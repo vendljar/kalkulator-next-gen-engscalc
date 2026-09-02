@@ -50,6 +50,71 @@ const CENIK_STARI_EXTRA = [
   { cesta: 'PC.dph',   popis: 'Sazba DPH projekce',    jed: 'podíl' },
 ];
 
+/* ---------- co patří ZAKÁZCE, ne ceníku (31. 8. 2026) ----------
+ *
+ * Hlášeno J. V.: „nevím, co se stalo, ale když jsem si dal náhled, vrátily se
+ * mi všechny ručně upravené položky do původního nastavení. Dokonce i globální
+ * přirážka, kterou mám pro Německo na 40 %, se vrátila zpět na 30 %."
+ *
+ * Příčina: otevření zakázky (i klikem na řádek v Přehledu) srovná rozpracované
+ * varianty s platným ceníkem — a přirážka i sazba DPH byly mezi sledovanými
+ * položkami, takže se „srovnaly" taky. Jenže to NEJSOU ceny: obchodník je
+ * nastavuje v hlavičce pro konkrétní zakázku (jiná země, jiný režim DPH).
+ * Tiché vrácení na ceníkovou hodnotu je ztráta rozhodnutí, ne oprava ceny.
+ *
+ * Ve sledovaných zůstávají — patří do otisku ceníku a do porovnání verzí —,
+ * ale automatický přepočet se jich nedotkne. */
+const CENIK_ZAKAZKOVE = ['C.marze', 'C.dph', 'PC.marze', 'PC.dph'];
+function cenikPatriZakazce(cesta) { return CENIK_ZAKAZKOVE.indexOf(String(cesta)) >= 0; }
+
+/* ---------- co z toho obchodník opravdu nastavil (31. 8. 2026 večer) ----------
+ *
+ * Hlášeno J. V.: „globální přirážka se nám maže a z ceníku se automaticky
+ * nenačítá, na rozdíl od nákladů, které se načtou."
+ *
+ * Příčina: pravidlo o pár řádků výš platilo na VŠECHNY varianty bez rozdílu —
+ * tedy i na prázdnou zakázku, kterou aplikace otevře při startu, ještě než se
+ * uživatel přihlásí a stáhne se platný ceník. Do takové zakázky se náklady
+ * natáhly (ty se srovnávají s ceníkem), ale přirážka ne, protože byla na
+ * seznamu výjimek. Firemní přirážka z ceníku se tak do nové nabídky nikdy
+ * nedostala a vypadalo to, že se maže.
+ *
+ * Rozlišují se proto dvě různé věci:
+ *   – hodnota, kterou obchodník v TÉHLE zakázce sám nastavil → nikdo mu ji
+ *     nepřepíše (to je #177 a platí dál),
+ *   – hodnota, které se nikdo nedotkl → chová se jako každá jiná ceníková
+ *     položka a natáhne se z platného ceníku.
+ *
+ * Značku zapisuje `set()` v ui/common.js, tedy ruční změna pole — ať v hlavičce
+ * kalkulace, nebo v ceníku (je to totéž pole nad týmiž daty). Zakázky uložené
+ * dřív značku nemají a migrace jim ji doplní na VŠECHNY zakázkové hodnoty:
+ * u starší nabídky nevíme, co v ní obchodník nastavil ručně, a přepsat mu
+ * přirážku by bylo horší než nechat ji být. */
+function cenikRucniMapa(data) {
+  if (!data || typeof data !== 'object') return {};
+  if (!data.cenikRucni || typeof data.cenikRucni !== 'object') data.cenikRucni = {};
+  return data.cenikRucni;
+}
+function cenikRucniJe(data, cesta) {
+  return !!(data && data.cenikRucni && data.cenikRucni[String(cesta)]);
+}
+function cenikRucniZnac(data, cesta) {
+  if (!cenikPatriZakazce(cesta)) return false;
+  cenikRucniMapa(data)[String(cesta)] = true;
+  return true;
+}
+/* Značka pro zakázku, o které nevíme nic (migrace starších souborů). */
+function cenikRucniVsechny() {
+  const m = {};
+  CENIK_ZAKAZKOVE.forEach(c => { m[c] = true; });
+  return m;
+}
+/* Hodnota, které se automatický přepočet nesmí dotknout: je zakázková
+ * A OBCHODNÍK JI SÁM NASTAVIL. Obojí musí platit zároveň. */
+function cenikChranena(data, cesta) {
+  return cenikPatriZakazce(cesta) && cenikRucniJe(data, cesta);
+}
+
 /* Jednotný seznam sledovaných položek: OCK, PROJ a tři globální hodnoty. */
 function cenikSledovane() {
   const out = [];
@@ -194,13 +259,26 @@ function cenikVerzeCislo(x) {
  * jedna cesta by verzi zapisovala a druhá tiše zahazovala. */
 function cenikRazitkoNovy(data, opts) {
   opts = opts || {};
-  return {
+  const r = {
     datum: opts.dnes || new Date().toISOString().slice(0, 10),
     build: opts.build || '',
     verze: cenikVerzeCislo(opts.verze),
     platnoOd: opts.platnoOd || '',
     otisk: cenikOtisk(data),
   };
+  /* Řada ceníku (#181): u roční staré nabídky musí jít doložit nejen
+   * z JAKÉ VERZE, ale i z JAKÉ ŘADY se počítalo. Tuzemská se nezapisuje —
+   * je výchozí a starší razítka ji nemají. */
+  const rada = (typeof cenikRadaVarianty === 'function') ? cenikRadaVarianty(data)
+    : ((data && data.cenikRada) || 'cr');
+  if (rada === 'zahr') r.rada = 'zahr';
+  return r;
+}
+
+/* Popis řady do razítka a přehledů: prázdno u tuzemska (výchozí stav
+ * nepotřebuje štítek), „zahraniční ceník" u druhé řady. */
+function cenikRazitkoRada(r) {
+  return (r && r.rada === 'zahr') ? 'zahraniční ceník' : '';
 }
 
 /* „verze 2 ceníku (platná od 1. 3. 2026)". Prázdno = verzi neznáme. */
@@ -325,14 +403,20 @@ function cenikPrepocti(v, dnesni, opts) {
   if (typeof variantaUzamcena === 'function' && variantaUzamcena(v))
     return { zmen: 0, duvod: 'varianta je uzamčená' };
   const vyber = opts.cesty ? new Set(opts.cesty) : null;
-  const rozdily = cenikRozdily(v.data, dnesni).filter(r => !vyber || vyber.has(r.cesta));
+  /* Zakázkové hodnoty (přirážka, sazba DPH) se automaticky nepřepisují —
+   * jsou to rozhodnutí obchodníka k téhle zakázce. Na výslovný pokyn
+   * (opts.cesty, tedy „přepočítej tyhle položky") se přepsat dají. */
+  const rozdily = cenikRozdily(v.data, dnesni)
+    .filter(r => (vyber ? vyber.has(r.cesta) : !cenikChranena(v.data, r.cesta)));
   rozdily.forEach(r => cenikNastavHodnotu(v.data, r.cesta, r.nova));
   /* Přepočet po vybraných položkách (dohodnutá cena skla zůstává) nechává
    * ceník jako směs: část z nové verze, část z původní dohody. Takový ceník
    * NENÍ žádná zveřejněná verze a razítko to nesmí tvrdit – jinak by se
    * u nabídky doložilo číslo verze, ze které se ve skutečnosti nepočítalo.
    * Verze se proto zapíše, jen když po přepočtu nezůstal žádný rozdíl. */
-  const zbyva = cenikRozdily(v.data, dnesni).length;
+  /* Do „co ještě zbývá" se zakázkové hodnoty nepočítají: jinak by odlišná
+   * přirážka navždy brala variantě číslo verze ceníku, ze které počítala. */
+  const zbyva = cenikRozdily(v.data, dnesni).filter(r => !cenikChranena(v.data, r.cesta)).length;
   v.data.cenikRazitko = cenikRazitkoNovy(v.data,
     zbyva ? Object.assign({}, opts, { verze: null, platnoOd: '' }) : opts);
   /* Značka se srovnává jen tehdy, když po přepočtu nezůstal rozdíl – tedy když
@@ -380,7 +464,10 @@ function cenikPrepoctiRozpracovane(zak, dnesni, opts) {
       return;
     }
 
-    const rozdily = cenikRozdily(v.data, dnesni);
+    /* Odlišná přirážka nebo sazba DPH není důvod k přepočtu — viz
+     * CENIK_ZAKAZKOVE. Bez téhle podmínky by zakázka do Německa (40 %)
+     * spustila přepočet při každém otevření. */
+    const rozdily = cenikRozdily(v.data, dnesni).filter(r => !cenikChranena(v.data, r.cesta));
     if (!rozdily.length) {
       /* Ceny už sedí, ale značka sedět nemusí: přesně tak vypadá varianta
        * spočítaná bez připojené složky, do které se pak ostrý ceník dostal
@@ -420,12 +507,13 @@ function cenikOznacJakoDnesni(data, opts) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { CENIK_STARI_EXTRA, cenikSledovane, cenikAktualizovano, cenikDniOd,
+  module.exports = { CENIK_STARI_EXTRA, CENIK_ZAKAZKOVE, cenikPatriZakazce,
+                     cenikRucniMapa, cenikRucniJe, cenikRucniZnac, cenikRucniVsechny, cenikChranena, cenikSledovane, cenikAktualizovano, cenikDniOd,
                      cenikStariCeniku, cenikHodnota, cenikNastavHodnotu, cenikRozdily,
                      cenikSrovnejZnacky,
                      cenikOtisk, cenikSouhrn, cenikKvitovat, cenikZrusKvitanci,
                      cenikJeKvitovano, cenikPrehled, cenikProcento, cenikVarovaniText,
                      cenikDatumCz, cenikPrepocti, cenikPrepoctiRozpracovane,
                      cenikOznacJakoDnesni,
-                     cenikVerzeCislo, cenikRazitkoNovy, cenikVerzeText, cenikVerzeVeta,
+                     cenikVerzeCislo, cenikRazitkoNovy, cenikRazitkoRada, cenikVerzeText, cenikVerzeVeta,
                      cenikDopadText };

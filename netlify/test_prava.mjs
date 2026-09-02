@@ -34,6 +34,7 @@ globalThis.__TEST_ULOZISTE = (nazev) => ({
     return [...pamet.keys()].filter(x => x.startsWith(nazev + '/' + (prefix || '')))
       .map(x => x.slice(nazev.length + 1));
   },
+  async smaz(k) { pamet.delete(nazev + '/' + k); },
 });
 
 import prihlaseni from './functions/prihlaseni.mjs';
@@ -49,6 +50,7 @@ import zalohaNocni from './functions/zaloha_nocni.mjs';
 import zalohaVynuceno from './functions/zaloha_vynuceno.mjs';
 import zdravi from './functions/zdravi.mjs';
 import zobrazeni from './functions/zobrazeni.mjs';
+import zakazniciFn from './functions/zakaznici.mjs';
 import schvalovaniFn from './functions/schvalovani.mjs';
 import sablonyFn from './functions/sablony.mjs';
 import analytikaFn from './functions/analytika.mjs';
@@ -56,7 +58,7 @@ import pdPole from './functions/pd_pole.mjs';
 import pdDealy from './functions/pd_dealy.mjs';
 import pdDeal from './functions/pd_deal.mjs';
 import { config as configNocni } from './functions/zaloha_nocni.mjs';
-import { ADMIN_EMAIL, ROLE, POKUSY_MAX, zpozdeniMs, pokusyReset,
+import { ADMIN_EMAIL, ROLE, POKUSY_MAX, POKUSY_IP_MAX, zpozdeniMs, pokusyReset,
          uloziste, PODPIS_ULOZISTE } from './lib/sdilene.mjs';
 
 import { createHmac } from 'node:crypto';
@@ -67,6 +69,7 @@ import { createRequire } from 'node:module';
 
 const KOREN = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
+const { ANALYTIKA_MAX_KLIC_ZNAKU, ANALYTIKA_MAX_HODNOTA } = require('../src/analytika.js');
 const zk = require('../src/zakazka.js');
 const ZC = require('../src/zkusebni_cenik.js');
 const fmod = require('../src/firma.js');
@@ -83,6 +86,8 @@ const test = (n, cond, info) => {
 const post = (fn, url, telo, cookie) => fn(new Request(url, {
   method: 'POST', headers: cookie ? { cookie } : {}, body: JSON.stringify(telo) }));
 const get = (fn, url, cookie) => fn(new Request(url, { headers: cookie ? { cookie } : {} }));
+const smaz = (fn, url, cookie) => fn(new Request(url,
+  { method: 'DELETE', headers: cookie ? { cookie } : {} }));
 
 async function prihlas(email, heslo) {
   const r = await post(prihlaseni, 'http://x/api/prihlaseni', { email, heslo });
@@ -285,6 +290,26 @@ const MATICE = [
    * a kdyby ji nedostal, viděl by výchozí (nejpřísnější) stav a administrátor
    * by mu nic nepřidělil. Zapisovat ji smí jen administrátor: je to rozhodnutí
    * za celou firmu, ne osobní předvolba. */
+  /* Seznam zákazníků (#162, 20. 8. 2026). Kartu vyplňuje obchodník přímo
+   * u zákazníka, takže číst i zapisovat smí každý přihlášený; MAZAT jen
+   * administrátor — se smazanou kartou zmizí i všechno, co si u toho
+   * zákazníka někdo jednou dohledal. */
+  { fn: zakazniciFn, soubor: 'zakaznici.mjs', nazev: 'zákazníci — seznam (GET /api/zakaznici)', metoda: 'GET',
+    url: 'http://x/api/zakaznici',
+    proc: 'kontakty a zástupci zákazníků jsou interní údaj, ale potřebuje je každý, kdo dělá nabídku',
+    prava: PRIHLASENY_OK },
+
+  { fn: zakazniciFn, nazev: 'zákazníci — uložení karty (POST /api/zakaznici)', metoda: 'POST',
+    url: 'http://x/api/zakaznici',
+    telo: () => ({ zakaznik: { nazev: 'Zkušební zákazník', ico: '12345679' } }),
+    proc: 'kartu zakládá a doplňuje obchodník u zákazníka — kdyby na to potřeboval admina, nevznikla by',
+    prava: PRIHLASENY_OK },
+
+  { fn: zakazniciFn, nazev: 'zákazníci — smazání karty (DELETE /api/zakaznici)', metoda: 'DELETE',
+    url: 'http://x/api/zakaznici?klic=12345679',
+    proc: 'smazaná karta bere s sebou i dohledané údaje — nevratné, proto jen administrátor',
+    prava: JEN_ADMIN },
+
   { fn: zobrazeni, soubor: 'zobrazeni.mjs', nazev: 'zobrazení — čtení matice (GET /api/zobrazeni)', metoda: 'GET',
     url: 'http://x/api/zobrazeni',
     proc: 'podle matice si rozhraní skládá sám prohlížeč — potřebuje ji každý přihlášený',
@@ -311,6 +336,13 @@ const MATICE = [
     telo: (r) => ({ zakazka: zakazkaCislo('2026 - OPR - CN - 09' + (10 + R.indexOf(r))) }),
     proc: 'ukládat zakázky je běžná práce obchodníka',
     prava: PRIHLASENY_OK },
+
+  /* Mazání zakázek (21. 8. 2026). Smazaná kalkulace je pryč i s historií
+   * cen — proto jako jediná operace nad zakázkami JEN ADMINISTRÁTOR. */
+  { fn: zakazky, nazev: 'zakázky — smazání (DELETE /api/zakazky?soubor=…)', metoda: 'DELETE',
+    url: 'http://x/api/zakazky?soubor=neexistujici-zakazka.json',
+    proc: 'smazaná zakázka je pryč i s historií cen; rozhodnutí patří administrátorovi',
+    prava: JEN_ADMIN },
 
   { fn: vypocet, soubor: 'vypocet.mjs', nazev: 'výpočet (POST /api/vypocet)', metoda: 'POST',
     url: 'http://x/api/vypocet',
@@ -413,11 +445,20 @@ console.log('\n===== KŘÍŽOVÁ MATICE: cesta × role =====\n');
 for (const radek of MATICE) {
   for (const role of R) {
     const c = cookieRole(role);
+    /* 20. 8. 2026: matice zná i DELETE (mazání karty zákazníka). Dřív uměla
+     * jen GET a POST a všechno ostatní posílala jako POST — nová cesta by
+     * se tak „ověřila" úplně jinou metodou, než jakou se volá. */
     const odpoved = radek.metoda === 'GET'
       ? await get(radek.fn, radek.url, c)
-      : await post(radek.fn, radek.url, radek.telo ? radek.telo(role) : {}, c);
+      : radek.metoda === 'DELETE'
+        ? await radek.fn(new Request(radek.url, { method: 'DELETE', headers: c ? { cookie: c } : {} }))
+        : await post(radek.fn, radek.url, radek.telo ? radek.telo(role) : {}, c);
     const cekano = radek.prava[role];
     const stav = odpoved.status;
+    /* Změna hesla zneplatní dosavadní relace (B6, 22. 8. 2026) a server
+     * vrací novou cookie — prohlížeč ji převezme, matice taky. */
+    const novaCookie = (odpoved.headers.get('set-cookie') || '').split(';')[0];
+    if (/^relace=.+/.test(novaCookie) && UCTY[role]) UCTY[role].cookie = novaCookie;   // odhlášení maže → nebrat
     let sedi, popis;
     if (cekano === 'ok' || cekano === 'verejne') { sedi = stav < 400; popis = 'projde (2xx)'; }
     else { sedi = stav === cekano; popis = 'odmítnuto ' + cekano; }
@@ -457,8 +498,10 @@ test('relace podepsaná jiným tajemstvím neprojde',
   (await get(ja, 'http://x/api/ja', 'relace=' + telaAdmin + '.' + podpisJinym(telaAdmin))).status === 401);
 
 const podpisSpravnym = (t) => createHmac('sha256', process.env.TAJEMSTVI_RELACE).update(t).digest('base64url');
+/* Hlavní účet: jeho heslo se v sadě nemění, takže verze hesla (B6) sedí
+ * a jediný důvod k odmítnutí zůstává prošlé `exp`. */
 const teloProsle = Buffer.from(JSON.stringify({
-  email: UCTY['Obchodník'].email, role: 'Obchodník', exp: Date.now() - 1000 })).toString('base64url');
+  email: ADMIN_EMAIL, role: 'Administrátor', hv: 0, exp: Date.now() - 1000 })).toString('base64url');
 test('prošlá relace neprojde, i když je podepsaná správně',
   (await get(ja, 'http://x/api/ja', 'relace=' + teloProsle + '.' + podpisSpravnym(teloProsle))).status === 401);
 
@@ -606,6 +649,15 @@ const snizHlavniho = await (await post(uzivatele, 'http://x/api/uzivatele',
 test('hlavnímu administrátorovi nejde snížit role',
   snizHlavniho.ok === false, JSON.stringify(snizHlavniho));
 
+/* Od B15 (22. 8. 2026) chrání vlastní účet i obecný guard „sám sebe ne";
+ * pojistka hlavního účtu se proto musí zkoušet z CIZÍHO správcovského účtu. */
+test('hlavní administrátorský účet nevypne ani jiný správce',
+  (await post(uzivatele, 'http://x/api/uzivatele',
+    { akce: 'aktivni', email: ADMIN_EMAIL, aktivni: false }, UCTY['Administrátor'].cookie)).status === 400);
+test('hlavnímu administrátorovi nesníží roli ani jiný správce',
+  (await post(uzivatele, 'http://x/api/uzivatele',
+    { akce: 'role', email: ADMIN_EMAIL, role: 'Obchodník' }, UCTY['Administrátor'].cookie)).status === 400);
+
 test('hlavní administrátor po obou pokusech dál funguje',
   (await get(zaloha, 'http://x/api/zaloha', cAdmin)).status === 200);
 
@@ -663,6 +715,361 @@ jinyZamek.varianty[0].zamek = { ...jinyZamek.varianty[0].zamek,
   kdy: new Date(Date.now() + 60000).toISOString() };
 test('zámek nesmí být potichu vyměněn za jiný',
   (await post(zakazky, 'http://x/api/zakazky', { zakazka: jinyZamek }, cObch)).status === 409);
+
+/* ============================================================
+ * BEZPEČNOSTNÍ AUDIT 22. 8. 2026 — nálezy B1, B2, B3
+ *
+ * Tři místa, kde server do té doby věřil tomu, co poslal klient: tvar
+ * identifikátorů (B1 — id šlo do onclick), rozhodnutí o slevě (B2 — stav
+ * „schváleno" psal prohlížeč) a odemčení odeslané nabídky (B3 — roli
+ * správce ověřoval jen prohlížeč). Každý test tu posílá přesně ten
+ * požadavek, který by poslal upravený klient.
+ * ============================================================ */
+
+console.log('\n===== AUDIT B1: TVAR IDENTIFIKÁTORŮ =====\n');
+
+const xssZak = zakazkaCislo('2026 - OPR - CN - 0960');
+xssZak.varianty[0].id = "x');fetch('/api/zaloha');//";
+xssZak.aktivni = xssZak.varianty[0].id;
+const xssOdp = await post(zakazky, 'http://x/api/zakazky', { zakazka: xssZak }, cObch);
+test('B1: id varianty se skriptem server odmítne (400)', xssOdp.status === 400, 'vrátil ' + xssOdp.status);
+test('B1: odmítnutí je srozumitelné a bez vnitřku serveru',
+  /identifik/i.test(JSON.stringify(await xssOdp.json())));
+const xssMin = zakazkaCislo('2026 - OPR - CN - 0960');
+xssMin.varianty[0].id = "v1')x(";     // nejmenší nutná sada: apostrof a závorky
+test('B1: stačí apostrof a závorky v id a server odmítne',
+  (await post(zakazky, 'http://x/api/zakazky', { zakazka: xssMin }, cObch)).status === 400);
+const xssPozn = zakazkaCislo('2026 - OPR - CN - 0961');
+xssPozn.poznamky = [{ id: "p');alert(1);//", text: 'x' }];
+test('B1: id poznámky se skriptem server odmítne',
+  (await post(zakazky, 'http://x/api/zakazky', { zakazka: xssPozn }, cObch)).status === 400);
+const xssPril = zakazkaCislo('2026 - OPR - CN - 0961');
+xssPril.prilohy = [{ id: '<img src=x onerror=alert(1)>', nazev: 'a' }];
+test('B1: id přílohy se značkou server odmítne',
+  (await post(zakazky, 'http://x/api/zakazky', { zakazka: xssPril }, cObch)).status === 400);
+const ciste = zakazkaCislo('2026 - OPR - CN - 0961');
+ciste.poznamky = [{ id: 'pz1abc', text: 'x' }]; ciste.prilohy = [{ id: 'pr_1-2.3', nazev: 'a' }];
+test('B1: běžné identifikátory aplikace projdou',
+  (await post(zakazky, 'http://x/api/zakazky', { zakazka: ciste }, cObch)).status === 200);
+
+console.log('\n===== AUDIT B3: ODEMČENÍ ODESLANÉ NABÍDKY =====\n');
+
+const odemZak = zakazkaCislo('2026 - OPR - CN - 0962');
+zam.zamkniVariantu(odemZak.varianty[0], { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Obchodník' });
+test('B3: příprava — zamčená zakázka uložena',
+  (await post(zakazky, 'http://x/api/zakazky', { zakazka: odemZak }, cObch)).status === 200);
+const odemPodvrh = JSON.parse(JSON.stringify(odemZak));
+odemPodvrh.varianty[0].odemceni = [{ kdy: new Date().toISOString(), kdo: 'Podvržený správce', duvod: 'x',
+                                     zamek: odemPodvrh.varianty[0].zamek }];
+odemPodvrh.varianty[0].zamek = null;
+test('B3: obchodník nemůže odemknout přes odemceni[] (403)',
+  (await post(zakazky, 'http://x/api/zakazky', { zakazka: odemPodvrh }, cObch)).status === 403);
+test('B3: ani vedoucí ne (403)',
+  (await post(zakazky, 'http://x/api/zakazky', { zakazka: odemPodvrh }, UCTY['Vedoucí'].cookie)).status === 403);
+const poPokusu = await (await get(zakazky,
+  'http://x/api/zakazky?soubor=2026-OPR-CN-0962.json', cAdmin)).json();
+test('B3: po odmítnutém pokusu je zámek v databázi nedotčen',
+  zam.variantaUzamcena(poPokusu.zakazka.varianty[0]));
+const odemAdmin = await post(zakazky, 'http://x/api/zakazky', { zakazka: odemPodvrh }, cAdmin);
+test('B3: administrátor odemkne', odemAdmin.status === 200, 'vrátil ' + odemAdmin.status);
+const poOdemceni = await (await get(zakazky,
+  'http://x/api/zakazky?soubor=2026-OPR-CN-0962.json', cAdmin)).json();
+const zaznamOdem = poOdemceni.zakazka.varianty[0].odemceni.slice(-1)[0];
+test('B3: razítko „kdo odemkl" píše server z relace, ne z těla',
+  zaznamOdem.kdo !== 'Podvržený správce' && zaznamOdem.kdo.includes(ADMIN_EMAIL), JSON.stringify(zaznamOdem));
+/* Druhý krok útoku: po odemčení přepsat data. Teď už zakázka zamčená není,
+ * takže obchodník data změnit smí — to je správně, odemčení bylo doložené
+ * správcem. Útok stál na tom, že KROK 1 udělal obchodník sám. */
+
+console.log('\n===== AUDIT B2: ROZHODNUTÍ O SLEVĚ =====\n');
+
+/* Stropy pro tuhle sadu: program má z přípravy jen minMarze; doplníme
+ * ukázkové stropy (obchodník 3 %, vedoucí 10 %), jako v test_schvalovani.js. */
+await post(program, 'http://x/api/program',
+  { cenik: cenikJinak(), cenikProj: ZC.zkusebniCenikProj(),
+    slevy: { minMarze: 0.02, stropy: { 'Obchodník': 0.03, 'Vedoucí': 0.10, 'Administrátor': 1 } } }, cAdmin);
+function slevaPodvrh(p) {
+  return { procenta: p, schema: '', role: 'Obchodník', poznamka: '', stav: 'schváleno',
+           schvalenoProc: p, schvalil: 'Vedoucí Podvržený', schvalilKdy: '2026-08-22T00:00:00Z' };
+}
+const slZak = zakazkaCislo('2026 - OPR - CN - 0963');
+slZak.varianty[0].data.sleva = slevaPodvrh(6);
+const slOdp = await post(zakazky, 'http://x/api/zakazky', { zakazka: slZak }, cObch);
+test('B2: obchodník nemůže uložit slevu jako schválenou (403)', slOdp.status === 403, 'vrátil ' + slOdp.status);
+const slProj = zakazkaCislo('2026 - OPR - CN - 0963');
+slProj.varianty[0].data.slevaProj = slevaPodvrh(6);
+test('B2: totéž pro slevu PROJ',
+  (await post(zakazky, 'http://x/api/zakazky', { zakazka: slProj }, cObch)).status === 403);
+const slAuto = zakazkaCislo('2026 - OPR - CN - 0963');
+slAuto.varianty[0].data.sleva = { ...slevaPodvrh(6), stav: 'schváleno automaticky', schvalil: '', schvalenoProc: undefined };
+test('B2: obchodník nemůže označit slevu nad stropem jako „schváleno automaticky"',
+  (await post(zakazky, 'http://x/api/zakazky', { zakazka: slAuto }, cObch)).status === 403);
+const slCeka = zakazkaCislo('2026 - OPR - CN - 0963');
+slCeka.varianty[0].data.sleva = { ...slevaPodvrh(6), stav: 'čeká na schválení', schvalil: '', schvalenoProc: undefined };
+test('B2: žádost „čeká na schválení" obchodník uloží',
+  (await post(zakazky, 'http://x/api/zakazky', { zakazka: slCeka }, cObch)).status === 200);
+const slVed = await post(zakazky, 'http://x/api/zakazky', { zakazka: slZak }, UCTY['Vedoucí'].cookie);
+test('B2: vedoucí slevu 6 % schválí', slVed.status === 200, 'vrátil ' + slVed.status);
+const slPo = await (await get(zakazky, 'http://x/api/zakazky?soubor=2026-OPR-CN-0963.json', cAdmin)).json();
+test('B2: jméno schvalovatele píše server z relace',
+  slPo.zakazka.varianty[0].data.sleva.schvalil !== 'Vedoucí Podvržený'
+  && slPo.zakazka.varianty[0].data.sleva.schvalilEmail === UCTY['Vedoucí'].email,
+  JSON.stringify(slPo.zakazka.varianty[0].data.sleva));
+test('B2: obchodník pak zakázku se schválenou slevou beze změny uloží',
+  (await post(zakazky, 'http://x/api/zakazky', { zakazka: slPo.zakazka }, cObch)).status === 200);
+const slVedNad = zakazkaCislo('2026 - OPR - CN - 0964');
+slVedNad.varianty[0].data.sleva = slevaPodvrh(15);
+test('B2: vedoucí nemůže schválit slevu nad svůj strop (403)',
+  (await post(zakazky, 'http://x/api/zakazky', { zakazka: slVedNad }, UCTY['Vedoucí'].cookie)).status === 403);
+test('B2: administrátor schválí i slevu nad stropem vedoucího',
+  (await post(zakazky, 'http://x/api/zakazky', { zakazka: slVedNad }, cAdmin)).status === 200);
+
+/* ============================================================
+ * BEZPEČNOSTNÍ AUDIT 22. 8. 2026 — 2. dávka: B4, B6, B7, B8, B9, B13
+ * ============================================================ */
+
+console.log('\n===== AUDIT B6: ZMĚNA HESLA ODHLÁSÍ STARÉ RELACE =====\n');
+{
+  await post(uzivatele, 'http://x/api/uzivatele',
+    { akce: 'zaloz', email: 'verze@example.com', jmeno: 'Verze Hesla', role: 'Obchodník', heslo: 'VerzeHeslo1' }, cAdmin);
+  const c1 = await prihlas('verze@example.com', 'VerzeHeslo1');
+  const c2 = await prihlas('verze@example.com', 'VerzeHeslo1');      // druhý prohlížeč (útočník s cookie)
+  test('B6: obě relace před změnou hesla platí',
+    (await get(ja, 'http://x/api/ja', c1)).status === 200 && (await get(ja, 'http://x/api/ja', c2)).status === 200);
+  const zmena = await post(uzivatele, 'http://x/api/uzivatele',
+    { akce: 'mojeheslo', stare: 'VerzeHeslo1', nove: 'VerzeHeslo2' }, c1);
+  test('B6: změna hesla projde a vrací novou cookie', zmena.status === 200
+    && /^relace=.+/.test((zmena.headers.get('set-cookie') || '').split(';')[0]));
+  const c1b = (zmena.headers.get('set-cookie') || '').split(';')[0];
+  test('B6: druhá (ukradená) relace po změně hesla NEPLATÍ (401)',
+    (await get(ja, 'http://x/api/ja', c2)).status === 401);
+  test('B6: stará cookie prvního prohlížeče také neplatí',
+    (await get(ja, 'http://x/api/ja', c1)).status === 401);
+  test('B6: nová cookie z odpovědi platí',
+    (await get(ja, 'http://x/api/ja', c1b)).status === 200);
+  const c3 = await prihlas('verze@example.com', 'VerzeHeslo2');
+  await post(uzivatele, 'http://x/api/uzivatele', { akce: 'heslo', email: 'verze@example.com', heslo: 'VerzeHeslo3' }, cAdmin);
+  test('B6: reset hesla správcem odhlásí dosavadní relaci dotyčného',
+    (await get(ja, 'http://x/api/ja', c3)).status === 401);
+  test('B6: po resetu jde přihlásit novým heslem', !!(await prihlas('verze@example.com', 'VerzeHeslo3')));
+  test('B6: účty a cookie bez verze hesla spolu dál sedí (nasazení nikoho neodhlásí)',
+    (await get(ja, 'http://x/api/ja', cAdmin)).status === 200);
+}
+
+console.log('\n===== AUDIT B7: HESLO HLAVNÍHO ÚČTU =====\n');
+{
+  const r = await post(uzivatele, 'http://x/api/uzivatele',
+    { akce: 'heslo', email: ADMIN_EMAIL, heslo: 'PrevzateHeslo1' }, UCTY['Administrátor'].cookie);
+  test('B7: vedlejší administrátor nemůže resetovat heslo hlavního účtu (403)', r.status === 403, 'vrátil ' + r.status);
+  test('B7: hlavní účet se dál přihlásí svým heslem', !!(await prihlas(ADMIN_EMAIL, 'Docasne.Heslo.123')));
+  test('B7: vedlejší administrátor dál resetuje hesla ostatním',
+    (await post(uzivatele, 'http://x/api/uzivatele',
+      { akce: 'heslo', email: 'terc@example.com', heslo: 'TercHeslo2' }, UCTY['Administrátor'].cookie)).status === 200);
+  /* B28 (23. 8. 2026): profil a podpis hlavního účtu smí měnit jen on sám. */
+  test('B28: vedlejší administrátor nezmění profil hlavního účtu (403)',
+    (await post(uzivatele, 'http://x/api/uzivatele',
+      { akce: 'profil', email: ADMIN_EMAIL, jmeno: 'Podvrh' }, UCTY['Administrátor'].cookie)).status === 403);
+  test('B28: vedlejší administrátor nenahraje podpis hlavního účtu (403)',
+    (await post(uzivatele, 'http://x/api/uzivatele',
+      { akce: 'podpis', email: ADMIN_EMAIL, obrazek: 'data:image/png;base64,iVBORw0KGgo=' }, UCTY['Administrátor'].cookie)).status === 403);
+  test('B28: hlavní administrátor si vlastní profil změní',
+    (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'profil', jmeno: 'Jaroslav Vendl' }, cAdmin)).status === 200);
+}
+
+console.log('\n===== AUDIT B4: LIMIT NA ADRESU =====\n');
+{
+  const zAdresy = (email, heslo, ip) => prihlaseni(new Request('http://x/api/prihlaseni', {
+    method: 'POST', headers: { 'x-nf-client-connection-ip': ip }, body: JSON.stringify({ email, heslo }) }));
+  let posledni = 0;
+  for (let i = 0; i < POKUSY_IP_MAX + 1; i++)
+    posledni = (await zAdresy('nikdo' + i + '@example.com', 'spatne-heslo', '203.0.113.7')).status;
+  test('B4: jedno heslo na ' + (POKUSY_IP_MAX + 1) + ' e-mailů z jedné adresy skončí 429', posledni === 429, posledni);
+  test('B4: jiná adresa není dotčená',
+    (await zAdresy('nikdo999@example.com', 'spatne-heslo', '203.0.113.8')).status === 401);
+  const spravne = await zAdresy(UCTY['Obchodník'].email, UCTY['Obchodník'].heslo, '203.0.113.7');
+  test('B4: správné heslo projde i z adresy nad limitem (brzda nikdy nebrání majiteli)', spravne.status === 200, spravne.status);
+  test('B4: úspěch počítadlo adresy vynuluje',
+    (await zAdresy('nikdo1000@example.com', 'spatne-heslo', '203.0.113.7')).status === 401);
+}
+
+console.log('\n===== AUDIT B8: OČISTA DÁVKY ANALYTIKY =====\n');
+{
+  const dnesKlic = 'den/' + new Date().toISOString().slice(0, 10);
+  await post(analytikaFn, 'http://x/api/analytika', { akce: 'rezim', sber: true }, cAdmin);   // ať se dávka opravdu ukládá
+  const sAn = await uloziste('analytika');
+  const pred = (await sAn.cti(dnesKlic)) || {};
+  const predCizi = ((pred.poUzivateli || {})['kolega@example.com'] || {}).chyby || 0;
+  const r = await post(analytikaFn, 'http://x/api/analytika', { akce: 'udalosti',
+    den: { pocty: { chyby: -500, zakazky: 'AAAA' }, zalozky: { ['x'.repeat(5000)]: 3 },
+           kliky: { 'btn': 1e12 },
+           poUzivateli: { 'kolega@example.com': { chyby: 500, zakazky: -200 } } },
+    casy: { "x');fetch('/')": { ock: 10 }, '2026-OPR-CN-0001': { ock: -5, proj: 'zz' } } }, cObch);
+  test('B8: dávka projde (ok:true)', r.status === 200);
+  const po = await sAn.cti(dnesKlic);
+  test('B8: poUzivateli od klienta se nepřičítá',
+    (((po.poUzivateli || {})['kolega@example.com'] || {}).chyby || 0) === predCizi, JSON.stringify(po.poUzivateli));
+  test('B8: záporné a nečíselné hodnoty se nepřičítají',
+    typeof po.pocty.chyby === 'number' && po.pocty.chyby >= (pred.pocty ? pred.pocty.chyby : 0)
+    && typeof po.pocty.zakazky === 'number');
+  test('B8: klíč je oříznutý na rozumnou délku',
+    Object.keys(po.zalozky).every(k => k.length <= ANALYTIKA_MAX_KLIC_ZNAKU), Object.keys(po.zalozky).map(k => k.length).join(','));
+  const predKliky = Object.values(pred.kliky || {}).reduce((a, b) => a + b, 0);
+  const poKliky = Object.values(po.kliky || {}).reduce((a, b) => a + b, 0);
+  test('B8: hodnota má strop (1e12 kliknutí se přičte nejvýš jako ' + ANALYTIKA_MAX_HODNOTA + ')',
+    poKliky - predKliky <= ANALYTIKA_MAX_HODNOTA && poKliky > predKliky, (poKliky - predKliky));
+  const casKlice = await sAn.seznam('cas/');
+  test('B8: klíč času zakázky s cizím tvarem se nezaloží',
+    !casKlice.some(k => k.includes('fetch')), casKlice.join(','));
+}
+
+console.log('\n===== AUDIT B9: ÚPLNOST ZÁLOHY =====\n');
+{
+  await post(zobrazeni, 'http://x/api/zobrazeni', { matice: {} }, cAdmin);
+  await post(zakazniciFn, 'http://x/api/zakaznici', { zakaznik: { nazev: 'Záloha s.r.o.', ico: '12345678' } }, cObch);
+  await post(uzivatele, 'http://x/api/uzivatele',
+    { akce: 'podpis', email: UCTY['Obchodník'].email, obrazek: 'data:image/png;base64,iVBORw0KGgo=' }, cObch);
+  const z = (await (await get(zaloha, 'http://x/api/zaloha', cAdmin)).json()).zaloha;
+  test('B9: záloha nese matici zobrazení', 'zobrazeni' in z);
+  test('B9: záloha nese kartotéku zákazníků', !!z.zakaznici && Object.keys(z.zakaznici).length >= 1, JSON.stringify(Object.keys(z.zakaznici || {})));
+  test('B9: záloha nese podpisy', !!z.podpisy && Object.keys(z.podpisy).length >= 1);
+  test('B9: záloha pořád nenese otisky hesel', !JSON.stringify(z.uzivatele).includes('heslo'));
+  const { porizOtisk } = await import('./lib/zalohovani.mjs');
+  const o = await porizOtisk('test', 'test');
+  const otisk = await (await uloziste('zalohy')).cti(o.den);
+  test('B9: noční otisk nese zákazníky, podpisy i zobrazení',
+    !!otisk.zakaznici && !!otisk.podpisy && 'zobrazeni' in otisk);
+}
+
+console.log('\n===== AUDIT B13: RAZÍTKA PŘI ZALOŽENÍ =====\n');
+{
+  const cizi = zakazkaCislo('2026 - OPR - CN - 0970');
+  cizi.autor = UCTY['Vedoucí'].email;
+  await post(zakazky, 'http://x/api/zakazky', { zakazka: cizi }, cObch);
+  const ul = (await (await get(zakazky, 'http://x/api/zakazky?soubor=2026-OPR-CN-0970.json', cAdmin)).json()).zakazka;
+  test('B13: obchodník nemůže založit zakázku „za" vedoucího — autor je z relace',
+    ul.autor === UCTY['Obchodník'].email, ul.autor);
+  const obnova = zakazkaCislo('2026 - OPR - CN - 0971');
+  obnova.autor = UCTY['Vedoucí'].email;
+  await post(zakazky, 'http://x/api/zakazky', { zakazka: obnova }, cAdmin);
+  const ul2 = (await (await get(zakazky, 'http://x/api/zakazky?soubor=2026-OPR-CN-0971.json', cAdmin)).json()).zakazka;
+  test('B13: administrátor smí při obnově ponechat cizího autora', ul2.autor === UCTY['Vedoucí'].email, ul2.autor);
+  const zam2 = zakazkaCislo('2026 - OPR - CN - 0972');
+  zam.zamkniVariantu(zam2.varianty[0], { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Podvržený Odesílatel' });
+  await post(zakazky, 'http://x/api/zakazky', { zakazka: zam2 }, cObch);
+  const ul3 = (await (await get(zakazky, 'http://x/api/zakazky?soubor=2026-OPR-CN-0972.json', cAdmin)).json()).zakazka;
+  test('B13: razítko nového zámku píše server z relace',
+    ul3.varianty[0].zamek.kdo !== 'Podvržený Odesílatel' && ul3.varianty[0].zamek.kdo.includes(UCTY['Obchodník'].email),
+    ul3.varianty[0].zamek.kdo);
+  test('B13: existující zámek se při dalším uložení nepřepisuje',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: ul3 }, cAdmin)).status === 200
+    && (await (await get(zakazky, 'http://x/api/zakazky?soubor=2026-OPR-CN-0972.json', cAdmin)).json())
+         .zakazka.varianty[0].zamek.kdo === ul3.varianty[0].zamek.kdo);
+}
+
+/* ============================================================
+ * BEZPEČNOSTNÍ AUDIT 22. 8. 2026 — 3. dávka: B10, B14, B15, B16, B17
+ * ============================================================ */
+
+console.log('\n===== AUDIT B10: RAZÍTKO VERZE =====\n');
+{
+  const z = zakazkaCislo('2026 - OPR - CN - 0980');
+  const prvni = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: z, ocekavaneRazitko: '' }, cObch)).json();
+  test('B10: nová zakázka s prázdným razítkem projde', prvni.ok === true && !!prvni.razitko, JSON.stringify(prvni));
+  const cizi = zakazkaCislo('2026 - OPR - CN - 0980');
+  const kol = await post(zakazky, 'http://x/api/zakazky', { zakazka: cizi, ocekavaneRazitko: '' }, UCTY['Vedoucí'].cookie);
+  test('B10: stejné číslo bez razítka (cizí zakázka) → 409 s příznakem kolize',
+    kol.status === 409 && (await kol.clone().json()).kolize === true, kol.status);
+  const nactena = (await (await get(zakazky, 'http://x/api/zakazky?soubor=2026-OPR-CN-0980.json', cObch)).json()).zakazka;
+  const ok2 = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: nactena, ocekavaneRazitko: prvni.razitko }, cObch)).json();
+  test('B10: uložení se správným razítkem projde a vrátí nové', ok2.ok === true && ok2.razitko !== prvni.razitko);
+  const stare = await post(zakazky, 'http://x/api/zakazky', { zakazka: nactena, ocekavaneRazitko: prvni.razitko }, cObch);
+  test('B10: uložení se zastaralým razítkem (kolega mezitím uložil) → 409', stare.status === 409);
+  test('B10: vědomé přepsání (prepsat:true) projde',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: nactena, ocekavaneRazitko: prvni.razitko, prepsat: true }, cObch)).status === 200);
+  test('B10: starší klient bez pole ocekavaneRazitko se nezastaví',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: nactena }, cObch)).status === 200);
+}
+
+console.log('\n===== AUDIT B14: VELIKOST ZAKÁZKY =====\n');
+{
+  const obr = zakazkaCislo('2026 - OPR - CN - 0981');
+  obr.prilohy = [{ id: 'pr1', nazev: 'a', data: 'A'.repeat(4 * 1024 * 1024 + 10) }];
+  const r = await post(zakazky, 'http://x/api/zakazky', { zakazka: obr }, cObch);
+  test('B14: zakázka nad 4 MB se odmítne (413)', r.status === 413, r.status);
+  const dlouhe = zakazkaCislo('2026 - OPR - CN - ' + '9'.repeat(70));
+  test('B14: číslo nabídky nad 60 znaků se odmítne (400)',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: dlouhe }, cObch)).status === 400);
+}
+
+console.log('\n===== AUDIT B27: NEPLATNÝ STAV PIPEDRIVE =====\n');
+{
+  const spatny = await get(pdDealy, 'http://x/api/pd/dealy?stav=cokoli', cObch);
+  test('B27: neplatný stav vrátí 400 (i bez napojení na Pipedrive)', spatny.status === 400, spatny.status);
+  const platny = await get(pdDealy, 'http://x/api/pd/dealy?stav=won', cObch);
+  test('B27: platný stav projde (bez napojení nastaveno:false)', platny.status === 200, platny.status);
+}
+
+console.log('\n===== AUDIT B29: AUTOR KARTY ZÁKAZNÍKA =====\n');
+{
+  await post(zakazniciFn, 'http://x/api/zakaznici',
+    { zakaznik: { nazev: 'B29 s.r.o.', ico: '27074358', autor: 'kolega@example.com' } }, cObch);
+  const list = await (await get(zakazniciFn, 'http://x/api/zakaznici', cAdmin)).json();
+  const k = (list.zakaznici || []).find(z => z.ico === '27074358');
+  test('B29: autor nové karty je z relace, ne z těla požadavku',
+    !!k && k.autor === UCTY['Obchodník'].email, k && k.autor);
+}
+
+console.log('\n===== AUDIT B15: SEBEUZAMČENÍ A ARCHIV =====\n');
+{
+  const cA = UCTY['Administrátor'].cookie, eA = UCTY['Administrátor'].email;
+  test('B15: správce si nesníží vlastní roli',
+    (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'role', email: eA, role: 'Obchodník' }, cA)).status === 400);
+  test('B15: správce si nevypne vlastní účet',
+    (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'aktivni', email: eA, aktivni: false }, cA)).status === 400);
+  test('B15: správce je po obou pokusech pořád správce', (await get(ja, 'http://x/api/ja', cA)).status === 200);
+  await post(uzivatele, 'http://x/api/uzivatele', { akce: 'zaloz', email: 'archiv@example.com', jmeno: 'Archiv', role: 'Obchodník', heslo: 'ArchivHeslo1' }, cAdmin);
+  await post(uzivatele, 'http://x/api/uzivatele', { akce: 'archiv', email: 'archiv@example.com', archiv: true }, cAdmin);
+  test('B15: archivovaný účet nejde zapnout bez zrušení archivu',
+    (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'aktivni', email: 'archiv@example.com', aktivni: true }, cAdmin)).status === 400);
+  const pokus = await post(prihlaseni, 'http://x/api/prihlaseni', { email: 'archiv@example.com', heslo: 'ArchivHeslo1' });
+  test('B15: archivovaný účet se nepřihlásí', pokus.status === 401);
+  /* B31 (23. 8. 2026): vlastní účet si správce nearchivuje (archiv = vypnutí). */
+  test('B31: správce si nearchivuje vlastní účet',
+    (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'archiv', email: eA, archiv: true }, cA)).status === 400);
+  test('B31: správce po pokusu dál funguje', (await get(ja, 'http://x/api/ja', cA)).status === 200);
+}
+
+console.log('\n===== AUDIT B16: DÉLKY A TVAR =====\n');
+{
+  test('B16: e-mail bez @ se při založení odmítne',
+    (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'zaloz', email: 'bez-zavinace', jmeno: 'x', role: 'Obchodník', heslo: 'HesloHeslo1' }, cAdmin)).status === 400);
+  test('B16: e-mail s mezerou/lomítkem se odmítne',
+    (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'zaloz', email: 'a b/c@example.com', jmeno: 'x', role: 'Obchodník', heslo: 'HesloHeslo1' }, cAdmin)).status === 400);
+  test('B16: heslo nad 200 znaků se odmítne',
+    (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'zaloz', email: 'dlouhe@example.com', jmeno: 'x', role: 'Obchodník', heslo: 'H'.repeat(201) }, cAdmin)).status === 400);
+  const p = await post(prihlaseni, 'http://x/api/prihlaseni', { email: 'x'.repeat(300) + '@example.com', heslo: 'abc12345' });
+  test('B16: přihlášení s obřím e-mailem vrátí obyčejné 401 (nic nezakládá)', p.status === 401);
+  const sPokusy = await uloziste('pokusy');
+  test('B16: obří e-mail nezaložil klíč v počítadle pokusů',
+    !(await sPokusy.seznam()).some(k => k.length > 260));
+}
+
+console.log('\n===== AUDIT B17: PŮVOD POŽADAVKU =====\n');
+{
+  const cizi = await zakazky(new Request('http://x/api/zakazky', { method: 'POST',
+    headers: { cookie: cObch, origin: 'https://utocnik.example', host: 'schaftscalc.netlify.app' },
+    body: JSON.stringify({ zakazka: zakazkaCislo('2026 - OPR - CN - 0982') }) }));
+  test('B17: POST s cizím Origin se odmítne jako nepřihlášený (401)', cizi.status === 401, cizi.status);
+  const vlastni = await zakazky(new Request('http://x/api/zakazky', { method: 'POST',
+    headers: { cookie: cObch, origin: 'https://schaftscalc.netlify.app', host: 'schaftscalc.netlify.app' },
+    body: JSON.stringify({ zakazka: zakazkaCislo('2026 - OPR - CN - 0982') }) }));
+  test('B17: POST s vlastním Origin projde', vlastni.status === 200, vlastni.status);
+  const ctení = await zakazky(new Request('http://x/api/zakazky', {
+    headers: { cookie: cObch, origin: 'https://utocnik.example', host: 'schaftscalc.netlify.app' } }));
+  test('B17: GET se na Origin neptá (čtení cizí stránce stejně nevydá — CORS)', ctení.status === 200);
+  test('B17: odhlášení na GET vrátí 405',
+    (await odhlaseni(new Request('http://x/api/odhlaseni', { headers: { cookie: cObch } }))).status === 405);
+}
 
 /* ============================================================
  * PLÁNOVANÁ FUNKCE
@@ -841,7 +1248,7 @@ const PODPIS_PNG = 'data:image/png;base64,iVBORw0KGgo=';
 
 await post(uzivatele, 'http://x/api/uzivatele',
   { akce: 'zaloz', email: 'mazany@example.com', jmeno: 'Ke smazání',
-    role: 'Obchodník', heslo: 'MazanyHeslo1' }, cAdmin);
+    role: 'Vedoucí', heslo: 'MazanyHeslo1' }, cAdmin);   // vedoucí: smí sám schválit slevu do stropu (B2)
 const cMazany = await prihlas('mazany@example.com', 'MazanyHeslo1');
 await post(uzivatele, 'http://x/api/uzivatele',
   { akce: 'podpis', email: 'mazany@example.com', obrazek: PODPIS_PNG }, cAdmin);
@@ -853,8 +1260,10 @@ test('příprava: mazaný účet má nahraný podpis',
  * pod rozhodnutím o slevě. Obojí musí smazání účtu přežít beze změny —
  * říkají, kdo co tehdy udělal, a to se nepřepisuje. */
 const razitkova = zakazkaCislo('2026 - OPR - CN - 0940');
-razitkova.varianty[0].data.sleva = { procenta: 12, role: 'Obchodník',
-  stav: 'schváleno', schvalil: 'mazany@example.com',
+/* Od 22. 8. 2026 (B2) rozhodnutí ověřuje server: razítko schvalovatele si
+ * napíše sám z relace. Proto tu účet je vedoucí a sleva je pod jeho stropem. */
+razitkova.varianty[0].data.sleva = { procenta: 6, role: 'Vedoucí',
+  stav: 'schváleno', schvalenoProc: 6, schvalil: 'mazany@example.com',
   schvalilKdy: new Date().toISOString(), poznamka: '' };
 zam.zamkniVariantu(razitkova.varianty[0],
   { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'mazany@example.com' });
@@ -976,11 +1385,12 @@ test('v knize smazaných účtů je zapsáno kdo a kdy',
 const razitkaPo = await (await get(zakazky,
   'http://x/api/zakazky?soubor=2026-OPR-CN-0940.json', cAdmin)).json();
 test('zámek odeslané nabídky nese pořád jméno toho, kdo ji tehdy odeslal',
-  razitkaPo.zakazka.varianty[0].zamek.kdo === 'mazany@example.com',
+  razitkaPo.zakazka.varianty[0].zamek.kdo.includes('mazany@example.com'),   // od B13 razítko ze serveru
   JSON.stringify(razitkaPo.zakazka.varianty[0].zamek));
 test('podpis pod rozhodnutím o slevě zůstal taky beze změny',
-  razitkaPo.zakazka.varianty[0].data.sleva.schvalil === 'mazany@example.com',
-  razitkaPo.zakazka.varianty[0].data.sleva.schvalil);
+  razitkaPo.zakazka.varianty[0].data.sleva.schvalilEmail === 'mazany@example.com'
+  && /Ke smazání/.test(razitkaPo.zakazka.varianty[0].data.sleva.schvalil),
+  JSON.stringify(razitkaPo.zakazka.varianty[0].data.sleva));
 test('autor zakázky je ale nový hospodář, ne smazaný účet',
   razitkaPo.zakazka.autor === UCTY['Vedoucí'].email, razitkaPo.zakazka.autor);
 
@@ -1196,6 +1606,9 @@ test('vyzadujRoli si ověřuje účet v databázi, ne jen cookie',
  * znak po znaku.) */
 test('hesla se porovnávají časově bezpečně (timingSafeEqual)',
   /function hesloSedi[\s\S]{0,500}timingSafeEqual\s*\(/.test(sdilene));
+/* Totéž pro podpis relace (audit 22. 8. 2026, B22). */
+test('podpis relace se porovnává časově bezpečně (timingSafeEqual v relaceOver)',
+  /function relaceOver[\s\S]{0,700}timingSafeEqual\s*\(/.test(sdilene));
 /* Sůl se hledá UVNITŘ otiskHesla, ne kdekoli v souboru. Volné hledání
  * `randomBytes(` přestalo platit ve chvíli, kdy soubor začal náhodná data
  * používat i jinde (zástupný otisk pro #93) — mutace „sůl je pro všechny
@@ -1217,13 +1630,100 @@ test('tajemství relace nemá záložní hodnotu v kódu',
  * Hlídá to tahle statická kontrola. */
 const kodPrihlaseni = readFileSync(resolve(KOREN, 'functions', 'prihlaseni.mjs'), 'utf8');
 test('přihlášení se u neúspěchu skutečně zdrží (pockej + zpozdeniMs)',
-  /pockej\s*\(\s*zpozdeniMs\s*\(/.test(kodPrihlaseni));
-/* Pořadí je celá podstata #92: kdyby se počítadlo ptalo dřív, než se ověří
- * heslo, dal by se majitel účtu zamknout deseti špatnými pokusy. */
-test('heslo se ověřuje dřív, než se rozhoduje o brzdě',
-  kodPrihlaseni.indexOf('hesloSedi(') < kodPrihlaseni.indexOf('pokusyNeuspech('));
+  /pockej\s*\([\s\S]{0,40}zpozdeniMs\s*\(/.test(kodPrihlaseni));
+/* Pořadí je celá podstata #92: rozhodnutí o ODMÍTNUTÍ (429) musí přijít až po
+ * ověření hesla — jinak by se dal majitel účtu zamknout deseti špatnými
+ * pokusy. Od 22. 8. 2026 (B4) se pokus ZAPOČÍTÁ a ČEKÁ ještě před ověřením
+ * (proti souběhu), ale 429 se pořád rozhoduje až za hesloSedi. */
+test('pokus se započítá před ověřením hesla (B4 — souběh)',
+  kodPrihlaseni.indexOf('pokusyZacatek(') < kodPrihlaseni.indexOf('hesloSedi('));
+test('o odmítnutí 429 se rozhoduje až po ověření hesla (#92)',
+  kodPrihlaseni.indexOf('hesloSedi(') < kodPrihlaseni.indexOf('> POKUSY_MAX'));
 test('u neznámého účtu se scrypt počítá proti zástupnému otisku (#93)',
   /hesloSedi\([\s\S]{0,120}FALESNY_OTISK/.test(kodPrihlaseni));
+
+/* ---------- mazání zakázek (21. 8. 2026, hromadné mazání v přehledu) ------- */
+console.log('\n===== MAZÁNÍ ZAKÁZEK =====\n');
+{
+  await post(zakazky, 'http://x/api/zakazky', { zakazka: zakazkaCislo('2026 - OPR - CN - 0950') }, cAdmin);
+  const pred = await (await get(zakazky, 'http://x/api/zakazky', cAdmin)).json();
+  test('zakázka ke smazání je v rejstříku',
+    pred.rejstrik.zakazky.some(z => z.soubor === '2026-OPR-CN-0950.json'));
+
+  test('obchodník zakázku smazat nesmí',
+    (await smaz(zakazky, 'http://x/api/zakazky?soubor=2026-OPR-CN-0950.json', cObch)).status === 403);
+  const porad = await (await get(zakazky, 'http://x/api/zakazky', cAdmin)).json();
+  test('a odmítnutí ji opravdu nechalo být',
+    porad.rejstrik.zakazky.some(z => z.soubor === '2026-OPR-CN-0950.json'));
+
+  const o = await smaz(zakazky, 'http://x/api/zakazky?soubor=2026-OPR-CN-0950.json', cAdmin);
+  test('administrátor zakázku smaže', o.status === 200);
+  const po = await (await get(zakazky, 'http://x/api/zakazky', cAdmin)).json();
+  test('zmizí ze seznamu i z rejstříku',
+    !po.rejstrik.zakazky.some(z => z.soubor === '2026-OPR-CN-0950.json'));
+  test('a samotná zakázka se už nenačte',
+    (await get(zakazky, 'http://x/api/zakazky?soubor=2026-OPR-CN-0950.json', cAdmin)).status === 404);
+  test('smazat neexistující zakázku není chyba (hromadné mazání se nesmí zaseknout)',
+    (await smaz(zakazky, 'http://x/api/zakazky?soubor=neni-tam.json', cAdmin)).status === 200);
+
+  /* Odeslaná (uzamčená) nabídka je doklad — smaže se jen na druhé potvrzení. */
+  const sZamkem = zakazkaCislo('2026 - OPR - CN - 0951');
+  sZamkem.varianty[0].zamek = { zamceno: true, kdy: '2026-08-21T10:00:00.000Z', kdo: ADMIN_EMAIL };
+  await post(zakazky, 'http://x/api/zakazky', { zakazka: sZamkem }, cAdmin);
+  const odmitnuto = await smaz(zakazky, 'http://x/api/zakazky?soubor=2026-OPR-CN-0951.json', cAdmin);
+  test('zakázku s odeslanou nabídkou server napoprvé odmítne', odmitnuto.status === 409);
+  test('a řekne, kolik odeslaných nabídek v ní je',
+    (await odmitnuto.json()).zamcenych === 1);
+  test('s výslovným potvrzením se smaže',
+    (await smaz(zakazky,
+      'http://x/api/zakazky?soubor=2026-OPR-CN-0951.json&ismazatOdeslane=1', cAdmin)).status === 200);
+}
+
+/* ---------- oddělení testovacího a ostrého prostředí (21. 8. 2026) ----------
+ * Kdyby testovací web dostal omylem stejné TAJEMSTVI_RELACE jako ostrý,
+ * platila by cookie z testu i v ostré aplikaci. Do podpisu proto vstupuje
+ * i jméno prostředí — a ostrý provoz (bez proměnné PROSTREDI) se přitom
+ * nesmí změnit, jinak by nasazení všechny odhlásilo. */
+{
+  const { relaceVytvor, relaceOver } = await import('./lib/sdilene.mjs');
+  const cookie = t => 'relace=' + t;
+  delete process.env.PROSTREDI;
+  const ostra = relaceVytvor('kdo@example.com', 'Administrátor');
+  test('ostrá relace platí v ostrém prostředí', !!relaceOver(cookie(ostra)));
+
+  process.env.PROSTREDI = 'test';
+  const testovaci = relaceVytvor('kdo@example.com', 'Administrátor');
+  test('relace z testu platí v testu', !!relaceOver(cookie(testovaci)));
+  test('ostrá relace v testu NEPLATÍ (stejné tajemství nestačí)',
+    relaceOver(cookie(ostra)) === null);
+
+  delete process.env.PROSTREDI;
+  test('a relace z testu neplatí v ostrém provozu', relaceOver(cookie(testovaci)) === null);
+  /* A hlavně: relace vydaná PŘED touhle úpravou (tedy bez PROSTREDI) platí
+   * v ostrém provozu dál — nasazení nikoho neodhlásí. */
+  test('ostrá relace platí i po přepnutí prostředí tam a zpět', !!relaceOver(cookie(ostra)));
+}
+
+console.log('\n===== ZAHRANIČNÍ CENÍK (#181) =====\n');
+/* Zveřejnit ceník — obě řady najednou — smí jen administrátor; obchodník ani
+ * vedoucí ne. Odchylky se navíc očistí: cizí klíč se do databáze nedostane. */
+{
+  const cenik = { profilasKgKc: 80, montazHodKc: 750 };
+  const zahranicni = { ceny: { 'C.montazHodKc': 1000, 'X.podvrh': 999 },
+                       jenZahr: { 'C.prekladyKc': true } };
+  test('zahraniční ceník nezveřejní obchodník',
+    (await post(program, 'http://x/api/program', { cenik, zahranicni }, cObch)).status === 403);
+  test('ani vedoucí',
+    (await post(program, 'http://x/api/program', { cenik, zahranicni }, UCTY['Vedoucí'].cookie)).status === 403);
+  const r = await post(program, 'http://x/api/program', { cenik, zahranicni }, cAdmin);
+  test('administrátor zveřejní obě řady najednou', r.status === 200, r.status);
+  const db = await (await get(program, 'http://x/api/program', cObch)).json();
+  const z = db && db.db && db.db.platny && db.db.platny.zahranicni;
+  test('zahraniční odchylky se uložily se stejnou verzí',
+    !!z && z.ceny['C.montazHodKc'] === 1000, JSON.stringify(z));
+  test('cizí klíč server zahodil', !!z && z.ceny['X.podvrh'] === undefined);
+  test('značka „jen pro zahraničí" se uložila', !!z && z.jenZahr['C.prekladyKc'] === true);
+}
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 if (fail) { console.log('\nSelhalo:\n - ' + selhalo.join('\n - ')); }

@@ -38,9 +38,25 @@ import zakazky from './netlify/functions/zakazky.mjs';
 import zaloha from './netlify/functions/zaloha.mjs';
 import firma from './netlify/functions/firma.mjs';
 import zobrazeni from './netlify/functions/zobrazeni.mjs';
+import zakazniciFn from './netlify/functions/zakaznici.mjs';
 import zalohaVynuceno from './netlify/functions/zaloha_vynuceno.mjs';
 import sablonyFn from './netlify/functions/sablony.mjs';
 import analytikaFn from './netlify/functions/analytika.mjs';
+
+/* Dialogy jsou od 2. 9. 2026 v aplikaci (src/ui/dialog.js), ne nativní —
+ * `page.on('dialog')` už tedy nic nechytí. Harness si proto potvrzování
+ * zjednoduší: potvrd/hlaska/dotaz se nahradí funkcemi, které si text
+ * zapamatují a rovnou odpoví „ano". Skutečný modál (kliknutí, Esc, Enter,
+ * ovladatelnost stránky po zavření) ověřuje samostatný overit_dialogy.mjs. */
+const dlgStub = async (page) => page.evaluate(() => {
+  window.__dlgTexty = [];
+  window.potvrd = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(true); };
+  window.hlaska = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(); };
+  window.dotaz = (t, v) => { window.__dlgTexty.push(String(t)); return Promise.resolve(v == null ? '' : v); };
+});
+const dlgPosledni = async (page) => page.evaluate(() =>
+  (window.__dlgTexty && window.__dlgTexty.length) ? window.__dlgTexty[window.__dlgTexty.length - 1] : '');
+
 
 const require = createRequire(import.meta.url);
 let chromium;
@@ -60,6 +76,7 @@ const FUNKCE = {
   /* Matice zobrazení (#136) — aplikace ji načítá hned po přihlášení, takže
    * bez ní by v každém průchodu svítilo 404 v konzoli. */
   '/api/zobrazeni': zobrazeni,
+  '/api/zakaznici': zakazniciFn,
   /* Vynucená (a ověřitelná) záloha databáze – 4. 8. 2026. Kdyby tu funkce
    * chyběla, volání z prohlížeče by skončilo na 404 a test by mlčel
    * o tom, že „vynucené zálohování" pořád nikam nevede. */
@@ -127,6 +144,8 @@ const prihlas = async (email, heslo) => {
 await page.goto(ADRESA);
 await page.waitForFunction(() => typeof window.render === 'function');
 await page.waitForTimeout(400);
+
+await dlgStub(page);
 
 /* ---- 1) přihlašovací stránka zakrývá aplikaci ---- */
 test('přihlašovací stránka je vidět a nese název aplikace',
@@ -450,6 +469,7 @@ await page.reload();
 await page.waitForFunction(() => typeof window.render === 'function');
 await page.waitForFunction(() => { try { return !!ONLINE_STAV.ja; } catch (e) { return false; } },
   null, { timeout: 8000 });
+await dlgStub(page);
 await page.waitForTimeout(400);
 test('po obnovení stránky je administrátor dál přihlášený a stránka se neukázala',
   !(await gateViditelna()) && await page.evaluate(() => ONLINE_STAV.ja.email === 'vendl.jaroslav@engineers-cz.cz'));
@@ -470,6 +490,7 @@ test('po odhlášení se vrátí přihlašovací stránka', await gateViditelna(
 await page.reload();
 await page.waitForFunction(() => typeof window.render === 'function');
 await page.waitForTimeout(400);
+await dlgStub(page);
 test('po odhlášení a obnovení stránky se aplikace zase zamkne', await gateViditelna());
 test('čerstvá aplikace startuje s ukázkovou firmou',
   await page.evaluate(() => NAST.firma.ukazkove === true));
@@ -481,11 +502,20 @@ test('obchodník je přihlášený a roh to říká',
   (await roh()).includes('Zkušební Obchodník') && (await roh()).includes('Obchodník'));
 test('obchodník NENÍ administrátor aplikace',
   await page.evaluate(() => NAST.jeAdmin === false));
-await page.evaluate(() => prepniTab('zakazka'));
-const stranka = await page.locator('#page-zakazka').innerHTML();
+/* Karty databáze se 21. 8. 2026 večer přestěhovaly z Přehledu cenových
+ * nabídek do Nastavení → Databáze (zadání J. V.) — je to nastavení spojení,
+ * ne nástroj obchodníka. Práva se tím nemění: složku vidí jen administrátor,
+ * online databázi každý přihlášený. */
+const stranka = await page.evaluate(() => {
+  otevriNastaveni(); nastPanel('databaze');
+  const el = document.getElementById('nastaveni-panel');
+  const html = el ? el.innerHTML : '';
+  zavriNastaveni();
+  return html;
+});
 test('obchodník nevidí kartu složky _DB (mapování jen pro administrátora)',
   !stranka.includes('Databáze zakázek (složka)'));
-test('obchodník kartu Online databáze vidí',
+test('obchodník kartu Online databáze vidí v Nastavení → Databáze',
   stranka.includes('Online databáze (schaftscalc.netlify.app)'));
 
 /* Přesně to, co uživatel hlásil: „Přihlásil jsem se jako nový uživatel
@@ -543,6 +573,97 @@ test('staré heslo už neplatí', (await gate()).includes('Nesprávný e-mail ne
 await prihlas('obchodnik@engineers-cz.cz', 'ObchodniHeslo2');
 await page.waitForFunction(() => { try { return !!ONLINE_STAV.ja; } catch (e) { return false; } });
 test('novým heslem se obchodník přihlásí', !(await gateViditelna()));
+
+/* ---- 10b) seznam zákazníků (#162, 20. 8. 2026) ----
+ * Databáze má jediný smysl: nepsat totéž podruhé. Sada projde celou cestu —
+ * z hlavičky zakázky vznikne karta, karta se přenese do nové zakázky a rozdíl
+ * se NABÍDNE, nikdy nezapíše potichu. */
+/* Jede se pod účtem, který je zrovna přihlášený (obchodník) — schválně:
+ * kartu zákazníka má zakládat obchodník u zákazníka, ne administrátor. */
+console.log('\nseznam zákazníků');
+await page.evaluate(() => {
+  ZAK.objednatel = 'Zkušební ocelárna s.r.o.'; ZAK.ico = '12345679';
+  ZAK.adresaObjednatele = 'Sídlištní 2, Zkušebín';
+  ZAK.zastupci.smluvniJmeno = 'Ing. Petr Sedlák';
+  ZAK.zastupci.smluvniPozice = 'jednatel';
+  ZAK.zastupci.technickyEmail = 'technik@zkusebni.cz';
+  zakaznikZeZakazkyUI();
+});
+test('karta se předvyplní z otevřené zakázky',
+  await page.evaluate(() => !!ZAK_DB.otevreny && ZAK_DB.otevreny.nazev === 'Zkušební ocelárna s.r.o.'
+    && ZAK_DB.otevreny.smluvniPozice === 'jednatel'));
+await page.evaluate(() => zakaznikUloz());
+await page.waitForFunction(() => { try { return ZAK_DB.seznam.length === 1; } catch (e) { return false; } },
+  null, { timeout: 15000 });
+test('karta se uložila na server a je v seznamu',
+  await page.evaluate(() => ZAK_DB.seznam[0].nazev === 'Zkušební ocelárna s.r.o.'
+    && ZAK_DB.seznam[0].ico === '12345679'));
+test('server doplnil autora a čas úpravy',
+  await page.evaluate(() => !!ZAK_DB.seznam[0].autor && !!ZAK_DB.seznam[0].upraven));
+test('nová zakázka si kartu vyzvedne jedním kliknutím',
+  await page.evaluate(() => {
+    ZAK = novaZakazka(); syncVarianta();
+    zakaznikDoZakazkyUI('12345679');
+    return ZAK.objednatel === 'Zkušební ocelárna s.r.o.'
+      && ZAK.zastupci.technickyEmail === 'technik@zkusebni.cz'
+      && ZAK.zakaznikId === '12345679';
+  }));
+test('a co obchodník v zakázce přepíše, se do karty samo nevrátí',
+  await page.evaluate(() => {
+    ZAK.zastupci.technickyEmail = 'jiny@zkusebni.cz';
+    return ZAK_DB.seznam[0].technickyEmail === 'technik@zkusebni.cz';
+  }));
+test('rozdíl se najde a NABÍDNE (potvrzuje ho člověk)',
+  await page.evaluate(async () => {
+    /* Od 2. 9. 2026 se ptá in-app modál (potvrd), ne nativní confirm. */
+    let text = '';
+    const puvodni = window.potvrd;
+    window.potvrd = (t) => { text = String(t); return Promise.resolve(false); };
+    await zakaznikNabidniAktualizaci();
+    window.potvrd = puvodni;
+    return /jiny@zkusebni/.test(text) && ZAK_DB.seznam[0].technickyEmail === 'technik@zkusebni.cz';
+  }));
+test('po potvrzení se karta doplní',
+  await page.evaluate(async () => {
+    const puvodni = window.potvrd; window.potvrd = () => Promise.resolve(true);
+    await zakaznikNabidniAktualizaci();
+    window.potvrd = puvodni;
+    return ZAK_DB.seznam[0].technickyEmail === 'jiny@zkusebni.cz';
+  }));
+/* ---- výběr firmy našeptávačem vyplní IČO a kontakt (22. 8. 2026 večer) ---- */
+test('výběr firmy z našeptávače vyplní do prázdné hlavičky IČO a sídlo; víc jmen → nabídka k výběru',
+  await page.evaluate(() => {
+    ZAK = novaZakazka(); syncVarianta(); prepniTab('kalk'); render();
+    ZAK_DB.seznam[0].kontaktOsoba = 'Karel Kontakt';   // lokálně: dvě jména (smluvní Sedlák + kontakt)
+    naseptavacZakVyber('Zkušební ocelárna s.r.o.', 'ock');
+    const box = document.getElementById('naseptBoxZak_ock');
+    return ZAK.objednatel === 'Zkušební ocelárna s.r.o.' && ZAK.ico === '12345679'
+      && ZAK.adresaObjednatele === 'Sídlištní 2, Zkušebín' && ZAK.kontakt === ''
+      && !!box && box.style.display !== 'none' && /Karel Kontakt/.test(box.innerHTML) && /Sedlák/.test(box.innerHTML);
+  }));
+test('kliknutí na jméno v nabídce vyplní kontaktní osobu a nabídku zavře',
+  await page.evaluate(async () => {
+    naseptavacZakKontaktVyber('Karel Kontakt', 'ock');
+    await new Promise(r => setTimeout(r, 250));
+    const box = document.getElementById('naseptBoxZak_ock');
+    return ZAK.kontakt === 'Karel Kontakt' && (!box || box.style.display === 'none');
+  }));
+test('jediné jméno se vyplní rovnou; vyplněná pole hlavičky se nepřepisují',
+  await page.evaluate(() => {
+    ZAK_DB.seznam[0].kontaktOsoba = '';
+    ZAK = novaZakazka(); syncVarianta(); ZAK.ico = '99999999'; render();
+    naseptavacZakVyber('Zkušební ocelárna s.r.o.', 'ock');
+    return ZAK.kontakt === 'Ing. Petr Sedlák' && ZAK.ico === '99999999' && ZAK.zakaznikId === '12345679';
+  }));
+test('firma jen z rejstříku (bez karty) vyplní jen název',
+  await page.evaluate(() => {
+    ZAK = novaZakazka(); syncVarianta(); render();
+    naseptavacZakVyber('Neznámá firma bez karty', 'ock');
+    return ZAK.objednatel === 'Neznámá firma bez karty' && ZAK.ico === '' && ZAK.kontakt === '';
+  }));
+test('hledání najde zákazníka podle IČO i názvu',
+  await page.evaluate(() => zakazniciHledej(ZAK_DB.seznam, '1234567').length === 1
+    && zakazniciHledej(ZAK_DB.seznam, 'ocelarna').length === 1));
 
 /* ---- 11) čistá konzole ---- */
 test('za celý průchod nevznikla nečekaná chyba v konzoli', chyby.length === 0, chyby);

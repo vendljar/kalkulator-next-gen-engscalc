@@ -50,7 +50,114 @@ function analytikaNovyDen() {
     zdrz: {},           // klíč prvku → sekundy soustředění (focus) na prvku
     zalozky: {},        // záložka → počet otevření
     pocty: { zakazky: 0, kalkulace: 0, tiskyWord: 0, tiskyNahled: 0, prihlaseni: 0, chyby: 0 },
+    /* Počty PO UŽIVATELÍCH (20. 8. 2026, zadání J. V.: „přidej možnost
+     * filtrování užívání dle uživatele"). Mapa e-mail → tytéž počty.
+     *
+     * POZOR — tohle je vědomý ústup od zásady 1 v hlavičce souboru.
+     * Do 20. 8. platilo, že z dat nejde dohledat chování jednotlivce; teď
+     * u ŠESTI POČÍTADEL jde (kolik kdo založil zakázek, kolik vytiskl,
+     * kolikrát se přihlásil). Rozsah je schválně co nejmenší:
+     *   • klíče prvků (kliky), zdržení a otevřené záložky zůstávají
+     *     ANONYMNÍ — heat mapa ani „nejpoužívanější prvky" se k člověku
+     *     nepřiřazují,
+     *   • atribuci dělá SERVER z přihlášené relace; klient svůj e-mail
+     *     do dávky neposílá a nemůže ho tedy ani podvrhnout,
+     *   • vypínač sběru platí i na tohle.
+     * Než se to zapne pro celou firmu, patří to do informačního textu
+     * pro zaměstnance (ANALYTIKA_GDPR_TEXT, pořád čeká na právníka):
+     * anonymní souhrn a jmenný přehled jsou dvě různé věci. */
+    poUzivateli: {},
   };
+}
+
+/* Prázdná sada počítadel pro jednoho uživatele.
+ *
+ * Od 31. 8. 2026 nese uživatel i ZÁLOŽKY a PRVKY (zadání J. V.: „analytika na
+ * uživatele nefunguje, zobrazují se souhrnné informace"). Do té doby byly
+ * obojí jen v anonymním souhrnu, takže filtr uživatele u nich nic nezměnil.
+ * Je to vědomé rozšíření toho, co se o zaměstnancích ukládá — patří k němu
+ * informační text pro zaměstnance (#160). */
+function analytikaNovePocty() {
+  return { zakazky: 0, kalkulace: 0, tiskyWord: 0, tiskyNahled: 0, prihlaseni: 0, chyby: 0,
+           zalozky: {}, kliky: {} };
+}
+
+/* Přičtení mapy klíč→počet (záložky, prvky) do cílové mapy uživatele. */
+function analytikaPrictiMapu(cil, zdroj) {
+  if (!cil || !zdroj || typeof zdroj !== 'object') return cil;
+  Object.entries(zdroj).forEach(([k, n]) => {
+    const klic = String(k).slice(0, ANALYTIKA_MAX_KLIC_ZNAKU);
+    if (!klic) return;
+    cil[klic] = (+cil[klic] || 0) + analytikaCislo(n);
+  });
+  return cil;
+}
+
+/* Přičte počty jedné dávky konkrétnímu uživateli. Volá SERVER, který jediný
+ * ví, kdo je přihlášený (viz poznámka výše). E-mail se ořízne, ať do klíče
+ * nemůže proniknout nic dlouhého. */
+function analytikaPrictiUzivateli(den, email, pocty, davka) {
+  const e = String(email || '').trim().toLowerCase().slice(0, 120);
+  if (!e || !den) return den;
+  if (!den.poUzivateli || typeof den.poUzivateli !== 'object') den.poUzivateli = {};
+  const cil = den.poUzivateli[e] || (den.poUzivateli[e] = analytikaNovePocty());
+  if (!cil.zalozky || typeof cil.zalozky !== 'object') cil.zalozky = {};   // starší záznamy
+  if (!cil.kliky || typeof cil.kliky !== 'object') cil.kliky = {};
+  Object.entries(pocty || {}).forEach(([k, n]) => {
+    if (typeof cil[k] === 'number') cil[k] += analytikaCislo(n);   // B8: nezáporné, se stropem
+  });
+  /* Záložky a prvky z TÉŽE dávky. Bere se očištěná dávka (B8), ne to, co
+   * poslal klient v `poUzivateli` — atribuci dělá pořád jen server. */
+  if (davka && typeof davka === 'object') {
+    analytikaPrictiMapu(cil.zalozky, davka.zalozky);
+    analytikaPrictiMapu(cil.kliky, davka.kliky);
+  }
+  return den;
+}
+
+/* Souhrn pro jednoho uživatele (nebo pro všechny, když je e-mail prázdný). */
+function analytikaPoctyUzivatele(den, email) {
+  if (!email) {
+    const p = (den && den.pocty) || analytikaNovePocty();
+    /* Bez filtru se ukazuje souhrn — záložky a prvky má den vlastní. */
+    return Object.assign({}, analytikaNovePocty(), p,
+      { zalozky: (den && den.zalozky) || {}, kliky: (den && den.kliky) || {} });
+  }
+  const u = den && den.poUzivateli && den.poUzivateli[String(email).toLowerCase()];
+  return u ? Object.assign(analytikaNovePocty(), u) : analytikaNovePocty();
+}
+
+/* Seznam e-mailů, které v datech vůbec figurují (pro rozbalovací filtr). */
+function analytikaUzivatele(den) {
+  return Object.keys((den && den.poUzivateli) || {}).sort();
+}
+
+/* ---------- očista dávky od klienta (bezpečnostní audit 22. 8. 2026, B8) ----
+ *
+ * Dávka analytiky přichází z prohlížeče a server ji do té doby přičítal, jak
+ * přišla: záporné číslo ubíralo, řetězec „otrávil" součet (0 + 'AAA' je
+ * řetězec a další sčítání už nic nespočítá), klíč mohl mít stovky kilobajtů
+ * a mapa záložek neměla strop. Tady se každé číslo ořízne na nezáporné celé
+ * číslo s rozumným stropem za dávku a každý klíč na ANALYTIKA_MAX_KLIC_ZNAKU
+ * znaků; strop počtu klíčů (ANALYTIKA_MAX_KLICU) platí pro všechny tři mapy.
+ * Rozpad po uživatelích (`poUzivateli`) z dávky klienta server ZAHAZUJE —
+ * atribuci dělá sám z relace (analytikaPrictiUzivateli), viz analytika.mjs. */
+const ANALYTIKA_MAX_KLIC_ZNAKU = 120;
+const ANALYTIKA_MAX_HODNOTA = 1e6;                // za dávku; víc není měření, ale útok
+function analytikaCislo(n) {
+  const x = Math.round(+n);
+  if (!isFinite(x) || x <= 0) return 0;
+  return Math.min(x, ANALYTIKA_MAX_HODNOTA);
+}
+function analytikaKlicOrez(k) {
+  return String(k == null ? '' : k).slice(0, ANALYTIKA_MAX_KLIC_ZNAKU);
+}
+/* Co smí z dávky klienta do slití: jmenovitě, bez `poUzivateli`. */
+function analytikaDavkaOcisti(den) {
+  const d = (den && typeof den === 'object') ? den : {};
+  const jenObjekt = (o) => (o && typeof o === 'object' && !Array.isArray(o)) ? o : {};
+  return { kliky: jenObjekt(d.kliky), zdrz: jenObjekt(d.zdrz),
+           zalozky: jenObjekt(d.zalozky), pocty: jenObjekt(d.pocty) };
 }
 
 /* přičtení do mapy se stropem — přeteklé klíče se slévají do „…ostatní",
@@ -75,11 +182,21 @@ function analytikaPridej(den, u) {
 function analytikaSlij(a, b) {
   const v = analytikaNovyDen();
   [a || {}, b || {}].forEach(d => {
-    Object.entries(d.kliky || {}).forEach(([k, n]) => analytikaDoMapy(v.kliky, k, n));
-    Object.entries(d.zdrz || {}).forEach(([k, n]) => analytikaDoMapy(v.zdrz, k, n));
-    Object.entries(d.zalozky || {}).forEach(([k, n]) => { v.zalozky[k] = (v.zalozky[k] || 0) + n; });
+    Object.entries(d.kliky || {}).forEach(([k, n]) => analytikaDoMapy(v.kliky, analytikaKlicOrez(k), analytikaCislo(n)));
+    Object.entries(d.zdrz || {}).forEach(([k, n]) => analytikaDoMapy(v.zdrz, analytikaKlicOrez(k), analytikaCislo(n)));
+    Object.entries(d.zalozky || {}).forEach(([k, n]) => analytikaDoMapy(v.zalozky, analytikaKlicOrez(k), analytikaCislo(n)));
     Object.entries(d.pocty || {}).forEach(([k, n]) => {
-      if (v.pocty[k] !== undefined) v.pocty[k] += n;
+      if (v.pocty[k] !== undefined) v.pocty[k] += analytikaCislo(n);
+    });
+    /* starší dny klíč `poUzivateli` nemají — slití to snese */
+    Object.entries(d.poUzivateli || {}).forEach(([e, p]) => {
+      const cil = v.poUzivateli[e] || (v.poUzivateli[e] = analytikaNovePocty());
+      analytikaPrictiMapu(cil.zalozky, p && p.zalozky);
+      analytikaPrictiMapu(cil.kliky, p && p.kliky);
+      Object.entries(p || {}).forEach(([k, n]) => {
+        /* jen čísla — mapy záložek a prvků se slily o dva řádky výš */
+        if (typeof cil[k] === 'number') cil[k] += analytikaCislo(n);
+      });
     });
   });
   return v;
@@ -166,6 +283,10 @@ function analytikaRezimNastav(rezim, sber, kdo, kdy) {
 
 if (typeof module !== 'undefined')
   module.exports = { ANALYTIKA_GDPR_TEXT, ANALYTIKA_NECINNOST_MS, ANALYTIKA_MAX_KLICU,
+                     ANALYTIKA_MAX_KLIC_ZNAKU, ANALYTIKA_MAX_HODNOTA,
+                     analytikaCislo, analytikaKlicOrez, analytikaDavkaOcisti,
     ANALYTIKA_RETENCE_MESICU, analytikaKlic, analytikaNovyDen, analytikaPridej,
     analytikaSlij, analytikaPocetZKliku, casNovy, casKrok, analytikaCastZTabu,
-    analytikaRetence, analytikaObdobi, analytikaRezimNovy, analytikaRezimNastav };
+    analytikaRetence, analytikaObdobi, analytikaRezimNovy, analytikaRezimNastav,
+    analytikaNovePocty, analytikaPrictiUzivateli, analytikaPoctyUzivatele, analytikaUzivatele,
+    analytikaPrictiMapu };

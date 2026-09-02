@@ -23,6 +23,21 @@ import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 
+/* Dialogy jsou od 2. 9. 2026 v aplikaci (src/ui/dialog.js), ne nativní —
+ * `page.on('dialog')` už tedy nic nechytí. Harness si proto potvrzování
+ * zjednoduší: potvrd/hlaska/dotaz se nahradí funkcemi, které si text
+ * zapamatují a rovnou odpoví „ano". Skutečný modál (kliknutí, Esc, Enter,
+ * ovladatelnost stránky po zavření) ověřuje samostatný overit_dialogy.mjs. */
+const dlgStub = async (page) => page.evaluate(() => {
+  window.__dlgTexty = [];
+  window.potvrd = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(true); };
+  window.hlaska = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(); };
+  window.dotaz = (t, v) => { window.__dlgTexty.push(String(t)); return Promise.resolve(v == null ? '' : v); };
+});
+const dlgPosledni = async (page) => page.evaluate(() =>
+  (window.__dlgTexty && window.__dlgTexty.length) ? window.__dlgTexty[window.__dlgTexty.length - 1] : '');
+
+
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
 
@@ -51,6 +66,8 @@ page.on('pageerror', (e) => chyby.push(String(e)));
 page.on('dialog', (d) => d.accept());
 await page.goto('http://127.0.0.1:' + port + '/', { waitUntil: 'load' });
 await page.waitForTimeout(600);
+
+await dlgStub(page);
 
 /* ---------- A) záložka Schvalování slev přežije starou konfiguraci ---------- */
 
@@ -93,13 +110,29 @@ const poVypnuti = await page.evaluate(() => {
   return { klic: NAST.tabViditelnost.schvalovani,
     display: getComputedStyle(document.getElementById('tab-schvalovani')).display };
 });
-test('vědomě vypnutá záložka zůstane vypnutá', poVypnuti.klic === false, JSON.stringify(poVypnuti));
-test('vypnutá záložka se nezobrazuje', poVypnuti.display === 'none', poVypnuti.display);
+test('vědomě vypnutá záložka zůstane v importovaném nastavení vypnutá',
+  poVypnuti.klic === false, JSON.stringify(poVypnuti));
+/* 20. 8. 2026: `tabViditelnost` je MRTVÉ POLE — viditelnost záložek řídí
+ * matice zobrazení (Nastavení → Zobrazení), která platí po rolích a bydlí
+ * na serveru. Import starého souboru ho tedy smí donést, ale na obrazovku
+ * už nemá vliv; kontrola se proto ptá na matici. */
+test('na obrazovku má vliv jen matice zobrazení, ne staré pole',
+  poVypnuti.display !== 'none', poVypnuti.display);
+test('a maticí se záložka schvalování vypnout DÁ',
+  await page.evaluate(() => {
+    NAST.zobrazeni['tab.schvalovani'] = { 'Obchodník': false, 'Vedoucí': false };
+    NAST.jeAdmin = false; NAST.nahledRole = 'Obchodník'; render();
+    const skryta = getComputedStyle(document.getElementById('tab-schvalovani')).display === 'none';
+    NAST.jeAdmin = true; NAST.nahledRole = '';
+    NAST.zobrazeni['tab.schvalovani'] = { 'Obchodník': true, 'Vedoucí': true }; render();
+    return skryta;
+  }));
 
 /* ---------- B) cesta k přihlášení přežije chybu překreslení ---------- */
 
 await page.reload({ waitUntil: 'load' });
 await page.waitForTimeout(600);
+await dlgStub(page);
 
 test('bez přihlášení nabízí roh hlavičky „Přihlásit se"',
   (await page.locator('#onlineLista').innerHTML()).includes('Přihlásit se'));

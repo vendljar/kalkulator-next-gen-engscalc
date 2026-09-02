@@ -40,6 +40,21 @@ import firma from './netlify/functions/firma.mjs';
 import zobrazeni from './netlify/functions/zobrazeni.mjs';
 import zalohaVynuceno from './netlify/functions/zaloha_vynuceno.mjs';
 
+/* Dialogy jsou od 2. 9. 2026 v aplikaci (src/ui/dialog.js), ne nativní —
+ * `page.on('dialog')` už tedy nic nechytí. Harness si proto potvrzování
+ * zjednoduší: potvrd/hlaska/dotaz se nahradí funkcemi, které si text
+ * zapamatují a rovnou odpoví „ano". Skutečný modál (kliknutí, Esc, Enter,
+ * ovladatelnost stránky po zavření) ověřuje samostatný overit_dialogy.mjs. */
+const dlgStub = async (page) => page.evaluate(() => {
+  window.__dlgTexty = [];
+  window.potvrd = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(true); };
+  window.hlaska = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(); };
+  window.dotaz = (t, v) => { window.__dlgTexty.push(String(t)); return Promise.resolve(v == null ? '' : v); };
+});
+const dlgPosledni = async (page) => page.evaluate(() =>
+  (window.__dlgTexty && window.__dlgTexty.length) ? window.__dlgTexty[window.__dlgTexty.length - 1] : '');
+
+
 const require = createRequire(import.meta.url);
 let chromium;
 try { ({ chromium } = require('playwright')); }
@@ -75,7 +90,7 @@ const page = await ctx.newPage();
 /* Odmítnutí se hlásí přes alert(); dialog se musí odklepnout, jinak by
  * stránka zamrzla a další kontrola by vypršela. Text si zapamatujeme. */
 let poslednihlaska = '';
-page.on('dialog', d => { poslednihlaska = d.message(); d.accept(); });
+/* Od 2. 9. 2026 se hlásí in-app modálem; text se čte z dlgPosledni(). */
 const chyby = [];
 page.on('pageerror', e => chyby.push(String(e)));
 
@@ -108,11 +123,14 @@ const odhlas = async () => {
   await page.reload();
   await page.waitForFunction(() => typeof window.render === 'function');
   await page.waitForTimeout(400);
+await dlgStub(page);
 };
 
 await page.goto(ADRESA);
 await page.waitForFunction(() => typeof window.render === 'function');
 await page.waitForTimeout(500);
+
+await dlgStub(page);
 
 /* ---------- 1) administrátor: pohled si přepnout smí ---------- */
 
@@ -122,8 +140,14 @@ test('administrátor je po přihlášení v pohledu administrátora',
   await page.evaluate(() => NAST.jeAdmin === true));
 test('administrátorovi funguje náhled běžného uživatele',
   await page.evaluate(() => { nastSetAdmin(false); return NAST.jeAdmin === false; }));
-test('z náhledu vede tlačítko zpět a je vidět',
-  await page.locator('#btnZpetAdmin').isVisible());
+/* Tlačítko „← Ukončit náhled uživatele" v horní liště bylo 20. 8. 2026
+ * odstraněno jako duplicitní — cestu ven drží oranžový pruh. */
+test('z náhledu role vede ven oranžový pruh (a žádné druhé tlačítko v liště)',
+  await page.evaluate(() => {
+    const p = document.getElementById('nahledLista').innerHTML;
+    return p.includes('Ukončit náhled') && p.includes('Náhled role')
+      && !document.getElementById('btnZpetAdmin');
+  }));
 test('administrátor se z náhledu vrátí',
   await page.evaluate(() => { nastSetAdmin(true); return NAST.jeAdmin === true; }));
 
@@ -136,7 +160,65 @@ await page.fill('#onlineUzHeslo', 'ObchodniHeslo1');
 await page.click('#nastaveni-panel >> text=Založit účet');
 await page.waitForFunction(() => { try { return ONLINE_STAV.uzivatele.length === 2; } catch (e) { return false; } });
 await page.evaluate(() => zavriNastaveni());
+
+/* ---------- 1b) náhled POHLEDEM KONKRÉTNÍHO UŽIVATELE (20. 8. 2026) ----------
+ * Do 20. 8. šla přepnout jen ROLE („nějaký obchodník"). Zadání J. V.: chci
+ * vidět, co uvidí Petr Novák, a přepínat to klikem na jméno vpravo nahoře. */
+/* Postavička je SVG s fill:currentColor, ne emoji (20. 8. 2026) — jinak by
+ * si nesla vlastní barvu z fontu a nešla sladit se zeleným jménem. */
+test('v liště je jméno klikací (přepínač náhledu) a postavička má barvu jména',
+  await page.evaluate(() => {
+    const h = document.getElementById('onlineLista').innerHTML;
+    const btn = document.querySelector('#onlineLista button[onclick*="nahledMenuPrepni"]');
+    const svg = btn && btn.querySelector('svg');
+    if (!svg) return false;
+    const barvaTextu = getComputedStyle(btn).color;
+    const barvaIkony = getComputedStyle(svg).fill;
+    return h.includes('#86e8ad') && barvaTextu === barvaIkony && !h.includes('👤');
+  }));
+test('nabídka náhledu vypíše založený účet',
+  await page.evaluate(() => {
+    nahledMenuPrepni();
+    return document.getElementById('onlineLista').innerHTML.includes('obchodnik@engineers-cz.cz');
+  }));
+test('zapnutí náhledu převezme roli vybraného účtu',
+  await page.evaluate(() => {
+    nahledZapni('obchodnik@engineers-cz.cz');
+    return nahledAktivni() && NAST.nahledUzivatel.role === 'Obchodník'
+      && NAST.jeAdmin === false && zobrazeniRole() === 'Obchodník';
+  }));
+test('ikona se změní na oko v červené barvě jména a v liště svítí jméno náhledu',
+  await page.evaluate(() => {
+    const h = document.getElementById('onlineLista').innerHTML;
+    const btn = document.querySelector('#onlineLista button[onclick*="nahledMenuPrepni"]');
+    const svg = btn && btn.querySelector('svg');
+    return !!svg && h.includes('#f87171') && h.includes('Petr Novák')
+      && getComputedStyle(btn).color === getComputedStyle(svg).fill;
+  }));
+test('přes celou šířku svítí pruh náhledu',
+  await page.evaluate(() => {
+    const h = document.getElementById('nahledLista').innerHTML;
+    return h.includes('Náhled: Petr Novák') && h.includes('Ukončit náhled');
+  }));
+test('v náhledu se do zakázky nic nezapíše (jen ke čtení)',
+  await page.evaluate(() => {
+    const pred = ZAK.nazevAkce;
+    let hlaska = '';
+    const puvodniAlert = window.hlaska; window.hlaska = t => { hlaska = String(t); return Promise.resolve(); };
+    tsSet('nazevAkce', 'ZKOUŠKA V NÁHLEDU');
+    window.hlaska = puvodniAlert;
+    return ZAK.nazevAkce === pred && /náhledu se nic nezapisuje/.test(hlaska);
+  }));
+test('ukončení náhledu vrátí pohled administrátora',
+  await page.evaluate(() => {
+    nahledVypni();
+    return !nahledAktivni() && NAST.jeAdmin === true
+      && document.getElementById('nahledLista').innerHTML === '';
+  }));
+
 await odhlas();
+test('odhlášením se náhled zruší (nikdo nesmí zdědit cizí pohled)',
+  await page.evaluate(() => !nahledAktivni() && !NAST.nahledUzivatel));
 
 /* ---------- 2) obchodník: pohled administrátora nedostane ---------- */
 
@@ -148,17 +230,24 @@ test('obchodník je v pohledu běžného uživatele',
   await page.evaluate(() => NAST.jeAdmin === false));
 test('stránka nese třídu role-user',
   await page.evaluate(() => document.body.classList.contains('role-user')));
+test('obchodník nemá pruh náhledu (nic si přepnout nemůže)',
+  await page.evaluate(() => document.getElementById('nahledLista').innerHTML === ''));
 test('stránka NEnese třídu muze-admin',
   await page.evaluate(() => !document.body.classList.contains('muze-admin')));
 
-/* Jádro nálezu: tlačítko „← Ukončit náhled uživatele" svítilo i obchodníkovi. */
-test('tlačítko „Ukončit náhled uživatele" obchodník nevidí',
-  !(await page.locator('#btnZpetAdmin').isVisible()));
+/* Jádro nálezu (5. 8. 2026): tlačítko „← Ukončit náhled uživatele" svítilo
+ * i obchodníkovi. 20. 8. 2026 bylo odstraněno úplně jako duplicitní k pruhu —
+ * kontrola tedy zůstává, jen se ptá, že prvek v dokumentu VŮBEC není. */
+test('tlačítko „Ukončit náhled uživatele" v aplikaci není',
+  await page.evaluate(() => !document.getElementById('btnZpetAdmin')));
 
 /* Skrýt nestačí — funkce jde zavolat z konzole prohlížeče. */
-poslednihlaska = '';
+/* Stránka se mezitím načetla znovu (přihlášení jiným účtem), takže stub
+ * dialogů je potřeba nasadit znovu — přežije jen do reloadu. */
+await dlgStub(page);
 await page.evaluate(() => nastSetAdmin(true));
 await page.waitForTimeout(200);
+poslednihlaska = await dlgPosledni(page);
 test('volání nastSetAdmin(true) z konzole roli nezmění',
   await page.evaluate(() => NAST.jeAdmin === false));
 test('odmítnutí se uživateli vysvětlí', /Administrátor/.test(poslednihlaska), poslednihlaska);

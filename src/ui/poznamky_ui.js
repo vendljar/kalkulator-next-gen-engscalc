@@ -94,11 +94,11 @@ function prilohyNahraj() {
         const r = prilohyPridej(zak, { nazev: f.name, typ: f.type, velikost: f.size, data: fr.result },
                                 { kdo: poznamkyKdo() });
         if (!r.ok) chyby.push(f.name + ': ' + r.duvod);
-        if (--zbyva === 0) { if (chyby.length) alert(chyby.join('\n')); poznamkyZmena(); }
+        if (--zbyva === 0) { if (chyby.length) hlaska(chyby.join('\n')); poznamkyZmena(); }
       };
       fr.onerror = () => {
         chyby.push(f.name + ': soubor se nepodařilo načíst.');
-        if (--zbyva === 0) { alert(chyby.join('\n')); poznamkyZmena(); }
+        if (--zbyva === 0) { hlaska(chyby.join('\n')); poznamkyZmena(); }
       };
       fr.readAsDataURL(f);
     });
@@ -114,11 +114,11 @@ function prilohyStahni(id) {
   document.body.appendChild(a); a.click(); a.remove();
 }
 
-function prilohySmazUI(id) {
+async function prilohySmazUI(id) {
   const zak = poznamkyZak(); if (!zak) return;
   const p = (zak.prilohy || []).find(x => x.id === id); if (!p) return;
   /* Tady se ptáme: na rozdíl od poznámky se obsah přílohy opravdu ztratí. */
-  if (!confirm('Odebrat přílohu „' + p.nazev + '“? Obsah souboru se ze zakázky smaže natrvalo.')) return;
+  if (!await potvrd('Odebrat přílohu „' + p.nazev + '“? Obsah souboru se ze zakázky smaže natrvalo.')) return;
   prilohySmaz(zak, id, { kdo: poznamkyKdo() });
   poznamkyZmena();
 }
@@ -131,9 +131,9 @@ function poznamkyRadek(p) {
   const upr = p.upraveno
     ? ` <span class="pozn-upr">upraveno ${esc(poznamkyDatum(p.upraveno.kdy))}</span>` : '';
   const ovladani = smazana
-    ? `<button class="mini" onclick="poznamkyObnovUI('${p.id}')">Vrátit</button>`
-    : `<button class="mini" onclick="poznamkyUpravStart('${p.id}')">Upravit</button>
-       <button class="mini" onclick="poznamkySmazUI('${p.id}')">Smazat</button>`;
+    ? `<button class="mini" onclick="poznamkyObnovUI('${escJs(p.id)}')">Vrátit</button>`
+    : `<button class="mini" onclick="poznamkyUpravStart('${escJs(p.id)}')">Upravit</button>
+       <button class="mini" onclick="poznamkySmazUI('${escJs(p.id)}')">Smazat</button>`;
   const stopa = smazana
     ? `<div class="pozn-stopa">Smazal ${esc(p.smazano.kdo || 'neuvedeno')} ${esc(poznamkyDatum(p.smazano.kdy))}
        – záznam zůstává v zakázce, dokud ho někdo nevrátí.</div>` : '';
@@ -153,8 +153,8 @@ function prilohyRadek(p) {
     <span class="vel">${esc(poznamkyVelikostText(p.velikost))}</span>
     <span class="kdy">${esc(poznamkyDatum(p.kdy))}${p.kdo ? ', ' + esc(p.kdo) : ''}</span>
     <span class="ovl">
-      <button class="mini" onclick="prilohyStahni('${p.id}')">Stáhnout</button>
-      <button class="mini" onclick="prilohySmazUI('${p.id}')">Odebrat</button>
+      <button class="mini" onclick="prilohyStahni('${escJs(p.id)}')">Stáhnout</button>
+      <button class="mini" onclick="prilohySmazUI('${escJs(p.id)}')">Odebrat</button>
     </span></li>`;
 }
 

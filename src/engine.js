@@ -88,17 +88,40 @@ const DEFAULT_CENIK = {  // HODNOTY VYNULOVÁNY pro GitHub (pripravit_github.py)
   sken3dKc: 0, vystupZamereniKc: 0, engineeringKc: 0,
   projekceHodKc: 0, statikaKc: 0, statikaHod: 0, rezieKancelareKc: 0,
   stavbyvedouciHod: 0, stavbyvedouciKc: 0,
+  prekladyKc: 0,                  // překlady CZ→DE, jen zahraniční zakázky (#181)
   atypPrirazka: 0,                // ATYP: přirážka k nákladu režie (viz zadání #22)
   zamecnikAtypKc: 0,              // ATYP: sazba za atypickou zámečnickou práci (#7) – viz Z.zamecnikAtypKc
+  /* Co zaškrtnutí ATYP předvyplní do zadání, a s čím začíná nová zakázka
+   * (31. 8. 2026). Do teď byla tahle čísla napsaná v kódu — v atypPrepni()
+   * a v DEFAULT_ZADANI —, takže je firma nemohla změnit bez nového
+   * sestavení. Teď jsou v ceníku, kde se dají zadat a zveřejnit.
+   * Výpočtu se netýkají: pracuje se zadáním zakázky, ne s nimi. */
+  atypMontazPct: 0, atypProjekcePct: 0, atypZamecnikKc: null,
+  atypRezervaZakladPct: 0, atypRezervaPriplatkyPct: 0,
+  vychMontazZakladHod: 0, vychProjekceZakladHod: 0,
+  vychOplechOstatniKg: 0, vychOplechOstatniHod: 0,
+  /* Předvolby sazeb DPH (1. 9. 2026). Sazba zakázky je `dph` o kus výš —
+   * tohle je jen nabídka v hlavičce. Nula = nenastaveno, platí zákonná
+   * sazba ze sestavení (viz dphPredvolby v ui/common.js). */
+  dphZakladni: 0, dphSnizena: 0, dphNulova: 0,
   spojovaci: { riplockM10: 0, riplockM8: 0, nordlock: 0, nytM10: 0, nytM8: 0,
                nytM6: 0, tSrouby: 0, sroubM10: 0, sroubM8: 0, sroubM6: 0,
                zavitTyc: 0, chemKotva: 0 },
   lak: { rezim: 'tomas',          // rezim = přepínač, ne částka
          lakovnaProfilBm: 0, lakovnaListaBm: 0, lakovnaM2: 0,
          tomasProfilM2: 0, tomasListaBm: 0, tomasPlechKs: 0, tomasOplechM2: 0, tomasTercKs: 0 },
-  priplatky: { vsgFolieM2: 0, sknM2: 0, zabranyPadKc: 0, medStrechaM2: 0,
+  priplatky: { vsgFolieM2: 0, sknM2: 0, medStrechaM2: 0,
                ventilatorKc: 0, zabranyDvereKc: 0, madlaBmKc: 0,
-               leseniHlavaKc: 0, montazDveriKc: 0, prechMontKc: 0 },
+               leseniHlavaKc: 0, montazDveriKc: 0, prechMontKc: 0,
+               /* Osm příplatků z excelové předlohy (rozhodnutí J. V. 1. 9. 2026:
+                * „zaveď je všechny, tak jak jsou"). V Excelu jsou to nabídkové
+                * položky za akci — množství 1, cena z ceníku; obchodník
+                * množství i cenu v zakázce přepíše. Žádný vzorec nad rozměry
+                * šachty za nimi NENÍ; kdyby některá měla počítat m² nebo bm,
+                * doplní se, až bude jasné z čeho. */
+               zabranyPadKc: 0, demontazOhrazeniKc: 0, malbaSchodnicKc: 0,
+               naterOhrazeniKc: 0, naterOkopovychKc: 0, prosklenaStenaKc: 0,
+               demontazVytahuKc: 0, destovySvodKc: 0 },
 };
 
 const DEFAULT_ZADANI = {
@@ -140,8 +163,27 @@ const DEFAULT_ZADANI = {
   cenyPrepis: {},       // ruční přepis jedn. ceny u položek bez ceníkové vazby { název: cena }
   poradi: {},           // ruční pořadí řádků v sekcích { sekce: [klíče] } (jen zobrazení)
   skryteProUzivatele: [], // klíče položek skryté běžnému uživateli
+  /* Můstek mezi budovou a OCK (#163, 21. 8. 2026). Do té doby existoval jen
+   * jako věta v technické specifikaci — bez čísel se nedal hlídat standard
+   * („hloubka max 1000 mm, šířka max na šířku OCK"). Do VÝPOČTU nevstupuje:
+   * jsou to evidenční údaje pro kontrolu standardu a pro dokument.
+   * Prázdné rozměry znamenají „nevyplněno", ne nulu — kontrola standardu je
+   * pak hlásí jako „nelze posoudit". */
+  mustek: false, mustekHloubkaMm: '', mustekSirkaMm: '',
   volitelneVychozi: {}, // výchozí zaškrtnutí volitelných { klíč: bool }
-  priplatkyVynechat: [], // klíče příplatků, které se nemají propsat do nabídky
+  /* Skla (vsgFolie, skn) jsou ve výchozím stavu MIMO nabídku (23. 8. 2026,
+   * zadání J. V. — řeší nález N7). Šachta se počítá jako ocelová a obchodník
+   * do nabídky vloží to sklo, které zákazník chce; dokud žádné nevloží,
+   * kontrola standardu neřeší „dvě skla" a nehlásí „nelze posoudit". Jsou to
+   * PŘÍPLATKY (nepovinné), takže se tím nemění základní cena, jen výchozí
+   * obsah nabídky. Vložení skla = odškrtnutí ze sloupce Nabídka. */
+  priplatkyVynechat: ['vsgFolie', 'skn'], // klíče příplatků mimo výchozí nabídku
+  /* Položky, které se v TÉTO zakázce nepočítají (21. 8. 2026, zadání J. V.:
+   * „přidej ke všem položkám kalkulace OCK možnost zaškrtnout výchozí
+   * počítání"). Seznam PŮVODNÍCH názvů řádků; prázdný seznam = počítá se
+   * všechno, tedy přesně dnešní chování a Model 1 se nemění ani o korunu.
+   * Vyplňuje ho sloupec Výchozí u nové zakázky (zobrazeniVychoziAplikuj). */
+  nepocitat: [],
 };
 
 function vypocet(zadani, cenik, jekly, fixes = true) {
@@ -260,7 +302,14 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
       + svetlik * z.nastupiste * (z.sirka + svetlaVyska - 2.2) * 2
       + kratkePricniky * (1.1 + (z.sirka - sirkaDveri)) * 2;
   const listaKgBm = 8500 * ((20 / 1000 + 10 / 1000) * 1 / 1000);
-  const listyCelkBm = listyBm + listyBm * 0.1;           // + kotvící lišty
+  /* KOTVÍCÍ LIŠTY (nález V1, 2. 9. 2026 — zakázky CN-0348 i 2025-OPR-0640).
+   * Předloha (list VZORCE, C60 = C59 a D60 = C60 × 0,1) bere 10 % z POČTU
+   * KUSŮ a výsledek sečte s metry: dimenzionálně to nesedí, ale Model 1 je
+   * 1:1 s předlohou VČETNĚ jejích chyb — to je celý smysl toho přepínače.
+   * Model 2 počítá 10 % z DÉLKY, což ten řádek evidentně měl znamenat.
+   * Ověřeno ve dvou různých zákaznických souborech, shodně (kusy). */
+  const listyKotviciBm = fixes ? listyBm * 0.1 : listyKs * 0.1;
+  const listyCelkBm = listyBm + listyKotviciBm;
   const listyKg = listaKgBm * listyCelkBm;
 
   const oplDvereKs = 3 * z.nastupiste;
@@ -379,6 +428,9 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     return { nazev: novyNazev || nazev, origNazev: nazev, nazevPrepsan: !!novyNazev,
              mnozstvi: mn, mnozstviAuto: mnozstvi, prepsano: prepis != null,
              cena: cenaEff, cenaAuto: cena, cenaPrepsana: cenaPrepis != null, cenaPath: opts.cenaPath || null,
+             /* Souhrnný řádek nemá jednu ceníkovou cenu, ale celou skupinu
+              * (`C.spojovaci.*`). Nese ji jen pro zobrazení klíče administrátorovi. */
+             cenaSkupina: opts.cenaSkupina || null,
              fix: opts.fix != null ? opts.fix : null,
              /* Řádky volitelných položek se NEZAOKROUHLUJÍ. Zaokrouhlení nahoru
               * na tisíce patří jen příplatkům (mkPrip). V jednom konkrétním
@@ -416,7 +468,22 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
    *  v sestaveném souboru žijí obě funkce v jednom globálním prostoru.) */
   const _prepisZadan = v => !(v === undefined || v === null || v === '');
   const atypZamecnikPrepsana = _prepisZadan(z.zamecnikAtypKc);
-  const atypZamecnikSazba = atypZamecnikPrepsana ? (+z.zamecnikAtypKc || 0) : (+c.zamecnikAtypKc || 0);
+  /* DVA MODELY, DVĚ PRAVIDLA (rozhodnutí J. V. 1. 9. 2026)
+   *
+   * Zámečník atyp má v datech dvě podoby: starší (počet kusů × ceníková sazba
+   * `C.zamecnikAtypKc`) a dnešní (jedna částka `Z.zamecnikAtypKc`, kterou
+   * předvyplní ATYP z `C.atypZamecnikKc`). Dokud platily obě naráz, nebylo
+   * z ceníku poznat, která z nich zrovna počítá.
+   *
+   *   MODEL 1 (1:1 jako Excel, fixes = false) — nechává se PŘESNĚ jak byl:
+   *     kusy mají přednost a při prázdném poli platí ceníková sazba. Starší
+   *     nabídky se tak přepočítají na korunu stejně jako v den, kdy odešly.
+   *   MODEL 2 (opravený, fixes = true) — stará podoba V NĚM NENÍ: počítá se
+   *     vždy novým způsobem, tedy jedna částka ze zakázky. Prázdné pole
+   *     znamená, že řádek nevznikne; ceníková sazba za kus se neuplatní.
+   */
+  const atypZamecnikSazba = atypZamecnikPrepsana ? (+z.zamecnikAtypKc || 0)
+    : (fixes ? 0 : (+c.zamecnikAtypKc || 0));
   /* `atyp` říká „tohle je práce navíc", `bezCeny` říká „a nikdo jí zatím nedal
    * cenu". Bez druhého příznaku by se neoceněná položka tiše sečetla jako nula
    * a nabídka by ji rozdala zdarma; takhle na ni upozorní kontrola před nabídkou.
@@ -435,7 +502,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     mkItem('PLECHY - OPLECH. DVEŘÍ A PODEST (PRÁCE)', z.nastupiste * 3, c.oplechPracKc, { cenaPath: 'C.oplechPracKc' }),
     mkItem('PLECHY - OPLECHOVÁNÍ OSTATNÍ (MATERIÁL)', z.oplechOstatniKg, ext ? c.powertechExt : c.powertechInt, { cenaPath: plechKey }),
     mkItem('PLECHY - OPLECHOVÁNÍ OSTATNÍ (PRÁCE)', z.oplechOstatniHod, c.oplechPracKc, { cenaPath: 'C.oplechPracKc' }),
-    mkItem('SPOJOVACÍ MATERIÁL', 1, spojovaciKc, { naklad: spojovaciKc }),
+    mkItem('SPOJOVACÍ MATERIÁL', 1, spojovaciKc, { naklad: spojovaciKc, cenaSkupina: 'C.spojovaci.*' }),
     !ext ? mkItem('PRÁCE ZÁMEČNÍKA - SPODNÍ RÁM (INT)', 1, c.spodniRamKc, { cenaPath: 'C.spodniRamKc' }) : null,
     mkItem('PRÁCE ZÁMEČNÍKA - NÝTOVÁNÍ', nytovaniKs, c.nytKc, { cenaPath: 'C.nytKc' }),
     !ext ? mkItem('PRÁCE ZÁMEČNÍKA - ČÍLKA (INT)', pocetCilek, c.cilkoKc, { cenaPath: 'C.cilkoKc' }) : null,
@@ -444,12 +511,12 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
      * 50 000). Řádek má množství VŽDY 1 a jednotkovou cenu = ta částka.
      * Staré zakázky s uloženými kusy se počítají PŘESNĚ jako dřív — kusy
      * mají přednost, dokud v datech jsou; jinak by se změnily jejich ceny. */
-    (+z.zamecnikAtypKs || 0)
+    ((+z.zamecnikAtypKs || 0) && !fixes)
       ? oznacAtyp(mkItem('PRÁCE ZÁMEČNÍKA - OSTATNÍ (ATYP)', z.zamecnikAtypKs, atypZamecnikSazba, { cenaPath: 'Z.zamecnikAtypKc' }))
       : (atypZamecnikPrepsana
         ? oznacAtyp(mkItem('PRÁCE ZÁMEČNÍKA - OSTATNÍ (ATYP)', 1, atypZamecnikSazba, { cenaPath: 'Z.zamecnikAtypKc' }))
         : null),
-    mkItem('LAKOVÁNÍ (ŠACHTA, PLECHY, ZASKLENÍ, OPLECHOVÁNÍ)', 1, lakovaniKc, { naklad: lakovaniKc }),
+    mkItem('LAKOVÁNÍ (ŠACHTA, PLECHY, ZASKLENÍ, OPLECHOVÁNÍ)', 1, lakovaniKc, { naklad: lakovaniKc, cenaSkupina: 'C.lak.*' }),
     mkItem('MONTÁŽ NA STAVBĚ', montazHod, c.montazHodKc, { cenaPath: 'C.montazHodKc' }),
     ext ? mkItem('VĚTRACÍ MŘÍŽKA (EXT)', 2, c.vetraciMrizkaKc, { cenaPath: 'C.vetraciMrizkaKc' }) : null,
     mkItem('INTERNÍ TRANSPORT', 2, c.transportKc, { cenaPath: 'C.transportKc' }),
@@ -526,6 +593,9 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     mkItem('STATICKÉ POSOUZENÍ', c.statikaHod, c.statikaKc, { cenaPath: 'C.statikaKc' }),
     mkItem('REŽIE KANCELÁŘE', 1, c.rezieKancelareKc, { cenaPath: 'C.rezieKancelareKc' }),
     mkItem('PRÁCE STAVBYVEDOUCÍHO', c.stavbyvedouciHod, c.stavbyvedouciKc, { cenaPath: 'C.stavbyvedouciKc' }),
+    /* `|| 0`: starší ceníky (a zkušební sady) položku nemají a bez toho by
+     * z nedefinované ceny vzniklo NaN, které by rozbilo celý součet. */
+    mkItem('PŘEKLADY CZ→DE', 1, +c.prekladyKc || 0, { cenaPath: 'C.prekladyKc' }),
     ...vlastniProSekci('rezie'),
   ].filter(Boolean);
 
@@ -550,13 +620,32 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
         pozn: `${Math.round(atypSazba * 1000) / 10} % z nákladu režie (${Math.round(atypZaklad).toLocaleString('cs-CZ')} Kč)` }));
   }
 
-  const sekce = { hrubaOck, oplasteni, volitelne, rezie };
+  /* VYŘAZENÉ POLOŽKY (21. 8. 2026). Filtr stojí schválně až tady, na jednom
+   * jediném místě těsně před součty: kdyby se rozházel po výpočtu, každá
+   * nová položka by musela na vyřazení znovu myslet. Volitelné se nefiltrují —
+   * ty mají vlastní, starší zaškrtávátko „počítat do základní ceny".
+   * Prázdný seznam nedělá nic, takže starší zakázky počítají beze změny. */
+  const nepocitat = Array.isArray(z.nepocitat) ? z.nepocitat.map(String) : [];
+  /* POLOŽKY JEN PRO ZAHRANIČÍ (#181, 31. 8. 2026, zadání J. V.: „pokud
+   * nějaká položka v tuzemsku není, tak ji v kalkulaci nezobrazuj").
+   * Cestovní náklady s logistikou nebo překlady CZ→DE nemají v tuzemské
+   * zakázce co dělat — a ukázat je s nulou není totéž jako neukázat je:
+   * nulový řádek v kalkulaci pořád svádí k tomu něco do něj napsat.
+   * Značky nese ceník varianty (`cenik.jenZahr`), řadu `cenik.rada`. */
+  const jenZahr = (c.jenZahr && typeof c.jenZahr === 'object') ? c.jenZahr : {};
+  const zahranicni = String(c.rada) === 'zahr';
+  const jenTetoRady = rows => (zahranicni || !Object.keys(jenZahr).length) ? rows
+    : rows.filter(r => !(r.cenaPath && jenZahr[r.cenaPath]));
+  const jenPocitane = rows => jenTetoRady(nepocitat.length
+    ? rows.filter(r => nepocitat.indexOf(String(r.origNazev || r.nazev)) < 0) : rows);
+  const sekce = { hrubaOck: jenPocitane(hrubaOck), oplasteni: jenPocitane(oplasteni),
+                  volitelne: jenTetoRady(volitelne), rezie: jenPocitane(rezie) };
   const sum = rows => ({
     naklad: rows.reduce((a, r) => a + r.naklad, 0),
     marze: rows.reduce((a, r) => a + r.marze, 0),
     sMarzi: rows.reduce((a, r) => a + r.sMarzi, 0),
   });
-  const s1 = sum(hrubaOck), s2 = sum(oplasteni), s3 = sum(volitelne), s4 = sum(rezie);
+  const s1 = sum(sekce.hrubaOck), s2 = sum(sekce.oplasteni), s3 = sum(sekce.volitelne), s4 = sum(sekce.rezie);
   const nakladBezRezervy = s1.naklad + s2.naklad + s3.naklad + s4.naklad;
   const sMarziBezRezervy = s1.sMarzi + s2.sMarzi + s3.sMarzi + s4.sMarzi;
 
@@ -578,12 +667,33 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   /* ---------- příplatkové položky (ceník variant) ---------- */
   const mkPrip = (key, nazev, mnozstvi, cena, opts = {}) => {
     zapisNazev(nazev);
+    /* RUČNÍ PŘEPIS MNOŽSTVÍ (2. 9. 2026, zadání J. V. po testu Kornpfortstraße).
+     * Excel má u některých položek pod čarou množství 0, aby se nenabízely —
+     * a obchodník se se zákazníkem běžně domluví na jiném počtu, než kolik
+     * plyne ze zadání. Do teď šla u příplatku přepsat jen jednotková cena,
+     * takže se předloha nedala napodobit. Sémantika je stejná jako u mkItem
+     * (#14): PRÁZDNO NENÍ NULA — prázdný přepis znamená „platí vypočtené",
+     * nula je platná dohoda („tuhle položku nenabízíme"). */
+    const prepis = z.mnozstviPrepis ? z.mnozstviPrepis[nazev] : null;
+    const prepisJe = (typeof prepisPlati === 'function') ? prepisPlati(prepis) : prepis != null;
+    const mn = prepisJe ? +prepis : mnozstvi;
     const cenaPrepis = (opts.cenaPath == null && z.cenyPrepis && z.cenyPrepis[nazev] != null) ? +z.cenyPrepis[nazev] : null;
     const cenaEff = cenaPrepis != null ? cenaPrepis : cena;
-    const naklad = (opts.naklad != null && cenaPrepis == null) ? opts.naklad : mnozstvi * cenaEff;
+    /* Náklad z PŘEPSANÉHO množství. U položek s vlastním nákladem (lešení:
+     * proměnná část × množství PLUS fixní částka) se přepis promítne poměrem
+     * — fixní část tak nespadne pod stůl ani se nezněkolikanásobí. Poměr se
+     * počítá jen tehdy, když je z čeho: u nulového automatického množství
+     * (a tedy nulového základu) by dělení nedávalo smysl. */
+    let naklad;
+    if (opts.naklad != null && cenaPrepis == null) {
+      naklad = (prepisJe && mnozstvi) ? opts.naklad * (mn / mnozstvi) : opts.naklad;
+    } else {
+      naklad = mn * cenaEff;
+    }
     const novyNazev = z.nazvyPrepis ? z.nazvyPrepis[nazev] : null;
     return { key, nazev: novyNazev || nazev, origNazev: nazev, nazevPrepsan: !!novyNazev,
-             mnozstvi, cena: cenaEff, cenaAuto: cena, cenaPrepsana: cenaPrepis != null, cenaPath: opts.cenaPath || null,
+             mnozstvi: mn, mnozstviAuto: mnozstvi, prepsano: prepisJe,
+             cena: cenaEff, cenaAuto: cena, cenaPrepsana: cenaPrepis != null, cenaPath: opts.cenaPath || null,
              naklad, sMarzi: CEIL(naklad * (1 + m), 1000), pozn: opts.pozn || '', vlastni: !!opts.vlastni };
   };
   let priplatky = [
@@ -598,7 +708,26 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     ext ? mkPrip('medStrecha', 'PŘÍPLATEK ZA STŘECHU V MĚDI (EXT)', (z.sirka + 0.2) * (z.hloubka + 0.1), pp.medStrechaM2, { cenaPath: 'C.priplatky.medStrechaM2' }) : null,
     ext ? mkPrip('ventilator', 'VENTILÁTOR (EXT)', 1, pp.ventilatorKc, { cenaPath: 'C.priplatky.ventilatorKc' }) : null,
     mkPrip('zabranyDvere', 'ZÁBRANY DO DVEŘNÍCH VSTUPŮ', z.nastupiste, pp.zabranyDvereKc, { cenaPath: 'C.priplatky.zabranyDvereKc' }),
-    mkPrip('montazDveri', 'MONTÁŽ ŠACHETNÍCH DVEŘÍ', z.nastupiste, pp.montazDveriKc, { cenaPath: 'C.priplatky.montazDveriKc' }),
+    /* MONTÁŽ ŠACHETNÍCH DVEŘÍ zrušena 2. 9. 2026 na pokyn J. V.: v excelové
+     * předloze pod čarou není a obchodník si ji podle potřeby přidá ručně
+     * („+ přidat položku" v příplatcích). Ceníkový klíč `montazDveriKc`
+     * ZŮSTÁVÁ i s cenou — je to vodítko, za kolik tu ruční položku nacenit,
+     * a kdyby se měla vrátit, stačí sem přidat řádek zpátky. */
+    /* Osm příplatků z excelové předlohy (1. 9. 2026). Množství 1 = za akci;
+     * cena je ceníková a v zakázce jde přepsat. V Excelu jsou u zakázky
+     * všechny nulové — je to nabídkové menu, ne automatika. */
+    /* Zábrany proti pádu jsou v předloze na KAŽDÉM nástupišti (2. 9. 2026:
+     * v Excelu množství 6,0 při šesti nástupištích) — stejně jako zábrany
+     * do dveřních vstupů. Ostatní položky z předlohy mají množství 1: i v Excelu
+     * jsou prázdné, je to nabídkové menu, ne automatika. */
+    mkPrip('zabranyPad', 'ZÁBRANY PROTI PÁDU DO ŠACHTY', z.nastupiste, +pp.zabranyPadKc || 0, { cenaPath: 'C.priplatky.zabranyPadKc' }),
+    mkPrip('demontazOhrazeni', 'DEMONTÁŽ STÁVAJÍCÍHO OHRAZENÍ', 1, +pp.demontazOhrazeniKc || 0, { cenaPath: 'C.priplatky.demontazOhrazeniKc' }),
+    mkPrip('malbaSchodnic', 'MALBA SCHODNIC', 1, +pp.malbaSchodnicKc || 0, { cenaPath: 'C.priplatky.malbaSchodnicKc' }),
+    mkPrip('naterOhrazeni', 'NÁTĚR CELÉHO OHRAZENÍ', 1, +pp.naterOhrazeniKc || 0, { cenaPath: 'C.priplatky.naterOhrazeniKc' }),
+    mkPrip('naterOkopovych', 'NÁTĚR POUZE OKOPOVÝCH PLECHŮ', 1, +pp.naterOkopovychKc || 0, { cenaPath: 'C.priplatky.naterOkopovychKc' }),
+    mkPrip('prosklenaStena', 'PROSKLENÁ STĚNA VEDLE ŠACHTY', 1, +pp.prosklenaStenaKc || 0, { cenaPath: 'C.priplatky.prosklenaStenaKc' }),
+    mkPrip('demontazVytahu', 'DEMONTÁŽ STÁVAJÍCÍHO VÝTAHU', 1, +pp.demontazVytahuKc || 0, { cenaPath: 'C.priplatky.demontazVytahuKc' }),
+    mkPrip('destovySvod', 'DEŠŤOVÝ SVOD', 1, +pp.destovySvodKc || 0, { cenaPath: 'C.priplatky.destovySvodKc' }),
     /* Fixní část lešení je v příplatcích táž jako ve volitelných — jeden klíč
      * c.leseniFix. Dokud měla každá větev vlastní číslo, znamenalo přesunutí
      * lešení ze základní ceny do příplatků tichou změnu ceny o tisíce korun. */
@@ -668,7 +797,20 @@ function cenikMigraceLeseni(cenik) {
   }
   delete cenik.leseniVnitrniFix;
   delete cenik.leseniVnejsiFix;
-  if (cenik.priplatky && typeof cenik.priplatky === 'object') delete cenik.priplatky.leseniHlavaFix;
+  if (cenik.priplatky && typeof cenik.priplatky === 'object') {
+    delete cenik.priplatky.leseniHlavaFix;
+    /* POZOR: `zabranyPadKc` se 1. 9. 2026 dopoledne zahazoval jako mrtvý klíč —
+     * a odpoledne ho J. V. vrátil k životu („zaveď těch osm příplatků všechny,
+     * tak jak jsou"). Mazání je proto pryč; kdo měl v ceníku uloženou hodnotu,
+     * o ni nepřijde. Poučení: mrtvý klíč nemusí být mrtvý nápad.
+     * Původní komentář k rozhodnutí:
+     * klíč nikdy neměl řádek v ceníku a žádná kalkulace ho nepoužívala, takže
+     * nesl vždycky nulu a jen mátl při kontrole pokrytí ceníku. Uložené
+     * a zveřejněné ceníky ho pořád nesou — proto se maže tady, stejnou cestou
+     * jako `leseniHlavaFix`. Kdyby se zábrany proti pádu měly nabízet, patří
+     * do KATALOGU trvalých položek (sekce příplatky), ne zpátky do kódu:
+     * osm trvale nulových řádků by zaplevelilo každou nabídku. */
+  }
 }
 
 if (typeof module !== 'undefined') module.exports = { vypocet, DEFAULT_ZADANI, DEFAULT_CENIK, CEIL, cenikMigraceLeseni };

@@ -43,24 +43,31 @@ Object.assign(globalThis, require('../../src/zakazka.js'));
 Object.assign(globalThis, require('../../src/uloziste.js'));
 Object.assign(globalThis, require('../../src/zamek.js'));
 Object.assign(globalThis, require('../../src/sleva.js'));
+Object.assign(globalThis, require('../../src/schvalovani.js'));   // serverová pojistka rozhodnutí (B2)
 Object.assign(globalThis, require('../../src/zaokrouhleni.js'));
 Object.assign(globalThis, require('../../src/marze.js'));
 Object.assign(globalThis, require('../../src/kontroly.js'));
 Object.assign(globalThis, require('../../src/firma.js'));
 Object.assign(globalThis, require('../../src/cenik.js'));
 Object.assign(globalThis, require('../../src/cenik_stari.js'));
+/* Řady ceníku (#181): server očišťuje zahraniční odchylky týmž kódem jako
+ * prohlížeč — bez tohohle řádku by `cenikZahrOciste` neznal seznam cest
+ * a propustil by i cizí klíč. */
+Object.assign(globalThis, require('../../src/cenik_rady.js'));
 Object.assign(globalThis, require('../../src/konfigurace.js'));
 Object.assign(globalThis, require('../../src/sablony_online.js'));
 Object.assign(globalThis, require('../../src/analytika.js'));
 Object.assign(globalThis, require('../../src/program.js'));
 Object.assign(globalThis, require('../../src/ukazkove.js'));
 Object.assign(globalThis, require('../../src/zobrazeni.js'));
+Object.assign(globalThis, require('../../src/zakaznici.js'));
 Object.assign(globalThis, require('../../src/sluzba.js'));   // jen server (služba K2)
 
 /* Pojmenované držáky pro moduly, které se v kódu funkcí volají přes tečku
  * (ULO.uloJmenoSouboru, fm.firmaLzeZverejnit) – ať se nemíchá s globály. */
 module.exports = {
   ULO: require('../../src/uloziste.js'),
+  SCHV: require('../../src/schvalovani.js'),
   fm: require('../../src/firma.js'),
   /* Matice zobrazení (#136). Server ji čte i zapisuje v /api/zobrazeni a
    * očistu dělá TÝMŽ kódem jako prohlížeč — jinak by mohl uložit klíč, který

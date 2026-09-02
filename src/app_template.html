@@ -111,6 +111,22 @@
   /* titulek nad cenovou kalkulací (název akce) */
   .kalk-title { font-size:15px; font-weight:700; color:var(--ink); margin:0 0 10px; }
   .kalk-title .kt-cislo { color:var(--mut); font-weight:600; font-size:12.5px; margin-right:8px; }
+  /* Stav otevřené varianty vedle čísla nabídky (21. 8. 2026). Zelená = dá se
+     měnit, červená = odeslaná a zamčená. Tiskne se taky: na papíře je pak
+     vidět, jestli šlo o rozpracovanou kalkulaci, nebo o odeslanou nabídku. */
+  .stav-pill { font-size:11.5px; font-weight:700; padding:2px 11px; border-radius:20px;
+               white-space:nowrap; letter-spacing:.2px; }
+  .stav-pill.aktivni { background:#dcfce7; color:#166534; border:1px solid #86efac; }
+  .stav-pill.zamcena { background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; }
+  /* Štítek Standard OCK (21. 8. 2026) — vedle stavu nabídky v téže liště. */
+  .std-pill { font-size:11.5px; font-weight:800; padding:2px 11px; border-radius:20px;
+              white-space:nowrap; letter-spacing:.3px; cursor:pointer; border:1.5px solid; }
+  .std-pill.ok { background:#dcfce7; color:#166534; border-color:#16a34a; }
+  .std-pill.atyp { background:#fee2e2; color:#991b1b; border-color:#dc2626; }
+  .std-pill.nejisto { background:#fff7e6; color:#92400e; border-color:#f59e0b; }
+  .std-panel { border:1px solid var(--line); border-radius:8px; margin:8px 0 0; overflow:hidden; }
+  .std-panel .hd { padding:6px 12px; font-weight:700; font-size:12.5px; }
+  .std-panel table { margin:0; }
   /* ozubené kolo + modální panel Nastavení */
   header .gear { background:transparent; border-color:#3a4761; color:#cdd7e8; font-size:16px; line-height:1; padding:6px 10px; }
   header .gear:hover { background:#2b3850; }
@@ -124,7 +140,7 @@
   .prihlaseni-box h1 { margin:0 0 2px; font-size:22px; }
   .prihlaseni-box .ver { display:block; margin-bottom:16px; }
   .prihlaseni-box .row { max-width:none; }
-  .online-lista { display:inline-flex; align-items:center; gap:6px; font-size:12.5px; color:#3b4453; }
+  .online-lista { position:relative; display:inline-flex; align-items:center; gap:6px; font-size:12.5px; color:#3b4453; }
   .online-lista b { white-space:nowrap; }
   .modal { background:#fff; border-radius:12px; max-width:760px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,.35); }
   /* Nastavení je jediné okno se širokou tabulkou (seznam uživatelů: e-mail,
@@ -139,7 +155,10 @@
   .modal .body { padding:18px 20px; }
   .modal .sec-title { font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--mut); font-weight:700; margin:18px 0 8px; }
   .modal .sec-title:first-child { margin-top:0; }
-  .modal .nast-tabs { display:flex; gap:4px; padding:10px 20px 0; border-bottom:1px solid var(--line); }
+  /* Záložek Nastavení přibývá (21. 8. 2026 přibyla Databáze) a na užším
+     monitoru se do jedné řádky nevejdou — proto se zalamují. Bez toho
+     přetékaly z okna a poslední záložka nešla trefit. */
+  .modal .nast-tabs { display:flex; flex-wrap:wrap; row-gap:4px; gap:4px; padding:10px 20px 0; border-bottom:1px solid var(--line); }
   .modal .nast-tabs button { border:1px solid var(--line); border-bottom:none; background:#f3f6fa; color:var(--ink);
     padding:7px 14px; border-radius:8px 8px 0 0; font-size:13px; cursor:pointer; }
   .modal .nast-tabs button.act { background:#fff; font-weight:600; color:#1d4ed8; position:relative; top:1px; }
@@ -156,12 +175,10 @@
      `nastaveni.otevrit`. Ostatní dřívější `admin-only` prvky se dnes
      nekreslí vůbec (podmínka přímo v šabloně), což je průhlednější. */
   body:not(.smi-nastaveni) .admin-only { display:none !important; }
-  #btnZpetAdmin { display:none; background:#b45309; border-color:#b45309; color:#fff; }
   /* Návrat z náhledu se nabízí jen tomu, kdo se do náhledu má jak vrátit,
      tedy skutečnému administrátorovi (třída `muze-admin` se nastavuje
      v render() podle role ze serveru). Do 5. 8. 2026 stačilo `role-user`
      a tlačítko svítilo i obchodníkovi — jeden klik a měl otevřené ceníky. */
-  body.role-user.muze-admin #btnZpetAdmin { display:inline-block; }
   /* ochrana rozpracované práce (#1): Zpět/Znovu, stav zálohy, lišta obnovy */
   /* Zpět/Znovu jsou po úklidu hlavičky (4. 8. 2026) jediná pracovní tlačítka
      nahoře – a zároveň jediná pojistka proti ztrátě rozdělané práce. Dokud
@@ -286,6 +303,34 @@
   .kalk-lista a.dv-kotva:hover { background:var(--acc); color:#fff; border-color:var(--acc); }
   /* cíl kotvy nesmí zajet pod přilepenou lištu */
   #page-kalk [id], #page-proj [id] { scroll-margin-top:64px; }
+  /* Řada ceníku ČR / Zahraničí (#181, 31. 8. 2026). Zahraniční režim jemně
+     podbarví celou hlavičku, aby se zakázka poznala i letmým pohledem —
+     zadání J. V.: „přepínač, který se bude jemně podbarvovat". */
+  .rada-prep { display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#fff; }
+  .rada-prep button { border:0; background:#fff; color:var(--mut); font:600 13px "Segoe UI", sans-serif;
+                      padding:4px 14px; cursor:pointer; }
+  .rada-prep button + button { border-left:1px solid var(--line); }
+  .rada-prep button.on { background:#eaf0ff; color:var(--acc); }
+  .rada-prep button.on.zahr { background:#ffedd5; color:#b45309; }
+  .zak-bar.rada-zahr { background:#fff7ed; border-color:#fdba74; }
+  .zak-bar.rada-zahr .zak-bar-h { background:#ffedd5; color:#b45309; border-bottom-color:#fdba74; }
+  .zak-bar.rada-zahr .zak-head input, .zak-bar.rada-zahr .zak-head select { background:#fffdf9; border-color:#f3d5b0; }
+  .ceniktbl tr.ma-zahr td { background:#fffaf3; }
+  .ceniktbl td.zahr-bunka { white-space:nowrap; }
+  .ceniktbl input.zahr-cena { width:96px; }
+  .ceniktbl input.zahr-cena.ma { border-color:#fdba74; background:#fffaf3; }
+  .rada-stitek { font-size:11.5px; font-weight:600; padding:1px 9px; border-radius:999px; margin-left:8px;
+                 background:#fff; color:#b45309; border:1px solid #fdba74; text-transform:none; letter-spacing:0; }
+  /* Zamčená (nepočítaná) strana zakázky — 23. 8. 2026. Buňky zešednou
+     a nejdou do nich klikat; hlavička a lišta zůstávají živé, protože
+     číslo nabídky a přepnutí zámku se musí dát vyplnit i tady. */
+  .strana-zamcena { opacity:.62; filter:grayscale(.55); }
+  .strana-zamcena input, .strana-zamcena select, .strana-zamcena textarea,
+  .strana-zamcena button { pointer-events:none; background:#f1f3f7; }
+  .zamek-lista { display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    background:#fff7ed; border:1px solid #fdba74; border-left:4px solid #ea580c;
+    border-radius:6px; padding:8px 12px; margin:6px 0 10px; font-size:13px; }
+  .zamek-lista b { color:#9a3412; }
   /* Lišta detailu je o řádek vyšší (přepínač a tisk stojí nad kotvami),
      proto má cíl kotvy větší odstup než v kalkulacích. */
   #page-detail [id], #page-detailproj [id] { scroll-margin-top:96px; }
@@ -339,6 +384,38 @@
   .ceniktbl td:nth-child(2) { width:140px; }
   .ceniktbl td:nth-child(3) { width:70px; text-align:left; color:var(--mut); }
   .ceniktbl td:nth-child(4) { text-align:left; color:var(--mut); font-size:12px; white-space:normal; }
+  /* Ceníková tabulka podle TŘÍD (1. 9. 2026). Pravidla podle pořadí sloupců
+     výš platí dál pro ostatní tabulky s .ceniktbl (překlady v Nastavení);
+     v ceníku OCK/PROJ ale sloupců přibylo a poznámka se nevešla na stránku. */
+  .ceniktbl td.c-nazev, .ceniktbl th.c-nazev { text-align:left; white-space:normal; width:230px; }
+  .ceniktbl td.c-hod { width:150px; }
+  .ceniktbl td.c-jed, .ceniktbl th.c-jed { width:76px; text-align:left; color:var(--mut); white-space:nowrap; }
+  .ceniktbl td.c-pozn, .ceniktbl th.c-pozn { text-align:left; color:var(--mut); font-size:12px;
+     white-space:normal; overflow-wrap:anywhere; }
+  /* Karta má overflow:hidden, takže cokoli širšího by se uřízlo. Tabulka se
+     proto smí posunout uvnitř vlastního rámečku, ne pod okrajem karty. */
+  .cenik-scroll { overflow-x:auto; }
+  /* Dialog v aplikaci (2. 9. 2026) — náhrada nativního confirm/alert/prompt.
+     Nativní dialog zastaví renderer a aplikace přestane být ovladatelná
+     zvenčí; tenhle je obyčejný DOM, takže jde i automatizovaně naklikat. */
+  .dlg-overlay { position:fixed; inset:0; background:rgba(16,22,34,.55); z-index:200;
+     display:flex; align-items:flex-start; justify-content:center; padding:80px 16px; overflow:auto; }
+  .dlg-box { background:#fff; border-radius:12px; box-shadow:0 18px 50px rgba(16,22,34,.35);
+     max-width:560px; width:100%; padding:20px 22px; }
+  .dlg-nadpis { font-weight:700; font-size:15px; margin-bottom:8px; }
+  .dlg-text { white-space:pre-line; font-size:14px; line-height:1.5; }
+  .dlg-box input[type=text] { width:100%; margin-top:12px; font:inherit; padding:7px 9px;
+     border:1px solid var(--line); border-radius:7px; }
+  .dlg-btns { display:flex; gap:8px; justify-content:flex-end; margin-top:16px; }
+  @media print { .dlg-overlay { display:none !important; } }
+  /* Klíč položky pro administrátora — malý, šedý, neruší, v tisku není. */
+  .klic { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:10.5px;
+     color:#94a3b8; font-weight:400; white-space:nowrap; }
+  /* V řádku formuláře klíč nikdy nesmí roztáhnout popisek ani přelézt do pole
+     vedle (2. 9. 2026): stojí na vlastním řádku pod popiskem a delší text se
+     ořízne — celý je pořád v bublině. */
+  .row label .klic { display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; }
+  @media print { .klic { display:none; } }
   .subhead td { color:var(--mut); font-size:11px; text-transform:uppercase; background:#fafbfd; }
   .neg { color:#b91c1c; }
   /* editovatelný název položky přímo v tabulce (vypadá jako text, edit po najetí/kliknutí) */
@@ -358,6 +435,28 @@
   tr.vyrazeno td { color:rgba(26,35,50,.5); text-decoration:line-through; }
   tr.vyrazeno td input, tr.vyrazeno td button, tr.vyrazeno td select {
     text-decoration:none; opacity:1; color:var(--ink); }
+  /* Nezahrnutá VOLITELNÁ položka (20. 8. 2026): není vyřazená, jen zatím
+     nespadá do základní ceny — proto ztlumit ano, přeškrtnout ne. Do 20. 8.
+     na ni řádek dostával inline opacity:.5, která se násobila i na
+     zaškrtávátka admin sloupců: hlásili jsme „světle modré položky".
+     Stejné pravidlo jako u .vyrazeno — tlumí se BARVA, ovládací prvky ne. */
+  /* Nabídka náhledu pod jménem v pravém horním rohu (20. 8. 2026). */
+  .nahled-menu { position:absolute; right:8px; top:38px; z-index:60; min-width:260px; max-width:340px;
+                 background:#fff; color:var(--ink); border:1px solid var(--line); border-radius:8px;
+                 box-shadow:0 10px 28px rgba(11,46,107,.18); padding:8px 10px; text-align:left; }
+  /* Pruh náhledu: přes celou šířku, aby nešlo přehlédnout, čí očima se dívám. */
+  .nahled-pruh { background:#fff7e6; border:1px solid #f59e0b; border-left-width:4px; border-radius:8px;
+                 padding:7px 12px; margin:8px 0; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .nahled-pruh b { color:#92400e; }
+  /* Testovací web: červený pruh se TISKNE taky (schválně není .noprint) —
+     kdyby z testu přece jen vyjel dokument, ať je to na papíře vidět. */
+  .prostredi-pruh { background:#fee2e2; border:1px solid #dc2626; border-left-width:5px;
+                    border-radius:8px; padding:7px 12px; margin:8px 0; display:flex;
+                    align-items:center; gap:10px; flex-wrap:wrap; color:#7f1d1d; }
+  .prostredi-pruh b { color:#991b1b; letter-spacing:.5px; }
+  tr.nezahrnuto td { color:rgba(26,35,50,.5); }
+  tr.nezahrnuto td input, tr.nezahrnuto td button, tr.nezahrnuto td select {
+    opacity:1; color:var(--ink); }
   /* Interní poznámka k položce — do nabídky ani krycího listu nejde (pravidlo #37),
      tak ať ani v tabulce nekřičí: menší, tlumená, rozbalí se až při psaní. */
   input.pozn-ed { display:block; width:100%; min-width:260px; margin-top:2px; padding:2px 5px;
@@ -459,6 +558,33 @@
      uvnitř, aby hledání i hláška o stavu složky zůstaly nad ní vidět. */
   #uloziste-panel { max-width:1180px; }
   #ulozisteTelo { overflow:auto; max-height:52vh; }
+  /* Zakázky online: širší než ostatní okna (21. 8. 2026, zadání J. V.
+     „zobrazení je třeba rozšířit, teď se tam nevejde") — přibyly sloupce
+     Obchodník a Druh a devět sloupců se do 760 px nevejde. Tabulka se
+     uvnitř roluje vodorovně i svisle, takže okno nikdy nepřeteče. */
+  #online-panel { max-width:1320px; }
+  #online-panel .tab-scroll { overflow:auto; max-height:58vh; }
+  /* Seznam nalezených nabídek v Přehledu: pět řádků a pak posuvník vpravo
+     (zadání J. V.) — karta by jinak odsunula souhrn řídící varianty pod
+     okraj obrazovky. Výška je v em, aby držela i při jiné velikosti písma. */
+  .prehled-seznam { overflow-y:auto; overflow-x:auto; max-height:17em;
+    border:1px solid var(--line); border-radius:8px; }
+  .prehled-seznam table { margin:0; }
+  .prehled-seznam thead th, .prehled-seznam tr:first-child th {
+    position:sticky; top:0; background:#f3f6fa; z-index:1; }
+  .prehled-vyber { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:8px 0 6px; }
+  /* Klik na řádek seznamu nabídek otevírá zakázku (22. 8. 2026). */
+  tr.radek-klik { cursor:pointer; }
+  /* Vlastní našeptávač hledání (22. 8. 2026) — nativní datalist v Chrome
+     nabídku při psaní spolehlivě nezužoval. */
+  .nasept-wrap { position:relative; display:inline-block; }
+  .nasept-box { position:absolute; top:100%; left:0; min-width:100%; max-width:420px;
+    background:#fff; border:1px solid var(--line); border-radius:8px;
+    box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:60; max-height:16em; overflow:auto;
+    display:block; }
+  .nasept-radek { padding:6px 10px; cursor:pointer; white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis; font-size:13px; }
+  .nasept-radek:hover { background:#f0f6ff; }
   .archtbl th, .archtbl td { border-bottom:1px solid var(--line); vertical-align:middle; }
   .archtbl tr:hover td { background:#f7f9fe; }
   .archiv-soubory { display:flex; align-items:center; gap:6px; flex-wrap:wrap;
@@ -521,6 +647,11 @@
   /* ARES (#10): odpověď z rejstříku. Modrá, ne žlutá ani červená – nic se
      neděje špatně, jen se ukazuje, co veřejný rejstřík ví. Tabulka staví
      „teď" a „z rejstříku" vedle sebe, aby bylo potvrzení vědomé. */
+  /* Řada „odkud vzít údaje o firmě" (databáze / uložit / ARES). Jeden řádek:
+     nezalamuje se, tlačítka se smějí zúžit a dlouhý popisek se zkrátí
+     výpustkou — dvouřádková varianta vypadala jako porucha (21. 8. 2026). */
+  .ares-tlacitka { display:flex; gap:6px; flex-wrap:nowrap; flex:1; min-width:0; }
+  .ares-tlacitka .mini { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .ares-panel { margin:6px 0 10px; background:#f0f7ff; border:1px solid #bfdbfe;
     color:#13315c; border-radius:8px; padding:9px 12px; font-size:12.5px; line-height:1.5; }
   .ares-panel.chyba { background:#fff7ed; border-color:#fed7aa; color:#7c2d12; }
@@ -660,13 +791,17 @@
     <!-- Vstup zůstává v dokumentu: „Načíst zakázku" na záložce Přehled
          cenových nabídek na něj klikne za uživatele. -->
     <input type="file" id="fileIn" accept=".json" style="display:none" onchange="nactiZakazku(event)">
-    <button id="btnZpetAdmin" onclick="nastSetAdmin(true)">← Ukončit náhled uživatele</button>
+    <!-- Tlačítko „← Ukončit náhled uživatele" bylo 20. 8. 2026 odstraněno jako
+         duplicitní: náhled se ukončuje v oranžovém pruhu pod lištou a klikem
+         na jméno vpravo nahoře (viz #nahledLista a renderOnlineLista). -->
     <!-- pravý horní roh: kdo je přihlášený + Změnit heslo + Odhlásit (4. 8. 2026) -->
     <span id="onlineLista" class="online-lista"></span>
     <button id="btnNastaveni" class="gear admin-only" title="Nastavení (jen administrátor)" onclick="otevriNastaveni()">⚙</button>
   </div>
 </header>
 
+<div id="prostrediLista"></div>
+<div id="nahledLista" class="noprint"></div>
 <div id="obnovaLista" class="noprint"></div>
 <div id="zapisLista" class="noprint"></div>
 <div id="ukazkoveLista" class="noprint"></div>
@@ -685,6 +820,7 @@
   <button id="tab-cenik" onclick="prepniTab('cenik')">Ceník nákladů OCK</button>
   <button id="tab-cenikproj" onclick="prepniTab('cenikproj')">Ceník nákladů PROJ</button>
   <button id="tab-zakazka" onclick="prepniTab('zakazka')">Přehled cenových nabídek</button>
+  <button id="tab-zakaznici" onclick="prepniTab('zakaznici')">Zákazníci</button>
   <button id="tab-schvalovani" onclick="prepniTab('schvalovani')">Schvalování slev</button>
 </nav>
 
@@ -708,6 +844,7 @@
 <div class="page narrow" id="page-cenik" style="display:none"></div>
 <div class="page narrow" id="page-cenikproj" style="display:none"></div>
 <div class="page narrow" id="page-zakazka" style="display:none"></div>
+<div class="page" id="page-zakaznici" style="display:none"></div>
 <div class="page narrow" id="page-schvalovani" style="display:none"></div>
 
 <div id="nastaveni-overlay" class="modal-overlay" style="display:none" onclick="if(event.target===this)zavriNastaveni()">

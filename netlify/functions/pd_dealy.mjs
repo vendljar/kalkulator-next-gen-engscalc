@@ -13,7 +13,9 @@
  * stojí 40 tokenů denního rozpočtu (dvojnásobek seznamu) a má vlastní přísný
  * krátkodobý limit 10 požadavků za 2 vteřiny. Při 308 dealech je levnější
  * a rychlejší přinést otevřené případy jednou a filtrovat je tady. */
-import { vyzadujRoli, json } from '../lib/sdilene.mjs';
+import { uloziste, vyzadujRoli, json } from '../lib/sdilene.mjs';
+const PD_CACHE_ULOZISTE = 'pd_cache';
+const PD_CACHE_MS = 90 * 1000;
 import { pdNastaveno, pdVsechny, PdChyba } from '../lib/pipedrive.mjs';
 import { pdCisloZNazvu, pdNazevAkce } from '../lib/pd_mapa.mjs';
 
@@ -25,18 +27,38 @@ export default async (req) => {
   const { chyba } = await vyzadujRoli(req);      // stačí být přihlášen
   if (chyba) return chyba;
 
+  /* Whitelist stavu (audit 23. 8. 2026, B27) — kontroluje se PŘED napojením
+   * na Pipedrive: neověřený parametr obcházel cache (?stav=x1, x2… = nový klíč
+   * + nový dotaz) a mohl vyčerpat denní rozpočet. Neznámá hodnota → 400. */
+  const url = new URL(req.url);
+  const stav = String(url.searchParams.get('stav') || 'open');
+  if (['open', 'won', 'lost', 'vse'].indexOf(stav) < 0)
+    return json({ ok: false, chyba: 'Neplatný stav (open / won / lost / vse).' }, 400);
+
   if (!pdNastaveno())
     return json({ ok: true, nastaveno: false, dealy: [], celkem: 0,
       chyba: 'Napojení na Pipedrive zatím není nastavené.' });
 
-  const url = new URL(req.url);
   const hledat = String(url.searchParams.get('hledat') || '').trim().toLowerCase();
-  const stav = String(url.searchParams.get('stav') || 'open');
   const limit = Math.min(Math.max(Number(url.searchParams.get('limit')) || 50, 1), 200);
 
   try {
-    const surove = await pdVsechny('/api/v2/deals',
-      stav && stav !== 'vse' ? { status: stav } : {});
+    /* Krátká cache seznamu (audit 22. 8. 2026, B19): každé volání stojí až
+     * 10 stránek × 200 dealů (~20 tokenů denního rozpočtu Pipedrive). Bez
+     * cache mohl kterýkoli přihlášený účet opakovaným hledáním odstavit
+     * integraci všem. 90 s stačí — hledání a filtr se dělají nad cache, do
+     * Pipedrive jde dotaz jednou za okno na každý stav. */
+    const cache = await uloziste(PD_CACHE_ULOZISTE);
+    const klic = 'dealy:' + (stav || 'open');
+    const ulozene = await cache.cti(klic);
+    let surove;
+    if (ulozene && Array.isArray(ulozene.dealy) && (Date.now() - (ulozene.poridano || 0)) < PD_CACHE_MS) {
+      surove = ulozene.dealy;
+    } else {
+      surove = await pdVsechny('/api/v2/deals',
+        stav && stav !== 'vse' ? { status: stav } : {});
+      await cache.zapis(klic, { poridano: Date.now(), dealy: surove });
+    }
 
     let dealy = surove.map((d) => ({
       id: d.id,

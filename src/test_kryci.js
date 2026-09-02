@@ -220,9 +220,11 @@ test('ruční hodnota má přednost před prefillem',
  * v poli natrvalo vyprázdnilo řádek dokumentu. */
 test('prázdná ruční hodnota se vrací k prefillu, nevyprázdní řádek',
   kr.kryciHodnota(pole('splatnostDni'), { hodnoty: { splatnostDni: '' } }, c) === '14');
+/* 20. 8. 2026: pole „kontaktStavba" zaniklo (byl to týž člověk jako zástupce
+ * ve věcech technických) — zkouška se přesunula na jiné pole bez prefillu. */
 test('pole bez prefillu i bez ruční hodnoty zůstane prázdné',
-  kr.kryciHodnota(pole('kontaktStavba'), klPrazdny, c) === '',
-  kr.kryciHodnota(pole('kontaktStavba'), klPrazdny, c));
+  kr.kryciHodnota(pole('podpisInformovanBo'), klPrazdny, c) === '',
+  kr.kryciHodnota(pole('podpisInformovanBo'), klPrazdny, c));
 test('chybějící úložiště ručních hodnot nespadne',
   kr.kryciHodnota(pole('splatnostDni'), null, c) === '14');
 
@@ -294,14 +296,14 @@ test('do dokumentu se propíše IČO objednatele z hlavičky',
 /* KL-1: sídlo objednatele, ne adresa stavby – ty se běžně liší a do
  * smlouvy patří sídlo. */
 test('adresa objednatele v dokumentu je sídlo, ne adresa stavby',
-  najdiRadek(dBo, 'Adresa (sídlo) objednatele') === zak.adresaObjednatele
-  && najdiRadek(dBo, 'Adresa (sídlo) objednatele') !== zak.adresa,
-  najdiRadek(dBo, 'Adresa (sídlo) objednatele'));
+  najdiRadek(dBo, 'Adresa (sídlo) zákazníka') === zak.adresaObjednatele
+  && najdiRadek(dBo, 'Adresa (sídlo) zákazníka') !== zak.adresa,
+  najdiRadek(dBo, 'Adresa (sídlo) zákazníka'));
 test('ruční hodnota se propíše do obou verzí listu', (() => {
   const vr = zk.novaVarianta('Ruční', JSON.parse(JSON.stringify(v.data)));
-  vr.data.kryci.hodnoty.podpisInformovan = 'Jan Zkušební';
-  return najdiRadek(kr.kryciData(zak, vr, JEKLY, 'bo'), 'Informován') === 'Jan Zkušební'
-      && najdiRadek(kr.kryciData(zak, vr, JEKLY, 'techdata'), 'Informován') === 'Jan Zkušební';
+  vr.data.kryci.hodnoty.podpisInformovanBo = 'Jan Zkušební';
+  return najdiRadek(kr.kryciData(zak, vr, JEKLY, 'bo'), 'Informováno Backoffice') === 'Jan Zkušební'
+      && najdiRadek(kr.kryciData(zak, vr, JEKLY, 'techdata'), 'Informováno Backoffice') === 'Jan Zkušební';
 })());
 
 /* Sekce zobrazené i v souhrnu nabídky musí existovat pod přesně týmž

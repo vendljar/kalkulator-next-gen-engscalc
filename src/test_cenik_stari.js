@@ -18,9 +18,11 @@ const sl = require('./sleva.js');
 global.slevaPodil = sl.slevaPodil; global.slevaDefault = sl.slevaDefault;
 const ck = require('./cenik.js');
 global.CENIK_DEF = ck.CENIK_DEF; global.CENIK_DEF_PROJ = ck.CENIK_DEF_PROJ;
-global.cenikGet = ck.cenikGet; global.cenikSet = ck.cenikSet;
+global.cenikGet = ck.cenikGet; global.cenikSet = ck.cenikSet; global.cenikVychozi = ck.cenikVychozi;
 const zk = require('./zakazka.js');
 global.novaVarianta = zk.novaVarianta; global.novaVariantaData = zk.novaVariantaData;
+global.zadaniZCeniku = zk.zadaniZCeniku; global.zadaniRucniZnac = zk.zadaniRucniZnac;
+global.zadaniRucniZrus = zk.zadaniRucniZrus; global.zadaniRucniJe = zk.zadaniRucniJe;
 global.aktivniVarianta = zk.aktivniVarianta; global.ridiciVarianta = zk.ridiciVarianta;
 const { novaZakazka } = zk;
 const zm = require('./zamek.js');
@@ -75,6 +77,11 @@ function staraVarianta() {
   v.data.cenik.skloBokyNazev = DEFAULT_CENIK.skloBokyNazev + ' – starší text';
   v.data.cenik.spojovaci.nordlock = stara(DEFAULT_CENIK.spojovaci.nordlock, POSUN_NORDLOCK);
   v.data.proj.cenik.marze = stara(DEFAULT_CENIK_PROJ.marze, POSUN_PROJ_MARZE);
+  /* Přirážka projekce ve fixtuře je hodnota, kterou si obchodník NASTAVIL —
+   * v aplikaci ji zapisuje `set()` a ta si zároveň poznamená, že je ruční
+   * (31. 8. 2026). Bez značky by šlo o hodnotu, které se nikdo nedotkl,
+   * a ta se dnes z ceníku správně natahuje. */
+  cenikRucniZnac(v.data, 'PC.marze');
   return { zak, v };
 }
 
@@ -209,13 +216,177 @@ test('zamčená varianta se nehlídá – její cena už odešla', (() => {
   return pr.zamceno === true && pr.varovat === false;
 })());
 
+/* ---------- ceníkové položky ATYP a výchozí rozsahy práce (31. 8. 2026) ----------
+ * Zadání J. V.: „do ceníku OCK v sekci atyp přidej ještě možnost editovat
+ * atypické položky … a do sekce režie přidej položky z červených rámečků."
+ * Podstatné je, že jsou to REGULÉRNÍ ceníkové položky: jdou zveřejnit, jdou
+ * do otisku a do porovnání verzí. Kdyby ve sledovaných nebyly, změna jen
+ * jejich hodnoty by se nedala zveřejnit (viz audit N8 u PC.dph). */
+{
+  const cesty = cenikSledovane().map(p => p.cesta);
+  const nove = ['C.atypPrirazka', 'C.atypMontazPct', 'C.atypProjekcePct', 'C.atypZamecnikKc',
+                'C.atypRezervaZakladPct', 'C.atypRezervaPriplatkyPct',
+                'C.vychMontazZakladHod', 'C.vychProjekceZakladHod',
+                'C.vychOplechOstatniKg', 'C.vychOplechOstatniHod'];
+  test('nové položky ATYP i výchozí rozsahy jsou mezi sledovanými',
+    nove.every(c => cesty.includes(c)), nove.filter(c => !cesty.includes(c)).join(', '));
+  const a = DNES(), b = DNES();
+  b.cenik.atypRezervaZakladPct = 0.45;
+  test('změna jen ceníkové rezervy ATYP změní otisk', cenikOtisk(a) !== cenikOtisk(b));
+  test('a objeví se v rozdílech', (() => {
+    const r = cenikRozdily(a, b);
+    return r.length === 1 && r[0].cesta === 'C.atypRezervaZakladPct';
+  })(), cenikRozdily(a, b).map(r => r.cesta).join(', '));
+  /* Zakázková hodnota to NENÍ: je to firemní nastavení jako každá cena. */
+  test('ceníková položka ATYP není zakázková hodnota',
+    !cenikPatriZakazce('C.atypRezervaZakladPct'));
+
+  /* „Prázdno nebo nula = nenastaveno, platí hodnota ze sestavení." */
+  test('cenikVychozi vezme hodnotu z ceníku', cenikVychozi({ x: 32 }, 'x', 24) === 32);
+  test('nula znamená nenastaveno', cenikVychozi({ x: 0 }, 'x', 24) === 24);
+  test('chybějící klíč i prázdný ceník taky', cenikVychozi({}, 'x', 24) === 24
+    && cenikVychozi(null, 'x', 24) === 24);
+  test('nesmysl v ceníku nesmí přebít sestavení',
+    cenikVychozi({ x: 'abc' }, 'x', 24) === 24 && cenikVychozi({ x: -5 }, 'x', 24) === 24);
+}
+
+/* ---------- ceník řídí pole zadání (1. 9. 2026) ----------
+ * Zadání J. V.: „hodnoty z ceníku se do atypů a režií nepropisují. Ceník má
+ * být zdrojem pravdy. Ovšem tak to není." */
+{
+  const zak = zajistiZamek(novaZakazka());
+  const v = zak.varianty[0];
+  const d = v.data;
+  d.ock.zadani.atyp = true;
+  d.cenik.vychMontazZakladHod = 32;
+  d.cenik.vychOplechOstatniKg = 15;
+  d.cenik.atypRezervaZakladPct = 0.10;
+  d.cenik.atypZamecnikKc = 25000;
+  const r = zadaniZCeniku(d);
+  test('vyplněná ceníková položka se propíše do zadání',
+    d.ock.zadani.montazZakladHod === 32 && d.ock.zadani.oplechOstatniKg === 15, r.zmen);
+  test('a atypová pole taky, když je ATYP zaškrtnutý',
+    d.ock.zadani.rezervaZakladPct === 0.10 && d.ock.zadani.zamecnikAtypKc === 25000);
+  test('výsledek pojmenuje, co se změnilo',
+    r.pole.some(x => x.klic === 'montazZakladHod' && x.nova === 32), JSON.stringify(r.pole));
+  test('druhé volání už nemá co dělat', zadaniZCeniku(d).zmen === 0);
+
+  /* Ruční přepis obchodníka ceník nepřebije. */
+  zadaniRucniZnac(d, 'montazZakladHod');
+  d.ock.zadani.montazZakladHod = 99;
+  d.cenik.vychMontazZakladHod = 40;
+  zadaniZCeniku(d);
+  test('co obchodník přepsal sám, zůstává jeho', d.ock.zadani.montazZakladHod === 99);
+
+  /* Prázdná (nulová) položka neřídí nic. */
+  d.cenik.vychProjekceZakladHod = 0;
+  const pred = d.ock.zadani.projekceZakladHod;
+  zadaniZCeniku(d);
+  test('prázdná ceníková položka nechává zadání být', d.ock.zadani.projekceZakladHod === pred);
+
+  /* Bez ATYPu se atypová pole nesrovnávají — jinak by standardní šachta tiše
+   * dostala rezervu 10 %. */
+  const zak2 = zajistiZamek(novaZakazka());
+  const d2 = zak2.varianty[0].data;
+  d2.ock.zadani.atyp = false;
+  d2.ock.zadani.rezervaZakladPct = 0;
+  d2.cenik.atypRezervaZakladPct = 0.10;
+  zadaniZCeniku(d2);
+  test('bez zaškrtnutého ATYP se rezerva z ceníku nebere', d2.ock.zadani.rezervaZakladPct === 0);
+
+  test('značka se zapíše jen u sledovaných polí',
+    zadaniRucniZnac(d2, 'sirka') === false && zadaniRucniZnac(d2, 'rezervaZakladPct') === true);
+  zadaniRucniZrus(d2, ['rezervaZakladPct']);
+  test('a jde zase zrušit (přepnutí ATYP)', zadaniRucniJe(d2, 'rezervaZakladPct') === false);
+}
+
 /* ---------- přepočet ---------- */
 const { v: vp } = staraVarianta();
 const zadaniPred = JSON.stringify(vp.data.ock.zadani);
 const vysl = cenikPrepocti(vp, DNES(), { dnes: '2026-07-29', build: 'v29.7.21' });
-test('přepočet přepsal všech pět položek', vysl.zmen === 5, vysl.zmen);
-test('po přepočtu je ceník shodný s dnešním',
-  cenikRozdily(vp.data, DNES()).length === 0);
+/* Od 31. 8. 2026 se přepisují jen CENY. Pátá odchylka ve fixtuře je globální
+ * přirážka projekce (PC.marze) — zakázková hodnota, které se automatika
+ * nedotkne (viz CENIK_ZAKAZKOVE). */
+test('přepočet přepsal čtyři ceny, přirážku nechal být', vysl.zmen === 4, vysl.zmen);
+test('po přepočtu se liší už jen zakázková hodnota',
+  cenikRozdily(vp.data, DNES()).every(r => cenikPatriZakazce(r.cesta)),
+  cenikRozdily(vp.data, DNES()).map(r => r.cesta).join(', '));
+test('vlastní přirážka projekce přepočet přežije',
+  vp.data.proj.cenik.marze !== DEFAULT_CENIK_PROJ.marze, vp.data.proj.cenik.marze);
+
+/* ---------- zakázkové hodnoty se nepřepisují (nález 31. 8. 2026) ----------
+ * Hlášeno J. V.: „globální přirážka, kterou mám pro Německo na 40 %, se
+ * vrátila zpět na 30 %." Stalo se to při otevření zakázky, které srovnává
+ * rozpracované varianty s platným ceníkem. */
+{
+  const { v: vz } = staraVarianta();
+  vz.data.cenik.marze = 0.40;                       // přirážka pro Německo
+  vz.data.cenik.dph = 0.21;                         // jiný režim DPH
+  cenikRucniZnac(vz.data, 'C.marze'); cenikRucniZnac(vz.data, 'C.dph');
+  const r = cenikPrepocti(vz, DNES(), { dnes: '2026-08-31' });
+  test('přirážka 40 % pro Německo přepočet přežije', vz.data.cenik.marze === 0.40, vz.data.cenik.marze);
+  test('ručně zvolená sazba DPH přepočet přežije', vz.data.cenik.dph === 0.21, vz.data.cenik.dph);
+  test('ceny se přesto srovnaly', r.zmen >= 3, r.zmen);
+  test('varianta si i tak nese číslo verze ceníku (přirážka ho nebere)',
+    !!vz.data.cenikRazitko && vz.data.cenikRazitko.otisk === cenikOtisk(vz.data));
+
+  /* A hlavně: pouhá odlišná přirážka nesmí přepočet vůbec spustit. */
+  const zak2 = zajistiZamek(novaZakazka());
+  zak2.varianty[0].data.cenik.marze = 0.40;
+  cenikRucniZnac(zak2.varianty[0].data, 'C.marze');
+  const rr = cenikPrepoctiRozpracovane(zak2, DNES(), { dnes: '2026-08-31' });
+  test('zakázka, která se liší jen přirážkou, se nepřepočítává',
+    rr.prepocteno === 0, JSON.stringify(rr.varianty));
+  test('a přirážka v ní zůstává', zak2.varianty[0].data.cenik.marze === 0.40);
+
+  /* Na výslovný pokyn (výběr položek) se přepsat dá — to je vědomý krok. */
+  const { v: vy } = staraVarianta();
+  vy.data.cenik.marze = 0.40;
+  cenikRucniZnac(vy.data, 'C.marze');
+  cenikPrepocti(vy, DNES(), { cesty: ['C.marze'], dnes: '2026-08-31' });
+  test('na výslovný pokyn se přirážka přepsat dá', vy.data.cenik.marze === DEFAULT_CENIK.marze);
+}
+
+/* ---------- a naopak: čeho se nikdo nedotkl, to se z ceníku natáhne ----------
+ * Hlášeno J. V. 31. 8. 2026: „globální přirážka se maže a z ceníku se
+ * nenačítá, na rozdíl od nákladů, které se načtou." Prázdná zakázka, kterou
+ * aplikace otevře při startu, dostávala z ceníku náklady, ale přirážku ne —
+ * ta byla plošně vyňatá z přepočtu. Vyňatá je nově jen tehdy, když ji
+ * obchodník sám nastavil. */
+{
+  const { v: vn } = staraVarianta();
+  vn.data.cenik.marze = 0.40;          // hodnota z dřívějška, NIKDO ji nenastavil
+  delete vn.data.cenikRucni;
+  const r = cenikPrepocti(vn, DNES(), { dnes: '2026-08-31' });
+  test('nedotčená přirážka se srovná s ceníkem',
+    vn.data.cenik.marze === DEFAULT_CENIK.marze, vn.data.cenik.marze);
+  test('a jde to spolu s cenami, jedním přepočtem', r.zmen >= 4, r.zmen);
+
+  /* Prázdná zakázka po startu: ceník dorazí až s přihlášením. */
+  const zak3 = zajistiZamek(novaZakazka());
+  const d3 = zak3.varianty[0].data;
+  test('nová zakázka nemá nastaveno nic ručně',
+    !!d3.cenikRucni && Object.keys(d3.cenikRucni).length === 0, JSON.stringify(d3.cenikRucni));
+  d3.cenik.marze = 0.30; d3.cenik.montazHodKc = 111;   // stav ze sestavení
+  const rr3 = cenikPrepoctiRozpracovane(zak3, DNES(), { dnes: '2026-08-31', verze: 4 });
+  test('do prázdné zakázky se přirážka z ceníku natáhne',
+    d3.cenik.marze === DEFAULT_CENIK.marze, d3.cenik.marze);
+  test('a náklady s ní (jsou to dvě strany téhož přepočtu)',
+    d3.cenik.montazHodKc === DEFAULT_CENIK.montazHodKc && rr3.prepocteno === 1);
+
+  /* Migrace: u starší zakázky nevíme nic, takže se chrání všechno. */
+  const stara2 = { varianty: [{ id: 'x', data: { cenik: { marze: 0.40 } } }], aktivni: 'x' };
+  const mig = cenikRucniVsechny();
+  test('migrace označí všechny zakázkové hodnoty jako ruční',
+    mig['C.marze'] && mig['C.dph'] && mig['PC.marze'] && mig['PC.dph']);
+  stara2.varianty[0].data.cenikRucni = mig;
+  test('a chráněná hodnota se pak nepřepisuje',
+    cenikChranena(stara2.varianty[0].data, 'C.marze') === true);
+  test('nechráněná (nedotčená) hodnota chráněná není',
+    cenikChranena({ cenikRucni: {} }, 'C.marze') === false);
+  test('cena nikdy chráněná není, ani se značkou',
+    cenikChranena({ cenikRucni: { 'C.montazHodKc': true } }, 'C.montazHodKc') === false);
+}
 test('přepočet se nedotkl zadání – to je to, co uživatel spočítal',
   JSON.stringify(vp.data.ock.zadani) === zadaniPred);
 test('přepočet zapsal razítko s datem i sestavením',

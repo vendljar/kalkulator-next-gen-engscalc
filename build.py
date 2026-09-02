@@ -4,7 +4,7 @@
 Skládá jednosouborovou aplikaci (bez CDN, bez serveru):
   CORE  = engine.js + engine_proj.js + techspec.js + zakazka.js
   JEKLY = jekly.json
-  UI    = ui/common.js + ui/kalk_ock.js + ui/techspec_ui.js
+  UI    = ui/common.js + ui/dialog.js + ui/kalk_ock.js + ui/techspec_ui.js
           + ui/kalk_proj.js + ui/cenik_ui.js + ui/zakazka_ui.js
           + ui/nastaveni_ui.js + ui/historie.js + start
 
@@ -27,12 +27,12 @@ CORE = ['build_info.js',
         'preklad.js', 'format.js', 'engine.js', 'engine_proj.js', 'techspec.js', 'zakazka.js', 'uloziste.js', 'zamek.js', 'seznam.js', 'archiv.js',
         'docxgen.js', 'xlsx.js',
         'dokumenty.js', 'sleva.js', 'schvalovani.js', 'zaokrouhleni.js', 'marze.js', 'kontroly.js', 'ares.js', 'poznamky.js', 'protokol.js', 'firma.js', 'zpracovatel.js', 'nabidka.js', 'nabidka_proj.js', 'sod.js', 'kryci.js', 'kryci_proj.js',
-        'cenik.js', 'cenik_stari.js', 'katalog.js', 'prepisy.js', 'slovnik.js',
-        'konfigurace.js', 'sablony_online.js', 'analytika.js', 'nastaveni_db.js', 'program.js', 'ukazkove.js', 'prava.js', 'zobrazeni.js']
-UI = ['ui/common.js', 'ui/zakulozeni_ui.js', 'ui/kalk_ock.js', 'ui/detail_ui.js', 'ui/techspec_ui.js', 'ui/specdata_ui.js',
+        'cenik.js', 'cenik_stari.js', 'cenik_rady.js', 'katalog.js', 'prepisy.js', 'slovnik.js',
+        'konfigurace.js', 'sablony_online.js', 'analytika.js', 'nastaveni_db.js', 'program.js', 'ukazkove.js', 'prava.js', 'zobrazeni.js', 'zakaznici.js', 'standard_ock.js']
+UI = ['ui/common.js', 'ui/dialog.js', 'ui/zakulozeni_ui.js', 'ui/kalk_ock.js', 'ui/detail_ui.js', 'ui/techspec_ui.js', 'ui/specdata_ui.js',
       'ui/kryci_ui.js', 'ui/kryci_proj_ui.js', 'ui/kalk_proj.js', 'ui/detail_proj_ui.js', 'ui/nabidka_proj_ui.js', 'ui/sod_ui.js',
       'ui/cenik_stari_ui.js', 'ui/cenik_ui.js',
-      'ui/zaokrouhleni_ui.js', 'ui/marze_ui.js', 'ui/zakazka_ui.js', 'ui/schvalovani_ui.js', 'ui/ares_ui.js', 'ui/zamek_ui.js', 'ui/build_info_ui.js', 'ui/ukazkove_ui.js', 'ui/kontroly_ui.js', 'ui/poznamky_ui.js', 'ui/protokol_ui.js', 'ui/seznam_ui.js', 'ui/archiv_ui.js', 'ui/program_ui.js', 'ui/nastaveni_db_ui.js', 'ui/uloziste_ui.js', 'ui/online_ui.js', 'ui/analytika_ui.js', 'ui/nastaveni_ui.js', 'ui/historie.js']
+      'ui/zaokrouhleni_ui.js', 'ui/marze_ui.js', 'ui/zakazka_ui.js', 'ui/schvalovani_ui.js', 'ui/ares_ui.js', 'ui/zamek_ui.js', 'ui/build_info_ui.js', 'ui/ukazkove_ui.js', 'ui/kontroly_ui.js', 'ui/poznamky_ui.js', 'ui/protokol_ui.js', 'ui/seznam_ui.js', 'ui/archiv_ui.js', 'ui/zakaznici_ui.js', 'ui/program_ui.js', 'ui/nastaveni_db_ui.js', 'ui/uloziste_ui.js', 'ui/online_ui.js', 'ui/analytika_ui.js', 'ui/nastaveni_ui.js', 'ui/historie.js']
 
 # ---- verze: DEN.MĚSÍC.pořadí buildu v daném dni ----
 #
@@ -45,8 +45,27 @@ UI = ['ui/common.js', 'ui/zakulozeni_ui.js', 'ui/kalk_ock.js', 'ui/detail_ui.js'
 # se commituje. Ruční `--ver` platí všude (poslední záchrana).
 verfile = root / 'verze.txt'
 na_serveru = bool(os.environ.get('NETLIFY') or os.environ.get('KNG_NEZVYSOVAT_VERZI'))
+#
+# POJISTKA PROTI ŠPATNÉMU DNI (20. 8. 2026). Ruční `--ver 21.8.1` zadané
+# 20. srpna vyrobilo dávku, která se tvářila, že je z 21. srpna — a protože
+# se číslo verze objevuje v názvu souboru, v zámcích variant i v hlídce
+# verze, nešlo z ničeho poznat, že je posunuté. Ručně zadaná verze proto
+# musí sedět na DNEŠNÍ den a měsíc; kdo opravdu potřebuje jinou (přehrání
+# staré dávky), obejde pojistku proměnnou KNG_VERZE_MIMO_DEN=1.
+def _hlidka_dne(v):
+    d = datetime.date.today()
+    try:
+        den, mesic = int(v.split('.')[0]), int(v.split('.')[1])
+    except (ValueError, IndexError):
+        sys.exit(f'CHYBA: verze „{v}" nemá tvar DEN.MĚSÍC.pořadí.')
+    if (den, mesic) != (d.day, d.month) and not os.environ.get('KNG_VERZE_MIMO_DEN'):
+        sys.exit(f'CHYBA: verze „{v}" neodpovídá dnešku ({d.day}.{d.month}). '
+                 f'Konvence je vDEN.MĚSÍC.pořadí — dnes tedy v{d.day}.{d.month}.N. '
+                 f'Když to má být schválně, spusťte s KNG_VERZE_MIMO_DEN=1.')
+
 if '--ver' in sys.argv:
     ver = sys.argv[sys.argv.index('--ver') + 1]
+    _hlidka_dne(ver)
     verfile.write_text(ver + '\n')
 elif na_serveru and verfile.exists() and verfile.read_text().strip():
     ver = verfile.read_text().strip()          # verze z gitu, soubor se nepřepisuje

@@ -74,10 +74,10 @@ test('prefill Nabídku vypracoval je bez přihlášení prázdný (od 19. 8. nes
 // KL-1: adresa stavby vs. sídlo objednatele jsou dvě různá pole
 test('KL-1 adresa stavby se bere z hlavičky', najdi(bo, 'Adresa stavby') === 'Vzorová 163/17, Praha 10', najdi(bo, 'Adresa stavby'));
 test('KL-1 sídlo objednatele zůstane prázdné, dokud se nevyplní',
-  najdi(bo, 'Adresa (sídlo) objednatele') === '', JSON.stringify(najdi(bo, 'Adresa (sídlo) objednatele')));
+  najdi(bo, 'Adresa (sídlo) zákazníka') === '', JSON.stringify(najdi(bo, 'Adresa (sídlo) zákazníka')));
 zak.adresaObjednatele = 'Radlická 3185/1c, 150 00 Praha 5';
 test('KL-1 sídlo objednatele se propíše, ne adresa stavby',
-  najdi(kr.kryciData(zak, v, JEKLY, 'bo'), 'Adresa (sídlo) objednatele') === 'Radlická 3185/1c, 150 00 Praha 5');
+  najdi(kr.kryciData(zak, v, JEKLY, 'bo'), 'Adresa (sídlo) zákazníka') === 'Radlická 3185/1c, 150 00 Praha 5');
 
 /* KL-2: hodnota = JEN ocelová konstrukce po schválené slevě. Tenhle krycí list
  * je podkladem pro objednávku / SoD na dodávku konstrukce; projekce má vlastní
@@ -137,11 +137,11 @@ const poleScoring = kr.KRYCI_SEKCE.flatMap(s => s.pole).find(p => p.id === 'scor
 test('KL-6 scoring je typu link', poleScoring && poleScoring.typ === 'link', poleScoring && poleScoring.typ);
 
 // KL-7: patička s podpisem
-test('KL-7 BO obsahuje sekci Podpis', sekBo.includes('Podpis'), sekBo.join('|'));
-test('KL-7 Techdata obsahuje sekci Podpis', sekTd.includes('Podpis'), sekTd.join('|'));
+test('KL-7 BO obsahuje sekci Ostatní', sekBo.includes('Ostatní'), sekBo.join('|'));
+test('KL-7 Techdata obsahuje sekci Ostatní', sekTd.includes('Ostatní'), sekTd.join('|'));
 test('KL-7 podpis obchodníka bez přihlášení prázdný (nese ho uživatel, 19. 8.)',
-  !najdi(bo, 'Podpis obchodníka'), najdi(bo, 'Podpis obchodníka'));
-test('KL-7 řádek Informován', labely.includes('Informován'), labely.join('|'));
+  !najdi(bo, 'Obchodník'), najdi(bo, 'Obchodník'));
+test('KL-7 řádek Informováno Backoffice', labely.includes('Informováno Backoffice'), labely.join('|'));
 
 // 4) ruční přepis má přednost
 v.data.kryci = { hodnoty: { obchodnik: 'Jan Novák' } };

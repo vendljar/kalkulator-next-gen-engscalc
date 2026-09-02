@@ -31,13 +31,39 @@ function renderInputs() {
        * vrací na nulu / ceník — atypové přirážky bez atypu nemají co dělat. */
       `<div class="row"><label>ATYP (nestandardní zakázka)</label>
         <input type="checkbox" ${Z.atyp ? 'checked' : ''} onchange="atypPrepni(this.checked)"><span class="u"></span></div>` +
-      // ATYP není jen štítek – od #22 přidává přirážku do Režie. Sazbu ukazujeme
-      // rovnou tady, aby obchodník viděl dopad zaškrtnutí ještě před přepočtem.
-      `<div class="note" style="margin-top:2px">Přidá do sekce <b>Režie</b> přirážku
-        <b>${typeof atypSazbaProc === 'function' ? atypSazbaProc() : 30} %</b> z nákladu
-        <b>celé sekce Režie</b> za projekční a koordinační práce. Sazba patří k této
-        zakázce (je v jejím ceníku) a mění ji administrátor v <b>Nastavení → Obecné</b>;
-        starší nabídky se změnou nepřepočítají.</div>`, false, 'ock-zadani') +
+      /* Můstek (#163, 21. 8. 2026). Do výpočtu nevstupuje — je to vstup pro
+       * kontrolu standardu a pro technickou specifikaci. Rozměry se ptají,
+       * jen když můstek je; prázdné pole znamená „nevyplněno", ne nulu. */
+      `<div class="row"><label>Můstek mezi budovou a OCK</label>
+        <input type="checkbox" ${Z.mustek ? 'checked' : ''} onchange="set('Z.mustek', this.checked)"><span class="u"></span></div>` +
+      (Z.mustek
+        ? `<div class="row"><label>— hloubka můstku</label>
+             <input type="number" step="10" min="0" style="width:110px" value="${esc(Z.mustekHloubkaMm == null ? '' : Z.mustekHloubkaMm)}"
+               placeholder="mm" title="vzdálenost mezi budovou a OCK; standard max 1 000 mm"
+               onchange="set('Z.mustekHloubkaMm', this.value)"><span class="u">mm</span></div>
+           <div class="row"><label>— šířka můstku</label>
+             <input type="number" step="10" min="0" style="width:110px" value="${esc(Z.mustekSirkaMm == null ? '' : Z.mustekSirkaMm)}"
+               placeholder="mm" title="standard: max na šířku OCK"
+               onchange="set('Z.mustekSirkaMm', this.value)"><span class="u">mm</span></div>`
+        : '') +
+      /* Sazba ATYP se 20. 8. 2026 přestěhovala z Nastavení → Obecné SEM
+       * (dotaz J. V. „proč to máme v obecném nastavení?"). Je to parametr
+       * TÉTO zakázky, ne nastavení aplikace: bydlí v ceníku varianty
+       * a u starších nabídek se nepřepočítává. Patří proto k zaškrtávátku,
+       * které ji zapíná — ne o dvě obrazovky dál. Měnit ji smí jen ten,
+       * kdo vidí nákladové sloupce (právo `sloupce.naklad`); ostatní ji
+       * vidí jen jako číslo, aby věděli, co zaškrtnutí udělá. */
+      `<div class="row"><label>Přirážka za ATYP <span class="note">(projekční a koordinační práce)</span>${klicChip('C.atypPrirazka')}</label>
+        ${smiZobrazit('sloupce.naklad')
+          ? `<input type="number" step="1" min="0" max="300" style="width:90px"
+               value="${typeof atypSazbaProc === 'function' ? atypSazbaProc() : 30}"
+               onchange="nastSetAtyp(this.value)"> %`
+          : `<b>${typeof atypSazbaProc === 'function' ? atypSazbaProc() : 30} %</b>`}<span class="u"></span></div>` +
+      `<div class="note" style="margin-top:2px">Zaškrtnutí ATYP přidá do sekce <b>Režie</b> samostatný
+        řádek „PŘIRÁŽKA ZA ATYP – PROJEKČNÍ A KOORDINAČNÍ PRÁCE" ve výši tohoto procenta z nákladu
+        <b>celé sekce Režie</b> (včetně 3D zaměření a výstupu pro zákazníka). Sazba je uložená
+        v ceníku <b>této zakázky</b>, takže se mění u jednotlivé nabídky a ukládá se s ní —
+        starší nabídky se změnou nepřepočítají. Nová zakázka začíná na 30 %.</div>`, false, 'ock-zadani') +
     card('Dimenze profilů',
       profRow('sloupek', 'Sloupek') + profRow('precnikBok', 'Příčníky bok/zadek') + profRow('sloupekPortal', 'Sloupek portálu') +
       profRow('precnikPortal', 'Příčníky portálu') + profRow('spojka', 'Spojka sloupků') + profRow('lemovani', 'Lemování ext. šachty') +
@@ -50,36 +76,98 @@ function renderInputs() {
        * Kliknutím na nadpis se karta kdykoli rozbalí. */
       inp('Z.rezervaPlechyPct', { type: 'pct', l: 'Rezerva plechy (atyp)' }), true, 'ock-profily') +
     card('Práce a režie',
-      inp('Z.montazZakladHod', { l: 'Montáž – základ (1 os.)', step: 1, u: 'hod' }) +
-      inp('Z.montazAtypHod', { l: 'Montáž – atyp navíc', step: 1, u: 'hod' }) +
-      inp('Z.projekceZakladHod', { l: 'Projekce – základ', step: 1, u: 'hod' }) +
-      inp('Z.projekceAtypHod', { l: 'Projekce – atyp navíc', step: 1, u: 'hod' }) +
-      inp('Z.oplechOstatniKg', { l: 'Oplechování ostatní – materiál', step: 1, u: 'kg' }) +
-      inp('Z.oplechOstatniHod', { l: 'Oplechování ostatní – práce', step: 1, u: 'hod' }) +
+      inp('Z.montazZakladHod', { l: 'Montáž – základ (1 os.)', step: 1, u: 'hod', klic: 'Z.montazZakladHod ← C.vychMontazZakladHod' }) +
+      inp('Z.montazAtypHod', { l: 'Montáž – atyp navíc', step: 1, u: 'hod', klic: 'Z.montazAtypHod ← C.atypMontazPct' }) +
+      inp('Z.projekceZakladHod', { l: 'Projekce – základ', step: 1, u: 'hod', klic: 'Z.projekceZakladHod ← C.vychProjekceZakladHod' }) +
+      inp('Z.projekceAtypHod', { l: 'Projekce – atyp navíc', step: 1, u: 'hod', klic: 'Z.projekceAtypHod ← C.atypProjekcePct' }) +
+      inp('Z.oplechOstatniKg', { l: 'Oplechování ostatní – materiál', step: 1, u: 'kg', klic: 'Z.oplechOstatniKg ← C.vychOplechOstatniKg' }) +
+      inp('Z.oplechOstatniHod', { l: 'Oplechování ostatní – práce', step: 1, u: 'hod', klic: 'Z.oplechOstatniHod ← C.vychOplechOstatniHod' }) +
       /* Zámečník atyp je od 17. 8. večer JEDNA částka: pole „množství" zmizelo,
        * v kalkulaci je řádek s množstvím vždy 1 a hodnotou z tohoto pole.
        * Prázdné pole = řádek není (příp. ceníková sazba u starých zakázek
        * s uloženými kusy); zaškrtnutí ATYP předvyplní 50 000 Kč. */
-      inp('Z.zamecnikAtypKc', { l: 'Zámečník atyp (prázdné = žádný)', step: 1000, u: 'Kč' }) +
+      inp('Z.zamecnikAtypKc', { l: 'Zámečník atyp (prázdné = žádný)', step: 1000, u: 'Kč', klic: 'Z.zamecnikAtypKc ← C.atypZamecnikKc (sazba: C.zamecnikAtypKc)' }) +
       inp('Z.engineeringKs', { type: 'anone', l: 'Engineering' }) +
       inp('Z.vystupZamereni', { type: 'anone', l: 'Výstup ze zaměření pro zákazníka' }) +
       /* REZERVY v procentech (17. 8. večer): 30 = +30 %. Základ se počítá
        * z celého základu kalkulace, příplatky z příplatků — jako dosud,
        * mění se jen zadávání (v datech zůstává desetinný podíl). */
-      inp('Z.rezervaZakladPct', { type: 'pct', l: 'REZERVA základ' }) +
-      inp('Z.rezervaPriplatkyPct', { type: 'pct', l: 'REZERVA příplatky' }), false, 'ock-prace');
+      inp('Z.rezervaZakladPct', { type: 'pct', l: 'REZERVA základ', klic: 'Z.rezervaZakladPct ← C.atypRezervaZakladPct' }) +
+      inp('Z.rezervaPriplatkyPct', { type: 'pct', l: 'REZERVA příplatky', klic: 'Z.rezervaPriplatkyPct ← C.atypRezervaPriplatkyPct' }), false, 'ock-prace');
+}
+
+/* ---- ceník → zadání pro jednu variantu (1. 9. 2026) ----
+ *
+ * Zadání J. V.: „hodnoty z ceníku se do atypů a režií nepropisují. Ceník má
+ * být zdrojem pravdy." Tohle je ta ruka, která to dělá: srovná pole zadání
+ * s ceníkem varianty. Jednoduchá pole umí jádro (zadaniZCeniku v zakazka.js),
+ * tady se k nim přidávají HODINY NAVÍC — ty se nepřebírají, ale počítají
+ * z podílu v ceníku, a k tomu je potřeba výpočet (hodiny navíc dle konstrukce),
+ * který v jádru zakázky není.
+ *
+ * Nesahá na to, co obchodník přepsal sám (`data.zadaniRucni`), a volá se jen
+ * nad rozpracovanou variantou — zamčené a kvitované vynechává volající. */
+function cenikDoZadani(v) {
+  const d = v && v.data;
+  if (!d || typeof zadaniZCeniku !== 'function') return 0;
+  let zmen = zadaniZCeniku(d).zmen;
+  const z = d.ock && d.ock.zadani, c = d.cenik;
+  if (!z || !c || !z.atyp || typeof cenikVychozi !== 'function') return zmen;
+  const pm = cenikVychozi(c, 'atypMontazPct', null);
+  const pp = cenikVychozi(c, 'atypProjekcePct', null);
+  if (pm != null && !zadaniRucniJe(d, 'montazAtypHod')) {
+    let navic = 0;
+    try { navic = vypocet(z, c, JEKLY, (d.ock || {}).fixes).montaz.hodinyNavicCelkem || 0; } catch (e) { navic = 0; }
+    const nova = Math.round(pm * ((+z.montazZakladHod || 0) + navic));
+    if (z.montazAtypHod !== nova) { z.montazAtypHod = nova; zmen++; }
+  }
+  if (pp != null && !zadaniRucniJe(d, 'projekceAtypHod')) {
+    const nova = Math.round(pp * (+z.projekceZakladHod || 0));
+    if (z.projekceAtypHod !== nova) { z.projekceAtypHod = nova; zmen++; }
+  }
+  return zmen;
 }
 
 /* Zaškrtnutí ATYP: předvyplnění rezerv a zámečníka (17. 8. 2026 večer).
  * Stojí MIMO renderInputs — volá se z onchange, musí být globální. */
-function atypPrepni(zap) {
+function atypPrepni(zap, opts) {
   if (typeof zamekStop === 'function' && zamekStop()) return;
+  /* Ruční odškrtnutí u nestandardní šachty je rozhodnutí člověka a automat
+   * (standardAtypAutomat v common.js) ho musí respektovat — jinak by se
+   * zaškrtávátko po každé změně zadání vracelo zpátky. Zapamatuje se
+   * v zadání, takže putuje se zakázkou. Zapnutí značku zase maže. */
+  if (opts && opts.automat) {
+    /* Značka „tohle zaškrtl automat" — jen svoje vlastní zaškrtnutí smí
+     * automat později zase vypnout, až potřeba atypu pomine (21. 8. 2026
+     * večer, zadání J. V.). Ručního ATYPu se nikdy nedotkne: důvodů k němu
+     * je víc než rozměry a ty aplikace nezná. */
+    if (zap) Z.atypAutomat = true; else delete Z.atypAutomat;
+  } else {
+    delete Z.atypAutomat;
+    if (zap) delete Z.atypRucneVypnut;
+    else Z.atypRucneVypnut = true;
+  }
   Z.atyp = !!zap;
+  /* Přepnutí ATYP je vědomé rozhodnutí: předvyplní se znovu z ceníku, takže
+   * se ruční značky u atypových polí ruší (1. 9. 2026). Co si obchodník
+   * přepíše POTOM, mu zase zůstane. */
+  if (typeof zadaniRucniZrus === 'function')
+    zadaniRucniZrus(aktivniVarianta(ZAK).data,
+      ['rezervaZakladPct', 'rezervaPriplatkyPct', 'zamecnikAtypKc', 'montazAtypHod', 'projekceAtypHod']);
+  /* Čím se ATYP předvyplní, bere ceník (31. 8. 2026, zadání J. V.: „do ceníku
+   * OCK v sekci atyp přidej ještě možnost editovat atypické položky").
+   * Prázdná nebo nulová ceníková položka znamená nenastaveno a platí hodnota
+   * ze sestavení — proto ta druhá čísla ve volání. Předvyplnění je jen
+   * nabídka: obchodník pole pak doladí a jeho čísla nikdo nepřepíše. */
+  const vych = (klic, zaklad) => (typeof cenikVychozi === 'function')
+    ? cenikVychozi(C, klic, zaklad) : zaklad;
+  const rezervaZakl = vych('atypRezervaZakladPct', 0.30);
+  const rezervaPripl = vych('atypRezervaPriplatkyPct', 0.30);
   Z.rezervaProfilyPct = zap ? 0.30 : 0;
   Z.rezervaPlechyPct = zap ? 0.30 : 0;
-  Z.rezervaZakladPct = zap ? 0.30 : 0;
-  Z.rezervaPriplatkyPct = zap ? 0.30 : 0;
-  Z.zamecnikAtypKc = zap ? 50000 : null;
+  Z.rezervaZakladPct = zap ? rezervaZakl : 0;
+  Z.rezervaPriplatkyPct = zap ? rezervaPripl : 0;
+  Z.zamecnikAtypKc = zap ? vych('atypZamecnikKc', 50000) : null;
   /* Hodiny navíc při ATYP (zadání 19. 8. 2026): projekce +30 % ze základních
    * hodin; montáž +30 % z CELKOVÝCH hodin potřebných pro montáž (základ +
    * hodiny navíc vypočtené z konstrukce — světlíky, přechody atd.).
@@ -87,8 +175,8 @@ function atypPrepni(zap) {
   if (zap) {
     let navic = 0;
     try { navic = vypocet(Z, C, JEKLY, OCK.fixes).montaz.hodinyNavicCelkem || 0; } catch (e) { navic = 0; }
-    Z.montazAtypHod = Math.round(0.30 * ((+Z.montazZakladHod || 0) + navic));
-    Z.projekceAtypHod = Math.round(0.30 * (+Z.projekceZakladHod || 0));
+    Z.montazAtypHod = Math.round(vych('atypMontazPct', 0.30) * ((+Z.montazZakladHod || 0) + navic));
+    Z.projekceAtypHod = Math.round(vych('atypProjekcePct', 0.30) * (+Z.projekceZakladHod || 0));
   } else {
     Z.montazAtypHod = 0;
     Z.projekceAtypHod = 0;
@@ -139,11 +227,11 @@ function vlastniPolozkyArr(sekce) {
   return Z.vlastniPolozky[sekce];
 }
 function vlastniAdd(sekce) { vlastniPolozkyArr(sekce).push({ nazev: 'Nová položka', mnozstvi: 1, cena: 0 }); aktivniVarianta(ZAK).upraveno = new Date().toISOString(); render(); }
-function vlastniDel(sekce, i) {
+async function vlastniDel(sekce, i) {
   const p = vlastniPolozkyArr(sekce)[i];
   // katalogovou (trvalou) položku si zapamatuj jako odebranou, ať se v této zakázce nevrátí
   if (p && p.kid) {
-    if (!confirm('Položka „' + p.nazev + '" je trvalá (z ceníku).\n\nSmazat ji jen v této zakázce?\nV ceníku a v nových nabídkách zůstane.')) return;
+    if (!await potvrd('Položka „' + p.nazev + '" je trvalá (z ceníku).\n\nSmazat ji jen v této zakázce?\nV ceníku a v nových nabídkách zůstane.')) return;
     katalogZapamatujOdebrani(Z, p);
   }
   vlastniPolozkyArr(sekce).splice(i, 1);
@@ -177,12 +265,25 @@ function volitelneToggle(key, v) {
 function bunkaNazev(r, sekceKey) {
   const orig = keyAttr(r.origNazev);
   const del = r.vlastni ? ` <button class="mini noprint" title="smazat položku" onclick="vlastniDel('${sekceKey}', ${r.idx})">✕</button>` : '';
-  const pin = (r.vlastni && !r.kid && jeAdmin())
-    ? ` <button class="mini noprint" title="uložit natrvalo do ceníku – bude ve všech nových nabídkách" onclick="vlastniDoCeniku('${sekceKey}', ${r.idx})">📌</button>` : '';
+  /* Špendlík „uložit natrvalo do ceníku" zmizel 1. 9. 2026 se stejným
+   * odůvodněním jako tlačítko „+ přidat položku trvale": trvalé položky se
+   * zakládají v ceníku, ne v kalkulaci. Funkce vlastniDoCeniku() zůstává —
+   * volá ji katalog při propisu — jen z kalkulace na ni nevede tlačítko. */
+  const pin = '';
   const reset = (!r.vlastni && r.nazevPrepsan) ? ` <button class="mini noprint" title="vrátit původní název (${esc(r.origNazev)})" onclick="nazevReset('${orig}')">↺</button>` : '';
   const onch = r.vlastni ? `vlastniSet('${sekceKey}', ${r.idx}, 'nazev', this.value)` : `nazevSet('${orig}', this.value)`;
   const pozn = r.pozn ? ` <span class="note">(${esc(r.pozn)})</span>` : '';
-  return `<input type="text" class="nazev-ed" value="${esc(r.nazev)}" onchange="${onch}" title="název položky lze přepsat">${reset}${pin}${del}${pozn}`;
+  /* Klíč ceníkové položky za tímhle řádkem (1. 9. 2026) — vidí ho jen
+   * administrátor. Řádek BEZ klíče je řádek, který se v ceníku neopírá
+   * o nic: buď je vlastní (přidaný v zakázce), nebo se cena počítá jinak. */
+  /* Souhrnný řádek (spojovací materiál, lakování) nemá jednu ceníkovou cenu,
+   * ale celou skupinu — `cenaSkupina` nese `C.spojovaci.*`, ať je i u nich
+   * vidět, kam v ceníku sáhnout (1. 9. 2026). */
+  const klic = r.vlastni ? '' : klicChip(r.cenaPath || r.cenaSkupina,
+    r.cenaSkupina && !r.cenaPath
+      ? 'řádek je součet celé skupiny ceníku — jednu cenu nemá'
+      : undefined);
+  return `<input type="text" class="nazev-ed" value="${esc(r.nazev)}" onchange="${onch}" title="název položky lze přepsat">${reset}${pin}${del}${klic}${pozn}`;
 }
 function bunkaMnozstvi(r) {
   if (r.vlastni)
@@ -213,11 +314,18 @@ function viditelnostSet(key, viditelne) {
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
   render();
 }
-function volitelneVychoziSet(key, v) {
-  if (!Z.volitelneVychozi) Z.volitelneVychozi = {};
-  Z.volitelneVychozi[key] = !!v;
-  aktivniVarianta(ZAK).upraveno = new Date().toISOString();
-  render();
+/* Výchozí zaškrtnutí volitelné položky (sloupec Výchozí).
+ *
+ * Do 20. 8. 2026 se zapisovalo do `Z.volitelneVychozi` — do zadání OTEVŘENÉ
+ * zakázky, kde ho ale nikdo nečetl: sloupec se dal zaškrtat a nestalo se nic
+ * (hlášeno J. V. 20. 8.). Hodnota teď žije v matici zobrazení (klíč `vychozi`)
+ * a platí pro každou NOVOU zakázku — viz zobrazeniVychoziAplikuj v zobrazeni.js.
+ * Pole `volitelneVychozi` v zadání zůstává kvůli starším uloženým zakázkám,
+ * nic se z něj ale nečte. */
+function volitelneVychoziZaklad(key) {
+  const D = (typeof DEFAULT_ZADANI !== 'undefined') ? DEFAULT_ZADANI : {};
+  if (key === 'prechodove') return !!D.prechodovePlechy;
+  return !!(D.volitelne || {})[key];
 }
 /* seřazení řádků sekce dle uloženého pořadí (Z.poradi[sekce]); neuvedené na konec */
 function serazSekci(rows, sekceKey) {
@@ -270,9 +378,25 @@ function gripHtml(r, sekceKey) {
 function adminKoncBunky(r, sekceKey) {
   const key = radekKey(r), ka = keyAttr(key);
   const vis = `<td class="admincol"><input type="checkbox" ${jeSkryta(key) ? '' : 'checked'} onchange="viditelnostSet('${ka}', this.checked)" title="viditelné pro běžného uživatele"></td>`;
-  const vych = `<td class="admincol">${sekceKey === 'volitelne'
-    ? `<input type="checkbox" ${(Z.volitelneVychozi || {})[key] ? 'checked' : ''} onchange="volitelneVychoziSet('${ka}', this.checked)" title="výchozí zaškrtnutí volitelné položky">` : ''}</td>`;
-  return vis + vych;
+  /* Sloupec Výchozí. Od 21. 8. 2026 večer ho mají VŠECHNY položky kalkulace
+   * (zadání J. V.), ne jen volitelné — u sekcí Hrubá OCK, Opláštění a Režie
+   * říká, jestli se položka v NOVÉ zakázce vůbec počítá.
+   *
+   * Dvě různá úložiště pro jednu otázku, protože jde o dvě různé věci:
+   *   volitelná položka → `ock.<klíč>`      = je rovnou v základní ceně,
+   *   běžná položka     → `ock.pocitat:<název>` = počítá se vůbec.
+   * Vlastní řádek zakázky sloupec nemá: v nové zakázce vůbec nevznikne,
+   * takže není co přednastavovat. */
+  let vych = '';
+  if (sekceKey === 'volitelne' && !r.vlastni) {
+    vych = vychoziPolozkaChk('ock.' + key, volitelneVychoziZaklad(key),
+      'zaškrtnuto = položka je v NOVÉ zakázce rovnou v základní ceně (platí pro všechny)');
+  } else if (!r.vlastni) {
+    vych = vychoziPolozkaChk(ZOBRAZENI_POCITAT + String(r.origNazev || r.nazev), true,
+      'zaškrtnuto = položka se v NOVÉ zakázce počítá (platí pro všechny); '
+      + 'odškrtnutím ji z každé nové kalkulace vyřadíte. Otevřená zakázka se nemění.');
+  }
+  return vis + `<td class="admincol">${vych}</td>`;
 }
 function radekKalk(r, sekceKey) {
   const { admin, showCost } = kalkSloupce();
@@ -317,10 +441,18 @@ function radekPridatSekce(sekceKey) {
   const btns = [];
   if (admin || smiZobrazit('kalk.pridatPolozku'))
     btns.push(`<button class="mini" title="vlastní řádek jen této zakázky" onclick="vlastniAdd('${sekceKey}')">+ přidat položku</button>`);
-  if (admin)
-    btns.push(`<button class="mini" title="zapíše položku natrvalo do ceníku – bude ve všech nových nabídkách" onclick="vlastniAddTrvale('${sekceKey}')">+ přidat položku trvale</button>`);
-  if (admin && sekceKey === 'hrubaOck')
-    btns.push(`<button class="mini" title="práce navíc u atypické zakázky – v nabídce spadá do Hrubé OCK (#7)" onclick="vlastniAdd('atyp')">+ přidat atypickou položku (práce navíc)</button>`);
+  /* „+ přidat položku trvale" z kalkulace ZMIZELO 1. 9. 2026 (pokyn J. V.:
+   * „nově už budeme trvalé položky přidávat pouze v cenících"). Důvod je
+   * pořádek ve zdroji pravdy: trvalá položka je ceníková věc a měnit ceník
+   * uprostřed počítání nabídky svádí k tomu udělat to omylem. Přidává se
+   * v záložce Ceník nákladů tlačítkem „+ přidat trvalou položku do sekce"
+   * — sekce ceníku jsou tytéž jako sekce kalkulace. */
+  /* Tlačítko „+ přidat atypickou položku (práce navíc)" bylo z Hrubé OCK
+   * ODEBRÁNO 20. 8. 2026 na pokyn J. V. — od sjednocení přidávání (19. 8.)
+   * dělalo totéž co „+ přidat položku", jen řádek posílalo do sekce atyp.
+   * Sekce `atyp` v zadání i ve výpočtu zůstává beze změny (nese předvyplnění
+   * ATYP a starší zakázky s atypickými řádky se počítají dál) — zmizelo jen
+   * tlačítko, kterým se nové řádky zakládaly. */
   if (!btns.length) return '';
   return `<tr class="pridat noprint"><td colspan="${NC}">${btns.join(' ')}</td></tr>`;
 }
@@ -375,9 +507,17 @@ function tblVolitelne(katalog, sum) {
   const vpravoV = admin ? sekceRezimSelect('ock', 'volitelne')
     : (rezimV === 'srolovat' ? sekceRozbalBtn('ock', 'volitelne') : '');
   let rows = serazSekci(katalog, 'volitelne');
-  if (!admin) rows = rows.filter(r => r.zahrnuto && !jeSkryta(radekKey(r)));   // uživatel: jen zahrnuté a viditelné
+  /* NÁLEZ 20. 8. 2026 (J. V.): obchodník tu neměl zaškrtávátka a viděl JEN
+   * položky, které už zahrnuté byly — nemohl tedy žádnou přidat ani ubrat,
+   * a v seznamu mu chyběly i položky, které měl podle sloupce Viditelné
+   * vidět. Filtr `r.zahrnuto` byl chybný: zahrnutí je VOLBA OBCHODNÍKA
+   * (levé zaškrtávátko), kdežto co vůbec smí vidět, řídí výhradně sloupec
+   * Viditelné (jeSkryta) — ten nastavuje vedoucí nebo admin vpravo.
+   * Teď tedy: uživatel vidí všechny NESKRYTÉ položky a každou si může
+   * zaškrtnout; sloupce Viditelné a Výchozí zůstávají jen adminovi. */
+  if (!admin) rows = rows.filter(r => !jeSkryta(radekKey(r)));
   if (sbalenoV) rows = [];
-  return `<tr class="sechd" id="ock-sek-volitelne"><td colspan="${NC}"><div style="display:flex;align-items:center;gap:12px"><span style="flex:1">VOLITELNÉ POLOŽKY DO ZÁKLADNÍ CENY ${admin ? '<span class="note" style="font-weight:400">(zaškrtnuté se počítají do základní ceny)</span>' : ''}</span>${vpravoV}</div></td></tr>` +
+  return `<tr class="sechd" id="ock-sek-volitelne"><td colspan="${NC}"><div style="display:flex;align-items:center;gap:12px"><span style="flex:1">VOLITELNÉ POLOŽKY DO ZÁKLADNÍ CENY <span class="note" style="font-weight:400">(zaškrtnuté se počítají do základní ceny)</span></span>${vpravoV}</div></td></tr>` +
     rows.map(r => {
       const key = radekKey(r);
       const dz = admin ? ` ondragover="dragOver(event)" ondrop="dragDrop(event,'volitelne','${keyAttr(key)}')"` : '';
@@ -392,18 +532,26 @@ function tblVolitelne(katalog, sum) {
          * (19. 8. 2026, právo kalk.pridatPolozku) — stejné pravidlo jako
          * v ostatních sekcích (radekKalk). Trvalé (kid) upravuje jen admin. */
         const vlEdV = r.vlastni && !r.kid && smiZobrazit('kalk.pridatPolozku');
+        /* Zaškrtávátko „počítat do základní ceny" má i obchodník (20. 8. 2026).
+         * Vlastní řádek zakázky se nezaškrtává — ten se počítá vždycky,
+         * proto jen mezera, aby text řádků lícoval. */
+        const chkU = r.vlastni ? '<span class="vol-spacer"></span>'
+          : `<input type="checkbox" ${r.zahrnuto ? 'checked' : ''} onchange="volitelneToggle('${escJs(r.key)}', this.checked)" title="zahrnout do základní ceny"> `;
         c = vlEdV
-          ? `<td style="white-space:normal"><input type="text" class="nazev-ed" style="width:55%" value="${esc(r.nazev)}" onchange="vlastniSet('volitelne', ${r.idx}, 'nazev', this.value)">
+          ? `<td style="white-space:normal">${chkU}<input type="text" class="nazev-ed" style="width:55%" value="${esc(r.nazev)}" onchange="vlastniSet('volitelne', ${r.idx}, 'nazev', this.value)">
                à <input type="number" step="any" style="width:96px" value="${+(+r.cena).toFixed(2)}" title="jednotková cena této položky (jen pro tuto zakázku)"
                  onchange="vlastniSet('volitelne', ${r.idx}, 'cena', this.value)"> Kč
                <button class="mini noprint" title="odebrat vlastní položku" onclick="vlastniDel('volitelne', ${r.idx})">✕</button></td>
              <td style="white-space:nowrap"><input type="number" step="any" style="width:86px" value="${+(+r.mnozstvi).toFixed(3)}" onchange="vlastniSet('volitelne', ${r.idx}, 'mnozstvi', this.value)"></td>`
-          : `<td style="white-space:normal">${esc(r.nazev) + poznHtml(r)}</td><td style="white-space:nowrap">${num(r.mnozstvi, 3)}</td>`;
+          : `<td style="white-space:normal">${chkU}${esc(r.nazev) + poznHtml(r)}</td><td style="white-space:nowrap">${num(r.mnozstvi, 3)}</td>`;
       }
       if (showCost) c += `<td>${fmt(r.naklad)}</td><td>${fmt(r.marze)}</td>`;
       c += `<td>${fmt(r.sMarzi)}</td>`;
       if (admin) c += adminKoncBunky(r, 'volitelne');
-      return `<tr${dz}${r.zahrnuto ? '' : ' style="opacity:.5"'}>${c}</tr>`;
+      /* Ztlumení nezahrnuté položky řídí třída, ne inline opacity (20. 8.
+       * 2026): opacity rodiče se násobila i na zaškrtávátka admin sloupců
+       * a ta pak vypadala „světle modře“ — stejný nález jako u .vyrazeno. */
+      return `<tr${dz}${r.zahrnuto ? '' : ' class="nezahrnuto"'}>${c}</tr>`;
     }).join('') +
     (sbalenoV ? '' : radekPridatSekce('volitelne')) +
     sumRadek('sectot', 'VOLITELNÉ CELKEM (jen zaškrtnuté)', sum);
@@ -418,10 +566,10 @@ function priplatekNabidka(key, zahrnout) {
 }
 /* Vlastní příplatkové položky */
 function priplatekVlastniAdd() { if (!Z.priplatkyVlastni) Z.priplatkyVlastni = []; Z.priplatkyVlastni.push({ nazev: 'Nový příplatek', mnozstvi: 1, cena: 0 }); aktivniVarianta(ZAK).upraveno = new Date().toISOString(); render(); }
-function priplatekVlastniDel(i) {
+async function priplatekVlastniDel(i) {
   const p = Z.priplatkyVlastni[i];
   if (p && p.kid) {
-    if (!confirm('Příplatek „' + p.nazev + '" je trvalý (z ceníku).\n\nSmazat jen v této zakázce?\nV ceníku a v nových nabídkách zůstane.')) return;
+    if (!await potvrd('Příplatek „' + p.nazev + '" je trvalý (z ceníku).\n\nSmazat jen v této zakázce?\nV ceníku a v nových nabídkách zůstane.')) return;
     katalogZapamatujOdebrani(Z, p);
   }
   Z.priplatkyVlastni.splice(i, 1);
@@ -460,11 +608,11 @@ function priplatekVlastniSet(i, k, v) {
  * ztratila. Kartu ukazujeme jen administrátorovi a úklid je vždy jeho vědomé
  * rozhodnutí: sirotek může být dočasný (položka je jen vypnutá nastavením
  * šachty a po přepnutí se vrátí i s přepisem). */
-function sirotciUklidVse() {
+async function sirotciUklidVse() {
   let r; try { r = vypocet(Z, C, JEKLY, OCK.fixes); } catch (e) { return; }
   const s = prepisySirotci(Z, r.nazvyPolozek);
   if (!s.length) return render();
-  if (!confirm('Smazat ' + s.length + ' nepoužitý ruční přepis/y?\n\nTýká se jen přepisů, které v tomto výpočtu nemají odpovídající položku. Vrátit zpět to lze tlačítkem „Zpět“ (Ctrl+Z).')) return;
+  if (!await potvrd('Smazat ' + s.length + ' nepoužitý ruční přepis/y?\n\nTýká se jen přepisů, které v tomto výpočtu nemají odpovídající položku. Vrátit zpět to lze tlačítkem „Zpět“ (Ctrl+Z).')) return;
   prepisyUklid(Z, s);
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
   render();
@@ -515,8 +663,15 @@ function renderOutputs() {
   const naklad = r.souhrn.zakladNaklad, hrubyZisk = cenaPoSleve - naklad;
   const marze = cenaPoSleve > 0 ? hrubyZisk / cenaPoSleve : 0;
   const kv = NAST.kpiViditelne || {};
-  const vidKpi = k => col.admin || kv[k];
-  const kpiChk = k => col.admin ? `<input type="checkbox" class="kpi-chk" ${kv[k] ? 'checked' : ''} onchange="kpiVidSet('${k}', this.checked)" title="zviditelnit pro běžného uživatele">` : '';
+  /* Ukazatele Náklad / Hrubý zisk / Marže řídí právo `kpi.marze` z matice
+   * zobrazení (oprava 22. 8. 2026, hlášení J. V.: obchodník je v náhledu viděl,
+   * protože se do té doby ptaly na `sloupce.naklad` — jiné právo, které má
+   * obchodník kvůli přirážce položek). Zaškrtávátko u ukazatele je ruční
+   * výjimka pro všechny („zviditelnit pro běžného uživatele") a smí ho jen
+   * skutečný administrátor — ne kdokoli se sloupci nákladů. */
+  const kpiAdmin = zobrazeniRole() === 'Administrátor';
+  const vidKpi = k => kpiAdmin || smiZobrazit('kpi.marze') || kv[k];
+  const kpiChk = k => kpiAdmin ? `<input type="checkbox" class="kpi-chk" ${kv[k] ? 'checked' : ''} onchange="kpiVidSet('${k}', this.checked)" title="zviditelnit pro běžného uživatele">` : '';
   const kpiLine = (k, label, val) => vidKpi(k)
     ? `<div class="kpi-line"><span class="kl">${label}${kpiChk(k)}</span><span class="kv">${val}</span></div>` : '';
   const pct = x => (Math.round(x * 1000) / 10).toLocaleString('cs-CZ') + ' %';
@@ -541,7 +696,7 @@ function renderOutputs() {
   </div>`;
 
   const thCena = col.admin ? 'Cena vč. přirážky' : 'Cena';
-  const adminTh = col.admin ? '<th class="admincol" title="viditelné pro běžného uživatele">Viditelné</th><th class="admincol" title="výchozí zaškrtnutí volitelné položky">Výchozí</th>' : '';
+  const adminTh = col.admin ? '<th class="admincol" title="viditelné pro běžného uživatele">Viditelné</th><th class="admincol" title="výchozí stav položky v NOVÉ zakázce: u volitelných „rovnou v základní ceně", u ostatních „počítá se">Výchozí</th>' : '';
   const adminTd = col.admin ? '<td class="admincol"></td><td class="admincol"></td>' : '';
   const kalkulace = `<table>
     <tr><th>Položka</th><th>Množství</th>${col.admin ? '<th>Jedn. cena</th>' : ''}${col.showCost ? '<th>Náklad</th><th>Přirážka</th>' : ''}<th>${thCena}</th>${adminTh}</tr>
@@ -553,7 +708,9 @@ function renderOutputs() {
     <tr class="tot"><td>CELKEM (zaokrouhleno ↑ na tisíce)</td><td></td>${col.admin ? '<td></td>' : ''}${col.showCost ? `<td>${fmt(r.souhrn.zakladNaklad)}</td><td>${fmt(r.souhrn.zakladMarze)}</td>` : ''}<td>${fmt0(r.souhrn.zakladCena)}</td>${adminTd}</tr>
   </table>
   ${col.admin ? `<div class="note">Řádky přetáhnete úchopem <b>⠿</b> vlevo (v rámci sekce). Zaškrtávátko <b>Viditelné</b> určuje,
-  zda položku vidí běžný uživatel; u volitelných navíc <b>Výchozí</b> určuje výchozí zaškrtnutí. Název i jednotkovou cenu
+  zda položku vidí běžný uživatel. Zaškrtávátko <b>Výchozí</b> platí pro <b>nové</b> zakázky, ne pro tuhle:
+    u volitelné položky znamená „je rovnou v základní ceně", u ostatních „počítá se". Odškrtnutá položka
+    se v každé nové kalkulaci vynechá; otevřená zakázka se tím nemění. Název i jednotkovou cenu
   lze přepsat přímo v tabulce (cena s ceníkovou vazbou obousměrně s Ceníkem).</div>` : ''}`;
 
   const vynech = Z.priplatkyVynechat || [];
@@ -568,11 +725,23 @@ function renderOutputs() {
         <button class="mini noprint" title="smazat příplatek" onclick="priplatekVlastniDel(${i})">✕</button>`;
     }
     const reset = x.nazevPrepsan ? ` <button class="mini noprint" title="vrátit původní název" onclick="nazevReset('${orig}')">↺</button>` : '';
-    return `<input type="text" class="nazev-ed" value="${esc(x.nazev)}" onchange="nazevSet('${orig}', this.value)" title="název příplatku lze přepsat">${reset}`;
+    /* Klíč ceníkové položky i u příplatku (2. 9. 2026): řádky kalkulace ho mají
+     * od 1. 9., příplatky na něj tehdy zapomněly — a přitom je to jediné místo,
+     * kde je vidět, ze které ceníkové položky se cena bere. */
+    return `<input type="text" class="nazev-ed" value="${esc(x.nazev)}" onchange="nazevSet('${orig}', this.value)" title="název příplatku lze přepsat">${reset}${klicChip(x.cenaPath)}`;
   };
-  const pripMnozstvi = (x) => x.vlastni
-    ? `<input type="number" step="any" style="width:80px" value="${+(+x.mnozstvi).toFixed(3)}" onchange="priplatekVlastniSet(${+String(x.key).split(':')[1]}, 'mnozstvi', this.value)">`
-    : num(x.mnozstvi, 3);
+  /* Množství u příplatku jde od 2. 9. 2026 PŘEPSAT (zadání J. V. po testu
+   * Kornpfortstraße): předloha má u některých položek pod čarou nulu, aby se
+   * nenabízely, a obchodník se se zákazníkem běžně domluví na jiném počtu.
+   * Pole je stejné jako u řádků kalkulace (bunkaMnozstvi) včetně tlačítka ↺,
+   * které vrátí vypočtené množství; prázdné pole = platí výpočet. */
+  const pripMnozstvi = (x) => {
+    if (x.vlastni)
+      return `<input type="number" step="any" style="width:80px" value="${+(+x.mnozstvi).toFixed(3)}" onchange="priplatekVlastniSet(${+String(x.key).split(':')[1]}, 'mnozstvi', this.value)">`;
+    const orig = keyAttr(x.origNazev);
+    return `<input type="number" step="any" style="width:80px" value="${+(+x.mnozstvi).toFixed(3)}" onchange="mnozstviSet('${orig}', this.value)" title="množství lze ručně přepsat (prázdné = vypočtené)">`
+      + (x.prepsano ? ` <button class="mini noprint" title="vrátit vypočtené množství (${num(x.mnozstviAuto, 3)})" onclick="mnozstviSet('${orig}', '')">↺</button>` : '');
+  };
   const pripCena = (x) => x.vlastni
     ? `<input type="number" step="any" style="width:96px" value="${+(+x.cena).toFixed(2)}" onchange="priplatekVlastniSet(${+String(x.key).split(':')[1]}, 'cena', this.value)">`
     : (x.cenaPath
@@ -581,7 +750,8 @@ function renderOutputs() {
   const pripHlava = (col.admin ? '<th title="zaškrtnuté položky se propíší do cenové nabídky">Nabídka</th>' : '')
     + '<th>Položka</th><th>Množství</th>' + (col.admin ? '<th>Jedn. cena</th>' : '')
     + (col.showCost ? '<th>Náklad</th>' : '') + '<th>Cena vč. přirážky</th>'
-    + (col.admin ? '<th class="admincol" title="viditelné pro běžného uživatele">Viditelné</th>' : '');
+    + (col.admin ? '<th class="admincol" title="viditelné pro běžného uživatele">Viditelné</th>'
+      + '<th class="admincol" title="výchozí stav sloupce Nabídka v NOVÉ zakázce">Výchozí</th>' : '');
   const pripRadek = (x) => {
     let c = '';
     if (col.admin) c += `<td style="text-align:center"><input type="checkbox" ${vynech.includes(x.key) ? '' : 'checked'}
@@ -591,21 +761,30 @@ function renderOutputs() {
     if (col.admin) c += `<td style="white-space:nowrap">${pripCena(x)}</td>`;
     if (col.showCost) c += `<td>${fmt(x.naklad)}</td>`;
     c += `<td>${fmt0(x.sMarzi)}</td>`;
-    if (col.admin) c += `<td class="admincol"><input type="checkbox" ${jeSkryta(x.key) ? '' : 'checked'} onchange="viditelnostSet('${keyAttr(x.key)}', this.checked)" title="viditelné pro běžného uživatele"></td>`;
+    if (col.admin) {
+      c += `<td class="admincol"><input type="checkbox" ${jeSkryta(x.key) ? '' : 'checked'} onchange="viditelnostSet('${keyAttr(x.key)}', this.checked)" title="viditelné pro běžného uživatele"></td>`;
+      /* Sloupec Výchozí i u příplatků (21. 8. 2026 večer, zadání J. V.):
+       * říká, jestli se příplatek v NOVÉ zakázce propíše do cenové nabídky
+       * (sloupec Nabídka vlevo). Vlastní příplatek zakázky ho nemá — ten
+       * v nové zakázce vůbec nevznikne. */
+      c += `<td class="admincol">${x.vlastni ? ''
+        : vychoziPolozkaChk(ZOBRAZENI_PRIPLATEK + x.key, true,
+          'zaškrtnuto = příplatek jde v NOVÉ zakázce do cenové nabídky (platí pro všechny); '
+          + 'otevřená zakázka se nemění')}</td>`;
+    }
     return `<tr>${c}</tr>`;
   };
   const pripRows = col.admin ? r.priplatky : r.priplatky.filter(x => !jeSkryta(x.key));
-  const pripCols = (col.admin ? 1 : 0) + 2 + (col.admin ? 1 : 0) + (col.showCost ? 1 : 0) + 1 + (col.admin ? 1 : 0);
+  const pripCols = (col.admin ? 1 : 0) + 2 + (col.admin ? 1 : 0) + (col.showCost ? 1 : 0) + 1 + (col.admin ? 2 : 0);
   const prip = `<table>
     <tr>${pripHlava}</tr>
     ${pripRows.map(pripRadek).join('')}
     ${col.admin ? `<tr class="pridat noprint"><td colspan="${pripCols}">
-      <button class="mini" title="vlastní příplatek jen této zakázky" onclick="priplatekVlastniAdd()">+ přidat položku</button>
-      <button class="mini" title="zapíše příplatek natrvalo do ceníku – bude ve všech nových nabídkách" onclick="priplatekVlastniAddTrvale()">+ přidat položku trvale</button></td></tr>` : ''}
-    <tr class="tot"><td colspan="${pripCols - 1 - (col.admin ? 1 : 0)}">PŘÍPLATKY CELKEM (pokud vše)</td><td>${fmt0(r.souhrn.priplatkyCena)}</td>${col.admin ? '<td class="admincol"></td>' : ''}</tr>
+      <button class="mini" title="vlastní příplatek jen této zakázky" onclick="priplatekVlastniAdd()">+ přidat položku</button></td></tr>` : ''}
+    <tr class="tot"><td colspan="${pripCols - 1 - (col.admin ? 2 : 0)}">PŘÍPLATKY CELKEM (pokud vše)</td><td>${fmt0(r.souhrn.priplatkyCena)}</td>${col.admin ? '<td class="admincol"></td><td class="admincol"></td>' : ''}</tr>
   </table>
   <div class="note">Příplatkové položky jsou ceník variant pro zákazníka – do základní ceny se nezapočítávají.${col.admin ? `
-  Název i jedn. cenu lze přepsat, tlačítkem lze přidat vlastní příplatek. Sloupec <b>Nabídka</b> určuje, které
+  Název, množství i jedn. cenu lze přepsat (↺ vrátí vypočtené množství), tlačítkem lze přidat vlastní příplatek. Sloupec <b>Nabídka</b> určuje, které
   příplatky se propíší do generované cenové nabídky (sekce II.). Položky zvolené ve „Volitelné" se zde
   automaticky nenabízejí podruhé, aby nedošlo k dvojímu započtení.` : ''}</div>`;
 
@@ -641,13 +820,25 @@ function renderOutputs() {
    * cenová kalkulace, vše na plnou šířku jako v kalkulaci PROJ. */
   const elSouhrn = document.getElementById('kalk-souhrn');
   if (elSouhrn) elSouhrn.innerHTML =
-    `<div class="card"><div class="body">${hlava}${marzeLista({ cast: 'ock' })}</div></div>`;
+    (typeof standardRozpis === 'function' ? standardRozpis() : '')
+    + `<div class="card"><div class="body">${hlava}${marzeLista({ cast: 'ock' })}</div></div>`;
   document.getElementById('outputs').innerHTML =
     (elSouhrn ? '' : `<div class="card"><div class="body">${hlava}${marzeLista({ cast: 'ock' })}</div></div>`) +
     card('Cenová kalkulace', kalkulace, false, 'ock-kalkulace') +
-    card('Příplatkové položky (ceník variant)', prip, false, 'ock-priplatky') +
+    /* Obě karty mají od 20. 8. 2026 režim sekce (zobrazit/skrýt/srolovat)
+     * stejně jako sekce v tabulce kalkulace — dřív ho neměly, ačkoli je
+     * obchodník vidí jako úplně stejné bloky. */
+    kartaRezim('ock', 'priplatky', 'Příplatkové položky (ceník variant)', prip, 'ock-priplatky') +
     sirotciKarta(r) +
-    (col.admin ? card('Detail mezivýpočtů', det) : '');
+    (col.admin ? kartaRezim('ock', 'detailMezivypoctu', 'Detail mezivýpočtů', det, 'ock-detail') : '') +
+    /* Interní poznámky a přílohy (#37). Do 21. 8. 2026 večer stály v Přehledu
+     * cenových nabídek; ten se na pokyn J. V. pročistil na vyhledávání
+     * a souhrn, a poznámky se přestěhovaly sem — „proč jsme šli s cenou
+     * dolů" je potřeba mít na očích tam, kde se ta cena dělá.
+     * Do žádného dokumentu se nedostanou. */
+    (typeof poznamkyKarta === 'function'
+      ? kartaRezim('ock', 'poznamky', 'Interní poznámky a přílohy k zakázce (netisknou se)',
+        poznamkyKarta(), 'ock-poznamky') : '');
 }
 
 function zkontrolujTl(key) {

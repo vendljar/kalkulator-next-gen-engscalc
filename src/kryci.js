@@ -41,6 +41,14 @@ const KRYCI_ZALOHY = ['Bez zálohy', '30 % – po podpisu smlouvy',
  * a vypustit ho má být vědomé rozhodnutí. */
 const KRYCI_LIMIT_POKUT = ['Uplatněn limit 10 %', 'NEUPLATNĚN limit 10 %'];
 
+/* Datum tisku pro předvyplnění pole „Dne" (20. 8. 2026). Formát YYYY-MM-DD,
+ * protože pole je typu date; ruční přepis má přednost jako u všech prefillů. */
+function kryciDnesIso() {
+  const d = new Date();
+  const dva = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + dva(d.getMonth() + 1) + '-' + dva(d.getDate());
+}
+
 const KRYCI_SEKCE = [
   { sekce: 'Základní údaje', pole: [
     /* KL-4: obchodníka aplikace zná – od 5. 8. 2026 je to přihlášený uživatel
@@ -68,20 +76,63 @@ const KRYCI_SEKCE = [
     { id: 'dodKontakt', label: 'Kontakt na zhotovitele (telefon, e-mail)', verze: ['bo', 'techdata'], prefill: c => [firmaHodnota(c.firma, 'telefon'), firmaHodnota(c.firma, 'email')].filter(Boolean).join(', '), src: 'Nastavení → Firma' },
     { id: 'dodZpracoval', label: 'Nabídku vypracoval', verze: ['bo', 'techdata'], prefill: c => kryciObchodnikKontakt(c.firma), src: 'přihlášený uživatel / Nastavení → Firma' },
   ] },
+  /* Terminologie (20. 8. 2026, zadání J. V.): v APLIKACI se všude říká
+   * ZÁKAZNÍK. „Objednatel" je pojem smluvní a zůstává jen v dokumentech
+   * a v symbolech šablon ({{OBJEDNATEL_…}}), kde ho vyžaduje právní text.
+   *
+   * Bankovní a rejstříkové údaje jsou od 20. 8. součástí TÉTO sekce, ne
+   * vlastního předělu — patří k identifikaci zákazníka a samostatný nadpis
+   * jen roztrhal jednu myšlenku na dvě obrazovky. */
   { sekce: 'Zákazník (smluvní partner)', pole: [
     { id: 'jmenoPrijmeni', label: 'Jméno a příjmení kontaktu', verze: ['bo'], prefill: c => c.zak.kontakt, src: 'z hlavičky zakázky' },
     { id: 'zakaznik', label: 'Zákazník (smluvní partner)', verze: ['bo', 'techdata'], prefill: c => c.zak.objednatel, src: 'z hlavičky zakázky' },
-    { id: 'kontaktObjednatel', label: 'Kontaktní údaje na objednatele (email, telefon)', verze: ['bo'] },
+    { id: 'kontaktZakaznikTel', label: 'Telefon na zákazníka', verze: ['bo'] },
+    { id: 'kontaktZakaznikEmail', label: 'E-mail na zákazníka', verze: ['bo'] },
     { id: 'ico', label: 'IČO', verze: ['bo'], prefill: c => c.zak.ico, src: 'z hlavičky zakázky' },
-    /* KL-1: sídlo objednatele, NE adresa stavby. Developer sídlí jinde, než
+    { id: 'dic', label: 'DIČ', verze: ['bo'], bind: 'ZAK.dic', prefill: c => c.zak.dic, src: 'hlavička zakázky' },
+    /* KL-1: sídlo zákazníka, NE adresa stavby. Developer sídlí jinde, než
      * staví; do smlouvy a na fakturu patří sídlo. Dokud není v hlavičce
      * vyplněné, zůstane pole prázdné – raději prázdné než špatné. */
-    { id: 'adresaZakaznik', label: 'Adresa (sídlo) objednatele', verze: ['bo'], prefill: c => c.zak.adresaObjednatele, src: 'z hlavičky zakázky (sídlo)' },
-    { id: 'fakturacniEmail', label: 'Kontakt na fakturační oddělení (email, telefon)', verze: ['bo'] },
-    { id: 'kontaktStavba', label: 'Kontakt stavba (tel / email)', verze: ['bo', 'techdata'] },
+    { id: 'adresaZakaznik', label: 'Adresa (sídlo) zákazníka', verze: ['bo'], prefill: c => c.zak.adresaObjednatele, src: 'z hlavičky zakázky (sídlo)' },
+    { id: 'zastBanka', label: 'Bankovní spojení zákazníka', verze: ['bo'], bind: 'ZAK.zastupci.banka', src: 'hlavička zakázky' },
+    { id: 'zastUcet', label: 'Číslo účtu / směrový kód', verze: ['bo'], bind: 'ZAK.zastupci.ucet', src: 'hlavička zakázky' },
+    { id: 'zastZapis', label: 'Zápis v rejstříku (zákazník)', verze: ['bo'], bind: 'ZAK.zastupci.zapis', src: 'hlavička zakázky' },
+    /* „Kontakt stavba (tel / email)" odstraněn 20. 8. 2026 (zadání J. V.):
+     * je to týž člověk jako zástupce zákazníka ve věcech technických, který
+     * má o sekci níž vlastní jméno, telefon i e-mail. Dvě místa pro totéž
+     * znamenala dvě různé hodnoty. */
     /* KL-6: ve formuláři je odkaz, ne popis – proto typ 'link' (otevře se ↗) */
     { id: 'scoring', label: 'Scoring Cribis / Pipedrive', verze: ['bo'], typ: 'link', ph: 'https://…' },
   ] },
+  /* Zástupci a kontakty ZÁKAZNÍKA (20. 8. 2026, zadání J. V.).
+   *
+   * Vstupy do smlouvy o dílo, které aplikace dosud neznala a dopisovaly se
+   * ve Wordu. Všechna pole mají `bind` na hlavičku zakázky (`ZAK.zastupci.*`),
+   * takže krycí list OCK a PROJ ukazují a zapisují TÁŽ data — provázání
+   * vzniká samo, nic se nesynchronizuje.
+   *
+   * Telefon a e-mail jsou VŽDY dvě samostatná pole. Slepenec „tel / mail"
+   * se nedá proklikat, vytřídit ani zkontrolovat.
+   *
+   * Osoba ve věcech smluvních je zároveň ta, která smlouvu PODEPISUJE —
+   * proto má pozici a žádná zvláštní podpisová pole tu nejsou. */
+  { sekce: 'Zástupci a kontakty zákazníka', pole: [
+    { id: 'zastSmluvniJmeno', label: 'Ve věcech smluvních — jméno', verze: ['bo'], bind: 'ZAK.zastupci.smluvniJmeno', src: 'hlavička zakázky' },
+    { id: 'zastSmluvniPozice', label: '— pozice (podepisuje smlouvu)', verze: ['bo'], bind: 'ZAK.zastupci.smluvniPozice', src: 'hlavička zakázky' },
+    { id: 'zastSmluvniTel', label: '— telefon', verze: ['bo'], bind: 'ZAK.zastupci.smluvniTel', src: 'hlavička zakázky' },
+    { id: 'zastSmluvniEmail', label: '— e-mail', verze: ['bo'], bind: 'ZAK.zastupci.smluvniEmail', src: 'hlavička zakázky' },
+    { id: 'zastObchodniJmeno', label: 'Ve věcech obchodních — jméno', verze: ['bo'], bind: 'ZAK.zastupci.obchodniJmeno', src: 'hlavička zakázky' },
+    { id: 'zastObchodniTel', label: '— telefon', verze: ['bo'], bind: 'ZAK.zastupci.obchodniTel', src: 'hlavička zakázky' },
+    { id: 'zastObchodniEmail', label: '— e-mail', verze: ['bo'], bind: 'ZAK.zastupci.obchodniEmail', src: 'hlavička zakázky' },
+    /* U technického zástupce chceme VŽDY aspoň jeden kontakt (zadání J. V.):
+     * bez telefonu i e-mailu se na stavbě nemá kdo ozvat. Hlídá kontroly.js. */
+    { id: 'zastTechnickyJmeno', label: 'Ve věcech technických — jméno', verze: ['bo', 'techdata'], bind: 'ZAK.zastupci.technickyJmeno', src: 'hlavička zakázky' },
+    { id: 'zastTechnickyTel', label: '— telefon (nutný telefon NEBO e-mail)', verze: ['bo', 'techdata'], bind: 'ZAK.zastupci.technickyTel', src: 'hlavička zakázky' },
+    { id: 'zastTechnickyEmail', label: '— e-mail (nutný telefon NEBO e-mail)', verze: ['bo', 'techdata'], bind: 'ZAK.zastupci.technickyEmail', src: 'hlavička zakázky' },
+    { id: 'zastFakturyEmail', label: 'Fakturace — e-mail', verze: ['bo'], bind: 'ZAK.zastupci.fakturyEmail', src: 'hlavička zakázky' },
+    { id: 'zastFakturyTel', label: 'Fakturace — telefon', verze: ['bo'], bind: 'ZAK.zastupci.fakturyTel', src: 'hlavička zakázky' },
+  ] },
+
   { sekce: 'Typ smlouvy a produktu', pole: [
     { id: 'typSmlouvy', label: 'Typ smlouvy', verze: ['bo'], typ: 'radio', o: ['Naše bez úprav', 'Naše s úpravami', 'Cizí'], prefill: () => 'Naše bez úprav', src: 'výchozí' },
     /* KL-3: formulář zná i třetí možnost „Projekce". Čistě projekční zakázka
@@ -148,6 +199,15 @@ const KRYCI_SEKCE = [
       prefill: c => c.dph + ' %', src: 'z hlavičky kalkulace OCK' },
     { id: 'zarukaMesicu', label: 'Doba trvání záruky (měsíců)', verze: ['bo'], prefill: () => '60', src: 'výchozí' },
   ] },
+  /* TERMÍN DODÁNÍ (21. 8. 2026, zadání J. V.: „atyp = + 4 týdny v CN termín").
+   * Vlastní sekce, ne řádek mezi datumovými termíny: jako jediná z termínů
+   * patří do cenové nabídky (je v KRYCI_NABIDKA_SEKCE), takže z ní vzniká
+   * symbol {{PODM_TERMIN_DODANI}} do šablony. Datumy převzetí a předání
+   * se do nabídky nedávají — ty se domlouvají až u smlouvy. */
+  { sekce: 'Termín dodání', pole: [
+    { id: 'terminDodani', label: 'Termín dodání OCK', verze: ['bo', 'techdata'],
+      prefill: c => kryciTerminDodani(c), src: 'Nastavení → Firma (+ ATYP)' },
+  ] },
   { sekce: 'Termíny', pole: [
     { id: 'terminPrevzeti', label: 'Převzetí staveniště k montáži šachty', verze: ['bo', 'techdata'], typ: 'date' },
     { id: 'terminMontaz', label: 'Ukončení montáže šachty a předání montáži výtahu', verze: ['bo', 'techdata'], typ: 'date' },
@@ -187,12 +247,16 @@ const KRYCI_SEKCE = [
     { id: 'atypTvar', label: 'Netradiční tvar OCK (např. 5 stěn)', verze: ['techdata'], typ: 'textarea' },
     { id: 'atypJiny', label: 'Jiný atyp (domluva na schůzce na stavbě)', verze: ['techdata'], typ: 'textarea' },
   ] },
-  /* KL-7: patička z předlohy („Dne" / „Podpis obchodníka" / „Informován").
-   * V obou verzích – technické oddělení podepisuje převzetí stejně jako BO. */
-  { sekce: 'Podpis', pole: [
-    { id: 'podpisDne', label: 'Dne', verze: ['bo', 'techdata'], typ: 'date' },
-    { id: 'podpisObchodnik', label: 'Podpis obchodníka', verze: ['bo', 'techdata'], prefill: c => kryciObchodnikJmeno(c.firma), src: 'přihlášený uživatel / Nastavení → Firma' },
-    { id: 'podpisInformovan', label: 'Informován', verze: ['bo', 'techdata'], ph: 'kdo byl o zakázce informován…' },
+  /* KL-7: patička z předlohy. 20. 8. 2026 (zadání J. V.) přejmenovaná na
+   * „Ostatní" — nejsou to podpisy, ale doprovodné údaje listu; „Dne" se
+   * předvyplňuje DATEM TISKU (ručně přepsatelné jako každé jiné pole)
+   * a „Informován" se rozpadl na dvě oddělení, protože se běžně liší. */
+  { sekce: 'Ostatní', pole: [
+    { id: 'podpisDne', label: 'Dne', verze: ['bo', 'techdata'], typ: 'date',
+      prefill: () => kryciDnesIso(), src: 'datum tisku' },
+    { id: 'podpisObchodnik', label: 'Obchodník', verze: ['bo', 'techdata'], prefill: c => kryciObchodnikJmeno(c.firma), src: 'přihlášený uživatel / Nastavení → Firma' },
+    { id: 'podpisInformovanBo', label: 'Informováno Backoffice', verze: ['bo', 'techdata'], ph: 'kdo z BO byl o zakázce informován…' },
+    { id: 'podpisInformovanTech', label: 'Informováno Technické odd.', verze: ['bo', 'techdata'], ph: 'kdo z technického oddělení byl informován…' },
   ] },
 ];
 
@@ -325,11 +389,42 @@ function kryciCtx(zak, varianta, jekly) {
   const firma = (typeof firmaAktualni === 'function') ? firmaAktualni() : {};
   return {
     zak, varianta, ext: Zv.typSachty === 'exteriérová', dph: Math.round((Cv.dph || 0) * 100),
+    /* ATYP z otevřené varianty — termín dodání se podle něj prodlužuje. */
+    atyp: !!Zv.atyp,
     hodnota, priplatky, firma, typProduktu,
     sken3d: kryciSken3d(d, rOck),
     projAno: key => (projSekce[key] > 0 ? 'Ano' : 'Ne'),
   };
 }
+/* ---------- termín dodání a přirážka za ATYP (21. 8. 2026) ----------
+ *
+ * Zadání J. V.: „atyp = + 4 týdny v CN termín." Standardní lhůta je firemní
+ * údaj (Nastavení → Firma), o kolik ji ATYP prodlouží taky — v kódu není ani
+ * jedno číslo, aby se to dalo změnit bez nové dávky.
+ *
+ * Prodlužuje se PRVNÍ ČÍSLO v textu, ne celý text: lhůta se píše jako věta
+ * („12 týdnů od podpisu smlouvy") a zbytek věty musí zůstat, jak je.
+ * Když v ní žádné číslo není (nebo lhůta není vyplněná vůbec), NIC SE
+ * NEVYMÝŠLÍ — vrátí se, co tam je, a k tomu poznámka o atypu; termín pak
+ * doplní člověk. Stejné pravidlo jako u cen. */
+function kryciTerminDodaniText(zakladniText, atyp, tydnyNavic) {
+  const zaklad = String(zakladniText == null ? '' : zakladniText).trim();
+  const navic = Math.round(+String(tydnyNavic == null ? '' : tydnyNavic).replace(',', '.')) || 0;
+  if (!atyp || navic <= 0) return zaklad;
+  const m = zaklad.match(/\d+/);
+  if (!m) return zaklad ? (zaklad + ' + ' + navic + ' týdnů (ATYP)') : '';
+  const nove = String(parseInt(m[0], 10) + navic);
+  return zaklad.slice(0, m.index) + nove + zaklad.slice(m.index + m[0].length)
+    + ' (vč. ' + navic + ' týdnů za ATYP)';
+}
+
+function kryciTerminDodani(c) {
+  const f = (c && c.firma) || {};
+  const zaklad = (typeof firmaHodnota === 'function') ? firmaHodnota(f, 'terminDodaniOck') : (f.terminDodaniOck || '');
+  const tydny = (typeof firmaHodnota === 'function') ? firmaHodnota(f, 'terminAtypTydny') : (f.terminAtypTydny || '');
+  return kryciTerminDodaniText(zaklad, !!(c && c.atyp), tydny);
+}
+
 /* hodnota pole: ruční přepis (data.kryci.hodnoty) > prefill > '' */
 function kryciHodnota(pole, kl, c) {
   /* `dphBind` je totéž provázání jako `bind`, jen mířené do sazby DPH
@@ -375,7 +470,7 @@ if (typeof dokumentRegistruj === 'function') {
  * (varianta.data.kryci.hodnoty), takže se změna projeví na obou místech.
  * Názvy musí přesně odpovídat `sekce` v KRYCI_SEKCE výše; test_nabidka_podminky.js
  * to hlídá, aby přejmenování sekce nabídku tiše nevyprázdnilo. */
-const KRYCI_NABIDKA_SEKCE = ['Typ smlouvy a produktu', 'Platební podmínky'];
+const KRYCI_NABIDKA_SEKCE = ['Typ smlouvy a produktu', 'Platební podmínky', 'Termín dodání'];
 
 /* ---------- symboly {{PODM_…}} do šablony nabídky (5. 8. 2026, #147) --------
  *
@@ -461,5 +556,6 @@ if (typeof module !== 'undefined')
   module.exports = { KRYCI_SEKCE, KRYCI_NABIDKA_SEKCE, KRYCI_DPH_SAZBY, KRYCI_POKUTY, kryciCtx, kryciHodnota,
     kryciData, kryciMigraceZadrzne, kryciMigraceSazbaDph,
     PODM_PREFIX, kryciSymbolId, kryciCisloZTextu, kryciProcentoZTextu,
+    kryciTerminDodani, kryciTerminDodaniText,
     kryciSymbolyZeSekci, kryciPodminkoveSymboly,
     kryciFaktura2Dopocet, kryciFaktura2Sync };

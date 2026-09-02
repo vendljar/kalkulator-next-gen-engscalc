@@ -63,6 +63,42 @@ const FIRMA_POLE = [
   { id: 'zpusobFakturaceOck', sekce: 'Smluvní standardy', label: 'Způsob fakturace — OCK', symbol: 'FIRMA_FAKTURACE_OCK' },
   { id: 'zpusobFakturaceProj', sekce: 'Smluvní standardy', label: 'Způsob fakturace — projekce', symbol: 'FIRMA_FAKTURACE_PROJ' },
   { id: 'rozsahDefinice', sekce: 'Smluvní standardy', label: 'Rozsah díla — čím je definován', symbol: 'FIRMA_ROZSAH' },
+  /* Termín dodání OCK (21. 8. 2026, zadání J. V. „atyp = + 4 týdny v CN
+   * termín"). Standardní lhůta je firemní údaj, ne údaj zakázky — mění se
+   * jednou za čas a pro všechny. V krycím listu i v nabídce se předvyplní
+   * a jde přepsat. ŽÁDNÉ VÝCHOZÍ ČÍSLO SE NEVYMÝŠLÍ: dokud tu lhůta není,
+   * zůstane pole v nabídce prázdné (stejné pravidlo jako u cen). */
+  { id: 'terminDodaniOck', sekce: 'Smluvní standardy', label: 'Termín dodání OCK — standardní lhůta', symbol: 'FIRMA_TERMIN_DODANI_OCK' },
+  { id: 'terminAtypTydny', sekce: 'Smluvní standardy', label: '— o kolik týdnů ho prodlužuje ATYP', symbol: 'FIRMA_TERMIN_ATYP_TYDNY' },
+
+  /* --- zástupci zhotovitele (20. 8. 2026) ---
+   *
+   * Symboly, které smlouvy o dílo dosud nechávaly prázdné a dopisovaly se
+   * ve Wordu. Nejsou to údaje zakázky, ale firmy — jednatel se nemění podle
+   * stavby, takže by nemělo smysl psát ho do každé zakázky znovu. V krycím
+   * listu se jen předvyplní a jde přepsat, když u konkrétní zakázky
+   * podepisuje někdo jiný (stejné pravidlo jako u ostatních firemních polí).
+   *
+   * Telefon a e-mail mají VŽDY vlastní pole (zadání J. V.), nikdy jeden
+   * slepenec — jinak se s nimi nedá dál pracovat.
+   *
+   * „Ve věcech obchodních" tu schválně NENÍ: tím je vždy zpracovatel
+   * nabídky, tedy přihlášený uživatel (zpracovatel.js). */
+  { id: 'zastupceSmluvni', sekce: 'Zástupci zhotovitele', label: 'Ve věcech smluvních — jméno a funkce', symbol: 'FIRMA_ZASTUPCE_SMLUVNI' },
+  { id: 'zastupceSmluvniJmeno', sekce: 'Zástupci zhotovitele', label: '— samotné jméno (do podpisové doložky)', symbol: 'FIRMA_ZASTUPCE_SMLUVNI_JMENO' },
+  { id: 'zastupceSmluvniEmail', sekce: 'Zástupci zhotovitele', label: '— e-mail', symbol: 'FIRMA_ZASTUPCE_SMLUVNI_EMAIL' },
+  { id: 'zastupceSmluvniTel', sekce: 'Zástupci zhotovitele', label: '— telefon', symbol: 'FIRMA_ZASTUPCE_SMLUVNI_TEL' },
+  { id: 'zastupceTechnicky', sekce: 'Zástupci zhotovitele', label: 'Ve věcech technických (projekce)', symbol: 'FIRMA_ZASTUPCE_TECHNICKY' },
+  { id: 'zastupceTechnickyEmail', sekce: 'Zástupci zhotovitele', label: '— e-mail', symbol: 'FIRMA_ZASTUPCE_TECHNICKY_EMAIL' },
+  { id: 'zastupceTechnickyTel', sekce: 'Zástupci zhotovitele', label: '— telefon', symbol: 'FIRMA_ZASTUPCE_TECHNICKY_TEL' },
+  /* Vedoucí montáží jde do smlouvy o dílo na realizaci. Kontakt na něj je
+   * firemní údaj (zadání J. V. 20. 8. 2026) — v krycím listu OCK se
+   * předvyplní a u zakázky, kde jede někdo jiný, se přepíše.
+   * Symbol je FIRMA_* (všechna firemní pole mají tenhle prefix, hlídá to
+   * test_firma.js); na smluvní {{SOD_VEDOUCI_MONTAZI*}} ho překládá sod.js. */
+  { id: 'vedouciMontazi', sekce: 'Zástupci zhotovitele', label: 'Vedoucí montáží — jméno', symbol: 'FIRMA_VEDOUCI_MONTAZI' },
+  { id: 'vedouciMontaziEmail', sekce: 'Zástupci zhotovitele', label: '— e-mail', symbol: 'FIRMA_VEDOUCI_MONTAZI_EMAIL' },
+  { id: 'vedouciMontaziTel', sekce: 'Zástupci zhotovitele', label: '— telefon', symbol: 'FIRMA_VEDOUCI_MONTAZI_TEL' },
 
   /* Sekce „Zpracovatel nabídky" zrušena 19. 8. 2026 (zadání J. V.):
    * zpracovatel se vždy bere z přihlášeného uživatele (zpracovatel.js),
@@ -71,7 +107,7 @@ const FIRMA_POLE = [
 
 /* Pořadí sekcí ve formuláři i v náhledech. */
 const FIRMA_SEKCE = ['Identifikace', 'Sídlo', 'Korespondenční adresa', 'Bankovní spojení',
-  'Kontakty', 'Smluvní standardy'];
+  'Kontakty', 'Zástupci zhotovitele', 'Smluvní standardy'];
 
 /* UKÁZKOVÉ ÚDAJE, NE SKUTEČNÉ.
  *
@@ -115,6 +151,10 @@ const DEFAULT_FIRMA = {
   zpusobFakturaceOck: 'Náš standard / měsíční',
   zpusobFakturaceProj: 'po dokončení jednotlivých stupňů dokumentace',
   rozsahDefinice: 'je definován přílohou ke smlouvě (specifikace)',
+  /* Prázdná lhůta = „nemáme ji nastavenou"; nabídka pak termín neuvádí
+   * a doplní se ručně. Prodloužení za ATYP je 4 týdny (zadání J. V.). */
+  terminDodaniOck: '',
+  terminAtypTydny: '4',
 
   /* logo: data URL (obrázek se ukládá přímo v konfiguraci, aby šel přenést) */
   logo: '', logoNazev: '',
@@ -262,7 +302,11 @@ function firmaLzeZverejnit(f) {
 function firmaKZverejneni(f) {
   const out = {};
   FIRMA_POLE.forEach(p => { if (f && f[p.id] !== undefined) out[p.id] = f[p.id]; });
-  if (f && f.logo) { out.logo = f.logo; out.logoNazev = f.logoNazev || ''; }
+  /* Logo jen jako datový zápis PNG/JPEG (audit 22. 8. 2026, B18) — stejné
+   * pravidlo jako u podpisu: SVG umí nést skript, odkaz prozradí otevření
+   * nabídky. Cokoli jiného se tiše zahodí (logo je volitelné). */
+  if (f && f.logo && /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(String(f.logo)))
+    { out.logo = f.logo; out.logoNazev = f.logoNazev || ''; }
   return out;
 }
 

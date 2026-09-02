@@ -11,10 +11,92 @@
 
 const ZAKAZKA_SCHEMA = 2;
 
+/* ============================================================
+ * CENÍK JAKO ZDROJ PRAVDY PRO PÁR POLÍ ZADÁNÍ (1. 9. 2026)
+ *
+ * Zadání J. V.: „hodnoty z ceníku se do atypů a režií nepropisují. Ceník má
+ * být zdrojem pravdy. Ovšem tak to není."
+ *
+ * Od 31. 8. byly rozsahy práce a čísla pro ATYP v ceníku, ale používaly se jen
+ * při ZALOŽENÍ zakázky a při zaškrtnutí ATYP. Změna ceníku se do rozdělané
+ * kalkulace nepropsala — a to je proti tomu, k čemu ceník je.
+ *
+ * Pravidlo (stejné jako u globální přirážky, #184, jen o patro níž):
+ *   – VYPLNĚNÁ ceníková položka řídí zakázku. Prázdná (nebo nula) neřídí nic
+ *     a platí, co je v zakázce — viz cenikVychozi() v cenik.js.
+ *   – Co obchodník v kalkulaci SÁM přepsal, zůstává jeho. Ruční změnu si
+ *     poznamená `set()` do `data.zadaniRucni`.
+ *   – Zamčené (odeslané) a kvitované varianty se nepřepisují nikdy; o to se
+ *     stará volající (progSrovnejNedotcene).
+ *
+ * Pole ATYP se srovnávají jen u zakázky, která ATYP zaškrtnutý MÁ. U ostatních
+ * by rezerva 30 % z ceníku znamenala tichou změnu ceny u standardní šachty.
+ * ============================================================ */
+const ZADANI_Z_CENIKU = [
+  { z: 'montazZakladHod', c: 'vychMontazZakladHod', popis: 'Montáž – základ' },
+  { z: 'projekceZakladHod', c: 'vychProjekceZakladHod', popis: 'Projekce – základ' },
+  { z: 'oplechOstatniKg', c: 'vychOplechOstatniKg', popis: 'Oplechování ostatní – materiál' },
+  { z: 'oplechOstatniHod', c: 'vychOplechOstatniHod', popis: 'Oplechování ostatní – práce' },
+  { z: 'rezervaZakladPct', c: 'atypRezervaZakladPct', popis: 'REZERVA základ', atyp: true },
+  { z: 'rezervaPriplatkyPct', c: 'atypRezervaPriplatkyPct', popis: 'REZERVA příplatky', atyp: true },
+  { z: 'zamecnikAtypKc', c: 'atypZamecnikKc', popis: 'Zámečník atyp', atyp: true },
+];
+/* Hodiny navíc se nepočítají z ceníku přímo (jsou to podíly ze základu), ale
+ * ruční přepis se u nich hlídá stejně. */
+const ZADANI_RUCNI_KLICE = ZADANI_Z_CENIKU.map(x => x.z).concat(['montazAtypHod', 'projekceAtypHod']);
+
+function zadaniRucniMapa(data) {
+  if (!data || typeof data !== 'object') return {};
+  if (!data.zadaniRucni || typeof data.zadaniRucni !== 'object') data.zadaniRucni = {};
+  return data.zadaniRucni;
+}
+function zadaniRucniJe(data, klic) {
+  return !!(data && data.zadaniRucni && data.zadaniRucni[String(klic)]);
+}
+function zadaniRucniZnac(data, klic) {
+  if (ZADANI_RUCNI_KLICE.indexOf(String(klic)) < 0) return false;
+  zadaniRucniMapa(data)[String(klic)] = true;
+  return true;
+}
+function zadaniRucniZrus(data, klice) {
+  const m = zadaniRucniMapa(data);
+  (klice || ZADANI_RUCNI_KLICE).forEach(k => { delete m[String(k)]; });
+}
+
+/* Srovná pole zadání s ceníkem varianty. Vrací { zmen, pole:[{klic,popis,stara,nova}] }. */
+function zadaniZCeniku(data) {
+  const out = { zmen: 0, pole: [] };
+  if (!data || !data.ock || !data.ock.zadani || !data.cenik) return out;
+  if (typeof cenikVychozi !== 'function') return out;
+  const z = data.ock.zadani, c = data.cenik;
+  ZADANI_Z_CENIKU.forEach(m => {
+    if (m.atyp && !z.atyp) return;
+    if (zadaniRucniJe(data, m.z)) return;
+    const nova = cenikVychozi(c, m.c, null);
+    if (nova === null || nova === undefined) return;      // prázdná položka nic neřídí
+    const stara = z[m.z];
+    if (String(stara) === String(nova)) return;
+    z[m.z] = nova;
+    out.zmen++;
+    out.pole.push({ klic: m.z, popis: m.popis, stara, nova });
+  });
+  return out;
+}
+
 function novaVariantaData() {
-  return {
-    ock: { zadani: JSON.parse(JSON.stringify(DEFAULT_ZADANI)), fixes: false },   // výchozí režim: 1:1 jako Excel
-    cenik: JSON.parse(JSON.stringify(DEFAULT_CENIK)),
+  const cenik = JSON.parse(JSON.stringify(DEFAULT_CENIK));
+  const zadani = JSON.parse(JSON.stringify(DEFAULT_ZADANI));
+  const data = {
+    ock: { zadani, fixes: false },   // výchozí režim: 1:1 jako Excel
+    cenik,
+    /* Řada ceníku (#181, 31. 8. 2026): nová zakázka i nová varianta jsou
+     * VŽDY tuzemské (rozhodnutí J. V.); na zahraniční se přepíná vědomě
+     * v hlavičce a přepnutí se nejdřív zeptá. */
+    cenikRada: 'cr',
+    /* Zakázkové hodnoty, které obchodník sám nastavil (31. 8. 2026). Nová
+     * zakázka nemá nastaveno nic — přirážka i sazba DPH se proto berou
+     * z platného ceníku, dokud se jich někdo nedotkne (viz cenik_stari.js). */
+    cenikRucni: {},
     proj: { zadani: JSON.parse(JSON.stringify(DEFAULT_ZADANI_PROJ)),
             cenik: JSON.parse(JSON.stringify(DEFAULT_CENIK_PROJ)) },
     techspec: JSON.parse(JSON.stringify(DEFAULT_TECHSPEC)),
@@ -34,7 +116,14 @@ function novaVariantaData() {
     // obchodník je může vést zvlášť – přesně jako slevu a sazbu DPH.
     zaokr: (typeof zaokrDefault === 'function') ? zaokrDefault() : { krok: 100, smer: 'nahoru' },
     zaokrProj: (typeof zaokrDefault === 'function') ? zaokrDefault() : { krok: 100, smer: 'nahoru' },
+    /* Co si obchodník v zadání přepsal sám (1. 9. 2026). Nová zakázka nemá
+     * přepsané nic, takže ji ceník řídí celou — viz zadaniZCeniku(). */
+    zadaniRucni: {},
   };
+  /* Rozsahy práce z ceníku (31. 8. 2026, zadání J. V.). Prázdná nebo nulová
+   * ceníková položka nic neřídí a platí hodnota ze sestavení. */
+  zadaniZCeniku(data);
+  return data;
 }
 
 let _varCounter = 0;
@@ -63,6 +152,8 @@ function novaZakazka() {
      * Příznak vypíná hlídání a porovnávání části OCK; data OCK zůstávají,
      * jen se nikam nepočítají. */
     jenProj: false,
+    jenOck: false,
+    obeStrany: false,
     // IČO objednatele (zadání z 30. 7. 2026). V hlavičce stojí hned za kontaktní
     // osobou. Je to jediný údaj, kterým se objednatel dá jednoznačně určit –
     // název firmy se píše pokaždé jinak („Stavby s.r.o." / „STAVBY s. r. o.").
@@ -71,6 +162,25 @@ function novaZakazka() {
     // DIČ objednatele (19. 8. 2026): potřebují ho smlouvy o dílo
     // ({{OBJEDNATEL_DIC}}); dotáhne se z ARES spolu s IČO a sídlem.
     dic: '',
+    /* Zástupci a kontakty zákazníka (20. 8. 2026) — vstupy do smluv o dílo.
+     * Jsou vlastností ZAKÁZKY, ne kalkulace: jednatel ani technik na stavbě
+     * se nemění podle toho, jestli počítám šachtu, nebo projekci. Proto sedí
+     * v hlavičce, která je od 19. 8. jedna společná pro OCK i PROJ — oba
+     * krycí listy tak čtou a zapisují TÁŽ pole a jsou provázané samy od sebe.
+     *
+     * Telefon a e-mail mají VŽDY vlastní pole (zadání J. V. 20. 8.), nikdy
+     * jeden slepenec „tel / mail": jen tak se s nimi dá dál pracovat
+     * (proklik, hromadná korespondence, kontrola úplnosti).
+     *
+     * Osoba „ve věcech smluvních" je zároveň ta, která smlouvu podepisuje —
+     * proto má i pozici a žádná zvláštní podpisová pole nejsou. */
+    zastupci: {
+      smluvniJmeno: '', smluvniPozice: '', smluvniTel: '', smluvniEmail: '',
+      obchodniJmeno: '', obchodniTel: '', obchodniEmail: '',
+      technickyJmeno: '', technickyTel: '', technickyEmail: '',
+      fakturyEmail: '', fakturyTel: '',
+      banka: '', ucet: '', zapis: '',
+    },
     // KL-2: adresa stavby (`adresa`) a sídlo objednatele jsou dvě různé věci –
     // developer sídlí v Praze a staví v Ostravě. Krycí list potřebuje obě.
     // Prázdné = sídlo se neuvádí; nikdy se sem nedosazuje adresa stavby.
@@ -231,6 +341,61 @@ function projCisloNabidky(zak) {
   const p = projHlavicka(zak);
   return hlavickaVyplneno(p && p.cislo) ? p.cislo : ((zak && zak.cislo) || '');
 }
+
+/* ---------- která strana zakázky nese cenovku (23. 8. 2026) ----------
+ *
+ * Zadání J. V.: „Pokud je na projektu spočítaná CN PROJ, neměla by se už
+ * počítat CN OCK — buňky v druhé kalkulaci ať zešednou a číslo nabídky ať se
+ * drží to kalkulované, aby bylo zřejmé, kde cenovka vznikla."
+ *
+ * Rozhoduje ČÍSLO NABÍDKY, ne cena: cena se dá spočítat i omylem (výchozí
+ * šachta má nenulový základ, i když do ní nikdo nesáhl), kdežto vyplněné
+ * číslo je vědomý krok obchodníka — od něj se odvíjí i jméno souboru
+ * a záznam v rejstříku. Řada OVP patří projekci, ostatní čísla realizaci.
+ *
+ * Zámek je MĚKKÝ a vratný: `obeStrany` ho zruší (tlačítko „Počítat i …“
+ * v šedé liště), `jenProj` / `jenOck` ho naopak přikážou natvrdo. Když mají
+ * číslo obě strany, nezamyká se nic — zakázka na obojí je legitimní. */
+function stranaCislo(zak, strana) {
+  if (strana === 'proj') {
+    const p = projHlavicka(zak) || {};
+    const vlastni = String(p.cislo || '');
+    if (hlavickaVyplneno(vlastni)) return vlastni;
+    const spolecne = String((zak && zak.cislo) || '');
+    return /ovp/i.test(spolecne) ? spolecne : '';
+  }
+  const c = String((zak && zak.cislo) || '');
+  return /ovp/i.test(c) ? '' : c;
+}
+
+function stranaMaCislo(zak, strana) {
+  return hlavickaVyplneno(stranaCislo(zak, strana));
+}
+
+/* '' = nezamyká se nic (obě strany, nebo ani jedna). */
+function zakazkaVedouciStrana(zak) {
+  if (zak && zak.jenProj) return 'proj';
+  if (zak && zak.jenOck) return 'ock';
+  if (zak && zak.obeStrany) return '';
+  const o = stranaMaCislo(zak, 'ock'), p = stranaMaCislo(zak, 'proj');
+  if (o && !p) return 'ock';
+  if (p && !o) return 'proj';
+  return '';
+}
+
+function stranaZamcena(zak, strana) {
+  const v = zakazkaVedouciStrana(zak);
+  return !!v && v !== strana;
+}
+
+/* Číslo, kterým se zakázka prokazuje navenek: z počítané strany. */
+function zakazkaCisloVedouci(zak) {
+  const v = zakazkaVedouciStrana(zak);
+  if (v) return stranaCislo(zak, v);
+  return stranaMaCislo(zak, 'ock') ? stranaCislo(zak, 'ock') : stranaCislo(zak, 'proj');
+}
+
+const STRANA_NAZEV = { ock: 'Kalkulaci OCK', proj: 'Kalkulaci PROJ' };
 
 /* ---------- číslo nabídky s číslem varianty (19. 8. 2026) ----------
  * Zadání J. V.: „Pokud má kalkulace variantu (např. varianta 2), pak se
@@ -396,6 +561,17 @@ function importZakazka(obj) {
     // dosadit ji sem by jen zopakovalo chybu, kterou tato změna odstraňuje.
     if (obj.adresaObjednatele == null) obj.adresaObjednatele = '';
     if (obj.jenProj == null) obj.jenProj = false;   // migrace: příznak jen projekce (2. 8. 2026)
+    if (obj.jenOck == null) obj.jenOck = false;     // migrace: příznak jen realizace (23. 8. 2026)
+    /* Zakázky uložené před 31. 8. 2026 řadu ceníku nemají — jsou tuzemské. */
+    (obj.varianty || []).forEach(v => {
+      if (v && v.data && !v.data.cenikRada) v.data.cenikRada = 'cr';
+      /* Zakázky uložené před 31. 8. 2026 nevědí, co v nich obchodník nastavil
+       * ručně. Berou se proto všechny zakázkové hodnoty jako ruční — přepsat
+       * přirážku ve starší nabídce by bylo horší než ji nechat být (#177). */
+      if (v && v.data && !v.data.cenikRucni && typeof cenikRucniVsechny === 'function')
+        v.data.cenikRucni = cenikRucniVsechny();
+    });
+    if (obj.obeStrany == null) obj.obeStrany = false;   // vědomé počítání obou stran naráz
     // migrace: IČO objednatele přibylo 30. 7. 2026. Zůstává PRÁZDNÉ – v žádném
     // dosavadním poli není nic, z čeho by se dalo odvodit, a odhadnuté IČO je
     // horší než žádné (skončilo by ve smlouvě).
@@ -403,6 +579,16 @@ function importZakazka(obj) {
     // migrace: DIČ objednatele přibylo 19. 8. 2026 (smlouvy o dílo). Zůstává
     // PRÁZDNÉ ze stejného důvodu jako IČO – odhadnuté DIČ je horší než žádné.
     if (obj.dic == null) obj.dic = '';
+    /* migrace: zástupci a kontakty zákazníka přibyly 20. 8. 2026. Zůstávají
+     * PRÁZDNÉ — z ničeho se nedají odvodit a odhadnutý zástupce by skončil
+     * ve smlouvě. Doplňují se jednotlivě, ať starší zakázka nepřijde o nic,
+     * co v ní už je. */
+    if (!obj.zastupci || typeof obj.zastupci !== 'object') obj.zastupci = {};
+    ['smluvniJmeno', 'smluvniPozice', 'smluvniTel', 'smluvniEmail',
+     'obchodniJmeno', 'obchodniTel', 'obchodniEmail',
+     'technickyJmeno', 'technickyTel', 'technickyEmail',
+     'fakturyEmail', 'fakturyTel', 'banka', 'ucet', 'zapis']
+      .forEach(k => { if (obj.zastupci[k] == null) obj.zastupci[k] = ''; });
     // migrace: úvodní fotka nabídky OCK přibyla později
     if (obj.uvodniFoto == null) obj.uvodniFoto = '';
     if (obj.uvodniFotoNazev == null) obj.uvodniFotoNazev = '';
@@ -801,11 +987,14 @@ const StorageAdapter = {
 };
 
 if (typeof module !== 'undefined')
-  module.exports = { uvodniFotoObrazky, uvodniFotoSymboly, uvodniFotoPole, ZAKAZKA_SCHEMA, novaZakazka, novaVarianta, novaVariantaData,
+  module.exports = { ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, zadaniRucniMapa, zadaniRucniJe,
+                     zadaniRucniZnac, zadaniRucniZrus, zadaniZCeniku, uvodniFotoObrazky, uvodniFotoSymboly, uvodniFotoPole, ZAKAZKA_SCHEMA, novaZakazka, novaVarianta, novaVariantaData,
                      nastavRidici, ridiciVarianta, aktivniVarianta, importZakazka, StorageAdapter,
                      ZAK_HLAVICKA_POLE, zajistiProjHlavicku, projHlavicka,
                      projHlavickaEfektivni, projHlavickaZOck, projCisloNabidky,
                      cisloSVariantou, zakazkaDuplicita,
+                     stranaCislo, stranaMaCislo, zakazkaVedouciStrana, stranaZamcena,
+                     zakazkaCisloVedouci, STRANA_NAZEV,
                      ZAK_CISLO_PREDLOHA, hlavickaVyplneno,
                      icoNormalizuj, icoVyplneno, icoPlatne,
                      zakazkaKopirujHlavicku, zakazkaHlavickaKolize, zakazkaHlavickyShodne,

@@ -106,6 +106,90 @@ const ZOBRAZENI_PRVKY = [
   },
 
   /* ---------- náklady a marže ---------- */
+  /* Zbývající záložky (20. 8. 2026, nález J. V.: „nastavení → zobrazení
+   * nereflektuje aktuální stav aplikace — nemůžu ovládat zhasínání
+   * schvalování slev"). Do 20. 8. měla matice jen čtyři záložky a zbytek se
+   * dal skrýt výhradně globálním přepínačem v Nastavení → Obecné, který
+   * ale platil VŠEM včetně administrátora. Teď má každá záložka svůj klíč.
+   * Výchozí hodnoty jsou nastavené tak, aby se dnešní chování nezměnilo:
+   * co dnes vidí všichni, zůstává zapnuté. Kalkulace OCK klíč nemá
+   * schválně — je to domovská záložka a náhrada za každou skrytou; kdyby
+   * se dala skrýt, neměl by se uživatel kam vrátit. */
+  {
+    klic: 'tab.spec', skupina: 'zalozky', nazev: 'Záložka Technická specifikace OCK',
+    kde: 'horní lišta záložek',
+    popis: 'Technický popis šachty a na jejím konci tisk cenové nabídky OCK.',
+    vychozi: { 'Obchodník': true, 'Vedoucí': true },
+    navrh: { 'Obchodník': true, 'Vedoucí': true },
+    proc: 'Obchodník bez ní neudělá nabídku — tisk nabídky OCK je na jejím konci. '
+        + 'Skrývat ji dává smysl leda někomu, kdo dělá výhradně projekci.',
+  },
+  {
+    klic: 'tab.kryci', skupina: 'zalozky', nazev: 'Záložka Krycí list zakázky OCK',
+    kde: 'horní lišta záložek',
+    popis: 'Podklad pro objednávku a smlouvu o dílo OCK; na konci vzniká smlouva.',
+    vychozi: { 'Obchodník': true, 'Vedoucí': true },
+    navrh: { 'Obchodník': true, 'Vedoucí': true },
+    proc: 'Krycí list vyplňuje obchodník. Bez něj nemá kde zadat platební podmínky '
+        + 'ani zástupce zákazníka, které pak jdou do smlouvy.',
+  },
+  {
+    klic: 'tab.proj', skupina: 'zalozky', nazev: 'Záložka Kalkulace PROJ',
+    kde: 'horní lišta záložek',
+    popis: 'Celá kalkulace projekčních prací a tisk nabídky PROJ.',
+    vychozi: { 'Obchodník': true, 'Vedoucí': true },
+    navrh: { 'Obchodník': true, 'Vedoucí': true },
+    proc: 'Kdo prodává jen ocelovou konstrukci, projekci nepotřebuje — a naopak. '
+        + 'Skrytí je tu proto, aby šlo rozhraní zúžit podle toho, co kdo dělá.',
+  },
+  {
+    klic: 'tab.detailproj', skupina: 'zalozky', nazev: 'Záložka Detail výpočtu PROJ',
+    kde: 'horní lišta záložek',
+    popis: 'Rozpad ceny projekčních prací po sekcích a hodinách.',
+    vychozi: { 'Obchodník': false, 'Vedoucí': false },
+    navrh: { 'Obchodník': false, 'Vedoucí': true },
+    proc: 'Do 20. 8. 2026 se řídil týmž právem jako Detail výpočtu OCK. Dostal vlastní '
+        + 'klíč, protože se ty dvě věci reálně přidělují zvlášť: projekční detail ukazuje '
+        + 'hodinové sazby, konstrukční nikoli.',
+  },
+  {
+    klic: 'tab.kryciproj', skupina: 'zalozky', nazev: 'Záložka Krycí list zakázky PROJ',
+    kde: 'horní lišta záložek',
+    popis: 'Podklad pro smlouvu o dílo na projekci a plnou moc.',
+    vychozi: { 'Obchodník': true, 'Vedoucí': true },
+    navrh: { 'Obchodník': true, 'Vedoucí': true },
+    proc: 'Stejný důvod jako u krycího listu OCK: vyplňuje ho obchodník a bez něj '
+        + 'nemá kde zadat podmínky, které pak jdou do smlouvy o dílo na projekci.',
+  },
+  {
+    klic: 'tab.zakazka', skupina: 'zalozky', nazev: 'Záložka Přehled cenových nabídek',
+    kde: 'horní lišta záložek',
+    popis: 'Seznam uložených zakázek a variant, načítání, klonování, porovnání.',
+    vychozi: { 'Obchodník': true, 'Vedoucí': true },
+    navrh: { 'Obchodník': true, 'Vedoucí': true },
+    proc: 'Bez ní se obchodník nedostane ke svým dřívějším nabídkám. Skrývat ji '
+        + 'nedoporučuji — spíš omezit, co v ní kdo smí (mazání, odemykání).',
+  },
+  {
+    klic: 'tab.zakaznici', skupina: 'zalozky', nazev: 'Záložka Zákazníci',
+    kde: 'horní lišta záložek',
+    popis: 'Databáze zákazníků: identifikace, bankovní údaje, zástupci a kontakty, '
+         + 'které se odtud přenášejí do hlavičky zakázky a do krycích listů.',
+    vychozi: { 'Obchodník': true, 'Vedoucí': true },
+    navrh: { 'Obchodník': true, 'Vedoucí': true },
+    proc: 'Kartu vyplňuje obchodník u zákazníka — bez záložky by databáze nikdy nevznikla. '
+        + 'Mazat karty smí i tak jen administrátor, to hlídá server.',
+  },
+  {
+    klic: 'tab.schvalovani', skupina: 'zalozky', nazev: 'Záložka Schvalování slev',
+    kde: 'horní lišta záložek',
+    popis: 'Fronta žádostí o slevu nad strop role a rozhodování o nich.',
+    vychozi: { 'Obchodník': true, 'Vedoucí': true },
+    navrh: { 'Obchodník': true, 'Vedoucí': true },
+    proc: 'Obchodník tu vidí, jak dopadla jeho žádost, vedoucí tu rozhoduje. '
+        + 'Samotné právo rozhodnout drží zvlášť „Schvalování slevy nad strop role" — '
+        + 'skrytí záložky tedy nikomu právo nebere, jen mu ji vezme z očí.',
+  },
   {
     klic: 'sloupce.naklad', skupina: 'cisla', nazev: 'Sloupce Náklad a Přirážka v kalkulaci',
     kde: 'Kalkulace OCK i PROJ – tabulka cenové kalkulace',
@@ -266,6 +350,17 @@ const ZOBRAZENI_PRVKY = [
         + 'nestandardní o tolik". Vedoucí to u složité šachty posoudí líp než ceník.',
   },
   {
+    klic: 'nastaveni.standard', skupina: 'nastaveni', nazev: 'Nastavení → Standard OCK',
+    kde: 'Nastavení (ozubené kolo) → Standard OCK',
+    popis: 'Tabulka limitů firemního standardu OCK: povolené profily, výšky, šířky, hloubky, '
+         + 'opláštění a rozměry můstku — a vypínač celé kontroly.',
+    vychozi: { 'Obchodník': false, 'Vedoucí': true },
+    navrh: { 'Obchodník': false, 'Vedoucí': true },
+    proc: 'Standard je obchodní i technické rozhodnutí firmy, ne věc jedné zakázky '
+        + '(zadání J. V. 21. 8. 2026: měnit ho smí administrátor a vedoucí). Obchodník '
+        + 'výsledek vidí jako štítek v kalkulaci, ale limity nenastavuje.',
+  },
+  {
     klic: 'nastaveni.zobrazeni', skupina: 'nastaveni', nazev: 'Nastavení → Zobrazení (tato matice)',
     kde: 'Nastavení, vnitřní záložka Zobrazení',
     popis: 'Sama tato tabulka práv — tedy rozhodnutí o tom, co která role v aplikaci vidí.',
@@ -416,6 +511,16 @@ function zobrazeniOciste(mat) {
     });
     if (Object.keys(s).length) out.sekce = s;
   }
+  /* výchozí zaškrtnutí položek (20. 8. 2026): jen booleany u platných klíčů;
+   * klíč `vychozi` vzniká jen tehdy, když je co nést (viz blok níže) */
+  if (mat.vychozi && typeof mat.vychozi === 'object') {
+    const v = {};
+    Object.keys(mat.vychozi).forEach(k => {
+      const h = mat.vychozi[k];
+      if (typeof h === 'boolean' && ZOBRAZENI_VYCHOZI_KLIC.test(k)) v[k] = h;
+    });
+    if (Object.keys(v).length) out.vychozi = v;
+  }
   return out;
 }
 
@@ -448,6 +553,111 @@ function zobrazeniSekceNastav(mat, klic, volba) {
   return mat;
 }
 
+/* ---------- výchozí zaškrtnutí položek (zadání 20. 8. 2026) ----------
+ *
+ * Sloupec „Výchozí“ u položek kalkulace (OCK volitelné, PROJ všechny řádky)
+ * do 20. 8. 2026 jen ležel v zadání otevřené zakázky (`Z.volitelneVychozi`)
+ * a NIC nedělal: nikdo ho nečetl, takže zaškrtnutí zmizelo s další zakázkou.
+ * Teď má stejný domov jako režimy sekcí — matici zobrazení, klíč `vychozi`.
+ * Znamená to: „takhle má vypadat NOVÁ zakázka pro všechny".
+ *
+ * Klíče:  ock.<klíč volitelné položky>            např. ock.leseniVnejsi
+ *         proj.<klíč sekce>.<kid nebo název>      např. proj.zamereni.Zaměření
+ * Hodnota je boolean „počítat / zaškrtnuto ve výchozím stavu".
+ *
+ * Ukládá se JEN odchylka od tvrdého výchozího stavu z DEFAULT_ZADANI(_PROJ):
+ * když se admin vrátí na původní hodnotu, klíč z matice zmizí. Matice tak
+ * nese jen to, co někdo opravdu přenastavil, a změna tvrdého výchozího stavu
+ * v kódu se propíše i do zakázek, kde nikdo nic neměnil. */
+
+/* Klíč `ock.pocitat:<původní název položky>` má vlastní tvar: názvy položek
+ * nesou tečky („PLECHY - OPLECH. DVEŘÍ…"), takže by přes tečkové omezení
+ * neprošly a sloupec Výchozí by u nich tiše nefungoval. */
+const ZOBRAZENI_VYCHOZI_KLIC = /^(ock|proj)\.([^.]+(\.[^.]+)?|(pocitat|priplatek):.+)$/;
+
+/* Předpona klíče pro „počítá se v nové zakázce" u běžné (nevolitelné)
+ * položky kalkulace OCK. */
+const ZOBRAZENI_POCITAT = 'ock.pocitat:';
+/* A pro příplatkovou položku: „jde v nové zakázce do cenové nabídky"
+ * (sloupec Nabídka). Klíč příplatku tečku neobsahuje, ale vlastní tvar
+ * má i tak — ať se obě věci nepletou. */
+const ZOBRAZENI_PRIPLATEK = 'ock.priplatek:';
+
+function zobrazeniPolozkaVychozi(mat, klic, zaklad) {
+  const v = mat && mat.vychozi && mat.vychozi[klic];
+  return typeof v === 'boolean' ? v : !!zaklad;
+}
+
+function zobrazeniPolozkaVychoziNastav(mat, klic, hodnota, zaklad) {
+  if (!mat || typeof mat !== 'object') return mat;
+  if (!ZOBRAZENI_VYCHOZI_KLIC.test(klic)) return mat;
+  if (!mat.vychozi || typeof mat.vychozi !== 'object') mat.vychozi = {};
+  if (!!hodnota === !!zaklad) delete mat.vychozi[klic];   // shoda s kódem = neukládá se
+  else mat.vychozi[klic] = !!hodnota;
+  if (!Object.keys(mat.vychozi).length) delete mat.vychozi;
+  return mat;
+}
+
+/* Klíč položky PROJ: trvalá položka z ceníku má kid (přežije přejmenování),
+ * ostatní se poznají podle názvu — ten je v DEFAULT_ZADANI_PROJ stabilní. */
+function zobrazeniProjKlic(sekceKey, polozka) {
+  const p = polozka || {};
+  return 'proj.' + sekceKey + '.' + (p.kid || p.nazev || '');
+}
+
+/* Vtiskne výchozí zaškrtnutí do ČERSTVÉHO zadání nové zakázky.
+ * Volá se hned po novaZakazka(), kdy zadání ještě nese tvrdé výchozí hodnoty
+ * z kódu — ty slouží jako `zaklad`, proti kterému se matice porovnává.
+ * Nikdy se nepouští na rozpracovanou zakázku: přepsalo by to práci
+ * obchodníka. Vrací počet změněných položek (pro testy). */
+function zobrazeniVychoziAplikuj(mat, zadaniOck, zadaniProj) {
+  let zmen = 0;
+  if (zadaniOck && typeof zadaniOck === 'object') {
+    /* přechodové plechy mají v zadání vlastní pole, ne položku ve `volitelne` */
+    const pl = zobrazeniPolozkaVychozi(mat, 'ock.prechodove', zadaniOck.prechodovePlechy);
+    if (!!pl !== !!zadaniOck.prechodovePlechy) { zadaniOck.prechodovePlechy = pl; zmen++; }
+    const vol = zadaniOck.volitelne || {};
+    Object.keys(vol).forEach(k => {
+      const v = zobrazeniPolozkaVychozi(mat, 'ock.' + k, vol[k]);
+      if (!!v !== !!vol[k]) { vol[k] = v; zmen++; }
+    });
+    /* Běžné (nevolitelné) položky kalkulace OCK: sloupec Výchozí říká, jestli
+     * se položka v NOVÉ zakázce vůbec počítá. Matice nese jen odchylky, tedy
+     * výhradně položky VYPNUTÉ — základ je „počítá se". */
+    const mv = (mat && mat.vychozi) || {};
+    const vyrazene = Object.keys(mv)
+      .filter(k => k.indexOf(ZOBRAZENI_POCITAT) === 0 && mv[k] === false)
+      .map(k => k.slice(ZOBRAZENI_POCITAT.length));
+    const dnes = Array.isArray(zadaniOck.nepocitat) ? zadaniOck.nepocitat : [];
+    if (vyrazene.join('\u0000') !== dnes.join('\u0000')) {
+      zadaniOck.nepocitat = vyrazene;
+      zmen += Math.abs(vyrazene.length - dnes.length) || 1;
+    }
+    /* Příplatky: matice nese jen ty, které se do nabídky dávat NEMAJÍ —
+     * základ je „jde do nabídky". V zadání je to `priplatkyVynechat`. */
+    const vynechane = Object.keys(mv)
+      .filter(k => k.indexOf(ZOBRAZENI_PRIPLATEK) === 0 && mv[k] === false)
+      .map(k => k.slice(ZOBRAZENI_PRIPLATEK.length));
+    const dnesP = Array.isArray(zadaniOck.priplatkyVynechat) ? zadaniOck.priplatkyVynechat : [];
+    if (vynechane.join('\u0000') !== dnesP.join('\u0000')) {
+      zadaniOck.priplatkyVynechat = vynechane;
+      zmen += Math.abs(vynechane.length - dnesP.length) || 1;
+    }
+  }
+  if (zadaniProj && Array.isArray(zadaniProj.sekce)) {
+    zadaniProj.sekce.forEach(s => {
+      (s.polozky || []).forEach(p => {
+        const pocitat = zobrazeniPolozkaVychozi(mat, zobrazeniProjKlic(s.key, p), !p.vyrazeno);
+        if (pocitat === !!p.vyrazeno) {          // liší se od dnešního stavu
+          if (pocitat) delete p.vyrazeno; else p.vyrazeno = true;
+          zmen++;
+        }
+      });
+    });
+  }
+  return zmen;
+}
+
 /* Liší se matice od dnešního stavu? Používá se v souhrnu Nastavení, aby bylo
  * na první pohled vidět, že někdo něco přenastavil. */
 function zobrazeniZmeny(mat) {
@@ -463,4 +673,7 @@ if (typeof module !== 'undefined')
     ZOBRAZENI_PRVKY, ZOBRAZENI_SKUPINY, ZOBRAZENI_ROLE_VZDY, ZOBRAZENI_ROLE_PRIDELITELNE,
     zobrazeniVychozi, zobrazeniPrvek, zobrazeniSmi, zobrazeniOciste, zobrazeniZmeny,
     ZOBRAZENI_SEKCE_VOLBY, zobrazeniSekceVolba, zobrazeniSekceNastav,
+    ZOBRAZENI_POCITAT, ZOBRAZENI_PRIPLATEK,
+    zobrazeniPolozkaVychozi, zobrazeniPolozkaVychoziNastav,
+    zobrazeniProjKlic, zobrazeniVychoziAplikuj,
   };

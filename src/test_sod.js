@@ -119,8 +119,43 @@ test('plná moc nese firemní údaje ({{FIRMA_*}})',
   'FIRMA_NAZEV' in pm.placeholders && 'FIRMA_SIDLO' in pm.placeholders && 'FIRMA_ICO' in pm.placeholders);
 test('plná moc nese adresu stavby z hlavičky PROJ', pm.placeholders.ADRESA === 'Zkušební 9, Praha');
 test('plná moc má vlastní jméno souboru', pm.nazevSouboru.indexOf('PLNA_MOC') === 0, pm.nazevSouboru);
-test('symboly PM_* (zmocnitel) se neplní — doplní se ručně',
-  !('PM_ZMOCNITEL' in pm.placeholders));
+test('prázdné pole plné moci se neplní — ve Wordu zůstane {{…}} k dopsání',
+  !('PM_ZMOCNITEL_NAROZEN' in pm.placeholders));
+
+/* Od 23. 8. 2026 mají zmocnitel i jednající osoba pole v krycím listu PROJ
+ * (zadání J. V.: „máme všechny žluté položky plné moci a smlouvy postiženy
+ * v krycím listu?"). Vyplněné se do dokumentu propíšou, prázdné zůstanou
+ * viditelné jako {{…}} — prázdné plnění by symbol beze stopy smazalo. */
+{
+  const zakPM = novaZakazka();
+  zakPM.adresa = 'Pod Kavalírkou 38, Praha 5';
+  const vPM = zakPM.varianty[0];
+  vPM.data.kryciProj = { hodnoty: {
+    pmZmocnitel: 'Jan Novák', pmZmocnitelNarozen: '1. 1. 1970',
+    pmZmocnitelBytem: 'Pod Kavalírkou 38, Praha 5', pmJednajici: 'Ing. Jiří Skovajsa, jednatel',
+  } };
+  const pm2 = plnaMocData(zakPM, vPM);
+  test('zmocnitel z krycího listu PROJ jde do plné moci',
+    pm2.placeholders.PM_ZMOCNITEL === 'Jan Novák'
+    && pm2.placeholders.PM_ZMOCNITEL_NAROZEN === '1. 1. 1970'
+    && pm2.placeholders.PM_ZMOCNITEL_BYTEM === 'Pod Kavalírkou 38, Praha 5',
+    JSON.stringify(pm2.placeholders.PM_ZMOCNITEL));
+  test('jednající osoba zhotovitele jde do plné moci',
+    pm2.placeholders.PM_JEDNAJICI === 'Ing. Jiří Skovajsa, jednatel');
+
+  vPM.data.kryciProj.hodnoty.sodpPlatba1 = '95 880 Kč';
+  vPM.data.kryciProj.hodnoty.sodpSpravniPoplatky = '5 000 Kč';
+  vPM.data.kryciProj.hodnoty.objPodpis2Jmeno = 'Petra Dvořáková';
+  vPM.data.kryciProj.hodnoty.objKopie1 = 'vybor1@svj.cz';
+  const sodP = sodProjData(zakPM, vPM);
+  test('splátky a doplňky z krycího listu jdou do SoD projekce',
+    sodP.placeholders.SODP_PLATBA1_KC === '95 880 Kč'
+    && sodP.placeholders.SODP_SPRAVNI_POPLATKY === '5 000 Kč'
+    && sodP.placeholders.OBJEDNATEL_PODPIS2_JMENO === 'Petra Dvořáková'
+    && sodP.placeholders.OBJEDNATEL_KONTAKT_KOPIE1 === 'vybor1@svj.cz');
+  test('nevyplněná splátka zůstane ve smlouvě vidět jako {{…}}',
+    !('SODP_PLATBA5_KC' in sodP.placeholders));
+}
 /* Když hlavička PROJ adresu nemá, bere se adresa stavby z hlavičky OCK —
  * plná moc se vyřizuje pro OBJEKT, ne pro konkrétní kalkulaci. */
 const zakBez = novaZakazka(); zakBez.adresa = 'Náhradní 1, Brno';
@@ -138,6 +173,44 @@ const xml = '<w:t>{{OBJEDNATEL}} … {{SOD_TERMIN_MONTAZ_OD}}</w:t>';
 const po = nahradPlaceholdery(xml, sod.placeholders);
 test('známý symbol se vyplní, neznámý zůstane viditelný',
   po.includes('SVJ Zkušební 9') && po.includes('{{SOD_TERMIN_MONTAZ_OD}}'), po);
+
+/* ---- zástupci a kontakty zákazníka (20. 8. 2026) ---------------------------
+ * Symboly, které do 20. 8. zůstávaly ve smlouvě prázdné. Sada hlídá tři věci:
+ * telefon a e-mail jsou v aplikaci DVĚ pole a slepenec vzniká až tady;
+ * osoba ve věcech smluvních plní i podpisovou doložku (je to týž člověk);
+ * a prázdné pole se nikdy nevloží jako prázdno — symbol musí zůstat vidět. */
+const zakZ = JSON.parse(JSON.stringify(zak));
+zakZ.zastupci = {
+  smluvniJmeno: 'Ing. Petr Sedlák', smluvniPozice: 'předseda výboru',
+  smluvniTel: '+420 601 111 222', smluvniEmail: 'sedlak@svj.cz',
+  obchodniJmeno: 'Jana Malá', obchodniTel: '+420 602 333 444', obchodniEmail: '',
+  technickyJmeno: 'Karel Technik', technickyTel: '', technickyEmail: 'technik@svj.cz',
+  fakturyEmail: 'faktury@svj.cz', fakturyTel: '',
+  banka: 'Komerční banka, a.s.', ucet: '123456789/0100', zapis: 'spolkový rejstřík MS v Praze',
+};
+const ph = sodData(zakZ, v, JEKLY, 'cz').placeholders;
+test('bankovní a rejstříkové údaje zákazníka se vyplní',
+  ph.OBJEDNATEL_BANKA === 'Komerční banka, a.s.' && ph.OBJEDNATEL_UCET === '123456789/0100'
+  && ph.OBJEDNATEL_ZAPIS === 'spolkový rejstřík MS v Praze');
+test('zástupce ve věcech smluvních nese jméno i pozici',
+  ph.OBJEDNATEL_ZASTUPCE_SMLUVNI === 'Ing. Petr Sedlák, předseda výboru', ph.OBJEDNATEL_ZASTUPCE_SMLUVNI);
+test('a je to zároveň podepisující osoba (žádná zvláštní podpisová pole)',
+  ph.OBJEDNATEL_PODPIS_JMENO === 'Ing. Petr Sedlák' && ph.OBJEDNATEL_PODPIS_FUNKCE === 'předseda výboru');
+test('telefon a e-mail se slepí až do dokumentu, každý z vlastního pole',
+  ph.OBJEDNATEL_ZASTUPCE_OBCHODNI_KONTAKT === '+420 602 333 444'
+  && ph.OBJEDNATEL_ZASTUPCE_TECHNICKY_KONTAKT === 'technik@svj.cz',
+  ph.OBJEDNATEL_ZASTUPCE_OBCHODNI_KONTAKT + ' | ' + ph.OBJEDNATEL_ZASTUPCE_TECHNICKY_KONTAKT);
+test('nevyplněný symbol se NEplní prázdnem (zůstane {{…}} v dokumentu)',
+  ph.SOD_TERMIN_DOKONCENI === undefined && ph.OBJEDNATEL_ZASTUPCE_OBCHODNI === 'Jana Malá');
+
+const { sodVedouciMontaziDoplna } = require('./sod.js');
+const vedM = sodVedouciMontaziDoplna({ FIRMA_VEDOUCI_MONTAZI: 'Tomáš Montér',
+  FIRMA_VEDOUCI_MONTAZI_TEL: '+420 603 555 666', FIRMA_VEDOUCI_MONTAZI_EMAIL: 'monter@firma.cz' });
+test('vedoucí montáží se překládá z firemního údaje na smluvní symbol',
+  vedM.SOD_VEDOUCI_MONTAZI === 'Tomáš Montér'
+  && vedM.SOD_VEDOUCI_MONTAZI_KONTAKT === '+420 603 555 666 / monter@firma.cz');
+test('a bez firemního údaje se symbol nevyrobí',
+  sodVedouciMontaziDoplna({}).SOD_VEDOUCI_MONTAZI === undefined);
 
 console.log('\nPASS=' + passes + ' FAIL=' + fails);
 process.exit(fails ? 1 : 0);

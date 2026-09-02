@@ -8,9 +8,21 @@
 let ZAK = novaZakazka();
 let Z, C, OCK, PJ, PC, TS, KL, KLP, SL, SLP, ZO, ZOP;
 
+/* Kurz EUR je od 2. 9. 2026 JEDEN pro celou zakázku (pokyn J. V.). Edituje se
+ * v ceníku OCK (`C.kurzEurKc`); ceník projekce si ho jen zrcadlí, protože
+ * dokumenty projekce (nabidka_proj.js) čtou kurz ze svého ceníku. Bez zrcadla
+ * by cizojazyčná nabídka počítala projekci jiným kurzem než stavební část —
+ * a na dokumentu se kurz neukazuje, takže by si toho nikdo nevšiml. */
+function kurzZrcadli(data) {
+  if (!data || !data.cenik || !data.proj || !data.proj.cenik) return;
+  const zdroj = +data.cenik.kurzEurKc || 0;
+  if (zdroj > 0) data.proj.cenik.kurzEurKc = zdroj;
+}
+
 function syncVarianta() {
   const v = aktivniVarianta(ZAK);
   ZAK.aktivni = v.id;
+  kurzZrcadli(v.data);
   if (!v.data.kryci) v.data.kryci = { hodnoty: {} };
   if (!v.data.kryci.hodnoty) v.data.kryci.hodnoty = {};
   if (!v.data.kryciProj) v.data.kryciProj = { hodnoty: {} };     // krycí list PROJ (KLP-1)
@@ -43,6 +55,11 @@ syncVarianta();
 /* ---------- nastavení aplikace (ozubené kolo, jen admin) ---------- */
 const NAST = {
   jeAdmin: true,               // dnes je vše admin; přepínač role je v Nastavení
+  /* `tabViditelnost` je od 20. 8. 2026 MRTVÉ POLE. Býval to druhý, globální
+   * vypínač záložek v Nastavení → Obecné: platil všem včetně administrátora,
+   * žil jen v paměti prohlížeče a dělal totéž co matice zobrazení — jen hůř.
+   * Pole zůstává kvůli uloženým konfiguracím (nic se nemaže bez dotazu),
+   * ale `tabViditelny()` ho už nečte. */
   tabViditelnost: { kalk: true, detail: true, spec: true, specdata: true, kryci: true, proj: true, detailproj: true, kryciproj: true, cenik: true, cenikproj: true, zakazka: true, schvalovani: true },
   zobrazitNaklady: true,       // sloupce Náklad/Přirážka v tabulce kalkulace (jen admin)
   kpiViditelne: { naklad: false, hrubyZisk: false, sleva: false, marze: false }, // KPI v hlavičce viditelné i běžnému uživateli
@@ -57,6 +74,19 @@ const NAST = {
    * administrátora. Prázdno = Obchodník. Běžného uživatele se to netýká –
    * jeho role chodí ze serveru a předstírat cizí nejde. */
   nahledRole: '',
+  /* Náhled KONKRÉTNÍHO uživatele (20. 8. 2026). Náhled role výše říká „co
+   * uvidí nějaký obchodník"; tohle říká „co uvidí Petr Novák". Drží
+   * { email, jmeno, role }; null = dívám se svýma očima. Přepíná se v pravém
+   * horním rohu klikem na jméno a v Nastavení → Zobrazení. Náhled je vždy
+   * JEN KE ČTENÍ (zamek_ui.js) a po odhlášení i po obnovení stránky se ruší:
+   * nikdo se nesmí omylem dívat cizíma očima a myslet si, že jsou jeho. */
+  /* Firemní standard OCK (#163, 21. 8. 2026). Výchozí znění je v
+   * standard_ock.js; zveřejňuje se na server jako ceník a matice zobrazení.
+   * Kontrola je ve výchozím stavu VYPNUTÁ. */
+  standard: (typeof STANDARD_VYCHOZI !== 'undefined')
+    ? JSON.parse(JSON.stringify(STANDARD_VYCHOZI)) : {},
+  nahledUzivatel: null,
+  nahledMenu: false,           // rozbalená nabídka náhledu pod jménem v liště
   jazyk: 'cz',                 // jazyk dokumentů: cz | en | de | fr (N1 – jazykové mutace)
 
   // --- Firemní údaje pro dokumenty (SET-3; jen admin) – viz firma.js ---
@@ -135,6 +165,91 @@ function smiPohledAdmina() {
  * pořídit otisk databáze smí podle netlify/functions/* jen administrátor
  * a upravený prohlížeč s tím nic nesvede. Tohle je vrstva pohodlí — co má
  * kdo na obrazovce, ne co smí provést. */
+/* ---------- náhled pohledem konkrétního uživatele (20. 8. 2026) ---------- */
+
+function nahledAktivni() { return !!(NAST.nahledUzivatel && NAST.nahledUzivatel.email); }
+
+/* Zapnutí: role vybraného účtu se stane rolí rozhraní. Pohled administrátora
+ * se zhasne (`NAST.jeAdmin = false`), jinak by matice vůbec nezačala platit —
+ * stejná mechanika jako u náhledu role, jen s konkrétním člověkem. */
+function nahledZapni(email) {
+  if (typeof smiPohledAdmina === 'function' && !smiPohledAdmina()) return;
+  const u = ((typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.uzivatele) || [])
+    .find(x => x.email === email);
+  if (!u) return;
+  NAST.nahledUzivatel = { email: u.email, jmeno: u.jmeno || u.email, role: u.role || 'Obchodník' };
+  NAST.nahledRole = NAST.nahledUzivatel.role;
+  NAST.jeAdmin = false;
+  NAST.nahledMenu = false;
+  render();
+}
+
+function nahledVypni() {
+  NAST.nahledUzivatel = null;
+  NAST.nahledRole = '';
+  NAST.jeAdmin = true;
+  NAST.nahledMenu = false;
+  render();
+}
+
+/* Zápis se v náhledu neprovede. Vrací true = „zastaveno", takže volající
+ * funkce se vrátí bez změny. Stejný tvar jako zamekStop() v zamek.js. */
+function nahledStop(popis) {
+  if (!nahledAktivni()) return false;   // rolový náhled zápis neblokuje (chová se jako dosud)
+  const kdo = NAST.nahledUzivatel.jmeno || NAST.nahledUzivatel.email;
+  hlaska('Prohlížíte aplikaci jako ' + kdo + ' — v náhledu se nic nezapisuje.\n\n'
+    + (popis ? 'Akce: ' + popis + '\n\n' : '')
+    + 'Náhled ukončíte kliknutím na jméno vpravo nahoře; pak se změna zapíše pod vaším jménem.');
+  return true;
+}
+
+/* Červený pruh TESTOVACÍHO webu (20. 8. 2026).
+ *
+ * Testovací kalkulačka běží na vlastní Netlify site, a má tedy i vlastní
+ * databázi (Blobs jsou per-site) — data se s ostrým provozem nepotkají.
+ * Zbývá jediné riziko: dvě stejně vypadající kalkulačky vedle sebe svádějí
+ * k tomu udělat nabídku v testu a poslat ji zákazníkovi. Pruh je proto
+ * NEPŘEHLÉDNUTELNÝ a je na každé záložce. Ostrý web nemá nic navíc:
+ * bez proměnné PROSTREDI=test se nekreslí. */
+function renderProstrediLista() {
+  const el = document.getElementById('prostrediLista');
+  if (!el) return;
+  const t = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV) ? ONLINE_STAV : {};
+  /* Jméno prostředí i do TITULKU KARTY prohlížeče (21. 8. 2026). Pruh je
+   * vidět, jen když je aplikace na obrazovce; v přepínači oken a v seznamu
+   * karet se ostrá a testovací kalkulačka bez tohohle nerozeznají. */
+  if (typeof document !== 'undefined') {
+    const zaklad = 'Kalkulátor OCK + PROJ';
+    document.title = (t.prostredi === 'test') ? ('[TEST] ' + zaklad) : zaklad;
+  }
+  if (t.prostredi !== 'test') { el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="prostredi-pruh">🧪
+    <span><b>TESTOVACÍ PROSTŘEDÍ</b> — vlastní databáze, ostrých dat se nedotkne.
+      ${esc(t.prostrediPopis || 'Nabídky odsud neposílejte zákazníkům.')}</span></div>`;
+}
+
+/* Oranžový pruh přes celou šířku — je vidět na každé záložce, takže se nedá
+ * zapomenout, že se člověk dívá cizíma očima. */
+function renderNahledLista() {
+  const el = document.getElementById('nahledLista');
+  if (!el) return;
+  const rolovy = !nahledAktivni() && !NAST.jeAdmin
+    && typeof smiPohledAdmina === 'function' && smiPohledAdmina();
+  if (!nahledAktivni() && !rolovy) { el.innerHTML = ''; return; }
+  /* Od 20. 8. 2026 pokrývá pruh OBA náhledy — konkrétního uživatele
+   * i obecnou roli. Do té doby měl náhled role vlastní tlačítko v horní
+   * liště („← Ukončit náhled uživatele"), takže při náhledu uživatele
+   * svítily dvě cesty ven vedle sebe. Tlačítko je pryč, pruh zůstal. */
+  const kdoHtml = nahledAktivni()
+    ? `<b>Náhled: ${esc(NAST.nahledUzivatel.jmeno || NAST.nahledUzivatel.email)}</b>`
+      + ` (${esc(NAST.nahledUzivatel.role)}) — vidíte přesně to, co on.`
+    : `<b>Náhled role: ${esc(NAST.nahledRole || 'Obchodník')}</b> — vidíte to, co uvidí tahle role.`;
+  el.innerHTML = `<div class="nahled-pruh">
+    <span style="display:inline-flex;color:#92400e">${typeof IKONA_OKO === 'string' ? IKONA_OKO : '·'}</span>
+    <span>${kdoHtml} Zápis je vypnutý.</span>
+    <button class="mini" style="margin-left:auto" onclick="nahledVypni()">Ukončit náhled</button></div>`;
+}
+
 function zobrazeniRole() {
   const ja = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV) ? ONLINE_STAV.ja : null;
   /* Náhled cizí role smí zapnout jen ten, kdo má nárok na pohled
@@ -160,10 +275,20 @@ function smiZobrazitVse(klice) { return klice.every(k => smiZobrazit(k)); }
  * ukládá se na server (/api/zobrazeni) hned při změně — platí pro všechny
  * a přežije obnovení stránky. Administrátor vidí vždy vše. */
 
+/* Režim sekce tak, jak se má PRÁVĚ TEĎ vykreslit přihlášenému uživateli.
+ *
+ * Změna 20. 8. 2026 (zadání J. V. „když nastavím srolování sekce, sroluj ji
+ * i u mě"): srolování platí pro VŠECHNY včetně administrátora — jinak admin
+ * nevidí, co vlastně nastavil, a musel by se přihlašovat za obchodníka.
+ * Skrytí zůstává výjimkou: administrátorovi se skrytá sekce dál kreslí,
+ * protože v jejím nadpisu je jediný ovládací prvek, kterým jde skrytí
+ * vrátit — kdyby zmizela, nešlo by ji už nikdy zobrazit. Že je skrytá
+ * ostatním, mu říká štítek vedle selectu (sekceRezimSelect). */
 function sekceRezim(oblast, sekceKey) {
-  if (jeAdmin()) return 'zobrazit';                       // admin vidí vždy vše
   if (typeof zobrazeniSekceVolba !== 'function') return 'zobrazit';
-  return zobrazeniSekceVolba(NAST.zobrazeni, oblast + '.' + sekceKey);
+  const v = zobrazeniSekceVolba(NAST.zobrazeni, oblast + '.' + sekceKey);
+  if (v === 'skryt' && jeAdmin()) return 'zobrazit';      // admin o ovládání nepřijde
+  return v;
 }
 
 /* Rozbalení srolované sekce je stav TÉTO obrazovky, ne nastavení — proto
@@ -174,22 +299,58 @@ function sekceSbalena(oblast, sekceKey) {
   return sekceRezim(oblast, sekceKey) === 'srolovat' && !SEKCE_ROZBALENO[oblast + '.' + sekceKey];
 }
 
-function sekceRezimSet(klic, volba) {
-  if (!jeAdmin() || typeof zobrazeniSekceNastav !== 'function') return;
-  if (!NAST.zobrazeni) NAST.zobrazeni = (typeof zobrazeniVychozi === 'function') ? zobrazeniVychozi() : {};
-  zobrazeniSekceNastav(NAST.zobrazeni, klic, volba);
-  /* hned na server, ať volba platí všem a přežije obnovení stránky; bez
-   * potvrzovacího okna — je to jedna volba u jedné sekce, ne celá matice */
+/* Odeslání matice zobrazení na server. Sdílí ji volba režimu sekce
+ * i sloupec Výchozí (20. 8. 2026) — obojí je jedno zaškrtnutí, ne celá
+ * matice, takže se ukládá hned a bez potvrzovacího okna. */
+function zobrazeniMaticiUloz(coSeNepovedlo) {
   if (typeof onlineApi === 'function' && typeof jeAdminOnline === 'function' && jeAdminOnline()) {
     onlineApi('/api/zobrazeni', { matice: NAST.zobrazeni })
       .then(() => { if (typeof onlineNactiZobrazeni === 'function') onlineNactiZobrazeni(); })
       .catch(e => { if (typeof onlineZprava === 'function') {
-        onlineZprava('Volbu zobrazení sekce se nepodařilo uložit na server: ' + e.message, 'varovani'); render();
+        onlineZprava(coSeNepovedlo + ' se nepodařilo uložit na server: ' + e.message, 'varovani'); render();
       } });
   } else if (typeof onlineZprava === 'function') {
-    onlineZprava('Volba zobrazení sekce platí jen do obnovení stránky – na server ji uloží až přihlášený administrátor.', 'varovani');
+    onlineZprava(coSeNepovedlo + ' platí jen do obnovení stránky – na server ji uloží až přihlášený administrátor.', 'varovani');
   }
+}
+
+function sekceRezimSet(klic, volba) {
+  if (!jeAdmin() || typeof zobrazeniSekceNastav !== 'function') return;
+  if (!NAST.zobrazeni) NAST.zobrazeni = (typeof zobrazeniVychozi === 'function') ? zobrazeniVychozi() : {};
+  zobrazeniSekceNastav(NAST.zobrazeni, klic, volba);
+  /* Rozbalení je stav obrazovky: po přepnutí na „srolovat" se sekce má
+   * opravdu srolovat i tomu, kdo ji měl před chvílí ručně rozbalenou. */
+  delete SEKCE_ROZBALENO[klic];
+  zobrazeniMaticiUloz('Volbu zobrazení sekce');
   render();
+}
+
+/* ---------- sloupec „Výchozí“ u položek kalkulace (20. 8. 2026) ----------
+ * Zaškrtnutí neplatí pro otevřenou zakázku, ale pro VŠECHNY NOVÉ: ukládá se
+ * do matice zobrazení (klíč `vychozi`, model v zobrazeni.js) a nová zakázka
+ * si ho vyzvedne v zobrazeniVychoziAplikuj(). Do 20. 8. 2026 sloupec zapisoval
+ * do zadání otevřené zakázky, kde ho nikdo nečetl — proto „nefungoval". */
+function vychoziPolozkaSet(klic, hodnota, zaklad) {
+  if (!jeAdmin() || typeof zobrazeniPolozkaVychoziNastav !== 'function') return;
+  if (!NAST.zobrazeni) NAST.zobrazeni = (typeof zobrazeniVychozi === 'function') ? zobrazeniVychozi() : {};
+  zobrazeniPolozkaVychoziNastav(NAST.zobrazeni, klic, hodnota, zaklad);
+  zobrazeniMaticiUloz('Výchozí zaškrtnutí položky');
+  render();
+}
+
+/* Zaškrtávátko do sloupce Výchozí. `zaklad` = tvrdá výchozí hodnota z kódu
+ * (DEFAULT_ZADANI / DEFAULT_ZADANI_PROJ) — proti ní se měří odchylka. */
+function vychoziPolozkaChk(klic, zaklad, popis) {
+  if (typeof zobrazeniPolozkaVychozi !== 'function') return '';
+  const v = zobrazeniPolozkaVychozi(NAST.zobrazeni, klic, zaklad);
+  const zmeneno = !!v !== !!zaklad;
+  /* Do 20. 8. 2026 měla přenastavená položka tmavší zaškrtávátko
+   * (accent-color). Vypadalo to jako porucha vykreslování, ne jako
+   * informace — zaškrtávátka v jednom sloupci mají být stejná.
+   * Že je hodnota přenastavená proti kódu, se dozvíte z nápovědy. */
+  return `<input type="checkbox" class="noprint" ${v ? 'checked' : ''}
+    onchange="vychoziPolozkaSet('${escJs(klic)}', this.checked, ${zaklad ? 'true' : 'false'})"
+    title="${esc(popis || 'výchozí stav v NOVÉ zakázce (platí pro všechny)')}${zmeneno ? ' — přenastaveno oproti výchozímu stavu aplikace' : ''}">`;
 }
 
 /* Malý select do pravé části nadpisu sekce (kreslí se JEN administrátorovi). */
@@ -198,9 +359,14 @@ function sekceRezimSelect(oblast, sekceKey) {
   const klic = oblast + '.' + sekceKey;
   const v = zobrazeniSekceVolba(NAST.zobrazeni, klic);
   const opt = (val, text) => `<option value="${val}" ${v === val ? 'selected' : ''}>${esc(text)}</option>`;
+  /* 20. 8. 2026: srolovaná sekce se roluje i administrátorovi, takže vedle
+   * selectu potřebuje i tlačítko rozbalení; u skryté sekce (kterou admin
+   * jediný pořád vidí) svítí štítek, aby si nemyslel, že ji vidí i ostatní. */
+  const doplnek = v === 'srolovat' ? ' ' + sekceRozbalBtn(oblast, sekceKey)
+    : (v === 'skryt' ? ` <span class="pill mut" title="obchodník ani vedoucí tuhle sekci nevidí; počítá se dál">skrytá ostatním</span>` : '');
   return `<select class="mini noprint sekce-rezim" onchange="sekceRezimSet('${escJs(klic)}', this.value)"
-      title="jak tuhle sekci uvidí obchodník a vedoucí (administrátor vidí vždy vše)">
-      ${opt('zobrazit', 'zobrazit')}${opt('skryt', 'skrýt')}${opt('srolovat', 'srolovat')}</select>`;
+      title="jak tuhle sekci uvidí obchodník a vedoucí (skrytou sekci vidí dál jen administrátor)">
+      ${opt('zobrazit', 'zobrazit')}${opt('skryt', 'skrýt')}${opt('srolovat', 'srolovat')}</select>${doplnek}`;
 }
 
 /* Tlačítko rozbalení pro obchodníka/vedoucího u srolované sekce. */
@@ -297,17 +463,21 @@ function sablonaProTisk(typ, lang) {
 /* je záložka viditelná? (skryté ceníky/detaily pro běžného uživatele) */
 /* Detail výpočtu PROJ (17. 8. 2026) se řídí TÝMŽ právem jako detail OCK —
  * oba rozepisují nákladové sazby a rozdávat je zvlášť by jen mátlo. */
-const TAB_ZOBRAZENI_KLIC = { cenik: 'tab.cenik', cenikproj: 'tab.cenikproj', detail: 'tab.detail', detailproj: 'tab.detail', specdata: 'tab.specdata' };
+/* Každá záložka má od 20. 8. 2026 svůj klíč v matici zobrazení (nález J. V.:
+ * „nastavení → zobrazení nereflektuje aktuální stav aplikace"). Do té doby
+ * měly klíč jen čtyři a zbytek se dal zhasnout výhradně přepínačem
+ * v Nastavení → Obecné — jenže ten platil VŠEM VČETNĚ ADMINISTRÁTORA a byl
+ * jen v paměti prohlížeče. Tenhle druhý mechanismus je proto pryč
+ * (viz `NAST.tabViditelnost`); rozhoduje výhradně matice, která se
+ * zveřejňuje na server a jde nastavit po rolích.
+ * `kalk` klíč nemá schválně: je domovská a náhrada za každou skrytou. */
+const TAB_ZOBRAZENI_KLIC = {
+  cenik: 'tab.cenik', cenikproj: 'tab.cenikproj', detail: 'tab.detail',
+  detailproj: 'tab.detailproj', specdata: 'tab.specdata', spec: 'tab.spec',
+  kryci: 'tab.kryci', proj: 'tab.proj', kryciproj: 'tab.kryciproj',
+  zakazka: 'tab.zakazka', zakaznici: 'tab.zakaznici', schvalovani: 'tab.schvalovani',
+};
 function tabViditelny(t) {
-  /* Nová záložka Detail výpočtu PROJ (17. 8. 2026): starší uložená nastavení
-   * ji neznají — zdědí proto viditelnost Detailu výpočtu OCK, ať nikomu,
-   * kdo detail vidí, nová záložka tiše nechybí. */
-  if (NAST.tabViditelnost.detailproj === undefined)
-    NAST.tabViditelnost.detailproj = NAST.tabViditelnost.detail !== false;
-  if (!NAST.tabViditelnost[t]) return false;
-  /* Dřív tu stálo `!NAST.jeAdmin && (cenik|cenikproj|detail|specdata)`.
-   * Matice #136 se ve výchozím stavu chová stejně, jen jde po jednotlivých
-   * záložkách — vedoucí tak může dostat Detail výpočtu, aniž by dostal ceník. */
   const k = TAB_ZOBRAZENI_KLIC[t];
   if (k && !smiZobrazit(k)) return false;
   return true;
@@ -355,11 +525,61 @@ function set(path, v) {
   const ks = path.split('.'); const last = ks.pop();
   ks.reduce((o, k) => o[k], rootObj())[last] = v;
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
+  /* Ceník je zdroj pravdy pro pár polí zadání (1. 9. 2026): ruční přepis
+   * pole se poznamená, aby ho ceník nepřebil, a naopak změna ŘÍDÍCÍ ceníkové
+   * položky se hned propíše do kalkulace — jinak by administrátor zadal číslo
+   * do ceníku a v kalkulaci se nestalo nic (přesně to hlásil J. V.). */
+  if (path === 'C.kurzEurKc' && typeof kurzZrcadli === 'function')
+    kurzZrcadli(aktivniVarianta(ZAK).data);
+  if (path.startsWith('Z.') && typeof zadaniRucniZnac === 'function')
+    zadaniRucniZnac(aktivniVarianta(ZAK).data, path.slice(2));
+  if (path.startsWith('C.') && typeof ZADANI_Z_CENIKU !== 'undefined'
+    && typeof cenikDoZadani === 'function') {
+    const klic = path.slice(2);
+    const ridici = ZADANI_Z_CENIKU.some(m => m.c === klic)
+      || klic === 'atypMontazPct' || klic === 'atypProjekcePct';
+    if (ridici) cenikDoZadani(aktivniVarianta(ZAK));
+  }
+  /* Zakázkové hodnoty (globální přirážka, sazba DPH): ruční změna se
+   * poznamená. Poznámka slouží OBĚMA směry — zveřejnění ceníku nepřepíše to,
+   * co obchodník sám nastavil (#177), a naopak do hodnoty, které se nikdo
+   * nedotkl, se ceník natáhnout SMÍ (31. 8. 2026, „přirážka se z ceníku
+   * nenačítá"). Platí to i pro pole v ceníku — je to totéž pole nad týmiž daty. */
+  if (typeof cenikPatriZakazce === 'function' && cenikPatriZakazce(path)
+    && typeof cenikRucniZnac === 'function')
+    cenikRucniZnac(aktivniVarianta(ZAK).data, path);
+  /* Změna zadání může posunout šachtu mimo standard — ATYP se pak zaškrtne
+   * sám (zadání J. V. 21. 8. 2026 večer). Stojí to TADY, ne v render():
+   * render se volá i z míst, kde se nic nemění, a zápis do dat uvnitř
+   * vykreslování je cesta k nekonečné smyčce. */
+  if (path.startsWith('Z.') && typeof standardAtypAutomat === 'function') standardAtypAutomat();
   render();
+}
+
+/* Klíč položky pro administrátora (1. 9. 2026, zadání J. V.: „přidej k textu
+ * položek v ceníku a v kalkulaci jen pro administrátora malým textem klíč,
+ * který bude vzájemným klíčem mezi těmito položkami").
+ *
+ * Slouží k jedinému: aby šlo bez hádání říct, která ceníková položka stojí za
+ * kterým řádkem kalkulace — a hlavně aby bylo VIDĚT, když za řádkem nestojí
+ * žádná (pak klíč chybí). Obchodník ho nevidí a do tisku nejde. */
+function klicChip(klic, titulek) {
+  if (!klic || typeof jeAdmin !== 'function' || !jeAdmin()) return '';
+  /* V kalkulaci se ukazuje JEN KLÍČ, ne celá vazba (2. 9. 2026, pokyn J. V.:
+   * „zobrazuj jen klíče s měrnou jednotkou, ne celé výpočty, pak to zabírá
+   * zbytečně moc místa"). Vazba `Z.montazZakladHod ← C.vychMontazZakladHod`
+   * se tedy zkrátí na `Z.montazZakladHod` a celá zůstane v bublině. */
+  const cely = String(klic);
+  const zobraz = cely.split('←')[0].trim();
+  const popis = titulek || (zobraz === cely
+    ? 'klíč ceníku — stejný klíč najdete u odpovídající položky v Ceníku nákladů'
+    : 'řídí se z ceníku: ' + cely);
+  return ` <span class="klic" title="${esc(popis)}">${esc(zobraz)}</span>`;
 }
 
 function inp(path, opts = {}) {
   const val = get(path);
+  if (opts.klic) opts = Object.assign({}, opts, { l: opts.l + klicChip(opts.klic) });
   const step = opts.step ?? 'any', u = opts.u ?? '';
   if (opts.type === 'check')
     return `<div class="row"><label>${opts.l}</label><input type="checkbox" ${val ? 'checked' : ''} onchange="set('${path}', this.checked)"><span class="u"></span></div>`;
@@ -376,12 +596,178 @@ function inp(path, opts = {}) {
       <option value="0" ${!val ? 'selected' : ''}>Ne</option></select><span class="u"></span></div>`;
   if (opts.type === 'pct')   // uloženo jako desetinné číslo (0,30), zobrazeno a zadáváno v % (30)
     return `<div class="row"><label>${opts.l}</label><input type="number" step="${opts.step ?? 1}" value="${Math.round(val * 10000) / 100}" onchange="set('${path}', (+this.value) / 100)"><span class="u">%</span></div>`;
-  return `<div class="row"><label>${opts.l}</label><input type="number" step="${step}" value="${val}" onchange="set('${path}', +this.value)"><span class="u">${u}</span></div>`;
+  return `<div class="row"><label>${opts.l}</label><input type="number" step="${step}" value="${esc(val)}" onchange="set('${path}', +this.value)"><span class="u">${u}</span></div>`;
 }
 
 function card(title, inner, closed = false, id = '') {
   // id slouží kotvám v klouzající liště kalkulací (kalkLista) – kliknutí sroluje na kartu
   return `<div class="card ${closed ? 'closed' : ''}"${id ? ` id="${id}"` : ''}><h2 onclick="this.parentElement.classList.toggle('closed')">${title}</h2><div class="body">${inner}</div></div>`;
+}
+
+/* Štítek stavu otevřené varianty vedle čísla nabídky (21. 8. 2026, zadání
+ * J. V.: „vždy zobrazuj, zda je nabídka aktivní nebo uzamčená").
+ *
+ * Zámek se dosud poznal jen podle lišty nad kalkulací, která se dá přerolovat
+ * — a rozdíl mezi „tuhle nabídku ještě můžu měnit" a „tahle už odešla
+ * zákazníkovi" je to nejdůležitější, co o otevřené variantě potřebujete
+ * vědět. Štítek je proto přímo v nadpisu, v OCK i v PROJ. */
+function variantaStavPill() {
+  const v = (typeof aktivniVarianta === 'function') ? aktivniVarianta(ZAK) : null;
+  if (!v) return '';
+  const z = (typeof zamekInfo === 'function') ? zamekInfo(v) : null;
+  /* Text je celá věta (21. 8. 2026, zadání J. V.): samotné „aktivní" vedle
+   * čísla nabídky se dalo číst i jako stav zakázky nebo účtu. Štítek sedí
+   * v tlačítkové liště nad kalkulací, kde je vidět i po odrolování. */
+  if (z) {
+    const kdy = String(z.kdy || '').slice(0, 10);
+    return `<span class="stav-pill zamcena" title="Odeslaná nabídka se zpětně needituje.${
+      z.popis ? ' ' + esc(z.popis) : ''}${kdy ? ' (' + esc(kdy) + ')' : ''} Pokračujte klonem varianty."
+      >🔒 Nabídka uzamčena</span>`;
+  }
+  return `<span class="stav-pill aktivni" title="Rozpracovaná varianta — dá se měnit a počítá se z ní nabídka."
+    >● Nabídka aktivní</span>`;
+}
+
+/* ---------- štítek Standard OCK (#163, 21. 8. 2026) ----------
+ * Vyhodnocení drží čistá funkce `standardVyhodnot` v src/standard_ock.js;
+ * tady je jen štítek do lišty a rozpis pod ním. Kontrola nic neblokuje
+ * a nic nepřepočítává — je to informace, ne zábrana. Když je vypnutá
+ * (výchozí stav), štítek se vůbec nekreslí. */
+let STD_ROZPIS = false;      // je rozpis nálezů rozbalený? (stav obrazovky)
+
+function standardVysledek() {
+  if (typeof standardVyhodnot !== 'function') return null;
+  let r;
+  try { r = vypocet(Z, C, JEKLY, OCK.fixes); } catch (e) { r = null; }
+  const vyska = r && r.odvozene ? r.odvozene.vyskaSachty : null;
+  /* Jednotypovost zasklení: názvy skel, která opravdu jdou do nabídky.
+   * „Zvolené" znamená dvě věci najednou — příplatek NENÍ vyškrtnutý ze
+   * sloupce Nabídka a má nenulové množství. Bez druhé podmínky by se
+   * hlásilo míchání skel i u šachty, kde je druhé sklo jen v ceníku
+   * s nulou. Míchání dvou druhů není standard (rozhodnutí J. V. 21. 8.). */
+  const vynechane = Z.priplatkyVynechat || [];
+  const skla = (r && r.priplatky ? r.priplatky : [])
+    .filter(x => x && /sklo/i.test(String(x.nazev || ''))
+      && vynechane.indexOf(x.key) < 0 && (+x.mnozstvi || 0) > 0)
+    .map(x => x.nazev);
+  return standardVyhodnot(Z, vyska, NAST.standard, skla);
+}
+
+function standardPill() {
+  const v = standardVysledek();
+  if (!v || v.stav === 'vypnuto') return '';
+  const tridy = { standard: 'ok', atyp: 'atyp', nelze: 'nejisto' };
+  const popis = {
+    standard: 'Šachta odpovídá firemnímu standardu OCK. Kliknutím rozbalíte, co se kontrolovalo.',
+    atyp: 'Šachta je mimo firemní standard. Kliknutím rozbalíte nálezy.',
+    nelze: 'K posouzení chybí údaj. Kliknutím rozbalíte, který.',
+  };
+  return `<span class="std-pill ${tridy[v.stav]}" onclick="standardRozpisPrepni()"
+    title="${esc(popis[v.stav])}">${esc(standardPopis(v))} ${STD_ROZPIS ? '▴' : '▾'}</span>`;
+}
+
+function standardRozpisPrepni() { STD_ROZPIS = !STD_ROZPIS; render(); }
+
+/* ---------- ATYP se u nestandardní šachty zaškrtne sám (21. 8. 2026 večer) ----
+ *
+ * Zadání J. V.: „pokud je zakázka vyhodnocena jako nestandardní, automaticky
+ * zaškrtni políčko ATYP." Je to vědomý ústup od zásady „přirážku zapíná
+ * vždycky člověk" (návrh z 21. 8. ráno) — proto tři pojistky, aby se z toho
+ * nestal stroj, který obchodníkovi přepisuje práci:
+ *
+ *  1. VYPÍNÁ JEN SVOJE. Vrátí-li se šachta do standardu, automat odškrtne
+ *     ATYP, který sám zaškrtl (`Z.atypAutomat`). ATYPu zaškrtnutého ČLOVĚKEM
+ *     se nedotkne — důvodů k atypu je víc než rozměry a ty aplikace nezná.
+ *  2. RUČNÍ ODŠKRTNUTÍ SE RESPEKTUJE. Kdo ATYP u nestandardní šachty vypne,
+ *     řekl tím „vím o tom". Zapamatuje se to v zadání (`atypRucneVypnut`)
+ *     a automat na tu zakázku už nesáhne, dokud se šachta nevrátí
+ *     do standardu. Bez toho by se zaškrtávátko po každé změně vracelo
+ *     a nešlo by vypnout vůbec.
+ *  3. NESAHÁ NA ZAMČENOU VARIANTU ANI V NÁHLEDU. Odeslaná nabídka se nemění
+ *     nikdy a náhled cizíma očima je jen ke čtení.
+ *
+ * Vrací true, když opravdu přepnul (pro testy a pro hlášku). */
+function standardAtypAutomat() {
+  if (typeof standardVysledek !== 'function' || typeof atypPrepni !== 'function') return false;
+  if (typeof nahledAktivni === 'function' && nahledAktivni()) return false;
+  if (typeof variantaUzamcena === 'function' && variantaUzamcena(aktivniVarianta(ZAK))) return false;
+
+  let v = null;
+  try { v = standardVysledek(); } catch (e) { return false; }
+  if (!v || v.stav === 'vypnuto') return false;
+
+  if (v.stav !== 'atyp') {
+    /* Zpátky ve standardu: ruční „ne" ztrácí platnost, aby příští odchylka
+     * zase zabrala. */
+    if (Z.atypRucneVypnut) delete Z.atypRucneVypnut;
+    /* A pomine-li potřeba atypu, automat SVOJE zaškrtnutí zase vypne
+     * (21. 8. 2026 večer, zadání J. V.: „když pomine potřeba atyp,
+     * automaticky tlačítko zase vypni"). Ručně zaškrtnutý ATYP zůstává —
+     * ten značku `atypAutomat` nenese. */
+    if (Z.atyp && Z.atypAutomat) { atypPrepni(false, { automat: true }); return true; }
+    return false;
+  }
+  if (Z.atyp || Z.atypRucneVypnut) return false;
+  atypPrepni(true, { automat: true });
+  return true;
+}
+
+/* Rozpis pod lištou — kreslí se jen rozbalený a jen tam, kde má smysl
+ * (Kalkulace OCK a Technická specifikace). */
+function standardRozpis() {
+  if (!STD_ROZPIS) return '';
+  const v = standardVysledek();
+  if (!v || v.stav === 'vypnuto') return '';
+  const barva = v.stav === 'standard' ? 'background:#dcfce7;color:#166534'
+    : (v.stav === 'atyp' ? 'background:#fee2e2;color:#991b1b' : 'background:#fff7e6;color:#92400e');
+  const radky = v.nalezy.length
+    ? v.nalezy.map(n => `<tr><td>${esc(n.co)}</td><td>${esc(n.limit)}</td>
+        <td style="font-weight:600">${esc(n.zadano)}${n.stav === 'nelze' ? ' <span class="pill mut">nelze posoudit</span>' : ''}</td></tr>`).join('')
+    : `<tr><td colspan="3">Všech ${v.kontrol} kontrolovaných pravidel sedí.</td></tr>`;
+  /* Nabídka zapnout ATYP se ukazuje jen u skutečného atypu a jen tomu, kdo
+   * na to má právo. Nikdy se nezapíná sama — přirážka mění cenu. */
+  /* Věta u tlačítka přepsána 22. 8. 2026 („co znamená ať přirážku
+   * nezapínáme sami? nerozumím" — J. V.): má říkat, CO tlačítko udělá
+   * a PROČ tu vůbec je, když jindy ATYP zaškrtává automat. Automat sahá
+   * na zakázku jen při ZMĚNĚ zadání — u zakázky, která se nestandardní
+   * teprve NAČETLA (nebo kde byl ATYP ručně odškrtnut), by tiché zapnutí
+   * změnilo cenu bez vědomí obchodníka. */
+  const nabidka = (v.stav === 'atyp' && !Z.atyp && smiZobrazit('sloupce.naklad'))
+    ? `<div style="padding:8px 12px;border-top:1px solid var(--line)">
+         <button class="mini" onclick="atypPrepni(true)">Zapnout ATYP a přirážku</button>
+         <span class="note" style="margin-left:8px">Zaškrtne ATYP v zadání a přidá do Režie přirážku
+           za projekční a koordinační práce — cena se zvýší. U načtené zakázky to necháváme
+           na vás, aby se cena nezměnila jen otevřením souboru.</span>
+       </div>` : '';
+  return `<div class="std-panel noprint">
+    <div class="hd" style="${barva}">${esc(standardPopis(v))} — kontrolováno ${v.kontrol} pravidel</div>
+    <table><tr><th>Pravidlo</th><th>Standard</th><th>V zadání</th></tr>${radky}</table>${nabidka}</div>`;
+}
+
+/* Karta s režimem sekce (20. 8. 2026, zadání J. V.).
+ *
+ * Volba zobrazit / skrýt / srolovat byla do 20. 8. jen u sekcí UVNITŘ tabulky
+ * kalkulace (řádek tr.sechd). Karty jako „Příplatkové položky" nebo „Detail
+ * mezivýpočtů" ji neměly — přitom jsou to z pohledu obchodníka úplně stejné
+ * bloky a admin je potřebuje řídit stejně. Tahle obálka nad card() jim ji dává:
+ * v nadpisu je pro admina týž `<select class="sekce-rezim">`, skrytá karta se
+ * obchodníkovi nekreslí a srolovaná se otevře kliknutím na nadpis (mechanika
+ * card(closed) zůstává).
+ *
+ * `event.stopPropagation()` u selectu je nutné: nadpis karty sám o sobě
+ * sbaluje a rozbaluje, takže bez něj by každá změna volby kartu i překlopila. */
+function kartaRezim(oblast, sekceKey, title, inner, id = '') {
+  const rezim = sekceRezim(oblast, sekceKey);
+  if (rezim === 'skryt') return '';
+  const vpravo = jeAdmin() ? sekceRezimSelect(oblast, sekceKey)
+    : (rezim === 'srolovat' ? sekceRozbalBtn(oblast, sekceKey) : '');
+  const nadpis = `<span style="flex:1">${title}</span>`
+    + (vpravo ? `<span onclick="event.stopPropagation()" style="font-weight:400">${vpravo}</span>` : '');
+  const zavreno = sekceSbalena(oblast, sekceKey);
+  return `<div class="card ${zavreno ? 'closed' : ''}"${id ? ` id="${id}"` : ''}>
+    <h2 onclick="this.parentElement.classList.toggle('closed')"
+      style="display:flex;align-items:center;gap:12px">${nadpis}</h2>
+    <div class="body">${inner}</div></div>`;
 }
 
 /* Krátké názvy kotev v liště PROJ (zadání z 29. 7. 2026). Mapuje se přes `key`
@@ -412,6 +798,9 @@ function kalkLista(ock) {
     <button class="hist2 jsHistZnovu" disabled onclick="historieZnovu()">↷ Znovu</button>
     <span class="odd"></span>
     ${chips.map(([id, t]) => `<a class="dv-kotva" href="#${id}">${esc(t)}</a>`).join('')}
+    <span style="margin-left:auto;display:inline-flex;gap:8px;align-items:center">${
+      typeof variantaStavPill === 'function' ? variantaStavPill() : ''}${
+      typeof standardPill === 'function' ? standardPill() : ''}</span>
   </div>`;
 }
 
@@ -426,6 +815,27 @@ function zakazkaHlavicka(ock) {
     `<option value="${v.id}" ${v.id === akt.id ? 'selected' : ''}>${esc(v.nazev)}${v.ridici ? ' · řídící' : ''}</option>`).join('');
   const txt = (path, label, pill) => `<div class="row"><label>${label}${pill || ''}</label>
     <input type="text" value="${esc(get(path))}" onchange="set('${path}', this.value)"></div>`;
+
+  /* Pole „Zákazník" našeptává z kartotéky i z rejstříku zakázek (22. 8. 2026,
+   * zadání J. V.). `kde` je 'ock' nebo 'proj' — obě hlavičky jsou v dokumentu
+   * zároveň, takže box potřebuje vlastní id. Zapisuje se přes onchange jako
+   * dosud; našeptávač jen nabízí, nic nevyplňuje sám. */
+  /* Pole Zákazník s našeptávačem. Od 22. 8. 2026 se výběrem (i ručním
+   * dopsáním celého jména) dotáhnou z kartotéky i prázdné údaje hlavičky —
+   * kontaktní osoba, IČO, adresa, zástupci. Vyplněné pole se nepřepisuje,
+   * na to je tlačítko „Vybrat z databáze zákazníků". Kartotéka se při
+   * prvním kliknutí do pole doptá serveru, jinak by našeptávač nabízel jen
+   * jména z dřívějších zakázek a dotahovat by neměl z čeho. */
+  const zakaznikRow = (kde) => `<div class="row"><label>Zákazník</label>
+    <span class="nasept-wrap" style="flex:1"><input type="text" style="width:100%" autocomplete="off"
+      value="${esc(get('ZAK.objednatel'))}"
+      title="Při psaní se nabízejí zákazníci z databáze a z dřívějších zakázek. Výběrem se doplní prázdná pole hlavičky (kontaktní osoba, IČO, adresa); už vyplněné údaje zůstanou a celou hlavičku přepíše tlačítko „Vybrat z databáze zákazníků“."
+      onchange="if(typeof naseptavacZakVyber==='function')naseptavacZakVyber(this.value,'${kde}'); else set('ZAK.objednatel', this.value)"
+      oninput="naseptavacZakKresli('${kde}', this.value)"
+      onfocus="if(typeof zakazniciNactiProNaseptavac==='function')zakazniciNactiProNaseptavac(); naseptavacZakKresli('${kde}', this.value)"
+      onblur="naseptavacZakSchovej('${kde}')"
+      onkeydown="if(event.key==='Escape')naseptavacZakSchovej('${kde}')">
+    <span class="nasept-box" id="naseptBoxZak_${kde}" style="display:none"></span></span></div>`;
 
   /* Kontrola duplicit (19. 8. 2026): číslo i název se porovnávají s online
    * rejstříkem zakázek; kolize svítí štítkem hned u pole, kde se opravuje.
@@ -456,18 +866,52 @@ function zakazkaHlavicka(ock) {
     /* Pod polem stojí dotaz do rejstříku (#10). Je to nabídka, ne krok
      * v postupu – hlavička se dá vyplnit ručně a nabídka odejde i tak. */
     const kde = kdeAres || (path.indexOf('projHlavicka') >= 0 ? 'proj' : 'ock');
-    const ares = (typeof aresRadek === 'function') ? aresRadek(kde) : '';
-    return `<div class="row"><label>IČO objednatele${pill}</label>
+    /* Vedle ARES stojí od 20. 8. 2026 cesta do databáze zákazníků (#162):
+     * u zákazníka, kterého už jednou někdo vyplnil, se všechno přenese
+     * jedním kliknutím. Je to nabídka, ne krok v postupu — hlavička se dá
+     * pořád vyplnit ručně. */
+    /* Tlačítka databáze zákazníků stojí od 21. 8. 2026 v TÉMŽE řádku jako
+     * „Najít firmu v ARES" (zadání J. V.) — jsou to tři varianty jedné věci:
+     * odkud vzít údaje o firmě. Na vlastním řádku pod ARES vypadala jako
+     * něco jiného a odsouvala datum o kus níž. */
+    /* Řádek „odkud vzít údaje o firmě" (21. 8. 2026, zadání J. V.):
+     * VŠECHNA tři tlačítka v jednom řádku, v pořadí databáze → uložit → ARES,
+     * zarovnaná zleva s popiskem „IČO zákazníka" a zprava s koncem pole IČO.
+     * Proto vlastní řádek s `justify-content:space-between`, ne mřížka .row
+     * s prázdným popiskem — ta začínala až u pole a tlačítka se lámala. */
+    /* Tlačítka databáze zákazníků se kreslí VŽDY (22. 8. 2026, hlášeno
+     * J. V.: „v offline html se nám nezobrazují"). Databáze žije na
+     * serveru, takže bez přihlášení fungovat nemůžou — ale zmizelé
+     * tlačítko vypadá jako chyba. Zhasnuté tlačítko s důvodem v bublině
+     * říká pravdu: funkce existuje, jen tady není k dispozici. */
+    const zakMozne = typeof zakazniciMozne === 'function' && zakazniciMozne();
+    const zakDuvod = zakMozne ? ''
+      : (typeof onlineMozne === 'function' && !onlineMozne()
+        ? ' — databáze zákazníků žije na serveru; v souboru spuštěném z disku není dostupná'
+        : ' — nejdřív se přihlaste k databázi (Nastavení → Databáze)');
+    const zakVyp = zakMozne ? '' : ' disabled';
+    /* Tlačítka jsou od 22. 8. 2026 v OBOU hlavičkách (zadání J. V.: „tato
+     * funkce má být přístupná i v kalkulaci proj"). Hlavička je jedna
+     * společná — obě kalkulace čtou a píší tatáž pole ZAK.* —, takže
+     * omezení na OCK nedávalo smysl: kdo zakládal zakázku z Kalkulace PROJ,
+     * musel kvůli zákazníkovi přepnout do OCK. */
+    const zakDbBtns = `<button class="mini noprint"${zakVyp} onclick="prepniTab('zakaznici')"
+           title="vybrat zákazníka z databáze — přenese hlavičku i kontakty do krycích listů${esc(zakDuvod)}"
+           >Vybrat z databáze zákazníků</button>
+         <button class="mini noprint"${zakVyp} onclick="zakaznikZeZakazkyUI()"
+           title="uložit údaje z téhle hlavičky jako novou kartu zákazníka${esc(zakDuvod)}">Uložit jako zákazníka</button>`;
+    const aresBtns = (typeof aresRadek === 'function') ? aresRadek(kde, false, zakDbBtns) : zakDbBtns;
+    return `<div class="row"><label>IČO zákazníka${pill}</label>
       <input type="text" value="${esc(h)}" placeholder="8 číslic"
-        title="IČO objednatele; přebírá ho krycí list. Prázdné pole se nikde nehlásí."
-        onchange="set('${path}', this.value)"></div>${ares}`;
+        title="IČO zákazníka; přebírá ho krycí list. Prázdné pole se nikde nehlásí."
+        onchange="set('${path}', this.value)"></div>${aresBtns}`;
   };
 
   // indikátor řídící varianty přímo za popiskem „Otevřená varianta" (odsazený)
   const ridiciPill = `<span class="pill ${akt.ridici ? '' : 'mut'}" style="margin-left:12px" title="řídící = aktuálně platná varianta pro nabídku">${akt.ridici ? '✓ řídící' : 'není řídící'}</span>`;
   const variantaRow = `<div class="row"><label>Otevřená varianta${ridiciPill}</label>
     <select onchange="varAktivuj(this.value)" title="přepnout počítanou variantu">${opts}</select></div>`;
-  const ridiciBtn = akt.ridici ? '' : `<div class="row"><label></label><button class="mini noprint" onclick="varRidici('${akt.id}')">nastavit jako řídící (platná je „${esc(rid.nazev)}")</button></div>`;
+  const ridiciBtn = akt.ridici ? '' : `<div class="row"><label></label><button class="mini noprint" onclick="varRidici('${escJs(akt.id)}')">nastavit jako řídící (platná je „${esc(rid.nazev)}")</button></div>`;
   const rezimRow = `<div class="row"><label>Režim výpočtu</label>
     <select onchange="set('OCK.fixes', this.value==='fix')" title="přepnutí Model 2 – opravený / Model 1 – 1:1 jako Excel">
       <option value="fix" ${OCK.fixes ? 'selected' : ''}>Model 2 – opravený</option>
@@ -481,16 +925,61 @@ function zakazkaHlavicka(ock) {
    * dřívější třída `admin-only` uměla jen „admin / neadmin", ne přidělení roli. */
   const prirazkaRow = !smiZobrazit('pole.prirazka') ? '' : `<div class="row"><label>Globální přirážka</label>
     <span class="pct-wrap"><input type="number" step="1" value="${Math.round(C.marze * 10000) / 100}" onchange="set('C.marze', (+this.value) / 100)"> %</span></div>`;
-  const dphRow = `<div class="row"><label>Sazba DPH</label>
-    <select onchange="set('C.dph', +this.value)">
-      <option value="0.12" ${C.dph === 0.12 ? 'selected' : ''}>12 % snížená</option>
-      <option value="0.21" ${C.dph === 0.21 ? 'selected' : ''}>21 % základní</option></select></div>`;
 
+  /* ---------- řada ceníku: ČR / Zahraničí (#181, 31. 8. 2026) ----------
+   * Zadání J. V.: „v pravém rohu hlavičky přepínač ČR / Zahraničí, který se
+   * bude jemně podbarvovat a definovat výpočet v tuzemských nebo zahraničních
+   * cenách." Stojí vedle režimu výpočtu a globální přirážky — je to volba
+   * k zakázce, ne nastavení programu. Zahraniční režim podbarví celou
+   * hlavičku, aby se zakázka poznala i letmým pohledem.
+   *
+   * Volba patří VARIANTĚ: jde tak postavit tuzemskou a zahraniční variantu
+   * téže nabídky vedle sebe. Nová zakázka i nová varianta začínají tuzemsky. */
+  const radaTed = (typeof cenikRadaVarianty === 'function')
+    ? cenikRadaVarianty(akt.data) : 'cr';
+  const radaRow = (typeof CENIK_RADY === 'undefined') ? '' : `<div class="row"><label>Ceník</label>
+    <span class="rada-prep">${CENIK_RADY.map(r => `<button type="button"
+      class="${radaTed === r.id ? 'on' : ''}${r.id === 'zahr' ? ' zahr' : ''}"
+      title="${esc(r.popis)} — přepnutí se nejdřív zeptá a ukáže, čeho se dotkne"
+      onclick="cenikRadaPrepniUI('${r.id}')">${esc(r.nazev)}</button>`).join('')}</span></div>`;
+  /* Kurz je společný pro obě řady (rozhodnutí J. V.), u zahraniční zakázky
+   * se ale ukazuje — ať je vidět, s čím se bude počítat cizojazyčná nabídka. */
+  const kurzRow = (radaTed !== 'zahr' || !smiZobrazit('pole.prirazka')) ? ''
+    : `<div class="row"><label>Kurz pro nabídku</label>
+       <span class="pct-wrap"><input type="number" step="0.01" value="${esc(C.kurzEurKc || 0)}"
+         title="kurz z ceníku; v dokumentu se neukazuje, jen se jím převádí"
+         onchange="set('C.kurzEurKc', +this.value)"> Kč/€</span></div>`;
+  /* Sazby DPH jsou od 1. 9. 2026 PŘEDVOLBY Z CENÍKU (zadání J. V.: „přidej do
+   * obou ceníků sekci DPH … a samozřejmě je potřebujeme editovat, kdyby se
+   * změnil zákon"). Nabídka v hlavičce se tedy skládá z ceníku; sazba samotné
+   * zakázky zůstává zakázkovou hodnotou a zveřejnění ceníku ji nepřepíše
+   * (#177). Prázdná nebo nulová předvolba znamená nenastaveno a platí dnešní
+   * zákonná sazba — jinak by po nasazení z vynulovaného repozitáře nabízela
+   * hlavička samé nuly. */
+  const dphPredvolby = (c, dnesniSazba) => {
+    const v = (klic, zaklad) => (typeof cenikVychozi === 'function')
+      ? cenikVychozi(c, klic, zaklad) : zaklad;
+    const nula = (c && typeof c.dphNulova === 'number' && c.dphNulova > 0) ? c.dphNulova : 0;
+    return [
+      { h: v('dphZakladni', 0.21), l: 'základní' },
+      { h: v('dphSnizena', 0.12), l: 'snížená' },
+      { h: nula, l: 'bez DPH' },
+    ].concat((dnesniSazba != null && ![v('dphZakladni', 0.21), v('dphSnizena', 0.12), nula]
+      .some(x => Math.abs(x - dnesniSazba) < 1e-9))
+      ? [{ h: dnesniSazba, l: 'vlastní sazba zakázky' }] : []);
+  };
+  /* Bez klíče v popisku schválně: hlavička má pevné rozvržení a klíč v tomhle
+   * řádku posunul „Datum vytvoření" o čtyři pixely (chytil overit_lista.mjs).
+   * Vazba je zřejmá z ceníku, kde sekce SAZBY DPH klíče nese. */
+  const dphSelect = (cesta, c, sazba) => `<div class="row"><label>Sazba DPH</label>
+    <select onchange="set('${cesta}', +this.value)">${dphPredvolby(c, sazba).map(o =>
+      `<option value="${o.h}" ${Math.abs((+sazba || 0) - o.h) < 1e-9 ? 'selected' : ''}>${
+        Math.round(o.h * 10000) / 100} % ${o.l}</option>`).join('')}</select></div>`;
+  const dphRow = dphSelect('C.dph', C, C.dph);
   // PROJ má vlastní sazbu DPH (ceník PROJ) – projekční práce bývají v jiné sazbě než stavební část
-  const dphRowProj = `<div class="row"><label>Sazba DPH</label>
-    <select onchange="set('PC.dph', +this.value)">
-      <option value="0.12" ${PC.dph === 0.12 ? 'selected' : ''}>12 % snížená</option>
-      <option value="0.21" ${PC.dph === 0.21 ? 'selected' : ''}>21 % základní</option></select></div>`;
+  /* Předvolby DPH bere projekce z ceníku OCK (2. 9. 2026: jeden zdroj pravdy).
+   * Vybraná sazba zůstává projekci vlastní — `PC.dph`. */
+  const dphRowProj = dphSelect('PC.dph', C, PC.dph);
   /* datumRowProj zanikl 19. 8. 2026 — hlavička je jedna společná (ZAK.datum). */
 
   /* Globální přirážka PROJ (zadání 31. 7. 2026) – stejné místo i chování jako
@@ -523,7 +1012,7 @@ function zakazkaHlavicka(ock) {
           ${txt('ZAK.cislo', 'Číslo nabídky (CN)', dupCislo)}${txt('ZAK.nazevAkce', 'Název akce', dupNazev)}${txt('ZAK.adresa', 'Adresa stavby')}${datumRow}
         </div>
         <div class="zak-head-col">
-          ${txt('ZAK.objednatel', 'Objednatel')}${txt('ZAK.kontakt', 'Kontaktní osoba')}${icoRow('ZAK.ico', 'proj')}${dphRowProj}
+          ${zakaznikRow('proj')}${txt('ZAK.kontakt', 'Kontaktní osoba')}${icoRow('ZAK.ico', 'proj')}${dphRowProj}
         </div>
         <div class="zak-head-col">${variantaRow}${ridiciBtn}${prirazkaRowProj}</div>
       </div>${puvodRadek}
@@ -534,7 +1023,10 @@ function zakazkaHlavicka(ock) {
         ${archivBtn}
         <button class="mini" onclick="prepniTab('zakazka')">Přehled cenových nabídek →</button>
       </div>${zakUlozeniRadek()}`;
-    return `<div class="card zak-bar"><div class="zak-bar-h">Zakázka a varianta</div><div class="body">${inner}</div></div>`
+    return `<div class="card zak-bar${radaTed === 'zahr' ? ' rada-zahr' : ''}">
+        <div class="zak-bar-h">Zakázka a varianta${radaTed === 'zahr'
+          ? ' <span class="rada-stitek">zahraniční ceník</span>' : ''}</div>
+        <div class="body">${inner}</div></div>`
       + kalkLista(false);
   }
 
@@ -543,10 +1035,10 @@ function zakazkaHlavicka(ock) {
         ${txt('ZAK.cislo', 'Číslo nabídky (CN)', dupCislo)}${txt('ZAK.nazevAkce', 'Název akce', dupNazev)}${txt('ZAK.adresa', 'Adresa stavby')}${datumRow}
       </div>
       <div class="zak-head-col">
-        ${txt('ZAK.objednatel', 'Objednatel')}${txt('ZAK.kontakt', 'Kontaktní osoba')}${icoRow('ZAK.ico')}${dphRow}
+        ${zakaznikRow('ock')}${txt('ZAK.kontakt', 'Kontaktní osoba')}${icoRow('ZAK.ico')}${dphRow}
       </div>
       <div class="zak-head-col">
-        ${variantaRow}${ridiciBtn}${rezimRow}${prirazkaRow}
+        ${variantaRow}${ridiciBtn}${rezimRow}${prirazkaRow}${radaRow}${kurzRow}
       </div>
     </div>${puvodRadek}
     <div class="zak-cena noprint">
@@ -556,25 +1048,28 @@ function zakazkaHlavicka(ock) {
       ${archivBtn}
       <button class="mini" onclick="prepniTab('zakazka')">Přehled cenových nabídek →</button>
     </div>${zakUlozeniRadek()}`;
-  return `<div class="card zak-bar"><div class="zak-bar-h">Zakázka a varianta</div><div class="body">${inner}</div></div>`
+  return `<div class="card zak-bar${radaTed === 'zahr' ? ' rada-zahr' : ''}">
+      <div class="zak-bar-h">Zakázka a varianta${radaTed === 'zahr'
+        ? ' <span class="rada-stitek">zahraniční ceník</span>' : ''}</div>
+      <div class="body">${inner}</div></div>`
     + kalkLista(true);
 }
 
 /* Ruční přenos hlavičky mezi OCK a PROJ. Ptá se, jen pokud by přepsal
  * neprázdná a odlišná pole – pak vypíše, kterých se to týká. */
-function zakHlavickaKopiruj(smer) {
+async function zakHlavickaKopiruj(smer) {
   const doProj = smer === 'doProj';
   const cil = doProj ? 'Kalkulace PROJ' : 'Kalkulace OCK';
   const zdroj = doProj ? 'Kalkulace OCK' : 'Kalkulace PROJ';
   if (zakazkaHlavickyShodne(ZAK)) {
-    alert('Obě hlavičky už mají shodné údaje – není co přenášet.');
+    hlaska('Obě hlavičky už mají shodné údaje – není co přenášet.');
     return;
   }
   const nazvy = { cislo: 'Číslo nabídky', nazevAkce: 'Název akce', adresa: 'Adresa stavby',
-                  objednatel: 'Objednatel', kontakt: 'Kontaktní osoba',
-                  ico: 'IČO objednatele', datum: 'Datum vytvoření' };
+                  objednatel: 'Zákazník', kontakt: 'Kontaktní osoba',
+                  ico: 'IČO zákazníka', datum: 'Datum vytvoření' };
   const kolize = zakazkaHlavickaKolize(ZAK, smer);
-  if (kolize.length && !confirm('Přenést údaje z hlavičky ' + zdroj + ' do hlavičky ' + cil + '?\n\n'
+  if (kolize.length && !await potvrd('Přenést údaje z hlavičky ' + zdroj + ' do hlavičky ' + cil + '?\n\n'
       + 'Přepíše se ' + kolize.length + ' již vyplněné pole:\n· '
       + kolize.map(k => nazvy[k] || k).join('\n· ')
       + '\n\nPo přenosu můžete kterékoli pole ručně upravit.')) return;
@@ -619,7 +1114,97 @@ function renderVerzePill() {
 
 function renderKalkHlavicka() {
   const el = document.getElementById('kalk-hlavicka');
-  if (el) el.innerHTML = zakazkaHlavicka(true);   // v OCK i s přepínačem režimu výpočtu
+  if (el) el.innerHTML = zakazkaHlavicka(true) + zamekStranyLista('ock');
+  zamekStranyNasad('ock');
+}
+
+/* ---------- přepnutí řady ceníku (#181, 31. 8. 2026) ----------
+ *
+ * Přepnutí MĚNÍ CENY otevřené varianty, takže se nejdřív zeptá a ukáže,
+ * kolika položek se to dotkne a co to udělá s nákladem. Tiché přepsání cen
+ * je přesně ta věc, kvůli které se 31. 8. 2026 opravovalo srovnávání
+ * s ceníkem (#177) — tady se stejná chyba dělat nebude.
+ *
+ * Uzamčená (odeslaná) varianta se nepřepíná vůbec: její ceny jsou doklad
+ * o tom, co odešlo zákazníkovi. */
+async function cenikRadaPrepniUI(rada) {
+  if (typeof cenikRadaPlatna !== 'function') return;
+  const r = cenikRadaPlatna(rada);
+  const v = aktivniVarianta(ZAK);
+  const d = v && v.data;
+  if (!d) return;
+  if (cenikRadaVarianty(d) === r) return;
+  if (typeof zamekStop === 'function' && zamekStop()) return;
+  if (typeof nahledStop === 'function' && nahledStop('přepnutí řady ceníku')) return;
+
+  const cr = (typeof cenikDnesniData === 'function') ? cenikDnesniData().cenik : DEFAULT_CENIK;
+  const zahr = (typeof CENIK_ZAHR !== 'undefined') ? CENIK_ZAHR : null;
+  const rozdily = (typeof cenikRadaRozdily === 'function') ? cenikRadaRozdily(cr, zahr) : [];
+  if (!rozdily.length && r === 'zahr') {
+    hlaska('Zahraniční ceník zatím nemá žádnou odchylku — ceny by se nezměnily.\n\n'
+      + 'Zadejte je v záložce Ceník nákladů OCK ve sloupci „Zahraničí" '
+      + '(smí je zadat a zveřejnit jen administrátor).');
+    return;
+  }
+  const nazev = cenikRadaNazev(r);
+  const vypis = rozdily.slice(0, 8).map(x => '• ' + x.popis).join('\n')
+    + (rozdily.length > 8 ? '\n• … a další ' + (rozdily.length - 8) : '');
+  if (!await potvrd('Přepnout výpočet na ' + (r === 'zahr' ? 'ZAHRANIČNÍ' : 'TUZEMSKÝ') + ' ceník?\n\n'
+    + 'Dotkne se to ' + rozdily.length + ' ceníkových položek:\n' + vypis
+    + '\n\nRuční přepisy v zakázce, globální přirážka ani sazba DPH se nemění.')) return;
+
+  const vysl = cenikRadaPrepni(d, cr, zahr, r);
+  v.upraveno = new Date().toISOString();
+  if (typeof protokolZapis === 'function')
+    protokolZapis(ZAK, { kde: 'Kalkulace OCK', varianta: v.id, variantaNazev: v.nazev,
+      kdo: (typeof zamekKdo === 'function') ? zamekKdo() : '',
+      co: 'Ceník přepnut na ' + nazev + ' (' + vysl.zmen + ' změněných cen)' });
+  syncVarianta(); render();
+}
+
+/* ---------- zámek nepočítané strany zakázky (23. 8. 2026) ----------
+ *
+ * Zadání J. V.: „Pokud je na projektu spočítaná CN PROJ, neměla by se už
+ * počítat CN OCK — buňky v druhé kalkulaci ať zešednou a číslo nabídky ať se
+ * drží to kalkulované." Pravidlo samotné (podle čeho se pozná počítaná
+ * strana) bydlí v `zakazka.js`; tady se jen kreslí lišta a přepíná třída.
+ *
+ * Hlavička ani lišta se nezamykají — číslo nabídky se musí dát vyplnit
+ * i v zamčené straně, jinak by z ní nešlo vystoupit. */
+function zamekStranyLista(strana) {
+  if (typeof stranaZamcena !== 'function' || !stranaZamcena(ZAK, strana)) return '';
+  const vedouci = zakazkaVedouciStrana(ZAK);
+  const cislo = zakazkaCisloVedouci(ZAK);
+  const kam = vedouci === 'proj' ? 'proj' : 'kalk';
+  return `<div class="zamek-lista noprint">
+    <span><b>Cenovka téhle zakázky vzniká v ${esc(STRANA_NAZEV[vedouci] || '')}</b>${cislo ? ' (' + esc(cislo) + ')' : ''}.
+      Tahle kalkulace je proto jen ke čtení, ať je zřejmé, odkud cena pochází.</span>
+    <button class="mini" onclick="prepniTab('${kam}')">Přejít do počítané kalkulace</button>
+    <button class="mini" onclick="zamekStranyPovol()">Počítat i tuhle stranu</button>
+  </div>`;
+}
+
+/* Přepnutí třídy na kontejnerech s výpočtem. Hlavička (#kalk-hlavicka)
+ * a lišta v ní zůstávají mimo — viz komentář výš. */
+function zamekStranyNasad(strana) {
+  if (typeof stranaZamcena !== 'function') return;
+  const zamceno = stranaZamcena(ZAK, strana);
+  const ids = strana === 'ock'
+    ? ['kalk-souhrn', 'inputs', 'outputs', 'kalk-nabidka']
+    : ['proj-telo'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('strana-zamcena', zamceno);
+  });
+}
+
+/* „Počítat i tuhle stranu" — vědomé rozhodnutí, že zakázka nese obojí. */
+function zamekStranyPovol() {
+  if (typeof zamekStop === 'function' && zamekStop()) return;
+  if (typeof nahledStop === 'function' && nahledStop('odemčení druhé kalkulace')) return;
+  set('ZAK.obeStrany', true);
+  set('ZAK.jenProj', false);
+  set('ZAK.jenOck', false);
 }
 function renderNabidkaOck() {
   const el = document.getElementById('kalk-nabidka');
@@ -1000,7 +1585,12 @@ function dokPatickaHtml(prekl) {
  * jméno, funkce a kontakt PŘIHLÁŠENÉHO zpracovatele + sken podpisu s razítkem,
  * je-li nahraný v profilu (Můj profil). Ve Wordu totéž dělají symboly ZPRAC_*
  * a {{ZPRAC_PODPIS}} v šabloně — tohle je táž informace pro online tisk.
- * Bez přihlášení se blok skládá z firemních údajů (offline build). */
+ * Bez přihlášení se blok skládá z firemních údajů (offline build).
+ *
+ * Velikost skenu se 23. 8. 2026 zdvojnásobila (84 → 168 px na výšku, 250 → 500
+ * na šířku) na pokyn J. V.: razítko s podpisem bylo v tisku tak malé, že se
+ * text v razítku nedal přečíst. Jsou to STROPY, ne rozměry — sken s jiným
+ * poměrem stran se pořád vejde a nedeformuje se. */
 function dokPodpisHtml(prekl) {
   const P = typeof prekl === 'function' ? prekl : (t => t);
   const f = (typeof firmaAktualni === 'function') ? firmaAktualni() : null;
@@ -1011,7 +1601,7 @@ function dokPodpisHtml(prekl) {
   return `<div class="podpis-blok" style="margin:28px 0 10px;page-break-inside:avoid">
     <div style="font-size:11px;color:#6b7686;text-transform:uppercase;letter-spacing:.03em">${esc(P('Vypracoval'))}</div>
     ${obr.ZPRAC_PODPIS ? `<img src="${esc(obr.ZPRAC_PODPIS)}" alt=""
-      style="max-height:84px;max-width:250px;display:block;margin:6px 0 2px">` : ''}
+      style="max-height:168px;max-width:500px;display:block;margin:10px 0 4px">` : ''}
     <div style="font-weight:700">${esc(p.ZPRAC_JMENO || '')}</div>
     ${kontakt ? `<div style="font-size:12px;color:#42506b">${esc(kontakt)}</div>` : ''}
   </div>`;
@@ -1019,10 +1609,23 @@ function dokPodpisHtml(prekl) {
 
 /* ---------- záložky ---------- */
 let TAB = 'kalk';
-const TABY = ['kalk', 'detail', 'spec', 'specdata', 'kryci', 'proj', 'detailproj', 'kryciproj', 'cenik', 'cenikproj', 'zakazka', 'schvalovani'];
+const TABY = ['kalk', 'detail', 'spec', 'specdata', 'kryci', 'proj', 'detailproj', 'kryciproj', 'cenik', 'cenikproj', 'zakazka', 'zakaznici', 'schvalovani'];
 function prepniTab(t) {
   if (!tabViditelny(t)) t = 'kalk';
   TAB = t;
+  /* Přepnutí záložky jen přepíná viditelnost, NEVYKRESLUJE (21. 8. 2026).
+   * Záložka Zákazníci si data stahuje až při otevření — bez tohohle řádku
+   * zůstala viset na „Načítám zákazníky…", dokud uživatel neobnovil stránku
+   * (hlášeno J. V.). Načtení si samo zavolá překreslení, až dorazí. */
+  if (t === 'zakaznici' && typeof zakazniciNacti === 'function'
+      && typeof ZAK_DB !== 'undefined' && !ZAK_DB.nacteno) zakazniciNacti();
+  /* Přehled cenových nabídek je od 21. 8. 2026 večer především VYHLEDÁVÁNÍ
+   * nabídek (zadání J. V.), takže při jeho otevření má smysl mít čerstvý
+   * rejstřík — kolega mohl mezitím uložit další. Selhání se neřeší:
+   * seznam se prostě vypíše z toho, co je v paměti. */
+  if (t === 'zakazka' && typeof onlineNactiRejstrik === 'function'
+      && typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.ja)
+    onlineNactiRejstrik().then(() => { if (TAB === 'zakazka') renderPrehledHledaniTelo(); }).catch(() => {});
   TABY.forEach(x => {
     document.getElementById('page-' + x).style.display = x === t ? '' : 'none';
     document.getElementById('tab-' + x).className = (x === t ? 'act' : '') + (tabViditelny(x) ? '' : ' skryt');
@@ -1134,7 +1737,7 @@ function nactiZakazku(ev) {
           nabidkaStavTextBezpecne(cenikVarovaniText(p) + ' Rozdíly a přepočet najdete na záložce Ceník.');
       }
     }
-    catch (e) { alert('Soubor se nepodařilo načíst: ' + e.message); }
+    catch (e) { hlaska('Soubor se nepodařilo načíst: ' + e.message); }
     ev.target.value = '';
   });
 }
@@ -1173,15 +1776,75 @@ function renderChybaBanner(e) {
   el.style.display = 'block';
 }
 
+/* ---------- ROZEPSANÁ HODNOTA PŘEŽIJE PŘEKRESLENÍ (31. 8. 2026) ----------
+ *
+ * Hlášeno J. V.: „uživatelé musejí zadávat data do buňky několikrát, protože
+ * se ručně přepsaná hodnota neuloží napoprvé."
+ *
+ * Příčina: aplikace překresluje celé záložky přes `innerHTML`. Když mezitím
+ * doběhne cokoli, co volá `render()` — automatické uložení, načtený rejstřík,
+ * odpověď serveru —, políčko se vymění za nové s PŮVODNÍ hodnotou. Co měl
+ * uživatel rozepsané, zmizí i s kurzorem, a protože `change` se nikdy
+ * nespustil, do dat se nic nezapsalo. Vypadá to, jako by aplikace zápis
+ * spolkla; ve skutečnosti ho nikdy nedostala.
+ *
+ * Řešení: před překreslením si zapamatovat zaostřené políčko a po něm ho
+ * najít znovu a vrátit do něj rozepsanou hodnotu i kurzor. Políčko se pozná
+ * podle své obsluhy (`onchange`/`oninput`) — ta je pro každou buňku jiná
+ * a překreslení ji nemění. Rozepsanost se pozná z `defaultValue`: to je
+ * hodnota, se kterou se pole vykreslilo, takže `value !== defaultValue`
+ * znamená „uživatel do toho psal a ještě to nepotvrdil".
+ *
+ * Číselná pole nemají výběr (setSelectionRange na nich vyhodí výjimku),
+ * proto se kurzor vrací jen tam, kde to jde. */
+function renderKlicPole(el) {
+  if (!el || !el.getAttribute) return '';
+  const t = (el.tagName || '').toUpperCase();
+  if (t !== 'INPUT' && t !== 'TEXTAREA' && t !== 'SELECT') return '';
+  const typ = String(el.type || 'text').toLowerCase();
+  if (['checkbox', 'radio', 'button', 'submit', 'file'].indexOf(typ) >= 0) return '';
+  const obsluha = (el.getAttribute('onchange') || '') + '\u0000' + (el.getAttribute('oninput') || '');
+  if (!obsluha.replace(/\u0000/g, '').trim()) return '';   // pole bez obsluhy nemá co obnovovat
+  return t + '\u0000' + typ + '\u0000' + obsluha;
+}
+
+function renderSFokusem(kresli) {
+  const a = document.activeElement;
+  const klic = renderKlicPole(a);
+  if (!klic) { kresli(); return; }
+  const rozepsano = a.value !== a.defaultValue;
+  const hodnota = a.value;
+  let zac = null, kon = null;
+  try { zac = a.selectionStart; kon = a.selectionEnd; } catch (e) {}
+  kresli();
+  const cil = [...document.querySelectorAll('input, textarea, select')]
+    .find(x => renderKlicPole(x) === klic);
+  if (!cil) return;
+  if (rozepsano) cil.value = hodnota;
+  try {
+    cil.focus({ preventScroll: true });
+    if (rozepsano && zac != null && cil.setSelectionRange) cil.setSelectionRange(zac, kon);
+  } catch (e) {}
+}
+
 function render() {
   renderPrihlaseniNejdriv();
   try {
-    renderTelo();
+    renderSFokusem(renderTelo);
     const b = document.getElementById('render-chyba');
     if (b) b.style.display = 'none';
     /* heat mapa (#26) jede s uživatelem: každé překreslení aplikace
      * překreslí i ji — jinak by po přepnutí záložky ukazovala staré prvky */
     if (typeof heatPoRenderu === 'function') heatPoRenderu();
+    /* Otevřené okno Nastavení se překresluje SPOLU s aplikací (21. 8. 2026
+     * večer). Do té doby ho obnovoval jen `nastRefresh()` — jenže od chvíle,
+     * kdy se do Nastavení přestěhovala karta Databáze, sedí v modálním okně
+     * tlačítka („Zálohovat teď", „Uložit online", „Odhlásit"), jejichž obsluhy
+     * volají obyčejný `render()`. Ten okno neznal, takže se po kliknutí
+     * viditelně nestalo nic — hlášku i nový stav nikdo nevykreslil.
+     * Hlášeno J. V.: „tlačítko zálohovat teď databázi nefunguje." */
+    if (typeof nastOtevreno === 'function' && nastOtevreno()
+        && typeof renderNastaveni === 'function') renderNastaveni();
   } catch (e) {
     renderChybaBanner(e);
     renderPrihlaseniNejdriv();          // ať zůstane cesta k přihlášení
@@ -1206,6 +1869,8 @@ function renderTelo() {
   if (typeof variantaUzamcena === 'function')
     document.body.classList.toggle('zamceno', variantaUzamcena(aktivniVarianta(ZAK)));
   if (typeof renderZamekLista === 'function') renderZamekLista();
+  if (typeof renderNahledLista === 'function') renderNahledLista();
+  if (typeof renderProstrediLista === 'function') renderProstrediLista();
   if (typeof renderZapisLista === 'function') renderZapisLista();
   if (typeof renderUkazkoveLista === 'function') renderUkazkoveLista();
   if (typeof renderBuildLista === 'function') renderBuildLista();
@@ -1224,6 +1889,7 @@ function renderTelo() {
   renderCenik();
   renderCenikProj();
   renderZakazka();
+  if (typeof renderZakaznici === 'function') renderZakaznici();
   if (typeof renderSchvalovani === 'function') renderSchvalovani();
   aplikujViditelnostTabu();
   // #41: protokol o kalkulaci. Musí být PŘED historií – zapsaný řádek je změna

@@ -14,7 +14,9 @@ function nastOtevreno() { const o = document.getElementById('nastaveni-overlay')
 function nastRefresh() {
   // změna v Nastavení = důvod zapsat do složky (se zpožděním, viz ui/nastaveni_db_ui.js)
   if (typeof nastdbZmeneno === 'function') nastdbZmeneno();
-  render(); if (nastOtevreno()) renderNastaveni();
+  /* render() si otevřené okno Nastavení překreslí sám (od 21. 8. 2026
+   * večer) — druhé volání by jen zdvojilo práci. */
+  render();
 }
 /* Vnitřní záložky Nastavení (#136). Do 5. 8. 2026 se skládaly ručně přímo
  * v renderNastaveni() a dvě z nich (Firma, Konfigurace, Slovník) měly kolem
@@ -29,8 +31,15 @@ const NAST_PANELY = [
   { id: 'obecne', nazev: 'Obecné', telo: () => nastObecne() },
   { id: 'firma', nazev: 'Firma', klic: 'nastaveni.firma', telo: () => nastFirma() },
   { id: 'uzivatele', nazev: 'Uživatelé', klic: 'nastaveni.uzivatele', telo: () => nastUzivatele() },
+  /* Databáze (21. 8. 2026 večer, zadání J. V.: „Online databáze přesuň do nové
+   * záložky v nastavení s názvem Databáze"). Karta stála na začátku Přehledu
+   * cenových nabídek, kde se pletla do cesty práci s nabídkami — je to
+   * nastavení spojení, ne nástroj obchodníka. Vidí ji každý přihlášený:
+   * jsou v ní tlačítka „Uložit online", „Zakázky online…" a odhlášení. */
+  { id: 'databaze', nazev: 'Databáze', telo: () => nastDatabaze() },
   { id: 'slevy', nazev: 'Slevy', klic: 'nastaveni.slevy', telo: () => nastSlevy() },
-  { id: 'sablony', nazev: 'Šablony', klic: 'nastaveni.sablony', telo: () => nastSablony() },
+  { id: 'sablony', nazev: 'Smlouvy / Šablony', klic: 'nastaveni.sablony', telo: () => nastSablony() },
+  { id: 'standard', nazev: 'Standard OCK', klic: 'nastaveni.standard', telo: () => nastStandard() },
   { id: 'zobrazeni', nazev: 'Zobrazení', klic: 'nastaveni.zobrazeni', telo: () => nastZobrazeni() },
   { id: 'konfigurace', nazev: 'Konfigurace', klic: 'nastaveni.konfigurace', telo: () => nastKonfigurace() },
   { id: 'slovnik', nazev: 'Slovník', klic: 'nastaveni.slovnik', telo: () => nastSlovnik() },
@@ -61,13 +70,15 @@ function nastPanel(p) { NAST.panel = p; renderNastaveni(); }
  * Skrýt tlačítko nestačí, funkce jde zavolat i z konzole. */
 function nastSetAdmin(v) {
   if (v && typeof smiPohledAdmina === 'function' && !smiPohledAdmina()) {
-    alert('Pohled administrátora má jen účet s rolí Administrátor. '
+    hlaska('Pohled administrátora má jen účet s rolí Administrátor. '
       + 'Potřebujete-li vidět ceník, požádejte administrátora.');
     return;
   }
   NAST.jeAdmin = !!v; nastRefresh();
 }
-function nastToggleTab(t, v) { NAST.tabViditelnost[t] = !!v; nastRefresh(); }
+/* `nastToggleTab` zanikla 20. 8. 2026 spolu s duplicitním seznamem záložek
+ * v Nastavení → Obecné. Viditelnost záložek řídí výhradně matice zobrazení
+ * (Nastavení → Zobrazení), která platí po rolích a bydlí na serveru. */
 function nastSetNaklady(v) { NAST.zobrazitNaklady = !!v; nastRefresh(); }
 
 /* ---- Uživatelé ---- */
@@ -87,12 +98,12 @@ function firmaSet(id, v) {
   nastRefresh();
 }
 function firmaLogoNahraj() {
-  if (!jeAdmin()) return alert('Firemní údaje smí měnit jen administrátor.');
+  if (!jeAdmin()) return hlaska('Firemní údaje smí měnit jen administrátor.');
   const inp = document.createElement('input');
   inp.type = 'file'; inp.accept = 'image/png,image/jpeg,image/svg+xml';
   inp.onchange = () => {
     const f = inp.files && inp.files[0]; if (!f) return;
-    if (f.size > 400 * 1024) return alert('Logo je příliš velké (' + Math.round(f.size / 1024)
+    if (f.size > 400 * 1024) return hlaska('Logo je příliš velké (' + Math.round(f.size / 1024)
       + ' kB). Použijte obrázek do 400 kB – ukládá se přímo do konfigurace.');
     const fr = new FileReader();
     fr.onload = () => { NAST.firma.logo = fr.result; NAST.firma.logoNazev = f.name; nastRefresh(); };
@@ -101,9 +112,9 @@ function firmaLogoNahraj() {
   inp.click();
 }
 function firmaLogoSmaz() { if (!jeAdmin()) return; NAST.firma.logo = ''; NAST.firma.logoNazev = ''; nastRefresh(); }
-function firmaObnovVychozi() {
-  if (!jeAdmin()) return alert('Firemní údaje smí měnit jen administrátor.');
-  if (!confirm('Vrátit firemní údaje na výchozí hodnoty? Ruční změny se ztratí.')) return;
+async function firmaObnovVychozi() {
+  if (!jeAdmin()) return hlaska('Firemní údaje smí měnit jen administrátor.');
+  if (!await potvrd('Vrátit firemní údaje na výchozí hodnoty? Ruční změny se ztratí.')) return;
   konfigNahradVMiste(NAST.firma, firmaDefault());
   /* Vzorek nese značku ukázkových dat, a onlineTik má nasazovat online firmu
    * právě podle ní – bez tohohle řádku by se do vteřiny vrátila zpátky a
@@ -139,7 +150,7 @@ function atypSazbaProc() {
   return Math.round(s * 1000) / 10;
 }
 function nastSetAtyp(v) {
-  if (!jeAdmin()) return alert('Sazbu přirážky za ATYP smí měnit jen administrátor.');
+  if (!jeAdmin()) return hlaska('Sazbu přirážky za ATYP smí měnit jen administrátor.');
   let proc = parseFloat(String(v).replace(',', '.'));
   if (!isFinite(proc) || proc < 0) proc = 0;
   if (proc > 300) proc = 300;          // pojistka proti překlepu (3000 místo 30)
@@ -147,29 +158,220 @@ function nastSetAtyp(v) {
   nastRefresh();
 }
 
+/* ---------- vnitřní záložka: Standard OCK (#163, 21. 8. 2026) ----------
+ * Tabulka limitů, podle které kalkulace i technická specifikace rozhodují,
+ * jestli je šachta standardní, nebo atyp. Vědomě je v Nastavení, ne v kódu:
+ * standard se mění a měnit ho musí jít bez nové dávky.
+ * Měnit ho smí administrátor a vedoucí (rozhodnutí J. V. 21. 8. 2026) —
+ * proto vlastní právo `nastaveni.standard` v matici zobrazení. */
+function stdData() {
+  if (!NAST.standard || typeof NAST.standard !== 'object')
+    NAST.standard = (typeof STANDARD_VYCHOZI !== 'undefined')
+      ? JSON.parse(JSON.stringify(STANDARD_VYCHOZI)) : {};
+  return NAST.standard;
+}
+
+function stdPrepniKontrolu() {
+  const s = stdData();
+  s.zapnuto = !s.zapnuto;
+  nastRefresh();
+}
+
+function stdSet(cesta, hodnota) {
+  const s = stdData();
+  const ks = cesta.split('.'); const last = ks.pop();
+  const cil = ks.reduce((o, k) => (o[k] = o[k] || {}), s);
+  cil[last] = hodnota;
+  nastRefresh();
+}
+
+/* Řádek tabulky limitů. Od 21. 8. 2026 večer má TENTÝŽ tvar exteriér
+ * i interiér (zadání J. V.: „sjednoť vizuál nastavení standardu OCK podle
+ * vnitřní šachty") — proto jedna sada obsluh s parametrem větve, ne dvě. */
+function stdRadaSet(vetev, i, klic, hodnota) {
+  const s = stdData();
+  if (!s[vetev] || !Array.isArray(s[vetev].profily)) return;
+  const r = s[vetev].profily[i];
+  if (!r) return;
+  if (klic === 'profil') r.profil = String(hodnota).trim();
+  else {
+    /* Prázdné pole znamená „limit se nehlídá", ne nulu — „prázdno není nula". */
+    const t = String(hodnota == null ? '' : hodnota).trim().replace(',', '.');
+    const n = t === '' ? null : +t;
+    r[klic] = (n !== null && isFinite(n) && n > 0) ? n : null;
+  }
+  nastRefresh();
+}
+
+function stdRadaPridej(vetev) {
+  const s = stdData();
+  if (!s[vetev] || !Array.isArray(s[vetev].profily)) return;
+  const vzor = vetev === 'exterier'
+    ? { profil: '', vyskaMaxM: 30, sirkaMaxMm: 2000, hloubkaMaxMm: 2000 }
+    : { profil: '', vyskaMaxM: 25, sirkaMaxMm: 1800, hloubkaMaxMm: 1800 };
+  s[vetev].profily.push(vzor);
+  nastRefresh();
+}
+
+function stdRadaSmaz(vetev, i) {
+  const s = stdData();
+  if (!s[vetev] || !Array.isArray(s[vetev].profily)) return;
+  s[vetev].profily.splice(i, 1);
+  nastRefresh();
+}
+
+/* Povolený způsob zasklení interiéru (terče × sklo do rámečku). Seznam,
+ * ne dvě zaškrtávátka natvrdo: standard se může rozšířit o další způsob
+ * a nemá se kvůli tomu vydávat nová dávka. */
+function stdZaskleniPrepni(vetev, hodnota, zapnuto) {
+  const s = stdData();
+  if (!s[vetev]) return;
+  const pole = Array.isArray(s[vetev].zaskleniPovolene) ? s[vetev].zaskleniPovolene.slice() : [];
+  const i = pole.indexOf(hodnota);
+  if (zapnuto && i < 0) pole.push(hodnota);
+  if (!zapnuto && i >= 0) pole.splice(i, 1);
+  s[vetev].zaskleniPovolene = pole;
+  nastRefresh();
+}
+
+async function stdObnovVychozi() {
+  if (!await potvrd('Vrátit celý standard na výchozí znění z 21. 8. 2026?')) return;
+  NAST.standard = JSON.parse(JSON.stringify(STANDARD_VYCHOZI));
+  nastRefresh();
+}
+
+/* Štítek u pole, které aplikace zatím NEUMÍ posoudit z dat kalkulace
+ * (zadání J. V. 21. 8. 2026 večer: „v sekci můstky označ pole, která
+ * v technické specifikaci, resp. v zadání kalkulace zatím nehlídáme").
+ * Je to poctivost vůči tomu, kdo standard nastavuje: číslo si tu vyplní,
+ * ale žádný štítek se podle něj nerozsvítí. */
+function stdNehlidame(proc) {
+  return `<span class="pill warn" style="margin-left:8px" title="${esc(proc)}">zatím nehlídáme</span>`;
+}
+
+/* Důvody stojí v konstantě, ne přímo ve volání: dlouhý literál uvnitř
+ * `${…}` v šabloně vypadá pro kontrolu escapování (test_escape.js) jako
+ * neošetřená hodnota, a ta kontrola má být přísná. */
+const STD_NEHLIDAME = {
+  mustekReseni: 'Standard připouští jediné konstrukční řešení můstku a mění se u něj pouze '
+    + 'hloubkový rozměr. Zadání kalkulace ani technická specifikace dnes nenesou údaj, podle '
+    + 'kterého by šlo jiné řešení poznat — hlídá se proto jen hloubka a šířka.',
+};
+
+function nastStandard() {
+  if (!smiZobrazit('nastaveni.standard'))
+    return `<div class="note">Firemní standard OCK smí měnit <b>administrátor a vedoucí</b>.</div>`;
+  const s = standardOciste(stdData());
+  NAST.standard = s;
+  const zap = s.zapnuto;
+
+  const cis = v => (v == null ? '' : v);
+  const radaHtml = (vetev) => (r, i) => `<tr>
+    <td><input type="text" style="width:100px" value="${esc(r.profil)}" onchange="stdRadaSet('${vetev}', ${i}, 'profil', this.value)"></td>
+    <td><input type="number" step="0.5" style="width:78px" value="${esc(cis(r.vyskaMaxM))}" onchange="stdRadaSet('${vetev}', ${i}, 'vyskaMaxM', this.value)"> m</td>
+    <td><input type="number" step="10" style="width:90px" value="${esc(cis(r.sirkaMaxMm))}" onchange="stdRadaSet('${vetev}', ${i}, 'sirkaMaxMm', this.value)"> mm</td>
+    <td><input type="number" step="10" style="width:90px" value="${esc(cis(r.hloubkaMaxMm))}" onchange="stdRadaSet('${vetev}', ${i}, 'hloubkaMaxMm', this.value)"> mm</td>
+    <td><button class="mini" onclick="stdRadaSmaz('${vetev}', ${i})" title="odebrat řádek">✕</button></td></tr>`;
+
+  const tabulka = (vetev) => `<table class="sd-tbl"><thead><tr><th>Profil sloupku</th><th>Výška max</th>
+      <th>Vnitřní šířka max</th><th>Vnitřní hloubka max</th><th></th></tr></thead>
+      <tbody>${(s[vetev].profily || []).map(radaHtml(vetev)).join('')}</tbody></table>
+    <div class="btns"><button class="mini" onclick="stdRadaPridej('${vetev}')">+ přidat profil</button></div>`;
+
+  /* Povolené způsoby zasklení — v OBOU větvích stejně (21. 8. 2026 večer,
+   * zadání J. V.). Popisná textová pole („Opláštění", „Popis opláštění")
+   * z nastavení zmizela: nikde se nekontrolovala a jen svádělo k dojmu,
+   * že se podle nich něco hlídá. Volby odpovídají poli „Způsob zasklení"
+   * v zadání šachty — seznam je jeden, v `standard_ock.js`. */
+  const zaskleniChk = (vetev) => STANDARD_ZASKLENI.map(v => {
+    const je = (s[vetev].zaskleniPovolene || []).indexOf(v.hodnota) >= 0;
+    return `<label style="display:flex;align-items:center;gap:8px;margin:4px 0">
+      <input type="checkbox" ${je ? 'checked' : ''}
+        onchange="stdZaskleniPrepni('${vetev}', '${escJs(v.hodnota)}', this.checked)"> ${esc(v.popis)}</label>`;
+  }).join('');
+  const zaskleniBlok = (vetev) => `<div class="note" style="margin:8px 0 2px"><b>Povolené způsoby
+      zasklení</b> — odpovídají volbě „Způsob zasklení" v zadání šachty. Nezaškrtnutý způsob je atyp;
+      když nezaškrtnete žádný, zasklení se nekontroluje vůbec.</div>${zaskleniChk(vetev)}`;
+
+  return `<div class="note" style="margin-top:0">Podle téhle tabulky se v <b>Kalkulaci OCK</b>
+      i v <b>Technické specifikaci</b> rozhoduje, jestli je šachta <b>standardní</b>, nebo <b>atyp</b>.
+      Kontrola <b>nikdy nic neblokuje</b> — ukazuje štítek a seznam nálezů; od 21. 8. 2026 večer
+      navíc u nálezu <b>zaškrtne ATYP</b> (zadání J. V.), a to jde kdykoli vrátit ručně.
+      Rozměry se posuzují jako <b>vnitřní</b>, výška jako <b>celková výška konstrukce</b>
+      (zdvih + horní přejezd + prohlubeň) a o typu konstrukce rozhoduje <b>profil sloupku</b>.</div>
+
+    <div class="sec-title">Kontrola standardu</div>
+    <div class="btns">
+      <button class="${zap ? 'primary' : ''}" onclick="stdPrepniKontrolu()">
+        Kontrola STD: ${zap ? 'Aktivní' : 'Neaktivní'}</button>
+      <span class="note" style="margin-left:8px">${zap
+    ? 'Štítek STANDARD OCK / ATYP OCK svítí v liště kalkulace i ve specifikaci.'
+    : 'Vypnuto — nikde se nic nekreslí a ATYP se sám nezaškrtává.'}</span>
+    </div>
+
+    <div class="sec-title">Exteriér (venkovní šachta) — limity podle profilu</div>
+    ${tabulka('exterier')}
+    ${zaskleniBlok('exterier')}
+
+    <div class="sec-title">Můstek mezi budovou a OCK</div>
+    <div class="note" style="margin-top:0">Můstek patří k venkovní šachtě — proto stojí tady
+      (zadání J. V. 21. 8. 2026). Hlídá se jen tehdy, když je v zadání šachty zaškrtnutý.</div>
+    <div class="row"><label>Hloubka max <span class="note">(mezi budovou a OCK)</span></label>
+      <input type="number" step="10" style="width:100px" value="${esc(s.mustek.hloubkaMaxMm)}"
+        onchange="stdSet('mustek.hloubkaMaxMm', +this.value)"><span class="u">mm</span></div>
+    <div class="row"><label>Šířka max <span class="note">(strop, i když je „na šířku OCK")</span></label>
+      <input type="number" step="10" style="width:100px" value="${esc(s.mustek.sirkaMaxMm)}"
+        onchange="stdSet('mustek.sirkaMaxMm', +this.value)"><span class="u">mm</span></div>
+    <label style="display:flex;align-items:center;gap:8px;margin:6px 0">
+      <input type="checkbox" ${s.mustek.sirkaJakoOck ? 'checked' : ''}
+        onchange="stdSet('mustek.sirkaJakoOck', this.checked)"> Šířka můstku nesmí přesáhnout šířku OCK</label>
+    <div class="row"><label>Konstrukční řešení ${stdNehlidame(STD_NEHLIDAME.mustekReseni)}</label>
+      <input type="text" value="jedno řešení, mění se pouze hloubkový rozměr" disabled><span class="u"></span></div>
+
+    <div class="sec-title">Interiér (vnitřní šachta) — limity podle profilu</div>
+    ${tabulka('interier')}
+    ${zaskleniBlok('interier')}
+
+    <div class="sec-title">Společná pravidla</div>
+    <label style="display:flex;align-items:center;gap:8px;margin:6px 0">
+      <input type="checkbox" ${s.jedenTypZaskleni ? 'checked' : ''}
+        onchange="stdSet('jedenTypZaskleni', this.checked)"> Standard je <b>jeden typ zasklení</b> — míchání druhů skel je atyp</label>
+    <div class="note" style="margin-top:2px">Dva druhy skla v nabídce hlásí aplikace jako
+      <b>„nelze posoudit"</b>, ne jako atyp: z dat nepozná rozdíl mezi dvěma variantami na výběr
+      pro zákazníka a dvěma skly na jedné šachtě.</div>
+
+    <div class="btns" style="margin-top:12px">
+      <button class="mini" onclick="stdObnovVychozi()">↺ Vrátit výchozí znění</button>
+    </div>
+    <div class="note" style="margin-top:6px">Standard se ukládá do konfigurace aplikace stejně jako
+      firemní údaje. Zakázka si při uložení pamatuje jen svoje zadání — vyhodnocení se počítá
+      vždy podle <b>aktuálního</b> znění standardu, takže po jeho změně se štítky u starších
+      nabídek přepočítají.</div>`;
+}
+
+/* ---------- vnitřní záložka: Databáze (21. 8. 2026) ----------
+ * Nic vlastního nekreslí — jen dá dohromady karty, které do 21. 8. 2026
+ * stály na začátku Přehledu cenových nabídek. Složková databáze je mrtvý
+ * archiv (rozhodnutí #150) a vidí ji jen ten, kdo na ni má právo. */
+function nastDatabaze() {
+  const online = (typeof renderOnlineKarta === 'function') ? renderOnlineKarta() : '';
+  const slozka = (smiZobrazit('uloziste.slozka') && typeof renderUlozisteKarta === 'function')
+    ? renderUlozisteKarta() : '';
+  const prenos = (typeof cenikPrenosKarta === 'function') ? cenikPrenosKarta() : '';
+  return `<div class="note" style="margin-top:0">Spojení s databází, ukládání a zálohy.
+      Zakázku samotnou ukládá tlačítko <b>Uložit zakázku</b> v liště nad kalkulací —
+      tady je jen to, co se nastavuje jednou.</div>${online}${slozka}${prenos}`;
+}
+
 /* ---------- vnitřní záložka: Obecné ---------- */
 function nastObecne() {
   const chk = (checked, on) => `<input type="checkbox" ${checked ? 'checked' : ''} onchange="${on}">`;
-  const tabRows = Object.keys(NAST_TAB_LABELS).map(t => {
-    const skrytoRoli = !NAST.jeAdmin && (t === 'cenik' || t === 'cenikproj' || t === 'detail' || t === 'specdata');
-    return `<label style="display:flex;align-items:center;gap:8px;margin:5px 0">
-      ${chk(NAST.tabViditelnost[t], `nastToggleTab('${t}', this.checked)`)} ${NAST_TAB_LABELS[t]}
-      ${skrytoRoli ? '<span class="pill mut" style="font-size:10px">skryto rolí</span>' : ''}</label>`;
-  }).join('');
+  /* Seznam „Přístupová práva (příprava pro role)" zanikl 20. 8. 2026.
+   * Byl to výčet toho, co JEDNOU BUDE skryté běžným uživatelům — jenže od
+   * 5. 8. 2026 to skutečně skryté JE a nastavuje se po jednotlivých prvcích
+   * v záložce Zobrazení. Seznam už tedy jen popisoval budoucnost, která
+   * nastala, a mátl: čtenář v něm hledal ovládání, které je jinde. */
 
-  const adminFeatures = [
-    'Ceník nákladů OCK a Ceník nákladů PROJ (celé záložky)',
-    'Editace jednotkových cen přímo v kalkulaci (obousměrně s ceníkem)',
-    'Globální přirážka a sloupce <b>Náklad</b> / <b>Přirážka</b>',
-    'Režim výpočtu (Model 2 – opravený / Model 1 – 1:1 jako Excel)',
-    'Rezervy a záložka <b>Detail výpočtu</b>',
-    'Záložka <b>Technická specifikace OCK Data</b> (editace číselníků a výchozích hodnot)',
-    '<b>Import / Export dat</b> – ceník do/z Excelu, export dat specifikace (jen administrátor)',
-    '<b>Slevy</b> – zadání slevy, schvalování nad rámec stropu role (viz záložka Slevy)',
-    '<b>Úložiště šablon dokumentů</b> (Nastavení → Šablony)',
-    '<b>Firemní údaje pro dokumenty</b> (Nastavení → Firma) – IČO, DIČ, sídlo, banka, logo; propisují se do nabídky i krycího listu',
-    'Toto <b>Nastavení</b> (ozubené kolo) včetně záložek Firma, Uživatelé, Slevy a Šablony',
-  ];
   const navrhy = [
         '<b>Číselné řady CN</b> – automatické číslování nové zakázky (2026-OPR-CN-xxxx).',
     '<b>Výchozí hodnoty</b> – DPH, globální přirážka, splatnost, záruka, platební milníky.',
@@ -191,27 +393,17 @@ function nastObecne() {
       data specifikace a sloupce Náklad/Přirážka. Náhled konkrétní role (obchodník / vedoucí) je také tam.</div>
 
     <div class="sec-title">Viditelnost záložek</div>
-    ${tabRows}
+    <div class="note">Přesunuto do záložky <b>Zobrazení</b> (20. 8. 2026). Býval tu druhý seznam
+      zaškrtávátek, který dělal totéž — jenže platil <b>všem včetně administrátora</b>, žil jen
+      v paměti prohlížeče a po odhlášení se ztratil. Matice v Zobrazení má každou záložku po
+      rolích a ukládá se na server, takže platí všem a přežije obnovení stránky.</div>
 
-    <div class="sec-title">Zobrazení kalkulace (admin)</div>
+    <div class="sec-title">Moje obrazovka</div>
     <label style="display:flex;align-items:center;gap:8px">${chk(NAST.zobrazitNaklady, 'nastSetNaklady(this.checked)')} Zobrazovat sloupce <b>Náklad</b> a <b>Přirážka</b> v kalkulaci</label>
-
-    <div class="sec-title">Parametry výpočtu</div>
-    <label style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <span>Přirážka za <b>ATYP</b> (projekční a koordinační práce) — <b>pro tuto zakázku</b>:</span>
-      <input type="number" step="1" min="0" max="300" style="width:90px"
-             value="${atypSazbaProc()}" ${jeAdmin() ? '' : 'disabled'}
-             onchange="nastSetAtyp(this.value)"> %
-    </label>
-    <div class="note">Zaškrtnutí <b>ATYP (nestandardní zakázka)</b> v kalkulaci OCK přidá do sekce
-      <b>Režie</b> samostatný řádek „PŘIRÁŽKA ZA ATYP – PROJEKČNÍ A KOORDINAČNÍ PRÁCE" ve výši tohoto
-      procenta z nákladu <b>celé sekce Režie</b> (včetně 3D zaměření a výstupu pro zákazníka).
-      Sazba je uložená v ceníku zakázky, takže se mění <b>u jednotlivé zakázky</b> a ukládá se s ní –
-      dřívější nabídky se změnou nepřepočítají. Nová zakázka začíná na 30 %.${jeAdmin() ? '' : ' Měnit ji smí jen administrátor.'}</div>
-
-    <div class="sec-title">Přístupová práva (příprava pro role)</div>
-    <div class="note">Tyto vlastnosti budou v budoucnu skryté běžným uživatelům (napojení na role a přihlášení):</div>
-    <ul style="margin:6px 0 0;padding-left:20px;font-size:13px">${adminFeatures.map(x => `<li style="margin:3px 0">${x}</li>`).join('')}</ul>
+    <div class="note">Tohle <b>není</b> nastavení práv a nikoho jiného se netýká — je to vypínač
+      pro <b>tuhle obrazovku a tuhle relaci</b>, hodí se, když si k monitoru sedne zákazník.
+      Kdo nákladové sloupce vidí vůbec, se nastavuje v <b>Zobrazení</b> (prvek
+      „Sloupce Náklad a Přirážka v kalkulaci").</div>
 
     <div class="sec-title">Návrhy dalších možností do Nastavení</div>
     <ul style="margin:6px 0 0;padding-left:20px;font-size:13px">${navrhy.map(x => `<li style="margin:4px 0">${x}</li>`).join('')}</ul>`;
@@ -235,7 +427,12 @@ function nastFirma() {
       ${p.symbol ? `<span class="note" style="flex:none;width:210px;font-size:11.5px"><code>{{${p.symbol}}}</code></span>` : '<span style="flex:none;width:210px"></span>'}</div>`;
   };
 
-  const sekce = FIRMA_SEKCE.map(s => {
+  /* Smluvní standardy a Logo firmy se 20. 8. 2026 (zadání J. V.) přestěhovaly
+   * na začátek záložky **Smlouvy / Šablony** — patří k dokumentům, ne
+   * k identifikaci firmy, a v seznamu firemních polí jen odtlačovaly dolů to,
+   * co obchodník hledá. Data zůstávají tam, kde byla (NAST.firma), takže
+   * uložené konfigurace se nemění. */
+  const sekce = FIRMA_SEKCE.filter(s => s !== 'Smluvní standardy').map(s => {
     const pole = FIRMA_POLE.filter(p => p.sekce === s);
     const skryt = s === 'Korespondenční adresa' && f.korShodna;
     return `<div class="sec-title">${esc(s)}</div>
@@ -256,15 +453,8 @@ function nastFirma() {
 
     ${sekce}
 
-    <div class="sec-title">Logo firmy</div>
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      ${f.logo ? `<img src="${esc(f.logo)}" alt="logo" style="max-height:56px;max-width:220px;border:1px solid var(--line);border-radius:6px;padding:4px">` : '<span class="note">Logo zatím nenahráno.</span>'}
-      <div class="btns"><button onclick="firmaLogoNahraj()">Nahrát logo</button>
-        ${f.logo ? '<button class="mini" onclick="firmaLogoSmaz()">Odebrat</button>' : ''}</div>
-      ${f.logoNazev ? `<span class="note">${esc(f.logoNazev)}</span>` : ''}
-    </div>
-    <div class="note" style="margin-top:6px">PNG / JPG / SVG do 400 kB. Ukládá se přímo do konfigurace (data URL),
-      aby se přeneslo spolu s ostatním nastavením. Logo se zobrazuje v hlavičce tiskových náhledů.</div>
+    <div class="note" style="margin-top:10px">Smluvní standardy a logo firmy najdete na záložce
+      <b>Smlouvy / Šablony</b> — patří k dokumentům, ne k identifikaci firmy.</div>
 
     <div class="sec-title">Zástupné symboly do .docx šablon</div>
     <div class="note" style="line-height:1.9">${symboly}</div>
@@ -387,9 +577,9 @@ function sablonaPrelozStav(typ, lang, text) {
   if (el) el.textContent = text;
 }
 function sablonaPrelozit(typ, lang) {
-  if (!jeAdmin()) return alert('Jazykové mutace šablon smí vytvářet jen administrátor.');
+  if (!jeAdmin()) return hlaska('Jazykové mutace šablon smí vytvářet jen administrátor.');
   const s = SABLONY[typ];
-  if (!s) return alert('Nejdřív nahrajte českou šablonu .docx.');
+  if (!s) return hlaska('Nejdřív nahrajte českou šablonu .docx.');
   const stat = {};
   sablonaPrelozStav(typ, lang, 'Překládám do ' + lang.toUpperCase() + '…');
   docxPrelozSablonu(s.data.slice(0), lang, stat)
@@ -412,7 +602,7 @@ function sablonaPrelozit(typ, lang) {
 function sablonaChybejiciCsv(typ, lang) {
   const s = SABLONY[typ]; if (!s) return;
   const stat = {};
-  docxPrelozSablonu(s.data.slice(0), lang, stat).then(() => {
+  docxPrelozSablonu(s.data.slice(0), lang, stat).then(async () => {
     const csv = '﻿' + ['český text;překlad (' + lang.toUpperCase() + ')']
       .concat(stat.chybi.map(t => '"' + t.replace(/"/g, '""') + '";')).join('\r\n');
     const a = document.createElement('a');
@@ -427,18 +617,18 @@ function sablonaOnlineStav(text, chyba) {
   const el = document.getElementById('sablOnlineStav');
   if (el) { el.textContent = text || ''; el.style.color = chyba ? 'var(--red, #c0392b)' : ''; }
 }
-function sablonaZverejniOnline(typ) {
-  if (!jeAdmin()) return alert('Zveřejnit šablonu smí jen administrátor.');
+async function sablonaZverejniOnline(typ) {
+  if (!jeAdmin()) return hlaska('Zveřejnit šablonu smí jen administrátor.');
   const s = SABLONY[typ];
-  if (!s) return alert('Nejdřív nahrajte .docx soubor šablony.');
+  if (!s) return hlaska('Nejdřív nahrajte .docx soubor šablony.');
   /* Zveřejňuje se česká šablona A VŠECHNY hotové jazykové mutace najednou —
    * zveřejnit jen češtinu by znamenalo, že anglická nabídka pojede z jiné
    * (starší) verze než česká, což je přesně to, čemu má centrála zabránit. */
   const mutace = ['en', 'de', 'fr'].filter(l => SABLONY[typ + '_' + l]);
-  if (!confirm('Zveřejnit „' + s.nazev + '" jako platnou šablonu pro celý program?'
+  if (!await potvrd('Zveřejnit „' + s.nazev + '" jako platnou šablonu pro celý program?'
     + (mutace.length ? '\nSpolu s ní se zveřejní jazykové mutace: ' + mutace.map(l => l.toUpperCase()).join(', ') + '.' : '')
     + '\n\nOd této chvíle z ní budou tisknout všichni přihlášení.')) return;
-  const pozn = prompt('Čím se změna zdůvodňuje (nepovinné):', '') || '';
+  const pozn = await dotaz('Čím se změna zdůvodňuje (nepovinné):', '') || '';
   sablonaOnlineStav('Zveřejňuji…');
   let fronta = Promise.resolve();
   const vysledky = [];
@@ -453,14 +643,60 @@ function sablonaZverejniOnline(typ) {
   });
   fronta.then(() => { sablonaOnlineStav('Hotovo: ' + vysledky.join(' · ')); nastRefresh(); });
 }
-function sablonyRezimUI(rezim) {
+async function sablonyRezimUI(rezim) {
   if (!jeAdmin()) return;
-  if (rezim === 'mekky' && !confirm('Přepnout šablony do MĚKKÉHO režimu?\n\n'
+  if (rezim === 'mekky' && !await potvrd('Přepnout šablony do MĚKKÉHO režimu?\n\n'
     + 'Obchodníci pak budou moci tisknout i z místních souborů. Používejte jen při výpadku '
     + 'online části; po jeho odeznění přepněte zpět na přísný.')) { nastRefresh(); return; }
   onlineSablonyRezimNastav(rezim)
     .then(() => { sablonaOnlineStav('Režim přepnut.'); nastRefresh(); })
     .catch(e => { sablonaOnlineStav('Chyba: ' + e.message, true); nastRefresh(); });
+}
+
+/* Bloky přestěhované 20. 8. 2026 z Nastavení → Firma na začátek záložky
+ * Smlouvy / Šablony: firemní smluvní standardy (věty, které jdou do každé
+ * nabídky a smlouvy) a logo do hlaviček dokumentů. Obojí se pořád ukládá do
+ * NAST.firma — přestěhovalo se jen místo, kde se to vyplňuje. */
+function nastSmluvniStandardy() {
+  const f = NAST.firma || (NAST.firma = firmaDefault());
+  const pole = FIRMA_POLE.filter(p => p.sekce === 'Smluvní standardy');
+  /* Prázdné pole neznamená „nic" — krycí list má pro ten případ záložní větu
+   * napsanou v kódu. Do 20. 8. 2026 to nebylo nikde vidět, takže formulář
+   * vypadal jako nevyplněný duplikát krycího listu (dotaz J. V.). Teď se
+   * záložní věta ukazuje jako nápověda v poli i pod ním. */
+  const ZALOHA = {
+    platnostNabidky: '2 měsíce',
+    zpusobFakturaceOck: 'Náš standard / měsíční',
+    zpusobFakturaceProj: 'po dokončení jednotlivých stupňů dokumentace',
+    rozsahDefinice: 'je definován přílohou ke smlouvě (specifikace)',
+  };
+  const radek = p => {
+    const prazdne = !String(f[p.id] || '').trim();
+    return `<div class="row"><label>${esc(p.label)}</label>
+      <input type="text" value="${esc(f[p.id] == null ? '' : f[p.id])}"
+        placeholder="${esc(ZALOHA[p.id] || '')}"
+        onchange="firmaSet('${p.id}', this.value)">
+      <span class="note" style="flex:none;width:210px;font-size:11.5px"><code>{{${p.symbol}}}</code>${
+        prazdne ? ' <span class="pill mut">platí záložní věta</span>' : ''}</span></div>`;
+  };
+  return `<div class="sec-title">Smluvní standardy</div>
+    <div class="note" style="margin-top:0">Věty, které platí pro celou firmu a propisují se do
+      <b>každé</b> nabídky, smlouvy i krycího listu. Mění se jednou za čas a pro všechny naráz —
+      proto tady, a ne v každé zakázce zvlášť. <b>Nejsou to duplicitní pole ke krycímu listu:</b>
+      tohle je jejich <b>zdroj</b>, krycí list je jen předvyplní a v konkrétní zakázce jdou
+      přepsat (↺ vrátí hodnotu odsud). Necháte-li pole prázdné, použije se
+      <b>záložní věta napsaná v kódu</b> — je vidět jako šedá nápověda v poli.</div>
+    ${pole.map(radek).join('')}
+
+    <div class="sec-title">Logo firmy</div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      ${f.logo ? `<img src="${esc(f.logo)}" alt="logo" style="max-height:56px;max-width:220px;border:1px solid var(--line);border-radius:6px;padding:4px">` : '<span class="note">Logo zatím nenahráno.</span>'}
+      <div class="btns"><button onclick="firmaLogoNahraj()">Nahrát logo</button>
+        ${f.logo ? '<button class="mini" onclick="firmaLogoSmaz()">Odebrat</button>' : ''}</div>
+      ${f.logoNazev ? `<span class="note">${esc(f.logoNazev)}</span>` : ''}
+    </div>
+    <div class="note" style="margin-top:6px">PNG / JPG / SVG do 400 kB. Ukládá se přímo do konfigurace (data URL),
+      aby se přeneslo spolu s ostatním nastavením. Logo se zobrazuje v hlavičce tiskových náhledů.</div>`;
 }
 
 function nastSablony() {
@@ -525,7 +761,10 @@ function nastSablony() {
         ${r.rezimZmenil ? `Naposledy přepnul ${esc(r.rezimZmenil)} ${esc((r.rezimKdy || '').slice(0, 10))}.` : ''}</div>
       <div id="sablOnlineStav" class="note" style="margin-top:6px"></div></div>`;
   };
-  return `<div class="note">Šablony <b>.docx</b> se od 13. 8. 2026 řídí <b>centrálně</b> (#139): administrátor je zveřejní
+  return `${nastSmluvniStandardy()}
+
+    <div class="sec-title">Šablony dokumentů</div>
+    <div class="note">Šablony <b>.docx</b> se od 13. 8. 2026 řídí <b>centrálně</b> (#139): administrátor je zveřejní
     na serveru a všichni přihlášení z nich automaticky tisknou — nikdo nemůže omylem použít starou verzi. Nahrání
     souboru níže je příprava (a nouzová cesta pro práci bez serveru); teprve <b>„Zveřejnit online"</b> ji učiní platnou
     pro všechny. Šablony se plní zástupnými symboly <code>{{KLÍČ}}</code> a jsou součástí všech záloh.</div>
@@ -570,7 +809,7 @@ function konfigCtx() {
 }
 
 function konfigExportSoubor() {
-  if (!jeAdmin()) return alert('Export konfigurace smí spustit jen administrátor.');
+  if (!jeAdmin()) return hlaska('Export konfigurace smí spustit jen administrátor.');
   if (!KONFIG_SEKCE.some(s => KONFIG_VOLBY[s.kod])) return konfigStav('Vyberte aspoň jednu sekci.', true);
   try {
     const data = konfiguraceExport(konfigCtx(), KONFIG_VOLBY);
@@ -583,13 +822,13 @@ function konfigExportSoubor() {
 }
 
 function konfigImportSoubor() {
-  if (!jeAdmin()) return alert('Import konfigurace smí spustit jen administrátor.');
+  if (!jeAdmin()) return hlaska('Import konfigurace smí spustit jen administrátor.');
   const inp = document.createElement('input');
   inp.type = 'file'; inp.accept = '.json,application/json';
   inp.onchange = () => {
     const f = inp.files && inp.files[0]; if (!f) return;
     const fr = new FileReader();
-    fr.onload = () => {
+    fr.onload = async () => {
       let data;
       try { data = JSON.parse(fr.result); }
       catch (e) { return konfigStav('Soubor není platný JSON: ' + e.message, true); }
@@ -605,7 +844,7 @@ function konfigImportSoubor() {
               + ' – ty se mění zveřejněním ceníku (databáze programu).' : '')
             : '')
         + '\n\nPokračovat?';
-      if (!confirm(otazka)) return konfigStav('Import zrušen.');
+      if (!await potvrd(otazka)) return konfigStav('Import zrušen.');
       try {
         const v = konfiguraceImport(data, konfigCtx(), KONFIG_VOLBY);
         nastRefresh();                       // překreslí panel – stav se doplní až potom
@@ -659,7 +898,7 @@ function slovStav(text, chyba) {
   el.style.color = chyba ? 'var(--red, #c0392b)' : '';
 }
 function slovNacti() {
-  if (!jeAdmin()) return alert('Porovnání slovníku smí spustit jen administrátor.');
+  if (!jeAdmin()) return hlaska('Porovnání slovníku smí spustit jen administrátor.');
   const inp = document.createElement('input');
   inp.type = 'file'; inp.accept = '.xlsx';
   inp.onchange = () => {
@@ -680,11 +919,11 @@ function slovNacti() {
   };
   inp.click();
 }
-function slovDoplnitVse() {
+async function slovDoplnitVse() {
   if (!jeAdmin() || !SLOV_STAV) return;
   const zm = SLOV_STAV.rozdil.doplnit;
   if (!zm.length) return;
-  if (!confirm('Doplnit ' + zm.length + ' chybějící překlad/y z tabulky?\n\nPřepisuje se jen tam, kde aplikace překlad nemá – nic hotového se nepřepíše.')) return;
+  if (!await potvrd('Doplnit ' + zm.length + ' chybějící překlad/y z tabulky?\n\nPřepisuje se jen tam, kde aplikace překlad nemá – nic hotového se nepřepíše.')) return;
   const n = slovnikAplikuj(zm, prekladNastav);
   slovPrepocti('Doplněno ' + n + ' překladů.');
 }
@@ -695,11 +934,11 @@ function slovVezmi(kategorie, i) {
   slovnikAplikuj([z], prekladNastav);
   slovPrepocti('Převzato z tabulky: ' + z.cz + ' (' + z.jazyk.toUpperCase() + ')');
 }
-function slovPridejNove() {
+async function slovPridejNove() {
   if (!jeAdmin() || !SLOV_STAV) return;
   const zm = slovnikNoveJakoZmeny(SLOV_STAV.rozdil.nove);
   if (!zm.length) return;
-  if (!confirm('Přidat do slovníku ' + SLOV_STAV.rozdil.nove.length + ' hesel z tabulky (' + zm.length + ' překladů)?\n\nJsou to hesla, která aplikace zatím nezná. Nic stávajícího se nepřepíše.')) return;
+  if (!await potvrd('Přidat do slovníku ' + SLOV_STAV.rozdil.nove.length + ' hesel z tabulky (' + zm.length + ' překladů)?\n\nJsou to hesla, která aplikace zatím nezná. Nic stávajícího se nepřepíše.')) return;
   const n = slovnikAplikuj(zm, prekladNastav);
   slovPrepocti('Přidáno ' + n + ' překladů v nových heslech.');
 }
@@ -796,18 +1035,74 @@ function zobrMatice() {
   if (!NAST.zobrazeni) NAST.zobrazeni = (typeof zobrazeniVychozi === 'function') ? zobrazeniVychozi() : {};
   return NAST.zobrazeni;
 }
+/* AUTOMATICKÉ UKLÁDÁNÍ MATICE (22. 8. 2026, hlášeno J. V.: „neukládají se
+ * nám zobrazení v nastavení, při novém buildu se zaškrtnutí resetuje").
+ *
+ * Zaškrtnutí se do dneška drželo jen v paměti prohlížeče a na server odešlo
+ * až tlačítkem „Zveřejnit". Jenže matice se při každém přihlášení znovu bere
+ * ze serveru — takže co se nestihlo odeslat, to se při dalším načtení
+ * stránky tiše přepsalo zpátky. Panel proto ukládá sám: 800 ms po poslední
+ * změně (aby proklikání dvaceti políček byl jeden zápis, ne dvacet).
+ *
+ * Stav ukládání je vidět nahoře v panelu. Beze zprávy by se opakovala táž
+ * chyba jako u ukládání zakázky (#166): uživatel neví, jestli se něco děje,
+ * a klikne znovu. */
+const ZOBR_ULOZ_PRODLEVA = 800;
+const ZOBR_ULOZ = { cas: null, stav: '', kdy: '', chyba: '' };
+
+function zobrUlozMozne() {
+  return typeof onlineUlozZobrazeniTise === 'function'
+    && typeof jeAdminOnline === 'function' && jeAdminOnline();
+}
+
+function zobrUlozBrzy() {
+  if (!jeAdmin()) return;
+  if (!zobrUlozMozne()) { ZOBR_ULOZ.stav = 'offline'; return; }
+  ZOBR_ULOZ.stav = 'ceka';
+  if (ZOBR_ULOZ.cas) clearTimeout(ZOBR_ULOZ.cas);
+  ZOBR_ULOZ.cas = setTimeout(zobrUlozHned, ZOBR_ULOZ_PRODLEVA);
+}
+
+function zobrUlozHned() {
+  if (ZOBR_ULOZ.cas) { clearTimeout(ZOBR_ULOZ.cas); ZOBR_ULOZ.cas = null; }
+  if (!jeAdmin()) return Promise.resolve(false);
+  if (!zobrUlozMozne()) { ZOBR_ULOZ.stav = 'offline'; nastRefresh(); return Promise.resolve(false); }
+  ZOBR_ULOZ.stav = 'uklada'; ZOBR_ULOZ.chyba = ''; nastRefresh();
+  return onlineUlozZobrazeniTise()
+    .then(() => {
+      ZOBR_ULOZ.stav = 'ulozeno';
+      ZOBR_ULOZ.kdy = new Date().toTimeString().slice(0, 5);
+      return true;
+    })
+    .catch(e => { ZOBR_ULOZ.stav = 'chyba'; ZOBR_ULOZ.chyba = e.message || String(e); return false; })
+    .then(v => { nastRefresh(); return v; });
+}
+
+/* Věta o stavu ukládání do panelu. */
+function zobrUlozPopis() {
+  switch (ZOBR_ULOZ.stav) {
+    case 'ceka':   return '⏳ Změna se za okamžik uloží…';
+    case 'uklada': return '⏳ Ukládám do databáze…';
+    case 'ulozeno': return '✓ Uloženo online v ' + ZOBR_ULOZ.kdy + ' — platí všem po dalším načtení stránky.';
+    case 'chyba':  return '⚠ Uložit se nepodařilo: ' + ZOBR_ULOZ.chyba + ' Zkuste „Uložit teď".';
+    case 'offline': return '⚠ Bez přihlášení k databázi se zaškrtnutí neuloží — platí jen do zavření stránky.';
+    default: return '';
+  }
+}
+
 function zobrSet(klic, role, v) {
   if (!jeAdmin()) return;
   const m = zobrMatice();
   if (!m[klic]) m[klic] = {};
   m[klic][role] = !!v;
+  zobrUlozBrzy();
   nastRefresh();
 }
 /* Hromadné přepnutí. `navrh` = doporučení sepsané u každého prvku (podklad
  * k rozhodnutí, ne výchozí stav), `vychozi` = dnešek před zavedením matice. */
-function zobrPredloha(ktera) {
+async function zobrPredloha(ktera) {
   if (!jeAdmin()) return;
-  if (!confirm(ktera === 'navrh'
+  if (!await potvrd(ktera === 'navrh'
     ? 'Přepsat celou tabulku doporučením?\n\nDoporučení je návrh, co dát obchodníkovi a co vedoucímu. '
       + 'Vaše dosavadní zaškrtnutí se ztratí. Zveřejnit se to musí zvlášť.'
     : 'Vrátit celou tabulku na stav před zavedením tohoto nastavení?\n\n'
@@ -819,6 +1114,7 @@ function zobrPredloha(ktera) {
       m[p.klic][r] = p.pevne ? false : !!(ktera === 'navrh' ? p.navrh : p.vychozi)[r];
     });
   });
+  zobrUlozBrzy();
   nastRefresh();
 }
 /* Náhled cizí role: administrátor si přepne, co uvidí obchodník nebo vedoucí,
@@ -826,6 +1122,10 @@ function zobrPredloha(ktera) {
  * přes `nastSetAdmin(false)` — tím se z NAST.jeAdmin stane false a rozhraní
  * začne chodit maticí; `nahledRole` řekne, ČÍ pohled to je. */
 function zobrNahled(role) {
+  /* Volba ROLE a náhled konkrétního účtu jsou dvě podoby téhož přepínače —
+   * proto se navzájem ruší (20. 8. 2026). Jinak by v liště svítilo jméno
+   * uživatele, ale rozhraní by se řídilo jinou rolí. */
+  NAST.nahledUzivatel = null;
   NAST.nahledRole = role || '';
   if (role) nastSetAdmin(false); else nastSetAdmin(true);
 }
@@ -874,28 +1174,42 @@ function nastZobrazeni() {
 
     <div class="sec-title">Stav v online databázi</div>
     <div class="note" style="margin-top:0">${esc(online)}</div>
+    <div class="note"><b>${esc(zobrUlozPopis() || 'Zaškrtnutí se ukládá samo — hned po změně.')}</b></div>
     <div class="note">${zmen.length
       ? esc('Proti výchozímu rozdělení máte v tabulce ' + zmen.length + ' odchylek.')
       : 'V tabulce zatím není žádná odchylka od výchozího rozdělení.'}</div>
     <div class="btns" style="margin-top:8px">
-      ${typeof onlineZverejniZobrazeni === 'function'
-        ? `<button class="primary" onclick="onlineZverejniZobrazeni()">Zveřejnit nastavení zobrazení online</button>` : ''}
+      <button class="primary" onclick="zobrUlozHned()">Uložit teď</button>
       <button class="mini" onclick="zobrPredloha('navrh')">Použít doporučení</button>
       <button class="mini" onclick="zobrPredloha('vychozi')">Vrátit na dnešní stav</button>
     </div>
-    <div class="note">Dokud nastavení nezveřejníte, platí jen vám a po odhlášení se ztratí —
-      matice bydlí na serveru, protože obchodník ani vedoucí složku <code>_DB</code> nemapují.</div>
+    <div class="note">Zaškrtnutí se ukládá samo krátce po změně; tlačítko <b>Uložit teď</b> je jen
+      pro jistotu, když nechcete čekat. Matice bydlí na serveru, protože obchodník ani vedoucí
+      složku <code>_DB</code> nemapují — a proto se zaškrtnutí, které se neuloží, při dalším
+      načtení stránky ztratí.</div>
 
-    <div class="sec-title">Náhled cizí role</div>
+    <div class="sec-title">Náhled pohledem uživatele</div>
     <div class="kl-radio">
       <label><input type="radio" name="nastNahled" ${NAST.jeAdmin ? 'checked' : ''}
         onchange="zobrNahled('')"> Administrátor (skutečný pohled)</label>
       ${ZOBRAZENI_ROLE_PRIDELITELNE.map(r => `<label><input type="radio" name="nastNahled"
-        ${!NAST.jeAdmin && NAST.nahledRole === r ? 'checked' : ''}
-        onchange="zobrNahled('${escJs(r)}')"> ${esc(r)} (náhled)</label>`).join('')}
+        ${!NAST.jeAdmin && !nahledAktivni() && NAST.nahledRole === r ? 'checked' : ''}
+        onchange="zobrNahled('${escJs(r)}')"> ${esc(r)} (obecný náhled role)</label>`).join('')}
     </div>
-    <div class="note">Náhled přepíná jen to, co je vidět na obrazovce. Co se smí skutečně
-      provést, hlídá server podle role účtu — náhledem se práva nezískávají.</div>
+    <div class="row" style="margin-top:8px">
+      <label>Prohlížet aplikaci jako konkrétní účet</label>
+      <select onchange="this.value ? nahledZapni(this.value) : nahledVypni()">
+        <option value="">— skutečný pohled —</option>
+        ${(ONLINE_STAV.uzivatele || []).filter(u => u.email && u.email !== (ONLINE_STAV.ja || {}).email)
+          .map(u => `<option value="${esc(u.email)}" ${nahledAktivni() && NAST.nahledUzivatel.email === u.email ? 'selected' : ''}>${esc(u.jmeno || u.email)} · ${esc(u.role || 'Obchodník')}</option>`).join('')}
+      </select><span class="u"></span>
+    </div>
+    <div class="note">Náhled se dá zapnout i <b>klikem na vlastní jméno vpravo nahoře</b> — zelená
+      postavička 👤 se v náhledu změní na červené oko 👁 a přes celou šířku svítí oranžový pruh.
+      Seznam účtů se bere z panelu <b>Uživatelé</b>; když je prázdný, otevřete ho jednou, ať se načte.</div>
+    <div class="note">Náhled přepíná jen to, co je vidět na obrazovce, a je <b>jen ke čtení</b> —
+      v cizím pohledu se nic nezapíše, aby v zakázce nezůstala změna bez jasného autora.
+      Co se smí skutečně provést, hlídá server podle role účtu — náhledem se práva nezískávají.</div>
 
     ${skupiny}`;
 }
