@@ -164,9 +164,11 @@ test('přepsat vrátí firmu ze zálohy', o2.ok && o2.casti.firma.prepsane === 1
   && (await ulz('program').cti('firma')).udaje.nazev === SKUT.nazev, o2.casti.firma);
 test('obnova po částech se nedotkne ostatního (zakázky v odpovědi nejsou)', o2.casti.zakazky === undefined);
 
-/* ---- 7) novější ruční změna zakázky: doplnit ji nechá, přepsat vrátí ---- */
+/* ---- 7) novější ruční změna zakázky: doplnit ji nechá, přepsat vrátí ----
+ * Od kroku 3 obchodníkův účet neexistuje (ztráta), takže jeho relace
+ * správně neprojde — ukládá administrátor. */
 const zakA2 = kopie(await ulz('zakazky').cti(A)); zakA2.nazevAkce = 'Ručně upraveno po záloze';
-test('ruční změna zakázky A se uloží', (await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zakA2 }, cookieObch)).json()).ok === true);
+test('ruční změna zakázky A se uloží', (await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zakA2 }, cookie)).json()).ok === true);
 const o3 = await obnovJson({ zdroj: { soubor: zalSoubor }, rezim: 'doplnit', potvrzeni: 'OBNOVIT', casti: ['zakazky'] }, cookie);
 test('doplnit nepřepíše novější ruční změnu zakázky',
   (await ulz('zakazky').cti(A)).nazevAkce === 'Ručně upraveno po záloze' && o3.casti.zakazky.preskocene === 1, o3.casti.zakazky);
@@ -176,7 +178,8 @@ test('přepsat vrátí zakázku ze zálohy',
 
 /* ---- 8) obnova nikdy nemaže: záznam mimo zálohu zůstane ---- */
 const zakC = novaZak('2026 - OPR - CN - 0779', 'Zakázka C (po záloze)');
-const ulC = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zakC }, cookieObch)).json();
+const ulC = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zakC }, cookie)).json();
+test('zakázka C se uložila', ulC.ok === true && !!ulC.soubor, ulC);
 const o5 = await obnovJson({ zdroj: { soubor: zalSoubor }, rezim: 'prepsat', potvrzeni: 'OBNOVIT' }, cookie);
 test('přepsat neodstraní zakázku, která v záloze není', o5.ok && (await ulz('zakazky').cti('z/' + ulC.soubor)) !== null);
 const rej5 = await ulz('zakazky').cti('_rejstrik');
@@ -185,7 +188,7 @@ test('a rejstřík ji dál eviduje (3 zakázky)', rej5.zakazky.length === 3 && r
 /* ---- 9) uzamčené nabídky se nepřepíšou ani v režimu přepsat ---- */
 const zakBz = kopie(await ulz('zakazky').cti(B));
 zm.zamkniVariantu(zakBz.varianty[0], { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Test' });
-test('zakázka B se uloží se zámkem', (await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zakBz }, cookieObch)).json()).ok === true);
+test('zakázka B se uloží se zámkem', (await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zakBz }, cookie)).json()).ok === true);
 const n9 = await obnovJson({ zdroj: { soubor: zalSoubor }, rezim: 'prepsat', nahled: true, casti: ['zakazky'] }, cookie);
 test('náhled: obnova ze zálohy před zámkem by zámek sundala → B přeskočena s důvodem',
   n9.casti.zakazky.preskocene === 1 && n9.casti.zakazky.duvody.some(d => d.klic === B && /uzam/.test(d.duvod)), n9.casti.zakazky);
