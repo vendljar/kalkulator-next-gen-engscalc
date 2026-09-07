@@ -328,7 +328,11 @@
      lišta se zámkem stojí mimo ně, takže tlačítko Odemknout zůstává živé. */
   .cteni-zamceno { opacity:.72; }
   .cteni-zamceno input, .cteni-zamceno select, .cteni-zamceno textarea,
-  .cteni-zamceno button:not(.noprint-ok) { pointer-events:none; background:#f4f6f9; }
+  .cteni-zamceno button:not(.noprint-ok):not(.cteni-ok) { pointer-events:none; background:#f4f6f9; }
+  /* Co zůstává živé i v režimu čtení (7. 9. 2026, hlášení J. V.: „nemůžu načíst
+     starou ani otevřít novou zakázku, ani vytisknout"): navigace a tisk nic
+     nezapisují, takže je zámek nesmí zabít — označují se třídou cteni-ok. */
+  .cteni-zamceno button.cteni-ok, .cteni-zamceno select.cteni-ok { pointer-events:auto; background:#fff; }
   .zamek-lista.zamek-cteni { background:#eef4ff; border-color:#b9cdf0; color:#123a72; }
   .zamek-lista.zamek-cteni b { color:#123a72; }
   .zamek-lista.zamek-cteni button { pointer-events:auto; }

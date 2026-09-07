@@ -298,6 +298,39 @@ test('panel Zakázky online ukazuje uloženou zakázku',
   (await page.locator('#online-panel').innerHTML()).includes('Online ověření'));
 await page.evaluate(() => onlineOtevri(ONLINE_STAV.soubor));
 await page.waitForTimeout(400);
+
+/* Zámek čtení (4. 9. 2026) nesmí zabít navigaci a tisk (hlášení J. V.
+ * 7. 9. 2026: „nemůžu načíst starou ani otevřít novou zakázku, ani
+ * vytisknout"). Měří se skutečné pointer-events tlačítek v DOM. */
+const ziveVZamku = await page.evaluate(() => {
+  const pe = (najdi) => { const b = [...document.querySelectorAll('button, select')].find(najdi); return b ? getComputedStyle(b).pointerEvents : 'chybí'; };
+  return {
+    zamceno: (typeof zamekCteniJe === 'function') && zamekCteniJe(),
+    nacist: pe(b => /Načíst zakázku/.test(b.textContent)),
+    nova: pe(b => /Nová zakázka/.test(b.textContent)),
+    historie: pe(b => /Historická kalkulace/.test(b.textContent)),
+    prehled: pe(b => /Přehled cenových nabídek →/.test(b.textContent)),
+    varianta: pe(b => b.tagName === 'SELECT' && /přepnout počítanou variantu/.test(b.title)),
+    ulozit: pe(b => /Uložit zakázku/.test(b.textContent)),
+  };
+});
+test('otevřená zakázka z databáze je jen ke čtení', ziveVZamku.zamceno === true, ziveVZamku);
+test('v režimu čtení zůstává živé Načíst, Nová zakázka, Historická kalkulace, Přehled i přepínač varianty',
+  ['nacist', 'nova', 'historie', 'prehled', 'varianta'].every(k => ziveVZamku[k] === 'auto'), ziveVZamku);
+test('Uložit zakázku je v režimu čtení dál vypnuté (nic se neukládá)', ziveVZamku.ulozit === 'none', ziveVZamku);
+await page.evaluate(() => prepniTab('proj'));
+await page.waitForTimeout(300);
+const tiskProjVZamku = await page.evaluate(() => {
+  const pe = (najdi) => { const b = [...document.querySelectorAll('button, select')].find(najdi); return b ? getComputedStyle(b).pointerEvents : 'chybí'; };
+  return { tisk: pe(b => /Kompletní náhled a tisk nabídky/.test(b.textContent) && b.closest('#proj-telo')),
+           word: pe(b => /Vytvořit nabídku PROJ \(Word\)/.test(b.textContent)),
+           jazyk: pe(b => b.tagName === 'SELECT' && /Jazyk tohoto výtisku/.test(b.title) && b.closest('#proj-telo')),
+           kryci: pe(b => /Přejít na krycí list/.test(b.textContent) && b.closest('#proj-telo')) };
+});
+test('v režimu čtení jde nabídku PROJ vytisknout, vytvořit Word, přepnout jazyk i přejít na krycí list',
+  Object.values(tiskProjVZamku).every(v => v === 'auto'), tiskProjVZamku);
+await page.evaluate(() => prepniTab('kalk'));
+await page.waitForTimeout(200);
 test('zakázka se otevřela online a číslo sedí',
   await page.evaluate(() => ZAK.cislo === '2026 - OPR - CN - 0555'));
 

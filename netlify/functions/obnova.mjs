@@ -262,6 +262,14 @@ export default async (req) => {
     const hodnota = zaloha[cast];
     if (hodnota == null || typeof hodnota !== 'object') preskoc(b, jednoduche[cast], 'záloha tuto část nenese');
     else await zaznam(b, sProg, jednoduche[cast], hodnota, rezim, zapisovat);
+    /* Přeskočený ceník v režimu „doplnit" je nejčastější důvod dojmu, že
+     * „obnova nenahrála všechno" (7. 9. 2026): důvod proto říká obě verze. */
+    if (cast === 'program' && b.preskocene && b.duvody[0] && /doplnit/.test(b.duvody[0].duvod)) {
+      const stary = await sProg.cti('db');
+      const v = (x) => (x && x.platny && x.platny.verze != null) ? 'verze ' + x.platny.verze + (x.platny.platnoOd ? ' z ' + x.platny.platnoOd : '') : 'bez verze';
+      b.duvody[0].duvod = 'ceník na serveru už je (' + v(stary) + '); záloha nese ' + v(hodnota)
+        + ' — nahradí ho jen režim „přepsat" (doplnit nepřepisuje)';
+    }
     vysledek[cast] = b;
   }
 

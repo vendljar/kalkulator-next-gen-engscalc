@@ -94,8 +94,8 @@ function zakTrojice() {
   return `<button class="mini${ceka ? ' vyzva' : ''}${ulozeno ? ' ulozeno-ok' : ''}" ${pracuje ? 'disabled' : ''}
       title="uložit otevřenou zakázku ${kam}"
       onmousedown="zakUlozMousedown()" onclick="zakUlozUI()">${ZAKULO_STAV.uklada ? '⏳ Ukládám…' : '💾 Uložit zakázku'}</button>
-    <button class="mini" title="otevřít jinou zakázku (${kam})" onclick="zakNactiUI()">📂 Načíst zakázku</button>
-    <button class="mini" title="začít novou prázdnou zakázku" onclick="novaZakazkaUI()">✚ Nová zakázka</button>`;
+    <button class="mini cteni-ok" title="otevřít jinou zakázku (${kam})" onclick="zakNactiUI()">📂 Načíst zakázku</button>
+    <button class="mini cteni-ok" title="začít novou prázdnou zakázku" onclick="novaZakazkaUI()">✚ Nová zakázka</button>`;
 }
 
 /* ---------- jak dlouho svítí „uloženo" (21. 8. 2026 večer) ----------

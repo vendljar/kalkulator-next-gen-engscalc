@@ -67,9 +67,12 @@ function nabidkaProjKarta() {
     <div class="btns" style="margin-top:8px">
       <!-- Pořadí i barvy od 19. 8. 2026 stejné jako v Kalkulaci OCK (zadání J. V.):
            modrý (primary) je tisk nabídky, Word je vedlejší cesta bez barvy. -->
-      <button class="primary"${typeof ukazkoveZabranaAttr === 'function' ? ukazkoveZabranaAttr() : ''}
+      <!-- cteni-ok: tisk a Word nic nezapisují, v režimu čtení (zámek okna)
+           zůstávají živé — bez třídy by je CSS .cteni-zamceno v #proj-telo
+           vypnulo (hlášení J. V. 7. 9. 2026: „nemůžu zakázku ani vytisknout"). -->
+      <button class="primary cteni-ok"${typeof ukazkoveZabranaAttr === 'function' ? ukazkoveZabranaAttr() : ''}
         onclick="nabidkaProjNahled()">Kompletní náhled a tisk nabídky</button>
-      <button${typeof ukazkoveZabranaAttr === 'function' ? ukazkoveZabranaAttr() : ''}
+      <button class="cteni-ok"${typeof ukazkoveZabranaAttr === 'function' ? ukazkoveZabranaAttr() : ''}
         onclick="nabidkaProjWord()">Vytvořit nabídku PROJ (Word)</button>
       ${typeof tiskJazykVyber === 'function' ? tiskJazykVyber() : ''}
     </div>
@@ -86,7 +89,7 @@ function nabidkaProjKarta() {
          záložky Krycí list zakázky PROJ (pokyn J. V.) — stejný krok jako u OCK:
          dokument se tvoří tam, kde se vyplňují jeho vstupy. -->
     <div class="btns" style="margin-top:12px">
-      <button style="background:#86e8ad;color:#0B2E6B;border-color:#5fcf92"
+      <button class="cteni-ok" style="background:#86e8ad;color:#0B2E6B;border-color:#5fcf92"
         onclick="prepniTab('kryciproj'); window.scrollTo(0, 0)">Přejít na krycí list</button>
     </div>
     <div class="note" style="margin-top:6px"><b>Smlouva o dílo PROJ</b> a <b>plná moc</b> se 20. 8. 2026

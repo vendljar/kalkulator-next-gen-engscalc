@@ -398,7 +398,7 @@ function tiskJazykNastav(v) {
 function tiskJazykVyber() {
   const moznosti = [['', 'dle Nastavení (' + jazyk().toUpperCase() + ')'],
     ['cz', 'česky'], ['en', 'anglicky'], ['de', 'německy'], ['fr', 'francouzsky']];
-  return '<label class="note" style="margin-left:8px">Jazyk tisku:&nbsp;<select '
+  return '<label class="note" style="margin-left:8px">Jazyk tisku:&nbsp;<select class="cteni-ok" '
     + 'onchange="tiskJazykNastav(this.value)" title="Jazyk tohoto výtisku – pevný text dodá jazyková mutace šablony, hodnoty přeloží aplikace">'
     + moznosti.map(([v, t]) => '<option value="' + v + '"' + (v === TISK_JAZYK ? ' selected' : '')
       + '>' + t + '</option>').join('')
@@ -914,7 +914,7 @@ function zakazkaHlavicka(ock) {
   // indikátor řídící varianty přímo za popiskem „Otevřená varianta" (odsazený)
   const ridiciPill = `<span class="pill ${akt.ridici ? '' : 'mut'}" style="margin-left:12px" title="řídící = aktuálně platná varianta pro nabídku">${akt.ridici ? '✓ řídící' : 'není řídící'}</span>`;
   const variantaRow = `<div class="row"><label>Otevřená varianta${ridiciPill}</label>
-    <select onchange="varAktivuj(this.value)" title="přepnout počítanou variantu">${opts}</select></div>`;
+    <select class="cteni-ok" onchange="varAktivuj(this.value)" title="přepnout počítanou variantu">${opts}</select></div>`;
   const ridiciBtn = akt.ridici ? '' : `<div class="row"><label></label><button class="mini noprint" onclick="varRidici('${escJs(akt.id)}')">nastavit jako řídící (platná je „${esc(rid.nazev)}")</button></div>`;
   const rezimRow = `<div class="row"><label>Režim výpočtu</label>
     <select onchange="set('OCK.fixes', this.value==='fix')" title="přepnutí Model 2 – opravený / Model 1 – 1:1 jako Excel">
@@ -1006,7 +1006,11 @@ function zakazkaHlavicka(ock) {
    * hlavně kterým ceníkem se počítalo. */
   const puvodVeta = (typeof puvodPopis === 'function') ? puvodPopis(akt) : '';
   const puvodRadek = puvodVeta ? `<div class="zak-puvod noprint">⤺ ${esc(puvodVeta)}</div>` : '';
-  const archivBtn = `<button class="mini" onclick="otevriArchiv()"
+  /* Načíst, Nová zakázka, Historická kalkulace, Přehled i přepínač varianty
+   * nesou třídu cteni-ok: v režimu čtení (zámek okna) zůstávají živé, protože
+   * nic nezapisují — bez ní by je CSS .cteni-zamceno vypnulo spolu s poli
+   * (hlášení J. V. 7. 9. 2026: „nemůžu načíst starou ani otevřít novou"). */
+  const archivBtn = `<button class="mini cteni-ok" onclick="otevriArchiv()"
     title="nahlédnout do uložených zakázek a převzít historickou kalkulaci jako alternativu">↩ Historická kalkulace…</button>`;
 
   /* Tlačítko „Převzít údaje z hlavičky OCK/PROJ" v liště obou kalkulací bylo
@@ -1034,7 +1038,7 @@ function zakazkaHlavicka(ock) {
         <span class="zak-cena-del"></span>
         <button class="mini" onclick="varNova()">+ Nová varianta (kopie otevřené)</button>
         ${archivBtn}
-        <button class="mini" onclick="prepniTab('zakazka')">Přehled cenových nabídek →</button>
+        <button class="mini cteni-ok" onclick="prepniTab('zakazka')">Přehled cenových nabídek →</button>
       </div>${zakUlozeniRadek()}`;
     return `<div class="card zak-bar${radaTed === 'zahr' ? ' rada-zahr' : ''}${
       (typeof zamekCteniJe === 'function' && zamekCteniJe()) ? ' cteni-zamceno' : ''}">
@@ -1060,7 +1064,7 @@ function zakazkaHlavicka(ock) {
       <span class="zak-cena-del"></span>
       <button class="mini" onclick="varNova()">+ Nová varianta (kopie otevřené)</button>
       ${archivBtn}
-      <button class="mini" onclick="prepniTab('zakazka')">Přehled cenových nabídek →</button>
+      <button class="mini cteni-ok" onclick="prepniTab('zakazka')">Přehled cenových nabídek →</button>
     </div>${zakUlozeniRadek()}`;
   return `<div class="card zak-bar${radaTed === 'zahr' ? ' rada-zahr' : ''}${
       (typeof zamekCteniJe === 'function' && zamekCteniJe()) ? ' cteni-zamceno' : ''}">

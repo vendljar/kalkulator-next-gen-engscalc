@@ -1673,6 +1673,11 @@ function onlineObnovaSoubor(ev) {
   const o = onlineObnovaStav();
   const f = ev && ev.target && ev.target.files && ev.target.files[0];
   if (!f) return;
+  /* Velký soubor (20 MB) se čte a parsuje i sekundu — bez okamžité odezvy to
+   * vypadá, že se „nic neděje" (hlášení J. V. 7. 9. 2026). */
+  o.soubor = null; o.souborJmeno = ''; o.nahled = null;
+  o.hlaska = 'Načítám soubor ' + f.name + ' (' + (f.size / 1048576).toFixed(1) + ' MB)…'; o.hlaskaTyp = '';
+  render();
   const fr = new FileReader();
   fr.onload = () => {
     try {
@@ -1797,7 +1802,14 @@ async function onlineObnovaNahled() {
       const { davky, prilisVelke } = onlineObnovaDavky(o.soubor, onlineObnovaCasti());
       const cil = { nahled: true, casti: {}, upozorneni: [], zdroj: null, rejstrik: null, otiskPred: null, davek: davky.length };
       onlineObnovaPrilisVelke(cil, prilisVelke);
-      for (const davka of davky) onlineObnovaSecti(cil, await onlineApi('/api/obnova', onlineObnovaTelo(true, { soubor: davka })));
+      let i = 0;
+      for (const davka of davky) {
+        /* Průběh: každá dávka je jeden požadavek na server a trvá i pár vteřin;
+         * bez počitadla to při deseti dávkách vypadá jako zaseknutí. */
+        o.hlaska = 'Náhled: posílám dávku ' + (++i) + ' z ' + davky.length + '…'; o.hlaskaTyp = ''; render();
+        onlineObnovaSecti(cil, await onlineApi('/api/obnova', onlineObnovaTelo(true, { soubor: davka })));
+      }
+      o.hlaska = '';
       o.nahled = cil;
     }
     return true;
@@ -1833,11 +1845,14 @@ function onlineObnovaProved() {
         let hotovo = 0, chybaDavky = null;
         try {
           for (const davka of davky) {
+            o.hlaska = 'Obnova: zapisuji dávku ' + (hotovo + 1) + ' z ' + davky.length + '…'; o.hlaskaTyp = ''; render();
             await onlineApi('/api/obnova', { ...onlineObnovaTelo(false, { soubor: davka }), obnovaId: zac.obnovaId });
             hotovo++;
           }
         } catch (e) { chybaDavky = e; }
+        o.hlaska = 'Obnova: přestavuji rejstřík…'; render();
         const kon = await onlineApi('/api/obnova', { faze: 'konec', obnovaId: zac.obnovaId });
+        o.hlaska = '';
         r = { ...kon.souhrn, preskocene: (kon.souhrn.preskocene || 0) + prilisVelke.length };
         upoz = [...(kon.upozorneni || [])];
         if (prilisVelke.length) upoz.push(prilisVelke.length + ' záznamů se nevešlo do jednoho požadavku a přeskočilo se: '
@@ -1912,8 +1927,11 @@ function renderOnlineObnova() {
         Zapsalo by se ${s.nove + s.prepsane} záznamů, ${s.preskocene} se přeskočí${n.rejstrik
     ? '; rejstřík by pak měl ' + onlinePocetText(n.rejstrik.zakazek) : ''}${n.davek > 1
     ? '; soubor se pošle po ' + n.davek + ' dávkách' : ''}.</div>
-      ${duvody.length ? `<div class="note"><b>Přeskočené a proč:</b><br>${duvody.slice(0, 20).map(esc).join('<br>')}${duvody.length > 20
+      ${duvody.length ? `<div class="note" style="border-left:3px solid #f0b429;padding-left:8px"><b>Přeskočené a proč:</b><br>${duvody.slice(0, 20).map(esc).join('<br>')}${duvody.length > 20
     ? '<br>… a dalších ' + (duvody.length - 20) : ''}</div>` : ''}
+      ${(o.rezim === 'doplnit' && duvody.some(d => /doplnit/.test(d)))
+    ? `<div class="note">⚠ Režim <b>doplnit</b> nenahrazuje nic, co na serveru už je — ceník, firemní údaje, matici
+        zobrazení ani existující zakázky. Má-li platit obsah zálohy, zvolte <b>přepsat</b> a náhled zopakujte.</div>` : ''}
       ${(n.upozorneni || []).map(u => `<div class="note">⚠ ${esc(u)}</div>`).join('')}`;
   }
   return `<div id="online-obnova" style="margin-top:12px;border-top:1px solid #ddd;padding-top:10px">
