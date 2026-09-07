@@ -493,6 +493,52 @@ test('obnova zakázku vrátila (rejstřík má zase původní počet a tu zakáz
 test('po obnově existuje otisk před obnovou a přehled ho ukazuje',
   await page.evaluate(() => ONLINE_STAV.otisky.some(o => /pred-obnovou/.test(o.den))),
   await page.evaluate(() => ONLINE_STAV.otisky.map(o => o.den)));
+
+/* Soubor jako zdroj (7. 9. 2026 večer): stažená záloha se posílá po dávkách
+ * (Netlify unese ~6 MB na požadavek). Ověřuje se dělení na dávky i skutečný
+ * průchod zacatek → dávky → konec s malým souborem přes <input type=file>. */
+test('dělení na dávky drží limit a neztratí žádný záznam',
+  await page.evaluate(() => {
+    const z = { porizena: new Date().toISOString(), zdroj: 'x', program: { a: 1 }, firma: null, zobrazeni: null,
+                uzivatele: [], zakazky: {}, zakaznici: {}, sablony: {}, podpisy: {} };
+    const velky = 'x'.repeat(300 * 1024);
+    for (let i = 0; i < 40; i++) z.zakazky['z' + i] = { cislo: 'Z' + i, data: velky };
+    z.sablony.obr = { data: 'y'.repeat(4 * 1024 * 1024) };            // sám větší než limit → přeskočit
+    const { davky, prilisVelke } = onlineObnovaDavky(z, OBNOVA_CASTI.map(([k]) => k));
+    const klice = new Set(); let maxB = 0;
+    davky.forEach(d => { maxB = Math.max(maxB, onlineObnovaVelikost(d)); Object.keys(d.zakazky || {}).forEach(k => klice.add(k)); });
+    return davky.length >= 3 && maxB <= OBNOVA_DAVKA_MAX_B && klice.size === 40
+      && prilisVelke.length === 1 && prilisVelke[0].klic === 'obr'
+      && davky.every(d => d.porizena === z.porizena && d.zdroj === 'x')
+      && davky.every(d => !(d.zakazky && d.sablony));                  // části se v dávce nemíchají
+  }));
+const zalohaText = await page.evaluate(() => onlineApi('/api/zaloha').then(o => JSON.stringify(o.zaloha)));
+await page.evaluate(() => onlineObnovaZmena('zdrojTyp', 'soubor'));
+await page.waitForTimeout(200);
+await page.setInputFiles('#online-obnova input[type=file]',
+  { name: 'zaloha_online_test.json', mimeType: 'application/json', buffer: Buffer.from(zalohaText) });
+await page.waitForFunction(() => { try { return !!ONLINE_STAV.obnova.soubor; } catch (e) { return false; } }, null, { timeout: 8000 });
+test('nahraný soubor zálohy se načte a panel ukáže jeho jméno a razítko',
+  /zaloha_online_test\.json/.test(await dbPanel()) && /pořízena/.test(await dbPanel()));
+await page.evaluate(() => onlineObnovaZmena('rezim', 'prepsat'));
+await page.evaluate(() => onlineObnovaNahled());
+await page.waitForFunction(() => { try { return !ONLINE_STAV.obnova.pracuje && (!!ONLINE_STAV.obnova.nahled || !!ONLINE_STAV.obnova.hlaska); } catch (e) { return false; } },
+  null, { timeout: 20000 });
+test('náhled ze souboru proběhl po dávkách a hlásí zakázky beze změny',
+  await page.evaluate(() => { const n = ONLINE_STAV.obnova.nahled;
+    return !!n && n.davek >= 1 && n.zdroj && n.zdroj.typ === 'soubor' && n.casti.zakazky.bezeZmeny >= 2 && n.casti.zakazky.nove === 0; }),
+  await page.evaluate(() => ONLINE_STAV.obnova.hlaska || JSON.stringify(ONLINE_STAV.obnova.nahled && ONLINE_STAV.obnova.nahled.casti)));
+test('účty ze souboru se v náhledu přeskočí s vysvětlením (bez otisků hesel)',
+  await page.evaluate(() => { const u = ONLINE_STAV.obnova.nahled.casti.uzivatele; return u.preskocene >= 1 && u.duvody.every(d => /otisk/.test(d.duvod)); }));
+const rejPredSouborem = await page.evaluate(() => ONLINE_STAV.rejstrik.length);
+await page.evaluate(() => onlineObnovaProved());
+await page.waitForFunction(() => { try { const o = ONLINE_STAV.obnova; return !o.pracuje && (!!o.posledni && /soubor|dávk|záznamů/.test(o.posledni.zprava) || !!o.hlaska); } catch (e) { return false; } },
+  null, { timeout: 30000 });
+test('ostrá obnova ze souboru proběhla (zacatek → dávky → konec)',
+  await page.evaluate(() => !ONLINE_STAV.obnova.hlaska && !!ONLINE_STAV.obnova.posledni && ONLINE_STAV.obnova.posledni.souhrn.bezeZmeny >= 2),
+  await page.evaluate(() => 'panel: ' + ONLINE_STAV.obnova.hlaska + ' | posledni: ' + JSON.stringify(ONLINE_STAV.obnova.posledni)));
+test('po obnově ze souboru má rejstřík stejný počet zakázek (nic nepřibylo, nic nezmizelo)',
+  await page.evaluate(() => ONLINE_STAV.rejstrik.length) === rejPredSouborem);
 await page.evaluate(() => { onlineObnovaOtevri(); zavriNastaveni(); });
 
 await page.evaluate(() => prepniTab('zakazka'));

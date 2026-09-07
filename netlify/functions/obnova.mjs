@@ -8,7 +8,7 @@
  * přepsat celou databázi — a proto je stejně citlivý a má pět pojistek.
  *
  * POST /api/obnova {
- *   zdroj:      { soubor: <záloha z /api/zaloha> }
+ *   zdroj:      { soubor: <záloha z /api/zaloha, nebo její část> }
  *               | { otisk: 'YYYY-MM-DD' | 'YYYY-MM-DD-pred-obnovou' },
  *   rezim:      'doplnit' (zapíše jen to, co na serveru chybí)
  *               | 'prepsat' (zapíše všechno ze zálohy přes stávající),
@@ -18,7 +18,21 @@
  *   potvrzeni:  'OBNOVIT' → bez něj se ostrá obnova odmítne (428)
  * } → { ok, nahled, zdroj: { typ, klic, porizena, web }, casti: { <část>:
  *      { nove, prepsane, bezeZmeny, preskocene, duvody: [{ klic, duvod }] } },
- *      rejstrik: { zakazek, prestaven }, otiskPred, upozorneni: [] }
+ *      rejstrik: { zakazek, existujicich, prestaven }, otiskPred, upozorneni: [] }
+ *
+ * OBNOVA PO DÁVKÁCH (7. 9. 2026 večer). Netlify přijme v jednom požadavku
+ * nejvýš ~6 MB; záloha se šablonami, podpisy a přílohami zakázek má klidně
+ * 20 MB (záloha ze schaftscalc: 19 MB). Klient ji proto posílá po částech
+ * a server drží jednu obnovu jako celek:
+ *   { faze: 'zacatek', rezim, potvrzeni }   → otisk před obnovou + obnovaId
+ *   { obnovaId, zdroj: { soubor: <část> }, rezim, casti, potvrzeni }
+ *                                            → dávka: bez dalšího otisku,
+ *                                              bez přestavby rejstříku
+ *   { faze: 'konec', obnovaId }             → přestaví rejstřík, vrátí součet
+ * Token žije v úložišti `zalohy` (klíč `obnova-<id>`, hodinu, jen pro toho,
+ * kdo obnovu zahájil), aby dávky nemohl posílat nikdo jiný a aby se otisk
+ * před obnovou nepořizoval znovu s napůl obnovenou databází — to by cestu
+ * zpátky zničilo. Otisk ze serveru se dávkovat nemusí, ten si server čte sám.
  *
  * PĚT POJISTEK (zadání 7. 9. 2026):
  *  1) Náhled: stejný průchod bez zápisu; obrazovka bez něj obnovu nepustí
@@ -44,8 +58,12 @@
  *    ne ze zálohy — jinak by v seznamu zůstal sirotek po zakázce, kterou
  *    obnova kvůli zámku přeskočila.
  *  – Kolize klíčů: otisk před obnovou má vlastní slot (klicPredObnovou),
- *    takže obnova z dnešního otisku nepřepíše svůj zdroj. */
-import { uloziste, vyzadujRoli, json, ADMIN_EMAIL } from '../lib/sdilene.mjs';
+ *    takže obnova z dnešního otisku nepřepíše svůj zdroj.
+ *  – Záloha z jiného webu (schaftscalc → engscalc) se neodmítá, ale náhled
+ *    na to upozorní: firemní údaje a účty toho druhého webu nemusí být to,
+ *    co tu člověk chce. */
+import { randomBytes } from 'node:crypto';
+import { uloziste, vyzadujRoli, json, ADMIN_EMAIL, hostitel } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 import { porizOtisk, denDnes, klicPredObnovou } from '../lib/zalohovani.mjs';
 
@@ -53,8 +71,11 @@ export const OBNOVA_CASTI = ['program', 'firma', 'zobrazeni', 'zakazky', 'uzivat
                              'sablony', 'zakaznici', 'podpisy'];
 export const OBNOVA_REZIMY = ['doplnit', 'prepsat'];
 export const OBNOVA_POTVRZENI = 'OBNOVIT';
+export const OBNOVA_TOKEN_PLATNOST_MS = 60 * 60 * 1000;
 const OTISK_KLIC = /^\d{4}-\d{2}-\d{2}(-pred-obnovou)?$/;
+const TOKEN_TVAR = /^[0-9a-f]{32}$/;
 const KLIC_MAX = 200;
+const tokenKlic = (id) => 'obnova-' + id;
 
 const stejne = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const bilance = () => ({ nove: 0, prepsane: 0, bezeZmeny: 0, preskocene: 0, duvody: [] });
@@ -97,6 +118,34 @@ async function obnovMapu(b, s, mapa, rezim, zapisovat, predpona, kontrola) {
   }
 }
 
+/* Rejstřík ze skutečného obsahu úložiště — ne ze zálohy. */
+async function prestavRejstrik(ULO, s, kdo) {
+  const zaznamy = [];
+  for (const k of await s.seznam('z/')) {
+    const z = await s.cti(k);
+    if (z && typeof z === 'object') zaznamy.push(ULO.uloRejstrikZaznam(z, { soubor: k.slice(2) }));
+  }
+  await s.zapis('_rejstrik', { schema: 1, zakazky: ULO.uloRejstrikSerad(zaznamy),
+                               kdo, upraveno: new Date().toISOString() });
+  return { zakazek: zaznamy.length, existujicich: zaznamy.length, prestaven: true };
+}
+
+/* Token rozpracované obnovy po dávkách. Vrací záznam, nebo odpověď s chybou. */
+async function nactiToken(relace, id) {
+  const klic = String(id || '');
+  if (!TOKEN_TVAR.test(klic)) return { chyba: json({ ok: false, chyba: 'Neplatný token obnovy.' }, 400) };
+  const s = await uloziste('zalohy');
+  const z = await s.cti(tokenKlic(klic));
+  if (!z || z.kdo !== relace.email)
+    return { chyba: json({ ok: false, chyba: 'Obnova nebyla zahájena, nebo ji zahájil někdo jiný. Začněte znovu náhledem.' }, 403) };
+  if (Date.now() - Date.parse(z.zacatek) > OBNOVA_TOKEN_PLATNOST_MS) {
+    await s.smaz(tokenKlic(klic));
+    return { chyba: json({ ok: false, chyba: 'Zahájená obnova vypršela (hodina). Stav před ní je v otisku '
+      + z.otiskPred + '; začněte znovu náhledem.' }, 410) };
+  }
+  return { token: z, s, klic: tokenKlic(klic) };
+}
+
 export default async (req) => {
   if (req.method !== 'POST') return json({ ok: false, chyba: 'Použijte POST.' }, 405);
   const { chyba, relace } = await vyzadujRoli(req, 'Administrátor');
@@ -106,6 +155,22 @@ export default async (req) => {
 
   let t; try { t = await req.json(); } catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
   if (!t || typeof t !== 'object') return json({ ok: false, chyba: 'Chybí tělo požadavku.' }, 400);
+
+  const faze = String(t.faze || '');
+  const nahled = t.nahled === true;
+  const upozorneni = [];
+
+  /* --- konec obnovy po dávkách: přestavět rejstřík, vrátit součet, zahodit token --- */
+  if (faze === 'konec') {
+    const tk = await nactiToken(relace, t.obnovaId);
+    if (tk.chyba) return tk.chyba;
+    const rejstrik = await prestavRejstrik(ULO, await uloziste('zakazky'), relace.email);
+    await tk.s.smaz(tk.klic);
+    upozorneni.push('Stav před obnovou leží v otisku ' + tk.token.otiskPred
+      + ' (jeden slot na den — další obnova téhož dne ho přepíše).');
+    return json({ ok: true, faze: 'konec', rezim: tk.token.rezim, davek: tk.token.davek,
+                  souhrn: tk.token.souhrn, rejstrik, otiskPred: tk.token.otiskPred, upozorneni });
+  }
 
   /* --- vstupy --- */
   const rezim = String(t.rezim || '');
@@ -117,7 +182,23 @@ export default async (req) => {
       return json({ ok: false, chyba: 'Neznámá část k obnově. Známé: ' + OBNOVA_CASTI.join(', ') + '.' }, 400);
     casti = OBNOVA_CASTI.filter(c => t.casti.includes(c));
   }
-  const nahled = t.nahled === true;
+
+  /* --- začátek obnovy po dávkách: potvrzení, otisk, token --- */
+  if (faze === 'zacatek') {
+    if (t.potvrzeni !== OBNOVA_POTVRZENI)
+      return json({ ok: false, chyba: 'Obnova se provede jen s výslovným potvrzením po náhledu.' }, 428);
+    let otiskPred;
+    try { otiskPred = (await porizOtisk('pred-obnovou', relace.email, klicPredObnovou(denDnes()))).den; }
+    catch (e) {
+      return json({ ok: false, chyba: 'Otisk současného stavu se nepovedl (' + (e && e.message ? e.message : e)
+        + ') — obnova se NEPROVEDLA, nic se nezměnilo. Bez cesty zpátky se neobnovuje.' }, 500);
+    }
+    const id = randomBytes(16).toString('hex');
+    await (await uloziste('zalohy')).zapis(tokenKlic(id), { id, kdo: relace.email, zacatek: new Date().toISOString(),
+      rezim, otiskPred, davek: 0, souhrn: { nove: 0, prepsane: 0, bezeZmeny: 0, preskocene: 0 } });
+    return json({ ok: true, faze: 'zacatek', obnovaId: id, otiskPred, upozorneni: [] });
+  }
+  if (faze) return json({ ok: false, chyba: 'Neznámá fáze obnovy.' }, 400);
 
   /* --- zdroj --- */
   const zd = t.zdroj && typeof t.zdroj === 'object' ? t.zdroj : {};
@@ -141,20 +222,29 @@ export default async (req) => {
     return json({ ok: false, chyba: 'Otisk je poškozený (chybí razítko pořízení nebo známé části).' }, 400);
   zdrojPopis.porizena = String(zaloha.porizena || '');
   zdrojPopis.web = String(zaloha.zdroj || '');
+  const tenhleWeb = hostitel(req);
+  if (zdrojPopis.web && tenhleWeb && /\./.test(zdrojPopis.web) && zdrojPopis.web !== tenhleWeb)
+    upozorneni.push('Záloha pochází z jiného webu (' + zdrojPopis.web + ') než ten, do kterého obnovujete ('
+      + tenhleWeb + '). Firemní údaje a účty toho webu nemusí být to, co tu chcete — zvažte odškrtnutí částí.');
 
-  /* Pojistka 1: ostrá obnova jen s výslovným potvrzením (428 = chybí
-   * předpoklad). Obrazovka posílá potvrzení až po náhledu a dialogu. */
-  if (!nahled && t.potvrzeni !== OBNOVA_POTVRZENI)
-    return json({ ok: false, chyba: 'Obnova se provede jen s výslovným potvrzením po náhledu.' }, 428);
-
-  /* Pojistka 2: otisk současného stavu DŘÍV, než se sáhne na první záznam.
-   * Vlastní slot, aby obnova z dnešního otisku nepřepsala svůj zdroj. */
+  /* --- dávka rozpracované obnovy, nebo jednorázová obnova --- */
   let otiskPred = null;
-  if (!nahled) {
-    try {
-      const v = await porizOtisk('pred-obnovou', relace.email, klicPredObnovou(denDnes()));
-      otiskPred = v.den;
-    } catch (e) {
+  let tk = null;
+  if (!nahled && t.obnovaId !== undefined) {
+    tk = await nactiToken(relace, t.obnovaId);
+    if (tk.chyba) return tk.chyba;
+    if (tk.token.rezim !== rezim)
+      return json({ ok: false, chyba: 'Dávka má jiný režim než zahájená obnova (' + tk.token.rezim + ').' }, 400);
+    otiskPred = tk.token.otiskPred;
+  } else if (!nahled) {
+    /* Pojistka 1: ostrá obnova jen s výslovným potvrzením (428 = chybí
+     * předpoklad). Obrazovka posílá potvrzení až po náhledu a dialogu. */
+    if (t.potvrzeni !== OBNOVA_POTVRZENI)
+      return json({ ok: false, chyba: 'Obnova se provede jen s výslovným potvrzením po náhledu.' }, 428);
+    /* Pojistka 2: otisk současného stavu DŘÍV, než se sáhne na první záznam.
+     * Vlastní slot, aby obnova z dnešního otisku nepřepsala svůj zdroj. */
+    try { otiskPred = (await porizOtisk('pred-obnovou', relace.email, klicPredObnovou(denDnes()))).den; }
+    catch (e) {
       return json({ ok: false, chyba: 'Otisk současného stavu se nepovedl (' + (e && e.message ? e.message : e)
         + ') — obnova se NEPROVEDLA, nic se nezměnilo. Bez cesty zpátky se neobnovuje.' }, 500);
     }
@@ -162,13 +252,12 @@ export default async (req) => {
 
   const zapisovat = !nahled;
   const vysledek = {};
-  const upozorneni = [];
   const sProg = await uloziste('program');
 
   /* Jednozáznamové části v úložišti `program`. */
   const jednoduche = { program: 'db', firma: 'firma', zobrazeni: 'zobrazeni' };
   for (const cast of Object.keys(jednoduche)) {
-    if (!casti.includes(cast)) continue;
+    if (!casti.includes(cast) || !Object.prototype.hasOwnProperty.call(zaloha, cast)) continue;
     const b = bilance();
     const hodnota = zaloha[cast];
     if (hodnota == null || typeof hodnota !== 'object') preskoc(b, jednoduche[cast], 'záloha tuto část nenese');
@@ -178,7 +267,7 @@ export default async (req) => {
 
   /* Zakázky: pojistka 3 — stejná kontrola zámků jako při ukládání. */
   let rejstrik = null;
-  if (casti.includes('zakazky')) {
+  if (casti.includes('zakazky') && Object.prototype.hasOwnProperty.call(zaloha, 'zakazky')) {
     const b = bilance();
     const s = await uloziste('zakazky');
     const kontrolaZamku = (stara, nova) => {
@@ -196,27 +285,16 @@ export default async (req) => {
     };
     await obnovMapu(b, s, zaloha.zakazky, rezim, zapisovat, 'z/', kontrolaZamku);
     vysledek.zakazky = b;
-
-    /* Rejstřík ze skutečného obsahu úložiště — ne ze zálohy. V náhledu se
-     * jen spočítá, kolik zakázek by po obnově v rejstříku bylo. */
-    const klice = await s.seznam('z/');
-    if (zapisovat) {
-      const zaznamy = [];
-      for (const k of klice) {
-        const z = await s.cti(k);
-        if (z && typeof z === 'object') zaznamy.push(ULO.uloRejstrikZaznam(z, { soubor: k.slice(2) }));
-      }
-      await s.zapis('_rejstrik', { schema: 1, zakazky: ULO.uloRejstrikSerad(zaznamy),
-                                   kdo: relace.email, upraveno: new Date().toISOString() });
-      rejstrik = { zakazek: zaznamy.length, prestaven: true };
-    } else {
-      rejstrik = { zakazek: klice.length + b.nove, prestaven: false };
-    }
+    /* V náhledu a v dávce se rejstřík nestaví — jen se spočítá, kolik zakázek
+     * by v něm bylo (existující + nové). Dávky ho přestaví jednou na konci. */
+    const existujicich = (await s.seznam('z/')).length;
+    if (zapisovat && !tk) rejstrik = await prestavRejstrik(ULO, s, relace.email);
+    else rejstrik = { zakazek: existujicich + (zapisovat ? 0 : b.nove), existujicich: zapisovat ? existujicich - b.nove : existujicich, prestaven: false };
   }
 
   /* Účty: jen s otiskem hesla (serverový otisk). Hlavní administrátor se
    * nedá vypnout ani obnovou — stejné pravidlo jako v uzivatele.mjs. */
-  if (casti.includes('uzivatele')) {
+  if (casti.includes('uzivatele') && Object.prototype.hasOwnProperty.call(zaloha, 'uzivatele')) {
     const b = bilance();
     const s = await uloziste('uzivatele');
     const seznam = Array.isArray(zaloha.uzivatele) ? zaloha.uzivatele : null;
@@ -242,15 +320,23 @@ export default async (req) => {
   /* Mapy: šablony, kartotéka zákazníků, podpisy (klíče přesně jako v úložišti). */
   const mapy = { sablony: 'sablony', zakaznici: 'zakaznici', podpisy: 'podpisy' };
   for (const cast of Object.keys(mapy)) {
-    if (!casti.includes(cast)) continue;
+    if (!casti.includes(cast) || !Object.prototype.hasOwnProperty.call(zaloha, cast)) continue;
     const b = bilance();
     await obnovMapu(b, await uloziste(mapy[cast]), zaloha[cast], rezim, zapisovat, '');
     vysledek[cast] = b;
   }
 
-  if (otiskPred)
+  /* Dávka: přičíst k součtu zahájené obnovy. */
+  if (tk) {
+    const so = tk.token.souhrn;
+    Object.values(vysledek).forEach(b => { so.nove += b.nove; so.prepsane += b.prepsane; so.bezeZmeny += b.bezeZmeny; so.preskocene += b.preskocene; });
+    tk.token.davek++;
+    await tk.s.zapis(tk.klic, tk.token);
+  } else if (otiskPred) {
     upozorneni.push('Stav před obnovou leží v otisku ' + otiskPred + ' (jeden slot na den — další obnova téhož dne ho přepíše).');
+  }
 
-  return json({ ok: true, nahled, rezim, zdroj: zdrojPopis, casti: vysledek, rejstrik, otiskPred, upozorneni });
+  return json({ ok: true, nahled, rezim, zdroj: zdrojPopis, casti: vysledek, rejstrik, otiskPred,
+                davka: tk ? tk.token.davek : undefined, upozorneni });
 };
 export const config = { path: '/api/obnova' };

@@ -103,6 +103,12 @@ prázdná).
   teprve pak obnova s potvrzením. Před obnovou se pořídí otisk současného
   stavu (`<den>-pred-obnovou`), uzamčené nabídky se nepřepíšou, nic se
   nemaže. Účty jdou obnovit jen z otisku (soubor nenese otisky hesel).
+  Velký soubor (šablony, podpisy, přílohy zakázek — záloha mívá i 20 MB) se
+  posílá **po dávkách**, protože Netlify přijme v jednom požadavku ~6 MB;
+  otisk před obnovou vzniká jednou, rejstřík se přestaví na konci. Záloha
+  z **jiného webu** (schaftscalc → engscalc) jde obnovit taky — náhled na to
+  upozorní; před obnovou zvaž odškrtnutí *Firemních údajů* (jinak se
+  přepíšou údaji druhé firmy) a účty z ní stejně nevzniknou (založ je znovu).
 - Přechodné období: dokud je připojená složka `_DB`, má přednost — všechno
   se chová jako dosud. Bez složky vládne online databáze.
 - Poznámka: pokud je web zaheslovaný ochranou Netlify (odpovídá 401), vypni

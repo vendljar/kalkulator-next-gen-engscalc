@@ -1695,12 +1695,85 @@ function onlineObnovaPripraveno() {
   return zdroj && OBNOVA_CASTI.some(([k]) => o.casti[k]);
 }
 
-function onlineObnovaTelo(nahled) {
+function onlineObnovaCasti() {
   const o = onlineObnovaStav();
-  const t = { zdroj: o.zdrojTyp === 'soubor' ? { soubor: o.soubor } : { otisk: o.otiskDen },
-              rezim: o.rezim, casti: OBNOVA_CASTI.map(([k]) => k).filter(k => o.casti[k]), nahled: !!nahled };
+  return OBNOVA_CASTI.map(([k]) => k).filter(k => o.casti[k]);
+}
+
+function onlineObnovaTelo(nahled, zdroj) {
+  const o = onlineObnovaStav();
+  const t = { zdroj: zdroj || (o.zdrojTyp === 'soubor' ? { soubor: o.soubor } : { otisk: o.otiskDen }),
+              rezim: o.rezim, casti: onlineObnovaCasti(), nahled: !!nahled };
   if (!nahled) t.potvrzeni = 'OBNOVIT';
   return t;
+}
+
+/* OBNOVA PO DÁVKÁCH (7. 9. 2026 večer). Netlify přijme v jednom požadavku
+ * nejvýš ~6 MB; záloha se šablonami, podpisy a přílohami zakázek má klidně
+ * 20 MB (záloha ze schaftscalc: 19 MB). Soubor se proto dělí na dávky —
+ * každá nese razítko zálohy a část záznamů — a server drží obnovu jako
+ * celek: 'zacatek' pořídí otisk a vydá token, dávky nesou token, 'konec'
+ * přestaví rejstřík. Otisk na serveru se neposílá vůbec, ten si server čte
+ * sám. Limit je pod polovinou toho, co Netlify unese, protože JSON se při
+ * přenosu ještě obaluje a čísla se nedají spočítat na bajt přesně. */
+const OBNOVA_DAVKA_MAX_B = 3.5 * 1024 * 1024;
+const OBNOVA_DAVKA_MAX_ZAZNAMU = 15;
+function onlineObnovaVelikost(x) { return new TextEncoder().encode(JSON.stringify(x === undefined ? null : x)).length; }
+
+/* Rozdělí zálohu na dávky podle vybraných částí. Jednozáznamové části
+ * (ceník, firma, zobrazení, účty) jdou pohromadě, mapy (zakázky, zákazníci,
+ * šablony, podpisy) po klíčích a každá zvlášť. Záznam, který se nevejde
+ * ani sám, se do dávek nedostane a vrátí se v `prilisVelke`. */
+function onlineObnovaDavky(zaloha, casti) {
+  const hlava = { porizena: zaloha.porizena, zdroj: zaloha.zdroj || '' };
+  const davky = [], prilisVelke = [];
+  let d = { ...hlava }, velikost = onlineObnovaVelikost(d);
+  const neprazdna = () => Object.keys(d).length > Object.keys(hlava).length;
+  const uzavri = () => { if (neprazdna()) davky.push(d); d = { ...hlava }; velikost = onlineObnovaVelikost(d); };
+  for (const k of ['program', 'firma', 'zobrazeni', 'uzivatele'].filter(k => casti.includes(k))) {
+    const v = zaloha[k] === undefined ? null : zaloha[k];
+    const s = onlineObnovaVelikost(v);
+    if (s > OBNOVA_DAVKA_MAX_B) { prilisVelke.push({ cast: k, klic: k, velikost: s }); continue; }
+    if (velikost + s > OBNOVA_DAVKA_MAX_B && neprazdna()) uzavri();
+    d[k] = v; velikost += s;
+  }
+  uzavri();
+  for (const k of ['zakazky', 'zakaznici', 'sablony', 'podpisy'].filter(k => casti.includes(k))) {
+    const mapa = zaloha[k];
+    if (!mapa || typeof mapa !== 'object' || Array.isArray(mapa)) { d[k] = mapa === undefined ? null : mapa; uzavri(); continue; }
+    let pocet = 0;
+    for (const [klic, hodnota] of Object.entries(mapa)) {
+      const s = onlineObnovaVelikost(hodnota) + klic.length + 8;
+      if (s > OBNOVA_DAVKA_MAX_B) { prilisVelke.push({ cast: k, klic, velikost: s }); continue; }
+      if (d[k] && (velikost + s > OBNOVA_DAVKA_MAX_B || pocet >= OBNOVA_DAVKA_MAX_ZAZNAMU)) { uzavri(); pocet = 0; }
+      if (!d[k]) d[k] = {};
+      d[k][klic] = hodnota; velikost += s; pocet++;
+    }
+    if (d[k]) uzavri();
+  }
+  return { davky, prilisVelke };
+}
+
+/* Součet odpovědí z více dávek do jednoho náhledu / výsledku. */
+function onlineObnovaSecti(cil, d) {
+  Object.keys((d && d.casti) || {}).forEach(k => {
+    const b = d.casti[k];
+    const c = cil.casti[k] || (cil.casti[k] = { nove: 0, prepsane: 0, bezeZmeny: 0, preskocene: 0, duvody: [] });
+    c.nove += b.nove; c.prepsane += b.prepsane; c.bezeZmeny += b.bezeZmeny; c.preskocene += b.preskocene;
+    c.duvody.push(...(b.duvody || []));
+  });
+  (d.upozorneni || []).forEach(u => { if (!cil.upozorneni.includes(u)) cil.upozorneni.push(u); });
+  if (d.zdroj) cil.zdroj = d.zdroj;
+  if (d.otiskPred) cil.otiskPred = d.otiskPred;
+  if (d.rejstrik) cil.rejstrik = { existujicich: d.rejstrik.existujicich, prestaven: !!d.rejstrik.prestaven,
+    zakazek: d.rejstrik.existujicich + (cil.casti.zakazky ? cil.casti.zakazky.nove : 0) };
+}
+function onlineObnovaPrilisVelke(cil, prilisVelke) {
+  prilisVelke.forEach(p => {
+    const c = cil.casti[p.cast] || (cil.casti[p.cast] = { nove: 0, prepsane: 0, bezeZmeny: 0, preskocene: 0, duvody: [] });
+    c.preskocene++;
+    c.duvody.push({ klic: p.klic, duvod: 'záznam je příliš velký na jeden požadavek (' + (p.velikost / 1048576).toFixed(1) + ' MB)' });
+  });
 }
 
 function onlineObnovaSouhrn(d) {
@@ -1713,14 +1786,24 @@ function onlineObnovaSouhrn(d) {
   return s;
 }
 
-function onlineObnovaNahled() {
+async function onlineObnovaNahled() {
   const o = onlineObnovaStav();
-  if (!jeAdminOnline() || !onlineObnovaPripraveno() || o.pracuje) return Promise.resolve(false);
+  if (!jeAdminOnline() || !onlineObnovaPripraveno() || o.pracuje) return false;
   o.pracuje = true; o.nahled = null; o.hlaska = ''; render();
-  return onlineApi('/api/obnova', onlineObnovaTelo(true))
-    .then(d => { o.nahled = d; return true; })
-    .catch(e => { o.hlaska = 'Náhled se nepovedl: ' + e.message; o.hlaskaTyp = 'varovani'; return false; })
-    .then(v => { o.pracuje = false; render(); return v; });
+  try {
+    if (o.zdrojTyp !== 'soubor') {
+      o.nahled = await onlineApi('/api/obnova', onlineObnovaTelo(true));
+    } else {
+      const { davky, prilisVelke } = onlineObnovaDavky(o.soubor, onlineObnovaCasti());
+      const cil = { nahled: true, casti: {}, upozorneni: [], zdroj: null, rejstrik: null, otiskPred: null, davek: davky.length };
+      onlineObnovaPrilisVelke(cil, prilisVelke);
+      for (const davka of davky) onlineObnovaSecti(cil, await onlineApi('/api/obnova', onlineObnovaTelo(true, { soubor: davka })));
+      o.nahled = cil;
+    }
+    return true;
+  } catch (e) {
+    o.hlaska = 'Náhled se nepovedl: ' + e.message; o.hlaskaTyp = 'varovani'; return false;
+  } finally { o.pracuje = false; render(); }
 }
 
 function onlineObnovaProved() {
@@ -1732,17 +1815,42 @@ function onlineObnovaProved() {
     + 'Zapíše se ' + (s.nove + s.prepsane) + ' záznamů (' + s.nove + ' nových, ' + s.prepsane + ' přepsaných), '
     + s.preskocene + ' se přeskočí. Před obnovou se pořídí otisk současného stavu na serveru (cesta zpátky). '
     + 'Uzamčené (odeslané) nabídky se nepřepíšou a nic se nemaže.';
-  return potvrd(text).then(ano => {
+  return potvrd(text).then(async ano => {
     if (!ano) return false;
     o.pracuje = true; render();
-    return onlineApi('/api/obnova', onlineObnovaTelo(false)).then(d => {
-      const r = onlineObnovaSouhrn(d);
+    try {
+      let r, upoz, otiskPred;
+      if (o.zdrojTyp !== 'soubor') {
+        const d = await onlineApi('/api/obnova', onlineObnovaTelo(false));
+        r = onlineObnovaSouhrn(d); upoz = d.upozorneni || []; otiskPred = d.otiskPred || '';
+      } else {
+        /* Po dávkách: začátek (otisk + token) → dávky → konec (rejstřík).
+         * Když dávka selže, 'konec' se zavolá stejně, aby rejstřík odpovídal
+         * tomu, co se stihlo zapsat — a chyba řekne, kde to skončilo. */
+        const { davky, prilisVelke } = onlineObnovaDavky(o.soubor, onlineObnovaCasti());
+        const zac = await onlineApi('/api/obnova', { faze: 'zacatek', rezim: o.rezim, potvrzeni: 'OBNOVIT' });
+        otiskPred = zac.otiskPred || '';
+        let hotovo = 0, chybaDavky = null;
+        try {
+          for (const davka of davky) {
+            await onlineApi('/api/obnova', { ...onlineObnovaTelo(false, { soubor: davka }), obnovaId: zac.obnovaId });
+            hotovo++;
+          }
+        } catch (e) { chybaDavky = e; }
+        const kon = await onlineApi('/api/obnova', { faze: 'konec', obnovaId: zac.obnovaId });
+        r = { ...kon.souhrn, preskocene: (kon.souhrn.preskocene || 0) + prilisVelke.length };
+        upoz = [...(kon.upozorneni || [])];
+        if (prilisVelke.length) upoz.push(prilisVelke.length + ' záznamů se nevešlo do jednoho požadavku a přeskočilo se: '
+          + prilisVelke.map(p => p.cast + '/' + p.klic).join(', ') + '.');
+        if (chybaDavky) throw new Error('dávka ' + (hotovo + 1) + ' z ' + davky.length + ' selhala (' + chybaDavky.message
+          + '); zapsáno bylo ' + hotovo + ' dávek, rejstřík je přestavený a stav před obnovou leží v otisku ' + otiskPred + '.');
+      }
       o.nahled = null;
       const zprava = 'Databáze obnovena: zapsáno ' + (r.nove + r.prepsane) + ' záznamů (' + r.nove + ' nových, '
-        + r.prepsane + ' přepsaných), ' + r.preskocene + ' přeskočeno. ' + (d.upozorneni || []).join(' ');
+        + r.prepsane + ' přepsaných), ' + r.preskocene + ' přeskočeno. ' + upoz.join(' ');
       /* Výsledek zůstává ve stavu (panel ho ukáže i po překreslení) — hláška
        * karty je pomíjivá, přepíše ji první další načtení. */
-      o.posledni = { kdy: new Date().toISOString(), souhrn: r, otiskPred: d.otiskPred || '', zprava };
+      o.posledni = { kdy: new Date().toISOString(), souhrn: r, otiskPred, zprava };
       onlineZprava(zprava);
       /* Okno drží starý svět — znovu se načte, co se mohlo změnit. Selhání
        * jednoho načtení nesmí shodit ostatní, a hláška o obnově se po nich
@@ -1750,9 +1858,14 @@ function onlineObnovaProved() {
       const znovu = [onlineNactiProgram, onlineNactiFirmu, onlineNactiRejstrik,
                      onlineNactiSablony, onlineNactiZobrazeni, onlineOtiskyNacti]
         .map(f => { try { return Promise.resolve(f()).catch(() => false); } catch (e) { return Promise.resolve(false); } });
-      return Promise.all(znovu).then(() => { onlineZprava(zprava); return true; });
-    }).catch(e => { o.hlaska = 'Obnova se neprovedla: ' + e.message; o.hlaskaTyp = 'varovani'; return false; })
-      .then(v => { o.pracuje = false; render(); return v; });
+      await Promise.all(znovu);
+      onlineZprava(zprava);
+      return true;
+    } catch (e) {
+      o.hlaska = 'Obnova se neprovedla: ' + e.message; o.hlaskaTyp = 'varovani';
+      onlineOtiskyNacti().catch(() => false);
+      return false;
+    } finally { o.pracuje = false; render(); }
   });
 }
 
@@ -1797,7 +1910,8 @@ function renderOnlineObnova() {
       <div class="note">Zdroj: ${esc(n.zdroj.typ === 'otisk' ? 'otisk ' + n.zdroj.klic : 'soubor')}${n.zdroj.porizena
     ? ', pořízen ' + esc(new Date(n.zdroj.porizena).toLocaleString('cs-CZ')) : ''}${n.zdroj.web ? ' na ' + esc(n.zdroj.web) : ''}.
         Zapsalo by se ${s.nove + s.prepsane} záznamů, ${s.preskocene} se přeskočí${n.rejstrik
-    ? '; rejstřík by pak měl ' + onlinePocetText(n.rejstrik.zakazek) : ''}.</div>
+    ? '; rejstřík by pak měl ' + onlinePocetText(n.rejstrik.zakazek) : ''}${n.davek > 1
+    ? '; soubor se pošle po ' + n.davek + ' dávkách' : ''}.</div>
       ${duvody.length ? `<div class="note"><b>Přeskočené a proč:</b><br>${duvody.slice(0, 20).map(esc).join('<br>')}${duvody.length > 20
     ? '<br>… a dalších ' + (duvody.length - 20) : ''}</div>` : ''}
       ${(n.upozorneni || []).map(u => `<div class="note">⚠ ${esc(u)}</div>`).join('')}`;

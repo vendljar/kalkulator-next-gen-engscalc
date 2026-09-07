@@ -234,5 +234,65 @@ await obnovJson({ zdroj: { otisk: '2026-01-01' }, rezim: 'prepsat', potvrzeni: '
 test('hlavní administrátor zůstává aktivní i po obnově z otisku, kde byl vypnutý',
   (await ulz('uzivatele').cti(ADMIN_EMAIL)).aktivni === true);
 
+/* ---- 13) obnova po dávkách (soubor větší než jeden požadavek, 7. 9. 2026 večer) ----
+ * Netlify přijme ~6 MB; záloha se šablonami a přílohami má i 20 MB. Klient
+ * ji dělí: 'zacatek' pořídí otisk a vydá obnovaId, dávky nesou obnovaId
+ * (bez dalšího otisku, bez přestavby rejstříku), 'konec' přestaví rejstřík
+ * a vrátí součet. */
+const HAV3 = kopie(SKUT); HAV3.nazev = 'Třetí havárie s.r.o.';
+await post(firma, 'http://x/api/firma', { udaje: HAV3 }, cookie);
+await ulz('zakazky').smaz(A);
+const rej13 = await ulz('zakazky').cti('_rejstrik');
+await ulz('zakazky').zapis('_rejstrik', { ...rej13, zakazky: rej13.zakazky.filter(z => z.soubor !== ulA.soubor) });
+const hlava = { porizena: zalSoubor.porizena, zdroj: zalSoubor.zdroj };
+test('zacatek bez potvrzení se odmítne (428)',
+  (await obnov({ faze: 'zacatek', rezim: 'prepsat' }, cookie)).status === 428);
+const zac = await obnovJson({ faze: 'zacatek', rezim: 'prepsat', potvrzeni: 'OBNOVIT' }, cookie);
+test('zacatek vydá token a pořídí otisk před obnovou', zac.ok && /^[0-9a-f]{32}$/.test(zac.obnovaId)
+  && zac.otiskPred === dnes() + '-pred-obnovou', zac);
+const predDavkami = kopie(await ulz('zalohy').cti(dnes() + '-pred-obnovou'));
+test('otisk před obnovou nese stav před dávkami (firma „Třetí havárie", bez A)',
+  predDavkami.firma.udaje.nazev === HAV3.nazev && !(ulA.soubor in predDavkami.zakazky));
+test('dávka s cizím tokenem 403',
+  (await obnov({ obnovaId: 'f'.repeat(32), zdroj: { soubor: { ...hlava, firma: zalSoubor.firma } }, rezim: 'prepsat', potvrzeni: 'OBNOVIT' }, cookie)).status === 403);
+test('dávka s nesmyslným tokenem 400',
+  (await obnov({ obnovaId: '../x', zdroj: { soubor: { ...hlava, firma: zalSoubor.firma } }, rezim: 'prepsat', potvrzeni: 'OBNOVIT' }, cookie)).status === 400);
+test('dávka s jiným režimem než zahájená obnova 400',
+  (await obnov({ obnovaId: zac.obnovaId, zdroj: { soubor: { ...hlava, firma: zalSoubor.firma } }, rezim: 'doplnit', potvrzeni: 'OBNOVIT' }, cookie)).status === 400);
+const d1 = await obnovJson({ obnovaId: zac.obnovaId, zdroj: { soubor: { ...hlava, firma: zalSoubor.firma } }, rezim: 'prepsat', casti: ['firma'], potvrzeni: 'OBNOVIT' }, cookie);
+test('dávka 1 (firma) zapsala a hlásí pořadí', d1.ok && d1.davka === 1 && d1.casti.firma.prepsane === 1
+  && (await ulz('program').cti('firma')).udaje.nazev === SKUT.nazev, d1);
+test('dávka nepořizuje další otisk (stav před obnovou zůstal)',
+  JSON.stringify(await ulz('zalohy').cti(dnes() + '-pred-obnovou')) === JSON.stringify(predDavkami));
+const d2 = await obnovJson({ obnovaId: zac.obnovaId, zdroj: { soubor: { ...hlava, zakazky: { [ulA.soubor]: zalSoubor.zakazky[ulA.soubor] } } }, rezim: 'prepsat', casti: ['zakazky'], potvrzeni: 'OBNOVIT' }, cookie);
+test('dávka 2 (zakázka A) zapsala, rejstřík ještě nestaví', d2.ok && d2.davka === 2 && d2.casti.zakazky.nove === 1
+  && d2.rejstrik.prestaven === false && (await ulz('zakazky').cti(A)) !== null
+  && !(await ulz('zakazky').cti('_rejstrik')).zakazky.some(z => z.soubor === ulA.soubor), d2);
+const kon = await obnovJson({ faze: 'konec', obnovaId: zac.obnovaId }, cookie);
+test('konec přestaví rejstřík a vrátí součet obou dávek', kon.ok && kon.davek === 2
+  && kon.souhrn.nove === 1 && kon.souhrn.prepsane === 1 && kon.rejstrik.prestaven === true
+  && (await ulz('zakazky').cti('_rejstrik')).zakazky.some(z => z.soubor === ulA.soubor), kon);
+test('po konci token neplatí (403)', (await obnov({ faze: 'konec', obnovaId: zac.obnovaId }, cookie)).status === 403);
+/* Vypršelý token: hodinu starý začátek. */
+const zac2 = await obnovJson({ faze: 'zacatek', rezim: 'doplnit', potvrzeni: 'OBNOVIT' }, cookie);
+const tokenZaznam = await ulz('zalohy').cti('obnova-' + zac2.obnovaId);
+await ulz('zalohy').zapis('obnova-' + zac2.obnovaId, { ...tokenZaznam, zacatek: new Date(Date.now() - 2 * 3600 * 1000).toISOString() });
+test('vypršelý token 410',
+  (await obnov({ obnovaId: zac2.obnovaId, zdroj: { soubor: { ...hlava, firma: zalSoubor.firma } }, rezim: 'doplnit', potvrzeni: 'OBNOVIT' }, cookie)).status === 410);
+test('obchodník zacatek nezahájí (403)',
+  (await obnov({ faze: 'zacatek', rezim: 'doplnit', potvrzeni: 'OBNOVIT' }, cookieObch)).status === 403);
+
+/* ---- 14) záloha z jiného webu (schaftscalc → engscalc) se neodmítá, ale upozorní ---- */
+const cizi = await (await obnova(new Request('http://x/api/obnova', { method: 'POST',
+  headers: { cookie, host: 'engscalc.netlify.app' },
+  body: JSON.stringify({ zdroj: { soubor: { ...zalSoubor, zdroj: 'schaftscalc.netlify.app' } }, rezim: 'doplnit', nahled: true }) }))).json();
+test('náhled zálohy z jiného webu projde a upozorní na původ',
+  cizi.ok === true && cizi.zdroj.web === 'schaftscalc.netlify.app'
+  && cizi.upozorneni.some(u => /jiného webu/.test(u) && /schaftscalc/.test(u) && /engscalc/.test(u)), cizi.upozorneni);
+const domaci = await (await obnova(new Request('http://x/api/obnova', { method: 'POST',
+  headers: { cookie, host: 'engscalc.netlify.app' },
+  body: JSON.stringify({ zdroj: { soubor: { ...zalSoubor, zdroj: 'engscalc.netlify.app' } }, rezim: 'doplnit', nahled: true }) }))).json();
+test('záloha z téhož webu bez upozornění na původ', domaci.ok && !domaci.upozorneni.some(u => /jiného webu/.test(u)));
+
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);
