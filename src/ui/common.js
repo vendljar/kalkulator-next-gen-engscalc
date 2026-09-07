@@ -107,15 +107,17 @@ const NAST = {
   // změny vidět kdo, kdy a proč. Odtud se načte při spuštění a tyhle
   // hodnoty přepíše. Čísla níž jsou schválně kulatá, aby si je nikdo
   // nespletl se skutečnými.
-  slevy: {  // STROPY A MIN. MARŽE VYNULOVÁNY pro GitHub (pripravit_github.py)
+  slevy: {  // STROPY VYNULOVÁNY pro GitHub (pripravit_github.py). minMarze a maxGlobalni
+            // NENULOVAT: jsou to ukázková kulatá čísla a marze.js (MARZE_MIN_VYCHOZI) i
+            // test_kontroly.js je zrcadlí – nula by rozešla dvě „minima" (CI 7. 9. 2026).
     ukazkove: true,            // #40 – vymyšlené hodnoty; zhasne načtením _program.json
-    minMarze: 0,            // pojistka: sleva nesmí stlačit marži pod tuto hranici
+    minMarze: 0.10,            // pojistka: sleva nesmí stlačit marži pod tuto hranici
     /* Maximum globální slevy (zadání 2. 8. 2026: „nastav maximální globální
      * slevu na 30 %"). Hlídá pole „Globální sleva PROJ" – sleva ZAK-10 má
      * vlastní stropy dle role výše. Zákonná třicítka to není, proto je
      * editovatelná v Nastavení → Slevy; záloha v kontroly.js se s ní musí
      * shodovat (hlídá test_kontroly.js). */
-    maxGlobalni: 0,
+    maxGlobalni: 0.30,
     stropy: {                  // max sleva bez schválení dle role (podíl z ceny bez DPH)
       'Obchodník': 0, 'Vedoucí': 0, 'Administrátor': 0,
     },

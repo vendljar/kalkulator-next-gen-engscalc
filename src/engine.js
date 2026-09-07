@@ -63,7 +63,7 @@ const SPOJE = {
 const DEFAULT_CENIK = {  // HODNOTY VYNULOVÁNY pro GitHub (pripravit_github.py) – reálný ceník je jen v lokální záloze
   ukazkove: true,
   prazdny: true,
-  marze: 0, dph: 0,            // dph = zákonná sazba, ne naše cena
+  marze: 0, dph: 0.12,            // dph = zákonná sazba, ne naše cena
   /* Kurz EUR (#155, 19. 8. 2026): přepočet cen pro dokumenty v jiné než
    * české mutaci. 0 = nenastaveno → cizojazyčný tisk se zastaví (ceny se
    * nevymýšlejí). Do výpočtu nevstupuje — kalkulace je vždy v Kč. */
@@ -103,7 +103,7 @@ const DEFAULT_CENIK = {  // HODNOTY VYNULOVÁNY pro GitHub (pripravit_github.py)
   /* Předvolby sazeb DPH (1. 9. 2026). Sazba zakázky je `dph` o kus výš —
    * tohle je jen nabídka v hlavičce. Nula = nenastaveno, platí zákonná
    * sazba ze sestavení (viz dphPredvolby v ui/common.js). */
-  dphZakladni: 0, dphSnizena: 0, dphNulova: 0,
+  dphZakladni: 0.21, dphSnizena: 0.12, dphNulova: 0,
   spojovaci: { riplockM10: 0, riplockM8: 0, nordlock: 0, nytM10: 0, nytM8: 0,
                nytM6: 0, tSrouby: 0, sroubM10: 0, sroubM8: 0, sroubM6: 0,
                zavitTyc: 0, chemKotva: 0 },

@@ -20,7 +20,7 @@ const DEFAULT_CENIK_PROJ = {  // HODNOTY VYNULOVÁNY pro GitHub (pripravit_githu
    * než stavební část. Zrcadlí ho `kurzZrcadli()` v ui/common.js. */
   ukazkove: true,
   prazdny: true,
-  dph: 0,                         // zákonná sazba DPH projekční části (nezávislá na ceníku OCK)
+  dph: 0.21,                         // zákonná sazba DPH projekční části (nezávislá na ceníku OCK)
   marze: 0,                          // globální přirážka sekcí
   sazby: { projektant: 0, statik: 0, zamereni: 0 },
   dopravaKmKc: 0,                    // Kč/km
