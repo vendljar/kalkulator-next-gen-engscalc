@@ -3,7 +3,7 @@
  * „odlévání" na Disk Google: aplikace nabídne uložení souboru rovnou do
  * připojené složky na Disku (File System Access), takže záloha končí tam,
  * kde ji chce uživatel mít — verzovaná jménem s datem. */
-import { uloziste, vyzadujRoli, json } from '../lib/sdilene.mjs';
+import { uloziste, vyzadujRoli, json, hostitel } from '../lib/sdilene.mjs';
 import { zalohaDoplnky } from '../lib/zalohovani.mjs';
 
 export default async (req) => {
@@ -33,8 +33,12 @@ export default async (req) => {
   const sab = await uloziste('sablony');
   const sablony = {};
   for (const k of await sab.seznam()) sablony[k] = await sab.cti(k);
+  /* zdroj = web, ze kterého záloha vznikla. Bere se z požadavku; do 7. 9. 2026
+   * tu byla napevno doména schaftscalc, takže zálohy z engscalc.netlify.app
+   * tvrdily, že jsou odjinud — a při obnově by nešlo poznat, ze kterého
+   * webu soubor je. */
   return json({ ok: true, zaloha: {
-    porizena: new Date().toISOString(), zdroj: 'schaftscalc.netlify.app',
+    porizena: new Date().toISOString(), zdroj: hostitel(req) || 'neznámý web',
     program: prog || null, firma: firma || null,
     rejstrik: rejstrik || null, zakazky, uzivatele,
     sablony: Object.keys(sablony).length ? sablony : null,

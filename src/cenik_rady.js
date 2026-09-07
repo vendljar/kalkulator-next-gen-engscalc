@@ -93,12 +93,20 @@ function cenikSlozRadu(cr, zahr, rada) {
 /* Rozdíly mezi řadami pro dialog při přepnutí: [{cesta, popis, cr, zahr}].
  * Uživatel má PŘED přepnutím vidět, čeho se to dotkne — bez toho by se
  * cena zakázky změnila a nikdo by nevěděl proč. */
+/* Přijímá buď HOLÝ ceník OCK (jak to bylo od #181), nebo CELÝ datový objekt
+ * `{cenik, proj:{cenik}}`. Druhá varianta je nutná od 3. 9. 2026, kdy smí mít
+ * zahraniční odchylku i přirážka projekce (`PC.marze`): ta bydlí v ceníku
+ * PROJ, a bez něj by se při návratu do tuzemska nebylo kam vrátit. */
+function cenikRadaTuzemskaData(cr) {
+  if (cr && typeof cr === 'object' && cr.cenik) return cr;
+  return { cenik: cr || {}, proj: { cenik: {} } };
+}
 function cenikRadaRozdily(cr, zahr) {
   const z = cenikZahrOciste(zahr);
   const popisy = {};
   if (typeof cenikSledovane === 'function')
     cenikSledovane().forEach(p => { popisy[p.cesta] = p.popis; });
-  const data = { cenik: cr || {} };
+  const data = cenikRadaTuzemskaData(cr);
   return Object.keys(z.ceny).map(cesta => ({
     cesta,
     popis: popisy[cesta] || cesta,
@@ -115,12 +123,22 @@ function cenikRadaRozdily(cr, zahr) {
  * Vrací { rada, zmen, rozdily }. */
 function cenikRadaPrepni(data, crDnesni, zahr, rada) {
   const r = cenikRadaPlatna(rada);
-  const out = { rada: r, zmen: 0, rozdily: [] };
+  const out = { rada: r, zmen: 0, rozdily: [], chranene: [] };
   if (!data) return out;
   const rozdily = cenikRadaRozdily(crDnesni, zahr);
   rozdily.forEach(rd => {
     const nova = (r === 'zahr') ? rd.zahr : rd.cr;
     if (nova === undefined) return;
+    /* Zakázkovou hodnotu (přirážka, DPH), kterou obchodník v TÉHLE nabídce
+     * sám nastavil, přepnutí řady nepřepíše — pravidlo #177 platí i tady.
+     * Od 3. 9. 2026 smí mít zahraniční odchylku i globální přirážka
+     * (zadání J. V.: „pro zahraniční zakázky předvolit 40 % místo 30 %"),
+     * takže tenhle případ nastane: ceník ji chce změnit, ale dohodnutá
+     * marže jedné nabídky je víc než předvolba. Vypíše se v dialogu. */
+    if (typeof cenikChranena === 'function' && cenikChranena(data, rd.cesta)) {
+      out.chranene.push(rd);
+      return;
+    }
     const ted = (typeof cenikHodnota === 'function') ? cenikHodnota(data, rd.cesta) : undefined;
     if (String(ted) === String(nova)) return;
     if (typeof cenikNastavHodnotu === 'function') cenikNastavHodnotu(data, rd.cesta, nova);
@@ -142,7 +160,38 @@ function cenikRadaVarianty(data) {
   return cenikRadaPlatna(data.cenik && data.cenik.rada);
 }
 
+/* ---------- ceník, který pro danou variantu PRÁVĚ PLATÍ (nález V23) ----------
+ *
+ * Automatický přepočet při otevření zakázky porovnával variantu vždycky
+ * s TUZEMSKÝM ceníkem, ať byla varianta jakákoli. U zahraniční zakázky se tím
+ * každá odchylka tvářila jako zastaralá cena a přepsala se tuzemskou —
+ * nabídka do Koblenz se sama podhodnotila o třetinu, přestože přepínač
+ * i štítek dál hlásily „Zahraničí". UI četlo řadu správně, přepočet ne;
+ * dva zdroje pravdy. Tohle je ten druhý a od 4. 9. 2026 se ptá na řadu.
+ *
+ * Vrací TÝŽ TVAR jako `cenikDnesniData()` — { cenik, proj: { cenik } } —,
+ * takže se dá podstrčit všude, kde se dnešní ceník používá. Pro tuzemskou
+ * řadu je to kopie beze změny; pro zahraniční kopie s vtisknutými odchylkami
+ * (včetně `PC.*`, které bydlí v ceníku projekce — proto celý objekt, ne jen
+ * ceník OCK jako v `cenikSlozRadu`). */
+function cenikDnesniProRadu(dnesni, zahr, rada) {
+  const zaklad = cenikRadaTuzemskaData(dnesni);
+  const kopie = x => JSON.parse(JSON.stringify(x || {}));
+  const out = { cenik: kopie(zaklad.cenik),
+                proj: { cenik: kopie(zaklad.proj && zaklad.proj.cenik) } };
+  const r = cenikRadaPlatna(rada);
+  const z = cenikZahrOciste(zahr);
+  out.cenik.rada = r;
+  out.cenik.jenZahr = Object.assign({}, z.jenZahr);
+  if (r !== 'zahr') return out;
+  Object.entries(z.ceny).forEach(([cesta, hodnota]) => {
+    if (typeof cenikNastavHodnotu === 'function') cenikNastavHodnotu(out, cesta, hodnota);
+  });
+  return out;
+}
+
 if (typeof module !== 'undefined')
   module.exports = { CENIK_RADY, CENIK_ZAHR, cenikRadaPlatna, cenikRadaNazev, cenikRadaPopis,
                      cenikZahrPrazdny, cenikZahrOciste, cenikZahrPrazdna,
-                     cenikSlozRadu, cenikRadaRozdily, cenikRadaPrepni, cenikRadaVarianty };
+                     cenikSlozRadu, cenikRadaRozdily, cenikRadaPrepni, cenikRadaVarianty,
+                     cenikRadaTuzemskaData, cenikDnesniProRadu };

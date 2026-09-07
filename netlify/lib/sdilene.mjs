@@ -245,6 +245,13 @@ export function json(data, status = 200, hlavicky = {}) {
   return new Response(JSON.stringify(data), { status,
     headers: { 'Content-Type': 'application/json; charset=utf-8', ...hlavicky } });
 }
+/* Adresa webu, na kterém funkce právě běží — z hlavičky požadavku, ne
+ * z konstanty: tentýž kód obsluhuje engscalc.netlify.app i sesterský
+ * schaftscalc a případný testovací web. Za proxy Netlify je původní jméno
+ * v X-Forwarded-Host. Prázdný řetězec = hlavička chybí (testy, curl). */
+export function hostitel(req) {
+  return String(req.headers.get('x-forwarded-host') || req.headers.get('host') || '').toLowerCase();
+}
 /* Kontrola původu požadavku (audit 22. 8. 2026, B17). Ochrana proti CSRF
  * stojí na SameSite=Lax; tohle je druhá vrstva: je-li v požadavku hlavička
  * Origin (prohlížeč ji u POST/DELETE posílá vždy), musí odpovídat Host.
@@ -254,9 +261,9 @@ export function cizihoPuvodu(req) {
   try {
     const origin = req.headers.get('origin');
     if (!origin || origin === 'null') return false;
-    const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || '';
+    const host = hostitel(req);
     if (!host) return false;
-    return new URL(origin).host.toLowerCase() !== String(host).toLowerCase();
+    return new URL(origin).host.toLowerCase() !== host;
   } catch (e) { return true; }
 }
 export async function prihlaseny(req) {

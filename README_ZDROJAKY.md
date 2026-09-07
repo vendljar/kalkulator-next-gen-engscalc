@@ -1,6 +1,6 @@
 # Kalkulačka OCK / PROJ – zdrojové soubory
 
-Verze v tomto archivu: **v31.7.7** (soubor `verze.txt`).
+Verze v tomto archivu: **v7.9.2** (soubor `verze.txt`).
 
 ## Co je uvnitř
 

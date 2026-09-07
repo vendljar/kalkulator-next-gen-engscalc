@@ -1057,15 +1057,15 @@ console.log('\n===== AUDIT B16: DÉLKY A TVAR =====\n');
 console.log('\n===== AUDIT B17: PŮVOD POŽADAVKU =====\n');
 {
   const cizi = await zakazky(new Request('http://x/api/zakazky', { method: 'POST',
-    headers: { cookie: cObch, origin: 'https://utocnik.example', host: 'schaftscalc.netlify.app' },
+    headers: { cookie: cObch, origin: 'https://utocnik.example', host: 'kalkulator.example' },
     body: JSON.stringify({ zakazka: zakazkaCislo('2026 - OPR - CN - 0982') }) }));
   test('B17: POST s cizím Origin se odmítne jako nepřihlášený (401)', cizi.status === 401, cizi.status);
   const vlastni = await zakazky(new Request('http://x/api/zakazky', { method: 'POST',
-    headers: { cookie: cObch, origin: 'https://schaftscalc.netlify.app', host: 'schaftscalc.netlify.app' },
+    headers: { cookie: cObch, origin: 'https://kalkulator.example', host: 'kalkulator.example' },
     body: JSON.stringify({ zakazka: zakazkaCislo('2026 - OPR - CN - 0982') }) }));
   test('B17: POST s vlastním Origin projde', vlastni.status === 200, vlastni.status);
   const ctení = await zakazky(new Request('http://x/api/zakazky', {
-    headers: { cookie: cObch, origin: 'https://utocnik.example', host: 'schaftscalc.netlify.app' } }));
+    headers: { cookie: cObch, origin: 'https://utocnik.example', host: 'kalkulator.example' } }));
   test('B17: GET se na Origin neptá (čtení cizí stránce stejně nevydá — CORS)', ctení.status === 200);
   test('B17: odhlášení na GET vrátí 405',
     (await odhlaseni(new Request('http://x/api/odhlaseni', { headers: { cookie: cObch } }))).status === 405);

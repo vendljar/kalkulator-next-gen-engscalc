@@ -359,8 +359,21 @@ function kalkSloupce() {
    * matice právo nikomu nedává, takže se dnešní chování nemění. */
   const admin = smiZobrazit('sloupce.naklad');
   const showCost = admin && NAST.zobrazitNaklady;
-  const adminExtra = admin ? 2 : 0;
-  return { admin, showCost, adminExtra, NC: 2 + (admin ? 1 : 0) + (showCost ? 2 : 0) + 1 + adminExtra };
+  /* Sloupec „Výchozí" nastavuje CELOU APLIKACI (co uvidí v nové zakázce
+   * všichni), ne tuhle zakázku — proto ho od 3. 9. 2026 (zadání J. V.:
+   * „obchodníci vidí tlačítka Výchozí v kalkulacích a to by neměli") vidí
+   * jen administrátor. Nestačilo by ho pověsit na `sloupce.naklad`: to je
+   * právo přidělitelné obchodníkovi i vedoucímu, a kdo smí vidět nákupní
+   * cenu, ještě nemá přenastavovat program všem ostatním. */
+  const spravce = (typeof zobrazeniRole === 'function')
+    ? zobrazeniRole() === 'Administrátor' : !!NAST.jeAdmin;
+  /* Od 3. 9. 2026 (druhé zadání J. V.: „sloupec Viditelné obchodníkům také
+   * skryj") jsou ADMINISTRÁTORSKÉ OBA koncové sloupce: „Viditelné" i „Výchozí"
+   * nastavují program všem uživatelům, ne tuhle zakázku. Kdo má jen právo
+   * `sloupce.naklad`, vidí náklad a přirážku — ale nepřenastavuje aplikaci. */
+  const adminExtra = (admin && spravce) ? 2 : 0;
+  return { admin, spravce, showCost, adminExtra,
+    NC: 2 + (admin ? 1 : 0) + (showCost ? 2 : 0) + 1 + adminExtra };
 }
 function poznHtml(r) { return r.pozn ? ` <span class="note">(${esc(r.pozn)})</span>` : ''; }
 /* Atypická položka bez ceny (#7). Nula v ceníku vypadá v tabulce úplně stejně
@@ -376,6 +389,7 @@ function gripHtml(r, sekceKey) {
   return `<span class="grip" draggable="true" ondragstart="dragStart(event,'${sekceKey}','${keyAttr(radekKey(r))}')" title="přetáhnout řádek">⠿</span>`;
 }
 function adminKoncBunky(r, sekceKey) {
+  if (!kalkSloupce().spravce) return '';        // oba sloupce jsou administrátorské
   const key = radekKey(r), ka = keyAttr(key);
   const vis = `<td class="admincol"><input type="checkbox" ${jeSkryta(key) ? '' : 'checked'} onchange="viditelnostSet('${ka}', this.checked)" title="viditelné pro běžného uživatele"></td>`;
   /* Sloupec Výchozí. Od 21. 8. 2026 večer ho mají VŠECHNY položky kalkulace
@@ -398,6 +412,21 @@ function adminKoncBunky(r, sekceKey) {
   }
   return vis + `<td class="admincol">${vych}</td>`;
 }
+/* Štítek u položky vypnuté ručním množstvím 0 (nález V22, 4. 9. 2026).
+ * Stejný typ štítku jako „skrytá ostatním" nebo „bez ceny" — jeden vzhled
+ * pro jednu třídu sdělení. Netiskne se: je to poznámka pro nás, ne pro
+ * zákazníka (obchodník ostatně vypnutou položku do nabídky nedává). */
+function vypnutoHtml(r) {
+  return (typeof radekVypnutyNulou === 'function' && radekVypnutyNulou(r))
+    ? ` <span class="pill vyp noprint" title="${esc(VYPNUTO_POPIS)}">vypnuto (množství 0)</span>` : '';
+}
+/* Třída řádku. Ztlumuje se BARVOU textu, ne opacity — opacity rodiče se
+ * násobí na potomky a zesvětlila by i zaškrtávátka admin sloupců (týž nález
+ * jsme měli u .vyrazeno i u .nezahrnuto). */
+function vypnutoTrida(r) {
+  return (typeof radekVypnutyNulou === 'function' && radekVypnutyNulou(r)) ? ' vypnuto-nulou' : '';
+}
+
 function radekKalk(r, sekceKey) {
   const { admin, showCost } = kalkSloupce();
   const key = radekKey(r);
@@ -408,19 +437,19 @@ function radekKalk(r, sekceKey) {
    * ukazuje přímo u názvu (nákladové sloupce nevidí). */
   const vlastniEd = !admin && r.vlastni && smiZobrazit('kalk.pridatPolozku');
   let c = `<td style="white-space:normal">${admin
-    ? `<div class="vol-name">${gripHtml(r, sekceKey)}${bunkaNazev(r, sekceKey)}${bezCenyHtml(r)}</div>`
+    ? `<div class="vol-name">${gripHtml(r, sekceKey)}${bunkaNazev(r, sekceKey)}${bezCenyHtml(r)}${vypnutoHtml(r)}</div>`
     : vlastniEd
       ? `<input type="text" class="nazev-ed" style="width:55%" value="${esc(r.nazev)}" onchange="vlastniSet('${r.sekce}', ${r.idx}, 'nazev', this.value)">
          à <input type="number" step="any" style="width:96px" value="${+(+r.cena).toFixed(2)}" title="jednotková cena této položky (jen pro tuto zakázku)"
            onchange="vlastniSet('${r.sekce}', ${r.idx}, 'cena', this.value)"> Kč
          <button class="mini noprint" title="odebrat vlastní položku" onclick="vlastniDel('${r.sekce}', ${r.idx})">✕</button>`
-      : esc(r.nazev) + poznHtml(r) + bezCenyHtml(r)}</td>`;
+      : esc(r.nazev) + poznHtml(r) + bezCenyHtml(r) + vypnutoHtml(r)}</td>`;
   c += `<td style="white-space:nowrap">${(admin || vlastniEd) ? bunkaMnozstvi(r) : num(r.mnozstvi, 3)}</td>`;
   if (admin) c += `<td style="white-space:nowrap">${bunkaCena(r)}</td>`;
   if (showCost) c += `<td>${fmt(r.naklad)}</td><td>${fmt(r.marze)}</td>`;
   c += `<td>${fmt(r.sMarzi)}</td>`;
   if (admin) c += adminKoncBunky(r, sekceKey);
-  return `<tr${dz}>${c}</tr>`;
+  return `<tr${dz} class="${vypnutoTrida(r).trim()}">${c}</tr>`;
 }
 function radekPridat(sekceKey, popis) {
   const { NC } = kalkSloupce();
@@ -465,17 +494,22 @@ function vlastniAddTrvale(sekce) {
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
   render();
 }
-function sumRadek(cls, label, sum) {
-  const { admin, showCost } = kalkSloupce();
-  let c = `<td>${label}</td><td></td>`;
+function sumRadek(cls, label, sum, rows) {
+  const { admin, showCost, adminExtra } = kalkSloupce();
+  /* Kolik položek sekce je vypnutých nulou — ať je to vidět i u SBALENÉ
+   * sekce, kde se jednotlivé řádky nekreslí (zadání J. V. 4. 9. 2026). */
+  const vyp = (typeof vypnutychVSekci === 'function') ? vypnutychVSekci(rows) : 0;
+  const pozn = vyp ? ` <span class="note" style="font-weight:400">· ${vyp} ${
+    vyp === 1 ? 'položka vypnuta' : (vyp < 5 ? 'položky vypnuty' : 'položek vypnuto')}</span>` : '';
+  let c = `<td>${label}${pozn}</td><td></td>`;
   if (admin) c += `<td></td>`;
   if (showCost) c += `<td>${fmt(sum.naklad)}</td><td>${fmt(sum.marze)}</td>`;
   c += `<td>${fmt(sum.sMarzi)}</td>`;
-  if (admin) c += `<td class="admincol"></td><td class="admincol"></td>`;
+  c += '<td class="admincol"></td>'.repeat(adminExtra);
   return `<tr class="${cls}">${c}</tr>`;
 }
 function tbl(rows, sum, nazevSekce, sekceKey) {
-  const { admin, NC } = kalkSloupce();
+  const { admin, spravce, NC } = kalkSloupce();
   /* Režim sekce (19. 8. 2026 večer): skrytou sekci obchodník/vedoucí vůbec
    * nedostane (počítá se dál!), srolovaná ukáže jen nadpis + CELKEM a jde
    * rozbalit. Administrátor vidí vždy vše a v nadpisu má select s volbou. */
@@ -485,7 +519,7 @@ function tbl(rows, sum, nazevSekce, sekceKey) {
   const vpravo = admin ? sekceRezimSelect('ock', sekceKey)
     : (rezim === 'srolovat' ? sekceRozbalBtn('ock', sekceKey) : '');
   rows = serazSekci(rows, sekceKey);
-  if (!admin) rows = rows.filter(r => !jeSkryta(radekKey(r)));   // skryté položky uživatel nevidí
+  if (!spravce) rows = rows.filter(r => !jeSkryta(radekKey(r)));  // skryté vidí jen ten, kdo je umí odkrýt
   // id řádku s názvem sekce = cíl kotvy v klouzající liště (kalkLista)
   return `<tr class="sechd" id="ock-sek-${sekceKey}"><td colspan="${NC}"><div style="display:flex;align-items:center;gap:12px"><span style="flex:1">${nazevSekce}</span>${vpravo}</div></td></tr>` +
     (sbaleno ? '' : rows.map(r => radekKalk(r, sekceKey)).join('')) +
@@ -495,11 +529,11 @@ function tbl(rows, sum, nazevSekce, sekceKey) {
      * Od 19. 8. 2026 večer jsou všechna přidávací tlačítka sekce v JEDNOM
      * řádku (radekPridatSekce): položku / položku trvale / atypickou. */
     (sbaleno ? '' : radekPridatSekce(sekceKey)) +
-    sumRadek('sectot', nazevSekce + ' CELKEM', sum);
+    sumRadek('sectot', nazevSekce + ' CELKEM', sum, rows);
 }
 /* Volitelné položky – zaškrtávátkem přímo v hlavním sloupci (jako příplatky) */
 function tblVolitelne(katalog, sum) {
-  const { admin, showCost, NC } = kalkSloupce();
+  const { admin, spravce, showCost, NC } = kalkSloupce();
   /* režim sekce (19. 8. 2026 večer) — viz tbl() */
   const rezimV = sekceRezim('ock', 'volitelne');
   if (rezimV === 'skryt') return '';
@@ -514,8 +548,9 @@ function tblVolitelne(katalog, sum) {
    * (levé zaškrtávátko), kdežto co vůbec smí vidět, řídí výhradně sloupec
    * Viditelné (jeSkryta) — ten nastavuje vedoucí nebo admin vpravo.
    * Teď tedy: uživatel vidí všechny NESKRYTÉ položky a každou si může
-   * zaškrtnout; sloupce Viditelné a Výchozí zůstávají jen adminovi. */
-  if (!admin) rows = rows.filter(r => !jeSkryta(radekKey(r)));
+   * zaškrtnout; sloupce Viditelné a Výchozí zůstávají jen administrátorovi
+   * (3. 9. 2026 — dřív je viděl každý s právem `sloupce.naklad`). */
+  if (!spravce) rows = rows.filter(r => !jeSkryta(radekKey(r)));
   if (sbalenoV) rows = [];
   return `<tr class="sechd" id="ock-sek-volitelne"><td colspan="${NC}"><div style="display:flex;align-items:center;gap:12px"><span style="flex:1">VOLITELNÉ POLOŽKY DO ZÁKLADNÍ CENY <span class="note" style="font-weight:400">(zaškrtnuté se počítají do základní ceny)</span></span>${vpravoV}</div></td></tr>` +
     rows.map(r => {
@@ -525,7 +560,7 @@ function tblVolitelne(katalog, sum) {
       if (admin) {
         const chk = r.vlastni ? '<span class="vol-spacer"></span>'
           : `<input type="checkbox" ${r.zahrnuto ? 'checked' : ''} onchange="volitelneToggle('${escJs(r.key)}', this.checked)" title="zahrnout do základní ceny">`;
-        c = `<td style="white-space:normal"><div class="vol-name">${gripHtml(r, 'volitelne')} ${chk}${bunkaNazev(r, 'volitelne')}</div></td>`;
+        c = `<td style="white-space:normal"><div class="vol-name">${gripHtml(r, 'volitelne')} ${chk}${bunkaNazev(r, 'volitelne')}${vypnutoHtml(r)}</div></td>`;
         c += `<td style="white-space:nowrap">${bunkaMnozstvi(r)}</td><td style="white-space:nowrap">${bunkaCena(r)}</td>`;
       } else {
         /* Vlastní volitelnou položku smí upravit i ten, kdo ji směl přidat
@@ -543,7 +578,7 @@ function tblVolitelne(katalog, sum) {
                  onchange="vlastniSet('volitelne', ${r.idx}, 'cena', this.value)"> Kč
                <button class="mini noprint" title="odebrat vlastní položku" onclick="vlastniDel('volitelne', ${r.idx})">✕</button></td>
              <td style="white-space:nowrap"><input type="number" step="any" style="width:86px" value="${+(+r.mnozstvi).toFixed(3)}" onchange="vlastniSet('volitelne', ${r.idx}, 'mnozstvi', this.value)"></td>`
-          : `<td style="white-space:normal">${chkU}${esc(r.nazev) + poznHtml(r)}</td><td style="white-space:nowrap">${num(r.mnozstvi, 3)}</td>`;
+          : `<td style="white-space:normal">${chkU}${esc(r.nazev) + poznHtml(r) + vypnutoHtml(r)}</td><td style="white-space:nowrap">${num(r.mnozstvi, 3)}</td>`;
       }
       if (showCost) c += `<td>${fmt(r.naklad)}</td><td>${fmt(r.marze)}</td>`;
       c += `<td>${fmt(r.sMarzi)}</td>`;
@@ -551,10 +586,13 @@ function tblVolitelne(katalog, sum) {
       /* Ztlumení nezahrnuté položky řídí třída, ne inline opacity (20. 8.
        * 2026): opacity rodiče se násobila i na zaškrtávátka admin sloupců
        * a ta pak vypadala „světle modře“ — stejný nález jako u .vyrazeno. */
-      return `<tr${dz}${r.zahrnuto ? '' : ' class="nezahrnuto"'}>${c}</tr>`;
+      /* Tři různé stavy vedle sebe: nezahrnutá do základní ceny × vypnutá
+       * nulou. Můžou nastat oba naráz, proto se třídy skládají. */
+      const tridy = (r.zahrnuto ? '' : 'nezahrnuto') + vypnutoTrida(r);
+      return `<tr${dz}${tridy.trim() ? ` class="${tridy.trim()}"` : ''}>${c}</tr>`;
     }).join('') +
     (sbalenoV ? '' : radekPridatSekce('volitelne')) +
-    sumRadek('sectot', 'VOLITELNÉ CELKEM (jen zaškrtnuté)', sum);
+    sumRadek('sectot', 'VOLITELNÉ CELKEM (jen zaškrtnuté)', sum, rows);
 }
 
 /* Výběr příplatků, které se propíší do cenové nabídky */
@@ -696,8 +734,11 @@ function renderOutputs() {
   </div>`;
 
   const thCena = col.admin ? 'Cena vč. přirážky' : 'Cena';
-  const adminTh = col.admin ? '<th class="admincol" title="viditelné pro běžného uživatele">Viditelné</th><th class="admincol" title="výchozí stav položky v NOVÉ zakázce: u volitelných „rovnou v základní ceně", u ostatních „počítá se">Výchozí</th>' : '';
-  const adminTd = col.admin ? '<td class="admincol"></td><td class="admincol"></td>' : '';
+  const adminTh = (col.admin && col.spravce)
+    ? '<th class="admincol" title="viditelné pro běžného uživatele">Viditelné</th>'
+      + '<th class="admincol" title="výchozí stav položky v NOVÉ zakázce: u volitelných „rovnou v základní ceně", u ostatních „počítá se">Výchozí</th>'
+    : '';
+  const adminTd = '<td class="admincol"></td>'.repeat(col.adminExtra);
   const kalkulace = `<table>
     <tr><th>Položka</th><th>Množství</th>${col.admin ? '<th>Jedn. cena</th>' : ''}${col.showCost ? '<th>Náklad</th><th>Přirážka</th>' : ''}<th>${thCena}</th>${adminTh}</tr>
     ${tbl(r.sekce.hrubaOck, s.hrubaOck, 'HRUBÁ OCK', 'hrubaOck')}
@@ -707,10 +748,10 @@ function renderOutputs() {
     ${Z.rezervaZakladPct ? `<tr><td>REZERVA (${num(Z.rezervaZakladPct * 100)} %)</td><td></td>${col.admin ? '<td></td>' : ''}${col.showCost ? `<td>${fmt(r.rezerva.naklad)}</td><td>${fmt(r.rezerva.marze)}</td>` : ''}<td>${fmt(r.rezerva.sMarzi)}</td>${adminTd}</tr>` : ''}
     <tr class="tot"><td>CELKEM (zaokrouhleno ↑ na tisíce)</td><td></td>${col.admin ? '<td></td>' : ''}${col.showCost ? `<td>${fmt(r.souhrn.zakladNaklad)}</td><td>${fmt(r.souhrn.zakladMarze)}</td>` : ''}<td>${fmt0(r.souhrn.zakladCena)}</td>${adminTd}</tr>
   </table>
-  ${col.admin ? `<div class="note">Řádky přetáhnete úchopem <b>⠿</b> vlevo (v rámci sekce). Zaškrtávátko <b>Viditelné</b> určuje,
+  ${col.admin ? `<div class="note">Řádky přetáhnete úchopem <b>⠿</b> vlevo (v rámci sekce).${col.spravce ? ` Zaškrtávátko <b>Viditelné</b> určuje,
   zda položku vidí běžný uživatel. Zaškrtávátko <b>Výchozí</b> platí pro <b>nové</b> zakázky, ne pro tuhle:
     u volitelné položky znamená „je rovnou v základní ceně", u ostatních „počítá se". Odškrtnutá položka
-    se v každé nové kalkulaci vynechá; otevřená zakázka se tím nemění. Název i jednotkovou cenu
+    se v každé nové kalkulaci vynechá; otevřená zakázka se tím nemění.` : ''} Název i jednotkovou cenu
   lze přepsat přímo v tabulce (cena s ceníkovou vazbou obousměrně s Ceníkem).</div>` : ''}`;
 
   const vynech = Z.priplatkyVynechat || [];
@@ -728,7 +769,7 @@ function renderOutputs() {
     /* Klíč ceníkové položky i u příplatku (2. 9. 2026): řádky kalkulace ho mají
      * od 1. 9., příplatky na něj tehdy zapomněly — a přitom je to jediné místo,
      * kde je vidět, ze které ceníkové položky se cena bere. */
-    return `<input type="text" class="nazev-ed" value="${esc(x.nazev)}" onchange="nazevSet('${orig}', this.value)" title="název příplatku lze přepsat">${reset}${klicChip(x.cenaPath)}`;
+    return `<input type="text" class="nazev-ed" value="${esc(x.nazev)}" onchange="nazevSet('${orig}', this.value)" title="název příplatku lze přepsat">${reset}${klicChip(x.cenaPath)}${vypnutoHtml(x)}`;
   };
   /* Množství u příplatku jde od 2. 9. 2026 PŘEPSAT (zadání J. V. po testu
    * Kornpfortstraße): předloha má u některých položek pod čarou nulu, aby se
@@ -750,18 +791,19 @@ function renderOutputs() {
   const pripHlava = (col.admin ? '<th title="zaškrtnuté položky se propíší do cenové nabídky">Nabídka</th>' : '')
     + '<th>Položka</th><th>Množství</th>' + (col.admin ? '<th>Jedn. cena</th>' : '')
     + (col.showCost ? '<th>Náklad</th>' : '') + '<th>Cena vč. přirážky</th>'
-    + (col.admin ? '<th class="admincol" title="viditelné pro běžného uživatele">Viditelné</th>'
-      + '<th class="admincol" title="výchozí stav sloupce Nabídka v NOVÉ zakázce">Výchozí</th>' : '');
+    + ((col.admin && col.spravce)
+      ? '<th class="admincol" title="viditelné pro běžného uživatele">Viditelné</th>'
+        + '<th class="admincol" title="výchozí stav sloupce Nabídka v NOVÉ zakázce">Výchozí</th>' : '');
   const pripRadek = (x) => {
     let c = '';
     if (col.admin) c += `<td style="text-align:center"><input type="checkbox" ${vynech.includes(x.key) ? '' : 'checked'}
         onchange="priplatekNabidka('${keyAttr(x.key)}', this.checked)" title="propsat do cenové nabídky"></td>`;
-    c += `<td style="white-space:normal">${col.admin ? pripNazev(x) : esc(x.nazev)}</td>`;
+    c += `<td style="white-space:normal">${col.admin ? pripNazev(x) : esc(x.nazev) + vypnutoHtml(x)}</td>`;
     c += `<td style="white-space:nowrap">${col.admin ? pripMnozstvi(x) : num(x.mnozstvi, 3)}</td>`;
     if (col.admin) c += `<td style="white-space:nowrap">${pripCena(x)}</td>`;
     if (col.showCost) c += `<td>${fmt(x.naklad)}</td>`;
     c += `<td>${fmt0(x.sMarzi)}</td>`;
-    if (col.admin) {
+    if (col.spravce) {
       c += `<td class="admincol"><input type="checkbox" ${jeSkryta(x.key) ? '' : 'checked'} onchange="viditelnostSet('${keyAttr(x.key)}', this.checked)" title="viditelné pro běžného uživatele"></td>`;
       /* Sloupec Výchozí i u příplatků (21. 8. 2026 večer, zadání J. V.):
        * říká, jestli se příplatek v NOVÉ zakázce propíše do cenové nabídky
@@ -772,16 +814,19 @@ function renderOutputs() {
           'zaškrtnuto = příplatek jde v NOVÉ zakázce do cenové nabídky (platí pro všechny); '
           + 'otevřená zakázka se nemění')}</td>`;
     }
-    return `<tr>${c}</tr>`;
+    return `<tr class="${vypnutoTrida(x).trim()}">${c}</tr>`;
   };
-  const pripRows = col.admin ? r.priplatky : r.priplatky.filter(x => !jeSkryta(x.key));
-  const pripCols = (col.admin ? 1 : 0) + 2 + (col.admin ? 1 : 0) + (col.showCost ? 1 : 0) + 1 + (col.admin ? 2 : 0);
+  /* Skryté položky vidí ten, kdo je umí odkrýt — tedy administrátor.
+   * Vedoucímu s právem na náklady by jinak v tabulce svítily řádky, které
+   * nemá jak vrátit zpátky a které v nabídce stejně nejsou. */
+  const pripRows = col.spravce ? r.priplatky : r.priplatky.filter(x => !jeSkryta(x.key));
+  const pripCols = (col.admin ? 1 : 0) + 2 + (col.admin ? 1 : 0) + (col.showCost ? 1 : 0) + 1 + col.adminExtra;
   const prip = `<table>
     <tr>${pripHlava}</tr>
     ${pripRows.map(pripRadek).join('')}
     ${col.admin ? `<tr class="pridat noprint"><td colspan="${pripCols}">
       <button class="mini" title="vlastní příplatek jen této zakázky" onclick="priplatekVlastniAdd()">+ přidat položku</button></td></tr>` : ''}
-    <tr class="tot"><td colspan="${pripCols - 1 - (col.admin ? 2 : 0)}">PŘÍPLATKY CELKEM (pokud vše)</td><td>${fmt0(r.souhrn.priplatkyCena)}</td>${col.admin ? '<td class="admincol"></td><td class="admincol"></td>' : ''}</tr>
+    <tr class="tot"><td colspan="${pripCols - 1 - col.adminExtra}">PŘÍPLATKY CELKEM (pokud vše)</td><td>${fmt0(r.souhrn.priplatkyCena)}</td>${'<td class="admincol"></td>'.repeat(col.adminExtra)}</tr>
   </table>
   <div class="note">Příplatkové položky jsou ceník variant pro zákazníka – do základní ceny se nezapočítávají.${col.admin ? `
   Název, množství i jedn. cenu lze přepsat (↺ vrátí vypočtené množství), tlačítkem lze přidat vlastní příplatek. Sloupec <b>Nabídka</b> určuje, které

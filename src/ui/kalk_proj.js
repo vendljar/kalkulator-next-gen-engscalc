@@ -167,7 +167,10 @@ function renderProj() {
    * nikdy náklad a přirážku. */
   const col = kalkSloupce();
   const POPIS_SL = 5;                       // Položka · Hodiny · Rezerva · Celkem h · Sazba
-  const NC = POPIS_SL + (col.showCost ? 2 : 0) + 1 + (col.admin ? 2 : 0);
+  const NC = POPIS_SL + (col.showCost ? 2 : 0) + 1 + col.adminExtra;
+  /* Prázdné buňky pod administrátorskými sloupci — kolik jich je, říká
+   * `col.adminExtra` (sloupec „Výchozí" vidí jen administrátor, 3. 9. 2026). */
+  const prazdneAdmin = '<td class="admincol"></td>'.repeat(col.adminExtra);
 
   /* Koncovou cenu skládá zaokrouhleni.js (#38) – hlavička i souhrn musí ukazovat
    * totéž číslo, které pak odejde v nabídce. Od 12. 8. 2026 (#135) se zaokrouhluje
@@ -243,8 +246,8 @@ function renderProj() {
   /* ---------------- tabulka kalkulace ---------------- */
   const hlavicka = `<tr><th>Položka</th><th>Hodiny</th><th>Rezerva h</th><th>Celkem h</th><th>Sazba Kč/h · fix</th>`
     + `${col.showCost ? `<th>Náklad</th><th>Přirážka ${num(PC.marze * 100)} %</th>` : ''}<th>Cena</th>`
-    + `${col.admin ? '<th class="admincol" title="odškrtnutím se položka přestane počítat v TÉTO zakázce">Počítat</th>'
-        + '<th class="admincol" title="zaškrtnutí platí pro každou NOVOU zakázku (nastavení aplikace, ne této zakázky)">Výchozí</th>' : ''}</tr>`;
+    + `${col.admin ? '<th class="admincol" title="odškrtnutím se položka přestane počítat v TÉTO zakázce">Počítat</th>' : ''}`
+    + `${col.admin && col.spravce ? '<th class="admincol" title="zaškrtnutí platí pro každou NOVOU zakázku (nastavení aplikace, ne této zakázky)">Výchozí</th>' : ''}</tr>`;
 
   const sekceHtml = r.sekce.map((s, i) => {
     const zdroj = pjSekce(i);
@@ -290,14 +293,28 @@ function renderProj() {
       /* Sloupec Počítat platí pro TUHLE zakázku, sloupec Výchozí pro každou
        * NOVOU (zadání 20. 8. 2026 — v OCK to tak bylo, v PROJ chybělo).
        * Výchozí stav se ukládá do matice zobrazení, ne do zakázky. */
-      const pocitat = col.admin
+      /* Sloupec „Výchozí" přenastavuje aplikaci všem – od 3. 9. 2026 ho vidí
+       * jen administrátor (viz kalkSloupce v kalk_ock.js). „Počítat" se týká
+       * jen téhle zakázky, ten zůstává každému, kdo kalkulaci upravuje. */
+      const pocitat = (col.admin
         ? `<td class="admincol"><input type="checkbox" class="noprint" ${p.vyrazeno ? '' : 'checked'}
             onchange="pjVyrazeno(${i},${j},!this.checked)"
             title="${p.vyrazeno ? 'položka se nepočítá – zaškrtnutím ji vrátíte do výpočtu' : 'odškrtnutím položku vyřadíte z výpočtu (zůstane v seznamu)'}"></td>`
-          + `<td class="admincol">${vychoziPolozkaChk(zobrazeniProjKlic(s.key, p), projVychoziZaklad(s.key, p),
+        : '')
+        + (col.admin && col.spravce
+          ? `<td class="admincol">${vychoziPolozkaChk(zobrazeniProjKlic(s.key, p), projVychoziZaklad(s.key, p),
               'zaškrtnuto = položka se v NOVÉ zakázce rovnou počítá (platí pro všechny)')}</td>`
-        : '';
-      const tr = `<tr${p.vyrazeno ? ' class="vyrazeno"' : ''}${dz}>`;
+          : '');
+      /* Položka vypnutá nulou (nález V22, 4. 9. 2026): u hodinové znamená
+       * nula hodin (výchozí zadání je nese vyplněné, takže je to vědomý krok),
+       * u fixní PŘEPSANÁ částka 0 — nula rovnou z ceníku vypnutím není, to je
+       * neoceněná položka a hlásí ji jiný štítek. Stav se nesmí slévat
+       * s vyřazenou položkou, proto se třídy skládají. */
+      const vypnuta = (typeof polozkaProjVypnuta === 'function') && polozkaProjVypnuta(p);
+      const tridyR = (p.vyrazeno ? 'vyrazeno' : '') + (vypnuta ? ' vypnuto-nulou' : '');
+      const stitekVyp = vypnuta
+        ? ` <span class="pill vyp noprint" title="${esc(VYPNUTO_POPIS_PROJ)}">vypnuto (množství 0)</span>` : '';
+      const tr = `<tr${tridyR.trim() ? ` class="${tridyR.trim()}"` : ''}${dz}>`;
       const cena = p.naklad + marzeSekce(s, p.naklad);
 
       if (p.typ === 'hod') {
@@ -312,7 +329,7 @@ function renderProj() {
                title="sjednaná sazba jen pro tuto zakázku (prázdné = ${num(p.sazbaZCeniku)} Kč z ceníku)">
              ${p.sazbaPrepsana ? `<button class="mini noprint" onclick="pjPrepis(${i},${j},'sazbaPrepis','')" title="vrátit sazbu z ceníku (${num(p.sazbaZCeniku)} Kč)">↺</button>` : ''}`
           : num(p.sazbaKc);
-        return `${tr}<td>${nazev}</td>
+        return `${tr}<td>${nazev}${stitekVyp}</td>
           <td>${(col.admin || vlEd) ? `<input type="number" step="1" style="width:66px" value="${p.hodiny}" onchange="pjSet(${i}, 'polozky.${j}.hodiny', +this.value)">` : num(p.hodiny)}</td>
           <td>${col.admin ? `<input type="number" step="1" style="width:66px" value="${p.rezerva}" onchange="pjSet(${i}, 'polozky.${j}.rezerva', +this.value)">` : num(p.rezerva)}</td>
           <td>${num(p.hodinyCelkem)}</td>
@@ -333,7 +350,7 @@ function renderProj() {
         : (vlEd && !p.fixKey
           ? `<input type="number" step="500" style="width:86px" value="${esc(p.cena)}" title="částka této položky (jen pro tuto zakázku)" onchange="pjSet(${i}, 'polozky.${j}.cena', +this.value)">`
           : num(p.cenaEfekt));
-      return `${tr}<td>${nazev}</td>
+      return `${tr}<td>${nazev}${stitekVyp}</td>
         <td colspan="3" class="note" style="text-align:right">${p.fixKey
           ? (p.cenaPrepsana ? 'fixní částka – přepsáno pro tuto zakázku' : 'fixní částka (ceník PROJ)')
           : 'fixní částka'}</td>
@@ -359,7 +376,7 @@ function renderProj() {
            <td style="white-space:nowrap"><label title="příplatek mimo Prahu = km / 60 × 1000 Kč (hodina cesty à 1 000 Kč); po Praze nechte odškrtnuté">
              <input type="checkbox" ${zdroj.doprava.mimoPrahu ? 'checked' : ''} onchange="pjSet(${i}, 'doprava.mimoPrahu', this.checked)"> mimo Prahu</label></td>
            <td class="note" style="white-space:nowrap" title="příplatek mimo Prahu: ${num(zdroj.doprava.km)} km / 60 × 1 000 Kč">${zdroj.doprava.mimoPrahu ? fmt(mimoKc) : '—'}${rucniPill}</td>
-           ${penize(s.dopravaKc, null, s.dopravaKc)}<td class="admincol"></td><td class="admincol"></td></tr>`
+           ${penize(s.dopravaKc, null, s.dopravaKc)}${prazdneAdmin}</tr>`
         : (s.dopravaKc
           ? `<tr><td>Doprava${zdroj.doprava.mimoPrahu ? ' (mimo Prahu)' : ''}</td><td>${num(zdroj.doprava.km)}</td><td class="note">km</td><td></td>
              <td class="note">${zdroj.doprava.mimoPrahu ? fmt(mimoKc) : '—'}${rucniPill}</td>${penize(s.dopravaKc, null, s.dopravaKc)}</tr>` : '');
@@ -415,16 +432,24 @@ function renderProj() {
        * (zadání 18. 8.) — „KOLAUDACE CELKEM (pro 1 ks výtahu)". */
       + `<tr class="sectot"><td colspan="${POPIS_SL}">${esc(nazevBezZavorek(s.nazev))} CELKEM${
           (String(s.nazev).match(/\s*(\([^)]*\))\s*$/) || [, ''])[1]
-            ? ' ' + esc((String(s.nazev).match(/\s*(\([^)]*\))\s*$/) || [, ''])[1]) : ''}</td>`
+            ? ' ' + esc((String(s.nazev).match(/\s*(\([^)]*\))\s*$/) || [, ''])[1]) : ''}${
+          /* Tichá poznámka o vypnutých položkách — ať je vidět i u sbalené
+           * sekce, kde se řádky nekreslí (4. 9. 2026). */
+          (() => {
+            const n = (typeof polozkaProjVypnuta === 'function')
+              ? vsechny.filter(x => polozkaProjVypnuta(x.p)).length : 0;
+            return n ? ` <span class="note" style="font-weight:400">· ${n} ${
+              n === 1 ? 'položka vypnuta' : (n < 5 ? 'položky vypnuty' : 'položek vypnuto')}</span>` : '';
+          })()}</td>`
       + penize(s.naklad + s.dopravaKc, s.marze, s.celkem)
-      + `${col.admin ? '<td class="admincol"></td><td class="admincol"></td>' : ''}</tr>`;
+      + prazdneAdmin + '</tr>';
   }).join('');
 
   const kalkulace = `<table>
     ${hlavicka}
     ${sekceHtml}
     <tr class="tot"><td colspan="${POPIS_SL}">CELKEM PROJEKČNÍ PRÁCE</td>
-      ${penize(naklad, r.souhrn.marze, r.souhrn.celkem)}${col.admin ? '<td class="admincol"></td><td class="admincol"></td>' : ''}</tr>
+      ${penize(naklad, r.souhrn.marze, r.souhrn.celkem)}${prazdneAdmin}</tr>
   </table>
   ${col.admin ? `<div class="note">Řádky přetáhnete úchopem <b>⠿</b> vlevo (v rámci sekce) – stejně jako v Kalkulaci OCK.
     Zaškrtávátko <b>Počítat</b> položku vyřadí z výpočtu, ale nechá ji v seznamu; běžný uživatel vyřazenou položku nevidí.
@@ -452,6 +477,7 @@ function renderProj() {
    * hlavička a šedá lišta nad ním zůstávají živé (viz zamekStranyLista). */
   document.getElementById('page-proj').innerHTML =
     zakazkaHlavicka(false) +
+    (typeof zamekCteniLista === 'function' ? zamekCteniLista() : '') +
     (typeof zamekStranyLista === 'function' ? zamekStranyLista('proj') : '') +
     `<div id="proj-telo">` +
     `<div class="card"><div class="body">${hlava}
@@ -481,4 +507,5 @@ function renderProj() {
      Doprava se počítá bez přirážky; sleva/přirážka sekce se počítá z ceny včetně dopravy (dle předlohy).</div>`
     + `</div>`;
   if (typeof zamekStranyNasad === 'function') zamekStranyNasad('proj');
+  if (typeof zamekCteniNasad === 'function') zamekCteniNasad('proj');
 }

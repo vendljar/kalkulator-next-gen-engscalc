@@ -521,6 +521,8 @@ function get(path) { return path.split('.').reduce((o, k) => o[k], rootObj()); }
  * (číslo, zákazník, hlavička), ne obsah konkrétní varianty; ty musí jít
  * upravit i tehdy, když je některá varianta zamčená. */
 function set(path, v) {
+  /* Zámek čtení platí i na hlavičku (ZAK.*) — viz komentář u ZAMEK_CTENI. */
+  if (typeof zamekCteniStop === 'function' && zamekCteniStop()) return;
   if (!path.startsWith('ZAK.') && typeof zamekStop === 'function' && zamekStop()) return;
   const ks = path.split('.'); const last = ks.pop();
   ks.reduce((o, k) => o[k], rootObj())[last] = v;
@@ -943,12 +945,21 @@ function zakazkaHlavicka(ock) {
       title="${esc(r.popis)} — přepnutí se nejdřív zeptá a ukáže, čeho se dotkne"
       onclick="cenikRadaPrepniUI('${r.id}')">${esc(r.nazev)}</button>`).join('')}</span></div>`;
   /* Kurz je společný pro obě řady (rozhodnutí J. V.), u zahraniční zakázky
-   * se ale ukazuje — ať je vidět, s čím se bude počítat cizojazyčná nabídka. */
+   * se ale ukazuje — ať je vidět, s čím se bude počítat cizojazyčná nabídka.
+   *
+   * MĚNIT ho smí jen ten, kdo smí do ceníku (3. 9. 2026, zadání J. V.:
+   * „obchodníkům odeber možnost editovat kurz"). Je to ceníková hodnota
+   * jako každá jiná — kdyby ji přepsal obchodník v hlavičce, rozejde se
+   * celá zahraniční nabídka s ceníkem a nikde by to nebylo vidět. Ostatní
+   * ho vidí jako text, aby věděli, s čím dokument počítá. */
+  const kurzEd = smiZobrazit('tab.cenik');
   const kurzRow = (radaTed !== 'zahr' || !smiZobrazit('pole.prirazka')) ? ''
     : `<div class="row"><label>Kurz pro nabídku</label>
-       <span class="pct-wrap"><input type="number" step="0.01" value="${esc(C.kurzEurKc || 0)}"
+       <span class="pct-wrap">${kurzEd
+        ? `<input type="number" step="0.01" value="${esc(C.kurzEurKc || 0)}"
          title="kurz z ceníku; v dokumentu se neukazuje, jen se jím převádí"
-         onchange="set('C.kurzEurKc', +this.value)"> Kč/€</span></div>`;
+         onchange="set('C.kurzEurKc', +this.value)">`
+        : `<b title="kurz z ceníku – mění se v Ceníku OCK, sekce CIZÍ MĚNA">${esc(C.kurzEurKc || 0)}</b>`} Kč/€</span></div>`;
   /* Sazby DPH jsou od 1. 9. 2026 PŘEDVOLBY Z CENÍKU (zadání J. V.: „přidej do
    * obou ceníků sekci DPH … a samozřejmě je potřebujeme editovat, kdyby se
    * změnil zákon"). Nabídka v hlavičce se tedy skládá z ceníku; sazba samotné
@@ -1023,7 +1034,8 @@ function zakazkaHlavicka(ock) {
         ${archivBtn}
         <button class="mini" onclick="prepniTab('zakazka')">Přehled cenových nabídek →</button>
       </div>${zakUlozeniRadek()}`;
-    return `<div class="card zak-bar${radaTed === 'zahr' ? ' rada-zahr' : ''}">
+    return `<div class="card zak-bar${radaTed === 'zahr' ? ' rada-zahr' : ''}${
+      (typeof zamekCteniJe === 'function' && zamekCteniJe()) ? ' cteni-zamceno' : ''}">
         <div class="zak-bar-h">Zakázka a varianta${radaTed === 'zahr'
           ? ' <span class="rada-stitek">zahraniční ceník</span>' : ''}</div>
         <div class="body">${inner}</div></div>`
@@ -1048,7 +1060,8 @@ function zakazkaHlavicka(ock) {
       ${archivBtn}
       <button class="mini" onclick="prepniTab('zakazka')">Přehled cenových nabídek →</button>
     </div>${zakUlozeniRadek()}`;
-  return `<div class="card zak-bar${radaTed === 'zahr' ? ' rada-zahr' : ''}">
+  return `<div class="card zak-bar${radaTed === 'zahr' ? ' rada-zahr' : ''}${
+      (typeof zamekCteniJe === 'function' && zamekCteniJe()) ? ' cteni-zamceno' : ''}">
       <div class="zak-bar-h">Zakázka a varianta${radaTed === 'zahr'
         ? ' <span class="rada-stitek">zahraniční ceník</span>' : ''}</div>
       <div class="body">${inner}</div></div>`
@@ -1114,8 +1127,9 @@ function renderVerzePill() {
 
 function renderKalkHlavicka() {
   const el = document.getElementById('kalk-hlavicka');
-  if (el) el.innerHTML = zakazkaHlavicka(true) + zamekStranyLista('ock');
+  if (el) el.innerHTML = zamekCteniLista() + zakazkaHlavicka(true) + zamekStranyLista('ock');
   zamekStranyNasad('ock');
+  zamekCteniNasad('ock');
 }
 
 /* ---------- přepnutí řady ceníku (#181, 31. 8. 2026) ----------
@@ -1137,7 +1151,9 @@ async function cenikRadaPrepniUI(rada) {
   if (typeof zamekStop === 'function' && zamekStop()) return;
   if (typeof nahledStop === 'function' && nahledStop('přepnutí řady ceníku')) return;
 
-  const cr = (typeof cenikDnesniData === 'function') ? cenikDnesniData().cenik : DEFAULT_CENIK;
+  /* Celý datový objekt, ne jen ceník OCK: odchylku smí mít i přirážka
+   * projekce (`PC.marze`, 3. 9. 2026) a ta se hledá v ceníku PROJ. */
+  const cr = (typeof cenikDnesniData === 'function') ? cenikDnesniData() : { cenik: DEFAULT_CENIK };
   const zahr = (typeof CENIK_ZAHR !== 'undefined') ? CENIK_ZAHR : null;
   const rozdily = (typeof cenikRadaRozdily === 'function') ? cenikRadaRozdily(cr, zahr) : [];
   if (!rozdily.length && r === 'zahr') {
@@ -1151,15 +1167,98 @@ async function cenikRadaPrepniUI(rada) {
     + (rozdily.length > 8 ? '\n• … a další ' + (rozdily.length - 8) : '');
   if (!await potvrd('Přepnout výpočet na ' + (r === 'zahr' ? 'ZAHRANIČNÍ' : 'TUZEMSKÝ') + ' ceník?\n\n'
     + 'Dotkne se to ' + rozdily.length + ' ceníkových položek:\n' + vypis
-    + '\n\nRuční přepisy v zakázce, globální přirážka ani sazba DPH se nemění.')) return;
+    + '\n\nRuční přepisy v zakázce se nemění. Globální přirážka a sazba DPH se přepnou jen '
+    + 'tehdy, když pro ně ceník zahraniční odchylku má a vy jste je v téhle nabídce sám '
+    + 'nepřenastavil.')) return;
 
   const vysl = cenikRadaPrepni(d, cr, zahr, r);
   v.upraveno = new Date().toISOString();
   if (typeof protokolZapis === 'function')
     protokolZapis(ZAK, { kde: 'Kalkulace OCK', varianta: v.id, variantaNazev: v.nazev,
       kdo: (typeof zamekKdo === 'function') ? zamekKdo() : '',
-      co: 'Ceník přepnut na ' + nazev + ' (' + vysl.zmen + ' změněných cen)' });
+      co: 'Ceník přepnut na ' + nazev + ' (' + vysl.zmen + ' změněných cen)'
+        + (vysl.chranene && vysl.chranene.length
+          ? ', ponecháno ručně nastavených: ' + vysl.chranene.length : '') });
   syncVarianta(); render();
+  /* Co se NEZMĚNILO, je stejně důležité jako co se změnilo: obchodník jinak
+   * čeká zahraniční přirážku a v nabídce má pořád svou vlastní. */
+  if (vysl.chranene && vysl.chranene.length)
+    hlaska('Ceník je přepnutý na ' + nazev + '.\n\nBeze změny zůstalo, co jste si v téhle '
+      + 'nabídce nastavil sám:\n' + vysl.chranene.map(x => '• ' + x.popis).join('\n')
+      + '\n\nChcete-li i tady hodnotu z ceníku, přepište ji ručně.');
+}
+
+/* ---------- ZÁMEK OTEVŘENÉ ZAKÁZKY: JEN PRO ČTENÍ (4. 9. 2026) ----------
+ *
+ * Zadání J. V. spolu s nálezem V23: „zakázka má být po otevření uzamčená
+ * (read-only) a odemykat se vědomým krokem." Model (kdo smí odemknout) je
+ * v `zamek.js`; tady je stav okna a jeho kreslení.
+ *
+ * ZÁMEK PATŘÍ OKNU, NE DATŮM. Do zakázky se nezapisuje nic — po zavření
+ * a novém otevření je zakázka zase jen ke čtení, což je přesně to chtěné.
+ *
+ * CO ZŮSTÁVÁ ŽIVÉ: přepínání záložek, tisk, porovnání variant, hledání
+ * a samozřejmě tlačítko Odemknout. Blokuje se ZÁPIS DO DAT — a to včetně
+ * hlavičky: kdyby šla editovat, psal by do ní obchodník změny, které se
+ * (protože autosave v zamčeném stavu mlčí) nikam neuloží. To by byla horší
+ * past než ta, kterou zavíráme. */
+const ZAMEK_CTENI = { zamceno: false };
+
+function zamekCteniJe() { return !!ZAMEK_CTENI.zamceno; }
+
+/* Volá se po otevření ULOŽENÉ zakázky (online i ze složky). Obnovení
+ * rozpracované zálohy zamčené NENÍ — to je vlastní nedokončená práce,
+ * do které chce uživatel rovnou psát. */
+function zamekCteniZapni() { ZAMEK_CTENI.zamceno = true; }
+function zamekCteniVypni() { ZAMEK_CTENI.zamceno = false; }
+
+/* Vrací true, když je zápis kvůli zámku čtení zakázaný (a řekne to). */
+function zamekCteniStop() {
+  if (!zamekCteniJe()) return false;
+  if (typeof hlaska === 'function')
+    hlaska('Nabídka je otevřená jen ke čtení.\n\nAbyste v ní mohl něco změnit, '
+      + 'klikněte nahoře na „Odemknout k úpravám". Dokud je zamčená, nic se do '
+      + 'databáze neukládá — otevřít si ji a jen se podívat je bezpečné.');
+  return true;
+}
+
+function zamekCteniLista() {
+  if (!zamekCteniJe()) return '';
+  const ja = (typeof ONLINE_STAV !== 'undefined') ? ONLINE_STAV.ja : null;
+  const smi = (typeof zamekCteniSmiOdemknout !== 'function') || zamekCteniSmiOdemknout(ZAK, ja);
+  const duvod = (!smi && typeof zamekCteniDuvod === 'function') ? zamekCteniDuvod(ZAK, ja) : '';
+  return `<div class="zamek-lista zamek-cteni noprint">
+    <span class="ikona">🔒</span>
+    <span class="sp"><b>Nabídka je otevřená jen ke čtení.</b>
+      Nic se neukládá, dokud ji vědomě neodemknete.${duvod ? ' ' + esc(duvod) : ''}</span>
+    ${smi ? '<button class="mini" onclick="zamekCteniOdemkniUI()">Odemknout k úpravám</button>' : ''}
+  </div>`;
+}
+
+/* Třída na kontejnery s daty. Lišta ani hlavička okna v nich nejsou, takže
+ * tlačítko Odemknout zůstane klikatelné. */
+function zamekCteniNasad(strana) {
+  const zamceno = zamekCteniJe();
+  const ids = strana === 'ock'
+    ? ['kalk-souhrn', 'inputs', 'outputs', 'kalk-nabidka']
+    : ['proj-telo'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('cteni-zamceno', zamceno);
+  });
+}
+
+function zamekCteniOdemkniUI() {
+  const ja = (typeof ONLINE_STAV !== 'undefined') ? ONLINE_STAV.ja : null;
+  if (typeof zamekCteniSmiOdemknout === 'function' && !zamekCteniSmiOdemknout(ZAK, ja)) {
+    hlaska(zamekCteniDuvod(ZAK, ja));
+    return;
+  }
+  if (typeof nahledStop === 'function' && nahledStop('odemčení nabídky k úpravám')) return;
+  zamekCteniVypni();
+  if (typeof onlineZprava === 'function')
+    onlineZprava('Nabídka je odemčená k úpravám — od téhle chvíle se změny zase ukládají samy.');
+  render();
 }
 
 /* ---------- zámek nepočítané strany zakázky (23. 8. 2026) ----------
@@ -1444,7 +1543,11 @@ function spocitejVariantu(v) {
 
 /* CSS pro lištu a vizuální označení rozepsaného dokumentu (do <style> náhledu) */
 function tiskListaCss() {
-  return `#dok.editace{outline:2px dashed #93b4f7;outline-offset:8px;border-radius:6px;background:#fdfeff}
+  return `/* Řádky s DPH se ve výchozím stavu netisknou (5. 9. 2026) — dokument
+     nese třídu bez-dph, kterou sundá přepínač v liště. Skrývá se tím
+     i řádek „Celkem s DPH"; obojí je označené třídou dph-radek. */
+    #dok.bez-dph .dph-radek{display:none}
+    #dok.editace{outline:2px dashed #93b4f7;outline-offset:8px;border-radius:6px;background:#fdfeff}
     #dok.editace:focus{outline-color:#1d4ed8}
     .bar .stav{margin-left:12px;color:#6b7686;font-size:11.5px}
     .bar label.edit{margin-left:12px;font-size:12.5px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;user-select:none}
@@ -1495,8 +1598,16 @@ function tiskListaHtml(o) {
   /* #33 – deset otázek, které by položil kolega přes rameno. Tady je poslední
    * místo, kde je ještě co zastavit; bez čísel, náhled odchází ven. */
   const kontroly = (typeof kontrolyTiskLista === 'function') ? kontrolyTiskLista() : '';
+  /* Přepínač zobrazení DPH (5. 9. 2026, zadání J. V.). Nabídka se generuje
+   * BEZ DPH — zákazník ji dostává v cenách bez daně a řádky s DPH mátly.
+   * Zapnout je jde jedním zaškrtnutím; volba platí pro tenhle výtisk, do
+   * zakázky se nezapisuje (je to způsob zobrazení, ne rozhodnutí o ceně). */
+  const dphChk = o.dph === false ? '' :
+    `<label class="edit"><input type="checkbox" id="tiskDphCheck" onchange="tiskDph(this.checked)">
+       ${esc(o.dphPopisek || 'Zobrazit DPH a cenu s DPH')}</label>`;
   return `${ukazka}${varovani}${stari}${marze}${kontroly}<div class="bar noprint">
     <button onclick="window.print()">🖨 ${esc(btnTisk)}</button>
+    ${dphChk}
     <label class="edit"><input type="checkbox" id="tiskEditCheck" onchange="tiskEditace(this.checked)"> ✏️ ${esc(btnUpravy)}</label>
     <button class="sek" onclick="tiskVratPuvodni()">↺ ${esc(btnVratit)}</button>
     <span class="stav" id="tiskStav">${esc(pozn)}</span>
@@ -1531,6 +1642,8 @@ function tiskListaSkript(hlasky, zamek) {
     + 'try{if(window.opener&&!window.opener.closed&&typeof window.opener.zamekPoTisku==="function"){'
     + 'window.opener.zamekPoTisku(TISK_ZAMEK.typ,TISK_ZAMEK.varId);tiskStav(TISK_HLASKY.zamceno);}}catch(e){}}\n'
     + 'window.addEventListener("beforeprint",tiskZamkni);\n'
+    + 'function tiskDph(zap){var d=document.getElementById("dok");if(!d)return;'
+    + 'if(zap)d.classList.remove("bez-dph");else d.classList.add("bez-dph");}\n'
     + 'function tiskEditace(zap){var d=document.getElementById("dok");if(!d)return;'
     + 'if(TISK_PUVODNI===null)TISK_PUVODNI=d.innerHTML;'
     + 'd.contentEditable=zap?"true":"false";'
@@ -1601,7 +1714,7 @@ function dokPodpisHtml(prekl) {
   return `<div class="podpis-blok" style="margin:28px 0 10px;page-break-inside:avoid">
     <div style="font-size:11px;color:#6b7686;text-transform:uppercase;letter-spacing:.03em">${esc(P('Vypracoval'))}</div>
     ${obr.ZPRAC_PODPIS ? `<img src="${esc(obr.ZPRAC_PODPIS)}" alt=""
-      style="max-height:168px;max-width:500px;display:block;margin:10px 0 4px">` : ''}
+      style="max-height:336px;max-width:1000px;width:auto;display:block;margin:10px 0 4px">` : ''}
     <div style="font-weight:700">${esc(p.ZPRAC_JMENO || '')}</div>
     ${kontakt ? `<div style="font-size:12px;color:#42506b">${esc(kontakt)}</div>` : ''}
   </div>`;

@@ -468,7 +468,7 @@ function nastFirma() {
 }
 
 /* ---------- vnitřní záložka: Uživatelé ----------
- * Od 4. 8. 2026 je tohle SKUTEČNÁ správa účtů online databáze (schaftscalc):
+ * Od 4. 8. 2026 je tohle SKUTEČNÁ správa účtů online databáze (na serveru):
  * založení uživatele s rolí a počátečním heslem, reset hesla, změna role,
  * vypnutí účtu. Obsluhu i vykreslení dodává ui/online_ui.js – táž logika,
  * kterou hlídá server. Bez spojení se serverem (nouzovka ze souboru) zůstává
@@ -478,7 +478,7 @@ function nastUzivatele() {
   const online = typeof onlineMozne === 'function' && onlineMozne()
     && typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.bezi;
   if (!online)
-    return `<div class="note">Účty žijí v online databázi (schaftscalc.netlify.app) – spravují se tam,
+    return `<div class="note">Účty žijí v online databázi na serveru – spravují se tam,
       kde se proti nim lidé přihlašují. Tady v nouzovém režimu (aplikace spuštěná ze souboru,
       bez serveru) se účty spravovat nedají.</div>`;
   if (!(typeof jeAdminOnline === 'function' && jeAdminOnline()))
