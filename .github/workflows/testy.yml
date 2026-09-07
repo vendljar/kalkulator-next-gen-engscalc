@@ -25,18 +25,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'   # stejná verze jako NODE_VERSION v netlify.toml
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
       - name: Sady v Node (jádro, UI, serverové funkce)
-        run: ./spust_testy.sh
+        run: bash ./spust_testy.sh
 
       - name: Sestavení (verze se přebírá z verze.txt a nezvyšuje se)
         env:
@@ -56,7 +56,7 @@ jobs:
 
       - name: Sestavený dist/ jako artefakt
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: dist-${{ github.sha }}
           path: dist/
