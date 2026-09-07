@@ -1,0 +1,64 @@
+# Testy Kalkulátoru v cloudu (7. 9. 2026)
+#
+# Proč: na pracovním notebooku nejde z bezpečnostních důvodů instalovat Node
+# ani Python, takže sady ze spust_testy.sh tam nikdy nepoběží. Kód už na
+# GitHubu je a Netlify ho staví v cloudu — testy tedy běží tamtéž, na
+# GitHub Actions, nad týmiž vynulovanými zdrojáky: žádný skutečný ceník
+# (sady, které ho potřebují, se přeskočí s kódem 3 stejně jako lokálně),
+# žádná tajemství (overit_online.mjs si nastavuje vlastní zkušební).
+#
+# Spouští se při každém pushi a pull requestu na main/test a ručně
+# (GitHub → Actions → Testy → Run workflow). Výsledek: zelená/červená
+# u commitu, podrobný výpis v záložce Actions, sestavený dist/ jako
+# artefakt ke stažení. Nasazení na Netlify tím NENÍ podmíněné — Netlify
+# staví dál sám; tohle je nezávislá kontrola.
+name: Testy
+
+on:
+  push:
+    branches: [main, test]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  testy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'   # stejná verze jako NODE_VERSION v netlify.toml
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Sady v Node (jádro, UI, serverové funkce)
+        run: ./spust_testy.sh
+
+      - name: Sestavení (verze se přebírá z verze.txt a nezvyšuje se)
+        env:
+          KNG_NEZVYSOVAT_VERZI: '1'
+        run: python3 build.py
+
+      - name: Playwright (Chromium)
+        run: |
+          npm i -g playwright
+          npx playwright install --with-deps chromium
+
+      - name: Kouřový test sestavené aplikace (smoke.mjs)
+        run: NODE_PATH="$(npm root -g)" node smoke.mjs
+
+      - name: Online databáze — skutečný klient proti skutečným funkcím (overit_online.mjs)
+        run: NODE_PATH="$(npm root -g)" node overit_online.mjs
+
+      - name: Sestavený dist/ jako artefakt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ github.sha }}
+          path: dist/
+          if-no-files-found: ignore
+          retention-days: 14
