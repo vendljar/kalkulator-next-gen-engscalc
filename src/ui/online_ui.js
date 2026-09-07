@@ -1738,14 +1738,19 @@ function onlineObnovaProved() {
     return onlineApi('/api/obnova', onlineObnovaTelo(false)).then(d => {
       const r = onlineObnovaSouhrn(d);
       o.nahled = null;
-      onlineZprava('Databáze obnovena: zapsáno ' + (r.nove + r.prepsane) + ' záznamů (' + r.nove + ' nových, '
-        + r.prepsane + ' přepsaných), ' + r.preskocene + ' přeskočeno. ' + (d.upozorneni || []).join(' '));
+      const zprava = 'Databáze obnovena: zapsáno ' + (r.nove + r.prepsane) + ' záznamů (' + r.nove + ' nových, '
+        + r.prepsane + ' přepsaných), ' + r.preskocene + ' přeskočeno. ' + (d.upozorneni || []).join(' ');
+      /* Výsledek zůstává ve stavu (panel ho ukáže i po překreslení) — hláška
+       * karty je pomíjivá, přepíše ji první další načtení. */
+      o.posledni = { kdy: new Date().toISOString(), souhrn: r, otiskPred: d.otiskPred || '', zprava };
+      onlineZprava(zprava);
       /* Okno drží starý svět — znovu se načte, co se mohlo změnit. Selhání
-       * jednoho načtení nesmí shodit ostatní. */
+       * jednoho načtení nesmí shodit ostatní, a hláška o obnově se po nich
+       * zopakuje, aby ji nepřekryla hláška některého z načtení. */
       const znovu = [onlineNactiProgram, onlineNactiFirmu, onlineNactiRejstrik,
                      onlineNactiSablony, onlineNactiZobrazeni, onlineOtiskyNacti]
         .map(f => { try { return Promise.resolve(f()).catch(() => false); } catch (e) { return Promise.resolve(false); } });
-      return Promise.all(znovu).then(() => true);
+      return Promise.all(znovu).then(() => { onlineZprava(zprava); return true; });
     }).catch(e => { o.hlaska = 'Obnova se neprovedla: ' + e.message; o.hlaskaTyp = 'varovani'; return false; })
       .then(v => { o.pracuje = false; render(); return v; });
   });
@@ -1815,6 +1820,8 @@ function renderOnlineObnova() {
         onchange="onlineObnovaZmena('rezim', 'prepsat')"> přepsat (vše ze zálohy přes stávající)</label></div>
     <div class="row"><label>Části</label><div>${casti}</div></div>
     ${hlaska}
+    ${o.posledni ? `<div class="note" id="online-obnova-posledni">Poslední obnova ${esc(new Date(o.posledni.kdy).toLocaleString('cs-CZ'))}:
+      ${esc(o.posledni.zprava)}</div>` : ''}
     <div class="btns" style="margin-top:8px">
       <button onclick="onlineObnovaNahled()" ${(!onlineObnovaPripraveno() || o.pracuje) ? 'disabled' : ''}>Zobrazit náhled</button>
       <button class="primary" onclick="onlineObnovaProved()" ${(!o.nahled || o.pracuje) ? 'disabled' : ''}

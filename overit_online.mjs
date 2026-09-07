@@ -471,8 +471,18 @@ test('náhled po ztrátě hlásí jednu novou zakázku',
   await page.evaluate(() => ONLINE_STAV.obnova.nahled.casti.zakazky.nove === 1),
   await page.evaluate(() => JSON.stringify(ONLINE_STAV.obnova.nahled.casti.zakazky)));
 await page.evaluate(() => onlineObnovaProved());
-await page.waitForFunction(() => { try { return !ONLINE_STAV.obnova.pracuje && /Databáze obnovena/.test(ONLINE_STAV.hlaska); } catch (e) { return false; } },
-  null, { timeout: 20000 });
+/* Čeká se na STAV (výsledek, nebo chyba panelu), ne na text hlášky karty —
+ * tu může přepsat kterékoli z následných načtení. */
+await page.waitForFunction(() => { try { const o = ONLINE_STAV.obnova; return !o.pracuje && (!!o.posledni || !!o.hlaska); } catch (e) { return false; } },
+  null, { timeout: 30000 });
+test('ostrá obnova proběhla (panel má výsledek, ne chybu)',
+  await page.evaluate(() => !!ONLINE_STAV.obnova.posledni && !ONLINE_STAV.obnova.hlaska),
+  await page.evaluate(() => 'panel: ' + ONLINE_STAV.obnova.hlaska + ' | karta: ' + ONLINE_STAV.hlaska));
+test('hláška karty po obnově mluví o obnově (načtení ji nepřekryla)',
+  await page.evaluate(() => /Databáze obnovena/.test(ONLINE_STAV.hlaska)),
+  await page.evaluate(() => ONLINE_STAV.hlaska));
+test('panel ukazuje poslední obnovu',
+  /Poslední obnova/.test(await dbPanel()));
 test('potvrzovací dialog říká, kolik se zapíše, že vznikne otisk a že se zamčené nepřepíšou',
   /Zapíše se \d+ záznam/.test(await dlgPosledni(page)) && /otisk/.test(await dlgPosledni(page))
   && /Uzamčené/.test(await dlgPosledni(page)), await dlgPosledni(page));
