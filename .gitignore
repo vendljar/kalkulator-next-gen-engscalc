@@ -61,3 +61,6 @@ __pycache__/
 Thumbs.db
 *.tmp
 /tmp/
+
+# Místní nastavení Claude Code (oprávnění této session) – nepatří do repozitáře
+.claude/

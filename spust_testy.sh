@@ -50,7 +50,15 @@ spust() {
 }
 
 echo "Testy jádra (shoda s Excelem):"
-spust test.js
+if [ -e test.js ]; then
+  spust test.js
+else
+  # Export pro GitHub (pripravit_github.py) test.js nepřikládá – porovnává se
+  # šablonou VZOR se skutečnými čísly. Bez něj se shoda s Excelem NEOVĚŘILA;
+  # hlásí se to jako přeskočení, ne jako pád (CI 7. 9. 2026).
+  preskoceno=$((preskoceno + 1)); seznam_preskocenych+=("test.js")
+  printf '  – %s (přeskočeno – není v exportu pro GitHub)\n' "test.js"
+fi
 
 echo "Ostatní sady:"
 for f in test_*.js; do
