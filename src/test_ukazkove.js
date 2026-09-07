@@ -148,8 +148,10 @@ test('firemní údaje prázdné NEJSOU – jsou jen ukázkové',
 /* Tři výjimky jsou vědomé a zdůvodněné v engine.js: dph je zákonná sazba
  * (nula by tiše vyrobila špatně zdaněný dokument místo zjevně prázdného),
  * lak.rezim je přepínač režimu a *Nazev jsou názvy zboží, ne částky. */
-const VYJIMKY = new Set(['dph', 'rezim', 'skloBokyNazev', 'skloCelniNazev',
-                         'ukazkove', 'prazdny']);
+/* dphZakladni/dphSnizena/dphNulova (1. 9. 2026) jsou předvolby zákonných sazeb
+ * do hlavičky kalkulace – stejná kategorie jako `dph`, ne naše cena (CI 7. 9. 2026). */
+const VYJIMKY = new Set(['dph', 'dphZakladni', 'dphSnizena', 'dphNulova', 'rezim',
+                         'skloBokyNazev', 'skloCelniNazev', 'ukazkove', 'prazdny']);
 function nenulove(o, cesta) {
   const nalez = [];
   Object.keys(o || {}).forEach(k => {
