@@ -22,6 +22,9 @@ globalThis.__TEST_ULOZISTE = (nazev) => ({
     return [...pamet.keys()].filter(x => x.startsWith(nazev + '/' + (prefix || '')))
       .map(x => x.slice(nazev.length + 1));
   },
+  /* Mazání (7. 9. 2026): krok „obnova ze zálohy" nejdřív zakázku smaže
+   * přes DELETE /api/zakazky, aby měla obnova co vracet. */
+  async smaz(k) { pamet.delete(nazev + '/' + k); },
 });
 
 import { createRequire } from 'module';
