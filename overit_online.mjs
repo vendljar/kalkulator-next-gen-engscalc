@@ -42,6 +42,7 @@ import zakazniciFn from './netlify/functions/zakaznici.mjs';
 import zalohaVynuceno from './netlify/functions/zaloha_vynuceno.mjs';
 import sablonyFn from './netlify/functions/sablony.mjs';
 import analytikaFn from './netlify/functions/analytika.mjs';
+import obnovaFn from './netlify/functions/obnova.mjs';
 
 /* Dialogy jsou od 2. 9. 2026 v aplikaci (src/ui/dialog.js), ne nativní —
  * `page.on('dialog')` už tedy nic nechytí. Harness si proto potvrzování
@@ -85,6 +86,10 @@ const FUNKCE = {
    * bez téhle cesty by každý průchod svítil 404 v konzoli. */
   '/api/sablony': sablonyFn,
   '/api/analytika': analytikaFn,
+  /* Obnova databáze ze zálohy (7. 9. 2026) — skutečný klient proti skutečné
+   * funkci: panel, náhled bez zápisu, obnova smazané zakázky, odmítnutí
+   * obchodníka. */
+  '/api/obnova': obnovaFn,
 };
 
 let ok = 0, fail = 0;
@@ -405,6 +410,78 @@ test('přehled záloh neveze data zakázek ani hesla',
   await page.evaluate(() => { const t = JSON.stringify(ONLINE_STAV.otisky);
     return !t.includes('Samo do databáze') && !t.includes('heslo'); }));
 
+/* ---- 5d) obnova databáze ze zálohy (7. 9. 2026) ----
+ * Skutečný klient proti skutečné funkci /api/obnova: panel se otevře, bez
+ * náhledu je obnova zhasnutá, náhled ukáže čísla a nic nezapíše, obnova
+ * smazanou zakázku vrátí. Dialog potvrzuje stub (dlgStub) — jeho text se
+ * kontroluje zvlášť. */
+await page.evaluate(() => { otevriNastaveni(); nastPanel('databaze'); });
+await page.waitForTimeout(300);
+const dbPanel = () => page.locator('#nastaveni-panel').innerHTML();
+test('administrátor má v kartě Online databáze tlačítko Obnovit ze zálohy…',
+  (await dbPanel()).includes('Obnovit ze zálohy'));
+await page.evaluate(() => onlineObnovaOtevri());
+await page.waitForFunction(() => { try { return ONLINE_STAV.obnova.otevreno && ONLINE_STAV.otiskyNacteno && !!ONLINE_STAV.obnova.otiskDen; } catch (e) { return false; } },
+  null, { timeout: 8000 });
+await page.waitForTimeout(300);
+const tlObnovit = () => page.evaluate(() => {
+  const b = [...document.querySelectorAll('#nastaveni-panel button')].find(x => /Obnovit databázi/.test(x.textContent));
+  return b ? b.disabled : null;
+});
+test('panel obnovy je vidět a bez náhledu je tlačítko Obnovit databázi zhasnuté',
+  (await dbPanel()).includes('id="online-obnova"') && (await tlObnovit()) === true);
+const rejPred = await page.evaluate(() => ONLINE_STAV.rejstrik.length);
+await page.evaluate(() => onlineObnovaZmena('rezim', 'prepsat'));
+await page.evaluate(() => onlineObnovaNahled());
+await page.waitForFunction(() => { try { return !ONLINE_STAV.obnova.pracuje && !!ONLINE_STAV.obnova.nahled; } catch (e) { return false; } },
+  null, { timeout: 15000 });
+test('náhled z otisku ukáže čísla po částech',
+  await page.evaluate(() => { const n = ONLINE_STAV.obnova.nahled;
+    return n.nahled === true && n.zdroj.typ === 'otisk' && typeof n.casti.zakazky.bezeZmeny === 'number' && n.casti.zakazky.bezeZmeny >= 2; }),
+  await page.evaluate(() => JSON.stringify(ONLINE_STAV.obnova.nahled.casti)));
+test('náhled se vykreslí do panelu jako tabulka',
+  /Přepsané/.test(await dbPanel()) && /Beze změny/.test(await dbPanel()));
+test('po náhledu je tlačítko Obnovit databázi aktivní', (await tlObnovit()) === false);
+await page.evaluate(() => onlineOtiskyNacti());
+await page.waitForTimeout(300);
+test('náhled sám nic nezapsal (žádný otisk před obnovou nevznikl)',
+  await page.evaluate(() => !ONLINE_STAV.otisky.some(o => /pred-obnovou/.test(o.den))));
+test('změna volby náhled zahodí a obnova zase zhasne',
+  await page.evaluate(() => { onlineObnovaZmena('rezim', 'doplnit'); return ONLINE_STAV.obnova.nahled === null; })
+  && (await tlObnovit()) === true);
+
+/* Ztráta: smazat nezamčenou (a neotevřenou) zakázku, obnovit z otisku,
+ * zakázka je zpátky. Rejstřík po obnově staví server ze skutečného obsahu. */
+const smazana = await page.evaluate(async () => {
+  const z = ONLINE_STAV.rejstrik.find(x => !x.odeslane && x.soubor !== ONLINE_STAV.soubor) || ONLINE_STAV.rejstrik[0];
+  await onlineApi('/api/zakazky?soubor=' + encodeURIComponent(z.soubor), null, 'DELETE');
+  await onlineNactiRejstrik();
+  return z.soubor;
+});
+test('smazaná zakázka v rejstříku chybí',
+  await page.evaluate(() => ONLINE_STAV.rejstrik.length) === rejPred - 1);
+await page.evaluate(() => onlineObnovaZmena('rezim', 'prepsat'));
+await page.evaluate(() => onlineObnovaNahled());
+await page.waitForFunction(() => { try { return !ONLINE_STAV.obnova.pracuje && !!ONLINE_STAV.obnova.nahled; } catch (e) { return false; } },
+  null, { timeout: 15000 });
+test('náhled po ztrátě hlásí jednu novou zakázku',
+  await page.evaluate(() => ONLINE_STAV.obnova.nahled.casti.zakazky.nove === 1),
+  await page.evaluate(() => JSON.stringify(ONLINE_STAV.obnova.nahled.casti.zakazky)));
+await page.evaluate(() => onlineObnovaProved());
+await page.waitForFunction(() => { try { return !ONLINE_STAV.obnova.pracuje && /Databáze obnovena/.test(ONLINE_STAV.hlaska); } catch (e) { return false; } },
+  null, { timeout: 20000 });
+test('potvrzovací dialog říká, kolik se zapíše, že vznikne otisk a že se zamčené nepřepíšou',
+  /Zapíše se \d+ záznam/.test(await dlgPosledni(page)) && /otisk/.test(await dlgPosledni(page))
+  && /Uzamčené/.test(await dlgPosledni(page)), await dlgPosledni(page));
+test('obnova zakázku vrátila (rejstřík má zase původní počet a tu zakázku)',
+  await page.evaluate(() => ONLINE_STAV.rejstrik.length) === rejPred
+  && await page.evaluate((s) => ONLINE_STAV.rejstrik.some(z => z.soubor === s), smazana),
+  await page.evaluate(() => ONLINE_STAV.rejstrik.map(z => z.soubor)));
+test('po obnově existuje otisk před obnovou a přehled ho ukazuje',
+  await page.evaluate(() => ONLINE_STAV.otisky.some(o => /pred-obnovou/.test(o.den))),
+  await page.evaluate(() => ONLINE_STAV.otisky.map(o => o.den)));
+await page.evaluate(() => { onlineObnovaOtevri(); zavriNastaveni(); });
+
 await page.evaluate(() => prepniTab('zakazka'));
 
 /* ---- 6) správa účtů v Nastavení ---- */
@@ -525,6 +602,13 @@ test('obchodník nevidí kartu složky _DB (mapování jen pro administrátora)'
   !stranka.includes('Databáze zakázek (složka)'));
 test('obchodník kartu Online databáze vidí v Nastavení → Databáze',
   stranka.includes('Online databáze (' + new URL(ADRESA).host + ')'));
+/* Obnova databáze (7. 9. 2026): obchodník tlačítko vůbec nevidí — a kdyby
+ * cestu zavolal ručně, odmítne ho server, ne jen obrazovka. */
+test('obchodník v kartě Online databáze nemá tlačítko Obnovit ze zálohy…',
+  !stranka.includes('Obnovit ze zálohy'));
+test('a když cestu /api/obnova zavolá ručně, server ho odmítne (403)',
+  await page.evaluate(() => fetch('/api/obnova', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nahled: true, rezim: 'doplnit', zdroj: { otisk: '2026-01-01' } }) }).then(r => r.status)) === 403);
 
 /* Přesně to, co uživatel hlásil: „Přihlásil jsem se jako nový uživatel
  * (obchodník) a přesto to po mně chce připojit databázi." Lišta ukázkových

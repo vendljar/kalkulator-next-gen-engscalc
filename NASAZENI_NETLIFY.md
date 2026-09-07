@@ -96,6 +96,13 @@ prázdná).
   na serveru (plánovaná funkce ve 2:00 UTC). Stažená záloha nese v poli
   `zdroj` adresu webu, ze kterého vznikla — při obnově se pozná, jestli je
   z ostrého, nebo z testovacího webu.
+- **Obnova ze zálohy** (7. 9. 2026): Nastavení → Databáze → karta Online
+  databáze → **Obnovit ze zálohy…** (jen administrátor). Zdroj = stažený
+  soubor nebo serverový otisk podle dne; režim „doplnit" (jen chybějící)
+  nebo „přepsat"; volitelně po částech. Nejdřív náhled (nic nezapíše),
+  teprve pak obnova s potvrzením. Před obnovou se pořídí otisk současného
+  stavu (`<den>-pred-obnovou`), uzamčené nabídky se nepřepíšou, nic se
+  nemaže. Účty jdou obnovit jen z otisku (soubor nenese otisky hesel).
 - Přechodné období: dokud je připojená složka `_DB`, má přednost — všechno
   se chová jako dosud. Bez složky vládne online databáze.
 - Poznámka: pokud je web zaheslovaný ochranou Netlify (odpovídá 401), vypni

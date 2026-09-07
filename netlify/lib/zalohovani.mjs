@@ -46,8 +46,18 @@ export async function zalohaDoplnky() {
            podpisy: Object.keys(podpisy).length ? podpisy : null };
 }
 
-export async function porizOtisk(zdroj, kdo) {
-  const den = denDnes();
+/* Klíč otisku před obnovou (7. 9. 2026). Otisk pořízený těsně před obnovou
+ * databáze NESMÍ ležet pod dnešním datem: kdyby se obnovovalo z dnešního
+ * otisku, přepsal by zdroj obnovy sám sebe stavem před obnovou a cesta
+ * zpátky by zmizela. Druhá obnova téhož dne tenhle slot přepíše — to je
+ * vědomé (jeden slot na den, stejně jako u nočního otisku) a obrazovka
+ * i odpověď serveru to říkají. */
+export function klicPredObnovou(den) { return (den || denDnes()) + '-pred-obnovou'; }
+
+/* `klic` je nepovinný: bez něj otisk míří pod dnešní datum (noční a vynucená
+ * záloha), s ním pod zadaný slot (otisk před obnovou, viz klicPredObnovou). */
+export async function porizOtisk(zdroj, kdo, klic) {
+  const den = klic || denDnes();
   const sProg = await uloziste('program');
   const program = await sProg.cti('db');
   const firma = await sProg.cti('firma');   // od 4. 8. 2026 online (viz functions/firma.mjs)
@@ -90,7 +100,10 @@ export async function porizOtisk(zdroj, kdo) {
  * Řadí se od nejnovější, protože obrazovku zajímá poslední otisk. */
 export async function seznamOtisku(kolik) {
   const s = await uloziste('zalohy');
-  const dny = (await s.seznam()).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort().reverse();
+  /* Otisky před obnovou (7. 9. 2026) patří do přehledu taky — jsou to cesty
+   * zpátky, ze kterých se dá obnovovat. Řetězcové řazení je dá hned před
+   * den, ke kterému patří. */
+  const dny = (await s.seznam()).filter(k => /^\d{4}-\d{2}-\d{2}(-pred-obnovou)?$/.test(k)).sort().reverse();
   const vybrane = dny.slice(0, Math.max(1, kolik || 14));
   const otisky = [];
   for (const den of vybrane) {
