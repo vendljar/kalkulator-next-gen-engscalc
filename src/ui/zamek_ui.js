@@ -189,10 +189,15 @@ function zamekLista() {
     <span class="ikona">🔒</span>
     <span><b>${esc(v.nazev)} (${esc(z.cislo || variantaCislo(ZAK, v))}) je odeslaná nabídka – needituje se.</b>
       Vytištěno ${esc(kdy)} jako ${esc(z.popis || 'cenová nabídka')}${pocet > 1 ? ` (výtisků: ${pocet})` : ''}.
-      Pokračujte klonem; původní nabídka zůstane v podobě, v jaké odešla.</span>
+      Pokračujte klonem, nebo založte novou zakázku; původní nabídka zůstane v podobě, v jaké odešla.</span>
     <span class="sp"></span>
-    <button class="primary" onclick="zamekKlonUI('${escJs(v.id)}')">Klonovat a pokračovat</button>
-    ${smiZobrazit('zamek.odemknout') ? `<button class="mini" onclick="zamekOdemkniUI('${escJs(v.id)}')">Odemknout…</button>` : ''}
+    <button class="primary cteni-ok" onclick="zamekKlonUI('${escJs(v.id)}')">Klonovat a pokračovat</button>
+    <!-- Založit novou zakázku (8. 9. 2026, zadání J. V.: „když chci začít novou
+         zakázku, musím nejprve klonovat tu starou, což je hloupost"). Táž cesta
+         jako tlačítko ✚ Nová zakázka v liště — potvrzení, prázdná zakázka. -->
+    <button class="cteni-ok" onclick="novaZakazkaUI()"
+      title="začít novou prázdnou zakázku — tahle zůstane uložená tak, jak odešla">Založit novou zakázku</button>
+    ${smiZobrazit('zamek.odemknout') ? `<button class="mini cteni-ok" onclick="zamekOdemkniUI('${escJs(v.id)}')">Odemknout…</button>` : ''}
   </div>`;
 }
 

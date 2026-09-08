@@ -215,7 +215,14 @@ function onlineStart() {
 let onlineVerzeCasovac = null;
 function onlineVerzeHlidkaStart() {
   if (onlineVerzeCasovac) return;
-  onlineVerzeCasovac = setInterval(onlineVerzeTik, 10 * 60 * 1000);
+  /* Od 8. 9. 2026 rozdíl verzí stránku zablokuje (renderVerzeOverlay), tak
+   * ať se na něj nečeká deset minut: dotaz každé 3 minuty a navíc při každém
+   * návratu do záložky nebo okna — přesně tehdy se s aplikací začne pracovat. */
+  onlineVerzeCasovac = setInterval(onlineVerzeTik, 3 * 60 * 1000);
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') onlineVerzeTik(); });
+    window.addEventListener('focus', () => onlineVerzeTik());
+  }
 }
 function onlineVerzeTik() {
   return fetch('/api/zdravi').then(r => (r.ok ? r.json() : null)).then(z => {

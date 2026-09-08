@@ -937,6 +937,37 @@ test('hledání najde zákazníka podle IČO i názvu',
   await page.evaluate(() => zakazniciHledej(ZAK_DB.seznam, '1234567').length === 1
     && zakazniciHledej(ZAK_DB.seznam, 'ocelarna').length === 1));
 
+/* ---- 10c) vynucené obnovení při nové verzi + nová zakázka z lišty zámku (8. 9. 2026) ---- */
+const prekryv = await page.evaluate(() => {
+  const moje = buildVerze();
+  ONLINE_STAV.serverVerze = '99.9.9'; renderVerzePill();
+  const ov = document.getElementById('verze-overlay');
+  const stav = { zobrazen: !!ov && ov.style.display !== 'none',
+    tlacitko: !!ov && /Obnovit stránku/.test(ov.innerHTML),
+    veta: !!ov && /99\.9\.9/.test(ov.innerHTML) && new RegExp(moje.replace(/\./g, '\\.')).test(ov.innerHTML),
+    nadVsim: !!ov && parseInt(getComputedStyle(ov).zIndex, 10) >= 300 };
+  ONLINE_STAV.serverVerze = moje; renderVerzePill();
+  stav.skryt = document.getElementById('verze-overlay').style.display === 'none';
+  return stav;
+});
+test('rozdíl verzí položí přes aplikaci překryv s jediným tlačítkem Obnovit stránku',
+  prekryv.zobrazen && prekryv.tlacitko && prekryv.veta && prekryv.nadVsim, prekryv);
+test('shodná verze překryv zase schová', prekryv.skryt, prekryv);
+const listaZamku = await page.evaluate(() => {
+  ZAK = novaZakazka(); syncVarianta();
+  zamkniVariantu(aktivniVarianta(ZAK), { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Harness' });
+  render();
+  const html = (document.getElementById('zamekLista') || {}).innerHTML || '';
+  const nova = [...document.querySelectorAll('#zamekLista button')].find(b => /Založit novou zakázku/.test(b.textContent));
+  const stav = { klon: /Klonovat a pokračovat/.test(html), nova: !!nova,
+    poradi: html.indexOf('Klonovat a pokračovat') < html.indexOf('Založit novou zakázku'),
+    ziva: nova ? getComputedStyle(nova).pointerEvents !== 'none' : false };
+  ZAK = novaZakazka(); syncVarianta(); render();
+  return stav;
+});
+test('lišta uzamčené varianty nabízí za Klonovat i Založit novou zakázku (živé tlačítko)',
+  listaZamku.klon && listaZamku.nova && listaZamku.poradi && listaZamku.ziva, listaZamku);
+
 /* ---- 11) čistá konzole ---- */
 test('za celý průchod nevznikla nečekaná chyba v konzoli', chyby.length === 0, chyby);
 

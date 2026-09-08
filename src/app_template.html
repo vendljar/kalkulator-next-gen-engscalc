@@ -138,6 +138,10 @@
   .prihlaseni-box { background:#fff; border:1px solid var(--line); border-radius:12px;
     box-shadow:0 12px 40px rgba(16,22,34,.14); padding:28px 30px; width:100%; max-width:420px; }
   .prihlaseni-box h1 { margin:0 0 2px; font-size:22px; }
+  /* Překryv nové verze (8. 9. 2026): leží NAD vším včetně dialogů a Nastavení,
+     průsvitný, aby bylo vidět, že aplikace pod ním je — jen se s ní nedá pracovat. */
+  .verze-overlay { z-index:400; background:rgba(16,22,34,.55); }
+  .verze-box { border-top:4px solid #ea580c; max-width:520px; }
   .prihlaseni-box .ver { display:block; margin-bottom:16px; }
   .prihlaseni-box .row { max-width:none; }
   .online-lista { position:relative; display:inline-flex; align-items:center; gap:6px; font-size:12.5px; color:#3b4453; }

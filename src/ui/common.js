@@ -1129,6 +1129,54 @@ function renderVerzePill() {
   el.textContent = veta;
   el.title = veta ? 'Nasazení nové dávky otevřenou stránku samo nepřekreslí — obnovte ji. '
     + 'Zakázka je uložená online, obnovením o nic nepřijdete.' : '';
+  renderVerzeOverlay(veta);
+}
+
+/* VYNUCENÉ OBNOVENÍ (8. 9. 2026, zadání J. V.: „při nasazení nové verze bude
+ * uživatel nucen provést refresh — nebude možné jakkoliv pracovat s programem,
+ * bez toho aby stránku obnovil"). Štítek v hlavičce zůstává, ale nad celou
+ * aplikaci se položí překryv, který pustí jen jedno tlačítko. Důvod: na staré
+ * stránce se počítá starým jádrem a ukládá starým klientem — a hlášky, které
+ * jdou přehlédnout, se přehlížejí (8. 9. se na v8.9.2 pracovalo ještě hodinu
+ * po nasazení v8.9.3). Rozpracovaná práce se neztrácí: uložená zakázka je na
+ * serveru, neuložené změny drží záloha v prohlížeči (historie.js) a před
+ * obnovením se ještě zkusí tiše zapsat. */
+function renderVerzeOverlay(veta) {
+  let ov = document.getElementById('verze-overlay');
+  if (!veta) { if (ov) ov.style.display = 'none'; return; }
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'verze-overlay';
+    ov.className = 'prihlaseni-overlay verze-overlay noprint';
+    document.body.appendChild(ov);
+  }
+  const neulozeno = (typeof historieNeulozeno === 'function') && historieNeulozeno();
+  ov.innerHTML = `<div class="prihlaseni-box verze-box" role="dialog" aria-modal="true">
+    <h1>Nová verze aplikace</h1>
+    <div class="note" style="margin:6px 0 12px">${esc(veta)}</div>
+    <div class="note">Dokud stránku neobnovíte, nejde v aplikaci pokračovat — počítalo by se starším
+      jádrem a ukládalo starším klientem. ${neulozeno
+    ? 'Rozpracované změny se před obnovením ještě zkusí uložit; kdyby to nešlo, zůstávají v záloze prohlížeče a aplikace je po obnovení nabídne.'
+    : 'Uložená zakázka je na serveru, obnovením o nic nepřijdete.'}</div>
+    <div class="btns" style="margin-top:14px">
+      <button class="primary" onclick="verzeObnovUI()" autofocus>Obnovit stránku</button>
+    </div></div>`;
+  ov.style.display = 'flex';
+}
+
+function verzeObnovUI() {
+  const b = document.querySelector('#verze-overlay button');
+  if (b) { b.disabled = true; b.textContent = 'Obnovuji…'; }
+  /* Tiché uložení rozpracované práce, když je kam (přihlášen, odemčeno);
+   * selhání obnovení nezastaví — záloha v prohlížeči zůstává. */
+  let uloz = Promise.resolve(false);
+  try {
+    if (typeof onlineUloz === 'function' && typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.ja
+        && ONLINE_STAV.soubor && !(typeof zamekCteniJe === 'function' && zamekCteniJe())
+        && typeof historieNeulozeno === 'function' && historieNeulozeno())
+      uloz = Promise.resolve(onlineUloz({ tiche: true })).catch(() => false);
+  } catch (e) { /* obnovení proběhne i tak */ }
+  return uloz.then(() => { window.location.reload(); return true; });
 }
 
 function renderKalkHlavicka() {
