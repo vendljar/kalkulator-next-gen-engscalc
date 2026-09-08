@@ -401,11 +401,13 @@ test('telefon a e-mail mají všude vlastní pole (žádný slepenec „tel / ma
 /* ---------- Standard OCK (#163, 21. 8. 2026) ----------
  * Kontrola nic neblokuje, takže se její chyba pozná jen tichým „zeleno"
  * tam, kde má být červená. Sada hlídá cestu od vypínače po štítek. */
-test('vypnutá kontrola (výchozí stav) nekreslí žádný štítek',
+test('výchozí stav kontroly je AKTIVNÍ (8. 9. 2026)',
+  await page.evaluate(() => NAST.standard.zapnuto === true));
+test('vypnutá kontrola nekreslí žádný štítek',
   await page.evaluate(() => {
+    NAST.standard.zapnuto = false;
     prepniTab('kalk'); render();
-    return NAST.standard.zapnuto === false
-      && !document.querySelector('.kalk-lista .std-pill');
+    return !document.querySelector('.kalk-lista .std-pill');
   }));
 test('zapnutá kontrola štítek ukáže a pozná atyp',
   await page.evaluate(() => {

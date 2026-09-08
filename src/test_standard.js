@@ -33,10 +33,15 @@ const int = (zmeny) => Object.assign({
 
 /* ---------- 1) vypínač ---------- */
 
-test('vypnutá kontrola nic nevyhodnocuje (výchozí stav)',
-  S.standardVyhodnot(ext(), 20, S.STANDARD_VYCHOZI).stav === 'vypnuto');
-test('a nekreslí ani popisek', S.standardPopis(S.standardVyhodnot(ext(), 20, S.STANDARD_VYCHOZI)) === '');
-test('výchozí znění má kontrolu VYPNUTOU (zabíhá se)', S.STANDARD_VYCHOZI.zapnuto === false);
+/* Od 8. 9. 2026 je kontrola ve výchozím znění AKTIVNÍ (pokyn J. V.);
+ * vypnutý stav si test vyrobí sám. */
+const VYPNUTO = Object.assign(JSON.parse(JSON.stringify(S.STANDARD_VYCHOZI)), { zapnuto: false });
+test('vypnutá kontrola nic nevyhodnocuje',
+  S.standardVyhodnot(ext(), 20, VYPNUTO).stav === 'vypnuto');
+test('a nekreslí ani popisek', S.standardPopis(S.standardVyhodnot(ext(), 20, VYPNUTO)) === '');
+test('výchozí znění má kontrolu AKTIVNÍ (8. 9. 2026)', S.STANDARD_VYCHOZI.zapnuto === true);
+test('a s výchozím zněním se nabídka opravdu vyhodnotí',
+  S.standardVyhodnot(ext(), 20, S.STANDARD_VYCHOZI).stav !== 'vypnuto');
 
 /* ---------- 2) exteriér ---------- */
 
@@ -186,8 +191,12 @@ test('starší tvar exteriéru se převede na řádky',
 test('a limity zůstanou zachované, ne výchozí',
   mig.exterier.profily[0].vyskaMaxM === 28 && mig.exterier.profily[0].hloubkaMaxMm === 1900);
 test('neznámý klíč se neuloží', oc.necoCizi === undefined);
-test('očista bez vstupu vrátí výchozí znění s vypnutou kontrolou',
-  S.standardOciste(null).zapnuto === false);
+test('očista bez vstupu vrátí výchozí znění s AKTIVNÍ kontrolou',
+  S.standardOciste(null).zapnuto === true);
+test('starší konfigurace bez klíče zapnuto dostane výchozí (aktivní) stav',
+  S.standardOciste({ schema: 1 }).zapnuto === true);
+test('výslovně vypnutá kontrola zůstane vypnutá',
+  S.standardOciste({ zapnuto: false }).zapnuto === false);
 
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);

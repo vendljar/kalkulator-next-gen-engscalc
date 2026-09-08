@@ -30,9 +30,11 @@
  * v metrech — tak, jak je psaný firemní dokument. */
 const STANDARD_VYCHOZI = {
   schema: 1,
-  /* Kontrola je ve VÝCHOZÍM STAVU VYPNUTÁ (pokyn J. V.): standard se teprve
-   * zabíhá a než bude tabulka odladěná, nemá nikomu svítit červený štítek. */
-  zapnuto: false,
+  /* Kontrola je ve VÝCHOZÍM STAVU AKTIVNÍ (pokyn J. V. 8. 9. 2026: „nastav
+   * jako výchozí kontrolu standardu na Aktivní"). Do té doby byla vypnutá,
+   * protože se standard zabíhal; teď je tabulka odladěná a štítek má svítit
+   * každému, kdo si ho sám nevypne. */
+  zapnuto: true,
   /* OBĚ VĚTVE MAJÍ TÝŽ TVAR (21. 8. 2026 večer, zadání J. V.: „sjednoť vizuál
    * nastavení standardu OCK podle vnitřní šachty"). Do té doby měl exteriér
    * jeden společný limit pro všechny profily a interiér tabulku po profilech —
@@ -134,7 +136,9 @@ function standardOciste(vstup) {
   const v = (vstup && typeof vstup === 'object') ? vstup : {};
   const d = JSON.parse(JSON.stringify(STANDARD_VYCHOZI));
   const s = JSON.parse(JSON.stringify(STANDARD_VYCHOZI));
-  s.zapnuto = v.zapnuto === true;
+  /* Chybějící klíč = výchozí stav (aktivní). Jen výslovné `false` kontrolu
+   * vypne — kdo si ji vypnul sám, tomu ji nová verze nezapne (8. 9. 2026). */
+  s.zapnuto = v.zapnuto !== false;
   if (v.exterier && typeof v.exterier === 'object') {
     const e = v.exterier;
     /* Limity ze starého tvaru se použijí jako společný základ řádků. */
