@@ -15,9 +15,21 @@
  *
  * Spuštění: node overit_vypnuty_radek.mjs
  */
-import { chromium } from 'playwright';
+/* require (ne import) kvůli globální instalaci playwrightu: import v ESM
+ * NODE_PATH ignoruje (stejně jako smoke.mjs). Cesta k dist je relativní
+ * ke složce, odkud se sada pouští — běží tak i v CI (8. 9. 2026). */
+import { createRequire } from 'module';
+import path from 'path';
+import { pathToFileURL } from 'url';
+const require = createRequire(import.meta.url);
+let chromium;
+try { ({ chromium } = require('playwright')); }
+catch (e) {
+  console.error('Playwright není k dispozici. NODE_PATH=$(npm root -g) node overit_vypnuty_radek.mjs');
+  process.exit(2);
+}
 
-const KDE = 'file:///home/claude/work/kng/dist/kalkulacka.html';
+const KDE = pathToFileURL(path.resolve('dist/kalkulacka.html')).href;
 let ok = 0, fail = 0;
 const zkus = (popis, podminka, detail) => {
   if (podminka) { ok++; console.log('  ✓ ' + popis); }

@@ -1,9 +1,10 @@
 /* ============================================================
  * KALKULÁTOR PROJ – výpočetní jádro projekčních prací
  * Zdroj: Kalkulator_projekce.xlsx (list STANDARDNÍ Kalkulace)
- * Sekce: hodiny×sazba + fixní položky + doprava (bez marže),
- * marže po sekcích, sleva/přirážka globální s možností přepisu
- * u jednotlivých sekcí (ve vzoru: Zaměření +30 %, Kolaudace +20 %).
+ * Sekce: hodiny×sazba + fixní položky + doprava; přirážka sekce se od
+ * 8. 9. 2026 (nález V29) počítá z nákladu VČETNĚ dopravy, sleva/přirážka
+ * globální s možností přepisu u jednotlivých sekcí (ve vzoru: Zaměření
+ * +30 %, Kolaudace +20 %).
  * ============================================================ */
 
 /* PRÁZDNÉ SAZBY – ze stejného důvodu jako u DEFAULT_CENIK v engine.js
@@ -180,26 +181,39 @@ function vypocetProj(zadani, cenik) {
      * „Prázdno není nula" platí dál: prázdné pole = globální přirážka,
      * vyplněná nula = „u téhle sekce nepřirážíme nic". */
     const pct = (s.prirazkaPct != null ? s.prirazkaPct / 100 : (+c.marze || 0));
-    const marze = naklad * pct;
-    const cena = naklad + marze;                      // nabídková cena sekce (bez dopravy)
-    // Doprava: bez marže, přičítá se k ceně sekce (vzor: O12 = O8 + O11).
-    // Příplatek „mimo Prahu" se od 17. 8. 2026 (rozhodnutí J. V.) POČÍTÁ ZE
-    // VZDÁLENOSTI: km / 60 × 1000 Kč — tedy hodina cesty při 60 km/h à 1 000 Kč.
-    // Pevný paušál z ceníku (dopravaPausalKc) do výpočtu nevstupuje: dvě
-    // nezávislá čísla pro jednu jízdu by se nevyhnutelně rozcházela a delší
-    // cesta má stát víc než kratší. Ruční Kč pole (s.doprava.pausal) zůstává
-    // jako příplatek navíc — nesou ho staré zakázky a jejich cena se změnit nesmí.
+    // Doprava. Příplatek „mimo Prahu" se od 17. 8. 2026 (rozhodnutí J. V.)
+    // POČÍTÁ ZE VZDÁLENOSTI: km / 60 × 1000 Kč — hodina cesty při 60 km/h
+    // à 1 000 Kč. Pevný paušál z ceníku (dopravaPausalKc) do výpočtu
+    // nevstupuje: dvě nezávislá čísla pro jednu jízdu by se nevyhnutelně
+    // rozcházela a delší cesta má stát víc než kratší. Ruční Kč pole
+    // (s.doprava.pausal) zůstává jako příplatek navíc — nesou ho staré
+    // zakázky a jejich cena se změnit nesmí.
     const km = s.doprava ? (+s.doprava.km || 0) : 0;
     const dopravaKc = s.doprava
       ? km * c.dopravaKmKc
         + (s.doprava.mimoPrahu ? km / 60 * 1000 : 0)
         + (+s.doprava.pausal || 0)
       : 0;
-    const cenaSDopravou = cena + dopravaKc;
+    /* DOPRAVA V ZÁKLADU PŘIRÁŽKY (nález V29, rozhodnutí J. V. 7. 9. 2026,
+     * provedeno 8. 9. 2026). Do té doby byla doprava z přirážky vyjmutá
+     * a přičítala se až k ceně sekce po uplatnění procenta. Předloha to dělá
+     * opačně: dopravu přičte k nabídkové ceně sekce PŘED slevou/přirážkou
+     * (buňka O12 = O8 + O11) a procento uplatní na celý součet, takže třeba
+     * 50% přirážka u zaměření dopadne i na dopravu. Platí tedy
+     *   cena sekce = (náklad + doprava) × (1 + procento sekce)
+     * a `marze` nese i přirážku z dopravy (souhrn PROJ ji tak i ukazuje).
+     * `cena` zůstává „cena bez dopravy" = náklad + marže, aby dál platilo
+     * cenaSDopravou = cena + doprava. Kontrolní příklad 2026-OPV-CN-0160,
+     * sekce ZAMĚŘENÍ: náklad 8 100 + doprava 6 306,67 při 87,5 % dá
+     * 27 012,50 Kč (dřív 21 494,17 Kč). Úplné 1:1 s předlohou tím nevzniká —
+     * ta má na sekci dvě procenta a dopravu vkládá mezi ně (nález P1). */
+    const marze = (naklad + dopravaKc) * pct;
+    const cena = naklad + marze;                      // nabídková cena sekce (bez dopravy)
+    const cenaSDopravou = cena + dopravaKc;           // = (náklad + doprava) × (1 + pct)
     /* Sleva se sem NEPLETE — odečítá se až od hotové ceny projekce
      * (cenaNabidkyProj). Přirážka říká, kolik si účtujeme; sleva kolik
      * z toho zákazníkovi odpustíme, a to je jiná otázka i jiný řádek
-     * v nabídce. A doprava přirážku nenese — přeprodává se tak, jak stojí. */
+     * v nabídce. */
     const celkem = cenaSDopravou;                     // celková cena sekce
     return { key: s.key, nazev: s.nazev, polozky, naklad, marze, cena, dopravaKc,
              cenaSDopravou, prirazkaPct: s.prirazkaPct == null ? null : s.prirazkaPct,

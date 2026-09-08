@@ -55,6 +55,11 @@ const ONLINE_STAV = {
   otiskyNacteno: false,
   soubor: '',        // pod jakým jménem je otevřená zakázka online
   razitko: '',
+  /* Kolize verzí při zápisu (nález V27, 8. 9. 2026): { soubor, kdo, naDisku,
+   * kdy } dokud uživatel nezvolí „načíst znovu" nebo „přepsat". Dokud tu
+   * něco je, autosave stojí a ruční uložení jen zopakuje hlášku. */
+  kolize: null,
+  ukladaBeh: null,   // právě běžící zápis (Promise) — druhý se za něj zařadí, autosave počká na příště
   posledni: '',      // co jsme naposledy zapsali (proti zbytečným zápisům)
   /* Kdy se naposledy povedl zápis do databáze. Lišta z toho ukazuje
    * „uloženo v HH:MM" – bez času vypadá stejně ráno i večer a obchodník
@@ -637,17 +642,37 @@ function onlineUloz(opts) {
     if (!opts.tiche) { onlineZprava('Nejdřív se přihlaste.', 'varovani'); render(); }
     return Promise.resolve(false);
   }
+  /* JEDEN ZÁPIS NAJEDNOU (nález V27, 8. 9. 2026). Ruční uložení, tlačítko
+   * „Uložit online" v kartě a autosave se uměly sejít: druhý požadavek vyšel
+   * se starým razítkem, server ho správně odmítl 409 a klient se ptal
+   * modálem, který nikdo neviděl — tlačítko zůstalo v „Ukládám…" a autosave
+   * sypal 409 dál. Autosave do rozpracovaného zápisu nevstupuje vůbec
+   * (ozve se příště), ruční uložení počká, až předchozí doběhne. */
+  if (ONLINE_STAV.ukladaBeh) {
+    if (opts.tiche) return Promise.resolve(false);
+    return ONLINE_STAV.ukladaBeh.then(() => onlineUloz(opts), () => onlineUloz(opts));
+  }
+  /* Po kolizi verzí se nic neukládá, dokud uživatel nezvolí jednu z cest
+   * (načíst znovu / přepsat) — jinak by se 409 sypaly do konzole dál. */
+  if (ONLINE_STAV.kolize) {
+    if (!opts.tiche) { onlineZprava(onlineKolizeText(), 'varovani'); render(); }
+    return Promise.resolve(false);
+  }
   // #41: rozepsané změny do protokolu hned – uložený záznam nese protokol
   // k okamžiku uložení (stejně jako ukládání do složky).
   if (typeof protokolZapisTed === 'function') protokolZapisTed();
   ONLINE_STAV.pracuje = true;
   /* Razítko verze jde se zakázkou (B10, 22. 8. 2026): server odmítne přepsat
-   * verzi, ze které jsme nevyšli. Při kolizi se uživatel ptá a může vědomě
-   * přepsat (`prepsat: true`). */
+   * verzi, ze které jsme nevyšli. Kolizi řeší hláška s dvěma tlačítky (V27);
+   * `prepsat: true` zůstává jako výslovná cesta pro volajícího. */
   const telo = { zakazka: ZAK, ocekavaneRazitko: ONLINE_STAV.razitko || '' };
   if (opts.prepsat) telo.prepsat = true;
-  return onlineApi('/api/zakazky', telo).then(o => {
+  const beh = onlineApi('/api/zakazky', telo).then(o => {
     ONLINE_STAV.soubor = o.soubor; ONLINE_STAV.razitko = o.razitko || '';
+    /* Razítko i do zakázky samé, ať kopie v okně odpovídá tomu, co leží na
+     * serveru — a ať se počítá do „naposledy zapsaného" o řádek níž. */
+    if (o.razitko) ZAK.uloRazitko = o.razitko;
+    ONLINE_STAV.kolize = null;
     onlinePoslednizapamatuj(o.soubor);   // po refreshi se sem vrátíme
     ONLINE_STAV.posledni = JSON.stringify(ZAK);
     ONLINE_STAV.kdyUlozeno = new Date();
@@ -664,19 +689,71 @@ function onlineUloz(opts) {
       try { Promise.resolve(zakaznikNabidniAktualizaci()).catch(() => {}); } catch (e) { /* nevadí */ }
     }
     return onlineNactiRejstrik().then(() => true);
-  }).catch(async e => {
-    /* Kolize verzí (B10): při ručním uložení se zeptat a případně přepsat;
-     * automatické uložení se neptá — jen varuje, ať se nepřepisuje potichu. */
-    if (e && e.data && e.data.kolize && !opts.tiche && !opts.prepsat
-        && await potvrd(e.message + '\n\nPřepsat uloženou verzi mými změnami?')) {
-      ONLINE_STAV.pracuje = false;
-      return onlineUloz({ ...opts, prepsat: true });
+  }).catch(e => {
+    /* Kolize verzí (B10 + V27): žádný modál. Stav se uloží, tlačítko se vrátí
+     * do klidu, autosave se zastaví a pod lištou i v kartě svítí hláška se
+     * dvěma tlačítky — „Načíst znovu ze serveru" a „Přepsat serverovou
+     * verzi". Volba platí jen pro tuhle zakázku. */
+    if (e && e.data && e.data.kolize) {
+      ONLINE_STAV.kolize = { soubor: ONLINE_STAV.soubor, kdo: String(e.data.kdo || ''),
+                             naDisku: String(e.data.naDisku || ''), kdy: new Date().toISOString() };
+      if (ONLINE_STAV.timer) { clearTimeout(ONLINE_STAV.timer); ONLINE_STAV.timer = null; }
+      onlineZprava(onlineKolizeText(), 'varovani');
+      return false;
     }
     /* Server odmítá i pokus přepsat odeslanou (uzamčenou) nabídku – jeho
-     * zdůvodnění se ukáže doslova, je z téhož kódu jako hláška u složky. */
+     * zdůvodnění se ukáže doslova, je z téhož kódu jako hláška u složky.
+     * Selhání zápisu nikdy nekončí tichem. */
     onlineZprava('Neuloženo online: ' + e.message, 'varovani');
     return false;
-  }).then(v => { ONLINE_STAV.pracuje = false; render(); return v; });
+  }).then(v => { ONLINE_STAV.pracuje = false; ONLINE_STAV.ukladaBeh = null; render(); return v; },
+          e => { ONLINE_STAV.pracuje = false; ONLINE_STAV.ukladaBeh = null; render(); throw e; });
+  ONLINE_STAV.ukladaBeh = beh;
+  return beh;
+}
+
+/* ---------- kolize verzí při zápisu (nález V27, 8. 9. 2026) ---------- */
+
+function onlineKolizeText() {
+  const k = ONLINE_STAV.kolize;
+  return 'Zakázku mezitím uložil ' + ((k && k.kdo) ? k.kdo : 'někdo jiný (nebo jiná záložka)')
+    + ' — neuloženo. Zvolte: „Načíst znovu ze serveru" (moje změny se zahodí), '
+    + 'nebo „Přepsat serverovou verzi" (moje změny přepíší tu na serveru).';
+}
+
+/* Dvě tlačítka k hlášce — kreslí se pod lištou zakázky i v kartě Online
+ * databáze. cteni-ok: musí jít stisknout i v zamčeném okně. */
+function onlineKolizeTlacitka() {
+  if (!ONLINE_STAV.kolize) return '';
+  const dis = ONLINE_STAV.pracuje ? 'disabled' : '';
+  return `<div class="btns" style="margin-top:6px">
+    <button class="mini cteni-ok" onclick="onlineKolizeNacti()" ${dis}
+      title="zahodí moje neuložené změny a otevře verzi, která je na serveru">Načíst znovu ze serveru</button>
+    <button class="mini primary cteni-ok" onclick="onlineKolizePrepsat()" ${dis}
+      title="uloží moje změny přes verzi na serveru (s jejím aktuálním razítkem)">Přepsat serverovou verzi</button></div>`;
+}
+
+/* Vědomá volba: neuložené změny se zahazují bez další otázky. */
+function onlineKolizeNacti() {
+  const k = ONLINE_STAV.kolize;
+  if (!k) return Promise.resolve(false);
+  ONLINE_STAV.kolize = null;
+  ONLINE_STAV.posledni = JSON.stringify(ZAK);
+  if (typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
+  return onlineOtevri(k.soubor).then(v => {
+    if (v) onlineZprava('Načteno znovu ze serveru: ' + k.soubor + '. Moje neuložené změny byly zahozeny.');
+    return v;
+  });
+}
+
+/* Ukládá se s razítkem verze, která TEĎ leží na serveru: kdyby se mezitím
+ * změnila znovu, server to zase odmítne — bez slepého `prepsat`. */
+function onlineKolizePrepsat() {
+  const k = ONLINE_STAV.kolize;
+  if (!k) return Promise.resolve(false);
+  ONLINE_STAV.kolize = null;
+  if (k.naDisku) ONLINE_STAV.razitko = k.naDisku;
+  return onlineUloz(k.naDisku ? {} : { prepsat: true });
 }
 
 /* ---------- naposledy otevřená zakázka (31. 8. 2026) ----------
@@ -732,6 +809,7 @@ async function onlineOtevri(soubor) {
     ZAK = importZakazka(o.zakazka);
     syncVarianta();
     ONLINE_STAV.soubor = soubor;
+    ONLINE_STAV.kolize = null;
     onlinePoslednizapamatuj(soubor);
     ONLINE_STAV.razitko = (typeof uloRazitko === 'function') ? uloRazitko(ZAK) : '';
     ONLINE_STAV.posledni = JSON.stringify(ZAK);
@@ -1118,6 +1196,8 @@ function onlineTik() {
   /* A v zamčené (jen ke čtení) nabídce se nezapisuje vůbec — druhá pojistka
    * nad tou první, protože zamčené okno stejně žádnou editaci nepustí. */
   if (typeof zamekCteniJe === 'function' && zamekCteniJe()) return;
+  /* Po kolizi verzí (V27) autosave stojí, dokud uživatel nezvolí cestu. */
+  if (ONLINE_STAV.kolize) return;
   if (!ONLINE_STAV.soubor && !uloHlavickaVyplnena(ZAK)) return;
   let text = '';
   try { text = JSON.stringify(ZAK); } catch (e) { return; }
@@ -1592,7 +1672,7 @@ function renderOnlineKarta() {
            title="nalije zálohu zpátky do online databáze – nejdřív náhled, teprve pak obnova">Obnovit ze zálohy…</button>` : '';
     const zalohaRadek = jeAdminOnline()
       ? `<div class="note" id="online-zalohy">${esc(onlineOtiskPopis())}</div>` : '';
-    telo = `${hlaska}${zalohaRadek}
+    telo = `${hlaska}${onlineKolizeTlacitka()}${zalohaRadek}
       <div class="btns" style="margin-top:10px">
         <button class="primary" onclick="onlineUloz()" ${ONLINE_STAV.pracuje ? 'disabled' : ''}>Uložit online</button>
         <button onclick="otevriOnline()">Zakázky online…</button>

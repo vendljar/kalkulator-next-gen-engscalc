@@ -1,7 +1,8 @@
 /* ================= ZÁLOŽKA KALKULACE PROJ =================
  * Kalkulace projekčních prací dle vzoru Kalkulator_projekce.xlsx.
- * Sekce: položky hodiny×sazba / fixní částky, doprava bez přirážky,
- * globální přirážka (PC.marze) po sekcích s možností vlastního % sekce.
+ * Sekce: položky hodiny×sazba / fixní částky, doprava v základu přirážky
+ * sekce (od 8. 9. 2026, nález V29), globální přirážka (PC.marze) po
+ * sekcích s možností vlastního % sekce.
  * Sleva projekce je vlastní (#134) a odečítá se až od hotové ceny.
  *
  * VZHLED (schválený návrh A2, 31. 7. 2026): tabulka vypadá stejně jako
@@ -370,7 +371,7 @@ function renderProj() {
     const doprava = !zdroj.doprava ? ''
       : col.admin
         ? `<tr><td><span class="grip" style="visibility:hidden">⠿</span>Doprava (${num(PC.dopravaKmKc)} Kč/km)
-             <span class="pill mut" style="margin-left:6px">bez přirážky</span></td>
+             <span class="pill mut" style="margin-left:6px" title="doprava vstupuje do základu přirážky sekce: cena sekce = (náklad + doprava) × (1 + %) — jako v předloze (O12 = O8 + O11)">v základu přirážky</span></td>
            <td><input type="number" step="1" style="width:66px" value="${esc(zdroj.doprava.km)}" onchange="pjSet(${i}, 'doprava.km', +this.value)" title="km"></td>
            <td class="note">km</td>
            <td style="white-space:nowrap"><label title="příplatek mimo Prahu = km / 60 × 1000 Kč (hodina cesty à 1 000 Kč); po Praze nechte odškrtnuté">
@@ -504,7 +505,7 @@ function renderProj() {
     (typeof slevaKarta === 'function' ? slevaKarta('proj') : '') +
     (typeof nabidkaProjKarta === 'function' ? card('Cenová nabídka (PROJ)', nabidkaProjKarta(), false, 'proj-nabidka') : '') +
     `<div class="note">Globální přirážku PROJ zadáte přímo v hlavičce nahoře (stejně jako v Kalkulaci OCK); platí pro všechny sekce a je proto započtená i u sekcí, které se u téhle stavby nepoužijí. Slevu a obchodní zaokrouhlení najdete v sekcích pod výpočtem. Sazby (projektant/statik/zaměření), fixní ceny subdodávek a sazbu dopravy nastavíte v záložce <b>Ceník nákladů PROJ</b> — ty platí pro všechny zakázky.
-     Doprava se počítá bez přirážky; sleva/přirážka sekce se počítá z ceny včetně dopravy (dle předlohy).</div>`
+     Doprava vstupuje do základu přirážky sekce — cena sekce = (náklad + doprava) × (1 + % sekce), jako v předloze (od 8. 9. 2026); sloupec Přirážka v souhrnu proto zahrnuje i přirážku z dopravy.</div>`
     + `</div>`;
   if (typeof zamekStranyNasad === 'function') zamekStranyNasad('proj');
   if (typeof zamekCteniNasad === 'function') zamekCteniNasad('proj');

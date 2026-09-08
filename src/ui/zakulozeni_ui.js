@@ -150,6 +150,10 @@ function zakUlozeniRadek() {
    * serverové funkce), uživatel ví, že se pracuje a nemá klikat znovu. */
   if (ZAKULO_STAV.uklada)
     radky.push(`<div class="${zapisTridaHlasky('')} zak-ulozeni noprint">Ukládám do databáze…</div>`);
+  /* Kolize verzí (nález V27, 8. 9. 2026): svítí, dokud uživatel nezvolí
+   * jednu ze dvou cest — a nabízí je rovnou tady, pod lištou zakázky. */
+  if (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.kolize && zakKanal() === 'online')
+    radky.push(`<div class="${zapisTridaHlasky('varovani')} zak-ulozeni zak-kolize noprint">${esc(onlineKolizeText())}${onlineKolizeTlacitka()}</div>`);
   if (s.stav === 'ulozeno') {
     /* Krátké potvrzení hned po zápisu — pak zhasne. */
     const pred = zakUlozenoPred();
@@ -255,6 +259,7 @@ function zakOdpojUlozeni() {
    * zůstal po předchozí otevřené nabídce, se tu shodí (4. 9. 2026). */
   if (typeof zamekCteniVypni === 'function') zamekCteniVypni();
   ONLINE_STAV.soubor = ''; ONLINE_STAV.razitko = ''; ONLINE_STAV.posledni = ''; ONLINE_STAV.kdyUlozeno = null;
+  ONLINE_STAV.kolize = null;   // kolize patřila té předchozí zakázce (V27)
   /* Nová zakázka = od téhle chvíle se po refreshi vracet není kam (31. 8. 2026). */
   if (typeof onlinePoslednizapamatuj === 'function') onlinePoslednizapamatuj('');
   if (ONLINE_STAV.timer) { clearTimeout(ONLINE_STAV.timer); ONLINE_STAV.timer = null; }

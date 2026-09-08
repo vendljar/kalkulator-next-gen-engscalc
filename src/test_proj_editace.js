@@ -260,9 +260,28 @@ t('1.2 žádná položka není ve výchozím stavu vyřazená',
   tc('8b.5 pevný paušál z ceníku do výpočtu nevstupuje',
     sek(vypocetProj(z5, C5), s5.key).dopravaKc, 60 * C.dopravaKmKc + 1000);
 
-  /* doprava dál bez přirážky a uvnitř ceny sekce (dle předlohy O12 = O8 + O11) */
-  tc('8b.4 příplatek mimo Prahu nenese přirážku',
+  /* doprava uvnitř ceny sekce: cenaSDopravou = cena (bez dopravy) + doprava platí dál */
+  tc('8b.4 cena s dopravou = cena bez dopravy + doprava',
     sek(r, s0.key).cenaSDopravou, sek(r, s0.key).cena + sek(r, s0.key).dopravaKc);
+
+  /* DOPRAVA V ZÁKLADU PŘIRÁŽKY (nález V29, 8. 9. 2026): předloha přičte
+   * dopravu k ceně sekce PŘED procentem (O12 = O8 + O11), procento pak
+   * dopadne i na ni. Kontrolní příklad 2026-OPV-CN-0160, ZAMĚŘENÍ:
+   * náklad 8 100 + doprava 6 306,67 při 87,5 % ⇒ 27 012,50 Kč. Tady se
+   * ověřuje vzorec nad ručním paušálem (doprava = přesně 6 306,67 Kč). */
+  const z6 = zad();
+  const s6 = z6.sekce.find(s => s.doprava);
+  s6.doprava.km = 0; s6.doprava.pausal = 6306.67; s6.doprava.mimoPrahu = false; s6.prirazkaPct = 87.5;
+  const r6 = sek(vypocetProj(z6, C), s6.key);
+  tc('8b.6 doprava je v základu přirážky: cena sekce = (náklad + doprava) × 1,875',
+    r6.cenaSDopravou, (r6.naklad + 6306.67) * 1.875);
+  tc('8b.7 přirážka sekce nese i přirážku z dopravy',
+    r6.marze, (r6.naklad + 6306.67) * 0.875);
+  tc('8b.8 bez dopravy se nic nemění: cena sekce = náklad × (1 + %)',
+    (() => { const z7 = zad(); const s7 = z7.sekce.find(s => s.doprava);
+      s7.doprava.km = 0; s7.doprava.pausal = 0; s7.doprava.mimoPrahu = false; s7.prirazkaPct = 87.5;
+      const r7 = sek(vypocetProj(z7, C), s7.key); return r7.cenaSDopravou; })(),
+    r6.naklad * 1.875);
 }
 
 /* ---------- 9) zpětná kompatibilita ---------- */

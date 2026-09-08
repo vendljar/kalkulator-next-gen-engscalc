@@ -54,6 +54,9 @@ jobs:
       - name: Online databáze — skutečný klient proti skutečným funkcím (overit_online.mjs)
         run: NODE_PATH="$(npm root -g)" node overit_online.mjs
 
+      - name: Vypnutý řádek (V22) a zápis přepisu bez Enteru (N8) v prohlížeči (overit_vypnuty_radek.mjs)
+        run: NODE_PATH="$(npm root -g)" node overit_vypnuty_radek.mjs
+
       - name: Sestavený dist/ jako artefakt
         if: always()
         uses: actions/upload-artifact@v5

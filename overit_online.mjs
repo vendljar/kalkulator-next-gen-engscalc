@@ -595,6 +595,73 @@ test('po obnově ze souboru má rejstřík stejný počet zakázek (nic nepřiby
   await page.evaluate(() => ONLINE_STAV.rejstrik.length) === rejPredSouborem);
 await page.evaluate(() => { onlineObnovaOtevri(); zavriNastaveni(); });
 
+/* ---- 5e) kolize verzí při ukládání (nález V27, 8. 9. 2026) ----
+ * Server odmítne zápis se starým razítkem (409). Do 8. 9. se klient ptal
+ * modálem, který automatizace neviděla, tlačítko zůstalo v „Ukládám…"
+ * a autosave sypal 409 dál. Teď: hláška s dvěma tlačítky, autosave stojí,
+ * „přepsat" ukládá s razítkem ze serveru, „načíst znovu" zahodí změny. */
+const zamcenoPredKolizi = await page.evaluate(() => zamekCteniJe());
+await page.evaluate(() => zamekCteniVypni());
+const souborKolize = await page.evaluate(() => ONLINE_STAV.soubor);
+const cizi = await page.evaluate(async (soubor) => {
+  /* kolega z druhé záložky: načte serverovou verzi a uloží ji s jejím razítkem */
+  const o = await onlineApi('/api/zakazky?soubor=' + encodeURIComponent(soubor));
+  const z = o.zakazka; z.nazevAkce = 'Uložil kolega';
+  const u = await onlineApi('/api/zakazky', { zakazka: z, ocekavaneRazitko: uloRazitko(z) });
+  return { ok: u.ok, jine: u.razitko !== ONLINE_STAV.razitko };
+}, souborKolize);
+test('cizí zápis téže zakázky prošel a server má nové razítko', cizi.ok === true && cizi.jine, cizi);
+const poKolizi = await page.evaluate(async () => {
+  ZAK.nazevAkce = 'Moje změna po kolizi';
+  const v = await onlineUloz();
+  return { v, kolize: !!ONLINE_STAV.kolize, hlaska: ONLINE_STAV.hlaska, uklada: ZAKULO_STAV.uklada, pracuje: ONLINE_STAV.pracuje,
+    tlacitka: /Načíst znovu ze serveru/.test(document.body.innerHTML) && /Přepsat serverovou verzi/.test(document.body.innerHTML) };
+});
+test('ruční uložení po cizím zápisu skončí kolizí bez dialogu: vrátí false, hláška svítí, tlačítko je v klidu',
+  poKolizi.v === false && poKolizi.kolize && /mezitím uložil/.test(poKolizi.hlaska) && !poKolizi.uklada && !poKolizi.pracuje, poKolizi);
+test('hláška nabízí obě cesty (Načíst znovu ze serveru / Přepsat serverovou verzi)', poKolizi.tlacitka, poKolizi);
+test('po kolizi autosave stojí (tik nic nenaplánuje) a další ruční uložení jen zopakuje hlášku',
+  await page.evaluate(async () => {
+    ONLINE_STAV.zmenaUzivatele = true; ZAK.nazevAkce = 'Moje změna po kolizi 2'; onlineTik();
+    const v = await onlineUloz();
+    return ONLINE_STAV.timer === null && !!ONLINE_STAV.kolize && v === false;
+  }));
+const prepsano = await page.evaluate(async (soubor) => {
+  const v = await onlineKolizePrepsat();
+  const o = await onlineApi('/api/zakazky?soubor=' + encodeURIComponent(soubor));
+  return { v, kolize: ONLINE_STAV.kolize, naServeru: o.zakazka.nazevAkce,
+    razitkoSedi: ONLINE_STAV.razitko === o.zakazka.uloRazitko && ZAK.uloRazitko === o.zakazka.uloRazitko };
+}, souborKolize);
+test('„Přepsat serverovou verzi" uloží moje změny a převezme nové razítko do stavu i do zakázky',
+  prepsano.v === true && prepsano.kolize === null && prepsano.naServeru === 'Moje změna po kolizi 2' && prepsano.razitkoSedi, prepsano);
+await page.evaluate(async (soubor) => {
+  const o = await onlineApi('/api/zakazky?soubor=' + encodeURIComponent(soubor));
+  const z = o.zakazka; z.nazevAkce = 'Kolega podruhé';
+  await onlineApi('/api/zakazky', { zakazka: z, ocekavaneRazitko: uloRazitko(z) });
+  ZAK.nazevAkce = 'Moje, co se zahodí';
+  await onlineUloz();
+}, souborKolize);
+const nacteno = await page.evaluate(async () => {
+  const kolize = !!ONLINE_STAV.kolize;
+  const v = await onlineKolizeNacti();
+  return { kolize, v, nazev: ZAK.nazevAkce, kolizePo: ONLINE_STAV.kolize };
+});
+test('„Načíst znovu ze serveru" zahodí moje změny a otevře serverovou verzi',
+  nacteno.kolize && nacteno.v === true && nacteno.nazev === 'Kolega podruhé' && nacteno.kolizePo === null, nacteno);
+await page.evaluate(() => zamekCteniVypni());
+const soubeh = await page.evaluate(async () => {
+  ZAK.nazevAkce = 'Souběh dvou zápisů';
+  const [a, b] = await Promise.all([onlineUloz(), onlineUloz()]);
+  return { a, b, kolize: ONLINE_STAV.kolize };
+});
+test('dva ruční zápisy najednou se serializují a žádný neskončí kolizí', soubeh.a === true && soubeh.b === true && soubeh.kolize === null, soubeh);
+/* úklid: původní název, čerstvý otisk (další kroky s ním počítají), zámek jako předtím */
+await page.evaluate(async () => { ZAK.nazevAkce = 'Online ověření'; await onlineUloz(); ONLINE_STAV.zmenaUzivatele = false; });
+await page.evaluate(() => onlineZalohaTed());
+await page.waitForFunction(() => { try { return !ONLINE_STAV.pracuje && /Záloha databáze pořízena/.test(ONLINE_STAV.hlaska); } catch (e) { return false; } },
+  null, { timeout: 8000 });
+await page.evaluate((z) => { if (z) zamekCteniZapni(); render(); }, zamcenoPredKolizi);
+
 await page.evaluate(() => prepniTab('zakazka'));
 
 /* ---- 6) správa účtů v Nastavení ---- */
