@@ -1221,10 +1221,32 @@ function zamekCteniVypni() { ZAMEK_CTENI.zamceno = false; }
 /* Vrací true, když je zápis kvůli zámku čtení zakázaný (a řekne to). */
 function zamekCteniStop() {
   if (!zamekCteniJe()) return false;
-  if (typeof hlaska === 'function')
-    hlaska('Nabídka je otevřená jen ke čtení.\n\nAbyste v ní mohl něco změnit, '
-      + 'klikněte nahoře na „Odemknout k úpravám". Dokud je zamčená, nic se do '
-      + 'databáze neukládá — otevřít si ji a jen se podívat je bezpečné.');
+  /* Jeden dialog najednou: psaní do pole volá set() při každé změně a bez
+   * pojistky by se dialogy vrstvily. Zápis je zablokovaný tak jako tak. */
+  if (ZAMEK_CTENI.dialog) return true;
+  ZAMEK_CTENI.dialog = true;
+  const hotovo = () => { ZAMEK_CTENI.dialog = false; };
+  const ja = (typeof ONLINE_STAV !== 'undefined') ? ONLINE_STAV.ja : null;
+  const smi = (typeof zamekCteniSmiOdemknout !== 'function') || zamekCteniSmiOdemknout(ZAK, ja);
+  if (smi && typeof potvrd === 'function') {
+    /* Do 8. 9. 2026 dialog jen posílal „nahoru na Odemknout k úpravám" — jenže
+     * na záložkách Ceník žádné takové tlačítko nebylo a přirážka se po každém
+     * zadání vracela zpět (hlášení J. V.). Odemknutí se proto nabízí rovnou
+     * tady; hodnotu pak člověk zadá znovu — ten jeden zablokovaný zápis se
+     * dodatečně neprovádí, aby se do odemčené nabídky nezapsalo nic, co by
+     * dialog jen odklepl. */
+    potvrd('Nabídka je otevřená jen ke čtení — změna se neuložila.\n\n'
+      + 'Odemknout k úpravám teď? Hodnotu pak zadejte znovu; od té chvíle se změny zase '
+      + 'ukládají samy. Dokud je zamčená, nic se do databáze nezapisuje — otevřít si ji '
+      + 'a jen se podívat je bezpečné.',
+      { nadpis: 'Nabídka jen ke čtení', ano: 'Odemknout k úpravám', ne: 'Nechat zamčené' })
+      .then(ano => { hotovo(); if (ano) zamekCteniOdemkniUI(); }, hotovo);
+  } else if (typeof hlaska === 'function') {
+    const duvod = (typeof zamekCteniDuvod === 'function') ? zamekCteniDuvod(ZAK, ja) : '';
+    hlaska('Nabídka je otevřená jen ke čtení.' + (duvod ? '\n\n' + duvod : '')
+      + '\n\nDokud je zamčená, nic se do databáze neukládá — otevřít si ji a jen se podívat je bezpečné.')
+      .then(hotovo, hotovo);
+  } else hotovo();
   return true;
 }
 

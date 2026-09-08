@@ -165,7 +165,11 @@ function renderCenik() {
   const zahrSl = jeAdmin() && typeof CENIK_ZAHR !== 'undefined';
   const zahrPocet = zahrSl ? Object.keys(CENIK_ZAHR.ceny || {}).length : 0;
   document.getElementById('page-cenik').innerHTML =
-    `${smiZobrazit('cenik.zverejnit') ? renderCenikProgramKarta() : ''}
+    /* Lišta zámku čtení i tady (8. 9. 2026): ceník je součást otevřené varianty,
+     * takže zamčená nabídka blokuje i jeho úpravy — a bez lišty tu nebylo kde
+     * odemknout (hlášení J. V.: „přirážka se vždy vrátí na 20 %"). */
+    `${typeof zamekCteniLista === 'function' ? zamekCteniLista() : ''}
+     ${smiZobrazit('cenik.zverejnit') ? renderCenikProgramKarta() : ''}
      <div class="card"><h2 style="cursor:default">Ceník nákladů OCK – číselník jednotkových cen
        <span class="pill warn" style="float:right">každou cenu před nabídkou překontrolovat!</span></h2>
      <div class="body">
@@ -228,7 +232,8 @@ function renderCenikProj() {
      * nad týmž stavem, stejný vzor jako karty slevy a zaokrouhlení. Karta
      * nenese žádné id (card() bez čtvrtého argumentu), dvojí vykreslení
      * proto nic nezdvojí; hlídá to overit_program.mjs. */
-    `${smiZobrazit('cenik.zverejnit') ? renderCenikProgramKarta() : ''}
+    `${typeof zamekCteniLista === 'function' ? zamekCteniLista() : ''}
+     ${smiZobrazit('cenik.zverejnit') ? renderCenikProgramKarta() : ''}
      <div class="card"><h2 style="cursor:default">Ceník nákladů PROJ – projekční práce
        <span class="pill warn" style="float:right">každou cenu před nabídkou překontrolovat!</span></h2>
      <div class="body">

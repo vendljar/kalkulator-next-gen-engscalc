@@ -183,6 +183,9 @@ zkus('hlavička zakázky taky (jinak by se do ní psalo nadarmo)', zamek.hlavick
 
 const zapisZamceno = await p.evaluate(() => {
   window.hlaska = (t) => { window.__hlaska = String(t); return Promise.resolve(); };
+  /* Od 8. 9. 2026 dialog odemknutí rovnou nabízí (potvrd); tady se odmítá,
+   * aby zámek vydržel na další kroky. Text se hlídá stejně. */
+  window.potvrd = (t) => { window.__hlaska = String(t); return Promise.resolve(false); };
   const pred = Z.nastupiste;
   set('Z.nastupiste', 9);
   const poZadani = Z.nastupiste;

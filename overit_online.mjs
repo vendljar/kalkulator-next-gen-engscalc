@@ -329,7 +329,28 @@ const tiskProjVZamku = await page.evaluate(() => {
 });
 test('v režimu čtení jde nabídku PROJ vytisknout, vytvořit Word, přepnout jazyk i přejít na krycí list',
   Object.values(tiskProjVZamku).every(v => v === 'auto'), tiskProjVZamku);
-await page.evaluate(() => prepniTab('kalk'));
+
+/* Zámek čtení na záložce Ceník (8. 9. 2026, hlášení J. V.: „přirážka se vždy
+ * vrátí na 20 %"): lišta s Odemknout je i tady a dialog při zablokovaném
+ * zápisu odemknutí rovnou nabídne (stub potvrd odpoví ano). */
+await page.evaluate(() => prepniTab('cenik'));
+await page.waitForTimeout(300);
+test('záložka Ceník ukazuje lištu jen ke čtení s tlačítkem Odemknout',
+  /Nabídka je otevřená jen ke čtení/.test(await page.locator('#page-cenik').innerHTML())
+  && /zamekCteniOdemkniUI\(\)/.test(await page.locator('#page-cenik').innerHTML()));
+const odemceniZCeniku = await page.evaluate(async () => {
+  const pred = C.marze;
+  set('C.marze', 0.31);                       // zamčeno → dialog (stub: ano) → odemkne se
+  const poZablokovani = C.marze;
+  await new Promise(r => setTimeout(r, 300));
+  const odemceno = !zamekCteniJe();
+  set('C.marze', 0.31);                       // po odemknutí už zápis projde
+  return { pred, poZablokovani, odemceno, po: C.marze, dialog: window.__dlgTexty[window.__dlgTexty.length - 1] };
+});
+test('zamčený zápis do ceníku se neprovede a dialog nabídne odemknutí',
+  odemceniZCeniku.poZablokovani === odemceniZCeniku.pred && /Odemknout k úpravám/.test(odemceniZCeniku.dialog), odemceniZCeniku);
+test('po odemknutí z dialogu se přirážka zapíše', odemceniZCeniku.odemceno && odemceniZCeniku.po === 0.31, odemceniZCeniku);
+await page.evaluate((v) => { set('C.marze', v); zamekCteniZapni(); prepniTab('kalk'); render(); }, odemceniZCeniku.pred);
 await page.waitForTimeout(200);
 test('zakázka se otevřela online a číslo sedí',
   await page.evaluate(() => ZAK.cislo === '2026 - OPR - CN - 0555'));
