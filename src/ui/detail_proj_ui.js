@@ -27,7 +27,8 @@ function renderDetailProj() {
     ['Sazba – statik', K(PC.sazby.statik) + '/h', ''],
     ['Globální přirážka', pctTxt((PC.marze || 0) * 100), 'výchozí procento všech sekcí; sekce ho může přepsat (#141)'],
     ['Doprava – sazba za km', K(PC.dopravaKmKc) + '/km', 'po Praze 0 km'],
-    ['Příplatek „mimo Prahu"', 'km / 60 × 1 000 Kč', 'hodina cesty při 60 km/h à 1 000 Kč (17. 8. 2026)'],
+    ['Cesta mimo Prahu – hodina cesty', K(dopravaHodinaKc(PC)) + '/h',
+      'příplatek = km / 60 × sazba (60 km/h); ' + ((+PC.dopravaHodKc > 0) ? 'z Ceníku nákladů PROJ' : 'v ceníku nevyplněno ⇒ výchozích 1 000 Kč/h')],
     ['DPH', Math.round((PC.dph || 0) * 100) + ' %', 'vlastní sazba projekční části'],
   ]), 'dvp-1');
 
@@ -43,16 +44,20 @@ function renderDetailProj() {
     const vyrazene = s.polozky.filter(p => p.vyrazeno).length;
     if (vyrazene) radky.push(['Vyřazené položky', vyrazene + '×', 'nepočítají se (zaškrtávátko Počítat)']);
     radky.push(['Náklad sekce', K(s.naklad), 'součet položek']);
-    radky.push(['Přirážka sekce', `${pctTxt(s.pouzitePct)} ⇒ ${K(s.marze)}`,
-      s.prirazkaPct == null ? 'globální přirážka z ceníku' : 'vlastní % sekce (přepisuje globální)']);
+    /* Doprava je od 8. 9. 2026 (nález V29) v základu přirážky jako každá jiná
+     * položka: řádek dopravy stojí PŘED přirážkou a přirážka se počítá
+     * z nákladu + dopravy. */
     if (s.dopravaKc) {
       const d = (pjSekce(r.sekce.indexOf(s)) || {}).doprava || {};
       radky.push(['Doprava', `${num(d.km || 0)} km × ${K(PC.dopravaKmKc)}`
-        + (d.mimoPrahu ? ` + ${num(d.km || 0)} / 60 × 1 000` : '')
+        + (d.mimoPrahu ? ` + ${num(d.km || 0)} / 60 × ${K(dopravaHodinaKc(PC))}` : '')
         + ((+d.pausal || 0) ? ` + ${K(+d.pausal)} ručně` : '') + ` = ${K(s.dopravaKc)}`,
-        'bez přirážky (přeprodává se, jak stojí)']);
+        'v základu přirážky — počítá se jako každá jiná položka sekce']);
     }
-    radky.push(['CELKEM sekce', K(s.celkem), 'náklad + přirážka + doprava']);
+    radky.push(['Přirážka sekce', `${pctTxt(s.pouzitePct)} ⇒ ${K(s.marze)}`,
+      (s.prirazkaPct == null ? 'globální přirážka z ceníku' : 'vlastní % sekce (přepisuje globální)')
+        + (s.dopravaKc ? `; z nákladu ${K(s.naklad)} + dopravy ${K(s.dopravaKc)}` : '')]);
+    radky.push(['CELKEM sekce', K(s.celkem), s.dopravaKc ? '(náklad + doprava) × (1 + přirážka)' : 'náklad + přirážka']);
     const krokCislo = 2 + i;
     return dvKrok(krokCislo + '. ' + s.nazev, dvTab(radky), 'dvp-s' + i);
   }).join('');

@@ -66,6 +66,7 @@ const ZKUSEBNI_CENIK_PROJ = {
   marze: 0.20,
   sazby: { projektant: 1000, statik: 1000, zamereni: 1000 },
   dopravaKmKc: 10,
+  dopravaHodKc: 1000,                // hodina cesty mimo Prahu (8. 9. 2026)
   dopravaPausalKc: 1000,
   fixy: {
     pamatkari: 0,

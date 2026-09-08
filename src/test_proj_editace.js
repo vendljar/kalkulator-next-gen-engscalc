@@ -21,7 +21,7 @@
  * dá v hlavě dopočítat, co má vyjít.
  * ============================================================ */
 
-const { vypocetProj, DEFAULT_ZADANI_PROJ } = require('./engine_proj.js');
+const { vypocetProj, DEFAULT_ZADANI_PROJ, dopravaHodinaKc } = require('./engine_proj.js');
 const { zkusebniCenikProj } = require('./zkusebni_cenik.js');
 
 let ok = 0, fail = 0;
@@ -282,6 +282,22 @@ t('1.2 žádná položka není ve výchozím stavu vyřazená',
       s7.doprava.km = 0; s7.doprava.pausal = 0; s7.doprava.mimoPrahu = false; s7.prirazkaPct = 87.5;
       const r7 = sek(vypocetProj(z7, C), s7.key); return r7.cenaSDopravou; })(),
     r6.naklad * 1.875);
+
+  /* SAZBA ZA HODINU CESTY MIMO PRAHU JE V CENÍKU (8. 9. 2026, zadání J. V.:
+   * „v ceníku projekce chybí položka, která se připočítává mimo Prahu").
+   * Do té doby tisícovka natvrdo; 0 nebo prázdno = výchozích 1 000 Kč/h,
+   * aby ceníky zveřejněné před tímhle klíčem počítaly dál stejně. */
+  const z9 = zad(); const s9 = z9.sekce.find(s => s.doprava);
+  s9.doprava.km = 120; s9.doprava.pausal = 0; s9.doprava.mimoPrahu = true;
+  tc('8b.9 hodina cesty mimo Prahu se bere z ceníku (1 500 Kč/h ⇒ 120 km = 3 000 Kč)',
+    sek(vypocetProj(z9, { ...C, dopravaHodKc: 1500 }), s9.key).dopravaKc, 120 * C.dopravaKmKc + 120 / 60 * 1500);
+  tc('8b.10 bez sazby v ceníku (0) platí výchozích 1 000 Kč/h',
+    sek(vypocetProj(z9, { ...C, dopravaHodKc: 0 }), s9.key).dopravaKc, 120 * C.dopravaKmKc + 120 / 60 * 1000);
+  tc('8b.11 chybějící klíč (starší zveřejněný ceník) = výchozích 1 000 Kč/h',
+    (() => { const C11 = { ...C }; delete C11.dopravaHodKc; return sek(vypocetProj(z9, C11), s9.key).dopravaKc; })(),
+    120 * C.dopravaKmKc + 120 / 60 * 1000);
+  tc('8b.12 dopravaHodinaKc: výchozí a z ceníku',
+    dopravaHodinaKc({ dopravaHodKc: 0 }) + dopravaHodinaKc({ dopravaHodKc: 1234 }), 1000 + 1234);
 }
 
 /* ---------- 9) zpětná kompatibilita ---------- */

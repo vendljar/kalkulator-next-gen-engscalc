@@ -185,7 +185,9 @@ function renderProj() {
    * sekce). Pro sloupce v tabulce se rozpočítá na řádky – součet sedí, protože
    * jde o tentýž jednotný podíl. Od #141 je procento JEDNO: výchozí globální
    * z ceníku, sekce ho může přepsat — řádky sekce proto počítají s procentem
-   * SVÉ sekce, ne s globálním. Doprava přirážku nenese, proto u ní pomlčka. */
+   * SVÉ sekce, ne s globálním. Doprava je od 8. 9. 2026 (nález V29) v základu
+   * přirážky jako každá jiná položka — její řádek ukazuje přirážku a cenu
+   * s přirážkou, žádnou pomlčku. */
   const marzeSekce = (s, n) => n * ((s.pouzitePct || 0) / 100);
   const penize = (naklad, marze, cena) =>
     (col.showCost ? `<td>${fmt(naklad)}</td><td>${marze === null ? '—' : fmt(marze)}</td>` : '') +
@@ -361,11 +363,17 @@ function renderProj() {
 
     /* Doprava je běžný řádek sekce, jen z ní přirážka neplyne (dle předlohy).
      * Příplatek „mimo Prahu" se od 17. 8. 2026 POČÍTÁ ZE VZDÁLENOSTI:
-     * km / 60 × 1000 Kč (hodina cesty při 60 km/h à 1 000 Kč). Zaškrtnutí ho
+     * km / 60 × sazba za hodinu cesty (od 8. 9. 2026 v Ceníku nákladů PROJ,
+     * PC.dopravaHodKc; prázdné = 1 000 Kč/h). Zaškrtnutí ho
      * přičte k ceně dopravy; vypočtená částka je vidět hned vedle, žádné
      * ruční pole. Starší zakázky s ručním Kč příplatkem (doprava.pausal) ho
      * nesou dál — jejich cena se změnit nesmí — a ukazuje se štítkem. */
-    const mimoKc = (+((zdroj.doprava || {}).km) || 0) / 60 * 1000;
+    /* Sazba za hodinu cesty mimo Prahu je od 8. 9. 2026 v ceníku PROJ
+     * (PC.dopravaHodKc); 0 = výchozích 1 000 Kč/h — totéž číslo bere jádro. */
+    const hodKc = (typeof dopravaHodinaKc === 'function') ? dopravaHodinaKc(PC) : 1000;
+    const mimoKc = (+((zdroj.doprava || {}).km) || 0) / 60 * hodKc;
+    /* Doprava v základu přirážky (V29): řádek ukazuje přirážku a cenu s ní. */
+    const dopravaPenize = penize(s.dopravaKc, marzeSekce(s, s.dopravaKc), s.dopravaKc + marzeSekce(s, s.dopravaKc));
     const rucni = +((zdroj.doprava || {}).pausal) || 0;
     const rucniPill = rucni ? ` <span class="pill mut" title="ruční příplatek dopravy ze starší zakázky – přičítá se dál, ať se cena nezmění">+ ${fmt(rucni)}</span>` : '';
     const doprava = !zdroj.doprava ? ''
@@ -374,13 +382,13 @@ function renderProj() {
              <span class="pill mut" style="margin-left:6px" title="doprava vstupuje do základu přirážky sekce: cena sekce = (náklad + doprava) × (1 + %) — jako v předloze (O12 = O8 + O11)">v základu přirážky</span></td>
            <td><input type="number" step="1" style="width:66px" value="${esc(zdroj.doprava.km)}" onchange="pjSet(${i}, 'doprava.km', +this.value)" title="km"></td>
            <td class="note">km</td>
-           <td style="white-space:nowrap"><label title="příplatek mimo Prahu = km / 60 × 1000 Kč (hodina cesty à 1 000 Kč); po Praze nechte odškrtnuté">
+           <td style="white-space:nowrap"><label title="příplatek mimo Prahu = km / 60 × ${num(hodKc)} Kč (hodina cesty při 60 km/h; sazba v Ceníku nákladů PROJ); po Praze nechte odškrtnuté">
              <input type="checkbox" ${zdroj.doprava.mimoPrahu ? 'checked' : ''} onchange="pjSet(${i}, 'doprava.mimoPrahu', this.checked)"> mimo Prahu</label></td>
-           <td class="note" style="white-space:nowrap" title="příplatek mimo Prahu: ${num(zdroj.doprava.km)} km / 60 × 1 000 Kč">${zdroj.doprava.mimoPrahu ? fmt(mimoKc) : '—'}${rucniPill}</td>
-           ${penize(s.dopravaKc, null, s.dopravaKc)}${prazdneAdmin}</tr>`
+           <td class="note" style="white-space:nowrap" title="příplatek mimo Prahu: ${num(zdroj.doprava.km)} km / 60 × ${num(hodKc)} Kč">${zdroj.doprava.mimoPrahu ? fmt(mimoKc) : '—'}${rucniPill}</td>
+           ${dopravaPenize}${prazdneAdmin}</tr>`
         : (s.dopravaKc
           ? `<tr><td>Doprava${zdroj.doprava.mimoPrahu ? ' (mimo Prahu)' : ''}</td><td>${num(zdroj.doprava.km)}</td><td class="note">km</td><td></td>
-             <td class="note">${zdroj.doprava.mimoPrahu ? fmt(mimoKc) : '—'}${rucniPill}</td>${penize(s.dopravaKc, null, s.dopravaKc)}</tr>` : '');
+             <td class="note">${zdroj.doprava.mimoPrahu ? fmt(mimoKc) : '—'}${rucniPill}</td>${dopravaPenize}</tr>` : '');
 
     /* Sjednocený řádek přidávání (19. 8. 2026 večer, stejné pravidlo jako
      * OCK): „+ přidat …" = vlastní řádek jen této zakázky (obchodník,

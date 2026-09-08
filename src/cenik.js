@@ -203,10 +203,12 @@ const CENIK_DEF_PROJ = [
   ]],
   ['DOPRAVA', [
     ['PC.dopravaKmKc', 'Doprava – sazba za km', 'Kč/km', 'po Praze 0 km'],
-    /* Pevný paušál „mimo Prahu" (dopravaPausalKc) z editoru zmizel 17. 8. 2026:
-     * příplatek se počítá vzorcem km / 60 × 1000 (engine_proj.js) a editovatelné
-     * číslo bez účinku je přesně past, která se opravovala 2. 8. 2026.
-     * Klíč v datech ceníku zůstává kvůli starým uloženým ceníkům. */
+    /* Cesta mimo Prahu (8. 9. 2026, zadání J. V.): příplatek = km / 60 × sazba za
+     * hodinu cesty. Do 8. 9. byla tisícovka natvrdo v jádře a v ceníku nebylo
+     * co nastavit. Pevný paušál (dopravaPausalKc) z editoru zmizel 17. 8. 2026 —
+     * číslo bez účinku je past; klíč v datech zůstává kvůli starým ceníkům. */
+    ['PC.dopravaHodKc', 'Cesta mimo Prahu – hodina cesty', 'Kč/h',
+      'příplatek „mimo Prahu" = km / 60 × tato sazba (hodina cesty při 60 km/h); prázdné nebo 0 = 1 000 Kč/h'],
   ]],
   /* Kurz EUR — viz poznámka u sekce Cizí měna v ceníku OCK (#155). */
   /* SAZBY DPH a KURZ EUR v ceníku PROJ NEJSOU (2. 9. 2026, pokyn J. V.:

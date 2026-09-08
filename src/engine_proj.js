@@ -25,7 +25,13 @@ const DEFAULT_CENIK_PROJ = {  // HODNOTY VYNULOVÁNY pro GitHub (pripravit_githu
   marze: 0,                          // globální přirážka sekcí
   sazby: { projektant: 0, statik: 0, zamereni: 0 },
   dopravaKmKc: 0,                    // Kč/km
-  dopravaPausalKc: 0,                // paušál mimo Prahu (po Praze 0)
+  /* Cesta mimo Prahu (8. 9. 2026, zadání J. V.: „v ceníku projekce chybí
+   * položka, která se připočítává, když je zakázka mimo Prahu"): sazba za
+   * HODINU CESTY, příplatek = km / 60 × sazba. Do 8. 9. byla tisícovka
+   * natvrdo v kódu; 0 nebo prázdno = výchozích 1 000 Kč/h (dopravaHodinaKc),
+   * aby ceníky zveřejněné před tímhle klíčem počítaly dál stejně. */
+  dopravaHodKc: 0,
+  dopravaPausalKc: 0,                // mrtvý klíč (paušál do 17. 8. 2026), nesou ho staré ceníky
   kurzEurKc: 0,                      // Kč/EUR — cizojazyčné dokumenty (#155); 0 = nenastaveno, tisk se zastaví
   fixy: {                            // fixní náklady po sekcích (Kč)
     pamatkari: 0,                    // PROJEDNÁNÍ STUDIE
@@ -191,7 +197,7 @@ function vypocetProj(zadani, cenik) {
     const km = s.doprava ? (+s.doprava.km || 0) : 0;
     const dopravaKc = s.doprava
       ? km * c.dopravaKmKc
-        + (s.doprava.mimoPrahu ? km / 60 * 1000 : 0)
+        + (s.doprava.mimoPrahu ? km / 60 * dopravaHodinaKc(c) : 0)
         + (+s.doprava.pausal || 0)
       : 0;
     /* DOPRAVA V ZÁKLADU PŘIRÁŽKY (nález V29, rozhodnutí J. V. 7. 9. 2026,
@@ -233,5 +239,15 @@ function vypocetProj(zadani, cenik) {
   };
 }
 
+/* Sazba za hodinu cesty mimo Prahu (8. 9. 2026). Jediné místo, kde se čte:
+ * jádro, tabulka kalkulace i Detail výpočtu z něj berou totéž číslo. Nula
+ * nebo prázdno = 1 000 Kč/h, tedy hodnota, která platila natvrdo od 17. 8. */
+const DOPRAVA_HOD_VYCHOZI_KC = 1000;
+function dopravaHodinaKc(c) {
+  const v = c ? +c.dopravaHodKc : 0;
+  return (isFinite(v) && v > 0) ? v : DOPRAVA_HOD_VYCHOZI_KC;
+}
+
 if (typeof module !== 'undefined')
-  module.exports = { vypocetProj, presunPolozku, DEFAULT_ZADANI_PROJ, DEFAULT_CENIK_PROJ };
+  module.exports = { vypocetProj, presunPolozku, DEFAULT_ZADANI_PROJ, DEFAULT_CENIK_PROJ,
+                     dopravaHodinaKc, DOPRAVA_HOD_VYCHOZI_KC };
