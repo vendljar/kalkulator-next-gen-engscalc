@@ -257,6 +257,11 @@ const ZAHR = () => ({
   const cStary = CR(); delete cStary.zaskleniListyProjHod;
   test('starší ceník bez položky počítá se čtyřmi hodinami',
     dok(zad('mezi příčníky'), cStary).mnozstvi === 54);
+  /* Vynulovaný ceník (ten v repozitáři) musí počítat stejně jako vyplněný —
+   * jinak by se sada proti Excelu rozešla podle toho, kde běží. */
+  const cNula = Object.assign(CR(), { zaskleniListyProjHod: 0 });
+  test('nula v ceníku znamená totéž co prázdno (4 hodiny)',
+    dok(zad('mezi příčníky'), cNula).mnozstvi === 54);
   test('atyp hodiny se přičtou k tomu',
     dok(Object.assign(zad('mezi příčníky'), { projekceAtypHod: 25 })).mnozstvi === 79);
 }

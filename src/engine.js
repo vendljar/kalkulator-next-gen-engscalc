@@ -87,7 +87,11 @@ const DEFAULT_CENIK = {  // HODNOTY VYNULOVÁNY pro GitHub (pripravit_github.py)
   leseniVnejsiKc: 0, hakyKc: 0, zabradliKc: 0, soklBmKc: 0,
   sken3dKc: 0, vystupZamereniKc: 0, engineeringKc: 0,
   projekceHodKc: 0, statikaKc: 0, statikaHod: 0, rezieKancelareKc: 0,
-  zaskleniListyProjHod: 4,        // projekce navíc při zasklení mezi příčníky (9. 9. 2026)
+  /* Projekce navíc při zasklení mezi příčníky (9. 9. 2026). V repozitáři je
+   * jako každá jiná ceníková hodnota NULA — skutečný ceník sem dosadí své
+   * číslo. Prázdná hodnota znamená „výchozí 4 hodiny" (viz vypocet), takže
+   * ceník, který položku ještě nemá, počítá stejně jako po jejím vyplnění. */
+  zaskleniListyProjHod: 0,
   stavbyvedouciHod: 0, stavbyvedouciKc: 0,
   prekladyKc: 0,                  // překlady CZ→DE, jen zahraniční zakázky (#181)
   atypPrirazka: 0,                // ATYP: přirážka k nákladu režie (viz zadání #22)
@@ -400,9 +404,12 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
    * se do něj: pole „Projekce – základ" patří obchodníkovi a přepsat mu ho
    * by znamenalo, že po přepnutí zpět na terče zůstane navýšené. Sazba je
    * v ceníku (C.zaskleniListyProjHod), takže cestuje se zakázkou a jde
-   * změnit v Nastavení — stejně jako hodina cesty mimo Prahu u projekce. */
+   * změnit v Nastavení — stejně jako hodina cesty mimo Prahu u projekce.
+   * Prázdná nebo nulová hodnota v ceníku znamená výchozí 4 hodiny (týž vzorec
+   * jako u hodiny cesty mimo Prahu): ceník v repozitáři je vynulovaný a starší
+   * ceníky položku vůbec nemají — obojí musí počítat stejně jako po vyplnění. */
   const listy = z.zaskleni === 'mezi příčníky';
-  const zaskleniProjHod = listy ? (c.zaskleniListyProjHod != null ? +c.zaskleniListyProjHod || 0 : 4) : 0;
+  const zaskleniProjHod = listy ? (+c.zaskleniListyProjHod || 4) : 0;
   const projekceHod = z.projekceZakladHod + z.projekceAtypHod + zaskleniProjHod;
 
   /* ---------- položky kalkulace ---------- */
