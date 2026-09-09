@@ -85,16 +85,23 @@ function cenikRows(def, zahrSloupec) {
       let zahr = '';
       if (zahrSloupec) {
         const zv = cenikZahrHodnota(path);
-        const jen = (typeof CENIK_ZAHR !== 'undefined') && !!CENIK_ZAHR.jenZahr[path];
+        /* Pevná sada (CENIK_JEN_ZAHR, 9. 9. 2026) se zobrazuje zaškrtnutá
+         * a zamčená: odškrtnout ji nejde, protože výpočet ji stejně skryje.
+         * Bez toho by administrátor odškrtl, nic by se nestalo a hledal by
+         * chybu tam, kde žádná není. */
+        const pevne = (typeof CENIK_JEN_ZAHR !== 'undefined') && CENIK_JEN_ZAHR.indexOf(path) >= 0;
+        const jen = pevne || ((typeof CENIK_ZAHR !== 'undefined') && !!CENIK_ZAHR.jenZahr[path]);
         zahr = typ ? '<td colspan="2" class="note">—</td>' : `<td class="zahr-bunka">
           <input type="number" step="any" class="zahr-cena${zv === '' ? '' : ' ma'}" value="${esc(zv)}"
             placeholder="jako ČR" title="prázdné = platí tuzemská cena"
             onchange="cenikZahrSet('${path}', this.value)">
           ${zv === '' ? '' : `<button class="mini noprint" title="převzít tuzemskou cenu"
             onclick="cenikZahrSet('${path}', '')">↺</button>`}</td>
-          <td class="zahr-bunka"><label title="položka v tuzemské kalkulaci vůbec není">
-            <input type="checkbox" ${jen ? 'checked' : ''}
-              onchange="cenikZahrJenSet('${path}', this.checked)"> jen zahr.</label></td>`;
+          <td class="zahr-bunka"><label title="${pevne
+            ? 'položka v tuzemské zakázce neexistuje — dané ceníkem, nejde vypnout'
+            : 'položka v tuzemské kalkulaci vůbec není'}">
+            <input type="checkbox" ${jen ? 'checked' : ''} ${pevne ? 'disabled' : ''}
+              onchange="cenikZahrJenSet('${escJs(path)}', this.checked)"> jen zahr.</label></td>`;
       }
       /* Třídy místo nth-child: se sloupcem Cena Zahraničí má tabulka šest
        * sloupců, ne čtyři, a stará pravidla podle pořadí pak trefila cizí
