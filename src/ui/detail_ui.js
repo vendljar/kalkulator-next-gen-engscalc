@@ -178,7 +178,7 @@ function renderDetail() {
 
   /* DET-1 + DET-3: ovládací lišta – vzorce zap/vyp, kotvy na kroky, samostatný tisk. */
   const listaKotev = DETAIL_KROKY.map(([id, nazev]) =>
-    `<a class="dv-kotva" href="#${id}" onclick="dvSkoc(event,'${id}')">${nazev}</a>`).join(' ');
+    `<a class="dv-kotva" href="#${esc(id)}" onclick="dvSkoc(event,'${escJs(id)}')">${nazev}</a>`).join(' ');
   const lista = `<div class="dv-lista noprint">
     <label class="dv-prep"><input type="checkbox" ${DETAIL_VZORCE ? 'checked' : ''}
       onchange="detailVzorce(this.checked)"> zobrazit vzorce a poznámky</label>

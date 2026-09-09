@@ -104,8 +104,11 @@ test('otisk se špatným klíčem 400', (await obnov({ zdroj: { otisk: '../x' },
 test('chybějící zdroj 400', (await obnov({ rezim: 'doplnit', nahled: true }, cookie)).status === 400);
 const bezPotvrzeni = await obnov({ zdroj: { soubor: zalSoubor }, rezim: 'doplnit' }, cookie);
 test('ostrá obnova bez potvrzení se odmítne (428)', bezPotvrzeni.status === 428);
-test('a bez potvrzení nevznikl ani otisk před obnovou',
-  (await ulz('zalohy').cti(otiskDen + '-pred-obnovou')) === null);
+/* Otisky před obnovou mají od 9. 9. 2026 klíč s časem (B28) — hledají se
+ * podle přípony, ne podle jednoho pevného jména. */
+const otiskyPredObnovou = async () => (await ulz('zalohy').seznam()).filter(k => /-pred-obnovou$/.test(k));
+const PRED_OBNOVOU = /^\d{4}-\d{2}-\d{2}T\d{6}-pred-obnovou$/;
+test('a bez potvrzení nevznikl ani otisk před obnovou', (await otiskyPredObnovou()).length === 0);
 
 /* ---- 3) simulovaná ztráta ---- */
 await ulz('zakazky').smaz(A);
@@ -130,7 +133,7 @@ test('náhled: účty ze souboru se přeskočí a řekne se proč (chybí otisk 
 test('náhled: rejstřík by měl 2 zakázky a není přestavený', n1.rejstrik.zakazek === 2 && n1.rejstrik.prestaven === false, n1.rejstrik);
 test('náhled sám nic nezapsal', (await ulz('zakazky').cti(A)) === null
   && (await ulz('program').cti('firma')).udaje.nazev === 'Po havárii s.r.o.'
-  && (await ulz('zalohy').cti(otiskDen + '-pred-obnovou')) === null && n1.otiskPred === null);
+  && (await otiskyPredObnovou()).length === 0 && n1.otiskPred === null);
 
 /* ---- 5) obnova „doplnit" ze souboru ---- */
 const o1 = await obnovJson({ zdroj: { soubor: zalSoubor }, rezim: 'doplnit', potvrzeni: 'OBNOVIT' }, cookie);
@@ -144,16 +147,16 @@ test('rejstřík se přestavil ze skutečného obsahu (2 zakázky, A i B)',
   && o1.rejstrik.prestaven === true, rej1);
 test('rejstřík nese číslo a název obnovené zakázky',
   rej1.zakazky.some(z => z.soubor === ulA.soubor && z.cislo === zakA.cislo && z.nazevAkce === 'Zakázka A'));
-const pred = await ulz('zalohy').cti(otiskDen + '-pred-obnovou');
-test('před obnovou vznikl otisk pod vlastním klíčem a hlásí se v odpovědi',
-  !!pred && o1.otiskPred === otiskDen + '-pred-obnovou', o1.otiskPred);
+const pred = await ulz('zalohy').cti(String(o1.otiskPred));
+test('před obnovou vznikl otisk pod vlastním klíčem s časem (B28) a hlásí se v odpovědi',
+  !!pred && PRED_OBNOVOU.test(o1.otiskPred) && o1.otiskPred.startsWith(otiskDen + 'T'), o1.otiskPred);
 test('otisk před obnovou nese stav PŘED obnovou (firma „Po havárii", bez zakázky A)',
   pred.firma.udaje.nazev === 'Po havárii s.r.o.' && !(ulA.soubor in pred.zakazky) && pred.zdroj === 'pred-obnovou' && pred.kdo === ADMIN_EMAIL);
 test('dnešní otisk zůstal nedotčený (žádná kolize klíčů)',
   JSON.stringify(await ulz('zalohy').cti(otiskDen)) === JSON.stringify(otiskPuvodni));
 const seznamOt = await (await get(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', cookie)).json();
 test('přehled otisků ukazuje i otisk před obnovou',
-  seznamOt.otisky.some(o => o.den === otiskDen + '-pred-obnovou' && o.zdroj === 'pred-obnovou'), seznamOt.otisky.map(o => o.den));
+  seznamOt.otisky.some(o => o.den === o1.otiskPred && o.zdroj === 'pred-obnovou'), seznamOt.otisky.map(o => o.den));
 test('účty ze souboru se ani ostrou obnovou nezaložily',
   (await ulz('uzivatele').cti('obchodnik@engineers-cz.cz')) === null && o1.casti.uzivatele.preskocene === 2);
 test('odpověď upozorní na slot otisku před obnovou', o1.upozorneni.some(u => /pred-obnovou/.test(u)));
@@ -215,7 +218,7 @@ test('z otisku se obchodník obnovil i s otiskem hesla', o10.ok && !!obchZpet &&
 const r3 = await post(prihlaseni, 'http://x/api/prihlaseni', { email: 'obchodnik@engineers-cz.cz', heslo: 'ObchodHeslo1' });
 test('obnovený obchodník se přihlásí původním heslem', r3.status === 200 && (await r3.json()).ok === true);
 test('obnova z otisku před obnovou jde taky (je to platný zdroj)',
-  (await obnovJson({ zdroj: { otisk: otiskDen + '-pred-obnovou' }, rezim: 'doplnit', nahled: true }, cookie)).ok === true);
+  (await obnovJson({ zdroj: { otisk: o1.otiskPred }, rezim: 'doplnit', nahled: true }, cookie)).ok === true);
 
 /* ---- 11) pojistka 2: když se otisk před obnovou nepovede, nic se nezapíše ---- */
 const HAVARIE2 = kopie(SKUT); HAVARIE2.nazev = 'Druhá havárie s.r.o.';
@@ -249,8 +252,8 @@ test('zacatek bez potvrzení se odmítne (428)',
   (await obnov({ faze: 'zacatek', rezim: 'prepsat' }, cookie)).status === 428);
 const zac = await obnovJson({ faze: 'zacatek', rezim: 'prepsat', potvrzeni: 'OBNOVIT' }, cookie);
 test('zacatek vydá token a pořídí otisk před obnovou', zac.ok && /^[0-9a-f]{32}$/.test(zac.obnovaId)
-  && zac.otiskPred === dnes() + '-pred-obnovou', zac);
-const predDavkami = kopie(await ulz('zalohy').cti(dnes() + '-pred-obnovou'));
+  && PRED_OBNOVOU.test(zac.otiskPred), zac);
+const predDavkami = kopie(await ulz('zalohy').cti(zac.otiskPred));
 test('otisk před obnovou nese stav před dávkami (firma „Třetí havárie", bez A)',
   predDavkami.firma.udaje.nazev === HAV3.nazev && !(ulA.soubor in predDavkami.zakazky));
 test('dávka s cizím tokenem 403',
@@ -263,7 +266,7 @@ const d1 = await obnovJson({ obnovaId: zac.obnovaId, zdroj: { soubor: { ...hlava
 test('dávka 1 (firma) zapsala a hlásí pořadí', d1.ok && d1.davka === 1 && d1.casti.firma.prepsane === 1
   && (await ulz('program').cti('firma')).udaje.nazev === SKUT.nazev, d1);
 test('dávka nepořizuje další otisk (stav před obnovou zůstal)',
-  JSON.stringify(await ulz('zalohy').cti(dnes() + '-pred-obnovou')) === JSON.stringify(predDavkami));
+  JSON.stringify(await ulz('zalohy').cti(zac.otiskPred)) === JSON.stringify(predDavkami));
 const d2 = await obnovJson({ obnovaId: zac.obnovaId, zdroj: { soubor: { ...hlava, zakazky: { [ulA.soubor]: zalSoubor.zakazky[ulA.soubor] } } }, rezim: 'prepsat', casti: ['zakazky'], potvrzeni: 'OBNOVIT' }, cookie);
 test('dávka 2 (zakázka A) zapsala, rejstřík ještě nestaví', d2.ok && d2.davka === 2 && d2.casti.zakazky.nove === 1
   && d2.rejstrik.prestaven === false && (await ulz('zakazky').cti(A)) !== null
@@ -293,6 +296,151 @@ const domaci = await (await obnova(new Request('http://x/api/obnova', { method: 
   headers: { cookie, host: 'engscalc.netlify.app' },
   body: JSON.stringify({ zdroj: { soubor: { ...zalSoubor, zdroj: 'engscalc.netlify.app' } }, rezim: 'doplnit', nahled: true }) }))).json();
 test('záloha z téhož webu bez upozornění na původ', domaci.ok && !domaci.upozorneni.some(u => /jiného webu/.test(u)));
+
+/* ===== bezpečnostní audit 9. 9. 2026: B27, B28, B30, B31, B32 =====
+ * Každý test posílá přesně to, co by poslal upravený klient nebo druhý
+ * správce — obnova je jediná cesta, která umí přepsat celou databázi. */
+
+/* ---- B28) souběh a opakování obnovy: zámek „obnova běží" ---- */
+console.log('\n===== B28: souběh obnov =====');
+const zacA = await obnovJson({ faze: 'zacatek', rezim: 'doplnit', potvrzeni: 'OBNOVIT' }, cookie);
+test('B28: vypršelý token z kroku 13 novému začátku nebrání a uklidí se', zacA.ok === true
+  && (await ulz('zalohy').cti('obnova-' + zac2.obnovaId)) === null, zacA);
+const pocetPredA = (await otiskyPredObnovou()).length;
+const druhy = await obnov({ faze: 'zacatek', rezim: 'prepsat', potvrzeni: 'OBNOVIT' }, cookie);
+const druhyTelo = await druhy.json();
+test('B28: druhý zacatek během živého tokenu → 409 s tím, kdo a kdy obnovu zahájil', druhy.status === 409
+  && !!druhyTelo.obnovaBezi && druhyTelo.obnovaBezi.kdo === ADMIN_EMAIL && druhyTelo.obnovaBezi.obnovaId === zacA.obnovaId
+  && /zahájil/.test(druhyTelo.chyba), druhyTelo);
+test('B28: jednorázová obnova během živého tokenu → 409',
+  (await obnov({ zdroj: { soubor: zalSoubor }, rezim: 'doplnit', potvrzeni: 'OBNOVIT', casti: ['firma'] }, cookie)).status === 409);
+test('B28: náhled během živého tokenu projde (nic nezapisuje)',
+  (await obnovJson({ zdroj: { soubor: zalSoubor }, rezim: 'doplnit', nahled: true, casti: ['firma'] }, cookie)).ok === true);
+test('B28: odmítnuté obnovy nepořídily žádný další otisk před obnovou (cesta zpátky nepřepsána)',
+  (await otiskyPredObnovou()).length === pocetPredA && (await ulz('zalohy').cti(zacA.otiskPred)) !== null);
+
+const z2 = await (await post(uzivatele, 'http://x/api/uzivatele',
+  { akce: 'zaloz', email: 'spravce2@engineers-cz.cz', jmeno: 'Druhý správce', role: 'Administrátor', heslo: 'SpravceHeslo2' }, cookie)).json();
+test('vedlejší správce založen', z2.ok === true, z2);
+const r4 = await post(prihlaseni, 'http://x/api/prihlaseni', { email: 'spravce2@engineers-cz.cz', heslo: 'SpravceHeslo2' });
+const cookieAdmin2 = (r4.headers.get('set-cookie') || '').split(';')[0];
+test('B28: vedlejší správce nezahájí obnovu přes cizí rozpracovanou (409)',
+  (await obnov({ faze: 'zacatek', rezim: 'doplnit', potvrzeni: 'OBNOVIT' }, cookieAdmin2)).status === 409);
+test('B28: cizí rozpracovanou obnovu nedokončí (403)',
+  (await obnov({ faze: 'konec', obnovaId: zacA.obnovaId }, cookieAdmin2)).status === 403);
+const zrus = await obnovJson({ faze: 'zrusit', obnovaId: zacA.obnovaId }, cookieAdmin2);
+test('B28: ale smí ji zahodit — rejstřík se přestaví, token zmizí, odpověď ukáže otisk', zrus.ok === true && zrus.faze === 'zrusit'
+  && zrus.rejstrik.prestaven === true && zrus.otiskPred === zacA.otiskPred
+  && (await ulz('zalohy').cti('obnova-' + zacA.obnovaId)) === null, zrus);
+test('B28: zahození neznámého tokenu 404', (await obnov({ faze: 'zrusit', obnovaId: 'a'.repeat(32) }, cookie)).status === 404);
+test('B28: zahození s nesmyslným tokenem 400', (await obnov({ faze: 'zrusit', obnovaId: '../x' }, cookie)).status === 400);
+const zacB = await obnovJson({ faze: 'zacatek', rezim: 'doplnit', potvrzeni: 'OBNOVIT' }, cookieAdmin2);
+test('B28: po zahození jde zahájit znovu', zacB.ok === true, zacB);
+const konB = await obnovJson({ faze: 'konec', obnovaId: zacB.obnovaId }, cookieAdmin2);
+const zacC = await obnovJson({ faze: 'zacatek', rezim: 'doplnit', potvrzeni: 'OBNOVIT' }, cookie);
+test('B28: po konci jde zahájit znovu', konB.ok === true && zacC.ok === true, [konB, zacC]);
+test('B28: a uzavřít', (await obnovJson({ faze: 'konec', obnovaId: zacC.obnovaId }, cookie)).ok === true);
+
+/* ---- B27) účty a podpisy jen ze serverového otisku; hlavní účet jen on sám ---- */
+console.log('\n===== B27: účty a podpisy =====');
+const PNG = 'data:image/png;base64,iVBORw0KGgo=';
+const adminSrv = kopie(await ulz('uzivatele').cti(ADMIN_EMAIL));
+const podvrh = kopie(zalSoubor);
+podvrh.uzivatele = [{ email: ADMIN_EMAIL, jmeno: 'Podvrh', role: 'Administrátor', aktivni: true, heslo: 'aa:bb' },
+                    { email: 'novy@engineers-cz.cz', jmeno: 'Nový', role: 'Obchodník', aktivni: true, heslo: 'cc:dd' }];
+podvrh.podpisy = { [ADMIN_EMAIL]: { obrazek: PNG }, 'obchodnik@engineers-cz.cz': { obrazek: PNG } };
+const o27 = await obnovJson({ zdroj: { soubor: podvrh }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['uzivatele', 'podpisy'] }, cookieAdmin2);
+test('B27: vedlejší správce ze souboru hlavní účet nepřepíše — účty ze souboru se přeskočí s důvodem',
+  o27.ok === true && o27.casti.uzivatele.preskocene === 2 && o27.casti.uzivatele.nove === 0 && o27.casti.uzivatele.prepsane === 0
+  && o27.casti.uzivatele.duvody.every(d => /otisk/.test(d.duvod))
+  && JSON.stringify(await ulz('uzivatele').cti(ADMIN_EMAIL)) === JSON.stringify(adminSrv), o27.casti.uzivatele);
+test('B27: podpisy ze souboru se nezapíšou (ani hlavního účtu)',
+  o27.casti.podpisy.preskocene === 2 && (await ulz('podpisy').cti(ADMIN_EMAIL)) === null
+  && (await ulz('podpisy').cti('obchodnik@engineers-cz.cz')) === null, o27.casti.podpisy);
+test('B27: odpověď na to upozorní', o27.upozorneni.some(u => /otisk/.test(u)));
+test('B27: účet ze souboru nevznikne ani hlavnímu správci',
+  (await obnovJson({ zdroj: { soubor: podvrh }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['uzivatele'] }, cookie)).casti.uzivatele.nove === 0
+  && (await ulz('uzivatele').cti('novy@engineers-cz.cz')) === null);
+
+const otiskPodvrh = kopie(await ulz('zalohy').cti(otiskDen));
+otiskPodvrh.uzivatele = otiskPodvrh.uzivatele
+  .map(u => (u.email === ADMIN_EMAIL ? { ...u, heslo: 'aa:bb', jmeno: 'Podvrh' } : u))
+  .concat([{ email: 'buh@engineers-cz.cz', jmeno: 'X', role: 'Bůh', aktivni: true, heslo: 'aa:bb' },
+           { email: 'ne mail', jmeno: 'X', role: 'Obchodník', aktivni: true, heslo: 'aa:bb' }]);
+otiskPodvrh.podpisy = { [ADMIN_EMAIL]: { obrazek: PNG },
+                        'obchodnik@engineers-cz.cz': { obrazek: 'data:image/svg+xml;base64,PHN2Zz4=' },
+                        'spravce2@engineers-cz.cz': { obrazek: PNG } };
+await ulz('zalohy').zapis('2026-01-02', otiskPodvrh);
+const o27b = await obnovJson({ zdroj: { otisk: '2026-01-02' }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['uzivatele', 'podpisy'] }, cookieAdmin2);
+const u27 = o27b.casti.uzivatele;
+test('B27: z otisku vedlejší správce hlavní účet nepřepíše (přeskočeno „jen on sám")',
+  u27.duvody.some(d => d.klic === ADMIN_EMAIL && /jen on sám/.test(d.duvod))
+  && JSON.stringify(await ulz('uzivatele').cti(ADMIN_EMAIL)) === JSON.stringify(adminSrv), u27);
+test('B27: role mimo výčet se nezapíše',
+  u27.duvody.some(d => d.klic === 'buh@engineers-cz.cz' && /role/.test(d.duvod)) && (await ulz('uzivatele').cti('buh@engineers-cz.cz')) === null);
+test('B27: e-mail v neplatném tvaru se nezapíše', u27.duvody.some(d => d.klic === 'ne mail' && /tvar/.test(d.duvod)));
+const p27 = o27b.casti.podpisy;
+test('B27: podpis hlavního účtu z otisku vedlejší správce nezapíše',
+  p27.duvody.some(d => d.klic === ADMIN_EMAIL && /jen on sám/.test(d.duvod)) && (await ulz('podpisy').cti(ADMIN_EMAIL)) === null, p27);
+test('B32: podpis v jiném formátu než PNG/JPEG (SVG) se z otisku nezapíše',
+  p27.duvody.some(d => d.klic === 'obchodnik@engineers-cz.cz' && /PNG/.test(d.duvod))
+  && (await ulz('podpisy').cti('obchodnik@engineers-cz.cz')) === null, p27);
+test('B27: platný podpis jiného účtu se z otisku zapíše', p27.nove === 1 && !!(await ulz('podpisy').cti('spravce2@engineers-cz.cz')), p27);
+
+/* ---- B32) zakázky a ceník ze zálohy procházejí stejnou kontrolou id jako při ukládání ---- */
+console.log('\n===== B32: kontrola id v obnově =====');
+const zalKid = kopie(zalSoubor);
+const podvrhZak = kopie(zalSoubor.zakazky[ulA.soubor]);
+podvrhZak.cislo = '2026 - OPR - CN - 0790';
+const dz = podvrhZak.varianty[0].data;
+dz.proj = dz.proj || {}; dz.proj.cenik = dz.proj.cenik || {};
+dz.proj.cenik.vlastniPolozky = { zamereni: [{ kid: "pk1');fetch('/api/zaloha');//", nazev: 'x', typ: 'fix', cena: 1 }] };
+zalKid.zakazky = { podvrh: podvrhZak };
+const o32 = await obnovJson({ zdroj: { soubor: zalKid }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['zakazky'] }, cookie);
+test('B32: zakázka s podvrženým kid se z obnovy přeskočí s důvodem',
+  o32.casti.zakazky.preskocene === 1 && /nepovoleném tvaru/.test(o32.casti.zakazky.duvody[0].duvod)
+  && (await ulz('zakazky').cti('z/podvrh')) === null, o32.casti.zakazky);
+const zalDupl = kopie(zalSoubor);
+const duplZak = kopie(zalSoubor.zakazky[ulA.soubor]);
+duplZak.varianty.push(kopie(duplZak.varianty[0]));
+zalDupl.zakazky = { dupl: duplZak };
+const o29 = await obnovJson({ zdroj: { soubor: zalDupl }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['zakazky'] }, cookie);
+test('B29: zakázka s duplicitním id varianty se z obnovy přeskočí',
+  o29.casti.zakazky.preskocene === 1 && /duplicitní/.test(o29.casti.zakazky.duvody[0].duvod), o29.casti.zakazky);
+const zalProg = kopie(zalSoubor);
+zalProg.program.platny.cenikProj = { ...(zalProg.program.platny.cenikProj || {}), vlastniPolozky: { dpz: [{ kid: "pk1'", nazev: 'x', typ: 'fix' }] } };
+const o26 = await obnovJson({ zdroj: { soubor: zalProg }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['program'] }, cookie);
+test('B26: platný ceník s podvrženým kid se z obnovy přeskočí',
+  o26.casti.program.preskocene === 1 && /trvalé položky/.test(o26.casti.program.duvody[0].duvod), o26.casti.program);
+
+/* ---- B30/B31) smazané a archivované účty, verze hesla ---- */
+console.log('\n===== B30/B31: smazané, archivované účty a verze hesla =====');
+const sm = await (await post(uzivatele, 'http://x/api/uzivatele',
+  { akce: 'smaz', email: 'obchodnik@engineers-cz.cz', i_se_zakazkami: true }, cookie)).json();
+test('obchodník řádně smazán (zapsán do knihy smazaných)', sm.ok === true && sm.smazano === true, sm);
+const o30 = await obnovJson({ zdroj: { otisk: otiskDen }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['uzivatele'] }, cookie);
+test('B30: smazaný účet se z otisku neoživí a důvod říká, kdy a kdo ho smazal',
+  o30.casti.uzivatele.duvody.some(d => d.klic === 'obchodnik@engineers-cz.cz' && /smazán/.test(d.duvod) && d.duvod.includes(ADMIN_EMAIL))
+  && (await ulz('uzivatele').cti('obchodnik@engineers-cz.cz')) === null, o30.casti.uzivatele);
+test('B30: smazaný obchodník se po obnově nepřihlásí',
+  (await post(prihlaseni, 'http://x/api/prihlaseni', { email: 'obchodnik@engineers-cz.cz', heslo: 'ObchodHeslo1' })).status === 401);
+
+test('účty pro B30/B31 založeny',
+  (await (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'zaloz', email: 'archiv@engineers-cz.cz', jmeno: 'Archivovaný', role: 'Obchodník', heslo: 'ArchivHeslo1' }, cookie)).json()).ok === true
+  && (await (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'zaloz', email: 'verze@engineers-cz.cz', jmeno: 'Verze', role: 'Obchodník', heslo: 'VerzeHeslo1' }, cookie)).json()).ok === true);
+const otiskB30 = await (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', {}, cookie)).json();
+test('otisk s oběma účty činnými pořízen', otiskB30.ok === true, otiskB30);
+test('archiv@ archivován', (await (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'archiv', email: 'archiv@engineers-cz.cz', archiv: true }, cookie)).json()).ok === true);
+test('verze@ dostal reset hesla (hesloVerze 1)',
+  (await (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'heslo', email: 'verze@engineers-cz.cz', heslo: 'VerzeHeslo2' }, cookie)).json()).ok === true
+  && (await ulz('uzivatele').cti('verze@engineers-cz.cz')).hesloVerze === 1);
+const o31 = await obnovJson({ zdroj: { otisk: otiskB30.den }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['uzivatele'] }, cookie);
+const arch = await ulz('uzivatele').cti('archiv@engineers-cz.cz');
+test('B30: archivovaný zůstane archivovaný a vypnutý i po „přepsat" z otisku, kde byl činný',
+  arch.archiv === true && arch.aktivni === false && !!arch.archivKdy
+  && o31.casti.uzivatele.duvody.some(d => d.klic === 'archiv@engineers-cz.cz' && /drží server/.test(d.duvod)), [arch, o31.casti.uzivatele]);
+test('B31: hesloVerze po obnově z otisku neklesne (zůstává 1)',
+  (await ulz('uzivatele').cti('verze@engineers-cz.cz')).hesloVerze === 1 && o31.casti.uzivatele.prepsane >= 1, o31.casti.uzivatele);
 
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);

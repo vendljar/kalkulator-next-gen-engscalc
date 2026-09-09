@@ -49,10 +49,20 @@ export async function zalohaDoplnky() {
 /* Klíč otisku před obnovou (7. 9. 2026). Otisk pořízený těsně před obnovou
  * databáze NESMÍ ležet pod dnešním datem: kdyby se obnovovalo z dnešního
  * otisku, přepsal by zdroj obnovy sám sebe stavem před obnovou a cesta
- * zpátky by zmizela. Druhá obnova téhož dne tenhle slot přepíše — to je
- * vědomé (jeden slot na den, stejně jako u nočního otisku) a obrazovka
- * i odpověď serveru to říkají. */
-export function klicPredObnovou(den) { return (den || denDnes()) + '-pred-obnovou'; }
+ * zpátky by zmizela.
+ *
+ * Od 9. 9. 2026 (bezpečnostní audit, B28) nese klíč i ČAS: `<den>T<hhmmss>
+ * -pred-obnovou`. Do té doby byl jeden slot na den a druhá obnova téhož dne
+ * — nebo opakování po selhané dávce, které obrazovka sama nabízí — přepsala
+ * jedinou cestu zpátky stavem napůl obnovené databáze. Vlastní slot na
+ * každou obnovu stojí místo v úložišti (obnova je vzácná, administrátorská
+ * akce), ale nikdy nezničí to, kvůli čemu otisk vznikl. Starší klíče bez
+ * času zůstávají platné (OTISK_KLIC), z přehledu nemizí. */
+export const OTISK_KLIC = /^\d{4}-\d{2}-\d{2}(-pred-obnovou|T\d{6}-pred-obnovou)?$/;
+export function klicPredObnovou(kdy) {
+  const d = new Date(kdy || Date.now()).toISOString();      // 2026-09-09T15:30:12.345Z
+  return d.slice(0, 10) + 'T' + d.slice(11, 19).replace(/:/g, '') + '-pred-obnovou';
+}
 
 /* `klic` je nepovinný: bez něj otisk míří pod dnešní datum (noční a vynucená
  * záloha), s ním pod zadaný slot (otisk před obnovou, viz klicPredObnovou). */
@@ -103,7 +113,7 @@ export async function seznamOtisku(kolik) {
   /* Otisky před obnovou (7. 9. 2026) patří do přehledu taky — jsou to cesty
    * zpátky, ze kterých se dá obnovovat. Řetězcové řazení je dá hned před
    * den, ke kterému patří. */
-  const dny = (await s.seznam()).filter(k => /^\d{4}-\d{2}-\d{2}(-pred-obnovou)?$/.test(k)).sort().reverse();
+  const dny = (await s.seznam()).filter(k => OTISK_KLIC.test(k)).sort().reverse();
   const vybrane = dny.slice(0, Math.max(1, kolik || 14));
   const otisky = [];
   for (const den of vybrane) {

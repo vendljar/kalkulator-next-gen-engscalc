@@ -94,11 +94,11 @@ export default async (req) => {
    * poznámek a příloh jdou v obrazovce do onclick; obrazovka je od 22. 8.
    * escapuje, ale server navíc nepustí dovnitř nic, co není písmeno, číslice,
    * tečka, podtržítko nebo pomlčka. Dvě vrstvy — kdyby jedna selhala. */
+  /* Od 9. 9. 2026 (B26, B29) hlídá uloIdProblemy i `kid` trvalých položek
+   * ceníku uvnitř variant a jedinečnost id variant, poznámek a příloh. */
   const spatnaId = ULO.uloIdProblemy(zak);
   if (spatnaId.length)
-    return json({ ok: false, chyba: 'Zakázka nese identifikátor v nepovoleném tvaru ('
-      + spatnaId.map(x => x.kde).join(', ') + '). Povolená jsou písmena, číslice, tečka, '
-      + 'podtržítko a pomlčka.' }, 400);
+    return json({ ok: false, chyba: 'Zakázka nese ' + ULO.uloIdProblemyText(spatnaId) + '.' }, 400);
 
   /* vytištěná (odeslaná) nabídka se nikdy nepřepíše. Dvě vrstvy:
    * 1) TÁŽ kontrola jako u složky (uloKontrolaZamku) — zámek nesmí zmizet

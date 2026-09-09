@@ -31,7 +31,8 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const KOREN = dirname(fileURLToPath(import.meta.url));
-const SADY = ['test_prava.mjs', 'test_funkce.mjs'];
+/* test_obnova.mjs přibyla 9. 9. 2026 (B27–B31): mutace obnovy hlídá ona. */
+const SADY = ['test_prava.mjs', 'test_funkce.mjs', 'test_obnova.mjs'];
 const filtr = (process.argv[2] || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -567,6 +568,82 @@ const MUTACE = [
     hledej: 'export const config = {',
     nahrad: 'export const config = { path: \'/api/zaloha_nocni\',',
     proc: 'plánovanou zálohu by šlo spouštět z internetu bez přihlášení' },
+
+  /* ---------- bezpečnostní audit 9. 9. 2026 (B26–B31) ---------- */
+  { nazev: 'B26: kid trvalé položky v zakázce se bere, jak přijde', soubor: '../src/uloziste.js',
+    hledej: "      if (p && p.kid != null && p.kid !== '' && !uloIdBezpecne(p.kid)) out.push({ kde: kde + ' (kid)', id: p.kid });",
+    nahrad: '      ;',
+    proc: 'obchodník by do zakázky uložil kid s apostrofem; administrátor klikne na ✕ v ceníku a skript běží pod jeho relací' },
+
+  { nazev: 'B26: zveřejnění ceníku nekontroluje kid', soubor: 'functions/program.mjs',
+    hledej: '  if (spatneKid.length)',
+    nahrad: '  if (false)',
+    proc: 'podvržený kid by se zveřejněním ceníku propsal do každé nové nabídky' },
+
+  { nazev: 'B27: účty ze souboru se obnovují', soubor: 'functions/obnova.mjs',
+    hledej: "    const uctyZeSouboru = zdrojPopis.typ === 'soubor';",
+    nahrad: '    const uctyZeSouboru = false;',
+    proc: 'vedlejší správce by si do souboru vložil vlastní otisk hesla pro hlavní účet a převzal ho' },
+
+  { nazev: 'B27: podpisy ze souboru se obnovují', soubor: 'functions/obnova.mjs',
+    hledej: "      const podpisyZeSouboru = zdrojPopis.typ === 'soubor';",
+    nahrad: '      const podpisyZeSouboru = false;',
+    proc: 'z upraveného souboru by se nahrál cizí podpis pod nabídky hlavního administrátora' },
+
+  { nazev: 'B27: hlavní účet z otisku zapíše i vedlejší správce', soubor: 'functions/obnova.mjs',
+    hledej: "        if (email === ADMIN_EMAIL && relace.email !== ADMIN_EMAIL) { preskoc(b, email, 'hlavní administrátorský účet obnoví jen on sám'); continue; }",
+    nahrad: '        ;',
+    proc: 'vedlejší správce by obnovou ze staršího otisku vrátil hlavnímu účtu heslo, které zná' },
+
+  { nazev: 'B27: podpis hlavního účtu z otisku zapíše i vedlejší správce', soubor: 'functions/obnova.mjs',
+    hledej: "          if (k === ADMIN_EMAIL && relace.email !== ADMIN_EMAIL) return 'podpis hlavního administrátora mění jen on sám';",
+    nahrad: '          ;',
+    proc: 'obejití pojistky B28 z uzivatele.mjs cestou obnovy' },
+
+  { nazev: 'B27: role z otisku se nekontroluje proti výčtu', soubor: 'functions/obnova.mjs',
+    hledej: "        if (!ROLE.includes(u.role)) { preskoc(b, email, 'role mimo výčet (' + String(u.role) + ') se nezapisuje'); continue; }",
+    nahrad: '        ;',
+    proc: 'vznikl by účet s rolí, kterou matice práv nezná' },
+
+  { nazev: 'B28: zámek „obnova běží" se nekontroluje', soubor: 'functions/obnova.mjs',
+    hledej: '  return z ? obnovaBeziOdpoved(z) : null;',
+    nahrad: '  return null;',
+    proc: 'druhá obnova by běžela přes rozpracovanou a pořídila otisk „před obnovou" z napůl obnovené databáze' },
+
+  { nazev: 'B28: otisk před obnovou bez času (jeden slot na den)', soubor: 'lib/zalohovani.mjs',
+    hledej: "  return d.slice(0, 10) + 'T' + d.slice(11, 19).replace(/:/g, '') + '-pred-obnovou';",
+    nahrad: "  return d.slice(0, 10) + '-pred-obnovou';",
+    proc: 'opakování po selhané dávce by přepsalo jedinou cestu zpátky' },
+
+  { nazev: 'B29: duplicitní id varianty projde', soubor: '../src/uloziste.js',
+    hledej: "    if (videno.has(id)) out.push({ kde, id, duvod: 'duplicita' });",
+    nahrad: '    ;',
+    proc: 'kopie uzamčené varianty se stejným id by rozbila párování zámků a každé další uložení by končilo 409' },
+
+  { nazev: 'B30: smazaný účet se obnovou oživí', soubor: 'functions/obnova.mjs',
+    hledej: '        if (smazan && smazan.smazano) {',
+    nahrad: '        if (false) {',
+    proc: 'smazaný obchodník by se po obnově ze staršího otisku přihlásil původním heslem' },
+
+  { nazev: 'B30: obnova přepíše archiv a aktivní ze zálohy', soubor: 'functions/obnova.mjs',
+    hledej: '          stavUctuDrziServer(novy, stary);            // B30',
+    nahrad: '          ;',
+    proc: 'obnova by odarchivovala nebo zapnula účet, který správce vědomě vypnul' },
+
+  { nazev: 'B31: hesloVerze se obnovou sníží', soubor: 'functions/obnova.mjs',
+    hledej: '          if (vz > 0) novy.hesloVerze = vz;           // B31: verze hesla nikdy neklesne',
+    nahrad: '          novy.hesloVerze = hesloVerzeUctu(u);',
+    proc: 'obnova by oživila cookie odvolanou změnou hesla' },
+
+  { nazev: 'B32: podpis z otisku se nekontroluje', soubor: 'functions/obnova.mjs',
+    hledej: '          if (!kk.ok) return kk.chyba;',
+    nahrad: '          if (false) return kk.chyba;',
+    proc: 'z otisku by se zapsal podpis jako SVG se skriptem' },
+
+  { nazev: 'B32: zakázky z obnovy neprocházejí kontrolou id', soubor: 'functions/obnova.mjs',
+    hledej: "      return p.length ? ULO.uloIdProblemyText(p) : '';",
+    nahrad: "      return '';",
+    proc: 'obnova by do databáze vrátila zakázku s id, které server při ukládání odmítá' },
 ];
 
 /* ---------- běh ---------- */
@@ -576,7 +653,8 @@ function spustSady() {
       const vystup = execFileSync('node', [resolve(KOREN, sada)],
         { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 120000,
           env: { ...process.env, NODE_PATH: process.env.NODE_PATH || '' } });
-      const m = /(\d+) prošlo, (\d+) selhalo/.exec(vystup);
+      /* test_obnova.mjs píše souhrn „N OK, M FAIL", ostatní „prošlo/selhalo". */
+      const m = /(\d+) (?:prošlo|OK), (\d+) (?:selhalo|FAIL)/.exec(vystup);
       if (!m) return { chycena: true, kde: sada + ' (sada nedoběhla do souhrnu)' };
       if (Number(m[2]) > 0) return { chycena: true, kde: sada + ': ' + m[2] + ' selhalo' };
     } catch (e) {

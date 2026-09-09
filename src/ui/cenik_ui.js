@@ -124,17 +124,22 @@ function cenikCustomRows(sekceKey, sloupcu) {
    * stanou součástí CENIK_DEF — zatím jim sloupec jen dorovná šířku. */
   const mezera = SL > 4 ? '<td colspan="' + (SL - 4) + '" class="note">—</td>' : '';
   const arr = katalogSekce(KATALOG, sekceKey);
+  /* Argumenty onclick/onchange přes escJs (B26, 9. 9. 2026): `kid` může
+   * přijít z uložené zakázky (📌 v kalkulaci), tedy od kohokoli, a esc()
+   * by tu nestačilo — entity prohlížeč dekóduje dřív, než JS argument
+   * parsuje. sek je z pevného výčtu, escapuje se pro jednotnost. */
+  const sk = escJs(sekceKey);
   const rows = arr.map(p => `<tr>
-      <td><input type="text" value="${esc(p.nazev)}" onchange="katSet('${sekceKey}','${p.kid}','nazev',this.value)"></td>
-      <td><input type="number" step="any" value="${+p.cena || 0}" onchange="katSet('${sekceKey}','${p.kid}','cena',this.value)"></td>
+      <td><input type="text" value="${esc(p.nazev)}" onchange="katSet('${sk}','${escJs(p.kid)}','nazev',this.value)"></td>
+      <td><input type="number" step="any" value="${+p.cena || 0}" onchange="katSet('${sk}','${escJs(p.kid)}','cena',this.value)"></td>
       ${mezera}
-      <td><input type="number" step="any" style="width:70px" value="${+p.mnozstvi || 1}" onchange="katSet('${sekceKey}','${p.kid}','mnozstvi',this.value)" title="výchozí množství v nové nabídce"></td>
+      <td><input type="number" step="any" style="width:70px" value="${+p.mnozstvi || 1}" onchange="katSet('${sk}','${escJs(p.kid)}','mnozstvi',this.value)" title="výchozí množství v nové nabídce"></td>
       <td><span class="pill ok" title="je součástí každé nové cenové nabídky">trvalá</span>
-          <button class="mini noprint" title="odebrat z ceníku i z této zakázky" onclick="katDel('${sekceKey}','${p.kid}')">✕</button></td></tr>`).join('');
+          <button class="mini noprint" title="odebrat z ceníku i z této zakázky" onclick="katDel('${sk}','${escJs(p.kid)}')">✕</button></td></tr>`).join('');
   const lokal = katalogCil(Z, sekceKey).filter(p => !p.kid).length;
   const info = lokal ? `<tr><td colspan="${SL}"><span class="note">V této zakázce je navíc ${lokal} položka/y přidaná přímo v kalkulaci
       (dočasná). Tlačítkem 📌 v Kalkulaci OCK ji uložíš sem natrvalo.</span></td></tr>` : '';
-  return rows + info + `<tr class="pridat noprint"><td colspan="${SL}"><button class="mini" onclick="katAdd('${sekceKey}')">+ přidat trvalou položku do sekce</button></td></tr>`;
+  return rows + info + `<tr class="pridat noprint"><td colspan="${SL}"><button class="mini" onclick="katAdd('${sk}')">+ přidat trvalou položku do sekce</button></td></tr>`;
 }
 
 /* --- obsluha trvalých (katalogových) položek ceníku --- */
@@ -314,23 +319,32 @@ function cenikProjTrvaleRadky(sekce) {
   const viceSekci = vyber.length > 1;
   const radky = vyber.map(sek => {
     const polozky = projKatalogSekce(PC, sek.key);
-    const seznam = polozky.map(p => `<tr>
+    /* `kid` přichází z uložené zakázky (PC = ceník varianty) — tedy od
+     * obchodníka, ne z kódu. V argumentu onclick/onchange chrání jen escJs;
+     * esc() tu do 9. 9. 2026 nechránilo vůbec (B26): prohlížeč HTML entity
+     * dekóduje před parsováním JS, takže &#39; se zase stalo apostrofem. */
+    const sk = escJs(sek.key);
+    const seznam = polozky.map(p => {
+      const kidJs = escJs(p.kid);
+      const chip = klicChip('PC.vlastniPolozky.' + sek.key + '.' + p.kid);   // escapuje uvnitř
+      return `<tr>
       <td class="c-nazev"><input type="text" class="nazev-ed" value="${esc(p.nazev)}"
-        onchange="cenikProjTrvaleSet('${esc(sek.key)}','${esc(p.kid)}','nazev',this.value)">
-        ${klicChip('PC.vlastniPolozky.' + sek.key + '.' + p.kid)}</td>
+        onchange="cenikProjTrvaleSet('${sk}','${kidJs}','nazev',this.value)">
+        ${chip}</td>
       <td class="c-hod">${p.typ === 'hod'
         ? `<input type="number" step="any" style="width:90px" value="${+p.hodiny || 0}"
-             title="hodin" onchange="cenikProjTrvaleSet('${esc(sek.key)}','${esc(p.kid)}','hodiny',this.value)">`
+             title="hodin" onchange="cenikProjTrvaleSet('${sk}','${kidJs}','hodiny',this.value)">`
         : `<input type="number" step="any" value="${+p.cena || 0}"
-             onchange="cenikProjTrvaleSet('${esc(sek.key)}','${esc(p.kid)}','cena',this.value)">`}</td>
+             onchange="cenikProjTrvaleSet('${sk}','${kidJs}','cena',this.value)">`}</td>
       <td class="c-jed">${p.typ === 'hod' ? 'hod (' + esc(p.sazba || 'projektant') + ')' : 'Kč'}</td>
       <td class="c-pozn">trvalá položka${viceSekci ? ' — ' + esc(sek.nazev) : ''}, je v každé nové nabídce
         <button class="mini noprint" title="odebrat trvalou položku z ceníku"
-          onclick="cenikProjTrvaleDel('${esc(sek.key)}','${esc(p.kid)}')">✕</button></td></tr>`).join('');
+          onclick="cenikProjTrvaleDel('${sk}','${kidJs}')">✕</button></td></tr>`;
+    }).join('');
     const kam = viceSekci ? ' do ' + esc(sek.nazev) : ' do sekce';
     return seznam + `<tr class="pridat noprint"><td colspan="4">
-        <button class="mini" onclick="cenikProjTrvaleAdd('${esc(sek.key)}','hod')">+ přidat trvalou hodinovou položku${kam}</button>
-        <button class="mini" onclick="cenikProjTrvaleAdd('${esc(sek.key)}','fix')">+ přidat trvalou fixní položku${kam}</button>
+        <button class="mini" onclick="cenikProjTrvaleAdd('${sk}','hod')">+ přidat trvalou hodinovou položku${kam}</button>
+        <button class="mini" onclick="cenikProjTrvaleAdd('${sk}','fix')">+ přidat trvalou fixní položku${kam}</button>
       </td></tr>`;
   }).join('');
   return radky;

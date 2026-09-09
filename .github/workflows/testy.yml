@@ -65,3 +65,19 @@ jobs:
           path: dist/
           if-no-files-found: ignore
           retention-days: 14
+
+  # Mutační testování serverové vrstvy (netlify/mutace.mjs) — samostatný
+  # job, protože pouští tři serverové sady znovu pro každou z ~100 mutací
+  # a trvá řádově deset minut. Od 9. 9. 2026 hlídá i regresi nálezů B26–B32:
+  # kdyby někdo kontrolu odstranil, testy by to musely chytit — a tohle
+  # ověřuje, že by to opravdu chytily.
+  mutace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Mutační testování serverové vrstvy (netlify/mutace.mjs)
+        run: node netlify/mutace.mjs

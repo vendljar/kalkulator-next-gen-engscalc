@@ -1736,6 +1736,51 @@ console.log('\n===== ZAHRANIČNÍ CENÍK (#181) =====\n');
   test('značka „jen pro zahraničí" se uložila', !!z && z.jenZahr['C.prekladyKc'] === true);
 }
 
+/* ============================================================
+ * BEZPEČNOSTNÍ AUDIT 9. 9. 2026 — B26 (kid trvalých položek), B29 (duplicitní id)
+ *
+ * `kid` trvalé položky ceníku cestuje uvnitř uložené zakázky a administrátor
+ * ho v obrazovce Ceník vkládá do onclick. Server ho do 9. 9. nekontroloval.
+ * Duplicitní id varianty rozbilo párování zámků (první shoda) a každé další
+ * uložení končilo 409. Obojí teď server odmítá 400.
+ * ============================================================ */
+console.log('\n===== AUDIT B26 / B29: KID TRVALÝCH POLOŽEK A DUPLICITNÍ ID =====\n');
+{
+  const uloz = (z) => post(zakazky, 'http://x/api/zakazky', { zakazka: z }, cObch);
+  const zProj = zakazkaCislo('2026 - OPR - CN - 0962');
+  const d = zProj.varianty[0].data; d.proj = d.proj || {}; d.proj.cenik = d.proj.cenik || {};
+  d.proj.cenik.vlastniPolozky = { zamereni: [{ kid: "pk1');fetch('/api/zaloha');//", nazev: 'x', typ: 'fix', cena: 1 }] };
+  const r1 = await uloz(zProj);
+  test('B26: kid trvalé položky PROJ s apostrofem server odmítne (400)', r1.status === 400, 'vrátil ' + r1.status);
+  test('B26: odmítnutí jmenuje trvalou položku', /trvalá položka PROJ/.test(JSON.stringify(await r1.json())));
+  const zOck = zakazkaCislo('2026 - OPR - CN - 0962');
+  const d2 = zOck.varianty[0].data; d2.ock = d2.ock || {}; d2.ock.zadani = d2.ock.zadani || {};
+  d2.ock.zadani.vlastniPolozky = { hrubaOck: [{ kid: "k1')x(", nazev: 'x', mnozstvi: 1, cena: 1 }] };
+  test('B26: kid trvalé položky OCK se závorkou server odmítne', (await uloz(zOck)).status === 400);
+  const zOk = zakazkaCislo('2026 - OPR - CN - 0962');
+  const d3 = zOk.varianty[0].data; d3.proj = d3.proj || {}; d3.proj.cenik = d3.proj.cenik || {};
+  d3.proj.cenik.vlastniPolozky = { zamereni: [{ kid: 'pk7', nazev: 'x', typ: 'fix', cena: 1 }, { nazev: 'ruční bez kid', typ: 'fix', cena: 1 }] };
+  const rOk = await uloz(zOk);
+  test('B26: běžný kid (pk7) a ruční položka bez kid projdou', rOk.status === 200, 'vrátil ' + rOk.status);
+
+  /* Zveřejnění ceníku: tudy by se podvržený kid propsal do každé nové nabídky. */
+  test('B26: zveřejnění ceníku PROJ s podvrženým kid server odmítne (400)',
+    (await post(program, 'http://x/api/program', { cenik: { profilasKgKc: 81 },
+      cenikProj: { vlastniPolozky: { dpz: [{ kid: "pk1'", nazev: 'x', typ: 'fix' }] } } }, cAdmin)).status === 400);
+  test('B26: katalog OCK s podvrženým kid server odmítne (400)',
+    (await post(program, 'http://x/api/program', { cenik: { profilasKgKc: 82 },
+      katalog: { polozky: { rezie: [{ kid: '<b>', nazev: 'x' }] } } }, cAdmin)).status === 400);
+
+  const dup = zakazkaCislo('2026 - OPR - CN - 0963');
+  dup.varianty.push(JSON.parse(JSON.stringify(dup.varianty[0])));
+  const r29 = await uloz(dup);
+  test('B29: duplicitní id varianty server odmítne (400)', r29.status === 400, 'vrátil ' + r29.status);
+  test('B29: a řekne, že jde o duplicitu', /duplicit/i.test(JSON.stringify(await r29.json())));
+  const dupP = zakazkaCislo('2026 - OPR - CN - 0963');
+  dupP.poznamky = [{ id: 'pz1', text: 'a' }, { id: 'pz1', text: 'b' }];
+  test('B29: duplicitní id poznámky server odmítne', (await uloz(dupP)).status === 400);
+}
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 if (fail) { console.log('\nSelhalo:\n - ' + selhalo.join('\n - ')); }
 process.exit(fail ? 1 : 0);

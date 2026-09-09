@@ -574,5 +574,36 @@ test('úložiště se hlásí jako souborové', zk.StorageAdapter.typ === 'file'
   test('příznak „jen realizace" zamkne PROJ', zk.stranaZamcena(jo, 'proj'));
 }
 
+/* ---- jedinečné id variant (bezpečnostní audit 9. 9. 2026, B29) ---- */
+{
+  const z = zk.novaZakazka();
+  const v0 = z.varianty[0];
+  test('zakazkaUnikatniId vrátí volné id beze změny', zk.zakazkaUnikatniId(z, 'v9') === 'v9');
+  test('obsazené id dostane pořadovou příponu', zk.zakazkaUnikatniId(z, v0.id) === v0.id + '-1');
+  z.varianty.push({ id: v0.id + '-1', data: {} });
+  test('a přípona roste, dokud není volno', zk.zakazkaUnikatniId(z, v0.id) === v0.id + '-2');
+
+  /* importZakazka: druhý výskyt téhož id u NEZAMČENÉ varianty se přejmenuje,
+   * uzamčená se nechá být (páruje se se serverem přes id). */
+  const s = JSON.parse(JSON.stringify(zk.novaZakazka()));
+  s.schema = 2;
+  const kopie = JSON.parse(JSON.stringify(s.varianty[0]));
+  s.varianty.push(kopie);
+  const m = zk.importZakazka(s);
+  test('import přejmenuje duplicitní id nezamčené varianty',
+    m.varianty[0].id !== m.varianty[1].id && m.varianty[1].id === m.varianty[0].id + '-1', m.varianty.map(v => v.id).join());
+  const s2 = JSON.parse(JSON.stringify(zk.novaZakazka()));
+  s2.schema = 2;
+  const zam = JSON.parse(JSON.stringify(s2.varianty[0]));
+  zam.zamek = { zamceno: true, kdy: '2026-09-09T00:00:00.000Z', typ: 'nabidka', kdo: 'x' };
+  s2.varianty.push(zam);
+  const puvUzamcena = global.variantaUzamcena;
+  global.variantaUzamcena = (v) => !!(v && v.zamek && v.zamek.zamceno);
+  const m2 = zk.importZakazka(s2);
+  test('uzamčenou duplicitu import nepřejmenuje (odmítne ji server)',
+    m2.varianty[0].id === m2.varianty[1].id, m2.varianty.map(v => v.id).join());
+  global.variantaUzamcena = puvUzamcena;
+}
+
 console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
 process.exit(fail ? 1 : 0);

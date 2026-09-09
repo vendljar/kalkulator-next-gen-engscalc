@@ -38,7 +38,7 @@ const { uloJmenoSouboru, uloJeZakazkovySoubor, uloKlicSouboru,
         uloRejstrikOdeber, uloRejstrikSerad, uloHledej,
         uloKontrolaZamku, uloProblemPopis, uloKolize, uloRazitko,
         uloRazitkoNove, ULO_REJSTRIK_SOUBOR,
-        uloIdBezpecne, uloIdProblemy, uloOdemceniPribylo,
+        uloIdBezpecne, uloIdProblemy, uloOdemceniPribylo, uloIdProblemyText, uloKidProblemyProgramu,
         uloZalohaRozhodni, uloZalohaStariDni, ULO_ZALOHA_STARI_DNI,
         uloZalohaSmiPrepsat } = U;
 
@@ -327,6 +327,36 @@ test('nová varianta s odemčením (na disku není) se také počítá jako při
   uloOdemceniPribylo(naDiskuB3, { varianty: [{ id: 'v9', odemceni: [{}] }] }).map(v => v.id).join() === 'v9');
 test('uloKontrolaZamku odemčení přes odemceni[] samo propouští (roli hlídá server)',
   uloKontrolaZamku(naDiskuB3, odemknuta).ok === true);
+
+console.log('\n--- kid trvalých položek uvnitř zakázky (B26, 9. 9. 2026) ---');
+const zakKid = (proj, ock, sekce) => ({ varianty: [{ id: 'v1', data: {
+  ock: { zadani: { vlastniPolozky: ock || {} } },
+  proj: { cenik: { vlastniPolozky: proj || {} }, zadani: { sekce: sekce || [] } } } }], aktivni: 'v1' });
+test('kid PROJ s apostrofem a závorkou je problém',
+  uloIdProblemy(zakKid({ zamereni: [{ kid: "pk1');fetch('/x');//", nazev: 'x' }] })).some(p => /PROJ/.test(p.kde) && /kid/.test(p.kde)));
+test('kid OCK se značkou je problém',
+  uloIdProblemy(zakKid(null, { hrubaOck: [{ kid: '<img onerror=1>', nazev: 'x' }] })).some(p => /OCK/.test(p.kde)));
+test('kid položky sekce projekce se hlídá taky',
+  uloIdProblemy(zakKid(null, null, [{ polozky: [{ kid: "a'b", nazev: 'x' }] }])).some(p => /sekce PROJ/.test(p.kde)));
+test('odebraný kid (katalogOdebrane) se hlídá',
+  uloIdProblemy({ varianty: [{ id: 'v1', data: { ock: { zadani: { katalogOdebrane: ["k1')x("] } } } }] }).some(p => /odebraný/.test(p.kde)));
+test('běžné kid (k12, pk3) a prázdný kid ruční položky projdou',
+  uloIdProblemy(zakKid({ zamereni: [{ kid: 'pk3', nazev: 'x' }, { kid: '', nazev: 'ruční' }, { nazev: 'bez kid' }] },
+    { hrubaOck: [{ kid: 'k12', nazev: 'y' }] })).length === 0);
+test('uloKidProblemyProgramu hlídá katalog OCK i ceník PROJ programu',
+  uloKidProblemyProgramu({ vlastniPolozky: { dpz: [{ kid: "pk1'" }] } }, { polozky: { rezie: [{ kid: 'k1' }, { kid: 'k2)' }] } }).length === 2
+  && uloKidProblemyProgramu({ vlastniPolozky: { dpz: [{ kid: 'pk1' }] } }, { polozky: { rezie: [{ kid: 'k1' }] } }).length === 0
+  && uloKidProblemyProgramu(null, undefined).length === 0);
+
+console.log('\n--- duplicitní id (B29, 9. 9. 2026) ---');
+const dupl = uloIdProblemy({ varianty: [{ id: 'v1' }, { id: 'v2' }, { id: 'v1' }], poznamky: [{ id: 'p1' }, { id: 'p1' }],
+  prilohy: [{ id: 'r1' }], aktivni: 'v1' });
+test('duplicitní id varianty i poznámky se ohlásí s důvodem „duplicita"',
+  dupl.length === 2 && dupl.every(p => p.duvod === 'duplicita') && dupl[0].kde === 'varianta' && dupl[1].kde === 'poznámka', JSON.stringify(dupl));
+test('věta pro odmítnutí rozliší tvar a duplicitu',
+  /duplicitní id \(varianta v1/.test(uloIdProblemyText(dupl)) && !/nepovoleném tvaru/.test(uloIdProblemyText(dupl))
+  && /nepovoleném tvaru/.test(uloIdProblemyText(uloIdProblemy({ varianty: [{ id: "x'" }] }))));
+test('různá id nejsou duplicita', uloIdProblemy({ varianty: [{ id: 'v1' }, { id: 'v2' }], aktivni: 'v1' }).length === 0);
 
 console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
 process.exit(fail ? 1 : 0);

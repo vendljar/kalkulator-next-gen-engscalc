@@ -14,6 +14,7 @@ function varNova() {
   if (!v) {   // pojistka pro sestavení bez zamek.js
     const z = novaVarianta('Varianta ' + (ZAK.varianty.length + 1),
       JSON.parse(JSON.stringify(zdroj.data)));
+    if (typeof zakazkaUnikatniId === 'function') z.id = zakazkaUnikatniId(ZAK, z.id);   // B29
     ZAK.varianty.push(z); ZAK.aktivni = z.id;
   }
   syncVarianta(); render();

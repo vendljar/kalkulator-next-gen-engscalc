@@ -300,6 +300,9 @@ export function profilZUctu(ucet) {
  * KAŽDÉM požadavku (vyzadujRoli čte účet pokaždé) a seznam kolegů pro
  * administrátora by z pár řádků tabulky narostl na megabajty. */
 export const PODPIS_ULOZISTE = 'podpisy';
+/* Kniha smazaných účtů (functions/uzivatele.mjs, akce 'smaz'). Od 9. 9. 2026
+ * ji čte i obnova (B30): účet, který někdo vědomě smazal, se z otisku neoživí. */
+export const SMAZANI_ULOZISTE = 'smazani';
 
 /* Strop na velikost. 900 000 znaků zápisu base64 je zhruba 660 kB obrázku —
  * na sken podpisu a razítka bohatě stačí a Blobs ani Word to netrápí.

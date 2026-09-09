@@ -181,7 +181,7 @@ function archivHlavicka(p) {
   const th = (id, popis) => {
     const akt = p.klic === id;
     const sipka = akt ? (p.smer === 1 ? ' ▲' : ' ▼') : '';
-    return `<th class="sort${akt ? ' aktivni' : ''}" onclick="archivRadit('${id}')"
+    return `<th class="sort${akt ? ' aktivni' : ''}" onclick="archivRadit('${escJs(id)}')"
       title="seřadit podle sloupce ${esc(popis)} (opakovaným kliknutím obrátíte směr)"
       >${esc(popis)}<span class="sipka">${sipka}</span></th>`;
   };

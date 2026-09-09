@@ -495,11 +495,86 @@ function uloOdemceniPribylo(naDisku, kUlozeni) {
  * Starší uložené zakázky mají id právě v tomhle tvaru, nic se nemigruje. */
 const ULO_ID_TVAR = /^[A-Za-z0-9._-]{1,80}$/;
 function uloIdBezpecne(id) { return ULO_ID_TVAR.test(String(id == null ? '' : id)); }
+
+/* Trvalé položky ceníku (bezpečnostní audit 9. 9. 2026, nález B26).
+ *
+ * `kid` katalogové položky (OCK: k…, PROJ: pk…) cestuje UVNITŘ uložené
+ * zakázky — ceník PROJ i vlastní položky OCK jsou součástí varianty — a
+ * administrátor ho v obrazovce Ceník vkládá do onclick tlačítka ✕. Do 9. 9.
+ * ho server nekontroloval vůbec: obchodník mohl do zakázky uložit položku
+ * s `kid` „x');fetch(…)//", administrátor by na ni klikl a skript by běžel
+ * pod jeho relací; „Zveřejnit ceník" by ho pak propsal všem. Kontroluje se
+ * proto na všech místech, kde kid v zakázce leží (vlastní položky obou
+ * částí, položky sekcí projekce, seznamy odebraných). Prázdný kid je
+ * v pořádku — ruční položka bez vazby na katalog ho nemá. */
+function uloKidSeznam(mapa, kde, out) {
+  if (!mapa || typeof mapa !== 'object') return;
+  Object.keys(mapa).forEach(sek => {
+    const arr = mapa[sek];
+    if (!Array.isArray(arr)) return;
+    arr.forEach(p => {
+      if (p && p.kid != null && p.kid !== '' && !uloIdBezpecne(p.kid)) out.push({ kde: kde + ' (kid)', id: p.kid });
+    });
+  });
+}
+function uloKidOdebrane(arr, kde, out) {
+  (Array.isArray(arr) ? arr : []).forEach(kid => {
+    if (kid != null && kid !== '' && !uloIdBezpecne(kid)) out.push({ kde: kde + ' (odebraný kid)', id: kid });
+  });
+}
+function uloKidProblemyVarianty(v, out) {
+  const d = v && v.data;
+  if (!d || typeof d !== 'object') return;
+  const ockZ = d.ock && d.ock.zadani;
+  if (ockZ && typeof ockZ === 'object') {
+    uloKidSeznam(ockZ.vlastniPolozky, 'trvalá položka OCK', out);
+    uloKidOdebrane(ockZ.katalogOdebrane, 'trvalá položka OCK', out);
+  }
+  const proj = d.proj;
+  if (proj && typeof proj === 'object') {
+    if (proj.cenik && typeof proj.cenik === 'object') uloKidSeznam(proj.cenik.vlastniPolozky, 'trvalá položka PROJ', out);
+    if (proj.zadani && typeof proj.zadani === 'object') {
+      uloKidOdebrane(proj.zadani.katalogOdebrane, 'trvalá položka PROJ', out);
+      (Array.isArray(proj.zadani.sekce) ? proj.zadani.sekce : []).forEach(s => {
+        (s && Array.isArray(s.polozky) ? s.polozky : []).forEach(p => {
+          if (p && p.kid != null && p.kid !== '' && !uloIdBezpecne(p.kid)) out.push({ kde: 'položka sekce PROJ (kid)', id: p.kid });
+        });
+      });
+    }
+  }
+}
+/* Totéž pro to, co jde do platného ceníku programu (/api/program a obnova
+ * části `program`): katalog OCK (`polozky.<sekce>[].kid`) a ceník PROJ
+ * (`vlastniPolozky.<sekce>[].kid`). Zveřejněný ceník se propíše do každé
+ * nové nabídky — tudy by se podvržený kid dostal ke všem. */
+function uloKidProblemyProgramu(cenikProj, katalog) {
+  const out = [];
+  if (cenikProj && typeof cenikProj === 'object') uloKidSeznam(cenikProj.vlastniPolozky, 'ceník PROJ', out);
+  if (katalog && typeof katalog === 'object') uloKidSeznam(katalog.polozky, 'katalog OCK', out);
+  return out;
+}
+
+/* Duplicitní id (bezpečnostní audit 9. 9. 2026, nález B29). Kontroly zámku
+ * párují varianty přes `varianty.find(v => v.id === sv.id)` — první shoda.
+ * Kopie uzamčené varianty se stejným id, jinými daty a cizím `zamek.kdo`
+ * do 9. 9. prošla: rejstřík pak hlásil dvě odeslané a každé další uložení
+ * končilo 409, protože se k uzamčené variantě „ztratil" pár. Jedinečnost
+ * se hlídá u variant, poznámek i příloh; server odmítá 400. */
+function uloDuplicity(arr, kde, out) {
+  const videno = new Set();
+  (Array.isArray(arr) ? arr : []).forEach(x => {
+    if (!x || x.id == null) return;
+    const id = String(x.id);
+    if (videno.has(id)) out.push({ kde, id, duvod: 'duplicita' });
+    videno.add(id);
+  });
+}
 function uloIdProblemy(zak) {
   const out = [];
   if (!zak) return out;
   (Array.isArray(zak.varianty) ? zak.varianty : []).forEach(v => {
     if (v && !uloIdBezpecne(v.id)) out.push({ kde: 'varianta', id: v.id });
+    uloKidProblemyVarianty(v, out);
   });
   (Array.isArray(zak.poznamky) ? zak.poznamky : []).forEach(p => {
     if (p && !uloIdBezpecne(p.id)) out.push({ kde: 'poznámka', id: p.id });
@@ -509,7 +584,21 @@ function uloIdProblemy(zak) {
   });
   if (zak.aktivni != null && zak.aktivni !== '' && !uloIdBezpecne(zak.aktivni))
     out.push({ kde: 'aktivní varianta', id: zak.aktivni });
+  uloDuplicity(zak.varianty, 'varianta', out);
+  uloDuplicity(zak.poznamky, 'poznámka', out);
+  uloDuplicity(zak.prilohy, 'příloha', out);
   return out;
+}
+/* Věta pro odmítnutí (server i obnova): tvar a duplicita se hlásí zvlášť,
+ * aby člověk věděl, co má opravit. */
+function uloIdProblemyText(problemy) {
+  const dupl = problemy.filter(p => p.duvod === 'duplicita');
+  const tvar = problemy.filter(p => p.duvod !== 'duplicita');
+  const casti = [];
+  if (tvar.length) casti.push('identifikátor v nepovoleném tvaru (' + tvar.map(x => x.kde).join(', ')
+    + ') — povolená jsou písmena, číslice, tečka, podtržítko a pomlčka');
+  if (dupl.length) casti.push('duplicitní id (' + dupl.map(x => x.kde + ' ' + x.id).join(', ') + ')');
+  return casti.join('; ');
 }
 
 if (typeof module !== 'undefined')
@@ -525,4 +614,5 @@ if (typeof module !== 'undefined')
                      uloDruhZakazky, uloObchodnik,
                      uloRejstrikOdeber, uloRejstrikSerad, uloHledej,
                      uloZamekKlic, uloPocetOdemceni, uloKontrolaZamku, uloProblemPopis,
-                     uloOdemceniPribylo, ULO_ID_TVAR, uloIdBezpecne, uloIdProblemy };
+                     uloOdemceniPribylo, ULO_ID_TVAR, uloIdBezpecne, uloIdProblemy,
+                     uloIdProblemyText, uloKidProblemyProgramu };

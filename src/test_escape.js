@@ -98,7 +98,10 @@ for (const v of VZORKY) {
  * úpravě a seznam by za týden neseděl). */
 
 /* Jména, která napovídají, že hodnota přichází od uživatele nebo z importu. */
-const RIZIKO = /\b(nazev|jmeno|popis|pozn|poznamka|text|email|kdo|firma|objednatel|stavba|adresa|ico|dic|mesto|ulice|psc|soubor|hlaska|chyba|zprava|cislo|klic|key|label|titul|kontakt|telefon|web|banka|ucet|zakaznik|vzkaz|duvod|misto|projekt|varianta|verze|puvod|orig|autor|uzivatel|role|znacka|typ|kod|sekce|polozka|item)\b/i;
+/* `id` a `kid` přibyly 9. 9. 2026 (B26): identifikátory variant, poznámek,
+ * příloh i trvalých položek ceníku cestují v uložené zakázce, tedy od
+ * kohokoli, a v obrazovce jdou přímo do onclick. */
+const RIZIKO = /\b(nazev|jmeno|popis|pozn|poznamka|text|email|kdo|firma|objednatel|stavba|adresa|ico|dic|mesto|ulice|psc|soubor|hlaska|chyba|zprava|cislo|klic|key|label|titul|kontakt|telefon|web|banka|ucet|zakaznik|vzkaz|duvod|misto|projekt|varianta|verze|puvod|orig|autor|uzivatel|role|znacka|typ|kod|sekce|polozka|item|id|kid)\b/i;
 /* Funkce, po kterých je hodnota prokazatelně bezpečná. */
 const OBALY = /^(esc|escJs|keyAttr|num|fmt|fmt0|fmtKc|T|tsPrelozText|zapisTridaHlasky|JSON\.stringify|encodeURIComponent|e2|xmlEsc)$/;
 const KONSTANTA = /^('[^'\\$]*'|"[^"\\$]*"|`[^`\\$]*`|[-+]?[0-9.]+|true|false|null|undefined)$/;
@@ -194,28 +197,22 @@ function hodnotaBezpecna(v) {
 const PROVERENO = {
   'common.js': {
     'label': 'popisek pole ve formulářové šabloně txt(path, label) – volá se s literály',
+    'id': 'id karty / sekce / kotvy (card(), sekce(), detailKotvy) – literály z kódu, ne data',
   },
   'detail_ui.js': {
     'nazev': 'název kroku výpočtu z pevného seznamu DETAIL_KROKY',
+    'id': 'id kroku výpočtu z pevného seznamu DETAIL_KROKY (dvKrok)',
   },
   'dialog.js': {
     'dlgEsc(text)': 'dlgEsc() je esc() s fallbackem – text dialogu se escapuje uvnitř (B26)',
   },
-  'cenik_ui.js': {
-    "klicChip('PC.vlastniPolozky.' + sek.key + '.' + p.kid)":
-      'hotový úsek HTML z klicChip() – klíč i titulek escapuje esc() uvnitř; '
-      + 'sek.key je klíč sekce z pevného výčtu, p.kid je id z projKatalogNoveId()',
-  },
   'kalk_ock.js': {
     'col.admin ? pripNazev(x) : esc(x.nazev) + vypnutoHtml(x)':
       'obě větve escapují – pripNazev skládá HTML přes esc() uvnitř; vypnutoHtml je hotové HTML štítku (text je literál, popis přes esc())',
-    'key': 'klíč jeklu z pevného výčtu profilů, ne uživatelský text',
     'label': 'popisek řádku / KPI psaný vývojářem (profRow, sumRadek, kpiLine)',
-    'orig': 'o pár řádků výš: const orig = keyAttr(r.origNazev) – tedy escJs',
     'popis': 'text tlačítka „+ …" předaný literálem do radekPridat()',
     'klic': 'hotový úsek HTML z klicChip() – cestu i titulek escapuje esc() uvnitř',
     'pozn': 'hotový úsek HTML `<span class="note">(${esc(r.pozn)})</span>`',
-    'r.sekce': 'klíč sekce kalkulace z pevného výčtu',
   },
   'kalk_proj.js': {
     'label': 'popisek KPI psaný vývojářem',
@@ -244,7 +241,8 @@ const PROVERENO = {
       'jméno souboru mutace prochází esc(), zbytek jsou literály',
     'popis': 'popisný text bloku nastavení psaný vývojářem',
     'pozn': 'poznámka k řádku šablony psaná vývojářem',
-    's.kod': 'kód volby konfigurace z konstanty KONFIG_SEKCE',
+    "pole.filter(p => !(skryt && p.id !== 'korShodna')).map(poleHtml).join('')":
+      'hotové HTML řádků formuláře z poleHtml() – každá hodnota uvnitř prochází esc()/escJs()',
     'sekce': 'hotový úsek HTML poskládaný výš (uvnitř už escapovaný)',
     'typ': "klíč šablony ('CN', 'OVP' …) z pevného výčtu",
   },
@@ -252,7 +250,6 @@ const PROVERENO = {
     'hlaska': 'hotový úsek HTML `<div class="…">${esc(ONLINE_STAV.hlaska)}</div>`',
   },
   'poznamky_ui.js': {
-    'd.kod': 'kód druhu poznámky z pevného číselníku',
     'kdo': "výš: const kdo = p.kdo ? esc(p.kdo) : 'neuvedeno'",
   },
   'program_ui.js': {
@@ -265,15 +262,72 @@ const PROVERENO = {
     'duvod': 'hotový úsek HTML poskládaný o pár řádků výš – hodnota v něm '
       + 'prochází esc(SCHV_DUVODY[z.id]) a id přes escJs()',
   },
-  'techspec_ui.js': {
-    'j.kod': 'kód jazyka z konstanty JAZYKY',
-  },
   'zakazka_ui.js': {
     'nazev': 'popisek pole v náhledu nabídky – pole() se volá s literály',
   },
 };
 
+/* ================================================================
+ * HLÍDAČ ARGUMENTŮ V ATRIBUTECH UDÁLOSTÍ (bezpečnostní audit 9. 9. 2026, B26)
+ * ================================================================
+ * Předchozí hlídač bere esc() jako bezpečné všude — a v textu i v běžném
+ * atributu to platí. V onclick="fn('${…}')" ale NE: prohlížeč nejdřív
+ * dekóduje HTML entity (z &#39; je zase apostrof) a teprve pak parsuje
+ * JavaScript, takže esc() tam nechrání vůbec. Přesně tak prošel kid trvalé
+ * položky ceníku (cenik_ui.js) do onclick administrátorova tlačítka ✕.
+ *
+ * Tenhle hlídač proto projde jen atributy on*="…" a v nich připustí pouze
+ * escJs()/keyAttr(), čísla, konstanty a jejich skládání. esc() se tu počítá
+ * jako NEobalené. Bez seznamu výjimek: kdo potřebuje do onclick hodnotu
+ * z dat, obalí ji escJs — je to o šest znaků víc. */
+const OBALY_JS = /^(escJs|keyAttr|num|fmt|fmt0|JSON\.stringify|encodeURIComponent)$/;
+function hodnotaBezpecnaJs(v) {
+  const t = v.trim();
+  if (!t) return true;
+  if (KONSTANTA.test(t)) return true;
+  if (/^[+-]\s*[A-Za-z_$(]/.test(t)) return true;
+  if (/^this\b/.test(t)) return true;
+  const fn = celeVolani(t);
+  if (fn && OBALY_JS.test(fn)) return true;
+  const tt = ternar(t);
+  if (tt) return hodnotaBezpecnaJs(tt[0]) && hodnotaBezpecnaJs(tt[1]);
+  const casti = rozdel(t);
+  if (casti && casti.length > 1) return casti.every(hodnotaBezpecnaJs);
+  if (/^\(.*\)$/.test(t)) return hodnotaBezpecnaJs(t.slice(1, -1));
+  return false;
+}
+const UDALOST = /\bon[a-z]+="([^"]*)"/g;
+const vJs = [];
 const uiDir = __dirname + '/ui';
+for (const f of fs.readdirSync(uiDir).sort()) {
+  if (!f.endsWith('.js')) continue;
+  fs.readFileSync(uiDir + '/' + f, 'utf8').split('\n').forEach((r, i) => {
+    let m;
+    UDALOST.lastIndex = 0;
+    while ((m = UDALOST.exec(r))) {
+      const ven = [];
+      for (const v of vyrazy(m[1])) listy(v, ven);
+      for (const v of ven) {
+        if (hodnotaBezpecnaJs(v)) continue;
+        /* Hlásí se hodnoty, které vypadají na data (RIZIKO), a KAŽDÉ esc() —
+         * to je v onclick vždycky chyba, ať se hodnota jmenuje jakkoli. */
+        if (!RIZIKO.test(v) && !/\besc\(/.test(v)) continue;
+        vJs.push(f + ':' + (i + 1) + '  ${' + v.replace(/\s+/g, ' ').trim() + '}');
+      }
+    }
+  });
+}
+test('v atributech on*="…" chrání jen escJs()/keyAttr(), ne esc()', vJs.length === 0,
+  '\n      nalezeno ' + vJs.length + ':\n      ' + vJs.join('\n      ')
+  + '\n      → argument uvnitř onclick="fn(\'…\')" obalte escJs() (esc() tam'
+  + '\n        nechrání: prohlížeč entity dekóduje před parsováním JS)');
+
+/* Sonda hlídače na sobě samém: kdyby se rozbil, nesmí mlčet. */
+test('hlídač on* pozná esc() i holou hodnotu z dat a připustí escJs()',
+  !hodnotaBezpecnaJs("esc(p.kid)") && !hodnotaBezpecnaJs("p.kid")
+  && hodnotaBezpecnaJs("escJs(p.kid)") && hodnotaBezpecnaJs("'literal'")
+  && hodnotaBezpecnaJs("+r.idx") && hodnotaBezpecnaJs("i") === false);
+
 const nove = [];
 const nepouzite = [];
 for (const f of fs.readdirSync(uiDir).sort()) {

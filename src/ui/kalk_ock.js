@@ -6,9 +6,9 @@ function renderInputs() {
     const p = Z.profily[key];
     const tls = Object.keys(JEKLY[p.dim].kg);
     return `<div class="row"><label>${label}</label>
-      <select style="width:86px" onchange="set('Z.profily.${key}.dim', this.value); zkontrolujTl('${key}')">${dims.map(d =>
+      <select style="width:86px" onchange="set('Z.profily.${escJs(key)}.dim', this.value); zkontrolujTl('${escJs(key)}')">${dims.map(d =>
         `<option ${d === p.dim ? 'selected' : ''}>${esc(d)}</option>`).join('')}</select>
-      <select style="width:64px" onchange="set('Z.profily.${key}.tl', +this.value)">${tls.map(t =>
+      <select style="width:64px" onchange="set('Z.profily.${escJs(key)}.tl', +this.value)">${tls.map(t =>
         `<option ${+t === p.tl ? 'selected' : ''} value="${esc(t)}">${esc(t)}</option>`).join('')}</select></div>`;
   };
   document.getElementById('inputs').innerHTML =
@@ -263,15 +263,15 @@ function volitelneToggle(key, v) {
 
 /* ---- buňky editovatelných sloupců (sdílené pro všechny sekce) ---- */
 function bunkaNazev(r, sekceKey) {
-  const orig = keyAttr(r.origNazev);
+  const origJs = keyAttr(r.origNazev);
   const del = r.vlastni ? ` <button class="mini noprint" title="smazat položku" onclick="vlastniDel('${sekceKey}', ${r.idx})">✕</button>` : '';
   /* Špendlík „uložit natrvalo do ceníku" zmizel 1. 9. 2026 se stejným
    * odůvodněním jako tlačítko „+ přidat položku trvale": trvalé položky se
    * zakládají v ceníku, ne v kalkulaci. Funkce vlastniDoCeniku() zůstává —
    * volá ji katalog při propisu — jen z kalkulace na ni nevede tlačítko. */
   const pin = '';
-  const reset = (!r.vlastni && r.nazevPrepsan) ? ` <button class="mini noprint" title="vrátit původní název (${esc(r.origNazev)})" onclick="nazevReset('${orig}')">↺</button>` : '';
-  const onch = r.vlastni ? `vlastniSet('${sekceKey}', ${r.idx}, 'nazev', this.value)` : `nazevSet('${orig}', this.value)`;
+  const reset = (!r.vlastni && r.nazevPrepsan) ? ` <button class="mini noprint" title="vrátit původní název (${esc(r.origNazev)})" onclick="nazevReset('${origJs}')">↺</button>` : '';
+  const onch = r.vlastni ? `vlastniSet('${sekceKey}', ${r.idx}, 'nazev', this.value)` : `nazevSet('${origJs}', this.value)`;
   const pozn = r.pozn ? ` <span class="note">(${esc(r.pozn)})</span>` : '';
   /* Klíč ceníkové položky za tímhle řádkem (1. 9. 2026) — vidí ho jen
    * administrátor. Řádek BEZ klíče je řádek, který se v ceníku neopírá
@@ -287,19 +287,19 @@ function bunkaNazev(r, sekceKey) {
 }
 function bunkaMnozstvi(r) {
   if (r.vlastni)
-    return `<input type="number" step="any" style="width:86px" value="${+(+r.mnozstvi).toFixed(3)}" onchange="vlastniSet('${r.sekce}', ${r.idx}, 'mnozstvi', this.value)">`;
-  const orig = keyAttr(r.origNazev);
-  return `<input type="number" step="any" style="width:86px" value="${+(+r.mnozstvi).toFixed(3)}" onchange="mnozstviSet('${orig}', this.value)" title="množství lze ručně přepsat">` +
-    (r.prepsano ? ` <button class="mini noprint" title="vrátit vypočtené množství (${num(r.mnozstviAuto, 3)})" onclick="mnozstviSet('${orig}', '')">↺</button>` : '');
+    return `<input type="number" step="any" style="width:86px" value="${+(+r.mnozstvi).toFixed(3)}" onchange="vlastniSet('${escJs(r.sekce)}', ${r.idx}, 'mnozstvi', this.value)">`;
+  const origJs = keyAttr(r.origNazev);
+  return `<input type="number" step="any" style="width:86px" value="${+(+r.mnozstvi).toFixed(3)}" onchange="mnozstviSet('${origJs}', this.value)" title="množství lze ručně přepsat">` +
+    (r.prepsano ? ` <button class="mini noprint" title="vrátit vypočtené množství (${num(r.mnozstviAuto, 3)})" onclick="mnozstviSet('${origJs}', '')">↺</button>` : '');
 }
 function bunkaCena(r) {
   if (r.vlastni)
-    return `<input type="number" step="any" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="vlastniSet('${r.sekce}', ${r.idx}, 'cena', this.value)">`;
+    return `<input type="number" step="any" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="vlastniSet('${escJs(r.sekce)}', ${r.idx}, 'cena', this.value)">`;
   if (r.cenaPath)
     return `<input type="number" step="any" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="set('${r.cenaPath}', +this.value)" title="jedn. cena z ceníku – změna se propíše i do Ceníku nákladů (obousměrně)">`;
-  const orig = keyAttr(r.origNazev);
-  return `<input type="number" step="any" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="cenaSet('${orig}', this.value)" title="jedn. cena – ruční přepis (bez ceníkové vazby)">` +
-    (r.cenaPrepsana ? ` <button class="mini noprint" title="vrátit vypočtenou cenu (${fmt(r.cenaAuto)})" onclick="cenaSet('${orig}', '')">↺</button>` : '');
+  const origJs = keyAttr(r.origNazev);
+  return `<input type="number" step="any" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="cenaSet('${origJs}', this.value)" title="jedn. cena – ruční přepis (bez ceníkové vazby)">` +
+    (r.cenaPrepsana ? ` <button class="mini noprint" title="vrátit vypočtenou cenu (${fmt(r.cenaAuto)})" onclick="cenaSet('${origJs}', '')">↺</button>` : '');
 }
 /* ---- stabilní klíč řádku (pro pořadí a viditelnost) ---- */
 function radekKey(r) {
@@ -439,10 +439,10 @@ function radekKalk(r, sekceKey) {
   let c = `<td style="white-space:normal">${admin
     ? `<div class="vol-name">${gripHtml(r, sekceKey)}${bunkaNazev(r, sekceKey)}${bezCenyHtml(r)}${vypnutoHtml(r)}</div>`
     : vlastniEd
-      ? `<input type="text" class="nazev-ed" style="width:55%" value="${esc(r.nazev)}" onchange="vlastniSet('${r.sekce}', ${r.idx}, 'nazev', this.value)">
+      ? `<input type="text" class="nazev-ed" style="width:55%" value="${esc(r.nazev)}" onchange="vlastniSet('${escJs(r.sekce)}', ${r.idx}, 'nazev', this.value)">
          à <input type="number" step="any" style="width:96px" value="${+(+r.cena).toFixed(2)}" title="jednotková cena této položky (jen pro tuto zakázku)"
-           onchange="vlastniSet('${r.sekce}', ${r.idx}, 'cena', this.value)"> Kč
-         <button class="mini noprint" title="odebrat vlastní položku" onclick="vlastniDel('${r.sekce}', ${r.idx})">✕</button>`
+           onchange="vlastniSet('${escJs(r.sekce)}', ${r.idx}, 'cena', this.value)"> Kč
+         <button class="mini noprint" title="odebrat vlastní položku" onclick="vlastniDel('${escJs(r.sekce)}', ${r.idx})">✕</button>`
       : esc(r.nazev) + poznHtml(r) + bezCenyHtml(r) + vypnutoHtml(r)}</td>`;
   c += `<td style="white-space:nowrap">${(admin || vlastniEd) ? bunkaMnozstvi(r) : num(r.mnozstvi, 3)}</td>`;
   if (admin) c += `<td style="white-space:nowrap">${bunkaCena(r)}</td>`;
@@ -756,7 +756,7 @@ function renderOutputs() {
 
   const vynech = Z.priplatkyVynechat || [];
   const pripNazev = (x) => {
-    const orig = keyAttr(x.origNazev);
+    const origJs = keyAttr(x.origNazev);
     if (x.vlastni) {
       const i = +String(x.key).split(':')[1];
       const pinP = (!x.kid && jeAdmin())
@@ -765,11 +765,11 @@ function renderOutputs() {
       return `<input type="text" class="nazev-ed" value="${esc(x.nazev)}" onchange="priplatekVlastniSet(${i}, 'nazev', this.value)" title="název příplatku">${trv}${pinP}
         <button class="mini noprint" title="smazat příplatek" onclick="priplatekVlastniDel(${i})">✕</button>`;
     }
-    const reset = x.nazevPrepsan ? ` <button class="mini noprint" title="vrátit původní název" onclick="nazevReset('${orig}')">↺</button>` : '';
+    const reset = x.nazevPrepsan ? ` <button class="mini noprint" title="vrátit původní název" onclick="nazevReset('${origJs}')">↺</button>` : '';
     /* Klíč ceníkové položky i u příplatku (2. 9. 2026): řádky kalkulace ho mají
      * od 1. 9., příplatky na něj tehdy zapomněly — a přitom je to jediné místo,
      * kde je vidět, ze které ceníkové položky se cena bere. */
-    return `<input type="text" class="nazev-ed" value="${esc(x.nazev)}" onchange="nazevSet('${orig}', this.value)" title="název příplatku lze přepsat">${reset}${klicChip(x.cenaPath)}${vypnutoHtml(x)}`;
+    return `<input type="text" class="nazev-ed" value="${esc(x.nazev)}" onchange="nazevSet('${origJs}', this.value)" title="název příplatku lze přepsat">${reset}${klicChip(x.cenaPath)}${vypnutoHtml(x)}`;
   };
   /* Množství u příplatku jde od 2. 9. 2026 PŘEPSAT (zadání J. V. po testu
    * Kornpfortstraße): předloha má u některých položek pod čarou nulu, aby se
@@ -779,9 +779,9 @@ function renderOutputs() {
   const pripMnozstvi = (x) => {
     if (x.vlastni)
       return `<input type="number" step="any" style="width:80px" value="${+(+x.mnozstvi).toFixed(3)}" onchange="priplatekVlastniSet(${+String(x.key).split(':')[1]}, 'mnozstvi', this.value)">`;
-    const orig = keyAttr(x.origNazev);
-    return `<input type="number" step="any" style="width:80px" value="${+(+x.mnozstvi).toFixed(3)}" onchange="mnozstviSet('${orig}', this.value)" title="množství lze ručně přepsat (prázdné = vypočtené)">`
-      + (x.prepsano ? ` <button class="mini noprint" title="vrátit vypočtené množství (${num(x.mnozstviAuto, 3)})" onclick="mnozstviSet('${orig}', '')">↺</button>` : '');
+    const origJs = keyAttr(x.origNazev);
+    return `<input type="number" step="any" style="width:80px" value="${+(+x.mnozstvi).toFixed(3)}" onchange="mnozstviSet('${origJs}', this.value)" title="množství lze ručně přepsat (prázdné = vypočtené)">`
+      + (x.prepsano ? ` <button class="mini noprint" title="vrátit vypočtené množství (${num(x.mnozstviAuto, 3)})" onclick="mnozstviSet('${origJs}', '')">↺</button>` : '');
   };
   const pripCena = (x) => x.vlastni
     ? `<input type="number" step="any" style="width:96px" value="${+(+x.cena).toFixed(2)}" onchange="priplatekVlastniSet(${+String(x.key).split(':')[1]}, 'cena', this.value)">`

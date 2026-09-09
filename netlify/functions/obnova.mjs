@@ -9,7 +9,7 @@
  *
  * POST /api/obnova {
  *   zdroj:      { soubor: <záloha z /api/zaloha, nebo její část> }
- *               | { otisk: 'YYYY-MM-DD' | 'YYYY-MM-DD-pred-obnovou' },
+ *               | { otisk: 'YYYY-MM-DD' | '…-pred-obnovou' },
  *   rezim:      'doplnit' (zapíše jen to, co na serveru chybí)
  *               | 'prepsat' (zapíše všechno ze zálohy přes stávající),
  *   casti:      ['program','firma','zobrazeni','zakazky','uzivatele',
@@ -29,6 +29,9 @@
  *                                            → dávka: bez dalšího otisku,
  *                                              bez přestavby rejstříku
  *   { faze: 'konec', obnovaId }             → přestaví rejstřík, vrátí součet
+ *   { faze: 'zrusit', obnovaId }            → zahodí rozpracovanou obnovu
+ *                                              (kterýkoli administrátor),
+ *                                              rejstřík přestaví
  * Token žije v úložišti `zalohy` (klíč `obnova-<id>`, hodinu, jen pro toho,
  * kdo obnovu zahájil), aby dávky nemohl posílat nikdo jiný a aby se otisk
  * před obnovou nepořizoval znovu s napůl obnovenou databází — to by cestu
@@ -38,9 +41,9 @@
  *  1) Náhled: stejný průchod bez zápisu; obrazovka bez něj obnovu nepustí
  *     a server ji bez `potvrzeni` odmítne.
  *  2) Otisk před obnovou: než se sáhne na první záznam, pořídí se otisk
- *     současného stavu pod klíčem `<den>-pred-obnovou`. Když se otisk
- *     nepovede, obnova se NEPROVEDE — nevratná operace bez cesty zpátky je
- *     horší než neprovedená obnova.
+ *     současného stavu pod vlastním klíčem `<den>T<hhmmss>-pred-obnovou`.
+ *     Když se otisk nepovede, obnova se NEPROVEDE — nevratná operace bez
+ *     cesty zpátky je horší než neprovedená obnova.
  *  3) Uzamčené nabídky: zakázka, které by obnova změnila data uzamčené
  *     (odeslané) varianty nebo jí sundala zámek, se přeskočí a vypíše — i v
  *     režimu „přepsat". Stejná kontrola jako při ukládání (zakazky.mjs).
@@ -50,10 +53,26 @@
  *  5) Cizí nebo poškozený soubor se neobnovuje: musí nést razítko pořízení
  *     a aspoň jednu známou část.
  *
+ * BEZPEČNOSTNÍ AUDIT 9. 9. 2026 (B27, B28, B30, B31, B32) přidal:
+ *  – Účty a podpisy jdou JEN ze serverového otisku (B27, volba a): stažená
+ *    záloha hesla nenese a soubor je to jediné, co si může kdokoli upravit
+ *    v editoru. Vedlejší správce si do něj do 9. 9. mohl vložit vlastní
+ *    scrypt otisk pro hlavní účet a převzít ho. Ani z otisku nesmí hlavní
+ *    účet (ADMIN_EMAIL) a jeho podpis zapsat nikdo jiný než on sám; role
+ *    jen z výčtu ROLE, e-mail v platném tvaru, podpis přes podpisZkontroluj.
+ *  – Zámek „obnova běží" (B28): dokud existuje živý token rozpracované
+ *    obnovy, druhý začátek i jednorázová obnova dostanou 409 s tím, kdo
+ *    a kdy ji zahájil. Vypršelé tokeny se při té příležitosti uklidí.
+ *    Otisk před obnovou má navíc klíč s časem, takže ani opakování po
+ *    selhané dávce nepřepíše cestu zpátky.
+ *  – Smazané účty se neoživí (B30): náhrobek `null` vypadal jako „nový
+ *    záznam"; teď se čte kniha smazaných (SMAZANI_ULOZISTE). Stav účtu
+ *    (aktivní / archiv) drží server — obnova neodarchivuje ani nezapne.
+ *  – `hesloVerze` nikdy neklesne (B31): zapisuje se max(server, záloha),
+ *    jinak by obnova oživila relace odvolané změnou hesla.
+ *  – Zakázky ze zálohy procházejí uloIdProblemy jako při ukládání (B32).
+ *
  * NA CO SE ZAPOMÍNÁ:
- *  – Účty: stažená záloha otisky hesel schválně nenese, takže účty z ní
- *    obnovit NEJDE — vznikly by účty, do kterých se nikdo nepřihlásí.
- *    Přeskočí se s důvodem a nabídne se serverový otisk, ten je nese celé.
  *  – Rejstřík zakázek se po zápisu poskládá ze SKUTEČNÉHO obsahu úložiště,
  *    ne ze zálohy — jinak by v seznamu zůstal sirotek po zakázce, kterou
  *    obnova kvůli zámku přeskočila.
@@ -63,19 +82,21 @@
  *    na to upozorní: firemní údaje a účty toho druhého webu nemusí být to,
  *    co tu člověk chce. */
 import { randomBytes } from 'node:crypto';
-import { uloziste, vyzadujRoli, json, ADMIN_EMAIL, hostitel } from '../lib/sdilene.mjs';
+import { uloziste, vyzadujRoli, json, ADMIN_EMAIL, ROLE, hostitel, emailPlatny,
+         podpisZkontroluj, hesloVerzeUctu, SMAZANI_ULOZISTE } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
-import { porizOtisk, denDnes, klicPredObnovou } from '../lib/zalohovani.mjs';
+import { porizOtisk, klicPredObnovou, OTISK_KLIC } from '../lib/zalohovani.mjs';
 
 export const OBNOVA_CASTI = ['program', 'firma', 'zobrazeni', 'zakazky', 'uzivatele',
                              'sablony', 'zakaznici', 'podpisy'];
 export const OBNOVA_REZIMY = ['doplnit', 'prepsat'];
 export const OBNOVA_POTVRZENI = 'OBNOVIT';
 export const OBNOVA_TOKEN_PLATNOST_MS = 60 * 60 * 1000;
-const OTISK_KLIC = /^\d{4}-\d{2}-\d{2}(-pred-obnovou)?$/;
 const TOKEN_TVAR = /^[0-9a-f]{32}$/;
 const KLIC_MAX = 200;
-const tokenKlic = (id) => 'obnova-' + id;
+const TOKEN_PREDPONA = 'obnova-';
+const tokenKlic = (id) => TOKEN_PREDPONA + id;
+const maVlastni = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 
 const stejne = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const bilance = () => ({ nove: 0, prepsane: 0, bezeZmeny: 0, preskocene: 0, duvody: [] });
@@ -86,7 +107,7 @@ const preskoc = (b, klic, duvod) => { b.preskocene++; b.duvody.push({ klic: Stri
 function vypadaJakoZaloha(z) {
   return !!z && typeof z === 'object' && !Array.isArray(z)
     && typeof z.porizena === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(z.porizena)
-    && OBNOVA_CASTI.some(c => Object.prototype.hasOwnProperty.call(z, c));
+    && OBNOVA_CASTI.some(c => maVlastni(z, c));
 }
 
 /* Jeden záznam v úložišti: rozhodne, do které kolonky patří, a když se
@@ -106,14 +127,20 @@ async function zaznam(b, s, klic, novy, rezim, zapisovat, kontrola) {
   if (stary == null) b.nove++; else b.prepsane++;
 }
 
-/* Mapa klíč → záznam (sablony, zakaznici, podpisy; zakázky s předponou). */
-async function obnovMapu(b, s, mapa, rezim, zapisovat, predpona, kontrola) {
+/* Mapa klíč → záznam (sablony, zakaznici, podpisy; zakázky s předponou).
+ * `overeni(klic, hodnota)` (B32) posoudí každý záznam ještě PŘED čtením
+ * ze serveru — vrací důvod přeskočení, nebo prázdno. */
+async function obnovMapu(b, s, mapa, rezim, zapisovat, predpona, kontrola, overeni) {
   if (!mapa || typeof mapa !== 'object' || Array.isArray(mapa)) {
     preskoc(b, '*', 'záloha tuto část nenese'); return;
   }
   for (const [k, v] of Object.entries(mapa)) {
     if (!k || k.length > KLIC_MAX) { preskoc(b, k, 'nepřijatelný klíč'); continue; }
     if (v == null || typeof v !== 'object') { preskoc(b, k, 'poškozený záznam (není objekt)'); continue; }
+    if (overeni) {
+      const d = overeni(k, v);
+      if (d) { preskoc(b, k, d); continue; }
+    }
     await zaznam(b, s, (predpona || '') + k, v, rezim, zapisovat, kontrola);
   }
 }
@@ -130,6 +157,8 @@ async function prestavRejstrik(ULO, s, kdo) {
   return { zakazek: zaznamy.length, existujicich: zaznamy.length, prestaven: true };
 }
 
+const tokenVyprsel = (z) => !z || !z.zacatek || (Date.now() - Date.parse(z.zacatek) > OBNOVA_TOKEN_PLATNOST_MS);
+
 /* Token rozpracované obnovy po dávkách. Vrací záznam, nebo odpověď s chybou. */
 async function nactiToken(relace, id) {
   const klic = String(id || '');
@@ -138,12 +167,52 @@ async function nactiToken(relace, id) {
   const z = await s.cti(tokenKlic(klic));
   if (!z || z.kdo !== relace.email)
     return { chyba: json({ ok: false, chyba: 'Obnova nebyla zahájena, nebo ji zahájil někdo jiný. Začněte znovu náhledem.' }, 403) };
-  if (Date.now() - Date.parse(z.zacatek) > OBNOVA_TOKEN_PLATNOST_MS) {
+  if (tokenVyprsel(z)) {
     await s.smaz(tokenKlic(klic));
     return { chyba: json({ ok: false, chyba: 'Zahájená obnova vypršela (hodina). Stav před ní je v otisku '
       + z.otiskPred + '; začněte znovu náhledem.' }, 410) };
   }
   return { token: z, s, klic: tokenKlic(klic) };
+}
+
+/* Zámek „obnova běží" (B28). Projde tokeny `obnova-*`: vypršelé smaže
+ * (úklid opuštěných obnov — po výpadku prohlížeče uprostřed dávek by tu
+ * jinak ležely napořád), živý vrátí. Druhý správce, nebo tentýž po selhané
+ * dávce, tak nezačne novou obnovu přes rozpracovanou: obě by zapisovaly
+ * do téže databáze a ta druhá by pořídila „otisk před obnovou" ze stavu,
+ * který už je napůl obnovený. */
+async function beziciObnova() {
+  const s = await uloziste('zalohy');
+  let ziva = null;
+  for (const k of (await s.seznam(TOKEN_PREDPONA)) || []) {
+    const z = await s.cti(k);
+    if (tokenVyprsel(z)) { await s.smaz(k); continue; }
+    if (!ziva || String(z.zacatek) < String(ziva.zacatek)) ziva = z;
+  }
+  return ziva;
+}
+async function zamekObnovy() {
+  const z = await beziciObnova();
+  return z ? obnovaBeziOdpoved(z) : null;
+}
+function obnovaBeziOdpoved(z) {
+  const kdy = new Date(z.zacatek).toLocaleString('cs-CZ', { timeZone: 'Europe/Prague' });
+  return json({ ok: false,
+    chyba: 'Obnovu už zahájil ' + z.kdo + ' (' + kdy + ', zapsáno ' + (z.davek || 0) + ' dávek) a ještě ji neuzavřel. '
+      + 'Dokud běží, druhá obnova by přepsala cestu zpátky. Počkejte, až ji dokončí, nebo rozpracovanou obnovu zahoďte.',
+    obnovaBezi: { obnovaId: z.id, kdo: z.kdo, zacatek: z.zacatek, otiskPred: z.otiskPred,
+                  davek: z.davek || 0, rezim: z.rezim } }, 409);
+}
+
+/* Stav účtu drží server (B30): obnova nikdy neodarchivuje ani nezapne
+ * účet — to jsou rozhodnutí správce s vlastními pojistkami v uzivatele.mjs
+ * (archivovaný účet se nezapíná, hlavní se nevypíná). Záloha do nich nemá
+ * co mluvit; přebírá se jen zbytek záznamu. */
+function stavUctuDrziServer(novy, stary) {
+  if (stary.aktivni === undefined) delete novy.aktivni; else novy.aktivni = stary.aktivni;
+  ['archiv', 'archivKdy', 'archivKdo'].forEach(k => {
+    if (stary[k] === undefined) delete novy[k]; else novy[k] = stary[k];
+  });
 }
 
 export default async (req) => {
@@ -166,10 +235,28 @@ export default async (req) => {
     if (tk.chyba) return tk.chyba;
     const rejstrik = await prestavRejstrik(ULO, await uloziste('zakazky'), relace.email);
     await tk.s.smaz(tk.klic);
-    upozorneni.push('Stav před obnovou leží v otisku ' + tk.token.otiskPred
-      + ' (jeden slot na den — další obnova téhož dne ho přepíše).');
+    upozorneni.push('Stav před obnovou leží v otisku ' + tk.token.otiskPred + '.');
     return json({ ok: true, faze: 'konec', rezim: tk.token.rezim, davek: tk.token.davek,
                   souhrn: tk.token.souhrn, rejstrik, otiskPred: tk.token.otiskPred, upozorneni });
+  }
+
+  /* --- zahození rozpracované obnovy (B28): kterýkoli administrátor ---
+   * Kdo obnovu zahájil, může být pryč (zavřený prohlížeč, dovolená), a bez
+   * tohohle by databáze zůstala hodinu zamčená. Co se stihlo zapsat,
+   * zůstává zapsané — rejstřík se přestaví, aby odpovídal obsahu, a cesta
+   * zpátky je v otisku, na který odpověď ukáže. */
+  if (faze === 'zrusit') {
+    const klic = String(t.obnovaId || '');
+    if (!TOKEN_TVAR.test(klic)) return json({ ok: false, chyba: 'Neplatný token obnovy.' }, 400);
+    const s = await uloziste('zalohy');
+    const z = await s.cti(tokenKlic(klic));
+    if (!z) return json({ ok: false, chyba: 'Rozpracovaná obnova s tímto tokenem není (už skončila, nebo vypršela).' }, 404);
+    const rejstrik = await prestavRejstrik(ULO, await uloziste('zakazky'), relace.email);
+    await s.smaz(tokenKlic(klic));
+    return json({ ok: true, faze: 'zrusit', zahozena: { kdo: z.kdo, zacatek: z.zacatek, davek: z.davek || 0 },
+                  otiskPred: z.otiskPred, rejstrik,
+                  upozorneni: ['Rozpracovaná obnova (' + z.kdo + ') je zahozená. Co stihla zapsat, zůstává zapsané; '
+                    + 'stav před ní leží v otisku ' + z.otiskPred + '.'] });
   }
 
   /* --- vstupy --- */
@@ -183,12 +270,14 @@ export default async (req) => {
     casti = OBNOVA_CASTI.filter(c => t.casti.includes(c));
   }
 
-  /* --- začátek obnovy po dávkách: potvrzení, otisk, token --- */
+  /* --- začátek obnovy po dávkách: potvrzení, zámek, otisk, token --- */
   if (faze === 'zacatek') {
     if (t.potvrzeni !== OBNOVA_POTVRZENI)
       return json({ ok: false, chyba: 'Obnova se provede jen s výslovným potvrzením po náhledu.' }, 428);
+    const zamek = await zamekObnovy();
+    if (zamek) return zamek;
     let otiskPred;
-    try { otiskPred = (await porizOtisk('pred-obnovou', relace.email, klicPredObnovou(denDnes()))).den; }
+    try { otiskPred = (await porizOtisk('pred-obnovou', relace.email, klicPredObnovou())).den; }
     catch (e) {
       return json({ ok: false, chyba: 'Otisk současného stavu se nepovedl (' + (e && e.message ? e.message : e)
         + ') — obnova se NEPROVEDLA, nic se nezměnilo. Bez cesty zpátky se neobnovuje.' }, 500);
@@ -241,9 +330,12 @@ export default async (req) => {
      * předpoklad). Obrazovka posílá potvrzení až po náhledu a dialogu. */
     if (t.potvrzeni !== OBNOVA_POTVRZENI)
       return json({ ok: false, chyba: 'Obnova se provede jen s výslovným potvrzením po náhledu.' }, 428);
+    /* B28: ani jednorázová obnova nesmí běžet přes rozpracovanou. */
+    const zamek = await zamekObnovy();
+    if (zamek) return zamek;
     /* Pojistka 2: otisk současného stavu DŘÍV, než se sáhne na první záznam.
-     * Vlastní slot, aby obnova z dnešního otisku nepřepsala svůj zdroj. */
-    try { otiskPred = (await porizOtisk('pred-obnovou', relace.email, klicPredObnovou(denDnes()))).den; }
+     * Vlastní slot s časem, aby obnova nepřepsala svůj zdroj ani cestu zpátky. */
+    try { otiskPred = (await porizOtisk('pred-obnovou', relace.email, klicPredObnovou())).den; }
     catch (e) {
       return json({ ok: false, chyba: 'Otisk současného stavu se nepovedl (' + (e && e.message ? e.message : e)
         + ') — obnova se NEPROVEDLA, nic se nezměnilo. Bez cesty zpátky se neobnovuje.' }, 500);
@@ -257,10 +349,16 @@ export default async (req) => {
   /* Jednozáznamové části v úložišti `program`. */
   const jednoduche = { program: 'db', firma: 'firma', zobrazeni: 'zobrazeni' };
   for (const cast of Object.keys(jednoduche)) {
-    if (!casti.includes(cast) || !Object.prototype.hasOwnProperty.call(zaloha, cast)) continue;
+    if (!casti.includes(cast) || !maVlastni(zaloha, cast)) continue;
     const b = bilance();
     const hodnota = zaloha[cast];
     if (hodnota == null || typeof hodnota !== 'object') preskoc(b, jednoduche[cast], 'záloha tuto část nenese');
+    else if (cast === 'program' && ULO.uloKidProblemyProgramu(hodnota.platny && hodnota.platny.cenikProj,
+                                                               hodnota.platny && hodnota.platny.katalog).length) {
+      /* B26: platný ceník ze zálohy nese kid trvalé položky v nepovoleném
+       * tvaru — stejná kontrola jako při zveřejnění (/api/program). */
+      preskoc(b, 'db', 'platný ceník v záloze nese identifikátor trvalé položky v nepovoleném tvaru — neobnovuje se');
+    }
     else await zaznam(b, sProg, jednoduche[cast], hodnota, rezim, zapisovat);
     /* Přeskočený ceník v režimu „doplnit" je nejčastější důvod dojmu, že
      * „obnova nenahrála všechno" (7. 9. 2026): důvod proto říká obě verze. */
@@ -273,9 +371,10 @@ export default async (req) => {
     vysledek[cast] = b;
   }
 
-  /* Zakázky: pojistka 3 — stejná kontrola zámků jako při ukládání. */
+  /* Zakázky: pojistka 3 — stejná kontrola zámků jako při ukládání;
+   * a tvar i jedinečnost id jako při ukládání (B32, 9. 9. 2026). */
   let rejstrik = null;
-  if (casti.includes('zakazky') && Object.prototype.hasOwnProperty.call(zaloha, 'zakazky')) {
+  if (casti.includes('zakazky') && maVlastni(zaloha, 'zakazky')) {
     const b = bilance();
     const s = await uloziste('zakazky');
     const kontrolaZamku = (stara, nova) => {
@@ -291,7 +390,11 @@ export default async (req) => {
       }
       return '';
     };
-    await obnovMapu(b, s, zaloha.zakazky, rezim, zapisovat, 'z/', kontrolaZamku);
+    const overeniId = (k, v) => {
+      const p = ULO.uloIdProblemy(v);
+      return p.length ? ULO.uloIdProblemyText(p) : '';
+    };
+    await obnovMapu(b, s, zaloha.zakazky, rezim, zapisovat, 'z/', kontrolaZamku, overeniId);
     vysledek.zakazky = b;
     /* V náhledu a v dávce se rejstřík nestaví — jen se spočítá, kolik zakázek
      * by v něm bylo (existující + nové). Dávky ho přestaví jednou na konci. */
@@ -300,27 +403,52 @@ export default async (req) => {
     else rejstrik = { zakazek: existujicich + (zapisovat ? 0 : b.nove), existujicich: zapisovat ? existujicich - b.nove : existujicich, prestaven: false };
   }
 
-  /* Účty: jen s otiskem hesla (serverový otisk). Hlavní administrátor se
-   * nedá vypnout ani obnovou — stejné pravidlo jako v uzivatele.mjs. */
-  if (casti.includes('uzivatele') && Object.prototype.hasOwnProperty.call(zaloha, 'uzivatele')) {
+  /* Účty (B27 a, B30, B31): jen ze serverového otisku, se stejnými
+   * pojistkami jako správa účtů, a nikdy neoživí smazaný ani neodarchivuje. */
+  if (casti.includes('uzivatele') && maVlastni(zaloha, 'uzivatele')) {
     const b = bilance();
     const s = await uloziste('uzivatele');
     const seznam = Array.isArray(zaloha.uzivatele) ? zaloha.uzivatele : null;
+    const uctyZeSouboru = zdrojPopis.typ === 'soubor';
     if (!seznam) preskoc(b, '*', 'záloha tuto část nenese');
-    else for (const u of seznam) {
-      const email = String((u && u.email) || '').trim().toLowerCase();
-      if (!email) { preskoc(b, '?', 'účet bez e-mailu'); continue; }
-      if (!(typeof u.heslo === 'string' && u.heslo.includes(':'))) {
-        preskoc(b, email, 'bez otisku hesla — stažená záloha hesla schválně nenese; účty obnovte ze serverového otisku');
-        continue;
+    else if (uctyZeSouboru) {
+      for (const u of seznam) preskoc(b, String((u && u.email) || '?').trim().toLowerCase() || '?',
+        'ze souboru se účty neobnovují — stažená záloha otisky hesel nenese a soubor jde upravit v editoru; '
+        + 'účty a podpisy se zapisují jen ze serverového otisku');
+      if (seznam.length) upozorneni.push('Účty a podpisy se ze souboru neobnovují — obnovte je ze serverového otisku (zdroj „otisk na serveru").');
+    } else {
+      const kniha = await uloziste(SMAZANI_ULOZISTE);
+      for (const u of seznam) {
+        const email = String((u && u.email) || '').trim().toLowerCase();
+        if (!email) { preskoc(b, '?', 'účet bez e-mailu'); continue; }
+        if (!emailPlatny(email)) { preskoc(b, email, 'e-mail nemá platný tvar'); continue; }
+        if (!(typeof u.heslo === 'string' && u.heslo.includes(':'))) {
+          preskoc(b, email, 'bez otisku hesla — účty obnovte ze serverového otisku');
+          continue;
+        }
+        if (!ROLE.includes(u.role)) { preskoc(b, email, 'role mimo výčet (' + String(u.role) + ') se nezapisuje'); continue; }
+        if (email === ADMIN_EMAIL && relace.email !== ADMIN_EMAIL) { preskoc(b, email, 'hlavní administrátorský účet obnoví jen on sám'); continue; }
+        const smazan = await kniha.cti(email);
+        if (smazan && smazan.smazano) {
+          preskoc(b, email, 'účet byl smazán ' + String(smazan.kdy || '').slice(0, 10) + ' (' + String(smazan.kdo || '') + ') — obnova ho neoživí; '
+            + 'vědomé oživení je samostatný krok správce');
+          continue;
+        }
+        const stary = await s.cti(email);
+        const novy = { ...u, email };
+        if (stary) {
+          stavUctuDrziServer(novy, stary);            // B30
+          const vz = Math.max(hesloVerzeUctu(stary), hesloVerzeUctu(u));
+          if (vz > 0) novy.hesloVerze = vz;           // B31: verze hesla nikdy neklesne
+          if (rezim === 'prepsat' && ((u.aktivni !== false) !== (stary.aktivni !== false) || !!u.archiv !== !!stary.archiv))
+            b.duvody.push({ klic: email, duvod: 'stav účtu (aktivní / archiv) drží server — v tom beze změny' });
+        }
+        if (email === ADMIN_EMAIL) novy.aktivni = true;
+        if (email === relace.email && stary && !stejne(stary, novy) && rezim === 'prepsat')
+          upozorneni.push('Váš vlastní účet se vrátí na stav z otisku (' + zdrojPopis.porizena.slice(0, 10)
+            + ') — po obnově se přihlaste znovu heslem, které platilo tehdy.');
+        await zaznam(b, s, email, novy, rezim, zapisovat);
       }
-      const novy = { ...u, email };
-      if (email === ADMIN_EMAIL) novy.aktivni = true;
-      const stary = await s.cti(email);
-      if (email === relace.email && stary && !stejne(stary, novy) && rezim === 'prepsat')
-        upozorneni.push('Váš vlastní účet se vrátí na stav z otisku (' + zdrojPopis.porizena.slice(0, 10)
-          + ') — po obnově se přihlaste znovu heslem, které platilo tehdy.');
-      await zaznam(b, s, email, novy, rezim, zapisovat);
     }
     vysledek.uzivatele = b;
   }
@@ -328,9 +456,25 @@ export default async (req) => {
   /* Mapy: šablony, kartotéka zákazníků, podpisy (klíče přesně jako v úložišti). */
   const mapy = { sablony: 'sablony', zakaznici: 'zakaznici', podpisy: 'podpisy' };
   for (const cast of Object.keys(mapy)) {
-    if (!casti.includes(cast) || !Object.prototype.hasOwnProperty.call(zaloha, cast)) continue;
+    if (!casti.includes(cast) || !maVlastni(zaloha, cast)) continue;
     const b = bilance();
-    await obnovMapu(b, await uloziste(mapy[cast]), zaloha[cast], rezim, zapisovat, '');
+    let overeni = null;
+    if (cast === 'podpisy') {
+      const podpisyZeSouboru = zdrojPopis.typ === 'soubor';
+      if (podpisyZeSouboru) {
+        /* B27 (a): podpis je razítko pod nabídkou — ze souboru, který jde
+         * upravit v editoru, se nezapisuje. */
+        overeni = () => 'ze souboru se podpisy neobnovují — jen ze serverového otisku';
+      } else {
+        overeni = (k, v) => {
+          if (k === ADMIN_EMAIL && relace.email !== ADMIN_EMAIL) return 'podpis hlavního administrátora mění jen on sám';
+          const kk = podpisZkontroluj(v && v.obrazek);   // B32: stejná kontrola jako při nahrání
+          if (!kk.ok) return kk.chyba;
+          return '';
+        };
+      }
+    }
+    await obnovMapu(b, await uloziste(mapy[cast]), zaloha[cast], rezim, zapisovat, '', null, overeni);
     vysledek[cast] = b;
   }
 
@@ -341,7 +485,7 @@ export default async (req) => {
     tk.token.davek++;
     await tk.s.zapis(tk.klic, tk.token);
   } else if (otiskPred) {
-    upozorneni.push('Stav před obnovou leží v otisku ' + otiskPred + ' (jeden slot na den — další obnova téhož dne ho přepíše).');
+    upozorneni.push('Stav před obnovou leží v otisku ' + otiskPred + '.');
   }
 
   return json({ ok: true, nahled, rezim, zdroj: zdrojPopis, casti: vysledek, rejstrik, otiskPred,

@@ -31,7 +31,7 @@ function tsJazykBar() {
   const akt = jazyk();
   const btns = JAZYKY.map(j =>
     `<button class="mini${j.kod === akt ? ' aktivni' : ''}" title="${esc(j.nazev)}"
-       onclick="jazykSet('${j.kod}')">${j.vlajka}</button>`).join(' ');
+       onclick="jazykSet('${escJs(j.kod)}')">${j.vlajka}</button>`).join(' ');
   const pokr = akt === 'cz' ? null : prekladPokryti(tsVsechnyFraze(), akt);
   const stav = pokr
     ? `<span class="pill ${pokr.procenta >= 90 ? 'ok' : 'warn'}" title="přeloženo ${pokr.prelozeno} z ${pokr.celkem} frází">
@@ -171,7 +171,7 @@ function renderTechspec() {
       opts.push(`<option value="__VLASTNI__">✎ vlastní text…</option>`);
       control = `<select data-cur="${esc(cur)}" onchange="tsSelect('${escJs(pole.id)}', this)">${opts.join('')}</select>`;
     } else {
-      control = `<input type="text" value="${esc(h.text)}" onchange="tsSet('${pole.id}', this.value)">`;
+      control = `<input type="text" value="${esc(h.text)}" onchange="tsSet('${escJs(pole.id)}', this.value)">`;
     }
     /* TS-1: povinné a prázdné pole se jen označí – zápis ani tisk se neblokuje */
     const chybi = tsChybi(pole, h.text);

@@ -26,7 +26,7 @@
  * nesmí: s cizím podpisem by šla poslat nabídka jménem kolegy. */
 import { uloziste, otiskHesla, hesloSedi, vyzadujRoli, json, ROLE, ADMIN_EMAIL,
          PODPIS_ULOZISTE, podpisZkontroluj, hesloVerzeUctu, relaceCookie,
-         emailPlatny, hesloPlatne, HESLO_PRAVIDLO } from '../lib/sdilene.mjs';
+         emailPlatny, hesloPlatne, HESLO_PRAVIDLO, SMAZANI_ULOZISTE } from '../lib/sdilene.mjs';
 
 /* Text z formuláře: ořízne okolní mezery a nepustí dál román. Telefon se
  * jinak NEUPRAVUJE — každý si ho píše po svém („+420 602 590 945",
@@ -37,8 +37,9 @@ const text = (v, max = 120) => String(v == null ? '' : v).trim().slice(0, max);
  * klíč v „uzivatele": seznam účtů i obě zálohy procházejí VŠECHNY klíče
  * úložiště účtů a co v nich najdou, považují za účet. Záznam o smazání
  * uložený mezi nimi by se tak vozil v zálohách jako podivný poloúčet bez
- * hesla a role. Takhle je stranou a nikomu nepřekáží. */
-const SMAZANI_ULOZISTE = 'smazani';
+ * hesla a role. Takhle je stranou a nikomu nepřekáží. Jméno úložiště je
+ * od 9. 9. 2026 v lib/sdilene.mjs (SMAZANI_ULOZISTE), protože knihu čte
+ * i obnova ze zálohy (B30). */
 
 /* Počet zakázek česky. „1 zakázku", „3 zakázky", „7 zakázek" — hláška, kterou
  * si správce přečte v okamžiku, kdy mu server smazání odmítne, má znít jako
@@ -267,7 +268,12 @@ export default async (req) => {
        *   · seznam účtů níž v tomhle souboru → `if (!x)` záznam přeskočí;
        *   · záloha ke stažení i noční otisk (functions/zaloha.mjs,
        *     lib/zalohovani.mjs) → obě mají `if (x)`, takže smazaný účet
-       *     neputuje ani do zálohy a nevrátí se obnovou.
+       *     neputuje do ŽÁDNÉ NOVÉ zálohy.
+       * Ve starším otisku (pořízeném před smazáním) ale účet dál leží,
+       * a náhrobek `null` v obnově vypadá jako „nový záznam" (audit
+       * 9. 9. 2026, B30). Obnova (functions/obnova.mjs) proto knihu
+       * smazaných čte a účet z ní neoživí — vědomé oživení je samostatný
+       * krok správce, ne vedlejší účinek obnovy.
        * Kdo, kdy a kolik zakázek — to se zapíše do knihy smazaných účtů
        * (SMAZANI_ULOZISTE) stranou. Do samotného náhrobku to jít nemůže:
        * jakýkoli obsah by z něj udělal záznam, který někde projde jako účet.

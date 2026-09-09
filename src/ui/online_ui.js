@@ -1964,11 +1964,60 @@ function onlineObnovaProved() {
       onlineZprava(zprava);
       return true;
     } catch (e) {
-      o.hlaska = 'Obnova se neprovedla: ' + e.message; o.hlaskaTyp = 'varovani';
+      /* 409 „obnova už běží" (B28, 9. 9. 2026) není obecná chyba: server
+       * říká, kdo a kdy obnovu zahájil, a panel nabídne dokončit ji, nebo
+       * ji zahodit — bez toho by správce jen četl chybu a zkoušel to znovu. */
+      if (e.stav === 409 && e.data && e.data.obnovaBezi) {
+        o.bezici = e.data.obnovaBezi;
+        o.hlaska = 'Obnova už běží: ' + e.message; o.hlaskaTyp = 'varovani';
+      } else {
+        o.hlaska = 'Obnova se neprovedla: ' + e.message; o.hlaskaTyp = 'varovani';
+      }
       onlineOtiskyNacti().catch(() => false);
       return false;
     } finally { o.pracuje = false; render(); }
   });
+}
+
+/* Rozpracovaná obnova někoho jiného (nebo vlastní po výpadku prohlížeče):
+ * 'konec' ji smí uzavřít jen ten, kdo ji zahájil (server vrátí 403 jinému);
+ * 'zrusit' smí kterýkoli administrátor. V obou případech se rejstřík
+ * přestaví a stav před obnovou zůstává v otisku. */
+async function onlineObnovaBeziciDokonci() {
+  const o = onlineObnovaStav();
+  if (!o.bezici || o.pracuje) return false;
+  o.pracuje = true; render();
+  try {
+    const d = await onlineApi('/api/obnova', { faze: 'konec', obnovaId: o.bezici.obnovaId });
+    o.bezici = null; o.hlaska = ''; o.nahled = null;
+    o.posledni = { kdy: new Date().toISOString(), souhrn: d.souhrn || {}, otiskPred: d.otiskPred || '',
+      zprava: 'Rozpracovaná obnova dokončena (' + (d.davek || 0) + ' dávek), rejstřík přestavěn. ' + (d.upozorneni || []).join(' ') };
+    onlineZprava(o.posledni.zprava);
+    await Promise.all([onlineNactiRejstrik, onlineOtiskyNacti].map(f => Promise.resolve(f()).catch(() => false)));
+    return true;
+  } catch (e) {
+    o.hlaska = (e.stav === 403 ? 'Rozpracovanou obnovu může dokončit jen ten, kdo ji zahájil (' + o.bezici.kdo + '). Můžete ji zahodit. '
+      : 'Dokončení se nepovedlo: ') + (e.stav === 403 ? '' : e.message);
+    o.hlaskaTyp = 'varovani';
+    return false;
+  } finally { o.pracuje = false; render(); }
+}
+async function onlineObnovaBeziciZahod() {
+  const o = onlineObnovaStav();
+  if (!o.bezici || o.pracuje) return false;
+  if (!await potvrd('Zahodit rozpracovanou obnovu (' + o.bezici.kdo + ')?\n\nCo už stihla zapsat, zůstane zapsané; rejstřík se přestaví '
+    + 'a stav před obnovou zůstává v otisku ' + o.bezici.otiskPred + '.')) return false;
+  o.pracuje = true; render();
+  try {
+    const d = await onlineApi('/api/obnova', { faze: 'zrusit', obnovaId: o.bezici.obnovaId });
+    o.bezici = null; o.hlaska = (d.upozorneni || []).join(' '); o.hlaskaTyp = '';
+    await Promise.all([onlineNactiRejstrik, onlineOtiskyNacti].map(f => Promise.resolve(f()).catch(() => false)));
+    return true;
+  } catch (e) {
+    if (e.stav === 404) { o.bezici = null; o.hlaska = 'Rozpracovaná obnova už neexistuje — můžete pokračovat.'; o.hlaskaTyp = ''; return true; }
+    o.hlaska = 'Zahození se nepovedlo: ' + e.message; o.hlaskaTyp = 'varovani';
+    return false;
+  } finally { o.pracuje = false; render(); }
 }
 
 function renderOnlineObnova() {
@@ -1992,7 +2041,14 @@ function renderOnlineObnova() {
   const casti = OBNOVA_CASTI.map(([k, l]) =>
     `<label style="display:inline-block;margin-right:12px"><input type="checkbox" ${o.casti[k] ? 'checked' : ''} ${dis}
        onchange="onlineObnovaCast('${k}', this.checked)"> ${esc(l)}</label>`).join('');
-  const hlaska = o.hlaska ? `<div class="${zapisTridaHlasky(o.hlaskaTyp)}">${esc(o.hlaska)}</div>` : '';
+  const hlaska = (o.hlaska ? `<div class="${zapisTridaHlasky(o.hlaskaTyp)}">${esc(o.hlaska)}</div>` : '')
+    + (o.bezici ? `<div class="note" id="online-obnova-bezici" style="border-left:3px solid #f0b429;padding-left:8px">
+        <b>Rozpracovaná obnova:</b> zahájil ${esc(o.bezici.kdo)} ${esc(new Date(o.bezici.zacatek).toLocaleString('cs-CZ'))},
+        zapsáno ${+o.bezici.davek || 0} dávek, stav před ní v otisku ${esc(o.bezici.otiskPred || '')}.
+        <div class="btns" style="margin-top:6px">
+          <button onclick="onlineObnovaBeziciDokonci()" ${dis} title="přestaví rejstřík a obnovu uzavře — jen ten, kdo ji zahájil">Dokončit rozpracovanou</button>
+          <button onclick="onlineObnovaBeziciZahod()" ${dis} title="zahodí token rozpracované obnovy; co se stihlo zapsat, zůstává">Zahodit rozpracovanou</button>
+        </div></div>` : '');
   let nahled = '';
   if (o.nahled) {
     const n = o.nahled;
@@ -2025,7 +2081,8 @@ function renderOnlineObnova() {
     <b>Obnova ze zálohy</b>
     <div class="note">Opak zálohy: zapíše obsah zálohy do online databáze. Nejdřív náhled (nic nezapíše),
       teprve pak obnova. Před obnovou se pořídí otisk současného stavu, uzamčené (odeslané) nabídky se
-      nepřepíšou a nic se nemaže. Účty jdou obnovit jen ze serverového otisku – stažený soubor otisky hesel nenese.</div>
+      nepřepíšou a nic se nemaže. Účty a podpisy jdou obnovit jen ze serverového otisku – stažený soubor otisky
+      hesel nenese a dá se upravit v editoru; smazané účty obnova neoživí a stav účtu (aktivní / archiv) drží server.</div>
     <div class="row" style="margin-top:8px"><label>Zdroj</label>
       <label><input type="radio" name="obnovaZdroj" ${o.zdrojTyp === 'otisk' ? 'checked' : ''} ${dis}
         onchange="onlineObnovaZmena('zdrojTyp', 'otisk')"> otisk na serveru</label>
@@ -2358,7 +2415,7 @@ function prehledHledaniKarta() {
         k databázi (Nastavení → Databáze). Otevřená zakázka a její varianty jsou vidět níž.</div>`
     : '';
   const p = ONLINE_STAV.prehled;
-  const volba = (id, popis) => `<option value="${id}" ${p.druh === id ? 'selected' : ''}>${esc(popis)}</option>`;
+  const volba = (id, popis) => `<option value="${esc(id)}" ${p.druh === id ? 'selected' : ''}>${esc(popis)}</option>`;
   return card('Vyhledání nabídek',
     bezDb + `<div class="seznam-ovladani noprint">
       <span class="nasept-wrap"><input type="search" class="seznam-hledat"

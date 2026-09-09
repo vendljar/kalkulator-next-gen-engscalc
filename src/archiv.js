@@ -261,6 +261,7 @@ function vytvorAlternativu(zak, zaznam, opts) {
   const v = (typeof novaVarianta === 'function')
     ? novaVarianta(opts.nazev || alternativaNazev(zak, zaznam.varianta), data)
     : { id: 'v' + p, nazev: opts.nazev || alternativaNazev(zak, zaznam.varianta), data };
+  if (typeof zakazkaUnikatniId === 'function') v.id = zakazkaUnikatniId(zak, v.id);   // B29
   v.zakaznik = zaznam.zakaznik || '';
   v.pozn = zaznam.pozn || '';
   v.pripona = p;

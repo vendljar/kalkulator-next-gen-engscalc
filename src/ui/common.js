@@ -816,7 +816,7 @@ function zakazkaHlavicka(ock) {
   const akt = aktivniVarianta(ZAK), rid = ridiciVarianta(ZAK);
   zajistiProjHlavicku(ZAK);   // starší zakázka hlavičku PROJ ještě nemá – doplní se
   const opts = ZAK.varianty.map(v =>
-    `<option value="${v.id}" ${v.id === akt.id ? 'selected' : ''}>${esc(v.nazev)}${v.ridici ? ' · řídící' : ''}</option>`).join('');
+    `<option value="${esc(v.id)}" ${v.id === akt.id ? 'selected' : ''}>${esc(v.nazev)}${v.ridici ? ' · řídící' : ''}</option>`).join('');
   const txt = (path, label, pill) => `<div class="row"><label>${label}${pill || ''}</label>
     <input type="text" value="${esc(get(path))}" onchange="set('${path}', this.value)"></div>`;
 
@@ -945,7 +945,7 @@ function zakazkaHlavicka(ock) {
     <span class="rada-prep">${CENIK_RADY.map(r => `<button type="button"
       class="${radaTed === r.id ? 'on' : ''}${r.id === 'zahr' ? ' zahr' : ''}"
       title="${esc(r.popis)} — přepnutí se nejdřív zeptá a ukáže, čeho se dotkne"
-      onclick="cenikRadaPrepniUI('${r.id}')">${esc(r.nazev)}</button>`).join('')}</span></div>`;
+      onclick="cenikRadaPrepniUI('${escJs(r.id)}')">${esc(r.nazev)}</button>`).join('')}</span></div>`;
   /* Kurz je společný pro obě řady (rozhodnutí J. V.), u zahraniční zakázky
    * se ale ukazuje — ať je vidět, s čím se bude počítat cizojazyčná nabídka.
    *

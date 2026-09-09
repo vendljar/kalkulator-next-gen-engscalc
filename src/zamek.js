@@ -89,6 +89,8 @@ function klonujVariantu(zak, id, opts) {
   const p = dalsiPriponaVarianty(zak);
   const kopie = novaVarianta(opts.nazev || ('Varianta ' + (p + 1)),
                              JSON.parse(JSON.stringify(zdroj.data)));
+  /* Id musí být v zakázce jedinečné i po načtení ze složky (B29, 9. 9. 2026). */
+  if (typeof zakazkaUnikatniId === 'function') kopie.id = zakazkaUnikatniId(zak, kopie.id);
   kopie.zakaznik = zdroj.zakaznik || '';
   kopie.pozn = zdroj.pozn || '';
   kopie.pripona = p;

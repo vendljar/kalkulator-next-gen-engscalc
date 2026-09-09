@@ -167,7 +167,7 @@ function poznamkyKarta() {
 
   const druhy = POZN_DRUHY.map(d =>
     `<button class="mini${d.kod === POZN_DRUH ? ' primary' : ''}"
-       onclick="poznamkyDruhSet('${d.kod}')">${esc(d.nazev)}</button>`).join(' ');
+       onclick="poznamkyDruhSet('${escJs(d.kod)}')">${esc(d.nazev)}</button>`).join(' ');
 
   const zapis = `<div class="pozn-zapis">
     <div class="btns" style="flex-wrap:wrap">${druhy}</div>

@@ -135,6 +135,19 @@ function novaVarianta(nazev, data) {
            data: data || novaVariantaData() };
 }
 
+/* Jedinečné id varianty v rámci zakázky (bezpečnostní audit 9. 9. 2026,
+ * nález B29). Čas + počítadlo stačí v jednom běhu stránky; po načtení ze
+ * složky nebo po obnovení stránky se počítadlo nuluje a dvě varianty
+ * založené v téže milisekundě by mohly mít stejné id. Server duplicitní id
+ * odmítá (uloIdProblemy), tak si ho klient hlídá sám: pokud id v zakázce
+ * už je, přidá se pořadová přípona, dokud není volné. */
+function zakazkaUnikatniId(zak, id) {
+  const ids = new Set(((zak && zak.varianty) || []).map(v => v && v.id));
+  let k = String(id || 'v'), n = 1;
+  while (ids.has(k)) k = String(id) + '-' + (n++);
+  return k;
+}
+
 /* Předloha čísla nabídky – obchodník k ní dopisuje pořadové číslo. Dokud v ní
  * žádné není, není to vyplněná hodnota (viz hlavickaVyplneno níže): v krycím
  * listu PROJ by se jinak místo skutečného čísla z hlavičky OCK ukazoval holý
@@ -553,6 +566,19 @@ function importZakazka(obj) {
         if (d.sleva.schvalitel) d.sleva.schvalitel = roleMigruj(d.sleva.schvalitel);
       }
       v.data = d;
+    });
+    /* Duplicitní id ve starším souboru (B29, 9. 9. 2026): druhý a další výskyt
+     * dostane nové id, aby zakázka vůbec šla uložit — ale jen u NEZAMČENÉ
+     * varianty. Uzamčená se páruje se serverem přes id; přejmenovat ji by
+     * znamenalo „ztratit" odeslanou nabídku a server by zápis stejně odmítl.
+     * Dvě uzamčené s týmž id se nechají být: server je odmítne a člověk to
+     * uvidí, což je správně — takový soubor někdo upravil ručně. */
+    const videnaId = new Set();
+    obj.varianty.forEach(v => {
+      if (!v) return;
+      const zamcena = (typeof variantaUzamcena === 'function') && variantaUzamcena(v);
+      if (videnaId.has(String(v.id)) && !zamcena) v.id = zakazkaUnikatniId(obj, v.id);
+      videnaId.add(String(v.id));
     });
     if (!obj.varianty.some(v => v.id === obj.aktivni)) obj.aktivni = obj.varianty[0].id;
     if (obj.popisZameru == null) obj.popisZameru = '';   // migrace: pole přibylo s nabídkou PROJ
@@ -990,6 +1016,7 @@ if (typeof module !== 'undefined')
   module.exports = { ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, zadaniRucniMapa, zadaniRucniJe,
                      zadaniRucniZnac, zadaniRucniZrus, zadaniZCeniku, uvodniFotoObrazky, uvodniFotoSymboly, uvodniFotoPole, ZAKAZKA_SCHEMA, novaZakazka, novaVarianta, novaVariantaData,
                      nastavRidici, ridiciVarianta, aktivniVarianta, importZakazka, StorageAdapter,
+                     zakazkaUnikatniId,
                      ZAK_HLAVICKA_POLE, zajistiProjHlavicku, projHlavicka,
                      projHlavickaEfektivni, projHlavickaZOck, projCisloNabidky,
                      cisloSVariantou, zakazkaDuplicita,

@@ -32,6 +32,15 @@ export default async (req) => {
   /* Zahraniční odchylky (#181, 31. 8. 2026) jdou se stejnou verzí jako
    * tuzemský ceník. Očistu (jen známé cesty, jen čísla) dělá jádro
    * v programZaznam → cenikZahrOciste; server nevěří tomu, co přišlo. */
+  /* Tvar `kid` trvalých položek (bezpečnostní audit 9. 9. 2026, B26): ceník
+   * PROJ i katalog OCK přicházejí z otevřené zakázky administrátora — tedy
+   * z dat, která mohl uložit kdokoli. Zveřejněný ceník se propíše do každé
+   * nové nabídky, takže podvržený kid by tudy doputoval ke všem. */
+  const spatneKid = globalThis.uloKidProblemyProgramu(t.cenikProj, t.katalog);
+  if (spatneKid.length)
+    return json({ ok: false, chyba: 'Ceník nese identifikátor trvalé položky v nepovoleném tvaru ('
+      + spatneKid.map(x => x.kde).join(', ') + '). Povolená jsou písmena, číslice, tečka, '
+      + 'podtržítko a pomlčka.' }, 400);
   const ctx = { cenik: t.cenik, cenikProj: t.cenikProj, zahranicni: t.zahranicni || null,
                 katalog: t.katalog || null,
                 slevy: t.slevy || null, kdo: relace.email, poznamka: String(t.poznamka || ''),

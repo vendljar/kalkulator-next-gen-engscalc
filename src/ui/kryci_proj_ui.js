@@ -42,13 +42,13 @@ function klpRow(id, label, opts = {}) {
       <div class="src"><span class="note" style="font-size:10px">${esc(opts.src || 'hlavička kalkulace')} ↔</span></div></div>`;
   }
   if (opts.type === 'textarea')
-    field = `<textarea onchange="klpSet('${id}', this.value)" placeholder="${esc(opts.ph || '')}">${esc(val)}</textarea>`;
+    field = `<textarea onchange="klpSet('${escJs(id)}', this.value)" placeholder="${esc(opts.ph || '')}">${esc(val)}</textarea>`;
   else if (opts.type === 'date')
-    field = `<input type="date" value="${esc(val)}" onchange="klpSet('${id}', this.value)">`;
+    field = `<input type="date" value="${esc(val)}" onchange="klpSet('${escJs(id)}', this.value)">`;
   else if (opts.type === 'radio')
     field = `<div class="kl-radio">${opts.o.map(x =>
-      `<label><input type="radio" name="${klSkupina('klp', id)}" ${String(val) === String(x) ? 'checked' : ''}
-        onchange="klpSet('${id}', this.value)" value="${esc(x)}">${esc(x)}</label>`).join('')}</div>`;
+      `<label><input type="radio" name="${esc(klSkupina('klp', id))}" ${String(val) === String(x) ? 'checked' : ''}
+        onchange="klpSet('${escJs(id)}', this.value)" value="${esc(x)}">${esc(x)}</label>`).join('')}</div>`;
   else if (opts.type === 'vyber' && Array.isArray(opts.o)) {
     /* Výběr z číselníku s možností vlastního znění — zrcadlo klRow() z OCK
      * verze (10. 8. 2026, smluvní pokuty). Stav rozbalovátka drží KLP_JINA,
@@ -56,21 +56,21 @@ function klpRow(id, label, opts = {}) {
     const jina = KLP_JINA[id] || (klpManual(id) && opts.o.indexOf(String(val)) < 0);
     const volby = opts.o.map(x =>
       `<option value="${esc(x)}" ${!jina && String(val) === String(x) ? 'selected' : ''}>${esc(x)}</option>`).join('');
-    field = `<select onchange="klpVyber('${id}', this.value)">${volby}`
+    field = `<select onchange="klpVyber('${escJs(id)}', this.value)">${volby}`
       + `<option value="${KL_JINE_ZNENI}" ${jina ? 'selected' : ''}>jiné znění…</option></select>`
       + (jina ? ` <input type="text" value="${esc(klpManual(id) ? val : '')}"
-           onchange="klpSet('${id}', this.value)" placeholder="${esc(opts.ph || 'např. 0,2 % / den')}">` : '');
+           onchange="klpSet('${escJs(id)}', this.value)" placeholder="${esc(opts.ph || 'např. 0,2 % / den')}">` : '');
   }
   else if (opts.type === 'link')   // KL-6: scoring je odkaz (klOdkaz je sdílený s OCK verzí)
-    field = `<input type="url" value="${esc(val)}" onchange="klpSet('${id}', this.value)" placeholder="${esc(opts.ph || 'https://…')}">${klOdkaz(val)}`;
+    field = `<input type="url" value="${esc(val)}" onchange="klpSet('${escJs(id)}', this.value)" placeholder="${esc(opts.ph || 'https://…')}">${klOdkaz(val)}`;
   else
-    field = `<input type="text" value="${esc(val)}" onchange="klpSet('${id}', this.value)" placeholder="${esc(opts.ph || '')}">`;
+    field = `<input type="text" value="${esc(val)}" onchange="klpSet('${escJs(id)}', this.value)" placeholder="${esc(opts.ph || '')}">`;
   const meta = opts.src
     ? (manual ? '<span class="pill mut" style="font-size:10px">ručně</span>'
               : `<span class="note" style="font-size:10px">${opts.src}</span>`)
     : '';
   const reset = (manual && opts.prefill != null)
-    ? ` <button class="mini noprint" title="vrátit automatiku (${esc(pref)})" onclick="klpReset('${id}')">↺</button>` : '';
+    ? ` <button class="mini noprint" title="vrátit automatiku (${esc(pref)})" onclick="klpReset('${escJs(id)}')">↺</button>` : '';
   return `<div class="kl-row"><div class="lbl">${label}</div><div>${field}</div><div class="src">${meta}${reset}</div></div>`;
 }
 

@@ -418,12 +418,12 @@ function nastFirma() {
   const poleHtml = p => {
     if (p.typ === 'check')
       return `<label style="display:flex;align-items:center;gap:8px;margin:6px 0">
-        <input type="checkbox" ${f[p.id] ? 'checked' : ''} onchange="firmaSet('${p.id}', this.checked)"> ${esc(p.label)}</label>`;
+        <input type="checkbox" ${f[p.id] ? 'checked' : ''} onchange="firmaSet('${escJs(p.id)}', this.checked)"> ${esc(p.label)}</label>`;
     const chybi = p.povinne && !String(f[p.id] || '').trim();
     return `<div class="row"><label>${esc(p.label)}${p.povinne ? ' <span class="mut">*</span>' : ''}</label>
       <input type="text" value="${esc(f[p.id] == null ? '' : f[p.id])}"
         ${chybi ? 'style="border-color:var(--warn)"' : ''}
-        onchange="firmaSet('${p.id}', this.value)">
+        onchange="firmaSet('${escJs(p.id)}', this.value)">
       ${p.symbol ? `<span class="note" style="flex:none;width:210px;font-size:11.5px"><code>{{${p.symbol}}}</code></span>` : '<span style="flex:none;width:210px"></span>'}</div>`;
   };
 
@@ -675,7 +675,7 @@ function nastSmluvniStandardy() {
     return `<div class="row"><label>${esc(p.label)}</label>
       <input type="text" value="${esc(f[p.id] == null ? '' : f[p.id])}"
         placeholder="${esc(ZALOHA[p.id] || '')}"
-        onchange="firmaSet('${p.id}', this.value)">
+        onchange="firmaSet('${escJs(p.id)}', this.value)">
       <span class="note" style="flex:none;width:210px;font-size:11.5px"><code>{{${p.symbol}}}</code>${
         prazdne ? ' <span class="pill mut">platí záložní věta</span>' : ''}</span></div>`;
   };
@@ -717,24 +717,24 @@ function nastSablony() {
     const s = SABLONY[typ];
     const mutace = ['en', 'de', 'fr'].map(l => {
       const m = SABLONY[typ + '_' + l];
-      return `<button class="mini ${m ? 'aktivni' : ''}" onclick="sablonaPrelozit('${typ}','${l}')"
+      return `<button class="mini ${m ? 'aktivni' : ''}" onclick="sablonaPrelozit('${escJs(typ)}','${l}')"
         title="${m ? 'hotovo: ' + esc(m.nazev) + ' – kliknutím přegeneruji' : 'vyrobit ' + l.toUpperCase() + ' mutaci z české šablony'}"
         >${m ? '✓ ' : ''}${l.toUpperCase()}</button>`;
     }).join('');
     return `<div style="margin:8px 0;padding:10px;border:1px solid var(--line);border-radius:8px">
       <b>${label}</b> ${pozn ? `<span class="note">— ${pozn}</span>` : ''}<br>
       <span class="${s ? '' : 'note'}" style="font-size:12.5px">${s ? '✓ nahráno: ' + esc(s.nazev) : 'zatím nenahráno (použije se výběr souboru při generování)'}</span>
-      <div class="btns" style="margin-top:6px"><button onclick="sablonaNahraj('${typ}')">Nahrát .docx</button>
-        ${s ? `<button class="mini" onclick="sablonaSmaz('${typ}')">Odebrat</button>` : ''}
+      <div class="btns" style="margin-top:6px"><button onclick="sablonaNahraj('${escJs(typ)}')">Nahrát .docx</button>
+        ${s ? `<button class="mini" onclick="sablonaSmaz('${escJs(typ)}')">Odebrat</button>` : ''}
         ${s && jeAdmin() && sablonyOnlineAktivni()
-          ? `<button class="primary" onclick="sablonaZverejniOnline('${typ}')">☁ Zveřejnit online jako platnou</button>` : ''}</div>
+          ? `<button class="primary" onclick="sablonaZverejniOnline('${escJs(typ)}')">☁ Zveřejnit online jako platnou</button>` : ''}</div>
       ${onlineInfo(typ)}
       ${s && jeAdmin() ? `<div style="margin-top:8px;border-top:1px dashed var(--line);padding-top:8px">
         <span class="note">Jazyková mutace šablony (N1):</span>
         <div class="btns" style="margin-top:4px">${mutace}
-          <button class="mini" onclick="sablonaChybejiciCsv('${typ}','en')">⤓ chybí EN</button>
-          <button class="mini" onclick="sablonaChybejiciCsv('${typ}','de')">⤓ chybí DE</button>
-          <button class="mini" onclick="sablonaChybejiciCsv('${typ}','fr')">⤓ chybí FR</button></div>
+          <button class="mini" onclick="sablonaChybejiciCsv('${escJs(typ)}','en')">⤓ chybí EN</button>
+          <button class="mini" onclick="sablonaChybejiciCsv('${escJs(typ)}','de')">⤓ chybí DE</button>
+          <button class="mini" onclick="sablonaChybejiciCsv('${escJs(typ)}','fr')">⤓ chybí FR</button></div>
         <div id="sablStav-${typ}" class="note" style="margin-top:6px"></div></div>` : ''}
       </div>`;
   };
@@ -863,7 +863,7 @@ function nastKonfigurace() {
   if (!jeAdmin()) return `<div class="note">Export a import konfigurace je dostupný <b>jen administrátorovi</b>.</div>`;
   const sekce = KONFIG_SEKCE.map(s => `<div class="row" style="align-items:flex-start">
       <label style="flex:none;width:auto"><input type="checkbox" ${KONFIG_VOLBY[s.kod] ? 'checked' : ''}
-        onchange="konfigVolba('${s.kod}', this.checked)"> ${esc(s.nazev)}</label></div>`).join('');
+        onchange="konfigVolba('${escJs(s.kod)}', this.checked)"> ${esc(s.nazev)}</label></div>`).join('');
   return `<div class="note">Přenos nastavení mezi relacemi a počítači jedním souborem
       <code>konfigurace.json</code>. Vyberte, co má soubor obsahovat (výběr platí i pro import –
       z načteného souboru se použijí jen zaškrtnuté sekce).

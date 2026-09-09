@@ -89,7 +89,7 @@ function seznamPohled() {
 
 function seznamOvladani() {
   const f = SEZNAM_FILTRY.map(x =>
-    `<option value="${x.id}" ${SEZNAM_POHLED.filtr === x.id ? 'selected' : ''}>${esc(x.popis)}</option>`).join('');
+    `<option value="${esc(x.id)}" ${SEZNAM_POHLED.filtr === x.id ? 'selected' : ''}>${esc(x.popis)}</option>`).join('');
   return `<div class="seznam-ovladani noprint">
     <input type="search" id="seznamHledat" class="seznam-hledat" placeholder="Hledat v kalkulacích…"
       title="Hledá se v názvu, čísle nabídky, stavu, zákazníkovi i poznámce. Diakritika ani velká písmena nehrají roli."
@@ -108,7 +108,7 @@ function seznamHlavicka(p) {
     const akt = p.klic === id;
     const sipka = akt ? (p.smer === 1 ? ' ▲' : ' ▼') : '';
     return `<th class="sort${akt ? ' aktivni' : ''}"${styl ? ` style="${styl}"` : ''}
-      onclick="seznamRadit('${id}')"
+      onclick="seznamRadit('${escJs(id)}')"
       title="seřadit podle sloupce ${esc(popis)} (opakovaným kliknutím obrátíte směr, potřetí řazení zrušíte)"
       >${esc(popis)}<span class="sipka">${sipka}</span></th>`;
   };
