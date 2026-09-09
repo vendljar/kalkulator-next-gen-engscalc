@@ -975,15 +975,22 @@ test('shodná verze překryv zase schová', prekryv.skryt, prekryv);
     JSON.stringify([bezZmen, bezZmenPo]));
 
   /* b) rozpracovaná změna u přihlášeného na uložené zakázce → tiché uložení.
-   * „Rozpracované" se nastavuje přímo v HIST: autosave (onlineTik) by změnu
-   * mohl uložit dřív, než se na ni stihneme zeptat, a test by byl náhodný. */
+   * Zakázku si test založí a uloží SÁM: kterákoli z rejstříku může být
+   * uzamčená (odeslaná nabídka), a pak by se ukládat nesmělo — test by pak
+   * měřil zámek, ne ukládání. „Rozpracované" se nastavuje přímo v HIST,
+   * protože autosave (onlineTik) by změnu mohl uložit dřív, než se na ni
+   * stihneme zeptat, a výsledek by byl náhodný. */
   const pred = await page.evaluate(async () => {
     ONLINE_STAV.serverVerze = buildVerze(); renderVerzePill();      // překryv pryč
     VERZE_ULOZ.stav = ''; VERZE_ULOZ.text = '';
-    await onlineOtevri(ONLINE_STAV.rejstrik[0].soubor);             // zakázka z databáze
+    ZAK = novaZakazka();
+    ZAK.cislo = '2026 - OPR - CN - 0998'; ZAK.nazevAkce = 'Uložení před vynuceným obnovením';
+    syncVarianta(); render();
+    await onlineUloz();                                             // vlastní odemčená zakázka
     set('Z.nastupiste', (+Z.nastupiste || 2) + 1);                  // rozpracovaná změna
     HIST.ulozenoJako = '{"jiny":"stav"}';                           // = neuloženo, bez ohledu na autosave
-    return { neulozeno: historieNeulozeno(), duvod: verzeUlozDuvod(), soubor: ONLINE_STAV.soubor };
+    return { neulozeno: historieNeulozeno(), duvod: verzeUlozDuvod(),
+             soubor: ONLINE_STAV.soubor, nastupiste: +Z.nastupiste };
   });
   await page.evaluate(() => { ONLINE_STAV.serverVerze = '99.9.9'; renderVerzePill(); });
   await page.waitForFunction(() => VERZE_ULOZ.stav === 'ulozeno' || VERZE_ULOZ.stav === 'chyba'
@@ -1006,7 +1013,7 @@ test('shodná verze překryv zase schová', prekryv.skryt, prekryv);
     return v.data.ock.zadani.nastupiste;
   }, pred.soubor);
   test('a v databázi je opravdu ta rozpracovaná hodnota',
-    naServeru === (await page.evaluate(() => +Z.nastupiste)), naServeru);
+    naServeru === pred.nastupiste, JSON.stringify({ naServeru, cekano: pred.nastupiste }));
   await page.evaluate(() => { ONLINE_STAV.serverVerze = buildVerze(); renderVerzePill(); VERZE_ULOZ.stav = ''; });
 }
 const listaZamku = await page.evaluate(() => {
