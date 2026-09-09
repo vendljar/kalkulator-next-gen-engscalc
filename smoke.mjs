@@ -212,14 +212,29 @@ test('Slovník vysvětlí, že se nic nezapíše samo',
 await page.evaluate(() => zavriNastaveni());
 
 /* ---- ATYP přirážka (#22) ----
- * Sazba se 21. 8. 2026 přestěhovala z Nastavení → Obecné do Kalkulace OCK,
- * k zaškrtávátku ATYP: mění ji ten, kdo vidí nákladové sloupce. */
-test('nastavení ATYP přirážky je u zaškrtávátka v kalkulaci OCK',
-  await page.evaluate(() => {
-    NAST.jeAdmin = true; prepniTab('kalk'); render();
-    const t = document.getElementById('page-kalk').innerText.toUpperCase();
-    return t.includes('ATYP (NESTANDARDNÍ ZAKÁZKA)') && t.includes('PŘIRÁŽKA ZA ATYP');
-  }));
+ * Sazba se 21. 8. 2026 přestěhovala z Nastavení → Obecné do Kalkulace OCK
+ * k zaškrtávátku ATYP a 9. 9. 2026 z kalkulace zase pryč (zadání J. V.:
+ * „přirážku za atyp v zadání šachty skryj a ponech pouze v ceníku"). Zadání
+ * šachty popisuje stavbu, ne ceny. Zaškrtávátko ATYP v kalkulaci zůstává,
+ * pole s procenty je v Ceníku — a test hlídá obojí, aby se sazba nevrátila
+ * na dvě místa najednou. */
+const atypUmisteni = await page.evaluate(() => {
+  NAST.jeAdmin = true; prepniTab('kalk'); render();
+  const kalk = document.getElementById('page-kalk').innerText.toUpperCase();
+  prepniTab('cenik'); render();
+  const cenik = document.getElementById('page-cenik').innerText.toUpperCase();
+  prepniTab('kalk'); render();
+  return { zaskrtavatko: kalk.includes('ATYP (NESTANDARDNÍ ZAKÁZKA)'),
+           /* Hledá se KLÍČ ceníku, ne text popisku: jádro do sekce Režie
+            * přidává řádek „PŘIRÁŽKA ZA ATYP – PROJEKČNÍ A KOORDINAČNÍ PRÁCE",
+            * takže podle názvu by se ta dvě místa nedala rozeznat. Klíč
+            * `C.atypPrirazka` visel jen u odstraněného pole. */
+           sazbaVKalkulaci: kalk.includes('C.ATYPPRIRAZKA'),
+           sazbaVCeniku: cenik.includes('ATYP: PŘIRÁŽKA ZA PROJEKČNÍ A KOORDINAČNÍ PRÁCE') };
+});
+test('zaškrtávátko ATYP zůstává v kalkulaci OCK', atypUmisteni.zaskrtavatko, atypUmisteni);
+test('sazba ATYP už v zadání šachty není', !atypUmisteni.sazbaVKalkulaci, atypUmisteni);
+test('a je v ceníku', atypUmisteni.sazbaVCeniku, atypUmisteni);
 
 /* ---- rozvržení OCK na plnou šířku (zadání 3. 8. 2026) ----
  * Zadání šachty, Dimenze profilů a Práce a režie stojí v hlavním sloupci
