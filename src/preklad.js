@@ -27,6 +27,10 @@ const PREKLAD = {
   "ne": ["no", "nein", "non"],
   /* obchodní část nabídky – běžné výrazy, ne odborná terminologie */
   "množství": ["quantity", "Menge", "quantité"],
+  /* Sloučená položka přechodových plechů v nabídce (9. 9. 2026) — v kalkulaci
+   * zůstávají materiál a montáž zvlášť, zákazník vidí jednu položku. */
+  "Přechodové plechy": ["Transition plates", "Übergangsbleche", "Tôles de transition"],
+  "materiál a montáž": ["material and installation", "Material und Montage", "matériel et pose"],
   "v základní ceně": ["included in the base price", "im Grundpreis enthalten", "inclus dans le prix de base"],
   "je součástí dodávky": ["included in the delivery", "im Lieferumfang enthalten", "inclus dans la livraison"],
   "není součástí nabídky": ["not included in the offer", "nicht im Angebot enthalten", "non inclus dans l'offre"],

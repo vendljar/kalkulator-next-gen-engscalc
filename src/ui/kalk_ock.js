@@ -15,16 +15,42 @@ function pruchoziPopisek() {
       : `<div class="note" style="margin:-2px 0 8px">U interiérové šachty se stříška nepřidává — položka je jen pro exteriérovou.</div>`;
   }
   return ext
-    ? `<div class="note" style="margin:-2px 0 8px"><b>Přidáno do opláštění:</b> 1 ks stříška nad vstupem na dvůr.
-       Jako každá položka vstupuje do rezervy a přirážky.</div>`
+    ? `<div class="note" style="margin:-2px 0 8px"><b>Přidáno do opláštění:</b> 1 ks stříška nad vstupem na dvůr.</div>`
     : `<div class="note warn" style="margin:-2px 0 8px">Zaškrtnuto, ale u <b>interiérové</b> šachty se stříška nepřidává —
        do ceny se nic nepromítlo. Platí jen pro exteriérovou šachtu.</div>`;
 }
 
+/* Přepnutí typu šachty dosadí výchozí dimenze profilů (9. 9. 2026, zadání
+ * J. V.). Interiérová a exteriérová šachta se liší profily i zasklením, a
+ * obchodník je dosud musel po přepnutí přenastavovat ručně — tedy na ně
+ * pravidelně zapomínal. Změna se říká nahlas, protože mění cenu; kdo si
+ * dimenze upravil po svém, přepíšou se mu, a musí to vědět. */
+function typSachtyPrepni(typ) {
+  const t = (typ === 'interiérová') ? 'interiérová' : 'exteriérová';
+  const puvodni = JSON.stringify(Z.profily);
+  set('Z.typSachty', t);
+  if (typeof PROFILY_VYCHOZI !== 'undefined' && PROFILY_VYCHOZI[t]) {
+    Z.profily = JSON.parse(JSON.stringify(PROFILY_VYCHOZI[t]));
+    if (JSON.stringify(Z.profily) !== puvodni && typeof progZprava === 'function')
+      progZprava('Typ šachty „' + t + '": dosazeny výchozí dimenze profilů podle typu. '
+        + 'Pokud jste si je upravil, nastavte je znovu.', 'varovani');
+  }
+  syncVarianta(); render();
+}
+
 function renderInputs() {
   const dims = Object.keys(JEKLY);
+  const ext = Z.typSachty === 'exteriérová';
   const profRow = (key, label) => {
     const p = Z.profily[key];
+    /* Lemování je jen exteriérová položka — u interiérové šachty se do
+     * výpočtu vůbec nedostane (engine: `ext ? mkItem('PROFILY - LEMOVÁNÍ…')`).
+     * Místo dimenzí, které nic neovlivní, se proto ukáže pomlčka (9. 9. 2026,
+     * zadání J. V.). Dimenze v datech zůstávají platné: nula by v nich byla
+     * neplatný klíč do katalogu jeklů a rozbila by výpočet po přepnutí zpět. */
+    if (key === 'lemovani' && !ext)
+      return `<div class="row"><label>${label}</label>
+        <span class="note" style="width:158px;display:inline-block">— (jen exteriérová šachta)</span><span class="u"></span></div>`;
     const tls = Object.keys(JEKLY[p.dim].kg);
     return `<div class="row"><label>${label}</label>
       <select style="width:86px" onchange="set('Z.profily.${escJs(key)}.dim', this.value); zkontrolujTl('${escJs(key)}')">${dims.map(d =>
@@ -39,7 +65,12 @@ function renderInputs() {
       inp('Z.sirka', { l: 'Vnitřní šířka', u: 'm' }) + inp('Z.hloubka', { l: 'Vnitřní hloubka', u: 'm' }) +
       inp('Z.roztec', { l: 'Svislá rozteč příčníků', u: 'm' }) +
       inp('Z.rohoveSloupky', { l: 'Počet rohových sloupků', step: 1 }) + inp('Z.nastupiste', { l: 'Počet nástupišť', step: 1 }) +
-      inp('Z.typSachty', { type: 'sel', l: 'Typ šachty', o: [['exteriérová', 'exteriérová'], ['interiérová', 'interiérová']] }) +
+      /* Vlastní obsluha (9. 9. 2026): přepnutí typu dosadí výchozí profily. */
+      `<div class="row"><label>Typ šachty</label>
+        <select onchange="typSachtyPrepni(this.value)">
+          <option ${ext ? 'selected' : ''} value="exteriérová">exteriérová</option>
+          <option ${ext ? '' : 'selected'} value="interiérová">interiérová</option>
+        </select><span class="u"></span></div>` +
       inp('Z.typPortalu', { type: 'sel', l: 'Typ portálů', o: [['zapuštěný', 'zapuštěný'], ['předsazený', 'předsazený']] }) +
       inp('Z.zaskleni', { type: 'sel', l: 'Způsob zasklení', o: [['na terče', 'na terče'], ['mezi příčníky', 'mezi příčníky (lišty)']] }) +
       inp('Z.svetlikNadDvermi', { type: 'check', l: 'Světlík nad šachetními dveřmi' }) +
@@ -72,24 +103,15 @@ function renderInputs() {
                placeholder="mm" title="standard: max na šířku OCK"
                onchange="set('Z.mustekSirkaMm', this.value)"><span class="u">mm</span></div>`
         : '') +
-      /* Sazba ATYP se 20. 8. 2026 přestěhovala z Nastavení → Obecné SEM
-       * (dotaz J. V. „proč to máme v obecném nastavení?"). Je to parametr
-       * TÉTO zakázky, ne nastavení aplikace: bydlí v ceníku varianty
-       * a u starších nabídek se nepřepočítává. Patří proto k zaškrtávátku,
-       * které ji zapíná — ne o dvě obrazovky dál. Měnit ji smí jen ten,
-       * kdo vidí nákladové sloupce (právo `sloupce.naklad`); ostatní ji
-       * vidí jen jako číslo, aby věděli, co zaškrtnutí udělá. */
-      `<div class="row"><label>Přirážka za ATYP <span class="note">(projekční a koordinační práce)</span>${klicChip('C.atypPrirazka')}</label>
-        ${smiZobrazit('sloupce.naklad')
-          ? `<input type="number" step="1" min="0" max="300" style="width:90px"
-               value="${typeof atypSazbaProc === 'function' ? atypSazbaProc() : 30}"
-               onchange="nastSetAtyp(this.value)"> %`
-          : `<b>${typeof atypSazbaProc === 'function' ? atypSazbaProc() : 30} %</b>`}<span class="u"></span></div>` +
-      `<div class="note" style="margin-top:2px">Zaškrtnutí ATYP přidá do sekce <b>Režie</b> samostatný
-        řádek „PŘIRÁŽKA ZA ATYP – PROJEKČNÍ A KOORDINAČNÍ PRÁCE" ve výši tohoto procenta z nákladu
-        <b>celé sekce Režie</b> (včetně 3D zaměření a výstupu pro zákazníka). Sazba je uložená
-        v ceníku <b>této zakázky</b>, takže se mění u jednotlivé nabídky a ukládá se s ní —
-        starší nabídky se změnou nepřepočítají. Nová zakázka začíná na 30 %.</div>`, false, 'ock-zadani') +
+      /* SAZBA ATYP UŽ V ZADÁNÍ ŠACHTY NENÍ (9. 9. 2026, zadání J. V.:
+       * „přirážku za atyp v zadání šachty skryj a ponech pouze v ceníku“).
+       * Cestovala sem 20. 8. 2026 z Nastavení, protože je to parametr TÉTO
+       * zakázky, ne aplikace — jenže zadání šachty popisuje stavbu, ne ceny,
+       * a dlouhé vysvětlení pod ním kartu jen natahovalo. Sazba zůstává
+       * v ceníku varianty (`C.atypPrirazka`, sekce REŽIE), takže se pořád
+       * mění u jednotlivé nabídky a starší nabídky se nepřepočítávají;
+       * mění ji ten, kdo vidí ceník. */
+      '', false, 'ock-zadani') +
     card('Dimenze profilů',
       profRow('sloupek', 'Sloupek') + profRow('precnikBok', 'Příčníky bok/zadek') + profRow('sloupekPortal', 'Sloupek portálu') +
       profRow('precnikPortal', 'Příčníky portálu') + profRow('spojka', 'Spojka sloupků') + profRow('lemovani', 'Lemování ext. šachty') +

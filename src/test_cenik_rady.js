@@ -266,5 +266,60 @@ const ZAHR = () => ({
     dok(Object.assign(zad('mezi příčníky'), { projekceAtypHod: 25 })).mnozstvi === 79);
 }
 
+/* ---------- zasklení a profily podle typu šachty (9. 9. 2026) ----------
+ * Exteriérová: boky dvojsklo, čelní VSG 4.4.1 (beze změny proti dřívějšku).
+ * Interiérová: obě plochy z téhož VSG — na terče 4.4.2, mezi příčníky 4.4.1. */
+{
+  const zad = (typ, zaskleni) => Object.assign(JSON.parse(JSON.stringify(DEFAULT_ZADANI)),
+    { typSachty: typ, zaskleni });
+  const opl = (z, c) => vypocet(z, c || CR(), JEKLY, true).sekce.oplasteni.map(x => x.origNazev || x.nazev);
+  const cenik = CR();
+
+  const ext = opl(zad('exteriérová', 'na terče'), cenik);
+  test('exteriérová: boky dvojsklo z ceníku, čelní VSG 4.4.1',
+    ext.some(n => n === 'MATERIÁL boční + zadní stěna (' + cenik.skloBokyNazev + ')')
+    && ext.includes('MATERIÁL VSG 4.4.1'), ext.slice(0, 3).join(' | '));
+  test('a v názvu čelního skla už není „čelní stěna"', !ext.some(n => /čelní stěna/.test(n)));
+
+  const intTerce = opl(zad('interiérová', 'na terče'), cenik);
+  test('interiérová na terče: obě plochy VSG 4.4.2',
+    intTerce.includes('MATERIÁL boční + zadní stěna (VSG 4.4.2)')
+    && intTerce.includes('MATERIÁL VSG 4.4.2'), intTerce.slice(0, 3).join(' | '));
+
+  const intListy = opl(zad('interiérová', 'mezi příčníky'), cenik);
+  test('interiérová mezi příčníky: obě plochy VSG 4.4.1',
+    intListy.includes('MATERIÁL boční + zadní stěna (VSG 4.4.1)')
+    && intListy.includes('MATERIÁL VSG 4.4.1'), intListy.slice(0, 3).join(' | '));
+
+  /* Sazba: interiérová na terče musí počítat s cenou 4.4.2, ne 4.4.1. */
+  const radek = (z, c, nazev) => vypocet(z, c, JEKLY, true).sekce.oplasteni
+    .find(x => (x.origNazev || x.nazev) === nazev);
+  test('interiérová na terče počítá sazbou VSG 4.4.2',
+    radek(zad('interiérová', 'na terče'), cenik, 'MATERIÁL VSG 4.4.2').cena === cenik.skloVsg442Kc,
+    radek(zad('interiérová', 'na terče'), cenik, 'MATERIÁL VSG 4.4.2').cena);
+  const bez442 = CR(); delete bez442.skloVsg442Kc;
+  test('starší ceník bez 4.4.2 počítá sazbou 4.4.1 (nabídka nespadne na nulu)',
+    radek(zad('interiérová', 'na terče'), bez442, 'MATERIÁL VSG 4.4.2').cena === bez442.skloCelniKc);
+
+  test('výchozí profily se liší podle typu šachty',
+    PROFILY_VYCHOZI['exteriérová'].sloupek.dim === '80x80'
+    && PROFILY_VYCHOZI['interiérová'].sloupek.dim === '80x40'
+    && PROFILY_VYCHOZI['interiérová'].spojka.dim === '70x30');
+  test('a DEFAULT_ZADANI drží exteriérovou sadu',
+    JSON.stringify(DEFAULT_ZADANI.profily) === JSON.stringify(PROFILY_VYCHOZI['exteriérová']));
+
+  /* Migrace: vyřazená položka pod starým názvem se musí přemapovat, jinak by
+   * se sklo tiše vrátilo do ceny. */
+  const stara = { ock: { zadani: Object.assign(zad('exteriérová', 'na terče'), {
+    nepocitat: ['MATERIÁL čelní stěna (VSG 44.1 čiré)'],
+    mnozstviPrepis: { 'MATERIÁL boční + zadní stěna (dvojsklo čiré Ug=2,6)': 12 } }) }, cenik: CR() };
+  const zmen = skloMigraceNazvu(stara);
+  test('migrace přemapuje vyřazenou položku i přepis množství', zmen === 2
+    && stara.ock.zadani.nepocitat[0] === 'MATERIÁL VSG 4.4.1'
+    && stara.ock.zadani.mnozstviPrepis['MATERIÁL boční + zadní stěna (' + CR().skloBokyNazev + ')'] === 12,
+    JSON.stringify([zmen, stara.ock.zadani.nepocitat, Object.keys(stara.ock.zadani.mnozstviPrepis)]));
+  test('a na nové zakázce nemá co dělat', skloMigraceNazvu({ ock: { zadani: zad('exteriérová', 'na terče') }, cenik: CR() }) === 0);
+}
+
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);

@@ -1,6 +1,6 @@
 # Návrhy změn obchodníci – 9. 9. 2026
 
-Stav řešení úkolů ze schůzky. Aktualizováno 9. 9. 2026, verze aplikace 9.9.3.
+Stav řešení úkolů ze schůzky. Aktualizováno 9. 9. 2026, verze aplikace 9.9.4.
 
 Legenda stavu: HOTOVO = nasazeno a ověřené testy · ZJIŠTĚNO = odpověď níž, čeká
 na rozhodnutí · ČEKÁ = zadané, ještě neřešené.
@@ -94,8 +94,6 @@ používat klávesy šipka nahoru/dolů přímo v poli, funguje mu to dál.
 
 ---
 
----
-
 ## 5. Nová nabídka začíná s nulovými rozměry — HOTOVO
 
 Nová cenová nabídka měla dosud v zadání šachty předvyplněné rozměry vzorové
@@ -118,7 +116,6 @@ Pod zaškrtávátkem je nově živý popisek. Než zaškrtnete, řekne, co zašk
 udělá; po zaškrtnutí potvrdí, co se přidalo:
 
 > **Přidáno do opláštění:** 1 ks stříška nad vstupem na dvůr.
-> Jako každá položka vstupuje do rezervy a přirážky.
 
 U **interiérové** šachty popisek upozorní, že se stříška nepřidává — položka
 existuje jen pro exteriérovou. Dřív šlo zaškrtnutí u interiérové šachty
@@ -144,6 +141,83 @@ Výzva vždy řekne, jak to dopadlo:
 
 ---
 
+## 8. Výchozí profily podle typu šachty — HOTOVO
+
+Po přepnutí typu šachty se dosadí dimenze profilů odpovídající tomu typu.
+Interiérová šachta nenese vítr ani sníh, takže vystačí se subtilnějšími profily:
+
+| Profil | Exteriérová | Interiérová |
+|---|---|---|
+| Sloupek | 80x80 / 4 | 80x40 / 4 |
+| Příčníky bok a zadek | 80x80 / 3 | 80x40 / 3 |
+| Sloupek portálu | 40x40 / 3 | 40x40 / 3 |
+| Příčníky portálu | 80x40 / 3 | 80x40 / 3 |
+| Spojka sloupků | 70x70 / 3 | 70x30 / 3 |
+
+Přepnutí typu **přepíše i dimenze, které jste si upravil**, a napíše to
+v liště. Po přepnutí si je tedy zkontrolujte.
+
+**Lemování ext. šachty** se u interiérové šachty ukazuje jako pomlčka —
+do ceny nevstupuje, protože položka „Profily – lemování šachty" je jen pro
+exteriérovou.
+
+---
+
+## 9. Zasklení podle typu šachty — HOTOVO
+
+Nově se materiál skla řídí typem šachty a způsobem zasklení:
+
+| Šachta a zasklení | Boky a zadní stěna | Čelní stěna |
+|---|---|---|
+| Exteriérová | dvojsklo (dle ceníku) | VSG 4.4.1 |
+| Interiérová, na terče | VSG 4.4.2 | VSG 4.4.2 |
+| Interiérová, mezi příčníky | VSG 4.4.1 | VSG 4.4.1 |
+
+Interiérová šachta stojí uvnitř budovy a dvojsklo kvůli tepelné izolaci
+nepotřebuje, proto jsou obě plochy z téhož VSG.
+
+**V ceníku přibyla položka „Sklo VSG 4.4.2"** (sekce OPLÁŠTĚNÍ) a stávající
+„Sklo čelní stěna" se jmenuje „Sklo VSG 4.4.1". Dokud sazbu pro 4.4.2
+nevyplníte, počítá se cenou 4.4.1 — nabídka nespadne na nulu, ale je to
+potřeba doplnit.
+
+V kalkulaci se řádek jmenuje **MATERIÁL VSG 4.4.1** nebo **MATERIÁL VSG 4.4.2**,
+slova „čelní stěna" v názvu už nejsou.
+
+> **Pozor u rozpracovaných zakázek.** Interiérové nabídky se přepočítají —
+> mění se materiál i sazba. U nabídek, kde jste sklo ručně vyřadil z výpočtu
+> nebo přepsal množství, se nastavení automaticky převede na nové názvy, ale
+> vyplatí se to zkontrolovat.
+
+---
+
+## 10. Přirážka za ATYP zmizela ze zadání šachty — HOTOVO
+
+Pole „Přirážka za ATYP" i dlouhé vysvětlení pod ním je z karty Zadání šachty
+pryč. Sazba zůstává v **ceníku** (sekce ATYP), kde se jí dá měnit stejně jako
+dosud — pořád platí jen pro tu jednu nabídku a starší nabídky nepřepočítává.
+Zaškrtávátko ATYP zůstává v zadání.
+
+---
+
+## 11. Otevřená karta zůstane otevřená — HOTOVO
+
+Karta „Dimenze profilů" se po každé změně sama zavírala, takže při úpravě
+šesti profilů se zavřela šestkrát. Nově zůstane otevřená, dokud ji sami
+nezavřete. Platí pro všechny karty; po obnovení stránky se aplikace vrátí
+do výchozího uspořádání.
+
+---
+
+## 12. Přechodové plechy v nabídce jako jedna položka — HOTOVO
+
+V cenové nabídce pro zákazníka se materiál a montáž přechodových plechů
+slučují do jedné položky **„Přechodové plechy"** se součtem obou cen.
+V kalkulaci zůstávají obě položky zvlášť — potřebujete je vidět a vyřadit
+nezávisle. Když je v nabídce jen jedna z nich, ukáže se sama a beze změny.
+
+---
+
 ## Přehled
 
 | # | Bod | Stav |
@@ -155,6 +229,12 @@ Výzva vždy řekne, jak to dopadlo:
 | 5 | Nulové rozměry v nové nabídce | HOTOVO (v9.9.3) |
 | 6 | Živý popisek u „Průchozí šachta" | HOTOVO (v9.9.3) |
 | 7 | Uložení nabídky před vynuceným obnovením | HOTOVO (v9.9.3) |
+| 8 | Výchozí profily podle typu šachty, lemování u interiérové | HOTOVO (v9.9.4) |
+| 9 | Zasklení podle typu šachty, nová položka VSG 4.4.2 | HOTOVO (v9.9.4) |
+| 10 | Přirážka za ATYP jen v ceníku | HOTOVO (v9.9.4) |
+| 11 | Otevřená karta zůstane otevřená | HOTOVO (v9.9.4) |
+| 12 | Přechodové plechy v nabídce jako jedna položka | HOTOVO (v9.9.4) |
+| 13 | Přeskládání hlavičky do čtyř sloupců | NÁVRH — čeká na odsouhlasení |
 
 Změny se projeví po obnovení stránky (aplikace si o ně sama řekne — a od
 verze 9.9.3 si před tím rozpracovanou nabídku uloží).

@@ -38,6 +38,7 @@ const ZKUSEBNI_CENIK = {
   zastreseniM2Kc: 5000, oplechFasadaBmKc: 500,
   skloBokyKc: 2000,  skloBokyNazev: 'dvojsklo čiré (zkušební)',
   skloCelniKc: 1000, skloCelniNazev: 'bezpečnostní sklo čiré (zkušební)',
+  skloVsg442Kc: 1200,
   /* praceOplasteniKc, hakyKc a lakovnaListaBm mají schválně NEkulatou
    hodnotu: kulatá se náhodou shodovala se skutečnou cenou a strážce
    (zkontroluj_pred_gitem.py, kontrola 7) to po právu hlásil. */

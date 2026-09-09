@@ -527,6 +527,10 @@ function importZakazka(obj) {
        * nulu a cena zakázky by se po otevření tiše propadla. Guard kvůli
        * Node testům, které zakazka.js načítají bez engine.js. */
       if (typeof cenikMigraceLeseni === 'function') cenikMigraceLeseni(d.cenik);
+      /* Migrace 9. 9. 2026: řádky skel se přejmenovaly (MATERIÁL VSG 4.4.1 /
+       * 4.4.2). Ruční přepisy i seznam vyřazených položek se klíčují názvem,
+       * takže bez přemapování by vyřazené sklo tiše vlezlo zpátky do ceny. */
+      if (typeof skloMigraceNazvu === 'function') skloMigraceNazvu(d);
       /* Migrace 12. 8. 2026 (#134): projekce dostala vlastní slevu.
        *
        * Do té doby žila „globální sleva projekce" v zadání jako `slevaPct`

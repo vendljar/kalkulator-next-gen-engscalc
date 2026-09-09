@@ -76,6 +76,7 @@ const DEFAULT_CENIK = {  // HODNOTY VYNULOVÁNY pro GitHub (pripravit_github.py)
   zastreseniM2Kc: 0, oplechFasadaBmKc: 0,
   skloBokyKc: 0,  skloBokyNazev: '',
   skloCelniKc: 0, skloCelniNazev: '',
+  skloVsg442Kc: 0,               // VSG 4.4.2 — interiérová šachta na terče (9. 9. 2026)
   praceOplasteniKc: 0, plastKotvyKc: 0, tmeleniKc: 0,
   striskaDvurKc: 0, cestovniKc: 0, cisteniKc: 0,
   /* leseniFix (11. 8. 2026) — JEDINÝ zdroj fixní části lešení. Do té doby
@@ -129,6 +130,118 @@ const DEFAULT_CENIK = {  // HODNOTY VYNULOVÁNY pro GitHub (pripravit_github.py)
                demontazVytahuKc: 0, destovySvodKc: 0 },
 };
 
+/* VÝCHOZÍ DIMENZE PROFILŮ PODLE TYPU ŠACHTY (9. 9. 2026, zadání J. V.
+ * v sešitu „Vychozi_nastaveni_spec_sachty_a_hlavicky.xlsx": „nastav výchozí
+ * nastavení profilů a zasklení pro interiérovou a exteriérovou šachtu — po
+ * vybrání typu šachty").
+ *
+ * Interiérová šachta nenese vítr ani sníh a stojí uvnitř budovy, takže
+ * vystačí se subtilnějšími profily; exteriérová sada zůstává tím, čím byla
+ * dosud (proto se DEFAULT_ZADANI nemění ani o milimetr). Lemování je
+ * u interiérové vedené taky, ale do výpočtu nevstupuje — položka
+ * „PROFILY - LEMOVÁNÍ ŠACHTY (EXT)" se skládá jen u exteriérové, a obrazovka
+ * proto u interiérové ukazuje místo dimenzí pomlčku. */
+const PROFILY_VYCHOZI = {
+  'exteriérová': {
+    sloupek:       { dim: '80x80', tl: 4 },
+    precnikBok:    { dim: '80x80', tl: 3 },
+    sloupekPortal: { dim: '40x40', tl: 3 },
+    precnikPortal: { dim: '80x40', tl: 3 },
+    spojka:        { dim: '70x70', tl: 3 },
+    lemovani:      { dim: '60x30', tl: 2 },
+  },
+  'interiérová': {
+    sloupek:       { dim: '80x40', tl: 4 },
+    precnikBok:    { dim: '80x40', tl: 3 },
+    sloupekPortal: { dim: '40x40', tl: 3 },
+    precnikPortal: { dim: '80x40', tl: 3 },
+    spojka:        { dim: '70x30', tl: 3 },
+    lemovani:      { dim: '60x30', tl: 2 },
+  },
+};
+
+/* ZASKLENÍ PODLE TYPU ŠACHTY (9. 9. 2026, zadání J. V. v sešitu
+ * „Vychozi_nastaveni_spec_sachty_a_hlavicky.xlsx", výklad potvrzen týž den).
+ *
+ * Exteriérová šachta stojí venku, takže boky a záda drží dvojsklo kvůli
+ * tepelné izolaci a čelní stěna je z VSG 4.4.1 — tak to bylo dosud a nemění
+ * se. Interiérová šachta uvnitř budovy dvojsklo nepotřebuje: obě plochy jsou
+ * z téhož VSG, a to podle způsobu zasklení — na terče 4.4.2, mezi příčníky
+ * 4.4.1.
+ *
+ * Vrací pro každou plochu NÁZEV ŘÁDKU, sazbu a cestu do ceníku. Název je
+ * součástí návratu schválně: ruční přepisy množství, přejmenování i seznam
+ * vyřazených položek se v tomhle jádře klíčují právě názvem řádku, takže
+ * migrace starších zakázek (skloMigraceNazvu) musí umět spočítat týž název
+ * jako výpočet. Jedna funkce, jedna pravda.
+ *
+ * Chybí-li v ceníku sazba pro 4.4.2 (starší ceníky ji nemají), počítá se
+ * cenou 4.4.1 — nabídka tak nespadne na nulu a v ceníku je vidět, co doplnit. */
+const SKLO_VSG441 = 'VSG 4.4.1';
+const SKLO_VSG442 = 'VSG 4.4.2';
+function skloVolba(z, c) {
+  const zd = z || {}, cc = c || {};
+  const ext = zd.typSachty !== 'interiérová';
+  if (ext) {
+    return {
+      boky:  { nazev: 'MATERIÁL boční + zadní stěna (' + (cc.skloBokyNazev || '') + ')',
+               kc: cc.skloBokyKc, cesta: 'C.skloBokyKc' },
+      celni: { nazev: 'MATERIÁL ' + SKLO_VSG441, kc: cc.skloCelniKc, cesta: 'C.skloCelniKc' },
+    };
+  }
+  const listy = zd.zaskleni === 'mezi příčníky';
+  const typ = listy ? SKLO_VSG441 : SKLO_VSG442;
+  const kc = listy ? cc.skloCelniKc
+    : (cc.skloVsg442Kc != null && cc.skloVsg442Kc !== '' ? cc.skloVsg442Kc : cc.skloCelniKc);
+  const cesta = listy ? 'C.skloCelniKc'
+    : (cc.skloVsg442Kc != null && cc.skloVsg442Kc !== '' ? 'C.skloVsg442Kc' : 'C.skloCelniKc');
+  return {
+    boky:  { nazev: 'MATERIÁL boční + zadní stěna (' + typ + ')', kc, cesta },
+    celni: { nazev: 'MATERIÁL ' + typ, kc, cesta },
+  };
+}
+
+/* Migrace názvů skel u starších zakázek (9. 9. 2026).
+ *
+ * Do 9. 9. se řádky jmenovaly „MATERIÁL boční + zadní stěna (<typ z ceníku>)"
+ * a „MATERIÁL čelní stěna (<typ z ceníku>)". Přepisy množství, přejmenování
+ * a hlavně seznam VYŘAZENÝCH položek (`nepocitat`) se klíčují názvem, takže
+ * bez přemapování by vyřazené sklo začalo znovu vstupovat do ceny — a to
+ * potichu. Klíče se proto přepíšou na názvy, které pro tutéž zakázku vydá
+ * skloVolba(). Migrace se pouští jen tehdy, když starý tvar v datech opravdu
+ * je; nová zakázka jí neprojde. */
+function skloMigraceNazvu(data) {
+  const d = data || {};
+  const z = d.ock && d.ock.zadani, c = d.cenik;
+  if (!z || !c) return 0;
+  const nove = skloVolba(z, c);
+  const dvojice = [[/^MATERIÁL boční \+ zadní stěna \(/, nove.boky.nazev],
+                   [/^MATERIÁL čelní stěna \(/, nove.celni.nazev]];
+  let zmen = 0;
+  const prejmenuj = (mapa) => {
+    if (!mapa || typeof mapa !== 'object') return;
+    Object.keys(mapa).forEach(k => {
+      dvojice.forEach(([vzor, novy]) => {
+        if (!vzor.test(k) || k === novy) return;
+        if (mapa[novy] === undefined) mapa[novy] = mapa[k];
+        delete mapa[k];
+        zmen++;
+      });
+    });
+  };
+  prejmenuj(z.mnozstviPrepis); prejmenuj(z.cenyPrepis); prejmenuj(z.nazvyPrepis);
+  if (Array.isArray(z.nepocitat)) {
+    z.nepocitat = z.nepocitat.map(n => {
+      const s = String(n);
+      const nalez = dvojice.find(([vzor]) => vzor.test(s));
+      if (!nalez || s === nalez[1]) return n;
+      zmen++;
+      return nalez[1];
+    });
+  }
+  return zmen;
+}
+
 const DEFAULT_ZADANI = {
   prejezd: 2.7, zdvih: 17.325, prohluben: 1.05,
   sirka: 1.51, hloubka: 1.515, roztec: 1.25,
@@ -137,14 +250,7 @@ const DEFAULT_ZADANI = {
   svetlikNadDvermi: true, svetlikyBoky: 0,
   cistyVstupMm: 800, sirkaRamuMm: 100, prechodovePlechy: true,
   pruchoziSachta: false, atyp: false, vystupZamereni: false,
-  profily: {
-    sloupek:       { dim: '80x80', tl: 4 },
-    precnikBok:    { dim: '80x80', tl: 3 },
-    sloupekPortal: { dim: '40x40', tl: 3 },
-    precnikPortal: { dim: '80x40', tl: 3 },
-    spojka:        { dim: '70x70', tl: 3 },
-    lemovani:      { dim: '60x30', tl: 2 },
-  },
+  profily: JSON.parse(JSON.stringify(PROFILY_VYCHOZI['exteriérová'])),
   rezervaProfilyPct: 0, rezervaPlechyPct: 0,
   montazZakladHod: 24, montazAtypHod: 0, projekceZakladHod: 50, projekceAtypHod: 0,
   /* zamecnikAtypKc = přepis sazby atypické zámečnické práce JEN pro tuhle zakázku.
@@ -393,6 +499,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const skloBokyZadniM2 = bocniM2 + zadniM2;
   const skloCelniM2 = svetlikM2 + svetlikBokM2;
   const skloCelkemM2 = skloBokyZadniM2 + skloCelniM2;
+  const skloRada = skloVolba(z, c);   // typ skla podle šachty a zasklení (9. 9. 2026)
 
   /* ---------- montáž + projekce ---------- */
   const montazHod1 = z.montazZakladHod + hodinyNavic + z.montazAtypHod;
@@ -548,8 +655,11 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   ].filter(Boolean);
 
   const oplasteni = [
-    mkItem(`MATERIÁL boční + zadní stěna (${c.skloBokyNazev})`, skloBokyZadniM2, c.skloBokyKc, { cenaPath: 'C.skloBokyKc' }),
-    mkItem(`MATERIÁL čelní stěna (${c.skloCelniNazev})`, skloCelniM2, c.skloCelniKc, { cenaPath: 'C.skloCelniKc' }),
+    /* Které sklo kam (9. 9. 2026) rozhoduje typ šachty a způsob zasklení —
+     * viz skloVolba(). Názvy řádků nese táž funkce, protože se na ně věší
+     * ruční přepisy i vyřazení položek. */
+    mkItem(skloRada.boky.nazev, skloBokyZadniM2, skloRada.boky.kc, { cenaPath: skloRada.boky.cesta }),
+    mkItem(skloRada.celni.nazev, skloCelniM2, skloRada.celni.kc, { cenaPath: skloRada.celni.cesta }),
     mkItem('PRÁCE OPLÁŠTĚNÍ', skloCelkemM2, c.praceOplasteniKc, { cenaPath: 'C.praceOplasteniKc' }),
     mkItem('PLASTOVÉ KOTVY', terce ? 1 : 0, c.plastKotvyKc, { cenaPath: 'C.plastKotvyKc' }),
     ext ? mkItem('TMELENÍ (MAT. + PRÁCE) (EXT)', skloCelkemM2, c.tmeleniKc, { cenaPath: 'C.tmeleniKc' }) : null,
@@ -843,4 +953,4 @@ function cenikMigraceLeseni(cenik) {
   }
 }
 
-if (typeof module !== 'undefined') module.exports = { vypocet, DEFAULT_ZADANI, DEFAULT_CENIK, CEIL, cenikMigraceLeseni };
+if (typeof module !== 'undefined') module.exports = { vypocet, DEFAULT_ZADANI, DEFAULT_CENIK, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442 };

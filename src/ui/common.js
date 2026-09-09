@@ -603,9 +603,32 @@ function inp(path, opts = {}) {
   return `<div class="row"><label>${opts.l}</label><input type="number" step="${step}" value="${esc(val)}" onchange="set('${path}', +this.value)"><span class="u">${u}</span></div>`;
 }
 
+/* OTEVŘENÁ KARTA ZŮSTANE OTEVŘENÁ (9. 9. 2026, hlášeno J. V.: „když zadávám
+ * úpravu dimenzí profilů, tak po každé změně se mi pole skryje; když ho
+ * otevřu, mělo by zůstat otevřené, dokud ho neskryju").
+ *
+ * Otevřenost karty držel jen DOM (`classList.toggle`), jenže každá změna
+ * zadání překreslí celou stránku a karta se vrátila do výchozího stavu.
+ * U Dimenzí profilů, které jsou schválně sbalené, to znamenalo zavřít se po
+ * každém jednom profilu — a těch je šest. Stav se proto pamatuje podle `id`
+ * karty; zapíše se, teprve když do ní člověk sáhne, takže výchozí chování
+ * ostatních karet zůstává. Vydrží do obnovení stránky, ne dál: po refreshi
+ * má být aplikace v uklizeném stavu. */
+const KARTY_OTEVRENE = {};
+function kartaPrepni(nadpis) {
+  const karta = nadpis && nadpis.parentElement;
+  if (!karta) return;
+  karta.classList.toggle('closed');
+  if (karta.id) KARTY_OTEVRENE[karta.id] = !karta.classList.contains('closed');
+}
+function kartaZavrena(id, closed) {
+  return (id && Object.prototype.hasOwnProperty.call(KARTY_OTEVRENE, id))
+    ? !KARTY_OTEVRENE[id] : closed;
+}
+
 function card(title, inner, closed = false, id = '') {
   // id slouží kotvám v klouzající liště kalkulací (kalkLista) – kliknutí sroluje na kartu
-  return `<div class="card ${closed ? 'closed' : ''}"${id ? ` id="${id}"` : ''}><h2 onclick="this.parentElement.classList.toggle('closed')">${title}</h2><div class="body">${inner}</div></div>`;
+  return `<div class="card ${kartaZavrena(id, closed) ? 'closed' : ''}"${id ? ` id="${id}"` : ''}><h2 onclick="kartaPrepni(this)">${title}</h2><div class="body">${inner}</div></div>`;
 }
 
 /* Štítek stavu otevřené varianty vedle čísla nabídky (21. 8. 2026, zadání
@@ -767,9 +790,9 @@ function kartaRezim(oblast, sekceKey, title, inner, id = '') {
     : (rezim === 'srolovat' ? sekceRozbalBtn(oblast, sekceKey) : '');
   const nadpis = `<span style="flex:1">${title}</span>`
     + (vpravo ? `<span onclick="event.stopPropagation()" style="font-weight:400">${vpravo}</span>` : '');
-  const zavreno = sekceSbalena(oblast, sekceKey);
+  const zavreno = kartaZavrena(id, sekceSbalena(oblast, sekceKey));
   return `<div class="card ${zavreno ? 'closed' : ''}"${id ? ` id="${id}"` : ''}>
-    <h2 onclick="this.parentElement.classList.toggle('closed')"
+    <h2 onclick="kartaPrepni(this)"
       style="display:flex;align-items:center;gap:12px">${nadpis}</h2>
     <div class="body">${inner}</div></div>`;
 }

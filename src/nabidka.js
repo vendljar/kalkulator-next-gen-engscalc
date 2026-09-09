@@ -170,11 +170,44 @@ function nabidkaData(zak, varianta, jekly, lang) {
   // Příplatky do sekce „II. Rozšíření cenové nabídky" – včetně množství a ceny.
   // Zahrnou se položky nevyřazené v kalkulaci (sloupec „Nabídka" v tabulce příplatků).
   const vynech = Zv.priplatkyVynechat || [];
-  const priplatkyList = r.priplatky.filter(p => !vynech.includes(p.key)).map(p => ({
-    nazev: P(p.nazev),
-    popis: P('množství') + ': ' + cislo(p.mnozstvi) + (p.pozn ? ' (' + P(p.pozn) + ')' : ''),
-    cena: kc(mena.na(p.sMarzi)),
-  }));
+  /* PŘECHODOVÉ PLECHY JAKO JEDNA POLOŽKA (9. 9. 2026, zadání J. V.: „proveď
+   * sloučení přechodových plechů (materiál a montáž) v cenové nabídce do jedné
+   * položky s názvem „Přechodové plechy", cena obou položek se musí sečíst").
+   *
+   * V kalkulaci zůstávají dvě položky — obchodník potřebuje vidět materiál
+   * a montáž zvlášť, protože se dají vyřadit nezávisle. Zákazníka v nabídce
+   * ale dvojice mate: kupuje jedny plechy, ne materiál a k němu práci.
+   * Slučuje se proto AŽ TADY, v dokumentu, a jen když jsou v nabídce obě;
+   * zůstane-li jedna, ukáže se sama a beze změny názvu. Množství se
+   * neuvádí — kusy a kilogramy nejde sečíst do jednoho čísla. */
+  const PLECHY = ['prechMat', 'prechMont'];
+  const vybrane = r.priplatky.filter(p => !vynech.includes(p.key));
+  const plechy = vybrane.filter(p => PLECHY.includes(p.key));
+  const priplatkyList = [];
+  vybrane.forEach(p => {
+    if (!PLECHY.includes(p.key)) {
+      priplatkyList.push({
+        nazev: P(p.nazev),
+        popis: P('množství') + ': ' + cislo(p.mnozstvi) + (p.pozn ? ' (' + P(p.pozn) + ')' : ''),
+        cena: kc(mena.na(p.sMarzi)),
+      });
+      return;
+    }
+    if (p.key !== plechy[0].key) return;              // druhá půlka dvojice se už nevypisuje
+    if (plechy.length < 2) {                          // jen jedna z nich — beze změny
+      priplatkyList.push({
+        nazev: P(p.nazev),
+        popis: P('množství') + ': ' + cislo(p.mnozstvi) + (p.pozn ? ' (' + P(p.pozn) + ')' : ''),
+        cena: kc(mena.na(p.sMarzi)),
+      });
+      return;
+    }
+    priplatkyList.push({
+      nazev: P('Přechodové plechy'),
+      popis: P('materiál a montáž'),
+      cena: kc(mena.na(plechy.reduce((a, x) => a + x.sMarzi, 0))),
+    });
+  });
 
   const nazevSouboru = 'NABÍDKA_' + (placeholders.CISLO_NABIDKY || 'CN')
     + (varianta.zakaznik ? '_' + varianta.zakaznik : '')

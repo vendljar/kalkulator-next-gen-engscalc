@@ -74,8 +74,11 @@ const CENIK_DEF = [
   ['OPLÁŠTĚNÍ', [
     ['C.skloBokyNazev', 'Sklo boky + zadní stěna – typ', '', '', 'text'],
     ['C.skloBokyKc', 'Sklo boky + zadní stěna', 'Kč/m²', ''],
-    ['C.skloCelniNazev', 'Sklo čelní stěna – typ', '', '', 'text'],
-    ['C.skloCelniKc', 'Sklo čelní stěna', 'Kč/m²', ''],
+    ['C.skloCelniNazev', 'Sklo VSG 4.4.1 – typ', '', '', 'text'],
+    ['C.skloCelniKc', 'Sklo VSG 4.4.1', 'Kč/m²', 'exteriérová: čelní stěna; interiérová: vše při zasklení mezi příčníky'],
+    /* 9. 9. 2026, zadání J. V.: interiérová šachta zasklená na terče. Prázdná
+     * položka = počítá se sazbou VSG 4.4.1 (viz skloVolba v engine.js). */
+    ['C.skloVsg442Kc', 'Sklo VSG 4.4.2', 'Kč/m²', 'interiérová šachta se zasklením na terče'],
     ['C.praceOplasteniKc', 'Práce opláštění', 'Kč/m²', ''],
     ['C.plastKotvyKc', 'Plastové kotvy (zasklení na terče)', 'Kč', ''],
     ['C.tmeleniKc', 'Tmelení – materiál + práce (ext)', 'Kč/m²', ''],
