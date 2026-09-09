@@ -567,19 +567,11 @@ function importZakazka(obj) {
       }
       v.data = d;
     });
-    /* Duplicitní id ve starším souboru (B29, 9. 9. 2026): druhý a další výskyt
-     * dostane nové id, aby zakázka vůbec šla uložit — ale jen u NEZAMČENÉ
-     * varianty. Uzamčená se páruje se serverem přes id; přejmenovat ji by
-     * znamenalo „ztratit" odeslanou nabídku a server by zápis stejně odmítl.
-     * Dvě uzamčené s týmž id se nechají být: server je odmítne a člověk to
-     * uvidí, což je správně — takový soubor někdo upravil ručně. */
-    const videnaId = new Set();
-    obj.varianty.forEach(v => {
-      if (!v) return;
-      const zamcena = (typeof variantaUzamcena === 'function') && variantaUzamcena(v);
-      if (videnaId.has(String(v.id)) && !zamcena) v.id = zakazkaUnikatniId(obj, v.id);
-      videnaId.add(String(v.id));
-    });
+    /* Duplicitní id variant (B29, 9. 9. 2026) se tu NEopravují: import žádné
+     * id nevyrábí (novou variantu zakládá jen novaVarianta + zakazkaUnikatniId),
+     * takže duplicita může vzniknout jen ručně upraveným souborem — a tu má
+     * server odmítnout (uloIdProblemy → 400), ne tiše přejmenovat. Stejnou
+     * cestou (importZakazka) totiž prochází i zakázka při ukládání na server. */
     if (!obj.varianty.some(v => v.id === obj.aktivni)) obj.aktivni = obj.varianty[0].id;
     if (obj.popisZameru == null) obj.popisZameru = '';   // migrace: pole přibylo s nabídkou PROJ
     // migrace: sídlo objednatele se oddělilo od adresy stavby (KL-2). Zůstává
