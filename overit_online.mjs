@@ -974,13 +974,15 @@ test('shodná verze překryv zase schová', prekryv.skryt, prekryv);
     bezZmen.duvod === 'nic rozpracovaného' && bezZmenPo.stav === 'neni-co' && bezZmenPo.tlacitkoZive,
     JSON.stringify([bezZmen, bezZmenPo]));
 
-  /* b) rozpracovaná změna u přihlášeného na uložené zakázce → tiché uložení */
+  /* b) rozpracovaná změna u přihlášeného na uložené zakázce → tiché uložení.
+   * „Rozpracované" se nastavuje přímo v HIST: autosave (onlineTik) by změnu
+   * mohl uložit dřív, než se na ni stihneme zeptat, a test by byl náhodný. */
   const pred = await page.evaluate(async () => {
     ONLINE_STAV.serverVerze = buildVerze(); renderVerzePill();      // překryv pryč
     VERZE_ULOZ.stav = ''; VERZE_ULOZ.text = '';
     await onlineOtevri(ONLINE_STAV.rejstrik[0].soubor);             // zakázka z databáze
-    historieOznacUlozeno();
     set('Z.nastupiste', (+Z.nastupiste || 2) + 1);                  // rozpracovaná změna
+    HIST.ulozenoJako = '{"jiny":"stav"}';                           // = neuloženo, bez ohledu na autosave
     return { neulozeno: historieNeulozeno(), duvod: verzeUlozDuvod(), soubor: ONLINE_STAV.soubor };
   });
   await page.evaluate(() => { ONLINE_STAV.serverVerze = '99.9.9'; renderVerzePill(); });

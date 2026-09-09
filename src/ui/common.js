@@ -1175,10 +1175,12 @@ function verzeUlozPredObnovou() {
     VERZE_ULOZ.text = duvod === 'nic rozpracovaného'
       ? 'Rozpracované změny nemáte — uložená zakázka je na serveru a obnovením o nic nepřijdete.'
       : 'Uložit teď nejde (' + duvod + '). Rozpracované změny drží záloha v prohlížeči a aplikace je po obnovení nabídne.';
+    verzeOverlayPrekresli();      // bez toho by tlačítko zůstalo zhasnuté a text „Zjišťuji…"
     return Promise.resolve(VERZE_ULOZ.stav);
   }
   VERZE_ULOZ.stav = 'uklada';
   VERZE_ULOZ.text = 'Ukládám rozpracovanou nabídku…';
+  verzeOverlayPrekresli();
   let p;
   try { p = Promise.resolve(onlineUloz({ tiche: true })); } catch (e) { p = Promise.reject(e); }
   return p.then(ok => {
