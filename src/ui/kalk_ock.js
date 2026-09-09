@@ -1,5 +1,26 @@
 /* ================= ZÁLOŽKA KALKULACE OCK ================= */
 
+/* Popisek pod „Průchozí šachta" (9. 9. 2026, zadání J. V.: „pro průchozí
+ * šachtu použij variantu živého popisku pod položkou s informací: 1 ks
+ * stříška nad vstupem na dvůr").
+ *
+ * Proč živě, a ne jen text v nápovědě: co zaškrtnutí udělá, závisí na typu
+ * šachty. U interiérové se v jádře řádek nepřidává vůbec (`ext && …`), takže
+ * pevný text by tam lhal. Popisek proto říká, co se v téhle chvíli stane. */
+function pruchoziPopisek() {
+  const ext = Z.typSachty === 'exteriérová';
+  if (!Z.pruchoziSachta) {
+    return ext
+      ? `<div class="note" style="margin:-2px 0 8px">Zaškrtnutím se do opláštění přidá 1 ks stříška nad vstupem na dvůr.</div>`
+      : `<div class="note" style="margin:-2px 0 8px">U interiérové šachty se stříška nepřidává — položka je jen pro exteriérovou.</div>`;
+  }
+  return ext
+    ? `<div class="note" style="margin:-2px 0 8px"><b>Přidáno do opláštění:</b> 1 ks stříška nad vstupem na dvůr.
+       Jako každá položka vstupuje do rezervy a přirážky.</div>`
+    : `<div class="note warn" style="margin:-2px 0 8px">Zaškrtnuto, ale u <b>interiérové</b> šachty se stříška nepřidává —
+       do ceny se nic nepromítlo. Platí jen pro exteriérovou šachtu.</div>`;
+}
+
 function renderInputs() {
   const dims = Object.keys(JEKLY);
   const profRow = (key, label) => {
@@ -25,7 +46,12 @@ function renderInputs() {
       inp('Z.svetlikyBoky', { type: 'sel', l: 'Světlíky na bocích dveří', o: [[0, 'bez'], [1, 'na jedné straně'], [2, 'na obou stranách']] }) +
       inp('Z.cistyVstupMm', { l: 'Čistý vstup – šířka', step: 10, u: 'mm' }) + inp('Z.sirkaRamuMm', { l: 'Šířka rámu dveří', step: 5, u: 'mm' }) +
       inp('Z.prechodovePlechy', { type: 'check', l: 'Přechodové plechy' }) +
+      /* Živý popisek pod položkou (9. 9. 2026, zadání J. V.). Obchodník po
+       * zaškrtnutí viděl v kalkulaci jen materiál a nevěděl, co přesně
+       * zaškrtnutí přidalo. Popisek to říká rovnou u pole. Rozhoduje typ
+       * šachty: u interiérové se stříška nepřidává vůbec (viz engine.js). */
       inp('Z.pruchoziSachta', { type: 'check', l: 'Průchozí šachta (stříška na dvůr)' }) +
+      pruchoziPopisek() +
       /* ATYP má vlastní obsluhu (17. 8. večer): zaškrtnutí předvyplní všechny
        * čtyři rezervy na 30 % a Zámečníka atyp na 50 000 Kč; odškrtnutí je
        * vrací na nulu / ceník — atypové přirážky bez atypu nemají co dělat. */

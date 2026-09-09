@@ -1,6 +1,6 @@
 # Návrhy změn obchodníci – 9. 9. 2026
 
-Stav řešení úkolů ze schůzky. Aktualizováno 9. 9. 2026, verze aplikace 9.9.2.
+Stav řešení úkolů ze schůzky. Aktualizováno 9. 9. 2026, verze aplikace 9.9.3.
 
 Legenda stavu: HOTOVO = nasazeno a ověřené testy · ZJIŠTĚNO = odpověď níž, čeká
 na rozhodnutí · ČEKÁ = zadané, ještě neřešené.
@@ -62,22 +62,7 @@ z nákladu sekce Režie, kam stříška nepatří.
 PRŮCHOZÍ KABINA na „průchozí kabina" a PROSKLENÁ STŘÍŠKA na „nad výstupem
 na dvůr". Na cenu to nemá vliv.
 
-**Zbývá rozhodnout, jak to obchodníkovi ukázat.** Nabízejí se tři varianty,
-stačí vybrat (nebo popsat vlastní):
-
-- **A – živý popisek u zaškrtávátka.** Vedle „Průchozí šachta (stříška na
-  dvůr)" se dopíše, o kolik zaškrtnutí zvedne cenu — například
-  „+ 15 000 Kč v ceně (stříška 10 000 Kč + rezerva a přirážka)". Vidí se
-  hned při rozhodování, ještě než se klikne. Přepočítá se s každou změnou
-  rezervy nebo přirážky.
-- **B – poznámka u řádku v kalkulaci.** Řádek stříšky v sekci OPLÁŠTĚNÍ
-  dostane poznámku „vstupuje do rezervy a přirážky" — stejný způsob, jakým
-  se od dneška vysvětlují hodiny navíc u dílenské dokumentace. Méně nápadné,
-  zato konzistentní se zbytkem kalkulace.
-- **C – obojí.** Popisek při rozhodování a poznámka v kalkulaci pro kontrolu.
-
-Platí pro každou položku, ne jen pro stříšku: rezerva a přirážka se stejně
-počítají u všeho. Pokud chcete vysvětlení i jinde, řekněte kde.
+**Vyřešeno** živým popiskem pod položkou — viz bod 6.
 
 ---
 
@@ -109,13 +94,67 @@ používat klávesy šipka nahoru/dolů přímo v poli, funguje mu to dál.
 
 ---
 
+---
+
+## 5. Nová nabídka začíná s nulovými rozměry — HOTOVO
+
+Nová cenová nabídka měla dosud v zadání šachty předvyplněné rozměry vzorové
+stavby (přejezd 2,7 m, zdvih 17,325 m a další). Vypadaly jako vyplněné, takže
+se daly přehlédnout a v nabídce zůstala cizí šachta.
+
+Nově je **horní přejezd, zdvih, prohlubeň, vnitřní šířka a vnitřní hloubka
+na nule** — nula je vidět a musí se přepsat. Ostatní pole zůstávají
+předvyplněná: svislá rozteč příčníků, počet rohových sloupků i počet
+nástupišť jsou konstrukční předvolby, ne rozměry konkrétní stavby.
+
+Týká se to jen **nově zakládané** nabídky. Klon varianty i načtená zakázka si
+svoje rozměry nesou dál.
+
+---
+
+## 6. Popisek u „Průchozí šachta" — HOTOVO
+
+Pod zaškrtávátkem je nově živý popisek. Než zaškrtnete, řekne, co zaškrtnutí
+udělá; po zaškrtnutí potvrdí, co se přidalo:
+
+> **Přidáno do opláštění:** 1 ks stříška nad vstupem na dvůr.
+> Jako každá položka vstupuje do rezervy a přirážky.
+
+U **interiérové** šachty popisek upozorní, že se stříška nepřidává — položka
+existuje jen pro exteriérovou. Dřív šlo zaškrtnutí u interiérové šachty
+provést a v ceně se neprojevilo nic, aniž by o tom aplikace řekla slovo.
+
+---
+
+## 7. Nová verze aplikace během práce nabídku neztratí — HOTOVO
+
+Když se během vaší práce nasadí nová verze aplikace, položí se přes obrazovku
+výzva k obnovení stránky. Nově se **rozpracovaná nabídka nejdřív sama uloží**
+do online databáze a teprve pak jde stránku obnovit. Tlačítko *Obnovit
+stránku* je do dokončení uložení zhasnuté, aby obnovení nepřišlo doprostřed
+zápisu.
+
+Výzva vždy řekne, jak to dopadlo:
+
+- „Rozpracovaná nabídka je uložená v online databázi." — můžete obnovit,
+- „Rozpracované změny nemáte." — nebylo co ukládat,
+- „Uložit teď nejde (důvod)." — například nejste přihlášeni nebo je zakázka
+  jen ke čtení; změny pak drží záloha v prohlížeči a aplikace je po obnovení
+  sama nabídne.
+
+---
+
 ## Přehled
 
 | # | Bod | Stav |
 |---|---|---|
 | 1 | Překlady CZ→DE jen u zahraničních zakázek | HOTOVO (v9.9.2) |
-| 2 | Rozbor výpočtu u „Průchozí šachta" | ZJIŠTĚNO — zobrazení čeká na zadání |
+| 2 | Rozbor výpočtu u „Průchozí šachta" | ZJIŠTĚNO — zobrazení vyřešeno bodem 6 |
 | 3 | Zasklení mezi příčníky: +4 h projekce | HOTOVO (v9.9.2) |
 | 4 | Odstranění klikacích šipek u číselných polí | HOTOVO (v9.9.2) |
+| 5 | Nulové rozměry v nové nabídce | HOTOVO (v9.9.3) |
+| 6 | Živý popisek u „Průchozí šachta" | HOTOVO (v9.9.3) |
+| 7 | Uložení nabídky před vynuceným obnovením | HOTOVO (v9.9.3) |
 
-Změny se projeví po obnovení stránky (aplikace si o ně sama řekne).
+Změny se projeví po obnovení stránky (aplikace si o ně sama řekne — a od
+verze 9.9.3 si před tím rozpracovanou nabídku uloží).

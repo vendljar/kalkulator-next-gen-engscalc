@@ -592,5 +592,35 @@ test('úložiště se hlásí jako souborové', zk.StorageAdapter.typ === 'file'
   test('import duplicitní id nechá být (odmítne ji server)', m.varianty[0].id === m.varianty[1].id);
 }
 
+/* ---- nová nabídka začíná s nulovými rozměry (9. 9. 2026, zadání J. V.) ---- */
+{
+  const z = zk.novaZakazka();
+  const zad = z.varianty[0].data.ock.zadani;
+  test('nová nabídka má nulový přejezd, zdvih, prohlubeň, šířku i hloubku',
+    zk.ZADANI_NOVA_NULA.every(k => zad[k] === 0),
+    JSON.stringify(zk.ZADANI_NOVA_NULA.map(k => k + '=' + zad[k])));
+  test('a nuluje se právě těch pět polí', zk.ZADANI_NOVA_NULA.join() === 'prejezd,zdvih,prohluben,sirka,hloubka');
+  test('konstrukční předvolby zůstávají (rozteč, sloupky, nástupiště)',
+    zad.roztec === global.DEFAULT_ZADANI.roztec && zad.rohoveSloupky === global.DEFAULT_ZADANI.rohoveSloupky
+    && zad.nastupiste === global.DEFAULT_ZADANI.nastupiste,
+    JSON.stringify([zad.roztec, zad.rohoveSloupky, zad.nastupiste]));
+  test('výpočetní vzor DEFAULT_ZADANI zůstal nedotčený (stojí na něm sada proti Excelu)',
+    global.DEFAULT_ZADANI.prejezd === 2.7 && global.DEFAULT_ZADANI.zdvih === 17.325
+    && global.DEFAULT_ZADANI.sirka === 1.51);
+  /* Nulové rozměry nesmí shodit výpočet — obchodník je vidí hned po založení. */
+  const JEKLY2 = JSON.parse(require('fs').readFileSync(__dirname + '/jekly.json', 'utf8'));
+  let r = null, spadl = null;
+  try { r = global.vypocet(zad, ZC.zkusebniCenik(), JEKLY2, true); } catch (e) { spadl = e.message; }
+  test('výpočet nad nulovými rozměry nespadne', !spadl, spadl);
+  const cisla = r ? [r.souhrn.zakladNaklad, r.souhrn.zakladCena, r.souhrn.zakladDph] : [];
+  test('a nevrátí NaN ani nekonečno', cisla.every(x => isFinite(x)), JSON.stringify(cisla));
+  /* Klon i načtená zakázka si nesou svoje — nulují se jen NOVÉ varianty. */
+  const zmenena = zk.novaZakazka();
+  zmenena.varianty[0].data.ock.zadani.zdvih = 12;
+  const klon = (typeof global.klonujVariantu === 'function') ? global.klonujVariantu(zmenena, zmenena.varianty[0].id) : null;
+  test('klon varianty si rozměry nese, nenuluje je',
+    !klon || klon.data.ock.zadani.zdvih === 12, klon && klon.data.ock.zadani.zdvih);
+}
+
 console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
 process.exit(fail ? 1 : 0);

@@ -19,6 +19,11 @@ const zak = zk.novaZakazka();
 zak.cislo = '2026-OPR-CN-9001'; zak.objednatel = 'Vzorový odběratel s.r.o.'; zak.kontakt = 'Ing. Jan Vzorový / jednatel';
 zak.adresa = 'Vzorová 163/17, Praha 10'; zak.datum = '2026-04-21';
 zak.varianty[0].data.ock.fixes = true;   // tyto testy ověřují opravený režim (výchozí je nyní 1:1 Excel)
+/* Rozměry se dosazují ručně: nová nabídka je od 9. 9. 2026 má nulové, protože
+ * je vyplňuje obchodník (ZADANI_NOVA_NULA). Sada zkouší DOKUMENT nad vyplněnou
+ * zakázkou, takže si stavbu popíše sama — čísla jsou táž jako dřív. */
+Object.assign(zak.varianty[0].data.ock.zadani,
+  { prejezd: 2.7, zdvih: 17.325, prohluben: 1.05, sirka: 1.51, hloubka: 1.515 });
 const v = zak.varianty[0];
 const d = nabidkaData(zak, v, JEKLY);
 const p = d.placeholders;

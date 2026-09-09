@@ -121,8 +121,8 @@ Netlify Blobs jsou vázané na konkrétní projekt, takže **druhý web má vlas
 databázi automaticky** — zakázky, ceníky, účty i matice zobrazení jsou dvě
 oddělené sady. Pro testovací kalkulačku tedy stačí:
 
-0. Tenhle repozitář zatím větev `test` **nemá** (stav 7. 9. 2026) — nejdřív
-   ji založ z `main` a nahraj na GitHub, teprve pak ji jde v Netlify vybrat.
+0. Větev `test` v repozitáři **už je** (založena 9. 9. 2026 z `main`). Testy
+   v GitHub Actions nad ní běží stejně jako nad `main`.
 1. Netlify → **Add new project → Import an existing project** → týž repozitář;
    v *Build & deploy → Branches* nastav *Production branch* na `test`.
 2. Environment variables toho nového projektu:
@@ -138,6 +138,31 @@ oddělené sady. Pro testovací kalkulačku tedy stačí:
 
 Odpovídá-li web 401, je zapnutá ochrana Netlify — vypni ji v *Site
 protection*, aplikace má vlastní přihlašování.
+
+### Jak se do testu dostanou data (9. 9. 2026)
+
+Testovací web startuje prázdný — vlastní databáze znamená i vlastní (žádný)
+ceník a žádné zakázky. Naplní se **zálohou z ostrého webu**:
+
+1. Ostrý web → Nastavení → Databáze → **Stáhnout zálohu** (soubor JSON).
+2. Testovací web → Nastavení → Databáze → **Obnova ze zálohy** → zdroj
+   *stažený soubor*, režim *přepsat*, náhled, pak obnovit.
+3. Účty a podpisy se ze souboru vědomě neobnovují (bezpečnostní audit 9. 9.
+   2026, B27) — v testu si založ vlastní účty přes správu účtů. Ceník,
+   firemní údaje, matice zobrazení, šablony, zákazníky i zakázky obnova
+   přenese.
+
+Obnova sama upozorní, že záloha pochází z jiného webu — to je v tomhle
+případě v pořádku a je to přesně ta hláška, která má u ostrého webu zaznít
+jako varování.
+
+### Jak se pracuje s dvěma větvemi
+
+- Dávka se vyvíjí a nahrává do `test` → testovací web ji nasadí, proklikáš ji
+  nad testovacími daty.
+- Když sedí, sloučí se `test` do `main` → ostrý web nasadí totéž.
+- Číslo verze se nezvyšuje sloučením; platí to, co je ve `verze.txt`, takže
+  ostrý i testovací web hlásí stejné číslo pro stejný kód.
 
 ## Každá další verze
 

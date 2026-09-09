@@ -953,6 +953,60 @@ const prekryv = await page.evaluate(() => {
 test('rozdíl verzí položí přes aplikaci překryv s jediným tlačítkem Obnovit stránku',
   prekryv.zobrazen && prekryv.tlacitko && prekryv.veta && prekryv.nadVsim, prekryv);
 test('shodná verze překryv zase schová', prekryv.skryt, prekryv);
+
+/* Nová verze při rozpracované práci NEJDŘÍV uloží, teprve pak pustí obnovení
+ * (9. 9. 2026, zadání J. V.: „ať se obchodníkovi nic neztratí"). */
+{
+  /* a) nic rozpracovaného → uložení se nespouští a tlačítko je hned živé */
+  const bezZmen = await page.evaluate(() => {
+    VERZE_ULOZ.stav = ''; VERZE_ULOZ.text = '';
+    historieOznacUlozeno();                       // stav = uloženo, nic rozpracovaného
+    ONLINE_STAV.serverVerze = '99.9.9'; renderVerzePill();
+    return { duvod: verzeUlozDuvod() };
+  });
+  await page.waitForFunction(() => VERZE_ULOZ.stav !== '', { timeout: 5000 });
+  const bezZmenPo = await page.evaluate(() => ({
+    stav: VERZE_ULOZ.stav,
+    tlacitkoZive: !document.querySelector('#verze-overlay button').disabled,
+    text: (document.getElementById('verze-uloz-stav') || {}).textContent || '',
+  }));
+  test('bez rozpracovaných změn se neukládá a tlačítko je hned živé',
+    bezZmen.duvod === 'nic rozpracovaného' && bezZmenPo.stav === 'neni-co' && bezZmenPo.tlacitkoZive,
+    JSON.stringify([bezZmen, bezZmenPo]));
+
+  /* b) rozpracovaná změna u přihlášeného na uložené zakázce → tiché uložení */
+  const pred = await page.evaluate(async () => {
+    ONLINE_STAV.serverVerze = buildVerze(); renderVerzePill();      // překryv pryč
+    VERZE_ULOZ.stav = ''; VERZE_ULOZ.text = '';
+    await onlineOtevri(ONLINE_STAV.rejstrik[0].soubor);             // zakázka z databáze
+    historieOznacUlozeno();
+    set('Z.nastupiste', (+Z.nastupiste || 2) + 1);                  // rozpracovaná změna
+    return { neulozeno: historieNeulozeno(), duvod: verzeUlozDuvod(), soubor: ONLINE_STAV.soubor };
+  });
+  await page.evaluate(() => { ONLINE_STAV.serverVerze = '99.9.9'; renderVerzePill(); });
+  await page.waitForFunction(() => VERZE_ULOZ.stav === 'ulozeno' || VERZE_ULOZ.stav === 'chyba'
+    || VERZE_ULOZ.stav === 'neni-co', { timeout: 15000 });
+  const po = await page.evaluate(() => ({
+    stav: VERZE_ULOZ.stav,
+    text: (document.getElementById('verze-uloz-stav') || {}).textContent || '',
+    tlacitkoZive: !document.querySelector('#verze-overlay button').disabled,
+    porad: historieNeulozeno(),
+  }));
+  test('rozpracovaná změna se před vynuceným obnovením sama uloží',
+    pred.neulozeno === true && pred.duvod === '' && po.stav === 'ulozeno',
+    JSON.stringify([pred, po]));
+  test('a překryv to řekne a teprve pak pustí obnovení',
+    /uložená/i.test(po.text) && po.tlacitkoZive, JSON.stringify(po));
+  /* Uložená verze na serveru musí nést tu změnu — jinak by „uloženo" lhalo. */
+  const naServeru = await page.evaluate(async (s) => {
+    const d = await onlineApi('/api/zakazky?soubor=' + encodeURIComponent(s));
+    const v = d.zakazka.varianty.find(x => x.id === d.zakazka.aktivni) || d.zakazka.varianty[0];
+    return v.data.ock.zadani.nastupiste;
+  }, pred.soubor);
+  test('a v databázi je opravdu ta rozpracovaná hodnota',
+    naServeru === (await page.evaluate(() => +Z.nastupiste)), naServeru);
+  await page.evaluate(() => { ONLINE_STAV.serverVerze = buildVerze(); renderVerzePill(); VERZE_ULOZ.stav = ''; });
+}
 const listaZamku = await page.evaluate(() => {
   ZAK = novaZakazka(); syncVarianta();
   zamkniVariantu(aktivniVarianta(ZAK), { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Harness' });

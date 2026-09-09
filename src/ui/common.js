@@ -1141,42 +1141,104 @@ function renderVerzePill() {
  * po nasazení v8.9.3). Rozpracovaná práce se neztrácí: uložená zakázka je na
  * serveru, neuložené změny drží záloha v prohlížeči (historie.js) a před
  * obnovením se ještě zkusí tiše zapsat. */
+/* NEJDŘÍV ULOŽIT, POTOM VYNUTIT OBNOVENÍ (9. 9. 2026, zadání J. V.: „pokud
+ * v průběhu práce obchodníka na cenové nabídce dojde k nahrání nové verze
+ * buildu, umožni uložit nabídku ve stavu, ve kterém aktuálně je, a teprve
+ * potom vynuť refresh… ať se obchodníkovi nic neztratí").
+ *
+ * Do 9. 9. se rozpracovaná práce ukládala až po kliknutí na „Obnovit
+ * stránku". Kdo tlačítko nestiskl (odešel od počítače, zavřel záložku),
+ * spoléhal jen na zálohu v prohlížeči. Teď se uloží HNED, jakmile se nová
+ * verze objeví, a překryv říká, jak to dopadlo. Tlačítko je do té doby
+ * zhasnuté, aby obnovení nepřišlo doprostřed zápisu.
+ *
+ * Uložení má tři možné konce a všechny se musí říct nahlas: uloženo, nebylo
+ * co ukládat (nic rozpracovaného, nepřihlášen, uzamčená varianta), nebo se
+ * nepovedlo — pak zůstává záloha v prohlížeči, kterou aplikace po obnovení
+ * sama nabídne. */
+const VERZE_ULOZ = { stav: '', text: '' };
+
+function verzeUlozDuvod() {
+  if (typeof historieNeulozeno !== 'function' || !historieNeulozeno()) return 'nic rozpracovaného';
+  if (typeof onlineUloz !== 'function' || typeof ONLINE_STAV === 'undefined') return 'online databáze není k dispozici';
+  if (!ONLINE_STAV.ja) return 'nejste přihlášen k online databázi';
+  if (!ONLINE_STAV.soubor) return 'zakázka zatím není v databázi (chybí číslo nabídky, nebo se ještě neuložila)';
+  if (typeof zamekCteniJe === 'function' && zamekCteniJe()) return 'zakázka je otevřená jen ke čtení';
+  return '';
+}
+
+function verzeUlozPredObnovou() {
+  if (VERZE_ULOZ.stav) return Promise.resolve(VERZE_ULOZ.stav);   // jednou stačí
+  const duvod = verzeUlozDuvod();
+  if (duvod) {
+    VERZE_ULOZ.stav = 'neni-co';
+    VERZE_ULOZ.text = duvod === 'nic rozpracovaného'
+      ? 'Rozpracované změny nemáte — uložená zakázka je na serveru a obnovením o nic nepřijdete.'
+      : 'Uložit teď nejde (' + duvod + '). Rozpracované změny drží záloha v prohlížeči a aplikace je po obnovení nabídne.';
+    return Promise.resolve(VERZE_ULOZ.stav);
+  }
+  VERZE_ULOZ.stav = 'uklada';
+  VERZE_ULOZ.text = 'Ukládám rozpracovanou nabídku…';
+  let p;
+  try { p = Promise.resolve(onlineUloz({ tiche: true })); } catch (e) { p = Promise.reject(e); }
+  return p.then(ok => {
+    VERZE_ULOZ.stav = ok ? 'ulozeno' : 'chyba';
+    VERZE_ULOZ.text = ok
+      ? 'Rozpracovaná nabídka je uložená v online databázi. Teď můžete stránku obnovit.'
+      : 'Uložení se nepovedlo. Změny zůstávají v záloze prohlížeče a aplikace je po obnovení nabídne.';
+    return VERZE_ULOZ.stav;
+  }).catch(e => {
+    VERZE_ULOZ.stav = 'chyba';
+    VERZE_ULOZ.text = 'Uložení se nepovedlo (' + ((e && e.message) || e) + '). Změny zůstávají v záloze '
+      + 'prohlížeče a aplikace je po obnovení nabídne.';
+    return VERZE_ULOZ.stav;
+  }).then(stav => { verzeOverlayPrekresli(); return stav; });
+}
+
+function verzeOverlayTelo() {
+  const cekame = VERZE_ULOZ.stav === 'uklada' || VERZE_ULOZ.stav === '';
+  const trida = VERZE_ULOZ.stav === 'chyba' ? 'note warn' : 'note';
+  return `<div class="${trida}" id="verze-uloz-stav">${VERZE_ULOZ.stav === 'uklada'
+    ? '⏳ ' : (VERZE_ULOZ.stav === 'ulozeno' ? '✓ ' : '')}${esc(VERZE_ULOZ.text || 'Zjišťuji, co je rozpracované…')}</div>
+    <div class="btns" style="margin-top:14px">
+      <button class="primary" onclick="verzeObnovUI()" ${cekame ? 'disabled' : 'autofocus'}
+        title="${cekame ? 'počkejte, než se rozpracovaná nabídka uloží' : 'aplikace se načte v nové verzi'}">Obnovit stránku</button>
+    </div>`;
+}
+
+function verzeOverlayPrekresli() {
+  const box = document.querySelector('#verze-overlay .verze-box .verze-telo');
+  if (box) box.innerHTML = verzeOverlayTelo();
+}
+
 function renderVerzeOverlay(veta) {
   let ov = document.getElementById('verze-overlay');
   if (!veta) { if (ov) ov.style.display = 'none'; return; }
+  const uzStoji = !!ov && ov.style.display === 'flex';
   if (!ov) {
     ov = document.createElement('div');
     ov.id = 'verze-overlay';
     ov.className = 'prihlaseni-overlay verze-overlay noprint';
     document.body.appendChild(ov);
   }
-  const neulozeno = (typeof historieNeulozeno === 'function') && historieNeulozeno();
   ov.innerHTML = `<div class="prihlaseni-box verze-box" role="dialog" aria-modal="true">
     <h1>Nová verze aplikace</h1>
     <div class="note" style="margin:6px 0 12px">${esc(veta)}</div>
     <div class="note">Dokud stránku neobnovíte, nejde v aplikaci pokračovat — počítalo by se starším
-      jádrem a ukládalo starším klientem. ${neulozeno
-    ? 'Rozpracované změny se před obnovením ještě zkusí uložit; kdyby to nešlo, zůstávají v záloze prohlížeče a aplikace je po obnovení nabídne.'
-    : 'Uložená zakázka je na serveru, obnovením o nic nepřijdete.'}</div>
-    <div class="btns" style="margin-top:14px">
-      <button class="primary" onclick="verzeObnovUI()" autofocus>Obnovit stránku</button>
-    </div></div>`;
+      jádrem a ukládalo starším klientem.</div>
+    <div class="verze-telo">${verzeOverlayTelo()}</div></div>`;
   ov.style.display = 'flex';
+  /* Uložení se pouští při PRVNÍM zobrazení překryvu, ne při každém překreslení
+   * (render() chodí často). Podruhé se vrátí hotový stav. */
+  if (!uzStoji) setTimeout(() => { verzeUlozPredObnovou(); }, 0);
 }
 
 function verzeObnovUI() {
   const b = document.querySelector('#verze-overlay button');
   if (b) { b.disabled = true; b.textContent = 'Obnovuji…'; }
-  /* Tiché uložení rozpracované práce, když je kam (přihlášen, odemčeno);
-   * selhání obnovení nezastaví — záloha v prohlížeči zůstává. */
-  let uloz = Promise.resolve(false);
-  try {
-    if (typeof onlineUloz === 'function' && typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.ja
-        && ONLINE_STAV.soubor && !(typeof zamekCteniJe === 'function' && zamekCteniJe())
-        && typeof historieNeulozeno === 'function' && historieNeulozeno())
-      uloz = Promise.resolve(onlineUloz({ tiche: true })).catch(() => false);
-  } catch (e) { /* obnovení proběhne i tak */ }
-  return uloz.then(() => { window.location.reload(); return true; });
+  /* Uložení už proběhlo při zobrazení překryvu; tohle je pojistka pro případ,
+   * že se překryv objevil jinudy nebo se mezitím něco změnilo. */
+  return verzeUlozPredObnovou().then(() => { window.location.reload(); return true; });
 }
 
 function renderKalkHlavicka() {

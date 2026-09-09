@@ -45,6 +45,22 @@ const ZADANI_Z_CENIKU = [
  * ruční přepis se u nich hlídá stejně. */
 const ZADANI_RUCNI_KLICE = ZADANI_Z_CENIKU.map(x => x.z).concat(['montazAtypHod', 'projekceAtypHod']);
 
+/* ROZMĚRY ŠACHTY V NOVÉ NABÍDCE JSOU NULOVÉ (9. 9. 2026, zadání J. V.:
+ * „v kalkulaci OCK při tvorbě nové cenové nabídky zadávej u vyznačených
+ * datových polí jako výchozí nulové hodnoty").
+ *
+ * Do 9. 9. začínala nová nabídka rozměry vzorové šachty (přejezd 2,7 m,
+ * zdvih 17,325 m…). Čísla vypadala jako vyplněná, takže se snadno přehlédla
+ * a v nabídce zůstala cizí šachta. Nula je vidět: obchodník ji musí přepsat.
+ *
+ * DEFAULT_ZADANI se schválně NEMĚNÍ — je to výpočetní vzor, na kterém stojí
+ * sada proti Excelu i ostatní testy jádra. Nuluje se až kopie pro novou
+ * variantu (novaVariantaData), a jen tahle pole; rozteč příčníků, počty
+ * sloupků a nástupišť a všechno ostatní zůstává, protože to jsou konstrukční
+ * předvolby, ne rozměry konkrétní stavby. Klon varianty ani načtená zakázka
+ * se netýkají — ty si nesou svoje. */
+const ZADANI_NOVA_NULA = ['prejezd', 'zdvih', 'prohluben', 'sirka', 'hloubka'];
+
 function zadaniRucniMapa(data) {
   if (!data || typeof data !== 'object') return {};
   if (!data.zadaniRucni || typeof data.zadaniRucni !== 'object') data.zadaniRucni = {};
@@ -86,6 +102,7 @@ function zadaniZCeniku(data) {
 function novaVariantaData() {
   const cenik = JSON.parse(JSON.stringify(DEFAULT_CENIK));
   const zadani = JSON.parse(JSON.stringify(DEFAULT_ZADANI));
+  ZADANI_NOVA_NULA.forEach(k => { zadani[k] = 0; });   // rozměry vyplní obchodník (9. 9. 2026)
   const data = {
     ock: { zadani, fixes: false },   // výchozí režim: 1:1 jako Excel
     cenik,
@@ -1005,7 +1022,7 @@ const StorageAdapter = {
 };
 
 if (typeof module !== 'undefined')
-  module.exports = { ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, zadaniRucniMapa, zadaniRucniJe,
+  module.exports = { ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ZADANI_NOVA_NULA, zadaniRucniMapa, zadaniRucniJe,
                      zadaniRucniZnac, zadaniRucniZrus, zadaniZCeniku, uvodniFotoObrazky, uvodniFotoSymboly, uvodniFotoPole, ZAKAZKA_SCHEMA, novaZakazka, novaVarianta, novaVariantaData,
                      nastavRidici, ridiciVarianta, aktivniVarianta, importZakazka, StorageAdapter,
                      zakazkaUnikatniId,
