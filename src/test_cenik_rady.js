@@ -93,10 +93,16 @@ const ZAHR = () => ({
     nazvy(rZahr).some(n => /PŘEKLADY/.test(n)), nazvy(rZahr).join(' | '));
   test('zahraniční kalkulace je dražší', rZahr.souhrn.zakladCena > rCr.souhrn.zakladCena,
     Math.round(rZahr.souhrn.zakladCena) + ' × ' + Math.round(rCr.souhrn.zakladCena));
-  test('bez značek se nic neskrývá', (() => {
+  /* Do 9. 9. 2026 tu stálo „bez značek se nic neskrývá". Přesně to byla ta
+   * chyba: administrátor značku nezaškrtl a překlady se objevily v české
+   * nabídce. Teď se pevná sada (CENIK_JEN_ZAHR) uplatní i bez značek —
+   * a co v ní není, se bez značky pořád ukáže. */
+  test('bez značek se skryje jen pevná sada, zbytek zůstane', (() => {
     const bezZnacek = cenikSlozRadu(CR(), { ceny: {}, jenZahr: {} }, 'cr');
-    return vypocet(zadani, bezZnacek, JEKLY, false).sekce.rezie.length === rZahr.sekce.rezie.length;
-  })());
+    const r = vypocet(zadani, bezZnacek, JEKLY, false);
+    return r.sekce.rezie.length === rZahr.sekce.rezie.length - CENIK_JEN_ZAHR.length
+      && !nazvy(r).some(n => /PŘEKLADY/.test(n));
+  })(), nazvy(vypocet(zadani, cenikSlozRadu(CR(), { ceny: {}, jenZahr: {} }, 'cr'), JEKLY, false)).join(' | '));
 }
 
 /* ---------- razítko nese řadu ---------- */
@@ -195,6 +201,64 @@ const ZAHR = () => ({
   /* Holý ceník OCK (starší volání) nesmí spadnout. */
   test('rozdíly snesou i holý ceník OCK jako dřív',
     Array.isArray(cenikRadaRozdily(cr, ZAHR())) && cenikRadaRozdily(cr, ZAHR()).length === 4);
+}
+
+/* ---------- položky, které v tuzemsku neexistují (9. 9. 2026) ----------
+ * Do 9. 9. o tom rozhodovala jen značka `jenZahr` z ceníku, takže když ji
+ * administrátor nezaškrtl, ukázaly se překlady i v české nabídce (hlášeno
+ * J. V.). Teď je zdrojem pravdy CENIK_JEN_ZAHR a značka umí jen přidat. */
+{
+  const nazvy = r => r.sekce.rezie.map(x => x.origNazev || x.nazev);
+  const zad = () => Object.assign(JSON.parse(JSON.stringify(DEFAULT_ZADANI)), { typSachty: 'exteriérová' });
+
+  const bezZnacek = cenikSlozRadu(CR(), { ceny: {}, jenZahr: {} }, 'cr');
+  test('CENIK_JEN_ZAHR nese překlady', CENIK_JEN_ZAHR.indexOf('C.prekladyKc') >= 0);
+  test('tuzemská zakázka překlady nenabídne ani BEZ značky v ceníku',
+    nazvy(vypocet(zad(), bezZnacek, JEKLY, true)).every(n => !/PŘEKLADY/.test(n)),
+    nazvy(vypocet(zad(), bezZnacek, JEKLY, true)).join(' | '));
+
+  const zahrBezZnacek = cenikSlozRadu(CR(), { ceny: { 'C.prekladyKc': 15000 }, jenZahr: {} }, 'zahr');
+  test('zahraniční zakázka je má dál',
+    nazvy(vypocet(zad(), zahrBezZnacek, JEKLY, true)).some(n => /PŘEKLADY/.test(n)));
+
+  /* Cestovní náklady jsou v obou řadách — jen s jinou cenou. Kdyby se do
+   * pevného seznamu dostaly omylem, česká nabídka by přišla o dopravu. */
+  test('cestovní náklady v tuzemské zakázce zůstávají',
+    vypocet(zad(), bezZnacek, JEKLY, true).sekce.oplasteni
+      .some(x => /CESTOVNÍ/.test(x.origNazev || x.nazev)));
+
+  /* Značka administrátora pořád funguje — přidá další položku. */
+  const seZnackou = cenikSlozRadu(CR(), { ceny: {}, jenZahr: { 'C.cisteniKc': true } }, 'cr');
+  test('značka „jen zahr." v ceníku dál skryje i jinou položku',
+    vypocet(zad(), seZnackou, JEKLY, true).sekce.oplasteni
+      .every(x => !/ČIŠTĚNÍ/.test(x.origNazev || x.nazev)));
+}
+
+/* ---------- zasklení mezi příčníky: projekce navíc (9. 9. 2026) ----------
+ * Zadání J. V.: „při zasklení mezi příčníky připočítávej k základu projekce
+ * 4 hodiny navíc." Hodiny se PŘIČÍTAJÍ, do zadání se nezapisují — po přepnutí
+ * zpět na terče musí být řádek zase původní. */
+{
+  const zad = (zaskleni) => Object.assign(JSON.parse(JSON.stringify(DEFAULT_ZADANI)),
+    { typSachty: 'exteriérová', zaskleni, projekceZakladHod: 50, projekceAtypHod: 0 });
+  const dok = (z, c) => vypocet(z, c || CR(), JEKLY, true).sekce.rezie
+    .find(x => /DÍLENSKÁ DOKUMENTACE/.test(x.origNazev || x.nazev));
+
+  test('na terče: hodiny = zadání', dok(zad('na terče')).mnozstvi === 50);
+  test('mezi příčníky: +4 hodiny z ceníku', dok(zad('mezi příčníky')).mnozstvi === 54,
+    dok(zad('mezi příčníky')).mnozstvi);
+  test('a řádek řekne proč', /zasklení mezi příčníky/.test(dok(zad('mezi příčníky')).pozn || ''),
+    dok(zad('mezi příčníky')).pozn);
+  test('zadání zůstane nedotčené (přepnutí zpět vrátí původní hodiny)',
+    (() => { const z = zad('mezi příčníky'); dok(z); return z.projekceZakladHod === 50; })());
+
+  const c8 = Object.assign(CR(), { zaskleniListyProjHod: 8 });
+  test('sazba se bere z ceníku, ne z kódu', dok(zad('mezi příčníky'), c8).mnozstvi === 58);
+  const cStary = CR(); delete cStary.zaskleniListyProjHod;
+  test('starší ceník bez položky počítá se čtyřmi hodinami',
+    dok(zad('mezi příčníky'), cStary).mnozstvi === 54);
+  test('atyp hodiny se přičtou k tomu',
+    dok(Object.assign(zad('mezi příčníky'), { projekceAtypHod: 25 })).mnozstvi === 79);
 }
 
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');

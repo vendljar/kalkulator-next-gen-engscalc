@@ -7,6 +7,22 @@
  * Používá záložka Ceník (cenik_ui.js) i Excel import/export.
  * ============================================================ */
 
+/* POLOŽKY, KTERÉ V TUZEMSKÉ ZAKÁZCE NEEXISTUJÍ (9. 9. 2026, hlášeno J. V.:
+ * „i když mám zvolenou novou zakázku OCK pro ČR, ve výběru se mi zobrazují
+ * překlady; ty by měly být nabízeny pouze pro zahraniční zakázky").
+ *
+ * Do 9. 9. o tom rozhodovala JEN značka `jenZahr`, kterou administrátor
+ * zaškrtává u zahraničního ceníku — takže dokud ji nikdo nezaškrtl (nebo se
+ * ztratila při zveřejnění či obnově ze zálohy), překlady se v české nabídce
+ * ukázaly, přestože poznámka v ceníku slibovala opak. Dva zdroje pravdy:
+ * text v tabulce a data v ceníku.
+ *
+ * Teď je zdroj jeden. Co je tady, je jen zahraniční VŽDY, bez ohledu na
+ * ceník; administrátorova značka může přidat další položku, ale tuhle sadu
+ * nemůže omylem zrušit. Cestovní náklady sem schválně NEPATŘÍ — po ČR se
+ * jezdí taky a jejich zahraniční odchylka je jen jiná cena, ne jiná položka. */
+const CENIK_JEN_ZAHR = ['C.prekladyKc'];
+
 const CENIK_DEF = [
   ['HRUBÁ OCK', [
     ['C.profilasKgKc', 'Profily – hlavní nosné prvky', 'Kč/kg', 'aktualizováno 3.5.2023'],
@@ -82,6 +98,9 @@ const CENIK_DEF = [
     ['C.vystupZamereniKc', 'Výstup ze zaměření pro zákazníka', 'Kč', 'bez výstupu se účtuje 50 %'],
     ['C.engineeringKc', 'Engineering', 'Kč', ''],
     ['C.projekceHodKc', 'Dílenská dokumentace', 'Kč/hod', ''],
+    /* 9. 9. 2026, zadání J. V.: sklo do rámečku znamená navrhnout a zakreslit
+     * lišty. Hodiny se přičtou k zadání „Projekce – základ", nepřepisují ho. */
+    ['C.zaskleniListyProjHod', 'Projekce navíc – zasklení mezi příčníky', 'hod', 'přičte se k projekci, jen u zasklení mezi příčníky (lišty)'],
     ['C.statikaHod', 'Statické posouzení – hodin', 'hod', ''],
     ['C.statikaKc', 'Statické posouzení – sazba', 'Kč/hod', ''],
     ['C.rezieKancelareKc', 'Režie kanceláře', 'Kč', ''],
@@ -356,5 +375,5 @@ function cenikAplikuj(zmeny, C, PC) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { CENIK_DEF, CENIK_DEF_PROJ, cenikGet, cenikSet, cenikTyp, cenikVychozi,
+  module.exports = { CENIK_DEF, CENIK_DEF_PROJ, CENIK_JEN_ZAHR, cenikGet, cenikSet, cenikTyp, cenikVychozi,
     cenikSheetRows, cenikToSheets, cenikDiffZeSheets, cenikAplikuj, CENIK_HLAVICKA };

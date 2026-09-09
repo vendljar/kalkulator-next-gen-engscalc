@@ -91,6 +91,14 @@
   .prm .prm-u { width:14px; color:var(--mut); font-size:12px; text-align:left; }
   input[type=number], select, input[type=text], input[type=date] { width:110px; padding:5px 7px; border:1px solid var(--line);
       border-radius:6px; font:inherit; background:#fff; text-align:right; }
+  /* Bez klikacích šipek (9. 9. 2026, zadání J. V.: „v datových polích odstraň
+   * klikací šipky, jsou zbytečné"). Čísla se v kalkulaci zadávají z klávesnice
+   * a krok po jedné nedává smysl u částky ani u rozměru v metrech; šipky jen
+   * ukrajovaly šířku pole a daly se trefit omylem. Klávesy ↑/↓ v poli fungují
+   * dál — `step` zůstává, mizí jen ovládací prvek. */
+  input[type=number] { -moz-appearance:textfield; appearance:textfield; }
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
   select { text-align:left; width:130px; }
   input[type=checkbox], input[type=radio]{ width:16px; height:16px; }
   table { width:100%; border-collapse:collapse; font-size:13px; }

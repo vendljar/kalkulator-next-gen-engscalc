@@ -87,6 +87,7 @@ const DEFAULT_CENIK = {  // HODNOTY VYNULOVÁNY pro GitHub (pripravit_github.py)
   leseniVnejsiKc: 0, hakyKc: 0, zabradliKc: 0, soklBmKc: 0,
   sken3dKc: 0, vystupZamereniKc: 0, engineeringKc: 0,
   projekceHodKc: 0, statikaKc: 0, statikaHod: 0, rezieKancelareKc: 0,
+  zaskleniListyProjHod: 4,        // projekce navíc při zasklení mezi příčníky (9. 9. 2026)
   stavbyvedouciHod: 0, stavbyvedouciKc: 0,
   prekladyKc: 0,                  // překlady CZ→DE, jen zahraniční zakázky (#181)
   atypPrirazka: 0,                // ATYP: přirážka k nákladu režie (viz zadání #22)
@@ -392,7 +393,17 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   /* ---------- montáž + projekce ---------- */
   const montazHod1 = z.montazZakladHod + hodinyNavic + z.montazAtypHod;
   const montazHod = montazHod1 * 4;
-  const projekceHod = z.projekceZakladHod + z.projekceAtypHod;
+  /* Zasklení mezi příčníky = projekce navíc (9. 9. 2026, zadání J. V.:
+   * „při zasklení mezi příčníky připočítávej k základu projekce 4 hodiny
+   * navíc"). Sklo do rámečku znamená navrhnout a zakreslit lišty, což je
+   * práce v kanceláři, ne na stavbě. Hodiny se PŘIČÍTAJÍ k zadání, nezapisují
+   * se do něj: pole „Projekce – základ" patří obchodníkovi a přepsat mu ho
+   * by znamenalo, že po přepnutí zpět na terče zůstane navýšené. Sazba je
+   * v ceníku (C.zaskleniListyProjHod), takže cestuje se zakázkou a jde
+   * změnit v Nastavení — stejně jako hodina cesty mimo Prahu u projekce. */
+  const listy = z.zaskleni === 'mezi příčníky';
+  const zaskleniProjHod = listy ? (c.zaskleniListyProjHod != null ? +c.zaskleniListyProjHod || 0 : 4) : 0;
+  const projekceHod = z.projekceZakladHod + z.projekceAtypHod + zaskleniProjHod;
 
   /* ---------- položky kalkulace ---------- */
   const m = c.marze;
@@ -589,7 +600,11 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     mkItem('ZAMĚŘENÍ 3D SKENEREM', 1, c.sken3dKc, { cenaPath: 'C.sken3dKc' }),
     mkItem('VÝSTUP ZE ZAMĚŘENÍ PRO ZÁKAZNÍKA', z.vystupZamereni ? 1 : 0.5, c.vystupZamereniKc, { cenaPath: 'C.vystupZamereniKc' }),
     z.engineeringKs ? mkItem('ENGINEERING', z.engineeringKs, c.engineeringKc, { cenaPath: 'C.engineeringKc' }) : null,
-    mkItem('DÍLENSKÁ DOKUMENTACE', projekceHod, c.projekceHodKc, { cenaPath: 'C.projekceHodKc' }),
+    /* Poznámka u hodin navíc: obchodník musí vidět, proč je řádek vyšší,
+     * než co má v poli „Projekce – základ" (9. 9. 2026). */
+    mkItem('DÍLENSKÁ DOKUMENTACE', projekceHod, c.projekceHodKc,
+      { cenaPath: 'C.projekceHodKc',
+        pozn: zaskleniProjHod ? `+ ${zaskleniProjHod} hod za zasklení mezi příčníky (lišty)` : '' }),
     mkItem('STATICKÉ POSOUZENÍ', c.statikaHod, c.statikaKc, { cenaPath: 'C.statikaKc' }),
     mkItem('REŽIE KANCELÁŘE', 1, c.rezieKancelareKc, { cenaPath: 'C.rezieKancelareKc' }),
     mkItem('PRÁCE STAVBYVEDOUCÍHO', c.stavbyvedouciHod, c.stavbyvedouciKc, { cenaPath: 'C.stavbyvedouciKc' }),
@@ -632,7 +647,15 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
    * zakázce co dělat — a ukázat je s nulou není totéž jako neukázat je:
    * nulový řádek v kalkulaci pořád svádí k tomu něco do něj napsat.
    * Značky nese ceník varianty (`cenik.jenZahr`), řadu `cenik.rada`. */
-  const jenZahr = (c.jenZahr && typeof c.jenZahr === 'object') ? c.jenZahr : {};
+  /* Od 9. 9. 2026 (hlášeno J. V.: „u zakázky pro ČR se mi ve výběru zobrazují
+   * překlady") rozhoduje kromě značek i pevný seznam CENIK_JEN_ZAHR z ceníku:
+   * dokud se rozhodovalo jen podle značky, stačilo ji v ceníku nezaškrtnout
+   * (nebo ji ztratit obnovou) a položka se v české nabídce objevila. Značka
+   * umí přidat další, tuhle sadu ale nezruší. */
+  const jenZahrZnacky = (c.jenZahr && typeof c.jenZahr === 'object') ? c.jenZahr : {};
+  const jenZahr = Object.assign({}, jenZahrZnacky);
+  if (typeof CENIK_JEN_ZAHR !== 'undefined')
+    CENIK_JEN_ZAHR.forEach(cesta => { jenZahr[cesta] = true; });
   const zahranicni = String(c.rada) === 'zahr';
   const jenTetoRady = rows => (zahranicni || !Object.keys(jenZahr).length) ? rows
     : rows.filter(r => !(r.cenaPath && jenZahr[r.cenaPath]));

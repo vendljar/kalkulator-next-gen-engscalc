@@ -245,6 +245,20 @@ test('pořadí: zadání → dimenze → práce a režie → cenová kalkulace',
 test('karty zadání mají plnou šířku jako kalkulace', rozvrzeni.rozdilSirek < 2,
   String(rozvrzeni.rozdilSirek));
 
+/* ---- číselná pole bez klikacích šipek (9. 9. 2026, zadání J. V.) ----
+ * Šipky spinneru ubíraly šířku a daly se trefit omylem. Kontrola je v CSS,
+ * takže se pozná jen v prohlížeči — proto tady, ne v Node sadě. */
+const sipky = await page.evaluate(() => {
+  const pole = [...document.querySelectorAll('input[type=number]')].filter(el => el.offsetParent !== null);
+  const st = pole.length ? getComputedStyle(pole[0]) : null;
+  return { pocet: pole.length,
+           appearance: st ? (st.appearance || st.webkitAppearance || st.MozAppearance) : '',
+           /* Pseudo-element spinneru: když ho CSS schová, prohlížeč u něj hlásí display:none. */
+           spinner: pole.length ? getComputedStyle(pole[0], '::-webkit-inner-spin-button').display : '' };
+});
+test('číselná pole nemají klikací šipky', sipky.pocet > 0
+  && (sipky.appearance === 'textfield' || sipky.spinner === 'none'), JSON.stringify(sipky));
+
 /* ---- nic se cestou nerozbilo ---- */
 test('za celý průchod nevznikla chyba v konzoli', chyby.length === 0, chyby);
 
