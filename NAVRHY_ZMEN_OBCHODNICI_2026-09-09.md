@@ -23,7 +23,9 @@ okolností, v zahraniční zůstávají beze změny. Zaškrtávátko v ceníku f
 dál a umí skrýt i další položku, ale tuhle sadu už nejde omylem zrušit.
 
 **Co to znamená pro vás.** Nic nemusíte přenastavovat. Cestovní náklady se
-nemění — po ČR se jezdí taky, jen mají do zahraničí jinou sazbu.
+nemění — po ČR se jezdí taky, jen mají do zahraničí jinou sazbu. V ceníku je
+u překladů zaškrtávátko „jen zahr." nově zaškrtnuté a zamčené, aby bylo
+vidět, že o téhle položce se už nerozhoduje ručně.
 
 ---
 
@@ -60,9 +62,22 @@ z nákladu sekce Režie, kam stříška nepatří.
 PRŮCHOZÍ KABINA na „průchozí kabina" a PROSKLENÁ STŘÍŠKA na „nad výstupem
 na dvůr". Na cenu to nemá vliv.
 
-**Zbývá rozhodnout.** Jak přesně to obchodníkovi ukázat — nabízí se poznámka
-u zaškrtávátka s vypočtenou částkou („přidá stříšku za X Kč, s rezervou
-a přirážkou Y Kč"). Zatím nezaprogramováno, čeká na zadání.
+**Zbývá rozhodnout, jak to obchodníkovi ukázat.** Nabízejí se tři varianty,
+stačí vybrat (nebo popsat vlastní):
+
+- **A – živý popisek u zaškrtávátka.** Vedle „Průchozí šachta (stříška na
+  dvůr)" se dopíše, o kolik zaškrtnutí zvedne cenu — například
+  „+ 15 000 Kč v ceně (stříška 10 000 Kč + rezerva a přirážka)". Vidí se
+  hned při rozhodování, ještě než se klikne. Přepočítá se s každou změnou
+  rezervy nebo přirážky.
+- **B – poznámka u řádku v kalkulaci.** Řádek stříšky v sekci OPLÁŠTĚNÍ
+  dostane poznámku „vstupuje do rezervy a přirážky" — stejný způsob, jakým
+  se od dneška vysvětlují hodiny navíc u dílenské dokumentace. Méně nápadné,
+  zato konzistentní se zbytkem kalkulace.
+- **C – obojí.** Popisek při rozhodování a poznámka v kalkulaci pro kontrolu.
+
+Platí pro každou položku, ne jen pro stříšku: rezerva a přirážka se stejně
+počítají u všeho. Pokud chcete vysvětlení i jinde, řekněte kde.
 
 ---
 
@@ -80,9 +95,9 @@ máte v poli „Projekce – základ" a v poznámce bude uvedeno
 původní, nic za sebou nezůstane.
 
 **Sazba je v ceníku.** Položka „Projekce navíc – zasklení mezi příčníky"
-v sekci REŽIE, výchozí hodnota 4 hodiny. Dá se změnit stejně jako každá jiná
-cena, takže na úpravu není potřeba nová verze aplikace. Starší zakázky bez
-této položky v ceníku počítají se čtyřmi hodinami.
+v sekci REŽIE. Dokud v ní nic nevyplníte, počítá se se čtyřmi hodinami —
+stejně tak u starších zakázek, které tuhle položku v ceníku ještě nemají.
+Změna hodnoty je běžná úprava ceníku, nová verze aplikace na ni není potřeba.
 
 ---
 
