@@ -20,7 +20,7 @@ Verzování (konvence): Kalkulačka vDEN.MĚSÍC.verze konkrétního dne
 Nikdy needitujte dist/* přímo – po změně src/ spusťte: python3 build.py
 Po změně enginů spusťte testy: cd src && node test.js && node test_proj.js
 """
-import datetime, os, pathlib, re, shutil, sys
+import datetime, os, pathlib, re, shutil, subprocess, sys
 
 root = pathlib.Path(__file__).parent
 CORE = ['build_info.js',
@@ -62,6 +62,47 @@ def _hlidka_dne(v):
         sys.exit(f'CHYBA: verze „{v}" neodpovídá dnešku ({d.day}.{d.month}). '
                  f'Konvence je vDEN.MĚSÍC.pořadí — dnes tedy v{d.day}.{d.month}.N. '
                  f'Když to má být schválně, spusťte s KNG_VERZE_MIMO_DEN=1.')
+
+# KONTROLA VERZE V CI (10. 9. 2026, nález J. V.: „nechápu, proč nerespektuješ
+# ty nebo netlify pojmenování verzí? stále se nahrává 9.9…, i když už je 10.").
+#
+# Pojistka `_hlidka_dne` výš hlídá jen VLASTNÍ build. Jenže na pracovním
+# notebooku nejde spustit Python, takže se `verze.txt` píše ručně a build.py
+# se pouští až na Netlify — a tam se verze schválně jen přebírá, jinak by
+# každé znovunasazení staré dávky vyrobilo jiné číslo. Mezi tím dvojím nebyl
+# nikdo, kdo by řekl „tohle je z jiného dne": čtyři dávky z 10. září tak odešly
+# jako 9.9.5 až 9.9.8.
+#
+# Tenhle režim doplňuje chybějící článek a pouští ho CI nad každým pushem.
+# Měří se proti datu POSLEDNÍHO COMMITU, ne proti dnešku: znovuspuštění běhu
+# o dva dny později je běžné a padat kvůli němu nesmí.
+def _kontrola_verze():
+    v = verfile.read_text().strip() if verfile.exists() else ''
+    if not re.fullmatch(r'\d{1,2}\.\d{1,2}\.\d+', v):
+        sys.exit(f'CHYBA: verze „{v}" nemá tvar DEN.MĚSÍC.pořadí.')
+    try:
+        # `%-d` (bez nuly vpředu) umí jen glibc, na Windows ne — proto se čte
+        # dvojmístný tvar a nuly se ubírají v Pythonu.
+        syrove = subprocess.check_output(
+            ['git', 'log', '-1', '--format=%cd', '--date=format:%d.%m'],
+            cwd=str(root), stderr=subprocess.DEVNULL).decode().strip()
+        den_commitu = '.'.join(str(int(x)) for x in syrove.split('.')) if syrove else ''
+    except Exception as e:                       # bez gitu se nekontroluje
+        print(f'build.py: datum commitu nezjištěno ({e}), kontrola verze se přeskakuje.')
+        return
+    if not den_commitu:
+        print('build.py: datum commitu prázdné, kontrola verze se přeskakuje.')
+        return
+    dnes_ver = '.'.join(v.split('.')[:2])
+    if dnes_ver != den_commitu:
+        sys.exit(f'CHYBA: verze.txt je „{v}", ale poslední commit je z {den_commitu}. '
+                 f'Konvence je vDEN.MĚSÍC.pořadí — u téhle dávky tedy v{den_commitu}.N '
+                 f'(N = kolikátá dávka toho dne). Opravte verze.txt.')
+    print(f'build.py: verze v{v} odpovídá dni commitu ({den_commitu}).')
+
+if '--kontrola-verze' in sys.argv:
+    _kontrola_verze()
+    sys.exit(0)
 
 if '--ver' in sys.argv:
     ver = sys.argv[sys.argv.index('--ver') + 1]

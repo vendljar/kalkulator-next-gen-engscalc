@@ -85,5 +85,39 @@ test('bez serverové verze mlčí', buildVerzeHlaska('v18.8.1', '') === ''
 test('serverové „neznámá" mlčí', buildVerzeHlaska('v18.8.1', 'neznámá') === '');
 test('v/bez v na začátku nehraje roli', buildVerzeHlaska('18.8.2', 'v18.8.2') === '');
 
+/* ---------- 4) konvence vDEN.MĚSÍC.pořadí je vynucená ----------
+ *
+ * NÁLEZ 10. 9. 2026 (J. V.: „nechápu, proč nerespektuješ ty nebo netlify
+ * pojmenování verzí? stále se nahrává 9.9…, i když už je 10."). Čtyři dávky
+ * z 10. září odešly jako 9.9.5 až 9.9.8.
+ *
+ * Proč to nikdo nechytil: pojistka `_hlidka_dne` v build.py hlídá jen build,
+ * který verzi sám zvyšuje. Na pracovním notebooku ale nejde spustit Python,
+ * takže se `verze.txt` píše ručně a build.py běží až na Netlify — a tam se
+ * verze schválně jen přebírá, jinak by každé znovunasazení staré dávky
+ * vyrobilo jiné číslo. Mezi tím dvojím nestál nikdo.
+ *
+ * Chybějící článek je krok v CI (`build.py --kontrola-verze`). Kontroluje se
+ * tady, protože samotný Python test v Node nespustíme — a hlavně proto, že
+ * kdyby ten krok z workflow zmizel, nic jiného by si toho nevšimlo. */
+const fs = require('fs');
+const verze = fs.readFileSync(__dirname + '/../verze.txt', 'utf8').trim();
+test('verze.txt má tvar DEN.MĚSÍC.pořadí', /^\d{1,2}\.\d{1,2}\.\d+$/.test(verze), verze);
+test('den ve verzi je platný (1–31)', +verze.split('.')[0] >= 1 && +verze.split('.')[0] <= 31, verze);
+test('měsíc ve verzi je platný (1–12)', +verze.split('.')[1] >= 1 && +verze.split('.')[1] <= 12, verze);
+
+const bp = fs.readFileSync(__dirname + '/../build.py', 'utf8');
+test('build.py umí režim --kontrola-verze', bp.indexOf("'--kontrola-verze'") >= 0);
+test('kontrola se měří proti datu commitu, ne proti dnešku',
+  /git['"],\s*['"]log['"]/.test(bp) && bp.indexOf('%cd') >= 0);
+
+const wf = fs.readFileSync(__dirname + '/../.github/workflows/testy.yml', 'utf8');
+test('CI pouští kontrolu verze', wf.indexOf('build.py --kontrola-verze') >= 0);
+/* Hledá se spouštěcí řádek, ne pouhá zmínka: `spust_testy.sh` je i v úvodním
+ * komentáři workflow, který stojí nad vším ostatním. */
+test('kontrola verze běží PŘED sadami (padne dřív, než se čeká 20 minut)',
+  wf.indexOf('build.py --kontrola-verze') < wf.indexOf('bash ./spust_testy.sh'),
+  [wf.indexOf('build.py --kontrola-verze'), wf.indexOf('bash ./spust_testy.sh')]);
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

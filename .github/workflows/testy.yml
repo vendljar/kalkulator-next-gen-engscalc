@@ -35,6 +35,13 @@ jobs:
         with:
           python-version: '3.12'
 
+      # Konvence vDEN.MĚSÍC.pořadí (10. 9. 2026). Na pracovním notebooku nejde
+      # spustit Python, takže se verze.txt píše ručně a pojistka uvnitř build.py
+      # se nikdy nespustí — čtyři dávky z 10. září odešly jako 9.9.x. Tenhle
+      # krok je ten chybějící článek: měří verzi proti datu posledního commitu.
+      - name: Verze odpovídá dni commitu (vDEN.MĚSÍC.pořadí)
+        run: python3 build.py --kontrola-verze
+
       - name: Sady v Node (jádro, UI, serverové funkce)
         run: bash ./spust_testy.sh
 
