@@ -1,6 +1,6 @@
 # Návrhy změn obchodníci – 9. 9. 2026
 
-Stav řešení úkolů ze schůzky. Aktualizováno 10. 9. 2026, verze aplikace 9.9.6.
+Stav řešení úkolů ze schůzky. Aktualizováno 10. 9. 2026, verze aplikace 9.9.7.
 
 Legenda stavu: HOTOVO = nasazeno a ověřené testy · ZJIŠTĚNO = odpověď níž, čeká
 na rozhodnutí · ČEKÁ = zadané, ještě neřešené.
@@ -294,6 +294,22 @@ a opravíte jednu číslici, jak jste zvyklí.
 
 ---
 
+## 19. Každý řádek detailu výpočtu říká, odkud se bere — HOTOVO
+
+Podnětem byl dotaz, odkud se bere 15 kusů oplechování dveří, když se takový
+počet nikde nezadává. Odpověď je 3 kusy na nástupiště, jenže ve sloupci
+vzorců stála prázdná buňka.
+
+Nově má **vysvětlení každý řádek** v Detailu výpočtu OCK i PROJ. U vstupních
+údajů je uvedeno, že jsou ze zadání a co ovlivňují. U odvozených čísel je
+vzorec. U zkratek, které nesou název řádku (spoje typu `zadniRoh`), je navíc
+česky, co znamenají a kolik kilogramů připadá na jeden spoj.
+
+Sloupec se zapíná zaškrtávátkem **„zobrazit vzorce a poznámky"** nahoře
+v Detailu výpočtu. Zapnutý je od začátku, tisk do PDF ho respektuje.
+
+---
+
 ## Přehled
 
 | # | Bod | Stav |
@@ -316,6 +332,7 @@ a opravíte jednu číslici, jak jste zvyklí.
 | 16 | Výchozí hodnoty v nové nabídce (5 ks, odškrtnuto, jednotky) | HOTOVO (v9.9.5) |
 | 17 | Popisné texty ze zadání šachty do detailu výpočtu | HOTOVO (v9.9.6) |
 | 18 | Nula v poli se nemusí mazat | HOTOVO (v9.9.6) |
+| 19 | Vysvětlení u každého řádku detailu výpočtu OCK i PROJ | HOTOVO (v9.9.7) |
 
 Změny se projeví po obnovení stránky (aplikace si o ně sama řekne — a od
 verze 9.9.3 si před tím rozpracovanou nabídku uloží).

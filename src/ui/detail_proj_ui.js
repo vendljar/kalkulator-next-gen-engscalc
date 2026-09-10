@@ -22,9 +22,12 @@ function renderDetailProj() {
 
   /* 1) sazby a ceník */
   const krCenik = dvKrok('1. Vstupy z Ceníku nákladů PROJ', dvTab([
-    ['Sazba – zaměření', K(PC.sazby.zamereni) + '/h', ''],
-    ['Sazba – projektant', K(PC.sazby.projektant) + '/h', ''],
-    ['Sazba – statik', K(PC.sazby.statik) + '/h', ''],
+    ['Sazba – zaměření', K(PC.sazby.zamereni) + '/h',
+      'nákladová sazba z Ceníku nákladů PROJ; u konkrétní položky ji jde pro zakázku přepsat'],
+    ['Sazba – projektant', K(PC.sazby.projektant) + '/h',
+      'nákladová sazba z Ceníku nákladů PROJ; u konkrétní položky ji jde pro zakázku přepsat'],
+    ['Sazba – statik', K(PC.sazby.statik) + '/h',
+      'nákladová sazba z Ceníku nákladů PROJ; u konkrétní položky ji jde pro zakázku přepsat'],
     ['Globální přirážka', pctTxt((PC.marze || 0) * 100), 'výchozí procento všech sekcí; sekce ho může přepsat (#141)'],
     ['Doprava – sazba za km', K(PC.dopravaKmKc) + '/km', 'po Praze 0 km'],
     ['Cesta mimo Prahu – hodina cesty', K(dopravaHodinaKc(PC)) + '/h',
@@ -74,9 +77,11 @@ function renderDetailProj() {
     ['Sleva PROJ', slevaPct ? pctTxt(slevaPct * 100) : 'žádná', 'jen schválená; počítá se z ceny projekce'],
     ['Obchodní zaokrouhlení', cnp && cnp.zaokrKc ? zaokrKc(cnp.zaokrKc) : 'beze změny',
       'zaokrouhluje se cena každé činnosti zvlášť (#135)'],
-    ['CENA NABÍDKY PROJ bez DPH', K(cena), ''],
-    ['DPH ' + Math.round((PC.dph || 0) * 100) + ' %', K(dph.dphKc), ''],
-    ['Celkem s DPH', K(dph.sDph), ''],
+    ['CENA NABÍDKY PROJ bez DPH', K(cena),
+      'součet sekcí po slevě a po obchodním zaokrouhlení; tohle číslo jde do cenové nabídky'],
+    ['DPH ' + Math.round((PC.dph || 0) * 100) + ' %', K(dph.dphKc),
+      'z ceny nabídky bez DPH; projekční část má vlastní sazbu, nezávislou na OCK'],
+    ['Celkem s DPH', K(dph.sDph), 'cena bez DPH + DPH'],
   ]), 'dvp-z');
 
   el.innerHTML = `<div class="card"><h2>Detail výpočtu kalkulace PROJ

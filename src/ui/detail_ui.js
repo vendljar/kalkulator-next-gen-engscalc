@@ -71,16 +71,22 @@ function renderDetail() {
   /* 1) vstupy */
   const krVstup = dvKrok('1. Vstupní zadání (šachta)', dvTab([
     ['Typ šachty', ext ? 'exteriérová' : 'interiérová', 'určuje int/ext větve výpočtu'],
-    ['Horní přejezd / Zdvih / Prohlubeň', `${M(Z.prejezd)} / ${M(Z.zdvih)} / ${M(Z.prohluben)} m`, ''],
-    ['Vnitřní šířka × hloubka', `${M(Z.sirka)} × ${M(Z.hloubka)} m`, ''],
-    ['Svislá rozteč příčníků', `${M(Z.roztec)} m`, ''],
+    ['Horní přejezd / Zdvih / Prohlubeň', `${M(Z.prejezd)} / ${M(Z.zdvih)} / ${M(Z.prohluben)} m`,
+      'ze zadání; jejich součet je výška šachty H (krok 2)'],
+    ['Vnitřní šířka × hloubka', `${M(Z.sirka)} × ${M(Z.hloubka)} m`,
+      'ze zadání; světlý rozměr uvnitř šachty — nad 2 m přidává hodiny montáže'],
+    ['Svislá rozteč příčníků', `${M(Z.roztec)} m`,
+      'ze zadání; z rozteče vychází počet rámů (krok 4) i výška tabule skla'],
     ['Počet rohových sloupků / nástupišť', `${Z.rohoveSloupky} / ${dvNastupist()}`, dvNastupistVzorec()],
     ...dvPruchoziRadky(),
-    ['Typ portálů / zasklení', `${Z.typPortalu} / ${Z.zaskleni}`, ''],
+    ['Typ portálů / zasklení', `${Z.typPortalu} / ${Z.zaskleni}`,
+      'ze zadání; předsazený portál přidá hodiny montáže i spoje, zasklení rozhoduje mezi terči a lištami'],
     ['Stříška nad nástupiště', `${+Z.striskaKs || 0} ks`,
       'počet kusů; nula znamená bez stříšky, každý kus násobí cenu i náklad'],
-    ['Světlík nad dveřmi / světlíky boky', `${Z.svetlikNadDvermi ? 'ano' : 'ne'} / ${Z.svetlikyBoky}`, ''],
-    ['Čistý vstup / šířka rámu dveří', `${Z.cistyVstupMm} / ${Z.sirkaRamuMm} mm`, ''],
+    ['Světlík nad dveřmi / světlíky boky', `${Z.svetlikNadDvermi ? 'ano' : 'ne'} / ${Z.svetlikyBoky}`,
+      'ze zadání; světlík nad dveřmi přidá sklo nad každým nástupištěm, světlíky po bocích i sloupky portálu'],
+    ['Čistý vstup / šířka rámu dveří', `${Z.cistyVstupMm} / ${Z.sirkaRamuMm} mm`,
+      'ze zadání; z obojího vychází šířka otvoru šachetních dveří (krok 2)'],
   ]), 'dv-1');
 
   /* 2) odvozené rozměry */
@@ -101,11 +107,15 @@ function renderDetail() {
     ['Za výšku > 21 m', `${M(hn.vyska, 2)} h`, '(H − 21) · 0,5'],
     ['Za šířku > 2 m', `${M(hn.sirka, 2)} h`, 'H · 0,2 (jinak 0)'],
     ['Za hloubku > 2 m', `${M(hn.hloubka, 2)} h`, 'H · 0,2 (jinak 0)'],
-    ['Za rohové sloupky > 4', `${M(hn.sloupky, 2)} h`, ''],
+    ['Za rohové sloupky > 4', `${M(hn.sloupky, 2)} h`,
+      'jen při více než 4 sloupcích: 8 + 4 + max(H − 21; 0) · 0,5 · 2'],
     ['Za počet nástupišť', `${M(hn.nastupiste, 2)} h`, 'nástupiště − 6'],
     ['Za exteriér', `${M(hn.exterier, 2)} h`, 'jen ext'],
-    ['Za portály (předsazené)', `${M(hn.portaly, 2)} h`, ''],
-    ['Za světlík / světlíky boky', `${M(hn.svetlik, 2)} / ${M(hn.svetlikyBoky, 2)} h`, ''],
+    ['Za portály (předsazené)', `${M(hn.portaly, 2)} h`,
+      'předsazený portál: 1 h na nástupiště; zapuštěný 0'],
+    ['Za světlík / světlíky boky', `${M(hn.svetlik, 2)} / ${M(hn.svetlikyBoky, 2)} h`,
+      'světlík: (světlík − 1) · nástupiště · 0,2 — BEZ světlíku tedy 0,2 h na nástupiště ubere; '
+      + 'boky: světlíky boků · 0,5 · nástupiště'],
     ['Hodiny navíc celkem', `${M(r.montaz.hodinyNavicCelkem, 2)} h`, 'součet výše'],
     ['Montáž 1 osoba / 4 osoby', `${M(r.montaz.hod1osoba, 1)} h / ${M(r.montaz.hodCelkem, 1)} h`, `≈ ${M(r.montaz.dni, 1)} dní`],
   ]), 'dv-3');
@@ -121,63 +131,128 @@ function renderDetail() {
   ]), 'dv-4');
 
   /* 5) profily */
+  /* Délky jednotlivých profilů se liší vzorcem, hmotnost a plocha už ne:
+   * obojí je délka × jednotková hodnota zvoleného jeklu. */
+  const PROF_VZOREC = {
+    'Profil - sloupek': 'H · rohové sloupky − 0,2 · rohové sloupky',
+    'Profil - příčníky bok/zadek': '(2 · hloubka + šířka) · rámy + šířka',
+    'Profil - sloupek portálu': '2,2 · nástupiště · světlíky boků (+ předsazený: nástupiště · světlá výška · 2)',
+    'Profil - příčníky portálu': 'portálové příčníky · šířka + sloupky portálu · (šířka − otvor dveří) · 2',
+    'Profil - spojka sloupků': 'spojky · 0,4',
+  };
   const prof = r.profily.rows.map(x => [x.nazev, `${M(x.m, 2)} m · ${M(x.kg, 1)} kg · ${M(x.m2, 3)} m²`,
-    `${M(x.j.kg)} kg/m`]);
+    (PROF_VZOREC[x.nazev] ? PROF_VZOREC[x.nazev] + '; ' : '') + `${M(x.j.kg)} kg/m · ${M(x.j.m2, 4)} m²/m`]);
   const krProf = dvKrok('5. Profily (jekly)', dvTab([
     ...prof,
     ['Rezerva profily (atyp)', `${M(Z.rezervaProfilyPct * 100)} %`, 'násobí délku/hmotnost/plochu'],
-    ['Profily celkem', `${M(r.profily.celkemM, 2)} m · ${M(r.profily.celkemKg, 1)} kg · ${M(r.profily.celkemM2, 2)} m²`, ''],
+    ['Profily celkem', `${M(r.profily.celkemM, 2)} m · ${M(r.profily.celkemKg, 1)} kg · ${M(r.profily.celkemM2, 2)} m²`,
+      'součet řádků výše × (1 + rezerva); lemování se nezapočítává'],
     ['Lemování ext. šachty', `${M(r.profily.lemovani.m, 2)} m · ${M(r.profily.lemovani.kg, 1)} kg`, ext ? '3·H' : 'jen ext (=0)'],
   ]), 'dv-5');
 
   /* 6) plechy (spoje) */
-  const spoje = r.plechy.spojeRows.map(x => [x.key, `${x.spoju} spojů · ${M(x.ks, 1)} ks · ${M(x.kg, 2)} kg · ${M(x.m2, 3)} m²`, '']);
+  /* Klíče spojů jsou v jádře anglické zkratky; co znamenají a odkud se bere
+   * jejich počet, se nedá uhodnout z názvu řádku — patří to do vysvětlení. */
+  const SPOJ_POPIS = {
+    zadniRoh: 'rohy zadní stěny — 2 na rám',
+    celni: 'čelní strana — (rámy − 1) · 2 − 2',
+    predsazene: 'předsazený portál — 8 na nástupiště; zapuštěný 0',
+    portPricniky: 'portálové příčníky — portálové příčníky · 2 + krátké příčníky',
+    sloupkyPortalu: 'sloupky portálu — 1 na sloupek',
+    spodniRamRoh: 'rohy spodního rámu — vždy 4',
+    kotveni: 'kotvení do stavby — nástupiště + 1',
+  };
+  const naSpoj = (x) => x.spoju
+    ? `${M(x.ks / x.spoju, 2)} ks · ${M(x.kg / x.spoju, 3)} kg · ${M(x.m2 / x.spoju, 4)} m² na spoj`
+    : 'v této zakázce se nevyskytuje';
+  const spoje = r.plechy.spojeRows.map(x => [x.key,
+    `${x.spoju} spojů · ${M(x.ks, 1)} ks · ${M(x.kg, 2)} kg · ${M(x.m2, 3)} m²`,
+    (SPOJ_POPIS[x.key] ? SPOJ_POPIS[x.key] + '; ' : '') + naSpoj(x)]);
   const krPlech = dvKrok('6. Konstrukční plechy (spoje)', dvTab([
     ...spoje,
-    ['Čílka (int)', `${p.pocetCilek} ks · ${M(p.pocetCilek * 0.12, 2)} kg`, '0,12 kg/ks'],
-    ['Rezerva plechy (atyp)', `${M(Z.rezervaPlechyPct * 100)} %`, ''],
-    ['Plechy celkem', `${r.plechy.ks} ks · ${M(r.plechy.kg, 1)} kg · ${M(r.plechy.m2, 3)} m²`, ''],
+    ['Čílka (int)', `${p.pocetCilek} ks · ${M(p.pocetCilek * 0.12, 2)} kg`, '0,12 kg/ks; jen interiérová šachta'],
+    ['Rezerva plechy (atyp)', `${M(Z.rezervaPlechyPct * 100)} %`,
+      'násobí jen hmotnost, která jde do ceny — kusy ani plochu nezvyšuje'],
+    ['Plechy celkem', `${r.plechy.ks} ks · ${M(r.plechy.kg, 1)} kg · ${M(r.plechy.m2, 3)} m²`,
+      'spoje + čílka, bez rezervy; do ceny materiálu jde hmotnost s rezervou'],
   ]), 'dv-6');
 
   /* 7) díly – terče/lišty/oplechování */
   const d = r.dily;
   const krDily = dvKrok('7. Terče / lišty / oplechování / podesty', dvTab([
-    ['Terče', `${d.terceKs} ks · ${M(d.terceKg, 2)} kg`, '0,15 kg/ks · 0,008 m²/ks'],
-    ['Lišty', `${d.listyKs} ks · ${M(d.listyBm, 1)} bm · ${M(d.listyKg, 1)} kg`, 'jen při zasklení mezi příčníky'],
-    ['Oplechování dveří', `${d.oplDvereKs} ks · ${M(d.oplDvereKg, 1)} kg · ${M(d.oplDvereM2, 2)} m²`, ''],
-    ['Podesty (int)', `${d.podestKs} ks · ${M(d.podestKg, 1)} kg · ${M(d.podestM2, 2)} m²`, ''],
-    ['Přechodové plechy', `${d.prechKs} ks · ${M(d.prechKg, 2)} kg`, Z.prechodovePlechy ? 'zapnuto' : 'vypnuto'],
+    ['Terče', `${d.terceKs} ks · ${M(d.terceKg, 2)} kg`,
+      'jen při zasklení na terče; rámy · (terče na bok · 2 + terče na čelo) + zbytek portálu; '
+      + `0,15 kg/ks · 0,008 m²/ks (terčů na stranu: 3 při rozměru nad 1,7 m, jinak 2)`],
+    ['Lišty', `${d.listyKs} ks · ${M(d.listyBm, 1)} bm · ${M(d.listyKg, 1)} kg`,
+      'jen při zasklení mezi příčníky; k délce se přičítá 10 % kotvicích lišt '
+      + (OCK.fixes ? '(Model 2: z délky)' : '(Model 1: z počtu kusů, jako v předloze)')],
+    ['Oplechování dveří', `${d.oplDvereKs} ks · ${M(d.oplDvereKg, 1)} kg · ${M(d.oplDvereM2, 2)} m²`,
+      '3 ks na nástupiště (2 svislé strany + nadpraží); bm = (2 · 2,3 + šířka otvoru dveří) · nástupiště, '
+      + 'z toho 0,8925 kg/bm a 0,21 m²/bm'],
+    ['Podesty (int)', `${d.podestKs} ks · ${M(d.podestKg, 1)} kg · ${M(d.podestM2, 2)} m²`,
+      'jen interiérová šachta: nástupiště − 1 ks; '
+      + 'kg = 8,5 · (šířka + 0,06) · (výška podlaží − světlá výška + 0,06)'],
+    ['Přechodové plechy', `${d.prechKs} ks · ${M(d.prechKg, 2)} kg`,
+      (Z.prechodovePlechy ? 'zapnuto' : 'vypnuto — zaškrtávátko v zadání šachty')
+      + '; 1 ks na nástupiště, kg = 8 500 · 0,1 · šířka otvoru dveří · 0,002'],
   ]), 'dv-7');
 
   /* 8) zasklení */
   const z = r.zaskleni;
   const krZas = dvKrok('8. Zasklení', dvTab([
     ['Rozměr skla (š×v)', `${M(z.rozmer.sir, 3)} × ${M(z.rozmer.vys, 3)} m`, Z.zaskleni === 'na terče' ? 'terče' : 'mezi příčníky'],
-    ['Zadní stěna', `${z.zadni.ks} ks · ${M(z.zadni.m2, 2)} m²`, ''],
-    ['Boční stěny', `${z.bocni.ks} ks · ${M(z.bocni.m2, 2)} m²`, ''],
-    ['Světlíky / boky', `${z.svetliky.ks} ks · ${M(z.svetliky.m2, 2)} m² / ${z.svetlikyBoky.ks} ks · ${M(z.svetlikyBoky.m2, 2)} m²`, ''],
+    ['Zadní stěna', `${z.zadni.ks} ks · ${M(z.zadni.m2, 2)} m²`,
+      'ks = strop(výška prosklené / rozteč); m² = max(ks · šířka skla · výška skla; výška prosklené · šířka skla)'],
+    ['Boční stěny', `${z.bocni.ks} ks · ${M(z.bocni.m2, 2)} m²`,
+      'ks = zadní stěna · 2 (dvě strany); m² = max(ks · hloubka skla · výška skla; 2 · výška prosklené · hloubka skla)'],
+    ['Světlíky / boky', `${z.svetliky.ks} ks · ${M(z.svetliky.m2, 2)} m² / ${z.svetlikyBoky.ks} ks · ${M(z.svetlikyBoky.m2, 2)} m²`,
+      'světlík nad dveřmi: 1 ks na nástupiště × šířka skla · (světlá výška − 2,3); '
+      + 'boky: krátké příčníky × zbylá šířka vedle dveří · 1,1'],
     ['Boční + zadní m²', `${M(z.bokyZadniM2, 2)} m²`, 'materiál boční/zadní stěna'],
     ['Čelní m² (světlíky)', `${M(z.celniM2, 2)} m²`, 'materiál čelní stěna'],
-    ['Zasklení celkem', `${M(z.celkemM2, 2)} m²`, ''],
+    ['Zasklení celkem', `${M(z.celkemM2, 2)} m²`,
+      'boční + zadní + čelní; každá skupina jde do ceny vlastním materiálem podle typu šachty'],
   ]), 'dv-8');
 
   /* 9) spojovací materiál */
-  const spoj = r.spojovaci.rows.map(x => [x.nazev, `${x.ks} ks × ${M(x.cena)} = ${K(x.celkem)}`, x.vlastni ? 'vlastní položka z ceníku' : '']);
+  /* Počty spojovacího materiálu plynou z konstrukce, ne ze zadání — bez téhle
+   * tabulky se nedá dohledat, proč jich vychází zrovna tolik. */
+  const SPOJOVACI_VZOREC = {
+    'riplock M10': (Z.typSachty === 'exteriérová' ? '48' : '16') + ' · rámy + portálové příčníky · 2 + sloupky portálu · 2 + spojky · 6 + nástupiště · 8',
+    'riplock M8': 'spojky · 6 + sloupky portálu · 4',
+    'NordLock': 'čílka · 2 (jen interiérová šachta)',
+    'nýtovací matice M10': 'riplock M10 + NordLock',
+    'nýtovací matice M8': 'stejně jako riplock M8',
+    'nýtovací matice M6': 'terče · 2',
+    'T šrouby': '(rámy + 2) / 2 · 4 + nástupiště · 4',
+    'Šrouby M10': 'riplock M10 + NordLock',
+    'Šrouby M8': 'stejně jako riplock M8',
+    'Šrouby M6': 'terče · 2',
+    'Závitové tyče M12': 'strop((nástupiště + 1) · 4 · 0,2 + 0,8)',
+    'Chem. kotvy': 'nástupiště + 2',
+  };
+  const spoj = r.spojovaci.rows.map(x => [x.nazev, `${x.ks} ks × ${M(x.cena)} = ${K(x.celkem)}`,
+    x.vlastni ? 'vlastní položka z ceníku (katalog nebo zakázka)'
+      : (SPOJOVACI_VZOREC[x.nazev] || 'počet z konstrukce, cena za kus z ceníku')]);
   const krSpoj = dvKrok('9. Spojovací materiál', dvTab([
     ...spoj,
-    ['Spojovací celkem', K(r.spojovaci.celkem), ''],
-    ['Nýtování', `${r.spojovaci.nytovaniKs} ks`, ''],
+    ['Spojovací celkem', K(r.spojovaci.celkem), 'součet řádků výše; jde do kalkulace jako jediná položka'],
+    ['Nýtování', `${r.spojovaci.nytovaniKs} ks`,
+      'riplock M10 + NordLock + riplock M8 + šrouby M6; počet úkonů pro montážní hodiny'],
   ]), 'dv-9');
 
   /* 10) lakování */
   const lakVl = (r.lakovani.vlastniRows || []).map(x =>
     [x.nazev, `${M(x.ks, 3)} × ${M(x.cena)} = ${K(x.celkem)}`, 'vlastní položka z ceníku']);
   const krLak = dvKrok('10. Lakování', dvTab([
-    ['Režim „Tomáš"', K(r.lakovani.tomas), 'profily/lišty/plechy/oplech./terče'],
-    ['Režim „lakovna"', K(r.lakovani.lakovna), ''],
+    ['Režim „Tomáš"', K(r.lakovani.tomas),
+      'profily m² + lišty bm + plechy ks + oplechování m² + terče ks, každé svou sazbou z ceníku'],
+    ['Režim „lakovna"', K(r.lakovani.lakovna),
+      'profily bm + lišty bm + m² (plechy + oplechování + terče); jiné jednotky než režim „Tomáš"'],
     ...lakVl,
     ...(r.lakovani.vlastniKc ? [['Vlastní položky celkem', K(r.lakovani.vlastniKc), 'přičítá se k oběma režimům']] : []),
-    ['Použito ve výpočtu', `${K(r.lakovani.pouzito)} (${r.lakovani.rezim})`, ''],
+    ['Použito ve výpočtu', `${K(r.lakovani.pouzito)} (${r.lakovani.rezim})`,
+      'režim se přepíná v ceníku, sekce LAKOVÁNÍ; druhý režim se jen zobrazuje pro srovnání'],
   ]), 'dv-10');
 
   /* 11–13) cenové sekce, rezerva, souhrn */
@@ -200,11 +275,15 @@ function renderDetail() {
 
   const krSouhrn = dvKrok('12. Rezerva, souhrn a DPH', dvTab([
     ['REZERVA základ', `${K(r.rezerva.sMarzi)}`, `sazba ${M(Z.rezervaZakladPct * 100)} % · ${OCK.fixes ? 'z nákladů' : 'z ceny (kompat)'}`],
-    ['Náklad celkem', K(r.souhrn.zakladNaklad), ''],
-    ['Přirážka celkem', K(r.souhrn.zakladMarze), ''],
-    ['ZÁKLADNÍ CENA bez DPH', `<b>${K0(r.souhrn.zakladCena)}</b>`, 'zaokrouhleno ↑ na tisíce'],
-    [`DPH ${M(C.dph * 100)} %`, K0(r.souhrn.zakladDph), ''],
-    ['CELKEM s DPH', `<b>${K0(r.souhrn.zakladSDph)}</b>`, ''],
+    ['Náklad celkem', K(r.souhrn.zakladNaklad),
+      'náklady sekcí HRUBÁ OCK + OPLÁŠTĚNÍ + VOLITELNÉ + REŽIE, plus náklad rezervy'],
+    ['Přirážka celkem', K(r.souhrn.zakladMarze),
+      'cena před zaokrouhlením − náklad celkem; není to prostý součet procent, protože rezerva se přirážky účastní'],
+    ['ZÁKLADNÍ CENA bez DPH', `<b>${K0(r.souhrn.zakladCena)}</b>`,
+      'náklad + přirážka, zaokrouhleno ↑ na tisíce'],
+    [`DPH ${M(C.dph * 100)} %`, K0(r.souhrn.zakladDph),
+      'ze zaokrouhlené základní ceny; sazba je v ceníku'],
+    ['CELKEM s DPH', `<b>${K0(r.souhrn.zakladSDph)}</b>`, 'základní cena + DPH'],
     ['Příplatky celkem (pokud vše)', K0(r.souhrn.priplatkyCena), 'ceník variant, mimo základní cenu'],
   ]), 'dv-12');
 

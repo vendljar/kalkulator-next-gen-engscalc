@@ -110,5 +110,35 @@ if (kus) {
 test('nulaOznacStart se v prostředí bez DOM tiše vypne',
   /typeof document === 'undefined'/.test(commonZdroj));
 
+/* ---------- 4) každý řádek detailu má vysvětlení ----------
+ *
+ * Zadání J. V. 10. 9. 2026: „doplň vysvětlující informace paušálně pro všechny
+ * položky v detailech výpočtu OCK a PROJ." Podnětem byl řádek Oplechování
+ * dveří: číslo 15 ks se v zadání nikde nebere, počítá se jako 3 × nástupiště,
+ * a ve sloupci vzorců stála prázdná buňka.
+ *
+ * Prázdný třetí prvek řádku (`, ''`) je právě ta prázdná buňka. Hlídá se na
+ * zdroji, protože ve vykreslené tabulce se prázdná buňka od vyplněné nepozná
+ * jinak než okem — a nový řádek se přidává jedním řádkem kódu. */
+const detailProjZdroj = fs.readFileSync(__dirname + '/ui/detail_proj_ui.js', 'utf8');
+const prazdne = (s) => (s.match(/,\s*''\]/g) || []).length;
+
+test('detail výpočtu OCK nemá řádek bez vysvětlení',
+  prazdne(detailZdroj) === 0, prazdne(detailZdroj) + ' prázdných');
+test('detail výpočtu PROJ nemá řádek bez vysvětlení',
+  prazdne(detailProjZdroj) === 0, prazdne(detailProjZdroj) + ' prázdných');
+
+/* Sonda na sobě: kdyby se hledání rozbilo, test by mlčel a prošel by i detail
+ * plný prázdných buněk. */
+test('hlídač prázdných buněk skutečně prázdnou buňku pozná',
+  prazdne("['Něco', `${x}`, ''],") === 1 && prazdne("['Něco', `${x}`, 'vzorec'],") === 0);
+
+/* Vysvětlení nesmí být jen tečka nebo mezera – kontroluje se, že jich je hodně
+ * a že mají obsah. */
+const vzorce = (s) => (s.match(/,\s*'[^']{10,}'\]/g) || []).length;
+test('detail OCK má vysvětlení u desítek řádků', vzorce(detailZdroj) >= 20, vzorce(detailZdroj));
+test('detail PROJ má vysvětlení u řádků závěru i ceníku', vzorce(detailProjZdroj) >= 5,
+  vzorce(detailProjZdroj));
+
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);
