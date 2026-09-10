@@ -658,6 +658,46 @@ function zobrazeniVychoziAplikuj(mat, zadaniOck, zadaniProj) {
   return zmen;
 }
 
+/* Je zadání pořád takové, jaké ho vyrobil kód — tedy se sloupcem Výchozí ještě
+ * nikdo nic neudělal a nikdo do něj nesáhl?
+ *
+ * NÁLEZ 10. 9. 2026 (hlásil J. V.: „jaktože mám u nové zakázky předvybrané
+ * příplatky, když ve výchozím výběru má být pouze lešení?"). Matice se do
+ * zakázky vtiskne jen v `novaZakazkaUI()`. Jenže aplikace startuje zakázkou
+ * založenou hned při načtení skriptu (`let ZAK = novaZakazka()`) — dávno
+ * předtím, než se po přihlášení stáhne matice ze serveru. Kdo po otevření
+ * aplikace rovnou začal počítat, dostal zakázku podle tvrdých hodnot z kódu
+ * a sloupec Výchozí jako by neexistoval.
+ *
+ * Matici tedy jde vtisknout i dodatečně, ale JEN do zakázky, se kterou ještě
+ * nikdo nepracoval. Porovnává se proti čerstvě vyrobenému vzoru a jen v těch
+ * polích, která matice vůbec mění: co si obchodník nastavil sám, se nesmí
+ * přepsat. Vzor si dodá volající (`novaVariantaData()`), aby tenhle modul
+ * nemusel znát zakazka.js. */
+function zobrazeniVychoziNedotcene(zadaniOck, zadaniProj, vzorOck, vzorProj) {
+  const seznamSedi = (a, b) => JSON.stringify((Array.isArray(a) ? a : []).slice().sort())
+    === JSON.stringify((Array.isArray(b) ? b : []).slice().sort());
+  const zd = zadaniOck || {}, vz = vzorOck || {};
+  if (!seznamSedi(zd.priplatkyVynechat, vz.priplatkyVynechat)) return false;
+  if (!seznamSedi(zd.nepocitat, vz.nepocitat)) return false;
+  if (!!zd.prechodovePlechy !== !!vz.prechodovePlechy) return false;
+  const vol = zd.volitelne || {}, volVz = vz.volitelne || {};
+  const klice = Object.keys(vol).concat(Object.keys(volVz));
+  for (const k of klice) if (!!vol[k] !== !!volVz[k]) return false;
+  /* PROJ: matice sahá jen na příznak `vyrazeno` u položek sekcí. */
+  const sekce = (zadaniProj && Array.isArray(zadaniProj.sekce)) ? zadaniProj.sekce : null;
+  const sekceVz = (vzorProj && Array.isArray(vzorProj.sekce)) ? vzorProj.sekce : null;
+  if (sekce && sekceVz) {
+    if (sekce.length !== sekceVz.length) return false;
+    for (let i = 0; i < sekce.length; i++) {
+      const p = sekce[i].polozky || [], pv = sekceVz[i].polozky || [];
+      if (p.length !== pv.length) return false;
+      for (let j = 0; j < p.length; j++) if (!!p[j].vyrazeno !== !!pv[j].vyrazeno) return false;
+    }
+  }
+  return true;
+}
+
 /* Liší se matice od dnešního stavu? Používá se v souhrnu Nastavení, aby bylo
  * na první pohled vidět, že někdo něco přenastavil. */
 function zobrazeniZmeny(mat) {
@@ -675,5 +715,5 @@ if (typeof module !== 'undefined')
     ZOBRAZENI_SEKCE_VOLBY, zobrazeniSekceVolba, zobrazeniSekceNastav,
     ZOBRAZENI_POCITAT, ZOBRAZENI_PRIPLATEK,
     zobrazeniPolozkaVychozi, zobrazeniPolozkaVychoziNastav,
-    zobrazeniProjKlic, zobrazeniVychoziAplikuj,
+    zobrazeniProjKlic, zobrazeniVychoziAplikuj, zobrazeniVychoziNedotcene,
   };

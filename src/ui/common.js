@@ -627,6 +627,78 @@ function nulaOznac(el) {
   if (!/^0(?:[.,]0+)?$/.test(String(el.value).trim())) return;
   try { el.select(); } catch (e) { /* pole bez podpory výběru (např. date) */ }
 }
+/* ============================================================================
+ * VLOŽENÍ OBRÁZKU ZE SCHRÁNKY (Ctrl+V) — 10. 9. 2026, zadání J. V.:
+ * „umožni vkládání fotek do cenových nabídek (a kamkoliv jinam, jestli ještě
+ * někde je ta možnost) formou příkazu ctrl+v; obchodník většinou fotku jenom
+ * vystřihne v google maps a potřebuje ji vložit rovnou."
+ *
+ * Dosud vedla jediná cesta přes dialog výběru souboru, takže výstřižek se
+ * musel nejdřív někam uložit jako soubor. Nově stačí Ctrl+V.
+ *
+ * Zóna se označí atributem `data-vlozobrazek="<název cíle>"`; cíl se registruje
+ * funkcí `vlozObrazekCil(název, funkce)`. Když se vloží mimo zónu, rozhodne
+ * otevřená záložka (VLOZ_OBRAZEK_TAB) — obchodník obvykle nic „nezaměří",
+ * jen zkopíruje výstřižek a zmáčkne Ctrl+V.
+ *
+ * Do textového pole se nezasahuje: tam Ctrl+V znamená vložit text.
+ * ========================================================================== */
+const VLOZ_OBRAZEK_CIL = {};
+const VLOZ_OBRAZEK_TAB = { kalk: 'fotoOck', proj: 'fotoProj' };
+function vlozObrazekCil(nazev, fn) { VLOZ_OBRAZEK_CIL[nazev] = fn; }
+
+/* První obrázek ze schránky. Chrome dává výstřižek jako `items` typu file,
+ * některé aplikace jako `files` — zkoušejí se obě cesty. */
+function schrankaObrazek(ev) {
+  const dt = ev && (ev.clipboardData || (ev.originalEvent && ev.originalEvent.clipboardData));
+  if (!dt) return null;
+  const items = dt.items ? Array.prototype.slice.call(dt.items) : [];
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].kind === 'file' && /^image\//.test(items[i].type || '')) {
+      const f = items[i].getAsFile();
+      if (f) return f;
+    }
+  }
+  const files = dt.files ? Array.prototype.slice.call(dt.files) : [];
+  for (let i = 0; i < files.length; i++) if (/^image\//.test(files[i].type || '')) return files[i];
+  return null;
+}
+
+/* Píše se právě do textu? Pak Ctrl+V patří textu, ne obrázku. */
+function vlozPoleEditace(el) {
+  if (!el) return false;
+  if (el.isContentEditable) return true;
+  const t = String(el.tagName || '').toUpperCase();
+  if (t === 'TEXTAREA') return true;
+  if (t !== 'INPUT') return false;
+  const typ = String(el.type || 'text').toLowerCase();
+  return ['checkbox', 'radio', 'button', 'submit', 'file', 'range', 'color'].indexOf(typ) < 0;
+}
+
+function vlozObrazekZona(el) {
+  for (let n = el; n && n.getAttribute; n = n.parentElement) {
+    const z = n.getAttribute('data-vlozobrazek');
+    if (z) return z;
+  }
+  return (typeof TAB !== 'undefined') ? (VLOZ_OBRAZEK_TAB[TAB] || null) : null;
+}
+
+function vlozObrazekStart() {
+  if (typeof document === 'undefined' || !document.addEventListener) return;   // sady v Node
+  document.addEventListener('paste', (ev) => {
+    if (vlozPoleEditace(document.activeElement)) return;
+    const zona = vlozObrazekZona(ev.target);
+    if (!zona) return;
+    const fn = VLOZ_OBRAZEK_CIL[zona];
+    if (typeof fn !== 'function') return;
+    const f = schrankaObrazek(ev);
+    if (!f) return;
+    ev.preventDefault();
+    fn(f);
+  });
+}
+vlozObrazekStart();
+
 function nulaOznacStart() {
   if (typeof document === 'undefined' || !document.addEventListener) return;   // sady v Node
   document.addEventListener('focusin', ev => {

@@ -565,6 +565,37 @@ function onlineZobrazeniNasad(matice) {
    * (panel Nastavení → Zobrazení pracuje přímo s objektem). */
   if (typeof konfigNahradVMiste === 'function' && NAST.zobrazeni) konfigNahradVMiste(NAST.zobrazeni, m);
   else NAST.zobrazeni = m;
+  onlineZobrazeniDoCerstveZakazky();
+}
+
+/* Vtiskne stažený sloupec Výchozí do zakázky, se kterou ještě nikdo nepracoval.
+ *
+ * NÁLEZ 10. 9. 2026 (J. V.: „jaktože mám u nové zakázky předvybrané příplatky,
+ * když ve výchozím výběru má být pouze lešení?"). Matice se dosud vtiskla jen
+ * v `novaZakazkaUI()`. Aplikace ale startuje zakázkou, kterou založí `common.js`
+ * hned při načtení skriptu — tehdy žádná matice není, přijde až po přihlášení.
+ * Kdo tedy po otevření aplikace rovnou začal počítat, měl zaškrtnuto všechno.
+ *
+ * Přepsat rozpracovanou práci nesmíme, proto se sahá jen na zakázku, která
+ * nemá číslo ani název, má jedinou variantu a v polích, kterých se matice týká,
+ * pořád nese hodnoty z kódu. */
+function onlineZobrazeniDoCerstveZakazky() {
+  if (typeof ZAK === 'undefined' || !ZAK) return false;
+  if (typeof zobrazeniVychoziAplikuj !== 'function'
+    || typeof zobrazeniVychoziNedotcene !== 'function'
+    || typeof novaVariantaData !== 'function'
+    || typeof aktivniVarianta !== 'function') return false;
+  if (ZAK.cislo || ZAK.nazevAkce || ZAK.objednatel) return false;
+  if (!Array.isArray(ZAK.varianty) || ZAK.varianty.length !== 1) return false;
+  const d = (aktivniVarianta(ZAK) || {}).data || {};
+  const zo = (d.ock || {}).zadani, zp = (d.proj || {}).zadani;
+  if (!zo) return false;
+  let vzor;
+  try { vzor = novaVariantaData(); } catch (e) { return false; }
+  if (!zobrazeniVychoziNedotcene(zo, zp, vzor.ock.zadani, vzor.proj.zadani)) return false;
+  const zmen = zobrazeniVychoziAplikuj(NAST.zobrazeni, zo, zp);
+  if (zmen && typeof render === 'function') render();
+  return zmen > 0;
 }
 
 function onlineNactiZobrazeni() {

@@ -1,6 +1,6 @@
 # Návrhy změn obchodníci – 9. 9. 2026
 
-Stav řešení úkolů ze schůzky. Aktualizováno 10. 9. 2026, verze aplikace 9.9.7.
+Stav řešení úkolů ze schůzky. Aktualizováno 10. 9. 2026, verze aplikace 9.9.8.
 
 Legenda stavu: HOTOVO = nasazeno a ověřené testy · ZJIŠTĚNO = odpověď níž, čeká
 na rozhodnutí · ČEKÁ = zadané, ještě neřešené.
@@ -310,6 +310,46 @@ v Detailu výpočtu. Zapnutý je od začátku, tisk do PDF ho respektuje.
 
 ---
 
+## 20. Nová zakázka respektuje sloupec „Výchozí" u příplatků — HOTOVO
+
+**Co bylo špatně.** V nové zakázce byla zaškrtnutá skoro celá nabídka
+příplatků, přestože ve sloupci **Výchozí** je zaškrtnuté jen lešení.
+
+**Proč se to dělo.** Nastavení sloupce Výchozí se do zakázky vtisklo jen
+tehdy, když jste klikli na **Nová zakázka**. Aplikace ale jednu prázdnou
+zakázku otevírá sama hned po spuštění, a to ještě dřív, než se po přihlášení
+stáhne nastavení ze serveru. Kdo tedy po otevření aplikace rovnou začal
+počítat, měl zaškrtnuto všechno.
+
+**Co se změnilo.** Nastavení se do té startovní zakázky doplní, jakmile
+dorazí ze serveru. Sáhne se **jen na zakázku, se kterou nikdo nic neudělal**
+— nemá číslo ani název a všechna dotčená zaškrtávátka jsou v původním stavu.
+Rozpracovanou nabídku to nikdy nepřepíše.
+
+**Co to znamená pro vás.** Nic nepřenastavujete. Když chcete jiný výchozí
+výběr, zaškrtejte sloupec Výchozí v tabulce příplatků; platí od příští nové
+zakázky, otevřená se nemění.
+
+---
+
+## 21. Fotku vložíte klávesami Ctrl+V — HOTOVO
+
+Výstřižek z map (nebo odkudkoli) se dá vložit rovnou ze schránky. Nemusíte
+ho nejdřív ukládat jako soubor.
+
+Funguje na třech místech:
+
+- **Úvodní fotka nabídky OCK a PROJ** — stačí být na příslušné záložce
+  kalkulace a zmáčknout Ctrl+V.
+- **Logo firmy** v Nastavení.
+- **Přílohy poznámek** — obrázek se přidá jako příloha, pojmenuje se podle
+  času vložení.
+
+Do textových polí se nic nemíchá. Když píšete do popisku pod fotkou nebo do
+poznámky, Ctrl+V tam dál vkládá text.
+
+---
+
 ## Přehled
 
 | # | Bod | Stav |
@@ -333,6 +373,8 @@ v Detailu výpočtu. Zapnutý je od začátku, tisk do PDF ho respektuje.
 | 17 | Popisné texty ze zadání šachty do detailu výpočtu | HOTOVO (v9.9.6) |
 | 18 | Nula v poli se nemusí mazat | HOTOVO (v9.9.6) |
 | 19 | Vysvětlení u každého řádku detailu výpočtu OCK i PROJ | HOTOVO (v9.9.7) |
+| 20 | Nová zakázka respektuje sloupec „Výchozí" u příplatků | HOTOVO (v9.9.8) |
+| 21 | Vkládání fotek klávesami Ctrl+V | HOTOVO (v9.9.8) |
 
 Změny se projeví po obnovení stránky (aplikace si o ně sama řekne — a od
 verze 9.9.3 si před tím rozpracovanou nabídku uloží).

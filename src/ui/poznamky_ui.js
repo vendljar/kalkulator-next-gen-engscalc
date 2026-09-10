@@ -80,6 +80,25 @@ function poznamkySmazanePrepni() { POZN_SMAZANE = !POZN_SMAZANE; render(); }
 
 /* ---------- přílohy ---------- */
 
+/* Obrázek ze schránky jako příloha. Výstřižek nemá jméno souboru, tak se
+ * pojmenuje podle času — jinak by v seznamu příloh visely samé prázdné řádky. */
+function prilohaZeSchranky(f) {
+  const zak = poznamkyZak(); if (!zak || !f) return;
+  const fr = new FileReader();
+  fr.onload = () => {
+    const pripona = (String(f.type || '').split('/')[1] || 'png').replace(/[^a-z0-9]/gi, '');
+    const nazev = f.name || ('vystrizek-' + new Date().toISOString().slice(0, 19)
+      .replace(/[:T]/g, '-') + '.' + pripona);
+    const r = prilohyPridej(zak, { nazev, typ: f.type, velikost: f.size, data: fr.result },
+                            { kdo: poznamkyKdo() });
+    if (!r.ok) hlaska(nazev + ': ' + r.duvod);
+    poznamkyZmena();
+  };
+  fr.onerror = () => hlaska('Obrázek ze schránky se nepodařilo načíst.');
+  fr.readAsDataURL(f);
+}
+if (typeof vlozObrazekCil === 'function') vlozObrazekCil('prilohy', prilohaZeSchranky);
+
 function prilohyNahraj() {
   const zak = poznamkyZak(); if (!zak) return;
   const inp = document.createElement('input');
@@ -169,7 +188,10 @@ function poznamkyKarta() {
     `<button class="mini${d.kod === POZN_DRUH ? ' primary' : ''}"
        onclick="poznamkyDruhSet('${escJs(d.kod)}')">${esc(d.nazev)}</button>`).join(' ');
 
-  const zapis = `<div class="pozn-zapis">
+  /* Ctrl+V přidá obrázek ze schránky jako přílohu (10. 9. 2026, zadání J. V.).
+   * Zóna je celý blok zápisu, ne jen tlačítko — do textového pole uvnitř se
+   * nezasahuje, tam Ctrl+V dál vkládá text (viz vlozPoleEditace v common.js). */
+  const zapis = `<div class="pozn-zapis" data-vlozobrazek="prilohy">
     <div class="btns" style="flex-wrap:wrap">${druhy}</div>
     <textarea id="poznText" rows="3" style="width:100%;margin-top:6px;text-align:left"
       placeholder="Např.: Sleva 6 % dohodnutá s p. Novákem – tři šachty v jedné budově, montáž v jednom nájezdu."
@@ -178,6 +200,7 @@ function poznamkyKarta() {
       <button class="primary" onclick="poznamkyUloz()">${POZN_UPRAVA ? 'Uložit úpravu' : 'Přidat poznámku'}</button>
       ${POZN_UPRAVA ? '<button class="mini" onclick="poznamkyUpravZrus()">Zrušit úpravu</button>' : ''}
       <button onclick="prilohyNahraj()">Přidat přílohu</button>
+      <span class="note" title="obrázek ze schránky se přidá jako příloha">obrázek jde vložit i Ctrl+V</span>
       <span class="note">${sh.pocet} poznámek, ${prilohy.length} příloh
         (${esc(poznamkyVelikostText(sh.bajtu))})</span>
     </div></div>`;

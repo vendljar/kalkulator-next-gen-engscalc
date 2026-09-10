@@ -97,20 +97,32 @@ function firmaSet(id, v) {
   if (typeof ukazkoveOcisti === 'function') ukazkoveOcisti(NAST.firma);
   nastRefresh();
 }
+/* Jedna cesta pro dialog i pro Ctrl+V (10. 9. 2026, zadání J. V. — vkládání
+ * obrázků ze schránky „a kamkoliv jinam, jestli ještě někde je ta možnost"). */
+function firmaLogoPrijmi(f, zeSchranky) {
+  if (!jeAdmin()) return hlaska('Firemní údaje smí měnit jen administrátor.');
+  if (!f) return;
+  if (!/^image\//.test(f.type || '')) return hlaska('Vložit jde jen obrázek (PNG, JPG nebo SVG).');
+  if (f.size > 400 * 1024) return hlaska('Logo je příliš velké (' + Math.round(f.size / 1024)
+    + ' kB). Použijte obrázek do 400 kB – ukládá se přímo do konfigurace.');
+  const fr = new FileReader();
+  fr.onload = () => {
+    NAST.firma.logo = fr.result;
+    NAST.firma.logoNazev = f.name || (zeSchranky ? 'logo ze schránky' : 'logo');
+    nastRefresh();
+  };
+  fr.onerror = () => hlaska('Obrázek se nepodařilo načíst.');
+  fr.readAsDataURL(f);
+}
 function firmaLogoNahraj() {
   if (!jeAdmin()) return hlaska('Firemní údaje smí měnit jen administrátor.');
   const inp = document.createElement('input');
   inp.type = 'file'; inp.accept = 'image/png,image/jpeg,image/svg+xml';
-  inp.onchange = () => {
-    const f = inp.files && inp.files[0]; if (!f) return;
-    if (f.size > 400 * 1024) return hlaska('Logo je příliš velké (' + Math.round(f.size / 1024)
-      + ' kB). Použijte obrázek do 400 kB – ukládá se přímo do konfigurace.');
-    const fr = new FileReader();
-    fr.onload = () => { NAST.firma.logo = fr.result; NAST.firma.logoNazev = f.name; nastRefresh(); };
-    fr.readAsDataURL(f);
-  };
+  inp.onchange = () => firmaLogoPrijmi(inp.files && inp.files[0], false);
   inp.click();
 }
+if (typeof vlozObrazekCil === 'function')
+  vlozObrazekCil('logo', (f) => firmaLogoPrijmi(f, true));
 function firmaLogoSmaz() { if (!jeAdmin()) return; NAST.firma.logo = ''; NAST.firma.logoNazev = ''; nastRefresh(); }
 async function firmaObnovVychozi() {
   if (!jeAdmin()) return hlaska('Firemní údaje smí měnit jen administrátor.');
@@ -689,13 +701,15 @@ function nastSmluvniStandardy() {
     ${pole.map(radek).join('')}
 
     <div class="sec-title">Logo firmy</div>
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <div data-vlozobrazek="logo" title="logo jde vložit i klávesami Ctrl+V ze schránky"
+      style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
       ${f.logo ? `<img src="${esc(f.logo)}" alt="logo" style="max-height:56px;max-width:220px;border:1px solid var(--line);border-radius:6px;padding:4px">` : '<span class="note">Logo zatím nenahráno.</span>'}
       <div class="btns"><button onclick="firmaLogoNahraj()">Nahrát logo</button>
         ${f.logo ? '<button class="mini" onclick="firmaLogoSmaz()">Odebrat</button>' : ''}</div>
       ${f.logoNazev ? `<span class="note">${esc(f.logoNazev)}</span>` : ''}
     </div>
-    <div class="note" style="margin-top:6px">PNG / JPG / SVG do 400 kB. Ukládá se přímo do konfigurace (data URL),
+    <div class="note" style="margin-top:6px"><b>Logo jde vložit klávesami Ctrl+V</b> ze schránky.
+      PNG / JPG / SVG do 400 kB. Ukládá se přímo do konfigurace (data URL),
       aby se přeneslo spolu s ostatním nastavením. Logo se zobrazuje v hlavičce tiskových náhledů.</div>`;
 }
 

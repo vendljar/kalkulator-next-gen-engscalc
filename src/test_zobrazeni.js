@@ -283,6 +283,47 @@ test('prázdná matice nezmění nic',
 test('aplikace snese chybějící zadání (jen OCK, jen PROJ, nic)',
   Z.zobrazeniVychoziAplikuj(maticeA, null, null) === 0);
 
+/* ---------- 6) do rozpracované zakázky se matice nevtiskne ----------
+ *
+ * NÁLEZ 10. 9. 2026 (J. V.: „jaktože mám u nové zakázky předvybrané příplatky,
+ * když ve výchozím výběru má být pouze lešení?"). Matice se dosud vtiskla jen
+ * v novaZakazkaUI(); zakázka, kterou aplikace založí při startu, ji nedostala,
+ * protože v tu chvíli ještě není stažená ze serveru. Vtiskne se tedy dodatečně,
+ * ale JEN do zakázky, se kterou nikdo nic neudělal — to hlídá tahle funkce. */
+const vzorOck = () => ({
+  prechodovePlechy: false, volitelne: { haky: true, sokl: false },
+  priplatkyVynechat: ['vsgFolie', 'skn'], nepocitat: [],
+});
+const vzorProj = () => ({ sekce: [{ key: 'studie', polozky: [{ nazev: 'Studie' }, { nazev: 'Konzultace' }] }] });
+
+test('čerstvé zadání je nedotčené', Z.zobrazeniVychoziNedotcene(vzorOck(), vzorProj(), vzorOck(), vzorProj()));
+test('pořadí v seznamu příplatků nerozhoduje',
+  Z.zobrazeniVychoziNedotcene(Object.assign(vzorOck(), { priplatkyVynechat: ['skn', 'vsgFolie'] }),
+    vzorProj(), vzorOck(), vzorProj()));
+
+const zmenenoPriplatek = vzorOck(); zmenenoPriplatek.priplatkyVynechat = ['vsgFolie'];
+test('odškrtnutý příplatek znamená, že už někdo pracoval',
+  !Z.zobrazeniVychoziNedotcene(zmenenoPriplatek, vzorProj(), vzorOck(), vzorProj()));
+
+const zmenenoNepocitat = vzorOck(); zmenenoNepocitat.nepocitat = ['LEŠENÍ'];
+test('vyřazená položka kalkulace znamená, že už někdo pracoval',
+  !Z.zobrazeniVychoziNedotcene(zmenenoNepocitat, vzorProj(), vzorOck(), vzorProj()));
+
+const zmenenoVolitelne = vzorOck(); zmenenoVolitelne.volitelne.sokl = true;
+test('zaškrtnutá volitelná položka znamená, že už někdo pracoval',
+  !Z.zobrazeniVychoziNedotcene(zmenenoVolitelne, vzorProj(), vzorOck(), vzorProj()));
+
+const zmenenoPlechy = vzorOck(); zmenenoPlechy.prechodovePlechy = true;
+test('zaškrtnuté přechodové plechy znamenají, že už někdo pracoval',
+  !Z.zobrazeniVychoziNedotcene(zmenenoPlechy, vzorProj(), vzorOck(), vzorProj()));
+
+const zmenenoProj = vzorProj(); zmenenoProj.sekce[0].polozky[1].vyrazeno = true;
+test('vyřazená položka PROJ znamená, že už někdo pracoval',
+  !Z.zobrazeniVychoziNedotcene(vzorOck(), zmenenoProj, vzorOck(), vzorProj()));
+
+test('chybějící zadání PROJ nedotčenosti nevadí (starší zakázka)',
+  Z.zobrazeniVychoziNedotcene(vzorOck(), null, vzorOck(), vzorProj()));
+
 test('klíč položky PROJ dá přednost kid před názvem',
   Z.zobrazeniProjKlic('dpz', { kid: 'pk3', nazev: 'Nová položka' }) === 'proj.dpz.pk3'
   && Z.zobrazeniProjKlic('dpz', { nazev: 'Statika' }) === 'proj.dpz.Statika');

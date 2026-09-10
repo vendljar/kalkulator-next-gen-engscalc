@@ -682,22 +682,39 @@ function nabidkaFotoPole(cast) {
 }
 const NABIDKA_FOTO_NAZVY = { ock: 'OCK', proj: 'PROJ' };
 
-function nabidkaFotoNahraj(cast) {
+/* Přijetí souboru z dialogu i ze schránky (Ctrl+V) — jedna cesta pro obojí,
+ * aby limit velikosti a pojmenování platily stejně. Výstřižek ze schránky
+ * jméno souboru nemá, tak se dopíše, odkud přišel a kdy. */
+function nabidkaFotoPrijmi(cast, f, zeSchranky) {
   const p = nabidkaFotoPole(cast);
+  if (!f) return;
+  if (!/^image\//.test(f.type || ''))
+    return hlaska('Vložit jde jen obrázek (JPG, PNG nebo WEBP).');
+  if (f.size > 2 * 1024 * 1024) return hlaska('Fotka je příliš velká (' + Math.round(f.size / 1024)
+    + ' kB). Použijte obrázek do 2 MB – ukládá se přímo do souboru zakázky.');
+  const fr = new FileReader();
+  fr.onload = () => {
+    ZAK[p.foto] = fr.result;
+    ZAK[p.nazev] = f.name || (zeSchranky
+      ? 'ze schránky ' + new Date().toISOString().slice(0, 16).replace('T', ' ') : 'fotka');
+    render();
+  };
+  fr.onerror = () => hlaska('Obrázek se nepodařilo načíst.');
+  fr.readAsDataURL(f);
+}
+
+function nabidkaFotoNahraj(cast) {
   const inp = document.createElement('input');
   inp.type = 'file'; inp.accept = 'image/png,image/jpeg,image/webp';
-  inp.onchange = () => {
-    const f = inp.files && inp.files[0]; if (!f) return;
-    if (f.size > 2 * 1024 * 1024) return hlaska('Fotka je příliš velká (' + Math.round(f.size / 1024)
-      + ' kB). Použijte obrázek do 2 MB – ukládá se přímo do souboru zakázky.');
-    const fr = new FileReader();
-    fr.onload = () => {
-      ZAK[p.foto] = fr.result; ZAK[p.nazev] = f.name;
-      render();
-    };
-    fr.readAsDataURL(f);
-  };
+  inp.onchange = () => nabidkaFotoPrijmi(cast, inp.files && inp.files[0], false);
   inp.click();
+}
+
+/* Cíle pro Ctrl+V. Registrují se jednou; zóna v kartě je označená atributem
+ * `data-vlozobrazek`, mimo ni rozhoduje otevřená záložka (viz common.js). */
+if (typeof vlozObrazekCil === 'function') {
+  vlozObrazekCil('fotoOck', (f) => nabidkaFotoPrijmi('ock', f, true));
+  vlozObrazekCil('fotoProj', (f) => nabidkaFotoPrijmi('proj', f, true));
 }
 async function nabidkaFotoSmaz(cast) {
   const p = nabidkaFotoPole(cast);
@@ -743,7 +760,9 @@ function nabidkaFotoKarta(cast) {
     : '<span class="note">Fotka zatím nenahraná – nabídka se vytiskne bez ní.</span>';
   return `<div class="note" style="font-weight:600;margin-top:10px">Úvodní fotka nabídky
       ${NABIDKA_FOTO_NAZVY[c]}:</div>
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:4px">
+    <div ${c === 'proj' ? 'data-vlozobrazek="fotoProj"' : 'data-vlozobrazek="fotoOck"'}
+      title="fotku jde vložit i klávesami Ctrl+V ze schránky"
+      style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:4px">
       ${nahled}
       <div class="btns"><button onclick="nabidkaFotoNahraj(${arg})">${ZAK[p.foto] ? 'Vyměnit fotku' : 'Nahrát fotku'}</button>
         ${ZAK[p.foto] ? `<button class="mini" onclick="nabidkaFotoSmaz(${arg})">Odebrat</button>` : ''}
@@ -752,7 +771,8 @@ function nabidkaFotoKarta(cast) {
     </div>
     <input type="text" style="width:100%;margin-top:6px;text-align:left" placeholder="Popisek pod fotkou (nepovinné) – např. Bytový dům Dlouhá 12, stávající stav"
       value="${esc(ZAK[p.popis] || '')}" oninput="nabidkaFotoPopis(this.value, ${arg})">
-    <div class="note" style="margin-top:4px">JPG / PNG / WEBP do 2 MB. Ukládá se přímo do souboru zakázky,
+    <div class="note" style="margin-top:4px"><b>Fotku jde vložit klávesami Ctrl+V</b> — stačí výstřižek
+      ve schránce (třeba z map), soubor se nikam ukládat nemusí. JPG / PNG / WEBP do 2 MB. Ukládá se přímo do souboru zakázky,
       takže se přenese i na jiný počítač. Tiskne se hned pod hlavičkou nabídky.
       Nabídka ${NABIDKA_FOTO_NAZVY[c]} má <b>vlastní</b> fotku – nabídka ${druhaNazev} tím zůstává nedotčená.</div>`;
 }
