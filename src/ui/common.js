@@ -600,8 +600,41 @@ function inp(path, opts = {}) {
       <option value="0" ${!val ? 'selected' : ''}>Ne</option></select><span class="u"></span></div>`;
   if (opts.type === 'pct')   // uloženo jako desetinné číslo (0,30), zobrazeno a zadáváno v % (30)
     return `<div class="row"><label>${opts.l}</label><input type="number" step="${opts.step ?? 1}" value="${Math.round(val * 10000) / 100}" onchange="set('${path}', (+this.value) / 100)"><span class="u">%</span></div>`;
-  return `<div class="row"><label>${opts.l}</label><input type="number" step="${step}" value="${esc(val)}" onchange="set('${path}', +this.value)"><span class="u">${u}</span></div>`;
+  /* `t` = tooltip nad polem. Přibylo 10. 9. 2026, když se popisné texty
+   * odstěhovaly ze Zadání šachty do Detailu výpočtu (zadání J. V.) — vysvětlení
+   * se tím neztratilo, jen přestalo zabírat řádek pod každým polem. */
+  const tit = opts.t ? ` title="${esc(opts.t)}"` : '';
+  return `<div class="row"><label>${opts.l}</label><input type="number" step="${step}" value="${esc(val)}"${tit} onchange="set('${path}', +this.value)"><span class="u">${u}</span></div>`;
 }
+
+/* NULA SE NEMUSÍ MAZAT (10. 9. 2026, zadání J. V.: „nastav buňky tak, aby když
+ * je v nich nula a kliknu do nich, tak jsem tu nulu nemusel mazat, ale mohl ji
+ * rovnou přepsat").
+ *
+ * Nulové výchozí hodnoty (nová nabídka je má u všech rozměrů) se jinak zadávají
+ * dvakrát: nejdřív smazat nulu, pak napsat číslo. Kdo nulu nesmaže, dostane
+ * „025" místo „25". Označí se proto celý obsah, takže první stisk klávesy nulu
+ * přepíše.
+ *
+ * Označuje se JEN nula, ne každá hodnota — u vyplněného pole je čekávané, že
+ * kliknutím nastavím kurzor a opravím jednu číslici, ne že smažu celé číslo.
+ *
+ * `setTimeout` je nutný: při kliknutí myší přijde `focus` dřív, než prohlížeč
+ * postaví kurzor, a ten by označení hned zrušil. */
+function nulaOznac(el) {
+  if (!el || el.tagName !== 'INPUT' || el.readOnly || el.disabled) return;
+  if (el.type !== 'number' && el.type !== 'text') return;
+  if (!/^0(?:[.,]0+)?$/.test(String(el.value).trim())) return;
+  try { el.select(); } catch (e) { /* pole bez podpory výběru (např. date) */ }
+}
+function nulaOznacStart() {
+  if (typeof document === 'undefined' || !document.addEventListener) return;   // sady v Node
+  document.addEventListener('focusin', ev => {
+    const el = ev.target;
+    setTimeout(() => { if (document.activeElement === el) nulaOznac(el); }, 0);
+  });
+}
+nulaOznacStart();
 
 /* OTEVŘENÁ KARTA ZŮSTANE OTEVŘENÁ (9. 9. 2026, hlášeno J. V.: „když zadávám
  * úpravu dimenzí profilů, tak po každé změně se mi pole skryje; když ho

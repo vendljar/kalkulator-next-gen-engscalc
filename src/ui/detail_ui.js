@@ -32,6 +32,33 @@ function dvTab(rows) {
       ? `<td class="f">${esc(r[2] || '')}</td>` : ''}</tr>`).join('')}</table>`;
 }
 
+/* PRŮCHOZÍ ŠACHTA V DETAILU (10. 9. 2026, zadání J. V.: „ze zadání šachty
+ * odstraň popisné texty, ty přenes do detailu výpočtu").
+ *
+ * Karta Zadání šachty nesla pod poli dvě vysvětlující věty a zabírala jimi
+ * dva řádky mřížky. Vysvětlení ale patří tam, kde se ukazuje, JAK se počítá —
+ * a to je detail výpočtu. V zadání zůstal jen tooltip nad polem. */
+function dvNastupist() {
+  return (typeof nastupisteCelkem === 'function') ? nastupisteCelkem(Z) : (+Z.nastupiste || 0);
+}
+function dvNastupistVzorec() {
+  return Z.pruchoziSachta
+    ? `u průchozí šachty se nezadává: nástupiště A + C = ${+Z.nastupisteA || 0} + ${+Z.nastupisteC || 0}`
+    : 'zadaný počet nástupišť';
+}
+function dvPruchoziRadky() {
+  if (!Z.pruchoziSachta) return [['Průchozí šachta', 'ne', 'nástupiště se zadávají jedním číslem']];
+  const p = +Z.patra || 0;
+  return [
+    ['Průchozí šachta', 'ano', 'nástupiště se rozpadají na čelní (A) a zadní (C) stěnu'],
+    ['— nástupiště A (čelní stěna)', `${+Z.nastupisteA || 0}`, 'sčítá se do celkového počtu nástupišť'],
+    ['— nástupiště C (zadní stěna)', `${+Z.nastupisteC || 0}`, 'sčítá se do celkového počtu nástupišť'],
+    ['— počet pater', `${p}`, p >= 2
+      ? 'z pater se počítá výška podlaží; u průchozí šachty ji nejde odvodit z nástupišť'
+      : 'ZADEJTE ASPOŇ 2 — bez toho se nedá spočítat výška podlaží a rozměry vycházejí nulové'],
+  ];
+}
+
 function renderDetail() {
   const el = document.getElementById('page-detail'); if (!el) return;
   let r;
@@ -47,8 +74,11 @@ function renderDetail() {
     ['Horní přejezd / Zdvih / Prohlubeň', `${M(Z.prejezd)} / ${M(Z.zdvih)} / ${M(Z.prohluben)} m`, ''],
     ['Vnitřní šířka × hloubka', `${M(Z.sirka)} × ${M(Z.hloubka)} m`, ''],
     ['Svislá rozteč příčníků', `${M(Z.roztec)} m`, ''],
-    ['Počet rohových sloupků / nástupišť', `${Z.rohoveSloupky} / ${Z.nastupiste}`, ''],
+    ['Počet rohových sloupků / nástupišť', `${Z.rohoveSloupky} / ${dvNastupist()}`, dvNastupistVzorec()],
+    ...dvPruchoziRadky(),
     ['Typ portálů / zasklení', `${Z.typPortalu} / ${Z.zaskleni}`, ''],
+    ['Stříška nad nástupiště', `${+Z.striskaKs || 0} ks`,
+      'počet kusů; nula znamená bez stříšky, každý kus násobí cenu i náklad'],
     ['Světlík nad dveřmi / světlíky boky', `${Z.svetlikNadDvermi ? 'ano' : 'ne'} / ${Z.svetlikyBoky}`, ''],
     ['Čistý vstup / šířka rámu dveří', `${Z.cistyVstupMm} / ${Z.sirkaRamuMm} mm`, ''],
   ]), 'dv-1');
@@ -56,7 +86,9 @@ function renderDetail() {
   /* 2) odvozené rozměry */
   const krOdv = dvKrok('2. Odvozené rozměry', dvTab([
     ['Výška šachty H', `${M(o.vyskaSachty, 3)} m`, 'H = přejezd + zdvih + prohlubeň'],
-    ['Výška podlaží', `${M(o.vyskaPodlazi, 3)} m`, 'zdvih / (počet nástupišť − 1)'],
+    ['Výška podlaží', `${M(o.vyskaPodlazi, 3)} m`, Z.pruchoziSachta
+      ? 'zdvih / (počet pater − 1)'
+      : 'zdvih / (počet nástupišť − 1)'],
     ['Světlá výška nástupiště', `${M(o.svetlaVyska, 3)} m`, 'výška podlaží − 0,2'],
     ['Výška prosklené části', `${M(o.vyskaProsklene, 3)} m`, 'zdvih + přejezd'],
     ['Šířka otvoru šach. dveří', `${M(o.sirkaDveri, 3)} m`, '(čistý vstup + 2·rám + 2·20) / 1000'],

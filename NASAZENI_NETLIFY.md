@@ -123,8 +123,18 @@ oddělené sady. Pro testovací kalkulačku tedy stačí:
 
 0. Větev `test` v repozitáři **už je** (založena 9. 9. 2026 z `main`). Testy
    v GitHub Actions nad ní běží stejně jako nad `main`.
-1. Netlify → **Add new project → Import an existing project** → týž repozitář;
-   v *Build & deploy → Branches* nastav *Production branch* na `test`.
+1. Netlify → **Add new project → Import an existing project** → vyber
+   **`kalkulator-next-gen-engscalc`**, tedy TÝŽ repozitář jako ostrý web.
+
+   > **Žádný repozitář `…-test` neexistuje a nemá vzniknout.** `test` je
+   > *větev* uvnitř téhož repozitáře, ne samostatný projekt — Netlify v seznamu
+   > „Let's deploy your project with…" ukazuje jen repozitáře, větve nabídne
+   > až v dalším kroku. Dva repozitáře by znamenaly dvě kopie kódu, které se
+   > rozejdou; celý smysl větve `test` je, že je to týž kód o krok napřed.
+
+   Ve wizardu (nebo potom v *Site configuration → Build & deploy → Branches
+   and deploy contexts*) přepni **Production branch** z `main` na `test`.
+   Název webu dej jiný než ostrý, například `engscalc-test`.
 2. Environment variables toho nového projektu:
    - `TAJEMSTVI_RELACE` — **jiné než na ostrém webu** (jinak by cookie z testu
      platila i v ostré aplikaci),

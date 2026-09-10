@@ -42,8 +42,7 @@ function nastupisteRadek() {
   const celkem = (typeof nastupisteCelkem === 'function') ? nastupisteCelkem(Z) : (+Z.nastupiste || 0);
   return `<div class="row"><label>Počet nástupišť</label>
       <input type="number" value="${esc(celkem)}" readonly
-        title="dopočítáno z nástupišť A + C"><span class="u">ks</span></div>
-    <div class="note" style="margin:-2px 0 8px">Dopočítáno z A + C (${+Z.nastupisteA || 0} + ${+Z.nastupisteC || 0}).</div>`;
+        title="dopočítáno z nástupišť A + C (${+Z.nastupisteA || 0} + ${+Z.nastupisteC || 0})"><span class="u">ks</span></div>`;
 }
 
 /* Výška podlaží se počítá jako zdvih / (patra − 1). Pod dvě patra to nedává
@@ -129,9 +128,12 @@ function renderInputs() {
         + inp('Z.hloubka', { l: 'Vnitřní hloubka', u: 'm' })
         + inp('Z.typPortalu', { type: 'sel', l: 'Typ portálů', o: [['zapuštěný', 'zapuštěný'], ['předsazený', 'předsazený']] })
         + nastupisteRadek()
-        + inp('Z.striskaKs', { l: 'Stříška nad nástupiště', step: 1, u: 'ks' })
-        + `<div class="note" style="margin:-2px 0 8px">Stříška nad nástupiště: zadejte počet kusů,
-            nula znamená bez stříšky.</div>`)
+        /* Popisný text pod polem se 10. 9. 2026 přestěhoval do Detailu výpočtu
+         * (zadání J. V.); v zadání zůstal jako tooltip, aby nezabíral řádek. */
+        + inp('Z.striskaKs', {
+          l: 'Stříška nad nástupiště', step: 1, u: 'ks',
+          t: 'počet kusů; nula znamená bez stříšky, každý kus násobí cenu i náklad',
+        }))
       + sl(
         inp('Z.zaskleni', { type: 'sel', l: 'Způsob zasklení', o: [['na terče', 'na terče'], ['mezi příčníky', 'mezi příčníky (lišty)']] })
         + inp('Z.rohoveSloupky', { l: 'Počet sloupků', step: 1, u: 'ks' })

@@ -1,6 +1,6 @@
 # Návrhy změn obchodníci – 9. 9. 2026
 
-Stav řešení úkolů ze schůzky. Aktualizováno 10. 9. 2026, verze aplikace 9.9.5.
+Stav řešení úkolů ze schůzky. Aktualizováno 10. 9. 2026, verze aplikace 9.9.6.
 
 Legenda stavu: HOTOVO = nasazeno a ověřené testy · ZJIŠTĚNO = odpověď níž, čeká
 na rozhodnutí · ČEKÁ = zadané, ještě neřešené.
@@ -270,6 +270,30 @@ V technické specifikaci se podle počtu doplní „nad nástupištěm", přípa
 
 ---
 
+## 17. Popisné texty ze zadání šachty jsou v detailu výpočtu — HOTOVO
+
+Vysvětlivky pod poli (u stříšky a u dopočítaného počtu nástupišť) zabíraly
+v hlavičce celý řádek. Zmizely a jejich obsah je v záložce **Detail výpočtu**,
+v kroku 1 „Vstupní zadání (šachta)". Přibyly tam řádky Průchozí šachta,
+nástupiště A, nástupiště C, počet pater a Stříška nad nástupiště, každý
+s vysvětlením ve sloupci vpravo.
+
+V zadání zůstalo vysvětlení jako **bublina po najetí myší** na pole. Varování
+u počtu pater zůstalo beze změny — není to popiska, ale upozornění, že bez
+aspoň dvou pater vyjdou rozměry nulové.
+
+---
+
+## 18. Nula v poli se nemusí mazat — HOTOVO
+
+Klikněte do pole, ve kterém je nula, a nula se celá označí. První číslice,
+kterou napíšete, ji přepíše. Konec „025" místo „25".
+
+Označuje se **jen nula**. Ve vyplněném poli kliknutím dál nastavíte kurzor
+a opravíte jednu číslici, jak jste zvyklí.
+
+---
+
 ## Přehled
 
 | # | Bod | Stav |
@@ -290,6 +314,8 @@ V technické specifikaci se podle počtu doplní „nad nástupištěm", přípa
 | 14 | Počet nástupišť A / C a počet pater u průchozí šachty | HOTOVO (v9.9.5) |
 | 15 | Stříška se zadává počtem kusů | HOTOVO (v9.9.5) |
 | 16 | Výchozí hodnoty v nové nabídce (5 ks, odškrtnuto, jednotky) | HOTOVO (v9.9.5) |
+| 17 | Popisné texty ze zadání šachty do detailu výpočtu | HOTOVO (v9.9.6) |
+| 18 | Nula v poli se nemusí mazat | HOTOVO (v9.9.6) |
 
 Změny se projeví po obnovení stránky (aplikace si o ně sama řekne — a od
 verze 9.9.3 si před tím rozpracovanou nabídku uloží).
