@@ -321,5 +321,51 @@ const ZAHR = () => ({
   test('a na nové zakázce nemá co dělat', skloMigraceNazvu({ ock: { zadani: zad('exteriérová', 'na terče') }, cenik: CR() }) === 0);
 }
 
+/* ---------- průchozí šachta: nástupiště A/C, patra, stříška (9. 9. 2026) ---------- */
+{
+  const zad = (zmeny) => Object.assign(JSON.parse(JSON.stringify(DEFAULT_ZADANI)),
+    { typSachty: 'exteriérová' }, zmeny || {});
+  const spocti = (z) => vypocet(z, CR(), JEKLY, true);
+  const radek = (z, vzor) => spocti(z).sekce.oplasteni.find(x => vzor.test(x.origNazev || x.nazev));
+
+  /* Neprůchozí šachta se nesmí změnit ani o korunu — nástupiště i patra
+   * se dál berou z jediného pole `nastupiste`. */
+  test('bez průchozí šachty platí nástupiště ze zadání',
+    nastupisteCelkem(zad({ nastupiste: 6 })) === 6 && patraProVypocet(zad({ nastupiste: 6 })) === 6);
+  test('u průchozí šachty je součet A + C',
+    nastupisteCelkem(zad({ pruchoziSachta: true, nastupisteA: 4, nastupisteC: 2 })) === 6);
+  test('a patra jsou vlastní údaj, ne nástupiště',
+    patraProVypocet(zad({ pruchoziSachta: true, nastupisteA: 4, nastupisteC: 2, patra: 3 })) === 3);
+
+  /* Výška podlaží se počítá z pater. Průchozí šachta se šesti nástupišti ve
+   * třech patrech musí mít vyšší podlaží než šest pater — to je celý smysl
+   * odděleného pole (postřeh J. V. 9. 9. 2026). */
+  const bezne = spocti(zad({ nastupiste: 6, zdvih: 10 }));
+  const pruchozi = spocti(zad({ pruchoziSachta: true, nastupisteA: 3, nastupisteC: 3, patra: 3, zdvih: 10 }));
+  test('výška podlaží se u průchozí šachty počítá z pater',
+    Math.abs(bezne.odvozene.vyskaPodlazi - 10 / 5) < 1e-9
+    && Math.abs(pruchozi.odvozene.vyskaPodlazi - 10 / 2) < 1e-9,
+    JSON.stringify([bezne.odvozene.vyskaPodlazi, pruchozi.odvozene.vyskaPodlazi]));
+  test('pod dvě patra vyjde nula, ne dělení nulou ani záporné číslo',
+    spocti(zad({ pruchoziSachta: true, nastupisteA: 1, nastupisteC: 0, patra: 1 })).odvozene.vyskaPodlazi === 0
+    && spocti(zad({ pruchoziSachta: true, patra: 0 })).odvozene.vyskaPodlazi === 0);
+  test('a výsledek zůstane číslem (žádné NaN ani nekonečno)',
+    ['zakladNaklad', 'zakladCena'].every(k => isFinite(spocti(zad({ pruchoziSachta: true, patra: 0 })).souhrn[k])));
+
+  /* Stříška: počet kusů, násobí se, platí i u interiérové šachty. */
+  const c = CR();
+  test('nula stříšek řádek do kalkulace vůbec nedá', !radek(zad({ striskaKs: 0 }), /STŘÍŠKA/));
+  const jedna = radek(zad({ striskaKs: 1 }), /STŘÍŠKA/);
+  const dve = radek(zad({ striskaKs: 2 }), /STŘÍŠKA/);
+  test('jedna stříška se počítá ceníkovou sazbou', jedna && jedna.naklad === c.striskaDvurKc, jedna && jedna.naklad);
+  test('dvě stříšky stojí dvojnásobek nákladu i ceny',
+    dve && dve.naklad === 2 * jedna.naklad && dve.sMarzi === 2 * jedna.sMarzi,
+    JSON.stringify([jedna && jedna.naklad, dve && dve.naklad]));
+  test('stříška platí i u interiérové šachty',
+    !!radek(zad({ typSachty: 'interiérová', striskaKs: 1 }), /STŘÍŠKA/));
+  test('a řádek se jmenuje podle nástupišť, ne podle dvora',
+    (jedna.origNazev || jedna.nazev) === 'STŘÍŠKA NAD NÁSTUPIŠTĚ', jedna.origNazev || jedna.nazev);
+}
+
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);

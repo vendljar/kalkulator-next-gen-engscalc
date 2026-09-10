@@ -1,23 +1,60 @@
 /* ================= ZÁLOŽKA KALKULACE OCK ================= */
 
-/* Popisek pod „Průchozí šachta" (9. 9. 2026, zadání J. V.: „pro průchozí
- * šachtu použij variantu živého popisku pod položkou s informací: 1 ks
- * stříška nad vstupem na dvůr").
+/* PRŮCHOZÍ ŠACHTA (9. 9. 2026, zadání J. V.).
  *
- * Proč živě, a ne jen text v nápovědě: co zaškrtnutí udělá, závisí na typu
- * šachty. U interiérové se v jádře řádek nepřidává vůbec (`ext && …`), takže
- * pevný text by tam lhal. Popisek proto říká, co se v téhle chvíli stane. */
-function pruchoziPopisek() {
-  const ext = Z.typSachty === 'exteriérová';
-  if (!Z.pruchoziSachta) {
-    return ext
-      ? `<div class="note" style="margin:-2px 0 8px">Zaškrtnutím se do opláštění přidá 1 ks stříška nad vstupem na dvůr.</div>`
-      : `<div class="note" style="margin:-2px 0 8px">U interiérové šachty se stříška nepřidává — položka je jen pro exteriérovou.</div>`;
-  }
-  return ext
-    ? `<div class="note" style="margin:-2px 0 8px"><b>Přidáno do opláštění:</b> 1 ks stříška nad vstupem na dvůr.</div>`
-    : `<div class="note warn" style="margin:-2px 0 8px">Zaškrtnuto, ale u <b>interiérové</b> šachty se stříška nepřidává —
-       do ceny se nic nepromítlo. Platí jen pro exteriérovou šachtu.</div>`;
+ * Zaškrtnutí odemkne rozpad nástupišť na čelní (A) a zadní (C) stěnu a pole
+ * pro počet pater. Celkový počet nástupišť se pak dopočítává z A + C, takže
+ * se přestane zadávat ručně — dvě čísla o téže věci by se dřív nebo později
+ * rozešla. Počet pater je vlastní údaj, protože u průchozí šachty nepadne
+ * na jedno patro jedno nástupiště, ale klidně dvě; výška podlaží se počítá
+ * z pater (viz engine.js).
+ *
+ * Při zaškrtnutí se A ani C nepředvyplňují — J. V. 9. 9. 2026: „v případě
+ * zaškrtnutí průchozí šachty na rozpracované zakázce klidně shoď celkový
+ * počet nástupišť na nulu". Obchodník je hned vyplní a vidí, že to musí
+ * udělat; předvyplnění by naopak vypadalo jako hotová práce. */
+function pruchoziPrepni(zap) {
+  set('Z.pruchoziSachta', !!zap);
+  render();
+}
+
+/* Dvě úzká pole vedle sebe: A (čelní stěna) a C (zadní stěna). */
+function nastupisteACRadek() {
+  if (!Z.pruchoziSachta) return '';
+  const pole = (klic, ozn, titulek) => `<span class="ozn" title="${esc(titulek)}">${ozn}</span>`
+    + `<input type="number" step="1" min="0" value="${esc(+Z[klic] || 0)}"`
+    + ` title="${esc(titulek)}" onchange="set('Z.${escJs(klic)}', +this.value)">`;
+  return `<div class="row"><label>Počet nástupišť</label>
+      <span class="par">${pole('nastupisteA', 'A', 'nástupiště na čelní stěně')}${pole('nastupisteC', 'C', 'nástupiště na zadní stěně')}</span>
+      <span class="u">ks</span></div>`
+    + `<div class="row"><label>Počet pater</label>
+        <input type="number" step="1" min="0" value="${esc(+Z.patra || 0)}"
+          title="z počtu pater se počítá výška podlaží; u průchozí šachty nejde odvodit z nástupišť"
+          onchange="set('Z.patra', +this.value)"><span class="u">ks</span></div>`
+    + (patraVarovani() || '');
+}
+
+/* Celkový počet nástupišť. U průchozí šachty je dopočítaný z A + C, takže se
+ * ukazuje jen ke čtení — ručně zadaná hodnota by si s tím součtem odporovala
+ * a jedna z nich by musela vyhrát potichu. */
+function nastupisteRadek() {
+  if (!Z.pruchoziSachta) return inp('Z.nastupiste', { l: 'Počet nástupišť', step: 1, u: 'ks' });
+  const celkem = (typeof nastupisteCelkem === 'function') ? nastupisteCelkem(Z) : (+Z.nastupiste || 0);
+  return `<div class="row"><label>Počet nástupišť</label>
+      <input type="number" value="${esc(celkem)}" readonly
+        title="dopočítáno z nástupišť A + C"><span class="u">ks</span></div>
+    <div class="note" style="margin:-2px 0 8px">Dopočítáno z A + C (${+Z.nastupisteA || 0} + ${+Z.nastupisteC || 0}).</div>`;
+}
+
+/* Výška podlaží se počítá jako zdvih / (patra − 1). Pod dvě patra to nedává
+ * číslo, se kterým jde počítat, takže se to říká nahlas — jinak by obchodník
+ * viděl jen tiše nulové rozměry. */
+function patraVarovani() {
+  if (!Z.pruchoziSachta) return '';
+  const p = +Z.patra || 0;
+  if (p >= 2) return '';
+  return `<div class="note warn" style="margin:-2px 0 8px">Zadejte počet pater (aspoň 2) — bez něj
+    se nedá spočítat výška podlaží a rozměry vycházejí nulové.</div>`;
 }
 
 /* Přepnutí typu šachty dosadí výchozí dimenze profilů (9. 9. 2026, zadání
@@ -58,51 +95,74 @@ function renderInputs() {
       <select style="width:64px" onchange="set('Z.profily.${escJs(key)}.tl', +this.value)">${tls.map(t =>
         `<option ${+t === p.tl ? 'selected' : ''} value="${esc(t)}">${esc(t)}</option>`).join('')}</select></div>`;
   };
+  /* ZADÁNÍ ŠACHTY VE ČTYŘECH PEVNÝCH SLOUPCÍCH (9. 9. 2026, zadání J. V.,
+   * odsouhlaseno nad vizuálním návrhem).
+   *
+   * Do 9. 9. se pole sypala za sebou a zalamovala podle šířky okna, takže
+   * jejich pořadí záviselo na velikosti obrazovky a obchodník je pokaždé
+   * hledal jinde. Teď stojí na svém: 1) šachta jako celek a výšky,
+   * 2) půdorys a nástupiště, 3) opláštění a doplňky, 4) dveře a ATYP.
+   *
+   * Karta má vlastní třídu `zadani-ctyri`, protože `.inputs .card .body`
+   * skládá pole vlastním gridem (auto-fill) — bez přebití by vznikl grid
+   * v gridu a sloupce by se zúžily tak, že se popisky lámou. */
+  const sl = (obsah) => `<div>${obsah}</div>`;
   document.getElementById('inputs').innerHTML =
     card('Zadání šachty',
-      inp('Z.prejezd', { l: 'Horní přejezd', u: 'm' }) + inp('Z.zdvih', { l: 'Zdvih', u: 'm' }) +
-      inp('Z.prohluben', { l: 'Prohlubeň (spodní přejezd)', u: 'm' }) +
-      inp('Z.sirka', { l: 'Vnitřní šířka', u: 'm' }) + inp('Z.hloubka', { l: 'Vnitřní hloubka', u: 'm' }) +
-      inp('Z.roztec', { l: 'Svislá rozteč příčníků', u: 'm' }) +
-      inp('Z.rohoveSloupky', { l: 'Počet rohových sloupků', step: 1 }) + inp('Z.nastupiste', { l: 'Počet nástupišť', step: 1 }) +
-      /* Vlastní obsluha (9. 9. 2026): přepnutí typu dosadí výchozí profily. */
-      `<div class="row"><label>Typ šachty</label>
-        <select onchange="typSachtyPrepni(this.value)">
-          <option ${ext ? 'selected' : ''} value="exteriérová">exteriérová</option>
-          <option ${ext ? '' : 'selected'} value="interiérová">interiérová</option>
-        </select><span class="u"></span></div>` +
-      inp('Z.typPortalu', { type: 'sel', l: 'Typ portálů', o: [['zapuštěný', 'zapuštěný'], ['předsazený', 'předsazený']] }) +
-      inp('Z.zaskleni', { type: 'sel', l: 'Způsob zasklení', o: [['na terče', 'na terče'], ['mezi příčníky', 'mezi příčníky (lišty)']] }) +
-      inp('Z.svetlikNadDvermi', { type: 'check', l: 'Světlík nad šachetními dveřmi' }) +
-      inp('Z.svetlikyBoky', { type: 'sel', l: 'Světlíky na bocích dveří', o: [[0, 'bez'], [1, 'na jedné straně'], [2, 'na obou stranách']] }) +
-      inp('Z.cistyVstupMm', { l: 'Čistý vstup – šířka', step: 10, u: 'mm' }) + inp('Z.sirkaRamuMm', { l: 'Šířka rámu dveří', step: 5, u: 'mm' }) +
-      inp('Z.prechodovePlechy', { type: 'check', l: 'Přechodové plechy' }) +
-      /* Živý popisek pod položkou (9. 9. 2026, zadání J. V.). Obchodník po
-       * zaškrtnutí viděl v kalkulaci jen materiál a nevěděl, co přesně
-       * zaškrtnutí přidalo. Popisek to říká rovnou u pole. Rozhoduje typ
-       * šachty: u interiérové se stříška nepřidává vůbec (viz engine.js). */
-      inp('Z.pruchoziSachta', { type: 'check', l: 'Průchozí šachta (stříška na dvůr)' }) +
-      pruchoziPopisek() +
-      /* ATYP má vlastní obsluhu (17. 8. večer): zaškrtnutí předvyplní všechny
-       * čtyři rezervy na 30 % a Zámečníka atyp na 50 000 Kč; odškrtnutí je
-       * vrací na nulu / ceník — atypové přirážky bez atypu nemají co dělat. */
-      `<div class="row"><label>ATYP (nestandardní zakázka)</label>
-        <input type="checkbox" ${Z.atyp ? 'checked' : ''} onchange="atypPrepni(this.checked)"><span class="u"></span></div>` +
-      /* Můstek (#163, 21. 8. 2026). Do výpočtu nevstupuje — je to vstup pro
-       * kontrolu standardu a pro technickou specifikaci. Rozměry se ptají,
-       * jen když můstek je; prázdné pole znamená „nevyplněno", ne nulu. */
-      `<div class="row"><label>Můstek mezi budovou a OCK</label>
-        <input type="checkbox" ${Z.mustek ? 'checked' : ''} onchange="set('Z.mustek', this.checked)"><span class="u"></span></div>` +
-      (Z.mustek
-        ? `<div class="row"><label>— hloubka můstku</label>
-             <input type="number" step="10" min="0" style="width:110px" value="${esc(Z.mustekHloubkaMm == null ? '' : Z.mustekHloubkaMm)}"
-               placeholder="mm" title="vzdálenost mezi budovou a OCK; standard max 1 000 mm"
-               onchange="set('Z.mustekHloubkaMm', this.value)"><span class="u">mm</span></div>
-           <div class="row"><label>— šířka můstku</label>
-             <input type="number" step="10" min="0" style="width:110px" value="${esc(Z.mustekSirkaMm == null ? '' : Z.mustekSirkaMm)}"
-               placeholder="mm" title="standard: max na šířku OCK"
-               onchange="set('Z.mustekSirkaMm', this.value)"><span class="u">mm</span></div>`
-        : '') +
+      `<div class="zadani-ctyri">`
+      + sl(
+        /* Vlastní obsluha (9. 9. 2026): přepnutí typu dosadí výchozí profily. */
+        `<div class="row"><label>Typ šachty</label>
+          <select onchange="typSachtyPrepni(this.value)">
+            <option ${ext ? 'selected' : ''} value="exteriérová">exteriérová</option>
+            <option ${ext ? '' : 'selected'} value="interiérová">interiérová</option>
+          </select><span class="u"></span></div>`
+        + inp('Z.zdvih', { l: 'Zdvih', u: 'm' })
+        + inp('Z.prejezd', { l: 'Horní přejezd', u: 'm' })
+        + inp('Z.prohluben', { l: 'Prohlubeň', u: 'm' })
+        + `<div class="row"><label>Průchozí šachta</label>
+            <input type="checkbox" ${Z.pruchoziSachta ? 'checked' : ''}
+              onchange="pruchoziPrepni(this.checked)"><span class="u"></span></div>`
+        + nastupisteACRadek())
+      + sl(
+        inp('Z.sirka', { l: 'Vnitřní šířka', u: 'm' })
+        + inp('Z.hloubka', { l: 'Vnitřní hloubka', u: 'm' })
+        + inp('Z.typPortalu', { type: 'sel', l: 'Typ portálů', o: [['zapuštěný', 'zapuštěný'], ['předsazený', 'předsazený']] })
+        + nastupisteRadek()
+        + inp('Z.striskaKs', { l: 'Stříška nad nástupiště', step: 1, u: 'ks' })
+        + `<div class="note" style="margin:-2px 0 8px">Stříška nad nástupiště: zadejte počet kusů,
+            nula znamená bez stříšky.</div>`)
+      + sl(
+        inp('Z.zaskleni', { type: 'sel', l: 'Způsob zasklení', o: [['na terče', 'na terče'], ['mezi příčníky', 'mezi příčníky (lišty)']] })
+        + inp('Z.rohoveSloupky', { l: 'Počet sloupků', step: 1, u: 'ks' })
+        + inp('Z.svetlikyBoky', { type: 'sel', l: 'Světlíky na bocích dveří', o: [[0, 'bez'], [1, 'na jedné straně'], [2, 'na obou stranách']] })
+        + inp('Z.prechodovePlechy', { type: 'check', l: 'Přechodové plechy' })
+        /* Můstek (#163, 21. 8. 2026). Do výpočtu nevstupuje — je to vstup pro
+         * kontrolu standardu a pro technickou specifikaci. Rozměry se ptají,
+         * jen když můstek je; prázdné pole znamená „nevyplněno", ne nulu. */
+        + `<div class="row"><label>Můstek mezi budovou a OCK</label>
+            <input type="checkbox" ${Z.mustek ? 'checked' : ''} onchange="set('Z.mustek', this.checked)"><span class="u"></span></div>`
+        + (Z.mustek
+          ? `<div class="row"><label>— hloubka můstku</label>
+               <input type="number" step="10" min="0" value="${esc(Z.mustekHloubkaMm == null ? '' : Z.mustekHloubkaMm)}"
+                 placeholder="mm" title="vzdálenost mezi budovou a OCK; standard max 1 000 mm"
+                 onchange="set('Z.mustekHloubkaMm', this.value)"><span class="u">mm</span></div>
+             <div class="row"><label>— šířka můstku</label>
+               <input type="number" step="10" min="0" value="${esc(Z.mustekSirkaMm == null ? '' : Z.mustekSirkaMm)}"
+                 placeholder="mm" title="standard: max na šířku OCK"
+                 onchange="set('Z.mustekSirkaMm', this.value)"><span class="u">mm</span></div>`
+          : ''))
+      + sl(
+        inp('Z.roztec', { l: 'Svislá rozteč příčníků', u: 'm' })
+        + inp('Z.sirkaRamuMm', { l: 'Šířka rámu dveří', step: 5, u: 'mm' })
+        + inp('Z.cistyVstupMm', { l: 'Čistý vstup – šířka', step: 10, u: 'mm' })
+        + inp('Z.svetlikNadDvermi', { type: 'check', l: 'Světlík nad šachetními dveřmi' })
+        /* ATYP má vlastní obsluhu (17. 8. večer): zaškrtnutí předvyplní všechny
+         * čtyři rezervy na 30 % a Zámečníka atyp na 50 000 Kč; odškrtnutí je
+         * vrací na nulu / ceník — atypové přirážky bez atypu nemají co dělat. */
+        + `<div class="row"><label>ATYP (nestandardní zakázka)</label>
+            <input type="checkbox" ${Z.atyp ? 'checked' : ''} onchange="atypPrepni(this.checked)"><span class="u"></span></div>`)
+      + `</div>` +
       /* SAZBA ATYP UŽ V ZADÁNÍ ŠACHTY NENÍ (9. 9. 2026, zadání J. V.:
        * „přirážku za atyp v zadání šachty skryj a ponech pouze v ceníku“).
        * Cestovala sem 20. 8. 2026 z Nastavení, protože je to parametr TÉTO

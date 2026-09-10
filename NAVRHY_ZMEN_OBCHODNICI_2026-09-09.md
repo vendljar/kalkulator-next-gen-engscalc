@@ -1,6 +1,6 @@
 # Návrhy změn obchodníci – 9. 9. 2026
 
-Stav řešení úkolů ze schůzky. Aktualizováno 9. 9. 2026, verze aplikace 9.9.4.
+Stav řešení úkolů ze schůzky. Aktualizováno 10. 9. 2026, verze aplikace 9.9.5.
 
 Legenda stavu: HOTOVO = nasazeno a ověřené testy · ZJIŠTĚNO = odpověď níž, čeká
 na rozhodnutí · ČEKÁ = zadané, ještě neřešené.
@@ -62,7 +62,9 @@ z nákladu sekce Režie, kam stříška nepatří.
 PRŮCHOZÍ KABINA na „průchozí kabina" a PROSKLENÁ STŘÍŠKA na „nad výstupem
 na dvůr". Na cenu to nemá vliv.
 
-**Vyřešeno** živým popiskem pod položkou — viz bod 6.
+**Vyřešeno** živým popiskem pod položkou — viz bod 6. Od verze 9.9.5 se navíc
+stříška zadává počtem kusů a na průchozí šachtě už nezávisí (bod 15), zato
+průchozí šachta nově řídí počet nástupišť A / C a počet pater (bod 14).
 
 ---
 
@@ -218,6 +220,56 @@ nezávisle. Když je v nabídce jen jedna z nich, ukáže se sama a beze změny.
 
 ---
 
+## 13. Hlavička zadání šachty ve čtyřech sloupcích — HOTOVO
+
+Zadání šachty se přeskládalo do čtyř sloupců, takže se celá hlavička vejde
+na obrazovku bez rolování. Pod hlavičkou zmizel dlouhý vysvětlující text.
+Na užších monitorech se sloupce samy sloučí na dva, na tabletu na jeden.
+Žádná položka se neztratila, jen se přesunula.
+
+---
+
+## 14. Počet nástupišť A / C a počet pater u průchozí šachty — HOTOVO
+
+Když zaškrtnete **Průchozí šachta**, objeví se dvě nová pole:
+
+- **Počet nástupišť A / C** — A je čelní stěna, C zadní stěna. Celkový počet
+  nástupišť se z nich sečte sám a pole „Počet nástupišť" už nejde přepsat
+  ručně, jen ukazuje součet.
+- **Počet pater** — zadáte ho ručně. Slouží k výpočtu výšky podlaží, kterou
+  u průchozí šachty nelze z počtu nástupišť odvodit.
+
+**Na co si dát pozor.** U rozpracované nabídky, kde průchozí šachtu teprve
+zaškrtnete, spadne celkový počet nástupišť na nulu, dokud A a C nevyplníte.
+Je to záměr, ne chyba — aplikace nemá jak uhodnout, jak se nástupiště dělí
+mezi obě stěny. Dokud je počet pater menší než 2, aplikace na to upozorní
+a výšku podlaží nepočítá.
+
+Počet nástupišť A / C se propisuje i do technické specifikace, hned pod
+řádek „Počet stanic / nástupišť". U neprůchozí šachty tam zůstane pomlčka.
+
+---
+
+## 15. Stříška se zadává počtem kusů — HOTOVO
+
+Zaškrtávátko u stříšky nahradilo číselné pole **Stříška nad nástupiště**
+s výchozí hodnotou 0. Zadáte-li číslo, výpočet se spustí sám a cena i náklad
+se násobí počtem kusů. Stříška už není vázaná na exteriérovou průchozí
+šachtu — může být u jakéhokoli typu a na kterékoli straně.
+
+V technické specifikaci se podle počtu doplní „nad nástupištěm", případně
+„3× nad nástupišti".
+
+---
+
+## 16. Výchozí hodnoty v nové nabídce — HOTOVO
+
+- **Počet nástupišť**: 5 ks.
+- **Přechodové plechy** a **Světlík nad šachetními dveřmi**: odškrtnuto.
+- U počtu nástupišť a počtu sloupků se nově ukazuje jednotka **ks**.
+
+---
+
 ## Přehled
 
 | # | Bod | Stav |
@@ -234,7 +286,10 @@ nezávisle. Když je v nabídce jen jedna z nich, ukáže se sama a beze změny.
 | 10 | Přirážka za ATYP jen v ceníku | HOTOVO (v9.9.4) |
 | 11 | Otevřená karta zůstane otevřená | HOTOVO (v9.9.4) |
 | 12 | Přechodové plechy v nabídce jako jedna položka | HOTOVO (v9.9.4) |
-| 13 | Přeskládání hlavičky do čtyř sloupců | NÁVRH — čeká na odsouhlasení |
+| 13 | Přeskládání hlavičky do čtyř sloupců | HOTOVO (v9.9.5) |
+| 14 | Počet nástupišť A / C a počet pater u průchozí šachty | HOTOVO (v9.9.5) |
+| 15 | Stříška se zadává počtem kusů | HOTOVO (v9.9.5) |
+| 16 | Výchozí hodnoty v nové nabídce (5 ks, odškrtnuto, jednotky) | HOTOVO (v9.9.5) |
 
 Změny se projeví po obnovení stránky (aplikace si o ně sama řekne — a od
 verze 9.9.3 si před tím rozpracovanou nabídku uloží).

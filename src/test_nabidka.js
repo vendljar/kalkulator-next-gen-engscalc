@@ -80,7 +80,13 @@ test('lešení v základní ceně', nabidkaData(zak, v2, JEKLY).placeholders.PRI
 
 // příplatky do nabídky: seznam s množstvím a cenou, filtr přes priplatkyVynechat
 test('příplatky obsahují položky', d.priplatky.length >= 5, d.priplatky.length);
-test('příplatek má množství v popisu', d.priplatky.every(x => x.popis.startsWith('množství: ')));
+/* Sloučené přechodové plechy množství neuvádějí — kusy a kilogramy nejde
+ * sečíst do jednoho čísla (9. 9. 2026). Ostatní příplatky ho mají mít. */
+test('příplatek má množství v popisu',
+  d.priplatky.filter(x => x.nazev !== 'Přechodové plechy').every(x => x.popis.startsWith('množství: ')),
+  JSON.stringify(d.priplatky.filter(x => !x.popis.startsWith('množství: ')).map(x => x.nazev)));
+test('sloučené přechodové plechy místo množství řeknou, co obsahují',
+  !d.priplatky.some(x => x.nazev === 'Přechodové plechy') || d.priplatky.find(x => x.nazev === 'Přechodové plechy').popis === 'materiál a montáž');
 test('příplatek má cenu v Kč', d.priplatky.every(x => /Kč$/.test(x.cena)));
 /* Skla (vsgFolie, skn) jsou od 23. 8. 2026 mimo výchozí nabídku (N7) —
  * ověříme to a pak testujeme vynechání dvou položek, které v nabídce JSOU. */

@@ -160,6 +160,29 @@ const PROFILY_VYCHOZI = {
   },
 };
 
+/* PRŮCHOZÍ ŠACHTA: NÁSTUPIŠTĚ A / C A POČET PATER (9. 9. 2026, zadání J. V.).
+ *
+ * Průchozí šachta má nástupiště na dvou stranách — A je čelní stěna, C zadní.
+ * Celkový počet nástupišť se z nich pak dopočítává a ručně se nezadává; jinak
+ * by v zakázce byla dvě čísla o téže věci a jedno z nich by se dřív nebo
+ * později rozešlo s druhým.
+ *
+ * Počet PATER je samostatný údaj, protože u průchozí šachty už není roven
+ * počtu nástupišť (jedno patro může mít dvě). Slouží k výšce podlaží.
+ *
+ * Obě funkce mají fallback na dnešní chování: bez zaškrtnuté průchozí šachty
+ * (a u všech starších zakázek) platí „nástupiště = patra" přesně jako dosud. */
+function nastupisteCelkem(z) {
+  const zd = z || {};
+  if (!zd.pruchoziSachta) return +zd.nastupiste || 0;
+  return (+zd.nastupisteA || 0) + (+zd.nastupisteC || 0);
+}
+function patraProVypocet(z) {
+  const zd = z || {};
+  if (!zd.pruchoziSachta) return +zd.nastupiste || 0;
+  return +zd.patra || 0;
+}
+
 /* ZASKLENÍ PODLE TYPU ŠACHTY (9. 9. 2026, zadání J. V. v sešitu
  * „Vychozi_nastaveni_spec_sachty_a_hlavicky.xlsx", výklad potvrzen týž den).
  *
@@ -250,6 +273,10 @@ const DEFAULT_ZADANI = {
   svetlikNadDvermi: true, svetlikyBoky: 0,
   cistyVstupMm: 800, sirkaRamuMm: 100, prechodovePlechy: true,
   pruchoziSachta: false, atyp: false, vystupZamereni: false,
+  /* Průchozí šachta (9. 9. 2026): nástupiště zvlášť na čelní (A) a zadní (C)
+   * stěně, počet pater kvůli výšce podlaží a počet stříšek. U neprůchozí
+   * šachty se A/C ani patra nečtou — platí `nastupiste` jako dosud. */
+  nastupisteA: 0, nastupisteC: 0, patra: 0, striskaKs: 0,
   profily: JSON.parse(JSON.stringify(PROFILY_VYCHOZI['exteriérová'])),
   rezervaProfilyPct: 0, rezervaPlechyPct: 0,
   montazZakladHod: 24, montazAtypHod: 0, projekceZakladHod: 50, projekceAtypHod: 0,
@@ -315,7 +342,24 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
 
   /* ---------- odvozené parametry ---------- */
   const H = z.prejezd + z.zdvih + z.prohluben;         // výška šachty
-  const vyskaPodlazi = z.zdvih / (z.nastupiste - 1);
+  /* VÝŠKA PODLAŽÍ SE POČÍTÁ Z PATER, NE Z NÁSTUPIŠŤ (9. 9. 2026).
+   *
+   * Do 9. 9. tu stálo `z.zdvih / (z.nastupiste - 1)`, protože platilo
+   * „jedno nástupiště = jedno patro". U průchozí šachty to přestává platit:
+   * patro má nástupiště na čelní i na zadní stěně, takže nástupišť je až
+   * dvakrát tolik co pater a výška podlaží by vyšla poloviční. Počet pater
+   * proto u průchozí šachty zadává obchodník (postřeh J. V. 9. 9. 2026);
+   * u běžné šachty se dál bere počet nástupišť, takže se nemění ani koruna.
+   *
+   * Pod dvě patra se nedělí: při jednom patře by šlo o dělení nulou
+   * a při nule o záporné číslo, které by prolezlo do všech navazujících
+   * rozměrů. Nula je poctivější — je vidět, že zadání není hotové. */
+  /* Počet nástupišť se od 9. 9. 2026 bere přes `nastupisteCelkem` — u průchozí
+   * šachty je to součet čelní (A) a zadní (C) stěny, jinde přesně to, co je
+   * v zadání. Celý výpočet dál pracuje s tímhle jedním číslem. */
+  const nastupist = nastupisteCelkem(z);
+  const pater = patraProVypocet(z);
+  const vyskaPodlazi = pater >= 2 ? z.zdvih / (pater - 1) : 0;
   const svetlaVyska = vyskaPodlazi - 0.2;
   const vyskaProsklene = z.zdvih + z.prejezd;
   const sirkaDveri = (z.cistyVstupMm + 2 * z.sirkaRamuMm + 2 * 20) / 1000;
@@ -328,18 +372,18 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     sirka: z.sirka <= 2 ? 0 : H * 0.2,
     hloubka: z.hloubka <= 2 ? 0 : H * 0.2,
     sloupky: z.rohoveSloupky > 4 ? 8 + 4 + Math.max((H - 21) * 0.5, 0) * 2 : 0,
-    nastupiste: z.nastupiste - 6,
+    nastupiste: nastupist - 6,
     exterier: D16 === 1 ? 0 : 8 + (H - 21) * 0.5 * 1.5,
-    portaly: zapusteny ? 0 : z.nastupiste,
-    svetlik: (svetlik - 1) * z.nastupiste * 0.2,
-    svetlikyBoky: z.svetlikyBoky * 0.5 * z.nastupiste,
+    portaly: zapusteny ? 0 : nastupist,
+    svetlik: (svetlik - 1) * nastupist * 0.2,
+    svetlikyBoky: z.svetlikyBoky * 0.5 * nastupist,
   };
   const hodinyNavic = Object.values(hn).reduce((a, b) => a + b, 0);
 
   /* ---------- parametry konstrukce ---------- */
   const ramy = Math.ceil(H / z.roztec + 2 - 1e-9) + Math.abs(1 - D16); // počet rámů
-  const portPricniky = 3 * z.nastupiste;
-  const sloupkyPortalu = z.nastupiste * z.svetlikyBoky;
+  const portPricniky = 3 * nastupist;
+  const sloupkyPortalu = nastupist * z.svetlikyBoky;
   const kratkePricniky = sloupkyPortalu * 2;
   const spojky = Math.ceil(H / 4 - 1e-9) * z.rohoveSloupky + z.rohoveSloupky;
   const pocetCilek = (ramy * 6 + portPricniky * 2 + kratkePricniky) * D16;
@@ -351,7 +395,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
 
   const dSloupky = H * z.rohoveSloupky - 0.2 * z.rohoveSloupky;
   const dPricniky = (2 * z.hloubka + z.sirka) * ramy + z.sirka;
-  const dSloupkyPortalu = 2.2 * z.nastupiste * z.svetlikyBoky + (zapusteny ? 0 : z.nastupiste * svetlaVyska * 2);
+  const dSloupkyPortalu = 2.2 * nastupist * z.svetlikyBoky + (zapusteny ? 0 : nastupist * svetlaVyska * 2);
   const dPricnikyPortalu = portPricniky * z.sirka + sloupkyPortalu * (z.sirka - sirkaDveri) * 2;
   const dSpojky = spojky * 0.4;
   const dLemovani = ext ? 3 * H : 0;
@@ -376,11 +420,11 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const spojeRows = [
     { key: 'zadniRoh',       spoju: ramy * 2 },
     { key: 'celni',          spoju: (ramy - 1) * 2 - 2 },
-    { key: 'predsazene',     spoju: zapusteny ? 0 : 8 * z.nastupiste },
+    { key: 'predsazene',     spoju: zapusteny ? 0 : 8 * nastupist },
     { key: 'portPricniky',   spoju: portPricniky * 2 + kratkePricniky },
     { key: 'sloupkyPortalu', spoju: sloupkyPortalu },
     { key: 'spodniRamRoh',   spoju: 4 },
-    { key: 'kotveni',        spoju: z.nastupiste + 1 },
+    { key: 'kotveni',        spoju: nastupist + 1 },
   ].map(r => {
     const s = SPOJE[r.key];
     // Oprava chyb šablony: D51/D52 měly obrácenou podmínku int/ext, G52 odkazoval na prázdné $D$3
@@ -404,13 +448,13 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
 
   /* ---------- terče / lišty / oplechování ---------- */
   const tercuBok = z.hloubka > 1.7 ? 3 : 2, tercuCelo = z.sirka > 1.7 ? 3 : 2;
-  const terceKs = terce ? ramy * (tercuBok * 2 + tercuCelo) + tercuCelo * (portPricniky - z.nastupiste) + kratkePricniky : 0;
+  const terceKs = terce ? ramy * (tercuBok * 2 + tercuCelo) + tercuCelo * (portPricniky - nastupist) + kratkePricniky : 0;
   const terceKg = terceKs * 0.15, terceM2 = terceKs * 0.008;
 
-  const listyKs = terce ? 0 : ramy * 12 + svetlik * z.nastupiste * 4 + kratkePricniky * 4;
+  const listyKs = terce ? 0 : ramy * 12 + svetlik * nastupist * 4 + kratkePricniky * 4;
   const listyBm = terce ? 0
     : (ramy - 1) * (z.hloubka * 6 + (z.sirka + z.hloubka * 2) * 2)
-      + svetlik * z.nastupiste * (z.sirka + svetlaVyska - 2.2) * 2
+      + svetlik * nastupist * (z.sirka + svetlaVyska - 2.2) * 2
       + kratkePricniky * (1.1 + (z.sirka - sirkaDveri)) * 2;
   const listaKgBm = 8500 * ((20 / 1000 + 10 / 1000) * 1 / 1000);
   /* KOTVÍCÍ LIŠTY (nález V1, 2. 9. 2026 — zakázky CN-0348 i 2025-OPR-0640).
@@ -423,11 +467,11 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const listyCelkBm = listyBm + listyKotviciBm;
   const listyKg = listaKgBm * listyCelkBm;
 
-  const oplDvereKs = 3 * z.nastupiste;
-  const oplDvereBm = (2.3 * 2 + sirkaDveri) * z.nastupiste;
+  const oplDvereKs = 3 * nastupist;
+  const oplDvereBm = (2.3 * 2 + sirkaDveri) * nastupist;
   const oplDvereKg = oplDvereBm * 0.8925, oplDvereM2 = oplDvereBm * 0.21;
 
-  const podestKs0 = z.nastupiste - 1;
+  const podestKs0 = nastupist - 1;
   const podKg1 = 8.5 * (z.sirka + 0.06) * (vyskaPodlazi - svetlaVyska + 0.06);
   const podM21 = (z.sirka + 0.06) * (vyskaPodlazi - svetlaVyska + 0.06) * 2;
   const podestKs = podestKs0 * D16, podestKg = podKg1 * podestKs0 * D16, podestM2 = podM21 * podestKs0 * D16;
@@ -436,12 +480,12 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   /* Montáž přechodových plechů má vlastní přepínač v OBOU režimech; prázdno
    * znamená „řídí se materiálem", tedy beze změny ceny proti dosavadnímu stavu. */
   const prechMontAno = (z.volitelne.prechMont != null) ? z.volitelne.prechMont : prechodoveAno;
-  const prechKs = z.prechodovePlechy ? z.nastupiste : 0;
+  const prechKs = z.prechodovePlechy ? nastupist : 0;
   const prechKg1 = 8500 * (0.1 * sirkaDveri * 0.002);
   const prechKg = prechKg1 * prechKs;
 
   /* ---------- spojovací materiál ---------- */
-  const riplockM10 = (D16 === 1 ? 16 : 48) * ramy + portPricniky * 2 + sloupkyPortalu * 2 + spojky * 6 + z.nastupiste * 8;
+  const riplockM10 = (D16 === 1 ? 16 : 48) * ramy + portPricniky * 2 + sloupkyPortalu * 2 + spojky * 6 + nastupist * 8;
   const riplockM8 = spojky * 6 + sloupkyPortalu * 4;
   const nordlock = pocetCilek * 2;
   const sroubM6 = terceKs * 2;
@@ -450,11 +494,11 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     ['riplock M10', riplockM10, sp.riplockM10], ['riplock M8', riplockM8, sp.riplockM8],
     ['NordLock', nordlock, sp.nordlock], ['nýtovací matice M10', riplockM10 + nordlock, sp.nytM10],
     ['nýtovací matice M8', riplockM8, sp.nytM8], ['nýtovací matice M6', sroubM6, sp.nytM6],
-    ['T šrouby', (ramy + 2) / 2 * 4 + z.nastupiste * 4, sp.tSrouby],
+    ['T šrouby', (ramy + 2) / 2 * 4 + nastupist * 4, sp.tSrouby],
     ['Šrouby M10', riplockM10 + nordlock, sp.sroubM10], ['Šrouby M8', riplockM8, sp.sroubM8],
     ['Šrouby M6', sroubM6, sp.sroubM6],
-    ['Závitové tyče M12', Math.ceil((z.nastupiste + 1) * 4 * 0.2 + 0.8 - 1e-9), sp.zavitTyc],
-    ['Chem. kotvy', z.nastupiste + 2, sp.chemKotva],
+    ['Závitové tyče M12', Math.ceil((nastupist + 1) * 4 * 0.2 + 0.8 - 1e-9), sp.zavitTyc],
+    ['Chem. kotvy', nastupist + 2, sp.chemKotva],
   ].map(([nazev, ks, cena]) => ({ nazev, ks, cena, celkem: ks * cena }));
   // vlastní položky spojovacího materiálu z ceníku (katalog / zakázka)
   const vlSpoj = (z.vlastniPolozky && Array.isArray(z.vlastniPolozky.spojovaci)) ? z.vlastniPolozky.spojovaci : [];
@@ -492,7 +536,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const bocniKs = zadniKs * 2;
   const bocniHl = fixes ? g.hl : (svetlik ? gTerc.hl : gLis.hl);   // chyba šablony: D19 místo D18
   const bocniM2 = Math.max(bocniKs * g.hl * g.vys, 2 * vyskaProsklene * bocniHl);
-  const svetlikKs = svetlik * z.nastupiste;
+  const svetlikKs = svetlik * nastupist;
   const svetlikM2 = svetlikKs * g.sir * (svetlaVyska - 2.3);
   const svetlikBokKs = kratkePricniky;
   const svetlikBokM2 = svetlikBokKs * ((g.sir - sirkaDveri - 0.04) / Math.max(1, z.svetlikyBoky)) * 1.1;
@@ -624,7 +668,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     mkItem('PLECHY - HLAVNÍ KONSTRUKČNÍ PLECHY', plechyKgRez, ext ? c.powertechExt : c.powertechInt, { cenaPath: plechKey }),
     mkItem('PLECHY - ZASKLENÍ (TERČE/LIŠTY)', terceKg + listyKg, ext ? c.powertechExt : c.powertechInt, { cenaPath: plechKey }),
     mkItem('PLECHY - OPLECH. DVEŘÍ A PODEST (MATERIÁL)', oplDvereKg + podestKg, ext ? c.powertechExt : c.powertechInt, { cenaPath: plechKey }),
-    mkItem('PLECHY - OPLECH. DVEŘÍ A PODEST (PRÁCE)', z.nastupiste * 3, c.oplechPracKc, { cenaPath: 'C.oplechPracKc' }),
+    mkItem('PLECHY - OPLECH. DVEŘÍ A PODEST (PRÁCE)', nastupist * 3, c.oplechPracKc, { cenaPath: 'C.oplechPracKc' }),
     mkItem('PLECHY - OPLECHOVÁNÍ OSTATNÍ (MATERIÁL)', z.oplechOstatniKg, ext ? c.powertechExt : c.powertechInt, { cenaPath: plechKey }),
     mkItem('PLECHY - OPLECHOVÁNÍ OSTATNÍ (PRÁCE)', z.oplechOstatniHod, c.oplechPracKc, { cenaPath: 'C.oplechPracKc' }),
     mkItem('SPOJOVACÍ MATERIÁL', 1, spojovaciKc, { naklad: spojovaciKc, cenaSkupina: 'C.spojovaci.*' }),
@@ -663,7 +707,16 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     mkItem('PRÁCE OPLÁŠTĚNÍ', skloCelkemM2, c.praceOplasteniKc, { cenaPath: 'C.praceOplasteniKc' }),
     mkItem('PLASTOVÉ KOTVY', terce ? 1 : 0, c.plastKotvyKc, { cenaPath: 'C.plastKotvyKc' }),
     ext ? mkItem('TMELENÍ (MAT. + PRÁCE) (EXT)', skloCelkemM2, c.tmeleniKc, { cenaPath: 'C.tmeleniKc' }) : null,
-    ext && z.pruchoziSachta ? mkItem('STŘÍŠKA NAD VSTUPEM NA DVŮR (PRŮCHOZÍ EXT)', 1, c.striskaDvurKc, { cenaPath: 'C.striskaDvurKc' }) : null,
+    /* STŘÍŠKA JE POČET KUSŮ, NE ZAŠKRTÁVÁTKO (9. 9. 2026, zadání J. V.).
+     *
+     * Do 9. 9. ji zapínala „Průchozí šachta" a byla vždy právě jedna, a jen
+     * u exteriérové. Obojí padlo: stříšek může být víc (2 ks = dvojnásobný
+     * náklad i cena) a být můžou i u interiérové šachty — „za určitých
+     * okolností může být stříška i u interiéru". Nula znamená žádnou, takže
+     * se řádek do kalkulace nedostane vůbec a nesvítí tam prázdná položka. */
+    (+z.striskaKs || 0) > 0
+      ? mkItem('STŘÍŠKA NAD NÁSTUPIŠTĚ', +z.striskaKs || 0, c.striskaDvurKc, { cenaPath: 'C.striskaDvurKc' })
+      : null,
     mkItem('CESTOVNÍ NÁKLADY', 1, c.cestovniKc, { cenaPath: 'C.cestovniKc' }),
     mkItem('ČIŠTĚNÍ', 1, c.cisteniKc, { cenaPath: 'C.cisteniKc' }),
     ...vlastniProSekci('oplasteni'),
@@ -701,7 +754,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     { key: 'leseniHlava', mk: () => mkItem('LEŠENÍ - dokončení hlavy šachty', z.prejezd, pp.leseniHlavaKc,
       { cenaPath: 'C.priplatky.leseniHlavaKc' }), zahrnuto: v.leseniHlava, dostupne: true },
     { key: 'haky', mk: () => mkItem('HÁKY NA MYTÍ ŠACHTY (EXT)', 3, c.hakyKc, { cenaPath: 'C.hakyKc' }), zahrnuto: v.haky, dostupne: ext },
-    { key: 'zabradli', mk: () => mkItem('ÚPRAVY/NAPOJENÍ ZÁBRADLÍ (INT)', z.nastupiste, c.zabradliKc, { cenaPath: 'C.zabradliKc' }), zahrnuto: v.zabradli, dostupne: !ext },
+    { key: 'zabradli', mk: () => mkItem('ÚPRAVY/NAPOJENÍ ZÁBRADLÍ (INT)', nastupist, c.zabradliKc, { cenaPath: 'C.zabradliKc' }), zahrnuto: v.zabradli, dostupne: !ext },
     { key: 'sokl', mk: () => mkItem('OPLECHOVÁNÍ SOKLU PROHLUBNĚ (EXT)', z.sirka + 2 * z.hloubka, c.soklBmKc, { cenaPath: 'C.soklBmKc' }), zahrnuto: v.sokl, dostupne: ext },
   ];
   // mk() voláme i u nedostupných variant (interiér vs. exteriér) – položka se do
@@ -839,15 +892,15 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   let priplatky = [
     mkPrip('vsgFolie', 'Sklo VSG s mléčnou fólií', skloCelkemM2, pp.vsgFolieM2, { cenaPath: 'C.priplatky.vsgFolieM2' }),
     ext ? mkPrip('skn', 'Sklo SKN 176 (Ug=1,1) (EXT)', skloBokyZadniM2, pp.sknM2, { cenaPath: 'C.priplatky.sknM2' }) : null,
-    prechodoveAno ? null : mkPrip('prechMat', 'PŘECHODOVÉ PLECHY - NEREZ (MATERIÁL)', prechKg1 * z.nastupiste, c.prechodoveKgKc, { cenaPath: 'C.prechodoveKgKc' }),
+    prechodoveAno ? null : mkPrip('prechMat', 'PŘECHODOVÉ PLECHY - NEREZ (MATERIÁL)', prechKg1 * nastupist, c.prechodoveKgKc, { cenaPath: 'C.prechodoveKgKc' }),
     /* Příplatková varianta jen tehdy, když montáž není už ve volitelných —
      * jinak by se táž práce naúčtovala dvakrát. */
-    prechMontAno ? null : mkPrip('prechMont', 'PŘECHODOVÉ PLECHY - NEREZ (MONTÁŽ)', z.nastupiste, pp.prechMontKc, { cenaPath: 'C.priplatky.prechMontKc' }),
-    mkPrip('madlaBoky', 'MADLA NA BOČNÍCH STĚNÁCH (dřevo, lak)', (z.nastupiste - 1) * ((z.hloubka + 0.16) * 1.2) * 2, pp.madlaBmKc, { cenaPath: 'C.priplatky.madlaBmKc' }),
-    mkPrip('madlaZadni', 'MADLA NA ZADNÍ STĚNĚ (dřevo, lak)', (z.nastupiste - 1) * ((z.sirka + 0.16) * 1.2), pp.madlaBmKc, { cenaPath: 'C.priplatky.madlaBmKc' }),
+    prechMontAno ? null : mkPrip('prechMont', 'PŘECHODOVÉ PLECHY - NEREZ (MONTÁŽ)', nastupist, pp.prechMontKc, { cenaPath: 'C.priplatky.prechMontKc' }),
+    mkPrip('madlaBoky', 'MADLA NA BOČNÍCH STĚNÁCH (dřevo, lak)', (nastupist - 1) * ((z.hloubka + 0.16) * 1.2) * 2, pp.madlaBmKc, { cenaPath: 'C.priplatky.madlaBmKc' }),
+    mkPrip('madlaZadni', 'MADLA NA ZADNÍ STĚNĚ (dřevo, lak)', (nastupist - 1) * ((z.sirka + 0.16) * 1.2), pp.madlaBmKc, { cenaPath: 'C.priplatky.madlaBmKc' }),
     ext ? mkPrip('medStrecha', 'PŘÍPLATEK ZA STŘECHU V MĚDI (EXT)', (z.sirka + 0.2) * (z.hloubka + 0.1), pp.medStrechaM2, { cenaPath: 'C.priplatky.medStrechaM2' }) : null,
     ext ? mkPrip('ventilator', 'VENTILÁTOR (EXT)', 1, pp.ventilatorKc, { cenaPath: 'C.priplatky.ventilatorKc' }) : null,
-    mkPrip('zabranyDvere', 'ZÁBRANY DO DVEŘNÍCH VSTUPŮ', z.nastupiste, pp.zabranyDvereKc, { cenaPath: 'C.priplatky.zabranyDvereKc' }),
+    mkPrip('zabranyDvere', 'ZÁBRANY DO DVEŘNÍCH VSTUPŮ', nastupist, pp.zabranyDvereKc, { cenaPath: 'C.priplatky.zabranyDvereKc' }),
     /* MONTÁŽ ŠACHETNÍCH DVEŘÍ zrušena 2. 9. 2026 na pokyn J. V.: v excelové
      * předloze pod čarou není a obchodník si ji podle potřeby přidá ručně
      * („+ přidat položku" v příplatcích). Ceníkový klíč `montazDveriKc`
@@ -860,7 +913,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
      * v Excelu množství 6,0 při šesti nástupištích) — stejně jako zábrany
      * do dveřních vstupů. Ostatní položky z předlohy mají množství 1: i v Excelu
      * jsou prázdné, je to nabídkové menu, ne automatika. */
-    mkPrip('zabranyPad', 'ZÁBRANY PROTI PÁDU DO ŠACHTY', z.nastupiste, +pp.zabranyPadKc || 0, { cenaPath: 'C.priplatky.zabranyPadKc' }),
+    mkPrip('zabranyPad', 'ZÁBRANY PROTI PÁDU DO ŠACHTY', nastupist, +pp.zabranyPadKc || 0, { cenaPath: 'C.priplatky.zabranyPadKc' }),
     mkPrip('demontazOhrazeni', 'DEMONTÁŽ STÁVAJÍCÍHO OHRAZENÍ', 1, +pp.demontazOhrazeniKc || 0, { cenaPath: 'C.priplatky.demontazOhrazeniKc' }),
     mkPrip('malbaSchodnic', 'MALBA SCHODNIC', 1, +pp.malbaSchodnicKc || 0, { cenaPath: 'C.priplatky.malbaSchodnicKc' }),
     mkPrip('naterOhrazeni', 'NÁTĚR CELÉHO OHRAZENÍ', 1, +pp.naterOhrazeniKc || 0, { cenaPath: 'C.priplatky.naterOhrazeniKc' }),
@@ -953,4 +1006,4 @@ function cenikMigraceLeseni(cenik) {
   }
 }
 
-if (typeof module !== 'undefined') module.exports = { vypocet, DEFAULT_ZADANI, DEFAULT_CENIK, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442 };
+if (typeof module !== 'undefined') module.exports = { vypocet, DEFAULT_ZADANI, DEFAULT_CENIK, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet };

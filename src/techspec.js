@@ -117,7 +117,19 @@ const TECHSPEC_DEF = [
     { id: 'zdvih', label: 'ZDVIH VÝTAHU [m] *', prefill: (r, Z) => tsNum(Z.zdvih, 3) },
     { id: 'dolniPrejezd', label: 'DOLNÍ PŘEJEZD [mm]', prefill: (r, Z) => tsNum(Z.prohluben * 1000) },
     { id: 'horniPrejezd', label: 'HORNÍ PŘEJEZD [mm]', prefill: (r, Z) => tsNum(Z.prejezd * 1000) },
-    { id: 'stanice', label: 'POČET STANIC / NÁSTUPIŠŤ', prefill: (r, Z) => `${Z.nastupiste} / ${Z.nastupiste}` },
+    { id: 'stanice', label: 'POČET STANIC / NÁSTUPIŠŤ',
+      prefill: (r, Z) => {
+        const celkem = (typeof nastupisteCelkem === 'function') ? nastupisteCelkem(Z) : Z.nastupiste;
+        const stanic = (typeof patraProVypocet === 'function') ? patraProVypocet(Z) : Z.nastupiste;
+        return `${stanic} / ${celkem}`;
+      } },
+    /* Rozpad nástupišť na čelní a zadní stěnu (9. 9. 2026, zadání J. V.:
+     * „vzhledem k následným pracem a detailnějšímu rozpracování v realizační
+     * fázi může být toto důležitá informace, kterou budeme potřebovat předávat
+     * dále"). U neprůchozí šachty nemá co říct, proto pomlčka. */
+    { id: 'nastupisteAC', label: 'POČET NÁSTUPIŠŤ A / C',
+      prefill: (r, Z) => (Z.pruchoziSachta
+        ? `${+Z.nastupisteA || 0} / ${+Z.nastupisteC || 0}` : ' -') },
     { id: 'kabina', label: 'PRŮCHOZÍ KABINA', ciselnik: TS_C.pruchoziKabina,
       prefill: (r, Z) => Z.pruchoziSachta ? 'průchozí kabina' : 'neprůchozí kabina' },
     { id: 'pudorys', label: 'PŮDORYSNÉ ŘEŠENÍ ŠACHTY', ciselnik: TS_C.pudorys, def: 'pravoúhlý tvar' },
@@ -203,8 +215,14 @@ const TECHSPEC_DEF = [
     { id: 'odvetrani', label: 'ODVĚTRÁNÍ ŠACHTY',
       prefill: (r, Z) => Z.typSachty === 'exteriérová'
         ? 'přirozené, větrací mřížka v horní i dolní části zadní stěny výtahové šachty' : 'přirozené, do prostoru schodiště' },
+    /* Stříška se od 9. 9. 2026 zadává počtem kusů a může být i u interiérové
+     * šachty, takže se text řídí tím počtem — ne typem šachty a průchozností. */
     { id: 'prosklenaStriska', label: 'PROSKLENÁ STŘÍŠKA',
-      prefill: (r, Z) => Z.typSachty === 'exteriérová' && Z.pruchoziSachta ? 'nad výstupem na dvůr' : ' -' },
+      prefill: (r, Z) => {
+        const ks = +Z.striskaKs || 0;
+        if (!ks) return ' -';
+        return ks === 1 ? 'nad nástupištěm' : `${ks}× nad nástupišti`;
+      } },
     { id: 'podchoziOck', label: 'PODCHOZÍ NOSNÁ OCK', def: ' -' },
     { id: 'zabradliPodesty', label: 'ZÁBRADLÍ NA PODESTÁCH',
       prefill: (r, Z) => Z.typSachty !== 'exteriérová' && Z.volitelne.zabradli

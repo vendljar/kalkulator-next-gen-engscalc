@@ -84,6 +84,7 @@ const PREKLAD = {
   "plnostěnné": ["Full wall","Vollwand","Plein"],
   "PODCHOZÍ NOSNÁ OCK": ["SUPPORT FOR OPEN SPACE UNDER SHAFT", "STÜTZE FÜR DEN FREIRAUM UNTER DEM SCHACHT", "STRUCTURE PORTEUSE POUR ESPACE LIBRE SOUS LA GAINE"],
   "POVRCHOVÁ ÚPRAVA OPLÁŠTĚNÍ": ["CLADDING FINISHING", "OBERFLÄCHENBEHANDLUNG DER VERKLEIDUNG", "FINITION DE L’HABILLAGE"],
+  "POČET NÁSTUPIŠŤ A / C": ["NUMBER OF LANDINGS A / C", "ANZAHL DER ZUGANGSSTELLEN A / C", "Nombre de paliers A / C"],
   "POČET STANIC / NÁSTUPIŠŤ": ["NUMBER OF STOPS / LANDINGS", "ANZAHL DER HALTESTELLEN / ZUGANGSSTELLEN", "Nombre d’arrêts / de paliers"],
   "POŽÁRNÍ KLASIFIKACE KONSTRUKCE": ["FIRE CLASS", "BRANDKLASSE", "CLASSE DE RÉACTION AU FEU"],
   "pravoúhlý tvar": ["rectangular shape", "rechteckige Form", "forme rectangulaire"],
@@ -260,6 +261,10 @@ const PREKLAD = {
   "STAVEBNÍK": ["building owner", "BAUHERR", "MAÎTRE D’OUVRAGE"],
   "Strojovna": ["Machine room", "Triebwerksraum", "local des machines"],
   "Stručný popis doplňkového prvku nabízené šachty.": ["Description to be added here.", "Beschreibung muss hier hinzugefügt werden.", "Description à compléter ici."],
+  /* Stříška se od 9. 9. 2026 zadává počtem kusů (položka nabídky i hodnota
+   * v technické specifikaci). Množné číslo řeší vzor v PREKLAD_VZORY. */
+  "STŘÍŠKA NAD NÁSTUPIŠTĚ": ["CANOPY OVER LANDING", "VORDACH ÜBER DER ZUGANGSSTELLE", "AUVENT AU-DESSUS DU PALIER"],
+  "nad nástupištěm": ["over the landing", "über der Zugangsstelle", "au-dessus du palier"],
   "STŘECHA NAD NÁSTUPIŠTĚM": ["CANOPY OVER ENTRANCE", "VORDACH ÜBER DEM EINGANG", "AUVENT AU-DESSUS DE L’ENTRÉE"],
   "Suterén": ["basement", "Untergeschoss (UG)", "sous-sol"],
   "Technická specifikace výtahové šachty": ["Elevator steel shaft technical specification", "Technische Spezifikation des Aufzugsschachtgerüsts", "Spécification technique de la gaine d’ascenseur"],
@@ -661,6 +666,9 @@ const PREKLAD_VZORY = [
   { re: /^(\d+)x\s+sloupek,\s+ocelové uzavřené profily$/i,
     en: '$1× column, steel hollow sections', de: '$1× Stütze, Stahlhohlprofile',
     fr: '$1× poteau, profilés creux en acier' },
+  { re: /^(\d+)×\s*nad nástupišti$/i,
+    en: '$1× over the landings', de: '$1× über den Zugangsstellen',
+    fr: '$1× au-dessus des paliers' },
   { re: /^(\d+)\s*ks závěsných ok pro výškové práce$/i,
     en: '$1 pcs of anchor eyes for work at height',
     de: '$1 Stk. Anschlagösen für Höhenarbeiten',

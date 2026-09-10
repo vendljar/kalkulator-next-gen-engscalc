@@ -597,16 +597,19 @@ test('úložiště se hlásí jako souborové', zk.StorageAdapter.typ === 'file'
   const z = zk.novaZakazka();
   const zad = z.varianty[0].data.ock.zadani;
   test('nová nabídka má nulový přejezd, zdvih, prohlubeň, šířku i hloubku',
-    zk.ZADANI_NOVA_NULA.every(k => zad[k] === 0),
-    JSON.stringify(zk.ZADANI_NOVA_NULA.map(k => k + '=' + zad[k])));
-  test('a nuluje se právě těch pět polí', zk.ZADANI_NOVA_NULA.join() === 'prejezd,zdvih,prohluben,sirka,hloubka');
-  test('konstrukční předvolby zůstávají (rozteč, sloupky, nástupiště)',
+    ['prejezd','zdvih','prohluben','sirka','hloubka'].every(k => zad[k] === 0),
+    JSON.stringify(Object.keys(zk.ZADANI_NOVA).map(k => k + '=' + zad[k])));
+  test('a nová nabídka má pět nástupišť, plechy i světlík odškrtnuté (9. 9. 2026)',
+    zad.nastupiste === 5 && zad.prechodovePlechy === false && zad.svetlikNadDvermi === false,
+    JSON.stringify([zad.nastupiste, zad.prechodovePlechy, zad.svetlikNadDvermi]));
+  test('konstrukční předvolby zůstávají (rozteč, sloupky)',
     zad.roztec === global.DEFAULT_ZADANI.roztec && zad.rohoveSloupky === global.DEFAULT_ZADANI.rohoveSloupky
-    && zad.nastupiste === global.DEFAULT_ZADANI.nastupiste,
-    JSON.stringify([zad.roztec, zad.rohoveSloupky, zad.nastupiste]));
+    ,
+    JSON.stringify([zad.roztec, zad.rohoveSloupky]));
   test('výpočetní vzor DEFAULT_ZADANI zůstal nedotčený (stojí na něm sada proti Excelu)',
     global.DEFAULT_ZADANI.prejezd === 2.7 && global.DEFAULT_ZADANI.zdvih === 17.325
-    && global.DEFAULT_ZADANI.sirka === 1.51);
+    && global.DEFAULT_ZADANI.sirka === 1.51 && global.DEFAULT_ZADANI.nastupiste === 6
+    && global.DEFAULT_ZADANI.prechodovePlechy === true && global.DEFAULT_ZADANI.svetlikNadDvermi === true);
   /* Nulové rozměry nesmí shodit výpočet — obchodník je vidí hned po založení. */
   const JEKLY2 = JSON.parse(require('fs').readFileSync(__dirname + '/jekly.json', 'utf8'));
   let r = null, spadl = null;

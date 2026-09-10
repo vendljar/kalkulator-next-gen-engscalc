@@ -96,6 +96,23 @@
    * a krok po jedné nedává smysl u částky ani u rozměru v metrech; šipky jen
    * ukrajovaly šířku pole a daly se trefit omylem. Klávesy ↑/↓ v poli fungují
    * dál — `step` zůstává, mizí jen ovládací prvek. */
+  /* ZADÁNÍ ŠACHTY VE ČTYŘECH PEVNÝCH SLOUPCÍCH (9. 9. 2026, zadání J. V.).
+     Do té doby karta skládala pole vlastním gridem `repeat(auto-fill,
+     minmax(300px,1fr))`, takže se pořadí polí měnilo se šířkou okna.
+     `grid-column: 1 / -1` roztáhne mřížku přes všechny sloupce toho vnějšího
+     gridu — bez toho by dostala jen jeden pruh ~300 px, čtyři sloupce by se
+     do něj vměstnaly po ~210 px a každý popisek by se zalomil na dva řádky. */
+  .zadani-ctyri { grid-column:1 / -1; display:grid; grid-template-columns:repeat(4, 1fr); gap:0 30px; }
+  .zadani-ctyri .row label { flex:1; min-width:0; }
+  .zadani-ctyri .row input[type=number] { width:96px; }
+  .zadani-ctyri .row select { width:118px; }
+  @media (max-width:1200px) { .zadani-ctyri { grid-template-columns:repeat(2, 1fr); } }
+  @media (max-width:700px)  { .zadani-ctyri { grid-template-columns:1fr; } }
+  /* Dvě úzká čísla vedle sebe: nástupiště A (čelní stěna) a C (zadní stěna). */
+  .zadani-ctyri .par { display:flex; gap:6px; align-items:center; }
+  .zadani-ctyri .par .ozn { color:var(--mut); font-size:12px; font-weight:600; }
+  .zadani-ctyri .par input[type=number] { width:44px; }
+  .zadani-ctyri input[readonly] { background:#f2f5f9; color:var(--mut); }
   input[type=number] { -moz-appearance:textfield; appearance:textfield; }
   input[type=number]::-webkit-outer-spin-button,
   input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }

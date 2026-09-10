@@ -45,21 +45,29 @@ const ZADANI_Z_CENIKU = [
  * ruční přepis se u nich hlídá stejně. */
 const ZADANI_RUCNI_KLICE = ZADANI_Z_CENIKU.map(x => x.z).concat(['montazAtypHod', 'projekceAtypHod']);
 
-/* ROZMĚRY ŠACHTY V NOVÉ NABÍDCE JSOU NULOVÉ (9. 9. 2026, zadání J. V.:
- * „v kalkulaci OCK při tvorbě nové cenové nabídky zadávej u vyznačených
- * datových polí jako výchozí nulové hodnoty").
+/* S ČÍM ZAČÍNÁ NOVÁ NABÍDKA (9. 9. 2026, zadání J. V.).
  *
- * Do 9. 9. začínala nová nabídka rozměry vzorové šachty (přejezd 2,7 m,
- * zdvih 17,325 m…). Čísla vypadala jako vyplněná, takže se snadno přehlédla
- * a v nabídce zůstala cizí šachta. Nula je vidět: obchodník ji musí přepsat.
+ * Nejdřív šlo o rozměry: „v kalkulaci OCK při tvorbě nové cenové nabídky
+ * zadávej u vyznačených datových polí jako výchozí nulové hodnoty". Nová
+ * nabídka do té doby začínala rozměry vzorové šachty (přejezd 2,7 m, zdvih
+ * 17,325 m…), které vypadaly jako vyplněné, takže se přehlédly a v nabídce
+ * zůstala cizí stavba. Nula je vidět a musí se přepsat.
+ *
+ * Týž den přibyly další předvolby: pět nástupišť místo šesti a přechodové
+ * plechy i světlík nad šachetními dveřmi odškrtnuté — obojí je doplněk, ne
+ * samozřejmost, a zaškrtnutý doplněk se v nabídce snadno přehlédne.
  *
  * DEFAULT_ZADANI se schválně NEMĚNÍ — je to výpočetní vzor, na kterém stojí
- * sada proti Excelu i ostatní testy jádra. Nuluje se až kopie pro novou
- * variantu (novaVariantaData), a jen tahle pole; rozteč příčníků, počty
- * sloupků a nástupišť a všechno ostatní zůstává, protože to jsou konstrukční
- * předvolby, ne rozměry konkrétní stavby. Klon varianty ani načtená zakázka
- * se netýkají — ty si nesou svoje. */
-const ZADANI_NOVA_NULA = ['prejezd', 'zdvih', 'prohluben', 'sirka', 'hloubka'];
+ * sada proti Excelu i ostatní testy jádra. Přepisuje se až kopie pro novou
+ * variantu (novaVariantaData). Konstrukční předvolby, které se nemění se
+ * stavbou (rozteč příčníků, počet sloupků), zůstávají. Klonu varianty ani
+ * načtené zakázky se to netýká — ty si nesou svoje. */
+const ZADANI_NOVA = {
+  prejezd: 0, zdvih: 0, prohluben: 0, sirka: 0, hloubka: 0,   // rozměry vyplní obchodník
+  nastupiste: 5,
+  prechodovePlechy: false,
+  svetlikNadDvermi: false,
+};
 
 function zadaniRucniMapa(data) {
   if (!data || typeof data !== 'object') return {};
@@ -102,7 +110,7 @@ function zadaniZCeniku(data) {
 function novaVariantaData() {
   const cenik = JSON.parse(JSON.stringify(DEFAULT_CENIK));
   const zadani = JSON.parse(JSON.stringify(DEFAULT_ZADANI));
-  ZADANI_NOVA_NULA.forEach(k => { zadani[k] = 0; });   // rozměry vyplní obchodník (9. 9. 2026)
+  Object.assign(zadani, ZADANI_NOVA);   // předvolby nové nabídky (9. 9. 2026)
   const data = {
     ock: { zadani, fixes: false },   // výchozí režim: 1:1 jako Excel
     cenik,
@@ -531,6 +539,26 @@ function importZakazka(obj) {
        * 4.4.2). Ruční přepisy i seznam vyřazených položek se klíčují názvem,
        * takže bez přemapování by vyřazené sklo tiše vlezlo zpátky do ceny. */
       if (typeof skloMigraceNazvu === 'function') skloMigraceNazvu(d);
+      /* Migrace 9. 9. 2026: průchozí šachta, stříška a patra.
+       *
+       * Do 9. 9. byla stříška zaškrtávátkem „Průchozí šachta" a počítala se
+       * právě jedna, jen u exteriérové šachty. Nově je to počet kusů, takže
+       * starší zakázce se dosadí přesně to, co dosud počítala — jinak by
+       * cena tiše spadla o celou stříšku.
+       *
+       * Nástupiště A/C a patra dostanou hodnoty, při kterých vyjde součet
+       * i výška podlaží stejně jako dosud (A = dosavadní počet nástupišť,
+       * C = 0, patra = tentýž počet). Shodit je na nulu smí až obchodník
+       * vlastním zaškrtnutím v aplikaci — u ULOŽENÉ nabídky by to znamenalo
+       * tichou změnu ceny, a to migrace dělat nesmí. */
+      const zo = d.ock && d.ock.zadani;
+      if (zo && typeof zo === 'object') {
+        if (zo.striskaKs == null)
+          zo.striskaKs = (zo.pruchoziSachta && zo.typSachty !== 'interiérová') ? 1 : 0;
+        if (zo.nastupisteA == null) zo.nastupisteA = +zo.nastupiste || 0;
+        if (zo.nastupisteC == null) zo.nastupisteC = 0;
+        if (zo.patra == null) zo.patra = +zo.nastupiste || 0;
+      }
       /* Migrace 12. 8. 2026 (#134): projekce dostala vlastní slevu.
        *
        * Do té doby žila „globální sleva projekce" v zadání jako `slevaPct`
@@ -1026,7 +1054,7 @@ const StorageAdapter = {
 };
 
 if (typeof module !== 'undefined')
-  module.exports = { ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ZADANI_NOVA_NULA, zadaniRucniMapa, zadaniRucniJe,
+  module.exports = { ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ZADANI_NOVA, zadaniRucniMapa, zadaniRucniJe,
                      zadaniRucniZnac, zadaniRucniZrus, zadaniZCeniku, uvodniFotoObrazky, uvodniFotoSymboly, uvodniFotoPole, ZAKAZKA_SCHEMA, novaZakazka, novaVarianta, novaVariantaData,
                      nastavRidici, ridiciVarianta, aktivniVarianta, importZakazka, StorageAdapter,
                      zakazkaUnikatniId,
