@@ -116,9 +116,20 @@ P.prekladSmaz('test & pokus');
   test('EN: sokl přeložen', /included|not included/.test(en.placeholders.TS_NENI_SOKL), en.placeholders.TS_NENI_SOKL);
   test('ceny zůstávají shodné bez ohledu na jazyk',
     en.placeholders.CENA_BEZ_DPH === cz.placeholders.CENA_BEZ_DPH);
+  /* Pořadí příplatků se mění s výchozím nastavením nové nabídky (9. 9. 2026:
+   * světlík i přechodové plechy jsou nově odškrtnuté), takže se nesmí testovat
+   * první řádek. Hlídá se to, o co jde: v anglické nabídce nezůstane česky
+   * uvozené množství — a sloučené přechodové plechy nemají množství vůbec,
+   * kusy a kilogramy nejde sečíst. */
+  const czPopisy = en.priplatky.filter(p => /^množství: /.test(p.popis));
+  const enPopisy = en.priplatky.filter(p => /^quantity: /.test(p.popis));
+  const bezMnozstvi = en.priplatky.filter(p => !/^(množství|quantity): /.test(p.popis));
   test('EN: příplatky mají anglické „quantity"',
-    !en.priplatky.length || en.priplatky[0].popis.startsWith('quantity: '),
-    (en.priplatky[0] || {}).popis);
+    czPopisy.length === 0 && (enPopisy.length > 0 || en.priplatky.length === bezMnozstvi.length),
+    en.priplatky.map(p => p.popis).join(' | '));
+  test('EN: sloučené přechodové plechy jsou přeložené, bez množství',
+    bezMnozstvi.every(p => !/[ěščřžýáíéúůňťď]/i.test(p.popis)),
+    bezMnozstvi.map(p => p.popis).join(' | '));
   test('název souboru nese jazyk', en.nazevSouboru.endsWith('_EN') && !cz.nazevSouboru.endsWith('_EN'),
     en.nazevSouboru);
   test('data nesou informaci o jazyku', en.jazyk === 'en' && cz.jazyk === 'cz');
