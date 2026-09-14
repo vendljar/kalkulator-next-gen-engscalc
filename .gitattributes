@@ -1,0 +1,28 @@
+# KONCE ŘÁDKŮ (nález B46, 14. 9. 2026)
+#
+# Proč to tu je: repozitář se edituje na Windows, kde má git zapnuté
+# `core.autocrlf=true`. Do commitu se tím pádem ukládá LF (to je v pořádku),
+# ale do PRACOVNÍ KOPIE se soubory rozbalují s CRLF. A na tom se láme
+# statický hlídač XSS: `src/test_escape.js` si vytahuje `esc()` a `escJs()`
+# ze zdroje `ui/common.js` hledáním `';\n'`. V souboru s CRLF tam žádné
+# `;\n` není, funkce se nevytáhne a sada spadne na `ReferenceError` ještě
+# před prvním testem. Kdo pustí `./spust_testy.sh` lokálně, dostane hlídač
+# escapování červený — a hlídač, který neběží, nic nehlídá.
+#
+# `eol=lf` říká gitu, ať LF nechá LF i při rozbalení do pracovní kopie,
+# takže `core.autocrlf` na téhle práci přestane záležet.
+* text=auto eol=lf
+
+# Binární soubory se nesmí normalizovat vůbec — git by je poškodil.
+*.docx  binary
+*.xlsx  binary
+*.pptx  binary
+*.pdf   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.zip   binary
+*.skill binary
