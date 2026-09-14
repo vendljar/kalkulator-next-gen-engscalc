@@ -564,7 +564,37 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const bocniHl = fixes ? g.hl : (svetlik ? gTerc.hl : gLis.hl);   // chyba šablony: D19 místo D18
   const bocniM2 = Math.max(bocniKs * g.hl * g.vys, 2 * vyskaProsklene * bocniHl);
   const svetlikKs = svetlik * nastupist;
-  const svetlikM2 = svetlikKs * g.sir * (svetlaVyska - 2.3);
+  /* ZÁPORNÁ PLOCHA SVĚTLÍKŮ — CHYBA PŘEDLOHY (nález N14, 19. kolo testů).
+   *
+   * Předloha počítá světlík nad dveřmi jako „co zbude nad dveřmi do stropu":
+   * šířka tabule × (světlá výška − 2,3). Nehlídá ale, že rozdíl může vyjít
+   * ZÁPORNĚ. Jakmile výška podlaží klesne pod 2,5 m, dveře o výšce 2,3 m se
+   * do patra nevejdou a vzorec začne sklo ODEČÍTAT: plocha jde do minusu
+   * a cena tiše klesá — a to hned třikrát, protože `skloCelniM2` vstupuje
+   * i do práce opláštění a u exteriérové šachty do tmelení.
+   *
+   * Měřeno při zdvihu 12 m a 5 nástupištích se světlíkem nad dveřmi:
+   *   5 pater → výška podlaží 3,00 m → +4,95 m²
+   *   6 pater → 2,40 m → −0,99 m²
+   *   8 pater → 1,71 m → −7,78 m²
+   *   1 patro → 0 m    → −24,75 m²
+   * Od v9.9.5 se počet pater u průchozí šachty zadává ručně, takže takový
+   * vstup vznikne snadno.
+   *
+   * ROZHODNUTÍ J. V. 14. 9. 2026: „opravu světlíků proveď jen v modelu 2.
+   * Model 1 ponech 1:1 a tuto chybu v něm zaeviduj."
+   *
+   * Model 1 tedy ZÁMĚRNĚ počítá dál i se zápornou plochou — je to chyba
+   * předlohy a kompatibilní režim má být 1:1 s předlohou včetně jejích chyb,
+   * jinak přepínač ztrácí smysl. Že se tak opravdu chová, drží test
+   * v src/test_pruchozi_zadni.js; kdyby se to někdo pokusil „opravit"
+   * i v Modelu 1, sada padne.
+   *
+   * Týká se to JEN zakázek se zaškrtnutým světlíkem nad šachetními dveřmi
+   * (bez něj je `svetlikKs` nula). Nové nabídky ho mají od v9.9.6 odškrtnutý,
+   * starší zakázky zaškrtnutý — tam to tedy hrozí. */
+  const svetlikVyskaM = svetlaVyska - 2.3;
+  const svetlikM2 = svetlikKs * g.sir * (fixes ? Math.max(svetlikVyskaM, 0) : svetlikVyskaM);
   const svetlikBokKs = kratkePricniky;
   const svetlikBokM2 = svetlikBokKs * ((g.sir - sirkaDveri - 0.04) / Math.max(1, z.svetlikyBoky)) * 1.1;
 

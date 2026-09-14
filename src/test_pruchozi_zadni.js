@@ -190,5 +190,62 @@ const z9003 = () => zad({
   }
 });
 
+/* ===== N14: ZÁPORNÁ PLOCHA SVĚTLÍKŮ (19. kolo testů, 14. 9. 2026) =====
+ *
+ * Předloha počítá světlík nad dveřmi jako šířka × (světlá výška − 2,3)
+ * a nehlídá, že rozdíl může vyjít záporně. Pod 2,5 m výšky podlaží se dveře
+ * o výšce 2,3 m do patra nevejdou a vzorec začne sklo ODEČÍTAT.
+ *
+ * ROZHODNUTÍ J. V. 14. 9. 2026: opraveno JEN v Modelu 2. Model 1 zůstává
+ * 1:1 s předlohou včetně téhle chyby — a tenhle oddíl je její evidence.
+ * Kdyby ji někdo „opravil" i v Modelu 1, sada padne a bude vidět proč.
+ */
+{
+  const zadaniN14 = (patra) => zad({
+    typSachty: 'interiérová', zaskleni: 'na terče', typPortalu: 'zapuštěný',
+    sirka: 1.8, hloubka: 1.8, zdvih: 12, prejezd: 3, prohluben: 1.2, roztec: 1.25,
+    pruchoziSachta: true, nastupisteA: 5, nastupisteC: 0, patra,
+    nastupiste: 5, rohoveSloupky: 4, svetlikNadDvermi: true, svetlikyBoky: 0,
+    cistyVstupMm: 900, sirkaRamuMm: 100,
+  });
+  const svetliky = (patra, fixes) => spocti(zadaniN14(patra), fixes).zaskleni.svetliky.m2;
+  const vyskaPodlazi = (patra) => (patra >= 2 ? 12 / (patra - 1) : 0);
+
+  /* Nad prahem se oba modely shodují — oprava sahá jen na záporné hodnoty. */
+  test('N14: nad 2,5 m výšky podlaží je plocha kladná a oba modely se shodují',
+    svetliky(5, false) > 0 && blizko(svetliky(5, false), svetliky(5, true)),
+    [vyskaPodlazi(5), svetliky(5, false), svetliky(5, true)]);
+
+  [6, 8, 1].forEach(patra => {
+    const m1 = svetliky(patra, false), m2 = svetliky(patra, true);
+    test(`N14: Model 1 při ${patra} patrech (výška podlaží ${vyskaPodlazi(patra).toFixed(2)} m) drží ZÁPORNOU plochu — chyba předlohy`,
+      m1 < 0, m1);
+    test(`N14: Model 2 při ${patra} patrech plochu neodečítá (nula)`, blizko(m2, 0), m2);
+  });
+
+  /* Práh je přesně 2,5 m: světlá výška = výška podlaží − 0,2 a dveře 2,3 m. */
+  const naPrahu = spocti(Object.assign(zadaniN14(2), { zdvih: 2.5 }), false).zaskleni.svetliky.m2;
+  test('N14: přesně na prahu 2,5 m je plocha nula i v Modelu 1', blizko(naPrahu, 0), naPrahu);
+
+  /* Bez světlíku nad dveřmi se nález neprojeví vůbec — ani v Modelu 1. */
+  const bezSvetliku = Object.assign(zadaniN14(8), { svetlikNadDvermi: false });
+  test('N14: bez světlíku nad dveřmi je plocha nula v obou modelech',
+    blizko(spocti(bezSvetliku, false).zaskleni.svetliky.m2, 0)
+    && blizko(spocti(bezSvetliku, true).zaskleni.svetliky.m2, 0));
+
+  /* Záporná plocha tekla do tří položek, ne jedné. V Modelu 2 tedy musí
+   * stoupnout cena opláštění — jinak se oprava někde ztratila. */
+  const m1Cena = spocti(zadaniN14(8), false).souctySekci.oplasteni.naklad;
+  const m2Cena = spocti(zadaniN14(8), true).souctySekci.oplasteni.naklad;
+  test('N14: v Modelu 2 vyjde opláštění dráž než v Modelu 1 (sklo se neodečítá)',
+    m2Cena > m1Cena, [m1Cena, m2Cena]);
+
+  /* A celková plocha skla v Modelu 2 nikdy nespadne pod plochu bočních
+   * a zadní stěny — víc než nulu světlíky ubrat nemůžou. */
+  const z8 = spocti(zadaniN14(8), true).zaskleni;
+  test('N14: Model 2 nemá zápornou žádnou z ploch skla',
+    z8.celniM2 >= 0 && z8.bokyZadniM2 >= 0 && z8.celkemM2 >= 0, z8.celkemM2);
+}
+
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);
