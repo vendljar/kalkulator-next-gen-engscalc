@@ -363,23 +363,31 @@ const MUTACE = [
     nahrad: "      ? (ctx.zahranicni || { ceny: {}, jenZahr: {} })",
     proc: 'cizí klíč ze souboru databáze by se dostal až do výpočtu ceny' },
 
-  /* ---------- 4. dávka (B27, B28, B29, B31) ---------- */
-  { nazev: 'B27: neplatný stav Pipedrive se nekontroluje', soubor: 'functions/pd_dealy.mjs',
+  /* ---------- 4. dávka, 23. 8. 2026 (L27, L28, L29, L31) ----------
+   *
+   * PŘEČÍSLOVÁNO 14. 9. 2026 (nález B55). Tahle sada nesla čísla B27–B31
+   * z pořadníku 4. dávky, jenže bezpečnostní audit z 9. 9. 2026 vydal
+   * VLASTNÍ nálezy B26–B31 o úplně jiných věcech (viz oddíl níž). Dvě různé
+   * věci pod týmž jménem znamenají, že se v protokolu nedá poznat, která
+   * z nich se zrovna opravovala. Starší sada dostala předponu L (jako
+   * „loňská", tedy srpnová) — čísla auditu zůstala, protože na ně odkazuje
+   * protokol i roadmapa. */
+  { nazev: 'L27: neplatný stav Pipedrive se nekontroluje', soubor: 'functions/pd_dealy.mjs',
     hledej: "  if (['open', 'won', 'lost', 'vse'].indexOf(stav) < 0)",
     nahrad: "  if (false)",
     proc: '?stav=x1,x2… by obešlo cache a vyčerpalo denní rozpočet Pipedrive' },
 
-  { nazev: 'B28: profil/podpis hlavního účtu smí měnit i vedlejší admin', soubor: 'functions/uzivatele.mjs',
+  { nazev: 'L28: profil/podpis hlavního účtu smí měnit i vedlejší admin', soubor: 'functions/uzivatele.mjs',
     hledej: "      if (cil === ADMIN_EMAIL && relace.email !== ADMIN_EMAIL)",
     nahrad: "      if (false)",
     proc: 'vedlejší správce by nahrál cizí podpis pod nabídky hlavního administrátora' },
 
-  { nazev: 'B29: autor nové karty zákazníka se bere od klienta', soubor: 'functions/zakaznici.mjs',
+  { nazev: 'L29: autor nové karty zákazníka se bere od klienta', soubor: 'functions/zakaznici.mjs',
     hledej: "  else z.autor = relace.email;   // nová karta",
     nahrad: "  else z.autor = z.autor || relace.email;   // nová karta",
     proc: 'obchodník by založil kartu „za" kolegu' },
 
-  { nazev: 'B31: správce si smí archivovat vlastní účet', soubor: 'functions/uzivatele.mjs',
+  { nazev: 'L31: správce si smí archivovat vlastní účet', soubor: 'functions/uzivatele.mjs',
     hledej: "      if (email === relace.email && t.archiv)",
     nahrad: "      if (false)",
     proc: 'archiv vypne účet — správce by se sám zamkl' },

@@ -89,9 +89,14 @@ jobs:
 
   # Mutační testování serverové vrstvy (netlify/mutace.mjs) — samostatný
   # job, protože pouští tři serverové sady znovu pro každou z ~100 mutací
-  # a trvá řádově deset minut. Od 9. 9. 2026 hlídá i regresi nálezů B26–B32:
-  # kdyby někdo kontrolu odstranil, testy by to musely chytit — a tohle
-  # ověřuje, že by to opravdu chytily.
+  # a trvá řádově deset minut. Od 9. 9. 2026 hlídá i regresi nálezů auditu
+  # B26–B31 a část B32: kdyby někdo kontrolu odstranil, testy by to musely
+  # chytit — a tohle ověřuje, že by to opravdu chytily.
+  #
+  # Upřesněno 14. 9. 2026 (nález B55): starší srpnová sada mutací nesla čísla
+  # B27–B31 z pořadníku 4. dávky a s čísly auditu se to pletlo. Ta starší je
+  # od té chvíle L27–L31; čísla auditu zůstala, odkazuje na ně protokol
+  # i roadmapa.
   mutace:
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -102,3 +107,40 @@ jobs:
           node-version: '22'
       - name: Mutační testování serverové vrstvy (netlify/mutace.mjs)
         run: node netlify/mutace.mjs
+
+  # Prohlížečové harnessy (nález N13, 14. 9. 2026). Do té doby jezdil v CI
+  # jediný (overit_vypnuty_radek) a o tom, že se ostatní rozešly s aplikací,
+  # se přišlo až při testovacím kole: overit_lista čekal rozměr, který nová
+  # nabídka od v9.9.3 nemá, overit_atyp měřil ATYP nad prázdným formulářem
+  # a overit_proj17 hledal částku, která se mezitím přestěhovala do ceníku.
+  # Harness, který nikdo nepouští, není pojistka, ale falešný pocit jistoty.
+  #
+  # Vlastní job, protože každý harness startuje Chromium a dohromady to trvá
+  # pár minut — do sad v Node to nepatří.
+  harnessy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Sestavení (verze se přebírá z verze.txt)
+        env:
+          KNG_NEZVYSOVAT_VERZI: '1'
+        run: python3 build.py
+      - name: Playwright (Chromium)
+        run: |
+          npm i -g playwright
+          npx playwright install --with-deps chromium
+      - name: Lišta a historie (overit_lista.mjs)
+        run: NODE_PATH="$(npm root -g)" node overit_lista.mjs
+      - name: ATYP a ceníkové podíly (overit_atyp.mjs)
+        run: NODE_PATH="$(npm root -g)" node overit_atyp.mjs
+      - name: Detail výpočtu PROJ (overit_proj17.mjs)
+        run: NODE_PATH="$(npm root -g)" node overit_proj17.mjs
+      - name: Matice zobrazení (overit_zobrazeni.mjs)
+        run: NODE_PATH="$(npm root -g)" node overit_zobrazeni.mjs

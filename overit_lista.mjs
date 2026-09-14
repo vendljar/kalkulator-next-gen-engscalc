@@ -143,8 +143,15 @@ await p.waitForTimeout(500);
 // --- synchronizace Zpět/Znovu ---------------------------------------------
 ok('před změnou jsou všechna Zpět vypnutá', await p.evaluate(() =>
   [...document.querySelectorAll('.jsHistZpet')].every(b => b.disabled)));
-// změna hodnoty v Zadání šachty (Horní přejezd 2,7 → 3,1)
+/* Harness si výchozí hodnotu NASTAVÍ, místo aby na ni spoléhal (nález N13,
+ * 14. 9. 2026). Do v9.9.2 měla nová nabídka v prvním poli předvyplněných
+ * 2,7 m; od v9.9.3 začíná na nule (#231), takže kontrola „Zpět vrátilo 2.7"
+ * padala — a přitom byla vadná kontrola, ne aplikace. Hodnota se proto
+ * dosadí jako první krok a teprve druhá změna se vrací. */
 const pole = p.locator('#ock-zadani input[type=number]').first();
+await pole.fill('2.7');
+await pole.press('Tab');
+await p.waitForTimeout(500);
 await pole.fill('3.1');
 await pole.press('Tab');
 await p.waitForTimeout(500);

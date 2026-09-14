@@ -166,6 +166,15 @@ const predvypln = await p.evaluate(() => {
   c.atypRezervaZakladPct = 0.40; c.atypRezervaPriplatkyPct = 0.25;
   c.atypZamecnikKc = 70000; c.atypMontazPct = 0.50; c.atypProjekcePct = 0.10;
   Z.montazZakladHod = 24; Z.projekceZakladHod = 50;
+  /* ROZMĚRY SE MUSÍ NASTAVIT PŘED ZAŠKRTNUTÍM (nález N13, 14. 9. 2026).
+   *
+   * Montážní hodiny navíc se počítají z konstrukce a část z nich je ZÁPORNÁ
+   * (za nástupiště „nástupiště − 6"). Od v9.9.3 začíná nová nabídka s nulovými
+   * rozměry, takže hodiny navíc vyšly −20,25 h a předvyplnění dalo 2 h místo
+   * čekaných dvanácti. Harness tedy neměřil ATYP, ale prázdný formulář —
+   * aplikace byla celou dobu v pořádku. */
+  Z.sirka = 1.51; Z.hloubka = 1.74; Z.zdvih = 17.325; Z.prejezd = 2.7; Z.prohluben = 1.2;
+  Z.nastupiste = 6;
   atypPrepni(true);
   return { rezZ: Z.rezervaZakladPct, rezP: Z.rezervaPriplatkyPct, zam: Z.zamecnikAtypKc,
            mont: Z.montazAtypHod, proj: Z.projekceAtypHod };

@@ -43,8 +43,12 @@ await p.waitForTimeout(300);
 test('rozpis se vykreslil a nese kroky výpočtu',
   await p.evaluate(() => /Detail výpočtu kalkulace PROJ/.test(document.getElementById('page-detailproj').innerHTML)
     && /Koncová cena/.test(document.getElementById('page-detailproj').innerHTML)));
+/* Hledá se TVAR vzorce, ne konkrétní sazba (nález N13, 14. 9. 2026).
+ * Od 8. 9. 2026 se hodina cesty bere z ceníku PROJ, takže v detailu stojí
+ * „km / 60 × sazba (60 km/h)" a ne „km / 60 × 1 000". Kontrola hlídala
+ * částku, kterou si tam nikdo nepřál mít napevno. */
 test('rozpis zná vzorec dopravy mimo Prahu',
-  await p.evaluate(() => /km \/ 60 × 1 000/.test(document.getElementById('page-detailproj').innerHTML)));
+  await p.evaluate(() => /km \/ 60 ×/.test(document.getElementById('page-detailproj').innerHTML)));
 /* 20. 8. 2026: Detail výpočtu PROJ dostal VLASTNÍ klíč v matici. Do té doby
  * sdílel právo s detailem OCK, takže je nešlo přidělit zvlášť — a projekční
  * detail přitom ukazuje hodinové sazby, konstrukční nikoli. */
@@ -363,8 +367,11 @@ test('tlačítka nabídky PROJ jsou poskládaná jako v OCK (modrý tisk, Word b
     const html = document.getElementById('page-proj').innerHTML;
     const iNahled = html.indexOf('nabidkaProjNahled()');
     const iWord = html.indexOf('nabidkaProjWord()');
-    const nahledPrimary = /class="primary"[^>]*onclick="nabidkaProjNahled\(\)"/.test(html);
-    const wordBezBarvy = !/class="primary"[^>]*onclick="nabidkaProjWord\(\)"/.test(html);
+    /* Třída se od 9. 9. 2026 skládá (`primary cteni-ok`), takže regex musí
+     * počítat s dalšími třídami (nález N11). Doslovné `class="primary"`
+     * hlásilo chybu tam, kde žádná nebyla. */
+    const nahledPrimary = /class="primary(?: [\w-]+)*"[^>]*onclick="nabidkaProjNahled\(\)"/.test(html);
+    const wordBezBarvy = !/class="primary(?: [\w-]+)*"[^>]*onclick="nabidkaProjWord\(\)"/.test(html);
     return iNahled >= 0 && iWord >= 0 && iNahled < iWord && nahledPrimary && wordBezBarvy;
   }));
 
