@@ -1,6 +1,6 @@
 # Návrhy změn obchodníci – 9. 9. 2026
 
-Stav řešení úkolů ze schůzky. Aktualizováno 10. 9. 2026, verze aplikace 9.9.8.
+Stav řešení úkolů ze schůzky. Aktualizováno 14. 9. 2026, verze aplikace 14.9.1.
 
 Legenda stavu: HOTOVO = nasazeno a ověřené testy · ZJIŠTĚNO = odpověď níž, čeká
 na rozhodnutí · ČEKÁ = zadané, ještě neřešené.
@@ -179,9 +179,13 @@ Interiérová šachta stojí uvnitř budovy a dvojsklo kvůli tepelné izolaci
 nepotřebuje, proto jsou obě plochy z téhož VSG.
 
 **V ceníku přibyla položka „Sklo VSG 4.4.2"** (sekce OPLÁŠTĚNÍ) a stávající
-„Sklo čelní stěna" se jmenuje „Sklo VSG 4.4.1". Dokud sazbu pro 4.4.2
-nevyplníte, počítá se cenou 4.4.1 — nabídka nespadne na nulu, ale je to
-potřeba doplnit.
+„Sklo čelní stěna" se jmenuje „Sklo VSG 4.4.1".
+
+> **Změna od verze 14.9.1.** Do té doby platilo, že se při prázdné sazbě
+> 4.4.2 dosadí cena 4.4.1, aby nabídka nespadla na nulu. To se ukázalo jako
+> špatný nápad: nabídka pak nesla cenu jiného skla, než měla v názvu, a nikdo
+> to nepoznal. Nově se prázdná sazba projeví **nulou** v nabídce. Nulu
+> přehlédnout nejde, tiše zaměněné sklo ano.
 
 V kalkulaci se řádek jmenuje **MATERIÁL VSG 4.4.1** nebo **MATERIÁL VSG 4.4.2**,
 slova „čelní stěna" v názvu už nejsou.
@@ -350,6 +354,59 @@ poznámky, Ctrl+V tam dál vkládá text.
 
 ---
 
+## 22. ATYP se sám odškrtne, když už není proč — HOTOVO
+
+**Co bylo špatně.** Při zadávání nové šachty od nuly se v jednom z mezikroků
+sama zaškrtla položka **ATYP (nestandardní zakázka)** i s přirážkou. Když
+bylo zadání hotové, odznak nahoře hlásil STANDARD OCK, ale ATYP zůstal
+zapnutý. Na zkušební zakázce to dělalo o třetinu vyšší cenu.
+
+**Co se změnilo.**
+
+- **Rozdělané zadání se už neposuzuje.** Dokud nemáte vyplněnou šířku,
+  hloubku a zdvih, odznak hlásí **NELZE POSOUDIT** a nic se samo nezaškrtává.
+  Nula není rozměr, je to nevyplněné pole.
+- **Automaticky zaškrtnutý ATYP se sám odškrtne**, jakmile kontrola nehlásí
+  jediný nález, a vrátí i atypové vstupy. Stane-li se to při otevření
+  zakázky, aplikace to napíše, protože to snižuje cenu.
+- **Ručně zaškrtnutý ATYP zůstává.** Vedle odznaku STANDARD OCK se ale objeví
+  štítek „ATYP zaškrtnut ručně", aby bylo jasné, že to není chyba aplikace.
+
+---
+
+## 23. Přepnutí na jinou zakázku se ptá — HOTOVO
+
+**Co bylo špatně.** Když jste po odemknutí jedné zakázky otevřel jinou,
+ta předchozí se bez dotazu uložila na server.
+
+**Co se změnilo.** Máte-li neuložené změny, aplikace se zeptá a nabídne tři
+cesty: **Uložit změny · Zahodit změny · Zůstat tady**. Dosud šlo jen zahodit
+nebo zůstat. Nepodaří-li se uložit, nikam se nepřepne a řekne proč.
+
+Přepočet na dnešní ceník při otevření zakázky **už se nepočítá za vaši
+změnu**, takže samotné otevření nabídky ji neuloží a neposune na nový ceník.
+
+---
+
+## 24. Průchozí šachta: zadní stěna s nástupišti — HOTOVO
+
+**Co bylo špatně.** U průchozí šachty se zadní stěna zasklívala celá,
+i v patrech, kde do ní vedou dveře. Průchozí šachta se dvěma nástupišti
+vzadu tak vycházela na sklo stejně jako neprůchozí.
+
+**Co se změnilo.** Za každé nástupiště na zadní stěně se od plochy skla
+odečte dveřní otvor. Ostatní patra se počítají jako plné zasklení, přesně
+jak to má být.
+
+**Koho se to týká.** Jen zakázek, které mají zaškrtnutou **Průchozí šachta**
+a aspoň jedno nástupiště C. Cena u nich klesne. Neprůchozí šachty a starší
+zakázky, kde je C nula, se nezmění ani o korunu.
+
+V Detailu výpočtu je zadní stěna nově ve třech řádcích: celá plocha, odečtené
+otvory a zbylé plné sklo.
+
+---
+
 ## Přehled
 
 | # | Bod | Stav |
@@ -375,6 +432,9 @@ poznámky, Ctrl+V tam dál vkládá text.
 | 19 | Vysvětlení u každého řádku detailu výpočtu OCK i PROJ | HOTOVO (v9.9.7) |
 | 20 | Nová zakázka respektuje sloupec „Výchozí" u příplatků | HOTOVO (v9.9.8) |
 | 21 | Vkládání fotek klávesami Ctrl+V | HOTOVO (v9.9.8) |
+| 22 | ATYP se sám odškrtne, když už není proč | HOTOVO (v14.9.1) |
+| 23 | Přepnutí na jinou zakázku se ptá | HOTOVO (v14.9.1) |
+| 24 | Průchozí šachta: zadní stěna s nástupišti | HOTOVO (v14.9.1) |
 
 Změny se projeví po obnovení stránky (aplikace si o ně sama řekne — a od
 verze 9.9.3 si před tím rozpracovanou nabídku uloží).
