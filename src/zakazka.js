@@ -535,6 +535,16 @@ function importZakazka(obj) {
        * nulu a cena zakázky by se po otevření tiše propadla. Guard kvůli
        * Node testům, které zakazka.js načítají bez engine.js. */
       if (typeof cenikMigraceLeseni === 'function') cenikMigraceLeseni(d.cenik);
+      /* Migrace 14. 9. 2026 (nález V38): doplnit klíče ceníku, které v době
+       * uložení zakázky ještě neexistovaly. Bez toho se zveřejněním ceníku
+       * z takové zakázky položka z platného ceníku ZTRATÍ — mezi verzemi 24
+       * a 25 takhle zmizelo „Sklo VSG 4.4.2". Doplňuje se jen chybějící klíč
+       * a jen nulou, takže se cena zakázky nemění. */
+      if (typeof cenikDoplnKlice === 'function') {
+        if (typeof DEFAULT_CENIK !== 'undefined') cenikDoplnKlice(d.cenik, DEFAULT_CENIK);
+        if (typeof DEFAULT_CENIK_PROJ !== 'undefined' && d.proj)
+          cenikDoplnKlice(d.proj.cenik, DEFAULT_CENIK_PROJ);
+      }
       /* Migrace 9. 9. 2026: řádky skel se přejmenovaly (MATERIÁL VSG 4.4.1 /
        * 4.4.2). Ruční přepisy i seznam vyřazených položek se klíčují názvem,
        * takže bez přemapování by vyřazené sklo tiše vlezlo zpátky do ceny. */

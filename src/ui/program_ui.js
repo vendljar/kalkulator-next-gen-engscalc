@@ -208,9 +208,23 @@ function progKontext(poznamka) {
    * prošla dál, červený pruh by svítil i nad pravdivými čísly. Bere se
    * kopie, ne originál – ceník varianty musí zůstat, jak byl. */
   const bez = o => (typeof ukazkoveBez === 'function') ? ukazkoveBez(o) : o;
+  /* POLOŽKA NESMÍ ZVEŘEJNĚNÍM ZMIZET (nález V38, 14. 9. 2026).
+   *
+   * Zveřejňuje se ceník otevřené varianty. Zakázka uložená dřív, než položka
+   * vznikla, ten klíč nemá — a zveřejněním z ní se položka z platného ceníku
+   * ztratí. Přesně tak mezi verzemi 24 a 25 zmizelo „Sklo VSG 4.4.2".
+   * Chybějící klíče se proto doplní NULOU do KOPIE, která jde na server;
+   * ceník varianty zůstává nedotčený a žádná cena se nemění. */
+  const doplneno = (o, vzor) => {
+    const kopie = JSON.parse(JSON.stringify(o || {}));
+    if (typeof cenikDoplnKlice === 'function' && vzor) cenikDoplnKlice(kopie, vzor);
+    return kopie;
+  };
+  const VZOR_OCK = (typeof DEFAULT_CENIK !== 'undefined') ? DEFAULT_CENIK : null;
+  const VZOR_PROJ = (typeof DEFAULT_CENIK_PROJ !== 'undefined') ? DEFAULT_CENIK_PROJ : null;
   return {
-    cenik: bez(d.cenik || {}),
-    cenikProj: bez((d.proj && d.proj.cenik) || {}),
+    cenik: bez(doplneno(d.cenik || {}, VZOR_OCK)),
+    cenikProj: bez(doplneno((d.proj && d.proj.cenik) || {}, VZOR_PROJ)),
     /* Zahraniční odchylky nejsou ceníkem VARIANTY (ta má jen jednu řadu),
      * ale samostatnou tabulkou, kterou spravuje administrátor v Ceníku. */
     zahranicni: (typeof CENIK_ZAHR !== 'undefined') ? CENIK_ZAHR : { ceny: {}, jenZahr: {} },

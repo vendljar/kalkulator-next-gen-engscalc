@@ -297,9 +297,17 @@ const ZAHR = () => ({
   test('interiérová na terče počítá sazbou VSG 4.4.2',
     radek(zad('interiérová', 'na terče'), cenik, 'MATERIÁL VSG 4.4.2').cena === cenik.skloVsg442Kc,
     radek(zad('interiérová', 'na terče'), cenik, 'MATERIÁL VSG 4.4.2').cena);
+  /* ZMĚNA 14. 9. 2026 (nález V38). Do té doby tu stálo, že starší ceník bez
+   * položky 4.4.2 počítá sazbou 4.4.1, „aby nabídka nespadla na nulu".
+   * V kole 3 se ukázalo, co to stojí: položka mezi verzemi ceníku zmizela
+   * a pět dní se interiérové nabídky počítaly sazbou jiného skla, než jaké
+   * měly v názvu — a nikdo to nepoznal. Záložní větev je pryč; prázdná sazba
+   * se projeví nulou, kterou přehlédnout nejde. Že položka nemá jak zmizet,
+   * hlídá cenikDoplnKlice (test_sklo_vazba.js). */
   const bez442 = CR(); delete bez442.skloVsg442Kc;
-  test('starší ceník bez 4.4.2 počítá sazbou 4.4.1 (nabídka nespadne na nulu)',
-    radek(zad('interiérová', 'na terče'), bez442, 'MATERIÁL VSG 4.4.2').cena === bez442.skloCelniKc);
+  test('prázdná 4.4.2 se NEnahradí sazbou 4.4.1 — název a sazba drží u sebe',
+    !(radek(zad('interiérová', 'na terče'), bez442, 'MATERIÁL VSG 4.4.2').cena === bez442.skloCelniKc),
+    radek(zad('interiérová', 'na terče'), bez442, 'MATERIÁL VSG 4.4.2').cena);
 
   test('výchozí profily se liší podle typu šachty',
     PROFILY_VYCHOZI['exteriérová'].sloupek.dim === '80x80'

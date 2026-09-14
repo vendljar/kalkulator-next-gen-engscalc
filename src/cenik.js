@@ -75,10 +75,15 @@ const CENIK_DEF = [
     ['C.skloBokyNazev', 'Sklo boky + zadní stěna – typ', '', '', 'text'],
     ['C.skloBokyKc', 'Sklo boky + zadní stěna', 'Kč/m²', ''],
     ['C.skloCelniNazev', 'Sklo VSG 4.4.1 – typ', '', '', 'text'],
-    ['C.skloCelniKc', 'Sklo VSG 4.4.1', 'Kč/m²', 'exteriérová: čelní stěna; interiérová: vše při zasklení mezi příčníky'],
+    /* Poznámky u obou VSG sjednoceny 14. 9. 2026 (nález V33/V38): sazbu řídí
+     * TYP ŠACHTY (interiér = VSG, exteriér = dvojsklo na bocích), uvnitř
+     * interiéru pak způsob zasklení. Dosavadní text „interiérová: vše při
+     * zasklení mezi příčníky" popisoval jen půlku pravidla a neodpovídal
+     * chování — u zasklení na terče jde celá interiérová šachta z VSG 4.4.2. */
+    ['C.skloCelniKc', 'Sklo VSG 4.4.1', 'Kč/m²', 'exteriérová: čelní stěna · interiérová: celá šachta při zasklení mezi příčníky'],
     /* 9. 9. 2026, zadání J. V.: interiérová šachta zasklená na terče. Prázdná
      * položka = počítá se sazbou VSG 4.4.1 (viz skloVolba v engine.js). */
-    ['C.skloVsg442Kc', 'Sklo VSG 4.4.2', 'Kč/m²', 'interiérová šachta se zasklením na terče'],
+    ['C.skloVsg442Kc', 'Sklo VSG 4.4.2', 'Kč/m²', 'interiérová: celá šachta při zasklení na terče · prázdná sazba = v nabídce nula, nedosazuje se 4.4.1'],
     ['C.praceOplasteniKc', 'Práce opláštění', 'Kč/m²', ''],
     ['C.plastKotvyKc', 'Plastové kotvy (zasklení na terče)', 'Kč', ''],
     ['C.tmeleniKc', 'Tmelení – materiál + práce (ext)', 'Kč/m²', ''],

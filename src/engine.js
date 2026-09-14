@@ -217,12 +217,19 @@ function skloVolba(z, c) {
       celni: { nazev: 'MATERIÁL ' + SKLO_VSG441, kc: cc.skloCelniKc, cesta: 'C.skloCelniKc' },
     };
   }
+  /* NÁZEV ŘÁDKU A SAZBA MÍŘÍ NA TUTÉŽ POLOŽKU CENÍKU (nález V38, 14. 9. 2026).
+   *
+   * Do 14. 9. tu stála záložní větev: když byla položka „Sklo VSG 4.4.2"
+   * v ceníku prázdná, řádek se dál jmenoval VSG 4.4.2, ale počítal se sazbou
+   * VSG 4.4.1. V kole 3 to tak i dopadlo — položka mezi verzemi ceníku
+   * zmizela (viz cenikDoplnKlice) a nabídka tiše počítala jiným sklem, než
+   * jaké měla v názvu. Záloha je pryč: řádek nese název i sazbu téže položky,
+   * a je-li prázdná, je v nabídce vidět nula. Nulu nejde přehlédnout, tiše
+   * zaměněné sklo ano. */
   const listy = zd.zaskleni === 'mezi příčníky';
   const typ = listy ? SKLO_VSG441 : SKLO_VSG442;
-  const kc = listy ? cc.skloCelniKc
-    : (cc.skloVsg442Kc != null && cc.skloVsg442Kc !== '' ? cc.skloVsg442Kc : cc.skloCelniKc);
-  const cesta = listy ? 'C.skloCelniKc'
-    : (cc.skloVsg442Kc != null && cc.skloVsg442Kc !== '' ? 'C.skloVsg442Kc' : 'C.skloCelniKc');
+  const kc = listy ? cc.skloCelniKc : cc.skloVsg442Kc;
+  const cesta = listy ? 'C.skloCelniKc' : 'C.skloVsg442Kc';
   return {
     boky:  { nazev: 'MATERIÁL boční + zadní stěna (' + typ + ')', kc, cesta },
     celni: { nazev: 'MATERIÁL ' + typ, kc, cesta },
@@ -995,6 +1002,39 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
  *
  * Funkce je bez návratové hodnoty a mění ceník na místě; volá se z migrace
  * zakázky (zakazka.js) i při načtení ceníku programu (program_ui.js). */
+/* CHYBĚJÍCÍ KLÍČ CENÍKU SE DOPLNÍ, AŤ NEMÁ JAK ZMIZET (nález V38, 14. 9. 2026).
+ *
+ * Ceník se zveřejňuje z ceníku OTEVŘENÉ VARIANTY. Zakázka uložená dřív, než
+ * nějaká položka vznikla, ten klíč vůbec nemá — a zveřejněním z takové
+ * zakázky se položka z platného ceníku ztratí. Přesně to se stalo mezi
+ * verzemi 24 a 25: „Sklo VSG 4.4.2" zmizelo, aniž by ho kdokoli mazal, a pět
+ * dní se interiérové nabídky počítaly bez něj. J. V.: „nic jsem neodebíral."
+ *
+ * Doplňuje se JEN chybějící klíč a JEN hodnotou ze sestavení (v repozitáři
+ * vynulovanou), takže se žádná cena nemění — chybějící klíč se ve výpočtu
+ * stejně chová jako nula. Rozdíl je v tom, že prázdná položka je v ceníku
+ * vidět a přežije zveřejnění. Hodnoty, které v ceníku jsou, se nepřepisují.
+ *
+ * Vrací počet doplněných klíčů (pro testy a pro hlášku). */
+function cenikDoplnKlice(cenik, vzor) {
+  const c = cenik, v = vzor;
+  if (!c || typeof c !== 'object' || !v || typeof v !== 'object') return 0;
+  let doplneno = 0;
+  Object.keys(v).forEach(k => {
+    const hodnota = v[k];
+    if (hodnota && typeof hodnota === 'object' && !Array.isArray(hodnota)) {
+      if (!c[k] || typeof c[k] !== 'object') { c[k] = {}; doplneno++; }
+      doplneno += cenikDoplnKlice(c[k], hodnota);
+      return;
+    }
+    if (!Object.prototype.hasOwnProperty.call(c, k)) {
+      c[k] = (typeof hodnota === 'number') ? 0 : hodnota;
+      doplneno++;
+    }
+  });
+  return doplneno;
+}
+
 function cenikMigraceLeseni(cenik) {
   if (!cenik || typeof cenik !== 'object') return;
   if (cenik.leseniFix == null) {
@@ -1019,4 +1059,4 @@ function cenikMigraceLeseni(cenik) {
   }
 }
 
-if (typeof module !== 'undefined') module.exports = { vypocet, DEFAULT_ZADANI, DEFAULT_CENIK, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };
+if (typeof module !== 'undefined') module.exports = { vypocet, DEFAULT_ZADANI, DEFAULT_CENIK, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };
