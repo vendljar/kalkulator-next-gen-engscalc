@@ -228,9 +228,10 @@ const PROVERENO = {
     'nazev': 'název kroku výpočtu z pevného seznamu DETAIL_KROKY',
     'id': 'id kroku výpočtu z pevného seznamu DETAIL_KROKY (dvKrok)',
   },
-  'dialog.js': {
-    'dlgEsc(text)': 'dlgEsc() je esc() s fallbackem – text dialogu se escapuje uvnitř (B26)',
-  },
+  /* `dialog.js` ze seznamu 14. 9. 2026 zmizel celý: `dlgEsc` je od té chvíle
+   * v OBALY, takže se hodnoty v něm zabalené k prověřování vůbec nedostanou.
+   * Záznam v PROVERENO by na ně čekal marně a hlídač zastaralých záznamů by
+   * ho (správně) hlásil. Že dlgEsc escapuje, dokazuje sonda nahoře. */
   'kalk_ock.js': {
     'col.admin ? pripNazev(x) : esc(x.nazev) + vypnutoHtml(x)':
       'obě větve escapují – pripNazev skládá HTML přes esc() uvnitř; vypnutoHtml je hotové HTML štítku (text je literál, popis přes esc())',
