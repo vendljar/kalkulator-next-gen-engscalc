@@ -670,7 +670,7 @@ const MUTACE = [
     proc: 'velká obnova po dávkách by uprostřed práce vypršela a nešla by ani řádně ukončit' },
 
   { nazev: 'B49: vypršelý token nepřestaví rejstřík', soubor: 'functions/obnova.mjs',
-    hledej: "    try { await prestavRejstrik(ULO, await uloziste('zakazky'), relace.email); } catch (e) { /* rejstřík se dá přestavět i ručně */ }",
+    hledej: '    await prestavRejstrikSam(relace.email);',
     nahrad: '    ;',
     proc: 'po vypršení uprostřed dávek by rejstřík zůstal ze stavu před nimi a zakázky by v seznamu chyběly' },
 

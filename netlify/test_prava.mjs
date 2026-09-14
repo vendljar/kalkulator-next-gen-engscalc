@@ -1763,6 +1763,35 @@ console.log('\n===== AUDIT B26 / B29: KID TRVALÝCH POLOŽEK A DUPLICITNÍ ID ==
   const rOk = await uloz(zOk);
   test('B26: běžný kid (pk7) a ruční položka bez kid projdou', rOk.status === 200, 'vrátil ' + rOk.status);
 
+  /* B51 (19. kolo, 14. 9. 2026): vlastní PŘÍPLATKY nesou kid taky. Kontrola
+   * kryla `vlastniPolozky`, ale `priplatkyVlastni` ne — a klíč odtamtud
+   * putuje tlačítkem 📌 do katalogu a do zveřejněného ceníku. */
+  const zPrip = zakazkaCislo('2026 - OPR - CN - 0962');
+  const dp = zPrip.varianty[0].data; dp.ock = dp.ock || {}; dp.ock.zadani = dp.ock.zadani || {};
+  dp.ock.zadani.priplatkyVlastni = [{ kid: "k1');fetch('/api/zaloha');//", nazev: 'x', mnozstvi: 1, cena: 1 }];
+  const rPrip = await uloz(zPrip);
+  test('B51: kid vlastního příplatku s apostrofem server odmítne (400)', rPrip.status === 400, 'vrátil ' + rPrip.status);
+  test('B51: odmítnutí jmenuje vlastní příplatek',
+    /vlastní příplatek/.test(JSON.stringify(await rPrip.json())));
+  const zPripOk = zakazkaCislo('2026 - OPR - CN - 0962');
+  const dpo = zPripOk.varianty[0].data; dpo.ock = dpo.ock || {}; dpo.ock.zadani = dpo.ock.zadani || {};
+  dpo.ock.zadani.priplatkyVlastni = [{ kid: 'k9', nazev: 'x', mnozstvi: 1, cena: 1 }, { nazev: 'ruční', mnozstvi: 1, cena: 1 }];
+  test('B51: běžný kid i ruční příplatek bez kid projdou', (await uloz(zPripOk)).status === 200);
+
+  /* B45 (19. kolo): délka názvu sekce PROJ. Druhá vrstva pod escapováním
+   * v dvKrok() — název jde z dat rovnou do nadpisu Detailu výpočtu. */
+  const zSekce = zakazkaCislo('2026 - OPR - CN - 0962');
+  const ds = zSekce.varianty[0].data; ds.proj = ds.proj || {}; ds.proj.zadani = ds.proj.zadani || {};
+  ds.proj.zadani.sekce = [{ key: 's', nazev: 'x'.repeat(201), polozky: [] }];
+  const rSekce = await uloz(zSekce);
+  test('B45: přehnaně dlouhý název sekce PROJ server odmítne (400)', rSekce.status === 400, 'vrátil ' + rSekce.status);
+  test('B45: odmítnutí mluví o délce, ne o špatném tvaru',
+    /příliš dlouhý text/.test(JSON.stringify(await rSekce.json())));
+  const zSekceOk = zakazkaCislo('2026 - OPR - CN - 0962');
+  const dso = zSekceOk.varianty[0].data; dso.proj = dso.proj || {}; dso.proj.zadani = dso.proj.zadani || {};
+  dso.proj.zadani.sekce = [{ key: 's', nazev: 'DPZ – dokumentace pro povolení záměru (včetně PBŘ)', polozky: [] }];
+  test('B45: český název s interpunkcí projde', (await uloz(zSekceOk)).status === 200);
+
   /* Zveřejnění ceníku: tudy by se podvržený kid propsal do každé nové nabídky. */
   test('B26: zveřejnění ceníku PROJ s podvrženým kid server odmítne (400)',
     (await post(program, 'http://x/api/program', { cenik: { profilasKgKc: 81 },
