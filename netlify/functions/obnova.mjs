@@ -157,7 +157,21 @@ async function prestavRejstrik(ULO, s, kdo) {
   return { zakazek: zaznamy.length, existujicich: zaznamy.length, prestaven: true };
 }
 
-const tokenVyprsel = (z) => !z || !z.zacatek || (Date.now() - Date.parse(z.zacatek) > OBNOVA_TOKEN_PLATNOST_MS);
+/* PLATNOST SE POČÍTÁ OD POSLEDNÍ DÁVKY, NE OD ZAČÁTKU (nález B49, 14. 9. 2026).
+ *
+ * Do 14. 9. platil token hodinu od `zacatek`. Velká obnova po dávkách ale
+ * hodinu klidně přesáhne — a vypršela uprostřed práce: další dávka token
+ * smazala, rejstřík zůstal ze stavu napůl obnovené databáze a `zrusit`
+ * vracelo 404, takže se obnova nedala ani řádně ukončit.
+ *
+ * Nově je to hodina NEČINNOSTI: každá dávka lhůtu posune. Kdo skončil
+ * a odešel, token po hodině stejně vyprší (to je smysl zámku), ale kdo
+ * pracuje, o rozdělanou obnovu nepřijde. */
+const tokenPoslednePouzit = (z) => (z && (z.naposled || z.zacatek)) || null;
+const tokenVyprsel = (z) => {
+  const kdy = tokenPoslednePouzit(z);
+  return !z || !kdy || (Date.now() - Date.parse(kdy) > OBNOVA_TOKEN_PLATNOST_MS);
+};
 
 /* Token rozpracované obnovy po dávkách. Vrací záznam, nebo odpověď s chybou. */
 async function nactiToken(relace, id) {
@@ -169,8 +183,13 @@ async function nactiToken(relace, id) {
     return { chyba: json({ ok: false, chyba: 'Obnova nebyla zahájena, nebo ji zahájil někdo jiný. Začněte znovu náhledem.' }, 403) };
   if (tokenVyprsel(z)) {
     await s.smaz(tokenKlic(klic));
-    return { chyba: json({ ok: false, chyba: 'Zahájená obnova vypršela (hodina). Stav před ní je v otisku '
-      + z.otiskPred + '; začněte znovu náhledem.' }, 410) };
+    /* Rejstřík se přestaví i při vypršení (B49). Token se smaže uprostřed
+     * rozdělané obnovy, takže v databázi leží zakázky z několika dávek
+     * a rejstřík je ze stavu před nimi — kdo by ho přestavěl, když se
+     * obnova řádně neukončila? Nikdo. Proto tady. */
+    try { await prestavRejstrik(ULO, await uloziste('zakazky'), relace.email); } catch (e) { /* rejstřík se dá přestavět i ručně */ }
+    return { chyba: json({ ok: false, chyba: 'Zahájená obnova vypršela (hodina nečinnosti). Stav před ní je v otisku '
+      + z.otiskPred + '; rejstřík byl přestavěn. Začněte znovu náhledem.' }, 410) };
   }
   return { token: z, s, klic: tokenKlic(klic) };
 }
@@ -184,10 +203,17 @@ async function nactiToken(relace, id) {
 async function beziciObnova() {
   const s = await uloziste('zalohy');
   let ziva = null;
+  let uklizeno = false;
   for (const k of (await s.seznam(TOKEN_PREDPONA)) || []) {
     const z = await s.cti(k);
-    if (tokenVyprsel(z)) { await s.smaz(k); continue; }
+    if (tokenVyprsel(z)) { await s.smaz(k); uklizeno = true; continue; }
     if (!ziva || String(z.zacatek) < String(ziva.zacatek)) ziva = z;
+  }
+  /* Úklid opuštěné obnovy znamená, že v databázi leží zakázky z dávek, které
+   * nikdo neuzavřel — rejstřík je tedy ze stavu před nimi (B49, 14. 9. 2026).
+   * Přestaví se tady, protože jinde už to nikdo neudělá. */
+  if (uklizeno && !ziva) {
+    try { await prestavRejstrik(ULO, await uloziste('zakazky'), 'úklid opuštěné obnovy'); } catch (e) { /* jde i ručně */ }
   }
   return ziva;
 }
@@ -276,14 +302,31 @@ export default async (req) => {
       return json({ ok: false, chyba: 'Obnova se provede jen s výslovným potvrzením po náhledu.' }, 428);
     const zamek = await zamekObnovy();
     if (zamek) return zamek;
+    /* TOKEN SE ZAPÍŠE HNED PO KONTROLE ZÁMKU (nález B48, 14. 9. 2026).
+     *
+     * Do 14. 9. bylo pořadí zámek → otisk → token, jenže pořízení otisku
+     * trvá sekundy. Dva požadavky `zacatek` v tomtéž okně tedy oba viděly
+     * prázdný zámek a oba prošly: vznikly dvě obnovy nad jednou databází
+     * a ta druhá pořídila „otisk před obnovou" ze stavu, který už byl napůl
+     * obnovený — tedy z cesty zpátky, která nikam nevede.
+     *
+     * Token teď vzniká jako první, ve stavu „pořizuje se otisk", takže
+     * druhý požadavek narazí na zámek. Klíč otisku se doplní, až otisk je.
+     * Když se otisk nepovede, token se uklidí a zámek nezůstane viset. */
+    const id = randomBytes(16).toString('hex');
+    const s = await uloziste('zalohy');
+    const ted = new Date().toISOString();
+    await s.zapis(tokenKlic(id), { id, kdo: relace.email, zacatek: ted, naposled: ted,
+      rezim, otiskPred: null, otiskSePorizuje: true, davek: 0,
+      souhrn: { nove: 0, prepsane: 0, bezeZmeny: 0, preskocene: 0 } });
     let otiskPred;
     try { otiskPred = (await porizOtisk('pred-obnovou', relace.email, klicPredObnovou())).den; }
     catch (e) {
+      await s.smaz(tokenKlic(id));
       return json({ ok: false, chyba: 'Otisk současného stavu se nepovedl (' + (e && e.message ? e.message : e)
         + ') — obnova se NEPROVEDLA, nic se nezměnilo. Bez cesty zpátky se neobnovuje.' }, 500);
     }
-    const id = randomBytes(16).toString('hex');
-    await (await uloziste('zalohy')).zapis(tokenKlic(id), { id, kdo: relace.email, zacatek: new Date().toISOString(),
+    await s.zapis(tokenKlic(id), { id, kdo: relace.email, zacatek: ted, naposled: new Date().toISOString(),
       rezim, otiskPred, davek: 0, souhrn: { nove: 0, prepsane: 0, bezeZmeny: 0, preskocene: 0 } });
     return json({ ok: true, faze: 'zacatek', obnovaId: id, otiskPred, upozorneni: [] });
   }
@@ -478,12 +521,30 @@ export default async (req) => {
     vysledek[cast] = b;
   }
 
-  /* Dávka: přičíst k součtu zahájené obnovy. */
+  /* Dávka: přičíst k součtu zahájené obnovy.
+   *
+   * TOKEN SE PŘED ZÁPISEM ZNOVU PŘEČTE (nález B47, 14. 9. 2026). Dávka běží
+   * sekundy a správce mezitím může v jiném okně kliknout na „Zrušit obnovu",
+   * která token smaže. Slepý zápis na konci dávky ho vzkřísil — zámek ožil
+   * a databáze zůstala zamčená obnovou, kterou už nikdo nevedl. Když token
+   * mezitím zmizel, dávka končí 410 a NIC nezapisuje: zapsané zakázky
+   * v databázi zůstanou (to je stejné jako u jakéhokoli výpadku uprostřed),
+   * ale zámek se neobnoví a v odpovědi stojí, kde leží cesta zpátky. */
   if (tk) {
-    const so = tk.token.souhrn;
+    const stale = await tk.s.cti(tk.klic);
+    if (!stale || stale.kdo !== relace.email) {
+      return json({ ok: false, zruseno: true,
+        chyba: 'Obnova byla mezitím zrušena, dávka se nezapočítala. Co se stihlo zapsat, v databázi zůstává; '
+          + 'stav před obnovou je v otisku ' + otiskPred + '.' }, 410);
+    }
+    const so = stale.souhrn || tk.token.souhrn;
     Object.values(vysledek).forEach(b => { so.nove += b.nove; so.prepsane += b.prepsane; so.bezeZmeny += b.bezeZmeny; so.preskocene += b.preskocene; });
-    tk.token.davek++;
-    await tk.s.zapis(tk.klic, tk.token);
+    stale.souhrn = so;
+    stale.davek = (+stale.davek || 0) + 1;
+    /* Každá dávka posouvá lhůtu — platnost je hodina NEČINNOSTI (B49). */
+    stale.naposled = new Date().toISOString();
+    await tk.s.zapis(tk.klic, stale);
+    tk.token = stale;
   } else if (otiskPred) {
     upozorneni.push('Stav před obnovou leží v otisku ' + otiskPred + '.');
   }

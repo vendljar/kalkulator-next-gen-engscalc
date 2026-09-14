@@ -33,7 +33,7 @@ import zakazky from './functions/zakazky.mjs';
 import zaloha from './functions/zaloha.mjs';
 import zalohaVynuceno from './functions/zaloha_vynuceno.mjs';
 import obnova from './functions/obnova.mjs';
-import { ADMIN_EMAIL } from './lib/sdilene.mjs';
+import { ADMIN_EMAIL, SMAZANI_ULOZISTE } from './lib/sdilene.mjs';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 Object.assign(globalThis, require('../src/format.js'), require('../src/engine.js'), require('../src/engine_proj.js'),
@@ -441,6 +441,124 @@ test('B30: archivovaný zůstane archivovaný a vypnutý i po „přepsat" z oti
   && o31.casti.uzivatele.duvody.some(d => d.klic === 'archiv@engineers-cz.cz' && /drží server/.test(d.duvod)), [arch, o31.casti.uzivatele]);
 test('B31: hesloVerze po obnově z otisku neklesne (zůstává 1)',
   (await ulz('uzivatele').cti('verze@engineers-cz.cz')).hesloVerze === 1 && o31.casti.uzivatele.prepsane >= 1, o31.casti.uzivatele);
+
+console.log('\n===== B50: vědomě znovu založený účet obnova nepřeskakuje =====');
+
+/* Knihu smazaných čte obnova, aby z otisku neoživila účet, který mezitím
+ * někdo smazal (B30). Záznam v ní ale zůstával napořád — i když správce
+ * tentýž e-mail vědomě založil znovu. Takový účet pak každá obnova potichu
+ * přeskakovala: existoval, fungoval, ale ze zálohy se nikdy neobnovil.
+ * Obchodník je v téhle chvíli smazaný z oddílu B30 výš. */
+{
+  const kniha = ulz(SMAZANI_ULOZISTE);
+  test('B50: výchozí stav — smazaný obchodník je v knize smazaných',
+    !!(await kniha.cti('obchodnik@engineers-cz.cz')));
+  const zaloz = await (await post(uzivatele, 'http://x/api/uzivatele',
+    { akce: 'zaloz', email: 'obchodnik@engineers-cz.cz', jmeno: 'Obchodník znovu',
+      role: 'Obchodník', heslo: 'ObchodHeslo3' }, cookie)).json();
+  test('B50: účet se stejným e-mailem jde vědomě založit znovu', zaloz.ok === true, zaloz);
+  test('B50: a z knihy smazaných tím zmizí',
+    (await kniha.cti('obchodnik@engineers-cz.cz')) === null);
+  /* Teď už ho obnova z otisku, kde byl činný, nepřeskočí. */
+  const o = await obnovJson({ zdroj: { otisk: otiskDen }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['uzivatele'] }, cookie);
+  test('B50: obnova účet nepřeskakuje kvůli starému smazání',
+    !o.casti.uzivatele.duvody.some(d => d.klic === 'obchodnik@engineers-cz.cz' && /smazán/.test(d.duvod)),
+    o.casti.uzivatele.duvody);
+  test('B50: a účet v úložišti zůstal', !!(await ulz('uzivatele').cti('obchodnik@engineers-cz.cz')));
+}
+
+console.log('\n===== B47–B49, B52: dotažení obnovy po dávkách (19. kolo, 14. 9. 2026) =====');
+
+/* --- B47: zrušená obnova se zápisem na konci dávky nevzkřísí ---
+ * Dávka běží sekundy a správce mezitím může v jiném okně kliknout na
+ * „Zrušit obnovu". Slepý zápis tokenu na konci dávky ho vzkřísil — zámek
+ * ožil a databáze zůstala zamčená obnovou, kterou už nikdo nevedl. */
+{
+  const z = await obnovJson({ faze: 'zacatek', rezim: 'prepsat', potvrzeni: 'OBNOVIT' }, cookie);
+  test('B47: obnova zahájena', z.ok === true && !!z.obnovaId, z);
+  const zr = await obnovJson({ faze: 'zrusit', obnovaId: z.obnovaId, rezim: 'prepsat' }, cookie);
+  test('B47: obnova zrušena', zr.ok === true, zr);
+  const po = await obnov({ obnovaId: z.obnovaId, zdroj: { soubor: { ...hlava, firma: zalSoubor.firma } },
+    rezim: 'prepsat', casti: ['firma'], potvrzeni: 'OBNOVIT' }, cookie);
+  test('B47: dávka po zrušení skončí 410, ne zápisem', po.status === 410, po.status);
+  const telo = await po.json();
+  test('B47: odpověď říká, že se obnova zrušila a kde je cesta zpátky',
+    telo.zruseno === true && /zrušena/.test(telo.chyba || ''), telo.chyba);
+  test('B47: token po zrušené dávce v úložišti NENÍ (zámek neožil)',
+    (await ulz('zalohy').cti('obnova-' + z.obnovaId)) === null);
+  const znovu = await obnovJson({ faze: 'zacatek', rezim: 'prepsat', potvrzeni: 'OBNOVIT' }, cookie);
+  test('B47: po zrušení jde rovnou zahájit novou obnovu (databáze není zamčená)',
+    znovu.ok === true, znovu);
+  await obnovJson({ faze: 'zrusit', obnovaId: znovu.obnovaId, rezim: 'prepsat' }, cookie);
+}
+
+/* --- B48: token vzniká hned po kontrole zámku ---
+ * Do 14. 9. bylo pořadí zámek → otisk → token a pořízení otisku trvá sekundy,
+ * takže dva `zacatek` v témže okně prošly oba. Token teď vzniká první. */
+{
+  const [a, b] = await Promise.all([
+    obnovJson({ faze: 'zacatek', rezim: 'prepsat', potvrzeni: 'OBNOVIT' }, cookie),
+    obnovJson({ faze: 'zacatek', rezim: 'prepsat', potvrzeni: 'OBNOVIT' }, cookie),
+  ]);
+  const uspesne = [a, b].filter(x => x.ok === true);
+  const odmitnute = [a, b].filter(x => x.ok !== true);
+  test('B48: ze dvou souběžných zahájení projde právě jedno',
+    uspesne.length === 1 && odmitnute.length === 1, [a, b]);
+  test('B48: to druhé narazí na zámek „obnova běží"',
+    odmitnute.length === 1 && !!odmitnute[0].obnovaBezi, odmitnute[0]);
+  if (uspesne.length) await obnovJson({ faze: 'zrusit', obnovaId: uspesne[0].obnovaId, rezim: 'prepsat' }, cookie);
+}
+
+/* --- B49: platnost je hodina NEČINNOSTI, ne hodina od začátku --- */
+{
+  const z = await obnovJson({ faze: 'zacatek', rezim: 'prepsat', potvrzeni: 'OBNOVIT' }, cookie);
+  const s = ulz('zalohy');
+  const pred = await s.cti('obnova-' + z.obnovaId);
+  test('B49: token nese značku poslední činnosti', !!pred.naposled, pred);
+  /* Posuneme začátek o hodinu a půl zpět — kdyby platnost stála na `zacatek`,
+   * další dávka by token zahodila. */
+  await s.zapis('obnova-' + z.obnovaId, { ...pred, zacatek: new Date(Date.now() - 90 * 60 * 1000).toISOString() });
+  const d = await obnovJson({ obnovaId: z.obnovaId, zdroj: { soubor: { ...hlava, firma: zalSoubor.firma } },
+    rezim: 'prepsat', casti: ['firma'], potvrzeni: 'OBNOVIT' }, cookie);
+  test('B49: dávka po 90 minutách od začátku projde, když se mezitím pracovalo',
+    d.ok === true, d);
+  const po = await s.cti('obnova-' + z.obnovaId);
+  test('B49: dávka posunula značku poslední činnosti',
+    !!po.naposled && Date.parse(po.naposled) > Date.parse(pred.naposled) - 1, [pred.naposled, po.naposled]);
+
+  /* A naopak: hodina bez jediné dávky token ukončí — a rejstřík se přestaví. */
+  await s.zapis('obnova-' + z.obnovaId, { ...po, naposled: new Date(Date.now() - 90 * 60 * 1000).toISOString() });
+  const vyprsel = await obnov({ obnovaId: z.obnovaId, zdroj: { soubor: { ...hlava, firma: zalSoubor.firma } },
+    rezim: 'prepsat', casti: ['firma'], potvrzeni: 'OBNOVIT' }, cookie);
+  test('B49: hodina nečinnosti token ukončí (410)', vyprsel.status === 410, vyprsel.status);
+  const t410 = await vyprsel.json();
+  test('B49: a řekne, že rejstřík byl přestavěn', /rejstřík/.test(t410.chyba || ''), t410.chyba);
+  test('B49: rejstřík v úložišti po vypršení existuje',
+    !!(await ulz('zakazky').cti('_rejstrik')));
+}
+
+/* --- B52: otisky před obnovou nevytlačí denní zálohy z přehledu --- */
+{
+  const { seznamOtisku, OTISKY_PRED_OBNOVOU_LIMIT } = await import('./lib/zalohovani.mjs');
+  const s = ulz('zalohy');
+  /* Denní otisk musí v přehledu zůstat i po sérii pokusů o obnovu. */
+  await s.zapis('2026-01-02', { porizena: '2026-01-02T00:00:00.000Z', zdroj: 'test', zakazky: {}, uzivatele: [] });
+  for (let i = 0; i < 20; i++) {
+    const kl = '2026-01-03T' + String(100000 + i).slice(0, 6) + '-pred-obnovou';
+    await s.zapis(kl, { porizena: '2026-01-03T10:00:00.000Z', zdroj: 'pred-obnovou', zakazky: {}, uzivatele: [] });
+  }
+  const seznam = await seznamOtisku(14);
+  const predObnovou = seznam.filter(o => o.den.indexOf('-pred-obnovou') >= 0);
+  const denni = seznam.filter(o => o.den.indexOf('-pred-obnovou') < 0);
+  test('B52: otisků před obnovou je v přehledu nejvýš deset',
+    predObnovou.length <= OTISKY_PRED_OBNOVOU_LIMIT, predObnovou.length);
+  test('B52: denní otisky z přehledu nezmizely',
+    denni.some(o => o.den === '2026-01-02'), denni.map(o => o.den));
+  test('B52: obojí se vejde do jednoho seznamu seřazeného od nejnovějšího',
+    seznam.length === denni.length + predObnovou.length
+    && seznam.map(o => o.den).join() === seznam.map(o => o.den).slice().sort().reverse().join(),
+    seznam.map(o => o.den));
+}
 
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);

@@ -59,6 +59,12 @@ export async function zalohaDoplnky() {
  * akce), ale nikdy nezničí to, kvůli čemu otisk vznikl. Starší klíče bez
  * času zůstávají platné (OTISK_KLIC), z přehledu nemizí. */
 export const OTISK_KLIC = /^\d{4}-\d{2}-\d{2}(-pred-obnovou|T\d{6}-pred-obnovou)?$/;
+
+/* Kolik otisků „před obnovou" se drží v přehledu (nález B52, 14. 9. 2026).
+ * Vlastní limit, aby série pokusů o obnovu nevytlačila denní zálohy — viz
+ * komentář v seznamOtisku(). Otisky se tím nemažou, jen se nezobrazují
+ * všechny: smazat cestu zpátky smí jedině člověk. */
+export const OTISKY_PRED_OBNOVOU_LIMIT = 10;
 export function klicPredObnovou(kdy) {
   const d = new Date(kdy || Date.now()).toISOString();      // 2026-09-09T15:30:12.345Z
   return d.slice(0, 10) + 'T' + d.slice(11, 19).replace(/:/g, '') + '-pred-obnovou';
@@ -113,8 +119,25 @@ export async function seznamOtisku(kolik) {
   /* Otisky před obnovou (7. 9. 2026) patří do přehledu taky — jsou to cesty
    * zpátky, ze kterých se dá obnovovat. Řetězcové řazení je dá hned před
    * den, ke kterému patří. */
-  const dny = (await s.seznam()).filter(k => OTISK_KLIC.test(k)).sort().reverse();
-  const vybrane = dny.slice(0, Math.max(1, kolik || 14));
+  const vsechny = (await s.seznam()).filter(k => OTISK_KLIC.test(k)).sort().reverse();
+  /* DENNÍ A „PŘED OBNOVOU" MAJÍ VLASTNÍ LIMITY (nález B52, 14. 9. 2026).
+   *
+   * Každý pokus o obnovu pořídí plný otisk `…Thhmmss-pred-obnovou`. Ty jsou
+   * v řetězcovém řazení vyšší než denní otisk téhož dne, takže deset pokusů
+   * za odpoledne vytlačilo z přehledu čtrnácti nejvyšších klíčů úplně
+   * všechny denní zálohy — a správce, který hledal včerejší stav, ho v seznamu
+   * nenašel. Přitom tam ležel; jen nebyl vidět, což je horší než kdyby tam
+   * nebyl vůbec.
+   *
+   * Seznamy se proto vedou odděleně: denní otisky mají celý limit, otisky
+   * před obnovou svých posledních deset. */
+  const jePredObnovou = (k) => k.indexOf('-pred-obnovou') >= 0;
+  const denni = vsechny.filter(k => !jePredObnovou(k));
+  const predObnovou = vsechny.filter(jePredObnovou);
+  const limit = Math.max(1, kolik || 14);
+  const vybrane = denni.slice(0, limit)
+    .concat(predObnovou.slice(0, OTISKY_PRED_OBNOVOU_LIMIT))
+    .sort().reverse();
   const otisky = [];
   for (const den of vybrane) {
     const o = await s.cti(den);

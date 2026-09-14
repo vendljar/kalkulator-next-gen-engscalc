@@ -652,6 +652,47 @@ const MUTACE = [
     hledej: "      return p.length ? ULO.uloIdProblemyText(p) : '';",
     nahrad: "      return '';",
     proc: 'obnova by do databáze vrátila zakázku s id, které server při ukládání odmítá' },
+
+  /* ---------- 19. testovací kolo a audit 14. 9. 2026 (B45, B47–B52) ---------- */
+  { nazev: 'B47: dávka zapíše token, aniž by ověřila, že obnova ještě běží', soubor: 'functions/obnova.mjs',
+    hledej: '    const stale = await tk.s.cti(tk.klic);',
+    nahrad: '    const stale = tk.token;',
+    proc: 'zrušená obnova by se zápisem na konci dávky vzkřísila a databáze zůstala zamčená' },
+
+  { nazev: 'B48: token nevznikne před pořízením otisku', soubor: 'functions/obnova.mjs',
+    hledej: '    await s.zapis(tokenKlic(id), { id, kdo: relace.email, zacatek: ted, naposled: ted,',
+    nahrad: '    await Promise.resolve({ id, kdo: relace.email, zacatek: ted, naposled: ted,',
+    proc: 'dva souběžné požadavky „zacatek" by prošly oba a druhý by pořídil otisk z napůl obnovené databáze' },
+
+  { nazev: 'B49: platnost tokenu se počítá od začátku, ne od poslední dávky', soubor: 'functions/obnova.mjs',
+    hledej: 'const tokenPoslednePouzit = (z) => (z && (z.naposled || z.zacatek)) || null;',
+    nahrad: 'const tokenPoslednePouzit = (z) => (z && z.zacatek) || null;',
+    proc: 'velká obnova po dávkách by uprostřed práce vypršela a nešla by ani řádně ukončit' },
+
+  { nazev: 'B49: vypršelý token nepřestaví rejstřík', soubor: 'functions/obnova.mjs',
+    hledej: "    try { await prestavRejstrik(ULO, await uloziste('zakazky'), relace.email); } catch (e) { /* rejstřík se dá přestavět i ručně */ }",
+    nahrad: '    ;',
+    proc: 'po vypršení uprostřed dávek by rejstřík zůstal ze stavu před nimi a zakázky by v seznamu chyběly' },
+
+  { nazev: 'B50: znovu založený účet zůstane v knize smazaných', soubor: 'functions/uzivatele.mjs',
+    hledej: '      try { await (await uloziste(SMAZANI_ULOZISTE)).smaz(email); }',
+    nahrad: '      try { if (false) await (await uloziste(SMAZANI_ULOZISTE)).smaz(email); }',
+    proc: 'vědomě obnovený účet by každá další obnova napořád přeskakovala' },
+
+  { nazev: 'B51: kid vlastních příplatků se nekontroluje', soubor: '../src/uloziste.js',
+    hledej: "    uloKidPole(ockZ.priplatkyVlastni, 'vlastní příplatek OCK', out);",
+    nahrad: '    ;',
+    proc: 'podvržený kid by se tlačítkem 📌 dostal do katalogu a do zveřejněného ceníku' },
+
+  { nazev: 'B45: délka názvu sekce PROJ se nekontroluje', soubor: '../src/uloziste.js',
+    hledej: "        if (s && typeof s.nazev === 'string' && s.nazev.length > 200)",
+    nahrad: '        if (false)',
+    proc: 'název sekce jde z dat rovnou do nadpisu Detailu výpočtu a do dokumentů' },
+
+  { nazev: 'B52: otisky před obnovou nemají vlastní limit', soubor: 'lib/zalohovani.mjs',
+    hledej: '  const denni = vsechny.filter(k => !jePredObnovou(k));',
+    nahrad: '  const denni = vsechny;',
+    proc: 'série pokusů o obnovu by z přehledu vytlačila všechny denní zálohy' },
 ];
 
 /* ---------- běh ---------- */

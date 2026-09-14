@@ -151,6 +151,19 @@ export default async (req) => {
                funkce: text(t.funkce, 80), telefon: text(t.telefon, 40), role: t.role,
                heslo: otiskHesla(t.heslo), zalozen: new Date().toISOString(),
                zalozil: relace.email, aktivni: true };
+      /* ZNOVU ZALOŽENÝ ÚČET SE Z KNIHY SMAZANÝCH VYŠKRTNE (nález B50, 14. 9. 2026).
+       *
+       * Knihu čte obnova, aby z otisku neoživila účet, který mezitím někdo
+       * smazal (B30). Jenže záznam v ní zůstával napořád — i když správce
+       * tentýž e-mail vědomě založil znovu. Takový účet pak každá obnova
+       * potichu přeskakovala: existoval, fungoval, ale ze zálohy se nikdy
+       * neobnovil. Vědomé založení je novější rozhodnutí než staré smazání,
+       * takže knihu přepisuje.
+       *
+       * Selhání zápisu nesmí shodit založení účtu — kniha je pojistka proti
+       * oživení, ne podmínka existence. */
+      try { await (await uloziste(SMAZANI_ULOZISTE)).smaz(email); }
+      catch (e) { /* účet vznikne i tak; v knize zůstane osiřelý záznam */ }
     } else if (!ucet) {
       return json({ ok: false, chyba: 'Účet neexistuje.' }, 404);
     } else if (t.akce === 'heslo') {
