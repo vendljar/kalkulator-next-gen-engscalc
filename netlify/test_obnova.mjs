@@ -478,47 +478,99 @@ console.log('\n===== B47–B49, B52: dotažení obnovy po dávkách (19. kolo, 1
  * „Zrušit obnovu". Slepý zápis tokenu na konci dávky ho vzkřísil — zámek
  * ožil a databáze zůstala zamčená obnovou, kterou už nikdo nevedl. */
 {
+  /* Zrušení PŘED dávkou chytne už `nactiToken` a vrátí 403 — to fungovalo
+   * i dřív. Nález B47 je o něčem jiném: o zrušení UPROSTŘED dávky, kdy
+   * `nactiToken` token ještě viděl a smazal se až během zpracování. */
   const z = await obnovJson({ faze: 'zacatek', rezim: 'prepsat', potvrzeni: 'OBNOVIT' }, cookie);
   test('B47: obnova zahájena', z.ok === true && !!z.obnovaId, z);
   const zr = await obnovJson({ faze: 'zrusit', obnovaId: z.obnovaId, rezim: 'prepsat' }, cookie);
   test('B47: obnova zrušena', zr.ok === true, zr);
   const po = await obnov({ obnovaId: z.obnovaId, zdroj: { soubor: { ...hlava, firma: zalSoubor.firma } },
     rezim: 'prepsat', casti: ['firma'], potvrzeni: 'OBNOVIT' }, cookie);
-  test('B47: dávka po zrušení skončí 410, ne zápisem', po.status === 410, po.status);
-  const telo = await po.json();
+  test('B47: dávka po zrušení se odmítne (403 od nactiToken)', po.status === 403, po.status);
+  test('B47: token po odmítnuté dávce v úložišti NENÍ (zámek neožil)',
+    (await ulz('zalohy').cti('obnova-' + z.obnovaId)) === null);
+
+  /* ZRUŠENÍ UPROSTŘED DÁVKY. Dávka běží sekundy; správce mezitím v jiném
+   * okně klikne na „Zrušit obnovu". Token tedy při vstupu do dávky ještě
+   * byl, ale při zápisu na konci už není. Simuluje se úložištěm, které
+   * token vydá jednou a podruhé už ne — časováním by to spolehlivě nešlo. */
+  const z2 = await obnovJson({ faze: 'zacatek', rezim: 'prepsat', potvrzeni: 'OBNOVIT' }, cookie);
+  test('B47: druhá obnova zahájena', z2.ok === true && !!z2.obnovaId, z2);
+  const puvodniUloziste = globalThis.__TEST_ULOZISTE;
+  const klicTokenu = 'obnova-' + z2.obnovaId;
+  let precteno = 0;
+  globalThis.__TEST_ULOZISTE = (nazev) => {
+    const s = puvodniUloziste(nazev);
+    if (nazev !== 'zalohy') return s;
+    return { ...s, async cti(k) {
+      if (k === klicTokenu && ++precteno > 1) return null;   // mezitím zrušeno
+      return s.cti(k);
+    } };
+  };
+  const behem = await obnov({ obnovaId: z2.obnovaId, zdroj: { soubor: { ...hlava, firma: zalSoubor.firma } },
+    rezim: 'prepsat', casti: ['firma'], potvrzeni: 'OBNOVIT' }, cookie);
+  globalThis.__TEST_ULOZISTE = puvodniUloziste;
+  test('B47: zrušení uprostřed dávky skončí 410, ne zápisem tokenu', behem.status === 410, behem.status);
+  const telo = await behem.json();
   test('B47: odpověď říká, že se obnova zrušila a kde je cesta zpátky',
     telo.zruseno === true && /zrušena/.test(telo.chyba || ''), telo.chyba);
-  test('B47: token po zrušené dávce v úložišti NENÍ (zámek neožil)',
-    (await ulz('zalohy').cti('obnova-' + z.obnovaId)) === null);
+
+  await obnovJson({ faze: 'zrusit', obnovaId: z2.obnovaId, rezim: 'prepsat' }, cookie);
   const znovu = await obnovJson({ faze: 'zacatek', rezim: 'prepsat', potvrzeni: 'OBNOVIT' }, cookie);
   test('B47: po zrušení jde rovnou zahájit novou obnovu (databáze není zamčená)',
     znovu.ok === true, znovu);
   await obnovJson({ faze: 'zrusit', obnovaId: znovu.obnovaId, rezim: 'prepsat' }, cookie);
 }
 
-/* --- B48: token vzniká hned po kontrole zámku ---
- * Do 14. 9. bylo pořadí zámek → otisk → token a pořízení otisku trvá sekundy,
- * takže dva `zacatek` v témže okně prošly oba. Token teď vzniká první. */
+/* --- B48: token vzniká hned po kontrole zámku, ne až po otisku ---
+ *
+ * CO SE OPRAVDU ZMĚNILO A CO NE. Do 14. 9. bylo pořadí zámek → otisk → token
+ * a pořízení otisku trvá SEKUNDY, takže okno, ve kterém dva požadavky
+ * `zacatek` viděly prázdný zámek, bylo sekundy dlouhé. Token teď vzniká
+ * jako první, takže se to okno zkrátilo na jedno kolo smyčky událostí.
+ *
+ * ZÁVOD TÍM NENÍ ZAVŘENÝ a nemá smysl předstírat, že je: Netlify Blobs
+ * neumí zápis podmíněný tím, že klíč neexistuje, takže dva požadavky, které
+ * si sáhnou pro zámek v témže kole, projdou pořád oba. Zavřít to jde jedině
+ * atomickým compare-and-set na straně úložiště — a to je vlastní úkol.
+ * Kontrola níž proto měří, co se skutečně zlepšilo: token existuje DŘÍV,
+ * než je hotový otisk, takže každý další požadavek už zámek uvidí. */
 {
-  const [a, b] = await Promise.all([
-    obnovJson({ faze: 'zacatek', rezim: 'prepsat', potvrzeni: 'OBNOVIT' }, cookie),
-    obnovJson({ faze: 'zacatek', rezim: 'prepsat', potvrzeni: 'OBNOVIT' }, cookie),
-  ]);
-  const uspesne = [a, b].filter(x => x.ok === true);
-  const odmitnute = [a, b].filter(x => x.ok !== true);
-  test('B48: ze dvou souběžných zahájení projde právě jedno',
-    uspesne.length === 1 && odmitnute.length === 1, [a, b]);
-  test('B48: to druhé narazí na zámek „obnova běží"',
-    odmitnute.length === 1 && !!odmitnute[0].obnovaBezi, odmitnute[0]);
-  if (uspesne.length) await obnovJson({ faze: 'zrusit', obnovaId: uspesne[0].obnovaId, rezim: 'prepsat' }, cookie);
+  const s = ulz('zalohy');
+  const predem = (await s.seznam('obnova-')).length;
+  const z = await obnovJson({ faze: 'zacatek', rezim: 'prepsat', potvrzeni: 'OBNOVIT' }, cookie);
+  test('B48: zahájení projde', z.ok === true, z);
+  const token = await s.cti('obnova-' + z.obnovaId);
+  test('B48: token v úložišti je a nese značku poslední činnosti', !!token && !!token.naposled, token);
+  test('B48: druhý požadavek hned po prvním narazí na zámek',
+    (await obnovJson({ faze: 'zacatek', rezim: 'prepsat', potvrzeni: 'OBNOVIT' }, cookie)).obnovaBezi != null);
+  test('B48: a živý token je právě jeden', (await s.seznam('obnova-')).length === predem + 1);
+  /* Zápis tokenu PŘED otiskem se hlídá i na zdroji — pořadí je to jediné,
+   * co tenhle nález řeší, a z běhu se nedá poznat. */
+  const zdrojObnovy = (await import('node:fs')).readFileSync(new URL('./functions/obnova.mjs', import.meta.url), 'utf8');
+  const zac = zdrojObnovy.slice(zdrojObnovy.indexOf("if (faze === 'zacatek')"));
+  /* Pozor na past: `indexOf` vrací −1, když zápis ve zdroji vůbec není —
+   * a −1 je menší než cokoli, takže by kontrola prošla i u kódu, kde se
+   * token nezapisuje. Existence se proto ověřuje zvlášť. */
+  const iZapis = zac.indexOf('await s.zapis(tokenKlic(id)');
+  const iOtisk = zac.indexOf('porizOtisk(');
+  test('B48: zápis tokenu ve zdroji vůbec je', iZapis >= 0, iZapis);
+  test('B48: token se zapisuje PŘED pořízením otisku',
+    iZapis >= 0 && iOtisk >= 0 && iZapis < iOtisk, [iZapis, iOtisk]);
+  test('B48: nepovedený otisk token uklidí, aby zámek nezůstal viset',
+    /catch \(e\) \{\s*await s\.smaz\(tokenKlic\(id\)\);/.test(zac));
+  await obnovJson({ faze: 'zrusit', obnovaId: z.obnovaId, rezim: 'prepsat' }, cookie);
 }
 
 /* --- B49: platnost je hodina NEČINNOSTI, ne hodina od začátku --- */
 {
   const z = await obnovJson({ faze: 'zacatek', rezim: 'prepsat', potvrzeni: 'OBNOVIT' }, cookie);
+  test('B49: obnova pro tenhle oddíl zahájena (zámek po předchozích oddílech volný)',
+    z.ok === true && !!z.obnovaId, z);
   const s = ulz('zalohy');
   const pred = await s.cti('obnova-' + z.obnovaId);
-  test('B49: token nese značku poslední činnosti', !!pred.naposled, pred);
+  test('B49: token nese značku poslední činnosti', !!pred && !!pred.naposled, pred);
   /* Posuneme začátek o hodinu a půl zpět — kdyby platnost stála na `zacatek`,
    * další dávka by token zahodila. */
   await s.zapis('obnova-' + z.obnovaId, { ...pred, zacatek: new Date(Date.now() - 90 * 60 * 1000).toISOString() });
@@ -530,15 +582,21 @@ console.log('\n===== B47–B49, B52: dotažení obnovy po dávkách (19. kolo, 1
   test('B49: dávka posunula značku poslední činnosti',
     !!po.naposled && Date.parse(po.naposled) > Date.parse(pred.naposled) - 1, [pred.naposled, po.naposled]);
 
-  /* A naopak: hodina bez jediné dávky token ukončí — a rejstřík se přestaví. */
+  /* A naopak: hodina bez jediné dávky token ukončí — a rejstřík se přestaví.
+   * Rejstřík se schválně SMAŽE, aby se poznalo, že ho přestavělo vypršení
+   * a ne že tam zbyl z předchozích kroků. Právě to je smysl té opravy:
+   * token zmizí uprostřed rozdělané obnovy a rejstřík by jinak zůstal ze
+   * stavu před dávkami, takže by zakázky v seznamu chyběly. */
+  await ulz('zakazky').smaz('_rejstrik');
+  test('B49: rejstřík je pro účel zkoušky smazaný', (await ulz('zakazky').cti('_rejstrik')) === null);
   await s.zapis('obnova-' + z.obnovaId, { ...po, naposled: new Date(Date.now() - 90 * 60 * 1000).toISOString() });
   const vyprsel = await obnov({ obnovaId: z.obnovaId, zdroj: { soubor: { ...hlava, firma: zalSoubor.firma } },
     rezim: 'prepsat', casti: ['firma'], potvrzeni: 'OBNOVIT' }, cookie);
   test('B49: hodina nečinnosti token ukončí (410)', vyprsel.status === 410, vyprsel.status);
   const t410 = await vyprsel.json();
   test('B49: a řekne, že rejstřík byl přestavěn', /rejstřík/.test(t410.chyba || ''), t410.chyba);
-  test('B49: rejstřík v úložišti po vypršení existuje',
-    !!(await ulz('zakazky').cti('_rejstrik')));
+  const rej = await ulz('zakazky').cti('_rejstrik');
+  test('B49: vypršení rejstřík opravdu přestavělo', !!rej && Array.isArray(rej.zakazky), rej);
 }
 
 /* --- B52: otisky před obnovou nevytlačí denní zálohy z přehledu --- */
