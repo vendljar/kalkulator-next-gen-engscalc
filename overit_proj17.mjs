@@ -11,7 +11,14 @@
 import { chromium } from 'playwright';
 import { readFileSync } from 'fs';
 
-const KDE = 'file:///home/claude/work/kng/dist/kalkulacka.html';
+/* Cesta k sestavení se odvozuje od UMÍSTĚNÍ HARNESSU, ne od stroje, na kterém
+ * kdysi vznikl (nález 14. 9. 2026 při zavádění jobu „harnessy" do CI).
+ * Šestnáct harnessů neslo napevno /home/claude/work/kng/… — tedy cestu
+ * z cloudového prostředí, ve kterém je psal. Jinde než tam se nedaly spustit
+ * vůbec, a právě proto si nikdo nevšiml, že se mezitím rozešly s aplikací. */
+import { fileURLToPath } from 'node:url';
+const KOREN = fileURLToPath(new URL('.', import.meta.url));
+const KDE = new URL('dist/kalkulacka.html', import.meta.url).href;
 let ok = 0, fail = 0;
 const test = (n, podm, info) => {
   if (podm) { ok++; console.log('  ✓ ' + n); }
@@ -26,7 +33,7 @@ p.on('pageerror', e => konzole.push('pageerror: ' + e.message));
 await p.goto(KDE);
 await p.waitForTimeout(700);
 
-const ZC = (await import('module')).createRequire(import.meta.url)('/home/claude/work/kng/src/zkusebni_cenik.js');
+const ZC = (await import('module')).createRequire(import.meta.url)(KOREN + 'src/zkusebni_cenik.js');
 await p.evaluate(([c, cp]) => {
   Object.assign(DEFAULT_CENIK, c); delete DEFAULT_CENIK.prazdny;
   Object.assign(DEFAULT_CENIK_PROJ, cp); delete DEFAULT_CENIK_PROJ.prazdny;
@@ -158,9 +165,9 @@ test('podpisový blok se skládá ze zpracovatele včetně obrázku podpisu',
       && /obchodní technik/.test(html) && /<img src="data:image\/png/.test(html);
   }));
 test('tiskový náhled PROJ podpisový blok volá',
-  /dokPodpisHtml/.test(readFileSync('/home/claude/work/kng/src/ui/nabidka_proj_ui.js', 'utf8')));
+  /dokPodpisHtml/.test(readFileSync(KOREN + 'src/ui/nabidka_proj_ui.js', 'utf8')));
 test('tiskový náhled OCK podpisový blok volá',
-  (readFileSync('/home/claude/work/kng/src/ui/zakazka_ui.js', 'utf8').match(/dokPodpisHtml/g) || []).length >= 1);
+  (readFileSync(KOREN + 'src/ui/zakazka_ui.js', 'utf8').match(/dokPodpisHtml/g) || []).length >= 1);
 
 /* ---------- 8) ikona programu = favicon ---------- */
 console.log('\nikona programu');

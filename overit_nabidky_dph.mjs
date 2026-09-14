@@ -15,7 +15,14 @@
  */
 import { chromium } from 'playwright';
 
-const KDE = 'file:///home/claude/work/kng/dist/kalkulacka.html';
+/* Cesta k sestavení se odvozuje od UMÍSTĚNÍ HARNESSU, ne od stroje, na kterém
+ * kdysi vznikl (nález 14. 9. 2026 při zavádění jobu „harnessy" do CI).
+ * Šestnáct harnessů neslo napevno /home/claude/work/kng/… — tedy cestu
+ * z cloudového prostředí, ve kterém je psal. Jinde než tam se nedaly spustit
+ * vůbec, a právě proto si nikdo nevšiml, že se mezitím rozešly s aplikací. */
+import { fileURLToPath } from 'node:url';
+const KOREN = fileURLToPath(new URL('.', import.meta.url));
+const KDE = new URL('dist/kalkulacka.html', import.meta.url).href;
 let ok = 0, fail = 0;
 const zkus = (popis, podminka, detail) => {
   if (podminka) { ok++; console.log('  ✓ ' + popis); }

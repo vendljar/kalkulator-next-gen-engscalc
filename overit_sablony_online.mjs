@@ -41,6 +41,10 @@ import firma from './netlify/functions/firma.mjs';
 import zobrazeni from './netlify/functions/zobrazeni.mjs';
 import zalohaVynuceno from './netlify/functions/zaloha_vynuceno.mjs';
 import sablonyFn from './netlify/functions/sablony.mjs';
+import { fileURLToPath } from 'node:url';
+/* Cesta ke kořeni repozitáře se odvozuje od umístění harnessu (14. 9. 2026).
+ * Dřív tu stála napevno cesta z cloudového stroje, na kterém harness vznikl. */
+const KOREN = fileURLToPath(new URL('.', import.meta.url));
 
 /* Dialogy jsou od 2. 9. 2026 v aplikaci (src/ui/dialog.js), ne nativní —
  * `page.on('dialog')` už tedy nic nechytí. Harness si proto potvrzování
@@ -59,7 +63,7 @@ const dlgPosledni = async (page) => page.evaluate(() =>
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
-const { zipPrecti } = require('/home/claude/work/kng/src/docxgen.js');
+const { zipPrecti } = require(KOREN + 'src/docxgen.js');
 
 const FUNKCE = {
   '/api/zdravi': zdravi, '/api/ja': ja, '/api/prihlaseni': prihlaseni,
@@ -121,7 +125,7 @@ await page.waitForFunction(() => { try { return !!ONLINE_STAV.ja; } catch (e) { 
 await page.waitForTimeout(400);
 
 /* Zkušební ceník, ať má nabídka co počítat (zábrana ukázkového ceníku). */
-const ZC = require('/home/claude/work/kng/src/zkusebni_cenik.js');
+const ZC = require(KOREN + 'src/zkusebni_cenik.js');
 await page.evaluate(([c, cp]) => {
   Object.assign(DEFAULT_CENIK, c); delete DEFAULT_CENIK.prazdny;
   Object.assign(DEFAULT_CENIK_PROJ, cp); delete DEFAULT_CENIK_PROJ.prazdny;

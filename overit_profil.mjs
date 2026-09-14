@@ -20,6 +20,10 @@
 import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
+/* Cesta ke kořeni repozitáře se odvozuje od umístění harnessu (14. 9. 2026).
+ * Dřív tu stála napevno cesta z cloudového stroje, na kterém harness vznikl. */
+const KOREN = fileURLToPath(new URL('.', import.meta.url));
 
 /* Dialogy jsou od 2. 9. 2026 v aplikaci (src/ui/dialog.js), ne nativní —
  * `page.on('dialog')` už tedy nic nechytí. Harness si proto potvrzování
@@ -39,7 +43,7 @@ const dlgPosledni = async (page) => page.evaluate(() =>
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
 
-const HTML = readFileSync('/home/claude/work/kng/dist/kalkulacka.html', 'utf8');
+const HTML = readFileSync(KOREN + 'dist/kalkulacka.html', 'utf8');
 
 let ok = 0, fail = 0;
 const test = (n, cond, info) => {

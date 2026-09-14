@@ -9,6 +9,10 @@
  */
 import { chromium } from 'playwright';
 import path from 'path';
+import { fileURLToPath } from 'node:url';
+/* Cesta ke kořeni repozitáře se odvozuje od umístění harnessu (14. 9. 2026).
+ * Dřív tu stála napevno cesta z cloudového stroje, na kterém harness vznikl. */
+const KOREN = fileURLToPath(new URL('.', import.meta.url));
 
 /* Dialogy jsou od 2. 9. 2026 v aplikaci (src/ui/dialog.js), ne nativní —
  * `page.on('dialog')` už tedy nic nechytí. Harness si proto potvrzování

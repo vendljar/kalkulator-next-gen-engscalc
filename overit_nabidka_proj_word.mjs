@@ -26,7 +26,7 @@ import { createRequire } from 'module';
 import { chromium } from 'playwright';
 
 const require = createRequire(import.meta.url);
-const { zipPrecti } = require('/home/claude/work/kng/src/docxgen.js');
+const { zipPrecti } = require(KOREN + 'src/docxgen.js');
 
 const KDE_SABLONA = [
   '/home/claude/work/sablona_proj/Sablona_NABIDKA_PROJ.docx',
@@ -39,7 +39,14 @@ if (!sablona) {
   process.exit(0);
 }
 
-const KDE = 'file:///home/claude/work/kng/dist/kalkulacka.html';
+/* Cesta k sestavení se odvozuje od UMÍSTĚNÍ HARNESSU, ne od stroje, na kterém
+ * kdysi vznikl (nález 14. 9. 2026 při zavádění jobu „harnessy" do CI).
+ * Šestnáct harnessů neslo napevno /home/claude/work/kng/… — tedy cestu
+ * z cloudového prostředí, ve kterém je psal. Jinde než tam se nedaly spustit
+ * vůbec, a právě proto si nikdo nevšiml, že se mezitím rozešly s aplikací. */
+import { fileURLToPath } from 'node:url';
+const KOREN = fileURLToPath(new URL('.', import.meta.url));
+const KDE = new URL('dist/kalkulacka.html', import.meta.url).href;
 let ok = 0, fail = 0;
 const test = (n, podm, info) => {
   if (podm) { ok++; console.log('  ✓ ' + n); }
@@ -65,7 +72,7 @@ await p.waitForTimeout(700);
 
 /* Sestavení nese prázdný ceník (samé nuly) – bez čísel by dokument stejně
  * nevznikl (zábrana ukázkového ceníku) a nebylo by co porovnávat. */
-const ZC = require('/home/claude/work/kng/src/zkusebni_cenik.js');
+const ZC = require(KOREN + 'src/zkusebni_cenik.js');
 await p.evaluate(([c, cp, fotoProj, fotoOck]) => {
   Object.assign(DEFAULT_CENIK, c); delete DEFAULT_CENIK.prazdny;
   Object.assign(DEFAULT_CENIK_PROJ, cp); delete DEFAULT_CENIK_PROJ.prazdny;

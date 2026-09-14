@@ -19,7 +19,14 @@
  */
 import { chromium } from 'playwright';
 
-const KDE = 'file:///home/claude/work/kng/dist/kalkulacka.html';
+/* Cesta k sestavení se odvozuje od UMÍSTĚNÍ HARNESSU, ne od stroje, na kterém
+ * kdysi vznikl (nález 14. 9. 2026 při zavádění jobu „harnessy" do CI).
+ * Šestnáct harnessů neslo napevno /home/claude/work/kng/… — tedy cestu
+ * z cloudového prostředí, ve kterém je psal. Jinde než tam se nedaly spustit
+ * vůbec, a právě proto si nikdo nevšiml, že se mezitím rozešly s aplikací. */
+import { fileURLToPath } from 'node:url';
+const KOREN = fileURLToPath(new URL('.', import.meta.url));
+const KDE = new URL('dist/kalkulacka.html', import.meta.url).href;
 const chyby = [];
 const konzole = [];
 
@@ -37,7 +44,7 @@ const ok = (co, podm) => { console.log((podm ? '  ✓ ' : '  ✗ ') + co); chyby
 
 // Sestavení nese prázdný ceník (samé nuly); podstrčíme zkušební, ať je z čeho počítat.
 const { createRequire } = await import('module');
-const ZC = createRequire(import.meta.url)('/home/claude/work/kng/src/zkusebni_cenik.js');
+const ZC = createRequire(import.meta.url)(KOREN + 'src/zkusebni_cenik.js');
 await p.evaluate(([c, cp]) => {
   Object.assign(DEFAULT_CENIK, c); delete DEFAULT_CENIK.prazdny;
   Object.assign(DEFAULT_CENIK_PROJ, cp); delete DEFAULT_CENIK_PROJ.prazdny;
