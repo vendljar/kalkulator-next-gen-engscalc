@@ -102,5 +102,34 @@ test('značka „uživatel něco udělal" se při přepnutí shodí',
   test('hlídač pořadí opravdu rozliší správné od špatného', poradi(vzor) && !poradi(spatne));
 }
 
+/* ---------- 4) kolize verzí při ukládání (V27 / úkol O2) ----------
+ *
+ * Oprava z prompty O2 (7. 9. 2026) v buildu JE — ověřeno 14. 9. 2026 čtením
+ * zdroje. Tenhle oddíl ji jen zajišťuje proti návratu, protože se o ni opírá
+ * i oprava V35 výš: „Uložit změny" při přepnutí se spoléhá na to, že se
+ * neúspěšný zápis pozná. */
+const uloz = (online.match(/function onlineUloz\(opts\)[\s\S]*?\n\}/) || [''])[0];
+test('funkce onlineUloz se našla', uloz.length > 200, uloz.length);
+
+test('razítko ze serveru se po každém zápisu přebírá',
+  /ONLINE_STAV\.razitko = o\.razitko \|\| ''/.test(uloz));
+test('a jde i do zakázky samé, ať kopie v okně odpovídá serveru',
+  /ZAK\.uloRazitko = o\.razitko/.test(uloz));
+test('zápis vychází z očekávaného razítka (optimistický zámek)',
+  /ocekavaneRazitko: ONLINE_STAV\.razitko/.test(uloz));
+test('kolize se zapamatuje místo modálu, který nikdo neviděl',
+  /e\.data && e\.data\.kolize/.test(uloz) && /ONLINE_STAV\.kolize = \{/.test(uloz));
+test('hláška nabízí obě cesty — načíst znovu i přepsat',
+  /Načíst znovu ze serveru/.test(online) && /Přepsat serverovou verzi/.test(online));
+test('po kolizi se autosave zastaví, aby nesypal 409 dál',
+  /ONLINE_STAV\.kolize[\s\S]{0,200}?clearTimeout\(ONLINE_STAV\.timer\)/.test(uloz));
+test('a dokud kolize trvá, další zápis se vůbec nepokusí',
+  /if \(ONLINE_STAV\.kolize\) return;/.test(online));
+test('tlačítko se po chybě vrátí do klidu (pracuje = false v obou větvích)',
+  (uloz.match(/ONLINE_STAV\.pracuje = false/g) || []).length >= 2);
+test('jeden zápis najednou — druhý počká, než první doběhne',
+  /if \(ONLINE_STAV\.ukladaBeh\)/.test(uloz));
+test('neúspěch se vrací jako false, aby se dal poznat', /return false;/.test(uloz));
+
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);
