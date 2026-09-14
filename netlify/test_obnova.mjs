@@ -276,10 +276,14 @@ test('konec přestaví rejstřík a vrátí součet obou dávek', kon.ok && kon.
   && kon.souhrn.nove === 1 && kon.souhrn.prepsane === 1 && kon.rejstrik.prestaven === true
   && (await ulz('zakazky').cti('_rejstrik')).zakazky.some(z => z.soubor === ulA.soubor), kon);
 test('po konci token neplatí (403)', (await obnov({ faze: 'konec', obnovaId: zac.obnovaId }, cookie)).status === 403);
-/* Vypršelý token: hodinu starý začátek. */
+/* Vypršelý token. UPRAVENO 14. 9. 2026 (nález B49): platnost se počítá od
+ * POSLEDNÍ ČINNOSTI, ne od začátku — velká obnova po dávkách hodinu klidně
+ * přesáhne a dosud vypršela uprostřed práce. Zestárnout musí obojí, jinak
+ * token žije dál (a právě tak se ta změna pozná). */
 const zac2 = await obnovJson({ faze: 'zacatek', rezim: 'doplnit', potvrzeni: 'OBNOVIT' }, cookie);
 const tokenZaznam = await ulz('zalohy').cti('obnova-' + zac2.obnovaId);
-await ulz('zalohy').zapis('obnova-' + zac2.obnovaId, { ...tokenZaznam, zacatek: new Date(Date.now() - 2 * 3600 * 1000).toISOString() });
+const stary = new Date(Date.now() - 2 * 3600 * 1000).toISOString();
+await ulz('zalohy').zapis('obnova-' + zac2.obnovaId, { ...tokenZaznam, zacatek: stary, naposled: stary });
 test('vypršelý token 410',
   (await obnov({ obnovaId: zac2.obnovaId, zdroj: { soubor: { ...hlava, firma: zalSoubor.firma } }, rezim: 'doplnit', potvrzeni: 'OBNOVIT' }, cookie)).status === 410);
 test('obchodník zacatek nezahájí (403)',
