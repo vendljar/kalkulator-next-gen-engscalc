@@ -343,6 +343,37 @@ test('odebraný kid (katalogOdebrane) se hlídá',
 test('běžné kid (k12, pk3) a prázdný kid ruční položky projdou',
   uloIdProblemy(zakKid({ zamereni: [{ kid: 'pk3', nazev: 'x' }, { kid: '', nazev: 'ruční' }, { nazev: 'bez kid' }] },
     { hrubaOck: [{ kid: 'k12', nazev: 'y' }] })).length === 0);
+/* --- B51 (14. 9. 2026): vlastní PŘÍPLATKY nesou kid taky ---
+ * Kontrola kryla `vlastniPolozky`, ale `priplatkyVlastni` ne. Klíč odtamtud
+ * přitom putuje tlačítkem 📌 do katalogu a do zveřejněného ceníku, takže
+ * nepovolený tvar by prošel až tam, kde ho čte celá firma. */
+const zakPrip = (pole) => ({ varianty: [{ id: 'v1', data: {
+  ock: { zadani: { priplatkyVlastni: pole } } } }], aktivni: 'v1' });
+test('B51: kid vlastního příplatku s apostrofem je problém',
+  uloIdProblemy(zakPrip([{ kid: "k1');fetch('/x');//", nazev: 'x' }]))
+    .some(p => /příplatek/.test(p.kde)),
+  JSON.stringify(uloIdProblemy(zakPrip([{ kid: "k1');fetch('/x');//", nazev: 'x' }]))));
+test('B51: kid vlastního příplatku se značkou je problém',
+  uloIdProblemy(zakPrip([{ kid: '<img onerror=1>', nazev: 'x' }])).some(p => /příplatek/.test(p.kde)));
+test('B51: běžný i prázdný kid příplatku projde',
+  uloIdProblemy(zakPrip([{ kid: 'k12', nazev: 'x' }, { kid: '', nazev: 'ruční' }, { nazev: 'bez kid' }])).length === 0);
+test('B51: chybějící pole příplatků nepadá', uloIdProblemy(zakPrip(undefined)).length === 0);
+
+/* --- B45 (14. 9. 2026): délka názvu sekce PROJ ---
+ * Druhá vrstva pod escapováním v dvKrok(). Omezuje se JEN délka, ne znaky:
+ * obchodník si sekci smí pojmenovat česky a s interpunkcí. */
+const zakSekce = (nazev) => ({ varianty: [{ id: 'v1', data: {
+  proj: { zadani: { sekce: [{ key: 's', nazev, polozky: [] }] } } } }], aktivni: 'v1' });
+test('B45: název sekce PROJ nad 200 znaků je problém',
+  uloIdProblemy(zakSekce('x'.repeat(201))).some(p => /název sekce PROJ/.test(p.kde)));
+test('B45: přesně 200 znaků ještě projde', uloIdProblemy(zakSekce('x'.repeat(200))).length === 0);
+test('B45: český název s interpunkcí projde',
+  uloIdProblemy(zakSekce('DPZ – dokumentace pro povolení záměru (včetně PBŘ)')).length === 0);
+test('B45: délka se hlásí jako délka, ne jako špatný tvar',
+  /příliš dlouhý text/.test(uloIdProblemyText(uloIdProblemy(zakSekce('x'.repeat(201)))))
+  && !/nepovoleném tvaru/.test(uloIdProblemyText(uloIdProblemy(zakSekce('x'.repeat(201))))),
+  uloIdProblemyText(uloIdProblemy(zakSekce('x'.repeat(201)))));
+
 test('uloKidProblemyProgramu hlídá katalog OCK i ceník PROJ programu',
   uloKidProblemyProgramu({ vlastniPolozky: { dpz: [{ kid: "pk1'" }] } }, { polozky: { rezie: [{ kid: 'k1' }, { kid: 'k2)' }] } }).length === 2
   && uloKidProblemyProgramu({ vlastniPolozky: { dpz: [{ kid: 'pk1' }] } }, { polozky: { rezie: [{ kid: 'k1' }] } }).length === 0

@@ -517,6 +517,18 @@ function uloKidSeznam(mapa, kde, out) {
     });
   });
 }
+/* Ploché pole položek s `kid` (nález B51, 14. 9. 2026).
+ *
+ * `uloKidSeznam` čeká MAPU sekce → pole, protože tak jsou uložené trvalé
+ * položky kalkulace. Vlastní příplatky ale žádné sekce nemají — je to jedno
+ * ploché pole. Vlastní funkce je poctivější než ohýbat tu první: kdyby
+ * `uloKidSeznam` brala obojí, prošla by jí i mapa, kterou někdo omylem
+ * uložil jako pole, a nikdo by se to nedozvěděl. */
+function uloKidPole(arr, kde, out) {
+  (Array.isArray(arr) ? arr : []).forEach(p => {
+    if (p && p.kid != null && p.kid !== '' && !uloIdBezpecne(p.kid)) out.push({ kde: kde + ' (kid)', id: p.kid });
+  });
+}
 function uloKidOdebrane(arr, kde, out) {
   (Array.isArray(arr) ? arr : []).forEach(kid => {
     if (kid != null && kid !== '' && !uloIdBezpecne(kid)) out.push({ kde: kde + ' (odebraný kid)', id: kid });
@@ -529,6 +541,14 @@ function uloKidProblemyVarianty(v, out) {
   if (ockZ && typeof ockZ === 'object') {
     uloKidSeznam(ockZ.vlastniPolozky, 'trvalá položka OCK', out);
     uloKidOdebrane(ockZ.katalogOdebrane, 'trvalá položka OCK', out);
+    /* VLASTNÍ PŘÍPLATKY NESOU `kid` TAKY (nález B51, 14. 9. 2026).
+     *
+     * Kontrola kryla `vlastniPolozky` (trvalé položky kalkulace), ale
+     * `priplatkyVlastni` — vlastní příplatkové řádky, které se tlačítkem 📌
+     * ukládají natrvalo do ceníku — ne. Klíč odtamtud přitom putuje do
+     * katalogu a do zveřejněného ceníku, takže nepovolený tvar by prošel
+     * až tam, kde ho čte celá firma. */
+    uloKidPole(ockZ.priplatkyVlastni, 'vlastní příplatek OCK', out);
   }
   const proj = d.proj;
   if (proj && typeof proj === 'object') {
@@ -536,6 +556,15 @@ function uloKidProblemyVarianty(v, out) {
     if (proj.zadani && typeof proj.zadani === 'object') {
       uloKidOdebrane(proj.zadani.katalogOdebrane, 'trvalá položka PROJ', out);
       (Array.isArray(proj.zadani.sekce) ? proj.zadani.sekce : []).forEach(s => {
+        /* DÉLKA NÁZVU SEKCE PROJ (nález B45, 14. 9. 2026).
+         *
+         * Escapování v `dvKrok()` je hlavní obrana, tohle je druhá vrstva:
+         * název sekce jde z dat varianty rovnou do nadpisu Detailu výpočtu
+         * a do dokumentů. Omezuje se JEN délka, ne znaky — obchodník si
+         * sekci smí pojmenovat česky a s interpunkcí. Dvě stě znaků je
+         * nadpis, víc už je pokus něco propašovat. */
+        if (s && typeof s.nazev === 'string' && s.nazev.length > 200)
+          out.push({ kde: 'název sekce PROJ', id: s.nazev.slice(0, 40) + '…', duvod: 'delka' });
         (s && Array.isArray(s.polozky) ? s.polozky : []).forEach(p => {
           if (p && p.kid != null && p.kid !== '' && !uloIdBezpecne(p.kid)) out.push({ kde: 'položka sekce PROJ (kid)', id: p.kid });
         });
@@ -593,11 +622,16 @@ function uloIdProblemy(zak) {
  * aby člověk věděl, co má opravit. */
 function uloIdProblemyText(problemy) {
   const dupl = problemy.filter(p => p.duvod === 'duplicita');
-  const tvar = problemy.filter(p => p.duvod !== 'duplicita');
+  const delka = problemy.filter(p => p.duvod === 'delka');
+  const tvar = problemy.filter(p => p.duvod !== 'duplicita' && p.duvod !== 'delka');
   const casti = [];
   if (tvar.length) casti.push('identifikátor v nepovoleném tvaru (' + tvar.map(x => x.kde).join(', ')
     + ') — povolená jsou písmena, číslice, tečka, podtržítko a pomlčka');
   if (dupl.length) casti.push('duplicitní id (' + dupl.map(x => x.kde + ' ' + x.id).join(', ') + ')');
+  /* Délka se hlásí zvlášť (B45): není to špatný tvar, je to příliš dlouhý
+   * text — a člověk má vědět, že stačí zkrátit, ne přepsat znaky. */
+  if (delka.length) casti.push('příliš dlouhý text (' + delka.map(x => x.kde).join(', ')
+    + ') — nejvýš 200 znaků');
   return casti.join('; ');
 }
 

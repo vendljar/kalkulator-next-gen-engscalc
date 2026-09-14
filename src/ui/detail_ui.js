@@ -19,8 +19,24 @@ var DETAIL_KROKY = [
   ['dv-10', '10. Lakování'], ['dv-11', '11. Cenové sekce'], ['dv-12', '12. Souhrn a DPH'],
 ];
 
+/* NADPIS KROKU SE ESCAPUJE (nález B45, 14. 9. 2026).
+ *
+ * Do 14. 9. se `nadpis` vkládal do `<h3>` syrový. Volání z detailu OCK
+ * předávají literály, takže to vypadalo neškodně — jenže detail PROJ
+ * skládá nadpis z `s.nazev`, což je NÁZEV SEKCE Z DAT VARIANTY. Ten si
+ * obchodník pojmenuje sám, `importZakazka` do něj nesahá a server ho
+ * nekontroluje. Stačilo uložit zakázku se sekcí pojmenovanou
+ * `<img src=x onerror=…>`; jakmile administrátor otevřel Detail výpočtu
+ * PROJ, běžel skript pod jeho relací — týž dopad jako B26.
+ *
+ * Kalkulace PROJ týž název escapuje odjakživa, jen detail ne. Escapování
+ * tady nic nerozbije: literály z ostatních volání projdou beze změny.
+ *
+ * `inner` se schválně NEescapuje — to je hotové HTML z dvTab/sekceBlok,
+ * které si escapování řeší uvnitř. Kdyby se sem někdy začal předávat text
+ * z dat, musí projít `esc()` u volajícího. */
 function dvKrok(nadpis, inner, id) {
-  return `<div class="dv-krok"${id ? ` id="${id}"` : ''}><h3>${nadpis}</h3><div class="dv-body">${inner}</div></div>`;
+  return `<div class="dv-krok"${id ? ` id="${esc(id)}"` : ''}><h3>${esc(nadpis)}</h3><div class="dv-body">${inner}</div></div>`;
 }
 /* řádky: [popis, hodnota, vzorec/poznámka] – třetí sloupec řídí DET-1 */
 function dvTab(rows) {
@@ -316,7 +332,11 @@ function renderDetail() {
 
   /* DET-1 + DET-3: ovládací lišta – vzorce zap/vyp, kotvy na kroky, samostatný tisk. */
   const listaKotev = DETAIL_KROKY.map(([id, nazev]) =>
-    `<a class="dv-kotva" href="#${esc(id)}" onclick="dvSkoc(event,'${escJs(id)}')">${nazev}</a>`).join(' ');
+    /* `nazev` je dnes literál z DETAIL_KROKY, přesto se escapuje (B45,
+     * 14. 9. 2026): u `dvKrok` platila táž výmluva, dokud do ní detail PROJ
+     * nezačal posílat název sekce z dat varianty. Výjimka, která stojí na
+     * tom, kdo funkci zrovna volá, vydrží jen do příštího volajícího. */
+    `<a class="dv-kotva" href="#${esc(id)}" onclick="dvSkoc(event,'${escJs(id)}')">${esc(nazev)}</a>`).join(' ');
   const lista = `<div class="dv-lista noprint">
     <label class="dv-prep"><input type="checkbox" ${DETAIL_VZORCE ? 'checked' : ''}
       onchange="detailVzorce(this.checked)"> zobrazit vzorce a poznámky</label>

@@ -60,6 +60,34 @@ const escJs = eval(vytahni('esc') + vytahni('escJs') + 'escJs');   // eslint-dis
   }
 }
 
+/* ---- funkce, které skládají HTML z argumentu, musí escapovat samy ----
+ * (nález B45, 14. 9. 2026)
+ *
+ * `dvKrok(nadpis, …)` vkládala nadpis do `<h3>` syrový. Volání z detailu OCK
+ * předávají literály, takže to vypadalo neškodně — jenže detail PROJ skládá
+ * nadpis z názvu sekce, který si pojmenuje obchodník a server ho nekontroluje.
+ * Uložil zakázku se sekcí `<img src=x onerror=…>` a administrátorovi běžel
+ * skript pod jeho relací, jakmile otevřel Detail výpočtu PROJ.
+ *
+ * Statický hlídač níž tohle nechytí: v `detail_proj_ui.js` je to `s.nazev`
+ * předaný jako ARGUMENT, ne interpolace do HTML. Proto tenhle seznam —
+ * funkce, o kterých víme, že si HTML skládají samy, se zavolají s `<b>`
+ * a musí vrátit escapovanou podobu. */
+{
+  const HTML_Z_ARGUMENTU = [
+    { soubor: 'detail_ui.js', fn: 'dvKrok', argy: ['<b>x</b>', '', 'id'], kde: 'nadpis kroku' },
+  ];
+  HTML_Z_ARGUMENTU.forEach(z => {
+    const zdroj = fs.readFileSync(__dirname + '/ui/' + z.soubor, 'utf8').replace(/\r\n/g, '\n');
+    const kus = zdroj.match(new RegExp('function ' + z.fn + '\\([\\s\\S]*?\\n\\}'));
+    test(`${z.fn} se v ui/${z.soubor} našla`, !!kus);
+    if (!kus) return;
+    const fn = new Function('esc', kus[0] + '\nreturn ' + z.fn + ';')(esc);
+    const html = fn.apply(null, z.argy);
+    test(`${z.fn} escapuje ${z.kde}`, html.indexOf('<b>') < 0 && html.indexOf('&lt;b&gt;') >= 0, html.slice(0, 160));
+  });
+}
+
 /* ---- esc(): text a obsah atributů ---- */
 test('esc escapuje <', esc('<script>') === '&lt;script&gt;', esc('<script>'));
 test('esc escapuje uvozovku', esc('a"b') === 'a&quot;b', esc('a"b'));
@@ -238,10 +266,12 @@ const PROVERENO = {
     'label': 'popisek pole ve formulářové šabloně txt(path, label) – volá se s literály',
     'id': 'id karty / sekce / kotvy (card(), sekce(), detailKotvy) – literály z kódu, ne data',
   },
-  'detail_ui.js': {
-    'nazev': 'název kroku výpočtu z pevného seznamu DETAIL_KROKY',
-    'id': 'id kroku výpočtu z pevného seznamu DETAIL_KROKY (dvKrok)',
-  },
+  /* `detail_ui.js` ze seznamu 14. 9. 2026 zmizel: `dvKrok()` od té chvíle
+   * escapuje nadpis i id sama (nález B45), takže obě hodnoty projdou přes
+   * `esc()` a k prověřování se nedostanou. Zdůvodnění „z pevného seznamu
+   * DETAIL_KROKY" navíc přestalo platit v okamžiku, kdy detail PROJ začal
+   * do dvKrok posílat název sekce z dat varianty — a přesně tím se nález
+   * B45 stal zneužitelným. Že dvKrok escapuje, dokazuje sonda nahoře. */
   /* `dialog.js` ze seznamu 14. 9. 2026 zmizel celý: `dlgEsc` je od té chvíle
    * v OBALY, takže se hodnoty v něm zabalené k prověřování vůbec nedostanou.
    * Záznam v PROVERENO by na ně čekal marně a hlídač zastaralých záznamů by
