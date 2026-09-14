@@ -132,15 +132,20 @@ jobs:
         env:
           KNG_NEZVYSOVAT_VERZI: '1'
         run: python3 build.py
+      # Playwright se instaluje MÍSTNĚ, ne globálně. `NODE_PATH` totiž platí
+      # jen pro require() ze CommonJS — hledání modulů pro `import` ho ignoruje
+      # úplně, takže harness končil na ERR_MODULE_NOT_FOUND. Ve starším jobu to
+      # nikdo neodhalil, protože ty kroky nikdy nedoběhly: padalo už spouštění
+      # sad o dva kroky výš (nález 14. 9. 2026 při zavádění tohohle jobu).
       - name: Playwright (Chromium)
         run: |
-          npm i -g playwright
+          npm i playwright
           npx playwright install --with-deps chromium
       - name: Lišta a historie (overit_lista.mjs)
-        run: NODE_PATH="$(npm root -g)" node overit_lista.mjs
+        run: node overit_lista.mjs
       - name: ATYP a ceníkové podíly (overit_atyp.mjs)
-        run: NODE_PATH="$(npm root -g)" node overit_atyp.mjs
+        run: node overit_atyp.mjs
       - name: Detail výpočtu PROJ (overit_proj17.mjs)
-        run: NODE_PATH="$(npm root -g)" node overit_proj17.mjs
+        run: node overit_proj17.mjs
       - name: Matice zobrazení (overit_zobrazeni.mjs)
-        run: NODE_PATH="$(npm root -g)" node overit_zobrazeni.mjs
+        run: node overit_zobrazeni.mjs

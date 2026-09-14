@@ -146,6 +146,24 @@ async function obnovMapu(b, s, mapa, rezim, zapisovat, predpona, kontrola, overe
 }
 
 /* Rejstřík ze skutečného obsahu úložiště — ne ze zálohy. */
+/* Přestavění rejstříku i odjinud než z obsluhy požadavku (B49, 14. 9. 2026).
+ *
+ * `ULO` je lokální proměnná obsluhy (načítá se přes `jadro()`), takže funkce
+ * mimo ni ho nevidí. První verze téhle opravy na to narazila a `catch` kolem
+ * volání chybu spolkl — rejstřík se nepřestavěl a nikdo se to nedozvěděl,
+ * dokud to neukázal test. Proto vlastní obálka, která si jádro načte sama,
+ * a proto se selhání aspoň vypíše do logu: potichu smí selhat úklid, ne
+ * chyba v kódu. */
+async function prestavRejstrikSam(kdo) {
+  try {
+    const { ULO } = await jadro();
+    return await prestavRejstrik(ULO, await uloziste('zakazky'), kdo);
+  } catch (e) {
+    console.error('obnova: rejstřík se nepodařilo přestavět (' + (e && e.message ? e.message : e) + ')');
+    return null;
+  }
+}
+
 async function prestavRejstrik(ULO, s, kdo) {
   const zaznamy = [];
   for (const k of await s.seznam('z/')) {
@@ -187,7 +205,7 @@ async function nactiToken(relace, id) {
      * rozdělané obnovy, takže v databázi leží zakázky z několika dávek
      * a rejstřík je ze stavu před nimi — kdo by ho přestavěl, když se
      * obnova řádně neukončila? Nikdo. Proto tady. */
-    try { await prestavRejstrik(ULO, await uloziste('zakazky'), relace.email); } catch (e) { /* rejstřík se dá přestavět i ručně */ }
+    await prestavRejstrikSam(relace.email);
     return { chyba: json({ ok: false, chyba: 'Zahájená obnova vypršela (hodina nečinnosti). Stav před ní je v otisku '
       + z.otiskPred + '; rejstřík byl přestavěn. Začněte znovu náhledem.' }, 410) };
   }
@@ -213,7 +231,7 @@ async function beziciObnova() {
    * nikdo neuzavřel — rejstřík je tedy ze stavu před nimi (B49, 14. 9. 2026).
    * Přestaví se tady, protože jinde už to nikdo neudělá. */
   if (uklizeno && !ziva) {
-    try { await prestavRejstrik(ULO, await uloziste('zakazky'), 'úklid opuštěné obnovy'); } catch (e) { /* jde i ručně */ }
+    await prestavRejstrikSam('úklid opuštěné obnovy');
   }
   return ziva;
 }
