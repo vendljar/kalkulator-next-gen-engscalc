@@ -47,9 +47,15 @@ function dlgUkaz(typ, text, opts) {
     const poleHtml = typ === 'dotaz'
       ? `<input type="text" id="dlg-text" data-dlg="text" value="${dlgEsc(opts.vychozi || '')}">`
       : '';
+    /* Typ „volba" (14. 9. 2026, nález V35): víc než dvě cesty ven. Přepnutí
+     * na jinou zakázku s neuloženými změnami se musí ptát „Uložit / Zahodit /
+     * Zůstat" — dvě tlačítka na to nestačí a mlčky uložit se nesmí. */
     const tlacitka = typ === 'hlaska'
       ? `<button class="primary" data-dlg="ano">${ano}</button>`
-      : `<button data-dlg="ne">${ne}</button><button class="primary" data-dlg="ano">${ano}</button>`;
+      : (typ === 'volba'
+        ? (opts.moznosti || []).map((m, i) =>
+          `<button class="${m.primary ? 'primary' : ''}" data-dlg="v${i}">${dlgEsc(m.popis)}</button>`).join('')
+        : `<button data-dlg="ne">${ne}</button><button class="primary" data-dlg="ano">${ano}</button>`);
 
     const el = document.createElement('div');
     el.id = 'dlg';
@@ -76,9 +82,16 @@ function dlgUkaz(typ, text, opts) {
       else if (e.key === 'Enter' && (!pole || document.activeElement === pole)) { e.preventDefault(); potvrdit(); }
     }
     document.addEventListener('keydown', naKlavesu, true);
-    el.querySelector('[data-dlg="ano"]').addEventListener('click', potvrdit);
-    const btnNe = el.querySelector('[data-dlg="ne"]');
-    if (btnNe) btnNe.addEventListener('click', zrusit);
+    if (typ === 'volba') {
+      (opts.moznosti || []).forEach((m, i) => {
+        const b = el.querySelector('[data-dlg="v' + i + '"]');
+        if (b) b.addEventListener('click', () => zavri(m.kod));
+      });
+    } else {
+      el.querySelector('[data-dlg="ano"]').addEventListener('click', potvrdit);
+      const btnNe = el.querySelector('[data-dlg="ne"]');
+      if (btnNe) btnNe.addEventListener('click', zrusit);
+    }
     /* Klik mimo box = zrušit; u hlášky zavřít. Nechává to cestu ven i tehdy,
      * když se tlačítko schová pod jiným prvkem. */
     el.addEventListener('mousedown', (e) => { if (e.target === el) zrusit(); });
@@ -86,7 +99,8 @@ function dlgUkaz(typ, text, opts) {
     setTimeout(() => {
       if (pole) { pole.focus(); pole.select(); }
       else {
-        const cil = el.querySelector('[data-dlg="' + (opts.vychoziNe ? 'ne' : 'ano') + '"]');
+        const cil = el.querySelector('[data-dlg="'
+          + (typ === 'volba' ? 'v0' : (opts.vychoziNe ? 'ne' : 'ano')) + '"]');
         if (cil) cil.focus();
       }
     }, 0);
@@ -110,5 +124,11 @@ function dlgZarad(typ, text, opts) {
 function potvrd(text, opts) { return dlgZarad('potvrd', text, opts); }
 function hlaska(text, opts) { return dlgZarad('hlaska', text, opts); }
 function dotaz(text, vychozi) { return dlgZarad('dotaz', text, { vychozi: vychozi }); }
+/* volba('text', [{kod,popis,primary}], {nadpis}) → kód zvoleného tlačítka,
+ * nebo null při Escape a kliknutí mimo. Escape znamená „nic nedělej" —
+ * u přepínání zakázek tedy „Zůstat", což je bezpečná cesta. */
+function volba(text, moznosti, opts) {
+  return dlgZarad('volba', text, Object.assign({}, opts || {}, { moznosti: moznosti || [] }));
+}
 
-if (typeof module !== 'undefined') module.exports = { potvrd, hlaska, dotaz };
+if (typeof module !== 'undefined') module.exports = { potvrd, hlaska, dotaz, volba };

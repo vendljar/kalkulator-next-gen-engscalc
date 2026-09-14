@@ -839,9 +839,40 @@ function onlineObnovPosledni() {
 
 async function onlineOtevri(soubor) {
   if (!ONLINE_STAV.ja) return Promise.resolve(false);
-  if (typeof historieNeulozeno === 'function' && historieNeulozeno()
-    && !await potvrd('Otevřená zakázka má neuložené změny. Otevřít jinou a ty změny zahodit?'))
-    return Promise.resolve(false);
+  /* PŘEPNUTÍ NA JINOU ZAKÁZKU SE PTÁ NA TŘI CESTY (nález V35, 14. 9. 2026).
+   *
+   * Do 14. 9. tu stálo jen „Otevřít jinou a ty změny zahodit?" — tedy zahodit
+   * nebo zůstat. Kdo chtěl změny uložit, musel dialog zrušit, uložit ručně
+   * a otevřít znovu; kdo to nevěděl, o práci přišel. Třetí tlačítko to řeší.
+   * Escape a kliknutí mimo znamená „Zůstat", protože to je jediná volba,
+   * po které se nic neztratí. */
+  if (typeof historieNeulozeno === 'function' && historieNeulozeno()) {
+    const co = (typeof volba === 'function')
+      ? await volba('Otevřená zakázka má neuložené změny. Co s nimi?', [
+        { kod: 'ulozit', popis: 'Uložit změny', primary: true },
+        { kod: 'zahodit', popis: 'Zahodit změny' },
+        { kod: 'zustat', popis: 'Zůstat tady' },
+      ], { nadpis: 'Otevřít jinou zakázku' })
+      : (await potvrd('Otevřená zakázka má neuložené změny. Otevřít jinou a ty změny zahodit?')
+        ? 'zahodit' : 'zustat');
+    if (co !== 'ulozit' && co !== 'zahodit') return false;
+    if (co === 'ulozit') {
+      const uspech = await onlineUloz();
+      /* Neuložilo se (kolize verzí, zamčená nabídka, výpadek sítě)? Pak se
+       * nikam nepřepíná — jinak by se změny ztratily přesně tam, kde je
+       * uživatel chtěl zachránit. */
+      if (!uspech) {
+        onlineZprava('Změny se nepodařilo uložit, zakázka zůstává otevřená.', 'varovani');
+        render();
+        return false;
+      }
+    }
+  }
+  /* Naplánovaný autosave patřil PŘEDCHOZÍ zakázce (V35). Kdyby doběhl až po
+   * přepnutí, zapsal by na server obsah okna pod novým jménem — a razítko
+   * i ceníkovou verzi by to změnilo bez jediného kliknutí. */
+  if (ONLINE_STAV.timer) { clearTimeout(ONLINE_STAV.timer); ONLINE_STAV.timer = null; }
+  ONLINE_STAV.zmenaUzivatele = false;
   ONLINE_STAV.pracuje = true; renderOnlinePanel();
   return onlineApi('/api/zakazky?soubor=' + encodeURIComponent(soubor)).then(o => {
     ZAK = importZakazka(o.zakazka);
@@ -859,12 +890,21 @@ async function onlineOtevri(soubor) {
     /* Otevřít se musí nad ceníkem, který právě platí – rozpracované varianty
      * se srovnají, uzamčené se nedotknou (stejné pravidlo jako u složky). */
     const prep = (typeof uloSrovnejSPlatnymCenikem === 'function') ? uloSrovnejSPlatnymCenikem() : null;
-    onlineZprava('Otevřeno online: ' + soubor + '.'
-      + (prep && prep.prepocteno && typeof uloPrepocetVeta === 'function' ? ' ' + uloPrepocetVeta(prep) : ''));
+    /* PŘEPOČET NA DNEŠNÍ CENÍK NENÍ NEULOŽENÁ ZMĚNA (nález V35, 14. 9. 2026).
+     *
+     * Otisk pro autosave se bral PŘED přepočtem, takže se otevřená zakázka
+     * hned lišila od „naposledy uloženého" — a první klik kamkoli spustil
+     * zápis na server. Zakázka se tím sama uložila s novým razítkem a novou
+     * ceníkovou verzí, aniž by do ní kdokoli sáhl. Otisk se proto bere až
+     * po přepočtu: uloží se, teprve když do zakázky někdo opravdu zasáhne. */
     /* Úklid po V36 (14. 9. 2026): automaticky zaškrtnutý ATYP, který už nemá
      * oporu v kontrole standardu, se odškrtne — a řekne se to nahlas, protože
-     * to mění cenu. Ručně zaškrtnutého ATYPu se to netýká. */
+     * to mění cenu. Ručně zaškrtnutého ATYPu se to netýká. Běží PŘED otiskem
+     * ze stejného důvodu jako přepočet: otevření zakázky se samo neukládá. */
     if (typeof standardAtypUklid === 'function') standardAtypUklid();
+    ONLINE_STAV.posledni = JSON.stringify(ZAK);
+    onlineZprava('Otevřeno online: ' + soubor + '.'
+      + (prep && prep.prepocteno && typeof uloPrepocetVeta === 'function' ? ' ' + uloPrepocetVeta(prep) : ''));
     zavriOnline();
     render();
     if (typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
