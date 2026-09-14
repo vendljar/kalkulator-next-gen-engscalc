@@ -371,6 +371,10 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
    * v zadání. Celý výpočet dál pracuje s tímhle jedním číslem. */
   const nastupist = nastupisteCelkem(z);
   const pater = patraProVypocet(z);
+  /* Nástupiště na ZADNÍ stěně (nález V37, 14. 9. 2026). U neprůchozí šachty
+   * je jich nula, takže se všechno, co na tomhle čísle visí, chová přesně
+   * jako dosud — to je podmínka, aby se nepohnuly ceny stávajících zakázek. */
+  const nastupistC = (z.pruchoziSachta && (+z.nastupisteC || 0) > 0) ? (+z.nastupisteC || 0) : 0;
   const vyskaPodlazi = pater >= 2 ? z.zdvih / (pater - 1) : 0;
   const svetlaVyska = vyskaPodlazi - 0.2;
   const vyskaProsklene = z.zdvih + z.prejezd;
@@ -439,7 +443,10 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const strana = ext ? 'ext' : 'int';
   const spojeRows = [
     { key: 'zadniRoh',       spoju: ramy * 2 },
-    { key: 'celni',          spoju: (ramy - 1) * 2 - 2 },
+    /* Spoje čelní strany se u PRŮCHOZÍ šachty počítají dvakrát (nález V37,
+     * 14. 9. 2026): portály jsou na obou stěnách, takže i spoje. Neprůchozí
+     * šachta a průchozí bez nástupišť C vycházejí přesně jako dosud. */
+    { key: 'celni',          spoju: ((ramy - 1) * 2 - 2) * (nastupistC > 0 ? 2 : 1) },
     { key: 'predsazene',     spoju: zapusteny ? 0 : 8 * nastupist },
     { key: 'portPricniky',   spoju: portPricniky * 2 + kratkePricniky },
     { key: 'sloupkyPortalu', spoju: sloupkyPortalu },
@@ -560,7 +567,40 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const svetlikM2 = svetlikKs * g.sir * (svetlaVyska - 2.3);
   const svetlikBokKs = kratkePricniky;
   const svetlikBokM2 = svetlikBokKs * ((g.sir - sirkaDveri - 0.04) / Math.max(1, z.svetlikyBoky)) * 1.1;
-  const skloBokyZadniM2 = bocniM2 + zadniM2;
+
+  /* PRŮCHOZÍ ŠACHTA: ZADNÍ STĚNA NENÍ CELÁ PROSKLENÁ (nález V37, 14. 9. 2026).
+   *
+   * Rozhodnutí J. V.: „U průchozí šachty se musí v případě nástupišť počítat
+   * s tím, že v nich jsou portály + světlíky. Ostatní patra se počítají jako
+   * plné zasklení."
+   *
+   * Do 14. 9. se zadní stěna zasklívala jako plná stěna i tam, kde do ní
+   * vedou dveře — průchozí 2+2 vycházela na sklo úplně stejně jako neprůchozí
+   * se čtyřmi nástupišti. Nástupiště na zadní stěně přitom znamená otvor:
+   * sklo v něm není a nad ním je světlík, přesně jako na stěně čelní.
+   *
+   * Model je záměrně týž jako u čelní stěny, aby se obě stěny nepočítaly
+   * každá jinak:
+   *   – otvor = šířka dveřního otvoru × 2,3 m (táž výška, s jakou počítá
+   *     oplechování dveří i sloupky portálu),
+   *   – světlík nad otvorem se POČÍTAT NEMUSÍ: `svetlikKs` stojí od 9. 9.
+   *     na SOUČTU nástupišť A + C, takže světlíky nad dveřmi C už v položce
+   *     „čelní stěna (světlíky)" jsou. Připočítat je znovu by je zdvojilo —
+   *     níž se proto jen vyčíslují zvlášť, aby bylo v Detailu výpočtu vidět,
+   *     kolik jich sedí na zadní stěně.
+   *
+   * Neprůchozí šachta a průchozí s nulou nástupišť C musí vyjít přesně jako
+   * dosud: `nastupistC` je pak 0 a obě čísla níž vycházejí na nulu. */
+  const zadniOtvorM2 = sirkaDveri * 2.3;
+  const zadniPortalyM2 = nastupistC * zadniOtvorM2;
+  /* Ubrat nejde víc, než na stěně je — u nízké šachty s mnoha nástupišti by
+   * jinak vyšlo záporné sklo. */
+  const zadniPlneM2 = Math.max(zadniM2 - zadniPortalyM2, 0);
+  /* Jen rozpad už započítaných světlíků, ne další sklo (viz komentář výš). */
+  const svetlikZadniKs = svetlik * nastupistC;
+  const svetlikZadniM2 = svetlikZadniKs * g.sir * (svetlaVyska - 2.3);
+
+  const skloBokyZadniM2 = bocniM2 + zadniPlneM2;
   const skloCelniM2 = svetlikM2 + svetlikBokM2;
   const skloCelkemM2 = skloBokyZadniM2 + skloCelniM2;
   const skloRada = skloVolba(z, c);   // typ skla podle šachty a zasklení (9. 9. 2026)
@@ -978,7 +1018,13 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     plechy: { spojeRows, ks: plechyKs, kg: plechyKg, m2: plechyM2 },
     zaskleni: { rozmer: g, zadni: { ks: zadniKs, m2: zadniM2 }, bocni: { ks: bocniKs, m2: bocniM2 },
                 svetliky: { ks: svetlikKs, m2: svetlikM2 }, svetlikyBoky: { ks: svetlikBokKs, m2: svetlikBokM2 },
-                bokyZadniM2: skloBokyZadniM2, celniM2: skloCelniM2, celkemM2: skloCelkemM2 },
+                bokyZadniM2: skloBokyZadniM2, celniM2: skloCelniM2, celkemM2: skloCelkemM2,
+                /* Rozpad zadní stěny pro Detail výpočtu (V37, 14. 9. 2026):
+                 * patra bez nástupiště C jsou plné sklo, patra s nástupištěm
+                 * mají portál a nad ním světlík. */
+                zadniPlne: { m2: zadniPlneM2 },
+                zadniPortaly: { ks: nastupistC, m2: zadniPortalyM2, otvorM2: zadniOtvorM2 },
+                svetlikyZadni: { ks: svetlikZadniKs, m2: svetlikZadniM2 } },
     dily: { terceKs, terceKg, listyKs, listyBm: listyCelkBm, listyKg, oplDvereKs, oplDvereKg, oplDvereM2,
             podestKs, podestKg, podestM2, prechKs, prechKg },
     spojovaci: { rows: spojovaciRows, celkem: spojovaciKc, nytovaniKs },

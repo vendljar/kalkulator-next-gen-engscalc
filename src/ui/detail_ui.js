@@ -212,8 +212,24 @@ function renderDetail() {
   const z = r.zaskleni;
   const krZas = dvKrok('8. Zasklení', dvTab([
     ['Rozměr skla (š×v)', `${M(z.rozmer.sir, 3)} × ${M(z.rozmer.vys, 3)} m`, Z.zaskleni === 'na terče' ? 'terče' : 'mezi příčníky'],
-    ['Zadní stěna', `${z.zadni.ks} ks · ${M(z.zadni.m2, 2)} m²`,
+    /* Rozpad zadní stěny (nález V37, 14. 9. 2026). Do té doby tu stál jediný
+     * řádek „Zadní stěna" a u průchozí šachty z něj nešlo poznat, že jsou
+     * v ní dveřní otvory — průchozí 2+2 vycházela na sklo stejně jako
+     * neprůchozí se čtyřmi nástupišti. */
+    ['Zadní stěna — celá plocha', `${z.zadni.ks} ks · ${M(z.zadni.m2, 2)} m²`,
       'ks = strop(výška prosklené / rozteč); m² = max(ks · šířka skla · výška skla; výška prosklené · šířka skla)'],
+    ...(Z.pruchoziSachta ? [
+      ['Zadní stěna — nástupiště C (portál + světlík)',
+        `${(z.zadniPortaly || {}).ks || 0} ks · −${M((z.zadniPortaly || {}).m2 || 0, 2)} m²`,
+        `otvor = šířka dveřního otvoru × 2,3 m = ${M((z.zadniPortaly || {}).otvorM2 || 0, 2)} m² na nástupiště; `
+        + 'sklo v otvoru není, nad ním je světlík (řádek níž)'],
+      ['Zadní stěna — patra bez nástupiště C (plné sklo)',
+        `${M((z.zadniPlne || {}).m2 || 0, 2)} m²`,
+        'celá plocha zadní stěny minus otvory nástupišť C; do materiálu bočních a zadní stěny jde tohle'],
+      ['— z toho světlíky nad dveřmi C', `${(z.svetlikyZadni || {}).ks || 0} ks · ${M((z.svetlikyZadni || {}).m2 || 0, 2)} m²`,
+        'JEN ROZPAD, nepřičítá se: světlíky se počítají ze součtu nástupišť A + C, '
+        + 'takže tyhle už jsou v řádku „Světlíky / boky" výš'],
+    ] : []),
     ['Boční stěny', `${z.bocni.ks} ks · ${M(z.bocni.m2, 2)} m²`,
       'ks = zadní stěna · 2 (dvě strany); m² = max(ks · hloubka skla · výška skla; 2 · výška prosklené · hloubka skla)'],
     ['Světlíky / boky', `${z.svetliky.ks} ks · ${M(z.svetliky.m2, 2)} m² / ${z.svetlikyBoky.ks} ks · ${M(z.svetlikyBoky.m2, 2)} m²`,
