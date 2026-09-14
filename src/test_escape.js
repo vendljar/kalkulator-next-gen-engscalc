@@ -26,6 +26,26 @@ const vytahni = jm => {
 const esc = eval(vytahni('esc') + 'esc');            // eslint-disable-line no-eval
 const escJs = eval(vytahni('esc') + vytahni('escJs') + 'escJs');   // eslint-disable-line no-eval
 
+/* ---- dlgEsc(): důkaz k allowlistu (14. 9. 2026) ----
+ * dlgEsc je v OBALY, takže hlídač hodnotu v něm zabalenou pustí. Ověřuje se
+ * proto obojí: že escapuje přes esc(), i že escapuje ve větvi BEZ esc() —
+ * tu si sada vytáhne zvlášť, protože přesně v ní dřív text procházel syrový. */
+{
+  const zdrojDlg = fs.readFileSync(__dirname + '/ui/dialog.js', 'utf8');
+  const kus = zdrojDlg.match(/function dlgEsc\(t\)[\s\S]*?\n\}/);
+  test('dlgEsc se v ui/dialog.js našla', !!kus);
+  if (kus) {
+    const sEsc = eval('(function(){ ' + vytahni('esc') + kus[0] + ' return dlgEsc; })()');   // eslint-disable-line no-eval
+    const bezEsc = eval('(function(){ ' + kus[0] + ' return dlgEsc; })()');                  // eslint-disable-line no-eval
+    const utok = '<img src=x onerror=alert(1)>';
+    test('dlgEsc escapuje ostrou závorku', !/[<>]/.test(sEsc(utok)), sEsc(utok));
+    test('dlgEsc escapuje uvozovku i apostrof', !/["']/.test(sEsc('a"b\'c')), sEsc('a"b\'c'));
+    test('dlgEsc escapuje i BEZ esc() — záložní větev není díra',
+      !/[<>]/.test(bezEsc(utok)) && !/["']/.test(bezEsc('a"b\'c')), [bezEsc(utok), bezEsc('a"b\'c')]);
+    test('dlgEsc zvládne null i undefined', sEsc(null) === '' && bezEsc(undefined) === '');
+  }
+}
+
 /* ---- esc(): text a obsah atributů ---- */
 test('esc escapuje <', esc('<script>') === '&lt;script&gt;', esc('<script>'));
 test('esc escapuje uvozovku', esc('a"b') === 'a&quot;b', esc('a"b'));
@@ -103,7 +123,12 @@ for (const v of VZORKY) {
  * kohokoli, a v obrazovce jdou přímo do onclick. */
 const RIZIKO = /\b(nazev|jmeno|popis|pozn|poznamka|text|email|kdo|firma|objednatel|stavba|adresa|ico|dic|mesto|ulice|psc|soubor|hlaska|chyba|zprava|cislo|klic|key|label|titul|kontakt|telefon|web|banka|ucet|zakaznik|vzkaz|duvod|misto|projekt|varianta|verze|puvod|orig|autor|uzivatel|role|znacka|typ|kod|sekce|polozka|item|id|kid)\b/i;
 /* Funkce, po kterých je hodnota prokazatelně bezpečná. */
-const OBALY = /^(esc|escJs|keyAttr|num|fmt|fmt0|fmtKc|T|tsPrelozText|zapisTridaHlasky|JSON\.stringify|encodeURIComponent|e2|xmlEsc)$/;
+/* `dlgEsc` přibylo 14. 9. 2026: je to escapovací funkce modálů v ui/dialog.js
+ * a od téhož dne escapuje i ve větvi bez `esc()` (dřív text vracela syrový,
+ * což byl v allowlistu slib, který se nedal vymáhat). Že opravdu escapuje,
+ * ověřuje sonda hned pod tímhle seznamem — do allowlistu se funkce nepřidává
+ * na slovo, ale na důkaz. */
+const OBALY = /^(esc|escJs|keyAttr|dlgEsc|num|fmt|fmt0|fmtKc|T|tsPrelozText|zapisTridaHlasky|JSON\.stringify|encodeURIComponent|e2|xmlEsc)$/;
 const KONSTANTA = /^('[^'\\$]*'|"[^"\\$]*"|`[^`\\$]*`|[-+]?[0-9.]+|true|false|null|undefined)$/;
 
 /* Vytáhne z řádku obsahy ${…}. Nestačí regulární výraz `\$\{[^}]*\}` —

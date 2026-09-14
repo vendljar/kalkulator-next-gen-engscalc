@@ -30,8 +30,19 @@
 
 const DLG = { fronta: [], bezi: false };
 
+/* Escapování textu do modálu. Vede přes společné `esc()` z ui/common.js;
+ * záložní větev je tu kvůli sadám v Node, které dialog.js načítají samotný.
+ *
+ * DO 14. 9. 2026 ta záložní větev text VRACELA TAK, JAK PŘIŠEL — tedy pro
+ * případ, kdy `esc` chybí, žádné escapování. V sestavení `esc` nikdy nechybí,
+ * takže to nikdy nic nerozbilo, ale hlídač escapování (test_escape.js) měl
+ * pravdu, že tomu nejde věřit: funkce jménem „esc" musí escapovat vždycky,
+ * jinak je allowlist v hlídači slib, který se nedá vymáhat. */
 function dlgEsc(t) {
-  return (typeof esc === 'function') ? esc(t == null ? '' : t) : String(t == null ? '' : t);
+  const s = String(t == null ? '' : t);
+  if (typeof esc === 'function') return esc(s);
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 /* Vykreslí modál a vrátí Promise s odpovědí. Typ: 'potvrd' | 'hlaska' | 'dotaz'. */
