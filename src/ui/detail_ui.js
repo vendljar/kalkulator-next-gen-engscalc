@@ -38,6 +38,11 @@ function dvTab(rows) {
  * Karta Zadání šachty nesla pod poli dvě vysvětlující věty a zabírala jimi
  * dva řádky mřížky. Vysvětlení ale patří tam, kde se ukazuje, JAK se počítá —
  * a to je detail výpočtu. V zadání zůstal jen tooltip nad polem. */
+/* Odstup lešení drží jádro (LESENI_ODSTUP_M). Detail si ho bere odtamtud, aby
+ * se vypsaný vzorec nemohl rozejít s tím, co se doopravdy počítá. */
+function dvOdstupLeseni() {
+  return (typeof LESENI_ODSTUP_M !== 'undefined') ? LESENI_ODSTUP_M : 0.25;
+}
 function dvNastupist() {
   return (typeof nastupisteCelkem === 'function') ? nastupisteCelkem(Z) : (+Z.nastupiste || 0);
 }
@@ -98,7 +103,13 @@ function renderDetail() {
     ['Světlá výška nástupiště', `${M(o.svetlaVyska, 3)} m`, 'výška podlaží − 0,2'],
     ['Výška prosklené části', `${M(o.vyskaProsklene, 3)} m`, 'zdvih + přejezd'],
     ['Šířka otvoru šach. dveří', `${M(o.sirkaDveri, 3)} m`, '(čistý vstup + 2·rám + 2·20) / 1000'],
-    ['Lešení věž / U-dokola', `${M(o.leseniVez, 2)} m / ${M(o.leseniU, 2)} m²`, 'věž = H; U = obvod × výška'],
+    /* Úplný vzorec s dosazením (nález V2, 14. 9. 2026): „U = obvod × výška"
+     * nešlo ručně přezkoušet — nebylo z čeho poznat, že se k hloubce přičítá
+     * odstup lešení 0,25 m na každé straně a k šířce půl metru. */
+    ['Lešení věž / U-dokola', `${M(o.leseniVez, 2)} m / ${M(o.leseniU, 2)} m²`,
+      'věž = H = přejezd + zdvih + prohlubeň; '
+      + `U = (šířka + 0,5 + 2 · (hloubka + ${M(dvOdstupLeseni(), 2)})) × (zdvih + přejezd) = `
+      + `(${M(Z.sirka)} + 0,5 + 2 · (${M(Z.hloubka)} + ${M(dvOdstupLeseni(), 2)})) × (${M(Z.zdvih)} + ${M(Z.prejezd)})`],
   ]), 'dv-2');
 
   /* 3) hodiny navíc (montáž) */

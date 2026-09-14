@@ -333,5 +333,60 @@ vObouRezimech(() => {
   }
 });
 
+/* ---------------------------------------------------------------------------
+ * ODSTUP LEŠENÍ U-DOKOLA (nález V2, rozhodnutí J. V. 14. 9. 2026)
+ *
+ * „Pracuje se s odstupem 0,25 m (novější předloha 01/2026)." Hodnota byla
+ * dosud zapsaná přímo ve vzorci a v kódu se povalovaly i jiné dvacetiny
+ * (sloupky, závitové tyče), takže při hledání „kde se to bere" nešlo poznat,
+ * která je která. Teď je to pojmenovaná konstanta na jednom místě.
+ *
+ * Testuje se plocha U-dokola na dvou zadáních ze 3. kola testů — čísla vyšla
+ * z aplikace a jsou ručně přepočitatelná ze vzorce, který od 14. 9. stojí
+ * i v Detailu výpočtu. Cena se tím nemění; smyslem je, aby další kolo
+ * nemuselo vzorec odvozovat.
+ * ------------------------------------------------------------------------- */
+const U_ZADANI = {
+  '2025-OPR-0664': { sirka: 1.5, hloubka: 1.52, zdvih: 14.752, prejezd: 3.6, prohluben: 2.45, ocekavano: 101.67 },
+  'fiktivní 9001': { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2, ocekavano: 75.64 },
+};
+
+test('odstup lešení je pojmenovaná konstanta a rovná se 0,25 m',
+  eng.LESENI_ODSTUP_M === 0.25, eng.LESENI_ODSTUP_M);
+
+/* Pojistka proti návratu literálu: 0,25 smí být ve zdroji jádra jen v té
+ * jediné konstantě. Kdyby ji někdo znovu vepsal do vzorce, rozejdou se. */
+const jadro = fs.readFileSync(__dirname + '/engine.js', 'utf8')
+  .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+const vyskytu025 = (jadro.match(/(?<![\d.])0\.25(?![\d])/g) || []).length;
+test('0,25 je v jádře jen jednou — v konstantě LESENI_ODSTUP_M',
+  vyskytu025 === 1, vyskytu025 + ' výskytů');
+
+[false, true].forEach(rezim => {
+  REZIM = rezim;
+  Object.keys(U_ZADANI).forEach(nazev => {
+    const d = U_ZADANI[nazev];
+    const z = zadani();
+    z.sirka = d.sirka; z.hloubka = d.hloubka;
+    z.zdvih = d.zdvih; z.prejezd = d.prejezd; z.prohluben = d.prohluben;
+    const r = eng.vypocet(z, cenik(), JEKLY, REZIM);
+    const u = r.odvozene.leseniU;
+    testR(`U-dokola ${nazev} = ${d.ocekavano} m²`, blizko(u, d.ocekavano, 0.005), u);
+
+    /* Totéž ručně ze vzorce — kdyby se vzorec v jádře změnil, tenhle test
+     * padne dřív, než se změna dostane do nabídky. */
+    const rucne = (d.sirka + 0.5 + 2 * (d.hloubka + eng.LESENI_ODSTUP_M)) * (d.zdvih + d.prejezd);
+    testR(`U-dokola ${nazev} sedí s ručním dosazením`, blizko(u, rucne, 1e-9), [u, rucne]);
+
+    /* Prohlubeň do plochy U-dokola NEvstupuje (lešení stojí od úrovně
+     * nástupu), ale do výšky věže ano — snadno se to zamění. */
+    const z2 = JSON.parse(JSON.stringify(z)); z2.prohluben = d.prohluben + 1;
+    const r2 = eng.vypocet(z2, cenik(), JEKLY, REZIM);
+    testR(`U-dokola ${nazev} nezávisí na prohlubni`, blizko(r2.odvozene.leseniU, u, 1e-9));
+    testR(`věž ${nazev} na prohlubni závisí`, blizko(r2.odvozene.leseniVez, r.odvozene.leseniVez + 1, 1e-9));
+  });
+});
+REZIM = false;
+
 console.log(`\n${ok} OK, ${fail} FAIL`);
 if (fail) process.exit(1);

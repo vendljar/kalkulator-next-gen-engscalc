@@ -7,6 +7,11 @@
 
 const CEIL = (x, m) => Math.ceil(x / m - 1e-9) * m;
 
+/* Odstup lešení U-dokola od šachty [m] — nález V2, rozhodnutí J. V. 14. 9. 2026:
+ * „pracuje se s odstupem 0,25 m (novější předloha 01/2026)". Jediné místo, kde
+ * se ta hodnota vyskytuje; platí pro Model 1 i Model 2. */
+const LESENI_ODSTUP_M = 0.25;
+
 // Konstanty spojů plechů (VZORCE řádky 44–52, sloupce O–T)
 const SPOJE = {
   zadniRoh:      { int: { ks: 1, kg: 1.38,   m2: 0.059 },  ext: { ks: 4, kg: 3.732,  m2: 0.202 } },
@@ -363,8 +368,16 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const svetlaVyska = vyskaPodlazi - 0.2;
   const vyskaProsklene = z.zdvih + z.prejezd;
   const sirkaDveri = (z.cistyVstupMm + 2 * z.sirkaRamuMm + 2 * 20) / 1000;
+  /* LEŠENÍ U-DOKOLA — odstup od šachty (nález V2, rozhodnuto J. V. 14. 9. 2026).
+   *
+   * Referenční odstup je 0,25 m podle novější předlohy 01/2026; soubor
+   * Kornpfortstraße s 0,20 m je odchylka jednoho souboru, ne jiné pravidlo
+   * (doloženo v test_kornpfortstrasse.js). Hodnota byla dosud zapsaná přímo
+   * ve vzorci, takže se při hledání „jak se to počítá" pletla s jinými
+   * dvacetinami v kódu (0,2 u sloupků, 0,2 u závitových tyčí). Teď je
+   * pojmenovaná a stojí na jednom místě. */
   const leseniVez = H;
-  const leseniU = (z.sirka + 0.5 + 2 * (z.hloubka + 0.25)) * (z.prejezd + z.zdvih);
+  const leseniU = (z.sirka + 0.5 + 2 * (z.hloubka + LESENI_ODSTUP_M)) * (z.prejezd + z.zdvih);
 
   /* ---------- hodiny navíc (montáž) ---------- */
   const hn = {
@@ -1006,4 +1019,4 @@ function cenikMigraceLeseni(cenik) {
   }
 }
 
-if (typeof module !== 'undefined') module.exports = { vypocet, DEFAULT_ZADANI, DEFAULT_CENIK, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet };
+if (typeof module !== 'undefined') module.exports = { vypocet, DEFAULT_ZADANI, DEFAULT_CENIK, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };
