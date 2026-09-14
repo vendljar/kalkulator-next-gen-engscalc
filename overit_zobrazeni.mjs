@@ -400,7 +400,19 @@ test('telefon a e-mail mají všude vlastní pole (žádný slepenec „tel / ma
 
 /* ---------- Standard OCK (#163, 21. 8. 2026) ----------
  * Kontrola nic neblokuje, takže se její chyba pozná jen tichým „zeleno"
- * tam, kde má být červená. Sada hlídá cestu od vypínače po štítek. */
+ * tam, kde má být červená. Sada hlídá cestu od vypínače po štítek.
+ *
+ * ROZMĚRY SE MUSÍ VYPLNIT (nález 14. 9. 2026 při zavádění jobu „harnessy").
+ * Od v14.9.1 (nález V36) kontrola rozdělané zadání neposuzuje: bez šířky,
+ * hloubky nebo zdvihu hlásí „NELZE POSOUDIT", aby se z prázdného formuláře
+ * nestal atyp a automat nezaškrtl přirážku. Nová nabídka má od v9.9.3 rozměry
+ * na nule, takže harness měřil štítek nad šachtou, která ještě neexistovala. */
+await page.evaluate(() => {
+  Z.sirka = 1.51; Z.hloubka = 1.74; Z.zdvih = 17.325; Z.prejezd = 2.7; Z.prohluben = 1.2;
+  render();
+});
+test('kontrola má co posuzovat (rozměry vyplněné)',
+  await page.evaluate(() => !standardVysledek().rozmeryChybi));
 test('výchozí stav kontroly je AKTIVNÍ (8. 9. 2026)',
   await page.evaluate(() => NAST.standard.zapnuto === true));
 test('vypnutá kontrola nekreslí žádný štítek',
