@@ -861,6 +861,10 @@ async function onlineOtevri(soubor) {
     const prep = (typeof uloSrovnejSPlatnymCenikem === 'function') ? uloSrovnejSPlatnymCenikem() : null;
     onlineZprava('Otevřeno online: ' + soubor + '.'
       + (prep && prep.prepocteno && typeof uloPrepocetVeta === 'function' ? ' ' + uloPrepocetVeta(prep) : ''));
+    /* Úklid po V36 (14. 9. 2026): automaticky zaškrtnutý ATYP, který už nemá
+     * oporu v kontrole standardu, se odškrtne — a řekne se to nahlas, protože
+     * to mění cenu. Ručně zaškrtnutého ATYPu se to netýká. */
+    if (typeof standardAtypUklid === 'function') standardAtypUklid();
     zavriOnline();
     render();
     if (typeof historieOznacUlozeno === 'function') historieOznacUlozeno();

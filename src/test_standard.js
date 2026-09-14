@@ -22,12 +22,17 @@ const test = (n, cond, info) => { if (cond) { ok++; console.log('OK  ' + n); }
   else { fail++; console.log('FAIL ' + n, info === undefined ? '' : info); } };
 
 const std = () => { const s = JSON.parse(JSON.stringify(S.STANDARD_VYCHOZI)); s.zapnuto = true; return s; };
+/* Od 14. 9. 2026 (nález V36) se rozdělané zadání neposuzuje: bez šířky,
+ * hloubky NEBO ZDVIHU vrací kontrola „nelze posoudit", aby se z prázdného
+ * formuláře nestal atyp a automat nezaškrtl přirážku. Vzory proto nesou
+ * i zdvih — testují se limity, ne neúplnost. Výšku konstrukce si každý test
+ * dál předává zvlášť druhým parametrem, ta se ze zdvihu nepočítá. */
 const ext = (zmeny) => Object.assign({
-  typSachty: 'exteriérová', sirka: 1.8, hloubka: 1.9,
+  typSachty: 'exteriérová', sirka: 1.8, hloubka: 1.9, zdvih: 12,
   profily: { sloupek: { dim: '80x80' } }, zaskleni: 'na terče',
 }, zmeny || {});
 const int = (zmeny) => Object.assign({
-  typSachty: 'interiérová', sirka: 1.5, hloubka: 1.5,
+  typSachty: 'interiérová', sirka: 1.5, hloubka: 1.5, zdvih: 12,
   profily: { sloupek: { dim: '80x50' } }, zaskleni: 'na terče',
 }, zmeny || {});
 

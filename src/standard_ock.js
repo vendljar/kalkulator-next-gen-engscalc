@@ -204,11 +204,37 @@ function standardNormProfil(s) {
  *            jednotypovosti); prázdné pole = nekontroluje se
  * Výstup: { stav: 'standard'|'atyp'|'nelze'|'vypnuto', nalezy: [], kontrol: n }
  */
+/* Jsou hlavní rozměry vůbec zadané? (nález V36, 14. 9. 2026)
+ *
+ * Nová nabídka začíná od 9. 9. s nulovými rozměry (#231), takže obchodník
+ * vyplňuje šachtu po jednom poli. Kontrola standardu ale do té doby nad
+ * rozdělaným zadáním klidně vyhlásila „standard" — a v jiném mezikroku
+ * naopak „atyp", načež automat zaškrtl ATYP a přirážku. Rozdělané zadání
+ * není nestandardní šachta, je to prázdný formulář: dokud chybí šířka,
+ * hloubka nebo zdvih, není co posuzovat.
+ *
+ * Nula je tu „nevyplněno", ne rozměr: šachta o nulové šířce neexistuje. */
+function standardRozmeryChybi(z) {
+  const zad = z || {};
+  const chybi = (x) => { const n = _cislo(x); return n === null || n <= 0; };
+  return chybi(zad.sirka) || chybi(zad.hloubka) || chybi(zad.zdvih);
+}
+
 function standardVyhodnot(z, vyskaM, std, pripl) {
   const s = standardOciste(std);
   if (!s.zapnuto) return { stav: 'vypnuto', nalezy: [], kontrol: 0, std: s };
 
   const zad = z || {};
+  /* Rozdělané zadání se neposuzuje (V36) — a hlavně z něj nesmí vyjít „atyp",
+   * protože na ten se věší automatické zaškrtnutí ATYP a přirážka. */
+  if (standardRozmeryChybi(zad)) {
+    const chybi = (x) => { const n = _cislo(x); return n === null || n <= 0; };
+    const nalezy = [];
+    if (chybi(zad.sirka)) nalezy.push(_nalez('Vnitřní šířka', 'vyplnit', 'nevyplněno', 'nelze'));
+    if (chybi(zad.hloubka)) nalezy.push(_nalez('Vnitřní hloubka', 'vyplnit', 'nevyplněno', 'nelze'));
+    if (chybi(zad.zdvih)) nalezy.push(_nalez('Zdvih', 'vyplnit', 'nevyplněno', 'nelze'));
+    return { stav: 'nelze', nalezy, kontrol: nalezy.length, std: s, rozmeryChybi: true };
+  }
   const nalezy = [];
   let kontrol = 0;
   const ext = String(zad.typSachty || '').indexOf('ext') === 0;
@@ -326,4 +352,4 @@ function standardPopis(vysledek) {
 
 if (typeof module !== 'undefined')
   module.exports = { STANDARD_VYCHOZI, standardOciste, standardVyhodnot,
-    standardNormProfil, standardPopis, STANDARD_ZASKLENI, standardZaskleniPopis };
+    standardNormProfil, standardPopis, STANDARD_ZASKLENI, standardZaskleniPopis, standardRozmeryChybi };

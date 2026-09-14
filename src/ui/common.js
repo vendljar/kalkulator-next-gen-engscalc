@@ -794,8 +794,16 @@ function standardPill() {
     atyp: 'Šachta je mimo firemní standard. Kliknutím rozbalíte nálezy.',
     nelze: 'K posouzení chybí údaj. Kliknutím rozbalíte, který.',
   };
+  /* RUČNÍ ATYP U STANDARDNÍ ŠACHTY SE ŘEKNE NAHLAS (nález V36, 14. 9. 2026).
+   * Automat ruční zaškrtnutí nikdy nevypíná — důvodů k atypu je víc než
+   * rozměry. Jenže pak stojí vedle sebe odznak „STANDARD OCK" a přirážka za
+   * atyp a vypadá to jako chyba aplikace. Tahle věta říká, že to je vědomé
+   * rozhodnutí člověka, a kde se vypíná. */
+  const rucniAtyp = (v.stav === 'standard' && Z && Z.atyp && !Z.atypAutomat)
+    ? `<span class="std-pill nejisto" title="ATYP zaškrtl člověk, ne automat — kontrola standardu žádný nález nehlásí. Odškrtne se v Zadání šachty."
+        style="margin-left:6px">ATYP zaškrtnut ručně</span>` : '';
   return `<span class="std-pill ${tridy[v.stav]}" onclick="standardRozpisPrepni()"
-    title="${esc(popis[v.stav])}">${esc(standardPopis(v))} ${STD_ROZPIS ? '▴' : '▾'}</span>`;
+    title="${esc(popis[v.stav])}">${esc(standardPopis(v))} ${STD_ROZPIS ? '▴' : '▾'}</span>${rucniAtyp}`;
 }
 
 function standardRozpisPrepni() { STD_ROZPIS = !STD_ROZPIS; render(); }
@@ -819,7 +827,8 @@ function standardRozpisPrepni() { STD_ROZPIS = !STD_ROZPIS; render(); }
  *     nikdy a náhled cizíma očima je jen ke čtení.
  *
  * Vrací true, když opravdu přepnul (pro testy a pro hlášku). */
-function standardAtypAutomat() {
+function standardAtypAutomat(opts) {
+  const jenVypnout = !!(opts && opts.jenVypnout);
   if (typeof standardVysledek !== 'function' || typeof atypPrepni !== 'function') return false;
   if (typeof nahledAktivni === 'function' && nahledAktivni()) return false;
   if (typeof variantaUzamcena === 'function' && variantaUzamcena(aktivniVarianta(ZAK))) return false;
@@ -827,6 +836,11 @@ function standardAtypAutomat() {
   let v = null;
   try { v = standardVysledek(); } catch (e) { return false; }
   if (!v || v.stav === 'vypnuto') return false;
+  /* ROZDĚLANÉ ZADÁNÍ SE NEPOSUZUJE (nález V36, 14. 9. 2026). Dokud chybí
+   * šířka, hloubka nebo zdvih, automat nesahá na nic — ani nezapíná, ani
+   * nevypíná. Zapnout by znamenalo přirážku za nevyplněný formulář, vypnout
+   * by sebralo ATYP, který někdo zapnul vědomě. */
+  if (v.rozmeryChybi) return false;
 
   if (v.stav !== 'atyp') {
     /* Zpátky ve standardu: ruční „ne" ztrácí platnost, aby příští odchylka
@@ -839,9 +853,34 @@ function standardAtypAutomat() {
     if (Z.atyp && Z.atypAutomat) { atypPrepni(false, { automat: true }); return true; }
     return false;
   }
+  /* Při otevření zakázky se smí jen VYPÍNAT (zadání 22. 8. 2026): tiché
+   * zapnutí by zdražilo nabídku jen tím, že ji někdo otevřel. */
+  if (jenVypnout) return false;
   if (Z.atyp || Z.atypRucneVypnut) return false;
   atypPrepni(true, { automat: true });
   return true;
+}
+
+/* Zbylo po otevřené zakázce automaticky zaškrtnuté ATYP, přestože kontrola
+ * standardu už nic nehlásí? (nález V36, 14. 9. 2026)
+ *
+ * Automat běží jen při ZMĚNĚ zadání (`set`). Když se zadání vrátilo do
+ * standardu cestou, která přes `set` nevede — přepnutím typu šachty, které
+ * přepíše profily, nebo přepočtem na dnešní ceník —, ATYP i s přirážkou
+ * zůstal zapnutý a odznak přitom hlásil STANDARD OCK. Na fiktivní 9003 to
+ * dělalo +33 % ceny. Proto se po otevření zakázky uklidí i to, co zbylo.
+ *
+ * Vypíná se JEN automatem zaškrtnuté ATYP (`atypAutomat`); ručního se nikdo
+ * nedotkne. A protože je to změna ceny, říká se nahlas. */
+function standardAtypUklid() {
+  if (typeof standardAtypAutomat !== 'function') return false;
+  if (!Z || !Z.atyp || !Z.atypAutomat) return false;
+  const zmena = standardAtypAutomat({ jenVypnout: true });
+  if (zmena && typeof progZprava === 'function')
+    progZprava('ATYP byl zaškrtnutý automaticky, ale kontrola standardu už žádný nález nehlásí — '
+      + 'odškrtnut a atypové vstupy vráceny na výchozí. Cena se tím snížila; '
+      + 'potřebujete-li přirážku i tak, zaškrtněte ATYP ručně.', 'varovani');
+  return zmena;
 }
 
 /* Rozpis pod lištou — kreslí se jen rozbalený a jen tam, kde má smysl

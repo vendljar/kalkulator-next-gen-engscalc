@@ -71,6 +71,13 @@ function typSachtyPrepni(typ) {
       progZprava('Typ šachty „' + t + '": dosazeny výchozí dimenze profilů podle typu. '
         + 'Pokud jste si je upravil, nastavte je znovu.', 'varovani');
   }
+  /* DÍRA V AUTOMATU ATYP (nález V36, 14. 9. 2026). `set` výš pustil kontrolu
+   * standardu ještě nad STARÝMI profily; nové se dosazují až tady, přímo do
+   * zadání, takže o nich automat nevěděl. Kdo přepnul typ šachty ze stavu,
+   * v němž byl ATYP zaškrtnutý automatem, měl pak ATYP i přirážku zapnutou
+   * u šachty, kterou odznak hlásil jako STANDARD. Kontrola se proto pustí
+   * znovu, až jsou profily na místě. */
+  if (typeof standardAtypAutomat === 'function') standardAtypAutomat();
   syncVarianta(); render();
 }
 
