@@ -16,12 +16,26 @@ const fs = require('fs');
 let ok = 0, fail = 0;
 const test = (n, cond, info) => { if (cond) { ok++; console.log('OK  ' + n); } else { fail++; console.log('FAIL ' + n, info || ''); } };
 
-const src = fs.readFileSync(__dirname + '/ui/common.js', 'utf8');
+/* Konce řádků se srovnají hned při čtení (B46) — viz komentář u `vytahni`. */
+const src = fs.readFileSync(__dirname + '/ui/common.js', 'utf8').replace(/\r\n/g, '\n');
+/* KONEC DEKLARACE SE HLEDÁ BEZ OHLEDU NA KONCE ŘÁDKŮ (nález B46, 14. 9. 2026).
+ *
+ * Do 14. 9. se hledalo doslova `';\n'`. V souboru s CRLF tam ale žádné `;\n`
+ * není — je tam `;\r\n` —, takže `indexOf` vrátil −1, `slice` uřízl celý
+ * zbytek souboru a `eval` spadl na TDZ ještě před prvním testem. Na Windows
+ * s `core.autocrlf=true` to potkalo každého, kdo pustil sady lokálně:
+ * hlídač escapování mlčel a nikdo nevěděl, že neběží.
+ *
+ * Konce řádků se proto normalizují hned při čtení a hledá se `/;\r?\n/`
+ * — dvě pojistky nad jednou věcí, protože tahle sada je poslední, co stojí
+ * mezi neescapovanou interpolací a produkcí. */
 const vytahni = jm => {
   const i = src.indexOf('const ' + jm + ' =');
   if (i < 0) throw new Error('v ui/common.js chybí deklarace `const ' + jm + ' =` (#6)');
-  const konec = src.indexOf(';\n', i);
-  return src.slice(i, konec + 1);
+  const zbytek = src.slice(i);
+  const m = zbytek.match(/;\r?\n/);
+  if (!m) throw new Error('v ui/common.js nejde najít konec deklarace `const ' + jm + ' =` (B46)');
+  return zbytek.slice(0, m.index + 1);
 };
 const esc = eval(vytahni('esc') + 'esc');            // eslint-disable-line no-eval
 const escJs = eval(vytahni('esc') + vytahni('escJs') + 'escJs');   // eslint-disable-line no-eval

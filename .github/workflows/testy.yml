@@ -42,6 +42,20 @@ jobs:
       - name: Verze odpovídá dni commitu (vDEN.MĚSÍC.pořadí)
         run: python3 build.py --kontrola-verze
 
+      # Žádný CR ve zdrojácích (nález B46, 14. 9. 2026). Soubor s CRLF vyřadí
+      # statický hlídač XSS: test_escape.js si vytahuje esc()/escJs() ze zdroje
+      # hledáním konce deklarace a v CRLF ho nenajde. Na Linuxu se to nestane
+      # samo od sebe, ale commit s CRLF sem přijít může — a pak by hlídač
+      # mlčel, aniž by kdokoli poznal, že neběží.
+      - name: Žádné CRLF ve zdrojácích
+        run: |
+          if grep -rlI $'\r' src netlify *.mjs *.sh *.py *.toml; then
+            echo "CHYBA: soubory výš mají CRLF. Repozitář má .gitattributes s eol=lf —"
+            echo "spusťte 'git add --renormalize .' a commitněte."
+            exit 1
+          fi
+          echo "Konce řádků v pořádku (LF)."
+
       - name: Sady v Node (jádro, UI, serverové funkce)
         run: bash ./spust_testy.sh
 
