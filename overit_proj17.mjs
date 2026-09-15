@@ -338,8 +338,23 @@ test('pole „Zámečník atyp – množství" zmizelo, zůstala jen částka v 
     const html = document.getElementById('inputs').innerHTML;
     return !/Zámečník atyp – množství/.test(html) && /Zámečník atyp \(prázdné = žádný\)/.test(html);
   }));
-test('zaškrtnutí ATYP předvyplní rezervy 30 % a zámečníka 50 000 Kč',
+/* VYPNUTÍ ATYP VRACÍ, NENULUJE (nálezy C1 a V39, rozhodnutí J. V. 15. 9. 2026:
+ * „nic nenulovat, vracet do předchozího stavu").
+ *
+ * Do 15. 9. tahle kontrola čekala po vypnutí NULY. Byl to ale jen popis
+ * tehdejšího chování, ne požadavek: obchodník, který si u neatypové šachty
+ * nastavil rezervu profilů, o ni po jednom prokliknutí ATYP tam a zpět přišel.
+ * Kontrola proto začíná známou nenulovou hodnotou a po vypnutí ji vyžaduje
+ * zpátky — tím měří pravidlo, ne vedlejší účinek.
+ *
+ * Pozor na past: o pár řádků výš si sada sama nastavila rezervaProfilyPct na
+ * 0,30, takže „předchozí stav" NENÍ nula. Právě na tom tahle kontrola po
+ * změně spadla a bylo to správně. */
+test('zaškrtnutí ATYP předvyplní rezervy 30 % a zámečníka 50 000 Kč, vypnutí vrátí původní stav',
   await p.evaluate(() => {
+    Z.rezervaProfilyPct = 0.12; Z.rezervaPlechyPct = 0; Z.rezervaZakladPct = 0;
+    Z.rezervaPriplatkyPct = 0; Z.zamecnikAtypKc = null; render();
+
     atypPrepni(true);
     const po = Z.rezervaProfilyPct === 0.30 && Z.rezervaPlechyPct === 0.30
       && Z.rezervaZakladPct === 0.30 && Z.rezervaPriplatkyPct === 0.30
@@ -347,9 +362,17 @@ test('zaškrtnutí ATYP předvyplní rezervy 30 % a zámečníka 50 000 Kč',
     const radek = vypocet(Z, C, JEKLY, OCK.fixes).sekce.hrubaOck
       .find(x => /ZÁMEČNÍKA - OSTATNÍ/.test(x.origNazev || x.nazev));
     const vKalkulaci = !!radek && radek.mnozstvi === 1 && radek.naklad === 50000;
+
     atypPrepni(false);
-    const zpet = Z.rezervaProfilyPct === 0 && Z.zamecnikAtypKc === null && Z.atyp === false;
-    return po && vKalkulaci && zpet;
+    const zpet = Z.rezervaProfilyPct === 0.12      // vrátilo se, NEvynulovalo
+      && Z.rezervaPlechyPct === 0 && Z.zamecnikAtypKc === null && Z.atyp === false;
+
+    /* A podruhé zapnuté ATYP dá zase předlohu — nic z prvního kola se
+     * nezakonzervovalo, protože do polí nikdo ručně nesáhl. */
+    atypPrepni(true);
+    const znovu = Z.rezervaProfilyPct === 0.30 && Z.zamecnikAtypKc === 50000;
+    atypPrepni(false);
+    return po && vKalkulaci && zpet && znovu && Z.rezervaProfilyPct === 0.12;
   }));
 
 test('součtový řádek nese závorku až ZA slovem CELKEM',
