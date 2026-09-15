@@ -674,6 +674,16 @@ function onlineNactiRejstrik() {
 }
 
 /* opts.tiche = automatické uložení (neruší prací hláškou, při chybě varuje) */
+/* Liší se otevřená zakázka od té uložené VÝHRADNĚ zápisníkem? Pravidlo samo
+ * bydlí v poznamky.js, aby ho autosave i ruční uložení četly z jednoho místa.
+ * Bez uložené předlohy (`posledni`) vrací false: zakázku, se kterou se nemám
+ * s čím porovnat, v režimu čtení raději neukládám. */
+function onlineJenZapisnik() {
+  if (typeof poznamkyJedinaZmena !== 'function' || !ONLINE_STAV.posledni) return false;
+  try { return poznamkyJedinaZmena(JSON.stringify(ZAK), ONLINE_STAV.posledni); }
+  catch (e) { return false; }
+}
+
 function onlineUloz(opts) {
   opts = opts || {};
   if (!ONLINE_STAV.ja) {
@@ -694,6 +704,32 @@ function onlineUloz(opts) {
    * (načíst znovu / přepsat) — jinak by se 409 sypaly do konzole dál. */
   if (ONLINE_STAV.kolize) {
     if (!opts.tiche) { onlineZprava(onlineKolizeText(), 'varovani'); render(); }
+    return Promise.resolve(false);
+  }
+  /* ČTECÍ ZÁMEK PLATÍ I NA RUČNÍ ULOŽENÍ (nález V41, 15. 9. 2026).
+   *
+   * Do 15. 9. se `zamekCteniJe()` testovalo v celém online_ui.js na JEDINÉM
+   * místě — v autosave. `onlineUloz()` strážce neměl, takže zakázku otevřenou
+   * „jen ke čtení" šlo uložit sedmi cestami: tlačítkem „Uložit změny" v dialogu
+   * při přepnutí (tam si toho všiml O7), viditelným tlačítkem „Uložit online"
+   * v kartě, přes kartu ukládání a dalšími. Zapsal se přitom výpočet, který
+   * aplikace sama změnila (ATYP automaticky odškrtnutý) — nad zakázkou, o níž
+   * o řádek výš tvrdila „nic se neukládá, dokud ji vědomě neodemknete".
+   *
+   * Skrýt tlačítko v dialogu (varianta B) by zavřelo jedny dveře ze sedmi;
+   * proto strážce stojí tady, u zápisu, ne u ovládacího prvku.
+   *
+   * VÝJIMKA JE JEDINÁ: zápisník. Ten je ze zámku vyňatý schválně (poznamky.js)
+   * a nález C6 byl přesně o tom, že ho autosave přes tenhle zámek zahazoval.
+   * Rozhoduje `poznamkyJedinaZmena()` — ne „je mezi změnami poznámka?", ale
+   * „je poznámka JEDINÁ změna?". */
+  if (typeof zamekCteniJe === 'function' && zamekCteniJe() && !onlineJenZapisnik()) {
+    if (!opts.tiche) {
+      onlineZprava('Zakázka je otevřená jen ke čtení, takže se výpočet neukládá. '
+        + 'Chcete-li změny zapsat, nejdřív ji vědomě odemkněte. '
+        + '(Interní poznámky a přílohy se ukládají i tak.)', 'varovani');
+      render();
+    }
     return Promise.resolve(false);
   }
   // #41: rozepsané změny do protokolu hned – uložený záznam nese protokol
@@ -847,12 +883,33 @@ async function onlineOtevri(soubor) {
    * Escape a kliknutí mimo znamená „Zůstat", protože to je jediná volba,
    * po které se nic neztratí. */
   if (typeof historieNeulozeno === 'function' && historieNeulozeno()) {
+    /* NAD ZAKÁZKOU JEN KE ČTENÍ SE „ULOŽIT ZMĚNY" NENABÍZÍ (nález V41,
+     * rozhodnutí J. V. 15. 9. 2026, varianta A).
+     *
+     * Ty „neuložené změny" si často nenapsal člověk — udělala je aplikace sama
+     * (automatické odškrtnutí ATYP po otevření, přepočet na dnešní ceník).
+     * Nabídnout k nim „Uložit" nad zakázkou, která o sobě tvrdí, že se
+     * neukládá, je past: O7 tak na fiktivní 9003 málem zapsal cenu o 217 000
+     * nižší. Uložení odmítne i strážce v onlineUloz(), ale tlačítko, které
+     * nic neudělá, je horší než tlačítko, které tam není.
+     *
+     * Zůstává „Zahodit" a „Zůstat" a věta, co dál — odemknout a uložit vědomě.
+     * Zápisník se v tomhle dialogu neřeší: ten se ukládá průběžně sám. */
+    const jenCteni = typeof zamekCteniJe === 'function' && zamekCteniJe();
+    const otazka = jenCteni
+      ? 'Zakázka je otevřená jen ke čtení a její výpočet se liší od uloženého '
+        + '(část změn udělala aplikace sama — například automatické odškrtnutí ATYP). '
+        + 'Uložit je odsud nejde; chcete-li je zapsat, zůstaňte tady, zakázku vědomě '
+        + 'odemkněte a uložte. Co teď?'
+      : 'Otevřená zakázka má neuložené změny. Co s nimi?';
+    const moznosti = jenCteni
+      ? [{ kod: 'zahodit', popis: 'Zahodit změny a otevřít jinou' },
+         { kod: 'zustat', popis: 'Zůstat tady', primary: true }]
+      : [{ kod: 'ulozit', popis: 'Uložit změny', primary: true },
+         { kod: 'zahodit', popis: 'Zahodit změny' },
+         { kod: 'zustat', popis: 'Zůstat tady' }];
     const co = (typeof volba === 'function')
-      ? await volba('Otevřená zakázka má neuložené změny. Co s nimi?', [
-        { kod: 'ulozit', popis: 'Uložit změny', primary: true },
-        { kod: 'zahodit', popis: 'Zahodit změny' },
-        { kod: 'zustat', popis: 'Zůstat tady' },
-      ], { nadpis: 'Otevřít jinou zakázku' })
+      ? await volba(otazka, moznosti, { nadpis: 'Otevřít jinou zakázku' })
       : (await potvrd('Otevřená zakázka má neuložené změny. Otevřít jinou a ty změny zahodit?')
         ? 'zahodit' : 'zustat');
     if (co !== 'ulozit' && co !== 'zahodit') return false;
@@ -1275,9 +1332,14 @@ function onlineTik() {
   if (!ONLINE_STAV.auto || !ONLINE_STAV.ja || ONLINE_STAV.pracuje) return;
   /* Bez zásahu uživatele se nezapisuje (nález V23-B) — viz `zmenaUzivatele`. */
   if (!ONLINE_STAV.zmenaUzivatele) return;
-  /* A v zamčené (jen ke čtení) nabídce se nezapisuje vůbec — druhá pojistka
-   * nad tou první, protože zamčené okno stejně žádnou editaci nepustí. */
-  if (typeof zamekCteniJe === 'function' && zamekCteniJe()) return;
+  /* V zakázce otevřené jen ke čtení se zapisuje JEN zápisník (nález C6).
+   *
+   * Dřív tu stálo prosté `return` s vysvětlením „zamčené okno stejně žádnou
+   * editaci nepustí". To neplatilo: karta Interní poznámky je ze zámku vyňatá
+   * schválně, takže obchodník do ní psal a autosave to mlčky zahazoval —
+   * text zmizel při nejbližším načtení stránky (a protože se stránka načítá
+   * hlavně kvůli novému buildu, vypadalo to, že za to může build). */
+  if (typeof zamekCteniJe === 'function' && zamekCteniJe() && !onlineJenZapisnik()) return;
   /* Po kolizi verzí (V27) autosave stojí, dokud uživatel nezvolí cestu. */
   if (ONLINE_STAV.kolize) return;
   if (!ONLINE_STAV.soubor && !uloHlavickaVyplnena(ZAK)) return;
@@ -1756,7 +1818,14 @@ function renderOnlineKarta() {
       ? `<div class="note" id="online-zalohy">${esc(onlineOtiskPopis())}</div>` : '';
     telo = `${hlaska}${onlineKolizeTlacitka()}${zalohaRadek}
       <div class="btns" style="margin-top:10px">
-        <button class="primary" onclick="onlineUloz()" ${ONLINE_STAV.pracuje ? 'disabled' : ''}>Uložit online</button>
+        <!-- V režimu čtení je tlačítko vypnuté a řekne proč (V41). Strážce
+             v onlineUloz() by uložení odmítl i tak, ale tlačítko, které jde
+             zmáčknout a nic neudělá, vypadá jako rozbitá aplikace. -->
+        <button class="primary" onclick="onlineUloz()"
+          ${ONLINE_STAV.pracuje || (typeof zamekCteniJe === 'function' && zamekCteniJe()) ? 'disabled' : ''}
+          ${(typeof zamekCteniJe === 'function' && zamekCteniJe())
+            ? 'title="Zakázka je otevřená jen ke čtení – nejdřív ji vědomě odemkněte. Interní poznámky se ukládají i tak."' : ''}
+          >Uložit online</button>
         <button onclick="otevriOnline()">Zakázky online…</button>
         ${adminTlacitka}
         <button onclick="onlineOdhlas()">Odhlásit</button>

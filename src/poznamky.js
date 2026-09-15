@@ -247,8 +247,57 @@ function prilohySmaz(zak, id, opts) {
   return p;
 }
 
+/* ---------- „změnil se JEN zápisník?" (nálezy C6 a V41, 15. 9. 2026) -------
+ *
+ * Čtecí zámek okna (ZAMEK_CTENI) zakazoval ukládání paušálně. Jenže zápisník
+ * je ze zámku vyňatý schválně (rozhodnutí 2 nahoře) — obchodník do něj smí
+ * psát i nad otevřenou zakázkou. Výsledek: text se přijal, zobrazil a při
+ * dalším načtení stránky zmizel, protože ho autosave nikdy nezapsal.
+ *
+ * Opravou není zámek zrušit, ale rozlišit, CO se změnilo. Tahle funkce je to
+ * jediné místo, kde se pravidlo „zápisník ano, výpočet ne" vyslovuje — čte ji
+ * autosave i ruční uložení, aby se nemohly rozejít.
+ *
+ * Pozor na dvě věci, kvůli kterým je to funkce a ne dvě podmínky vedle sebe:
+ *  - Neptáme se „přibyla poznámka?", ale „je zápisník JEDINÝ rozdíl?". Kdyby
+ *    se spolu s poznámkou změnila i cena, uložit se to nesmí ANI TAK.
+ *  - Porovnává se se stabilním pořadím klíčů. Zakázka se po načtení ze
+ *    serveru skládá znovu a pořadí klíčů se může lišit; bez seřazení by
+ *    vyšlo „liší se všechno" a poznámka by se zase neuložila. */
+const POZN_POLE_ZAPISNIKU = ['poznamky', 'prilohy', 'prilohySmazane'];
+
+function poznamkyStabilne(v) {
+  if (v === null || typeof v !== 'object') return JSON.stringify(v === undefined ? null : v);
+  if (Array.isArray(v)) return '[' + v.map(poznamkyStabilne).join(',') + ']';
+  return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + poznamkyStabilne(v[k])).join(',') + '}';
+}
+
+function poznamkyBezZapisniku(zak) {
+  if (!zak || typeof zak !== 'object') return null;
+  const kopie = Object.assign({}, zak);
+  POZN_POLE_ZAPISNIKU.forEach(k => { delete kopie[k]; });
+  return kopie;
+}
+
+/* Vrací true, jen když se `ted` proti `ulozeno` liší VÝHRADNĚ v zápisníku.
+ * Shodné objekty vracejí false — nemá se co ukládat a volající se nemá
+ * čeho chytit. Nečitelný nebo chybějící vstup je taky false: u zakázky,
+ * se kterou se nemám s čím porovnat, je bezpečnější neuložit. */
+function poznamkyJedinaZmena(ted, ulozeno) {
+  const rozbal = (x) => {
+    if (x == null) return null;
+    if (typeof x === 'string') { try { return JSON.parse(x); } catch (e) { return null; } }
+    return (typeof x === 'object') ? x : null;
+  };
+  const a = rozbal(ted), b = rozbal(ulozeno);
+  if (!a || !b) return false;
+  if (poznamkyStabilne(a) === poznamkyStabilne(b)) return false;      // nic se nezměnilo
+  return poznamkyStabilne(poznamkyBezZapisniku(a)) === poznamkyStabilne(poznamkyBezZapisniku(b));
+}
+
 if (typeof module !== 'undefined')
   module.exports = { POZN_DRUHY, POZN_DRUH_VYCHOZI, POZN_MAX_PRILOHA, POZN_MAX_CELKEM,
+                     POZN_POLE_ZAPISNIKU, poznamkyJedinaZmena, poznamkyBezZapisniku,
                      poznamkyZajisti, poznamkyPridej, poznamkyUprav, poznamkySmaz, poznamkyObnov,
                      poznamkySeznam, poznamkyNajdi, poznamkyShrnuti, poznamkyText,
                      poznamkyDruhNazev, poznamkyDatum, poznamkyVelikostText,

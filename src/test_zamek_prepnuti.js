@@ -47,7 +47,15 @@ const common = fs.readFileSync(__dirname + '/ui/common.js', 'utf8');
 test('stav zámku žije jen v paměti, po obnovení stránky se nepřenáší',
   /const ZAMEK_CTENI = \{ zamceno: false \};/.test(common)
   && !/localStorage[^\n]*ZAMEK_CTENI/.test(common));
-test('v zamčené zakázce autosave nezapisuje', /zamekCteniJe\(\)\) return;/.test(online));
+/* Do 15. 9. 2026 tu stálo `/zamekCteniJe\(\)\) return;/` — tedy „v režimu
+ * čtení se nezapisuje NIC". Od nálezů C6 a V41 to zní přesněji: zapisuje se
+ * zápisník, výpočet ne (viz test_cteni_zapis.js). Autosave i ruční uložení
+ * se přitom musí ptát TOUŽ podmínkou, jinak by jedno z nich bylo děravé —
+ * a přesně to byl V41: strážce měl jen autosave. */
+test('v zamčené zakázce autosave nezapisuje výpočet',
+  /zamekCteniJe\(\) && !onlineJenZapisnik\(\)\) return;/.test(online));
+test('a totéž hlídá i ruční uložení',
+  (online.match(/zamekCteniJe\(\) && !onlineJenZapisnik\(\)/g) || []).length >= 2);
 
 /* Návrat na poslední zakázku po obnovení stránky jde touž cestou, takže se
  * zamkne taky — kdyby si otevíral zakázku po svém, zámek by obešel. */
