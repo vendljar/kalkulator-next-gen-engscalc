@@ -99,6 +99,29 @@ const TS_C = { /* číselníky z listů _data (bez úvodní pomlčky) */
 /* Pomocné formátování čísel pro prefill */
 const tsNum = (n, d = 0) => (+n).toLocaleString('cs-CZ', { maximumFractionDigits: d });
 
+/* DVOJSKLO MÁ JEN EXTERIÉROVÁ ŠACHTA (nález C3 z testování obchodníkem,
+ * 15. 9. 2026).
+ *
+ * Do 15. 9. měla čtyři pole opláštění pevné `def:` psané pro exteriérovou
+ * šachtu: MATERIÁL OPLÁŠTĚNÍ hlásil „izolační dvojsklo v kombinaci s VSG",
+ * povrch „standardní dvojsklo" a nadsvětlíky „izolační dvojskla". U INTERIÉROVÉ
+ * šachty přitom jádro počítá VSG na všech plochách (skloVolba, rozhodnutí
+ * J. V. z 9. 9. 2026) — dvojsklo se v ní nevyskytuje vůbec. Technická
+ * specifikace tedy slibovala zákazníkovi dražší zasklení, než jaké bylo
+ * v ceně, a obchodník to opravoval ručně u každé interiérové nabídky.
+ * Z databáze: 12 interiérových variant, u 10 z nich text opravený nebyl.
+ *
+ * Pevná hodnota se nemá jak zeptat na zadání — proto `prefill`. Podmínka je
+ * schválně TÁŽ jako v `skloVolba()` (`typSachty !== 'interiérová'`), aby se
+ * text řídil tím, co se opravdu počítá; kdyby se pravidlo v jádře změnilo
+ * (viz otevřený nález V42), text ho má následovat sám. Svázanost obojího
+ * hlídá test_techspec_sklo.js — ten se ptá přímo `skloVolba()`, ne téhle
+ * konstanty, takže rozejít se to nemůže potichu.
+ *
+ * Ruční hodnota má pořád přednost (tsHodnota se ptá na ts.hodnoty[id] první),
+ * takže zakázkám, kde obchodník text už opravil, se nic nezmění. */
+function tsDvojsklo(Z) { return (Z || {}).typSachty !== 'interiérová'; }
+
 /* Definice dokumentu: sekce → pole. prefill(r, Z, C) vrací text z kalkulace OCK
  * (r = výsledek vypocet(), Z = zadání, C = ceník); bez prefill je výchozí def. */
 const TECHSPEC_DEF = [
@@ -186,18 +209,33 @@ const TECHSPEC_DEF = [
   { sekce: 'OPLÁŠTĚNÍ ŠACHTY', pole: [
     { id: 'typOplasteni', label: 'TYP OPLÁŠTĚNÍ', ciselnik: TS_C.typOplasteni, def: 'plnostěnné' },
     { id: 'materialOplasteni', label: 'MATERIÁL OPLÁŠTĚNÍ', ciselnik: TS_C.materialOplasteni,
-      def: 'izolační dvojsklo v kombinaci s vrstveným bezpečnostním sklem VSG' },
+      prefill: (r, Z) => tsDvojsklo(Z)
+        ? 'izolační dvojsklo v kombinaci s vrstveným bezpečnostním sklem VSG'
+        : 'vrstvené bezpečnostní sklo VSG' },
+    /* Povrch se u exteriéru bere z názvu ceníkové položky pro boky — a to je
+     * právě ta položka, ze které se u exteriéru počítá. U interiéru se z ní
+     * nepočítá nic, takže by její název popisoval sklo, které v nabídce není. */
     { id: 'povrchOplasteni', label: 'POVRCHOVÁ ÚPRAVA OPLÁŠTĚNÍ', ciselnik: TS_C.povrchOplasteni,
-      prefill: (r, Z, C) => `standardní ${C.skloBokyNazev || 'čirá skla'}` },
+      prefill: (r, Z, C) => tsDvojsklo(Z)
+        ? `standardní ${C.skloBokyNazev || 'čirá skla'}`
+        : 'čiré sklo' },
     { id: 'oplasteniCela', label: 'OPLÁŠTĚNÍ ČELA POD NÁSTUPIŠTĚM', ciselnik: TS_C.oplasteniCela,
       def: 'plech v celé ploše podesty' },
     { id: 'rozsahOplasteni', label: 'ROZSAH OPLÁŠTĚNÍ', def: 'kompletní opláštění šachty' },
     { id: 'oplasteniPortalu', label: 'OPLÁŠTĚNÍ PORTÁLŮ NÁSTUPIŠŤ', ciselnik: TS_C.oplasteniPortalu, def: ' -' },
     { id: 'oplasteniNadsvetliku', label: 'OPLÁŠTĚNÍ NADSVĚTLÍKŮ', ciselnik: TS_C.oplasteniNadsvetliku,
-      prefill: (r, Z) => Z.svetlikNadDvermi || Z.svetlikyBoky
-        ? 'izolační dvojskla vsazená do lakovaných rámečků' : ' -' },
+      prefill: (r, Z) => (Z.svetlikNadDvermi || Z.svetlikyBoky)
+        ? (tsDvojsklo(Z) ? 'izolační dvojskla vsazená do lakovaných rámečků'
+                         : 'vrstvené bezpečnostní sklo VSG vsazené do rámečků')
+        : ' -' },
+    /* Umístění se řídí ZPŮSOBEM ZASKLENÍ, ne typem šachty — stejným polem jako
+     * ZPŮSOB KOTVENÍ o řádek níž. Sklo na terče se kotví zvenku, sklo mezi
+     * příčníky leží v profilech; pevné „kotvené na vnější stranu" tvrdilo
+     * u lištového zasklení opak (ruční oprava obchodníka 10. 9. 2026). */
     { id: 'umisteniOplasteni', label: 'VNĚJŠÍ OPLÁŠTĚNÍ ŠACHTY', ciselnik: TS_C.umisteniOplasteni,
-      def: 'kotvené na vnější stranu ocelové konstrukce' },
+      prefill: (r, Z) => Z.zaskleni === 'na terče'
+        ? 'kotvené na vnější stranu ocelové konstrukce'
+        : 'vložené mezi ocelové profily konstrukce' },
     { id: 'kotveniOplasteni', label: 'ZPŮSOB KOTVENÍ OPLÁŠTĚNÍ', ciselnik: TS_C.kotveniOplasteni,
       prefill: (r, Z) => Z.zaskleni === 'na terče' ? 'na zasklívací terče' : 'do L profilů mezi příčníky' },
     { id: 'parametryKotvy', label: 'VZHLED KOTVENÍ ZASKLENÍ', ciselnik: TS_C.parametryKotvy,
