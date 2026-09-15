@@ -613,22 +613,38 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
    * každá jinak:
    *   – otvor = šířka dveřního otvoru × 2,3 m (táž výška, s jakou počítá
    *     oplechování dveří i sloupky portálu),
-   *   – světlík nad otvorem se POČÍTAT NEMUSÍ: `svetlikKs` stojí od 9. 9.
-   *     na SOUČTU nástupišť A + C, takže světlíky nad dveřmi C už v položce
-   *     „čelní stěna (světlíky)" jsou. Připočítat je znovu by je zdvojilo —
-   *     níž se proto jen vyčíslují zvlášť, aby bylo v Detailu výpočtu vidět,
-   *     kolik jich sedí na zadní stěně.
+   *   – světlík nad otvorem se NEPŘIČÍTÁ: `svetlikKs` stojí od 9. 9. na
+   *     SOUČTU nástupišť A + C, takže světlíky nad dveřmi C už v položce
+   *     „čelní stěna (světlíky)" jsou.
+   *
+   * PÁS NAD DVEŘMI SE ODEČÍTÁ CELÝ (nález O10/V40, 15. 9. 2026).
+   *
+   * Do 15. 9. se od zadní stěny odečítal jen dveřní otvor po 2,3 m. Pás mezi
+   * 2,3 m a světlou výškou podlaží tedy zůstal ve skle ZADNÍ STĚNY — a zároveň
+   * se týž pás počítal jako světlík v čelní stěně. Tatáž plocha byla v ceně
+   * dvakrát. Komentář o pár řádků výš přitom tvrdil, že se nezdvojuje: popisoval
+   * záměr, jenže odečet k němu nikdo nedopsal. Na zadání 9001 se světlíkem to
+   * dělalo 75,49 m² místo 68,69 — o 6,8 m² skla navíc.
+   *
+   * Odečítá se proto celý otvor až po výšku světlíku: dveře (šířka dveřního
+   * otvoru × 2,3) plus světlík (šířka skla × (světlá výška − 2,3)). Je-li
+   * světlík vypnutý, je `svetlik` nula a odečte se jen dveřní otvor — tedy
+   * přesně dnešní chování, jak má být.
+   *
+   * Výška pásu se bere z `svetlikVyskaM`, tedy z téhož čísla jako světlík
+   * v čelní stěně, VČETNĚ ošetření podle modelu (N14): Model 2 ořízne nulou,
+   * Model 1 nechá zápornou hodnotu. Kdyby se to počítalo zvlášť, šla by
+   * u podlaží nižšího než 2,5 m odečíst jiná plocha, než jaká se přičetla.
    *
    * Neprůchozí šachta a průchozí s nulou nástupišť C musí vyjít přesně jako
    * dosud: `nastupistC` je pak 0 a obě čísla níž vycházejí na nulu. */
   const zadniOtvorM2 = sirkaDveri * 2.3;
-  const zadniPortalyM2 = nastupistC * zadniOtvorM2;
+  const svetlikZadniKs = svetlik * nastupistC;
+  const svetlikZadniM2 = svetlikZadniKs * g.sir * (fixes ? Math.max(svetlikVyskaM, 0) : svetlikVyskaM);
+  const zadniPortalyM2 = nastupistC * zadniOtvorM2 + svetlikZadniM2;
   /* Ubrat nejde víc, než na stěně je — u nízké šachty s mnoha nástupišti by
    * jinak vyšlo záporné sklo. */
   const zadniPlneM2 = Math.max(zadniM2 - zadniPortalyM2, 0);
-  /* Jen rozpad už započítaných světlíků, ne další sklo (viz komentář výš). */
-  const svetlikZadniKs = svetlik * nastupistC;
-  const svetlikZadniM2 = svetlikZadniKs * g.sir * (svetlaVyska - 2.3);
 
   const skloBokyZadniM2 = bocniM2 + zadniPlneM2;
   const skloCelniM2 = svetlikM2 + svetlikBokM2;
@@ -1053,7 +1069,8 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
                  * patra bez nástupiště C jsou plné sklo, patra s nástupištěm
                  * mají portál a nad ním světlík. */
                 zadniPlne: { m2: zadniPlneM2 },
-                zadniPortaly: { ks: nastupistC, m2: zadniPortalyM2, otvorM2: zadniOtvorM2 },
+                zadniPortaly: { ks: nastupistC, m2: zadniPortalyM2, otvorM2: zadniOtvorM2,
+                                  dvereM2: nastupistC * zadniOtvorM2, svetlikyM2: svetlikZadniM2 },
                 svetlikyZadni: { ks: svetlikZadniKs, m2: svetlikZadniM2 } },
     dily: { terceKs, terceKg, listyKs, listyBm: listyCelkBm, listyKg, oplDvereKs, oplDvereKg, oplDvereM2,
             podestKs, podestKg, podestM2, prechKs, prechKg },

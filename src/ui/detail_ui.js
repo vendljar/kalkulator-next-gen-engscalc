@@ -253,16 +253,23 @@ function renderDetail() {
     ['Zadní stěna — celá plocha', `${z.zadni.ks} ks · ${M(z.zadni.m2, 2)} m²`,
       'ks = strop(výška prosklené / rozteč); m² = max(ks · šířka skla · výška skla; výška prosklené · šířka skla)'],
     ...(Z.pruchoziSachta ? [
+      /* Rozpis odečtu na dveře + světlík (nález O10/V40, 15. 9. 2026). Do té
+       * doby tu stálo jen souhrnné číslo a nešlo z něj poznat, že se pás nad
+       * dveřmi neodečítá — a přitom se jako světlík přičítá v čelní stěně. */
       ['Zadní stěna — nástupiště C (portál + světlík)',
         `${(z.zadniPortaly || {}).ks || 0} ks · −${M((z.zadniPortaly || {}).m2 || 0, 2)} m²`,
-        `otvor = šířka dveřního otvoru × 2,3 m = ${M((z.zadniPortaly || {}).otvorM2 || 0, 2)} m² na nástupiště; `
-        + 'sklo v otvoru není, nad ním je světlík (řádek níž)'],
+        `dveře ${M((z.zadniPortaly || {}).dvereM2 || 0, 2)} m² `
+        + `(šířka dveřního otvoru × 2,3 m = ${M((z.zadniPortaly || {}).otvorM2 || 0, 2)} m² na nástupiště) `
+        + `+ světlíky ${M((z.zadniPortaly || {}).svetlikyM2 || 0, 2)} m²; `
+        + 'odečítá se celý otvor až po výšku světlíku — pás nad dveřmi je sklo ČELNÍ stěny, '
+        + 'ne zadní, a v zadní stěně by se počítal podruhé'],
       ['Zadní stěna — patra bez nástupiště C (plné sklo)',
         `${M((z.zadniPlne || {}).m2 || 0, 2)} m²`,
         'celá plocha zadní stěny minus otvory nástupišť C; do materiálu bočních a zadní stěny jde tohle'],
       ['— z toho světlíky nad dveřmi C', `${(z.svetlikyZadni || {}).ks || 0} ks · ${M((z.svetlikyZadni || {}).m2 || 0, 2)} m²`,
-        'JEN ROZPAD, nepřičítá se: světlíky se počítají ze součtu nástupišť A + C, '
-        + 'takže tyhle už jsou v řádku „Světlíky / boky" výš'],
+        'tahle plocha je odečtená od zadní stěny (řádek výš) a přičtená v „Světlíky / boky", '
+        + 'protože se světlíky počítají ze součtu nástupišť A + C. V ceně je tedy JEDNOU, '
+        + 'jako sklo čelní stěny'],
     ] : []),
     ['Boční stěny', `${z.bocni.ks} ks · ${M(z.bocni.m2, 2)} m²`,
       'ks = zadní stěna · 2 (dvě strany); m² = max(ks · hloubka skla · výška skla; 2 · výška prosklené · hloubka skla)'],

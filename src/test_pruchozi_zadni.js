@@ -113,6 +113,61 @@ const z9003 = () => zad({
       [r.celniM2, spocti(vsechnaVpredu, fixes).zaskleni.celniM2]);
   }
 
+  /* ---------- O10 / V40: pás nad dveřmi C se nesmí počítat dvakrát -------
+   *
+   * Do 15. 9. 2026 se od zadní stěny odečítal jen dveřní otvor po 2,3 m. Pás
+   * mezi 2,3 m a světlou výškou zůstal ve skle ZADNÍ stěny — a týž pás se
+   * počítal jako světlík ve stěně ČELNÍ. Tatáž plocha byla v ceně dvakrát.
+   * Komentář v jádře přitom tvrdil, že se nezdvojuje; popisoval záměr, ke
+   * kterému odečet nikdo nedopsal.
+   *
+   * Testuje se VZTAH, ne opsaná čísla: zapnutí světlíku smí celkovou plochu
+   * změnit přesně o „přibyly světlíky A+C vepředu, ubyly světlíky C vzadu".
+   * Tím sada drží i tehdy, když se rozměry fiktivní šachty někdy změní. */
+  {
+    const bez = spocti(z9001(), fixes).zaskleni;
+    const se = (() => { const x = z9001(); x.svetlikNadDvermi = true; return spocti(x, fixes).zaskleni; })();
+
+    test(`[${rezim}] odečet zadní stěny = dveře + světlíky`,
+      blizko(se.zadniPortaly.m2, se.zadniPortaly.dvereM2 + se.zadniPortaly.svetlikyM2, 1e-9),
+      [se.zadniPortaly.m2, se.zadniPortaly.dvereM2, se.zadniPortaly.svetlikyM2]);
+    test(`[${rezim}] a odečtená část světlíků sedí s rozpadem`,
+      blizko(se.zadniPortaly.svetlikyM2, se.svetlikyZadni.m2, 1e-9),
+      [se.zadniPortaly.svetlikyM2, se.svetlikyZadni.m2]);
+    test(`[${rezim}] zadní stěna se beze zbytku rozpadá na plnou a odečtenou`,
+      blizko(se.zadniPlne.m2 + se.zadniPortaly.m2, se.zadni.m2, 1e-9),
+      [se.zadniPlne.m2, se.zadniPortaly.m2, se.zadni.m2]);
+
+    /* Jádro nálezu: přírůstek po zapnutí světlíku. */
+    const cekano = bez.celkemM2 + se.svetliky.m2 + se.svetlikyBoky.m2 - se.svetlikyZadni.m2;
+    test(`[${rezim}] zapnutí světlíku přidá světlíky vepředu a ubere je vzadu`,
+      blizko(se.celkemM2, cekano, 1e-9),
+      { bez: bez.celkemM2, se: se.celkemM2, cekano, svetlikyC: se.svetlikyZadni.m2 });
+    test(`[${rezim}] a pás nad dveřmi C už není v zadní stěně`,
+      se.celkemM2 < bez.celkemM2 + se.svetliky.m2 + se.svetlikyBoky.m2 - 1e-9,
+      [se.celkemM2, bez.celkemM2 + se.svetliky.m2 + se.svetlikyBoky.m2]);
+
+    /* Vypnutý světlík = dnešní chování, odečítá se jen dveřní otvor. */
+    test(`[${rezim}] bez světlíku se odečítá jen dveřní otvor`,
+      blizko(bez.zadniPortaly.m2, bez.zadniPortaly.dvereM2, 1e-9)
+      && blizko(bez.zadniPortaly.svetlikyM2, 0, 1e-9),
+      [bez.zadniPortaly.m2, bez.zadniPortaly.dvereM2, bez.zadniPortaly.svetlikyM2]);
+
+    /* Neprůchozí šachta se světlíkem se změnit NESMÍ — nemá nástupiště C. */
+    const nepr = (() => { const x = z9003(); x.svetlikNadDvermi = true; return spocti(x, fixes).zaskleni; })();
+    test(`[${rezim}] neprůchozí šachta se světlíkem se nemění`,
+      blizko(nepr.zadniPortaly.m2, 0, 1e-9) && blizko(nepr.svetlikyZadni.m2, 0, 1e-9),
+      [nepr.zadniPortaly.m2, nepr.svetlikyZadni.m2]);
+
+    /* Průchozí s nulou nástupišť C taky ne. */
+    const c0 = (() => {
+      const x = z9001(); x.svetlikNadDvermi = true; x.nastupisteA = 4; x.nastupisteC = 0;
+      return spocti(x, fixes).zaskleni;
+    })();
+    test(`[${rezim}] průchozí s nulou nástupišť C nemá co odečítat`,
+      blizko(c0.zadniPortaly.m2, 0, 1e-9), c0.zadniPortaly.m2);
+  }
+
   {
     /* Spoje čelní strany se u průchozí šachty počítají dvakrát: portály jsou
      * na obou stěnách. */
