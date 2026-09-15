@@ -15,7 +15,7 @@
 function renderDetailProj() {
   const el = document.getElementById('page-detailproj'); if (!el) return;
   let r;
-  try { r = vypocetProj(PJ, PC); }
+  try { r = vypocetProjAkt(); }
   catch (e) { el.innerHTML = `<div class="card"><div class="body neg">Chyba výpočtu PROJ: ${esc(e.message)}</div></div>`; return; }
 
   const K = fmt, pctTxt = p => num(Math.round(p * 100) / 100) + ' %';

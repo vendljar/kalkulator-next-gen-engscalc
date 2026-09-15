@@ -169,8 +169,12 @@ const zakUi = fs.readFileSync(__dirname + '/ui/zakazka_ui.js', 'utf8');
  * vrátila k výpočtu OCK, byli bychom přesně tam, kde 12. 8. 2026 začínal
  * tenhle nález. */
 test('základ slevy se bere podle části', /function slevaZaklad\(/.test(spol));
+/* Od 15. 9. 2026 (nálezy A1/D1) se v UI nevolá `vypocetProj(PJ, PC)` přímo:
+ * přístupovým bodem je `vypocetProjAkt()`, který u ODESLANÉ nabídky vydá
+ * otisk místo dnešního výpočtu. Věcně se nic nemění — pořád je to výpočet
+ * projekce, jen se ptá zámku. Hlídá to test_zamek_otisk.js. */
 test('sleva projekce se počítá z výpočtu projekce',
-  /slevaZaklad[\s\S]{0,400}vypocetProj\(PJ, PC\)/.test(spol));
+  /slevaZaklad[\s\S]{0,400}vypocetProjAkt\(\)/.test(spol));
 test('sleva projekce nebere základ z výpočtu OCK',
   !/cast === 'proj'[\s\S]{0,300}souhrn\.zakladCena/.test(spol));
 

@@ -33,8 +33,8 @@ function kontrolyCtxAkt() {
   let ock = null, proj = null;
   /* Spadlý výpočet není důvod kontroly vypnout – naopak, část pravidel
    * (rozměry, nástupiště) je právě na takový stav. */
-  try { ock = vypocet(Z, C, JEKLY, OCK.fixes); } catch (e) {}
-  try { proj = vypocetProj(PJ, PC); } catch (e) {}
+  try { ock = vypocetAkt(); } catch (e) {}
+  try { proj = vypocetProjAkt(); } catch (e) {}
   return {
     zadani: Z,
     vysledek: ock,

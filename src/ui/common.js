@@ -795,12 +795,52 @@ function variantaStavPill() {
  * tady je jen štítek do lišty a rozpis pod ním. Kontrola nic neblokuje
  * a nic nepřepočítává — je to informace, ne zábrana. Když je vypnutá
  * (výchozí stav), štítek se vůbec nekreslí. */
+/* VÝSLEDEK OTEVŘENÉ VARIANTY (nálezy A1 a D1, 15. 9. 2026).
+ *
+ * Obrazovky si výsledek dosud počítaly každá sama: `vypocet(Z, C, JEKLY,
+ * OCK.fixes)` na dvanácti místech. U rozpracované nabídky je to správně —
+ * musí reagovat na každé ťuknutí do zadání. U ODESLANÉ nabídky ale ne:
+ * zadání i ceník jsou sice zmrazené, jenže jádro ne, takže změna vzorce
+ * přepsala cenu nabídky, kterou zákazník už držel v ruce (V29, 8. 9. 2026).
+ *
+ * `vypocetAkt()` se ptá zámku: odeslaná varianta vydá svůj otisk, rozpracovaná
+ * se spočítá. Obrazovky proto volají tohle a ne `vypocet()` přímo — jedno
+ * místo, jedno rozhodnutí. Kdo zavolá `vypocet()` sám, obejde zámek; hlídá to
+ * test_zamek_otisk.js.
+ *
+ * Varianty odeslané před 15. 9. 2026 otisk nemají a počítají se dál jako
+ * dosud — dopočítat ho zpětně nejde, byl by to dnešní výpočet vydávaný za
+ * tehdejší. */
+function vypocetAkt() {
+  const v = (typeof aktivniVarianta === 'function' && typeof ZAK !== 'undefined')
+    ? aktivniVarianta(ZAK) : null;
+  if (v && typeof vypocetZ === 'function') {
+    const r = vypocetZ(v, JEKLY);
+    if (r) return r;
+  }
+  return vypocet(Z, C, JEKLY, OCK.fixes);
+}
+
+/* Totéž pro Kalkulaci PROJ — a právě tam nález A1 vznikl: zamčená nabídka
+ * 2025-OVP-CN-0356 měla sekci ZAMĚŘENÍ za 195 800 Kč a po změně vzorce
+ * ukazovala 208 104. Zapomenout na tuhle polovinu by znamenalo zmrazit
+ * šachtu a projekci nechat plavat. */
+function vypocetProjAkt() {
+  const v = (typeof aktivniVarianta === 'function' && typeof ZAK !== 'undefined')
+    ? aktivniVarianta(ZAK) : null;
+  if (v && typeof vypocetProjZ === 'function') {
+    const r = vypocetProjZ(v);
+    if (r) return r;
+  }
+  return vypocetProj(PJ, PC);
+}
+
 let STD_ROZPIS = false;      // je rozpis nálezů rozbalený? (stav obrazovky)
 
 function standardVysledek() {
   if (typeof standardVyhodnot !== 'function') return null;
   let r;
-  try { r = vypocet(Z, C, JEKLY, OCK.fixes); } catch (e) { r = null; }
+  try { r = vypocetAkt(); } catch (e) { r = null; }
   const vyska = r && r.odvozene ? r.odvozene.vyskaSachty : null;
   /* Jednotypovost zasklení: názvy skel, která opravdu jdou do nabídky.
    * „Zvolené" znamená dvě věci najednou — příplatek NENÍ vyškrtnutý ze
@@ -1694,13 +1734,13 @@ function slevaCast(cast) {
  * výpočet nepodařil — cena se nikdy neodhaduje. */
 function slevaZaklad(cast) {
   if (cast === 'proj') {
-    let r = null; try { r = vypocetProj(PJ, PC); } catch (e) {}
+    let r = null; try { r = vypocetProjAkt(); } catch (e) {}
     if (!r || !r.souhrn) return null;
     /* Náklad projekce zahrnuje dopravu — cena ji obsahuje, tak ji musí
      * obsahovat i náklad, se kterým se poměřuje (audit 1. 8. 2026, N2). */
     return { zaklad: r.souhrn.celkem, naklad: r.souhrn.naklad + (r.souhrn.doprava || 0) };
   }
-  let r = null; try { r = vypocet(Z, C, JEKLY, OCK.fixes); } catch (e) {}
+  let r = null; try { r = vypocetAkt(); } catch (e) {}
   if (!r || !r.souhrn) return null;
   return { zaklad: r.souhrn.zakladCena, naklad: r.souhrn.zakladNaklad };
 }
@@ -1859,8 +1899,8 @@ function slevaKarta(kontext) {
 /* Výsledky výpočtů pro libovolnou variantu (pro přehledy) */
 function spocitejVariantu(v) {
   let ock = null, proj = null;
-  try { ock = vypocet(v.data.ock.zadani, v.data.cenik, JEKLY, v.data.ock.fixes); } catch (e) {}
-  try { proj = vypocetProj(v.data.proj.zadani, v.data.proj.cenik); } catch (e) {}
+  try { ock = (typeof vypocetZ === 'function' ? vypocetZ(v, JEKLY) : vypocet(v.data.ock.zadani, v.data.cenik, JEKLY, v.data.ock.fixes)); } catch (e) {}
+  try { proj = (typeof vypocetProjZ === 'function' ? vypocetProjZ(v) : vypocetProj(v.data.proj.zadani, v.data.proj.cenik)); } catch (e) {}
   return { ock, proj };
 }
 

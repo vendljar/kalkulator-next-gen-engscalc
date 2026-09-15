@@ -111,6 +111,43 @@ function klonujVariantu(zak, id, opts) {
   return kopie;
 }
 
+/* VÝSLEDEK VARIANTY — JEDINÉ MÍSTO, KDE SE ROZHODUJE (nálezy A1, D1).
+ *
+ * Odeslaná nabídka vydá svůj otisk; rozpracovaná se počítá. Kdo se ptá téhle
+ * dvojice, nemůže na zamčené variantě omylem spustit dnešní jádro.
+ *
+ * Zamčená varianta BEZ otisku (vše, co odešlo před 15. 9. 2026) se počítá
+ * dál jako dosud. Zpětně se otisk dopočítat nedá — to už by nebyl otisk, ale
+ * dnešní výpočet s dnešní chybou. U těch nabídek tedy A1 zůstává a jedinou
+ * cestou k aktuálním číslům je nová varianta, jak rozhodl J. V.
+ *
+ * Funkce NIC NEUKLÁDÁ a vrací hluboký klon: kdyby volající do výsledku sáhl
+ * (a UI to dělá — dopisuje si do něj mezivýpočty), přepsal by otisk odeslané
+ * nabídky. To je přesně ta třída chyby, kterou tenhle nález řeší. */
+function vypocetZ(v, jekly) {
+  const zmr = zamekVysledek(v);
+  if (zmr && zmr.ock) return JSON.parse(JSON.stringify(zmr.ock));
+  const d = (v && v.data) || {};
+  if (!d.ock || !d.cenik) return null;
+  return vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes);
+}
+
+function vypocetProjZ(v) {
+  const zmr = zamekVysledek(v);
+  if (zmr && zmr.proj) return JSON.parse(JSON.stringify(zmr.proj));
+  const d = (v && v.data) || {};
+  if (!d.proj) return null;
+  return vypocetProj(d.proj.zadani, d.proj.cenik);
+}
+
+/* Kurz EUR pro cizojazyčný dokument. U odeslané nabídky ten, který platil
+ * v okamžiku odeslání — doplnit ho dodatečně nejde, nabídka se nemění (D1). */
+function kurzEurZ(v, zaklad) {
+  const zmr = zamekVysledek(v);
+  if (zmr && zmr.kurzEurKc) return zmr.kurzEurKc;
+  return zaklad;
+}
+
 /* Nese zakázka aspoň jednu ODESLANOU (uzamčenou) nabídku? (nález A3,
  * 15. 9. 2026.) Číslo nabídky je hlavičkové pole, a hlavička je ze zámku
  * VARIANTY vědomě vyjmutá — zámek chrání cenu, ne adresu zákazníka. U čísla
@@ -168,9 +205,38 @@ function zamkniVariantu(v, info) {
     kdy: zaznam.kdy, typ: zaznam.typ, popis: zaznam.popis, kdo: zaznam.kdo,
     cislo: info.cislo || '',
     otisk: info.otisk || null,
+    /* CELÝ VÝSLEDEK, NE JEN SOUHRN (nálezy A1 a D1, rozhodnutí J. V.
+     * 15. 9. 2026: „potřebujeme uzamknout nabídku as is, jakoby to bylo pdf …
+     * už se za žádných podmínek nezmění").
+     *
+     * `otisk` výš nese jen souhrnné částky a slouží k tomu, aby bylo vidět,
+     * když se něco rozejde. Jenže rozejít se to smělo: zamčená varianta si
+     * drží svá DATA (zadání i ceník jsou zmrazená kopie), ale počítala se
+     * DNEŠNÍM KÓDEM. Když se 8. 9. 2026 přesunula doprava do základu
+     * přirážky (V29), přepsalo to celkovou cenu nabídky vytištěné 4. 9.
+     * — zákazník držel papír s jiným číslem, než jaké aplikace ukazovala.
+     * Zmrazit data a nezmrazit vzorec je půlka zámku.
+     *
+     * Ukládá se proto celý výsledek OCK i PROJ, jak vyšel v okamžiku
+     * odeslání, a k tomu kurz EUR: bez něj by cizojazyčný dotisk téže
+     * nabídky nešel vyrobit (D1) a doplnit ho už nelze — zamčená nabídka
+     * se nemění. Měřeno: OCK ~25 kB, PROJ ~5 kB na variantu; bere se
+     * JEDNOU při prvním zamčení, další tisky do `tisky[]` nic nepřidávají.
+     *
+     * `build` je tu kvůli dohledatelnosti: říká, který kód to číslo vydal. */
+    vysledek: info.vysledek || null,
     tisky: [zaznam],
   };
   return v.zamek;
+}
+
+/* Zmrazený výsledek odeslané nabídky, nebo null. Ptát se na tuhle funkci je
+ * jediný správný způsob, jak zjistit „smí se tahle varianta počítat znovu?" —
+ * `variantaUzamcena()` na to nestačí, protože zamčené varianty ze starších
+ * zakázek otisk výsledku nemají a počítat se musí dál. */
+function zamekVysledek(v) {
+  const z = zamekInfo(v);
+  return (z && z.vysledek) ? z.vysledek : null;
 }
 
 /* Odemknutí je výjimka, ne běžný krok: smí ho udělat jen správce a musí
@@ -312,7 +378,7 @@ function zamekCteniDuvod(zak, ja) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { zakazkaMaOdeslanou, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
+  module.exports = { zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
                      zamekCteniSmiOdemknout, zamekCteniDuvod,
                      variantaPripona, dalsiPriponaVarianty, variantaCislo,
                      klonujVariantu, zamekInfo, variantaUzamcena,

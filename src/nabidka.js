@@ -14,7 +14,9 @@
 function nabidkaData(zak, varianta, jekly, lang) {
   const d = varianta.data;
   const Zv = d.ock.zadani, Cv = d.cenik, TSv = d.techspec;
-  const r = vypocet(Zv, Cv, jekly, d.ock.fixes);
+  /* Odeslaná nabídka vydá svůj otisk, ne dnešní výpočet (nález A1). */
+  const r = (typeof vypocetZ === 'function') ? vypocetZ(varianta, jekly)
+    : vypocet(Zv, Cv, jekly, d.ock.fixes);
 
   const L = lang || 'cz';
   const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
@@ -25,7 +27,7 @@ function nabidkaData(zak, varianta, jekly, lang) {
    * nahoru, mena.na) a součty se skládají z převedených čísel — rozpad
    * v dokumentu proto sedí na euro. Kurz se v dokumentu neukazuje; bez
    * kurzu se hodí srozumitelná chyba a dokument nevznikne. */
-  const mena = (typeof menaDokumentu === 'function') ? menaDokumentu(L, Cv.kurzEurKc)
+  const mena = (typeof menaDokumentu === 'function') ? menaDokumentu(L, (typeof kurzEurZ === 'function') ? kurzEurZ(varianta, Cv.kurzEurKc) : Cv.kurzEurKc)
     : { eur: false, na: n => n,
         fmt: (typeof formatKc2 === 'function') ? formatKc2
           : n => n.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Kč' };

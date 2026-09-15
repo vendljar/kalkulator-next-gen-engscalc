@@ -293,7 +293,7 @@ function atypPrepni(zap, opts) {
      * hodin; montáž +30 % z CELKOVÝCH hodin potřebných pro montáž (základ +
      * hodiny navíc vypočtené z konstrukce — světlíky, přechody atd.). */
     let navic = 0;
-    try { navic = vypocet(Z, C, JEKLY, OCK.fixes).montaz.hodinyNavicCelkem || 0; } catch (e) { navic = 0; }
+    try { navic = vypocetAkt().montaz.hodinyNavicCelkem || 0; } catch (e) { navic = 0; }
     predloha = {
       rezervaProfilyPct: 0.30,
       rezervaPlechyPct: 0.30,
@@ -464,7 +464,7 @@ function dragStart(e, sek, key) { _dragSek = sek; _dragKey = key; if (e.dataTran
 function dragOver(e) { if (_dragKey != null) { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'; } }
 function dragDrop(e, sek, key) { e.preventDefault(); if (_dragSek === sek && _dragKey != null && _dragKey !== key) presunRadek(sek, _dragKey, key); _dragKey = null; _dragSek = null; }
 function presunRadek(sekceKey, fromKey, toKey) {
-  let r; try { r = vypocet(Z, C, JEKLY, OCK.fixes); } catch (e) { return; }
+  let r; try { r = vypocetAkt(); } catch (e) { return; }
   const zdroj = sekceKey === 'volitelne' ? r.volitelneKatalog : (r.sekce[sekceKey] || []);
   let ord = serazSekci(zdroj, sekceKey).map(radekKey).filter(k => k !== fromKey);
   const ti = ord.indexOf(toKey);
@@ -771,7 +771,7 @@ function priplatekVlastniSet(i, k, v) {
  * rozhodnutí: sirotek může být dočasný (položka je jen vypnutá nastavením
  * šachty a po přepnutí se vrátí i s přepisem). */
 async function sirotciUklidVse() {
-  let r; try { r = vypocet(Z, C, JEKLY, OCK.fixes); } catch (e) { return; }
+  let r; try { r = vypocetAkt(); } catch (e) { return; }
   const s = prepisySirotci(Z, r.nazvyPolozek);
   if (!s.length) return render();
   if (!await potvrd('Smazat ' + s.length + ' nepoužitý ruční přepis/y?\n\nTýká se jen přepisů, které v tomto výpočtu nemají odpovídající položku. Vrátit zpět to lze tlačítkem „Zpět“ (Ctrl+Z).')) return;
@@ -805,7 +805,7 @@ function sirotciKarta(r) {
 
 function renderOutputs() {
   let r;
-  try { r = vypocet(Z, C, JEKLY, OCK.fixes); }
+  try { r = vypocetAkt(); }
   catch (e) {
     const elS = document.getElementById('kalk-souhrn'); if (elS) elS.innerHTML = '';
     document.getElementById('outputs').innerHTML = `<div class="card"><div class="body neg">Chyba výpočtu: ${esc(e.message)}</div></div>`; return; }

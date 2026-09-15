@@ -101,7 +101,7 @@ function dvPruchoziRadky() {
 function renderDetail() {
   const el = document.getElementById('page-detail'); if (!el) return;
   let r;
-  try { r = vypocet(Z, C, JEKLY, OCK.fixes); }
+  try { r = vypocetAkt(); }
   catch (e) { el.innerHTML = `<div class="card"><div class="body neg">Chyba výpočtu: ${esc(e.message)}</div></div>`; return; }
   const o = r.odvozene, p = r.parametry, ext = Z.typSachty === 'exteriérová';
   const M = num, K = fmt, K0 = fmt0;

@@ -46,7 +46,7 @@ function tsJazykBar() {
 /* všechny fráze dokumentu (popisky i hodnoty) – podklad pro měření pokrytí */
 function tsVsechnyFraze() {
   let r = null;
-  try { r = vypocet(Z, C, JEKLY, OCK.fixes); } catch (e) {}
+  try { r = vypocetAkt(); } catch (e) {}
   const out = [];
   TECHSPEC_DEF.forEach(sk => {
     out.push(sk.sekce);
@@ -77,7 +77,7 @@ function tsChybejiciExport() {
 
 function tsKontrolaStav() {
   let r = null;
-  try { r = vypocet(Z, C, JEKLY, OCK.fixes); } catch (e) {}
+  try { r = vypocetAkt(); } catch (e) {}
   return tsKontrola(TS, r, Z, C, ZAK);
 }
 
@@ -113,7 +113,7 @@ function tsPrelozText(t) {
 /* náhled dokumentu v cizím jazyce (jen ke čtení a tisku) */
 function renderTechspecPreklad() {
   let r = null;
-  try { r = vypocet(Z, C, JEKLY, OCK.fixes); } catch (e) {}
+  try { r = vypocetAkt(); } catch (e) {}
   const lang = jazyk();
 
   const row = (lbl, val) => `<div class="spec-row ro"><div class="lbl">${tsPrelozText(lbl)}</div>
@@ -151,7 +151,7 @@ function renderTechspecPreklad() {
 function renderTechspec() {
   if (jazyk() !== 'cz') return renderTechspecPreklad();
   let r = null;
-  try { r = vypocet(Z, C, JEKLY, OCK.fixes); } catch (e) {}
+  try { r = vypocetAkt(); } catch (e) {}
 
   const specRow = (pole) => {
     const h = tsHodnota(pole, TS, r, Z, C);

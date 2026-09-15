@@ -167,11 +167,27 @@ function zamekPoTisku(typ, varId, sablona) {
   const v = (varId && ZAK.varianty.find(x => x.id === varId)) || aktivniVarianta(ZAK);
   if (!v) return null;
   const prvni = !variantaUzamcena(v);
-  let otisk = null;
+  let otisk = null, vysledek = null;
   if (prvni) {
     try { otisk = zamekOtiskZPorovnani(porovnaniData(), v.id); } catch (e) { otisk = null; }
+    /* CELÝ VÝSLEDEK SE BERE PŘI PRVNÍM ZAMČENÍ (nálezy A1 a D1, rozhodnutí
+     * J. V. 15. 9. 2026). Tohle je ten jediný okamžik, kdy nabídka odchází —
+     * od téhle chvíle se má chovat jako PDF. Bere se celý výsledek OCK i PROJ
+     * a kurz EUR; bez kurzu by se cizojazyčný dotisk téže nabídky už nedal
+     * vyrobit, protože doplnit ho do zamčené varianty nelze.
+     *
+     * Každý další tisk téže varianty sem nesahá (`prvni`), takže se otisk
+     * nepřepíše novějším výpočtem a zakázka neroste. */
+    const d = (v.data || {});
+    try { vysledek = {
+      ock: vypocet(d.ock.zadani, d.cenik, JEKLY, d.ock.fixes),
+      proj: vypocetProj(d.proj.zadani, d.proj.cenik),
+      kurzEurKc: (d.cenik && +d.cenik.kurzEurKc) || (d.proj && d.proj.cenik && +d.proj.cenik.kurzEurKc) || 0,
+      build: (typeof buildVerze === 'function') ? buildVerze() : '',
+      kdy: new Date().toISOString(),
+    }; } catch (e) { vysledek = null; }
   }
-  zamkniVariantu(v, { typ, kdo: zamekKdo(), cislo: variantaCislo(ZAK, v), otisk,
+  zamkniVariantu(v, { typ, kdo: zamekKdo(), cislo: variantaCislo(ZAK, v), otisk, vysledek,
                       sablona: sablona || null });
   render();
   return v.zamek;

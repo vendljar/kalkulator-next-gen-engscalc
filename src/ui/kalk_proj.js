@@ -160,7 +160,7 @@ function pjDragDrop(e, i, j, tr) {
 
 function renderProj() {
   let r;
-  try { r = vypocetProj(PJ, PC); }
+  try { r = vypocetProjAkt(); }
   catch (e) { document.getElementById('page-proj').innerHTML = `<div class="card"><div class="body neg">Chyba výpočtu: ${esc(e.message)}</div></div>`; return; }
 
   /* Sloupce podle role řeší stejná funkce jako v OCK (kalkSloupce), ať se obě

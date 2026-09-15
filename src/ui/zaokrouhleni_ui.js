@@ -29,10 +29,10 @@ function zaokrProjSetSmer(val) { ZOP.smer = val; render(); }
 /* Dopad na tu část nabídky, o kterou jde. Spadne-li výpočet, řádek se prostě
  * neukáže – karta je informace o ceně, ne hlásič chyb výpočtu. */
 function zaokrDopadOck() {
-  try { return cenaNabidkyOck(vypocet(Z, C, JEKLY, OCK.fixes), SL, ZO); } catch (e) { return null; }
+  try { return cenaNabidkyOck(vypocetAkt(), SL, ZO); } catch (e) { return null; }
 }
 function zaokrDopadProj() {
-  try { return cenaNabidkyProj(vypocetProj(PJ, PC), SLP, ZOP); } catch (e) { return null; }
+  try { return cenaNabidkyProj(vypocetProjAkt(), SLP, ZOP); } catch (e) { return null; }
 }
 
 /* Karta se vykresluje na dvou místech – pod výpočtem OCK a pod výpočtem PROJ.

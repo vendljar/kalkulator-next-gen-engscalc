@@ -310,14 +310,17 @@ function nabidkaProjData(zak, varianta, lang) {
   const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
   const d = (varianta && varianta.data) || {};
   const pj = d.proj || {};
-  const r = vypocetProj(pj.zadani || DEFAULT_ZADANI_PROJ, pj.cenik || DEFAULT_CENIK_PROJ);
+  /* Odeslaná nabídka vydá svůj otisk (A1). */
+  const r = (typeof vypocetProjZ === 'function' && varianta && varianta.zamek)
+    ? vypocetProjZ(varianta)
+    : vypocetProj(pj.zadani || DEFAULT_ZADANI_PROJ, pj.cenik || DEFAULT_CENIK_PROJ);
 
   /* #14 krok 3: formát bydlí ve format.js (záložka pro samostatný Node běh).
    * Měna (#155 + dorovnání 19. 8. večer): CZ = koruny; jiná mutace = eura
    * kurzem z ceníku varianty. Převádějí se ČÍSLA po sekcích (celá eura
    * nahoru, mena.na) a součty se sčítají z převedených sekcí — rozpad sedí
    * na euro. Kurz se v dokumentu neukazuje; bez kurzu chyba. */
-  const mena = (typeof menaDokumentu === 'function') ? menaDokumentu(L, (pj.cenik || {}).kurzEurKc)
+  const mena = (typeof menaDokumentu === 'function') ? menaDokumentu(L, (typeof kurzEurZ === 'function') ? kurzEurZ(varianta, (pj.cenik || {}).kurzEurKc) : (pj.cenik || {}).kurzEurKc)
     : { eur: false, na: n => n,
         fmt: (typeof formatKc2 === 'function') ? formatKc2
           : n => (+n || 0).toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Kč' };

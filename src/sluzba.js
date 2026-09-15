@@ -27,8 +27,11 @@
 function sluzbaVarianta(zak, v, nast, jekly) {
   const d = (v && v.data) || {};
   let ock = null, proj = null;
-  try { ock = vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes); } catch (e) { ock = null; }
-  try { proj = vypocetProj(d.proj.zadani, d.proj.cenik); } catch (e) { proj = null; }
+  /* Odeslaná nabídka vydá svůj otisk, ne dnešní výpočet (A1). */
+  try { ock = (typeof vypocetZ === 'function') ? vypocetZ(v, jekly)
+    : vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes); } catch (e) { ock = null; }
+  try { proj = (typeof vypocetProjZ === 'function') ? vypocetProjZ(v)
+    : vypocetProj(d.proj.zadani, d.proj.cenik); } catch (e) { proj = null; }
 
   const jenProj = !!(zak && zak.jenProj);
   let cenaOck = null, cenaProj = null, marze = null, kontroly = null;

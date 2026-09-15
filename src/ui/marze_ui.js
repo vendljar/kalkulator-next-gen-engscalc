@@ -30,8 +30,8 @@ function marzeSmiCisla() {
  * část jako neznámá – hlídání marže není místo, kde hlásit chybu výpočtu. */
 function marzePrehledAkt() {
   let ock = null, proj = null;
-  try { ock = vypocet(Z, C, JEKLY, OCK.fixes); } catch (e) {}
-  try { proj = vypocetProj(PJ, PC); } catch (e) {}
+  try { ock = vypocetAkt(); } catch (e) {}
+  try { proj = vypocetProjAkt(); } catch (e) {}
   /* ZO/ZOP (#38): hlídá se marže z ceny po obchodním zaokrouhlení, tedy z toho,
    * co zákazník opravdu zaplatí – zaokrouhlením dolů se marže reálně snižuje.
    * Od 4. 8. 2026 má každá část vlastní nastavení: ZO = výtahová šachta,
