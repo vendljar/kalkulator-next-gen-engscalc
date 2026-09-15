@@ -98,8 +98,26 @@ const NABIDKA_PROJ_DEF = [
    * tehdy, když se studie nabízí — jinak by v nabídce stálo totéž číslo
    * dvakrát pod dvěma nadpisy. `jenSe` je právě na tenhle rozdíl: „počítej
    * z téhle sekce, ale ukazuj se podle jiné". */
+  /* ČÁSTKA SE V NABÍDCE NEOPAKUJE (nález B z testování obchodníkem, 15. 9. 2026,
+   * rozhodnutí J. V.: varianta (a)).
+   *
+   * `jenSe` z 23. 8. 2026 vyřešilo jeden směr: zákazníkovi, který si objednal
+   * JEN zaměření, se přestala tisknout hlavička studie i s cenou za „část 1".
+   * Druhý směr zůstal — když si objedná OBOJÍ, vytisknou se oba bloky a KAŽDÝ
+   * nese tutéž částku. Rekapitulace ji přitom vede jen jednou, takže kdo si
+   * sčítá řádky, dostane víc než celkem. Obchodník blok mazal ručně ve Wordu.
+   *
+   * Všimni si, že jinak to ani dopadnout nemohlo: „část 1" se tiskne jen
+   * tehdy, když má cenu `zamereni` A ZÁROVEŇ studie nebo projednání — a blok
+   * CENA ZA ZAMĚŘENÍ se tiskne, kdykoli má cenu `zamereni`. Tisk „části 1"
+   * tedy tisk ZA VŽDY implikuje; duplicita nebyla okrajový případ, ale jediný
+   * možný. Proto tu nestojí žádná podmínka: řádek částku nenese NIKDY.
+   *
+   * `odkaz` = „cena je jinde, tady je jen rozsah". Sekce zůstává `zamereni`,
+   * protože vzorec #174 platí dál: odsud JE ta cena — jen se už jednou vypsala. */
   { typ: 'cena', nadpis: 'CENA ZA STUDII PROVEDITELNOSTI – část 1', sekce: 'zamereni',
-    jenSe: ['studie', 'projednani'], popis: 'ZAMĚŘENÍ a zpracování výstupů' },
+    jenSe: ['studie', 'projednani'], popis: 'ZAMĚŘENÍ a zpracování výstupů',
+    odkaz: 'viz CENA ZA ZAMĚŘENÍ A ZPRACOVÁNÍ VÝSTUPŮ výše' },
   { typ: 'cena', nadpis: 'CENA ZA STUDII PROVEDITELNOSTI – část 2', sekce: 'studie',
     popis: 'Vypracování STUDIE PROVEDITELNOSTI' },
   { typ: 'cena', nadpis: 'CENA ZA STUDII PROVEDITELNOSTI – část 3', sekce: 'projednani',
@@ -496,9 +514,15 @@ function nabidkaProjData(zak, varianta, lang) {
         popis += ', ' + P(b.popisPredpona || 'včetně') + ' ' + vycet;
       }
     }
+    /* Blok s `odkaz` ukazuje rozsah, ale částku už ne — ta stojí u bloku, na
+     * který odkazuje (viz B). Nesmí spadnout do `neuvedena`: ten filtr níž
+     * vyhazuje NEOCENĚNÉ činnosti, a tahle oceněná je — jen jinde. */
+    const odkaz = b.odkaz && !neuvedena ? P(b.odkaz) : '';
     return { typ: 'cena', nadpis: P(b.nadpis), popis, sekce: b.sekce || null,
-      castka: neuvedena ? P('není součástí této nabídky') : kc(hodnota)
-        + (b.jednotka ? ' / ' + P(b.jednotka) : ''),
+      castka: odkaz ? odkaz
+        : (neuvedena ? P('není součástí této nabídky') : kc(hodnota)
+            + (b.jednotka ? ' / ' + P(b.jednotka) : '')),
+      odkaz: !!odkaz,
       neuvedena: neuvedena,
       hvezdicka: b.hvezdicka ? P(b.hvezdicka) : '' };
   })
@@ -549,7 +573,13 @@ function nabidkaProjData(zak, varianta, lang) {
      * Neoceněná činnost NEDOSTANE nulu, ale větu „není součástí této
      * nabídky": nula v nabídce znamená „uděláme zdarma", což nikdo nemyslel. */
     PROJ_CENA_ZAMERENI: cenaSymbol('zamereni'),
-    PROJ_CENA_SP1: cenaSymbol('zamereni'),
+    /* Ve Wordu stojí „část 1" v pevné šabloně, takže se z ní blok vypustit
+     * nedá — dosadí se tedy aspoň odkaz místo druhé opsané částky (nález B).
+     * Podmínka je táž jako `jenSe` u online bloku: odkazuje se jen tehdy,
+     * když se studie opravdu nabízí a cena za zaměření už v dokumentu byla. */
+    PROJ_CENA_SP1: (cenaSekce('zamereni') && (vRozsahu('studie') || vRozsahu('projednani')))
+      ? P('viz CENA ZA ZAMĚŘENÍ A ZPRACOVÁNÍ VÝSTUPŮ výše')
+      : cenaSymbol('zamereni'),
     PROJ_CENA_SP2: cenaSymbol('studie'),
     PROJ_CENA_SP3: cenaSymbol('projednani'),
     PROJ_CENA_DPZ: cenaSymbol('dpz'),

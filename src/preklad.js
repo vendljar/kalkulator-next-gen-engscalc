@@ -630,6 +630,10 @@ const PREKLAD = {
   "IČ – INŽENÝRSKÁ ČINNOST": ["IČ – ENGINEERING SERVICES","IČ – INGENIEURLEISTUNGEN","IČ – ASSISTANCE ADMINISTRATIVE"],
   "DPS – DOKUMENTACE PRO PROVEDENÍ STAVBY": ["DPS – DETAILED DESIGN DOCUMENTATION","DPS – AUSFÜHRUNGSPLANUNG","DPS – DOSSIER D'EXÉCUTION"],
   /* popisy u cenových řádků (krátké obchodní věty – překládají se) */
+  /* PŘIBYLO 15. 9. 2026 (nález B) – nový řetězec, žádný stávající překlad se
+   * nemění. Stojí místo částky u „části 1" studie, aby se tatáž cena
+   * netiskla v nabídce dvakrát. */
+  "viz CENA ZA ZAMĚŘENÍ A ZPRACOVÁNÍ VÝSTUPŮ výše": ["see PRICE FOR SURVEY AND PROCESSING OF OUTPUTS above","siehe PREIS FÜR AUFMASS UND AUSWERTUNG DER ERGEBNISSE oben","voir PRIX DU RELEVÉ ET DU TRAITEMENT DES RÉSULTATS ci-dessus"],
   "Cena ZAMĚŘENÍ zamýšleného prostoru pro umístění výtahu, stavebně technický průzkum a zpracování výstupů.": ["Price for the SURVEY of the space intended for the lift, the building-technical inspection and processing of its outputs.","Preis für das AUFMASS des für den Aufzug vorgesehenen Raums, die bautechnische Untersuchung und die Auswertung der Ergebnisse.","Prix du RELEVÉ de l'espace destiné à l'ascenseur, de l'étude technique du bâtiment et du traitement des résultats."],
   "Projednání STUDIE PROVEDITELNOSTI na odboru památkové péče HMP": ["Approval of the FEASIBILITY STUDY at the Prague heritage preservation department","Abstimmung der MACHBARKEITSSTUDIE beim Denkmalschutzamt der Hauptstadt Prag","Instruction de l'ÉTUDE DE FAISABILITÉ auprès du service du patrimoine de la Ville de Prague"],
   "Vypracování každé jedné další varianty řešení požadované Odborem památkové péče": ["Preparation of each further design alternative required by the heritage preservation department","Ausarbeitung jeder weiteren vom Denkmalschutzamt geforderten Lösungsvariante","Élaboration de chaque variante supplémentaire demandée par le service du patrimoine"],
