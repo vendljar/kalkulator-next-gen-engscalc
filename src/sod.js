@@ -124,7 +124,9 @@ function plnaMocData(zak, varianta) {
       : {});
   placeholders.ADRESA = h.adresa || zak.adresa || '';
   placeholders.NAZEV_AKCE = h.nazevAkce || zak.nazevAkce || '';
-  placeholders.DATUM = (typeof datumCz === 'function') ? datumCz(zak.datum) : (zak.datum || '');
+  /* Datum nese VARIANTA, ne zakázka (nález D2). */
+  const datumDok = (typeof variantaDatum === 'function') ? variantaDatum(zak, varianta) : zak.datum;
+  placeholders.DATUM = (typeof datumCz === 'function') ? datumCz(datumDok) : (datumDok || '');
   /* Údaje zmocnitele (jméno, datum narození, bytem) a jednající osoba
    * zhotovitele se od 23. 8. 2026 berou z krycího listu PROJ — do té doby
    * je musel obchodník dopisovat ve Wordu do žlutě podbarvených míst. */

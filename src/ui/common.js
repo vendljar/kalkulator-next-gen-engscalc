@@ -526,6 +526,36 @@ function set(path, v) {
   /* Zámek čtení platí i na hlavičku (ZAK.*) — viz komentář u ZAMEK_CTENI. */
   if (typeof zamekCteniStop === 'function' && zamekCteniStop()) return;
   if (!path.startsWith('ZAK.') && typeof zamekStop === 'function' && zamekStop()) return;
+  /* ČÍSLO ODESLANÉ NABÍDKY MĚNÍ JEN ADMINISTRÁTOR (nález A3, rozhodnutí
+   * J. V. 15. 9. 2026: „Pouze administrátor").
+   *
+   * Hlavička je ze zámku varianty vyjmutá schválně — zámek chrání cenu, ne
+   * adresu zákazníka. U ČÍSLA to ale neplatí: je to identifikátor dokumentu,
+   * který odešel zákazníkovi, a otisk zámku ho neobsahuje, takže se dosud dal
+   * přepsat beze stopy. (Na 0356 nese číslo rok 2025 proti datu vytvoření
+   * 2. 9. 2026 — aplikace rok negeneruje, napsal ho člověk.)
+   *
+   * Omezuje se AŽ PO ODESLÁNÍ. Dokud nic neodešlo, obchodník číslo vyplňuje
+   * volně — nová zakázka má jen předlohu „2026 - OPR - CN - " a bez dopsání
+   * pořadí by nabídka nešla vytvořit vůbec.
+   *
+   * Změna se zapisuje do protokolu zakázky, takže je dohledatelné kdo, kdy
+   * a z čeho na co. Tichý přepis by byl horší než zákaz. */
+  if (path === 'ZAK.cislo' && typeof zakazkaMaOdeslanou === 'function' && zakazkaMaOdeslanou(ZAK)) {
+    if (typeof jeAdmin !== 'function' || !jeAdmin()) {
+      if (typeof progZprava === 'function')
+        progZprava('Zakázka už má odeslanou (uzamčenou) nabídku, takže číslo smí změnit '
+          + 'jen administrátor. Požádejte ho o opravu — změna se zapíše do protokolu zakázky.', 'varovani');
+      render();
+      return;
+    }
+    const pred = get(path);
+    if (String(pred) !== String(v) && typeof protokolZapis === 'function') {
+      protokolZapis(ZAK, { co: 'Číslo nabídky změněno u zakázky s odeslanou nabídkou',
+        kde: 'hlavička zakázky', kdo: (typeof NAST !== 'undefined' && NAST.uzivatel) || '',
+        pred: String(pred), po: String(v) });
+    }
+  }
   const ks = path.split('.'); const last = ks.pop();
   ks.reduce((o, k) => o[k], rootObj())[last] = v;
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();

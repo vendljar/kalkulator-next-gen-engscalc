@@ -61,6 +61,25 @@ const ATYP_POLE = ['rezervaProfilyPct', 'rezervaPlechyPct', 'rezervaZakladPct',
 const ATYP_NULA = { rezervaProfilyPct: 0, rezervaPlechyPct: 0, rezervaZakladPct: 0,
   rezervaPriplatkyPct: 0, zamecnikAtypKc: null, montazAtypHod: 0, projekceAtypHod: 0 };
 
+/* DATUM DOKUMENTU PATŘÍ VARIANTĚ (nález D2, 15. 9. 2026).
+ *
+ * Datum bylo vlastností ZAKÁZKY: `novaZakazka()` ho nastavilo jednou a už
+ * nikdy. Každá další varianta pak nesla datum založení zakázky — na 0356
+ * vyšla varianta z pozdějška s datem 2. 9. Zákazník tak dostal nabídku
+ * s datem, které neodpovídá dni odeslání, a u nabídky s omezenou platností
+ * to je právně nepříjemné. J. V. 15. 9. 2026: „nová varianta musí mít vždy
+ * nové aktuální datum."
+ *
+ * Datum se proto ukládá na variantu (`v.datum`) a dokumenty čtou tuhle
+ * funkci. HISTORICKÉ VARIANTY SE NEMĚNÍ, a to bez migrace: kdo `datum` nemá,
+ * spadne na `zak.datum` přesně jako dosud. Nové pravidlo platí od téhle
+ * verze dál, jak bylo zadáno — „historické varianty už neměň". */
+function variantaDatum(zak, v) {
+  const d = v && v.datum;
+  return d || ((zak && zak.datum) || '');
+}
+function dnesIso() { return new Date().toISOString().slice(0, 10); }
+
 /* CO PŘESNĚ UDĚLÁ PŘEPÍNAČ ATYP S HODNOTAMI (nálezy C1 a V39, 15. 9. 2026).
  *
  * Bydlí to tady, a ne v `atypPrepni()` v kalk_ock.js, schválně: v UI to jde
@@ -1122,7 +1141,7 @@ const StorageAdapter = {
 };
 
 if (typeof module !== 'undefined')
-  module.exports = { ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, ZADANI_NOVA, zadaniRucniMapa, zadaniRucniJe,
+  module.exports = { ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, variantaDatum, dnesIso, ZADANI_NOVA, zadaniRucniMapa, zadaniRucniJe,
                      zadaniRucniZnac, zadaniRucniZrus, zadaniZCeniku, uvodniFotoObrazky, uvodniFotoSymboly, uvodniFotoPole, ZAKAZKA_SCHEMA, novaZakazka, novaVarianta, novaVariantaData,
                      nastavRidici, ridiciVarianta, aktivniVarianta, importZakazka, StorageAdapter,
                      zakazkaUnikatniId,

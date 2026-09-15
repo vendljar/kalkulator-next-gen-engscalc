@@ -555,7 +555,13 @@ function nabidkaProjData(zak, varianta, lang) {
   const placeholders = {
     OBJEDNATEL: h.objednatel || '…',
     OBJEDNATEL_KONTAKT: h.kontakt || '…',
-    DATUM: datumCz(h.datum),
+    /* Datum nese VARIANTA, ne hlavička (nález D2, 15. 9. 2026). Klon varianty
+     * vzniká typicky po odeslané nabídce, takže datum založení zakázky by na
+     * něm bylo staré o týdny. Varianta bez `datum` (všechny starší) spadne na
+     * hlavičku přesně jako dosud — historické nabídky se nemění. */
+    DATUM: datumCz((varianta && varianta.datum)
+      || (typeof variantaDatum === 'function' ? variantaDatum(zak, varianta) : h.datum)
+      || h.datum),
     NAZEV_AKCE: h.nazevAkce || '…',
     CISLO_NABIDKY: String(h.cislo || '').replace(/\s+/g, ''),
     ADRESA: h.adresa || '…',

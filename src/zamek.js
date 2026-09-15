@@ -98,11 +98,31 @@ function klonujVariantu(zak, id, opts) {
   kopie.zamek = null;
   kopie.klonZ = zdroj.id;
   kopie.klonZCislo = variantaCislo(zak, zdroj);
+  /* NOVÁ VARIANTA NESE DNEŠNÍ DATUM (nález D2, 15. 9. 2026). Klon vzniká
+   * typicky proto, že se pokračuje po odeslané nabídce — datum založení
+   * zakázky by na něm bylo staré o týdny. Zdrojová varianta ani hlavička
+   * zakázky se nemění; historické varianty tím pádem zůstávají, jak byly. */
+  kopie.datum = (typeof dnesIso === 'function')
+    ? dnesIso() : new Date().toISOString().slice(0, 10);
 
   zak.varianty.push(kopie);
   zak.priponaMax = p;
   if (opts.aktivovat !== false) zak.aktivni = kopie.id;
   return kopie;
+}
+
+/* Nese zakázka aspoň jednu ODESLANOU (uzamčenou) nabídku? (nález A3,
+ * 15. 9. 2026.) Číslo nabídky je hlavičkové pole, a hlavička je ze zámku
+ * VARIANTY vědomě vyjmutá — zámek chrání cenu, ne adresu zákazníka. U čísla
+ * to ale neplatí: je to identifikátor dokumentu, který už odešel, a otisk
+ * zámku ho neobsahuje, takže se dosud dal přepsat beze stopy.
+ *
+ * Dokud nic neodešlo, číslo si obchodník vyplňuje volně — nová zakázka ho
+ * má jen jako předlohu „2026 - OPR - CN - " a bez dopsání pořadí by nešla
+ * odeslat vůbec. Teprve odeslání z něj dělá údaj, který se nemění jen tak. */
+function zakazkaMaOdeslanou(zak) {
+  return !!(zak && Array.isArray(zak.varianty)
+    && zak.varianty.some(v => typeof variantaUzamcena === 'function' && variantaUzamcena(v)));
 }
 
 /* ---------- stav zámku ------------------------------------------------ */
@@ -292,7 +312,7 @@ function zamekCteniDuvod(zak, ja) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
+  module.exports = { zakazkaMaOdeslanou, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
                      zamekCteniSmiOdemknout, zamekCteniDuvod,
                      variantaPripona, dalsiPriponaVarianty, variantaCislo,
                      klonujVariantu, zamekInfo, variantaUzamcena,

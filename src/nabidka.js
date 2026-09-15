@@ -85,7 +85,9 @@ function nabidkaData(zak, varianta, jekly, lang) {
   const placeholders = {
     OBJEDNATEL: zak.objednatel || '…',
     OBJEDNATEL_KONTAKT: zak.kontakt || '…',
-    DATUM: datumCz(zak.datum),
+    /* Datum nese VARIANTA, ne zakázka (nález D2) — starší varianty ho nemají
+     * a spadnou na zak.datum, takže se nezmění. */
+    DATUM: datumCz(typeof variantaDatum === 'function' ? variantaDatum(zak, varianta) : zak.datum),
     NAZEV_AKCE: zak.nazevAkce || TSv.nazevAkce || '…',
     /* Číslo varianty ≥ 2 se připojuje tečkou (…-555.2) — zadání 19. 8. 2026. */
     CISLO_NABIDKY: String((typeof cisloSVariantou === 'function'
