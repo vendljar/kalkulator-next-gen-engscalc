@@ -142,6 +142,27 @@ const jeDvojsklo = (Z, C) => /dvojskl/i.test(eng.skloVolba(Z, C).boky.nazev);
     hodnota('kotveniOplasteni', Z, C));
 });
 
+/* ---------- 4b) Detail výpočtu říká, které sklo se počítá (V33 / V42) ----
+ *
+ * Potvrzeno J. V. 15. 9. 2026: dvě různá skla uvnitř budovy podle způsobu
+ * kotvení jsou ZÁMĚR, ne chyba — jiné kotvení znamená jinou skladbu skla.
+ * V exteriéru drží boky a záda ditherm dvojsklo kvůli izolaci. Pravidlo
+ * dosud stálo jen v poznámkách ceníku, kam obchodník nevidí.
+ *
+ * Kontroluje se STRUKTURA, ne text: že se ta věta odvozuje ze `skloVolba()`,
+ * tedy z téhož místa jako sazba. Kdyby se vypisovala natvrdo, rozešla by se
+ * s cenou přesně tak, jako se do 15. 9. rozcházela technická specifikace. */
+{
+  const fsDet = require('fs');
+  const det = fsDet.readFileSync(__dirname + '/ui/detail_ui.js', 'utf8');
+  const fn = (det.match(/function dvSkloPopis\(Z, C\)[\s\S]*?\n\}/) || [''])[0];
+  test('Detail výpočtu má řádek „Které sklo se počítá"', /Které sklo se počítá/.test(det));
+  test('a plní ho dvSkloPopis(Z, C)', /dvSkloPopis\(Z, C\)/.test(det));
+  test('dvSkloPopis se ptá skloVolba()', /skloVolba\(Z, C\)/.test(fn), fn.length);
+  test('a nevypisuje názvy skel natvrdo', !/VSG 4\.4\.[12]|dvojskl/i.test(fn), fn);
+  test('nápověda zmiňuje ditherm dvojsklo v exteriéru', /ditherm dvojsklo/.test(det));
+}
+
 /* ---------- 5) ruční hodnota má pořád přednost ---------- */
 {
   const Z = zad('interiérová', 'na terče'), C = cenik();

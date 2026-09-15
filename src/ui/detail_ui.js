@@ -35,6 +35,24 @@ var DETAIL_KROKY = [
  * `inner` se schválně NEescapuje — to je hotové HTML z dvTab/sekceBlok,
  * které si escapování řeší uvnitř. Kdyby se sem někdy začal předávat text
  * z dat, musí projít `esc()` u volajícího. */
+/* Věta „tahle šachta počítá tímhle sklem" do Detailu výpočtu (V33 / V42).
+ * Bere ji z `skloVolba()`, tedy z téhož místa, odkud se bere SAZBA — kdyby se
+ * pravidlo v jádře změnilo, věta se změní s ním. Vypsat to natvrdo by
+ * znamenalo nápovědu, která se časem rozejde s cenou; přesně tím se lišila
+ * technická specifikace do 15. 9. 2026 (nález C3). */
+function dvSkloPopis(Z, C) {
+  if (typeof skloVolba !== 'function') return '—';
+  const s = skloVolba(Z, C);
+  const bez = (n) => String(n || '').replace(/^MATERIÁL (boční \+ zadní stěna )?/, '').replace(/[()]/g, '');
+  const boky = bez(s.boky.nazev), celni = bez(s.celni.nazev);
+  const kde = Z.typSachty === 'interiérová'
+    ? 'interiér, ' + (Z.zaskleni === 'na terče' ? 'na terče' : 'mezi příčníky')
+    : 'exteriér';
+  return boky === celni
+    ? `${kde}: všechny plochy ${boky}`
+    : `${kde}: boky a záda ${boky}, čelní stěna ${celni}`;
+}
+
 function dvKrok(nadpis, inner, id) {
   return `<div class="dv-krok"${id ? ` id="${esc(id)}"` : ''}><h3>${esc(nadpis)}</h3><div class="dv-body">${inner}</div></div>`;
 }
@@ -255,6 +273,20 @@ function renderDetail() {
     ['Čelní m² (světlíky)', `${M(z.celniM2, 2)} m²`, 'materiál čelní stěna'],
     ['Zasklení celkem', `${M(z.celkemM2, 2)} m²`,
       'boční + zadní + čelní; každá skupina jde do ceny vlastním materiálem podle typu šachty'],
+    /* KTERÉ SKLO SE POUŽIJE (nálezy V33 a V42, potvrzeno J. V. 15. 9. 2026).
+     *
+     * Obchodník se ptal, proč dvě interiérové nabídky se stejnými rozměry
+     * počítají jiným sklem. Není to chyba: uvnitř budovy se nedělá tepelná
+     * izolace, ale způsob KOTVENÍ mění skladbu skla — zasklení na terče se
+     * kotví přes vrtané otvory, sklo mezi příčníky leží v lištách. Venku se
+     * na boky a záda dává ditherm dvojsklo kvůli izolaci.
+     *
+     * Pravidlo stálo jen v poznámkách ceníku, kam obchodník nevidí. Tady je
+     * u řádku, kde ta otázka vzniká. */
+    ['Které sklo se počítá', dvSkloPopis(Z, C),
+      'řídí se TYPEM ŠACHTY a u interiéru i ZPŮSOBEM ZASKLENÍ — jiné kotvení znamená jinou '
+      + 'skladbu skla, ne jinou kvalitu. Venku drží boky a záda ditherm dvojsklo kvůli tepelné '
+      + 'izolaci, uvnitř budovy se neizoluje a jsou všude VSG. Sazby jsou v Ceníku OCK.'],
   ]), 'dv-8');
 
   /* 9) spojovací materiál */
