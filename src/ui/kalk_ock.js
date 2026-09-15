@@ -265,39 +265,46 @@ function atypPrepni(zap, opts) {
     else Z.atypRucneVypnut = true;
   }
   Z.atyp = !!zap;
-  /* Přepnutí ATYP je vědomé rozhodnutí: předvyplní se znovu z ceníku, takže
-   * se ruční značky u atypových polí ruší (1. 9. 2026). Co si obchodník
-   * přepíše POTOM, mu zase zůstane. */
-  if (typeof zadaniRucniZrus === 'function')
-    zadaniRucniZrus(aktivniVarianta(ZAK).data,
-      ['rezervaZakladPct', 'rezervaPriplatkyPct', 'zamecnikAtypKc', 'montazAtypHod', 'projekceAtypHod']);
+  /* ATYP UŽ NIC NEPŘEPISUJE NATVRDO (nálezy C1 a V39, rozhodnutí J. V.
+   * 15. 9. 2026: „nic nenulovat, vracet do předchozího stavu").
+   *
+   * Do 15. 9. přepnutí bezpodmínečně přepsalo sedm polí zadání — a k tomu
+   * zrušilo ruční značky, aby si na to nikdo nemohl stěžovat. Obchodník
+   * (D. Sikora, 10. 9.) to popsal přesně: „pokud se ta částka změní, tak by
+   * ji to tlačítko ATYP měnit zpět na 25 000 nemělo." Na 2026-OPR-CN-0290 to
+   * po několikerém prokliknutí srazilo cenu o 64 000.
+   *
+   * SAMOTNÉ PRAVIDLO TADY NENÍ — bydlí v `atypHodnoty()` v zakazka.js. Je to
+   * kvůli testu: logiku uvnitř UI jde ověřit jen čtením zdrojáku jako textu
+   * a takový test pozná změněný TVAR kódu, ne změněné CHOVÁNÍ. První verze
+   * sady k tomuhle nálezu proto mlčky prošla i nad mutací „vypnutí zase
+   * nuluje". Tady zůstalo jen to, co se bez ceníku a výpočtu spočítat nedá:
+   * ceníková předloha. */
+  const vData = aktivniVarianta(ZAK).data;
   /* Čím se ATYP předvyplní, bere ceník (31. 8. 2026, zadání J. V.: „do ceníku
    * OCK v sekci atyp přidej ještě možnost editovat atypické položky").
    * Prázdná nebo nulová ceníková položka znamená nenastaveno a platí hodnota
-   * ze sestavení — proto ta druhá čísla ve volání. Předvyplnění je jen
-   * nabídka: obchodník pole pak doladí a jeho čísla nikdo nepřepíše. */
+   * ze sestavení — proto ta druhá čísla ve volání. */
   const vych = (klic, zaklad) => (typeof cenikVychozi === 'function')
     ? cenikVychozi(C, klic, zaklad) : zaklad;
-  const rezervaZakl = vych('atypRezervaZakladPct', 0.30);
-  const rezervaPripl = vych('atypRezervaPriplatkyPct', 0.30);
-  Z.rezervaProfilyPct = zap ? 0.30 : 0;
-  Z.rezervaPlechyPct = zap ? 0.30 : 0;
-  Z.rezervaZakladPct = zap ? rezervaZakl : 0;
-  Z.rezervaPriplatkyPct = zap ? rezervaPripl : 0;
-  Z.zamecnikAtypKc = zap ? vych('atypZamecnikKc', 50000) : null;
-  /* Hodiny navíc při ATYP (zadání 19. 8. 2026): projekce +30 % ze základních
-   * hodin; montáž +30 % z CELKOVÝCH hodin potřebných pro montáž (základ +
-   * hodiny navíc vypočtené z konstrukce — světlíky, přechody atd.).
-   * Předvyplňuje se při zaškrtnutí; políčka jdou pak ručně doladit. */
+  let predloha = null;
   if (zap) {
+    /* Hodiny navíc při ATYP (zadání 19. 8. 2026): projekce +30 % ze základních
+     * hodin; montáž +30 % z CELKOVÝCH hodin potřebných pro montáž (základ +
+     * hodiny navíc vypočtené z konstrukce — světlíky, přechody atd.). */
     let navic = 0;
     try { navic = vypocet(Z, C, JEKLY, OCK.fixes).montaz.hodinyNavicCelkem || 0; } catch (e) { navic = 0; }
-    Z.montazAtypHod = Math.round(vych('atypMontazPct', 0.30) * ((+Z.montazZakladHod || 0) + navic));
-    Z.projekceAtypHod = Math.round(vych('atypProjekcePct', 0.30) * (+Z.projekceZakladHod || 0));
-  } else {
-    Z.montazAtypHod = 0;
-    Z.projekceAtypHod = 0;
+    predloha = {
+      rezervaProfilyPct: 0.30,
+      rezervaPlechyPct: 0.30,
+      rezervaZakladPct: vych('atypRezervaZakladPct', 0.30),
+      rezervaPriplatkyPct: vych('atypRezervaPriplatkyPct', 0.30),
+      zamecnikAtypKc: vych('atypZamecnikKc', 50000),
+      montazAtypHod: Math.round(vych('atypMontazPct', 0.30) * ((+Z.montazZakladHod || 0) + navic)),
+      projekceAtypHod: Math.round(vych('atypProjekcePct', 0.30) * (+Z.projekceZakladHod || 0)),
+    };
   }
+  atypHodnoty(Z, vData, zap, predloha);
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
   render();
 }

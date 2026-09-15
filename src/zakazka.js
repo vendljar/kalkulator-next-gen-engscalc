@@ -42,8 +42,66 @@ const ZADANI_Z_CENIKU = [
   { z: 'zamecnikAtypKc', c: 'atypZamecnikKc', popis: 'Zámečník atyp', atyp: true },
 ];
 /* Hodiny navíc se nepočítají z ceníku přímo (jsou to podíly ze základu), ale
- * ruční přepis se u nich hlídá stejně. */
-const ZADANI_RUCNI_KLICE = ZADANI_Z_CENIKU.map(x => x.z).concat(['montazAtypHod', 'projekceAtypHod']);
+ * ruční přepis se u nich hlídá stejně.
+ *
+ * REZERVY PROFILŮ A PLECHŮ PŘIBYLY 15. 9. 2026 (nález C1). Přepínač ATYP je
+ * odjakživa přepisoval, ale v tomhle seznamu nebyly — `zadaniRucniZnac` je
+ * tedy odmítal označit a `zadaniRucniJe` u nich vracelo vždycky false.
+ * Obchodník je mohl přepsat a aplikace o tom nevěděla; ATYP mu je pak beze
+ * stopy vzal. Sazba z ceníku pro ně není (jsou natvrdo 0,30), proto stojí
+ * tady a ne v ZADANI_Z_CENIKU. */
+const ZADANI_RUCNI_KLICE = ZADANI_Z_CENIKU.map(x => x.z)
+  .concat(['montazAtypHod', 'projekceAtypHod', 'rezervaProfilyPct', 'rezervaPlechyPct']);
+
+/* Pole, na která sahá přepínač ATYP. Jeden seznam pro zapnutí i vypnutí —
+ * dokud byly vypsané ručně na dvou místech, dvě z nich v jednom ze seznamů
+ * chyběla a nikdo si toho půl měsíce nevšiml (C1). */
+const ATYP_POLE = ['rezervaProfilyPct', 'rezervaPlechyPct', 'rezervaZakladPct',
+  'rezervaPriplatkyPct', 'zamecnikAtypKc', 'montazAtypHod', 'projekceAtypHod'];
+const ATYP_NULA = { rezervaProfilyPct: 0, rezervaPlechyPct: 0, rezervaZakladPct: 0,
+  rezervaPriplatkyPct: 0, zamecnikAtypKc: null, montazAtypHod: 0, projekceAtypHod: 0 };
+
+/* CO PŘESNĚ UDĚLÁ PŘEPÍNAČ ATYP S HODNOTAMI (nálezy C1 a V39, 15. 9. 2026).
+ *
+ * Bydlí to tady, a ne v `atypPrepni()` v kalk_ock.js, schválně: v UI to jde
+ * ověřit jen čtením zdrojáku jako textu, a takový test pozná změněný TVAR
+ * kódu, ne změněné CHOVÁNÍ. První verze sady k tomuhle nálezu tak mlčky
+ * prošla i nad mutací „vypnutí zase nuluje". Rozhodovací pravidlo je proto
+ * funkce nad prostými daty; v UI zůstala jen ceníková předloha a překreslení.
+ *
+ * Pravidlo (rozhodnutí J. V.: „nic nenulovat, vracet do předchozího stavu"):
+ *  ZAPNUTÍ  – uloží snímek stávajících hodnot pro pozdější vypnutí; dosadí
+ *             ceníkovou předlohu, ale JEN tam, kde obchodník vlastní číslo
+ *             nemá. Co si při minulém ATYPu napsal sám, dostane zpátky.
+ *  VYPNUTÍ  – zapamatuje si ručně přepsaná čísla (ať je zapnutí umí vrátit)
+ *             a obnoví snímek. Nenuluje; nula se použije jen u zakázky, která
+ *             snímek nemá, protože přesně to v ní před zapnutím bylo.
+ *
+ * `predloha` = { klíč: hodnota } z ceníku. `data` je varianta.data kvůli
+ * ručním značkám. Mutuje `Z` a nic nevrací — volající beztak překresluje. */
+function atypHodnoty(Z, data, zap, predloha) {
+  if (!Z) return;
+  const znac = (k) => { if (typeof zadaniRucniZnac === 'function') zadaniRucniZnac(data, k); };
+  const rucniJe = (k) => (typeof zadaniRucniJe === 'function') && zadaniRucniJe(data, k);
+  if (zap) {
+    Z.atypPredchozi = {};
+    ATYP_POLE.forEach(k => { Z.atypPredchozi[k] = Z[k]; });
+    const ulozene = Z.atypUlozene || {};
+    ATYP_POLE.forEach(k => {
+      if (Object.prototype.hasOwnProperty.call(ulozene, k)) { Z[k] = ulozene[k]; znac(k); }
+      else { Z[k] = (predloha || {})[k]; }
+    });
+    return;
+  }
+  Z.atypUlozene = Z.atypUlozene || {};
+  ATYP_POLE.forEach(k => { if (rucniJe(k)) Z.atypUlozene[k] = Z[k]; });
+  if (typeof zadaniRucniZrus === 'function') zadaniRucniZrus(data, ATYP_POLE);
+  const pred = Z.atypPredchozi || {};
+  ATYP_POLE.forEach(k => {
+    Z[k] = Object.prototype.hasOwnProperty.call(pred, k) ? pred[k] : ATYP_NULA[k];
+  });
+  delete Z.atypPredchozi;
+}
 
 /* S ČÍM ZAČÍNÁ NOVÁ NABÍDKA (9. 9. 2026, zadání J. V.).
  *
@@ -1064,7 +1122,7 @@ const StorageAdapter = {
 };
 
 if (typeof module !== 'undefined')
-  module.exports = { ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ZADANI_NOVA, zadaniRucniMapa, zadaniRucniJe,
+  module.exports = { ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, ZADANI_NOVA, zadaniRucniMapa, zadaniRucniJe,
                      zadaniRucniZnac, zadaniRucniZrus, zadaniZCeniku, uvodniFotoObrazky, uvodniFotoSymboly, uvodniFotoPole, ZAKAZKA_SCHEMA, novaZakazka, novaVarianta, novaVariantaData,
                      nastavRidici, ridiciVarianta, aktivniVarianta, importZakazka, StorageAdapter,
                      zakazkaUnikatniId,
