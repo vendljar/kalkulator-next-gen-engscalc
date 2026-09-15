@@ -284,16 +284,21 @@ function renderDetail() {
      *
      * Obchodník se ptal, proč dvě interiérové nabídky se stejnými rozměry
      * počítají jiným sklem. Není to chyba: uvnitř budovy se nedělá tepelná
-     * izolace, ale způsob KOTVENÍ mění skladbu skla — zasklení na terče se
-     * kotví přes vrtané otvory, sklo mezi příčníky leží v lištách. Venku se
-     * na boky a záda dává ditherm dvojsklo kvůli izolaci.
+     * izolace, ale způsob KOTVENÍ mění typ skla — k firemním terčům patří
+     * jiné sklo než k zasklení do lišt mezi příčníky. Venku drží boky a záda
+     * ditherm dvojsklo kvůli izolaci.
+     *
+     * (Proč k terčům patří jiné sklo, je věc výroby a v aplikaci na tom nic
+     * nestojí — ať se to v komentáři nedomýšlí. Sem patří jen pravidlo:
+     * terče = jedno sklo, lišty = druhé.)
      *
      * Pravidlo stálo jen v poznámkách ceníku, kam obchodník nevidí. Tady je
      * u řádku, kde ta otázka vzniká. */
     ['Které sklo se počítá', dvSkloPopis(Z, C),
-      'řídí se TYPEM ŠACHTY a u interiéru i ZPŮSOBEM ZASKLENÍ — jiné kotvení znamená jinou '
-      + 'skladbu skla, ne jinou kvalitu. Venku drží boky a záda ditherm dvojsklo kvůli tepelné '
-      + 'izolaci, uvnitř budovy se neizoluje a jsou všude VSG. Sazby jsou v Ceníku OCK.'],
+      'řídí se TYPEM ŠACHTY a u interiéru i ZPŮSOBEM ZASKLENÍ — k našim terčům patří jiné '
+      + 'sklo než k zasklení do lišt mezi příčníky. Není to jiná kvalita, je to jiný typ. '
+      + 'Venku drží boky a záda ditherm dvojsklo kvůli tepelné izolaci, uvnitř budovy se '
+      + 'neizoluje a jsou všude VSG. Sazby jsou v Ceníku OCK.'],
   ]), 'dv-8');
 
   /* 9) spojovací materiál */

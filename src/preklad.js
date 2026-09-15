@@ -240,6 +240,18 @@ const PREKLAD = {
   "PŘÍMOTOP S ČIDLEM A TERMOSTATEM": ["HEATING WITH SENSOR AND THERMOSTAT", "HEIZUNG MIT SENSOR UND THERMOSTAT", "CHAUFFAGE AVEC CAPTEUR ET THERMOSTAT"],
   "příplatky": ["extra charge", "Mehrpreis", "suppléments"],
   "PŘÍPRAVA PRO DALŠÍ DODAVATELE": ["PREPARATORY FOR OTHER SUBCONTRACTORS","VORBEREITUNGEN FÜR ANDERE SUBUNTERNEHMER","PRÉPARATION POUR LES AUTRES FOURNISSEURS"],
+  /* NÁZEV AKCE PO JEDNÉ VARIANTĚ (nález D3, 15. 9. 2026).
+   *
+   * Řetězce s lomítkem („přístavba/vestavba…") nesly obě možnosti naráz
+   * a slovník je poctivě přeložil celé — v anglické specifikaci pro Konstanz
+   * proto stálo „extension / built-in installation…" a obchodník jednu půlku
+   * mazal ve Wordu. Čtyři samostatné varianty odpovídají číselníku
+   * TS_C.nazevAkce; obě staré podoby ZŮSTÁVAJÍ, aby se starší zakázky pořád
+   * přeložily. */
+  "přístavba nové prosklené OCK výtahové šachty": ["extension of a building with a new glazed steel elevator shaft structure", "Anbau eines neuen verglasten Aufzugsschachtgerüsts", "extension par une nouvelle structure métallique vitrée de gaine d'ascenseur"],
+  "vestavba nové prosklené OCK výtahové šachty": ["built-in installation of a new glazed steel elevator shaft structure", "Einbau eines neuen verglasten Aufzugsschachtgerüsts", "intégration d'une nouvelle structure métallique vitrée de gaine d'ascenseur"],
+  "přístavba nové OCK výtahové šachty včetně opláštění": ["extension of a building with a new steel elevator shaft structure incl. cladding", "Anbau eines neuen Aufzugsschachtgerüsts einschließlich Verkleidung", "extension par une nouvelle gaine d'ascenseur en acier, habillage compris"],
+  "vestavba nové OCK výtahové šachty včetně opláštění": ["built-in installation of a new steel elevator shaft structure incl. cladding", "Einbau eines neuen Aufzugsschachtgerüsts einschließlich Verkleidung", "intégration d'une nouvelle gaine d'ascenseur en acier, habillage compris"],
   "přístavba/vestavba nové prosklené OCK výtahové šachty": ["extension / built-in installation of a new glazed steel elevator shaft structure", "Anbau/Einbau eines neuen verglasten Aufzugsschachtgerüsts", "extension / intégration d'une nouvelle structure métallique vitrée de gaine d'ascenseur"],
   "přístavba/vestavba nové OCK výtahové šachty včetně opláštění": ["extension / built-in installation of a new steel elevator shaft structure incl. cladding", "Anbau/Einbau eines neuen Aufzugsschachtgerüsts einschließlich Verkleidung", "extension/intégration d’une nouvelle gaine d’ascenseur en acier, habillage compris"],
   "přízemí": ["ground floor","Erdgeschoss (EG)","rez-de-chaussée"],

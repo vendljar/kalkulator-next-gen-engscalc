@@ -83,6 +83,14 @@ const TS_C = { /* číselníky z listů _data (bez úvodní pomlčky) */
     'kruhový terč průměr 70 mm, nerezový, zapuštěný šroub', 'lakované lišty po obvodu skla', 'nerezové lišty po obvodu skla'],
   napojeniDveri: ['provede kompletně stavba po montáži šachetních dveří', 'bez dokrytí', 'řeší objednatel',
     'dokrytí lakovaným plechem', 'dokrytí nerezovým plechem'],
+  /* Čtyři varianty názvu akce místo jedné věty s lomítkem (nález D3,
+   * 15. 9. 2026). Přístavba = šachta přistavěná k domu, vestavba = vsazená
+   * dovnitř; prosklená = kompletní zasklení, s opláštěním = plné plochy.
+   * Všechny čtyři musí být v preklad.js, jinak zůstanou v EN/DE česky. */
+  nazevAkce: ['přístavba nové prosklené OCK výtahové šachty',
+    'vestavba nové prosklené OCK výtahové šachty',
+    'přístavba nové OCK výtahové šachty včetně opláštění',
+    'vestavba nové OCK výtahové šachty včetně opláštění'],
   anoNe: ['ano', 'ne'],
   dodavkaPozn: ['bezúplatně zajistí objednatel', 'bezúplatně zajistí majitel objektu', 'není řešeno',
     'není požadováno', 'není součástí nabídky', 'zajistí objednatel v rámci SP', 'zajistí objednatel',
@@ -305,7 +313,21 @@ const TECHSPEC_DEF = [
     { id: 'neni4', label: 'ODBĚRNÉ MÍSTO EL. ENERGIE PO DOBU REALIZACE', ciselnik: TS_C.dodavkaPozn, def: 'bezúplatně zajistí objednatel' },
     { id: 'neni5', label: 'ÚLOŽNÉ PROSTORY', ciselnik: TS_C.dodavkaPozn, def: 'bezúplatně zajistí majitel objektu' },
     { id: 'neni6', label: 'DOKONČENÍ PODLAH NÁSTUPIŠŤ A NAPOJENÍ K PRAHŮM Š. DVEŘÍ', ciselnik: TS_C.dodavkaPozn, def: 'zajistí objednatel' },
-    { id: 'neni7', label: 'DOZDĚNÍ KOLEM ŠACHETNÍCH DVEŘÍ', ciselnik: TS_C.dodavkaPozn, def: 'zajistí objednatel' },
+    /* DOZDĚNÍ U ŠACHTY V ZRCADLE SCHODIŠTĚ (nález C5, 15. 9. 2026).
+     *
+     * Obchodník ten řádek u šachty v zrcadle schodiště pokaždé mazal ručně:
+     * kolem dveří tam není co dozdívat. Aplikace o tom umístění VÍ — je to
+     * volba číselníku UMÍSTĚNÍ ŠACHTY —, jen ji dosud nikdo s tímhle řádkem
+     * nespojil.
+     *
+     * Zůstává to NABÍDKA, ne automatika (pokyn J. V.: „návrh = přepínač
+     * u zakázky, ne tichá automatika"): `prefill` jen předvyplní a obchodník
+     * ho může přepsat; štítek u pole pak ukáže „ručně". Čte se ULOŽENÁ
+     * hodnota umístění, ne zadání — umístění je pole specifikace, ne
+     * kalkulace, takže `ts.hodnoty.umisteni` je jediný zdroj pravdy. */
+    { id: 'neni7', label: 'DOZDĚNÍ KOLEM ŠACHETNÍCH DVEŘÍ', ciselnik: TS_C.dodavkaPozn,
+      def: 'zajistí objednatel', prefillTs: (ts) => /zrcadle schodiště/.test(
+        String((ts && ts.hodnoty && ts.hodnoty.umisteni) || '')) ? ' -' : 'zajistí objednatel' },
     { id: 'neni8', label: 'STAVEBNÍ PŘÍPRAVA', ciselnik: TS_C.dodavkaPozn, def: 'zajistí objednatel v rámci SP' },
     { id: 'neni9', label: 'NAPÁJENÍ VÝTAHU VČETNĚ REVIZNÍ ZPRÁVY', ciselnik: TS_C.dodavkaPozn, def: 'není součástí nabídky' },
     { id: 'neni10', label: 'PROHLUBEŇ PRO ZALOŽENÍ OCK VE SPRÁVNÉ POZICI A ROZMĚRU', ciselnik: TS_C.dodavkaPozn, def: 'zajistí objednatel v rámci SP' },
@@ -314,7 +336,7 @@ const TECHSPEC_DEF = [
 ];
 
 const DEFAULT_TECHSPEC = {
-  nazevAkce: 'přístavba/vestavba nové prosklené OCK výtahové šachty',
+  nazevAkce: 'vestavba nové prosklené OCK výtahové šachty',
   hodnoty: {},     // { idPole: 'ruční hodnota' } – jen přepsaná pole; ostatní auto/výchozí
   extra: [],       // [{label, hodnota}] – vlastní doplněné řádky (sekce SOUČÁSTÍ DODÁVKY NENÍ apod.)
 };
@@ -325,6 +347,15 @@ function tsHodnota(pole, ts, vysledekOck, Z, C) {
   if (pole.prefill && vysledekOck) {
     try { return { text: pole.prefill(vysledekOck, Z, C), zdroj: 'z kalkulace' }; }
     catch (e) { /* spadne-li prefill, použij výchozí */ }
+  }
+  /* `prefillTs` se řídí JINÝM POLEM SPECIFIKACE, ne kalkulací (nález C5,
+   * 15. 9. 2026). Umístění šachty je volba obchodníka v této záložce, takže
+   * výsledek OCK o něm nic neví a `prefill(r, Z, C)` by se neměl čeho chytit.
+   * Zdroj se hlásí jako „ze specifikace", ať je v rozhraní poznat, odkud to
+   * je — „z kalkulace" by u toho řádku lhalo. */
+  if (pole.prefillTs) {
+    try { return { text: pole.prefillTs(ts, Z, C), zdroj: 'ze specifikace' }; }
+    catch (e) { /* spadne-li, použij výchozí */ }
   }
   return { text: pole.def != null ? pole.def : ' -', zdroj: pole.prefill ? 'z kalkulace' : 'výchozí' };
 }
@@ -376,7 +407,20 @@ const TS_HLAVICKA = [
   { id: 'cislo', label: 'ČÍSLO NABÍDKY', zdroj: 'zakazka' },
   { id: 'objednatel', label: 'OBJEDNATEL', zdroj: 'zakazka' },
   { id: 'datum', label: 'DATUM', zdroj: 'zakazka' },
-  { id: 'nazevAkce', label: 'NÁZEV AKCE', zdroj: 'techspec' },
+  /* NÁZEV AKCE JE VÝBĚR, NE JEDNA VĚTA S LOMÍTKEM (nález D3, 15. 9. 2026).
+   *
+   * Výchozí hodnota zněla „přístavba/vestavba nové prosklené OCK výtahové
+   * šachty" — tedy obě možnosti naráz. Slovník ji poctivě přeložil celou,
+   * takže v anglické specifikaci pro Konstanz stálo „extension / built-in
+   * installation…" a obchodník jednu půlku mazal ve Wordu. Nebyl to dynamický
+   * text, byl to jeden řetězec se dvěma významy.
+   *
+   * Číselník to řeší v CZ i v mutacích: každá ze čtyř variant je vlastní
+   * položka slovníku. Vlastní text zůstává povolený (jako u všech polí
+   * specifikace) — jen se nepřeloží, protože ve slovníku není; na to
+   * upozorňuje nápověda u pole. Přesně to se dnes děje na 0290, kde si
+   * obchodník název zkrátil ručně. */
+  { id: 'nazevAkce', label: 'NÁZEV AKCE', zdroj: 'techspec', ciselnik: TS_C.nazevAkce },
   { id: 'adresa', label: 'ADRESA STAVBY', zdroj: 'zakazka' },
 ];
 

@@ -145,9 +145,10 @@ const jeDvojsklo = (Z, C) => /dvojskl/i.test(eng.skloVolba(Z, C).boky.nazev);
 /* ---------- 4b) Detail výpočtu říká, které sklo se počítá (V33 / V42) ----
  *
  * Potvrzeno J. V. 15. 9. 2026: dvě různá skla uvnitř budovy podle způsobu
- * kotvení jsou ZÁMĚR, ne chyba — jiné kotvení znamená jinou skladbu skla.
- * V exteriéru drží boky a záda ditherm dvojsklo kvůli izolaci. Pravidlo
- * dosud stálo jen v poznámkách ceníku, kam obchodník nevidí.
+ * kotvení jsou ZÁMĚR, ne chyba — k firemním terčům patří jiné sklo než
+ * k zasklení do lišt mezi příčníky. V exteriéru drží boky a záda ditherm
+ * dvojsklo kvůli tepelné izolaci. Pravidlo dosud stálo jen v poznámkách
+ * ceníku, kam obchodník nevidí.
  *
  * Kontroluje se STRUKTURA, ne text: že se ta věta odvozuje ze `skloVolba()`,
  * tedy z téhož místa jako sazba. Kdyby se vypisovala natvrdo, rozešla by se
@@ -161,6 +162,60 @@ const jeDvojsklo = (Z, C) => /dvojskl/i.test(eng.skloVolba(Z, C).boky.nazev);
   test('dvSkloPopis se ptá skloVolba()', /skloVolba\(Z, C\)/.test(fn), fn.length);
   test('a nevypisuje názvy skel natvrdo', !/VSG 4\.4\.[12]|dvojskl/i.test(fn), fn);
   test('nápověda zmiňuje ditherm dvojsklo v exteriéru', /ditherm dvojsklo/.test(det));
+}
+
+/* ---------- 4c) dozdění u šachty v zrcadle schodiště (C5) ----------
+ *
+ * Obchodník řádek „DOZDĚNÍ KOLEM ŠACHETNÍCH DVEŘÍ" u šachty v zrcadle
+ * schodiště pokaždé mazal ručně — kolem dveří tam není co dozdívat.
+ * Aplikace o tom umístění věděla (je to volba číselníku UMÍSTĚNÍ ŠACHTY),
+ * jen ji s tímhle řádkem nikdo nespojil.
+ *
+ * Zůstává to NABÍDKA, ne automatika: obchodník smí přepsat a štítek u pole
+ * pak ukáže „ručně". Pokyn J. V.: „návrh = přepínač u zakázky, ne tichá
+ * automatika." */
+{
+  const Z = zad('interiérová', 'mezi příčníky'), C = cenik();
+  const r = eng.vypocet(Z, C, JEKLY, true);
+  const hod = (umisteni) => ts.tsHodnota(pole('neni7'),
+    { hodnoty: umisteni ? { umisteni } : {}, extra: [] }, r, Z, C);
+
+  test('v zrcadle schodiště se dozdění nenabízí',
+    hod('v interiéru - v zrcadle schodiště').text.trim() === '-',
+    hod('v interiéru - v zrcadle schodiště'));
+  test('a zdroj se hlásí jako ze specifikace, ne z kalkulace',
+    hod('v interiéru - v zrcadle schodiště').zdroj === 'ze specifikace',
+    hod('v interiéru - v zrcadle schodiště').zdroj);
+  ['v interiéru', 'v interiéru - v ATRIU domu', 'v exteriéru', 'v exteriéru, přisazena k fasádě']
+    .forEach(u => test('jinde dozdění zůstává — ' + u,
+      hod(u).text === 'zajistí objednatel', hod(u)));
+  test('nevyplněné umístění dozdění nechává', hod(null).text === 'zajistí objednatel', hod(null));
+  test('ruční hodnota přebije i prefillTs', ts.tsHodnota(pole('neni7'),
+    { hodnoty: { umisteni: 'v interiéru - v zrcadle schodiště', neni7: 'zajistí objednatel' }, extra: [] },
+    r, Z, C).zdroj === 'ručně');
+}
+
+/* ---------- 4d) název akce je výběr, ne věta s lomítkem (D3) ---------- */
+{
+  const pr = require('./preklad.js');
+  const seznam = ts.TS_C.nazevAkce;
+  test('číselník názvu akce má čtyři varianty', seznam.length === 4, seznam);
+  test('a žádná nenese obě možnosti naráz',
+    seznam.every(x => !/\//.test(x)), seznam.filter(x => /\//.test(x)));
+  test('výchozí název je jedna z nich',
+    seznam.indexOf(ts.DEFAULT_TECHSPEC.nazevAkce) >= 0, ts.DEFAULT_TECHSPEC.nazevAkce);
+  test('pole NÁZEV AKCE ten číselník opravdu nabízí',
+    (ts.TS_HLAVICKA.find(x => x.id === 'nazevAkce') || {}).ciselnik === ts.TS_C.nazevAkce);
+  /* Bez překladu by v EN/DE zůstala čeština — to byla druhá polovina nálezu. */
+  ['en', 'de', 'fr'].forEach(l => seznam.forEach(x => {
+    const t = pr.tr(x, l);
+    test('„' + x.slice(0, 22) + '…" se přeloží do ' + l.toUpperCase(), t !== x, t);
+    test('a překlad do ' + l.toUpperCase() + ' nenese lomítko u „' + x.slice(0, 18) + '…"',
+      !/ \/ /.test(t), t);
+  }));
+  test('starý tvar s lomítkem se pořád přeloží (starší zakázky)',
+    pr.tr('přístavba/vestavba nové prosklené OCK výtahové šachty', 'de')
+      !== 'přístavba/vestavba nové prosklené OCK výtahové šachty');
 }
 
 /* ---------- 5) ruční hodnota má pořád přednost ---------- */
