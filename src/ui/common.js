@@ -2323,7 +2323,8 @@ function renderKlicPole(el) {
  * Řešení: zapamatovat si, že poslední klávesou byl Tab, a po překreslení
  * poslat fokus na SOUSEDNÍ pole místo na totéž. Shift+Tab míří opačně.
  * Značka platí jen okamžik — po pár stovkách milisekund se na ni zapomene,
- * aby překreslení z úplně jiného podnětu fokus nikam neposouvalo. */
+ * aby překreslení z úplně jiného podnětu fokus nikam neposouvalo.
+ *
  * POLE SI PAMATUJEME UŽ PŘI STISKU KLÁVESY, ne až při překreslení. Měřením
  * na běžící aplikaci se ukázalo, že v okamžiku, kdy `render()` proběhne, je
  * `document.activeElement` už `BODY`: prohlížeč pole opustí dřív, než se
