@@ -1006,6 +1006,46 @@ test('Nastavení má novou záložku Databáze s kartou online databáze',
     zavriNastaveni();
     return je && /Online databáze/.test(html);
   }));
+/* PŘÍPRAVA PŘEHLEDU — každý test si ji zavolá sám (16. 9. 2026).
+ *
+ * Přepnutí na Přehled si od 21. 8. 2026 dotahuje rejstřík ze serveru:
+ *   onlineNactiRejstrik().then(() => renderPrehledHledaniTelo())   (common.js)
+ * Server v harnessu vrací prázdno — a hlavně ASYNCHRONNĚ. Test, který se
+ * o rejstřík opřel o třicet řádků výš, tak jednou za čas našel prázdnou
+ * tabulku a spadl, přestože aplikace byla v pořádku. Přesně to se stalo
+ * v běhu CI #86: tři testy našeptávače spadly, ty těsně před i za nimi
+ * prošly, a v dalším běhu nad týmž kódem bylo zase všechno zelené.
+ *
+ * Falešný pád je horší než žádný test — příště se mu nebude věřit a někdo
+ * ho přejde mávnutím ruky i ve chvíli, kdy bude mít pravdu.
+ *
+ * Řeší se to dvěma věcmi:
+ *  1) Dotahování se v téhle sadě UMLČÍ, takže nemá co přepsat. Nikdo tu
+ *     jeho chování netestuje (to dělá overit_online.mjs, jiný soubor).
+ *  2) Fixtura se instaluje na `window` a každý test si ji zavolá. Přes
+ *     window schválně: každý page.evaluate má vlastní rozsah, takže pomocná
+ *     funkce z jednoho v dalším prostě neexistuje.
+ *
+ * Deklarace `function` jsou v klasickém skriptu vlastnostmi window, takže
+ * je přepsání opravdu zastíní — na rozdíl od `const NAST` a spol. Týmž
+ * způsobem si níž podstrkuje špióna i test klikání na řádek. */
+await page.evaluate(() => {
+  window.onlineNactiRejstrik = () => Promise.resolve(true);
+  window.__prehledFixtura = () => {
+    ONLINE_STAV.ja = { email: 'a@b.cz', jmeno: 'Správce', role: 'Administrátor' };
+    NAST.jeAdmin = true;
+    ONLINE_STAV.rejstrik = [
+      { soubor: 'a.json', cislo: '2026 - OPR - CN - 1', nazevAkce: 'Šachta', objednatel: 'SVJ',
+        autor: 'a@b.cz', autorJmeno: 'Jan Novák', datum: '2026-08-01', variant: 1, odeslane: 0, upraveno: '' },
+      { soubor: 'b.json', cislo: '2026 - OVP - CN - 2', nazevAkce: 'Studie', objednatel: 'Firma',
+        autor: 'c@d.cz', autorJmeno: '', datum: '2026-08-02', variant: 1, odeslane: 0, upraveno: '' },
+    ];
+    prepniTab('zakazka');
+    render();
+    renderPrehledHledaniTelo();
+  };
+});
+
 test('seznam nabídek má sloupec Obchodník i druh OCK/PROJ',
   await page.evaluate(() => {
     ONLINE_STAV.ja = { email: 'a@b.cz', jmeno: 'Zkušební Obchodník', role: 'Administrátor' };
@@ -1072,7 +1112,7 @@ test('obchodníkovi se hromadné mazání vůbec nenabízí',
   }));
 test('našeptávač se při psaní PRŮBĚŽNĚ zužuje (ne jen první písmeno)',
   await page.evaluate(() => {
-    renderPrehledHledaniTelo(); render();
+    window.__prehledFixtura();
     /* Filtruje toutéž logikou jako hledání: bez diakritiky, každé slovo. */
     const vse = naseptavacFiltr('a');
     const uzsi = naseptavacFiltr('nov');                 // uprostřed slova
@@ -1086,6 +1126,7 @@ test('našeptávač se při psaní PRŮBĚŽNĚ zužuje (ne jen první písmeno)
   }));
 test('nabídka se kreslí pod políčko a klik ji vybere',
   await page.evaluate(() => {
+    window.__prehledFixtura();
     const inp = document.querySelector('#page-zakazka input.seznam-hledat');
     if (!inp || !document.getElementById('naseptBoxPrehled')) return false;
     naseptavacKresli('naseptBoxPrehled', 'nov', 'prehled');
@@ -1100,6 +1141,7 @@ test('nabídka se kreslí pod políčko a klik ji vybere',
   }));
 test('klik na řádek otevře zakázku, klik na zaškrtávátko ne',
   await page.evaluate(() => {
+    window.__prehledFixtura();
     const radek = document.querySelector('#prehledHledaniTelo tr.radek-klik');
     if (!radek || !/prehledRadekOtevri/.test(radek.getAttribute('onclick') || '')) return false;
     /* Otevření se nevolá doopravdy (fetch by spadl) — podstrčí se špión. */
