@@ -4302,13 +4302,13 @@
    "stav" : "hotovo",
    "dulezitost" : "vysoka",
    "slozitost" : "S",
-   "hotovoV" : "v16.9.20",
+   "hotovoV" : "v16.9.21",
    "nazev" : "Plechy vždy jako dvojice, ruční hodnota přežije vypnutí ATYP",
    "proc" : "Dvě vyjádření J. V. z 5. kola testů. Přechodové plechy šlo rozpojit — materiál vypnutý, montáž dál účtovaná za nástupiště, tedy práce na dodávce, která neexistuje. A ručně přepsaná atypová hodnota při vypnutí ATYP z obrazovky zmizela, takže obchodník musel své číslo psát znovu.",
-   "detail" : "PLECHY: montáž se řídí výhradně materiálem, vlastní přepínač z 11. 8. 2026 padl. Pole `volitelne.prechMont` v uložených zakázkách zůstává, ale nečte se. Ve sloupci Výchozí nemá montáž vlastní klíč — psala by do mrtvého zaškrtávátka, takže obě řádky míří na `ock.prechodove`. ATYP: vypnutí vrací jen pole BEZ ruční značky; ručně přepsaným zůstává hodnota i značka, aby je ceník při nejbližším přepočtu tiše nepřebil.",
-   "hotovoKdyz" : "Splněno: zaškrtnuté plechy dají vždy dvě položky s nenulovým množstvím, odškrtnuté spadnou obě do příplatků, a ručně zadaná atypová hodnota zůstane na obrazovce i po vypnutí ATYP.",
+   "detail" : "PLECHY: montáž se řídí výhradně materiálem, vlastní přepínač z 11. 8. 2026 padl. Pole `volitelne.prechMont` v uložených zakázkách zůstává, ale nečte se. Ve sloupci Výchozí nemá montáž vlastní klíč — psala by do mrtvého zaškrtávátka, takže obě řádky míří na `ock.prechodove`. ATYP (sled upřesněný J. V. tentýž den): zapnuto dosadí předlohu do VŠECH atypových polí, i do ručně přepsaných; vypnuto vrátí jen pole BEZ ruční značky, ručně přepsaná nechá být. Přepínač tak vždycky něco udělá — kdyby ruční číslo přebíjelo předlohu, byl by pro takové pole od první ruční úpravy mrtvý. Zmizel tím mezistav `atypUlozene`.",
+   "hotovoKdyz" : "Splněno: zaškrtnuté plechy dají vždy dvě položky s nenulovým množstvím, odškrtnuté spadnou obě do příplatků, a sled ATYP zapnuto → ruční číslo → vypnuto → zapnuto → vypnuto dá předloha / drží / drží / předloha / drží.",
    "kde" : "`src/engine.js`, `src/zakazka.js`, `src/ui/kalk_ock.js`, `src/test_leseni.js`, `src/test_priplatky_volitelne.js`, `src/test_vychozi_zaklad.js`, `src/test_atyp_idempotence.js`",
-   "pozn" : "**ZÁMĚRNÝ DŮSLEDEK u plechů:** zakázka, ve které někdo montáž ručně vypnul, ji po otevření má zpátky — a je o ni dražší. Vyplývá to přímo ze zadání „Plechy mají vždy 2 položky\"; kdyby to mělo platit jen pro nové zakázky, je to jiná úloha. Ověřeno 97 sadami a 4081 kontrolami; čtyři mutace (vrátit vlastní přepínač montáže, montáž bez množství, vypnutí vrací zase všechno, vrátit montáži vlastní klíč ve sloupci Výchozí) sady chytily."
+   "pozn" : "**ZÁMĚRNÝ DŮSLEDEK u plechů:** zakázka, ve které někdo montáž ručně vypnul, ji po otevření má zpátky — a je o ni dražší. Vyplývá to přímo ze zadání „Plechy mají vždy 2 položky\"; kdyby to mělo platit jen pro nové zakázky, je to jiná úloha. **ROZPOR U ATYP:** nové pravidlo přebíjí připomínku D. Sikory z 10. 9. 2026 („pokud se ta částka změní, tak by ji to tlačítko ATYP měnit zpět na 25 000 nemělo\"). Rozpor je vědomý, rozhodl ho J. V. jako pozdější zadání a je zapsaný v komentáři pravidla i v sadě. Hlavní důvod té stížnosti zůstává splněný: opakované klikání cenou NEPOHNE, protože předloha je pokaždé stejná. Ověřeno 97 sadami a 4082 kontrolami; osm mutací chyceno. Jedna mutace prošla naprázdno a byla zahozena — vracela jen půlku starého pravidla, tedy čtení stavu, který už nikdo nezapisuje."
   }
  ],
  "meta" : {
@@ -4723,7 +4723,7 @@
    {
     "text" : "Dávka 16. 9. 2026 (3, engscalc): 5. kolo připomínek J. V. — přechodové plechy jsou vždy dvojice materiál + montáž a ručně přepsaná atypová hodnota přežije vypnutí ATYP (#262).",
     "hotovo" : true,
-    "pozn" : "build v16.9.20. Připomínky se získaly porovnáním dvou verzí hodnoticího sešitu; ze dvaceti řetězců navíc byly čtyři opravdu nové a dva z nich znamenaly změnu chování. Ověřeno: 97 sad, 4081 kontrol, čtyři cílené mutace (2 až 23 pádů každá). **Otázka r36 (sazba skla interiéru podle zasklení) je potvrzená a v kódu byla už od 9. 9.** — na terče VSG 4.4.2, mezi příčníky VSG 4.4.1, obě plochy týmž sklem; 14. 9. k tomu padla tichá záloha, která uměla počítat jiným sklem, než měl řádek v názvu. Hlídá `src/test_sklo_vazba.js`."
+    "pozn" : "build v16.9.21. Připomínky se získaly porovnáním dvou verzí hodnoticího sešitu; ze dvaceti řetězců navíc byly čtyři opravdu nové a dva z nich znamenaly změnu chování. Pravidlo ATYP se téhož dne ještě upřesnilo: zapnutí dosazuje předlohu VŽDY, i přes ruční hodnotu. Ověřeno: 97 sad, 4082 kontrol, osm cílených mutací. **Otázka r36 (sazba skla interiéru podle zasklení) je potvrzená a v kódu byla už od 9. 9.** — na terče VSG 4.4.2, mezi příčníky VSG 4.4.1, obě plochy týmž sklem; 14. 9. k tomu padla tichá záloha, která uměla počítat jiným sklem, než měl řádek v názvu. Hlídá `src/test_sklo_vazba.js`. Výsledky kola zapsány do `VYHODNOCENI_TESTU_KALKULACE_18.xlsx` (nový sloupec J na listu 5. kola)."
    }
   ],
   "pravidla" : [
@@ -4810,7 +4810,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v16.9.20 (engscalc)",
+  "build" : "v16.9.21 (engscalc)",
   "stavKDatu" : "16. 9. 2026"
  },
  "_comment" : [
