@@ -720,6 +720,39 @@ function tblVolitelne(katalog, sum) {
 }
 
 /* Výběr příplatků, které se propíší do cenové nabídky */
+/* ŘÁDEK, KTERÝ SE NENABÍZÍ, SE NESMÍ JEN TAK ZTRATIT (nález J. V. 16. 9. 2026:
+ * „myslím, že mi u příplatkové výbavy chybí minimálně dva řádky lešení").
+ *
+ * Lešení je v aplikaci na dvou místech: ve VOLITELNÝCH (je v základní ceně)
+ * a v PŘÍPLATCÍCH (zákazník si ho může doobjednat). Aby se nezapočítalo
+ * dvakrát, vypadne z příplatků to, co je zaškrtnuté ve Volitelných —
+ * `engine.js` to dělá řádky `v.leseniVnejsi ? null : mkPrip(...)`.
+ *
+ * Věcně je to správně a nic se tím neztrácí. Jenže řádek prostě ZMIZÍ a nikde
+ * není poznat proč: v ceníku variant se z ničeho nic nedá najít položka, která
+ * tam včera byla. Vysvětlující věta pod tabulkou to říkala obecně, což při
+ * hledání konkrétní položky nepomůže.
+ *
+ * Tenhle řádek proto vyjmenuje, CO PRÁVĚ TEĎ vypadlo a kam se pro to jít
+ * podívat. Nic nepočítá a do žádného dokumentu nejde — je to jen odpověď na
+ * otázku „kde je lešení". */
+function priplatkyVeVolitelnych(r) {
+  const kat = (r && r.volitelneKatalog) || [];
+  const skryte = kat.filter(x => x.zahrnuto && /LEŠENÍ/i.test(x.nazev || ''));
+  if (!skryte.length) return '';
+  /* Názvy se spojí NEJDŘÍV a escapují se jedním voláním. Escapovat po
+   * položkách a slepit je `</b>, <b>` by bylo stejně bezpečné, ale statický
+   * hlídač v test_escape.js vidí jen vnější výraz — a `join()` mu bezpečný
+   * nepřipadá. Obejít ho zápisem do PROVERENO kvůli tučnému písmu nestojí za
+   * to: hlídač, který má výjimky pro kosmetiku, přestane být hlídačem. */
+  const nazvy = esc(skryte.map(x => x.nazev).join(', '));
+  const jedna = skryte.length === 1;
+  return `<div class="note" style="margin-top:6px">V příplatcích se nenabízí
+    <b>${nazvy}</b> — ${jedna ? 'tahle položka je zaškrtnutá' : 'tyhle položky jsou zaškrtnuté'}
+    v sekci <b>Volitelné</b>, tedy už v základní ceně. Odškrtnutím tam se
+    ${jedna ? 'vrátí' : 'vrátí'} sem jako příplatek.</div>`;
+}
+
 function priplatekNabidka(key, zahrnout) {
   if (!Z.priplatkyVynechat) Z.priplatkyVynechat = [];
   Z.priplatkyVynechat = Z.priplatkyVynechat.filter(k => k !== key);
@@ -952,6 +985,7 @@ function renderOutputs() {
       <button class="mini" title="vlastní příplatek jen této zakázky" onclick="priplatekVlastniAdd()">+ přidat položku</button></td></tr>` : ''}
     <tr class="tot"><td colspan="${pripCols - 1 - col.adminExtra}">PŘÍPLATKY CELKEM (pokud vše)</td><td>${fmt0(r.souhrn.priplatkyCena)}</td>${'<td class="admincol"></td>'.repeat(col.adminExtra)}</tr>
   </table>
+  ${priplatkyVeVolitelnych(r)}
   <div class="note">Příplatkové položky jsou ceník variant pro zákazníka – do základní ceny se nezapočítávají.${col.admin ? `
   Název, množství i jedn. cenu lze přepsat (↺ vrátí vypočtené množství), tlačítkem lze přidat vlastní příplatek. Sloupec <b>Nabídka</b> určuje, které
   příplatky se propíší do generované cenové nabídky (sekce II.). Položky zvolené ve „Volitelné" se zde

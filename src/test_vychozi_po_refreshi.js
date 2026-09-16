@@ -108,5 +108,62 @@ test('prázdný název akce vyplněný není', zk.hlavickaVyplneno(nova.nazevAkc
       vzor.ock.zadani, vzor.proj.zadani) === false);
 }
 
+/* ---------- 4) proč zmizely řádky lešení z příplatků (16. 9. 2026) ----------
+ *
+ * J. V.: „myslím, že mi v testovacím rozhraní u příplatkové výbavy chybí
+ * minimálně dva řádky lešení."
+ *
+ * Věcně je to správně: lešení je v aplikaci na dvou místech — ve VOLITELNÝCH
+ * (v základní ceně) a v PŘÍPLATCÍCH (k doobjednání). Co je zaškrtnuté ve
+ * Volitelných, vypadne z příplatků, aby se nezapočítalo dvakrát. Tahle sada
+ * to drží, aby se z „opravy" nestalo dvojí započtení.
+ *
+ * Co se opravdu opravilo, je viditelnost: řádek dřív jen zmizel a nikde nebylo
+ * poznat proč.
+ */
+{
+  const ZCx = require('./zkusebni_cenik.js');
+  const engx = require('./engine.js');
+  const JE = JSON.parse(require('fs').readFileSync(__dirname + '/jekly.json', 'utf8'));
+  const zad = (vol) => {
+    const z = JSON.parse(JSON.stringify(engx.DEFAULT_ZADANI));
+    Object.assign(z, { typSachty: 'exteriérová', zaskleni: 'na terče',
+      sirka: 1.6, hloubka: 1.8, zdvih: 15, prejezd: 2, prohluben: 0, nastupiste: 5 });
+    Object.assign(z.volitelne, vol); return z;
+  };
+  const les = (vol) => engx.vypocet(zad(vol), ZCx.zkusebniCenik(), JE, false)
+    .priplatky.filter(p => /LEŠENÍ/.test(p.nazev)).map(p => p.nazev);
+
+  test('výchozí zadání má ve Volitelných jen lešení vnitřní',
+    engx.DEFAULT_ZADANI.volitelne.leseniVnitrni === true
+    && !engx.DEFAULT_ZADANI.volitelne.leseniHlava
+    && !engx.DEFAULT_ZADANI.volitelne.leseniVnejsi, engx.DEFAULT_ZADANI.volitelne);
+  test('takže v příplatcích zbývají právě ty dva řádky, které J. V. postrádal',
+    les({ leseniVnitrni: true, leseniHlava: false, leseniVnejsi: false }).join('|')
+      === 'LEŠENÍ - dokončení hlavy šachty|LEŠENÍ - vnější');
+  test('se vším ve Volitelných nezbude v příplatcích žádné lešení',
+    les({ leseniVnitrni: true, leseniHlava: true, leseniVnejsi: true }).length === 0);
+  test('a bez Volitelných jsou v příplatcích všechna tři',
+    les({ leseniVnitrni: false, leseniHlava: false, leseniVnejsi: false }).length === 3);
+
+  const ui = require('fs').readFileSync(__dirname + '/ui/kalk_ock.js', 'utf8');
+  test('tabulka příplatků vysvětlí, co vypadlo do Volitelných',
+    /function priplatkyVeVolitelnych\(r\)/.test(ui));
+  /* Funkce, kterou nikdo nevolá, nic nevysvětlí — mutace „vysvětlení se
+   * nekreslí" mi napoprvé prošla právě proto, že tahle kontrola chyběla. */
+  test('a opravdu se v té tabulce kreslí',
+    /\$\{priplatkyVeVolitelnych\(r\)\}/.test(ui));
+  test('a vypisuje konkrétní názvy, ne obecnou větu',
+    /skryte\.map\(x => x\.nazev\)\.join/.test(ui));
+  /* Escapuje se jedním voláním kolem celého spojeného textu — po položkách
+   * by to bylo stejně bezpečné, ale statický hlídač v test_escape.js vidí jen
+   * vnější výraz a `join()` mu bezpečný nepřipadá. */
+  test('a názvy jsou escapované', /const nazvy = esc\(skryte\.map/.test(ui));
+  test('bere je z katalogu volitelných, ne z vlastního seznamu',
+    /r\.volitelneKatalog/.test(ui) && /x\.zahrnuto && \/LEŠENÍ\/i/.test(ui));
+  test('a nic nepočítá — je to jen vysvětlení',
+    !/priplatkyVeVolitelnych[\s\S]{0,400}naklad|priplatkyVeVolitelnych[\s\S]{0,400}sMarzi/.test(ui));
+}
+
 console.log('\n' + (fail ? 'SELHALO ' + fail + ' z ' + (ok + fail) : 'OK ' + ok));
 if (fail) process.exit(1);
