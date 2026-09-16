@@ -507,7 +507,25 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   /* Montáž přechodových plechů má vlastní přepínač v OBOU režimech; prázdno
    * znamená „řídí se materiálem", tedy beze změny ceny proti dosavadnímu stavu. */
   const prechMontAno = (z.volitelne.prechMont != null) ? z.volitelne.prechMont : prechodoveAno;
-  const prechKs = z.prechodovePlechy ? nastupist : 0;
+  /* MNOŽSTVÍ SE ŘÍDÍ TÝMŽ PŘEPÍNAČEM JAKO ZAHRNUTÍ (16. 9. 2026, nález J. V.:
+   * „stále nám nefunguje zaškrtávání výchozích položek").
+   *
+   * Plechy mají dva přepínače: jeden v zadání šachty (`z.prechodovePlechy` —
+   * „jsou tam vůbec?") a jeden ve Volitelných (`z.volitelne.prechodove` —
+   * „v základní ceně, nebo za příplatek?"). O ZAHRNUTÍ rozhodoval ten druhý,
+   * o MNOŽSTVÍ pořád ten první. Se zadáním vypnutým se tedy položka po
+   * zaškrtnutí sice započetla, ale s množstvím 0 — a zároveň zmizela
+   * z příplatků, protože zaškrtnutá položka se odtamtud vypouští.
+   * Zákazník ji tak nedostal nabídnutou ANI ji nezaplatil v základní ceně.
+   * Zaškrtávátko vypadalo, že nefunguje; ve skutečnosti ovládalo jen půlku.
+   *
+   * `prechodoveAno` je efektivní odpověď na „jsou tam plechy" — zaškrtnutím
+   * ve Volitelných obchodník říká, že ano. Množství se proto počítá z něj.
+   * Montáž má od 11. 8. 2026 vlastní přepínač právě proto, aby šla objednat
+   * bez materiálu; kdyby se její množství dál řídilo materiálem, zůstala by
+   * v tom případě na nule a ten přepínač by byl k ničemu. */
+  const prechKs = prechodoveAno ? nastupist : 0;
+  const prechKsMont = prechMontAno ? nastupist : 0;
   const prechKg1 = 8500 * (0.1 * sirkaDveri * 0.002);
   const prechKg = prechKg1 * prechKs;
 
@@ -861,7 +879,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
      * montáž vlastní přepínač `volitelne.prechMont`. Prázdno znamená „řídí se
      * materiálem", takže se nic nezmění, dokud to obchodník nepřepne — a kdo
      * potřebuje montáž bez materiálu (nebo naopak), má to konečně jak zadat. */
-    { key: 'prechMont', mk: () => mkItem('PŘECHODOVÉ PLECHY - NEREZ (MONTÁŽ)', prechKs, pp.prechMontKc,
+    { key: 'prechMont', mk: () => mkItem('PŘECHODOVÉ PLECHY - NEREZ (MONTÁŽ)', prechKsMont, pp.prechMontKc,
       { cenaPath: 'C.priplatky.prechMontKc' }),
       zahrnuto: prechMontAno, dostupne: true, prip: 'prechMont' },
     /* Lešení pro dokončení hlavy šachty (11. 8. 2026). Fixní část NEMÁ, a to

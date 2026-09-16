@@ -40,9 +40,13 @@ const test = (n, cond, info) => {
 
 const C = ZC.zkusebniCenik();
 const EXT = 'exteriérová', INT = 'interiérová';
-function vypocti(typ, vol, fixes) {
+function vypocti(typ, vol, fixes, zaklad) {
   const Z = JSON.parse(JSON.stringify(eng.DEFAULT_ZADANI));
   Z.typSachty = typ;
+  /* `zaklad` přepisuje pole ZADÁNÍ ŠACHTY (ne volitelné). Je to kvůli
+   * oddílu 6: DEFAULT_ZADANI má `prechodovePlechy: true`, ale nová zakázka
+   * začíná s `false` — a přesně v tom stavu se 16. 9. 2026 ukázala chyba. */
+  Object.assign(Z, zaklad || {});
   Z.volitelne = Object.assign({}, Z.volitelne, vol || {});
   return eng.vypocet(Z, C, JEKLY, fixes === undefined ? false : fixes);
 }
@@ -236,6 +240,89 @@ const vlastni = (k) => String(k).indexOf('vlastni:') === 0;
   test('dostupnost podle typu šachty je i u příplatků',
     src.indexOf('(ext && !v.haky)') >= 0 && src.indexOf('(!ext && !v.zabradli)') >= 0
     && src.indexOf('(ext && !v.sokl)') >= 0);
+}
+
+/* ---------- 6) dva přepínače na jednu položku ----------
+ *
+ * Nález J. V. 16. 9. 2026: „stále nám nefunguje zaškrtávání výchozích
+ * položek". Přechodové plechy mají přepínač v ZADÁNÍ ŠACHTY („jsou tam
+ * vůbec?") a druhý ve VOLITELNÝCH („v základní ceně, nebo za příplatek?").
+ * O zahrnutí rozhodoval ten druhý, o MNOŽSTVÍ pořád ten první — zaškrtnutá
+ * položka se tedy započetla s množstvím 0 a zároveň vypadla z příplatků,
+ * protože zaškrtnuté se odtamtud vypouštějí. Zákazník ji tak nedostal
+ * nabídnutou ANI ji nezaplatil v základní ceně.
+ *
+ * PROČ TO PŘEDCHOZÍ ODDÍLY NECHYTILY: běží nad DEFAULT_ZADANI, kde je
+ * `prechodovePlechy: true`. Nová zakázka (zakazka.js) ho má ale `false` —
+ * a to je stav, ve kterém obchodník začíná. Celá baterie se proto pouští
+ * nad OBĚMA základy; nad jedním by se chyba schovala i podruhé.
+ */
+const ZAKLADY = [
+  ['zadání s plechy zapnutými', { prechodovePlechy: true }],
+  ['nová zakázka (plechy vypnuté)', { prechodovePlechy: false }],
+];
+
+ZAKLADY.forEach(([popis, zaklad]) => {
+  [EXT, INT].forEach(typ => {
+    vypocti(typ, {}, false, zaklad).volitelneKatalog
+      .filter(x => !vlastni(x.key) && x.prip).forEach(x => {
+        const jm = popis + ' / ' + typ + ' / ' + x.key;
+        const vol = vypocti(typ, { [x.key]: true }, false, zaklad)
+          .volitelneKatalog.find(y => y.key === x.key);
+        const pri = (vypocti(typ, { [x.key]: false }, false, zaklad).priplatky || [])
+          .find(p => p.key === x.prip);
+        if (!vol || !pri) { test(jm + ': obě strany existují', false); return; }
+        /* Nula sama o sobě chyba není — rozměr může být nulový. Chyba je,
+         * když se obě strany LIŠÍ: táž položka, dvě různá množství. */
+        test(jm + ': zahrnutá položka nese totéž množství jako její příplatek',
+          Math.abs(vol.mnozstvi - pri.mnozstvi) < 1e-9, { vol: vol.mnozstvi, pri: pri.mnozstvi });
+        test(jm + ': a týž náklad',
+          Math.abs(vol.naklad - pri.naklad) < 0.01, { vol: vol.naklad, pri: pri.naklad });
+        /* Tohle je ta chyba doslova: zaškrtnuto, ale za nic — a z příplatků
+         * přitom vypadlo, takže si to zákazník nemůže ani doobjednat. */
+        test(jm + ': zaškrtnutím nezmizí z nabídky úplně',
+          !(vol.zahrnuto && vol.sMarzi === 0 && pri.sMarzi > 0),
+          { volSMarzi: vol.sMarzi, priSMarzi: pri.sMarzi });
+      });
+  });
+});
+
+{
+  /* Případ přímo z obrázku: v zadání šachty vypnuto, obchodník zaškrtne ve
+   * Volitelných. Do 16. 9. 2026 se započetlo 0 Kč a nic se nestalo. */
+  const nova = { prechodovePlechy: false };
+  const r = vypocti(EXT, { prechodove: true }, false, nova);
+  const k = r.volitelneKatalog.find(x => x.key === 'prechodove');
+  test('zaškrtnutím plechů ve Volitelných se opravdu něco započte',
+    k.zahrnuto && k.mnozstvi > 0 && k.sMarzi > 0, { mn: k.mnozstvi, sMarzi: k.sMarzi });
+  const m = r.volitelneKatalog.find(x => x.key === 'prechMont');
+  test('a montáž jde s nimi, taky s nenulovým množstvím',
+    m.zahrnuto && m.mnozstvi > 0, { mn: m.mnozstvi });
+
+  /* Montáž bez materiálu je pravidlo z 11. 8. 2026 — vlastní přepínač právě
+   * proto existuje. Kdyby se její množství dál řídilo materiálem, zůstala by
+   * na nule a ten přepínač by byl k ničemu. */
+  const jenMont = vypocti(EXT, { prechodove: false, prechMont: true }, false, nova);
+  const mm = jenMont.volitelneKatalog.find(x => x.key === 'prechMont');
+  const mat = jenMont.volitelneKatalog.find(x => x.key === 'prechodove');
+  test('montáž jde objednat bez materiálu a není na nule',
+    mm.zahrnuto && mm.mnozstvi > 0 && !mat.zahrnuto, { mont: mm.mnozstvi, mat: mat.zahrnuto });
+  test('a chybějící materiál se nabídne jako příplatek',
+    klice(jenMont).indexOf('prechMat') >= 0, klice(jenMont));
+
+  const jenMat = vypocti(EXT, { prechodove: true, prechMont: false }, false, nova);
+  const m2 = jenMat.volitelneKatalog.find(x => x.key === 'prechMont');
+  const mat2 = jenMat.volitelneKatalog.find(x => x.key === 'prechodove');
+  test('materiál jde objednat bez montáže',
+    mat2.zahrnuto && mat2.mnozstvi > 0 && !m2.zahrnuto);
+  test('a nezahrnutá montáž spadne do příplatků',
+    klice(jenMat).indexOf('prechMont') >= 0, klice(jenMat));
+
+  const vyp = vypocti(EXT, { prechodove: false }, false, nova);
+  test('vypnuté plechy se v nové zakázce nabízejí jako příplatek',
+    klice(vyp).indexOf('prechMat') >= 0, klice(vyp));
+  test('a nejsou přitom v základní ceně — nikdy obojí naráz',
+    !vyp.volitelneKatalog.find(x => x.key === 'prechodove').zahrnuto);
 }
 
 console.log('\n' + (fail ? 'SELHALO ' + fail + ' z ' + (ok + fail) : 'OK ' + ok));
