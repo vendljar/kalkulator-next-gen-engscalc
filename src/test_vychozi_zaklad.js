@@ -209,6 +209,39 @@ function koleckoOck(key, zapnout, ctenyKlic) {
    * kontrol vynechávám právě proto, že žádný vlastní nemá. */
   test('montáž plechů se ve sloupci Výchozí veze na klíči materiálu',
     ui.indexOf("(key === 'prechMont') ? 'prechodove' : key") >= 0);
+  /* Starší zakázka si ruční nastavení montáže drží (J. V.: „zpětně neřeš"),
+   * ale nesmí v něm uvíznout: samostatné zaškrtávátko montáže už neexistuje,
+   * takže kliknutí na plechy to pole musí uvolnit. */
+  test('kliknutí na plechy zahodí staré ruční nastavení montáže',
+    ui.indexOf("set('Z.volitelne.prechMont', null)") >= 0);
+}
+
+/* ---------- 5) matice nesmí novou zakázku vyřadit z pravidla o dvojici ----
+ *
+ * `volitelne.prechMont` má dvojí význam: hodnota = „tahle zakázka je z dob
+ * vlastního přepínače". Kdyby ji do nové zakázky zapsala matice Výchozí,
+ * tvářila by se tak i zakázka právě založená a montáž by se přestala řídit
+ * materiálem. Matice v sobě přitom takový klíč mít MŮŽE — zbyl tam z doby,
+ * kdy montáž vlastní sloupec měla. */
+{
+  /* Klíč musí být `true`. S `false` by test neměřil nic: výchozí hodnota pole
+   * je null a cyklus zapisuje jen při ROZDÍLU v pravdivosti, takže false
+   * proti null neprojde tak jako tak. Škodí právě `true` — a zrovna to je
+   * hodnota, kterou tam sloupec Výchozí u montáže do 16. 9. 2026 zapisoval. */
+  const mat = { vychozi: { 'ock.prechMont': true, 'ock.prechodove': false } };
+  const zad = novaZadani();
+  ZOB.zobrazeniVychoziAplikuj(mat, zad, null);
+  test('matice do volitelne.prechMont nesahá ani se starým klíčem',
+    zad.volitelne.prechMont == null, zad.volitelne.prechMont);
+  const r = eng.vypocet(JSON.parse(JSON.stringify(zad)), ZC.zkusebniCenik(), JEKLY, false);
+  const m = r.volitelneKatalog.find(x => x.key === 'prechMont');
+  const mt = r.volitelneKatalog.find(x => x.key === 'prechodove');
+  /* Materiál je v matici vypnutý, takže montáž musí být vypnutá taky. Kdyby
+   * matice `prechMont` prosadila, vznikla by přesně ta vada z 5. kola: montáž
+   * účtovaná za nástupiště bez jediného plechu — a rovnou v NOVÉ zakázce. */
+  test('takže nová zakázka má montáž podle materiálu, ne podle matice',
+    !!m && m.zahrnuto === false && !!mt && mt.zahrnuto === false,
+    m && { mont: m.zahrnuto, mat: mt && mt.zahrnuto });
 }
 
 console.log('\n' + (fail ? 'SELHALO ' + fail + ' z ' + (ok + fail) : 'OK ' + ok));

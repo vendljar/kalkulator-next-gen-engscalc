@@ -514,10 +514,17 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
    * přestože se žádné plechy nedodávaly — nález 5. kola. Montáž se proto
    * řídí VÝHRADNĚ materiálem a samostatně ji zapnout nejde.
    *
-   * Pole `z.volitelne.prechMont` v zadání zůstává kvůli starším uloženým
-   * zakázkám, ale nic se z něj nečte: kdyby se četlo, vrátila by se přesně
-   * ta situace, kvůli které se tohle mění. */
-  const prechMontAno = prechodoveAno;
+   * NOVÉ PRAVIDLO PLATÍ JEN PRO NOVÉ ZAKÁZKY (rozhodnutí J. V. 16. 9. 2026:
+   * „nové pravidlo bude platit jen pro nové zakázky. zpětně neřeš."). Kdo
+   * montáž ručně vypnul za starých pravidel, má `volitelne.prechMont` zapsané
+   * — a takové zakázce se cena nemění, dokud se jí nikdo nedotkne. Nová
+   * zakázka má v tom poli null a řídí se materiálem.
+   *
+   * Jakmile ale obchodník na plechy v takové zakázce klikne, pole se zahodí
+   * (viz `volitelneToggle`) a zakázka přejde pod nové pravidlo. Bez toho by
+   * v ní zůstal duch: montáž natrvalo vypnutá a žádný přepínač, kterým to
+   * vrátit — samostatné zaškrtávátko montáže už neexistuje. */
+  const prechMontAno = (z.volitelne.prechMont != null) ? !!z.volitelne.prechMont : prechodoveAno;
   /* MNOŽSTVÍ SE ŘÍDÍ TÝMŽ PŘEPÍNAČEM JAKO ZAHRNUTÍ (16. 9. 2026, nález J. V.:
    * „stále nám nefunguje zaškrtávání výchozích položek").
    *

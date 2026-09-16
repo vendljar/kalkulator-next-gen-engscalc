@@ -629,6 +629,13 @@ function zobrazeniVychoziAplikuj(mat, zadaniOck, zadaniProj) {
        * `prechodovePlechy`, přestalo cokoli dělat. Matice tedy zapisovala
        * TOTÉŽ rozhodnutí na dvě místa a to druhé zabilo první. */
       if (k === 'prechodove') return;
+      /* `prechMont` sem nepatří ze stejného důvodu, jen z druhé strany:
+       * nenulová hodnota v tom poli znamená „tahle zakázka je z dob, kdy
+       * měla montáž vlastní přepínač". Kdyby ji sem zapsala matice, tvářila
+       * by se tak i zakázka právě založená a rovnou by vypadla z pravidla
+       * o dvojici (J. V. 16. 9. 2026: nové pravidlo jen pro nové zakázky).
+       * Montáž se ve sloupci Výchozí přepíná klíčem materiálu. */
+      if (k === 'prechMont') return;
       const v = zobrazeniPolozkaVychozi(mat, 'ock.' + k, vol[k]);
       if (!!v !== !!vol[k]) { vol[k] = v; zmen++; }
     });

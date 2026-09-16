@@ -133,9 +133,13 @@ const vlastni = (k) => String(k).indexOf('vlastni:') === 0;
   const oba = klice(vypocti(EXT, { prechodove: false }));
   test('odškrtnutím přechodových plechů spadne do příplatků i jejich montáž',
     oba.indexOf('prechMat') >= 0 && oba.indexOf('prechMont') >= 0, oba);
-  const jenMat = klice(vypocti(EXT, { prechodove: false, prechMont: true }));
-  test('a vlastní přepínač montáže to nepřebije — dvojice se nerozpojí',
-    jenMat.indexOf('prechMat') >= 0 && jenMat.indexOf('prechMont') >= 0, jenMat);
+  /* Ve STARŠÍ zakázce, která má `prechMont` vyplněné z dob vlastního
+   * přepínače, se cena nemění (J. V. 16. 9. 2026: „zpětně neřeš"). Montáž
+   * tam tedy zůstane zapnutá i bez materiálu a mezi příplatky spadne jen
+   * chybějící materiál. */
+  const stara = klice(vypocti(EXT, { prechodove: false, prechMont: true }));
+  test('starší zakázka si své ruční nastavení montáže podrží',
+    stara.indexOf('prechMat') >= 0 && stara.indexOf('prechMont') < 0, stara);
   /* Háky, zábradlí a sokl žádnou takovou vazbu nemají — každý sám za sebe.
    * Ptát se, jestli v příplatcích NENÍ sokl, by bylo špatně: tam už ve
    * výchozím stavu je, a ne kvůli hákům. Rozhoduje ROZDÍL mezi oběma stavy. */
@@ -316,29 +320,37 @@ ZAKLADY.forEach(([popis, zaklad]) => {
   test('a montáž jde s nimi, taky s nenulovým množstvím',
     m.zahrnuto && m.mnozstvi > 0, { mn: m.mnozstvi });
 
-  /* SAMOSTATNĚ UŽ MONTÁŽ OBJEDNAT NEJDE (16. 9. 2026). Vlastní přepínač
-   * z 11. 8. 2026 uměl obojí rozpojit a v 5. kole se ukázalo, k čemu to
-   * vede: odškrtnuté plechy a montáž dál účtovaná za nástupiště. Rozhodnutí
-   * J. V.: „Plechy mají vždy 2 položky." Obě strany se proto zkoušejí tak,
-   * že se starý přepínač nastaví PROTI materiálu — a nesmí uspět. */
-  const jenMont = vypocti(EXT, { prechodove: false, prechMont: true }, false, nova);
+  /* V NOVÉ ZAKÁZCE UŽ MONTÁŽ SAMOSTATNĚ OBJEDNAT NEJDE (16. 9. 2026).
+   * Vlastní přepínač z 11. 8. 2026 uměl obojí rozpojit a v 5. kole se
+   * ukázalo, k čemu to vede: odškrtnuté plechy a montáž dál účtovaná za
+   * nástupiště. Rozhodnutí J. V.: „Plechy mají vždy 2 položky."
+   *
+   * Nová zakázka pozná podle toho, že `prechMont` je prázdné — a přesně to
+   * se tu zkouší. Kdyby se do nové zakázky ta hodnota odněkud dostala
+   * (třeba z matice Výchozí), vypadla by z pravidla hned při založení. */
+  const jenMont = vypocti(EXT, { prechodove: false }, false, nova);
   const mm = jenMont.volitelneKatalog.find(x => x.key === 'prechMont');
   const mat = jenMont.volitelneKatalog.find(x => x.key === 'prechodove');
-  test('montáž se bez materiálu objednat nedá',
+  test('v nové zakázce se montáž bez materiálu objednat nedá',
     !mm.zahrnuto && !mat.zahrnuto, { mont: mm.zahrnuto, mat: mat.zahrnuto });
   test('a v příplatcích se pak nabídnou obě strany dodávky',
     klice(jenMont).indexOf('prechMat') >= 0 && klice(jenMont).indexOf('prechMont') >= 0,
     klice(jenMont));
 
-  const jenMat = vypocti(EXT, { prechodove: true, prechMont: false }, false, nova);
+  const jenMat = vypocti(EXT, { prechodove: true }, false, nova);
   const m2 = jenMat.volitelneKatalog.find(x => x.key === 'prechMont');
   const mat2 = jenMat.volitelneKatalog.find(x => x.key === 'prechodove');
-  test('materiál si montáž přitáhne, i když ji někdo ručně vypnul',
+  test('a zaškrtnutý materiál si montáž přitáhne, obojí s množstvím',
     mat2.zahrnuto && mat2.mnozstvi > 0 && m2.zahrnuto && m2.mnozstvi > 0,
     { mat: mat2.mnozstvi, mont: m2.mnozstvi });
-  test('a do příplatků tím pádem nespadne ani jedna',
+  test('takže do příplatků nespadne ani jedna',
     klice(jenMat).indexOf('prechMont') < 0 && klice(jenMat).indexOf('prechMat') < 0,
     klice(jenMat));
+  /* A naopak starší zakázka si ruční vypnutí montáže podrží. */
+  const starsi = vypocti(EXT, { prechodove: true, prechMont: false }, false, nova);
+  const m3 = starsi.volitelneKatalog.find(x => x.key === 'prechMont');
+  test('starší zakázka s ručně vypnutou montáží ji zapnutou nedostane',
+    !m3.zahrnuto && klice(starsi).indexOf('prechMont') >= 0, m3.zahrnuto);
 
   const vyp = vypocti(EXT, { prechodove: false }, false, nova);
   test('vypnuté plechy se v nové zakázce nabízejí jako příplatek',

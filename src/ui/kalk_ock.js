@@ -393,10 +393,19 @@ function volitelneToggle(key, v) {
      * Příčinu řeší zobrazeni.js; tímhle se uzdraví i zakázky, které už
      * poškozené jsou — první kliknutí tu zálohu zase uvolní.
      *
+     * Spolu s tím se zahazuje `Z.volitelne.prechMont`. Starší zakázka, ve
+     * které někdo montáž ručně vypnul, si to pole nese dál a jádro ho ctí —
+     * nové pravidlo o dvojici platí jen pro nové zakázky (J. V. 16. 9. 2026:
+     * „zpětně neřeš"). Jenže samostatné zaškrtávátko montáže už neexistuje,
+     * takže dokud tam to pole je, nejde montáž nijak vrátit. Uvolní se tedy
+     * ve chvíli, kdy obchodník na plechy sáhne: od té chvíle se zakázka řídí
+     * materiálem jako každá nová. Dokud na ně nesáhne, cena se jí nemění.
+     *
      * Pořadí je schválně takhle: `set()` sám hlídá zámek varianty, takže na
      * uzamčené zakázce neprojde ani jedno volání a stav zůstane, jak byl.
      * Kdybych pole vynuloval napřímo, zámek bych obešel. */
     set('Z.volitelne.prechodove', null);
+    set('Z.volitelne.prechMont', null);
     set('Z.prechodovePlechy', v);
     return;
   }
