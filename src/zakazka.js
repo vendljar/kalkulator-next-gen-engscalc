@@ -88,49 +88,62 @@ function dnesIso() { return new Date().toISOString().slice(0, 10); }
  * prošla i nad mutací „vypnutí zase nuluje". Rozhodovací pravidlo je proto
  * funkce nad prostými daty; v UI zůstala jen ceníková předloha a překreslení.
  *
- * Pravidlo (rozhodnutí J. V.: „nic nenulovat, vracet do předchozího stavu"):
- *  ZAPNUTÍ  – uloží snímek stávajících hodnot pro pozdější vypnutí; dosadí
- *             ceníkovou předlohu, ale JEN tam, kde obchodník vlastní číslo
- *             nemá. Co si při minulém ATYPu napsal sám, dostane zpátky.
- *  VYPNUTÍ  – zapamatuje si ručně přepsaná čísla (ať je zapnutí umí vrátit)
- *             a obnoví snímek. Nenuluje; nula se použije jen u zakázky, která
- *             snímek nemá, protože přesně to v ní před zapnutím bylo.
+ * Pravidlo (rozhodnutí J. V.: „nic nenulovat, vracet do předchozího stavu",
+ * upřesněné 16. 9. 2026 v 5. kole na tenhle sled):
+ *
+ *     ATYP zapnuto      → dosadí se předloha
+ *     napíšu své číslo  → drží
+ *     ATYP VYPNUTO      → drží
+ *     zase zapnuto      → dosadí se předloha
+ *     zase vypnuto      → drží
+ *
+ *  ZAPNUTÍ  – uloží snímek stávajících hodnot pro pozdější vypnutí a dosadí
+ *             ceníkovou předlohu do VŠECH atypových polí, i do těch, která
+ *             obchodník přepsal ručně. Přepínač tak vždycky něco udělá;
+ *             kdyby ruční číslo přebíjelo předlohu, byl by pro takové pole
+ *             od první ruční úpravy mrtvý.
+ *  VYPNUTÍ  – ručně přepsaná pole nechá být, ostatní vrátí do snímku.
+ *             Nenuluje; nula se použije jen u zakázky, která snímek nemá,
+ *             protože přesně to v ní před zapnutím bylo.
+ *
+ * POZOR, TOHLE SI ODPORUJE SE STARŠÍ PŘIPOMÍNKOU. D. Sikora 10. 9. 2026:
+ * „pokud se ta částka změní, tak by ji to tlačítko ATYP měnit zpět na 25 000
+ * nemělo." Podle sledu výš ji zpět mění. Rozpor je vědomý a rozhodl ho J. V.
+ * 16. 9. 2026 jako pozdější zadání; hlavní důvod původní stížnosti ale trvá
+ * splněný: opakované klikání už cenu NEPOSOUVÁ (dřív ubralo 64 000 na
+ * 2026-OPR-CN-0290), protože předloha je pokaždé stejná.
  *
  * `predloha` = { klíč: hodnota } z ceníku. `data` je varianta.data kvůli
  * ručním značkám. Mutuje `Z` a nic nevrací — volající beztak překresluje. */
 function atypHodnoty(Z, data, zap, predloha) {
   if (!Z) return;
-  const znac = (k) => { if (typeof zadaniRucniZnac === 'function') zadaniRucniZnac(data, k); };
   const rucniJe = (k) => (typeof zadaniRucniJe === 'function') && zadaniRucniJe(data, k);
   if (zap) {
     Z.atypPredchozi = {};
     ATYP_POLE.forEach(k => { Z.atypPredchozi[k] = Z[k]; });
-    const ulozene = Z.atypUlozene || {};
-    ATYP_POLE.forEach(k => {
-      if (Object.prototype.hasOwnProperty.call(ulozene, k)) { Z[k] = ulozene[k]; znac(k); }
-      else { Z[k] = (predloha || {})[k]; }
-    });
+    ATYP_POLE.forEach(k => { Z[k] = (predloha || {})[k]; });
     return;
   }
   /* RUČNĚ PŘEPSANÁ HODNOTA VYPNUTÍ ATYP PŘEŽIJE (16. 9. 2026, vyjádření J. V.
    * z 5. kola: „Pokud obchodník při zadání atyp změní položku ručně, pak jí
    * při vypnutí atyp zachovej.").
    *
-   * Do teď se ručně přepsaná hodnota sice uložila do `atypUlozene` na příště,
+   * Do teď se ručně přepsaná hodnota sice uložila stranou na příští zapnutí,
    * ale TEĎ se přesto přepsala zpátky. Obchodník tedy viděl, jak mu číslo,
    * které sám napsal, po vypnutí ATYP zmizelo — a jediné, co s tím mohl
    * dělat, bylo napsat ho znovu.
    *
    * Vrací se proto jen pole, kterých se nikdo nedotkl. Ručně přepsaným
-   * zůstává i ZNAČKA ruční úpravy: hodnota, kterou obchodník napsal, se nemá
+   * zůstává i ZNAČKA ruční úpravy: hodnota, kterou obchodník vidí, se nemá
    * přepsat ani z ceníku, a plošné rušení značek (jak to dělal starý kód) by
-   * ceníku přesně tohle dovolilo při nejbližším přepočtu.
+   * ceníku přesně tohle dovolilo při nejbližším přepočtu. Značka přitom není
+   * příslibem, že v poli je pořád obchodníkovo číslo — zapnutí ATYP ho
+   * přebije předlohou a značka zůstane; říká jen „tohle pole si spravuje
+   * zakázka, ne ceník".
    *
-   * Značky se tu proto NERUŠÍ vůbec — vracená pole jsou z definice ta, která
+   * Značky se tu NERUŠÍ vůbec — vracená pole jsou z definice ta, která
    * značku nemají, takže by šlo o mazání neexistujícího. */
-  Z.atypUlozene = Z.atypUlozene || {};
   const rucne = ATYP_POLE.filter(k => rucniJe(k));
-  rucne.forEach(k => { Z.atypUlozene[k] = Z[k]; });
   const vratit = ATYP_POLE.filter(k => rucne.indexOf(k) < 0);
   const pred = Z.atypPredchozi || {};
   vratit.forEach(k => {

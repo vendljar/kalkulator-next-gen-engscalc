@@ -76,14 +76,24 @@ const snimek = (Z) => P.map(k => k + '=' + JSON.stringify(Z[k])).join(' ');
 
 /* ---------- 3) vlastní chování ---------- */
 
-/* Sikorův případ: vlastní cena zámečníka nesmí spadnout zpátky na předlohu. */
+/* CELÝ SLED TAK, JAK HO J. V. NAPSAL 16. 9. 2026. Tohle je hlavní test
+ * pravidla; ostatní jen rozebírají jeho jednotlivé kroky.
+ *
+ * ODPORUJE SI TO SE SIKOROVOU PŘIPOMÍNKOU z 10. 9. 2026 („pokud se ta částka
+ * změní, tak by ji to tlačítko ATYP měnit zpět na 25 000 nemělo"). Rozpor
+ * rozhodl J. V. jako pozdější zadání. Hlavní důvod té stížnosti ale zůstává
+ * splněný a hlídá ho test „opakované klikání cenu neposouvá" níž: předloha
+ * je pokaždé stejná, takže se nic nesčítá ani neubírá. */
 {
   const { Z, data } = novy();
-  prepni(Z, data, true);
+  const sled = [];
+  prepni(Z, data, true);            sled.push('zap=' + Z.zamecnikAtypKc);
   rucne(Z, data, 'zamecnikAtypKc', 74500);
-  prepni(Z, data, false);
-  prepni(Z, data, true);
-  test('vlastní cena zámečníka přežije vypnutí a zapnutí', Z.zamecnikAtypKc === 74500, Z.zamecnikAtypKc);
+  prepni(Z, data, false);           sled.push('vyp=' + Z.zamecnikAtypKc);
+  prepni(Z, data, true);            sled.push('zap=' + Z.zamecnikAtypKc);
+  prepni(Z, data, false);           sled.push('vyp=' + Z.zamecnikAtypKc);
+  test('sled J. V.: předloha → moje číslo drží → vypnuto drží → zapnuto zase předloha → vypnuto drží',
+    sled.join(' ') === 'zap=50000 vyp=74500 zap=50000 vyp=50000', sled.join(' '));
 }
 
 /* Bod 1: vypnutí VRACÍ, nenuluje. */
@@ -103,18 +113,26 @@ const snimek = (Z) => P.map(k => k + '=' + JSON.stringify(Z[k])).join(' ');
   prepni(Z, data, true);
   rucne(Z, data, 'rezervaProfilyPct', 0.45);
   prepni(Z, data, false);
+  test('ruční rezerva profilů přežije vypnutí', Z.rezervaProfilyPct === 0.45, Z.rezervaProfilyPct);
   prepni(Z, data, true);
-  test('ruční rezerva profilů přežije cyklus', Z.rezervaProfilyPct === 0.45, Z.rezervaProfilyPct);
+  test('a zapnutí ji přebije předlohou, jako každé jiné pole',
+    Z.rezervaProfilyPct === 0.30, Z.rezervaProfilyPct);
 }
 
 /* Opakované klikání nesmí hodnoty posouvat — to byl ten úbytek 64 000. */
 {
+  /* TOHLE JE JÁDRO SIKOROVY STÍŽNOSTI a platí dál: opakované klikání nesmí
+   * cenou POHYBOVAT. Na 2026-OPR-CN-0290 ubralo několikeré prokliknutí
+   * 64 000 — a to je něco jiného než „vrátit předlohu". Základ se proto bere
+   * až PO prvním úplném cyklu: první cyklus ruční číslo vědomě přepíše
+   * předlohou (nové pravidlo), od druhého se nesmí hnout vůbec nic. */
   const { Z, data } = novy({ rezervaZakladPct: 0.12 });
   prepni(Z, data, true);
   rucne(Z, data, 'zamecnikAtypKc', 30000);
+  prepni(Z, data, false); prepni(Z, data, true);
   const poPrvnim = snimek(Z);
   for (let i = 0; i < 5; i++) { prepni(Z, data, false); prepni(Z, data, true); }
-  test('pětkrát vyp/zap dá pořád totéž', snimek(Z) === poPrvnim, { poPrvnim, ted: snimek(Z) });
+  test('opakované klikání cenu neposouvá', snimek(Z) === poPrvnim, { poPrvnim, ted: snimek(Z) });
 }
 {
   const { Z, data } = novy({ rezervaZakladPct: 0.12 });
@@ -159,8 +177,8 @@ const snimek = (Z) => P.map(k => k + '=' + JSON.stringify(Z[k])).join(' ');
     Z.rezervaProfilyPct === 0.10, Z.rezervaProfilyPct);
 }
 
-/* A do třetice: co si obchodník napsal, se mu vrátí i při dalším zapnutí —
- * tedy nejen že to nezmizí, ale ani se to nepřepíše předlohou. */
+/* A do třetice jiné pole než cena zámečníka, ať je vidět, že pravidlo není
+ * ušité na jednu položku: ruční hodnota vypnutí přežije, zapnutí ji přebije. */
 {
   const { Z, data } = novy();
   prepni(Z, data, true);
@@ -168,7 +186,8 @@ const snimek = (Z) => P.map(k => k + '=' + JSON.stringify(Z[k])).join(' ');
   prepni(Z, data, false);
   test('ruční montážní hodiny přežijí vypnutí', Z.montazAtypHod === 21, Z.montazAtypHod);
   prepni(Z, data, true);
-  test('a zapnutí je nepřebije předlohou', Z.montazAtypHod === 21, Z.montazAtypHod);
+  test('ale zapnutí je přebije předlohou — přepínač musí vždy něco udělat',
+    Z.montazAtypHod === 12, Z.montazAtypHod);
 }
 
 /* Starší zakázka snímek nemá — nesmí to spadnout ani zůstat s přirážkou. */
