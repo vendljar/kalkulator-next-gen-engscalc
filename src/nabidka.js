@@ -21,6 +21,22 @@ function nabidkaData(zak, varianta, jekly, lang) {
   const L = lang || 'cz';
   const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
 
+  /* OPLECHOVÁNÍ SOKLU PROHLUBNĚ — v které sekci nabídky stojí (16. 9. 2026,
+   * nález J. V.: „přestože je součástí, zobrazuje se v sekci, kdy součástí
+   * není").
+   *
+   * Řádek byl natvrdo v sekci SOUČÁSTÍ DODÁVKY NENÍ a měnil jen text. Když
+   * tedy sokl v dodávce byl, tvrdila nabídka zákazníkovi obojí naráz: nadpis
+   * říkal „není součástí", hodnota vedle „je součástí dodávky". Nově řádek
+   * mezi sekcemi PŘESKAKUJE — do Doplňkových konstrukcí, když se dodává.
+   *
+   * Rozhoduje VÝPOČET, ne zaškrtávátko v zadání. Sokl se nabízí jen na
+   * exteriérové šachtě (v katalogu volitelných má `dostupne: ext`), takže
+   * samotné `volitelne.sokl` by na interiérové šachtě slíbilo dodávku něčeho,
+   * co se vůbec nepočítá. A protože `r` je u odeslané nabídky zmrazený otisk
+   * (vypocetZ, nález A1), nezmění vytištěná nabídka svoje znění zpětně. */
+  const soklJe = (r.volitelneKatalog || []).some(x => x.key === 'sokl' && x.zahrnuto);
+
   /* #14 krok 3: formát bydlí ve format.js (záložka pro samostatný Node běh).
    * Měna (#155 + dorovnání 19. 8. večer): CZ = koruny; jiná mutace = eura
    * kurzem z ceníku varianty. Převádějí se ČÍSLA po položkách (celá eura
@@ -129,7 +145,13 @@ function nabidkaData(zak, varianta, jekly, lang) {
     TS_NENI_LESENI: ts('neni3'), TS_NENI_ODBERNE: ts('neni4'),
     TS_NENI_ULOZNE: ts('neni5'), TS_NENI_DOZDENI: ts('neni7'),
     TS_NENI_STAVEBNI: ts('neni8'),
-    TS_NENI_SOKL: P(Zv.volitelne.sokl ? 'je součástí dodávky' : 'není součástí nabídky'),
+    /* Vyplněný je vždy právě JEDEN z nich, druhý zůstává prázdný — tím se
+     * řádek přesune mezi sekcemi. Prázdná hodnota je v téhle aplikaci
+     * zavedený způsob, jak řádek zmizí: docxgen.js vyhodí z Wordu řádek,
+     * jehož všechny TS_* zástupce jsou prázdné, i s popiskem, a pak i sekční
+     * pruh, kterému nezbyl jediný datový řádek. Náhled se řídí týmž. */
+    TS_SOKL: soklJe ? P('je součástí dodávky') : '',
+    TS_NENI_SOKL: soklJe ? '' : P('není součástí nabídky'),
     TS_NENI_NAPAJENI: ts('neni9'), TS_NENI_PROHLUBEN: ts('neni10'),
     TS_NENI_PRISTUP: ts('neni11'),
 
@@ -268,7 +290,11 @@ function nabidkaNahledSekce(ph, lang) {
     { sekce: 'DOPLŇKOVÉ KONSTRUKCE', radky: [
       ['MONTÁŽNÍ NOSNÍK NEBO OKA', ph.TS_MONTAZNI_NOSNIK], ['PŘÍPRAVA PRO KOTVENÍ VÝTAHU', ph.TS_PRIPRAVA_KOTVENI],
       ['ODVĚTRÁNÍ ŠACHTY', ph.TS_ODVETRANI], ['PODCHOZÍ NOSNÁ OCK', ph.TS_PODCHOZI_OCK],
-      ['PŘECHODOVÉ PLECHY V NÁSTUPIŠTÍCH', ph.TS_PRECHODOVE_PLECHY]] },
+      ['PŘECHODOVÉ PLECHY V NÁSTUPIŠTÍCH', ph.TS_PRECHODOVE_PLECHY],
+      /* Sokl sem patří, jen když se dodává — jinak stojí níž mezi tím, co
+       * součástí dodávky není. Rozhoduje to, který ze zástupců je vyplněný;
+       * tahle funkce dostává jen `ph`, jinou cestou se sem odpověď nedostane. */
+      ...(ph.TS_SOKL ? [['OPLECHOVÁNÍ SOKLU PROHLUBNĚ', ph.TS_SOKL]] : [])] },
     { sekce: 'STAVEBNÍ A PŘÍPRAVNÉ PRÁCE', radky: [
       ['LEŠENÍ – UVNITŘ ŠACHTY', ph.TS_LESENI_UVNITR], ['LEŠENÍ – VNĚ ŠACHTY', ph.TS_LESENI_VNE],
       ['ZÁBRANY DO DVEŘNÍCH VSTUPŮ', ph.TS_ZABRANY_VSTUPY]] },
@@ -280,7 +306,8 @@ function nabidkaNahledSekce(ph, lang) {
       ['LEŠENÍ KOLEM OCK PRO PROVEDENÍ OPLÁŠTĚNÍ', ph.TS_NENI_LESENI],
       ['ODBĚRNÉ MÍSTO EL. ENERGIE PO DOBU REALIZACE', ph.TS_NENI_ODBERNE], ['ÚLOŽNÉ PROSTORY', ph.TS_NENI_ULOZNE],
       ['DOZDĚNÍ KOLEM ŠACHETNÍCH DVEŘÍ', ph.TS_NENI_DOZDENI], ['STAVEBNÍ PŘÍPRAVA', ph.TS_NENI_STAVEBNI],
-      ['OPLECHOVÁNÍ SOKLU PROHLUBNĚ', ph.TS_NENI_SOKL], ['NAPÁJENÍ VÝTAHU VČET. REVIZNÍ ZPRÁVY', ph.TS_NENI_NAPAJENI],
+      ...(ph.TS_NENI_SOKL ? [['OPLECHOVÁNÍ SOKLU PROHLUBNĚ', ph.TS_NENI_SOKL]] : []),
+      ['NAPÁJENÍ VÝTAHU VČET. REVIZNÍ ZPRÁVY', ph.TS_NENI_NAPAJENI],
       ['PROHLUBEŇ PRO ZALOŽENÍ OCK VE SPRÁVNÉ POZICI A ROZMĚRU', ph.TS_NENI_PROHLUBEN],
       ['DOSTATEČNÉ PŘÍSTUPOVÉ A MANIPULAČNÍ PROSTORY', ph.TS_NENI_PRISTUP]] },
     { sekce: 'B. OBCHODNÍ ČÁST – CENOVÁ NABÍDKA', radky: [
