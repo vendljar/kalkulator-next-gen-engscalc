@@ -282,8 +282,69 @@ function programSouhrn(db) {
     + ' · otisk ' + p.otisk + ' · ' + ((db.historie || []).length) + ' starších verzí';
 }
 
+/* ---------- most mezi ostrým a testovacím webem ----------
+ *
+ * Netlify Blobs jsou vázané na site, takže testovací web má vlastní databázi
+ * a vlastní ceník. Most je soubor: v ostrém webu se platný ceník stáhne,
+ * v testovacím se z něj zveřejní. Spojení mezi weby záměrně není.
+ *
+ * PRAVIDLO: soubor musí nést VŠECHNO, co umí přijmout zveřejnění
+ * (/api/program). Do 16. 9. 2026 to neplatilo — zahraniční řada (#181,
+ * 31. 8. 2026) přibyla do zveřejnění, ale do mostu se nikdy nedoplnila.
+ * Test proto počítal zahraniční nabídky z výchozích cen ze sestavení
+ * a nikdo nevěděl proč: soubor se tvářil kompletní a chyběl v něm jediný
+ * klíč. (J. V. 16. 9. 2026: „proč se nám do zálohy neukládá zahraniční
+ * ceník? z toho důvodu nám zřejmě chybí v testu.")
+ *
+ * Pravidlo bydlí tady, a ne v UI, schválně: soubory v src/ui/ se v Node
+ * testech nenačítají, takže by šlo ověřit jen znění zápisu. Že se obě
+ * strany nerozejdou znovu, hlídá test_cenik_prenos.js — porovnává tenhle
+ * tvar s poli, která server z požadavku OPRAVDU čte. */
+const PROG_PRENOS_TYP = 'kalkulator-cenik';
+/* 1 = původní (bez zahraniční řady), 2 = od 16. 9. 2026 i se zahraniční.
+ * Starší soubory se čtou dál — chybějící klíč není chyba, jen prázdno. */
+const PROG_PRENOS_SCHEMA = 2;
+
+function programPrenosData(platny) {
+  if (!platny) return null;
+  const p = platny;
+  return {
+    typ: PROG_PRENOS_TYP, schema: PROG_PRENOS_SCHEMA,
+    verze: p.verze || null, platnoOd: p.platnoOd || '',
+    poznamka: p.poznamka || '',
+    cenik: p.cenik || {}, cenikProj: p.cenikProj || {},
+    katalog: p.katalog || {}, slevy: p.slevy || {},
+    zahranicni: p.zahranicni || null,
+  };
+}
+
+/* Tělo pro /api/program ze souboru. Verze ceníku je celek — co je v souboru,
+ * to se zveřejní; nedoplňuje se nic ze serveru, aby nevznikl míchanec části
+ * ze souboru a části z databáze. Že starý soubor zahraniční řadu nepřinese,
+ * proto musí být VIDĚT dopředu (programPrenosZahrPocet). */
+function programPrenosZverejneni(d, poznamka, build) {
+  const x = d || {};
+  return {
+    cenik: x.cenik, cenikProj: x.cenikProj || {},
+    katalog: x.katalog || {}, slevy: x.slevy || {},
+    zahranicni: x.zahranicni || null,
+    poznamka: String(poznamka || ''), build: String(build || ''),
+  };
+}
+
+/* Kolik zahraničních odchylek soubor nese. Ukazuje se správci PŘED
+ * zveřejněním: nula u souboru staženého ze starší verze aplikace je tak
+ * vidět dřív, než přepíše zahraniční ceník na cílovém webu. */
+function programPrenosZahrPocet(d) {
+  const z = d && d.zahranicni;
+  if (!z || typeof z !== 'object') return 0;
+  return Object.keys(z.ceny || {}).length + Object.keys(z.jenZahr || {}).length;
+}
+
 if (typeof module !== 'undefined')
   module.exports = { PROG_SOUBOR, PROG_SCHEMA, PROG_APLIKACE, PROG_HISTORIE_MAX, PROG_ODDILY,
     progOtiskText, programData, programOtisk, programZaznam, programNovy, programNormalizuj,
     programRozdily, programBezeZmeny, programNovaVerze, programVerze, programProDatum,
-    programPocetKatalogu, programPopisVerze, programSouhrn };
+    programPocetKatalogu, programPopisVerze, programSouhrn,
+    PROG_PRENOS_TYP, PROG_PRENOS_SCHEMA, programPrenosData, programPrenosZverejneni,
+    programPrenosZahrPocet };

@@ -342,15 +342,7 @@ function progStahni() {
  * zakázky, účty ani zálohy v souboru nejsou. */
 function cenikPrenosData() {
   const akt = cenikAktivniDb();
-  const p = akt.db && akt.db.platny;
-  if (!p) return null;
-  return {
-    typ: 'kalkulator-cenik', schema: 1,
-    verze: p.verze || null, platnoOd: p.platnoOd || '',
-    poznamka: p.poznamka || '',
-    cenik: p.cenik || {}, cenikProj: p.cenikProj || {},
-    katalog: p.katalog || {}, slevy: p.slevy || {},
-  };
+  return programPrenosData(akt.db && akt.db.platny);
 }
 
 function cenikPrenosStahni() {
@@ -380,26 +372,35 @@ function cenikPrenosNahraj() {
       try { d = JSON.parse(String(fr.result)); } catch (e) { d = null; }
       /* Vadný nebo cizí soubor se NEZVEŘEJNÍ. Ceník je to jediné, z čeho
        * se počítají nabídky — radši nic než něco, co jsme nečetli. */
-      if (!d || d.typ !== 'kalkulator-cenik' || !d.cenik) {
+      if (!d || d.typ !== PROG_PRENOS_TYP || !d.cenik) {
         progZprava('Soubor ' + f.name + ' není stažený ceník z této aplikace — nic se nezveřejnilo.', 'chyba');
         render(); return;
       }
       const kam = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.prostredi === 'test')
         ? 'TESTOVACÍHO webu' : 'OSTRÉHO webu';
+      /* CO SOUBOR NESE, MUSÍ BÝT VIDĚT PŘEDEM (16. 9. 2026). Zahraniční řada
+       * se do mostu doplnila až teď, takže starší stažené soubory ji nemají —
+       * a zveřejnění je celek, takže by zahraniční ceník na cílovém webu
+       * vyprázdnily. Bez téhle věty se to pozná až na nabídce pro zákazníka,
+       * a to je přesně ten případ, který tuhle opravu vyvolal. */
+      const zahrPocet = programPrenosZahrPocet(d);
+      const zahrVeta = zahrPocet
+        ? '\n\nSoubor nese i zahraniční řadu (' + zahrPocet + ' odchylek).'
+        : '\n\nPOZOR: soubor NENESE zahraniční řadu, takže zahraniční ceník na cílovém webu '
+          + 'zůstane prázdný. Soubory stažené před 16. 9. 2026 ji neobsahují — stáhněte ceník znovu.';
       if (!await potvrd('Zveřejnit ceník ze souboru „' + f.name + '" (verze ' + (d.verze || '?') + ') '
         + 'jako platný ceník ' + kam + '?\n\n'
         + 'Od té chvíle z něj vycházejí všechny nové nabídky. Dosavadní verze se odloží '
-        + 'do historie a jde se k ní vrátit. Vytištěné (uzamčené) nabídky se nemění.')) return;
+        + 'do historie a jde se k ní vrátit. Vytištěné (uzamčené) nabídky se nemění.'
+        + zahrVeta)) return;
       if (typeof ONLINE_STAV === 'undefined' || !ONLINE_STAV.ja) {
         progZprava('Zveřejnění jde jen online — přihlaste se v Nastavení → Databáze.', 'varovani');
         render(); return;
       }
       PROG_STAV.pracuje = true; render();
-      onlineApi('/api/program', {
-        cenik: d.cenik, cenikProj: d.cenikProj || {}, katalog: d.katalog || {}, slevy: d.slevy || {},
-        poznamka: 'převzato ze souboru ' + f.name + (d.verze ? ' (ostrá verze ' + d.verze + ')' : ''),
-        build: (typeof buildVerze === 'function' ? buildVerze() : ''),
-      }).then(o => {
+      onlineApi('/api/program', programPrenosZverejneni(d,
+        'převzato ze souboru ' + f.name + (d.verze ? ' (ostrá verze ' + d.verze + ')' : ''),
+        (typeof buildVerze === 'function' ? buildVerze() : ''))).then(o => {
         progZprava('Ceník ze souboru ' + f.name + ' je zveřejněný jako verze ' + o.verze + '.');
         if (typeof onlineNactiProgram === 'function') return onlineNactiProgram();
         return true;
