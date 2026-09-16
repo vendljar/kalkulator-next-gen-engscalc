@@ -159,8 +159,12 @@ test('prázdný název akce vyplněný není', zk.hlavickaVyplneno(nova.nazevAkc
    * by to bylo stejně bezpečné, ale statický hlídač v test_escape.js vidí jen
    * vnější výraz a `join()` mu bezpečný nepřipadá. */
   test('a názvy jsou escapované', /const nazvy = esc\(skryte\.map/.test(ui));
+  /* Od 16. 9. 2026 rozhoduje příznak `prip` z jádra (klíč zastupujícího
+   * příplatku), ne název položky. Podle názvu se hledalo `/LEŠENÍ/i`, takže
+   * věta mlčela o přechodových plechách — a od téhož dne jsou dvojdomé
+   * i háky, zábradlí a sokl. Podrobně test_priplatky_volitelne.js. */
   test('bere je z katalogu volitelných, ne z vlastního seznamu',
-    /r\.volitelneKatalog/.test(ui) && /x\.zahrnuto && \/LEŠENÍ\/i/.test(ui));
+    /r\.volitelneKatalog/.test(ui) && ui.indexOf('x.zahrnuto && x.prip') >= 0);
   /* SPRÁVCE MUSÍ TY ŘÁDKY VIDĚT (J. V. 16. 9. 2026: „ty položky by měly být
    * každopádně viditelné minimálně pro administrátora a to nejsou").
    *
@@ -173,8 +177,11 @@ test('prázdný název akce vyplněný není', zk.hlavickaVyplneno(nova.nazevAkc
   test('a opravdu se to kreslí', /\$\{priplatkyZakladniCena\(r, col\)\}/.test(ui));
   test('jen pro správce — obchodníkovi by to v ceníku překáželo',
     /function priplatkyZakladniCena\(r, col\) \{\s*\n\s*if \(!col\.admin\) return '';/.test(ui));
+  /* Od 16. 9. 2026 navíc podle `prip`: smysl bloku je ukázat řádky, které
+   * z tabulky příplatků ZMIZELY. Vlastní volitelná položka zakázky tam nikdy
+   * nebyla, takže se nemá kde ztratit a jen by dělala šum. */
   test('bere je z katalogu volitelných podle zahrnuto',
-    /kat\.filter\(x => x\.zahrnuto\);/.test(ui));
+    ui.indexOf('kat.filter(x => x.zahrnuto && x.prip);') >= 0);
   /* `dostupne` se do katalogu nepřenáší — filtrovat na něj vrátí prázdno.
    * Stalo se mi to napoprvé a odhalil to až pohled do běžící aplikace. */
   test('a NEfiltruje na dostupne, které v katalogu není',

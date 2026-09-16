@@ -835,10 +835,21 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
 
   // ---------- VOLITELNÉ: katalog všech dostupných položek + příznak „zahrnuto“ (checkbox v tabulce) ----------
   const v = z.volitelne;
+  /* `prip` = klíč PŘÍPLATKU, který tuhle položku zastupuje, když není
+   * zaškrtnutá (16. 9. 2026). Položka totiž žije na dvou místech: ve
+   * VOLITELNÝCH je součástí základní ceny, v PŘÍPLATCÍCH si ji zákazník
+   * doobjedná. Zaškrtnutím se z příplatků vypustí, aby se nepočítala
+   * dvakrát — řádky `v.klic ? null : mkPrip(...)` níž.
+   *
+   * Do 16. 9. 2026 tenhle příznak neexistoval a tabulka příplatků si
+   * dvojdomé položky poznávala podle názvu (`/LEŠENÍ/i`). Fungovalo to jen
+   * u lešení; přechodové plechy jsou dvojdomé taky a věta pod tabulkou
+   * o nich mlčela. Klíč je jednoznačný a nezmění se přejmenováním položky.
+   * Že oba seznamy souhlasí, hlídá test_priplatky_volitelne.js. */
   const volKatalogDef = [
-    { key: 'prechodove', mk: () => mkItem('PŘECHODOVÉ PLECHY - NEREZ', prechKg, c.prechodoveKgKc, { cenaPath: 'C.prechodoveKgKc' }), zahrnuto: prechodoveAno, dostupne: true },
-    { key: 'leseniVnitrni', mk: () => mkItem('LEŠENÍ - vnitřní', leseniVez, c.leseniVnitrniKc, { cenaPath: 'C.leseniVnitrniKc', fix: c.leseniFix, pozn: `+ fix ${c.leseniFix} Kč` }), zahrnuto: v.leseniVnitrni, dostupne: true },
-    { key: 'leseniVnejsi', mk: () => mkItem('LEŠENÍ - vnější', leseniU, c.leseniVnejsiKc, { cenaPath: 'C.leseniVnejsiKc', fix: c.leseniFix, pozn: `+ fix ${c.leseniFix} Kč` }), zahrnuto: v.leseniVnejsi, dostupne: true },
+    { key: 'prechodove', mk: () => mkItem('PŘECHODOVÉ PLECHY - NEREZ', prechKg, c.prechodoveKgKc, { cenaPath: 'C.prechodoveKgKc' }), zahrnuto: prechodoveAno, dostupne: true, prip: 'prechMat' },
+    { key: 'leseniVnitrni', mk: () => mkItem('LEŠENÍ - vnitřní', leseniVez, c.leseniVnitrniKc, { cenaPath: 'C.leseniVnitrniKc', fix: c.leseniFix, pozn: `+ fix ${c.leseniFix} Kč` }), zahrnuto: v.leseniVnitrni, dostupne: true, prip: 'leseniVnitrni' },
+    { key: 'leseniVnejsi', mk: () => mkItem('LEŠENÍ - vnější', leseniU, c.leseniVnejsiKc, { cenaPath: 'C.leseniVnejsiKc', fix: c.leseniFix, pozn: `+ fix ${c.leseniFix} Kč` }), zahrnuto: v.leseniVnejsi, dostupne: true, prip: 'leseniVnejsi' },
     /* Montáž přechodových plechů (11. 8. 2026). Předloha ji má ve volitelných
      * hned pod materiálem — u nás byla jen jako příplatek, takže když se plechy
      * daly do základní ceny, jejich montáž se neúčtovala vůbec. Množství je
@@ -852,23 +863,23 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
      * potřebuje montáž bez materiálu (nebo naopak), má to konečně jak zadat. */
     { key: 'prechMont', mk: () => mkItem('PŘECHODOVÉ PLECHY - NEREZ (MONTÁŽ)', prechKs, pp.prechMontKc,
       { cenaPath: 'C.priplatky.prechMontKc' }),
-      zahrnuto: prechMontAno, dostupne: true },
+      zahrnuto: prechMontAno, dostupne: true, prip: 'prechMont' },
     /* Lešení pro dokončení hlavy šachty (11. 8. 2026). Fixní část NEMÁ, a to
      * ani ve volitelných, ani v příplatcích: je to nástavba už postaveného
      * lešení, ne samostatná stavba. Předloha tu měla dvě různá čísla (0 a
      * 5 000) — obojí padlo spolu se zavedením jediného klíče leseniFix. */
     { key: 'leseniHlava', mk: () => mkItem('LEŠENÍ - dokončení hlavy šachty', z.prejezd, pp.leseniHlavaKc,
-      { cenaPath: 'C.priplatky.leseniHlavaKc' }), zahrnuto: v.leseniHlava, dostupne: true },
-    { key: 'haky', mk: () => mkItem('HÁKY NA MYTÍ ŠACHTY (EXT)', 3, c.hakyKc, { cenaPath: 'C.hakyKc' }), zahrnuto: v.haky, dostupne: ext },
-    { key: 'zabradli', mk: () => mkItem('ÚPRAVY/NAPOJENÍ ZÁBRADLÍ (INT)', nastupist, c.zabradliKc, { cenaPath: 'C.zabradliKc' }), zahrnuto: v.zabradli, dostupne: !ext },
-    { key: 'sokl', mk: () => mkItem('OPLECHOVÁNÍ SOKLU PROHLUBNĚ (EXT)', z.sirka + 2 * z.hloubka, c.soklBmKc, { cenaPath: 'C.soklBmKc' }), zahrnuto: v.sokl, dostupne: ext },
+      { cenaPath: 'C.priplatky.leseniHlavaKc' }), zahrnuto: v.leseniHlava, dostupne: true, prip: 'leseniHlava' },
+    { key: 'haky', mk: () => mkItem('HÁKY NA MYTÍ ŠACHTY (EXT)', 3, c.hakyKc, { cenaPath: 'C.hakyKc' }), zahrnuto: v.haky, dostupne: ext, prip: 'haky' },
+    { key: 'zabradli', mk: () => mkItem('ÚPRAVY/NAPOJENÍ ZÁBRADLÍ (INT)', nastupist, c.zabradliKc, { cenaPath: 'C.zabradliKc' }), zahrnuto: v.zabradli, dostupne: !ext, prip: 'zabradli' },
+    { key: 'sokl', mk: () => mkItem('OPLECHOVÁNÍ SOKLU PROHLUBNĚ (EXT)', z.sirka + 2 * z.hloubka, c.soklBmKc, { cenaPath: 'C.soklBmKc' }), zahrnuto: v.sokl, dostupne: ext, prip: 'sokl' },
   ];
   // mk() voláme i u nedostupných variant (interiér vs. exteriér) – položka se do
   // výsledku nedostane, ale její název se zapíše do rejstříku. Jinak by ruční
   // přepis u exteriérové položky vypadal na interiérové šachtě jako sirotek (#4).
   const volitelneKatalog = volKatalogDef.map(d => ({ d, it: d.mk() }))
     .filter(x => x.d.dostupne)
-    .map(x => ({ ...x.it, key: x.d.key, zahrnuto: !!x.d.zahrnuto }))
+    .map(x => ({ ...x.it, key: x.d.key, zahrnuto: !!x.d.zahrnuto, prip: x.d.prip || null }))
     .concat(vlastniProSekci('volitelne').map(r => ({ ...r, key: 'vlastni:' + r.idx, zahrnuto: true })));
   const volitelne = volitelneKatalog.filter(r => r.zahrnuto);
 
@@ -1036,6 +1047,28 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
       { cenaPath: 'C.priplatky.leseniHlavaKc' }),
     v.leseniVnejsi ? null : mkPrip('leseniVnejsi', 'LEŠENÍ - vnější', leseniU, c.leseniVnejsiKc,
       { cenaPath: 'C.leseniVnejsiKc', naklad: leseniU * c.leseniVnejsiKc + c.leseniFix }),
+    /* HÁKY, ZÁBRADLÍ a SOKL i mezi příplatky (16. 9. 2026, zadání J. V.:
+     * „z volitelných položek do základní ceny přidej do příplatkových i ty
+     * zbývající a ať se chovají stejně jako lešení").
+     *
+     * Do teď byly tyhle tři jen ve volitelných. Odškrtnutím tedy zmizely
+     * úplně — zákazník si je nemohl doobjednat a obchodník neměl kam sáhnout,
+     * když je nechtěl mít v základní ceně. Lešení a přechodové plechy to
+     * uměly od začátku; tyhle tři na to jen nikdo nedošel.
+     *
+     * Množství i sazba jsou TYTÉŽ výrazy jako ve volitelných — jeden zdroj,
+     * ať přesun mezi základní cenou a příplatkem cenu nemění. Právě na tomhle
+     * pravidle stojí lešení (viz poznámka o c.leseniFix výš).
+     *
+     * Dostupnost se drží stejného dělení: háky a sokl jen na exteriérové
+     * šachtě, zábradlí jen na interiérové. Nabízet v příplatcích něco, co
+     * volitelné pro tuhle šachtu vůbec neukazují, by byl nový nesoulad. */
+    (ext && !v.haky) ? mkPrip('haky', 'HÁKY NA MYTÍ ŠACHTY (EXT)', 3, c.hakyKc,
+      { cenaPath: 'C.hakyKc' }) : null,
+    (!ext && !v.zabradli) ? mkPrip('zabradli', 'ÚPRAVY/NAPOJENÍ ZÁBRADLÍ (INT)', nastupist, c.zabradliKc,
+      { cenaPath: 'C.zabradliKc' }) : null,
+    (ext && !v.sokl) ? mkPrip('sokl', 'OPLECHOVÁNÍ SOKLU PROHLUBNĚ (EXT)', z.sirka + 2 * z.hloubka, c.soklBmKc,
+      { cenaPath: 'C.soklBmKc' }) : null,
     ...(Array.isArray(z.priplatkyVlastni) ? z.priplatkyVlastni : []).map((vl, i) =>
       ({ ...mkPrip('vlastni:' + i, vl.nazev, +vl.mnozstvi || 0, +vl.cena || 0,
         { vlastni: true, pozn: vl.kid ? 'trvalá položka z ceníku' : 'ruční položka' }), kid: vl.kid || null })),

@@ -704,8 +704,26 @@ function tblVolitelne(katalog, sum) {
              <td style="white-space:nowrap"><input type="number" step="any" style="width:86px" value="${+(+r.mnozstvi).toFixed(3)}" onchange="vlastniSet('volitelne', ${r.idx}, 'mnozstvi', this.value)"></td>`
           : `<td style="white-space:normal">${chkU}${esc(r.nazev) + poznHtml(r) + vypnutoHtml(r)}</td><td style="white-space:nowrap">${num(r.mnozstvi, 3)}</td>`;
       }
-      if (showCost) c += `<td>${fmt(r.naklad)}</td><td>${fmt(r.marze)}</td>`;
-      c += `<td>${fmt(r.sMarzi)}</td>`;
+      /* NEZAŠKRTNUTÝ ŘÁDEK NEUKAZUJE ČÁSTKU (16. 9. 2026, nález J. V.:
+       * „volitelné položky nám zřejmě také stále nefungují podle
+       * zaškrtávátek").
+       *
+       * Jádro spočítá každou položku katalogu bez ohledu na zaškrtnutí —
+       * do součtu pustí jen zaškrtnuté, ale samotný řádek si svou částku
+       * nese pořád. U většiny položek to nebylo vidět náhodou: mají
+       * množství 0, takže se stejně vypsala nula. Lešení má ale FIXNÍ
+       * část, a tak u odškrtnutého řádku svítilo 20 000 Kč, přestože se
+       * nikam nepočítalo. Vypadalo to, že zaškrtávátko nefunguje.
+       *
+       * Pomlčka místo nuly je záměr: nula by tvrdila „tahle položka nic
+       * nestojí", což není pravda — jen se nepočítá SEM. Kolik stojí, se
+       * dozvíte v Příplatcích, kam odškrtnutá položka spadne. Stejnou
+       * pomlčku ze stejného důvodu ukazuje i opačný případ v tabulce
+       * příplatků (priplatkyZakladniCena). Množství a jednotková cena
+       * v řádku zůstávají, takže je pořád z čeho odhadnout dopad. */
+      const castka = (x) => r.zahrnuto ? fmt(x) : '—';
+      if (showCost) c += `<td>${castka(r.naklad)}</td><td>${castka(r.marze)}</td>`;
+      c += `<td>${castka(r.sMarzi)}</td>`;
       if (admin) c += adminKoncBunky(r, 'volitelne');
       /* Ztlumení nezahrnuté položky řídí třída, ne inline opacity (20. 8.
        * 2026): opacity rodiče se násobila i na zaškrtávátka admin sloupců
@@ -758,8 +776,12 @@ function priplatkyZakladniCena(r, col) {
   /* Katalog je už profiltrovaný podle dostupnosti (jádro do něj nepustí
    * položku, která se u téhle šachty nenabízí), takže stačí `zahrnuto`.
    * Ověřeno v prohlížeči: `dostupne` se do katalogu vůbec nepřenáší —
-   * filtrovat na něj by vrátilo prázdno, což se mi napoprvé stalo. */
-  const v = kat.filter(x => x.zahrnuto);
+   * filtrovat na něj by vrátilo prázdno, což se mi napoprvé stalo.
+   *
+   * `prip` navíc (16. 9. 2026): smysl tohohle bloku je ukázat řádky, které
+   * z tabulky příplatků ZMIZELY. Vlastní volitelná položka zakázky tu nikdy
+   * nebyla, takže se nemá kde ztratit — vypisovat ji sem by byl jen šum. */
+  const v = kat.filter(x => x.zahrnuto && x.prip);
   if (!v.length) return '';
   const sirka = (col.admin ? 1 : 0) + 2 + (col.admin ? 1 : 0) + (col.showCost ? 1 : 0) + 1 + col.adminExtra;
   return `<tr class="subhead"><td colspan="${sirka}">V ZÁKLADNÍ CENĚ (sekce Volitelné) — nepočítá se sem</td></tr>`
@@ -779,7 +801,12 @@ function priplatkyZakladniCena(r, col) {
 
 function priplatkyVeVolitelnych(r) {
   const kat = (r && r.volitelneKatalog) || [];
-  const skryte = kat.filter(x => x.zahrnuto && /LEŠENÍ/i.test(x.nazev || ''));
+  /* Rozhoduje příznak `prip` z jádra (klíč zastupujícího příplatku), ne
+   * název. Do 16. 9. 2026 se tu hledalo `/LEŠENÍ/i`, takže věta mlčela
+   * o přechodových plechách — ty jsou dvojdomé úplně stejně. Od téhož dne
+   * jsou dvojdomé i háky, zábradlí a sokl; podle názvu by se to muselo
+   * dopisovat pokaždé znovu a na jedno by se zapomnělo. */
+  const skryte = kat.filter(x => x.zahrnuto && x.prip);
   if (!skryte.length) return '';
   /* Názvy se spojí NEJDŘÍV a escapují se jedním voláním. Escapovat po
    * položkách a slepit je `</b>, <b>` by bylo stejně bezpečné, ale statický
