@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Favicon TESTOVACÍHO webu (16. 9. 2026, zadání J. V.: „změň barvu
+       favicon testovacího rozhraní na červenou, ať je i v liště zřejmé, že
+       jde o test").
+
+       Týž znak i tvar jako ostrý favicon, jen ČERVENÝ. Shodný tvar je
+       záměr: v liště se hledá podle siluety, takže aplikaci poznáte na
+       první pohled a teprve barva řekne, KTERÁ to je. Kdyby se lišil
+       i znak, byly by to pro oko dvě různé aplikace.
+
+       Odstín #E11D2E je tmavší červená ze stejného důvodu, ze kterého je
+       favicon ostrého webu tmavší zelená než ikona v hlavičce: karta
+       prohlížeče bývá bílá a světlá červeň by se na ní ztrácela. Tmavý
+       obrys drží tvar čitelný i na tmavém podkladu.
+
+       Nepoužívá se při sestavení — do HTML se zapékají OBA favicony a ten
+       testovací se nasadí až za běhu podle PROSTREDI ze serveru
+       (renderProstrediLista v ui/common.js). Sestavení je totiž jedno pro
+       oba weby; kdyby se vybíralo při buildu, musely by vzniknout dvě
+       různá sestavení a testovalo by se něco jiného, než co pojede ostře. -->
+  <text x="32" y="34" text-anchor="middle" dominant-baseline="central"
+        font-family="Arial, Helvetica, sans-serif" font-size="56" font-weight="700"
+        stroke="#4A0A10" stroke-width="2.5" paint-order="stroke"
+        fill="#E11D2E">$</text>
+</svg>

@@ -11,8 +11,17 @@
      i 512 px na ploše telefonu.
      Motiv: vlevo ocelová konstrukce výtahové šachty s kabinou, vpravo tři
      klesající sloupce = spočítaná cena. Barvy jsou z firemního loga. -->
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,__FAVICON_B64__">
-<link rel="apple-touch-icon" href="data:image/svg+xml;base64,__FAVICON_B64__">
+<!-- Favicon TESTOVACÍHO webu (16. 9. 2026, zadání J. V.: „ať je i v liště
+     zřejmé, že jde o test"). Zapékají se OBA a přepíná se až za běhu podle
+     PROSTREDI ze serveru — sestavení je jedno pro oba weby. Testovací data
+     leží v `data-test`, protože prohlížeč použije `href`; kdyby tu byl druhý
+     `<link rel=icon>`, vybral by si sám a na ostrém webu by mohla svítit
+     červená. Přepnutí dělá renderProstrediLista() v ui/common.js. -->
+<link rel="icon" type="image/svg+xml" id="favikona"
+      data-ostra="data:image/svg+xml;base64,__FAVICON_B64__"
+      data-test="data:image/svg+xml;base64,__FAVICON_TEST_B64__"
+      href="data:image/svg+xml;base64,__FAVICON_B64__">
+<link rel="apple-touch-icon" id="favikonaApple" href="data:image/svg+xml;base64,__FAVICON_B64__">
 <meta name="theme-color" content="#3A3F45">
 <style>
   :root { --ink:#1a2332; --mut:#6b7686; --line:#dde3ea; --bg:#f4f6f9; --card:#fff;

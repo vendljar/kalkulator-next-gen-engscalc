@@ -129,5 +129,76 @@ test('důvod existence je v interní poznámce, ne v názvu akce',
   test('ostrý web ji nedostane', !/classList\.add\('prostredi-test'\)/.test(com));
 }
 
+/* ---------- 6) červený favicon testovacího webu (16. 9. 2026) ----------
+ *
+ * J. V.: „změň barvu favicon testovacího rozhraní na červenou, ať je i v liště
+ * zřejmé, že jde o test."
+ *
+ * Pruh nahoře i jantarové téma jsou vidět až po přepnutí do okna; v liště
+ * záložek a v přepínači oken rozhoduje IKONA. Oba obrázky se zapékají do
+ * HTML a přepíná se jen `href` — sestavení je jedno pro oba weby, takže
+ * vybírat při buildu by znamenalo dvě různá sestavení a testovalo by se něco
+ * jiného, než co pojede ostře.
+ */
+{
+  const fsx = require('fs');
+  const sab = fsx.readFileSync(__dirname + '/app_template.html', 'utf8');
+  const com = fsx.readFileSync(__dirname + '/ui/common.js', 'utf8');
+  const bld = fsx.readFileSync(__dirname + '/../build.py', 'utf8');
+
+  test('testovací favicon existuje jako vlastní soubor',
+    fsx.existsSync(__dirname + '/favicon_test.svg'));
+  const svg = fsx.readFileSync(__dirname + '/favicon_test.svg', 'utf8');
+  test('a je opravdu červený', /fill="#E11D2E"/.test(svg));
+  test('ostrý zůstal zelený',
+    /fill="#3FBF7F"/.test(fsx.readFileSync(__dirname + '/favicon.svg', 'utf8')));
+  /* Shodný tvar je záměr: v liště se hledá podle siluety, barva pak říká,
+   * KTERÁ aplikace to je. Jiný znak by z toho udělal dvě různé ikony. */
+  test('má týž znak jako ostrý — liší se jen barvou', />\$<\/text>/.test(svg));
+
+  test('sestavení zapéká oba favicony', /__FAVICON_TEST_B64__/.test(bld));
+  test('a testovací nahrazuje dřív než ostrý (bez kolize značek)',
+    bld.indexOf("'__FAVICON_TEST_B64__'") < bld.indexOf("'__FAVICON_B64__'"));
+  test('chybí-li soubor, spadne se na ostrý favicon',
+    /favicon_test\.exists\(\) else favicon_b64/.test(bld));
+
+  test('šablona nese obě varianty v data-atributech',
+    /data-ostra="data:image\/svg\+xml;base64,__FAVICON_B64__"/.test(sab)
+    && /data-test="data:image\/svg\+xml;base64,__FAVICON_TEST_B64__"/.test(sab));
+  /* Druhý `<link rel=icon>` by prohlížeč mohl vybrat sám — a na ostrém webu
+   * by pak svítila červená. Proto data-atribut, ne druhý odkaz. */
+  test('a NENÍ to druhý <link rel=icon>',
+    (sab.match(/<link rel="icon"/g) || []).length === 1);
+  test('výchozí href je ostrý favicon',
+    /id="favikona"[\s\S]{0,200}href="data:image\/svg\+xml;base64,__FAVICON_B64__"/.test(sab));
+
+  /* Odkazy na ikonu jsou v common.js DVA — `favikona` a `favikonaApple` —
+   * a oba se přepínají. Ptát se „je to někde v souboru?" by znamenalo, že
+   * se rozbije ten hlavní a test mlčí, protože ho zaštítí ten druhý; přesně
+   * to 16. 9. prošlo mutací. Každý blok se proto zkoumá zvlášť. Dělení podle
+   * `getElementById(` dá bloky, které samy končí tam, kde začíná další. */
+  const bloky = {};
+  com.split('document.getElementById(').forEach(c => {
+    const m = c.match(/^'(favikona|favikonaApple)'\)/);
+    if (m) bloky[m[1]] = c;
+  });
+  test('oba odkazy na ikonu se v common.js opravdu obsluhují',
+    !!bloky.favikona && !!bloky.favikonaApple);
+
+  [['favikona', 'fav'], ['favikonaApple', 'favA']].forEach(([id, p]) => {
+    const b = bloky[id] || '';
+    test(id + ': přepíná se podle PROSTREDI ze serveru, ne podle adresy',
+      /\(t\.prostredi === 'test'\) \? fav\.dataset\.test : fav\.dataset\.ostra/.test(b));
+    test(id + ': ostrý web dostane zelený zpátky — není to jednosměrka',
+      /: fav\.dataset\.ostra/.test(b));
+    test(id + ': mění se jen href, nic se nepřidává',
+      b.indexOf(p + ".setAttribute('href', kam)") >= 0);
+  });
+  /* Adresu si lze vymyslet, proměnnou prostředí ne — totéž pravidlo jako
+   * u ukázkových dat v oddíle 4. */
+  test('o barvě ikony nerozhoduje adresa v prohlížeči',
+    !/location\.(hostname|host|href)[\s\S]{0,120}dataset\.(test|ostra)/.test(com));
+}
+
 console.log('\n' + (fail ? 'SELHALO ' + fail + ' z ' + (ok + fail) : 'OK ' + ok));
 if (fail) process.exit(1);

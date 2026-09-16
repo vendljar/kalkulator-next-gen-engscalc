@@ -228,6 +228,21 @@ function renderProstrediLista() {
      * rozložení ani chování se nemění, aby se v testu zkoušelo totéž, co
      * pak pojede ostře. */
     if (document.body) document.body.classList.toggle('prostredi-test', t.prostredi === 'test');
+    /* ČERVENÝ FAVICON NA TESTU (16. 9. 2026, zadání J. V.: „ať je i v liště
+     * zřejmé, že jde o test"). Pruh i barvy jsou vidět až po přepnutí do
+     * okna; v liště záložek a v přepínači oken rozhoduje ikona. Oba obrázky
+     * jsou zapečené v `<link>`u, mění se jen `href` — sestavení je jedno pro
+     * oba weby, takže vybírat při buildu by znamenalo dvě různá sestavení. */
+    const fav = document.getElementById('favikona');
+    if (fav) {
+      const kam = (t.prostredi === 'test') ? fav.dataset.test : fav.dataset.ostra;
+      if (kam && fav.getAttribute('href') !== kam) fav.setAttribute('href', kam);
+    }
+    const favA = document.getElementById('favikonaApple');
+    if (favA && fav) {
+      const kam = (t.prostredi === 'test') ? fav.dataset.test : fav.dataset.ostra;
+      if (kam && favA.getAttribute('href') !== kam) favA.setAttribute('href', kam);
+    }
   }
   if (t.prostredi !== 'test') { el.innerHTML = ''; return; }
   el.innerHTML = `<div class="prostredi-pruh">🧪

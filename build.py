@@ -146,6 +146,13 @@ ikona_b64 = base64.b64encode(ikona_svg.read_bytes()).decode('ascii') if ikona_sv
 favicon_svg = (root / 'src' / 'favicon.svg')
 favicon_b64 = (base64.b64encode(favicon_svg.read_bytes()).decode('ascii')
                if favicon_svg.exists() else ikona_b64)
+# Favicon TESTOVACÍHO webu (16. 9. 2026): týž znak, jen červený. Zapéká se
+# spolu s ostrým a přepíná se až ZA BĚHU podle PROSTREDI ze serveru — build
+# je jeden pro oba weby, takže vybírat při sestavení by znamenalo dvě různá
+# sestavení a testovalo by se něco jiného, než co pojede ostře.
+favicon_test = (root / 'src' / 'favicon_test.svg')
+favicon_test_b64 = (base64.b64encode(favicon_test.read_bytes()).decode('ascii')
+                    if favicon_test.exists() else favicon_b64)
 
 # Ikona programu = znak dolaru jako favicon (17. 8. 2026), ale v hlavičce
 # SVĚTLE ZELENÝ (17. 8. večer): hlavička je tmavá a tmavě modrý znak na ní
@@ -157,6 +164,7 @@ html = (html.replace('/*__CORE__*/', core).replace('/*__JEKLY__*/', jekly)
             .replace('/*__UI__*/', ui).replace('__VERZE__', 'v' + ver)
             .replace('__SESTAVENO__', datetime.date.today().isoformat())
             .replace('__IKONA_B64__', ikona_hlavicka_b64)
+            .replace('__FAVICON_TEST_B64__', favicon_test_b64)
             .replace('__FAVICON_B64__', favicon_b64))
 
 (root / 'dist').mkdir(exist_ok=True)
