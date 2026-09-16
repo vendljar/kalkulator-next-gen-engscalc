@@ -2303,9 +2303,83 @@ function renderKlicPole(el) {
   return t + '\u0000' + typ + '\u0000' + obsluha;
 }
 
+/* TABULÁTOR PO ZADÁNÍ HODNOTY (nález J. V. 16. 9. 2026).
+ *
+ * „Tabulátor přeskakuje správně, pokud do datového okna nic nevpisuju. Ve
+ * chvíli, kdy tam cokoliv zadám, mě po stisku tabulátoru systém přenese do
+ * první buňky (typ šachty) a začínám znovu."
+ *
+ * Proč: Tab z vyplněného pole spustí `change` → `set()` → `render()`, a ten
+ * přepíše `#inputs` novým HTML. Původní políčko tím ZANIKNE. Prohlížeč má
+ * ale přesun fokusu už rozjetý a míří na prvek, který v dokumentu není —
+ * skončí tedy na `<body>` a další Tab začíná od začátku stránky. Ověřeno
+ * skutečnou klávesou: po zápisu hodnoty a Tabu je `document.activeElement`
+ * rovno `document.body`.
+ *
+ * `renderSFokusem` fokus obnovovalo odjakživa, jenže vracelo ho na TOTÉŽ
+ * pole — což je správně při překreslení z jiného důvodu (přepočet, kliknutí
+ * jinam), ale ne při Tabu: uživatel chtěl o pole dál.
+ *
+ * Řešení: zapamatovat si, že poslední klávesou byl Tab, a po překreslení
+ * poslat fokus na SOUSEDNÍ pole místo na totéž. Shift+Tab míří opačně.
+ * Značka platí jen okamžik — po pár stovkách milisekund se na ni zapomene,
+ * aby překreslení z úplně jiného podnětu fokus nikam neposouvalo. */
+ * POLE SI PAMATUJEME UŽ PŘI STISKU KLÁVESY, ne až při překreslení. Měřením
+ * na běžící aplikaci se ukázalo, že v okamžiku, kdy `render()` proběhne, je
+ * `document.activeElement` už `BODY`: prohlížeč pole opustí dřív, než se
+ * `change` vyřídí. Dosavadní obnova fokusu se proto u Tabu vůbec nespustila —
+ * hned na prvním řádku zjistila, že aktivní prvek není pole, a odešla.
+ * Při `keydown` ale fokus ještě v poli je, takže se dá zapamatovat. */
+let RENDER_TAB = null;
+if (typeof document !== 'undefined') {
+  document.addEventListener('keydown', (e) => {
+    RENDER_TAB = (e.key === 'Tab')
+      ? { zpet: !!e.shiftKey, kdy: Date.now(), klic: renderKlicPole(document.activeElement) }
+      : null;
+  }, true);
+}
+function renderTabCerstvy() {
+  return !!(RENDER_TAB && RENDER_TAB.klic && (Date.now() - RENDER_TAB.kdy) < 400);
+}
+
+/* Prvky, na které umí skočit tabulátor, v pořadí dokumentu. Záporný
+ * `tabindex` a skryté nebo zakázané prvky se přeskakují stejně jako
+ * v prohlížeči — jinak by fokus skončil na něčem, co uživatel nevidí. */
+function renderTabovatelne() {
+  const vyber = 'input, select, textarea, button, a[href], [tabindex]';
+  return [...document.querySelectorAll(vyber)].filter(el => {
+    if (el.disabled || el.getAttribute('aria-hidden') === 'true') return false;
+    if ((el.getAttribute('tabindex') || '0').trim().charAt(0) === '-') return false;
+    if (el.type === 'hidden') return false;
+    return el.offsetParent !== null || el.tagName === 'BODY';
+  });
+}
+
 function renderSFokusem(kresli) {
   const a = document.activeElement;
   const klic = renderKlicPole(a);
+  const tab = renderTabCerstvy() ? RENDER_TAB : null;
+
+  /* Odchod tabulátorem: pole už fokus nemá (je na `BODY`), ale víme, ze
+   * kterého se odcházelo. Po překreslení ho najdeme podle téhož klíče
+   * a pošleme fokus na SOUSEDA — tam, kam uživatel mířil. */
+  if (!klic && tab) {
+    RENDER_TAB = null;
+    kresli();
+    const odkud = [...document.querySelectorAll('input, textarea, select')]
+      .find(x => renderKlicPole(x) === tab.klic);
+    if (!odkud) return;
+    const seznam = renderTabovatelne();
+    const i = seznam.indexOf(odkud);
+    const soused = (i >= 0) ? seznam[i + (tab.zpet ? -1 : 1)] : null;
+    /* Není-li soused (poslední pole), zůstane se v poli, ze kterého se
+     * odcházelo. Pořád je to lepší než spadnout na `<body>` a začínat
+     * příštím Tabem od začátku stránky. */
+    const kam = soused || odkud;
+    try { kam.focus({ preventScroll: true }); if (kam.select) kam.select(); } catch (e) {}
+    return;
+  }
+
   if (!klic) { kresli(); return; }
   const rozepsano = a.value !== a.defaultValue;
   const hodnota = a.value;
