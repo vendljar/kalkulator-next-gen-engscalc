@@ -4302,13 +4302,13 @@
    "stav" : "hotovo",
    "dulezitost" : "vysoka",
    "slozitost" : "S",
-   "hotovoV" : "v16.9.21",
+   "hotovoV" : "v16.9.22",
    "nazev" : "Plechy vždy jako dvojice, ruční hodnota přežije vypnutí ATYP",
    "proc" : "Dvě vyjádření J. V. z 5. kola testů. Přechodové plechy šlo rozpojit — materiál vypnutý, montáž dál účtovaná za nástupiště, tedy práce na dodávce, která neexistuje. A ručně přepsaná atypová hodnota při vypnutí ATYP z obrazovky zmizela, takže obchodník musel své číslo psát znovu.",
    "detail" : "PLECHY: montáž se řídí výhradně materiálem, vlastní přepínač z 11. 8. 2026 padl. Pole `volitelne.prechMont` v uložených zakázkách zůstává, ale nečte se. Ve sloupci Výchozí nemá montáž vlastní klíč — psala by do mrtvého zaškrtávátka, takže obě řádky míří na `ock.prechodove`. ATYP (sled upřesněný J. V. tentýž den): zapnuto dosadí předlohu do VŠECH atypových polí, i do ručně přepsaných; vypnuto vrátí jen pole BEZ ruční značky, ručně přepsaná nechá být. Přepínač tak vždycky něco udělá — kdyby ruční číslo přebíjelo předlohu, byl by pro takové pole od první ruční úpravy mrtvý. Zmizel tím mezistav `atypUlozene`.",
    "hotovoKdyz" : "Splněno: zaškrtnuté plechy dají vždy dvě položky s nenulovým množstvím, odškrtnuté spadnou obě do příplatků, a sled ATYP zapnuto → ruční číslo → vypnuto → zapnuto → vypnuto dá předloha / drží / drží / předloha / drží.",
    "kde" : "`src/engine.js`, `src/zakazka.js`, `src/ui/kalk_ock.js`, `src/test_leseni.js`, `src/test_priplatky_volitelne.js`, `src/test_vychozi_zaklad.js`, `src/test_atyp_idempotence.js`",
-   "pozn" : "**ZÁMĚRNÝ DŮSLEDEK u plechů:** zakázka, ve které někdo montáž ručně vypnul, ji po otevření má zpátky — a je o ni dražší. Vyplývá to přímo ze zadání „Plechy mají vždy 2 položky\"; kdyby to mělo platit jen pro nové zakázky, je to jiná úloha. **ROZPOR U ATYP:** nové pravidlo přebíjí připomínku D. Sikory z 10. 9. 2026 („pokud se ta částka změní, tak by ji to tlačítko ATYP měnit zpět na 25 000 nemělo\"). Rozpor je vědomý, rozhodl ho J. V. jako pozdější zadání a je zapsaný v komentáři pravidla i v sadě. Hlavní důvod té stížnosti zůstává splněný: opakované klikání cenou NEPOHNE, protože předloha je pokaždé stejná. Ověřeno 97 sadami a 4082 kontrolami; osm mutací chyceno. Jedna mutace prošla naprázdno a byla zahozena — vracela jen půlku starého pravidla, tedy čtení stavu, který už nikdo nezapisuje."
+   "pozn" : "**ZPĚTNĚ SE PLECHY NEŘEŠÍ** (rozhodnutí J. V. 16. 9. 2026: „nové pravidlo bude platit jen pro nové zakázky. zpětně neřeš.\"). Zakázka, která má `volitelne.prechMont` vyplněné, je z dob vlastního přepínače a cena se jí nemění; rozhoduje PŘÍTOMNOST hodnoty, ne její obsah. Dvě pojistky, bez kterých by to byla past: kliknutí na plechy to pole zahodí (jinak by v zakázce zůstal duch — montáž natrvalo vypnutá a žádný přepínač, kterým ji vrátit) a matice Výchozí na `prechMont` nesahá (klíč `ock.prechMont` v ní může zbýt a nová zakázka by kvůli němu z pravidla vypadla hned při založení). **ROZPOR U ATYP:** nové pravidlo přebíjí připomínku D. Sikory z 10. 9. 2026 („pokud se ta částka změní, tak by ji to tlačítko ATYP měnit zpět na 25 000 nemělo\"). Rozpor je vědomý, rozhodl ho J. V. jako pozdější zadání a je zapsaný v komentáři pravidla i v sadě. Hlavní důvod té stížnosti zůstává splněný: opakované klikání cenou NEPOHNE, protože předloha je pokaždé stejná. Ověřeno 97 sadami a 4082 kontrolami; osm mutací chyceno. Jedna mutace prošla naprázdno a byla zahozena — vracela jen půlku starého pravidla, tedy čtení stavu, který už nikdo nezapisuje."
   }
   ,
   {
@@ -4324,6 +4324,20 @@
    "kde" : "`src/ui/kalk_ock.js` (funkce `atypPrepni`, pomocník `vych`), `src/cenik.js` (`cenikVychozi`)",
    "otazka" : "Má se u chybějící sazby ukázat NULA (jako u skla po V38), nebo se má dosadit a jen viditelně označit, že hodnota není z ceníku? Nula je poctivější, ale u rezerv v procentech může vypadat jako záměr.",
    "pozn" : "Nález vznikl mimo zadaný rozsah 5. kola, při ověřování jiné opravy. Číslo je přiděleno, aby se neztratil v chatu; rozsah opravy zatím neodsouhlasen."
+  }
+  ,
+  {
+   "id" : "264",
+   "vlna" : "A",
+   "stav" : "ceka",
+   "dulezitost" : "stredni",
+   "slozitost" : "S",
+   "nazev" : "Výpis rozdílů mezi verzemi ceníku nevidí zahraniční řadu",
+   "proc" : "Zveřejnění verze, která mění JEN zahraniční sazby, se v historii ceníku tváří jako „nezměnila se žádná sledovaná cena\". Správce tedy nemá jak zkontrolovat, co vlastně zveřejnil — a u zahraniční řady je to jediné místo, kde by to viděl. Nález V45 z 5. kola testů (16. 9. 2026): po doplnění 24 zahraničních sazeb hlásilo tlačítko Rozdíly, že se nic nezměnilo.",
+   "detail" : "Příčina: `progRozdilyVerze()` posílá do `cenikRozdily()` výstup `programData()`, a ten vrací jen `{ cenik, proj.cenik }` — klíč `zaznam.zahranicni` zahodí. Diff tedy zahraniční odchylky nikdy nevidí. TOTÉŽ SE UŽ JEDNOU OPRAVOVALO U OTISKU (#181): `programOtisk()` si zahraniční data přidává výslovně, s komentářem, že bez nich by změna jen v zahraniční řadě vypadala jako „beze změny\" a databáze by ji odmítla zapsat. Otisk se opravil, výpis rozdílů zůstal slepý.",
+   "hotovoKdyz" : "Hotovo, až zveřejnění verze měnící jen zahraniční sazby vypíše tyto změny v historii ceníku, a drží to sada.",
+   "kde" : "`src/ui/program_ui.js` (`progRozdilyVerze`), `src/program.js` (`programData`, srov. `programOtisk`), `src/cenik.js` (`cenikRozdily`)",
+   "pozn" : "Nález V45 byl v závěru 5. kola v sešitu, ale v roadmapě chyběl — doplněn 16. 9. 2026 večer při kontrole listů Nálezy a Prompty oprav. Rozsah opravy zatím neodsouhlasen."
   }
  ],
  "meta" : {
@@ -4736,9 +4750,9 @@
     "pozn" : "build v16.9.18. **Hlavní zjištění dne:** Model 1 předražuje ATYP zakázky o jednotky procent (při marži 30 % a rezervě 30 % o 6,55 %) a celý rozdíl dělá dvojitá marže v rezervě. Čeká rozhodnutí, který model má být výchozí. **Nutný krok u J. V.:** nastavit ADMIN_EMAIL v Netlify na obou webech, jinak neplatí ochrany hlavního účtu."
    },
    {
-    "text" : "Dávka 16. 9. 2026 (3, engscalc): 5. kolo připomínek J. V. — přechodové plechy jsou vždy dvojice materiál + montáž a ručně přepsaná atypová hodnota přežije vypnutí ATYP (#262).",
+    "text" : "Dávka 16. 9. 2026 (3, engscalc): 5. kolo připomínek J. V. — přechodové plechy jsou vždy dvojice materiál + montáž (jen u NOVÝCH zakázek, zpětně se neřeší) a ručně přepsaná atypová hodnota přežije vypnutí ATYP (#262). Při ověřování přibyly dva zapsané nálezy: tichá náhrada chybějící sazby ATYP (#263) a slepý výpis rozdílů u zahraniční řady ceníku (#264, = V45 ze závěru 5. kola, v roadmapě do té doby chyběl).",
     "hotovo" : true,
-    "pozn" : "build v16.9.21. Připomínky se získaly porovnáním dvou verzí hodnoticího sešitu; ze dvaceti řetězců navíc byly čtyři opravdu nové a dva z nich znamenaly změnu chování. Pravidlo ATYP se téhož dne ještě upřesnilo: zapnutí dosazuje předlohu VŽDY, i přes ruční hodnotu. Ověřeno: 97 sad, 4082 kontrol, osm cílených mutací. **Otázka r36 (sazba skla interiéru podle zasklení) je potvrzená a v kódu byla už od 9. 9.** — na terče VSG 4.4.2, mezi příčníky VSG 4.4.1, obě plochy týmž sklem; 14. 9. k tomu padla tichá záloha, která uměla počítat jiným sklem, než měl řádek v názvu. Hlídá `src/test_sklo_vazba.js`. Výsledky kola zapsány do `VYHODNOCENI_TESTU_KALKULACE_18.xlsx` (nový sloupec J na listu 5. kola)."
+    "pozn" : "build v16.9.22. Připomínky se získaly porovnáním dvou verzí hodnoticího sešitu; ze dvaceti řetězců navíc byly čtyři opravdu nové a dva z nich znamenaly změnu chování. Pravidlo ATYP se téhož dne ještě upřesnilo: zapnutí dosazuje předlohu VŽDY, i přes ruční hodnotu. Ověřeno: 97 sad, 4082 kontrol, osm cílených mutací. **Otázka r36 (sazba skla interiéru podle zasklení) je potvrzená a v kódu byla už od 9. 9.** — na terče VSG 4.4.2, mezi příčníky VSG 4.4.1, obě plochy týmž sklem; 14. 9. k tomu padla tichá záloha, která uměla počítat jiným sklem, než měl řádek v názvu. Hlídá `src/test_sklo_vazba.js`. Výsledky kola zapsány do `VYHODNOCENI_TESTU_KALKULACE_18.xlsx` (nový sloupec J na listu 5. kola)."
    }
   ],
   "pravidla" : [
@@ -4825,7 +4839,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v16.9.21 (engscalc)",
+  "build" : "v16.9.22 (engscalc)",
   "stavKDatu" : "16. 9. 2026"
  },
  "_comment" : [
