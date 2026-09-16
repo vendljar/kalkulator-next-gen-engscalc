@@ -4310,6 +4310,21 @@
    "kde" : "`src/engine.js`, `src/zakazka.js`, `src/ui/kalk_ock.js`, `src/test_leseni.js`, `src/test_priplatky_volitelne.js`, `src/test_vychozi_zaklad.js`, `src/test_atyp_idempotence.js`",
    "pozn" : "**ZÁMĚRNÝ DŮSLEDEK u plechů:** zakázka, ve které někdo montáž ručně vypnul, ji po otevření má zpátky — a je o ni dražší. Vyplývá to přímo ze zadání „Plechy mají vždy 2 položky\"; kdyby to mělo platit jen pro nové zakázky, je to jiná úloha. **ROZPOR U ATYP:** nové pravidlo přebíjí připomínku D. Sikory z 10. 9. 2026 („pokud se ta částka změní, tak by ji to tlačítko ATYP měnit zpět na 25 000 nemělo\"). Rozpor je vědomý, rozhodl ho J. V. jako pozdější zadání a je zapsaný v komentáři pravidla i v sadě. Hlavní důvod té stížnosti zůstává splněný: opakované klikání cenou NEPOHNE, protože předloha je pokaždé stejná. Ověřeno 97 sadami a 4082 kontrolami; osm mutací chyceno. Jedna mutace prošla naprázdno a byla zahozena — vracela jen půlku starého pravidla, tedy čtení stavu, který už nikdo nezapisuje."
   }
+  ,
+  {
+   "id" : "263",
+   "vlna" : "A",
+   "stav" : "ceka",
+   "dulezitost" : "vysoka",
+   "slozitost" : "S",
+   "nazev" : "Předloha ATYP tiše nahrazuje chybějící ceníkovou sazbu",
+   "proc" : "Když ceník některou sazbu ATYP nemá vyplněnou, dosadí přepínač ATYP číslo natvrdo z kódu a nikde to neřekne. U ceny zámečníka je to dvojnásobek toho, co má testovací ceník — obchodník tedy dostane cenu, kterou v ceníku nikdo nezadal, a nemá jak poznat, že se to stalo. Je to přesně ten druh tiché náhrady, kterou J. V. 14. 9. 2026 zakázal u skla (nález V38): „nulu nejde přehlédnout, tiše zaměněné sklo ano.\"",
+   "detail" : "Týká se pěti hodnot v `atypPrepni()`: `atypZamecnikKc` (náhrada natvrdo), `atypRezervaZakladPct`, `atypRezervaPriplatkyPct`, `atypMontazPct` a `atypProjekcePct` (u všech čtyř 30 %). Pomocník `cenikVychozi()` vrací náhradu nejen když klíč chybí, ale i když je nula nebo prázdno — takže úmyslně vynulovaná sazba se chová stejně jako zapomenutá. Objeveno 16. 9. 2026 při živém ověřování opravy ATYP: první zapnutí po načtení stránky dosadilo jinou částku než další, protože ceník se ještě nestihl načíst.",
+   "hotovoKdyz" : "Hotovo, až chybějící ceníková sazba ATYP nebude nahrazena potichu — buď se ukáže nula jako u skla, nebo se u pole objeví viditelné upozornění, co v ceníku chybí. A drží to sada.",
+   "kde" : "`src/ui/kalk_ock.js` (funkce `atypPrepni`, pomocník `vych`), `src/cenik.js` (`cenikVychozi`)",
+   "otazka" : "Má se u chybějící sazby ukázat NULA (jako u skla po V38), nebo se má dosadit a jen viditelně označit, že hodnota není z ceníku? Nula je poctivější, ale u rezerv v procentech může vypadat jako záměr.",
+   "pozn" : "Nález vznikl mimo zadaný rozsah 5. kola, při ověřování jiné opravy. Číslo je přiděleno, aby se neztratil v chatu; rozsah opravy zatím neodsouhlasen."
+  }
  ],
  "meta" : {
   "projekt" : "Kalkulator Next Gen",
