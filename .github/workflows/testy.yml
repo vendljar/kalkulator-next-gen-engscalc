@@ -149,3 +149,9 @@ jobs:
         run: node overit_proj17.mjs
       - name: Matice zobrazení (overit_zobrazeni.mjs)
         run: node overit_zobrazeni.mjs
+      # Průchod celou cestou OCK zakázky: založení → zadání → volitelné →
+      # příplatky → nabídka → PDF (16. 9. 2026). Jednotkové sady ověřují
+      # jednotlivé kroky; tenhle harness ověřuje MEZERY mezi nimi — tam byly
+      # všechny tři závady, které J. V. ten den hlásil po sobě.
+      - name: Celá cesta OCK zakázky (overit_ock_cela_cesta.mjs)
+        run: node overit_ock_cela_cesta.mjs
