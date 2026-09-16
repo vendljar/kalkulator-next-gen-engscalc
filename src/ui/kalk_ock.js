@@ -736,6 +736,47 @@ function tblVolitelne(katalog, sum) {
  * Tenhle řádek proto vyjmenuje, CO PRÁVĚ TEĎ vypadlo a kam se pro to jít
  * podívat. Nic nepočítá a do žádného dokumentu nejde — je to jen odpověď na
  * otázku „kde je lešení". */
+/* ŘÁDKY, KTERÉ VYPADLY DO VOLITELNÝCH, VIDÍ SPRÁVCE V TABULCE (J. V.
+ * 16. 9. 2026: „ty položky by měly být každopádně viditelné minimálně pro
+ * administrátora a to nejsou").
+ *
+ * Ověřeno v prohlížeči na testovacím webu: v matici Výchozí je zveřejněno
+ * `ock.leseniHlava=true`, `ock.leseniVnejsi=true`, `ock.sokl=true`
+ * a `ock.prechMont=true`, takže tyhle položky patří do základní ceny a jádro
+ * je z příplatků správně vynechá. Správce ale kouká do ceníku variant a tři
+ * řádky z něj beze stopy zmizí — a nemá kde ověřit, že se to nepočítá
+ * dvakrát, ani z čeho se ta částka skládá.
+ *
+ * Řádky se proto vypisují znovu, ale ZTLUMENÉ a bez zaškrtávátka Nabídka:
+ * jsou to údaje, ne položky. Do `r.priplatky` nepatří, takže se do žádného
+ * součtu ani dokumentu nepromítnou — dvojí započtení tudy nehrozí. Vidí je
+ * jen správce; obchodníkovi by v ceníku pro zákazníka jen překážely, tomu
+ * stačí věta pod tabulkou. */
+function priplatkyZakladniCena(r, col) {
+  if (!col.admin) return '';
+  const kat = (r && r.volitelneKatalog) || [];
+  /* Katalog je už profiltrovaný podle dostupnosti (jádro do něj nepustí
+   * položku, která se u téhle šachty nenabízí), takže stačí `zahrnuto`.
+   * Ověřeno v prohlížeči: `dostupne` se do katalogu vůbec nepřenáší —
+   * filtrovat na něj by vrátilo prázdno, což se mi napoprvé stalo. */
+  const v = kat.filter(x => x.zahrnuto);
+  if (!v.length) return '';
+  const sirka = (col.admin ? 1 : 0) + 2 + (col.admin ? 1 : 0) + (col.showCost ? 1 : 0) + 1 + col.adminExtra;
+  return `<tr class="subhead"><td colspan="${sirka}">V ZÁKLADNÍ CENĚ (sekce Volitelné) — nepočítá se sem</td></tr>`
+    + v.map(x => {
+      const m = (+x.mnozstvi || 0), c = (+x.cena || 0);
+      return `<tr class="nezahrnuto">
+        <td></td>
+        <td>${esc(x.nazev)} <span class="pill mut" title="položka je zaškrtnutá v sekci Volitelné, tedy už v základní ceně">v základní ceně</span></td>
+        <td>${num(m, 3)}</td>
+        <td>${num(c, 0)}</td>
+        ${col.showCost ? `<td>${fmt0(x.naklad)}</td>` : ''}
+        <td>—</td>
+        ${'<td class="admincol"></td>'.repeat(col.adminExtra)}
+      </tr>`;
+    }).join('');
+}
+
 function priplatkyVeVolitelnych(r) {
   const kat = (r && r.volitelneKatalog) || [];
   const skryte = kat.filter(x => x.zahrnuto && /LEŠENÍ/i.test(x.nazev || ''));
@@ -981,6 +1022,7 @@ function renderOutputs() {
   const prip = `<table>
     <tr>${pripHlava}</tr>
     ${pripRows.map(pripRadek).join('')}
+    ${priplatkyZakladniCena(r, col)}
     ${col.admin ? `<tr class="pridat noprint"><td colspan="${pripCols}">
       <button class="mini" title="vlastní příplatek jen této zakázky" onclick="priplatekVlastniAdd()">+ přidat položku</button></td></tr>` : ''}
     <tr class="tot"><td colspan="${pripCols - 1 - col.adminExtra}">PŘÍPLATKY CELKEM (pokud vše)</td><td>${fmt0(r.souhrn.priplatkyCena)}</td>${'<td class="admincol"></td>'.repeat(col.adminExtra)}</tr>

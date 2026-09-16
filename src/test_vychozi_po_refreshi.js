@@ -161,6 +161,28 @@ test('prázdný název akce vyplněný není', zk.hlavickaVyplneno(nova.nazevAkc
   test('a názvy jsou escapované', /const nazvy = esc\(skryte\.map/.test(ui));
   test('bere je z katalogu volitelných, ne z vlastního seznamu',
     /r\.volitelneKatalog/.test(ui) && /x\.zahrnuto && \/LEŠENÍ\/i/.test(ui));
+  /* SPRÁVCE MUSÍ TY ŘÁDKY VIDĚT (J. V. 16. 9. 2026: „ty položky by měly být
+   * každopádně viditelné minimálně pro administrátora a to nejsou").
+   *
+   * Ověřeno v prohlížeči na testovacím webu: v matici Výchozí je zveřejněno
+   * `ock.leseniHlava=true`, `ock.leseniVnejsi=true`, `ock.sokl=true`
+   * a `ock.prechMont=true`, takže jádro je z příplatků správně vynechá.
+   * Správce ale kouká do ceníku variant a řádky z něj beze stopy zmizí. */
+  test('tabulka příplatků vypisuje i to, co je v základní ceně',
+    /function priplatkyZakladniCena\(r, col\)/.test(ui));
+  test('a opravdu se to kreslí', /\$\{priplatkyZakladniCena\(r, col\)\}/.test(ui));
+  test('jen pro správce — obchodníkovi by to v ceníku překáželo',
+    /function priplatkyZakladniCena\(r, col\) \{\s*\n\s*if \(!col\.admin\) return '';/.test(ui));
+  test('bere je z katalogu volitelných podle zahrnuto',
+    /kat\.filter\(x => x\.zahrnuto\);/.test(ui));
+  /* `dostupne` se do katalogu nepřenáší — filtrovat na něj vrátí prázdno.
+   * Stalo se mi to napoprvé a odhalil to až pohled do běžící aplikace. */
+  test('a NEfiltruje na dostupne, které v katalogu není',
+    !/x\.zahrnuto && x\.dostupne/.test(ui));
+  test('řádky jsou ztlumené a bez zaškrtávátka Nabídka',
+    /<tr class="nezahrnuto"><td><\/td>/.test(ui.replace(/\s+/g, ' ')) || /class="nezahrnuto"/.test(ui));
+  test('cena se u nich neuvádí — nepočítají se sem', /<td>—<\/td>/.test(ui));
+
   test('a nic nepočítá — je to jen vysvětlení',
     !/priplatkyVeVolitelnych[\s\S]{0,400}naklad|priplatkyVeVolitelnych[\s\S]{0,400}sMarzi/.test(ui));
 }
