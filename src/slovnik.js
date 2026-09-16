@@ -151,6 +151,72 @@ function slovnikCsvJenVApp(jenVApp) {
   return '﻿' + [hlav].concat(radky).join('\r\n');
 }
 
+/* ---------- export slovníku do XLSX (16. 9. 2026) ----------
+ *
+ * Zadání J. V.: „vygeneruj mi všechny verze slovníků, které aktuálně
+ * používáme v databázi, v XLS a do aplikace přidej možnost jejich snadného
+ * stažení."
+ *
+ * CO JE „VERZE SLOVNÍKU". Na rozdíl od ceníku slovník verzovaný NENÍ —
+ * v databázi neleží historie jako `program.db`. Je jeden a putuje uvnitř
+ * konfigurace (konfigurace.js, oddíl `slovnik`); tím se taky přenáší mezi
+ * ostrým a testovacím webem. „Verzemi" jsou tedy JAZYKOVÉ MUTACE: EN, DE
+ * a FR. Export proto dělá jeden sešit se čtyřmi listy — přehled všech
+ * jazyků vedle sebe a pak list na každý jazyk zvlášť, protože překladateli
+ * se posílá jeho jazyk, ne tabulka se třemi cizími sloupci.
+ *
+ * Bere se ŽIVÝ stav `PREKLAD`, ne to, co je zapsané ve zdrojáku: pokud si
+ * administrátor načetl konfiguraci s upraveným slovníkem, exportuje se ta.
+ * Jinak by soubor tvrdil něco jiného, než čím se právě překládá.
+ *
+ * Sloupec `stav` je tu kvůli reviznímu kolu (nález E, D. Sikora): rozlišuje
+ * „přeloženo" od „chybí", aby šlo v Excelu filtrovat, co ještě není hotové,
+ * bez porovnávání prázdných buněk. */
+function slovnikToSheets(preklad, jazyky) {
+  const P = preklad || {};
+  const J = jazyky || [{ kod: 'en', nazev: 'English' }, { kod: 'de', nazev: 'Deutsch' },
+                       { kod: 'fr', nazev: 'Français' }];
+  const idx = { en: 0, de: 1, fr: 2 };
+  /* Řazení podle českého hesla, ne podle pořadí v souboru: sešit jde do ruky
+   * člověku, který v něm hledá slovo, ne pořadí zápisu. Porovnává se česky
+   * (localeCompare), aby diakritika nespadla na konec. */
+  const hesla = Object.keys(P).sort((a, b) => String(a).localeCompare(String(b), 'cs'));
+
+  const prehled = [['CZ'].concat(J.map(j => j.kod.toUpperCase()))];
+  hesla.forEach(cz => {
+    const v = P[cz] || [];
+    prehled.push([cz].concat(J.map(j => v[idx[j.kod]] || '')));
+  });
+
+  const sheets = [{ nazev: 'PŘEHLED', rows: prehled }];
+  J.forEach(j => {
+    const rows = [['CZ', j.kod.toUpperCase(), 'stav']];
+    hesla.forEach(cz => {
+      const t = (P[cz] || [])[idx[j.kod]] || '';
+      rows.push([cz, t, t ? 'přeloženo' : 'CHYBÍ']);
+    });
+    sheets.push({ nazev: j.kod.toUpperCase(), rows });
+  });
+  return sheets;
+}
+
+/* Kolik hesel a kolik z nich přeložených — do popisku tlačítka i do hlášky
+ * po stažení, ať je hned vidět, co v souboru je. */
+function slovnikPrehled(preklad, jazyky) {
+  const P = preklad || {};
+  const J = jazyky || [{ kod: 'en' }, { kod: 'de' }, { kod: 'fr' }];
+  const idx = { en: 0, de: 1, fr: 2 };
+  const hesla = Object.keys(P);
+  return {
+    hesel: hesla.length,
+    jazyky: J.map(j => ({
+      kod: j.kod,
+      prelozeno: hesla.filter(cz => (P[cz] || [])[idx[j.kod]]).length,
+    })),
+  };
+}
+
 if (typeof module !== 'undefined' && module.exports)
   module.exports = { SLOVNIK_JAZYKY, slovnikNajdiHlavicku, slovnikZListu, slovnikVyberList,
-    slovnikPorovnej, slovnikAplikuj, slovnikNoveJakoZmeny, slovnikCsvJenVApp };
+    slovnikPorovnej, slovnikAplikuj, slovnikNoveJakoZmeny, slovnikCsvJenVApp,
+    slovnikToSheets, slovnikPrehled };

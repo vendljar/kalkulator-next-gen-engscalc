@@ -977,6 +977,29 @@ function slovCsvJenVApp() {
   slovStav('Uloženo: ' + a.download + ' — pošlete překladatelům k doplnění do tabulky.');
 }
 
+/* Stažení celého slovníku do Excelu (16. 9. 2026, zadání J. V.).
+ *
+ * Nepotřebuje načtenou tabulku Vocabulary — na rozdíl od porovnání jde
+ * o prostý výpis toho, co aplikace právě umí. Proto je tlačítko vidět vždycky
+ * a ne až po výběru souboru.
+ *
+ * Datum v názvu souboru je schválně: slovník se reviduje po kolech a bez data
+ * se ve složce překladatele sejdou tři „slovnik.xlsx" a nikdo nepozná, který
+ * je poslední. */
+function slovXlsxExport() {
+  try {
+    const sheets = slovnikToSheets(PREKLAD, JAZYKY.filter(j => j.kod !== 'cz'));
+    const p = slovnikPrehled(PREKLAD, JAZYKY.filter(j => j.kod !== 'cz'));
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(xlsxZapis(sheets));
+    a.download = 'SLOVNIK_ENG_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+    a.click();
+    slovStav('Uloženo: ' + a.download + ' — ' + p.hesel + ' hesel, '
+      + p.jazyky.map(j => j.kod.toUpperCase() + ' ' + j.prelozeno).join(', ')
+      + '. Soubor je ve Stažených.');
+  } catch (e) { slovStav('Stažení slovníku se nepovedlo: ' + e.message); }
+}
+
 function slovTabulka(rows, kategorie, tlacitko) {
   const vypsat = rows.slice(0, SLOV_LIMIT);
   const telo = vypsat.map((z, i) => `<tr>
@@ -1000,7 +1023,13 @@ function nastSlovnik() {
       ve vašem počítači, nikam se neodesílá. Trvale se změny uloží až exportem konfigurace
       (záložka <b>Konfigurace</b>), jinak platí jen pro tuto relaci.</div>
     <div class="btns"><button class="primary" onclick="slovNacti()">⤒ Vybrat tabulku Vocabulary (.xlsx)</button>
+      <button onclick="slovXlsxExport()">⤓ Stáhnout celý slovník (.xlsx)</button>
       ${SLOV_STAV ? `<button onclick="slovCsvJenVApp()">⤓ Hesla jen v aplikaci (CSV pro překladatele)</button>` : ''}</div>
+    <div class="note">Stažený sešit má list <b>PŘEHLED</b> se všemi jazyky vedle sebe a pak list
+      <b>EN</b>, <b>DE</b> a <b>FR</b> zvlášť — překladateli se posílá jeho jazyk, ne tabulka se třemi
+      cizími sloupci. Sloupec <b>stav</b> odlišuje přeložená hesla od chybějících, aby šlo v Excelu
+      filtrovat, co ještě není hotové. Exportuje se <b>živý stav</b> slovníku: máte-li načtenou
+      konfiguraci s upraveným zněním, je v souboru ta.</div>
     <div id="slovStav" class="note" style="margin-top:8px"></div>`;
   if (!SLOV_STAV) return uvod + `<div class="note" style="margin-top:12px">Aktuálně slovník obsahuje
       <b>${prekladPocet()}</b> hesel — EN ${prekladPocet('en')}, DE ${prekladPocet('de')}, FR ${prekladPocet('fr')}.</div>`;
