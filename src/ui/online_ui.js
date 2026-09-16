@@ -585,7 +585,23 @@ function onlineZobrazeniDoCerstveZakazky() {
     || typeof zobrazeniVychoziNedotcene !== 'function'
     || typeof novaVariantaData !== 'function'
     || typeof aktivniVarianta !== 'function') return false;
-  if (ZAK.cislo || ZAK.nazevAkce || ZAK.objednatel) return false;
+  /* ČÍSLO NOVÉ ZAKÁZKY NENÍ PRÁZDNÉ (nález J. V. 16. 9. 2026: „po refreshi
+   * stránky se stále počítají příplatkové položky, které mají být ve výchozím
+   * nastavení nepočítané; když založím novou zakázku, tak už je vše OK").
+   *
+   * Tady byla oprava z 10. 9. celou dobu mrtvá. `novaZakazka()` nastaví číslo
+   * na PŘEDLOHU „2026 - OPR - CN - " — neprázdný řetězec — takže podmínka
+   * `ZAK.cislo` byla u startovní zakázky vždycky pravdivá a funkce se otočila
+   * na prvním řádku. Matice se do ní tedy nikdy nevtiskla a po každém načtení
+   * stránky měl obchodník zaškrtnuté všechny příplatky. Přes tlačítko Nová
+   * zakázka to bylo správně, protože `novaZakazkaUI()` matici nasazuje samo —
+   * proto se ta chyba schovala právě do refreshe.
+   *
+   * `hlavickaVyplneno()` je na tohle v zakazka.js odjakživa: předlohu za
+   * vyplněnou hodnotu nepovažuje. Sem se prostě nedostala. */
+  const vyplneno = (typeof hlavickaVyplneno === 'function')
+    ? hlavickaVyplneno : (v => String(v == null ? '' : v).trim() !== '');
+  if (vyplneno(ZAK.cislo) || vyplneno(ZAK.nazevAkce) || vyplneno(ZAK.objednatel)) return false;
   if (!Array.isArray(ZAK.varianty) || ZAK.varianty.length !== 1) return false;
   const d = (aktivniVarianta(ZAK) || {}).data || {};
   const zo = (d.ock || {}).zadani, zp = (d.proj || {}).zadani;
