@@ -402,7 +402,7 @@
    "otazka" : "K rozhodnutí před startem (2. 8. 2026): 1) Kdo a odkud bude online verzi používat — jen firma (obchodník, backoffice, ty), nebo časem i externí partneři? Určuje přihlašování a role. 2) Osud jednosouborové verze — zůstává plnohodnotná offline záloha udržovaná napořád, nebo jen nouzovka pro výpadek? 3) Hranice celků — návrh: Kalkulace OCK / Kalkulace PROJ / dokumenty (nabídky a krycí listy) / ceník a databáze / správa a nastavení. Má projekce umět běžet i samostatně bez OCK? 4) Kde poběží data — platí rosti.cz a malá databáze dle #11 a složka _DB skončí jako jednorázový import? Kdo drží zálohy? 5) Verzování po rozdělení — jedna verze celku (jako dnes), nebo každá část zvlášť? Jedna verze = snadnější doložení, za jaké verze nabídka odešla. 6) Excel-kompatibilní režim OCK — musí přežít i online (porovnání se starými nabídkami), nebo se po ověření zamrazí? 7) Souběh při přechodu — dokud poběží obě verze, která je zdroj pravdy pro ceník a zakázky?",
    "vlna" : "C",
    "slozitost" : "L",
-   "pozn" : "**rozhodnout dřív než #11**, potom je to dražší; překrývá se s #14 Otázky k zodpovězení sepsány 2. 8. 2026 (viz „otázka\"). Odpovědi 2. 8. 2026: 1) časem i externí partneři; přihlašování e-mailem a kódem; role zjednodušené na obchodník / vedoucí / administrátor, přiděluje administrátor. 2) jednosouborová verze je jen nouzovka, cíl je výhradně online. 5) verzuje se vždy celá aplikace, jedna verze. 6) Excel-kompatibilní režim musí přežít online; po dokončení testování se zmrazí. 7) do LIVE se testují obě (možná tři) verze souběžně, zdroj pravdy se určí až před ostrým startem. Body 3 a 4 čekají na dovysvětlení a potvrzení. Body 3 a 4 dovysvětleny a potvrzeny 2. 8. 2026 (projekce samostatně = #76; zálohy = #77). Plán po krocích: PLAN_2026-08-02_ROZDELENI_A_ONLINE.md. Doplněno 3. 8. 2026: nasazení z GitHubu (nejsnazší cesta, rozhodnuto); do odvolání generická adresa od rosti.cz (účet zakládá uživatel z Anglie, adresa přijde); reset hesla vždy administrátorem; první a zatím jediný uživatel Jaroslav Vendl, vendl.jaroslav@engineers-cz.cz, Administrátor — další po spuštění. Formát potvrzen: HTML/JS v prohlížeči, server Node.js (sdílí otestovaná jádra), frameworky nejdřív u třetí verze. 4. 8. 2026: hosting změněn na Netlify (schaftscalc.netlify.app), nasazení přímo z GitHubu — každé nahrání dávek se nasadí samo. UZAVŘENO 18. 8. 2026 (rozhodnutí potvrzena uživatelem): 1) klient ZŮSTÁVÁ jeden sestavený HTML soubor (src/ moduly → build.py → dist); pět celků platí jako logické členění zdrojáků, ne jako oddělené soubory na výstupu. 2) Případné fyzické rozdělení se rozhodne až se zadáním třetí verze výpočtu (nadcházející týdny) — kritéria v ROZHODNUTI_2026-08-18_24_rozdeleni.md. 3) Zdrojem pravdy pro ceník a zakázky je ONLINE verze (schaftscalc.netlify.app); jednosouborová offline je nouzovka. 4) Excel-kompatibilní režim se NEZMRAZUJE — testování ještě není dokončené; zmrazí se na pokyn po dotestování. Dokument: ROZHODNUTI_2026-08-18_24_rozdeleni.md.",
+   "pozn" : "**rozhodnout dřív než #11**, potom je to dražší; překrývá se s #14 Otázky k zodpovězení sepsány 2. 8. 2026 (viz „otázka\"). Odpovědi 2. 8. 2026: 1) časem i externí partneři; přihlašování e-mailem a kódem; role zjednodušené na obchodník / vedoucí / administrátor, přiděluje administrátor. 2) jednosouborová verze je jen nouzovka, cíl je výhradně online. 5) verzuje se vždy celá aplikace, jedna verze. 6) Excel-kompatibilní režim musí přežít online; po dokončení testování se zmrazí. 7) do LIVE se testují obě (možná tři) verze souběžně, zdroj pravdy se určí až před ostrým startem. Body 3 a 4 čekají na dovysvětlení a potvrzení. Body 3 a 4 dovysvětleny a potvrzeny 2. 8. 2026 (projekce samostatně = #76; zálohy = #77). Plán po krocích: PLAN_2026-08-02_ROZDELENI_A_ONLINE.md. Doplněno 3. 8. 2026: nasazení z GitHubu (nejsnazší cesta, rozhodnuto); do odvolání generická adresa od rosti.cz (účet zakládá uživatel z Anglie, adresa přijde); reset hesla vždy administrátorem; první a zatím jediný uživatel Jaroslav Vendl, (adresa hlavního správce), Administrátor — další po spuštění. Formát potvrzen: HTML/JS v prohlížeči, server Node.js (sdílí otestovaná jádra), frameworky nejdřív u třetí verze. 4. 8. 2026: hosting změněn na Netlify (schaftscalc.netlify.app), nasazení přímo z GitHubu — každé nahrání dávek se nasadí samo. UZAVŘENO 18. 8. 2026 (rozhodnutí potvrzena uživatelem): 1) klient ZŮSTÁVÁ jeden sestavený HTML soubor (src/ moduly → build.py → dist); pět celků platí jako logické členění zdrojáků, ne jako oddělené soubory na výstupu. 2) Případné fyzické rozdělení se rozhodne až se zadáním třetí verze výpočtu (nadcházející týdny) — kritéria v ROZHODNUTI_2026-08-18_24_rozdeleni.md. 3) Zdrojem pravdy pro ceník a zakázky je ONLINE verze (schaftscalc.netlify.app); jednosouborová offline je nouzovka. 4) Excel-kompatibilní režim se NEZMRAZUJE — testování ještě není dokončené; zmrazí se na pokyn po dotestování. Dokument: ROZHODNUTI_2026-08-18_24_rozdeleni.md.",
    "nazev" : "Rozdělit aplikaci do menších funkčních celků před nasazením online",
    "hotovoKdyz" : "Je zapsané rozhodnutí o členění aplikace i o tom, co zůstane v jednom souboru, a je jasné, co se dělá dřív — #24, nebo #14. Bez toho se #11 neotevírá.",
    "kde" : "build.py (seznamy CORE a UI), src/app_template.html",
@@ -539,6 +539,7 @@
    "slozitost" : "XL"
   },
   {
+   "pozn" : "ROZEBRÁNO 16. 9. 2026 — podklad `2026-09-16_NAVRH_19_schvalovani_slev_mobil.md`. Hotová je už rozhodovací část (#100): stropy rolí, stavy, rejstřík `/api/schvalovani` (záměrně BEZ částek) i responzivní rozhraní do 700 px. Chybí jen dát vědět a pohodlně rozhodnout na malé obrazovce. ODESÍLÁNÍ POŠTY V APLIKACI NENÍ — je to nová infrastruktura, ne úprava. NAVRŽENÝ PRVNÍ KROK bez ní: odznak s počtem čekajících žádostí v liště + záložka Schvalování použitelná na 375 px + harness s emulací telefonu. ČEKÁ NA ROZHODNUTÍ J. V.: (1) má vedoucí rozhodovat o slevě, aniž vidí marži? (2) první krok odznak, nebo rovnou e-maily? Magic link v e-mailu NEDOPORUČEN — je to heslo poslané poštou a rozhodnutí se podepisuje jménem.",
    "detail" : "Rozhodovací část je od 5. 8. 2026 hotová v aplikaci (#100): sleva nad strop role čeká na rozhodnutí, vedoucí nebo administrátor ji v záložce Schvalování slev schválí či zamítne a rozhodnutí se podepíše jménem a časem.\nZbývá to, co ze schvalování dělá „přes mobil\": aby schvalovatel nemusel čekat, až se do kalkulačky náhodou podívá. Tedy upozornění — e-mailem nebo push zprávou — ve chvíli, kdy žádost vznikne, a rozhraní, které se dá ovládat palcem na telefonu.\nPozor na jednu věc, která se bude řešit spolu s tím: dnešní fronta ukazuje jen otevřenou zakázku (#102). Upozornění na zakázku, kterou schvalovatel nemá otevřenou, nemá kam vést, dokud #102 nebude rozhodnuté.",
    "vlna" : "D",
    "proc" : "Slevu nad limit dnes schvaluje ten, kdo kalkulaci dělá — tedy nikdo. Schvalovací kolečko po telefonu se nikam nezapíše a u sporné zakázky se pak nedá dohledat, kdo ústupek povolil.",
@@ -1617,7 +1618,7 @@
    "proc" : "Nález bezpečnostního auditu (blok 1, 5. 8. 2026). Text hlášky je správně neurčitý — nikdy neřekne, jestli bylo špatně jméno, nebo heslo. Prozradí to ale čas odpovědi: u neexistujícího e-mailu se odpoví hned, u existujícího se nejdřív spočítá scrypt, což trvá měřitelně déle. Kdo měří, dokáže si tak ověřit, které adresy v databázi jsou.",
    "dulezitost" : "nizka",
    "vlna" : "D",
-   "detail" : "Praktický dopad je malý — okruh e-mailů ve firmě není tajemství a adresy jsou tvaru jmeno@engineers-cz.cz, tedy uhodnutelné. Uvádí se pro úplnost. Oprava je jednoduchá: u neexistujícího účtu spočítat scrypt proti pevnému zástupnému otisku, aby obě větve trvaly stejně dlouho.\nHOTOVO 9. 8. 2026 ve v9.8.1. U neznámého e-mailu se scrypt počítá proti zástupnému otisku (FALESNY_OTISK), který vzniká z náhodných dat při startu funkce. Naměřený rozdíl mediánů obou větví je hluboko pod požadovanými 50 ms; kontrola měří deseti průchody v netlify/test_prava.mjs.",
+   "detail" : "Praktický dopad je malý — okruh e-mailů ve firmě není tajemství a adresy jsou tvaru (adresa hlavního správce), tedy uhodnutelné. Uvádí se pro úplnost. Oprava je jednoduchá: u neexistujícího účtu spočítat scrypt proti pevnému zástupnému otisku, aby obě větve trvaly stejně dlouho.\nHOTOVO 9. 8. 2026 ve v9.8.1. U neznámého e-mailu se scrypt počítá proti zástupnému otisku (FALESNY_OTISK), který vzniká z náhodných dat při startu funkce. Naměřený rozdíl mediánů obou větví je hluboko pod požadovanými 50 ms; kontrola měří deseti průchody v netlify/test_prava.mjs.",
    "kde" : "netlify/functions/prihlaseni.mjs",
    "hotovoKdyz" : "Přihlášení neexistujícího účtu a přihlášení existujícího účtu se špatným heslem vrací tutéž hlášku, tentýž stavový kód a měřitelně stejně dlouho (rozdíl pod 50 ms na deseti měřeních). Kontrola je v `netlify/test_prava.mjs`.",
    "zavisi" : [
@@ -1658,7 +1659,7 @@
    "detail" : "Řeší se tím, že klient adresu neluští, ale dostane ji ze serveru — buď v odpovědi `/api/ja`, nebo jako příznak `hlavni: true` u položek v seznamu účtů. Prohlížeč pak jen zobrazuje, co mu server řekl.\nHOTOVO 9. 8. 2026 ve v9.8.1. Server posílá příznak hlavni v seznamu účtů i v /api/ja; prohlížeč adresu neluští. Kontrola v netlify/test_funkce.mjs prochází src/, netlify/ a server/ a trvá na jediném výskytu adresy — v ADMIN_EMAIL.",
    "slozitost" : "S",
    "dulezitost" : "nizka",
-   "proc" : "Nález bezpečnostního auditu (blok 1, 5. 8. 2026). Tvoje adresa je napsaná natvrdo na dvou místech: v `netlify/lib/sdilene.mjs` (kde ji vymáhá server) a znovu v `src/ui/online_ui.js` jako `const hlavni = u.email === 'vendl.jaroslav@engineers-cz.cz'`. Není to díra — server si pojistku hlídá sám a v prohlížeči jde jen o to, že se tvůj účet nedá smazat ani zbavit role. Je to riziko údržby: kdyby se adresa jednou měnila, na druhé místo se zapomene a chování obou vrstev se rozejde.",
+   "proc" : "Nález bezpečnostního auditu (blok 1, 5. 8. 2026). Tvoje adresa je napsaná natvrdo na dvou místech: v `netlify/lib/sdilene.mjs` (kde ji vymáhá server) a znovu v `src/ui/online_ui.js` jako `const hlavni = u.email === '(adresa hlavního správce)'`. Není to díra — server si pojistku hlídá sám a v prohlížeči jde jen o to, že se tvůj účet nedá smazat ani zbavit role. Je to riziko údržby: kdyby se adresa jednou měnila, na druhé místo se zapomene a chování obou vrstev se rozejde.",
    "kde" : "netlify/lib/sdilene.mjs, netlify/functions/uzivatele.mjs, src/ui/online_ui.js",
    "hotovoKdyz" : "V `src/` ani v `netlify/` není adresa hlavního administrátora napsaná víc než na jednom místě; klient se dozvídá z odpovědi serveru (`hlavni: true`), kdo je hlavní účet, a záměrná změna té adresy na serveru se projeví v aplikaci bez zásahu do prohlížečového kódu. Ověřeno kontrolou v `netlify/test_funkce.mjs` (statické hledání adresy ve zdrojích) a v `overit_role_nahled.mjs`.",
    "stav" : "hotovo",
@@ -2567,6 +2568,7 @@
    "pozn" : "Hotovo v buildu v18.8.1 (18. 8. 2026). Číslování odpovídá historii: Model 1 = původní excelová šablona, Model 2 = opravená; případná třetí verze výpočtu bude Model 3."
   },
   {
+   "pozn" : "VYČÍSLENO 16. 9. 2026 — podklad `2026-09-16_MODEL1_vs_MODEL2_vycisleni.md`. **Model 1 předražuje ATYP zakázky.** Při marži 30 % a rezervě 30 % je dražší o 6,55 %; při marži 45 % o 9,97 %. Bez rezervy je rozdíl −0,40 %, takže se to týká přesně ATYP zakázek, kde jde o nejvíc peněz. Celý rozdíl dělají DVĚ položky, obě o rezervě: základ se bere z ceny VČETNĚ marže a marže se přidá ještě jednou (základ −4,35 %, příplatky −4,61 %). Zbylých sedm rozdílů je dohromady do půl procenta. Ověřeno při třech maržích a třech rezervách — poměr je strukturální, takže platí i nad ostrým ceníkem. ZBÝVÁ ROZHODNUTÍ: potvrdit na skutečné ATYP zakázce a rozhodnout, zda Model 2 jako výchozí, nebo Model 1 zmrazit a otevřít #159.",
    "id" : "149",
    "pozn" : "Souvisí s třetí verzí výpočtu (Model 3) a se zmrazením Modelu 1 po dotestování (#24). Nespouštět bez pokynu — „mrkneme na to později\".",
    "hotovoKdyz" : "Existuje vyčíslené porovnání dopadů všech osmi rozdílů na vzorové zakázce a zapsané rozhodnutí, co z toho převezme Model 3 (případně změna výchozího režimu nové zakázky). Model 1 zůstal nedotčený.",
@@ -4278,6 +4280,21 @@
    "detail" : "ZBÝVÁ: dodat soubor a doplnit zbývající část D3.",
    "hotovoKdyz" : "Příloha je k dispozici a D3 je uzavřené celé."
   }
+  ,
+  {
+   "id" : "261",
+   "vlna" : "A",
+   "stav" : "hotovo",
+   "dulezitost" : "vysoka",
+   "slozitost" : "S",
+   "hotovoV" : "v16.9.18",
+   "nazev" : "Citlivé údaje ven z veřejného repozitáře",
+   "proc" : "Repozitář je čitelný bez přihlášení a byla v něm natvrdo adresa hlavního správce. To je zároveň osobní údaj vystavený komukoliv a návod, na který účet útočit — zbývalo uhodnout heslo.",
+   "detail" : "Adresa se bere z proměnné prostředí, kterou si správce nastaví v Netlify vedle TAJEMSTVI_RELACE a ADMIN_INIT_HESLO. Když proměnná chybí, přihlášení běží dál (účty se ověřují proti databázi), ale přestanou platit ochrany hlavního účtu a nepůjde prvotní založení — tiché oslabení, ne výpadek. Proto se nenastavená proměnná hlásí v /api/zdravi jako `spravceNastaven: false`. Test, který dřív trval na JEDINÉM výskytu adresy ve zdrojích, teď trvá na ŽÁDNÉM a je z něj hlídka. Zmizela i firemní doména z testovacích adres a jedno skutečné telefonní číslo. Roadmapa se do repozitáře ukládá bez částek — 35 jich je nahrazeno řádově (#viz README v roadmapa/).",
+   "hotovoKdyz" : "Splněno: ve zdrojích není adresa správce, firemní doména ani skutečné telefonní číslo; test to hlídá.",
+   "kde" : "`netlify/lib/sdilene.mjs`, `netlify/functions/zdravi.mjs`, `netlify/test_funkce.mjs`, `.github/workflows/testy.yml`, `roadmapa/`",
+   "pozn" : "ZŮSTALA čísla zakázek a názvy projektů v komentářích jádra (Kornpfortstraße, CN-0327): vysvětlují, PROČ je kód takový, jaký je, a odstranit je znamená zahodit odůvodnění. To je rozhodnutí J. V., ne vedlejší efekt úklidu. **Proměnnou ADMIN_EMAIL je potřeba nastavit v Netlify na OBOU webech**, jinak ochrany hlavního účtu nefungují."
+  }
  ],
  "meta" : {
   "projekt" : "Kalkulator Next Gen",
@@ -4682,6 +4699,11 @@
     "text" : "Dávka 16. 9. 2026 (engscalc): volitelné položky a zaškrtávátka — dvojdomost položek, pomlčka místo zavádějící částky, přechodové plechy pod jedním přepínačem, oprava mrtvého sloupce Výchozí, most ostrý→test nese zahraniční řadu (#248–#251). K tomu testovací téma a červená ikona, tabulátor po sloupcích, slovník do Excelu, hlídač syntaxe po havárii a průchozí harness až do PDF (#252–#257).",
     "hotovo" : true,
     "pozn" : "build v16.9.16. Šestnáct commitů v jednom dni. Ověřeno: 96 jednotkových sad čistých, ~50 nových mutací (všechny chycené), tři zelené běhy CI včetně jobu mutace. Nasazeno do main jako v16.9.14 a v16.9.15. **Poučení dávky:** tři hlášení J. V. o témže zaškrtávátku měla tři různé příčiny a žádná nebyla uvnitř kroku — všechny byly v mezeře mezi kroky. Proto vznikl průchozí harness (#252)."
+   },
+   {
+    "text" : "Dávka 16. 9. 2026 (2, engscalc): oplechování soklu ve správné sekci nabídky (#252 okolí), roadmapa do repozitáře bez částek a adresa správce ven z veřejného kódu (#261). K tomu vyčíslení Modelu 1 × Modelu 2 (#149) a rozbor schvalování slev z telefonu (#19).",
+    "hotovo" : true,
+    "pozn" : "build v16.9.18. **Hlavní zjištění dne:** Model 1 předražuje ATYP zakázky o jednotky procent (při marži 30 % a rezervě 30 % o 6,55 %) a celý rozdíl dělá dvojitá marže v rezervě. Čeká rozhodnutí, který model má být výchozí. **Nutný krok u J. V.:** nastavit ADMIN_EMAIL v Netlify na obou webech, jinak neplatí ochrany hlavního účtu."
    }
   ],
   "pravidla" : [
@@ -4768,7 +4790,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v16.9.16 (engscalc)",
+  "build" : "v16.9.18 (engscalc)",
   "stavKDatu" : "16. 9. 2026"
  },
  "_comment" : [
