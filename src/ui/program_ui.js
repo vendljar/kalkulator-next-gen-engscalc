@@ -432,6 +432,69 @@ function cenikPrenosKarta() {
        by znamenalo, že se test umí přihlásit do ostrého provozu.</div>`);
 }
 
+/* ---------- ukázkové zakázky testovacího webu (16. 9. 2026) ----------
+ *
+ * Zadání J. V.: „testovací rozhraní musí mít vlastní dummy data."
+ *
+ * Karta se kreslí JEN tam, kde server hlásí PROSTREDI=test, a jen správci.
+ * Ptá se serveru, ne adresy v prohlížeči — adresu si lze vymyslet, proměnnou
+ * prostředí ne. Na ostrém webu tedy tahle karta neexistuje a `testDataSyp()`
+ * se z ní nedá spustit; kdyby ji někdo zavolal z konzole, zastaví ho tatáž
+ * podmínka uvnitř.
+ *
+ * Zakázky nenesou ceny (viz testdata.js) — spočítají se z ceníku, který je
+ * na testovacím webu zveřejněný. Proto ta věta o pořadí kroků. */
+function testDataKarta() {
+  if (typeof testDataSmi !== 'function') return '';
+  const stav = (typeof ONLINE_STAV !== 'undefined') ? ONLINE_STAV : {};
+  if (!testDataSmi(stav, typeof jeAdminOnline === 'function' && jeAdminOnline())) return '';
+  const maCenik = !!(typeof cenikPrenosData === 'function' && cenikPrenosData());
+  return card('Ukázkové zakázky testovacího webu',
+    `<div class="note" style="margin-top:0">Založí ${TESTDATA_ZAKAZKY.length} smyšlených zakázek řady
+       <b>${esc(TESTDATA_RADA)}xxx</b>. Každá stojí na jednom nálezu z testování, takže se dá
+       proklikat bez vymýšlení vstupů — proč která je, stojí v jejích interních poznámkách.</div>
+     ${maCenik ? '' : `<div class="note" style="color:var(--warn)"><b>Nejdřív zveřejněte ceník</b>
+       (karta výš). Bez něj se zakázky založí, ale všude budou nuly — ukázkové zakázky
+       si žádné ceny nenesou, aby se vymyšlená sazba nemohla dostat do ostrého sestavení.</div>`}
+     <div class="btns" style="margin-top:8px">
+       <button onclick="testDataSyp()" ${PROG_STAV.pracuje ? 'disabled' : ''}>Založit ukázkové zakázky</button>
+     </div>
+     <div class="note">Existující zakázku se stejným číslem <b>přepíše</b>. Pouštějte znovu,
+       kdykoli chcete čistý stav — je to rychlejší než mazat ručně.</div>`);
+}
+
+async function testDataSyp() {
+  const stav = (typeof ONLINE_STAV !== 'undefined') ? ONLINE_STAV : {};
+  /* Druhá pojistka na úrovni akce, ne jen vykreslení karty. */
+  if (typeof testDataSmi !== 'function'
+    || !testDataSmi(stav, typeof jeAdminOnline === 'function' && jeAdminOnline())) {
+    progZprava('Ukázkové zakázky jde založit jen na testovacím webu a jen jako správce.', 'varovani');
+    render(); return;
+  }
+  if (!await potvrd('Založit ' + TESTDATA_ZAKAZKY.length + ' ukázkových zakázek?\n\n'
+    + 'Zakázky se stejným číslem se přepíšou. Týká se to jen tohohle (testovacího) webu — '
+    + 'ostrá databáze je jiná a tenhle krok se jí nedotkne.')) return;
+
+  PROG_STAV.pracuje = true; render();
+  let hotovo = 0; const chyby = [];
+  for (const p of TESTDATA_ZAKAZKY) {
+    try {
+      const zak = testDataZakazka(p, novaZakazka);
+      /* `prepsat` je tu schválně: ukázková data se mají dát obnovit do
+       * čistého stavu, aniž by je někdo musel mazat ručně. */
+      await onlineApi('/api/zakazky', { zakazka: zak, prepsat: true });
+      hotovo++;
+    } catch (e) { chyby.push(p.cislo + ': ' + e.message); }
+  }
+  PROG_STAV.pracuje = false;
+  if (typeof onlineNactiRejstrik === 'function') await onlineNactiRejstrik();
+  progZprava(chyby.length
+    ? ('Založeno ' + hotovo + ' z ' + TESTDATA_ZAKAZKY.length + '. Nepovedlo se: ' + chyby.join('; '))
+    : ('Založeno ' + hotovo + ' ukázkových zakázek. Najdete je v Přehledu cenových nabídek.'),
+    chyby.length ? 'varovani' : 'ok');
+  render();
+}
+
 /* Převzetí starší verze do aktivní varianty. Nezveřejňuje – jen nasype
  * historické ceny do ceníku varianty, aby šlo spočítat, jak by nabídka
  * vypadala tehdy. Zveřejnit se dá až samostatným krokem. */

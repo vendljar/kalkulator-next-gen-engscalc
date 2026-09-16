@@ -17,6 +17,23 @@
 <style>
   :root { --ink:#1a2332; --mut:#6b7686; --line:#dde3ea; --bg:#f4f6f9; --card:#fff;
           --acc:#1f5eff; --ok:#0a7d4f; --warn:#b45309; --sec:#eef2f8; }
+  /* TESTOVACÍ WEB VYPADÁ JINAK (16. 9. 2026, zadání J. V.: „testovací
+     rozhraní musí mít vlastní dummy data a jiný barevný vizuál").
+
+     Červený pruh nahoře byl od 20. 8. 2026, ale pruh se odroluje. Dvě
+     stejně modré kalkulačky vedle sebe svádějí udělat nabídku v testu
+     a poslat ji zákazníkovi; proto se mění samo téma — modrá akcentní
+     barva na jantarovou a pozadí do teplého odstínu. Je to vidět na
+     každé záložce, v každé kartě a i na malém výřezu obrazovky.
+
+     Mění se jen PROMĚNNÉ, ne jednotlivá pravidla: rozložení, velikosti
+     ani chování zůstávají shodné s ostrým webem, jinak by se v testu
+     zkoušelo něco jiného, než co pojede ostře. Třídu nasazuje
+     renderProstrediLista() podle PROSTREDI=test ze serveru. */
+  body.prostredi-test { --acc:#b45309; --bg:#fdf6ec; --sec:#fbefdc; --ink:#2b2013; --line:#e8d9c0; }
+  body.prostredi-test header { background:#7c2d12; }
+  body.prostredi-test .zak-bar-h { background:#fbefdc; }
+  body.prostredi-test header h1::after { content:" · TEST"; color:#fdba74; font-weight:700; letter-spacing:.06em; }
   * { box-sizing: border-box; }
   body { margin:0; font:14px/1.45 "Segoe UI", system-ui, sans-serif; color:var(--ink); background:var(--bg); }
   header { background:var(--ink); color:#fff; padding:14px 22px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }

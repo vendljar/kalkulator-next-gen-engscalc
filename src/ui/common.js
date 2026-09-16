@@ -223,6 +223,11 @@ function renderProstrediLista() {
   if (typeof document !== 'undefined') {
     const zaklad = 'Kalkulátor OCK + PROJ';
     document.title = (t.prostredi === 'test') ? ('[TEST] ' + zaklad) : zaklad;
+    /* CELÉ TÉMA, NE JEN PRUH (16. 9. 2026, zadání J. V.). Pruh se odroluje;
+     * barva zůstane. Třída přepíná CSS proměnné v app_template.html —
+     * rozložení ani chování se nemění, aby se v testu zkoušelo totéž, co
+     * pak pojede ostře. */
+    if (document.body) document.body.classList.toggle('prostredi-test', t.prostredi === 'test');
   }
   if (t.prostredi !== 'test') { el.innerHTML = ''; return; }
   el.innerHTML = `<div class="prostredi-pruh">🧪

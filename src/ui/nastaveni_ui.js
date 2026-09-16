@@ -370,9 +370,12 @@ function nastDatabaze() {
   const slozka = (smiZobrazit('uloziste.slozka') && typeof renderUlozisteKarta === 'function')
     ? renderUlozisteKarta() : '';
   const prenos = (typeof cenikPrenosKarta === 'function') ? cenikPrenosKarta() : '';
+  /* Ukázková data se kreslí jen na testovacím webu — karta se na ostrém
+   * vrátí prázdná (testDataKarta se ptá serveru na PROSTREDI). */
+  const testdata = (typeof testDataKarta === 'function') ? testDataKarta() : '';
   return `<div class="note" style="margin-top:0">Spojení s databází, ukládání a zálohy.
       Zakázku samotnou ukládá tlačítko <b>Uložit zakázku</b> v liště nad kalkulací —
-      tady je jen to, co se nastavuje jednou.</div>${online}${slozka}${prenos}`;
+      tady je jen to, co se nastavuje jednou.</div>${online}${slozka}${prenos}${testdata}`;
 }
 
 /* ---------- vnitřní záložka: Obecné ---------- */
