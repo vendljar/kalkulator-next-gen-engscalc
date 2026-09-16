@@ -133,6 +133,44 @@ const snimek = (Z) => P.map(k => k + '=' + JSON.stringify(Z[k])).join(' ');
   test('a bere ji i podruhé, když do něj nikdo nesáhl', Z.zamecnikAtypKc === 50000);
 }
 
+/* RUČNÍ HODNOTA PŘEŽIJE I SAMOTNÉ VYPNUTÍ (J. V., 5. kolo, 16. 9. 2026:
+ * „Pokud obchodník při zadání atyp změní položku ručně, pak jí při vypnutí
+ * atyp zachovej.")
+ *
+ * Do teď se ručně přepsaná hodnota schovala do `atypUlozene` na příští
+ * zapnutí, ale z obrazovky při vypnutí zmizela — obchodník viděl, jak mu
+ * číslo, které sám napsal, nahradilo to staré, a jediné, co s tím mohl
+ * dělat, bylo napsat ho znovu. Rozdíl proti testu „vypnutí vrátí stav před
+ * zapnutím" výš je právě ta ruční značka: bez ní se vrací, s ní zůstává. */
+{
+  const { Z, data } = novy({ rezervaProfilyPct: 0.10, zamecnikAtypKc: 12000 });
+  prepni(Z, data, true);
+  rucne(Z, data, 'zamecnikAtypKc', 74500);
+  prepni(Z, data, false);
+  test('ručně přepsaná hodnota zůstane i po vypnutí ATYP',
+    Z.zamecnikAtypKc === 74500, Z.zamecnikAtypKc);
+  /* Značka musí zůstat taky, jinak by ceník při nejbližším přepočtu ručně
+   * zadané číslo tiše přebil — a chyba by se vrátila zadními vrátky. */
+  test('a zůstane u ní i značka ruční úpravy',
+    zk.zadaniRucniJe(data, 'zamecnikAtypKc') === true);
+  /* Pravidlo je po polích, ne plošné. Kdyby se „zachovej ručně změněné"
+   * zvrhlo v „nevracej nic", spadl by tenhle test. */
+  test('pole, do kterého nikdo nesáhl, se při vypnutí pořád vrací',
+    Z.rezervaProfilyPct === 0.10, Z.rezervaProfilyPct);
+}
+
+/* A do třetice: co si obchodník napsal, se mu vrátí i při dalším zapnutí —
+ * tedy nejen že to nezmizí, ale ani se to nepřepíše předlohou. */
+{
+  const { Z, data } = novy();
+  prepni(Z, data, true);
+  rucne(Z, data, 'montazAtypHod', 21);
+  prepni(Z, data, false);
+  test('ruční montážní hodiny přežijí vypnutí', Z.montazAtypHod === 21, Z.montazAtypHod);
+  prepni(Z, data, true);
+  test('a zapnutí je nepřebije předlohou', Z.montazAtypHod === 21, Z.montazAtypHod);
+}
+
 /* Starší zakázka snímek nemá — nesmí to spadnout ani zůstat s přirážkou. */
 {
   const { Z, data } = novy();
@@ -160,8 +198,8 @@ test('ruční značky ruší pravidlo, ne UI', !/zadaniRucniZrus/.test(fn));
 
 const zdrojZak = fs.readFileSync(__dirname + '/zakazka.js', 'utf8');
 test('pravidlo bere seznam polí z ATYP_POLE', /ATYP_POLE\.forEach/.test(zdrojZak));
-test('a ruší ruční značky jen při vypnutí',
-  /zadaniRucniZrus\(data, ATYP_POLE\)/.test(zdrojZak));
+test('a rozděluje pole podle ruční značky',
+  /ATYP_POLE\.filter\(k => rucniJe\(k\)\)/.test(zdrojZak));
 
 console.log('\n' + (fail ? 'SELHALO ' + fail + ' z ' + (ok + fail) : 'OK ' + ok));
 if (fail) process.exit(1);

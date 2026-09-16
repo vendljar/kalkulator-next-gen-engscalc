@@ -112,11 +112,28 @@ function atypHodnoty(Z, data, zap, predloha) {
     });
     return;
   }
+  /* RUČNĚ PŘEPSANÁ HODNOTA VYPNUTÍ ATYP PŘEŽIJE (16. 9. 2026, vyjádření J. V.
+   * z 5. kola: „Pokud obchodník při zadání atyp změní položku ručně, pak jí
+   * při vypnutí atyp zachovej.").
+   *
+   * Do teď se ručně přepsaná hodnota sice uložila do `atypUlozene` na příště,
+   * ale TEĎ se přesto přepsala zpátky. Obchodník tedy viděl, jak mu číslo,
+   * které sám napsal, po vypnutí ATYP zmizelo — a jediné, co s tím mohl
+   * dělat, bylo napsat ho znovu.
+   *
+   * Vrací se proto jen pole, kterých se nikdo nedotkl. Ručně přepsaným
+   * zůstává i ZNAČKA ruční úpravy: hodnota, kterou obchodník napsal, se nemá
+   * přepsat ani z ceníku, a plošné rušení značek (jak to dělal starý kód) by
+   * ceníku přesně tohle dovolilo při nejbližším přepočtu.
+   *
+   * Značky se tu proto NERUŠÍ vůbec — vracená pole jsou z definice ta, která
+   * značku nemají, takže by šlo o mazání neexistujícího. */
   Z.atypUlozene = Z.atypUlozene || {};
-  ATYP_POLE.forEach(k => { if (rucniJe(k)) Z.atypUlozene[k] = Z[k]; });
-  if (typeof zadaniRucniZrus === 'function') zadaniRucniZrus(data, ATYP_POLE);
+  const rucne = ATYP_POLE.filter(k => rucniJe(k));
+  rucne.forEach(k => { Z.atypUlozene[k] = Z[k]; });
+  const vratit = ATYP_POLE.filter(k => rucne.indexOf(k) < 0);
   const pred = Z.atypPredchozi || {};
-  ATYP_POLE.forEach(k => {
+  vratit.forEach(k => {
     Z[k] = Object.prototype.hasOwnProperty.call(pred, k) ? pred[k] : ATYP_NULA[k];
   });
   delete Z.atypPredchozi;

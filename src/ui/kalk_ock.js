@@ -381,7 +381,11 @@ function vlastniSet(sekce, i, k, v) {
 
 /* ---- zaškrtnutí volitelné položky do základní ceny ---- */
 function volitelneToggle(key, v) {
-  if (key === 'prechodove') {
+  /* Materiál i MONTÁŽ přechodových plechů se přepínají jedním zaškrtávátkem
+   * (16. 9. 2026): plechy mají vždy dvě položky, viz `prechMontAno` v jádře.
+   * Kliknutí na kteroukoli z těch dvou řádek tedy míří na týž zdroj —
+   * jinak by zůstalo zaškrtávátko, které nic nedělá. */
+  if (key === 'prechodove' || key === 'prechMont') {
     /* Jednotný zdroj pravdy je `Z.prechodovePlechy`. Jenže `Z.volitelne.prechodove`
      * má u jádra PŘEDNOST, kdykoli není null — a starší zakázky ho nenulové
      * mají, protože ho tam do 16. 9. 2026 zapisovala matice Výchozí. Na takové
@@ -556,7 +560,14 @@ function adminKoncBunky(r, sekceKey) {
    * takže není co přednastavovat. */
   let vych = '';
   if (sekceKey === 'volitelne' && !r.vlastni) {
-    vych = vychoziPolozkaChk('ock.' + key, volitelneVychoziZaklad(key),
+    /* Montáž přechodových plechů nemá vlastní přednastavení: od 16. 9. 2026
+     * se řídí materiálem (J. V.: „Plechy mají vždy 2 položky"). Kdyby si
+     * nesla vlastní klíč, byl by ze sloupce Výchozí u toho řádku mrtvý
+     * přepínač — zaškrtnutí by se uložilo a nová zakázka by ho ignorovala.
+     * Obě řádky proto píší do `ock.prechodove`: přepnutím kterékoliv z nich
+     * se přednastaví dvojice. */
+    const vychKey = (key === 'prechMont') ? 'prechodove' : key;
+    vych = vychoziPolozkaChk('ock.' + vychKey, volitelneVychoziZaklad(vychKey),
       'zaškrtnuto = položka je v NOVÉ zakázce rovnou v základní ceně (platí pro všechny)');
   } else if (!r.vlastni) {
     vych = vychoziPolozkaChk(ZOBRAZENI_POCITAT + String(r.origNazev || r.nazev), true,

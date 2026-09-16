@@ -287,20 +287,29 @@ vObouRezimech(() => {
 }
 
 /* ============================================================
- * 5) Montáž přechodových plechů má vlastní přepínač
+ * 5) Přechodové plechy jsou vždy DVĚ položky
  * ============================================================ */
 
 /* V excelovém souboru zakázky CN-0327 čte montáž zapnutí z přepínače
  * materiálu (vzorec sahá o řádek výš, protože vlastní buňka zůstala prázdná)
  * a jako jediný řádek volitelných položek se tam zaokrouhluje na tisíce.
- * Rozhodnutí uživatele z 11. 8. 2026: obojí je úprava toho JEDNOHO souboru,
- * ne pravidlo původní šablony — nenapodobuje se to ani v kompatibilním režimu.
- * U nás má proto montáž vlastní přepínač v obou režimech a nezaokrouhluje se
- * nikde. Prázdný přepínač znamená „řídí se materiálem", takže se dosavadním
- * zakázkám nemění cena ani o korunu. */
+ * Z rozhodnutí uživatele z 11. 8. 2026 platí dodnes ta část o zaokrouhlení:
+ * je to úprava toho JEDNOHO souboru, ne pravidlo šablony, a nenapodobuje se
+ * ani v kompatibilním režimu.
+ *
+ * Vlastní přepínač montáže, který tehdy přibyl, ale 16. 9. 2026 padl:
+ * „Pokud jsou zaškrtnuté plechy, pak vždy musí být zaškrtnuta i jejich montáž
+ * a vice versa. Tzn. Plechy mají vždy 2 položky." Materiál bez montáže je
+ * nedodělek a montáž bez materiálu je práce na ničem; v 5. kole se ukázalo,
+ * že odškrtnutí plechů nechávalo montáž v základní ceně za nástupiště.
+ * Excel měl tedy ve výsledku pravdu. Pole `volitelne.prechMont` v uložených
+ * zakázkách zůstává, ale na výpočet nemá vliv — ZÁMĚRNÝ DŮSLEDEK je, že
+ * zakázka, ve které někdo montáž ručně vypnul, ji po otevření má zpátky. */
 
+const MAT = 'PŘECHODOVÉ PLECHY - NEREZ';
 const MONT = 'PŘECHODOVÉ PLECHY - NEREZ (MONTÁŽ)';
 const montaz = r => r.sekce.volitelne.find(x => x.origNazev === MONT);
+const material = r => r.sekce.volitelne.find(x => x.origNazev === MAT);
 
 vObouRezimech(() => {
   /* Žádná volitelná položka se nezaokrouhluje — zaokrouhlení nahoru na tisíce
@@ -312,24 +321,37 @@ vObouRezimech(() => {
       spatne.length === 0, spatne.map(x => x.origNazev));
   }
 
-  /* Vlastní přepínač montáže. */
+  /* Dvojice materiál + montáž se nerozpojuje. */
   {
-    const bezMontaze = { prechodove: true, prechMont: false };
-    testR('montáž jde vypnout samostatně', !montaz(spocti(bezMontaze)));
-    /* A opačně: materiál vypnutý, montáž zapnutá. */
-    testR('montáž jde zapnout i bez materiálu',
-      !!montaz(spocti({ prechodove: false, prechMont: true })));
-    /* Prázdný přepínač = „řídí se materiálem", tedy beze změny ceny proti
-     * dosavadnímu stavu. Kdyby prázdno znamenalo „vypnuto", zmizela by montáž
-     * ze všech starších zakázek. */
-    testR('prázdný přepínač montáže znamená „řídí se materiálem"',
-      !!montaz(spocti({ prechodove: true, prechMont: null })));
-    testR('prázdný přepínač montáže s vypnutým materiálem montáž nezapne',
-      !montaz(spocti({ prechodove: false, prechMont: null })));
-    /* Vypnutá montáž nezmizí, spadne mezi příplatky. Neúčtovaná práce je horší
-     * než práce v příplatcích — tam je aspoň vidět. */
-    testR('vypnutá montáž se objeví mezi příplatky',
-      !!spocti(bezMontaze).priplatky.find(x => x.key === 'prechMont'));
+    const dva = spocti({ prechodove: true });
+    testR('zapnuté plechy dají obě položky — materiál i montáž',
+      !!material(dva) && !!montaz(dva));
+    const zadna = spocti({ prechodove: false });
+    testR('vypnuté plechy neberou do základní ceny ani jednu',
+      !material(zadna) && !montaz(zadna));
+    /* Neúčtovaná práce je horší než práce v příplatcích — tam je aspoň vidět.
+     * Proto obě vypnuté položky spadnou mezi příplatky, ne do ztracena. */
+    const prip = zadna.priplatky.map(x => x.key);
+    testR('vypnuté plechy se OBĚ objeví mezi příplatky',
+      prip.indexOf('prechMat') >= 0 && prip.indexOf('prechMont') >= 0, prip);
+  }
+
+  /* Starý vlastní přepínač už nerozhoduje, a to v obou směrech. Kdyby se
+   * četl, vrátila by se přesně ta situace z 5. kola: odškrtnuté plechy
+   * a zaškrtnutá montáž účtovaná za nástupiště. */
+  {
+    testR('ruční vypnutí montáže se ignoruje — montáž zůstává s materiálem',
+      !!montaz(spocti({ prechodove: true, prechMont: false })));
+    testR('ruční zapnutí montáže bez materiálu montáž nepřidá',
+      !montaz(spocti({ prechodove: false, prechMont: true })));
+    testR('prázdný přepínač se chová stejně jako kterákoliv jiná hodnota',
+      !!montaz(spocti({ prechodove: true, prechMont: null }))
+      && !montaz(spocti({ prechodove: false, prechMont: null })));
+    /* Montáž musí mít i množství, ne jen řádek. Nález 16. 9. 2026 byl přesně
+     * tenhle: položka se tvářila zahrnutá, ale počítala se s nulou. */
+    const m = montaz(spocti({ prechodove: true, prechMont: false }));
+    testR('montáž vynucená materiálem má nenulové množství',
+      !!m && m.mnozstvi > 0, m && m.mnozstvi);
   }
 });
 

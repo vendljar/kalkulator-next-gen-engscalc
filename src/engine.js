@@ -299,7 +299,7 @@ const DEFAULT_ZADANI = {
   zamecnikAtypKs: 0, zamecnikAtypKc: null, oplechOstatniKg: 10, oplechOstatniHod: 5,
   engineeringKs: 0, rezervaZakladPct: 0, rezervaPriplatkyPct: 0,
   volitelne: { prechodove: null /* null = dle zadání */, leseniVnitrni: true, leseniVnejsi: false,
-               prechMont: null /* null = řídí se materiálem (jen opravený režim) */,
+               prechMont: null /* od 16. 9. 2026 se nečte — montáž jde s materiálem */,
                leseniHlava: false,
                haky: true, zabradli: true, sokl: false },
   priplatkyVyber: null, // null = všechny (jako Excel); jinak pole klíčů
@@ -504,9 +504,20 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const podestKs = podestKs0 * D16, podestKg = podKg1 * podestKs0 * D16, podestM2 = podM21 * podestKs0 * D16;
 
   const prechodoveAno = z.volitelne.prechodove == null ? z.prechodovePlechy : z.volitelne.prechodove;
-  /* Montáž přechodových plechů má vlastní přepínač v OBOU režimech; prázdno
-   * znamená „řídí se materiálem", tedy beze změny ceny proti dosavadnímu stavu. */
-  const prechMontAno = (z.volitelne.prechMont != null) ? z.volitelne.prechMont : prechodoveAno;
+  /* PLECHY MAJÍ VŽDY DVĚ POLOŽKY (16. 9. 2026, vyjádření J. V. z 5. kola:
+   * „Pokud jsou zaškrtnuté plechy, pak vždy musí být zaškrtnuta i jejich
+   * montáž a vice versa. Tzn. Plechy mají vždy 2 položky. Uprav.").
+   *
+   * Montáž měla od 11. 8. 2026 vlastní přepínač, aby šla objednat bez
+   * materiálu. V praxi to znamenalo, že odškrtnutí plechů v Zadání šachty
+   * nechalo montáž zaškrtnutou a ta šla do základní ceny za nástupiště,
+   * přestože se žádné plechy nedodávaly — nález 5. kola. Montáž se proto
+   * řídí VÝHRADNĚ materiálem a samostatně ji zapnout nejde.
+   *
+   * Pole `z.volitelne.prechMont` v zadání zůstává kvůli starším uloženým
+   * zakázkám, ale nic se z něj nečte: kdyby se četlo, vrátila by se přesně
+   * ta situace, kvůli které se tohle mění. */
+  const prechMontAno = prechodoveAno;
   /* MNOŽSTVÍ SE ŘÍDÍ TÝMŽ PŘEPÍNAČEM JAKO ZAHRNUTÍ (16. 9. 2026, nález J. V.:
    * „stále nám nefunguje zaškrtávání výchozích položek").
    *
@@ -873,12 +884,12 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
      * daly do základní ceny, jejich montáž se neúčtovala vůbec. Množství je
      * počet nástupišť, sazba je táž jako u příplatkové varianty (jeden zdroj).
      *
-     * Vlastní přepínač (11. 8. 2026): v excelovém souboru zakázky CN-0327 čte
-     * montáž zapnutí z přepínače MATERIÁLU — vzorec `=H64*G64*F63` sahá na
-     * buňku o řádek výš, protože jeho vlastní F64 zůstala prázdná. U nás má
-     * montáž vlastní přepínač `volitelne.prechMont`. Prázdno znamená „řídí se
-     * materiálem", takže se nic nezmění, dokud to obchodník nepřepne — a kdo
-     * potřebuje montáž bez materiálu (nebo naopak), má to konečně jak zadat. */
+     * Zapnutí se řídí MATERIÁLEM, ne vlastním přepínačem (16. 9. 2026).
+     * V excelovém souboru zakázky CN-0327 to tak bylo omylem — vzorec
+     * `=H64*G64*F63` sahá na buňku o řádek výš, protože jeho vlastní F64
+     * zůstala prázdná. Vlastní přepínač, který kvůli tomu 11. 8. 2026 přibyl,
+     * vydržel do 5. kola testů: „Plechy mají vždy 2 položky." Excel měl tedy
+     * ve výsledku pravdu a dvojice se nerozpojuje — viz `prechMontAno` výš. */
     { key: 'prechMont', mk: () => mkItem('PŘECHODOVÉ PLECHY - NEREZ (MONTÁŽ)', prechKsMont, pp.prechMontKc,
       { cenaPath: 'C.priplatky.prechMontKc' }),
       zahrnuto: prechMontAno, dostupne: true, prip: 'prechMont' },

@@ -101,8 +101,17 @@ const vlastni = (k) => String(k).indexOf('vlastni:') === 0;
     const ubylo = zap.filter(k => vyp.indexOf(k) < 0);
     test(typ + '/' + x.key + ': odškrtnutím se z příplatků nic neztratí',
       ubylo.length === 0, ubylo);
+    /* `prechMont` je jmenovitá výjimka: od 16. 9. 2026 se montáž řídí
+     * materiálem, takže jejím vlastním přepínačem nehne nic a slib z `prip`
+     * plní přepínač MATERIÁLU (kontroluje se hned pod smyčkou — test
+     * „odškrtnutím přechodových plechů spadne do příplatků i jejich montáž").
+     * Výjimka je psaná jménem schválně: kdyby se napsala jako „položky bez
+     * vlastního účinku se přeskakují", proklouzla by tudy každá nová položka
+     * s mrtvým zaškrtávátkem, a přesně to tahle sada hledá. */
+    const rozhodujeMaterial = (x.key === 'prechMont');
     test(typ + '/' + x.key + ': odškrtnutím se objeví slíbený příplatek',
-      !x.prip || pribylo.indexOf(x.prip) >= 0, { pribylo, prip: x.prip });
+      !x.prip || rozhodujeMaterial || pribylo.indexOf(x.prip) >= 0,
+      { pribylo, prip: x.prip });
     /* Přibýt smí i protějšek JINÉ volitelné položky — přechodové plechy
      * táhnou s sebou montáž (níž). Co ale přibýt nesmí, je příplatek, který
      * žádné volitelné položce nepatří: to by znamenalo, že zaškrtávátko
@@ -115,18 +124,18 @@ const vlastni = (k) => String(k).indexOf('vlastni:') === 0;
 });
 
 {
-  /* PŘECHODOVÉ PLECHY TÁHNOU S SEBOU MONTÁŽ (pravidlo z 11. 8. 2026).
-   * Přepínač montáže smí zůstat prázdný a pak se řídí materiálem — prázdno
-   * není nula, znamená „řídí se materiálem". Odškrtnutím materiálu proto
-   * spadnou do příplatků obě položky naráz. Je to záměr: montovat plechy,
-   * které nejsou v dodávce, nedává smysl. Kdo to potřebuje jinak, přepne si
-   * montáž zvlášť — a pak má její vlastní přepínač přednost. */
+  /* PŘECHODOVÉ PLECHY JSOU VŽDY DVĚ POLOŽKY (rozhodnutí J. V. 16. 9. 2026:
+   * „Plechy mají vždy 2 položky."). Montáž se řídí výhradně materiálem, takže
+   * odškrtnutím materiálu spadnou do příplatků obě naráz a zaškrtnutím se
+   * obě vrátí. Montovat plechy, které nejsou v dodávce, nedává smysl — a to
+   * je zároveň nález 5. kola, kvůli kterému vlastní přepínač montáže z 11. 8.
+   * skončil: uměl nechat montáž v základní ceně bez jediného plechu. */
   const oba = klice(vypocti(EXT, { prechodove: false }));
   test('odškrtnutím přechodových plechů spadne do příplatků i jejich montáž',
     oba.indexOf('prechMat') >= 0 && oba.indexOf('prechMont') >= 0, oba);
   const jenMat = klice(vypocti(EXT, { prechodove: false, prechMont: true }));
-  test('ale vlastní přepínač montáže to přebije',
-    jenMat.indexOf('prechMat') >= 0 && jenMat.indexOf('prechMont') < 0, jenMat);
+  test('a vlastní přepínač montáže to nepřebije — dvojice se nerozpojí',
+    jenMat.indexOf('prechMat') >= 0 && jenMat.indexOf('prechMont') >= 0, jenMat);
   /* Háky, zábradlí a sokl žádnou takovou vazbu nemají — každý sám za sebe.
    * Ptát se, jestli v příplatcích NENÍ sokl, by bylo špatně: tam už ve
    * výchozím stavu je, a ne kvůli hákům. Rozhoduje ROZDÍL mezi oběma stavy. */
@@ -149,12 +158,19 @@ const vlastni = (k) => String(k).indexOf('vlastni:') === 0;
 
 /* ---------- 3) přesun nesmí změnit cenu ---------- */
 
+/* KTERÝM ZAŠKRTÁVÁTKEM SE POLOŽKA PŘEPÍNÁ. Obvykle vlastním — montáž plechů
+ * se ale od 16. 9. 2026 řídí materiálem (J. V.: „Plechy mají vždy 2 položky"),
+ * takže zapsat `{ prechMont: true }` neudělá nic a porovnávaly by se dva
+ * náhodné stavy místo dvou stran téhož přesunu. */
+const prepinac = (key) => (key === 'prechMont') ? 'prechodove' : key;
+
 [false, true].forEach(fixes => {
   const model = fixes ? 'model 2' : 'model 1';
   [EXT, INT].forEach(typ => {
     vypocti(typ).volitelneKatalog.filter(x => !vlastni(x.key) && x.prip).forEach(x => {
-      const vol = vypocti(typ, { [x.key]: true }, fixes).volitelneKatalog.find(y => y.key === x.key);
-      const pri = (vypocti(typ, { [x.key]: false }, fixes).priplatky || []).find(p => p.key === x.prip);
+      const p = prepinac(x.key);
+      const vol = vypocti(typ, { [p]: true }, fixes).volitelneKatalog.find(y => y.key === x.key);
+      const pri = (vypocti(typ, { [p]: false }, fixes).priplatky || []).find(q => q.key === x.prip);
       if (!vol || !pri) { test(model + ' ' + x.key + ': obě strany existují', false); return; }
       test(model + ' ' + x.key + ': množství je na obou stranách stejné',
         Math.abs(vol.mnozstvi - pri.mnozstvi) < 1e-9, { vol: vol.mnozstvi, pri: pri.mnozstvi });
@@ -267,10 +283,11 @@ ZAKLADY.forEach(([popis, zaklad]) => {
     vypocti(typ, {}, false, zaklad).volitelneKatalog
       .filter(x => !vlastni(x.key) && x.prip).forEach(x => {
         const jm = popis + ' / ' + typ + ' / ' + x.key;
-        const vol = vypocti(typ, { [x.key]: true }, false, zaklad)
+        const p = prepinac(x.key);
+        const vol = vypocti(typ, { [p]: true }, false, zaklad)
           .volitelneKatalog.find(y => y.key === x.key);
-        const pri = (vypocti(typ, { [x.key]: false }, false, zaklad).priplatky || [])
-          .find(p => p.key === x.prip);
+        const pri = (vypocti(typ, { [p]: false }, false, zaklad).priplatky || [])
+          .find(q => q.key === x.prip);
         if (!vol || !pri) { test(jm + ': obě strany existují', false); return; }
         /* Nula sama o sobě chyba není — rozměr může být nulový. Chyba je,
          * když se obě strany LIŠÍ: táž položka, dvě různá množství. */
@@ -299,24 +316,29 @@ ZAKLADY.forEach(([popis, zaklad]) => {
   test('a montáž jde s nimi, taky s nenulovým množstvím',
     m.zahrnuto && m.mnozstvi > 0, { mn: m.mnozstvi });
 
-  /* Montáž bez materiálu je pravidlo z 11. 8. 2026 — vlastní přepínač právě
-   * proto existuje. Kdyby se její množství dál řídilo materiálem, zůstala by
-   * na nule a ten přepínač by byl k ničemu. */
+  /* SAMOSTATNĚ UŽ MONTÁŽ OBJEDNAT NEJDE (16. 9. 2026). Vlastní přepínač
+   * z 11. 8. 2026 uměl obojí rozpojit a v 5. kole se ukázalo, k čemu to
+   * vede: odškrtnuté plechy a montáž dál účtovaná za nástupiště. Rozhodnutí
+   * J. V.: „Plechy mají vždy 2 položky." Obě strany se proto zkoušejí tak,
+   * že se starý přepínač nastaví PROTI materiálu — a nesmí uspět. */
   const jenMont = vypocti(EXT, { prechodove: false, prechMont: true }, false, nova);
   const mm = jenMont.volitelneKatalog.find(x => x.key === 'prechMont');
   const mat = jenMont.volitelneKatalog.find(x => x.key === 'prechodove');
-  test('montáž jde objednat bez materiálu a není na nule',
-    mm.zahrnuto && mm.mnozstvi > 0 && !mat.zahrnuto, { mont: mm.mnozstvi, mat: mat.zahrnuto });
-  test('a chybějící materiál se nabídne jako příplatek',
-    klice(jenMont).indexOf('prechMat') >= 0, klice(jenMont));
+  test('montáž se bez materiálu objednat nedá',
+    !mm.zahrnuto && !mat.zahrnuto, { mont: mm.zahrnuto, mat: mat.zahrnuto });
+  test('a v příplatcích se pak nabídnou obě strany dodávky',
+    klice(jenMont).indexOf('prechMat') >= 0 && klice(jenMont).indexOf('prechMont') >= 0,
+    klice(jenMont));
 
   const jenMat = vypocti(EXT, { prechodove: true, prechMont: false }, false, nova);
   const m2 = jenMat.volitelneKatalog.find(x => x.key === 'prechMont');
   const mat2 = jenMat.volitelneKatalog.find(x => x.key === 'prechodove');
-  test('materiál jde objednat bez montáže',
-    mat2.zahrnuto && mat2.mnozstvi > 0 && !m2.zahrnuto);
-  test('a nezahrnutá montáž spadne do příplatků',
-    klice(jenMat).indexOf('prechMont') >= 0, klice(jenMat));
+  test('materiál si montáž přitáhne, i když ji někdo ručně vypnul',
+    mat2.zahrnuto && mat2.mnozstvi > 0 && m2.zahrnuto && m2.mnozstvi > 0,
+    { mat: mat2.mnozstvi, mont: m2.mnozstvi });
+  test('a do příplatků tím pádem nespadne ani jedna',
+    klice(jenMat).indexOf('prechMont') < 0 && klice(jenMat).indexOf('prechMat') < 0,
+    klice(jenMat));
 
   const vyp = vypocti(EXT, { prechodove: false }, false, nova);
   test('vypnuté plechy se v nové zakázce nabízejí jako příplatek',

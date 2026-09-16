@@ -109,7 +109,10 @@ const skutecnost = (zad, key) => (key === 'prechodove')
  * háky a sokl jen v exteriéru. Zkusit napevno jednu šachtu znamená, že
  * polovina položek v katalogu není a test „neprojde" z úplně jiného důvodu,
  * než který zkoumá. */
-function koleckoOck(key, zapnout) {
+/* `ctenyKlic` odděluje ZAŠKRTÁVÁTKO od POLOŽKY, na kterou se pak koukáme.
+ * Obvykle je to totéž, ale u přechodových plechů ne: přepíná se materiál
+ * a ptáme se, co to udělalo s montáží. */
+function koleckoOck(key, zapnout, ctenyKlic) {
   const mat = {};
   ZOB.zobrazeniPolozkaVychoziNastav(mat, 'ock.' + key, zapnout, zk.vychoziZakladVolitelne(key));
   const ulozeno = mat.vychozi ? mat.vychozi['ock.' + key] : undefined;
@@ -118,7 +121,7 @@ function koleckoOck(key, zapnout) {
     ZOB.zobrazeniVychoziAplikuj(mat, zad, null);
     zad.typSachty = typ;
     const r = eng.vypocet(JSON.parse(JSON.stringify(zad)), ZC.zkusebniCenik(), JEKLY, false);
-    const k = r.volitelneKatalog.find(x => x.key === key);
+    const k = r.volitelneKatalog.find(x => x.key === (ctenyKlic || key));
     if (k) return { ulozeno, typ, zahrnuto: k.zahrnuto, mnozstvi: +k.mnozstvi };
   }
   return { ulozeno, typ: null, zahrnuto: null, mnozstvi: null };
@@ -143,12 +146,30 @@ function koleckoOck(key, zapnout) {
   /* Totéž musí platit pro OSTATNÍ volitelné položky — oprava plechů nesměla
    * rozbít sloupec zbytku tabulky. */
   const zad = novaZadani();
-  Object.keys(zad.volitelne).forEach(key => {
+  Object.keys(zad.volitelne).filter(key => key !== 'prechMont').forEach(key => {
     const puv = skutecnost(zad, key);
     const k = koleckoOck(key, !puv);
     test('sloupec Výchozí přepne i položku ' + key,
       k.zahrnuto === !puv, { chteno: !puv, dostal: k.zahrnuto, ulozeno: k.ulozeno });
   });
+}
+
+{
+  /* MONTÁŽ PLECHŮ VLASTNÍ PŘEDNASTAVENÍ NEMÁ (16. 9. 2026). Od rozhodnutí
+   * „Plechy mají vždy 2 položky" jde montáž s materiálem, takže obě řádky
+   * tabulky píší do `ock.prechodove` — viz `adminKoncBunky` v kalk_ock.js.
+   * Kdyby si montáž nesla vlastní klíč, vznikl by tím přesně ten mrtvý
+   * sloupec, kvůli kterému tahle sada existuje: zaškrtnutí by se uložilo
+   * a nová zakázka by ho přehlédla. Zkouší se proto to, co dělá skutečné
+   * zaškrtávátko — přepnutí materiálu musí pohnout OBĚMA položkami. */
+  const zapM = koleckoOck('prechodove', true, 'prechMont');
+  test('zaškrtnutí plechů ve sloupci Výchozí přednastaví i jejich montáž',
+    zapM.zahrnuto === true, zapM);
+  test('a to s nenulovým množstvím, ne jen odškrtnutým řádkem',
+    zapM.mnozstvi > 0, zapM);
+  const vypM = koleckoOck('prechodove', false, 'prechMont');
+  test('odškrtnutí plechů vezme montáž taky — dvojice drží i v přednastavení',
+    vypM.zahrnuto === false, vypM);
 }
 
 /* ---------- 3) sloupec se dá přepnout OBĚMA směry ----------
@@ -157,7 +178,11 @@ function koleckoOck(key, zapnout) {
  * stejně, takže klikání nic neměnilo. Test se proto ptá na ROZDÍL. */
 {
   const zad = novaZadani();
-  const klice = Object.keys(zad.volitelne).concat(['prechodove']);
+  /* `prechMont` se vynechává, protože vlastní zaškrtávátko v tom sloupci
+   * nemá (viz blok výš) — ptát se na jeho rozdíl by znamenalo zkoušet klíč,
+   * který rozhraní vůbec nenabízí. */
+  const klice = Object.keys(zad.volitelne).concat(['prechodove'])
+    .filter(key => key !== 'prechMont');
   const mrtve = klice.filter(key => {
     const a = koleckoOck(key, true).zahrnuto;
     const b = koleckoOck(key, false).zahrnuto;
@@ -178,7 +203,12 @@ function koleckoOck(key, zapnout) {
   test('a nemá vlastní kopii, která by se mohla rozejít',
     ui.indexOf('D.prechodovePlechy') < 0);
   test('sloupec se pořád kreslí z toho základu',
-    ui.indexOf("vychoziPolozkaChk('ock.' + key, volitelneVychoziZaklad(key)") >= 0);
+    ui.indexOf("vychoziPolozkaChk('ock.' + vychKey, volitelneVychoziZaklad(vychKey)") >= 0);
+  /* Tohle drží tu výjimku výš. Bez téhle kontroly by stačilo vrátit montáži
+   * vlastní klíč a sada by mlčela — `prechMont` totiž z obou behaviorálních
+   * kontrol vynechávám právě proto, že žádný vlastní nemá. */
+  test('montáž plechů se ve sloupci Výchozí veze na klíči materiálu',
+    ui.indexOf("(key === 'prechMont') ? 'prechodove' : key") >= 0);
 }
 
 console.log('\n' + (fail ? 'SELHALO ' + fail + ' z ' + (ok + fail) : 'OK ' + ok));
