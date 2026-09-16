@@ -618,6 +618,17 @@ function zobrazeniVychoziAplikuj(mat, zadaniOck, zadaniProj) {
     if (!!pl !== !!zadaniOck.prechodovePlechy) { zadaniOck.prechodovePlechy = pl; zmen++; }
     const vol = zadaniOck.volitelne || {};
     Object.keys(vol).forEach(k => {
+      /* `prechodove` SEM NEPATŘÍ — vyřídilo se výš vlastním polem
+       * `prechodovePlechy` (nález J. V. 16. 9. 2026: „stále nám nefunguje
+       * zaškrtávání výchozích položek").
+       *
+       * Klíč `volitelne.prechodove` v zadání existuje a má výchozí hodnotu
+       * `null`, což jádro čte jako „řiď se zadáním šachty". Tenhle cyklus ho
+       * ale přepsal na true/false — a tím tu zálohu umlčel: od té chvíle měl
+       * `volitelne.prechodove` přednost a zaškrtávátko, které píše do
+       * `prechodovePlechy`, přestalo cokoli dělat. Matice tedy zapisovala
+       * TOTÉŽ rozhodnutí na dvě místa a to druhé zabilo první. */
+      if (k === 'prechodove') return;
       const v = zobrazeniPolozkaVychozi(mat, 'ock.' + k, vol[k]);
       if (!!v !== !!vol[k]) { vol[k] = v; zmen++; }
     });

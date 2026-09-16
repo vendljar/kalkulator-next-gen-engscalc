@@ -381,7 +381,21 @@ function vlastniSet(sekce, i, k, v) {
 
 /* ---- zaškrtnutí volitelné položky do základní ceny ---- */
 function volitelneToggle(key, v) {
-  if (key === 'prechodove') { set('Z.prechodovePlechy', v); return; }   // jednotný zdroj pravdy
+  if (key === 'prechodove') {
+    /* Jednotný zdroj pravdy je `Z.prechodovePlechy`. Jenže `Z.volitelne.prechodove`
+     * má u jádra PŘEDNOST, kdykoli není null — a starší zakázky ho nenulové
+     * mají, protože ho tam do 16. 9. 2026 zapisovala matice Výchozí. Na takové
+     * zakázce bylo zaškrtávátko úplně mrtvé: psalo do pole, které nikdo nečetl.
+     * Příčinu řeší zobrazeni.js; tímhle se uzdraví i zakázky, které už
+     * poškozené jsou — první kliknutí tu zálohu zase uvolní.
+     *
+     * Pořadí je schválně takhle: `set()` sám hlídá zámek varianty, takže na
+     * uzamčené zakázce neprojde ani jedno volání a stav zůstane, jak byl.
+     * Kdybych pole vynuloval napřímo, zámek bych obešel. */
+    set('Z.volitelne.prechodove', null);
+    set('Z.prechodovePlechy', v);
+    return;
+  }
   set('Z.volitelne.' + key, v);
 }
 

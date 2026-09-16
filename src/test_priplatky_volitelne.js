@@ -325,5 +325,96 @@ ZAKLADY.forEach(([popis, zaklad]) => {
     !vyp.volitelneKatalog.find(x => x.key === 'prechodove').zahrnuto);
 }
 
+/* ---------- 7) zaškrtávátko přežije matici Výchozí ----------
+ *
+ * Nález J. V. 16. 9. 2026: „stále nám nefunguje zaškrtávání výchozích položek."
+ *
+ * Plechy mají jednotný zdroj pravdy `Z.prechodovePlechy` — zaškrtávátko píše
+ * tam (volitelneToggle v ui/kalk_ock.js). Jádro ale dá přednost poli
+ * `Z.volitelne.prechodove`, kdykoli není null; null znamená „řiď se zadáním
+ * šachty". Matice Výchozí zapisovala TOTÉŽ rozhodnutí na obě místa a to druhé
+ * tu zálohu umlčelo: od té chvíle mělo `volitelne.prechodove` přednost
+ * a zaškrtávátko psalo do pole, které už nikdo nečetl. Bylo mrtvé.
+ *
+ * Proto se tu nezkouší jen výsledek, ale celá CESTA: nová zakázka → matice →
+ * kliknutí. Chyba se objevila až ve třetím kroku a každý z nich sám o sobě
+ * vypadal v pořádku.
+ */
+const ZOB = require('./zobrazeni.js');
+{
+  const novaZad = () => {
+    const Z = JSON.parse(JSON.stringify(eng.DEFAULT_ZADANI));
+    Z.typSachty = EXT;
+    Z.prechodovePlechy = false;   // tak začíná nová zakázka (zakazka.js)
+    return Z;
+  };
+  const zahrnuto = (Z) => eng.vypocet(JSON.parse(JSON.stringify(Z)), C, JEKLY, false)
+    .volitelneKatalog.find(x => x.key === 'prechodove').zahrnuto;
+  /* Přesně to, co dělá volitelneToggle('prechodove', v). */
+  const toggle = (Z, v) => { Z.volitelne.prechodove = null; Z.prechodovePlechy = v; };
+
+  const Z = novaZad();
+  test('nová zakázka má zálohu volnou (null = řiď se zadáním)',
+    Z.volitelne.prechodove === null, Z.volitelne.prechodove);
+  ZOB.zobrazeniVychoziAplikuj({ vychozi: { 'ock.prechodove': true } }, Z, null);
+  test('matice Výchozí plechy zapne', Z.prechodovePlechy === true && zahrnuto(Z) === true);
+  test('a NEUMLČÍ přitom zálohu', Z.volitelne.prechodove === null, Z.volitelne.prechodove);
+  toggle(Z, false);
+  test('po matici jde položka odškrtnout', zahrnuto(Z) === false);
+  toggle(Z, true);
+  test('a zase zaškrtnout', zahrnuto(Z) === true);
+
+  const Z2 = novaZad();
+  Z2.prechodovePlechy = true;
+  ZOB.zobrazeniVychoziAplikuj({ vychozi: { 'ock.prechodove': false } }, Z2, null);
+  test('matice umí plechy i vypnout', Z2.prechodovePlechy === false && zahrnuto(Z2) === false);
+  test('a ani přitom zálohu neumlčí', Z2.volitelne.prechodove === null);
+
+  /* Vyjmutí z cyklu se týká JEN přechodových plechů — ty mají vlastní pole.
+   * Ostatní volitelné položky musí matice dál ovládat, jinak bych opravou
+   * jedné věci rozbil celou matici. */
+  const Z3 = novaZad();
+  const puvHaky = Z3.volitelne.haky;
+  ZOB.zobrazeniVychoziAplikuj({ vychozi: { 'ock.haky': !puvHaky } }, Z3, null);
+  test('matice ostatní volitelné položky dál ovládá', Z3.volitelne.haky === !puvHaky);
+  const Z3b = novaZad();
+  const puvSokl = Z3b.volitelne.sokl;
+  ZOB.zobrazeniVychoziAplikuj({ vychozi: { 'ock.sokl': !puvSokl } }, Z3b, null);
+  test('a to i u soklu', Z3b.volitelne.sokl === !puvSokl);
+
+  /* UZDRAVENÍ. Zakázka uložená před opravou má zálohu nenulovou a zaškrtávátko
+   * v ní bylo mrtvé. Oprava příčiny takovým zakázkám nepomůže — musí je
+   * uvolnit první kliknutí. */
+  const Z4 = novaZad();
+  Z4.volitelne.prechodove = true;
+  Z4.prechodovePlechy = false;
+  test('stará poškozená zakázka: zadání říká ne, ale položka se počítá',
+    zahrnuto(Z4) === true);
+  toggle(Z4, false);
+  test('první kliknutí ji uzdraví',
+    Z4.volitelne.prechodove === null && zahrnuto(Z4) === false);
+}
+
+{
+  const ui = fs.readFileSync(__dirname + '/ui/kalk_ock.js', 'utf8');
+  const zob = fs.readFileSync(__dirname + '/zobrazeni.js', 'utf8');
+  test('zaškrtávátko plechů uvolní zálohu, než zapíše',
+    ui.indexOf("set('Z.volitelne.prechodove', null);") >= 0
+    && ui.indexOf("set('Z.prechodovePlechy', v);") >= 0);
+  /* Přes set(), ne napřímo: set() hlídá zámek varianty, takže na uzamčené
+   * zakázce neprojde ani jedno volání. Vynulovat pole natvrdo by zámek obešlo
+   * a uzamčená nabídka by se tiše změnila. */
+  test('a dělá to přes set(), takže zámek varianty platí',
+    ui.indexOf('Z.volitelne.prechodove = null;\n') < 0);
+  /* Pořadí není kosmetika: uvolnit zálohu až PO zápisu by na zakázce, kde
+   * záloha přebíjí, znamenalo, že první kliknutí zase nic neudělá. */
+  test('a v tomhle pořadí — nejdřív uvolnit zálohu, pak zapsat',
+    ui.indexOf("set('Z.volitelne.prechodove', null);") < ui.indexOf("set('Z.prechodovePlechy', v);"));
+  test('matice Výchozí přechodové plechy v cyklu přeskakuje',
+    zob.indexOf("if (k === 'prechodove') return;") >= 0);
+  test('ale vlastní pole jim pořád nastavuje',
+    zob.indexOf("zobrazeniPolozkaVychozi(mat, 'ock.prechodove'") >= 0);
+}
+
 console.log('\n' + (fail ? 'SELHALO ' + fail + ' z ' + (ok + fail) : 'OK ' + ok));
 if (fail) process.exit(1);
