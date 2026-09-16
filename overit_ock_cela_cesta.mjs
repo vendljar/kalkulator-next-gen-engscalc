@@ -327,14 +327,23 @@ await nab.emulateMedia({ media: 'screen' });
 await nab.close();
 
 oddil('8) krycí list');
+/* Hlavičková pole krycího listu jsou obousměrně navázaná na ZAK (`bind`
+ * v KRYCI_SEKCE) a kreslí se jako <input value="…">. Hodnota inputu NENÍ
+ * v innerText — na tom tahle kontrola 16. 9. 2026 napoprvé spadla. Čte se
+ * tedy z `value`, a rovnou se tím ověří to podstatnější: že hlavička
+ * doteče až sem, na poslední dokument cesty. */
 const kryci = await p.evaluate(() => {
   prepniTab('kryci'); render();
   const t = document.getElementById('page-kryci');
-  return { je: !!t, delka: t ? t.innerText.length : 0,
-           maCislo: t ? t.innerText.indexOf('9101') >= 0 : false };
+  if (!t) return { je: false };
+  const hodnoty = [...t.querySelectorAll('input')].map(i => i.value).filter(Boolean);
+  return { je: true, delka: t.innerText.length, poli: hodnoty.length,
+           maCislo: hodnoty.some(v => v.indexOf('9101') >= 0),
+           maNazev: hodnoty.some(v => v.indexOf('průchod celou cestou') >= 0) };
 });
 zkus('krycí list se vykreslil', kryci.je && kryci.delka > 200, kryci);
-zkus('a nese číslo zakázky', kryci.maCislo === true);
+zkus('a hlavička do něj dotekla — číslo nabídky', kryci.maCislo === true, kryci);
+zkus('i název akce', kryci.maNazev === true, kryci);
 
 oddil('závěr');
 zkus('za celý průchod nepřibyla chyba v konzoli', konzole.length === 0, konzole);
