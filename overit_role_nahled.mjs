@@ -134,7 +134,7 @@ await dlgStub(page);
 
 /* ---------- 1) administrátor: pohled si přepnout smí ---------- */
 
-await prihlas('vendl.jaroslav@engineers-cz.cz', 'Zkusebni.Heslo.123');
+await prihlas('spravce@priklad.cz', 'Zkusebni.Heslo.123');
 await cekejPrihlasen();
 test('administrátor je po přihlášení v pohledu administrátora',
   await page.evaluate(() => NAST.jeAdmin === true));
@@ -154,7 +154,7 @@ test('administrátor se z náhledu vrátí',
 /* Založíme obchodníka a odhlásíme se. */
 await page.evaluate(() => { otevriNastaveni(); nastPanel('uzivatele'); });
 await page.waitForFunction(() => { try { return ONLINE_STAV.uzivateleNacteno; } catch (e) { return false; } });
-await page.fill('#onlineUzEmail', 'obchodnik@engineers-cz.cz');
+await page.fill('#onlineUzEmail', 'obchodnik@priklad.cz');
 await page.fill('#onlineUzJmeno', 'Petr Novák');
 await page.fill('#onlineUzHeslo', 'ObchodniHeslo1');
 await page.click('#nastaveni-panel >> text=Založit účet');
@@ -179,11 +179,11 @@ test('v liště je jméno klikací (přepínač náhledu) a postavička má barv
 test('nabídka náhledu vypíše založený účet',
   await page.evaluate(() => {
     nahledMenuPrepni();
-    return document.getElementById('onlineLista').innerHTML.includes('obchodnik@engineers-cz.cz');
+    return document.getElementById('onlineLista').innerHTML.includes('obchodnik@priklad.cz');
   }));
 test('zapnutí náhledu převezme roli vybraného účtu',
   await page.evaluate(() => {
-    nahledZapni('obchodnik@engineers-cz.cz');
+    nahledZapni('obchodnik@priklad.cz');
     return nahledAktivni() && NAST.nahledUzivatel.role === 'Obchodník'
       && NAST.jeAdmin === false && zobrazeniRole() === 'Obchodník';
   }));
@@ -222,7 +222,7 @@ test('odhlášením se náhled zruší (nikdo nesmí zdědit cizí pohled)',
 
 /* ---------- 2) obchodník: pohled administrátora nedostane ---------- */
 
-await prihlas('obchodnik@engineers-cz.cz', 'ObchodniHeslo1');
+await prihlas('obchodnik@priklad.cz', 'ObchodniHeslo1');
 await cekejPrihlasen();
 await page.waitForTimeout(600);
 

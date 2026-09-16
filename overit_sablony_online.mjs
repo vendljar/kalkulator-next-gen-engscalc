@@ -118,7 +118,7 @@ await page.waitForFunction(() => typeof window.render === 'function');
 await page.waitForTimeout(300);
 
 await dlgStub(page);
-await page.fill('#onlineEmail', 'vendl.jaroslav@engineers-cz.cz');
+await page.fill('#onlineEmail', 'spravce@priklad.cz');
 await page.fill('#onlineHeslo', 'Zkusebni.Heslo.123');
 await page.click('#prihlaseni-box >> text=Přihlásit');
 await page.waitForFunction(() => { try { return !!ONLINE_STAV.ja; } catch (e) { return false; } });
@@ -162,7 +162,7 @@ const zverejneni = await page.evaluate(async (b64) => {
 }, sablonaB64);
 test('zveřejnění vrátilo verzi 1', zverejneni.verze === 1, zverejneni);
 test('rejstřík v aplikaci hned zná platnou verzi',
-  zverejneni.meta && zverejneni.meta.verze === 1 && zverejneni.meta.zverejnil === 'vendl.jaroslav@engineers-cz.cz');
+  zverejneni.meta && zverejneni.meta.verze === 1 && zverejneni.meta.zverejnil === 'spravce@priklad.cz');
 test('obrazovka Nastavení → Šablony verzi ukazuje',
   await page.evaluate(() => /Na serveru: verze 1/.test(nastSablony())));
 test('obrazovka nabízí přepínač režimu',

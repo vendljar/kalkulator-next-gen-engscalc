@@ -162,13 +162,13 @@ test('stránka má pole pro e-mail (uživatelské jméno) i heslo',
   (await gate()).includes('uživatelské jméno') && (await gate()).includes('onlineHeslo'));
 
 /* ---- 2) špatné heslo ---- */
-await prihlas('vendl.jaroslav@engineers-cz.cz', 'spatne-heslo');
+await prihlas('spravce@priklad.cz', 'spatne-heslo');
 test('špatné heslo se odmítne s důvodem přímo na přihlašovací stránce',
   (await gate()).includes('Nesprávný e-mail nebo heslo'));
 test('stránka po chybě zůstává', await gateViditelna());
 
 /* ---- 3) přihlášení administrátora (bootstrap) ---- */
-await prihlas('vendl.jaroslav@engineers-cz.cz', 'Zkusebni.Heslo.123');
+await prihlas('spravce@priklad.cz', 'Zkusebni.Heslo.123');
 await page.waitForFunction(() => { try { return !!ONLINE_STAV.ja; } catch (e) { return false; } });
 await page.waitForTimeout(400);
 test('po přihlášení přihlašovací stránka zmizí', !(await gateViditelna()));
@@ -235,7 +235,7 @@ await page.waitForTimeout(300);
 test('zveřejněné údaje se vrátily ze serveru se jménem firmy',
   await page.evaluate(() => ONLINE_STAV.firma.udaje.nazev === 'Zkušební ocelárna s.r.o.'));
 test('server si zapsal, kdo a kdy zveřejnil',
-  await page.evaluate(() => ONLINE_STAV.firma.kdo === 'vendl.jaroslav@engineers-cz.cz' && !!ONLINE_STAV.firma.kdy));
+  await page.evaluate(() => ONLINE_STAV.firma.kdo === 'spravce@priklad.cz' && !!ONLINE_STAV.firma.kdy));
 test('panel po zveřejnění ukazuje, kdy a kým',
   (await panelFirma()).includes('Online zveřejněno'));
 
@@ -670,7 +670,7 @@ await page.waitForFunction(() => { try { return ONLINE_STAV.uzivateleNacteno; } 
 await page.waitForTimeout(300);
 const nastav = () => page.locator('#nastaveni-panel').innerHTML();
 test('Nastavení → Uživatelé ukazuje účty online databáze',
-  (await nastav()).includes('vendl.jaroslav@engineers-cz.cz') && (await nastav()).includes('hlavní'));
+  (await nastav()).includes('spravce@priklad.cz') && (await nastav()).includes('hlavní'));
 
 /* Zadání 4. 8. 2026: „Při tvoření hesla přidej informaci, že heslo musí mít
  * minimálně 8 znaků." Požadavek se musí dozvědět DŘÍV, než heslo vymyslí –
@@ -689,7 +689,7 @@ test('a panel to vysvětluje i celou větou',
 
 /* Chybová cesta (4. 8. 2026 večer): krátké heslo dřív formulář tiše smazalo
  * a nic neřeklo. Teď musí hláška stát přímo v panelu a pole zůstat vyplněná. */
-await page.fill('#onlineUzEmail', 'obchodnik@engineers-cz.cz');
+await page.fill('#onlineUzEmail', 'obchodnik@priklad.cz');
 await page.fill('#onlineUzJmeno', 'Zkušební Obchodník');
 await page.fill('#onlineUzHeslo', 'kratke');
 await page.click('#nastaveni-panel >> text=Založit účet');
@@ -697,7 +697,7 @@ await page.waitForTimeout(300);
 test('krátké heslo: důvod odmítnutí je vidět přímo v panelu Uživatelé',
   (await nastav()).includes('aspoň 8 znaků'));
 test('krátké heslo: vyplněná pole se NEsmazala',
-  await page.evaluate(() => document.getElementById('onlineUzEmail').value === 'obchodnik@engineers-cz.cz'
+  await page.evaluate(() => document.getElementById('onlineUzEmail').value === 'obchodnik@priklad.cz'
     && document.getElementById('onlineUzJmeno').value === 'Zkušební Obchodník'));
 
 /* Úspěch — KLIKEM na tlačítko, přesně jako uživatel. */
@@ -706,14 +706,14 @@ await page.click('#nastaveni-panel >> text=Založit účet');
 await page.waitForFunction(() => { try { return ONLINE_STAV.uzivatele.length === 2; } catch (e) { return false; } });
 await page.waitForTimeout(300);
 test('nový účet obchodníka se založil klikem z Nastavení',
-  await page.evaluate(() => ONLINE_STAV.uzivatele.some(u => u.email === 'obchodnik@engineers-cz.cz' && u.role === 'Obchodník')));
+  await page.evaluate(() => ONLINE_STAV.uzivatele.some(u => u.email === 'obchodnik@priklad.cz' && u.role === 'Obchodník')));
 test('založení potvrzuje hláška přímo v panelu a nový řádek v tabulce',
-  (await nastav()).includes('je založený') && (await nastav()).includes('obchodnik@engineers-cz.cz'));
+  (await nastav()).includes('je založený') && (await nastav()).includes('obchodnik@priklad.cz'));
 test('po úspěchu se formulář vyprázdnil',
   await page.evaluate(() => document.getElementById('onlineUzEmail').value === ''
     && document.getElementById('onlineUzHeslo').value === ''));
 test('opakované založení téhož účtu řekne důvod (účet už existuje)', await (async () => {
-  await page.fill('#onlineUzEmail', 'obchodnik@engineers-cz.cz');
+  await page.fill('#onlineUzEmail', 'obchodnik@priklad.cz');
   await page.fill('#onlineUzHeslo', 'JinaHesla123');
   await page.click('#nastaveni-panel >> text=Založit účet');
   await page.waitForTimeout(400);
@@ -737,7 +737,7 @@ await page.waitForFunction(() => { try { return !!ONLINE_STAV.ja; } catch (e) { 
 await dlgStub(page);
 await page.waitForTimeout(400);
 test('po obnovení stránky je administrátor dál přihlášený a stránka se neukázala',
-  !(await gateViditelna()) && await page.evaluate(() => ONLINE_STAV.ja.email === 'vendl.jaroslav@engineers-cz.cz'));
+  !(await gateViditelna()) && await page.evaluate(() => ONLINE_STAV.ja.email === 'spravce@priklad.cz'));
 test('platný ceník se po obnovení načetl a nasadil sám',
   await page.evaluate(() => ONLINE_STAV.db.platny.verze === 1 && ONLINE_STAV.cenikPouzit === true));
 
@@ -760,7 +760,7 @@ test('po odhlášení a obnovení stránky se aplikace zase zamkne', await gateV
 test('čerstvá aplikace startuje s ukázkovou firmou',
   await page.evaluate(() => NAST.firma.ukazkove === true));
 
-await prihlas('obchodnik@engineers-cz.cz', 'ObchodniHeslo1');
+await prihlas('obchodnik@priklad.cz', 'ObchodniHeslo1');
 await page.waitForFunction(() => { try { return !!ONLINE_STAV.ja; } catch (e) { return false; } });
 await page.waitForTimeout(400);
 test('obchodník je přihlášený a roh to říká',
@@ -840,9 +840,9 @@ test('změna vlastního hesla proběhla',
   await page.evaluate(() => ONLINE_STAV.hlaska.includes('Heslo je změněné')));
 await page.evaluate(() => onlineOdhlas());
 await page.waitForFunction(() => { try { return ONLINE_STAV.ja === null; } catch (e) { return false; } });
-await prihlas('obchodnik@engineers-cz.cz', 'ObchodniHeslo1');
+await prihlas('obchodnik@priklad.cz', 'ObchodniHeslo1');
 test('staré heslo už neplatí', (await gate()).includes('Nesprávný e-mail nebo heslo'));
-await prihlas('obchodnik@engineers-cz.cz', 'ObchodniHeslo2');
+await prihlas('obchodnik@priklad.cz', 'ObchodniHeslo2');
 await page.waitForFunction(() => { try { return !!ONLINE_STAV.ja; } catch (e) { return false; } });
 test('novým heslem se obchodník přihlásí', !(await gateViditelna()));
 

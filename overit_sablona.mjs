@@ -171,7 +171,7 @@ console.log('\nnabídka vygenerovaná offline (firemní údaje)');
   /* Kalkulačka běží i jako jednosouborové HTML na ploše, kdy o uživateli neví.
    * Symboly pak plní zpracovatel.js firemními údaji — šablona to musí unést. */
   const firma = { ZPRAC_JMENO: 'ENGINEERS CZ s.r.o.', ZPRAC_FUNKCE: '',
-                  ZPRAC_TEL: '+420 252 546 463', ZPRAC_EMAIL: 'info@engineers-cz.cz' };
+                  ZPRAC_TEL: '+420 111 222 333', ZPRAC_EMAIL: 'info@priklad.cz' };
   const { doc } = await vygeneruj(firma, {});
   test('firemní jméno se doplnilo', doc.includes('ENGINEERS CZ s.r.o.'));
   test('prázdná funkce nenechá v dokumentu symbol', !doc.includes('ZPRAC_FUNKCE'));

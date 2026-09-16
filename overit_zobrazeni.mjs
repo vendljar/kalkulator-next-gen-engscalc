@@ -145,7 +145,7 @@ await dlgStub(page);
 
 /* ---------- 1) administrátor: panel Zobrazení existuje a je úplný ---------- */
 
-await prihlas('vendl.jaroslav@engineers-cz.cz', 'Zkusebni.Heslo.123');
+await prihlas('spravce@priklad.cz', 'Zkusebni.Heslo.123');
 await cekejPrihlasen();
 test('po přihlášení se matice zobrazení načetla ze serveru',
   volani.includes('GET /api/zobrazeni'), volani.join(', '));
@@ -819,7 +819,7 @@ test('ceník OCK založí trvalou položku do katalogu',
 /* Založíme obchodníka a odhlásíme se. */
 await page.evaluate(() => { nastPanel('uzivatele'); });
 await page.waitForFunction(() => { try { return ONLINE_STAV.uzivateleNacteno; } catch (e) { return false; } });
-await page.fill('#onlineUzEmail', 'obchodnik@engineers-cz.cz');
+await page.fill('#onlineUzEmail', 'obchodnik@priklad.cz');
 await page.fill('#onlineUzJmeno', 'Petr Novák');
 await page.fill('#onlineUzHeslo', 'ObchodniHeslo1');
 await page.click('#nastaveni-panel >> text=Založit účet');
@@ -832,7 +832,7 @@ test('po odhlášení platí zase výchozí (nejpřísnější) matice',
 
 /* ---------- 4) obchodník: přidělené vidí, ostatní ne ---------- */
 
-await prihlas('obchodnik@engineers-cz.cz', 'ObchodniHeslo1');
+await prihlas('obchodnik@priklad.cz', 'ObchodniHeslo1');
 await cekejPrihlasen();
 await page.waitForTimeout(700);
 

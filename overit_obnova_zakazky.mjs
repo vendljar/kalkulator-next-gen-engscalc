@@ -80,7 +80,7 @@ await page.route('**/api/**', async route => {
 });
 
 const prihlas = async () => {
-  await page.fill('#onlineEmail', 'vendl.jaroslav@engineers-cz.cz');
+  await page.fill('#onlineEmail', 'spravce@priklad.cz');
   await page.fill('#onlineHeslo', 'Zkusebni.Heslo.123');
   await page.click('#prihlaseni-box >> text=Přihlásit');
   await page.waitForFunction(() => { try { return !!ONLINE_STAV.ja; } catch (e) { return false; } }, null, { timeout: 10000 });

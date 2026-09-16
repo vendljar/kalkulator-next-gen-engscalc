@@ -24,6 +24,12 @@ jobs:
   testy:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Adresa hlavního správce se od 16. 9. 2026 bere z proměnné prostředí,
+    # ne z konstanty v repozitáři (ten je veřejný). Testům stačí SMYŠLENÁ
+    # adresa — ověřují pravidla, ne konkrétní účet. Ostrý a testovací web mají
+    # svou vlastní nastavenou v Netlify.
+    env:
+      ADMIN_EMAIL: spravce@priklad.cz
     steps:
       - uses: actions/checkout@v5
 
@@ -100,6 +106,8 @@ jobs:
   mutace:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      ADMIN_EMAIL: spravce@priklad.cz
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -120,6 +128,8 @@ jobs:
   harnessy:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      ADMIN_EMAIL: spravce@priklad.cz
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5

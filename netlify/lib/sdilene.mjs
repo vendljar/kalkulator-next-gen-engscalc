@@ -17,7 +17,25 @@
  * ============================================================ */
 import { scryptSync, randomBytes, timingSafeEqual, createHmac } from 'node:crypto';
 
-export const ADMIN_EMAIL = 'vendl.jaroslav@engineers-cz.cz';
+/* ADRESA HLAVNÍHO SPRÁVCE UŽ NENÍ V REPOZITÁŘI (16. 9. 2026).
+ *
+ * Repozitář je veřejně čitelný bez přihlášení. Adresa v konstantě tedy byla
+ * zároveň osobní údaj vystavený komukoliv a návod, na který účet útočit —
+ * zbývalo uhodnout heslo. Bere se proto z proměnné prostředí, kterou si
+ * správce nastaví v Netlify (stejně jako TAJEMSTVI_RELACE a ADMIN_INIT_HESLO);
+ * do repozitáře ani do konverzace nepatří.
+ *
+ * KDYŽ PROMĚNNÁ CHYBÍ, konstanta je prázdná. Přihlášení tím nepřestane
+ * fungovat — existující účty se hlásí dál, protože se ověřují proti databázi.
+ * Přestanou ale platit ochrany HLAVNÍHO účtu (nikdo mu nesmí změnit roli,
+ * deaktivovat ho ani ho smazat) a nepůjde prvotní založení účtu. Je to tedy
+ * tiché oslabení, ne výpadek — a přesně proto se nenastavená proměnná hlásí
+ * v /api/zdravi, aby to nikdo nepřehlédl.
+ *
+ * Porovnává se v malých písmenech a bez okrajových mezer: adresa zapsaná
+ * v Netlify s velkým písmenem by jinak vyrobila „hlavní účet, který jím
+ * není". */
+export const ADMIN_EMAIL = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
 export const ROLE = ['Obchodník', 'Vedoucí', 'Administrátor'];
 
 /* ---------- úložiště ---------- */

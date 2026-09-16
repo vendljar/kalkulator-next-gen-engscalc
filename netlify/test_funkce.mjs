@@ -135,9 +135,9 @@ test('relace se vydala v cookie', cookie.startsWith('relace='));
 test('/api/ja zná přihlášeného', (await (await get(ja, 'http://x/api/ja', cookie)).json()).email === ADMIN_EMAIL);
 
 /* 3) uživatelé: založení obchodníka + jeho omezená práva */
-const z1 = await (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'zaloz', email: 'obchodnik@engineers-cz.cz', jmeno: 'Test Obchodník', role: 'Obchodník', heslo: 'ObchodHeslo1' }, cookie)).json();
+const z1 = await (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'zaloz', email: 'obchodnik@priklad.cz', jmeno: 'Test Obchodník', role: 'Obchodník', heslo: 'ObchodHeslo1' }, cookie)).json();
 test('administrátor založí účet', z1.ok === true, JSON.stringify(z1));
-const r2 = await post(prihlaseni, 'http://x/api/prihlaseni', { email: 'obchodnik@engineers-cz.cz', heslo: 'ObchodHeslo1' });
+const r2 = await post(prihlaseni, 'http://x/api/prihlaseni', { email: 'obchodnik@priklad.cz', heslo: 'ObchodHeslo1' });
 let cookieObch = (r2.headers.get('set-cookie') || '').split(';')[0];
 test('obchodník se přihlásí', (await r2.json()).role === 'Obchodník');
 test('obchodník NEspravuje uživatele', (await get(uzivatele, 'http://x/api/uzivatele', cookieObch)).status === 403);
@@ -155,12 +155,12 @@ test('obchodník si změní vlastní heslo', mh.ok === true, JSON.stringify(mh))
 /* Změna hesla zneplatní dosavadní relace (B6, 22. 8. 2026) — prohlížeč
  * převezme novou cookie z odpovědi, sada taky. */
 cookieObch = (mhOdp.headers.get('set-cookie') || '').split(';')[0] || cookieObch;
-test('staré heslo už neplatí', (await post(prihlaseni, 'http://x/api/prihlaseni', { email: 'obchodnik@engineers-cz.cz', heslo: 'ObchodHeslo1' })).status === 401);
-test('novým heslem se přihlásí', (await (await post(prihlaseni, 'http://x/api/prihlaseni', { email: 'obchodnik@engineers-cz.cz', heslo: 'NoveHeslo123' })).json()).ok === true);
+test('staré heslo už neplatí', (await post(prihlaseni, 'http://x/api/prihlaseni', { email: 'obchodnik@priklad.cz', heslo: 'ObchodHeslo1' })).status === 401);
+test('novým heslem se přihlásí', (await (await post(prihlaseni, 'http://x/api/prihlaseni', { email: 'obchodnik@priklad.cz', heslo: 'NoveHeslo123' })).json()).ok === true);
 /* administrátorský reset zpátky (bez znalosti starého — to je jeho role) */
 test('administrátor resetuje heslo bez znalosti starého',
-  (await (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'heslo', email: 'obchodnik@engineers-cz.cz', heslo: 'ObchodHeslo1' }, cookie)).json()).ok === true);
-const poResetu = await post(prihlaseni, 'http://x/api/prihlaseni', { email: 'obchodnik@engineers-cz.cz', heslo: 'ObchodHeslo1' });
+  (await (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'heslo', email: 'obchodnik@priklad.cz', heslo: 'ObchodHeslo1' }, cookie)).json()).ok === true);
+const poResetu = await post(prihlaseni, 'http://x/api/prihlaseni', { email: 'obchodnik@priklad.cz', heslo: 'ObchodHeslo1' });
 test('po resetu platí heslo od administrátora', (await poResetu.clone().json()).ok === true);
 cookieObch = (poResetu.headers.get('set-cookie') || '').split(';')[0] || cookieObch;   // reset odhlásil starou relaci (B6)
 
@@ -304,12 +304,22 @@ function projdi(slozka, nalezy) {
   return nalezy;
 }
 
+/* OD 16. 9. 2026 UŽ ADRESA VE ZDROJÍCH NENÍ VŮBEC. Repozitář je veřejně
+ * čitelný, takže konstanta v kódu byla zároveň osobní údaj vystavený komukoliv
+ * a návod, na který účet útočit. Bere se z proměnné prostředí — a tenhle test
+ * je hlídka, aby se tam nevrátila zpátky.
+ *
+ * Prázdná hodnota by z kontroly udělala nesmysl: `split('')` rozseká soubor
+ * po znacích a „našel by se“ úplně všude. Bez nastavené proměnné se proto
+ * neporovnává, jen se to nahlásí. */
 const vyskyty = [];
-for (const kde of ['src', 'netlify', 'server']) projdi(join(KOREN_PROJEKTU, kde), vyskyty);
-test('adresa hlavního administrátora je ve zdrojácích právě jednou',
-  vyskyty.length === 1, vyskyty.join(', ') || 'nikde');
-test('a to v netlify/lib/sdilene.mjs, odkud si ji vyzvedne server i prohlížeč',
-  vyskyty.length === 1 && vyskyty[0].startsWith('netlify/lib/sdilene.mjs'), vyskyty.join(', '));
+if (ADMIN_EMAIL) {
+  for (const kde of ['src', 'netlify', 'server']) projdi(join(KOREN_PROJEKTU, kde), vyskyty);
+}
+test('proměnná ADMIN_EMAIL je pro běh testů nastavená',
+  !!ADMIN_EMAIL, 'nastavte ADMIN_EMAIL (v CI ji nastavuje testy.yml)');
+test('adresa hlavního administrátora není ve zdrojácích vůbec',
+  !!ADMIN_EMAIL && vyskyty.length === 0, vyskyty.join(', ') || 'nikde');
 
 const uiKod = readFileSync(join(KOREN_PROJEKTU, 'src', 'ui', 'online_ui.js'), 'utf8');
 test('prohlížeč hlavní účet nepoznává podle e-mailu, ale podle příznaku ze serveru',
@@ -418,8 +428,8 @@ const DOCX2 = 'UEsDBBQABgAIAAAAIQ' + 'B'.repeat(400);   // jiná data = jiný ot
    * počítadel se nově ukládá i rozpad po uživatelích. Zbytek zůstává
    * anonymní — a přesně to sada hlídá, aby se rozsah zase nerozšířil. */
   test('analytika: počítadla se přiřadí přihlášenému uživateli',
-    ulozeny && ulozeny.poUzivateli && ulozeny.poUzivateli['obchodnik@engineers-cz.cz']
-    && ulozeny.poUzivateli['obchodnik@engineers-cz.cz'].tiskyWord === 4,
+    ulozeny && ulozeny.poUzivateli && ulozeny.poUzivateli['obchodnik@priklad.cz']
+    && ulozeny.poUzivateli['obchodnik@priklad.cz'].tiskyWord === 4,
     JSON.stringify(ulozeny && ulozeny.poUzivateli));
   test('analytika: e-mail je JEN v rozpadu počítadel, nikde jinde',
     !JSON.stringify({ kliky: ulozeny.kliky, zdrz: ulozeny.zdrz,

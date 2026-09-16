@@ -22,9 +22,18 @@ function prostredi() {
   return (p === 'test' || p === 'sandbox' || p === 'testovaci') ? 'test' : 'ostre';
 }
 
+/* Nenastavená ADMIN_EMAIL je tiché oslabení (16. 9. 2026): přihlášení jede
+ * dál, ale ochrany hlavního účtu přestanou platit a nepůjde prvotní založení.
+ * Hlásí se proto sem — bez adresy, jen ano/ne. Kdo se ptá na zdraví webu,
+ * musí se dozvědět, že je napůl nastavený. */
+function spravceNastaven() {
+  return String(process.env.ADMIN_EMAIL || '').trim() !== '';
+}
+
 export default async () =>
   Response.json({ ok: true, verze: verze(), prostredi: prostredi(),
     popisProstredi: String(process.env.PROSTREDI_POPIS || '').trim(),
+    spravceNastaven: spravceNastaven(),
     cas: new Date().toISOString(), beh: 'netlify' });
 
 export const config = { path: '/api/zdravi' };
