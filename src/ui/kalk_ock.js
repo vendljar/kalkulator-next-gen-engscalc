@@ -460,10 +460,25 @@ function viditelnostSet(key, viditelne) {
  * a platí pro každou NOVOU zakázku — viz zobrazeniVychoziAplikuj v zobrazeni.js.
  * Pole `volitelneVychozi` v zadání zůstává kvůli starším uloženým zakázkám,
  * nic se z něj ale nečte. */
+/* ZÁKLAD JE TO, S ČÍM NOVÁ ZAKÁZKA OPRAVDU ZAČÍNÁ (16. 9. 2026, nález J. V.:
+ * „stále nám nefunguje zaškrtávání výchozích položek").
+ *
+ * Matice ukládá jen ODCHYLKY od základu — shoda se základem se maže
+ * (zobrazeniPolozkaVychoziNastav). Základ tedy musí být přesně ta hodnota,
+ * proti které se pak matice aplikuje, jinak se celý sloupec rozjede.
+ *
+ * A přesně to se dělo u přechodových plechů. Sloupec je kreslil proti
+ * `DEFAULT_ZADANI.prechodovePlechy` (= true), jenže nová zakázka začíná
+ * z `ZADANI_NOVA`, kde je `false`. Zaškrtávátko proto svítilo zapnuté,
+ * ale nová zakázka plechy neměla — a zaškrtnutím se nic neuložilo, protože
+ * „true se rovná základu". Sloupec se nedal přepnout ANI JEDNÍM směrem:
+ * zapnuto = neukládá se, vypnuto = uloží false, což je totéž jako nic.
+ * Administrátor tedy klikal do prázdna.
+ *
+ * `ZADANI_NOVA` přebíjí `DEFAULT_ZADANI` jen u pár polí zadání; sekce
+ * `volitelne` v něm není, takže ostatní položky dopadnou stejně jako dřív. */
 function volitelneVychoziZaklad(key) {
-  const D = (typeof DEFAULT_ZADANI !== 'undefined') ? DEFAULT_ZADANI : {};
-  if (key === 'prechodove') return !!D.prechodovePlechy;
-  return !!(D.volitelne || {})[key];
+  return vychoziZakladVolitelne(key);
 }
 /* seřazení řádků sekce dle uloženého pořadí (Z.poradi[sekce]); neuvedené na konec */
 function serazSekci(rows, sekceKey) {

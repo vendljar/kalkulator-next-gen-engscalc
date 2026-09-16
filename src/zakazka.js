@@ -146,6 +146,33 @@ const ZADANI_NOVA = {
   svetlikNadDvermi: false,
 };
 
+/* ZÁKLAD PRO SLOUPEC VÝCHOZÍ (16. 9. 2026, nález J. V.: „stále nám nefunguje
+ * zaškrtávání výchozích položek").
+ *
+ * Matice zobrazení ukládá jen ODCHYLKY od základu — hodnota shodná se základem
+ * se maže. Základ proto musí být přesně ta hodnota, se kterou NOVÁ zakázka
+ * doopravdy začíná; jinak sloupec ukazuje jedno a zakládá se druhé.
+ *
+ * U přechodových plechů se ty dvě strany rozešly: sloupec se kreslil proti
+ * `DEFAULT_ZADANI.prechodovePlechy` (true), ale nová zakázka je bere
+ * ze `ZADANI_NOVA` (false). Zaškrtávátko svítilo zapnuté, nová zakázka plechy
+ * neměla, a přepnout to nešlo ani jedním směrem: zapnuto = shoda se základem,
+ * neuloží se; vypnuto = uloží se false, což je zase totéž. Administrátor klikal
+ * do prázdna.
+ *
+ * Pravidlo bydlí tady, a ne v UI, schválně: takhle se dá otestovat CHOVÁNÍ —
+ * „základ se rovná tomu, co má nová zakázka" — a ne jen tvar zápisu.
+ * Soubory v src/ui/ se v Node testech nenačítají (nález 16. 9. 2026 při havárii
+ * v16.9.5), takže cokoli, co si zaslouží skutečný test, patří do jádra. */
+function vychoziZakladVolitelne(key, vychoziZadani) {
+  const D = vychoziZadani || (typeof DEFAULT_ZADANI !== 'undefined' ? DEFAULT_ZADANI : {}) || {};
+  const ma = (o, k) => !!o && Object.prototype.hasOwnProperty.call(o, k);
+  if (key === 'prechodove')
+    return !!(ma(ZADANI_NOVA, 'prechodovePlechy') ? ZADANI_NOVA.prechodovePlechy : D.prechodovePlechy);
+  const nv = ZADANI_NOVA.volitelne;
+  return !!(ma(nv, key) ? nv[key] : (D.volitelne || {})[key]);
+}
+
 function zadaniRucniMapa(data) {
   if (!data || typeof data !== 'object') return {};
   if (!data.zadaniRucni || typeof data.zadaniRucni !== 'object') data.zadaniRucni = {};
@@ -1141,7 +1168,7 @@ const StorageAdapter = {
 };
 
 if (typeof module !== 'undefined')
-  module.exports = { ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, variantaDatum, dnesIso, ZADANI_NOVA, zadaniRucniMapa, zadaniRucniJe,
+  module.exports = { ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, variantaDatum, dnesIso, ZADANI_NOVA, vychoziZakladVolitelne, zadaniRucniMapa, zadaniRucniJe,
                      zadaniRucniZnac, zadaniRucniZrus, zadaniZCeniku, uvodniFotoObrazky, uvodniFotoSymboly, uvodniFotoPole, ZAKAZKA_SCHEMA, novaZakazka, novaVarianta, novaVariantaData,
                      nastavRidici, ridiciVarianta, aktivniVarianta, importZakazka, StorageAdapter,
                      zakazkaUnikatniId,
