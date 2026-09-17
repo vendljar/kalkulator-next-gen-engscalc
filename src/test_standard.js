@@ -124,10 +124,30 @@ test('popis povolených způsobů se skládá ze seznamu, ne z volného textu',
 test('prázdný seznam se popíše jako „nekontroluje se"',
   S.standardZaskleniPopis({ zaskleniPovolene: [] }) === 'nekontroluje se');
 
-/* ---------- 4) můstek a třetí stav ---------- */
+/* ---------- 4) můstek a třetí stav ----------
+ *
+ * MŮSTEK PLATÍ PRO OBĚ VĚTVE (potvrzeno J. V. 17. 9. 2026: „zaveď kontrolu
+ * můstků i v interiérové"). Tenhle oddíl to odjakživa zkoušel na VNITŘNÍ
+ * šachtě, takže chování bylo správné — jenže Nastavení u můstku psalo, že
+ * patří k venkovní šachtě, a nikdo nehlídal, že se podle toho kód jednou
+ * „neopraví" na exteriér. Limity jsou společné, ne per větev; párové testy
+ * níž to přibíjejí z obou stran. */
 
 test('bez můstku se rozměry můstku neřeší',
   S.standardVyhodnot(int(), 20, std()).stav === 'standard');
+
+/* Táž zadání na obou typech šachty musí dát tutéž odpověď. Kdyby kontrola
+ * začala platit jen pro exteriér (nebo jen pro interiér), rozejdou se. */
+[
+  ['v limitu projde', { mustek: true, mustekHloubkaMm: 800, mustekSirkaMm: 1400 }, 'standard'],
+  ['hloubka nad limit je atyp', { mustek: true, mustekHloubkaMm: 1200, mustekSirkaMm: 1400 }, 'atyp'],
+  ['nevyplněné rozměry jsou „nelze posoudit"', { mustek: true }, 'nelze'],
+].forEach(([jm, zm, cekano]) => {
+  const vInt = S.standardVyhodnot(int(zm), 20, std()).stav;
+  const vExt = S.standardVyhodnot(ext(zm), 20, std()).stav;
+  test('můstek — ' + jm + ' stejně v interiéru i exteriéru',
+    vInt === cekano && vExt === cekano, { int: vInt, ext: vExt, cekano });
+});
 const bezRozmeru = S.standardVyhodnot(int({ mustek: true }), 20, std());
 test('můstek bez rozměrů = NELZE POSOUDIT, ne atyp',
   bezRozmeru.stav === 'nelze', bezRozmeru.stav);
@@ -145,6 +165,17 @@ const skryvani = S.standardVyhodnot(int({ hloubka: 9, mustek: true }), 20, std()
 test('„mimo standard" přebíjí „nelze posoudit" (atyp se nedá schovat)',
   skryvani.stav === 'atyp', skryvani.stav);
 /* Nula je platný rozměr, prázdno ne — „prázdno není nula" (pravidlo #8). */
+/* A text v Nastavení musí říkat totéž co kód. Do 17. 9. 2026 tvrdil, že
+ * můstek patří k venkovní šachtě, zatímco kontrola běžela na obou — přesně
+ * ten druh rozporu, kvůli kterému se pak „opravuje" správně fungující kód. */
+{
+  const fs = require('fs');
+  const ui = fs.readFileSync(__dirname + '/ui/nastaveni_ui.js', 'utf8');
+  test('Nastavení u můstku neslibuje jen venkovní šachtu',
+    ui.indexOf('Můstek patří k venkovní šachtě') < 0);
+  test('a říká, že platí pro obě', /venkovní i vnitřní<\/b> šachtu/.test(ui));
+}
+
 test('nulová hloubka můstku je platná hodnota, ne chybějící údaj',
   S.standardVyhodnot(int({ mustek: true, mustekHloubkaMm: 0, mustekSirkaMm: 0 }), 20, std()).stav === 'standard');
 
