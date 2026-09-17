@@ -4344,6 +4344,21 @@
    "kde" : "`src/ui/program_ui.js` (`progRozdilyVerze`), `src/program.js` (`programData`, srov. `programOtisk`), `src/cenik.js` (`cenikRozdily`)",
    "pozn" : "Nález V45 byl v závěru 5. kola v sešitu, ale v roadmapě chyběl — doplněn 16. 9. 2026 večer při kontrole listů Nálezy a Prompty oprav. Rozsah opravy zatím neodsouhlasen."
   }
+  ,
+  {
+   "id" : "265",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "stredni",
+   "slozitost" : "S",
+   "hotovoV" : "v17.9.2",
+   "nazev" : "Standard OCK hlídá počet sloupků",
+   "proc" : "Zadání J. V. 17. 9. 2026: „do interiéru i exteriérů přidej položku počet sloupků. ve standardu to jsou 4. jakékoliv jiné číslo = atyp.\" Počet sloupků určuje konstrukční řešení a do té doby ho kontrola standardu neposuzovala — šachta s pěti nebo třemi sloupky prošla jako standardní.",
+   "detail" : "Nová položka `sloupkyStandard` v OBOU větvích standardu, výchozí 4, nastavitelná v Nastavení → Standard OCK (zásada modulu: limity nejsou v kódu). Na rozdíl od rozměrů to NENÍ strop, ale PŘESNÁ hodnota — tři sloupky jsou stejně nestandardní jako pět, protože nejde o velikost, ale o řešení. Prázdné pole kontrolu vypne, nevyplněný počet v zadání je „nelze posoudit\", ne atyp. Pole „Počet sloupků\" v Zadání šachty už existovalo (`Z.rohoveSloupky`), přibyla tedy jen kontrola.",
+   "hotovoKdyz" : "Splněno: čtyři sloupky projdou, jakýkoli jiný počet hlásí atyp, a limit jde změnit v Nastavení zvlášť pro každou větev.",
+   "kde" : "`src/standard_ock.js`, `src/ui/nastaveni_ui.js`, `src/test_standard_sloupky.js`",
+   "pozn" : "Cena se tím nemění — kontrola standardu podle zásady 1 nic nepřepočítává, jen zaškrtne ATYP a ten si člověk může vrátit. **Při té příležitosti ověřeno, že ŠÍŘKA MŮSTKU se hlídá už dnes** (strop = min(šířka OCK, 2000 mm), nález „mimo\" při překročení, „nelze\" při nevyplnění) — a to v OBOU větvích, přestože Nastavení u můstku píše, že patří k venkovní šachtě. Ten rozpor mezi textem a chováním zůstává k rozhodnutí J. V."
+  }
  ],
  "meta" : {
   "projekt" : "Kalkulator Next Gen",
@@ -4849,7 +4864,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v17.9.1 (engscalc)",
+  "build" : "v17.9.2 (engscalc)",
   "stavKDatu" : "17. 9. 2026"
  },
  "_comment" : [

@@ -49,6 +49,11 @@ const STANDARD_VYCHOZI = {
      * (21. 8. 2026 večer, zadání J. V.). Do té doby tu stál jen popisný
      * text, který se nikde nekontroloval; popisná pole z nastavení zmizela. */
     zaskleniPovolene: ['na terče'],
+    /* POČET SLOUPKŮ (17. 9. 2026, zadání J. V.: „ve standardu to jsou 4,
+     * jakékoliv jiné číslo = atyp"). Není to strop jako u rozměrů, ale
+     * PŘESNÁ hodnota — tři sloupky jsou stejně nestandardní jako pět.
+     * Prázdno v tabulce znamená „nekontroluje se". */
+    sloupkyStandard: 4,
   },
   /* Interiér má limity PODLE PROFILU — každý profil svou výšku a hloubku. */
   interier: {
@@ -61,6 +66,7 @@ const STANDARD_VYCHOZI = {
      * hlásilo atyp — přitom je součástí standardu (nález J. V.). Hodnoty
      * odpovídají volbám v Zadání šachty → Způsob zasklení. */
     zaskleniPovolene: ['na terče', 'mezi příčníky'],
+    sloupkyStandard: 4,        // viz poznámka u exteriéru
   },
   mustek: {
     hloubkaMaxMm: 1000,
@@ -130,6 +136,19 @@ function _radyOciste(pole, spolecneLimity) {
   return rady.length ? rady : null;
 }
 
+/* Počet sloupků z uložené tabulky. Tři stavy, ne dva:
+ *   chybí klíč   → výchozí hodnota (starší konfigurace ho nemá a nemá důvod
+ *                  přijít o kontrolu, kterou si nikdy nevypnula),
+ *   prázdno/0    → null = „nekontroluje se" (vědomé vypnutí),
+ *   kladné číslo → přesná hodnota standardu.
+ * Záporné a nečíselné se zahodí na „nekontroluje se" — vymýšlet za uživatele
+ * číslo, podle kterého se pak hlásí atyp, by bylo horší než nekontrolovat. */
+function _sloupkyOciste(vetev, vychozi) {
+  if (!Object.prototype.hasOwnProperty.call(vetev, 'sloupkyStandard')) return vychozi;
+  const n = _cislo(vetev.sloupkyStandard);
+  return (n !== null && n > 0) ? n : null;
+}
+
 /* Očista uloženého standardu — server ani starší konfigurace nesmí protlačit
  * nesmysl. Chybějící části se doplní z výchozího znění. */
 function standardOciste(vstup) {
@@ -151,6 +170,7 @@ function standardOciste(vstup) {
     if (rady) s.exterier.profily = rady;
     if (Array.isArray(e.zaskleniPovolene))
       s.exterier.zaskleniPovolene = e.zaskleniPovolene.map(x => String(x).trim()).filter(Boolean);
+    s.exterier.sloupkyStandard = _sloupkyOciste(e, d.exterier.sloupkyStandard);
   }
   if (v.interier && typeof v.interier === 'object') {
     const i = v.interier;
@@ -164,6 +184,7 @@ function standardOciste(vstup) {
      * a to je platná volba, takže se NEPŘEPISUJE výchozím zněním. */
     if (Array.isArray(i.zaskleniPovolene))
       s.interier.zaskleniPovolene = i.zaskleniPovolene.map(x => String(x).trim()).filter(Boolean);
+    s.interier.sloupkyStandard = _sloupkyOciste(i, d.interier.sloupkyStandard);
   }
   if (v.mustek && typeof v.mustek === 'object') {
     const n = _cislo(v.mustek.hloubkaMaxMm); if (n !== null && n > 0) s.mustek.hloubkaMaxMm = n;
@@ -310,6 +331,31 @@ function standardVyhodnot(z, vyskaM, std, pripl) {
       nalezy.push(_nalez('Jeden typ zasklení', 'jeden druh skla po celém povrchu',
         druhy.length + ' druhy v nabídce (' + druhy.join(', ')
         + ') — varianty pro zákazníka, nebo se míchají na jedné šachtě?', 'nelze'));
+  }
+
+  /* --- počet sloupků (17. 9. 2026, zadání J. V.) ---
+   * „Ve standardu to jsou 4. Jakékoliv jiné číslo = atyp."
+   *
+   * Není to strop, ale PŘESNÁ hodnota: tři sloupky jsou stejně nestandardní
+   * jako pět. Proto `!==` a ne `>`. Platí pro obě větve; limit se bere
+   * z té, do které zakázka patří, aby šel v Nastavení nastavit zvlášť.
+   *
+   * Souvislost s výpočtem: jádro počítá `z.rohoveSloupky > 4` jako příznak
+   * zesílené konstrukce. Tahle kontrola tam nesahá — jen řekne, že zakázka
+   * není standardní. Cenu podle zásady 1 nemění nic. */
+  {
+    const vetevS = ext ? s.exterier : s.interier;
+    const kde = ext ? 'exteriér' : 'interiér';
+    if (vetevS.sloupkyStandard != null) {
+      kontrol++;
+      const ks = _cislo(zad.rohoveSloupky);
+      if (ks === null)
+        nalezy.push(_nalez('Počet sloupků (' + kde + ')', vetevS.sloupkyStandard + ' ks',
+          'nevyplněno', 'nelze'));
+      else if (ks !== vetevS.sloupkyStandard)
+        nalezy.push(_nalez('Počet sloupků (' + kde + ')', 'přesně ' + vetevS.sloupkyStandard + ' ks',
+          ks + ' ks'));
+    }
   }
 
   /* --- můstek --- */

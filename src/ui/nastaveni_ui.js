@@ -305,6 +305,19 @@ function nastStandard() {
       zasklení</b> — odpovídají volbě „Způsob zasklení" v zadání šachty. Nezaškrtnutý způsob je atyp;
       když nezaškrtnete žádný, zasklení se nekontroluje vůbec.</div>${zaskleniChk(vetev)}`;
 
+  /* POČET SLOUPKŮ (17. 9. 2026, zadání J. V.: „ve standardu to jsou 4,
+   * jakékoliv jiné číslo = atyp"). Na rozdíl od rozměrů to není strop, ale
+   * přesná hodnota — proto „přesně", ne „max". Prázdné pole kontrolu vypne;
+   * je to platná volba, takže se nedoplňuje výchozí čtyřkou. */
+  const sloupkyBlok = (vetev) => `<div class="row"><label>Počet sloupků ve standardu</label>
+      <input type="number" step="1" min="0" style="width:100px"
+        value="${esc(s[vetev].sloupkyStandard == null ? '' : s[vetev].sloupkyStandard)}"
+        placeholder="nekontrolovat"
+        title="Přesný počet sloupků ve standardu. Jakýkoli jiný počet je atyp. Prázdné pole kontrolu vypne."
+        onchange="stdSet('${vetev}.sloupkyStandard', this.value)"><span class="u">ks</span></div>
+    <div class="note" style="margin:2px 0 0">Hlídá se <b>přesná</b> hodnota, ne strop — méně sloupků
+      je stejně nestandardní jako víc. Prázdné pole kontrolu vypne.</div>`;
+
   return `<div class="note" style="margin-top:0">Podle téhle tabulky se v <b>Kalkulaci OCK</b>
       i v <b>Technické specifikaci</b> rozhoduje, jestli je šachta <b>standardní</b>, nebo <b>atyp</b>.
       Kontrola <b>nikdy nic neblokuje</b> — ukazuje štítek a seznam nálezů; od 21. 8. 2026 večer
@@ -324,6 +337,7 @@ function nastStandard() {
     <div class="sec-title">Exteriér (venkovní šachta) — limity podle profilu</div>
     ${tabulka('exterier')}
     ${zaskleniBlok('exterier')}
+    ${sloupkyBlok('exterier')}
 
     <div class="sec-title">Můstek mezi budovou a OCK</div>
     <div class="note" style="margin-top:0">Můstek patří k venkovní šachtě — proto stojí tady
@@ -343,6 +357,7 @@ function nastStandard() {
     <div class="sec-title">Interiér (vnitřní šachta) — limity podle profilu</div>
     ${tabulka('interier')}
     ${zaskleniBlok('interier')}
+    ${sloupkyBlok('interier')}
 
     <div class="sec-title">Společná pravidla</div>
     <label style="display:flex;align-items:center;gap:8px;margin:6px 0">

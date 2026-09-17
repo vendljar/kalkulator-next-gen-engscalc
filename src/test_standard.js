@@ -26,13 +26,19 @@ const std = () => { const s = JSON.parse(JSON.stringify(S.STANDARD_VYCHOZI)); s.
  * hloubky NEBO ZDVIHU vrací kontrola „nelze posoudit", aby se z prázdného
  * formuláře nestal atyp a automat nezaškrtl přirážku. Vzory proto nesou
  * i zdvih — testují se limity, ne neúplnost. Výšku konstrukce si každý test
- * dál předává zvlášť druhým parametrem, ta se ze zdvihu nepočítá. */
+ * dál předává zvlášť druhým parametrem, ta se ze zdvihu nepočítá.
+ *
+ * `rohoveSloupky: 4` přibyly 17. 9. 2026 se standardem počtu sloupků. Není
+ * to kosmetika vzoru: bez nich by každý test táhl navíc nález „nevyplněno"
+ * a měřil by něco jiného, než co má v názvu. Skutečné zadání to pole vždy
+ * má (`DEFAULT_ZADANI.rohoveSloupky` = 4), takže vzor tím sedí blíž realitě.
+ * Vlastní pravidlo hlídá `test_standard_sloupky.js`. */
 const ext = (zmeny) => Object.assign({
-  typSachty: 'exteriérová', sirka: 1.8, hloubka: 1.9, zdvih: 12,
+  typSachty: 'exteriérová', sirka: 1.8, hloubka: 1.9, zdvih: 12, rohoveSloupky: 4,
   profily: { sloupek: { dim: '80x80' } }, zaskleni: 'na terče',
 }, zmeny || {});
 const int = (zmeny) => Object.assign({
-  typSachty: 'interiérová', sirka: 1.5, hloubka: 1.5, zdvih: 12,
+  typSachty: 'interiérová', sirka: 1.5, hloubka: 1.5, zdvih: 12, rohoveSloupky: 4,
   profily: { sloupek: { dim: '80x50' } }, zaskleni: 'na terče',
 }, zmeny || {});
 
