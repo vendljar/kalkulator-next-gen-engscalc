@@ -2568,7 +2568,7 @@
    "pozn" : "Hotovo v buildu v18.8.1 (18. 8. 2026). Číslování odpovídá historii: Model 1 = původní excelová šablona, Model 2 = opravená; případná třetí verze výpočtu bude Model 3."
   },
   {
-   "pozn" : "VYČÍSLENO 16. 9. 2026 — podklad `2026-09-16_MODEL1_vs_MODEL2_vycisleni.md`. **Model 1 předražuje ATYP zakázky.** Při marži 30 % a rezervě 30 % je dražší o 6,55 %; při marži 45 % o 9,97 %. Bez rezervy je rozdíl −0,40 %, takže se to týká přesně ATYP zakázek, kde jde o nejvíc peněz. Celý rozdíl dělají DVĚ položky, obě o rezervě: základ se bere z ceny VČETNĚ marže a marže se přidá ještě jednou (základ −4,35 %, příplatky −4,61 %). Zbylých sedm rozdílů je dohromady do půl procenta. Ověřeno při třech maržích a třech rezervách — poměr je strukturální, takže platí i nad ostrým ceníkem. ZBÝVÁ ROZHODNUTÍ: potvrdit na skutečné ATYP zakázce a rozhodnout, zda Model 2 jako výchozí, nebo Model 1 zmrazit a otevřít #159.",
+   "pozn" : "VYČÍSLENO 16. 9. 2026 — podklad `2026-09-16_MODEL1_vs_MODEL2_vycisleni.md`. **Model 1 předražuje ATYP zakázky.** Při marži 30 % a rezervě 30 % je dražší o 6,55 %; při marži 45 % o 9,97 %. Bez rezervy je rozdíl −0,40 %, takže se to týká přesně ATYP zakázek, kde jde o nejvíc peněz. Celý rozdíl dělají DVĚ položky, obě o rezervě: základ se bere z ceny VČETNĚ marže a marže se přidá ještě jednou (základ −4,35 %, příplatky −4,61 %). Zbylých sedm rozdílů je dohromady do půl procenta. Ověřeno při třech maržích a třech rezervách — poměr je strukturální, takže platí i nad ostrým ceníkem. ZBÝVÁ ROZHODNUTÍ: potvrdit na skutečné ATYP zakázce a rozhodnout, zda Model 2 jako výchozí, nebo Model 1 zmrazit a otevřít #159. **AVIZOVÁNO J. V. 17. 9. 2026: „za pár dní už přejdeme výpočetně výhradně na model 2.\"** Než k tomu dojde, je potřeba vědět, co se stane se STARŠÍMI nabídkami: dnes se shodují s předlohou, ze které vznikly, protože je počítal Model 1. Po přepnutí by se přepočítaly jinak — u ATYP zakázek řádově o procenta. Otázka tedy nezní jen „který model\", ale i „platí nový model i zpětně, nebo si uzavřené nabídky nesou ten svůj?\" — stejné rozhodnutí, jaké 16. 9. padlo u přechodových plechů (#262), a tam znělo „zpětně neřeš\".",
    "id" : "149",
    "pozn" : "Souvisí s třetí verzí výpočtu (Model 3) a se zmrazením Modelu 1 po dotestování (#24). Nespouštět bez pokynu — „mrkneme na to později\".",
    "hotovoKdyz" : "Existuje vyčíslené porovnání dopadů všech osmi rozdílů na vzorové zakázce a zapsané rozhodnutí, co z toho převezme Model 3 (případně změna výchozího režimu nové zakázky). Model 1 zůstal nedotčený.",
@@ -2742,7 +2742,7 @@
    "stav" : "ceka",
    "slozitost" : "S",
    "vlna" : "B",
-   "pozn" : "Dá se pustit kdykoliv samostatně, nic k tomu není potřeba.",
+   "pozn" : "Dá se pustit kdykoliv samostatně, nic k tomu není potřeba. **Stav k 17. 9. 2026: OTEVŘENO a naléhavější než dřív.** Rozhraní se od vzniku snímků výrazně změnilo (zaškrtávátka volitelných položek, sloupec Výchozí, dvojice přechodových plechů), takže snímky ukazují chování, které už neplatí. POZOR na `kde` výš: `snimky_manual.mjs` ani `deploy/manual_obchodnik.html` v repozitáři NEJSOU — příručka i generátor snímků žijí mimo něj (cloudová složka `deliver/`). V repozitáři je jen kontrola `overit_manual.mjs`. Než se položka pustí, musí se dohledat, kde generátor je.",
    "nazev" : "Přegenerovat snímky obrazovky v příručce obchodníka",
    "zavisi" : [
     {
@@ -2803,7 +2803,7 @@
    "hotovoKdyz" : "Ze samotné hlavičky sloupce je poznat, co zaškrtnutí udělá, i bez čtení poznámky pod tabulkou.",
    "nazev" : "Zaškrtávátka v přehledu variant — srozumitelnější názvy sloupců",
    "stav" : "ceka",
-   "pozn" : "Nález N8 z 9. kola testovací procedury. Vzniklo z dotazu v chatu 21. 8. 2026 večer.",
+   "pozn" : "Nález N8 z 9. kola testovací procedury. Vzniklo z dotazu v chatu 21. 8. 2026 večer. **Stav k 17. 9. 2026: OTEVŘENO, čeká na rozhodnutí J. V.** (otázka výš). Ověřeno ve zdrojáku: hlavičky jsou pořád „Otevř.\" a „Řídící ✓\" a vysvětlení nese jen `title`, tedy bublina po najetí myší — na telefonu se k ní uživatel nedostane vůbec, takže podmínka „poznat to ze samotné hlavičky\" splněná není. Tabulka se mezitím přestěhovala: je v `src/ui/seznam_ui.js` (funkce hlavičky variant), ne v `online_ui.js`, jak stojí v `kde` výš.",
    "id" : "165",
    "vlna" : "B",
    "detail" : "Jde o dva sloupce v kartě „Kalkulace v zakázce (varianty řešení a zákazníků)“: kolečko OTEVŘ. říká, která varianta je otevřená k úpravám (přepíná i záložky Kalkulace OCK / Specifikace / Kalkulace PROJ), čtvereček ŘÍDÍCÍ říká, která varianta je platná — z ní se dělá cenová nabídka, krycí list i smlouva. Vysvětlivka je dnes jen v poznámce pod tabulkou, což zjevně nestačí.",
@@ -3682,11 +3682,12 @@
    "dulezitost" : "stredni",
    "vlna" : "B",
    "detail" : "Ověřeno v kódu 8. 9. 2026 (v8.9.2), co se dá bez prohlížeče: **N2** hlídač stáří ceníku — `C.dph` je mezi sledovanými položkami (src/cenik_stari.js, CENIK_ZAKAZKOVE) záměrně: automatika ho nepřepisuje, ale do POČTU rozdílů se počítá; hlášení „1 položka, Sazba DPH −42,9 %“ = 0,12 vs 0,21 — zakázkové rozhodnutí, ne starý ceník → řeší #223. **P4** nic v kódu; sledovat, po které akci. **N8** hlídá `overit_vypnuty_radek.mjs` (od 8. 9. v CI) — přepis se zapisuje na onchange, tedy i Tabulátorem; při testu ověřit ručně u klávesnice. **N9** relace platí 12 h (`Max-Age=43200`, sdilene.mjs); 8. 9. vypadla 3× — ten den proběhly tři obnovy databáze s účty z otisku (mění `hesloVerze` → všechny relace 401 „Heslo účtu bylo změněno“), což je čekané; sérii 409 už #219 nepřipouští. Při dalším kole sledovat bez obnov. **N10** zaškrtávátka Počítat/Výchozí — ověřit ručně; harness `overit_zobrazeni.mjs` je přepíná programově. **V19** výběr příplatků do nabídky (`Z.priplatkyVynechat`) přežívá přepnutí modelu — hlídá test_nepocitat.js/test_nabidka.js; ponecháno otevřené. **V2** (odstup lešení 0,20 vs 0,25) a **V25** (kusy kotvicích lišt) — rozhodnuto ponechat otevřené, jen porovnat s předlohou dané zakázky.",
-   "hotovoKdyz" : "Po dalším kole testů má každý z osmi nálezů v sešitu zapsáno POTVRZEN / NEPROJEVIL SE s číslem zakázky a akcí.",
-   "stav" : "ceka",
+   "hotovoKdyz" : "Splněno: každý z osmi nálezů má po 4. a 5. kole zapsaný výsledek v sešitu VYHODNOCENI_TESTU_KALKULACE.",
+   "stav" : "hotovo",
+   "hotovoV" : "v16.9.23",
    "nazev" : "Nové kolo testů na engscalc: co sledovat (N2, P4, N8, N9, N10, V19, V2, V25)",
    "id" : "221",
-   "pozn" : "Nutná podmínka kola: neprovádět během něj obnovu databáze ani zveřejnění ceníku (viz N9 a pravidlo z listu Prompty oprav). Stav k 16. 9. 2026: 4. kolo testů proběhlo a nálezy V39, V40, V41, V42 i O10 jsou opravené (viz #248 až #251); otevřené zůstává jen V25, které se vede samostatně jako #258."
+   "pozn" : "Nutná podmínka kola: neprovádět během něj obnovu databáze ani zveřejnění ceníku (viz N9 a pravidlo z listu Prompty oprav). **UZAVŘENO 17. 9. 2026:** proběhla 4. i 5. kolo testů a všech osm sledovaných nálezů má výsledek — N2 vyřešeno v #223, P4 se za dvě kola neprojevil, N8 i N9/N10 potvrdil J. V. jako odstraněné, V2 opraveno ve 4. kole, V19 hlídají test_nepocitat.js a test_nabidka.js, V25 rozhodnuto 17. 9. 2026 (#258). Poslední otevřenou položkou bylo právě V25; jeho rozhodnutím kolo končí."
   },
   {
    "id" : "222",
@@ -4245,14 +4246,15 @@
   {
    "id" : "258",
    "vlna" : "E",
-   "stav" : "blokovano",
+   "stav" : "hotovo",
    "dulezitost" : "stredni",
    "slozitost" : "S",
+   "hotovoV" : "v16.9.23",
    "nazev" : "V25 — lišty u zasklení mezi příčníky",
-   "cekaNa" : "odpověď projektantů (dotaz zadán 15. 9. 2026)",
-   "proc" : "Nález ze 4. kola testů. Bez stanoviska projektantů nelze rozhodnout, co je správně.",
-   "detail" : "ZBÝVÁ: získat od projektantů stanovisko a teprve pak opravit.",
-   "hotovoKdyz" : "Projektanti odpoví a oprava projde v modelu 2.",
+   "proc" : "Nález ze 4. kola testů. Předloha si u kotvicích lišt odporovala sama: v listu VZORCE (C60 = C59) je vykazuje 1 : 1 k vnějším a KALKULÁK C127 sčítá 204 + 204 = 408 ks, ale do DÉLKY přičte jen 10 %. Mezi „ke každé vnější liště patří jedna kotvicí\" a „kotvení stojí desetinu materiálu navíc\" je faktor deset, takže obojí platit nemohlo.",
+   "detail" : "ROZHODNUTO J. V. 17. 9. 2026 (varianta B): „správný je výpočet Model 2: +10 % z délky a dále pracovat v bm.\" Kotvicí lišta tedy NENÍ samostatný kus, je to přídavek materiálu — a přídavek se měří v metrech. `listyKs` počítá výhradně vnější lišty a zůstává, jak byl; cena se nemění, protože peníze jdou z kilogramů a ty z metrů, počet kusů do nich nevstupuje nikde. Doplněno vysvětlení do Detailu výpočtu (KUSY = vnější lišty, kotvicí jsou 10 % v DÉLCE), zapsáno odůvodnění do jádra a založena sada `src/test_listy_kotvici.js` (12 kontrol), která rozhodnutí přibíjí — počet kusů natvrdo, aby se „srovnání s předlohou\" na 408 nedalo provést omylem. Model 1 zůstává 1 : 1 s předlohou (10 % z kusů) podle rozhodnutí z 15. 9. 2026.",
+   "hotovoKdyz" : "Splněno: rozhodnutí padlo, je zapsané v jádře i v Detailu výpočtu a drží ho sada.",
+   "kde" : "`src/engine.js` (listyKs, listyKotviciBm), `src/ui/detail_ui.js` (řádek Lišty), `src/test_listy_kotvici.js`",
    "pozn" : "Rozhodnutí J. V. 15. 9. 2026: **opravu dělat jen v rámci modelu 2**, model 1 zůstává 1:1 s předlohou."
   },
   {
@@ -4753,6 +4755,11 @@
     "text" : "Dávka 16. 9. 2026 (3, engscalc): 5. kolo připomínek J. V. — přechodové plechy jsou vždy dvojice materiál + montáž (jen u NOVÝCH zakázek, zpětně se neřeší) a ručně přepsaná atypová hodnota přežije vypnutí ATYP (#262). Při ověřování přibyly dva zapsané nálezy: tichá náhrada chybějící sazby ATYP (#263) a slepý výpis rozdílů u zahraniční řady ceníku (#264, = V45 ze závěru 5. kola, v roadmapě do té doby chyběl).",
     "hotovo" : true,
     "pozn" : "build v16.9.22. Připomínky se získaly porovnáním dvou verzí hodnoticího sešitu; ze dvaceti řetězců navíc byly čtyři opravdu nové a dva z nich znamenaly změnu chování. Pravidlo ATYP se téhož dne ještě upřesnilo: zapnutí dosazuje předlohu VŽDY, i přes ruční hodnotu. Ověřeno: 97 sad, 4082 kontrol, osm cílených mutací. **Otázka r36 (sazba skla interiéru podle zasklení) je potvrzená a v kódu byla už od 9. 9.** — na terče VSG 4.4.2, mezi příčníky VSG 4.4.1, obě plochy týmž sklem; 14. 9. k tomu padla tichá záloha, která uměla počítat jiným sklem, než měl řádek v názvu. Hlídá `src/test_sklo_vazba.js`. Výsledky kola zapsány do `VYHODNOCENI_TESTU_KALKULACE_18.xlsx` (nový sloupec J na listu 5. kola)."
+   },
+   {
+    "text" : "Dávka 17. 9. 2026 (engscalc): rozhodnut nález V25 — kotvicí lišty jsou přídavek v METRECH, ne samostatné kusy; správný je výpočet Modelu 2 (+10 % z délky). Rozhodnutí zafixováno sadou a uzavřeno #258 i #221 (sledované nálezy 4. a 5. kola).",
+    "hotovo" : true,
+    "pozn" : "build v16.9.23. Cena se nemění — peníze jdou z kilogramů a ty z metrů, počet kusů do nich nevstupuje nikde; varianta B je tedy vysvětlení výkazu, ne přepočet. Nová sada `src/test_listy_kotvici.js` (12 kontrol) přibíjí počet kusů natvrdo, aby se „srovnání s předlohou\" na 408 nedalo provést omylem; čtyři mutace chyceny. Celkem 98 sad a 4098 kontrol. **Vlna B tím NENÍ hotová** — otevřené zůstávají #161 (snímky v příručce; generátor není v repozitáři) a #165 (názvy sloupců v přehledu variant, čeká na rozhodnutí J. V.)."
    }
   ],
   "pravidla" : [
@@ -4839,8 +4846,8 @@
     "id" : "F"
    }
   ],
-  "build" : "v16.9.22 (engscalc)",
-  "stavKDatu" : "16. 9. 2026"
+  "build" : "v16.9.23 (engscalc)",
+  "stavKDatu" : "17. 9. 2026"
  },
  "_comment" : [
   "JEDINÝ ZDROJ PRAVDY pro roadmapu Kalkulátoru Next Gen.",

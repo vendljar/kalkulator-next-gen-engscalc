@@ -489,7 +489,21 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
    * KUSŮ a výsledek sečte s metry: dimenzionálně to nesedí, ale Model 1 je
    * 1:1 s předlohou VČETNĚ jejích chyb — to je celý smysl toho přepínače.
    * Model 2 počítá 10 % z DÉLKY, což ten řádek evidentně měl znamenat.
-   * Ověřeno ve dvou různých zákaznických souborech, shodně (kusy). */
+   * Ověřeno ve dvou různých zákaznických souborech, shodně (kusy).
+   *
+   * ROZHODNUTO (nález V25, J. V. 17. 9. 2026, varianta B): „správný je
+   * výpočet Model 2: +10 % z délky a dále pracovat v bm."
+   *
+   * Tím se uzavírá rozpor předlohy, která si odporovala sama: v C60 vykazuje
+   * kotvicí lišty 1 : 1 k vnějším (KALKULÁK C127 sčítá 204 + 204 = 408 ks),
+   * ale do DÉLKY přičte jen 10 %. Obojí platit nemůže. Platí ta desetina:
+   * kotvicí lišta NENÍ samostatný kus ke každé vnější, je to přídavek
+   * materiálu na kotvení — a přídavek se měří v metrech, ne v kusech.
+   *
+   * `listyKs` proto počítá VÝHRADNĚ vnější lišty a kotvicí do něj nepatří.
+   * Kdo by ho chtěl „opravit" na 408, ať nejdřív čte tenhle odstavec: byla
+   * by to změna ceny (dvojnásobek metrů i kilogramů), ne oprava výkazu.
+   * Hlídá `src/test_listy_kotvici.js`. */
   const listyKotviciBm = fixes ? listyBm * 0.1 : listyKs * 0.1;
   const listyCelkBm = listyBm + listyKotviciBm;
   const listyKg = listaKgBm * listyCelkBm;

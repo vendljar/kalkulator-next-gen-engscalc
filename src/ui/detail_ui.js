@@ -229,8 +229,10 @@ function renderDetail() {
       'jen při zasklení na terče; rámy · (terče na bok · 2 + terče na čelo) + zbytek portálu; '
       + `0,15 kg/ks · 0,008 m²/ks (terčů na stranu: 3 při rozměru nad 1,7 m, jinak 2)`],
     ['Lišty', `${d.listyKs} ks · ${M(d.listyBm, 1)} bm · ${M(d.listyKg, 1)} kg`,
-      'jen při zasklení mezi příčníky; k délce se přičítá 10 % kotvicích lišt '
-      + (OCK.fixes ? '(Model 2: z délky)' : '(Model 1: z počtu kusů, jako v předloze)')],
+      'jen při zasklení mezi příčníky. KUSY jsou vnější lišty; kotvicí lišty '
+      + 'mezi ně nepatří, započítávají se jako 10 % přídavek v DÉLCE '
+      + (OCK.fixes ? '(Model 2: z délky — takto je to správně, rozhodnutí 17. 9. 2026)'
+                   : '(Model 1: z počtu kusů, jako v předloze — Model 2 to počítá z délky)')],
     ['Oplechování dveří', `${d.oplDvereKs} ks · ${M(d.oplDvereKg, 1)} kg · ${M(d.oplDvereM2, 2)} m²`,
       '3 ks na nástupiště (2 svislé strany + nadpraží); bm = (2 · 2,3 + šířka otvoru dveří) · nástupiště, '
       + 'z toho 0,8925 kg/bm a 0,21 m²/bm'],
