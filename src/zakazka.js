@@ -246,7 +246,20 @@ function novaVariantaData() {
   const zadani = JSON.parse(JSON.stringify(DEFAULT_ZADANI));
   Object.assign(zadani, ZADANI_NOVA);   // předvolby nové nabídky (9. 9. 2026)
   const data = {
-    ock: { zadani, fixes: false },   // výchozí režim: 1:1 jako Excel
+    /* VÝCHOZÍ JE MODEL 2 (17. 9. 2026, rozhodnutí J. V. po rozboru nálezu V9:
+     * „souhlas s modelem 2, nově v aplikaci už nastav jako výchozí model 2").
+     *
+     * Do teď začínala nová zakázka Modelem 1, tedy 1:1 s excelovou předlohou
+     * VČETNĚ jejích chyb. Ty se mezitím jedna po druhé doložily — u lakování
+     * (V9) jsou to tři: předloha nelakuje lemování venkovní šachty, má
+     * prohozenou podmínku int/ext u dvou řádků plechů a lakuje oplechování
+     * podest, které venku není. Model 2 je všechny opravuje.
+     *
+     * STARŠÍ ZAKÁZKY SE NEMĚNÍ. `fixes` je pole UVNITŘ varianty, ne globální
+     * nastavení, a uzamčené varianty navíc `set()` nepustí — takže tahle
+     * změna platí jen pro nově zakládané. Model 1 zůstává v přepínači kvůli
+     * porovnání s předlohou. */
+    ock: { zadani, fixes: true },
     cenik,
     /* Řada ceníku (#181, 31. 8. 2026): nová zakázka i nová varianta jsou
      * VŽDY tuzemské (rozhodnutí J. V.); na zahraniční se přepíná vědomě

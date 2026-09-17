@@ -2087,7 +2087,11 @@ function dokPatickaHtml(prekl) {
   if (!text) return '';
   const zprac = h('zpracoval');
   const kontakt = zprac ? [zprac, h('zpracovalTelefon'), h('zpracovalEmail')].filter(Boolean).join(', ') : '';
-  return `<div class="paticka">${esc(text)}${kontakt
+  /* Patička je od 17. 9. 2026 dvouřádková (název + adresa + IČ, pod tím obor
+   * činnosti) — `firmaPaticka()` vrací řádky oddělené `\n`. Escapuje se po
+   * řádcích, aby se z oddělovače stal `<br>` a ne viditelný znak. */
+  const radky = String(text).split('\n').filter(Boolean).map(esc).join('<br>');
+  return `<div class="paticka">${radky}${kontakt
     ? '<br>' + esc(P('Vypracoval') + ': ' + kontakt) : ''}</div>`;
 }
 

@@ -132,8 +132,13 @@ test('FIRMA_SIDLO složené z ulice/PSČ/města',
   p.FIRMA_SIDLO === FD.sidloUlice + ', ' + FD.sidloPsc + ' ' + FD.sidloMesto, p.FIRMA_SIDLO);
 test('FIRMA_KORESPONDENCNI = sídlo (shodná adresa)', p.FIRMA_KORESPONDENCNI === p.FIRMA_SIDLO, p.FIRMA_KORESPONDENCNI);
 test('FIRMA_ICO_DIC bez prázdného DIČ', p.FIRMA_ICO_DIC === 'IČO: ' + FD.ico, p.FIRMA_ICO_DIC);
-test('FIRMA_PATICKA obsahuje název, sídlo i web',
-  [FD.nazev, FD.sidloUlice, FD.web].every(x => p.FIRMA_PATICKA.includes(x)), p.FIRMA_PATICKA);
+/* Patička je od 17. 9. 2026 dvouřádková a bez kontaktů (zadání J. V.) —
+ * web v ní tedy schválně NENÍ, nese ho podpisový blok zpracovatele. */
+test('FIRMA_PATICKA obsahuje název, sídlo a IČ',
+  [FD.nazev, FD.sidloUlice, 'IČ: ' + FD.ico].every(x => p.FIRMA_PATICKA.includes(x)),
+  p.FIRMA_PATICKA);
+test('a nenese kontakty, které jsou jinde v dokumentu',
+  !p.FIRMA_PATICKA.includes(FD.web), p.FIRMA_PATICKA);
 test('FIRMA_ZPRACOVAL vyplněn', p.FIRMA_ZPRACOVAL === FD.zpracoval, p.FIRMA_ZPRACOVAL);
 
 // ruční přepis v technické specifikaci má přednost

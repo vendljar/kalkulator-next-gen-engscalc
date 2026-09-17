@@ -23,6 +23,11 @@ const FIRMA_POLE = [
   { id: 'ico', sekce: 'Identifikace', label: 'IČO', symbol: 'FIRMA_ICO', povinne: true },
   { id: 'dic', sekce: 'Identifikace', label: 'DIČ', symbol: 'FIRMA_DIC' },
   { id: 'zapis', sekce: 'Identifikace', label: 'Zápis v obchodním rejstříku', symbol: 'FIRMA_ZAPIS' },
+  /* Druhý řádek patičky nabídek (17. 9. 2026, zadání J. V.). Je to text, který
+   * se v čase mění — firma si obory přidává a ubírá — a proto patří do
+   * nastavení, ne do kódu. Prázdné pole znamená jednořádkovou patičku. */
+  { id: 'oborCinnosti', sekce: 'Identifikace', label: 'Obor činnosti (2. řádek patičky)',
+    symbol: 'FIRMA_OBOR', typ: 'text' },
 
   /* --- sídlo --- */
   { id: 'sidloUlice', sekce: 'Sídlo', label: 'Ulice a číslo popisné', symbol: 'FIRMA_SIDLO_ULICE', povinne: true },
@@ -205,11 +210,29 @@ function firmaIcoDic(f) {
   const ico = firmaHodnota(f, 'ico'), dic = firmaHodnota(f, 'dic');
   return [ico ? 'IČO: ' + ico : '', dic ? 'DIČ: ' + dic : ''].filter(Boolean).join(', ');
 }
-/* patička dokumentu: „Ukázková firma s.r.o., Vzorová 1, 100 00 Praha, IČO: …, tel. …, web“ */
+/* PATIČKA NABÍDEK — DVA ŘÁDKY (17. 9. 2026, zadání J. V.):
+ *
+ *   ENGINEERS CZ s.r.o. V Háji 1092/15, 170 00, Praha 7, IČ: 241 27 663
+ *   projekční činnost ve výstavbě, statika staveb, …
+ *
+ * Proti dosavadnímu znění zmizely telefon, e-mail a web — v nabídce je nese
+ * podpisový blok zpracovatele, takže v patičce byly podruhé. Přibyl obor
+ * činnosti jako druhý řádek.
+ *
+ * `IČ:` schválně, ne `IČO:`. Patička je tištěná hlavička firmy a má znít
+ * tak, jak si ji firma píše; `firmaIcoDic()` s „IČO: … , DIČ: …“ zůstává
+ * beze změny pro smlouvy a krycí listy, kde se čte jako údaj, ne jako
+ * součást hlavičky.
+ *
+ * Vrací řádky oddělené `\n`. Kdo je vykresluje, ať si je rozdělí — Word
+ * z toho udělá dva odstavce, obrazovka dva řádky. Spojovat je do jednoho
+ * řetězce s čárkou by druhý řádek schovalo doprostřed prvního. */
 function firmaPaticka(f) {
-  return [firmaHodnota(f, 'nazev'), firmaSidlo(f), firmaIcoDic(f),
-    firmaHodnota(f, 'telefon') ? 'tel. ' + firmaHodnota(f, 'telefon') : '',
-    firmaHodnota(f, 'email'), firmaHodnota(f, 'web')].filter(Boolean).join(', ');
+  const ico = firmaHodnota(f, 'ico');
+  const prvni = [firmaHodnota(f, 'nazev') + (firmaSidlo(f) ? ' ' + firmaSidlo(f) : ''),
+    ico ? 'IČ: ' + ico : ''].filter(Boolean).join(', ');
+  const druhy = firmaHodnota(f, 'oborCinnosti');
+  return [prvni, druhy].filter(Boolean).join('\n');
 }
 
 /* Zástupné symboly {{…}} pro .docx šablony. prekl = funkce překladu hodnot

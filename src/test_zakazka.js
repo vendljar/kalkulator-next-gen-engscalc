@@ -72,6 +72,19 @@ const z = zk.novaZakazka();
 
 test('nová zakázka nese číslo schématu, podle kterého se pozná při importu',
   z.schema === zk.ZAKAZKA_SCHEMA && z.schema >= 2, z.schema);
+
+/* VÝCHOZÍ VÝPOČTOVÝ MODEL (rozhodnutí J. V. 17. 9. 2026 po rozboru V9).
+ *
+ * Do 17. 9. začínala nová zakázka Modelem 1, tedy 1:1 s předlohou včetně
+ * jejích chyb. Teď začíná Modelem 2 (opraveným). Je to jediné písmeno
+ * v `novaZakazka()`, mění cenu KAŽDÉ nově založené nabídky — a do dneška
+ * ho nehlídal žádný test: zkusmé přepnutí zpět na Model 1 prošlo všemi
+ * sto sadami. Proto je tenhle test tady. */
+test('nová zakázka počítá Modelem 2 (opraveným), ne 1:1 s předlohou',
+  zk.novaVarianta().data.ock.fixes === true,
+  zk.novaVarianta().data.ock.fixes);
+test('a nová varianta uvnitř zakázky taky',
+  z.varianty[0].data.ock.fixes === true, z.varianty[0].data.ock.fixes);
 test('nová zakázka má předlohu čísla nabídky k dopsání pořadí',
   z.cislo === zk.ZAK_CISLO_PREDLOHA, z.cislo);
 /* Předloha není vyplněné číslo. Kdyby se za vyplněné považovala, ukázal by

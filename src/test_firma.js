@@ -69,10 +69,32 @@ test('bankovní spojení složené',
 const Fb2 = fm.firmaDefault(); Fb2.ucet = '123456789/0100';
 test('bankovní spojení jen s účtem', fm.firmaBankaRadek(Fb2) === 'č. ú. 123456789/0100', fm.firmaBankaRadek(Fb2));
 
-test('patička obsahuje název, sídlo, IČO, telefon i web', (() => {
-  const pat = fm.firmaPaticka(F);
-  return [D.nazev, SIDLO, ICO, 'tel. ' + D.telefon, D.web].every(x => pat.includes(x));
-})(), fm.firmaPaticka(F));
+/* PATIČKA MÁ OD 17. 9. 2026 DVA ŘÁDKY (zadání J. V.): název s adresou a IČ,
+ * pod tím obor činnosti. Telefon, e-mail a web z ní zmizely — v nabídce je
+ * nese podpisový blok zpracovatele, takže tam byly podruhé. */
+{
+  const Fp = fm.firmaDefault();
+  Fp.oborCinnosti = 'projekční činnost ve výstavbě, statika staveb';
+  const radky = fm.firmaPaticka(Fp).split('\n');
+  test('patička má dva řádky', radky.length === 2, radky);
+  test('první řádek nese název, sídlo a IČ',
+    radky[0].includes(D.nazev) && radky[0].includes(SIDLO) && radky[0].includes('IČ: ' + D.ico),
+    radky[0]);
+  /* „IČ“, ne „IČO“ — patička je tištěná hlavička firmy a zní tak, jak si ji
+   * firma píše. `firmaIcoDic()` zůstává s „IČO:“ pro smlouvy a krycí listy. */
+  test('a píše IČ, ne IČO', !/IČO/.test(radky[0]), radky[0]);
+  test('druhý řádek je obor činnosti', radky[1] === Fp.oborCinnosti, radky[1]);
+  test('telefon, e-mail ani web v patičce nejsou',
+    !fm.firmaPaticka(Fp).includes(D.telefon) && !fm.firmaPaticka(Fp).includes(D.web),
+    fm.firmaPaticka(Fp));
+}
+/* Nevyplněný obor nesmí nechat prázdný druhý řádek — patička je pak
+ * jednořádková, ne dvouřádková s prázdnem. */
+{
+  const Fb = fm.firmaDefault(); Fb.oborCinnosti = '';
+  test('bez oboru činnosti má patička jediný řádek',
+    fm.firmaPaticka(Fb).split('\n').length === 1, fm.firmaPaticka(Fb));
+}
 test('patička nemá prázdné části (žádné „, ,“)', !/, ,/.test(fm.firmaPaticka(F)), fm.firmaPaticka(F));
 test('patička prázdné firmy = prázdný řetězec', fm.firmaPaticka({}) === '');
 
