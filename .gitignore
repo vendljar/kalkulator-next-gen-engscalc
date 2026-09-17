@@ -64,3 +64,11 @@ Thumbs.db
 
 # Místní nastavení Claude Code (oprávnění této session) – nepatří do repozitáře
 .claude/
+
+# Příručka obchodníka: generátor se verzuje, VÝSTUP ne (rozhodnuto 17. 9. 2026).
+# Hotová příručka nese snímky cenové kalkulace se skutečnými sazbami a jednou
+# commitnutá by v historii Gitu zůstala napořád. Hotový soubor patří do složky
+# Manual na sdíleném disku, ne sem.
+manual/snimky.json
+manual/nahled.html
+manual/*_MANUAL_OBCHODNIK.html

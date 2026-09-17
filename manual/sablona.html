@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kalkulátor Next Gen — co se změnilo</title>
+<!--
+  PŘÍRUČKA OBCHODNÍKA — JEDEN SOUBOR, ŽÁDNÝ INTERNET
+
+  Sestavuje `manual/sestav.sh` ze tří dílů: z téhle šablony, ze `snimky.json`
+  (snímky obrazovky posbírané z běžící aplikace) a z `obsah.json` (text).
+  Oboje se do souboru zapéká jako JSON — příručka se tak dá přegenerovat,
+  aniž by kdokoli přepisoval HTML rukou.
+
+  PROČ JSOU SNÍMKY ŽIVÝ DOM, A NE OBRÁZKY
+  Minulá příručka měla 6 MB, protože v ní leželo 25 rastrových snímků.
+  Tady je místo obrázku skutečný kus stránky — HTML plus firemní CSS —
+  vykreslený znovu. Zůstane ostrý při jakémkoli zvětšení i v tisku, dá se
+  v něm hledat a celá příručka se vejde pod 1 MB, takže projde e-mailem.
+
+  KAŽDÝ SNÍMEK STOJÍ VE VLASTNÍM SHADOW DOM
+  Firemní CSS je psané pro celou stránku (`body`, `header`, `.card`)
+  a kdyby se pustilo do příručky napřímo, přebilo by její vlastní vzhled —
+  a naopak. Shadow DOM je hermetický: dovnitř nic nepronikne a ven nic
+  neuteče. Vedlejší zisk, se kterým se počítá: testovací téma visí na
+  `body.prostredi-test`, a protože uvnitř snímku žádné `body` není, kreslí
+  se snímky samy od sebe v OSTRÉM modrém vzhledu — tedy tak, jak aplikaci
+  vidí obchodník. Jantarový testovací vzhled se zapne jen tam, kde je o něm
+  řeč (`tema: "test"`).
+-->
+<style>
+  :root {
+    --text:#1a2332; --mut:#5b6673; --line:#dbe1e8; --pozadi:#fff;
+    --akcent:#1f5eff; --varovne:#b45309; --varovne-poz:#fffbeb;
+    --duraz-poz:#eff4ff; --odznak:#dc2626;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--pozadi); color:var(--text);
+         font:16px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif; }
+  .stranka { max-width:980px; margin:0 auto; padding:32px 24px 80px; }
+
+  h1 { font-size:30px; line-height:1.25; margin:0 0 6px; letter-spacing:-.01em; }
+  .podtitul { color:var(--mut); font-size:17px; margin:0 0 4px; }
+  .verze { color:var(--mut); font-size:14px; margin:0 0 28px; }
+  h2 { font-size:22px; margin:52px 0 14px; padding-bottom:8px;
+       border-bottom:2px solid var(--line); scroll-margin-top:16px; }
+  h3 { font-size:17px; margin:26px 0 8px; }
+  p { margin:0 0 14px; }
+  b { font-weight:600; }
+  code { font:13px/1.4 "Cascadia Mono", Consolas, monospace;
+         background:#f3f5f8; padding:1px 5px; border-radius:4px; }
+
+  /* ---------- upozornění ---------- */
+  .ram { border:1px solid var(--line); border-left:5px solid var(--akcent);
+         background:var(--duraz-poz); border-radius:8px; padding:14px 18px; margin:0 0 22px; }
+  .ram.varovne { border-left-color:var(--varovne); background:var(--varovne-poz); }
+  .ram p:last-child { margin-bottom:0; }
+  .ram .nadpisek { font-weight:700; display:block; margin-bottom:6px; }
+
+  /* ---------- obsah ---------- */
+  #obsah { background:#f7f9fc; border:1px solid var(--line); border-radius:10px;
+           padding:18px 22px; margin:0 0 12px; }
+  #obsah h2 { font-size:15px; text-transform:uppercase; letter-spacing:.08em;
+              color:var(--mut); border:0; margin:0 0 10px; padding:0; }
+  .obsah-list { list-style:none; margin:0; padding:0; columns:2; column-gap:32px; }
+  .obsah-list li { margin:0 0 7px; break-inside:avoid; }
+  .obsah-list a { color:var(--text); text-decoration:none; border-bottom:1px solid var(--line); }
+  .obsah-list a:hover { color:var(--akcent); border-bottom-color:var(--akcent); }
+  .nahoru { float:right; font-size:13px; font-weight:400; color:var(--mut);
+            text-decoration:none; margin-top:4px; }
+  .nahoru:hover { color:var(--akcent); }
+
+  /* ---------- snímek ---------- */
+  figure.snimek { margin:22px 0 26px; }
+  .snimek-ram { position:relative; overflow:hidden; border:1px solid var(--line);
+                border-radius:10px; background:#fff; }
+  .snimek-plocha { position:relative; transform-origin:top left; }
+  figcaption { font-size:14px; color:var(--mut); margin-top:9px; }
+  figcaption b { color:var(--text); }
+
+  /* Vysvětlivky pod snímkem. Čísla odpovídají kolečkům VE snímku — ta se
+     kreslí dovnitř, aby zůstala na místě i po vytištění na papír. */
+  .odkazy { list-style:none; margin:10px 0 0; padding:0; }
+  .odkazy li { position:relative; padding-left:30px; margin:0 0 7px; font-size:15px; }
+  .odkazy .cis { position:absolute; left:0; top:1px; width:21px; height:21px;
+                 border-radius:50%; background:var(--odznak); color:#fff;
+                 font:700 12px/21px system-ui; text-align:center; }
+
+  /* ---------- dvousloupcový výklad ---------- */
+  dl.vyklad { margin:16px 0 20px; display:grid; grid-template-columns:minmax(150px,260px) 1fr;
+              gap:1px; background:var(--line); border:1px solid var(--line); border-radius:8px;
+              overflow:hidden; }
+  dl.vyklad dt { background:#f7f9fc; padding:10px 14px; font-weight:600; font-size:15px; }
+  dl.vyklad dd { background:#fff; padding:10px 14px; margin:0; }
+  dl.vyklad dd p { margin:0; }
+  @media (max-width:640px) { dl.vyklad { grid-template-columns:1fr; } }
+
+  /* ---------- tisk ---------- */
+  /* Bez tohohle vytiskne prohlížeč US Letter — to je jeho výchozí formát,
+   * ne náš. Příručka se tiskne v kanceláři na A4. */
+  @page { size:A4; margin:14mm 12mm; }
+
+  @media print {
+    /* Bez tohohle prohlížeč pozadí při tisku vynechá a ze snímků kalkulace
+     * zbude bílá tabulka bez modrých hlaviček — tedy něco, co na obrazovce
+     * nikdy nevypadá. Snímek má v tisku vypadat jako obrazovka. */
+    * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    body { font-size:11pt; }
+    .stranka { max-width:none; padding:0; }
+    h2 { page-break-after:avoid; }
+    figure.snimek { page-break-inside:avoid; }
+    #obsah { break-after:page; }
+    .nahoru { display:none; }
+    a { color:inherit; text-decoration:none; }
+  }
+  @media (max-width:700px) { .obsah-list { columns:1; } }
+
+  noscript .ram { border-left-color:var(--odznak); background:#fef2f2; }
+</style>
+</head>
+<body>
+<div class="stranka" id="nahoru">
+  <noscript>
+    <div class="ram varovne">
+      <span class="nadpisek">Zapněte prosím JavaScript</span>
+      <p>Snímky obrazovky i text téhle příručky jsou uvnitř souboru uložené
+         jako data a vykreslují se při otevření. Bez JavaScriptu zůstane
+         stránka prázdná. Soubor nikam nechodí — všechno je uvnitř něj.</p>
+    </div>
+  </noscript>
+  <div id="cil"></div>
+</div>
+
+<script type="application/json" id="data-snimky">__SNIMKY__</script>
+<script type="application/json" id="data-obsah">__OBSAH__</script>
+
+<script>
+(function () {
+  'use strict';
+
+  var SNIMKY = JSON.parse(document.getElementById('data-snimky').textContent);
+  var OBSAH = JSON.parse(document.getElementById('data-obsah').textContent);
+  var podleId = {};
+  SNIMKY.snimky.forEach(function (s) { podleId[s.id] = s; });
+
+  var cil = document.getElementById('cil');
+  var cisloObrazku = 0;
+  var nesedi = [];      /* nenalezené cíle vysvětlivek — hlásí je kontrola */
+
+  function el(tag, tridaNeboText, text) {
+    var e = document.createElement(tag);
+    if (tridaNeboText) e.className = tridaNeboText;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  /* Text v obsahu smí nést jednoduché zvýraznění **tučně** a `kód`.
+   * Záměrně nic víc: příručku píše člověk do JSONu a každá další značka
+   * je další způsob, jak si ji rozbít. */
+  function bohatyText(s) {
+    var e = document.createElement('p');
+    var zbytek = String(s), kus;
+    var vzor = /(\*\*[^*]+\*\*|`[^`]+`)/;
+    while ((kus = zbytek.match(vzor))) {
+      if (kus.index > 0) e.appendChild(document.createTextNode(zbytek.slice(0, kus.index)));
+      var t = kus[0];
+      if (t.charAt(0) === '*') e.appendChild(el('b', null, t.slice(2, -2)));
+      else e.appendChild(el('code', null, t.slice(1, -1)));
+      zbytek = zbytek.slice(kus.index + t.length);
+    }
+    if (zbytek) e.appendChild(document.createTextNode(zbytek));
+    return e;
+  }
+
+  /* ---------- snímek ---------- */
+
+  /* Cíl vysvětlivky se hledá POPISKEM, ne pozicí. Selektor typu
+   * `.row:nth-child(7)` by po prvním přeskládání obrazovky ukazoval na jiné
+   * pole a nikdo by si toho nevšiml — popisek se drží svého prvku. */
+  function najdiCil(koren, odkaz) {
+    var nalez = null;
+    if (odkaz.sel) {
+      nalez = koren.querySelector(odkaz.sel);
+    } else if (odkaz.pole) {
+      /* Názvy položek kalkulace jsou HODNOTOU pole, ne textem — jdou
+       * přepsat přímo v tabulce, takže v textContent nejsou vůbec. */
+      var h = odkaz.pole.trim().toLowerCase();
+      var vstupy = koren.querySelectorAll('input');
+      for (var j = 0; j < vstupy.length; j++) {
+        var v = (vstupy[j].getAttribute('value') || '').trim().toLowerCase();
+        if (v === h || v.indexOf(h) === 0) { nalez = vstupy[j]; break; }
+      }
+    } else if (odkaz.obsahuje || odkaz.popisek) {
+      var hledany = (odkaz.obsahuje || odkaz.popisek).trim().toLowerCase();
+      var presne = !odkaz.obsahuje;
+      var vse = koren.querySelectorAll('label, th, td, h2, h3, b, span, div, option, li');
+      /* U hledání podle části textu vyhrává NEJKRATŠÍ shoda: každý rodič
+       * obsahuje totéž co potomek, a zvýraznit celou kartu místo jedné
+       * buňky je horší než neukázat nic. */
+      for (var i = 0; i < vse.length; i++) {
+        var t = (vse[i].textContent || '').trim().toLowerCase();
+        var sedi = presne
+          ? (t === hledany || (t.indexOf(hledany) === 0 && t.length < hledany.length + 4))
+          : t.indexOf(hledany) >= 0;
+        if (!sedi) continue;
+        if (!nalez || t.length < (nalez.textContent || '').trim().length) nalez = vse[i];
+        if (presne) break;
+      }
+    }
+    if (nalez && odkaz.cely) nalez = nalez.closest(odkaz.cely) || nalez;
+    return nalez;
+  }
+
+  function vykresliSnimek(obr) {
+    var s = podleId[obr.snimek];
+    var fig = el('figure', 'snimek');
+    if (!s) {
+      fig.appendChild(el('div', 'ram varovne', 'Snímek „' + obr.snimek + '" v datech chybí.'));
+      cil.appendChild(fig);
+      nesedi.push('chybí snímek ' + obr.snimek);
+      return;
+    }
+
+    var ram = el('div', 'snimek-ram');
+    var plocha = el('div', 'snimek-plocha');
+    plocha.style.width = s.sirka + 'px';
+    if (s.tema === 'test') plocha.classList.add('test');
+    if (s.admin) plocha.classList.add('admin');
+    ram.appendChild(plocha);
+    fig.appendChild(ram);
+
+    var sr = plocha.attachShadow({ mode: 'open' });
+    sr.innerHTML = '<style>' + SNIMKY.css + '</style>'
+      + '<style>' + STYL_ODZNAKU + '</style>' + s.html;
+
+    /* Kolečka se kreslí DOVNITŘ snímku, do jeho vlastní souřadné soustavy.
+     * V HTML okolo by se při tisku i při jiné šířce okna rozešla s tím,
+     * na co ukazují — a příručka se tiskne. */
+    (obr.odkazy || []).forEach(function (o, i) {
+      var t = najdiCil(sr, o);
+      if (!t) { nesedi.push(obr.snimek + ' → ' + (o.popisek || o.obsahuje || o.pole || o.sel)); return; }
+      t.classList.add('mn-vyznac');
+      var odznak = document.createElement('span');
+      odznak.className = 'mn-odznak';
+      odznak.textContent = String(i + 1);
+      sr.appendChild(odznak);
+      /* Souřadnice se počítají až po vykreslení; snímek má pevnou šířku
+       * a zvětšuje se jedním `transform`, takže uvnitř se nic nepřelije
+       * a jednou spočítaná poloha platí dál — i na papíře. */
+      requestAnimationFrame(function () {
+        var rk = plocha.getBoundingClientRect();
+        var rc = t.getBoundingClientRect();
+        odznak.style.left = Math.max(0, rc.left - rk.left - 9) + 'px';
+        odznak.style.top = Math.max(0, rc.top - rk.top - 9) + 'px';
+      });
+    });
+
+    cisloObrazku++;
+    var pop = el('figcaption');
+    pop.appendChild(el('b', null, 'Obrázek ' + cisloObrazku + '.'));
+    pop.appendChild(document.createTextNode(' ' + (obr.titulek || s.popis || '')));
+    fig.appendChild(pop);
+
+    if (obr.odkazy && obr.odkazy.length) {
+      var ul = el('ul', 'odkazy');
+      obr.odkazy.forEach(function (o, i) {
+        var li = el('li');
+        li.appendChild(el('span', 'cis', String(i + 1)));
+        var p = bohatyText(o.text);
+        p.style.margin = '0';
+        li.appendChild(p);
+        ul.appendChild(li);
+      });
+      fig.appendChild(ul);
+    }
+    cil.appendChild(fig);
+
+    /* Zmenšení na šířku stránky. Uvnitř snímku se tím nic nepřeskládá —
+     * mění se měřítko, ne rozvržení, takže obrazovka vypadá přesně jako
+     * na monitoru, kde vznikla. */
+    function srovnej() {
+      var k = Math.min(1, ram.clientWidth / s.sirka);
+      plocha.style.transform = k < 1 ? 'scale(' + k + ')' : 'none';
+      ram.style.height = Math.ceil(plocha.offsetHeight * k) + 'px';
+    }
+    requestAnimationFrame(srovnej);
+    window.addEventListener('resize', srovnej);
+    /* Tisk mění šířku stránky — tiskový stylopis zruší max-width a nastoupí
+     * okraje papíru. Bez přepočtu v ten okamžik by snímek přetekl přes okraj.
+     * `beforeprint` volá i Chrome při generování PDF z příkazové řádky. */
+    window.addEventListener('beforeprint', srovnej);
+    if (window.matchMedia) {
+      var m = window.matchMedia('print');
+      if (m.addEventListener) m.addEventListener('change', srovnej);
+      else if (m.addListener) m.addListener(srovnej);
+    }
+  }
+
+  var STYL_ODZNAKU = [
+    '.mn-vyznac { outline:2px solid #dc2626 !important; outline-offset:2px;',
+    '  border-radius:3px; background:rgba(220,38,38,.06) !important; }',
+    '.mn-odznak { position:absolute; z-index:50; width:19px; height:19px;',
+    '  border-radius:50%; background:#dc2626; color:#fff; font:700 11px/19px',
+    '  system-ui, sans-serif; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,.35); }',
+  ].join('\n');
+
+  /* ---------- stavba stránky ---------- */
+
+  cil.appendChild(el('h1', null, OBSAH.titul));
+  cil.appendChild(el('p', 'podtitul', OBSAH.podtitul));
+  cil.appendChild(el('p', 'verze', OBSAH.verze));
+
+  (OBSAH.uvod || []).forEach(function (u) {
+    var d = el('div', 'ram' + (u.druh === 'varovne' ? ' varovne' : ''));
+    if (u.nadpis) d.appendChild(el('span', 'nadpisek', u.nadpis));
+    (u.odstavce || []).forEach(function (o) { d.appendChild(bohatyText(o)); });
+    cil.appendChild(d);
+  });
+
+  var obsahBlok = el('nav', null);
+  obsahBlok.id = 'obsah';
+  obsahBlok.appendChild(el('h2', null, 'Obsah'));
+  var seznam = el('ul', 'obsah-list');
+  OBSAH.kapitoly.forEach(function (k) {
+    var li = el('li');
+    var a = el('a', null, k.nadpis);
+    a.href = '#' + k.id;
+    li.appendChild(a);
+    seznam.appendChild(li);
+  });
+  obsahBlok.appendChild(seznam);
+  cil.appendChild(obsahBlok);
+
+  OBSAH.kapitoly.forEach(function (k) {
+    var h = el('h2', null, k.nadpis);
+    h.id = k.id;
+    var zpet = el('a', 'nahoru', '↑ obsah');
+    zpet.href = '#obsah';
+    h.insertBefore(zpet, h.firstChild);
+    cil.appendChild(h);
+
+    (k.bloky || []).forEach(function (b) {
+      if (b.typ === 'text') cil.appendChild(bohatyText(b.text));
+      else if (b.typ === 'podnadpis') cil.appendChild(el('h3', null, b.text));
+      else if (b.typ === 'obrazek') vykresliSnimek(b);
+      else if (b.typ === 'seznam') {
+        /* Dvousloupcový výklad (slovníček hlášek, přehled dokumentů).
+         * Tabulka by se na užší obrazovce rozsypala, definiční seznam ne. */
+        var dl = el('dl', 'vyklad');
+        (b.polozky || []).forEach(function (p) {
+          dl.appendChild(el('dt', null, p.pojem));
+          var dd = el('dd');
+          dd.appendChild(bohatyText(p.vyklad));
+          dl.appendChild(dd);
+        });
+        cil.appendChild(dl);
+      }
+      else if (b.typ === 'ram') {
+        var d = el('div', 'ram' + (b.druh === 'varovne' ? ' varovne' : ''));
+        if (b.nadpis) d.appendChild(el('span', 'nadpisek', b.nadpis));
+        (b.odstavce || []).forEach(function (o) { d.appendChild(bohatyText(o)); });
+        cil.appendChild(d);
+      }
+    });
+  });
+
+  /* Kontrola si sáhne sem: `PRIRUCKA.nesedi` musí být prázdné pole.
+   * Nenalezená vysvětlivka je tichá chyba — kolečko se nenakreslí, text
+   * pod obrázkem zůstane a čtenář hledá něco, co na snímku není. */
+  window.PRIRUCKA = {
+    verze: OBSAH.verze,
+    zachyceno: SNIMKY.zachyceno,
+    prostredi: SNIMKY.prostredi,
+    castkyUpraveny: SNIMKY.castkyUpraveny,
+    snimku: SNIMKY.snimky.length,
+    obrazku: cisloObrazku,
+    kapitol: OBSAH.kapitoly.length,
+    nesedi: nesedi,
+  };
+  if (nesedi.length) console.warn('PŘÍRUČKA — vysvětlivky bez cíle:', nesedi);
+})();
+</script>
+</body>
+</html>
