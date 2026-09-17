@@ -4317,7 +4317,8 @@
   {
    "id" : "263",
    "vlna" : "A",
-   "stav" : "ceka",
+   "stav" : "hotovo",
+   "hotovoV" : "v16.9.24",
    "dulezitost" : "vysoka",
    "slozitost" : "S",
    "nazev" : "Předloha ATYP tiše nahrazuje chybějící ceníkovou sazbu",
@@ -4325,20 +4326,21 @@
    "detail" : "Týká se pěti hodnot v `atypPrepni()`: `atypZamecnikKc` (náhrada natvrdo), `atypRezervaZakladPct`, `atypRezervaPriplatkyPct`, `atypMontazPct` a `atypProjekcePct` (u všech čtyř 30 %). Pomocník `cenikVychozi()` vrací náhradu nejen když klíč chybí, ale i když je nula nebo prázdno — takže úmyslně vynulovaná sazba se chová stejně jako zapomenutá. Objeveno 16. 9. 2026 při živém ověřování opravy ATYP: první zapnutí po načtení stránky dosadilo jinou částku než další, protože ceník se ještě nestihl načíst.",
    "hotovoKdyz" : "Hotovo, až chybějící ceníková sazba ATYP nebude nahrazena potichu — buď se ukáže nula jako u skla, nebo se u pole objeví viditelné upozornění, co v ceníku chybí. A drží to sada.",
    "kde" : "`src/ui/kalk_ock.js` (funkce `atypPrepni`, pomocník `vych`), `src/cenik.js` (`cenikVychozi`)",
-   "otazka" : "Má se u chybějící sazby ukázat NULA (jako u skla po V38), nebo se má dosadit a jen viditelně označit, že hodnota není z ceníku? Nula je poctivější, ale u rezerv v procentech může vypadat jako záměr.",
-   "pozn" : "Nález vznikl mimo zadaný rozsah 5. kola, při ověřování jiné opravy. Číslo je přiděleno, aby se neztratil v chatu; rozsah opravy zatím neodsouhlasen."
+   "hotovoKdyz" : "Splněno: při zapnutém ATYP je u přepínače vidět štítek, když se některá sazba nebrala z ceníku.",
+   "pozn" : "ROZHODNUTO 17. 9. 2026 pro variantu „dosadit a viditelně označit\", ne pro nulu. Důvod: není odsud vidět, jestli má OSTRÝ ceník těch pět sazeb vyplněných (bez přihlášení se ceník nenačte a `/api/zdravi` to neříká), a kdyby neměl, znamenalo by zrušení náhrady nulové rezervy — tedy tichou změnu ceny opačným směrem. Náhrada tak zůstává, jen se o ní ví. Zjištění při té příležitosti: **`DEFAULT_CENIK` těch pět sazeb NEMÁ**, takže náhrada je běžný stav, ne výjimka; hlídá to sada. Náhradní čísla i popisky drží jeden seznam `ATYP_SAZBY`, ze kterého bere i předloha — dvě kopie by se rozešly a štítek by mlčel přesně o tom, co se dosadilo. Podmínku „sazba chybí\" si UI nepíše samo, ptá se `cenikVychozi()` značkou, kterou ceníková hodnota být nemůže."
   }
   ,
   {
    "id" : "264",
    "vlna" : "A",
-   "stav" : "ceka",
+   "stav" : "hotovo",
+   "hotovoV" : "v16.9.24",
    "dulezitost" : "stredni",
    "slozitost" : "S",
    "nazev" : "Výpis rozdílů mezi verzemi ceníku nevidí zahraniční řadu",
    "proc" : "Zveřejnění verze, která mění JEN zahraniční sazby, se v historii ceníku tváří jako „nezměnila se žádná sledovaná cena\". Správce tedy nemá jak zkontrolovat, co vlastně zveřejnil — a u zahraniční řady je to jediné místo, kde by to viděl. Nález V45 z 5. kola testů (16. 9. 2026): po doplnění 24 zahraničních sazeb hlásilo tlačítko Rozdíly, že se nic nezměnilo.",
-   "detail" : "Příčina: `progRozdilyVerze()` posílá do `cenikRozdily()` výstup `programData()`, a ten vrací jen `{ cenik, proj.cenik }` — klíč `zaznam.zahranicni` zahodí. Diff tedy zahraniční odchylky nikdy nevidí. TOTÉŽ SE UŽ JEDNOU OPRAVOVALO U OTISKU (#181): `programOtisk()` si zahraniční data přidává výslovně, s komentářem, že bez nich by změna jen v zahraniční řadě vypadala jako „beze změny\" a databáze by ji odmítla zapsat. Otisk se opravil, výpis rozdílů zůstal slepý.",
-   "hotovoKdyz" : "Hotovo, až zveřejnění verze měnící jen zahraniční sazby vypíše tyto změny v historii ceníku, a drží to sada.",
+   "detail" : "Příčina: `progRozdilyVerze()` posílá do `cenikRozdily()` výstup `programData()`, a ten vrací jen `{ cenik, proj.cenik }` — klíč `zaznam.zahranicni` zahodí. Diff tedy zahraniční odchylky nikdy nevidí. TOTÉŽ SE UŽ JEDNOU OPRAVOVALO U OTISKU (#181): `programOtisk()` si zahraniční data přidává výslovně, s komentářem, že bez nich by změna jen v zahraniční řadě vypadala jako „beze změny\" a databáze by ji odmítla zapsat. Otisk se opravil, výpis rozdílů zůstal slepý. OPRAVENO 17. 9. 2026 novou funkcí `programRozdilyZahr()` v `src/program.js`, kterou historie ceníku připojuje k výstupu `cenikRozdily()`. Protlačit zahraniční řadu skrz `cenikRozdily()` nešlo — ta čte tvar `{cenik, proj:{cenik}}`, kdežto odchylky mají vlastní tvar `{ceny, jenZahr}`. Vrací ale záznamy ve stejném tvaru, takže tabulka v historii se měnit nemusela. Hlásí se i přepnutí „platí jen pro zahraniční\" při nezměněné částce — jinak by zmizení položky z tuzemské řady prošlo bez povšimnutí.",
+   "hotovoKdyz" : "Splněno: zveřejnění verze měnící jen zahraniční sazby vypíše tyto změny v historii ceníku a drží to sada `src/test_tiche_nahrady.js`.",
    "kde" : "`src/ui/program_ui.js` (`progRozdilyVerze`), `src/program.js` (`programData`, srov. `programOtisk`), `src/cenik.js` (`cenikRozdily`)",
    "pozn" : "Nález V45 byl v závěru 5. kola v sešitu, ale v roadmapě chyběl — doplněn 16. 9. 2026 večer při kontrole listů Nálezy a Prompty oprav. Rozsah opravy zatím neodsouhlasen."
   }
@@ -4847,7 +4849,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v16.9.23 (engscalc)",
+  "build" : "v16.9.24 (engscalc)",
   "stavKDatu" : "17. 9. 2026"
  },
  "_comment" : [

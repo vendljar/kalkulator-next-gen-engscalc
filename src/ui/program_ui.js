@@ -668,7 +668,11 @@ function progRozdilyVerze(cislo) {
     .sort((a, b) => a.verze - b.verze);
   const i = vse.findIndex(z => +z.verze === +cislo);
   if (i <= 0) return [];
-  return cenikRozdily(programData(vse[i - 1]), programData(vse[i]));
+  /* Zahraniční řada se přidává zvlášť (#264): `programData()` ji do tvaru pro
+   * `cenikRozdily()` nepředává, takže by změna jen v ní vypadala jako žádná. */
+  return cenikRozdily(programData(vse[i - 1]), programData(vse[i]))
+    .concat(typeof programRozdilyZahr === 'function'
+      ? programRozdilyZahr(vse[i - 1], vse[i]) : []);
 }
 
 function progRadekHtml(z, platna) {

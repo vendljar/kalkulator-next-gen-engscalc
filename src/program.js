@@ -79,6 +79,53 @@ function programData(zaznam) {
            proj: { cenik: (zaznam && zaznam.cenikProj) || {} } };
 }
 
+/* ROZDÍLY ZAHRANIČNÍ ŘADY MEZI DVĚMA VERZEMI (#264, 17. 9. 2026).
+ *
+ * `cenikRozdily()` sem nedosáhne: čte tvar `{ cenik, proj:{cenik} }`, který
+ * vyrábí `programData()` — a ten klíč `zahranicni` zahodí. Zveřejnění verze,
+ * která mění JEN zahraniční sazby, se pak v historii ceníku tvářilo jako
+ * „nezměnila se žádná sledovaná cena". Nález V45 z 5. kola: po doplnění 24
+ * zahraničních sazeb hlásilo tlačítko Rozdíly, že se nic nezměnilo.
+ *
+ * Je to táž díra, jakou u OTISKU zalepilo #181 — tam se `zahranicni` musela
+ * přidat výslovně, protože jinak by databáze změnu odmítla zapsat jako
+ * shodnou. Otisk se opravil, výpis rozdílů zůstal slepý.
+ *
+ * Vrací záznamy ve stejném tvaru jako `cenikRozdily()`, aby je tabulka
+ * v historii uměla vykreslit beze změny. */
+function programRozdilyZahr(stary, novy) {
+  const A = (stary || {}).zahranicni || {}, B = (novy || {}).zahranicni || {};
+  const cenyA = A.ceny || {}, cenyB = B.ceny || {};
+  const jenA = A.jenZahr || {}, jenB = B.jenZahr || {};
+  const popisy = {};
+  if (typeof cenikSledovane === 'function')
+    cenikSledovane().forEach(p => { popisy[p.cesta] = p; });
+  const cesty = Object.keys(cenyA)
+    .concat(Object.keys(cenyB), Object.keys(jenA), Object.keys(jenB))
+    .filter((c, i, a) => a.indexOf(c) === i);
+  const out = [];
+  cesty.forEach(c => {
+    const a = cenyA[c], b = cenyB[c];
+    const jenSeZmenil = !!jenA[c] !== !!jenB[c];
+    const stejna = String(a == null ? '' : a) === String(b == null ? '' : b);
+    if (stejna && !jenSeZmenil) return;
+    const cislo = typeof a === 'number' && typeof b === 'number';
+    const p = popisy[c] || {};
+    /* Přepnutí „platí jen pro zahraniční" je změna, i když se částka nehnula
+     * — jinak by zmizení položky z tuzemské řady prošlo bez povšimnutí. */
+    const znacka = jenSeZmenil
+      ? (jenB[c] ? ' — nově jen zahraniční' : ' — už neplatí jen pro zahraniční')
+      : '';
+    out.push({
+      cesta: c, popis: (p.popis || c) + ' (zahraniční)' + znacka,
+      jed: p.jed, skupina: p.skupina, sekce: p.sekce,
+      stara: a, nova: b, cislo,
+      zmena: (cislo && a !== 0) ? (b - a) / a : null,
+    });
+  });
+  return out;
+}
+
 function programOtisk(zaznam) {
   /* Otisk nese i zahraniční odchylky (#181): bez nich by zveřejnění změny,
    * která se týká JEN zahraniční řady, vypadalo jako „beze změny" a databáze
@@ -343,7 +390,7 @@ function programPrenosZahrPocet(d) {
 
 if (typeof module !== 'undefined')
   module.exports = { PROG_SOUBOR, PROG_SCHEMA, PROG_APLIKACE, PROG_HISTORIE_MAX, PROG_ODDILY,
-    progOtiskText, programData, programOtisk, programZaznam, programNovy, programNormalizuj,
+    progOtiskText, programData, programRozdilyZahr, programOtisk, programZaznam, programNovy, programNormalizuj,
     programRozdily, programBezeZmeny, programNovaVerze, programVerze, programProDatum,
     programPocetKatalogu, programPopisVerze, programSouhrn,
     PROG_PRENOS_TYP, PROG_PRENOS_SCHEMA, programPrenosData, programPrenosZverejneni,

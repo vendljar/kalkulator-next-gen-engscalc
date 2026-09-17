@@ -167,10 +167,12 @@ function renderInputs() {
         + inp('Z.cistyVstupMm', { l: 'Čistý vstup – šířka', step: 10, u: 'mm' })
         + inp('Z.svetlikNadDvermi', { type: 'check', l: 'Světlík nad šachetními dveřmi' })
         /* ATYP má vlastní obsluhu (17. 8. večer): zaškrtnutí předvyplní všechny
-         * čtyři rezervy na 30 % a Zámečníka atyp na 50 000 Kč; odškrtnutí je
-         * vrací na nulu / ceník — atypové přirážky bez atypu nemají co dělat. */
+         * čtyři rezervy a Zámečníka atyp z ceníku; odškrtnutí vrací pole, do
+         * kterých nikdo ručně nesáhl — atypové přirážky bez atypu nemají co
+         * dělat. Když ceník některou sazbu nemá, dosadí se náhrada z kódu —
+         * a `atypNahradyHtml()` to řekne nahlas (#263). */
         + `<div class="row"><label>ATYP (nestandardní zakázka)</label>
-            <input type="checkbox" ${Z.atyp ? 'checked' : ''} onchange="atypPrepni(this.checked)"><span class="u"></span></div>`)
+            <input type="checkbox" ${Z.atyp ? 'checked' : ''} onchange="atypPrepni(this.checked)"><span class="u">${atypNahradyHtml()}</span></div>`)
       + `</div>` +
       /* SAZBA ATYP UŽ V ZADÁNÍ ŠACHTY NENÍ (9. 9. 2026, zadání J. V.:
        * „přirážku za atyp v zadání šachty skryj a ponech pouze v ceníku“).
@@ -245,6 +247,54 @@ function cenikDoZadani(v) {
   return zmen;
 }
 
+/* SAZBY ATYP, KTERÉ MAJÍ PŘIJÍT Z CENÍKU (nález #263, 17. 9. 2026).
+ *
+ * Když je ceník nemá vyplněné, dosadí se číslo natvrdo odsud. Do 17. 9. se
+ * to dělo POTICHU: obchodník dostal u zámečníka dvojnásobek toho, co má
+ * testovací ceník, a neměl jak poznat, že to číslo nikdo nezadal. Je to
+ * stejná třída vady jako V38 u skla, kde padlo, že tichá náhrada musí pryč.
+ *
+ * Náhrada se ale NERUŠÍ. Není odsud vidět, jestli má ostrý ceník těch pět
+ * sazeb vyplněných — a kdyby neměl, znamenalo by zrušení náhrady nulové
+ * rezervy, tedy tichou změnu ceny opačným směrem. Zvolena proto varianta
+ * „dosadit a viditelně označit": hodnota zůstává, jen se o ní ví.
+ *
+ * Jeden seznam pro předlohu i pro upozornění. Dvě kopie by se rozešly a
+ * upozornění by mlčelo přesně o tom, co se dosadilo. */
+const ATYP_SAZBY = [
+  { klic: 'atypZamecnikKc', nahrada: 50000, popis: 'zámečník atyp' },
+  { klic: 'atypRezervaZakladPct', nahrada: 0.30, popis: 'rezerva základ' },
+  { klic: 'atypRezervaPriplatkyPct', nahrada: 0.30, popis: 'rezerva příplatky' },
+  { klic: 'atypMontazPct', nahrada: 0.30, popis: 'montážní hodiny' },
+  { klic: 'atypProjekcePct', nahrada: 0.30, popis: 'projekční hodiny' },
+];
+const ATYP_NAHRADA = ATYP_SAZBY.reduce((m, s) => { m[s.klic] = s.nahrada; return m; }, {});
+
+/* Ptá se SAMOTNÉHO CENÍKU, ne vlastní kopie pravidla: pošle mu značku, kterou
+ * ceníková hodnota nikdy být nemůže, a když ji dostane zpátky, je jasné, že
+ * sazba chybí. Kdyby se `cenikVychozi` někdy začal rozhodovat jinak (třeba
+ * začal brát i nulu), pozná to tohle samo. */
+function atypSazbaChybi(klic) {
+  if (typeof cenikVychozi !== 'function') return true;
+  const znacka = {};
+  return cenikVychozi(typeof C === 'undefined' ? null : C, klic, znacka) === znacka;
+}
+
+/* Štítek vedle přepínače ATYP. Ukazuje se jen při zapnutém ATYP — u vypnuté
+ * zakázky by to bylo varování před něčím, co se neděje. Netiskne se. */
+function atypNahradyHtml() {
+  if (typeof Z === 'undefined' || !Z || !Z.atyp) return '';
+  const chybi = ATYP_SAZBY.filter(s => atypSazbaChybi(s.klic));
+  if (!chybi.length) return '';
+  const vse = chybi.length === ATYP_SAZBY.length;
+  const titulek = 'V ceníku (sekce ATYP) ' + (vse ? 'nejsou vyplněné tyto sazby' : 'chybí')
+    + ': ' + chybi.map(s => s.popis).join(', ')
+    + '. Dosadily se náhradní hodnoty ze sestavení aplikace, ne z ceníku — '
+    + 'zkontrolujte je, nebo sazby doplňte v Ceníku.';
+  return ` <span class="pill warn noprint" title="${esc(titulek)}">`
+    + (vse ? 'sazby ATYP nejsou v ceníku' : 'část sazeb ATYP není v ceníku') + '</span>';
+}
+
 /* Zaškrtnutí ATYP: předvyplnění rezerv a zámečníka (17. 8. 2026 večer).
  * Stojí MIMO renderInputs — volá se z onchange, musí být globální. */
 function atypPrepni(zap, opts) {
@@ -287,6 +337,7 @@ function atypPrepni(zap, opts) {
    * ze sestavení — proto ta druhá čísla ve volání. */
   const vych = (klic, zaklad) => (typeof cenikVychozi === 'function')
     ? cenikVychozi(C, klic, zaklad) : zaklad;
+  const S = (klic) => vych(klic, ATYP_NAHRADA[klic]);
   let predloha = null;
   if (zap) {
     /* Hodiny navíc při ATYP (zadání 19. 8. 2026): projekce +30 % ze základních
@@ -297,11 +348,11 @@ function atypPrepni(zap, opts) {
     predloha = {
       rezervaProfilyPct: 0.30,
       rezervaPlechyPct: 0.30,
-      rezervaZakladPct: vych('atypRezervaZakladPct', 0.30),
-      rezervaPriplatkyPct: vych('atypRezervaPriplatkyPct', 0.30),
-      zamecnikAtypKc: vych('atypZamecnikKc', 50000),
-      montazAtypHod: Math.round(vych('atypMontazPct', 0.30) * ((+Z.montazZakladHod || 0) + navic)),
-      projekceAtypHod: Math.round(vych('atypProjekcePct', 0.30) * (+Z.projekceZakladHod || 0)),
+      rezervaZakladPct: S('atypRezervaZakladPct'),
+      rezervaPriplatkyPct: S('atypRezervaPriplatkyPct'),
+      zamecnikAtypKc: S('atypZamecnikKc'),
+      montazAtypHod: Math.round(S('atypMontazPct') * ((+Z.montazZakladHod || 0) + navic)),
+      projekceAtypHod: Math.round(S('atypProjekcePct') * (+Z.projekceZakladHod || 0)),
     };
   }
   atypHodnoty(Z, vData, zap, predloha);
