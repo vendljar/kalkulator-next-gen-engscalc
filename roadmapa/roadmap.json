@@ -3685,7 +3685,7 @@
    "detail" : "Ověřeno v kódu 8. 9. 2026 (v8.9.2), co se dá bez prohlížeče: **N2** hlídač stáří ceníku — `C.dph` je mezi sledovanými položkami (src/cenik_stari.js, CENIK_ZAKAZKOVE) záměrně: automatika ho nepřepisuje, ale do POČTU rozdílů se počítá; hlášení „1 položka, Sazba DPH −42,9 %“ = 0,12 vs 0,21 — zakázkové rozhodnutí, ne starý ceník → řeší #223. **P4** nic v kódu; sledovat, po které akci. **N8** hlídá `overit_vypnuty_radek.mjs` (od 8. 9. v CI) — přepis se zapisuje na onchange, tedy i Tabulátorem; při testu ověřit ručně u klávesnice. **N9** relace platí 12 h (`Max-Age=43200`, sdilene.mjs); 8. 9. vypadla 3× — ten den proběhly tři obnovy databáze s účty z otisku (mění `hesloVerze` → všechny relace 401 „Heslo účtu bylo změněno“), což je čekané; sérii 409 už #219 nepřipouští. Při dalším kole sledovat bez obnov. **N10** zaškrtávátka Počítat/Výchozí — ověřit ručně; harness `overit_zobrazeni.mjs` je přepíná programově. **V19** výběr příplatků do nabídky (`Z.priplatkyVynechat`) přežívá přepnutí modelu — hlídá test_nepocitat.js/test_nabidka.js; ponecháno otevřené. **V2** (odstup lešení 0,20 vs 0,25) a **V25** (kusy kotvicích lišt) — rozhodnuto ponechat otevřené, jen porovnat s předlohou dané zakázky.",
    "hotovoKdyz" : "Splněno: každý z osmi nálezů má po 4. a 5. kole zapsaný výsledek v sešitu VYHODNOCENI_TESTU_KALKULACE.",
    "stav" : "hotovo",
-   "hotovoV" : "v16.9.23",
+   "hotovoV" : "v17.9.1",
    "nazev" : "Nové kolo testů na engscalc: co sledovat (N2, P4, N8, N9, N10, V19, V2, V25)",
    "id" : "221",
    "pozn" : "Nutná podmínka kola: neprovádět během něj obnovu databáze ani zveřejnění ceníku (viz N9 a pravidlo z listu Prompty oprav). **UZAVŘENO 17. 9. 2026:** proběhla 4. i 5. kolo testů a všech osm sledovaných nálezů má výsledek — N2 vyřešeno v #223, P4 se za dvě kola neprojevil, N8 i N9/N10 potvrdil J. V. jako odstraněné, V2 opraveno ve 4. kole, V19 hlídají test_nepocitat.js a test_nabidka.js, V25 rozhodnuto 17. 9. 2026 (#258). Poslední otevřenou položkou bylo právě V25; jeho rozhodnutím kolo končí."
@@ -4250,7 +4250,7 @@
    "stav" : "hotovo",
    "dulezitost" : "stredni",
    "slozitost" : "S",
-   "hotovoV" : "v16.9.23",
+   "hotovoV" : "v17.9.1",
    "nazev" : "V25 — lišty u zasklení mezi příčníky",
    "proc" : "Nález ze 4. kola testů. Předloha si u kotvicích lišt odporovala sama: v listu VZORCE (C60 = C59) je vykazuje 1 : 1 k vnějším a KALKULÁK C127 sčítá 204 + 204 = 408 ks, ale do DÉLKY přičte jen 10 %. Mezi „ke každé vnější liště patří jedna kotvicí\" a „kotvení stojí desetinu materiálu navíc\" je faktor deset, takže obojí platit nemohlo.",
    "detail" : "ROZHODNUTO J. V. 17. 9. 2026 (varianta B): „správný je výpočet Model 2: +10 % z délky a dále pracovat v bm.\" Kotvicí lišta tedy NENÍ samostatný kus, je to přídavek materiálu — a přídavek se měří v metrech. `listyKs` počítá výhradně vnější lišty a zůstává, jak byl; cena se nemění, protože peníze jdou z kilogramů a ty z metrů, počet kusů do nich nevstupuje nikde. Doplněno vysvětlení do Detailu výpočtu (KUSY = vnější lišty, kotvicí jsou 10 % v DÉLCE), zapsáno odůvodnění do jádra a založena sada `src/test_listy_kotvici.js` (12 kontrol), která rozhodnutí přibíjí — počet kusů natvrdo, aby se „srovnání s předlohou\" na 408 nedalo provést omylem. Model 1 zůstává 1 : 1 s předlohou (10 % z kusů) podle rozhodnutí z 15. 9. 2026.",
@@ -4318,7 +4318,7 @@
    "id" : "263",
    "vlna" : "A",
    "stav" : "hotovo",
-   "hotovoV" : "v16.9.24",
+   "hotovoV" : "v17.9.1",
    "dulezitost" : "vysoka",
    "slozitost" : "S",
    "nazev" : "Předloha ATYP tiše nahrazuje chybějící ceníkovou sazbu",
@@ -4334,7 +4334,7 @@
    "id" : "264",
    "vlna" : "A",
    "stav" : "hotovo",
-   "hotovoV" : "v16.9.24",
+   "hotovoV" : "v17.9.1",
    "dulezitost" : "stredni",
    "slozitost" : "S",
    "nazev" : "Výpis rozdílů mezi verzemi ceníku nevidí zahraniční řadu",
@@ -4762,7 +4762,7 @@
    {
     "text" : "Dávka 17. 9. 2026 (engscalc): rozhodnut nález V25 — kotvicí lišty jsou přídavek v METRECH, ne samostatné kusy; správný je výpočet Modelu 2 (+10 % z délky). Rozhodnutí zafixováno sadou a uzavřeno #258 i #221 (sledované nálezy 4. a 5. kola).",
     "hotovo" : true,
-    "pozn" : "build v16.9.23. Cena se nemění — peníze jdou z kilogramů a ty z metrů, počet kusů do nich nevstupuje nikde; varianta B je tedy vysvětlení výkazu, ne přepočet. Nová sada `src/test_listy_kotvici.js` (12 kontrol) přibíjí počet kusů natvrdo, aby se „srovnání s předlohou\" na 408 nedalo provést omylem; čtyři mutace chyceny. Celkem 98 sad a 4098 kontrol. **Vlna B tím NENÍ hotová** — otevřené zůstávají #161 (snímky v příručce; generátor není v repozitáři) a #165 (názvy sloupců v přehledu variant, čeká na rozhodnutí J. V.)."
+    "pozn" : "build v17.9.1. Cena se nemění — peníze jdou z kilogramů a ty z metrů, počet kusů do nich nevstupuje nikde; varianta B je tedy vysvětlení výkazu, ne přepočet. Nová sada `src/test_listy_kotvici.js` (12 kontrol) přibíjí počet kusů natvrdo, aby se „srovnání s předlohou\" na 408 nedalo provést omylem; čtyři mutace chyceny. Celkem 98 sad a 4098 kontrol. **Vlna B tím NENÍ hotová** — otevřené zůstávají #161 (snímky v příručce; generátor není v repozitáři) a #165 (názvy sloupců v přehledu variant, čeká na rozhodnutí J. V.)."
    }
   ],
   "pravidla" : [
@@ -4849,7 +4849,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v16.9.24 (engscalc)",
+  "build" : "v17.9.1 (engscalc)",
   "stavKDatu" : "17. 9. 2026"
  },
  "_comment" : [
