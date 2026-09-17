@@ -38,4 +38,4 @@ místo konkrétního čísla. Argument („cena se propadla o desítky tisíc")
 tím zůstává čitelný, údaj nikoli. Nula zůstává nulou, protože nic neprozrazuje,
 a zaokrouhlovací kroky (100 / 500 / 1 000 …) taky — to je nastavení, ne cena.
 
-Stav k 16. 9. 2026, build v16.9.16: 260 položek, 231 hotovo.
+Stav k 17. 9. 2026, build v17.9.3: 266 položek, 240 hotovo.

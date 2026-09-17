@@ -2739,10 +2739,11 @@
   },
   {
    "id" : "161",
-   "stav" : "ceka",
+   "stav" : "hotovo",
+   "hotovoV" : "v17.9.3",
    "slozitost" : "S",
    "vlna" : "B",
-   "pozn" : "Dá se pustit kdykoliv samostatně, nic k tomu není potřeba. **Stav k 17. 9. 2026: OTEVŘENO a naléhavější než dřív.** Rozhraní se od vzniku snímků výrazně změnilo (zaškrtávátka volitelných položek, sloupec Výchozí, dvojice přechodových plechů), takže snímky ukazují chování, které už neplatí. POZOR na `kde` výš: `snimky_manual.mjs` ani `deploy/manual_obchodnik.html` v repozitáři NEJSOU — příručka i generátor snímků žijí v jiném coworku (potvrdil J. V. 17. 9. 2026). V repozitáři je jen kontrola `overit_manual.mjs`, takže se dnes verzuje kontrola, ale ne to, co kontroluje. **NAVRŽENO 17. 9. 2026: přenést sem GENERÁTOR, ale ne VÝSTUP.** Generátor je kód a patří k rozhraní, které fotí — stejná mašinerie jako třicítka harnessů `overit_*.mjs`, takže ho jde rovnou napsat tady místo portování. Výstup sem naopak nepatří ze dvou důvodů: hotová příručka je jeden zapečený soubor o 2 MB v base64 (v historii Gitu napořád) a snímky ukazují ceníkové řádky — `.gitignore` má kvůli tomu už teď pravidlo `snimek_*.png` s poznámkou, že se to 29. 7. 2026 jednou stalo. Přenos tedy znamená: generátor do repozitáře, `snímky/` i zabalené HTML do `.gitignore` jako `dist/`. ČEKÁ NA ROZHODNUTÍ J. V.",
+   "pozn" : "Dá se pustit kdykoliv samostatně, nic k tomu není potřeba. **Stav k 17. 9. 2026: OTEVŘENO a naléhavější než dřív.** Rozhraní se od vzniku snímků výrazně změnilo (zaškrtávátka volitelných položek, sloupec Výchozí, dvojice přechodových plechů), takže snímky ukazují chování, které už neplatí. POZOR na `kde` výš: `snimky_manual.mjs` ani `deploy/manual_obchodnik.html` v repozitáři NEJSOU — příručka i generátor snímků žijí v jiném coworku (potvrdil J. V. 17. 9. 2026). V repozitáři je jen kontrola `overit_manual.mjs`, takže se dnes verzuje kontrola, ale ne to, co kontroluje. **NAVRŽENO 17. 9. 2026: přenést sem GENERÁTOR, ale ne VÝSTUP.** Generátor je kód a patří k rozhraní, které fotí — stejná mašinerie jako třicítka harnessů `overit_*.mjs`, takže ho jde rovnou napsat tady místo portování. Výstup sem naopak nepatří ze dvou důvodů: hotová příručka je jeden zapečený soubor o 2 MB v base64 (v historii Gitu napořád) a snímky ukazují ceníkové řádky — `.gitignore` má kvůli tomu už teď pravidlo `snimek_*.png` s poznámkou, že se to 29. 7. 2026 jednou stalo. Přenos tedy znamená: generátor do repozitáře, `snímky/` i zabalené HTML do `.gitignore` jako `dist/`. **UZAVŘENO 17. 9. 2026 ve v17.9.2** — J. V. návrh schválil a generátor byl napsán znovu v repozitáři (`manual/`), výstup zůstává mimo něj. Starý `snimky_manual.mjs` ani `zabal_manual.py` se neportovaly a v repozitáři nejsou; snímky se dnes neberou jako PNG, ale jako živý DOM. Podrobnosti v **#266**.",
    "nazev" : "Přegenerovat snímky obrazovky v příručce obchodníka",
    "zavisi" : [
     {
@@ -4358,6 +4359,20 @@
    "hotovoKdyz" : "Splněno: čtyři sloupky projdou, jakýkoli jiný počet hlásí atyp, a limit jde změnit v Nastavení zvlášť pro každou větev.",
    "kde" : "`src/standard_ock.js`, `src/ui/nastaveni_ui.js`, `src/test_standard_sloupky.js`",
    "pozn" : "Cena se tím nemění — kontrola standardu podle zásady 1 nic nepřepočítává, jen zaškrtne ATYP a ten si člověk může vrátit. **Při té příležitosti ověřeno, že ŠÍŘKA MŮSTKU se hlídá už dnes** (strop = min(šířka OCK, 2000 mm), nález „mimo\" při překročení, „nelze\" při nevyplnění) — a to v OBOU větvích, přestože Nastavení u můstku píše, že patří k venkovní šachtě. Ten rozpor mezi textem a chováním zůstává k rozhodnutí J. V."
+  },
+  {
+   "id" : "266",
+   "vlna" : "C",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "L",
+   "nazev" : "Příručka obchodníka: generátor živých snímků a sloučená příručka k v17.9.3",
+   "proc" : "Poslední vydaná příručka byla z v8.9.3 (9. 9. 2026) a za osm dní se přepracovalo právě to, co obchodník používá nejvíc — zadání šachty, volitelné položky, plechy, zasklení. Příručka s obrázky z jiné verze je horší než žádná: vede ke klikání, které nikam nevede. Generátor snímků navíc v repozitáři vůbec nebyl, takže se verzovala kontrola, ale ne to, co kontroluje.",
+   "detail" : "Snímky obrazovky se nově neberou jako PNG, ale jako ŽIVÝ KUS DOM plus firemní CSS; v příručce se vykreslí znovu, každý ve vlastním shadow rootu. Příručka spadla z 6 MB na 153 kB, zůstává ostrá při jakémkoli zvětšení i v tisku a dá se v ní hledat. Vedlejší zisk: testovací téma visí na `body.prostredi-test`, a protože uvnitř snímku žádné `body` není, kreslí se snímky samy od sebe v OSTRÉM vzhledu — jantarový se zapne jen tam, kde je o něm řeč. Sběr běží v prohlížeči nad testovacím webem, takže nepotřebuje Node ani Python (na stroji nejsou). Obsah i snímky jsou zapečené jako JSON přímo v HTML, příručka se tedy dá přegenerovat beze změny HTML rukou. Vysvětlivky ①②③ se kreslí DOVNITŘ snímku a cíl se hledá podle popisku, ne podle pozice — po přeskládání obrazovky ukáže kontrola, že cíl zmizel, místo aby ukazovala na jiné pole.\n\nPŘÍRUČKA JE JEDNA, NE DVĚ (pokyn J. V. 17. 9. 2026: „nechci dvě oddělené verze\"). Revize změn od v8.9.3 se slila s příručkou z 9. 9. 2026 do jediného dokumentu: 33 kapitol, 19 obrázků z 18 snímků. Kronikové kapitoly staré příručky (27 z 49 neslo v názvu datum vydání) se rozpustily do kapitol podle obrazovek. Vydává se HTML i PDF; PDF tiskne `manual/do_pdf.sh` headless Chromem, protože nic jiného na stroji PDF neumí — a je to týž vykreslovač, kterým příručku uvidí obchodník.",
+   "hotovoKdyz" : "Splněno: `manual/sestav.sh` sestaví jednosouborovou příručku a zastaví se při neshodě verze s `verze.txt`, při snímcích mimo testovací prostředí i při názvu skutečné firmy v datech; `manual/do_pdf.sh` vytiskne A4 PDF a zastaví se, když nedoběhl JavaScript; `manual/overit.js` projde v prohlížeči beze zbytku.",
+   "kde" : "`manual/snimac.js` (sběr a anonymizace), `manual/sablona.html` (vzhled + vykreslení z JSON), `manual/obsah.json` (text), `manual/sestav.sh`, `manual/do_pdf.sh`, `manual/overit.js`; výstup mimo repozitář, ve složce Manual na sdíleném disku",
+   "hotovoV" : "v17.9.3",
+   "pozn" : "**Rozhodnutí J. V. 17. 9. 2026: fotí se skutečné částky.** Obchodník má v matici zobrazení právo `sloupce.naklad`, takže na Jedn. cenu, Náklad i Přirážku vidí, a příručka má ukazovat to, co uvidí on. Příručka proto nese označení „interní\" místo dřívější věty o zkušebních číslech — ta by dnes byla nepravdivá. Přepočet částek jedním koeficientem v generátoru zůstává připravený a vypnutý (`SNIMAC.kurz = 1`).\n\n**Jména zákazníků se anonymizují při sběru, ne rozmazáním.** U živého DOM je rozmazání pouhá kosmetika — text zůstane ve zdroji. Hodnota se proto NAHRAZUJE nad klonem, dřív než snímek vznikne, a táž skutečná hodnota dá vždy tutéž vymyšlenou, aby vztahy v datech zůstaly pravdivé.\n\n**Nález k rozhodnutí:** testovací web má podle zadání #168 stejný ceník jako ostrý provoz a jeho databáze vznikla zálohou z ostrého, takže obsahuje skutečné zakázky i zákazníky. Bod 3 pokynů pro příručku („testovací web má testovací ceník\") tomu odporuje. Pro příručku vznikla vymyšlená zakázka **2026 - OPR - CN - 9100 - PRIRUCKA**.\n\n**Zbývá:** `overit_manual.mjs` v kořeni popisuje starou příručku (25 zapečených PNG, cesta `/home/claude/work/deliver`) a v CI zapojený není. Nemazal jsem ho — patří jiné příručce a o jeho osudu rozhodne zadavatel."
   }
  ],
  "meta" : {
@@ -4778,6 +4793,11 @@
     "text" : "Dávka 17. 9. 2026 (engscalc): rozhodnut nález V25 — kotvicí lišty jsou přídavek v METRECH, ne samostatné kusy; správný je výpočet Modelu 2 (+10 % z délky). Rozhodnutí zafixováno sadou a uzavřeno #258 i #221 (sledované nálezy 4. a 5. kola).",
     "hotovo" : true,
     "pozn" : "build v17.9.1. Cena se nemění — peníze jdou z kilogramů a ty z metrů, počet kusů do nich nevstupuje nikde; varianta B je tedy vysvětlení výkazu, ne přepočet. Nová sada `src/test_listy_kotvici.js` (12 kontrol) přibíjí počet kusů natvrdo, aby se „srovnání s předlohou\" na 408 nedalo provést omylem; čtyři mutace chyceny. Celkem 98 sad a 4098 kontrol. **Vlna B tím NENÍ hotová** — otevřené zůstávají #161 (snímky v příručce; generátor není v repozitáři) a #165 (názvy sloupců v přehledu variant, čeká na rozhodnutí J. V.)."
+   },
+   {
+    "text" : "Dávka 17. 9. 2026 (příručka): generátor příručky obchodníka přenesen do repozitáře a vydána SLOUČENÁ příručka k v17.9.3 — příručka z 9. 9. 2026 a revize změn v jednom dokumentu, v HTML i PDF. Uzavřeno #161, nově #266.",
+    "hotovo" : true,
+    "pozn" : "build v17.9.3. Snímky se nově neberou jako PNG, ale jako živý DOM plus firemní CSS, každý ve vlastním shadow rootu — 33 kapitol a 19 obrázků se vejde do 226 kB HTML (dřív 6 MB) a zůstává ostrých i v tisku. Sběr i sestavení běží bez Node a Pythonu; PDF (A4, 23 stran) tiskne headless Chrome. Ověřeno kontrolami v prohlížeči (`manual/overit.js`) a zastávkami v `manual/sestav.sh`; měřítko snímků při tiskové šířce dopočítáno a ověřeno, nic nepřetéká. **Vlna B tím stále NENÍ hotová** — otevřené zůstává #165. Při práci vyšlo najevo, že testovací web má podle #168 ostrý ceník a databázi ze zálohy ostrého provozu, což odporuje bodu 3 pokynů pro příručku; pokyny opraveny, viz #266."
    }
   ],
   "pravidla" : [
@@ -4864,7 +4884,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v17.9.2 (engscalc)",
+  "build" : "v17.9.3 (engscalc)",
   "stavKDatu" : "17. 9. 2026"
  },
  "_comment" : [
