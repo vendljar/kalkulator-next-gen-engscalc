@@ -82,6 +82,7 @@ const DEFAULT_CENIK = {  // HODNOTY VYNULOVÁNY pro GitHub (pripravit_github.py)
   skloBokyKc: 0,  skloBokyNazev: '',
   skloCelniKc: 0, skloCelniNazev: '',
   skloVsg442Kc: 0,               // VSG 4.4.2 — interiérová šachta na terče (9. 9. 2026)
+  cetrisKc: 0,                   // Cetris — neprůhledné opláštění stěny (17. 9. 2026)
   praceOplasteniKc: 0, plastKotvyKc: 0, tmeleniKc: 0,
   striskaDvurKc: 0, cestovniKc: 0, cisteniKc: 0,
   /* leseniFix (11. 8. 2026) — JEDINÝ zdroj fixní části lešení. Do té doby

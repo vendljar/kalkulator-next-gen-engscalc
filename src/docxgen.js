@@ -100,11 +100,22 @@ function xmlEsc(s) {
   return String(s).replace(XML_RIDICI, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 }
+/* VÍCEŘÁDKOVÁ HODNOTA (17. 9. 2026). Konec řádku `\n` projde `xmlEsc()` bez
+ * úhony — v seznamu řídicích znaků není — jenže Word ho ve své XML vykreslí
+ * jako obyčejnou MEZERU. Dvouřádková patička by tak ve wordové nabídce
+ * skončila na jednom řádku a nikdo by nepoznal proč.
+ *
+ * Řádky se proto spojují značkou `<w:br/>`, která uvnitř běhu (`<w:r>`)
+ * znamená zalomení. Placeholder v běhu vždycky je, takže je to platné.
+ * `\r` se zahazuje, aby se ze souboru s CRLF nedělaly prázdné řádky. */
+function xmlEscRadky(s) {
+  return String(s).replace(/\r/g, '').split('\n').map(xmlEsc).join('<w:br/>');
+}
 function nahradPlaceholdery(xml, ph) {
   // {{KLÍČ}} i rozdělené mezi runy: {{ / KLÍČ / }} mohou být proloženy XML tagy
   return xml.replace(/\{(?:<[^>]+>)*\{((?:<[^>]+>|[A-Z0-9_])+)\}(?:<[^>]+>)*\}/g, (cely, vnitrek) => {
     const klic = vnitrek.replace(/<[^>]+>/g, '');
-    return ph[klic] != null ? xmlEsc(ph[klic]) : cely;
+    return ph[klic] != null ? xmlEscRadky(ph[klic]) : cely;
   });
 }
 

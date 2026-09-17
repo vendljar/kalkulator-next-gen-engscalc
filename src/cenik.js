@@ -84,6 +84,13 @@ const CENIK_DEF = [
     /* 9. 9. 2026, zadání J. V.: interiérová šachta zasklená na terče. Prázdná
      * položka = počítá se sazbou VSG 4.4.1 (viz skloVolba v engine.js). */
     ['C.skloVsg442Kc', 'Sklo VSG 4.4.2', 'Kč/m²', 'interiérová: celá šachta při zasklení na terče · prázdná sazba = v nabídce nula, nedosazuje se 4.4.1'],
+    /* CETRIS (17. 9. 2026, zadání J. V.). Cementotřísková deska — neprůhledné
+     * opláštění tam, kde sklo nedává smysl (stěna u zdi budovy, spodní pás).
+     * Do výpočtu zatím NEVSTUPUJE: volí se až v připravovaném opláštění po
+     * stěnách. Sazba se zadává jako u skel, aby byla v ceníku připravená
+     * dřív, než ji začne kdo potřebovat — prázdná znamená „nemáme sazbu",
+     * ne nulu (viz cenikVychozi). */
+    ['C.cetrisKc', 'Cetris (cementotřísková deska)', 'Kč/m²', 'neprůhledné opláštění stěny · volí se v opláštění po stěnách'],
     ['C.praceOplasteniKc', 'Práce opláštění', 'Kč/m²', ''],
     ['C.plastKotvyKc', 'Plastové kotvy (zasklení na terče)', 'Kč', ''],
     ['C.tmeleniKc', 'Tmelení – materiál + práce (ext)', 'Kč/m²', ''],

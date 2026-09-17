@@ -31,6 +31,22 @@ const pocetRadku = x => (x.match(/<w:tr[\s>]/g) || []).length;
   test('rozdělené závorky', nahradPlaceholdery('<w:t>{</w:t><w:t>{DATUM}</w:t><w:t>}</w:t>', { DATUM: '1.1.' }).includes('1.1.'));
   test('neznámý klíč zůstává', nahradPlaceholdery('<w:t>{{NEZNAMY}}</w:t>', {}) === '<w:t>{{NEZNAMY}}</w:t>');
 
+  /* VÍCEŘÁDKOVÁ HODNOTA (17. 9. 2026). `\n` projde escapováním bez úhony —
+   * v seznamu řídicích znaků není — ale Word ho vykreslí jako MEZERU. Bez
+   * převodu na `<w:br/>` by dvouřádková patička ve wordové nabídce skončila
+   * na jednom řádku a nikdo by nepoznal proč. */
+  test('konec řádku se ve Wordu stane zalomením, ne mezerou',
+    nahradPlaceholdery('<w:t>{{PATICKA}}</w:t>', { PATICKA: 'první\ndruhý' })
+      === '<w:t>první<w:br/>druhý</w:t>');
+  test('a text kolem zalomení se pořád escapuje',
+    nahradPlaceholdery('<w:t>{{X}}</w:t>', { X: 'a<b\nc&d' })
+      === '<w:t>a&lt;b<w:br/>c&amp;d</w:t>');
+  /* CRLF ze schránky nebo z CRM nesmí udělat prázdný řádek navíc. */
+  test('CRLF dá jedno zalomení, ne dvě',
+    nahradPlaceholdery('<w:t>{{X}}</w:t>', { X: 'a\r\nb' }) === '<w:t>a<w:br/>b</w:t>');
+  test('jednořádková hodnota zůstává beze změny',
+    nahradPlaceholdery('<w:t>{{X}}</w:t>', { X: 'bez zalomení' }) === '<w:t>bez zalomení</w:t>');
+
   // 2) odstranění prázdných řádků (syntetické tabulky)
   // (a) řádek s jediným prázdným TS_ symbolem zmizí
   {
