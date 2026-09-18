@@ -702,8 +702,39 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
    * jinak vyšlo záporné sklo. */
   const zadniPlneM2 = Math.max(zadniM2 - zadniPortalyM2, 0);
 
-  const skloBokyZadniM2 = bocniM2 + zadniPlneM2;
-  const skloCelniM2 = svetlikM2 + svetlikBokM2;
+  /* ---------- plocha zasklení PO STĚNÁCH (#268, 18. 9. 2026) ----------
+   *
+   * PŘÍPRAVNÝ KROK, KTERÝ NESMÍ ZMĚNIT ANI HALÉŘ. Připravovaný režim
+   * „opláštění po stěnách" (viz NAVRH_ZASKLENI_PROHLUBNE) potřebuje u každé
+   * stěny vlastní typ a rozsah. Dnes se ale plocha počítá ze tří čísel, ve
+   * kterých se OBĚ BOČNÍ STĚNY sčítají dohromady — B a D tedy nejde
+   * rozlišit. Tenhle krok je rozpojí a nic víc; součty zůstávají stejné,
+   * takže regrese na uložených zakázkách musí sedět na haléř.
+   *
+   * Značení podle zadání J. V.: stojím na nástupišti čelem ke dveřím,
+   *   A = čelní (dveře)   B = boční   C = zadní   D = boční
+   * po směru hodinových ručiček. Táž abeceda jako u nástupišť A/C.
+   *
+   * POZOR NA DĚLENÍ DVĚMA. `bocniM2` má v sobě `Math.max` přes OBĚ stěny
+   * najednou — počítá se maximum ze součtu tabulí a ze součinu výšky,
+   * nikoli maximum po jedné stěně. Půlka výsledku je proto jediný věrný
+   * způsob, jak z toho udělat dvě stěny; kdyby se `Math.max` počítal zvlášť
+   * pro B a D, vyšlo by u některých zadání jiné číslo. Rozpojení podle
+   * skutečných rozměrů přijde na řadu teprve s režimem po stěnách, kde
+   * se stejně bude počítat po pásech.
+   *
+   * Portály a světlíky: A nese světlík nad dveřmi i po stranách; C už má
+   * své portály odečtené v `zadniPlneM2`. */
+  const skloStenaB = bocniM2 / 2;
+  const skloSteny = {
+    A: svetlikM2 + svetlikBokM2,
+    B: skloStenaB,
+    C: zadniPlneM2,
+    D: skloStenaB,
+  };
+
+  const skloBokyZadniM2 = skloSteny.B + skloSteny.D + skloSteny.C;
+  const skloCelniM2 = skloSteny.A;
   const skloCelkemM2 = skloBokyZadniM2 + skloCelniM2;
   const skloRada = skloVolba(z, c);   // typ skla podle šachty a zasklení (9. 9. 2026)
 
@@ -1183,6 +1214,10 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     zaskleni: { rozmer: g, zadni: { ks: zadniKs, m2: zadniM2 }, bocni: { ks: bocniKs, m2: bocniM2 },
                 svetliky: { ks: svetlikKs, m2: svetlikM2 }, svetlikyBoky: { ks: svetlikBokKs, m2: svetlikBokM2 },
                 bokyZadniM2: skloBokyZadniM2, celniM2: skloCelniM2, celkemM2: skloCelkemM2,
+                /* Plocha po stěnách A–D (#268). Zatím jen se vydává — cenu
+                 * pořád tvoří součty výš. Bude z ní stavět režim „opláštění
+                 * po stěnách" a Detail výpočtu. */
+                steny: skloSteny,
                 /* Rozpad zadní stěny pro Detail výpočtu (V37, 14. 9. 2026):
                  * patra bez nástupiště C jsou plné sklo, patra s nástupištěm
                  * mají portál a nad ním světlík. */
