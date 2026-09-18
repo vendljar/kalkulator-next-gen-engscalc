@@ -61,18 +61,33 @@ test('výpočet se vykreslil', (await page.locator('#outputs').innerHTML()).leng
 test('verze je v hlavičce', /\d+\.\d+\.\d+/.test(await page.locator('body').innerText()));
 
 /* ---- štítek režimu (#2) ---- */
+/* Od 17. 9. 2026 zakládá nová zakázka Model 2 (zakazka.js: `fixes: true`),
+ * takže výchozí štítek NEVARUJE — varování patří Modelu 1, který počítá 1:1
+ * s předlohou včetně jejích osmi chyb. Test tedy začíná u opraveného režimu
+ * a do varovného se teprve přepne; dřív to bylo obráceně a CI kvůli tomu
+ * padalo od dávky, která výchozí model změnila.
+ *
+ * `fixes` je BOOLEAN, ne řetězec 'fix'/'compat' — tak ho posílá i select
+ * v hlavičce (`this.value==='fix'`). Původní test podstrkával řetězce, a tak
+ * se „přepnutím zpět" na 'compat' ve skutečnosti nic nepřeplo: neprázdný
+ * řetězec je pravdivý, takže aplikace zůstala v opraveném režimu a varovná
+ * větev štítku se nikdy neproběhla. */
 const pill = page.locator('#rezimPill');
 test('štítek režimu je vidět', await pill.isVisible());
-test('výchozí režim je 1:1 s Excelem', (await pill.innerText()).includes('1:1'), await pill.innerText());
-test('štítek varuje barvou', (await pill.getAttribute('class') || '').includes('warn'));
+test('výchozí režim je Model 2 – opravený', (await pill.innerText()).includes('Model 2'), await pill.innerText());
+test('opravený režim nevaruje barvou', !(await pill.getAttribute('class') || '').includes('warn'),
+  await pill.getAttribute('class'));
 
-await page.evaluate(() => { set('OCK.fixes', 'fix'); });
+await page.evaluate(() => { set('OCK.fixes', false); });
 await page.waitForTimeout(150);
-test('po přepnutí režimu štítek přestane varovat',
-  (await pill.innerText()).includes('opravený') && !(await pill.getAttribute('class') || '').includes('warn'),
+test('po přepnutí na Model 1 štítek varuje barvou',
+  (await pill.innerText()).includes('1:1') && (await pill.getAttribute('class') || '').includes('warn'),
+  await pill.innerText() + ' / ' + await pill.getAttribute('class'));
+await page.evaluate(() => { set('OCK.fixes', true); });
+await page.waitForTimeout(150);
+test('přepnutí zpět na Model 2 štítek zase uklidní',
+  (await pill.innerText()).includes('Model 2') && !(await pill.getAttribute('class') || '').includes('warn'),
   await pill.innerText());
-await page.evaluate(() => { set('OCK.fixes', 'compat'); });
-await page.waitForTimeout(150);
 
 /* ---- záložky ---- */
 const taby = await page.evaluate(() => TABY);

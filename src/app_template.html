@@ -850,7 +850,10 @@
   <h1>Kalkulačka __VERZE__</h1>
   <!-- Podtitulek s verzemi šablon zmizel 17. 8. 2026 večer (zadání J. V.) —
        zůstává jen štítek režimu výpočtu. -->
-  <span class="ver"><span id="rezimPill" class="pill warn">výpočet: 1:1 jako Excel (vč. jeho chyb)</span><span
+  <!-- Výchozí stav štítku musí odpovídat výchozímu modelu (od 17. 9. 2026
+       Model 2), jinak hlavička než doběhne první render() blikne varováním
+       o režimu, ve kterém aplikace není. Pravdu pak nastaví renderRezimPill. -->
+  <span class="ver"><span id="rezimPill" class="pill">výpočet: Model 2 – opravený</span><span
     id="verzePill" class="pill stara" style="display:none;margin-left:8px"></span></span>
   <span class="sp"></span>
   <div class="btns">

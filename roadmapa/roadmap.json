@@ -4373,6 +4373,20 @@
    "kde" : "`manual/snimac.js` (sběr a anonymizace), `manual/sablona.html` (vzhled + vykreslení z JSON), `manual/obsah.json` (text), `manual/sestav.sh`, `manual/do_pdf.sh`, `manual/overit.js`; výstup mimo repozitář, ve složce Manual na sdíleném disku",
    "hotovoV" : "v17.9.3",
    "pozn" : "**Rozhodnutí J. V. 17. 9. 2026: fotí se skutečné částky.** Obchodník má v matici zobrazení právo `sloupce.naklad`, takže na Jedn. cenu, Náklad i Přirážku vidí, a příručka má ukazovat to, co uvidí on. Příručka proto nese označení „interní\" místo dřívější věty o zkušebních číslech — ta by dnes byla nepravdivá. Přepočet částek jedním koeficientem v generátoru zůstává připravený a vypnutý (`SNIMAC.kurz = 1`).\n\n**Jména zákazníků se anonymizují při sběru, ne rozmazáním.** U živého DOM je rozmazání pouhá kosmetika — text zůstane ve zdroji. Hodnota se proto NAHRAZUJE nad klonem, dřív než snímek vznikne, a táž skutečná hodnota dá vždy tutéž vymyšlenou, aby vztahy v datech zůstaly pravdivé.\n\n**Nález k rozhodnutí:** testovací web má podle zadání #168 stejný ceník jako ostrý provoz a jeho databáze vznikla zálohou z ostrého, takže obsahuje skutečné zakázky i zákazníky. Bod 3 pokynů pro příručku („testovací web má testovací ceník\") tomu odporuje. Pro příručku vznikla vymyšlená zakázka **2026 - OPR - CN - 9100 - PRIRUCKA**.\n\n**Zbývá:** `overit_manual.mjs` v kořeni popisuje starou příručku (25 zapečených PNG, cesta `/home/claude/work/deliver`) a v CI zapojený není. Nemazal jsem ho — patří jiné příručce a o jeho osudu rozhodne zadavatel."
+  },
+  {
+   "id" : "269",
+   "vlna" : "A",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "S",
+   "hotovoV" : "v21.9.1",
+   "nazev" : "Kouřový test držel starý výchozí model a zastavil CI",
+   "proc" : "Od dávky, která podle rozhodnutí J. V. ze 17. 9. 2026 udělala výchozím Model 2, bylo CI červené — čtyři běhy po sobě (114–117). Nepadal ale program: padal test, který si držel starou domněnku, že nová zakázka začíná Modelem 1. Červená, o které se ví, že „to nic není\", je horší než žádná: příští skutečné rozbití by v ní zaniklo.",
+   "detail" : "Kouřový test tvrdil „výchozí režim je 1:1 s Excelem\" a „štítek varuje barvou\". Obojí platilo do chvíle, než `zakazka.js` začal zakládat zakázku s `fixes: true`; varování patří Modelu 1, a ten už výchozí není. Test teď začíná u opraveného režimu, přepne do varovného a zase zpátky.\n\nPŘITOM VYŠLA NAJEVO DRUHÁ, TIŠŠÍ CHYBA: `fixes` je boolean — tak ho posílá i select v hlavičce (`this.value==='fix'`) — ale test mu podstrkával řetězce `'fix'` a `'compat'`. Neprázdný řetězec je pravdivý, takže „přepnutí zpět\" na `'compat'` ve skutečnosti nic nepřeplo a varovná větev štítku se za celou dobu ani jednou neproběhla. Test tedy neměřil, co měl, ještě než ho změna výchozího modelu shodila.\n\nSpolu s tím statická předloha štítku v `app_template.html`: nesla text a oranžové `warn` Modelu 1, takže hlavička než doběhl první `render()` blikla varováním o režimu, ve kterém aplikace není.",
+   "hotovoKdyz" : "Splněno: kouřový test 50 OK / 0 FAIL nad sestaveným `dist/kalkulacka.html`, plná sada 106 prošlo / 0 selhalo (1 přeskočeno — `test.js` potřebuje skutečný ceník mimo repozitář).",
+   "kde" : "`smoke.mjs` (štítek režimu), `src/app_template.html` (výchozí podoba `#rezimPill`)",
+   "pozn" : "Kontrolu výchozího modelu hlídají i dva testy v `src/test_zakazka.js` doplněné v dávce, která model měnila — ty prošly. Kouřový test je jediné místo, kde se režim čte z vykreslené hlavičky, a právě tam domněnka zůstala.\n\n**Zbývá k rozhodnutí J. V.:** roadmapa zaostala za kódem o tři dávky. Do souboru se nezapsalo #267 (dodatkový text k položce v nabídce) ani #268, pod kterým odešly DVĚ dávky opláštění po stěnách (rozpojení plochy na stěny A–D a pak výpočet s typy a kontrolou standardu); `meta.build` zůstala na v17.9.3, přestože poslední z nich je z 18. 9. Obě čísla jsou tím obsazená zprávami commitů, tahle položka má proto 269 — čísla se podle pravidel roadmapy nepoužívají podruhé. Dopsat obsah #267 a #268 přísluší jejich dávkám, ne téhle."
   }
  ],
  "meta" : {
@@ -4884,8 +4898,8 @@
     "id" : "F"
    }
   ],
-  "build" : "v17.9.3 (engscalc)",
-  "stavKDatu" : "17. 9. 2026"
+  "build" : "v21.9.1 (engscalc)",
+  "stavKDatu" : "21. 9. 2026"
  },
  "_comment" : [
   "JEDINÝ ZDROJ PRAVDY pro roadmapu Kalkulátoru Next Gen.",
