@@ -130,6 +130,53 @@ const tsNum = (n, d = 0) => (+n).toLocaleString('cs-CZ', { maximumFractionDigits
  * takže zakázkám, kde obchodník text už opravil, se nic nezmění. */
 function tsDvojsklo(Z) { return (Z || {}).typSachty !== 'interiérová'; }
 
+/* ROZSAH OPLÁŠTĚNÍ při režimu „po stěnách" (#268).
+ *
+ * Text popisuje, co je na které stěně — značení A čelní, dál po směru
+ * hodinových ručiček B, C zadní, D. Bere se z `r.oplasteniPlan`, tedy
+ * z TÉHOŽ rozpadu, ze kterého se počítala cena; kdyby si to tenhle řádek
+ * počítal po svém, mohl by popisovat jinou šachtu, než jaká je v nabídce.
+ *
+ * Vrací null, když se režim nepoužívá — volající pak nechá výchozí větu.
+ *
+ * `usek()` popíše jeden pás, `skupiny` slučuje stěny se shodným popisem,
+ * aby „A, B, D: sklo · C: Cetris" nebylo čtyřikrát totéž. */
+function tsOplasteniUsek(p) {
+  const od = tsNum(p.odM, 2), doV = tsNum(p.doM, 2);
+  return `${p.nazevTypu} (${od}–${doV} m)`;
+}
+function tsOplasteniSkupiny(r) {
+  const plan = (r || {}).oplasteniPlan;
+  if (!plan || plan.rezim !== 'poStenach' || !plan.pasy.length) return null;
+  const popisSteny = {};
+  plan.pasy.forEach(p => {
+    (popisSteny[p.stena] = popisSteny[p.stena] || []).push(p);
+  });
+  const skupiny = [];
+  ['A', 'B', 'C', 'D'].forEach(k => {
+    const pasy = popisSteny[k];
+    if (!pasy) return;
+    /* Jeden pás přes celou stěnu se popisuje jen typem — výšky by tam nic
+     * neřekly. Dva a víc pásů se vypisují odshora dolů, jako v rozhraní. */
+    const popis = (pasy.length === 1) ? pasy[0].nazevTypu
+      : pasy.slice().reverse().map(tsOplasteniUsek).join(', ');
+    const posl = skupiny[skupiny.length - 1];
+    if (posl && posl.popis === popis) posl.steny.push(k);
+    else skupiny.push({ steny: [k], popis });
+  });
+  return skupiny;
+}
+function tsOplasteniRozsah(r) {
+  const skupiny = tsOplasteniSkupiny(r);
+  if (!skupiny) return null;
+  /* Všechny čtyři stěny stejně = je to zase kompletní opláštění šachty
+   * a rozepisovat stěny by jen přidalo text bez informace. */
+  if (skupiny.length === 1 && skupiny[0].steny.length === 4)
+    return 'kompletní opláštění šachty';
+  // TODO(human): složit z `skupiny` větu do řádku ROZSAH OPLÁŠTĚNÍ
+  return null;
+}
+
 /* Definice dokumentu: sekce → pole. prefill(r, Z, C) vrací text z kalkulace OCK
  * (r = výsledek vypocet(), Z = zadání, C = ceník); bez prefill je výchozí def. */
 const TECHSPEC_DEF = [
@@ -229,7 +276,8 @@ const TECHSPEC_DEF = [
         : 'čiré sklo' },
     { id: 'oplasteniCela', label: 'OPLÁŠTĚNÍ ČELA POD NÁSTUPIŠTĚM', ciselnik: TS_C.oplasteniCela,
       def: 'plech v celé ploše podesty' },
-    { id: 'rozsahOplasteni', label: 'ROZSAH OPLÁŠTĚNÍ', def: 'kompletní opláštění šachty' },
+    { id: 'rozsahOplasteni', label: 'ROZSAH OPLÁŠTĚNÍ', def: 'kompletní opláštění šachty',
+      prefill: (r) => tsOplasteniRozsah(r) || 'kompletní opláštění šachty' },
     { id: 'oplasteniPortalu', label: 'OPLÁŠTĚNÍ PORTÁLŮ NÁSTUPIŠŤ', ciselnik: TS_C.oplasteniPortalu, def: ' -' },
     { id: 'oplasteniNadsvetliku', label: 'OPLÁŠTĚNÍ NADSVĚTLÍKŮ', ciselnik: TS_C.oplasteniNadsvetliku,
       prefill: (r, Z) => (Z.svetlikNadDvermi || Z.svetlikyBoky)
@@ -474,4 +522,5 @@ function tsKontrola(ts, r, Z, C, zak) {
 if (typeof module !== 'undefined')
   module.exports = { TECHSPEC_DEF, TS_C, DEFAULT_TECHSPEC, tsHodnota,
     TS_C_KEY_OF, tsCiselnikKlic, tsCiselnikPouziti, tsPole, TS_C_ORIG, TS_DEF_ORIG,
-    TS_HLAVICKA, TS_POVINNE, tsPrazdna, tsKontrola };
+    TS_HLAVICKA, TS_POVINNE, tsPrazdna, tsKontrola,
+    tsOplasteniRozsah, tsOplasteniSkupiny, tsOplasteniUsek };

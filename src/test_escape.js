@@ -283,6 +283,8 @@ const PROVERENO = {
     'popis': 'text tlačítka „+ …" předaný literálem do radekPridat()',
     'klic': 'hotový úsek HTML z klicChip() – cestu i titulek escapuje esc() uvnitř',
     'pozn': 'hotový úsek HTML `<span class="note">(${esc(r.pozn)})</span>`',
+    'volby(p.typ)': 'hotový seznam prvků <option> z volby() – id typu i jeho '
+      + 'název procházejí esc() uvnitř; seznam sám je pevná konstanta OPLASTENI_TYPY',
   },
   'kalk_proj.js': {
     'label': 'popisek KPI psaný vývojářem',

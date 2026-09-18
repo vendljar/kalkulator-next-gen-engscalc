@@ -847,7 +847,14 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
       const podNulou = Math.min(horni, 0) - Math.min(dolni, 0);
       const m2 = (vyskaProsklene > 0 ? celkem * (nadNulou / vyskaProsklene) : 0)
         + podNulou * stenaSirka[k];
+      /* Název typu se řeší TADY, ne u odběratele: technická specifikace ani
+       * Detail výpočtu na OPLASTENI_TYPY nevidí (v Node by je nenašly a tiše
+       * by spadly do výchozího textu — přesně ten rozjezd mezi testy
+       * a aplikací už tenhle projekt jednou stál několik kol). */
+      const defTyp = OPLASTENI_TYPY.find(t => t.id === String(p.typ || oplVychoziTyp(k)));
       out.push({ stena: k, typ: String(p.typ || oplVychoziTyp(k)),
+        nazevTypu: (String(p.typ) === OPL_JINE ? (p.nazev || 'jiné')
+          : (defTyp ? defTyp.nazev : String(p.typ || oplVychoziTyp(k)))),
         nazev: p.nazev || '', naklad: p.naklad, odM: dolni, doM: horni, m2 });
       dolni = horni;
     });
@@ -1375,6 +1382,10 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     lakovani: { lakovna, tomas, pouzito: lakovaniKc, rezim: L.rezim, vlastniRows: vlLakRows, vlastniKc: lakVlastniKc },
     montaz: { hodinyNavic: hn, hodinyNavicCelkem: hodinyNavic, hod1osoba: montazHod1, hodCelkem: montazHod, dni: montazHod1 / 8 },
     nazvyPolozek,
+    /* Rozpis opláštění po stěnách, jak se z něj počítalo (#268). Cenu netvoří —
+     * ta stojí na řádcích výš; tohle je podklad pro technickou specifikaci
+     * a Detail výpočtu, aby nemusely rozpad počítat podruhé a jinak. */
+    oplasteniPlan: { rezim: oplRezim, pasy: oplPasy, plochaCelkemM2: oplPlochaCelkem },
     sekce, volitelneKatalog, souctySekci: { hrubaOck: s1, oplasteni: s2, volitelne: s3, rezie: s4 }, rezerva,
     priplatky, souhrn,
   };
@@ -1449,4 +1460,4 @@ function cenikMigraceLeseni(cenik) {
   }
 }
 
-if (typeof module !== 'undefined') module.exports = { vypocet, DEFAULT_ZADANI, DEFAULT_CENIK, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };
+if (typeof module !== 'undefined') module.exports = { vypocet, DEFAULT_ZADANI, DEFAULT_CENIK, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, skloVolba, skloMigraceNazvu, OPLASTENI_TYPY, oplasteniTypy, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };

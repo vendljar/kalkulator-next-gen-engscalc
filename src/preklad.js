@@ -350,6 +350,15 @@ const PREKLAD = {
   "je součástí dodávky pro provedení kompletního opláštění šachty": ["Included in the delivery for carrying out the complete shaft cladding","Im Lieferumfang für die Ausführung der kompletten Schachtverkleidung","Inclus dans la fourniture pour la réalisation du bardage complet de la gaine"],
   "je součástí dodávky pro stavbu šachty i montáž výtahu": ["Included in the delivery for both the shaft erection and the lift installation","Im Lieferumfang für den Schachtbau und die Aufzugsmontage","Inclus dans la fourniture pour le montage de la gaine et de l'ascenseur"],
   "kabina se třemi vstupy": ["Car with three entrances","Kabine mit drei Zugängen","Cabine à trois accès"],
+  /* Typy opláštění stěn A–D (#268). Názvy se berou z OPLASTENI_TYPY v jádře —
+   * kdo je tam přejmenuje, musí přejmenovat i heslo tady, jinak se řádek
+   * v cizojazyčné specifikaci označí jako nepřeložený (tečkovaně). Volba
+   * „jiné" se nepřekládá: název píše obchodník ručně. */
+  "Cetris": ["Cetris cement-bonded particle board","Cetris-Zementspanplatte","Panneau Cetris en particules liées au ciment"],
+  "Dvojsklo (boky + záda)": ["Insulating double glazing (sides + rear wall)","Isolierverglasung (Seiten + Rückwand)","Double vitrage isolant (côtés + paroi arrière)"],
+  "Sklo VSG 4.4.1": ["Laminated safety glass VSG 4.4.1","Verbundsicherheitsglas VSG 4.4.1","Verre feuilleté de sécurité VSG 4.4.1"],
+  "Sklo VSG 4.4.2": ["Laminated safety glass VSG 4.4.2","Verbundsicherheitsglas VSG 4.4.2","Verre feuilleté de sécurité VSG 4.4.2"],
+  "bez — dodá stavba": ["None — provided by the building contractor","Ohne — bauseits beigestellt","Sans — fourni par le lot bâtiment"],
   "kompletní opláštění šachty": ["Complete shaft cladding","Komplette Schachtverkleidung","Bardage complet de la gaine"],
   "kontaktní, hmoždiny do ŽB konstrukcí": ["Contact, dowels into reinforced concrete structures","Kontakt, Dübel in Stahlbetonkonstruktionen","Contact, chevilles dans les structures en béton armé"],
   "kontaktní, přes antivibrační podložky": ["Contact, via anti-vibration pads","Kontakt, über Schwingungsdämpfer","Contact, via des plots antivibratoires"],
