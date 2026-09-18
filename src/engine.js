@@ -211,6 +211,56 @@ function patraProVypocet(z) {
  *
  * Chybí-li v ceníku sazba pro 4.4.2 (starší ceníky ji nemají), počítá se
  * cenou 4.4.1 — nabídka tak nespadne na nulu a v ceníku je vidět, co doplnit. */
+/* TYPY OPLÁŠTĚNÍ PRO REŽIM PO STĚNÁCH (#268, 18. 9. 2026).
+ *
+ * Typ JE ceníková cesta — díky tomu se sazba nehledá v žádné druhé tabulce
+ * a nové sklo v ceníku se ve výběru objeví samo. Dvě výjimky nemají cestu:
+ * „bez" (dodá stavba, nepočítá se nikam) a „jiné" (název i náklad zadá
+ * obchodník ručně; ruční náklad je vždycky atyp, stejně jako ručně přepsané
+ * množství).
+ *
+ * `kde` říká, kde se typ nabízí — pravidla interiér/exteriér jsou táž jako
+ * u `skloVolba()`. Cetris a „jiné" jsou vždy. */
+const OPLASTENI_TYPY = [
+  { id: 'C.skloBokyKc', nazev: 'Dvojsklo (boky + záda)', kde: 'ext' },
+  { id: 'C.skloCelniKc', nazev: 'Sklo VSG 4.4.1', kde: 'vse' },
+  { id: 'C.skloVsg442Kc', nazev: 'Sklo VSG 4.4.2', kde: 'int' },
+  { id: 'C.cetrisKc', nazev: 'Cetris', kde: 'vse' },
+  { id: 'bez', nazev: 'bez — dodá stavba', kde: 'vse' },
+  { id: 'jine', nazev: 'jiné', kde: 'vse' },
+];
+function oplasteniTypy(ext) {
+  return OPLASTENI_TYPY.filter(t => t.kde === 'vse' || t.kde === (ext ? 'ext' : 'int'));
+}
+/* Řádky kalkulace ze součtu ploch podle typu. Pořadí je dané pořadím
+ * v OPLASTENI_TYPY, aby se kalkulace nepřeskupovala podle toho, kterou
+ * stěnu obchodník vyplnil dřív; „jiné" jdou nakonec, abecedně. */
+function oplRadky(podleTypu, mk, c) {
+  const znam = OPLASTENI_TYPY.map(t => t.id).filter(id => id !== 'bez' && id !== 'jine');
+  const klice = Object.keys(podleTypu).sort((a, b) => {
+    const ia = znam.indexOf(a), ib = znam.indexOf(b);
+    if (ia >= 0 && ib >= 0) return ia - ib;
+    if (ia >= 0) return -1;
+    if (ib >= 0) return 1;
+    return a.localeCompare(b, 'cs');
+  });
+  return klice.map(k => {
+    const r = podleTypu[k];
+    if (r.typ === 'jine') {
+      /* Ruční sazba — položka nemá ceníkovou cestu, takže se cena zadává
+       * v zadání a do ceníku se nepropisuje. */
+      return mk('OPLÁŠTĚNÍ - ' + (r.nazev || 'JINÉ').toUpperCase(), r.m2, +r.naklad || 0, {});
+    }
+    const def = OPLASTENI_TYPY.find(t => t.id === r.typ);
+    /* Sazba se čte přímo z dat, ne přes `cenikGet()`: ten je v jiném modulu
+     * a v Node by tu nebyl vidět, takže by jádro v testech počítalo nulou
+     * a v aplikaci správně. Cesta má tvar „C.klic" nebo „C.skupina.klic". */
+    const sazba = String(r.typ).split('.').slice(1)
+      .reduce((o, k) => (o == null ? undefined : o[k]), c);
+    return mk((def ? def.nazev : r.typ).toUpperCase(), r.m2, +sazba || 0, { cenaPath: r.typ });
+  });
+}
+
 const SKLO_VSG441 = 'VSG 4.4.1';
 const SKLO_VSG442 = 'VSG 4.4.2';
 function skloVolba(z, c) {
@@ -308,6 +358,15 @@ const DEFAULT_ZADANI = {
                prechMont: null /* od 16. 9. 2026 se nečte — montáž jde s materiálem */,
                leseniHlava: false,
                haky: true, zabradli: true, sokl: false },
+  /* OPLÁŠTĚNÍ PO STĚNÁCH (#268, druhý krok, 18. 9. 2026).
+   *
+   * `rezim: 'standard'` znamená, že se nepočítá nic nového — jádro jde
+   * dosavadní cestou přes `skloVolba()` a ŽÁDNÁ uložená zakázka se nemění.
+   * Teprve `'poStenach'` pustí ke slovu `steny`.
+   *
+   * Prázdné `steny` = „ještě se nezadávalo". Naplní se až při přepnutí, a to
+   * tím, co by vyšlo ve standardu — přepnutí samo tedy cenou nehne. */
+  oplasteni: { rezim: 'standard', steny: null },
   priplatkyVyber: null, // null = všechny (jako Excel); jinak pole klíčů
   mnozstviPrepis: {},   // ruční přepis množství položek kalkulace { název: množství }
   volitelneVlastni: [], // (starší) vlastní ruční položky sekce Volitelné [{nazev, mnozstvi, cena}]
@@ -738,6 +797,82 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const skloCelkemM2 = skloBokyZadniM2 + skloCelniM2;
   const skloRada = skloVolba(z, c);   // typ skla podle šachty a zasklení (9. 9. 2026)
 
+  /* ---------- OPLÁŠTĚNÍ PO STĚNÁCH (#268, druhý krok) ----------
+   *
+   * Každá stěna může mít vlastní typ opláštění a rozdělení na pásy.
+   * Rozhodnutí J. V. 18. 9. 2026:
+   *   · sazby práce a tmelení se počítají PO CELÉ PLOŠE, ne po typech,
+   *   · ořez tabulí se řídí tím, co zadá obchodník — dělicí výška platí,
+   *     jak ji napsal, a počítá se skutečná plocha.
+   *
+   * PLOCHA STĚNY SE NEPŘEPOČÍTÁVÁ. Bere se ta, kterou jádro spočítalo
+   * dosavadní cestou (`skloSteny`), a pásy si ji dělí POMĚREM VÝŠEK. Je to
+   * schválně: dnešní plochy mají v sobě `Math.max` a odečty portálů, takže
+   * počítat je znovu jako šířka × výška by dalo jiná čísla a přepnutí režimu
+   * by hnulo cenou. Takhle platí, že zapnutí režimu beze změny zadání
+   * nezmění ani haléř — a to se dá otestovat.
+   *
+   * Prohlubeň je jediné místo, kde plocha PŘIBÝVÁ: záporná dolní mez sahá
+   * pod úroveň nástupu, kam dnešní výpočet nesahá vůbec. Připočítá se
+   * skutečnou šířkou stěny. */
+  const OPL_BEZ = 'bez', OPL_JINE = 'jine';
+  const oplRezim = ((z.oplasteni || {}).rezim === 'poStenach') ? 'poStenach' : 'standard';
+  const stenaSirka = { A: g.sir, B: g.hl, C: g.sir, D: g.hl };
+  /* Výchozí typ stěny = to, co by na ní bylo ve standardu. Čelní stěna nese
+   * světlíky (celni), ostatní jsou boky a záda. */
+  const oplVychoziTyp = (k) => (k === 'A' ? skloRada.celni.cesta : skloRada.boky.cesta);
+
+  function oplPasyStenyM2(k) {
+    const st = ((z.oplasteni || {}).steny || {})[k] || null;
+    const celkem = skloSteny[k];
+    const odM = st ? (+st.odM || 0) : 0;
+    /* Pásy zdola nahoru; poslední má `doM: null` = až nahoru. Rozhraní je
+     * vypisuje odshora, ale ukládají se takhle — v tomhle pořadí nejde
+     * zapsat překryv ani mezeru. */
+    const pasy = (st && Array.isArray(st.pasy) && st.pasy.length)
+      ? st.pasy : [{ typ: oplVychoziTyp(k), doM: null }];
+    const out = [];
+    let dolni = odM;                     // záporné = do prohlubně
+    pasy.forEach((p, i) => {
+      const posledni = (i === pasy.length - 1);
+      /* Dělicí výška platí, jak ji obchodník napsal (rozhodnutí J. V.):
+       * nezaokrouhluje se na rozteč příčníků. Jen se nepustí pod předchozí
+       * pás a nad horní hranu — jinak by pás vyšel záporně. */
+      const horni = posledni ? vyskaProsklene
+        : Math.min(Math.max(+p.doM || 0, dolni), vyskaProsklene);
+      if (horni <= dolni) { dolni = horni; return; }
+      /* Nad nulou se bere PODÍL na dnešní ploše stěny, pod nulou skutečná
+       * plocha — tam dnešní výpočet nesahá, takže není z čeho brát podíl. */
+      const nadNulou = Math.max(horni, 0) - Math.max(dolni, 0);
+      const podNulou = Math.min(horni, 0) - Math.min(dolni, 0);
+      const m2 = (vyskaProsklene > 0 ? celkem * (nadNulou / vyskaProsklene) : 0)
+        + podNulou * stenaSirka[k];
+      out.push({ stena: k, typ: String(p.typ || oplVychoziTyp(k)),
+        nazev: p.nazev || '', naklad: p.naklad, odM: dolni, doM: horni, m2 });
+      dolni = horni;
+    });
+    return out;
+  }
+
+  const oplPasy = oplRezim === 'poStenach'
+    ? ['A', 'B', 'C', 'D'].reduce((a, k) => a.concat(oplPasyStenyM2(k)), [])
+    : [];
+
+  /* Součet ploch podle TYPU — nabídka se tím nerozdrobí na osm skoro
+   * stejných řádků. „bez" se nepočítá nikam: stěnu dodá stavba. */
+  const oplPodleTypu = {};
+  oplPasy.forEach(p => {
+    if (p.typ === OPL_BEZ) return;
+    const klic = p.typ === OPL_JINE ? (OPL_JINE + ':' + (p.nazev || 'bez názvu')) : p.typ;
+    if (!oplPodleTypu[klic]) oplPodleTypu[klic] = { typ: p.typ, nazev: p.nazev, m2: 0, naklad: p.naklad };
+    oplPodleTypu[klic].m2 += p.m2;
+  });
+  /* Plocha, ze které se počítá PRÁCE a TMELENÍ: po celé ploše (J. V.), tedy
+   * i přes typy — ale bez stěn, které nedodáváme. */
+  const oplPlochaCelkem = oplRezim === 'poStenach'
+    ? oplPasy.reduce((a, p) => a + (p.typ === OPL_BEZ ? 0 : p.m2), 0)
+    : skloCelkemM2;
+
   /* ---------- montáž + projekce ---------- */
   const montazHod1 = z.montazZakladHod + hodinyNavic + z.montazAtypHod;
   const montazHod = montazHod1 * 4;
@@ -915,11 +1050,20 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     /* Které sklo kam (9. 9. 2026) rozhoduje typ šachty a způsob zasklení —
      * viz skloVolba(). Názvy řádků nese táž funkce, protože se na ně věší
      * ruční přepisy i vyřazení položek. */
-    mkItem(skloRada.boky.nazev, skloBokyZadniM2, skloRada.boky.kc, { cenaPath: skloRada.boky.cesta }),
-    mkItem(skloRada.celni.nazev, skloCelniM2, skloRada.celni.kc, { cenaPath: skloRada.celni.cesta }),
-    mkItem('PRÁCE OPLÁŠTĚNÍ', skloCelkemM2, c.praceOplasteniKc, { cenaPath: 'C.praceOplasteniKc' }),
+    /* REŽIM PO STĚNÁCH (#268): místo dvou řádků podle `skloVolba()` vznikne
+     * jeden řádek na každý POUŽITÝ typ. Nerozdrobí se tím nabídka: stěny se
+     * sečtou podle typu, ne podle písmene. Ve standardu zůstává všechno
+     * přesně jako dosud. */
+    ...(oplRezim === 'poStenach'
+      ? oplRadky(oplPodleTypu, mkItem, c)
+      : [mkItem(skloRada.boky.nazev, skloBokyZadniM2, skloRada.boky.kc, { cenaPath: skloRada.boky.cesta }),
+         mkItem(skloRada.celni.nazev, skloCelniM2, skloRada.celni.kc, { cenaPath: skloRada.celni.cesta })]),
+    /* Práce i tmelení se počítají PO CELÉ PLOŠE, ne po typech (rozhodnutí
+     * J. V. 18. 9. 2026) — proto `oplPlochaCelkem`, která je ve standardu
+     * totožná se `skloCelkemM2`. */
+    mkItem('PRÁCE OPLÁŠTĚNÍ', oplPlochaCelkem, c.praceOplasteniKc, { cenaPath: 'C.praceOplasteniKc' }),
     mkItem('PLASTOVÉ KOTVY', terce ? 1 : 0, c.plastKotvyKc, { cenaPath: 'C.plastKotvyKc' }),
-    ext ? mkItem('TMELENÍ (MAT. + PRÁCE) (EXT)', skloCelkemM2, c.tmeleniKc, { cenaPath: 'C.tmeleniKc' }) : null,
+    ext ? mkItem('TMELENÍ (MAT. + PRÁCE) (EXT)', oplPlochaCelkem, c.tmeleniKc, { cenaPath: 'C.tmeleniKc' }) : null,
     /* STŘÍŠKA JE POČET KUSŮ, NE ZAŠKRTÁVÁTKO (9. 9. 2026, zadání J. V.).
      *
      * Do 9. 9. ji zapínala „Průchozí šachta" a byla vždy právě jedna, a jen

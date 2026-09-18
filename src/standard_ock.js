@@ -358,6 +358,20 @@ function standardVyhodnot(z, vyskaM, std, pripl) {
     }
   }
 
+  /* --- opláštění po stěnách (#268, 18. 9. 2026) ---
+   *
+   * Standard zná jen jednotné opláštění celé šachty — tabulka výš má jeden
+   * povolený způsob zasklení na větev, ne čtyři. Šachta, které si obchodník
+   * skládá stěny po pásech, tedy standardní být nemůže z definice.
+   *
+   * Není to nález o rozměru, ale o KONSTRUKČNÍM ŘEŠENÍ, proto se nehlásí
+   * jako překročený limit, ale jako vlastní řádek. A je to „mimo standard",
+   * ne „nelze posoudit": posoudit to jde, odpověď je prostě ne. */
+  if (String(((zad.oplasteni || {}).rezim) || 'standard') === 'poStenach') {
+    kontrol++;
+    nalezy.push(_nalez('Opláštění', 'jednotné po celé šachtě', 'zadané po stěnách A–D'));
+  }
+
   /* --- můstek --- */
   if (zad.mustek) {
     kontrol += 2;
