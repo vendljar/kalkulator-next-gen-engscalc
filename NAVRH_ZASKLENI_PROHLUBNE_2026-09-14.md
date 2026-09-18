@@ -224,3 +224,153 @@ výchozí model na 2 a čeká nás kolo testů. Pořadí, které dává smysl:
 3. **teprve pak** režim po stěnách do zadání, dokumentů a standardu.
 
 Krok 2 se dá udělat kdykoliv a nic nerozbije; je to příprava, ne změna.
+
+---
+
+# Dodatek 2 — upřesnění J. V. 17. 9. 2026 večer
+
+## A. Dodatkový text je na POLOŽCE CENÍKU
+
+Rozhodnuto: text se váže na ceníkovou položku, ne na zakázku, **a bude se
+opakovat**. „Skla s vyšší energetickou reflexí" mají popis pokaždé stejný.
+
+```
+C.priplatky.sknM2        550          ← sazba, jak je dnes
+C.popisy['C.priplatky.sknM2'] = "Provedení vnějších skel opláštění …"
+```
+
+**Proč zvlášť, a ne jako další sloupec u sazby:** popisy jsou dlouhé texty,
+kdežto ceník je tabulka čísel, která se zveřejňuje, verzuje a porovnává
+(`cenikRozdily`). Kdyby popis ležel mezi cenami, hlásila by se změna
+formulace jako změna ceníku. Vlastní mapa u téhož záznamu to odděluje,
+a přitom se **veze se zveřejněním** — nová verze ceníku nese i texty.
+
+**V zakázce se nic neukládá.** Nabídka si text vezme z ceníku, který k ní
+patří (zakázka nese vlastní kopii ceníku, takže starší nabídka má text
+takový, jaký platil tehdy — to je přesně chování, které chceme).
+
+**Kde se edituje:** pod řádkem příplatkové i volitelné položky v kalkulaci,
+jak bylo zadáno. Uloží se do ceníku varianty; do sdíleného ceníku se dostane
+běžnou cestou přes zveřejnění. Obchodník tedy může text upravit pro svou
+nabídku a správce ho ustálí pro všechny.
+
+**V nabídce nahradí dnešní řádek `množství: 88,626`.** Když text není
+vyplněný, řádek se neukazuje vůbec — prázdný popis je lepší než dopočítané
+číslo, které zákazníkovi nic neříká.
+
+## B. Opláštění po stěnách — rolovací sekce
+
+Sekce se stěnami je **skrytá**, dokud se nepřepne na „po stěnách". Ve
+standardním režimu obchodník o čtyřech stěnách vůbec neví.
+
+## C. Řádek stěny: typ · po celé výšce · od · do
+
+Mezi typ a „od" patří zaškrtávátko **„po celé výšce"**. Zaškrtnuté (výchozí)
+schová „od" i „do" — většina stěn je celá stejná a dvě prázdná pole by jen
+mátla. Odškrtnutím se pole objeví.
+
+## D. Číselník typů opláštění
+
+Bere se **z ceníku podle pravidel interiér/exteriér**, která už platí pro
+zasklení dnes (`skloVolba` v `engine.js`):
+
+| typ | odkud | kdy se nabízí |
+|---|---|---|
+| sklo podle zasklení | `C.skloCelniKc` / `C.skloVsg442Kc` | interiér |
+| dvojsklo | `C.skloBokyKc` | exteriér — boky a záda |
+| VSG 4.4.1 | `C.skloCelniKc` | exteriér — čelní stěna |
+| **Cetris** | `C.cetrisKc` | vždy *(přidáno 17. 9. 2026)* |
+| **jiné** | zadá obchodník ručně | vždy |
+
+**„Jiné"** je únikový východ: obchodník napíše název a **náklad za m²**
+rovnou do zadání. Dnes se takový případ řeší tak, že se do nabídky dopisuje
+vlastní položka — tohle mu dovolí říct to na správném místě a nechat to
+spočítat. Ručně zadaný náklad **vždycky znamená atyp**, stejně jako dnes
+ručně přepsané množství.
+
+Číselník je tedy dynamický: nabídne se jen to, co dává pro daný typ šachty
+smysl, plus Cetris a jiné. Tím se drží pravidlo, že sazbu určuje ceník, ne
+kód — a nové sklo v ceníku se objeví ve výběru samo.
+
+## E. Co z toho plyne pro pořadí prací
+
+Beze změny proti dodatku 1: **nejdřív rozpojit plochy na čtyři stěny beze
+změny výsledku**, teprve pak pustit režim po stěnách do zadání. Dodatkový
+text (oddíl A) na tom ale **nezávisí** — dá se udělat hned a samostatně,
+protože se nedotýká výpočtu ploch.
+
+---
+
+# Dodatek 3 — dva pásy na stěnu (18. 9. 2026)
+
+J. V.: *„většinou stačí jeden souvislý pás, ale může nastat i situace, kdy
+budou dvě varianty opláštění."*
+
+## Klíčové rozhodnutí: ukládá se DĚLICÍ VÝŠKA, ne dva rozsahy
+
+Nabízí se zapsat dva pásy jako dva nezávislé rozsahy `od`–`do`. Nedělal bych
+to. Dvě nezávislé dvojice čísel umí popsat i stavy, které nedávají smysl:
+
+```
+pás 1:  0 → 2,5      pás 2:  2,0 → nahoru     překryv 0,5 m
+pás 1:  0 → 2,0      pás 2:  2,5 → nahoru     díra 0,5 m
+```
+
+Obojí by se muselo hlídat a hlásit, a obojí by šlo uložit ze staršího
+souboru nebo ze serveru. **Lepší je takový stav nejít zapsat.**
+
+Stěna se proto ukládá jako **jedna dolní mez a seznam pásů se stropem**:
+
+```
+B: {
+  odM: -1.2,                      // kde opláštění začíná; záporné = do prohlubně
+  pasy: [
+    { typ: 'dvojsklo', doM: 2.2 },   // od odM do 2,2 m
+    { typ: 'cetris',   doM: null },  // od 2,2 m až nahoru
+  ]
+}
+```
+
+Pás začíná tam, kde skončil předchozí. **Překryv ani mezera nemůžou
+vzniknout — není je z čeho složit.** Hlídá se jediné: dělicí výšky musí
+růst a ležet nad `odM`.
+
+**Mezera se nezadává jako mezera.** Když se část stěny oplášťovat nemá, je
+to pás typu „bez — dodá stavba". Tím zůstane v zadání vidět, že se na to
+myslelo, místo aby to vypadalo jako zapomenutý úsek.
+
+## Co to znamená pro „po celé výšce"
+
+Zaškrtnuté = `odM: 0` a jediný pás s `doM: null`. Rozsah i tlačítko
+„přidat pás" jsou schované. Odškrtnutím se objeví dolní mez a seznam pásů,
+zpočátku s tím jedním, který tam byl.
+
+## Kolik pásů povolit
+
+**Technicky neomezeně, v rozhraní po jednom.** Datový tvar je seznam, takže
+tři pásy nic nestojí navíc; tlačítko „přidat pás" prostě přidá další řádek.
+Nezavádět umělý strop dvou — kdyby se objevila stěna se třemi pásy, bylo by
+to zbytečné omezení, a kontrola „dělicí výšky rostou" platí pro libovolný
+počet stejně.
+
+## Dopad na výpočet
+
+Plocha stěny se počítá po pásech a sečte se podle **typu**, ne podle stěny:
+dvojsklo ze všech stěn dohromady jde do jednoho řádku kalkulace, Cetris do
+druhého. Řádky kalkulace tedy zůstávají tytéž jako dnes, jen se plní
+z jiného zdroje — to je dobře, protože nabídka se tím nerozdrobí na osm
+skoro stejných řádků.
+
+**Terče a lišty** se počítají jen z pásů se sklem. To je vedlejší účinek,
+který dnes nejde zadat vůbec: u stěny z Cetrisu dnes aplikace terče počítá,
+protože o jiném opláštění neví.
+
+## Otevřené k rozhodnutí
+
+1. **Sazby po pásech, nebo po stěnách?** Návrh počítá plochu po pásech
+   a účtuje ji sazbou toho typu. Je to tak správně i pro práci opláštění
+   a tmelení, nebo se ty počítají z celé plochy bez ohledu na typ?
+2. **Dělicí výška proti rozteči příčníků** — pořád tatáž otázka jako
+   u prohlubně: když dělicí výška nepadne na rozteč, počítá se skutečná
+   plocha (ořez), nebo celá tabule? U dvou pásů je to naléhavější, protože
+   dělicí výšku volí obchodník ručně.
