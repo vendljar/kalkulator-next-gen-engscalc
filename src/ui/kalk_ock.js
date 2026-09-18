@@ -383,6 +383,40 @@ function nazevSet(orig, v) {
   render();
 }
 function nazevReset(orig) { if (Z.nazvyPrepis) delete Z.nazvyPrepis[orig]; render(); }
+/* Dodatkový text k ceníkové položce (#267, 18. 9. 2026). Píše se do CENÍKU
+ * varianty, ne do zadání — proto `C`, a ne `Z`. Zámek varianty se hlídá
+ * stejně jako u ostatních zápisů; bez něj by šlo do uzamčené odeslané
+ * nabídky dopsat větu, kterou zákazník nikdy neviděl. */
+function popisSet(cesta, v) {
+  if (typeof zamekStop === 'function' && zamekStop()) return;
+  if (typeof cenikPopisNastav !== 'function') return;
+  cenikPopisNastav(C, cesta, v);
+  aktivniVarianta(ZAK).upraveno = new Date().toISOString();
+  render();
+}
+/* Řádek s dodatkovým textem pod položkou. Jeden pro příplatky i pro
+ * volitelné — dvě kopie by se rozešly v popisku i v tom, kdo pole vidí.
+ *
+ * Text se ukládá k CENÍKOVÉ POLOŽCE, takže ho smí měnit jen ten, kdo smí
+ * sahat na ceníkové ceny. Vlastní položka zakázky ceníkovou položku nemá,
+ * ke které by se text vázal, a v příští nabídce stejně nevznikne.
+ * Netiskne se: je to zadávací pole, ne obsah kalkulace. */
+function popisRadekHtml(r, cols, smiEdit) {
+  if (!smiEdit || !r || r.vlastni || !r.cenaPath) return '';
+  /* Klíčem je PŮVODNÍ NÁZEV položky, ne ceníková cesta — dvě různé položky
+   * můžou sdílet tutéž sazbu (madla boční × zadní) a v nabídce jsou to dva
+   * různé výrobky. Podrobně u `popisZCeniku` v engine.js. */
+  const klic = r.origNazev || r.nazev;
+  const t = (typeof cenikPopis === 'function') ? cenikPopis(C, klic) : '';
+  return `<tr class="noprint"><td colspan="${cols}" style="padding-top:0">
+    <input type="text" style="width:100%" value="${esc(t)}"
+      placeholder="dodatkový text do cenové nabídky (nepovinné)"
+      title="Tiskne se v nabídce pod názvem položky místo množství. Ukládá se do ceníku, takže se u další nabídky předvyplní."
+      onchange="popisSet('${keyAttr(klic)}', this.value)"></td></tr>`;
+}
+function popisRadekVol(r, cols) {
+  return popisRadekHtml(r, cols, kalkSloupce().admin);
+}
 /* ---- ruční přepis jedn. ceny u položek bez ceníkové vazby ---- */
 function cenaSet(orig, v) {
   if (!Z.cenyPrepis) Z.cenyPrepis = {};
@@ -831,7 +865,10 @@ function tblVolitelne(katalog, sum) {
       /* Tři různé stavy vedle sebe: nezahrnutá do základní ceny × vypnutá
        * nulou. Můžou nastat oba naráz, proto se třídy skládají. */
       const tridy = (r.zahrnuto ? '' : 'nezahrnuto') + vypnutoTrida(r);
-      return `<tr${dz}${tridy.trim() ? ` class="${tridy.trim()}"` : ''}>${c}</tr>`;
+      /* Dodatkový text i u volitelných položek (#267) — zadání J. V. mluví
+       * o „příplatkových a volitelných položkách“, takže obojí. */
+      return `<tr${dz}${tridy.trim() ? ` class="${tridy.trim()}"` : ''}>${c}</tr>`
+        + popisRadekVol(r, NC);
     }).join('') +
     (sbalenoV ? '' : radekPridatSekce('volitelne')) +
     sumRadek('sectot', 'VOLITELNÉ CELKEM (jen zaškrtnuté)', sum, rows);
@@ -1119,6 +1156,8 @@ function renderOutputs() {
     + ((col.admin && col.spravce)
       ? '<th class="admincol" title="viditelné pro běžného uživatele">Viditelné</th>'
         + '<th class="admincol" title="výchozí stav sloupce Nabídka v NOVÉ zakázce">Výchozí</th>' : '');
+  /* Dodatkový text pod příplatkem (#267) — táž funkce jako u volitelných. */
+  const popisRadek = (x, cols) => popisRadekHtml(x, cols, col.admin);
   const pripRadek = (x) => {
     let c = '';
     if (col.admin) c += `<td style="text-align:center"><input type="checkbox" ${vynech.includes(x.key) ? '' : 'checked'}
@@ -1139,7 +1178,8 @@ function renderOutputs() {
           'zaškrtnuto = příplatek jde v NOVÉ zakázce do cenové nabídky (platí pro všechny); '
           + 'otevřená zakázka se nemění')}</td>`;
     }
-    return `<tr class="${vypnutoTrida(x).trim()}">${c}</tr>`;
+    const radek = `<tr class="${vypnutoTrida(x).trim()}">${c}</tr>`;
+    return radek + popisRadek(x, pripCols);
   };
   /* Skryté položky vidí ten, kdo je umí odkrýt — tedy administrátor.
    * Vedoucímu s právem na náklady by jinak v tabulce svítily řádky, které

@@ -160,7 +160,7 @@ const CENIK_DEF = [
   ]],
   ['PŘÍPLATKOVÉ POLOŽKY', [
     ['C.priplatky.vsgFolieM2', 'Sklo VSG s mléčnou fólií (příplatek)', 'Kč/m²', ''],
-    ['C.priplatky.sknM2', 'Sklo SKN 176 Ug=1,1 (příplatek, ext)', 'Kč/m²', ''],
+    ['C.priplatky.sknM2', 'Sklo SKN 176 (Ug=1,1) (EXT)', 'Kč/m²', ''],
     ['C.priplatky.medStrechaM2', 'Střecha venkovní šachty v mědi (příplatek)', 'Kč/m²', ''],
     ['C.priplatky.ventilatorKc', 'Ventilátor (ext)', 'Kč/ks', ''],
     ['C.priplatky.zabranyDvereKc', 'Zábrany do dveřních vstupů', 'Kč/ks', ''],
@@ -278,6 +278,40 @@ const CENIK_SMI_BYT_PRAZDNY = new Set([
  * z repozitáře má tyhle položky nulové — a nová zakázka by pak začínala
  * s nulou hodin montáže. Nula jako firemní výchozí rozsah práce nedává
  * smysl, kdežto nula jako "tohle jsme nevyplnili" ano. */
+/* DODATKOVÝ TEXT K POLOŽCE (#267, 18. 9. 2026, zadání J. V.).
+ *
+ * Do cenové nabídky se pod název položky tiskne popis, kterým obchodník
+ * zákazníkovi vysvětlí, co si kupuje — místo dosavadního řádku
+ * „množství: 88,626", který zákazníkovi neříkal nic.
+ *
+ * TEXT PATŘÍ K CENÍKOVÉ POLOŽCE, ne k zakázce (rozhodnutí J. V.): popis
+ * „skel s vyšší energetickou reflexí" je pokaždé stejný, takže se u další
+ * nabídky předvyplní sám. Zakázka si přitom nese vlastní kopii ceníku,
+ * takže starší nabídka má text takový, jaký platil tehdy — nemusí se nic
+ * zvlášť zamrazovat.
+ *
+ * VLASTNÍ MAPA, NE SLOUPEC U SAZBY. Ceník se verzuje a porovnává
+ * (`cenikRozdily` nad `cenikSledovane`); kdyby popis ležel mezi cenami,
+ * hlásila by se změna formulace jako změna ceny. Mapa `popisy` stojí vedle
+ * a do porovnání cen nevstupuje — zato ji nese OTISK verze, jinak by
+ * zveřejnění opravy překlepu databáze odmítla jako „beze změny" (táž past
+ * jako #181 u zahraniční řady). */
+function cenikPopis(c, cesta) {
+  const p = (c && c.popisy) || null;
+  const v = p ? p[String(cesta)] : null;
+  return (typeof v === 'string') ? v : '';
+}
+function cenikPopisNastav(c, cesta, text) {
+  if (!c) return;
+  const t = String(text == null ? '' : text).trim();
+  if (!c.popisy) c.popisy = {};
+  /* Prázdný text se MAŽE, neukládá se jako prázdný řetězec. Jinak by ceník
+   * postupně obrostl klíči, které nic neříkají, a diff verzí by hlásil
+   * „přibyl popis", kde jen někdo klikl do pole a zase z něj vyjel. */
+  if (t === '') delete c.popisy[String(cesta)];
+  else c.popisy[String(cesta)] = t;
+}
+
 function cenikVychozi(c, klic, zaklad) {
   const v = c ? c[klic] : null;
   return (typeof v === 'number' && isFinite(v) && v > 0) ? v : zaklad;
@@ -391,4 +425,5 @@ function cenikAplikuj(zmeny, C, PC) {
 
 if (typeof module !== 'undefined')
   module.exports = { CENIK_DEF, CENIK_DEF_PROJ, CENIK_JEN_ZAHR, cenikGet, cenikSet, cenikTyp, cenikVychozi,
+    cenikPopis, cenikPopisNastav,
     cenikSheetRows, cenikToSheets, cenikDiffZeSheets, cenikAplikuj, CENIK_HLAVICKA };

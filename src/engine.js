@@ -83,6 +83,11 @@ const DEFAULT_CENIK = {  // HODNOTY VYNULOVÁNY pro GitHub (pripravit_github.py)
   skloCelniKc: 0, skloCelniNazev: '',
   skloVsg442Kc: 0,               // VSG 4.4.2 — interiérová šachta na terče (9. 9. 2026)
   cetrisKc: 0,                   // Cetris — neprůhledné opláštění stěny (17. 9. 2026)
+  /* Dodatkové texty k položkám (#267, 18. 9. 2026): cesta do ceníku → věta
+   * do cenové nabídky. Prázdná mapa schválně — nic se nepředvyplňuje, dokud
+   * si firma texty nenapíše. Není to sazba, takže do porovnání cen nevstupuje;
+   * otisk verze ji naopak nese, jinak by oprava překlepu nešla zveřejnit. */
+  popisy: {},
   praceOplasteniKc: 0, plastKotvyKc: 0, tmeleniKc: 0,
   striskaDvurKc: 0, cestovniKc: 0, cisteniKc: 0,
   /* leseniFix (11. 8. 2026) — JEDINÝ zdroj fixní části lešení. Do té doby
@@ -729,6 +734,24 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
    * už nic nepotká. Rejstřík umožňuje takové sirotky najít – viz prepisy.js (#4). */
   const nazvyPolozek = [];
   const zapisNazev = n => { if (n != null && nazvyPolozek.indexOf(n) === -1) nazvyPolozek.push(n); };
+  /* Dodatkový text k položce (#267). Bydlí v CENÍKU, aby se u další nabídky
+   * předvyplnil sám, ale klíčuje se PŮVODNÍM NÁZVEM POLOŽKY, ne ceníkovou
+   * cestou.
+   *
+   * Proč: dvě různé položky můžou sdílet tutéž sazbu — „MADLA NA BOČNÍCH
+   * STĚNÁCH" a „MADLA NA ZADNÍ STĚNĚ" obě počítají z `C.priplatky.madlaBmKc`.
+   * S klíčem podle cesty by text napsaný u jedné vyskočil i u druhé, a to
+   * jsou v nabídce dva různé výrobky. Název je navíc týž klíč, jakým se už
+   * klíčují ruční přepisy množství, cen a názvů — jeden zvyk, ne dva.
+   *
+   * Čte se přímo z dat: `cenikPopis()` je v jiném modulu a v Node by tu
+   * nebyl vidět, takže by jádro v testech vracelo prázdno a v aplikaci text.
+   * Jediným zapisovatelem zůstává `cenikPopisNastav()`. */
+  const popisZCeniku = (nazev) => {
+    if (!nazev || !c || !c.popisy) return '';
+    const v = c.popisy[String(nazev)];
+    return (typeof v === 'string') ? v : '';
+  };
   const mkItem = (nazev, mnozstvi, cena, opts = {}) => {
     zapisNazev(nazev);
     // klíčem pro přepisy je PŮVODNÍ název položky
@@ -754,6 +777,8 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     return { nazev: novyNazev || nazev, origNazev: nazev, nazevPrepsan: !!novyNazev,
              mnozstvi: mn, mnozstviAuto: mnozstvi, prepsano: prepis != null,
              cena: cenaEff, cenaAuto: cena, cenaPrepsana: cenaPrepis != null, cenaPath: opts.cenaPath || null,
+             /* Dodatkový text z ceníku (#267) — stejně jako u příplatků. */
+             popisNabidka: popisZCeniku(nazev),
              /* Souhrnný řádek nemá jednu ceníkovou cenu, ale celou skupinu
               * (`C.spojovaci.*`). Nese ji jen pro zobrazení klíče administrátorovi. */
              cenaSkupina: opts.cenaSkupina || null,
@@ -1055,7 +1080,16 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     return { key, nazev: novyNazev || nazev, origNazev: nazev, nazevPrepsan: !!novyNazev,
              mnozstvi: mn, mnozstviAuto: mnozstvi, prepsano: prepisJe,
              cena: cenaEff, cenaAuto: cena, cenaPrepsana: cenaPrepis != null, cenaPath: opts.cenaPath || null,
-             naklad, sMarzi: CEIL(naklad * (1 + m), 1000), pozn: opts.pozn || '', vlastni: !!opts.vlastni };
+             naklad, sMarzi: CEIL(naklad * (1 + m), 1000), pozn: opts.pozn || '', vlastni: !!opts.vlastni,
+             /* Dodatkový text z ceníku (#267). Nese ho POLOŽKA, aby ho nabídka
+              * nemusela dohledávat v ceníku sama — jinak by si musela vozit celý
+              * ceník kvůli jedné větě.
+              *
+              * Čte se PŘÍMO z dat, ne přes cenikPopis(): ten je v jiném modulu
+              * a v Node by tu nebyl vidět, takže by jádro v testech vracelo
+              * prázdno a v aplikaci text. Jediným zapisovatelem zůstává
+              * cenikPopisNastav() — tvar {cesta: text} se drží tam. */
+             popisNabidka: popisZCeniku(nazev) };
   };
   let priplatky = [
     mkPrip('vsgFolie', 'Sklo VSG s mléčnou fólií', skloCelkemM2, pp.vsgFolieM2, { cenaPath: 'C.priplatky.vsgFolieM2' }),

@@ -209,23 +209,32 @@ function nabidkaData(zak, varianta, jekly, lang) {
   const PLECHY = ['prechMat', 'prechMont'];
   const vybrane = r.priplatky.filter(p => !vynech.includes(p.key));
   const plechy = vybrane.filter(p => PLECHY.includes(p.key));
+  /* POPIS POLOŽKY V NABÍDCE (#267, 18. 9. 2026, zadání J. V.).
+   *
+   * Do 18. 9. tu stálo „množství: 88,626“. Zákazníkovi to neříkalo nic —
+   * je to vnitřní mezivýsledek, ne popis toho, co si kupuje. Nahradil ho
+   * dodatkový text z ceníku, který píše obchodník pod položkou v kalkulaci.
+   *
+   * PRÁZDNÝ TEXT = ŽÁDNÝ ŘÁDEK. Nevyplněná položka tak nevypadá jako
+   * nedodělek; prostě popis nemá, jako ho nemá dnes. Poznámka z výpočtu
+   * (`pozn`) se k textu připojí v závorce, jako se dosud připojovala
+   * k množství — nese věci jako „v základní ceně“. */
+  const popisPolozky = (p) => {
+    const t = String(p.popisNabidka || '').trim();
+    const pz = p.pozn ? P(p.pozn) : '';
+    if (t && pz) return P(t) + ' (' + pz + ')';
+    if (t) return P(t);
+    return pz ? '(' + pz + ')' : '';
+  };
   const priplatkyList = [];
   vybrane.forEach(p => {
     if (!PLECHY.includes(p.key)) {
-      priplatkyList.push({
-        nazev: P(p.nazev),
-        popis: P('množství') + ': ' + cislo(p.mnozstvi) + (p.pozn ? ' (' + P(p.pozn) + ')' : ''),
-        cena: kc(mena.na(p.sMarzi)),
-      });
+      priplatkyList.push({ nazev: P(p.nazev), popis: popisPolozky(p), cena: kc(mena.na(p.sMarzi)) });
       return;
     }
     if (p.key !== plechy[0].key) return;              // druhá půlka dvojice se už nevypisuje
     if (plechy.length < 2) {                          // jen jedna z nich — beze změny
-      priplatkyList.push({
-        nazev: P(p.nazev),
-        popis: P('množství') + ': ' + cislo(p.mnozstvi) + (p.pozn ? ' (' + P(p.pozn) + ')' : ''),
-        cena: kc(mena.na(p.sMarzi)),
-      });
+      priplatkyList.push({ nazev: P(p.nazev), popis: popisPolozky(p), cena: kc(mena.na(p.sMarzi)) });
       return;
     }
     priplatkyList.push({

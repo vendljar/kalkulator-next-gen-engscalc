@@ -80,11 +80,47 @@ test('lešení v základní ceně', nabidkaData(zak, v2, JEKLY).placeholders.PRI
 
 // příplatky do nabídky: seznam s množstvím a cenou, filtr přes priplatkyVynechat
 test('příplatky obsahují položky', d.priplatky.length >= 5, d.priplatky.length);
-/* Sloučené přechodové plechy množství neuvádějí — kusy a kilogramy nejde
- * sečíst do jednoho čísla (9. 9. 2026). Ostatní příplatky ho mají mít. */
-test('příplatek má množství v popisu',
-  d.priplatky.filter(x => x.nazev !== 'Přechodové plechy').every(x => x.popis.startsWith('množství: ')),
-  JSON.stringify(d.priplatky.filter(x => !x.popis.startsWith('množství: ')).map(x => x.nazev)));
+/* POPIS UŽ NENÍ MNOŽSTVÍ (#267, 18. 9. 2026, zadání J. V.).
+ *
+ * Do 18. 9. tu stálo „množství: 88,626“ — vnitřní mezivýsledek, který
+ * zákazníkovi neříkal nic o tom, co si kupuje. Nahradil ho dodatkový text
+ * z ceníku; bez vyplněného textu se řádek s popisem neukáže vůbec, takže
+ * nevyplněná položka nevypadá jako nedodělek. */
+test('popis příplatku už nenese vypočtené množství',
+  d.priplatky.every(x => !/^množství: /.test(x.popis)),
+  JSON.stringify(d.priplatky.filter(x => /^množství: /.test(x.popis)).map(x => x.nazev)));
+/* Bez vyplněného textu zbude v popisu nanejvýš poznámka z výpočtu
+ * („v základní ceně"), která tam byla i dřív — nikdy vypočtené množství. */
+test('bez vyplněného textu je popis prázdný nebo jen poznámka výpočtu',
+  d.priplatky.filter(x => x.nazev !== 'Přechodové plechy')
+    .every(x => x.popis === '' || /^\(.*\)$/.test(x.popis)),
+  JSON.stringify(d.priplatky.filter(x => x.nazev !== 'Přechodové plechy'
+    && x.popis !== '' && !/^\(.*\)$/.test(x.popis)).map(x => x.nazev + ' → ' + x.popis)));
+/* A s vyplněným textem ho nabídka opravdu nese. Text se váže na ceníkovou
+ * položku, takže se nastavuje do ceníku varianty, ne do zadání. */
+{
+  const ck = require('./cenik.js');
+  /* Položka se vybírá z TÉHOŽ výpočtu, ne napevno podle názvu: SKN 176 je
+   * jen pro exteriér, takže test napsaný na něj by nad interiérovou fixturou
+   * mlčky procházel na `undefined`. */
+  const vzor = d.priplatky.find(x => x.nazev !== 'Přechodové plechy');
+  const klic = vzor.nazev;   // popisy se klíčují názvem položky, ne ceníkovou cestou
+  const v3 = JSON.parse(JSON.stringify(v));
+  ck.cenikPopisNastav(v3.data.cenik, klic, 'Provedení vnějších skel s vyšší reflexí');
+  const d3 = nabidkaData(zak, v3, JEKLY);
+  const p3 = d3.priplatky.find(x => x.nazev === vzor.nazev);
+  test('vyplněný dodatkový text se propíše do nabídky',
+    !!p3 && p3.popis === 'Provedení vnějších skel s vyšší reflexí', p3 && p3.popis);
+  /* A jinou položku nezasáhne — text patří JEDNÉ ceníkové cestě, ne všem.
+   * Nekontroluje se prázdnost: položka s poznámkou z výpočtu („v základní
+   * ceně") má popis i bez dodatkového textu. Rozhoduje, že ten text nikde
+   * jinde není. */
+  test('dodatkový text se neobjeví u jiné položky',
+    d3.priplatky.filter(x => x.nazev !== vzor.nazev)
+      .every(x => !/vyšší reflexí/.test(x.popis)),
+    JSON.stringify(d3.priplatky.filter(x => x.nazev !== vzor.nazev && /vyšší reflexí/.test(x.popis))
+      .map(x => x.nazev)));
+}
 test('sloučené přechodové plechy místo množství řeknou, co obsahují',
   !d.priplatky.some(x => x.nazev === 'Přechodové plechy') || d.priplatky.find(x => x.nazev === 'Přechodové plechy').popis === 'materiál a montáž');
 test('příplatek má cenu v Kč', d.priplatky.every(x => /Kč$/.test(x.cena)));

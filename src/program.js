@@ -129,8 +129,13 @@ function programRozdilyZahr(stary, novy) {
 function programOtisk(zaznam) {
   /* Otisk nese i zahraniční odchylky (#181): bez nich by zveřejnění změny,
    * která se týká JEN zahraniční řady, vypadalo jako „beze změny" a databáze
-   * by ho odmítla zapsat. */
-  const zahr = JSON.stringify((zaznam || {}).zahranicni || {});
+   * by ho odmítla zapsat.
+   *
+   * Od 18. 9. 2026 (#267) totéž pro DODATKOVÉ TEXTY k položkám. Do porovnání
+   * CEN nepatří — oprava překlepu není zdražení — ale do otisku ano, jinak
+   * by ji nešlo zveřejnit vůbec. Je to táž past, jen o tři měsíce později. */
+  const zahr = JSON.stringify((zaznam || {}).zahranicni || {})
+    + '|' + JSON.stringify(((zaznam || {}).cenik || {}).popisy || {});
   if (typeof cenikOtisk === 'function' && typeof cenikSledovane === 'function')
     return progOtiskText(cenikOtisk(programData(zaznam)) + '|' + zahr);
   return progOtiskText(JSON.stringify([(zaznam || {}).cenik, (zaznam || {}).cenikProj,
