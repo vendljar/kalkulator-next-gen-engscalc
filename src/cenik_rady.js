@@ -70,6 +70,45 @@ function cenikZahrPrazdna(z) {
   return !z || (!Object.keys(z.ceny || {}).length && !Object.keys(z.jenZahr || {}).length);
 }
 
+/* ---------- položky, které v tuzemsku nejsou (P4, nález N6) ----------
+ *
+ * Sjednocuje DVA zdroje pravdy, které se do 21. 9. 2026 vyhodnocovaly každý
+ * jinde: značky `jenZahr` od administrátora a pevný seznam `CENIK_JEN_ZAHR`
+ * v ceníku (ten přibyl 9. 9. 2026, protože samotnou značku šlo v ceníku
+ * nezaškrtnout nebo ji ztratit obnovou a položka se pak v české nabídce
+ * objevila). Jádro obojí spojovalo u sebe, skládání řady jen značky —
+ * a právě z té nerovnosti plynul nález N6.
+ *
+ * Vrací pole cest. Pevný seznam jde přidat, ne zrušit. */
+function cenikJenZahrCesty(zahr) {
+  const z = cenikZahrOciste(zahr);
+  const out = Object.keys(z.jenZahr || {});
+  if (typeof CENIK_JEN_ZAHR !== 'undefined')
+    CENIK_JEN_ZAHR.forEach(c => { if (out.indexOf(c) < 0) out.push(c); });
+  return out;
+}
+
+/* V TUZEMSKÉ ŘADĚ NEMÁ TAKOVÁ POLOŽKA CENU (P4, nález N6).
+ *
+ * Ceník verze 27 měl u překladů CZ→DE vyplněnou i ČR hodnotu. Jádro sice
+ * řádek v tuzemské kalkulaci skryje, ale hodnota v datech zůstávala — a
+ * odtud se dostávala do základu přirážky za ATYP a přes ni i do rezervy.
+ * Po otevření a přepočtu „na ceník, který platí dnes" tak cena vyskočila,
+ * aniž by přibyl jediný viditelný řádek.
+ *
+ * Nuluje se na jednom místě: v obou funkcích, které skládají ceník pro
+ * danou řadu. Tím se srovnají i obě strany porovnání při přepočtu —
+ * varianta má nulu a dnešní ceník taky, takže přepočet nemá co hlásit.
+ * `null` by neprošlo: „prázdno není nula" platí pro zadání, tady jde
+ * o ceníkovou sazbu, která do součtu vstupuje číslem. */
+function cenikJenZahrVynuluj(kam, zahr) {
+  if (!kam) return kam;
+  cenikJenZahrCesty(zahr).forEach(cesta => {
+    if (typeof cenikNastavHodnotu === 'function') cenikNastavHodnotu(kam, cesta, 0);
+  });
+  return kam;
+}
+
 /* ---------- složení ceníku pro danou řadu ---------- */
 
 /* Vrací KOPII tuzemského ceníku s vtisknutými odchylkami. Kopie schválně:
@@ -83,7 +122,14 @@ function cenikSlozRadu(cr, zahr, rada) {
   const z = cenikZahrOciste(zahr);
   zaklad.rada = r;
   zaklad.jenZahr = Object.assign({}, z.jenZahr);
-  if (r !== 'zahr') return zaklad;
+  if (r !== 'zahr') {
+    /* Tuzemská řada: položky, které v tuzemsku nejsou, jdou na nulu — ať už
+     * měl zveřejněný ceník v ČR sloupci cokoli (P4, nález N6). Obal
+     * `{ cenik }` je tu proto, že `cenikNastavHodnotu` pracuje s celým
+     * datovým objektem; mění se `zaklad` na místě. */
+    cenikJenZahrVynuluj({ cenik: zaklad }, zahr);
+    return zaklad;
+  }
   Object.entries(z.ceny).forEach(([cesta, hodnota]) => {
     if (typeof cenikNastavHodnotu === 'function') cenikNastavHodnotu({ cenik: zaklad }, cesta, hodnota);
   });
@@ -183,7 +229,12 @@ function cenikDnesniProRadu(dnesni, zahr, rada) {
   const z = cenikZahrOciste(zahr);
   out.cenik.rada = r;
   out.cenik.jenZahr = Object.assign({}, z.jenZahr);
-  if (r !== 'zahr') return out;
+  if (r !== 'zahr') {
+    /* Táž nula jako v `cenikSlozRadu` (P4, nález N6) — a právě proto, že je
+     * na obou stranách, nemá přepočet při otevření zakázky co hlásit. */
+    cenikJenZahrVynuluj(out, zahr);
+    return out;
+  }
   Object.entries(z.ceny).forEach(([cesta, hodnota]) => {
     if (typeof cenikNastavHodnotu === 'function') cenikNastavHodnotu(out, cesta, hodnota);
   });
@@ -277,6 +328,7 @@ if (typeof module !== 'undefined')
   module.exports = { CENIK_RADY, CENIK_ZAHR, cenikRadaPlatna, cenikRadaNazev, cenikRadaPopis,
                      cenikZahrPrazdny, cenikZahrOciste, cenikZahrPrazdna,
                      cenikSlozRadu, cenikRadaRozdily, cenikRadaPrepni, cenikRadaVarianty,
+                     cenikJenZahrCesty, cenikJenZahrVynuluj,
                      cenikRadaTuzemskaData, cenikDnesniProRadu,
                      CENIK_ZVEREJNENI_SHODA_MAX, cenikZverejneniOcisti,
                      cenikZverejneniShody, cenikZverejneniKontrola };

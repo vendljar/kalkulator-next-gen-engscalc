@@ -8,6 +8,50 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.9.3 — 21. 9. 2026
+
+### P4 — Položky „jen pro zahraničí" už nezdražují české zakázky
+
+*Nález N6*
+
+- **Příčina byla v pořadí, ne ve filtru.** Základ **přirážky za ATYP** se
+  počítal z celého pole `rezie`, a to o pár řádků **nad** filtrem, který
+  skryté a vyřazené položky odstraňuje. Řádek PŘEKLADY CZ→DE se v tuzemské
+  kalkulaci správně neukázal, ale jeho cena přesto vstupovala do přirážky —
+  a přes ni ještě jednou do rezervy. Po otevření zakázky a přepočtu „na
+  ceník, který platí dnes" cena vyskočila, aniž by přibyl jediný viditelný
+  řádek.
+- Základ přirážky nově bere `jenPocitane(rezie)`, tedy přesně ty řádky,
+  které jdou do součtu. **Týká se to i ručně vyřazených položek**
+  (`nepocitat`) — ty přirážku nafukovaly úplně stejně.
+- **V tuzemské řadě taková položka nemá cenu.** Obě funkce, které skládají
+  ceník pro danou řadu (`cenikSlozRadu`, `cenikDnesniProRadu`), ji nulují.
+  Protože nulují obě, nemá přepočet při otevření zakázky co hlásit.
+- Sjednoceny dva zdroje pravdy: značky `jenZahr` od administrátora a pevný
+  seznam `CENIK_JEN_ZAHR`. Jádro je spojovalo, skládání řady znalo jen
+  značky — a z té nerovnosti nález plynul.
+- **V editoru ceníku je tuzemské pole u takové položky zašedlé** („neplatí
+  v ČR"). Vadná hodnota ve verzi 27 se tam dala prostě napsat.
+
+**Ceny některých zakázek se tím MĚNÍ — vždy dolů.** Týká se to tuzemských
+zakázek se zaškrtnutým ATYP, které měly buď položku „jen zahraniční"
+s vyplněnou ČR cenou, nebo ručně vyřazený řádek v režii. Uzamčené nabídky
+se nepřepočítávají, ale jejich cena se v aplikaci zobrazuje z dat — u takové
+nabídky proto bude nově nižší než na vytištěném PDF, které odešlo
+zákazníkovi. Rozhodující je PDF; aplikace teď ukazuje, kolik ta nabídka měla
+stát.
+
+Nová sada: `src/test_jen_zahranicni.js` (17 kontrol).
+
+### Ověření
+
+112 sad prošlo / 0 selhalo (1 přeskočena), s `--smoke` 114. Harnessy:
+`overit_lista` 268/0, `overit_atyp` 57/0, `overit_zobrazeni` 121/0,
+`overit_ock_cela_cesta` 42/0, `overit_vypnuty_radek` 21/0,
+`overit_online` 135/0.
+
+---
+
 ## v21.9.2 — 21. 9. 2026
 
 Opravy z **kola 6** testování (zakázky CN-0383 a CN-0377/377), priorita 1.

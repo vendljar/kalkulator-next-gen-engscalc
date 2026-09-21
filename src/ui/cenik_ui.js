@@ -71,6 +71,13 @@ function cenikRows(def, zahrSloupec) {
   return def.map(([grp, items]) => {
     const body = items.map(([path, l, u, note, typ]) => {
       const val = get(path);
+      /* JE TO POLOŽKA, KTERÁ V TUZEMSKU NENÍ? (P4, nález N6, 21. 9. 2026.)
+       * Počítá se dřív než editor ceny, protože u takové položky se tuzemské
+       * pole zašedne — viz níž. Pevná sada (CENIK_JEN_ZAHR) je zaškrtnutá
+       * a zamčená: odškrtnout ji nejde, výpočet ji stejně skryje. */
+      const jenZahrPevne = (typeof CENIK_JEN_ZAHR !== 'undefined') && CENIK_JEN_ZAHR.indexOf(path) >= 0;
+      const jenZahrPolozka = jenZahrPevne
+        || ((typeof CENIK_ZAHR !== 'undefined') && !!CENIK_ZAHR.jenZahr[path]);
       let ed;
       if (typ === 'text') ed = `<input type="text" style="width:130px;text-align:left" value="${esc(val)}" onchange="set('${path}', this.value)">`;
       else if (typ === 'selLak') ed = `<select style="width:130px" onchange="set('${path}', this.value)">
@@ -82,15 +89,21 @@ function cenikRows(def, zahrSloupec) {
       else if (typ === 'pct') ed = `<input type="number" step="1" value="${val == null || val === '' ? '' : Math.round(val * 10000) / 100}"
           placeholder="nenastaveno" onchange="set('${path}', this.value === '' ? 0 : (+this.value) / 100)">`;
       else ed = `<input type="number" step="any" value="${esc(val)}" onchange="set('${path}', +this.value)">`;
+      /* TUZEMSKÁ CENA U POLOŽKY „JEN ZAHRANIČNÍ" SE NEZADÁVÁ (P4, nález N6).
+       *
+       * Ceník verze 27 měl u překladů CZ→DE vyplněnou i ČR hodnotu — dalo se
+       * ji totiž normálně napsat. V kalkulaci se řádek neukázal, ale cena
+       * tiše vstupovala do základu přirážky za ATYP a přes ni i do rezervy.
+       * Pole, do kterého jde psát a nic to neudělá (nebo udělá něco jiného,
+       * než člověk čeká), je horší než pole, které tam není. */
+      if (jenZahrPolozka && zahrSloupec)
+        ed = `<input type="number" value="" placeholder="neplatí v ČR" disabled
+          title="Položka v tuzemské kalkulaci vůbec není, takže tuzemská cena nemá co ovlivnit. Zadává se jen cena ve sloupci Zahraničí.">`;
       let zahr = '';
       if (zahrSloupec) {
         const zv = cenikZahrHodnota(path);
-        /* Pevná sada (CENIK_JEN_ZAHR, 9. 9. 2026) se zobrazuje zaškrtnutá
-         * a zamčená: odškrtnout ji nejde, protože výpočet ji stejně skryje.
-         * Bez toho by administrátor odškrtl, nic by se nestalo a hledal by
-         * chybu tam, kde žádná není. */
-        const pevne = (typeof CENIK_JEN_ZAHR !== 'undefined') && CENIK_JEN_ZAHR.indexOf(path) >= 0;
-        const jen = pevne || ((typeof CENIK_ZAHR !== 'undefined') && !!CENIK_ZAHR.jenZahr[path]);
+        const pevne = jenZahrPevne;
+        const jen = jenZahrPolozka;
         zahr = typ ? '<td colspan="2" class="note">—</td>' : `<td class="zahr-bunka">
           <input type="number" step="any" class="zahr-cena${zv === '' ? '' : ' ma'}" value="${esc(zv)}"
             placeholder="jako ČR" title="prázdné = platí tuzemská cena"

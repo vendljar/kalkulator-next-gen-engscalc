@@ -4441,6 +4441,20 @@
    "detail": "P4 — příznak „jen zahraniční\" respektovat ve VŠECH cestách, kde se sestavují položky varianty (nová zakázka, přepočet na dnešní ceník, převzetí ceníku z historie, přepnutí řady). Dnes se položka Překlady CZ→DE vrátí do ČR zakázky při přepočtu. Nález N6, priorita 2.\n\nP5 — tichý přepočet při otevření zakázky: ukázat dialog s rozdílem (verze ceníku, počet změněných položek, Δ ceny) a nabídnout ponechání původního ceníku. Nálezy N7 a N22, priorita 2.\n\nP6 — migrace staré položky stříšky: zakázky z doby před změnou nesou obě položky naráz a stříšky se počítají dvakrát. Nález N10, priorita 2.\n\nP7 — tisk nabídky OCK: chybí kapitoly III. až VI., doložky a překlady, které wordová šablona má. Nálezy N15 a N16, priorita 2.\n\nP8 — výchozí nastavení nové zakázky a devět otázek k rozhodnutí (výchozí model výpočtu, automatický ATYP, výchozí volitelné položky, tmelení, montáž, statika, lešení, DPH u zahraniční řady, hmotnost spojky). Nálezy N8, N9, N11–N14, N18. **Je to podklad k ROZHODNUTÍ, ne k nasazení.**\n\nP9 — technická specifikace: věta o oplechování soklu prohlubně se tiskne v sekci „SOUČÁSTÍ DODÁVKY NENÍ\", ačkoli součástí dodávky je. Nález N17, priorita 3.",
    "kde": "zadání je v prompt souboru kola 6; čísla a dopady v Kč jsou ve vyhodnocovacím sešitu na Drive (složka Testovani)",
    "pozn": "P8 vyžaduje rozhodnutí J. V. ke každé z devíti voleb — dokud nepadne, nemá smysl kódovat. P4 je z nich nejnaléhavější: mění cenu ČR zakázky po pouhém znovuotevření."
+  },
+  {
+   "id": "274",
+   "vlna": "A",
+   "stav": "hotovo",
+   "dulezitost": "",
+   "slozitost": "S",
+   "hotovoV": "v21.9.3",
+   "nazev": "Položky „jen pro zahraničí\" zdražovaly české zakázky přes přirážku ATYP (kolo 6, P4)",
+   "proc": "Položka PŘEKLADY CZ→DE má příznak „jen zahraniční\" a v tuzemské kalkulaci se správně nezobrazuje. Vadný ceník verze 27 u ní ale měl vyplněnou i ČR hodnotu — a ta se přes základ přirážky za ATYP dostala do ceny. Po otevření zakázky a přepočtu „na ceník, který platí dnes\" cena vyskočila, aniž by přibyl jediný viditelný řádek (testovací zakázka 2026-OPR-CN-9010-TEST-K6).",
+   "detail": "Příčina byla v POŘADÍ, ne ve filtru. Řádek přirážky se skládal NAD filtrem, který skryté a vyřazené položky odstraňuje, a základ si bral z celého pole `rezie`. Filtr přitom stojí schválně na jednom jediném místě těsně před součty — jenže přirážka se počítala dřív, takže mu utekla. Přes přirážku se cena propsala ještě jednou do rezervy, která se počítá z celkového nákladu.\n\nZáklad nově bere `jenPocitane(rezie)`, tedy přesně ty řádky, které jdou do součtu. TÝKÁ SE TO I RUČNĚ VYŘAZENÝCH POLOŽEK (`nepocitat`): ty přirážku nafukovaly úplně stejně, jen si toho nikdo nevšiml.\n\nDruhá část opravy je v datech: obě funkce, které skládají ceník pro danou řadu (`cenikSlozRadu`, `cenikDnesniProRadu`), dávají takové položce v tuzemské řadě nulu. Protože nulují OBĚ, srovnají se i obě strany porovnání a přepočet při otevření zakázky nemá co hlásit.\n\nSjednoceny dva zdroje pravdy: značky `jenZahr` od administrátora a pevný seznam `CENIK_JEN_ZAHR` (ten přibyl 9. 9. 2026, protože značku šlo v ceníku nezaškrtnout nebo ji ztratit obnovou). Jádro obojí spojovalo u sebe, skládání řady znalo jen značky — a právě z té nerovnosti nález plynul.\n\nV editoru ceníku je tuzemské pole u takové položky zašedlé s popiskem „neplatí v ČR\": vadnou hodnotu ve verzi 27 tam šlo prostě napsat, v kalkulaci se neukázala a cenu přitom měnila.",
+   "hotovoKdyz": "Splněno: nová sada test_jen_zahranicni.js (17 kontrol) hlídá, že tuzemská cena u takové položky nemění výsledek ani se zaškrtnutým ATYP, že základ přirážky odpovídá viditelným řádkům režie, že skládání řady dá v ČR nulu, že přepočet při otevření cenu nezvedne a že se v zahraniční zakázce položka počítá dál.",
+   "kde": "`src/engine.js` (pořadí přirážky ATYP), `src/cenik_rady.js` (cenikJenZahrCesty, cenikJenZahrVynuluj), `src/ui/cenik_ui.js`, `src/test_jen_zahranicni.js`",
+   "pozn": "**CENY NĚKTERÝCH ZAKÁZEK SE TÍM MĚNÍ — vždy dolů.** Týká se tuzemských zakázek se zaškrtnutým ATYP, které měly buď položku „jen zahraniční\" s vyplněnou ČR cenou (tedy od zveřejnění vadné verze 27), nebo ručně vyřazený řádek v režii (to může být i starší). Uzamčené nabídky se nepřepočítávají, ale cena se v aplikaci zobrazuje z dat — u takové nabídky proto bude nově nižší než na vytištěném PDF, které odešlo zákazníkovi. Rozhodující je PDF; aplikace ukazuje, kolik ta nabídka měla stát.\n\nModel 1 to neporušuje: přirážka za ATYP je vlastní funkce aplikace (#22), v předloze VZOR žádná není, takže není s čím být 1:1. Shodu s Excelem hlídá `test.js`, který se v cloudovém běhu přeskakuje (chybí skutečný ceník) — ověřeno tedy nepřímo, harnessem overit_atyp (57 kontrol) a mutačními testy."
   }
  ],
  "meta" : {
@@ -4952,7 +4966,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v21.9.2 (engscalc)",
+  "build" : "v21.9.3 (engscalc)",
   "stavKDatu" : "21. 9. 2026"
  },
  "_comment" : [

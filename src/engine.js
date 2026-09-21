@@ -1165,13 +1165,6 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
    * Sazba je součástí ceníku (C.atypPrirazka), takže cestuje se zakázkou a jde
    * změnit v Nastavení; výchozí hodnota je 30 %. */
   const atypSazba = z.atyp ? (c.atypPrirazka != null ? +c.atypPrirazka : 0.30) : 0;
-  if (atypSazba > 0) {
-    const atypZaklad = rezie.reduce((a, r) => a + r.naklad, 0);
-    const atypKc = atypZaklad * atypSazba;
-    rezie.push(mkItem('PŘIRÁŽKA ZA ATYP - PROJEKČNÍ A KOORDINAČNÍ PRÁCE', 1, atypKc,
-      { naklad: atypKc,
-        pozn: `${Math.round(atypSazba * 1000) / 10} % z nákladu režie (${Math.round(atypZaklad).toLocaleString('cs-CZ')} Kč)` }));
-  }
 
   /* VYŘAZENÉ POLOŽKY (21. 8. 2026). Filtr stojí schválně až tady, na jednom
    * jediném místě těsně před součty: kdyby se rozházel po výpočtu, každá
@@ -1199,6 +1192,40 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     : rows.filter(r => !(r.cenaPath && jenZahr[r.cenaPath]));
   const jenPocitane = rows => jenTetoRady(nepocitat.length
     ? rows.filter(r => nepocitat.indexOf(String(r.origNazev || r.nazev)) < 0) : rows);
+
+  /* PŘIRÁŽKA ZA ATYP SE POČÍTÁ AŽ Z TOHO, CO SE OPRAVDU POČÍTÁ
+   * (P4, nález N6, 21. 9. 2026).
+   *
+   * Řádek přirážky stál dřív NAD filtry a základ si bral z celého pole
+   * `rezie`. Do základu tak vstupovaly i řádky, které se do nabídky vůbec
+   * nedostanou: položka „jen pro zahraničí" (PŘEKLADY CZ→DE) v tuzemské
+   * zakázce a ručně vyřazené řádky ze seznamu `nepocitat`. V kalkulaci
+   * nebyly vidět, ale cenu zvedaly — a přes přirážku ještě jednou i rezervu,
+   * která se počítá z celkového nákladu.
+   *
+   * Projevilo se to u zakázky s ATYP, jakmile měl ČR sloupec u překladů
+   * vyplněnou hodnotu (vadný ceník v27): po otevření a přepočtu „na ceník,
+   * který platí dnes" cena vyskočila, aniž by přibyl jediný viditelný řádek.
+   * Rozdíl mezi tím, co je v kalkulaci vidět, a tím, z čeho se počítá, je
+   * ta nejhůř dohledatelná chyba — proto základ bere `jenPocitane(rezie)`,
+   * tedy přesně ty řádky, které jdou do součtu.
+   *
+   * Řádek se pak přidá do `rezie` a projde filtrem ještě jednou (v `sekce`
+   * níž): to je schválně, aby šel vyřadit jako každý jiný. Sám žádnou
+   * `cenaPath` nemá, takže ho filtr řady nevyhodí.
+   *
+   * ZMĚNA CENY: tuzemská zakázka s ATYP, která měla některý z těchto řádků,
+   * se tím zlevní na hodnotu, kterou měla mít. Model 1 to neporušuje —
+   * přirážka za ATYP je vlastní funkce aplikace (#22), v předloze VZOR
+   * žádná není, takže není s čím být 1:1. */
+  if (atypSazba > 0) {
+    const atypZaklad = jenPocitane(rezie).reduce((a, r) => a + r.naklad, 0);
+    const atypKc = atypZaklad * atypSazba;
+    rezie.push(mkItem('PŘIRÁŽKA ZA ATYP - PROJEKČNÍ A KOORDINAČNÍ PRÁCE', 1, atypKc,
+      { naklad: atypKc,
+        pozn: `${Math.round(atypSazba * 1000) / 10} % z nákladu režie (${Math.round(atypZaklad).toLocaleString('cs-CZ')} Kč)` }));
+  }
+
   const sekce = { hrubaOck: jenPocitane(hrubaOck), oplasteni: jenPocitane(oplasteni),
                   volitelne: jenTetoRady(volitelne), rezie: jenPocitane(rezie) };
   const sum = rows => ({
