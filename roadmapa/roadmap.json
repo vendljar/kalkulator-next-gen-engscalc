@@ -67,6 +67,19 @@
    "testy": "test_cenik_dopad.js (25), test_zakazka_duplikace.js (44), test_jen_zahranicni.js (25), overit_prepocet_dialog.mjs (31 — ověřeno, že bez opravy padá). Plná sada --smoke: 126 prošlo, 0 selhalo."
   },
   {
+   "id": "291",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "hotovoV": "v21.9.14",
+   "nazev": "Odmítnutí vrácení cen vysvětlovalo nepravdu",
+   "proc": "Dialog #284 odmítne vrátit původní ceny, když se zakázka mezi dotazem a odpovědí vymění. Táž věta se ale ukazovala i uživateli, který si jen vzal krok Zpět — `historieObnov` dosadí do ZAK jiný objekt TÉŽE zakázky. Tvrdit mu „mezitím se otevřela jiná zakázka\" je nepravda a rada „otevřete tu původní znovu\" mu nepomůže. Zpřístupnila to dávka v21.9.13, která dialog zavedla i k obnově zálohy z prohlížeče.",
+   "detail": "Odmítnout se musí v OBOU případech — vrácení snímku pořízeného před přepočtem by krok zpět tiše zahodilo. Liší se jen vysvětlení: při shodě čísla zakázky se řekne, že se zakázka změnila (nejspíš krokem Zpět) a jak přepočet spustit znovu; jinak zůstává původní věta o jiné zakázce.\n\nA CHYBA V SAMOTNÉ KONTROLE: oddíl 6 v `overit_prepocet_dialog.mjs` vydával za „cizí zakázku\" re-import TÉŽE zakázky (`ZAK = importZakazka(kopie ZAK)`), takže případ opravdu jiné zakázky se neměřil vůbec — a právě tenhle rozdíl by odhalil. Rozdělen na oba případy: jiné číslo → čeká se věta o jiné zakázce, stejné číslo → čeká se věta o změně a výslovně se ověřuje, že se NEtvrdí „jiná zakázka\".",
+   "kde": "src/ui/uloziste_ui.js (uloPrepocetDialog), overit_prepocet_dialog.mjs (oddíl 6)",
+   "testy": "overit_prepocet_dialog.mjs (34). Plná sada --smoke: 126 prošlo, 0 selhalo."
+  },
+  {
    "id" : "285",
    "vlna" : "C",
    "stav" : "ceka",

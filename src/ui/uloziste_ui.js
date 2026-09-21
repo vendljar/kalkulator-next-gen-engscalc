@@ -422,6 +422,9 @@ async function uloPrepocetDialog(r) {
    * zakázce; když se mezitím vymění, řekne se to nahlas. */
   const mojeZaloha = ULO_PREPOCET.zaloha;
   const mojeZakazka = ULO_PREPOCET.zakazka;
+  /* Číslo se drží zvlášť od objektu, aby se odmítnutí dalo vysvětlit pravdivě
+   * — viz hláška níž. */
+  const mojeCislo = String((mojeZakazka && mojeZakazka.cislo) || '');
   const pred = ULO_PREPOCET.pred, po = ULO_PREPOCET.po;
   const kc = n => (typeof formatKc === 'function') ? formatKc(n)
     : (Math.round(n).toLocaleString('cs-CZ') + ' Kč');
@@ -458,11 +461,24 @@ async function uloPrepocetDialog(r) {
   }
 
   /* Vyměnila se mezitím zakázka? Pak se vrací cizí data a to se nesmí stát
-   * potichu — ani tiše nevrátit, ani tiše přepsat rozdělanou práci. */
+   * potichu — ani tiše nevrátit, ani tiše přepsat rozdělanou práci.
+   *
+   * DVA RŮZNÉ DŮVODY, DVĚ RŮZNÉ VĚTY (upřesnění 21. 9. 2026 po revizi).
+   * Tahle větev nechytá jen přepnutí na jinou zakázku: `historieObnov`
+   * (krok ZPĚT) dosadí do `ZAK` JINÝ OBJEKT téže zakázky, takže se sem
+   * dostane i uživatel, který si mezi otevřením dialogu a kliknutím vzal
+   * jeden krok zpátky. Odmítnout je správně — vrácení snímku by ten krok
+   * zpět tiše zahodilo —, ale tvrdit mu, že „se otevřela jiná zakázka",
+   * je nepravda a rada „otevřete tu původní znovu" mu nepomůže. */
   if (ZAK !== mojeZakazka || ULO_PREPOCET.zaloha !== mojeZaloha) {
+    const tataz = !!ZAK && String(ZAK.cislo || '') === mojeCislo;
     if (typeof nabidkaStavTextBezpecne === 'function')
-      nabidkaStavTextBezpecne('Mezitím se otevřela jiná zakázka — původní ceny se nevracejí. '
-        + 'Otevřete tu původní znovu a rozhodněte se u ní.');
+      nabidkaStavTextBezpecne(tataz
+        ? 'Zakázka se mezitím změnila (nejspíš krokem Zpět) — původní ceny se '
+          + 'nevracejí, aby se ta změna nezahodila. Přepočet spustíte znovu '
+          + 'zavřením a otevřením zakázky.'
+        : 'Mezitím se otevřela jiná zakázka — původní ceny se nevracejí. '
+          + 'Otevřete tu původní znovu a rozhodněte se u ní.');
     return false;
   }
 

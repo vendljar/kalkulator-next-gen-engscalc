@@ -8,6 +8,29 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.9.14 — 21. 9. 2026
+
+### Hláška, která tvrdila nepravdu — a test, který ji nechytil (#291)
+
+Dialog o přepočtu odmítne vrátit původní ceny, když se zakázka mezi
+dotazem a odpovědí vymění. Odmítnout je správně, ale vysvětlení bylo
+špatné: **stejná věta se ukazovala i uživateli, který si jen vzal krok
+Zpět.** „Zpět" dosadí jiný objekt téže zakázky, takže se do téhle větve
+dostane taky — a věta „Mezitím se otevřela jiná zakázka. Otevřete tu
+původní znovu" mu tvrdí nepravdu a radí něco, co mu nepomůže. Dva různé
+důvody teď mají dvě různé věty; odmítnutí platí v obou (vrácení snímku by
+ten krok zpět tiše zahodilo).
+
+**Kontrola v harnessu tu chybu nemohla odhalit, protože ji sama měla.** Za
+„cizí zakázku" vydávala re-import **téže** zakázky — případ opravdu jiné
+zakázky se tedy neměřil vůbec. Rozdělena na oba případy: jiné číslo → jiná
+zakázka, stejné číslo → změnila se.
+
+Nalezl závěrečný běh revize; zpřístupnila to dnešní oprava, která dialog
+zavedla i k obnově zálohy z prohlížeče.
+
+---
+
 ## v21.9.13 — 21. 9. 2026
 
 ### Třetí kolo revize — a regrese, kterou zavedla dnešní oprava (#290)

@@ -169,34 +169,62 @@ zkus('Escape nevrací ceny', poEsc.odp === false && poEsc.montaz === stav3.monta
     bezPrepoctu.dlg === false && bezPrepoctu.r === false, JSON.stringify(bezPrepoctu));
 }
 
-/* ---------- 6) mezitím otevřená jiná zakázka ----------
+/* ---------- 6) zakázka se mezi dotazem a odpovědí vyměnila ----------
  *
  * Dialog je asynchronní a `ULO_PREPOCET` je jeden sdílený objekt. Dvojklik
  * na řádek přehledu otevře zakázku dvakrát, dialogy se zařadí za sebe —
  * a druhý by po zálohu sáhl až ve chvíli, kdy ji první zahodil. Do opravy
  * z 21. 9. 2026 (nález nezávislé revize) „Vrátit" v takovém případě TIŠE
- * neudělalo nic a uživatel se to nedozvěděl. */
-{
-  const stav4 = await priprava();
+ * neudělalo nic a uživatel se to nedozvěděl.
+ *
+ * DVA RŮZNÉ DŮVODY, DVĚ RŮZNÉ VĚTY (upřesnění téhož dne). Odmítnout se musí
+ * v obou, ale vysvětlit se musí pravdivě:
+ *   a) uživatel přepnul na JINOU zakázku,
+ *   b) uživatel si vzal krok ZPĚT — `historieObnov` dosadí do `ZAK` jiný
+ *      objekt TÉŽE zakázky, takže se sem dostane taky. Tvrdit mu, že se
+ *      otevřela jiná zakázka, je nepravda, a rada „otevřete tu původní"
+ *      mu nepomůže.
+ *
+ * Původní znění téhle kontroly mělo v sobě právě tu chybu: vydávalo za
+ * „cizí zakázku" re-import TÉŽE zakázky, takže případ (a) se neměřil vůbec. */
+const vymenZakazku = async (upravCislo) => {
+  const stav = await priprava();
   await p.evaluate(() => { window.__odp4 = uloPrepocetDialog({ prepocteno: 1, zmen: 4 }); });
   await p.waitForTimeout(250);
-  /* Mezi otevřením dialogu a odpovědí se vymění zakázka. */
-  await p.evaluate(() => { ZAK = importZakazka(JSON.parse(JSON.stringify(ZAK))); });
+  await p.evaluate((nove) => {
+    const kopie = JSON.parse(JSON.stringify(ZAK));
+    if (nove) kopie.cislo = nove;
+    ZAK = importZakazka(kopie);
+  }, upravCislo || null);
   await p.evaluate(() => {
     const b = [...document.querySelectorAll('#dlg .dlg-btns button')].find(x => /Vrátit/i.test(x.textContent));
     b.click();
   });
   await p.waitForTimeout(250);
-  const cizi = await p.evaluate(async () => ({
+  const r = await p.evaluate(async () => ({
     odp: await window.__odp4,
     montaz: aktivniVarianta(ZAK).data.cenik.montazHodKc,
     lista: [...document.querySelectorAll('.nabidkaStav')].map(e => e.textContent).join(' '),
   }));
-  zkus('cizí zakázka: vrácení se neprovede', cizi.odp === false, cizi.odp);
+  return Object.assign(r, { cekanoMontaz: stav.montaz });
+};
+
+{
+  /* a) opravdu JINÁ zakázka — jiné číslo */
+  const cizi = await vymenZakazku('2026 - OPR - CN - 9999');
+  zkus('jiná zakázka: vrácení se neprovede', cizi.odp === false, cizi.odp);
   zkus('a ceny zůstanou tak, jak byly po přepočtu',
-    cizi.montaz === stav4.montaz, { je: cizi.montaz, cekano: stav4.montaz });
-  zkus('a nestane se to potichu — obrazovka to řekne',
-    /jiná zakázka/i.test(cizi.lista), cizi.lista.slice(0, 120));
+    cizi.montaz === cizi.cekanoMontaz, { je: cizi.montaz, cekano: cizi.cekanoMontaz });
+  zkus('a obrazovka řekne, že jde o jinou zakázku',
+    /jiná zakázka/i.test(cizi.lista), cizi.lista.slice(0, 140));
+
+  /* b) TÁŽ zakázka, jen se mezitím změnila (krok Zpět) */
+  const tataz = await vymenZakazku(null);
+  zkus('táž zakázka po změně: vrácení se taky neprovede', tataz.odp === false, tataz.odp);
+  zkus('ale netvrdí se, že se otevřela jiná zakázka',
+    !/jiná zakázka/i.test(tataz.lista), tataz.lista.slice(0, 140));
+  zkus('a řekne se, co se opravdu stalo',
+    /změnila/i.test(tataz.lista) && /Zpět/i.test(tataz.lista), tataz.lista.slice(0, 160));
 }
 
 /* 7) rozbitá záloha nesmí shodit otevřenou zakázku */
