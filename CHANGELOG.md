@@ -94,11 +94,26 @@ Nová sada: `src/test_zakazka_duplikace.js` (23 kontrol).
   celého skriptu. `typeof` před tím nechrání: u proměnné v TDZ hází taky.
   Chytil to kouřový test v prohlížeči.
 
+- **Tlačítko uložení bylo v režimu čtení mrtvé, ne jen špatně pojmenované.**
+  Lišta „Zakázka a varianta" dává v režimu čtení všem tlačítkům
+  `pointer-events:none` kromě těch se značkou `cteni-ok` — a tlačítko
+  uložení ji nemělo. Přejmenování samo by nepomohlo, dialog by se neměl jak
+  otevřít. Odhalil to `overit_online.mjs` v CI; jeho očekávání „tlačítko je
+  nedostupné" se změnilo na „je klikatelné a říká, co se stane" — nedostupné
+  tlačítko není vysvětlení. Zápis dál hlídá `zamekCteniStop()`.
+- **`spust_testy.sh --smoke` nově pouští i `overit_online.mjs`** (pokyn
+  J. V.): dvě chyby této dávky chytil až prohlížeč v CI. Skript si zároveň
+  sám doplní smyšlený `ADMIN_EMAIL`, když v prostředí chybí — stejně jako
+  CI; bez něj serverové sady padaly na „Nepřihlášen" a vypadalo to jako
+  rozbitý kód.
+
 ### Ověření
 
 111 testovacích sad prošlo, 0 selhalo (1 přeskočena — `test.js` potřebuje
-skutečný ceník mimo repozitář). Kouřový test 50/0. Prohlížečové harnessy:
-`overit_lista` 268/0, `overit_zobrazeni` 121/0, `overit_ock_cela_cesta` 42/0.
+skutečný ceník mimo repozitář); s `--smoke` 113. Kouřový test 50/0,
+`overit_online` 135/0. Prohlížečové harnessy: `overit_lista` 268/0,
+`overit_zobrazeni` 121/0, `overit_ock_cela_cesta` 42/0,
+`overit_vypnuty_radek` 21/0.
 
 ---
 
