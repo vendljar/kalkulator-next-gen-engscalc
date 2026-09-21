@@ -630,7 +630,43 @@ function oplStenaVarovani(k, opl) {
       return 'Pás ' + (i + 1) + ' je „jiné" bez sazby — dokud ji nevyplníte, počítá se za 0 Kč.';
   }
 
-  if (oplCelaVyska(k)) return '';
+  /* STĚNA, ZE KTERÉ SE DO CENY NEDOSTANE NIC (nález J. V. 21. 9. 2026).
+   *
+   * Plocha se v režimu po stěnách bere z dosavadního výpočtu (`skloSteny`)
+   * a pásy si ji dělí poměrem výšek — aby zapnutí režimu nehnulo cenou.
+   * U ČELNÍ STĚNY je ale tou dosavadní plochou jen SVĚTLÍK nad dveřmi a po
+   * stranách, protože zbytek čelní stěny zabírají dveře a portály. Bez
+   * světlíků je tedy plocha čelní stěny NULA — a obchodník si může vybrat
+   * sklo přes celou stěnu, nákres mu ji vybarví celou, specifikace ji
+   * zákazníkovi slíbí, a v ceně nebude ani koruna.
+   *
+   * Změřeno: šachta bez světlíků, stěna A celá ze skla od −2 m do 23 m →
+   * 0 m² nad nulou (do ceny jde jen část pod nulou, tedy prohlubeň),
+   * zatímco stěny B, C a D dají přes 40 m² každá.
+   *
+   * Tohle varování ten nesoulad pojmenuje. Čím plochu čelní stěny NAHRADIT
+   * je obchodní rozhodnutí (kolik z ní ukrojí dveře a portály), ne otázka
+   * pro kód — dokud nepadne, musí být aspoň vidět.
+   *
+   * POŘADÍ: hlásí se AŽ NAPOSLED. Chybějící dělicí výška nebo „jiné" bez
+   * sazby jsou konkrétní chyby zadání, se kterými obchodník něco udělá hned;
+   * tohle je vlastnost výpočtu, kterou sám nespraví. Kdyby to bylo naopak,
+   * zakrylo by to hlášky, na které se dá reagovat. Počítá se ale už tady,
+   * aby se dalo vrátit i u stěny po celé výšce, která má vlastní odbočku. */
+  let nulova = '';
+  if (opl && Array.isArray(opl.pasy)) {
+    const nadNulou = opl.pasy.filter(p => p.stena === k && (+p.doM || 0) > 0);
+    const m2 = nadNulou.reduce((a, p) => a + (+p.m2 || 0), 0);
+    const jenBez = nadNulou.length > 0 && nadNulou.every(p => String(p.typ) === 'bez');
+    if (nadNulou.length && !jenBez && m2 < 0.005)
+      nulova = 'Z téhle stěny se do ceny nedostane nic: nad úrovní nástupiště vychází 0 m². '
+        + (k === 'A'
+          ? 'Plocha čelní stěny se bere ze světlíků nad dveřmi a po stranách — tahle šachta '
+            + 'žádné nemá, takže není z čeho počítat. Zbytek čelní stěny zabírají dveře a portály.'
+          : 'Zkontrolujte rozměry šachty — dosavadní výpočet u téhle stěny žádnou plochu nedává.');
+  }
+
+  if (oplCelaVyska(k)) return nulova;
 
   /* Horní hrana opláštění. Bere se z jádra (`r.oplasteni.vyska`), ne ze
    * zadání — jádro na ni dělicí výšky ořezává, takže se tím pozná pás,
@@ -661,7 +697,7 @@ function oplStenaVarovani(k, opl) {
         + ' m) — pás ' + (i + 2) + ' a výš se do ceny nedostanou.';
     dolni = +doM;
   }
-  return '';
+  return nulova;
 }
 
 function oplTypSelect(k, i) {

@@ -106,6 +106,31 @@
    "testy": "overit_oplasteni.mjs (50). Plná sada --smoke: 126 prošlo, 0 selhalo."
   },
   {
+   "id": "294",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "vysoka",
+   "slozitost": "S",
+   "hotovoV": "v21.9.17",
+   "nazev": "Čelní stěna se v režimu po stěnách počítá za nulu — aspoň je to vidět",
+   "proc": "Nález J. V. 21. 9. 2026 ze snímku: stěna A vyšla 3,36 m², stěny B, C a D přes 38 m². Plocha se v režimu po stěnách bere z dosavadního výpočtu (`skloSteny`) a u ČELNÍ stěny je tou plochou jen světlík nad dveřmi a po stranách — zbytek zabírají dveře a portály. Bez světlíků je tedy nulová.",
+   "detail": "DOPAD: obchodník si vybere sklo přes celou čelní stěnu, nákres ji vybarví celou, technická specifikace ji zákazníkovi slíbí — a v ceně nebude ani koruna. Těch 3,36 m² byla jen část pod úrovní nástupiště (prohlubeň).\n\nZMĚŘENO: šachta bez světlíků, stěna A celá ze skla od −2 m do 23 m → 0 m² nad nulou; stěny B, C a D přes 40 m² každá.\n\nCO SE ZAVEDLO: varování na kartě opláštění, které ten nesoulad pojmenuje i s důvodem. Hlásí se AŽ NAPOSLED — chybějící dělicí výška nebo „jiné\" bez sazby jsou konkrétní chyby zadání, se kterými obchodník něco udělá hned; tohle je vlastnost výpočtu, kterou sám nespraví, a zakrývat jím hlášky, na které jde reagovat, by bylo horší.\n\nCO SE NEZAVEDLO A PROČ: čím plochu čelní stěny nahradit, je obchodní rozhodnutí — viz #295.\n\nPŘI TÉ PŘÍLEŽITOSTI ověřeno měřením v prohlížeči, že P12 (nález N25) a P15 (nález N29) jsou hotové: nová varianta v režimu jen ke čtení nabídne odemčení místo mlčení, nová zakázka shodí zámek čtení, vrátí číslo na předlohu a zruší vazbu na soubor.",
+   "kde": "src/ui/kalk_ock.js (oplStenaVarovani), overit_oplasteni.mjs, src/test_zamek_prepnuti.js",
+   "testy": "overit_oplasteni.mjs (54, nově 4 kontroly včetně pojistky proti prázdné), test_zamek_prepnuti.js (39, nově řetěz P15)."
+  },
+  {
+   "id": "295",
+   "vlna": "E",
+   "stav": "ceka",
+   "dulezitost": "vysoka",
+   "slozitost": "S",
+   "nazev": "Z čeho brát plochu ČELNÍ stěny v režimu po stěnách?",
+   "proc": "Plocha čelní stěny se dnes bere ze světlíků nad dveřmi a po stranách, protože tak ji počítá standardní model. V režimu po stěnách si ale obchodník vybírá opláštění pro CELOU stěnu — a u šachty bez světlíků mu vyjde 0 m² (#294).",
+   "detail": "Možnosti:\n(a) NECHAT JAK JE a spolehnout se na varování. Zapnutí režimu pak dál nehne cenou ani o haléř, což byla původní podmínka.\n(b) POČÍTAT SKUTEČNOU PLOCHU stěny (šířka × výška) MÍNUS otvory dveří a portálů. Odpovídá to pokynu „počítá se skutečná plocha\", ale je potřeba vědět, kolik z čelní stěny ukrojí dveře a portály — to je údaj z dílny, ne z kódu.\n(c) POČÍTAT CELOU PLOCHU bez odečtu otvorů, pokud se opláštění objednává na celou stěnu.\n\nKterákoli z (b) a (c) změní cenu každé zakázky v režimu po stěnách, a to směrem nahoru. Proto rozhodnutí J. V., ne odhad.\n\nOTÁZKA: ukrojí dveře a portály z čelní stěny plochu, která se neopláští? Jestli ano, jak velkou — z čeho ji spočítat (šířka dveří × 2,3 m + portály)?",
+   "otazka": "Z čeho se má brát plocha čelní stěny v režimu po stěnách a odečítají se otvory dveří a portálů?",
+   "cekaNa": "J. V."
+  },
+  {
    "id" : "285",
    "vlna" : "C",
    "stav" : "ceka",

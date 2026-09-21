@@ -8,6 +8,40 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.9.17 — 21. 9. 2026
+
+### Čelní stěna se v režimu po stěnách počítala za nulu (#294)
+
+Nález J. V. ze snímku: stěna A vyšla na **3,36 m²**, zatímco B, C i D přes
+38 m². Změřeno a potvrzeno — a příčina je horší, než vypadá.
+
+Plocha se v režimu po stěnách bere z dosavadního výpočtu a pásy si ji dělí
+poměrem výšek, aby zapnutí režimu nehnulo cenou. **U čelní stěny je ale tou
+dosavadní plochou jen světlík nad dveřmi a po stranách** — zbytek zabírají
+dveře a portály. Šachta bez světlíků má tedy plochu čelní stěny **nulovou**:
+obchodník si vybere sklo přes celou stěnu, nákres mu ji vybarví celou,
+specifikace ji zákazníkovi slíbí — a v ceně nebude ani koruna. Těch 3,36 m²
+byla jen část pod úrovní nástupiště, tedy prohlubeň.
+
+Změřeno: šachta bez světlíků, stěna A celá ze skla od −2 m do 23 m → **0 m²
+nad nulou**, stěny B, C a D přes 40 m² každá.
+
+**Obrazovka to teď řekne.** Varování pojmenuje, že se z té stěny do ceny
+nedostane nic, a proč. Hlásí se až naposled — chybějící dělicí výška nebo
+„jiné" bez sazby jsou konkrétní chyby, se kterými obchodník něco udělá hned,
+kdežto tohle je vlastnost výpočtu, kterou sám nespraví.
+
+**Čím plochu čelní stěny nahradit, je obchodní rozhodnutí** (kolik z ní
+ukrojí dveře a portály), ne otázka pro kód — zapsáno jako **#295**. Dokud
+nepadne, musí být aspoň vidět.
+
+Při té příležitosti ověřeno měřením v prohlížeči, že **P12** (nová varianta
+v režimu jen ke čtení nabídne odemčení místo mlčení) a **P15** (nová zakázka
+shodí zámek čtení i vazbu na soubor) jsou hotové. P15 má nově test na řetěz,
+na kterém stojí.
+
+---
+
 ## v21.9.16 — 21. 9. 2026
 
 ### Opláštění: pořadí řádků, popisky — a místo, kde zadání přežije (#293)

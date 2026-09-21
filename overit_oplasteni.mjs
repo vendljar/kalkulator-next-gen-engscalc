@@ -366,9 +366,12 @@ zkus('N5: dolní mez pod dnem prohlubně se ohlásí',
 zkus('N4: dělicí výška nad horní hranou se ohlásí',
   /nad horní hranou/.test(await varovani('Z.oplasteni.steny.A.pasy[0].doM = 99;')),
   await varovani('Z.oplasteni.steny.A.pasy[0].doM = 99;'));
-zkus('a správné zadání nevaruje',
-  (await varovani('Z.oplasteni.steny.A.odM = 0;')) === '',
-  await varovani('Z.oplasteni.steny.A.odM = 0;'));
+/* ZMĚNA OČEKÁVÁNÍ 21. 9. 2026 (nález J. V.): zkušební šachta nemá světlíky,
+ * takže čelní stěna vychází na 0 m² — a nové varování to právem hlásí.
+ * „Správné zadání" se proto zkouší nad šachtou se světlíkem; jinak by tenhle
+ * řádek vyžadoval, aby aplikace o nulové ploše mlčela. */
+const spravne = 'Z.svetlikNadDvermi = true; Z.oplasteni.steny.A.odM = 0;';
+zkus('a správné zadání nevaruje', (await varovani(spravne)) === '', await varovani(spravne));
 
 /* N9: minimální výška pásu 2 px nesmí přetéct pruh — spodní pás by se
  * v `overflow:hidden` tiše oříznul. */
@@ -396,6 +399,48 @@ zkus('po vypnutí režimu karta stěn zmizí',
   await p.locator('#ock-oplasteni-steny').count() === 0);
 const prezilo = await p.evaluate(() => Z.oplasteni.steny.B.pasy.length);
 zkus('rozdělení stěn se vypnutím režimu nezahodí', prezilo === 2, prezilo);
+
+/* STĚNA, ZE KTERÉ SE DO CENY NEDOSTANE NIC (nález J. V. 21. 9. 2026).
+ *
+ * Čelní stěna bere plochu ze SVĚTLÍKŮ nad dveřmi a po stranách — zbytek
+ * zabírají dveře a portály. Bez světlíků je ta plocha nula, takže sklo přes
+ * celou čelní stěnu vyjde na 0 m², nákres ji přitom vybarví celou
+ * a specifikace ji zákazníkovi slíbí. */
+{
+  const stav = await p.evaluate(() => {
+    ZAK = novaZakazka(); syncVarianta();
+    set('OCK.zadani.typSachty', 'exteriérová');
+    set('OCK.zadani.sirka', 1.6); set('OCK.zadani.hloubka', 1.4);
+    set('OCK.zadani.zdvih', 9); set('OCK.zadani.prejezd', 3.5);
+    set('OCK.zadani.prohluben', 1.1); set('OCK.zadani.nastupiste', 4);
+    set('OCK.zadani.svetlikNadDvermi', false);
+    set('OCK.zadani.svetlikyBoky', 0);
+    oplRezimSet('poStenach');
+    render();
+    const r = vypocetAkt();
+    const m2 = (k) => (r.oplasteni.pasy || [])
+      .filter(x => x.stena === k && (+x.doM || 0) > 0)
+      .reduce((a, x) => a + (+x.m2 || 0), 0);
+    const text = (k) => {
+      const i = ['A', 'B', 'C', 'D'].indexOf(k);
+      const el = document.querySelectorAll('#ock-oplasteni-steny .opl-stena')[i];
+      const v = el && el.querySelector('.seznam-varovani');
+      return v ? v.textContent.replace(/\s+/g, ' ').trim() : '';
+    };
+    return { a: m2('A'), b: m2('B'), c: m2('C'), d: m2('D'),
+             varA: text('A'), varB: text('B') };
+  });
+  /* POJISTKA PROTI PRÁZDNÉ KONTROLE: nesoulad tu opravdu je — ostatní stěny
+   * plochu mají, čelní ne. Bez tohohle by kontrola níž prošla i tehdy, kdyby
+   * plochu neměla ani jedna stěna (třeba u rozbitého zadání). */
+  zkus('kontrola není prázdná — ostatní stěny plochu mají',
+    stav.b > 1 && stav.c > 1 && stav.d > 1, JSON.stringify(stav));
+  zkus('čelní stěna bez světlíků vyjde nad nulou na 0 m²', stav.a < 0.005, stav.a);
+  zkus('a obrazovka to řekne, místo aby mlčela',
+    /nedostane nic/i.test(stav.varA) && /světlík/i.test(stav.varA), stav.varA.slice(0, 160));
+  zkus('u stěn, které plochu mají, se nic takového nehlásí',
+    !/nedostane nic/i.test(stav.varB), stav.varB.slice(0, 120));
+}
 
 zkus('za celý průchod nevznikla chyba v konzoli', konzole.length === 0, konzole.slice(0, 2).join(' | '));
 
