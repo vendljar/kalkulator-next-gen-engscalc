@@ -191,6 +191,30 @@ const PREKLAD = {
   "Dokončovací práce do cca 2 týdny po ukončení montáže technologie výtahu – šachetních dveří.": ["Finishing work (mainly landing door entrance portals) will be done within 2 weeks after elevator installation is completed.", "Die abschließenden Arbeiten (vor allem die Portale der Schachttüren) werden innerhalb von 2 Wochen nach Abschluss der Aufzugsmontage durchgeführt.", "Les travaux de finition (principalement les portails des portes palières) seront réalisés dans les 2 semaines suivant l’achèvement du montage de l’ascenseur."],
   "Doprava, stavba a pronájem lešení (vnitřního i vnějšího) po dobu realizace šachty": ["Rental, transport and construction of scaffolding (inside and outside around shaft construction) for duration of the shaft installation.", "Vermietung, Transport und Aufbau eines Gerüstes (innen und außen um das Schachtbauwerk) für die Dauer der Schachtmontage.", "Location, transport et montage de l’échafaudage (intérieur et extérieur autour de la gaine) pendant la durée du montage."],
   "DPH": ["VAT","MwSt","TVA"],
+  /* ---- PLATEBNÍ PODMÍNKY (#283, rozhodnutí J. V. 21. 9. 2026) ----
+   * Kapitola III. brala hodnoty z krycího listu, a ty jsou volný text —
+   * slovníkem prošly beze změny, takže anglická nabídka měla nadpisy
+   * anglicky a hodnoty česky („50 % – po podpisu smlouvy", „2 měsíce").
+   * Rozhodnutí: české podmínky se do cizojazyčné nabídky tisknou PŘELOŽENÉ.
+   * Překládá se konečná sada PŘEDVYPLNĚNÝCH hodnot (rozbalovátka a výchozí
+   * texty); co obchodník napíše ručně, projde dál beze změny — vymýšlet
+   * překlad cizí věty se nesmí. Pomlčka je půlčtverčíková (–), jak ji
+   * zapisuje `KRYCI_ZALOHY`; kopie s obyčejným spojovníkem by se nenašla. */
+  "Bez zálohy": ["No advance payment", "Keine Anzahlung", "Sans acompte"],
+  "30 % \u2013 po podpisu smlouvy": ["30 % \u2013 upon signature of the contract", "30 % \u2013 nach Vertragsunterzeichnung", "30 % \u2013 \u00e0 la signature du contrat"],
+  "50 % \u2013 po podpisu smlouvy": ["50 % \u2013 upon signature of the contract", "50 % \u2013 nach Vertragsunterzeichnung", "50 % \u2013 \u00e0 la signature du contrat"],
+  "70 % \u2013 po podpisu smlouvy": ["70 % \u2013 upon signature of the contract", "70 % \u2013 nach Vertragsunterzeichnung", "70 % \u2013 \u00e0 la signature du contrat"],
+  "40 % \u2013 po zah\u00e1jen\u00ed mont\u00e1\u017ee": ["40 % \u2013 upon start of installation", "40 % \u2013 nach Montagebeginn", "40 % \u2013 au d\u00e9but du montage"],
+  "10 % \u2013 po p\u0159ed\u00e1n\u00ed": ["10 % \u2013 upon handover", "10 % \u2013 nach \u00dcbergabe", "10 % \u2013 \u00e0 la r\u00e9ception"],
+  "1 m\u011bs\u00edc": ["1 month", "1 Monat", "1 mois"],
+  "2 m\u011bs\u00edce": ["2 months", "2 Monate", "2 mois"],
+  "3 m\u011bs\u00edce": ["3 months", "3 Monate", "3 mois"],
+  "6 m\u011bs\u00edc\u016f": ["6 months", "6 Monate", "6 mois"],
+  "N\u00e1\u0161 standard / m\u011bs\u00ed\u010dn\u00ed": ["Our standard / monthly", "Unser Standard / monatlich", "Notre standard / mensuel"],
+  "Uplatn\u011bn limit 10 %": ["10 % cap applied", "Haftungsgrenze 10 % angewendet", "Plafond de 10 % appliqu\u00e9"],
+  "NEUPLATN\u011aN limit 10 %": ["10 % cap NOT applied", "Haftungsgrenze 10 % NICHT angewendet", "Plafond de 10 % NON appliqu\u00e9"],
+  "0,05 % / den": ["0.05 % / day", "0,05 % / Tag", "0,05 % / jour"],
+  "0,1 % / den": ["0.1 % / day", "0,1 % / Tag", "0,1 % / jour"],
   "DŘEVĚNÁ MADLA NA BOČNÍCH STĚNÁCH OCK": ["WOODEN HANDLE ON THE SIDE OF SHAFT STRUCTURE", "HOLZGRIFF AN DER SEITE DER SCHACHTSTAHLKONSTRUKTION", "MAINS COURANTES EN BOIS SUR LES PAROIS LATÉRALES DE LA GAINE"],
   "Firma, s.r.o.": ["Firma, s.r.o.","Firma, s.r.o.","Firma, s.r.o."],
   "Harmonogram montáže bude vypracován cca 3 týdny po podpisu smlouvy.": ["The shaft installation schedule will be compiled within approx. 3 weeks after the contract is signed.", "Der Zeitplan für die Schachtinstallation wird innerhalb von ca. 3 Wochen nach Vertragsunterzeichnung erstellt.", "Le calendrier de montage sera établi env. 3 semaines après la signature du contrat."],

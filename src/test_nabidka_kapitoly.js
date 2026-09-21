@@ -234,5 +234,35 @@ KAPITOLY.forEach(base => {
     String(ph.FIRMA_NAB_DOLOZKY_DE || '').slice(0, 160));
 }
 
+/* ---------- 11) platební podmínky se do ciziny tisknou PŘELOŽENÉ ----------
+ * (#283, rozhodnutí J. V. 21. 9. 2026)
+ *
+ * Kapitola III. bere hodnoty z krycího listu a ty jsou volný text — slovníkem
+ * prošly beze změny, takže anglická nabídka měla nadpisy anglicky a hodnoty
+ * česky („50 % – po podpisu smlouvy", „2 měsíce"). Zákazník dostal kapitolu,
+ * které z poloviny nerozuměl.
+ *
+ * Překládá se KONEČNÁ SADA PŘEDVYPLNĚNÝCH hodnot. Co obchodník napíše ručně,
+ * projde beze změny — vymýšlet překlad cizí věty se nesmí. */
+{
+  const HODNOTY = ['Bez zálohy', '30 \u2013 po podpisu smlouvy'.replace('30 ', '30 % '),
+                   '50 % \u2013 po podpisu smlouvy', '40 % \u2013 po zahájení montáže',
+                   '10 % \u2013 po předání', '2 měsíce', 'Náš standard / měsíční',
+                   'Uplatněn limit 10 %', '0,05 % / den'];
+  HODNOTY.forEach(h => {
+    ['en', 'de'].forEach(jaz => {
+      const p = P.tr(h, jaz);
+      test('„' + h + '" se přeloží do ' + jaz, p !== h && String(p).trim() !== '', p);
+    });
+  });
+  /* POJISTKA PROTI PRÁZDNÉMU TESTU: v češtině se nic nepřekládá, takže kdyby
+   * `tr` vracela pořád vstup, kontroly výš by padaly — a kdyby vracela
+   * cokoli jiného, padla by tahle. */
+  test('v češtině zůstává původní znění', P.tr('2 měsíce', 'cz') === '2 měsíce');
+  /* A ruční text se nepřekládá ani nemrzačí. */
+  const rucni = 'Dohodnuto telefonicky s panem Novákem';
+  test('ručně napsaná podmínka projde beze změny', P.tr(rucni, 'en') === rucni, P.tr(rucni, 'en'));
+}
+
 console.log('\n' + (fail ? 'SELHALO ' + fail + ' z ' + (ok + fail) : 'OK ' + ok));
 if (fail) process.exit(1);

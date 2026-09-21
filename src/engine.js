@@ -829,6 +829,45 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const skloCelkemM2 = skloBokyZadniM2 + skloCelniM2;
   const skloRada = skloVolba(z, c);   // typ skla podle šachty a zasklení (9. 9. 2026)
 
+  /* ---------- ZÁKLAD PLOCHY PRO REŽIM PO STĚNÁCH (#295) ----------
+   *
+   * ROZHODNUTÍ J. V. 21. 9. 2026, varianta (b): „otvory dveří a portálů
+   * odečti".
+   *
+   * `skloSteny.A` je plocha SKLA v čelní stěně, jak ji zná standardní model —
+   * tedy jen světlík nad dveřmi a po stranách. To je pro standard správně:
+   * zbytek čelní stěny zabírají dveře a portály, které se nesklí. V režimu po
+   * stěnách si ale obchodník vybírá opláštění pro CELOU stěnu, takže u šachty
+   * bez světlíků vycházela čelní stěna na NULU (#294) — sklo přes celou stěnu
+   * bylo zdarma.
+   *
+   * Nově se u čelní stěny bere plocha celé stěny MÍNUS dveřní otvory. Vzorec
+   * není nový: přesně takhle se už počítá ZADNÍ stěna u průchozí šachty
+   * (`zadniPlneM2` pár řádků výš), takže obě strany s nástupišti se teď
+   * počítají stejně.
+   *
+   * Otvor je `sirkaDveri * 2.3`, kde `sirkaDveri` UŽ OBSAHUJE rámy (čistý
+   * vstup + 2× šířka rámu + 2× 20 mm), takže „dveře a portály" jsou v tom
+   * čísle oba. Nástupišť na čelní straně je `nastupist − nastupistC`:
+   * u neprůchozí šachty jsou všechna, u průchozí se ta na zadní straně
+   * odečtou — jinak by se na čelní stěně odečetly otvory, které jsou vzadu.
+   *
+   * STANDARDNÍ MODEL SE TÍM NEMĚNÍ. `skloSteny` zůstává, jak byl; tohle je
+   * samostatný základ, který se použije jen v režimu po stěnách. Cena mimo
+   * tenhle režim je proto na haléř stejná jako dřív.
+   *
+   * Vedlejší důsledek, který je potřeba říct nahlas: ZAPNUTÍ REŽIMU PO
+   * STĚNÁCH UŽ CENOU HNE — u čelní stěny nahoru. Do 21. 9. 2026 to byla
+   * podmínka návrhu; rozhodnutí J. V. ji vědomě ruší, protože „počítá se
+   * skutečná plocha". Drží to test_oplasteni_zapnuti.js. */
+  const celniOtvoryKs = Math.max(nastupist - nastupistC, 0);
+  const oplZakladSteny = {
+    A: Math.max(zadniM2 - celniOtvoryKs * zadniOtvorM2, 0),
+    B: skloSteny.B,
+    C: skloSteny.C,
+    D: skloSteny.D,
+  };
+
   /* ---------- OPLÁŠTĚNÍ PO STĚNÁCH (#268, druhý krok) ----------
    *
    * Každá stěna může mít vlastní typ opláštění a rozdělení na pásy.
@@ -857,7 +896,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
 
   function oplPasyStenyM2(k) {
     const st = ((z.oplasteni || {}).steny || {})[k] || null;
-    const celkem = skloSteny[k];
+    const celkem = oplZakladSteny[k];
     const odM = st ? (+st.odM || 0) : 0;
     /* Pásy zdola nahoru; poslední má `doM: null` = až nahoru. Rozhraní je
      * vypisuje odshora, ale ukládají se takhle — v tomhle pořadí nejde
@@ -1460,6 +1499,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
      *
      * Ve standardním režimu je pole prázdné; kreslit není co. */
     oplasteni: { rezim: oplRezim, vyska: vyskaProsklene, pasy: oplPasy,
+                 zakladSten: oplZakladSteny,
                  sirkySten: stenaSirka, plochaCelkem: oplPlochaCelkem,
                  podleTypu: Object.keys(oplPodleTypu).map(k => ({ klic: k, ...oplPodleTypu[k] })) },
     sekce, volitelneKatalog, souctySekci: { hrubaOck: s1, oplasteni: s2, volitelne: s3, rezie: s4 }, rezerva,

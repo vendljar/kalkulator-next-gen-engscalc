@@ -53,15 +53,23 @@ const prace = (r) => plocha(r, 'PRÁCE OPLÁŠTĚNÍ');
             const zm = { typSachty: t, zaskleni: zs, svetlikNadDvermi: sv, nastupiste: n };
             const a = spocti(zm, { rezim: 'standard', steny: null }, fixes);
             const b = spocti(zm, PO_STENACH(null), fixes);
-            if (blizko(a.souhrn.zakladCena, b.souhrn.zakladCena, 0.005)) shoda++;
+            /* ZMĚNA PRAVIDLA 21. 9. 2026 (rozhodnutí J. V., #295): zapnutí
+             * režimu už cenou hnout SMÍ — čelní stěna se nově počítá jako celá
+             * stěna mínus dveřní otvory, ne jen jako světlík nad dveřmi.
+             * Podrobné zdůvodnění i směr změny je v test_oplasteni_zapnuti.js;
+             * tady se hlídá, že se rozdíl VEJDE DO ČELNÍ STĚNY — tedy že
+             * zapnutí režimu nehnulo ničím jiným. */
+            const rozdilPlochy = b.oplasteni.zakladSten.A - a.zaskleni.steny.A;
+            const rozdilCelkem = b.oplasteni.plochaCelkem - a.zaskleni.celkemM2;
+            if (blizko(rozdilCelkem, rozdilPlochy, 0.005)) shoda++;
             else rozdil.push(t + '/' + zs + '/' + n + (fixes ? '/M2' : '/M1')
-              + ': ' + a.souhrn.zakladCena + ' vs ' + b.souhrn.zakladCena);
+              + ': rozdíl ploch ' + rozdilCelkem + ' vs čelní stěna ' + rozdilPlochy);
           });
         });
       });
     });
   });
-  test('zapnutí režimu beze změny zadání nezmění cenu (' + shoda + ' zadání)',
+  test('zapnutí režimu hne jen čelní stěnou, ničím jiným (' + shoda + ' zadání)',
     rozdil.length === 0, rozdil.slice(0, 3));
 }
 

@@ -54,7 +54,22 @@ const zad = (e) => Object.assign(JSON.parse(JSON.stringify(DEFAULT_ZADANI)), e |
     });
   });
 
-  let shod = 0;
+  /* ZMĚNA PRAVIDLA 21. 9. 2026 (rozhodnutí J. V., #295, varianta „b").
+   *
+   * Do té doby se tu čekalo, že zapnutí režimu NEHNE CENOU ani o haléř.
+   * To pravidlo padlo: plocha čelní stěny se v režimu po stěnách nově bere
+   * jako celá stěna MÍNUS dveřní otvory, ne jen jako světlík nad dveřmi.
+   * Bez toho vycházela čelní stěna u šachty bez světlíků na NULU a sklo přes
+   * celou stěnu bylo zdarma (#294).
+   *
+   * Cena tedy NAHORU jít smí — ale jen z tohohle jediného důvodu. Měří se
+   * proto přesně to: rozdíl ploch mezi režimy musí sedět na rozdíl ZÁKLADU
+   * ČELNÍ STĚNY, a to na haléř. Kdyby se hnulo cokoli jiného (boky, záda,
+   * terče, práce), vyjde jiné číslo a sada spadne.
+   *
+   * Pouhé „cena vzrostla" by byl slabý test: prošel by i tehdy, kdyby se
+   * omylem zdvojnásobila plocha boků. */
+  let shod = 0, vzrostlo = 0;
   const rozdily = [];
   pripady.forEach(zm => {
     const c = CENIK();
@@ -65,14 +80,52 @@ const zad = (e) => Object.assign(JSON.parse(JSON.stringify(DEFAULT_ZADANI)), e |
     zPo.oplasteni = { rezim: 'poStenach', steny: oplasteniStenyVychozi(zPo, c) };
     const po = vypocet(zPo, c, JEKLY, false);
 
-    if (Math.abs(std.souhrn.zakladCena - po.souhrn.zakladCena) < 0.005
-      && Math.abs(std.souhrn.zakladNaklad - po.souhrn.zakladNaklad) < 0.005) shod++;
-    else rozdily.push({ zm, std: std.souhrn.zakladCena, po: po.souhrn.zakladCena });
+    /* Plocha skla ve standardu vs. celková plocha v režimu po stěnách. */
+    const plochaStd = std.zaskleni.celkemM2;
+    const plochaPo = po.oplasteni.plochaCelkem;
+    const cekanyRozdil = po.oplasteni.zakladSten.A - std.zaskleni.steny.A;
+    if (Math.abs((plochaPo - plochaStd) - cekanyRozdil) < 0.005) shod++;
+    else rozdily.push({ zm, plochaStd, plochaPo, cekanyRozdil });
+    if (po.souhrn.zakladCena >= std.souhrn.zakladCena - 0.005) vzrostlo++;
   });
 
-  test('zapnutí režimu nehne cenou na žádném z ' + pripady.length + ' zadání',
-    shod === pripady.length, rozdily.slice(0, 3));
+  test('rozdíl ploch mezi režimy sedí PŘESNĚ na rozdíl základu čelní stěny ('
+    + pripady.length + ' zadání)', shod === pripady.length, rozdily.slice(0, 3));
+  /* SMĚR SE LIŠÍ PODLE ŠACHTY — a je poctivé to tu mít změřené, ne tvrdit,
+   * že cena vždycky vzroste (to jsem si nejdřív myslel a měření to vyvrátilo).
+   *
+   * U šachty BEZ světlíků je standardní plocha čelní stěny nula, takže režim
+   * po stěnách přidá celou stěnu a cena JDE NAHORU.
+   *
+   * U PRŮCHOZÍ šachty je to naopak: `svetlikM2` se v předloze počítá jako
+   * `počet nástupišť × šířka × (světlá výška − 2,3)` a bere VŠECHNA nástupiště
+   * včetně zadních, takže u ní vyjde plocha světlíků VĚTŠÍ NEŽ CELÁ STĚNA —
+   * změřeno 75,16 m² proti 37,9 m² skutečné stěny. Geometricky poctivý základ
+   * je tedy menší a cena JDE DOLŮ (změřeno −92 000 Kč u 16 z 32 zadání).
+   * Je to tatáž vada předlohy, kvůli které umí `svetlikM2` vyjít i záporně
+   * (nález N14) — režim po stěnách ji nedědí.
+   *
+   * Hlídá se proto jen to, že rozdíl sedí na čelní stěnu (kontrola výš),
+   * a že obojí opravdu nastává — kdyby jeden ze směrů zmizel, něco se změnilo
+   * a je potřeba se na to podívat. */
+  test('cena jde nahoru u části zadání a dolů u jiné (viz komentář)',
+    vzrostlo > 0 && vzrostlo < pripady.length, { vzrostlo, celkem: pripady.length });
   test('a případů bylo opravdu dost, aby to něco znamenalo', pripady.length >= 32, pripady.length);
+
+  /* POJISTKA PROTI PRÁZDNÉMU TESTU: kdyby byl rozdíl u všech zadání nulový,
+   * kontrola výš by vycházela i u výpočtu, který čelní stěnu dál počítá za
+   * světlík. Aspoň u jednoho zadání se tedy rozdíl musí opravdu projevit. */
+  {
+    const c = CENIK();
+    const z1 = zad({ svetlikNadDvermi: false, svetlikyBoky: 0 });
+    const std1 = vypocet(z1, c, JEKLY, false);
+    const z2 = zad({ svetlikNadDvermi: false, svetlikyBoky: 0 });
+    z2.oplasteni = { rezim: 'poStenach', steny: oplasteniStenyVychozi(z2, c) };
+    const po1 = vypocet(z2, c, JEKLY, false);
+    test('u šachty bez světlíků čelní stěna plochu OPRAVDU získá',
+      po1.oplasteni.zakladSten.A > std1.zaskleni.steny.A + 1,
+      { std: std1.zaskleni.steny.A, po: po1.oplasteni.zakladSten.A });
+  }
 
   /* Kdyby výpočet v obou režimech vracel nulu, test výš by prošel naprázdno. */
   const kontrola = vypocet(zad({}), CENIK(), JEKLY, false);

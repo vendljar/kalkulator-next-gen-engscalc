@@ -8,6 +8,46 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.9.18 — 21. 9. 2026
+
+### Rozhodnutí J. V.: plocha čelní stěny a překlad platebních podmínek (#295, #283)
+
+**Čelní stěna se v režimu po stěnách počítá jako celá stěna mínus otvory
+dveří a portálů.** Varianta (b) z #295. Vzorec není nový — přesně tak se už
+počítá zadní stěna u průchozí šachty, takže obě strany s nástupišti se teď
+počítají stejně. `sirkaDveri` už obsahuje rámy, takže „dveře a portály" jsou
+v jednom čísle. **Standardní režim se tím nemění ani o haléř** — je to
+samostatný základ, který platí jen v režimu po stěnách.
+
+Tím padla dosavadní podmínka, že zapnutí režimu nesmí hnout cenou. **A hnula
+oběma směry, což stojí za pozornost:**
+
+- šachta **bez světlíků** → čelní stěna dosud vycházela na **0 m²**, teď má
+  plochu, takže cena jde **nahoru** (to byl původní nález);
+- **průchozí** šachta → cena jde **dolů**, změřeno −92 000 Kč u 16 z 32
+  zkušebních zadání.
+
+Ten druhý případ má vlastní příčinu: `svetlikM2` počítá světlíky ze **všech**
+nástupišť včetně zadních, takže u průchozí šachty vyjde plocha světlíků
+**větší než celá stěna** — změřeno 75,16 m² proti 37,9 m² skutečné stěny. Je
+to táž vada předlohy, kvůli které umí ta plocha vyjít i záporně (nález N14).
+Režim po stěnách ji nově nedědí; ve standardu zůstává. **Jestli se má opravit
+i tam, je otázka — #296.**
+
+**Do zahraničních nabídek se platební podmínky tisknou přeložené (#283).**
+Kapitola III. brala hodnoty z krycího listu a ty šly slovníkem beze změny,
+takže anglická nabídka měla nadpisy anglicky a hodnoty česky. Přeložila se
+konečná sada předvyplněných hodnot — zálohy, dílčí i konečná faktura,
+platnost nabídky, způsob fakturace, limit i sazby pokut. **Co obchodník
+napíše ručně, projde beze změny**; vymýšlet překlad cizí věty se nesmí.
+
+Zapsána dvě rozhodnutí bez zásahu do kódu: **terče a lišty** se zatím na typ
+opláštění vázat nebudou (#287) a **sazba plechů pro interiérovou šachtu**
+zůstává — je to aktualizace, ne zbytek po poškozeném ceníku (#297). Ověřeno
+měřením, že **interiérová šachta se netmelí** — aplikace to tak už dělá.
+
+---
+
 ## v21.9.17 — 21. 9. 2026
 
 ### Čelní stěna se v režimu po stěnách počítala za nulu (#294)

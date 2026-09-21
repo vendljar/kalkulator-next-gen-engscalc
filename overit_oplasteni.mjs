@@ -435,11 +435,23 @@ zkus('rozdělení stěn se vypnutím režimu nezahodí', prezilo === 2, prezilo)
    * plochu neměla ani jedna stěna (třeba u rozbitého zadání). */
   zkus('kontrola není prázdná — ostatní stěny plochu mají',
     stav.b > 1 && stav.c > 1 && stav.d > 1, JSON.stringify(stav));
-  zkus('čelní stěna bez světlíků vyjde nad nulou na 0 m²', stav.a < 0.005, stav.a);
-  zkus('a obrazovka to řekne, místo aby mlčela',
-    /nedostane nic/i.test(stav.varA) && /světlík/i.test(stav.varA), stav.varA.slice(0, 160));
-  zkus('u stěn, které plochu mají, se nic takového nehlásí',
-    !/nedostane nic/i.test(stav.varB), stav.varB.slice(0, 120));
+  /* ZMĚNA OČEKÁVÁNÍ 21. 9. 2026 (rozhodnutí J. V., #295, varianta „b").
+   *
+   * Nejdřív se tu čekala NULA a varování k ní — takový byl stav, který J. V.
+   * našel. Rozhodnutí ten stav odstranilo u zdroje: čelní stěna se nově
+   * počítá jako celá stěna MÍNUS dveřní otvory, takže plocha je i bez
+   * světlíků. Varování v kódu zůstává jako pojistka pro zadání, kde by
+   * plocha vyšla nulová i tak (třeba dveře přes celou stěnu) — tady už ale
+   * nemá co hlásit, a právě to se měří. */
+  zkus('čelní stěna bez světlíků teď plochu MÁ', stav.a > 1, stav.a);
+  zkus('a nehlásí se, že se do ceny nedostane nic',
+    !/nedostane nic/i.test(stav.varA), stav.varA.slice(0, 160));
+  zkus('ani u ostatních stěn', !/nedostane nic/i.test(stav.varB), stav.varB.slice(0, 120));
+  /* Otvory dveří se ale odečetly — čelní stěna musí být MENŠÍ než zadní,
+   * která u neprůchozí šachty žádné otvory nemá. Bez tohohle by kontrola
+   * výš prošla i u výpočtu, který otvory ignoruje. */
+  zkus('a dveřní otvory jsou odečtené (čelní stěna < zadní)',
+    stav.a < stav.c - 1, { celni: stav.a, zadni: stav.c });
 }
 
 zkus('za celý průchod nevznikla chyba v konzoli', konzole.length === 0, konzole.slice(0, 2).join(' | '));

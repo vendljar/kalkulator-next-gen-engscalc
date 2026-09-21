@@ -15,17 +15,18 @@
    "pozn" : "POUČENÍ: N1 zavedla oprava, která sama vznikla jako reakce na nález J. V. — a prošla přes 36 prohlížečových kontrol, protože žádná z nich nepracovala s typem „jiné\". Opravená dávka není automaticky bezpečná dávka.\n\nDvě ze tří revizí (ceník a nabídka; přepočet a zámek) se nedoběhly — model Fable narazil na limit sezení. Je potřeba je zopakovat."
   },
   {
-   "id" : "287",
-   "vlna" : "E",
-   "stav" : "ceka",
-   "dulezitost" : "stredni",
-   "slozitost" : "S",
-   "nazev" : "Mají se terče a lišty vázat na typ opláštění?",
-   "proc" : "Karta opláštění po stěnách do 21. 9. 2026 tvrdila „Terče a lišty se počítají jen z pásů se sklem\". Neplatí to: `terceKs` i `listyCelkBm` se počítají z rozměrů šachty a na `z.oplasteni` vůbec nesahají. Změřeno — u čtyř stěn ze skla, z Cetrisu i „bez\" vyjde řádek PLECHY - ZASKLENÍ (TERČE/LIŠTY) stejně. Text byl opraven, ale otázka zůstala.",
-   "detail" : "Terče a lišty jsou kotvení ZASKLENÍ. U stěny z Cetrisu nebo u stěny, kterou dodá stavba, se logicky nepoužijí — dnes se ale počítají v plné výši bez ohledu na typ. Totéž platí pro PLASTOVÉ KOTVY.\n\nJestli se to má změnit, je obchodní rozhodnutí, ne technické: může být, že se terče objednávají na celou šachtu bez ohledu na materiál. Změna by hnula cenou každé zakázky v režimu po stěnách, která nemá všechny stěny ze skla.",
-   "kde" : "`src/engine.js` (terceKs, listyCelkBm, PLASTOVÉ KOTVY)",
-   "hotovoKdyz" : "Padlo rozhodnutí a buď se výpočet upravil, nebo se do kódu zapsalo, proč zůstává.",
-   "pozn" : "ČEKÁ NA J. V. Souvisí s P8 — je to další případ dvou míst, která si můžou odporovat."
+   "id": "287",
+   "vlna": "E",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "nazev": "Mají se terče a lišty vázat na typ opláštění?",
+   "proc": "Karta opláštění po stěnách do 21. 9. 2026 tvrdila „Terče a lišty se počítají jen z pásů se sklem\". Neplatí to: `terceKs` i `listyCelkBm` se počítají z rozměrů šachty a na `z.oplasteni` vůbec nesahají. Změřeno — u čtyř stěn ze skla, z Cetrisu i „bez\" vyjde řádek PLECHY - ZASKLENÍ (TERČE/LIŠTY) stejně. Text byl opraven, ale otázka zůstala.",
+   "detail": "Terče a lišty jsou kotvení ZASKLENÍ. U stěny z Cetrisu nebo u stěny, kterou dodá stavba, se logicky nepoužijí — dnes se ale počítají v plné výši bez ohledu na typ. Totéž platí pro PLASTOVÉ KOTVY.\n\nJestli se to má změnit, je obchodní rozhodnutí, ne technické: může být, že se terče objednávají na celou šachtu bez ohledu na materiál. Změna by hnula cenou každé zakázky v režimu po stěnách, která nemá všechny stěny ze skla.",
+   "kde": "`src/engine.js` (terceKs, listyCelkBm, PLASTOVÉ KOTVY)",
+   "hotovoKdyz": "Padlo rozhodnutí a buď se výpočet upravil, nebo se do kódu zapsalo, proč zůstává.",
+   "pozn": "ROZHODNUTÍ J. V. 21. 9. 2026: zatím neměnit. Terče, lišty a plastové kotvy se dál počítají z rozměrů šachty bez ohledu na typ opláštění. Karta opláštění to takhle i říká, takže obrazovka a výpočet se neshodují jen zdánlivě — text odpovídá tomu, co kód dělá.",
+   "hotovoV": "—"
   },
   {
    "id": "288",
@@ -121,14 +122,39 @@
   {
    "id": "295",
    "vlna": "E",
-   "stav": "ceka",
+   "stav": "hotovo",
    "dulezitost": "vysoka",
    "slozitost": "S",
    "nazev": "Z čeho brát plochu ČELNÍ stěny v režimu po stěnách?",
    "proc": "Plocha čelní stěny se dnes bere ze světlíků nad dveřmi a po stranách, protože tak ji počítá standardní model. V režimu po stěnách si ale obchodník vybírá opláštění pro CELOU stěnu — a u šachty bez světlíků mu vyjde 0 m² (#294).",
    "detail": "Možnosti:\n(a) NECHAT JAK JE a spolehnout se na varování. Zapnutí režimu pak dál nehne cenou ani o haléř, což byla původní podmínka.\n(b) POČÍTAT SKUTEČNOU PLOCHU stěny (šířka × výška) MÍNUS otvory dveří a portálů. Odpovídá to pokynu „počítá se skutečná plocha\", ale je potřeba vědět, kolik z čelní stěny ukrojí dveře a portály — to je údaj z dílny, ne z kódu.\n(c) POČÍTAT CELOU PLOCHU bez odečtu otvorů, pokud se opláštění objednává na celou stěnu.\n\nKterákoli z (b) a (c) změní cenu každé zakázky v režimu po stěnách, a to směrem nahoru. Proto rozhodnutí J. V., ne odhad.\n\nOTÁZKA: ukrojí dveře a portály z čelní stěny plochu, která se neopláští? Jestli ano, jak velkou — z čeho ji spočítat (šířka dveří × 2,3 m + portály)?",
    "otazka": "Z čeho se má brát plocha čelní stěny v režimu po stěnách a odečítají se otvory dveří a portálů?",
+   "cekaNa": "J. V.",
+   "hotovoV": "v21.9.18",
+   "pozn": "ROZHODNUTÍ J. V. 21. 9. 2026: varianta (b) — plocha celé stěny MÍNUS otvory dveří a portálů. Zavedeno; `sirkaDveri` už obsahuje rámy, takže „dveře a portály\" jsou v jednom čísle. Zapnutí režimu po stěnách tím přestalo být cenově neutrální — viz #296."
+  },
+  {
+   "id": "296",
+   "vlna": "E",
+   "stav": "ceka",
+   "dulezitost": "vysoka",
+   "slozitost": "S",
+   "nazev": "Průchozí šachta: světlíky vycházejí větší než celá stěna",
+   "proc": "Vyšlo najevo při zavádění #295. `svetlikM2` se v předloze počítá jako `počet nástupišť × šířka × (světlá výška − 2,3)` a bere VŠECHNA nástupiště včetně zadních. U průchozí šachty proto plocha světlíků čelní stěny vyjde VĚTŠÍ NEŽ CELÁ STĚNA — změřeno 75,16 m² proti 37,9 m² skutečné stěny.",
+   "detail": "Je to táž vada předlohy, kvůli které umí `svetlikM2` vyjít i ZÁPORNĚ u nízkých podlaží (nález N14, kde J. V. rozhodl opravit jen Model 2 a Model 1 nechat 1:1 s předlohou).\n\nDOPAD PO ZAVEDENÍ #295: režim po stěnách počítá čelní stěnu geometricky (celá stěna mínus otvory), takže u průchozí šachty vyjde MENŠÍ plocha než ve standardu — a cena klesne. Změřeno −92 000 Kč u 16 z 32 zkušebních zadání. Ve standardním režimu se nic nemění, ten dál počítá jako dosud.\n\nOTÁZKA: má se `svetlikM2` opravit i pro standardní režim (tedy počítat světlíky jen z nástupišť na ČELNÍ straně), nebo zůstává předloha 1:1 jako u N14? Oprava by zlevnila každou průchozí zakázku ve standardu — proto rozhodnutí, ne odhad.",
+   "otazka": "Má se plocha světlíků u průchozí šachty počítat jen z čelních nástupišť (dnes bere i zadní), nebo zůstává předloha 1:1?",
    "cekaNa": "J. V."
+  },
+  {
+   "id": "297",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "hotovoV": "v21.9.18",
+   "nazev": "Sazba plechů pro interiérovou šachtu a tmelení interiéru — potvrzeno",
+   "proc": "Dvě z otázek 3. kola testu (nálezy N27 a část P8). J. V. 21. 9. 2026 obojí rozhodl.",
+   "detail": "PLECHY PRO INTERIÉROVOU ŠACHTU zůstávají na aktuální sazbě z verze 28 — J. V.: „nech to, je to aktualizace a nová pravda\". Není to tedy zbytek po poškozeném ceníku, ale záměr; shoduje se i s Excelem a zahraniční řadou. Konkrétní částka do repozitáře nepatří, je ve vyhodnocovacím sešitu na Drive.\n\nTMELENÍ INTERIÉROVÉ ŠACHTY: J. V. — „interiérová šachta se netmelí\". Ověřeno měřením, že aplikace to tak UŽ DĚLÁ: řádek TMELENÍ (MAT. + PRÁCE) (EXT) vzniká jen u exteriérové šachty (`ext ? mkItem(...) : null`), u interiérové nevzniká vůbec. Žádná změna kódu tedy nebyla potřeba — zapsáno, aby se otázka nevracela."
   },
   {
    "id" : "285",
@@ -172,17 +198,18 @@
    "pozn" : "Sada `test_nabidka_kapitoly.js` má 72 kontrol. Hlídá mimo jiné, že všechny tři jazyky mají u každé kapitoly STEJNÝ POČET ODRÁŽEK — jinak by se někde při přepisu ztratil řádek a cizí zákazník by dostal kratší podmínky než český —, že se do kapitol nedostane měna, a že prázdná kapitola zmizí i s nadpisem (to je zároveň pojistka proti prázdnému testu).\n\nPŘI PSANÍ TESTŮ SE NAŠLA CHYBA V NOVÉ LOGICE: prázdné pole a nedodaný jazyk byly jedním příznakem `chybi`, takže prázdná ČESKÁ kapitola hlásila „překlad nebyl dodán\". Jsou to dvě různé věci; rozlišují je `prazdne` a `jazykChybi`.\n\nDVĚ SADY ZMĚNILY OČEKÁVÁNÍ: `test_firma.js` trval na prefixu FIRMA_ u všech symbolů (proto se symboly jmenují FIRMA_NAB_*, ne NAB_*) a `test_nabidka.js` počítal sekce náhledu (10 → 14; nově se kontroluje i seznam názvů, ne jen počet)."
   },
   {
-   "id" : "283",
-   "vlna" : "E",
-   "stav" : "ceka",
-   "dulezitost" : "stredni",
-   "slozitost" : "S",
-   "nazev" : "Platební podmínky zůstávají v cizojazyčné nabídce česky",
-   "proc" : "Zjištěno 21. 9. 2026 při práci na #282. Anglická nabídka má v kapitole III. nadpisy anglicky, ale HODNOTY česky: „50 % – po podpisu smlouvy\", „2 měsíce\", „Náš standard / měsíční\". Zákazník dostane kapitolu, které z poloviny nerozumí.",
-   "detail" : "Není to regrese #282 — chování je starší: symboly {{PODM_…}} skládá `kryciSymbolyZeSekci` z volného textu, který obchodník napsal v krycím listu, a pouští ho přes slovník. Volná věta ve slovníku pochopitelně není, takže projde beze změny. Do 21. 9. to šlo jen do wordové šablony, takže si toho nikdo nevšiml; teď je to vidět i v náhledu nabídky.\n\nMOŽNOSTI K ROZHODNUTÍ: a) nechat tak a spolehnout se na obchodníka, že u cizojazyčné zakázky vyplní pole v cílovém jazyce; b) dát polím platebních podmínek jazykové varianty jako u kapitol IV.–VI.; c) doplnit do slovníku nejčastější věty (jsou to předvyplněné hodnoty, takže jich je konečný počet) a nechat volný text projít beze změny. Varianta (c) je nejlevnější a pokryje běžné případy; vymýšlet překlad toho, co obchodník napíše ručně, se nesmí tak jako tak.",
-   "kde" : "`src/kryci.js` (kryciSymbolyZeSekci), `src/preklad.js`",
-   "hotovoKdyz" : "Cizojazyčná nabídka nemá v kapitole III. českou větu, aniž by ji tam někdo vědomě napsal.",
-   "pozn" : "ČEKÁ NA ROZHODNUTÍ J. V. Netýká se jen nabídky — týmiž symboly se plní i smlouvy o dílo."
+   "id": "283",
+   "vlna": "E",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "nazev": "Platební podmínky zůstávají v cizojazyčné nabídce česky",
+   "proc": "Zjištěno 21. 9. 2026 při práci na #282. Anglická nabídka má v kapitole III. nadpisy anglicky, ale HODNOTY česky: „50 % – po podpisu smlouvy\", „2 měsíce\", „Náš standard / měsíční\". Zákazník dostane kapitolu, které z poloviny nerozumí.",
+   "detail": "Není to regrese #282 — chování je starší: symboly {{PODM_…}} skládá `kryciSymbolyZeSekci` z volného textu, který obchodník napsal v krycím listu, a pouští ho přes slovník. Volná věta ve slovníku pochopitelně není, takže projde beze změny. Do 21. 9. to šlo jen do wordové šablony, takže si toho nikdo nevšiml; teď je to vidět i v náhledu nabídky.\n\nMOŽNOSTI K ROZHODNUTÍ: a) nechat tak a spolehnout se na obchodníka, že u cizojazyčné zakázky vyplní pole v cílovém jazyce; b) dát polím platebních podmínek jazykové varianty jako u kapitol IV.–VI.; c) doplnit do slovníku nejčastější věty (jsou to předvyplněné hodnoty, takže jich je konečný počet) a nechat volný text projít beze změny. Varianta (c) je nejlevnější a pokryje běžné případy; vymýšlet překlad toho, co obchodník napíše ručně, se nesmí tak jako tak.",
+   "kde": "`src/kryci.js` (kryciSymbolyZeSekci), `src/preklad.js`",
+   "hotovoKdyz": "Cizojazyčná nabídka nemá v kapitole III. českou větu, aniž by ji tam někdo vědomě napsal.",
+   "pozn": "ROZHODNUTÍ J. V. 21. 9. 2026: do zahraničních nabídek se české platební podmínky tisknou PŘELOŽENÉ. Zavedena varianta (c) — konečná sada předvyplněných hodnot je ve slovníku (zálohy, dílčí i konečná faktura, platnost nabídky, způsob fakturace, limit pokut, sazby pokut, Ano/Ne). Ruční text projde beze změny.",
+   "hotovoV": "v21.9.18"
   },
   {
    "id" : "281",
