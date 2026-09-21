@@ -1,6 +1,33 @@
 {
  "polozky" : [
   {
+   "id" : "282",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "vysoka",
+   "slozitost" : "M",
+   "hotovoV" : "v21.9.8",
+   "nazev" : "Nabídka končila cenou — chyběly kapitoly III.–VI. a doložky (kolo 6, P7)",
+   "proc" : "Nálezy N15 a N16 kola 6 a mail D. Sikory předaný J. V. 21. 9. 2026: „JEŠTĚ MOC DŮLEŽITÁ VĚC — nám tam schází úplně: PLATEBNÍ PODMÍNKY, POŽADAVKY NA PROVEDENÍ REALIZACE, TERMÍNY REALIZACE, PŘEDÁNÍ DÍLA.\" Wordová šablona ty kapitoly měla, aplikace ne — dokument z aplikace se tedy s tím, co zákazník dostal, neshodoval.",
+   "detail" : "DVA ZDROJE, ZÁMĚRNĚ RŮZNÉ.\n\nIII. PLATEBNÍ PODMÍNKY se skládá z ÚDAJŮ ZAKÁZKY: zálohy, splatnost, platnost nabídky a způsob fakturace už v krycím listu jsou a do šablony jdou jako {{PODM_…}}. Druhý opis týchž vět by se dřív nebo později rozešel s tím, co obchodník u zakázky opravdu nastavil.\n\nIV. POŽADAVKY PRO PROVEDENÍ REALIZACE, V. TERMÍNY REALIZACE, VI. PŘEDÁNÍ DÍLA a závěrečné DOLOŽKY (oprava zjevných chyb, autorská práva) jsou firemní standard — mění se jednou za čas a pro všechny naráz, proto v Nastavení → Smlouvy / Šablony → „Kapitoly nabídky III.–VI.\". Jeden řádek = jedna odrážka, prázdné řádky se přeskočí, kapitoly jsou v rozbalovacích blocích (dvanáct rozbalených polí by z té záložky udělalo zeď).\n\nKAŽDÝ JAZYK MÁ VLASTNÍ POLE. Smluvní podmínky se nepřekládají strojově — totéž pravidlo jako u cen: co nikdo nenapsal, si aplikace nevymyslí. Výchozí znění CZ/EN/DE je PŘEVZATÉ z nabídek dodaných J. V., ne přeložené. Nevyplněný jazyk se z nabídky vypustí i s nadpisem; francouzština se podle rozhodnutí J. V. z 21. 9. 2026 zatím neřeší a vytiskne češtinu s viditelným upozorněním — tiché vytištění češtiny cizímu zákazníkovi je horší, protože se to nikdo nedozví.\n\nNázev firmy v doložce o autorských právech zastupuje značka {FIRMA}: firemní údaje jsou v repozitáři schválně ukázkové a skutečné bydlí mimo něj. Bez vyplněného názvu značka v textu ZŮSTANE vidět — prázdné místo v doložce by vypadalo jako chyba sazby, ne jako chybějící údaj.",
+   "hotovoKdyz" : "Splněno: nabídka tiskne kapitoly III.–VI. i doložky ve všech jazycích, které má firma vyplněné, a kapitola III. se skládá z údajů zakázky.",
+   "kde" : "`src/firma.js` (FIRMA_KAPITOLY, firmaKapitola, 12 nových polí), `src/nabidka.js` (symboly {{FIRMA_NAB_…}} a sekce náhledu), `src/ui/nastaveni_ui.js` (nastKapitolyNabidky), `src/preklad.js`, `src/test_nabidka_kapitoly.js`",
+   "pozn" : "Sada `test_nabidka_kapitoly.js` má 72 kontrol. Hlídá mimo jiné, že všechny tři jazyky mají u každé kapitoly STEJNÝ POČET ODRÁŽEK — jinak by se někde při přepisu ztratil řádek a cizí zákazník by dostal kratší podmínky než český —, že se do kapitol nedostane měna, a že prázdná kapitola zmizí i s nadpisem (to je zároveň pojistka proti prázdnému testu).\n\nPŘI PSANÍ TESTŮ SE NAŠLA CHYBA V NOVÉ LOGICE: prázdné pole a nedodaný jazyk byly jedním příznakem `chybi`, takže prázdná ČESKÁ kapitola hlásila „překlad nebyl dodán\". Jsou to dvě různé věci; rozlišují je `prazdne` a `jazykChybi`.\n\nDVĚ SADY ZMĚNILY OČEKÁVÁNÍ: `test_firma.js` trval na prefixu FIRMA_ u všech symbolů (proto se symboly jmenují FIRMA_NAB_*, ne NAB_*) a `test_nabidka.js` počítal sekce náhledu (10 → 14; nově se kontroluje i seznam názvů, ne jen počet)."
+  },
+  {
+   "id" : "283",
+   "vlna" : "E",
+   "stav" : "ceka",
+   "dulezitost" : "stredni",
+   "slozitost" : "S",
+   "nazev" : "Platební podmínky zůstávají v cizojazyčné nabídce česky",
+   "proc" : "Zjištěno 21. 9. 2026 při práci na #282. Anglická nabídka má v kapitole III. nadpisy anglicky, ale HODNOTY česky: „50 % – po podpisu smlouvy\", „2 měsíce\", „Náš standard / měsíční\". Zákazník dostane kapitolu, které z poloviny nerozumí.",
+   "detail" : "Není to regrese #282 — chování je starší: symboly {{PODM_…}} skládá `kryciSymbolyZeSekci` z volného textu, který obchodník napsal v krycím listu, a pouští ho přes slovník. Volná věta ve slovníku pochopitelně není, takže projde beze změny. Do 21. 9. to šlo jen do wordové šablony, takže si toho nikdo nevšiml; teď je to vidět i v náhledu nabídky.\n\nMOŽNOSTI K ROZHODNUTÍ: a) nechat tak a spolehnout se na obchodníka, že u cizojazyčné zakázky vyplní pole v cílovém jazyce; b) dát polím platebních podmínek jazykové varianty jako u kapitol IV.–VI.; c) doplnit do slovníku nejčastější věty (jsou to předvyplněné hodnoty, takže jich je konečný počet) a nechat volný text projít beze změny. Varianta (c) je nejlevnější a pokryje běžné případy; vymýšlet překlad toho, co obchodník napíše ručně, se nesmí tak jako tak.",
+   "kde" : "`src/kryci.js` (kryciSymbolyZeSekci), `src/preklad.js`",
+   "hotovoKdyz" : "Cizojazyčná nabídka nemá v kapitole III. českou větu, aniž by ji tam někdo vědomě napsal.",
+   "pozn" : "ČEKÁ NA ROZHODNUTÍ J. V. Netýká se jen nabídky — týmiž symboly se plní i smlouvy o dílo."
+  },
+  {
    "id" : "281",
    "vlna" : "B",
    "stav" : "hotovo",
@@ -5062,7 +5089,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v21.9.7 (engscalc)",
+  "build" : "v21.9.8 (engscalc)",
   "stavKDatu" : "21. 9. 2026"
  },
  "_comment" : [

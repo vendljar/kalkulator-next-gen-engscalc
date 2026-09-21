@@ -220,6 +220,32 @@ function nabidkaData(zak, varianta, jekly, lang) {
   if (typeof kryciPodminkoveSymboly === 'function')
     Object.assign(placeholders, kryciPodminkoveSymboly(zak, varianta, jekly, P));
 
+  /* KAPITOLY IV.–VI. A DOLOŽKY (#282, nálezy N15 a N16 kola 6).
+   *
+   * Wordová šablona je má, aplikace je neuměla — tiskla tedy nabídku bez
+   * kapitol POŽADAVKY PRO PROVEDENÍ REALIZACE, TERMÍNY REALIZACE, PŘEDÁNÍ
+   * DÍLA a bez závěrečných doložek. D. Sikora to hlásil slovy „nám tam
+   * schází úplně". Texty jsou firemní standard (Nastavení → Firma), každý
+   * jazyk má vlastní.
+   *
+   * NEPŘEKLÁDAJÍ SE. Jsou to smluvní podmínky napsané člověkem v cílovém
+   * jazyce; `tr()` by přes ně jel podruhé a hlásil chybějící hesla u textu,
+   * který je v pořádku. Chybějící jazyk se pozná podle `chybi` a nabídka to
+   * řekne nahlas — tiché nahrazení češtinou by znamenalo poslat cizímu
+   * zákazníkovi podmínky v jazyce, kterému nemusí rozumět. */
+  if (typeof firmaKapitola === 'function' && typeof FIRMA_KAPITOLY !== 'undefined') {
+    const f = (typeof firmaAktualni === 'function') ? firmaAktualni() : null;
+    FIRMA_KAPITOLY.forEach(kap => {
+      const k = firmaKapitola(f, kap.base, L);
+      const sym = 'FIRMA_NAB_' + kap.base.replace(/^kap/, '').toUpperCase();
+      placeholders[sym] = k.radky.join('\n');
+      /* Příznak znamená „tenhle jazyk aplikace u kapitol nezná, text je
+       * česky" — ne „pole je prázdné". Prázdná kapitola se z dokumentu
+       * vypustí i s nadpisem a upozorňovat na ni není na co. */
+      placeholders[sym + '_CHYBI'] = k.jazykChybi ? '1' : '';
+    });
+  }
+
   // Příplatky do sekce „II. Rozšíření cenové nabídky" – včetně množství a ceny.
   // Zahrnou se položky nevyřazené v kalkulaci (sloupec „Nabídka" v tabulce příplatků).
   const vynech = Zv.priplatkyVynechat || [];
@@ -353,6 +379,51 @@ function nabidkaNahledSekce(ph, lang) {
       [{ hotovo: P('DPH') + ' ' + ph.DPH_SAZBA + ' % (' + ph.DPH_NAZEV + ' ' + P('sazba') + ')' }, ph.DPH_KC],
       ['CELKEM za nabídku (včetně DPH)', ph.CENA_S_DPH]] },
   ];
+
+  /* ---------- KAPITOLY III.–VI. (#282, nálezy N15 a N16) ----------
+   *
+   * Do 21. 9. 2026 nabídka končila cenou. Wordová šablona přitom měla ještě
+   * čtyři kapitoly a dvě doložky — dokument z aplikace se tedy s dokumentem,
+   * který zákazník dostal, neshodoval. D. Sikora: „nám tam schází úplně".
+   *
+   * KAPITOLA III. SE SKLÁDÁ Z ÚDAJŮ ZAKÁZKY, ne z pevného textu: zálohy,
+   * splatnost i platnost nabídky už v krycím listu jsou a do šablony jdou
+   * jako {{PODM_…}}. Druhý opis týchž vět by se dřív nebo později rozešel
+   * s tím, co obchodník u zakázky opravdu nastavil.
+   *
+   * Kapitoly IV.–VI. a doložky jsou firemní standard z Nastavení → Firma,
+   * jeden řádek = jedna odrážka. Jsou už v cílovém jazyce, takže se přes ně
+   * NESMÍ pustit `tr()` podruhé — proto `{ hotovo: … }`. */
+  const kapRadky = (sym) => {
+    const radky = String(ph[sym] || '').split('\n').map(r => r.trim()).filter(Boolean);
+    /* PRÁZDNÁ KAPITOLA ZMIZÍ CELÁ. Upozornění na nedodaný překlad se přidá
+     * jen k textu, který opravdu je — jinak by z nevyplněného pole zbyl
+     * nadpis a pod ním varování, což vypadá jako chyba aplikace. */
+    if (!radky.length) return [];
+    const hlavicka = ph[sym + '_CHYBI']
+      ? [[{ hotovo: '⚠ ' + P('Překlad do tohoto jazyka nebyl dodán — text je česky.') }, '']]
+      : [];
+    return hlavicka.concat(radky.map(r => [{ hotovo: r }, '']));
+  };
+
+  const platebni = [
+    ['1. dílčí faktura', ph.PODM_ZALOHA1], ['2. dílčí faktura', ph.PODM_FAKTURA2],
+    ['Konečná faktura', ph.PODM_FAKTURA_KONC],
+    ['Splatnost faktur (dní)', ph.PODM_SPLATNOST_DNI],
+    ['Platnost nabídky', ph.PODM_PLATNOST_NABIDKY],
+    ['Způsob fakturace', ph.PODM_ZPUSOB_FAKTURACE],
+  ].filter(r => String(r[1] == null ? '' : r[1]).trim() !== '');
+  if (platebni.length) sekce.push({ sekce: 'III. PLATEBNÍ PODMÍNKY', radky: platebni });
+
+  [['IV. POŽADAVKY PRO PROVEDENÍ REALIZACE', 'FIRMA_NAB_POZADAVKY'],
+   ['V. TERMÍNY REALIZACE', 'FIRMA_NAB_TERMINY'],
+   ['VI. PŘEDÁNÍ DÍLA', 'FIRMA_NAB_PREDANI'],
+   ['DOLOŽKY', 'FIRMA_NAB_DOLOZKY']].forEach(([nazev, sym]) => {
+    const radky = kapRadky(sym);
+    /* Prázdná kapitola se vynechá i s nadpisem — stejné pravidlo jako
+     * u prázdných řádků technické specifikace ve Wordu. */
+    if (radky.length) sekce.push({ sekce: nazev, radky });
+  });
 
   // Dodavatel (naše firma) – SET-3; sekce se vypustí, nejsou-li údaje vyplněné
   if (typeof firmaRadky === 'function') {

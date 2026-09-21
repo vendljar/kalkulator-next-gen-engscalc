@@ -463,7 +463,10 @@ function nastFirma() {
    * k identifikaci firmy, a v seznamu firemních polí jen odtlačovaly dolů to,
    * co obchodník hledá. Data zůstávají tam, kde byla (NAST.firma), takže
    * uložené konfigurace se nemění. */
-  const sekce = FIRMA_SEKCE.filter(s => s !== 'Smluvní standardy').map(s => {
+  /* „Kapitoly nabídky" (#282) patří k dokumentům, ne k identifikaci firmy —
+   * stejně jako smluvní standardy se vyplňují na záložce Smlouvy / Šablony.
+   * Data leží pořád v NAST.firma. */
+  const sekce = FIRMA_SEKCE.filter(s => s !== 'Smluvní standardy' && s !== 'Kapitoly nabídky').map(s => {
     const pole = FIRMA_POLE.filter(p => p.sekce === s);
     const skryt = s === 'Korespondenční adresa' && f.korShodna;
     return `<div class="sec-title">${esc(s)}</div>
@@ -688,6 +691,53 @@ async function sablonyRezimUI(rezim) {
  * Smlouvy / Šablony: firemní smluvní standardy (věty, které jdou do každé
  * nabídky a smlouvy) a logo do hlaviček dokumentů. Obojí se pořád ukládá do
  * NAST.firma — přestěhovalo se jen místo, kde se to vyplňuje. */
+/* KAPITOLY III.–VI. CENOVÉ NABÍDKY (#282, nálezy N15 a N16 kola 6).
+ *
+ * Wordová šablona je měla, aplikace ne — nabídka z aplikace se tedy
+ * s dokumentem, který zákazník dostal, neshodovala. Texty jsou firemní
+ * standard, mění se jednou za čas a pro všechny naráz, proto sem.
+ *
+ * KAPITOLA III. SE TU NEVYPLŇUJE: skládá se z údajů zakázky (zálohy,
+ * splatnost, platnost nabídky), které už v krycím listu jsou. Druhý opis
+ * týchž vět by se dřív nebo později rozešel s tím, co obchodník nastavil.
+ *
+ * Každý jazyk má VLASTNÍ pole. Smluvní podmínky se nepřekládají strojově —
+ * co nikdo nenapsal, si aplikace nevymyslí. Nevyplněný jazyk nabídka řekne
+ * nahlas, místo aby tiše vytiskla češtinu.
+ *
+ * Kapitoly jsou v `<details>`, ne za sebou: dvanáct rozbalených polí by
+ * z téhle záložky udělalo nepřehlednou zeď a hledá se v nich jednou za rok. */
+function nastKapitolyNabidky() {
+  const f = NAST.firma || (NAST.firma = firmaDefault());
+  const JAZ = [['', 'česky'], ['En', 'anglicky'], ['De', 'německy']];
+  const blok = kap => {
+    const pola = JAZ.map(([suf, jmeno]) => {
+      const id = kap.base + suf;
+      const hodnota = f[id] == null ? '' : String(f[id]);
+      const pocet = hodnota.split('\n').filter(r => r.trim()).length;
+      return `<div class="row" style="align-items:flex-start">
+        <label style="flex:none;width:86px;padding-top:6px">${esc(jmeno)}</label>
+        <textarea rows="${Math.min(14, Math.max(4, pocet + 1))}" style="flex:1;min-width:0;font-family:inherit"
+          onchange="firmaSet('${escJs(id)}', this.value)">${esc(hodnota)}</textarea>
+        <span class="note" style="flex:none;width:150px;font-size:11.5px;padding-top:6px">
+          <code>{{${esc('FIRMA_NAB_' + kap.base.replace(/^kap/, '').toUpperCase() + (suf ? '_' + suf.toUpperCase() : ''))}}}</code><br>
+          ${pocet ? pocet + ' odrážek' : '<span class="pill mut">nevyplněno</span>'}</span></div>`;
+    }).join('');
+    return `<details style="margin:6px 0;border:1px solid var(--line);border-radius:6px;padding:6px 10px">
+      <summary style="cursor:pointer;font-weight:600">${esc((kap.cislo ? kap.cislo + ' ' : '') + kap.nadpis)}</summary>
+      ${pola}</details>`;
+  };
+  return `<div class="sec-title">Kapitoly nabídky III.–VI.</div>
+    <div class="note" style="margin-top:0">Texty, které se tisknou pod cenou v <b>každé</b> nabídce.
+      <b>Jeden řádek = jedna odrážka</b>, prázdné řádky se přeskočí.
+      <b>Kapitola III. Platební podmínky se tady nevyplňuje</b> — skládá se ze zálohy, splatnosti
+      a platnosti nabídky z krycího listu, aby se dvě místa nemohla rozejít.
+      Každý jazyk má vlastní pole: smluvní podmínky se <b>nepřekládají strojově</b>. Jazyk, který
+      necháte prázdný, nabídka <b>vypustí i s nadpisem</b>; francouzština se zatím neřeší a vytiskne
+      češtinu s upozorněním. Značka <code>{FIRMA}</code> se nahradí názvem firmy.</div>
+    ${(typeof FIRMA_KAPITOLY !== 'undefined' ? FIRMA_KAPITOLY : []).map(blok).join('')}`;
+}
+
 function nastSmluvniStandardy() {
   const f = NAST.firma || (NAST.firma = firmaDefault());
   const pole = FIRMA_POLE.filter(p => p.sekce === 'Smluvní standardy');
@@ -718,6 +768,8 @@ function nastSmluvniStandardy() {
       přepsat (↺ vrátí hodnotu odsud). Necháte-li pole prázdné, použije se
       <b>záložní věta napsaná v kódu</b> — je vidět jako šedá nápověda v poli.</div>
     ${pole.map(radek).join('')}
+
+    ${nastKapitolyNabidky()}
 
     <div class="sec-title">Logo firmy</div>
     <div data-vlozobrazek="logo" title="logo jde vložit i klávesami Ctrl+V ze schránky"

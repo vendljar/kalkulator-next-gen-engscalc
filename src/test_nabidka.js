@@ -157,9 +157,26 @@ test('vlastní položka ve volitelných',
   zebrik && zebrik.naklad === 9000 && Math.abs(zebrik.sMarzi - 9000 * (1 + C.marze)) < 0.01,
   zebrik && [zebrik.naklad, zebrik.sMarzi]);
 
-// struktura náhledu po sekcích (9 původních + DODAVATEL ze SET-3)
+/* struktura náhledu po sekcích.
+ *
+ * ZMĚNA 21. 9. 2026 (#282): z 10 na 14. Přibyly kapitoly, které wordová
+ * šablona měla a aplikace ne — IV. POŽADAVKY PRO PROVEDENÍ REALIZACE,
+ * V. TERMÍNY REALIZACE, VI. PŘEDÁNÍ DÍLA a DOLOŽKY. Kapitola III. PLATEBNÍ
+ * PODMÍNKY se v téhle sadě NEOBJEVÍ: skládá se ze symbolů {{PODM_…}}, které
+ * plní kryci.js, a ten se tu nenačítá.
+ *
+ * Kontroluje se i SEZNAM NÁZVŮ, ne jen počet: samotné číslo by prošlo
+ * i tehdy, kdyby jedna sekce zmizela a jiná přibyla. */
 const sekce = require('./nabidka.js').nabidkaNahledSekce(p);
-test('náhled má 10 sekcí (vč. dodavatele)', sekce.length === 10, sekce.length);
+test('náhled má 14 sekcí (vč. dodavatele)', sekce.length === 14, sekce.length);
+['IV. POŽADAVKY PRO PROVEDENÍ REALIZACE', 'V. TERMÍNY REALIZACE',
+ 'VI. PŘEDÁNÍ DÍLA', 'DOLOŽKY'].forEach(n =>
+  test('náhled nese kapitolu ' + n, sekce.some(s => s.sekce === n),
+    sekce.map(s => s.sekce).join(' | ')));
+test('kapitoly stojí až za cenou',
+  sekce.findIndex(s => s.sekce === 'IV. POŽADAVKY PRO PROVEDENÍ REALIZACE')
+    > sekce.findIndex(s => /CENOVÁ NABÍDKA/.test(s.sekce)),
+  sekce.map(s => s.sekce).join(' | '));
 test('náhled: základní parametry 14 řádků', sekce[1].radky.length === 14, sekce[1].radky.length);
 const dod = sekce[sekce.length - 1];
 test('poslední sekce je DODAVATEL', dod.sekce === 'DODAVATEL', dod.sekce);

@@ -35,6 +35,29 @@ const PREKLAD = {
   "je součástí dodávky": ["included in the delivery", "im Lieferumfang enthalten", "inclus dans la livraison"],
   "není součástí nabídky": ["not included in the offer", "nicht im Angebot enthalten", "non inclus dans l'offre"],
   "nabízeno jako příplatek": ["offered as an extra charge", "als Aufpreis angeboten", "proposé en supplément"],
+
+  /* Kapitoly III.–VI. nabídky (#282). Anglické a německé nadpisy jsou
+   * PŘEVZATÉ ze vzorových nabídek J. V. (CZ/EN/DE), ne přeložené tady —
+   * u smluvního dokumentu se znění nevymýšlí. Francouzština u nadpisů
+   * navazuje na hesla, která ve slovníku už byla; TĚLA kapitol se
+   * nepřekládají vůbec a francouzská nabídka je vytiskne česky
+   * s viditelným upozorněním (rozhodnutí J. V. 21. 9. 2026). */
+  "III. PLATEBNÍ PODMÍNKY": ["III. BILLING PLAN", "III. ZAHLUNGSBEDINGUNGEN", "III. CONDITIONS DE PAIEMENT"],
+  "IV. POŽADAVKY PRO PROVEDENÍ REALIZACE": ["IV. REQUIREMENTS FOR PROJECT REALIZATION",
+    "IV. VORAUSSETZUNGEN FÜR DIE PROJEKTREALISIERUNG", "IV. CONDITIONS PRÉALABLES À LA RÉALISATION"],
+  "V. TERMÍNY REALIZACE": ["V. INSTALLATION SCHEDULE", "V. INSTALLATIONSZEITPLAN", "V. CALENDRIER DE RÉALISATION"],
+  "VI. PŘEDÁNÍ DÍLA": ["VI. HANDOVER OF COMPLETE INSTALLATION",
+    "VI. ÜBERGABE DER KOMPLETTEN INSTALLATION", "VI. REMISE DE L’OUVRAGE"],
+  "DOLOŽKY": ["CLAUSES", "KLAUSELN", "CLAUSES"],
+  "1. dílčí faktura": ["1st partial invoice", "1. Teilrechnung", "1re facture partielle"],
+  "2. dílčí faktura": ["2nd partial invoice", "2. Teilrechnung", "2e facture partielle"],
+  "Konečná faktura": ["Final invoice", "Schlussrechnung", "Facture finale"],
+  "Splatnost faktur (dní)": ["Invoices are due (days)", "Zahlungsziel (Tage)", "Échéance des factures (jours)"],
+  "Způsob fakturace": ["Invoicing method", "Abrechnungsweise", "Mode de facturation"],
+  "Překlad do tohoto jazyka nebyl dodán — text je česky.": [
+    "No translation supplied for this language — the text is in Czech.",
+    "Für diese Sprache wurde keine Übersetzung geliefert — der Text ist auf Tschechisch.",
+    "Aucune traduction n’a été fournie pour cette langue — le texte est en tchèque."],
   "snížená": ["reduced", "ermäßigt", "réduit"],
   "základní": ["standard", "Regelsatz", "normal"],
 

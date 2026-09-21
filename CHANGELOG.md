@@ -8,6 +8,53 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.9.8 — 21. 9. 2026
+
+### P7 — nabídka končila cenou, chyběly čtyři kapitoly (#282)
+
+*Nálezy N15 a N16; mail D. Sikory: „nám tam schází úplně — platební
+podmínky, požadavky na provedení realizace, termíny realizace, předání
+díla."*
+
+Wordová šablona ty kapitoly měla, aplikace ne — dokument z aplikace se tedy
+s tím, co zákazník dostal, neshodoval. Nově se tisknou všechny čtyři
+a k nim závěrečné doložky (oprava zjevných chyb, autorská práva).
+
+**Dva zdroje, záměrně různé:**
+
+- **III. PLATEBNÍ PODMÍNKY se skládá z údajů zakázky** — zálohy, splatnost,
+  platnost nabídky a způsob fakturace už v krycím listu jsou. Druhý opis
+  týchž vět by se dřív nebo později rozešel s tím, co obchodník nastavil.
+- **IV., V., VI. a doložky jsou firemní standard** (Nastavení → Smlouvy
+  / Šablony → *Kapitoly nabídky III.–VI.*). Jeden řádek = jedna odrážka.
+
+**Každý jazyk má vlastní pole.** Smluvní podmínky se nepřekládají strojově —
+totéž pravidlo jako u cen: co nikdo nenapsal, si aplikace nevymyslí. Výchozí
+znění v češtině, angličtině a němčině je převzaté z nabídek dodaných J. V.
+Nevyplněný jazyk se z nabídky **vypustí i s nadpisem**; francouzština se
+podle rozhodnutí zatím neřeší a vytiskne češtinu **s viditelným
+upozorněním** — tiché vytištění češtiny cizímu zákazníkovi je horší, protože
+se to nikdo nedozví.
+
+Název firmy v doložce o autorských právech zastupuje značka `{FIRMA}`:
+firemní údaje jsou v repozitáři schválně ukázkové a skutečné bydlí mimo něj.
+
+Nová sada `src/test_nabidka_kapitoly.js` (**72 kontrol**) hlídá i to, že
+všechny tři jazyky mají u každé kapitoly **stejný počet odrážek** — jinak
+by se někde při přepisu ztratil řádek a cizí zákazník by dostal kratší
+podmínky než český.
+
+**Při psaní testů se našla chyba v mé vlastní logice:** prázdné pole
+a nedodaný jazyk byly jedním příznakem, takže prázdná *česká* kapitola
+hlásila „překlad nebyl dodán". Jsou to dvě různé věci a teď je rozlišuje
+`prazdne` / `jazykChybi`.
+
+### Ověření
+
+118 sad prošlo / 0 selhalo (1 přeskočena).
+
+---
+
 ## v21.9.7 — 21. 9. 2026
 
 ### Nákres stěny u opláštění po stěnách (#281)

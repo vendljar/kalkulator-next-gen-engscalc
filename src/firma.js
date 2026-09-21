@@ -108,11 +108,95 @@ const FIRMA_POLE = [
   /* Sekce „Zpracovatel nabídky" zrušena 19. 8. 2026 (zadání J. V.):
    * zpracovatel se vždy bere z přihlášeného uživatele (zpracovatel.js),
    * symboly FIRMA_ZPRACOVAL* plní on — firemní pole by jen mátla. */
+
+  /* --- KAPITOLY III.–VI. CENOVÉ NABÍDKY (#282, nález N15/N16 kola 6) ---
+   *
+   * Wordová šablona má kapitoly III. PLATEBNÍ PODMÍNKY, IV. POŽADAVKY PRO
+   * PROVEDENÍ REALIZACE, V. TERMÍNY REALIZACE a VI. PŘEDÁNÍ DÍLA; aplikace
+   * je neuměla, takže tiskla nabídku bez nich. D. Sikora to hlásil slovy
+   * „nám tam schází úplně".
+   *
+   * KAPITOLA III. SE TADY NEVYPLŇUJE. Skládá se z údajů zakázky, které už
+   * existují (zálohy, splatnost, platnost nabídky v krycím listu) — dvakrát
+   * zapsaná splatnost by se dřív nebo později rozešla.
+   *
+   * Zbylé tři kapitoly a doložky jsou firemní standard: mění se jednou za
+   * čas a pro všechny naráz, proto tady a ne v každé zakázce. Jeden řádek
+   * textu = jedna odrážka v nabídce; prázdný řádek se přeskočí.
+   *
+   * KAŽDÝ JAZYK MÁ VLASTNÍ POLE. Jsou to smluvní podmínky a ty se
+   * nepřekládají strojově — stejné pravidlo jako u cen: co nikdo nenapsal,
+   * si aplikace nevymyslí. Nevyplněný jazyk se v nabídce pozná (viz
+   * nabidka.js), nenahradí se tiše češtinou.
+   *
+   * Značka {FIRMA} se při tisku nahradí názvem firmy z Nastavení → Firma.
+   * Výchozí texty jsou v repozitáři schválně bez názvu firmy — stejně jako
+   * ostatní firemní údaje jsou ukázkové a skutečné bydlí v `_nastaveni.json`. */
+  { id: 'kapPozadavky', sekce: 'Kapitoly nabídky', label: 'IV. Požadavky pro provedení realizace — česky', symbol: 'FIRMA_NAB_POZADAVKY', typ: 'textarea' },
+  { id: 'kapPozadavkyEn', sekce: 'Kapitoly nabídky', label: 'IV. Požadavky pro provedení realizace — anglicky', symbol: 'FIRMA_NAB_POZADAVKY_EN', typ: 'textarea' },
+  { id: 'kapPozadavkyDe', sekce: 'Kapitoly nabídky', label: 'IV. Požadavky pro provedení realizace — německy', symbol: 'FIRMA_NAB_POZADAVKY_DE', typ: 'textarea' },
+  { id: 'kapTerminy', sekce: 'Kapitoly nabídky', label: 'V. Termíny realizace — česky', symbol: 'FIRMA_NAB_TERMINY', typ: 'textarea' },
+  { id: 'kapTerminyEn', sekce: 'Kapitoly nabídky', label: 'V. Termíny realizace — anglicky', symbol: 'FIRMA_NAB_TERMINY_EN', typ: 'textarea' },
+  { id: 'kapTerminyDe', sekce: 'Kapitoly nabídky', label: 'V. Termíny realizace — německy', symbol: 'FIRMA_NAB_TERMINY_DE', typ: 'textarea' },
+  { id: 'kapPredani', sekce: 'Kapitoly nabídky', label: 'VI. Předání díla — česky', symbol: 'FIRMA_NAB_PREDANI', typ: 'textarea' },
+  { id: 'kapPredaniEn', sekce: 'Kapitoly nabídky', label: 'VI. Předání díla — anglicky', symbol: 'FIRMA_NAB_PREDANI_EN', typ: 'textarea' },
+  { id: 'kapPredaniDe', sekce: 'Kapitoly nabídky', label: 'VI. Předání díla — německy', symbol: 'FIRMA_NAB_PREDANI_DE', typ: 'textarea' },
+  { id: 'dolozky', sekce: 'Kapitoly nabídky', label: 'Doložky pod nabídkou — česky', symbol: 'FIRMA_NAB_DOLOZKY', typ: 'textarea' },
+  { id: 'dolozkyEn', sekce: 'Kapitoly nabídky', label: 'Doložky pod nabídkou — anglicky', symbol: 'FIRMA_NAB_DOLOZKY_EN', typ: 'textarea' },
+  { id: 'dolozkyDe', sekce: 'Kapitoly nabídky', label: 'Doložky pod nabídkou — německy', symbol: 'FIRMA_NAB_DOLOZKY_DE', typ: 'textarea' },
 ];
+
+/* ---------- KAPITOLY III.–VI. NABÍDKY (#282) ----------
+ *
+ * Čtyři bloky textu, které se do nabídky propisují jako odrážky. Klíč pole
+ * v NAST.firma je `base` pro češtinu a `base + 'En' / 'De'` pro překlady —
+ * jeden zdroj pro formulář, pro tisk i pro testy. */
+const FIRMA_KAPITOLY = [
+  { base: 'kapPozadavky', cislo: 'IV.', nadpis: 'POŽADAVKY PRO PROVEDENÍ REALIZACE' },
+  { base: 'kapTerminy',   cislo: 'V.',  nadpis: 'TERMÍNY REALIZACE' },
+  { base: 'kapPredani',   cislo: 'VI.', nadpis: 'PŘEDÁNÍ DÍLA' },
+  { base: 'dolozky',      cislo: '',    nadpis: 'DOLOŽKY' },
+];
+/* Jazyky, ve kterých kapitoly existují. Francouzština schválně chybí:
+ * podklad k ní nebyl dodán a smluvní podmínky se nevymýšlejí (rozhodnutí
+ * J. V. 21. 9. 2026 — „francouzštinu zatím neřeš"). */
+const FIRMA_KAP_JAZYK = { cz: '', en: 'En', de: 'De' };
+
+/* Vrátí odrážky kapitoly pro daný jazyk.
+ *
+ * DVA RŮZNÉ STAVY, KTERÉ SE NESMÍ SLÍT DOHROMADY:
+ *
+ *   `prazdne`     — pole pro ten jazyk nikdo nevyplnil. Nabídka kapitolu
+ *                   vypustí i s nadpisem; prázdný nadpis vypadá jako
+ *                   nedodělek.
+ *   `jazykChybi`  — aplikace ten jazyk u kapitol vůbec nezná (dnes
+ *                   francouzština). Vrátí se ČESKÝ text a nabídka na to
+ *                   musí upozornit. Tiché vytištění češtiny cizímu
+ *                   zákazníkovi je horší: nikdo se to nedozví.
+ *
+ * Při prvním pokusu byly obě věci jedním příznakem `chybi` a prázdná česká
+ * kapitola pak hlásila „překlad nebyl dodán" (21. 9. 2026).
+ *
+ * Prázdné řádky se zahazují; `{FIRMA}` se nahradí názvem firmy, aby název
+ * nemusel být v kódu. Bez vyplněného názvu značka ZŮSTANE vidět — prázdné
+ * místo v doložce o autorských právech by vypadalo jako chyba sazby. */
+function firmaKapitola(f, base, jazyk) {
+  const firma = f || {};
+  const jaz = String(jazyk || 'cz').toLowerCase();
+  const znamy = Object.prototype.hasOwnProperty.call(FIRMA_KAP_JAZYK, jaz);
+  const klic = base + (znamy ? FIRMA_KAP_JAZYK[jaz] : '');
+  const syrovy = String(firma[klic] == null ? '' : firma[klic]);
+  const nazev = String(firma.nazev || '').trim();
+  const radky = syrovy.split('\n')
+    .map(r => r.replace(/\{FIRMA\}/g, nazev || '{FIRMA}').trim())
+    .filter(r => r !== '');
+  return { radky, prazdne: radky.length === 0, jazykChybi: !znamy,
+           chybi: !znamy || radky.length === 0, jazyk: jaz, klic };
+}
 
 /* Pořadí sekcí ve formuláři i v náhledech. */
 const FIRMA_SEKCE = ['Identifikace', 'Sídlo', 'Korespondenční adresa', 'Bankovní spojení',
-  'Kontakty', 'Zástupci zhotovitele', 'Smluvní standardy'];
+  'Kontakty', 'Zástupci zhotovitele', 'Smluvní standardy', 'Kapitoly nabídky'];
 
 /* UKÁZKOVÉ ÚDAJE, NE SKUTEČNÉ.
  *
@@ -160,6 +244,24 @@ const DEFAULT_FIRMA = {
    * a doplní se ručně. Prodloužení za ATYP je 4 týdny (zadání J. V.). */
   terminDodaniOck: '',
   terminAtypTydny: '4',
+
+
+  /* Kapitoly III.–VI. nabídky (#282). Na rozdíl od ostatních firemních polí
+   * NEJSOU ukázkové: je to obchodní standard bez cen i osobních údajů, takže
+   * v repozitáři být může a nová instalace rovnou tiskne úplnou nabídku.
+   * Název firmy v doložce zastupuje značka {FIRMA} — ten do kódu nepatří. */
+  kapPozadavky: "Pro dokončení projekční části je nutné poskytnout finální dispoziční výkresy výtahové technologie\nDohoda ohledně termínů realizace a součinnosti s dodavatelem technologie výtahu\nNutná koordinace s celkovým harmonogramem stavby.\nZajištění přístupu na místo realizace a do všech prostor s realizací díla souvisejících včetně transportních cest (nutné dojednat před zahájením přípravných prací)\nOchrana proti pádu nesmí bránit naší instalaci\nZajištění montážního lešení\nProstor pro skladování materiálu a nářadí během montáže\nParkovací místo v bezprostřední blízkosti stavby pro potřeby montáže a vykládání materiálu.\nPřipojení na elektřinu 230V\nBez časového omezení v běžné pracovní době, možnost práce o víkendech\nWC\nStatika objektu a zkušební statika",
+  kapPozadavkyEn: "Final and approved layour drawings of elevator technology is needed to complete shaft design.\nInstallation time schedule for key project milestones will be aligned with elevator supplier.\nCoordination with overall site installation schedule is mandatory.\nEnsuring access to the site and to all areas related to installation, including transport routes (to be arranged before the start of pre-work).\nFall protection must not impede our installation.\nProvide installation scaffolding.\nStorage location for materials and tools during installation.\nParking space next to the building for the purpose of installation and unloading of material.\nElectric power line of 230V for installation needs.\nNo time restrictions during normal working hours, possibility of working at weekends.\nWC\nBuilding statics and test statics.",
+  kapPozadavkyDe: "Endgültige und genehmigte Drehzeichnungen der Aufzugstechnik sind erforderlich, um die Schachtplanung abzuschließen.\nDer Zeitplan für die Installation wichtiger Projektmeilensteine wird mit dem Aufzugslieferanten abgestimmt.\nDie Koordinierung mit dem gesamten Zeitplan für die Installation vor Ort ist obligatorisch.\nSicherstellung des Zugangs zur Baustelle und zu allen mit der Installation zusammenhängenden Bereichen, einschließlich der Transportwege (vor Beginn der Vorarbeiten zu vereinbaren).\nDie Absturzsicherung darf unsere Montage nicht behindern.\nBereitstellung eines Montagegerüsts.\nLagerplatz für Material und Werkzeug während der Montage.\nParkplatz neben dem Gebäude für die Montage und das Abladen des Materials.\nStromanschluss mit 230 V für die Installation.\nKeine zeitlichen Einschränkungen während der normalen Arbeitszeiten, Möglichkeit der Arbeit an Wochenenden.\nWC\nGebäudestatik und Prüfstatik.",
+  kapTerminy: "Zahájení montáže cca 12 týdnů po podpisu SoD a odsouhlasení finálních dispozičních výkresů celé technologie výtahu a šachty.\nMontáž ocelové konstrukce výtahové šachty cca 1-2 týdny.\nNásledné opláštění konstrukce šachty cca 1-2 týdny.\nDokončovací práce do cca 2 týdny po ukončení montáže technologie výtahu – šachetních dveří.\nHarmonogram montáže bude vypracován cca 3 týdny po podpisu smlouvy.\n5 let záruka na celé dílo.",
+  kapTerminyEn: "Installation will start cca 12 weeks from contract signature AND final approved elevator and shaft layout drawings.\nInstallation of steel shaft cunstruction need 1-2 weeks time.\nShaft cladding installation need 1-2 weeks time.\nFinishing work (mainly landing door entrance portals) will be done within 2 weeks after elevator installation is completed.\nThe shaft installation schedule will be compiled within cca 3 weeks after the contract is signed.\n5 years warranty for the whole shaft structure and cladding.",
+  kapTerminyDe: "Die Installation beginnt ca. 12 Wochen nach Vertragsunterzeichnung UND endgültiger Genehmigung der Aufzugs- und Schachtgrundrisszeichnungen.\nDie Montage der Stahlschachtkonstruktion dauert 1-2 Wochen.\nDie Montage der Schachtverkleidung dauert 1-2 Wochen.\nDie abschließenden Arbeiten (vor allem die Protokolle der Schachttüren) werden innerhalb von 2 Wochen nach Abschluss der Aufzugsinstallation durchgeführt.\nDer Zeitplan für die Schachtinstallation wird innerhalb von ca. 3 Wochen nach Vertragsunterzeichnung erstellt.\n5 Jahre Garantie für die gesamte Schachtstruktur und Verkleidung.",
+  kapPredani: "1.  předávací protokol bude požadován po dokončení montáže ocelové konstrukce\n2.  předávací protokol bude požadován po provedení opláštění výtahové šachty\n3.  předávací protokol bude požadován po provedení dokončovacích prací při předání a převzetí díla.",
+  kapPredaniEn: "1.  Handover protocol will be used when shaft steel structure is completed.\n2.  Handover protocol will be used when shaft cladding is completed.\n3.  Handover protocol will be used when finishing works are done for final handover of completed shaft.",
+  kapPredaniDe: "1. Das Übergabeprotokoll wird verwendet, wenn die Schachtstahlkonstruktion fertiggestellt ist.\n2. Das Übergabeprotokoll wird verwendet, wenn die Schachtverkleidung abgeschlossen ist.\n3. Das Übergabeprotokoll wird verwendet, wenn die Abschlussarbeiten für die endgültige Übergabe des fertigen Schachtes durchgeführt werden.",
+  dolozky: "Zjevné chyby v nabídkovém řízení mohou být opraveny před podpisem smlouvy.\nAutorská práva – {FIRMA} si vyhrazuje vlastnické a autorské právo k ilustracím, výkresům, skicám a jiným dokumentům a vzorkům. Tyto musí být na požádání neprodleně vráceny a nesmí být předány třetím stranám bez souhlasu {FIRMA}.",
+  dolozkyEn: "Obvious errors in the tendering procedure may be corrected before the contract is signed.\nCopyright - {FIRMA} reserves the ownership and copyright of illustrations, drawings, sketches and other documents and samples. These must be returned immediately on request and may not be passed on to third parties without {FIRMA}'s consent.",
+  dolozkyDe: "Offenbare Angebotsfehler können vor Auftragsannahme berichtigt werden.\nUrheberrechte - An Abbildungen, Zeichnungen, Skizzen, sonstigen Unterlagen und Mustern behält sich {FIRMA}- und Urheberrechte vor; sie sind auf Verlangen unverzüglich zurückzusenden und dürfen nicht an Dritte ohne Einverständnis von {FIRMA} weitergegeben werden.",
 
   /* logo: data URL (obrázek se ukládá přímo v konfiguraci, aby šel přenést) */
   logo: '', logoNazev: '',
@@ -377,7 +479,8 @@ function firmaShodaSOnline(mistni, online) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { FIRMA_POLE, FIRMA_SEKCE, DEFAULT_FIRMA, firmaDefault, firmaAktualni,
+  module.exports = { FIRMA_KAPITOLY, FIRMA_KAP_JAZYK, firmaKapitola,
+    FIRMA_POLE, FIRMA_SEKCE, DEFAULT_FIRMA, firmaDefault, firmaAktualni,
     firmaPole, firmaHodnota, firmaAdresaRadek, firmaSidlo, firmaKorespondencni, firmaBankaRadek,
     firmaIcoDic, firmaPaticka, firmaPlaceholders, firmaSymboly, firmaRadky, firmaKontrola,
     firmaLzeZverejnit, firmaKZverejneni, firmaShodaSOnline };
