@@ -87,6 +87,9 @@ jobs:
       - name: Obrazovka opláštění po stěnách (#268) v prohlížeči (overit_oplasteni.mjs)
         run: NODE_PATH="$(npm root -g)" node overit_oplasteni.mjs
 
+      - name: Dialog o přepočtu na dnešní ceník (#284) v prohlížeči (overit_prepocet_dialog.mjs)
+        run: NODE_PATH="$(npm root -g)" node overit_prepocet_dialog.mjs
+
       - name: Sestavený dist/ jako artefakt
         if: always()
         uses: actions/upload-artifact@v5

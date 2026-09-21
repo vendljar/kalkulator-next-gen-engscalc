@@ -1,6 +1,20 @@
 {
  "polozky" : [
   {
+   "id" : "284",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "vysoka",
+   "slozitost" : "M",
+   "hotovoV" : "v21.9.9",
+   "nazev" : "Tichý přepočet na dnešní ceník má dialog s dopadem na cenu (kolo 6, P5)",
+   "proc" : "Nálezy N7 a N22. Rozpracovaná zakázka se po otevření přepočítá na platný ceník — to je správně, staré ceny v ní nejsou doklad, ale past. Dělo se to ale potichu: do lišty se napsala věta, kterou je snadné přehlédnout, a hlavně neříkala to podstatné. „12 změněných položek\" může znamenat stokorunu i sto tisíc; obchodník se to dozvěděl, až když nabídku porovnal s tou, kterou posílal minule.",
+   "detail" : "Dialog ukazuje verzi ceníku, počet změněných cen a hlavně ROZDÍL CENY NABÍDKY v korunách (před i po, bez DPH) — a nabízí vrácení původních cen. Bez nabídky vrátit je to jen hlášení hotové věci.\n\nVrací se ZE ZÁLOHY pořízené před přepočtem (`ULO_PREPOCET.zaloha`). Dopočítávat staré ceny zpětně by znamenalo druhý výpočet, který by se s tím prvním mohl rozejít. Záloha se pořizuje jen tehdy, když je co přepočítávat, a po rozhodnutí se zahodí.\n\nNabídka vrátit je JEDNORÁZOVÁ: příště se zakázka zeptá znovu, protože se tím nic trvalého nerozhodlo. Dialog proto sám ukazuje na trvalé řešení — kvitanci „ceny jsou dohodnuté\".\n\nESCAPE A KLIK MIMO ZNAMENAJÍ PONECHAT PŘEPOČET. Zavřít okno je útěk z dialogu, ne rozhodnutí; kdyby Escape vracel ceny, ztratil by obchodník přepočet, o kterém se ještě nerozhodl.\n\nPo vrácení se obnoví i otisky pro autosave (`ONLINE_STAV.posledni`, `historieOznacUlozeno`). Bez toho by první klik kamkoli uložil zakázku s cenami, které uživatel právě odmítl — týž mechanismus jako nález V35.\n\nSoučet cen dělá nová čistá funkce `cenikCenaRozpracovanych`: sečte základní cenu NEZAMČENÝCH variant. Zamčené se vynechávají schválně — nepřepočítávají se, takže by rozdíl jen ředily.",
+   "hotovoKdyz" : "Splněno: po otevření přepočítané zakázky se objeví dialog s verzí ceníku, počtem změn a rozdílem ceny a jde se jím vrátit k původním cenám.",
+   "kde" : "`src/cenik_stari.js` (cenikCenaRozpracovanych), `src/ui/uloziste_ui.js` (ULO_PREPOCET, uloPrepocetDialog), `src/ui/online_ui.js`, `src/test_cenik_dopad.js`, `overit_prepocet_dialog.mjs`",
+   "pozn" : "Dialog se zapojil do OBOU cest otevření zakázky — ze složky i ze serveru. Do historie kroků schválně ne: tam jde o návrat v rámci jednoho sezení a dialog by překážel.\n\nOvěřeno 13 kontrolami v Node (součet přes varianty, vynechání zamčených, hlášení nespočítatelné varianty) a 21 v prohlížeči (text dialogu, obě tlačítka, Escape). Prohlížečová sada nese i pojistku proti prázdnému testu: při nule změněných cen se dialog nesmí otevřít vůbec."
+  },
+  {
    "id" : "282",
    "vlna" : "B",
    "stav" : "hotovo",
@@ -5089,7 +5103,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v21.9.8 (engscalc)",
+  "build" : "v21.9.9 (engscalc)",
   "stavKDatu" : "21. 9. 2026"
  },
  "_comment" : [

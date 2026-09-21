@@ -335,15 +335,36 @@ function uloUlozDoSlozky(opts) {
  * varianty se nedotkne a varianta s dohodnutými cenami se vynechá.
  * Nová hodnota `ULO_STAV.posledni` se schválně NEnastavuje: přepočet je proti
  * souboru na disku změna a autosave ji má uložit. */
+/* Stav posledního přepočtu — podklad pro dialog (#284). Drží se stranou
+ * od výsledku, protože záloha celé zakázky je velká a do návratové hodnoty,
+ * kterou si volající předávají dál, nepatří. */
+const ULO_PREPOCET = { zaloha: null, pred: null, po: null, verze: null };
+
 function uloSrovnejSPlatnymCenikem() {
   if (typeof cenikPrepoctiRozpracovane !== 'function'
     || typeof cenikDnesniData !== 'function'
     || typeof ZAK === 'undefined' || !ZAK) return null;
   const info = (typeof progPlatnaVerzeInfo === 'function')
     ? progPlatnaVerzeInfo() : { verze: null, platnoOd: '' };
+
+  /* ZÁLOHA PŘED PŘEPOČTEM (#284). Bez ní by nabídka „ponechat původní ceník"
+   * byla prázdný slib: přepočet přepisuje ceny na místě a zpátky se z toho
+   * nedá dopočítat. Kopie se dělá JEN když je co přepočítávat — u zakázky
+   * bez rozdílu by to byla zbytečná práce při každém otevření. */
+  const pred = (typeof cenikCenaRozpracovanych === 'function')
+    ? cenikCenaRozpracovanych(ZAK, JEKLY) : null;
+  let zaloha = null;
+  try { zaloha = JSON.parse(JSON.stringify(ZAK)); } catch (e) { zaloha = null; }
+
   const r = cenikPrepoctiRozpracovane(ZAK, cenikDnesniData(), Object.assign(
     { zahr: (typeof CENIK_ZAHR !== 'undefined') ? CENIK_ZAHR : null,
       build: (typeof buildVerze === 'function') ? buildVerze() : '' }, info));
+
+  ULO_PREPOCET.zaloha = (r && r.prepocteno && r.zmen) ? zaloha : null;
+  ULO_PREPOCET.pred = pred;
+  ULO_PREPOCET.po = (typeof cenikCenaRozpracovanych === 'function')
+    ? cenikCenaRozpracovanych(ZAK, JEKLY) : null;
+  ULO_PREPOCET.verze = info.verze;
   /* Srovnaná značka je taky změna: zakázka spočítaná bez připojené složky si
    * v ceníku varianty nese „nejsou to ostrá data" a po otevření nad platným
    * ceníkem by jinak dál svítila červená lišta a dokument by byl zablokovaný. */
@@ -365,6 +386,76 @@ function uloPrepocetVeta(r) {
   if (r.zamcene) t += ' Vytištěné nabídky (' + r.zamcene + ') zůstávají beze změny.';
   if (r.dohodnute) t += ' Varianty s dohodnutými cenami (' + r.dohodnute + ') se nepřepočítávají.';
   return t;
+}
+
+/* ---------- DIALOG O PŘEPOČTU (#284, nálezy N7 a N22) ----------
+ *
+ * Do 21. 9. 2026 se zakázka po otevření tiše přepočítala a do lišty se
+ * napsala věta. Věta v liště je snadné přehlédnout a hlavně neříkala to
+ * podstatné: O KOLIK se hnula cena. „12 změněných cen" může znamenat
+ * stokorunu i sto tisíc a obchodník se to dozvěděl, až když nabídku
+ * porovnal s tou, kterou posílal minule.
+ *
+ * Dialog proto ukáže verzi ceníku, počet změněných položek i rozdíl ceny
+ * a nabídne VRÁCENÍ — jinak je to jen hlášení hotové věci.
+ *
+ * Vrací se ze zálohy pořízené před přepočtem; dopočítat zpětné ceny by
+ * znamenalo druhý výpočet, který by se s tím prvním mohl rozejít.
+ *
+ * Nabídka „vrátit" je JEDNORÁZOVÁ: příště se zakázka zeptá znovu, protože
+ * se tím nic trvalého nerozhodlo. Kdo chce mít od dotazů pokoj natrvalo,
+ * potvrdí u varianty „ceny jsou dohodnuté" (kvitance) — a dialog na to
+ * sám upozorní. */
+async function uloPrepocetDialog(r) {
+  if (!r || !r.prepocteno || !r.zmen) return false;
+  if (typeof volba !== 'function' || !ULO_PREPOCET.zaloha) return false;
+
+  const pred = ULO_PREPOCET.pred, po = ULO_PREPOCET.po;
+  const kc = n => (typeof formatKc === 'function') ? formatKc(n)
+    : (Math.round(n).toLocaleString('cs-CZ') + ' Kč');
+  let dopad = '';
+  if (pred && po && !pred.chyby && !po.chyby && pred.pocet === po.pocet) {
+    const d = po.cena - pred.cena;
+    dopad = Math.abs(d) < 0.5
+      ? 'Na celkovou cenu to nakonec nemělo vliv.'
+      : 'Cena nabídky se tím ' + (d > 0 ? 'zvedla' : 'snížila') + ' o '
+        + kc(Math.abs(d)) + ' (z ' + kc(pred.cena) + ' na ' + kc(po.cena) + ', bez DPH).';
+  } else {
+    /* Radši nic než číslo, za které neručíme — stejné pravidlo jako u cen. */
+    dopad = 'Dopad na celkovou cenu se nepodařilo spočítat.';
+  }
+
+  const verze = ULO_PREPOCET.verze ? ('verze ' + ULO_PREPOCET.verze) : 'nová verze';
+  const text = 'Zakázka se otevřela s ceníkem, který už neplatí, a přepočítala se na '
+    + verze + '. Změnilo se ' + r.zmen + (r.zmen === 1 ? ' cena' : (r.zmen < 5 ? ' ceny' : ' cen'))
+    + '. ' + dopad
+    + '\n\nChcete-li v téhle zakázce ceny držet natrvalo, potvrďte u varianty '
+    + '„ceny jsou dohodnuté" — pak se přepočítávat nebude a tenhle dotaz se '
+    + 'příště neobjeví.';
+
+  const odp = await volba(text, [
+    { kod: 'nech', popis: 'Počítat s dnešním ceníkem', primary: true },
+    { kod: 'vrat', popis: 'Vrátit původní ceny' },
+  ], { nadpis: 'Ceník se od posledního uložení změnil' });
+
+  /* Escape a klik mimo = nic nedělat, tedy ponechat přepočet. Zavřít okno
+   * nesmí znamenat vrácení cen — to je rozhodnutí, ne útěk z dialogu. */
+  if (odp !== 'vrat') { ULO_PREPOCET.zaloha = null; return false; }
+
+  ZAK = (typeof importZakazka === 'function')
+    ? importZakazka(ULO_PREPOCET.zaloha) : ULO_PREPOCET.zaloha;
+  ULO_PREPOCET.zaloha = null;
+  if (typeof syncVarianta === 'function') syncVarianta();
+  /* Po vrácení je zakázka zase přesně taková, jaká přišla ze souboru nebo
+   * ze serveru — tedy BEZ neuložené změny. Kdyby se otisky pro autosave
+   * nechaly na stavu po přepočtu, první klik kamkoli by zakázku uložil
+   * s cenami, které uživatel právě odmítl (týž mechanismus jako nález V35). */
+  if (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV) ONLINE_STAV.posledni = JSON.stringify(ZAK);
+  if (typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
+  if (typeof render === 'function') render();
+  if (typeof nabidkaStavTextBezpecne === 'function')
+    nabidkaStavTextBezpecne('Původní ceny vráceny. Zakázka počítá z ceníku, se kterým byla uložena.');
+  return true;
 }
 
 async function uloOtevriZeSlozky(soubor) {
@@ -394,6 +485,10 @@ async function uloOtevriZeSlozky(soubor) {
     zavriUloziste();
     render();
     if (typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
+    /* Dialog o přepočtu (#284) až po překreslení: obchodník má za dialogem
+     * vidět zakázku, o které se rozhoduje. Nečeká se na něj — otevření
+     * zakázky je hotové a dialog si výsledek dořeší sám. */
+    if (typeof uloPrepocetDialog === 'function') uloPrepocetDialog(prep);
     if (prep && prep.prepocteno && typeof nabidkaStavTextBezpecne === 'function') {
       nabidkaStavTextBezpecne(uloPrepocetVeta(prep));
     } else if (typeof cenikPrehledAkt === 'function') {

@@ -551,8 +551,38 @@ function cenikOznacJakoDnesni(data, opts) {
   return data.cenikRazitko;
 }
 
+/* ---------- DOPAD PŘEPOČTU NA CENU (#284, nálezy N7 a N22) ----------
+ *
+ * Do 21. 9. 2026 se rozpracovaná zakázka po otevření přepočítala na platný
+ * ceník a do lišty se napsalo, KOLIK cen se změnilo. Nikde ale nestálo,
+ * O KOLIK SE HNULA CENA NABÍDKY — a to je jediné číslo, které obchodníka
+ * zajímá: „počet změněných položek: 12" může znamenat stokorunu i sto tisíc.
+ *
+ * Tahle funkce sečte základní cenu VŠECH NEZAMČENÝCH variant, takže se dá
+ * změřit stav před přepočtem a po něm. Zamčené se vynechávají schválně:
+ * ty se nepřepočítávají, takže by do rozdílu jen přidaly šum.
+ *
+ * Varianta, kterou se nepodaří spočítat, se do součtu nepočítá a hlásí se
+ * v `chyby`. Tvrdit o ní nulu by znamenalo vykázat pokles ceny, který se
+ * nestal. */
+function cenikCenaRozpracovanych(zak, jekly) {
+  if (!zak || !Array.isArray(zak.varianty) || typeof vypocet !== 'function') return null;
+  let cena = 0, pocet = 0, chyby = 0;
+  zak.varianty.forEach(v => {
+    if (!v || !v.data || !v.data.ock) return;
+    if (typeof variantaUzamcena === 'function' && variantaUzamcena(v)) return;
+    try {
+      const r = vypocet(v.data.ock.zadani, v.data.cenik, jekly, v.data.ock.fixes);
+      cena += (r && r.souhrn && +r.souhrn.zakladCena) || 0;
+      pocet++;
+    } catch (e) { chyby++; }
+  });
+  return { cena, pocet, chyby };
+}
+
 if (typeof module !== 'undefined')
-  module.exports = { CENIK_STARI_EXTRA, CENIK_ZAKAZKOVE, cenikPatriZakazce,
+  module.exports = { cenikCenaRozpracovanych,
+                     CENIK_STARI_EXTRA, CENIK_ZAKAZKOVE, cenikPatriZakazce,
                      cenikRucniMapa, cenikRucniJe, cenikRucniZnac, cenikRucniVsechny, cenikChranena, cenikSledovane, cenikAktualizovano, cenikDniOd,
                      cenikStariCeniku, cenikHodnota, cenikNastavHodnotu, cenikRozdily,
                      cenikSrovnejZnacky,

@@ -128,6 +128,9 @@ if [ "${1:-}" = "--smoke" ]; then
     # ale obě chyby, které J. V. našel při prvním proklikání 21. 9. 2026, byly
     # čistě v obrazovce — odtud sem (viz hlavička sady).
     spust_prohlizec overit_oplasteni.mjs
+    # Dialog o přepočtu na dnešní ceník (#284): v Node se neotevře, a přitom
+    # je to jediné místo, kde se obchodník dozví, o kolik se hnula cena.
+    spust_prohlizec overit_prepocet_dialog.mjs
   fi
 fi
 

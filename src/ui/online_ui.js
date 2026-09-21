@@ -987,6 +987,10 @@ async function onlineOtevri(soubor) {
     zavriOnline();
     render();
     if (typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
+    /* Dialog o přepočtu (#284) — týž, jaký se ukáže při otevření ze složky.
+     * Až po překreslení, aby za ním byla vidět zakázka, o které se
+     * rozhoduje; případné vrácení cen si obnoví i ONLINE_STAV.posledni. */
+    if (typeof uloPrepocetDialog === 'function') uloPrepocetDialog(prep);
     /* Otevření není editace: značka se shodí AŽ TEĎ, po přepočtu i po
      * překreslení, aby ji nenastavil klik, kterým se zakázka otevřela. */
     ONLINE_STAV.zmenaUzivatele = false;

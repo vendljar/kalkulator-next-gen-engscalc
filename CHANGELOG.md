@@ -8,6 +8,49 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.9.9 — 21. 9. 2026
+
+### P5 — tichý přepočet na dnešní ceník má konečně dialog (#284)
+
+*Nálezy N7 a N22*
+
+Rozpracovaná zakázka se po otevření přepočítá na platný ceník — to je
+správně, staré ceny v ní nejsou doklad, ale past. Dělo se to ale **potichu**:
+do lišty se napsala věta, kterou je snadné přehlédnout, a hlavně neříkala to
+podstatné. **„12 změněných položek" může znamenat stokorunu i sto tisíc.**
+
+Nově se otevře dialog, který řekne:
+
+- na kterou **verzi ceníku** se přepočítalo,
+- **kolik cen** se změnilo,
+- a hlavně **o kolik se hnula cena nabídky** — v korunách, před i po.
+
+A nabídne **vrácení původních cen**. Bez toho je to jen hlášení hotové věci.
+Vrací se ze zálohy pořízené *před* přepočtem; dopočítávat staré ceny zpětně
+by znamenalo druhý výpočet, který by se s tím prvním mohl rozejít.
+
+Nabídka vrátit je **jednorázová** — příště se zakázka zeptá znovu, protože
+se tím nic trvalého nerozhodlo. Dialog proto sám ukáže na trvalé řešení:
+potvrdit u varianty „ceny jsou dohodnuté".
+
+**Escape a klik mimo znamenají „nic nedělej", tedy ponechat přepočet.**
+Zavřít okno je útěk z dialogu, ne rozhodnutí — kdyby Escape vracel ceny,
+ztratil by obchodník přepočet, o kterém se ještě nerozhodl.
+
+Po vrácení se obnoví i otisky pro autosave. Bez toho by první klik kamkoli
+uložil zakázku s cenami, které uživatel právě odmítl (týž mechanismus jako
+nález V35).
+
+Nové sady: `src/test_cenik_dopad.js` (13 kontrol na součet cen) a
+`overit_prepocet_dialog.mjs` (21 kontrol v prohlížeči — text dialogu, obě
+tlačítka, Escape i to, že se bez změn neotevře vůbec).
+
+### Ověření
+
+120 sad prošlo / 0 selhalo (1 přeskočena).
+
+---
+
 ## v21.9.8 — 21. 9. 2026
 
 ### P7 — nabídka končila cenou, chyběly čtyři kapitoly (#282)
