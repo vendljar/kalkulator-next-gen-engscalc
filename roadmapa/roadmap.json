@@ -1,6 +1,20 @@
 {
  "polozky" : [
   {
+   "id" : "281",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "M",
+   "hotovoV" : "v21.9.7",
+   "nazev" : "Nákres stěny u opláštění po stěnách",
+   "proc" : "Zadání J. V. 21. 9. 2026 po prvním proklikání: „kalkulace opláštění postrádá vizualizaci, takhle je to nepřehledné.\" Tabulka pásů řekne, co je zadané, ale ne jak stěna VYPADÁ. Čtyři stěny po dvou pásech si člověk musí skládat v hlavě a záporná dolní mez v prohlubni se z čísel nepozná vůbec.",
+   "detail" : "U každé stěny stojí schematický nákres: svislý pruh rozdělený na pásy V POMĚRU SKUTEČNÝCH VÝŠEK, barva podle typu, název materiálu v pásu, kóty u horní hrany, každého rozhraní i dolní meze, čárkovaná čára úrovně nástupu (0 m) a hnědé záporné kóty, takže je vidět, co sahá do prohlubně. Typ „bez — dodá stavba\" je šrafa, ne barva: není to materiál. Pod kartou legenda s plochami podle typu a celkovou plochou — tatáž čísla, která jdou do kalkulace.\n\nNÁKRES KRESLÍ PÁSY, KTERÉ SPOČÍTALO JÁDRO. `vypocet()` nově vydává `oplasteni: { rezim, vyska, pasy, sirkySten, plochaCelkem, podleTypu }`. Obrazovka si je schválně nepočítá sama: jádro dělicí výšku ořezává (pás nesmí pod předchozí ani nad horní hranu) a plochu pod nulou bere jinak než nad ní. Obrázek, který by si to počítal po svém, by při první změně pravidel ukazoval něco jiného, než z čeho vyšla cena — a obrázek, kterému se nedá věřit, je horší než žádný.\n\nPOD NÁKRESEM STOJÍ PLOCHA STĚNY, nebo výslovné „bez plochy k opláštění\". Není to ozdoba: čelní stěna nese dveřní portály, takže její plocha k opláštění jsou jen světlíky nad dveřmi (`skloSteny.A = svetlikM2 + svetlikBokM2`) — a bez nich vyjde nula. Barevné pásy by pak slibovaly materiál, za který se nic nepočítá.",
+   "hotovoKdyz" : "Splněno: u každé stěny je nákres, jehož proporce odpovídají výškám pásů, a pod ním plocha; nulová stěna to řekne nahlas.",
+   "kde" : "`src/ui/kalk_ock.js` (oplNakresStena, oplSouhrnHtml), `src/app_template.html` (.opl-nakres a spol.), `src/engine.js` (výsledek nese `oplasteni`), `overit_oplasteni.mjs`",
+   "pozn" : "Sada `overit_oplasteni.mjs` má 36 kontrol a je ověřená NEGATIVNĚ: bez nákresu jich 7 padá. Měří skutečné rozměry vykreslených prvků (poměry výšek pruhů proti výškám pásů z jádra), ne přítomnost tříd — třída sama o sobě neříká, že se něco nakreslilo správně. Pokrytý je i stav nové zakázky s nulovými rozměry (#231): jádro nevrátí ani jeden pás a nákres se nekreslí, místo aby spadl.\n\nPŘI PRÁCI CHYTIL EXISTUJÍCÍ STRÁŽCE SKUTEČNOU CHYBU: první verze měla u výpočtu zálohu `vypocet(Z, C, JEKLY, OCK.fixes)`, která by obcházela zámek odeslané nabídky (nález A1) — nákres by se u odeslané nabídky překreslil dnešním jádrem místo jejího otisku. Zachytil to `test_zamek_otisk.js` dřív, než se to dostalo do commitu."
+  },
+  {
    "id" : "279",
    "vlna" : "B",
    "stav" : "hotovo",
@@ -5048,7 +5062,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v21.9.6 (engscalc)",
+  "build" : "v21.9.7 (engscalc)",
   "stavKDatu" : "21. 9. 2026"
  },
  "_comment" : [

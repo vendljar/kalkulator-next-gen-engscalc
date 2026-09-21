@@ -170,6 +170,115 @@ const nezavisle = await p.evaluate(() => ({
 zkus('rozdělení stěny B nesáhne na stěnu A', nezavisle.A === 1 && nezavisle.B === 2,
   JSON.stringify(nezavisle));
 
+/* ---------- NÁKRES STĚNY (#281) ----------
+ *
+ * Nákres smí ukazovat JEN to, co spočítalo jádro. Kontroly proto porovnávají
+ * vykreslené pásy s `vypocetAkt().oplasteni.pasy`, ne se zadáním — kdyby si
+ * obrazovka pásy počítala po svém, tohle to pozná. */
+/* NOVÁ ZAKÁZKA MÁ NULOVÉ ROZMĚRY (#231), takže výška opláštění je nula
+ * a jádro nevrátí ani jeden pás. Nákres se pak nesmí kreslit — a hlavně
+ * nesmí spadnout. Zkouší se to dřív, než se rozměry doplní. */
+{
+  const prazdno = await p.evaluate(() => ({
+    pasu: vypocetAkt().oplasteni.pasy.length,
+    nakresu: document.querySelectorAll('#ock-oplasteni-steny .opl-nakres').length,
+    vyska: vypocetAkt().oplasteni.vyska,
+  }));
+  zkus('u zakázky s nulovými rozměry jádro žádné pásy nevrátí',
+    prazdno.pasu === 0 && !prazdno.vyska, JSON.stringify(prazdno));
+  zkus('a nákres se v tom případě nekreslí, místo aby spadl',
+    prazdno.nakresu === 0, prazdno.nakresu);
+}
+
+await p.evaluate(() => {
+  /* Teprve teď rozměry — do téhle chvíle se zkoušel prázdný stav. */
+  set('OCK.zadani.sirka', 1.6); set('OCK.zadani.hloubka', 1.4);
+  set('OCK.zadani.zdvih', 9); set('OCK.zadani.prejezd', 3.5);
+  set('OCK.zadani.prohluben', 1.1); set('OCK.zadani.nastupiste', 4);
+  /* Stěna A: dva pásy. Stěna B: dolní mez v prohlubni. Stěna C: tři pásy.
+   * Stěna D zůstává po celé výšce, ať je pokrytý i ten případ. */
+  Z.oplasteni.steny.A = { odM: 0, pasy: [{ typ: 'C.skloCelniKc', doM: 2.4 }, { typ: 'C.skloBokyKc', doM: null }] };
+  Z.oplasteni.steny.B = { odM: -1.1, pasy: [{ typ: 'bez', doM: 0 }, { typ: 'C.skloBokyKc', doM: null }] };
+  Z.oplasteni.steny.C = { odM: 0, pasy: [{ typ: 'C.cetrisKc', doM: 1.2 }, { typ: 'C.skloBokyKc', doM: 6 }, { typ: 'jine', nazev: 'perf. plech', naklad: 900, doM: null }] };
+  Z.oplasteni.steny.D = { odM: 0, pasy: [{ typ: 'C.skloBokyKc', doM: null }] };
+  render();
+});
+await p.waitForTimeout(300);
+
+const nakres = await p.evaluate(() => {
+  const jadro = vypocetAkt().oplasteni;
+  const bloky = [...document.querySelectorAll('#ock-oplasteni-steny .opl-stena')];
+  return {
+    vyska: jadro.vyska,
+    steny: ['A', 'B', 'C', 'D'].map((k, i) => {
+      const blok = bloky[i];
+      const pasyJadro = jadro.pasy.filter(x => x.stena === k);
+      const kresby = [...blok.querySelectorAll('.opl-pas')];
+      return {
+        k,
+        maNakres: !!blok.querySelector('.opl-nakres'),
+        pasuJadro: pasyJadro.length,
+        pasuKresba: kresby.length,
+        /* Jádro ukládá zdola nahoru, nákres kreslí odshora — první vykreslený
+         * pás musí odpovídat poslednímu v datech. */
+        prvniTitulek: kresby.length ? kresby[0].getAttribute('title') : '',
+        posledniTypJadro: pasyJadro.length ? pasyJadro[pasyJadro.length - 1].typ : '',
+        vysky: kresby.map(e => Math.round(e.getBoundingClientRect().height)),
+        podilyJadro: pasyJadro.slice().reverse().map(x => (x.doM - x.odM) / (jadro.vyska - pasyJadro[0].odM)),
+        maNulu: !!blok.querySelector('.opl-nula'),
+        koty: [...blok.querySelectorAll('.opl-kota')].map(e => e.textContent.trim()),
+        pata: (blok.querySelector('.opl-nakres-pata') || {}).textContent || '',
+        sraf: [...blok.querySelectorAll('.opl-pas-bez')].length,
+      };
+    }),
+    legendaKusu: document.querySelectorAll('#ock-oplasteni-steny .opl-legenda-kus').length,
+    legenda: (document.querySelector('#ock-oplasteni-steny .opl-legenda') || {}).textContent || '',
+  };
+});
+
+zkus('nákres se kreslí u všech čtyř stěn',
+  nakres.steny.every(s => s.maNakres), nakres.steny.map(s => s.k + ':' + s.maNakres));
+zkus('počet vykreslených pásů sedí s tím, co spočítalo jádro',
+  nakres.steny.every(s => s.pasuKresba === s.pasuJadro),
+  nakres.steny.map(s => s.k + ' ' + s.pasuKresba + '/' + s.pasuJadro));
+zkus('nákres nevymyslí pás navíc ani u stěny po celé výšce',
+  nakres.steny.find(s => s.k === 'D').pasuKresba === 1,
+  nakres.steny.find(s => s.k === 'D').pasuKresba);
+zkus('pásy se kreslí ODSHORA (první vykreslený = poslední v datech)',
+  nakres.steny.every(s => !s.pasuKresba || s.prvniTitulek.length > 0),
+  nakres.steny.map(s => s.k + ': ' + s.prvniTitulek));
+
+/* Výšky pruhů musí odpovídat poměru skutečných výšek pásů. Tohle je jádro
+ * věci: obrázek, jehož proporce nesedí, je horší než tabulka. */
+{
+  const c = nakres.steny.find(s => s.k === 'C');
+  const soucet = c.vysky.reduce((a, b) => a + b, 0);
+  const sedi = c.vysky.every((v, i) => Math.abs(v / soucet - c.podilyJadro[i]) < 0.04);
+  zkus('výšky pruhů odpovídají poměru výšek pásů',
+    sedi, { vysky: c.vysky, ocekavane: c.podilyJadro.map(x => Math.round(x * 100) / 100) });
+}
+
+zkus('stěna s dolní mezí v prohlubni má čáru úrovně nástupu',
+  nakres.steny.find(s => s.k === 'B').maNulu === true);
+zkus('stěna bez prohlubně ji nemá',
+  nakres.steny.find(s => s.k === 'A').maNulu === false);
+zkus('kóty nesou horní hranu i zápornou dolní mez',
+  nakres.steny.find(s => s.k === 'B').koty.some(t => /-1,1|-1\.1/.test(t)),
+  nakres.steny.find(s => s.k === 'B').koty);
+zkus('pás „bez — dodá stavba" je odlišený šrafou, ne barvou materiálu',
+  nakres.steny.find(s => s.k === 'B').sraf === 1,
+  nakres.steny.find(s => s.k === 'B').sraf);
+
+/* Pata nákresu: plocha stěny, nebo výslovné „bez plochy". Bez toho by
+ * barevné pásy slibovaly materiál i na stěně, za kterou se nic nepočítá
+ * (čelní stěna nese dveřní portály — její plocha jsou jen světlíky). */
+zkus('pod každým nákresem stojí plocha stěny, nebo že žádná není',
+  nakres.steny.every(s => /m²/.test(s.pata) || /bez plochy/.test(s.pata)),
+  nakres.steny.map(s => s.k + ': ' + s.pata.trim()));
+
+zkus('pod kartou je legenda s plochami podle typu',
+  nakres.legendaKusu >= 2 && /celkem k opláštění/.test(nakres.legenda), nakres.legendaKusu);
+
 /* ---------- vypnutí režimu ---------- */
 
 await p.evaluate(() => { oplRezimSet('standard'); });

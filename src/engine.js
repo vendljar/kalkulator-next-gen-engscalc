@@ -1435,6 +1435,19 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     lakovani: { lakovna, tomas, pouzito: lakovaniKc, rezim: L.rezim, vlastniRows: vlLakRows, vlastniKc: lakVlastniKc },
     montaz: { hodinyNavic: hn, hodinyNavicCelkem: hodinyNavic, hod1osoba: montazHod1, hodCelkem: montazHod, dni: montazHod1 / 8 },
     nazvyPolozek,
+    /* PÁSY OPLÁŠTĚNÍ TAK, JAK JE SPOČÍTALO JÁDRO (#268).
+     *
+     * Vydávají se ven kvůli NÁKRESU stěn v Zadání šachty. Obrazovka si je
+     * schválně nepočítá sama: jádro dělicí výšku ořezává (pás nesmí pod
+     * předchozí ani nad horní hranu) a plochu pod nulou bere jinak než nad
+     * ní. Nákres, který by si to spočítal po svém, by při první změně
+     * pravidel ukazoval něco jiného, než z čeho vyšla cena — a obrázek,
+     * kterému se nedá věřit, je horší než žádný.
+     *
+     * Ve standardním režimu je pole prázdné; kreslit není co. */
+    oplasteni: { rezim: oplRezim, vyska: vyskaProsklene, pasy: oplPasy,
+                 sirkySten: stenaSirka, plochaCelkem: oplPlochaCelkem,
+                 podleTypu: Object.keys(oplPodleTypu).map(k => ({ klic: k, ...oplPodleTypu[k] })) },
     sekce, volitelneKatalog, souctySekci: { hrubaOck: s1, oplasteni: s2, volitelne: s3, rezie: s4 }, rezerva,
     priplatky, souhrn,
   };

@@ -8,6 +8,53 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.9.7 — 21. 9. 2026
+
+### Nákres stěny u opláštění po stěnách (#281)
+
+Zadání J. V. po prvním proklikání: *„kalkulace opláštění postrádá
+vizualizaci, takhle je to nepřehledné."* Tabulka pásů řekne, co je zadané —
+neřekne, jak stěna **vypadá**. Čtyři stěny po dvou pásech si člověk musí
+v hlavě skládat a záporná dolní mez v prohlubni se z čísel nepozná vůbec.
+
+U každé stěny proto stojí **schematický nákres**:
+
+- svislý pruh rozdělený na pásy **v poměru skutečných výšek**,
+- **barva podle typu** opláštění, název materiálu v pásu,
+- **kóty** u horní hrany, každého rozhraní pásů i dolní meze,
+- **čárkovaná čára úrovně nástupu (0 m)**, takže je vidět, co sahá do
+  prohlubně; záporné kóty jsou hnědé,
+- `bez — dodá stavba` je **šrafa, ne barva** — není to materiál,
+- pod nákresem **plocha stěny**, nebo výslovné **„bez plochy k opláštění"**.
+
+Pod kartou přibyla **legenda s plochami podle typu** a celkovou plochou —
+tatáž čísla, která jdou do kalkulace.
+
+**Nákres kreslí pásy, které spočítalo jádro** (`r.oplasteni.pasy`, nově se
+vydávají z `vypocet()`), ne vlastní přepočet zadání. Jádro dělicí výšku
+ořezává a plochu pod nulou bere jinak než nad ní; obrázek, který by si to
+počítal po svém, by při první změně pravidel ukazoval něco jiného, než
+z čeho vyšla cena.
+
+**Proč je ta plocha pod nákresem důležitá:** čelní stěna nese dveřní
+portály, takže její plocha k opláštění jsou jen světlíky nad dveřmi — a bez
+nich vyjde **nula**. Barevné pásy by pak slibovaly materiál, za který se nic
+nepočítá. S číslem je to na první pohled vidět.
+
+Sada `overit_oplasteni.mjs` narostla na **36 kontrol**; ověřeno negativně —
+bez nákresu jich 7 padá. Kontroly měří skutečné rozměry vykreslených prvků
+(poměry výšek pruhů proti výškám pásů), ne přítomnost tříd.
+
+Mimochodem: první pokus měl u výpočtu zálohu přes `vypocet()`, která by
+obcházela zámek odeslané nabídky. **Chytil to `test_zamek_otisk.js`** dřív,
+než se to stihlo dostat do commitu.
+
+### Ověření
+
+117 sad prošlo / 0 selhalo (1 přeskočena).
+
+---
+
 ## v21.9.6 — 21. 9. 2026
 
 ### P9 — nabídka si u soklu prohlubně odporovala (#279, nález N17)

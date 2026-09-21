@@ -152,6 +152,38 @@
   .opl-stena { min-width:0; }
   .opl-stena .row label { flex:1; min-width:0; }
   @media (max-width:1100px) { .opl-steny { grid-template-columns:1fr; } }
+  /* NÁKRES STĚNY (#281). Pole vlevo, obrázek vpravo. Kóty leží v samostatné
+     vrstvě nad pruhem, protože pruh má `overflow:hidden` (jinak by z něj
+     barva pásu vytekla přes zaoblený roh) a popisek by se v něm oříznul. */
+  .opl-stena-in { display:flex; gap:12px; align-items:flex-start; }
+  .opl-pole { flex:1; min-width:0; }
+  .opl-nakres { flex:none; width:152px; position:relative; padding:6px 0 0 34px; }
+  .opl-bar { border:1px solid var(--line); border-radius:3px; overflow:hidden; background:#fff; }
+  .opl-pas { display:flex; align-items:center; justify-content:center; overflow:hidden;
+             font-size:10px; line-height:1.1; color:#334155; text-align:center;
+             border-top:1px solid rgba(15,23,42,.16); }
+  .opl-pas:first-child { border-top:0; }
+  .opl-pas > span { padding:0 3px; }
+  /* „bez — dodá stavba" není materiál, tak nemá ani barvu: šrafa říká
+     „tudy se neoplášťuje", aniž by to vypadalo jako další sklo. */
+  .opl-pas-bez { background-image:repeating-linear-gradient(45deg,#eef2f7 0 5px,#dfe6ee 5px 10px) !important;
+                 color:var(--mut); }
+  .opl-koty { position:absolute; left:0; top:6px; right:0; pointer-events:none; }
+  .opl-kota { position:absolute; left:0; width:30px; text-align:right;
+              transform:translateY(-50%); font-size:10px; color:var(--mut); white-space:nowrap; }
+  .opl-kota-pod { color:#92400e; font-weight:600; }
+  /* Úroveň nástupu (0 m). Bez ní se z obrázku nepozná, co je prohlubeň. */
+  .opl-nula { position:absolute; left:34px; right:0; border-top:1px dashed #92400e; }
+  .opl-nakres-pata { margin-top:4px; font-size:11px; text-align:center; color:var(--ink); font-weight:600; }
+  .opl-nakres-nic { color:#92400e; font-weight:600; }
+  .opl-legenda { grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:6px 16px;
+                 margin:10px 0 2px; font-size:12px; color:var(--mut); }
+  .opl-legenda-kus { display:inline-flex; align-items:center; gap:5px; }
+  .opl-legenda-kus i { width:11px; height:11px; border-radius:2px; display:inline-block;
+                       border:1px solid var(--line); }
+  .opl-legenda-kus b { color:var(--ink); font-weight:600; }
+  .opl-legenda-soucet { margin-left:auto; }
+  @media (max-width:640px) { .opl-stena-in { flex-direction:column; } .opl-nakres { width:100%; } }
   input[type=number] { -moz-appearance:textfield; appearance:textfield; }
   input[type=number]::-webkit-outer-spin-button,
   input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }

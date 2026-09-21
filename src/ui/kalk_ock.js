@@ -639,7 +639,104 @@ function oplJineHtml(k, i) {
     </span>`;
 }
 
-function oplStenaHtml(s) {
+/* ---------- NÁKRES STĚNY (#281) ----------
+ *
+ * Tabulka pásů řekne, co je zadané; neřekne, jak stěna VYPADÁ. Při prvním
+ * proklikání (J. V., 21. 9. 2026) se ukázalo, že čtyři stěny po dvou pásech
+ * jsou jako text nepřehledné — člověk si musí v hlavě skládat, co je nahoře
+ * a co dole, a záporná dolní mez v prohlubni se z čísel nepozná vůbec.
+ *
+ * Nákres proto kreslí PÁSY, KTERÉ SPOČÍTALO JÁDRO (`r.oplasteni.pasy`), ne
+ * vlastní přepočet zadání. Jádro dělicí výšku ořezává (pás nesmí pod
+ * předchozí ani nad horní hranu) a plochu pod nulou bere jinak než nad ní;
+ * obrázek, který by si to počítal po svém, by při první změně pravidel
+ * ukazoval něco jiného, než z čeho vyšla cena. */
+const OPL_BARVY = {
+  'C.skloBokyKc':   '#bfdbfe',
+  'C.skloCelniKc':  '#a7f3d0',
+  'C.skloVsg442Kc': '#5eead4',
+  'C.cetrisKc':     '#e7d5bb',
+  'jine':           '#ddd6fe',
+};
+/* Neznámý typ dostane šedou, ať nákres přežije, když v jádru přibude
+ * materiál — chybějící barva nesmí shodit obrazovku. */
+function oplBarva(typ) { return OPL_BARVY[typ] || '#e5e7eb'; }
+
+function oplTypNazev(typ, nazev) {
+  if (typ === 'jine') return nazev || 'jiné';
+  const t = (typeof OPLASTENI_TYPY !== 'undefined' ? OPLASTENI_TYPY : []).find(x => x.id === typ);
+  return t ? t.nazev : String(typ || '');
+}
+
+const OPL_NAKRES_PX = 150;
+
+function oplNakresStena(k, opl) {
+  const pasy = ((opl && opl.pasy) || []).filter(p => p.stena === k);
+  if (!pasy.length) return '';
+  const dole = +pasy[0].odM || 0;
+  const nahore = +opl.vyska || 0;
+  const rozsah = nahore - dole;
+  if (!(rozsah > 0)) return '';
+  const naPx = v => (nahore - v) / rozsah * OPL_NAKRES_PX;
+
+  /* Odshora dolů — tak se člověk na stěnu dívá. Ukládají se zdola nahoru. */
+  const kusy = pasy.slice().reverse().map(p => {
+    const vys = Math.max(2, (+p.doM - +p.odM) / rozsah * OPL_NAKRES_PX);
+    const jmeno = oplTypNazev(p.typ, p.nazev);
+    const m2 = (typeof formatCislo === 'function') ? formatCislo(p.m2) : String(Math.round(p.m2 * 100) / 100);
+    return `<div class="opl-pas${p.typ === 'bez' ? ' opl-pas-bez' : ''}"
+        style="height:${vys.toFixed(1)}px;background:${esc(oplBarva(p.typ))}"
+        title="${esc(jmeno + ' · ' + m2 + ' m²')}"
+      >${vys >= 18 ? `<span>${esc(jmeno)}</span>` : ''}</div>`;
+  }).join('');
+
+  /* Kóty: horní hrana, každé rozhraní pásů a dolní mez. Set kvůli stěně
+   * o jednom pásu, kde by se horní hrana objevila dvakrát. */
+  const hranice = [];
+  const pridej = v => { if (!hranice.some(x => Math.abs(x - v) < 1e-9)) hranice.push(v); };
+  pridej(nahore);
+  pasy.forEach(p => { pridej(+p.doM); pridej(+p.odM); });
+  const koty = hranice.map(v => {
+    const pod = v < 0;
+    return `<span class="opl-kota${pod ? ' opl-kota-pod' : ''}" style="top:${naPx(v).toFixed(1)}px">${
+      esc((typeof formatCislo === 'function' ? formatCislo(v) : String(v)))}</span>`;
+  }).join('');
+
+  /* Čára úrovně nástupu: bez ní se z obrázku nepozná, co je prohlubeň. */
+  const nula = (dole < 0 && nahore > 0)
+    ? `<span class="opl-nula" style="top:${naPx(0).toFixed(1)}px" title="úroveň nástupu (0 m)"></span>` : '';
+
+  /* PLOCHA STĚNY POD OBRÁZKEM. Bez ní by obrázek mohl lhát: čelní stěna nese
+   * dveřní portály, takže její plocha k opláštění jsou jen světlíky nad
+   * dveřmi — a bez nich vyjde NULA. Barevné pásy by pak slibovaly materiál,
+   * za který se nic nepočítá. S číslem je to na první pohled vidět. */
+  const stenaM2 = pasy.reduce((a, p) => a + (p.typ === 'bez' ? 0 : (+p.m2 || 0)), 0);
+  const cis = v => (typeof formatCislo === 'function') ? formatCislo(v) : String(Math.round(v * 100) / 100);
+  const popisek = `<div class="opl-nakres-pata${stenaM2 > 0 ? '' : ' opl-nakres-nic'}">${
+    stenaM2 > 0 ? esc(cis(stenaM2)) + ' m²'
+      : 'bez plochy k opláštění'}</div>`;
+
+  return `<div class="opl-nakres">
+      <div class="opl-bar" style="height:${OPL_NAKRES_PX}px">${kusy}</div>
+      <div class="opl-koty" style="height:${OPL_NAKRES_PX}px">${koty}${nula}</div>
+      ${popisek}
+    </div>`;
+}
+
+/* Souhrn ploch podle typu — totéž číslo, které jde do kalkulace. */
+function oplSouhrnHtml(opl) {
+  const podle = (opl && opl.podleTypu) || [];
+  if (!podle.length) return '';
+  const cis = v => (typeof formatCislo === 'function') ? formatCislo(v) : String(Math.round(v * 100) / 100);
+  const bunky = podle.map(t => `<span class="opl-legenda-kus">
+      <i style="background:${esc(oplBarva(t.typ))}"></i>${esc(oplTypNazev(t.typ, t.nazev))}
+      <b>${esc(cis(t.m2))} m²</b></span>`).join('');
+  return `<div class="opl-legenda">${bunky}
+    <span class="opl-legenda-kus opl-legenda-soucet">celkem k opláštění
+      <b>${esc(cis(opl.plochaCelkem || 0))} m²</b></span></div>`;
+}
+
+function oplStenaHtml(s, opl) {
   const k = s.k;
   const st = oplStena(k);
   const cela = oplCelaVyska(k);
@@ -653,7 +750,12 @@ function oplStenaHtml(s) {
           onchange="oplCelaVyskaSet('${escJs(k)}', this.checked)"> po celé výšce</label>
     </span><span class="u"></span></div>`
     + (cela ? oplJineHtml(k, 0) : '');
-  if (cela) return hlava;
+  /* Pole vlevo, nákres vpravo. Nákres se kreslí i u stěny po celé výšce —
+   * i tam nese informaci (materiál a výšku), a hlavně se tím čtyři stěny
+   * vedle sebe čtou stejně. */
+  const obal = (obsah) => `<div class="opl-stena-in">
+      <div class="opl-pole">${obsah}</div>${oplNakresStena(k, opl)}</div>`;
+  if (cela) return obal(hlava);
 
   /* Pásy se vypisují ODSHORA DOLŮ, protože tak se na stěnu člověk dívá;
    * ukládají se zdola nahoru (viz jádro). Proto to obrácené pořadí. */
@@ -672,7 +774,7 @@ function oplStenaHtml(s) {
       + oplJineHtml(k, i);
   }).reverse().join('');
 
-  return hlava
+  return obal(hlava
     + `<div class="row"><label style="font-weight:400">— opláštění začíná</label>
         <input type="number" step="0.01" style="width:90px"
           title="výška, od které se opláštění počítá; záporná hodnota sahá do prohlubně"
@@ -680,12 +782,23 @@ function oplStenaHtml(s) {
     + pasy
     + `<div class="row"><label></label><span class="par">
         <button class="mini" onclick="oplPasPridej('${escJs(k)}')">+ přidat pás</button></span><span class="u"></span></div>`
-    + (varovani ? `<div class="seznam-varovani">Stěna ${esc(k)}: ${esc(varovani)}</div>` : '');
+    + (varovani ? `<div class="seznam-varovani">Stěna ${esc(k)}: ${esc(varovani)}</div>` : ''));
 }
 
 /* Karta se kreslí JEN v režimu po stěnách (návrh, oddíl B). */
 function oplasteniKarta() {
   if (!oplPoStenach()) return '';
+  /* Pásy z JÁDRA, jednou pro celou kartu. Zámek respektuje `vypocetAkt()`:
+   * u odeslané nabídky vydá zmrazený otisk, takže nákres ukazuje stěnu tak,
+   * jak ji viděl zákazník, ne jak by vyšla dnes. Kdyby výpočet z nějakého
+   * důvodu spadl, karta se musí vykreslit i bez obrázku — zadání je
+   * důležitější než ilustrace.
+   *
+   * Volá se VÝHRADNĚ `vypocetAkt()`. Záloha přes `vypocet()` by obcházela
+   * zámek: odeslaná nabídka by se překreslila dnešním jádrem místo svého
+   * otisku (nález A1). Hlídá to `test_zamek_otisk.js` — a chytil to hned. */
+  let opl = null;
+  try { opl = (vypocetAkt() || {}).oplasteni || null; } catch (e) { opl = null; }
   return card('Opláštění po stěnách (A–D)',
     /* Každá stěna je JEDEN blok. Bez toho ji `.inputs .card .body` rozseká:
      * ten grid sází do sloupců každý `.row` zvlášť, takže hlavičky čtyř stěn
@@ -693,8 +806,9 @@ function oplasteniKarta() {
      * proužku) a po rozdělení stěny na pásy by se hlavička, dolní mez a pásy
      * rozletěly do různých sloupců. Viz `.opl-steny` v app_template.html. */
     `<div class="opl-steny">`
-    + OPL_STENY.map(s => `<div class="opl-stena">${oplStenaHtml(s)}</div>`).join('')
+    + OPL_STENY.map(s => `<div class="opl-stena">${oplStenaHtml(s, opl)}</div>`).join('')
     + `</div>`
+    + oplSouhrnHtml(opl)
     + `<div class="note">Stěny se počítají po pásech a do kalkulace se sčítají <b>podle typu</b>,
       ne podle stěny — nabídka se tím nerozdrobí na osm skoro stejných řádků.
       Pás začíná tam, kde skončil předchozí, takže překryv ani mezera nemůžou vzniknout.
