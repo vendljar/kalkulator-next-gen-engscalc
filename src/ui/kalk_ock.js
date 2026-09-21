@@ -161,11 +161,11 @@ function renderInputs() {
         + `<div class="row"><label>Můstek mezi budovou a OCK</label>
             <input type="checkbox" ${Z.mustek ? 'checked' : ''} onchange="set('Z.mustek', this.checked)"><span class="u"></span></div>`
         + (Z.mustek
-          ? `<div class="row"><label>— hloubka můstku</label>
+          ? `<div class="row"><label>Hloubka můstku</label>
                <input type="number" step="10" min="0" value="${esc(Z.mustekHloubkaMm == null ? '' : Z.mustekHloubkaMm)}"
                  placeholder="mm" title="vzdálenost mezi budovou a OCK; standard max 1 000 mm"
                  onchange="set('Z.mustekHloubkaMm', this.value)"><span class="u">mm</span></div>
-             <div class="row"><label>— šířka můstku</label>
+             <div class="row"><label>Šířka můstku</label>
                <input type="number" step="10" min="0" value="${esc(Z.mustekSirkaMm == null ? '' : Z.mustekSirkaMm)}"
                  placeholder="mm" title="standard: max na šířku OCK"
                  onchange="set('Z.mustekSirkaMm', this.value)"><span class="u">mm</span></div>`
@@ -845,7 +845,7 @@ function oplStenaHtml(s, opl) {
    * ukládají se zdola nahoru (viz jádro). Proto to obrácené pořadí. */
   const pasy = st.pasy.map((p, i) => {
     const posledni = (i === st.pasy.length - 1);
-    return `<div class="row"><label style="font-weight:400">— pás ${i + 1}${posledni ? ' (až nahoru)' : ''}</label>
+    return `<div class="row"><label style="font-weight:400">Pás ${i + 1}${posledni ? ' (až nahoru)' : ''}</label>
       <span class="par">${oplTypSelect(k, i)}
         ${posledni ? '<span class="note">po horní hranu</span>'
           : `<input type="number" step="0.01" style="width:90px" placeholder="do (m)"
@@ -858,14 +858,21 @@ function oplStenaHtml(s, opl) {
       + oplJineHtml(k, i);
   }).reverse().join('');
 
+  /* POŘADÍ ŘÁDKŮ ODPOVÍDÁ STĚNĚ (zadání J. V. 21. 9. 2026).
+   *
+   * Pásy se čtou odshora dolů, takže „Opláštění začíná" — spodní hrana
+   * opláštění — patří až pod ně, ne nad ně. Dokud stálo nahoře, čtl se
+   * sloupec zdola nahoru a pak zase shora dolů, a nákres vedle toho šel
+   * opačně než text. Tlačítko „+ přidat pás" zůstává hned pod pásy, protože
+   * se týká jich. */
   return obal(hlava
-    + `<div class="row"><label style="font-weight:400">— opláštění začíná</label>
-        <input type="number" step="0.01" style="width:90px"
-          title="výška, od které se opláštění počítá; záporná hodnota sahá do prohlubně"
-          value="${esc(st.odM)}" onchange="oplOdSet('${escJs(k)}', this.value)"><span class="u">m</span></div>`
     + pasy
     + `<div class="row"><label></label><span class="par">
         <button class="mini" onclick="oplPasPridej('${escJs(k)}')">+ přidat pás</button></span><span class="u"></span></div>`
+    + `<div class="row"><label style="font-weight:400">Opláštění začíná</label>
+        <input type="number" step="0.01" style="width:90px"
+          title="výška, od které se opláštění počítá; záporná hodnota sahá do prohlubně"
+          value="${esc(st.odM)}" onchange="oplOdSet('${escJs(k)}', this.value)"><span class="u">m</span></div>`
     + varovaniHtml);
 }
 
@@ -906,7 +913,7 @@ function oplasteniKarta() {
      * neplní, je horší než mlčení — obchodník podle něj čeká u Cetrisu nižší
      * cenu, která nepřijde. Jestli se terče a lišty MAJÍ vázat na sklo, je
      * otázka na J. V. (zapsáno v roadmapě). */
-    + `<div class="note">Záporná hodnota u „opláštění začíná" sahá <b>do prohlubně</b>.
+    + `<div class="note">Záporná hodnota u „Opláštění začíná" sahá <b>do prohlubně</b>.
       <b>Terče, lišty a plastové kotvy</b> se počítají z rozměrů šachty —
       typ opláštění s nimi zatím nehýbe.
       Režim po stěnách je vždy <b>mimo standard</b> — standard zná jen jednotné opláštění.</div>`,

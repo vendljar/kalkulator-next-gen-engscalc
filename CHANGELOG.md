@@ -8,6 +8,32 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.9.16 — 21. 9. 2026
+
+### Opláštění: pořadí řádků, popisky — a místo, kde zadání přežije (#293)
+
+**„Opláštění začíná" se přesunulo pod „+ přidat pás".** Je to spodní hrana
+opláštění, takže nad pásy působilo, že se sloupec čte zdola nahoru a pak
+zase shora dolů — a šel proti nákresu vedle sebe. Tlačítko zůstává hned pod
+pásy, protože se týká jich.
+
+**Popisky bez pomlčky, velkým písmenem:** `Pás 1` místo `— pás 1`. Totéž
+u můstku (`Hloubka můstku`, `Šířka můstku`). Pomlčku dál nese jen
+`— (jen exteriérová šachta)` u lemování — tam není popisek, ale hodnota ve
+smyslu „neuplatní se".
+
+**A hlavně: vzniklo `podklady/`.** Vizuál opláštění se dnes ztratil proto, že
+byl popsaný jen v chatu — a chat se u dlouhého sezení shrnuje, takže zadání,
+které žije jen tam, zanikne zákonitě. Co leží v repozitáři, se naopak čte
+znovu na začátku každé práce. `podklady/OBRAZOVKA_OPLASTENI.md` je teď
+závazný popis té obrazovky; `podklady/README.md` říká, kam co ukládat.
+
+Dokument sám ale nestačí — **pojistkou je test.** `overit_oplasteni.mjs`
+nově měří pořadí řádků i tvar popisků a je ověřeno, že při návratu ke staré
+podobě spadne.
+
+---
+
 ## v21.9.15 — 21. 9. 2026
 
 ### Pojistka, která se dá tiše vypnout, potřebuje vlastní test (#292)

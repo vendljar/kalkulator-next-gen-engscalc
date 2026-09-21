@@ -93,6 +93,19 @@
    "testy": "netlify/test_funkce.mjs (210 prošlo, 0 selhalo). Plná sada --smoke: 126 prošlo, 0 selhalo."
   },
   {
+   "id": "293",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "hotovoV": "v21.9.16",
+   "nazev": "Opláštění: pořadí řádků, popisky a složka podklady/",
+   "proc": "Zadání J. V. 21. 9. 2026 ke snímku obrazovky: přesunout „opláštění začíná\" pod „+ přidat pás\" a nezačínat popisky pomlčkou. Ve stejné zprávě otázka, jak mu průběžné informace ukládat, aby se neztrácely tak jako dnes vizuál opláštění.",
+   "detail": "POŘADÍ: „Opláštění začíná\" je SPODNÍ hrana opláštění. Nad pásy působilo, že se sloupec čte zdola nahoru a pak zase shora dolů, a šel proti nákresu vedle sebe. Tlačítko „+ přidat pás\" zůstává hned pod pásy, protože se týká jich.\n\nPOPISKY: bez pomlčky na začátku, velkým písmenem — „Pás 1\" místo „— pás 1\". Stejné pravidlo uplatněno i na můstek („Hloubka můstku\", „Šířka můstku\"). Pomlčku dál nese jen „— (jen exteriérová šachta)\" u lemování: tam to není popisek, ale HODNOTA ve smyslu „neuplatní se\" (zadání J. V. z 9. 9. 2026).\n\nPROČ SE VIZUÁL ZTRATIL: byl popsaný jen v chatu. U dlouhého sezení se starší část rozhovoru shrnuje, takže zadání, které žije jen v chatu, zanikne zákonitě — není to nehoda, je to vlastnost. Vzniklo proto `podklady/`: `OBRAZOVKA_OPLASTENI.md` je závazný popis té obrazovky (pořadí, popisky, nákres, varování, co zatím nedělá) a `README.md` říká, kam co ukládat a co do repozitáře nepatří (ceny a firemní údaje na Drive). Na složku odkazuje README_ZDROJAKY.md, aby se našla.\n\nDOKUMENT SÁM NESTAČÍ: dokud je pravidlo jen v textu, může ho příští úprava porušit a nikdo si toho nevšimne. Pojistkou je test — `overit_oplasteni.mjs` měří pořadí řádků i tvar popisků a je ověřeno měřením, že při návratu ke staré podobě spadne (2 kontroly).",
+   "kde": "src/ui/kalk_ock.js (oplStenaHtml, popisky můstku), overit_oplasteni.mjs, podklady/README.md, podklady/OBRAZOVKA_OPLASTENI.md, README_ZDROJAKY.md",
+   "testy": "overit_oplasteni.mjs (50). Plná sada --smoke: 126 prošlo, 0 selhalo."
+  },
+  {
    "id" : "285",
    "vlna" : "C",
    "stav" : "ceka",

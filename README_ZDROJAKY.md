@@ -9,6 +9,10 @@ Verze v tomto archivu: **v7.9.2** (soubor `verze.txt`).
 - `src/ui/` – uživatelské rozhraní rozdělené po záložkách
 - `build.py` – sestavovací skript
 - `verze.txt` – aktuální číslo verze (tvar DEN.MĚSÍC.pořadí)
+- `podklady/` – **závazné popisy, jak se má aplikace chovat a vypadat**
+  (např. `OBRAZOVKA_OPLASTENI.md`). Čte se na začátku práce; co je jen
+  v chatu, se dřív nebo později ztratí. Návod je v `podklady/README.md`.
+- `roadmapa/roadmap.json` – co se má udělat a co se čeká na rozhodnutí
 
 ## Jak sestavit aplikaci
 

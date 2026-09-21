@@ -130,6 +130,39 @@ zkus('objevilo se pole „opláštění začíná"',
   await stenaA.locator('input[onchange*="oplOdSet"]').count() === 1);
 zkus('objevilo se tlačítko „+ přidat pás"',
   await stenaA.locator('button[onclick*="oplPasPridej"]').count() === 1);
+/* POŘADÍ ŘÁDKŮ A POPISKY (zadání J. V. 21. 9. 2026).
+ *
+ * Pásy se čtou odshora dolů, takže „Opláštění začíná" — spodní hrana
+ * opláštění — patří AŽ POD ně, ne nad ně. Dokud stálo nahoře, šel sloupec
+ * proti nákresu vedle sebe. A popisky nezačínají pomlčkou: „Pás 1", ne
+ * „— pás 1". */
+{
+  const poradi = await stenaA.evaluate(el => {
+    const radky = [...el.querySelectorAll('.row')];
+    const kde = (test) => radky.findIndex(r => test(r));
+    return {
+      odM: kde(r => r.querySelector('input[onchange*="oplOdSet"]')),
+      tlacitko: kde(r => r.querySelector('button[onclick*="oplPasPridej"]')),
+      prvniPas: kde(r => r.querySelector('select')),
+      popisky: radky.map(r => (r.querySelector('label') || {}).textContent || '')
+                    .map(s => s.trim()).filter(Boolean),
+    };
+  });
+  zkus('„Opláštění začíná" stojí až pod tlačítkem „+ přidat pás"',
+    poradi.odM > poradi.tlacitko && poradi.tlacitko > poradi.prvniPas,
+    JSON.stringify({ prvniPas: poradi.prvniPas, tlacitko: poradi.tlacitko, odM: poradi.odM }));
+  zkus('žádný popisek řádku nezačíná pomlčkou',
+    poradi.popisky.every(s => !/^[—–-]/.test(s)), JSON.stringify(poradi.popisky));
+  zkus('popisky začínají velkým písmenem',
+    poradi.popisky.every(s => s[0] === s[0].toUpperCase()), JSON.stringify(poradi.popisky));
+  /* POJISTKA PROTI PRÁZDNÉ KONTROLE: kdyby se popisky nenašly, obě kontroly
+   * výš by prošly nad prázdným polem. */
+  zkus('kontrola není prázdná — popisky se opravdu načetly',
+    poradi.popisky.length >= 3 && poradi.popisky.some(s => /^Pás 1/.test(s))
+      && poradi.popisky.some(s => /^Opláštění začíná/.test(s)),
+    JSON.stringify(poradi.popisky));
+}
+
 zkus('obrazovka řekne, že chybí dělicí výška',
   (await stenaA.locator('.seznam-varovani').innerText()).includes('dělicí výšku'),
   await stenaA.locator('.seznam-varovani').count());
