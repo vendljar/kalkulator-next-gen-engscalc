@@ -219,6 +219,49 @@ zkus('Escape nevrací ceny', poEsc.odp === false && poEsc.montaz === stav3.monta
     /nepodařilo vrátit/i.test(rozbita.lista), rozbita.lista.slice(0, 120));
 }
 
+/* 8) OBNOVA ZÁLOHY Z PROHLÍŽEČE se ptá stejně jako otevření ze složky
+ *
+ * Dávka v21.9.9 zavedla dialog u otevření ze složky a z online databáze,
+ * ale `historieObnovZalohu` zůstala u pouhé věty v liště (nález nezávislé
+ * revize 21. 9. 2026). Přitom je to TÁŽ situace — a spíš horší: záloha
+ * mohla v prohlížeči ležet od minulého ceníku. Obchodník se nedozvěděl,
+ * o kolik se cena hnula, a neměl jak přepočet vrátit.
+ *
+ * Měří se zapojení, ne přepočet sám: `uloSrovnejSPlatnymCenikem` se na dobu
+ * kontroly podstrčí, aby vrátila výsledek „přepočítáno". Skutečný přepočet
+ * má svoje sady v Node (test_cenik_dopad.js, test_cenik_stari.js). */
+{
+  await priprava();
+  const obnova = await p.evaluate(async () => {
+    const puvodni = window.uloSrovnejSPlatnymCenikem;
+    let volanoSrovnani = 0;
+    window.uloSrovnejSPlatnymCenikem = () => { volanoSrovnani++; return { prepocteno: 1, zmen: 4 }; };
+    /* Záloha v úložišti, ze které se obnovuje. */
+    Uloziste.zapis(HIST_KLIC, JSON.stringify({ kdy: new Date().toISOString(),
+      cislo: 'ZK-1', nazevAkce: 'Zkouška', zakazka: JSON.stringify(ZAK) }));
+    historieObnovZalohu();
+    await new Promise(r => setTimeout(r, 250));
+    const dlg = document.querySelector('#dlg');
+    const text = dlg ? dlg.textContent.replace(/\s+/g, ' ') : '';
+    const btn = [...document.querySelectorAll('#dlg .dlg-btns button')]
+      .map(x => x.textContent.trim());
+    /* Dialog se zavře, ať neblokuje zbytek průchodu. */
+    const nech = [...document.querySelectorAll('#dlg .dlg-btns button')]
+      .find(x => /dnešním ceníkem|Počítat/i.test(x.textContent));
+    if (nech) nech.click();
+    await new Promise(r => setTimeout(r, 150));
+    window.uloSrovnejSPlatnymCenikem = puvodni;
+    return { volanoSrovnani, otevren: !!dlg, text, btn };
+  });
+  zkus('obnova zálohy: přepočet se opravdu spustil', obnova.volanoSrovnani === 1,
+    String(obnova.volanoSrovnani));
+  zkus('obnova zálohy nabídne dialog o přepočtu', obnova.otevren === true);
+  zkus('a dialog řekne, o kolik se cena hnula',
+    /(zvedla|snížila) o|nemělo vliv/i.test(obnova.text), obnova.text.slice(0, 160));
+  zkus('a nabídne vrácení původních cen',
+    obnova.btn.some(x => /Vrátit/i.test(x)), JSON.stringify(obnova.btn));
+}
+
 zkus('za celý průchod nevznikla chyba v konzoli', konzole.length === 0, konzole.slice(0, 2).join(' | '));
 
 await b.close();

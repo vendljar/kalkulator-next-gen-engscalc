@@ -572,8 +572,30 @@ function cenikCenaRozpracovanych(zak, jekly) {
     if (!v || !v.data || !v.data.ock) return;
     if (typeof variantaUzamcena === 'function' && variantaUzamcena(v)) return;
     try {
-      const r = vypocet(v.data.ock.zadani, v.data.cenik, jekly, v.data.ock.fixes);
-      cena += (r && r.souhrn && +r.souhrn.zakladCena) || 0;
+      /* Mezisoučet za variantu, ne rovnou do `cena`: kdyby projekce spadla,
+       * zůstala by v součtu půlka varianty, která se zároveň hlásí jako
+       * chyba (nález druhého kola revize 21. 9. 2026 — změřeno
+       * `{"cena":912000,"pocet":0,"chyby":1}`). Buď se započítá celá, nebo
+       * vůbec. */
+      let dil = 0;
+      /* POČÍTÁ SE JEN STRANA, KTERÁ JDE DO NABÍDKY.
+       *
+       * Zakázka může být jen OCK, jen PROJ, nebo obojí — rozhoduje
+       * `zakazkaVedouciStrana`. Zamčená strana se nenabízí a její čísla do
+       * dopadu na cenu nepatří. Bez tohohle rozlišení nesla každá zakázka
+       * „jen OCK" fantomovou cenu projekce z výchozího zadání a změna
+       * SAZBY PROJEKTANTA hlásila u čistě ocelářské nabídky pohyb ceny,
+       * který se nestal — změřeno 160 961 Kč při nezměněné nabízené ceně
+       * 912 000 Kč. Obchodník by podle toho klikl „Vrátit původní ceny" a
+       * vrátil si zastaralý ceník kvůli změně, která se ho netýká.
+       * (Regresi zavedla dnešní oprava dopoledne, našlo ji druhé kolo
+       * nezávislé revize.) */
+      const strana = (typeof zakazkaVedouciStrana === 'function')
+        ? zakazkaVedouciStrana(zak) : '';
+      if (strana !== 'proj') {
+        const r = vypocet(v.data.ock.zadani, v.data.cenik, jekly, v.data.ock.fixes);
+        dil += (r && r.souhrn && +r.souhrn.zakladCena) || 0;
+      }
       /* PROJEKCE SE POČÍTÁ TAKY (oprava 21. 9. 2026, nezávislá revize).
        *
        * `cenikPrepoctiRozpracovane` počítá změněné položky i z ceníku PROJ
@@ -585,10 +607,12 @@ function cenikCenaRozpracovanych(zak, jekly) {
        *
        * Falešné ujištění je horší než mlčení: obchodník podle něj klikne
        * „Počítat s dnešním ceníkem" a nepodívá se. */
-      if (typeof vypocetProj === 'function' && v.data.proj) {
+      if (strana !== 'ock' && typeof vypocetProj === 'function'
+          && v.data.proj && v.data.proj.zadani && v.data.proj.cenik) {
         const rp = vypocetProj(v.data.proj.zadani, v.data.proj.cenik);
-        cena += (rp && rp.souhrn && +rp.souhrn.celkem) || 0;
+        dil += (rp && rp.souhrn && +rp.souhrn.celkem) || 0;
       }
+      cena += dil;
       pocet++;
     } catch (e) { chyby++; }
   });

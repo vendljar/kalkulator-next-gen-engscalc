@@ -1289,6 +1289,17 @@ function zakazkaDuplikuj(zak, noveCislo) {
   nova.protokol = [];
   delete nova.protokolKlic;
 
+  /* ČÍSLO NABÍDKY PROJ SE TAKY NEDĚDÍ (oprava 21. 9. 2026, druhé kolo revize).
+   *
+   * Přepisovalo se jen `nova.cislo` (řada OPR), zatímco `projHlavicka.cislo`
+   * (řada OVP) je identifikátor JINÉHO dokumentu — a kopie si ho nesla dál.
+   * Dvě zakázky pak vystupovaly navenek pod týmž číslem OVP a `zakazkaDuplicita`
+   * to neodhalila: porovnává jen číslo a název akce strany OCK. Kopie proto
+   * začíná s předlohovým číslem stejně jako nová zakázka — nevyplněné číslo je
+   * vidět a doplní se, kdežto cizí číslo vypadá jako správné. */
+  if (nova.projHlavicka && typeof ZAK_CISLO_PREDLOHA === 'string')
+    nova.projHlavicka.cislo = ZAK_CISLO_PREDLOHA;
+
   nova.varianty = (Array.isArray(nova.varianty) ? nova.varianty : []).map((v, i) => {
     const n = v && typeof v === 'object' ? v : {};
     n.zamek = null;          // nová zakázka nic neodeslala
@@ -1305,6 +1316,29 @@ function zakazkaDuplikuj(zak, noveCislo) {
      * tak bez jediného varování počítala z cen dohodnutých s někým jiným,
      * a od #284 se u ní neukázal ani dialog, který by na to upozornil. */
     delete n.cenikKvitance;
+    /* SCHVÁLENÍ SLEVY SE NEDĚDÍ (oprava 21. 9. 2026, druhé kolo revize).
+     *
+     * Táž úvaha jako u kvitance, ale s tvrdšími následky. Sleva schválená
+     * vedoucím pro jednoho zákazníka se do kopie propsala i s razítkem
+     * („schváleno", kdo a kdy) a `slevaPlati` ji rovnou pustila do ceny.
+     * Změřeno na dvou koncích:
+     *   · obchodník duplikát VŮBEC NEULOŽÍ — server (schvalovani.js) nemá
+     *     ke kopii starou verzi, takže rozhodnutí vidí jako nové a vrátí
+     *     „Slevu 12 % smí schválit jen nadřízený…", aniž by aplikace řekla proč;
+     *   · vedoucí, který kopii uloží, se stane schvalovatelem slevy, kterou
+     *     nikdy neviděl — server přepíše `schvalil` jeho jménem.
+     *
+     * Procenta a poznámka zůstávají: obchodník s tou slevou nejspíš počítá.
+     * Zahazuje se jen ROZHODNUTÍ. Dokud ho někdo nezopakuje, `slevaPlati`
+     * vrací false, takže se sleva do ceny nepropíše — nic se tiše neuplatní
+     * ani tiše neztratí. */
+    ['sleva', 'slevaProj'].forEach(cast => {
+      const s = n.data && n.data[cast];
+      if (!s || typeof s !== 'object') return;
+      s.stav = '';
+      ['schvalil', 'schvalilEmail', 'schvalilKdy', 'schvalenoProc',
+       'zamitl', 'zamitlEmail', 'zamitlKdy', 'zamitnutoProc'].forEach(k => { delete s[k]; });
+    });
     n.pripona = 0;           // čísluje se od začátku
     n.datum = (typeof dnesIso === 'function')
       ? dnesIso() : new Date().toISOString().slice(0, 10);

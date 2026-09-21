@@ -29,6 +29,7 @@ const eng = require('./engine.js');
 Object.keys(eng).forEach(k => { global[k] = eng[k]; });
 nacti('./engine_proj.js'); nacti('./techspec.js'); nacti('./zamek.js');
 nacti('./poznamky.js'); nacti('./zakazka.js');
+nacti('./program.js');   // zveřejnění se zkouší tou cestou, kterou opravdu chodí
 const ZC = require('./zkusebni_cenik.js');
 const JEKLY = JSON.parse(require('fs').readFileSync(__dirname + '/jekly.json', 'utf8'));
 
@@ -128,12 +129,55 @@ const ZAHR = () => ({ ceny: { 'C.prekladyKc': 60000 }, jenZahr: { 'C.prekladyKc'
   test('se zahraniční cenou se ČR hodnota nuluje dál',
     sOdchylkou.prekladyKc === 0, sOdchylkou.prekladyKc);
 
-  /* Jádro nálezu: cena nesmí zmizet ani po zveřejnění z tuzemské varianty. */
-  const zverejneny = V27();
-  zverejneny.prekladyKc = bezOdchylky.prekladyKc;      // co zapíše zveřejnění
-  test('po zveřejnění z ČR varianty zahraniční řada cenu drží',
-    cenikSlozRadu(zverejneny, { ceny: {}, jenZahr: {} }, 'zahr').prekladyKc === 50000,
-    cenikSlozRadu(zverejneny, { ceny: {}, jenZahr: {} }, 'zahr').prekladyKc);
+  /* Jádro nálezu: cena nesmí zmizet ani po zveřejnění z tuzemské varianty.
+   *
+   * PŮVODNĚ SE TU HODNOTA DOSAZOVALA RUČNĚ (`zverejneny.prekladyKc =
+   * bezOdchylky.prekladyKc`) a test tím jen potvrzoval sám sebe — skutečné
+   * zveřejnění jím neprocházelo (nález druhého kola revize 21. 9. 2026).
+   * Jde se proto přes `programNovaVerze`, tedy tou cestou, kterou zveřejnění
+   * opravdu chodí z aplikace, ze serveru i souborem.
+   *
+   * A měří se OBA případy, protože se liší:
+   *   · bez odchylky se ČR hodnota vůbec nenuluje, takže projde,
+   *   · S ODCHYLKOU varianta ČR nulu má — a právě tu nulu nesmí zveřejnění
+   *     zapsat do platného ceníku, jinak zahraniční řada po zrušení odchylky
+   *     zdědí nulu místo ceny. */
+  {
+    const vychozi = { cenik: V27(), cenikProj: {}, zahranicni: { ceny: {}, jenZahr: {} },
+                      kdo: 'test', poznamka: 'v1' };
+    let db = programNovy(vychozi);
+    test('příprava: platný ceník tu cenu má', db.platny.cenik.prekladyKc === 50000,
+      db.platny.cenik.prekladyKc);
+
+    /* a) zveřejnění z varianty ČR, kde odchylka JE (tam je hodnota na nule) */
+    const varCR = cenikSlozRadu(JSON.parse(JSON.stringify(db.platny.cenik)), ZAHR(), 'cr');
+    test('příprava: varianta ČR má u položky s odchylkou nulu',
+      varCR.prekladyKc === 0, varCR.prekladyKc);
+    db = programNovaVerze(db, { cenik: varCR, cenikProj: {}, zahranicni: ZAHR(),
+                                kdo: 'test', poznamka: 'v2' });
+    test('zveřejnění z ČR varianty nezapíše nulu do platného ceníku',
+      db.platny.cenik.prekladyKc === 50000, db.platny.cenik.prekladyKc);
+    test('a otisk popisuje ceník, který se opravdu uložil',
+      db.platny.otisk === programOtisk(db.platny));
+
+    /* b) a proto zahraniční řada po ZRUŠENÍ odchylky zdědí cenu, ne nulu —
+     *    to je ten okamžik, ve kterém se ztráta projeví. */
+    test('po zrušení odchylky zahraniční řada zdědí cenu, ne nulu',
+      cenikSlozRadu(JSON.parse(JSON.stringify(db.platny.cenik)),
+        { ceny: {}, jenZahr: { 'C.prekladyKc': true } }, 'zahr').prekladyKc === 50000,
+      cenikSlozRadu(JSON.parse(JSON.stringify(db.platny.cenik)),
+        { ceny: {}, jenZahr: { 'C.prekladyKc': true } }, 'zahr').prekladyKc);
+
+    /* c) POJISTKA: zákaz nesmí zamknout hodnotu natrvalo. Legitimní cesta,
+     *    jak cenu položky „jen zahraniční" změnit, je tabulka odchylek — a ta
+     *    musí fungovat dál. */
+    const jina = { ceny: { 'C.prekladyKc': 70000 }, jenZahr: { 'C.prekladyKc': true } };
+    db = programNovaVerze(db, { cenik: varCR, cenikProj: {}, zahranicni: jina,
+                                kdo: 'test', poznamka: 'v3' });
+    test('změna přes tabulku odchylek projde',
+      cenikSlozRadu(JSON.parse(JSON.stringify(db.platny.cenik)), jina, 'zahr').prekladyKc === 70000,
+      cenikSlozRadu(JSON.parse(JSON.stringify(db.platny.cenik)), jina, 'zahr').prekladyKc);
+  }
 
   /* A obě strany porovnání jsou pořád shodné, takže přepočet nemá co hlásit —
    * kvůli tomu se nulovalo. */

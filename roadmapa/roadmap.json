@@ -54,6 +54,19 @@
    "testy": "./spust_testy.sh --smoke: 126 prošlo, 0 selhalo (nově včetně overit_lista, overit_atyp, overit_proj17, overit_zobrazeni, overit_ock_cela_cesta a overit_vypnuty_radek)."
   },
   {
+   "id": "290",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "vysoka",
+   "slozitost": "M",
+   "hotovoV": "v21.9.13",
+   "nazev": "Třetí kolo revize — pět nálezů, jeden z nich regrese téhož dne",
+   "proc": "Závěrečný běh revize modelem Fable 5.1 nad commitem fcfe0b3 (#288). Pět nálezů; jeden zavedla oprava N4 z téhož dne a vedl by obchodníka k rozhodnutí podle čísla, které není pravda.",
+   "detail": "R1 (REGRESE ZAVEDENÁ DNES): `cenikCenaRozpracovanych` přičítala projekci BEZ OHLEDU na to, která strana zakázky se počítá. Zakázka může být jen OCK, jen PROJ, nebo obojí (`zakazkaVedouciStrana`). U zakázky „jen OCK\" nesla každá varianta fantomovou cenu projekce z výchozího zadání — a kdyby nová verze ceníku hnula JEN sazbou projektanta, dialog by u čistě ocelářské nabídky hlásil pohyb ceny, který se nestal. Změřeno 160 961 Kč při nezměněné nabízené ceně 912 000 Kč. Nově se počítá jen strana, která jde do nabídky. Ve stejném místě opraveno i to, že při výjimce zůstala v součtu už přičtená cena OCK u varianty hlášené jako chyba (`{\"cena\":912000,\"pocet\":0,\"chyby\":1}`).\n\nR2: kopie zakázky dědila SCHVÁLENOU SLEVU i s razítkem (`stav: schváleno`, kdo a kdy) a `slevaPlati` ji pouštěla do ceny. Změřeno na obou koncích: obchodník duplikát vůbec neuloží — server (schvalovani.js) nemá ke kopii starou verzi, vidí rozhodnutí jako nové a vrátí „Slevu 12 % smí schválit jen nadřízený…\" —, a vedoucí, který kopii uloží, se stane schvalovatelem slevy, kterou nikdy neviděl. Nově se zahazuje rozhodnutí (stav a všechna razítka), procenta a poznámka zůstávají: nic se tiše neuplatní ani neztratí.\n\nR3: kopie dědila `projHlavicka.cislo` (řada OVP) — identifikátor jiného dokumentu. `zakazkaDuplicita` porovnává jen stranu OCK, takže kolizi neodhalí a dvě zakázky vystupují navenek pod týmž číslem. Nově začíná kopie s předlohovým číslem jako nová zakázka.\n\nR4: zveřejnění ceníku umělo umazat cenu, která se dědí do zahraničí. Varianta vedená v řadě ČR má položku „jen zahraniční\" záměrně na nule a zveřejnění z ní tu nulu zapsalo do platného ceníku. Dokud odchylka existuje, nepozná se nic; po jejím zrušení se zdědí NULA místo ceny. V editoru to opravit nejde (ČR pole je zašedlé „neplatí v ČR\"). Opraveno v `programZaznam` — na jediném místě, kterým zveřejnění prochází z aplikace, ze serveru i souborem —, a to PŘED otiskem, aby otisk popisoval ceník, který se opravdu uloží. Změna přes tabulku odchylek funguje dál (ověřeno).\n\nR5: `historieObnovZalohu` přepočítala ceny, ale dialog #284 nenabídla — obchodník se nedozvěděl, o kolik se cena hnula, a neměl jak to vrátit. Přitom je to táž situace jako otevření ze složky, spíš horší: záloha mohla v prohlížeči ležet od minulého ceníku.\n\nDVA PRÁZDNÉ TESTY: „projekce se do součtu započítá\" procházela i bez projekce (OCK samo dává statisíce) a „po zveřejnění z ČR varianty zahraniční řada cenu drží\" si hodnotu dosazovala ručně, takže skutečné zveřejnění jí neprocházelo. Obojí přepsáno tak, aby měřilo.",
+   "kde": "src/cenik_stari.js (cenikCenaRozpracovanych), src/zakazka.js (zakazkaDuplikuj), src/program.js (programZaznam, programNovaVerze), src/ui/historie.js (historieObnovZalohu)",
+   "testy": "test_cenik_dopad.js (25), test_zakazka_duplikace.js (44), test_jen_zahranicni.js (25), overit_prepocet_dialog.mjs (31 — ověřeno, že bez opravy padá). Plná sada --smoke: 126 prošlo, 0 selhalo."
+  },
+  {
    "id" : "285",
    "vlna" : "C",
    "stav" : "ceka",

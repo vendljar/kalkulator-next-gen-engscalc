@@ -199,6 +199,39 @@ function programZaznam(ctx, verze) {
     katalog: progKopie(ctx.katalog) || null,
     slevy: progKopie(ctx.slevy) || null,
   };
+  /* ČR SLOUPEC POLOŽKY „JEN ZAHRANIČNÍ" SE ZVEŘEJNĚNÍM NEPŘEPISUJE NULOU
+   * (oprava 21. 9. 2026, druhé kolo nezávislé revize).
+   *
+   * Zahraniční řada je ŘÍDKÁ TABULKA ODCHYLEK: co v ní není, DĚDÍ SE Z ČR
+   * sloupce. Jenže ceník varianty vedené v řadě ČR má takovou položku
+   * záměrně na nule (`cenikJenZahrVynuluj` — v tuzemsku se nepoužije), a
+   * zveřejnění z takové varianty tu nulu zapsalo do platného ceníku. Dokud
+   * odchylka existuje, nepozná se nic. Jakmile ji ale správce zruší —
+   * v dobré víře, že se hodnota zdědí z ČR —, zdědí se NULA a položka
+   * z ceny zahraniční nabídky tiše vypadne.
+   *
+   * Změřeno: platný ceník 50 000 → varianta ČR 0 → zveřejnění zapíše 0 →
+   * zahraniční řada po zrušení odchylky 0 místo 50 000.
+   *
+   * Opravit to v editoru nejde: ČR pole je u takové položky zašedlé
+   * s popiskem „neplatí v ČR", takže hodnota, kterou nikdo nemůže zadat,
+   * by se dala jedině ztratit. Jediná legitimní cesta, jak ji změnit, je
+   * tabulka odchylek — proto se sem přebírá z dosud platné verze.
+   *
+   * Dělá se to PŘED otiskem: otisk musí popisovat ceník, který se opravdu
+   * uloží. */
+  const predchozi = ctx.predchozi && ctx.predchozi.cenik ? ctx.predchozi.cenik : null;
+  if (predchozi && typeof cenikJenZahrCesty === 'function'
+      && typeof cenikHodnota === 'function' && typeof cenikNastavHodnotu === 'function') {
+    const kam = { cenik: z.cenik, proj: { cenik: z.cenikProj } };
+    const odkud = { cenik: predchozi, proj: { cenik: ctx.predchozi.cenikProj || {} } };
+    cenikJenZahrCesty(z.zahranicni).forEach(cesta => {
+      if (+cenikHodnota(kam, cesta) > 0) return;        // hodnota se posílá, neruší se
+      const drive = +cenikHodnota(odkud, cesta);
+      if (drive > 0) cenikNastavHodnotu(kam, cesta, drive);
+    });
+  }
+
   z.otisk = programOtisk(z);
   z.otiskVerze = PROG_OTISK_VERZE;
   return z;
@@ -324,7 +357,10 @@ function programNovaVerze(db, ctx) {
   const zaklad = db ? programNormalizuj(db) : null;
   if (!zaklad) return programNovy(ctx);
   const stary = zaklad.platny;
-  const nova = programZaznam(ctx, (+stary.verze || 0) + 1);
+  /* Dosud platná verze jde do `programZaznam` proto, aby z ní mohl převzít
+   * ČR sloupec položek „jen zahraniční" — viz zdůvodnění tam. */
+  const nova = programZaznam(Object.assign({}, ctx, { predchozi: stary }),
+    (+stary.verze || 0) + 1);
   /* CO SE TOU VERZÍ VLASTNĚ ZMĚNILO (P1, nález N20, 21. 9. 2026).
    *
    * Historie do té doby nesla jen poznámku, kterou napsal člověk — a u verze

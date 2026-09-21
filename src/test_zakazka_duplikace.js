@@ -21,6 +21,7 @@ nacti('./format.js');
 const eng = require('./engine.js');
 Object.keys(eng).forEach(k => { global[k] = eng[k]; });
 nacti('./engine_proj.js'); nacti('./techspec.js'); nacti('./zamek.js'); nacti('./poznamky.js');
+nacti('./sleva.js');   // slevaPlati — kontrola, že se schválení nedědí
 nacti('./zakazka.js');
 
 let ok = 0, fail = 0;
@@ -170,6 +171,66 @@ const test = (n, cond, info) => {
    * vůbec nedostala, kontroly výš by vycházely i u předlohy bez nich. */
   test('kontrola není prázdná — předloha ty položky opravdu měla',
     !!zak.varianty[0].cenikKvitance && zak.protokol.length > 0 && !!zak.protokolKlic);
+}
+
+/* ---------- schválená sleva a číslo nabídky PROJ se nedědí ----------
+ * (druhé kolo nezávislé revize, 21. 9. 2026)
+ *
+ * Táž úvaha jako u kvitance ceníku, jen s tvrdšími následky. Změřeno:
+ *   · obchodník duplikát VŮBEC NEULOŽÍ — server nemá ke kopii starou verzi,
+ *     vidí rozhodnutí jako nové a vrátí „Slevu 12 % smí schválit jen
+ *     nadřízený…", aniž by aplikace řekla proč;
+ *   · vedoucí, který kopii uloží, se stane schvalovatelem slevy, kterou
+ *     nikdy neviděl.
+ * A `projHlavicka.cislo` je identifikátor JINÉHO dokumentu (řada OVP);
+ * `zakazkaDuplicita` porovnává jen stranu OCK, takže kolize čísla PROJ
+ * neodhalí a dvě zakázky vystupují navenek pod týmž číslem.
+ */
+{
+  const zak = novaZakazka();
+  zak.cislo = '2026 - OPR - CN - 7001';
+  zak.projHlavicka = zak.projHlavicka || {};
+  zak.projHlavicka.cislo = '2026 - OVP - CN - 0160';
+  const v = zak.varianty[0];
+  v.data.sleva = { procenta: 12, role: 'Obchodník', poznamka: 'pro zákazníka A',
+                   stav: 'schváleno', schvalil: 'Vedoucí V. (Vedoucí)',
+                   schvalilEmail: 'vedouci@firma.cz', schvalilKdy: '2026-09-01T10:00:00Z' };
+  v.data.slevaProj = { procenta: 8, role: 'Obchodník', stav: 'schváleno',
+                       schvalil: 'Vedoucí V. (Vedoucí)', schvalilKdy: '2026-09-01T10:00:00Z' };
+
+  /* POJISTKA PROTI PRÁZDNÉMU TESTU: rozhodnutí v předloze opravdu je
+   * a opravdu by se propsalo do ceny. */
+  test('kontrola není prázdná — předloha má schválenou slevu',
+    slevaPlati(v.data.sleva) === true && slevaPlati(v.data.slevaProj) === true);
+
+  const nova = zakazkaDuplikuj(zak, '2026 - OPR - CN - 7002');
+  const n = nova.varianty[0];
+
+  ['sleva', 'slevaProj'].forEach(cast => {
+    const s = n.data[cast];
+    test('kopie: ' + cast + ' nenese rozhodnutí', s.stav === '', s);
+    test('kopie: ' + cast + ' nenese razítko schvalovatele',
+      !s.schvalil && !s.schvalilEmail && !s.schvalilKdy, s);
+    test('kopie: ' + cast + ' se do ceny nepropíše', slevaPlati(s) === false, s);
+    /* Procenta se ZÁMĚRNĚ nechávají — obchodník s tou slevou nejspíš počítá.
+     * Zahazuje se rozhodnutí, ne záměr; nic se tiše neuplatní ani neztratí. */
+    test('kopie: ' + cast + ' si procenta nechává', +s.procenta > 0, s);
+  });
+  test('kopie: poznámka ke slevě zůstává', n.data.sleva.poznamka === 'pro zákazníka A',
+    n.data.sleva.poznamka);
+
+  test('kopie nenese číslo nabídky PROJ předlohy',
+    nova.projHlavicka.cislo !== '2026 - OVP - CN - 0160', nova.projHlavicka.cislo);
+  test('a tváří se jako nevyplněné, ne jako platné',
+    stranaMaCislo(nova, 'proj') === false, stranaCislo(nova, 'proj'));
+  test('číslo OCK je to nové', nova.cislo === '2026 - OPR - CN - 7002', nova.cislo);
+
+  /* Předloha zůstává, jak byla — duplikace do ní nesahá. */
+  test('předloha si schválení nechává',
+    v.data.sleva.stav === 'schváleno' && v.data.sleva.schvalil === 'Vedoucí V. (Vedoucí)',
+    v.data.sleva);
+  test('a předloha si číslo PROJ nechává',
+    zak.projHlavicka.cislo === '2026 - OVP - CN - 0160', zak.projHlavicka.cislo);
 }
 
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');

@@ -129,8 +129,17 @@ function zakazkaSVariantami(pocet) {
   v.data.proj = v.data.proj || {};
   v.data.proj.cenik = ZC.zkusebniCenikProj();
   v.data.proj.zadani = JSON.parse(JSON.stringify(ep.DEFAULT_ZADANI_PROJ));
+  /* PŮVODNĚ tu stálo `pred.cena > 0` — to projde i BEZ projekce, protože
+   * OCK samo dává statisíce. Prázdná kontrola (nález druhého kola revize
+   * 21. 9. 2026). Měří se proto proti téže zakázce bez projekce. */
+  const zakBez = zakazkaSVariantami(1);
+  zakBez.varianty[0].data.proj = null;             // opravdu bez projekce
+  const bezProj = cs.cenikCenaRozpracovanych(zakBez, JEKLY);
   const pred = cs.cenikCenaRozpracovanych(zak, JEKLY);
-  test('projekce se do součtu započítá', pred.cena > 0 && pred.chyby === 0, pred);
+  const samaProj = ep.vypocetProj(v.data.proj.zadani, v.data.proj.cenik).souhrn.celkem;
+  test('projekce se do součtu započítá', pred.chyby === 0
+    && Math.abs((pred.cena - bezProj.cena) - samaProj) < 0.01,
+    { sProj: pred.cena, bezProj: bezProj.cena, samaProj });
 
   /* Změní se VÝHRADNĚ ceník projekce — OCK zůstane netknuté. */
   const pc = v.data.proj.cenik;
@@ -149,6 +158,80 @@ function zakazkaSVariantami(pocet) {
   test('a rozdíl sedí přesně na rozdíl projekce',
     Math.abs((po.cena - pred.cena) - (projPo - projPred)) < 0.01,
     { vSouctu: po.cena - pred.cena, vProjekci: projPo - projPred });
+}
+
+/* ---------- 7) počítá se jen strana, která jde do nabídky ----------
+ *
+ * Zakázka může být jen OCK, jen PROJ, nebo obojí — rozhoduje
+ * `zakazkaVedouciStrana`. Do 21. 9. 2026 (druhé kolo nezávislé revize) se
+ * projekce přičítala VŽDY, takže každá zakázka „jen OCK" nesla fantomovou
+ * cenu projekce z výchozího zadání. Horší než nafouknuté číslo v závorce je
+ * ale druhý důsledek: kdyby nová verze ceníku hnula JEN sazbou projektanta,
+ * dialog by u čistě ocelářské nabídky hlásil pohyb ceny, který se nestal —
+ * a obchodník by podle toho klikl „Vrátit původní ceny". */
+{
+  const zakOck = zakazkaSVariantami(1);
+  const v = zakOck.varianty[0];
+  v.data.proj = { cenik: ZC.zkusebniCenikProj(),
+                  zadani: JSON.parse(JSON.stringify(ep.DEFAULT_ZADANI_PROJ)) };
+  const ockSamo = eng.vypocet(v.data.ock.zadani, v.data.cenik, JEKLY,
+    v.data.ock.fixes).souhrn.zakladCena;
+
+  zakOck.jenOck = true;
+  test('příprava: zakázka je opravdu vedená jako jen OCK',
+    zk.zakazkaVedouciStrana(zakOck) === 'ock' && zk.stranaZamcena(zakOck, 'proj') === true);
+
+  const pred = cs.cenikCenaRozpracovanych(zakOck, JEKLY);
+  test('u zakázky „jen OCK" se projekce nepočítá',
+    Math.abs(pred.cena - ockSamo) < 0.01, { soucet: pred.cena, ockSamo });
+
+  /* Změní se VÝHRADNĚ ceník projekce. Nabízená cena se nehne — a dopad
+   * na cenu tedy musí vyjít na nulu, ne na desítky tisíc. */
+  const pc = v.data.proj.cenik, klic = Object.keys(pc.sazby || {})[0];
+  test('zkušební ceník PROJ má sazbu, na které jde měřit', !!klic);
+  pc.sazby[klic] = (+pc.sazby[klic] || 0) * 2 + 1;
+  const po = cs.cenikCenaRozpracovanych(zakOck, JEKLY);
+  test('a změna sazby projektanta cenu nabídky „jen OCK" nehne',
+    Math.abs(po.cena - pred.cena) < 0.01, { pred: pred.cena, po: po.cena });
+
+  /* POJISTKA PROTI PRÁZDNÉ KONTROLE: táž změna téhož ceníku se u zakázky,
+   * která projekci opravdu nabízí, projevit MUSÍ — jinak by kontrola výš
+   * vycházela i u funkce, která projekci nepočítá nikdy. */
+  const zakObe = zakazkaSVariantami(1);
+  const v2 = zakObe.varianty[0];
+  v2.data.proj = { cenik: ZC.zkusebniCenikProj(),
+                   zadani: JSON.parse(JSON.stringify(ep.DEFAULT_ZADANI_PROJ)) };
+  zakObe.obeStrany = true;
+  const predObe = cs.cenikCenaRozpracovanych(zakObe, JEKLY);
+  v2.data.proj.cenik.sazby[klic] = (+v2.data.proj.cenik.sazby[klic] || 0) * 2 + 1;
+  const poObe = cs.cenikCenaRozpracovanych(zakObe, JEKLY);
+  test('u zakázky s oběma stranami se táž změna projeví', poObe.cena > predObe.cena,
+    { pred: predObe.cena, po: poObe.cena });
+}
+
+/* ---------- 8) varianta se započítá celá, nebo vůbec ----------
+ *
+ * Když spadne výpočet projekce, nesmí v součtu zůstat půlka varianty, která
+ * se zároveň hlásí jako chyba. Do 21. 9. 2026 vycházelo u varianty s `proj`
+ * bez zadání `{"cena":912000,"pocet":0,"chyby":1}` — cena z varianty, která
+ * se „nepočítala". */
+{
+  const zak = zakazkaSVariantami(1);
+  const v = zak.varianty[0];
+  const ockSamo = eng.vypocet(v.data.ock.zadani, v.data.cenik, JEKLY,
+    v.data.ock.fixes).souhrn.zakladCena;
+  v.data.proj = { cenik: null, zadani: null };     // rozpracovaná, ještě nevyplněná
+  const r = cs.cenikCenaRozpracovanych(zak, JEKLY);
+  test('nevyplněná projekce není chyba', r.chyby === 0, r);
+  test('a OCK se započte normálně', Math.abs(r.cena - ockSamo) < 0.01,
+    { cena: r.cena, ockSamo });
+
+  /* A když výpočet opravdu spadne, nezůstane v součtu nic. */
+  const zak2 = zakazkaSVariantami(1);
+  zak2.varianty[0].data.ock.zadani = null;
+  const r2 = cs.cenikCenaRozpracovanych(zak2, JEKLY);
+  test('rozbitá varianta nepřidá do součtu ani část ceny',
+    r2.cena === 0 && r2.pocet === 0 && r2.chyby === 1, r2);
 }
 
 console.log('\n' + (fail ? 'SELHALO ' + fail + ' z ' + (ok + fail) : 'OK ' + ok));

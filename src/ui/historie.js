@@ -260,6 +260,15 @@ function historieObnovZalohu() {
       if (prep.prepocteno && typeof nabidkaStavTextBezpecne === 'function'
           && typeof uloPrepocetVeta === 'function')
         nabidkaStavTextBezpecne(uloPrepocetVeta(prep));
+      /* Dialog o přepočtu (#284) patří i sem — nález nezávislé revize
+       * 21. 9. 2026. Dávka v21.9.9 ho zavedla u otevření ze složky a
+       * z online databáze, ale obnova zálohy z prohlížeče zůstala u pouhé
+       * věty v liště. Přitom je to TÁŽ situace, a spíš horší: záloha mohla
+       * v prohlížeči ležet od minulého ceníku. Obchodník se takhle nedozvěděl
+       * O KOLIK se cena hnula a neměl jak přepočet vrátit — přesně to, kvůli
+       * čemu dialog vznikl. Až po renderu, ať je za dialogem vidět zakázka,
+       * o které se rozhoduje; nečeká se na něj, obnova je hotová. */
+      if (typeof uloPrepocetDialog === 'function') uloPrepocetDialog(prep);
     }
   }
 }

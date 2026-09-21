@@ -8,6 +8,56 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.9.13 — 21. 9. 2026
+
+### Třetí kolo revize — a regrese, kterou zavedla dnešní oprava (#290)
+
+Revize dnešních oprav našla pět věcí. **Jednu z nich jsem zavedl dnes já,
+a stála by obchodníka rozhodnutí podle čísla, které není pravda.**
+
+**Dopad přepočtu na cenu počítal projekci i tam, kde se projekce nenabízí.**
+Zakázka může být jen OCK, jen PROJ, nebo obojí. Ranní oprava přičítala
+projekci vždy, takže každá zakázka „jen OCK" nesla fantomovou cenu projekce
+z výchozího zadání. Horší než nafouknutá částka je ale druhý následek:
+kdyby nová verze ceníku hnula **jen sazbou projektanta**, dialog by
+u čistě ocelářské nabídky hlásil pohyb ceny, který se nestal — změřeno
+**160 961 Kč při nezměněné nabízené ceně**. Obchodník by podle toho klikl
+„Vrátit původní ceny" a vrátil si zastaralý ceník kvůli změně, která se ho
+netýká. Počítá se teď jen strana, která jde do nabídky. Ve stejném místě:
+když výpočet spadne, nezůstane v součtu půlka varianty (dřív vycházelo
+`cena` z varianty hlášené jako chyba).
+
+**Kopie zakázky dědila schválenou slevu i s razítkem schvalovatele.** Táž
+úvaha jako u kvitance, ale s tvrdšími následky — změřeno na obou koncích:
+obchodník duplikát **vůbec neuloží** (server vidí rozhodnutí jako nové a
+odmítne ho, aniž by aplikace řekla proč), a vedoucí, který ho uloží, se
+stane schvalovatelem slevy, kterou nikdy neviděl. Procenta a poznámka
+zůstávají, zahazuje se jen rozhodnutí — nic se tiše neuplatní ani neztratí.
+
+**Kopie dědila i číslo nabídky PROJ** (řada OVP). Je to identifikátor jiného
+dokumentu a kontrola duplicit ho neodhalí — porovnává jen stranu OCK. Dvě
+zakázky tak vystupovaly navenek pod týmž číslem.
+
+**Zveřejnění ceníku umělo umazat cenu, která se dědí do zahraničí.**
+Zahraniční řada je řídká tabulka odchylek: co v ní není, dědí se z ČR
+sloupce. Varianta vedená v řadě ČR má ale takovou položku záměrně na nule —
+a zveřejnění z ní tu nulu zapsalo do platného ceníku. Dokud odchylka
+existuje, nepozná se nic; jakmile ji správce zruší v dobré víře, že se
+hodnota zdědí, **zdědí se nula**. Opravit to v editoru nejde: ČR pole je
+zašedlé „neplatí v ČR". Zveřejnění proto tu hodnotu přebírá z dosud platné
+verze. Změna přes tabulku odchylek funguje dál.
+
+**Obnova zálohy z prohlížeče se teď ptá stejně jako otevření ze složky.**
+Dialog o přepočtu (#284) u ní chyběl — a přitom je to táž situace, spíš
+horší: záloha mohla ležet od minulého ceníku.
+
+Dva testy navíc byly prázdné a nic neměřily — kontrola „projekce se do
+součtu započítá" procházela i bez projekce a „zahraniční řada cenu drží"
+si hodnotu dosazovala ručně, takže skutečné zveřejnění jí neprocházelo.
+Obojí přepsáno tak, aby měřilo.
+
+---
+
 ## v21.9.12 — 21. 9. 2026
 
 ### Červené CI tří dávek za sebou — kontrola hledala slovo, ne protokol (#289)
