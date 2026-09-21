@@ -37,6 +37,24 @@ function nabidkaData(zak, varianta, jekly, lang) {
    * (vypocetZ, nález A1), nezmění vytištěná nabídka svoje znění zpětně. */
   const soklJe = (r.volitelneKatalog || []).some(x => x.key === 'sokl' && x.zahrnuto);
 
+  /* SOKL NABÍZENÝ JAKO PŘÍPLATEK (nález N17, kolo 6, 21. 9. 2026).
+   *
+   * Oprava z 16. 9. řešila jen dva stavy: v základní ceně → sekce Doplňkové
+   * konstrukce, jinak → „není součástí nabídky". Jenže od 16. 9. se sokl
+   * nabízí i mezi PŘÍPLATKY, a ty se do nabídky dávají VŠECHNY, dokud je
+   * obchodník ve sloupci „Nabídka" nevyřadí. Výchozí exteriérová nabídka
+   * proto zákazníkovi tvrdila obojí naráz: kapitola II. mu sokl nabízela
+   * za cenu a tabulka specifikace u téhož řádku psala „není součástí
+   * nabídky". Dokument, který si odporuje, je horší než chybějící řádek.
+   *
+   * Třetí stav má proto vlastní větu. Řádek zůstává v sekci SOUČÁSTÍ DODÁVKY
+   * NENÍ — v dodávce (základní ceně) opravdu není —, ale místo popření
+   * odkazuje na příplatek. Rozhoduje TÝŽ seznam, ze kterého se sází
+   * kapitola II. (`r.priplatky` bez vyřazených), aby se obě místa nemohla
+   * rozejít. */
+  const soklPriplatek = (r.priplatky || []).some(x => x.key === 'sokl')
+    && !(Zv.priplatkyVynechat || []).includes('sokl');
+
   /* #14 krok 3: formát bydlí ve format.js (záložka pro samostatný Node běh).
    * Měna (#155 + dorovnání 19. 8. večer): CZ = koruny; jiná mutace = eura
    * kurzem z ceníku varianty. Převádějí se ČÍSLA po položkách (celá eura
@@ -160,7 +178,7 @@ function nabidkaData(zak, varianta, jekly, lang) {
      * jehož všechny TS_* zástupce jsou prázdné, i s popiskem, a pak i sekční
      * pruh, kterému nezbyl jediný datový řádek. Náhled se řídí týmž. */
     TS_SOKL: soklJe ? P('je součástí dodávky') : '',
-    TS_NENI_SOKL: soklJe ? '' : P('není součástí nabídky'),
+    TS_NENI_SOKL: soklJe ? '' : (soklPriplatek ? P('nabízeno jako příplatek') : P('není součástí nabídky')),
     TS_NENI_NAPAJENI: ts('neni9'), TS_NENI_PROHLUBEN: ts('neni10'),
     TS_NENI_PRISTUP: ts('neni11'),
 

@@ -134,7 +134,14 @@ oddělené sady. Pro testovací kalkulačku tedy stačí:
 
    Ve wizardu (nebo potom v *Site configuration → Build & deploy → Branches
    and deploy contexts*) přepni **Production branch** z `main` na `test`.
-   Název webu dej jiný než ostrý, například `engscalc-test`.
+   Název webu dej jiný než ostrý.
+
+   > **Skutečné adresy (stav 21. 9. 2026):**
+   > ostrý web `https://engscalc.netlify.app`, testovací web
+   > **`https://testengscalc.netlify.app`** — tedy `test` jako PŘEDPONA, ne
+   > přípona. Tenhle návod do té doby uváděl jako příklad `engscalc-test`
+   > a podle toho se pak marně hledalo `/api/zdravi` na adrese, která
+   > neexistuje. Jméno webu je vidět v Netlify nahoře na stránce projektu.
 2. Environment variables toho nového projektu:
    - `TAJEMSTVI_RELACE` — **jiné než na ostrém webu** (jinak by cookie z testu
      platila i v ostré aplikaci),

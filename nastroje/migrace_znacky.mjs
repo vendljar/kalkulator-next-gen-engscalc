@@ -25,7 +25,7 @@
  *     bylo poznat, proč se razítko úpravy změnilo.
  *
  * SPUŠTĚNÍ
- *   node nastroje/migrace_znacky.mjs --web https://engscalc-test.netlify.app
+ *   node nastroje/migrace_znacky.mjs --web https://testengscalc.netlify.app
  *   node nastroje/migrace_znacky.mjs --web https://…  --zapsat
  *
  * Bez `--zapsat` je to jen náhled — nic se neodešle. Heslo skript nečte
@@ -58,7 +58,7 @@ const ZAPSAT = args.includes('--zapsat');
 
 if (!WEB) {
   console.error('Chybí adresa webu.\n\n'
-    + '  node nastroje/migrace_znacky.mjs --web https://engscalc-test.netlify.app\n'
+    + '  node nastroje/migrace_znacky.mjs --web https://testengscalc.netlify.app\n'
     + '  node nastroje/migrace_znacky.mjs --web https://…  --zapsat\n\n'
     + 'Bez --zapsat se jen ukáže, co by se změnilo.');
   process.exit(2);

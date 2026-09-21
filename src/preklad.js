@@ -34,6 +34,7 @@ const PREKLAD = {
   "v základní ceně": ["included in the base price", "im Grundpreis enthalten", "inclus dans le prix de base"],
   "je součástí dodávky": ["included in the delivery", "im Lieferumfang enthalten", "inclus dans la livraison"],
   "není součástí nabídky": ["not included in the offer", "nicht im Angebot enthalten", "non inclus dans l'offre"],
+  "nabízeno jako příplatek": ["offered as an extra charge", "als Aufpreis angeboten", "proposé en supplément"],
   "snížená": ["reduced", "ermäßigt", "réduit"],
   "základní": ["standard", "Regelsatz", "normal"],
 

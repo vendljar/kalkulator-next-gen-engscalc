@@ -1,6 +1,34 @@
 {
  "polozky" : [
   {
+   "id" : "279",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "S",
+   "hotovoV" : "v21.9.6",
+   "nazev" : "Nabídka si u oplechování soklu odporovala (kolo 6, P9)",
+   "proc" : "Nález N17. Kapitola II. nabízela zákazníkovi oplechování soklu prohlubně za cenu a tabulka technické specifikace u téhož řádku psala „není součástí nabídky\". Dokument, který si odporuje, je horší než chybějící řádek — zákazník neví, co objednal.",
+   "detail" : "Oprava z 16. 9. 2026 (#252 okolí) znala jen DVA stavy: sokl v základní ceně → sekce Doplňkové konstrukce, jinak → „není součástí nabídky\". Jenže TÁŽ dávka ze 16. 9. přidala sokl i mezi PŘÍPLATKY (zadání J. V.: „ať se chovají stejně jako lešení\") a příplatky se do nabídky dávají VŠECHNY, dokud je obchodník ve sloupci „Nabídka\" nevyřadí. Prostřední stav — zdaleka nejčastější, protože nastává ve výchozím nastavení každé exteriérové zakázky — tím dostal nepravdivou větu.\n\nTřetí stav má nově vlastní znění „nabízeno jako příplatek\" (EN/DE/FR ve slovníku). Řádek ZŮSTÁVÁ v sekci SOUČÁSTÍ DODÁVKY NENÍ, protože v základní ceně (dodávce) opravdu není, ale místo popření odkazuje na příplatek. Rozhoduje TÝŽ seznam, ze kterého se sází kapitola II. (`r.priplatky` bez vyřazených), aby se obě místa nemohla rozejít.",
+   "hotovoKdyz" : "Splněno: ve všech třech stavech (v základní ceně / za příplatek / vyřazeno) říká tabulka specifikace pravdu a neodporuje kapitole II.",
+   "kde" : "`src/nabidka.js` (soklPriplatek), `src/preklad.js`, `src/test_nabidka_sokl.js`",
+   "pozn" : "Sada `test_nabidka_sokl.js` rozšířena na 38 kontrol včetně pojistky, že se nabízený sokl v kapitole II. opravdu najde — první pokus hledal placeholdery `PRIPLATEK*`, které vůbec neexistují, takže kontrola vycházela vždycky a nehlídala nic. DVĚ SADY ZMĚNILY OČEKÁVÁNÍ (`test_nabidka.js`, `test_docx_preklad.js`), protože stará věta byla nepravdivá — kód se neohýbal podle testů. U překladové sady se zkouška zpevnila: místo hledání konkrétních anglických slov ověřuje, že hodnota projde slovníkem."
+  },
+  {
+   "id" : "280",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "S",
+   "hotovoV" : "v21.9.6",
+   "nazev" : "Migrace stříšky neměla test (kolo 6, P6)",
+   "proc" : "Nález N10 hlásí, že zakázky z doby před změnou nesou obě položky stříšky naráz a stříšky se počítají dvakrát. Při prověřování se ukázalo, že se to na dnešním kódu nereprodukuje — zato migrace, o kterou jde, neměla jedinou kontrolu.",
+   "detail" : "OVĚŘENO A NEREPRODUKOVÁNO: migrace z #240 (`zakazka.js`, „starší zakázce se dosadí přesně to, co dosud počítala\") dosadí exteriérové průchozí zakázce `striskaKs = 1`, interiérové a neprůchozí nulu. V celém výsledku výpočtu stojí řádek stříšky právě jednou a nese jeden kus; druhá položka se stejným významem v kódu není (jediné místo je `STŘÍŠKA NAD NÁSTUPIŠTĚ` v sekci opláštění, jediná sazba `C.striskaDvurKc`). Prověřena i nejpodezřelejší cesta — IDEMPOTENCE: zakázka prochází `importZakazka` při každém načtení ze serveru (`online_ui.js`), při návratu v historii kroků i při importu souboru, takže migrace, která by kus PŘIČÍTALA místo dosazovala, by dala přesně to, co N10 popisuje. Pětinásobné načtení dává pořád jeden kus.\n\nSKUTEČNÁ DÍRA BYLA JINDE: migrace neměla jedinou kontrolu. Je to přesně ten druh kódu, který se rozbije nepozorovaně — běží jen nad starými daty, která nikdo v testech nemá, a pozná se to až na ceně u zákazníka.",
+   "hotovoKdyz" : "Splněno: nová sada `src/test_migrace_striska.js` (14 kontrol) přibíjí počet kusů, idempotenci, nedotknutelnost ručně zadané hodnoty i to, že se nástupiště A/C a patra dosadí tak, aby se cena nezměnila.",
+   "kde" : "`src/test_migrace_striska.js`; migrace samotná je v `src/zakazka.js` (importZakazka)",
+   "pozn" : "ZBÝVÁ OD J. V.: detail nálezu N10 je ve vyhodnocovacím sešitu na Drive, ke kterému odsud není přístup. Bez čísla zakázky nebo exportu té konkrétní nabídky se nedá říct, jestli šlo o data z mezistavu (zakázka uložená verzí, kde migrace ještě nebyla), nebo o cestu, kterou tahle sada nepokrývá. Sada je psaná tak, aby druhou stříšku našla kdekoli ve výsledku výpočtu, ne jen v sekci, kde dnes stojí."
+  },
+  {
    "id" : "276",
    "vlna" : "B",
    "stav" : "hotovo",
@@ -5020,7 +5048,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v21.9.5 (engscalc)",
+  "build" : "v21.9.6 (engscalc)",
   "stavKDatu" : "21. 9. 2026"
  },
  "_comment" : [

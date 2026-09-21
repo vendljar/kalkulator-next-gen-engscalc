@@ -8,6 +8,56 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.9.6 — 21. 9. 2026
+
+### P9 — nabídka si u soklu prohlubně odporovala (#279, nález N17)
+
+Oprava z 16. 9. znala u oplechování soklu jen dva stavy: v základní ceně →
+sekce *Doplňkové konstrukce*, jinak → „není součástí nabídky". Jenže **od
+16. 9. se sokl nabízí i mezi příplatky** a ty se do nabídky dávají všechny,
+dokud je obchodník ve sloupci „Nabídka" nevyřadí.
+
+Výchozí exteriérová nabídka proto zákazníkovi tvrdila **obojí naráz**:
+kapitola II. mu sokl nabízela za cenu a tabulka specifikace u téhož řádku
+psala „není součástí nabídky".
+
+Třetí stav má nově vlastní větu — **„nabízeno jako příplatek"** (přeloženo do
+EN/DE/FR). Řádek zůstává v sekci *Součástí dodávky není*, protože v základní
+ceně opravdu není, ale místo popření odkazuje na příplatek. Rozhoduje týž
+seznam, ze kterého se sází kapitola II., takže se obě místa nemůžou rozejít.
+
+Dvě sady musely změnit očekávání, protože stará věta byla nepravdivá:
+`test_nabidka.js` a `test_docx_preklad.js`. U druhé se navíc zkouška
+zpevnila — místo hledání konkrétních anglických slov se ověřuje, že hodnota
+prochází slovníkem.
+
+### P6 — migrace stříšky: nález se nereprodukuje, ale chyběl test (#280)
+
+N10 hlásí, že staré zakázky nesou obě položky stříšky naráz a počítají ji
+dvakrát. **Na dnešním kódu se to nereprodukuje** — migrace z #240
+(`zakazka.js`) dosadí starší zakázce přesně jeden kus a ve výpočtu stojí
+řádek právě jednou. Ověřeno i to nejpodezřelejší: **idempotence**, tedy že
+pětinásobné načtení zakázky (ze serveru, z historie kroků, ze souboru) nedá
+pět stříšek.
+
+Skutečná díra byla jinde: **migrace neměla jedinou kontrolu**. Je to přesně
+ten druh kódu, který se rozbije nepozorovaně — běží jen nad starými daty,
+která nikdo v testech nemá, a pozná se to až na ceně u zákazníka. Nová sada
+`src/test_migrace_striska.js` (14 kontrol) správné chování přibíjí, včetně
+toho, že ručně zadaná nula ani dvojka se migrací nepřepíše.
+
+### Adresa testovacího webu v dokumentaci
+
+Návod uváděl `engscalc-test.netlify.app`; skutečná adresa je
+**`testengscalc.netlify.app`** — `test` jako předpona. Kvůli tomu se marně
+hledalo `/api/zdravi`.
+
+### Ověření
+
+117 sad prošlo / 0 selhalo (1 přeskočena).
+
+---
+
 ## v21.9.5 — 21. 9. 2026
 
 ### Opláštění po stěnách: dvě chyby z prvního proklikání (#276)

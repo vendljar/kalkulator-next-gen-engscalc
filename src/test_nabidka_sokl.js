@@ -46,7 +46,7 @@ const POPIS = 'OPLECHOVÁNÍ SOKLU PROHLUBNĚ';
 const SEK_NENI = 'SOUČÁSTÍ DODÁVKY NENÍ';
 const SEK_DOPL = 'DOPLŇKOVÉ KONSTRUKCE';
 
-function nabidka(typ, sokl) {
+function nabidka(typ, sokl, bezPriplatku) {
   const zak = zk.novaZakazka();
   const v = zak.varianty[0];
   v.data.cenik = ZC.zkusebniCenik();
@@ -54,6 +54,8 @@ function nabidka(typ, sokl) {
   Z.typSachty = typ;
   Z.sirka = 1.6; Z.hloubka = 1.4; Z.zdvih = 9; Z.prejezd = 3.5; Z.prohluben = 1.1;
   Z.volitelne = Object.assign({}, Z.volitelne, { sokl: sokl });
+  /* Sloupec „Nabídka" v tabulce příplatků — obchodník jím příplatek vyřadí. */
+  if (bezPriplatku) Z.priplatkyVynechat = ['sokl'];
   const d = N.nabidkaData(zak, v, JEKLY, 'cz');
   const sekce = N.nabidkaNahledSekce(d.placeholders, 'cz');
   const vyskyty = [];
@@ -61,7 +63,7 @@ function nabidka(typ, sokl) {
     const popis = (r[0] && r[0].hotovo) ? r[0].hotovo : r[0];
     if (String(popis).indexOf(POPIS) >= 0) vyskyty.push({ sekce: s.sekce, hodnota: r[1] });
   }));
-  return { ph: d.placeholders, vyskyty,
+  return { ph: d.placeholders, vyskyty, priplatky: d.priplatky || [],
            zahrnuto: (eng.vypocet(Z, v.data.cenik, JEKLY, v.data.ock.fixes).volitelneKatalog || [])
              .some(x => x.key === 'sokl' && x.zahrnuto) };
 }
@@ -110,8 +112,14 @@ PRIPADY.forEach(([typ, sokl, cekanaSekce, popis]) => {
   const vyp = nabidka('exteriérová', false).ph;
   test('když se dodává, je vyplněný TS_SOKL a TS_NENI_SOKL je prázdný',
     !!zap.TS_SOKL && zap.TS_NENI_SOKL === '', { a: zap.TS_SOKL, b: zap.TS_NENI_SOKL });
-  test('když se nedodává, je to obráceně',
-    vyp.TS_NENI_SOKL === 'není součástí nabídky' && vyp.TS_SOKL === '',
+  /* ZMĚNA OČEKÁVÁNÍ 21. 9. 2026 (nález N17, kolo 6). Do téhle dávky se tady
+   * čekalo „není součástí nabídky". Jenže sokl se od 16. 9. nabízí i mezi
+   * PŘÍPLATKY a ty se do nabídky dávají všechny, dokud je obchodník
+   * nevyřadí — tenhle případ tedy NENÍ „nedodává se", ale „nabízí se za
+   * příplatek". Stará věta byla nepravdivá, ne test špatný; proto se mění
+   * očekávání, ne kód. Stav „opravdu se nenabízí" se zkouší o kus níž. */
+  test('když není v základní ceně, ale nabízí se jako příplatek, řekne to',
+    vyp.TS_NENI_SOKL === 'nabízeno jako příplatek' && vyp.TS_SOKL === '',
     { a: vyp.TS_SOKL, b: vyp.TS_NENI_SOKL });
   /* Prázdný řetězec, ne `null`/`undefined`: docxgen.js pozná prázdnou hodnotu
    * po `String(v).trim()`, ale placeholder, který v mapě chybí, by se ve Wordu
@@ -120,6 +128,57 @@ PRIPADY.forEach(([typ, sokl, cekanaSekce, popis]) => {
     typeof zap.TS_NENI_SOKL === 'string' && typeof vyp.TS_SOKL === 'string');
   test('a nikdy nejsou vyplněné obě naráz',
     !(zap.TS_SOKL && zap.TS_NENI_SOKL) && !(vyp.TS_SOKL && vyp.TS_NENI_SOKL));
+}
+
+/* ---------- 3b) tři stavy, tři různé věty (nález N17) ----------
+ *
+ * Sokl může být v základní ceně, může se nabízet za příplatek, nebo se
+ * nenabízet vůbec. Do 21. 9. 2026 aplikace znala jen dva stavy a prostřední
+ * z nich — zdaleka nejčastější, protože příplatky se nabízejí automaticky —
+ * popisovala větou „není součástí nabídky", zatímco kapitola II. téže
+ * nabídky sokl zákazníkovi za cenu nabízela. */
+{
+  const vZakladu   = nabidka('exteriérová', true);
+  const zaPriplatek = nabidka('exteriérová', false);
+  const vubec      = nabidka('exteriérová', false, true);   // příplatek vyřazen
+  const interier   = nabidka('interiérová', false);
+
+  test('N17: v základní ceně → „je součástí dodávky"',
+    vZakladu.ph.TS_SOKL === 'je součástí dodávky', vZakladu.ph.TS_SOKL);
+  test('N17: jako příplatek → „nabízeno jako příplatek"',
+    zaPriplatek.ph.TS_NENI_SOKL === 'nabízeno jako příplatek', zaPriplatek.ph.TS_NENI_SOKL);
+  test('N17: vyřazený příplatek → „není součástí nabídky"',
+    vubec.ph.TS_NENI_SOKL === 'není součástí nabídky', vubec.ph.TS_NENI_SOKL);
+  test('N17: na interiéru se sokl nenabízí ani jako příplatek',
+    interier.ph.TS_NENI_SOKL === 'není součástí nabídky', interier.ph.TS_NENI_SOKL);
+
+  /* JÁDRO NÁLEZU: dokument si nesmí odporovat. Když kapitola II. sokl nese,
+   * nesmí tabulka specifikace tvrdit, že v nabídce není.
+   *
+   * Měří se SKUTEČNÝ zdroj kapitoly II., tedy pole `nabidkaData().priplatky`.
+   * První pokus hledal placeholdery `PRIPLATEK*` — žádné takové ale
+   * neexistují, takže kontrola vycházela vždycky a nehlídala nic. */
+  const nabizi = v => (v.priplatky || []).some(p =>
+    /OPLECHOVÁNÍ SOKLU/i.test(String((p && (p.nazev || p.popis)) || '')));
+
+  test('N17: kontrola není prázdná — nabízený sokl se v kapitole II. opravdu najde',
+    nabizi(zaPriplatek) === true, zaPriplatek.priplatky.map(p => p.nazev || p.popis));
+  test('N17: a vyřazený se tam nenajde',
+    nabizi(vubec) === false, vubec.priplatky.map(p => p.nazev || p.popis));
+
+  [['jako příplatek', zaPriplatek], ['vyřazený', vubec], ['v základní ceně', vZakladu],
+   ['interiér', interier]].forEach(([jm, v]) => {
+    const rika = String(v.ph.TS_NENI_SOKL || '');
+    test('N17: ' + jm + ' — věta neodporuje tomu, co nabídka opravdu nabízí',
+      !(rika === 'není součástí nabídky' && nabizi(v)), { veta: rika, nabizi: nabizi(v) });
+  });
+
+  /* A ve všech třech případech je vyplněná právě jedna strana. */
+  [vZakladu, zaPriplatek, vubec, interier].forEach((v, i) => {
+    test('N17: stav ' + (i + 1) + ' má vyplněnou právě jednu stranu',
+      !!(v.ph.TS_SOKL) !== !!(v.ph.TS_NENI_SOKL),
+      { a: v.ph.TS_SOKL, b: v.ph.TS_NENI_SOKL });
+  });
 }
 
 /* ---------- 4) zdroj pravdy je zmrazený otisk, ne dnešní zadání ---------- */

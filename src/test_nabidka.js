@@ -70,7 +70,12 @@ test('cena s DPH je z téže částky',
 test('DPH sazba', p.DPH_SAZBA === '12' && p.DPH_NAZEV === 'snížená', p.DPH_SAZBA);
 test('příplatek SKN je částka', /Kč$/.test(p.PRIP_SKN), p.PRIP_SKN);
 test('lešení vnější jako příplatek', /Kč$/.test(p.PRIP_LESENI_VNEJSI), p.PRIP_LESENI_VNEJSI);
-test('sokl není v dodávce', p.TS_NENI_SOKL === 'není součástí nabídky');
+/* ZMĚNA OČEKÁVÁNÍ 21. 9. 2026 (nález N17): sokl tu není v základní ceně, ale
+ * mezi příplatky ANO — a ty se do nabídky dávají všechny, dokud je obchodník
+ * nevyřadí. Věta „není součástí nabídky" tedy byla nepravdivá; kapitola II.
+ * ho zákazníkovi zároveň nabízela za cenu. Tři stavy hlídá test_nabidka_sokl.js. */
+test('sokl není v základní ceně, ale nabízí se jako příplatek',
+  p.TS_NENI_SOKL === 'nabízeno jako příplatek', p.TS_NENI_SOKL);
 test('název souboru', d.nazevSouboru === 'NABÍDKA_2026-OPR-CN-9001', d.nazevSouboru);
 
 // lešení vnější zvolené ve volitelných => „v základní ceně“

@@ -113,7 +113,15 @@ P.prekladSmaz('test & pokus');
     cz.placeholders.DPH_NAZEV + ' → ' + en.placeholders.DPH_NAZEV);
   test('DE: sazba DPH slovem přeložena', de.placeholders.DPH_NAZEV === P.tr(cz.placeholders.DPH_NAZEV, 'de'),
     cz.placeholders.DPH_NAZEV + ' → ' + de.placeholders.DPH_NAZEV);
-  test('EN: sokl přeložen', /included|not included/.test(en.placeholders.TS_NENI_SOKL), en.placeholders.TS_NENI_SOKL);
+  /* Do 21. 9. 2026 se tu hledala konkrétní anglická slova („included"). To je
+   * křehké: nález N17 přidal třetí stav („nabízeno jako příplatek" → „offered
+   * as an extra charge") a kontrola spadla, přestože překlad byl v pořádku.
+   * Zkouší se proto totéž co o pár řádků výš u TS_HAKY — že hodnota projde
+   * slovníkem —, ne jaká slova v ní stojí. */
+  test('EN: sokl přeložen',
+    en.placeholders.TS_NENI_SOKL === P.tr(cz.placeholders.TS_NENI_SOKL, 'en')
+    && ['slovník', 'vzor'].includes(P.trStav(cz.placeholders.TS_NENI_SOKL, 'en').zdroj),
+    cz.placeholders.TS_NENI_SOKL + ' → ' + en.placeholders.TS_NENI_SOKL);
   test('ceny zůstávají shodné bez ohledu na jazyk',
     en.placeholders.CENA_BEZ_DPH === cz.placeholders.CENA_BEZ_DPH);
   /* Pořadí příplatků se mění s výchozím nastavením nové nabídky (9. 9. 2026:
