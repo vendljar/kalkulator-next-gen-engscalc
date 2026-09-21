@@ -99,7 +99,17 @@ function zakTrojice() {
   const jenCteni = (typeof zamekCteniJe === 'function') && zamekCteniJe();
   const popis = ZAKULO_STAV.uklada ? '⏳ Ukládám…'
     : (jenCteni ? '🔒 Odemknout a uložit' : '💾 Uložit zakázku');
-  return `<button class="mini${ceka && !jenCteni ? ' vyzva' : ''}${ulozeno && !jenCteni ? ' ulozeno-ok' : ''}" ${pracuje ? 'disabled' : ''}
+  /* `cteni-ok` MUSÍ BÝT, jinak je oprava jen nápis. Lišta „Zakázka
+   * a varianta" dostává v režimu čtení třídu `cteni-zamceno`, která všem
+   * tlačítkům uvnitř nastaví `pointer-events:none` — kromě těch se značkou
+   * `cteni-ok`. Tlačítko uložení ji do 21. 9. 2026 nemělo, takže bylo
+   * doslova mrtvé: vypadalo jako tlačítko, kliknutí neudělalo nic a nikde
+   * se nic nevysvětlilo. To je jádro nálezu N4.
+   *
+   * Klikatelné neznamená, že se uloží: `zakUlozUI()` se hned na začátku
+   * ptá `zamekCteniStop()` a místo zápisu otevře dialog s odemknutím.
+   * Zápis dál hlídá ta kontrola, ne nedostupnost tlačítka. */
+  return `<button class="mini${jenCteni ? ' cteni-ok' : ''}${ceka && !jenCteni ? ' vyzva' : ''}${ulozeno && !jenCteni ? ' ulozeno-ok' : ''}" ${pracuje ? 'disabled' : ''}
       title="${jenCteni ? 'zakázka je otevřená jen ke čtení — nejdřív ji odemkněte k úpravám'
         : 'uložit otevřenou zakázku ' + kam}"
       onmousedown="zakUlozMousedown()" onclick="zakUlozUI()">${esc(popis)}</button>
