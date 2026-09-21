@@ -41,6 +41,19 @@
    "testy": "test_jen_zahranicni.js (20, přepsané očekávání — nuluje se podmíněně), test_cenik_dopad.js (17, nově i projekce), test_zakazka_duplikace.js (29), test_nabidka_kapitoly.js (99, nově jazykové symboly), overit_prepocet_dialog.mjs (27, nově stráž identity). Celkem 120 sad zeleně."
   },
   {
+   "id": "289",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "vysoka",
+   "slozitost": "S",
+   "hotovoV": "v21.9.12",
+   "nazev": "Červené CI tří dávek — --smoke pouštěl jinou sadu než CI",
+   "proc": "Lokálně zeleno, v CI červeno. `./spust_testy.sh --smoke` pouštěl čtyři prohlížečové harnessy, CI jich pouští deset. Šest jich lokálně nikdy neběželo, takže tři dávky za sebou odešly s červeným CI, aniž by si toho kdokoli všiml. Přesně ta past, kterou měl job „harnessy\" (nález N13, 14. 9. 2026) zavřít — jen z druhé strany.",
+   "detail": "PADALO `overit_lista.mjs`, kontrola „protokol se do dokumentů nedostane\". Procházela sestavená data výrazem /protokol/i. Kapitola V. TERMÍNY REALIZACE (#282, dávka v21.9.8) mluví v němčině o „Protokolle der Schachttüren\" — předávacích protokolech šachetních dveří. Se záznamem o změnách to nesouvisí; kontrola padala na vlastním textu nabídky a jediná cesta, jak ji „spravit\" beze změny kontroly, by byla přepsat větu pro zákazníka.\n\nŽÁDNÁ DATA NEUNIKLA. Změřeno: v sestavených dokumentech není klíč \"protokol\", není tam protokolKlic zakázky ani id jediného záznamu.\n\nKONTROLA NOVĚ hledá klíč struktury, protokolKlic, id záznamů a texty záznamů (u citlivých i hodnoty pred/po). Že umí selhat, je ověřeno měřením: po vložení id záznamu do textu zabere, po vložení klíče zabere, po vložení klíče struktury zabere. Přibyla pojistka proti prázdnému měření — musí existovat aspoň jeden citlivý záznam.\n\nPOCTIVÁ MEZ: hodnoty kratší než čtyři znaky se nehledají. Dvojciferná sazba se v dokumentu plném čísel neodliší od běžného údaje a kontrola by hlásila poplach pořád. Pojistkou proti úniku jsou id a klíč, kontrola hodnot je doplněk pro delší částky.\n\nA HLAVNĚ: --smoke nově pouští přesně tu sadu, kterou pouští CI. Seznam je v obou souborech shodný a je u něj napsané, že se musí měnit spolu.",
+   "kde": "overit_lista.mjs (kontrola úniku protokolu), spust_testy.sh (sada --smoke shodná s .github/workflows/testy.yml)",
+   "testy": "./spust_testy.sh --smoke: 126 prošlo, 0 selhalo (nově včetně overit_lista, overit_atyp, overit_proj17, overit_zobrazeni, overit_ock_cela_cesta a overit_vypnuty_radek)."
+  },
+  {
    "id" : "285",
    "vlna" : "C",
    "stav" : "ceka",

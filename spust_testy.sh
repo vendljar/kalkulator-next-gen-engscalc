@@ -17,7 +17,10 @@
 #   – smoke.mjs         že bundle vůbec nastartuje (pořadí souborů, TDZ,
 #                       překlep v inline onclick, výjimka při prvním render),
 #   – overit_online.mjs skutečný klient proti skutečným serverovým funkcím
-#                       (přihlášení, zámek čtení, ukládání, ceník online).
+#                       (přihlášení, zámek čtení, ukládání, ceník online),
+#   – a všechny ostatní harnessy, které pouští CI (lišta, ATYP, PROJ, matice
+#     zobrazení, celá cesta OCK…) — seznam je záměrně shodný s workflow, viz
+#     poznámku u jejich spuštění níž.
 # Jsou dobrovolné, protože potřebují playwright a hotový build; bez něj by
 # skript hlásil chybu i tam, kde jde jen o změnu v jádře.
 #
@@ -131,6 +134,24 @@ if [ "${1:-}" = "--smoke" ]; then
     # Dialog o přepočtu na dnešní ceník (#284): v Node se neotevře, a přitom
     # je to jediné místo, kde se obchodník dozví, o kolik se hnula cena.
     spust_prohlizec overit_prepocet_dialog.mjs
+
+    # HARNESSY, KTERÉ POUŠTÍ CI (job „harnessy" v .github/workflows/testy.yml).
+    #
+    # Do 21. 9. 2026 tu nebyly, a --smoke tak pouštěl JINOU SADU NEŽ CI. Kdo si
+    # lokálně nechal projít všechno zeleně, mohl pushnout dávku, která v CI
+    # spadla — a přesně to se stalo: kapitola V. TERMÍNY REALIZACE v němčině
+    # mluví o „Protokolle der Schachttüren", čímž rozbila kontrolu
+    # v overit_lista.mjs, která hledala slovo „protokol". Tři dávky za sebou
+    # odešly s červeným CI, aniž by o tom kdokoli věděl.
+    #
+    # Seznam musí zůstat shodný s workflow. Kdyby do CI přibyl další harness,
+    # patří i sem — jinak se ta past otevře znovu.
+    spust_prohlizec overit_vypnuty_radek.mjs
+    spust_prohlizec overit_lista.mjs
+    spust_prohlizec overit_atyp.mjs
+    spust_prohlizec overit_proj17.mjs
+    spust_prohlizec overit_zobrazeni.mjs
+    spust_prohlizec overit_ock_cela_cesta.mjs
   fi
 fi
 

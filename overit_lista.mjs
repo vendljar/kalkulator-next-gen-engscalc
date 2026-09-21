@@ -1140,17 +1140,60 @@ ok('běžný uživatel hodnoty z ceníku nevidí', citlive41.uzivatelVidi === fa
 ok('ale ví, že se ceník měnil', citlive41.uzivatelSkryto, JSON.stringify(citlive41));
 ok('administrátor hodnoty vidí', citlive41.adminVidi, JSON.stringify(citlive41));
 
-/* A to hlavní: protokol nesmí ven v žádném dokumentu. */
+/* A to hlavní: protokol nesmí ven v žádném dokumentu.
+ *
+ * HLEDÁ SE PROTOKOL, NE SLOVO „PROTOKOL" (oprava 21. 9. 2026). Kontrola
+ * původně procházela sestavená data regulárním výrazem /protokol/i. To
+ * fungovalo do chvíle, než nabídka dostala kapitolu V. TERMÍNY REALIZACE:
+ * německé znění mluví o „Protokolle der Schachttüren", tedy o PŘEDÁVACÍCH
+ * protokolech šachetních dveří, což se záznamem o změnách nijak nesouvisí.
+ * Kontrola tím začala padat na vlastním textu nabídky — a co hůř, jediná
+ * cesta, jak ji „spravit", by bylo přeformulovat větu pro zákazníka.
+ *
+ * Nově se hledá to, co ven opravdu nesmí:
+ *   · klíč `"protokol"` ve struktuře dat dokumentu,
+ *   · `protokolKlic` zakázky,
+ *   · id konkrétních záznamů (jsou náhodná, shoda náhodou nehrozí),
+ *   · a texty záznamů, u citlivých i hodnoty pred/po.
+ *
+ * MEZ, KTEROU JE POCTIVÉ PŘIZNAT: hodnoty kratší než čtyři znaky se
+ * nehledají. Dvojciferná sazba se v dokumentu plném čísel nedá odlišit od
+ * běžného údaje a kontrola by hlásila poplach pořád. Skutečnou pojistkou
+ * proti úniku je tedy id záznamu a klíč protokolu — ty jsou náhodné; kontrola
+ * hodnot je jen doplněk pro delší částky. */
 const ven41 = await p.evaluate(() => {
   const v = aktivniVarianta(ZAK);
   let text = '';
   try { text += JSON.stringify(nabidkaData(ZAK, v, JEKLY, 'cz')); } catch (e) {}
   try { text += JSON.stringify(kryciData(ZAK, v, JEKLY)); } catch (e) {}
   try { text += tiskListaHtml({}); } catch (e) {}
-  return { delka: text.length, protokol: /protokol/i.test(text), klic: text.includes(ZAK.protokolKlic) };
+
+  const zaznamy = ZAK.protokol || [];
+  const stopy = [];
+  zaznamy.forEach(z => {
+    if (z.id) stopy.push(z.id);
+    if (z.co && String(z.co).length > 8) stopy.push(String(z.co));
+    /* Citlivé záznamy nesou hodnoty z ceníku — ty nesmí ven ani samotné. */
+    if (z.citlive) [z.pred, z.po].forEach(h => {
+      const s = String(h == null ? '' : h);
+      if (s.length > 3) stopy.push(s);
+    });
+  });
+  const unik = stopy.filter(s => text.includes(s));
+  const citlivych = zaznamy.filter(z => z.citlive).length;
+  return { delka: text.length, zaznamu: zaznamy.length, citlivych,
+           stop: stopy.length, unik: unik.slice(0, 3),
+           klicStruktury: /"protokol"\s*:/.test(text),
+           klic: !!ZAK.protokolKlic && text.includes(ZAK.protokolKlic) };
 });
 ok('dokumenty se sestavily i s protokolem v datech', ven41.delka > 0);
-ok('protokol se do dokumentů nedostane', ven41.protokol === false && ven41.klic === false,
+/* POJISTKA PROTI PRÁZDNÉ KONTROLE: kdyby zakázka protokol neměla, nebo kdyby
+ * v něm nebyl žádný citlivý záznam, kontrola níž by prošla, aniž by cokoli
+ * změřila — a únik částek z ceníku by zůstal neodhalený. */
+ok('harness má v protokolu co hledat',
+   ven41.zaznamu > 0 && ven41.citlivych > 0 && ven41.stop > 0, JSON.stringify(ven41));
+ok('protokol se do dokumentů nedostane',
+   ven41.klicStruktury === false && ven41.klic === false && ven41.unik.length === 0,
    JSON.stringify(ven41));
 
 /* --- IČO v hlavičkách (zadání z 30. 7. 2026) ------------------------------

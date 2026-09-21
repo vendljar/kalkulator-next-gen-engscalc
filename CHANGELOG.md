@@ -8,6 +8,37 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.9.12 — 21. 9. 2026
+
+### Červené CI tří dávek za sebou — kontrola hledala slovo, ne protokol (#289)
+
+Lokálně bylo zeleno, v CI červeno. **`./spust_testy.sh --smoke` pouštěl
+jinou sadu prohlížečových harnessů než CI** — šest jich lokálně nikdy
+neběželo. Tři dávky tak odešly s červeným CI, aniž by o tom kdokoli věděl.
+
+Padalo `overit_lista.mjs`, kontrola „protokol se do dokumentů nedostane".
+Ta procházela sestavená data výrazem `/protokol/i` — a **dnešní kapitola
+V. TERMÍNY REALIZACE mluví v němčině o „Protokolle der Schachttüren"**,
+tedy o předávacích protokolech šachetních dveří. Se záznamem o změnách to
+nemá nic společného; kontrola padala na vlastním textu nabídky. Jediná
+cesta, jak ji „spravit" beze změny kontroly, by byla přepsat větu, kterou
+dostane zákazník.
+
+**Žádná data neunikla** — ověřeno měřením: v dokumentech není klíč
+`"protokol"`, není tam `protokolKlic` zakázky ani id jediného záznamu.
+
+Kontrola teď hledá to, co ven opravdu nesmí: klíč struktury, klíč
+protokolu, id záznamů a texty záznamů. Že umí selhat, je ověřeno — po
+vložení id záznamu do textu kontrola zabere. Přibyla u ní pojistka proti
+prázdnému měření (musí existovat aspoň jeden citlivý záznam). *Poctivá mez:
+hodnoty kratší než čtyři znaky se nehledají — dvojciferná sazba se
+v dokumentu plném čísel neodliší od běžného údaje.*
+
+**A hlavně: `--smoke` teď pouští přesně to, co CI.** Seznam je v obou
+souborech záměrně shodný a je to u něj napsané.
+
+---
+
 ## v21.9.11 — 21. 9. 2026
 
 ### Druhé kolo nezávislé revize — sedm nálezů (#288)
