@@ -130,6 +130,60 @@ const tsNum = (n, d = 0) => (+n).toLocaleString('cs-CZ', { maximumFractionDigits
  * takže zakázkám, kde obchodník text už opravil, se nic nezmění. */
 function tsDvojsklo(Z) { return (Z || {}).typSachty !== 'interiérová'; }
 
+/* ROZSAH OPLÁŠTĚNÍ PŘI REŽIMU PO STĚNÁCH (#268, 3. krok, 21. 9. 2026).
+ *
+ * Ve standardním režimu je opláštění jednotné a věta „kompletní opláštění
+ * šachty" ho popisuje přesně. Jakmile se ale plášť rozdělí po stěnách,
+ * přestane to být pravda — a technická specifikace je dokument, který
+ * zákazník dostane. Mlčet o tom, že jedna stěna je z Cetrisu a druhou dodá
+ * stavba, by znamenalo poslat mu popis jiné šachty, než jakou kupuje.
+ *
+ * Věta se jen PŘEDVYPLNÍ: obchodník ji může přepsat jako každé jiné pole
+ * specifikace. Dělicí výšky se uvádějí tak, jak je zadal — nezaokrouhlují se
+ * (rozhodnutí J. V. u dodatku 3).
+ *
+ * Názvy typů se berou z OPLASTENI_TYPY, aby se popis nerozešel s číselníkem
+ * v zadání. Když jádro po ruce není (Node test jen nad techspec.js), vypíše
+ * se aspoň klíč — nikdy se nevymýšlí. */
+function tsOplasteniRozsah(Z, jazyk) {
+  const z = Z || {};
+  const o = z.oplasteni || {};
+  /* Kusy věty se překládají jednotlivě — celou složenou větu by slovník
+   * nikdy netrefil. Bez jazyka (nebo v češtině) vrací `tr` originál, takže
+   * česká cesta zůstává přesně taková, jaká byla. */
+  const T = (s) => (jazyk && jazyk !== 'cz' && typeof tr === 'function') ? tr(s, jazyk) : s;
+  if (o.rezim !== 'poStenach' || !o.steny) return T('kompletní opláštění šachty');
+  const nazvy = (typeof OPLASTENI_TYPY !== 'undefined') ? OPLASTENI_TYPY : [];
+  const jmeno = (p) => {
+    if (p.typ === 'jine') return (p.nazev || T('jiné opláštění'));
+    const d = nazvy.find(t => t.id === p.typ);
+    /* Název se NEPŘEVÁDÍ na malá písmena: „Sklo VSG 4.4.1" by z toho vyšlo
+     * jako „sklo vsg 4.4.1" a zkratka by přestala být zkratkou.
+     * Ruční název u typu „jiné" napsal obchodník — ten se nepřekládá, protože
+     * ho slovník nezná a vymýšlet si cizojazyčný název materiálu nesmíme. */
+    return d ? T(d.nazev) : String(p.typ);
+  };
+  const cislo = (x) => (typeof formatCislo === 'function')
+    ? formatCislo(x) : String(Math.round((+x || 0) * 100) / 100).replace('.', ',');
+  const klice = (typeof OPLASTENI_STENY !== 'undefined') ? OPLASTENI_STENY : ['A', 'B', 'C', 'D'];
+  const casti = [];
+  klice.forEach(k => {
+    const st = o.steny[k];
+    if (!st || !Array.isArray(st.pasy) || !st.pasy.length) return;
+    const odM = +st.odM || 0;
+    const pasy = st.pasy.map((p, i) => {
+      const posledni = (i === st.pasy.length - 1);
+      if (st.pasy.length === 1) return jmeno(p);
+      return posledni ? jmeno(p) + ' ' + T('výš')
+        : jmeno(p) + ' ' + T('do výšky') + ' ' + cislo(p.doM) + ' m';
+    });
+    casti.push(T('stěna') + ' ' + k + ': ' + pasy.join(', ')
+      + (odM < 0 ? ' (' + T('od výšky') + ' ' + cislo(odM) + ' m, ' + T('tedy do prohlubně') + ')' : ''));
+  });
+  if (!casti.length) return T('kompletní opláštění šachty');
+  return T('opláštění po stěnách') + ' — ' + casti.join('; ');
+}
+
 /* Definice dokumentu: sekce → pole. prefill(r, Z, C) vrací text z kalkulace OCK
  * (r = výsledek vypocet(), Z = zadání, C = ceník); bez prefill je výchozí def. */
 const TECHSPEC_DEF = [
@@ -229,7 +283,9 @@ const TECHSPEC_DEF = [
         : 'čiré sklo' },
     { id: 'oplasteniCela', label: 'OPLÁŠTĚNÍ ČELA POD NÁSTUPIŠTĚM', ciselnik: TS_C.oplasteniCela,
       def: 'plech v celé ploše podesty' },
-    { id: 'rozsahOplasteni', label: 'ROZSAH OPLÁŠTĚNÍ', def: 'kompletní opláštění šachty' },
+    /* `jazykSam`: větu skládá prefill rovnou v cílovém jazyce — viz tsHodnota. */
+    { id: 'rozsahOplasteni', label: 'ROZSAH OPLÁŠTĚNÍ', def: 'kompletní opláštění šachty',
+      jazykSam: true, prefill: (r, Z, C, jazyk) => tsOplasteniRozsah(Z, jazyk) },
     { id: 'oplasteniPortalu', label: 'OPLÁŠTĚNÍ PORTÁLŮ NÁSTUPIŠŤ', ciselnik: TS_C.oplasteniPortalu, def: ' -' },
     { id: 'oplasteniNadsvetliku', label: 'OPLÁŠTĚNÍ NADSVĚTLÍKŮ', ciselnik: TS_C.oplasteniNadsvetliku,
       prefill: (r, Z) => (Z.svetlikNadDvermi || Z.svetlikyBoky)
@@ -342,10 +398,20 @@ const DEFAULT_TECHSPEC = {
 };
 
 /* Výsledná hodnota pole: ruční přepis > prefill z kalkulace > výchozí text */
-function tsHodnota(pole, ts, vysledekOck, Z, C) {
+/* `jazyk` (nepovinný) se předává PREFILLU, ne výstupu. Skoro všechna pole
+ * vracejí českou větu, kterou přeloží až tisk přes `tr()` nad celým textem —
+ * to ale nejde u vět, které se SKLÁDAJÍ z proměnlivého počtu kusů (rozsah
+ * opláštění po stěnách, #268). Takovou větu nemá slovník jak trefit celou,
+ * takže si ji prefill složí rovnou v cílovém jazyce a dá o tom vědět
+ * příznakem `prelozeno`. Tisk pak ví, že přes ni nemá pouštět `tr()` podruhé
+ * — jinak by hlásil chybějící heslo u textu, který je přeložený správně. */
+function tsHodnota(pole, ts, vysledekOck, Z, C, jazyk) {
   if (ts.hodnoty[pole.id] != null) return { text: ts.hodnoty[pole.id], zdroj: 'ručně' };
   if (pole.prefill && vysledekOck) {
-    try { return { text: pole.prefill(vysledekOck, Z, C), zdroj: 'z kalkulace' }; }
+    try {
+      const t = pole.prefill(vysledekOck, Z, C, jazyk);
+      return { text: t, zdroj: 'z kalkulace', prelozeno: !!(jazyk && jazyk !== 'cz' && pole.jazykSam) };
+    }
     catch (e) { /* spadne-li prefill, použij výchozí */ }
   }
   /* `prefillTs` se řídí JINÝM POLEM SPECIFIKACE, ne kalkulací (nález C5,
@@ -472,6 +538,6 @@ function tsKontrola(ts, r, Z, C, zak) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { TECHSPEC_DEF, TS_C, DEFAULT_TECHSPEC, tsHodnota,
+  module.exports = { TECHSPEC_DEF, TS_C, DEFAULT_TECHSPEC, tsHodnota, tsOplasteniRozsah,
     TS_C_KEY_OF, tsCiselnikKlic, tsCiselnikPouziti, tsPole, TS_C_ORIG, TS_DEF_ORIG,
     TS_HLAVICKA, TS_POVINNE, tsPrazdna, tsKontrola };

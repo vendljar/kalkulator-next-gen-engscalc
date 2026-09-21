@@ -143,6 +143,15 @@ function renderInputs() {
         }))
       + sl(
         inp('Z.zaskleni', { type: 'sel', l: 'Způsob zasklení', o: [['na terče', 'na terče'], ['mezi příčníky', 'mezi příčníky (lišty)']] })
+        /* OPLÁŠTĚNÍ PO STĚNÁCH (#268, 3. krok). Přepínač stojí tady, mezi
+         * zasklením a sloupky, protože to je místo, kde se o plášti rozhoduje.
+         * Vlastní stěny jsou ve zvláštní kartě, která se kreslí až po
+         * přepnutí — ve standardním režimu o nich obchodník nemá vědět. */
+        + `<div class="row"><label>Opláštění</label>
+            <select style="width:150px" onchange="oplRezimSet(this.value)">
+              <option value="standard" ${oplPoStenach() ? '' : 'selected'}>jednotné (standard)</option>
+              <option value="poStenach" ${oplPoStenach() ? 'selected' : ''}>po stěnách A–D</option>
+            </select><span class="u"></span></div>`
         + inp('Z.rohoveSloupky', { l: 'Počet sloupků', step: 1, u: 'ks' })
         + inp('Z.svetlikyBoky', { type: 'sel', l: 'Světlíky na bocích dveří', o: [[0, 'bez'], [1, 'na jedné straně'], [2, 'na obou stranách']] })
         + inp('Z.prechodovePlechy', { type: 'check', l: 'Přechodové plechy' })
@@ -183,6 +192,9 @@ function renderInputs() {
        * mění u jednotlivé nabídky a starší nabídky se nepřepočítávají;
        * mění ji ten, kdo vidí ceník. */
       '', false, 'ock-zadani') +
+    /* Stěny stojí hned za zadáním šachty: navazují na přepínač Opláštění
+       o pár polí výš a patří k popisu stavby, ne k cenám. */
+    oplasteniKarta() +
     card('Dimenze profilů',
       profRow('sloupek', 'Sloupek') + profRow('precnikBok', 'Příčníky bok/zadek') + profRow('sloupekPortal', 'Sloupek portálu') +
       profRow('precnikPortal', 'Příčníky portálu') + profRow('spojka', 'Spojka sloupků') + profRow('lemovani', 'Lemování ext. šachty') +
@@ -423,6 +435,259 @@ function cenaSet(orig, v) {
   if (v === '' || v == null) delete Z.cenyPrepis[orig]; else Z.cenyPrepis[orig] = +v;
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
   render();
+}
+
+/* ================= OPLÁŠTĚNÍ PO STĚNÁCH (#268, 3. krok, 21. 9. 2026) =======
+ *
+ * Výpočet, typy i kontrola standardu přišly ve dvou dávkách 18. 9. 2026
+ * (plocha rozpojená na stěny A–D beze změny výsledku, pak pásy a sazby).
+ * Chyběla obrazovka — režim se zapínal jedině ruční úpravou JSON, takže ho
+ * obchodník neměl jak použít. Tohle je ta obrazovka.
+ *
+ * DATOVÝ TVAR (rozhodnutí z návrhu, dodatek 3): stěna nese JEDNU dolní mez
+ * a SEZNAM PÁSŮ se stropem, ne dvě nezávislé dvojice od–do.
+ *
+ *   B: { odM: -1.2, pasy: [ {typ, doM: 2.2}, {typ, doM: null} ] }
+ *
+ * Pás začíná tam, kde skončil předchozí; poslední má `doM: null` = až
+ * nahoru. Překryv ani mezera nejdou zapsat — není je z čeho složit. Mezera
+ * se zadává jako pás typu „bez — dodá stavba", aby v zadání zůstalo vidět,
+ * že se na to myslelo.
+ *
+ * Záporná dolní mez sahá do prohlubně; tam výpočet bere skutečnou šířku
+ * stěny, protože nad ní není z čeho brát podíl.
+ *
+ * SEKCE JE SKRYTÁ, DOKUD SE REŽIM NEZAPNE (návrh, oddíl B): ve standardním
+ * režimu obchodník o čtyřech stěnách vůbec neví. */
+
+/* Popisky stěn pro obrazovku. Pořadí a klíče drží jádro (OPLASTENI_STENY),
+ * tady je jen to, co se o nich píše člověku. */
+const OPL_STENY_POPIS = { A: 'čelní stěna (dveře a světlíky)', B: 'boční stěna',
+                          C: 'zadní stěna', D: 'boční stěna' };
+const OPL_STENY = (typeof OPLASTENI_STENY !== 'undefined' ? OPLASTENI_STENY : ['A', 'B', 'C', 'D'])
+  .map(k => ({ k, popis: OPL_STENY_POPIS[k] || '' }));
+
+function oplZadani() {
+  if (!Z.oplasteni || typeof Z.oplasteni !== 'object') Z.oplasteni = { rezim: 'standard', steny: null };
+  return Z.oplasteni;
+}
+function oplPoStenach() { return oplZadani().rezim === 'poStenach'; }
+
+/* Stěna vždy existuje a vždy má aspoň jeden pás — obrazovka se tak nemusí
+ * ptát na prázdno na deseti místech. Výchozí typ bere `oplasteniVychoziTyp`
+ * z jádra, takže sedí na to, co by na stěně bylo ve standardním režimu. */
+function oplStena(k) {
+  const o = oplZadani();
+  if (!o.steny || typeof o.steny !== 'object') o.steny = {};
+  if (!o.steny[k] || typeof o.steny[k] !== 'object') o.steny[k] = { odM: 0, pasy: [] };
+  const st = o.steny[k];
+  if (!Array.isArray(st.pasy) || !st.pasy.length) {
+    /* Výchozí podobu stěny skládá JÁDRO (`oplasteniStenyVychozi`), ne tahle
+     * obrazovka — jedině tak platí slib dávky #268, že zapnutí režimu beze
+     * změny zadání nehne cenou. Viz komentář u té funkce. */
+    const vych = (typeof oplasteniStenyVychozi === 'function')
+      ? oplasteniStenyVychozi(Z, aktivniVarianta(ZAK).data.cenik)[k]
+      : { odM: 0, pasy: [{ typ: 'bez', doM: null }] };
+    st.pasy = vych.pasy;
+    if (st.odM == null) st.odM = vych.odM;
+  }
+  if (st.odM == null) st.odM = 0;
+  return st;
+}
+
+/* „Po celé výšce" = dolní mez 0 a jediný pás až nahoru. Není to zvláštní
+ * příznak v datech: kdyby byl, musel by se držet v souladu s pásy a dřív
+ * nebo později by se rozešel. Odvozuje se z nich. */
+function oplCelaVyska(k) {
+  const st = oplStena(k);
+  return (+st.odM || 0) === 0 && st.pasy.length === 1 && st.pasy[0].doM == null;
+}
+
+function oplZmeneno() {
+  aktivniVarianta(ZAK).upraveno = new Date().toISOString();
+  /* Ručně zadaný náklad u typu „jiné" znamená atyp — stejně jako ručně
+   * přepsané množství. Automatiku pouští `set()`; tady se na ni musí
+   * sáhnout zvlášť, protože zapisujeme mimo něj. */
+  if (typeof standardAtypAutomat === 'function') standardAtypAutomat();
+  render();
+}
+
+function oplRezimSet(rezim) {
+  const o = oplZadani();
+  o.rezim = (rezim === 'poStenach') ? 'poStenach' : 'standard';
+  /* Stěny se při zapnutí založí hned, ať se dá rovnou psát. Při vypnutí se
+   * NEMAŽOU: kdo režim omylem vypne a zase zapne, nesmí přijít o rozdělení
+   * stěn. Výpočet je ve standardním režimu stejně ignoruje. */
+  if (o.rezim === 'poStenach') OPL_STENY.forEach(s => oplStena(s.k));
+  oplZmeneno();
+}
+
+function oplCelaVyskaSet(k, ano) {
+  const st = oplStena(k);
+  if (ano) {
+    /* Zpátky na jeden pás: ponechá se typ PRVNÍHO pásu, protože ten pokrývá
+     * spodek stěny, na který se obchodník dívá nejdřív. */
+    st.odM = 0;
+    st.pasy = [{ typ: st.pasy[0].typ, nazev: st.pasy[0].nazev, naklad: st.pasy[0].naklad, doM: null }];
+  } else if (st.pasy.length === 1) {
+    /* Odškrtnutím se objeví dolní mez a seznam pásů — zpočátku s tím
+     * jediným, který tam byl (návrh, dodatek 3). */
+    st.pasy = [{ typ: st.pasy[0].typ, nazev: st.pasy[0].nazev, naklad: st.pasy[0].naklad, doM: null }];
+  }
+  oplZmeneno();
+}
+
+function oplOdSet(k, val) {
+  const st = oplStena(k);
+  const s = String(val == null ? '' : val).trim().replace(',', '.');
+  st.odM = s === '' ? 0 : (+s || 0);
+  oplZmeneno();
+}
+
+function oplPasSet(k, i, pole, val) {
+  const st = oplStena(k);
+  const p = st.pasy[i];
+  if (!p) return;
+  if (pole === 'doM') {
+    const s = String(val == null ? '' : val).trim().replace(',', '.');
+    p.doM = s === '' ? null : (+s || 0);
+  } else if (pole === 'naklad') {
+    const s = String(val == null ? '' : val).trim().replace(',', '.');
+    p.naklad = s === '' ? null : (+s || 0);
+  } else if (pole === 'typ') {
+    p.typ = String(val || '');
+    /* Přepnutím na jiný typ ztrácí ruční název a sazba smysl — nechat je
+     * viset by znamenalo, že se po návratu na „jiné" objeví cizí čísla. */
+    if (p.typ !== 'jine') { delete p.nazev; delete p.naklad; }
+  } else if (pole === 'nazev') {
+    p.nazev = String(val || '');
+  }
+  oplZmeneno();
+}
+
+/* Nový pás se vkládá NAD poslední: poslední vždy sahá až nahoru, takže nový
+ * dělí to, co bylo pod ním. Dělicí výška se nepředvyplňuje — vymyslet ji za
+ * obchodníka by znamenalo tvrdit něco o stavbě. */
+function oplPasPridej(k) {
+  const st = oplStena(k);
+  const posledni = st.pasy[st.pasy.length - 1];
+  st.pasy.splice(st.pasy.length - 1, 0, { typ: posledni.typ, doM: null });
+  oplZmeneno();
+}
+
+function oplPasSmaz(k, i) {
+  const st = oplStena(k);
+  if (st.pasy.length <= 1) return;        // stěna bez pásu neexistuje
+  st.pasy.splice(i, 1);
+  st.pasy[st.pasy.length - 1].doM = null;  // poslední vždycky až nahoru
+  oplZmeneno();
+}
+
+/* Dělicí výšky musí růst a ležet nad dolní mezí. Výpočet si to hlídá sám
+ * (pás s nulovou nebo zápornou výškou prostě přeskočí), ale mlčky — a tiché
+ * přeskočení pásu je přesně ten druh chyby, který se pozná až u zákazníka.
+ * Vrací text varování, nebo prázdno. */
+function oplStenaVarovani(k) {
+  const st = oplStena(k);
+  if (oplCelaVyska(k)) return '';
+  let dolni = +st.odM || 0;
+  for (let i = 0; i < st.pasy.length - 1; i++) {
+    const doM = st.pasy[i].doM;
+    if (doM == null) return 'Pás ' + (i + 1) + ' nemá dělicí výšku — vyplňte ji, nebo pás odeberte.';
+    if (+doM <= dolni) return 'Dělicí výšky musí růst: ' + formatCislo(+doM) + ' m není nad ' + formatCislo(dolni) + ' m.';
+    dolni = +doM;
+  }
+  return '';
+}
+
+function oplTypSelect(k, i) {
+  const st = oplStena(k);
+  const p = st.pasy[i];
+  const ext = Z.typSachty !== 'interiérová';
+  const typy = (typeof oplasteniTypy === 'function') ? oplasteniTypy(ext) : [];
+  /* Uložený typ, který se do nabídky nevejde (změnil se typ šachty), se
+   * přidá navrch — jinak by select tiše ukázal něco jiného, než je v datech,
+   * a při nejbližším překreslení by se to do dat i zapsalo. */
+  const zname = typy.some(t => t.id === p.typ);
+  const navic = zname ? '' : `<option value="${esc(p.typ)}" selected>${esc(p.typ)} (z jiného typu šachty)</option>`;
+  return `<select style="width:190px" onchange="oplPasSet('${escJs(k)}', ${+i}, 'typ', this.value)">
+      ${navic}${typy.map(t => `<option value="${esc(t.id)}" ${t.id === p.typ ? 'selected' : ''}>${esc(t.nazev)}</option>`).join('')}
+    </select>`;
+}
+
+function oplJineHtml(k, i) {
+  const p = oplStena(k).pasy[i];
+  if (p.typ !== 'jine') return '';
+  /* Ruční název i sazba patří do zadání, ne do ceníku: je to jednorázové
+   * řešení téhle zakázky. Do ceníku se nepropisují schválně — jinak by se
+   * jednorázovost stala sazbou pro všechny. */
+  return `<span class="par">
+      <input type="text" style="width:150px" placeholder="název opláštění"
+        value="${esc(p.nazev || '')}" onchange="oplPasSet('${escJs(k)}', ${+i}, 'nazev', this.value)">
+      <input type="number" step="any" style="width:100px" placeholder="Kč/m²"
+        title="náklad za m²; ruční sazba znamená atyp"
+        value="${esc(p.naklad == null ? '' : p.naklad)}" onchange="oplPasSet('${escJs(k)}', ${+i}, 'naklad', this.value)">
+    </span>`;
+}
+
+function oplStenaHtml(s) {
+  const k = s.k;
+  const st = oplStena(k);
+  const cela = oplCelaVyska(k);
+  const varovani = oplStenaVarovani(k);
+  const hlava = `<div class="row"><label title="${esc(s.popis)}">Stěna ${esc(k)}
+      <span class="note" style="font-weight:400"> — ${esc(s.popis)}</span></label>
+    <span class="par">
+      ${cela ? oplTypSelect(k, 0) : ''}
+      <label style="font-weight:400" title="celá stěna je z jednoho materiálu">
+        <input type="checkbox" ${cela ? 'checked' : ''}
+          onchange="oplCelaVyskaSet('${escJs(k)}', this.checked)"> po celé výšce</label>
+    </span><span class="u"></span></div>`
+    + (cela ? oplJineHtml(k, 0) : '');
+  if (cela) return hlava;
+
+  /* Pásy se vypisují ODSHORA DOLŮ, protože tak se na stěnu člověk dívá;
+   * ukládají se zdola nahoru (viz jádro). Proto to obrácené pořadí. */
+  const pasy = st.pasy.map((p, i) => {
+    const posledni = (i === st.pasy.length - 1);
+    return `<div class="row"><label style="font-weight:400">— pás ${i + 1}${posledni ? ' (až nahoru)' : ''}</label>
+      <span class="par">${oplTypSelect(k, i)}
+        ${posledni ? '<span class="note">po horní hranu</span>'
+          : `<input type="number" step="0.01" style="width:90px" placeholder="do (m)"
+              title="dělicí výška — kde tenhle pás končí a začíná další"
+              value="${esc(p.doM == null ? '' : p.doM)}"
+              onchange="oplPasSet('${escJs(k)}', ${+i}, 'doM', this.value)">`}
+        ${st.pasy.length > 1 ? `<button class="mini" title="odebrat pás"
+          onclick="oplPasSmaz('${escJs(k)}', ${+i})">✕</button>` : ''}
+      </span><span class="u"></span></div>`
+      + oplJineHtml(k, i);
+  }).reverse().join('');
+
+  return hlava
+    + `<div class="row"><label style="font-weight:400">— opláštění začíná</label>
+        <input type="number" step="0.01" style="width:90px"
+          title="výška, od které se opláštění počítá; záporná hodnota sahá do prohlubně"
+          value="${esc(st.odM)}" onchange="oplOdSet('${escJs(k)}', this.value)"><span class="u">m</span></div>`
+    + pasy
+    + `<div class="row"><label></label><span class="par">
+        <button class="mini" onclick="oplPasPridej('${escJs(k)}')">+ přidat pás</button></span><span class="u"></span></div>`
+    + (varovani ? `<div class="seznam-varovani">Stěna ${esc(k)}: ${esc(varovani)}</div>` : '');
+}
+
+/* Karta se kreslí JEN v režimu po stěnách (návrh, oddíl B). */
+function oplasteniKarta() {
+  if (!oplPoStenach()) return '';
+  return card('Opláštění po stěnách (A–D)',
+    OPL_STENY.map(oplStenaHtml).join('')
+    + `<div class="note">Stěny se počítají po pásech a do kalkulace se sčítají <b>podle typu</b>,
+      ne podle stěny — nabídka se tím nerozdrobí na osm skoro stejných řádků.
+      Pás začíná tam, kde skončil předchozí, takže překryv ani mezera nemůžou vzniknout.
+      Úsek, který se oplášťovat nemá, zadejte jako pás typu <b>„bez — dodá stavba"</b>;
+      zůstane tak vidět, že se na to myslelo.</div>`
+    + `<div class="note">Záporná hodnota u „opláštění začíná" sahá <b>do prohlubně</b>.
+      Terče a lišty se počítají jen z pásů se sklem.
+      Režim po stěnách je vždy <b>mimo standard</b> — standard zná jen jednotné opláštění.</div>`,
+    false, 'ock-oplasteni-steny');
 }
 
 /* ---- vlastní ruční položky v jednotlivých sekcích ---- */

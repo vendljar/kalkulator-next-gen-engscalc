@@ -232,6 +232,38 @@ const OPLASTENI_TYPY = [
 function oplasteniTypy(ext) {
   return OPLASTENI_TYPY.filter(t => t.kde === 'vse' || t.kde === (ext ? 'ext' : 'int'));
 }
+
+/* VÝCHOZÍ TYP STĚNY = to, co by na ní bylo ve standardním režimu.
+ *
+ * Čelní stěna (A) nese světlíky a dveře, takže se u ní sklo volí jinak než
+ * u boků a zad — rozhoduje o tom `skloVolba` podle typu šachty a způsobu
+ * zasklení. Pravidlo stojí tady, na jednom místě, protože ho potřebuje
+ * VÝPOČET (když stěna v zadání ještě není) i OBRAZOVKA (když se režim po
+ * stěnách zapíná a stěny se zakládají). Dvě kopie by se rozešly a zapnutí
+ * režimu by pak hnulo cenou — přesně to, co se u #268 slíbilo, že nenastane. */
+function oplasteniVychoziTyp(z, c, stena) {
+  const r = skloVolba(z, c);
+  return (stena === 'A' ? r.celni.cesta : r.boky.cesta);
+}
+
+const OPLASTENI_STENY = ['A', 'B', 'C', 'D'];
+
+/* Čtyři stěny v takovém stavu, v JAKÉM JE ŠACHTA DNES: každá celá, z toho
+ * materiálu, který by na ní byl ve standardním režimu.
+ *
+ * Bydlí to v jádru, ne v obrazovce, schválně. Dávka #268 slíbila, že
+ * ZAPNUTÍ REŽIMU BEZE ZMĚNY ZADÁNÍ NEHNE CENOU ANI O HALÉŘ — a ten slib drží
+ * jedině tehdy, když stěny zakládá tentýž kód, jehož se výpočet drží, když
+ * je v zadání nenajde. Kdyby si je skládala obrazovka po svém, rozešlo by se
+ * to při první změně pravidel a poznalo by se to až na ceně. Takhle se to dá
+ * otestovat v Node, bez prohlížeče. */
+function oplasteniStenyVychozi(z, c) {
+  const out = {};
+  OPLASTENI_STENY.forEach(k => {
+    out[k] = { odM: 0, pasy: [{ typ: oplasteniVychoziTyp(z, c, k), doM: null }] };
+  });
+  return out;
+}
 /* Řádky kalkulace ze součtu ploch podle typu. Pořadí je dané pořadím
  * v OPLASTENI_TYPY, aby se kalkulace nepřeskupovala podle toho, kterou
  * stěnu obchodník vyplnil dřív; „jiné" jdou nakonec, abecedně. */
@@ -820,7 +852,8 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const stenaSirka = { A: g.sir, B: g.hl, C: g.sir, D: g.hl };
   /* Výchozí typ stěny = to, co by na ní bylo ve standardu. Čelní stěna nese
    * světlíky (celni), ostatní jsou boky a záda. */
-  const oplVychoziTyp = (k) => (k === 'A' ? skloRada.celni.cesta : skloRada.boky.cesta);
+  /* Jediné pravidlo pro výpočet i obrazovku — viz `oplasteniVychoziTyp`. */
+  const oplVychoziTyp = (k) => oplasteniVychoziTyp(z, c, k);
 
   function oplPasyStenyM2(k) {
     const st = ((z.oplasteni || {}).steny || {})[k] || null;
@@ -1506,4 +1539,4 @@ function cenikMigraceLeseni(cenik) {
   }
 }
 
-if (typeof module !== 'undefined') module.exports = { vypocet, DEFAULT_ZADANI, DEFAULT_CENIK, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };
+if (typeof module !== 'undefined') module.exports = { vypocet, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };

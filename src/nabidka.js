@@ -59,7 +59,16 @@ function nabidkaData(zak, varianta, jekly, lang) {
   // hodnota pole technické specifikace (ruční přepis > prefill > výchozí)
   const pole = {};
   TECHSPEC_DEF.forEach(s => s.pole.forEach(p => { pole[p.id] = p; }));
-  const ts = id => P(pole[id] ? tsHodnota(pole[id], TSv, r, Zv, Cv).text : ' -');
+  /* Jazyk se předává i PREFILLU (#268, 3. krok): věta o rozsahu opláštění po
+   * stěnách se skládá z proměnlivého počtu kusů, takže ji slovník nemůže
+   * trefit celou a `tsOplasteniRozsah` si ji složí rovnou v cílovém jazyce.
+   * Když to udělá (hlásí `prelozeno`), NEPOUŠTÍ se přes ni `tr()` podruhé —
+   * jinak by tisk hlásil chybějící heslo u textu, který je v pořádku. */
+  const ts = id => {
+    if (!pole[id]) return P(' -');
+    const h = tsHodnota(pole[id], TSv, r, Zv, Cv, L);
+    return h.prelozeno ? h.text : P(h.text);
+  };
 
   // vnější rozměr: z ručního přepisu pole „ROZMĚR ŠACHTY – VNĚJŠÍ“, je-li ve tvaru „š × h“
   let sirkaVnejsi = ' -', hloubkaVnejsi = ' -';

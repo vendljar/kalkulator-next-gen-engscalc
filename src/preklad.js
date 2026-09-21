@@ -351,6 +351,23 @@ const PREKLAD = {
   "je součástí dodávky pro stavbu šachty i montáž výtahu": ["Included in the delivery for both the shaft erection and the lift installation","Im Lieferumfang für den Schachtbau und die Aufzugsmontage","Inclus dans la fourniture pour le montage de la gaine et de l'ascenseur"],
   "kabina se třemi vstupy": ["Car with three entrances","Kabine mit drei Zugängen","Cabine à trois accès"],
   "kompletní opláštění šachty": ["Complete shaft cladding","Komplette Schachtverkleidung","Bardage complet de la gaine"],
+  /* Opláštění po stěnách (#268, 3. krok, 21. 9. 2026). Věta o rozsahu se
+     skládá z proměnlivého počtu kusů, takže ji slovník nemůže trefit celou —
+     překládají se jednotlivé kusy a `tsOplasteniRozsah` je složí v cílovém
+     jazyce. Proto jsou tu i krátká slova jako „do" nebo „výš": samostatně
+     vypadají divně, ve větě o stěně dávají smysl. */
+  "opláštění po stěnách": ["Cladding by walls","Verkleidung nach Wänden","Bardage par parois"],
+  "stěna": ["Wall","Wand","Paroi"],
+  "do výšky": ["up to","bis","jusqu'à"],
+  "od výšky": ["from","ab","à partir de"],
+  "výš": ["above","darüber","au-dessus"],
+  "tedy do prohlubně": ["i.e. into the pit","also in die Schachtgrube","c'est-à-dire dans la cuvette"],
+  "jiné opláštění": ["Other cladding","Andere Verkleidung","Autre bardage"],
+  "Dvojsklo (boky + záda)": ["Double glazing (sides + rear)","Isolierverglasung (Seiten + Rückwand)","Double vitrage (côtés + arrière)"],
+  "Sklo VSG 4.4.1": ["Laminated safety glass VSG 4.4.1","Verbundsicherheitsglas VSG 4.4.1","Verre feuilleté de sécurité VSG 4.4.1"],
+  "Sklo VSG 4.4.2": ["Laminated safety glass VSG 4.4.2","Verbundsicherheitsglas VSG 4.4.2","Verre feuilleté de sécurité VSG 4.4.2"],
+  "Cetris": ["Cement-bonded particle board","Zementgebundene Spanplatte","Panneau de particules lié au ciment"],
+  "bez — dodá stavba": ["None — supplied by the building contractor","Ohne — wird bauseits geliefert","Sans — fourni par l'entreprise de construction"],
   "kontaktní, hmoždiny do ŽB konstrukcí": ["Contact, dowels into reinforced concrete structures","Kontakt, Dübel in Stahlbetonkonstruktionen","Contact, chevilles dans les structures en béton armé"],
   "kontaktní, přes antivibrační podložky": ["Contact, via anti-vibration pads","Kontakt, über Schwingungsdämpfer","Contact, via des plots antivibratoires"],
   "kontaktní, přivařením k ocelovým nosníkům": ["Contact, welded to steel beams","Kontakt, an Stahlträger angeschweißt","Contact, soudé aux poutres métalliques"],

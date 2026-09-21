@@ -4455,6 +4455,20 @@
    "hotovoKdyz": "Splněno: nová sada test_jen_zahranicni.js (17 kontrol) hlídá, že tuzemská cena u takové položky nemění výsledek ani se zaškrtnutým ATYP, že základ přirážky odpovídá viditelným řádkům režie, že skládání řady dá v ČR nulu, že přepočet při otevření cenu nezvedne a že se v zahraniční zakázce položka počítá dál.",
    "kde": "`src/engine.js` (pořadí přirážky ATYP), `src/cenik_rady.js` (cenikJenZahrCesty, cenikJenZahrVynuluj), `src/ui/cenik_ui.js`, `src/test_jen_zahranicni.js`",
    "pozn": "**CENY NĚKTERÝCH ZAKÁZEK SE TÍM MĚNÍ — vždy dolů.** Týká se tuzemských zakázek se zaškrtnutým ATYP, které měly buď položku „jen zahraniční\" s vyplněnou ČR cenou (tedy od zveřejnění vadné verze 27), nebo ručně vyřazený řádek v režii (to může být i starší). Uzamčené nabídky se nepřepočítávají, ale cena se v aplikaci zobrazuje z dat — u takové nabídky proto bude nově nižší než na vytištěném PDF, které odešlo zákazníkovi. Rozhodující je PDF; aplikace ukazuje, kolik ta nabídka měla stát.\n\nModel 1 to neporušuje: přirážka za ATYP je vlastní funkce aplikace (#22), v předloze VZOR žádná není, takže není s čím být 1:1. Shodu s Excelem hlídá `test.js`, který se v cloudovém běhu přeskakuje (chybí skutečný ceník) — ověřeno tedy nepřímo, harnessem overit_atyp (57 kontrol) a mutačními testy."
+  },
+  {
+   "id": "275",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "",
+   "slozitost": "M",
+   "hotovoV": "v21.9.4",
+   "nazev": "Opláštění po stěnách — obrazovka, specifikace a překlady (#268, 3. krok)",
+   "proc": "Výpočet, typy i kontrola standardu přišly dvěma dávkami 18. 9. 2026, ale obrazovka ne. Režim po stěnách se dal zapnout jedině ruční úpravou JSON zakázky — `Z.oplasteni.rezim` se v celé aplikaci nastavovalo jen jako výchozí hodnota a nikdo ho nepřepínal. Hotový a otestovaný kód tak ležel v aplikaci nečinně a obchodník o něm nevěděl.",
+   "detail": "Přepínač „Opláštění\" stojí v Zadání šachty mezi zasklením a sloupky — tam se o plášti rozhoduje. Karta se stěnami se kreslí AŽ PO PŘEPNUTÍ; ve standardním režimu obchodník o čtyřech stěnách vůbec neví (návrh, oddíl B).\n\nŘádek stěny: typ · „po celé výšce\" · dolní mez · pásy. Zaškrtnuté „po celé výšce\" schová rozsah i pásy, protože většina stěn je celá stejná a dvě prázdná pole by jen mátla. Není to zvláštní příznak v datech — odvozuje se z nich (dolní mez 0 a jediný pás až nahoru), jinak by se dřív nebo později rozešel s pásy.\n\nPásy se přidávají a odebírají po jednom, bez umělého stropu. Nový pás se vkládá NAD poslední, protože poslední vždycky sahá až nahoru. Dělicí výška se nepředvyplňuje — vymyslet ji za obchodníka by znamenalo tvrdit něco o stavbě.\n\nObrazovka varuje, když dělicí výška chybí nebo neroste. Výpočet takový pás přeskočí, ale MLČKY — a tiché přeskočení pásu se pozná až u zákazníka.\n\nTECHNICKÁ SPECIFIKACE popisuje rozsah opláštění po stěnách (řádek ROZSAH OPLÁŠTĚNÍ) a dělá to ve všech čtyřech jazycích. Věta se skládá z proměnlivého počtu kusů, takže ji slovník nemůže trefit celou; `tsOplasteniRozsah` ji proto staví rovnou v cílovém jazyce a pole nese příznak `jazykSam`, aby přes ni tisk nepustil `tr()` podruhé a nehlásil chybějící heslo u textu, který je v pořádku. Ruční název u typu „jiné\" se nepřekládá — vymýšlet cizojazyčný název materiálu, který napsal obchodník, nesmíme.",
+   "hotovoKdyz": "Splněno: nová sada test_oplasteni_zapnuti.js (31 kontrol). Klíčová je první: zapnutí režimu beze změny zadání nehne cenou na 32 zadáních napříč typem šachty, zasklením, průchozí šachtou, prohlubní i ATYP. Obrazovka i kontrola standardu ověřeny v prohlížeči.",
+   "kde": "`src/ui/kalk_ock.js` (přepínač a karta stěn), `src/engine.js` (oplasteniVychoziTyp, oplasteniStenyVychozi), `src/techspec.js` (tsOplasteniRozsah), `src/preklad.js`, `src/ui/zamek_ui.js`, `src/test_oplasteni_zapnuti.js`",
+   "pozn": "Výchozí podobu stěn skládá JÁDRO, ne obrazovka — jedině tak platí slib dávky #268, že zapnutí režimu nehne cenou. Kdyby si je obrazovka skládala po svém, rozešlo by se to při první změně pravidel a poznalo by se to až na ceně.\n\n**Zbývá k rozhodnutí J. V.** (otevřené otázky z návrhu, oddíl „Otevřené k rozhodnutí\"): sazby práce a tmelení se dnes počítají PO CELÉ PLOŠE bez ohledu na typ — je to tak správně? A dělicí výška, která nepadne na rozteč příčníků: počítá se skutečná plocha (dnešní stav), nebo celá tabule? U dvou pásů je to naléhavější, protože dělicí výšku volí obchodník ručně."
   }
  ],
  "meta" : {
@@ -4966,7 +4980,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v21.9.3 (engscalc)",
+  "build" : "v21.9.4 (engscalc)",
   "stavKDatu" : "21. 9. 2026"
  },
  "_comment" : [

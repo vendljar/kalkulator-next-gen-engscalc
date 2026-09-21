@@ -8,6 +8,48 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.9.4 — 21. 9. 2026
+
+### Opláštění po stěnách — obrazovka, specifikace a překlady (#268, 3. krok)
+
+Výpočet, typy i kontrola standardu přišly dvěma dávkami 18. 9. 2026. Chyběla
+**obrazovka** — režim se dal zapnout jedině ruční úpravou JSON, takže ho
+obchodník neměl jak použít a kód ležel v aplikaci nečinně.
+
+- **Přepínač „Opláštění"** v Zadání šachty (jednotné / po stěnách A–D).
+  Karta se stěnami se kreslí **až po přepnutí**; ve standardním režimu
+  obchodník o čtyřech stěnách vůbec neví.
+- **Řádek stěny:** typ · „po celé výšce" · dolní mez · pásy. Zaškrtnuté „po
+  celé výšce" schová rozsah i pásy — většina stěn je celá stejná.
+- **Pásy** se přidávají a odebírají po jednom, bez umělého stropu. Ukládá se
+  **dělicí výška**, ne dva nezávislé rozsahy, takže překryv ani mezera nejdou
+  zapsat. Úsek, který se oplášťovat nemá, se zadá jako pás **„bez — dodá
+  stavba"**; zůstane tak vidět, že se na to myslelo.
+- **Záporná dolní mez** sahá do prohlubně. **„Jiné"** dovolí napsat název
+  a náklad za m² rovnou do zadání.
+- **Varování**, když dělicí výška chybí nebo neroste. Výpočet takový pás
+  přeskočí — ale mlčky, a tiché přeskočení se pozná až u zákazníka.
+- **Technická specifikace** nově popisuje rozsah opláštění po stěnách
+  (řádek ROZSAH OPLÁŠTĚNÍ), a to **ve všech čtyřech jazycích**. Věta se
+  skládá z proměnlivého počtu kusů, takže ji slovník nemůže trefit celou —
+  `tsOplasteniRozsah` ji proto staví rovnou v cílovém jazyce a tisk přes ni
+  nepouští `tr()` podruhé.
+- Výchozí podobu stěn skládá **jádro** (`oplasteniStenyVychozi`), ne
+  obrazovka. Jedině tak platí slib dávky #268, že **zapnutí režimu beze změny
+  zadání nehne cenou** — doloženo na 32 zadáních napříč typem šachty,
+  zasklením, průchozí šachtou, prohlubní i ATYP.
+
+Nová sada: `src/test_oplasteni_zapnuti.js` (31 kontrol).
+
+### Ověření
+
+115 sad prošlo / 0 selhalo (1 přeskočena), včetně prohlížečových. Harnessy:
+`overit_lista` 268/0, `overit_atyp` 57/0, `overit_zobrazeni` 121/0,
+`overit_ock_cela_cesta` 42/0, `overit_vypnuty_radek` 21/0,
+`overit_online` 135/0, kouřový test 50/0.
+
+---
+
 ## v21.9.3 — 21. 9. 2026
 
 ### P4 — Položky „jen pro zahraničí" už nezdražují české zakázky

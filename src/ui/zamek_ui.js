@@ -28,6 +28,11 @@ const ZAMEK_CHRANENE = [
    * aplikace pro nové zakázky) — a nastavení aplikace zámek varianty
    * neblokuje, stejně jako neblokuje volbu režimu sekce. */
   'volitelneToggle', 'viditelnostSet', 'presunRadek',
+  /* Opláštění po stěnách (#268, 3. krok, 21. 9. 2026). Zapisují do zadání
+   * mimo `set()`, protože zakládají strukturu stěn a pásů — `set()` umí jen
+   * dosadit hodnotu na existující cestu. Zámek je proto musí hlídat zvlášť,
+   * jinak by šlo měnit plášť odeslané nabídky. */
+  'oplRezimSet', 'oplCelaVyskaSet', 'oplOdSet', 'oplPasSet', 'oplPasPridej', 'oplPasSmaz',
   'priplatekNabidka', 'priplatekVlastniAdd', 'priplatekVlastniDel',
   'priplatekVlastniSet', 'priplatekDoCeniku',
   'sirotciUklidVse', 'sirotekUklid',
