@@ -1,6 +1,46 @@
 {
  "polozky" : [
   {
+   "id" : "276",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "S",
+   "hotovoV" : "v21.9.5",
+   "nazev" : "Opláštění po stěnách: zaškrtávátko nešlo odškrtnout a vizuál se rozsypal",
+   "proc" : "J. V. zapnul režim po stěnách na testovacím webu (21. 9. 2026) a narazil na obojí hned. Stěnu nešlo rozdělit na pásy, takže celá funkce, kterou dávka #275 pustila, byla pro obchodníka nedostupná. Hotová a otestovaná funkce, ke které se nedá dostat, je totéž jako žádná.",
+   "detail" : "CHYBA 1 — zaškrtávátko. „Po celé výšce\" je ODVOZENÝ stav (dolní mez 0, jediný pás až nahoru), ne příznak v datech; tak to bylo navrženo schválně, aby se příznak nemohl rozejít s pásy. Odškrtnutí ale pásy jen přepsalo zase na jeden jediný, takže se ze stejných dat odvodilo znovu „po celé výšce\" a zaškrtávátko se okamžitě vrátilo zpátky. Odškrtnout to nešlo nikdy. Nově odškrtnutí stěnu OPRAVDU rozdělí — přidá druhý pás stejně jako tlačítko „+ přidat pás\", se stejným typem a nad ten stávající. Dělicí výška se dál nepředvyplňuje (vymýšlet ji za obchodníka by znamenalo tvrdit něco o stavbě) a obrazovka rovnou hlásí, že ji má vyplnit.\n\nCHYBA 2 — rozložení. `.inputs .card .body` je mřížka `repeat(auto-fill, minmax(300px,1fr))`, která sází do sloupců KAŽDÝ `.row` zvlášť. Hlavičky čtyř stěn proto stály vedle sebe v ~290px sloupcích, popisek „Stěna A — čelní stěna (dveře a světlíky)\" se lámal do svislého proužku a „po celé výšce\" se trhalo na dva kusy. Horší bylo, co by přišlo po rozdělení stěny: hlavička, dolní mez a jednotlivé pásy by se rozletěly do různých sloupců a vedle sebe by stály pásy různých stěn. Stěna je nově JEDEN blok (`.opl-stena`) ve vlastní mřížce (`.opl-steny`) s `grid-column: 1 / -1` — stejný důvod jako u `.zadani-ctyri`. Dva sloupce, ne čtyři: řádek pásu nese select 190 px, dělicí výšku a křížek, což se do čtvrtiny šířky nevejde.",
+   "hotovoKdyz" : "Splněno: obchodník odškrtne „po celé výšce\", stěna se rozdělí na dva pásy a obrazovka řekne, že chybí dělicí výška; popisky se nelámou a pásy jedné stěny stojí pod sebou.",
+   "kde" : "`src/ui/kalk_ock.js` (oplCelaVyskaSet, oplasteniKarta), `src/app_template.html` (.opl-steny/.opl-stena), `overit_oplasteni.mjs`",
+   "pozn" : "POUČENÍ: jednotková sada `src/test_oplasteni_zapnuti.js` (31 kontrol) zůstala celou dobu zelená a zelená byla správně — hlídá JÁDRO, tedy že zapnutí režimu nehne cenou. Obě chyby byly čistě v obrazovce, kam jádro nevidí. Proto vznikla `overit_oplasteni.mjs` (23 kontrol v prohlížeči), zapojená do `spust_testy.sh --smoke` i do CI. Sada je ověřená NEGATIVNĚ: nad neopraveným kódem padá 5 kontrol na rozložení a 4 na zaškrtávátko, takže nehlídá naprázdno."
+  },
+  {
+   "id" : "277",
+   "vlna" : "E",
+   "stav" : "ceka",
+   "dulezitost" : "vysoka",
+   "slozitost" : "M",
+   "nazev" : "Čtyři chybějící oddíly nabídky podle Daniela Sikory",
+   "proc" : "Mail Daniela Sikory (předán J. V. 21. 9. 2026): „JEŠTĚ MOC DŮLEŽITÁ VĚC — nám tam schází úplně: PLATEBNÍ PODMÍNKY, POŽADAVKY NA PROVEDENÍ REALIZACE, TERMÍNY REALIZACE, PŘEDÁNÍ DÍLA. To by tam mělo být.\" Přikládá k tomu šablony v CZ, EN a DE, kde ty oddíly jsou.",
+   "detail" : "STAV ZJIŠTĚNÝ 21. 9. 2026 — každý ze čtyř oddílů stojí jinak, proto se to nedá odbavit jedním krokem:\n\n1) PLATEBNÍ PODMÍNKY — DATA JSOU A DO NABÍDKY JDOU. Sekce „Platební podmínky\" krycího listu (splatnost, platnost nabídky, způsob fakturace, zálohy/dílčí faktury) je v `KRYCI_NABIDKA_SEKCE`, takže se z ní skládají symboly {{PODM_…}} do wordové šablony (#147, #110, #137). Pokud oddíl v dokumentu chybí, chybí v ŠABLONĚ .docx, ne v aplikaci.\n\n2) TERMÍNY REALIZACE a 3) PŘEDÁNÍ DÍLA — DATA JSOU, ALE DO NABÍDKY SE ZÁMĚRNĚ NEPOSÍLAJÍ. Sekce „Termíny\" krycího listu má pole Převzetí staveniště k montáži šachty, Ukončení montáže a předání montáži výtahu, Konečné předání díla a Jiné termíny. U sekce „Termín dodání\" je v `src/kryci.js` napsáno proč: „Datumy převzetí a předání se do nabídky nedávají — ty se domlouvají až u smlouvy.\" Daniel teď říká opak. Je to tedy ZMĚNA DŘÍVĚJŠÍHO ROZHODNUTÍ, ne chybějící funkce; technicky jde o doplnění sekce „Termíny\" do `KRYCI_NABIDKA_SEKCE` (symboly pak vzniknou samy) a o doplnění oddílů do šablony. Rozhodnout musí J. V.\n\n4) POŽADAVKY NA PROVEDENÍ REALIZACE — NENÍ ANI SEKCE, ANI POLE. Nejblíž je „Rozsah a odchylky\" (odchylky od smluvního standardu, co cena nezahrnuje, rozsah). Co přesně má oddíl obsahovat, se pozná až z přiložených šablon.\n\nPŘEKLADY UŽ HOTOVÉ NEJSOU PŘEKÁŽKOU: slovník `src/preklad.js` hesla „PLATEBNÍ PODMÍNKY\", „TERMÍNY REALIZACE:\" i „PŘEDÁNÍ DÍLA:\" zná ve všech čtyřech jazycích.",
+   "kde" : "`src/kryci.js` (KRYCI_NABIDKA_SEKCE, KRYCI_SEKCE), wordové šablony nabídky (nejsou v repozitáři — nahrávají se přes Nastavení → Šablony)",
+   "hotovoKdyz" : "Nabídka OCK nese všechny čtyři oddíly ve všech jazycích šablony a jejich obsah se bere ze zakázky, ne z natvrdo psaného textu v šabloně.",
+   "pozn" : "ČEKÁ NA PODKLAD: přiložené šablony CZ/EN/DE z mailu nejsou v repozitáři ani je odsud není jak získat. Bez nich se nedá říct, jaká pole oddíl „Požadavky na provedení realizace\" potřebuje, ani jak mají být oddíly formulované. Zároveň čeká na rozhodnutí J. V. u bodů 2 a 3, protože jde o revizi dřívějšího rozhodnutí."
+  },
+  {
+   "id" : "278",
+   "vlna" : "B",
+   "stav" : "ceka",
+   "dulezitost" : "stredni",
+   "slozitost" : "S",
+   "nazev" : "V aplikaci není vidět, jestli je nastavený hlavní správce",
+   "proc" : "Roadmapa u #261 upozorňuje, že bez proměnné ADMIN_EMAIL neplatí ochrany hlavního účtu, a k 16. 9. 2026 hlásil testovací web `spravceNastaven: false`. Zjistit to jde ale JEN přes `/api/zdravi` — v aplikaci to není vidět nikde. J. V. se 21. 9. 2026 ptal, kde to najde, a odpověď „napište si do adresy /api/zdravi\" není odpověď pro obchodníka.",
+   "detail" : "`netlify/functions/zdravi.mjs` příznak `spravceNastaven` vrací, ale žádná obrazovka ho nečte — v `src/` se řetězec nevyskytuje. Přitom stejná odpověď už se v aplikaci používá: podle `prostredi` se kreslí červený pruh TESTOVACÍ PROSTŘEDÍ. Nabízí se totéž místo: když správce nastavený není, ukázat to administrátorovi v Nastavení (a nikomu jinému — je to provozní údaj, ne věc pro obchodníka).",
+   "kde" : "`netlify/functions/zdravi.mjs` (příznak už vrací), `src/ui/` (chybí čtenář), nejspíš Nastavení → Databáze",
+   "hotovoKdyz" : "Administrátor vidí v aplikaci, že hlavní správce není nastavený, aniž by musel otevírat adresu API.",
+   "pozn" : "Souvisí s #261. Samotné nastavení proměnné v Netlify je klikání u J. V., tohle je jen o tom, aby se na to přišlo."
+  },
+  {
    "vlna" : "A",
    "detail" : "Tři nezávislé vrstvy, aby selhání jedné šlo přežít: historie kroků v paměti (40 kroků), automatická záloha do úložiště prohlížeče nabízená žlutou lištou (nikdy se nenahraje sama) a varování před zavřením záložky. Záloha v prohlížeči není archiv — skutečné uložení zůstává export do JSON.",
    "nazev" : "Ochrana rozpracované práce — historie kroků, záloha v prohlížeči, varování při odchodu",
@@ -4980,7 +5020,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v21.9.4 (engscalc)",
+  "build" : "v21.9.5 (engscalc)",
   "stavKDatu" : "21. 9. 2026"
  },
  "_comment" : [

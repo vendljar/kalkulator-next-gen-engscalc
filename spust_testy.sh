@@ -124,6 +124,10 @@ if [ "${1:-}" = "--smoke" ]; then
     # padal na každém kroku a zahalil by tu jedinou podstatnou zprávu.
     spust_prohlizec smoke.mjs
     spust_prohlizec overit_online.mjs
+    # Opláštění po stěnách (#268): jádro hlídá `src/test_oplasteni_zapnuti.js`,
+    # ale obě chyby, které J. V. našel při prvním proklikání 21. 9. 2026, byly
+    # čistě v obrazovce — odtud sem (viz hlavička sady).
+    spust_prohlizec overit_oplasteni.mjs
   fi
 fi
 

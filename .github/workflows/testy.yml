@@ -84,6 +84,9 @@ jobs:
       - name: Vypnutý řádek (V22) a zápis přepisu bez Enteru (N8) v prohlížeči (overit_vypnuty_radek.mjs)
         run: NODE_PATH="$(npm root -g)" node overit_vypnuty_radek.mjs
 
+      - name: Obrazovka opláštění po stěnách (#268) v prohlížeči (overit_oplasteni.mjs)
+        run: NODE_PATH="$(npm root -g)" node overit_oplasteni.mjs
+
       - name: Sestavený dist/ jako artefakt
         if: always()
         uses: actions/upload-artifact@v5

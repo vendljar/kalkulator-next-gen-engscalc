@@ -8,6 +8,44 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.9.5 — 21. 9. 2026
+
+### Opláštění po stěnách: dvě chyby z prvního proklikání (#276)
+
+J. V. zapnul režim po stěnách na testovacím webu a narazil na obojí hned:
+
+- **Zaškrtávátko „po celé výšce" nešlo odškrtnout**, takže stěnu nebylo jak
+  rozdělit na pásy — celá funkce po stěnách byla nedostupná. „Po celé výšce"
+  je **odvozený** stav (dolní mez 0, jediný pás až nahoru), ne příznak
+  v datech. Odškrtnutí ale pásy jen přepsalo zase na jeden jediný, takže se
+  ze stejných dat odvodilo znovu „po celé výšce" a zaškrtávátko se okamžitě
+  vrátilo. Nově odškrtnutí stěnu **opravdu rozdělí**: přidá druhý pás stejně
+  jako tlačítko „+ přidat pás". Dělicí výška zůstává prázdná a obrazovka
+  rovnou řekne, že ji má obchodník vyplnit.
+- **Vizuál se rozsypal.** `.inputs .card .body` je mřížka
+  `repeat(auto-fill, minmax(300px,1fr))`, která sází do sloupců **každý
+  `.row` zvlášť** — hlavičky čtyř stěn tedy stály vedle sebe v ~290px
+  sloupcích, popisek „Stěna A — čelní stěna" se lámal do svislého proužku
+  a „po celé výšce" se trhalo na dva kusy. Po rozdělení stěny na pásy by se
+  navíc hlavička, dolní mez a pásy rozletěly do různých sloupců a vedle sebe
+  by stály pásy různých stěn. Stěna je nově **jeden blok** ve vlastní mřížce
+  (`.opl-steny` / `.opl-stena`), dva sloupce na širokém okně, jeden pod
+  1100 px.
+
+**Nová sada `overit_oplasteni.mjs` (23 kontrol) v prohlížeči.** Jádro obě
+chyby vidět nemohlo — `src/test_oplasteni_zapnuti.js` hlídá, že zapnutí
+režimu nehne cenou, a to platilo dál. Obojí bylo čistě v obrazovce. Sada je
+zapojená do `spust_testy.sh --smoke` i do CI.
+
+Ověřeno i **negativně**: nad neopraveným kódem sada padá (5 kontrol na
+rozložení, 4 na zaškrtávátko), takže nehlídá naprázdno.
+
+### Ověření
+
+116 sad prošlo / 0 selhalo (1 přeskočena), včetně prohlížečových.
+
+---
+
 ## v21.9.4 — 21. 9. 2026
 
 ### Opláštění po stěnách — obrazovka, specifikace a překlady (#268, 3. krok)

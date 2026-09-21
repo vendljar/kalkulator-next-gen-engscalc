@@ -530,9 +530,18 @@ function oplCelaVyskaSet(k, ano) {
     st.odM = 0;
     st.pasy = [{ typ: st.pasy[0].typ, nazev: st.pasy[0].nazev, naklad: st.pasy[0].naklad, doM: null }];
   } else if (st.pasy.length === 1) {
-    /* Odškrtnutím se objeví dolní mez a seznam pásů — zpočátku s tím
-     * jediným, který tam byl (návrh, dodatek 3). */
-    st.pasy = [{ typ: st.pasy[0].typ, nazev: st.pasy[0].nazev, naklad: st.pasy[0].naklad, doM: null }];
+    /* ODŠKRTNUTÍ MUSÍ STĚNU OPRAVDU ROZDĚLIT. „Po celé výšce" je ODVOZENÝ
+     * stav (dolní mez 0, jediný pás až nahoru), ne příznak v datech — do
+     * 21. 9. 2026 se tady pásy jen přepsaly na jeden jediný, takže se ze
+     * stejných dat odvodilo zase „po celé výšce" a zaškrtávátko se okamžitě
+     * vrátilo zpátky. Rozdělit stěnu na pásy nešlo vůbec; celá funkce po
+     * stěnách byla tím nedostupná (nález J. V. při prvním proklikání testu).
+     *
+     * Druhý pás se přidá stejně jako tlačítkem „+ přidat pás": nad ten
+     * stávající a s týmž typem. Dělicí výška zůstává prázdná — vymyslet ji
+     * za obchodníka by znamenalo tvrdit něco o stavbě — a obrazovka rovnou
+     * řekne, že ji má vyplnit. */
+    st.pasy.splice(0, 0, { typ: st.pasy[0].typ, doM: null });
   }
   oplZmeneno();
 }
@@ -678,7 +687,14 @@ function oplStenaHtml(s) {
 function oplasteniKarta() {
   if (!oplPoStenach()) return '';
   return card('Opláštění po stěnách (A–D)',
-    OPL_STENY.map(oplStenaHtml).join('')
+    /* Každá stěna je JEDEN blok. Bez toho ji `.inputs .card .body` rozseká:
+     * ten grid sází do sloupců každý `.row` zvlášť, takže hlavičky čtyř stěn
+     * stály vedle sebe v ~290px sloupcích (popisek se lámal do svislého
+     * proužku) a po rozdělení stěny na pásy by se hlavička, dolní mez a pásy
+     * rozletěly do různých sloupců. Viz `.opl-steny` v app_template.html. */
+    `<div class="opl-steny">`
+    + OPL_STENY.map(s => `<div class="opl-stena">${oplStenaHtml(s)}</div>`).join('')
+    + `</div>`
     + `<div class="note">Stěny se počítají po pásech a do kalkulace se sčítají <b>podle typu</b>,
       ne podle stěny — nabídka se tím nerozdrobí na osm skoro stejných řádků.
       Pás začíná tam, kde skončil předchozí, takže překryv ani mezera nemůžou vzniknout.

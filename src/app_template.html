@@ -139,6 +139,19 @@
   .zadani-ctyri .par .ozn { color:var(--mut); font-size:12px; font-weight:600; }
   .zadani-ctyri .par input[type=number] { width:44px; }
   .zadani-ctyri input[readonly] { background:#f2f5f9; color:var(--mut); }
+  /* OPLÁŠTĚNÍ PO STĚNÁCH (#268). Vlastní mřížka ze stejného důvodu jako
+     `.zadani-ctyri`, ale tady jde o víc než o vzhled: `.inputs .card .body`
+     je `repeat(auto-fill, minmax(300px,1fr))` a sází do sloupců KAŽDÝ `.row`
+     zvlášť. Hlavička stěny, její dolní mez a jednotlivé pásy by se tedy
+     rozletěly do různých sloupců a vedle sebe by stály pásy různých stěn.
+     Stěna musí zůstat jeden blok (`.opl-stena`), proto ta mezivrstva.
+     Dva sloupce, ne čtyři: řádek pásu nese select 190 px, dělicí výšku
+     a křížek, což se do ~290 px čtvrtiny nevejde (nález z testu 21. 9. 2026,
+     kdy se popisek „Stěna A — čelní stěna" lámal do svislého proužku). */
+  .opl-steny { grid-column:1 / -1; display:grid; grid-template-columns:repeat(2, 1fr); gap:14px 30px; }
+  .opl-stena { min-width:0; }
+  .opl-stena .row label { flex:1; min-width:0; }
+  @media (max-width:1100px) { .opl-steny { grid-template-columns:1fr; } }
   input[type=number] { -moz-appearance:textfield; appearance:textfield; }
   input[type=number]::-webkit-outer-spin-button,
   input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
