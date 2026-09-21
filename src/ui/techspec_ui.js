@@ -51,7 +51,13 @@ function tsVsechnyFraze() {
   TECHSPEC_DEF.forEach(sk => {
     out.push(sk.sekce);
     if (sk.pozn) out.push(sk.pozn);
-    sk.pole.forEach(p => { out.push(p.label); out.push(tsHodnota(p, TS, r, Z, C).text); });
+    sk.pole.forEach(p => {
+      out.push(p.label);
+      /* Hodnota, kterou si pole přeloží samo (`jazykSam`), do měření pokrytí
+       * ani do seznamu chybějících frází NEPATŘÍ: slovník ji nemá znát. */
+      const h = tsHodnota(p, TS, r, Z, C, jazyk());
+      if (!h.prelozeno) out.push(h.text);
+    });
   });
   TS.extra.forEach(e => { out.push(e.label); out.push(e.hodnota); });
   return out;
@@ -116,12 +122,21 @@ function renderTechspecPreklad() {
   try { r = vypocetAkt(); } catch (e) {}
   const lang = jazyk();
 
-  const row = (lbl, val) => `<div class="spec-row ro"><div class="lbl">${tsPrelozText(lbl)}</div>
-    <div>${tsPrelozText(val)}</div><div></div></div>`;
+  /* `hotovo` = hodnota už JE v cílovém jazyce a nesmí přes ni jet `tr()`
+   * podruhé. Týká se polí s příznakem `jazykSam` — dnes věty o rozsahu
+   * opláštění po stěnách, která se skládá z proměnlivého počtu kusů, takže
+   * ji slovník nemůže trefit celou. Do 21. 9. 2026 se jazyk `tsHodnota`
+   * vůbec nepředával, takže se ta věta v EN/DE/FR specifikaci tiskla ČESKY
+   * — a navíc se objevovala v exportu „chybějící překlady" (nález revize). */
+  const row = (lbl, val, hotovo) => `<div class="spec-row ro"><div class="lbl">${tsPrelozText(lbl)}</div>
+    <div>${hotovo ? esc(val) : tsPrelozText(val)}</div><div></div></div>`;
 
   const sekce = TECHSPEC_DEF.map(sk =>
     `<h3>${tsPrelozText(sk.sekce)}</h3>` +
-    sk.pole.map(p => row(p.label, tsHodnota(p, TS, r, Z, C).text)).join('') +
+    sk.pole.map(p => {
+      const h = tsHodnota(p, TS, r, Z, C, jazyk());
+      return row(p.label, h.text, h.prelozeno);
+    }).join('') +
     (sk.pozn ? `<div class="note">${tsPrelozText(sk.pozn)}</div>` : '')
   ).join('');
 

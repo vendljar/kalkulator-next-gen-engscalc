@@ -1,6 +1,33 @@
 {
  "polozky" : [
   {
+   "id" : "286",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "vysoka",
+   "slozitost" : "M",
+   "hotovoV" : "v21.9.10",
+   "nazev" : "Opravy z nezávislé revize dnešních změn",
+   "proc" : "Zadání J. V. 21. 9. 2026: „spusť test zavedených úprav dnešního dne modelem fable 5.1 a prověř, zda se v úpravách neobjevují další chyby.\" Revize našla šest věcí, které stojí za opravu — a jednu z nich zavedla dopolední dávka téhož dne.",
+   "detail" : "N1 (ZAVEDENO TÉHOŽ DNE): sloučení stěny zpět mazalo ruční název i sazbu u typu „jiné\". Dopolední oprava zaškrtávátka (#276) zakládala nový pás holý `{ typ, doM }`, a protože se při slučování bere PRVNÍ pás, dvě kliknutí stěnu tiše zlevnila na nulu — v kalkulaci zůstal řádek „JINÉ\" za 0 Kč. Nově se kopíruje celý pás (`oplPasKopie`); totéž u „+ přidat pás\".\n\nN2: technická specifikace tiskla větu o rozsahu opláštění ČESKY i v EN/DE/FR. `techspec_ui.js` volal `tsHodnota` bez jazyka, takže se nová cesta z dávky #275 uplatnila jen v nabídce. Věta navíc figurovala v exportu „chybějící překlady\", přestože přeložená je.\n\nN3: text na kartě sliboval „Terče a lišty se počítají jen z pásů se sklem\" — změřeno, že to neplatí (viz #287).\n\nN6: dvě stěny „jiné\" se stejným názvem a různou sazbou se slily do jedné sazby; klíč byl jen název a sazba se brala z prvního pásu. Klíč nově nese i sazbu. NĚKTERÝM ZAKÁZKÁM TO CENU ZVEDNE — na správnou.\n\nN4/N5: chyběla varování u zadání, které výpočet mlčky spolkne — dolní mez nad horní hranou stěny, dolní mez pod dnem prohlubně, dělicí výška nad horní hranou a typ „jiné\" bez sazby.\n\nN9: nákres si ořezával spodní pás (minimum 2 px na pás přeteklo pruh s `overflow:hidden`). Výška pruhu se počítá ze skutečných výšek pásů, kóty se umisťují podle nich a `.opl-bar` má `content-box` proti globálnímu `* { box-sizing: border-box }`.",
+   "hotovoKdyz" : "Splněno: všech šest nálezů opraveno a pokryto kontrolami; `overit_oplasteni.mjs` má 46 kontrol.",
+   "kde" : "`src/ui/kalk_ock.js`, `src/ui/techspec_ui.js`, `src/engine.js` (oplPodleTypu), `src/app_template.html`, `overit_oplasteni.mjs`",
+   "pozn" : "POUČENÍ: N1 zavedla oprava, která sama vznikla jako reakce na nález J. V. — a prošla přes 36 prohlížečových kontrol, protože žádná z nich nepracovala s typem „jiné\". Opravená dávka není automaticky bezpečná dávka.\n\nDvě ze tří revizí (ceník a nabídka; přepočet a zámek) se nedoběhly — model Fable narazil na limit sezení. Je potřeba je zopakovat."
+  },
+  {
+   "id" : "287",
+   "vlna" : "E",
+   "stav" : "ceka",
+   "dulezitost" : "stredni",
+   "slozitost" : "S",
+   "nazev" : "Mají se terče a lišty vázat na typ opláštění?",
+   "proc" : "Karta opláštění po stěnách do 21. 9. 2026 tvrdila „Terče a lišty se počítají jen z pásů se sklem\". Neplatí to: `terceKs` i `listyCelkBm` se počítají z rozměrů šachty a na `z.oplasteni` vůbec nesahají. Změřeno — u čtyř stěn ze skla, z Cetrisu i „bez\" vyjde řádek PLECHY - ZASKLENÍ (TERČE/LIŠTY) stejně. Text byl opraven, ale otázka zůstala.",
+   "detail" : "Terče a lišty jsou kotvení ZASKLENÍ. U stěny z Cetrisu nebo u stěny, kterou dodá stavba, se logicky nepoužijí — dnes se ale počítají v plné výši bez ohledu na typ. Totéž platí pro PLASTOVÉ KOTVY.\n\nJestli se to má změnit, je obchodní rozhodnutí, ne technické: může být, že se terče objednávají na celou šachtu bez ohledu na materiál. Změna by hnula cenou každé zakázky v režimu po stěnách, která nemá všechny stěny ze skla.",
+   "kde" : "`src/engine.js` (terceKs, listyCelkBm, PLASTOVÉ KOTVY)",
+   "hotovoKdyz" : "Padlo rozhodnutí a buď se výpočet upravil, nebo se do kódu zapsalo, proč zůstává.",
+   "pozn" : "ČEKÁ NA J. V. Souvisí s P8 — je to další případ dvou míst, která si můžou odporovat."
+  },
+  {
    "id" : "285",
    "vlna" : "C",
    "stav" : "ceka",
@@ -5116,7 +5143,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v21.9.9 (engscalc)",
+  "build" : "v21.9.10 (engscalc)",
   "stavKDatu" : "21. 9. 2026"
  },
  "_comment" : [

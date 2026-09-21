@@ -279,6 +279,82 @@ zkus('pod každým nákresem stojí plocha stěny, nebo že žádná není',
 zkus('pod kartou je legenda s plochami podle typu',
   nakres.legendaKusu >= 2 && /celkem k opláštění/.test(nakres.legenda), nakres.legendaKusu);
 
+/* ---------- NÁLEZY NEZÁVISLÉ REVIZE (21. 9. 2026) ---------- */
+
+/* N1: sloučení stěny zpět nesmí zahodit ruční název a sazbu u typu „jiné".
+ * Byla to chyba zavedená TÉHOŽ DNE opravou zaškrtávátka: nový pás se zakládal
+ * holý, a protože se při slučování bere PRVNÍ pás, dvě kliknutí stěnu tiše
+ * zlevnila na nulu. */
+{
+  const stav = await p.evaluate(async () => {
+    Z.oplasteni.steny.A = { odM: 0, pasy: [{ typ: 'jine', nazev: 'Trapézový plech', naklad: 1234, doM: null }] };
+    render();
+    const pred = JSON.parse(JSON.stringify(Z.oplasteni.steny.A.pasy));
+    oplCelaVyskaSet('A', false);          // rozdělit
+    const poRozdeleni = JSON.parse(JSON.stringify(Z.oplasteni.steny.A.pasy));
+    oplCelaVyskaSet('A', true);           // a zase sloučit
+    const po = JSON.parse(JSON.stringify(Z.oplasteni.steny.A.pasy));
+    return { pred, poRozdeleni, po };
+  });
+  zkus('N1: po rozdělení mají oba pásy název i sazbu',
+    stav.poRozdeleni.length === 2 && stav.poRozdeleni.every(x => x.nazev === 'Trapézový plech' && +x.naklad === 1234),
+    JSON.stringify(stav.poRozdeleni));
+  zkus('N1: sloučení zpět nezahodí ruční název ani sazbu',
+    stav.po.length === 1 && stav.po[0].nazev === 'Trapézový plech' && +stav.po[0].naklad === 1234,
+    JSON.stringify(stav.po));
+  const poPridani = await p.evaluate(() => {
+    oplCelaVyskaSet('A', false); oplPasPridej('A');
+    return Z.oplasteni.steny.A.pasy.map(x => ({ n: x.nazev, k: x.naklad }));
+  });
+  zkus('N1: i „+ přidat pás" kopíruje název a sazbu',
+    poPridani.every(x => x.n === 'Trapézový plech' && +x.k === 1234), JSON.stringify(poPridani));
+}
+
+/* Varování, která do revize chyběla: výpočet tyhle stavy spolkne bez hlesnutí
+ * a pozná se to až na ceně nebo v dokumentu u zákazníka. */
+const varovani = async (uprav) => p.evaluate((u) => {
+  Z.oplasteni.steny.A = { odM: 0, pasy: [{ typ: 'C.skloCelniKc', doM: 2 }, { typ: 'C.skloBokyKc', doM: null }] };
+  // eslint-disable-next-line no-new-func
+  (new Function('Z', u))(Z);
+  render();
+  const el = document.querySelector('#ock-oplasteni-steny .opl-stena .seznam-varovani');
+  return el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
+}, uprav);
+
+zkus('N1b: „jiné" bez sazby se ohlásí',
+  /bez sazby/.test(await varovani("Z.oplasteni.steny.A.pasy[0] = { typ:'jine', nazev:'X', doM:2 };")),
+  await varovani("Z.oplasteni.steny.A.pasy[0] = { typ:'jine', nazev:'X', doM:2 };"));
+zkus('N5: dolní mez nad horní hranou se ohlásí',
+  /stěna končí/.test(await varovani('Z.oplasteni.steny.A.odM = 99;')),
+  await varovani('Z.oplasteni.steny.A.odM = 99;'));
+zkus('N5: dolní mez pod dnem prohlubně se ohlásí',
+  /pod dnem prohlubně/.test(await varovani('Z.oplasteni.steny.A.odM = -9;')),
+  await varovani('Z.oplasteni.steny.A.odM = -9;'));
+zkus('N4: dělicí výška nad horní hranou se ohlásí',
+  /nad horní hranou/.test(await varovani('Z.oplasteni.steny.A.pasy[0].doM = 99;')),
+  await varovani('Z.oplasteni.steny.A.pasy[0].doM = 99;'));
+zkus('a správné zadání nevaruje',
+  (await varovani('Z.oplasteni.steny.A.odM = 0;')) === '',
+  await varovani('Z.oplasteni.steny.A.odM = 0;'));
+
+/* N9: minimální výška pásu 2 px nesmí přetéct pruh — spodní pás by se
+ * v `overflow:hidden` tiše oříznul. */
+{
+  const orez = await p.evaluate(() => {
+    Z.oplasteni.steny.A = { odM: 0, pasy: [
+      { typ: 'C.skloCelniKc', doM: 0.01 }, { typ: 'C.cetrisKc', doM: 0.02 },
+      { typ: 'C.skloBokyKc', doM: 0.03 }, { typ: 'jine', nazev: 'X', naklad: 10, doM: null }] };
+    render();
+    const bar = document.querySelector('#ock-oplasteni-steny .opl-stena .opl-bar');
+    const pasy = [...bar.querySelectorAll('.opl-pas')];
+    return { klient: bar.clientHeight, obsah: bar.scrollHeight,
+             pasu: pasy.length, vysky: pasy.map(x => Math.round(x.getBoundingClientRect().height)) };
+  });
+  zkus('N9: žádný pás se neořízne ani při čtyřech tenkých pásech',
+    orez.obsah <= orez.klient + 1, JSON.stringify(orez));
+  zkus('N9: a všechny čtyři pásy se opravdu kreslí', orez.pasu === 4, orez.pasu);
+}
+
 /* ---------- vypnutí režimu ---------- */
 
 await p.evaluate(() => { oplRezimSet('standard'); });

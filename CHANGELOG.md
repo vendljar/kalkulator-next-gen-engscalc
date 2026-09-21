@@ -8,6 +8,54 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.9.10 — 21. 9. 2026
+
+### Opravy z nezávislé revize dnešních změn (#286)
+
+Revizi dnešních úprav dělal jiný model (Fable 5.1) se zadáním „hledej
+skutečné chyby, ne stylistiku". Našel šest věcí, které stojí za opravu —
+**a jednu z nich jsem zavedl dnes já**.
+
+**Zaškrtnutí „po celé výšce" zpět smazalo ruční název i sazbu u typu
+„jiné".** Dopolední oprava zaškrtávátka zakládala nový pás holý
+(`{ typ, doM }`), a protože se při slučování bere **první** pás, dvě
+kliknutí stěnu tiše zlevnila na nulu — v kalkulaci zůstal řádek „JINÉ" za
+0 Kč. Nově se kopíruje celý pás; totéž u tlačítka „+ přidat pás".
+
+**Technická specifikace tiskla větu o rozsahu opláštění česky i v EN/DE/FR.**
+`techspec_ui.js` volal `tsHodnota` **bez jazyka**, takže se nová cesta
+z dnešní dávky uplatnila jen v nabídce, ne ve specifikaci. Ta věta se navíc
+objevovala v exportu „chybějící překlady", přestože přeložená je.
+
+**Text na kartě sliboval, co kód nedělá.** Stálo tam „Terče a lišty se
+počítají jen z pásů se sklem" — změřeno: u čtyř stěn ze skla, z Cetrisu
+i „bez" vyjde řádek TERČE/LIŠTY **stejně**. Slib v obrazovce, který kód
+neplní, je horší než mlčení. Text opraven; jestli se terče a lišty **mají**
+vázat na sklo, je otázka na J. V. (#287).
+
+**Dvě stěny „jiné" se stejným názvem a různou sazbou se slily do jedné
+sazby.** Klíč byl jen název, sazba se brala z prvního pásu — druhá stěna se
+spočítala za cenu té první, tiše a bez stopy. Klíč nově nese i sazbu.
+**Tohle některým zakázkám cenu zvedne — na správnou.**
+
+**Chyběla varování u zadání, které výpočet mlčky spolkne:** dolní mez nad
+horní hranou stěny (stěna z ceny zmizí celá), dolní mez pod dnem prohlubně
+(počítá se plocha, která neexistuje), dělicí výška nad horní hranou (pásy
+nad ní zmizí, ale specifikace je zákazníkovi dál slibuje) a typ „jiné" bez
+sazby.
+
+**Nákres si ořezával spodní pás.** Minimum 2 px na pás přeteklo pruh
+s `overflow:hidden`. Výška pruhu se nově počítá ze **skutečných** výšek pásů
+a kóty se umisťují podle nich, ne lineárním přepočtem z metrů.
+
+Sada `overit_oplasteni.mjs` narostla na **46 kontrol**.
+
+### Ověření
+
+120 sad prošlo / 0 selhalo (1 přeskočena).
+
+---
+
 ## v21.9.9 — 21. 9. 2026
 
 ### P5 — tichý přepočet na dnešní ceník má konečně dialog (#284)

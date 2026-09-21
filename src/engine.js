@@ -896,7 +896,21 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const oplPodleTypu = {};
   oplPasy.forEach(p => {
     if (p.typ === OPL_BEZ) return;
-    const klic = p.typ === OPL_JINE ? (OPL_JINE + ':' + (p.nazev || 'bez názvu')) : p.typ;
+    /* U typu „jiné" je součástí klíče i SAZBA, ne jen název (oprava
+     * 21. 9. 2026, revize téhož dne).
+     *
+     * Do té doby se slévaly podle samotného názvu a sazba se brala z PRVNÍHO
+     * pásu. Dvě stěny „Trapézový plech" za různou cenu — což je běžné, když
+     * je na jedné straně jiná tloušťka nebo povrch — se tak spočítaly obě
+     * za tu levnější a nikde to nebylo vidět: v kalkulaci byl jeden řádek
+     * se správnou plochou a tichým podhodnocením ceny.
+     *
+     * Dva řádky se stejným názvem a jinou sazbou vypadají v nabídce divně,
+     * ale to je na obchodníkovi, aby je pojmenoval jinak. Tichá ztráta peněz
+     * je horší než divně vypadající nabídka. */
+    const klic = p.typ === OPL_JINE
+      ? (OPL_JINE + ':' + (p.nazev || 'bez názvu') + ':' + (+p.naklad || 0))
+      : p.typ;
     if (!oplPodleTypu[klic]) oplPodleTypu[klic] = { typ: p.typ, nazev: p.nazev, m2: 0, naklad: p.naklad };
     oplPodleTypu[klic].m2 += p.m2;
   });

@@ -158,7 +158,13 @@
   .opl-stena-in { display:flex; gap:12px; align-items:flex-start; }
   .opl-pole { flex:1; min-width:0; }
   .opl-nakres { flex:none; width:152px; position:relative; padding:6px 0 0 34px; }
-  .opl-bar { border:1px solid var(--line); border-radius:3px; overflow:hidden; background:#fff; }
+  /* `content-box` schválně, proti globálnímu `* { box-sizing: border-box }`.
+     Výška pruhu se počítá jako SOUČET výšek pásů; s border-boxem by z ní
+     ale 2 px sebral vlastní rámeček pruhu a spodní pás by se v
+     `overflow:hidden` tiše oříznul (nález nezávislé revize 21. 9. 2026:
+     čtyři tenké pásy daly obsah 156 px do 154px pruhu). */
+  .opl-bar { box-sizing:content-box; border:1px solid var(--line); border-radius:3px;
+             overflow:hidden; background:#fff; }
   .opl-pas { display:flex; align-items:center; justify-content:center; overflow:hidden;
              font-size:10px; line-height:1.1; color:#334155; text-align:center;
              border-top:1px solid rgba(15,23,42,.16); }
@@ -168,7 +174,9 @@
      „tudy se neoplášťuje", aniž by to vypadalo jako další sklo. */
   .opl-pas-bez { background-image:repeating-linear-gradient(45deg,#eef2f7 0 5px,#dfe6ee 5px 10px) !important;
                  color:var(--mut); }
-  .opl-koty { position:absolute; left:0; top:6px; right:0; pointer-events:none; }
+  /* O 1 px níž než pruh: kóty se umisťují od HORNÍ HRANY PRVNÍHO PÁSU,
+     a ta leží až za horním rámečkem pruhu. */
+  .opl-koty { position:absolute; left:0; top:7px; right:0; pointer-events:none; }
   .opl-kota { position:absolute; left:0; width:30px; text-align:right;
               transform:translateY(-50%); font-size:10px; color:var(--mut); white-space:nowrap; }
   .opl-kota-pod { color:#92400e; font-weight:600; }
