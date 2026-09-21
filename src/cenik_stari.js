@@ -574,6 +574,21 @@ function cenikCenaRozpracovanych(zak, jekly) {
     try {
       const r = vypocet(v.data.ock.zadani, v.data.cenik, jekly, v.data.ock.fixes);
       cena += (r && r.souhrn && +r.souhrn.zakladCena) || 0;
+      /* PROJEKCE SE POČÍTÁ TAKY (oprava 21. 9. 2026, nezávislá revize).
+       *
+       * `cenikPrepoctiRozpracovane` počítá změněné položky i z ceníku PROJ
+       * (`cenikSledovane` zahrnuje `CENIK_DEF_PROJ`). Když se sem ale
+       * projekce nezapočítala, vyšel rozdíl před/po na nulu — a dialog
+       * obchodníkovi výslovně tvrdil „na celkovou cenu to nemělo vliv",
+       * přestože se cena projekce hnula. Změřeno: poloviční sazba
+       * projektanta = rozdíl v desítkách tisíc, dialog hlásil nulu.
+       *
+       * Falešné ujištění je horší než mlčení: obchodník podle něj klikne
+       * „Počítat s dnešním ceníkem" a nepodívá se. */
+      if (typeof vypocetProj === 'function' && v.data.proj) {
+        const rp = vypocetProj(v.data.proj.zadani, v.data.proj.cenik);
+        cena += (rp && rp.souhrn && +rp.souhrn.celkem) || 0;
+      }
       pocet++;
     } catch (e) { chyby++; }
   });

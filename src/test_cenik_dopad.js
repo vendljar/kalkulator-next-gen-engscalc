@@ -18,6 +18,7 @@ global.vypocet = eng.vypocet; global.DEFAULT_ZADANI = eng.DEFAULT_ZADANI;
 global.DEFAULT_CENIK = ZC.zkusebniCenik();
 const ep = require('./engine_proj.js');
 global.DEFAULT_ZADANI_PROJ = ep.DEFAULT_ZADANI_PROJ; global.DEFAULT_CENIK_PROJ = ZC.zkusebniCenikProj();
+global.vypocetProj = ep.vypocetProj;
 const tsm = require('./techspec.js');
 global.TECHSPEC_DEF = tsm.TECHSPEC_DEF; global.DEFAULT_TECHSPEC = tsm.DEFAULT_TECHSPEC;
 const zk = require('./zakazka.js'); Object.keys(zk).forEach(k => { global[k] = zk[k]; });
@@ -113,6 +114,41 @@ function zakazkaSVariantami(pocet) {
   const po = cs.cenikCenaRozpracovanych(zak, JEKLY);
   test('zdražení položky ceníku zvedne i součet', po.cena > pred.cena,
     { pred: pred.cena, po: po.cena });
+}
+
+/* ---------- 6) projekce se počítá taky ----------
+ *
+ * `cenikPrepoctiRozpracovane` počítá změněné položky i z ceníku PROJ. Kdyby
+ * je součet ignoroval, vyšel by rozdíl před/po na nulu a dialog by
+ * obchodníkovi TVRDIL „na celkovou cenu to nemělo vliv", přestože se cena
+ * projekce hnula. Falešné ujištění je horší než mlčení (nález nezávislé
+ * revize 21. 9. 2026). */
+{
+  const zak = zakazkaSVariantami(1);
+  const v = zak.varianty[0];
+  v.data.proj = v.data.proj || {};
+  v.data.proj.cenik = ZC.zkusebniCenikProj();
+  v.data.proj.zadani = JSON.parse(JSON.stringify(ep.DEFAULT_ZADANI_PROJ));
+  const pred = cs.cenikCenaRozpracovanych(zak, JEKLY);
+  test('projekce se do součtu započítá', pred.cena > 0 && pred.chyby === 0, pred);
+
+  /* Změní se VÝHRADNĚ ceník projekce — OCK zůstane netknuté. */
+  const pc = v.data.proj.cenik;
+  const sazby = pc.sazby || {};
+  const klic = Object.keys(sazby)[0];
+  test('zkušební ceník PROJ má sazby, na kterých jde měřit', !!klic, Object.keys(sazby));
+  sazby[klic] = (+sazby[klic] || 0) * 2 + 1;
+  const po = cs.cenikCenaRozpracovanych(zak, JEKLY);
+  test('změna sazby projekce se v součtu projeví', po.cena > pred.cena,
+    { pred: pred.cena, po: po.cena });
+
+  /* Pojistka: kdyby se do součtu dostala projekce dvakrát nebo vůbec,
+   * rozdíl by neodpovídal tomu, co spočítá sám `vypocetProj`. */
+  const projPred = ep.vypocetProj(JSON.parse(JSON.stringify(ep.DEFAULT_ZADANI_PROJ)), ZC.zkusebniCenikProj()).souhrn.celkem;
+  const projPo = ep.vypocetProj(v.data.proj.zadani, pc).souhrn.celkem;
+  test('a rozdíl sedí přesně na rozdíl projekce',
+    Math.abs((po.cena - pred.cena) - (projPo - projPred)) < 0.01,
+    { vSouctu: po.cena - pred.cena, vProjekci: projPo - projPred });
 }
 
 console.log('\n' + (fail ? 'SELHALO ' + fail + ' z ' + (ok + fail) : 'OK ' + ok));

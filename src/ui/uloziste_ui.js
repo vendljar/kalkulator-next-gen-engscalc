@@ -338,7 +338,7 @@ function uloUlozDoSlozky(opts) {
 /* Stav posledního přepočtu — podklad pro dialog (#284). Drží se stranou
  * od výsledku, protože záloha celé zakázky je velká a do návratové hodnoty,
  * kterou si volající předávají dál, nepatří. */
-const ULO_PREPOCET = { zaloha: null, pred: null, po: null, verze: null };
+const ULO_PREPOCET = { zaloha: null, zakazka: null, pred: null, po: null, verze: null };
 
 function uloSrovnejSPlatnymCenikem() {
   if (typeof cenikPrepoctiRozpracovane !== 'function'
@@ -349,8 +349,8 @@ function uloSrovnejSPlatnymCenikem() {
 
   /* ZÁLOHA PŘED PŘEPOČTEM (#284). Bez ní by nabídka „ponechat původní ceník"
    * byla prázdný slib: přepočet přepisuje ceny na místě a zpátky se z toho
-   * nedá dopočítat. Kopie se dělá JEN když je co přepočítávat — u zakázky
-   * bez rozdílu by to byla zbytečná práce při každém otevření. */
+   * nedá dopočítat. Pořizuje se při KAŽDÉM otevření — jestli bude k čemu,
+   * se pozná až z výsledku přepočtu o pár řádků níž; zahodí se hned tam. */
   const pred = (typeof cenikCenaRozpracovanych === 'function')
     ? cenikCenaRozpracovanych(ZAK, JEKLY) : null;
   let zaloha = null;
@@ -361,6 +361,10 @@ function uloSrovnejSPlatnymCenikem() {
       build: (typeof buildVerze === 'function') ? buildVerze() : '' }, info));
 
   ULO_PREPOCET.zaloha = (r && r.prepocteno && r.zmen) ? zaloha : null;
+  /* Ke které zakázce záloha patří. Dialog je asynchronní a `ULO_PREPOCET` je
+   * jeden sdílený objekt, takže se mezi otevřením a odpovědí může stihnout
+   * otevřít jiná zakázka — pak by „Vrátit" sáhlo do cizích dat. */
+  ULO_PREPOCET.zakazka = ZAK;
   ULO_PREPOCET.pred = pred;
   ULO_PREPOCET.po = (typeof cenikCenaRozpracovanych === 'function')
     ? cenikCenaRozpracovanych(ZAK, JEKLY) : null;
@@ -410,6 +414,14 @@ async function uloPrepocetDialog(r) {
   if (!r || !r.prepocteno || !r.zmen) return false;
   if (typeof volba !== 'function' || !ULO_PREPOCET.zaloha) return false;
 
+  /* CO JE MOJE, SI DRŽÍM PŘED `await`. Dialog je asynchronní a `ULO_PREPOCET`
+   * je jeden sdílený objekt: dvojklik na řádek přehledu otevře zakázku dvakrát,
+   * dialogy se zařadí za sebe a druhý by po zálohu sáhl až ve chvíli, kdy ji
+   * první zahodil — „Vrátit" by pak tiše neudělalo nic (nález nezávislé revize
+   * 21. 9. 2026). Rozhodnutí se proto vztahuje k TOMUTO snímku a k TÉTO
+   * zakázce; když se mezitím vymění, řekne se to nahlas. */
+  const mojeZaloha = ULO_PREPOCET.zaloha;
+  const mojeZakazka = ULO_PREPOCET.zakazka;
   const pred = ULO_PREPOCET.pred, po = ULO_PREPOCET.po;
   const kc = n => (typeof formatKc === 'function') ? formatKc(n)
     : (Math.round(n).toLocaleString('cs-CZ') + ' Kč');
@@ -440,11 +452,33 @@ async function uloPrepocetDialog(r) {
 
   /* Escape a klik mimo = nic nedělat, tedy ponechat přepočet. Zavřít okno
    * nesmí znamenat vrácení cen — to je rozhodnutí, ne útěk z dialogu. */
-  if (odp !== 'vrat') { ULO_PREPOCET.zaloha = null; return false; }
+  if (odp !== 'vrat') {
+    if (ULO_PREPOCET.zaloha === mojeZaloha) ULO_PREPOCET.zaloha = null;
+    return false;
+  }
 
-  ZAK = (typeof importZakazka === 'function')
-    ? importZakazka(ULO_PREPOCET.zaloha) : ULO_PREPOCET.zaloha;
+  /* Vyměnila se mezitím zakázka? Pak se vrací cizí data a to se nesmí stát
+   * potichu — ani tiše nevrátit, ani tiše přepsat rozdělanou práci. */
+  if (ZAK !== mojeZakazka || ULO_PREPOCET.zaloha !== mojeZaloha) {
+    if (typeof nabidkaStavTextBezpecne === 'function')
+      nabidkaStavTextBezpecne('Mezitím se otevřela jiná zakázka — původní ceny se nevracejí. '
+        + 'Otevřete tu původní znovu a rozhodněte se u ní.');
+    return false;
+  }
+
+  let vraceno = null;
+  try {
+    vraceno = (typeof importZakazka === 'function') ? importZakazka(mojeZaloha) : mojeZaloha;
+  } catch (e) {
+    /* Radši nic než polovina: rozbitá záloha nesmí shodit otevřenou zakázku. */
+    if (typeof nabidkaStavTextBezpecne === 'function')
+      nabidkaStavTextBezpecne('Původní ceny se nepodařilo vrátit: ' + (e && e.message ? e.message : 'neznámá chyba'));
+    ULO_PREPOCET.zaloha = null;
+    return false;
+  }
+  ZAK = vraceno;
   ULO_PREPOCET.zaloha = null;
+  ULO_PREPOCET.zakazka = ZAK;
   if (typeof syncVarianta === 'function') syncVarianta();
   /* Po vrácení je zakázka zase přesně taková, jaká přišla ze souboru nebo
    * ze serveru — tedy BEZ neuložené změny. Kdyby se otisky pro autosave

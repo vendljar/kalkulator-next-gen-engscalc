@@ -28,6 +28,19 @@
    "pozn" : "ČEKÁ NA J. V. Souvisí s P8 — je to další případ dvou míst, která si můžou odporovat."
   },
   {
+   "id": "288",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "vysoka",
+   "slozitost": "M",
+   "hotovoV": "v21.9.11",
+   "nazev": "Druhé kolo nezávislé revize — sedm nálezů",
+   "proc": "Pokračování zadání J. V. z 21. 9. 2026: „pokud něco najdeš, sjednej rovnou nápravu a opět jí commitni do testu.\" Další dva běhy revize modelem Fable 5.1 prošly i dávky v21.9.8–v21.9.10 a našly sedm věcí — dvě braly peníze z ceny, jedna mohla přepsat cizí zakázku.",
+   "detail": "N1 (NEJZÁVAŽNĚJŠÍ): `cenikJenZahrVynuluj` nulovala český sloupec u položek vedených jako „jen zahraniční\" BEZ OHLEDU na to, jestli zahraniční odchylka opravdu existuje. Zahraniční řada je přitom ŘÍDKÁ tabulka odchylek — co v ní není, dědí se z ČR. Změřeno: u položky bez odchylky vyšlo cr → 0 a zveřejněný ceník pak dal i zahr → 0, takže položka tiše zmizela z ceny OBOU řad. Nově se nuluje jen tam, kde zahraniční cena opravdu je.\n\nN2: `programRozdilyZahr(db, ctx)` dostávala celý objekt databáze místo platného ceníku (`db.platny`), takže přehled rozdílů mezi řadami hlásil rozdíly, které nejsou. Změřeno 1 → 0.\n\nN3: dialog přepočtu (#284) si držel volbu „vrátit zálohu\" v modulové proměnné. Kdyby obchodník mezitím přepnul zakázku, tlačítko by obnovilo zálohu do JINÉ zakázky — tedy přepsalo cizí data. Nově se identita zakázky i zálohy zachytí PŘED čekáním na odpověď a při neshodě se obnova odmítne s viditelnou hláškou; `importZakazka` je navíc v try/catch, aby selhání nezůstalo tiché.\n\nN4: součet dopadu přepočtu (`cenikCenaRozpracovanych`) počítal jen OCK, přestože přepočet mění i ceník PROJ. U zakázky, kde se hnula jen projekce, dialog TVRDIL „na celkovou cenu to nemělo vliv\". Falešné ujištění je horší než mlčení. Nově se přičítá i `vypocetProj`.\n\nN5: duplikace zakázky (`zakazkaDuplikuj`) brala s sebou protokol a kvitanci ceníku původní zakázky. Kopie tak vypadala, že u ní někdo odsouhlasil ceník a že má za sebou historii, kterou nemá. Nově se protokol, `protokolKlic` i `cenikKvitance` v kopii zahazují.\n\nN6: jazykové symboly kapitol (`FIRMA_NAB_*_EN`, `_DE`) vydávala `firmaPlaceholders` jako SYROVÝ text pole — se značkou `{FIRMA}` a s prázdnými řádky. Kdo si takový symbol vložil do wordové šablony (a formulář v Nastavení je přesně takhle nabízí), dostal v dokumentu „…von {FIRMA} weitergegeben…\". Nově se i jazykové symboly prohánějí přes `firmaKapitola`.\n\nN7: německá doložka vynechávala „die Eigentums-\" — z věty zmizelo vyhrazení VLASTNICKÉHO práva a zůstalo jen autorské. Srovnáno se zdrojovým dokumentem J. V.",
+   "kde": "src/cenik_rady.js (cenikJenZahrVynuluj), src/ui/program_ui.js, src/ui/uloziste_ui.js (uloPrepocetDialog), src/cenik_stari.js (cenikCenaRozpracovanych), src/zakazka.js (zakazkaDuplikuj), src/firma.js (firmaPlaceholders, dolozkyDe)",
+   "testy": "test_jen_zahranicni.js (20, přepsané očekávání — nuluje se podmíněně), test_cenik_dopad.js (17, nově i projekce), test_zakazka_duplikace.js (29), test_nabidka_kapitoly.js (99, nově jazykové symboly), overit_prepocet_dialog.mjs (27, nově stráž identity). Celkem 120 sad zeleně."
+  },
+  {
    "id" : "285",
    "vlna" : "C",
    "stav" : "ceka",

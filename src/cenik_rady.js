@@ -101,9 +101,31 @@ function cenikJenZahrCesty(zahr) {
  * varianta má nulu a dnešní ceník taky, takže přepočet nemá co hlásit.
  * `null` by neprošlo: „prázdno není nula" platí pro zadání, tady jde
  * o ceníkovou sazbu, která do součtu vstupuje číslem. */
+/* NULUJE SE JEN TEHDY, KDYŽ MÁ POLOŽKA CENU V ZAHRANIČNÍ TABULCE
+ * (oprava 21. 9. 2026 po nezávislé revizi).
+ *
+ * Zahraniční řada je ŘÍDKÁ TABULKA ODCHYLEK — co v ní není, dědí se z ČR
+ * sloupce. Bezpodmínečné nulování proto u položky BEZ zahraniční odchylky
+ * zničilo cenu i zahraniční řadě: ČR sloupec se vynuloval, zveřejnění tu
+ * nulu zapsalo do platného ceníku a každá další zahraniční varianta pak
+ * počítala s nulou. Tiše, a v editoru to nešlo ani opravit — ČR pole je
+ * u takové položky zašedlé s popiskem „neplatí v ČR".
+ *
+ * Změřeno: položka se sazbou v ČR a bez odchylky → `cr` 0, `zahr` 0.
+ * S odchylkou → `zahr` drží odchylku, což je v pořádku.
+ *
+ * Nulování je u P4 DRUHOTNÉ opatření: má jen srovnat obě strany porovnání,
+ * aby přepočet neměl co hlásit. Vlastní únik do ceny zavřel filtr v jádře
+ * (`jenPocitane(rezie)` v základu přirážky za ATYP), a ten platí bez ohledu
+ * na tohle. Když tedy položka zahraniční cenu nemá, je bezpečnější hodnotu
+ * NECHAT: obě strany porovnání ji mají stejně, takže přepočet mlčí,
+ * a zahraniční řada o cenu nepřijde. */
 function cenikJenZahrVynuluj(kam, zahr) {
   if (!kam) return kam;
+  const z = cenikZahrOciste(zahr);
   cenikJenZahrCesty(zahr).forEach(cesta => {
+    const zahrCena = (z.ceny || {})[cesta];
+    if (!(+zahrCena > 0)) return;          // bez zahraniční ceny se nenuluje
     if (typeof cenikNastavHodnotu === 'function') cenikNastavHodnotu(kam, cesta, 0);
   });
   return kam;

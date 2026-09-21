@@ -261,7 +261,7 @@ const DEFAULT_FIRMA = {
   kapPredaniDe: "1. Das Übergabeprotokoll wird verwendet, wenn die Schachtstahlkonstruktion fertiggestellt ist.\n2. Das Übergabeprotokoll wird verwendet, wenn die Schachtverkleidung abgeschlossen ist.\n3. Das Übergabeprotokoll wird verwendet, wenn die Abschlussarbeiten für die endgültige Übergabe des fertigen Schachtes durchgeführt werden.",
   dolozky: "Zjevné chyby v nabídkovém řízení mohou být opraveny před podpisem smlouvy.\nAutorská práva – {FIRMA} si vyhrazuje vlastnické a autorské právo k ilustracím, výkresům, skicám a jiným dokumentům a vzorkům. Tyto musí být na požádání neprodleně vráceny a nesmí být předány třetím stranám bez souhlasu {FIRMA}.",
   dolozkyEn: "Obvious errors in the tendering procedure may be corrected before the contract is signed.\nCopyright - {FIRMA} reserves the ownership and copyright of illustrations, drawings, sketches and other documents and samples. These must be returned immediately on request and may not be passed on to third parties without {FIRMA}'s consent.",
-  dolozkyDe: "Offenbare Angebotsfehler können vor Auftragsannahme berichtigt werden.\nUrheberrechte - An Abbildungen, Zeichnungen, Skizzen, sonstigen Unterlagen und Mustern behält sich {FIRMA}- und Urheberrechte vor; sie sind auf Verlangen unverzüglich zurückzusenden und dürfen nicht an Dritte ohne Einverständnis von {FIRMA} weitergegeben werden.",
+  dolozkyDe: "Offenbare Angebotsfehler können vor Auftragsannahme berichtigt werden.\nUrheberrechte - An Abbildungen, Zeichnungen, Skizzen, sonstigen Unterlagen und Mustern behält sich {FIRMA} die Eigentums- und Urheberrechte vor; sie sind auf Verlangen unverzüglich zurückzusenden und dürfen nicht an Dritte ohne Einverständnis von {FIRMA} weitergegeben werden.",
 
   /* logo: data URL (obrázek se ukládá přímo v konfiguraci, aby šel přenést) */
   logo: '', logoNazev: '',
@@ -349,6 +349,26 @@ function firmaPlaceholders(f, prekl) {
     if (p.id === 'sidloZeme' || p.id === 'korZeme') v = v ? P(v) : v;
     out[p.symbol] = v;
   });
+  /* KAPITOLY SE NEVYDÁVAJÍ SYROVÉ (oprava 21. 9. 2026, nezávislá revize).
+   *
+   * Obecná smyčka výš vzala hodnotu pole tak, jak leží — tedy i se značkou
+   * `{FIRMA}` a s prázdnými řádky. Kdo do wordové šablony vložil
+   * {{FIRMA_NAB_DOLOZKY_DE}}, dostal v dokumentu „…von {FIRMA} weitergegeben…".
+   * Formulář v Nastavení přitom ty jazykové symboly nabízí jako ty správné.
+   *
+   * Prožene se to proto touž funkcí, kterou používá nabídka. Jazyk se bere
+   * ze SUFFIXU symbolu, ne z jazyka dokumentu: kdo si do šablony napíše
+   * `_DE`, chce němčinu bez ohledu na to, v jakém jazyce se tiskne. */
+  FIRMA_KAPITOLY.forEach(kap => {
+    const zaklad = 'FIRMA_NAB_' + kap.base.replace(/^kap/, '').toUpperCase();
+    Object.keys(FIRMA_KAP_JAZYK).forEach(jaz => {
+      const suf = FIRMA_KAP_JAZYK[jaz];
+      const sym = zaklad + (suf ? '_' + suf.toUpperCase() : '');
+      if (!(sym in out)) return;
+      out[sym] = firmaKapitola(f, kap.base, jaz).radky.join('\n');
+    });
+  });
+
   out.FIRMA_SIDLO = firmaSidlo(f);
   out.FIRMA_KORESPONDENCNI = firmaKorespondencni(f);
   out.FIRMA_BANKA_RADEK = firmaBankaRadek(f);

@@ -105,11 +105,42 @@ const ZAHR = () => ({ ceny: { 'C.prekladyKc': 60000 }, jenZahr: { 'C.prekladyKc'
     dnesZahr.cenik.prekladyKc === 60000, dnesZahr.cenik.prekladyKc);
 
   /* Pevný seznam platí i bez značky — značku šlo v ceníku ztratit. */
-  const bezZnacky = cenikSlozRadu(V27(), { ceny: {}, jenZahr: {} }, 'cr');
-  test('pevný seznam CENIK_JEN_ZAHR platí i bez zaškrtnuté značky',
-    bezZnacky.prekladyKc === 0, bezZnacky.prekladyKc);
-  test('a cenikJenZahrCesty ho vrací', cenikJenZahrCesty({ ceny: {}, jenZahr: {} })
-    .indexOf('C.prekladyKc') >= 0, cenikJenZahrCesty({ ceny: {}, jenZahr: {} }));
+  test('cenikJenZahrCesty vrací pevný seznam i bez zaškrtnuté značky',
+    cenikJenZahrCesty({ ceny: {}, jenZahr: {} }).indexOf('C.prekladyKc') >= 0,
+    cenikJenZahrCesty({ ceny: {}, jenZahr: {} }));
+
+  /* ZMĚNA OČEKÁVÁNÍ 21. 9. 2026 (nezávislá revize téhož dne).
+   *
+   * Do té doby se tady čekala nula i u ceníku BEZ zahraniční odchylky. Jenže
+   * zahraniční řada je řídká tabulka odchylek — co v ní není, DĚDÍ SE Z ČR
+   * SLOUPCE. Bezpodmínečné nulování proto takové položce zničilo cenu i pro
+   * zahraničí: ČR sloupec šel na nulu, zveřejnění ji zapsalo do platného
+   * ceníku a každá další zahraniční varianta počítala s nulou. Tiše, a
+   * v editoru se to nedalo ani opravit (ČR pole je zašedlé „neplatí v ČR").
+   *
+   * Nuluje se proto jen tam, kde zahraniční cena OPRAVDU JE. Únik do ceny
+   * zavírá filtr v jádře (`jenPocitane(rezie)`), ne tohle — nulování má jen
+   * srovnat obě strany porovnání, a to platí i tehdy, když se nenuluje. */
+  const bezOdchylky = cenikSlozRadu(V27(), { ceny: {}, jenZahr: {} }, 'cr');
+  test('bez zahraniční ceny se ČR hodnota NENULUJE (jinak by o ni přišlo i zahraničí)',
+    bezOdchylky.prekladyKc === 50000, bezOdchylky.prekladyKc);
+  const sOdchylkou = cenikSlozRadu(V27(), ZAHR(), 'cr');
+  test('se zahraniční cenou se ČR hodnota nuluje dál',
+    sOdchylkou.prekladyKc === 0, sOdchylkou.prekladyKc);
+
+  /* Jádro nálezu: cena nesmí zmizet ani po zveřejnění z tuzemské varianty. */
+  const zverejneny = V27();
+  zverejneny.prekladyKc = bezOdchylky.prekladyKc;      // co zapíše zveřejnění
+  test('po zveřejnění z ČR varianty zahraniční řada cenu drží',
+    cenikSlozRadu(zverejneny, { ceny: {}, jenZahr: {} }, 'zahr').prekladyKc === 50000,
+    cenikSlozRadu(zverejneny, { ceny: {}, jenZahr: {} }, 'zahr').prekladyKc);
+
+  /* A obě strany porovnání jsou pořád shodné, takže přepočet nemá co hlásit —
+   * kvůli tomu se nulovalo. */
+  const dnesBez = cenikDnesniProRadu({ cenik: V27(), proj: { cenik: {} } }, { ceny: {}, jenZahr: {} }, 'cr');
+  test('a obě strany porovnání se pořád shodují',
+    dnesBez.cenik.prekladyKc === bezOdchylky.prekladyKc,
+    { dnesni: dnesBez.cenik.prekladyKc, varianta: bezOdchylky.prekladyKc });
 }
 
 /* ---------- 4) přepočet při otevření zakázky ---------- */

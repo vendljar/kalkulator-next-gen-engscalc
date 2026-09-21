@@ -54,6 +54,9 @@ const priprava = async () => p.evaluate(() => {
   c.montazHodKc = (+c.montazHodKc || 0) + 500;        // „nový ceník"
   const po = cenikCenaRozpracovanych(ZAK, JEKLY);
   ULO_PREPOCET.zaloha = zaloha;
+  /* `zakazka` drží, ke KTERÉ zakázce záloha patří — dialog to po `await`
+   * kontroluje, aby „Vrátit" nesáhlo do cizích dat. */
+  ULO_PREPOCET.zakazka = ZAK;
   ULO_PREPOCET.pred = pred; ULO_PREPOCET.po = po; ULO_PREPOCET.verze = 28;
   return { pred: pred.cena, po: po.cena, montaz: c.montazHodKc };
 });
@@ -164,6 +167,56 @@ zkus('Escape nevrací ceny', poEsc.odp === false && poEsc.montaz === stav3.monta
   });
   zkus('a bez přepočítané varianty taky ne',
     bezPrepoctu.dlg === false && bezPrepoctu.r === false, JSON.stringify(bezPrepoctu));
+}
+
+/* ---------- 6) mezitím otevřená jiná zakázka ----------
+ *
+ * Dialog je asynchronní a `ULO_PREPOCET` je jeden sdílený objekt. Dvojklik
+ * na řádek přehledu otevře zakázku dvakrát, dialogy se zařadí za sebe —
+ * a druhý by po zálohu sáhl až ve chvíli, kdy ji první zahodil. Do opravy
+ * z 21. 9. 2026 (nález nezávislé revize) „Vrátit" v takovém případě TIŠE
+ * neudělalo nic a uživatel se to nedozvěděl. */
+{
+  const stav4 = await priprava();
+  await p.evaluate(() => { window.__odp4 = uloPrepocetDialog({ prepocteno: 1, zmen: 4 }); });
+  await p.waitForTimeout(250);
+  /* Mezi otevřením dialogu a odpovědí se vymění zakázka. */
+  await p.evaluate(() => { ZAK = importZakazka(JSON.parse(JSON.stringify(ZAK))); });
+  await p.evaluate(() => {
+    const b = [...document.querySelectorAll('#dlg .dlg-btns button')].find(x => /Vrátit/i.test(x.textContent));
+    b.click();
+  });
+  await p.waitForTimeout(250);
+  const cizi = await p.evaluate(async () => ({
+    odp: await window.__odp4,
+    montaz: aktivniVarianta(ZAK).data.cenik.montazHodKc,
+    lista: [...document.querySelectorAll('.nabidkaStav')].map(e => e.textContent).join(' '),
+  }));
+  zkus('cizí zakázka: vrácení se neprovede', cizi.odp === false, cizi.odp);
+  zkus('a ceny zůstanou tak, jak byly po přepočtu',
+    cizi.montaz === stav4.montaz, { je: cizi.montaz, cekano: stav4.montaz });
+  zkus('a nestane se to potichu — obrazovka to řekne',
+    /jiná zakázka/i.test(cizi.lista), cizi.lista.slice(0, 120));
+}
+
+/* 7) rozbitá záloha nesmí shodit otevřenou zakázku */
+{
+  await priprava();
+  const rozbita = await p.evaluate(async () => {
+    ULO_PREPOCET.zaloha = { neco: 'nesmysl' };     // importZakazka tohle odmítne
+    ULO_PREPOCET.zakazka = ZAK;
+    const slib = uloPrepocetDialog({ prepocteno: 1, zmen: 2 });
+    await new Promise(r => setTimeout(r, 150));
+    const b = [...document.querySelectorAll('#dlg .dlg-btns button')].find(x => /Vrátit/i.test(x.textContent));
+    if (b) b.click();
+    const odp = await slib;
+    return { odp, maZak: !!ZAK && !!aktivniVarianta(ZAK),
+             lista: [...document.querySelectorAll('.nabidkaStav')].map(e => e.textContent).join(' ') };
+  });
+  zkus('rozbitá záloha: vrácení se neprovede', rozbita.odp === false, rozbita.odp);
+  zkus('a zakázka zůstane otevřená, ne rozbitá', rozbita.maZak === true);
+  zkus('a řekne se, že se to nepovedlo',
+    /nepodařilo vrátit/i.test(rozbita.lista), rozbita.lista.slice(0, 120));
 }
 
 zkus('za celý průchod nevznikla chyba v konzoli', konzole.length === 0, konzole.slice(0, 2).join(' | '));

@@ -8,6 +8,55 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.9.11 — 21. 9. 2026
+
+### Druhé kolo nezávislé revize — sedm nálezů (#288)
+
+Revize pokračovala i na dávkách v21.9.8–v21.9.10. Sedm nálezů: **dvě braly
+peníze z ceny, jedna mohla přepsat cizí zakázku.**
+
+**Položka „jen zahraniční" mizela z ceny OBOU řad.** Zahraniční ceník je
+**řídká tabulka odchylek** — co v ní není, dědí se z českého sloupce.
+Zveřejnění ale nulovalo český sloupec u každé takové položky bez ohledu na
+to, jestli odchylka existuje. Změřeno: bez odchylky vyjde `cr → 0` a
+zveřejněný ceník pak dá i `zahr → 0`. Nově se nuluje jen tam, kde
+zahraniční cena opravdu je. *Očekávání v `test_jen_zahranicni.js` se proto
+změnilo — dřív se nulování vyžadovalo vždy; to bylo špatně.*
+
+**Dialog přepočtu mohl obnovit zálohu do jiné zakázky.** Volba „vrátit
+zálohu" se držela v modulové proměnné, takže mezi otevřením dialogu a
+kliknutím stačilo přepnout zakázku a záloha se zapsala jinam. Identita
+zakázky i zálohy se teď zachytí **před** čekáním na odpověď a při neshodě
+se obnova odmítne s hláškou. `importZakazka` je navíc v try/catch — dřív
+by selhání zůstalo tiché.
+
+**Dialog tvrdil „na celkovou cenu to nemělo vliv" i tam, kde měl.** Součet
+dopadu počítal jen OCK, přestože přepočet mění i ceník projekce. U zakázky,
+kde se hnula jen PROJ, dostal obchodník falešné ujištění — a to je horší
+než mlčení.
+
+**Kopie zakázky si brala protokol a kvitanci ceníku originálu.** Vypadala
+tak, že u ní někdo odsouhlasil ceník a že má za sebou historii, kterou
+nemá. Duplikace teď protokol i kvitanci zahazuje.
+
+**Jazykové symboly kapitol nesly do Wordu značku `{FIRMA}`.** Formulář
+v Nastavení nabízí `{{FIRMA_NAB_DOLOZKY_DE}}`, ale vydával se syrový text
+pole — v dokumentu pak stálo „…von {FIRMA} weitergegeben…". Jazykové
+symboly se nově prohánějí přes stejné zpracování jako české.
+
+**Německá doložka vynechávala „die Eigentums-".** Z věty zmizelo vyhrazení
+**vlastnického** práva a zůstalo jen autorské. Srovnáno se zdrojovým
+dokumentem.
+
+**Přehled rozdílů mezi řadami hlásil rozdíly, které nejsou.** Do porovnání
+šel celý objekt databáze místo platného ceníku. Změřeno 1 → 0.
+
+Testy: `test_jen_zahranicni.js` (20), `test_cenik_dopad.js` (17),
+`test_zakazka_duplikace.js` (29), `test_nabidka_kapitoly.js` (99),
+`overit_prepocet_dialog.mjs` (27). Celkem 120 sad zeleně.
+
+---
+
 ## v21.9.10 — 21. 9. 2026
 
 ### Opravy z nezávislé revize dnešních změn (#286)

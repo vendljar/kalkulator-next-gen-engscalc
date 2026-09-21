@@ -1281,12 +1281,30 @@ function zakazkaDuplikuj(zak, noveCislo) {
   nova.prilohy = [];
   nova.prilohySmazane = [];
 
+  /* PROTOKOL O KALKULACI TAKY (oprava 21. 9. 2026, nezávislá revize).
+   *
+   * Protokol je záznam o tom, kdo a kdy co v TÉHLE zakázce počítal. Kopie
+   * pro jiného zákazníka si ho nesla s sebou i s klíčem, takže popisoval
+   * jednání, které se u ní nikdy nestalo. `protokolZajisti` založí nový. */
+  nova.protokol = [];
+  delete nova.protokolKlic;
+
   nova.varianty = (Array.isArray(nova.varianty) ? nova.varianty : []).map((v, i) => {
     const n = v && typeof v === 'object' ? v : {};
     n.zamek = null;          // nová zakázka nic neodeslala
     delete n.odemceni;       // ani nic neodemykala
     delete n.klonZ;          // klon čeho? původní varianta tu není
     delete n.klonZCislo;
+    /* KVITANCE „CENY JSOU DOHODNUTÉ" SE NEDĚDÍ (oprava 21. 9. 2026,
+     * nezávislá revize).
+     *
+     * Kvitance je vědomé prohlášení „u TÉHLE zakázky ceny držím" a vyřazuje
+     * variantu z automatického přepočtu na platný ceník. Kopie pro jiného
+     * zákazníka si ji brala s sebou — a protože se ceník kopíruje beze
+     * změny, otisk seděl a přepočet se u ní NIKDY nespustil. Nová nabídka
+     * tak bez jediného varování počítala z cen dohodnutých s někým jiným,
+     * a od #284 se u ní neukázal ani dialog, který by na to upozornil. */
+    delete n.cenikKvitance;
     n.pripona = 0;           // čísluje se od začátku
     n.datum = (typeof dnesIso === 'function')
       ? dnesIso() : new Date().toISOString().slice(0, 10);

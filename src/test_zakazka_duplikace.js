@@ -131,5 +131,46 @@ const test = (n, cond, info) => {
   test('nesmysl na vstupu nespadne', zakazkaDuplikuj(null, 'x') === null);
 }
 
+/* ---------- co se NESMÍ zdědit (nálezy nezávislé revize 21. 9. 2026) ----------
+ *
+ * Duplikát je nabídka pro JINOU akci, často pro jiného zákazníka. Všechno,
+ * co se váže na jednání u předlohy, musí zůstat u ní. */
+{
+  const zak = novaZakazka();
+  zak.cislo = '2026 - OPR - CN - 7001';
+  zak.nazevAkce = 'Předloha';
+
+  /* KVITANCE „ceny jsou dohodnuté" vyřazuje variantu z přepočtu na platný
+   * ceník. Zděděná znamená, že nová nabídka NIKDY nepřepočítá a bez jediného
+   * varování počítá z cen dohodnutých s někým jiným — ceník se totiž kopíruje
+   * beze změny, takže otisk kvitance sedí. Od #284 se u ní neukáže ani
+   * dialog, který by na to upozornil. */
+  zak.varianty[0].cenikKvitance = { otisk: 'abc', kdy: '2026-09-01T00:00:00.000Z', kdo: 'někdo' };
+
+  /* PROTOKOL je záznam o tom, kdo a kdy co v téhle zakázce počítal. */
+  zak.protokol = [{ kdy: '2026-09-01T00:00:00.000Z', co: 'jednání u předlohy' }];
+  zak.protokolKlic = 'klic-predlohy';
+
+  const nova = zakazkaDuplikuj(zak, '2026 - OPR - CN - 7002');
+
+  test('kvitance „ceny jsou dohodnuté" se nedědí',
+    nova.varianty.every(v => !v.cenikKvitance),
+    nova.varianty.map(v => v.cenikKvitance || null));
+  test('a předloha si ji nechává',
+    !!zak.varianty[0].cenikKvitance, zak.varianty[0].cenikKvitance);
+
+  test('protokol o kalkulaci se nedědí',
+    Array.isArray(nova.protokol) && nova.protokol.length === 0, nova.protokol);
+  test('ani jeho klíč', !nova.protokolKlic, nova.protokolKlic);
+  test('a předloha si protokol nechává',
+    zak.protokol.length === 1 && zak.protokolKlic === 'klic-predlohy',
+    { pocet: zak.protokol.length, klic: zak.protokolKlic });
+
+  /* Pojistka proti prázdnému testu: kdyby se duplikace na tyhle položky
+   * vůbec nedostala, kontroly výš by vycházely i u předlohy bez nich. */
+  test('kontrola není prázdná — předloha ty položky opravdu měla',
+    !!zak.varianty[0].cenikKvitance && zak.protokol.length > 0 && !!zak.protokolKlic);
+}
+
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);

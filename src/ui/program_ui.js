@@ -277,7 +277,15 @@ function progZverejniRozpis(db, ctx) {
   const rada = (ctx && ctx.rada) === 'zahr' ? 'Zahraničí' : 'ČR';
   if (!db) return 'Založí se databáze programu (varianta: řada ' + rada + ').';
   const cr = (typeof programRozdily === 'function') ? programRozdily(db, ctx) : [];
-  const zahr = (typeof programRozdilyZahr === 'function') ? programRozdilyZahr(db, ctx) : [];
+  /* `db.platny`, ne `db` (oprava 21. 9. 2026, nezávislá revize).
+   *
+   * `programRozdilyZahr` čte `stary.zahranicni` — a to má ZÁZNAM `platny`,
+   * ne celá databáze. S `db` vycházela stará strana jako prázdná, takže se
+   * jako změněná vypsala KAŽDÁ zahraniční odchylka, i když se nesáhlo na
+   * jedinou. Přesně to „varování, které svítí vždycky", proti kterému P1
+   * argumentuje: skutečná změna odchylky v tom zanikne.
+   * `programNovaVerze` to volá správně už od začátku. */
+  const zahr = (typeof programRozdilyZahr === 'function') ? programRozdilyZahr(db.platny, ctx) : [];
   const radek = (nadpis, pole) => nadpis + ': ' + (pole.length
     ? pole.length + ' ' + (pole.length === 1 ? 'položka' : (pole.length < 5 ? 'položky' : 'položek'))
       + '\n' + pole.slice(0, 12).map(r => '   • ' + r.popis).join('\n')

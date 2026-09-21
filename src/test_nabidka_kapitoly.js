@@ -198,5 +198,41 @@ KAPITOLY.forEach(base => {
   test('u francouzštiny je příznak nastavený', fr.ph.FIRMA_NAB_PREDANI_CHYBI === '1');
 }
 
+/* ---------- 10) jazykové symboly do šablony nesou hotový text ----------
+ *
+ * `firmaPlaceholders` vydává VŠECHNA pole s prefixem FIRMA_, tedy i
+ * {{FIRMA_NAB_DOLOZKY_DE}}. Do 21. 9. 2026 (nezávislá revize) to byla
+ * syrová hodnota pole — se značkou {FIRMA} a s prázdnými řádky. Kdo si
+ * takový symbol vložil do wordové šablony, dostal v dokumentu
+ * „…von {FIRMA} weitergegeben…". Formulář v Nastavení přitom ty jazykové
+ * symboly nabízí jako ty správné. */
+{
+  const f = Object.assign({}, fm.DEFAULT_FIRMA, { nazev: 'Zkušební firma s.r.o.' });
+  const ph = fm.firmaPlaceholders(f, x => x);
+  const symboly = [];
+  ['kapPozadavky', 'kapTerminy', 'kapPredani', 'dolozky'].forEach(base => {
+    const zaklad = 'FIRMA_NAB_' + base.replace(/^kap/, '').toUpperCase();
+    ['', '_EN', '_DE'].forEach(suf => symboly.push(zaklad + suf));
+  });
+  symboly.forEach(s => {
+    const v = String(ph[s] == null ? '' : ph[s]);
+    test('symbol ' + s + ' je vyplněný', v.trim() !== '', v.slice(0, 40));
+    test('symbol ' + s + ' nenese značku {FIRMA}', !/\{FIRMA\}/.test(v), v.slice(0, 80));
+  });
+  /* Pojistka proti prázdnému testu: značka v poli OPRAVDU je, takže se
+   * ověřuje náhrada, ne to, že ji text nikdy neobsahoval. */
+  test('kontrola není prázdná — v uloženém poli značka {FIRMA} je',
+    /\{FIRMA\}/.test(String(fm.DEFAULT_FIRMA.dolozkyDe || '')),
+    String(fm.DEFAULT_FIRMA.dolozkyDe || '').slice(0, 80));
+  test('a jazykový symbol nese opravdu ten jazyk',
+    /Urheberrechte/.test(String(ph.FIRMA_NAB_DOLOZKY_DE || '')),
+    String(ph.FIRMA_NAB_DOLOZKY_DE || '').slice(0, 60));
+  /* Německá doložka musí být celá věta — zdrojový dokument J. V. má
+   * „behält sich {FIRMA}- und Urheberrechte vor" bez „die Eigentums-". */
+  test('německá doložka si vyhrazuje i vlastnické právo',
+    /die Eigentums- und Urheberrechte/.test(String(ph.FIRMA_NAB_DOLOZKY_DE || '')),
+    String(ph.FIRMA_NAB_DOLOZKY_DE || '').slice(0, 160));
+}
+
 console.log('\n' + (fail ? 'SELHALO ' + fail + ' z ' + (ok + fail) : 'OK ' + ok));
 if (fail) process.exit(1);
