@@ -584,5 +584,75 @@ const DOCX2 = 'UEsDBBQABgAIAAAAIQ' + 'B'.repeat(400);   // jiná data = jiný ot
 }
 
 
+/* ---------- ČR sloupec položky „jen zahraniční" přežije zveřejnění ----------
+ * (#290, druhé kolo nezávislé revize 21. 9. 2026)
+ *
+ * Zahraniční řada je ŘÍDKÁ TABULKA ODCHYLEK: co v ní není, dědí se z ČR
+ * sloupce. Varianta vedená v řadě ČR má ale takovou položku záměrně na nule
+ * — a zveřejnění z ní tu nulu zapsalo do platného ceníku. Dokud odchylka
+ * existuje, nepozná se nic; po jejím zrušení se zdědí NULA místo ceny.
+ *
+ * PROČ SE TO ZKOUŠÍ PRÁVĚ PROTI SERVERU: oprava sedí v `programZaznam` za
+ * `typeof` strážemi (cenikJenZahrCesty, cenikHodnota, cenikNastavHodnotu).
+ * V prohlížeči jsou všechna jména globální vždycky, na serveru je skládá
+ * `netlify/lib/jadro_moduly.cjs` — kdyby tam někdo změnil pořadí načítání
+ * nebo modul vynechal, stráž by prošla a oprava by se TIŠE VYPNULA. Jádro
+ * by dál mělo zelené testy a chyba by se vrátila jen serverovou cestou.
+ */
+{
+  const CESTA = 'C.prekladyKc';
+  const zahr = { jenZahr: { [CESTA]: true }, ceny: { [CESTA]: 60000 } };
+
+  /* 1) platný ceník s hodnotou v ČR sloupci */
+  const zaklad = Object.assign(ZC.zkusebniCenik(), { prekladyKc: 50000 });
+  await post(program, 'http://x/api/program',
+    { cenik: zaklad, cenikProj: ZC.zkusebniCenikProj(), zahranicni: zahr,
+      poznamka: 'základ pro zkoušku dědění' }, cookie);
+  const db1 = await (await get(program, 'http://x/api/program', cookie)).json();
+  test('P4: příprava — platný ceník tu cenu má',
+    db1.ok && db1.db.platny.cenik.prekladyKc === 50000,
+    db1.ok && db1.db.platny.cenik.prekladyKc);
+
+  /* 2) administrátor zveřejní z varianty vedené v řadě ČR (tam je nula) */
+  const varCR = globalThis.cenikSlozRadu(
+    JSON.parse(JSON.stringify(db1.db.platny.cenik)), zahr, 'cr');
+  test('P4: příprava — varianta ČR má u té položky nulu',
+    varCR.prekladyKc === 0, varCR.prekladyKc);
+  const podklad = globalThis.cenikZverejneniOcisti(varCR);
+  const odp = await (await post(program, 'http://x/api/program',
+    { cenik: podklad, cenikProj: ZC.zkusebniCenikProj(), zahranicni: zahr,
+      poznamka: 'zveřejnění z tuzemské varianty' }, cookie)).json();
+  test('P4: takové zveřejnění projde (není to chyba obsluhy)', odp.ok === true,
+    JSON.stringify(odp).slice(0, 120));
+
+  const db2 = await (await get(program, 'http://x/api/program', cookie)).json();
+  test('P4: server nezapsal nulu do ČR sloupce',
+    db2.ok && db2.db.platny.cenik.prekladyKc === 50000,
+    db2.ok && db2.db.platny.cenik.prekladyKc);
+  test('P4: a otisk popisuje ceník, který se opravdu uložil',
+    db2.ok && db2.db.platny.otisk === globalThis.programOtisk(db2.db.platny));
+
+  /* 3) a proto zahraniční řada po zrušení odchylky zdědí cenu, ne nulu —
+   *    to je okamžik, ve kterém se ztráta projeví. */
+  const poZruseni = globalThis.cenikSlozRadu(
+    JSON.parse(JSON.stringify(db2.db.platny.cenik)),
+    { jenZahr: { [CESTA]: true }, ceny: {} }, 'zahr');
+  test('P4: po zrušení odchylky zahraniční řada zdědí cenu, ne nulu',
+    poZruseni.prekladyKc === 50000, poZruseni.prekladyKc);
+
+  /* 4) POJISTKA: zákaz nesmí hodnotu zamknout natrvalo. Legitimní cesta,
+   *    jak ji změnit, je tabulka odchylek — a ta musí fungovat dál. */
+  const jina = { jenZahr: { [CESTA]: true }, ceny: { [CESTA]: 70000 } };
+  await post(program, 'http://x/api/program',
+    { cenik: podklad, cenikProj: ZC.zkusebniCenikProj(), zahranicni: jina,
+      poznamka: 'změna odchylky' }, cookie);
+  const db3 = await (await get(program, 'http://x/api/program', cookie)).json();
+  const sNovou = globalThis.cenikSlozRadu(
+    JSON.parse(JSON.stringify(db3.db.platny.cenik)), jina, 'zahr');
+  test('P4: změna přes tabulku odchylek projde dál',
+    sNovou.prekladyKc === 70000, sNovou.prekladyKc);
+}
+
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

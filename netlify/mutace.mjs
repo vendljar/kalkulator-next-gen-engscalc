@@ -397,6 +397,15 @@ const MUTACE = [
     nahrad: "      ? progKopie(ctx.cenik) : progKopie(ctx.cenik)) || {},",
     proc: 'zveřejněná verze by nesla rada/jenZahr a tvářila se jako zahraniční pro všechny' },
 
+  /* ČR sloupec položky „jen zahraniční" (#290, druhé kolo revize).
+   * Oprava sedí za `typeof` strážemi, takže se dá vypnout i omylem — třeba
+   * změnou pořadí načítání v jadro_moduly.cjs. Tahle mutace ověřuje, že by
+   * to serverové sady poznaly. */
+  { nazev: 'ČR sloupec položky „jen zahraniční" se přepíše nulou', soubor: '../src/program.js',
+    hledej: "  const predchozi = ctx.predchozi && ctx.predchozi.cenik ? ctx.predchozi.cenik : null;",
+    nahrad: "  const predchozi = null;",
+    proc: 'zveřejnění z tuzemské varianty by umazalo cenu, ze které dědí zahraniční řada' },
+
   /* ---------- značky ukázkového ceníku (P2, nálezy N2/N3) ----------
    * Vypnuly tisk nabídky na ostrých zakázkách 0383 a 377. */
   { nazev: 'server ukládá značky ukázkového ceníku', soubor: 'functions/zakazky.mjs',

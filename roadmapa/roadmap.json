@@ -80,6 +80,19 @@
    "testy": "overit_prepocet_dialog.mjs (34). Plná sada --smoke: 126 prošlo, 0 selhalo."
   },
   {
+   "id": "292",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "hotovoV": "v21.9.15",
+   "nazev": "Serverová kontrola a mutace k opravě #290 (ČR sloupec „jen zahraniční\")",
+   "proc": "Oprava z #290 sedí v `programZaznam` za `typeof` strážemi (cenikJenZahrCesty, cenikHodnota, cenikNastavHodnotu). V prohlížeči jsou ta jména globální vždycky, na serveru je skládá `netlify/lib/jadro_moduly.cjs` — změna pořadí načítání nebo vynechaný modul by stráž nechaly projít a opravu TIŠE VYPNULY. Jádro by mělo dál zelené testy a chyba by se vrátila jen serverovou cestou.",
+   "detail": "Do `netlify/test_funkce.mjs` přibyla kontrola proti skutečné funkci /api/program: platný ceník s hodnotou v ČR sloupci → zveřejnění z varianty vedené v řadě ČR (kde je hodnota na nule) → uložená verze hodnotu drží, otisk sedí, a po zrušení odchylky zahraniční řada zdědí cenu, ne nulu. Plus pojistka, že změna přes tabulku odchylek funguje dál (zákaz nesmí hodnotu zamknout natrvalo).\n\nZměřeno, že kontrola umí selhat: s vypnutou opravou padají dvě z nich (208 prošlo, 2 selhala).\n\nA mutace v `netlify/mutace.mjs` — `const predchozi = null` —, takže je ověřené i to, že by odstranění té pojistky testy poznaly.",
+   "kde": "netlify/test_funkce.mjs, netlify/mutace.mjs",
+   "testy": "netlify/test_funkce.mjs (210 prošlo, 0 selhalo). Plná sada --smoke: 126 prošlo, 0 selhalo."
+  },
+  {
    "id" : "285",
    "vlna" : "C",
    "stav" : "ceka",

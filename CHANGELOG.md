@@ -8,6 +8,25 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.9.15 — 21. 9. 2026
+
+### Pojistka, která se dá tiše vypnout, potřebuje vlastní test (#292)
+
+Oprava z v21.9.13 — zveřejnění nesmí umazat ČR hodnotu, ze které dědí
+zahraniční řada — sedí v `programZaznam` za `typeof` strážemi. **V prohlížeči
+jsou ta jména globální vždycky, na serveru je skládá `jadro_moduly.cjs`:**
+kdyby tam někdo změnil pořadí načítání nebo modul vynechal, stráž by prošla
+a oprava by se **tiše vypnula**. Jádro by mělo dál zelené testy a chyba by
+se vrátila jen serverovou cestou.
+
+Ověřeno proti skutečné serverové funkci `/api/program`, že tou cestou
+oprava opravdu platí (dosud to bylo jen doložené na jádře, ne na serveru),
+a doplněna mutace — takže je ověřené i to, že by testy odstranění té
+pojistky poznaly. Že test umí selhat, jsem změřil: s vypnutou opravou
+padají dvě kontroly.
+
+---
+
 ## v21.9.14 — 21. 9. 2026
 
 ### Hláška, která tvrdila nepravdu — a test, který ji nechytil (#291)
