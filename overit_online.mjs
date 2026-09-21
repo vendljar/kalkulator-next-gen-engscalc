@@ -340,6 +340,52 @@ test('Uložit zakázku je v režimu čtení klikatelné (aby šlo nabídnout ode
   ziveVZamku.ulozit === 'auto', ziveVZamku);
 test('a říká, co se opravdu stane — nejdřív odemknout',
   /Odemknout a uložit/.test(ziveVZamku.ulozitPopis), ziveVZamku.ulozitPopis);
+
+/* NOVÁ VARIANTA SE V ZAMČENÉ ZAKÁZCE NEVYROBÍ DO ZTRACENA (P3, nález N4).
+ *
+ * „+ Nová varianta" a kopie ⧉ v Přehledu variantu založily, ale autosave
+ * ani „Uložit zakázku" v režimu čtení nic nezapsaly — po Ctrl+F5 byla pryč.
+ * Obě cesty se teď ptají `zamekCteniStop()`, tedy nabídnou odemknutí
+ * a samy nic neudělají. Hlídá se, že varianty OPRAVDU nepřibyly: kdyby se
+ * zábrana odstranila, tenhle test spadne dřív, než si toho všimne obchodník. */
+const varZamek = await page.evaluate(async () => {
+  const pred = ZAK.varianty.length;
+  const zamceno = (typeof zamekCteniJe === 'function') && zamekCteniJe();
+  varNova();
+  const poNova = ZAK.varianty.length;
+  varKopie(ZAK.varianty[0].id);
+  const poKopie = ZAK.varianty.length;
+  return { zamceno, pred, poNova, poKopie };
+});
+test('zakázka je pro tenhle test opravdu jen ke čtení', varZamek.zamceno === true, varZamek);
+test('„+ Nová varianta" v režimu čtení variantu NEzaloží',
+  varZamek.poNova === varZamek.pred, varZamek);
+test('ani kopie ⧉ v Přehledu', varZamek.poKopie === varZamek.pred, varZamek);
+
+/* A po odemčení to musí jít — zábrana nesmí zavřít i správnou cestu.
+ *
+ * Stav se hned VRACÍ ZPĚT: přidaná varianta se odebere, aktivní se vrátí
+ * na původní a zámek čtení se zapne. Sady o pár desítek řádků níž měří
+ * tutéž otevřenou zakázku (tisk PROJ, lišta na Ceníku) a cizí varianta
+ * navíc by jim podstrčila jiný stav, než na jaký se ptají. */
+const varPoOdemceni = await page.evaluate(async () => {
+  const puvodniAktivni = ZAK.aktivni;
+  const puvodniIds = ZAK.varianty.map(v => v.id);
+  zamekCteniVypni();
+  const pred = ZAK.varianty.length;
+  varNova();
+  const po = ZAK.varianty.length;
+  ZAK.varianty = ZAK.varianty.filter(v => puvodniIds.indexOf(v.id) >= 0);
+  ZAK.aktivni = puvodniAktivni;
+  if (typeof syncVarianta === 'function') syncVarianta();
+  zamekCteniZapni();
+  render();
+  return { pred, po, uklizeno: ZAK.varianty.length, aktivniSedi: ZAK.aktivni === puvodniAktivni };
+});
+test('po odemčení se nová varianta založí normálně',
+  varPoOdemceni.po === varPoOdemceni.pred + 1, varPoOdemceni);
+test('a test po sobě uklidil (zakázka je ve stavu, v jakém ji našel)',
+  varPoOdemceni.uklizeno === varPoOdemceni.pred && varPoOdemceni.aktivniSedi, varPoOdemceni);
 await page.evaluate(() => prepniTab('proj'));
 await page.waitForTimeout(300);
 const tiskProjVZamku = await page.evaluate(() => {

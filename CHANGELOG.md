@@ -41,12 +41,59 @@ obchodník neměl jak použít a kód ležel v aplikaci nečinně.
 
 Nová sada: `src/test_oplasteni_zapnuti.js` (31 kontrol).
 
+### Rozhodnutí J. V. k opláštění (21. 9. 2026)
+
+Obě otázky, které u #268 zůstávaly otevřené, jsou zodpovězené — a obě
+**potvrzují dnešní stav**, takže se nic nepřepočítává:
+
+- Sazby **práce a tmelení** se počítají **po celé ploše** bez ohledu na typ
+  opláštění.
+- U **dělicí výšky**, která nepadne na rozteč příčníků, se počítá **skutečná
+  plocha**, ne celá tabule.
+
+Obojí si J. V. vyhradil k pozdější úpravě. Zapsáno do roadmapy (#275), aby se
+o tom podruhé nespekulovalo.
+
+### Testy k P1–P3: tři díry, které samy testy neukázaly
+
+Kontrola po dokončení P1–P4 — otázka zněla, jestli oprava ceníku opravdu
+nemůže znovu propadnout. Našly se **tři místa, kde se opravené chování
+nehlídalo vůbec**, a jedno, kde se hlídalo jen naoko:
+
+- **Serverová pojistka P1 neměla test.** Zákaz zveřejnit ceník z varianty
+  přepnuté na Zahraničí byl v `netlify/functions/program.mjs`, ale žádná
+  sada ho nevolala. Doplněno 8 kontrol na konec `netlify/test_funkce.mjs`
+  (203 prošlo / 0 selhalo).
+- **Zámek jen ke čtení neměl kontrolu v prohlížeči.** `overit_online.mjs`
+  nově ověřuje, že tlačítka „nová varianta" a „kopie" v režimu čtení
+  **nejsou mrtvá** a řeknou, co udělají — přesně ta chyba, která se u P3
+  jednou už stala (135/0 → **140/0**).
+- **Žádná z oprav P1–P3 neměla mutaci.** Doplněno 5 mutací do
+  `netlify/mutace.mjs`.
+
+**A pak mutace odhalila čtvrtou, nepříjemnější věc.** Ze 128 mutací zůstala
+jediná nechycená: „klíče řady se zapíšou do platného ceníku". Test na to
+existoval — jenže ověřoval čištění nad **čistým zkušebním ceníkem, který
+`rada` ani `jenZahr` vůbec neobsahoval**. Čištění nemělo co odebrat, takže
+kontrola prošla i s vypnutým čištěním. Test, který platí vždycky, je horší
+než žádný: tvářil se, že hlídá přesně tu chybu z v27. Podklad teď klíče
+skutečně nese (tak, jak je do něj přidá `cenikSlozRadu` u každé varianty)
+a k tomu stojí kontrola, že je tam opravdu má. Mutace je po opravě chycená.
+
+Navíc: `netlify/mutace.mjs` si doplní `ADMIN_EMAIL` sám, stejně jako to už
+umí `spust_testy.sh`. Bez něj se ručně spuštěný běh zastavil hned na „sady
+nejsou zelené ani bez mutace" a vypadalo to jako rozbitý kód.
+
 ### Ověření
 
 115 sad prošlo / 0 selhalo (1 přeskočena), včetně prohlížečových. Harnessy:
 `overit_lista` 268/0, `overit_atyp` 57/0, `overit_zobrazeni` 121/0,
 `overit_ock_cela_cesta` 42/0, `overit_vypnuty_radek` 21/0,
-`overit_online` 135/0, kouřový test 50/0.
+`overit_online` 140/0, kouřový test 50/0.
+
+Mutační testování serveru: **127 z 128 chycených**; jediná nechycená byla ta
+popsaná výše. Po opravě testu je chycená i ona — ověřeno cíleným během
+`node netlify/mutace.mjs "klíče řady"` (1 z 1).
 
 ---
 

@@ -31,6 +31,16 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const KOREN = dirname(fileURLToPath(import.meta.url));
+
+/* Adresa hlavního správce se bere z prostředí (repozitář je veřejný, do kódu
+ * nepatří). Testům stačí SMYŠLENÁ — ověřují pravidla, ne konkrétní účet —
+ * a CI ji tak nastavuje. Ručně spuštěný běh ji ale neměl a zastavil se hned
+ * na „sady nejsou zelené ani bez mutace", protože test_prava.mjs padne na
+ * přihlášení prázdným e-mailem. Vypadalo to jako rozbitý kód, přitom šlo
+ * jen o chybějící proměnnou (21. 9. 2026; totéž doplněno do spust_testy.sh).
+ * Vlastní hodnota z prostředí má přednost. */
+if (!process.env.ADMIN_EMAIL) process.env.ADMIN_EMAIL = 'spravce@priklad.cz';
+
 /* test_obnova.mjs přibyla 9. 9. 2026 (B27–B31): mutace obnovy hlídá ona. */
 const SADY = ['test_prava.mjs', 'test_funkce.mjs', 'test_obnova.mjs'];
 const filtr = (process.argv[2] || '').toLowerCase();
@@ -362,6 +372,37 @@ const MUTACE = [
     hledej: "      ? cenikZahrOciste(ctx.zahranicni)",
     nahrad: "      ? (ctx.zahranicni || { ceny: {}, jenZahr: {} })",
     proc: 'cizí klíč ze souboru databáze by se dostal až do výpočtu ceny' },
+
+  /* ---------- pojistky zveřejnění (P1, nálezy N1/N20, 21. 9. 2026) ----------
+   * Takhle vznikl vadný platný ceník verze 27: zahraniční ceny se zveřejnily
+   * jako tuzemské. Kontrola je v aplikaci i na serveru — dialog jde obejít,
+   * server ne. Mutace hlídají, že serverová půlka opravdu drží. */
+  { nazev: 'zveřejnění se nekontroluje proti zahraniční řadě', soubor: 'functions/program.mjs',
+    hledej: "  const posudek = globalThis.cenikZverejneniKontrola(ctx, ctx.zahranicni, t.rada);",
+    nahrad: "  const posudek = { ok: true, kod: '', shody: [] };",
+    proc: 'zahraniční ceny by se daly zveřejnit jako tuzemské — přesně tak vznikla vadná verze 27' },
+
+  { nazev: 'varianta přepnutá na Zahraničí projde zveřejněním', soubor: '../src/cenik_rady.js',
+    hledej: "  if (r === 'zahr')",
+    nahrad: "  if (false)",
+    proc: 'hlavní zábrana P1 by zmizela a zahraniční ceník by se propsal do tuzemských nabídek' },
+
+  { nazev: 'shoda ČR se zahraniční odchylkou se nehlídá', soubor: '../src/cenik_rady.js',
+    hledej: "  if (shody.length > CENIK_ZVEREJNENI_SHODA_MAX)",
+    nahrad: "  if (false)",
+    proc: 'druhá pojistka by nechytila podklad, ze kterého někdo odstranil značku řady' },
+
+  { nazev: 'klíče řady se zapíšou do platného ceníku', soubor: '../src/program.js',
+    hledej: "      ? cenikZverejneniOcisti(progKopie(ctx.cenik)) : progKopie(ctx.cenik)) || {},",
+    nahrad: "      ? progKopie(ctx.cenik) : progKopie(ctx.cenik)) || {},",
+    proc: 'zveřejněná verze by nesla rada/jenZahr a tvářila se jako zahraniční pro všechny' },
+
+  /* ---------- značky ukázkového ceníku (P2, nálezy N2/N3) ----------
+   * Vypnuly tisk nabídky na ostrých zakázkách 0383 a 377. */
+  { nazev: 'server ukládá značky ukázkového ceníku', soubor: 'functions/zakazky.mjs',
+    hledej: "  ocistiZnacky(zak);",
+    nahrad: "  void 0;",
+    proc: 'značka „ukázkový ceník" by se uložila k zakázce a u uzamčené varianty vypnula tisk nabídky' },
 
   /* ---------- 4. dávka, 23. 8. 2026 (L27, L28, L29, L31) ----------
    *

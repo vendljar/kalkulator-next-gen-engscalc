@@ -511,5 +511,78 @@ const DOCX2 = 'UEsDBBQABgAIAAAAIQ' + 'B'.repeat(400);   // jiná data = jiný ot
   test('a ceny přitom nechá být', c2.montazHodKc === 850, c2.montazHodKc);
 }
 
+/* ZAHRANIČNÍ CENY SE DO TUZEMSKÉ ŘADY NEDOSTANOU (P1, nález N1, 21. 9. 2026).
+ *
+ * Takhle vznikl vadný platný ceník verze 27: varianta přepnutá na řadu
+ * Zahraničí má zahraniční ceny přímo ve svém ceníku a „Zveřejnit ceník této
+ * varianty jako platný" je vzal jako podklad. Táž kontrola běží i v dialogu
+ * aplikace — tady se hlídá, že ji má i SERVER, protože dialog jde obejít.
+ * Bez tohohle testu by šlo pojistku ze serveru odstranit a nic by nespadlo.
+ *
+ * Blok stojí AŽ NA KONCI schválně: zveřejňuje další verze ceníku, a sady
+ * o pár set řádků výš kontrolují, co záloha obsahuje, včetně čísla verze.
+ * Uprostřed souboru by je rozbil. */
+{
+  const cZahr = ZC.zkusebniCenik();
+  cZahr.rada = 'zahr';                                   // značka, kterou nechá cenikRadaPrepni
+  cZahr.montazHodKc = (cZahr.montazHodKc || 0) + 7;      // aby to nebylo „beze změny"
+  const odm = await post(program, 'http://x/api/program',
+    { cenik: cZahr, cenikProj: ZC.zkusebniCenikProj(), rada: 'zahr' }, cookie);
+  const telo = await odm.json();
+  test('P1: server odmítne zveřejnění z varianty přepnuté na Zahraničí',
+    odm.status === 400 && telo.ok === false, odm.status + ' ' + JSON.stringify(telo).slice(0, 120));
+  test('P1: a řekne proč (kód i česká věta)',
+    telo.kod === 'zahr' && /Zahrani/.test(telo.chyba || ''), JSON.stringify(telo).slice(0, 160));
+
+  /* Pozná se to i bez pole `rada` — klíč v ceníku stačí. */
+  const bezPole = await post(program, 'http://x/api/program',
+    { cenik: cZahr, cenikProj: ZC.zkusebniCenikProj() }, cookie);
+  test('P1: pozná to i bez předaného pole „rada"', bezPole.status === 400, bezPole.status);
+
+  /* Druhá pojistka: shoda ČR se zahraniční odchylkou u víc než pěti položek.
+   * Chytí i podklad, ze kterého někdo značku řady odstranil. */
+  const cShoda = ZC.zkusebniCenik();
+  const zahrOdchylky = { ceny: {}, jenZahr: {} };
+  ['C.montazHodKc', 'C.powertechInt', 'C.powertechExt', 'C.transportKc',
+   'C.lemovaniKgKc', 'C.striskaDvurKc'].forEach((cesta, i) => {
+    const hodnota = 7100 + i;
+    zahrOdchylky.ceny[cesta] = hodnota;
+    cShoda[cesta.slice(2)] = hodnota;                    // ČR sloupec = zahraniční hodnota
+  });
+  const shoda = await post(program, 'http://x/api/program',
+    { cenik: cShoda, cenikProj: ZC.zkusebniCenikProj(), zahranicni: zahrOdchylky }, cookie);
+  const telo2 = await shoda.json();
+  test('P1: server odmítne podklad, kde se ČR shoduje se zahraniční u šesti položek',
+    shoda.status === 400 && telo2.kod === 'shoda', shoda.status + ' ' + JSON.stringify(telo2).slice(0, 120));
+  test('P1: a vypíše konkrétní položky',
+    Array.isArray(telo2.polozky) && telo2.polozky.length === 6, JSON.stringify(telo2.polozky));
+
+  /* Poctivý podklad projde dál — pojistka nesmí zavřít i správnou cestu.
+   *
+   * PODKLAD MUSÍ KLÍČE ŘADY OPRAVDU NÉST. Do 21. 9. 2026 se tahle kontrola
+   * dělala nad čistým `zkusebniCenik()`, ve kterém žádné `rada` ani `jenZahr`
+   * nebyly — čištění tedy nemělo co odebrat a kontrola o kus níž prošla
+   * i s VYPNUTÝM čištěním. Odhalila to mutace „klíče řady se zapíšou do
+   * platného ceníku": jako jediná ze 128 zůstala nechycená. Tuzemská varianta
+   * složená `cenikSlozRadu` je takhle označkovaná vždycky, takže tohle je
+   * zároveň věrnější podklad než ten čistý. */
+  const cPoctivy = ZC.zkusebniCenik();
+  cPoctivy.montazHodKc = (cPoctivy.montazHodKc || 0) + 11;
+  cPoctivy.rada = 'cr';                       // runtime klíč, který přidá cenikSlozRadu
+  cPoctivy.jenZahr = { 'C.transportKc': true };
+  test('P1: podklad do kontroly čištění klíče řady skutečně nese',
+    'rada' in cPoctivy && 'jenZahr' in cPoctivy, Object.keys(cPoctivy).filter(k => k === 'rada' || k === 'jenZahr'));
+  const ok4 = await (await post(program, 'http://x/api/program',
+    { cenik: cPoctivy, cenikProj: ZC.zkusebniCenikProj(), rada: 'cr' }, cookie)).json();
+  test('P1: tuzemský podklad se zveřejní normálně dál', ok4.ok === true, JSON.stringify(ok4).slice(0, 120));
+
+  /* A klíče řady se do uložené verze nezapíšou, ať přijde cokoli. */
+  const dbP1 = await (await get(program, 'http://x/api/program', cookie)).json();
+  test('P1: uložená verze nenese klíče řady (rada, jenZahr)',
+    dbP1.ok && !('rada' in dbP1.db.platny.cenik) && !('jenZahr' in dbP1.db.platny.cenik),
+    Object.keys(dbP1.db.platny.cenik).filter(k => k === 'rada' || k === 'jenZahr'));
+}
+
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);
