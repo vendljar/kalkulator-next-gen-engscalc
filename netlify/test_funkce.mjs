@@ -474,5 +474,42 @@ const DOCX2 = 'UEsDBBQABgAIAAAAIQ' + 'B'.repeat(400);   // jiná data = jiný ot
   test('analytika: zálohovací kód úložiště analytiky vůbec nezná', !kodZaloh.includes('analytika'));
 }
 
+/* 5b) ZNAČKY UKÁZKOVÉHO A PRÁZDNÉHO CENÍKU (P2, nálezy N2/N3, 21. 9. 2026)
+ *
+ * Server doplňoval chybějící klíče ceníku z DEFAULT_CENIK ze sestavení —
+ * pro GitHub vynulovaného a označeného `ukazkove`/`prazdny`. Klient značky
+ * neposlal, ale v uloženém souboru je měl. U uzamčených variant, které se
+ * při načtení nepřepočítávají, tam zůstaly napořád a vypnuly tisk nabídky
+ * na ostrých zakázkách 0383 a 377.
+ *
+ * Hlídá se OBOJÍ: že se značka nepřidá při uložení, a že ji server odstraní,
+ * i když ji klient pošle (starší klient, import souboru). */
+{
+  const zn = zk.novaZakazka();
+  zn.cislo = '2026 - OPR - CN - 0778'; zn.nazevAkce = 'Značky ceníku';
+  const d0 = zn.varianty[0].data;
+  d0.cenik = Object.assign({}, d0.cenik, { montazHodKc: 850, dph: 21 });
+  const ulZ = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zn }, cookieObch)).json();
+  const naZ = await (await get(zakazky, 'http://x/api/zakazky?soubor='
+    + encodeURIComponent(ulZ.soubor), cookieObch)).json();
+  const cZ = naZ.zakazka.varianty[0].data.cenik;
+  test('uložení zakázky značku ukázkového ceníku nepřidá', cZ.ukazkove === undefined, JSON.stringify(cZ.ukazkove));
+  test('ani značku prázdného ceníku', cZ.prazdny === undefined, JSON.stringify(cZ.prazdny));
+  test('a ceny se uložily beze změny', cZ.montazHodKc === 850 && cZ.dph === 21,
+    JSON.stringify([cZ.montazHodKc, cZ.dph]));
+
+  /* Značka poslaná klientem se zahodí — druhá obrana pro starší klienty. */
+  const zn2 = JSON.parse(JSON.stringify(naZ.zakazka));
+  zn2.varianty[0].data.cenik.ukazkove = true;
+  zn2.varianty[0].data.cenik.prazdny = true;
+  const ul2 = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zn2 }, cookieObch)).json();
+  const na2 = await (await get(zakazky, 'http://x/api/zakazky?soubor='
+    + encodeURIComponent(ul2.soubor || ulZ.soubor), cookieObch)).json();
+  const c2 = na2.zakazka.varianty[0].data.cenik;
+  test('značku poslanou klientem server zahodí',
+    c2.ukazkove === undefined && c2.prazdny === undefined, JSON.stringify([c2.ukazkove, c2.prazdny]));
+  test('a ceny přitom nechá být', c2.montazHodKc === 850, c2.montazHodKc);
+}
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

@@ -1210,8 +1210,99 @@ const StorageAdapter = {
   },
 };
 
+/* Návrh dalšího čísla zakázky: zvýší POSLEDNÍ číselnou skupinu o jedna
+ * a zachová vedoucí nuly i zbytek textu („2026 - OPR - CN - 0383" →
+ * „2026 - OPR - CN - 0384"). Je to jen PŘEDVYPLNĚNÍ dialogu — skutečné
+ * číslo volí člověk a duplicitu proti rejstříku hlídá `zakazkaDuplicita`
+ * a server. Vymýšlet tu chytřejší logiku (hledat volné číslo v databázi)
+ * by znamenalo, že dialog čeká na síť; to se nevyplatí.
+ *
+ * Číslo bez číselné skupiny se vrátí, jak přišlo — návrh pak není, ale
+ * dialog se kvůli tomu neotevírat nemá. */
+function zakazkaCisloDalsi(cislo) {
+  const s = String(cislo == null ? '' : cislo);
+  let konec = -1;
+  for (let i = s.length - 1; i >= 0; i--) {
+    if (s[i] >= '0' && s[i] <= '9') { konec = i; break; }
+  }
+  if (konec < 0) return s;
+  let zacatek = konec;
+  while (zacatek > 0 && s[zacatek - 1] >= '0' && s[zacatek - 1] <= '9') zacatek--;
+  const cast = s.slice(zacatek, konec + 1);
+  const dalsi = String(Number(cast) + 1);
+  /* Vedoucí nuly se zachovají: „0383" → „0384", ne „384". Přetečení na víc
+   * číslic (např. „999" → „1000") šířku prostě rozšíří. */
+  const doplneno = dalsi.length < cast.length
+    ? '0'.repeat(cast.length - dalsi.length) + dalsi : dalsi;
+  return s.slice(0, zacatek) + doplneno + s.slice(konec + 1);
+}
+
+/* ---------- duplikace celé zakázky (P3, nález N5, 21. 9. 2026) ----------
+ *
+ * ZADÁNÍ: „Do Přehledu přidat akci Duplikovat jako novou zakázku (nové číslo
+ * CN zadá uživatel; zkopíruje varianty bez zámků a tisků, poznámky ne),
+ * vedle stávající kopie varianty ⧉."
+ *
+ * PROČ TO CHYBĚLO A PROČ TO NENÍ TOTÉŽ CO ⧉: kopie varianty zakládá DALŠÍ
+ * VARIANTU TÉŽE zakázky (číslo 2026-OPR-CN-0383.2) — tedy další nabídku pro
+ * tutéž akci. Když ale přijde nová poptávka, která se té staré podobá, je
+ * potřeba NOVÁ ZAKÁZKA s vlastním číslem. Do 21. 9. 2026 na to nebyla cesta
+ * a lidé to obcházeli tím, že otevřeli starou zakázku a přepsali jí číslo —
+ * čímž si ji přepsali a o původní přišli.
+ *
+ * CO SE NEKOPÍRUJE A PROČ:
+ *   – zámky a doklady o odeslání: nová zakázka nic neodeslala. Nést cizí
+ *     doklad o tom, co dostal jiný zákazník, je nebezpečná lež;
+ *   – poznámky a přílohy: jsou to zápisy o JEDNÁNÍ ke konkrétní akci
+ *     (zadání J. V.), ne součást kalkulace;
+ *   – razítko a autor: doplní je server při prvním uložení;
+ *   – čísla variant se přečíslují od začátku — přípona .3 v nové zakázce,
+ *     která má jedinou variantu, by nedávala smysl.
+ *
+ * CO SE KOPÍRUJE: hlavička (zákazník, adresa, IČO…), zadání i ceníky všech
+ * variant. To je ta práce, kvůli které se duplikuje.
+ *
+ * Vrací NOVOU zakázku; předlohy se nedotýká. */
+function zakazkaDuplikuj(zak, noveCislo) {
+  if (!zak || typeof zak !== 'object') return null;
+  const nova = JSON.parse(JSON.stringify(zak));
+  nova.cislo = String(noveCislo == null ? '' : noveCislo);
+
+  /* Identita uložené zakázky. Bez vynulování by se nová zakázka tvářila
+   * jako uložená kopie té staré a první uložení by narazilo na razítko. */
+  delete nova.uloRazitko;
+  delete nova.uloSoubor;
+  delete nova.autor;
+  delete nova.autorJmeno;
+  delete nova.upravil;
+
+  /* Zápisy o jednání patří k původní akci, ne sem. */
+  nova.poznamky = [];
+  nova.prilohy = [];
+  nova.prilohySmazane = [];
+
+  nova.varianty = (Array.isArray(nova.varianty) ? nova.varianty : []).map((v, i) => {
+    const n = v && typeof v === 'object' ? v : {};
+    n.zamek = null;          // nová zakázka nic neodeslala
+    delete n.odemceni;       // ani nic neodemykala
+    delete n.klonZ;          // klon čeho? původní varianta tu není
+    delete n.klonZCislo;
+    n.pripona = 0;           // čísluje se od začátku
+    n.datum = (typeof dnesIso === 'function')
+      ? dnesIso() : new Date().toISOString().slice(0, 10);
+    return n;
+  });
+  if (nova.varianty.length) {
+    /* Řídící musí zůstat právě jedna. Kdyby ji předloha neměla (starší
+     * soubor), stane se jí první — stejně jako v importZakazka. */
+    if (!nova.varianty.some(v => v.ridici)) nova.varianty[0].ridici = true;
+    nova.aktivni = (nova.varianty.find(v => v.ridici) || nova.varianty[0]).id;
+  }
+  return nova;
+}
+
 if (typeof module !== 'undefined')
-  module.exports = { ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, variantaDatum, dnesIso, ZADANI_NOVA, vychoziZakladVolitelne, zadaniRucniMapa, zadaniRucniJe,
+  module.exports = { zakazkaDuplikuj, zakazkaCisloDalsi, ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, variantaDatum, dnesIso, ZADANI_NOVA, vychoziZakladVolitelne, zadaniRucniMapa, zadaniRucniJe,
                      zadaniRucniZnac, zadaniRucniZrus, zadaniZCeniku, uvodniFotoObrazky, uvodniFotoSymboly, uvodniFotoPole, ZAKAZKA_SCHEMA, novaZakazka, novaVarianta, novaVariantaData,
                      nastavRidici, ridiciVarianta, aktivniVarianta, importZakazka, StorageAdapter,
                      zakazkaUnikatniId,

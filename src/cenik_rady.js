@@ -190,8 +190,93 @@ function cenikDnesniProRadu(dnesni, zahr, rada) {
   return out;
 }
 
+/* ---------- pojistky zveřejnění (P1, nálezy N1/N20/N6, 21. 9. 2026) ----------
+ *
+ * CO SE STALO: platný ceník verze 27 měl u čtrnácti položek v ČR sloupci
+ * ZAHRANIČNÍ hodnoty. Nešlo o překlep — vzniklo to cestou, kterou aplikace
+ * sama nabízí:
+ *
+ *   1. obchodník přepne variantu na řadu Zahraničí,
+ *   2. `cenikRadaPrepni` vtiskne odchylky PŘÍMO do `data.cenik` (tak to má
+ *      být — varianta má jen jednu řadu a počítá se z ní),
+ *   3. administrátor nad toutéž variantou klikne „Zveřejnit ceník této
+ *      varianty jako platný" a `progKontext` vezme `d.cenik` jako podklad.
+ *
+ * Zahraniční ceny tím propadnou do TUZEMSKÉ řady pro všechny budoucí
+ * zakázky. Zveřejněný ceník navíc odnese i runtime klíče `rada` a `jenZahr`,
+ * které do databáze programu nepatří vůbec — u varianty je pokaždé znovu
+ * skládá `cenikSlozRadu`.
+ *
+ * Krok 2 je správně a nemění se. Chybí zábrana v kroku 3, a ta patří sem,
+ * do modelu: volá ji UI i server (`netlify/functions/program.mjs`), protože
+ * server klientovi nevěří — kdyby kontrola žila jen v dialogu, stačilo by
+ * poslat požadavek mimo něj. */
+
+/* Kolik položek smí mít ČR hodnotu shodnou se zahraniční, než to začne být
+ * podezřelé. Shoda u jedné dvou položek je normální (cena se prostě neliší);
+ * u čtrnácti je to otisk přepnuté varianty. Pět je práh, ne pravda — proto
+ * se při jeho překročení NEHÁDÁ, ale vypíšou se konkrétní položky. */
+const CENIK_ZVEREJNENI_SHODA_MAX = 5;
+
+/* Ceník připravený ke zveřejnění: bez runtime klíčů řady. Kopie, originál
+ * (ceník varianty) musí zůstat, jak byl — počítá se z něj otevřená nabídka. */
+function cenikZverejneniOcisti(cenik) {
+  if (!cenik || typeof cenik !== 'object') return cenik;
+  const k = JSON.parse(JSON.stringify(cenik));
+  delete k.rada;
+  delete k.jenZahr;
+  return k;
+}
+
+/* Položky, kde se ČR hodnota shoduje se zahraniční odchylkou.
+ * `ctx` je podklad zveřejnění ({ cenik, cenikProj }) — tedy tvar, ve kterém
+ * ho posílá UI i přijímá server; `cenikHodnota` chce { cenik, proj:{cenik} },
+ * proto se uvnitř převádí. */
+function cenikZverejneniShody(ctx, zahr) {
+  const z = cenikZahrOciste(zahr);
+  const c = ctx || {};
+  const data = { cenik: c.cenik || {}, proj: { cenik: c.cenikProj || {} } };
+  const popisy = {};
+  if (typeof cenikSledovane === 'function')
+    cenikSledovane().forEach(p => { popisy[p.cesta] = p.popis; });
+  return Object.keys(z.ceny).filter(cesta => {
+    const ted = (typeof cenikHodnota === 'function') ? cenikHodnota(data, cesta) : undefined;
+    if (ted === undefined || ted === null || ted === '') return false;
+    return String(ted) === String(z.ceny[cesta]);
+  }).map(cesta => ({ cesta, popis: popisy[cesta] || cesta }));
+}
+
+/* Smí se tenhle podklad zveřejnit jako TUZEMSKÝ ceník?
+ * Vrací { ok, kod, duvod, shody, rada }. `kod` je pro testy a server,
+ * `duvod` je česká věta pro člověka.
+ *
+ * `rada` se bere přednostně z varianty (UI ji zná), jinak z klíče `rada`
+ * v samotném ceníku — ten tam nechal `cenikRadaPrepni`, takže i požadavek
+ * poslaný mimo dialog se pozná. */
+function cenikZverejneniKontrola(ctx, zahr, rada) {
+  const c = ctx || {};
+  const r = cenikRadaPlatna(rada !== undefined && rada !== null && rada !== ''
+    ? rada : (c.cenik && c.cenik.rada));
+  if (r === 'zahr')
+    return { ok: false, kod: 'zahr', rada: r, shody: [],
+      duvod: 'Tahle varianta je přepnutá na řadu Zahraničí, takže její ceník nese '
+        + 'zahraniční ceny. Zveřejněním by se dostaly do tuzemského ceníku pro všechny '
+        + 'budoucí zakázky. Přepněte variantu zpět na ČR, nebo ceny zapište do zahraniční '
+        + 'řady v Nastavení → Ceník.' };
+  const shody = cenikZverejneniShody(c, zahr);
+  if (shody.length > CENIK_ZVEREJNENI_SHODA_MAX)
+    return { ok: false, kod: 'shoda', rada: r, shody,
+      duvod: 'U ' + shody.length + ' položek se tuzemská cena shoduje se zahraniční odchylkou. '
+        + 'Tolik shod obvykle znamená, že podklad vznikl z varianty přepnuté na Zahraničí. '
+        + 'Zkontrolujte vypsané položky; pokud je to opravdu záměr, opravte je v ceníku tak, '
+        + 'aby se řady lišily, nebo zahraniční odchylku zrušte.' };
+  return { ok: true, kod: '', rada: r, shody, duvod: '' };
+}
+
 if (typeof module !== 'undefined')
   module.exports = { CENIK_RADY, CENIK_ZAHR, cenikRadaPlatna, cenikRadaNazev, cenikRadaPopis,
                      cenikZahrPrazdny, cenikZahrOciste, cenikZahrPrazdna,
                      cenikSlozRadu, cenikRadaRozdily, cenikRadaPrepni, cenikRadaVarianty,
-                     cenikRadaTuzemskaData, cenikDnesniProRadu };
+                     cenikRadaTuzemskaData, cenikDnesniProRadu,
+                     CENIK_ZVEREJNENI_SHODA_MAX, cenikZverejneniOcisti,
+                     cenikZverejneniShody, cenikZverejneniKontrola };

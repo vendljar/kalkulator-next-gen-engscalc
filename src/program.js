@@ -41,6 +41,30 @@ const PROG_SCHEMA = 1;
 const PROG_APLIKACE = 'Kalkulátor OCK';
 const PROG_HISTORIE_MAX = 60;
 
+/* VERZE VZORCE OTISKU (P1, nález N20, 21. 9. 2026).
+ *
+ * Otisk je doklad, že do uložené verze ceníku nikdo ručně nesáhl. Jenže sám
+ * vzorec se od zavedení dvakrát změnil — #181 (31. 8. 2026) do něj přidal
+ * zahraniční odchylky a #267 (18. 9. 2026) dodatkové texty k položkám.
+ * Starší verze byly orazítkované vzorcem, který dnes neexistuje, takže se
+ * přepočtený otisk NIKDY netrefí: aplikace hlásila „někdo sáhl do souboru
+ * ručně" u všech 27 verzí naráz. Varování, které svítí vždycky, přestane
+ * být varováním — a skutečný zásah by v něm zanikl.
+ *
+ * Řešení: každý záznam si nese číslo vzorce, kterým byl orazítkován, a
+ * porovnává se jen se shodným. Záznam orazítkovaný starším vzorcem se
+ * neoznačí za podezřelý, jen se u něj přizná, že doložit ho nejde.
+ * Jednorázové přerazítkování historie by tentýž problém přineslo znovu při
+ * příští změně vzorce; tohle vydrží.
+ *
+ *   1 = původní (jen ceníky)
+ *   2 = od #181 — i zahraniční odchylky
+ *   3 = od #267 — i dodatkové texty (`cenik.popisy`)
+ *
+ * Záznam bez čísla je z doby před touhle pojistkou, tedy vzorec 1 nebo 2 —
+ * které přesně, se zpětně nepozná, proto se bere jako „neznámý". */
+const PROG_OTISK_VERZE = 3;
+
 /* Oddíly databáze. Slouží k popisu i k výběrovému načtení – kdo si chce
  * vzít ze složky jen ceník a nechat si vlastní katalog, může. */
 const PROG_ODDILY = [
@@ -160,7 +184,14 @@ function programZaznam(ctx, verze) {
     kdo: String(ctx.kdo || ''),
     poznamka: String(ctx.poznamka || ''),
     build: String(ctx.build || ''),
-    cenik: progKopie(ctx.cenik) || {},
+    /* Runtime klíče řady (`rada`, `jenZahr`) do platného ceníku NEPATŘÍ —
+     * u varianty je pokaždé znovu složí `cenikSlozRadu` z tuzemské řady
+     * a tabulky odchylek. Do 21. 9. 2026 sem propadaly z ceníku varianty
+     * a zveřejněná verze pak nesla `rada: "zahr"` (nález N1). Čistí se tady,
+     * na jediném místě, kterým prochází zveřejnění z aplikace, ze serveru
+     * i přenos ceníku souborem. */
+    cenik: ((typeof cenikZverejneniOcisti === 'function')
+      ? cenikZverejneniOcisti(progKopie(ctx.cenik)) : progKopie(ctx.cenik)) || {},
     cenikProj: progKopie(ctx.cenikProj) || {},
     zahranicni: (typeof cenikZahrOciste === 'function')
       ? cenikZahrOciste(ctx.zahranicni)
@@ -169,6 +200,7 @@ function programZaznam(ctx, verze) {
     slevy: progKopie(ctx.slevy) || null,
   };
   z.otisk = programOtisk(z);
+  z.otiskVerze = PROG_OTISK_VERZE;
   return z;
 }
 
@@ -215,10 +247,28 @@ function programNormalizuj(data) {
       katalog: z.katalog, slevy: z.slevy,
       build: z.build, kdo: z.kdo, poznamka: z.poznamka, kdy: z.zapsano, platnoOd: z.platnoOd,
     }, z.verze || i);
-    // Otisk v souboru se přebírá, jen když sedí: přepsat ho potichu by
-    // znamenalo zamlčet, že se se souborem někdo ručně přehraboval.
-    if (z.otisk && z.otisk !== v.otisk) v.otiskNesedi = String(z.otisk);
+    /* Otisk v souboru se přebírá, jen když sedí: přepsat ho potichu by
+     * znamenalo zamlčet, že se se souborem někdo ručně přehraboval.
+     *
+     * POROVNÁVÁ SE JEN SE SHODNÝM VZORCEM (P1, nález N20). Záznam
+     * orazítkovaný starším vzorcem dá jiný otisk vždycky, i když je
+     * netknutý — hlásit u něj ruční zásah je lež. Takový záznam se označí
+     * `otiskStaryVzorec` a doloží se prostě nedá; za podezřelý se ale
+     * neoznačí. Poctivé „nevíme" je víc než falešné „pozor". */
+    const vzorecZnamy = +z.otiskVerze === PROG_OTISK_VERZE;
+    if (z.otisk && !vzorecZnamy) v.otiskStaryVzorec = z.otiskVerze ? +z.otiskVerze : 0;
+    else if (z.otisk && z.otisk !== v.otisk) v.otiskNesedi = String(z.otisk);
     if (z.platnoDo) v.platnoDo = String(z.platnoDo);
+    /* Počty změn jsou METADATA, ne data ceníku — `programZaznam` je proto
+     * nezná a při načtení by se ztratily. Přenášejí se ručně, stejně jako
+     * konec platnosti. Starší verze je nemají a mít nebudou: zpětně se
+     * dopočítat dají, ale zapsat je jako by tam byly od začátku by bylo
+     * dopisování historie. */
+    if (z.zmeny && typeof z.zmeny === 'object') v.zmeny = {
+      cr: Math.max(0, Math.floor(+z.zmeny.cr || 0)),
+      zahr: Math.max(0, Math.floor(+z.zmeny.zahr || 0)),
+      protiVerzi: Math.max(0, Math.floor(+z.zmeny.protiVerzi || 0)),
+    };
     return v;
   };
 
@@ -275,6 +325,22 @@ function programNovaVerze(db, ctx) {
   if (!zaklad) return programNovy(ctx);
   const stary = zaklad.platny;
   const nova = programZaznam(ctx, (+stary.verze || 0) + 1);
+  /* CO SE TOU VERZÍ VLASTNĚ ZMĚNILO (P1, nález N20, 21. 9. 2026).
+   *
+   * Historie do té doby nesla jen poznámku, kterou napsal člověk — a u verze
+   * 27 stálo „17-8-1", z čehož nešlo poznat vůbec nic. Rozdíl se dal zjistit
+   * leda ručním porovnáním dvou verzí. Počty se proto zapisují rovnou do
+   * záznamu, a to ZVLÁŠŤ pro tuzemskou řadu a zvlášť pro zahraniční: kdyby
+   * to bylo jedno číslo, právě ten případ, kdy někdo zveřejnil zahraniční
+   * ceny jako tuzemské, by v něm nebyl vidět.
+   *
+   * Do otisku počty nevstupují — počítají se až po `programZaznam`, takže
+   * otisk zůstává otiskem CEN, ne metadat. */
+  nova.zmeny = {
+    cr: programRozdily(zaklad, ctx).length,
+    zahr: programRozdilyZahr(zaklad.platny, ctx).length,
+    protiVerzi: +stary.verze || 0,
+  };
   stary.platnoDo = nova.platnoOd;
   const historie = [stary].concat(zaklad.historie).slice(0, PROG_HISTORIE_MAX);
   return {
@@ -395,6 +461,7 @@ function programPrenosZahrPocet(d) {
 
 if (typeof module !== 'undefined')
   module.exports = { PROG_SOUBOR, PROG_SCHEMA, PROG_APLIKACE, PROG_HISTORIE_MAX, PROG_ODDILY,
+    PROG_OTISK_VERZE,
     progOtiskText, programData, programRozdilyZahr, programOtisk, programZaznam, programNovy, programNormalizuj,
     programRozdily, programBezeZmeny, programNovaVerze, programVerze, programProDatum,
     programPocetKatalogu, programPopisVerze, programSouhrn,

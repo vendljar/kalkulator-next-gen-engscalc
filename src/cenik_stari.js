@@ -477,6 +477,19 @@ function cenikPrepoctiRozpracovane(zak, dnesni, opts) {
 
   zak.varianty.forEach(v => {
     if (!v || !v.data) return;
+    /* CHYBNÁ ZNAČKA SE SROVNÁ I U UZAMČENÉ VARIANTY (P2, nálezy N2/N3,
+     * 21. 9. 2026). Stojí to SCHVÁLNĚ před kontrolou zámku o pár řádků níž:
+     * uzamčená varianta se nepřepočítává, takže značku, kterou jí kdysi
+     * vtiskl server, neměl kdo smazat — a ta pak vypínala tisk nabídky
+     * u zakázek, které ceník mají (ostré 0383 a 377).
+     *
+     * CENY SE NEMĚNÍ. `ukazkoveSrovnejSObsahem` jen odebere značku, které
+     * obsah odporuje (ceník má nenulová čísla, takže prázdný není). Zámek
+     * chrání ČÍSLA, ne nálepku, která o nich lže. */
+    if (typeof ukazkoveSrovnejSObsahem === 'function') {
+      if (ukazkoveSrovnejSObsahem(v.data.cenik)) vysledek.znacky++;
+      if (v.data.proj && ukazkoveSrovnejSObsahem(v.data.proj.cenik)) vysledek.znacky++;
+    }
     /* Ceník se bere PODLE ŘADY VARIANTY: zahraniční varianta se srovnává
      * se zahraniční řadou, ne s tuzemskou. Bez toho se každá odchylka
      * tvářila jako zastaralá cena (jádro nálezu V23). */

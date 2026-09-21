@@ -7,6 +7,17 @@
 /* Nová varianta = klon otevřené. Od #34 jde přes klonujVariantu, aby dostala
  * vlastní příponu čísla nabídky (.1, .2 …) a nezdědila zámek zdroje. */
 function varNova() {
+  /* NOVÁ VARIANTA V ZAMČENÉ ZAKÁZCE SE TIŠE ZTRÁCELA (P3, nález N4,
+   * 21. 9. 2026). Zakázka otevřená z databáze je jen ke čtení, ale tohle
+   * tlačítko zámek neznalo: variantu vyrobilo, na obrazovce se objevila
+   * a vypadala jako hotová práce — jenže autosave i „Uložit zakázku"
+   * v zamčeném stavu mlčely, takže po Ctrl+F5 byla pryč.
+   *
+   * `zamekCteniStop()` nabídne odemknutí. Varianta se ani po odemknutí
+   * nezaloží sama: člověk klikne znovu, už v odemčené zakázce. Dodatečné
+   * provedení akce, kterou dialog jen odklepl, je přesně ten druh
+   * překvapení, kterému se tu vyhýbáme. */
+  if (typeof zamekCteniStop === 'function' && zamekCteniStop()) return;
   const zdroj = aktivniVarianta(ZAK);
   const v = (typeof klonujVariantu === 'function')
     ? klonujVariantu(ZAK, zdroj.id, { nazev: 'Varianta ' + (ZAK.varianty.length + 1) })

@@ -4387,6 +4387,60 @@
    "hotovoKdyz" : "Splněno: kouřový test 50 OK / 0 FAIL nad sestaveným `dist/kalkulacka.html`, plná sada 106 prošlo / 0 selhalo (1 přeskočeno — `test.js` potřebuje skutečný ceník mimo repozitář).",
    "kde" : "`smoke.mjs` (štítek režimu), `src/app_template.html` (výchozí podoba `#rezimPill`)",
    "pozn" : "Kontrolu výchozího modelu hlídají i dva testy v `src/test_zakazka.js` doplněné v dávce, která model měnila — ty prošly. Kouřový test je jediné místo, kde se režim čte z vykreslené hlavičky, a právě tam domněnka zůstala.\n\n**Zbývá k rozhodnutí J. V.:** roadmapa zaostala za kódem o tři dávky. Do souboru se nezapsalo #267 (dodatkový text k položce v nabídce) ani #268, pod kterým odešly DVĚ dávky opláštění po stěnách (rozpojení plochy na stěny A–D a pak výpočet s typy a kontrolou standardu); `meta.build` zůstala na v17.9.3, přestože poslední z nich je z 18. 9. Obě čísla jsou tím obsazená zprávami commitů, tahle položka má proto 269 — čísla se podle pravidel roadmapy nepoužívají podruhé. Dopsat obsah #267 a #268 přísluší jejich dávkám, ne téhle."
+  },
+  {
+   "id": "270",
+   "vlna": "A",
+   "stav": "hotovo",
+   "dulezitost": "",
+   "slozitost": "M",
+   "hotovoV": "v21.9.2",
+   "nazev": "Zahraniční ceny se dostaly do tuzemského ceníku (kolo 6, P1)",
+   "proc": "Platný ceník verze 27 měl u čtrnácti položek v ČR sloupci zahraniční hodnoty. Nebyl to překlep: zveřejnění bere ceník AKTIVNÍ VARIANTY a přepnutí varianty na řadu Zahraničí do něj zahraniční ceny vtiskne. Kdo pak nad toutéž variantou klikl na „Zveřejnit ceník jako platný\", propsal je do každé budoucí tuzemské nabídky.",
+   "detail": "Zveřejnění z varianty s řadou „zahr\" je nově ZAKÁZANÉ — v aplikaci i na serveru, protože dialog jde obejít. Druhá pojistka chytí i podklad, ze kterého někdo značku řady odstranil: shoduje-li se ČR cena se zahraniční odchylkou u víc než pěti položek, zveřejnění se zastaví a položky se vypíšou. Runtime klíče `rada` a `jenZahr` se do platného ceníku nezapisují vůbec (u varianty je pokaždé znovu složí cenikSlozRadu).\n\nDialog zveřejnění nově ukazuje řadu varianty a rozdíly ZVLÁŠŤ pro ČR a zvlášť pro ZAHR — dřív to bylo jedno číslo „změněných položek ceníku\", ve kterém přesně tahle chyba nebyla vidět. Do historie verzí se ukládají počty změn proti předchozí verzi.\n\nPŘI TÉ PŘÍLEŽITOSTI zmizelo falešné varování „do souboru někdo sáhl ručně\": vzorec otisku se dvakrát změnil (#181 zahraniční odchylky, #267 dodatkové texty), takže varování svítilo u VŠECH 27 verzí a přestalo být varováním. Každá verze si teď pamatuje verzi vzorce a porovnává se jen se shodnou; skutečný zásah se pozná dál.",
+   "hotovoKdyz": "Splněno: nová sada test_cenik_zverejneni.js (26 kontrol) ověřuje zákaz, obě pojistky, očistu klíčů, verzi vzorce otisku i počty změn.",
+   "kde": "`src/cenik_rady.js` (cenikZverejneniKontrola, cenikZverejneniOcisti), `src/program.js` (PROG_OTISK_VERZE, počty změn), `src/ui/program_ui.js`, `src/ui/online_ui.js`, `netlify/functions/program.mjs`, `src/test_cenik_zverejneni.js`",
+   "pozn": "**Vadnou verzi 27 tahle dávka NEOPRAVUJE** — ceník zveřejňuje administrátor sám. Postup k vydání opravené verze 28 (ČR z v26 + zahraniční řada z v27) je v `POSTUP_CENIK_V28_2026-09-21.md`.\n\n**Zbývá:** uzamčené nabídky spočítané z v27 se nepřepočítají (a nemají — je to doklad o tom, co odešlo zákazníkovi). Nabídky vystavené mezi 17. a 21. 9. 2026 je potřeba projít ručně."
+  },
+  {
+   "id": "271",
+   "vlna": "A",
+   "stav": "hotovo",
+   "dulezitost": "",
+   "slozitost": "M",
+   "hotovoV": "v21.9.2",
+   "nazev": "Server značkoval zakázky jako „ukázkový ceník\" a vypínal tisk nabídek (kolo 6, P2)",
+   "proc": "Na ostrých zakázkách 0383 a 377 svítila červená lišta „Ceník není nahraný — všude svítí nuly\" a tlačítka „Kompletní náhled a tisk nabídky\" i „Vytvořit nabídku (Word)\" byla vypnutá, přestože ceník v zakázce byl. Obchodník nemohl vystavit nabídku.",
+   "detail": "Příčina: server při uložení zakázky doplňoval chybějící klíče ceníku z DEFAULT_CENIK ze sestavení. To je pro GitHub VYNULOVANÉ a nese značky `ukazkove: true` a `prazdny: true` — a doplňování je vtisklo do každé varianty. Klient je neposlal, ale v uloženém souboru je měl (ověřeno porovnáním JSON.stringify(ZAK) proti GET). U uzamčených variant, které se při otevření zakázky nepřepočítávají, tam zůstaly napořád.\n\nOpraveno na třech místech: `cenikDoplnKlice` značky ze vzoru nedoplňuje (jedno místo pro klienta i server, chybějící CENY doplňuje dál — nález V38 platí); server je odstraňuje před zápisem; a aplikace si značku srovná podle SKUTEČNÉHO OBSAHU i u uzamčené varianty, bez přepočtu cen. Srovnání záměrně jen ODEBÍRÁ, nikdy nepřidává — nenulové ceny jsou tvrdý důkaz, že ceník prázdný není, kdežto opačný směr by byl dohad a vypnul by tisk u zakázky, která dnes funguje.",
+   "hotovoKdyz": "Splněno: uložit → načíst → JSON bez značek (netlify/test_funkce.mjs); uzamčená varianta s reálnými cenami značku ztratí a ceny se nehnou (src/test_ukazkove_znacky.js, 24 kontrol).",
+   "kde": "`src/engine.js` (CENIK_NEDOPLNOVAT), `src/ukazkove.js` (ukazkoveMaCisla, ukazkoveSrovnejSObsahem), `src/cenik_stari.js`, `netlify/functions/zakazky.mjs`, `nastroje/migrace_znacky.mjs`",
+   "pozn": "Starší zakázky se srovnají samy, jakmile je někdo otevře a uloží. Pro hromadnou nápravu je `nastroje/migrace_znacky.mjs` (náhled → potvrzení → zápis, nic nemaže, zapisuje do protokolu zakázky). **Skript zatím neběžel proti skutečné databázi** — pustit nejdřív na testovacím webu bez `--zapsat`.\n\n**Nález při práci:** první verze serverové očisty odstraňovala značky až těsně před zápisem, takže se uložená varianta přestala rovnat té klientské a kontrola „nesmí se změnit data uzamčené nabídky\" odmítala legitimní uložení s 409. Chytila to sada test_prava.mjs. Čistí se proto obě strany porovnání."
+  },
+  {
+   "id": "272",
+   "vlna": "A",
+   "stav": "hotovo",
+   "dulezitost": "",
+   "slozitost": "M",
+   "hotovoV": "v21.9.2",
+   "nazev": "Zakázka jen ke čtení tiše zahazovala práci (kolo 6, P3)",
+   "proc": "Zakázka otevřená z databáze je jen ke čtení, ale pole zůstávala editovatelná, „+ Nová varianta\" i kopie ⧉ variantu vyrobily a automatické ukládání i „Uložit zakázku\" mlčely. Jediná zmínka o tom šla do karty Databáze — tedy tam, kam se v tu chvíli nikdo nedívá. Po Ctrl+F5 byla práce pryč.",
+   "detail": "Obě cesty, které vyráběly variantu do ztracena, teď nabídnou odemknutí. Tlačítko uložení se v tomhle stavu jmenuje „🔒 Odemknout a uložit\" — nápis říká, co se opravdu stane, místo aby sliboval uložení, které neproběhne. Odmítnutí dialogu nově překreslí obrazovku, aby v poli nezůstala hodnota, která v datech není.\n\nStav „jen ke čtení\" dostal výrazný štítek v liště nad kalkulací, jantarový: červená už v téže liště znamená „odeslaná nabídka, needituje se\", což je jiný stav, a dvě různé věci nesmějí mít stejnou barvu. Štítek má přednost před stavem varianty — dokud zámek okna platí, neuloží se nic, ať je varianta jakákoli.\n\nNová akce „Duplikovat jako novou zakázku\" řeší to, co lidé obcházeli přepisováním čísla u otevřené staré zakázky (a tím o ni přicházeli). Kopíruje hlavičku, zadání a ceníky; nekopíruje zámky, doklady o odemčení, poznámky ani přílohy a nedědí identitu uložené předlohy (razítko, autor) — jinak by první uložení přepsalo původní zakázku.",
+   "hotovoKdyz": "Splněno: nová sada test_zakazka_duplikace.js (23 kontrol) hlídá, co se kopíruje a co ne, že se předloha nezmění a že duplikát je hluboká kopie; návrh dalšího čísla zachová vedoucí nuly.",
+   "kde": "`src/zakazka.js` (zakazkaDuplikuj, zakazkaCisloDalsi), `src/ui/seznam_ui.js`, `src/ui/zakazka_ui.js`, `src/ui/zakulozeni_ui.js`, `src/ui/common.js`, `src/app_template.html`",
+   "pozn": "Duplikace se záměrně NEPTÁ na zámek čtení: předlohu vůbec nemění, čte z ní a vyrábí vedle novou zakázku — tedy přesně ten bezpečný postup, kvůli kterému vznikla."
+  },
+  {
+   "id": "273",
+   "vlna": "B",
+   "stav": "ceka",
+   "dulezitost": "vysoka",
+   "slozitost": "M",
+   "nazev": "Kolo 6 — zbývající opravy P4 až P9",
+   "proc": "Kolo 6 testování (zakázky CN-0383 a CN-0377/377) přineslo devět oprav. Dávka v21.9.2 odbavila prioritu 1, tedy P1 až P3. Zbytek čeká a bez zápisu by se na něj zapomnělo.",
+   "detail": "P4 — příznak „jen zahraniční\" respektovat ve VŠECH cestách, kde se sestavují položky varianty (nová zakázka, přepočet na dnešní ceník, převzetí ceníku z historie, přepnutí řady). Dnes se položka Překlady CZ→DE vrátí do ČR zakázky při přepočtu. Nález N6, priorita 2.\n\nP5 — tichý přepočet při otevření zakázky: ukázat dialog s rozdílem (verze ceníku, počet změněných položek, Δ ceny) a nabídnout ponechání původního ceníku. Nálezy N7 a N22, priorita 2.\n\nP6 — migrace staré položky stříšky: zakázky z doby před změnou nesou obě položky naráz a stříšky se počítají dvakrát. Nález N10, priorita 2.\n\nP7 — tisk nabídky OCK: chybí kapitoly III. až VI., doložky a překlady, které wordová šablona má. Nálezy N15 a N16, priorita 2.\n\nP8 — výchozí nastavení nové zakázky a devět otázek k rozhodnutí (výchozí model výpočtu, automatický ATYP, výchozí volitelné položky, tmelení, montáž, statika, lešení, DPH u zahraniční řady, hmotnost spojky). Nálezy N8, N9, N11–N14, N18. **Je to podklad k ROZHODNUTÍ, ne k nasazení.**\n\nP9 — technická specifikace: věta o oplechování soklu prohlubně se tiskne v sekci „SOUČÁSTÍ DODÁVKY NENÍ\", ačkoli součástí dodávky je. Nález N17, priorita 3.",
+   "kde": "zadání je v prompt souboru kola 6; čísla a dopady v Kč jsou ve vyhodnocovacím sešitu na Drive (složka Testovani)",
+   "pozn": "P8 vyžaduje rozhodnutí J. V. ke každé z devíti voleb — dokud nepadne, nemá smysl kódovat. P4 je z nich nejnaléhavější: mění cenu ČR zakázky po pouhém znovuotevření."
   }
  ],
  "meta" : {
@@ -4898,7 +4952,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v21.9.1 (engscalc)",
+  "build" : "v21.9.2 (engscalc)",
   "stavKDatu" : "21. 9. 2026"
  },
  "_comment" : [

@@ -336,20 +336,22 @@ function onlineVerzeInfo() {
 async function onlineZverejni(preddanaPozn) {
   if (!jeAdminOnline()) { onlineZprava('Zveřejnit ceník smí jen administrátor.', 'varovani'); render(); return Promise.resolve(false); }
   const ctx = progKontext('');
+  /* Táž zábrana jako u složkové cesty (P1). Obě cesty berou podklad ze
+   * `progKontext`, takže by bez ní online zveřejnění zůstalo otevřené —
+   * a právě tudy odešla vadná verze 27. */
+  if (typeof progZverejniPojistka === 'function' && !progZverejniPojistka(ctx))
+    return Promise.resolve(false);
   if (ONLINE_STAV.db && programBezeZmeny(ONLINE_STAV.db, ctx)) {
     onlineZprava('Ceník této varianty se od online verze neliší – není co zveřejňovat.');
     render(); return Promise.resolve(false);
   }
-  const rozdily = ONLINE_STAV.db ? programRozdily(ONLINE_STAV.db, ctx) : [];
   const zahrPocet = (ctx.zahranicni && ctx.zahranicni.ceny)
     ? Object.keys(ctx.zahranicni.ceny).length : 0;
-  const shrnuti = (ONLINE_STAV.db
-    ? (rozdily.length ? rozdily.length + ' změněných položek ceníku' : 'ceník beze změny, mění se katalog nebo slevy')
-    : 'založení online databáze programu')
-    + (zahrPocet ? ' · zahraniční řada: ' + zahrPocet + ' odchylek' : '');
   const pozn = (typeof preddanaPozn === 'string') ? preddanaPozn
     : await dotaz('Zveřejnit ceník aktivní varianty jako platný ONLINE pro celý program?\n\n'
-    + shrnuti + '.\nOd této chvíle z něj budou vycházet nové nabídky všech přihlášených.\n'
+    + progZverejniRozpis(ONLINE_STAV.db, ctx)
+    + (zahrPocet ? '\n\nZahraniční řada nese celkem ' + zahrPocet + ' odchylek.' : '')
+    + '\n\nOd této chvíle z něj budou vycházet nové nabídky všech přihlášených.\n'
     + 'Rozpracované nabídky se přepočítají samy, vytištěné (uzamčené) zůstanou beze změny.'
     + '\n\nČím se změna zdůvodňuje (nepovinné):', '');
   if (pozn === null) return Promise.resolve(false);
@@ -358,6 +360,10 @@ async function onlineZverejni(preddanaPozn) {
   return onlineApi('/api/program', {
     cenik: ctx.cenik, cenikProj: ctx.cenikProj, zahranicni: ctx.zahranicni,
     katalog: ctx.katalog,
+    /* Řada varianty se posílá schválně, i když si ji server umí odvodit
+     * z klíče `rada` v ceníku: ten z podkladu odstraňuje `progKontext`,
+     * takže bez tohohle pole by serveru zbyla jen nepřímá pojistka (P1). */
+    rada: ctx.rada,
     slevy: ctx.slevy, poznamka: pozn, build: ctx.build,
   }).then(o => {
     onlineZprava('Zveřejněno online – platí verze ' + o.verze + '.');

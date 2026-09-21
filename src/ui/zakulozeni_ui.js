@@ -91,9 +91,18 @@ function zakTrojice() {
   const pracuje = ONLINE_STAV.pracuje || ULO_STAV.pracuje || ZAKULO_STAV.uklada;
   /* mousedown řeší ztracený první klik (viz zakUlozMousedown), onclick
    * zůstává pro klávesnici. Během zápisu tlačítko říká, co dělá. */
-  return `<button class="mini${ceka ? ' vyzva' : ''}${ulozeno ? ' ulozeno-ok' : ''}" ${pracuje ? 'disabled' : ''}
-      title="uložit otevřenou zakázku ${kam}"
-      onmousedown="zakUlozMousedown()" onclick="zakUlozUI()">${ZAKULO_STAV.uklada ? '⏳ Ukládám…' : '💾 Uložit zakázku'}</button>
+  /* TLAČÍTKO NESMÍ SLIBOVAT ULOŽENÍ, KTERÉ NEPROBĚHNE (P3, nález N4,
+   * 21. 9. 2026). V zakázce otevřené jen ke čtení se po kliknutí nic
+   * nezapsalo a vysvětlení šlo jen do karty Databáze — tedy tam, kam se
+   * v tu chvíli nikdo nedíval. Nápis proto říká, co se opravdu stane:
+   * nejdřív odemknout, pak uložit. Samotné odemknutí nabídne dialog. */
+  const jenCteni = (typeof zamekCteniJe === 'function') && zamekCteniJe();
+  const popis = ZAKULO_STAV.uklada ? '⏳ Ukládám…'
+    : (jenCteni ? '🔒 Odemknout a uložit' : '💾 Uložit zakázku');
+  return `<button class="mini${ceka && !jenCteni ? ' vyzva' : ''}${ulozeno && !jenCteni ? ' ulozeno-ok' : ''}" ${pracuje ? 'disabled' : ''}
+      title="${jenCteni ? 'zakázka je otevřená jen ke čtení — nejdřív ji odemkněte k úpravám'
+        : 'uložit otevřenou zakázku ' + kam}"
+      onmousedown="zakUlozMousedown()" onclick="zakUlozUI()">${esc(popis)}</button>
     <button class="mini cteni-ok" title="otevřít jinou zakázku (${kam})" onclick="zakNactiUI()">📂 Načíst zakázku</button>
     <button class="mini cteni-ok" title="začít novou prázdnou zakázku" onclick="novaZakazkaUI()">✚ Nová zakázka</button>`;
 }
@@ -217,6 +226,14 @@ function zakUlozUI() {
   const ted = Date.now();
   if (ted - _zakUlozPosledni < 400) return Promise.resolve(false);
   _zakUlozPosledni = ted;
+  /* ZAMČENÁ ZAKÁZKA: nabídnout odemknutí, ne mlčet (P3, nález N4).
+   * Do 21. 9. 2026 se kliknutím na „Uložit zakázku" neuložilo nic a jediná
+   * zmínka o tom skončila v kartě Databáze. Uživatel odcházel s dojmem,
+   * že je práce uložená. `zamekCteniStop()` otevře dialog s odemknutím;
+   * po odemčení se uloží dalším kliknutím — tady se nic neprovádí
+   * dodatečně, aby se do odemčené zakázky nezapsalo nic, co člověk jen
+   * odklepl v dialogu. */
+  if (typeof zamekCteniStop === 'function' && zamekCteniStop()) return Promise.resolve(false);
   const s = zakUlozeniStav();
   if (s.stav === 'vyplnit') {
     zakUlozeniZprava('Vyplňte v hlavičce: ' + s.chybi.join(', ')

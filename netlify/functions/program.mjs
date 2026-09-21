@@ -45,6 +45,22 @@ export default async (req) => {
                 katalog: t.katalog || null,
                 slevy: t.slevy || null, kdo: relace.email, poznamka: String(t.poznamka || ''),
                 build: String(t.build || '') };
+
+  /* ZAHRANIČNÍ CENY DO TUZEMSKÉ ŘADY NEPROJDOU (P1, nález N1, 21. 9. 2026).
+   *
+   * Tatáž kontrola běží i v dialogu aplikace, ale tady musí být taky: dialog
+   * jde obejít a server klientovi nevěří (viz bezpečnostní audit). Řada se
+   * pozná z klíče `rada`, který do ceníku zapsal `cenikRadaPrepni` při
+   * přepnutí varianty na Zahraničí — tedy přesně z toho, co vadnou verzi 27
+   * prozradilo. Druhá větev (shoda ČR se zahraniční odchylkou u víc než pěti
+   * položek) chytí i podklad, ze kterého klíč někdo odstranil.
+   *
+   * Klíče `rada` a `jenZahr` se ze zveřejněného ceníku zahazují v jádru
+   * (programZaznam), takže se sem nedostanou ani oklikou přes soubor. */
+  const posudek = globalThis.cenikZverejneniKontrola(ctx, ctx.zahranicni, t.rada);
+  if (!posudek.ok)
+    return json({ ok: false, kod: posudek.kod, chyba: posudek.duvod,
+      polozky: (posudek.shody || []).map(s => s.popis) }, 400);
   let db = await s.cti('db');
   if (!db) db = globalThis.programNovy(ctx);
   else {

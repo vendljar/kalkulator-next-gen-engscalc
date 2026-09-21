@@ -81,6 +81,47 @@ function ukazkoveSrovnejZnacku(cil, zdroj) {
   return cil;
 }
 
+/* Je v ceníku aspoň jedna nenulová hodnota? (P2, nálezy N2/N3, 21. 9. 2026.)
+ *
+ * Vynulovaný ceník ze sestavení pro GitHub má nuly VŠUDE — včetně sazby DPH
+ * a stropů slev. Jediné nenulové číslo tedy znamená, že ceny odněkud přišly
+ * a prázdný ceník to není. Texty (dodatkové popisy položek) se nepočítají:
+ * popis u nulové sazby cenu nedělá. */
+function ukazkoveMaCisla(o) {
+  if (!o || typeof o !== 'object') return false;
+  return Object.keys(o).some(k => {
+    if (k === UKAZKOVE_KLIC || k === PRAZDNY_KLIC || k === 'popisy') return false;
+    const h = o[k];
+    if (typeof h === 'number') return isFinite(h) && h !== 0;
+    if (h && typeof h === 'object') return ukazkoveMaCisla(h);
+    return false;
+  });
+}
+
+/* Srovnání značky podle SKUTEČNÉHO OBSAHU ceníku (P2, nálezy N2/N3).
+ *
+ * `ukazkoveSrovnejZnacku` výš umí srovnat cíl podle ZDROJE, ze kterého čísla
+ * přišla. To ale nestačí tam, kde žádný zdroj není: uzamčená varianta se při
+ * otevření zakázky schválně nepřepočítává, takže chybnou značku, kterou jí
+ * kdysi vtiskl server, nemá co smazat. Zůstala tam napořád a vypínala tisk
+ * nabídky u zakázek, které ceník mají (ostré 0383 a 377).
+ *
+ * ZÁMĚRNĚ JEN ODEBÍRÁ, NIKDY NEPŘIDÁVÁ. Nenulové ceny dokazují, že ceník
+ * prázdný ani ze sestavení není — to je tvrdý fakt a značka se smí zahodit.
+ * Opačný směr by byl dohad: ceník samých nul může být rozdělaná práce, a
+ * kdyby mu tahle funkce značku přidala, vypnula by tisk u zakázky, která
+ * dnes funguje. Opravovat se má nález, ne zavádět nový.
+ *
+ * Vrací true, když se něco změnilo (volající pak ví, že má překreslit). */
+function ukazkoveSrovnejSObsahem(o) {
+  if (!o || typeof o !== 'object') return false;
+  if (!ukazkoveMaCisla(o)) return false;
+  const melo = ukazkoveJe(o) || ukazkovePrazdny(o);
+  if (!melo) return false;
+  ukazkoveOcisti(o);
+  return true;
+}
+
 /* Kopie bez značky – tam, kde se originál přepsat nesmí. */
 function ukazkoveBez(o) {
   if (!o || typeof o !== 'object') return o;
@@ -200,6 +241,7 @@ function ukazkoveVyctem(stav) {
 if (typeof module !== 'undefined')
   module.exports = { UKAZKOVE_KLIC, PRAZDNY_KLIC, ukazkoveJe, ukazkovePrazdny,
                      ukazkoveOcisti, ukazkoveSrovnejZnacku,
+                     ukazkoveMaCisla, ukazkoveSrovnejSObsahem,
                      ukazkoveBez, ukazkoveStav, ukazkoveText,
                      ukazkoveKratce, ukazkoveVyctem, ukazkoveBraniDokumentu,
                      ukazkoveKudy, ukazkovePripojeni };

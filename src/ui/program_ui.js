@@ -222,9 +222,18 @@ function progKontext(poznamka) {
   };
   const VZOR_OCK = (typeof DEFAULT_CENIK !== 'undefined') ? DEFAULT_CENIK : null;
   const VZOR_PROJ = (typeof DEFAULT_CENIK_PROJ !== 'undefined') ? DEFAULT_CENIK_PROJ : null;
+  /* Klíče řady (`rada`, `jenZahr`) se z podkladu odstraňují UŽ TADY, ne až
+   * v programZaznam (kde stojí tvrdá pojistka). Důvod: `programBezeZmeny`
+   * porovnává tenhle kontext s uloženou verzí, a ta klíče nemá — bez očisty
+   * by se každý podklad tvářil jako změněný. */
+  const bezRady = o => (typeof cenikZverejneniOcisti === 'function') ? cenikZverejneniOcisti(o) : o;
   return {
-    cenik: bez(doplneno(d.cenik || {}, VZOR_OCK)),
+    cenik: bezRady(bez(doplneno(d.cenik || {}, VZOR_OCK))),
     cenikProj: bez(doplneno((d.proj && d.proj.cenik) || {}, VZOR_PROJ)),
+    /* Řada VARIANTY, ze které podklad vznikl. Nezapisuje se do databáze
+     * programu (programZaznam bere jen jmenovaná pole) — slouží kontrole
+     * před zveřejněním a výpisu v dialogu. */
+    rada: (typeof cenikRadaVarianty === 'function') ? cenikRadaVarianty(d) : 'cr',
     /* Zahraniční odchylky nejsou ceníkem VARIANTY (ta má jen jednu řadu),
      * ale samostatnou tabulkou, kterou spravuje administrátor v Ceníku. */
     zahranicni: (typeof CENIK_ZAHR !== 'undefined') ? CENIK_ZAHR : { ceny: {}, jenZahr: {} },
@@ -234,6 +243,50 @@ function progKontext(poznamka) {
     kdo: (typeof zamekKdo === 'function') ? zamekKdo() : '',
     poznamka: poznamka || '',
   };
+}
+
+/* ZÁBRANA PŘED ZVEŘEJNĚNÍM (P1, nálezy N1/N20/N6, 21. 9. 2026).
+ *
+ * Vrací true, když se smí pokračovat. Při zádrhelu sama napíše důvod do
+ * hlášky (včetně výpisu konkrétních položek) — volající jen skončí.
+ * Rozhodnutí samo dělá model (`cenikZverejneniKontrola`), aby totéž mohl
+ * uplatnit server; tady zůstává jen vypsání člověku.
+ *
+ * Proč zábrana a ne dotaz „opravdu?": zveřejnění se propíše do KAŽDÉ budoucí
+ * nabídky a pozná se to až u zákazníka. Verze 27 takhle nesla čtrnáct
+ * zahraničních cen v tuzemské řadě tři dny, než si toho někdo všiml. */
+function progZverejniPojistka(ctx) {
+  if (typeof cenikZverejneniKontrola !== 'function') return true;
+  const zahr = (typeof CENIK_ZAHR !== 'undefined') ? CENIK_ZAHR : null;
+  const v = cenikZverejneniKontrola(ctx, zahr, ctx && ctx.rada);
+  if (v.ok) return true;
+  const seznam = (v.shody && v.shody.length)
+    ? '\n\nPoložky se shodnou cenou:\n' + v.shody.map(s => ' • ' + s.popis).join('\n')
+    : '';
+  progZprava('Zveřejnění zastaveno. ' + v.duvod + seznam, 'varovani');
+  if (typeof render === 'function') render();
+  return false;
+}
+
+/* Rozpis změn do dialogu — ZVLÁŠŤ tuzemská řada a zvlášť zahraniční.
+ * Do 21. 9. 2026 se vypisoval jediný počet „změněných položek ceníku",
+ * ve kterém nešlo rozeznat, jestli se sahá na české ceny, nebo na odchylky
+ * (nález N20). Správce tak neměl z čeho poznat, že zveřejňuje něco jiného,
+ * než čekal. */
+function progZverejniRozpis(db, ctx) {
+  const rada = (ctx && ctx.rada) === 'zahr' ? 'Zahraničí' : 'ČR';
+  if (!db) return 'Založí se databáze programu (varianta: řada ' + rada + ').';
+  const cr = (typeof programRozdily === 'function') ? programRozdily(db, ctx) : [];
+  const zahr = (typeof programRozdilyZahr === 'function') ? programRozdilyZahr(db, ctx) : [];
+  const radek = (nadpis, pole) => nadpis + ': ' + (pole.length
+    ? pole.length + ' ' + (pole.length === 1 ? 'položka' : (pole.length < 5 ? 'položky' : 'položek'))
+      + '\n' + pole.slice(0, 12).map(r => '   • ' + r.popis).join('\n')
+      + (pole.length > 12 ? '\n   … a další ' + (pole.length - 12) : '')
+    : 'beze změny');
+  return 'Varianta, ze které se zveřejňuje: řada ' + rada + '\n\n'
+    + radek('Tuzemská řada (ČR)', cr) + '\n'
+    + radek('Zahraniční odchylky (ZAHR)', zahr)
+    + ((!cr.length && !zahr.length) ? '\n\nCeník beze změny — mění se katalog nebo slevy.' : '');
 }
 
 async function progZverejni(preddanaPozn) {
@@ -250,17 +303,15 @@ async function progZverejni(preddanaPozn) {
       + '\n\nZaložit ji znovu od této verze? Původní soubor se přepíše a historie starších cen se ztratí.')) return Promise.resolve(false);
   }
   const ctx = progKontext('');
+  if (!progZverejniPojistka(ctx)) return Promise.resolve(false);
   if (PROG_STAV.db && programBezeZmeny(PROG_STAV.db, ctx)) {
     progZprava('Ceník této varianty se od platné verze neliší – není co zveřejňovat.');
     render(); return Promise.resolve(false);
   }
-  const rozdily = PROG_STAV.db ? programRozdily(PROG_STAV.db, ctx) : [];
-  const shrnuti = PROG_STAV.db
-    ? (rozdily.length ? rozdily.length + ' změněných položek ceníku' : 'ceník beze změny, mění se katalog nebo slevy')
-    : 'založení databáze programu ve složce';
   const pozn = (typeof preddanaPozn === 'string') ? preddanaPozn
     : await dotaz('Zveřejnit ceník aktivní varianty jako platný pro celý program?\n\n'
-    + shrnuti + '.\nOd této chvíle z něj budou vycházet nové nabídky.\n'
+    + progZverejniRozpis(PROG_STAV.db, ctx)
+    + '\n\nOd této chvíle z něj budou vycházet nové nabídky.\n'
     + 'Rozpracované nabídky se přepočítají samy, vytištěné (uzamčené) zůstanou beze změny.'
     + '\n\nČím se změna zdůvodňuje (nepovinné):', '');
   if (pozn === null) return Promise.resolve(false);
@@ -683,6 +734,13 @@ function progRadekHtml(z, platna) {
       ${z.poznamka ? `<div class="note" style="margin-top:0">Zdůvodnění: ${esc(z.poznamka)}</div>` : ''}
       ${z.otiskNesedi ? `<div class="seznam-varovani">Pozor: otisk zapsaný v souboru (${esc(z.otiskNesedi)}) neodpovídá datům.
         Do souboru zřejmě někdo sáhl ručně mimo aplikaci.</div>` : ''}
+      ${z.otiskStaryVzorec !== undefined ? `<div class="note">Tuhle verzi orazítkoval starší vzorec otisku${
+        z.otiskStaryVzorec ? ' (č. ' + esc(String(z.otiskStaryVzorec)) + ')' : ''}, než do něj přibyly
+        zahraniční odchylky a dodatkové texty. Netknutost proto doložit nejde — není to známka
+        ručního zásahu, jen se tu nedá ověřit ani jeho opak.</div>` : ''}
+      ${z.zmeny ? `<div class="note">Proti verzi ${+z.zmeny.protiVerzi}: <b>${+z.zmeny.cr}</b>
+        ${+z.zmeny.cr === 1 ? 'změna' : (+z.zmeny.cr < 5 ? 'změny' : 'změn')} v tuzemské řadě,
+        <b>${+z.zmeny.zahr}</b> v zahraničních odchylkách.</div>` : ''}
       ${rozdily.length ? `<table class="sd-tbl"><thead><tr><th>Položka</th><th style="text-align:right">Předtím</th>
           <th style="text-align:right">Od této verze</th><th style="text-align:right">Změna</th></tr></thead><tbody>
         ${rozdily.map(r => `<tr><td style="text-align:left">${esc(r.popis || r.cesta)}</td>

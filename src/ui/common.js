@@ -796,6 +796,17 @@ function card(title, inner, closed = false, id = '') {
 function variantaStavPill() {
   const v = (typeof aktivniVarianta === 'function') ? aktivniVarianta(ZAK) : null;
   if (!v) return '';
+  /* JEN KE ČTENÍ MÁ PŘEDNOST PŘED STAVEM VARIANTY (P3, nález N4,
+   * 21. 9. 2026). Stav zakázky se dosud hlásil jen lištou nahoře, která
+   * po odrolování zmizela — a štítek vedle čísla nabídky přitom tvrdil
+   * „● Nabídka aktivní", tedy pravý opak toho, co se s prací stane.
+   * Zámek okna je silnější zpráva než stav varianty: dokud platí, neuloží
+   * se nic, ať je varianta v jakémkoli stavu. */
+  if (typeof zamekCteniJe === 'function' && zamekCteniJe())
+    return `<span class="stav-pill cteni" title="Zakázka je otevřená z databáze jen ke čtení — `
+      + `dokud ji vědomě neodemknete, žádná změna se neuloží. Odemyká se tlačítkem v liště `
+      + `nahoře nebo tlačítkem „Odemknout a uložit“."
+      >🔒 Jen ke čtení — neukládá se</span>`;
   const z = (typeof zamekInfo === 'function') ? zamekInfo(v) : null;
   /* Text je celá věta (21. 8. 2026, zadání J. V.): samotné „aktivní" vedle
    * čísla nabídky se dalo číst i jako stav zakázky nebo účtu. Štítek sedí
@@ -1608,8 +1619,17 @@ function zamekCteniStop() {
       + 'Odemknout k úpravám teď? Hodnotu pak zadejte znovu; od té chvíle se změny zase '
       + 'ukládají samy. Dokud je zamčená, nic se do databáze nezapisuje — otevřít si ji '
       + 'a jen se podívat je bezpečné.',
-      { nadpis: 'Nabídka jen ke čtení', ano: 'Odemknout k úpravám', ne: 'Nechat zamčené' })
-      .then(ano => { hotovo(); if (ano) zamekCteniOdemkniUI(); }, hotovo);
+      { nadpis: 'Nabídka jen ke čtení', ano: 'Odemknout a pokračovat', ne: 'Zůstat jen ke čtení' })
+      /* ZŮSTAT ZNAMENÁ, ŽE SE ZMĚNA NEPROVEDE — A MUSÍ TO BÝT VIDĚT
+       * (P3, nález N4, 21. 9. 2026). Zablokovaný zápis se dodatečně
+       * neprovádí, jenže napsaná hodnota zůstávala v políčku a tvářila se
+       * jako uložená; po obnovení stránky byla pryč. `render()` vrátí do
+       * polí to, co je v datech, takže obrazovka zase říká pravdu. */
+      .then(ano => {
+        hotovo();
+        if (ano) zamekCteniOdemkniUI();
+        else if (typeof render === 'function') render();
+      }, hotovo);
   } else if (typeof hlaska === 'function') {
     const duvod = (typeof zamekCteniDuvod === 'function') ? zamekCteniDuvod(ZAK, ja) : '';
     hlaska('Nabídka je otevřená jen ke čtení.' + (duvod ? '\n\n' + duvod : '')

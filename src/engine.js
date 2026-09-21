@@ -1406,11 +1406,41 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
  * vidět a přežije zveřejnění. Hodnoty, které v ceníku jsou, se nepřepisují.
  *
  * Vrací počet doplněných klíčů (pro testy a pro hlášku). */
+/* Klíče, které se NIKDY nedoplňují ze vzoru (P2, nálezy N2/N3, 21. 9. 2026).
+ *
+ * `ukazkove` a `prazdny` nejsou schéma ceníku — jsou to značky o STAVU dat
+ * („tenhle ceník je ukázkový / vynulovaný"). Vzorem je ale DEFAULT_CENIK ze
+ * sestavení, které je pro GitHub vynulované a obě značky nese. Doplňování
+ * chybějících klíčů je tím vtisklo do každé zakázky, která šla přes
+ * normalizaci — a protože normalizaci pouští i server při POST /api/zakazky,
+ * vracel se klientovi soubor, kde každá varianta měla `cenik.ukazkove = true`,
+ * přestože klient nic takového neposlal.
+ *
+ * Důsledek u uživatele: uzamčené varianty se při načtení nepřepočítávají,
+ * takže značka zůstala — červená lišta „Ceník není nahraný, všude svítí nuly"
+ * a vypnutá tlačítka tisku nabídky na ostrých zakázkách, které ceník měly.
+ *
+ * Značka musí jít s čísly, ne se schématem. */
+/* Názvy jsou tu NAPSANÉ DOSLOVA, ne převzaté z `UKAZKOVE_KLIC`/`PRAZDNY_KLIC`
+ * v ukazkove.js — a je to nutnost, ne lenost.
+ *
+ * Sestavená aplikace je jeden skript a `ukazkove.js` v něm stojí AŽ ZA
+ * `engine.js`. Odkaz na tamní `const` by se vyhodnocoval v jeho dočasné
+ * mrtvé zóně (TDZ) a vyhodil by výjimku. Nepomůže ani `typeof`: u proměnné
+ * v TDZ hází i on — chrání jen před úplně nedeklarovaným jménem. Výjimka
+ * v hlavním skriptu ukončí jeho vyhodnocování, takže se nenainicializuje
+ * nic, co stojí níž, a aplikace se vůbec nespustí. Přesně to se 21. 9. 2026
+ * stalo a chytil to až kouřový test v prohlížeči.
+ *
+ * Že se obě místa nerozejdou, hlídá test_ukazkove_znacky.js. */
+const CENIK_NEDOPLNOVAT = ['ukazkove', 'prazdny'];
+
 function cenikDoplnKlice(cenik, vzor) {
   const c = cenik, v = vzor;
   if (!c || typeof c !== 'object' || !v || typeof v !== 'object') return 0;
   let doplneno = 0;
   Object.keys(v).forEach(k => {
+    if (CENIK_NEDOPLNOVAT.indexOf(k) >= 0) return;
     const hodnota = v[k];
     if (hodnota && typeof hodnota === 'object' && !Array.isArray(hodnota)) {
       if (!c[k] || typeof c[k] !== 'object') { c[k] = {}; doplneno++; }
@@ -1449,4 +1479,4 @@ function cenikMigraceLeseni(cenik) {
   }
 }
 
-if (typeof module !== 'undefined') module.exports = { vypocet, DEFAULT_ZADANI, DEFAULT_CENIK, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };
+if (typeof module !== 'undefined') module.exports = { vypocet, DEFAULT_ZADANI, DEFAULT_CENIK, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };

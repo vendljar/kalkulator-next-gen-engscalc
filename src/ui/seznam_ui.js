@@ -58,6 +58,9 @@ function seznamRadit(klic) {
  * číslo nabídky. Liší se jen název: tlačítko v seznamu pojmenuje kopii
  * podle zdroje, aby se v delším seznamu poznalo, z čeho vznikla. */
 function varKopie(id) {
+  /* Táž past jako u „+ Nová varianta" (P3, nález N4): v zakázce otevřené
+   * jen ke čtení kopie vznikla, ale neměl ji kdo uložit. Viz varNova(). */
+  if (typeof zamekCteniStop === 'function' && zamekCteniStop()) return;
   const zdroj = ZAK.varianty.find(x => x.id === id) || aktivniVarianta(ZAK);
   if (!zdroj) return;
   const nazev = (typeof seznamKopieNazev === 'function')
@@ -69,6 +72,57 @@ function varKopie(id) {
   if (typeof nabidkaStavTextBezpecne === 'function')
     nabidkaStavTextBezpecne(`Založena kopie „${kopie.nazev}" s číslem ${variantaCislo(ZAK, kopie)} `
       + `(zdroj ${variantaCislo(ZAK, zdroj)}). Pokračujte v ní.`);
+}
+
+/* ---------- duplikace celé zakázky (P3, nález N5, 21. 9. 2026) ----------
+ *
+ * Rozdíl proti ⧉ na řádku varianty: ta zakládá DALŠÍ VARIANTU téže zakázky
+ * (číslo .2), tohle zakládá ZAKÁZKU NOVOU s vlastním číslem CN. Model je
+ * v `zakazkaDuplikuj` (zakazka.js), tady je jen dotaz na číslo a otevření.
+ *
+ * Zámek „jen ke čtení" tu NEVADÍ a schválně se neptá: duplikace předlohu
+ * vůbec nemění — čte z ní a vyrábí vedle novou zakázku. Zamykat čtení by
+ * znamenalo bránit přesně tomu bezpečnému postupu, kvůli kterému funkce
+ * vznikla (dřív si lidé starou zakázku přepisovali). */
+async function zakazkaDuplikujUI() {
+  if (typeof zakazkaDuplikuj !== 'function') return;
+  const puvodni = String(ZAK.cislo || '');
+  const navrh = (typeof zakazkaCisloDalsi === 'function') ? zakazkaCisloDalsi(puvodni) : puvodni;
+  const cislo = await dotaz('Duplikovat zakázku jako NOVOU, samostatnou.\n\n'
+    + 'Zkopírují se hlavička, zadání a ceníky všech variant.\n'
+    + 'NEzkopírují se zámky odeslaných nabídek, poznámky ani přílohy — '
+    + 'ty patří k původní akci.\n\n'
+    + 'Číslo nové zakázky:', navrh);
+  if (cislo === null) return;
+  const c = String(cislo).trim();
+  if (!c) { await hlaska('Bez čísla zakázku založit nejde — duplikace zrušena.'); return; }
+  if (c === puvodni) {
+    await hlaska('Nová zakázka musí mít jiné číslo než ta otevřená ('
+      + esc(puvodni) + '), jinak by se navzájem přepsaly. Duplikace zrušena.');
+    return;
+  }
+
+  /* Neuložená práce v otevřené zakázce by se přepnutím ztratila. Ptáme se
+   * dřív, než cokoli uděláme — po přepnutí už není kam se vrátit. */
+  if (typeof ULO_STAV !== 'undefined' && ULO_STAV.posledni
+    && ULO_STAV.posledni !== JSON.stringify(ZAK)
+    && !await potvrd('Otevřená zakázka má neuložené změny. Duplikací se zavře a změny se ztratí.\n\n'
+      + 'Pokračovat?', { nadpis: 'Neuložené změny', vychoziNe: true })) return;
+
+  const nova = zakazkaDuplikuj(ZAK, c);
+  if (!nova) return;
+  /* Nová zakázka JEŠTĚ NENÍ V DATABÁZI — uloží se až tlačítkem. Proto se
+   * pouští zámek čtení pryč a zapomene se soubor předlohy: kdyby zůstal,
+   * uložení by přepsalo původní zakázku. To je ta nejhorší chyba, kterou
+   * tahle funkce může udělat, takže se to hlídá tady i v modelu. */
+  ZAK = nova;
+  if (typeof ULO_STAV !== 'undefined') { ULO_STAV.soubor = ''; ULO_STAV.razitko = ''; ULO_STAV.posledni = ''; }
+  if (typeof ONLINE_STAV !== 'undefined') { ONLINE_STAV.soubor = ''; ONLINE_STAV.razitko = ''; ONLINE_STAV.posledni = ''; }
+  if (typeof zamekCteniVypni === 'function') zamekCteniVypni();
+  if (typeof syncVarianta === 'function') syncVarianta();
+  render();
+  await hlaska('Založena nová zakázka ' + esc(c) + ' jako kopie ' + esc(puvodni) + '.\n\n'
+    + 'Zatím NENÍ uložená — uložte ji tlačítkem „Uložit zakázku".');
 }
 
 /* ---------- data pro vykreslení ---------- */
@@ -208,6 +262,8 @@ function seznamKarta() {
     '<div id="seznamTelo"></div>' +
     `<div class="btns" style="margin-top:10px">
       <button class="primary" onclick="varNova()">+ Nová varianta (kopie otevřené)</button>
+      <button onclick="zakazkaDuplikujUI()"
+        title="založit SAMOSTATNOU zakázku s vlastním číslem CN z kopie téhle – pro novou poptávku, která se té staré podobá">⧉⧉ Duplikovat jako novou zakázku…</button>
       <button onclick="otevriArchiv()"
         title="nahlédnout do uložených zakázek a převzít historickou kalkulaci jako alternativu">↩ Historická kalkulace…</button>
     </div>

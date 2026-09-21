@@ -107,6 +107,37 @@ export default async (req) => {
    *    V aplikaci to hlídá obrazovka, ale server mluví s kýmkoli — upravený
    *    klient by jinak mohl přepsat obsah odeslané nabídky a zámek si nechat. */
   const stara = await s.cti('z/' + jmeno);
+
+  /* ZNAČKY UKÁZKOVÉHO A PRÁZDNÉHO CENÍKU SE DO DATABÁZE NEUKLÁDAJÍ
+   * (P2, nálezy N2/N3, 21. 9. 2026).
+   *
+   * Příčinu řeší jádro (`cenikDoplnKlice` značky ze vzoru nedoplňuje);
+   * tohle je druhá obrana: značka může přijít i starším klientem, importem
+   * souboru nebo ze zakázky uložené dřív, než se oprava nasadila. Uložená
+   * značka je zákeřná v tom, že uzamčené varianty se při načtení
+   * nepřepočítávají — zůstala by tam napořád a vypínala tisk nabídky
+   * u zakázky, která ceník má (ostré 0383 a 377).
+   *
+   * STOJÍ TO PŘED KONTROLOU UZAMČENÝCH VARIANT, A TO SCHVÁLNĚ. Ta kontrola
+   * porovnává `data` uložené a příchozí varianty na shodu znak po znaku;
+   * kdyby se značky odstraňovaly až těsně před zápisem, uložená verze by
+   * je neměla, příchozí ano, a legitimní uložení by spadlo na 409 „změnila
+   * by se data uzamčené nabídky". Čistí se proto OBĚ strany: příchozí
+   * zakázka i kopie té uložené, kterou server drží jen pro porovnání
+   * (zapisuje se `zak`, `stara` se nikdy neukládá).
+   *
+   * Čistí se jen značky, ne ceny — obsahu ceníku se to nedotýká. */
+  const ocistiZnacky = (z) => {
+    if (!z || typeof globalThis.ukazkoveOcisti !== 'function') return;
+    for (const v of (z.varianty || [])) {
+      const d = (v && v.data) || null;
+      if (!d) continue;
+      globalThis.ukazkoveOcisti(d.cenik);
+      if (d.proj) globalThis.ukazkoveOcisti(d.proj.cenik);
+    }
+  };
+  ocistiZnacky(zak);
+  ocistiZnacky(stara);
   /* Razítko verze (audit 22. 8. 2026, B10). Klient posílá razítko verze, ze
    * které vyšel (`ocekavaneRazitko`). Když v databázi leží jiná verze —
    * kolega mezitím uložil, nebo jde o cizí zakázku pod stejným číslem — server

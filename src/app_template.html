@@ -169,6 +169,11 @@
                white-space:nowrap; letter-spacing:.2px; }
   .stav-pill.aktivni { background:#dcfce7; color:#166534; border:1px solid #86efac; }
   .stav-pill.zamcena { background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; }
+  /* Jen ke čtení (P3, 21. 9. 2026): jantarová, ne červená. Červená v téhle
+     liště už znamená „odeslaná nabídka, needituje se" — a to je jiný stav
+     než „zakázka se dá odemknout a psát dál". Dvě různé věci nesmějí mít
+     stejnou barvu, jinak štítek přestane nést informaci. */
+  .stav-pill.cteni { background:#fef3c7; color:#92400e; border:1px solid #fcd34d; }
   /* Štítek Standard OCK (21. 8. 2026) — vedle stavu nabídky v téže liště. */
   .std-pill { font-size:11.5px; font-weight:800; padding:2px 11px; border-radius:20px;
               white-space:nowrap; letter-spacing:.3px; cursor:pointer; border:1.5px solid; }
