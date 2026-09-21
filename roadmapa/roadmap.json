@@ -1,6 +1,19 @@
 {
  "polozky" : [
   {
+   "id" : "285",
+   "vlna" : "C",
+   "stav" : "ceka",
+   "dulezitost" : "vysoka",
+   "slozitost" : "S",
+   "nazev" : "P8 — devět voleb výchozího nastavení k rozhodnutí J. V.",
+   "proc" : "Zadání kola 6 u P8 říká výslovně: „Je to podklad k ROZHODNUTÍ, ne k nasazení.\" Nálezy N8, N9, N11–N14 a N18 se týkají výchozího nastavení nové zakázky; bez rozhodnutí nemá smysl kódovat, protože každá z těch voleb mění cenu každé nové nabídky.",
+   "detail" : "Dokument `ROZHODNUTI_P8_2026-09-21.md` popisuje u každé z devíti voleb (výchozí model výpočtu, automatický ATYP, výchozí volitelné položky, tmelení, montáž, statika, lešení, DPH u zahraniční řady, hmotnost spojky) tři věci: co aplikace dělá DNES i s místem v kódu, čeho se otázka týká, a doporučení s odůvodněním. Žádné částky — jen klíče ceníku.\n\nPŘI PSANÍ VYŠLY NAJEVO DVĚ VĚCI, KTERÉ NEJSOU JEN NASTAVENÍ, ALE CHYBY:\n\n(6) STATIKA. Položka STATICKÉ POSOUZENÍ se počítá VŽDY, zatímco pole technické specifikace „OVĚŘOVACÍ STATICKÝ VÝPOČET KONSTRUKCE\" je jen text s výchozím „ano\". Jádro to pole vůbec nečte (ověřeno). Obchodník tedy může ve specifikaci napsat „ne\" a v ceně statika zůstane — dvě místa, která si mohou odporovat, přesně jako u oplechování soklu (N17).\n\n(8) DPH U ZAHRANIČNÍ ŘADY. Ceník má JEDINOU sazbu DPH a používá se bez ohledu na řadu. Zahraniční nabídka se tiskne v eurech, ale s českou sazbou DPH — u dodání s montáží do jiného státu EU se přitom běžně fakturuje v režimu přenesené daňové povinnosti. Tohle je jediná z devíti voleb, kde doporučuji zeptat se účetní, ne rozhodovat podle toho, co dává smysl programátorovi.",
+   "kde" : "`ROZHODNUTI_P8_2026-09-21.md`",
+   "hotovoKdyz" : "U každé z devíti voleb padlo rozhodnutí J. V. a to, co se má změnit, odešlo jako samostatná dávka.",
+   "pozn" : "ČEKÁ NA J. V. U čtyř voleb chybí podklad, který odsud nezjistím, a je to v dokumentu označené: číslo zakázky z nálezu N9 (automatický ATYP), dotaz na dílnu (tmelí se interiérová šachta?), potvrzení k lešení (kdo ho dodává — specifikace a kapitola IV. nabídky si dnes odporují) a skutečná hmotnost spojky pro běžné profily.\n\nNEJNALÉHAVĚJŠÍ JSOU #6 (statika) A #8 (DPH): obě znamenají, že dnes může odejít dokument, který si odporuje nebo uvádí špatné daňové zacházení. Ostatní volby jsou o nastavení, ne o chybách."
+  },
+  {
    "id" : "284",
    "vlna" : "B",
    "stav" : "hotovo",
@@ -4563,7 +4576,7 @@
    "proc": "Kolo 6 testování (zakázky CN-0383 a CN-0377/377) přineslo devět oprav. Dávka v21.9.2 odbavila prioritu 1, tedy P1 až P3. Zbytek čeká a bez zápisu by se na něj zapomnělo.",
    "detail": "P4 — příznak „jen zahraniční\" respektovat ve VŠECH cestách, kde se sestavují položky varianty (nová zakázka, přepočet na dnešní ceník, převzetí ceníku z historie, přepnutí řady). Dnes se položka Překlady CZ→DE vrátí do ČR zakázky při přepočtu. Nález N6, priorita 2.\n\nP5 — tichý přepočet při otevření zakázky: ukázat dialog s rozdílem (verze ceníku, počet změněných položek, Δ ceny) a nabídnout ponechání původního ceníku. Nálezy N7 a N22, priorita 2.\n\nP6 — migrace staré položky stříšky: zakázky z doby před změnou nesou obě položky naráz a stříšky se počítají dvakrát. Nález N10, priorita 2.\n\nP7 — tisk nabídky OCK: chybí kapitoly III. až VI., doložky a překlady, které wordová šablona má. Nálezy N15 a N16, priorita 2.\n\nP8 — výchozí nastavení nové zakázky a devět otázek k rozhodnutí (výchozí model výpočtu, automatický ATYP, výchozí volitelné položky, tmelení, montáž, statika, lešení, DPH u zahraniční řady, hmotnost spojky). Nálezy N8, N9, N11–N14, N18. **Je to podklad k ROZHODNUTÍ, ne k nasazení.**\n\nP9 — technická specifikace: věta o oplechování soklu prohlubně se tiskne v sekci „SOUČÁSTÍ DODÁVKY NENÍ\", ačkoli součástí dodávky je. Nález N17, priorita 3.",
    "kde": "zadání je v prompt souboru kola 6; čísla a dopady v Kč jsou ve vyhodnocovacím sešitu na Drive (složka Testovani)",
-   "pozn": "P8 vyžaduje rozhodnutí J. V. ke každé z devíti voleb — dokud nepadne, nemá smysl kódovat. P4 je z nich nejnaléhavější: mění cenu ČR zakázky po pouhém znovuotevření."
+   "pozn": "UZAVŘENO 21. 9. 2026. P4 v21.9.3 (#274), P5 v21.9.9 (#284), P6 prověřeno a pokryto testy v21.9.6 (#280 — nález se nereprodukuje), P7 v21.9.8 (#282), P9 v21.9.6 (#279). P8 je podle zadání PODKLAD K ROZHODNUTÍ, ne k nasazení — vznikl dokument ROZHODNUTI_P8_2026-09-21.md s dnešním stavem, otázkou a doporučením u každé z devíti voleb; nic z něj se neprogramovalo (#285)."
   },
   {
    "id": "274",
