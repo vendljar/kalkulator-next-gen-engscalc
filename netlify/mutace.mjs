@@ -43,7 +43,7 @@ if (!process.env.ADMIN_EMAIL) process.env.ADMIN_EMAIL = 'spravce@priklad.cz';
 
 /* test_obnova.mjs přibyla 9. 9. 2026 (B27–B31): mutace obnovy hlídá ona. */
 const SADY = ['test_prava.mjs', 'test_funkce.mjs', 'test_obnova.mjs'];
-const filtr = (process.argv[2] || '').toLowerCase();
+const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
  * čím se nahradí, a proč nás zajímá — co by se v praxi stalo, kdyby tuhle
@@ -378,7 +378,7 @@ const MUTACE = [
    * jako tuzemské. Kontrola je v aplikaci i na serveru — dialog jde obejít,
    * server ne. Mutace hlídají, že serverová půlka opravdu drží. */
   { nazev: 'zveřejnění se nekontroluje proti zahraniční řadě', soubor: 'functions/program.mjs',
-    hledej: "  const posudek = globalThis.cenikZverejneniKontrola(ctx, ctx.zahranicni, t.rada);",
+    hledej: "  const posudek = globalThis.cenikZverejneniKontrola(ctx, zahrProKontrolu, t.rada, platny);",
     nahrad: "  const posudek = { ok: true, kod: '', shody: [] };",
     proc: 'zahraniční ceny by se daly zveřejnit jako tuzemské — přesně tak vznikla vadná verze 27' },
 
@@ -482,7 +482,7 @@ const MUTACE = [
     proc: 'obchodník by si sám povýšil roli nebo přepsal cizí heslo' },
 
   { nazev: 'seznam kolegů vidí kdokoli (GET)', soubor: 'functions/uzivatele.mjs',
-    hledej: '  if (relace.role !== \'Administrátor\')\n    return json({ ok: false, chyba: \'K této akci je potřeba role: Administrátor.\' }, 403);\n  const klice = await u.seznam();',
+    hledej: '  if (relace.role !== \'Administrátor\')\n    return json({ ok: false, chyba: \'K této akci je potřeba role: Administrátor.\' }, 403);\n  /* Seznam u každého účtu hlásí `hlavni` — bez ADMIN_EMAIL by u všech stálo\n   * `false` a obrazovka správy by tvrdila, že hlavní účet není žádný (B54). */\n  { const stop = bezHlavnihoUctu(); if (stop) return stop; }\n  const klice = await u.seznam();',
     nahrad: '  const klice = await u.seznam();',
     proc: 'kdokoli by si vytáhl seznam zaměstnanců i s rolemi' },
 
@@ -795,6 +795,33 @@ function spustSady() {
 
 const vybrane = MUTACE.filter(m => !filtr
   || m.nazev.toLowerCase().includes(filtr) || m.soubor.toLowerCase().includes(filtr));
+
+/* RYCHLÁ KONTROLA ZADÁNÍ (`--kontrola`) — bez jediného spuštění sad.
+ *
+ * Proč vznikla (22. 9. 2026): dávka 4 změnila dva řádky, na které mířily
+ * starší mutace, a jejich `hledej` se přestal nacházet. Plný běh to pozná
+ * taky, jenže až po sedmnácti minutách a červeným CI — přitom je to chyba
+ * v ZADÁNÍ mutace, ne v kódu. Tahle kontrola ji najde za vteřinu, takže se
+ * dá pustit před commitem i jako samostatný krok v CI. */
+if (process.argv.includes('--kontrola')) {
+  const spatne = [];
+  for (const m of MUTACE) {
+    const cesta = resolve(KOREN, m.soubor);
+    let obsah = '';
+    try { obsah = readFileSync(cesta, 'utf8'); }
+    catch (e) { spatne.push(m.nazev + ' — soubor ' + m.soubor + ' nejde přečíst'); continue; }
+    const pocet = obsah.split(m.hledej).length - 1;
+    if (pocet !== 1)
+      spatne.push(m.nazev + ' — hledaný úsek v ' + m.soubor + ' nalezen ' + pocet + '×');
+  }
+  if (spatne.length) {
+    console.log('CHYBNĚ ZADANÉ MUTACE (kód se změnil, mutace se nenašla):');
+    spatne.forEach(s => console.log(' - ' + s));
+    process.exit(1);
+  }
+  console.log('Zadání mutací je v pořádku: všech ' + MUTACE.length + ' úseků se v kódu našlo právě jednou.');
+  process.exit(0);
+}
 
 console.log('MUTAČNÍ TESTOVÁNÍ SERVEROVÉ VRSTVY');
 console.log('Mutací k ověření: ' + vybrane.length + '   (sady: ' + SADY.join(', ') + ')\n');

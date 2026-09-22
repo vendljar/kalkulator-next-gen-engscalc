@@ -101,6 +101,17 @@ for f in ../netlify/test_*.mjs; do
   spust "$f"
 done
 
+# Samotný mutační běh tu schválně není (viz výš), ale RYCHLÁ KONTROLA ZADÁNÍ
+# ano: za vteřinu ověří, že každá mutace svůj úsek v kódu vůbec najde.
+# Bez ní se změněný řádek pozná až po sedmnácti minutách v CI — a je to
+# přitom chyba v zadání mutace, ne v kódu (22. 9. 2026, dávka 4).
+if ( cd .. && node netlify/mutace.mjs --kontrola ) > /tmp/kng_mutace_kontrola.txt 2>&1; then
+  proslo=$((proslo + 1)); printf '  ✓ %s\n' "zadání mutací sedí na kód"
+else
+  selhalo=$((selhalo + 1)); seznam_selhani+=("zadání mutací"); printf '  ✗ %s\n' "zadání mutací nesedí na kód"
+  sed 's/^/      /' /tmp/kng_mutace_kontrola.txt
+fi
+
 # Sada v prohlížeči: běží z kořene (harnessy si dist/ hledají odtud), s
 # NODE_PATH kvůli globálně instalovanému playwrightu. Návratový kód 2 = sada
 # sama hlásí, že playwright chybí — není to selhání kódu, jen se přeskočí.

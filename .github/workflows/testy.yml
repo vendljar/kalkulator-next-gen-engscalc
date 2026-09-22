@@ -110,6 +110,12 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
+      # Nejdřív se za vteřinu ověří, že každá mutace v kódu vůbec NAJDE svůj
+      # úsek. Bez toho se chyba v zadání mutace pozná až po sedmnácti
+      # minutách plného běhu (22. 9. 2026: dávka 4 změnila dva řádky,
+      # na které mířily starší mutace).
+      - name: Zadání mutací sedí na kód (rychlá kontrola)
+        run: node netlify/mutace.mjs --kontrola
       - name: Mutační testování serverové vrstvy (netlify/mutace.mjs)
         run: node netlify/mutace.mjs
 

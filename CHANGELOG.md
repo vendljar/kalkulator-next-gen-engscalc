@@ -8,6 +8,30 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.9.7 — 22. 9. 2026
+
+### Mutace se teď kontrolují za vteřinu, ne za sedmnáct minut (#309)
+
+**Co se stalo.** Dávka 4 změnila dva řádky, na které mířily starší mutace.
+Mutace se tím staly nespustitelnými — jejich hledaný úsek se v kódu už
+nenašel. Sady i harnessy v CI byly zelené, mutační job červený, a to až
+po sedmnácti minutách běhu.
+
+Je to chyba v **zadání mutace**, ne v kódu. Obě mutace jsou srovnané a obě
+znovu ověřené jednotlivě: chytají se.
+
+**Oprava u kořene.** Mutační skript umí `--kontrola`: projde všechna zadání
+a ověří, že každé najde svůj úsek právě jednou. Nespustí přitom ani jednu
+testovou sadu, takže je hotov za vteřinu. Běží nově v CI jako krok **před**
+plným během a taky v běžné sadě `./spust_testy.sh` — tedy dřív, než se
+vůbec dá pushnout.
+
+Celý mutační běh po opravě: **131 ze 131 chycených**, žádné chybné zadání.
+Mezi nimi všechny čtyři dnešní: zmrazený výsledek (B53), ADMIN_EMAIL (B54),
+odchylky ceníku (B55) i číslo odeslané nabídky (B56).
+
+---
+
 ## v22.9.6 — 22. 9. 2026
 
 ### Dávka 5: drobnosti, na kterých ale stojí důvěra v běh (#307, #308)

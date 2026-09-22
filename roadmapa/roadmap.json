@@ -300,6 +300,19 @@
    "testy": "Jedenáct kontrol, běží v Node sadě (`test_*.js` se nabírá globem, takže se přidala sama)."
   },
   {
+   "id": "309",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "hotovoV": "v22.9.7",
+   "nazev": "Chybné zadání mutace se poznalo až po sedmnácti minutách",
+   "proc": "Dávka 4 změnila dva řádky, na které mířily starší mutace (`program.mjs` a `uzivatele.mjs`). Jejich `hledej` se v kódu přestal nacházet, takže se mutace nedaly spustit — a mutační job v CI zčervenal. Sady i harnessy byly přitom zelené: je to chyba v ZADÁNÍ mutace, ne v kódu.",
+   "detail": "Plný mutační běh trvá kolem sedmnácti minut a pouští celé testové sady pro každou mutaci zvlášť. Dozvědět se z něj, že se změnil jeden řádek, je nepoměr.\\n\\nOPRAVA: `node netlify/mutace.mjs --kontrola` projde všechna zadání a ověří, že každé najde svůj úsek právě jednou. Nespustí ani jednu sadu, takže je hotov za vteřinu. Zapojen v CI jako krok PŘED plným během a zároveň v běžné sadě `./spust_testy.sh` — tedy dřív, než se dá pushnout.\\n\\nObě mutace srovnané a ověřené jednotlivě. Celý běh po opravě: 131 ze 131 chycených, žádné chybné zadání.",
+   "kde": "netlify/mutace.mjs (--kontrola), .github/workflows/testy.yml, spust_testy.sh",
+   "testy": "Kontrola sama je test: projde 133 zadání. Obě opravené mutace navíc ověřeny samostatným během (chycené 1 z 1)."
+  },
+  {
    "id" : "285",
    "vlna" : "C",
    "stav" : "ceka",
