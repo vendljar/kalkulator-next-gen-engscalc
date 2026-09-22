@@ -8,6 +8,39 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.9.18 — 22. 9. 2026
+
+### Dávka R2 z revize v22.9.9 — kde se ztrácela nebo tiše ukládala práce
+
+Všechny čtyři nálezy revize ověřila čtením kódu; tady jsou poprvé
+**změřené v prohlížeči** — každý test nad kódem před opravou selže.
+
+**Ruční přihlášení po vypršení relace (N34).** Posluchače „uživatel něco
+udělal" sedí na celém dokumentu a přihlašovací okno je v tomtéž dokumentu:
+napsání hesla značku nastavilo dřív, než se člověk přihlásil. Poslední
+zakázka se pak neotevřela (změřeno: místo ní prázdná zakázka s firemní
+přirážkou) a aplikace hlásila neuložené změny, které nikdo neudělal. Oprava
+N12/N13 tak platila jen pro F5 se živou relací. Události z přihlašovacího
+okna se nově nepočítají; ochrana rozdělané práce zůstává.
+
+**Společné dodatkové texty po nasazení ceníku (N35).** Nasazení platného
+ceníku vyměňuje výchozí ceník celý — a texty vlité po přihlášení tím
+zmizely, podle toho, který požadavek doběhl dřív; po zveřejnění nového
+ceníku pokaždé. Texty se teď vlévají znovu po každé výměně ceníku.
+
+**Duplikace s neuloženými změnami (N36).** Dotaz se ptal jen režimu složky,
+který je vypnutý — v online režimu se nepoložil nikdy a duplikace práci
+tiše zahodila. Nově se ptá jako otevření jiné zakázky (uložit / zahodit /
+zůstat) a od předlohy se odpojí toutéž funkcí jako „Nová zakázka", která
+ruší i naplánovaný autosave předchozí zakázky.
+
+**„Vrátit původní ceny" v obnovené záloze (N37).** Větev vrácení prohlásila
+zakázku za uloženou — u zálohy z prohlížeče, která na serveru není, tím
+autosave i varování při zavření okna ztichly. U zálohy se to už neděje;
+u zakázky ze serveru ano (jinak by první klik uložil odmítnuté ceny).
+
+---
+
 ## v22.9.17 — 22. 9. 2026
 
 ### Dávka R1 z revize v22.9.9 — rychlé opravy

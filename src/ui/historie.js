@@ -268,7 +268,9 @@ function historieObnovZalohu() {
        * O KOLIK se cena hnula a neměl jak přepočet vrátit — přesně to, kvůli
        * čemu dialog vznikl. Až po renderu, ať je za dialogem vidět zakázka,
        * o které se rozhoduje; nečeká se na něj, obnova je hotová. */
-      if (typeof uloPrepocetDialog === 'function') uloPrepocetDialog(prep);
+      /* Zdroj „záloha": po vrácení cen se zakázka NESMÍ prohlásit za
+       * uloženou — na serveru není (nález N37). */
+      if (typeof uloPrepocetDialog === 'function') uloPrepocetDialog(prep, { zdroj: 'zaloha' });
     }
   }
 }

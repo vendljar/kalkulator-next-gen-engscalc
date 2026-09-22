@@ -168,7 +168,27 @@ function onlineApi(cesta, telo, metoda) {
  * Záměrně se nesleduje `set()` ani jiná datová cesta: zakázkou hýbe i sama
  * aplikace (přepočet, migrace, zrcadlení kurzu) a právě to se nemá ukládat.
  * Sledují se proto UDÁLOSTI OD ČLOVĚKA. */
-function onlineZmenaUzivatele() { ONLINE_STAV.zmenaUzivatele = true; }
+function onlineZmenaUzivatele(ev) {
+  if (onlineUdalostZPrihlaseni(ev)) return;
+  ONLINE_STAV.zmenaUzivatele = true;
+}
+/* PŘIHLAŠOVACÍ FORMULÁŘ NENÍ PRÁCE NA ZAKÁZCE (nález N34 revize v22.9.9).
+ *
+ * Posluchače níž sedí na celém dokumentu v zachycovací fázi — a přihlašovací
+ * okno je v tomtéž dokumentu. Kdo po vypršení relace napsal e-mail a heslo
+ * a klikl „Přihlásit", měl značku „uživatel něco udělal" nastavenou dřív, než
+ * se vůbec přihlásil. Návrat k poslední zakázce (#302) se pak neprovedl
+ * (`onlineObnovPosledni` na značku čeká) a otisk uložení se neposunul, takže
+ * aplikace hlásila neuložené změny, které nikdo neudělal. Oprava N12/N13 tím
+ * platila jen pro F5 se živou relací — přesně to, co měřil harness.
+ *
+ * Značka má dál chránit rozdělanou práci, proto se nemaže po přihlášení
+ * (kdo pracoval offline a pak se přihlásil, o ochranu nepřijde). Jen se
+ * nepočítají události, které vznikly uvnitř přihlašovacího okna. */
+function onlineUdalostZPrihlaseni(ev) {
+  const t = ev && ev.target;
+  return !!(t && typeof t.closest === 'function' && t.closest('#prihlaseni-overlay'));
+}
 
 /* Zavolá se jednou při startu (z onlineStart). Posluchače jsou v zachycovací
  * fázi, aby je nezastavil žádný stopPropagation po cestě. */
@@ -183,7 +203,7 @@ function onlineSledujUzivatele() {
   document.addEventListener('click', ev => {
     const t = ev.target;
     if (t && typeof t.closest === 'function' && t.closest('button, input, select, textarea'))
-      onlineZmenaUzivatele();
+      onlineZmenaUzivatele(ev);
   }, true);
 }
 
@@ -709,9 +729,27 @@ function onlineNactiPopisy() {
     return Promise.resolve(false);
   return onlineApi('/api/popisy').then(o => {
     ONLINE_STAV.popisy = (o && o.popisy) ? o.popisy : null;
-    popisyVlij(DEFAULT_CENIK, ONLINE_STAV.popisy ? ONLINE_STAV.popisy.texty : null);
+    onlinePopisyVlijZnovu();
     return true;
   }).catch(() => { ONLINE_STAV.popisy = null; return false; });
+}
+
+/* VLITÍ TEXTŮ DO VÝCHOZÍHO CENÍKU — i po každé jeho výměně (nález N35
+ * revize v22.9.9).
+ *
+ * `onlineNactiProgram` platný ceník jen stáhne; nasazuje ho až `onlineTik`
+ * při dalším překreslení (`progPouzij` → `konfigNahradVMiste`, která
+ * VŠECHNY klíče výchozího ceníku smaže a naplní znovu). Texty vlité po
+ * přihlášení tak smazalo nasazení ceníku, které doběhlo později — podle
+ * toho, který požadavek byl rychlejší. A po zveřejnění nového ceníku se to
+ * stalo pokaždé: každá nová zakázka až do dalšího přihlášení vznikala bez
+ * textů. Proto se vlévají i na konci `progPouzij`, tedy po každé výměně —
+ * pořadí požadavků pak nerozhoduje. */
+function onlinePopisyVlijZnovu() {
+  if (typeof popisyVlij !== 'function' || typeof DEFAULT_CENIK === 'undefined') return false;
+  if (!ONLINE_STAV.popisy) return false;
+  popisyVlij(DEFAULT_CENIK, ONLINE_STAV.popisy.texty);
+  return true;
 }
 
 /* Uložení JEDNOHO textu pro celou aplikaci. Smí jen administrátor — server

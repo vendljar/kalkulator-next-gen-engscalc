@@ -430,7 +430,12 @@ function uloPrepocetUvod(zmen, verze) {
     + cast + '. ' + kolik + '.';
 }
 
-async function uloPrepocetDialog(r) {
+/* `opts.zdroj` říká, odkud zakázka přišla: 'server' / 'soubor' (výchozí —
+ * data, která už někde uložená jsou), nebo 'zaloha' (záloha v prohlížeči,
+ * tedy práce, která na serveru NENÍ). Rozhoduje o tom, jestli se po vrácení
+ * cen smí zakázka prohlásit za uloženou — viz konec funkce (nález N37). */
+async function uloPrepocetDialog(r, opts) {
+  const zdroj = (opts && opts.zdroj) || 'server';
   if (!r || !r.prepocteno || !r.zmen) return false;
   if (typeof volba !== 'function' || !ULO_PREPOCET.zaloha) return false;
 
@@ -516,9 +521,19 @@ async function uloPrepocetDialog(r) {
   /* Po vrácení je zakázka zase přesně taková, jaká přišla ze souboru nebo
    * ze serveru — tedy BEZ neuložené změny. Kdyby se otisky pro autosave
    * nechaly na stavu po přepočtu, první klik kamkoli by zakázku uložil
-   * s cenami, které uživatel právě odmítl (týž mechanismus jako nález V35). */
-  if (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV) ONLINE_STAV.posledni = JSON.stringify(ZAK);
-  if (typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
+   * s cenami, které uživatel právě odmítl (týž mechanismus jako nález V35).
+   *
+   * JENŽE NE U ZÁLOHY Z PROHLÍŽEČE (nález N37 revize v22.9.9). Dialog se
+   * od 21. 9. ukazuje i po obnově zálohy (`historieObnovZalohu`) — a ta
+   * záloha je právě práce, která na serveru NENÍ. Prohlásit ji po vrácení
+   * cen za uloženou znamenalo, že ji autosave přestal považovat za změnu
+   * a varování při zavření okna mlčelo: po zavření byla pryč. U zálohy se
+   * proto otisky nechávají, jak je nastavila obnova — vrácené ceny jsou
+   * ty, se kterými se v záloze pracovalo, a uložit se mají. */
+  if (zdroj !== 'zaloha') {
+    if (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV) ONLINE_STAV.posledni = JSON.stringify(ZAK);
+    if (typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
+  }
   if (typeof render === 'function') render();
   if (typeof nabidkaStavTextBezpecne === 'function')
     nabidkaStavTextBezpecne('Původní ceny vráceny. Zakázka počítá z ceníku, se kterým byla uložena.');

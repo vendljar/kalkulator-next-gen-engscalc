@@ -310,6 +310,64 @@ const vymenZakazku = async (upravCislo) => {
     obnova.btn.some(x => /Vrátit/i.test(x)), JSON.stringify(obnova.btn));
 }
 
+/* 9) VRÁCENÍ CEN V OBNOVENÉ ZÁLOZE NEPROHLÁSÍ PRÁCI ZA ULOŽENOU (nález N37
+ * revize v22.9.9).
+ *
+ * Větev „Vrátit původní ceny" nastavila otisky tak, jako by zakázka byla
+ * zase ta ze serveru. U zálohy z prohlížeče to neplatí — ta na serveru NENÍ.
+ * Autosave ji pak nepovažoval za změnu a varování při zavření okna mlčelo.
+ * Zkouší se celá cesta: obnova zálohy → dialog → „Vrátit". Srovnání
+ * s ceníkem se podstrčí (jako v oddílu 8), aby dialog měl co nabídnout. */
+{
+  await priprava();
+  const r = await p.evaluate(async () => {
+    const puvodni = window.uloSrovnejSPlatnymCenikem;
+    window.uloSrovnejSPlatnymCenikem = () => {
+      ULO_PREPOCET.zaloha = JSON.parse(JSON.stringify(ZAK));
+      ULO_PREPOCET.zakazka = ZAK;
+      return { prepocteno: 1, zmen: 2 };
+    };
+    Uloziste.zapis(HIST_KLIC, JSON.stringify({ kdy: new Date().toISOString(),
+      cislo: 'ZK-2', nazevAkce: 'Záloha z prohlížeče', zakazka: JSON.stringify(ZAK) }));
+    /* Na serveru leží JINÁ verze než ta v záloze. */
+    const SERVER = '{"jina":"verze na serveru"}';
+    HIST.ulozenoJako = SERVER;
+    ONLINE_STAV.posledni = SERVER;
+    historieObnovZalohu();
+    await new Promise(res => setTimeout(res, 250));
+    const vrat = [...document.querySelectorAll('#dlg .dlg-btns button')].find(x => /Vrátit/i.test(x.textContent));
+    if (vrat) vrat.click();
+    await new Promise(res => setTimeout(res, 300));
+    window.uloSrovnejSPlatnymCenikem = puvodni;
+    return { klik: !!vrat, posledniStejne: ONLINE_STAV.posledni === SERVER, neulozeno: historieNeulozeno() };
+  });
+  zkus('(dialog po obnově zálohy nabídl „Vrátit" a kliklo se)', r.klik === true, JSON.stringify(r));
+  zkus('po vrácení cen v obnovené záloze zůstává zakázka neuložená (N37)', r.neulozeno === true, JSON.stringify(r));
+  zkus('a autosave ji dál považuje za změnu (otisk se nepřepsal)', r.posledniStejne === true, JSON.stringify(r));
+}
+
+/* 10) PROTĚJŠEK: u zakázky ze SERVERU se po vrácení cen za uloženou prohlásit
+ * MÁ — jinak by první klik uložil ceny, které uživatel právě odmítl (V35).
+ * Bez tohohle by oprava N37 mohla vypnout i správnou cestu. */
+{
+  await priprava();
+  await p.evaluate(() => {
+    HIST.ulozenoJako = '{"jina":"verze"}';
+    ONLINE_STAV.posledni = '{"jina":"verze"}';
+    window.__odp10 = uloPrepocetDialog({ prepocteno: 1, zmen: 2 });
+  });
+  await p.waitForTimeout(250);
+  await p.evaluate(() => {
+    const b = [...document.querySelectorAll('#dlg .dlg-btns button')].find(x => /Vrátit/i.test(x.textContent));
+    if (b) b.click();
+  });
+  await p.waitForTimeout(300);
+  const r10 = await p.evaluate(async () => ({ odp: await window.__odp10, neulozeno: historieNeulozeno(),
+    otisk: ONLINE_STAV.posledni === JSON.stringify(ZAK) }));
+  zkus('u zakázky ze serveru se po vrácení cen zakázka za uloženou prohlásí',
+    r10.odp === true && r10.neulozeno === false && r10.otisk === true, JSON.stringify(r10));
+}
+
 zkus('za celý průchod nevznikla chyba v konzoli', konzole.length === 0, konzole.slice(0, 2).join(' | '));
 
 await b.close();

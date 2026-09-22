@@ -148,6 +148,35 @@ test('po obnovení stránky je zakázka zase otevřená', po.soubor === pred.sou
 test('a přirážka v ní zůstala 40 %', po.marze === 0.40, po.marze);
 test('i číslo nabídky sedí', /0999/.test(po.cislo), po.cislo);
 
+/* 2b) VYPRŠELÁ RELACE → RUČNÍ PŘIHLÁŠENÍ (nález N34 revize v22.9.9).
+ *
+ * Krok 2 měří F5 se ŽIVOU relací — přihlášení proběhne samo a nikdo nic
+ * nepíše. Jenže relace vyprší za dvanáct hodin a pak se člověk přihlásí
+ * RUKAMA: napíše e-mail a heslo a klikne. Posluchače „uživatel něco udělal"
+ * sedí na celém dokumentu, přihlašovací okno je v tomtéž dokumentu, takže
+ * značka byla nastavená dřív, než se vůbec přihlásil — a návrat k poslední
+ * zakázce se neprovedl. Tady se to zkouší skutečným psaním (page.fill)
+ * a kliknutím, ne voláním funkce. */
+cookieJar = '';                                   // relace vypršela
+await page.reload();
+await page.waitForFunction(() => typeof window.render === 'function');
+await page.waitForSelector('#onlineEmail', { timeout: 10000 });
+await dlgStub(page);
+const predPrihlasenim = await page.evaluate(() => ({ ja: !!ONLINE_STAV.ja, soubor: ONLINE_STAV.soubor }));
+test('(relace opravdu vypršela: nikdo přihlášený, žádná zakázka otevřená)',
+  !predPrihlasenim.ja && !predPrihlasenim.soubor, JSON.stringify(predPrihlasenim));
+await prihlas();
+await pockejNaObnovu(page);
+const poRucnim = await page.evaluate(() => ({
+  soubor: ONLINE_STAV.soubor, marze: aktivniVarianta(ZAK).data.cenik.marze,
+  zmena: !!ONLINE_STAV.zmenaUzivatele,
+}));
+test('po ručním přihlášení se otevře zakázka, na které se pracovalo (N34)',
+  poRucnim.soubor === pred.soubor, JSON.stringify(poRucnim));
+test('i s přirážkou 40 %', poRucnim.marze === 0.40, poRucnim.marze);
+test('psaní do přihlašovacího okna se za práci na zakázce nepočítá',
+  poRucnim.zmena === false, JSON.stringify(poRucnim));
+
 /* 3) nová zakázka značku zahodí — po refreshi se pak není kam vracet */
 /* novaZakazkaUI() se od 2. 9. 2026 ptá in-app modálem (Promise) — stub
  * odpoví „ano", ale je potřeba počkat, až se promise vyřídí. */

@@ -132,6 +132,11 @@ function progPouzij(zaznam) {
   /* Verze se bere z použitého záznamu, ne z toho, co je zrovna platné –
    * kdyby se aplikace přepnula na starší verzi, razítko by jinak tvrdilo
    * číslo ceníku, ze kterého se nepočítá (#39). */
+  /* Společné dodatkové texty se po výměně ceníku vlévají znovu (N35) —
+   * `konfigNahradVMiste` výš je z výchozího ceníku smazala. Dřív než
+   * srovnání otevřené zakázky níž, ať s výchozím ceníkem nic nepracuje
+   * v neúplném stavu. */
+  if (typeof onlinePopisyVlijZnovu === 'function') onlinePopisyVlijZnovu();
   progSrovnejNedotcene({ verze: zaznam.verze, platnoOd: zaznam.platnoOd || '' });
 }
 

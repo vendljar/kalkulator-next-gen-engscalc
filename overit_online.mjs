@@ -192,6 +192,37 @@ test('zveřejnění založilo online verzi 1',
 test('online ceník se v aplikaci sám nasadil',
   await page.evaluate(() => ONLINE_STAV.cenikPouzit === true));
 
+/* ---- 4a) společné dodatkové texty přežijí nasazení ceníku (nález N35 revize v22.9.9) ----
+ *
+ * Texty se vlévají do výchozího ceníku. Nasazení ceníku (`progPouzij` →
+ * `konfigNahradVMiste`) ale všechny jeho klíče smaže a naplní znovu — takže
+ * texty vlité dřív zmizely, a po zveřejnění nového ceníku pokaždé.
+ *
+ * Zkouší se TATÁŽ CESTA, kterou jde zveřejnění i přihlášení: `onlineNactiProgram`
+ * shodí `cenikPouzit` a nasazení provede `onlineTik` při dalším překreslení.
+ * Novou verzi ceníku kvůli tomu nezakládá — další oddíly počítají s verzí 1. */
+const KLIC_TEXTU = 'Zkušební položka pro text';
+const textPred = await page.evaluate(async (klic) => {
+  await onlinePopisUloz(klic, 'Věta, která má přežít nový ceník.');
+  return (DEFAULT_CENIK.popisy || {})[klic] || '';
+}, KLIC_TEXTU);
+test('administrátor uložil dodatkový text pro celou aplikaci',
+  textPred === 'Věta, která má přežít nový ceník.', textPred);
+/* Stav po `onlineNactiProgram`: ceník stažený, nasazení čeká na tik. */
+await page.evaluate(() => { ONLINE_STAV.cenikPouzit = false; render(); });
+await page.waitForFunction(() => { try { return ONLINE_STAV.cenikPouzit === true; } catch (e) { return false; } });
+await page.waitForTimeout(300);
+const textPo = await page.evaluate((klic) => ({
+  text: (DEFAULT_CENIK.popisy || {})[klic] || '',
+  verze: ONLINE_STAV.db.platny.verze,
+  nova: (novaZakazka().varianty[0].data.cenik.popisy || {})[klic] || '',
+}), KLIC_TEXTU);
+test('po nasazení platného ceníku text ve výchozím ceníku zůstal (N35)',
+  textPo.text === 'Věta, která má přežít nový ceník.', textPo);
+test('a nová zakázka si ho odnese', textPo.nova === 'Věta, která má přežít nový ceník.', textPo);
+/* Úklid: text zpátky, ať další oddíly počítají s tím, s čím dosud. */
+await page.evaluate(async (klic) => { await onlinePopisUloz(klic, ''); }, KLIC_TEXTU);
+
 /* ---- 4b) firemní údaje online (4. 8. 2026) ----
  * Ceník sám nestačí. Obchodník složku _DB nemapuje, takže dokud firemní údaje
  * nejsou taky online, zůstane mu v hlavičce nabídky „Ukázková firma s.r.o."
@@ -575,6 +606,50 @@ test('a po každém kroku se do databáze opravdu zapíše',
   await page.evaluate(() => ONLINE_STAV.posledni.includes('Zkušební 1, Praha')));
 test('zakázka „0777" je v rejstříku online zakázek',
   await page.evaluate(() => ONLINE_STAV.rejstrik.some(z => (z.cislo || '').includes('0777'))));
+
+/* ---- 5b2) DUPLIKACE NEZAHODÍ NEULOŽENOU PRÁCI (nález N36 revize v22.9.9) ----
+ *
+ * Dotaz na neuložené změny se ptal jen režimu SLOŽKY (`ULO_STAV.posledni`),
+ * který je vypnutý — v online režimu se tedy nepoložil nikdy a duplikace
+ * rozdělanou práci tiše zahodila. A naplánovaný autosave předchozí zakázky
+ * zůstal běžet. Tři volby jako u otevření jiné zakázky (V35); dialog se tu
+ * nahrazuje odpovědí, kterou dostane. */
+const dup = await page.evaluate(async () => {
+  const out = {};
+  window.__volbaOdpoved = 'zustat';
+  window.volba = (t, m) => { window.__dlgTexty.push(String(t)); return Promise.resolve(window.__volbaOdpoved); };
+  window.dotaz = (t, v) => { window.__dlgTexty.push(String(t)); return Promise.resolve('2026 - OPR - CN - 0778'); };
+  const puvodniCislo = ZAK.cislo;
+  const puvodniSoubor = ONLINE_STAV.soubor;
+  set('ZAK.adresa', 'Neuložená změna 12, Praha');        // práce, která ještě není na serveru
+  out.neulozeno = historieNeulozeno();
+  window.__dlgTexty = [];
+  await zakazkaDuplikujUI();
+  out.zustalo = ZAK.cislo === puvodniCislo && ZAK.adresa === 'Neuložená změna 12, Praha';
+  out.zeptal = (window.__dlgTexty || []).some(x => /neuložené změny/i.test(x));
+  window.__volbaOdpoved = 'zahodit';
+  await zakazkaDuplikujUI();
+  out.cislo = ZAK.cislo;
+  out.soubor = ONLINE_STAV.soubor;
+  out.timer = ONLINE_STAV.timer;
+  out.zmena = ONLINE_STAV.zmenaUzivatele;
+  /* Úklid: zpátky na uloženou zakázku 0777 (duplikát se zahodí), odemčenou
+   * jako dosud — další oddíly (kolize verzí) s ní počítají. */
+  window.__volbaOdpoved = 'zahodit';
+  await onlineOtevri(puvodniSoubor);
+  zamekCteniVypni();
+  out.zpet = ONLINE_STAV.soubor === puvodniSoubor;
+  delete window.volba;
+  return out;
+});
+test('(zakázka má opravdu neuloženou změnu)', dup.neulozeno === true, dup);
+test('duplikace se na neuložené změny zeptá (N36)', dup.zeptal === true, dup);
+test('„Zůstat tady" nechá otevřenou zakázku i s rozdělanou prací', dup.zustalo === true, dup);
+test('„Zahodit" duplikát založí a odpojí ho od souboru předlohy',
+  /0778/.test(dup.cislo) && dup.soubor === '', dup);
+test('a naplánovaný autosave předchozí zakázky se zrušil', dup.timer === null, dup);
+test('kliknutí v dialogu se za práci na duplikátu nepočítá', dup.zmena === false, dup);
+test('(úklid: zpátky na uloženou zakázku)', dup.zpet === true, dup);
 
 /* ---- 5c) záloha databáze: automatická po přihlášení i vynucená ---- */
 test('po přihlášení administrátora vznikla dnešní záloha databáze sama',
