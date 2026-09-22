@@ -129,7 +129,7 @@
    "proc": "Plocha čelní stěny se dnes bere ze světlíků nad dveřmi a po stranách, protože tak ji počítá standardní model. V režimu po stěnách si ale obchodník vybírá opláštění pro CELOU stěnu — a u šachty bez světlíků mu vyjde 0 m² (#294).",
    "detail": "Možnosti:\n(a) NECHAT JAK JE a spolehnout se na varování. Zapnutí režimu pak dál nehne cenou ani o haléř, což byla původní podmínka.\n(b) POČÍTAT SKUTEČNOU PLOCHU stěny (šířka × výška) MÍNUS otvory dveří a portálů. Odpovídá to pokynu „počítá se skutečná plocha\", ale je potřeba vědět, kolik z čelní stěny ukrojí dveře a portály — to je údaj z dílny, ne z kódu.\n(c) POČÍTAT CELOU PLOCHU bez odečtu otvorů, pokud se opláštění objednává na celou stěnu.\n\nKterákoli z (b) a (c) změní cenu každé zakázky v režimu po stěnách, a to směrem nahoru. Proto rozhodnutí J. V., ne odhad.\n\nOTÁZKA: ukrojí dveře a portály z čelní stěny plochu, která se neopláští? Jestli ano, jak velkou — z čeho ji spočítat (šířka dveří × 2,3 m + portály)?",
    "otazka": "Z čeho se má brát plocha čelní stěny v režimu po stěnách a odečítají se otvory dveří a portálů?",
-   "cekaNa": "J. V.",
+   "odpoved": "J. V. 22. 9. 2026: varianta (b) — skutečná plocha stěny mínus otvory dveří a portálů. Zavedeno ve v21.9.18. `cekaNa` odtud odstraněno 22. 9. 2026: hotová položka na nic nečeká (pravidlo z roadmapa/README.md, nově hlídá src/test_roadmapa.js).",
    "hotovoV": "v21.9.18",
    "pozn": "ROZHODNUTÍ J. V. 21. 9. 2026: varianta (b) — plocha celé stěny MÍNUS otvory dveří a portálů. Zavedeno; `sirkaDveri` už obsahuje rámy, takže „dveře a portály\" jsou v jednom čísle. Zapnutí režimu po stěnách tím přestalo být cenově neutrální — viz #296."
   },
@@ -272,6 +272,32 @@
    "detail": "U ČÍSLA JE TA DÍRA ZÁKEŘNÁ: číslo určuje jméno souboru. Se změněným číslem spadne zakázka pod JINÉ jméno, uložená verze k porovnání neexistuje (`stara` je prázdná) a všechny kontroly zámku se přeskočí. Odeslaná nabídka tak mohla dostat jiné číslo, než jaké má zákazník na papíře.\n\nOPRAVA: pozná se to ZE ZÁMKU SAMOTNÉHO, ne z uložené zakázky — `zamek.cislo` drží číslo z okamžiku odeslání (plní ho `variantaCislo` při zamykání v zamek_ui.js). Kontrola je proto vnitřní a funguje i tam, kde není s čím porovnávat. Neshoda: 403 pro kohokoli kromě administrátora; administrátorovi projde a server mu razítko v zámku srovná, aby zakázka nezůstala natrvalo v rozporu sama se sebou a nepadala při každém dalším uložení kolegy.\n\nZámky pořízené před zavedením pole `cislo` ho mají prázdné — přeskakují se, jinak by oprava zablokovala historické zakázky.\n\nMEZ, KTEROU TO NEZAVŘE: kdo si upraví klienta, může přepsat číslo i razítko v zámku najednou. Výsledek je ale nová zakázka pod novým jménem; původní soubor s původním číslem zůstává nedotčený, takže se stopa neztrácí.",
    "kde": "netlify/functions/zakazky.mjs (za kontrolami zámku)",
    "testy": "Sedm kontrol v netlify/test_prava.mjs (blok B56): obchodníkovi 403, administrátorovi 200 se srovnaným razítkem, zámek zůstává, starší zámek bez razítka projde. Ověřeno, že bez opravy tři padají. Mutace „změna čísla odeslané nabídky se na serveru nehlídá\"."
+  },
+  {
+   "id": "307",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "hotovoV": "v22.9.6",
+   "nazev": "B11 — repozitář neměl package-lock.json",
+   "proc": "Bezpečnostní audit: jediná závislost `@netlify/blobs` je zapsaná rozsahem `^8.1.0` a zámek verzí v historii nikdy nebyl. Každé sestavení na Netlify si tedy mohlo vzít jinou 8.x verzi, aniž by se v repozitáři cokoli změnilo — a případný problém by nešlo přiřadit k žádnému commitu.",
+   "detail": "Zámek se generoval v ČISTÉM adresáři, ne na místě: v `node_modules` tohohle prostředí leží symbolické odkazy na globální playwright (kvůli prohlížečovým harnessům) a `npm install --package-lock-only` je zapsalo do zámku jako závislost s cestou `../../../opt/node22/...`. Takový zámek by `npm ci` jinde rozbil. Výsledek je proto jen kořen a `@netlify/blobs` 8.2.0.",
+   "kde": "package-lock.json (nový)",
+   "testy": "Ověřeno čtením obsahu: žádná absolutní cesta, jediná závislost. Sestavení na Netlify tím dostává pevnou verzi."
+  },
+  {
+   "id": "308",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "hotovoV": "v22.9.6",
+   "nazev": "N18 — pravidla pořadníku nekontroloval v CI nikdo",
+   "proc": "`roadmap.json` je jediný zdroj pravdy o tom, co je hotové. Jeho pravidla (jedinečná id, jen tři stavy, `blokovano` vyžaduje `cekaNa`, hotová položka na nic nečeká, `odemyka` se do zdroje nepíše) hlídal jedině generátor `roadmapa.py` — a ten v repozitáři není, leží v pracovní kopii mimo GitHub.",
+   "detail": "Rozbitý JSON nebo dvakrát použité číslo se tedy poznaly až u toho, kdo měl generátor po ruce. Není to teorie: 22. 9. 2026 se soubor rozbil dvakrát (přeformátováním a uvozovkou uvnitř české citace) a chyba se pokaždé našla ručně.\\n\\nNOVÁ SADA `src/test_roadmapa.js` ověřuje přesně ta pravidla, která README v roadmapě vypisuje — nic navíc. Generátor nenahrazuje, stránku pořád skládá on. První běh rovnou našel položku #295 ve stavu `hotovo`, která si držela `cekaNa: J. V.`; odpověď J. V. z 22. 9. je teď zapsaná v poli `odpoved` a `cekaNa` je pryč.\\n\\nHarness `overit_roadmapu.mjs` zůstává přeskakovaný: vygenerovaná ROADMAPA.html je firemní dokument a v repozitáři schválně není.",
+   "kde": "src/test_roadmapa.js (nový), roadmapa/roadmap.json (#295)",
+   "testy": "Jedenáct kontrol, běží v Node sadě (`test_*.js` se nabírá globem, takže se přidala sama)."
   },
   {
    "id" : "285",

@@ -209,6 +209,22 @@ Stojí proto na zámku samotném.
 - **`README_ZDROJAKY.md`** — sekce o prohlížečových testech dopsat podle
   skutečného stavu po dávce 1.
 
+### Jak dávka 5 dopadla (doplněno po provedení)
+
+- **B11** hotovo. Zámek se NESMÍ generovat na místě: `node_modules` tady
+  nese symbolické odkazy na globální playwright a `npm` je zapíše do zámku
+  jako závislost s absolutní cestou. Generováno v čistém adresáři.
+- **N14** se neřešilo — vyřešila ji už dávka 2 (zastaralé očekávání testu,
+  ne chyba kódu). Položka v plánu byla zastaralá.
+- **N18** vyřešeno jinak, než plán nabízel: generátor se nedoplňoval (je to
+  firemní nástroj mimo repozitář a harness se poctivě přeskakuje už od
+  dávky 1), ale pravidla `roadmap.json` teď kontroluje Node sada
+  `src/test_roadmapa.js`. Našla hned první reálnou neshodu (#295).
+- **Popisky** přeznačeny na L27–L31, tedy tak, jak je má soubor mutací.
+- **README_ZDROJAKY.md** dopsán podle skutečného stavu po dávce 1.
+
+---
+
 ---
 
 ## Nesahá se — čeká na rozhodnutí J. V.

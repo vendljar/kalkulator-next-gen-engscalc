@@ -935,14 +935,14 @@ console.log('\n===== AUDIT B7: HESLO HLAVNÍHO ÚČTU =====\n');
   test('B7: vedlejší administrátor dál resetuje hesla ostatním',
     (await post(uzivatele, 'http://x/api/uzivatele',
       { akce: 'heslo', email: 'terc@example.com', heslo: 'TercHeslo2' }, UCTY['Administrátor'].cookie)).status === 200);
-  /* B28 (23. 8. 2026): profil a podpis hlavního účtu smí měnit jen on sám. */
-  test('B28: vedlejší administrátor nezmění profil hlavního účtu (403)',
+  /* L28 (23. 8. 2026): profil a podpis hlavního účtu smí měnit jen on sám. */
+  test('L28: vedlejší administrátor nezmění profil hlavního účtu (403)',
     (await post(uzivatele, 'http://x/api/uzivatele',
       { akce: 'profil', email: ADMIN_EMAIL, jmeno: 'Podvrh' }, UCTY['Administrátor'].cookie)).status === 403);
-  test('B28: vedlejší administrátor nenahraje podpis hlavního účtu (403)',
+  test('L28: vedlejší administrátor nenahraje podpis hlavního účtu (403)',
     (await post(uzivatele, 'http://x/api/uzivatele',
       { akce: 'podpis', email: ADMIN_EMAIL, obrazek: 'data:image/png;base64,iVBORw0KGgo=' }, UCTY['Administrátor'].cookie)).status === 403);
-  test('B28: hlavní administrátor si vlastní profil změní',
+  test('L28: hlavní administrátor si vlastní profil změní',
     (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'profil', jmeno: 'Jaroslav Vendl' }, cAdmin)).status === 200);
 }
 
@@ -1071,21 +1071,21 @@ console.log('\n===== AUDIT B14: VELIKOST ZAKÁZKY =====\n');
     (await post(zakazky, 'http://x/api/zakazky', { zakazka: dlouhe }, cObch)).status === 400);
 }
 
-console.log('\n===== AUDIT B27: NEPLATNÝ STAV PIPEDRIVE =====\n');
+console.log('\n===== AUDIT L27: NEPLATNÝ STAV PIPEDRIVE =====\n');
 {
   const spatny = await get(pdDealy, 'http://x/api/pd/dealy?stav=cokoli', cObch);
-  test('B27: neplatný stav vrátí 400 (i bez napojení na Pipedrive)', spatny.status === 400, spatny.status);
+  test('L27: neplatný stav vrátí 400 (i bez napojení na Pipedrive)', spatny.status === 400, spatny.status);
   const platny = await get(pdDealy, 'http://x/api/pd/dealy?stav=won', cObch);
-  test('B27: platný stav projde (bez napojení nastaveno:false)', platny.status === 200, platny.status);
+  test('L27: platný stav projde (bez napojení nastaveno:false)', platny.status === 200, platny.status);
 }
 
-console.log('\n===== AUDIT B29: AUTOR KARTY ZÁKAZNÍKA =====\n');
+console.log('\n===== AUDIT L29: AUTOR KARTY ZÁKAZNÍKA =====\n');
 {
   await post(zakazniciFn, 'http://x/api/zakaznici',
-    { zakaznik: { nazev: 'B29 s.r.o.', ico: '27074358', autor: 'kolega@example.com' } }, cObch);
+    { zakaznik: { nazev: 'L29 s.r.o.', ico: '27074358', autor: 'kolega@example.com' } }, cObch);
   const list = await (await get(zakazniciFn, 'http://x/api/zakaznici', cAdmin)).json();
   const k = (list.zakaznici || []).find(z => z.ico === '27074358');
-  test('B29: autor nové karty je z relace, ne z těla požadavku',
+  test('L29: autor nové karty je z relace, ne z těla požadavku',
     !!k && k.autor === UCTY['Obchodník'].email, k && k.autor);
 }
 
@@ -1103,10 +1103,10 @@ console.log('\n===== AUDIT B15: SEBEUZAMČENÍ A ARCHIV =====\n');
     (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'aktivni', email: 'archiv@example.com', aktivni: true }, cAdmin)).status === 400);
   const pokus = await post(prihlaseni, 'http://x/api/prihlaseni', { email: 'archiv@example.com', heslo: 'ArchivHeslo1' });
   test('B15: archivovaný účet se nepřihlásí', pokus.status === 401);
-  /* B31 (23. 8. 2026): vlastní účet si správce nearchivuje (archiv = vypnutí). */
-  test('B31: správce si nearchivuje vlastní účet',
+  /* L31 (23. 8. 2026): vlastní účet si správce nearchivuje (archiv = vypnutí). */
+  test('L31: správce si nearchivuje vlastní účet',
     (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'archiv', email: eA, archiv: true }, cA)).status === 400);
-  test('B31: správce po pokusu dál funguje', (await get(ja, 'http://x/api/ja', cA)).status === 200);
+  test('L31: správce po pokusu dál funguje', (await get(ja, 'http://x/api/ja', cA)).status === 200);
 }
 
 console.log('\n===== AUDIT B16: DÉLKY A TVAR =====\n');

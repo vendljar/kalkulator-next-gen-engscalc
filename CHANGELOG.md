@@ -8,6 +8,40 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.9.6 — 22. 9. 2026
+
+### Dávka 5: drobnosti, na kterých ale stojí důvěra v běh (#307, #308)
+
+**Repozitář dostal `package-lock.json` (B11).** Jediná závislost byla
+zapsaná rozsahem, takže si každé sestavení na Netlify mohlo vzít jinou
+verzi, aniž by se v repozitáři cokoli změnilo. Zámek se generoval v čistém
+adresáři: na místě by do něj `npm` zapsal i symbolické odkazy na globální
+playwright z tohohle prostředí a jinde by pak `npm ci` spadl.
+
+**Pravidla pořadníku teď kontroluje Node sada (N18).** `roadmap.json` je
+jediný zdroj pravdy o tom, co je hotové, ale jeho pravidla hlídal jedině
+generátor, který v repozitáři není. Dnes se soubor rozbil dvakrát a pokaždé
+se to našlo ručně. Nová sada ověřuje přesně to, co vypisuje README
+v roadmapě — nic navíc, aby nebyla přísnější než dohoda.
+
+První běh rovnou našel položku **#295** ve stavu „hotovo", která si držela
+„čeká na J. V.". Odpověď z dnešního rána je teď zapsaná přímo u ní, čekání
+je pryč.
+
+**Popisky tří bloků v matici práv nesly čísla, která už patří jinému
+auditu.** Testy z 23. 8. se jmenovaly stejně jako nálezy z 9. 9.
+Přeznačeny na řadu L, jak je to od začátku v souboru mutací.
+
+**Návod ke zdrojákům popisoval dva prohlížečové testy, ne třicet sedm.**
+Sekce dopsaná podle skutečného stavu: co harnessy pokrývají, že se pouštějí
+globem (a proč), které se bez firemních podkladů přeskočí a co k tomu
+potřebují za prostředí.
+
+**N14 se sem nevrací** — vyřešila ji už dávka 2: nebyla to chyba kódu, ale
+zastaralé očekávání testu.
+
+---
+
 ## v22.9.5 — 22. 9. 2026
 
 ### Dávka 4: tři serverové pojistky (#304, #305, #306)
