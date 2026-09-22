@@ -1,6 +1,10 @@
 # Kalkulačka OCK / PROJ – zdrojové soubory
 
-Verze v tomto archivu: **v7.9.2** (soubor `verze.txt`).
+Verzi tohohle archivu nese soubor **`verze.txt`** — tam je vždycky pravda.
+
+> Dřív tu stálo číslo natvrdo („v7.9.2") a zůstalo stát, zatímco archiv byl
+> o víc než sto dávek dál. Číslo napsané na dvou místech se dřív nebo později
+> rozejde, a to na tom, které je vidět první. Proto tu žádné není.
 
 ## Co je uvnitř
 
