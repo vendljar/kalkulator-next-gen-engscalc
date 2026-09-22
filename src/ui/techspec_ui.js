@@ -135,6 +135,9 @@ function renderTechspecPreklad() {
     `<h3>${tsPrelozText(sk.sekce)}</h3>` +
     sk.pole.map(p => {
       const h = tsHodnota(p, TS, r, Z, C, jazyk());
+      /* Odvozený prázdný řádek do dokumentu nepatří (lešení kolem OCK, když
+       * je v ceně) — cizojazyčný náhled je tiskový, takže ho vynechá celý. */
+      if (h.odvozeno && h.text === '') return '';
       return row(p.label, h.text, h.prelozeno);
     }).join('') +
     (sk.pozn ? `<div class="note">${tsPrelozText(sk.pozn)}</div>` : '')
@@ -170,6 +173,23 @@ function renderTechspec() {
 
   const specRow = (pole) => {
     const h = tsHodnota(pole, TS, r, Z, C);
+    /* ODVOZENÉ POLE (22. 9. 2026 večer): hodnotu určuje cena, takže se nedá
+     * přepsat a obrazovka řekne, kde se to mění. Ruční hodnota ze starší
+     * zakázky se nemaže — jen se ukáže, že neplatí, jinak by uživatel nevěděl,
+     * proč se jeho „ne" do dokumentu nedostalo. Prázdná odvozená hodnota =
+     * řádek do dokumentu nepatří; na obrazovce zůstane (ať je vidět proč),
+     * ale do tisku ne. */
+    if (h.odvozeno) {
+      const stara = TS.hodnoty[pole.id];
+      const neplati = (stara != null && String(stara) !== h.text)
+        ? `<div class="note noprint" style="margin:2px 0 0">Ruční hodnota „${esc(stara)}“ se nepoužije — řádek se řídí cenou.</div>` : '';
+      const vynechano = h.text === '';
+      return `<div class="spec-row${vynechano ? ' noprint' : ''}"><div class="lbl">${esc(pole.label)}</div>
+      <div><div class="spec-odvozene">${vynechano ? '<i>do dokumentu se nedává</i>' : esc(h.text)}</div>
+        ${pole.odvozenePopis ? `<div class="note noprint" style="margin:2px 0 0">${esc(pole.odvozenePopis)}</div>` : ''}${neplati}</div>
+      <div><span class="pill src" title="hodnotu určuje cena v Kalkulaci OCK, ručně se nemění">z kalkulace</span></div>
+    </div>`;
+    }
     const rucne = TS.hodnoty[pole.id] != null;
     const badge = rucne ? '<span class="pill warn src">ručně</span>'
       : (h.zdroj === 'z kalkulace' ? '<span class="pill src">z kalkulace</span>' : '<span class="pill mut src">výchozí</span>');

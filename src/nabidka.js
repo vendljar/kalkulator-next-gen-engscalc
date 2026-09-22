@@ -55,6 +55,12 @@ function nabidkaData(zak, varianta, jekly, lang) {
   const soklPriplatek = (r.priplatky || []).some(x => x.key === 'sokl')
     && !(Zv.priplatkyVynechat || []).includes('sokl');
 
+  /* Vnější lešení v ZÁKLADNÍ CENĚ — jedna definice pro kapitolu IV.
+   * i pro řádek specifikace „LEŠENÍ KOLEM OCK…" (P8/7). Dvě různé podmínky
+   * na dvou místech by se dřív nebo později rozešly a dokument by si zase
+   * odporoval. Tutéž otázku klade `tsLeseniVnejsiVCene` ve specifikaci. */
+  const leseniVnejsiVCene = (r.volitelneKatalog || []).some(x => x.key === 'leseniVnejsi' && x.zahrnuto);
+
   /* #14 krok 3: formát bydlí ve format.js (záložka pro samostatný Node běh).
    * Měna (#155 + dorovnání 19. 8. večer): CZ = koruny; jiná mutace = eura
    * kurzem z ceníku varianty. Převádějí se ČÍSLA po položkách (celá eura
@@ -269,8 +275,7 @@ function nabidkaData(zak, varianta, jekly, lang) {
      *
      * Hledá se ve všech jazycích kapitoly, ne jen česky: kapitola se
      * nepřekládá, každý jazyk má vlastní ručně psaný text. */
-    const leseniVDodavce = jeVKatalogu('leseniVnejsi')
-      && !(r.priplatky || []).some(x => x.key === 'leseniVnejsi');
+    const leseniVDodavce = leseniVnejsiVCene;
     const LESENI_RE = /lešen|scaffold|gerüst|gerust|échafaud|echafaud/i;
     FIRMA_KAPITOLY.forEach(kap => {
       const k = firmaKapitola(f, kap.base, L);
@@ -404,7 +409,10 @@ function nabidkaNahledSekce(ph, lang) {
       ['ZPRACOVÁNÍ DÍLENSKÉ DOKUMENTACE', ph.TS_DILENSKA_DOK], ['OVĚŘOVACÍ STATICKÝ VÝPOČET KONSTRUKCE', ph.TS_STATIKA]] },
     { sekce: 'SOUČÁSTÍ DODÁVKY NENÍ', radky: [
       ['OSVĚTLENÍ NÁSTUPIŠŤ', ph.TS_NENI_OSVETLENI], ['NUCENÉ VĚTRÁNÍ ŠACHTY VENTILÁTOREM', ph.TS_NENI_VENTILATOR],
-      ['LEŠENÍ KOLEM OCK PRO PROVEDENÍ OPLÁŠTĚNÍ', ph.TS_NENI_LESENI],
+      /* Řádek zmizí, když je vnější lešení v základní ceně (P8/7) — dodávku
+       * pak říká LEŠENÍ – VNĚ ŠACHTY výš. Word ho vyhodí sám (prázdný TS_*),
+       * náhled se musí zeptat tady, stejně jako u soklu. */
+      ...(ph.TS_NENI_LESENI ? [['LEŠENÍ KOLEM OCK PRO PROVEDENÍ OPLÁŠTĚNÍ', ph.TS_NENI_LESENI]] : []),
       ['ODBĚRNÉ MÍSTO EL. ENERGIE PO DOBU REALIZACE', ph.TS_NENI_ODBERNE], ['ÚLOŽNÉ PROSTORY', ph.TS_NENI_ULOZNE],
       ['DOZDĚNÍ KOLEM ŠACHETNÍCH DVEŘÍ', ph.TS_NENI_DOZDENI], ['STAVEBNÍ PŘÍPRAVA', ph.TS_NENI_STAVEBNI],
       ...(ph.TS_NENI_SOKL ? [['OPLECHOVÁNÍ SOKLU PROHLUBNĚ', ph.TS_NENI_SOKL]] : []),

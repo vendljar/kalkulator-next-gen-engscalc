@@ -219,10 +219,10 @@ nepříjemné, ne to číslo samo.
 | 2 | Automatický ATYP | Ponechat, nikdy tiše | uzavřeno — bez zásahu |
 | 3 | Výchozí volitelné položky | Zatím neměnit, pak rozhodnout z dat | uzavřeno — bez zásahu |
 | 4 | Tmelení | Ponechat jen exteriér | **zavedeno** (v21.9.18) |
-| 5 | Montáž | Udělat z počtu lidí pole (dnes je 4 natvrdo) | **čeká na vaši volbu** |
-| 6 | Statika | **Svázat cenu se specifikací** — dnes si můžou odporovat | **čeká na vaši volbu** |
-| 7 | Lešení | Sjednotit dodávku napříč dokumentem | **zavedeno** (v22.9.12) |
-| 8 | DPH u zahraniční řady | Vlastní sazba + doložka o přenesené povinnosti | **zavedeno** (v22.9.13) |
+| 5 | Montáž | Udělat z počtu lidí pole (dnes je 4 natvrdo) | uzavřeno — bez zásahu |
+| 6 | Statika | **Svázat cenu se specifikací** — dnes si můžou odporovat | **zavedeno** (v22.9.16) |
+| 7 | Lešení | Sjednotit dodávku napříč dokumentem | **zavedeno** (v22.9.12, doladěno v22.9.16) |
+| 8 | DPH u zahraniční řady | Vlastní sazba + doložka o přenesené povinnosti | **zavedeno** (v22.9.13, výchozí 0 % v22.9.15) |
 | 9 | Hmotnost spojky | Ponechat 0,4 m profilu | uzavřeno — bez zásahu |
 
 ## Co se rozhodlo 22. 9. 2026
@@ -251,3 +251,25 @@ u téže zakázky může říkat „ne".
 
 **Nic z nezavedených voleb jsem neprogramoval.** Až u obou padne rozhodnutí,
 vznikne z nich samostatná dávka.
+
+## Doplněno 22. 9. 2026 večer — uzavřeny poslední dvě volby
+
+**(6) Statika:** *„statiku nastav tak, ať dokument respektuje to, co je
+v ceně."* Zvolená je tedy druhá z variant, které podklad nabízel: pole
+specifikace je **odvozené z ceny** („ano", když je v kalkulaci položka
+STATICKÉ POSOUZENÍ s nenulovým množstvím), ne nový vypínač. Vypínačem je
+množství u té položky — tím se statika v kalkulaci OCK vypíná už dnes.
+
+**(5) Montáž:** *„počet lidí na montáž neřeš."* Zůstává čtyřka v kódu.
+
+**Doladění (7) lešení:** *„vnější lešení vrať do příplatkových položek."*
+U interiérové šachty je vnější lešení příplatkem (odpolední oprava ho tam
+vyřadila úplně). A řádek „LEŠENÍ KOLEM OCK…" v sekci Součástí dodávky není
+se u lešení v základní ceně vynechá — to byla druhá půlka návrhu výš, kterou
+odpolední oprava nedotáhla.
+
+**Doladění (8) DPH:** *„sazba DPH se při přepnutí na zahraniční ceník
+nepřepíná na 0 % … to by bylo optimální."* Prázdná zahraniční sazba DPH
+znamená 0 %. Doložku o přenesené daňové povinnosti, kterou podklad
+doporučoval probrat s účetní, zatím nikdo nerozhodl — v nabídce je jen
+sazba 0 % (nulová).

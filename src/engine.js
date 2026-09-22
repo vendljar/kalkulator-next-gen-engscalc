@@ -1202,13 +1202,18 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const volKatalogDef = [
     { key: 'prechodove', mk: () => mkItem('PŘECHODOVÉ PLECHY - NEREZ', prechKg, c.prechodoveKgKc, { cenaPath: 'C.prechodoveKgKc' }), zahrnuto: prechodoveAno, dostupne: true, prip: 'prechMat' },
     { key: 'leseniVnitrni', mk: () => mkItem('LEŠENÍ - vnitřní', leseniVez, c.leseniVnitrniKc, { cenaPath: 'C.leseniVnitrniKc', fix: c.leseniFix, pozn: `+ fix ${c.leseniFix} Kč` }), zahrnuto: v.leseniVnitrni, dostupne: true, prip: 'leseniVnitrni' },
-    /* VNĚJŠÍ LEŠENÍ JEN NA EXTERIÉROVÉ ŠACHTĚ (nález K1, rozhodnutí J. V.:
-     * „u interiérové šachty vnější lešení primárně nenabízet").
+    /* VNĚJŠÍ LEŠENÍ JE V ZÁKLADNÍ CENĚ JEN NA EXTERIÉROVÉ ŠACHTĚ (nález K1,
+     * rozhodnutí J. V.: „u interiérové šachty vnější lešení primárně
+     * nenabízet").
      *
      * Dělení volitelných položek podle typu šachty tu existovalo od začátku
      * — háky a sokl jen venku, zábradlí jen uvnitř —, jen vnější lešení do
      * něj nikdo nedopsal. Interiérová šachta tak v základní ceně platila
-     * lešení, které se u ní nestaví.
+     * lešení, které se u ní běžně nestaví.
+     *
+     * „Primárně" ale neznamená „vůbec": od 22. 9. 2026 večer se u interiérové
+     * šachty nabízí mezi PŘÍPLATKY (viz řádek u příplatků níž). Tady se jen
+     * nesmí dostat do základní ceny.
      *
      * `mk()` se volá i u nedostupných položek, aby se název zapsal do
      * rejstříku (#4): ruční přepis pořízený na exteriérové zakázce se tím
@@ -1445,9 +1450,21 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
       { cenaPath: 'C.leseniVnitrniKc', naklad: leseniVez * c.leseniVnitrniKc + c.leseniFix }),
     v.leseniHlava ? null : mkPrip('leseniHlava', 'LEŠENÍ - dokončení hlavy šachty', z.prejezd, pp.leseniHlavaKc,
       { cenaPath: 'C.priplatky.leseniHlavaKc' }),
-    /* Týž tvar jako háky a sokl o kus níž (K1): na interiérové šachtě se
-     * vnější lešení nenabízí ani jako příplatek. */
-    (ext && !v.leseniVnejsi) ? mkPrip('leseniVnejsi', 'LEŠENÍ - vnější', leseniU, c.leseniVnejsiKc,
+    /* VNĚJŠÍ LEŠENÍ U INTERIÉROVÉ ŠACHTY JE PŘÍPLATEK (22. 9. 2026 večer,
+     * pokyn J. V.: „vnější lešení vrať do příplatkových položek").
+     *
+     * Oprava K1 z odpoledne ho u interiérové šachty vyřadila z volitelných
+     * I z příplatků. Rozhodnutí přitom znělo „primárně nenabízet" — tedy
+     * nedávat do základní ceny, ne zakázat. Jsou interiérové šachty, kde se
+     * vnější lešení stavět musí, a obchodník pak neměl kam sáhnout.
+     *
+     * Na exteriérové šachtě platí dál dvojdomost: v základní ceně (zaškrtnuté
+     * ve volitelných), jinak příplatek. Na interiérové je vždycky příplatek,
+     * protože do základní ceny se tam dostat nemůže (`dostupne: ext` u
+     * volitelných) — proto se tu na `v.leseniVnejsi` neptá. Zaškrtnutí
+     * z matice Výchozí by jinak u interiérové šachty příplatek schovalo,
+     * aniž by lešení bylo kde jinde. */
+    (!ext || !v.leseniVnejsi) ? mkPrip('leseniVnejsi', 'LEŠENÍ - vnější', leseniU, c.leseniVnejsiKc,
       { cenaPath: 'C.leseniVnejsiKc', naklad: leseniU * c.leseniVnejsiKc + c.leseniFix }) : null,
     /* HÁKY, ZÁBRADLÍ a SOKL i mezi příplatky (16. 9. 2026, zadání J. V.:
      * „z volitelných položek do základní ceny přidej do příplatkových i ty

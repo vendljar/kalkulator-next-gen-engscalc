@@ -344,15 +344,17 @@ const TECHSPEC_DEF = [
     { id: 'leseniUvnitr', label: 'LEŠENÍ – UVNITŘ ŠACHTY', ciselnik: TS_C.stavebniPrace,
       prefill: (r, Z) => Z.volitelne.leseniVnitrni
         ? 'je součástí dodávky pouze po dobu stavby šachty' : 'není součást dodávky, lze doplnit viz příplatkové ceny' },
-    /* U interiérové šachty se vnější lešení nestaví, takže ho nenabízí ani
-     * kalkulace (nález K1). Specifikace by jinak tvrdila „lze doplnit viz
-     * příplatkové ceny" u položky, která v příplatcích není. */
+    /* Rozhoduje VÝSLEDEK VÝPOČTU, ne zaškrtávátko v zadání (22. 9. 2026
+     * večer). Do základní ceny se vnější lešení dostane jen na exteriérové
+     * šachtě; na interiérové je od té doby vždycky příplatkem (pokyn J. V.:
+     * „vnější lešení vrať do příplatkových položek"). Samotné
+     * `Z.volitelne.leseniVnejsi` by na interiérové šachtě s předvolbou
+     * z matice Výchozí slíbilo dodávku, která v ceně není. U odeslané
+     * nabídky je `r` zmrazený otisk, takže se znění zpětně nemění. */
     { id: 'leseniVne', label: 'LEŠENÍ – VNĚ ŠACHTY', ciselnik: TS_C.stavebniPrace,
-      prefill: (r, Z) => (String(Z.typSachty) !== 'exteriérová')
-        ? 'není součástí dodávky, zajistí objednatel'
-        : (Z.volitelne.leseniVnejsi
-          ? 'je součástí dodávky pro provedení kompletního opláštění šachty'
-          : 'není součást dodávky, lze doplnit viz příplatkové ceny') },
+      prefill: (r) => tsLeseniVnejsiVCene(r)
+        ? 'je součástí dodávky pro provedení kompletního opláštění šachty'
+        : 'není součást dodávky, lze doplnit viz příplatkové ceny' },
     { id: 'ohrazeniProtiPadu', label: 'OHRAZENÍ ŠACHTY PROTI PÁDU', ciselnik: TS_C.stavebniPrace,
       def: 'není součástí dodávky, zajistí objednatel' },
     { id: 'zabranyVstupy', label: 'ZÁBRANY DO DVEŘNÍCH VSTUPŮ', ciselnik: TS_C.stavebniPrace,
@@ -365,13 +367,42 @@ const TECHSPEC_DEF = [
     { id: 'vystupZamereni', label: 'VÝSTUP ZE ZAMĚŘENÍ PRO OBJEDNATELE', ciselnik: TS_C.anoNe,
       prefill: (r, Z) => Z.vystupZamereni ? 'ano' : 'ne' },
     { id: 'dilenskaDok', label: 'ZPRACOVÁNÍ DÍLENSKÉ DOKUMENTACE', ciselnik: TS_C.anoNe, def: 'ano' },
-    { id: 'statika', label: 'OVĚŘOVACÍ STATICKÝ VÝPOČET KONSTRUKCE', ciselnik: TS_C.anoNe, def: 'ano' },
+    /* STATIKA SE ŘÍDÍ CENOU (P8/6, pokyn J. V. 22. 9. 2026: „statiku nastav
+     * tak, ať dokument respektuje to, co je v ceně").
+     *
+     * Do té doby tu stálo jen `def: 'ano'`. Položka STATICKÉ POSOUZENÍ se
+     * přitom v kalkulaci dá vypnout (množstvím 0 nebo vyřazením z počítání)
+     * a pole šlo naopak přepsat na „ne", zatímco statika v ceně zůstala.
+     * Specifikace je příloha smlouvy: co v ní stojí, je slib zákazníkovi.
+     *
+     * Pole je proto ODVOZENÉ — ruční hodnota se nepoužije (zůstává v datech,
+     * nic se nemaže) a obrazovka ho ukazuje jen ke čtení s vysvětlením, kde
+     * se statika zapíná. `def` zůstává pro chvíli, kdy výsledek výpočtu
+     * ještě není (tsHodnota pak prefill ani odvození nevolá). */
+    { id: 'statika', label: 'OVĚŘOVACÍ STATICKÝ VÝPOČET KONSTRUKCE', ciselnik: TS_C.anoNe, def: 'ano',
+      odvozene: (r) => tsStatikaVCene(r) ? 'ano' : 'ne',
+      odvozenePopis: 'Řídí se cenou: „ano", když je v Kalkulaci OCK (sekce Režie) položka '
+        + 'STATICKÉ POSOUZENÍ s nenulovým množstvím. Statiku vypnete tam — množstvím 0.' },
   ] },
 
   { sekce: 'SOUČÁSTÍ DODÁVKY NENÍ', volne: true, pole: [
     { id: 'neni1', label: 'OSVĚTLENÍ NÁSTUPIŠŤ', ciselnik: TS_C.dodavkaPozn, def: 'není součástí nabídky' },
     { id: 'neni2', label: 'NUCENÉ VĚTRÁNÍ ŠACHTY VENTILÁTOREM', ciselnik: TS_C.dodavkaPozn, def: 'není požadováno' },
-    { id: 'neni3', label: 'LEŠENÍ KOLEM OCK PRO PROVEDENÍ OPLÁŠTĚNÍ', ciselnik: TS_C.dodavkaPozn, def: 'zajistí objednatel v rámci SP' },
+    /* Když je vnější lešení v ZÁKLADNÍ CENĚ, nesmí tu stát (P8/7 — návrh,
+     * který J. V. 22. 9. 2026 schválil: „když je lešení vnější zaškrtnuté,
+     * musí řádek LEŠENÍ KOLEM OCK… říct, že je v dodávce"). Řádek je ale
+     * v sekci SOUČÁSTÍ DODÁVKY NENÍ, takže „je v dodávce" by si odporovalo
+     * s nadpisem — stejná past jako u soklu (16. 9. 2026). Dodávku už říká
+     * řádek LEŠENÍ – VNĚ ŠACHTY výš; tenhle se proto VYNECHÁ (prázdná
+     * hodnota = řádek z dokumentu zmizí, viz TS_SOKL v nabidka.js).
+     *
+     * Oprava K1 z 22. 9. odpoledne srovnala jen kapitolu IV. a řádek výš;
+     * tenhle zůstal a u exteriérové šachty s lešením v ceně tvrdil opak.
+     * Mimo tenhle případ se pole chová jako dřív — text volí obchodník. */
+    { id: 'neni3', label: 'LEŠENÍ KOLEM OCK PRO PROVEDENÍ OPLÁŠTĚNÍ', ciselnik: TS_C.dodavkaPozn, def: 'zajistí objednatel v rámci SP',
+      odvozene: (r) => tsLeseniVnejsiVCene(r) ? '' : null,
+      odvozenePopis: 'Vnější lešení je v základní ceně (řádek LEŠENÍ – VNĚ ŠACHTY), '
+        + 'proto se tenhle řádek do dokumentu nedává.' },
     { id: 'neni4', label: 'ODBĚRNÉ MÍSTO EL. ENERGIE PO DOBU REALIZACE', ciselnik: TS_C.dodavkaPozn, def: 'bezúplatně zajistí objednatel' },
     { id: 'neni5', label: 'ÚLOŽNÉ PROSTORY', ciselnik: TS_C.dodavkaPozn, def: 'bezúplatně zajistí majitel objektu' },
     { id: 'neni6', label: 'DOKONČENÍ PODLAH NÁSTUPIŠŤ A NAPOJENÍ K PRAHŮM Š. DVEŘÍ', ciselnik: TS_C.dodavkaPozn, def: 'zajistí objednatel' },
@@ -411,7 +442,46 @@ const DEFAULT_TECHSPEC = {
  * takže si ji prefill složí rovnou v cílovém jazyce a dá o tom vědět
  * příznakem `prelozeno`. Tisk pak ví, že přes ni nemá pouštět `tr()` podruhé
  * — jinak by hlásil chybějící heslo u textu, který je přeložený správně. */
+/* ODVOZENÉ POLE (22. 9. 2026 večer). `pole.odvozene(r, Z, C, jazyk)` vrací
+ * text, když hodnotu URČUJE CENA — pak se ruční přepis nepoužije —, nebo
+ * `null`, když se pole chová jako každé jiné. Prázdný řetězec znamená „řádek
+ * do dokumentu nepatří" (dokument prázdné řádky vynechává).
+ *
+ * Proč přednost před ruční hodnotou: specifikace je příloha smlouvy a tyhle
+ * řádky popisují něco, za co zákazník v ceně platí, nebo neplatí. Ruční text,
+ * který ceně odporuje, je slib, který firma nedodrží (statika P8/6), nebo
+ * popření dodávky, kterou si zákazník zaplatil (lešení P8/7). Ruční hodnota
+ * se nemaže — zůstává v datech a vrátí se, jakmile cena přestane rozhodovat. */
+function tsOdvozeno(pole, vysledekOck, Z, C, jazyk) {
+  if (!pole || typeof pole.odvozene !== 'function' || !vysledekOck) return null;
+  try {
+    const t = pole.odvozene(vysledekOck, Z, C, jazyk);
+    return t == null ? null : String(t);
+  } catch (e) { return null; }
+}
+
+/* Je vnější lešení v ZÁKLADNÍ CENĚ? Rozhoduje výsledek výpočtu: katalog
+ * volitelných je profiltrovaný podle typu šachty, takže na interiérové šachtě
+ * v něm lešení není vůbec. U odeslané nabídky je `r` zmrazený otisk. */
+function tsLeseniVnejsiVCene(r) {
+  return !!(r && (r.volitelneKatalog || []).some(x => x.key === 'leseniVnejsi' && x.zahrnuto));
+}
+
+/* Je statika v ceně? Řádek STATICKÉ POSOUZENÍ mezi POČÍTANÝMI řádky režie
+ * (`r.sekce.rezie` už je po filtru vyřazených položek) a s nenulovým
+ * množstvím — nula je v kalkulaci OCK zavedený způsob, jak položku vypnout
+ * (štítek „vypnuto (množství 0)"). Nulová CENA při nenulovém množství
+ * statiku nevypíná: to je statika zdarma, ale pořád se dělá. Řádek se hledá
+ * podle ceníkové cesty; název může obchodník přejmenovat. */
+function tsStatikaVCene(r) {
+  const radky = (r && r.sekce && r.sekce.rezie) || [];
+  return radky.some(x => (x.cenaPath === 'C.statikaKc' || x.origNazev === 'STATICKÉ POSOUZENÍ')
+    && Number(x.mnozstvi) > 0);
+}
+
 function tsHodnota(pole, ts, vysledekOck, Z, C, jazyk) {
+  const odv = tsOdvozeno(pole, vysledekOck, Z, C, jazyk);
+  if (odv != null) return { text: odv, zdroj: 'z kalkulace', odvozeno: true };
   if (ts.hodnoty[pole.id] != null) return { text: ts.hodnoty[pole.id], zdroj: 'ručně' };
   if (pole.prefill && vysledekOck) {
     try {
@@ -545,5 +615,6 @@ function tsKontrola(ts, r, Z, C, zak) {
 
 if (typeof module !== 'undefined')
   module.exports = { TECHSPEC_DEF, TS_C, DEFAULT_TECHSPEC, tsHodnota, tsOplasteniRozsah,
+    tsOdvozeno, tsLeseniVnejsiVCene, tsStatikaVCene,
     TS_C_KEY_OF, tsCiselnikKlic, tsCiselnikPouziti, tsPole, TS_C_ORIG, TS_DEF_ORIG,
     TS_HLAVICKA, TS_POVINNE, tsPrazdna, tsKontrola };

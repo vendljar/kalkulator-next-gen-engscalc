@@ -103,13 +103,21 @@ vObouRezimech(() => {
     vol && pri && blizko(vol.naklad, pri.naklad), vol && pri && [vol.naklad, pri.naklad]);
 }
 
-/* VNĚJŠÍ LEŠENÍ SE NA INTERIÉROVÉ ŠACHTĚ NENABÍZÍ (nález K1, rozhodnutí
- * J. V. 22. 9. 2026: „u interiérové šachty vnější lešení primárně
- * nenabízet"). Do 22. 9. ho interiérová zakázka platila v základní ceně,
- * ačkoli se u ní nestaví.
+/* VNĚJŠÍ LEŠENÍ NA INTERIÉROVÉ ŠACHTĚ NENÍ V ZÁKLADNÍ CENĚ, ALE NABÍZÍ SE
+ * JAKO PŘÍPLATEK.
  *
- * Měří se DOPAD NA CENU, ne jen přítomnost řádku: interiérová o tu položku
- * zlevní přesně, exteriérová se nesmí hnout ani o korunu. */
+ * Očekávání se změnilo dvakrát za jeden den, a proto je tu celý vývoj:
+ *  - do 22. 9. 2026 ho interiérová zakázka platila v základní ceně, ačkoli
+ *    se u ní běžně nestaví (nález K1);
+ *  - oprava K1 z odpoledne ho u interiérové šachty vyřadila z volitelných
+ *    I z příplatků — šlo to dál, než znělo rozhodnutí („primárně
+ *    nenabízet");
+ *  - večer J. V.: „vnější lešení vrať do příplatkových položek". Do základní
+ *    ceny se u interiérové šachty dostat nesmí, zákazník si ho ale může
+ *    doobjednat.
+ *
+ * Měří se DOPAD NA CENU, ne jen přítomnost řádku: přepínač ze zadání
+ * interiérovou základní cenou nehne a exteriérovou ano. */
 {
   const int1 = spocti({ leseniVnejsi: true }, (c) => {}, REZIM);
   const intZ = (() => { const z = zadani(); z.typSachty = 'interiérová';
@@ -117,8 +125,23 @@ vObouRezimech(() => {
     return eng.vypocet(z, cenik(), JEKLY, REZIM); })();
   testR('na interiérové šachtě není vnější lešení ve volitelných',
     !volitelna(intZ, VNEJSI));
-  testR('ani v příplatcích', !priplatek(intZ, 'leseniVnejsi'));
+  testR('ale nabízí se mezi příplatky', !!priplatek(intZ, 'leseniVnejsi'));
   testR('na exteriérové zůstává', !!volitelna(int1, VNEJSI));
+  /* Příplatek musí stát stejně jako na exteriérové šachtě: množství
+   * i sazba jsou tytéž výrazy (obvod lešení × výška + fixní část). Kdyby se
+   * pro interiérovou šachtu počítal jinak, zákazník by za tutéž práci
+   * dostal jinou cenu podle toho, kde šachta stojí. */
+  const priInt = priplatek(intZ, 'leseniVnejsi');
+  const priExt = priplatek(spocti({ leseniVnejsi: false }, null, REZIM), 'leseniVnejsi');
+  testR('a stojí tam stejně jako na exteriérové šachtě',
+    priInt && priExt && blizko(priInt.naklad, priExt.naklad), priInt && priExt && [priInt.naklad, priExt.naklad]);
+  /* Zaškrtnutí z matice Výchozí nesmí interiérové šachtě příplatek schovat:
+   * v základní ceně tam lešení být nemůže, takže by nebylo nikde. */
+  const intVypPri = (() => { const z = zadani(); z.typSachty = 'interiérová';
+    z.volitelne = Object.assign({}, z.volitelne, { leseniVnejsi: false });
+    return eng.vypocet(z, cenik(), JEKLY, REZIM); })();
+  testR('a to bez ohledu na zaškrtnutí ve volitelných',
+    !!priplatek(intZ, 'leseniVnejsi') && !!priplatek(intVypPri, 'leseniVnejsi'));
 
   /* Cena: interiérová se zaškrtnutým i odškrtnutým vnějším lešením musí
    * vyjít stejně — položka u ní neexistuje, takže s ní přepínač nehne. */

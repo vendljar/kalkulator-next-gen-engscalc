@@ -83,15 +83,49 @@ function nahled(jazyk, upravFirmu, upravZadani) {
       [radky(bez.ph).length, radky(sNim.ph).length]);
   });
 
-  /* Interiérová šachta vnější lešení nenabízí vůbec, takže odrážka zůstává:
-   * lešení si tam objednatel opravdu zajistí sám. */
+  /* Interiérová šachta nemá vnější lešení v základní ceně, takže odrážka
+   * zůstává: bez příplatku si ho objednatel zajistí sám. */
   const int = nahled('cz', null, (z) => { z.typSachty = 'interiérová'; z.volitelne.leseniVnejsi = true; });
   test('na interiérové šachtě odrážka zůstává',
     String(int.ph.FIRMA_NAB_POZADAVKY || '').split('\n').some(r => LESENI.test(r)));
-  /* A v rozšíření nabídky u ní nesmí stát „v základní ceně" — položka
-   * u téhle šachty neexistuje (nález K1). */
+  /* A v rozšíření nabídky u ní nesmí stát „v základní ceně" (nález K1).
+   * Od 22. 9. večer je tam naopak CENA PŘÍPLATKU — J. V.: „vnější lešení
+   * vrať do příplatkových položek". Do té doby (odpoledne) tam byla
+   * pomlčka, protože položka u interiérové šachty neexistovala vůbec. */
   test('a v nabídce u ní nestojí „v základní ceně"',
     String(int.ph.PRIP_LESENI_VNEJSI || '').indexOf('základní') < 0, int.ph.PRIP_LESENI_VNEJSI);
+  test('ale cena příplatku (lešení se u ní nabízí jako příplatek)',
+    /\d/.test(String(int.ph.PRIP_LESENI_VNEJSI || '')), int.ph.PRIP_LESENI_VNEJSI);
+  test('a specifikace u ní odkazuje na příplatkové ceny',
+    /příplatkové ceny/.test(String(int.ph.TS_LESENI_VNE || '')), int.ph.TS_LESENI_VNE);
+
+  /* ŘÁDEK „LEŠENÍ KOLEM OCK…" V SEKCI SOUČÁSTÍ DODÁVKY NENÍ (P8/7).
+   * Schválený návrh chtěl srovnat specifikaci i kapitolu IV.; oprava K1
+   * srovnala jen kapitolu. U lešení v základní ceně tak dokument pořád
+   * tvrdil v jedné sekci „je součástí dodávky" a v druhé „součástí dodávky
+   * není — zajistí objednatel". Řádek teď v tom případě zmizí (jako sokl). */
+  const neniSekce = (n) => (n.sekce.find(s => s.sekce === 'SOUČÁSTÍ DODÁVKY NENÍ') || { radky: [] })
+    .radky.map(rr => rr[0]);
+  const extSLesenim = nahled('cz', null, (z) => { z.typSachty = 'exteriérová'; z.volitelne.leseniVnejsi = true; });
+  const extBezLeseni = nahled('cz', null, (z) => { z.typSachty = 'exteriérová'; z.volitelne.leseniVnejsi = false; });
+  test('lešení v základní ceně: řádek LEŠENÍ KOLEM OCK v „Součástí dodávky není" chybí',
+    neniSekce(extSLesenim).indexOf('LEŠENÍ KOLEM OCK PRO PROVEDENÍ OPLÁŠTĚNÍ') < 0
+    && extSLesenim.ph.TS_NENI_LESENI === '', neniSekce(extSLesenim));
+  test('bez lešení v ceně tam je', neniSekce(extBezLeseni).indexOf('LEŠENÍ KOLEM OCK PRO PROVEDENÍ OPLÁŠTĚNÍ') >= 0,
+    neniSekce(extBezLeseni));
+  test('a u interiérové šachty taky (lešení je tam příplatek)',
+    neniSekce(int).indexOf('LEŠENÍ KOLEM OCK PRO PROVEDENÍ OPLÁŠTĚNÍ') >= 0, neniSekce(int));
+  /* Pojistka proti prázdnému testu: zmizet smí jen ten jeden řádek. */
+  test('ostatní řádky sekce zůstanou',
+    neniSekce(extSLesenim).length === neniSekce(extBezLeseni).length - 1,
+    [neniSekce(extBezLeseni).length, neniSekce(extSLesenim).length]);
+
+  /* STATIKA V DOKUMENTU SE ŘÍDÍ CENOU (P8/6). Model a hraniční případy
+   * hlídá test_specifikace_cena.js; tady jen, že to dojde až do nabídky. */
+  const sStatikou = nahled('cz');
+  const bezStatiky = nahled('cz', null, (z) => { z.mnozstviPrepis = { 'STATICKÉ POSOUZENÍ': 0 }; });
+  test('nabídka: statika v ceně → „ano"', sStatikou.ph.TS_STATIKA === 'ano', sStatikou.ph.TS_STATIKA);
+  test('nabídka: statika vypnutá množstvím 0 → „ne"', bezStatiky.ph.TS_STATIKA === 'ne', bezStatiky.ph.TS_STATIKA);
   const ext = nahled('cz', null, (z) => { z.typSachty = 'exteriérová'; z.volitelne.leseniVnejsi = true; });
   test('na exteriérové v základní ceně naopak stojí',
     String(ext.ph.PRIP_LESENI_VNEJSI || '').indexOf('základní') >= 0, ext.ph.PRIP_LESENI_VNEJSI);

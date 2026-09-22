@@ -8,6 +8,52 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.9.16 — 22. 9. 2026
+
+### Vnější lešení je u interiérové šachty zase příplatkem
+
+Pokyn J. V. večer: „vnější lešení vrať do příplatkových položek."
+
+Oprava K1 z odpoledne (v22.9.12) ho u interiérové šachty vyřadila ze
+základní ceny **i z příplatků**. Rozhodnutí přitom znělo „primárně
+nenabízet" — tedy nedávat do základní ceny, ne zakázat. U interiérové šachty
+je teď vnější lešení **vždycky příplatkem**: do základní ceny se tam dostat
+nemůže, zákazník si ho ale doobjedná. Cena příplatku je tatáž jako na
+exteriérové šachtě (obvod lešení × výška + fixní část). Nabídka u něj tiskne
+cenu, specifikace „lze doplnit viz příplatkové ceny" a kapitola IV. dál žádá
+lešení po objednateli, dokud si ho neobjedná.
+
+### Technická specifikace se řídí cenou (P8/6 statika, P8/7 lešení)
+
+**Statika:** „statiku nastav tak, ať dokument respektuje to, co je v ceně."
+Pole OVĚŘOVACÍ STATICKÝ VÝPOČET KONSTRUKCE mělo pevné „ano" a šlo přepsat na
+„ne", zatímco statika v ceně zůstala — a naopak. Nově je **odvozené**: „ano",
+když je v Kalkulaci OCK položka STATICKÉ POSOUZENÍ s nenulovým množstvím,
+jinak „ne". Na obrazovce je jen ke čtení a říká, kde se statika vypíná
+(množstvím 0). Statika zdarma (cena 0, množství nenulové) je pořád „ano" —
+dělá se.
+
+**Lešení kolem OCK:** schválený návrh k P8/7 chtěl srovnat specifikaci
+i kapitolu IV.; oprava K1 srovnala jen kapitolu. U exteriérové šachty
+s lešením v ceně tak dokument tvrdil v jedné sekci „je součástí dodávky"
+a v sekci SOUČÁSTÍ DODÁVKY NENÍ „zajistí objednatel". Ten řádek se teď
+v tom případě **vynechá** — stejně jako sokl od 16. 9. Mimo tenhle případ
+volí text dál obchodník.
+
+**Ruční hodnota se nemaže.** Zůstává v datech a obrazovka ukáže, že se
+nepoužije. Vrátí se, kdyby cena přestala rozhodovat.
+
+U odeslané nabídky se znění řídí zmrazeným výsledkem, takže se zpětně
+nezmění — kromě případu, kdy ruční text ceně odporoval; takový dokument si
+odporoval už při odeslání.
+
+### P8/5 montáž — uzavřeno bez zásahu
+
+„Počet lidí na montáž neřeš." Čtyřka v kódu zůstává. Tím je uzavřených všech
+devět voleb P8 (#285).
+
+---
+
 ## v22.9.15 — 22. 9. 2026
 
 ### Zahraniční zakázka má po přepnutí sazbu DPH 0 %

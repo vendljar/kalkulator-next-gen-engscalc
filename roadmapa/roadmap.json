@@ -423,17 +423,32 @@
    "testy": "src/test_cenik_rady.js (celý kruh tam a zpět, ruční volba, výslovná sazba, přepočet při otevření, výchozí nula se neukládá), src/test_nabidka_kapitoly.js (jméno nulové sazby CZ/EN/DE), overit_zahranicni.mjs (scénář ze snímku v prohlížeči)."
   },
   {
+   "id": "318",
+   "vlna": "E",
+   "stav": "hotovo",
+   "dulezitost": "vysoka",
+   "slozitost": "M",
+   "hotovoV": "v22.9.16",
+   "nazev": "Specifikace se řídí cenou (statika, lešení) a vnější lešení je u interiérové šachty příplatkem",
+   "proc": "Tři rozhodnutí J. V. z večera 22. 9. 2026: „vnější lešení vrať do příplatkových položek\", „statiku nastav tak, ať dokument respektuje to, co je v ceně\" a „počet lidí na montáž neřeš\".",
+   "detail": "LEŠENÍ: oprava K1 (#313) ho u interiérové šachty vyřadila ze základní ceny I z příplatků; rozhodnutí přitom znělo „primárně nenabízet\". U interiérové šachty je teď vždycky příplatkem, se stejnou cenou jako na exteriérové.\n\nSTATIKA (P8/6): pole OVĚŘOVACÍ STATICKÝ VÝPOČET KONSTRUKCE je ODVOZENÉ z ceny — „ano\", když je položka STATICKÉ POSOUZENÍ v kalkulaci s nenulovým množstvím. Na obrazovce jen ke čtení, s vysvětlením, kde se statika vypíná.\n\nLEŠENÍ KOLEM OCK (P8/7): schválený návrh chtěl srovnat specifikaci i kapitolu IV.; K1 srovnala jen kapitolu. U lešení v základní ceně se řádek v sekci SOUČÁSTÍ DODÁVKY NENÍ nově vynechá (jako sokl).\n\nRuční hodnoty se nemažou — zůstávají v datech a obrazovka ukáže, že se nepoužijí.",
+   "odpoved": "J. V. 22. 9. 2026 večer: „vnější lešení vrať do příplatkových položek\", „statiku nastav tak ať dokument respektuje to co je v ceně\", „počet lidí na montáž neřeš\".",
+   "kde": "src/engine.js (příplatek), src/techspec.js (odvozená pole: tsOdvozeno, tsStatikaVCene, tsLeseniVnejsiVCene), src/ui/techspec_ui.js, src/nabidka.js",
+   "testy": "src/test_specifikace_cena.js (nová sada, oba modely výpočtu), src/test_leseni.js, src/test_priplatky_volitelne.js, src/test_nabidka_kapitoly.js, overit_specifikace_cena.mjs (nový harness)."
+  },
+  {
    "id" : "285",
    "vlna" : "C",
-   "stav" : "ceka",
+   "stav" : "hotovo",
    "dulezitost" : "vysoka",
    "slozitost" : "S",
+   "hotovoV" : "v22.9.16 (poslední dvě volby)",
    "nazev" : "P8 — devět voleb výchozího nastavení k rozhodnutí J. V.",
    "proc" : "Zadání kola 6 u P8 říká výslovně: „Je to podklad k ROZHODNUTÍ, ne k nasazení.\" Nálezy N8, N9, N11–N14 a N18 se týkají výchozího nastavení nové zakázky; bez rozhodnutí nemá smysl kódovat, protože každá z těch voleb mění cenu každé nové nabídky.",
    "detail" : "Dokument `ROZHODNUTI_P8_2026-09-21.md` popisuje u každé z devíti voleb (výchozí model výpočtu, automatický ATYP, výchozí volitelné položky, tmelení, montáž, statika, lešení, DPH u zahraniční řady, hmotnost spojky) tři věci: co aplikace dělá DNES i s místem v kódu, čeho se otázka týká, a doporučení s odůvodněním. Žádné částky — jen klíče ceníku.\n\nPŘI PSANÍ VYŠLY NAJEVO DVĚ VĚCI, KTERÉ NEJSOU JEN NASTAVENÍ, ALE CHYBY:\n\n(6) STATIKA. Položka STATICKÉ POSOUZENÍ se počítá VŽDY, zatímco pole technické specifikace „OVĚŘOVACÍ STATICKÝ VÝPOČET KONSTRUKCE\" je jen text s výchozím „ano\". Jádro to pole vůbec nečte (ověřeno). Obchodník tedy může ve specifikaci napsat „ne\" a v ceně statika zůstane — dvě místa, která si mohou odporovat, přesně jako u oplechování soklu (N17).\n\n(8) DPH U ZAHRANIČNÍ ŘADY. Ceník má JEDINOU sazbu DPH a používá se bez ohledu na řadu. Zahraniční nabídka se tiskne v eurech, ale s českou sazbou DPH — u dodání s montáží do jiného státu EU se přitom běžně fakturuje v režimu přenesené daňové povinnosti. Tohle je jediná z devíti voleb, kde doporučuji zeptat se účetní, ne rozhodovat podle toho, co dává smysl programátorovi.",
    "kde" : "`ROZHODNUTI_P8_2026-09-21.md`",
    "hotovoKdyz" : "U každé z devíti voleb padlo rozhodnutí J. V. a to, co se má změnit, odešlo jako samostatná dávka.",
-   "pozn" : "STAV K 22. 9. 2026 — SEDM Z DEVÍTI VOLEB JE UZAVŘENO.\n\nZavedeno jako dávka: (7) lešení — interiérová šachta ho už neplatí, viz #313; (8) DPH u zahraniční řady — ceník má zahraniční sazbu, viz #314; (4) tmelení — potvrzeno spolu se sazbou plechů, viz #297.\n\nUzavřeno bez zásahu do kódu: (1) výchozí model zůstává Model 2 a (3) výchozí volitelné položky se zatím nemění — u obou znělo doporučení „ponechat\" a nic dalšího nechybělo. (9) hmotnost spojky: J. V. 22. 9. 2026 „hmotnost spojky 0,4 m je dobrá náhrada\" — údaj z dílny se tedy nedohledává. (2) automatický ATYP: J. V. 22. 9. 2026 „číslo nálezu N9 už nech být\" — automatika zůstává a nikdy neběží tiše; chybějící číslo zakázky se dohledávat nebude.\n\nZBÝVAJÍ DVĚ, OBĚ JSOU VOLBA J. V., NE CHYBĚJÍCÍ PODKLAD:\n(5) MONTÁŽ — počet lidí je dnes čtyřka natvrdo v kódu; doporučení je udělat z ní pole.\n(6) STATIKA — nejnaléhavější zbývající: položka STATICKÉ POSOUZENÍ se počítá VŽDY, zatímco pole technické specifikace „OVĚŘOVACÍ STATICKÝ VÝPOČET KONSTRUKCE\" jádro vůbec nečte. Obchodník může ve specifikaci napsat „ne\" a v ceně statika zůstane — dvě místa, která si mohou odporovat, a odejde s tím dokument k zákazníkovi."
+   "pozn" : "VŠECH DEVĚT VOLEB JE UZAVŘENO (22. 9. 2026 večer).\n\nZavedeno jako dávka: (4) tmelení — #297; (6) statika — specifikace se řídí cenou, #318; (7) lešení — #313, doladěno #318 (u interiérové šachty příplatek, řádek „lešení kolem OCK\" u lešení v ceně vynechán); (8) DPH u zahraniční řady — #314 a výchozí 0 % #317.\n\nUzavřeno bez zásahu do kódu: (1) výchozí model Model 2, (3) výchozí volitelné položky, (9) hmotnost spojky („0,4 m je dobrá náhrada\"), (2) automatický ATYP („číslo nálezu N9 už nech být\") a (5) montáž („počet lidí na montáž neřeš\").\n\nZbývá jen, co P8 samo doporučilo ověřit mimo kód: doložku o přenesené daňové povinnosti v zahraniční nabídce P8 navrhovalo probrat s účetní — J. V. zatím rozhodl jen sazbu 0 %."
   },
   {
    "id" : "284",
@@ -5491,6 +5506,9 @@
    },
   {
    "text": "Dávka 22. 9. 2026 večer (engscalc): rozhodnutí J. V. převedená do kódu. Světlíky se počítají k té stěně, na které je nástupiště (#296), interiérová šachta přestala platit vnější lešení (#313, P8/7) a zahraniční řada ceníku umí vlastní sazbu DPH (#314, P8/8) — nula je v ní platná hodnota, přenesená daňová povinnost. V zamčené zakázce se uložení vůbec nenabízí a odemyká se na jednom místě (#315, N25), dialog o přepočtu ceníku mluví česky (K5). Z devíti voleb P8 tím zbývají dvě: počet lidí při montáži a svázání ceny statiky se specifikací. Ceník se ani jednou dávkou nezveřejňoval."
+  },
+  {
+   "text": "Dávka 22. 9. 2026 pozdě večer (engscalc): další tři rozhodnutí J. V. Zahraniční zakázka má po přepnutí sazbu DPH 0 % i bez vyplněné odchylky v ceníku (#317), vnější lešení je u interiérové šachty zase příplatkem a technická specifikace se řídí cenou — statika i řádek „lešení kolem OCK\" (#318). Montáž beze změny; všech devět voleb P8 uzavřeno (#285)."
   }
   ],
   "pravidla" : [
@@ -5577,7 +5595,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v22.9.15 (engscalc)",
+  "build" : "v22.9.16 (engscalc)",
   "stavKDatu" : "22. 9. 2026"
  },
  "_comment" : [
