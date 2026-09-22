@@ -963,70 +963,82 @@ const tisk = await p.evaluate(() => {
 ok('náhled tisku nese varování kontrol', tisk.v && tisk.lista.length > 0);
 ok('a neprozradí v něm žádnou částku', tisk.kc === false, tisk.lista);
 
-// --- #37 interní poznámky a přílohy ---------------------------------------
+// --- #37 interní poznámky (zjednodušeno 22. 9. 2026) ----------------------
 /* Stejný důvod jako u #33: kdyby poznamky.js chyběl v seznamu v build.py,
  * aplikace by běžela dál, jen by karta zmizela a nikdo by si toho nevšiml. */
 const p37 = await p.evaluate(() => ({
-  logika: typeof poznamkyPridej === 'function' && typeof poznamkySeznam === 'function',
+  logika: typeof poznamkyPoleText === 'function' && typeof poznamkyTextNastav === 'function',
   karta: typeof poznamkyKarta === 'function',
-  druhu: typeof POZN_DRUHY !== 'undefined' ? POZN_DRUHY.length : -1,
 }));
 ok('modul poznámek je v sestavení', p37.logika && p37.karta, JSON.stringify(p37));
-ok('druhů poznámek je pět', p37.druhu === 5);
 
-/* Poznámky se 21. 8. 2026 večer přestěhovaly z Přehledu cenových nabídek
- * na konec Kalkulace OCK — „proč jsme šli s cenou dolů" má být na očích tam,
- * kde se ta cena dělá (zadání J. V.). */
+/* Karta se 22. 9. 2026 přestěhovala na pokyn J. V. z úplného konce Kalkulace
+ * OCK nahoru, mezi souhrn zakázky a Zadání šachty — dolů k ní obchodník
+ * musel projet celou kalkulaci a psal proto dál do e-mailu. */
 await p.locator('#tab-kalk').click();
 await p.waitForTimeout(400);
 const kartaPozn = await p.evaluate(() => {
   const h = [...document.querySelectorAll('#page-kalk .card h2')]
     .find(x => /Interní poznámky/i.test(x.textContent));
   return { je: !!h, nadpis: h ? h.textContent.trim() : '',
-           zapis: !!document.querySelector('#page-kalk .pozn-zapis'),
-           pole: !!document.getElementById('poznText') };
+           vSouhrnu: !!document.querySelector('#kalk-souhrn .pozn-zapis'),
+           poli: document.querySelectorAll('#page-kalk .pozn-pole').length,
+           tlacitek: document.querySelectorAll('#kalk-souhrn .pozn-zapis button').length };
 });
-ok('karta poznámek je na konci Kalkulace OCK', kartaPozn.je, kartaPozn.nadpis);
-ok('a v nadpisu stojí, že se netiskne', /netisknou se/i.test(kartaPozn.nadpis), kartaPozn.nadpis);
-ok('karta má zápisník i pole pro text', kartaPozn.zapis && kartaPozn.pole);
+ok('karta poznámek je v Kalkulaci OCK', kartaPozn.je, kartaPozn.nadpis);
+ok('a stojí nad Zadáním šachty, v bloku souhrnu', kartaPozn.vSouhrnu, JSON.stringify(kartaPozn));
+ok('v nadpisu stojí, že se netiskne', /netisknou se/i.test(kartaPozn.nadpis), kartaPozn.nadpis);
+ok('má právě jedno textové pole', kartaPozn.poli === 1, kartaPozn.poli);
+ok('a žádná tlačítka (druhy, přílohy, ukládání)', kartaPozn.tlacitek === 0, kartaPozn.tlacitek);
 
+/* Starší zakázky nesou strukturované poznámky. Dokud do pole nikdo nesáhne,
+ * musí je ukazovat — jinak by to vypadalo, že se ztratily. */
 const TAJNE37 = 'TAJNÁ INTERNÍ VĚTA 4711';
-const zapis37 = await p.evaluate((tajne) => {
+const stare37 = await p.evaluate((tajne) => {
   poznamkyPridej(ZAK, tajne, { kdo: 'Test', druh: 'sleva' });
-  prilohyPridej(ZAK, { nazev: 'Interni_kalkulace.pdf', typ: 'application/pdf',
-                       velikost: 2048, data: 'data:application/pdf;base64,AAAA' }, { kdo: 'Test' });
   render();
-  return {
-    radku: document.querySelectorAll('#page-kalk .pozn-seznam .pozn-radek').length,
-    priloh: document.querySelectorAll('#page-kalk .pozn-prilohy .pozn-priloha').length,
-    vidim: document.getElementById('page-kalk').innerText.includes(tajne),
-  };
+  const ta = document.querySelector('#kalk-souhrn .pozn-pole');
+  return { vPoli: !!ta && ta.value.includes(tajne),
+           vDatech: ZAK.poznamky.length,
+           poleNevzniklo: typeof ZAK.poznamkyText === 'undefined' };
 }, TAJNE37);
-ok('poznámka se objeví v seznamu', zapis37.radku >= 1, JSON.stringify(zapis37));
-ok('příloha se objeví v seznamu', zapis37.priloh === 1);
-ok('a text poznámky je v kartě opravdu vidět', zapis37.vidim);
+ok('starší poznámka se objeví v textovém poli', stare37.vPoli, JSON.stringify(stare37));
+ok('a samo vykreslení pole v datech nevyrobí', stare37.poleNevzniklo, JSON.stringify(stare37));
 
-/* Měkké mazání: záznam z běžného seznamu zmizí, ale v datech zůstane
- * i se jménem a datem, a jde ho vrátit. */
-const smaz37 = await p.evaluate(() => {
-  const id = poznamkySeznam(ZAK)[0].id;
-  poznamkySmazUI(id);
-  const po = { vidi: document.querySelectorAll('#page-kalk .pozn-seznam .pozn-radek').length,
-               vDatech: ZAK.poznamky.length,
-               stopa: !!(ZAK.poznamky.find(x => x.id === id) || {}).smazano };
-  poznamkySmazanePrepni();
-  po.skrz = document.querySelectorAll('#page-kalk .pozn-radek.smazana').length;
-  poznamkyObnovUI(id);
-  po.zpet = poznamkySeznam(ZAK).length;
-  poznamkySmazanePrepni();
-  return po;
+/* Zápis jde rovnou do zakázky, takže ho vezme automatické ukládání
+ * a nepřežije ho jen DOM (dřív ho držela proměnná POZN_ROZEPSANO). */
+const zapis37 = await p.evaluate(() => {
+  poznamkyPoleHotovo('Přepsáno do jednoho pole.');
+  const ta = document.querySelector('#kalk-souhrn .pozn-pole');
+  return { vZakazce: ZAK.poznamkyText, vPoli: ta ? ta.value : '' };
 });
-ok('smazaná poznámka zmizí ze seznamu', smaz37.vidi === 0, JSON.stringify(smaz37));
-ok('ale v datech zůstane se stopou', smaz37.vDatech >= 1 && smaz37.stopa);
-ok('smazané jdou zobrazit zvlášť', smaz37.skrz >= 1);
-ok('a dají se vrátit', smaz37.zpet >= 1);
+ok('zápis se uloží do zakázky', zapis37.vZakazce === 'Přepsáno do jednoho pole.', JSON.stringify(zapis37));
+ok('a po překreslení je pořád v poli', zapis37.vPoli === 'Přepsáno do jednoho pole.');
 
-/* A to hlavní: nic z toho se nesmí dostat do dokumentu, který jde ven. */
+/* Táž karta musí být i v Kalkulaci PROJ (zadání J. V.) a musí to být TÝŽ
+ * zápisník — jeden text zakázky, ne dva vedle sebe. */
+await p.locator('#tab-proj').click();
+await p.waitForTimeout(400);
+const proj37 = await p.evaluate(() => {
+  const h = [...document.querySelectorAll('#page-proj .card h2')]
+    .find(x => /Interní poznámky/i.test(x.textContent));
+  const ta = document.querySelector('#page-proj .pozn-pole');
+  return { je: !!h, text: ta ? ta.value : null,
+           predKalkulaci: (() => {
+             const karty = [...document.querySelectorAll('#page-proj .card h2')].map(x => x.textContent);
+             const iP = karty.findIndex(x => /Interní poznámky/i.test(x));
+             const iK = karty.findIndex(x => /Cenová kalkulace PROJ/i.test(x));
+             return iP >= 0 && iK >= 0 && iP < iK;
+           })() };
+});
+ok('karta poznámek je i v Kalkulaci PROJ', proj37.je, JSON.stringify(proj37));
+ok('a stojí nad Cenovou kalkulací PROJ', proj37.predKalkulaci, JSON.stringify(proj37));
+ok('je to týž text jako v OCK', proj37.text === 'Přepsáno do jednoho pole.', proj37.text);
+await p.locator('#tab-kalk').click();
+await p.waitForTimeout(300);
+
+/* A to hlavní, co platí od #37 pořád: nic z toho se nesmí dostat do
+ * dokumentu, který jde ven. */
 const tajne37 = await p.evaluate((tajne) => {
   const v = aktivniVarianta(ZAK);
   let text = '';
@@ -1034,14 +1046,17 @@ const tajne37 = await p.evaluate((tajne) => {
   try { text += JSON.stringify(kryciData(ZAK, v, JEKLY)); } catch (e) {}
   try { text += tiskListaHtml({}); } catch (e) {}
   return { delka: text.length, pozn: text.includes(tajne),
-           priloha: text.includes('Interni_kalkulace') };
+           pole: text.includes('Přepsáno do jednoho pole') };
 }, TAJNE37);
 ok('dokumenty se opravdu sestavily', tajne37.delka > 0);
-ok('poznámka se do dokumentů nedostane', tajne37.pozn === false);
-ok('ani název přílohy', tajne37.priloha === false);
+ok('stará poznámka se do dokumentů nedostane', tajne37.pozn === false);
+ok('ani text z nového pole', tajne37.pole === false);
 
 /* Úklid, ať do snímků obrazovky nelezou testovací data. */
-await p.evaluate(() => { ZAK.poznamky = []; ZAK.prilohy = []; ZAK.prilohySmazane = []; render(); });
+await p.evaluate(() => {
+  ZAK.poznamky = []; ZAK.prilohy = []; ZAK.prilohySmazane = [];
+  delete ZAK.poznamkyText; render();
+});
 
 // --- #41 protokol o kalkulaci ---------------------------------------------
 /* Stejný důvod jako u #33 a #37: chybějící řádek v build.py aplikaci

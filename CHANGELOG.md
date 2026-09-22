@@ -8,6 +8,56 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.9.8 — 22. 9. 2026
+
+### Dodatkové texty zůstávají v aplikaci, zápisník je jedno pole (#310, #311)
+
+**Dodatkový text pod položkou teď platí pro celou firmu (#310).** Od #267
+se text píše do ceníku, jenže ceník se **zveřejňuje** — vydat kvůli jedné
+větě novou verzi ceníku znamená novou verzi pro všechny budoucí nabídky.
+Nikdo to nedělal, takže text zůstal v zakázce toho, kdo ho napsal, a nikdo
+jiný ho neviděl. Pole navíc viděl jedině administrátor.
+
+Nově jsou dvě úrovně, přesně podle zadání:
+
+- **Aplikace.** Co napíše administrátor, se uloží na server a od příštího
+  přihlášení se předvyplňuje všem. Zveřejněný ceník má přednost: kdyby ho
+  společná mapa přebíjela, správce by změnu ve vydané verzi nikdy
+  neprosadil.
+- **Zakázka.** Pole vidí a upraví každý, ale jeho změna platí jen pro jeho
+  nabídku. Výchozí text tím nikdo nepřepíše nedopatřením.
+
+Odeslané nabídky se tím nemění. Zakázka si nese vlastní kopii ceníku, takže
+pozdější úprava textu nesahá na to, co už zákazník dostal.
+
+Texty putují i do **zálohy a obnovy**. Nový klíč, který záloha nenese, by
+obnova tiše smazala — přesně kvůli tomu vznikl nález B9.
+
+**Interní poznámky jsou jedno textové pole (#311).** Z karty zmizely štítky
+druhu poznámky, zápisník jednotlivých záznamů i nahrávání příloh. V provozu
+se zápisník používal jako jeden odstavec pod druhým, takže druh, autor a čas
+u každé věty byly režie navíc; přílohy se navíc nosily přímo v souboru
+zakázky a nafukovaly ho na hranici odeslatelnosti e-mailem.
+
+**Nic se nesmazalo.** Model umí dál všechno, co uměl. Starší zakázky se
+svými záznamy se v poli ukážou jako předvyplněný text a přílohy, které v nich
+už jsou, jdou pořád stáhnout — jen nové přibývat nemůžou. Čtení přitom
+zakázku nemění: kdyby se pole materializovalo při vykreslení, zakázka by se
+sama označila za neuloženou, což je táž past jako u dnešních nálezů N12/N13.
+
+**Karta se přestěhovala nahoru** — v Kalkulaci OCK mezi souhrn zakázky
+a Zadání šachty, v Kalkulaci PROJ mezi souhrn a Cenovou kalkulaci PROJ.
+Dosud stála úplně dole pod Detailem mezivýpočtů, kam obchodník musel projet
+celou kalkulaci. Je to **jeden zápisník zakázky**, ne dva: co se napíše
+v OCK, je vidět i v PROJ.
+
+**Testy:** sedm serverových k novým textům a pět k úplnosti zálohy,
+jedenáct modelových k očistě a přednosti ceníku, deset k textovému poli
+a pět ke stavu obrazovky. Prohlížečový harness ověřuje obě nové polohy karty
+i to, že se text nedostane do žádného dokumentu. Dvě nové mutace, celkem 135.
+
+---
+
 ## v22.9.7 — 22. 9. 2026
 
 ### Mutace se teď kontrolují za vteřinu, ne za sedmnáct minut (#309)

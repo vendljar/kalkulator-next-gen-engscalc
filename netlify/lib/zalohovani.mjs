@@ -35,6 +35,10 @@ export function denDnes(kdy) {
 export async function zalohaDoplnky() {
   const sProg = await uloziste('program');
   const zobrazeni = await sProg.cti('zobrazeni');
+  /* Dodatkové texty položek (22. 9. 2026) leží ve stejném úložišti pod
+   * vlastním klíčem. Bez tohohle řádku by je obnova ze zálohy tiše smazala —
+   * přesně ta chyba, kvůli které vznikl nález B9. */
+  const popisy = await sProg.cti('popisy');
   const zk = await uloziste('zakaznici');
   const zakaznici = {};
   for (const k of await zk.seznam()) zakaznici[k] = await zk.cti(k);
@@ -42,6 +46,7 @@ export async function zalohaDoplnky() {
   const podpisy = {};
   for (const k of await pd.seznam()) podpisy[k] = await pd.cti(k);
   return { zobrazeni: zobrazeni || null,
+           popisy: popisy || null,
            zakaznici: Object.keys(zakaznici).length ? zakaznici : null,
            podpisy: Object.keys(podpisy).length ? podpisy : null };
 }
@@ -104,7 +109,7 @@ export async function porizOtisk(zdroj, kdo, klic) {
     program: program || null, firma: firma || null,
     rejstrik: rejstrik || null, zakazky, uzivatele,
     sablony: Object.keys(sablony).length ? sablony : null,
-    ...(await zalohaDoplnky()),              // zobrazeni, zakaznici, podpisy (B9)
+    ...(await zalohaDoplnky()),              // zobrazeni, popisy, zakaznici, podpisy (B9)
   };
   await (await uloziste('zalohy')).zapis(den, otisk);
   return { den, pocetZakazek: Object.keys(zakazky).length, pocetUctu: uzivatele.length };

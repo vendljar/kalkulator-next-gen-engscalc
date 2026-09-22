@@ -320,7 +320,9 @@ const PROVERENO = {
     'hlaska': 'hotový úsek HTML `<div class="…">${esc(ONLINE_STAV.hlaska)}</div>`',
   },
   'poznamky_ui.js': {
-    'kdo': "výš: const kdo = p.kdo ? esc(p.kdo) : 'neuvedeno'",
+    'id': "vývojářský literál: id textového pole se skládá jako "
+      + "'poznText-' + (kde === 'proj' ? 'proj' : 'ock'), tedy ze dvou pevných "
+      + 'řetězců — z venku do něj nic nevstupuje',
   },
   'program_ui.js': {
     'z.verze': 'pořadové číslo verze ceníku – číslo, ne text',

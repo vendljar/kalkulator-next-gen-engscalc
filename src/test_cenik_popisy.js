@@ -127,5 +127,50 @@ const test = (n, cond, info) => {
   test('ale mezi ZMĚNAMI CEN se neobjeví', rozd.length === 0, rozd.map(r => r.cesta));
 }
 
+/* ===== SPOLEČNÁ MAPA TEXTŮ PRO CELOU APLIKACI (22. 9. 2026) =====
+ *
+ * Zadání J. V.: text zadaný administrátorem zůstane uložený v aplikaci;
+ * ostatní ho smí ve své zakázce upravit, ale trvale přepsat ne. Mapa proto
+ * stojí vedle ceníku (`/api/popisy`) a při přihlášení se vlévá do výchozího
+ * ceníku. Očista je společná pro prohlížeč i server — tahle sada hlídá ji
+ * a pravidlo přednosti. */
+{
+  const o = ck.popisyOciste({
+    '  Sklo VSG  ': '  Provedení vnějších skel.  ',   // ořízne se klíč i text
+    'Prázdný': '   ',                                  // prázdné se neukládá
+    'Číslo': 123,                                      // jiný typ než text
+    '': 'bez klíče',
+  });
+  test('očista ořízne klíč i text', o['Sklo VSG'] === 'Provedení vnějších skel.', JSON.stringify(o));
+  test('prázdný text se neukládá', !('Prázdný' in o), JSON.stringify(o));
+  test('nepsaná hodnota se zahodí', !('Číslo' in o), JSON.stringify(o));
+  test('klíč bez názvu se zahodí', !('' in o), JSON.stringify(o));
+
+  /* Stropy: mapa se vlévá do ceníku každé nové zakázky, takže se sem nesmí
+   * dát poslat slovník libovolné velikosti ani román místo věty. */
+  const dlouhy = {}; dlouhy['A'.repeat(ck.POPISY_MAX_KLIC + 1)] = 'x';
+  test('příliš dlouhý klíč neprojde', Object.keys(ck.popisyOciste(dlouhy)).length === 0);
+  const roman = ck.popisyOciste({ 'X': 'a'.repeat(ck.POPISY_MAX_TEXT + 50) });
+  test('text se zkrátí na strop', roman['X'].length === ck.POPISY_MAX_TEXT, roman['X'].length);
+  const mnoho = {};
+  for (let i = 0; i < ck.POPISY_MAX_POLOZEK + 20; i++) mnoho['k' + i] = 'text';
+  test('počet položek má strop',
+    Object.keys(ck.popisyOciste(mnoho)).length === ck.POPISY_MAX_POLOZEK);
+
+  /* PŘEDNOST MÁ ZVEŘEJNĚNÝ CENÍK. Kdyby ho společná mapa přebila, správce by
+   * změnu textu ve zveřejněné verzi nikdy neprosadil — mapa by ji přepsala
+   * při každém přihlášení. */
+  const cenik = { popisy: { 'Sklo VSG': 'z ceníku' } };
+  ck.popisyVlij(cenik, { 'Sklo VSG': 'ze společné mapy', 'Madlo': 'nový text' });
+  test('ceník má přednost před společnou mapou', cenik.popisy['Sklo VSG'] === 'z ceníku',
+    cenik.popisy['Sklo VSG']);
+  test('co ceník nemá, se doplní', cenik.popisy['Madlo'] === 'nový text');
+
+  /* Ceník bez mapy popisů je běžný stav (starší zveřejněná verze). */
+  const prazdny = {};
+  ck.popisyVlij(prazdny, { 'Madlo': 'text' });
+  test('vlití funguje i do ceníku bez popisů', prazdny.popisy['Madlo'] === 'text');
+}
+
 console.log('\n' + (fail ? 'SELHALO ' + fail + ' z ' + (ok + fail) : 'OK ' + ok));
 if (fail) process.exit(1);

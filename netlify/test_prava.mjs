@@ -51,6 +51,7 @@ import zalohaVynuceno from './functions/zaloha_vynuceno.mjs';
 import obnova from './functions/obnova.mjs';
 import zdravi from './functions/zdravi.mjs';
 import zobrazeni from './functions/zobrazeni.mjs';
+import popisy from './functions/popisy.mjs';
 import zakazniciFn from './functions/zakaznici.mjs';
 import schvalovaniFn from './functions/schvalovani.mjs';
 import sablonyFn from './functions/sablony.mjs';
@@ -320,6 +321,18 @@ const MATICE = [
     url: 'http://x/api/zobrazeni',
     telo: () => ({ matice: { 'tab.detail': { 'Obchodník': false, 'Vedoucí': true } } }),
     proc: 'kdo co v aplikaci vidí, rozhoduje administrátor za celou firmu',
+    prava: JEN_ADMIN },
+
+  { fn: popisy, soubor: 'popisy.mjs', nazev: 'dodatkové texty — čtení (GET /api/popisy)', metoda: 'GET',
+    url: 'http://x/api/popisy',
+    proc: 'texty se vlévají do výchozího ceníku při přihlášení — potřebuje je každý přihlášený',
+    prava: PRIHLASENY_OK },
+
+  { fn: popisy, nazev: 'dodatkové texty — uložení pro celou aplikaci (POST /api/popisy)', metoda: 'POST',
+    url: 'http://x/api/popisy',
+    telo: () => ({ texty: { 'Sklo VSG s mléčnou fólií': 'Provedení vnějších skel.' } }),
+    proc: 'text se předvyplní do nabídek všech obchodníků — zadat ho smí jen administrátor '
+      + '(zadání J. V. 22. 9. 2026: ostatní ho smí ve své zakázce upravit, trvale přepsat ne)',
     prava: JEN_ADMIN },
 
   { fn: zakazky, soubor: 'zakazky.mjs', nazev: 'zakázky — rejstřík (GET /api/zakazky)', metoda: 'GET',
@@ -995,11 +1008,17 @@ console.log('\n===== AUDIT B8: OČISTA DÁVKY ANALYTIKY =====\n');
 console.log('\n===== AUDIT B9: ÚPLNOST ZÁLOHY =====\n');
 {
   await post(zobrazeni, 'http://x/api/zobrazeni', { matice: {} }, cAdmin);
+  await post(popisy, 'http://x/api/popisy', { texty: { 'Sklo VSG': 'Věta do zálohy.' } }, cAdmin);
   await post(zakazniciFn, 'http://x/api/zakaznici', { zakaznik: { nazev: 'Záloha s.r.o.', ico: '12345678' } }, cObch);
   await post(uzivatele, 'http://x/api/uzivatele',
     { akce: 'podpis', email: UCTY['Obchodník'].email, obrazek: 'data:image/png;base64,iVBORw0KGgo=' }, cObch);
   const z = (await (await get(zaloha, 'http://x/api/zaloha', cAdmin)).json()).zaloha;
   test('B9: záloha nese matici zobrazení', 'zobrazeni' in z);
+  /* Nový klíč v úložišti `program` (22. 9. 2026). Přesně kvůli tomuhle B9
+   * vzniklo: co záloha nenese, to obnova tiše smaže. */
+  test('B9: záloha nese dodatkové texty položek',
+    !!z.popisy && z.popisy.texty && z.popisy.texty['Sklo VSG'] === 'Věta do zálohy.',
+    JSON.stringify(z.popisy));
   test('B9: záloha nese kartotéku zákazníků', !!z.zakaznici && Object.keys(z.zakaznici).length >= 1, JSON.stringify(Object.keys(z.zakaznici || {})));
   test('B9: záloha nese podpisy', !!z.podpisy && Object.keys(z.podpisy).length >= 1);
   test('B9: záloha pořád nenese otisky hesel', !JSON.stringify(z.uzivatele).includes('heslo'));
@@ -1008,6 +1027,7 @@ console.log('\n===== AUDIT B9: ÚPLNOST ZÁLOHY =====\n');
   const otisk = await (await uloziste('zalohy')).cti(o.den);
   test('B9: noční otisk nese zákazníky, podpisy i zobrazení',
     !!otisk.zakaznici && !!otisk.podpisy && 'zobrazeni' in otisk);
+  test('B9: a taky dodatkové texty', 'popisy' in otisk && !!otisk.popisy);
 }
 
 console.log('\n===== AUDIT B13: RAZÍTKA PŘI ZALOŽENÍ =====\n');
@@ -1962,6 +1982,47 @@ console.log('\n===== AUDIT B26 / B29: KID TRVALÝCH POLOŽEK A DUPLICITNÍ ID ==
     { cenik: cenikJinak(), cenikProj: ZC.zkusebniCenikProj(), zahranicni: odchylky,
       slevy: { minMarze: 0.1 } }, cAdmin);
   test('B55: běžné zveřejnění jde dál', bezne.status === 200, 'vrátil ' + bezne.status);
+}
+
+/* ---------- DODATKOVÉ TEXTY POLOŽEK PRO CELOU APLIKACI ----------
+ * (zadání J. V. 22. 9. 2026)
+ *
+ * „Texty, které jako administrátor zadám, mají zůstat v aplikaci uložené.
+ * Ostatní uživatelé je mohou v případě potřeby upravovat, ale jen admin je
+ * může zadat, resp. trvale přepisovat."
+ *
+ * Trvalé uložení je tahle cesta; úprava „jen pro svou zakázku" se odehrává
+ * v ceníku zakázky a na server nejde vůbec, takže ji tady není co měřit.
+ * Matice práv výš hlídá, kdo smí zapisovat; tenhle blok měří, co se uloží. */
+{
+  const ulozeni = await post(popisy, 'http://x/api/popisy',
+    { texty: { 'Sklo SKN 176 (Ug=1,1) (EXT)': 'Provedení vnějších skel opláštění výtahové šachty' } },
+    cAdmin);
+  test('texty: administrátor uloží text pro celou aplikaci', ulozeni.status === 200,
+    'vrátil ' + ulozeni.status);
+
+  /* Přečíst je musí i obchodník — při jeho přihlášení se vlévají do
+   * výchozího ceníku, jinak by text viděl jen ten, kdo ho napsal. */
+  const cteni = await (await get(popisy, 'http://x/api/popisy', cObch)).json();
+  test('texty: přečte je i obchodník',
+    cteni.ok && cteni.popisy && cteni.popisy.texty['Sklo SKN 176 (Ug=1,1) (EXT)']
+      === 'Provedení vnějších skel opláštění výtahové šachty', JSON.stringify(cteni.popisy));
+  test('texty: u záznamu stojí, kdo a kdy ho uložil',
+    !!cteni.popisy.kdo && /^\d{4}-\d{2}-\d{2}T/.test(cteni.popisy.kdy), JSON.stringify(cteni.popisy));
+
+  /* Očista běží NA SERVERU, ne jen v prohlížeči: klient se dá obejít. */
+  const dlouhy = 'a'.repeat(1000);
+  await post(popisy, 'http://x/api/popisy',
+    { texty: { 'X': dlouhy, 'Prázdný': '   ', 'Číslo': 7 } }, cAdmin);
+  const po = (await (await get(popisy, 'http://x/api/popisy', cAdmin)).json()).popisy.texty;
+  test('texty: server zkrátí příliš dlouhý text', po['X'] && po['X'].length === 300, (po['X'] || '').length);
+  test('texty: prázdný text se neuloží', !('Prázdný' in po), JSON.stringify(po));
+  test('texty: nepsaná hodnota se neuloží', !('Číslo' in po), JSON.stringify(po));
+
+  /* Smazání textu = poslat mapu bez něj. Nesmí zůstat viset prázdný klíč. */
+  await post(popisy, 'http://x/api/popisy', { texty: {} }, cAdmin);
+  const prazdno = (await (await get(popisy, 'http://x/api/popisy', cAdmin)).json()).popisy.texty;
+  test('texty: prázdnou mapou se text zruší', Object.keys(prazdno).length === 0, JSON.stringify(prazdno));
 }
 
 /* ---------- B54: SERVER BEZ ADRESY HLAVNÍHO ÚČTU ----------

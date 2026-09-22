@@ -12,7 +12,7 @@
  *               | { otisk: 'YYYY-MM-DD' | '…-pred-obnovou' },
  *   rezim:      'doplnit' (zapíše jen to, co na serveru chybí)
  *               | 'prepsat' (zapíše všechno ze zálohy přes stávající),
- *   casti:      ['program','firma','zobrazeni','zakazky','uzivatele',
+ *   casti:      ['program','firma','zobrazeni','popisy','zakazky','uzivatele',
  *                'sablony','zakaznici','podpisy']   — nepovinné = všechny,
  *   nahled:     true  → NIC nezapíše, jen vrátí, co by se stalo,
  *   potvrzeni:  'OBNOVIT' → bez něj se ostrá obnova odmítne (428)
@@ -88,7 +88,7 @@ import { uloziste, vyzadujRoli, json, ADMIN_EMAIL, ROLE, hostitel, emailPlatny,
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 import { porizOtisk, klicPredObnovou, OTISK_KLIC } from '../lib/zalohovani.mjs';
 
-export const OBNOVA_CASTI = ['program', 'firma', 'zobrazeni', 'zakazky', 'uzivatele',
+export const OBNOVA_CASTI = ['program', 'firma', 'zobrazeni', 'popisy', 'zakazky', 'uzivatele',
                              'sablony', 'zakaznici', 'podpisy'];
 export const OBNOVA_REZIMY = ['doplnit', 'prepsat'];
 export const OBNOVA_POTVRZENI = 'OBNOVIT';
@@ -414,7 +414,7 @@ export default async (req) => {
   const sProg = await uloziste('program');
 
   /* Jednozáznamové části v úložišti `program`. */
-  const jednoduche = { program: 'db', firma: 'firma', zobrazeni: 'zobrazeni' };
+  const jednoduche = { program: 'db', firma: 'firma', zobrazeni: 'zobrazeni', popisy: 'popisy' };
   for (const cast of Object.keys(jednoduche)) {
     if (!casti.includes(cast) || !maVlastni(zaloha, cast)) continue;
     const b = bilance();

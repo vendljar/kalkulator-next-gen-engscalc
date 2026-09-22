@@ -1,26 +1,35 @@
 /* ============================================================
- * INTERNÍ POZNÁMKY A PŘÍLOHY – obrazovka (#37)
+ * INTERNÍ POZNÁMKY – obrazovka (#37, zjednodušeno 22. 9. 2026)
  *
- * Karta na záložce Zakázka. Logika je celá v poznamky.js; tady je jen
- * zápisník na obrazovce a nahrávání souborů.
+ * Karta stojí v Kalkulaci OCK i v Kalkulaci PROJ, hned pod souhrnem
+ * zakázky. Logika je celá v poznamky.js; tady je jen jedno textové pole.
  *
- * Dvě věci, které se v UI dělají schválně jinak, než by se čekalo:
+ * CO SE 22. 9. 2026 ZMĚNILO A PROČ (zadání J. V.)
  *
- *   – Rozepsaný text nedrží <textarea>, ale proměnná POZN_ROZEPSANO.
- *     render() překresluje celou stránku (ukládání, hodiny, jiná karta),
- *     a kdyby text žil jen v DOM, po každém takovém překreslení by zmizel
- *     rozepsaný odstavec. Tohle je zápisník – ztratit v něm text je horší
- *     než pár řádků navíc v kódu.
+ * Z karty zmizely tři věci: štítky druhu poznámky (Obchodní jednání,
+ * Důvod slevy, …), zápisník jednotlivých záznamů s měkkým mazáním
+ * a nahrávání příloh. Zůstalo VOLNÉ TEXTOVÉ POLE. Zápisník se v provozu
+ * používal jako jeden odstavec pod druhým, takže druh, autor a čas u každé
+ * věty byly režie navíc; a přílohy se nosily přímo v souboru zakázky jako
+ * data URL, čímž ho nafukovaly na hranici odeslatelnosti e-mailem.
  *
- *   – „Netiskne se" je napsané přímo v kartě, ne schované v nápovědě.
- *     Celá funkce stojí na tom, že si tím uživatel je jistý; kdyby si
- *     nebyl, psal by dál do e-mailů a zápisník by zůstal prázdný.
+ * NIC SE NESMAZALO. Model v poznamky.js umí dál všechno, co uměl, a starší
+ * zakázky si své záznamy i přílohy nesou dál:
+ *   • staré strukturované poznámky se v poli ukážou jako předvyplněný text
+ *     (poznamkyPoleText), takže je uživatel vidí a může s nimi pracovat;
+ *   • přílohy, které v zakázce už jsou, jdou pořád stáhnout — jen nové
+ *     přibývat nemůžou.
+ *
+ * Text nedrží pomocná proměnná, ale přímo zakázka. Dřív žil v POZN_ROZEPSANO,
+ * protože render() překresluje celou stránku a rozepsaný odstavec by z DOM
+ * zmizel. Teď se při psaní zapisuje rovnou do ZAK (bez překreslení, takže
+ * kurzor neutíká) a při překreslení se z ní zase načte — nemá se tedy
+ * odkud ztratit a automatické ukládání ho vezme s sebou.
+ *
+ * „Netiskne se" je napsané přímo v kartě, ne schované v nápovědě. Celá
+ * funkce stojí na tom, že si tím uživatel je jistý; kdyby si nebyl, psal by
+ * dál do e-mailů a pole by zůstalo prázdné.
  * ============================================================ */
-
-let POZN_ROZEPSANO = '';
-let POZN_DRUH = 'obchod';
-let POZN_UPRAVA = null;      // id právě upravované poznámky (null = nová)
-let POZN_SMAZANE = false;    // zobrazit i smazané
 
 function poznamkyZak() {
   return (typeof ZAK !== 'undefined' && ZAK) ? poznamkyZajisti(ZAK) : null;
@@ -33,137 +42,34 @@ function poznamkyZmena() {
   render();
 }
 
-/* ---------- zápis ---------- */
+/* ---------- textové pole ---------- */
 
-function poznamkyPis(val) { POZN_ROZEPSANO = val; }      // bez překreslení – neutíká kurzor
-function poznamkyDruhSet(kod) { POZN_DRUH = kod; render(); }
-
-function poznamkyUloz() {
+/* Při psaní se NEPŘEKRESLUJE — render() by přepsal innerHTML a kurzor by
+ * skočil na začátek. Zápis do zakázky stačí: automatické ukládání se řídí
+ * porovnáním se stavem na disku, takže změnu uvidí i bez překreslení. */
+function poznamkyPoleSet(v) {
   const zak = poznamkyZak(); if (!zak) return;
-  const t = (POZN_ROZEPSANO || '').trim();
-  if (!t) return;
-  if (POZN_UPRAVA) {
-    poznamkyUprav(zak, POZN_UPRAVA, t, { kdo: poznamkyKdo() });
-    POZN_UPRAVA = null;
-  } else {
-    const v = (typeof aktivniVarianta === 'function') ? aktivniVarianta(zak) : null;
-    poznamkyPridej(zak, t, { kdo: poznamkyKdo(), druh: POZN_DRUH, varianta: v ? v.id : null });
-  }
-  POZN_ROZEPSANO = '';
+  poznamkyTextNastav(zak, v);
+}
+
+/* Po opuštění pole se překreslí, aby se srovnal zbytek obrazovky
+ * (lišta uložení, počítadlo znaků). */
+function poznamkyPoleHotovo(v) {
+  const zak = poznamkyZak(); if (!zak) return;
+  poznamkyTextNastav(zak, v);
   poznamkyZmena();
 }
 
-function poznamkyUpravStart(id) {
-  const zak = poznamkyZak(); if (!zak) return;
-  const p = poznamkyNajdi(zak, id); if (!p) return;
-  POZN_UPRAVA = id; POZN_ROZEPSANO = p.text; POZN_DRUH = p.druh;
-  render();
-  const ta = document.getElementById('poznText');
-  if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
-}
-function poznamkyUpravZrus() { POZN_UPRAVA = null; POZN_ROZEPSANO = ''; render(); }
+/* ---------- přílohy: jen stažení ---------- */
 
-/* Mazání se neptá: poznámka nikam nezmizí, jen se schová, a hned vedle je
- * „Vrátit". Potvrzovací dialog by tu jen otravoval bez užitku. */
-function poznamkySmazUI(id) {
-  const zak = poznamkyZak(); if (!zak) return;
-  if (POZN_UPRAVA === id) { POZN_UPRAVA = null; POZN_ROZEPSANO = ''; }
-  poznamkySmaz(zak, id, { kdo: poznamkyKdo() });
-  poznamkyZmena();
-}
-function poznamkyObnovUI(id) {
-  const zak = poznamkyZak(); if (!zak) return;
-  poznamkyObnov(zak, id);
-  poznamkyZmena();
-}
-function poznamkySmazanePrepni() { POZN_SMAZANE = !POZN_SMAZANE; render(); }
-
-/* ---------- přílohy ---------- */
-
-/* Obrázek ze schránky jako příloha. Výstřižek nemá jméno souboru, tak se
- * pojmenuje podle času — jinak by v seznamu příloh visely samé prázdné řádky. */
-function prilohaZeSchranky(f) {
-  const zak = poznamkyZak(); if (!zak || !f) return;
-  const fr = new FileReader();
-  fr.onload = () => {
-    const pripona = (String(f.type || '').split('/')[1] || 'png').replace(/[^a-z0-9]/gi, '');
-    const nazev = f.name || ('vystrizek-' + new Date().toISOString().slice(0, 19)
-      .replace(/[:T]/g, '-') + '.' + pripona);
-    const r = prilohyPridej(zak, { nazev, typ: f.type, velikost: f.size, data: fr.result },
-                            { kdo: poznamkyKdo() });
-    if (!r.ok) hlaska(nazev + ': ' + r.duvod);
-    poznamkyZmena();
-  };
-  fr.onerror = () => hlaska('Obrázek ze schránky se nepodařilo načíst.');
-  fr.readAsDataURL(f);
-}
-if (typeof vlozObrazekCil === 'function') vlozObrazekCil('prilohy', prilohaZeSchranky);
-
-function prilohyNahraj() {
-  const zak = poznamkyZak(); if (!zak) return;
-  const inp = document.createElement('input');
-  inp.type = 'file'; inp.multiple = true;
-  inp.onchange = () => {
-    const soubory = Array.from(inp.files || []);
-    if (!soubory.length) return;
-    let zbyva = soubory.length; const chyby = [];
-    soubory.forEach(f => {
-      const fr = new FileReader();
-      fr.onload = () => {
-        const r = prilohyPridej(zak, { nazev: f.name, typ: f.type, velikost: f.size, data: fr.result },
-                                { kdo: poznamkyKdo() });
-        if (!r.ok) chyby.push(f.name + ': ' + r.duvod);
-        if (--zbyva === 0) { if (chyby.length) hlaska(chyby.join('\n')); poznamkyZmena(); }
-      };
-      fr.onerror = () => {
-        chyby.push(f.name + ': soubor se nepodařilo načíst.');
-        if (--zbyva === 0) { hlaska(chyby.join('\n')); poznamkyZmena(); }
-      };
-      fr.readAsDataURL(f);
-    });
-  };
-  inp.click();
-}
-
+/* Nahrávání skončilo 22. 9. 2026, ale co v zakázce leží, musí jít dostat
+ * ven — jinak by se obsah stal nedosažitelným, aniž by ho kdokoli smazal. */
 function prilohyStahni(id) {
   const zak = poznamkyZak(); if (!zak) return;
   const p = (zak.prilohy || []).find(x => x.id === id); if (!p) return;
   const a = document.createElement('a');
   a.href = p.data; a.download = p.nazev;
   document.body.appendChild(a); a.click(); a.remove();
-}
-
-async function prilohySmazUI(id) {
-  const zak = poznamkyZak(); if (!zak) return;
-  const p = (zak.prilohy || []).find(x => x.id === id); if (!p) return;
-  /* Tady se ptáme: na rozdíl od poznámky se obsah přílohy opravdu ztratí. */
-  if (!await potvrd('Odebrat přílohu „' + p.nazev + '“? Obsah souboru se ze zakázky smaže natrvalo.')) return;
-  prilohySmaz(zak, id, { kdo: poznamkyKdo() });
-  poznamkyZmena();
-}
-
-/* ---------- vykreslení ---------- */
-
-function poznamkyRadek(p) {
-  const smazana = !!p.smazano;
-  const kdo = p.kdo ? esc(p.kdo) : 'neuvedeno';
-  const upr = p.upraveno
-    ? ` <span class="pozn-upr">upraveno ${esc(poznamkyDatum(p.upraveno.kdy))}</span>` : '';
-  const ovladani = smazana
-    ? `<button class="mini" onclick="poznamkyObnovUI('${escJs(p.id)}')">Vrátit</button>`
-    : `<button class="mini" onclick="poznamkyUpravStart('${escJs(p.id)}')">Upravit</button>
-       <button class="mini" onclick="poznamkySmazUI('${escJs(p.id)}')">Smazat</button>`;
-  const stopa = smazana
-    ? `<div class="pozn-stopa">Smazal ${esc(p.smazano.kdo || 'neuvedeno')} ${esc(poznamkyDatum(p.smazano.kdy))}
-       – záznam zůstává v zakázce, dokud ho někdo nevrátí.</div>` : '';
-  return `<li class="pozn-radek${smazana ? ' smazana' : ''}">
-    <div class="pozn-hlava">
-      <span class="pozn-druh d-${esc(p.druh)}">${esc(poznamkyDruhNazev(p.druh))}</span>
-      <span class="pozn-kdy">${esc(poznamkyDatum(p.kdy))}, ${kdo}${upr}</span>
-      <span class="pozn-ovl">${ovladani}</span>
-    </div>
-    <div class="pozn-text">${esc(p.text).replace(/\n/g, '<br>')}</div>
-    ${stopa}</li>`;
 }
 
 function prilohyRadek(p) {
@@ -173,60 +79,40 @@ function prilohyRadek(p) {
     <span class="kdy">${esc(poznamkyDatum(p.kdy))}${p.kdo ? ', ' + esc(p.kdo) : ''}</span>
     <span class="ovl">
       <button class="mini" onclick="prilohyStahni('${escJs(p.id)}')">Stáhnout</button>
-      <button class="mini" onclick="prilohySmazUI('${escJs(p.id)}')">Odebrat</button>
     </span></li>`;
 }
 
-function poznamkyKarta() {
+/* ---------- vykreslení ---------- */
+
+/* `kde` je 'ock' / 'proj' a jde JEN o jedinečnost id v dokumentu. Karta se
+ * vykresluje na obou stránkách naráz (obě jsou v DOM, jen skryté), takže
+ * pevné `id="poznText"` by v dokumentu vzniklo dvakrát — a na to je vlastní
+ * kontrola v harnessech. Obsah i chování jsou přitom totožné: je to jeden
+ * zápisník zakázky. */
+function poznamkyKarta(kde) {
   const zak = poznamkyZak();
   if (!zak) return '';
-  const seznam = poznamkySeznam(zak, { smazane: POZN_SMAZANE });
-  const sh = poznamkyShrnuti(zak);
+  const text = poznamkyPoleText(zak);
   const prilohy = prilohySeznam(zak);
+  const id = 'poznText-' + (kde === 'proj' ? 'proj' : 'ock');
 
-  const druhy = POZN_DRUHY.map(d =>
-    `<button class="mini${d.kod === POZN_DRUH ? ' primary' : ''}"
-       onclick="poznamkyDruhSet('${escJs(d.kod)}')">${esc(d.nazev)}</button>`).join(' ');
-
-  /* Ctrl+V přidá obrázek ze schránky jako přílohu (10. 9. 2026, zadání J. V.).
-   * Zóna je celý blok zápisu, ne jen tlačítko — do textového pole uvnitř se
-   * nezasahuje, tam Ctrl+V dál vkládá text (viz vlozPoleEditace v common.js). */
-  const zapis = `<div class="pozn-zapis" data-vlozobrazek="prilohy">
-    <div class="btns" style="flex-wrap:wrap">${druhy}</div>
-    <textarea id="poznText" rows="3" style="width:100%;margin-top:6px;text-align:left"
+  const pole = `<textarea id="${id}" class="pozn-pole" rows="6" style="width:100%;text-align:left"
       placeholder="Např.: Sleva 6 % dohodnutá s p. Novákem – tři šachty v jedné budově, montáž v jednom nájezdu."
-      oninput="poznamkyPis(this.value)">${esc(POZN_ROZEPSANO)}</textarea>
-    <div class="btns" style="margin-top:6px">
-      <button class="primary" onclick="poznamkyUloz()">${POZN_UPRAVA ? 'Uložit úpravu' : 'Přidat poznámku'}</button>
-      ${POZN_UPRAVA ? '<button class="mini" onclick="poznamkyUpravZrus()">Zrušit úpravu</button>' : ''}
-      <button onclick="prilohyNahraj()">Přidat přílohu</button>
-      <span class="note" title="obrázek ze schránky se přidá jako příloha">obrázek jde vložit i Ctrl+V</span>
-      <span class="note">${sh.pocet} poznámek, ${prilohy.length} příloh
-        (${esc(poznamkyVelikostText(sh.bajtu))})</span>
-    </div></div>`;
+      oninput="poznamkyPoleSet(this.value)"
+      onchange="poznamkyPoleHotovo(this.value)">${esc(text)}</textarea>`;
 
-  const listPozn = seznam.length
-    ? `<ul class="pozn-seznam">${seznam.map(poznamkyRadek).join('')}</ul>`
-    : `<div class="note" style="margin-top:8px">Zatím tu nic není. Sem patří to, co se jinak ztratí
-       v e-mailu: proč se dala sleva, co jsme slíbili, na čem se čeká.</div>`;
-
-  const prepinac = sh.smazanych
-    ? `<div class="btns" style="margin-top:6px"><button class="mini" onclick="poznamkySmazanePrepni()">
-       ${POZN_SMAZANE ? 'Skrýt smazané' : 'Zobrazit i smazané (' + sh.smazanych + ')'}</button></div>`
-    : '';
-
+  /* Seznam příloh se ukáže jen tehdy, když v zakázce opravdu nějaké jsou.
+   * U nové zakázky by prázdný nadpis „Přílohy" jen mátl: působil by jako
+   * nabídka něco nahrát, což už nejde. */
   const listPril = prilohy.length
-    ? `<div class="note" style="font-weight:600;margin-top:12px">Přílohy:</div>
+    ? `<div class="note" style="font-weight:600;margin-top:12px">Přílohy ze starších zakázek
+         (nové už nahrát nejdou):</div>
        <ul class="pozn-prilohy">${prilohy.map(prilohyRadek).join('')}</ul>`
     : '';
 
-  return zapis + listPozn + prepinac + listPril
-    + `<div class="note" style="margin-top:10px"><b>Nic z této karty se netiskne</b> – poznámky ani
-       přílohy se neobjeví v cenové nabídce, krycím listu ani v technické specifikaci. Cestují jen
-       uvnitř souboru zakázky, takže je při předání zakázky kolegovi má rovnou k dispozici.
-       Přílohy se ukládají přímo do souboru zakázky: nejvýš
-       ${esc(poznamkyVelikostText(POZN_MAX_PRILOHA))} na soubor a
-       ${esc(poznamkyVelikostText(POZN_MAX_CELKEM))} dohromady, aby zakázka zůstala odeslatelná
-       e-mailem. Smazaná poznámka zůstává v datech se jménem a datem – zápisník se nemá dát tiše
-       vygumovat.</div>`;
+  return `<div class="pozn-zapis">${pole}</div>` + listPril
+    + `<div class="note" style="margin-top:10px"><b>Nic z této karty se netiskne</b> – text se
+       neobjeví v cenové nabídce, krycím listu ani v technické specifikaci. Cestuje jen uvnitř
+       souboru zakázky, takže ho při předání zakázky kolegovi má rovnou k dispozici. Sem patří to,
+       co se jinak ztratí v e-mailu: proč se dala sleva, co jsme slíbili, na čem se čeká.</div>`;
 }

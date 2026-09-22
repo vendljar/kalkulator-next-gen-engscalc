@@ -168,6 +168,34 @@ function poznamkyDatum(kdy) {
   return d.getDate() + '. ' + (d.getMonth() + 1) + '. ' + d.getFullYear();
 }
 
+/* ---------- jedno textové pole (zadání J. V. 22. 9. 2026) ----------------
+ *
+ * Zápisník se scvrkl na JEDNO VOLNÉ TEXTOVÉ POLE. Druhy poznámky, měkké
+ * mazání i přílohy zůstávají v datech i v modelu — starší zakázky je nesou
+ * a nic se z nich nemaže —, ale obrazovka je nenabízí.
+ *
+ * `poznamkyPoleText` vrací to, co se má v poli ukázat:
+ *   • `poznamkyText` (nové pole), jakmile do něj někdo jednou sáhl,
+ *   • jinak text složený ze starých strukturovaných poznámek.
+ *
+ * Schválně se NIC nepřepisuje při čtení: kdyby se pole materializovalo už
+ * při vykreslení, zakázka by se sama označila za změněnou, aniž by na ni
+ * kdokoli sáhl — přesně ta chyba, kterou 22. 9. 2026 ráno řešily nálezy
+ * N12/N13 („zakázkou hýbe i sama aplikace"). Pole vznikne až prvním
+ * uživatelským zápisem, a protože se do něj předvyplní tentýž odvozený
+ * text, nic se tím neztratí. */
+function poznamkyPoleText(zak) {
+  if (!zak) return '';
+  if (typeof zak.poznamkyText === 'string') return zak.poznamkyText;
+  return poznamkyText(zak);
+}
+
+function poznamkyTextNastav(zak, v) {
+  if (!zak) return '';
+  zak.poznamkyText = (v == null) ? '' : String(v);
+  return zak.poznamkyText;
+}
+
 /* Textová podoba zápisníku – pro protokol o kalkulaci (#41) a pro schránku,
  * když se zakázka předává kolegovi. Smazané se nevypisují. */
 function poznamkyText(zak) {
@@ -264,7 +292,7 @@ function prilohySmaz(zak, id, opts) {
  *  - Porovnává se se stabilním pořadím klíčů. Zakázka se po načtení ze
  *    serveru skládá znovu a pořadí klíčů se může lišit; bez seřazení by
  *    vyšlo „liší se všechno" a poznámka by se zase neuložila. */
-const POZN_POLE_ZAPISNIKU = ['poznamky', 'prilohy', 'prilohySmazane'];
+const POZN_POLE_ZAPISNIKU = ['poznamky', 'prilohy', 'prilohySmazane', 'poznamkyText'];
 
 function poznamkyStabilne(v) {
   if (v === null || typeof v !== 'object') return JSON.stringify(v === undefined ? null : v);
@@ -300,5 +328,6 @@ if (typeof module !== 'undefined')
                      POZN_POLE_ZAPISNIKU, poznamkyJedinaZmena, poznamkyBezZapisniku,
                      poznamkyZajisti, poznamkyPridej, poznamkyUprav, poznamkySmaz, poznamkyObnov,
                      poznamkySeznam, poznamkyNajdi, poznamkyShrnuti, poznamkyText,
+                     poznamkyPoleText, poznamkyTextNastav,
                      poznamkyDruhNazev, poznamkyDatum, poznamkyVelikostText,
                      prilohyPridej, prilohySmaz, prilohySeznam, prilohyVelikost };

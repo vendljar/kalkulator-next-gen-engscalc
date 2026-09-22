@@ -313,6 +313,32 @@
    "testy": "Kontrola sama je test: projde 133 zadání. Obě opravené mutace navíc ověřeny samostatným během (chycené 1 z 1)."
   },
   {
+   "id": "310",
+   "vlna": "E",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "M",
+   "hotovoV": "v22.9.8",
+   "nazev": "Dodatkové texty položek platné pro celou aplikaci",
+   "proc": "Zadání J. V. 22. 9. 2026: „dodatkové texty pod příplatky a volitelnými položkami, které jako administrátor zadám, mají zůstat v aplikaci uložené. Ostatní uživatelé je mohou v případě potřeby upravovat, ale jen admin je může zadat, resp. trvale přepisovat.“",
+   "detail": "STAV DO 22. 9.: text se od #267 psal do ceníku VARIANTY. Ceník se ale zveřejňuje — vydat kvůli jedné větě novou verzi znamená novou verzi pro všechny budoucí nabídky, záznam v historii a porovnání otisků. Nikdo to nedělal, takže text zůstal v zakázce toho, kdo ho napsal. Pole navíc viděl jen administrátor.\n\nŘEŠENÍ: samostatná mapa textů `/api/popisy` (úložiště `program`, klíč `popisy`) vedle ceníku — bez verze, zapisuje ji jen administrátor. Při přihlášení se vlévá do `DEFAULT_CENIK.popisy`, a to JEN tam, kde zveřejněný ceník vlastní text nemá: zveřejněná verze je konkrétnější zdroj a nesmí ji přebít nic mimo ni.\n\nDVĚ ÚROVNĚ: administrátorův zápis jde do zakázky i na server; zápis ostatních jen do zakázky. Odeslané nabídky se nemění — zakázka si nese vlastní kopii ceníku.\n\nZÁLOHA A OBNOVA: nový klíč přibyl do `zalohaDoplnky()` i do `OBNOVA_CASTI`. Co záloha nenese, to obnova tiše smaže — přesně kvůli tomu vznikl nález B9.\n\nOčista (`popisyOciste`) je v modelu, takže ji prohlížeč i server dělají týmž kódem: prázdné texty se nezapisují, klíč i text mají strop délky a počet položek je omezený.",
+   "kde": "netlify/functions/popisy.mjs (nový), src/cenik.js (popisyOciste, popisyVlij), src/ui/online_ui.js, src/ui/kalk_ock.js, netlify/lib/zalohovani.mjs, netlify/functions/obnova.mjs",
+   "testy": "Sedm serverových v netlify/test_prava.mjs (uložení, čtení obchodníkem, očista na serveru, zrušení textu) plus matice práv a dvě kontroly úplnosti zálohy. Jedenáct modelových v src/test_cenik_popisy.js. Dvě mutace, obě chycené."
+  },
+  {
+   "id": "311",
+   "vlna": "E",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "M",
+   "hotovoV": "v22.9.8",
+   "nazev": "Interní poznámky jako jedno textové pole, nahoře nad kalkulací",
+   "proc": "Zadání J. V. 22. 9. 2026: „Interní poznámky a přílohy k zakázce uprav, aby se nově jednalo jen o interní poznámky. Přílohy nebude už dále možné nahrávat. Horní navigační tlačítka odstraň. Bude se jednat pouze o textové pole.“ Plus přesun mezi souhrn zakázky a zadání šachty (OCK), resp. cenovou kalkulaci (PROJ).",
+   "detail": "Z karty zmizely štítky druhu poznámky, zápisník jednotlivých záznamů s měkkým mazáním i nahrávání příloh. V provozu se zápisník používal jako jeden odstavec pod druhým, takže druh, autor a čas u každé věty byly režie navíc; přílohy se nosily přímo v souboru zakázky jako data URL a nafukovaly ho na hranici odeslatelnosti e-mailem.\n\nNIC SE NESMAZALO: model v poznamky.js umí dál všechno. Starší zakázky se svými záznamy se v poli ukážou jako předvyplněný text (`poznamkyPoleText`) a přílohy, které v nich už jsou, jdou pořád stáhnout.\n\nČTENÍ NEMĚNÍ ZAKÁZKU: pole vzniká až prvním uživatelským zápisem. Kdyby se materializovalo při vykreslení, zakázka by se sama označila za neuloženou — táž past jako nálezy N12/N13 z téhož dne.\n\nText drží přímo zakázka (`ZAK.poznamkyText`), ne pomocná proměnná; pole je zároveň v POZN_POLE_ZAPISNIKU, takže se smí uložit i nad zamčenou variantou (zámek chrání cenu, ne zápisník).\n\nUMÍSTĚNÍ: v OCK v bloku `kalk-souhrn`, ne v `inputs` — `.inputs .card .body` skládá obsah vlastním gridem pro dvojice popisek/pole a textové pole by se v něm zalomilo. V PROJ nad kartou Cenová kalkulace PROJ. Je to jeden zápisník zakázky: co se napíše v OCK, je vidět i v PROJ.",
+   "kde": "src/poznamky.js, src/ui/poznamky_ui.js, src/ui/kalk_ock.js, src/ui/kalk_proj.js",
+   "testy": "Deset modelových a pět ke stavu obrazovky v src/test_poznamky.js (včetně toho, že v UI nezůstala cesta k nahrání přílohy). Prohlížečový harness overit_lista.mjs ověřuje obě polohy karty, jediné textové pole, žádná tlačítka, sdílený text mezi OCK a PROJ a že se nic nedostane do dokumentů."
+  },
+  {
    "id" : "285",
    "vlna" : "C",
    "stav" : "ceka",

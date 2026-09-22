@@ -312,6 +312,58 @@ function cenikPopisNastav(c, cesta, text) {
   else c.popisy[String(cesta)] = t;
 }
 
+/* ---------- dodatkové texty platné pro celou aplikaci (22. 9. 2026) ------
+ *
+ * Zadání J. V.: „dodatkové texty pod příplatky a volitelnými položkami,
+ * které jako administrátor zadám, mají zůstat v aplikaci uložené. Ostatní
+ * uživatelé je mohou v případě potřeby upravovat, ale jen admin je může
+ * zadat, resp. trvale přepisovat."
+ *
+ * Do 22. 9. text žil JEN v ceníku otevřené zakázky. Dokud správce ceník
+ * nezveřejnil, nikdo jiný ho neviděl — a zveřejnit celý ceník kvůli jedné
+ * větě znamená novou verzi ceníku se vším, co k tomu patří. Proto vedle
+ * ceníku stojí samostatná mapa textů (`/api/popisy`), kterou smí zapsat
+ * jen administrátor a která se při přihlášení vlije do výchozího ceníku.
+ * Odtud si ji každá nová zakázka odnese ve své kopii, takže odeslaná
+ * nabídka se pozdější změnou textu už nezmění.
+ *
+ * Očista je tady, v modelu, aby ji prohlížeč i server dělali TÝMŽ kódem —
+ * stejně jako u matice zobrazení. Klíčem je PŮVODNÍ NÁZEV položky, ne
+ * ceníková cesta (viz `popisZCeniku` v engine.js), takže se nedá ověřit
+ * proti seznamu cest; hlídá se tedy tvar a délka. */
+const POPISY_MAX_KLIC = 200;
+const POPISY_MAX_TEXT = 300;
+const POPISY_MAX_POLOZEK = 500;
+
+function popisyOciste(vstup) {
+  const v = (vstup && typeof vstup === 'object' && !Array.isArray(vstup)) ? vstup : {};
+  const out = {};
+  let kolik = 0;
+  Object.keys(v).forEach(k => {
+    if (kolik >= POPISY_MAX_POLOZEK) return;
+    const klic = String(k == null ? '' : k).trim();
+    if (!klic || klic.length > POPISY_MAX_KLIC) return;
+    const t = (typeof v[k] === 'string') ? v[k].trim() : '';
+    if (!t) return;                       // prázdný text se neukládá, viz cenikPopisNastav
+    out[klic] = t.slice(0, POPISY_MAX_TEXT);
+    kolik++;
+  });
+  return out;
+}
+
+/* Vlije texty do ceníku (na místě), ale JEN tam, kde ceník vlastní text
+ * nemá. Zveřejněný ceník je konkrétnější zdroj: kdyby ho společná mapa
+ * přebila, správce by změnu textu ve zveřejněné verzi nikdy neprosadil. */
+function popisyVlij(cenik, texty) {
+  if (!cenik) return cenik;
+  const t = popisyOciste(texty);
+  if (!cenik.popisy) cenik.popisy = {};
+  Object.keys(t).forEach(k => {
+    if (typeof cenik.popisy[k] !== 'string' || !cenik.popisy[k].trim()) cenik.popisy[k] = t[k];
+  });
+  return cenik;
+}
+
 function cenikVychozi(c, klic, zaklad) {
   const v = c ? c[klic] : null;
   return (typeof v === 'number' && isFinite(v) && v > 0) ? v : zaklad;
@@ -426,4 +478,5 @@ function cenikAplikuj(zmeny, C, PC) {
 if (typeof module !== 'undefined')
   module.exports = { CENIK_DEF, CENIK_DEF_PROJ, CENIK_JEN_ZAHR, cenikGet, cenikSet, cenikTyp, cenikVychozi,
     cenikPopis, cenikPopisNastav,
+    POPISY_MAX_KLIC, POPISY_MAX_TEXT, POPISY_MAX_POLOZEK, popisyOciste, popisyVlij,
     cenikSheetRows, cenikToSheets, cenikDiffZeSheets, cenikAplikuj, CENIK_HLAVICKA };

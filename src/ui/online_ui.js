@@ -292,6 +292,14 @@ function onlinePoPrihlaseni(ja) {
                       onlineNactiSablony(),
                       /* analytika (#27): zjistit, jestli je sběr zapnutý, a nastartovat ho */
                       typeof analytikaPoPrihlaseni === 'function' ? analytikaPoPrihlaseni() : Promise.resolve()])
+    /* SPOLEČNÉ DODATKOVÉ TEXTY AŽ PO CENÍKU, NE VEDLE NĚJ (22. 9. 2026).
+     * `onlineNactiProgram` vyměňuje obsah DEFAULT_CENIK na místě
+     * (`progPouzij` → `konfigNahradVMiste`). Kdyby se texty vlévaly souběžně
+     * v témže `Promise.all`, rozhodovalo by pořadí a při nešťastném pořadí by
+     * je výměna ceníku smazala. Tahle chyba by se přitom projevila jednou za
+     * čas a vypadala jako „texty se občas neukážou" — přesně ten druh
+     * nestability, který 22. 9. ráno řešila dávka 2. */
+    .then(() => onlineNactiPopisy())
     .then(() => {
       if (!byloOdUzivatele && typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
     })
@@ -679,6 +687,58 @@ function onlineNactiZobrazeni() {
     onlineZprava('Nastavení zobrazení se ze serveru nepodařilo načíst: ' + e.message
       + ' Platí výchozí rozdělení (vše navíc vidí jen administrátor).', 'varovani');
     onlineZobrazeniNasad(null);
+    return false;
+  });
+}
+
+/* ---------- společné dodatkové texty položek (22. 9. 2026) --------------
+ *
+ * Zadání J. V.: text, který pod příplatkem nebo volitelnou položkou napíše
+ * ADMINISTRÁTOR, má zůstat uložený v aplikaci; ostatní ho smí ve své zakázce
+ * upravit, ale trvale přepsat ne.
+ *
+ * Texty se vlévají do VÝCHOZÍHO ceníku (`DEFAULT_CENIK.popisy`) a jen tam,
+ * kde zveřejněný ceník vlastní text nemá — zveřejněná verze je konkrétnější
+ * zdroj a nesmí ji přebít nic mimo ni. Každá nová zakázka si pak text odnese
+ * ve své kopii ceníku, takže odeslaná nabídka se pozdější změnou nezmění.
+ *
+ * Selhání načtení není důvod cokoli hlásit nahlas: texty jsou pohodlí, ne
+ * podmínka kalkulace. Zůstane, co je v ceníku. */
+function onlineNactiPopisy() {
+  if (typeof popisyVlij !== 'function' || typeof DEFAULT_CENIK === 'undefined')
+    return Promise.resolve(false);
+  return onlineApi('/api/popisy').then(o => {
+    ONLINE_STAV.popisy = (o && o.popisy) ? o.popisy : null;
+    popisyVlij(DEFAULT_CENIK, ONLINE_STAV.popisy ? ONLINE_STAV.popisy.texty : null);
+    return true;
+  }).catch(() => { ONLINE_STAV.popisy = null; return false; });
+}
+
+/* Uložení JEDNOHO textu pro celou aplikaci. Smí jen administrátor — server
+ * to hlídá znovu (403), tohle je jen to, aby se ostatním tlačítko nenabízelo.
+ *
+ * Posílá se CELÁ mapa, ne jeden klíč: úložiště drží jeden záznam a částečný
+ * zápis by musel řešit souběh dvou správců slučováním na serveru. Map je
+ * řádově stovky krátkých vět, takže na tom nezáleží. */
+function onlinePopisUloz(klic, text) {
+  if (!jeAdminOnline()) return Promise.resolve(false);
+  const zaklad = (ONLINE_STAV.popisy && ONLINE_STAV.popisy.texty) ? ONLINE_STAV.popisy.texty : {};
+  const texty = Object.assign({}, zaklad);
+  const t = String(text == null ? '' : text).trim();
+  if (t) texty[String(klic)] = t; else delete texty[String(klic)];
+  return onlineApi('/api/popisy', { texty }).then(() => {
+    ONLINE_STAV.popisy = { texty, kdo: (ONLINE_STAV.ja || {}).email || '', kdy: new Date().toISOString() };
+    if (typeof popisyVlij === 'function' && typeof DEFAULT_CENIK !== 'undefined') {
+      /* Vlití samo by starý text nepřepsalo (ceník má přednost), takže se
+       * u tohohle jednoho klíče srovná výchozí ceník natvrdo — administrátor
+       * právě řekl, jak má znít. */
+      if (!DEFAULT_CENIK.popisy) DEFAULT_CENIK.popisy = {};
+      if (t) DEFAULT_CENIK.popisy[String(klic)] = t; else delete DEFAULT_CENIK.popisy[String(klic)];
+    }
+    return true;
+  }).catch(e => {
+    onlineZprava('Dodatkový text se nepodařilo uložit pro celou aplikaci: ' + e.message
+      + ' V téhle zakázce zůstává zapsaný.', 'varovani');
     return false;
   });
 }
@@ -1960,6 +2020,7 @@ const OBNOVA_CASTI = [
   ['program', 'Ceník, katalog a slevová politika'],
   ['firma', 'Firemní údaje'],
   ['zobrazeni', 'Matice zobrazení'],
+  ['popisy', 'Dodatkové texty položek'],
   ['zakazky', 'Zakázky (rejstřík se přestaví sám)'],
   ['uzivatele', 'Účty uživatelů (jen ze serverového otisku)'],
   ['sablony', 'Šablony dokumentů'],
@@ -2069,7 +2130,7 @@ function onlineObnovaDavky(zaloha, casti) {
   let d = { ...hlava }, velikost = onlineObnovaVelikost(d);
   const neprazdna = () => Object.keys(d).length > Object.keys(hlava).length;
   const uzavri = () => { if (neprazdna()) davky.push(d); d = { ...hlava }; velikost = onlineObnovaVelikost(d); };
-  for (const k of ['program', 'firma', 'zobrazeni', 'uzivatele'].filter(k => casti.includes(k))) {
+  for (const k of ['program', 'firma', 'zobrazeni', 'popisy', 'uzivatele'].filter(k => casti.includes(k))) {
     const v = zaloha[k] === undefined ? null : zaloha[k];
     const s = onlineObnovaVelikost(v);
     if (s > OBNOVA_DAVKA_MAX_B) { prilisVelke.push({ cast: k, klic: k, velikost: s }); continue; }

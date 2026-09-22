@@ -398,36 +398,55 @@ function nazevReset(orig) { if (Z.nazvyPrepis) delete Z.nazvyPrepis[orig]; rende
 /* Dodatkový text k ceníkové položce (#267, 18. 9. 2026). Píše se do CENÍKU
  * varianty, ne do zadání — proto `C`, a ne `Z`. Zámek varianty se hlídá
  * stejně jako u ostatních zápisů; bez něj by šlo do uzamčené odeslané
- * nabídky dopsat větu, kterou zákazník nikdy neviděl. */
+ * nabídky dopsat větu, kterou zákazník nikdy neviděl.
+ *
+ * DVĚ ÚROVNĚ OD 22. 9. 2026 (zadání J. V.):
+ *   • ZAKÁZKA — píše každý, platí jen pro tuhle nabídku (`C.popisy`);
+ *   • APLIKACE — píše jen administrátor, platí pro všechny budoucí zakázky
+ *     (`/api/popisy`, vlévá se do `DEFAULT_CENIK.popisy` při přihlášení).
+ *
+ * Administrátorův zápis jde do obou: v otevřené zakázce se text projeví
+ * hned a zároveň se uloží jako nový výchozí. Ostatním se ukládá jen do
+ * zakázky, takže výchozí text nikdo nepřepíše nedopatřením. Do 22. 9. pole
+ * viděl jen administrátor a text nepřežil ani zavření zakázky, pokud
+ * nezveřejnil celý ceník. */
 function popisSet(cesta, v) {
   if (typeof zamekStop === 'function' && zamekStop()) return;
   if (typeof cenikPopisNastav !== 'function') return;
   cenikPopisNastav(C, cesta, v);
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
+  if (typeof jeAdmin === 'function' && jeAdmin() && typeof onlinePopisUloz === 'function')
+    onlinePopisUloz(cesta, v);
   render();
 }
 /* Řádek s dodatkovým textem pod položkou. Jeden pro příplatky i pro
  * volitelné — dvě kopie by se rozešly v popisku i v tom, kdo pole vidí.
  *
- * Text se ukládá k CENÍKOVÉ POLOŽCE, takže ho smí měnit jen ten, kdo smí
- * sahat na ceníkové ceny. Vlastní položka zakázky ceníkovou položku nemá,
- * ke které by se text vázal, a v příští nabídce stejně nevznikne.
- * Netiskne se: je to zadávací pole, ne obsah kalkulace. */
-function popisRadekHtml(r, cols, smiEdit) {
-  if (!smiEdit || !r || r.vlastni || !r.cenaPath) return '';
+ * Pole vidí KAŽDÝ (zadání J. V. 22. 9. 2026: „ostatní uživatelé je mohou
+ * v případě potřeby upravovat"). Vlastní položka zakázky ceníkovou položku
+ * nemá, ke které by se text vázal, a v příští nabídce stejně nevznikne.
+ * Samotné pole se netiskne: je zadávací, ne obsah kalkulace. */
+function popisRadekHtml(r, cols) {
+  if (!r || r.vlastni || !r.cenaPath) return '';
   /* Klíčem je PŮVODNÍ NÁZEV položky, ne ceníková cesta — dvě různé položky
    * můžou sdílet tutéž sazbu (madla boční × zadní) a v nabídce jsou to dva
    * různé výrobky. Podrobně u `popisZCeniku` v engine.js. */
   const klic = r.origNazev || r.nazev;
   const t = (typeof cenikPopis === 'function') ? cenikPopis(C, klic) : '';
+  const admin = (typeof jeAdmin === 'function') && jeAdmin();
+  const naped = admin
+    ? 'Tiskne se v nabídce pod názvem položky místo množství. Jako administrátor ho ukládáte '
+      + 'pro celou aplikaci — předvyplní se i v nabídkách ostatních.'
+    : 'Tiskne se v nabídce pod názvem položky místo množství. Změna platí jen pro tuhle '
+      + 'zakázku; výchozí text pro celou aplikaci zadává administrátor.';
   return `<tr class="noprint"><td colspan="${cols}" style="padding-top:0">
-    <input type="text" style="width:100%" value="${esc(t)}"
+    <input type="text" style="width:100%" value="${esc(t)}" maxlength="${POPISY_MAX_TEXT}"
       placeholder="dodatkový text do cenové nabídky (nepovinné)"
-      title="Tiskne se v nabídce pod názvem položky místo množství. Ukládá se do ceníku, takže se u další nabídky předvyplní."
+      title="${esc(naped)}"
       onchange="popisSet('${keyAttr(klic)}', this.value)"></td></tr>`;
 }
 function popisRadekVol(r, cols) {
-  return popisRadekHtml(r, cols, kalkSloupce().admin);
+  return popisRadekHtml(r, cols);
 }
 /* ---- ruční přepis jedn. ceny u položek bez ceníkové vazby ---- */
 function cenaSet(orig, v) {
@@ -1688,7 +1707,7 @@ function renderOutputs() {
       ? '<th class="admincol" title="viditelné pro běžného uživatele">Viditelné</th>'
         + '<th class="admincol" title="výchozí stav sloupce Nabídka v NOVÉ zakázce">Výchozí</th>' : '');
   /* Dodatkový text pod příplatkem (#267) — táž funkce jako u volitelných. */
-  const popisRadek = (x, cols) => popisRadekHtml(x, cols, col.admin);
+  const popisRadek = (x, cols) => popisRadekHtml(x, cols);
   const pripRadek = (x) => {
     let c = '';
     if (col.admin) c += `<td style="text-align:center"><input type="checkbox" ${vynech.includes(x.key) ? '' : 'checked'}
@@ -1761,27 +1780,35 @@ function renderOutputs() {
   /* Souhrn (základní cena, DPH, náklad, marže) stojí NAD zadáním šachty —
    * rozvržení 3. 8. 2026: souhrn → zadání → dimenze → práce a režie →
    * cenová kalkulace, vše na plnou šířku jako v kalkulaci PROJ. */
+  /* INTERNÍ POZNÁMKY STOJÍ HNED POD SOUHRNEM (zadání J. V. 22. 9. 2026).
+   *
+   * Do 22. 9. visely úplně dole, pod Detailem mezivýpočtů — obchodník k nim
+   * musel projet celou kalkulaci a psal proto dál do e-mailu. Teď jsou tam,
+   * kam se dívá jako první. Schválně do `kalk-souhrn`, ne do `inputs`:
+   * `.inputs .card .body` skládá obsah vlastním gridem pro dvojice
+   * popisek/pole a textové pole by se v něm zalomilo do sloupce.
+   *
+   * Táž karta se vykresluje i v Kalkulaci PROJ (kalk_proj.js) — je to jeden
+   * zápisník zakázky, ne dva. */
+  const kartaPoznamek = (typeof poznamkyKarta === 'function')
+    ? kartaRezim('ock', 'poznamky', 'Interní poznámky k zakázce (netisknou se)',
+                 poznamkyKarta('ock'), 'ock-poznamky')
+    : '';
   const elSouhrn = document.getElementById('kalk-souhrn');
   if (elSouhrn) elSouhrn.innerHTML =
     (typeof standardRozpis === 'function' ? standardRozpis() : '')
-    + `<div class="card"><div class="body">${hlava}${marzeLista({ cast: 'ock' })}</div></div>`;
+    + `<div class="card"><div class="body">${hlava}${marzeLista({ cast: 'ock' })}</div></div>`
+    + kartaPoznamek;
   document.getElementById('outputs').innerHTML =
-    (elSouhrn ? '' : `<div class="card"><div class="body">${hlava}${marzeLista({ cast: 'ock' })}</div></div>`) +
+    (elSouhrn ? '' : `<div class="card"><div class="body">${hlava}${marzeLista({ cast: 'ock' })}</div></div>`
+      + kartaPoznamek) +
     card('Cenová kalkulace', kalkulace, false, 'ock-kalkulace') +
     /* Obě karty mají od 20. 8. 2026 režim sekce (zobrazit/skrýt/srolovat)
      * stejně jako sekce v tabulce kalkulace — dřív ho neměly, ačkoli je
      * obchodník vidí jako úplně stejné bloky. */
     kartaRezim('ock', 'priplatky', 'Příplatkové položky (ceník variant)', prip, 'ock-priplatky') +
     sirotciKarta(r) +
-    (col.admin ? kartaRezim('ock', 'detailMezivypoctu', 'Detail mezivýpočtů', det, 'ock-detail') : '') +
-    /* Interní poznámky a přílohy (#37). Do 21. 8. 2026 večer stály v Přehledu
-     * cenových nabídek; ten se na pokyn J. V. pročistil na vyhledávání
-     * a souhrn, a poznámky se přestěhovaly sem — „proč jsme šli s cenou
-     * dolů" je potřeba mít na očích tam, kde se ta cena dělá.
-     * Do žádného dokumentu se nedostanou. */
-    (typeof poznamkyKarta === 'function'
-      ? kartaRezim('ock', 'poznamky', 'Interní poznámky a přílohy k zakázce (netisknou se)',
-        poznamkyKarta(), 'ock-poznamky') : '');
+    (col.admin ? kartaRezim('ock', 'detailMezivypoctu', 'Detail mezivýpočtů', det, 'ock-detail') : '');
 }
 
 function zkontrolujTl(key) {

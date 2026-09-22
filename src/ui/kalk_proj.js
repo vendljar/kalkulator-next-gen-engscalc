@@ -494,6 +494,13 @@ function renderProj() {
          <span class="note">(vypne hlídání a porovnávání části OCK)</span></label>
          <input type="checkbox" ${ZAK.jenProj ? 'checked' : ''} onchange="set('ZAK.jenProj', this.checked)"><span class="u"></span></div>
        ${marzeLista({ cast: 'proj' })}</div></div>` +
+    /* INTERNÍ POZNÁMKY I TADY (zadání J. V. 22. 9. 2026). Je to jeden
+     * zápisník ZAKÁZKY, ne dva: obě karty píšou do téhož pole, takže co
+     * obchodník napíše v OCK, vidí i v PROJ. Stojí na témže místě jako
+     * v Kalkulaci OCK — hned pod souhrnem, nad vlastním výpočtem. */
+    (typeof poznamkyKarta === 'function'
+      ? card('Interní poznámky k zakázce (netisknou se)', poznamkyKarta('proj'), false, 'proj-poznamky')
+      : '') +
     card('Cenová kalkulace PROJ', kalkulace, false, 'proj-kalkulace') +
     /* Sleva a obchodní zaokrouhlení stojí hned pod výpočtem, přesně jako
      * v Kalkulaci OCK (zadání 1. 8. 2026). Ty dvě karty se ale od 4. 8. 2026

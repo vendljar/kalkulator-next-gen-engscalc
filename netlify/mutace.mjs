@@ -406,6 +406,20 @@ const MUTACE = [
     nahrad: "                          vysledek: null });",
     proc: 'šlo by přepsat částky už odeslané („neměnné") nabídky beze stopy' },
 
+  /* Dodatkové texty položek pro celou aplikaci (22. 9. 2026, zadání J. V.). */
+
+  { nazev: 'dodatkový text pro celou aplikaci smí uložit kdokoli',
+    soubor: 'functions/popisy.mjs',
+    hledej: "  const { chyba, relace } = await vyzadujRoli(req, 'Administrátor');",
+    nahrad: "  const { chyba, relace } = await vyzadujRoli(req);",
+    proc: 'obchodník by přepsal text, který se předvyplňuje do nabídek všech ostatních' },
+
+  { nazev: 'dodatkové texty se ukládají, jak přijdou',
+    soubor: 'functions/popisy.mjs',
+    hledej: "  const texty = globalThis.popisyOciste(t && t.texty);",
+    nahrad: "  const texty = (t && t.texty) || {};",
+    proc: 'do ceníku každé nové zakázky by se vlil slovník libovolné velikosti' },
+
   /* Pojistky serverové vrstvy z auditu 22. 9. 2026 (B54–B56). */
 
   { nazev: 'server bez ADMIN_EMAIL obsluhuje chráněné cesty dál', soubor: 'lib/sdilene.mjs',

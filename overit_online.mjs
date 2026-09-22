@@ -41,6 +41,7 @@ import zakazky from './netlify/functions/zakazky.mjs';
 import zaloha from './netlify/functions/zaloha.mjs';
 import firma from './netlify/functions/firma.mjs';
 import zobrazeni from './netlify/functions/zobrazeni.mjs';
+import popisyFn from './netlify/functions/popisy.mjs';
 import zakazniciFn from './netlify/functions/zakaznici.mjs';
 import zalohaVynuceno from './netlify/functions/zaloha_vynuceno.mjs';
 import sablonyFn from './netlify/functions/sablony.mjs';
@@ -80,6 +81,7 @@ const FUNKCE = {
   /* Matice zobrazení (#136) — aplikace ji načítá hned po přihlášení, takže
    * bez ní by v každém průchodu svítilo 404 v konzoli. */
   '/api/zobrazeni': zobrazeni,
+  '/api/popisy': popisyFn,
   '/api/zakaznici': zakazniciFn,
   /* Vynucená (a ověřitelná) záloha databáze – 4. 8. 2026. Kdyby tu funkce
    * chyběla, volání z prohlížeče by skončilo na 404 a test by mlčel
