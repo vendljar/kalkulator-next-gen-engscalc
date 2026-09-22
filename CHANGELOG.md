@@ -44,6 +44,21 @@ Věta je teď samostatná funkce, takže se dá změřit testem bez otevírání
 dialogu a bez vyrábění zakázky s přesným počtem změněných cen. **Nula patří
 do tvaru „0 cen"**, ne mezi 2–4; dosavadní podmínka `zmen < 5` to nehlídala.
 
+### N28 — odpověď, ne oprava
+
+Dvě zakázky v ostré databázi nesou uvnitř uloženého ceníku značku zahraniční
+řady, ačkoli jejich varianta je česká. **Na výpočet to nemá vliv** (o řadě
+rozhoduje `cenikRada`, značka v ceníku je až druhá v pořadí) a klon počítá
+správně. **Na zveřejnění ceníku taky ne**, a to dvakrát pojištěně: podklad se
+od značek čistí před odesláním a nad tím stojí pojistka, která zveřejnění
+zastaví, kdyby se zahraniční ceník vydával za tuzemský.
+
+Rozhodnutí J. V.: **migrace ostré databáze se nedělá** — riziko převyšuje
+užitek. U odemčené zakázky značka zmizí sama při nejbližším uložení; u
+odeslané je uložený ceník doklad o tom, co odešlo zákazníkovi. Zapsáno do
+roadmapy jako #316, v kódu se nemění nic.
+
+---
 
 ## v22.9.13 — 22. 9. 2026
 

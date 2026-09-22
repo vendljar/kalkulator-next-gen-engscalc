@@ -396,6 +396,19 @@
    "testy": "overit_online.mjs (zamčená lišta bez uložení, odemčená s trojicí a uložení po odemčení se skutečně zapíše), overit_prepocet_dialog.mjs (tvary počtu a 4. pád)."
   },
   {
+   "id": "316",
+   "vlna": "E",
+   "stav": "hotovo",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "hotovoV": "bez zásahu do kódu (rozhodnutí J. V. 22. 9. 2026)",
+   "nazev": "N28 — značky zahraniční řady ve dvou ostrých zakázkách: migrace se nedělá",
+   "proc": "Dvě zakázky v ostré databázi nesou uvnitř uloženého ceníku značku zahraniční řady, ačkoli jejich varianta je česká. Otázka J. V. zněla: mají takové zakázky ještě vliv na ceník nebo aplikaci, a počítají klony správně?",
+   "detail": "ODPOVĚĎ: na výpočet to vliv nemá. O řadě varianty rozhoduje `cenikRada`; značka uvnitř ceníku je až druhá v pořadí (`cenikRadaVarianty`). Obě zakázky se počítaly česky celou dobu a klon si nese `cenikRada` zakázky, takže počítá správně.\n\nNa zveřejnění ceníku to vliv nemá dvakrát pojištěně: podklad se od klíčů `rada` a `jenZahr` čistí ještě před odesláním (`cenikZverejneniOcisti`) a nad tím stojí pojistka, která zveřejnění zastaví, kdyby se zahraniční ceník vydával za tuzemský (`progZverejniPojistka`). Obě vznikly po zářijovém přepsání ceníku — je to přesně ta díra, kterou zavřely.\n\nPŘI ověřování se opravilo i vlastní starší hlášení z 8. kola: u třetí zakázky značka sedí na variantě, která zahraniční opravdu je. Rozejité jsou dvě, ne tři.",
+   "odpoved": "J. V. 22. 9. 2026: „pokud ano, pak mě to netrápí a můžeme to takto ponechat.\" MIGRACE OSTRÉ DATABÁZE SE NEDĚLÁ — riziko převyšuje užitek, protože značka dnes nic neovlivní. U odemčené zakázky značka zmizí sama při nejbližším uložení; u odeslané je uložený ceník doklad o tom, co odešlo zákazníkovi, a proto se jí nikdo nedotkne.",
+   "pozn": "JEDINÉ, CO PLATÍ DÁL: z těch dvou zakázek ceník nezveřejňovat. Pojistka to sice zastaví, ale ať se na ni nespoléháme. Čísla zakázek jsou ve vyhodnocovacím sešitu na Drive, ne tady."
+  },
+  {
    "id" : "285",
    "vlna" : "C",
    "stav" : "ceka",
