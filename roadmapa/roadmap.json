@@ -159,15 +159,16 @@
   {
    "id": "298",
    "vlna": "E",
-   "stav": "ceka",
+   "stav": "hotovo",
    "dulezitost": "stredni",
    "slozitost": "S",
    "nazev": "P11 — dvě cesty k hodinám ATYP se liší záchrannou hodnotou",
    "proc": "Nález N24 ze 3. kola: automatické zapnutí ATYP dalo „Montáž – atyp navíc\" 5 hodin, ruční zaškrtnutí 6 hodin (rozdíl 2 000 Kč). Změřeno 22. 9. 2026: vzorec je v obou cestách TÝŽ, liší se ZDROJ SAZBY.",
    "detail": "`atypPrepni` (zaškrtnutí, ruční i automatické) bere sazbu jako `cenikVychozi(C, klic, ATYP_NAHRADA[klic])` — když ji ceník nemá, použije NÁHRADU ZE SESTAVENÍ. `cenikDoZadani` (přepočet na platný ceník při otevření zakázky) bere `cenikVychozi(c, 'atypMontazPct', null)` — když ji ceník nemá, vrátí null a hodiny se VŮBEC NEPŘEPOČÍTAJÍ.\n\nZměřená citlivost zaokrouhlení (zkušební šachta, základ 24 h, hodinyNavicCelkem −3,25): sazba 0,30 → 6 h, sazba 0,25 → 5 h. Hlášený rozdíl tedy vznikne i při nezměněné geometrii, jen jiným zdrojem sazby. Druhá cesta k témuž rozdílu: `cenikDoZadani` přeskočí přepočet i tehdy, když obchodník hodnotu někdy ručně přepsal (`zadaniRucniJe`) — pak u zakázky zůstane staré číslo vedle nového.\n\nPROČ JSEM TO NESJEDNOTIL SÁM: dát `cenikDoZadani` tutéž náhradu znamená, že se u ceníku BEZ té sazby začne přepočítávat tam, kde se dosud nepřepočítávalo — a to hne cenou existujících zakázek. To je rozhodnutí, ne úklid.\n\nNEREPRODUKOVÁNO na konkrétním čísle: bez rozměrů té zakázky ze 3. kola nevím, která z obou cest se u ní uplatnila. Rozdíl mezi cestami je ale doložený a drží ho test v `test_standard_atyp.js` (5 kontrol), aby se nezměnil nikým nepozorovaně.",
    "otazka": "Má `cenikDoZadani` při chybějící sazbě v ceníku použít tutéž náhradu jako zaškrtnutí ATYP (a tedy přepočítat), nebo má dál mlčet a nechat hodnotu, jak je?",
-   "cekaNa": "J. V. — plus rozměry zakázky ze 3. kola, kde vyšlo 5 vs 6 hodin",
-   "testy": "src/test_standard_atyp.js (37)"
+   "testy": "src/test_standard_atyp.js (37)",
+   "hotovoV": "v22.9.9",
+   "odpoved": "J. V. 22. 9. 2026: sazba se bere vždy z ceníku, ať se ATYP spustí automaticky nebo ručně; co si obchodník přepíše, je jeho věc. Obě cesty (atypPrepni i cenikDoZadani) proto čtou sazbu týmž způsobem včetně téže záchranné hodnoty. Ruční přepis zůstává nedotčený, uzamčené a kvitované varianty se do přepočtu nedostanou."
   },
   {
    "id": "299",
@@ -4850,6 +4851,32 @@
    "pozn" : "**Rozhodnutí J. V. 17. 9. 2026: fotí se skutečné částky.** Obchodník má v matici zobrazení právo `sloupce.naklad`, takže na Jedn. cenu, Náklad i Přirážku vidí, a příručka má ukazovat to, co uvidí on. Příručka proto nese označení „interní\" místo dřívější věty o zkušebních číslech — ta by dnes byla nepravdivá. Přepočet částek jedním koeficientem v generátoru zůstává připravený a vypnutý (`SNIMAC.kurz = 1`).\n\n**Jména zákazníků se anonymizují při sběru, ne rozmazáním.** U živého DOM je rozmazání pouhá kosmetika — text zůstane ve zdroji. Hodnota se proto NAHRAZUJE nad klonem, dřív než snímek vznikne, a táž skutečná hodnota dá vždy tutéž vymyšlenou, aby vztahy v datech zůstaly pravdivé.\n\n**Nález k rozhodnutí:** testovací web má podle zadání #168 stejný ceník jako ostrý provoz a jeho databáze vznikla zálohou z ostrého, takže obsahuje skutečné zakázky i zákazníky. Bod 3 pokynů pro příručku („testovací web má testovací ceník\") tomu odporuje. Pro příručku vznikla vymyšlená zakázka **2026 - OPR - CN - 9100 - PRIRUCKA**.\n\n**Zbývá:** `overit_manual.mjs` v kořeni popisuje starou příručku (25 zapečených PNG, cesta `/home/claude/work/deliver`) a v CI zapojený není. Nemazal jsem ho — patří jiné příručce a o jeho osudu rozhodne zadavatel."
   },
   {
+   "id": "267",
+   "vlna": "A",
+   "stav": "hotovo",
+   "dulezitost": "",
+   "slozitost": "M",
+   "hotovoV": "v18.9.1",
+   "nazev": "Dodatkový text k položce místo množství v nabídce",
+   "proc": "V cenové nabídce stálo pod názvem položky množství (například 88,626), což je vnitřní mezivýsledek. Zákazníkovi neříká nic o tom, co si kupuje.",
+   "detail": "Místo množství se tiskne věta, kterou obchodník napíše pod položku v kalkulaci. Text bydlí v ceníku, takže se u další nabídky předvyplní sám; klíčuje se NÁZVEM položky, ne ceníkovou cestou, protože dvě různé položky můžou sdílet tutéž sazbu (madla boční a zadní) a v nabídce jsou to dva různé výrobky. Do porovnání CEN nevstupuje (oprava překlepu není zdražení), do OTISKU verze ano.",
+   "kde": "src/cenik.js (cenikPopis, cenikPopisNastav), src/engine.js (popisZCeniku), src/nabidka.js, src/ui/kalk_ock.js",
+   "pozn": "Commit 2ace4ce (18. 9. 2026) — tam je odůvodnění. Záznam v pořadníku k tomu chyběl, doplněn 22. 9. 2026. Rozšířeno položkou #310 (texty platné pro celou aplikaci)."
+  },
+  {
+   "id": "268",
+   "vlna": "A",
+   "stav": "hotovo",
+   "dulezitost": "",
+   "slozitost": "XL",
+   "hotovoV": "v18.9.2 rozpad ploch, v18.9.3 výpočet a typy, v21.9.4 obrazovka a specifikace",
+   "nazev": "Opláštění po stěnách: každá stěna A–D vlastní typ a pásy",
+   "proc": "Plocha zasklení se počítala ze tří čísel, ve kterých se obě boční stěny sčítaly dohromady — stěny B a D nešlo rozlišit a obchodník nemohl zadat jiný materiál na stěnu u zdi budovy než na tu prosklenou do ulice.",
+   "detail": "Tři kroky. 1) Plocha rozpojena na stěny A–D beze změny výsledku (regrese na uložených zakázkách musela sedět na haléř). 2) Výpočet, typy materiálu a kontrola standardu, včetně dvou pásů na stěnu. 3) Obrazovka v Zadání šachty, zápis do technické specifikace a překlady — do té doby se režim zapínal jedině ruční úpravou JSON, takže ho obchodník neměl jak použít.",
+   "kde": "src/engine.js (skloSteny, oplPasyStenyM2), src/ui/kalk_ock.js (obrazovka), src/techspec.js, src/preklad.js",
+   "pozn": "Commity ab29f8d, 6abbd42 a 0b28852 (18. a 21. 9. 2026) — tam je odůvodnění. Záznam v pořadníku k tomu chyběl, doplněn 22. 9. 2026."
+  },
+  {
    "id" : "269",
    "vlna" : "A",
    "stav" : "hotovo",
@@ -5369,6 +5396,15 @@
     "text" : "Dávka 17. 9. 2026 (příručka): generátor příručky obchodníka přenesen do repozitáře a vydána SLOUČENÁ příručka k v17.9.3 — příručka z 9. 9. 2026 a revize změn v jednom dokumentu, v HTML i PDF. Uzavřeno #161, nově #266.",
     "hotovo" : true,
     "pozn" : "build v17.9.3. Snímky se nově neberou jako PNG, ale jako živý DOM plus firemní CSS, každý ve vlastním shadow rootu — 33 kapitol a 19 obrázků se vejde do 226 kB HTML (dřív 6 MB) a zůstává ostrých i v tisku. Sběr i sestavení běží bez Node a Pythonu; PDF (A4, 23 stran) tiskne headless Chrome. Ověřeno kontrolami v prohlížeči (`manual/overit.js`) a zastávkami v `manual/sestav.sh`; měřítko snímků při tiskové šířce dopočítáno a ověřeno, nic nepřetéká. **Vlna B tím stále NENÍ hotová** — otevřené zůstává #165. Při práci vyšlo najevo, že testovací web má podle #168 ostrý ceník a databázi ze zálohy ostrého provozu, což odporuje bodu 3 pokynů pro příručku; pokyny opraveny, viz #266."
+   },
+   {
+    "text": "Dávka 18. 9. 2026 (engscalc): #267 — v cenové nabídce nahradil dodatkový text pod položkou vnitřní údaj o množství. #268 — plocha zasklení rozpojena na stěny A–D beze změny výsledku a hned nato dostala každá stěna vlastní typ materiálu a pásy."
+   },
+   {
+    "text": "Dávka 21. 9. 2026 (engscalc): 6. kolo, priorita 1 — ceník nejde zveřejnit ze zahraniční varianty, značky ukázkového a prázdného ceníku se nedostanou do databáze a zámek odeslané nabídky přestal tiše zahazovat data (P1–P3). Dále obrazovka opláštění po stěnách (#268, 3. krok), čelní stěna v tomhle režimu už nevychází na nulu (#294) a rozhodnutí o ploše čelní stěny (#295)."
+   },
+   {
+    "text": "Dávka 22. 9. 2026 (engscalc): pět dávek z bezpečnostního auditu a 19. testovacího kola. Všech 37 prohlížečových harnessů do CI (#299, #300), po obnovení stránky se přestala ztrácet rozdělaná práce (#301, #302), částky už odeslané nabídky nejde přepsat beze stopy (#303, jediný vysoký nález), tři serverové pojistky (#304–#306), zámek závislostí a kontrola pravidel pořadníku (#307, #308), rychlá kontrola zadání mutací (#309). Navečer dodatkové texty platné pro celou aplikaci (#310) a interní poznámky zjednodušené na jedno textové pole (#311)."
    }
   ],
   "pravidla" : [
@@ -5455,8 +5491,8 @@
     "id" : "F"
    }
   ],
-  "build" : "v21.9.10 (engscalc)",
-  "stavKDatu" : "21. 9. 2026"
+  "build" : "v22.9.9 (engscalc)",
+  "stavKDatu" : "22. 9. 2026"
  },
  "_comment" : [
   "JEDINÝ ZDROJ PRAVDY pro roadmapu Kalkulátoru Next Gen.",

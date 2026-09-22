@@ -180,13 +180,18 @@ const kalk = fs.readFileSync(__dirname + '/ui/kalk_ock.js', 'utf8');
  * hlášený rozdíl tedy vznikne i při nezměněné geometrii, jen jiným zdrojem
  * sazby.
  *
- * SJEDNOTIT SE NESMÍ POTICHU: dát `cenikDoZadani` tutéž náhradu znamená, že
- * se u ceníku bez sazby začne přepočítávat tam, kde se dosud nepřepočítávalo
- * — a to hne cenou. Čeká na rozhodnutí J. V. (roadmapa #298).
+ * ROZHODNUTO 22. 9. 2026 (J. V.): „sazba by se měla brát vždy z ceníku,
+ * ať už se atyp spustí automaticky nebo manuálně. To, že si to pak obchodník
+ * přepíše, už je jeho věc."
  *
- * Tenhle test rozdíl POJMENUJE a drží ho na místě, aby se nezměnil nikým
- * nepozorovaně. Je to kontrola zdroje, ne chování — logika je v UI, které
- * v Node nejde načíst. */
+ * Obě cesty proto od v22.9.9 čtou sazbu týmž způsobem, včetně téže záchranné
+ * hodnoty. Když ceník sazbu MÁ — a to je normální stav — dávají obě cesty
+ * totéž a rozdíl 5 vs 6 hodin nemá jak vzniknout. Ruční přepis obchodníka
+ * zůstává nedotčený (`zadaniRucniJe`) a uzamčené ani kvitované varianty se
+ * do přepočtu vůbec nedostanou, takže odeslanými nabídkami to nehne.
+ *
+ * Tenhle test drží sjednocení na místě, aby se cesty zase nerozešly. Je to
+ * kontrola zdroje, ne chování — logika je v UI, které v Node nejde načíst. */
 {
   const kalk = fs.readFileSync(__dirname + '/ui/kalk_ock.js', 'utf8');
   const prepni = (kalk.match(/function atypPrepni\(zap, opts\)[\s\S]*?\n\}/) || [''])[0];
@@ -203,14 +208,21 @@ const kalk = fs.readFileSync(__dirname + '/ui/kalk_ock.js', 'utf8');
     vzorec.test(prepni) && vzorec.test(doZadani),
     { prepni: vzorec.test(prepni), doZadani: vzorec.test(doZadani) });
 
-  /* A tady je ten doložený rozdíl. Až padne rozhodnutí #298, tenhle řádek
-   * se změní spolu s kódem — ne dřív. */
-  test('P11: zaškrtnutí má u chybějící sazby náhradu ze sestavení',
+  /* Sjednocený zdroj sazby (#298, rozhodnuto 22. 9. 2026). Obě cesty čtou
+   * ceník a obě mají touž záchrannou hodnotu — jinak by se zase rozešly. */
+  test('P11: zaškrtnutí bere sazbu z ceníku se záchrannou hodnotou',
     /ATYP_NAHRADA\[klic\]/.test(kalk) && /vych\(klic, ATYP_NAHRADA\[klic\]\)/.test(kalk));
-  test('P11: přepočet ceníku náhradu NEMÁ (vrací null a přeskočí)',
-    /cenikVychozi\(c, 'atypMontazPct', null\)/.test(doZadani));
-  test('P11: a když sazba chybí, přepočet se u montáže opravdu přeskočí',
-    /if \(pm != null && !zadaniRucniJe\(d, 'montazAtypHod'\)\)/.test(doZadani));
+  test('P11: přepočet ceníku bere sazbu z TÉHOŽ zdroje',
+    /cenikVychozi\(c, 'atypMontazPct', ATYP_NAHRADA\.atypMontazPct\)/.test(doZadani)
+    && /cenikVychozi\(c, 'atypProjekcePct', ATYP_NAHRADA\.atypProjekcePct\)/.test(doZadani),
+    doZadani.slice(0, 200));
+  test('P11: záchranná hodnota už nikde není null (to byl ten rozdíl)',
+    !/cenikVychozi\(c, 'atyp[A-Za-z]+Pct', null\)/.test(kalk));
+  /* Ruční přepis obchodníka přepočet nepřepíše — to byla podmínka
+   * rozhodnutí („že si to pak obchodník přepíše, už je jeho věc"). */
+  test('P11: ruční přepis zůstává nedotčený',
+    /!zadaniRucniJe\(d, 'montazAtypHod'\)/.test(doZadani)
+    && /!zadaniRucniJe\(d, 'projekceAtypHod'\)/.test(doZadani));
 }
 
 console.log(`\n${ok} OK, ${fail} FAIL`);

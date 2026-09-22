@@ -244,8 +244,26 @@ function cenikDoZadani(v) {
   let zmen = zadaniZCeniku(d).zmen;
   const z = d.ock && d.ock.zadani, c = d.cenik;
   if (!z || !c || !z.atyp || typeof cenikVychozi !== 'function') return zmen;
-  const pm = cenikVychozi(c, 'atypMontazPct', null);
-  const pp = cenikVychozi(c, 'atypProjekcePct', null);
+  /* SAZBA SE BERE Z CENÍKU V OBOU CESTÁCH (rozhodnutí J. V. 22. 9. 2026,
+   * uzavírá #298 / nález N24).
+   *
+   * Do 22. 9. se tyhle dvě cesty lišily NE vzorcem, ale zdrojem sazby:
+   *   · zaškrtnutí ATYP (`atypPrepni`) sáhlo při chybějící sazbě po náhradě
+   *     ze sestavení (ATYP_NAHRADA) a hodiny spočítalo,
+   *   · přepočet na platný ceník (tahle funkce) dostal `null` a hodiny
+   *     nechal, jak byly.
+   * Táž zakázka proto vycházela jednou na 5 a jednou na 6 hodin podle toho,
+   * kudy se k ATYP došlo. Rozhodnutí J. V.: „sazba by se měla brát vždy
+   * z ceníku, ať už se atyp spustí automaticky nebo manuálně. To, že si to
+   * pak obchodník přepíše, už je jeho věc."
+   *
+   * Obě cesty tedy nově čtou touž hodnotu týmž způsobem. Ruční přepis
+   * obchodníka zůstává nedotčený — hlídá ho `zadaniRucniJe` o řádek níž —
+   * a uzamčené a kvitované varianty se sem vůbec nedostanou
+   * (`progSrovnejNedotcene` je vynechává), takže odeslanými nabídkami to
+   * nehne. */
+  const pm = cenikVychozi(c, 'atypMontazPct', ATYP_NAHRADA.atypMontazPct);
+  const pp = cenikVychozi(c, 'atypProjekcePct', ATYP_NAHRADA.atypProjekcePct);
   if (pm != null && !zadaniRucniJe(d, 'montazAtypHod')) {
     let navic = 0;
     try { navic = vypocet(z, c, JEKLY, (d.ock || {}).fixes).montaz.hodinyNavicCelkem || 0; } catch (e) { navic = 0; }

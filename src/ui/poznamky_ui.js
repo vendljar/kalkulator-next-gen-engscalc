@@ -112,7 +112,5 @@ function poznamkyKarta(kde) {
 
   return `<div class="pozn-zapis">${pole}</div>` + listPril
     + `<div class="note" style="margin-top:10px"><b>Nic z této karty se netiskne</b> – text se
-       neobjeví v cenové nabídce, krycím listu ani v technické specifikaci. Cestuje jen uvnitř
-       souboru zakázky, takže ho při předání zakázky kolegovi má rovnou k dispozici. Sem patří to,
-       co se jinak ztratí v e-mailu: proč se dala sleva, co jsme slíbili, na čem se čeká.</div>`;
+       neobjeví v cenové nabídce, krycím listu ani v technické specifikaci.</div>`;
 }

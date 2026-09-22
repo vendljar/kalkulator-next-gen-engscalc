@@ -8,6 +8,34 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.9.9 — 22. 9. 2026
+
+### Sazba ATYP se bere vždy z ceníku, drobnosti v poznámkách, roadmapa (#298)
+
+**#298 je rozhodnuté a zavedené.** Hlášený rozdíl 5 versus 6 hodin nevznikal
+jiným vzorcem, ale jiným zdrojem sazby: zaškrtnutí ATYP sáhlo při chybějící
+sazbě po náhradě ze sestavení, kdežto přepočet na platný ceník hodiny nechal,
+jak byly. Rozhodnutí J. V.: sazba se bere vždy z ceníku, ať se ATYP spustí
+automaticky nebo ručně, a co si obchodník přepíše, je jeho věc.
+
+Obě cesty teď čtou touž hodnotu týmž způsobem. **Když ceník sazbu má, a to je
+normální stav, dávají obě totéž** a rozdíl nemá jak vzniknout. Ruční přepis
+zůstává nedotčený a uzamčené ani kvitované varianty se do přepočtu vůbec
+nedostanou, takže odeslanými nabídkami to nehne.
+
+**Interní poznámky v Kalkulaci PROJ dostaly ovládání sekce** (zobrazit,
+srolovat, skrýt) stejně jako v Kalkulaci OCK. Vysvětlivka pod polem se
+zkrátila na to podstatné: karta se netiskne.
+
+**Roadmapa doplněna ke stavu v22.9.9.** Chyběly v ní položky **#267**
+(dodatkový text místo množství v nabídce, v18.9.1) a **#268** (opláštění po
+stěnách ve třech krocích, v18.9.2 až v21.9.4) — čísla padla v commitech
+z 18. a 21. 9., ale záznam v pořadníku k nim nikdo nezaložil. Doplněny
+z commitů, ne z odhadu. Pořadník končil 17. 9.; přibyly dávky z 18., 21.
+a 22. 9. a hlavička je na dnešku.
+
+---
+
 ## v22.9.8 — 22. 9. 2026
 
 ### Dodatkové texty zůstávají v aplikaci, zápisník je jedno pole (#310, #311)
