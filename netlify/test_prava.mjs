@@ -1869,6 +1869,163 @@ console.log('\n===== AUDIT B26 / B29: KID TRVALÝCH POLOŽEK A DUPLICITNÍ ID ==
   test('B29: duplicitní id poznámky server odmítne', (await uloz(dupP)).status === 400);
 }
 
+/* ---------- B56: ČÍSLO ODESLANÉ NABÍDKY ----------
+ * (bezpečnostní audit 22. 9. 2026)
+ *
+ * Zákaz měnit číslo po odeslání žil jen v prohlížeči; server hlídal u čísla
+ * jen délku. Číslo přitom určuje JMÉNO SOUBORU: se změněným číslem spadne
+ * zakázka pod jiné jméno, uložená verze k porovnání neexistuje a všechny
+ * kontroly zámku se přeskočí. */
+{
+  const puvodniCislo = '2026 - OPR - CN - 0990';
+  const zOdeslana = zakazkaCislo(puvodniCislo);
+  zam.zamkniVariantu(zOdeslana.varianty[0], {
+    typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Matice práv',
+    cislo: zam.variantaCislo(zOdeslana, zOdeslana.varianty[0]),
+  });
+  test('B56: zakázku s odeslanou nabídkou lze uložit',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: zOdeslana }, cObch)).status === 200);
+
+  /* Obchodník přepíše číslo — zakázka míří pod JINÉ jméno souboru. */
+  const preclovane = JSON.parse(JSON.stringify(zOdeslana));
+  preclovane.cislo = '2026 - OPR - CN - 0991';
+  const odpObch = await post(zakazky, 'http://x/api/zakazky', { zakazka: preclovane }, cObch);
+  test('B56: obchodníkovi server změnu čísla odmítne (403)',
+    odpObch.status === 403, 'vrátil ' + odpObch.status);
+  test('B56: a řekne, že to smí jen administrátor',
+    /administrátor/i.test(JSON.stringify(await odpObch.json())));
+
+  /* Administrátor smí (rozhodnutí J. V. 15. 9. 2026) a server si razítko
+   * v zámku srovná, aby zakázka nezůstala v rozporu sama se sebou. */
+  const adminPreclovane = JSON.parse(JSON.stringify(preclovane));
+  const odpAdmin = await post(zakazky, 'http://x/api/zakazky', { zakazka: adminPreclovane }, cAdmin);
+  test('B56: administrátorovi změna čísla projde', odpAdmin.status === 200,
+    'vrátil ' + odpAdmin.status);
+  const poUlozeni = await (await get(zakazky, 'http://x/api/zakazky?soubor=2026-OPR-CN-0991.json',
+                                     cAdmin)).json();
+  const zamekPo = poUlozeni.zakazka && poUlozeni.zakazka.varianty[0].zamek;
+  test('B56: a server srovná razítko čísla v zámku',
+    zamekPo && zamekPo.cislo === '2026 - OPR - CN - 0991', zamekPo && zamekPo.cislo);
+  test('B56: zámek jinak zůstal (nabídka je pořád odeslaná)',
+    !!(zamekPo && zamekPo.zamceno));
+
+  /* Zámky pořízené dřív než pole `cislo` ho mají prázdné — ty se
+   * přeskakují, jinak by oprava zablokovala historické zakázky. */
+  const starsi = zakazkaCislo('2026 - OPR - CN - 0992');
+  zam.zamkniVariantu(starsi.varianty[0],
+    { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Matice práv' });
+  starsi.varianty[0].zamek.cislo = '';
+  await post(zakazky, 'http://x/api/zakazky', { zakazka: starsi }, cObch);
+  const starsiJinak = JSON.parse(JSON.stringify(starsi));
+  starsiJinak.cislo = '2026 - OPR - CN - 0993';
+  test('B56: zámek bez razítka čísla se ukládá dál (starší zakázky)',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: starsiJinak }, cObch)).status === 200);
+}
+
+/* ---------- B55: POJISTKU ZVEŘEJNĚNÍ NEJDE VYPNOUT VYNECHÁNÍM POLE ----------
+ * (bezpečnostní audit 22. 9. 2026)
+ *
+ * Druhá větev pojistky (shoda ČR ceny se zahraniční odchylkou u víc než pěti
+ * položek) porovnávala výhradně proti odchylkám Z TÉHOŽ POŽADAVKU. Stačilo
+ * tedy `zahranicni` neposlat a pojistka mlčky vypadla. Server přitom uložené
+ * odchylky zná — leží v platné verzi, kterou sám vydal.
+ *
+ * Tady se to zkouší přes skutečnou cestu /api/program, ne jen nad modelem. */
+{
+  const cesty = ['C.montazHodKc', 'C.powertechInt', 'C.prekladyKc',
+                 'C.cestovniKc', 'C.striskaDvurKc', 'C.lemovaniKgKc'];
+  const odchylky = { ceny: {}, jenZahr: {} };
+  cesty.forEach((c, i) => { odchylky.ceny[c] = 9000 + i; });
+
+  /* 1) Administrátor řádně zveřejní ceník s odchylkami. */
+  const zalozeni = await post(program, 'http://x/api/program',
+    { cenik: cenikJinak(), cenikProj: ZC.zkusebniCenikProj(), zahranicni: odchylky,
+      slevy: { minMarze: 0.1 } }, cAdmin);
+  test('B55: ceník se zahraničními odchylkami se zveřejní', zalozeni.status === 200,
+    'vrátil ' + zalozeni.status);
+
+  /* 2) Podklad, který má tytéž zahraniční ceny v ČR sloupci — a pole
+   *    `zahranicni` v požadavku VYNECHANÉ. Přesně cesta z auditu. */
+  const podvrh = cenikJinak();
+  cesty.forEach(c => CEN.cenikSet(podvrh, c, odchylky.ceny[c]));
+  const odpVynechane = await post(program, 'http://x/api/program',
+    { cenik: podvrh, cenikProj: ZC.zkusebniCenikProj(), slevy: { minMarze: 0.1 } }, cAdmin);
+  test('B55: zveřejnění s vynechanými odchylkami server odmítne (400)',
+    odpVynechane.status === 400, 'vrátil ' + odpVynechane.status);
+  const telo = await odpVynechane.json();
+  test('B55: a řekne, že jde o shodu se zahraniční řadou', telo.kod === 'shoda', telo.kod);
+  test('B55: a vypíše konkrétní položky', (telo.polozky || []).length === 6,
+    (telo.polozky || []).length);
+
+  /* 3) Běžné zveřejnění musí jít dál — pojistka nesmí zamknout ceník. */
+  const bezne = await post(program, 'http://x/api/program',
+    { cenik: cenikJinak(), cenikProj: ZC.zkusebniCenikProj(), zahranicni: odchylky,
+      slevy: { minMarze: 0.1 } }, cAdmin);
+  test('B55: běžné zveřejnění jde dál', bezne.status === 200, 'vrátil ' + bezne.status);
+}
+
+/* ---------- B54: SERVER BEZ ADRESY HLAVNÍHO ÚČTU ----------
+ * (bezpečnostní audit 22. 9. 2026)
+ *
+ * Všechny ochrany hlavního účtu jsou psané jako `email === ADMIN_EMAIL`.
+ * Když proměnná prostředí chybí, konstanta je prázdná a nerovná se jí žádná
+ * skutečná adresa — ochrany tím TIŠE PŘESTANOU PLATIT a vedlejší správce smí
+ * hlavnímu účtu změnit roli, vypnout ho, smazat ho i přepsat mu podpis.
+ *
+ * Tahle větev do 22. 9. 2026 v testech NIKDY NEBĚŽELA: CI i mutační běh
+ * proměnnou vždy dosadí (`mutace.mjs` ji dokonce doplní, když chybí), takže
+ * se chyba v nastavení nedala odhalit ničím jiným než provozem.
+ *
+ * Správné chování: chráněné cesty se neobsluhují (503). Přihlášení a změna
+ * VLASTNÍHO hesla musí jít dál — bez nich by se závada nedala opravit
+ * zevnitř. */
+{
+  const puvodni = process.env.ADMIN_EMAIL;
+  process.env.ADMIN_EMAIL = '';
+
+  const rRole = await post(uzivatele, 'http://x/api/uzivatele',
+    { akce: 'role', email: 'terc@example.com', role: 'Administrátor' }, cAdmin);
+  test('B54: bez ADMIN_EMAIL server odmítne změnu role (503)',
+    rRole.status === 503, 'vrátil ' + rRole.status);
+  test('B54: a řekne, že chybí nastavení, ne že chybí právo',
+    /ADMIN_EMAIL|hlavního administrátorského/.test(JSON.stringify(await rRole.json())));
+
+  test('B54: bez ADMIN_EMAIL server odmítne smazání účtu (503)',
+    (await post(uzivatele, 'http://x/api/uzivatele',
+      { akce: 'smaz', email: 'terc@example.com' }, cAdmin)).status === 503);
+  test('B54: bez ADMIN_EMAIL server odmítne reset cizího hesla (503)',
+    (await post(uzivatele, 'http://x/api/uzivatele',
+      { akce: 'heslo', email: 'terc@example.com', heslo: 'NoveHeslo123' }, cAdmin)).status === 503);
+  test('B54: bez ADMIN_EMAIL server odmítne zásah do cizího podpisu (503)',
+    (await post(uzivatele, 'http://x/api/uzivatele',
+      { akce: 'podpis', email: 'terc@example.com', obrazek: '' }, cAdmin)).status === 503);
+  test('B54: bez ADMIN_EMAIL server odmítne seznam uživatelů (503)',
+    (await get(uzivatele, 'http://x/api/uzivatele', cAdmin)).status === 503);
+  test('B54: bez ADMIN_EMAIL server odmítne obnovu ze zálohy (503)',
+    (await post(obnova, 'http://x/api/obnova', { faze: 'zahaj', nahled: true }, cAdmin)).status === 503);
+
+  /* A co musí jít dál: bez tohohle by oprava zavřela i cestu k nápravě.
+   * Schválně se zkouší se ŠPATNÝM starým heslem — odpověď „staré heslo
+   * nesouhlasí" dokládá, že požadavek pojistkou prošel, a přitom se nezmění
+   * heslo ani jeho verze (ta by zneplatnila relaci a další testy by padaly
+   * na 401 z jiného důvodu, než který měří tenhle blok). */
+  const rMoje = await post(uzivatele, 'http://x/api/uzivatele',
+    { akce: 'mojeheslo', stare: 'Urcite.Spatne.Heslo', nove: 'JineHeslo123' }, cAdmin);
+  test('B54: změna VLASTNÍHO hesla jde i bez ADMIN_EMAIL',
+    rMoje.status !== 503, 'vrátil ' + rMoje.status);
+  test('B54: a dojde až ke kontrole starého hesla',
+    /staré heslo/i.test(JSON.stringify(await rMoje.json())));
+
+  /* POJISTKA PROTI PRÁZDNÉMU TESTU: s doplněnou proměnnou se tytéž cesty
+   * musí chovat normálně. Jinak by 503 mohla pocházet odkudkoli jinud. */
+  process.env.ADMIN_EMAIL = puvodni;
+  test('B54: s nastavenou ADMIN_EMAIL seznam uživatelů zase jde',
+    (await get(uzivatele, 'http://x/api/uzivatele', cAdmin)).status === 200);
+  const rRoleZpet = await post(uzivatele, 'http://x/api/uzivatele',
+    { akce: 'role', email: 'terc@example.com', role: 'Vedoucí' }, cAdmin);
+  test('B54: a změna role zase projde', rRoleZpet.status === 200, 'vrátil ' + rRoleZpet.status);
+}
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 if (fail) { console.log('\nSelhalo:\n - ' + selhalo.join('\n - ')); }
 process.exit(fail ? 1 : 0);

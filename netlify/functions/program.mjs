@@ -57,11 +57,25 @@ export default async (req) => {
    *
    * Klíče `rada` a `jenZahr` se ze zveřejněného ceníku zahazují v jádru
    * (programZaznam), takže se sem nedostanou ani oklikou přes soubor. */
-  const posudek = globalThis.cenikZverejneniKontrola(ctx, ctx.zahranicni, t.rada);
+  /* POJISTKA SE NESMÍ DÁT VYPNOUT VYNECHÁNÍM POLE (nález B55, audit
+   * 22. 9. 2026). Do 22. 9. se ČR ceny porovnávaly výhradně proti odchylkám
+   * Z TÉHOŽ POŽADAVKU. Kdo `zahranicni` neposlal — starší klient, ruční
+   * volání —, neměl se s čím shodovat a druhá větev pojistky mlčky vypadla.
+   * Přitom uložené odchylky server zná vždycky a v prohlížeči se odjakživa
+   * porovnávalo právě proti nim (`CENIK_ZAHR` = odchylky, které platí).
+   *
+   * Proto se porovnává proti SLOUČENÍ obou zdrojů a předává se i platný
+   * záznam — ten z počítání vyřadí položky, jejichž ČR cena se nemění, aby
+   * šlo zrušit víc odchylek naráz. Kvůli tomu se `db` čte dřív než posudek. */
+  let db = await s.cti('db');
+  const platny = (db && db.platny) || null;
+  const zahrProKontrolu = (typeof globalThis.cenikZahrSluc === 'function')
+    ? globalThis.cenikZahrSluc(platny && platny.zahranicni, ctx.zahranicni)
+    : ctx.zahranicni;
+  const posudek = globalThis.cenikZverejneniKontrola(ctx, zahrProKontrolu, t.rada, platny);
   if (!posudek.ok)
     return json({ ok: false, kod: posudek.kod, chyba: posudek.duvod,
       polozky: (posudek.shody || []).map(s => s.popis) }, 400);
-  let db = await s.cti('db');
   if (!db) db = globalThis.programNovy(ctx);
   else {
     if (globalThis.programBezeZmeny(db, ctx))

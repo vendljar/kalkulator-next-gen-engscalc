@@ -258,7 +258,12 @@ function progKontext(poznamka) {
 function progZverejniPojistka(ctx) {
   if (typeof cenikZverejneniKontrola !== 'function') return true;
   const zahr = (typeof CENIK_ZAHR !== 'undefined') ? CENIK_ZAHR : null;
-  const v = cenikZverejneniKontrola(ctx, zahr, ctx && ctx.rada);
+  /* Platná verze jde do kontroly od 22. 9. 2026 (nález B55): položka, jejíž
+   * ČR cena se zveřejněním NEMĚNÍ, se nepočítá jako shoda. Bez toho by
+   * nešlo zrušit víc než pět odchylek naráz — porovnávalo by se pořád proti
+   * tomu, co se ruší. */
+  const platny = (PROG_STAV.db && PROG_STAV.db.platny) || null;
+  const v = cenikZverejneniKontrola(ctx, zahr, ctx && ctx.rada, platny);
   if (v.ok) return true;
   const seznam = (v.shody && v.shody.length)
     ? '\n\nPoložky se shodnou cenou:\n' + v.shody.map(s => ' • ' + s.popis).join('\n')

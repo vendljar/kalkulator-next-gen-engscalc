@@ -175,6 +175,25 @@ se přeskakuje. Výjimka pro administrátora podle rozhodnutí J. V. z 15. 9.
 2026 („Pouze administrátor"), a razítko čísla v zámku pak přepíše server,
 aby zakázka nezůstala trvale v rozporu.
 
+### Jak dávka 4 dopadla (doplněno po provedení)
+
+Všechny tři opravy sedí tam, kde je plán čekal. Dvě věci se ukázaly až při
+psaní kódu:
+
+**B54:** prohlížeč tu nebyl slabší článek — slabší byl server. A hlavně:
+tahle větev nikdy neběžela v žádném testu, protože prostředí proměnnou vždy
+dosadí. Test ji proto maže za běhu a po sobě zase uklízí.
+
+**B55:** prostá výměna zdroje odchylek by ceník zamkla (víc než pět
+zrušených odchylek by neprošlo nikdy). Bez podmínky „počítá se jen položka,
+jejíž ČR cena se mění" by oprava vyrobila horší problém, než jaký řešila.
+Prohlížeč přitom porovnával správně už dřív — server byl ten, kdo se ptal
+na špatný zdroj.
+
+**B56:** kontrola nemohla stát na porovnání s uloženou zakázkou, protože
+právě tudy díra vede (jiné číslo = jiný soubor = není s čím porovnávat).
+Stojí proto na zámku samotném.
+
 ## Dávka 5 — drobnosti (podvečer, S)
 
 - **B11** — `package-lock.json` nikdy v historii nebyl; `@netlify/blobs` je

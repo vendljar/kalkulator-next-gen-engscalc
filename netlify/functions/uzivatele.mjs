@@ -26,7 +26,8 @@
  * nesmí: s cizím podpisem by šla poslat nabídka jménem kolegy. */
 import { uloziste, otiskHesla, hesloSedi, vyzadujRoli, json, ROLE, ADMIN_EMAIL,
          PODPIS_ULOZISTE, podpisZkontroluj, hesloVerzeUctu, relaceCookie,
-         emailPlatny, hesloPlatne, HESLO_PRAVIDLO, SMAZANI_ULOZISTE } from '../lib/sdilene.mjs';
+         emailPlatny, hesloPlatne, HESLO_PRAVIDLO, SMAZANI_ULOZISTE,
+         bezHlavnihoUctu } from '../lib/sdilene.mjs';
 
 /* Text z formuláře: ořízne okolní mezery a nepustí dál román. Telefon se
  * jinak NEUPRAVUJE — každý si ho píše po svém („+420 602 590 945",
@@ -95,6 +96,9 @@ export default async (req) => {
       const cil = String(t.email || relace.email).trim().toLowerCase();
       if (cil !== relace.email && relace.role !== 'Administrátor')
         return json({ ok: false, chyba: 'Cizí profil smí měnit jen administrátor.' }, 403);
+      /* Zásah do CIZÍHO profilu stojí na ochraně hlavního účtu o řádek níž
+       * (B28). Bez adresy hlavního účtu ta ochrana neplatí (B54). */
+      if (cil !== relace.email) { const stop = bezHlavnihoUctu(); if (stop) return stop; }
       /* Profil a podpis hlavního účtu smí měnit jen on sám (audit 23. 8. 2026,
        * B28) — jinak by vedlejší správce nahrál cizí podpis pod nabídky
        * „podepsané" hlavním administrátorem. Stejná pojistka jako u hesla (B7). */
@@ -129,6 +133,10 @@ export default async (req) => {
     /* --- všechno ostatní jen Administrátor --- */
     if (relace.role !== 'Administrátor')
       return json({ ok: false, chyba: 'K této akci je potřeba role: Administrátor.' }, 403);
+    /* Odtud dál jsou akce, které hlavní účet chrání porovnáním s ADMIN_EMAIL
+     * (reset hesla, role, zapnutí, archiv, převod, smazání). Bez té adresy
+     * ochrany neplatí, takže se neobsluhují vůbec (B54). */
+    { const stop = bezHlavnihoUctu(); if (stop) return stop; }
 
     const email = String(t.email || '').trim().toLowerCase();
     if (!email) return json({ ok: false, chyba: 'Chybí e-mail.' }, 400);
@@ -361,6 +369,9 @@ export default async (req) => {
   /* GET seznam — jen Administrátor (seznam kolegů s rolemi je interní údaj) */
   if (relace.role !== 'Administrátor')
     return json({ ok: false, chyba: 'K této akci je potřeba role: Administrátor.' }, 403);
+  /* Seznam u každého účtu hlásí `hlavni` — bez ADMIN_EMAIL by u všech stálo
+   * `false` a obrazovka správy by tvrdila, že hlavní účet není žádný (B54). */
+  { const stop = bezHlavnihoUctu(); if (stop) return stop; }
   const klice = await u.seznam();
   const out = [];
   for (const k of klice) {

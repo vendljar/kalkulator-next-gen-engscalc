@@ -406,6 +406,25 @@ const MUTACE = [
     nahrad: "                          vysledek: null });",
     proc: 'šlo by přepsat částky už odeslané („neměnné") nabídky beze stopy' },
 
+  /* Pojistky serverové vrstvy z auditu 22. 9. 2026 (B54–B56). */
+
+  { nazev: 'server bez ADMIN_EMAIL obsluhuje chráněné cesty dál', soubor: 'lib/sdilene.mjs',
+    hledej: "  if (ADMIN_EMAIL && String(process.env.ADMIN_EMAIL || '').trim() !== '') return null;",
+    nahrad: "  if (true) return null;",
+    proc: 'chybějící proměnná by zase tiše vypnula ochrany hlavního účtu (B54)' },
+
+  { nazev: 'pojistka zveřejnění se ptá jen na odchylky z požadavku',
+    soubor: 'functions/program.mjs',
+    hledej: "  const posudek = globalThis.cenikZverejneniKontrola(ctx, zahrProKontrolu, t.rada, platny);",
+    nahrad: "  const posudek = globalThis.cenikZverejneniKontrola(ctx, ctx.zahranicni, t.rada, platny);",
+    proc: 'kdo pole `zahranicni` vynechá, dostal by zahraniční ceny do tuzemského ceníku (B55)' },
+
+  { nazev: 'změna čísla odeslané nabídky se na serveru nehlídá',
+    soubor: 'functions/zakazky.mjs',
+    hledej: "  if (jineCislo.length) {",
+    nahrad: "  if (false) {",
+    proc: 'odeslaná nabídka by dostala jiné číslo, než jaké má zákazník na papíře (B56)' },
+
   /* ČR sloupec položky „jen zahraniční" (#290, druhé kolo revize).
    * Oprava sedí za `typeof` strážemi, takže se dá vypnout i omylem — třeba
    * změnou pořadí načítání v jadro_moduly.cjs. Tahle mutace ověřuje, že by

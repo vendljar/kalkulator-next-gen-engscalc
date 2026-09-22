@@ -27,16 +27,40 @@ import { scryptSync, randomBytes, timingSafeEqual, createHmac } from 'node:crypt
  *
  * KDYŽ PROMĚNNÁ CHYBÍ, konstanta je prázdná. Přihlášení tím nepřestane
  * fungovat — existující účty se hlásí dál, protože se ověřují proti databázi.
- * Přestanou ale platit ochrany HLAVNÍHO účtu (nikdo mu nesmí změnit roli,
- * deaktivovat ho ani ho smazat) a nepůjde prvotní založení účtu. Je to tedy
- * tiché oslabení, ne výpadek — a přesně proto se nenastavená proměnná hlásí
- * v /api/zdravi, aby to nikdo nepřehlédl.
+ * Od 22. 9. 2026 se ale zastaví SPRÁVA UŽIVATELŮ a OBNOVA ZE ZÁLOHY, viz
+ * `bezHlavnihoUctu()` níž.
  *
  * Porovnává se v malých písmenech a bez okrajových mezer: adresa zapsaná
  * v Netlify s velkým písmenem by jinak vyrobila „hlavní účet, který jím
  * není". */
 export const ADMIN_EMAIL = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
 export const ROLE = ['Obchodník', 'Vedoucí', 'Administrátor'];
+
+/* CHRÁNĚNÉ CESTY SE BEZ ADRESY HLAVNÍHO ÚČTU NEOBSLUHUJÍ
+ * (bezpečnostní audit 22. 9. 2026, nález B54).
+ *
+ * Do 22. 9. byla nenastavená proměnná TICHÉ OSLABENÍ: všechny ochrany
+ * hlavního účtu jsou psané jako `email === ADMIN_EMAIL`, a proti prázdné
+ * konstantě se nerovná žádná skutečná adresa. Vedlejší správce tedy směl
+ * hlavnímu účtu změnit roli, vypnout ho, smazat ho, resetovat mu heslo
+ * i přepsat jeho podpis — a nikde se nic neozvalo. Že to hlásí /api/zdravi,
+ * je málo: hlášení si někdo musí přečíst, kdežto tohle platí hned.
+ *
+ * Správně je to odmítnout: 503 (dočasně nedostupné) je poctivější než 403,
+ * protože chyba není na straně volajícího, ale v nastavení webu. Přihlášení
+ * a změna VLASTNÍHO hesla zůstávají funkční schválně — bez nich by se
+ * závada nedala opravit zevnitř.
+ *
+ * Ptáme se na konstantu I na živou proměnnou prostředí. Konstanta je ta
+ * hodnota, na které ochrany opravdu stojí (čte se jednou při načtení
+ * modulu); živá proměnná dovolí ověřit chování testem v témže procesu.
+ * Odmítne se, když je prázdná kterákoli z nich — tedy přísněji z obou. */
+export function bezHlavnihoUctu() {
+  if (ADMIN_EMAIL && String(process.env.ADMIN_EMAIL || '').trim() !== '') return null;
+  return json({ ok: false, chyba: 'Server nemá nastavenou adresu hlavního administrátorského '
+    + 'účtu, takže ochrany toho účtu neplatí. Správa uživatelů a obnova ze zálohy jsou proto '
+    + 'zastavené. Doplňte proměnnou ADMIN_EMAIL v nastavení webu a zkuste to znovu.' }, 503);
+}
 
 /* ---------- úložiště ---------- */
 export async function uloziste(nazev) {

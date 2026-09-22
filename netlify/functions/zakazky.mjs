@@ -186,6 +186,47 @@ export default async (req) => {
     }
   }
 
+  /* ČÍSLO ODESLANÉ NABÍDKY MĚNÍ JEN ADMINISTRÁTOR — TAKY NA SERVERU
+   * (bezpečnostní audit 22. 9. 2026, nález B56).
+   *
+   * Do 22. 9. to hlídal jedině prohlížeč (`common.js`, rozhodnutí J. V.
+   * z 15. 9. 2026: „Pouze administrátor"). Server kontroloval u čísla jen
+   * délku — a právě u čísla je díra zákeřná: číslo určuje JMÉNO SOUBORU.
+   * Změnou čísla zakázka spadne pod jiné jméno, `stara` je tedy prázdná
+   * a VŠECHNY kontroly zámku výš se přeskočí. Odeslaná nabídka tak mohla
+   * dostat jiné číslo, než jaké má zákazník na papíře.
+   *
+   * Pozná se to ZE ZÁMKU SAMOTNÉHO, ne z uložené zakázky: `zamek.cislo`
+   * drží číslo z okamžiku odeslání (plní ho `variantaCislo` při zamykání).
+   * Kontrola je proto vnitřní a funguje i tam, kde není s čím porovnávat.
+   *
+   * Zámky pořízené před zavedením pole `cislo` ho mají prázdné — ty se
+   * přeskakují, jinak by oprava zablokovala historické zakázky.
+   *
+   * MEZ, KTEROU TOHLE NEZAVŘE: kdo si upraví klienta, může přepsat číslo
+   * i razítko v zámku najednou. Výsledek je ale nová zakázka pod novým
+   * jménem; původní soubor s původním číslem zůstává nedotčený, takže se
+   * stopa neztrácí. Tady jde o to, aby se číslo nedalo změnit NEDOPATŘENÍM
+   * ani běžným klientem. */
+  const jineCislo = [];
+  for (const v of (zak.varianty || [])) {
+    if (!(globalThis.variantaUzamcena && globalThis.variantaUzamcena(v))) continue;
+    const bylo = String((v.zamek && v.zamek.cislo) || '');
+    if (!bylo) continue;
+    const ted = String(globalThis.variantaCislo(zak, v) || '');
+    if (bylo !== ted) jineCislo.push({ v, bylo, ted });
+  }
+  if (jineCislo.length) {
+    if (relace.role !== 'Administrátor')
+      return json({ ok: false, chyba: 'Neuloženo: zakázka má odeslanou (uzamčenou) nabídku '
+        + 'číslo ' + jineCislo[0].bylo + ', takže číslo smí změnit jen administrátor. '
+        + 'Požádejte ho o opravu — změna se zapisuje do protokolu zakázky.' }, 403);
+    /* Administrátor smí. Razítko v zámku pak srovná server, ať zakázka
+     * nezůstane natrvalo v rozporu sama se sebou a nepadala při každém
+     * dalším uložení kolegy. */
+    for (const x of jineCislo) x.v.zamek.cislo = x.ted;
+  }
+
   /* Rozhodnutí o slevě (bezpečnostní audit 22. 8. 2026, nález B2). Stav
    * „schváleno" / „zamítnuto" a jméno schvalovatele se do té doby přebíraly
    * z prohlížeče. Teď je hlídá SCHV.schvalovaniServerKontrola proti stropům

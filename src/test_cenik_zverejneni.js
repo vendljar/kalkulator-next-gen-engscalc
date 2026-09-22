@@ -88,6 +88,69 @@ const ZAHR = () => ({
   test('práh je pět', CENIK_ZVEREJNENI_SHODA_MAX === 5);
 }
 
+/* ---------- 2b) pojistku nejde vypnout vynecháním odchylek (B55) ----------
+ *
+ * Bezpečnostní audit 22. 9. 2026: druhá větev pojistky porovnávala ČR ceny
+ * výhradně proti odchylkám Z TÉHOŽ POŽADAVKU. Kdo pole `zahranicni` vynechal,
+ * neměl se s čím shodovat a pojistka mlčky vypadla — přitom právě takový
+ * podklad je nejpodezřelejší. Uložené odchylky přitom zná server vždycky
+ * a v prohlížeči se odjakživa porovnávalo proti nim (`CENIK_ZAHR`). */
+{
+  const cesty = ['C.montazHodKc', 'C.powertechInt', 'C.prekladyKc',
+                 'C.cestovniKc', 'C.striskaDvurKc', 'C.lemovaniKgKc'];
+  const ulozene = { ceny: {}, jenZahr: {} };
+  cesty.forEach((c, i) => { ulozene.ceny[c] = 9000 + i; });
+
+  /* Podklad se zahraničními cenami v ČR sloupci — přesně to, co má pojistka
+   * zastavit. Platná verze má u týchž položek jiné (tuzemské) ceny, takže
+   * zveřejněním se opravdu MĚNÍ. */
+  const data = { cenik: CR(), proj: { cenik: {} } };
+  cesty.forEach(c => cenikNastavHodnotu(data, c, ulozene.ceny[c]));
+  const ctx = { cenik: data.cenik, cenikProj: {} };
+  const platny = { cenik: CR(), cenikProj: {}, zahranicni: ulozene };
+
+  const bezPole = cenikZverejneniKontrola(ctx, cenikZahrSluc(ulozene, null), 'cr', platny);
+  test('B55: vynechané odchylky pojistku nevypnou',
+    bezPole.ok === false && bezPole.kod === 'shoda', bezPole.kod);
+  test('B55: a vypíše se všech šest položek', bezPole.shody.length === 6, bezPole.shody.length);
+
+  /* Totéž s prázdnou tabulkou v požadavku — vynechat jde i takhle. */
+  const prazdne = cenikZverejneniKontrola(ctx, cenikZahrSluc(ulozene, { ceny: {}, jenZahr: {} }),
+                                          'cr', platny);
+  test('B55: prázdná tabulka v požadavku pojistku taky nevypne', prazdne.ok === false, prazdne.kod);
+
+  /* POJISTKA PROTI PRÁZDNÉMU TESTU: bez sloučení (tedy tak, jak se server
+   * choval do 22. 9.) tentýž podklad projde. Jinak by testy výš měřily něco
+   * jiného než B55. */
+  const pred = cenikZverejneniKontrola(ctx, null, 'cr', platny);
+  test('B55: a bez sloučení by týž podklad prošel (stav před opravou)', pred.ok === true, pred.kod);
+
+  /* SLOUČENÍ NESMÍ ZAMKNOUT CENÍK. Kdo ruší víc než pět odchylek a ČR ceny
+   * přitom nechává být, musí projít — jinak by odchylky nešlo zrušit nikdy,
+   * protože zrušit je lze jedině zveřejněním. Cena shodná s platnou verzí
+   * z přepnuté varianty pocházet nemůže: v ceníku je už dnes. */
+  const stejny = { cenik: CR(), proj: { cenik: {} } };
+  cesty.forEach(c => cenikNastavHodnotu(stejny, c, ulozene.ceny[c]));
+  const platnyStejny = { cenik: JSON.parse(JSON.stringify(stejny.cenik)), cenikProj: {},
+                         zahranicni: ulozene };
+  const ruseni = cenikZverejneniKontrola({ cenik: stejny.cenik, cenikProj: {} },
+                                         cenikZahrSluc(ulozene, null), 'cr', platnyStejny);
+  test('B55: zrušení všech odchylek beze změny ČR cen projde', ruseni.ok === true, ruseni.kod);
+
+  /* A naopak: bez znalosti platné verze (první zveřejnění vůbec) se chová
+   * jako dřív — každá shoda se počítá. */
+  const bezPlatne = cenikZverejneniKontrola({ cenik: stejny.cenik, cenikProj: {} },
+                                            cenikZahrSluc(ulozene, null), 'cr', null);
+  test('B55: bez platné verze se počítá každá shoda', bezPlatne.ok === false, bezPlatne.kod);
+
+  /* Sloučení samo: příchozí hodnota přebíjí uloženou, obě strany se sejdou. */
+  const s = cenikZahrSluc({ ceny: { 'C.montazHodKc': 1 }, jenZahr: { 'C.prekladyKc': true } },
+                          { ceny: { 'C.montazHodKc': 2, 'C.powertechInt': 3 }, jenZahr: {} });
+  test('B55: sloučení – příchozí přebíjí uložené', s.ceny['C.montazHodKc'] === 2, s.ceny);
+  test('B55: sloučení – uložené, co v požadavku není, zůstává',
+    s.ceny['C.powertechInt'] === 3 && s.jenZahr['C.prekladyKc'] === true, s);
+}
+
 /* ---------- 3) runtime klíče řady se nezveřejňují ---------- */
 {
   const zahr = ZAHR();

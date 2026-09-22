@@ -301,21 +301,55 @@ function cenikZverejneniOcisti(cenik) {
   return k;
 }
 
+/* Sloučení zahraničních odchylek ze dvou zdrojů: z PLATNÉ VERZE a z toho,
+ * co přišlo v požadavku. Příchozí přebíjí uloženou hodnotu u téže cesty.
+ *
+ * Proč (nález B55, audit 22. 9. 2026): pojistka zveřejnění porovnávala ČR
+ * ceny výhradně proti odchylkám Z TÉHOŽ POŽADAVKU. Kdo pole `zahranicni`
+ * v požadavku vynechal (starší klient, ruční volání), neměl se s čím
+ * shodovat a pojistka mlčky vypadla — přitom právě tehdy je podklad
+ * nejpodezřelejší. Uložené odchylky server zná vždycky. */
+function cenikZahrSluc(ulozene, prichozi) {
+  const a = cenikZahrOciste(ulozene), b = cenikZahrOciste(prichozi);
+  const ceny = {}, jenZahr = {};
+  Object.keys(a.ceny).forEach(k => { ceny[k] = a.ceny[k]; });
+  Object.keys(b.ceny).forEach(k => { ceny[k] = b.ceny[k]; });
+  Object.keys(a.jenZahr).forEach(k => { if (a.jenZahr[k]) jenZahr[k] = true; });
+  Object.keys(b.jenZahr).forEach(k => { if (b.jenZahr[k]) jenZahr[k] = true; });
+  return { ceny, jenZahr };
+}
+
 /* Položky, kde se ČR hodnota shoduje se zahraniční odchylkou.
  * `ctx` je podklad zveřejnění ({ cenik, cenikProj }) — tedy tvar, ve kterém
  * ho posílá UI i přijímá server; `cenikHodnota` chce { cenik, proj:{cenik} },
- * proto se uvnitř převádí. */
-function cenikZverejneniShody(ctx, zahr) {
+ * proto se uvnitř převádí.
+ *
+ * `platny` (nepovinný) je ZÁZNAM PLATNÉ VERZE ceníku. Když je po ruce,
+ * nepočítají se položky, jejichž ČR cena se tímhle zveřejněním NEMĚNÍ.
+ * Bez toho by sloučené odchylky uměly ceník zamknout: kdo chce zrušit víc
+ * než pět odchylek naráz, by neprošel, protože by se pořád porovnával proti
+ * tomu, co ruší — a zrušit je jinak než zveřejněním nejde. Cena, která
+ * zůstala shodná s platnou verzí, přitom z přepnuté varianty pocházet
+ * nemůže: v platném ceníku je už dnes a nikdo ji teď nezapisuje. */
+function cenikZverejneniShody(ctx, zahr, platny) {
   const z = cenikZahrOciste(zahr);
   const c = ctx || {};
   const data = { cenik: c.cenik || {}, proj: { cenik: c.cenikProj || {} } };
+  const stara = platny
+    ? { cenik: platny.cenik || {}, proj: { cenik: platny.cenikProj || {} } } : null;
   const popisy = {};
   if (typeof cenikSledovane === 'function')
     cenikSledovane().forEach(p => { popisy[p.cesta] = p.popis; });
   return Object.keys(z.ceny).filter(cesta => {
     const ted = (typeof cenikHodnota === 'function') ? cenikHodnota(data, cesta) : undefined;
     if (ted === undefined || ted === null || ted === '') return false;
-    return String(ted) === String(z.ceny[cesta]);
+    if (String(ted) !== String(z.ceny[cesta])) return false;
+    if (stara && typeof cenikHodnota === 'function') {
+      const drive = cenikHodnota(stara, cesta);
+      if (drive !== undefined && drive !== null && drive !== '' && String(drive) === String(ted))
+        return false;                      // ČR cena se nemění — nemá odkud přijít
+    }
+    return true;
   }).map(cesta => ({ cesta, popis: popisy[cesta] || cesta }));
 }
 
@@ -326,7 +360,7 @@ function cenikZverejneniShody(ctx, zahr) {
  * `rada` se bere přednostně z varianty (UI ji zná), jinak z klíče `rada`
  * v samotném ceníku — ten tam nechal `cenikRadaPrepni`, takže i požadavek
  * poslaný mimo dialog se pozná. */
-function cenikZverejneniKontrola(ctx, zahr, rada) {
+function cenikZverejneniKontrola(ctx, zahr, rada, platny) {
   const c = ctx || {};
   const r = cenikRadaPlatna(rada !== undefined && rada !== null && rada !== ''
     ? rada : (c.cenik && c.cenik.rada));
@@ -336,7 +370,7 @@ function cenikZverejneniKontrola(ctx, zahr, rada) {
         + 'zahraniční ceny. Zveřejněním by se dostaly do tuzemského ceníku pro všechny '
         + 'budoucí zakázky. Přepněte variantu zpět na ČR, nebo ceny zapište do zahraniční '
         + 'řady v Nastavení → Ceník.' };
-  const shody = cenikZverejneniShody(c, zahr);
+  const shody = cenikZverejneniShody(c, zahr, platny);
   if (shody.length > CENIK_ZVEREJNENI_SHODA_MAX)
     return { ok: false, kod: 'shoda', rada: r, shody,
       duvod: 'U ' + shody.length + ' položek se tuzemská cena shoduje se zahraniční odchylkou. '
@@ -352,5 +386,5 @@ if (typeof module !== 'undefined')
                      cenikSlozRadu, cenikRadaRozdily, cenikRadaPrepni, cenikRadaVarianty,
                      cenikJenZahrCesty, cenikJenZahrVynuluj,
                      cenikRadaTuzemskaData, cenikDnesniProRadu,
-                     CENIK_ZVEREJNENI_SHODA_MAX, cenikZverejneniOcisti,
+                     CENIK_ZVEREJNENI_SHODA_MAX, cenikZverejneniOcisti, cenikZahrSluc,
                      cenikZverejneniShody, cenikZverejneniKontrola };

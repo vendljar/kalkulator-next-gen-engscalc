@@ -235,6 +235,45 @@
    "testy": "netlify/test_prava.mjs — 5 kontrol včetně pojistky proti prázdnému testu (podvrh se smí lišit VÝHRADNĚ ve zmrazeném výsledku) a kontroly starších zámků. Ověřeno, že bez opravy padají 2 z nich. Mutace „zmrazený výsledek se bere, jak přijde\" v netlify/mutace.mjs."
   },
   {
+   "id": "304",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "hotovoV": "v22.9.5",
+   "nazev": "B54 — prázdná ADMIN_EMAIL tiše vypnula ochrany hlavního účtu",
+   "proc": "Bezpečnostní audit 22. 9. 2026. Všechny ochrany hlavního účtu jsou psané jako `email === ADMIN_EMAIL`. Když proměnná prostředí chybí, konstanta je prázdná a nerovná se jí žádná skutečná adresa — ochrany tím TIŠE přestanou platit. Že to hlásí /api/zdravi, je málo: hlášení si někdo musí přečíst, kdežto oslabení platí hned.",
+   "detail": "DŮSLEDEK: vedlejší správce směl hlavnímu účtu změnit roli, vypnout ho, smazat ho, resetovat mu heslo i přepsat jeho podpis — a nikde se nic neozvalo. Táž mezera byla v obnově ze zálohy („hlavní administrátorský účet obnoví jen on sám\" a „podpis hlavního administrátora mění jen on sám\").\n\nTAHLE VĚTEV V TESTECH NIKDY NEBĚŽELA: CI i mutační běh proměnnou vždy dosadí (mutace.mjs ji dokonce doplní, když chybí), takže se chyba v nastavení nedala odhalit ničím jiným než provozem.\n\nOPRAVA: `bezHlavnihoUctu()` v lib/sdilene.mjs vrací 503 (dočasně nedostupné — chyba není u volajícího, ale v nastavení webu). Nasazeno na čtyřech místech v uzivatele.mjs (zásah do cizího profilu/podpisu, všechny akce vyžadující roli Administrátor, seznam uživatelů) a na jednom v obnova.mjs.\n\nSCHVÁLNĚ ZŮSTÁVÁ FUNKČNÍ přihlášení a změna VLASTNÍHO hesla — bez nich by se závada nedala opravit zevnitř. Kontrola se ptá na konstantu i na živou proměnnou prostředí a odmítne, když je prázdná kterákoli z nich: konstanta je hodnota, na které ochrany opravdu stojí, živá proměnná dovolí ověřit chování testem v témže procesu.",
+   "kde": "netlify/lib/sdilene.mjs (bezHlavnihoUctu), netlify/functions/uzivatele.mjs, netlify/functions/obnova.mjs",
+   "testy": "Devět kontrol v netlify/test_prava.mjs (blok B54) včetně toho, co musí jít dál, a pojistky proti prázdnému testu. Ověřeno, že bez opravy jich padá osm. Mutace „server bez ADMIN_EMAIL obsluhuje chráněné cesty dál\"."
+  },
+  {
+   "id": "305",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "hotovoV": "v22.9.5",
+   "nazev": "B55 — pojistku zveřejnění ceníku šlo vypnout vynecháním pole",
+   "proc": "Bezpečnostní audit 22. 9. 2026. Druhá větev pojistky (shoda ČR ceny se zahraniční odchylkou u víc než pěti položek) porovnávala výhradně proti odchylkám Z TÉHOŽ POŽADAVKU (`ctx.zahranicni`). Stačilo tedy pole `zahranicni` neposlat a pojistka mlčky vypadla — přitom právě takový podklad je nejpodezřelejší.",
+   "detail": "Server uložené odchylky zná vždycky: leží v platné verzi, kterou sám vydal. V prohlížeči se odjakživa porovnávalo právě proti nim (`CENIK_ZAHR` = odchylky, které platí), takže serverová větev byla slabší než ta klientská.\n\nOPRAVA: porovnává se proti SLOUČENÍ uložených a příchozích odchylek (`cenikZahrSluc`, příchozí přebíjí uloženou hodnotu). Kvůli tomu se `db` čte dřív než posudek.\n\nSLOUČENÍ SAMO BY ALE UMĚLO CENÍK ZAMKNOUT: kdo chce zrušit víc než pět odchylek naráz, by neprošel, protože by se pořád porovnával proti tomu, co ruší — a zrušit je lze jedině zveřejněním. Proto `cenikZverejneniShody` dostala nepovinný záznam platné verze a nepočítá položky, jejichž ČR cena se tímhle zveřejněním NEMĚNÍ. Cena shodná s platnou verzí z přepnuté varianty pocházet nemůže: v ceníku je už dnes a nikdo ji teď nezapisuje. Totéž dostal i dialog v prohlížeči, aby se obě strany chovaly stejně.",
+   "kde": "src/cenik_rady.js (cenikZahrSluc, cenikZverejneniShody, cenikZverejneniKontrola), netlify/functions/program.mjs, src/ui/program_ui.js",
+   "testy": "Osm modelových v src/test_cenik_zverejneni.js (včetně toho, že bez sloučení by týž podklad prošel, a že zrušení všech odchylek beze změny ČR cen projít musí) a pět serverových v netlify/test_prava.mjs přes skutečnou cestu /api/program. Ověřeno, že bez opravy tři padají. Mutace „pojistka zveřejnění se ptá jen na odchylky z požadavku\"."
+  },
+  {
+   "id": "306",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "hotovoV": "v22.9.5",
+   "nazev": "B56 — číslo odeslané nabídky hlídal jen prohlížeč",
+   "proc": "Bezpečnostní audit 22. 9. 2026. Zákaz měnit číslo nabídky po odeslání žil jen v prohlížeči (rozhodnutí J. V. 15. 9. 2026: „Pouze administrátor\"). Server u čísla kontroloval jen délku.",
+   "detail": "U ČÍSLA JE TA DÍRA ZÁKEŘNÁ: číslo určuje jméno souboru. Se změněným číslem spadne zakázka pod JINÉ jméno, uložená verze k porovnání neexistuje (`stara` je prázdná) a všechny kontroly zámku se přeskočí. Odeslaná nabídka tak mohla dostat jiné číslo, než jaké má zákazník na papíře.\n\nOPRAVA: pozná se to ZE ZÁMKU SAMOTNÉHO, ne z uložené zakázky — `zamek.cislo` drží číslo z okamžiku odeslání (plní ho `variantaCislo` při zamykání v zamek_ui.js). Kontrola je proto vnitřní a funguje i tam, kde není s čím porovnávat. Neshoda: 403 pro kohokoli kromě administrátora; administrátorovi projde a server mu razítko v zámku srovná, aby zakázka nezůstala natrvalo v rozporu sama se sebou a nepadala při každém dalším uložení kolegy.\n\nZámky pořízené před zavedením pole `cislo` ho mají prázdné — přeskakují se, jinak by oprava zablokovala historické zakázky.\n\nMEZ, KTEROU TO NEZAVŘE: kdo si upraví klienta, může přepsat číslo i razítko v zámku najednou. Výsledek je ale nová zakázka pod novým jménem; původní soubor s původním číslem zůstává nedotčený, takže se stopa neztrácí.",
+   "kde": "netlify/functions/zakazky.mjs (za kontrolami zámku)",
+   "testy": "Sedm kontrol v netlify/test_prava.mjs (blok B56): obchodníkovi 403, administrátorovi 200 se srovnaným razítkem, zámek zůstává, starší zámek bez razítka projde. Ověřeno, že bez opravy tři padají. Mutace „změna čísla odeslané nabídky se na serveru nehlídá\"."
+  },
+  {
    "id" : "285",
    "vlna" : "C",
    "stav" : "ceka",

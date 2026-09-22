@@ -83,7 +83,8 @@
  *    co tu člověk chce. */
 import { randomBytes } from 'node:crypto';
 import { uloziste, vyzadujRoli, json, ADMIN_EMAIL, ROLE, hostitel, emailPlatny,
-         podpisZkontroluj, hesloVerzeUctu, SMAZANI_ULOZISTE } from '../lib/sdilene.mjs';
+         podpisZkontroluj, hesloVerzeUctu, SMAZANI_ULOZISTE,
+         bezHlavnihoUctu } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 import { porizOtisk, klicPredObnovou, OTISK_KLIC } from '../lib/zalohovani.mjs';
 
@@ -263,6 +264,11 @@ export default async (req) => {
   if (req.method !== 'POST') return json({ ok: false, chyba: 'Použijte POST.' }, 405);
   const { chyba, relace } = await vyzadujRoli(req, 'Administrátor');
   if (chyba) return chyba;
+  /* Obnova přepisuje účty i podpisy a hlavní účet v ní chrání porovnání
+   * s ADMIN_EMAIL (viz „hlavní administrátorský účet obnoví jen on sám"
+   * a „podpis hlavního administrátora mění jen on sám"). Bez té adresy
+   * ochrany neplatí, takže se obnova neobsluhuje (B54, 22. 9. 2026). */
+  { const stop = bezHlavnihoUctu(); if (stop) return stop; }
   let ULO;
   try { ({ ULO } = await jadro()); } catch (e) { return jadroChyba(e); }
 

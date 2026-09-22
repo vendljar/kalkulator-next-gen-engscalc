@@ -8,6 +8,59 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.9.5 — 22. 9. 2026
+
+### Dávka 4: tři serverové pojistky (#304, #305, #306)
+
+Společné všem třem: pravidlo existovalo, ale server ho neuplatňoval — hlídal
+ho prohlížeč, nastavení webu nebo obsah požadavku.
+
+**Prázdná `ADMIN_EMAIL` tiše vypnula ochrany hlavního účtu (B54).** Všechny
+jsou psané jako „e-mail se rovná hlavnímu"; proti prázdné hodnotě se
+nerovná žádná skutečná adresa. Vedlejší správce tedy směl hlavnímu účtu
+změnit roli, vypnout ho, smazat ho, resetovat heslo i přepsat podpis — a
+nikde se nic neozvalo. Že to hlásí kontrola zdraví, je málo: hlášení si
+někdo musí přečíst, kdežto oslabení platí hned. **Tahle větev v testech
+nikdy neběžela**, protože CI i mutační běh proměnnou vždycky dosadí.
+
+Nově se chráněné cesty neobsluhují (503 — chyba není u volajícího, ale
+v nastavení webu): správa uživatelů a obnova ze zálohy. **Přihlášení
+a změna vlastního hesla zůstávají funkční schválně** — bez nich by se
+závada nedala opravit zevnitř.
+
+**Pojistku zveřejnění ceníku šlo vypnout vynecháním pole (B55).** Shoda ČR
+ceny se zahraniční odchylkou se porovnávala výhradně proti odchylkám
+z téhož požadavku. Stačilo je neposlat a pojistka mlčky vypadla — přitom
+takový podklad je nejpodezřelejší. Server přitom uložené odchylky zná
+vždycky a prohlížeč proti nim porovnával odjakživa.
+
+Porovnává se proti sloučení uložených a příchozích. Samotné sloučení by ale
+**umělo ceník zamknout**: kdo ruší víc než pět odchylek naráz, by neprošel,
+protože se pořád porovnává proti tomu, co ruší. Proto se nepočítá položka,
+jejíž ČR cena se tímhle zveřejněním nemění — taková z přepnuté varianty
+pocházet nemůže, v ceníku je už dnes.
+
+**Číslo odeslané nabídky hlídal jen prohlížeč (B56).** Server u něj
+kontroloval jen délku. U čísla je to zákeřné: číslo určuje jméno souboru,
+takže se změněným číslem spadne zakázka pod jiné jméno, uložená verze
+k porovnání neexistuje a **všechny kontroly zámku se přeskočí**. Odeslaná
+nabídka tak mohla dostat jiné číslo, než jaké má zákazník na papíře.
+
+Pozná se to ze zámku samotného — drží si číslo z okamžiku odeslání — takže
+kontrola funguje i tam, kde není s čím porovnávat. Neshoda: administrátor
+smí (rozhodnutí z 15. 9.), ostatním se to odmítne. Zámky pořízené dřív
+razítko čísla nemají a přeskakují se.
+
+**Mez, kterou to nezavře:** kdo si upraví klienta, přepíše číslo i razítko
+najednou. Výsledek je ale nová zakázka pod novým jménem a původní soubor
+zůstává nedotčený, takže se stopa neztrácí.
+
+**Testy:** devět kontrol k B54, třináct k B55 (osm modelových, pět
+serverových přes skutečnou cestu) a sedm k B56. U všech tří ověřeno, že bez
+opravy padají. Tři nové mutace, celkem 133.
+
+---
+
 ## v22.9.4 — 22. 9. 2026
 
 ### Dávka 3: čísla už odeslané nabídky šlo přepsat beze stopy (#303)
