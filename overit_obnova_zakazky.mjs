@@ -112,10 +112,33 @@ const pred = await page.evaluate(() => ({
 }));
 test('zakázka se uložila s přirážkou 40 %', pred.marze === 0.40 && !!pred.soubor, JSON.stringify(pred));
 
+/* ČEKÁ SE NA PODMÍNKU, NE NA HODINKY (22. 9. 2026).
+ *
+ * Po `reload()` běží přihlášení a návrat k poslední zakázce asynchronně.
+ * Pevné `waitForTimeout(2000)` proto sadu dělalo NESTABILNÍ: na volném stroji
+ * stihla doběhnout, pod zátěží ne — a test pak hlásil „přirážka se ztratila",
+ * ačkoli se jen ještě nestihla načíst. Test, který někdy lže, je horší než
+ * žádný; v CI by navíc červenal náhodně a lidé by si zvykli ho přehlížet.
+ *
+ * Čeká se tedy na to, co nás doopravdy zajímá: že je uživatel přihlášený,
+ * nic se nenačítá a zakázka je otevřená. Když se to nestane do limitu,
+ * pokračuje se dál a kontrola níž selže s konkrétním číslem — což je
+ * správné selhání, ne timeout uprostřed harnessu. */
+const pockejNaObnovu = async (page) => {
+  try {
+    await page.waitForFunction(() => {
+      try { return !!ONLINE_STAV.ja && !ONLINE_STAV.pracuje && !!ONLINE_STAV.soubor; }
+      catch (e) { return false; }
+    }, null, { timeout: 20000 });
+  } catch (e) { /* necháme selhat kontrolu, ne harness */ }
+  await page.waitForTimeout(300);
+};
+
+
 /* 2) obnovení stránky (F5) */
 await page.reload();
 await page.waitForFunction(() => typeof window.render === 'function');
-await page.waitForTimeout(1200);
+await pockejNaObnovu(page);
 await dlgStub(page);
 const po = await page.evaluate(() => ({
   marze: aktivniVarianta(ZAK).data.cenik.marze, cislo: ZAK.cislo,

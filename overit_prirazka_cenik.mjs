@@ -124,11 +124,34 @@ test('zveřejněný ceník nese přirážku OCK i PROJ', await page.evaluate(() 
   ONLINE_STAV.db && ONLINE_STAV.db.platny.cenik.marze === 0.42
   && ONLINE_STAV.db.platny.cenikProj.marze === 0.55));
 
+/* ČEKÁ SE NA PODMÍNKU, NE NA HODINKY (22. 9. 2026).
+ *
+ * Po `reload()` běží přihlášení a návrat k poslední zakázce asynchronně.
+ * Pevné `waitForTimeout(2000)` proto sadu dělalo NESTABILNÍ: na volném stroji
+ * stihla doběhnout, pod zátěží ne — a test pak hlásil „přirážka se ztratila",
+ * ačkoli se jen ještě nestihla načíst. Test, který někdy lže, je horší než
+ * žádný; v CI by navíc červenal náhodně a lidé by si zvykli ho přehlížet.
+ *
+ * Čeká se tedy na to, co nás doopravdy zajímá: že je uživatel přihlášený,
+ * nic se nenačítá a zakázka je otevřená. Když se to nestane do limitu,
+ * pokračuje se dál a kontrola níž selže s konkrétním číslem — což je
+ * správné selhání, ne timeout uprostřed harnessu. */
+const pockejNaObnovu = async (page) => {
+  try {
+    await page.waitForFunction(() => {
+      try { return !!ONLINE_STAV.ja && !ONLINE_STAV.pracuje && !!ONLINE_STAV.soubor; }
+      catch (e) { return false; }
+    }, null, { timeout: 20000 });
+  } catch (e) { /* necháme selhat kontrolu, ne harness */ }
+  await page.waitForTimeout(300);
+};
+
+
 /* 2) obnovení stránky = nová prázdná zakázka, do které ceník teprve dorazí.
  *    Přesně tady se přirážka dřív „ztrácela". */
 await page.reload();
 await page.waitForFunction(() => typeof window.render === 'function');
-await page.waitForTimeout(2000);
+await pockejNaObnovu(page);
 await dlgStub(page);
 const po = await stav();
 test('do nové zakázky se natáhne přirážka OCK z ceníku', po.zak === 0.42, JSON.stringify(po));
@@ -158,12 +181,35 @@ await page.evaluate(async () => {
   set('ZAK.nazevAkce', 'Německo — ruční přirážka');
   await zakUlozUI();
 });
-await page.waitForTimeout(1200);
+/* ZÁVOD MEZI ULOŽENÍM A REFRESHEM (22. 9. 2026). `zakUlozUI()` se sice
+ * dokončí, ale na uložení navazuje ještě zápis „naposledy otevřená zakázka"
+ * a doběh autosave. Pevných 1200 ms na to na zatíženém stroji nestačilo
+ * a refresh pak přišel dřív — zakázka nebyla co obnovit a kontrola níž
+ * hlásila ztracenou přirážku. Čeká se proto, až je uloženo doopravdy. */
+await page.waitForFunction(() => {
+  try { return !!ONLINE_STAV.soubor && !ONLINE_STAV.pracuje
+    && onlinePosledniZapamatovana() === ONLINE_STAV.soubor; } catch (e) { return false; }
+}, null, { timeout: 20000 }).catch(() => {});
+await page.waitForTimeout(300);
 await page.reload();
 await page.waitForFunction(() => typeof window.render === 'function');
-await page.waitForTimeout(2000);
+await pockejNaObnovu(page);
 await dlgStub(page);
 const po3 = await stav();
+/* Když tahle kontrola selže, chceme vědět PROČ, ne jen že. Návrat k poslední
+ * zakázce má tři podmínky a bez téhle diagnostiky se v CI nedá poznat, která
+ * z nich neplatila (22. 9. 2026). */
+if (po3.zak !== 0.40) {
+  const proc = await page.evaluate(() => ({
+    zmenaUzivatele: ONLINE_STAV.zmenaUzivatele,
+    prihlasen: !!ONLINE_STAV.ja, pracuje: ONLINE_STAV.pracuje,
+    otevrenySoubor: ONLINE_STAV.soubor,
+    zapamatovana: (typeof onlinePosledniZapamatovana === 'function')
+      ? onlinePosledniZapamatovana() : '(nedef)',
+    vRejstriku: (ONLINE_STAV.rejstrik || []).map(z => z.soubor),
+  }));
+  console.log('     ! proč se zakázka neobnovila: ' + JSON.stringify(proc));
+}
 test('po znovuotevření zakázky je přirážka pořád 40 %', po3.zak === 0.40, po3.zak);
 test('a značka „nastavil jsem si ji sám" se uložila taky',
   po3.rucni.includes('C.marze'), JSON.stringify(po3.rucni));

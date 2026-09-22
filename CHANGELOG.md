@@ -8,6 +8,53 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.9.3 — 22. 9. 2026
+
+### Dávka 2: po F5 se ztrácela rozdělaná práce (#301, #302)
+
+**N12 a N13 byla jedna chyba se dvěma projevy.** Po obnovení stránky se
+vracel prázdný formulář, ačkoli zakázka ležela na serveru — a s ní se
+„ztrácela" ruční přirážka 40 %, kterou obchodník viděl přepsanou na
+firemních 0,42.
+
+Návrat k poslední zakázce se ptal, jestli se zakázka liší od otisku
+pořízeného **při startu stránky**. Jenže mezi startem a tím dotazem proběhne
+přihlášení, a to do čerstvé zakázky samo nasype **platný ceník** a **matici
+zobrazení**. Zakázka se tím od otisku liší vždycky — takže se návrat
+neprovedl **nikdy**.
+
+Změřeno po refreshi: rozdíl proti otisku byl `marze` 0 → 0,42,
+`montazHodKc` 0 → 1234, zmizely značky `ukazkove`/`prazdny` a přibylo
+`cenikRazitko`. Ani jedné z těch změn se uživatel nedotkl.
+
+**Přirážka se přitom nikdy neztratila** — ověřeno dotazem na server, kde
+ležela správně i se značkou „nastavil jsem si ji sám". Jen se k té zakázce
+nikdo nevrátil.
+
+**Táž příčina byla i o úroveň níž — a projevila se jako nestabilita.**
+Otevření zakázky se na totéž ptá taky a otevře nad tím **dialog** „máte
+neuložené změny". Obě automatické synchronizace přitom běží v jednom
+`Promise.all`, takže záleželo na jejich pořadí: sada padala zhruba **jednou
+ze tří**. To je nejhorší druh chyby — takovému testu lidé přestanou věřit.
+
+Opraveno u kořene: ptáme se `ONLINE_STAV.zmenaUzivatele` místo otisku,
+a otisk se srovnává až **po všech načteních**, takže na pořadí nezáleží.
+Ověřeno pěti běhy po sobě. Ten
+příznak je v souboru odjakživa a nastavují ho posluchače na `input`,
+`change` a klik — tedy **události od člověka**, schválně ne `set()`, protože
+„zakázkou hýbe i sama aplikace". Táž věta platí i pro návrat k zakázce.
+Ochrana rozdělané práce zůstává: kdo do formuláře sáhl nebo si kliknutím
+obnovil zálohu, má příznak nastavený.
+
+**N14 nebyla chyba, ale zastaralé očekávání testu.** Kód se chová přesně
+tak, jak to 21. 9. vědomě zavedla dávka P2: značka „ukázkový / prázdný
+ceník" se smí srovnat i u uzamčené varianty, ale **jen když jí obsah
+odporuje** — u opravdu prázdného ceníku zůstane. Test přepsán na skutečné
+pravidlo a měří teď i to, co starou kontrolu znepokojovalo: že se ceny
+uzamčené varianty nezmění a že se doklad o prázdném ceníku nepřepisuje.
+
+---
+
 ## v22.9.2 — 22. 9. 2026
 
 ### Dávka 1: harnessy, které nikde neběžely (#299, #300)

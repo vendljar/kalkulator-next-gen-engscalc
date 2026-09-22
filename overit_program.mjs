@@ -444,23 +444,64 @@ zkus('a dokument se odblokuje',
 zkus('ceny přitom zůstaly ostré, srovnání s nimi nehýbe',
   znacka.cena === 200, String(znacka.cena));
 
-/* Uzamčená (vytištěná = odeslaná) varianta je doklad o tom, co odešlo.
- * Kdyby se z ní značka sundala, aplikace by zpětně tvrdila, že nabídka
- * počítala z ostrých čísel – i když nepočítala. */
+/* ZNAČKA U UZAMČENÉ VARIANTY — ZMĚNA OČEKÁVÁNÍ (nález N14, 22. 9. 2026)
+ *
+ * Do 21. 9. se tu čekalo, že uzamčená varianta si značku „ukázkový / prázdný
+ * ceník" PONECHÁ za všech okolností. Důvod byl dobrý: odeslaná nabídka je
+ * doklad o tom, co zákazník dostal, a kdyby se značka sundala, aplikace by
+ * zpětně tvrdila, že nabídka počítala z ostrých čísel — i když nepočítala.
+ *
+ * Dávka P2 z 21. 9. (nálezy N2/N3) to vědomě zúžila. Na ostrých zakázkách
+ * 0383 a 377 ležela značka, kterou jim kdysi vtiskl server, a protože se
+ * uzamčená varianta nepřepočítává, neměl ji kdo smazat — vypínala tisk
+ * nabídky u zakázek, které ceník mají.
+ *
+ * Nové pravidlo: ZNAČKA NESMÍ ODPOROVAT OBSAHU. `ukazkoveSrovnejSObsahem`
+ * ji odebere jen tehdy, když ceník opravdu nese čísla (`ukazkoveMaCisla`).
+ * Ceny se přitom nemění — zámek chrání ČÍSLA, ne nálepku, která o nich lže.
+ *
+ * Obojí se proto měří zvlášť: že se lživá značka srovná I u zamčené varianty,
+ * a že u skutečně prázdného ceníku ZŮSTANE. Druhá kontrola je tu právě kvůli
+ * obavě, kterou vyjadřoval původní test — ta platí dál, jen se ptá přesněji. */
 const znackaZam = await stranka.evaluate(async () => {
+  /* a) ceník s čísly, ale se lživou značkou → značka se srovná */
   ZAK = novaZakazka(); syncVarianta();
   const v = aktivniVarianta(ZAK);
   const oznac = c => { c.ukazkove = true; c.prazdny = true; };
   oznac(v.data.cenik); oznac(v.data.proj.cenik);
   zamkniVariantu(v, { typ: 'nabidkaOck', kdy: '2026-07-30T08:00:00.000Z' });
+  const cenyPred = JSON.stringify(v.data.cenik);
   const zmen = progSrovnejNedotcene();
-  return { zmen, ukazkove: !!v.data.cenik.ukazkove, prazdny: !!v.data.cenik.prazdny,
-           proj: !!(v.data.proj.cenik && v.data.proj.cenik.prazdny) };
+  const lziva = { zmen, ukazkove: !!v.data.cenik.ukazkove, prazdny: !!v.data.cenik.prazdny,
+                  proj: !!(v.data.proj.cenik && v.data.proj.cenik.prazdny),
+                  maCisla: ukazkoveMaCisla(v.data.cenik),
+                  cenyStejne: JSON.stringify(ukazkoveBez(JSON.parse(cenyPred)))
+                    === JSON.stringify(ukazkoveBez(v.data.cenik)) };
+
+  /* b) ceník OPRAVDU prázdný (samé nuly) → značka musí zůstat */
+  ZAK = novaZakazka(); syncVarianta();
+  const v2 = aktivniVarianta(ZAK);
+  const vynuluj = (c) => { Object.keys(c).forEach(k => { if (typeof c[k] === 'number') c[k] = 0; }); };
+  vynuluj(v2.data.cenik); vynuluj(v2.data.proj.cenik);
+  oznac(v2.data.cenik); oznac(v2.data.proj.cenik);
+  zamkniVariantu(v2, { typ: 'nabidkaOck', kdy: '2026-07-30T08:00:00.000Z' });
+  progSrovnejNedotcene();
+  const prazdny = { ukazkove: !!v2.data.cenik.ukazkove, prazdny: !!v2.data.cenik.prazdny,
+                    maCisla: ukazkoveMaCisla(v2.data.cenik) };
+  return { lziva, prazdny };
 });
-zkus('uzamčená varianta si značku ponechá',
-  znackaZam.ukazkove === true && znackaZam.prazdny === true && znackaZam.proj === true,
-  JSON.stringify(znackaZam));
-zkus('a nehlásí se jako změna', znackaZam.zmen === 0, String(znackaZam.zmen));
+zkus('kontrola není prázdná — ceník v případu (a) opravdu nese čísla',
+  znackaZam.lziva.maCisla === true, JSON.stringify(znackaZam.lziva));
+zkus('lživá značka se srovná i u uzamčené varianty (P2)',
+  znackaZam.lziva.ukazkove === false && znackaZam.lziva.prazdny === false
+  && znackaZam.lziva.proj === false, JSON.stringify(znackaZam.lziva));
+zkus('a hlásí se to jako změna, ne potichu', znackaZam.lziva.zmen > 0,
+  String(znackaZam.lziva.zmen));
+zkus('CENY uzamčené varianty se přitom nezměnily',
+  znackaZam.lziva.cenyStejne === true, JSON.stringify(znackaZam.lziva));
+zkus('u OPRAVDU prázdného ceníku značka zůstane (doklad se nepřepisuje)',
+  znackaZam.prazdny.ukazkove === true && znackaZam.prazdny.prazdny === true,
+  JSON.stringify(znackaZam.prazdny));
 
 zkus('konzole je čistá', chyby.length === 0);
 if (chyby.length) chyby.slice(0, 5).forEach(c => console.log('     ! ' + c));

@@ -196,6 +196,32 @@
    "testy": "./spust_testy.sh --smoke pouští celý glob."
   },
   {
+   "id": "301",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "vysoka",
+   "slozitost": "S",
+   "hotovoV": "v22.9.3",
+   "nazev": "N12 + N13 — po F5 se uložená zakázka neotevřela a ruční přirážka „zmizela\"",
+   "proc": "19. testovací kolo, dva nejhorší nálezy z pohledu obchodníka: po obnovení stránky se vrátí prázdný formulář, ačkoli zakázka leží na serveru (N13), a ruční přirážka 40 % se změní na firemních 0,42 (N12). Ukázalo se, že je to JEDNA chyba se dvěma projevy.",
+   "detail": "PŘÍČINA: `onlineObnovPosledni()` se ptala `historieNeulozeno()`, tedy jestli se ZAK liší od otisku pořízeného PŘI STARTU stránky. Jenže mezi startem a tím dotazem proběhne přihlášení, které do čerstvé zakázky samo nasype PLATNÝ CENÍK (`progSrovnejNedotcene`) a MATICI ZOBRAZENÍ (`onlineZobrazeniDoCerstveZakazky`). Zakázka se tím od otisku liší VŽDY — a návrat k poslední zakázce se tedy neprovedl nikdy.\n\nZMĚŘENO po refreshi: rozdíl proti otisku byl `cenik.marze` 0 → 0,42, `montazHodKc` 0 → 1234, zmizely značky `ukazkove`/`prazdny` a přibylo `cenikRazitko`. U druhého harnessu `priplatkyVynechat` (['vsgFolie','skn'] proti hodnotám z matice). Ani jedné z těch změn se uživatel nedotkl.\n\nN12 byl DŮSLEDEK N13, ne samostatná chyba: ruční přirážka se nikam neztratila — ověřeno dotazem na server, kde ležela správně i se značkou `cenikRucni: ['C.marze']`. Jen se k té zakázce nikdo nevrátil a obchodník viděl prázdnou s firemními 0,42.\n\nTÁŽ PŘÍČINA BYLA I O ÚROVEŇ NÍŽ, a to se projevilo jako NESTABILITA. `onlineOtevri()` se na `historieNeulozeno()` ptá taky a otevře nad tím DIALOG „máte neuložené změny“. Obě automatické synchronizace přitom běží v jednom `Promise.all`, takže na jejich pořadí nezáleželo deterministicky: když matice doběhla poslední, otisk se srovnal a návrat prošel; když poslední doběhl ceník, otisk zůstal starý a otevírání čekalo na odpověď na nesmyslnou otázku. Sada `overit_prirazka_cenik.mjs` proto padala zhruba jednou ze tří — a to je nejhorší druh chyby, protože takovému testu lidé přestanou věřit.\n\nOtisk se proto srovnává AŽ PO VŠECH NAČTENÍCH v `onlinePoPrihlaseni` a jen tehdy, když člověk před přihlášením do formuláře nesáhl. Tím padá závislost na pořadí. Ověřeno pěti běhy po sobě: 5× 13 OK.\n\nOPRAVA U KOŘENE: ptáme se `ONLINE_STAV.zmenaUzivatele` místo otisku. Ten příznak je v souboru odjakživa a nastavují ho posluchače na `input`/`change`/klik — tedy UDÁLOSTI OD ČLOVĚKA, schválně ne `set()`, protože „zakázkou hýbe i sama aplikace (přepočet, migrace, zrcadlení kurzu) a právě to se nemá ukládat\". Táž věta platí i pro návrat k zakázce. Ochrana rozdělané práce zůstává: kdo do formuláře sáhl nebo si kliknutím obnovil zálohu, má příznak nastavený.\n\nNAVÍC (samostatná drobnost): `onlineZobrazeniDoCerstveZakazky()` nově posune otisk historie, když sama něco změnila — jinak prohlížeč při zavření okna varuje před ztrátou změn, které nikdo neudělal. Bezpečné právě tam: funkce sahá výhradně na čerstvou zakázku, u níž `zobrazeniVychoziNedotcene()` potvrdilo hodnoty z kódu.",
+   "kde": "src/ui/online_ui.js (onlineObnovPosledni, onlineZobrazeniDoCerstveZakazky)",
+   "testy": "overit_obnova_zakazky.mjs (7 OK), overit_prirazka_cenik.mjs (13 OK). Oba nově běží v CI (#300)."
+  },
+  {
+   "id": "302",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "hotovoV": "v22.9.3",
+   "nazev": "N14 — nebyla to chyba, ale zastaralé očekávání testu proti rozhodnutí P2",
+   "proc": "19. testovací kolo hlásilo, že uzamčená varianta si nedrží značku „ukázkový / prázdný ceník\" a hlásí dvě změny. Prověřeno: kód se chová přesně tak, jak to 21. 9. vědomě zavedla dávka P2 (nálezy N2/N3) — test zůstal na starém pravidle.",
+   "detail": "STARÉ PRAVIDLO: uzamčená varianta si značku ponechá za všech okolností, protože odeslaná nabídka je doklad o tom, co zákazník dostal.\n\nPROČ SE ZÚŽILO: na ostrých zakázkách 0383 a 377 ležela značka, kterou jim kdysi vtiskl server. Uzamčená varianta se nepřepočítává, takže ji neměl kdo smazat — a ta značka vypínala TISK NABÍDKY u zakázek, které ceník mají.\n\nNOVÉ PRAVIDLO: značka nesmí ODPOROVAT OBSAHU. `ukazkoveSrovnejSObsahem` ji odebere jen tehdy, když ceník opravdu nese čísla (`ukazkoveMaCisla`); u skutečně prázdného ceníku zůstane. Ceny se nemění — zámek chrání ČÍSLA, ne nálepku, která o nich lže.\n\nTest přepsán tak, aby měřil skutečné pravidlo, a hlavně aby měřil OBOJÍ: že se lživá značka srovná i u zamčené varianty, že se to hlásí jako změna, že se přitom NEZMĚNILY CENY, a že u opravdu prázdného ceníku značka ZŮSTANE. Ta poslední kontrola je tam právě kvůli obavě, kterou vyjadřoval původní test — platí dál, jen se ptá přesněji. Přibyla i pojistka proti prázdnému testu (ověří se, že ceník v prvním případu čísla opravdu nese).",
+   "kde": "overit_program.mjs",
+   "testy": "overit_program.mjs (78 OK)"
+  },
+  {
    "id" : "285",
    "vlna" : "C",
    "stav" : "ceka",

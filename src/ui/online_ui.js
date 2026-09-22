@@ -262,10 +262,39 @@ function onlinePoPrihlaseni(ja) {
   /* Matice zobrazení se načítá spolu s ostatním — a hlavně PŘED prvním
    * překreslením, aby rozhraní hned napoprvé odpovídalo roli. Kdyby dorazila
    * později, obchodník by na okamžik zahlédl ceníky a pak by mu zmizely. */
+  /* CO DO ZAKÁZKY NASYPALO SAMO PŘIHLÁŠENÍ, NENÍ NEULOŽENÁ PRÁCE UŽIVATELE
+   * (nálezy N12 a N13, 22. 9. 2026).
+   *
+   * Načtení níž vtiskne čerstvé zakázce PLATNÝ CENÍK (`progSrovnejNedotcene`
+   * uvnitř `onlineNactiProgram`) a MATICI ZOBRAZENÍ
+   * (`onlineZobrazeniDoCerstveZakazky` uvnitř `onlineNactiZobrazeni`).
+   * `HIST.ulozenoJako` přitom nese otisk pořízený PŘI STARTU stránky, tedy
+   * ještě s hodnotami z kódu — od téhle chvíle tedy `historieNeulozeno()`
+   * vrací true, přestože se člověk ničeho nedotkl.
+   *
+   * Platilo to na DVOU místech naráz a obě bolela:
+   *   · `onlineObnovPosledni()` se na to ptala a návrat k poslední zakázce
+   *     odmítla — po F5 dostal obchodník prázdný formulář (N13),
+   *   · `onlineOtevri()` na to otevře DIALOG „máte neuložené změny", takže
+   *     i když se návrat spustil, čekal na odpověď na otázku, která nedávala
+   *     smysl.
+   *
+   * Protože obě načtení běží v jednom `Promise.all`, záleželo na jejich
+   * pořadí — sada `overit_prirazka_cenik.mjs` proto padala jednou ze tří,
+   * což je ten nejhorší druh chyby: ta, které se přestane věřit.
+   *
+   * Otisk se proto posune AŽ PO všech načteních a JEN TEHDY, když člověk
+   * před přihlášením do formuláře nesáhl. `zmenaUzivatele` nastavují
+   * posluchače na `input`/`change`/klik, tedy události od člověka; kdo měl
+   * rozdělanou práci, o ni nepřijde. */
+  const byloOdUzivatele = !!ONLINE_STAV.zmenaUzivatele;
   return Promise.all([onlineNactiProgram(), onlineNactiFirmu(), onlineNactiZobrazeni(), onlineNactiRejstrik(),
                       onlineNactiSablony(),
                       /* analytika (#27): zjistit, jestli je sběr zapnutý, a nastartovat ho */
                       typeof analytikaPoPrihlaseni === 'function' ? analytikaPoPrihlaseni() : Promise.resolve()])
+    .then(() => {
+      if (!byloOdUzivatele && typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
+    })
     .then(() => onlineObnovPosledni())
     .then(() => { if (jeAdminOnline()) onlineZalohaAuto(); });
 }
@@ -616,6 +645,27 @@ function onlineZobrazeniDoCerstveZakazky() {
   try { vzor = novaVariantaData(); } catch (e) { return false; }
   if (!zobrazeniVychoziNedotcene(zo, zp, vzor.ock.zadani, vzor.proj.zadani)) return false;
   const zmen = zobrazeniVychoziAplikuj(NAST.zobrazeni, zo, zp);
+  /* VLASTNÍ ZÁSAH SE NESMÍ TVÁŘIT JAKO NEULOŽENÁ PRÁCE UŽIVATELE
+   * (22. 9. 2026, při řešení N12/N13).
+   *
+   * Tahle funkce právě přepsala `priplatkyVynechat` (a spol.) podle matice
+   * zobrazení. `HIST.ulozenoJako` ale nese otisk pořízený PŘI STARTU, ještě
+   * s hodnotami z kódu — od téhle chvíle se tedy ZAK od otisku liší
+   * a `historieNeulozeno()` vrací true, přestože se uživatel ničeho nedotkl.
+   * Prohlížeč pak při zavření okna varuje před ztrátou změn, které nikdo
+   * neudělal.
+   *
+   * Otisk se proto posouvá na nový stav. Je to bezpečné právě tady: funkce
+   * sahá VÝHRADNĚ na čerstvou zakázku bez čísla, názvu a objednatele, u níž
+   * `zobrazeniVychoziNedotcene()` výš potvrdilo, že v dotčených polích pořád
+   * stojí hodnoty z kódu. Co se tu změnilo, tedy nikdy nebyla práce člověka.
+   *
+   * POZOR, NENÍ TO OPRAVA N13. Návrat k poslední zakázce blokoval týž
+   * mechanismus, ale i z druhé strany (platný ceník z `progSrovnejNedotcene`),
+   * takže se řeší u zdroje — v `onlineObnovPosledni()`, která se nově ptá na
+   * `zmenaUzivatele` místo na otisk. Tohle je samostatná drobnost: falešné
+   * varování „máte neuložené změny". */
+  if (zmen && typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
   if (zmen && typeof render === 'function') render();
   return zmen > 0;
 }
@@ -888,7 +938,34 @@ function onlineObnovPosledni() {
   if (!soubor || ONLINE_STAV.soubor) return Promise.resolve(false);
   const jeVRejstriku = (ONLINE_STAV.rejstrik || []).some(z => z.soubor === soubor);
   if (!jeVRejstriku) { onlinePoslednizapamatuj(''); return Promise.resolve(false); }
-  if (typeof historieNeulozeno === 'function' && historieNeulozeno()) return Promise.resolve(false);
+  /* PTÁME SE, JESTLI NĚCO UDĚLAL ČLOVĚK — ne jestli se zakázka liší od otisku
+   * (nálezy N12 a N13, 19. testovací kolo, 22. 9. 2026).
+   *
+   * Do téhle chvíle tu stálo `historieNeulozeno()`, tedy porovnání ZAK proti
+   * otisku pořízenému při startu stránky. Jenže mezi startem a tímhle místem
+   * proběhne přihlášení, a to do čerstvé zakázky samo nasype PLATNÝ CENÍK
+   * (`progSrovnejNedotcene`) a matici zobrazení (`onlineZobrazeniDoCerstveZakazky`).
+   * Zakázka se tím od otisku liší VŽDY — a návrat k poslední zakázce se tedy
+   * neprovedl NIKDY. Po každém F5 dostal obchodník prázdný formulář, přestože
+   * jeho zakázka ležela na serveru.
+   *
+   * Změřeno po refreshi: rozdíl proti otisku byl `cenik.marze` 0 → 0,42,
+   * `montazHodKc` 0 → 1234, zmizely značky `ukazkove`/`prazdny` a přibylo
+   * `cenikRazitko`. Ani jedné z těch změn se uživatel nedotkl.
+   *
+   * Tím padaly OBA nálezy naráz: zakázka se neotevřela (N13) a s ní se
+   * „ztratila" i ruční přirážka (N12) — ve skutečnosti pořád ležela na
+   * serveru, jen se k ní nikdo nevrátil a obchodník viděl firemní 0,42.
+   *
+   * `ONLINE_STAV.zmenaUzivatele` je na tohle v souboru odjakživa: nastavují
+   * ho posluchače na `input`/`change`/klik, tedy UDÁLOSTI OD ČLOVĚKA, a
+   * schválně ne `set()` — „zakázkou hýbe i sama aplikace (přepočet, migrace,
+   * zrcadlení kurzu) a právě to se nemá ukládat". Táž věta platí i tady.
+   *
+   * Ochrana rozdělané práce zůstává: kdo do formuláře sáhl nebo si kliknutím
+   * obnovil zálohu z prohlížeče, má příznak nastavený a jeho práci nic
+   * nepřepíše. */
+  if (ONLINE_STAV.zmenaUzivatele) return Promise.resolve(false);
   return onlineOtevri(soubor).then(v => {
     if (v) onlineZprava('Otevřena zakázka, na které jste naposledy pracoval: ' + soubor + '.');
     return v;
