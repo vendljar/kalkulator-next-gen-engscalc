@@ -468,6 +468,12 @@ const znackaZam = await stranka.evaluate(async () => {
   ZAK = novaZakazka(); syncVarianta();
   const v = aktivniVarianta(ZAK);
   const oznac = c => { c.ukazkove = true; c.prazdny = true; };
+  /* Ceník PROJ tu musí nést SKUTEČNOU sazbu. Do 22. 9. 2026 (N33) se za
+   * „čísla" počítala i sazba DPH, kterou výchozí ceník PROJ nese vždycky —
+   * a tahle kontrola na tom nevědomky stála: ceník projekce samých nul
+   * procházel jako „ceník s čísly". Po opravě by v něm značka po právu
+   * zůstala, proto dostane jednu hodinovou sazbu (smyšlenou). */
+  v.data.proj.cenik.sazby = Object.assign({}, v.data.proj.cenik.sazby, { statik: 950 });
   oznac(v.data.cenik); oznac(v.data.proj.cenik);
   zamkniVariantu(v, { typ: 'nabidkaOck', kdy: '2026-07-30T08:00:00.000Z' });
   const cenyPred = JSON.stringify(v.data.cenik);
@@ -488,7 +494,17 @@ const znackaZam = await stranka.evaluate(async () => {
   progSrovnejNedotcene();
   const prazdny = { ukazkove: !!v2.data.cenik.ukazkove, prazdny: !!v2.data.cenik.prazdny,
                     maCisla: ukazkoveMaCisla(v2.data.cenik) };
-  return { lziva, prazdny };
+  /* c) N33: ceník PROJ samých nul, jen se sazbou DPH (tak ho nese
+   * sestavení) — značka musí zůstat. */
+  ZAK = novaZakazka(); syncVarianta();
+  const v3 = aktivniVarianta(ZAK);
+  vynuluj(v3.data.cenik); vynuluj(v3.data.proj.cenik);
+  v3.data.proj.cenik.dph = 0.21;
+  oznac(v3.data.cenik); oznac(v3.data.proj.cenik);
+  zamkniVariantu(v3, { typ: 'nabidkaOck', kdy: '2026-07-30T08:00:00.000Z' });
+  progSrovnejNedotcene();
+  const prazdnyProj = !!v3.data.proj.cenik.prazdny;
+  return { lziva, prazdny, prazdnyProj };
 });
 zkus('kontrola není prázdná — ceník v případu (a) opravdu nese čísla',
   znackaZam.lziva.maCisla === true, JSON.stringify(znackaZam.lziva));
@@ -502,6 +518,10 @@ zkus('CENY uzamčené varianty se přitom nezměnily',
 zkus('u OPRAVDU prázdného ceníku značka zůstane (doklad se nepřepisuje)',
   znackaZam.prazdny.ukazkove === true && znackaZam.prazdny.prazdny === true,
   JSON.stringify(znackaZam.prazdny));
+/* N33: ceník samých nul, který nese jen sazbu DPH — tak vypadá výchozí
+ * ceník PROJ ze sestavení —, je pořád prázdný a značka mu musí zůstat. */
+zkus('ceník PROJ samých nul se sazbou DPH se za „ceník s čísly" nevydává (N33)',
+  znackaZam.prazdnyProj === true, String(znackaZam.prazdnyProj));
 
 zkus('konzole je čistá', chyby.length === 0);
 if (chyby.length) chyby.slice(0, 5).forEach(c => console.log('     ! ' + c));

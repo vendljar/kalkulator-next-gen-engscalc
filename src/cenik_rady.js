@@ -241,8 +241,20 @@ function cenikRadaPrepni(data, crDnesni, zahr, rada) {
   const out = { rada: r, zmen: 0, rozdily: [], chranene: [] };
   if (!data) return out;
   const rozdily = cenikRadaRozdily(crDnesni, zahr);
+  /* NÁVRAT DO TUZEMSKA BERE TUZEMSKOU ŘADU, NE SYROVÁ TUZEMSKÁ DATA (nález
+   * N38 revize v22.9.9). Položka „jen pro zahraničí" má v tuzemské řadě
+   * nulu (`cenikDnesniProRadu` → `cenikJenZahrVynuluj`, P4), jenže návrat
+   * sem dosazoval hodnotu z ČR sloupce tak, jak v ceníku leží. Změřeno:
+   * ČR 50 000 → zahraničí 60 000 → zpátky ČR 50 000, zatímco tuzemská řada
+   * má 0 — a přepočet při příštím otevření pak hlásil „Změnila se 1 cena",
+   * ačkoli se nic nezměnilo (výpočet řádek v tuzemsku stejně vynechá).
+   * Hodnota se proto bere ze SLOŽENÉ tuzemské řady — tatáž funkce jako při
+   * přepočtu, takže obě místa mluví stejně. */
+  const crRada = (r === 'cr' && typeof cenikDnesniProRadu === 'function')
+    ? cenikDnesniProRadu(crDnesni, zahr, 'cr') : null;
   rozdily.forEach(rd => {
-    const nova = (r === 'zahr') ? rd.zahr : rd.cr;
+    const nova = (r === 'zahr') ? rd.zahr
+      : ((crRada && rd.jenZahr && typeof cenikHodnota === 'function') ? cenikHodnota(crRada, rd.cesta) : rd.cr);
     if (nova === undefined) return;
     /* Zakázkovou hodnotu (přirážka, DPH), kterou obchodník v TÉHLE nabídce
      * sám nastavil, přepnutí řady nepřepíše — pravidlo #177 platí i tady.

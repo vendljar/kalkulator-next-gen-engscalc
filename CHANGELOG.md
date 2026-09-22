@@ -8,6 +8,33 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.9.19 — 22. 9. 2026
+
+### Dávka R3 z revize v22.9.9 — pojistky ceníku
+
+**Značka prázdného ceníku se sundávala sama (N33).** Pravidlo „jediné
+nenulové číslo dokazuje skutečné ceny" počítalo s tím, že vynulovaný ceník
+má nuly všude. Sestavení ale nese skutečné sazby DPH (zákonné, ne firemní
+data) — OCK 12 % a předvolby, PROJ 21 %. Každý ceník tak „měl čísla" a při
+otevření zakázky se značka prázdného ceníku sundala; u uzamčené varianty
+natrvalo, i s červenou lištou a zábranou tisku nad nulovými cenami. Za
+důkaz cen se nově nepočítají sazby a předvolby DPH, přirážka, procenta
+a kurz. Test se ptá přímo výchozích ceníků ze sestavení, ne umělé fixtury
+s `dph: 0`.
+
+Harness `overit_program` na té chybě nevědomky stál: jeho „ceník projekce
+s čísly" byl ve skutečnosti samé nuly se sazbou DPH. Dostal jednu
+smyšlenou hodinovou sazbu a přibyl případ ceníku PROJ samých nul se sazbou
+DPH, kterému značka zůstat musí.
+
+**Návrat do tuzemska u položky jen pro zahraničí (N38).** Tuzemská řada má
+u takové položky nulu, návrat ale dosazoval hodnotu z ČR sloupce ceníku
+(změřeno: 50 000 místo 0). Přepočet při dalším otevření pak hlásil „Změnila
+se 1 cena", ačkoli se nic nezměnilo. Návrat bere hodnotu ze složené
+tuzemské řady — tatáž funkce jako přepočet.
+
+---
+
 ## v22.9.18 — 22. 9. 2026
 
 ### Dávka R2 z revize v22.9.9 — kde se ztrácela nebo tiše ukládala práce

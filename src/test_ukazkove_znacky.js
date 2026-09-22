@@ -80,6 +80,34 @@ const test = (n, cond, info) => {
   test('dodatkové texty se za čísla nepočítají',
     ukazkoveMaCisla({ popisy: { 'MADLA': 'nerez' }, montazHodKc: 0 }) === false);
   test('prázdno i nesmysl snese', ukazkoveMaCisla(null) === false && ukazkoveMaCisla('x') === false);
+
+  /* SKUTEČNÝ VÝCHOZÍ CENÍK ZE SESTAVENÍ, NE UMĚLÁ FIXTURA (nález N33 revize
+   * v22.9.9). Kontroly výš měly `dph: 0` — stav, který v repozitáři není:
+   * sestavení nese skutečné sazby DPH (zákonné, ne firemní data), takže
+   * každý ceník „měl čísla" a značka prázdného ceníku se sundávala pořád.
+   * Tady se ptá přímo DEFAULT_CENIK a DEFAULT_CENIK_PROJ z jader. */
+  const ep = require('./engine_proj.js');
+  const ock = JSON.parse(JSON.stringify(eng.DEFAULT_CENIK));
+  const proj = JSON.parse(JSON.stringify(ep.DEFAULT_CENIK_PROJ));
+  test('(výchozí ceník OCK opravdu nese nenulové sazby DPH)',
+    ock.dph > 0 && ock.dphZakladni > 0, [ock.dph, ock.dphZakladni]);
+  test('výchozí ceník OCK ze sestavení čísla NEMÁ (N33)', ukazkoveMaCisla(ock) === false);
+  test('ani výchozí ceník PROJ', ukazkoveMaCisla(proj) === false);
+  test('a jeho značky srovnání s obsahem nesundá',
+    ukazkoveSrovnejSObsahem(ock) === false && ock.prazdny === true && ock.ukazkove === true,
+    [ock.prazdny, ock.ukazkove]);
+  test('ani u projekce', ukazkoveSrovnejSObsahem(proj) === false && proj.prazdny === true,
+    [proj.prazdny]);
+  /* Jediná skutečná cena ale značku sundat musí — oprava nesmí přepnout
+   * na opačnou chybu. */
+  const sCenou = JSON.parse(JSON.stringify(eng.DEFAULT_CENIK)); sCenou.montazHodKc = 850;
+  test('jediná skutečná cena ve výchozím ceníku značku sundá', ukazkoveSrovnejSObsahem(sCenou) === true
+    && !('prazdny' in sCenou), Object.keys(sCenou).filter(k => /prazdny|ukazkove/.test(k)));
+  /* Co se za cenu nepočítá: sazby a předvolby DPH, přirážka, procenta, kurz. */
+  test('sazby, přirážka, procenta ani kurz se za ceny nepočítají',
+    ukazkoveMaCisla({ dph: 0.21, dphZakladni: 0.21, dphSnizena: 0.12, marze: 0.42,
+      atypMontazPct: 0.3, kurzEurKc: 25 }) === false);
+  test('položka v Kč ale ano, i vedle nich', ukazkoveMaCisla({ dph: 0.21, cisteniKc: 1 }) === true);
 }
 
 /* ---------- 3) srovnání podle obsahu JEN odebírá ---------- */

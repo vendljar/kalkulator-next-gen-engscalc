@@ -87,10 +87,28 @@ function ukazkoveSrovnejZnacku(cil, zdroj) {
  * a stropů slev. Jediné nenulové číslo tedy znamená, že ceny odněkud přišly
  * a prázdný ceník to není. Texty (dodatkové popisy položek) se nepočítají:
  * popis u nulové sazby cenu nedělá. */
+/* KLÍČE, KTERÉ NEJSOU CENY (nález N33 revize v22.9.9).
+ *
+ * Komentář výš počítal s tím, že vynulovaný ceník má nuly VŠUDE „včetně
+ * sazby DPH". Sestavení v repozitáři ale nese skutečné sazby DPH (OCK
+ * 12 % / 21 % předvolby, PROJ 21 %) — jsou to zákonné sazby, ne firemní
+ * data, takže se nenulují. Jediné nenulové číslo tak bylo VŽDYCKY a každý
+ * ceník „měl čísla": při každém otevření zakázky se značka prázdného ceníku
+ * sundala — u uzamčené varianty natrvalo, i s červenou lištou a zábranou
+ * tisku nad nulovými cenami.
+ *
+ * Za důkaz skutečných cen se proto nepočítají sazby a nastavení: sazba DPH
+ * a její předvolby (`dph…`), přirážka (`marze`), procenta (`…Pct`) a kurz.
+ * Nic z toho cenu položky neurčuje — ceník samých nul s vyplněnou sazbou
+ * DPH je pořád ceník samých nul. */
+const UKAZKOVE_NE_CENY = /^(dph.*|marze|kurzEurKc|.*Pct)$/;
+function ukazkoveNeniCena(k) { return UKAZKOVE_NE_CENY.test(String(k)); }
+
 function ukazkoveMaCisla(o) {
   if (!o || typeof o !== 'object') return false;
   return Object.keys(o).some(k => {
     if (k === UKAZKOVE_KLIC || k === PRAZDNY_KLIC || k === 'popisy') return false;
+    if (ukazkoveNeniCena(k)) return false;
     const h = o[k];
     if (typeof h === 'number') return isFinite(h) && h !== 0;
     if (h && typeof h === 'object') return ukazkoveMaCisla(h);
@@ -241,7 +259,7 @@ function ukazkoveVyctem(stav) {
 if (typeof module !== 'undefined')
   module.exports = { UKAZKOVE_KLIC, PRAZDNY_KLIC, ukazkoveJe, ukazkovePrazdny,
                      ukazkoveOcisti, ukazkoveSrovnejZnacku,
-                     ukazkoveMaCisla, ukazkoveSrovnejSObsahem,
+                     ukazkoveMaCisla, ukazkoveSrovnejSObsahem, ukazkoveNeniCena,
                      ukazkoveBez, ukazkoveStav, ukazkoveText,
                      ukazkoveKratce, ukazkoveVyctem, ukazkoveBraniDokumentu,
                      ukazkoveKudy, ukazkovePripojeni };

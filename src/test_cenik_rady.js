@@ -295,6 +295,29 @@ const ZAHR = () => ({
   test('přepnutí nechá zdroj odchylek netknutý', !('C.dph' in bezOdchylek.ceny), bezOdchylek.ceny);
 }
 
+/* ---------- N38 (revize v22.9.9): návrat do tuzemska u položky jen pro zahraničí ----------
+ *
+ * Změřeno v revizi: ČR 50 000 → zahraničí 60 000 → zpátky ČR 50 000, ale
+ * tuzemská řada (a tedy přepočet při otevření) má u té položky 0. Přepočet
+ * pak hlásil změnu ceny, která žádná nebyla. Návrat bere hodnotu ze složené
+ * tuzemské řady. */
+{
+  const dnes = { cenik: Object.assign(CR(), { prekladyKc: 50000 }), proj: { cenik: {} } };
+  const zahr = { ceny: { 'C.prekladyKc': 60000, 'C.montazHodKc': 1000 }, jenZahr: { 'C.prekladyKc': true } };
+  const data = JSON.parse(JSON.stringify(dnes)); data.cenikRada = 'cr';
+  cenikRadaPrepni(data, dnes, zahr, 'zahr');
+  test('(zahraniční řada má u položky zahraniční cenu)', data.cenik.prekladyKc === 60000, data.cenik.prekladyKc);
+  cenikRadaPrepni(data, dnes, zahr, 'cr');
+  const dnesCr = cenikDnesniProRadu(dnes, zahr, 'cr');
+  test('návrat do tuzemska dá položce jen pro zahraničí tutéž nulu jako tuzemská řada (N38)',
+    data.cenik.prekladyKc === dnesCr.cenik.prekladyKc && data.cenik.prekladyKc === 0,
+    [data.cenik.prekladyKc, dnesCr.cenik.prekladyKc]);
+  const zbyva = cenikRozdily(data, dnesCr).filter(r => !cenikPatriZakazce(r.cesta));
+  test('a přepočet pak nemá co hlásit', zbyva.length === 0, zbyva.map(r => r.cesta));
+  test('běžná položka se vrátí na tuzemskou cenu jako dřív',
+    data.cenik.montazHodKc === dnes.cenik.montazHodKc, [data.cenik.montazHodKc, dnes.cenik.montazHodKc]);
+}
+
 /* ---------- zahraniční přirážka i pro projekci (3. 9. 2026) ----------
  * Zadání J. V.: „připrav tedy pro globální přirážku i variantu pro zahraničí."
  * Ceny projekce zahraniční řadu nemají (#181 je jen pro OCK), přirážka ano —
