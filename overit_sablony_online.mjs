@@ -27,6 +27,7 @@ globalThis.__TEST_ULOZISTE = (nazev) => ({
 });
 
 import { createRequire } from 'module';
+import { najdiPodklad, preskoc } from './nastroje/harness_podklady.mjs';
 import { createServer } from 'http';
 import { readFileSync } from 'fs';
 import zdravi from './netlify/functions/zdravi.mjs';
@@ -151,7 +152,15 @@ test('odmítnutí říká, kdo to napraví (administrátor)',
 
 /* ---------- 2) administrátor zveřejní šablonu ---------- */
 console.log('\nzveřejnění šablony administrátorem');
-const sablonaB64 = readFileSync('/home/claude/work/sablona_proj/Sablona_NABIDKA_PROJ.docx').toString('base64');
+/* ŠABLONA SE ČETLA BEZ KONTROLY (N15, 22. 9. 2026) — mimo původní prostředí
+ * to byl pád na ENOENT uprostřed běhu, tedy až po přihlášení a polovině
+ * kontrol. Nově se přeskočí hned a s vysvětlením. */
+const sablonaCesta = najdiPodklad('Sablona_NABIDKA_PROJ.docx',
+  ['/home/claude/work/sablona_proj/Sablona_NABIDKA_PROJ.docx',
+   '/home/claude/work/deliver/Sablona_NABIDKA_PROJ.docx']);
+if (!sablonaCesta) preskoc('šablona Sablona_NABIDKA_PROJ.docx',
+  ['/home/claude/work/sablona_proj/', '$KNG_PODKLADY']);
+const sablonaB64 = readFileSync(sablonaCesta).toString('base64');
 const zverejneni = await page.evaluate(async (b64) => {
   const bin = atob(b64);
   const u8 = new Uint8Array(bin.length);

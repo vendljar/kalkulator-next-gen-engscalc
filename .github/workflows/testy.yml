@@ -75,20 +75,11 @@ jobs:
           npm i -g playwright
           npx playwright install --with-deps chromium
 
+      # Jen kouřový test — ostatní harnessy pouští job „harnessy" níž, aby
+      # běžely paralelně a měly vlastní log. Tady zůstává proto, že když
+      # sestavení nenastartuje, nemá smysl pouštět nic dalšího.
       - name: Kouřový test sestavené aplikace (smoke.mjs)
         run: NODE_PATH="$(npm root -g)" node smoke.mjs
-
-      - name: Online databáze — skutečný klient proti skutečným funkcím (overit_online.mjs)
-        run: NODE_PATH="$(npm root -g)" node overit_online.mjs
-
-      - name: Vypnutý řádek (V22) a zápis přepisu bez Enteru (N8) v prohlížeči (overit_vypnuty_radek.mjs)
-        run: NODE_PATH="$(npm root -g)" node overit_vypnuty_radek.mjs
-
-      - name: Obrazovka opláštění po stěnách (#268) v prohlížeči (overit_oplasteni.mjs)
-        run: NODE_PATH="$(npm root -g)" node overit_oplasteni.mjs
-
-      - name: Dialog o přepočtu na dnešní ceník (#284) v prohlížeči (overit_prepocet_dialog.mjs)
-        run: NODE_PATH="$(npm root -g)" node overit_prepocet_dialog.mjs
 
       - name: Sestavený dist/ jako artefakt
         if: always()
@@ -133,7 +124,8 @@ jobs:
   # pár minut — do sad v Node to nepatří.
   harnessy:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    # Od 22. 9. 2026 tu běží všech ~36 harnessů, ne pět — viz komentář u kroku.
+    timeout-minutes: 45
     env:
       ADMIN_EMAIL: spravce@priklad.cz
     steps:
@@ -157,17 +149,41 @@ jobs:
         run: |
           npm i playwright
           npx playwright install --with-deps chromium
-      - name: Lišta a historie (overit_lista.mjs)
-        run: node overit_lista.mjs
-      - name: ATYP a ceníkové podíly (overit_atyp.mjs)
-        run: node overit_atyp.mjs
-      - name: Detail výpočtu PROJ (overit_proj17.mjs)
-        run: node overit_proj17.mjs
-      - name: Matice zobrazení (overit_zobrazeni.mjs)
-        run: node overit_zobrazeni.mjs
-      # Průchod celou cestou OCK zakázky: založení → zadání → volitelné →
-      # příplatky → nabídka → PDF (16. 9. 2026). Jednotkové sady ověřují
-      # jednotlivé kroky; tenhle harness ověřuje MEZERY mezi nimi — tam byly
-      # všechny tři závady, které J. V. ten den hlásil po sobě.
-      - name: Celá cesta OCK zakázky (overit_ock_cela_cesta.mjs)
-        run: node overit_ock_cela_cesta.mjs
+      # VŠECHNY HARNESSY, ŽÁDNÝ RUČNÍ SEZNAM (nález N16, 22. 9. 2026).
+      #
+      # Do 22. 9. tu bylo pět jmen a v jobu „testy" další čtyři — dohromady
+      # deset z třiceti sedmi. Právě ve zbylých dvaceti sedmi vyšly N12, N13
+      # i N14 (ztráta ruční přirážky, rozdělaná zakázka se po F5 neotevře,
+      # uzamčená varianta ztrácí značku). Osm dní o tom nikdo nevěděl.
+      #
+      # Ruční seznam se rozejde vždycky — ten samý příběh se tu odehrál už
+      # 21. 9. Proto se harnessy berou GLOBEM, stejně jako ve
+      # `spust_testy.sh --smoke`: nový `overit_*.mjs` je v sadě sám od sebe.
+      #
+      # Harness, který potřebuje firemní dokument mimo repozitář (wordové
+      # šablony, příručka, ROADMAPA.html), se sám přeskočí s vysvětlením
+      # a skončí kódem 0 — viz nastroje/harness_podklady.mjs. Přeskočení se
+      # VYPÍŠE do logu; přeskočená kontrola, o které se mlčí, je totéž co
+      # kontrola, která neexistuje.
+      #
+      # Běží se v jednom kroku, aby se pokračovalo i po prvním selhání
+      # a bylo v logu vidět VŠECHNO, co je rozbité, ne jen první nález.
+      - name: Prohlížečové harnessy (všechny overit_*.mjs)
+        run: |
+          selhalo=""
+          for f in overit_*.mjs; do
+            echo "::group::$f"
+            if node "$f"; then
+              echo "OK $f"
+            else
+              echo "SELHALO $f"
+              selhalo="$selhalo $f"
+            fi
+            echo "::endgroup::"
+          done
+          if [ -n "$selhalo" ]; then
+            echo "Selhaly tyto harnessy:$selhalo"
+            exit 1
+          fi
+          echo "Všechny harnessy prošly."
+

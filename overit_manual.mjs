@@ -17,11 +17,18 @@ import { createServer } from 'node:http';
 import { readFileSync, readdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 
+import { najdiSlozku, preskoc } from './nastroje/harness_podklady.mjs';
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.NODE_PATH
   ? 'playwright' : 'playwright');
 
-const KAM = '/home/claude/work/deliver';
+/* Složka s hotovými výstupy. Hledá se i v `KNG_PODKLADY` (N15, 22. 9. 2026)
+ * — do té doby tu byla jen pevná cesta z cizího prostředí a `readdirSync`
+ * nad neexistujícím adresářem shodil celý harness na ENOENT. V CI by to
+ * svítilo červeně kvůli chybějícímu firemnímu dokumentu, ne kvůli aplikaci. */
+const KAM = najdiSlozku(['/home/claude/work/deliver']);
+if (!KAM) preskoc('složka s příručkou obchodníka',
+  ['/home/claude/work/deliver', '$KNG_PODKLADY']);
 /* Verze se řadí čísly, ne abecedou: textově je „v5.8.9“ větší než „v5.8.15“
  * a harness by pak kontroloval starou příručku a hlásil nesmyslné chyby. */
 const cislaVerze = (f) => (f.match(/v(\d+)\.(\d+)\.(\d+)/) || []).slice(1).map(Number);

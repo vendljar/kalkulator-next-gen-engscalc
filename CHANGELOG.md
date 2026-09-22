@@ -8,6 +8,43 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.9.2 — 22. 9. 2026
+
+### Dávka 1: harnessy, které nikde neběžely (#299, #300)
+
+**Dva harnessy od 14. 9. vůbec nenastartovaly.** `overit_sod.mjs`
+a `overit_nabidka_proj_word.mjs` končily hned při načtení chybou
+*Cannot access 'KOREN' before initialization* — `const KOREN` stálo až pod
+prvním použitím. `import` se vytahuje nahoru sám, `const` ne. **Sedm kontrol
+smluv o dílo a plné moci tím osm dní neběželo nikde**, ani lokálně, ani
+v CI, protože v CI tyhle sady nebyly. Změřeno před opravou: oba skončily
+kódem 1.
+
+**Ani po opravě by se ale nespustily** — wordové šablony mají napevno cestu
+z cizího prostředí. Vznikl proto `nastroje/harness_podklady.mjs`: podklady
+mimo repozitář se hledají i v adresáři z proměnné `KNG_PODKLADY`, a když
+nejsou, harness se přeskočí **s vysvětlením** a kódem 0.
+
+Táž vada byla ve čtyřech dalších a dvě z nich by **shodily CI**:
+`overit_manual.mjs` padal na ENOENT nad neexistující složkou,
+`overit_sablony_online.mjs` četl šablonu bez kontroly, takže padal uprostřed
+běhu po polovině kontrol. `overit_roadmapu.mjs` mířil na cizí `file://`
+cestu. A `overit_sablona.mjs` hledal výhradně šablonu CN **v7, která už
+neexistuje** — bere se nejdřív v8 a vypisuje se, která to byla; „prošlo" nad
+starou šablonou totiž nejde odlišit od ověření.
+
+**CI pouštělo 10 harnessů z 37 — nově všechny.** Právě ve zbylých dvaceti
+sedmi vyšly nálezy N12, N13 a N14. Jádro opravy ale není *doplnit seznam*,
+nýbrž **zrušit ho**: týž příběh se odehrál už 21. 9., kdy se dva ruční
+seznamy srovnaly — a zůstaly ruční. Harnessy se proto berou **globem**, a to
+v `spust_testy.sh --smoke` i ve workflow. Nový soubor je v sadě sám od sebe.
+
+Job „harnessy" je pouští v jednom kroku se `::group::` na soubor, takže se
+**pokračuje i po prvním selhání** a v logu je vidět všechno rozbité najednou.
+Limit zvednut na 45 minut. Job „testy" si nechává jen kouřový test.
+
+---
+
 ## v22.9.1 — 22. 9. 2026
 
 ### P11: rozdíl 5 vs 6 hodin u ATYP pojmenován a zajištěn testem (#298)

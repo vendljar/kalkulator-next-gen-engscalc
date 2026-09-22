@@ -170,6 +170,32 @@
    "testy": "src/test_standard_atyp.js (37)"
   },
   {
+   "id": "299",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "vysoka",
+   "slozitost": "S",
+   "hotovoV": "v22.9.2",
+   "nazev": "N15 — dva harnessy od 14. 9. vůbec nenastartovaly (TDZ u KOREN)",
+   "proc": "19. testovací kolo: `overit_sod.mjs` a `overit_nabidka_proj_word.mjs` končily hned při načtení chybou „Cannot access 'KOREN' before initialization\". Sedm kontrol smluv o dílo a plné moci tím osm dní neběželo NIKDE — ani lokálně, ani v CI, protože tyhle sady v CI nebyly.",
+   "detail": "PŘÍČINA: `const KOREN = …` stálo AŽ POD `require(KOREN + 'src/docxgen.js')`. `import` se vytahuje nahoru sám, `const` ne — dočasná mrtvá zóna shodila celý soubor. Změřeno před opravou: oba soubory skončily kódem 1.\n\nZavedeno 14. 9. 2026 při odstraňování pevných cest `/home/claude/work/kng/…`: deklarace se přidala na konec hlavičky, ale první použití bylo výš.\n\nDRUHÁ POLOVINA TÉHOŽ PROBLÉMU: i po opravě se sady mohly jen PŘESKOČIT, protože wordové šablony mají napevno cestu `/home/claude/work/smlouvy/…` z cizího prostředí. Bez toho by N15 nesplnilo, kvůli čemu vzniklo — pořád by nikdo nevěděl, jestli smlouvy a plná moc fungují. Vznikl proto `nastroje/harness_podklady.mjs`: podklady mimo repozitář se hledají i v adresáři z proměnné `KNG_PODKLADY`, a když nejsou, harness se přeskočí S VYSVĚTLENÍM a kódem 0.\n\nTOTÉŽ U DALŠÍCH ČTYŘ: `overit_manual.mjs` padal na ENOENT (`readdirSync` nad neexistující složkou) — v CI by svítil červeně kvůli chybějícímu firemnímu dokumentu; `overit_sablony_online.mjs` četl šablonu BEZ kontroly, takže padal uprostřed běhu po polovině kontrol; `overit_roadmapu.mjs` mířil na cizí `file:///home/claude/work/kng/…` (N18); `overit_sablona.mjs` hledal výhradně šablonu CN v7, která už neexistuje — bere se nejdřív v8 a vypisuje se, která to byla, aby „prošlo\" nad starou šablonou nebylo k nerozeznání od ověření.",
+   "kde": "overit_sod.mjs, overit_nabidka_proj_word.mjs, overit_manual.mjs, overit_sablony_online.mjs, overit_roadmapu.mjs, overit_sablona.mjs, nastroje/harness_podklady.mjs",
+   "testy": "Všech šest nastartuje a skončí kódem 0. Přepis přes KNG_PODKLADY ověřen měřením."
+  },
+  {
+   "id": "300",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "vysoka",
+   "slozitost": "S",
+   "hotovoV": "v22.9.2",
+   "nazev": "N16 — CI pouštělo 10 harnessů z 37; nově všechny, a bez ručního seznamu",
+   "proc": "19. testovací kolo: nálezy N12, N13 i N14 vyšly právě ve dvaceti sedmi harnessech, které CI nepouštělo. Osm dní o nich nikdo nevěděl. Rozhodnutí J. V. 22. 9. 2026: všech 37 do CI.",
+   "detail": "JÁDRO OPRAVY NENÍ „doplnit seznam\", ALE ZRUŠIT HO. Týž příběh se odehrál už 21. 9. (#289): `--smoke` pouštěl jinou sadu než CI, seznamy se srovnaly — a zůstaly RUČNÍ. Ruční seznam se rozejde vždycky, je to jen otázka času.\n\nHarnessy se proto nově berou GLOBEM `overit_*.mjs`, a to na obou místech: v `spust_testy.sh --smoke` i ve workflow. Nový soubor je v sadě sám od sebe a není co udržovat v souladu.\n\nCI: job „harnessy\" pouští všechny v jednom kroku se `::group::` na soubor, takže se POKRAČUJE i po prvním selhání a v logu je vidět všechno rozbité najednou, ne jen první nález. Časový limit zvednut z 25 na 45 minut. Job „testy\" si nechává jen kouřový test — když sestavení nenastartuje, nemá smysl pouštět nic dalšího.\n\nHarnessy závislé na firemních dokumentech mimo repozitář se samy přeskočí s vysvětlením a kódem 0 (viz #299), takže CI nečervená kvůli chybějící wordové šabloně. Přeskočení se VYPÍŠE — přeskočená kontrola, o které se mlčí, je totéž co kontrola, která neexistuje.",
+   "kde": ".github/workflows/testy.yml, spust_testy.sh",
+   "testy": "./spust_testy.sh --smoke pouští celý glob."
+  },
+  {
    "id" : "285",
    "vlna" : "C",
    "stav" : "ceka",

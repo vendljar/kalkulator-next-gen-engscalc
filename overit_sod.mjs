@@ -19,27 +19,35 @@ import { readFileSync, existsSync } from 'fs';
 import { createRequire } from 'module';
 import { chromium } from 'playwright';
 
+/* Cesta k sestavení i ke zdrojákům se odvozuje od UMÍSTĚNÍ HARNESSU, ne od
+ * stroje, na kterém kdysi vznikl (nález 14. 9. 2026 při zavádění jobu
+ * „harnessy" do CI). Šestnáct harnessů neslo napevno /home/claude/work/kng/… —
+ * tedy cestu z cloudového prostředí, ve kterém je psal.
+ *
+ * MUSÍ STÁT PŘED PRVNÍM POUŽITÍM (oprava N15, 22. 9. 2026). Deklarace tu
+ * do té doby byla AŽ POD `require(KOREN + …)`, takže `const` v dočasné mrtvé
+ * zóně shodil celý soubor hned při načtení:
+ *     ReferenceError: Cannot access 'KOREN' before initialization
+ * Sada tedy od 14. 9. NENASTARTOVALA vůbec a její kontroly neběžely nikde —
+ * ani lokálně, ani v CI, protože tenhle harness v CI nebyl. `import` se
+ * vytahuje nahoru sám, `const` ne. */
+import { fileURLToPath } from 'node:url';
+const KOREN = fileURLToPath(new URL('.', import.meta.url));
+
+import { najdiPodklady, preskoc } from './nastroje/harness_podklady.mjs';
 const require = createRequire(import.meta.url);
 const { zipPrecti } = require(KOREN + 'src/docxgen.js');
 
-const SABLONY_SOUBORY = {
-  sod: '/home/claude/work/smlouvy/Sablona_SOD_REALIZACE.docx',
-  sodProj: '/home/claude/work/smlouvy/Sablona_SOD_PROJEKCE.docx',
-  plnaMoc: '/home/claude/work/smlouvy/Sablona_PLNA_MOC.docx',
-};
-if (!Object.values(SABLONY_SOUBORY).every(p => existsSync(p))) {
-  console.log('PŘESKOČENO – šablony smluv nenalezeny.');
-  console.log('Hledáno:\n  ' + Object.values(SABLONY_SOUBORY).join('\n  '));
-  process.exit(0);
-}
+/* Šablony se hledají i v `KNG_PODKLADY` — do 22. 9. 2026 jen na pevné cestě
+ * z cizího prostředí, takže se tahle sada mimo ně nemohla spustit nikdy. */
+const { cesty: SABLONY_SOUBORY, chybi } = najdiPodklady({
+  sod: ['/home/claude/work/smlouvy/Sablona_SOD_REALIZACE.docx'],
+  sodProj: ['/home/claude/work/smlouvy/Sablona_SOD_PROJEKCE.docx'],
+  plnaMoc: ['/home/claude/work/smlouvy/Sablona_PLNA_MOC.docx'],
+});
+if (chybi.length) preskoc('šablony smluv (' + chybi.join(', ') + ')',
+  '/home/claude/work/smlouvy/ nebo $KNG_PODKLADY');
 
-/* Cesta k sestavení se odvozuje od UMÍSTĚNÍ HARNESSU, ne od stroje, na kterém
- * kdysi vznikl (nález 14. 9. 2026 při zavádění jobu „harnessy" do CI).
- * Šestnáct harnessů neslo napevno /home/claude/work/kng/… — tedy cestu
- * z cloudového prostředí, ve kterém je psal. Jinde než tam se nedaly spustit
- * vůbec, a právě proto si nikdo nevšiml, že se mezitím rozešly s aplikací. */
-import { fileURLToPath } from 'node:url';
-const KOREN = fileURLToPath(new URL('.', import.meta.url));
 const KDE = new URL('dist/kalkulacka.html', import.meta.url).href;
 let ok = 0, fail = 0;
 const test = (n, podm, info) => {

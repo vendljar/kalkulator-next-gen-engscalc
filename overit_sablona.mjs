@@ -21,19 +21,28 @@
 import { readFileSync, existsSync } from 'fs';
 import { createRequire } from 'module';
 
+import { najdiPodklad, preskoc } from './nastroje/harness_podklady.mjs';
 const require = createRequire(import.meta.url);
 const { docxVyplnSablonu, zipPrecti, rozmeryObrazku } = require('./src/docxgen.js');
 
+/* ŠABLONA CN: v8 NAPŘED, v7 jako ústupek (22. 9. 2026).
+ *
+ * Harness hledal výhradně `v7`. Ve složce `_CN` je dnes jen `v8` — a když
+ * se v původním prostředí nějaká v7 ještě válela, sada „prošla" nad starou
+ * šablonou. To není ověření, to je záměna: kontroluje se tím dokument, který
+ * se zákazníkovi neposílá. Bere se proto nejdřív v8; která to nakonec byla,
+ * se vypíše, ať je to v protokolu vidět. */
 const KDE = [
+  '/home/claude/work/sablona/Sablona_NABIDKA_CN_v8.docx',
+  '/home/claude/work/deliver/Sablona_NABIDKA_CN_v8.docx',
   '/home/claude/work/sablona/Sablona_NABIDKA_CN_v7.docx',
   '/home/claude/work/deliver/Sablona_NABIDKA_CN_v7.docx',
 ];
-const sablona = KDE.find(p => existsSync(p));
-if (!sablona) {
-  console.log('PŘESKOČENO – šablona Sablona_NABIDKA_CN_v7.docx nenalezena.');
-  console.log('Hledáno v:\n  ' + KDE.join('\n  '));
-  process.exit(0);
-}
+const sablona = najdiPodklad('Sablona_NABIDKA_CN_v8.docx', KDE)
+  || najdiPodklad('Sablona_NABIDKA_CN_v7.docx', KDE);
+if (!sablona) preskoc('šablona Sablona_NABIDKA_CN (v8, případně v7)',
+  KDE.concat('$KNG_PODKLADY'));
+console.log('Šablona: ' + sablona);
 console.log('šablona: ' + sablona + '\n');
 
 let ok = 0, fail = 0;

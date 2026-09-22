@@ -123,35 +123,30 @@ if [ "${1:-}" = "--smoke" ]; then
   if [ ! -f ../dist/kalkulacka.html ]; then
     echo "  – přeskočeno: chybí dist/kalkulacka.html (spusťte python3 build.py)"
   else
-    # Nejdřív kouřový test: když bundle nenastartuje, overit_online.mjs by
-    # padal na každém kroku a zahalil by tu jedinou podstatnou zprávu.
+    # VŠECHNY HARNESSY, ŽÁDNÝ RUČNÍ SEZNAM (N16, 22. 9. 2026).
+    #
+    # Do 21. 9. tu byl výčet čtyř harnessů, zatímco CI jich pouštělo deset —
+    # dvě různé sady. Pak se srovnaly, ale oba seznamy zůstaly RUČNÍ a v CI
+    # jich bylo deset z třiceti sedmi. Právě ve zbylých dvaceti sedmi vyšly
+    # nálezy N12, N13 i N14: ruční přirážka se po znovuotevření zakázky
+    # změní, rozdělaná zakázka se po F5 neotevře, uzamčená varianta ztrácí
+    # značku. Osm dní to nikdo neviděl, protože ty sady nikde neběžely.
+    #
+    # Ruční seznam se dřív nebo později rozejde znovu. Proto se harnessy
+    # NEVYPISUJÍ — berou se globem, takže nový soubor `overit_*.mjs` je
+    # v sadě automaticky, tady i v CI (workflow pouští týž glob).
+    #
+    # Harness, který potřebuje firemní dokument mimo repozitář (šablony,
+    # příručka, ROADMAPA.html), se sám přeskočí s vysvětlením a skončí
+    # kódem 0 — viz nastroje/harness_podklady.mjs.
+    #
+    # Kouřový test jde PRVNÍ: když sestavení nenastartuje, ostatní harnessy
+    # by padaly na každém kroku a zahalily by tu jedinou podstatnou zprávu.
     spust_prohlizec smoke.mjs
-    spust_prohlizec overit_online.mjs
-    # Opláštění po stěnách (#268): jádro hlídá `src/test_oplasteni_zapnuti.js`,
-    # ale obě chyby, které J. V. našel při prvním proklikání 21. 9. 2026, byly
-    # čistě v obrazovce — odtud sem (viz hlavička sady).
-    spust_prohlizec overit_oplasteni.mjs
-    # Dialog o přepočtu na dnešní ceník (#284): v Node se neotevře, a přitom
-    # je to jediné místo, kde se obchodník dozví, o kolik se hnula cena.
-    spust_prohlizec overit_prepocet_dialog.mjs
-
-    # HARNESSY, KTERÉ POUŠTÍ CI (job „harnessy" v .github/workflows/testy.yml).
-    #
-    # Do 21. 9. 2026 tu nebyly, a --smoke tak pouštěl JINOU SADU NEŽ CI. Kdo si
-    # lokálně nechal projít všechno zeleně, mohl pushnout dávku, která v CI
-    # spadla — a přesně to se stalo: kapitola V. TERMÍNY REALIZACE v němčině
-    # mluví o „Protokolle der Schachttüren", čímž rozbila kontrolu
-    # v overit_lista.mjs, která hledala slovo „protokol". Tři dávky za sebou
-    # odešly s červeným CI, aniž by o tom kdokoli věděl.
-    #
-    # Seznam musí zůstat shodný s workflow. Kdyby do CI přibyl další harness,
-    # patří i sem — jinak se ta past otevře znovu.
-    spust_prohlizec overit_vypnuty_radek.mjs
-    spust_prohlizec overit_lista.mjs
-    spust_prohlizec overit_atyp.mjs
-    spust_prohlizec overit_proj17.mjs
-    spust_prohlizec overit_zobrazeni.mjs
-    spust_prohlizec overit_ock_cela_cesta.mjs
+    for f in ../overit_*.mjs; do
+      [ -e "$f" ] || continue
+      spust_prohlizec "$(basename "$f")"
+    done
   fi
 fi
 

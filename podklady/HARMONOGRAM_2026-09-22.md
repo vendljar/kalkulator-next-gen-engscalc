@@ -45,6 +45,22 @@ Harnessy, které dnes NEMOHOU projít ani po opravě, se v CI označí jako
 **Výstup dávky:** skutečný seznam padajících kontrol → podle něj se upřesní
 dávka 2.
 
+### Co se v dávce 1 ukázalo navíc (doplněno po provedení)
+
+TDZ byla jen polovina N15. I po opravě by se obě sady mohly **jen přeskočit**,
+protože šablony mají napevno cestu z cizího prostředí — a pak by N15 nesplnilo,
+kvůli čemu vzniklo. Vznikl proto `nastroje/harness_podklady.mjs` s přepisem
+přes `KNG_PODKLADY`.
+
+Táž vada byla ve **čtyřech dalších** harnessech a dva z nich by po zapojení do
+CI svítily červeně kvůli chybějícímu firemnímu dokumentu, ne kvůli aplikaci:
+`overit_manual.mjs` (ENOENT nad neexistující složkou) a
+`overit_sablony_online.mjs` (četl šablonu bez kontroly, padal uprostřed běhu).
+Bez téhle části by zapojení všech 37 do CI rozbilo CI hned první den.
+
+A `overit_sablona.mjs` hledal šablonu CN **v7, která už neexistuje** — to je
+přesně ta „záměna místo ověření", kterou popisuje STAV.
+
 ## Dávka 2 — ztráta ruční práce: N12 + N13 (dopoledne–poledne, M)
 
 **N12** — ruční přirážka se po znovuotevření zakázky změní (40 % → 0,42)
