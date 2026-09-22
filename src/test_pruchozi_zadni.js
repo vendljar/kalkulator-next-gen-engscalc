@@ -89,63 +89,85 @@ const z9003 = () => zad({
     test(`[${rezim}] 2 ze světlíků sedí na zadní stěně`,
       r.svetlikyZadni.ks === 2, r.svetlikyZadni.ks);
 
-    /* POZOR NA DVOJÍ POČÍTÁNÍ. `svetliky.ks` stojí od 9. 9. na SOUČTU A + C,
-     * takže světlíky nad dveřmi C v položce „čelní stěna" už jsou. Rozpad
-     * níž je jen informace do Detailu výpočtu; přičíst ho znovu by sklo
-     * zdvojnásobilo. Chyba, které jsem se při první verzi O8 dopustil. */
-    test(`[${rezim}] světlíky celkem stojí na součtu A + C`,
-      r.svetliky.ks === 4, r.svetliky.ks);
-    test(`[${rezim}] rozpad zadní stěny se do materiálu NEpřičítá znovu`,
+    /* SVĚTLÍK PATŘÍ K TÉ STĚNĚ, NA KTERÉ JE NÁSTUPIŠTĚ (#296, rozhodnutí
+     * J. V. 22. 9. 2026: „zadní světlíky patří pochopitelně na zadní stěnu").
+     *
+     * Do 22. 9. stál `svetliky.ks` na SOUČTU A + C a všechny světlíky se
+     * sčítaly do položky čelní stěny; zadní stěna si pás odečítala, aby se
+     * plocha nepočítala dvakrát. Položka čelní stěny tím u průchozí šachty
+     * vycházela větší než celá čelní stěna a zadní světlíky se počítaly
+     * sazbou čelního skla, které je jiné. Nově nese čelní položka jen
+     * nástupiště A a zadní pás je obyčejné sklo zadní stěny. */
+    test(`[${rezim}] čelní světlíky stojí jen na nástupištích A`,
+      r.svetliky.ks === 2, r.svetliky.ks);
+    test(`[${rezim}] a zadní na nástupištích C`,
+      r.svetlikyZadni.ks === 2, r.svetlikyZadni.ks);
+    test(`[${rezim}] dohromady je světlíků tolik, kolik je nástupišť`,
+      r.svetliky.ks + r.svetlikyZadni.ks === 4,
+      [r.svetliky.ks, r.svetlikyZadni.ks]);
+    test(`[${rezim}] materiál čelní stěny nese jen čelní světlíky`,
       blizko(r.celniM2, r.svetliky.m2 + r.svetlikyBoky.m2),
       [r.celniM2, r.svetliky.m2, r.svetlikyBoky.m2, r.svetlikyZadni.m2]);
-    test(`[${rezim}] a světlíky C jsou podmnožinou všech světlíků`,
-      r.svetlikyZadni.ks <= r.svetliky.ks && r.svetlikyZadni.m2 <= r.svetliky.m2 + 1e-9,
-      [r.svetlikyZadni.ks, r.svetliky.ks]);
-    /* Přesun nástupiště z čelní stěny na zadní materiálem čelní stěny nehne:
-     * počet světlíků i světlá výška zůstávají. Srovnává se se stejnou šachtou,
-     * jen se všemi nástupišti vepředu — kdyby se porovnávalo s neprůchozí,
-     * lišila by se výška podlaží (ta se u průchozí počítá z pater). */
+    /* A hlavně to, co nález #296 pojmenoval: plocha položky čelní stěny
+     * se nesmí vejít mimo čelní stěnu. */
+    test(`[${rezim}] čelní položka se vejde do čelní stěny`,
+      r.celniM2 <= r.zadni.m2 + 1e-9, [r.celniM2, r.zadni.m2]);
+    /* Přesun nástupiště z čelní stěny na zadní teď materiálem čelní stěny
+     * POHNE — o ten jeden světlík. To je celý smysl opravy. Srovnává se se
+     * stejnou šachtou, jen se všemi nástupišti vepředu; kdyby se porovnávalo
+     * s neprůchozí, lišila by se výška podlaží (u průchozí se počítá z pater). */
     const vsechnaVpredu = z9001();
     vsechnaVpredu.svetlikNadDvermi = true;
     vsechnaVpredu.nastupisteA = 4; vsechnaVpredu.nastupisteC = 0;
-    test(`[${rezim}] přesun nástupiště na zadní stěnu materiálem čelní stěny nehne`,
-      blizko(r.celniM2, spocti(vsechnaVpredu, fixes).zaskleni.celniM2),
-      [r.celniM2, spocti(vsechnaVpredu, fixes).zaskleni.celniM2]);
+    const vpredu = spocti(vsechnaVpredu, fixes).zaskleni;
+    test(`[${rezim}] přesun nástupiště dozadu ubere světlík z čelní stěny`,
+      vpredu.svetliky.ks === 4 && r.svetliky.ks === 2,
+      [vpredu.svetliky.ks, r.svetliky.ks]);
+    /* Celková plocha se přesunem nástupiště změnit SMÍ: vpředu přibude
+     * světlík, vzadu zmizí dveřní otvor. Měří se proto ten světlík výš,
+     * ne součet. */
   }
 
-  /* ---------- O10 / V40: pás nad dveřmi C se nesmí počítat dvakrát -------
+  /* ---------- odečet zadní stěny: jen dveře (#296) ----------------------
    *
-   * Do 15. 9. 2026 se od zadní stěny odečítal jen dveřní otvor po 2,3 m. Pás
-   * mezi 2,3 m a světlou výškou zůstal ve skle ZADNÍ stěny — a týž pás se
-   * počítal jako světlík ve stěně ČELNÍ. Tatáž plocha byla v ceně dvakrát.
-   * Komentář v jádře přitom tvrdil, že se nezdvojuje; popisoval záměr, ke
-   * kterému odečet nikdo nedopsal.
+   * Tohle místo se za týden obrátilo dvakrát a stojí za to vědět proč:
    *
-   * Testuje se VZTAH, ne opsaná čísla: zapnutí světlíku smí celkovou plochu
-   * změnit přesně o „přibyly světlíky A+C vepředu, ubyly světlíky C vzadu".
-   * Tím sada drží i tehdy, když se rozměry fiktivní šachty někdy změní. */
+   *   · do 15. 9. 2026 se odečítal jen dveřní otvor po 2,3 m, ale pás nad
+   *     ním se ZÁROVEŇ počítal jako světlík v čelní stěně (`svetlikKs` stál
+   *     na součtu A + C). Tatáž plocha byla v ceně dvakrát (nález O10/V40);
+   *   · 15. 9. se pás od zadní stěny odečetl. Dvojí počítání zmizelo, jenže
+   *     plocha zůstala v položce ČELNÍ stěny, která tím u průchozí šachty
+   *     vycházela větší než celá čelní stěna (nález #296);
+   *   · 22. 9. se světlíky rozdělily podle stěn. Zadní pás tím z čelní
+   *     položky zmizel, takže se od zadní stěny nemá co odečítat — je to
+   *     obyčejné sklo zadní stěny nad dveřmi, stejně jako když je světlík
+   *     vypnutý.
+   *
+   * Testuje se VZTAH, ne opsaná čísla, ať sada drží i po změně rozměrů
+   * fiktivní šachty. */
   {
     const bez = spocti(z9001(), fixes).zaskleni;
     const se = (() => { const x = z9001(); x.svetlikNadDvermi = true; return spocti(x, fixes).zaskleni; })();
 
-    test(`[${rezim}] odečet zadní stěny = dveře + světlíky`,
-      blizko(se.zadniPortaly.m2, se.zadniPortaly.dvereM2 + se.zadniPortaly.svetlikyM2, 1e-9),
+    test(`[${rezim}] odečet zadní stěny jsou jen dveře`,
+      blizko(se.zadniPortaly.m2, se.zadniPortaly.dvereM2, 1e-9),
       [se.zadniPortaly.m2, se.zadniPortaly.dvereM2, se.zadniPortaly.svetlikyM2]);
-    test(`[${rezim}] a odečtená část světlíků sedí s rozpadem`,
-      blizko(se.zadniPortaly.svetlikyM2, se.svetlikyZadni.m2, 1e-9),
-      [se.zadniPortaly.svetlikyM2, se.svetlikyZadni.m2]);
+    test(`[${rezim}] pás nad dveřmi C zůstává sklem zadní stěny`,
+      se.zadniPortaly.svetlikyM2 > 0 && se.zadniPortaly.m2 < se.zadniPortaly.dvereM2 + se.svetlikyZadni.m2,
+      [se.zadniPortaly.m2, se.svetlikyZadni.m2]);
     test(`[${rezim}] zadní stěna se beze zbytku rozpadá na plnou a odečtenou`,
       blizko(se.zadniPlne.m2 + se.zadniPortaly.m2, se.zadni.m2, 1e-9),
       [se.zadniPlne.m2, se.zadniPortaly.m2, se.zadni.m2]);
 
-    /* Jádro nálezu: přírůstek po zapnutí světlíku. */
-    const cekano = bez.celkemM2 + se.svetliky.m2 + se.svetlikyBoky.m2 - se.svetlikyZadni.m2;
-    test(`[${rezim}] zapnutí světlíku přidá světlíky vepředu a ubere je vzadu`,
+    /* Jádro: zapnutí světlíku přidá sklo jen na ČELNÍ stěně — vzadu bylo
+     * nad dveřmi sklo tak jako tak. */
+    const cekano = bez.celkemM2 + se.svetliky.m2 + se.svetlikyBoky.m2;
+    test(`[${rezim}] zapnutí světlíku přidá sklo jen vepředu`,
       blizko(se.celkemM2, cekano, 1e-9),
       { bez: bez.celkemM2, se: se.celkemM2, cekano, svetlikyC: se.svetlikyZadni.m2 });
-    test(`[${rezim}] a pás nad dveřmi C už není v zadní stěně`,
-      se.celkemM2 < bez.celkemM2 + se.svetliky.m2 + se.svetlikyBoky.m2 - 1e-9,
-      [se.celkemM2, bez.celkemM2 + se.svetliky.m2 + se.svetlikyBoky.m2]);
+    test(`[${rezim}] a zadní stěna se tím nezmenší`,
+      se.zadniPlne.m2 >= bez.zadniPlne.m2 - 1e-9,
+      [se.zadniPlne.m2, bez.zadniPlne.m2]);
 
     /* Vypnutý světlík = dnešní chování, odečítá se jen dveřní otvor. */
     test(`[${rezim}] bez světlíku se odečítá jen dveřní otvor`,

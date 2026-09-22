@@ -8,6 +8,41 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.9.11 — 22. 9. 2026
+
+### Světlík se počítá k té stěně, na které je nástupiště (#296)
+
+Rozhodnutí J. V.: „zadní světlíky patří pochopitelně na zadní stěnu."
+
+Počet světlíků byl správný, je jich tolik, kolik je nástupišť. Všechny se
+ale sčítaly do položky **čelní stěny**, a zadní stěna si svůj pás odečítala,
+aby se plocha nepočítala dvakrát. Dvě věci na tom byly špatně. U průchozí
+šachty vycházela položka čelní stěny **větší než celá čelní stěna**, na ostré
+zakázce 75,16 m² proti 37,9 m². A protože čelní a zadní stěna mají
+u exteriérové šachty jiné sklo, počítaly se zadní světlíky **sazbou čelního
+skla**.
+
+Nově nese čelní položka jen nástupiště A a pás nad zadními dveřmi je
+obyčejné sklo zadní stěny. Od zadní stěny se proto odečítají už jen dveře.
+
+**Celková plocha skla se nemění**, přesouvá se jen podíl mezi stěnami.
+Změřeno na zkušební průchozí šachtě 2 plus 2, obojí 71,97 m²:
+
+| šachta | před | po |
+|---|---|---|
+| exteriérová | 978 000 Kč | 986 000 Kč |
+| interiérová | 804 000 Kč | 804 000 Kč |
+
+Exteriérová podražila proto, že zadní sklo je dražší než čelní, a zadní
+světlíky se teď počítají tím, čím doopravdy jsou. Interiérová má obě stěny
+ze stejného skla, takže se nehne vůbec. Neprůchozí šachty se změna netýká,
+nemají nástupiště C.
+
+Zamčené nabídky zůstávají, jak jsou, mají zmrazený výsledek. Rozpracovaná
+průchozí exteriérová zakázka se po otevření přepočítá.
+
+---
+
 ## v22.9.10 — 22. 9. 2026
 
 ### Roadmapa se dá vydat z repozitáře (#312)

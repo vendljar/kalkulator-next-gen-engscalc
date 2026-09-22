@@ -136,14 +136,15 @@
   {
    "id": "296",
    "vlna": "E",
-   "stav": "ceka",
+   "stav": "hotovo",
    "dulezitost": "vysoka",
    "slozitost": "S",
    "nazev": "Průchozí šachta: světlíky vycházejí větší než celá stěna",
    "proc": "Vyšlo najevo při zavádění #295. `svetlikM2` se v předloze počítá jako `počet nástupišť × šířka × (světlá výška − 2,3)` a bere VŠECHNA nástupiště včetně zadních. U průchozí šachty proto plocha světlíků čelní stěny vyjde VĚTŠÍ NEŽ CELÁ STĚNA — změřeno 75,16 m² proti 37,9 m² skutečné stěny.",
    "detail": "Je to táž vada předlohy, kvůli které umí `svetlikM2` vyjít i ZÁPORNĚ u nízkých podlaží (nález N14, kde J. V. rozhodl opravit jen Model 2 a Model 1 nechat 1:1 s předlohou).\n\nDOPAD PO ZAVEDENÍ #295: režim po stěnách počítá čelní stěnu geometricky (celá stěna mínus otvory), takže u průchozí šachty vyjde MENŠÍ plocha než ve standardu — a cena klesne. Změřeno −92 000 Kč u 16 z 32 zkušebních zadání. Ve standardním režimu se nic nemění, ten dál počítá jako dosud.\n\nOTÁZKA: má se `svetlikM2` opravit i pro standardní režim (tedy počítat světlíky jen z nástupišť na ČELNÍ straně), nebo zůstává předloha 1:1 jako u N14? Oprava by zlevnila každou průchozí zakázku ve standardu — proto rozhodnutí, ne odhad.",
    "otazka": "Má se plocha světlíků u průchozí šachty počítat jen z čelních nástupišť (dnes bere i zadní), nebo zůstává předloha 1:1?",
-   "cekaNa": "J. V."
+   "hotovoV": "v22.9.11",
+   "odpoved": "J. V. 22. 9. 2026: zadní světlíky patří na zadní stěnu. Čelní položka nese jen nástupiště A, pás nad zadními dveřmi je sklo zadní stěny a od zadní stěny se odečítají jen dveře. Celková plocha skla se nemění, přesouvá se podíl mezi stěnami. Změřeno na zkušební průchozí šachtě 2+2: exteriérová 978 000 → 986 000 Kč (zadní sklo je dražší), interiérová beze změny (obě stěny ze stejného skla), neprůchozí se netýká."
   },
   {
    "id": "297",

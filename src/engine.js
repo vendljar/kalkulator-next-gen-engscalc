@@ -710,7 +710,24 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const bocniKs = zadniKs * 2;
   const bocniHl = fixes ? g.hl : (svetlik ? gTerc.hl : gLis.hl);   // chyba šablony: D19 místo D18
   const bocniM2 = Math.max(bocniKs * g.hl * g.vys, 2 * vyskaProsklene * bocniHl);
-  const svetlikKs = svetlik * nastupist;
+  /* SVĚTLÍK SE POČÍTÁ K TÉ STĚNĚ, NA KTERÉ JE NÁSTUPIŠTĚ (#296, rozhodnutí
+   * J. V. 22. 9. 2026: „zadní světlíky patří pochopitelně na zadní stěnu").
+   *
+   * Do 22. 9. stálo na tomhle řádku `svetlik * nastupist`, tedy součet
+   * nástupišť A + C. Počet světlíků tím vycházel správně — je jich tolik,
+   * kolik je nástupišť —, jenže VŠECHNY se sčítaly do položky „čelní stěna
+   * (světlíky)". Zadní stěna si pak svůj pás odečítala, aby se plocha
+   * nepočítala dvakrát.
+   *
+   * Dvě věci na tom byly špatně. Za prvé u průchozí šachty vycházela položka
+   * čelní stěny větší než celá čelní stěna (na ostré zakázce 75,16 m² proti
+   * 37,9 m²), což je v nabídce i v kontrole standardu nesmysl. Za druhé, a to
+   * je ta dražší: čelní a zadní stěna mají u exteriérové šachty jiné sklo
+   * a jinou sazbu, takže se zadní světlíky počítaly sazbou čelní stěny.
+   *
+   * Nástupišť na čelní straně je `nastupist − nastupistC`; u neprůchozí
+   * šachty je `nastupistC` nula, takže se pro ni nemění vůbec nic. */
+  const svetlikKs = svetlik * Math.max(nastupist - nastupistC, 0);
   /* ZÁPORNÁ PLOCHA SVĚTLÍKŮ — CHYBA PŘEDLOHY (nález N14, 19. kolo testů).
    *
    * Předloha počítá světlík nad dveřmi jako „co zbude nad dveřmi do stropu":
@@ -759,36 +776,35 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
    * Model je záměrně týž jako u čelní stěny, aby se obě stěny nepočítaly
    * každá jinak:
    *   – otvor = šířka dveřního otvoru × 2,3 m (táž výška, s jakou počítá
-   *     oplechování dveří i sloupky portálu),
-   *   – světlík nad otvorem se NEPŘIČÍTÁ: `svetlikKs` stojí od 9. 9. na
-   *     SOUČTU nástupišť A + C, takže světlíky nad dveřmi C už v položce
-   *     „čelní stěna (světlíky)" jsou.
+   *     oplechování dveří i sloupky portálu).
    *
-   * PÁS NAD DVEŘMI SE ODEČÍTÁ CELÝ (nález O10/V40, 15. 9. 2026).
+   * ODEČÍTAJÍ SE JEN DVEŘE, NE PÁS NAD NIMI (#296, rozhodnutí J. V.
+   * 22. 9. 2026: „zadní světlíky patří pochopitelně na zadní stěnu").
    *
-   * Do 15. 9. se od zadní stěny odečítal jen dveřní otvor po 2,3 m. Pás mezi
-   * 2,3 m a světlou výškou podlaží tedy zůstal ve skle ZADNÍ STĚNY — a zároveň
-   * se týž pás počítal jako světlík v čelní stěně. Tatáž plocha byla v ceně
-   * dvakrát. Komentář o pár řádků výš přitom tvrdil, že se nezdvojuje: popisoval
-   * záměr, jenže odečet k němu nikdo nedopsal. Na zadání 9001 se světlíkem to
-   * dělalo 75,49 m² místo 68,69 — o 6,8 m² skla navíc.
+   * Vývoj tohohle místa stojí za přečtení, protože se sem dvakrát vracelo
+   * totéž z opačné strany:
    *
-   * Odečítá se proto celý otvor až po výšku světlíku: dveře (šířka dveřního
-   * otvoru × 2,3) plus světlík (šířka skla × (světlá výška − 2,3)). Je-li
-   * světlík vypnutý, je `svetlik` nula a odečte se jen dveřní otvor — tedy
-   * přesně dnešní chování, jak má být.
+   *   · do 15. 9. 2026 se odečítal jen dveřní otvor po 2,3 m, ale pás nad
+   *     ním se ZÁROVEŇ počítal jako světlík v čelní stěně (`svetlikKs` stál
+   *     na součtu nástupišť A + C). Tatáž plocha byla v ceně dvakrát —
+   *     na zadání 9001 to dělalo 75,49 m² místo 68,69;
+   *   · 15. 9. (nález O10/V40) se proto pás od zadní stěny odečetl. Dvojí
+   *     počítání zmizelo, jenže plocha zůstala v položce ČELNÍ stěny —
+   *     a ta u průchozí šachty vycházela větší než celá čelní stěna;
+   *   · 22. 9. se světlíky rozdělily podle stěn (viz `svetlikKs` výš).
+   *     Zadní pás tím přestal být v čelní položce, takže se od zadní stěny
+   *     nemá co odečítat: je to obyčejné sklo zadní stěny nad dveřmi.
    *
-   * Výška pásu se bere z `svetlikVyskaM`, tedy z téhož čísla jako světlík
-   * v čelní stěně, VČETNĚ ošetření podle modelu (N14): Model 2 ořízne nulou,
-   * Model 1 nechá zápornou hodnotu. Kdyby se to počítalo zvlášť, šla by
-   * u podlaží nižšího než 2,5 m odečíst jiná plocha, než jaká se přičetla.
+   * Zůstává tedy odečet dveří. Plocha pásu se dál vypisuje v Detailu
+   * výpočtu (`svetlikyZadni`) — je užitečné vidět, kolik ze zadního skla
+   * leží nad dveřmi —, ale do odečtu nevstupuje.
    *
    * Neprůchozí šachta a průchozí s nulou nástupišť C musí vyjít přesně jako
    * dosud: `nastupistC` je pak 0 a obě čísla níž vycházejí na nulu. */
   const zadniOtvorM2 = sirkaDveri * 2.3;
   const svetlikZadniKs = svetlik * nastupistC;
   const svetlikZadniM2 = svetlikZadniKs * g.sir * (fixes ? Math.max(svetlikVyskaM, 0) : svetlikVyskaM);
-  const zadniPortalyM2 = nastupistC * zadniOtvorM2 + svetlikZadniM2;
+  const zadniPortalyM2 = nastupistC * zadniOtvorM2;
   /* Ubrat nejde víc, než na stěně je — u nízké šachty s mnoha nástupišti by
    * jinak vyšlo záporné sklo. */
   const zadniPlneM2 = Math.max(zadniM2 - zadniPortalyM2, 0);
