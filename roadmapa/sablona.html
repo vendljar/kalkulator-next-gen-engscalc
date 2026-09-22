@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roadmapa — Kalkulator Next Gen</title>
+<!-- ============================================================
+     NEEDITOVAT RUČNĚ. Tento soubor vzniká z roadmap.json příkazem
+        python3 roadmapa.py
+     Ruční změny se při příštím generování ztratí. Obsah se mění
+     v roadmap.json, vzhled v sablona.html.
+     Soubor je záměrně samostatný: žádný internet, žádné CDN,
+     otevře se dvojklikem v prohlížeči i bez připojení.
+     ============================================================ -->
+<style>
+:root{
+  --bg:#f4f6fa; --panel:#fff; --line:#dfe5ee; --text:#182234; --mut:#67748c;
+  --vys:#dc2626; --str:#ea580c; --niz:#ca8a04; --hot:#16a34a; --blok:#7c3aed;
+  --sel:#1d4ed8;
+}
+*{box-sizing:border-box}
+body{margin:0;font:13.5px/1.5 "Segoe UI",system-ui,sans-serif;color:var(--text);background:var(--bg)}
+header{background:#1f2a3d;color:#fff;padding:12px 18px}
+header h1{margin:0;font-size:17px;font-weight:600}
+header .sub{font-size:12px;opacity:.75;margin-top:2px}
+.hdr-stats{display:flex;gap:18px;margin-top:9px;flex-wrap:wrap}
+.hdr-stats div{font-size:11.5px;opacity:.9}
+.hdr-stats b{font-size:15px;display:block;opacity:1}
+
+nav{display:flex;gap:2px;background:#2b3850;padding:0 12px}
+nav button{background:none;border:none;color:#c9d3e4;padding:9px 15px;font:600 13px "Segoe UI",sans-serif;cursor:pointer;border-bottom:3px solid transparent}
+nav button:hover{color:#fff;background:rgba(255,255,255,.06)}
+nav button.on{color:#fff;border-bottom-color:#60a5fa}
+
+.filtr{background:var(--panel);border-bottom:1px solid var(--line);padding:8px 14px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.fgrp{display:flex;gap:5px;align-items:center}
+.fgrp>span.lbl{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;margin-right:2px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:20px;padding:3px 11px;font-size:12px;cursor:pointer;user-select:none;color:#48566e}
+.chip.on{background:#1d4ed8;border-color:#1d4ed8;color:#fff}
+.chip.on.c-vys{background:var(--vys);border-color:var(--vys)}
+.chip.on.c-str{background:var(--str);border-color:var(--str)}
+.chip.on.c-niz{background:var(--niz);border-color:var(--niz)}
+.chip.on.c-hot{background:var(--hot);border-color:var(--hot)}
+.chip.on.c-blok{background:var(--blok);border-color:var(--blok)}
+input[type=search]{border:1px solid var(--line);border-radius:6px;padding:4px 9px;font:13px "Segoe UI",sans-serif;width:190px}
+.tlac{border:1px solid var(--line);background:#fff;border-radius:6px;padding:4px 10px;font:12px "Segoe UI",sans-serif;cursor:pointer}
+.tlac:hover{background:#eef2f8}
+.pocet{font-size:12px;color:var(--mut);margin-left:auto}
+
+main{padding:0}
+.pohled{display:none}
+.pohled.on{display:block}
+
+/* ---------- síť ---------- */
+#plocha{position:relative;height:calc(100vh - 190px);min-height:420px;overflow:hidden;background:
+  radial-gradient(circle,#dde3ec 1px,transparent 1px) 0 0/22px 22px,var(--bg);cursor:grab}
+#plocha.tahne{cursor:grabbing}
+#plocha svg{width:100%;height:100%;display:block}
+.uzel rect{fill:#fff;stroke:#c4cddc;stroke-width:1.5;rx:7}
+.uzel text{pointer-events:none}
+.uzel .cislo{font:700 11px "Segoe UI",sans-serif;fill:#fff}
+.uzel .nadpis{font:11.5px/1.2 "Segoe UI",sans-serif;fill:#233}
+.uzel .slz{font:700 9.5px "Segoe UI",sans-serif;fill:#7b8698}
+.skupina{font:700 12.5px "Segoe UI",sans-serif;fill:#8e9bad;letter-spacing:.2px}
+.uzel{cursor:pointer}
+.uzel.dim{opacity:.16}
+.uzel.zvyr rect{stroke-width:3;stroke:var(--sel)}
+.hrana{fill:none;stroke:#aab5c6;stroke-width:1.6}
+.hrana.mekka{stroke-dasharray:5 4;stroke:#c3ccda}
+.hrana.dim{opacity:.1}
+.hrana.zvyr{stroke:var(--sel);stroke-width:2.6;opacity:1}
+.ovl{position:absolute;left:10px;top:10px;display:flex;gap:5px;z-index:3}
+.ovl button{width:30px;height:30px;border:1px solid var(--line);background:#fff;border-radius:6px;cursor:pointer;font-size:15px;line-height:1}
+.ovl button.sirsi{width:auto;padding:0 10px;font-size:12px}
+.legenda{position:absolute;right:10px;bottom:10px;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:8px;padding:8px 11px;font-size:11px;z-index:3;max-width:250px}
+.legenda .r{display:flex;align-items:center;gap:6px;margin:2px 0}
+.legenda i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.prazdno{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:14px;pointer-events:none}
+
+/* ---------- detail ---------- */
+#detail{position:absolute;right:0;top:0;bottom:0;width:360px;background:var(--panel);border-left:1px solid var(--line);
+  padding:14px 16px;overflow:auto;z-index:5;box-shadow:-4px 0 14px rgba(20,30,50,.08);display:none}
+#detail.on{display:block}
+#detail h3,#modal h3{margin:0 0 3px;font-size:15px}
+#detail .zavri,#modal .zavri{position:absolute;right:10px;top:8px;border:none;background:none;font-size:19px;cursor:pointer;color:var(--mut);line-height:1}
+#detail .radek,#modal .radek{margin:9px 0;font-size:12.5px}
+#detail .radek b,#modal .radek b{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);margin-bottom:2px}
+#detail ul,#modal ul{margin:3px 0;padding-left:16px}
+#detail li,#modal li{margin:3px 0}
+#detail .odk,#modal .odk{color:var(--sel);cursor:pointer;text-decoration:underline}
+
+/* Rozklik úkolu odkudkoli (30. 7. 2026). Karty ve Vlnách i čipy v matici dřív
+   přepínaly na síť — člověk ztratil místo, kde byl, a musel se proklikávat
+   zpátky. Panel v překryvu ukáže totéž nad tím pohledem, ve kterém zrovna je;
+   obsah kreslí táž funkce jako postranní panel u sítě, aby se nemohly
+   rozejít. */
+#zaclona{position:fixed;inset:0;background:rgba(18,26,40,.42);z-index:40;display:none}
+#zaclona.on{display:block}
+#modal{position:fixed;z-index:41;right:0;top:0;bottom:0;width:min(460px,94vw);background:var(--panel);
+  border-left:1px solid var(--line);box-shadow:-8px 0 26px rgba(20,30,50,.18);padding:16px 20px;overflow:auto;display:none}
+#modal.on{display:block}
+.dpole{display:flex;flex-wrap:wrap;gap:5px 8px;margin-top:6px;font-size:11.5px;color:var(--mut)}
+.dpole span{background:#eef2f8;border-radius:5px;padding:1px 7px}
+.pill{display:inline-block;border-radius:11px;padding:1px 8px;font-size:11px;font-weight:600;color:#fff}
+.pill.vys{background:var(--vys)} .pill.str{background:var(--str)} .pill.niz{background:var(--niz)}
+.pill.hot{background:var(--hot)} .pill.blok{background:var(--blok)} .pill.sed{background:#8593a8}
+.varovani{background:#fff7ed;border-left:3px solid var(--str);padding:7px 9px;border-radius:0 5px 5px 0;font-size:12.5px}
+.otaznik{background:#eff6ff;border-left:3px solid var(--sel);padding:7px 9px;border-radius:0 5px 5px 0;font-size:12.5px}
+
+/* ---------- vlny ---------- */
+.vlny{display:flex;gap:12px;padding:14px;overflow-x:auto;align-items:flex-start;height:calc(100vh - 190px);min-height:420px}
+.sloup{background:var(--panel);border:1px solid var(--line);border-radius:9px;min-width:290px;width:290px;max-height:100%;display:flex;flex-direction:column}
+.sloup>h2{margin:0;padding:10px 12px 8px;font-size:13.5px;border-bottom:1px solid var(--line)}
+.sloup>h2 .p{font-weight:400;font-size:11.5px;color:var(--mut);display:block;margin-top:3px}
+.sloup .telo{overflow:auto;padding:9px;display:flex;flex-direction:column;gap:8px}
+.karta{border:1px solid var(--line);border-left-width:4px;border-radius:7px;padding:8px 10px;background:#fff;cursor:pointer}
+.karta:hover{background:#f7f9fc}
+.karta.l-vys{border-left-color:var(--vys)} .karta.l-str{border-left-color:var(--str)}
+.karta.l-niz{border-left-color:var(--niz)} .karta.l-hot{border-left-color:var(--hot)}
+.karta.l-blok{border-left-color:var(--blok)}
+.karta .hl{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.karta .id{font-weight:700;font-size:12px;color:#3d4a61}
+.karta .nm{font-size:12.5px;margin:2px 0 0;line-height:1.35}
+.karta .sp{font-size:11px;color:var(--mut);margin-top:5px;display:flex;flex-wrap:wrap;gap:4px 9px}
+.slz-badge{border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:10.5px;font-weight:700;color:#5a6880;background:#f2f5fa}
+.pruh{height:5px;background:#e8edf5;border-radius:3px;overflow:hidden;margin:6px 12px 8px}
+.pruh i{display:block;height:100%;background:var(--hot)}
+
+/* ---------- matice ---------- */
+.wrap{padding:14px;height:calc(100vh - 190px);overflow:auto}
+table.mx{border-collapse:collapse;width:100%;background:var(--panel)}
+table.mx th,table.mx td{border:1px solid var(--line);padding:7px;vertical-align:top}
+table.mx th{background:#eef2f8;font-size:11.5px;text-transform:uppercase;letter-spacing:.4px;color:#4a5771}
+table.mx td.rh{background:#f7f9fc;font-weight:600;width:130px;font-size:12.5px}
+table.mx td.rychla{background:#f0fdf4}
+.mchip{display:inline-block;border:1px solid var(--line);border-left-width:3px;border-radius:5px;padding:2px 7px;margin:2px 3px 2px 0;font-size:11.5px;cursor:pointer;background:#fff}
+.mchip:hover{background:#eef2f8}
+.mchip.l-vys{border-left-color:var(--vys)} .mchip.l-str{border-left-color:var(--str)}
+.mchip.l-niz{border-left-color:var(--niz)} .mchip.l-hot{border-left-color:var(--hot)}
+.mchip.l-blok{border-left-color:var(--blok)}
+.pozn{font-size:12px;color:var(--mut);margin:0 0 10px}
+h2.sekce{font-size:14px;margin:16px 0 7px}
+.blok{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:12px 14px;margin-bottom:10px}
+.blok h4{margin:0 0 4px;font-size:13px}
+.blok p{margin:3px 0;font-size:12.5px}
+.krok{display:flex;gap:9px;align-items:flex-start;padding:5px 0;border-bottom:1px dashed var(--line)}
+.krok:last-child{border-bottom:none}
+.krok .n{background:#1f2a3d;color:#fff;border-radius:50%;width:20px;height:20px;flex:0 0 20px;text-align:center;font-size:11px;line-height:20px;font-weight:700}
+.krok.done .n{background:var(--hot)}
+.krok.done .t{text-decoration:line-through;color:var(--mut)}
+footer{padding:10px 16px;font-size:11.5px;color:var(--mut);background:var(--panel);border-top:1px solid var(--line)}
+@media print{nav,.filtr,.ovl,#detail{display:none}.pohled{display:block!important}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Roadmapa — Kalkulator Next Gen</h1>
+  <div class="sub" id="podnadpis"></div>
+  <div class="hdr-stats" id="statistiky"></div>
+</header>
+
+<nav>
+  <button data-p="sit" class="on">Síť závislostí</button>
+  <button data-p="vlny">Vlny</button>
+  <button data-p="matice">Užitek × náročnost</button>
+  <button data-p="cekani">Na co se čeká</button>
+</nav>
+
+<div class="filtr">
+  <div class="fgrp"><span class="lbl">Hledat</span><input type="search" id="hledej" placeholder="číslo nebo slovo…"></div>
+  <div class="fgrp" id="f-dul"><span class="lbl">Důležitost</span></div>
+  <div class="fgrp" id="f-stav"><span class="lbl">Stav</span></div>
+  <div class="fgrp" id="f-slz"><span class="lbl">Náročnost</span></div>
+  <div class="fgrp" id="f-vlna"><span class="lbl">Vlna</span></div>
+  <div class="fgrp"><span class="chip on" id="f-nehotove" title="trvale zapnuto: hotová práce se schová, ať je vidět jen to, co se má zpracovat. Vypnout se dá kliknutím, „Zrušit filtry“ ho zase zapne.">Jen ke zpracování</span>
+    <span class="chip" id="f-pripr" title="položky, kterým nic tvrdě nebrání – dá se do nich pustit hned">Jen připravené</span></div>
+  <button class="tlac" id="reset">Zrušit filtry</button>
+  <span class="pocet" id="pocet"></span>
+</div>
+
+<main>
+  <section class="pohled on" id="p-sit">
+    <div id="plocha">
+      <div class="ovl">
+        <button id="zoomVen">−</button><button id="zoomDo">+</button>
+        <button class="sirsi" id="fit">Na celou plochu</button>
+      </div>
+      <svg id="graf"><defs>
+        <marker id="sipka" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#8e9bad"/></marker>
+        <marker id="sipka-z" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#1d4ed8"/></marker>
+      </defs><g id="viewport"><g id="hrany"></g><g id="uzly"></g></g></svg>
+      <div class="prazdno" id="prazdno" style="display:none">Filtrům nic neodpovídá.</div>
+      <div class="legenda">
+        <div class="r"><i style="background:var(--vys)"></i> vysoká důležitost</div>
+        <div class="r"><i style="background:var(--str)"></i> střední</div>
+        <div class="r"><i style="background:var(--niz)"></i> nízká</div>
+        <div class="r"><i style="background:var(--hot)"></i> hotovo</div>
+        <div class="r"><i style="background:var(--blok)"></i> čeká na podklad zvenčí</div>
+        <div class="r" style="margin-top:5px">Šipka vede <b>od toho, co musí být dřív</b>. Čárkovaně = jen doporučené pořadí.</div>
+        <div class="r">Klikni na uzel — ukáže se detail a rozsvítí se celá jeho větev.</div>
+      </div>
+      <aside id="detail"><button class="zavri" onclick="zavriDetail()">×</button><div id="detail-telo"></div></aside>
+    </div>
+  </section>
+
+  <div id="zaclona" onclick="zavriModal()"></div>
+  <aside id="modal"><button class="zavri" onclick="zavriModal()">×</button><div id="modal-telo"></div></aside>
+
+  <section class="pohled" id="p-vlny"><div class="vlny" id="vlny-telo"></div></section>
+
+  <section class="pohled" id="p-matice"><div class="wrap">
+    <p class="pozn">Vlevo nahoře jsou <b>rychlé výhry</b> — hodně užitku za málo práce. Vpravo dole to, co se vyplatí dělat, jen když je na to čas a rozhodnutí.
+    Náročnost: <b>S</b> = hodiny · <b>M</b> = 1–2 dny · <b>L</b> = týden · <b>XL</b> = víc než týden.</p>
+    <div id="matice-telo"></div>
+    <h2 class="sekce">Doporučené pořadí</h2>
+    <div class="blok" id="poradi-telo"></div>
+  </div></section>
+
+  <section class="pohled" id="p-cekani"><div class="wrap">
+    <p class="pozn">Práce, která nestojí na nás. Dokud podklad nepřijde, nemá smysl ji plánovat do dávky — zato ji stačí jednou popohnat a rozjede se víc věcí najednou.</p>
+    <div id="cekani-telo"></div>
+    <h2 class="sekce">Odloženo (vlna F) — vědomě odsunuto, znovu jen na pokyn</h2>
+    <div id="odlozene-telo"></div>
+    <h2 class="sekce">Otevřené otázky k rozhodnutí</h2>
+    <div id="otazky-telo"></div>
+    <h2 class="sekce">Pravidla, která platí bez ohledu na pořadí</h2>
+    <div class="blok" id="pravidla-telo"></div>
+  </div></section>
+</main>
+
+<footer id="paticka"></footer>
+
+<script>
+/* Data se sem vkládají generátorem roadmapa.py z roadmap.json. */
+const RM = <?ROADMAP_JSON?>
+;
+
+/* ---------- pomůcky ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+/* Poznámky v datech jsou psané v markdownu (kvůli textové roadmapě), tady
+ * stačí přeložit tučné a `kód` – nic víc se v nich nepoužívá. */
+const md = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`(.+?)`/g, '<code>$1</code>');
+
+const P = RM.polozky;
+const MAPA = {}; P.forEach(p => MAPA[p.id] = p);
+/* odemyka = obrácené závislosti; v datech je vždy jen směr „co potřebuju“,
+ * aby nešlo zapsat půlku vazby a druhou zapomenout. */
+P.forEach(p => { p.odemyka = []; });
+P.forEach(p => (p.zavisi || []).forEach(z => {
+  const c = MAPA[z.id]; if (c) c.odemyka.push({ id: p.id, typ: z.typ, proc: z.proc });
+}));
+
+const KLIC_DUL = { vysoka: 'vys', stredni: 'str', nizka: 'niz' };
+const NAZEV_DUL = { vysoka: 'vysoká', stredni: 'střední', nizka: 'nízká' };
+const NAZEV_STAV = { hotovo: 'hotovo', ceka: 'čeká na nás', blokovano: 'čeká na podklad' };
+function barvaKlic(p) {   // podle čeho se položka barví
+  if (p.stav === 'hotovo') return 'hot';
+  if (p.stav === 'blokovano') return 'blok';
+  return KLIC_DUL[p.dulezitost] || 'sed';
+}
+function vlnaNazev(id) { const v = RM.meta.vlny.find(v => v.id === id); return v ? v.nazev : id; }
+
+/* Připravená položka = není hotová, nic ji zvenčí neblokuje a všechny tvrdé
+ * závislosti jsou hotové. Přesně tyhle se dají vzít do práce hned teď. */
+function pripravena(p) {
+  if (p.stav !== 'ceka') return false;
+  return (p.zavisi || []).every(z => z.typ !== 'tvrda' || (MAPA[z.id] && MAPA[z.id].stav === 'hotovo'));
+}
+
+/* Odložené položky (vlna F, zavedena 23. 8. 2026). Nejsou zrušené, ale
+ * nesmějí se míchat mezi práci: v hlavičce mají vlastní číslo, v matici
+ * užitku se nepočítají a v „Na co se čeká" stojí zvlášť, protože se na ně
+ * nečeká — čekají ony na rozhodnutí, že se k nim vrátíme. */
+const odlozena = p => p.vlna === 'F';
+
+/* ---------- filtry ---------- */
+/* `nehotove` je zapnuté už při otevření stránky (zadání 30. 7. 2026: „nastav
+ * trvale filtr ke zpracování, ať nám svítí nehotové úkoly a hotové se
+ * schovají"). Roadmapa se otevírá kvůli tomu, co se má udělat — hotová
+ * polovina je archiv a při plánování jen přebíjí pohled. Skryté ale není
+ * ztracené: chip jde vypnout a stavový filtr „hotovo" má nad ním přednost. */
+const F = { dul: new Set(), stav: new Set(), slz: new Set(), vlna: new Set(), text: '', pripr: false, nehotove: true };
+
+function slzSkupina(s) {          // S–M spadne do S i do M, ať se nic neztratí
+  const t = String(s || '').toUpperCase();
+  const g = [];
+  if (/\bXL\b/.test(t)) g.push('XL');
+  if (/\bL\b/.test(t)) g.push('L');
+  if (/\bM\b/.test(t)) g.push('M');
+  if (/\bS\b/.test(t)) g.push('S');
+  return g.length ? g : ['?'];
+}
+
+function projde(p) {
+  /* Trvalý filtr ustoupí, jakmile si někdo o hotovou práci výslovně řekne
+   * stavovým chipem — jinak by kliknutí na „hotovo" vrátilo prázdnou plochu
+   * a vypadalo by to jako porouchaný filtr. */
+  if (F.nehotove && p.stav === 'hotovo' && !F.stav.has('hotovo')) return false;
+  if (F.dul.size && !F.dul.has(barvaKlic(p))) return false;
+  if (F.stav.size && !F.stav.has(p.stav)) return false;
+  if (F.slz.size && !slzSkupina(p.slozitost).some(g => F.slz.has(g))) return false;
+  if (F.vlna.size && !F.vlna.has(p.vlna)) return false;
+  if (F.pripr && !pripravena(p)) return false;
+  if (F.text) {
+    const t = (p.id + ' ' + p.nazev + ' ' + (p.pozn || '') + ' ' + (p.detail || '') + ' ' + (p.cekaNa || '')).toLowerCase();
+    if (t.indexOf(F.text) === -1) return false;
+  }
+  return true;
+}
+const vybrane = () => P.filter(projde);
+
+function postavFiltry() {
+  const g = (box, polozky, tridaPrefix) => {
+    polozky.forEach(([k, popis, tr]) => {
+      const c = document.createElement('span');
+      c.className = 'chip' + (tr ? ' ' + tr : '');
+      c.textContent = popis; c.dataset.k = k;
+      c.onclick = () => { const s = F[tridaPrefix]; s.has(k) ? s.delete(k) : s.add(k); c.classList.toggle('on'); prekresli(); };
+      box.appendChild(c);
+    });
+  };
+  g($('#f-dul'), [['vys', 'vysoká', 'c-vys'], ['str', 'střední', 'c-str'], ['niz', 'nízká', 'c-niz']], 'dul');
+  g($('#f-stav'), [['ceka', 'čeká na nás'], ['blokovano', 'čeká na podklad', 'c-blok'], ['hotovo', 'hotovo', 'c-hot']], 'stav');
+  g($('#f-slz'), [['S', 'S'], ['M', 'M'], ['L', 'L'], ['XL', 'XL']], 'slz');
+  g($('#f-vlna'), RM.meta.vlny.map(v => [v.id, v.id]), 'vlna');
+  $('#f-pripr').onclick = function () { F.pripr = !F.pripr; this.classList.toggle('on'); prekresli(); };
+  $('#f-nehotove').onclick = function () { F.nehotove = !F.nehotove; this.classList.toggle('on', F.nehotove); prekresli(); };
+  $('#hledej').oninput = e => { F.text = e.target.value.trim().toLowerCase(); prekresli(); };
+  /* „Zrušit filtry" vrací výchozí stav, a výchozí stav je od 30. 7. 2026
+   * se zapnutým „Jen ke zpracování". Kdyby ho reset shodil, musel by se
+   * po každém pročištění filtrů zapínat znovu — a tomu se říkalo „trvale". */
+  $('#reset').onclick = () => {
+    F.dul.clear(); F.stav.clear(); F.slz.clear(); F.vlna.clear(); F.pripr = false; F.text = '';
+    F.nehotove = true;
+    $('#hledej').value = '';
+    document.querySelectorAll('.filtr .chip.on').forEach(c => c.classList.remove('on'));
+    $('#f-nehotove').classList.add('on');
+    prekresli();
+  };
+}
+
+/* ---------- rozvržení sítě ---------- */
+const SIR = 208, MEZ_X = 268, MEZ_Y = 15;
+
+function zalom(text, max) {
+  const slova = String(text).split(' '); const r = []; let l = '';
+  slova.forEach(s => {
+    if ((l + ' ' + s).trim().length > max) { if (l) r.push(l); l = s; } else l = (l + ' ' + s).trim();
+  });
+  if (l) r.push(l);
+  return r.slice(0, 3).map((x, i) => (i === 2 && r.length > 3) ? x.replace(/.{0,3}$/, '…') : x);
+}
+
+function rozvrhni(polozky) {
+  const set = new Set(polozky.map(p => p.id));
+  const uzel = {};
+  polozky.forEach(p => {
+    uzel[p.id] = { p, radky: zalom(p.nazev, 27) };
+    uzel[p.id].v = 22 + uzel[p.id].radky.length * 14;
+  });
+  /* Většina položek na ničem nevisí a nic neodemyká. Kdyby šly do vrstev
+   * spolu se zbytkem, spadly by všechny do prvního sloupce a udělaly by z něj
+   * nečitelný sloup přes tři obrazovky — a skutečná síť vedle něj by se
+   * scvrkla do rohu. Kreslí se proto zvlášť jako mřížka a síť zůstane sítí. */
+  const maVazbu = id =>
+    (MAPA[id].zavisi || []).some(z => set.has(z.id)) ||
+    (MAPA[id].odemyka || []).some(z => set.has(z.id));
+  const svazane = polozky.filter(p => maVazbu(p.id));
+  const volne = polozky.filter(p => !maVazbu(p.id));
+
+  /* vrstva = nejdelší cesta zleva; závislosti mimo výběr se ignorují,
+   * aby filtrovaný graf nezůstal viset na neexistujícím předchůdci */
+  const vrstva = {};
+  const spocti = (id, stopa) => {
+    if (vrstva[id] != null) return vrstva[id];
+    if (stopa.has(id)) return 0;                 // pojistka proti kruhu v datech
+    stopa.add(id);
+    const z = (MAPA[id].zavisi || []).filter(z => set.has(z.id));
+    const v = z.length ? Math.max(...z.map(x => spocti(x.id, stopa) + 1)) : 0;
+    stopa.delete(id);
+    return vrstva[id] = v;
+  };
+  svazane.forEach(p => spocti(p.id, new Set()));
+
+  const sloupce = [];
+  svazane.forEach(p => { (sloupce[vrstva[p.id]] = sloupce[vrstva[p.id]] || []).push(p.id); });
+  const poradiDul = { vys: 0, blok: 1, str: 2, niz: 3, hot: 4, sed: 5 };
+  sloupce.forEach(s => s.sort((a, b) =>
+    (poradiDul[barvaKlic(MAPA[a])] - poradiDul[barvaKlic(MAPA[b])]) || String(a).localeCompare(String(b))));
+
+  /* dvě těžišťová kola — sníží počet křížení, aby šlo očima sledovat čáru */
+  for (let k = 0; k < 3; k++) {
+    for (let i = 1; i < sloupce.length; i++) {
+      const poz = {}; sloupce[i - 1].forEach((id, j) => poz[id] = j);
+      sloupce[i].sort((a, b) => {
+        const t = id => {
+          const z = (MAPA[id].zavisi || []).filter(z => poz[z.id] != null);
+          return z.length ? z.reduce((s, x) => s + poz[x.id], 0) / z.length : 99;
+        };
+        return t(a) - t(b);
+      });
+    }
+  }
+  const NADPIS = 30;   // místo nad grafem na popisek skupiny
+  let maxV = 0;
+  sloupce.forEach((s, i) => {
+    let y = NADPIS;
+    s.forEach(id => { const u = uzel[id]; u.x = i * MEZ_X; u.y = y; y += u.v + MEZ_Y; });
+    maxV = Math.max(maxV, y);
+  });
+  /* svislé vycentrování sloupců, ať graf nevisí u horního okraje */
+  sloupce.forEach(s => {
+    const vyska = s.reduce((a, id) => a + uzel[id].v + MEZ_Y, 0) - MEZ_Y;
+    const posun = (maxV - NADPIS - MEZ_Y - vyska) / 2;
+    s.forEach(id => uzel[id].y += posun);
+  });
+
+  let sirka = sloupce.length * MEZ_X - (MEZ_X - SIR);
+  let vyska = Math.max(0, maxV - MEZ_Y);
+  const popisky = [];
+  if (sloupce.length && volne.length) {
+    popisky.push({ x: 0, y: 16, text: 'Na sebe navazující — šipka vede od toho, co musí být dřív' });
+  }
+
+  if (volne.length) {
+    volne.sort((a, b) =>
+      (poradiDul[barvaKlic(a)] - poradiDul[barvaKlic(b)]) || String(a.id).localeCompare(String(b.id)));
+    /* mřížka je tak vysoká jako síť vedle ní, ať se obojí vejde na jednu obrazovku */
+    const radku = Math.max(4, sirka
+      ? Math.round((vyska - NADPIS) / 62) || 4
+      : Math.round(Math.sqrt(volne.length * 1.6)));
+    const x0 = sirka ? sirka + 72 : 0;
+    let x = x0, y = NADPIS, dno = 0;
+    volne.forEach((p, i) => {
+      if (i && i % radku === 0) { x += MEZ_X; y = NADPIS; }
+      const u = uzel[p.id];
+      u.x = x; u.y = y; y += u.v + MEZ_Y; dno = Math.max(dno, y - MEZ_Y);
+    });
+    popisky.push({ x: x0, y: 16, text: 'Nezávislé — nic nečeká a nic neblokují, dá se do nich pustit kdykoliv' });
+    sirka = x + SIR;
+    vyska = Math.max(vyska, dno);
+  }
+  return { uzel, sirka, vyska, popisky };
+}
+
+let VYBER = null;
+function vetev(id) {   // celá větev: co tomu předchází i co z toho plyne
+  const nahoru = new Set(), dolu = new Set();
+  (function up(i) { (MAPA[i].zavisi || []).forEach(z => { if (!nahoru.has(z.id)) { nahoru.add(z.id); up(z.id); } }); })(id);
+  (function dn(i) { (MAPA[i].odemyka || []).forEach(z => { if (!dolu.has(z.id)) { dolu.add(z.id); dn(z.id); } }); })(id);
+  const vse = new Set([...nahoru, ...dolu]); vse.add(id);
+  return vse;
+}
+
+function kresliSit() {
+  const polozky = vybrane();
+  $('#prazdno').style.display = polozky.length ? 'none' : 'flex';
+  const { uzel, sirka, vyska, popisky } = rozvrhni(polozky);
+  const set = new Set(polozky.map(p => p.id));
+  const zvyr = VYBER && set.has(VYBER) ? vetev(VYBER) : null;
+
+  let h = '', u = popisky.map(t =>
+    `<text class="skupina" x="${t.x}" y="${t.y}">${esc(t.text)}</text>`).join('');
+  polozky.forEach(p => (p.zavisi || []).forEach(z => {
+    if (!set.has(z.id)) return;
+    const a = uzel[z.id], b = uzel[p.id];
+    const x1 = a.x + SIR, y1 = a.y + a.v / 2, x2 = b.x, y2 = b.y + b.v / 2;
+    const dx = Math.max(30, (x2 - x1) * .55);
+    const akt = zvyr && zvyr.has(z.id) && zvyr.has(p.id);
+    h += `<path class="hrana ${z.typ === 'doporuceno' ? 'mekka' : ''} ${zvyr ? (akt ? 'zvyr' : 'dim') : ''}"
+      d="M${x1},${y1} C${x1 + dx},${y1} ${x2 - dx},${y2} ${x2},${y2}"
+      marker-end="url(#${akt ? 'sipka-z' : 'sipka'})"></path>`;
+  }));
+  polozky.forEach(p => {
+    const n = uzel[p.id], k = barvaKlic(p), b = `var(--${k === 'sed' ? 'mut' : k})`;
+    const dim = zvyr && !zvyr.has(p.id) ? ' dim' : '';
+    const sel = VYBER === p.id ? ' zvyr' : '';
+    const prip = pripravena(p);
+    u += `<g class="uzel${dim}${sel}" data-id="${esc(p.id)}" transform="translate(${n.x},${n.y})">
+      <rect width="${SIR}" height="${n.v}" ${prip ? 'stroke="#16a34a" stroke-dasharray="4 3"' : ''}></rect>
+      <rect width="34" height="${n.v}" fill="${b}" rx="7"></rect>
+      <rect x="24" width="10" height="${n.v}" fill="${b}"></rect>
+      <text class="cislo" x="17" y="${n.v / 2 + 4}" text-anchor="middle">${esc(p.id)}</text>
+      ${n.radky.map((r, i) => `<text class="nadpis" x="42" y="${17 + i * 14}">${esc(r)}</text>`).join('')}
+      <text class="slz" x="${SIR - 7}" y="${n.v - 6}" text-anchor="end">${esc(p.stav === 'hotovo' ? '✓' : (p.slozitost || ''))}</text>
+    </g>`;
+  });
+  $('#hrany').innerHTML = h; $('#uzly').innerHTML = u;
+  document.querySelectorAll('.uzel').forEach(g => g.onclick = () => { VYBER = g.dataset.id; kresliSit(); ukazDetail(VYBER); });
+  GRAF = { sirka, vyska };
+  if (!POHLED_NASTAVEN) { naCelou(); POHLED_NASTAVEN = true; }
+}
+
+/* ---------- posun a zvětšení ---------- */
+let K = 1, TX = 0, TY = 0, GRAF = { sirka: 1, vyska: 1 }, POHLED_NASTAVEN = false;
+function aplikuj() { $('#viewport').setAttribute('transform', `translate(${TX},${TY}) scale(${K})`); }
+function naCelou() {
+  const r = $('#plocha').getBoundingClientRect();
+  K = Math.min(1.1, Math.max(.28, Math.min((r.width - 60) / (GRAF.sirka + 20), (r.height - 40) / (GRAF.vyska + 20))));
+  TX = 24; TY = Math.max(14, (r.height - GRAF.vyska * K) / 2); aplikuj();
+}
+(function ovladani() {
+  const pl = $('#plocha');
+  let tahne = false, x0 = 0, y0 = 0;
+  pl.addEventListener('mousedown', e => { if (e.target.closest('#detail,.ovl')) return; tahne = true; x0 = e.clientX - TX; y0 = e.clientY - TY; pl.classList.add('tahne'); });
+  addEventListener('mousemove', e => { if (!tahne) return; TX = e.clientX - x0; TY = e.clientY - y0; aplikuj(); });
+  addEventListener('mouseup', () => { tahne = false; pl.classList.remove('tahne'); });
+  pl.addEventListener('wheel', e => {
+    e.preventDefault();
+    const r = pl.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+    const nk = Math.min(2.2, Math.max(.2, K * (e.deltaY < 0 ? 1.12 : .89)));
+    TX = mx - (mx - TX) * nk / K; TY = my - (my - TY) * nk / K; K = nk; aplikuj();
+  }, { passive: false });
+  $('#zoomDo').onclick = () => { K = Math.min(2.2, K * 1.2); aplikuj(); };
+  $('#zoomVen').onclick = () => { K = Math.max(.2, K / 1.2); aplikuj(); };
+  $('#fit').onclick = naCelou;
+})();
+
+/* ---------- detail ----------
+ * Obsah panelu kreslí jediná funkce, kterou používá jak postranní panel u sítě,
+ * tak překryv otevřený z karty nebo z matice. Kdyby si každý pohled kreslil
+ * svoje, dřív nebo později by jeden z nich zaostal a stejný úkol by na dvou
+ * místech říkal dvě různé věci.
+ *
+ * Čtyři rubriky se ukážou vždycky, i když jsou v datech prázdné. Prázdné místo
+ * s poznámkou „není vyplněno" je poctivější než rubrika, která zmizí — z chybějící
+ * rubriky se nepozná, jestli odpověď nikdo nenapsal, nebo jestli ji panel neumí
+ * zobrazit (zadání 30. 7. 2026: „málo informací k tomu, co se za úkolem
+ * skutečně skrývá"). */
+const NEVYPLNENO = '<i style="color:var(--mut)">zatím nevyplněno — doplní se při zadání dávky</i>';
+
+function detailHTML(p, otevri) {
+  const k = barvaKlic(p);
+  const seznam = (pole, popisek, prazdne) => {
+    if (!pole || !pole.length) return `<div class="radek"><b>${popisek}</b><i style="color:var(--mut)">${prazdne}</i></div>`;
+    return `<div class="radek"><b>${popisek}</b><ul>` + pole.map(z => {
+      const c = MAPA[z.id];
+      const stavPopis = c ? (c.stav === 'hotovo' ? 'hotovo'
+        : c.stav === 'blokovano' ? 'čeká na cizí podklad' : 'ke zpracování') : 'neznámá položka';
+      return `<li><span class="odk" onclick="${otevri}('${esc(z.id)}')">#${esc(z.id)}</span>
+       ${esc(c ? c.nazev : '')} <span class="pill ${c ? barvaKlic(c) : 'sed'}">${esc(stavPopis)}</span>
+       ${z.typ === 'doporuceno' ? '<br><i style="color:var(--mut)">jen doporučené pořadí, netvrdá závislost</i>' : ''}
+       ${z.proc ? '<br><span style="color:var(--mut)">' + esc(z.proc) + '</span>' : ''}</li>`;
+    }).join('') + '</ul></div>';
+  };
+  /* Co položku právě teď drží: ne celý seznam závislostí, ale jen ty, které
+   * ještě nejsou hotové. To je odpověď na otázku „proč se do toho nemůžu pustit". */
+  const drzi = (p.zavisi || []).filter(z => MAPA[z.id] && MAPA[z.id].stav !== 'hotovo' && z.typ !== 'doporuceno');
+  const stavVeta = p.stav === 'hotovo'
+    ? `Hotovo${p.hotovoV ? ' v buildu ' + esc(p.hotovoV) : ''}.`
+    : p.stav === 'blokovano'
+      ? 'Nestojí to na nás — dokud nepřijde podklad zvenčí, nemá smysl to plánovat do dávky.'
+      : drzi.length
+        ? `Ke zpracování, ale nejdřív musí být hotové ${drzi.map(z => '#' + esc(z.id)).join(', ')}.`
+        : 'Ke zpracování a nic tomu nebrání — dá se do toho pustit hned.';
+
+  return `
+    <div><span class="pill ${k}">${esc(p.stav === 'hotovo' ? 'hotovo' : (p.dulezitost ? NAZEV_DUL[p.dulezitost] : NAZEV_STAV[p.stav]))}</span>
+      ${p.slozitost ? `<span class="slz-badge" style="margin-left:5px">${esc(p.slozitost)}</span>` : ''}
+      ${pripravena(p) ? '<span class="pill hot" style="margin-left:5px">připraveno k práci</span>' : ''}</div>
+    <h3 style="margin-top:7px">#${esc(p.id)} ${esc(p.nazev)}</h3>
+    <div class="dpole">
+      <span>${esc(vlnaNazev(p.vlna))}</span>
+      <span>stav: ${esc(p.stav === 'hotovo' ? 'hotovo' : p.stav === 'blokovano' ? 'čeká na cizí podklad' : 'ke zpracování')}</span>
+      ${p.dulezitost ? `<span>důležitost: ${esc(NAZEV_DUL[p.dulezitost])}</span>` : ''}
+      ${p.slozitost ? `<span>náročnost: ${esc(p.slozitost)}</span>` : ''}
+      ${p.hotovoV ? `<span>uzavřeno v ${esc(p.hotovoV)}</span>` : ''}
+    </div>
+    <div class="radek" style="color:var(--mut)">${stavVeta}</div>
+    ${p.otazka ? `<div class="radek"><div class="otaznik"><b style="color:var(--sel)">Otevřená otázka</b>${esc(p.otazka)}</div></div>` : ''}
+    ${p.cekaNa ? `<div class="radek"><div class="varovani"><b style="color:var(--str)">Čeká na</b>${esc(p.cekaNa)}</div></div>` : ''}
+    <div class="radek"><b>Proč to děláme</b>${p.proc ? esc(p.proc) : NEVYPLNENO}</div>
+    <div class="radek"><b>Co to obnáší</b>${p.detail ? esc(p.detail) : NEVYPLNENO}</div>
+    <div class="radek"><b>Hotovo, až</b>${p.hotovoKdyz ? esc(p.hotovoKdyz) : NEVYPLNENO}</div>
+    <div class="radek"><b>Kde to je</b>${p.kde ? md(p.kde) : NEVYPLNENO}</div>
+    ${p.pozn && p.pozn !== '—' ? `<div class="radek"><b>Poznámka</b>${md(p.pozn)}</div>` : ''}
+    ${seznam(p.zavisi, 'Musí být dřív', 'nic — nezávisí na jiné položce')}
+    ${seznam(p.odemyka, 'Odemkne', 'nic dalšího přímo neodemyká')}`;
+}
+
+function zavriDetail() { $('#detail').classList.remove('on'); VYBER = null; kresliSit(); }
+function ukazDetail(id) {
+  const p = MAPA[id]; if (!p) return;
+  VYBER = id;
+  $('#detail-telo').innerHTML = detailHTML(p, 'skocNaUzel');
+  $('#detail').classList.add('on');
+}
+/* Odkaz uvnitř panelu u sítě přepne výběr i zvýrazněnou větev; v překryvu
+ * jen přelistuje obsah, protože tam žádná větev nesvítí. */
+function skocNaUzel(id) { VYBER = id; kresliSit(); ukazDetail(id); }
+
+function ukazModal(id) {
+  const p = MAPA[id]; if (!p) return;
+  $('#modal-telo').innerHTML = detailHTML(p, 'ukazModal');
+  $('#modal').classList.add('on'); $('#zaclona').classList.add('on');
+  $('#modal').scrollTop = 0;
+}
+function zavriModal() { $('#modal').classList.remove('on'); $('#zaclona').classList.remove('on'); }
+addEventListener('keydown', e => { if (e.key === 'Escape') zavriModal(); });
+
+/* ---------- vlny ---------- */
+function kresliVlny() {
+  const vyb = vybrane();
+  $('#vlny-telo').innerHTML = RM.meta.vlny.map(v => {
+    const vse = P.filter(p => p.vlna === v.id);
+    const moje = vyb.filter(p => p.vlna === v.id);
+    const hot = vse.filter(p => p.stav === 'hotovo').length;
+    const poradiDul = { vys: 0, blok: 1, str: 2, niz: 3, hot: 4, sed: 5 };
+    moje.sort((a, b) => poradiDul[barvaKlic(a)] - poradiDul[barvaKlic(b)]);
+    return `<div class="sloup">
+      <h2>${esc(v.nazev)} <span class="p">${esc(v.popis)}</span></h2>
+      <div class="pruh"><i style="width:${vse.length ? Math.round(hot / vse.length * 100) : 0}%"></i></div>
+      <div style="font-size:11px;color:var(--mut);padding:0 12px 6px">hotovo ${hot} z ${vse.length}${moje.length !== vse.length ? ` · filtrem vidíš ${moje.length}` : ''}</div>
+      <div class="telo">${moje.map(karta).join('') || '<div style="color:var(--mut);font-size:12px;padding:6px">Filtrům tu nic neodpovídá.</div>'}</div>
+    </div>`;
+  }).join('');
+  navesKarty();
+}
+function karta(p) {
+  const k = barvaKlic(p);
+  const cekaji = (p.zavisi || []).filter(z => MAPA[z.id] && MAPA[z.id].stav !== 'hotovo');
+  return `<div class="karta l-${k}" data-id="${esc(p.id)}">
+    <div class="hl"><span class="id">#${esc(p.id)}</span>
+      <span>${p.slozitost ? `<span class="slz-badge">${esc(p.slozitost)}</span>` : ''}
+      ${pripravena(p) ? '<span class="pill hot" style="margin-left:4px">lze začít</span>' : ''}
+      ${p.stav === 'hotovo' ? '<span class="pill hot" style="margin-left:4px">✓</span>' : ''}</span></div>
+    <div class="nm">${esc(p.nazev)}</div>
+    <div class="sp">
+      ${cekaji.length ? `<span>⟵ čeká na ${cekaji.map(z => '#' + esc(z.id)).join(', ')}</span>` : ''}
+      ${p.odemyka.length ? `<span>⟶ odemkne ${p.odemyka.map(z => '#' + esc(z.id)).join(', ')}</span>` : ''}
+      ${p.cekaNa ? `<span title="${esc(p.cekaNa)}">⏳ ${esc(p.cekaNa)}</span>` : ''}
+      ${p.otazka ? '<span title="' + esc(p.otazka) + '">❓ otevřená otázka</span>' : ''}
+    </div></div>`;
+}
+/* Klik na kartu (Vlny) i na čip (matice) otevře detail na místě. Dřív to
+ * přepnulo na síť — pohled, ve kterém člověk zrovna přemýšlel, zmizel
+ * a musel se do něj proklikat zpátky. */
+function navesKarty() {
+  document.querySelectorAll('.karta,.mchip').forEach(el => el.onclick = () => ukazModal(el.dataset.id));
+}
+
+/* ---------- matice ---------- */
+function kresliMatici() {
+  const sl = ['S', 'M', 'L', 'XL'];
+  const vyb = vybrane().filter(p => p.stav !== 'hotovo' && !odlozena(p));
+  const rady = [['vysoka', 'vysoká důležitost'], ['stredni', 'střední'], ['nizka', 'nízká']];
+  $('#matice-telo').innerHTML = `<table class="mx"><tr><th></th>${sl.map(s =>
+    `<th>${s}${s === 'S' ? ' — hodiny' : s === 'M' ? ' — 1–2 dny' : s === 'L' ? ' — týden' : ' — víc'}</th>`).join('')}</tr>` +
+    rady.map(([d, popis], ri) => `<tr><td class="rh">${popis}</td>` + sl.map((s, ci) => {
+      const bunka = vyb.filter(p => p.dulezitost === d && slzSkupina(p.slozitost).indexOf(s) !== -1);
+      return `<td class="${ri === 0 && ci <= 1 ? 'rychla' : ''}">${bunka.map(p =>
+        `<span class="mchip l-${barvaKlic(p)}" data-id="${esc(p.id)}" title="${esc(p.nazev)}">#${esc(p.id)} ${esc(p.nazev.slice(0, 34))}${p.nazev.length > 34 ? '…' : ''}</span>`).join('') || '<span style="color:#b6bfcd">—</span>'}</td>`;
+    }).join('') + '</tr>').join('') + '</table>';
+  $('#poradi-telo').innerHTML = RM.meta.poradi.map((k, i) =>
+    `<div class="krok ${k.hotovo ? 'done' : ''}"><span class="n">${k.hotovo ? '✓' : i + 1}</span>
+      <span class="t"><b>${md(k.text)}</b>${k.pozn ? ' — ' + esc(k.pozn) : ''}</span></div>`).join('');
+  navesKarty();
+}
+
+/* ---------- na co se čeká ---------- */
+function kresliCekani() {
+  const blok = P.filter(p => p.cekaNa && p.stav !== 'hotovo' && !odlozena(p));
+  $('#cekani-telo').innerHTML = blok.map(p => `<div class="blok">
+    <h4><span class="odk" onclick="ukazModal('${esc(p.id)}')">#${esc(p.id)} ${esc(p.nazev)}</span> <span class="pill ${barvaKlic(p)}">${esc(p.dulezitost ? NAZEV_DUL[p.dulezitost] : '')}</span></h4>
+    <p><b>Čeká na:</b> ${esc(p.cekaNa)}</p>
+    ${p.odemyka.length ? `<p><b>Až přijde, odemkne to:</b> ${p.odemyka.map(z => '#' + esc(z.id) + ' ' + esc(MAPA[z.id].nazev)).join(' · ')}</p>` : ''}
+  </div>`).join('') || '<div class="blok">Nic nečeká na cizí podklad.</div>';
+  /* Odložené: vlastní seznam s důvodem a datem. Kdyby se schovaly úplně,
+   * za měsíc by nikdo nevěděl, jestli se na ně zapomnělo, nebo se zamítly. */
+  const odl = P.filter(odlozena);
+  const boxOdl = document.getElementById('odlozene-telo');
+  if (boxOdl) boxOdl.innerHTML = odl.map(p => `<div class="blok">
+    <h4><span class="odk" onclick="ukazModal('${esc(p.id)}')">#${esc(p.id)} ${esc(p.nazev)}</span></h4>
+    <p>${esc(p.cekaNa || 'bez uvedeného důvodu')}</p></div>`).join('')
+    || '<div class="blok">Nic není odložené.</div>';
+  const ot = P.filter(p => p.otazka && p.stav !== 'hotovo' && !odlozena(p));
+  $('#otazky-telo').innerHTML = ot.map(p => `<div class="blok">
+    <h4><span class="odk" onclick="ukazModal('${esc(p.id)}')">#${esc(p.id)} ${esc(p.nazev)}</span></h4><p>${esc(p.otazka)}</p></div>`).join('') || '<div class="blok">Žádné otevřené otázky.</div>';
+  $('#pravidla-telo').innerHTML = RM.meta.pravidla.map(r => `<p>• ${md(r)}</p>`).join('');
+}
+
+/* ---------- přepínání a start ---------- */
+function prepni(p) {
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.p === p));
+  document.querySelectorAll('.pohled').forEach(s => s.classList.toggle('on', s.id === 'p-' + p));
+  if (p === 'sit' && !POHLED_NASTAVEN) naCelou();
+}
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => prepni(b.dataset.p));
+
+function prekresli() {
+  kresliSit(); kresliVlny(); kresliMatici(); kresliCekani();
+  const v = vybrane();
+  const skryto = F.nehotove && !F.stav.has('hotovo') ? P.filter(p => p.stav === 'hotovo').length : 0;
+  $('#pocet').textContent = `zobrazeno ${v.length} z ${P.length} položek`
+    + (skryto ? ` · ${skryto} hotových je schovaných filtrem „Jen ke zpracování“` : '');
+}
+
+(function start() {
+  /* Hlavička dřív hlásila jedno číslo „zbývá" — a do něj spadla i práce, která
+   * na nás vůbec nestojí (čeká na statika, na právníka, na schůzku). Podle toho
+   * čísla to vypadalo na dvakrát tolik úkolů, než kolik se dá reálně vzít do
+   * dávky (připomínka z 30. 7. 2026). Teď stojí tři stavy vedle sebe a sečtou
+   * se na celek, takže si každý může ověřit, že se nikde nic neztratilo:
+   * ke zpracování + čeká na cizí podklad + hotovo = celkem. */
+  const hot = P.filter(p => p.stav === 'hotovo').length;
+  const zpracovat = P.filter(p => p.stav === 'ceka' && !odlozena(p)).length;
+  const podklad = P.filter(p => p.stav === 'blokovano' && !odlozena(p)).length;
+  const odlozeno = P.filter(odlozena).length;
+  const prip = P.filter(pripravena).length;
+  $('#podnadpis').textContent = `Stav k ${RM.meta.stavKDatu}, build ${RM.meta.build}. ${RM.meta.legendaLegenda || RM.meta.legendaSlozitosti}`;
+  $('#statistiky').innerHTML = `
+    <div data-k="zpracovat" title="stav „čeká na nás“ – tohle je práce, kterou můžeme naplánovat do dávky"><b>${zpracovat}</b> ke zpracování</div>
+    <div data-k="hned" title="podmnožina „ke zpracování“: nic tvrdého tomu nebrání"><b>${prip}</b> z toho lze začít hned</div>
+    <div data-k="podklad" title="stav „čeká na podklad“ – nestojí to na nás, čeká se na cizí vstup"><b>${podklad}</b> čeká na cizí podklad</div>
+    <div data-k="odlozeno" title="vlna F – vědomě odsunuto, znovu jen na výslovný pokyn"><b>${odlozeno}</b> odloženo</div>
+    <div data-k="hotovo"><b>${hot}</b> hotovo</div>
+    <div data-k="celkem" title="ke zpracování + čeká na cizí podklad + odloženo + hotovo"><b>${P.length}</b> celkem</div>
+    <div data-k="otazky"><b>${P.filter(p => p.otazka && p.stav !== 'hotovo').length}</b> otevřených otázek</div>`;
+  $('#paticka').textContent = 'Generováno z roadmap.json — ručně spuštěno. Needituj tento soubor ručně: obsah se mění v roadmap.json a pak se pustí python3 roadmapa.py.';
+  postavFiltry();
+  prekresli();
+  addEventListener('resize', () => { POHLED_NASTAVEN = false; naCelou(); POHLED_NASTAVEN = true; });
+})();
+</script>
+</body>
+</html>

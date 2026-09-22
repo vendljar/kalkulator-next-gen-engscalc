@@ -1,9 +1,14 @@
 /* PODKLADY, KTERÉ NEJSOU V REPOZITÁŘI (N15, 22. 9. 2026)
  *
- * Wordové šablony nabídek a smluv, hotová příručka obchodníka a vygenerovaná
- * ROADMAPA.html v repozitáři schválně nejsou — jsou to firemní dokumenty
- * a repozitář je veřejný. Harnessy, které je potřebují, si je proto musí
- * najít venku.
+ * Wordové šablony nabídek a smluv a hotová příručka obchodníka v repozitáři
+ * schválně nejsou — jsou to firemní dokumenty a repozitář je veřejný.
+ * Harnessy, které je potřebují, si je proto musí najít venku.
+ *
+ * ROADMAPA.html mezi ně od 22. 9. 2026 UŽ NEPATŘÍ: je to výstup, ne firemní
+ * dokument, a skládá se v repozitáři z `roadmapa/roadmap.json`
+ * a `roadmapa/sablona.html`. Sada i CI si ji před harnessy vyrobí samy
+ * (`python3 roadmapa/roadmapa.py`), takže `overit_roadmapu.mjs` se přestal
+ * přeskakovat. Hledání venku u něj zůstává jako záloha.
  *
  * DO 22. 9. 2026 to dělaly napevno zapsanou cestou `/home/claude/work/…`,
  * tedy cestou z cloudového prostředí, ve kterém kdysi vznikly. Jinde než tam

@@ -115,6 +115,15 @@ fi
 # Sada v prohlížeči: běží z kořene (harnessy si dist/ hledají odtud), s
 # NODE_PATH kvůli globálně instalovanému playwrightu. Návratový kód 2 = sada
 # sama hlásí, že playwright chybí — není to selhání kódu, jen se přeskočí.
+# Roadmapa se před prohlížečovými sadami VYGENERUJE (22. 9. 2026). Stránka
+# je výstup a v repozitáři není, takže `overit_roadmapu.mjs` se do dneška
+# vždycky jen přeskočil — třináct kontrol, které nikdy neběžely. Generátor
+# je od 22. 9. v repozitáři, takže si je sada umí vyrobit sama.
+if [ -f ../roadmapa/roadmapa.py ]; then
+  ( cd .. && python3 roadmapa/roadmapa.py ) > /tmp/kng_roadmapa.txt 2>&1 \
+    || { echo "  – roadmapa se nevygenerovala (harness ji přeskočí):"; sed 's/^/      /' /tmp/kng_roadmapa.txt; }
+fi
+
 spust_prohlizec() {
   local f="$1"
   ( cd .. && NODE_PATH="$(npm root -g 2>/dev/null)" node "$f" ) > /tmp/kng_prohlizec_out.txt 2>&1

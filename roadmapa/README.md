@@ -6,17 +6,24 @@ needituje, protože při příštím generování by se změny ztratily.
 
 ## Co s tím
 
-Soubor se vkládá do šablony stránky na místo dat (`const RM = { … }`).
-Generátor (`roadmapa.py`) v tomhle repozitáři není — je v pracovní kopii
-mimo GitHub. Kdo má po ruce Python:
+Soubor se vkládá do šablony stránky (`sablona.html`) na místo značky
+`<?ROADMAP_JSON?>`. Od 22. 9. 2026 je **generátor i šablona v repozitáři**:
 
 ```
-python3 roadmapa.py --kontrola   # duplicitní id, neznámé stavy, viselce
-python3 roadmapa.py              # → ROADMAPA.html + ROADMAPA.md
+python3 roadmapa/roadmapa.py --kontrola   # duplicitní id, neznámé stavy, viselce
+python3 roadmapa/roadmapa.py              # → ROADMAPA.html + ROADMAPA.md
 ```
+
+Oba výstupy jsou v `.gitignore` — jsou to výstupy, ne zdroje, a v repozitáři
+by se rozcházely se zdrojem. `./spust_testy.sh --smoke` i CI si je před
+prohlížečovými sadami vyrobí samy, takže `overit_roadmapu.mjs` běží.
+
+**Vzhled a vykreslení se mění v `sablona.html`, data v `roadmap.json`.**
+Ruční úpravy vygenerované stránky se při příštím generování ztratí.
 
 Bez Pythonu jde JSON vložit do šablony i ručně — jen se musí `</` v textech
-zapsat jako `<\/`, jinak by to ukončilo `<script>` dřív, než má.
+zapsat jako `<\/`, jinak by to ukončilo `<script>` dřív, než má (generátor
+to dělá sám).
 
 ## Pravidla, která se tu hlídají
 

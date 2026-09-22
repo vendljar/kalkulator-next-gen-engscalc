@@ -340,6 +340,19 @@
    "testy": "Deset modelových a pět ke stavu obrazovky v src/test_poznamky.js (včetně toho, že v UI nezůstala cesta k nahrání přílohy). Prohlížečový harness overit_lista.mjs ověřuje obě polohy karty, jediné textové pole, žádná tlačítka, sdílený text mezi OCK a PROJ a že se nic nedostane do dokumentů."
   },
   {
+   "id": "312",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "nizka",
+   "slozitost": "M",
+   "hotovoV": "v22.9.10",
+   "nazev": "Roadmapa se dá vydat z repozitáře (generátor a šablona)",
+   "proc": "Generátor roadmapy žil v pracovní kopii mimo GitHub. Kdo měl po ruce jen repozitář, stránku přegenerovat neuměl — roadmapa proto zůstala na v17.9.2, zatímco aplikace byla o pět buildů dál. A prohlížečový harness overit_roadmapu.mjs se od svého vzniku jen přeskakoval, protože stránku neměl kde vzít: třináct kontrol, které nikdy neběžely.",
+   "detail": "Z vydané stránky ze 16. 9. 2026 se stala ŠABLONA: data se vyřízla a nahradila značkou `<?ROADMAP_JSON?>`. Generátor `roadmapa/roadmapa.py` na to místo vloží `roadmap.json` (se zaescapovaným `</`, jinak by ukončilo `<script>`) a vedle stránky napíše i textovou podobu pro čtení mimo prohlížeč.\\n\\nVzhled a vykreslení se tedy mění v šabloně, data v JSONu.\\n\\nVÝSTUPY SE NECOMMITUJÍ (stejný důvod jako u `dist/`): rozcházely by se se zdrojem a každá dávka by nafoukla diff o půl megabajtu. `./spust_testy.sh --smoke` i CI si stránku před prohlížečovými harnessy vyrobí samy, takže harness běží — napoprvé prošel, 13 kontrol.\\n\\nKontrola pravidel je ve skriptu i v Node sadě `src/test_roadmapa.js`. Dvě místa schválně: sada hlídá repozitář v CI, skript hlídá i toho, kdo generuje mimo něj.",
+   "kde": "roadmapa/roadmapa.py a roadmapa/sablona.html (nové), spust_testy.sh, .github/workflows/testy.yml, .gitignore, roadmapa/README.md",
+   "testy": "Čtyři nové kontroly v src/test_roadmapa.js (šablona je v repozitáři, nese značku, nezůstala v ní stará data, generátor existuje) a samotný overit_roadmapu.mjs, který se nově pouští místo přeskakování."
+  },
+  {
    "id" : "285",
    "vlna" : "C",
    "stav" : "ceka",

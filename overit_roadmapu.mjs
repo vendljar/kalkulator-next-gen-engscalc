@@ -12,14 +12,19 @@ import { najdiPodklad, preskoc } from './nastroje/harness_podklady.mjs';
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
 
-/* ROADMAPA.html se generuje z roadmap.json (`python3 roadmapa.py`) a v
- * repozitáři není. Do 22. 9. 2026 tu stála pevná cesta z cizího prostředí,
- * takže se tahle sada nemohla spustit nikde jinde (N18). */
+/* ROADMAPA.html je VÝSTUP: skládá ji `roadmapa/roadmapa.py` z roadmap.json
+ * a sablona.html. Do repozitáře se necommituje (stejný důvod jako u dist/),
+ * ale sada i CI si ji před během vyrobí, takže tenhle harness běží.
+ *
+ * Do 22. 9. 2026 tu stála pevná cesta z cizího prostředí, takže se sada
+ * nemohla spustit nikde jinde (N18), a generátor v repozitáři nebyl, takže
+ * se pak jen přeskakovala. Hledání venku zůstává jako záloha pro toho, kdo
+ * si stránku vyrobil jinde. */
 const ROADMAPA = najdiPodklad('ROADMAPA.html',
   ['/home/claude/work/kng/roadmapa/ROADMAPA.html',
    new URL('roadmapa/ROADMAPA.html', import.meta.url).pathname]);
 if (!ROADMAPA) preskoc('vygenerovaná ROADMAPA.html',
-  ['roadmapa/ROADMAPA.html (vzniká z roadmapa.py)', '$KNG_PODKLADY']);
+  ['roadmapa/ROADMAPA.html (vyrobí `python3 roadmapa/roadmapa.py`)', '$KNG_PODKLADY']);
 const SOUBOR = 'file://' + ROADMAPA;
 
 let ok = 0, fail = 0;

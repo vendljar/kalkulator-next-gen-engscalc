@@ -72,3 +72,10 @@ Thumbs.db
 manual/snimky.json
 manual/nahled.html
 manual/*_MANUAL_OBCHODNIK.html
+
+# Vygenerovaná roadmapa. Zdroj je roadmapa/roadmap.json + roadmapa/sablona.html,
+# skládá je roadmapa/roadmapa.py. Stejný důvod jako u dist/: výstup do
+# repozitáře nepatří, protože by se v něm rozcházel se zdrojem a diff by
+# u každé dávky nafoukl o půl megabajtu.
+roadmapa/ROADMAPA.html
+roadmapa/ROADMAPA.md

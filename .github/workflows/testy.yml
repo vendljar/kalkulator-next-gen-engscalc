@@ -174,6 +174,10 @@ jobs:
       #
       # Běží se v jednom kroku, aby se pokračovalo i po prvním selhání
       # a bylo v logu vidět VŠECHNO, co je rozbité, ne jen první nález.
+      # Bez tohohle kroku se overit_roadmapu.mjs vždycky jen přeskočí:
+      # stránka je výstup a v repozitáři není. Generátor v repozitáři je.
+      - name: Roadmapa (stránka pro harness)
+        run: python3 roadmapa/roadmapa.py
       - name: Prohlížečové harnessy (všechny overit_*.mjs)
         run: |
           selhalo=""

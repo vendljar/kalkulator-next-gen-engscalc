@@ -8,6 +8,35 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.9.10 — 22. 9. 2026
+
+### Roadmapa se dá vydat z repozitáře (#312)
+
+Generátor roadmapy v repozitáři nebyl. Žil v pracovní kopii mimo GitHub,
+což mělo dva důsledky. Kdo měl po ruce jen repozitář, stránku přegenerovat
+neuměl, a roadmapa proto zůstala na **v17.9.2**, zatímco aplikace byla o pět
+buildů dál. A prohlížečový harness, který stránku kontroluje, se **od svého
+vzniku jen přeskakoval** — třináct kontrol, které nikdy neběžely.
+
+Z vydané stránky ze 16. 9. je nově **šablona**: vyříznutá data nahradila
+značka, kam je generátor vkládá. Vzhled a vykreslení se tedy mění v šabloně,
+data v JSONu, a obojí je v repozitáři.
+
+```
+python3 roadmapa/roadmapa.py --kontrola   # jen pravidla, nic nezapíše
+python3 roadmapa/roadmapa.py              # → ROADMAPA.html + ROADMAPA.md
+```
+
+**Výstupy se necommitují** (stejný důvod jako u `dist/`): rozcházely by se
+se zdrojem a každá dávka by nafoukla diff o půl megabajtu. Sada
+`./spust_testy.sh --smoke` i CI si stránku před prohlížečovými harnessy
+vyrobí samy, takže `overit_roadmapu.mjs` běží. Prošel napoprvé, 13 kontrol.
+
+Kontrola pravidel je ve skriptu i v Node sadě. Dvě místa schválně: sada
+hlídá repozitář v CI, skript hlídá i toho, kdo generuje mimo něj.
+
+---
+
 ## v22.9.9 — 22. 9. 2026
 
 ### Sazba ATYP se bere vždy z ceníku, drobnosti v poznámkách, roadmapa (#298)

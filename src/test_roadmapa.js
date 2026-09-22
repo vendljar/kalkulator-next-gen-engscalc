@@ -91,15 +91,41 @@ if (polozky) {
   test('závislosti míří na existující položky', visici.length === 0, visici);
 
   /* ---------- text se vejde do <script> ----------
-   * Stránka vzniká vložením JSONu do `const RM = { … }` uvnitř <script>.
-   * Sekvence `</` v textu by značku ukončila dřív, než má; generátor ji
-   * escapuje, ale test hlídá, že se do zdroje nedostane nic, co by na to
-   * spoléhalo víc, než je zdrávo. */
-  const sKoncovkou = polozky
-    .filter(p => JSON.stringify(p).indexOf('</') >= 0)
-    .map(p => p.id);
-  test('žádný text nenese `</` (ukončilo by <script> stránky)',
-    sKoncovkou.length === 0, sKoncovkou);
+   * Stránka vzniká vložením JSONu do `const RM = { … }` uvnitř <script>,
+   * takže sekvence `</` v textu by značku ukončila dřív, než má.
+   *
+   * Do 22. 9. 2026 to tahle sada řešila ZÁKAZEM `</` v datech — generátor
+   * totiž v repozitáři nebyl a nešlo se spolehnout, že to někdo ošetří.
+   * Teď v něm je a escapování dělá sám, takže zákaz by jen bránil napsat
+   * do poznámky kus HTML. Hlídá se proto to, na čem to opravdu stojí:
+   * že generátor escapuje. Že výsledek v prohlížeči skutečně naběhne,
+   * ověřuje `overit_roadmapu.mjs` nad vygenerovanou stránkou. */
+  const gen = (() => {
+    try { return fs.readFileSync(path.join(__dirname, '..', 'roadmapa', 'roadmapa.py'), 'utf8'); }
+    catch (e) { return ''; }
+  })();
+  test('generátor escapuje `</`, aby text neukončil <script>',
+    /replace\('<\/', *'<\\\\\/'\)/.test(gen) || gen.indexOf("replace('</'") >= 0, gen.length);
+}
+
+/* ---------- šablona a generátor (22. 9. 2026) ----------
+ *
+ * Stránka se skládá z `roadmap.json` a `sablona.html`; do 22. 9. 2026 to
+ * uměl jen generátor v pracovní kopii mimo GitHub, takže roadmapa zůstala
+ * o pět buildů pozadu a nikdo s repozitářem ji neuměl vydat. Tyhle dvě
+ * kontroly hlídají, že v repozitáři zůstane obojí — sám JSON je k ničemu,
+ * když se nemá do čeho vložit. */
+{
+  const sablona = path.join(__dirname, '..', 'roadmapa', 'sablona.html');
+  const generator = path.join(__dirname, '..', 'roadmapa', 'roadmapa.py');
+  let s = '';
+  try { s = fs.readFileSync(sablona, 'utf8'); } catch (e) { s = ''; }
+  test('šablona stránky je v repozitáři', s.length > 1000, s.length);
+  test('a nese značku, kam se vkládají data', s.indexOf('<?ROADMAP_JSON?>') >= 0);
+  /* Data jdou do <script>: kdyby v šabloně zůstal kus starých dat, stránka
+   * by se vykreslila ze dvou zdrojů naráz. */
+  test('v šabloně nezůstala stará data', s.indexOf('"polozky"') < 0);
+  test('generátor je v repozitáři', fs.existsSync(generator));
 }
 
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
