@@ -180,8 +180,8 @@ kdo by podle nich plánoval rozpočet, spočítá to špatně oběma směry:
 | `netlify/functions/pd_dealy.mjs:47` | 10 stránek ≈ 20 tokenů | **až 100** (10 × 10) |
 | `netlify/functions/pd_pole.mjs:8` | seznam polí 20 tokenů | **10** |
 
-Opravit to jsou čtyři řádky komentářů; nesahá se při tom na chování. Čeká to
-na nejbližší dávku (§10, úkol 14).
+**Opraveno 22. 9. 2026** (commit `3d8dcea`): mění se jen komentáře, chování
+ne; `test_pipedrive` 71/71, `test_funkce` 210/210.
 
 ### 3.7 Podle hodnoty vlastního pole se v seznamu filtrovat NEDÁ
 
@@ -205,9 +205,71 @@ Zbývají dvě cesty a obě jsou v pořádku:
    (`pd_dealy.mjs`). Funguje bez jakéhokoli zásahu v CRM a je to přesně to, co
    kód dnes dělá s textovým hledáním.
 
-*Návrh: postavit to na cestě 2 a filtr podle 1 přidat jako zrychlení, až bude.*
-Kdyby se místo `enum` zvolil `varchar`, šlo by hledat i přes `/deals/search` —
-ale text se překlepne a výběr ne, takže `enum` je pořád lepší volba.
+*Návrh: viz §3.8 — s webhookem se seznam u nás nefiltruje vůbec, protože
+požadavky chodí samy.* Kdyby se místo `enum` zvolil `varchar`, šlo by hledat
+i přes `/deals/search` — ale text se překlepne a výběr ne, takže `enum` je
+pořád lepší volba.
+
+### 3.8 Skutečné náklady přenosu — a kde se opravdu šetří
+
+**Nejdřív narovnat, co stojí sto tokenů.** Sto není přenos. Je to teoretický
+strop **čtení celého seznamu dealů** (deset stránek po deseti) a platí se jen
+při vypršení 90s cache; při 308 dealech jsou to reálně 1–2 stránky, tedy
+10–20. **Přenos** — zápis řídící varianty do dealu — stojí:
+
+| krok | volání | tokenů |
+|---|---|---|
+| načíst deal pro potvrzovací tabulku | `GET /deals/{id}?custom_fields=<jen naše hashe>` | 1 |
+| zapsat strukturovaná pole — **všechna najednou, bez ohledu na počet** | `PATCH /deals/{id}` | 5 |
+| poznámka s krycím listem BO | `POST /v1/notes` | v1 — ve vložené specifikaci není; podle změnového logu řádově 10 |
+| příloha krycí list `.docx` | `POST /v1/files` | v1 — totéž |
+| příloha nabídka `.docx` | `POST /v1/files` | v1 — totéž |
+| **celkem za jeden přenos** | | **6 + tři zápisy v1 ≈ 30–40** |
+
+Proti rozpočtu `30 000 × násobič × počet míst` — i nejmenší představitelný
+(Lite, 3 místa) je 90 000 denně — je jeden přenos **čtyři setiny procenta
+dne**. Přenos tedy není místo, kde se šetří. Dvě věci z toho plynou:
+
+- **Počet přenášených polí cenu nemění.** `PATCH` stojí 5, ať nese jedno pole
+  nebo dvacet. To, že **nativní údaje neposíláme** (obchodník = vlastník
+  dealu, název akce a číslo CN = titulek, zákazník/IČO/sídlo = organizace,
+  kontakt = osoba, adresa stavby = existující vlastní pole), je správně kvůli
+  **duplicitě dat**, ne kvůli tokenům — viz §5.2, kde jsou vyjmenované.
+- **Kde se šetří, je čtení** — a hlavně to, které §6.2 přidává: hlídání
+  požadavků. Dnešní návrh (kalkulačka se ptá na seznam a filtruje *Zadáno*)
+  znamená 10–20 tokenů pokaždé, když někdo otevře kartu po vypršení cache.
+  Za den při pěti obchodnících klidně stovky tokenů — pořád zlomek rozpočtu,
+  ale zbytečný a hlavně **opožděný** (90 s).
+
+#### Push místo pull: Pipedrive nám změny pošle sám
+
+**Webhook** — v1 (v2 protějšek nemá, na seznamu zastaralých není), výchozí
+verze 2.0 od 17. 3. 2025 posílá deal **ve stejném tvaru jako v2 API**, takže
+mu naše `pd_mapa.mjs` rozumí bez úprav. Zakládá se **ručně v Pipedrive**
+(Nastavení → Nástroje → Webhooky, právo správce má integrátor): **na jeho
+straně žádný kód, na naší straně žádný dotaz do API.**
+
+| krok | co se stane | tokenů |
+|---|---|---|
+| 1 | Integrátor založí webhook: `event_object = deal`, `event_action = change` (a `create`), `subscription_url = https://<web>/api/pd/webhook`, HTTP Basic auth (heslo = nová proměnná `PIPEDRIVE_WEBHOOK_HESLO` v Netlify), `user_id` = správce — jinak webhook posílá jen to, k čemu má daný uživatel přístup | 0 |
+| 2 | Nová `netlify/functions/pd_webhook.mjs`: ověří Basic auth proti proměnné (`timingSafeEqual` jako u B22), cokoli jiného → 401; z těla vezme `data` (deal v2) a přečte `Stav kalkulace`; je-li *Zadáno*, zapíše záznam do úložiště `pd_pozadavky` (klíč = id dealu, hodnota = hlavička přes `pdDealNaNase` + čas); jinak záznam smaže. Odpoví 200 hned — Pipedrive při chybě opakuje | 0 |
+| 3 | Karta *Požadavky z Pipedrivu* čte **z našeho úložiště** (`GET /api/pd/pozadavky`) | **0** |
+| 4 | **Smyčka:** náš vlastní `PATCH` vyvolá webhook zpátky. Pozná se podle `meta.user_id` = účet integrace → ignorovat. **Další důvod pro samostatný účet z otázky A** | 0 |
+| 5 | **Záchranná síť:** tlačítko *Srovnat s Pipedrive* (vedoucí/admin) — `GET /deals?updated_since=<čas posledního webhooku>&custom_fields=<hash stavu>` dorovná, co webhook zmeškal (výpadek, vypnutý webhook). Ručně, nebo jednou za noc z `zaloha_nocni.mjs`, která už běží | 10 / den |
+
+Výsledek: **hlídání požadavků 0 tokenů denně** místo stovek, požadavek je
+v kalkulačce **do vteřiny** místo do 90 s, a z #117 (souběh a synchronizace)
+je tím hotová polovina práce rovnou — webhook byl tam stejně plánovaný, jen
+se posouvá dřív, protože je to nejlevnější způsob, jak požadavky vůbec vidět.
+
+#### Co jde srazit na zápisu (kdyby na tom někdy záleželo)
+
+- **Nabídka `.docx` jako příloha volitelně** (zaškrtávátko u odeslání) — je
+  největší a Backoffice ji nutně nepotřebuje, když má krycí list.
+- Poznámka + krycí list `.docx` = to, co Backoffice chce. Nechat.
+- `GET /deals/{id}` před zápisem stojí 1 token a nese potvrzovací tabulku —
+  vyplatí se. S webhookem máme aktuální stav i v úložišti, ale za 1 token bych
+  ho pro jistotu četl z Pipedrive dál: potvrzuje se proti CRM, ne proti kopii.
 
 ---
 
@@ -295,6 +357,23 @@ rozdíly.* Důvod je rozhodnutí #162: dokud Pipedrive neumí vytěžovat ARES, 
 přesnější karta zákazníka v kalkulátoru — a přepisovat CRM méně spolehlivým
 zdrojem je krok zpátky. Až se to otočí, je to malá změna.
 
+**Nativní pole se nepřenášejí vůbec** (rozhodnutí J. V. 22. 9. 2026) — jsou
+v Pipedrive už dnes a jsou tam zdrojem, ne cílem. Vynechávají se jak
+z `PATCH`, tak z poznámky ve vrstvě 3:
+
+| pole krycího listu | kde v Pipedrive je |
+|---|---|
+| `obchodnik` | vlastník dealu (`owner_id`) |
+| `nazevAkce`, `cisloCN` | titulek dealu (`title` — „CN-123 Název") |
+| `zakaznik`, `ico`, `adresaZakaznik` | organizace (název, vlastní pole IČO, adresa) |
+| `jmenoPrijmeni`, `kontaktZakaznikTel`, `kontaktZakaznikEmail` | osoba (jméno, telefony, e-maily) |
+| `adresaStavby` | existující vlastní pole dealu (audit 9. 8. 2026) |
+| celá sekce **Dodavatel (naše firma)** | není v CRM, ale je to **naše konstanta** — do CRM nepatří |
+
+Poznámka ve vrstvě 3 tím zhubne zhruba na **55 řádků (OCK) / 75 (PROJ)**.
+Na ceně to nic nemění (poznámka stojí stejně, ať je dlouhá jak chce), ale
+Backoffice nedostane dvakrát totéž a nic se nerozejde s tím, co je na dealu.
+
 **Vrstva 3 — celý krycí list Backoffice jako poznámka a příloha.**
 Tohle je jádro odpovědi na B+C+D:
 
@@ -348,10 +427,11 @@ nemění, takže se nerozbijí trychtýř ani reporty:
 **Kroky:**
 
 1. **V kalkulačce přibude seznam požadavků** — karta *Požadavky z Pipedrivu
-   (n)*. Čte se existující funkcí `/api/pd/dealy` rozšířenou o filtr na
-   `Stav kalkulace = Zadáno`. **Filtruje se u nás nad staženým seznamem**, ne
-   dotazem — podle hodnoty vlastního pole Pipedrive filtrovat neumí a `enum`
-   není ani vyhledatelný (§3.7). Zrychlit to jde uloženým filtrem v CRM.
+   (n)*. **Čte se z našeho úložiště `pd_pozadavky`, které plní webhook**
+   (§3.8) — 0 tokenů, aktuální do vteřiny. Do Pipedrive se na seznam ptá jen
+   záchranné *Srovnat s Pipedrive* (10 tokenů, `updated_since`). Podle hodnoty
+   vlastního pole Pipedrive filtrovat neumí a `enum` není ani vyhledatelný
+   (§3.7), takže tohle je zároveň jediná cesta, jak požadavky dostat levně.
 2. **Klik na požadavek založí NOVOU zakázku.** Nikdy se nepřipojí
    k otevřené — to je to „vynutí" ze zadání. Hlavička se předvyplní z dealu
    (funkce `/api/pd/deal` už to celé umí) a do zakázky se uloží vazba
@@ -400,9 +480,13 @@ v Pipedrive, ne aplikace** — vyžadovalo by to právo `admin` a tvar CRM patř
 do CRM. Kalkulačka bude umět **říct, které pole chybí**, a poslat zbytek.
 
 **D‑3 — Požadavky a založení zakázky (#113 + nové).**
-Karta *Požadavky z Pipedrivu*, založení nové zakázky z požadavku, vazba
-`ZAK.pdDealId`, pojistka proti dvojímu zpracování, přepnutí stavu na
-*Vyřizuje se*. Serverové čtení je hotové, jde hlavně o UI a o rejstřík.
+Nová `netlify/functions/pd_webhook.mjs` (příjem změn z Pipedrive, Basic auth,
+zápis do `pd_pozadavky`, ignorování vlastních zápisů) a `GET /api/pd/pozadavky`
+(čtení z úložiště, 0 tokenů). Karta *Požadavky z Pipedrivu*, založení nové
+zakázky z požadavku, vazba `ZAK.pdDealId`, pojistka proti dvojímu zpracování,
+přepnutí stavu na *Vyřizuje se*. Záchranné *Srovnat s Pipedrive* přes
+`updated_since`. **Na straně integrátora:** založit webhook (§3.8, krok 1)
+a v Netlify přibude proměnná `PIPEDRIVE_WEBHOOK_HESLO`.
 
 **D‑4 — Potvrzený zápis řídící varianty (#115).**
 Nová `netlify/functions/pd_zapis.mjs` (`POST /api/pd/zapis`): server si deal
@@ -420,9 +504,11 @@ psát, změřit skutečnou velikost nabídky i krycího listu; náhradní cesta 
 generovat `.docx` rovnou na serveru.
 
 **D‑6 — Souběh a zpětná synchronizace (#117).**
-Až se bude zapisovat pravidelně. Levnější začátek je dotaz `updated_since`
-než webhook. **Pozor na smyčku:** vlastní zápis posune čas poslední změny —
-další důvod pro samostatný účet pro integraci.
+Webhook z D‑3 už chodí, takže tady zbývá jen druhá polovina: změny v CRM
+u **navázaného** dealu (částka, podmínky) ukázat v kalkulačce jako rozdíl
+proti zapsané řídící variantě, ne je tiše přebírat. Smyčka je ošetřená
+v D‑3 (`meta.user_id` = účet integrace) — **další důvod pro samostatný účet
+pro integraci.**
 
 ### 7.2 Co vědomě NEDĚLÁME
 
@@ -479,6 +565,15 @@ vyjmenuj je a přesunu je do vrstvy 1.
 schvalování slev v provozu a bude jasné, že se CRM a kalkulačka v číslech
 neperou.
 
+**K) Webhook místo dotazování** (§3.8). *Návrh: ano* — je to jediná cesta,
+jak požadavky hlídat za nula tokenů, a integrátor ho založí v Pipedrive
+ručně bez kódu. Potřebuje k tomu **adresu webu** a **heslo pro Basic auth**
+(nastavíš ho v Netlify jako `PIPEDRIVE_WEBHOOK_HESLO`, jemu dáš totéž —
+opět ne přes mě).
+
+**L) Nabídka `.docx` jako příloha** — vždy, nebo jen na zaškrtnutí?
+*Návrh: na zaškrtnutí, výchozí zapnuté.* Krycí list a poznámka jdou vždy.
+
 ---
 
 ## 9) Rizika
@@ -513,5 +608,8 @@ neperou.
 | 11 | Aktualizovat roadmapu (#16, #113–#117) | ⬜ | záměrně odloženo — G a H mění, co v položkách stojí |
 | 12 | Ověřit token cost jednotlivých endpointů | ✅ | z `x-token-cost` ve vložené specifikaci; §3.3 a §3.5 |
 | 13 | Ověřit úplnost vložené specifikace | ✅ | 85 cest proti SDK 33.7.0, nula rozdílů |
-| 14 | Opravit pět čísel v komentářích kódu | ⬜ | §3.6 — čtyři řádky, bez zásahu do chování |
-| 15 | Uložený filtr „Stav kalkulace = Zadáno" v CRM | ⬜ | pro integrátora, §3.7 — nepovinné zrychlení |
+| 14 | Opravit pět čísel v komentářích kódu | ✅ | commit `3d8dcea`; testy 71/71 a 210/210 |
+| 15 | Uložený filtr „Stav kalkulace = Zadáno" v CRM | ⬜ | pro integrátora — s webhookem (§3.8) už jen záloha, ne nutnost |
+| 16 | Navrhnout úspornější přenos | ✅ | §3.8 — přenos ≈ 30–40 tokenů, čtení požadavků 0 přes webhook |
+| 17 | Vyjmenovat nativní pole, která se nepřenášejí | ✅ | §5.2 |
+| 18 | Webhook v Pipedrive + `PIPEDRIVE_WEBHOOK_HESLO` v Netlify | ⬜ | integrátor + ty; otázka K |
