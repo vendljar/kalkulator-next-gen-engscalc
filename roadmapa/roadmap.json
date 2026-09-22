@@ -222,6 +222,19 @@
    "testy": "overit_program.mjs (78 OK)"
   },
   {
+   "id": "303",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "vysoka",
+   "slozitost": "S",
+   "hotovoV": "v22.9.4",
+   "nazev": "B53 — čísla už odeslané nabídky šlo přepsat beze stopy",
+   "proc": "Bezpečnostní audit 22. 9. 2026, jediný vysoký nález. Od 15. 9. si zámek varianty ukládá CELÝ výsledek výpočtu (`zamek.vysledek`) a všechny dokumenty i přehledy berou částky odtud — `vypocetZ()` a `vypocetProjZ()` vracejí zmrazená data, pokud existují. Otisk zámku ho ale nezahrnoval.",
+   "detail": "DŮSLEDEK: dvě varianty lišící se POUZE ve `vysledek` měly shodný klíč `uloZamekKlic()`, `uloKontrolaZamku()` vrátila ok a serverová pojistka v `zakazky.mjs` porovnávala jen `data` — ta jsou shodná. Razítko `kdo` se u existujícího zámku záměrně přeskakuje, takže se nezměnilo ani ono.\n\nCESTA ZNEUŽITÍ: obchodník si stáhne VLASTNÍ zakázku z GET /api/zakazky, v JSONu změní jedině `varianty[i].zamek.vysledek.ock` a pošle ji zpět. Od té chvíle tisk téže „neměnné\" nabídky, krycí list i celý přehled ukazují jiné peníze, než jaké dostal zákazník — BEZ JEDINÉ STOPY, protože `tisky[]` ani `odemceni[]` nepřibudou. Táž mezera byla v obnově ze zálohy v režimu „přepsat\".\n\nZMĚŘENO PŘED OPRAVOU: cena v zámku 912 000 → 1, klíč zámku SHODNÝ, `uloKontrolaZamku` ok, `data` shodná.\n\nOPRAVA: do klíče zámku přibyl CELÝ zmrazený výsledek. První verze opravy tam dávala jen krátký otisk (FNV-1a, 32 bitů) kvůli velikosti (~25 kB na variantu), ale FNV není kryptografická funkce a její kód je v každé vydané stránce — kdo chce částky přepsat, dopočítá si k nim výplň se shodným otiskem. Přesné porovnání skulinu nemá a je to totéž, čím se o řádek vedle porovnávají `data` uzamčené varianty (`zakazky.mjs`). Klíč se skládá jen při ukládání (server `zakazky.mjs` a `obnova.mjs`, v prohlížeči `uloziste_ui.js`), ne při vykreslování.\n\nOBĚ CESTY JSOU TÍM POKRYTÉ NARÁZ — `zakazky.mjs` i `obnova.mjs` volají tutéž `uloKontrolaZamku`, takže stačilo opravit klíč.\n\nSTARŠÍ ZAKÁZKY SE NEROZBILY: otisk se počítá čerstvě pro obě strany porovnání, takže zámek bez `vysledek` dává null proti null. Ověřeno vlastní kontrolou, aby oprava nezablokovala historické zakázky.",
+   "kde": "src/uloziste.js (uloZamekKlic, uloOtiskHodnoty)",
+   "testy": "netlify/test_prava.mjs — 5 kontrol včetně pojistky proti prázdnému testu (podvrh se smí lišit VÝHRADNĚ ve zmrazeném výsledku) a kontroly starších zámků. Ověřeno, že bez opravy padají 2 z nich. Mutace „zmrazený výsledek se bere, jak přijde\" v netlify/mutace.mjs."
+  },
+  {
    "id" : "285",
    "vlna" : "C",
    "stav" : "ceka",

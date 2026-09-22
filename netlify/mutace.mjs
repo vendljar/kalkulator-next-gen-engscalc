@@ -397,6 +397,15 @@ const MUTACE = [
     nahrad: "      ? progKopie(ctx.cenik) : progKopie(ctx.cenik)) || {},",
     proc: 'zveřejněná verze by nesla rada/jenZahr a tvářila se jako zahraniční pro všechny' },
 
+  /* Zmrazený výsledek odeslané nabídky (B53, audit 22. 9. 2026).
+   * Dokumenty berou částky z `zamek.vysledek`. Kdyby vypadl z otisku zámku,
+   * daly by se přepsat částky už odeslané nabídky — a bez stopy, protože
+   * `tisky[]` ani `odemceni[]` nepřibudou. */
+  { nazev: 'zmrazený výsledek se bere, jak přijde', soubor: '../src/uloziste.js',
+    hledej: "                          vysledek: z.vysledek || null });",
+    nahrad: "                          vysledek: null });",
+    proc: 'šlo by přepsat částky už odeslané („neměnné") nabídky beze stopy' },
+
   /* ČR sloupec položky „jen zahraniční" (#290, druhé kolo revize).
    * Oprava sedí za `typeof` strážemi, takže se dá vypnout i omylem — třeba
    * změnou pořadí načítání v jadro_moduly.cjs. Tahle mutace ověřuje, že by

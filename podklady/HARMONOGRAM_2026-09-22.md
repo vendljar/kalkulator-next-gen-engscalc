@@ -108,6 +108,22 @@ ne jen `data`; totéž v obnově ze zálohy (`obnova.mjs:441–453`). Plus mutac
 zakázky: klíč se počítá čerstvě pro obě strany porovnání, takže starší zámky
 bez `vysledek` projdou dál — ověřím testem, ne úvahou.
 
+### Jak to dopadlo (doplněno po provedení)
+
+Stačilo opravit **jedno místo**, ne tři: `zakazky.mjs` i `obnova.mjs` volají
+tutéž `uloKontrolaZamku`, takže oprava klíče pokryla obě cesty naráz.
+
+Do klíče šel nakonec **celý výsledek**, ne jeho otisk. První verze měla otisk
+(FNV-1a, 32 bitů) kvůli velikosti (~25 kB na variantu). Při kontrole před
+commitem jsem si vlastní řešení zamítl: FNV není kryptografická funkce a její
+kód je ve vydané stránce, takže kdo chce částky přepsat, dopočítá si k nim
+výplň se shodným otiskem. Klíč se skládá jen při ukládání, ne při vykreslování,
+takže přesné porovnání je zaplatitelné — a je to totéž, čím se o řádek vedle
+porovnávají `data` uzamčené varianty.
+
+Předpoklad o starších zakázkách se potvrdil a je pokrytý vlastní kontrolou,
+ne úvahou.
+
 ## Dávka 4 — serverové pojistky: B54, B55, B56 (odpoledne, M)
 
 **B54** — prázdná proměnná `ADMIN_EMAIL` tiše vypne všechny ochrany hlavního
@@ -124,6 +140,40 @@ tomu, co je uložené; test na vynechané pole.
 **B56** — zákaz změnit číslo nabídky po odeslání žije jen v prohlížeči
 (`common.js:564`); server (`zakazky.mjs:88–91`) hlídá jen délku. Doplnit
 serverovou kontrolu u uzamčené varianty.
+
+### Rozhodnuto před psaním kódu (22. 9. 2026)
+
+**B54 — kam přesně patří 503.** Ne na celou obsluhu `uzivatele.mjs`: jedna
+akce v ní je dostupná i bez role administrátora (změna VLASTNÍHO hesla) a tu
+by odmítnutí připravilo o jedinou cestu k nápravě. Tři místa:
+`uzivatele.mjs` hned za `relace.role !== 'Administrátor'` (kryje nový účet,
+reset hesla, roli, zapnutí, archiv, převod i smazání), dále větev resetu
+CIZÍHO hesla o kus výš, a `obnova.mjs` za jeho kontrolou role. Přihlášení
+zůstává funkční schválně — bez něj by se závada nedala opravit zevnitř.
+
+Kontrola se ptá na konstantu `ADMIN_EMAIL` **i** na živou proměnnou
+prostředí. Konstanta se čte jednou při načtení modulu (to je hodnota, na
+které ochrany opravdu stojí), živá proměnná dovolí test v témže procesu.
+Odmítne se, když je prázdná kterákoli z nich — tedy přísněji.
+
+**B55 — proti čemu porovnávat.** Prostá výměna „odchylky z požadavku" za
+„odchylky uložené" by uměla zamknout ceník: kdo chce zrušit víc než pět
+odchylek naráz, neprojde, protože se pořád porovnává proti tomu, co ruší.
+Proto sjednocení uložených a příchozích odchylek PLUS podmínka, že se počítá
+jen položka, jejíž ČR cena se tímhle zveřejněním **mění**. Cena, která
+zůstala stejná jako v platné verzi, nemohla přijít ze zahraniční varianty.
+Vyžaduje načíst `db` dřív než posudek a rozšířit `cenikZverejneniShody`
+o předchozí záznam.
+
+**B56 — z čeho se pozná změna čísla.** Ne z uložené zakázky: změna čísla
+zakázku přesune pod JINÉ jméno souboru, takže server nemá co porovnávat
+(právě tudy díra vede). Pozná se ze zámku samotného — `zamek.cislo` drží
+číslo z okamžiku odeslání (`zamek_ui.js` ho plní z `variantaCislo`). Kontrola
+je tedy vnitřní: u každé uzamčené varianty musí `zamek.cislo` odpovídat
+`variantaCislo(zak, v)`. Prázdné `zamek.cislo` (zámky před zavedením pole)
+se přeskakuje. Výjimka pro administrátora podle rozhodnutí J. V. z 15. 9.
+2026 („Pouze administrátor"), a razítko čísla v zámku pak přepíše server,
+aby zakázka nezůstala trvale v rozporu.
 
 ## Dávka 5 — drobnosti (podvečer, S)
 

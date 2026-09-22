@@ -429,8 +429,42 @@ const ULO_PROBLEMY = {
 function uloZamekKlic(v) {
   const z = v && v.zamek;
   if (!z || !z.zamceno) return '';
+  /* ZMRAZENÝ VÝSLEDEK PATŘÍ DO OTISKU ZÁMKU (nález B53, audit 22. 9. 2026).
+   *
+   * Od 15. 9. 2026 si zámek vedle souhrnného `otisk` ukládá CELÝ výsledek
+   * výpočtu (`zamek.vysledek`) a všechny dokumenty i přehledy berou čísla
+   * odtud — `vypocetZ()` a `vypocetProjZ()` vracejí zmrazená data, pokud
+   * existují. Do klíče se ale `vysledek` nepočítal.
+   *
+   * Dvě varianty lišící se POUZE ve `vysledek` tedy měly shodný klíč,
+   * `uloKontrolaZamku()` vrátila ok a serverová pojistka v zakazky.mjs
+   * porovnávala jen `data` — ta jsou shodná. Kdo si stáhl vlastní zakázku
+   * z GET /api/zakazky, přepsal v JSONu `varianty[i].zamek.vysledek.ock`
+   * a poslal ji zpět, změnil částky UŽ ODESLANÉ nabídky. Tisk téže
+   * „neměnné" nabídky, krycí list i přehled pak ukazovaly jiné peníze, než
+   * jaké dostal zákazník — a bez jediné stopy, protože `tisky[]` ani
+   * `odemceni[]` nepřibyly.
+   *
+   * Změřeno před opravou: cena v zámku 912 000 → 1, klíč SHODNÝ,
+   * `uloKontrolaZamku` ok, `data` shodná.
+   *
+   * DO KLÍČE JDE CELÝ VÝSLEDEK, NE JEHO OTISK. První verze téhle opravy
+   * vkládala krátký otisk (FNV-1a, 32 bitů), aby se nepracovalo s 25 kB
+   * na variantu. Jenže FNV není kryptografická funkce a její kód je
+   * v každé vydané stránce: kdo chce částky přepsat, dopočítá si k nim
+   * výplň se shodným otiskem. U bezpečnostní kontroly je to málo. Přesné
+   * porovnání žádnou takovou skulinu nemá a je to totéž, čím se o řádek
+   * vedle porovnávají `data` uzamčené varianty (zakazky.mjs).
+   *
+   * Cena za to je snesitelná: klíč se skládá jen při ULOŽENÍ (server
+   * zakazky.mjs a obnova.mjs, v prohlížeči uloziste_ui.js), ne při
+   * vykreslování, a celá zakázka se u téhož uložení stejně serializuje.
+   *
+   * Starší zámky bez `vysledek` to nerozbije — klíč se skládá čerstvě pro
+   * obě strany porovnání, takže `null` proti `null` sedí. */
   return JSON.stringify({ kdy: z.kdy || '', typ: z.typ || '', cislo: z.cislo || '',
-                          otisk: z.otisk || null });
+                          otisk: z.otisk || null,
+                          vysledek: z.vysledek || null });
 }
 
 function uloPocetOdemceni(v) {

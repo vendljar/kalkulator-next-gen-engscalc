@@ -8,6 +8,49 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.9.4 — 22. 9. 2026
+
+### Dávka 3: čísla už odeslané nabídky šlo přepsat beze stopy (#303)
+
+Jediný **vysoký** nález bezpečnostního auditu. Od 15. 9. si zámek varianty
+ukládá **celý výsledek výpočtu** a všechny dokumenty i přehledy berou částky
+odtud. Otisk zámku ho ale nezahrnoval.
+
+Dvě varianty lišící se **pouze** ve zmrazeném výsledku měly tedy shodný
+klíč, kontrola zámku vrátila „v pořádku" a serverová pojistka porovnávala
+jen `data` — ta jsou shodná. Razítko „kdo" se u existujícího zámku záměrně
+přeskakuje, takže se nezměnilo ani ono.
+
+**Cesta zneužití:** obchodník si stáhne vlastní zakázku, v JSONu změní
+jedině `varianty[i].zamek.vysledek.ock` a pošle ji zpět. Od té chvíle tisk
+téže „neměnné" nabídky, krycí list i celý přehled ukazují jiné peníze, než
+jaké dostal zákazník — **bez jediné stopy**, protože `tisky[]` ani
+`odemceni[]` nepřibudou. Táž mezera byla v obnově ze zálohy.
+
+Změřeno před opravou: cena v zámku **912 000 → 1**, klíč zámku **shodný**,
+kontrola v pořádku, `data` shodná.
+
+Do klíče zámku proto přibyl **celý zmrazený výsledek**. První verze opravy
+tam dávala jen krátký otisk (FNV‑1a, 32 bitů), aby se nepracovalo s 25 kB
+na variantu — jenže FNV není kryptografická funkce a její kód je v každé
+vydané stránce, takže kdo chce částky přepsat, dopočítá si k nim výplň se
+shodným otiskem. U kontroly, která má hlídat podvrh, je to málo. Přesné
+porovnání skulinu nemá a je to totéž, čím se o řádek vedle porovnávají
+`data` uzamčené varianty. Zaplatí se to jen při ukládání, ne při
+vykreslování, a celá zakázka se u téhož uložení stejně serializuje.
+
+**Obě cesty jsou pokryté naráz** — ukládání i obnova volají tutéž kontrolu,
+takže stačilo opravit klíč. **Starší zakázky se nerozbily:** klíč se skládá
+čerstvě pro obě strany porovnání, takže zámek bez zmrazeného výsledku dává
+null proti null. Ověřeno vlastní kontrolou.
+
+Pět serverových kontrol včetně pojistky proti prázdnému testu (podvrh se smí
+lišit **výhradně** ve zmrazeném výsledku, jinak by ho zastavila jiná
+kontrola a test by neměřil B53). Ověřeno, že bez opravy dvě z nich padají.
+Plus mutace „zmrazený výsledek se bere, jak přijde".
+
+---
+
 ## v22.9.3 — 22. 9. 2026
 
 ### Dávka 2: po F5 se ztrácela rozdělaná práce (#301, #302)

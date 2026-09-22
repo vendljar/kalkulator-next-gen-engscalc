@@ -192,6 +192,41 @@ k = uloKontrolaZamku(naDisku(), prepsanyZamek);
 test('změněný otisk odeslaných částek se pozná',
   !k.ok && k.problemy[0].duvod === 'zmenena', JSON.stringify(k));
 
+/* ZMRAZENÝ VÝSLEDEK JE SOUČÁSTÍ ZÁMKU (nález B53, audit 22. 9. 2026).
+ *
+ * Od 15. 9. 2026 si zámek vedle souhrnného `otisk` drží CELÝ výsledek
+ * výpočtu a dokumenty i přehledy berou částky odtud. Do klíče se ale
+ * nepočítal, takže dvě varianty lišící se POUZE ve `vysledek` měly klíč
+ * shodný a přepsání částek už odeslané nabídky neprošlo nikde. */
+const sVysledkem = naDisku();
+sVysledkem.varianty[0].zamek.vysledek = { ock: { souhrn: { zakladCena: 912000, celkem: 1103520 } } };
+test('shodný zmrazený výsledek projde',
+  uloKontrolaZamku(sVysledkem, JSON.parse(JSON.stringify(sVysledkem))).ok);
+
+const prepsanyVysledek = JSON.parse(JSON.stringify(sVysledkem));
+prepsanyVysledek.varianty[0].zamek.vysledek.ock.souhrn.zakladCena = 1;
+k = uloKontrolaZamku(sVysledkem, prepsanyVysledek);
+test('přepsaná částka ve zmrazeném výsledku se pozná (B53)',
+  !k.ok && k.problemy[0].duvod === 'zmenena', JSON.stringify(k));
+
+/* Pojistka proti prázdnému testu: podvrh se smí lišit VÝHRADNĚ ve zmrazeném
+ * výsledku. Kdyby se lišil i jinde, chytila by ho jiná kontrola a tenhle
+ * test by B53 neměřil. */
+const bezVysledku = (z) => {
+  const c = JSON.parse(JSON.stringify(z));
+  c.varianty.forEach(v => { if (v.zamek) delete v.zamek.vysledek; });
+  return JSON.stringify(c);
+};
+test('podvrh se liší jedině ve zmrazeném výsledku',
+  bezVysledku(sVysledkem) === bezVysledku(prepsanyVysledek));
+
+/* Zámky pořízené před 15. 9. 2026 `vysledek` nemají. Klíč se skládá čerstvě
+ * pro obě strany porovnání, takže jim chybějící pole nic nerozbije. */
+const starsiZamek = JSON.parse(JSON.stringify(sVysledkem));
+starsiZamek.varianty.forEach(v => { if (v.zamek) delete v.zamek.vysledek; });
+test('starší zámek bez zmrazeného výsledku projde',
+  uloKontrolaZamku(starsiZamek, JSON.parse(JSON.stringify(starsiZamek))).ok);
+
 const zmenenaNezamcena = naDisku();
 zmenenaNezamcena.varianty[1].nazev = 'Přejmenováno';
 test('změna nezamčené varianty nevadí', uloKontrolaZamku(naDisku(), zmenenaNezamcena).ok);

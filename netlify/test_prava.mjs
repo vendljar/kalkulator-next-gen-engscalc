@@ -727,6 +727,65 @@ jinyZamek.varianty[0].zamek = { ...jinyZamek.varianty[0].zamek,
 test('zámek nesmí být potichu vyměněn za jiný',
   (await post(zakazky, 'http://x/api/zakazky', { zakazka: jinyZamek }, cObch)).status === 409);
 
+/* ---------- B53: ZMRAZENÝ VÝSLEDEK ODESLANÉ NABÍDKY ----------
+ * (bezpečnostní audit 22. 9. 2026, vysoká závažnost)
+ *
+ * Od 15. 9. 2026 si zámek ukládá CELÝ výsledek výpočtu (`zamek.vysledek`)
+ * a všechny dokumenty berou čísla odtud — `vypocetZ()` vrací zmrazená data,
+ * pokud existují. Otisk zámku ho ale nezahrnoval a server porovnával jen
+ * `data`. Dvě varianty lišící se POUZE ve `vysledek` tedy měly shodný klíč
+ * a zápis prošel.
+ *
+ * CESTA ZNEUŽITÍ, kterou audit popsal a která se tu zkouší doslova:
+ * obchodník si stáhne VLASTNÍ zakázku, v JSONu změní jedině
+ * `varianty[i].zamek.vysledek.ock` (data i zbytek zámku nechá být) a pošle
+ * ji zpět. Od té chvíle tisk téže „neměnné" nabídky, krycí list i přehled
+ * ukazují jiné peníze, než jaké dostal zákazník — bez jediné stopy, protože
+ * `tisky[]` ani `odemceni[]` nepřibudou.
+ *
+ * Změřeno před opravou: cena v zámku 912 000 → 1, klíč zámku SHODNÝ,
+ * `uloKontrolaZamku` ok, `data` shodná. Zápis prošel. */
+const sVysledkem = zakazkaCislo('2026 - OPR - CN - 0906');
+zam.zamkniVariantu(sVysledkem.varianty[0], {
+  typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Matice práv',
+  vysledek: { ock: { souhrn: { zakladCena: 912000, celkemSDph: 1103520 } },
+              proj: null, kurzEurKc: 25 },
+});
+const ulozSVysledkem = await (await post(zakazky, 'http://x/api/zakazky',
+  { zakazka: sVysledkem }, cObch)).json();
+test('B53: zakázku se zmrazeným výsledkem lze uložit',
+  ulozSVysledkem.ok === true, JSON.stringify(ulozSVysledkem));
+
+const podvrh = JSON.parse(JSON.stringify(sVysledkem));
+podvrh.varianty[0].zamek.vysledek.ock.souhrn.zakladCena = 1;
+/* POJISTKA PROTI PRÁZDNÉMU TESTU: podvrh se od originálu smí lišit VÝHRADNĚ
+ * ve zmrazeném výsledku. Kdyby se lišil i v datech nebo ve zbytku zámku,
+ * zápis by zastavila jiná kontrola a tenhle test by neměřil B53. */
+test('B53: podvrh mění opravdu jen zmrazený výsledek',
+  JSON.stringify(podvrh.varianty[0].data) === JSON.stringify(sVysledkem.varianty[0].data)
+  && podvrh.varianty[0].zamek.kdy === sVysledkem.varianty[0].zamek.kdy
+  && JSON.stringify(podvrh.varianty[0].zamek.otisk) === JSON.stringify(sVysledkem.varianty[0].zamek.otisk));
+const odpVysledek = await post(zakazky, 'http://x/api/zakazky', { zakazka: podvrh }, cObch);
+test('B53: přepsaný zmrazený výsledek odeslané nabídky server odmítne',
+  odpVysledek.status === 409, String(odpVysledek.status));
+test('B53: a řekne proč (uzamčená nabídka)',
+  /uzamčen|odeslan/i.test(JSON.stringify(await odpVysledek.json())));
+
+/* A naopak: zakázka BEZ zmrazeného výsledku (starší zámky ho nemají) se
+ * ukládat musí dál — klíč zámku se skládá čerstvě pro obě strany porovnání,
+ * takže null proti null sedí. Bez tohohle by oprava zablokovala historické
+ * zakázky. */
+const starsiZamek = zakazkaCislo('2026 - OPR - CN - 0907');
+zam.zamkniVariantu(starsiZamek.varianty[0],
+  { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Matice práv' });
+delete starsiZamek.varianty[0].zamek.vysledek;
+await post(zakazky, 'http://x/api/zakazky', { zakazka: starsiZamek }, cObch);
+const starsiZnovu = JSON.parse(JSON.stringify(starsiZamek));
+starsiZnovu.nazevAkce = 'Jiný název, zámku se to netýká';
+const odpStarsi = await post(zakazky, 'http://x/api/zakazky', { zakazka: starsiZnovu }, cObch);
+test('B53: zámek bez zmrazeného výsledku se ukládá dál (starší zakázky)',
+  odpStarsi.status === 200, String(odpStarsi.status));
+
 /* ============================================================
  * BEZPEČNOSTNÍ AUDIT 22. 8. 2026 — nálezy B1, B2, B3
  *
