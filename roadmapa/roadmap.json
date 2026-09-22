@@ -446,7 +446,19 @@
    "proc": "Nezávislá revize nad main v22.9.9 (dokument 2026-09-22_kalkulator_REVIZE_zmen_21-22_9_v22.9.9.md). J. V. 22. 9. večer: „prověř ještě postřehy a úpravy v přiložených md a posuď, zda dávají smysl.\" Každý nález prověřen proti větvi test (v22.9.16) — revize běžela před večerními dávkami.",
    "detail": "UŽ OPRAVENO NA TEST: N31 (pás světlíku nad zadními dveřmi v režimu po stěnách propadal z ceny) — odstranila ho #296. Změřeno na stejném zadání: v22.9.9 zadní stěna 8,01 m² se světlíkem, na test 33,06 m² s i bez něj. Na main vada trvá, dokud se test nesloučí.\n\nPLATÍ, STŘEDNÍ — navrženo opravit: N32 + B60 (duplikace: všechny varianty s příponou 0, kopíruje interní poznámku — B60 zavedla #311), N33 (vynulovaný ceník ztrácí značku „prázdný\" kvůli nenulovým sazbám DPH, tedy i zábranu tisku), N34 (po ručním přihlášení se neotevře poslední zakázka), N35 (společné dodatkové texty smaže nasazení online ceníku — zavedla #310), N36 (duplikace online zahodí neuložené změny), N37 („vrátit původní ceny\" po obnově zálohy z prohlížeče označí neuloženou práci za uloženou), B59 (výsledek NOVÉHO zámku server přebírá od klienta), T1 (cenový test režimu po stěnách chybí — proto prošel N31), T2 (overit_sablony_online končí kódem 0 i se selháním), T3 (5 harnessů se pro chybějící šablony přeskakuje a souhrn je počítá jako prošlé).\n\nPLATÍ, DROBNÉ: B61, B62, B63 (popisSet mimo ZAMEK_CHRANENE), N38 (změřeno: položka jen pro zahraničí po cestě ČR→zahr→ČR drží 50 000 místo 0), N39, N41 (pásy ve specifikaci, FR kapitoly, protokol × poznamkyText), T4, T5 (mimo jiné chybí obsluha SIGINT v mutace.mjs).\n\nINFORMATIVNÍ, BEZ ZÁSAHU NEBO JEN KOSMETIKA: B64 (obnova popisů bez očisty), B65, B66, B67 (režim složky je vypnutý), B68.\n\nDOPORUČENO NECHAT: N40 (nulovou sazbu ATYP nejde vyjádřit — vynulované sestavení na té náhradě stojí).",
    "hotovoKdyz": "J. V. rozhodl pořadí dávek a každá odešla s testem.",
-   "pozn": "Navržené pořadí: R1 rychlé opravy (N32+B60, B63, N39, protokol × poznamkyText, B64, T1), R2 ztráta práce (N34–N37), R3 pojistky ceníku (N33, N38), R4 server (B59 + mutace role B56, SIGINT), R5 testy (T2, T3, T5). K tomu z revize: převzít mutace_jadro.mjs do repozitáře (N19); B57 a B58 z ranního auditu trvají."
+   "pozn": "HOTOVO v22.9.17 — dávka R1: N32 + B60 (duplikace: přípony podle pořadí, nejvyšší přípona, bez textového pole poznámek), B63 (dodatkový text pod obalem zámku), N39 (varování u nulové stěny podle dnešního výpočtu), N41 část protokol × poznámka, B64 (očista textů při obnově + mutace), T1 (cenový test po stěnách + regrese N31, ověřeno nad jádrem v22.9.9).\n\nZBÝVÁ: R2 ztráta práce (N34–N37), R3 pojistky ceníku (N33, N38), R4 server (B59 + mutace role B56, obsluha SIGINT v mutace.mjs), R5 testy (T2, T3, T5). K tomu z revize: mutace_jadro.mjs do repozitáře (N19); B57 a B58 z ranního auditu trvají. Drobné N41 (pásy ve specifikaci, FR kapitoly) a B61, B62, B65–B68 podle kapacity; N40 doporučeno nechat."
+  },
+  {
+   "id": "320",
+   "vlna": "B",
+   "stav": "ceka",
+   "dulezitost": "vysoka",
+   "slozitost": "M",
+   "nazev": "Číslo varianty: dokument ukazuje .2, zámek a aplikace .1",
+   "proc": "Našlo se při opravě N32 (22. 9. 2026). V aplikaci žijí dvě číslování variant a nikdo je nesrovnal. Dokumenty (nabídka OCK a PROJ, krycí listy) číslují podle POŘADÍ v zakázce: druhá varianta „…-0555.2\" (cisloSVariantou, rozhodnutí 19. 8. 2026). Zámek odeslané nabídky, hlášky, seznam variant, archiv a serverová kontrola čísla (B56) číslují podle PŘÍPONY klonu: první klon „…-0555.1\" (variantaCislo, #17).",
+   "detail": "ZMĚŘENO (zakázka se dvěma klony): varianta 2 — dokument 0555.2, zámek a hlášky 0555.1; varianta 3 — dokument 0555.3, zámek 0555.2. Zákazník má tedy na papíře jiné číslo, než jaké o té nabídce ukazuje aplikace, a číslo 0555.2 v aplikaci patří jiné nabídce než na papíře.\n\nDRUHÁ POTÍŽ: číslování podle pořadí se po smazání nebo přesunu varianty posune — znovu vytištěná odeslaná nabídka pak nese jiné číslo, než jaké odešlo. Číslování #17 tomu schválně bránilo („číslo, které jednou odešlo na papíře, nesmí patřit jiné nabídce\").\n\nPROČ NE HNED: sjednocení mění čísla, která už odešla zákazníkům — buď na papíře (když se dokument přepne na přípony), nebo v zámcích (když se zámek přepne na pořadí; serverová kontrola B56 by pak zamčené zakázky odmítala). Je to rozhodnutí, ne oprava.",
+   "otazka": "Které číslo má platit: to, které je na papíře (pořadí, druhá varianta .2), nebo stabilní přípona klonu (první klon .1)? Návrh: papír je doklad — sjednotit na dokument a novým klonům přidělovat příponu tak, aby se s pořadím shodovala; u odeslaných nabídek nechat číslo, které odešlo.",
+   "pozn": "Duplikát zakázky (N32) po opravě dostává přípony 0, 1, 2 — stejně jako klony, aby se číslování nerozdělilo ještě víc; až padne rozhodnutí, srovná se s ostatními."
   },
   {
    "id" : "285",
@@ -5607,7 +5619,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v22.9.16 (engscalc)",
+  "build" : "v22.9.17 (engscalc)",
   "stavKDatu" : "22. 9. 2026"
  },
  "_comment" : [

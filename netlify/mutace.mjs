@@ -433,6 +433,13 @@ const MUTACE = [
     nahrad: "  const posudek = globalThis.cenikZverejneniKontrola(ctx, ctx.zahranicni, t.rada, platny);",
     proc: 'kdo pole `zahranicni` vynechá, dostal by zahraniční ceny do tuzemského ceníku (B55)' },
 
+  /* Obnova společných dodatkových textů (B64, revize v22.9.9). */
+  { nazev: 'B64: obnova zapíše dodatkové texty ze zálohy bez očisty',
+    soubor: 'functions/obnova.mjs',
+    hledej: "        await zaznam(b, sProg, jednoduche[cast], cisty, rezim, zapisovat);",
+    nahrad: "        await zaznam(b, sProg, jednoduche[cast], hodnota, rezim, zapisovat);",
+    proc: 'soubor zálohy by do databáze dostal texty bez stropu délky, počtu i tvaru' },
+
   { nazev: 'změna čísla odeslané nabídky se na serveru nehlídá',
     soubor: 'functions/zakazky.mjs',
     hledej: "  if (jineCislo.length) {",

@@ -28,6 +28,14 @@ const ZAMEK_CHRANENE = [
    * aplikace pro nové zakázky) — a nastavení aplikace zámek varianty
    * neblokuje, stejně jako neblokuje volbu režimu sekce. */
   'volitelneToggle', 'viditelnostSet', 'presunRadek',
+  /* Dodatkový text pod položkou (nález B63 revize v22.9.9). Do 22. 9. 2026
+   * ho viděl jen administrátor; od #310 ho vidí a píše každý. `popisSet`
+   * se sám ptal jen na zámek VARIANTY, takže v zakázce otevřené jen ke
+   * čtení text přijal, zapsal do ceníku varianty a po F5 byl pryč — bez
+   * jediného slova (třída N4). A v náhledu cizího uživatele by administrátor
+   * zapsal text do zakázky i na server pod cizím pohledem. Obal přidá obě
+   * kontroly, které funkce sama nemá: náhled a zámek čtení. */
+  'popisSet',
   /* Opláštění po stěnách (#268, 3. krok, 21. 9. 2026). Zapisují do zadání
    * mimo `set()`, protože zakládají strukturu stěn a pásů — `set()` umí jen
    * dosadit hodnotu na existující cestu. Zámek je proto musí hlídat zvlášť,

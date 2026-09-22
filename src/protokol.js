@@ -330,6 +330,27 @@ function protokolRozdil(a, b) {
       out.push({ kde: 'Interní poznámky a přílohy', co: par[1],
                  pred: pa, po: pb, citlive: false, varianta: null });
   });
+  /* JEDINÉ TEXTOVÉ POLE POZNÁMEK (nález N41 revize v22.9.9).
+   *
+   * Od #311 (22. 9. 2026) se interní poznámky píšou do jediného pole
+   * `poznamkyText` a seznam výš už nepřibývá. Protokol ale porovnával jen
+   * počty v seznamech, takže úprava poznámky v něm nebyla vůbec — přesně
+   * ta změna, kterou dnes lidé dělají.
+   *
+   * Zapisuje se, ŽE se poznámka změnila, a o kolik znaků — nikdy obsah
+   * (stejné pravidlo jako u seznamu: poznámky jsou interní a protokol se
+   * ukazuje dál). Porovnává se text, který uživatel VIDÍ (`poznamkyPoleText`
+   * — u starší zakázky odvozený ze seznamu), ne syrové pole: první úprava
+   * starší zakázky jinak vypadala jako „z 0 znaků na 300", i když text
+   * v poli byl odjakživa. */
+  const pozn = (x) => {
+    if (typeof poznamkyPoleText === 'function') return String(poznamkyPoleText(x) || '');
+    return String((x && x.poznamkyText) || '');
+  };
+  const ta = pozn(a), tb = pozn(b);
+  if (ta !== tb)
+    out.push({ kde: 'Interní poznámky', co: 'Interní poznámka upravena',
+               pred: ta.length + ' znaků', po: tb.length + ' znaků', citlive: false, varianta: null });
 
   /* 4) varianty */
   const va = Array.isArray(a.varianty) ? a.varianty : [];

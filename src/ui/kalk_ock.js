@@ -669,6 +669,12 @@ function oplStenaVarovani(k, opl) {
 
   /* STĚNA, ZE KTERÉ SE DO CENY NEDOSTANE NIC (nález J. V. 21. 9. 2026).
    *
+   * POZOR, NÁSLEDUJÍCÍ ODSTAVCE POPISUJÍ STAV PŘED #295 — nechávají se kvůli
+   * historii. Dnes je čelní stěna celá stěna mínus otvory dveří a portálů
+   * (#295) a zadní stěna průchozí šachty se počítá stejně (#296); nula
+   * u nich vzniká jen tehdy, když otvory zaberou celou stěnu. Text
+   * varování níž to od 22. 9. 2026 říká (N39).
+   *
    * Plocha se v režimu po stěnách bere z dosavadního výpočtu (`skloSteny`)
    * a pásy si ji dělí poměrem výšek — aby zapnutí režimu nehnulo cenou.
    * U ČELNÍ STĚNY je ale tou dosavadní plochou jen SVĚTLÍK nad dveřmi a po
@@ -695,12 +701,25 @@ function oplStenaVarovani(k, opl) {
     const nadNulou = opl.pasy.filter(p => p.stena === k && (+p.doM || 0) > 0);
     const m2 = nadNulou.reduce((a, p) => a + (+p.m2 || 0), 0);
     const jenBez = nadNulou.length > 0 && nadNulou.every(p => String(p.typ) === 'bez');
+    /* TEXT PODLE DNEŠNÍHO VÝPOČTU (nález N39 revize v22.9.9). Do 22. 9. 2026
+     * tu stálo, že se plocha čelní stěny bere ze světlíků — to platilo před
+     * #295. Od té doby je čelní stěna celá stěna MÍNUS otvory dveří
+     * a portálů a od #296 se stejně počítá i zadní stěna průchozí šachty.
+     * Nula tedy u těch dvou stěn znamená jediné: otvory zaberou celou
+     * stěnu (nízká šachta s mnoha nástupišti). Stará věta posílala
+     * obchodníka hledat světlíky, které s tím nemají nic společného. */
+    const otvoryC = k === 'C' && !!(Z && Z.pruchoziSachta) && (+(Z && Z.nastupisteC) || 0) > 0;
     if (nadNulou.length && !jenBez && m2 < 0.005)
       nulova = 'Z téhle stěny se do ceny nedostane nic: nad úrovní nástupiště vychází 0 m². '
         + (k === 'A'
-          ? 'Plocha čelní stěny se bere ze světlíků nad dveřmi a po stranách — tahle šachta '
-            + 'žádné nemá, takže není z čeho počítat. Zbytek čelní stěny zabírají dveře a portály.'
-          : 'Zkontrolujte rozměry šachty — dosavadní výpočet u téhle stěny žádnou plochu nedává.');
+          ? 'Plocha čelní stěny je celá stěna mínus otvory dveří a portálů (šířka otvoru × 2,3 m '
+            + 'za každé nástupiště) — u téhle šachty otvory zaberou celou stěnu. Zkontrolujte '
+            + 'výšku šachty a počet nástupišť.'
+          : otvoryC
+            ? 'Plocha zadní stěny je celá stěna mínus otvory dveří a portálů na zadní straně — '
+              + 'u téhle šachty otvory zaberou celou stěnu. Zkontrolujte výšku šachty a počet '
+              + 'nástupišť vzadu.'
+            : 'Zkontrolujte rozměry šachty — dosavadní výpočet u téhle stěny žádnou plochu nedává.');
   }
 
   if (oplCelaVyska(k)) return nulova;

@@ -107,7 +107,17 @@ const zad = (e) => Object.assign(JSON.parse(JSON.stringify(DEFAULT_ZADANI)), e |
    *
    * Hlídá se proto jen to, že rozdíl sedí na čelní stěnu (kontrola výš),
    * a že obojí opravdu nastává — kdyby jeden ze směrů zmizel, něco se změnilo
-   * a je potřeba se na to podívat. */
+   * a je potřeba se na to podívat.
+   *
+   * DOPLNĚNO 22. 9. 2026 (revize v22.9.9, T1): vysvětlení o dva odstavce výš
+   * už neplatí celé. Od #296 se zadní nástupiště do čelních světlíků
+   * nepočítají. Cena u průchozí šachty v těchhle zadáních jde dolů pořád,
+   * ale z jiného důvodu: zkušební zadání mají 2 patra při výchozím zdvihu
+   * 17,3 m, takže světlá výška podlaží vychází 17,1 m a světlík nad KAŽDÝMI
+   * dveřmi se počítá přes celou tu výšku (vzorec předlohy, Model 1) — dva
+   * světlíky dají 50,1 m² na stěně, která má bez dveří 30,7 m². Režim po
+   * stěnách počítá skutečnou stěnu, proto vyjde levněji. U reálného zadání
+   * (patra odpovídají zdvihu) tenhle rozdíl nevzniká. */
   test('cena jde nahoru u části zadání a dolů u jiné (viz komentář)',
     vzrostlo > 0 && vzrostlo < pripady.length, { vzrostlo, celkem: pripady.length });
   test('a případů bylo opravdu dost, aby to něco znamenalo', pripady.length >= 32, pripady.length);
@@ -260,6 +270,99 @@ const zad = (e) => Object.assign(JSON.parse(JSON.stringify(DEFAULT_ZADANI)), e |
   const hrucne = tsHodnota(pole, { hodnoty: { rozsahOplasteni: 'ruční text' } }, { neco: 1 }, z, c, 'de');
   test('ruční přepis má přednost a překládá se jako dřív',
     hrucne.text === 'ruční text' && !hrucne.prelozeno, hrucne);
+}
+
+/* ---------- CENA SEDÍ NA PLOCHU (nález T1 revize v22.9.9) ----------
+ *
+ * Kontrola „rozdíl ploch = rozdíl základu čelní stěny" v oddílu 1 je
+ * rovnost z konstrukce: základy B, C, D jsou doslova plochy standardního
+ * výpočtu, takže ověřuje jen, že dělení na pásy neztrácí plochu. CENU
+ * neměřila žádná sada — a přesně proto prošel N31 (pás světlíku nad
+ * zadními dveřmi se v režimu po stěnách odečetl a neúčtoval se nikde).
+ *
+ * Tady se měří, že se NÁKLAD SEKCE OPLÁŠTĚNÍ hne stejným směrem jako
+ * plocha: víc plochy = dražší opláštění, stejná plocha = stejná cena,
+ * méně plochy = levnější. Plocha, která se započte, ale nezaplatí (nebo
+ * naopak), se tím pozná na kterémkoli ze 128 zadání. */
+{
+  let shoda = 0, n = 0;
+  const nesoulad = [];
+  const smer = (x, eps) => (Math.abs(x) < eps ? 0 : Math.sign(x));
+  ['exteriérová', 'interiérová'].forEach(typSachty => ['na terče', 'mezi příčníky'].forEach(zaskleni =>
+    [false, true].forEach(pruchozi => [0, 1.2].forEach(prohluben => [false, true].forEach(atyp =>
+      [false, true].forEach(svetlik => [false, true].forEach(fixes => {
+        const zm = { typSachty, zaskleni, prohluben, atyp, pruchoziSachta: pruchozi, svetlikNadDvermi: svetlik,
+          nastupisteA: pruchozi ? 2 : undefined, nastupisteC: pruchozi ? 1 : undefined,
+          patra: pruchozi ? 2 : undefined };
+        const c = CENIK();
+        const std = vypocet(zad(zm), c, JEKLY, fixes);
+        const zPo = zad(zm);
+        zPo.oplasteni = { rezim: 'poStenach', steny: oplasteniStenyVychozi(zPo, c) };
+        const po = vypocet(zPo, c, JEKLY, fixes);
+        const dPlocha = po.oplasteni.plochaCelkem - std.zaskleni.celkemM2;
+        const dNaklad = po.souctySekci.oplasteni.naklad - std.souctySekci.oplasteni.naklad;
+        n++;
+        if (smer(dPlocha, 0.005) === smer(dNaklad, 0.5)) shoda++;
+        else nesoulad.push({ zm, fixes, dPlocha, dNaklad });
+      })))))));
+  test('náklad opláštění jde stejným směrem jako plocha (' + n + ' zadání, oba modely)',
+    shoda === n, nesoulad.slice(0, 3));
+  test('a zadání bylo dost, aby to něco znamenalo', n >= 128, n);
+}
+
+/* ---------- REGRESE N31: světlík nad dveřmi u průchozí šachty ----------
+ *
+ * Revize v22.9.9: v režimu po stěnách zaškrtnutí „světlík nad dveřmi"
+ * SNÍŽILO cenu. Základ zadní stěny odečítal kromě dveří i pás světlíku nad
+ * nimi, a ten se v režimu po stěnách neúčtoval nikde. Změřeno na zadání
+ * průchozí A2 + C1, 2 patra: zadní stěna 33,06 m² bez světlíku, 8,01 m²
+ * se světlíkem; cena o desítky tisíc níž.
+ *
+ * Opravila to #296 (22. 9. 2026): od zadní stěny se odečítají jen dveře
+ * a pás nad nimi je obyčejné sklo zadní stěny. Tady se hlídá, že se to
+ * nevrátí: v režimu po stěnách je plocha stěny celá stěna mínus otvory,
+ * takže přepínač světlíku s ní nesmí hnout — a cenu nesmí snížit. */
+{
+  ['exteriérová', 'interiérová'].forEach(typSachty => ['na terče', 'mezi příčníky'].forEach(zaskleni =>
+    [false, true].forEach(fixes => {
+      const sfx = ' [' + typSachty + ', ' + zaskleni + ', ' + (fixes ? 'opravený' : 'Excel 1:1') + ']';
+      const spocti = (svetlik) => {
+        const c = CENIK();
+        const z = zad({ typSachty, zaskleni, pruchoziSachta: true, nastupisteA: 2, nastupisteC: 1,
+          nastupiste: 3, patra: 2, svetlikNadDvermi: svetlik, svetlikyBoky: 0 });
+        z.oplasteni = { rezim: 'poStenach', steny: oplasteniStenyVychozi(z, c) };
+        return vypocet(z, c, JEKLY, fixes);
+      };
+      const bez = spocti(false), se = spocti(true);
+      test('světlík nad dveřmi nemění základ zadní stěny' + sfx,
+        Math.abs(se.oplasteni.zakladSten.C - bez.oplasteni.zakladSten.C) < 0.005,
+        [bez.oplasteni.zakladSten.C, se.oplasteni.zakladSten.C]);
+      test('ani čelní stěny' + sfx,
+        Math.abs(se.oplasteni.zakladSten.A - bez.oplasteni.zakladSten.A) < 0.005,
+        [bez.oplasteni.zakladSten.A, se.oplasteni.zakladSten.A]);
+      /* Celková plocha jen v OPRAVENÉM modelu. Model 1 je 1:1 s Excelem
+       * včetně zdokumentované chyby šablony (engine.js, `bocniHl`: „D19
+       * místo D18") — u zasklení mezi příčníky se v něm se světlíkem mění
+       * hloubka BOČNÍCH stěn. Stěny s nástupišti (A a C), o které v N31
+       * šlo, hlídají kontroly výš v obou modelech. */
+      if (fixes)
+        test('ani celkovou plochu opláštění' + sfx,
+          Math.abs(se.oplasteni.plochaCelkem - bez.oplasteni.plochaCelkem) < 0.005,
+          [bez.oplasteni.plochaCelkem, se.oplasteni.plochaCelkem]);
+      else
+        test('v Modelu 1 se liší jen boční stěny (chyba šablony D19/D18)' + sfx,
+          Math.abs((se.oplasteni.plochaCelkem - bez.oplasteni.plochaCelkem)
+            - ((se.oplasteni.zakladSten.B + se.oplasteni.zakladSten.D)
+              - (bez.oplasteni.zakladSten.B + bez.oplasteni.zakladSten.D))) < 0.005,
+          [bez.oplasteni.plochaCelkem, se.oplasteni.plochaCelkem]);
+      test('a zaškrtnutí světlíku cenu nesníží' + sfx,
+        se.souhrn.zakladCena >= bez.souhrn.zakladCena, [bez.souhrn.zakladCena, se.souhrn.zakladCena]);
+      /* Pojistka proti prázdnému testu: zadní stěna tu opravdu má plochu
+       * a otvory se z ní odečítají (je menší než boční stěna × 2). */
+      test('(zadní stěna má plochu a dveře vzadu se od ní odečetly)' + sfx,
+        bez.oplasteni.zakladSten.C > 1 && bez.oplasteni.zakladSten.C < bez.oplasteni.zakladSten.A + 5,
+        [bez.oplasteni.zakladSten.A, bez.oplasteni.zakladSten.C]);
+    })));
 }
 
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');

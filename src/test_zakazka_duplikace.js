@@ -73,9 +73,19 @@ const test = (n, cond, info) => {
   const v2 = klonujVariantu(zak, v1.id, { nazev: 'Varianta 2' });
   v2.data.ock.zadani.sirka = 2.1;
 
+  /* Varianta 3: ještě jeden klon — se dvěma variantami by se chyba
+   * „všechny přípony nula" poznala jen napůl (N32). */
+  const v3 = klonujVariantu(zak, v1.id, { nazev: 'Varianta 3' });
+  v3.data.ock.zadani.sirka = 2.4;
+
   poznamkyZajisti(zak);
   poznamkyPridej(zak, 'Telefonát se zákazníkem', {});
   zak.prilohy.push({ id: 'pr1', nazev: 'vykres.pdf' });
+  /* Od #311 se poznámky píšou do jediného pole (B60). */
+  zak.poznamkyText = 'Sleva slíbena ústně, zákazník tlačí na termín.';
+  /* Předloha si pamatuje vyšší příponu, než kolik má dnes variant (některé
+   * se smazaly). Duplikát ji zdědit nesmí (N32). */
+  zak.priponaMax = 7;
 
   const predJson = JSON.stringify(zak);
   const nova = zakazkaDuplikuj(zak, '2026 - OPR - CN - 0384');
@@ -89,9 +99,10 @@ const test = (n, cond, info) => {
     nova.nazevAkce === 'Výtah Lauda' && nova.objednatel === 'Jiří Lauda' && nova.ico === '12345678',
     [nova.nazevAkce, nova.objednatel, nova.ico]);
   test('zadání variant se zkopírovalo',
-    nova.varianty.length === 2
+    nova.varianty.length === 3
     && nova.varianty[0].data.ock.zadani.sirka === 1.8
-    && nova.varianty[1].data.ock.zadani.sirka === 2.1,
+    && nova.varianty[1].data.ock.zadani.sirka === 2.1
+    && nova.varianty[2].data.ock.zadani.sirka === 2.4,
     nova.varianty.map(v => v.data.ock.zadani.sirka));
 
   /* Zámky a doklady — nová zakázka nic neodeslala. */
@@ -107,6 +118,13 @@ const test = (n, cond, info) => {
     nova.poznamky);
   test('přílohy se NEzkopírovaly', Array.isArray(nova.prilohy) && nova.prilohy.length === 0,
     nova.prilohy);
+  /* B60: jediné textové pole poznámek (od #311). Duplikace vznikla dřív
+   * a nové pole do kopie propsala celé — i se zápisky o jednání s jiným
+   * zákazníkem. Hlídá se pole i to, co z něj uvidí obrazovka. */
+  test('ani jediné textové pole poznámek (B60)', nova.poznamkyText === undefined, nova.poznamkyText);
+  test('a obrazovka poznámek je v duplikátu prázdná',
+    poznamkyPoleText(nova) === '', poznamkyPoleText(nova));
+  test('předloze poznámka zůstala', zak.poznamkyText === 'Sleva slíbena ústně, zákazník tlačí na termín.');
 
   /* Identita uložené zakázky — jinak by první uložení přepsalo předlohu. */
   test('razítko uložení se nezdědilo', nova.uloRazitko === undefined);
@@ -114,9 +132,28 @@ const test = (n, cond, info) => {
     nova.autor === undefined && nova.autorJmeno === undefined && nova.upravil === undefined,
     [nova.autor, nova.autorJmeno, nova.upravil]);
 
-  /* Varianty se čísluje od začátku a řídící je právě jedna. */
-  test('přípony variant se vynulovaly',
-    nova.varianty.every(v => v.pripona === 0), nova.varianty.map(v => v.pripona));
+  /* PŘÍPONY PODLE POŘADÍ (nález N32 revize v22.9.9).
+   *
+   * Do 22. 9. 2026 tu stálo „přípony variant se vynulovaly" a test tím
+   * CHYBU ZAFIXOVAL: tři nuly = tři nabídky pod holým číslem zakázky
+   * (zámek, seznam variant, hlášky). Nově první holé číslo, další .1, .2. */
+  test('přípony variant jdou podle pořadí 0, 1, 2',
+    nova.varianty.map(v => v.pripona).join(',') === '0,1,2', nova.varianty.map(v => v.pripona));
+  test('každá varianta duplikátu má v zámku a hláškách vlastní číslo',
+    new Set(nova.varianty.map(v => variantaCislo(nova, v))).size === 3,
+    nova.varianty.map(v => variantaCislo(nova, v)));
+  test('čísla nesou nové číslo zakázky, ne předlohy',
+    nova.varianty.every(v => variantaCislo(nova, v).indexOf('0384') >= 0),
+    nova.varianty.map(v => variantaCislo(nova, v)));
+  /* Maximum předlohy (#17: číslo se nepoužije znovu) do kopie nepatří —
+   * další klon by v duplikátu dostal číslo o několik výš. */
+  test('nejvyšší přípona odpovídá duplikátu, ne předloze', nova.priponaMax === 2,
+    [nova.priponaMax, zak.priponaMax]);
+  const dalsi = klonujVariantu(nova, nova.varianty[0].id, { nazev: 'Klon v duplikátu' });
+  test('další klon v duplikátu pokračuje .3', dalsi && dalsi.pripona === 3, dalsi && dalsi.pripona);
+  /* Pojistka proti prázdnému testu: předloha má opravdu jiné maximum,
+   * jinak by předchozí kontrola nic nedokazovala. */
+  test('(předloha má svoje maximum, jiné než duplikát)', zak.priponaMax === 7, zak.priponaMax);
   test('řídící varianta je právě jedna',
     nova.varianty.filter(v => v.ridici).length === 1,
     nova.varianty.map(v => !!v.ridici));

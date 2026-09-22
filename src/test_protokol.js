@@ -145,6 +145,30 @@ test('přibylá poznámka se ohlásí', rn.length >= 1 && /poznám/i.test(rn[0].
 test('ale její text se do protokolu neopíše', JSON.stringify(rn).indexOf(TAJNE) < 0,
   JSON.stringify(rn));
 
+/* ---------- 7b) jediné textové pole poznámek (N41 revize v22.9.9) ----------
+ *
+ * Od #311 se poznámky píšou do `poznamkyText`, seznam už nepřibývá. Protokol
+ * porovnával jen počty v seznamech — úprava poznámky v něm nebyla vůbec. */
+b = kopie(a);
+b.poznamkyText = TAJNE + ' a další věta';
+const rt = protokolRozdil(a, b);
+test('úprava textového pole poznámek se ohlásí', rt.length === 1 && /poznámka upravena/i.test(rt[0].co),
+  JSON.stringify(rt));
+test('ale její text se do protokolu neopíše', JSON.stringify(rt).indexOf(TAJNE) < 0, JSON.stringify(rt));
+test('zapíše se jen délka', /znaků/.test(String(rt[0] && rt[0].po)), JSON.stringify(rt[0]));
+const c2 = kopie(b);
+test('beze změny poznámky se nic nehlásí', protokolRozdil(b, c2).length === 0,
+  JSON.stringify(protokolRozdil(b, c2)));
+/* Starší zakázka má text jen ve SEZNAMU; pole vznikne až první úpravou.
+ * Když ho uživatel otevře a nic nezmění, text v poli je tentýž — protokol
+ * nesmí hlásit „z 0 znaků na N". */
+const starsi = kopie(a); poznamkyZajisti(starsi);
+poznamkyPridej(starsi, 'Zápis z jednání', { kdo: 'Vendl' });
+const poOtevreni = kopie(starsi);
+poOtevreni.poznamkyText = (typeof poznamkyPoleText === 'function') ? poznamkyPoleText(starsi) : '';
+test('první uložení pole u starší zakázky beze změny textu se nehlásí',
+  protokolRozdil(starsi, poOtevreni).length === 0, JSON.stringify(protokolRozdil(starsi, poOtevreni)));
+
 /* ---------- 8) zaznamenání dávky ---------- */
 const zz = nova();
 const pred = JSON.parse(protokolOtisk(zz));

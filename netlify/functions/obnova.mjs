@@ -426,6 +426,23 @@ export default async (req) => {
        * tvaru — stejná kontrola jako při zveřejnění (/api/program). */
       preskoc(b, 'db', 'platný ceník v záloze nese identifikátor trvalé položky v nepovoleném tvaru — neobnovuje se');
     }
+    else if (cast === 'popisy') {
+      /* SPOLEČNÉ DODATKOVÉ TEXTY PROJDOU TOUŽ OČISTOU JAKO /api/popisy
+       * (nález B64 revize v22.9.9). Záloha je soubor, který mohl projít
+       * čímkoli; obnova ho zapisovala doslova, bez stropu délky, počtu
+       * i tvaru, kdežto běžný zápis textů je hlídá. Aplikace si texty při
+       * čtení čistí sama, jenže do databáze se nemá dostat nic, co by
+       * běžnou cestou neprošlo. Razítko kdo/kdy se nese dál jako text
+       * s omezenou délkou — je to doklad, kdo texty naposledy měnil. */
+      if (typeof globalThis.popisyOciste !== 'function')
+        preskoc(b, 'popisy', 'očista dodatkových textů není k dispozici — neobnovuje se');
+      else {
+        const txt = (x, max) => (typeof x === 'string' ? x.slice(0, max) : '');
+        const cisty = { texty: globalThis.popisyOciste(hodnota.texty),
+                        kdo: txt(hodnota.kdo, 200), kdy: txt(hodnota.kdy, 40) };
+        await zaznam(b, sProg, jednoduche[cast], cisty, rezim, zapisovat);
+      }
+    }
     else await zaznam(b, sProg, jednoduche[cast], hodnota, rezim, zapisovat);
     /* Přeskočený ceník v režimu „doplnit" je nejčastější důvod dojmu, že
      * „obnova nenahrála všechno" (7. 9. 2026): důvod proto říká obě verze. */

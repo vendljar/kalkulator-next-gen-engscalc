@@ -622,5 +622,36 @@ console.log('\n===== B47–B49, B52: dotažení obnovy po dávkách (19. kolo, 1
     seznam.map(o => o.den));
 }
 
+/* ---- B64 (revize v22.9.9): obnova společných dodatkových textů je čistí ----
+ *
+ * Běžný zápis textů (/api/popisy) hlídá délku klíče i textu, počet položek
+ * a tvar hodnot. Obnova ze zálohy je zapisovala doslova — soubor zálohy
+ * přitom mohl projít čímkoli. */
+{
+  const DLOUHY = 'x'.repeat(1000);
+  const spinava = {
+    porizena: new Date().toISOString(),       // bez razítka pořízení obnova soubor odmítne
+    popisy: {
+      texty: { 'Sklo VSG': DLOUHY, ['K'.repeat(250)]: 'klíč přes strop', 'Číslo místo textu': 42,
+               'Prázdný': '   ', 'Sklo SKN': 'Platná věta.' },
+      kdo: 'p'.repeat(500), kdy: 'k'.repeat(100), navic: 'cizí pole',
+    },
+  };
+  const ob = await obnovJson({ zdroj: { soubor: spinava }, rezim: 'prepsat', potvrzeni: 'OBNOVIT',
+    casti: ['popisy'] }, cookie);
+  test('B64: obnova textů proběhla', ob.ok === true, ob);
+  const ul = await ulz('program').cti('popisy');
+  const tx = (ul && ul.texty) || {};
+  test('B64: text přes strop se zkrátil jako při běžném zápisu', (tx['Sklo VSG'] || '').length === 300,
+    (tx['Sklo VSG'] || '').length);
+  test('B64: klíč přes strop se nezapsal', !Object.keys(tx).some(k => k.length > 200), Object.keys(tx));
+  test('B64: číslo místo textu ani prázdný text se nezapsaly',
+    !('Číslo místo textu' in tx) && !('Prázdný' in tx), Object.keys(tx));
+  test('B64: platná věta prošla beze změny', tx['Sklo SKN'] === 'Platná věta.', tx['Sklo SKN']);
+  test('B64: cizí pole ze zálohy se nezapsalo a razítko má strop',
+    ul && !('navic' in ul) && ul.kdo.length === 200 && ul.kdy.length === 40,
+    ul && { klice: Object.keys(ul), kdo: ul.kdo.length, kdy: ul.kdy.length });
+}
+
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);

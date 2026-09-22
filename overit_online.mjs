@@ -374,6 +374,32 @@ test('„+ Nová varianta" v režimu čtení variantu NEzaloží',
   varZamek.poNova === varZamek.pred, varZamek);
 test('ani kopie ⧉ v Přehledu', varZamek.poKopie === varZamek.pred, varZamek);
 
+/* DODATKOVÝ TEXT V ZAMČENÉ ZAKÁZCE (nález B63 revize v22.9.9).
+ *
+ * Pole textu pod položkou vidí od #310 každý. `popisSet` se ale ptal jen na
+ * zámek varianty, ne na zámek čtení: text se v zakázce jen ke čtení zapsal,
+ * autosave ho neuložil a po F5 byl pryč. Měří se, že se do ceníku varianty
+ * NIC nezapsalo — dialog s odemčením sám o sobě nic nedokazuje. */
+const popisZamek = await page.evaluate(() => {
+  /* Předchozí kontroly („+ Nová varianta", kopie ⧉) odklepnou dialog
+   * s odemčením — stub odpovídá „ano" —, takže se zakázka před měřením
+   * zamyká znovu. Bez toho by test měřil odemčenou zakázku. */
+  zamekCteniZapni(); render();
+  const d = aktivniVarianta(ZAK).data;
+  const pred = JSON.stringify((d.cenik && d.cenik.popisy) || {});
+  const zamceno = zamekCteniJe();
+  popisSet('C.priplatky.zabranyDvereKc', 'Text napsaný v režimu čtení');
+  const po = JSON.stringify((aktivniVarianta(ZAK).data.cenik.popisy) || {});
+  const obaleny = !!(window.popisSet && window.popisSet._zamek);
+  /* Stub dialogu odpovídá „ano" a zakázku tím odemkne — vrátit, ať další
+   * kontroly počítají se zamčenou zakázkou jako dosud. */
+  zamekCteniZapni();
+  return { zamceno, stejne: pred === po, obaleny };
+});
+test('dodatkový text se v zakázce jen ke čtení nezapíše (B63)',
+  popisZamek.zamceno === true && popisZamek.stejne === true, popisZamek);
+test('a hlídá ho týž obal zámku jako ostatní zápisy', popisZamek.obaleny === true, popisZamek);
+
 /* A po odemčení to musí jít — zábrana nesmí zavřít i správnou cestu.
  *
  * Stav se hned VRACÍ ZPĚT: přidaná varianta se odebere, aktivní se vrátí

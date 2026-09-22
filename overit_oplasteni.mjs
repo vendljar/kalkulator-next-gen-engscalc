@@ -454,6 +454,36 @@ zkus('rozdělení stěn se vypnutím režimu nezahodí', prezilo === 2, prezilo)
     stav.a < stav.c - 1, { celni: stav.a, zadni: stav.c });
 }
 
+/* KDYŽ OTVORY ZABEROU CELOU STĚNU, VAROVÁNÍ ŘEKNE PRAVÝ DŮVOD (nález N39
+ * revize v22.9.9). Do 22. 9. 2026 text tvrdil, že se čelní stěna bere ze
+ * světlíků — stav před #295. Nula dnes vzniká jen u nízké šachty s mnoha
+ * nástupišti: šest otvorů 2,3 m vysokých se do 7,6 m vysoké stěny široké
+ * 1,6 m nevejde. */
+{
+  const stav = await p.evaluate(() => {
+    ZAK = novaZakazka(); syncVarianta();
+    set('OCK.zadani.typSachty', 'exteriérová');
+    set('OCK.zadani.sirka', 1.6); set('OCK.zadani.hloubka', 1.4);
+    set('OCK.zadani.zdvih', 3); set('OCK.zadani.prejezd', 3.5);
+    set('OCK.zadani.prohluben', 1.1); set('OCK.zadani.nastupiste', 6);
+    set('OCK.zadani.svetlikNadDvermi', false);
+    set('OCK.zadani.svetlikyBoky', 0);
+    oplRezimSet('poStenach');
+    render();
+    const r = vypocetAkt();
+    const el = document.querySelectorAll('#ock-oplasteni-steny .opl-stena')[0];
+    const v = el && el.querySelector('.seznam-varovani');
+    return { zakladA: r.oplasteni.zakladSten.A,
+             varA: v ? v.textContent.replace(/\s+/g, ' ').trim() : '' };
+  });
+  /* Pojistka proti prázdné kontrole: stěna A tu opravdu vychází na nulu. */
+  zkus('(zadání opravdu dává čelní stěnu 0 m²)', stav.zakladA === 0, stav.zakladA);
+  zkus('varování u nulové čelní stěny se ukáže', /nedostane nic/.test(stav.varA), stav.varA.slice(0, 160));
+  zkus('a jako důvod jmenuje otvory dveří a portálů', /otvory dveří a portálů/.test(stav.varA),
+    stav.varA.slice(0, 200));
+  zkus('ne světlíky (stav před #295)', !/světlík/i.test(stav.varA), stav.varA.slice(0, 200));
+}
+
 zkus('za celý průchod nevznikla chyba v konzoli', konzole.length === 0, konzole.slice(0, 2).join(' | '));
 
 await b.close();

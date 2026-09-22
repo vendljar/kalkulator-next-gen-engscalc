@@ -8,6 +8,58 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.9.17 — 22. 9. 2026
+
+### Dávka R1 z revize v22.9.9 — rychlé opravy
+
+Pořadí dávek schválil J. V. („ano, začni dávkou R1"). Tři z oprav jdou za
+mnou: B60 a protokol poznámek vznikly s jediným textovým polem poznámek
+(#311), a B63 s tím, že dodatkový text vidí každý (#310).
+
+**Duplikace zakázky (N32 + B60).** Všechny varianty duplikátu dostávaly
+příponu 0, tedy v zámku, v seznamu variant i v hláškách tři nabídky pod
+holým číslem; test to dokonce zafixoval. Nově přípony podle pořadí (holé
+číslo, .1, .2) a nejvyšší přípona odpovídá duplikátu, ne předloze. Duplikát
+navíc nesl celé jediné textové pole poznámek — zápisky o jednání s jiným
+zákazníkem —, ačkoli dialog tvrdí, že se poznámky nekopírují. Už nenese.
+
+**Dodatkový text v zamčené zakázce (B63).** Pole textu pod položkou se ptalo
+jen na zámek varianty. V zakázce jen ke čtení text přijalo a po F5 byl pryč;
+v náhledu cizího uživatele by ho administrátor zapsal i na server. Teď ho
+hlídá týž obal jako ostatní zápisy (náhled, zámek čtení, zámek varianty).
+
+**Varování u stěny s nulovou plochou (N39).** Tvrdilo, že se čelní stěna
+bere ze světlíků — stav před #295. Dnes říká pravý důvod: otvory dveří
+a portálů zaberou celou stěnu (nízká šachta s mnoha nástupišti), a totéž
+umí i u zadní stěny průchozí šachty.
+
+**Protokol zakázky vidí úpravu poznámky (N41).** Od #311 se poznámka píše do
+jediného pole a protokol porovnával jen počty v seznamech — úprava v něm
+nebyla vůbec. Zapisuje se, že se poznámka změnila a o kolik znaků, nikdy
+obsah. Porovnává se text, který uživatel vidí, takže první uložení pole
+u starší zakázky se za změnu nevydává.
+
+**Obnova společných dodatkových textů ze zálohy (B64).** Zapisovala je
+doslova; nově projdou toutéž očistou jako běžný zápis (strop délky, počtu
+a tvaru). Nová mutace to hlídá, chycená — celkem 136.
+
+**Cenový test režimu po stěnách (T1).** Dosavadní kontrola byla rovnost
+z konstrukce a cenu neměřila — proto prošel N31. Nově: na 128 zadáních
+(oba modely) se náklad opláštění hýbe stejným směrem jako plocha, a regrese
+N31 — u průchozí šachty zaškrtnutí světlíku nad dveřmi v režimu po stěnách
+nemění základ čelní ani zadní stěny a cenu nesníží. Ověřeno, že nad jádrem
+v22.9.9 sada padá (24 selhání), nad dnešním prochází.
+
+Každá oprava je ověřená i opačně: test nad kódem před opravou selže.
+
+**Mimo R1 se při práci ukázal nový nález, ne k opravě bez rozhodnutí:**
+číslo varianty v dokumentu (index v zakázce: druhá varianta „.2") se liší
+od čísla v zámku, v hláškách a na serveru (přípona klonu: první klon „.1").
+U odeslané nabídky tak zákazník má na papíře jiné číslo, než jaké o ní
+aplikace ukazuje. Zapsáno do roadmapy jako #320 s otázkou.
+
+---
+
 ## v22.9.16 — 22. 9. 2026
 
 ### Vnější lešení je u interiérové šachty zase příplatkem

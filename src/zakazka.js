@@ -1280,6 +1280,16 @@ function zakazkaDuplikuj(zak, noveCislo) {
   nova.poznamky = [];
   nova.prilohy = [];
   nova.prilohySmazane = [];
+  /* A TAKY JEDINÉ TEXTOVÉ POLE POZNÁMEK (nález B60 revize v22.9.9).
+   *
+   * Od #311 (22. 9. 2026) se interní poznámky píšou do jediného pole
+   * `poznamkyText`. Duplikace vznikla o den dřív a nulovala jen seznamy
+   * výš — nové pole se do kopie propsalo celé. Duplikát pro JINÉHO
+   * zákazníka tak nesl zápisky o jednání s tím původním (slevy, sliby),
+   * přestože dialog duplikace tvrdí „poznámky se nekopírují". Pole se
+   * maže, ne nuluje: chybějící pole je pro zakázku výchozí stav
+   * (poznamkyPoleText si ho odvodí ze seznamu, který je teď prázdný). */
+  delete nova.poznamkyText;
 
   /* PROTOKOL O KALKULACI TAKY (oprava 21. 9. 2026, nezávislá revize).
    *
@@ -1339,11 +1349,26 @@ function zakazkaDuplikuj(zak, noveCislo) {
       ['schvalil', 'schvalilEmail', 'schvalilKdy', 'schvalenoProc',
        'zamitl', 'zamitlEmail', 'zamitlKdy', 'zamitnutoProc'].forEach(k => { delete s[k]; });
     });
-    n.pripona = 0;           // čísluje se od začátku
+    /* PŘÍPONY PODLE POŘADÍ, NE SAMÉ NULY (nález N32 revize v22.9.9).
+     *
+     * Do 22. 9. 2026 tu stálo `n.pripona = 0` pro každou variantu. Komentář
+     * slibovalo „čísluje se od začátku", jenže nula znamená HOLÉ ČÍSLO
+     * zakázky — a `zajistiZamek` doplňuje přípony jen variantám, které
+     * číslo nemají vůbec, takže tři nuly zůstaly třemi nulami. Duplikát se
+     * třemi variantami měl v zámku, v seznamu variant i v hláškách tři
+     * nabídky pod jedním číslem — přesně záměna, kterou číslování #17
+     * odstraňovalo. Nově první varianta holé číslo, další .1, .2 … v pořadí,
+     * v jakém jsou v zakázce (stejně jako migrace v zajistiZamek). */
+    n.pripona = i;
     n.datum = (typeof dnesIso === 'function')
       ? dnesIso() : new Date().toISOString().slice(0, 10);
     return n;
   });
+  /* Nejvyšší přidělenou příponu si zakázka pamatuje (#17): číslo, které
+   * jednou padlo, se nepoužije znovu. Kopie si nesla maximum PŘEDLOHY,
+   * takže další klon v duplikátu dostal třeba .4 v zakázce se dvěma
+   * variantami. Počítá se od nových přípon. */
+  nova.priponaMax = Math.max(0, nova.varianty.length - 1);
   if (nova.varianty.length) {
     /* Řídící musí zůstat právě jedna. Kdyby ji předloha neměla (starší
      * soubor), stane se jí první — stejně jako v importZakazka. */
