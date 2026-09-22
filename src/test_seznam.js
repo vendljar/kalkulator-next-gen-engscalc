@@ -99,7 +99,8 @@ function vzorek() {
   test('řádků je tolik co variant', r.length === 4, r.length);
   test('řádek nese číslo nabídky varianty', r[1].cislo === variantaCislo(zak, v2), r[1].cislo);
   test('první varianta drží holé číslo zakázky', r[0].cislo === '2026 - OPR - CN - 0500', r[0].cislo);
-  test('klon má příponu .1', r[1].cislo === '2026 - OPR - CN - 0500.1', r[1].cislo);
+  /* #320: přípona = pořadí = číslo na papíře — druhá varianta .2. */
+  test('klon (druhá varianta) má příponu .2', r[1].cislo === '2026 - OPR - CN - 0500.2', r[1].cislo);
   test('celkem je součet OCK a PROJ', r[0].celkem === 340000, r[0].celkem);
   test('chybějící cena je null, ne nula', r[3].ock === null && r[3].celkem === null,
     JSON.stringify([r[3].ock, r[3].celkem]));
@@ -130,7 +131,7 @@ function vzorek() {
   test('hledání ignoruje velikost písmen', seznamHledej(r, 'HEJTMÁNSKÁ').length === 2);
   test('více slov zužuje (AND)', seznamHledej(r, 'hejtmanska usporna').length === 1,
     seznamHledej(r, 'hejtmanska usporna').map(x => x.nazev).join(','));
-  test('slova nemusí být vedle sebe', seznamHledej(r, 'opr 0500.1').length === 1);
+  test('slova nemusí být vedle sebe', seznamHledej(r, 'opr 0500.2').length === 1);
   test('hledá se i v poznámce', seznamHledej(r, 'prosklení').length === 1);
   test('hledá se i ve stavu', seznamHledej(r, 'odeslaná').length === 1);
   test('nic nenalezeno = prázdný seznam', seznamHledej(r, 'traktor').length === 0);

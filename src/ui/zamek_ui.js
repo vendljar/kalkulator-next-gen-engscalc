@@ -215,7 +215,7 @@ function zamekLista() {
   const overeni = (typeof zamekOvereniText === 'function') ? zamekOvereniText(z.overeni) : '';
   return `<div class="zamek-lista">
     <span class="ikona">🔒</span>
-    <span><b>${esc(v.nazev)} (${esc(z.cislo || variantaCislo(ZAK, v))}) je odeslaná nabídka – needituje se.</b>
+    <span><b>${esc(v.nazev)} (${esc(variantaCislo(ZAK, v))}) je odeslaná nabídka – needituje se.</b>
       Vytištěno ${esc(kdy)} jako ${esc(z.popis || 'cenová nabídka')}${pocet > 1 ? ` (výtisků: ${pocet})` : ''}.
       Pokračujte klonem, nebo založte novou zakázku; původní nabídka zůstane v podobě, v jaké odešla.${overeni
         ? `<span class="zamek-overeni">⚠ ${esc(overeni)}</span>` : ''}</span>

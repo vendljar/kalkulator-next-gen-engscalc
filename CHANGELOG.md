@@ -8,6 +8,61 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.9.22 — 22. 9. 2026
+
+### Jedno číslo varianty — platí číslo na papíře (#320)
+
+Rozhodnutí J. V.: „platí číslo na papíře, nové klony dostanou příponu shodnou
+s pořadím a odeslaným nabídkám zůstane číslo, se kterým odešly."
+
+**Co bylo špatně.** Varianta měla dvě čísla. Dokumenty (nabídky OCK i PROJ,
+krycí listy) číslovaly podle POŘADÍ v zakázce — druhá varianta …555.2 —
+kdežto zámek odeslané nabídky, seznam variant, archiv, hlášky i serverová
+kontrola čísla (B56) podle přípony klonu, kterou první klon dostal .1.
+Změřeno: druhá varianta odešla zákazníkovi jako 0555.2, v zámku stála
+0555.1 a číslo 0555.2 v aplikaci patřilo jiné nabídce než na papíře. Číslo
+podle pořadí se navíc posouvalo: po smazání dřívější varianty nesl dotisk
+téže odeslané nabídky jiné číslo, než jaké odešlo.
+
+**Co platí teď.** Číslo je jedno — přípona varianty — a berou ho odsud
+dokumenty, zámek, seznamy i server. Nová varianta (klon, alternativa
+z archivu, duplikát) dostane příponu podle pořadí: druhá .2, třetí .3.
+Po smazání varianty se její číslo znovu nepoužije — další dostane číslo
+nad maximem (…555.4 místo uvolněného .3), protože číslo, které jednou
+padlo, nesmí patřit jiné nabídce. Název klonu nese totéž číslo
+(„Varianta 3" = .3).
+
+**Uložené zakázky.** Při prvním načtení se jednou přečíslují podle pořadí
+— tedy na přesně to číslo, které jim dosud tiskly dokumenty. Týká se to
+i odeslaných variant: jejich papír nesl číslo podle pořadí. Od té chvíle se
+číslo nemění ani po smazání jiné varianty (značka `priponySchema`).
+Samotného zámku se migrace nedotkne — `zamek.cislo` je v klíči zámku
+a zůstává, jak byl pořízen; lišta zámku ale ukazuje číslo z papíru.
+
+**Server (B56).** Nový zámek nese značku `cisloPapir` (je v klíči zámku,
+nedá se sundat) a server u něj hlídá celé číslo včetně přípony —
+přečíslovat odeslanou nabídku .2 na .7 obchodník nesmí. U starých zámků se
+hlídá jen základ čísla; jinak by migrace sama zablokovala každé uložení
+zakázky se starou odeslanou variantou.
+
+**Mez.** Nabídka odeslaná před touto změnou, u níž se mezitím smazala
+dřívější varianta, nese na papíře jiné číslo, než jaké jí dává pořadí dnes.
+Kolik variant tehdy existovalo, se nikde nezapisovalo — zůstává jí číslo,
+které aplikace ukazovala naposledy.
+
+Testy: `test_zamek.js` oddíl #320 (20 kontrol: dokument = zámek u každé
+varianty, číslo drží po smazání dřívější varianty, znovunačtení
+nepřečísluje, migrace starého zámku bez zásahu do klíče, duplikáty
+z v22.9.16 se třemi nulami, značka v klíči), `test_prava.mjs` (10: stará
+zakázka se starým zámkem se po migraci uloží, změna základu u starého
+zámku i přečíslování přípony u nového se odmítnou, sundaná značka → 409),
+`overit_online.mjs` 10e (stará zakázka v prohlížeči: lišta i dokument
+nesou .2), `overit_lista.mjs` (klon .2 a nabídka ho vytiskne pod týmž
+číslem). Upravena očekávání starého číslování v `test_archiv`, `test_seznam`
+a `test_zakazka_duplikace`. Tři nové mutace, serverových mutací je 144.
+
+---
+
 ## v22.9.21 — 22. 9. 2026
 
 ### Dávka R5 z revize v22.9.9 — testy říkají pravdu o tom, co neověřily

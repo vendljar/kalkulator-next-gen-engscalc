@@ -136,9 +136,12 @@ const test = (n, cond, info) => {
    *
    * Do 22. 9. 2026 tu stálo „přípony variant se vynulovaly" a test tím
    * CHYBU ZAFIXOVAL: tři nuly = tři nabídky pod holým číslem zakázky
-   * (zámek, seznam variant, hlášky). Nově první holé číslo, další .1, .2. */
-  test('přípony variant jdou podle pořadí 0, 1, 2',
-    nova.varianty.map(v => v.pripona).join(',') === '0,1,2', nova.varianty.map(v => v.pripona));
+   * (zámek, seznam variant, hlášky). Nově první holé číslo, další podle
+   * pořadí — od #320 .2, .3 (číslo, které tisknou dokumenty). */
+  test('přípony variant jdou podle pořadí 0, 2, 3 (číslo z papíru, #320)',
+    nova.varianty.map(v => v.pripona).join(',') === '0,2,3', nova.varianty.map(v => v.pripona));
+  test('duplikát nese značku číslování podle papíru (nepřečísluje se při načtení)',
+    nova.priponySchema === 2, nova.priponySchema);
   test('každá varianta duplikátu má v zámku a hláškách vlastní číslo',
     new Set(nova.varianty.map(v => variantaCislo(nova, v))).size === 3,
     nova.varianty.map(v => variantaCislo(nova, v)));
@@ -147,10 +150,10 @@ const test = (n, cond, info) => {
     nova.varianty.map(v => variantaCislo(nova, v)));
   /* Maximum předlohy (#17: číslo se nepoužije znovu) do kopie nepatří —
    * další klon by v duplikátu dostal číslo o několik výš. */
-  test('nejvyšší přípona odpovídá duplikátu, ne předloze', nova.priponaMax === 2,
+  test('nejvyšší přípona odpovídá duplikátu, ne předloze', nova.priponaMax === 3,
     [nova.priponaMax, zak.priponaMax]);
   const dalsi = klonujVariantu(nova, nova.varianty[0].id, { nazev: 'Klon v duplikátu' });
-  test('další klon v duplikátu pokračuje .3', dalsi && dalsi.pripona === 3, dalsi && dalsi.pripona);
+  test('další klon v duplikátu pokračuje .4', dalsi && dalsi.pripona === 4, dalsi && dalsi.pripona);
   /* Pojistka proti prázdnému testu: předloha má opravdu jiné maximum,
    * jinak by předchozí kontrola nic nedokazovala. */
   test('(předloha má svoje maximum, jiné než duplikát)', zak.priponaMax === 7, zak.priponaMax);

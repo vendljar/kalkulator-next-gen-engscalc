@@ -63,22 +63,24 @@ const v1 = zak.varianty[0];
 test('bez přípony je číslo varianty holé číslo zakázky',
   variantaCislo(zak, v1) === '2026 - OPR - CN - 0500', variantaCislo(zak, v1));
 test('výchozí varianta má příponu 0', variantaPripona(v1) === 0);
-test('první volná přípona je 1', dalsiPriponaVarianty(zak) === 1);
+/* #320: přípona = pořadí = číslo na papíře — druhá varianta .2, ne .1. */
+test('první volná přípona je 2 (druhá varianta)', dalsiPriponaVarianty(zak) === 2);
 
-/* ---------- 3) klon dostane .1, další .2 – přípony se nevnořují ---------- */
+/* ---------- 3) klon dostane .2, další .3 – přípony se nevnořují ---------- */
 const k1 = klonujVariantu(zak, v1.id);
-test('klon má příponu .1', variantaCislo(zak, k1) === '2026 - OPR - CN - 0500.1',
+test('klon (druhá varianta) má příponu .2', variantaCislo(zak, k1) === '2026 - OPR - CN - 0500.2',
   variantaCislo(zak, k1));
+test('a jmenuje se podle svého čísla', k1.nazev === 'Varianta 2', k1.nazev);
 test('klon je v téže zakázce', zak.varianty.length === 2 && zak.varianty[1] === k1);
 test('klon se stane aktivní variantou', zak.aktivni === k1.id);
 test('klon si pamatuje předlohu', k1.klonZ === v1.id
   && k1.klonZCislo === '2026 - OPR - CN - 0500');
 
 const k2 = klonujVariantu(zak, k1.id);   // klon klonu
-test('klon klonu je .2, ne .1.1', variantaCislo(zak, k2) === '2026 - OPR - CN - 0500.2',
+test('klon klonu je .3, ne .2.1', variantaCislo(zak, k2) === '2026 - OPR - CN - 0500.3',
   variantaCislo(zak, k2));
 test('původní varianta si číslo drží', variantaCislo(zak, v1) === '2026 - OPR - CN - 0500');
-test('klon .1 si číslo drží', variantaCislo(zak, k1) === '2026 - OPR - CN - 0500.1');
+test('klon .2 si číslo drží', variantaCislo(zak, k1) === '2026 - OPR - CN - 0500.2');
 
 /* ---------- 4) klon je hluboká kopie dat ---------- */
 k2.data.ock.zadani.sirka = 9999;
@@ -88,10 +90,10 @@ test('klon není řídící', k1.ridici === false && k2.ridici === false);
 test('řídící zůstala původní varianta', v1.ridici === true);
 
 /* ---------- 5) číslo se nepoužije podruhé ani po smazání ---------- */
-zak.varianty = zak.varianty.filter(v => v.id !== k2.id);   // uživatel smaže .2
+zak.varianty = zak.varianty.filter(v => v.id !== k2.id);   // uživatel smaže .3
 const k3 = klonujVariantu(zak, v1.id);
-test('po smazání .2 dostane další klon .3 (číslo se neopakuje)',
-  variantaCislo(zak, k3) === '2026 - OPR - CN - 0500.3', variantaCislo(zak, k3));
+test('po smazání .3 dostane další klon .4 (číslo se neopakuje)',
+  variantaCislo(zak, k3) === '2026 - OPR - CN - 0500.4', variantaCislo(zak, k3));
 
 /* ---------- 6) uzamčení při tisku ---------- */
 const zak2 = novaZakazka();
@@ -141,7 +143,7 @@ test('historie zná typ druhého tisku', a.zamek.tisky[1].typ === 'nabidkaTisk')
 const b = klonujVariantu(zak2, a.id);
 test('klon zamčené varianty je editovatelný', variantaEditovatelna(b) === true);
 test('klon zamčené varianty nemá zámek', b.zamek === null);
-test('klon má číslo .1', variantaCislo(zak2, b) === '2026 - OPR - CN - 0600.1');
+test('klon má číslo .2', variantaCislo(zak2, b) === '2026 - OPR - CN - 0600.2');
 test('zamčená předloha zůstává zamčená', variantaUzamcena(a) === true);
 
 /* ---------- 9) odemknutí je výjimka pro správce ---------- */
@@ -189,17 +191,18 @@ const stara = { schema: 2, cislo: '2026 - OPR - CN - 0300',
 zajistiZamek(stara);
 test('migrace: první varianta zůstává na holém čísle',
   variantaCislo(stara, stara.varianty[0]) === '2026 - OPR - CN - 0300');
-test('migrace: druhá varianta dostane .1',
-  variantaCislo(stara, stara.varianty[1]) === '2026 - OPR - CN - 0300.1');
-test('migrace: třetí varianta dostane .2',
-  variantaCislo(stara, stara.varianty[2]) === '2026 - OPR - CN - 0300.2');
+/* #320: podle pořadí — tedy číslo, které starší zakázce tiskly dokumenty. */
+test('migrace: druhá varianta dostane .2',
+  variantaCislo(stara, stara.varianty[1]) === '2026 - OPR - CN - 0300.2');
+test('migrace: třetí varianta dostane .3',
+  variantaCislo(stara, stara.varianty[2]) === '2026 - OPR - CN - 0300.3');
 test('migrace: nikde nevznikl zámek', stara.varianty.every(v => v.zamek === null));
-test('migrace: zakázka si pamatuje nejvyšší příponu', stara.priponaMax === 2);
+test('migrace: zakázka si pamatuje nejvyšší příponu', stara.priponaMax === 3);
 const snap = JSON.stringify(stara);
 zajistiZamek(stara);
 test('migrace je idempotentní', JSON.stringify(stara) === snap);
 const k4 = klonujVariantu(stara, 'x2');
-test('klon po migraci pokračuje .3', variantaCislo(stara, k4) === '2026 - OPR - CN - 0300.3',
+test('klon po migraci pokračuje .4', variantaCislo(stara, k4) === '2026 - OPR - CN - 0300.4',
   variantaCislo(stara, k4));
 
 /* rozbitý zápis zámku se nesmí brát jako zámek */
@@ -223,8 +226,8 @@ const naimportovana = importZakazka(JSON.parse(JSON.stringify({
   schema: 2, cislo: '2026 - OPR - CN - 0400', aktivni: 'i1',
   varianty: [ { id: 'i1', nazev: 'Varianta 1', ridici: true, data: {} },
               { id: 'i2', nazev: 'Varianta 2', data: {} } ] })));
-test('import doplní přípony', variantaPripona(naimportovana.varianty[0]) === 0
-  && variantaPripona(naimportovana.varianty[1]) === 1);
+test('import doplní přípony (podle papíru: 0 a 2)', variantaPripona(naimportovana.varianty[0]) === 0
+  && variantaPripona(naimportovana.varianty[1]) === 2);
 test('import doplní prázdný zámek', naimportovana.varianty.every(v => v.zamek === null));
 test('import zachová číslo první varianty',
   variantaCislo(naimportovana, naimportovana.varianty[0]) === '2026 - OPR - CN - 0400');
@@ -261,6 +264,93 @@ test('klon nevyplněné zakázky nekončí mezerou před tečkou',
   test('zakázka bez autora jde odemknout každému', zamekCteniSmiOdemknout(bezAutora, kolega));
   test('bez přihlášení (ze souboru) se neptáme', zamekCteniSmiOdemknout(cizi, null));
   test('kdo smí, nedostane žádné vysvětlení', zamekCteniDuvod(moje, ja) === '');
+}
+
+/* ---------- 14) JEDNO ČÍSLO VARIANTY — ČÍSLO Z PAPÍRU (#320, 22. 9. 2026) ----------
+ * Do 22. 9. dokumenty číslovaly podle POŘADÍ (druhá varianta .2), zámek,
+ * seznamy a server podle PŘÍPONY (první klon .1). Změřeno: druhá varianta
+ * odešla jako 0555.2, v zámku 0555.1 — a po smazání dřívější varianty dotisk
+ * téže odeslané nabídky nesl jiné číslo. Rozhodnutí J. V.: „platí číslo na
+ * papíře, nové klony dostanou příponu shodnou s pořadím a odeslaným nabídkám
+ * zůstane číslo, se kterým odešly." */
+{
+  global.variantaPriponaVZakazce = zm.variantaPriponaVZakazce;
+  const { cisloSVariantou } = zk;
+  const { uloZamekKlic } = require('./uloziste.js');
+  const papir = (z, v) => cisloSVariantou(z, v);
+
+  test('#320: nová zakázka nese značku číslování podle papíru (= PRIPONY_SCHEMA)',
+    novaZakazka().priponySchema === zm.PRIPONY_SCHEMA && zm.PRIPONY_SCHEMA === 2);
+
+  /* Dokument a zámek mají TOTÉŽ číslo — u každé varianty. */
+  const z1 = novaZakazka(); z1.cislo = '2026 - OPR - CN - 0555';
+  const a1 = z1.varianty[0];
+  const a2 = klonujVariantu(z1, a1.id);
+  const a3 = klonujVariantu(z1, a2.id);
+  test('#320: číslo na dokumentu = číslo varianty (1., 2. i 3. varianta)',
+    [a1, a2, a3].every(v => papir(z1, v) === variantaCislo(z1, v)),
+    [a1, a2, a3].map(v => papir(z1, v) + ' / ' + variantaCislo(z1, v)));
+  test('#320: druhá varianta je .2 na dokumentu i v zámku (dřív .2 × .1)',
+    papir(z1, a2) === '2026 - OPR - CN - 0555.2');
+  zamkniVariantu(a2, { typ: 'nabidka', kdy: '2026-09-22T10:00:00.000Z', cislo: variantaCislo(z1, a2) });
+  test('#320: nový zámek drží číslo z papíru a nese značku',
+    a2.zamek.cislo === papir(z1, a2) && a2.zamek.cisloPapir === true, a2.zamek.cislo);
+
+  /* Číslo se neposouvá: smazání DŘÍVĚJŠÍ varianty odeslané nabídce číslo
+   * nezmění (dřív se podle pořadí posunula z .2 na holé číslo). */
+  z1.varianty = z1.varianty.filter(v => v.id !== a1.id);
+  test('#320: po smazání dřívější varianty nese odeslaná nabídka pořád .2',
+    papir(z1, a2) === '2026 - OPR - CN - 0555.2' && variantaCislo(z1, a2) === '2026 - OPR - CN - 0555.2',
+    papir(z1, a2));
+  test('#320: a číslo v zámku s ním pořád sedí', a2.zamek.cislo === variantaCislo(z1, a2));
+  const znovu = importZakazka(JSON.parse(JSON.stringify(z1)));
+  test('#320: znovunačtení zakázku NEpřečísluje (značka) — .2 a .3 zůstávají',
+    znovu.varianty.map(v => v.pripona).join(',') === '2,3', znovu.varianty.map(v => v.pripona));
+  const a4 = klonujVariantu(z1, a3.id);
+  test('#320: další klon nepoužije uvolněné číslo — .4', variantaCislo(z1, a4) === '2026 - OPR - CN - 0555.4',
+    variantaCislo(z1, a4));
+
+  /* Starší zakázka se starým zámkem: přečísluje se podle papíru, zámek
+   * zůstane, jak byl pořízen (je v klíči — server by jinak odmítl uložení). */
+  const legacy = { schema: 2, cislo: '2026 - OPR - CN - 0556', aktivni: 'l1', priponaMax: 5,
+    varianty: [ { id: 'l1', nazev: 'Varianta 1', ridici: true, pripona: 0, data: {} },
+                { id: 'l2', nazev: 'Varianta 2', pripona: 1, data: {},
+                  zamek: { zamceno: true, kdy: '2026-09-18T08:00:00.000Z', typ: 'nabidka',
+                           cislo: '2026 - OPR - CN - 0556.1', tisky: [{ kdy: '2026-09-18T08:00:00.000Z' }] } },
+                { id: 'l3', nazev: 'Varianta 3', pripona: 4, data: {} } ] };
+  const klicPred = uloZamekKlic(legacy.varianty[1]);
+  const zPred = JSON.stringify(legacy.varianty[1].zamek);
+  const mig = importZakazka(JSON.parse(JSON.stringify(legacy)));
+  test('#320: migrace přečísluje podle pořadí (0, 2, 3) — tak je tiskly dokumenty',
+    mig.varianty.map(v => v.pripona).join(',') === '0,2,3', mig.varianty.map(v => v.pripona));
+  test('#320: odeslaná varianta má číslo z papíru (.2)',
+    variantaCislo(mig, mig.varianty[1]) === '2026 - OPR - CN - 0556.2');
+  test('#320: její zámek migrace nezměnila ani o znak',
+    JSON.stringify(mig.varianty[1].zamek) === zPred && uloZamekKlic(mig.varianty[1]) === klicPred);
+  test('#320: po migraci nese zakázka značku a nejvyšší příponu 3',
+    mig.priponySchema === 2 && mig.priponaMax === 3, [mig.priponySchema, mig.priponaMax]);
+  const klonMig = klonujVariantu(mig, 'l3');
+  test('#320: klon v migrované zakázce pokračuje .4', variantaCislo(mig, klonMig) === '2026 - OPR - CN - 0556.4');
+
+  /* Duplikáty z v22.9.16 (všechny přípony 0) migrace srovná. */
+  const nuly = importZakazka({ schema: 2, cislo: 'CN 1', aktivni: 'n1', varianty: [
+    { id: 'n1', ridici: true, pripona: 0, data: {} }, { id: 'n2', pripona: 0, data: {} },
+    { id: 'n3', pripona: 0, data: {} }] });
+  test('#320: tři varianty s příponou 0 (duplikát z v22.9.16) dostanou 0, 2, 3',
+    nuly.varianty.map(v => v.pripona).join(',') === '0,2,3');
+
+  /* Základ čísla pro staré zámky (B56 na serveru). */
+  const zakZ = { cislo: '2026 - OPR - CN - 0556' };
+  test('#320: starý zámek s holým číslem sedí na základ', zm.zamekCisloZakladSedi('2026 - OPR - CN - 0556', zakZ));
+  test('#320: starý zámek se starou příponou (.1) sedí na základ',
+    zm.zamekCisloZakladSedi('2026 - OPR - CN - 0556.1', zakZ));
+  test('#320: jiný základ nesedí', !zm.zamekCisloZakladSedi('2026 - OPR - CN - 0557.1', zakZ));
+  test('#320: nečíselná přípona nesedí', !zm.zamekCisloZakladSedi('2026 - OPR - CN - 0556.x', zakZ));
+  test('#320: prázdné číslo zakázky nesedí', !zm.zamekCisloZakladSedi('2026 - OPR - CN - 0556', { cislo: '' }));
+
+  /* Značka je v klíči zámku: sundat ji potichu nejde. */
+  const bez = JSON.parse(JSON.stringify(a2)); delete bez.zamek.cisloPapir;
+  test('#320: značka cisloPapir je v klíči zámku', uloZamekKlic(bez) !== uloZamekKlic(a2));
 }
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);

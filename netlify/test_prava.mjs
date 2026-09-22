@@ -2050,6 +2050,65 @@ console.log('\n===== AUDIT B26 / B29: KID TRVALÝCH POLOŽEK A DUPLICITNÍ ID ==
     (await post(zakazky, 'http://x/api/zakazky', { zakazka: starsiJinak }, cObch)).status === 200);
 }
 
+/* ---------- #320: JEDNO ČÍSLO VARIANTY × B56 ----------
+ * Zakázky uložené před #320 se při načtení přečíslují podle papíru (první
+ * klon .1 → .2). Jejich STARÉ zámky ale v `cislo` drží příponu z dřívějška
+ * (a zůstat jí musí — je v klíči zámku). Kdyby B56 porovnával celé číslo,
+ * migrace sama by obchodníkovi zablokovala každé uložení zakázky se starou
+ * odeslanou variantou (403). U starých zámků se proto hlídá jen ZÁKLAD;
+ * u nových (značka cisloPapir) celé číslo včetně přípony. */
+{
+  const nactiZ = async (s) => (await (await get(zakazky, 'http://x/api/zakazky?soubor=' + s, cAdmin)).json()).zakazka;
+  const legacy = zakazkaCislo('2026 - OPR - CN - 0860');
+  delete legacy.priponySchema;                                   // uloženo před #320
+  const l2 = JSON.parse(JSON.stringify(legacy.varianty[0]));
+  l2.id = 'v-legacy-2'; l2.ridici = false; l2.pripona = 1;
+  legacy.varianty[0].pripona = 0;
+  legacy.varianty.push(l2);
+  l2.zamek = { zamceno: true, kdy: '2026-09-18T08:00:00.000Z', typ: 'nabidka', popis: 'Cenová nabídka OCK (Word)',
+               kdo: 'Matice práv', cislo: '2026 - OPR - CN - 0860.1', otisk: null,
+               tisky: [{ kdy: '2026-09-18T08:00:00.000Z', typ: 'nabidka' }] };
+  const odpL = await post(zakazky, 'http://x/api/zakazky', { zakazka: legacy }, cObch);
+  test('#320: stará zakázka se starým zámkem (.1) se po přečíslování uloží (žádné 403)',
+    odpL.status === 200, 'vrátil ' + odpL.status);
+  const ulL = await nactiZ('2026-OPR-CN-0860.json');
+  test('#320: server ji přečísloval podle papíru (0, 2) a dal jí značku',
+    ulL.varianty.map(v => v.pripona).join(',') === '0,2' && ulL.priponySchema === 2,
+    JSON.stringify([ulL.varianty.map(v => v.pripona), ulL.priponySchema]));
+  test('#320: starý zámek zůstal, jak byl pořízen (.1 — je v klíči zámku)',
+    ulL.varianty[1].zamek.cislo === '2026 - OPR - CN - 0860.1' && !ulL.varianty[1].zamek.cisloPapir);
+  test('#320: další uložení téže zakázky projde',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: ulL }, cObch)).status === 200);
+  const lJinyZaklad = JSON.parse(JSON.stringify(ulL)); lJinyZaklad.cislo = '2026 - OPR - CN - 0861';
+  test('#320: u starého zámku se změna ZÁKLADU čísla pořád odmítne (403)',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: lJinyZaklad }, cObch)).status === 403);
+
+  /* Nový zámek: číslo z papíru, hlídá se celé. */
+  const nova = zakazkaCislo('2026 - OPR - CN - 0862');
+  const n2 = zam.klonujVariantu(nova, nova.varianty[0].id);
+  zam.zamkniVariantu(n2, { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Matice práv',
+                           cislo: zam.variantaCislo(nova, n2) });
+  test('#320: nový zámek nese číslo z papíru (.2) a značku',
+    n2.zamek.cislo === '2026 - OPR - CN - 0862.2' && n2.zamek.cisloPapir === true, n2.zamek.cislo);
+  test('#320: zakázku s novým zámkem lze uložit',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: nova }, cObch)).status === 200);
+  const precislovana = JSON.parse(JSON.stringify(nova));
+  precislovana.varianty[1].pripona = 7;                            // .2 → .7 u odeslané nabídky
+  const odpP = await post(zakazky, 'http://x/api/zakazky', { zakazka: precislovana }, cObch);
+  test('#320: přečíslovat příponu odeslané nabídky obchodník nesmí (403)', odpP.status === 403,
+    'vrátil ' + odpP.status);
+  test('#320: po odmítnutí je v databázi pořád .2',
+    (await nactiZ('2026-OPR-CN-0862.json')).varianty[1].pripona === 2);
+  /* Sundat značku a tím si vynutit mírnější hlídání (jen základ) nejde:
+   * značka je v klíči zámku, takže zámek „se změnil". */
+  const bezZnacky = await nactiZ('2026-OPR-CN-0862.json');
+  delete bezZnacky.varianty[1].zamek.cisloPapir;
+  bezZnacky.varianty[1].pripona = 7;
+  const odpZ = await post(zakazky, 'http://x/api/zakazky', { zakazka: bezZnacky }, cObch);
+  test('#320: sundaná značka cisloPapir neprojde (zámek se změnil → 409)', odpZ.status === 409,
+    'vrátil ' + odpZ.status);
+}
+
 /* ---------- B55: POJISTKU ZVEŘEJNĚNÍ NEJDE VYPNOUT VYNECHÁNÍM POLE ----------
  * (bezpečnostní audit 22. 9. 2026)
  *

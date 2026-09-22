@@ -1296,6 +1296,46 @@ test('lišta uzamčené varianty nabízí za Klonovat i Založit novou zakázku 
     ZAK = novaZakazka(); syncVarianta(); render(); });
 }
 
+/* ---- 10e) JEDNO ČÍSLO VARIANTY — ČÍSLO Z PAPÍRU (#320) ----
+ * Zakázka uložená před #320: druhá varianta odešla zákazníkovi jako …0763.2
+ * (dokumenty číslovaly podle pořadí), ale v zámku a v liště stála jako
+ * …0763.1. Uloží se do databáze PŘÍMO (bez serverového importu, jako by
+ * ležela z dřívějška) a otevře se ve skutečném klientu: lišta zámku i číslo
+ * pro dokument musí ukázat číslo z papíru. */
+{
+  const zamekStary = { zamceno: true, kdy: '2026-09-18T08:00:00.000Z', typ: 'nabidka',
+    popis: 'Cenová nabídka OCK (Word)', kdo: 'Harness', cislo: '2026 - OPR - CN - 0763.1', otisk: null,
+    tisky: [{ kdy: '2026-09-18T08:00:00.000Z', typ: 'nabidka' }] };
+  const stara = await page.evaluate((zamek) => {
+    const z = novaZakazka(); z.cislo = '2026 - OPR - CN - 0763'; z.nazevAkce = '#320 stará zakázka';
+    delete z.priponySchema;
+    const v2 = JSON.parse(JSON.stringify(z.varianty[0]));
+    v2.id = 'v320-2'; v2.nazev = 'Varianta 2'; v2.ridici = false; v2.pripona = 1; v2.zamek = zamek;
+    z.varianty[0].pripona = 0; z.varianty.push(v2); z.aktivni = v2.id;
+    return JSON.parse(JSON.stringify(z));
+  }, zamekStary);
+  pamet.set('zakazky/z/2026-OPR-CN-0763.json', JSON.stringify(stara));
+  const po = await page.evaluate(async () => {
+    /* Otevřená je čerstvá prázdná zakázka — dotaz na neuložené změny se
+     * odpoví „zahodit" (skutečný modál by harness zastavil). */
+    window.volba = () => Promise.resolve('zahodit');
+    try { await onlineOtevri('2026-OPR-CN-0763.json'); } finally { delete window.volba; }
+    const v = ZAK.varianty.find(x => x.id === 'v320-2');
+    return { lista: (document.getElementById('zamekLista') || {}).textContent || '',
+             dokument: cisloSVariantou(ZAK, v), cislo: variantaCislo(ZAK, v),
+             zamekCislo: v.zamek && v.zamek.cislo, pripony: ZAK.varianty.map(x => x.pripona) };
+  });
+  test('#320: stará zakázka se v klientu přečísluje podle papíru (0, 2)',
+    po.pripony.join(',') === '0,2', JSON.stringify(po));
+  test('#320: dokument i číslo varianty nesou číslo z papíru (.2)',
+    po.dokument === '2026 - OPR - CN - 0763.2' && po.cislo === po.dokument, JSON.stringify(po));
+  test('#320: lišta zámku ukazuje číslo z papíru, ne starou příponu ze zámku',
+    /0763\.2/.test(po.lista) && !/0763\.1/.test(po.lista), po.lista);
+  test('#320: zámek sám zůstal, jak byl pořízen', po.zamekCislo === '2026 - OPR - CN - 0763.1', po.zamekCislo);
+  await page.evaluate(() => { if (typeof zamekCteniVypni === 'function') zamekCteniVypni();
+    ZAK = novaZakazka(); syncVarianta(); render(); });
+}
+
 /* ---- 11) čistá konzole ---- */
 test('za celý průchod nevznikla nečekaná chyba v konzoli', chyby.length === 0, chyby);
 

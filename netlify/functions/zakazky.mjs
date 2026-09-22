@@ -208,13 +208,22 @@ export default async (req) => {
    * jménem; původní soubor s původním číslem zůstává nedotčený, takže se
    * stopa neztrácí. Tady jde o to, aby se číslo nedalo změnit NEDOPATŘENÍM
    * ani běžným klientem. */
+  /* JEDNO ČÍSLO VARIANTY (#320, 22. 9. 2026). Zámek pořízený od #320 nese
+   * v `cislo` číslo z papíru (značka `cisloPapir`, je v klíči zámku) —
+   * u něj se hlídá CELÉ číslo, tedy i přípona: přečíslovat odeslanou nabídku
+   * .2 na .7 je stejná změna jako přepsat základ. Starší zámky mají v `cislo`
+   * příponu z dřívějšího číslování (první klon .1, na papíře .2); zakázka se
+   * při načtení přečíslovala podle papíru, takže u nich se hlídá jen ZÁKLAD
+   * čísla — jinak by migrace sama o sobě zablokovala každé uložení zakázky
+   * se starou odeslanou variantou. */
   const jineCislo = [];
   for (const v of (zak.varianty || [])) {
     if (!(globalThis.variantaUzamcena && globalThis.variantaUzamcena(v))) continue;
     const bylo = String((v.zamek && v.zamek.cislo) || '');
     if (!bylo) continue;
     const ted = String(globalThis.variantaCislo(zak, v) || '');
-    if (bylo !== ted) jineCislo.push({ v, bylo, ted });
+    const sedi = v.zamek.cisloPapir ? bylo === ted : globalThis.zamekCisloZakladSedi(bylo, zak);
+    if (!sedi) jineCislo.push({ v, bylo, ted });
   }
   if (jineCislo.length) {
     if (relace.role !== 'Administrátor')

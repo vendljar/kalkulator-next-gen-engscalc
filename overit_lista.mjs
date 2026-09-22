@@ -332,15 +332,25 @@ const chovani = await p.evaluate(() => {
   // klon musí být editovatelný a mít další číslo
   const klon = klonujVariantu(ZAK, v.id); syncVarianta(); render();
   const klonCislo = variantaCislo(ZAK, klon);
+  /* Číslo, které vytiskne nabídka (#320). Harness pracuje s nevyplněnou
+   * předlohou čísla, na kterou dokument příponu záměrně nelepí — proto se
+   * srovnává nad vyplněným základem. */
+  const ZKOUSKA = '2026 - OPR - CN - 0999';
+  const klonDokument = cisloSVariantou(ZAK, klon, ZKOUSKA);
+  const klonCisloVyplnene = variantaCislo(Object.assign({}, ZAK, { cislo: ZKOUSKA }), klon);
   const klonEdit = variantaEditovatelna(klon);
   set('Z.zdvih', puvodni + 3);
   const klonZapis = Z.zdvih;
   window.potvrd = puvodniConfirm;
-  return { zamceno, cislo, poZapisu, puvodni, klonCislo, klonEdit, klonZapis, listaText };
+  return { zamceno, cislo, poZapisu, puvodni, klonCislo, klonDokument, klonCisloVyplnene,
+           klonEdit, klonZapis, listaText };
 });
 ok(`tisk nabídky uzamkl variantu (číslo ${chovani.cislo})`, chovani.zamceno);
 ok('do zamčené varianty se nezapsalo', chovani.poZapisu === chovani.puvodni);
-ok(`klon dostal další číslo (${chovani.klonCislo})`, /\.1$/.test(chovani.klonCislo));
+/* #320: druhá varianta je .2 — v zámku, v seznamu i na dokumentu (dřív .1 × .2). */
+ok(`klon dostal další číslo (${chovani.klonCislo})`, /\.2$/.test(chovani.klonCislo));
+ok(`a nabídka ho vytiskne pod týmž číslem (${chovani.klonDokument})`,
+  chovani.klonDokument === chovani.klonCisloVyplnene && /\.2$/.test(chovani.klonDokument));
 ok('klon je editovatelný', chovani.klonEdit);
 ok('do klonu se zapsat dá', chovani.klonZapis === chovani.puvodni + 3);
 ok('lišta zámku se u zamčené varianty zobrazila', chovani.listaText.length > 0);

@@ -8,11 +8,12 @@
  * variantou uvnitř téže zakázky.
  *
  * Číslování variant je ploché: původní varianta nese holé číslo zakázky,
- * každý klon dostane příponu .1, .2, .3 … Klon varianty „…-0500.1" je
- * tedy „…-0500.2", nikdy „…-0500.1.1" – přípony se nevnořují, jen rostou.
- * Nejvyšší přidělené číslo si zakázka pamatuje (zak.priponaMax), takže
- * ani po smazání varianty se číslo nepoužije podruhé: číslo, které už
- * jednou odešlo na papíře, nesmí patřit jiné nabídce.
+ * další varianty příponu podle pořadí — druhá .2, třetí .3 … (#320, 22. 9.
+ * 2026; do té doby dostal první klon .1, viz „Jedno číslo varianty" níž).
+ * Přípony se nevnořují, jen rostou. Nejvyšší přidělené číslo si zakázka
+ * pamatuje (zak.priponaMax), takže ani po smazání varianty se číslo
+ * nepoužije podruhé: číslo, které už jednou odešlo na papíře, nesmí patřit
+ * jiné nabídce.
  *
  * Tenhle soubor je čistý model – žádné DOM, žádné globální UI stavy.
  * Blokování editace řeší ui/zamek_ui.js, který se ptá jen na
@@ -54,27 +55,74 @@ function dokumentPopis(typ) {
 
 /* ---------- číslování variant ---------------------------------------- */
 
+/* JEDNO ČÍSLO VARIANTY — ČÍSLO Z PAPÍRU (#320, rozhodnutí J. V. 22. 9. 2026:
+ * „platí číslo na papíře, nové klony dostanou příponu shodnou s pořadím
+ * a odeslaným nabídkám zůstane číslo, se kterým odešly").
+ *
+ * Do 22. 9. 2026 měla varianta DVĚ čísla. Dokumenty (nabídky, krycí listy)
+ * číslovaly podle POŘADÍ v zakázce — druhá varianta .2 (zadání 19. 8. 2026) —
+ * kdežto zámek, seznamy, hlášky i serverová pojistka B56 podle PŘÍPONY, kterou
+ * první klon dostal .1. Změřeno: druhá varianta odešla zákazníkovi jako
+ * 0555.2, v zámku stálo 0555.1. A číslo podle pořadí se navíc posouvalo:
+ * po smazání dřívější varianty dotisk téže odeslané nabídky nesl jiné číslo.
+ *
+ * Teď je číslo jedno — přípona — a dokumenty ho berou odsud taky
+ * (cisloSVariantou v zakazka.js). Zakázky uložené dřív se při načtení JEDNOU
+ * přečíslují podle pořadí (zajistiZamek, značka zak.priponySchema), tedy na
+ * přesně to číslo, které jim dosud tiskly dokumenty. Od té chvíle se číslo
+ * nemění ani po smazání jiné varianty.
+ *
+ * Mez, kterou nic nezavře: nabídka odeslaná PŘED touto změnou, u níž se
+ * mezitím smazala dřívější varianta, na papíře nese jiné číslo, než jaké jí
+ * dávalo pořadí v okamžiku migrace. Kolik variant tehdy existovalo, se
+ * nikde nezapisovalo — zůstává jí číslo, které aplikace ukazovala naposledy. */
+const PRIPONY_SCHEMA = 2;
+
 function variantaPripona(v) {
   const p = v && v.pripona;
   return (typeof p === 'number' && isFinite(p) && p > 0) ? Math.floor(p) : 0;
 }
 
+/* Přípona varianty v zakázce. Varianta, která příponu ještě nemá (zakázka
+ * sestavená v kódu mimo importZakazka), dostane tutéž, jakou by jí dala
+ * migrace: podle pořadí. */
+function variantaPriponaVZakazce(zak, v) {
+  if (v && typeof v.pripona === 'number') return variantaPripona(v);
+  const i = ((zak && zak.varianty) || []).findIndex(x => x === v || (x && v && x.id === v.id));
+  return i > 0 ? i + 1 : 0;
+}
+
+/* Příští přípona: podle pořadí (druhá varianta .2), ale nikdy číslo, které
+ * už v zakázce padlo — po smazání varianty se tedy pokračuje nad maximem. */
 function dalsiPriponaVarianty(zak) {
   let max = (zak && typeof zak.priponaMax === 'number' && isFinite(zak.priponaMax))
     ? Math.floor(zak.priponaMax) : 0;
-  ((zak && zak.varianty) || []).forEach(v => {
-    const p = variantaPripona(v);
+  const varianty = (zak && zak.varianty) || [];
+  varianty.forEach(v => {
+    const p = variantaPriponaVZakazce(zak, v);
     if (p > max) max = p;
   });
-  return max + 1;
+  return Math.max(max + 1, varianty.length + 1);
 }
 
-/* Číslo nabídky konkrétní varianty. Bez přípony vrací HOLÉ číslo zakázky –
- * díky tomu se u dosavadních zakázek na dokumentech nic nemění. */
+/* Číslo nabídky konkrétní varianty = číslo na papíře. Bez přípony vrací
+ * HOLÉ číslo zakázky. Tutéž příponu tisknou dokumenty (cisloSVariantou). */
 function variantaCislo(zak, v) {
   const zaklad = String((zak && zak.cislo) || '');
-  const p = variantaPripona(v);
+  const p = variantaPriponaVZakazce(zak, v);
   return p ? zaklad.replace(/\s+$/, '') + '.' + p : zaklad;
+}
+
+/* Patří uložené číslo z odeslané nabídky k tomuto číslu zakázky? Pro zámky
+ * pořízené před #320: ty v `zamek.cislo` nesou číslo z tehdejší přípony
+ * (první klon .1), které se od čísla na papíře může lišit v příponě. Mění se
+ * u nich proto jen ZÁKLAD — ten musí sedět; přípona je od migrace dána
+ * pořadím, ve kterém dokumenty tiskly. */
+function zamekCisloZakladSedi(cisloZamku, zak) {
+  const bylo = String(cisloZamku || '');
+  const zaklad = String((zak && zak.cislo) || '').replace(/\s+$/, '');
+  if (bylo === zaklad || bylo === String((zak && zak.cislo) || '')) return true;
+  return bylo.startsWith(zaklad + '.') && /^\d+$/.test(bylo.slice(zaklad.length + 1));
 }
 
 /* Klon = nová varianta uvnitř téže zakázky. Přebírá kompletní data
@@ -87,7 +135,8 @@ function klonujVariantu(zak, id, opts) {
   if (!zdroj) return null;
 
   const p = dalsiPriponaVarianty(zak);
-  const kopie = novaVarianta(opts.nazev || ('Varianta ' + (p + 1)),
+  /* Název nese totéž číslo jako přípona (#320): „Varianta 3" = …555.3. */
+  const kopie = novaVarianta(opts.nazev || ('Varianta ' + p),
                              JSON.parse(JSON.stringify(zdroj.data)));
   /* Id musí být v zakázce jedinečné i po načtení ze složky (B29, 9. 9. 2026). */
   if (typeof zakazkaUnikatniId === 'function') kopie.id = zakazkaUnikatniId(zak, kopie.id);
@@ -204,6 +253,11 @@ function zamkniVariantu(v, info) {
     zamceno: true,
     kdy: zaznam.kdy, typ: zaznam.typ, popis: zaznam.popis, kdo: zaznam.kdo,
     cislo: info.cislo || '',
+    /* `cislo` je číslo Z PAPÍRU (#320) — tatáž přípona, jakou tisknou
+     * dokumenty. Zámky pořízené dřív značku nemají a jejich `cislo` může
+     * nést starou příponu (první klon .1); server u nich hlídá jen základ
+     * čísla (B56). Značka je v klíči zámku, takže se nedá potichu sundat. */
+    cisloPapir: true,
     otisk: info.otisk || null,
     /* CELÝ VÝSLEDEK, NE JEN SOUHRN (nálezy A1 a D1, rozhodnutí J. V.
      * 15. 9. 2026: „potřebujeme uzamknout nabídku as is, jakoby to bylo pdf …
@@ -394,27 +448,42 @@ function zamekOtiskZPorovnani(porovnani, id) {
 /* Doplní nová pole do zakázek uložených před zavedením zámku.
  *
  * Přípony: první varianta zůstává na holém čísle zakázky, další dostanou
- * .1, .2 … v pořadí, v jakém jsou v zakázce. Dosud se všechny varianty
- * tiskly pod jedním číslem, což je přesně ta záměna, kterou má číslování
- * odstranit; žádná varianta zatím není zamčená, takže se tím nepřepisuje
- * číslo žádné prokazatelně odeslané nabídky.
+ * .2, .3 … v pořadí, v jakém jsou v zakázce — číslo, které jim tiskly
+ * dokumenty (#320, 22. 9. 2026; původní migrace z #34 rozdávala .1, .2 …
+ * a číslo v zámku se tím rozešlo s číslem na papíře).
  *
  * Funkce je idempotentní – opakované volání už nic nemění. */
 function zajistiZamek(zak) {
   if (!zak || !Array.isArray(zak.varianty)) return zak;
 
-  // Přípony: pokud je nemá žádná varianta (stará zakázka), rozdá se
-  // 0, 1, 2 … v pořadí. Pokud některé už existují, doplní se jen ty
-  // chybějící – vždy nad dosavadní maximum, aby se číslo neopakovalo.
-  const zname = zak.varianty.filter(v => typeof v.pripona === 'number');
-  let volne = 0;
-  if (zname.length) {
-    volne = Math.max(...zname.map(variantaPripona),
-                     (typeof zak.priponaMax === 'number' && isFinite(zak.priponaMax))
-                       ? Math.floor(zak.priponaMax) : 0) + 1;
+  /* JEDNO ČÍSLO VARIANTY (#320). Zakázka uložená před 22. 9. 2026 se
+   * JEDNOU přečísluje podle pořadí: první varianta holé číslo, další .2, .3 …
+   * — přesně to číslo, které jí dosud tiskly dokumenty (cisloSVariantou
+   * číslovala podle pořadí). Týká se to i odeslaných variant: jejich papír
+   * nesl číslo podle pořadí, ne podle staré přípony. Zámku samotného se to
+   * nedotkne — `zamek.cislo` zůstává, jak byl pořízen (je v klíči zámku),
+   * a server u takového zámku hlídá jen základ čísla (B56).
+   *
+   * Značka zak.priponySchema zajistí, že se to stane jednou: po smazání
+   * varianty se už NEpřečísluje — právě to posouvání čísel byla chyba.
+   * Nová zakázka značku nese od založení (novaZakazka). */
+  if (zak.priponySchema !== PRIPONY_SCHEMA) {
+    zak.varianty.forEach((v, i) => { v.pripona = i === 0 ? 0 : i + 1; });
+    zak.priponaMax = zak.varianty.length > 1 ? zak.varianty.length : 0;
+    zak.priponySchema = PRIPONY_SCHEMA;
   }
-  zak.varianty.forEach(v => {
-    if (typeof v.pripona !== 'number') { v.pripona = volne; volne++; }
+
+  // Přípony, které chybí (varianta přidaná mimo klonujVariantu): podle
+  // pořadí, ale vždy nad dosavadní maximum, aby se číslo neopakovalo.
+  const zname = zak.varianty.filter(v => typeof v.pripona === 'number');
+  let volne = Math.max(0, ...zname.map(variantaPripona),
+                       (typeof zak.priponaMax === 'number' && isFinite(zak.priponaMax))
+                         ? Math.floor(zak.priponaMax) : 0);
+  zak.varianty.forEach((v, i) => {
+    if (typeof v.pripona === 'number') return;
+    if (i === 0 && !zname.length) { v.pripona = 0; return; }
+    volne = Math.max(volne + 1, i + 1);
+    v.pripona = volne;
   });
 
   let max = 0;
@@ -478,6 +547,7 @@ if (typeof module !== 'undefined')
                      zamekVysledekSpocti, ZAMEK_OVERENI_CASTI, zamekVysledekRozdily, zamekOvereni, zamekOvereniText,
                      zamekCteniSmiOdemknout, zamekCteniDuvod,
                      variantaPripona, dalsiPriponaVarianty, variantaCislo,
+                     PRIPONY_SCHEMA, variantaPriponaVZakazce, zamekCisloZakladSedi,
                      klonujVariantu, zamekInfo, variantaUzamcena,
                      variantaEditovatelna, zamkniVariantu, odemkniVariantu,
                      ZAMEK_OTISK_POLE, zamekOtisk, zamekOtiskZPorovnani,

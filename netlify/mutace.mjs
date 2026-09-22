@@ -460,6 +460,23 @@ const MUTACE = [
     nahrad: "  if (jineCislo.length) {\n    if (false)",
     proc: 'obchodník by přečísloval odeslanou nabídku a server by mu razítko v zámku ještě srovnal (B56)' },
 
+  /* Jedno číslo varianty (#320, 22. 9. 2026). */
+  { nazev: '#320: u nového zámku se hlídá jen základ čísla',
+    soubor: 'functions/zakazky.mjs',
+    hledej: "    const sedi = v.zamek.cisloPapir ? bylo === ted : globalThis.zamekCisloZakladSedi(bylo, zak);",
+    nahrad: "    const sedi = globalThis.zamekCisloZakladSedi(bylo, zak);",
+    proc: 'odeslanou nabídku .2 by šlo přečíslovat na .7 — dotisk by nesl jiné číslo, než má zákazník' },
+
+  { nazev: '#320: stará zakázka se nepřečísluje podle papíru', soubor: '../src/zamek.js',
+    hledej: "  if (zak.priponySchema !== PRIPONY_SCHEMA) {",
+    nahrad: "  if (false) {",
+    proc: 'zámek a seznamy by dál nesly .1 u nabídky, která odešla jako .2' },
+
+  { nazev: '#320: značka čísla z papíru není v klíči zámku', soubor: '../src/uloziste.js',
+    hledej: "                          otisk: z.otisk || null, cisloPapir: !!z.cisloPapir,",
+    nahrad: "                          otisk: z.otisk || null,",
+    proc: 'sundáním značky by si klient vynutil mírnější hlídání a přečísloval odeslanou nabídku' },
+
   /* Ověření zmrazeného výsledku NOVÉHO zámku (B59, revize v22.9.9). */
   { nazev: 'B59: server výsledek nového zámku neověří',
     soubor: 'functions/zakazky.mjs',

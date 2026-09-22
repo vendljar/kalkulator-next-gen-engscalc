@@ -451,14 +451,18 @@
   {
    "id": "320",
    "vlna": "B",
-   "stav": "ceka",
+   "stav": "hotovo",
+   "hotovoV": "v22.9.22",
    "dulezitost": "vysoka",
    "slozitost": "M",
    "nazev": "Číslo varianty: dokument ukazuje .2, zámek a aplikace .1",
    "proc": "Našlo se při opravě N32 (22. 9. 2026). V aplikaci žijí dvě číslování variant a nikdo je nesrovnal. Dokumenty (nabídka OCK a PROJ, krycí listy) číslují podle POŘADÍ v zakázce: druhá varianta „…-0555.2\" (cisloSVariantou, rozhodnutí 19. 8. 2026). Zámek odeslané nabídky, hlášky, seznam variant, archiv a serverová kontrola čísla (B56) číslují podle PŘÍPONY klonu: první klon „…-0555.1\" (variantaCislo, #17).",
    "detail": "ZMĚŘENO (zakázka se dvěma klony): varianta 2 — dokument 0555.2, zámek a hlášky 0555.1; varianta 3 — dokument 0555.3, zámek 0555.2. Zákazník má tedy na papíře jiné číslo, než jaké o té nabídce ukazuje aplikace, a číslo 0555.2 v aplikaci patří jiné nabídce než na papíře.\n\nDRUHÁ POTÍŽ: číslování podle pořadí se po smazání nebo přesunu varianty posune — znovu vytištěná odeslaná nabídka pak nese jiné číslo, než jaké odešlo. Číslování #17 tomu schválně bránilo („číslo, které jednou odešlo na papíře, nesmí patřit jiné nabídce\").\n\nPROČ NE HNED: sjednocení mění čísla, která už odešla zákazníkům — buď na papíře (když se dokument přepne na přípony), nebo v zámcích (když se zámek přepne na pořadí; serverová kontrola B56 by pak zamčené zakázky odmítala). Je to rozhodnutí, ne oprava.",
    "otazka": "Které číslo má platit: to, které je na papíře (pořadí, druhá varianta .2), nebo stabilní přípona klonu (první klon .1)? Návrh: papír je doklad — sjednotit na dokument a novým klonům přidělovat příponu tak, aby se s pořadím shodovala; u odeslaných nabídek nechat číslo, které odešlo.",
-   "pozn": "Duplikát zakázky (N32) po opravě dostává přípony 0, 1, 2 — stejně jako klony, aby se číslování nerozdělilo ještě víc; až padne rozhodnutí, srovná se s ostatními."
+   "odpoved": "J. V. 22. 9. 2026 večer: „nález 320 oprav dle tvého návrhu\" — tedy platí číslo na papíře, nové klony dostanou příponu shodnou s pořadím a odeslaným nabídkám zůstane číslo, se kterým odešly.",
+   "kde": "src/zamek.js (PRIPONY_SCHEMA, variantaPriponaVZakazce, dalsiPriponaVarianty, zajistiZamek — migrace, zamkniVariantu — značka cisloPapir, zamekCisloZakladSedi), src/zakazka.js (cisloSVariantou, novaZakazka, zakazkaDuplikuj), src/uloziste.js (uloZamekKlic), netlify/functions/zakazky.mjs (B56), src/ui/zamek_ui.js (lišta zámku)",
+   "testy": "src/test_zamek.js (oddíl #320), netlify/test_prava.mjs (#320 × B56), overit_online.mjs 10e, overit_lista.mjs; tři mutace (#320)",
+   "pozn": "HOTOVO v22.9.22. Uložené zakázky se jednou přečíslují podle pořadí (= číslo, které tiskly dokumenty); staré zámky zůstávají beze změny a server u nich hlídá jen základ čísla. Mez: u nabídky odeslané před změnou, u níž se mezitím smazala dřívější varianta, se číslo z papíru zjistit nedá — zůstává číslo, které aplikace ukazovala naposledy."
   },
   {
    "id" : "285",
@@ -5619,7 +5623,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v22.9.21 (engscalc)",
+  "build" : "v22.9.22 (engscalc)",
   "stavKDatu" : "22. 9. 2026"
  },
  "_comment" : [

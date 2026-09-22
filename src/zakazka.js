@@ -393,6 +393,10 @@ function novaZakazka() {
     },
     varianty: [v],
     aktivni: v.id,
+    /* Číslování variant podle papíru (#320) platí od založení — nová zakázka
+     * se nikdy nepřečísluje migrací ze zajistiZamek. Hodnota = PRIPONY_SCHEMA
+     * v zamek.js (shodu hlídá test_zamek.js). */
+    priponySchema: 2,
   };
 }
 
@@ -589,14 +593,26 @@ const STRANA_NAZEV = { ock: 'Kalkulaci OCK', proj: 'Kalkulaci PROJ' };
  * pořadí určuje pole zak.varianty (varianta 2 = druhá v seznamu). Prázdné
  * číslo ani nedopsaná předloha se nedoplňují — přípona na útržku by budila
  * dojem hotového čísla. `zaklad` dovoluje předat už odvozené číslo
- * (projCisloNabidky), aniž by se sahalo na zakázku. */
+ * (projCisloNabidky), aniž by se sahalo na zakázku.
+ *
+ * JEDNO ČÍSLO VARIANTY (#320, 22. 9. 2026). Do té doby se tu přípona
+ * počítala z POŘADÍ v zakázce, zatímco zámek, seznamy a server brali
+ * příponu varianty — druhá varianta tak odešla jako …555.2 a v zámku stála
+ * jako …555.1; a po smazání dřívější varianty se číslo odeslané nabídky při
+ * dotisku posunulo. Teď se tiskne přípona varianty (variantaPriponaVZakazce
+ * v zamek.js) — týž údaj, ze kterého číslo skládá variantaCislo. Starší
+ * zakázky se na ni při načtení jednou přečíslují podle pořadí, tedy na číslo,
+ * které jim dokumenty tiskly dosud. */
 function cisloSVariantou(zak, varianta, zaklad) {
   const cislo = String(zaklad != null ? zaklad : ((zak && zak.cislo) || '')).trim();
   if (!cislo || !hlavickaVyplneno(cislo)) return cislo;
-  const list = (zak && zak.varianty) || [];
-  const i = varianta ? list.findIndex(v => v && v.id === varianta.id) : -1;
-  if (i <= 0) return cislo;
-  return cislo + '.' + (i + 1);
+  let p;
+  if (typeof variantaPriponaVZakazce === 'function') p = variantaPriponaVZakazce(zak, varianta);
+  else {   // sestavení bez zamek.js (Node testy jader): podle pořadí, jako migrace
+    const i = varianta ? ((zak && zak.varianty) || []).findIndex(v => v && v.id === varianta.id) : -1;
+    p = i > 0 ? i + 1 : 0;
+  }
+  return p ? cislo + '.' + p : cislo;
 }
 
 /* ---------- kontrola duplicit čísla a názvu (19. 8. 2026) ----------
@@ -1357,9 +1373,10 @@ function zakazkaDuplikuj(zak, noveCislo) {
      * číslo nemají vůbec, takže tři nuly zůstaly třemi nulami. Duplikát se
      * třemi variantami měl v zámku, v seznamu variant i v hláškách tři
      * nabídky pod jedním číslem — přesně záměna, kterou číslování #17
-     * odstraňovalo. Nově první varianta holé číslo, další .1, .2 … v pořadí,
-     * v jakém jsou v zakázce (stejně jako migrace v zajistiZamek). */
-    n.pripona = i;
+     * odstraňovalo. Nově první varianta holé číslo, další podle pořadí
+     * — od #320 .2, .3 … (číslo, které tisknou dokumenty; stejně jako
+     * migrace v zajistiZamek). */
+    n.pripona = i === 0 ? 0 : i + 1;
     n.datum = (typeof dnesIso === 'function')
       ? dnesIso() : new Date().toISOString().slice(0, 10);
     return n;
@@ -1368,7 +1385,8 @@ function zakazkaDuplikuj(zak, noveCislo) {
    * jednou padlo, se nepoužije znovu. Kopie si nesla maximum PŘEDLOHY,
    * takže další klon v duplikátu dostal třeba .4 v zakázce se dvěma
    * variantami. Počítá se od nových přípon. */
-  nova.priponaMax = Math.max(0, nova.varianty.length - 1);
+  nova.priponaMax = nova.varianty.length > 1 ? nova.varianty.length : 0;
+  nova.priponySchema = 2;   // přípony výš už jsou podle papíru (#320)
   if (nova.varianty.length) {
     /* Řídící musí zůstat právě jedna. Kdyby ji předloha neměla (starší
      * soubor), stane se jí první — stejně jako v importZakazka. */

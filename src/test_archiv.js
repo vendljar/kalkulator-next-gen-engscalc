@@ -174,9 +174,10 @@ test('alternativa je varianta téže zakázky, ne nová zakázka',
   dnes.varianty.length === 2 && dnes.varianty[1] === alt);
 test('alternativa nemění hlavičku otevřené zakázky',
   dnes.cislo === '2026 - OPR - CN - 0500' && dnes.objednatel === 'Město Olomouc');
-test('alternativa dostala další volnou příponu', alt.pripona === 1);
+/* #320: přípona = pořadí = číslo na papíře — druhá varianta .2. */
+test('alternativa dostala další volnou příponu (druhá varianta = 2)', alt.pripona === 2);
 test('číslo alternativy navazuje na otevřenou zakázku',
-  variantaCislo(dnes, alt) === '2026 - OPR - CN - 0500.1');
+  variantaCislo(dnes, alt) === '2026 - OPR - CN - 0500.2');
 test('alternativa se otevře k práci', dnes.aktivni === alt.id);
 test('alternativa není řídící', alt.ridici === false);
 test('alternativa není zamčená', !alt.zamek);
@@ -193,7 +194,7 @@ test('popis původu je věta pro obrazovku',
 test('varianta bez původu popis nemá', puvodPopis(dnes.varianty[0]) === '');
 
 const alt2 = vytvorAlternativu(dnes, zaznam, { cenik: 'historicky' });
-test('druhá alternativa dostala další příponu', alt2.pripona === 2);
+test('druhá alternativa dostala další příponu', alt2.pripona === 3);
 test('historický režim ponechá starý ceník', alt2.data.cenik.marze === 0.19);
 test('historický režim se zapíše do původu', alt2.puvod.cenik === 'historicky');
 test('popis původu historický ceník pojmenuje', puvodPopis(alt2).includes('historickým ceníkem'));
@@ -205,9 +206,9 @@ test('alternativa se nedělá z ničeho', vytvorAlternativu(dnes, null) === null
 /* Klon (#34) i alternativa berou z jedné řady čísel – dvě různé cesty
  * nesmí přidělit stejné číslo nabídky. */
 const klon = klonujVariantu(dnes, alt.id);
-test('klon po alternativě dostane další číslo v řadě', klon.pripona === 3);
+test('klon po alternativě dostane další číslo v řadě', klon.pripona === 4);
 test('alternativa po klonu pokračuje v téže řadě',
-  vytvorAlternativu(dnes, zaznam).pripona === 4);
+  vytvorAlternativu(dnes, zaznam).pripona === 5);
 
 test('název nezdvojuje předponu',
   alternativaNazev({ varianty: [] }, 'Alternativa – Základní') === 'Alternativa – Základní');

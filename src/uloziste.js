@@ -462,8 +462,11 @@ function uloZamekKlic(v) {
    *
    * Starší zámky bez `vysledek` to nerozbije — klíč se skládá čerstvě pro
    * obě strany porovnání, takže `null` proti `null` sedí. */
+  /* `cisloPapir` (#320): značka, že `cislo` je číslo z papíru. V klíči je,
+   * aby ji klient nemohl sundat a tím serveru přepnout hlídání čísla
+   * odeslané nabídky na mírnější (u starých zámků jen základ, B56). */
   return JSON.stringify({ kdy: z.kdy || '', typ: z.typ || '', cislo: z.cislo || '',
-                          otisk: z.otisk || null,
+                          otisk: z.otisk || null, cisloPapir: !!z.cisloPapir,
                           vysledek: z.vysledek || null });
 }
 
