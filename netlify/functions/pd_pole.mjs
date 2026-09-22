@@ -5,9 +5,10 @@
  *                               (jen Administrátor)
  *
  * Proč cache: seznam vlastních polí se mění jednou za rok, ale potřebuje ho
- * KAŽDÉ načtení dealu. Dotaz na seznam stojí 20 tokenů denního rozpočtu —
- * bez cache by pár desítek načtení denně ukrojilo znatelný kus limitu jen za
- * čtení něčeho, co se nemění. Platnost jeden den je kompromis: když se pole
+ * KAŽDÉ načtení dealu. Obnovení jsou dva dotazy po 10 tokenech (dealFields
+ * a organizationFields, x-token-cost ve specifikaci v2), tedy 20 za jedno
+ * obnovení — bez cache by pár desítek načtení denně ukrojilo znatelný kus
+ * limitu jen za čtení něčeho, co se nemění. Platnost jeden den je kompromis: když se pole
  * v CRM přejmenuje, projeví se to nejpozději zítra a administrátor to umí
  * uspíšit přepínačem `obnovit`.
  *

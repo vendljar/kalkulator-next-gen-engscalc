@@ -11,8 +11,9 @@
  * z CRM by byla přesně ten „odhad", který se do dokumentů nesmí dostat.
  *
  * Organizace a osoba se dotahují zvlášť, protože deal nese jen jejich ID.
- * Jsou to dva dotazy navíc po 2 tokenech; načtení dealu tedy stojí 6 tokenů
- * denního rozpočtu, což je proti seznamu (20) zanedbatelné.
+ * Jsou to dva dotazy navíc po 1 tokenu; načtení dealu tedy stojí 3 tokeny
+ * denního rozpočtu, což je proti jedné stránce seznamu (10) zanedbatelné.
+ * (Ceny podle x-token-cost ve specifikaci v2, ověřeno 22. 9. 2026.)
  *
  * Dvouúrovňový model objednatele (ověřeno na účtu 9. 8. 2026): `org_id`
  * dealu bývá investor nebo majitel, kdežto skutečný objednatel — výtahová

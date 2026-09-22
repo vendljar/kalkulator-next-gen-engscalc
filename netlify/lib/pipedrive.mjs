@@ -26,9 +26,11 @@
 export const PD_TOKEN_PROMENNA = 'PIPEDRIVE_TOKEN';
 export const PD_DOMENA_PROMENNA = 'PIPEDRIVE_DOMENA';
 
-/* Kolik dealů se natáhne najednou. Seznam stojí 20 tokenů denního
- * rozpočtu bez ohledu na velikost stránky, takže větší stránka je levnější
- * než víc malých. Strop Pipedrive je 500. */
+/* Kolik dealů se natáhne najednou. Každý POŽADAVEK na seznam stojí
+ * 10 tokenů denního rozpočtu (x-token-cost ve specifikaci v2, ověřeno
+ * 22. 9. 2026) bez ohledu na velikost stránky, takže větší stránka je
+ * levnější než víc malých. Strop Pipedrive je 500. Pozor: cena je za
+ * každou stránku, takže pdVsechny() s deseti stránkami může stát až 100. */
 export const PD_STRANKA = 200;
 
 /* Kolikrát to zkusit znovu, když API odpoví 429 (vyčerpaný krátkodobý
