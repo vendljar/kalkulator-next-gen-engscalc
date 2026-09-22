@@ -42,7 +42,7 @@ const SEKCE = { kapPozadavky: 'IV. POŽADAVKY PRO PROVEDENÍ REALIZACE',
                 kapTerminy: 'V. TERMÍNY REALIZACE',
                 kapPredani: 'VI. PŘEDÁNÍ DÍLA', dolozky: 'DOLOŽKY' };
 
-function nahled(jazyk, upravFirmu) {
+function nahled(jazyk, upravFirmu, upravZadani) {
   const puv = global.NAST;
   const f = Object.assign({}, fm.DEFAULT_FIRMA, { nazev: 'Zkušební firma s.r.o.' });
   if (upravFirmu) upravFirmu(f);
@@ -50,10 +50,51 @@ function nahled(jazyk, upravFirmu) {
   const zak = zk.novaZakazka();
   const v = zak.varianty[0];
   v.data.cenik = ZC.zkusebniCenik();
+  if (upravZadani) upravZadani(v.data.ock.zadani);
   const d = N.nabidkaData(zak, v, JEKLY, jazyk);
   const s = N.nabidkaNahledSekce(d.placeholders, jazyk);
   global.NAST = puv;
   return { ph: d.placeholders, sekce: s, nazvy: s.map(x => x.sekce) };
+}
+
+/* ---------- 0) lešení si nesmí odporovat se specifikací (P8/7) ----------
+ *
+ * Kapitola IV. žádá po objednateli „zajištění montážního lešení". Když je
+ * ale vnější lešení v základní ceně, technická specifikace u téže zakázky
+ * říká, že je součástí dodávky — dokument si protiřečil a zákazník si mohl
+ * vybrat výklad, který je pro něj levnější.
+ *
+ * Rozhodnutí J. V. 22. 9. 2026: odrážka zmizí, když je lešení v dodávce.
+ * Hlídá se ve všech třech jazycích, protože kapitola se nepřekládá — každý
+ * jazyk má vlastní ručně psaný text. */
+{
+  const LESENI = /lešen|scaffold|gerüst|échafaud/i;
+  [['cz', 'Zajištění montážního lešení'], ['en', 'scaffold'], ['de', 'Gerüst']].forEach(([jaz]) => {
+    const bez = nahled(jaz, null, (z) => { z.typSachty = 'exteriérová'; z.volitelne.leseniVnejsi = false; });
+    const sNim = nahled(jaz, null, (z) => { z.typSachty = 'exteriérová'; z.volitelne.leseniVnejsi = true; });
+    const radky = (ph) => String(ph.FIRMA_NAB_POZADAVKY || '').split('\n');
+    test('kapitola IV. (' + jaz + ') odrážku o lešení má, když v dodávce není',
+      radky(bez.ph).some(r => LESENI.test(r)), radky(bez.ph).filter(r => LESENI.test(r)));
+    test('a nemá ji, když vnější lešení v dodávce je',
+      !radky(sNim.ph).some(r => LESENI.test(r)), radky(sNim.ph).filter(r => LESENI.test(r)));
+    /* Pojistka proti prázdnému testu: zmizet smí JEDNA odrážka, ne kapitola. */
+    test('ostatní odrážky (' + jaz + ') zůstanou',
+      radky(sNim.ph).length === radky(bez.ph).length - 1,
+      [radky(bez.ph).length, radky(sNim.ph).length]);
+  });
+
+  /* Interiérová šachta vnější lešení nenabízí vůbec, takže odrážka zůstává:
+   * lešení si tam objednatel opravdu zajistí sám. */
+  const int = nahled('cz', null, (z) => { z.typSachty = 'interiérová'; z.volitelne.leseniVnejsi = true; });
+  test('na interiérové šachtě odrážka zůstává',
+    String(int.ph.FIRMA_NAB_POZADAVKY || '').split('\n').some(r => LESENI.test(r)));
+  /* A v rozšíření nabídky u ní nesmí stát „v základní ceně" — položka
+   * u téhle šachty neexistuje (nález K1). */
+  test('a v nabídce u ní nestojí „v základní ceně"',
+    String(int.ph.PRIP_LESENI_VNEJSI || '').indexOf('základní') < 0, int.ph.PRIP_LESENI_VNEJSI);
+  const ext = nahled('cz', null, (z) => { z.typSachty = 'exteriérová'; z.volitelne.leseniVnejsi = true; });
+  test('na exteriérové v základní ceně naopak stojí',
+    String(ext.ph.PRIP_LESENI_VNEJSI || '').indexOf('základní') >= 0, ext.ph.PRIP_LESENI_VNEJSI);
 }
 
 /* ---------- 1) výchozí texty existují ve všech třech jazycích ---------- */

@@ -344,9 +344,15 @@ const TECHSPEC_DEF = [
     { id: 'leseniUvnitr', label: 'LEŠENÍ – UVNITŘ ŠACHTY', ciselnik: TS_C.stavebniPrace,
       prefill: (r, Z) => Z.volitelne.leseniVnitrni
         ? 'je součástí dodávky pouze po dobu stavby šachty' : 'není součást dodávky, lze doplnit viz příplatkové ceny' },
+    /* U interiérové šachty se vnější lešení nestaví, takže ho nenabízí ani
+     * kalkulace (nález K1). Specifikace by jinak tvrdila „lze doplnit viz
+     * příplatkové ceny" u položky, která v příplatcích není. */
     { id: 'leseniVne', label: 'LEŠENÍ – VNĚ ŠACHTY', ciselnik: TS_C.stavebniPrace,
-      prefill: (r, Z) => Z.volitelne.leseniVnejsi
-        ? 'je součástí dodávky pro provedení kompletního opláštění šachty' : 'není součást dodávky, lze doplnit viz příplatkové ceny' },
+      prefill: (r, Z) => (String(Z.typSachty) !== 'exteriérová')
+        ? 'není součástí dodávky, zajistí objednatel'
+        : (Z.volitelne.leseniVnejsi
+          ? 'je součástí dodávky pro provedení kompletního opláštění šachty'
+          : 'není součást dodávky, lze doplnit viz příplatkové ceny') },
     { id: 'ohrazeniProtiPadu', label: 'OHRAZENÍ ŠACHTY PROTI PÁDU', ciselnik: TS_C.stavebniPrace,
       def: 'není součástí dodávky, zajistí objednatel' },
     { id: 'zabranyVstupy', label: 'ZÁBRANY DO DVEŘNÍCH VSTUPŮ', ciselnik: TS_C.stavebniPrace,

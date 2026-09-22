@@ -8,6 +8,36 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.9.12 — 22. 9. 2026
+
+### Interiérová šachta neplatí lešení, které se u ní nestaví (K1, P8/7)
+
+Rozhodnutí J. V.: „u interiérové šachty vnější lešení primárně nenabízet."
+
+Dělení volitelných položek podle typu šachty v jádře existovalo od začátku,
+háky a sokl jen venku, zábradlí jen uvnitř. **Vnější lešení do něj nikdo
+nedopsal**, takže ho interiérová zakázka platila v základní ceně. Nově se
+u ní nenabízí ani mezi volitelnými, ani mezi příplatky.
+
+Dvě místa se musela srovnat spolu s tím. Nabídka vracela u chybějícího
+příplatku vždycky „v základní ceně", což by u interiérové šachty tvrdilo, že
+lešení v ceně je, ačkoli v kalkulaci není vůbec; teď rozlišuje **„je
+v základní ceně"** od **„u téhle šachty neexistuje"** a v druhém případě
+tiskne pomlčku. Technická specifikace u interiérové šachty říká, že lešení
+zajistí objednatel, místo dosavadního odkazu na příplatkové ceny.
+
+**Kapitola IV. si přestala odporovat se specifikací.** Žádala po objednateli
+zajištění montážního lešení i tehdy, když specifikace u téže zakázky říkala,
+že vnější lešení je součástí dodávky. Zákazník si mohl vybrat výklad, který
+je pro něj levnější. Odrážka teď zmizí, právě když je lešení v dodávce, a to
+ve všech třech jazycích kapitoly.
+
+**Testy:** čtrnáct kontrol, které bez opravy padají. Interiérová zakázka
+o položku zlevní a přepínač s ní nehne, exteriérová se nezmění, a to v obou
+režimech výpočtu.
+
+---
+
 ## v22.9.11 — 22. 9. 2026
 
 ### Světlík se počítá k té stěně, na které je nástupiště (#296)

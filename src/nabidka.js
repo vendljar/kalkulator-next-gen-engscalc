@@ -93,9 +93,25 @@ function nabidkaData(zak, varianta, jekly, lang) {
   const mVnejsi = String(TSv.hodnoty.rozmerVnejsi || '').match(/(\d[\d\s]*)\D+(\d[\d\s]*)/);
   if (mVnejsi) { sirkaVnejsi = mVnejsi[1].trim(); hloubkaVnejsi = mVnejsi[2].trim(); }
 
+  /* Je položka u TÉHLE šachty vůbec na výběr? Katalog volitelných je už
+   * profiltrovaný podle typu šachty (`dostupne`), takže co v něm není,
+   * u téhle zakázky neexistuje. */
+  const jeVKatalogu = key => (r.volitelneKatalog || []).some(x => x.key === key);
+
+  /* ROZLIŠIT DVA RŮZNÉ DŮVODY, PROČ POLOŽKA NENÍ MEZI PŘÍPLATKY (nález K1).
+   *
+   * Do 22. 9. 2026 vracela tahle funkce „v základní ceně" pokaždé, když
+   * položku mezi příplatky nenašla. Dokud byly všechny volitelné položky
+   * dostupné všude, sedělo to. Jakmile se vnější lešení omezilo na
+   * exteriérovou šachtu, tvrdila by nabídka u interiérové, že lešení je
+   * v základní ceně — ačkoli v kalkulaci není vůbec.
+   *
+   * Pomlčka je totéž, co má technická specifikace u polí, která se dané
+   * zakázky netýkají. */
   const prip = key => {
     const p = r.priplatky.find(x => x.key === key);
-    return p ? kc(mena.na(p.sMarzi)) : P('v základní ceně');
+    if (p) return kc(mena.na(p.sMarzi));
+    return jeVKatalogu(key) ? P('v základní ceně') : ' -';
   };
 
   /* Koncová cena: základní cena → schválená sleva (ZAK-10; neschválená ani
@@ -235,10 +251,29 @@ function nabidkaData(zak, varianta, jekly, lang) {
    * zákazníkovi podmínky v jazyce, kterému nemusí rozumět. */
   if (typeof firmaKapitola === 'function' && typeof FIRMA_KAPITOLY !== 'undefined') {
     const f = (typeof firmaAktualni === 'function') ? firmaAktualni() : null;
+    /* LEŠENÍ SI NESMÍ ODPOROVAT S TECHNICKOU SPECIFIKACÍ (P8/7, rozhodnutí
+     * J. V. 22. 9. 2026).
+     *
+     * Kapitola IV. žádá po objednateli „zajištění montážního lešení", zatímco
+     * technická specifikace u téže zakázky může říkat, že vnější lešení je
+     * součástí dodávky. Dokument si tím protiřečil a zákazník si vybral
+     * výklad, který je pro něj levnější.
+     *
+     * Když je vnější lešení v základní ceně, odrážka z kapitoly vypadne.
+     * Je-li příplatkem nebo u téhle šachty neexistuje, zůstává — tam platí
+     * dál, že si ho objednatel zajistí sám.
+     *
+     * Hledá se ve všech jazycích kapitoly, ne jen česky: kapitola se
+     * nepřekládá, každý jazyk má vlastní ručně psaný text. */
+    const leseniVDodavce = jeVKatalogu('leseniVnejsi')
+      && !(r.priplatky || []).some(x => x.key === 'leseniVnejsi');
+    const LESENI_RE = /lešen|scaffold|gerüst|gerust|échafaud|echafaud/i;
     FIRMA_KAPITOLY.forEach(kap => {
       const k = firmaKapitola(f, kap.base, L);
       const sym = 'FIRMA_NAB_' + kap.base.replace(/^kap/, '').toUpperCase();
-      placeholders[sym] = k.radky.join('\n');
+      const radky = (kap.base === 'kapPozadavky' && leseniVDodavce)
+        ? k.radky.filter(rr => !LESENI_RE.test(rr)) : k.radky;
+      placeholders[sym] = radky.join('\n');
       /* Příznak znamená „tenhle jazyk aplikace u kapitol nezná, text je
        * česky" — ne „pole je prázdné". Prázdná kapitola se z dokumentu
        * vypustí i s nadpisem a upozorňovat na ni není na co. */

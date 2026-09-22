@@ -75,11 +75,24 @@ const vlastni = (k) => String(k).indexOf('vlastni:') === 0;
   test('háky a sokl jsou jen na exteriérové šachtě',
     extK.indexOf('haky') >= 0 && extK.indexOf('sokl') >= 0
     && intK.indexOf('haky') < 0 && intK.indexOf('sokl') < 0);
+  /* VNĚJŠÍ LEŠENÍ TAKY (nález K1, 22. 9. 2026). Dělení podle typu šachty tu
+   * bylo od začátku, jen vnější lešení do něj nikdo nedopsal — interiérová
+   * šachta proto v základní ceně platila lešení, které se u ní nestaví. */
+  test('vnější lešení je jen na exteriérové šachtě',
+    extK.indexOf('leseniVnejsi') >= 0 && intK.indexOf('leseniVnejsi') < 0,
+    { ext: extK.indexOf('leseniVnejsi') >= 0, int: intK.indexOf('leseniVnejsi') >= 0 });
+  test('vnitřní lešení zůstává na obou', extK.indexOf('leseniVnitrni') >= 0
+    && intK.indexOf('leseniVnitrni') >= 0);
   test('zábradlí jen na interiérové',
     intK.indexOf('zabradli') >= 0 && extK.indexOf('zabradli') < 0);
-  const pI = klice(vypocti(INT, { haky: false, sokl: false }));
+  const pI = klice(vypocti(INT, { haky: false, sokl: false, leseniVnejsi: false }));
   test('a v příplatcích to platí taky — na interiérové se háky ani sokl nenabízejí',
     pI.indexOf('haky') < 0 && pI.indexOf('sokl') < 0, pI);
+  test('ani vnější lešení', pI.indexOf('leseniVnejsi') < 0, pI);
+  /* Protějšek: na exteriérové se po odškrtnutí nabídnout MUSÍ, jinak by
+   * oprava položku zrušila úplně. */
+  test('na exteriérové se vnější lešení po odškrtnutí nabídne',
+    klice(vypocti(EXT, { leseniVnejsi: false })).indexOf('leseniVnejsi') >= 0);
   const pE = klice(vypocti(EXT, { zabradli: false }));
   test('ani zábradlí na exteriérové', pE.indexOf('zabradli') < 0, pE);
 }
@@ -259,7 +272,7 @@ const prepinac = (key) => (key === 'prechMont') ? 'prechodove' : key;
     && src.indexOf("c.soklBmKc") >= 0 && src.indexOf("c.zabradliKc") >= 0);
   test('dostupnost podle typu šachty je i u příplatků',
     src.indexOf('(ext && !v.haky)') >= 0 && src.indexOf('(!ext && !v.zabradli)') >= 0
-    && src.indexOf('(ext && !v.sokl)') >= 0);
+    && src.indexOf('(ext && !v.sokl)') >= 0 && src.indexOf('(ext && !v.leseniVnejsi)') >= 0);
 }
 
 /* ---------- 6) dva přepínače na jednu položku ----------
