@@ -167,10 +167,12 @@ jobs:
       # `spust_testy.sh --smoke`: nový `overit_*.mjs` je v sadě sám od sebe.
       #
       # Harness, který potřebuje firemní dokument mimo repozitář (wordové
-      # šablony, příručka, ROADMAPA.html), se sám přeskočí s vysvětlením
-      # a skončí kódem 0 — viz nastroje/harness_podklady.mjs. Přeskočení se
-      # VYPÍŠE do logu; přeskočená kontrola, o které se mlčí, je totéž co
-      # kontrola, která neexistuje.
+      # šablony, příručka), se sám přeskočí s vysvětlením a skončí kódem 4
+      # — viz nastroje/harness_podklady.mjs. Přeskočení se VYPÍŠE do logu
+      # i jako upozornění v přehledu běhu; přeskočená kontrola, o které se
+      # mlčí, je totéž co kontrola, která neexistuje. Do 22. 9. 2026 se
+      # končilo kódem 0 a krok psal „OK" i „Všechny harnessy prošly" u pěti
+      # harnessů, které tu nikdy neběží (nález T3 revize v22.9.9).
       #
       # Běží se v jednom kroku, aby se pokračovalo i po prvním selhání
       # a bylo v logu vidět VŠECHNO, co je rozbité, ne jen první nález.
@@ -180,20 +182,27 @@ jobs:
         run: python3 roadmapa/roadmapa.py
       - name: Prohlížečové harnessy (všechny overit_*.mjs)
         run: |
-          selhalo=""
+          selhalo=""; preskoceno=""; proslo=0
           for f in overit_*.mjs; do
             echo "::group::$f"
-            if node "$f"; then
-              echo "OK $f"
+            kod=0; node "$f" || kod=$?
+            if [ "$kod" -eq 0 ]; then
+              echo "OK $f"; proslo=$((proslo + 1))
+            elif [ "$kod" -eq 4 ]; then
+              echo "PŘESKOČENO $f (chybí firemní podklad mimo repozitář)"
+              preskoceno="$preskoceno $f"
             else
-              echo "SELHALO $f"
+              echo "SELHALO $f (kód $kod)"
               selhalo="$selhalo $f"
             fi
             echo "::endgroup::"
           done
+          if [ -n "$preskoceno" ]; then
+            echo "::warning title=Harnessy bez podkladů::Nic neověřily (chybí firemní podklady, KNG_PODKLADY):$preskoceno"
+          fi
           if [ -n "$selhalo" ]; then
             echo "Selhaly tyto harnessy:$selhalo"
             exit 1
           fi
-          echo "Všechny harnessy prošly."
+          echo "Prošlo $proslo harnessů; přeskočeno pro chybějící podklady:${preskoceno:- žádný}."
 

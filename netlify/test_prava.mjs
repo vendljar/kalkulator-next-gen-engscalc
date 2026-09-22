@@ -2186,8 +2186,19 @@ console.log('\n===== AUDIT B26 / B29: KID TRVALÝCH POLOŽEK A DUPLICITNÍ ID ==
     /staré heslo/i.test(JSON.stringify(await rMoje.json())));
 
   /* POJISTKA PROTI PRÁZDNÉMU TESTU: s doplněnou proměnnou se tytéž cesty
-   * musí chovat normálně. Jinak by 503 mohla pocházet odkudkoli jinud. */
-  process.env.ADMIN_EMAIL = puvodni;
+   * musí chovat normálně. Jinak by 503 mohla pocházet odkudkoli jinud.
+   *
+   * Vrací se PŘESNĚ původní stav (nález T5 revize v22.9.9): nenastavená
+   * proměnná zůstane nenastavená. `process.env.X = undefined` totiž zapíše
+   * ŘETĚZEC 'undefined' — neprázdnou „adresu", se kterou by další bloky
+   * běžely proti jinému nastavení, než jaké sada dostala. */
+  const vratPromennou = (nazev, hodnota) => {
+    if (hodnota === undefined) delete process.env[nazev]; else process.env[nazev] = hodnota;
+  };
+  vratPromennou('KNG_ZKOUSKA_T5', undefined);
+  test('T5: vrácení nenastavené proměnné ji nechá nenastavenou (ne řetězec „undefined")',
+    !('KNG_ZKOUSKA_T5' in process.env));
+  vratPromennou('ADMIN_EMAIL', puvodni);
   test('B54: s nastavenou ADMIN_EMAIL seznam uživatelů zase jde',
     (await get(uzivatele, 'http://x/api/uzivatele', cAdmin)).status === 200);
   const rRoleZpet = await post(uzivatele, 'http://x/api/uzivatele',

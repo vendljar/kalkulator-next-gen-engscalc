@@ -63,7 +63,7 @@ spust() {
     printf '  ✓ %s\n' "$f"
   elif [ "$kod" -eq 3 ]; then
     preskoceno=$((preskoceno + 1))
-    seznam_preskocenych+=("$f")
+    seznam_preskocenych+=("$f (chybí skutečný ceník)")
     printf '  – %s (přeskočeno – chybí skutečný ceník)\n' "$f"
   else
     selhalo=$((selhalo + 1))
@@ -80,7 +80,7 @@ else
   # Export pro GitHub (pripravit_github.py) test.js nepřikládá – porovnává se
   # šablonou VZOR se skutečnými čísly. Bez něj se shoda s Excelem NEOVĚŘILA;
   # hlásí se to jako přeskočení, ne jako pád (CI 7. 9. 2026).
-  preskoceno=$((preskoceno + 1)); seznam_preskocenych+=("test.js")
+  preskoceno=$((preskoceno + 1)); seznam_preskocenych+=("test.js (není v exportu pro GitHub – shoda s Excelem neověřena)")
   printf '  – %s (přeskočeno – není v exportu pro GitHub)\n' "test.js"
 fi
 
@@ -113,8 +113,10 @@ else
 fi
 
 # Sada v prohlížeči: běží z kořene (harnessy si dist/ hledají odtud), s
-# NODE_PATH kvůli globálně instalovanému playwrightu. Návratový kód 2 = sada
-# sama hlásí, že playwright chybí — není to selhání kódu, jen se přeskočí.
+# NODE_PATH kvůli globálně instalovanému playwrightu (platí jen pro require;
+# harnessy s `import` potřebují místní node_modules/playwright). Návratový
+# kód 2 = sada sama hlásí, že playwright chybí, 4 = chybí firemní podklad —
+# ani jedno není selhání kódu; obojí se počítá jako PŘESKOČENO (viz níž).
 # Roadmapa se před prohlížečovými sadami VYGENERUJE (22. 9. 2026). Stránka
 # je výstup a v repozitáři není, takže `overit_roadmapu.mjs` se do dneška
 # vždycky jen přeskočil — třináct kontrol, které nikdy neběžely. Generátor
@@ -124,14 +126,30 @@ if [ -f ../roadmapa/roadmapa.py ]; then
     || { echo "  – roadmapa se nevygenerovala (harness ji přeskočí):"; sed 's/^/      /' /tmp/kng_roadmapa.txt; }
 fi
 
+# PŘESKOČENÍ SE POČÍTÁ ZVLÁŠŤ A S DŮVODEM (nálezy T3 a T5 revize v22.9.9).
+# Do 22. 9. se harness bez firemního podkladu hlásil jako „✓ prošlo" (končil
+# kódem 0), kód 2 se nepočítal nikam a harness, který playwright importuje
+# (ESM), bez místního node_modules/playwright padal jako „✗ selhalo" s radou
+# „npm i -g", která mu nepomůže — `import` proměnnou NODE_PATH nečte.
+#   0 = prošlo · 4 = chybí firemní podklad (nastroje/harness_podklady.mjs)
+#   2 nebo ERR_MODULE_NOT_FOUND u playwrightu = chybí playwright
 spust_prohlizec() {
   local f="$1"
   ( cd .. && NODE_PATH="$(npm root -g 2>/dev/null)" node "$f" ) > /tmp/kng_prohlizec_out.txt 2>&1
   local kod=$?
+  if [ "$kod" -ne 0 ] && [ "$kod" -ne 4 ] \
+     && grep -q "ERR_MODULE_NOT_FOUND" /tmp/kng_prohlizec_out.txt \
+     && grep -q "'playwright'" /tmp/kng_prohlizec_out.txt; then
+    kod=2
+  fi
   if [ "$kod" -eq 0 ]; then
     proslo=$((proslo + 1)); printf '  ✓ %s\n' "$f"
+  elif [ "$kod" -eq 4 ]; then
+    preskoceno=$((preskoceno + 1)); seznam_preskocenych+=("$f (chybí firemní podklad – KNG_PODKLADY)")
+    printf '  – %s (přeskočeno: chybí firemní podklad mimo repozitář – KNG_PODKLADY=/cesta)\n' "$f"
   elif [ "$kod" -eq 2 ]; then
-    printf '  – %s (přeskočeno: playwright není nainstalovaný – npm i -g playwright)\n' "$f"
+    preskoceno=$((preskoceno + 1)); seznam_preskocenych+=("$f (chybí playwright)")
+    printf '  – %s (přeskočeno: playwright se nenačetl – v kořeni: npm i playwright)\n' "$f"
   else
     selhalo=$((selhalo + 1)); seznam_selhani+=("$f"); printf '  ✗ %s\n' "$f"
     sed 's/^/      /' /tmp/kng_prohlizec_out.txt
@@ -157,8 +175,8 @@ if [ "${1:-}" = "--smoke" ]; then
     # v sadě automaticky, tady i v CI (workflow pouští týž glob).
     #
     # Harness, který potřebuje firemní dokument mimo repozitář (šablony,
-    # příručka, ROADMAPA.html), se sám přeskočí s vysvětlením a skončí
-    # kódem 0 — viz nastroje/harness_podklady.mjs.
+    # příručka), se sám přeskočí s vysvětlením a skončí kódem 4 (do 22. 9.
+    # kódem 0, takže se hlásil jako „prošlo") — viz nastroje/harness_podklady.mjs.
     #
     # Kouřový test jde PRVNÍ: když sestavení nenastartuje, ostatní harnessy
     # by padaly na každém kroku a zahalily by tu jedinou podstatnou zprávu.
@@ -173,11 +191,20 @@ fi
 echo
 echo "Souhrn: $proslo prošlo, $selhalo selhalo, $preskoceno přeskočeno (celkem $((proslo + selhalo + preskoceno)) sad)."
 if [ "$preskoceno" -gt 0 ]; then
-  echo "Přeskočeno: ${seznam_preskocenych[*]}"
-  echo "  (potřebují skutečný ceník mimo repozitář – návod vypíše sada sama)"
+  echo "Přeskočeno (nic neověřily):"
+  printf '  – %s\n' "${seznam_preskocenych[@]}"
 fi
 if [ "$selhalo" -gt 0 ]; then
   echo "Selhalo: ${seznam_selhani[*]}"
   exit 1
 fi
-echo "Vše v pořádku – můžete sestavit build (python3 build.py)."
+if [ "$preskoceno" -gt 0 ]; then
+  case "$preskoceno" in
+    1) sady="1 sada se přeskočila" ;;
+    2|3|4) sady="$preskoceno sady se přeskočily" ;;
+    *) sady="$preskoceno sad se přeskočilo" ;;
+  esac
+  echo "Vše v pořádku – můžete sestavit build (python3 build.py). Pozor: $sady (viz výš)."
+else
+  echo "Vše v pořádku – můžete sestavit build (python3 build.py)."
+fi

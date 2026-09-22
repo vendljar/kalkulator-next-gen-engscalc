@@ -66,16 +66,38 @@ export function najdiPodklady(mapa) {
   return { cesty, chybi };
 }
 
-/* Jednotná hláška o přeskočení. Harness ji zavolá a skončí kódem 0 —
- * chybějící firemní dokument není chyba aplikace.
+/* Jednotná hláška o přeskočení. Chybějící firemní dokument není chyba
+ * aplikace — ale ani „prošlo".
  *
  * VYPISUJE SE VŽDY, i v CI: přeskočená kontrola, o které se mlčí, je totéž
- * jako kontrola, která neexistuje. Právě tím se N15 osm dní skrývalo. */
-export function preskoc(co, hledano) {
+ * jako kontrola, která neexistuje. Právě tím se N15 osm dní skrývalo.
+ *
+ * VLASTNÍ NÁVRATOVÝ KÓD 4 (nález T3 revize v22.9.9, 22. 9. 2026). Do té doby
+ * se končilo kódem 0, takže CI psalo „OK" a `spust_testy.sh` „✓ prošlo"
+ * u harnessu, který nic neověřil — souhrn hlásil „všechny prošly", zatímco
+ * pět harnessů v CI nikdy neběželo. Kód 4 obě místa počítají zvlášť jako
+ * PŘESKOČENO a vypíšou proč.
+ *
+ * DŘÍVĚJŠÍ SELHÁNÍ SE NEZAMETE (nález T2). Harness, který před přeskočením
+ * už něco zkontroloval, předá svůj stav `{ ok, fail }`: selhalo-li cokoli,
+ * končí kódem 1 jako každé jiné selhání. `overit_sablony_online.mjs` tak
+ * končil kódem 0 i s pěti selhanými kontrolami — přeskočení je přebilo.
+ * Že harness s kontrolou před přeskočením stav opravdu předává, hlídá
+ * src/test_harness_podklady.js. */
+export const KOD_PRESKOCENO = 4;
+
+export function preskoc(co, hledano, stav) {
   /* „Chybí: …" schválně — do hlášky se dosazuje šablona, složka i soubor,
    * takže jakékoli sloveso by u některého z nich mělo špatný rod. */
   console.log('PŘESKOČENO – chybí: ' + co + '.');
   console.log('Hledáno v:\n  ' + [].concat(hledano).join('\n  '));
   console.log('Tip: KNG_PODKLADY=/cesta/ke/složce node ' + basename(process.argv[1] || ''));
-  process.exit(0);
+  const selhalo = (stav && +stav.fail > 0) ? +stav.fail : 0;
+  if (selhalo) {
+    console.log('ALE PŘED PŘESKOČENÍM SELHALO ' + selhalo + ' z ' + (selhalo + (+stav.ok || 0))
+      + ' kontrol — harness končí jako selhání.');
+    process.exit(1);
+  }
+  if (stav) console.log('Kontroly před přeskočením: ' + (+stav.ok || 0) + ' prošlo, 0 selhalo.');
+  process.exit(KOD_PRESKOCENO);
 }

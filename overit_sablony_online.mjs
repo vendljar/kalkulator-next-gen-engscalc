@@ -158,8 +158,10 @@ console.log('\nzveřejnění šablony administrátorem');
 const sablonaCesta = najdiPodklad('Sablona_NABIDKA_PROJ.docx',
   ['/home/claude/work/sablona_proj/Sablona_NABIDKA_PROJ.docx',
    '/home/claude/work/deliver/Sablona_NABIDKA_PROJ.docx']);
+/* Kontroly přísného režimu výš šablonu nepotřebují a běží vždy — jejich
+ * selhání přeskočení nesmí zamést (nález T2 revize v22.9.9). */
 if (!sablonaCesta) preskoc('šablona Sablona_NABIDKA_PROJ.docx',
-  ['/home/claude/work/sablona_proj/', '$KNG_PODKLADY']);
+  ['/home/claude/work/sablona_proj/', '$KNG_PODKLADY'], { ok, fail });
 const sablonaB64 = readFileSync(sablonaCesta).toString('base64');
 const zverejneni = await page.evaluate(async (b64) => {
   const bin = atob(b64);

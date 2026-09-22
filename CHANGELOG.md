@@ -8,6 +8,45 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.9.21 — 22. 9. 2026
+
+### Dávka R5 z revize v22.9.9 — testy říkají pravdu o tom, co neověřily
+
+Aplikace se v této dávce nemění; mění se to, co o ní hlásí testy.
+
+**Přeskočený harness už není „prošlo" (T3).** Harness bez firemního
+podkladu (wordové šablony, příručka obchodníka) končil kódem 0, takže CI
+psalo „OK" a `spust_testy.sh` „✓ prošlo". Souhrn hlásil „všechny prošly",
+zatímco pět harnessů — příručka, nabídka PROJ ve Wordu, šablona nabídky,
+šablony online a smlouvy — v CI nikdy neběželo. `preskoc()` teď končí
+vlastním kódem 4; `spust_testy.sh` ho počítá jako PŘESKOČENO s důvodem
+a CI ho vypíše jako „PŘESKOČENO" i jako upozornění v přehledu běhu. Souhrn
+místo „159 prošlo" říká „155 prošlo, 6 přeskočeno" a vyjmenuje je.
+
+**Selhání před přeskočením se nezamete (T2).** `overit_sablony_online.mjs`
+pouští pět kontrol přísného režimu ještě před hledáním šablony — a když
+šablona chyběla (v CI vždy), skončil kódem 0 i se selháním. Harness teď
+předává `preskoc()` svůj stav a selhání před přeskočením je selháním
+harnessu. Že to dělá každý harness s kontrolou nad přeskočením, hlídá
+nová sada.
+
+**Chybějící playwright (T5).** Kód 2 se dosud nepočítal nikam a harness,
+který playwright importuje (ESM proměnnou `NODE_PATH` nečte), padal bez
+místního `node_modules/playwright` jako selhání s radou „npm i -g
+playwright", která mu nepomůže. Obojí je teď přeskočení s radou
+„v kořeni: npm i playwright".
+
+**Obnova proměnné v testu (T5).** `test_prava.mjs` po bloku B54 vracel
+`ADMIN_EMAIL` přiřazením — u nenastavené proměnné tím zapsal řetězec
+„undefined". Nenastavená teď zůstane nenastavená.
+
+Nová sada `src/test_harness_podklady.js` nezkouší text skriptů, ale jejich
+chování: spouští skutečné `preskoc()`, skutečný krok z workflow a skutečnou
+funkci `spust_prohlizec` nad podstrčenými harnessy s kódy 0, 1, 2, 4
+a s chybějícím playwrightem. Nad skripty před opravou 16 selhání z 21.
+
+---
+
 ## v22.9.20 — 22. 9. 2026
 
 ### Dávka R4 z revize v22.9.9 — server a mutační nástroj
