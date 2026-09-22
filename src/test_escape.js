@@ -276,6 +276,13 @@ const PROVERENO = {
    * v OBALY, takže se hodnoty v něm zabalené k prověřování vůbec nedostanou.
    * Záznam v PROVERENO by na ně čekal marně a hlídač zastaralých záznamů by
    * ho (správně) hlásil. Že dlgEsc escapuje, dokazuje sonda nahoře. */
+  'cenik_ui.js': {
+    'label': 'popisek pole pro zahraniční procentní hodnotu (cenikZahrPctPole). '
+      + 'Je to HOTOVÉ HTML — obsahuje `&nbsp;`, takže by ho esc() rozbilo na '
+      + 'viditelné „&amp;nbsp;“. Obě volání ho předávají literálem z kódu '
+      + '(přirážka a sazba DPH); z dat ani od uživatele sem nic nevstupuje. '
+      + 'Ostatní texty té funkce (title, reset) přes esc() prochází.',
+  },
   'kalk_ock.js': {
     'col.admin ? pripNazev(x) : esc(x.nazev) + vypnutoHtml(x)':
       'obě větve escapují – pripNazev skládá HTML přes esc() uvnitř; vypnutoHtml je hotové HTML štítku (text je literál, popis přes esc())',

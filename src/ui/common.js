@@ -803,9 +803,12 @@ function variantaStavPill() {
    * Zámek okna je silnější zpráva než stav varianty: dokud platí, neuloží
    * se nic, ať je varianta v jakémkoli stavu. */
   if (typeof zamekCteniJe === 'function' && zamekCteniJe())
+    /* Odkaz na „Odemknout a uložit" odsud zmizel 22. 9. 2026 (N25): tlačítko
+     * se v režimu čtení nenabízí a odemyká se na jednom místě, v liště
+     * zámku nahoře. */
     return `<span class="stav-pill cteni" title="Zakázka je otevřená z databáze jen ke čtení — `
       + `dokud ji vědomě neodemknete, žádná změna se neuloží. Odemyká se tlačítkem v liště `
-      + `nahoře nebo tlačítkem „Odemknout a uložit“."
+      + `nahoře."
       >🔒 Jen ke čtení — neukládá se</span>`;
   const z = (typeof zamekInfo === 'function') ? zamekInfo(v) : null;
   /* Text je celá věta (21. 8. 2026, zadání J. V.): samotné „aktivní" vedle

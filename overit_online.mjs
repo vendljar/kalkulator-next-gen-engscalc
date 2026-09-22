@@ -313,35 +313,45 @@ const ziveVZamku = await page.evaluate(() => {
     historie: pe(b => /Historická kalkulace/.test(b.textContent)),
     prehled: pe(b => /Přehled cenových nabídek →/.test(b.textContent)),
     varianta: pe(b => b.tagName === 'SELECT' && /přepnout počítanou variantu/.test(b.title)),
-    /* Od 21. 9. 2026 se tlačítko v režimu čtení jmenuje jinak (viz níž),
-     * takže se hledá podle obou znění — jinak by test měřil „chybí". */
+    /* Hledá se podle obou znění, která tlačítko kdy mělo (viz níž). Od
+     * 22. 9. 2026 se v režimu čtení nekreslí ani jedno, takže tu vyjde
+     * „chybí" — a přesně to se dole tvrdí. Kdyby se sem regulární výraz
+     * zúžil na dnešní znění, test by prošel i tehdy, kdyby se tlačítko
+     * vrátilo pod svým starým jménem. */
     ulozit: pe(b => /Uložit zakázku|Odemknout a uložit/.test(b.textContent)),
     ulozitPopis: (() => {
       const b = [...document.querySelectorAll('button')]
         .find(x => /Uložit zakázku|Odemknout a uložit/.test(x.textContent));
       return b ? b.textContent.trim() : 'chybí';
     })(),
+    /* Odemčení musí být v tu chvíli dosažitelné — jinak by se oprava N25
+     * změnila v past: neuložíš a nemáš čím odemknout. */
+    odemknout: pe(b => /Odemknout k úpravám/.test(b.textContent)),
   };
 });
 test('otevřená zakázka z databáze je jen ke čtení', ziveVZamku.zamceno === true, ziveVZamku);
 test('v režimu čtení zůstává živé Načíst, Nová zakázka, Historická kalkulace, Přehled i přepínač varianty',
   ['nacist', 'nova', 'historie', 'prehled', 'varianta'].every(k => ziveVZamku[k] === 'auto'), ziveVZamku);
-/* ZMĚNA OČEKÁVÁNÍ 21. 9. 2026 (P3, nález N4).
+/* OČEKÁVÁNÍ SE TU ZMĚNILO DVAKRÁT — celý vývoj, ať se nevracíme zpátky.
  *
- * Do té doby se hlídalo, že je tlačítko uložení v režimu čtení MRTVÉ
- * (`pointer-events:none`). Chránilo to sice data, ale právě tím vznikl
- * nález N4: tlačítko vypadalo jako tlačítko, kliknutí neudělalo nic
- * a jediné vysvětlení šlo do karty Databáze, kam se v tu chvíli nikdo
- * nedívá. Uživatel odcházel s dojmem, že je práce uložená.
+ * Do 21. 9. 2026 se hlídalo, že je tlačítko uložení v režimu čtení MRTVÉ
+ * (`pointer-events:none`). Chránilo to data, ale právě tím vznikl nález N4:
+ * tlačítko vypadalo jako tlačítko, kliknutí neudělalo nic a jediné
+ * vysvětlení šlo do karty Databáze, kam se v tu chvíli nikdo nedívá.
  *
- * Nově je tlačítko KLIKATELNÉ, jmenuje se „🔒 Odemknout a uložit" a místo
- * zápisu otevře dialog s odemknutím. Že se nic neuloží, hlídá kontrola
- * `zamekCteniStop()` na začátku `zakUlozUI()` — tedy pravidlo v kódu,
- * ne nedostupnost prvku. Nedostupné tlačítko není vysvětlení. */
-test('Uložit zakázku je v režimu čtení klikatelné (aby šlo nabídnout odemknutí)',
-  ziveVZamku.ulozit === 'auto', ziveVZamku);
-test('a říká, co se opravdu stane — nejdřív odemknout',
-  /Odemknout a uložit/.test(ziveVZamku.ulozitPopis), ziveVZamku.ulozitPopis);
+ * 21. 9. se tedy oživilo a přejmenovalo na „🔒 Odemknout a uložit". Jenže
+ * ani to akci nedokončilo: zůstala hláška o režimu čtení, nic se neuložilo
+ * a otevřel se panel Zakázky online (nález N25).
+ *
+ * 22. 9. 2026, rozhodnutí J. V.: „tlačítko u otevřené zakázky nenabízet."
+ * V režimu čtení se tedy nekreslí vůbec a lišta začíná „Načíst zakázku".
+ * Odemčení má jedno místo — lištu zámku. Že se nic neuloží, hlídá dál
+ * kontrola `zamekCteniStop()` na začátku `zakUlozUI()`: pravidlo v kódu,
+ * ne nedostupnost prvku. */
+test('Uložit zakázku se v režimu čtení vůbec nenabízí',
+  ziveVZamku.ulozit === 'chybí', ziveVZamku);
+test('a odemknout jde lištou zámku',
+  ziveVZamku.odemknout === 'auto', ziveVZamku);
 
 /* NOVÁ VARIANTA SE V ZAMČENÉ ZAKÁZCE NEVYROBÍ DO ZTRACENA (P3, nález N4).
  *
@@ -439,18 +449,42 @@ const listaBtn = async (kde) => page.evaluate((k) => {
   return l ? Array.from(l.querySelectorAll('button')).map(b => b.textContent.trim()) : [];
 }, kde);
 
+/* Zakázka je v tuhle chvíli pořád otevřená z databáze, tedy jen ke čtení.
+ * Nejdřív se tedy měří ZAMČENÁ lišta: od 22. 9. 2026 (N25) v ní uložení
+ * není a začíná rovnou „Načíst zakázku". Teprve pak se odemkne a měří
+ * se trojice — jinak by se ty dva stavy daly zaměnit. */
 await page.evaluate(() => prepniTab('kalk'));
+const btnZamek = await listaBtn('kalk');
+test('lišta zamčené zakázky uložení vůbec nenabízí a začíná dvojicí Načíst / Nová zakázka',
+  !btnZamek.some(x => /Uložit zakázku|Odemknout a uložit/.test(x))
+  && /Načíst zakázku/.test(btnZamek[0] || '') && /Nová zakázka/.test(btnZamek[1] || ''),
+  btnZamek.slice(0, 4));
+
+await page.evaluate(() => { zamekCteniVypni(); render(); });
+await page.waitForTimeout(150);
 const btnOck = await listaBtn('kalk');
-/* Znění prvního tlačítka se od 21. 9. 2026 liší podle stavu zakázky
- * („Uložit zakázku" × „🔒 Odemknout a uložit" v režimu čtení). Test hlídá
- * POŘADÍ a složení trojice, ne konkrétní slovo — proto obě znění. */
+/* Test hlídá POŘADÍ a složení trojice, ne konkrétní slovo — jinak by prošel
+ * i tehdy, kdyby trojice skončila na konci lišty (zadání 4. 8. 2026). */
 test('lišta Kalkulace OCK začíná trojicí Uložit / Načíst / Nová zakázka',
-  /Uložit zakázku|Odemknout a uložit/.test(btnOck[0] || '') && /Načíst zakázku/.test(btnOck[1] || '')
+  /Uložit zakázku/.test(btnOck[0] || '') && /Načíst zakázku/.test(btnOck[1] || '')
   && /Nová zakázka/.test(btnOck[2] || ''), btnOck.slice(0, 4));
+test('po odemčení se tedy uložení vrátilo na své místo',
+  btnOck.length === btnZamek.length + 1, { btnZamek: btnZamek.slice(0, 4), btnOck: btnOck.slice(0, 4) });
+/* A uložení po odemčení SKUTEČNĚ PROJDE. Samotné tlačítko nic nedokazuje:
+ * přesně na tom stál nález N25, kde tlačítko bylo, ale akci nedokončilo. */
+const ulozPoOdemceni = await page.evaluate(async () => {
+  ONLINE_STAV.posledni = '';
+  ZAK.adresa = 'Odemčeno a uloženo 1, Praha';
+  await zakUlozUI();
+  return { zamceno: zamekCteniJe(), zapsano: (ONLINE_STAV.posledni || '').includes('Odemčeno a uloženo 1') };
+});
+test('a uložení po odemčení opravdu zapíše do databáze',
+  ulozPoOdemceni.zamceno === false && ulozPoOdemceni.zapsano, ulozPoOdemceni);
+
 await page.evaluate(() => prepniTab('proj'));
 const btnProj = await listaBtn('proj');
 test('lišta Kalkulace PROJ začíná stejnou trojicí (projekční zakázky)',
-  /Uložit zakázku|Odemknout a uložit/.test(btnProj[0] || '') && /Načíst zakázku/.test(btnProj[1] || '')
+  /Uložit zakázku/.test(btnProj[0] || '') && /Načíst zakázku/.test(btnProj[1] || '')
   && /Nová zakázka/.test(btnProj[2] || ''), btnProj.slice(0, 4));
 /* 5. 8. 2026: tlačítko „Převzít údaje z hlavičky OCK/PROJ" bylo z lišty obou
  * kalkulací zrušeno (zadání). Dřív se tu hlídalo jen jeho pořadí; teď se hlídá,

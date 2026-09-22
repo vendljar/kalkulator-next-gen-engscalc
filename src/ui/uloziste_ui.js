@@ -410,6 +410,26 @@ function uloPrepocetVeta(r) {
  * se tím nic trvalého nerozhodlo. Kdo chce mít od dotazů pokoj natrvalo,
  * potvrdí u varianty „ceny jsou dohodnuté" (kvitance) — a dialog na to
  * sám upozorní. */
+/* ÚVODNÍ VĚTA DIALOGU O PŘEPOČTU — ČESKY (nález K5, 8. kolo, 22. 9. 2026).
+ *
+ * Do 22. 9. z toho vycházelo „přepočítala se na nová verze. Změnilo se
+ * 3 ceny.": číslo verze se skládalo v 1. pádě a dosazovalo do věty, která
+ * žádá 4. pád, a sloveso bylo napsané jednou pro všechny tvary počtu.
+ *
+ * Pozor na NULU: patří do „Změnilo se 0 cen", ne do tvaru pro 2–4. Dosavadní
+ * podmínka `zmen < 5` to nehlídala.
+ *
+ * Samostatná funkce schválně: věta se tím dá změřit testem bez otevírání
+ * dialogu a bez vyrábění zakázky s přesným počtem změněných cen. */
+function uloPrepocetUvod(zmen, verze) {
+  const n = +zmen || 0;
+  const cast = verze ? ('verzi ' + verze) : 'novou verzi';
+  const kolik = n === 1 ? 'Změnila se 1 cena'
+    : (n >= 2 && n <= 4 ? 'Změnily se ' + n + ' ceny' : 'Změnilo se ' + n + ' cen');
+  return 'Zakázka se otevřela s ceníkem, který už neplatí, a přepočítala se na '
+    + cast + '. ' + kolik + '.';
+}
+
 async function uloPrepocetDialog(r) {
   if (!r || !r.prepocteno || !r.zmen) return false;
   if (typeof volba !== 'function' || !ULO_PREPOCET.zaloha) return false;
@@ -440,10 +460,7 @@ async function uloPrepocetDialog(r) {
     dopad = 'Dopad na celkovou cenu se nepodařilo spočítat.';
   }
 
-  const verze = ULO_PREPOCET.verze ? ('verze ' + ULO_PREPOCET.verze) : 'nová verze';
-  const text = 'Zakázka se otevřela s ceníkem, který už neplatí, a přepočítala se na '
-    + verze + '. Změnilo se ' + r.zmen + (r.zmen === 1 ? ' cena' : (r.zmen < 5 ? ' ceny' : ' cen'))
-    + '. ' + dopad
+  const text = uloPrepocetUvod(r.zmen, ULO_PREPOCET.verze) + ' ' + dopad
     + '\n\nChcete-li v téhle zakázce ceny držet natrvalo, potvrďte u varianty '
     + '„ceny jsou dohodnuté" — pak se přepočítávat nebude a tenhle dotaz se '
     + 'příště neobjeví.';

@@ -8,6 +8,43 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.9.14 — 22. 9. 2026
+
+### V zamčené zakázce se uložení nenabízí, odemyká se na jednom místě (N25)
+
+Tohle očekávání se během dvou dnů změnilo dvakrát, a proto stojí za to mít
+celý vývoj pohromadě.
+
+Do 21. 9. bylo tlačítko „Uložit zakázku" v zakázce jen ke čtení **mrtvé**:
+vypadalo jako tlačítko a kliknutí neudělalo nic. Jediná zmínka o tom, proč,
+skončila v kartě Databáze, kam se v tu chvíli nikdo nedívá — uživatel
+odcházel s dojmem, že je práce uložená (nález N4).
+
+21. 9. se tedy oživilo a přejmenovalo na „🔒 Odemknout a uložit". Jenže ani
+to akci nedokončilo: zůstala hláška o režimu čtení, nic se neuložilo
+a otevřel se panel Zakázky online. Uživatel měl před sebou tlačítko, které
+slibovalo dvě věci a neudělalo ani jednu (N25).
+
+Rozhodnutí J. V. 22. 9.: **tlačítko u otevřené zakázky nenabízet.** V režimu
+čtení se proto nekreslí vůbec a lišta začíná „Načíst zakázku". Odemčení má
+jedno místo — lištu zámku nad Kalkulací OCK, Kalkulací PROJ i oběma ceníky,
+kde je i důvod, smí-li odemykat jen někdo jiný.
+
+**Zábrana zápisu zůstala v kódu, ne v nedostupnosti prvku.** `zakUlozUI()` se
+dál ptá `zamekCteniStop()`: vede sem i automatické ukládání a klávesnice.
+Odznak „jen ke čtení" už neposílá na tlačítko, které neexistuje.
+
+### Dialog o přepočtu mluví česky (K5)
+
+Vycházelo z něj „přepočítala se na **nová verze**. **Změnilo se 3** ceny."
+Číslo verze se skládalo v 1. pádě a dosazovalo do věty, která žádá 4. pád,
+a sloveso bylo napsané jednou pro všechny tvary počtu.
+
+Věta je teď samostatná funkce, takže se dá změřit testem bez otevírání
+dialogu a bez vyrábění zakázky s přesným počtem změněných cen. **Nula patří
+do tvaru „0 cen"**, ne mezi 2–4; dosavadní podmínka `zmen < 5` to nehlídala.
+
+
 ## v22.9.13 — 22. 9. 2026
 
 ### Zahraniční řada ceníku umí i sazbu DPH (N18)

@@ -213,22 +213,41 @@ nepříjemné, ne to číslo samo.
 
 ## Souhrn
 
-| # | Volba | Doporučení | Čeká na |
+| # | Volba | Doporučení | Stav k 22. 9. 2026 |
 |---|---|---|---|
-| 1 | Výchozí model výpočtu | Ponechat Model 2 | — |
-| 2 | Automatický ATYP | Ponechat, nikdy tiše | ⚠ číslo zakázky z N9 |
-| 3 | Výchozí volitelné položky | Zatím neměnit, pak rozhodnout z dat | — |
-| 4 | Tmelení | Ponechat jen exteriér | ⚠ dotaz na dílnu |
-| 5 | Montáž | Udělat z počtu lidí pole (dnes je 4 natvrdo) | vaše volba |
-| 6 | Statika | **Svázat cenu se specifikací** — dnes si můžou odporovat | vaše volba |
-| 7 | Lešení | Sjednotit dodávku napříč dokumentem | ⚠ potvrzení |
-| 8 | DPH u zahraniční řady | Vlastní sazba + doložka o přenesené povinnosti | ⚠ účetní |
-| 9 | Hmotnost spojky | Ponechat 0,4 m profilu | ⚠ údaj z dílny |
+| 1 | Výchozí model výpočtu | Ponechat Model 2 | uzavřeno — bez zásahu |
+| 2 | Automatický ATYP | Ponechat, nikdy tiše | uzavřeno — bez zásahu |
+| 3 | Výchozí volitelné položky | Zatím neměnit, pak rozhodnout z dat | uzavřeno — bez zásahu |
+| 4 | Tmelení | Ponechat jen exteriér | **zavedeno** (v21.9.18) |
+| 5 | Montáž | Udělat z počtu lidí pole (dnes je 4 natvrdo) | **čeká na vaši volbu** |
+| 6 | Statika | **Svázat cenu se specifikací** — dnes si můžou odporovat | **čeká na vaši volbu** |
+| 7 | Lešení | Sjednotit dodávku napříč dokumentem | **zavedeno** (v22.9.12) |
+| 8 | DPH u zahraniční řady | Vlastní sazba + doložka o přenesené povinnosti | **zavedeno** (v22.9.13) |
+| 9 | Hmotnost spojky | Ponechat 0,4 m profilu | uzavřeno — bez zásahu |
 
-**Nejnaléhavější jsou #6 a #8.** Obě znamenají, že dnes může odejít
-dokument, který si odporuje nebo uvádí špatné daňové zacházení — a to jsou
-chyby, které se poznají až u zákazníka. Ostatní volby jsou o nastavení,
-ne o chybách.
+## Co se rozhodlo 22. 9. 2026
 
-**Nic z toho jsem neprogramoval.** Až u každé volby padne rozhodnutí,
+Sedm z devíti voleb je uzavřeno, a tabulka výš už to nese.
+
+**Zavedeno jako dávka.** (7) lešení: „u interiérové šachty vnější lešení
+primárně nenabízet" a „ad lešení — ano, oprav dle tvého návrhu." (8) DPH
+u zahraniční řady: ceník má nově pole pro zahraniční sazbu; **nula je v něm
+platná hodnota** (přenesená daňová povinnost) a od prázdného pole se liší.
+Sazbu do ostrého ceníku zadáte sám, až bude oprava odsouhlasená — ceník se
+touhle dávkou nezveřejňoval. (4) tmelení odešlo už 21. 9. spolu se sazbou
+plechů.
+
+**Uzavřeno bez zásahu do kódu.** (1) a (3) nesly doporučení „ponechat"
+a nečekaly na žádný podklad. (9) hmotnost spojky: *„hmotnost spojky 0,4 m je
+dobrá náhrada"* — údaj z dílny se tedy nedohledává. (2) automatický ATYP:
+*„číslo nálezu N9 už nech být"* — automatika zůstává a nikdy neběží tiše,
+chybějící číslo zakázky se dohledávat nebude.
+
+**Zbývají dvě a obě jsou vaše volba, ne chybějící podklad:** #5 (počet lidí
+při montáži jako pole místo konstanty) a #6 (statika). **#6 je z nich
+naléhavější** — je to jediná ze zbývajících, kvůli které dnes může odejít
+dokument, který si sám odporuje: cena statiku obsahuje vždy, specifikace
+u téže zakázky může říkat „ne".
+
+**Nic z nezavedených voleb jsem neprogramoval.** Až u obou padne rozhodnutí,
 vznikne z nich samostatná dávka.

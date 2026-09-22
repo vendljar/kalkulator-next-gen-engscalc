@@ -91,29 +91,32 @@ function zakTrojice() {
   const pracuje = ONLINE_STAV.pracuje || ULO_STAV.pracuje || ZAKULO_STAV.uklada;
   /* mousedown řeší ztracený první klik (viz zakUlozMousedown), onclick
    * zůstává pro klávesnici. Během zápisu tlačítko říká, co dělá. */
-  /* TLAČÍTKO NESMÍ SLIBOVAT ULOŽENÍ, KTERÉ NEPROBĚHNE (P3, nález N4,
-   * 21. 9. 2026). V zakázce otevřené jen ke čtení se po kliknutí nic
-   * nezapsalo a vysvětlení šlo jen do karty Databáze — tedy tam, kam se
-   * v tu chvíli nikdo nedíval. Nápis proto říká, co se opravdu stane:
-   * nejdřív odemknout, pak uložit. Samotné odemknutí nabídne dialog. */
-  const jenCteni = (typeof zamekCteniJe === 'function') && zamekCteniJe();
-  const popis = ZAKULO_STAV.uklada ? '⏳ Ukládám…'
-    : (jenCteni ? '🔒 Odemknout a uložit' : '💾 Uložit zakázku');
-  /* `cteni-ok` MUSÍ BÝT, jinak je oprava jen nápis. Lišta „Zakázka
-   * a varianta" dostává v režimu čtení třídu `cteni-zamceno`, která všem
-   * tlačítkům uvnitř nastaví `pointer-events:none` — kromě těch se značkou
-   * `cteni-ok`. Tlačítko uložení ji do 21. 9. 2026 nemělo, takže bylo
-   * doslova mrtvé: vypadalo jako tlačítko, kliknutí neudělalo nic a nikde
-   * se nic nevysvětlilo. To je jádro nálezu N4.
+  /* V ZAKÁZCE JEN KE ČTENÍ SE ULOŽENÍ NENABÍZÍ VŮBEC (nález N25, rozhodnutí
+   * J. V. 22. 9. 2026: „tlačítko u otevřené zakázky nenabízet").
    *
-   * Klikatelné neznamená, že se uloží: `zakUlozUI()` se hned na začátku
-   * ptá `zamekCteniStop()` a místo zápisu otevře dialog s odemknutím.
-   * Zápis dál hlídá ta kontrola, ne nedostupnost tlačítka. */
-  return `<button class="mini${jenCteni ? ' cteni-ok' : ''}${ceka && !jenCteni ? ' vyzva' : ''}${ulozeno && !jenCteni ? ' ulozeno-ok' : ''}" ${pracuje ? 'disabled' : ''}
-      title="${jenCteni ? 'zakázka je otevřená jen ke čtení — nejdřív ji odemkněte k úpravám'
-        : 'uložit otevřenou zakázku ' + kam}"
+   * Historie, ať se nevracíme o krok zpět. Do 21. 9. 2026 bylo tlačítko
+   * v režimu čtení MRTVÉ: lišta dostává třídu `cteni-zamceno`, která všem
+   * tlačítkům uvnitř nastaví `pointer-events:none`, a tohle jedno nemělo
+   * značku `cteni-ok`. Vypadalo jako tlačítko a kliknutí neudělalo nic —
+   * to byl nález N4. Oprava z 21. 9. ho oživila a přejmenovala na
+   * „🔒 Odemknout a uložit", jenže ani to nedokončilo akci: zůstala hláška
+   * o režimu čtení a otevřel se panel Zakázky online (N25).
+   *
+   * Řešením tedy není vrátit mrtvé tlačítko, ale nezobrazit ho. Odemčení má
+   * jedno místo — lištu zámku (`zamekCteniLista`), která se kreslí nad
+   * Kalkulací OCK, Kalkulací PROJ i nad oběma ceníky. Kdo odemykat nesmí,
+   * vidí v ní důvod.
+   *
+   * `zakUlozUI()` si kontrolu `zamekCteniStop()` PONECHÁVÁ. Zábrana zápisu
+   * je pravidlo v kódu, ne nedostupnost prvku: jinou cestou (klávesnice,
+   * automatické ukládání, jiné tlačítko) se sem pořád dá dostat. */
+  const jenCteni = (typeof zamekCteniJe === 'function') && zamekCteniJe();
+  const popis = ZAKULO_STAV.uklada ? '⏳ Ukládám…' : '💾 Uložit zakázku';
+  const ulozitBtn = jenCteni ? '' : `<button class="mini${ceka ? ' vyzva' : ''}${ulozeno ? ' ulozeno-ok' : ''}" ${pracuje ? 'disabled' : ''}
+      title="uložit otevřenou zakázku ${kam}"
       onmousedown="zakUlozMousedown()" onclick="zakUlozUI()">${esc(popis)}</button>
-    <button class="mini cteni-ok" title="otevřít jinou zakázku (${kam})" onclick="zakNactiUI()">📂 Načíst zakázku</button>
+    `;
+  return `${ulozitBtn}<button class="mini cteni-ok" title="otevřít jinou zakázku (${kam})" onclick="zakNactiUI()">📂 Načíst zakázku</button>
     <button class="mini cteni-ok" title="začít novou prázdnou zakázku" onclick="novaZakazkaUI()">✚ Nová zakázka</button>`;
 }
 
@@ -242,7 +245,12 @@ function zakUlozUI() {
    * že je práce uložená. `zamekCteniStop()` otevře dialog s odemknutím;
    * po odemčení se uloží dalším kliknutím — tady se nic neprovádí
    * dodatečně, aby se do odemčené zakázky nezapsalo nic, co člověk jen
-   * odklepl v dialogu. */
+   * odklepl v dialogu.
+   *
+   * Od 22. 9. 2026 (N25) sem tlačítkem v liště nikdo nepřijde — v režimu
+   * čtení se nekreslí (viz zakTrojice). Kontrola ale zůstává: vede sem
+   * i automatické ukládání a klávesnice, a zábrana zápisu má být pravidlo
+   * v kódu, ne nedostupnost prvku. */
   if (typeof zamekCteniStop === 'function' && zamekCteniStop()) return Promise.resolve(false);
   const s = zakUlozeniStav();
   if (s.stav === 'vyplnit') {

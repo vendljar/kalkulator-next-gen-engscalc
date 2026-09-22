@@ -79,8 +79,28 @@ const dlg = await p.evaluate(() => {
 });
 zkus('dialog se otevřel', !!dlg);
 zkus('nadpis mluví o změně ceníku', dlg && /cen[íi]k/i.test(dlg.nadpis), dlg && dlg.nadpis);
-zkus('text nese verzi ceníku', dlg && /verze 28/.test(dlg.text), dlg && dlg.text.slice(0, 90));
-zkus('text nese počet změněných cen', dlg && /5 cen/.test(dlg.text), dlg && dlg.text.slice(0, 120));
+/* 4. PÁD A SPRÁVNÉ SLOVESO (nález K5, 22. 9. 2026). Do té doby z toho
+ * vycházelo „přepočítala se na nová verze. Změnilo se 3 ceny." */
+zkus('text nese verzi ceníku ve 4. pádě', dlg && /přepočítala se na verzi 28/.test(dlg.text),
+  dlg && dlg.text.slice(0, 90));
+zkus('text nese počet změněných cen', dlg && /Změnilo se 5 cen/.test(dlg.text),
+  dlg && dlg.text.slice(0, 120));
+zkus('a nezůstal v něm 1. pád', dlg && !/na verze |na nová verze/.test(dlg.text),
+  dlg && dlg.text.slice(0, 90));
+
+/* Tvary počtu se měří přímo na skládání věty, ne přes dialog — jinak by se
+ * musela pro každý případ vyrobit zakázka s přesným počtem změn. */
+const tvary = await p.evaluate(() => {
+  const out = {};
+  for (const n of [0, 1, 3, 5]) out[n] = uloPrepocetUvod(n, 28);
+  out.bezVerze = uloPrepocetUvod(2, null);
+  return out;
+});
+zkus('jedna změna má jednotné číslo', /Změnila se 1 cena\./.test(tvary[1]), tvary[1]);
+zkus('tři změny mají tvar pro 2–4', /Změnily se 3 ceny\./.test(tvary[3]), tvary[3]);
+zkus('pět a víc má tvar pro množství', /Změnilo se 5 cen\./.test(tvary[5]), tvary[5]);
+zkus('nula spadne do tvaru pro množství, ne do 2–4', /Změnilo se 0 cen\./.test(tvary[0]), tvary[0]);
+zkus('bez čísla verze se řekne „novou verzi"', /na novou verzi\./.test(tvary.bezVerze), tvary.bezVerze);
 zkus('text říká, o kolik se cena zvedla', dlg && /zvedla o/.test(dlg.text), dlg && dlg.text.slice(0, 200));
 zkus('text nabídne i trvalé řešení (dohodnuté ceny)',
   dlg && /dohodnut/.test(dlg.text), dlg && dlg.text.slice(-140));

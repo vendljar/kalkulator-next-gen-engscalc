@@ -354,6 +354,48 @@
    "testy": "Čtyři nové kontroly v src/test_roadmapa.js (šablona je v repozitáři, nese značku, nezůstala v ní stará data, generátor existuje) a samotný overit_roadmapu.mjs, který se nově pouští místo přeskakování."
   },
   {
+   "id": "313",
+   "vlna": "E",
+   "stav": "hotovo",
+   "dulezitost": "vysoka",
+   "slozitost": "S",
+   "hotovoV": "v22.9.12",
+   "nazev": "Interiérová šachta platila vnější lešení, které se u ní nestaví (K1, P8/7)",
+   "proc": "Sedmá z devíti voleb P8. Dělení volitelných položek podle typu šachty v jádře existovalo od začátku (háky a sokl jen venku, zábradlí jen uvnitř), ale vnější lešení do něj nikdo nedopsal — interiérová zakázka ho proto platila v základní ceně.",
+   "detail": "Nabídka vracela u chybějícího příplatku vždycky „v základní ceně\". U interiérové šachty by to tvrdilo, že lešení v ceně je, ačkoli v kalkulaci není vůbec; nově se rozlišuje „je v základní ceně\" od „u téhle šachty neexistuje\" a v druhém případě se tiskne pomlčka.\n\nKapitola IV. nabídky si navíc přestala odporovat s technickou specifikací. Žádala po objednateli zajištění montážního lešení i tehdy, když specifikace u téže zakázky říkala, že vnější lešení je součástí dodávky — zákazník si mohl vybrat výklad, který se mu hodil.",
+   "odpoved": "J. V. 22. 9. 2026: „u interiérové šachty vnější lešení primárně nenabízet\" a „ad lešení — ano, oprav dle tvého návrhu.\"",
+   "kde": "src/engine.js (katalog i formulář příplatků), src/nabidka.js (jeVKatalogu, filtr kapitoly IV.), src/techspec.js",
+   "testy": "src/test_leseni.js, src/test_priplatky_volitelne.js, src/test_nabidka_kapitoly.js."
+  },
+  {
+   "id": "314",
+   "vlna": "E",
+   "stav": "hotovo",
+   "dulezitost": "vysoka",
+   "slozitost": "S",
+   "hotovoV": "v22.9.13",
+   "nazev": "Zahraniční řada ceníku umí i sazbu DPH (P8/8)",
+   "proc": "Osmá z devíti voleb P8 a spolu se statikou ta nejnaléhavější: po přepnutí zakázky na zahraniční ceník naskočila zahraniční přirážka a ceny se přepsaly, ale sazba DPH zůstala tuzemská. Zahraniční nabídka se tiskla v eurech s českou sazbou.",
+   "detail": "Nebylo to chybějící pravidlo, ale CHYBĚJÍCÍ POLE. Sazba DPH je sledovaná ceníková cesta úplně stejně jako globální přirážka, takže mechanismus pro odchylku existoval; administrátor ji ale neměl kam zadat, protože sloupec „Cena Zahraničí\" se kreslí jen u řádků tabulky a sazba DPH v tabulce není. Dialog přepnutí přitom správně sliboval, že se sazba přepne, má-li pro ni ceník odchylku.\n\nNULA JE PLATNÁ HODNOTA (přenesená daňová povinnost) a od prázdného pole se liší: prázdné znamená „jako v ČR\". Hlídá to test, ne čtení kódu — přesně tenhle rozdíl se v pravdivostní podmínce ztrácí.\n\nPoznámka u ceníku PROJ navíc tvrdila, že sazby DPH jsou celé společné s OCK. Společné jsou PŘEDVOLBY; vybraná sazba nabídky zůstává projekci vlastní, a proto má i vlastní zahraniční odchylku.",
+   "odpoved": "J. V. 22. 9. 2026: „DPH u zahraničních zakázek viz prompt\" — sazbu do ostrého ceníku zadá sám, až bude oprava odsouhlasená. Ceník se touhle dávkou nezveřejňuje.",
+   "kde": "src/ui/cenik_ui.js (cenikZahrPctPole, cenikDphZahrPole)",
+   "testy": "src/test_cenik_rady.js, overit_zahranicni.mjs, overit_atyp.mjs (znění poznámky u ceníku PROJ)."
+  },
+  {
+   "id": "315",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "vysoka",
+   "slozitost": "S",
+   "hotovoV": "v22.9.14",
+   "nazev": "V zamčené zakázce se uložení nenabízí, odemyká se na jednom místě (N25, K5)",
+   "proc": "Očekávání se tu během dvou dnů změnilo dvakrát. Do 21. 9. bylo tlačítko „Uložit zakázku\" v zakázce jen ke čtení MRTVÉ: vypadalo jako tlačítko, kliknutí neudělalo nic a jediné vysvětlení skončilo v kartě Databáze, kam se v tu chvíli nikdo nedívá (N4). Oprava z 21. 9. ho oživila a přejmenovala na „Odemknout a uložit\", jenže ani to akci nedokončilo: zůstala hláška o režimu čtení, nic se neuložilo a otevřel se panel Zakázky online (N25).",
+   "detail": "Řešením tedy nebylo vrátit mrtvé tlačítko, ale nezobrazit ho. V režimu čtení lišta začíná „Načíst zakázku\"; odemčení má jedno místo — lištu zámku nad Kalkulací OCK, Kalkulací PROJ i oběma ceníky, kde je i důvod, smí-li odemykat jen někdo jiný.\n\nZÁBRANA ZÁPISU ZŮSTALA V KÓDU, ne v nedostupnosti prvku: `zakUlozUI()` se dál ptá `zamekCteniStop()`, protože sem vede i automatické ukládání a klávesnice.\n\nV téže dávce K5: z dialogu o přepočtu na nový ceník vycházelo „přepočítala se na NOVÁ VERZE. ZMĚNILO SE 3 ceny.\" — číslo verze se skládalo v 1. pádě a sloveso bylo napsané jednou pro všechny tvary počtu. Nula patří do tvaru „0 cen\", ne mezi 2–4; dosavadní podmínka `zmen < 5` to nehlídala.",
+   "odpoved": "J. V. 22. 9. 2026: „tlačítko u otevřené zakázky nenabízet.\"",
+   "kde": "src/ui/zakulozeni_ui.js (zakTrojice), src/ui/common.js (odznak jen ke čtení), src/ui/uloziste_ui.js (uloPrepocetUvod)",
+   "testy": "overit_online.mjs (zamčená lišta bez uložení, odemčená s trojicí a uložení po odemčení se skutečně zapíše), overit_prepocet_dialog.mjs (tvary počtu a 4. pád)."
+  },
+  {
    "id" : "285",
    "vlna" : "C",
    "stav" : "ceka",
@@ -364,7 +406,7 @@
    "detail" : "Dokument `ROZHODNUTI_P8_2026-09-21.md` popisuje u každé z devíti voleb (výchozí model výpočtu, automatický ATYP, výchozí volitelné položky, tmelení, montáž, statika, lešení, DPH u zahraniční řady, hmotnost spojky) tři věci: co aplikace dělá DNES i s místem v kódu, čeho se otázka týká, a doporučení s odůvodněním. Žádné částky — jen klíče ceníku.\n\nPŘI PSANÍ VYŠLY NAJEVO DVĚ VĚCI, KTERÉ NEJSOU JEN NASTAVENÍ, ALE CHYBY:\n\n(6) STATIKA. Položka STATICKÉ POSOUZENÍ se počítá VŽDY, zatímco pole technické specifikace „OVĚŘOVACÍ STATICKÝ VÝPOČET KONSTRUKCE\" je jen text s výchozím „ano\". Jádro to pole vůbec nečte (ověřeno). Obchodník tedy může ve specifikaci napsat „ne\" a v ceně statika zůstane — dvě místa, která si mohou odporovat, přesně jako u oplechování soklu (N17).\n\n(8) DPH U ZAHRANIČNÍ ŘADY. Ceník má JEDINOU sazbu DPH a používá se bez ohledu na řadu. Zahraniční nabídka se tiskne v eurech, ale s českou sazbou DPH — u dodání s montáží do jiného státu EU se přitom běžně fakturuje v režimu přenesené daňové povinnosti. Tohle je jediná z devíti voleb, kde doporučuji zeptat se účetní, ne rozhodovat podle toho, co dává smysl programátorovi.",
    "kde" : "`ROZHODNUTI_P8_2026-09-21.md`",
    "hotovoKdyz" : "U každé z devíti voleb padlo rozhodnutí J. V. a to, co se má změnit, odešlo jako samostatná dávka.",
-   "pozn" : "ČEKÁ NA J. V. U čtyř voleb chybí podklad, který odsud nezjistím, a je to v dokumentu označené: číslo zakázky z nálezu N9 (automatický ATYP), dotaz na dílnu (tmelí se interiérová šachta?), potvrzení k lešení (kdo ho dodává — specifikace a kapitola IV. nabídky si dnes odporují) a skutečná hmotnost spojky pro běžné profily.\n\nNEJNALÉHAVĚJŠÍ JSOU #6 (statika) A #8 (DPH): obě znamenají, že dnes může odejít dokument, který si odporuje nebo uvádí špatné daňové zacházení. Ostatní volby jsou o nastavení, ne o chybách."
+   "pozn" : "STAV K 22. 9. 2026 — SEDM Z DEVÍTI VOLEB JE UZAVŘENO.\n\nZavedeno jako dávka: (7) lešení — interiérová šachta ho už neplatí, viz #313; (8) DPH u zahraniční řady — ceník má zahraniční sazbu, viz #314; (4) tmelení — potvrzeno spolu se sazbou plechů, viz #297.\n\nUzavřeno bez zásahu do kódu: (1) výchozí model zůstává Model 2 a (3) výchozí volitelné položky se zatím nemění — u obou znělo doporučení „ponechat\" a nic dalšího nechybělo. (9) hmotnost spojky: J. V. 22. 9. 2026 „hmotnost spojky 0,4 m je dobrá náhrada\" — údaj z dílny se tedy nedohledává. (2) automatický ATYP: J. V. 22. 9. 2026 „číslo nálezu N9 už nech být\" — automatika zůstává a nikdy neběží tiše; chybějící číslo zakázky se dohledávat nebude.\n\nZBÝVAJÍ DVĚ, OBĚ JSOU VOLBA J. V., NE CHYBĚJÍCÍ PODKLAD:\n(5) MONTÁŽ — počet lidí je dnes čtyřka natvrdo v kódu; doporučení je udělat z ní pole.\n(6) STATIKA — nejnaléhavější zbývající: položka STATICKÉ POSOUZENÍ se počítá VŽDY, zatímco pole technické specifikace „OVĚŘOVACÍ STATICKÝ VÝPOČET KONSTRUKCE\" jádro vůbec nečte. Obchodník může ve specifikaci napsat „ne\" a v ceně statika zůstane — dvě místa, která si mohou odporovat, a odejde s tím dokument k zákazníkovi."
   },
   {
    "id" : "284",
@@ -5419,7 +5461,10 @@
    },
    {
     "text": "Dávka 22. 9. 2026 (engscalc): pět dávek z bezpečnostního auditu a 19. testovacího kola. Všech 37 prohlížečových harnessů do CI (#299, #300), po obnovení stránky se přestala ztrácet rozdělaná práce (#301, #302), částky už odeslané nabídky nejde přepsat beze stopy (#303, jediný vysoký nález), tři serverové pojistky (#304–#306), zámek závislostí a kontrola pravidel pořadníku (#307, #308), rychlá kontrola zadání mutací (#309). Navečer dodatkové texty platné pro celou aplikaci (#310) a interní poznámky zjednodušené na jedno textové pole (#311)."
-   }
+   },
+  {
+   "text": "Dávka 22. 9. 2026 večer (engscalc): rozhodnutí J. V. převedená do kódu. Světlíky se počítají k té stěně, na které je nástupiště (#296), interiérová šachta přestala platit vnější lešení (#313, P8/7) a zahraniční řada ceníku umí vlastní sazbu DPH (#314, P8/8) — nula je v ní platná hodnota, přenesená daňová povinnost. V zamčené zakázce se uložení vůbec nenabízí a odemyká se na jednom místě (#315, N25), dialog o přepočtu ceníku mluví česky (K5). Z devíti voleb P8 tím zbývají dvě: počet lidí při montáži a svázání ceny statiky se specifikací. Ceník se ani jednou dávkou nezveřejňoval."
+  }
   ],
   "pravidla" : [
    "GitHub (INFRA-14), rosti.cz (INFRA-15) a Apps Script se bez výslovného pokynu nespouští ani neaktualizují.",
@@ -5505,7 +5550,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v22.9.10 (engscalc)",
+  "build" : "v22.9.14 (engscalc)",
   "stavKDatu" : "22. 9. 2026"
  },
  "_comment" : [
