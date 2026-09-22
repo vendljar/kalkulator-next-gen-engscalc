@@ -26,7 +26,7 @@
  * ============================================================ */
 
 import { readFileSync, writeFileSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -42,7 +42,12 @@ const KOREN = dirname(fileURLToPath(import.meta.url));
 if (!process.env.ADMIN_EMAIL) process.env.ADMIN_EMAIL = 'spravce@priklad.cz';
 
 /* test_obnova.mjs přibyla 9. 9. 2026 (B27–B31): mutace obnovy hlídá ona. */
-const SADY = ['test_prava.mjs', 'test_funkce.mjs', 'test_obnova.mjs'];
+/* KNG_MUTACE_SADY (22. 9. 2026) nahradí seznam sad — výhradně pro test
+ * přerušení (netlify/test_mutace.mjs), který potřebuje sadu, jež čeká, dokud
+ * je soubor zmutovaný. Běžný běh ji nenastavuje. */
+const SADY = process.env.KNG_MUTACE_SADY
+  ? process.env.KNG_MUTACE_SADY.split(',').map(s => s.trim()).filter(Boolean)
+  : ['test_prava.mjs', 'test_funkce.mjs', 'test_obnova.mjs'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -446,6 +451,39 @@ const MUTACE = [
     nahrad: "  if (false) {",
     proc: 'odeslaná nabídka by dostala jiné číslo, než jaké má zákazník na papíře (B56)' },
 
+  /* Větev ROLE u B56 (nález T5 revize v22.9.9). Mutace výš vypíná celou
+   * kontrolu; tahle jen rozhodnutí „smí jen administrátor" — kontrola by
+   * běžela a razítko srovnala, jen by nikoho nezastavila. */
+  { nazev: 'B56: číslo odeslané nabídky smí změnit kdokoli (větev role)',
+    soubor: 'functions/zakazky.mjs',
+    hledej: "  if (jineCislo.length) {\n    if (relace.role !== 'Administrátor')",
+    nahrad: "  if (jineCislo.length) {\n    if (false)",
+    proc: 'obchodník by přečísloval odeslanou nabídku a server by mu razítko v zámku ještě srovnal (B56)' },
+
+  /* Ověření zmrazeného výsledku NOVÉHO zámku (B59, revize v22.9.9). */
+  { nazev: 'B59: server výsledek nového zámku neověří',
+    soubor: 'functions/zakazky.mjs',
+    hledej: "    const ov = globalThis.zamekOvereni(v, JEKLY, verzeServeru);",
+    nahrad: "    const ov = null;",
+    proc: 'upravený klient by zamkl nabídku s jinými čísly, než dávají data, a B53 by je chránil jako pravdu' },
+
+  { nazev: 'B59: server věří razítku ověření u nového zámku',
+    soubor: 'functions/zakazky.mjs',
+    hledej: "    if (ov) v.zamek.overeni = ov; else delete v.zamek.overeni;",
+    nahrad: "    if (ov && !v.zamek.overeni) v.zamek.overeni = ov;",
+    proc: 'upravený klient by k podvrženému výsledku rovnou přiložil „shoda"' },
+
+  { nazev: 'B59: razítko ověření u uloženého zámku mění klient',
+    soubor: 'functions/zakazky.mjs',
+    hledej: "      if (sv.zamek.overeni) v.zamek.overeni = sv.zamek.overeni;\n      else delete v.zamek.overeni;",
+    nahrad: "",
+    proc: 'dalším uložením by klient rozpor přepsal na „shoda" nebo ho smazal' },
+
+  { nazev: 'B59: porovnání výsledku přehlédne změněnou částku', soubor: '../src/zamek.js',
+    hledej: "    if (typeof a === 'number' && typeof b === 'number') { if (!stejneCislo(a, b)) pridej(c); return; }",
+    nahrad: "    if (typeof a === 'number' && typeof b === 'number') return;",
+    proc: 'ověření by prošlo i s podvrženými čísly — razítko by lhalo „shoda"' },
+
   /* ČR sloupec položky „jen zahraniční" (#290, druhé kolo revize).
    * Oprava sedí za `typeof` strážemi, takže se dá vypnout i omylem — třeba
    * změnou pořadí načítání v jadro_moduly.cjs. Tahle mutace ověřuje, že by
@@ -794,22 +832,67 @@ const MUTACE = [
     proc: 'série pokusů o obnovu by z přehledu vytlačila všechny denní zálohy' },
 ];
 
+/* ---------- přerušený běh vrátí zmutovaný soubor ----------
+ * (nález T5 revize v22.9.9, 22. 9. 2026)
+ *
+ * V 19. testovacím kole se běh přerušil uprostřed mutace a v pracovní kopii
+ * zůstal rozbitý serverový soubor (`if (false)` místo kontroly) — `finally`
+ * ve smyčce se při ukončení signálem vůbec nespustí. Proto:
+ *   – smyčka nečeká na sady synchronně (execFileSync blokoval smyčku událostí,
+ *     takže by se obsluha signálu dostala ke slovu až po doběhnutí VŠECH
+ *     mutací), sady běží přes execFile a na výsledek se čeká;
+ *   – SIGINT (Ctrl+C), SIGTERM (kill, časový limit CI) i SIGHUP (zavřený
+ *     terminál) nejdřív vrátí právě zmutovaný soubor, pak ukončí běžící sadu
+ *     a skončí kódem 130;
+ *   – totéž dělá pojistka při ukončení procesu (`exit`) — třeba po výjimce. */
+let aktivni = null;        // { cesta, puvodni } — soubor, který je právě zmutovaný
+let dite = null;           // právě běžící sada
+function vratMutaci() {
+  if (!aktivni) return null;
+  const cesta = aktivni.cesta;
+  writeFileSync(cesta, aktivni.puvodni, 'utf8');
+  aktivni = null;
+  return cesta;
+}
+for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
+  process.on(sig, () => {
+    let vraceno = null, chyba = null;
+    try { vraceno = vratMutaci(); } catch (e) { chyba = e; }
+    if (chyba) console.log('\nPŘERUŠENO (' + sig + ') — ZMUTOVANÝ SOUBOR SE NEPODAŘILO VRÁTIT: '
+      + chyba.message + '\nVraťte ho ručně: git checkout -- netlify/ src/');
+    else console.log('\nPŘERUŠENO (' + sig + ')'
+      + (vraceno ? ' — zmutovaný soubor vrácen do původního znění: ' + vraceno : ' — žádný soubor nebyl zmutovaný') + '.');
+    /* Běžící sadu ukončit a POČKAT na ni (nejvýš 2 s): proces, který skončí
+     * dřív než jeho dítě, nechá po něm sirotka — v kontejneru bez init
+     * procesu pak visí jako zombie. Soubor je v tu chvíli už vrácený. */
+    if (!dite) process.exit(130);
+    dite.once('exit', () => process.exit(130));
+    try { dite.kill('SIGKILL'); } catch (e) { process.exit(130); }
+    setTimeout(() => process.exit(130), 2000);
+  });
+}
+process.on('exit', () => { try { vratMutaci(); } catch (e) { /* hlášeno výš */ } });
+
 /* ---------- běh ---------- */
-function spustSady() {
+function spustSadu(sada) {
+  return new Promise((hotovo) => {
+    dite = execFile('node', [resolve(KOREN, sada)],
+      { encoding: 'utf8', timeout: 120000, maxBuffer: 64 * 1024 * 1024,
+        env: { ...process.env, NODE_PATH: process.env.NODE_PATH || '' } },
+      (chyba, vystup) => { dite = null; hotovo({ chyba, vystup: String(vystup || '') }); });
+  });
+}
+
+async function spustSady() {
   for (const sada of SADY) {
-    try {
-      const vystup = execFileSync('node', [resolve(KOREN, sada)],
-        { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 120000,
-          env: { ...process.env, NODE_PATH: process.env.NODE_PATH || '' } });
-      /* test_obnova.mjs píše souhrn „N OK, M FAIL", ostatní „prošlo/selhalo". */
-      const m = /(\d+) (?:prošlo|OK), (\d+) (?:selhalo|FAIL)/.exec(vystup);
-      if (!m) return { chycena: true, kde: sada + ' (sada nedoběhla do souhrnu)' };
-      if (Number(m[2]) > 0) return { chycena: true, kde: sada + ': ' + m[2] + ' selhalo' };
-    } catch (e) {
-      /* Pád sady je taky chycení — mutace rozbila kód tak, že se nedá ani
-       * dojít na konec. Tichý průchod je jediná špatná odpověď. */
-      return { chycena: true, kde: sada + ' (spadla)' };
-    }
+    const { chyba, vystup } = await spustSadu(sada);
+    /* test_obnova.mjs píše souhrn „N OK, M FAIL", ostatní „prošlo/selhalo". */
+    const m = /(\d+) (?:prošlo|OK), (\d+) (?:selhalo|FAIL)/.exec(vystup);
+    if (m && Number(m[2]) > 0) return { chycena: true, kde: sada + ': ' + m[2] + ' selhalo' };
+    /* Pád sady je taky chycení — mutace rozbila kód tak, že se nedá ani
+     * dojít na konec. Tichý průchod je jediná špatná odpověď. */
+    if (chyba) return { chycena: true, kde: sada + ' (spadla)' };
+    if (!m) return { chycena: true, kde: sada + ' (sada nedoběhla do souhrnu)' };
   }
   return { chycena: false };
 }
@@ -849,7 +932,7 @@ console.log('Mutací k ověření: ' + vybrane.length + '   (sady: ' + SADY.join
 
 /* Nejdřív se ověří, že je před zásahem všechno zelené — jinak by „chycená"
  * mutace znamenala jen to, že testy padaly už předtím. */
-const vychozi = spustSady();
+const vychozi = await spustSady();
 if (vychozi.chycena) {
   console.log('PŘERUŠENO: sady nejsou zelené ani bez mutace — ' + vychozi.kde);
   process.exit(1);
@@ -870,12 +953,13 @@ for (const m of vybrane) {
     continue;
   }
   try {
+    aktivni = { cesta, puvodni };                // od téhle chvíle ho vrací i obsluha signálu
     writeFileSync(cesta, puvodni.replace(m.hledej, m.nahrad), 'utf8');
-    const v = spustSady();
+    const v = await spustSady();
     if (v.chycena) { chycene++; console.log('chycená      ' + m.nazev + '   → ' + v.kde); }
     else { nechycene.push(m); console.log('NECHYCENÁ    ' + m.nazev + '   → ' + m.proc); }
   } finally {
-    writeFileSync(cesta, puvodni, 'utf8');       // vrátit vždy, i při pádu
+    vratMutaci();                                // vrátit vždy, i při pádu
   }
 }
 

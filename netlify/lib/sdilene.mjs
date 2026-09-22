@@ -16,6 +16,17 @@
  * ani repozitář); po založení účtu lze proměnnou smazat.
  * ============================================================ */
 import { scryptSync, randomBytes, timingSafeEqual, createHmac } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+
+/* VERZE NASAZENÉHO SERVERU — z verze.txt přibalené ke všem funkcím
+ * (netlify.toml: included_files). Čte ji /api/zdravi a od 22. 9. 2026 i razítko
+ * ověření zmrazeného výsledku nové odeslané nabídky (B59, /api/zakazky). */
+export function serverVerze() {
+  for (const cesta of ['verze.txt', '../../verze.txt', new URL('../../verze.txt', import.meta.url).pathname]) {
+    try { return readFileSync(cesta, 'utf8').trim(); } catch (e) { /* zkusí další */ }
+  }
+  return 'neznámá';
+}
 
 /* ADRESA HLAVNÍHO SPRÁVCE UŽ NENÍ V REPOZITÁŘI (16. 9. 2026).
  *

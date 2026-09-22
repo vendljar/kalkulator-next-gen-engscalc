@@ -920,7 +920,11 @@ function onlineUloz(opts) {
     onlinePoslednizapamatuj(o.soubor);   // po refreshi se sem vrátíme
     ONLINE_STAV.posledni = JSON.stringify(ZAK);
     ONLINE_STAV.kdyUlozeno = new Date();
-    onlineZprava('Uloženo online jako ' + o.soubor + ' (' + new Date().toLocaleTimeString('cs-CZ') + ').');
+    /* Server může uložení přijmout s varováním — typicky rozpor zmrazeného
+     * výsledku nově odeslané nabídky s jeho přepočtem (B59). Takové varování
+     * nesmí zaniknout pod běžným „Uloženo". */
+    onlineZprava('Uloženo online jako ' + o.soubor + ' (' + new Date().toLocaleTimeString('cs-CZ') + ').'
+      + (o.varovani ? ' ' + o.varovani : ''), o.varovani ? 'varovani' : '');
     if (typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
     /* Zakázka je v databázi – nouzová záloha v prohlížeči už nemá co chránit.
      * Kdyby se nechala ležet, ptá se na ni aplikace při každém dalším spuštění

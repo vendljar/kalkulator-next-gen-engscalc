@@ -239,6 +239,102 @@ function zamekVysledek(v) {
   return (z && z.vysledek) ? z.vysledek : null;
 }
 
+/* VÝSLEDEK K ZAMČENÍ — JEDEN KÓD PRO PROHLÍŽEČ I SERVER (nález B59,
+ * revize v22.9.9, 22. 9. 2026).
+ *
+ * Prohlížeč tím při prvním tisku pořizuje zmrazený výsledek a server tímž
+ * kódem ověřuje, že výsledek NOVÉHO zámku odpovídá datům varianty. Dvě kopie
+ * téhož vzorce by se časem rozešly a server by hlásil rozpor tam, kde žádný
+ * není. Při chybě výpočtu vrací null — stejně jako dosud zamekPoTisku: zámek
+ * pak vznikne bez zmrazeného výsledku a dokumenty počítají z dat. */
+function zamekVysledekSpocti(v, jekly, build) {
+  const d = (v && v.data) || {};
+  try {
+    return {
+      ock: vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes),
+      proj: vypocetProj(d.proj.zadani, d.proj.cenik),
+      kurzEurKc: (d.cenik && +d.cenik.kurzEurKc) || (d.proj && d.proj.cenik && +d.proj.cenik.kurzEurKc) || 0,
+      build: build || '',
+      kdy: new Date().toISOString(),
+    };
+  } catch (e) { return null; }
+}
+
+/* Části výsledku, ze kterých se tiskne. `build` a `kdy` jsou razítka pořízení,
+ * ne čísla nabídky — ta se neporovnávají. */
+const ZAMEK_OVERENI_CASTI = ['ock', 'proj', 'kurzEurKc'];
+
+/* Porovná výsledek ze zámku s přepočtem. Obě strany mají projít JSONem
+ * (klientská jím prošla cestou po síti — NaN je v ní null). Čísla se srovnávají
+ * s tolerancí na poslední bit, ne na koruny: jádro používá jen sčítání,
+ * násobení a zaokrouhlení, takže stejný kód nad stejnými daty dává shodu
+ * přesnou a každý skutečný rozdíl je rozdíl. Vrací počet rozdílů a prvních
+ * `max` cest — cesty, ne hodnoty: výsledek nese i náklady firmy. */
+function zamekVysledekRozdily(klient, server, max) {
+  const lim = max || 5;
+  const out = { pocet: 0, cesty: [] };
+  const pridej = (c) => { out.pocet++; if (out.cesty.length < lim) out.cesty.push(c); };
+  const stejneCislo = (a, b) => Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
+  const projdi = (a, b, c) => {
+    if (a === b) return;
+    if (typeof a === 'number' && typeof b === 'number') { if (!stejneCislo(a, b)) pridej(c); return; }
+    const oa = !!a && typeof a === 'object', ob = !!b && typeof b === 'object';
+    if (!oa || !ob || Array.isArray(a) !== Array.isArray(b)) { pridej(c); return; }
+    if (Array.isArray(a)) {
+      if (a.length !== b.length) pridej(c + '.length');
+      for (let i = 0; i < Math.min(a.length, b.length); i++) projdi(a[i], b[i], c + '[' + i + ']');
+      return;
+    }
+    const klice = Object.keys(a);
+    Object.keys(b).forEach(k => { if (klice.indexOf(k) < 0) klice.push(k); });
+    klice.forEach(k => projdi(a[k], b[k], c + '.' + k));
+  };
+  ZAMEK_OVERENI_CASTI.forEach(k => projdi(klient ? klient[k] : undefined, server ? server[k] : undefined, k));
+  return out;
+}
+
+/* Razítko ověření zmrazeného výsledku (B59). Píše ho VÝHRADNĚ server při
+ * prvním uložení zámku; klient ho nepodvrhne ani nesmaže — při každém dalším
+ * uložení se přenáší z uložené verze. Stav:
+ *   'shoda'       výsledek odpovídá datům varianty,
+ *   'nesouhlasi'  neodpovídá: upravený klient, nebo stránka se starším jádrem
+ *                 (těsně po nasazení); `klient` a `server` říkají, které verze,
+ *   'chyba'       server výsledek nepřepočítal, takže ho neověřil.
+ * Zámek bez zmrazeného výsledku razítko nedostane (null): dokumenty ho
+ * počítají z dat, která server hlídá sám. */
+function zamekOvereni(v, jekly, verzeServeru, kdy) {
+  const z = zamekInfo(v);
+  if (!z || !z.vysledek) return null;
+  const zaklad = { kdy: kdy || new Date().toISOString(), server: String(verzeServeru || ''),
+                   klient: String(z.vysledek.build || '').slice(0, 40) };
+  const server = zamekVysledekSpocti(v, jekly, '');
+  if (!server) return Object.assign({ stav: 'chyba', rozdilu: 0, cesty: [] }, zaklad);
+  /* Výsledek od klienta může být cokoli, co projde JSONem — ani patologický
+   * tvar nesmí shodit uložení; skončí jako „neověřeno". */
+  let r;
+  try { r = zamekVysledekRozdily(JSON.parse(JSON.stringify(z.vysledek)), JSON.parse(JSON.stringify(server))); }
+  catch (e) { return Object.assign({ stav: 'chyba', rozdilu: 0, cesty: [] }, zaklad); }
+  return Object.assign({ stav: r.pocet ? 'nesouhlasi' : 'shoda', rozdilu: r.pocet, cesty: r.cesty }, zaklad);
+}
+
+/* Věta o sporném razítku pro lištu zámku a pro hlášku po uložení. Prázdno =
+ * není co říct (shoda, žádné razítko, starší zámek). */
+function zamekOvereniText(ov) {
+  if (!ov || typeof ov !== 'object') return '';
+  const verze = 'výsledek spočítala verze aplikace ' + (ov.klient || 'neuvedená')
+    + ', server běžel na ' + (ov.server || 'neznámé verzi');
+  const n = +ov.rozdilu || 0;
+  const rozdilu = n + (n === 1 ? ' rozdíl' : (n >= 2 && n <= 4) ? ' rozdíly' : ' rozdílů');
+  if (ov.stav === 'nesouhlasi')
+    return 'Čísla této odeslané nabídky nesouhlasí s výpočtem serveru z jejích dat ('
+      + rozdilu + '; ' + verze + '). Dokumenty se dál tisknou tak, '
+      + 'jak nabídka odešla — rozpor je zapsaný v jejím zámku.';
+  if (ov.stav === 'chyba')
+    return 'Čísla této odeslané nabídky server při uzamčení nepřepočítal, takže je neověřil ('
+      + verze + ').';
+  return '';
+}
+
 /* Odemknutí je výjimka, ne běžný krok: smí ho udělat jen správce a musí
  * uvést důvod. Původní zámek se neztrácí – uloží se do historie odemčení,
  * aby zůstalo dohledatelné, co a kdy bylo odesláno. */
@@ -379,6 +475,7 @@ function zamekCteniDuvod(zak, ja) {
 
 if (typeof module !== 'undefined')
   module.exports = { zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
+                     zamekVysledekSpocti, ZAMEK_OVERENI_CASTI, zamekVysledekRozdily, zamekOvereni, zamekOvereniText,
                      zamekCteniSmiOdemknout, zamekCteniDuvod,
                      variantaPripona, dalsiPriponaVarianty, variantaCislo,
                      klonujVariantu, zamekInfo, variantaUzamcena,

@@ -799,6 +799,114 @@ const odpStarsi = await post(zakazky, 'http://x/api/zakazky', { zakazka: starsiZ
 test('B53: zámek bez zmrazeného výsledku se ukládá dál (starší zakázky)',
   odpStarsi.status === 200, String(odpStarsi.status));
 
+/* ---------- B59: VÝSLEDEK NOVÉHO ZÁMKU OVĚŘÍ SERVER ----------
+ * (revize v22.9.9, 22. 9. 2026, střední závažnost)
+ *
+ * B53 chrání zmrazený výsledek PO zamčení; při VZNIKU zámku ho ale server
+ * převzal od klienta, jak přišel. Upravený klient tedy mohl zamknout nabídku
+ * s jinými čísly, než dávají data, a B53 ji pak chránil jako pravdu.
+ *
+ * Server teď výsledek nového zámku přepočítá týmž jádrem a porovnání zapíše
+ * do zámku jako razítko `overeni` ('shoda' / 'nesouhlasi' / 'chyba').
+ * Uložení NEODMÍTNE (papír už odešel a odmítnutí by nechalo variantu
+ * odemčenou), ale rozpor zapíše natrvalo a ohlásí ho v odpovědi.
+ *
+ * Změřeno před opravou: podvržený výsledek (celkem s DPH 1 Kč) se uložil
+ * jako řádný zámek, bez jediné stopy. */
+const JEKLY_T = require('../src/jekly.json');
+const VERZE_SERVERU = (await (await get(zdravi, 'http://x/api/zdravi')).json()).verze;
+function zakazkaSCeny(cislo) {
+  const z = zakazkaCislo(cislo);
+  const v = z.varianty[0];
+  Object.assign(v.data.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2, nastupiste: 4 });
+  v.data.cenik = ZC.zkusebniCenik();
+  v.data.proj.cenik = ZC.zkusebniCenikProj();
+  return z;
+}
+/* Zamčení přesně tak, jak ho dělá prohlížeč (zamekPoTisku). `uprav` smí
+ * výsledek pozměnit — to je ten upravený klient. */
+function odesliB59(z, uprav) {
+  const v = z.varianty[0];
+  const vysledek = zam.zamekVysledekSpocti(v, JEKLY_T, 'v-klient-matice');
+  if (uprav) uprav(vysledek);
+  zam.zamkniVariantu(v, { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Matice práv',
+    cislo: zam.variantaCislo(z, v), vysledek });
+  return z;
+}
+const nactiB59 = async (soubor) => (await (await get(zakazky,
+  'http://x/api/zakazky?soubor=' + soubor, cAdmin)).json()).zakazka;
+
+{
+  const poctiva = odesliB59(zakazkaSCeny('2026 - OPR - CN - 0850'));
+  test('B59: příprava — výsledek z jádra má skutečná čísla',
+    poctiva.varianty[0].zamek.vysledek.ock.souhrn.zakladCena > 0,
+    poctiva.varianty[0].zamek.vysledek.ock.souhrn.zakladCena);
+  const odp = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: poctiva }, cObch)).json();
+  test('B59: poctivý zámek se uloží bez varování', odp.ok === true && !odp.varovani, JSON.stringify(odp));
+  const ov = (await nactiB59('2026-OPR-CN-0850.json')).varianty[0].zamek.overeni;
+  test('B59: server poctivý výsledek ověří (shoda)', ov && ov.stav === 'shoda' && ov.rozdilu === 0,
+    JSON.stringify(ov));
+  test('B59: razítko nese verzi serveru i verzi, která výsledek spočítala',
+    ov && ov.server === VERZE_SERVERU && ov.klient === 'v-klient-matice', JSON.stringify(ov));
+}
+{
+  const podvrh = odesliB59(zakazkaSCeny('2026 - OPR - CN - 0851'),
+    (r) => { r.ock.souhrn.zakladSDph = 1; });
+  /* POJISTKA PROTI PRÁZDNÉMU TESTU: data jsou poctivá — liší se jen výsledek. */
+  test('B59: podvrh mění opravdu jen zmrazený výsledek',
+    zam.zamekVysledekRozdily(podvrh.varianty[0].zamek.vysledek,
+      zam.zamekVysledekSpocti(podvrh.varianty[0], JEKLY_T, '')).pocet === 1);
+  const odp = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: podvrh }, cObch)).json();
+  test('B59: podvržený výsledek se uloží (papír už odešel) …', odp.ok === true, JSON.stringify(odp));
+  test('B59: … ale odpověď varuje, že čísla nesouhlasí', /nesouhlasí/.test(String(odp.varovani || ''))
+    && /0851/.test(String(odp.varovani || '')), odp.varovani);
+  const ulozena = await nactiB59('2026-OPR-CN-0851.json');
+  const ov = ulozena.varianty[0].zamek.overeni;
+  test('B59: rozpor je zapsaný v zámku (nesouhlasi)', ov && ov.stav === 'nesouhlasi' && ov.rozdilu === 1,
+    JSON.stringify(ov));
+  test('B59: razítko jmenuje, kde se výsledek rozchází',
+    ov && ov.cesty.indexOf('ock.souhrn.zakladSDph') >= 0, JSON.stringify(ov));
+
+  /* Klient razítko nepřepíše ani nesmaže: u zámku, který už v databázi je,
+   * se bere z uložené verze. */
+  const prepis = JSON.parse(JSON.stringify(ulozena));
+  prepis.nazevAkce = 'Jiný název, zámku se to netýká';
+  prepis.varianty[0].zamek.overeni = { stav: 'shoda', rozdilu: 0, cesty: [], server: 'x', klient: 'x' };
+  const odpPrepis = await post(zakazky, 'http://x/api/zakazky', { zakazka: prepis }, cObch);
+  test('B59: uložení s podvrženým razítkem projde (razítko se zahodí)', odpPrepis.status === 200,
+    String(odpPrepis.status));
+  test('B59: podvržená „shoda" rozpor nepřepíše',
+    (await nactiB59('2026-OPR-CN-0851.json')).varianty[0].zamek.overeni.stav === 'nesouhlasi');
+  const bez = JSON.parse(JSON.stringify(ulozena));
+  delete bez.varianty[0].zamek.overeni;
+  await post(zakazky, 'http://x/api/zakazky', { zakazka: bez }, cObch);
+  const poSmazani = (await nactiB59('2026-OPR-CN-0851.json')).varianty[0].zamek.overeni;
+  test('B59: vynechané razítko rozpor nesmaže', poSmazani && poSmazani.stav === 'nesouhlasi',
+    JSON.stringify(poSmazani));
+}
+{
+  /* Podvržené razítko u NOVÉHO zámku: server ho spočítá sám. */
+  const z = odesliB59(zakazkaSCeny('2026 - OPR - CN - 0852'), (r) => { r.ock.souhrn.zakladCena += 1000; });
+  z.varianty[0].zamek.overeni = { stav: 'shoda', rozdilu: 0, cesty: [], server: 'x', klient: 'x' };
+  await post(zakazky, 'http://x/api/zakazky', { zakazka: z }, cObch);
+  const ov = (await nactiB59('2026-OPR-CN-0852.json')).varianty[0].zamek.overeni;
+  test('B59: podvržená „shoda" u nového zámku neprojde — server spočítá svou',
+    ov && ov.stav === 'nesouhlasi' && ov.server === VERZE_SERVERU, JSON.stringify(ov));
+}
+{
+  /* Zámek bez zmrazeného výsledku (starší klient, chyba výpočtu v prohlížeči):
+   * dokumenty počítají z dat, která server hlídá sám — razítko nevzniká
+   * a podvržené se zahodí. */
+  const z = zakazkaSCeny('2026 - OPR - CN - 0853');
+  zam.zamkniVariantu(z.varianty[0], { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Matice práv',
+    cislo: zam.variantaCislo(z, z.varianty[0]) });
+  z.varianty[0].zamek.overeni = { stav: 'shoda' };
+  const odp = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: z }, cObch)).json();
+  test('B59: zámek bez výsledku se uloží bez varování', odp.ok === true && !odp.varovani, JSON.stringify(odp));
+  test('B59: a razítko nedostane (ani podvržené)',
+    !('overeni' in (await nactiB59('2026-OPR-CN-0853.json')).varianty[0].zamek));
+}
+
 /* ============================================================
  * BEZPEČNOSTNÍ AUDIT 22. 8. 2026 — nálezy B1, B2, B3
  *

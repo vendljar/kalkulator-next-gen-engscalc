@@ -1,13 +1,8 @@
 /* /api/zdravi — kontrola, že serverová část na Netlify žije (K3).
  * Odpovídá { ok, verze, cas }; verze se čte z verze.txt přibalené k funkci. */
-import { readFileSync } from 'node:fs';
-
-function verze() {
-  for (const cesta of ['verze.txt', '../../verze.txt', new URL('../../verze.txt', import.meta.url).pathname]) {
-    try { return readFileSync(cesta, 'utf8').trim(); } catch (e) { /* zkusí další */ }
-  }
-  return 'neznámá';
-}
+/* Čtení verze.txt je od 22. 9. 2026 ve sdilene.mjs — potřebuje ho i /api/zakazky
+ * (razítko ověření odeslané nabídky, B59). */
+import { serverVerze as verze } from '../lib/sdilene.mjs';
 
 /* Prostředí (20. 8. 2026): TESTOVACÍ web má vlastní Netlify site, a tedy
  * i vlastní úložiště Blobs — data se s ostrým provozem nikdy nepotkají.

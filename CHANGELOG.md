@@ -8,6 +8,52 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.9.20 — 22. 9. 2026
+
+### Dávka R4 z revize v22.9.9 — server a mutační nástroj
+
+**Výsledek nově odeslané nabídky ověří server (B59).** Oprava B53 chrání
+zmrazený výsledek odeslané nabídky PO zamčení, jenže ten výsledek do té doby
+pořizoval jedině prohlížeč a server ho při vzniku zámku převzal, jak přišel.
+Upravený klient tak mohl zamknout nabídku s jinými čísly, než dávají data
+(třeba s větší slevou, než smí schválit), a B53 ji pak chránil jako pravdu.
+
+Server teď výsledek každého NOVÉHO zámku přepočítá tímž jádrem a porovnání
+zapíše do zámku jako razítko: shoda / nesouhlasí / neověřeno. Výsledek skládá
+jediná funkce `zamekVysledekSpocti` v `zamek.js` — tou ho pořizuje prohlížeč
+při tisku i tou ho ověřuje server, aby se dva opisy téhož vzorce časem
+nerozešly. Razítko píše výhradně server: u nového zámku ho spočítá, u zámku,
+který už v databázi je, ho převezme z uložené verze. Klient ho tedy
+nepodvrhne ani nesmaže.
+
+Rozpor uložení **neodmítne** — vědomé rozhodnutí. Papír v tu chvíli už
+odešel a odmítnutí by jen nechalo variantu v databázi odemčenou a dál
+upravitelnou, což je horší stopa než zámek s rozporem zapsaným natrvalo.
+A poctivého obchodníka se stránkou načtenou těsně před nasazením nové verze
+by zablokovalo: jeho čísla spočítalo starší jádro a papír nese právě ta.
+Rozpor proto hlásí hned hláška po uložení a trvale lišta zámku u každého,
+kdo variantu otevře (i se jménem verze, která výsledek spočítala).
+
+Ověřeno v prohlížeči: nabídka zamčená skutečným tiskovým náhledem má
+u serveru shodu (po cestě přes síť i přes `importZakazka`), upravený klient
+dostane varování a rozpor v liště.
+
+**Mutace na větev role u B56 (T5).** Dosavadní mutace vypínala celou
+kontrolu čísla odeslané nabídky; nově se zkouší i to, že by kontrola běžela,
+ale nikoho nezastavila. Přibyly čtyři mutace B59. Serverových mutací je 141.
+
+**Přerušený mutační běh vrátí zmutovaný soubor (T5).** V 19. kole zůstal
+po přerušení v pracovní kopii rozbitý serverový soubor. `mutace.mjs` teď
+na SIGINT, SIGTERM i SIGHUP nejdřív vrátí právě zmutovaný soubor, pak
+ukončí běžící sadu, počká na ni (jinak po ní v kontejneru visí zombie)
+a skončí kódem 130. Sady se kvůli tomu spouštějí asynchronně — se
+synchronním `execFileSync` by se obsluha signálu dostala ke slovu až po
+doběhnutí všech mutací. Hlídá to nová sada `netlify/test_mutace.mjs`:
+skutečný běh s podstrčenou čekající sadou, oba signály, soubor bajt po
+bajtu, žádný visící proces.
+
+---
+
 ## v22.9.19 — 22. 9. 2026
 
 ### Dávka R3 z revize v22.9.9 — pojistky ceníku

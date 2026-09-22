@@ -1239,6 +1239,63 @@ const listaZamku = await page.evaluate(() => {
 test('lišta uzamčené varianty nabízí za Klonovat i Založit novou zakázku (živé tlačítko)',
   listaZamku.klon && listaZamku.nova && listaZamku.poradi && listaZamku.ziva, listaZamku);
 
+/* ---- 10d) VÝSLEDEK NOVÉHO ZÁMKU OVĚŘÍ SERVER (nález B59 revize v22.9.9) ----
+ * Server výsledek nově odeslané nabídky přepočítá a porovnání zapíše do zámku.
+ * Node sady to zkoušejí nad modelem; tady jde o to, co Node nevidí: že výsledek,
+ * který spočítá SKUTEČNÝ prohlížeč (zamekPoTisku z tiskového náhledu), server
+ * po cestě přes síť a importZakazka uzná za shodný — plané „nesouhlasí" by
+ * strašilo obchodníky u každé odeslané nabídky. A naopak: upravený klient
+ * dostane varování a rozpor uvidí každý v liště zámku. */
+{
+  /* Ceník ze sestavení je v repozitáři vynulovaný — shoda 0 = 0 by nic
+   * nedokázala. Smyšlený zkušební ceník (týž jako v Node sadách). */
+  const ZKC = require('./src/zkusebni_cenik.js');
+  const ceniky = { ock: ZKC.zkusebniCenik(), proj: ZKC.zkusebniCenikProj() };
+  const poctiva = await page.evaluate(async (ceniky) => {
+    ZAK = novaZakazka(); ZAK.cislo = '2026 - OPR - CN - 0761'; ZAK.nazevAkce = 'B59 poctivá';
+    aktivniVarianta(ZAK).data.cenik = ceniky.ock; aktivniVarianta(ZAK).data.proj.cenik = ceniky.proj;
+    syncVarianta(); render();
+    await onlineUloz();
+    zamekPoTisku('nabidkaTisk', aktivniVarianta(ZAK).id);
+    await onlineUloz();
+    const d = await onlineApi('/api/zakazky?soubor=' + encodeURIComponent(ONLINE_STAV.soubor));
+    const z = d.zakazka.varianty[0].zamek || {};
+    return { overeni: z.overeni || null, klient: buildVerze(), hlaska: ONLINE_STAV.hlaska,
+             typ: ONLINE_STAV.hlaskaTyp, castka: ((z.vysledek || {}).ock || {}).souhrn
+               ? z.vysledek.ock.souhrn.zakladCena : null };
+  }, ceniky);
+  test('B59: nabídka zamčená tiskem v prohlížeči má u serveru shodu',
+    poctiva.overeni && poctiva.overeni.stav === 'shoda' && poctiva.overeni.rozdilu === 0,
+    JSON.stringify(poctiva));
+  test('B59: a zkouší se na nenulových číslech (smyšlený zkušební ceník)', poctiva.castka > 0, poctiva.castka);
+  test('B59: razítko nese verzi stránky, která výsledek spočítala',
+    poctiva.overeni && poctiva.overeni.klient === poctiva.klient && /^v\d/.test(poctiva.klient),
+    JSON.stringify(poctiva.overeni));
+  test('B59: poctivé uložení žádné varování nenese',
+    poctiva.typ !== 'varovani' && !/Pozor/.test(poctiva.hlaska), poctiva.hlaska);
+
+  const upraveny = await page.evaluate(async (ceniky) => {
+    ZAK = novaZakazka(); ZAK.cislo = '2026 - OPR - CN - 0762'; ZAK.nazevAkce = 'B59 upravený klient';
+    aktivniVarianta(ZAK).data.cenik = ceniky.ock; aktivniVarianta(ZAK).data.proj.cenik = ceniky.proj;
+    syncVarianta(); render();
+    await onlineUloz();
+    zamekPoTisku('nabidkaTisk', aktivniVarianta(ZAK).id);
+    aktivniVarianta(ZAK).zamek.vysledek.ock.souhrn.zakladSDph += 1000;   // upravený klient
+    await onlineUloz();
+    const po = { hlaska: ONLINE_STAV.hlaska, typ: ONLINE_STAV.hlaskaTyp, soubor: ONLINE_STAV.soubor };
+    await onlineOtevri(po.soubor);
+    po.lista = (document.getElementById('zamekLista') || {}).textContent || '';
+    return po;
+  }, ceniky);
+  test('B59: upravený klient se uloží, ale hláška varuje, že čísla nesouhlasí',
+    upraveny.typ === 'varovani' && /nesouhlasí/.test(upraveny.hlaska) && /0762/.test(upraveny.hlaska),
+    JSON.stringify(upraveny));
+  test('B59: po otevření ze serveru ukazuje rozpor lišta zámku',
+    /nesouhlasí s výpočtem serveru/.test(upraveny.lista), upraveny.lista);
+  await page.evaluate(() => { if (typeof zamekCteniVypni === 'function') zamekCteniVypni();
+    ZAK = novaZakazka(); syncVarianta(); render(); });
+}
+
 /* ---- 11) čistá konzole ---- */
 test('za celý průchod nevznikla nečekaná chyba v konzoli', chyby.length === 0, chyby);
 

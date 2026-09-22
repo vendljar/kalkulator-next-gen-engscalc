@@ -150,6 +150,96 @@ function odesli(zak, v, opts) {
   test('kurz EUR spadne na ceník varianty', zm.kurzEurZ(v, 24) === 24);
 }
 
+/* ---------- 4b) OVĚŘENÍ ZMRAZENÉHO VÝSLEDKU (nález B59, revize v22.9.9) ----------
+ * Server výsledek NOVÉHO zámku přepočítá tímž kódem, kterým ho pořizuje
+ * prohlížeč, a porovnání zapíše do zámku jako razítko. Tady se zkouší model:
+ * skládání výsledku, porovnání a razítko. Serverovou cestu hlídá
+ * netlify/test_prava.mjs (blok B59). */
+{
+  const zak = zakazka(), v = zak.varianty[0];
+  const r = zm.zamekVysledekSpocti(v, JEKLY, 'v1.2.3');
+  test('B59: výsledek k zamčení nese OCK, PROJ, kurz, build a čas',
+    !!r && !!r.ock && !!r.proj && r.kurzEurKc === 0 && r.build === 'v1.2.3' && !!r.kdy, r && Object.keys(r));
+  test('B59: čísla jsou tatáž, jaká dá jádro napřímo',
+    JSON.stringify(r.ock) === JSON.stringify(eng.vypocet(v.data.ock.zadani, v.data.cenik, JEKLY, v.data.ock.fixes)));
+  const rozbita = JSON.parse(JSON.stringify(v)); delete rozbita.data.ock;
+  test('B59: při chybě výpočtu vrací null (zámek pak vznikne bez výsledku, jako dosud)',
+    zm.zamekVysledekSpocti(rozbita, JEKLY, '') === null);
+
+  /* Porovnání. Obě strany prošly JSONem, jako na serveru. */
+  const kopie = () => JSON.parse(JSON.stringify(r));
+  test('B59: shodný výsledek nemá rozdíl', zm.zamekVysledekRozdily(kopie(), kopie()).pocet === 0);
+  const b = kopie(); b.build = 'jina'; b.kdy = '2000-01-01';
+  test('B59: build a čas pořízení se neporovnávají', zm.zamekVysledekRozdily(kopie(), b).pocet === 0);
+  const c = kopie(); c.ock.souhrn.zakladCena += 1;
+  const rc = zm.zamekVysledekRozdily(c, kopie());
+  test('B59: změněná částka je rozdíl a má cestu',
+    rc.pocet === 1 && rc.cesty[0] === 'ock.souhrn.zakladCena', rc);
+  const e = kopie(); e.ock.souhrn.zakladCena = r.ock.souhrn.zakladCena * (1 + 1e-12);
+  test('B59: rozdíl v posledním bitu rozdílem není', zm.zamekVysledekRozdily(e, kopie()).pocet === 0);
+  const k = kopie(); k.kurzEurKc = 25;
+  test('B59: jiný kurz EUR je rozdíl', zm.zamekVysledekRozdily(k, kopie()).cesty[0] === 'kurzEurKc');
+  const s = kopie(); s.ock.sekce = s.ock.sekce || {};
+  const klicSekce = Object.keys(r.ock.sekce || {})[0];
+  if (klicSekce && Array.isArray(r.ock.sekce[klicSekce])) {
+    s.ock.sekce[klicSekce] = s.ock.sekce[klicSekce].slice(1);
+    test('B59: chybějící řádek sekce je rozdíl', zm.zamekVysledekRozdily(s, kopie()).pocet >= 1);
+  }
+  const n = kopie(); n.ock.podvrzenyKlic = 1;
+  test('B59: přidaný klíč je rozdíl', zm.zamekVysledekRozdily(n, kopie()).cesty[0] === 'ock.podvrzenyKlic');
+  const mnoho = kopie(); Object.keys(mnoho.ock.souhrn).forEach(x => { mnoho.ock.souhrn[x] = -12345; });
+  const rm = zm.zamekVysledekRozdily(mnoho, kopie());
+  test('B59: cest je nejvýš pět, počet rozdílů je celý', rm.cesty.length === 5 && rm.pocet > 5, rm);
+
+  /* Razítko. */
+  test('B59: rozpracovaná varianta razítko nedostane', zm.zamekOvereni(v, JEKLY, 'v9') === null);
+  zm.zamkniVariantu(v, { typ: 'nabidka', cislo: zm.variantaCislo(zak, v),
+    vysledek: JSON.parse(JSON.stringify(zm.zamekVysledekSpocti(v, JEKLY, 'v8'))) });
+  const ov = zm.zamekOvereni(v, JEKLY, 'v9', '2026-09-22T10:00:00Z');
+  test('B59: poctivý zámek = shoda, s verzemi obou stran',
+    ov.stav === 'shoda' && ov.rozdilu === 0 && ov.server === 'v9' && ov.klient === 'v8'
+    && ov.kdy === '2026-09-22T10:00:00Z', ov);
+  test('B59: ke shodě se nic neříká', zm.zamekOvereniText(ov) === '');
+  v.zamek.vysledek.ock.souhrn.zakladSDph = 1;
+  const ov2 = zm.zamekOvereni(v, JEKLY, 'v9');
+  test('B59: podvržený výsledek = nesouhlasi s cestou',
+    ov2.stav === 'nesouhlasi' && ov2.rozdilu === 1 && ov2.cesty[0] === 'ock.souhrn.zakladSDph', ov2);
+  const t2 = zm.zamekOvereniText(ov2);
+  test('B59: věta o rozporu jmenuje obě verze a počet rozdílů',
+    /nesouhlasí/.test(t2) && /v8/.test(t2) && /v9/.test(t2) && /\(1 rozdíl;/.test(t2), t2);
+  test('B59: počet rozdílů se skloňuje',
+    /\(3 rozdíly;/.test(zm.zamekOvereniText(Object.assign({}, ov2, { rozdilu: 3 })))
+    && /\(7 rozdílů;/.test(zm.zamekOvereniText(Object.assign({}, ov2, { rozdilu: 7 }))));
+  /* Patologický výsledek od klienta nesmí shodit uložení — skončí „neověřeno". */
+  const hluboky = JSON.parse(JSON.stringify(v));
+  let uzel = {}; hluboky.zamek.vysledek = { ock: uzel };
+  for (let i = 0; i < 20000; i++) { uzel.x = {}; uzel = uzel.x; }
+  let ovH = null, padlo = false;
+  try { ovH = zm.zamekOvereni(hluboky, JEKLY, 'v9'); } catch (e) { padlo = true; }
+  test('B59: ani patologicky hluboký výsledek porovnání neshodí', !padlo && ovH && ovH.stav !== 'shoda',
+    padlo ? 'výjimka' : ovH);
+  const zDat = JSON.parse(JSON.stringify(v)); delete zDat.data.ock;
+  const ov3 = zm.zamekOvereni(zDat, JEKLY, 'v9');
+  test('B59: nepřepočitatelná data = chyba (neověřeno), ne shoda', ov3.stav === 'chyba', ov3);
+  test('B59: a věta to řekne', /neověřil/.test(zm.zamekOvereniText(ov3)));
+  const bezVysl = zakazka().varianty[0];
+  zm.zamkniVariantu(bezVysl, { typ: 'nabidka' });
+  test('B59: zámek bez zmrazeného výsledku razítko nedostane', zm.zamekOvereni(bezVysl, JEKLY, 'v9') === null);
+  test('B59: prázdné nebo cizí razítko nic neříká',
+    zm.zamekOvereniText(null) === '' && zm.zamekOvereniText({ stav: 'cosi' }) === '');
+}
+
+/* Prohlížeč výsledek k zamčení skládá VÝHRADNĚ sdílenou funkcí — kdyby si
+ * vzorec zase opsal, rozešel by se časem se serverovým ověřením a server by
+ * hlásil rozpor u poctivých nabídek. */
+{
+  const ui = fs.readFileSync(__dirname + '/ui/zamek_ui.js', 'utf8');
+  const kod = ui.split('\n').filter(l => !/^\s*\*|^\s*\/\*|^\s*\/\//.test(l)).join('\n');
+  test('B59: zamekPoTisku bere výsledek ze zamekVysledekSpocti',
+    /vysledek = zamekVysledekSpocti\(v, JEKLY,/.test(kod));
+  test('B59: a jádro napřímo nevolá', !/(?<![\w.])vypocet(?:Proj)?\(/.test(kod));
+}
+
 /* ---------- 5) HLÍDAČ: nikdo nesmí obejít zámek přímým vypocet() ---------- */
 
 const POVOLENO = {

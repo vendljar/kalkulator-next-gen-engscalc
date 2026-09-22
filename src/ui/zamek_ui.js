@@ -190,15 +190,11 @@ function zamekPoTisku(typ, varId, sablona) {
      * vyrobit, protože doplnit ho do zamčené varianty nelze.
      *
      * Každý další tisk téže varianty sem nesahá (`prvni`), takže se otisk
-     * nepřepíše novějším výpočtem a zakázka neroste. */
-    const d = (v.data || {});
-    try { vysledek = {
-      ock: vypocet(d.ock.zadani, d.cenik, JEKLY, d.ock.fixes),
-      proj: vypocetProj(d.proj.zadani, d.proj.cenik),
-      kurzEurKc: (d.cenik && +d.cenik.kurzEurKc) || (d.proj && d.proj.cenik && +d.proj.cenik.kurzEurKc) || 0,
-      build: (typeof buildVerze === 'function') ? buildVerze() : '',
-      kdy: new Date().toISOString(),
-    }; } catch (e) { vysledek = null; }
+     * nepřepíše novějším výpočtem a zakázka neroste.
+     *
+     * Výsledek skládá zamekVysledekSpocti — TÝŽ kód, kterým ho server při
+     * prvním uložení zámku ověřuje (B59). */
+    vysledek = zamekVysledekSpocti(v, JEKLY, (typeof buildVerze === 'function') ? buildVerze() : '');
   }
   zamkniVariantu(v, { typ, kdo: zamekKdo(), cislo: variantaCislo(ZAK, v), otisk, vysledek,
                       sablona: sablona || null });
@@ -214,11 +210,15 @@ function zamekLista() {
   if (!z) return '';
   const kdy = (z.kdy || '').slice(0, 10);
   const pocet = Array.isArray(z.tisky) ? z.tisky.length : 1;
+  /* Razítko serveru o ověření zmrazeného výsledku (B59) — ukazuje se jen
+   * rozpor nebo neověření; shoda je běžný stav a lištu nezatěžuje. */
+  const overeni = (typeof zamekOvereniText === 'function') ? zamekOvereniText(z.overeni) : '';
   return `<div class="zamek-lista">
     <span class="ikona">🔒</span>
     <span><b>${esc(v.nazev)} (${esc(z.cislo || variantaCislo(ZAK, v))}) je odeslaná nabídka – needituje se.</b>
       Vytištěno ${esc(kdy)} jako ${esc(z.popis || 'cenová nabídka')}${pocet > 1 ? ` (výtisků: ${pocet})` : ''}.
-      Pokračujte klonem, nebo založte novou zakázku; původní nabídka zůstane v podobě, v jaké odešla.</span>
+      Pokračujte klonem, nebo založte novou zakázku; původní nabídka zůstane v podobě, v jaké odešla.${overeni
+        ? `<span class="zamek-overeni">⚠ ${esc(overeni)}</span>` : ''}</span>
     <span class="sp"></span>
     <button class="primary cteni-ok" onclick="zamekKlonUI('${escJs(v.id)}')">Klonovat a pokračovat</button>
     <!-- Založit novou zakázku (8. 9. 2026, zadání J. V.: „když chci začít novou

@@ -7,15 +7,15 @@
  *   stejná kontrola jako ve složce (uloKontrolaZamku není v modelu, ale
  *   zámky hlídá porovnání razítek: server odmítne zápis, který by změnil
  *   variantu zamčenou v uložené verzi). */
-import { uloziste, vyzadujRoli, json } from '../lib/sdilene.mjs';
+import { uloziste, vyzadujRoli, json, serverVerze } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 
 const ZAKAZKA_MAX_B = 4 * 1024 * 1024;
 const CISLO_MAX = 60;
 
 export default async (req) => {
-  let ULO, SCHV;
-  try { ({ ULO, SCHV } = await jadro()); } catch (e) { return jadroChyba(e); }
+  let ULO, SCHV, JEKLY;
+  try { ({ ULO, SCHV, JEKLY } = await jadro()); } catch (e) { return jadroChyba(e); }
 
   const { chyba, relace } = await vyzadujRoli(req);
   if (chyba) return chyba;
@@ -258,11 +258,47 @@ export default async (req) => {
   /* Totéž pro razítko zámku: NOVĚ vzniklý zámek (v uložené verzi varianta
    * zamčená nebyla) nese `kdo` z relace, ne z klienta. `kdy` se nechává —
    * je součástí klíče zámku a klient si ho drží v rozpracované kopii. */
+  /* ZMRAZENÝ VÝSLEDEK NOVÉHO ZÁMKU OVĚŘÍ SERVER (nález B59, revize v22.9.9,
+   * 22. 9. 2026).
+   *
+   * B53 chrání zmrazený výsledek PO zamčení — ale ten výsledek do té doby
+   * pořizoval jedině prohlížeč a server ho při vzniku zámku převzal, jak
+   * přišel. Upravený klient tak mohl zamknout nabídku s jinými čísly, než
+   * dávají data (třeba s větší slevou, než smí schválit), a od té chvíle ji
+   * B53 chránil jako pravdu.
+   *
+   * Server teď výsledek každého NOVÉHO zámku přepočítá tímž jádrem
+   * (zamekOvereni → zamekVysledekSpocti, tentýž kód, kterým ho pořizuje
+   * prohlížeč) a výsledek porovnání zapíše do zámku jako razítko `overeni`.
+   *
+   * PROČ RAZÍTKO A NE ODMÍTNUTÍ (rozhodnuto při opravě): v okamžiku uložení
+   * je dokument už vytištěný nebo stažený — server papír nezastaví. Odmítnutí
+   * by jen nechalo variantu v databázi odemčenou a dál upravitelnou, tedy
+   * horší stopu než zámek s rozporem zapsaným natrvalo. A poctivého obchodníka
+   * se stránkou načtenou těsně před nasazením nové verze (hlídka verze se
+   * ptá jednou za 10 minut) by zablokovalo: jeho výsledek spočítalo starší
+   * jádro a papír nese právě ta čísla — přesně ta se mají v zámku držet.
+   * Rozpor je proto vidět v liště zámku u každého, kdo variantu otevře,
+   * a hned v hlášce po uložení.
+   *
+   * Razítko píše VÝHRADNĚ server: u nového zámku ho spočítá, u zámku, který
+   * už v uložené verzi byl, ho převezme z ní (klientské `overeni` se zahodí
+   * v obou případech). Klíč zámku (uloZamekKlic) ho neobsahuje schválně —
+   * pracovní kopie v prohlížeči ho nemá a mít nemusí. */
+  const verzeServeru = serverVerze();
+  const sporne = [];
   for (const v of (zak.varianty || [])) {
     if (!v || !v.zamek || !v.zamek.zamceno) continue;
     const sv = stara ? (stara.varianty || []).find(x => x && x.id === v.id) : null;
-    if (sv && sv.zamek && sv.zamek.zamceno) continue;           // zámek už byl — nesahat
+    if (sv && sv.zamek && sv.zamek.zamceno) {                   // zámek už byl — nesahat
+      if (sv.zamek.overeni) v.zamek.overeni = sv.zamek.overeni;
+      else delete v.zamek.overeni;
+      continue;
+    }
     v.zamek.kdo = relace.jmeno ? relace.jmeno + ' <' + relace.email + '>' : relace.email;
+    const ov = globalThis.zamekOvereni(v, JEKLY, verzeServeru);
+    if (ov) v.zamek.overeni = ov; else delete v.zamek.overeni;
+    if (ov && ov.stav !== 'shoda') sporne.push({ cislo: v.zamek.cislo || globalThis.variantaCislo(zak, v), ov });
   }
   /* Jméno obchodníka do rejstříku (21. 8. 2026, zadání J. V.). Bere se
    * z RELACE, ne od klienta — jméno v seznamu je stejné razítko jako autor
@@ -308,6 +344,10 @@ export default async (req) => {
     ULO.uloRejstrikZaznam(zak, { soubor: jmeno, razitko }));
   await s.zapis('_rejstrik', { schema: 1, zakazky: ULO.uloRejstrikSerad(novy), kdo: relace.email,
                                upraveno: new Date().toISOString() });
-  return json({ ok: true, soubor: jmeno, razitko });
+  /* Sporné razítko (B59) se hlásí hned — uložení prošlo, ale obchodník se
+   * musí dozvědět, že čísla odeslané nabídky server z dat nedostal. */
+  const varovani = sporne.map(x => 'Pozor, nabídka ' + x.cislo + ': '
+    + globalThis.zamekOvereniText(x.ov) + ' Obnovte stránku (Ctrl+F5) a nabídku zkontrolujte.').join(' ');
+  return json(varovani ? { ok: true, soubor: jmeno, razitko, varovani } : { ok: true, soubor: jmeno, razitko });
 };
 export const config = { path: '/api/zakazky' };
