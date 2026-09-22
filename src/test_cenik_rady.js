@@ -58,7 +58,15 @@ const ZAHR = () => ({
 {
   const cr = CR();
   const rozdily = cenikRadaRozdily(cr, ZAHR());
-  test('rozdíly vypíšou všechny odchylky', rozdily.length === 4, rozdily.length);
+  /* Od 22. 9. 2026 večer přibývá k odchylkám ze zveřejněného ceníku ještě
+   * VÝCHOZÍ NULOVÁ SAZBA DPH (J. V.: „sazba DPH se při přepnutí na zahraniční
+   * ceník nepřepíná na 0 % … to by bylo optimální"). Proto se výslovné
+   * odchylky počítají zvlášť a výchozí nula má vlastní kontrolu níž. */
+  test('rozdíly vypíšou všechny odchylky', rozdily.filter(x => !x.vychozi).length === 4,
+    rozdily.map(x => x.cesta));
+  test('a navíc výchozí nulovou sazbu DPH (holý ceník OCK = jen sazba OCK)',
+    rozdily.filter(x => x.vychozi).map(x => x.cesta).join(',') === 'C.dph',
+    rozdily.filter(x => x.vychozi));
   test('rozdíl zná tuzemskou i zahraniční cenu', (() => {
     const r = rozdily.find(x => x.cesta === 'C.montazHodKc');
     return r && r.zahr === 1000 && r.cr === cr.montazHodKc;
@@ -226,6 +234,67 @@ const ZAHR = () => ({
     dataP.proj.cenik.dph);
 }
 
+/* ---------- VÝCHOZÍ NULOVÁ SAZBA DPH V ZAHRANIČNÍ ŘADĚ (22. 9. 2026 večer) ----------
+ *
+ * J. V.: „sazba DPH se při přepnutí na zahraniční ceník nepřepíná na 0 %
+ * … to by bylo optimální." Pole pro zahraniční sazbu (N18) je v ceníku, ale
+ * zveřejněný ceník ho nemá vyplněné — a ceník se během testu nemění. Bez
+ * výchozí hodnoty se tedy nic nestalo: zahraniční nabídka měla dál českou
+ * sazbu. Prázdná zahraniční sazba DPH proto nově znamená NULU.
+ *
+ * Hlídá se celý kruh: tam (0 %), zpátky (tuzemská), ruční volba obchodníka
+ * (zůstává), výslovná sazba v ceníku (má přednost) a — nejzrádnější —
+ * přepočet při příštím otevření, který by jinak prázdné zakázce nulu vrátil
+ * zpátky na tuzemskou sazbu. */
+{
+  const bezOdchylek = { ceny: {}, jenZahr: {} };
+  const crData = () => ({ cenik: Object.assign(CR(), { dph: 0.12 }), proj: { cenik: { dph: 0.21 } } });
+
+  const data = Object.assign(crData(), { cenikRada: 'cr' });
+  const v = cenikRadaPrepni(data, crData(), bezOdchylek, 'zahr');
+  test('bez odchylky v ceníku jde sazba DPH v zahraničí na 0 %', data.cenik.dph === 0, data.cenik.dph);
+  test('i sazba DPH projekce', data.proj.cenik.dph === 0, data.proj.cenik.dph);
+  test('a přepnutí to hlásí jako změnu (dialog ji vypíše)',
+    v.rozdily.some(x => x.cesta === 'C.dph' && x.nova === 0), JSON.stringify(v.rozdily));
+  cenikRadaPrepni(data, crData(), bezOdchylek, 'cr');
+  test('návrat do tuzemska vrátí tuzemskou sazbu OCK', data.cenik.dph === 0.12, data.cenik.dph);
+  test('i projekce', data.proj.cenik.dph === 0.21, data.proj.cenik.dph);
+
+  /* Výslovná sazba v ceníku má přednost — kdo chce i v zahraničí českou
+   * sazbu (nebo jinou), zapíše ji do ceníku. */
+  const vyslovne = { ceny: { 'C.dph': 0.19 }, jenZahr: {} };
+  const d2 = Object.assign(crData(), { cenikRada: 'cr' });
+  cenikRadaPrepni(d2, crData(), vyslovne, 'zahr');
+  test('výslovná zahraniční sazba v ceníku má přednost před nulou', d2.cenik.dph === 0.19, d2.cenik.dph);
+  test('a na projekci, kde odchylka není, platí nula', d2.proj.cenik.dph === 0, d2.proj.cenik.dph);
+
+  /* Ruční volba obchodníka zůstává (#177) — ať je jakákoli. */
+  const d3 = Object.assign(crData(), { cenikRada: 'cr' });
+  cenikRucniZnac(d3, 'C.dph');
+  const v3 = cenikRadaPrepni(d3, crData(), bezOdchylek, 'zahr');
+  test('ručně nastavenou sazbu výchozí nula nepřepíše', d3.cenik.dph === 0.12, d3.cenik.dph);
+  test('a volající se to dozví (upozornění po přepnutí)',
+    v3.chranene.some(x => x.cesta === 'C.dph'), JSON.stringify(v3.chranene));
+
+  /* PŘEPOČET PŘI OTEVŘENÍ. Dnešní ceník pro zahraniční variantu musí nést
+   * tutéž nulu — jinak by ho přepočet prázdné zakázce „srovnal" zpátky na
+   * tuzemskou sazbu (u nerozdělané zakázky se zakázkové hodnoty z ceníku
+   * natahují). */
+  const dnesZahr = cenikDnesniProRadu(crData(), bezOdchylek, 'zahr');
+  test('dnešní ceník zahraniční řady nese nulovou sazbu DPH', dnesZahr.cenik.dph === 0, dnesZahr.cenik.dph);
+  test('i u projekce', dnesZahr.proj.cenik.dph === 0, dnesZahr.proj.cenik.dph);
+  const dnesCr = cenikDnesniProRadu(crData(), bezOdchylek, 'cr');
+  test('tuzemská řada nulu nedostane', dnesCr.cenik.dph === 0.12 && dnesCr.proj.cenik.dph === 0.21,
+    [dnesCr.cenik.dph, dnesCr.proj.cenik.dph]);
+  test('a složení zahraniční řady taky', cenikSlozRadu(CR(), bezOdchylek, 'zahr').dph === 0);
+
+  /* VÝCHOZÍ NULA SE NEUKLÁDÁ: ceník (a tím otisk a verze) se nemění
+   * a pojistka zveřejnění ji nevidí. */
+  const z = cenikZahrOciste(bezOdchylek);
+  test('výchozí nula se do odchylek ceníku nezapisuje', !('C.dph' in z.ceny) && !('PC.dph' in z.ceny), z.ceny);
+  test('přepnutí nechá zdroj odchylek netknutý', !('C.dph' in bezOdchylek.ceny), bezOdchylek.ceny);
+}
+
 /* ---------- zahraniční přirážka i pro projekci (3. 9. 2026) ----------
  * Zadání J. V.: „připrav tedy pro globální přirážku i variantu pro zahraničí."
  * Ceny projekce zahraniční řadu nemají (#181 je jen pro OCK), přirážka ano —
@@ -238,7 +307,7 @@ const ZAHR = () => ({
   const crData = { cenik: cr, proj: { cenik: { marze: 0.55 } } };
   const zahrProj = { ceny: { 'PC.marze': 0.66 }, jenZahr: {} };
 
-  const rozdily = cenikRadaRozdily(crData, zahrProj);
+  const rozdily = cenikRadaRozdily(crData, zahrProj).filter(x => !x.vychozi);
   test('rozdíl u přirážky projekce zná obě hodnoty',
     rozdily.length === 1 && rozdily[0].cr === 0.55 && rozdily[0].zahr === 0.66,
     JSON.stringify(rozdily));
@@ -253,7 +322,8 @@ const ZAHR = () => ({
 
   /* Holý ceník OCK (starší volání) nesmí spadnout. */
   test('rozdíly snesou i holý ceník OCK jako dřív',
-    Array.isArray(cenikRadaRozdily(cr, ZAHR())) && cenikRadaRozdily(cr, ZAHR()).length === 4);
+    Array.isArray(cenikRadaRozdily(cr, ZAHR()))
+    && cenikRadaRozdily(cr, ZAHR()).filter(x => !x.vychozi).length === 4);
 }
 
 /* ---------- položky, které v tuzemsku neexistují (9. 9. 2026) ----------

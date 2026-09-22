@@ -236,6 +236,54 @@ await page.evaluate(() => {
 });
 await page.waitForTimeout(200);
 
+/* ---------- 6e) VÝCHOZÍ NULA: sazba DPH bez zahraniční odchylky (22. 9. 2026 večer) ----
+ *
+ * Přesně stav ze snímku J. V.: zahraniční ceník má odchylku u přirážky, u DPH
+ * nic — a po přepnutí svítila v hlavičce „12 % snížená". „To by bylo
+ * optimální" znamenalo 0 %. Zkouší se na tom, co obchodník vidí: hodnota
+ * v datech i vybraná volba v hlavičce, tam i zpátky. */
+const vychoziDph = await page.evaluate(() => {
+  const v = aktivniVarianta(ZAK);
+  DEFAULT_CENIK.dph = 0.12;
+  v.data.cenik.dph = 0.12;
+  if (v.data.cenikRucni) delete v.data.cenikRucni['C.dph'];
+  prepniTab('kalk'); render();
+  return { odchylka: Object.prototype.hasOwnProperty.call(CENIK_ZAHR.ceny, 'C.dph'), pred: v.data.cenik.dph };
+});
+test('výchozí stav: ceník zahraniční sazbu DPH nemá', vychoziDph.odchylka === false && vychoziDph.pred === 0.12,
+  vychoziDph);
+await page.evaluate(() => { window.__dlgTexty = []; });
+await page.evaluate(() => cenikRadaPrepniUI('zahr'));
+await page.waitForTimeout(300);
+test('dialog přepnutí vypíše i sazbu DPH', /Sazba DPH/.test(await dlgPosledni(page)) || await page.evaluate(() =>
+  (window.__dlgTexty || []).some(x => /Sazba DPH/.test(x))), (await dlgPosledni(page)).slice(0, 200));
+test('po přepnutí na zahraničí je sazba DPH 0 %',
+  await page.evaluate(() => aktivniVarianta(ZAK).data.cenik.dph === 0),
+  await page.evaluate(() => aktivniVarianta(ZAK).data.cenik.dph));
+test('a hlavička ji tak i ukazuje',
+  await page.evaluate(() => [...document.querySelectorAll('#page-kalk select')]
+    .some(s => s.selectedOptions[0] && /^0 %/.test(s.selectedOptions[0].textContent.trim()))),
+  await page.evaluate(() => [...document.querySelectorAll('#page-kalk select')]
+    .map(s => s.selectedOptions[0] && s.selectedOptions[0].textContent.trim()).filter(x => /%/.test(x || ''))));
+await page.evaluate(() => cenikRadaPrepniUI('cr'));
+await page.waitForTimeout(300);
+test('návratem do tuzemska je zpátky tuzemská sazba',
+  await page.evaluate(() => aktivniVarianta(ZAK).data.cenik.dph === 0.12),
+  await page.evaluate(() => aktivniVarianta(ZAK).data.cenik.dph));
+/* Ruční volba obchodníka má přednost i před výchozí nulou (#177). */
+await page.evaluate(() => { set('C.dph', 0.12); });
+await page.evaluate(() => cenikRadaPrepniUI('zahr'));
+await page.waitForTimeout(300);
+test('ručně vybranou sazbu výchozí nula nepřepíše',
+  await page.evaluate(() => aktivniVarianta(ZAK).data.cenik.dph === 0.12),
+  await page.evaluate(() => aktivniVarianta(ZAK).data.cenik.dph));
+await page.evaluate(() => {
+  cenikRadaPrepniUI('cr');
+  const v = aktivniVarianta(ZAK);
+  if (v.data.cenikRucni) delete v.data.cenikRucni['C.dph'];
+});
+await page.waitForTimeout(200);
+
 /* ---------- 6c) zahraniční přirážka i v ceníku projekce (3. 9. 2026) ---------- */
 test('u globální přirážky PROJ je také pole pro zahraničí',
   await page.evaluate(() => {

@@ -8,6 +8,41 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.9.15 — 22. 9. 2026
+
+### Zahraniční zakázka má po přepnutí sazbu DPH 0 %
+
+J. V. ke snímku zahraniční zakázky se sazbou 12 %: „sazba DPH se při
+přepnutí na zahraniční ceník nepřepíná na 0 % … to by bylo optimální."
+
+Pole pro zahraniční sazbu DPH přibylo dávkou N18 (v22.9.13), jenže
+zveřejněný ceník ho nemá vyplněné a ceník se během testu nemění. Přepnutí
+tedy sazbu nechalo tuzemskou. **Prázdná zahraniční sazba DPH teď znamená
+0 %**, ne „jako v ČR" — dodávka s montáží do zahraničí se běžně fakturuje
+bez české daně. Výslovně zadaná sazba v ceníku má přednost; kdo chce
+i v zahraničí českou sazbu, zapíše ji. Návrat zakázky do tuzemska vrátí
+tuzemskou sazbu a ruční volba obchodníka se nepřepisuje nikdy (#177).
+
+**Výchozí nula se do ceníku neukládá**, takže nemění jeho otisk ani verzi.
+Doplňuje se na třech místech, která musí mluvit stejně: přepnutí varianty,
+dnešní ceník pro přepočet při otevření a složení zahraniční řady. Kdyby ji
+znalo jen přepnutí, přepočet by prázdné zakázce při příštím otevření vrátil
+tuzemskou sazbu.
+
+Nabídka měla u sazby podmínku „do 15 % snížená, jinak základní" a tiskla by
+**„DPH 0 % (snížená sazba)"**. Nulová sazba má teď vlastní jméno — nulová,
+v angličtině *zero*, v němčině *Null*.
+
+Přepnutí se dál odmítne nad zahraničním ceníkem, který nemá **žádnou
+výslovnou** odchylku — samotná výchozí nula k přepnutí nestačí, jinak by se
+zakázka tvářila jako zahraniční s tuzemskými cenami.
+
+Zakázky přepnuté do zahraničí před touhle dávkou si svou sazbu nechávají.
+Nulu dostanou přepnutím zpět do tuzemska a znovu do zahraničí, nebo výběrem
+v hlavičce.
+
+---
+
 ## v22.9.14 — 22. 9. 2026
 
 ### V zamčené zakázce se uložení nenabízí, odemyká se na jednom místě (N25)

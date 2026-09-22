@@ -200,7 +200,11 @@ function nabidkaData(zak, varianta, jekly, lang) {
 
     CENA_BEZ_DPH: kc(cenaBezDphNum),
     DPH_SAZBA: String(Math.round(Cv.dph * 100)),
-    DPH_NAZEV: P(Cv.dph <= 0.15 ? 'snížená' : 'základní'),
+    /* Nulová sazba má vlastní jméno (22. 9. 2026 večer). Od té doby, co
+     * zahraniční řada ceníku přepíná DPH na 0 %, by tu podmínka `<= 0.15`
+     * tiskla „DPH 0 % (snížená sazba)" — tedy nesmysl, který by zákazník
+     * četl jako chybu v nabídce. */
+    DPH_NAZEV: P(!(+Cv.dph > 0) ? 'nulová' : (Cv.dph <= 0.15 ? 'snížená' : 'základní')),
     DPH_KC: kc(dphKcNum),
     CENA_S_DPH: kc(cenaSDphNum),
     CENA_PRED_SLEVOU: kc(cenaPredSlevou),

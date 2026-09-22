@@ -1545,7 +1545,11 @@ async function cenikRadaPrepniUI(rada) {
   const cr = (typeof cenikDnesniData === 'function') ? cenikDnesniData() : { cenik: DEFAULT_CENIK };
   const zahr = (typeof CENIK_ZAHR !== 'undefined') ? CENIK_ZAHR : null;
   const rozdily = (typeof cenikRadaRozdily === 'function') ? cenikRadaRozdily(cr, zahr) : [];
-  if (!rozdily.length && r === 'zahr') {
+  /* Odmítá se podle VÝSLOVNÝCH odchylek ceníku, ne podle výchozí nulové
+   * sazby DPH (22. 9. 2026 večer). Ta se doplní vždycky, takže by jinak
+   * přepnutí prošlo i nad zahraničním ceníkem, který administrátor ještě
+   * nezaložil — a zakázka by se tvářila jako zahraniční s tuzemskými cenami. */
+  if (!rozdily.some(x => !x.vychozi) && r === 'zahr') {
     hlaska('Zahraniční ceník zatím nemá žádnou odchylku — ceny by se nezměnily.\n\n'
       + 'Zadejte je v záložce Ceník nákladů OCK ve sloupci „Zahraničí" '
       + '(smí je zadat a zveřejnit jen administrátor).');
@@ -1556,9 +1560,12 @@ async function cenikRadaPrepniUI(rada) {
     + (rozdily.length > 8 ? '\n• … a další ' + (rozdily.length - 8) : '');
   if (!await potvrd('Přepnout výpočet na ' + (r === 'zahr' ? 'ZAHRANIČNÍ' : 'TUZEMSKÝ') + ' ceník?\n\n'
     + 'Dotkne se to ' + rozdily.length + ' ceníkových položek:\n' + vypis
-    + '\n\nRuční přepisy v zakázce se nemění. Globální přirážka a sazba DPH se přepnou jen '
-    + 'tehdy, když pro ně ceník zahraniční odchylku má a vy jste je v téhle nabídce sám '
-    + 'nepřenastavil.')) return;
+    /* Sazba DPH má v zahraniční řadě výchozí nulu (22. 9. 2026 večer) —
+     * dialog to říká nahlas, protože se tím mění cena s DPH v nabídce. */
+    + '\n\nRuční přepisy v zakázce se nemění. Sazba DPH jde v zahraničí na 0 % '
+    + '(pokud ceník neurčuje jinou), při návratu do tuzemska zpět na tuzemskou; globální '
+    + 'přirážka se přepne, když pro ni ceník odchylku má. Co jste si v téhle nabídce '
+    + 'nastavil sám, zůstává.')) return;
 
   const vysl = cenikRadaPrepni(d, cr, zahr, r);
   v.upraveno = new Date().toISOString();

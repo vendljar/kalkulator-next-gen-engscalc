@@ -59,6 +59,7 @@ const PREKLAD = {
     "Für diese Sprache wurde keine Übersetzung geliefert — der Text ist auf Tschechisch.",
     "Aucune traduction n’a été fournie pour cette langue — le texte est en tchèque."],
   "snížená": ["reduced", "ermäßigt", "réduit"],
+  "nulová": ["zero", "Null", "zéro"],
   "základní": ["standard", "Regelsatz", "normal"],
 
   /* ---- hesla používaná aplikací ---- */

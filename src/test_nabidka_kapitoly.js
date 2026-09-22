@@ -97,6 +97,34 @@ function nahled(jazyk, upravFirmu, upravZadani) {
     String(ext.ph.PRIP_LESENI_VNEJSI || '').indexOf('základní') >= 0, ext.ph.PRIP_LESENI_VNEJSI);
 }
 
+/* ---------- 0b) nulová sazba DPH má v nabídce vlastní jméno (22. 9. 2026 večer) ----------
+ *
+ * Zahraniční řada ceníku od téhle dávky přepíná DPH na 0 %. Podmínka
+ * `dph <= 0.15 ? 'snížená' : 'základní'` by pak tiskla „DPH 0 % (snížená
+ * sazba)" — nesmysl, který zákazník přečte jako chybu v nabídce. */
+{
+  const sDph = (sazba, jaz) => {
+    const puv = global.NAST;
+    global.NAST = { firma: Object.assign({}, fm.DEFAULT_FIRMA, { nazev: 'Zkušební firma s.r.o.' }) };
+    const zak = zk.novaZakazka();
+    const v = zak.varianty[0];
+    v.data.cenik = Object.assign(ZC.zkusebniCenik(), { dph: sazba, kurzEurKc: 25 });
+    const ph = N.nabidkaData(zak, v, JEKLY, jaz || 'cz').placeholders;
+    global.NAST = puv;
+    return ph;
+  };
+  const nula = sDph(0);
+  test('0 % se jmenuje „nulová", ne „snížená"', nula.DPH_NAZEV === 'nulová' && nula.DPH_SAZBA === '0',
+    [nula.DPH_SAZBA, nula.DPH_NAZEV]);
+  test('částka DPH je u nulové sazby nulová', /^0[,.]00/.test(String(nula.DPH_KC).trim()), nula.DPH_KC);
+  test('snížená sazba zůstává snížená', sDph(0.12).DPH_NAZEV === 'snížená', sDph(0.12).DPH_NAZEV);
+  test('základní zůstává základní', sDph(0.21).DPH_NAZEV === 'základní', sDph(0.21).DPH_NAZEV);
+  /* Zahraniční nabídka se tiskne v cizím jazyce — jméno musí být ve slovníku,
+   * jinak by zůstalo česky a export chybějících překladů by ho hlásil. */
+  test('v angličtině „zero"', sDph(0, 'en').DPH_NAZEV === 'zero', sDph(0, 'en').DPH_NAZEV);
+  test('v němčině „Null"', sDph(0, 'de').DPH_NAZEV === 'Null', sDph(0, 'de').DPH_NAZEV);
+}
+
 /* ---------- 1) výchozí texty existují ve všech třech jazycích ---------- */
 
 [['cz', ''], ['en', 'En'], ['de', 'De']].forEach(([jaz, suf]) => {

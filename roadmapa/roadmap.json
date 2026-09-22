@@ -409,6 +409,20 @@
    "pozn": "JEDINÉ, CO PLATÍ DÁL: z těch dvou zakázek ceník nezveřejňovat. Pojistka to sice zastaví, ale ať se na ni nespoléháme. Čísla zakázek jsou ve vyhodnocovacím sešitu na Drive, ne tady."
   },
   {
+   "id": "317",
+   "vlna": "E",
+   "stav": "hotovo",
+   "dulezitost": "vysoka",
+   "slozitost": "S",
+   "hotovoV": "v22.9.15",
+   "nazev": "Zahraniční zakázka má po přepnutí sazbu DPH 0 %",
+   "proc": "J. V. ke snímku zahraniční zakázky se sazbou 12 %: „sazba DPH se při přepnutí na zahraniční ceník nepřepíná na 0 % … to by bylo optimální.\" Pole pro zahraniční sazbu (#314) v ceníku bylo, ale zveřejněný ceník ho nemá vyplněné a ceník se během testu nemění — přepnutí tedy sazbu nechalo tuzemskou.",
+   "detail": "PRÁZDNÁ ZAHRANIČNÍ SAZBA DPH ZNAMENÁ 0 %, ne „jako v ČR\". Výslovně zadaná sazba v ceníku má přednost; návrat do tuzemska vrátí tuzemskou sazbu; ruční volba obchodníka se nepřepisuje (#177).\n\nVýchozí nula se do ceníku NEUKLÁDÁ (nemění otisk ani verzi). Doplňuje se na třech místech, která musí mluvit stejně: přepnutí varianty, dnešní ceník pro přepočet při otevření a složení zahraniční řady — jinak by přepočet prázdné zakázce při příštím otevření vrátil tuzemskou sazbu.\n\nNabídka by u nulové sazby tiskla „DPH 0 % (snížená sazba)\" (podmínka „do 15 % snížená\"); nulová sazba má vlastní jméno a překlad.\n\nPřepnutí se dál odmítne nad zahraničním ceníkem bez jediné výslovné odchylky — samotná výchozí nula k němu nestačí.",
+   "odpoved": "J. V. 22. 9. 2026 večer: „to by bylo optimální\" (0 % po přepnutí na zahraniční ceník).",
+   "kde": "src/cenik_rady.js (cenikZahrSVychozimi), src/ui/common.js (dialog přepnutí), src/ui/cenik_ui.js (pole a poznámky), src/nabidka.js (DPH_NAZEV), src/preklad.js",
+   "testy": "src/test_cenik_rady.js (celý kruh tam a zpět, ruční volba, výslovná sazba, přepočet při otevření, výchozí nula se neukládá), src/test_nabidka_kapitoly.js (jméno nulové sazby CZ/EN/DE), overit_zahranicni.mjs (scénář ze snímku v prohlížeči)."
+  },
+  {
    "id" : "285",
    "vlna" : "C",
    "stav" : "ceka",
@@ -5563,7 +5577,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v22.9.14 (engscalc)",
+  "build" : "v22.9.15 (engscalc)",
   "stavKDatu" : "22. 9. 2026"
  },
  "_comment" : [

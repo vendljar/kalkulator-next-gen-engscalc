@@ -74,22 +74,29 @@ function cenikZahrPctPole(cesta, opts) {
   const label = o.label || '…&nbsp;pro ZAHRANIČÍ';
   const title = o.title || 'prázdné = i v zahraniční zakázce platí tuzemská přirážka';
   const reset = o.reset || 'převzít tuzemskou přirážku';
+  const placeholder = o.placeholder || 'jako ČR';
   return `<span class="pct-wrap" style="margin-left:18px">
     <label style="margin-right:6px">${label}</label>
     <input type="number" step="1" class="zahr-cena${zv === '' ? '' : ' ma'}" style="width:80px"
-      value="${esc(pct)}" placeholder="jako ČR"
+      value="${esc(pct)}" placeholder="${esc(placeholder)}"
       title="${esc(title)}"
       onchange="cenikZahrSet('${cesta}', this.value === '' ? '' : (+this.value) / 100)"> %
     ${zv === '' ? '' : `<button class="mini noprint" title="${esc(reset)}"
       onclick="cenikZahrSet('${cesta}', '')">↺</button>`}</span>`;
 }
-/* Sazba DPH pro zahraniční řadu. Vlastní texty, jinak totéž co u přirážky. */
+/* Sazba DPH pro zahraniční řadu. Vlastní texty, jinak totéž co u přirážky.
+ *
+ * PRÁZDNÉ POLE TU ZNAMENÁ NULU, ne „jako v ČR" (22. 9. 2026 večer, J. V.:
+ * „sazba DPH se při přepnutí na zahraniční ceník nepřepíná na 0 % … to by
+ * bylo optimální"). Výchozí nulu doplňuje model (`cenikZahrSVychozimi`),
+ * pole jen ukazuje, co platí. Kdo chce v zahraničí českou sazbu, zapíše ji. */
 function cenikDphZahrPole(cesta) {
   return cenikZahrPctPole(cesta, {
     label: 'SAZBA DPH&nbsp;… pro ZAHRANIČÍ',
-    title: 'prázdné = i v zahraniční zakázce platí tuzemská sazba. Nula je platná hodnota '
-      + '(přenesená daňová povinnost) a s prázdným polem se neplete.',
-    reset: 'převzít tuzemskou sazbu',
+    placeholder: '0',
+    title: 'prázdné = v zahraniční zakázce platí 0 % (dodávka do zahraničí bez české DPH). '
+      + 'Chcete-li i v zahraničí českou sazbu, zapište ji sem.',
+    reset: 'vrátit výchozích 0 %',
   });
 }
 
@@ -243,10 +250,11 @@ function renderCenik() {
          <b>přirážka pro zahraničí</b> se použije, jakmile se zakázka přepne na zahraniční
          ceník — a jen tehdy, když si ji obchodník v té zakázce sám nepřenastavil.` : ''}</div>
        ${zahrSl ? `<div class="row" style="max-width:620px">${cenikDphZahrPole('C.dph')}</div>
-       <div class="note" style="margin-top:0">Vyplněná <b>sazba DPH pro zahraničí</b> se použije,
-         jakmile se zakázka přepne na zahraniční ceník — a jen tehdy, když si ji obchodník v té
-         nabídce sám nepřenastavil. <b>Nula je platná hodnota</b> (přenesená daňová povinnost)
-         a od prázdného pole se liší: prázdné znamená „jako v ČR".</div>` : ''}
+       <div class="note" style="margin-top:0"><b>Sazba DPH pro zahraničí</b> se použije, jakmile
+         se zakázka přepne na zahraniční ceník — a jen tehdy, když si ji obchodník v té nabídce sám
+         nepřenastavil. <b>Prázdné pole znamená 0 %</b> (dodávka do zahraničí bez české DPH);
+         chcete-li v zahraničí jinou sazbu, zapište ji. Při návratu zakázky do tuzemska se vrátí
+         tuzemská sazba.</div>` : ''}
        <div class="note">Sazbu DPH pro tuzemsko nastavíš v hlavičce Kalkulace OCK. Tlačítkem
          „+ přidat <b>trvalou</b> položku do sekce" založíš položku, která je od té chvíle součástí
          <b>každé nové cenové nabídky</b> (žije mimo zakázku, v katalogu). Položka přidaná přímo v Kalkulaci OCK
@@ -303,8 +311,8 @@ function renderCenikProj() {
        <div class="note" style="margin-top:0">Vyplněná <b>přirážka pro
          zahraničí</b> se použije, jakmile se zakázka přepne na zahraniční ceník — a jen
          tehdy, když si ji obchodník v té zakázce sám nepřenastavil. Totéž platí pro
-         <b>sazbu DPH</b>; <b>nula je platná hodnota</b> (přenesená daňová povinnost)
-         a od prázdného pole se liší. Ostatní ceny projekce
+         <b>sazbu DPH</b>, jen s jiným výchozím stavem: <b>prázdné pole znamená 0 %</b>
+         (dodávka do zahraničí bez české DPH). Ostatní ceny projekce
          zahraniční variantu nemají; liší-li se, doplňte je jako ruční sazbu v kalkulaci.</div>` : ''}
        <div class="cenik-scroll"><table class="ceniktbl">
          <tr><th>Položka</th><th>Cena</th><th>Jednotka</th><th>Poznámka</th></tr>
