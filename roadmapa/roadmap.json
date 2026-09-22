@@ -157,6 +157,19 @@
    "detail": "PLECHY PRO INTERIÉROVOU ŠACHTU zůstávají na aktuální sazbě z verze 28 — J. V.: „nech to, je to aktualizace a nová pravda\". Není to tedy zbytek po poškozeném ceníku, ale záměr; shoduje se i s Excelem a zahraniční řadou. Konkrétní částka do repozitáře nepatří, je ve vyhodnocovacím sešitu na Drive.\n\nTMELENÍ INTERIÉROVÉ ŠACHTY: J. V. — „interiérová šachta se netmelí\". Ověřeno měřením, že aplikace to tak UŽ DĚLÁ: řádek TMELENÍ (MAT. + PRÁCE) (EXT) vzniká jen u exteriérové šachty (`ext ? mkItem(...) : null`), u interiérové nevzniká vůbec. Žádná změna kódu tedy nebyla potřeba — zapsáno, aby se otázka nevracela."
   },
   {
+   "id": "298",
+   "vlna": "E",
+   "stav": "ceka",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "nazev": "P11 — dvě cesty k hodinám ATYP se liší záchrannou hodnotou",
+   "proc": "Nález N24 ze 3. kola: automatické zapnutí ATYP dalo „Montáž – atyp navíc\" 5 hodin, ruční zaškrtnutí 6 hodin (rozdíl 2 000 Kč). Změřeno 22. 9. 2026: vzorec je v obou cestách TÝŽ, liší se ZDROJ SAZBY.",
+   "detail": "`atypPrepni` (zaškrtnutí, ruční i automatické) bere sazbu jako `cenikVychozi(C, klic, ATYP_NAHRADA[klic])` — když ji ceník nemá, použije NÁHRADU ZE SESTAVENÍ. `cenikDoZadani` (přepočet na platný ceník při otevření zakázky) bere `cenikVychozi(c, 'atypMontazPct', null)` — když ji ceník nemá, vrátí null a hodiny se VŮBEC NEPŘEPOČÍTAJÍ.\n\nZměřená citlivost zaokrouhlení (zkušební šachta, základ 24 h, hodinyNavicCelkem −3,25): sazba 0,30 → 6 h, sazba 0,25 → 5 h. Hlášený rozdíl tedy vznikne i při nezměněné geometrii, jen jiným zdrojem sazby. Druhá cesta k témuž rozdílu: `cenikDoZadani` přeskočí přepočet i tehdy, když obchodník hodnotu někdy ručně přepsal (`zadaniRucniJe`) — pak u zakázky zůstane staré číslo vedle nového.\n\nPROČ JSEM TO NESJEDNOTIL SÁM: dát `cenikDoZadani` tutéž náhradu znamená, že se u ceníku BEZ té sazby začne přepočítávat tam, kde se dosud nepřepočítávalo — a to hne cenou existujících zakázek. To je rozhodnutí, ne úklid.\n\nNEREPRODUKOVÁNO na konkrétním čísle: bez rozměrů té zakázky ze 3. kola nevím, která z obou cest se u ní uplatnila. Rozdíl mezi cestami je ale doložený a drží ho test v `test_standard_atyp.js` (5 kontrol), aby se nezměnil nikým nepozorovaně.",
+   "otazka": "Má `cenikDoZadani` při chybějící sazbě v ceníku použít tutéž náhradu jako zaškrtnutí ATYP (a tedy přepočítat), nebo má dál mlčet a nechat hodnotu, jak je?",
+   "cekaNa": "J. V. — plus rozměry zakázky ze 3. kola, kde vyšlo 5 vs 6 hodin",
+   "testy": "src/test_standard_atyp.js (37)"
+  },
+  {
    "id" : "285",
    "vlna" : "C",
    "stav" : "ceka",

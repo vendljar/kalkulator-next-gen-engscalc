@@ -153,5 +153,65 @@ const kalk = fs.readFileSync(__dirname + '/ui/kalk_ock.js', 'utf8');
     cenaS > cenaBez * 1.1, [cenaBez, cenaS]);
 }
 
+/* ---------- P11: DVĚ CESTY K HODINÁM ATYP (nález N24) ----------
+ *
+ * Hlášení ze 3. kola: automatické zapnutí ATYP dalo „Montáž – atyp navíc"
+ * 5 hodin, ruční zaškrtnutí 6 hodin — rozdíl 2 000 Kč v ceně.
+ *
+ * Měřením 22. 9. 2026 se ukázalo, že VZOREC je v obou cestách týž:
+ *   Math.round(sazba × (montazZakladHod + hodinyNavicCelkem))
+ * Liší se ale ZDROJ SAZBY, a to způsobem, který dokáže dát jiné číslo:
+ *
+ *   · `atypPrepni` (ui/kalk_ock.js) — zaškrtnutí, ruční i automatické:
+ *       S(klic) = cenikVychozi(C, klic, ATYP_NAHRADA[klic])
+ *     Když ceník sazbu nemá, POUŽIJE SE NÁHRADA ZE SESTAVENÍ.
+ *
+ *   · `cenikDoZadani` (ui/kalk_ock.js) — přepočet na platný ceník při
+ *     otevření zakázky:
+ *       cenikVychozi(c, 'atypMontazPct', null)
+ *     Když ceník sazbu nemá, vrátí null a hodiny se VŮBEC NEPŘEPOČÍTAJÍ.
+ *
+ * Jedna cesta tedy má záchrannou hodnotu a druhá ne. U ceníku BEZ té sazby
+ * se proto hodiny podle cesty buď dopočítají z náhrady, nebo zůstanou, jak
+ * byly — a to jsou dvě různá čísla u téže zakázky.
+ *
+ * Změřená citlivost zaokrouhlení (zkušební šachta, základ 24 h,
+ * hodinyNavicCelkem −3,25): sazba 0,30 → 6 h, sazba 0,25 → 5 h. Přesně ten
+ * hlášený rozdíl tedy vznikne i při nezměněné geometrii, jen jiným zdrojem
+ * sazby.
+ *
+ * SJEDNOTIT SE NESMÍ POTICHU: dát `cenikDoZadani` tutéž náhradu znamená, že
+ * se u ceníku bez sazby začne přepočítávat tam, kde se dosud nepřepočítávalo
+ * — a to hne cenou. Čeká na rozhodnutí J. V. (roadmapa #298).
+ *
+ * Tenhle test rozdíl POJMENUJE a drží ho na místě, aby se nezměnil nikým
+ * nepozorovaně. Je to kontrola zdroje, ne chování — logika je v UI, které
+ * v Node nejde načíst. */
+{
+  const kalk = fs.readFileSync(__dirname + '/ui/kalk_ock.js', 'utf8');
+  const prepni = (kalk.match(/function atypPrepni\(zap, opts\)[\s\S]*?\n\}/) || [''])[0];
+  const doZadani = (kalk.match(/function cenikDoZadani\(v\)[\s\S]*?\n\}/) || [''])[0];
+
+  test('P11: kontrola není prázdná — obě funkce se ve zdroji našly',
+    prepni.length > 200 && doZadani.length > 200,
+    { prepni: prepni.length, doZadani: doZadani.length });
+
+  /* Vzorec je týž — kdyby se rozešel i ten, rozdíl by přestal být jen
+   * v záchranné hodnotě a tenhle popis by přestal platit. */
+  const vzorec = /Math\.round\([\s\S]{0,60}?\(\(\+[zZ]\.montazZakladHod \|\| 0\) \+ navic\)\)/;
+  test('P11: obě cesty počítají hodiny týmž vzorcem',
+    vzorec.test(prepni) && vzorec.test(doZadani),
+    { prepni: vzorec.test(prepni), doZadani: vzorec.test(doZadani) });
+
+  /* A tady je ten doložený rozdíl. Až padne rozhodnutí #298, tenhle řádek
+   * se změní spolu s kódem — ne dřív. */
+  test('P11: zaškrtnutí má u chybějící sazby náhradu ze sestavení',
+    /ATYP_NAHRADA\[klic\]/.test(kalk) && /vych\(klic, ATYP_NAHRADA\[klic\]\)/.test(kalk));
+  test('P11: přepočet ceníku náhradu NEMÁ (vrací null a přeskočí)',
+    /cenikVychozi\(c, 'atypMontazPct', null\)/.test(doZadani));
+  test('P11: a když sazba chybí, přepočet se u montáže opravdu přeskočí',
+    /if \(pm != null && !zadaniRucniJe\(d, 'montazAtypHod'\)\)/.test(doZadani));
+}
+
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);

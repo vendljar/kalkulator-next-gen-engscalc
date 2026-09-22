@@ -8,6 +8,31 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.9.1 — 22. 9. 2026
+
+### P11: rozdíl 5 vs 6 hodin u ATYP pojmenován a zajištěn testem (#298)
+
+Vzorec je v obou cestách **týž**. Liší se **zdroj sazby**:
+
+- **zaškrtnutí ATYP** (ruční i automatické) vezme sazbu z ceníku, a když ji
+  ceník nemá, použije **náhradu ze sestavení**;
+- **přepočet na platný ceník** při otevření zakázky vrátí u chybějící sazby
+  `null` a hodiny **vůbec nepřepočítá**.
+
+Jedna cesta tedy má záchrannou hodnotu a druhá ne. Změřená citlivost
+zaokrouhlení (základ 24 h, hodiny navíc −3,25): sazba 0,30 → **6 h**,
+sazba 0,25 → **5 h**. Hlášený rozdíl vznikne i při nezměněné geometrii.
+
+**Nesjednotil jsem to** — dát přepočtu tutéž náhradu znamená začít
+přepočítávat tam, kde se dosud nepřepočítávalo, a to hne cenou existujících
+zakázek. Čeká na rozhodnutí. Rozdíl mezi cestami teď drží test, aby se
+nezměnil nikým nepozorovaně.
+
+`README_ZDROJAKY.md` přestal psát číslo verze natvrdo — stálo v něm
+„v7.9.2", zatímco archiv byl o víc než sto dávek dál.
+
+---
+
 ## v21.9.18 — 21. 9. 2026
 
 ### Rozhodnutí J. V.: plocha čelní stěny a překlad platebních podmínek (#295, #283)
