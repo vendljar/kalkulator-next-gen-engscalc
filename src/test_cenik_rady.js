@@ -173,6 +173,59 @@ const ZAHR = () => ({
   test('ceny se přitom přepnuly normálně', dohodnuta.cenik.montazHodKc === 1000, dohodnuta.cenik.montazHodKc);
 }
 
+/* ---------- zahraniční sazba DPH (nález N18, 22. 9. 2026) ----------
+ * Pozorování z 8. kola: po přepnutí na zahraniční ceník naskočila zahraniční
+ * přirážka a ceny se přepsaly, ale SAZBA DPH zůstala tuzemská. Mechanismus
+ * pro ni přitom existoval — `C.dph` je sledovaná cesta —, jen ji neměl
+ * administrátor kam zadat: sloupec „Cena Zahraničí" se kreslí u řádků
+ * tabulky a DPH v tabulce není.
+ *
+ * NULA JE PLATNÁ HODNOTA, ne „prázdné". U DPH to není detail: 0 % znamená
+ * přenesenou daňovou povinnost, která je u dodání s montáží do jiného státu
+ * EU běžná. Je to přesně ten rozdíl, který se ztratí v pravdivostní
+ * podmínce, takže se měří testem, ne čtením kódu. */
+{
+  const cr = CR();
+  cr.dph = 0.21;
+  const zahrDph = { ceny: { 'C.dph': 0 }, jenZahr: {} };
+
+  const rozdily = cenikRadaRozdily({ cenik: cr }, zahrDph);
+  test('rozdíl u sazby DPH zná obě hodnoty',
+    rozdily.length === 1 && rozdily[0].cr === 0.21 && rozdily[0].zahr === 0,
+    JSON.stringify(rozdily));
+
+  const data = { cenik: Object.assign(CR(), { dph: 0.21 }), cenikRada: 'cr' };
+  const v = cenikRadaPrepni(data, cr, zahrDph, 'zahr');
+  test('nulová zahraniční sazba DPH se při přepnutí použije',
+    data.cenik.dph === 0, data.cenik.dph);
+  test('a nespadne pod stůl jako „prázdné"', data.cenik.dph !== 0.21, data.cenik.dph);
+  test('nic nezůstalo ležet jako chráněné', v.chranene.length === 0, JSON.stringify(v.chranene));
+  cenikRadaPrepni(data, cr, zahrDph, 'cr');
+  test('návratem do tuzemska se vrátí tuzemská sazba', data.cenik.dph === 0.21, data.cenik.dph);
+
+  /* Sazba, kterou si obchodník v téhle nabídce nastavil sám, se nepřepíše —
+   * stejné pravidlo jako u přirážky (#177). */
+  const vlastni = { cenik: Object.assign(CR(), { dph: 0.12 }), cenikRada: 'cr' };
+  cenikRucniZnac(vlastni, 'C.dph');
+  const v2 = cenikRadaPrepni(vlastni, cr, zahrDph, 'zahr');
+  test('ručně nastavenou sazbu přepnutí nepřepíše', vlastni.cenik.dph === 0.12, vlastni.cenik.dph);
+  test('a řekne o ní volajícímu',
+    v2.chranene.some(x => x.cesta === 'C.dph'), JSON.stringify(v2.chranene));
+
+  /* Projekce má vlastní sazbu (`PC.dph`), takže i vlastní odchylku. Past je
+   * tatáž jako u přirážky: hodnota bydlí v ceníku PROJ, rozdíly proto musí
+   * dostat CELÝ datový objekt. */
+  const crData = { cenik: CR(), proj: { cenik: { dph: 0.21 } } };
+  const zahrProjDph = { ceny: { 'PC.dph': 0 }, jenZahr: {} };
+  const dataP = { cenik: CR(), proj: { cenik: { dph: 0.21 } }, cenikRada: 'cr' };
+  cenikRadaPrepni(dataP, crData, zahrProjDph, 'zahr');
+  test('přepnutí použije zahraniční sazbu DPH projekce', dataP.proj.cenik.dph === 0,
+    dataP.proj.cenik.dph);
+  cenikRadaPrepni(dataP, crData, zahrProjDph, 'cr');
+  test('a návrat vrátí tuzemskou sazbu projekce', dataP.proj.cenik.dph === 0.21,
+    dataP.proj.cenik.dph);
+}
+
 /* ---------- zahraniční přirážka i pro projekci (3. 9. 2026) ----------
  * Zadání J. V.: „připrav tedy pro globální přirážku i variantu pro zahraničí."
  * Ceny projekce zahraniční řadu nemají (#181 je jen pro OCK), přirážka ano —

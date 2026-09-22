@@ -192,6 +192,50 @@ await page.evaluate(() => {
 });
 await page.waitForTimeout(300);
 
+/* ---------- 6d) sazba DPH pro zahraniční řadu (nález N18, 22. 9. 2026) ----
+ * Pozorování z 8. kola: po přepnutí na zahraniční ceník naskočila zahraniční
+ * přirážka, ale sazba DPH zůstala tuzemská. Mechanismus existoval, chybělo
+ * POLE — sloupec „Cena Zahraničí" se kreslí u řádků tabulky a DPH v tabulce
+ * není, je to hodnota hlavičky.
+ *
+ * Nula je platná hodnota (přenesená daňová povinnost) a nesmí se splést
+ * s prázdným polem. Proto se tu zkouší právě nula, ne nějakých 19 %. */
+test('u sazby DPH je v ceníku pole pro zahraničí',
+  await page.evaluate(() => {
+    NAST.jeAdmin = true; prepniTab('cenik'); render();
+    return /SAZBA DPH.*pro ZAHRANIČÍ/s.test((document.getElementById('page-cenik') || {}).innerHTML || '');
+  }));
+const dph = await page.evaluate(() => {
+  cenikZahrSet('C.dph', 0);
+  prepniTab('kalk');
+  const v = aktivniVarianta(ZAK);
+  DEFAULT_CENIK.dph = 0.21;
+  v.data.cenik.dph = 0.21;
+  if (v.data.cenikRucni) delete v.data.cenikRucni['C.dph'];
+  render();
+  return { odchylka: CENIK_ZAHR.ceny['C.dph'], typ: typeof CENIK_ZAHR.ceny['C.dph'],
+           pred: v.data.cenik.dph };
+});
+test('nula se do odchylek uloží jako nula, ne jako prázdno',
+  dph.odchylka === 0 && dph.typ === 'number', dph);
+await page.evaluate(() => cenikRadaPrepniUI('zahr'));
+await page.waitForTimeout(300);
+test('přepnutí na zahraničí sazbu DPH vymění',
+  await page.evaluate(() => aktivniVarianta(ZAK).data.cenik.dph === 0),
+  await page.evaluate(() => aktivniVarianta(ZAK).data.cenik.dph));
+await page.evaluate(() => cenikRadaPrepniUI('cr'));
+await page.waitForTimeout(300);
+test('návratem se vrátí tuzemská sazba',
+  await page.evaluate(() => aktivniVarianta(ZAK).data.cenik.dph === 0.21),
+  await page.evaluate(() => aktivniVarianta(ZAK).data.cenik.dph));
+/* Úklid, ať další oddíly nepočítají s nulovou DPH. */
+await page.evaluate(() => {
+  cenikZahrSet('C.dph', '');
+  const v = aktivniVarianta(ZAK);
+  if (v.data.cenikRucni) delete v.data.cenikRucni['C.dph'];
+});
+await page.waitForTimeout(200);
+
 /* ---------- 6c) zahraniční přirážka i v ceníku projekce (3. 9. 2026) ---------- */
 test('u globální přirážky PROJ je také pole pro zahraničí',
   await page.evaluate(() => {

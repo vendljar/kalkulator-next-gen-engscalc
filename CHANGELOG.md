@@ -8,6 +8,35 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.9.13 — 22. 9. 2026
+
+### Zahraniční řada ceníku umí i sazbu DPH (N18)
+
+Po přepnutí zakázky na zahraniční ceník naskočila zahraniční globální
+přirážka a ceny se přepsaly, ale **sazba DPH zůstala tuzemská**. Zahraniční
+nabídka se tiskla v eurech s českou sazbou.
+
+Nebylo to chybějící pravidlo, ale **chybějící pole**. Sazba DPH je sledovaná
+ceníková cesta úplně stejně jako globální přirážka, takže mechanismus pro ni
+existoval. Administrátor ji ale neměl kam zadat: sloupec „Cena Zahraničí" se
+kreslí jen u řádků tabulky a sazba DPH v tabulce není, je to hodnota
+hlavičky. Dialog přepnutí přitom sliboval správně, že se sazba přepne, má-li
+pro ni ceník odchylku.
+
+Pole je teď v obou cenících, u přirážky. **Nula je platná hodnota**,
+přenesená daňová povinnost, a od prázdného pole se liší: prázdné znamená
+„jako v ČR". Ověřeno testem, ne čtením kódu, protože přesně tenhle rozdíl se
+v pravdivostní podmínce ztratí.
+
+Poznámka u ceníku PROJ tvrdila, že sazby DPH jsou celé společné s OCK.
+Společné jsou **předvolby**; vybraná sazba nabídky zůstává projekci vlastní,
+a proto má i vlastní zahraniční odchylku.
+
+**Ceník se touhle dávkou nezveřejňuje.** Sazbu do ostrého ceníku zadá J. V.
+sám, až bude oprava odsouhlasená.
+
+---
+
 ## v22.9.12 — 22. 9. 2026
 
 ### Interiérová šachta neplatí lešení, které se u ní nestaví (K1, P8/7)

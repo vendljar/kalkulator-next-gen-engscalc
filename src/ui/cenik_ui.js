@@ -54,17 +54,43 @@ function cenikZahrJenSet(path, ano) {
  *
  * Prázdné pole = pro zahraničí platí tuzemská přirážka. Hodnota se ZADÁVÁ
  * V PROCENTECH a ukládá jako podíl, přesně jako tuzemská. */
-function cenikMarzeZahrPole(cesta) {
+/* ZOBECNĚNO NA LIBOVOLNOU PROCENTNÍ CESTU (nález N18, 22. 9. 2026).
+ *
+ * Původně to uměla jen přirážka. Sazba DPH je přitom úplně stejný druh
+ * hodnoty — jedno číslo nad celou nabídkou, uložené jako podíl, a taky
+ * sledovaná ceníková cesta (`C.dph` / `PC.dph` v CENIK_STARI_EXTRA).
+ * Rozdíl byl jen v tom, že pro ni nikdo neudělal pole: sloupec „Cena
+ * Zahraničí" se kreslí u řádků tabulky a DPH v tabulce není.
+ *
+ * `opts.label` a `opts.title` mění text, chování zůstává jedno.
+ *
+ * NULA JE PLATNÁ HODNOTA, ne „prázdné". U DPH to není detail: 0 % znamená
+ * přenesenou daňovou povinnost. `cenikZahrSet` maže odchylku jen u prázdného
+ * řetězce a `cenikZahrHodnota` vrací nulu jako nulu — drží to test. */
+function cenikZahrPctPole(cesta, opts) {
+  const o = opts || {};
   const zv = cenikZahrHodnota(cesta);
   const pct = zv === '' ? '' : Math.round(zv * 10000) / 100;
+  const label = o.label || '…&nbsp;pro ZAHRANIČÍ';
+  const title = o.title || 'prázdné = i v zahraniční zakázce platí tuzemská přirážka';
+  const reset = o.reset || 'převzít tuzemskou přirážku';
   return `<span class="pct-wrap" style="margin-left:18px">
-    <label style="margin-right:6px">…&nbsp;pro ZAHRANIČÍ</label>
+    <label style="margin-right:6px">${label}</label>
     <input type="number" step="1" class="zahr-cena${zv === '' ? '' : ' ma'}" style="width:80px"
       value="${esc(pct)}" placeholder="jako ČR"
-      title="prázdné = i v zahraniční zakázce platí tuzemská přirážka"
+      title="${esc(title)}"
       onchange="cenikZahrSet('${cesta}', this.value === '' ? '' : (+this.value) / 100)"> %
-    ${zv === '' ? '' : `<button class="mini noprint" title="převzít tuzemskou přirážku"
+    ${zv === '' ? '' : `<button class="mini noprint" title="${esc(reset)}"
       onclick="cenikZahrSet('${cesta}', '')">↺</button>`}</span>`;
+}
+/* Sazba DPH pro zahraniční řadu. Vlastní texty, jinak totéž co u přirážky. */
+function cenikDphZahrPole(cesta) {
+  return cenikZahrPctPole(cesta, {
+    label: 'SAZBA DPH&nbsp;… pro ZAHRANIČÍ',
+    title: 'prázdné = i v zahraniční zakázce platí tuzemská sazba. Nula je platná hodnota '
+      + '(přenesená daňová povinnost) a s prázdným polem se neplete.',
+    reset: 'převzít tuzemskou sazbu',
+  });
 }
 
 function cenikRows(def, zahrSloupec) {
@@ -208,7 +234,7 @@ function renderCenik() {
             přirážka pro každou NOVOU zakázku. -->
        <div class="row" style="max-width:620px">
          ${inp('C.marze', { type: 'pct', l: 'GLOBÁLNÍ PŘIRÁŽKA OCK' })}
-         ${zahrSl ? cenikMarzeZahrPole('C.marze') : ''}
+         ${zahrSl ? cenikZahrPctPole('C.marze') : ''}
        </div>
        <div class="note" style="margin-top:0">Táž hodnota jako v hlavičce Kalkulace OCK —
          změna se projeví na obou místech. <b>Zveřejněním ceníku</b> se z ní stane výchozí
@@ -216,7 +242,12 @@ function renderCenik() {
          nepřepíše (přirážka je rozhodnutí k zakázce, viz #177).${zahrSl ? ` Vyplněná
          <b>přirážka pro zahraničí</b> se použije, jakmile se zakázka přepne na zahraniční
          ceník — a jen tehdy, když si ji obchodník v té zakázce sám nepřenastavil.` : ''}</div>
-       <div class="note">Sazbu DPH nastavíš v hlavičce Kalkulace OCK. Tlačítkem
+       ${zahrSl ? `<div class="row" style="max-width:620px">${cenikDphZahrPole('C.dph')}</div>
+       <div class="note" style="margin-top:0">Vyplněná <b>sazba DPH pro zahraničí</b> se použije,
+         jakmile se zakázka přepne na zahraniční ceník — a jen tehdy, když si ji obchodník v té
+         nabídce sám nepřenastavil. <b>Nula je platná hodnota</b> (přenesená daňová povinnost)
+         a od prázdného pole se liší: prázdné znamená „jako v ČR".</div>` : ''}
+       <div class="note">Sazbu DPH pro tuzemsko nastavíš v hlavičce Kalkulace OCK. Tlačítkem
          „+ přidat <b>trvalou</b> položku do sekce" založíš položku, která je od té chvíle součástí
          <b>každé nové cenové nabídky</b> (žije mimo zakázku, v katalogu). Položka přidaná přímo v Kalkulaci OCK
          platí jen pro danou zakázku – natrvalo ji uložíš tlačítkem 📌 u řádku. Výchozí zaškrtnutí volitelných
@@ -266,19 +297,24 @@ function renderCenikProj() {
        ${cenikVerzeLista()}
        <div class="row" style="max-width:620px">
          ${inp('PC.marze', { type: 'pct', l: 'GLOBÁLNÍ PŘIRÁŽKA PROJ' })}
-         ${zahrSlProj ? cenikMarzeZahrPole('PC.marze') : ''}
+         ${zahrSlProj ? cenikZahrPctPole('PC.marze') : ''}
        </div>
-       ${zahrSlProj ? `<div class="note" style="margin-top:0">Vyplněná <b>přirážka pro
+       ${zahrSlProj ? `<div class="row" style="max-width:620px">${cenikDphZahrPole('PC.dph')}</div>
+       <div class="note" style="margin-top:0">Vyplněná <b>přirážka pro
          zahraničí</b> se použije, jakmile se zakázka přepne na zahraniční ceník — a jen
-         tehdy, když si ji obchodník v té zakázce sám nepřenastavil. Ostatní ceny projekce
+         tehdy, když si ji obchodník v té zakázce sám nepřenastavil. Totéž platí pro
+         <b>sazbu DPH</b>; <b>nula je platná hodnota</b> (přenesená daňová povinnost)
+         a od prázdného pole se liší. Ostatní ceny projekce
          zahraniční variantu nemají; liší-li se, doplňte je jako ruční sazbu v kalkulaci.</div>` : ''}
        <div class="cenik-scroll"><table class="ceniktbl">
          <tr><th>Položka</th><th>Cena</th><th>Jednotka</th><th>Poznámka</th></tr>
          ${cenikRows(CENIK_DEF_PROJ)}
        </table></div>
-       <div class="note"><b>Sazby DPH a kurz EUR jsou společné s ceníkem OCK</b> —
+       <div class="note"><b>PŘEDVOLBY sazeb DPH a kurz EUR jsou společné s ceníkem OCK</b> —
          mají jeden zdroj pravdy, aby se nemohly rozejít. Nastavíte je v záložce
-         <b>Ceník nákladů OCK</b> (sekce SAZBY DPH a CIZÍ MĚNA); projekce si z nich
+         <b>Ceník nákladů OCK</b> (sekce SAZBY DPH a CIZÍ MĚNA). <b>Vybraná sazba nabídky
+         zůstává projekci vlastní</b> (<code>PC.dph</code>), a proto má i vlastní zahraniční
+         odchylku v poli výš; projekce si z nich
          bere předvolby a kurz. Sazbu DPH pro konkrétní nabídku projekce vybíráte
          dál v hlavičce Kalkulace PROJ — ta zůstává vlastní.</div>
        ${smiZobrazit('cenik.import') ? `<div class="btns" style="margin-top:12px">
