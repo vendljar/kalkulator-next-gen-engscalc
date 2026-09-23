@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v23.9.3 — noční dávka D3 (23.–24. 9. 2026): nástroje a testy, aplikace beze změny
+## v23.9.3 — dávka D3 (23. 9. 2026 večer): nástroje a testy, aplikace beze změny
 
 - **Mutační testování jádra je v repozitáři (N19).** `mutace_jadro.mjs`
   (převzato ze zdrojáků v21.8.1, bez cen) do té doby v repozitáři chybělo,

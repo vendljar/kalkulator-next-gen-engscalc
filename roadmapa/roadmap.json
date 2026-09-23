@@ -446,7 +446,7 @@
    "proc": "Nezávislá revize nad main v22.9.9 (dokument 2026-09-22_kalkulator_REVIZE_zmen_21-22_9_v22.9.9.md). J. V. 22. 9. večer: „prověř ještě postřehy a úpravy v přiložených md a posuď, zda dávají smysl.\" Každý nález prověřen proti větvi test (v22.9.16) — revize běžela před večerními dávkami.",
    "detail": "UŽ OPRAVENO NA TEST: N31 (pás světlíku nad zadními dveřmi v režimu po stěnách propadal z ceny) — odstranila ho #296. Změřeno na stejném zadání: v22.9.9 zadní stěna 8,01 m² se světlíkem, na test 33,06 m² s i bez něj. Na main vada trvá, dokud se test nesloučí.\n\nPLATÍ, STŘEDNÍ — navrženo opravit: N32 + B60 (duplikace: všechny varianty s příponou 0, kopíruje interní poznámku — B60 zavedla #311), N33 (vynulovaný ceník ztrácí značku „prázdný\" kvůli nenulovým sazbám DPH, tedy i zábranu tisku), N34 (po ručním přihlášení se neotevře poslední zakázka), N35 (společné dodatkové texty smaže nasazení online ceníku — zavedla #310), N36 (duplikace online zahodí neuložené změny), N37 („vrátit původní ceny\" po obnově zálohy z prohlížeče označí neuloženou práci za uloženou), B59 (výsledek NOVÉHO zámku server přebírá od klienta), T1 (cenový test režimu po stěnách chybí — proto prošel N31), T2 (overit_sablony_online končí kódem 0 i se selháním), T3 (5 harnessů se pro chybějící šablony přeskakuje a souhrn je počítá jako prošlé).\n\nPLATÍ, DROBNÉ: B61, B62, B63 (popisSet mimo ZAMEK_CHRANENE), N38 (změřeno: položka jen pro zahraničí po cestě ČR→zahr→ČR drží 50 000 místo 0), N39, N41 (pásy ve specifikaci, FR kapitoly, protokol × poznamkyText), T4, T5 (mimo jiné chybí obsluha SIGINT v mutace.mjs).\n\nINFORMATIVNÍ, BEZ ZÁSAHU NEBO JEN KOSMETIKA: B64 (obnova popisů bez očisty), B65, B66, B67 (režim složky je vypnutý), B68.\n\nDOPORUČENO NECHAT: N40 (nulovou sazbu ATYP nejde vyjádřit — vynulované sestavení na té náhradě stojí).",
    "hotovoKdyz": "J. V. rozhodl pořadí dávek a každá odešla s testem.",
-   "pozn": "HOTOVO v22.9.17 — dávka R1: N32 + B60, B63, N39, N41 část protokol × poznámka, B64, T1.\n\nHOTOVO v22.9.18 — dávka R2: N34, N35, N36, N37 (změřeno v prohlížeči).\n\nHOTOVO v22.9.19 — dávka R3: N33 (sazby DPH, přirážka, procenta a kurz se za důkaz cen nepočítají; test nad výchozími ceníky ze sestavení), N38 (návrat do tuzemska bere složenou tuzemskou řadu).\n\nHOTOVO v22.9.20 — dávka R4: B59 (server ověří výsledek nově odeslané nabídky a zapíše razítko shoda / nesouhlasí; rozpor uložení neodmítne, hlásí ho a drží v zámku), mutace větve role u B56 a čtyři mutace B59 (141 serverových mutací), obsluha SIGINT/SIGTERM/SIGHUP v mutace.mjs + sada test_mutace.mjs (část T5).\n\nHOTOVO v22.9.21 — dávka R5: T2 (selhání před přeskočením = selhání), T3 (přeskočení kódem 4, v souhrnu i v CI zvlášť a s důvodem), T5 (kód 2 a chybějící playwright pro import = přeskočení, obnova ADMIN_EMAIL v test_prava) + sada test_harness_podklady.js.\n\nNEŘEŠENO V R1–R5 (k rozhodnutí): mutace_jadro.mjs do repozitáře (N19); B57 a B58 z ranního auditu; drobné N41 (pásy ve specifikaci, FR kapitoly), B61, B62, B65–B68 a T4; N40 doporučeno nechat."
+   "pozn": "HOTOVO v22.9.17 — dávka R1: N32 + B60, B63, N39, N41 část protokol × poznámka, B64, T1.\n\nHOTOVO v22.9.18 — dávka R2: N34, N35, N36, N37 (změřeno v prohlížeči).\n\nHOTOVO v22.9.19 — dávka R3: N33 (sazby DPH, přirážka, procenta a kurz se za důkaz cen nepočítají; test nad výchozími ceníky ze sestavení), N38 (návrat do tuzemska bere složenou tuzemskou řadu).\n\nHOTOVO v22.9.20 — dávka R4: B59 (server ověří výsledek nově odeslané nabídky a zapíše razítko shoda / nesouhlasí; rozpor uložení neodmítne, hlásí ho a drží v zámku), mutace větve role u B56 a čtyři mutace B59 (141 serverových mutací), obsluha SIGINT/SIGTERM/SIGHUP v mutace.mjs + sada test_mutace.mjs (část T5).\n\nHOTOVO v22.9.21 — dávka R5: T2 (selhání před přeskočením = selhání), T3 (přeskočení kódem 4, v souhrnu i v CI zvlášť a s důvodem), T5 (kód 2 a chybějící playwright pro import = přeskočení, obnova ADMIN_EMAIL v test_prava) + sada test_harness_podklady.js.\n\nNEŘEŠENO V R1–R5 (k rozhodnutí): mutace_jadro.mjs do repozitáře (N19); B57 a B58 z ranního auditu; drobné N41 (pásy ve specifikaci, FR kapitoly), B61, B62, B65–B68 a T4; N40 doporučeno nechat.\n\nHOTOVO v23.9.3 (noční dávky D1–D3): N41b, B57, B58, B61, B62, B68; B65–B67 zapsány v BEZPECNOST_MEZE.md; T4 první krok (zaokrouhlení). Zbývá N41c (FR znění), N41d (neověřeno) a T4 postupně."
   },
   {
    "id": "320",
@@ -577,30 +577,32 @@
    "pozn" : "POUČENÍ: jednotková sada `src/test_oplasteni_zapnuti.js` (31 kontrol) zůstala celou dobu zelená a zelená byla správně — hlídá JÁDRO, tedy že zapnutí režimu nehne cenou. Obě chyby byly čistě v obrazovce, kam jádro nevidí. Proto vznikla `overit_oplasteni.mjs` (23 kontrol v prohlížeči), zapojená do `spust_testy.sh --smoke` i do CI. Sada je ověřená NEGATIVNĚ: nad neopraveným kódem padá 5 kontrol na rozložení a 4 na zaškrtávátko, takže nehlídá naprázdno."
   },
   {
-   "id" : "277",
-   "vlna" : "E",
-   "stav" : "ceka",
-   "dulezitost" : "vysoka",
-   "slozitost" : "M",
-   "nazev" : "Čtyři chybějící oddíly nabídky podle Daniela Sikory",
-   "proc" : "Mail Daniela Sikory (předán J. V. 21. 9. 2026): „JEŠTĚ MOC DŮLEŽITÁ VĚC — nám tam schází úplně: PLATEBNÍ PODMÍNKY, POŽADAVKY NA PROVEDENÍ REALIZACE, TERMÍNY REALIZACE, PŘEDÁNÍ DÍLA. To by tam mělo být.\" Přikládá k tomu šablony v CZ, EN a DE, kde ty oddíly jsou.",
-   "detail" : "STAV ZJIŠTĚNÝ 21. 9. 2026 — každý ze čtyř oddílů stojí jinak, proto se to nedá odbavit jedním krokem:\n\n1) PLATEBNÍ PODMÍNKY — DATA JSOU A DO NABÍDKY JDOU. Sekce „Platební podmínky\" krycího listu (splatnost, platnost nabídky, způsob fakturace, zálohy/dílčí faktury) je v `KRYCI_NABIDKA_SEKCE`, takže se z ní skládají symboly {{PODM_…}} do wordové šablony (#147, #110, #137). Pokud oddíl v dokumentu chybí, chybí v ŠABLONĚ .docx, ne v aplikaci.\n\n2) TERMÍNY REALIZACE a 3) PŘEDÁNÍ DÍLA — DATA JSOU, ALE DO NABÍDKY SE ZÁMĚRNĚ NEPOSÍLAJÍ. Sekce „Termíny\" krycího listu má pole Převzetí staveniště k montáži šachty, Ukončení montáže a předání montáži výtahu, Konečné předání díla a Jiné termíny. U sekce „Termín dodání\" je v `src/kryci.js` napsáno proč: „Datumy převzetí a předání se do nabídky nedávají — ty se domlouvají až u smlouvy.\" Daniel teď říká opak. Je to tedy ZMĚNA DŘÍVĚJŠÍHO ROZHODNUTÍ, ne chybějící funkce; technicky jde o doplnění sekce „Termíny\" do `KRYCI_NABIDKA_SEKCE` (symboly pak vzniknou samy) a o doplnění oddílů do šablony. Rozhodnout musí J. V.\n\n4) POŽADAVKY NA PROVEDENÍ REALIZACE — NENÍ ANI SEKCE, ANI POLE. Nejblíž je „Rozsah a odchylky\" (odchylky od smluvního standardu, co cena nezahrnuje, rozsah). Co přesně má oddíl obsahovat, se pozná až z přiložených šablon.\n\nPŘEKLADY UŽ HOTOVÉ NEJSOU PŘEKÁŽKOU: slovník `src/preklad.js` hesla „PLATEBNÍ PODMÍNKY\", „TERMÍNY REALIZACE:\" i „PŘEDÁNÍ DÍLA:\" zná ve všech čtyřech jazycích.",
-   "kde" : "`src/kryci.js` (KRYCI_NABIDKA_SEKCE, KRYCI_SEKCE), wordové šablony nabídky (nejsou v repozitáři — nahrávají se přes Nastavení → Šablony)",
-   "hotovoKdyz" : "Nabídka OCK nese všechny čtyři oddíly ve všech jazycích šablony a jejich obsah se bere ze zakázky, ne z natvrdo psaného textu v šabloně.",
-   "pozn" : "ČEKÁ NA PODKLAD: přiložené šablony CZ/EN/DE z mailu nejsou v repozitáři ani je odsud není jak získat. Bez nich se nedá říct, jaká pole oddíl „Požadavky na provedení realizace\" potřebuje, ani jak mají být oddíly formulované. Zároveň čeká na rozhodnutí J. V. u bodů 2 a 3, protože jde o revizi dřívějšího rozhodnutí."
+   "id": "277",
+   "vlna": "E",
+   "stav": "blokovano",
+   "dulezitost": "vysoka",
+   "slozitost": "M",
+   "nazev": "Čtyři chybějící oddíly nabídky podle Daniela Sikory",
+   "proc": "Mail Daniela Sikory (předán J. V. 21. 9. 2026): „JEŠTĚ MOC DŮLEŽITÁ VĚC — nám tam schází úplně: PLATEBNÍ PODMÍNKY, POŽADAVKY NA PROVEDENÍ REALIZACE, TERMÍNY REALIZACE, PŘEDÁNÍ DÍLA. To by tam mělo být.\" Přikládá k tomu šablony v CZ, EN a DE, kde ty oddíly jsou.",
+   "detail": "STAV ZJIŠTĚNÝ 21. 9. 2026 — každý ze čtyř oddílů stojí jinak, proto se to nedá odbavit jedním krokem:\n\n1) PLATEBNÍ PODMÍNKY — DATA JSOU A DO NABÍDKY JDOU. Sekce „Platební podmínky\" krycího listu (splatnost, platnost nabídky, způsob fakturace, zálohy/dílčí faktury) je v `KRYCI_NABIDKA_SEKCE`, takže se z ní skládají symboly {{PODM_…}} do wordové šablony (#147, #110, #137). Pokud oddíl v dokumentu chybí, chybí v ŠABLONĚ .docx, ne v aplikaci.\n\n2) TERMÍNY REALIZACE a 3) PŘEDÁNÍ DÍLA — DATA JSOU, ALE DO NABÍDKY SE ZÁMĚRNĚ NEPOSÍLAJÍ. Sekce „Termíny\" krycího listu má pole Převzetí staveniště k montáži šachty, Ukončení montáže a předání montáži výtahu, Konečné předání díla a Jiné termíny. U sekce „Termín dodání\" je v `src/kryci.js` napsáno proč: „Datumy převzetí a předání se do nabídky nedávají — ty se domlouvají až u smlouvy.\" Daniel teď říká opak. Je to tedy ZMĚNA DŘÍVĚJŠÍHO ROZHODNUTÍ, ne chybějící funkce; technicky jde o doplnění sekce „Termíny\" do `KRYCI_NABIDKA_SEKCE` (symboly pak vzniknou samy) a o doplnění oddílů do šablony. Rozhodnout musí J. V.\n\n4) POŽADAVKY NA PROVEDENÍ REALIZACE — NENÍ ANI SEKCE, ANI POLE. Nejblíž je „Rozsah a odchylky\" (odchylky od smluvního standardu, co cena nezahrnuje, rozsah). Co přesně má oddíl obsahovat, se pozná až z přiložených šablon.\n\nPŘEKLADY UŽ HOTOVÉ NEJSOU PŘEKÁŽKOU: slovník `src/preklad.js` hesla „PLATEBNÍ PODMÍNKY\", „TERMÍNY REALIZACE:\" i „PŘEDÁNÍ DÍLA:\" zná ve všech čtyřech jazycích.",
+   "kde": "`src/kryci.js` (KRYCI_NABIDKA_SEKCE, KRYCI_SEKCE), wordové šablony nabídky (nejsou v repozitáři — nahrávají se přes Nastavení → Šablony)",
+   "hotovoKdyz": "Nabídka OCK nese všechny čtyři oddíly ve všech jazycích šablony a jejich obsah se bere ze zakázky, ne z natvrdo psaného textu v šabloně.",
+   "pozn": "STAV 23. 9. 2026 (podklad podklady/PODKLAD_277_ODDILY_NABIDKY_2026-09-23.md): všechny čtyři oddíly v nabídce OCK JSOU od #282 (v21.9.8). Zbývají dvě skutečné díry: Word šablona v10 má kapitoly IV.–VI. natvrdo (#331) a termín dodání s ATYP se do nabídky nedostane (#330). Návrh: #277 uzavřít s odkazem na #282.",
+   "cekaNa": "rozhodnutí J. V. — podklad 2026-09-23 (výchozí odpovědi v podkladu)"
   },
   {
-   "id" : "278",
-   "vlna" : "B",
-   "stav" : "ceka",
-   "dulezitost" : "stredni",
-   "slozitost" : "S",
-   "nazev" : "V aplikaci není vidět, jestli je nastavený hlavní správce",
-   "proc" : "Roadmapa u #261 upozorňuje, že bez proměnné ADMIN_EMAIL neplatí ochrany hlavního účtu, a k 16. 9. 2026 hlásil testovací web `spravceNastaven: false`. Zjistit to jde ale JEN přes `/api/zdravi` — v aplikaci to není vidět nikde. J. V. se 21. 9. 2026 ptal, kde to najde, a odpověď „napište si do adresy /api/zdravi\" není odpověď pro obchodníka.",
-   "detail" : "`netlify/functions/zdravi.mjs` příznak `spravceNastaven` vrací, ale žádná obrazovka ho nečte — v `src/` se řetězec nevyskytuje. Přitom stejná odpověď už se v aplikaci používá: podle `prostredi` se kreslí červený pruh TESTOVACÍ PROSTŘEDÍ. Nabízí se totéž místo: když správce nastavený není, ukázat to administrátorovi v Nastavení (a nikomu jinému — je to provozní údaj, ne věc pro obchodníka).",
-   "kde" : "`netlify/functions/zdravi.mjs` (příznak už vrací), `src/ui/` (chybí čtenář), nejspíš Nastavení → Databáze",
-   "hotovoKdyz" : "Administrátor vidí v aplikaci, že hlavní správce není nastavený, aniž by musel otevírat adresu API.",
-   "pozn" : "Souvisí s #261. Samotné nastavení proměnné v Netlify je klikání u J. V., tohle je jen o tom, aby se na to přišlo."
+   "id": "278",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "",
+   "slozitost": "S",
+   "nazev": "V aplikaci není vidět, jestli je nastavený hlavní správce",
+   "proc": "Roadmapa u #261 upozorňuje, že bez proměnné ADMIN_EMAIL neplatí ochrany hlavního účtu, a k 16. 9. 2026 hlásil testovací web `spravceNastaven: false`. Zjistit to jde ale JEN přes `/api/zdravi` — v aplikaci to není vidět nikde. J. V. se 21. 9. 2026 ptal, kde to najde, a odpověď „napište si do adresy /api/zdravi\" není odpověď pro obchodníka.",
+   "detail": "`netlify/functions/zdravi.mjs` příznak `spravceNastaven` vrací, ale žádná obrazovka ho nečte — v `src/` se řetězec nevyskytuje. Přitom stejná odpověď už se v aplikaci používá: podle `prostredi` se kreslí červený pruh TESTOVACÍ PROSTŘEDÍ. Nabízí se totéž místo: když správce nastavený není, ukázat to administrátorovi v Nastavení (a nikomu jinému — je to provozní údaj, ne věc pro obchodníka).",
+   "kde": "`netlify/functions/zdravi.mjs` (příznak už vrací), `src/ui/` (chybí čtenář), nejspíš Nastavení → Databáze",
+   "hotovoKdyz": "Administrátor vidí v aplikaci, že hlavní správce není nastavený, aniž by musel otevírat adresu API.",
+   "pozn": "HOTOVO v23.9.3 (D1 + D2/B57): administrátor vidí stav v Nastavení → Uživatelé; údaj posílá server jen administrátorovi (/api/ja, přihlášení), z anonymního /api/zdravi zmizel.",
+   "hotovoV": "v23.9.3"
   },
   {
    "vlna" : "A",
@@ -3170,18 +3172,18 @@
    "pozn" : "Hotovo v buildu v18.8.1 (18. 8. 2026). Číslování odpovídá historii: Model 1 = původní excelová šablona, Model 2 = opravená; případná třetí verze výpočtu bude Model 3."
   },
   {
-   "pozn" : "VYČÍSLENO 16. 9. 2026 — podklad `2026-09-16_MODEL1_vs_MODEL2_vycisleni.md`. **Model 1 předražuje ATYP zakázky.** Při marži 30 % a rezervě 30 % je dražší o 6,55 %; při marži 45 % o 9,97 %. Bez rezervy je rozdíl −0,40 %, takže se to týká přesně ATYP zakázek, kde jde o nejvíc peněz. Celý rozdíl dělají DVĚ položky, obě o rezervě: základ se bere z ceny VČETNĚ marže a marže se přidá ještě jednou (základ −4,35 %, příplatky −4,61 %). Zbylých sedm rozdílů je dohromady do půl procenta. Ověřeno při třech maržích a třech rezervách — poměr je strukturální, takže platí i nad ostrým ceníkem. ZBÝVÁ ROZHODNUTÍ: potvrdit na skutečné ATYP zakázce a rozhodnout, zda Model 2 jako výchozí, nebo Model 1 zmrazit a otevřít #159. **AVIZOVÁNO J. V. 17. 9. 2026: „za pár dní už přejdeme výpočetně výhradně na model 2.\"** ZPĚTNÝ DOPAD ŽÁDNÝ NENÍ — ověřeno v kódu 17. 9. 2026 po upřesnění J. V. („uzavřené nabídky jsou zmrazené a nesou si vždy model, ve kterém byly počítané\"): přepínač modelu není globální nastavení, ale pole `data.ock.fixes` UVNITŘ VARIANTY (`zakazka.js`, nová varianta má `fixes: false`), a přepnutí jde přes `set()`, které na uzamčené variantě neprojde (`zamekStop`). Změna výchozí hodnoty se tedy dotkne jen nově zakládaných variant; odeslané nabídky se nepřepočítají. Zbývá tedy opravdu jen rozhodnout, který model je výchozí.",
-   "id" : "149",
-   "pozn" : "Souvisí s třetí verzí výpočtu (Model 3) a se zmrazením Modelu 1 po dotestování (#24). Nespouštět bez pokynu — „mrkneme na to později\".",
-   "hotovoKdyz" : "Existuje vyčíslené porovnání dopadů všech osmi rozdílů na vzorové zakázce a zapsané rozhodnutí, co z toho převezme Model 3 (případně změna výchozího režimu nové zakázky). Model 1 zůstal nedotčený.",
-   "nazev" : "Model 1 × Model 2 — porovnání rozdílů a rozhodnutí o nápravě",
-   "stav" : "ceka",
-   "kde" : "src/engine.js (větve fixes), test.js, PLAN/ROZHODNUTI dokument",
-   "vlna" : "E",
-   "detail" : "Osm zdokumentovaných rozdílů (stav k 18. 8. 2026, engine.js): 1) SPOJOVACÍ MATERIÁL – obrácená podmínka interiér/exteriér (D51/D52): u položek „spodní rám roh\" a „kotvení\" bere Model 1 počty kusů z opačného typu šachty; Model 2 správnou stranu. 2) SPOJOVACÍ MATERIÁL – odkaz na prázdnou buňku ($D$3 v G52): m² u kotvení bere Model 1 vždy z exteriérové hodnoty; Model 2 podle typu šachty. 3) LAKOVÁNÍ PROFILŮ – plocha: Model 1 nezapočítává lemování (m²); Model 2 ano. 4) LAKOVÁNÍ PROFILŮ – běžné metry: Model 1 vynechává délku lemování; Model 2 přičítá. 5) LAKOVÁNÍ OPLECHOVÁNÍ – podesty: šablona podesty odečetla jen z ceny, v lakování je nechala; Model 1 to napodobuje, Model 2 lakuje skutečnou plochu podest. 6) BOČNÍ ZASKLENÍ – hloubka skla (D19 místo D18): Model 1 bere hloubku z rozměru terčového zasklení i pro zasklení do lišt; Model 2 vždy rozměr zvoleného systému. 7) REZERVA (základ): Model 1 počítá rezervu z ceny včetně přirážky a přirážku pak uplatní ještě jednou (dvojité navýšení); Model 2 z nákladů, přirážka jen jednou. 8) REZERVA PŘÍPLATKOVÝCH POLOŽEK: stejný princip – Model 1 z ceny s přirážkou, Model 2 z nákladu. Prakticky: opravy 3–5 zvedají lakování, opravy 7–8 snižují rezervy – u konkrétní zakázky se to přetahuje oběma směry. Úkol: nad reálnou zakázkou vyčíslit dopad každého rozdílu, rozhodnout, které opravy převzít jako závazné (souvisí s Modelem 3 a s výchozím režimem nové zakázky – dnes Model 1), a rozhodnutí zapsat. Model 1 zůstává 1:1 se šablonou (nikdy se „neopravuje\" – jinak ztratí smysl).",
-   "slozitost" : "M",
-   "proc" : "Zadání 18. 8. 2026: „porovnání rozdílů mezi modely a jejich nápravu nám dej včetně tohoto detailu jako úkol do road mapy, mrkneme na to později.\" Oba modely se liší jen v osmi místech, kde původní excelová šablona obsahovala chyby — Model 1 je věrně napodobuje (shoda se starými nabídkami), Model 2 je opravuje. Než se Model 1 zmrazí a než vznikne Model 3, je potřeba rozdíly projít a rozhodnout, co s nimi.",
-   "dulezitost" : "stredni"
+   "pozn": "PODKLAD K ROZHODNUTÍ HOTOV 23. 9. 2026 (dávka D4): podklady/PODKLAD_149_MODEL1_MODEL2_2026-09-23.md — 12 rozdílů (ne 8), dopad na 6 vzorových zakázkách, nástroj nastroje/porovnani_modelu.js pro výpočet se skutečným ceníkem u J. V. Výchozí model nové zakázky je od 17. 9. 2026 Model 2. Návrh: Model 3 = zmrazený Model 2. Při rozboru nalezen #329.",
+   "id": "149",
+   "hotovoKdyz": "Existuje vyčíslené porovnání dopadů všech osmi rozdílů na vzorové zakázce a zapsané rozhodnutí, co z toho převezme Model 3 (případně změna výchozího režimu nové zakázky). Model 1 zůstal nedotčený.",
+   "nazev": "Model 1 × Model 2 — porovnání rozdílů a rozhodnutí o nápravě",
+   "stav": "blokovano",
+   "kde": "src/engine.js (větve fixes), test.js, PLAN/ROZHODNUTI dokument",
+   "vlna": "E",
+   "detail": "Osm zdokumentovaných rozdílů (stav k 18. 8. 2026, engine.js): 1) SPOJOVACÍ MATERIÁL – obrácená podmínka interiér/exteriér (D51/D52): u položek „spodní rám roh\" a „kotvení\" bere Model 1 počty kusů z opačného typu šachty; Model 2 správnou stranu. 2) SPOJOVACÍ MATERIÁL – odkaz na prázdnou buňku ($D$3 v G52): m² u kotvení bere Model 1 vždy z exteriérové hodnoty; Model 2 podle typu šachty. 3) LAKOVÁNÍ PROFILŮ – plocha: Model 1 nezapočítává lemování (m²); Model 2 ano. 4) LAKOVÁNÍ PROFILŮ – běžné metry: Model 1 vynechává délku lemování; Model 2 přičítá. 5) LAKOVÁNÍ OPLECHOVÁNÍ – podesty: šablona podesty odečetla jen z ceny, v lakování je nechala; Model 1 to napodobuje, Model 2 lakuje skutečnou plochu podest. 6) BOČNÍ ZASKLENÍ – hloubka skla (D19 místo D18): Model 1 bere hloubku z rozměru terčového zasklení i pro zasklení do lišt; Model 2 vždy rozměr zvoleného systému. 7) REZERVA (základ): Model 1 počítá rezervu z ceny včetně přirážky a přirážku pak uplatní ještě jednou (dvojité navýšení); Model 2 z nákladů, přirážka jen jednou. 8) REZERVA PŘÍPLATKOVÝCH POLOŽEK: stejný princip – Model 1 z ceny s přirážkou, Model 2 z nákladu. Prakticky: opravy 3–5 zvedají lakování, opravy 7–8 snižují rezervy – u konkrétní zakázky se to přetahuje oběma směry. Úkol: nad reálnou zakázkou vyčíslit dopad každého rozdílu, rozhodnout, které opravy převzít jako závazné (souvisí s Modelem 3 a s výchozím režimem nové zakázky – dnes Model 1), a rozhodnutí zapsat. Model 1 zůstává 1:1 se šablonou (nikdy se „neopravuje\" – jinak ztratí smysl).",
+   "slozitost": "M",
+   "proc": "Zadání 18. 8. 2026: „porovnání rozdílů mezi modely a jejich nápravu nám dej včetně tohoto detailu jako úkol do road mapy, mrkneme na to později.\" Oba modely se liší jen v osmi místech, kde původní excelová šablona obsahovala chyby — Model 1 je věrně napodobuje (shoda se starými nabídkami), Model 2 je opravuje. Než se Model 1 zmrazí a než vznikne Model 3, je potřeba rozdíly projít a rozhodnout, co s nimi.",
+   "dulezitost": "stredni",
+   "cekaNa": "rozhodnutí J. V. — podklad 2026-09-23 (výchozí odpovědi v podkladu)"
   },
   {
    "hotovoV" : "hotovo",
@@ -5141,14 +5143,15 @@
   {
    "id": "324",
    "vlna": "B",
-   "stav": "ceka",
-   "dulezitost": "vysoka",
+   "stav": "hotovo",
+   "dulezitost": "",
    "slozitost": "S",
    "nazev": "Varovat, když chybí kapitoly IV.–VI. nabídky (K9-N32)",
    "proc": "Nález 9. kola: online nabídce pro zákazníka chybí kapitoly IV.–VI. a doložky — ve Firmě nejsou vyplněné a aplikace mlčí. Zákazník dostane nabídku bez podmínek a nikdo si toho nevšimne.",
-   "detail": "Dvě části: 1) administrátor vyplní Nastavení → Firma (testovací i ostrý web) — mimo kód; 2) kód: kapitola se prázdná záměrně vypouští (firmaKapitola), chybí ale varování — v Nastavení → Firma u prázdné kapitoly a nad tiskem nabídky („kapitoly IV.–VI. nejsou vyplněné, nabídka odejde bez nich“).",
+   "detail": "HOTOVO v23.9.3 (noční dávka D1): pravidlo kontrol před nabídkou „Nevyplněné kapitoly nabídky\" (varování, jazyk podle tisku) a varování v Nastavení → Firma → Kapitoly nabídky (firmaKapitolyPrazdne v src/firma.js). Test test_kontroly.js +8. Vyplnění textů ve Firmě na webech zůstává administrátorovi.",
    "hotovoKdyz": "S prázdnou kapitolou svítí varování v Nastavení i nad tiskem; test v harnessu.",
-   "kde": "`src/firma.js` (firmaKapitola), nabídka OCK/PROJ"
+   "kde": "`src/firma.js` (firmaKapitola), nabídka OCK/PROJ",
+   "hotovoV": "v23.9.3"
   },
   {
    "id": "325",
@@ -5193,14 +5196,53 @@
   {
    "id": "328",
    "vlna": "C",
-   "stav": "ceka",
-   "dulezitost": "nizka",
+   "stav": "hotovo",
+   "dulezitost": "",
    "slozitost": "S",
    "nazev": "Zablokované vyskakovací okno shodí tiskový náhled (K6)",
    "proc": "Nález 9. kola: když prohlížeč zablokuje vyskakovací okno, tiskový náhled spadne na chybě bez vysvětlení.",
-   "detail": "window.open bez kontroly výsledku na 8 místech (zakazka_ui.js ×4, nabidka_proj_ui.js, kryci_ui.js, kryci_proj_ui.js, detail_ui.js). Při null hláška „Prohlížeč zablokoval okno s náhledem — povolte vyskakovací okna“.",
+   "detail": "HOTOVO v23.9.3 (D1): oknoNahledu() v src/ui/dialog.js — při zablokovaném okně hláška „Prohlížeč zablokoval okno s náhledem…\" místo pádu, všech 8 náhledů. Test overit_dialogy.mjs +3 (bez opravy 2 selhání).",
    "hotovoKdyz": "Zablokované okno ukáže srozumitelnou hlášku na všech osmi místech; test v harnessu.",
-   "kde": "`src/ui/*_ui.js`"
+   "kde": "`src/ui/*_ui.js`",
+   "hotovoV": "v23.9.3"
+  },
+  {
+   "id": "329",
+   "vlna": "B",
+   "stav": "ceka",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "nazev": "Přepnutím na Model 2 zmizí zámečník ATYP zadaný v kusech (M1)",
+   "proc": "Nalezeno 23. 9. 2026 při podkladu k #149. Model jde přepnout u každé varianty; starší zakázka se zámečníkem v kusech (zamecnikAtypKs) po přepnutí na Model 2 řádek tiše ztratí — Model 2 zná jen jednu částku.",
+   "detail": "Návrh: při přepnutí na Model 2 převést kusy × sazbu z ceníku na částku Z.zamecnikAtypKc (cena v Modelu 1 se tím nezmění), nebo přepnutí zastavit s vysvětlením. Vzor F v podkladu #149.",
+   "hotovoKdyz": "Po přepnutí modelu zůstane zámečník v ceně; test.",
+   "kde": "`src/engine.js` (atypZamecnikSazba), `src/ui/common.js` (přepínač OCK.fixes)"
+  },
+  {
+   "id": "330",
+   "vlna": "B",
+   "stav": "ceka",
+   "dulezitost": "vysoka",
+   "slozitost": "S",
+   "nazev": "Termín dodání s ATYP se do nabídky nedostane (TD1)",
+   "proc": "Nalezeno 23. 9. 2026 při podkladu k #277. Krycí list počítá termín dodání i s +4 týdny za ATYP (zadání 21. 8. 2026) a skládá {{PODM_TERMIN_DODANI}} — ten ale nepoužívá ani šablona v10, ani náhled v aplikaci; kapitola V. všude říká pevné „cca 12 týdnů\".",
+   "detail": "Návrh: termín dodání jako první odrážka kapitoly V. (náhled i Word), pevné číslo z textu Firmy vypustit. U atypické zakázky dnes zákazník dostane o 4 týdny kratší termín, než počítá krycí list.",
+   "hotovoKdyz": "Nabídka u ATYP nese prodloužený termín z krycího listu; test v náhledu i ve Wordu.",
+   "kde": "`src/kryci.js` (kryciTerminDodani), `src/nabidka.js` (kapitoly)",
+   "otazka": "Souhlas s návrhem v podkladu #277 (bod 2)?"
+  },
+  {
+   "id": "331",
+   "vlna": "B",
+   "stav": "blokovano",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "nazev": "Šablona CN v11: kapitoly IV.–VI. ze symbolů, ne natvrdo",
+   "proc": "Zjištěno 23. 9. 2026 (#277): náhled z aplikace bere kapitoly IV.–VI. z Nastavení → Firma, Word šablona v10 je má napsané natvrdo — úprava v Nastavení se do Wordu nedostane.",
+   "detail": "Nahradit pevné texty v šabloně symboly {{FIRMA_NAB_POZADAVKY}}, {{FIRMA_NAB_TERMINY}}, {{FIRMA_NAB_PREDANI}} a doplnit {{FIRMA_NAB_DOLOZKY}}; aplikace je už vydává i jazykově. Šablonu připraví Claude, nahraje administrátor (Nastavení → Šablony); do repozitáře nepatří.",
+   "hotovoKdyz": "Word i náhled tisknou kapitoly ze stejného zdroje; overit_sablona nad v11 zelený.",
+   "kde": "šablona Sablona_NABIDKA_CN (Drive), `src/firma.js`",
+   "cekaNa": "souhlas J. V. s podkladem #277 (bod 1) a nahrání šablony administrátorem"
   }
  ],
  "meta" : {
@@ -5649,6 +5691,14 @@
   {
    "text": "Dávka 23. 9. 2026 (engscalc): main posunut na v22.9.22 (pokyn J. V.). Nová tuzemská zakázka nehlásí falešný rozdíl ceníku (#321, K9-N31), volba skrýt/srolovat u všech karet Kalkulace OCK a obchodníkovi se skrytí projeví bez obnovení stránky (#322), harness overit_verzi nepadá den po commitu (#323 — kvůli němu je CI na main červené do dalšího sloučení). Nálezy 9. testovacího kola zapsány jako #324–#328. Ověřeno: plná sada 159/1/1, overit_zobrazeni 133/0, CI zelené u b31dd26, 5b98e58, 36daef8.",
    "hotovo": true
+  },
+  {
+   "text": "Večer 23. 9. 2026 (engscalc), dávky D1–D3 na pokyn J. V. („pusť D1 až D3 v noci“): D1 varování nevyplněných kapitol (#324), zablokované vyskakovací okno (#328), specifikace jen se započítanými pásy (N41b), hlavní správce v Nastavení (#278); D2 bezpečnost B57, B58, B61, B62, B68 + BEZPECNOST_MEZE.md; D3 mutace jádra v repozitáři (52/52 po nové sadě test_jadro_pojistky.js), harness šablony na v10, T4 první krok. Ověřeno: Node sada 123/0/1, 150 serverových mutací (6 nových chycených), CI.",
+   "hotovo": true
+  },
+  {
+   "text": "Večer 23. 9. 2026 (engscalc), D4 — podklady k rozhodnutí: #149 Model 1 × 2 (12 rozdílů, nástroj porovnani_modelu.js, nález #329) a #277 oddíly nabídky (všechny čtyři už jsou; nálezy #330 termín dodání s ATYP a #331 šablona natvrdo).",
+   "hotovo": true
   }
   ],
   "pravidla" : [
@@ -5735,7 +5785,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v23.9.2 (engscalc)",
+  "build" : "v23.9.3 (engscalc)",
   "stavKDatu" : "23. 9. 2026"
  },
  "_comment" : [
