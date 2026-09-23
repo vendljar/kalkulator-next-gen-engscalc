@@ -134,6 +134,23 @@ function dlgZarad(typ, text, opts) {
 
 function potvrd(text, opts) { return dlgZarad('potvrd', text, opts); }
 function hlaska(text, opts) { return dlgZarad('hlaska', text, opts); }
+
+/* OKNO NÁHLEDU, KTERÉ PROHLÍŽEČ ZABLOKOVAL (23. 9. 2026, nález K6 z 9. kola).
+ *
+ * Tiskové náhledy (nabídka OCK i PROJ, krycí listy, detail výpočtu,
+ * porovnání variant) se otevírají do nového okna. Když ho prohlížeč
+ * zablokuje, `window.open` vrátí null a náhled spadl na `w.document` —
+ * obchodník kliknul a nestalo se nic, bez jediného slova. Teď dostane
+ * vysvětlení a volající skončí dřív, než na okno sáhne. */
+const OKNO_ZABLOKOVANO_TEXT = 'Prohlížeč zablokoval okno s náhledem. Povolte pro tuto stránku '
+  + 'vyskakovací okna (ikona v adresním řádku) a klikněte znovu.';
+function oknoNahledu() {
+  let w = null;
+  try { w = window.open('', '_blank'); } catch (e) { w = null; }
+  if (w && w.document) return w;
+  hlaska(OKNO_ZABLOKOVANO_TEXT, { nadpis: 'Náhled se neotevřel' });
+  return null;
+}
 function dotaz(text, vychozi) { return dlgZarad('dotaz', text, { vychozi: vychozi }); }
 /* volba('text', [{kod,popis,primary}], {nadpis}) → kód zvoleného tlačítka,
  * nebo null při Escape a kliknutí mimo. Escape znamená „nic nedělej" —

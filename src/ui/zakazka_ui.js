@@ -384,7 +384,8 @@ function porovnaniPolozkyTisk() {
       </table>`;
   }).join('');
 
-  const w = window.open('', '_blank');
+  const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
+  if (!w) return;
   w.document.write(`<!DOCTYPE html><html lang="${L}"><head><meta charset="utf-8">
     <title>${esc(T('Detail položek'))} ${esc(ZAK.cislo || '')}</title>
     <style>body{font:12px/1.5 "Segoe UI",sans-serif;color:#1a2332;max-width:1100px;margin:24px auto;padding:0 16px}
@@ -431,7 +432,8 @@ function porovnaniTisk() {
     return `<tr class="${m.hlavni ? 'hlavni' : ''}"><th>${esc(T(m.popis))}</th>${bunky}</tr>`;
   }).join('');
 
-  const w = window.open('', '_blank');
+  const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
+  if (!w) return;
   w.document.write(`<!DOCTYPE html><html lang="${L}"><head><meta charset="utf-8">
     <title>${esc(T('Porovnání variant'))} ${esc(ZAK.cislo || '')}</title>
     <style>body{font:13px/1.5 "Segoe UI",sans-serif;color:#1a2332;max-width:1000px;margin:24px auto;padding:0 16px}
@@ -647,7 +649,8 @@ async function nabidkaNahled() {
   const logoHtml = dokLogoHtml();
   const patickaHtml = dokPatickaHtml(P);
 
-  const w = window.open('', '_blank');
+  const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
+  if (!w) return;
   w.document.write(`<!DOCTYPE html><html lang="${L === 'cz' ? 'cs' : L}"><head><meta charset="utf-8">
     <title>${esc(data.nazevSouboru)}</title>
     <style>body{font:13px/1.5 "Segoe UI",sans-serif;color:#1a2332;max-width:860px;margin:24px auto;padding:0 16px}
@@ -847,7 +850,8 @@ async function nabidkaOckDokument() {
   const logoHtml = dokLogoHtml();
   const patickaHtml = dokPatickaHtml(P);
 
-  const w = window.open('', '_blank');
+  const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
+  if (!w) return;
   w.document.write(`<!DOCTYPE html><html lang="${L === 'cz' ? 'cs' : L}"><head><meta charset="utf-8">
     <title>${esc(data.nazevSouboru)}</title>
     <style>body{font:13px/1.55 "Segoe UI",sans-serif;color:#1a2332;max-width:860px;margin:24px auto;padding:0 16px}

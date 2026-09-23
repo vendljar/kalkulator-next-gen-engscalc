@@ -420,7 +420,8 @@ function detailTisk() {
     ? `<div class="paticka">${esc(firmaPaticka(f))}</div>` : '';
   const nazev = `Detail vypoctu ${(ZAK.cislo || '').replace(/[^\w.-]+/g, '_')}`.trim();
 
-  const w = window.open('', '_blank');
+  const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
+  if (!w) return;
   w.document.write(`<!DOCTYPE html><html lang="cs"><head><meta charset="utf-8">
     <title>${esc(nazev)}</title>
     <style>body{font:12.5px/1.5 "Segoe UI",sans-serif;color:#1a2332;max-width:900px;margin:20px auto;padding:0 16px}

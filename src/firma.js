@@ -194,6 +194,24 @@ function firmaKapitola(f, base, jazyk) {
            chybi: !znamy || radky.length === 0, jazyk: jaz, klic };
 }
 
+/* Kapitoly, které v nabídce v daném jazyce CHYBĚT BUDOU (23. 9. 2026,
+ * nález K9-N32 z 9. testovacího kola).
+ *
+ * Prázdná kapitola se z nabídky vypouští i s nadpisem — záměrně, prázdný
+ * nadpis vypadá jako nedodělek. Jenže tím zmizela beze stopy: na testovacím
+ * webu nebyly kapitoly IV.–VI. ve Firmě vyplněné a zákazník dostal nabídku
+ * bez požadavků, termínů i předání díla, aniž si toho kdo všiml. Tahle
+ * funkce je jediné místo, které to umí říct; ptá se jí kontrola před
+ * nabídkou (kontroly.js) i Nastavení → Firma.
+ *
+ * Jazyk, který kapitoly nemají (FR), bere český text — prázdný je tedy,
+ * když je prázdná čeština (stejné pravidlo jako firmaKapitola). */
+function firmaKapitolyPrazdne(f, jazyk) {
+  return FIRMA_KAPITOLY.filter(kap => firmaKapitola(f, kap.base, jazyk).prazdne)
+    .map(kap => ({ base: kap.base, cislo: kap.cislo, nadpis: kap.nadpis,
+                   popis: (kap.cislo ? kap.cislo + ' ' : '') + kap.nadpis.toLowerCase() }));
+}
+
 /* Pořadí sekcí ve formuláři i v náhledech. */
 const FIRMA_SEKCE = ['Identifikace', 'Sídlo', 'Korespondenční adresa', 'Bankovní spojení',
   'Kontakty', 'Zástupci zhotovitele', 'Smluvní standardy', 'Kapitoly nabídky'];
@@ -435,8 +453,26 @@ function firmaLzeZverejnit(f) {
   const k = firmaKontrola(f);
   if (!k.ok)
     return { ok: false, duvod: 'Chybí povinné údaje: ' + k.chybi.join(', ') + '.' };
+  /* TYP A DÉLKA POLÍ (23. 9. 2026, nález B68). Texty kapitol IV.–VI.
+   * a doložek se do té doby ukládaly bez kontroly typu i délky. Zapisuje jen
+   * administrátor a výstup je všude escapovaný, ale záznam firmy se čte při
+   * každém přihlášení každého uživatele — objekt místo textu nebo megabajt
+   * v jednom poli by zpomalil nebo shodil všechny. Stropy jsou velkorysé:
+   * dlouhý odstavec kapitoly se vejde, omyl se zarazí. */
+  const spatne = FIRMA_POLE.filter(p => {
+    const v = f[p.id];
+    if (v === undefined || v === null) return false;
+    if (typeof v === 'boolean' || (typeof v === 'number' && isFinite(v))) return false;
+    if (typeof v !== 'string') return true;
+    return v.length > (p.typ === 'textarea' ? FIRMA_TEXT_MAX : FIRMA_POLE_MAX);
+  });
+  if (spatne.length)
+    return { ok: false, duvod: 'Pole ' + spatne.map(p => '„' + p.label + '“').join(', ')
+      + ' nemá platný tvar nebo je příliš dlouhé (nejvýš ' + FIRMA_POLE_MAX + ' znaků, u textů kapitol '
+      + FIRMA_TEXT_MAX + ').' };
   return { ok: true, duvod: '' };
 }
+const FIRMA_POLE_MAX = 2000, FIRMA_TEXT_MAX = 20000;
 
 /* Kopie pro zápis na server: bez značek vymyšlených dat a bez klíčů,
  * které do firemních údajů nepatří (server ukládá jen známá pole).
@@ -499,7 +535,7 @@ function firmaShodaSOnline(mistni, online) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { FIRMA_KAPITOLY, FIRMA_KAP_JAZYK, firmaKapitola,
+  module.exports = { FIRMA_KAPITOLY, FIRMA_KAP_JAZYK, firmaKapitola, firmaKapitolyPrazdne,
     FIRMA_POLE, FIRMA_SEKCE, DEFAULT_FIRMA, firmaDefault, firmaAktualni,
     firmaPole, firmaHodnota, firmaAdresaRadek, firmaSidlo, firmaKorespondencni, firmaBankaRadek,
     firmaIcoDic, firmaPaticka, firmaPlaceholders, firmaSymboly, firmaRadky, firmaKontrola,

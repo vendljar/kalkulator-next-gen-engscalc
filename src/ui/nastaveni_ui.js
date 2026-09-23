@@ -727,7 +727,14 @@ function nastKapitolyNabidky() {
       <summary style="cursor:pointer;font-weight:600">${esc((kap.cislo ? kap.cislo + ' ' : '') + kap.nadpis)}</summary>
       ${pola}</details>`;
   };
-  return `<div class="sec-title">Kapitoly nabídky III.–VI.</div>
+  /* Varování nahoře (23. 9. 2026, K9-N32): prázdná česká kapitola se
+   * z nabídky tiše vypustí — tady je to vidět dřív, než odejde nabídka. */
+  const prazdneCz = (typeof firmaKapitolyPrazdne === 'function') ? firmaKapitolyPrazdne(f, 'cz') : [];
+  const varovani = prazdneCz.length
+    ? `<div class="cenik-stari kapitoly-chybi" style="margin:4px 0 8px">⚠ Česky nevyplněno: ${
+        esc(prazdneCz.map(k => k.popis).join(', '))}. Nabídka tyto kapitoly <b>vypustí</b> i s nadpisem —
+        zákazník je nedostane. Vyplňte je níž.</div>` : '';
+  return `<div class="sec-title">Kapitoly nabídky III.–VI.</div>${varovani}
     <div class="note" style="margin-top:0">Texty, které se tisknou pod cenou v <b>každé</b> nabídce.
       <b>Jeden řádek = jedna odrážka</b>, prázdné řádky se přeskočí.
       <b>Kapitola III. Platební podmínky se tady nevyplňuje</b> — skládá se ze zálohy, splatnosti

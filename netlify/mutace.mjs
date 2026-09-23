@@ -847,6 +847,32 @@ const MUTACE = [
     hledej: '  const denni = vsechny.filter(k => !jePredObnovou(k));',
     nahrad: '  const denni = vsechny;',
     proc: 'série pokusů o obnovu by z přehledu vytlačila všechny denní zálohy' },
+
+  /* Noční dávka 23. 9. 2026 (D2): B57, B58, B61, B62. */
+  { nazev: 'B57: /api/ja dá příznak hlavního správce i obchodníkovi', soubor: 'functions/ja.mjs',
+    hledej: "    ...(relace.role === 'Administrátor' ? { spravceNastaven: spravceNastaven() } : {}),",
+    nahrad: "    spravceNastaven: spravceNastaven(),",
+    proc: 'provozní údaj o slabině serveru by dostal každý přihlášený' },
+  { nazev: 'B58: záloha přestane vozit knihu smazaných účtů', soubor: 'lib/zalohovani.mjs',
+    hledej: "  for (const k of await sm.seznam()) smazani[k] = await sm.cti(k);",
+    nahrad: "  if (false) for (const k of await sm.seznam()) smazani[k] = await sm.cti(k);",
+    proc: 'po havárii by zmizela jediná stopa po tom, kdo koho smazal' },
+  { nazev: 'B58: obnova zapíše smazání i u živého účtu', soubor: 'functions/obnova.mjs',
+    hledej: "        if (ucet && !ucet.smazano) { preskoc(bs, email,",
+    nahrad: "        if (false) { preskoc(bs, email,",
+    proc: 'kniha by tvrdila, že je smazaný kolega, který pracuje' },
+  { nazev: 'B61: nový zámek s prázdným nebo cizím číslem projde', soubor: 'functions/zakazky.mjs',
+    hledej: "    if (String(v.zamek.cislo || '') !== cisloMaBy || v.zamek.cisloPapir !== true)",
+    nahrad: "    if (false)",
+    proc: 'odeslaná nabídka by vznikla pod jiným číslem bez jakéhokoli porovnání' },
+  { nazev: 'B62: razítka existujícího zámku bere server od klienta', soubor: 'functions/zakazky.mjs',
+    hledej: "    ULO.uloZamekRazitkaDrz(stara, zak);",
+    nahrad: "    void 0;",
+    proc: '„kdo odeslal" a historii tisků by přepsal kterýkoli přihlášený' },
+  { nazev: 'B62: z historie tisků jde ubrat', soubor: '../src/uloziste.js',
+    hledej: "    const out = s.map(x => JSON.parse(JSON.stringify(x))).concat(n.slice(s.length));",
+    nahrad: "    const out = n;",
+    proc: 'dřívější tisk odeslané nabídky by šel smazat nebo přepsat beze stopy' },
 ];
 
 /* ---------- přerušený běh vrátí zmutovaný soubor ----------

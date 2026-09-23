@@ -42,6 +42,12 @@ const zk = require('../src/zakazka.js');
 const ZC = require('../src/zkusebni_cenik.js');
 const fmod = require('../src/firma.js');
 const zm = require('../src/zamek.js');
+/* Zámek jako v aplikaci (zamek_ui.js): nese číslo z papíru. Od 23. 9. 2026
+ * (nález B61) server nový zámek bez něj odmítne. Výslovně zadané `cislo`
+ * v testu přebije výchozí. */
+const zamkniJakoAplikace = (z, v, info) => zm.zamkniVariantu(v,
+  Object.assign({ cislo: zm.variantaCislo(z, v) }, info || {}));
+
 
 let ok = 0, fail = 0;
 const test = (n, cond, info) => { if (cond) { ok++; console.log('OK  ' + n); } else { fail++; console.log('FAIL ' + n, info === undefined ? '' : (typeof info === 'string' ? info : JSON.stringify(info))); } };
@@ -190,7 +196,7 @@ test('a rejstřík ji dál eviduje (3 zakázky)', rej5.zakazky.length === 3 && r
 
 /* ---- 9) uzamčené nabídky se nepřepíšou ani v režimu přepsat ---- */
 const zakBz = kopie(await ulz('zakazky').cti(B));
-zm.zamkniVariantu(zakBz.varianty[0], { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Test' });
+zamkniJakoAplikace(zakBz, zakBz.varianty[0], { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Test' });
 test('zakázka B se uloží se zámkem', (await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zakBz }, cookie)).json()).ok === true);
 const n9 = await obnovJson({ zdroj: { soubor: zalSoubor }, rezim: 'prepsat', nahled: true, casti: ['zakazky'] }, cookie);
 test('náhled: obnova ze zálohy před zámkem by zámek sundala → B přeskočena s důvodem',
@@ -469,6 +475,27 @@ console.log('\n===== B50: vědomě znovu založený účet obnova nepřeskakuje 
     !o.casti.uzivatele.duvody.some(d => d.klic === 'obchodnik@priklad.cz' && /smazán/.test(d.duvod)),
     o.casti.uzivatele.duvody);
   test('B50: a účet v úložišti zůstal', !!(await ulz('uzivatele').cti('obchodnik@priklad.cz')));
+}
+
+console.log('\n===== B58: kniha smazaných účtů jde se zálohou (23. 9. 2026) =====');
+{
+  const kniha = ulz(SMAZANI_ULOZISTE);
+  await kniha.zapis('byvaly@priklad.cz', { email: 'byvaly@priklad.cz', smazano: true, kdy: '2026-09-01T08:00:00.000Z', kdo: ADMIN_EMAIL, zakazek: 0 });
+  const zal = (await (await get(zaloha, 'http://x/api/zaloha', cookie)).json()).zaloha;
+  test('B58: záloha ke stažení nese knihu smazaných', !!(zal.smazani && zal.smazani['byvaly@priklad.cz']), Object.keys(zal.smazani || {}));
+  const v2 = await (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', {}, cookie)).json();
+  const ot = await ulz('zalohy').cti(v2.den);
+  test('B58: serverový otisk nese knihu smazaných', !!(ot && ot.smazani && ot.smazani['byvaly@priklad.cz']));
+  /* Havárie: kniha zmizela. Obnova ze serverového otisku ji doplní. */
+  await kniha.smaz('byvaly@priklad.cz');
+  const o = await obnovJson({ zdroj: { otisk: v2.den }, rezim: 'doplnit', potvrzeni: 'OBNOVIT', casti: ['uzivatele'] }, cookie);
+  test('B58: obnova ze serverového otisku knihu doplní', !!(await kniha.cti('byvaly@priklad.cz')) && o.casti.smazani && o.casti.smazani.nove >= 1,
+    JSON.stringify(o.casti && o.casti.smazani));
+  /* Pod e-mailem, kde dnes žije účet, se do knihy nezapisuje. */
+  const ot2 = kopie(ot); ot2.smazani = { 'obchodnik@priklad.cz': { smazano: true, kdy: '2026-01-01', kdo: 'x' } };
+  await ulz('zalohy').zapis(v2.den + 'T000001-pred-obnovou', ot2);
+  await obnovJson({ zdroj: { otisk: v2.den + 'T000001-pred-obnovou' }, rezim: 'doplnit', potvrzeni: 'OBNOVIT', casti: ['uzivatele'] }, cookie);
+  test('B58: živý účet se do knihy smazaných nezapíše', (await kniha.cti('obchodnik@priklad.cz')) === null);
 }
 
 console.log('\n===== B47–B49, B52: dotažení obnovy po dávkách (19. kolo, 14. 9. 2026) =====');

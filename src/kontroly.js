@@ -321,6 +321,26 @@ const KONTROLY = [
     },
   },
   {
+    /* KAPITOLY IV.–VI. A DOLOŽKY (23. 9. 2026, nález K9-N32). Prázdná
+     * kapitola se z nabídky OCK vypustí i s nadpisem, takže bez tohohle
+     * pravidla odešla nabídka bez požadavků, termínů a předání díla a nikdo
+     * se to nedozvěděl. Nabídka PROJ kapitoly nemá — u zakázky jen projekce
+     * pravidlo mlčí. Jazyk je jazyk tisku: anglická nabídka potřebuje
+     * anglické kapitoly, ne české. */
+    kod: 'kapitoly', kde: 'Nabídka', nazev: 'Nevyplněné kapitoly nabídky',
+    zjisti(ctx) {
+      if (ctx.jenProj || !ctx.nast || typeof firmaKapitolyPrazdne !== 'function') return null;
+      const f = ctx.nast.firma || null;
+      if (!f) return null;
+      const jaz = String(ctx.jazyk || 'cz').toLowerCase();
+      const chybi = firmaKapitolyPrazdne(f, jaz);
+      if (!chybi.length) return null;
+      return { text: 'Nabídka odejde bez ' + kontrolyVyctem(chybi.map(k => k.popis))
+        + ' — v Nastavení → Firma → Kapitoly nabídky nejsou vyplněné'
+        + (jaz !== 'cz' ? ' (jazyk ' + jaz.toUpperCase() + ')' : '') + '. Prázdná kapitola se z nabídky vypustí i s nadpisem.' };
+    },
+  },
+  {
     kod: 'hlavicka', kde: 'Hlavička zakázky', nazev: 'Prázdná hlavička',
     zjisti(ctx) {
       const zak = ctx.zak;

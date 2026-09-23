@@ -184,6 +184,10 @@ export default async (req) => {
         return json({ ok: false, chyba: 'Neuloženo: změnila by se data uzamčené (odeslané) '
           + 'nabídky. Pokračujte klonem varianty.' }, 409);
     }
+    /* Razítka mimo klíč zámku (kdo, popis, šablona, tisky[], odemceni[])
+     * se u existujícího zámku berou z uložené verze (nález B62). Až PO
+     * razítku nového odemčení výš, aby se jeho kdo/kdy nepřepsalo. */
+    ULO.uloZamekRazitkaDrz(stara, zak);
   }
 
   /* ČÍSLO ODESLANÉ NABÍDKY MĚNÍ JEN ADMINISTRÁTOR — TAKY NA SERVERU
@@ -304,6 +308,19 @@ export default async (req) => {
       else delete v.zamek.overeni;
       continue;
     }
+    /* NOVÝ ZÁMEK NESE ČÍSLO, KTERÉ DÁVAJÍ DATA (23. 9. 2026, nález B61).
+     * Kontrola B56 výš přeskakuje zámek s prázdným `cislo` (kvůli zámkům
+     * z doby před tím polem) — upravený klient tak mohl založit NOVÝ zámek
+     * s vymazaným číslem a zakázka pod jiným jménem souboru prošla bez
+     * porovnání. Nový zámek ale vzniká jedině v aplikaci od #320, která
+     * do něj píše číslo z papíru i značku `cisloPapir`; co se liší, není
+     * z aplikace. Odmítá se každému — i administrátorovi, protože jeho
+     * aplikace takový zámek vyrobit neumí. */
+    const cisloMaBy = String(globalThis.variantaCislo(zak, v) || '');
+    if (String(v.zamek.cislo || '') !== cisloMaBy || v.zamek.cisloPapir !== true)
+      return json({ ok: false, chyba: 'Neuloženo: nová odeslaná (uzamčená) nabídka nese jiné číslo ('
+        + (v.zamek.cislo || 'prázdné') + '), než dávají údaje zakázky (' + (cisloMaBy || 'prázdné')
+        + '). Obnovte stránku (Ctrl+F5) a nabídku vytiskněte znovu.' }, 409);
     v.zamek.kdo = relace.jmeno ? relace.jmeno + ' <' + relace.email + '>' : relace.email;
     const ov = globalThis.zamekOvereni(v, JEKLY, verzeServeru);
     if (ov) v.zamek.overeni = ov; else delete v.zamek.overeni;

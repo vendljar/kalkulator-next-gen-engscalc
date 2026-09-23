@@ -51,6 +51,8 @@ function kontrolyCtxAkt() {
     /* Hlavička zakázky sedí přímo na ZAK (cislo, nazevAkce, objednatel…),
      * ne ve vnořeném objektu – viz novaZakazka() v zakazka.js. */
     zak: (typeof ZAK !== 'undefined') ? ZAK : null,
+    /* Jazyk tisku — kapitoly nabídky má každý jazyk vlastní (K9-N32). */
+    jazyk: (typeof tiskJazyk === 'function') ? tiskJazyk() : 'cz',
     zaokr: (typeof ZO !== 'undefined') ? ZO : null,
     /* Od 4. 8. 2026 má PROJ vlastní obchodní zaokrouhlení (#38); kontroly
      * marže musí počítat s tím, které opravdu odejde v nabídce PROJ. */

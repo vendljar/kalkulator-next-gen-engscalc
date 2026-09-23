@@ -66,6 +66,15 @@ export const ROLE = ['Obchodník', 'Vedoucí', 'Administrátor'];
  * hodnota, na které ochrany opravdu stojí (čte se jednou při načtení
  * modulu); živá proměnná dovolí ověřit chování testem v témže procesu.
  * Odmítne se, když je prázdná kterákoli z nich — tedy přísněji z obou. */
+/* Je adresa hlavního účtu nastavená? (23. 9. 2026, #278 + nález B57)
+ * Stejná podmínka jako v `bezHlavnihoUctu()`, jen jako ano/ne. Do 23. 9. ji
+ * hlásilo anonymní /api/zdravi komukoli na internetu; teď ji dostane jen
+ * přihlášený ADMINISTRÁTOR v /api/ja a v odpovědi na přihlášení — a aplikace
+ * mu ji ukáže v Nastavení → Uživatelé. Ostatním do ní nic není. */
+export function spravceNastaven() {
+  return !!ADMIN_EMAIL && String(process.env.ADMIN_EMAIL || '').trim() !== '';
+}
+
 export function bezHlavnihoUctu() {
   if (ADMIN_EMAIL && String(process.env.ADMIN_EMAIL || '').trim() !== '') return null;
   return json({ ok: false, chyba: 'Server nemá nastavenou adresu hlavního administrátorského '

@@ -145,7 +145,13 @@ function tsDvojsklo(Z) { return (Z || {}).typSachty !== 'interiérová'; }
  * Názvy typů se berou z OPLASTENI_TYPY, aby se popis nerozešel s číselníkem
  * v zadání. Když jádro po ruce není (Node test jen nad techspec.js), vypíše
  * se aspoň klíč — nikdy se nevymýšlí. */
-function tsOplasteniRozsah(Z, jazyk) {
+/* PÁSY PODLE JÁDRA, NE SYROVĚ (23. 9. 2026, nález N41b z revize v22.9.9).
+ * Dostane-li funkce i výsledek výpočtu `r`, vypisuje jen pásy, které jádro
+ * opravdu započítalo (`r.oplasteni.pasy`). Syrový výpis zadání uváděl
+ * i pás, který se do ceny nedostal — dělicí výšku nad horní hranou
+ * prosklení nebo neklesající výšky — a zákazník ho viděl ve specifikaci,
+ * ačkoli ho nikdo nenaceňoval. Poslední započítaný pás je „výš“. */
+function tsOplasteniRozsah(Z, jazyk, r) {
   const z = Z || {};
   const o = z.oplasteni || {};
   /* Kusy věty se překládají jednotlivě — celou složenou větu by slovník
@@ -171,9 +177,13 @@ function tsOplasteniRozsah(Z, jazyk) {
     const st = o.steny[k];
     if (!st || !Array.isArray(st.pasy) || !st.pasy.length) return;
     const odM = +st.odM || 0;
-    const pasy = st.pasy.map((p, i) => {
-      const posledni = (i === st.pasy.length - 1);
-      if (st.pasy.length === 1) return jmeno(p);
+    const spoctene = (r && r.oplasteni && r.oplasteni.rezim === 'poStenach' && Array.isArray(r.oplasteni.pasy))
+      ? r.oplasteni.pasy.filter(p => p.stena === k) : null;
+    const zdroj = spoctene || st.pasy;
+    if (!zdroj.length) return;       // stěna bez plochy — ve výpočtu nic nemá
+    const pasy = zdroj.map((p, i) => {
+      const posledni = (i === zdroj.length - 1);
+      if (zdroj.length === 1) return jmeno(p);
       return posledni ? jmeno(p) + ' ' + T('výš')
         : jmeno(p) + ' ' + T('do výšky') + ' ' + cislo(p.doM) + ' m';
     });
@@ -285,7 +295,7 @@ const TECHSPEC_DEF = [
       def: 'plech v celé ploše podesty' },
     /* `jazykSam`: větu skládá prefill rovnou v cílovém jazyce — viz tsHodnota. */
     { id: 'rozsahOplasteni', label: 'ROZSAH OPLÁŠTĚNÍ', def: 'kompletní opláštění šachty',
-      jazykSam: true, prefill: (r, Z, C, jazyk) => tsOplasteniRozsah(Z, jazyk) },
+      jazykSam: true, prefill: (r, Z, C, jazyk) => tsOplasteniRozsah(Z, jazyk, r) },
     { id: 'oplasteniPortalu', label: 'OPLÁŠTĚNÍ PORTÁLŮ NÁSTUPIŠŤ', ciselnik: TS_C.oplasteniPortalu, def: ' -' },
     { id: 'oplasteniNadsvetliku', label: 'OPLÁŠTĚNÍ NADSVĚTLÍKŮ', ciselnik: TS_C.oplasteniNadsvetliku,
       prefill: (r, Z) => (Z.svetlikNadDvermi || Z.svetlikyBoky)

@@ -154,7 +154,8 @@ const pravidla = kontrolyPravidla();
  * + „atypBezCeny" (obojí 30. 7. 2026; atypBezCeny má vlastní sadu
  * v test_atyp_katalog.js). 13. pravidlo „slevaProjMax" přibylo po auditu
  * 1. 8. 2026 (N4): globální sleva PROJ nad firemní maximum. */
-test('pravidel je třináct', pravidla.length === 13, pravidla.length);
+/* 14. pravidlo „kapitoly" přibylo 23. 9. 2026 (K9-N32). */
+test('pravidel je čtrnáct', pravidla.length === 14, pravidla.length);
 test('kódy pravidel jsou jedinečné',
   new Set(pravidla.map(p => p.kod)).size === pravidla.length,
   pravidla.map(p => p.kod).join(','));
@@ -367,6 +368,28 @@ const rozbity = kontrolyProved({ zadani: { sirka: 0 }, zak: null, sleva: null, n
                                  vysledek: { souhrn: null }, projVysledek: undefined });
 test('nekompletní kontext nic neshodí a nálezy dorazí',
   rozbity.varovat === true && kody(rozbity).includes('rozmery'), JSON.stringify(kody(rozbity)));
+
+/* ---------- 9) nevyplněné kapitoly nabídky (23. 9. 2026, K9-N32) ---------- */
+{
+  const fm = require('./firma.js');
+  global.firmaKapitolyPrazdne = fm.firmaKapitolyPrazdne;
+  const s = (firma, extra) => kontrolyProved(Object.assign({ nast: Object.assign({}, NAST, { firma }) }, extra || {}));
+  const plna = fm.firmaDefault();
+  test('K9-N32: vyplněné kapitoly nic nehlásí', !kody(s(plna)).includes('kapitoly'), JSON.stringify(kody(s(plna))));
+  const bez = Object.assign({}, plna, { kapPozadavky: '', kapTerminy: '  \n ', kapPredani: '' });
+  const n = s(bez).nalezy.find(x => x.kod === 'kapitoly');
+  test('K9-N32: prázdné IV.–VI. se hlásí před nabídkou', !!n, JSON.stringify(kody(s(bez))));
+  test('K9-N32: text jmenuje chybějící kapitoly a kde se vyplňují',
+    !!n && /IV\. /.test(n.text) && /V\. termíny/.test(n.text) && /VI\. /.test(n.text) && /Nastavení → Firma/.test(n.text), n && n.text);
+  test('K9-N32: doložky vyplněné, tak je text nejmenuje', !!n && !/doložky/.test(n.text), n && n.text);
+  test('K9-N32: je to varování, ne zábrana', !!n && n.uroven === KONTROLY_UROVEN);
+  const en = Object.assign({}, plna, { kapTerminyEn: '' });
+  test('K9-N32: anglická nabídka hlídá anglické kapitoly',
+    kody(s(en, { jazyk: 'en' })).includes('kapitoly') && !kody(s(en, { jazyk: 'cz' })).includes('kapitoly'));
+  test('K9-N32: zakázka jen projekce pravidlo nemá (kapitoly jsou v nabídce OCK)',
+    !kody(s(bez, { jenProj: true })).includes('kapitoly'));
+  test('K9-N32: bez firmy v kontextu pravidlo mlčí', !kody(kontrolyProved({ nast: NAST })).includes('kapitoly'));
+}
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

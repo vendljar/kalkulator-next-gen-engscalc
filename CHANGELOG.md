@@ -8,6 +8,55 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v23.9.3 — 23. 9. 2026 (noční dávka D1 + D2)
+
+### D1 — drobnosti z 9. testovacího kola a revize v22.9.9
+
+- **Varování, když chybí kapitoly IV.–VI. (#324, K9-N32).** Prázdná kapitola
+  se z nabídky OCK vypouští i s nadpisem, takže odešla bez požadavků, termínů
+  a předání díla a nikdo o tom nevěděl. Nově je v kontrolách před nabídkou
+  pravidlo „Nevyplněné kapitoly nabídky“ (varování, jazyk podle tisku)
+  a Nastavení → Firma → Kapitoly nabídky ukazuje, které české kapitoly chybí.
+  `firmaKapitolyPrazdne` v `src/firma.js`. Test: `test_kontroly.js` (+8).
+- **Zablokované vyskakovací okno (#328, K6).** Osm tiskových náhledů padalo
+  na `w.document`, když prohlížeč okno zablokoval, a obchodník neviděl nic.
+  Teď přes `oknoNahledu()` dostane hlášku, jak okna povolit. Test:
+  `overit_dialogy.mjs` (+3, bez opravy 2 selhání).
+- **Technická specifikace vypisuje jen započítané pásy (N41b).** Věta
+  o opláštění po stěnách se skládá z pásů, které jádro opravdu spočítalo.
+  Pás nad horní hranou prosklení nebo pod předchozím pásem už ve specifikaci
+  není. Test: `test_oplasteni_zapnuti.js` (+5, bez opravy 2 selhání).
+- **Hlavní správce v Nastavení (#278).** Administrátor v Nastavení →
+  Uživatelé vidí, jestli je na serveru nastavená proměnná `ADMIN_EMAIL`.
+  Pokud chybí, dostane varování s návodem.
+
+### D2 — bezpečnost (B57, B58, B61, B62, B68) a meze v dokumentaci
+
+- **B57:** `/api/zdravi` už anonymně nehlásí, jestli je nastavený hlavní
+  správce. Údaj dostává jen administrátor v `/api/ja` a v odpovědi na
+  přihlášení (viz #278).
+- **B58:** kniha smazaných účtů jde s oběma zálohami. Obnova ze serverového
+  otisku ji doplní, existující záznam nepřepíše a u e-mailu, pod kterým žije
+  účet, nic nezapíše.
+- **B61:** server odmítne nový zámek, jehož číslo nesedí na data zakázky
+  nebo nemá značku `cisloPapir`. Dřív tudy prošla „odeslaná“ nabídka pod
+  novým číslem bez porovnání. Administrátorovi při změně čísla server
+  razítko dál srovná (B56).
+- **B62:** u existujícího zámku bere server `kdo`, `popis` a `sablona`
+  z uložené verze. Z `tisky[]` a `odemceni[]` platí uložený začátek:
+  přidávat se smí, přepsat ani ubrat ne (`uloZamekRazitkaDrz`).
+- **B68:** textová pole firmy mají kontrolu typu a délky (2 000 znaků,
+  u kapitol 20 000).
+- Nový dokument **`BEZPECNOST_MEZE.md`**: B65–B67 a zbytkové meze B61/B62.
+
+Testy: `test_prava.mjs` (534, +12), `test_obnova.mjs` (+4), `test_firma.js`
+(+4), `overit_zobrazeni.mjs` (+2). Šest nových mutací (150 celkem), všechny
+chycené. Testy, které zakládaly zámek bez čísla, teď dělají zámek stejně
+jako aplikace. Staré zámky zapisují rovnou do úložiště, jako by tam ležely
+odjakživa.
+
+---
+
 ## v23.9.2 — 23. 9. 2026
 
 ### Skrýt / srolovat u všech karet Kalkulace OCK; skrytí se obchodníkovi projeví hned

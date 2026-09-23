@@ -232,6 +232,36 @@ const zad = (e) => Object.assign(JSON.parse(JSON.stringify(DEFAULT_ZADANI)), e |
   test('stěna, kterou dodá stavba, je v textu vidět', /dodá stavba/.test(cz), cz);
   test('záporná dolní mez se označí jako prohlubeň', /prohlubně/.test(cz), cz);
 
+  /* N41b (revize v22.9.9, oprava 23. 9. 2026): specifikace vypisuje jen pásy,
+   * které jádro započítalo. Dělicí výška nad horní hranou prosklení dá
+   * hornímu pásu nulovou výšku — do ceny nejde, a tak nesmí ani do textu. */
+  {
+    const zn = zad({ typSachty: 'exteriérová' });
+    zn.oplasteni = { rezim: 'poStenach', steny: oplasteniStenyVychozi(zn, c) };
+    const rn0 = vypocet(zn, c, JEKLY, false);
+    const H = rn0.oplasteni.vyska;
+    zn.oplasteni.steny.B.pasy = [{ typ: 'C.skloBokyKc', doM: H + 5 }, { typ: 'C.cetrisKc', doM: null }];
+    /* neklesající výšky: druhý pás pod prvním se nezapočítá */
+    zn.oplasteni.steny.D.pasy = [{ typ: 'C.skloBokyKc', doM: 3 }, { typ: 'C.cetrisKc', doM: 1 }, { typ: 'C.skloBokyKc', doM: null }];
+    const rn = vypocet(zn, c, JEKLY, false);
+    const pasyB = rn.oplasteni.pasy.filter(p => p.stena === 'B');
+    const pasyD = rn.oplasteni.pasy.filter(p => p.stena === 'D');
+    test('N41b: jádro na stěně B započítá jen spodní pás', pasyB.length === 1, JSON.stringify(pasyB.map(p => p.typ)));
+    const t = tsOplasteniRozsah(zn, 'cz', rn);
+    const stB = (t.split('; ').find(x => x.indexOf('stěna B') >= 0) || '');
+    const stD = (t.split('; ').find(x => x.indexOf('stěna D') >= 0) || '');
+    test('N41b: specifikace u stěny B nevypíše pás, který se nepočítá', !/Cetris/i.test(stB) && !/do výšky/.test(stB), stB);
+    test('N41b: u stěny D vypíše tolik pásů, kolik jádro započítalo',
+      (stD.match(/, /g) || []).length + 1 === pasyD.length, stD + ' | jádro: ' + pasyD.length);
+    test('N41b: bez výsledku výpočtu zůstává dosavadní syrový výpis', /Cetris/i.test(tsOplasteniRozsah(zn, 'cz').split('; ').find(x => x.indexOf('stěna B') >= 0)));
+    /* Chování, ne tvar zdrojáku (T4): pole specifikace, které větu plní,
+     * musí s výsledkem výpočtu dát tentýž text. */
+    const pole = TECHSPEC_DEF.reduce((a, sk) => a.concat(sk.pole), []).find(f => f.jazykSam && f.prefill
+      && /opláštění/.test(String(f.prefill(rn, zn, c, 'cz'))));
+    test('N41b: pole specifikace plní větu podle jádra',
+      !!pole && pole.prefill(rn, zn, c, 'cz') === t, pole ? pole.prefill(rn, zn, c, 'cz') : 'pole nenalezeno');
+  }
+
   /* Ruční název u typu „jiné" se nepřekládá — vymýšlet cizojazyčný název
    * materiálu, který napsal obchodník, nesmíme. */
   const zj = zad({ typSachty: 'exteriérová' });

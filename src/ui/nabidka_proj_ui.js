@@ -248,7 +248,8 @@ function nabidkaProjNahled() {
   const logoHtml = dokLogoHtml();
   const patickaHtml = dokPatickaHtml(P);
 
-  const w = window.open('', '_blank');
+  const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
+  if (!w) return;
   w.document.write(`<!DOCTYPE html><html lang="${L === 'cz' ? 'cs' : L}"><head><meta charset="utf-8">
     <title>${esc(d.nazevSouboru)}</title>
     <style>body{font:13px/1.55 "Segoe UI",sans-serif;color:#1a2332;max-width:860px;margin:24px auto;padding:0 16px}

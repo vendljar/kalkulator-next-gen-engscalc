@@ -16,7 +16,7 @@
  * obnova nevyžaduje reset všech hesel. Ven (na Disk Google) míří jiná
  * záloha – functions/zaloha.mjs, ta otisky hesel nenese.
  * ============================================================ */
-import { uloziste } from './sdilene.mjs';
+import { uloziste, SMAZANI_ULOZISTE } from './sdilene.mjs';
 
 export function denDnes(kdy) {
   return new Date(kdy || Date.now()).toISOString().slice(0, 10);
@@ -45,7 +45,14 @@ export async function zalohaDoplnky() {
   const pd = await uloziste('podpisy');
   const podpisy = {};
   for (const k of await pd.seznam()) podpisy[k] = await pd.cti(k);
+  /* KNIHA SMAZANÝCH ÚČTŮ (23. 9. 2026, nález B58). Kdo, kdy a koho smazal —
+   * bez ní by po obnově z nulové databáze zmizela jediná stopa po smazání
+   * a obnova by neměla podle čeho odmítnout oživení smazaného účtu. */
+  const sm = await uloziste(SMAZANI_ULOZISTE);
+  const smazani = {};
+  for (const k of await sm.seznam()) smazani[k] = await sm.cti(k);
   return { zobrazeni: zobrazeni || null,
+           smazani: Object.keys(smazani).length ? smazani : null,
            popisy: popisy || null,
            zakaznici: Object.keys(zakaznici).length ? zakaznici : null,
            podpisy: Object.keys(podpisy).length ? podpisy : null };
@@ -109,7 +116,7 @@ export async function porizOtisk(zdroj, kdo, klic) {
     program: program || null, firma: firma || null,
     rejstrik: rejstrik || null, zakazky, uzivatele,
     sablony: Object.keys(sablony).length ? sablony : null,
-    ...(await zalohaDoplnky()),              // zobrazeni, popisy, zakaznici, podpisy (B9)
+    ...(await zalohaDoplnky()),              // zobrazeni, popisy, zakaznici, podpisy (B9), smazani (B58)
   };
   await (await uloziste('zalohy')).zapis(den, otisk);
   return { den, pocetZakazek: Object.keys(zakazky).length, pocetUctu: uzivatele.length };

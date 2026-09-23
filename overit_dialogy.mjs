@@ -155,6 +155,49 @@ zkus('druhá otázka přijde na řadu až po první', /Druhá/.test(fronta.text2
 zkus('každá otázka dostane svou odpověď',
   JSON.stringify(fronta.vysledek) === '[true,false]', JSON.stringify(fronta.vysledek));
 
+/* ---------- 8b) zablokované okno náhledu (23. 9. 2026, nález K6) ----------
+ * window.open vrátí null, když prohlížeč okno zablokuje. Dřív náhled spadl
+ * na w.document a nestalo se nic viditelného; teď se objeví hláška a do
+ * konzole nepadne žádná chyba. Zkouší se všech osm náhledů. */
+/* Prázdný ceník je tvrdá zábrana (dokument nevznikne ještě před oknem) —
+ * proto zkušební ceník ze src/zkusebni_cenik.js, stejně jako overit_lista. */
+{
+  const { createRequire: cr } = await import('module');
+  const ZCd = cr(import.meta.url)('./src/zkusebni_cenik.js');
+  await p.evaluate(([c, cp]) => {
+    Object.assign(DEFAULT_CENIK, c); delete DEFAULT_CENIK.prazdny;
+    Object.assign(DEFAULT_CENIK_PROJ, cp); delete DEFAULT_CENIK_PROJ.prazdny;
+    ZAK = novaZakazka(); syncVarianta(); render();
+  }, [ZCd.zkusebniCenik(), ZCd.zkusebniCenikProj()]);
+}
+const blok = await p.evaluate(async () => {
+  const puvodni = window.open;
+  window.open = () => null;
+  const chyby = [];
+  const nahledy = ['nabidkaOckDokument', 'nabidkaProjNahled', 'kryciTiskPohled', 'kryciProjTiskPohled',
+                   'detailTisk', 'porovnaniTisk', 'porovnaniPolozkyTisk', 'nabidkaNahled']
+    .filter(n => typeof window[n] === 'function');
+  let hlasek = 0, textOk = true; const bez = [];
+  for (const n of nahledy) {
+    try { const r = window[n]('bo'); if (r && r.then) await Promise.race([r, new Promise(res => setTimeout(res, 800))]); }
+    catch (e) { chyby.push(n + ': ' + e.message); }
+    await new Promise(res => setTimeout(res, 50));
+    const d = document.querySelector('#dlg');
+    if (d && /zablokoval okno/.test(d.textContent)) { hlasek++; const ok = d.querySelector('[data-dlg]'); if (ok) ok.click(); }
+    else { textOk = false; bez.push(n + ': ' + (d ? d.textContent.slice(0, 90) : 'žádný dialog')); }
+    await new Promise(res => setTimeout(res, 30));
+    /* případný jiný dialog (volba varianty apod.) zavřít, ať nebrzdí další */
+    document.querySelectorAll('#dlg [data-dlg]').forEach(x => x.click());
+  }
+  window.open = puvodni;
+  return { nahledy, hlasek, chyby, textOk, bez,
+           oknoNahledu: typeof oknoNahledu === 'function' };
+});
+zkus('K6: pomocník oknoNahledu je v sestavení', blok.oknoNahledu);
+zkus('K6: náhledy se při zablokovaném okně nesloží na chybě', blok.chyby.length === 0, blok.chyby.join(' | '));
+zkus('K6: každý nalezený náhled vysvětlí, co se stalo (' + blok.nahledy.length + ')',
+  blok.nahledy.length >= 4 && blok.hlasek === blok.nahledy.length, JSON.stringify(blok));
+
 /* ---------- 9) žádný nativní dialog se neobjevil ---------- */
 zkus('aplikace nepoužila jediný nativní dialog', nativni === 0, String(nativni));
 zkus('za celý průchod nevznikla chyba v konzoli', konzole.length === 0, konzole.slice(0, 2).join(' | '));

@@ -470,6 +470,52 @@ function uloZamekKlic(v) {
                           vysledek: z.vysledek || null });
 }
 
+/* RAZÍTKA EXISTUJÍCÍHO ZÁMKU DRŽÍ SERVER (23. 9. 2026, nález B62).
+ *
+ * Klíč zámku (uloZamekKlic) hlídá čísla a data. Pole MIMO klíč — kdo
+ * nabídku odeslal, popis dokumentu, šablona, historie tisků `tisky[]`
+ * a starší záznamy o odemčení `odemceni[]` — ale mohl u uloženého zámku
+ * přepsat kterýkoli přihlášený: zakázky nemají vlastníka a server
+ * porovnával jen `data`. Razítko „kdo odeslal" tak nebylo nezměnitelné.
+ *
+ * Teď: u varianty, která už na serveru byla zamčená a zamčená zůstává,
+ * se `kdo`, `popis` a `sablona` vezmou z uložené verze a z `tisky[]`
+ * i `odemceni[]` platí uložený ZAČÁTEK — přidávat se smí, přepsat ani ubrat
+ * ne. Neodmítá se: poctivý klient tahle pole nemění, takže oprava potká jen
+ * podvržený požadavek, a ten dostane zpátky pravdu. Vrací počet oprav. */
+function uloZamekRazitkaDrz(naDisku, kUlozeni) {
+  let oprav = 0;
+  const nove = (kUlozeni && kUlozeni.varianty) || [];
+  const stejne = (a, b) => JSON.stringify(a === undefined ? null : a) === JSON.stringify(b === undefined ? null : b);
+  const zacatek = (stare, nove) => {
+    const s = Array.isArray(stare) ? stare : [];
+    const n = Array.isArray(nove) ? nove : [];
+    const out = s.map(x => JSON.parse(JSON.stringify(x))).concat(n.slice(s.length));
+    return { out, zmena: !stejne(out, n) };
+  };
+  ((naDisku && naDisku.varianty) || []).forEach(sv => {
+    const nv = nove.find(v => v && v.id === sv.id);
+    if (!nv) return;
+    if (Array.isArray(sv.odemceni) && sv.odemceni.length) {
+      const r = zacatek(sv.odemceni, nv.odemceni);
+      if (r.zmena) { nv.odemceni = r.out; oprav++; }
+    }
+    const sz = sv.zamek, nz = nv.zamek;
+    if (!(sz && sz.zamceno && nz && nz.zamceno)) return;
+    ['kdo', 'popis', 'sablona'].forEach(k => {
+      if (!stejne(sz[k], nz[k])) {
+        if (sz[k] === undefined) delete nz[k]; else nz[k] = JSON.parse(JSON.stringify(sz[k]));
+        oprav++;
+      }
+    });
+    if (Array.isArray(sz.tisky) && sz.tisky.length) {
+      const r = zacatek(sz.tisky, nz.tisky);
+      if (r.zmena) { nz.tisky = r.out; oprav++; }
+    }
+  });
+  return oprav;
+}
+
 function uloPocetOdemceni(v) {
   return (v && Array.isArray(v.odemceni)) ? v.odemceni.length : 0;
 }
@@ -673,7 +719,7 @@ function uloIdProblemyText(problemy) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
+  module.exports = { uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
                      uloNorm, uloSlova, uloCisloVyplneno, uloKlicSouboru,
                      uloJmenoSouboru, uloJeZakazkovySoubor,
                      ULO_HLAVICKA_POLE, uloHlavickaChybi, uloHlavickaVyplnena, uloUlozeniStav,

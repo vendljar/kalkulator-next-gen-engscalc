@@ -10,7 +10,7 @@
 import { uloziste, otiskHesla, hesloSedi, relaceCookie, json, ADMIN_EMAIL,
          profilZUctu, podpisCti, FALESNY_OTISK, POKUSY_MAX, POKUSY_IP_MAX,
          zpozdeniMs, pockej, pokusyZacatek, pokusyUspech, adresaKlienta,
-         EMAIL_MAX, HESLO_MAX } from '../lib/sdilene.mjs';
+         EMAIL_MAX, HESLO_MAX, spravceNastaven } from '../lib/sdilene.mjs';
 
 export default async (req) => {
   if (req.method !== 'POST') return json({ ok: false, chyba: 'Použijte POST.' }, 405);
@@ -57,6 +57,8 @@ export default async (req) => {
      * „Vypracoval" v cenové nabídce. Kdyby si ho musela dotahovat zvlášť, první
      * nabídka udělaná hned po přihlášení by odešla bez podpisu a bez telefonu. */
     return json({ ok: true, ...profilZUctu(ucet), hlavni: ucet.email === ADMIN_EMAIL,
+      /* Jen administrátorovi (B57, #278), stejně jako /api/ja. */
+      ...(ucet.role === 'Administrátor' ? { spravceNastaven: spravceNastaven() } : {}),
       podpis: await podpisCti(ucet.email) }, 200, { 'Set-Cookie': cookie });
   }
 

@@ -77,6 +77,12 @@ const ZC = require('../src/zkusebni_cenik.js');
 const fmod = require('../src/firma.js');
 const CEN = require('../src/cenik.js');
 const zam = require('../src/zamek.js');
+/* Zámek jako v aplikaci (zamek_ui.js): nese číslo z papíru. Od 23. 9. 2026
+ * (nález B61) server nový zámek bez něj odmítne. Výslovně zadané `cislo`
+ * v testu přebije výchozí. */
+const zamkniJakoAplikace = (z, v, info) => zam.zamkniVariantu(v,
+  Object.assign({ cislo: zam.variantaCislo(z, v) }, info || {}));
+
 
 let ok = 0, fail = 0;
 const selhalo = [];
@@ -633,6 +639,15 @@ const zdraviTelo = await (await get(zdravi, 'http://x/api/zdravi')).json();
 const zdraviText = JSON.stringify(zdraviTelo);
 test('/api/zdravi neprozradí tajemství relace', !zdraviText.includes(process.env.TAJEMSTVI_RELACE));
 test('/api/zdravi neprozradí zaváděcí heslo administrátora', !zdraviText.includes(process.env.ADMIN_INIT_HESLO));
+/* B57 + #278 (23. 9. 2026): příznak „hlavní správce nastaven" nesmí jít
+ * anonymně ze /api/zdravi; dostane ho jen administrátor v /api/ja. */
+test('B57: /api/zdravi anonymně nehlásí, jestli je nastavený hlavní správce',
+  zdraviTelo.spravceNastaven === undefined && !/spravce/i.test(zdraviText), zdraviText);
+test('B57: obchodník v /api/ja příznak nedostane', jaObch.spravceNastaven === undefined, JSON.stringify(jaObch));
+{
+  const jaAdm = await (await get(ja, 'http://x/api/ja', cAdmin)).json();
+  test('#278: administrátor v /api/ja příznak dostane (tady nastaveno)', jaAdm.spravceNastaven === true, JSON.stringify(jaAdm));
+}
 test('/api/zdravi nenese data z databáze',
   !zdraviText.includes('Matice práv') && !zdraviText.includes(FIRMA.ico), zdraviText);
 
@@ -709,7 +724,7 @@ test('role se nedá přepsat na neznámou',
 console.log('\n===== ZÁMEK ODESLANÉ NABÍDKY =====\n');
 
 const zamcena = zakazkaCislo('2026 - OPR - CN - 0905');
-zam.zamkniVariantu(zamcena.varianty[0],
+zamkniJakoAplikace(zamcena, zamcena.varianty[0],
   { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Matice práv' });
 const ulozZamcenou = await (await post(zakazky, 'http://x/api/zakazky',
   { zakazka: zamcena }, cObch)).json();
@@ -759,7 +774,7 @@ test('zámek nesmí být potichu vyměněn za jiný',
  * Změřeno před opravou: cena v zámku 912 000 → 1, klíč zámku SHODNÝ,
  * `uloKontrolaZamku` ok, `data` shodná. Zápis prošel. */
 const sVysledkem = zakazkaCislo('2026 - OPR - CN - 0906');
-zam.zamkniVariantu(sVysledkem.varianty[0], {
+zamkniJakoAplikace(sVysledkem, sVysledkem.varianty[0], {
   typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Matice práv',
   vysledek: { ock: { souhrn: { zakladCena: 912000, celkemSDph: 1103520 } },
               proj: null, kurzEurKc: 25 },
@@ -789,7 +804,7 @@ test('B53: a řekne proč (uzamčená nabídka)',
  * takže null proti null sedí. Bez tohohle by oprava zablokovala historické
  * zakázky. */
 const starsiZamek = zakazkaCislo('2026 - OPR - CN - 0907');
-zam.zamkniVariantu(starsiZamek.varianty[0],
+zamkniJakoAplikace(starsiZamek, starsiZamek.varianty[0],
   { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Matice práv' });
 delete starsiZamek.varianty[0].zamek.vysledek;
 await post(zakazky, 'http://x/api/zakazky', { zakazka: starsiZamek }, cObch);
@@ -898,7 +913,7 @@ const nactiB59 = async (soubor) => (await (await get(zakazky,
    * dokumenty počítají z dat, která server hlídá sám — razítko nevzniká
    * a podvržené se zahodí. */
   const z = zakazkaSCeny('2026 - OPR - CN - 0853');
-  zam.zamkniVariantu(z.varianty[0], { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Matice práv',
+  zamkniJakoAplikace(z, z.varianty[0], { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Matice práv',
     cislo: zam.variantaCislo(z, z.varianty[0]) });
   z.varianty[0].zamek.overeni = { stav: 'shoda' };
   const odp = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: z }, cObch)).json();
@@ -946,7 +961,7 @@ test('B1: běžné identifikátory aplikace projdou',
 console.log('\n===== AUDIT B3: ODEMČENÍ ODESLANÉ NABÍDKY =====\n');
 
 const odemZak = zakazkaCislo('2026 - OPR - CN - 0962');
-zam.zamkniVariantu(odemZak.varianty[0], { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Obchodník' });
+zamkniJakoAplikace(odemZak, odemZak.varianty[0], { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Obchodník' });
 test('B3: příprava — zamčená zakázka uložena',
   (await post(zakazky, 'http://x/api/zakazky', { zakazka: odemZak }, cObch)).status === 200);
 const odemPodvrh = JSON.parse(JSON.stringify(odemZak));
@@ -1152,7 +1167,7 @@ console.log('\n===== AUDIT B13: RAZÍTKA PŘI ZALOŽENÍ =====\n');
   const ul2 = (await (await get(zakazky, 'http://x/api/zakazky?soubor=2026-OPR-CN-0971.json', cAdmin)).json()).zakazka;
   test('B13: administrátor smí při obnově ponechat cizího autora', ul2.autor === UCTY['Vedoucí'].email, ul2.autor);
   const zam2 = zakazkaCislo('2026 - OPR - CN - 0972');
-  zam.zamkniVariantu(zam2.varianty[0], { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Podvržený Odesílatel' });
+  zamkniJakoAplikace(zam2, zam2.varianty[0], { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Podvržený Odesílatel' });
   await post(zakazky, 'http://x/api/zakazky', { zakazka: zam2 }, cObch);
   const ul3 = (await (await get(zakazky, 'http://x/api/zakazky?soubor=2026-OPR-CN-0972.json', cAdmin)).json()).zakazka;
   test('B13: razítko nového zámku píše server z relace',
@@ -1463,7 +1478,7 @@ const razitkova = zakazkaCislo('2026 - OPR - CN - 0940');
 razitkova.varianty[0].data.sleva = { procenta: 6, role: 'Vedoucí',
   stav: 'schváleno', schvalenoProc: 6, schvalil: 'mazany@example.com',
   schvalilKdy: new Date().toISOString(), poznamka: '' };
-zam.zamkniVariantu(razitkova.varianty[0],
+zamkniJakoAplikace(razitkova, razitkova.varianty[0],
   { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'mazany@example.com' });
 await post(zakazky, 'http://x/api/zakazky', { zakazka: razitkova }, cMazany);
 await post(zakazky, 'http://x/api/zakazky',
@@ -1866,7 +1881,8 @@ console.log('\n===== MAZÁNÍ ZAKÁZEK =====\n');
 
   /* Odeslaná (uzamčená) nabídka je doklad — smaže se jen na druhé potvrzení. */
   const sZamkem = zakazkaCislo('2026 - OPR - CN - 0951');
-  sZamkem.varianty[0].zamek = { zamceno: true, kdy: '2026-08-21T10:00:00.000Z', kdo: ADMIN_EMAIL };
+  sZamkem.varianty[0].zamek = { zamceno: true, kdy: '2026-08-21T10:00:00.000Z', kdo: ADMIN_EMAIL,
+    cislo: zam.variantaCislo(sZamkem, sZamkem.varianty[0]), cisloPapir: true };   // jako z aplikace (B61)
   await post(zakazky, 'http://x/api/zakazky', { zakazka: sZamkem }, cAdmin);
   const odmitnuto = await smaz(zakazky, 'http://x/api/zakazky?soubor=2026-OPR-CN-0951.json', cAdmin);
   test('zakázku s odeslanou nabídkou server napoprvé odmítne', odmitnuto.status === 409);
@@ -2007,7 +2023,7 @@ console.log('\n===== AUDIT B26 / B29: KID TRVALÝCH POLOŽEK A DUPLICITNÍ ID ==
 {
   const puvodniCislo = '2026 - OPR - CN - 0990';
   const zOdeslana = zakazkaCislo(puvodniCislo);
-  zam.zamkniVariantu(zOdeslana.varianty[0], {
+  zamkniJakoAplikace(zOdeslana, zOdeslana.varianty[0], {
     typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Matice práv',
     cislo: zam.variantaCislo(zOdeslana, zOdeslana.varianty[0]),
   });
@@ -2039,15 +2055,78 @@ console.log('\n===== AUDIT B26 / B29: KID TRVALÝCH POLOŽEK A DUPLICITNÍ ID ==
 
   /* Zámky pořízené dřív než pole `cislo` ho mají prázdné — ty se
    * přeskakují, jinak by oprava zablokovala historické zakázky. */
+  /* Takový zámek už v databázi LEŽÍ (vznikl před polem `cislo`) — zapisuje se
+   * proto rovnou do úložiště. Přes API by to byl NOVÝ zámek a ten od 23. 9.
+   * bez čísla neprojde (B61). */
   const starsi = zakazkaCislo('2026 - OPR - CN - 0992');
-  zam.zamkniVariantu(starsi.varianty[0],
-    { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Matice práv' });
+  zam.zamkniVariantu(starsi.varianty[0], { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Matice práv' });
   starsi.varianty[0].zamek.cislo = '';
-  await post(zakazky, 'http://x/api/zakazky', { zakazka: starsi }, cObch);
+  delete starsi.varianty[0].zamek.cisloPapir;
+  pamet.set('zakazky/z/2026-OPR-CN-0992.json', JSON.stringify(starsi));
+  test('B56: zámek bez razítka čísla se ukládá dál (starší zakázky)',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: JSON.parse(JSON.stringify(starsi)) }, cObch)).status === 200);
+  /* B61 (23. 9. 2026): pod JINÝM číslem je to jiný soubor, zámek je pro
+   * server nový — a nový zámek bez čísla z papíru se odmítne. Dřív tudy
+   * prošla „odeslaná" nabídka pod novým číslem bez jakéhokoli porovnání. */
   const starsiJinak = JSON.parse(JSON.stringify(starsi));
   starsiJinak.cislo = '2026 - OPR - CN - 0993';
-  test('B56: zámek bez razítka čísla se ukládá dál (starší zakázky)',
-    (await post(zakazky, 'http://x/api/zakazky', { zakazka: starsiJinak }, cObch)).status === 200);
+  test('B61: starý zámek bez čísla pod novým číslem zakázky neprojde (409)',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: starsiJinak }, cObch)).status === 409);
+  test('B61: ani administrátorovi (jeho aplikace takový zámek vyrobit neumí)',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: JSON.parse(JSON.stringify(starsiJinak)) }, cAdmin)).status === 409);
+  test('B61: a soubor pod novým číslem nevznikl', !pamet.has('zakazky/z/2026-OPR-CN-0993.json'));
+  /* Nový zámek s číslem, které data nedávají (upravený klient), taky ne. */
+  const podvrh = zakazkaCislo('2026 - OPR - CN - 0994');
+  zamkniJakoAplikace(podvrh, podvrh.varianty[0], { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'x',
+    cislo: '2026 - OPR - CN - 0001' });
+  test('B61: nový zámek s cizím číslem obchodníkovi neprojde (B56, 403)',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: JSON.parse(JSON.stringify(podvrh)) }, cObch)).status === 403);
+  /* Administrátor číslo odeslané nabídky měnit smí (rozhodnutí 15. 9. 2026);
+   * server mu razítko srovná podle dat, takže podvržené číslo v zámku nezůstane. */
+  await post(zakazky, 'http://x/api/zakazky', { zakazka: podvrh }, cAdmin);
+  const podvrhUl = JSON.parse(pamet.get('zakazky/z/2026-OPR-CN-0994.json') || 'null');
+  test('B61: u administrátora server číslo v zámku srovná podle dat',
+    !!podvrhUl && podvrhUl.varianty[0].zamek.cislo === '2026 - OPR - CN - 0994',
+    podvrhUl && podvrhUl.varianty[0].zamek.cislo);
+  const bezZnacky = zakazkaCislo('2026 - OPR - CN - 0995');
+  zamkniJakoAplikace(bezZnacky, bezZnacky.varianty[0], { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'x' });
+  delete bezZnacky.varianty[0].zamek.cisloPapir;
+  test('B61: nový zámek bez značky cisloPapir se odmítne (mírnější hlídání B56 si nevynutí)',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: bezZnacky }, cObch)).status === 409);
+}
+
+/* ---------- B62: razítka existujícího zámku (23. 9. 2026) ----------
+ * Pole mimo klíč zámku smí u uloženého zámku přepsat kdokoli — dřív ano,
+ * teď je server vrátí podle uložené verze. Přidávat do tisky[] se smí. */
+{
+  const rz = zakazkaCislo('2026 - OPR - CN - 0996');
+  zamkniJakoAplikace(rz, rz.varianty[0], { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Matice práv',
+    popis: 'Cenová nabídka OCK (Word)', sablona: { nazev: 'sablona-v10.docx' } });
+  await post(zakazky, 'http://x/api/zakazky', { zakazka: rz }, cObch);
+  const ul0 = JSON.parse(pamet.get('zakazky/z/2026-OPR-CN-0996.json'));
+  const kdoPuvodne = ul0.varianty[0].zamek.kdo;
+  const podvrh = JSON.parse(JSON.stringify(ul0));
+  const z = podvrh.varianty[0].zamek;
+  z.kdo = 'Podvržený Odesílatel'; z.popis = 'jiný dokument'; z.sablona = { nazev: 'cizi.docx' };
+  z.tisky[0].kdo = 'Přepsaný tisk';
+  z.tisky.push({ kdy: new Date().toISOString(), typ: 'nabidka', kdo: 'Dotisk' });   // přidat se smí
+  const odp = await post(zakazky, 'http://x/api/zakazky', { zakazka: podvrh }, cObch);
+  const ul = JSON.parse(pamet.get('zakazky/z/2026-OPR-CN-0996.json'));
+  const zu = ul.varianty[0].zamek;
+  test('B62: uložení s přepsanými razítky projde (poctivý klient je nemění, podvrh dostane pravdu)', odp.status === 200, 'vrátil ' + odp.status);
+  test('B62: „kdo odeslal" zůstal podle uložené verze', zu.kdo === kdoPuvodne && zu.kdo !== 'Podvržený Odesílatel', zu.kdo);
+  /* Šablona se zapisuje k záznamu tisku, v samotném zámku není — podvržená
+   * `zamek.sablona` proto zmizí a platí ta z prvního tisku. */
+  test('B62: popis zůstal a podvržená šablona se do zámku nedostala',
+    zu.popis === 'Cenová nabídka OCK (Word)' && zu.sablona === undefined
+      && zu.tisky[0].sablona && zu.tisky[0].sablona.nazev === 'sablona-v10.docx',
+    JSON.stringify([zu.popis, zu.sablona, zu.tisky[0].sablona]));
+  test('B62: dřívější záznam v tisky[] se přepsat nedá', zu.tisky[0].kdo !== 'Přepsaný tisk', JSON.stringify(zu.tisky[0]));
+  test('B62: nový dotisk se do tisky[] přidat smí', zu.tisky.length === 2 && zu.tisky[1].kdo === 'Dotisk', JSON.stringify(zu.tisky));
+  const ubrano = JSON.parse(JSON.stringify(ul));
+  ubrano.varianty[0].zamek.tisky = [];
+  await post(zakazky, 'http://x/api/zakazky', { zakazka: ubrano }, cObch);
+  test('B62: ubrat záznamy z tisky[] nejde', JSON.parse(pamet.get('zakazky/z/2026-OPR-CN-0996.json')).varianty[0].zamek.tisky.length === 2);
 }
 
 /* ---------- #320: JEDNO ČÍSLO VARIANTY × B56 ----------
@@ -2068,6 +2147,8 @@ console.log('\n===== AUDIT B26 / B29: KID TRVALÝCH POLOŽEK A DUPLICITNÍ ID ==
   l2.zamek = { zamceno: true, kdy: '2026-09-18T08:00:00.000Z', typ: 'nabidka', popis: 'Cenová nabídka OCK (Word)',
                kdo: 'Matice práv', cislo: '2026 - OPR - CN - 0860.1', otisk: null,
                tisky: [{ kdy: '2026-09-18T08:00:00.000Z', typ: 'nabidka' }] };
+  /* Zakázka s tímhle zámkem už v databázi je (uložená před #320). */
+  pamet.set('zakazky/z/2026-OPR-CN-0860.json', JSON.stringify(legacy));
   const odpL = await post(zakazky, 'http://x/api/zakazky', { zakazka: legacy }, cObch);
   test('#320: stará zakázka se starým zámkem (.1) se po přečíslování uloží (žádné 403)',
     odpL.status === 200, 'vrátil ' + odpL.status);

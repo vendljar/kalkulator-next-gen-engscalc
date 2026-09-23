@@ -533,6 +533,24 @@ export default async (req) => {
             + ') — po obnově se přihlaste znovu heslem, které platilo tehdy.');
         await zaznam(b, s, email, novy, rezim, zapisovat);
       }
+      /* Kniha smazaných účtů (B58, 23. 9. 2026) jde se zálohou a obnovuje se
+       * spolu s účty, tedy jen ze serverového otisku. Záznam se jen DOPLNÍ:
+       * existující se nepřepisuje, a u e-mailu, pod kterým dnes žije
+       * nesmazaný účet (znovu založený kolega), se nezapíše — kniha by jinak
+       * tvrdila, že je smazaný někdo, kdo pracuje. */
+      const bs = bilance();
+      const knihaZal = (zaloha.smazani && typeof zaloha.smazani === 'object' && !Array.isArray(zaloha.smazani)) ? zaloha.smazani : {};
+      for (const [k, zaz] of Object.entries(knihaZal)) {
+        const email = String(k || '').trim().toLowerCase();
+        if (!email || !emailPlatny(email) || !zaz || zaz.smazano !== true) { preskoc(bs, email || '?', 'záznam nemá platný tvar'); continue; }
+        if (await kniha.cti(email)) { bs.bezeZmeny++; continue; }
+        const ucet = await s.cti(email);
+        if (ucet && !ucet.smazano) { preskoc(bs, email, 'pod tímto e-mailem dnes je účet — do knihy smazaných se nezapisuje'); continue; }
+        if (zapisovat) await kniha.zapis(email, { email, smazano: true, kdy: String(zaz.kdy || ''), kdo: String(zaz.kdo || ''),
+          zakazek: Number.isFinite(+zaz.zakazek) ? +zaz.zakazek : 0 });
+        bs.nove++;
+      }
+      vysledek.smazani = bs;
     }
     vysledek.uzivatele = b;
   }

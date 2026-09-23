@@ -303,7 +303,9 @@ function onlinePrihlas() {
 function onlinePoPrihlaseni(ja) {
   ONLINE_STAV.ja = { email: ja.email, jmeno: ja.jmeno || '', role: ja.role,
     titul: ja.titul || '', funkce: ja.funkce || '', telefon: ja.telefon || '',
-    podpis: ja.podpis || '' };
+    podpis: ja.podpis || '',
+    /* Jen u administrátora (#278, B57); jinde undefined = server to neřekl. */
+    spravceNastaven: (typeof ja.spravceNastaven === 'boolean') ? ja.spravceNastaven : undefined };
   ONLINE_STAV.uzivateleNacteno = false;   // seznam účtů se načte čerstvý
   if (typeof NAST !== 'undefined') {
     NAST.uzivatel = ja.jmeno || ja.email;
@@ -2905,11 +2907,28 @@ function onlineRadekUzivatele(u) {
 
 /* HTML správy účtů. Vykresluje se v panelu Nastavení (vnitřní záložka
  * Uživatelé) – tam, kde uživatel správu hledá (zadání 4. 8. 2026). */
+/* Je na serveru nastavený hlavní správce? (23. 9. 2026, #278)
+ *
+ * J. V. se 21. 9. ptal, kde to zjistí; odpověď „napište si do adresy
+ * /api/zdravi" nebyla odpověď. Bez proměnné ADMIN_EMAIL neplatí ochrany
+ * hlavního účtu a server zastaví správu uživatelů i obnovu ze zálohy (B54) —
+ * a to se administrátor musí dozvědět tady, kde uživatele spravuje.
+ * Údaj posílá server jen administrátorovi (B57). */
+function onlineSpravceStavHtml() {
+  const v = ONLINE_STAV.ja ? ONLINE_STAV.ja.spravceNastaven : undefined;
+  if (v === true) return `<div class="note spravce-stav" style="margin:0 0 8px">✔ Hlavní správce je na serveru
+    nastavený — ochrany hlavního účtu platí.</div>`;
+  if (v === false) return `<div class="cenik-stari spravce-stav" style="margin:0 0 8px">⚠ <b>Hlavní správce není na serveru
+    nastavený</b> (proměnná <code>ADMIN_EMAIL</code> v nastavení webu v Netlify). Ochrany hlavního účtu
+    neplatí a server proto odmítne správu uživatelů i obnovu ze zálohy. Doplňte proměnnou a web nasaďte znovu.</div>`;
+  return '';
+}
+
 function onlineUzivateleHtml() {
   const f = ONLINE_STAV.uzForm;
   /* Hláška (úspěch i odmítnutí serverem) se ukazuje PŘÍMO TADY — dřív šla
    * jen do karty na jiné záložce a založení účtu vypadalo, že nic nedělá. */
-  return `${ONLINE_STAV.hlaska ? `<div class="${zapisTridaHlasky(ONLINE_STAV.hlaskaTyp)}">${esc(ONLINE_STAV.hlaska)}</div>` : ''}
+  return `${onlineSpravceStavHtml()}${ONLINE_STAV.hlaska ? `<div class="${zapisTridaHlasky(ONLINE_STAV.hlaskaTyp)}">${esc(ONLINE_STAV.hlaska)}</div>` : ''}
     <div class="tab-scroll"><table class="vartbl archtbl">
       <tr><th style="text-align:left">E-mail</th><th style="text-align:left">Titul</th>
           <th style="text-align:left">Jméno / funkce</th><th style="text-align:left">Telefon</th>

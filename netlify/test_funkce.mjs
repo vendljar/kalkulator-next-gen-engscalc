@@ -203,6 +203,12 @@ test('zveřejněná firma nenese značku ukázkových dat', fCteni.firma.udaje.u
 /* 5) zakázky: uložení, rejstřík, načtení, ochrana zámku */
 Object.assign(globalThis, require('../src/format.js'), require('../src/engine.js'), require('../src/engine_proj.js'), require('../src/techspec.js'), require('../src/sleva.js'), require('../src/zaokrouhleni.js'), require('../src/zamek.js'));
 const zm = require('../src/zamek.js');
+/* Zámek jako v aplikaci (zamek_ui.js): nese číslo z papíru. Od 23. 9. 2026
+ * (nález B61) server nový zámek bez něj odmítne. Výslovně zadané `cislo`
+ * v testu přebije výchozí. */
+const zamkniJakoAplikace = (z, v, info) => zm.zamkniVariantu(v,
+  Object.assign({ cislo: zm.variantaCislo(z, v) }, info || {}));
+
 const zak = zk.novaZakazka(); zak.cislo = '2026 - OPR - CN - 0777'; zak.nazevAkce = 'Online test';
 const ul1 = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zak }, cookieObch)).json();
 test('zakázka se uloží online', ul1.ok === true && !!ul1.soubor, JSON.stringify(ul1));
@@ -210,7 +216,7 @@ const rej = await (await get(zakazky, 'http://x/api/zakazky', cookieObch)).json(
 test('rejstřík zakázku eviduje', rej.ok && rej.rejstrik.zakazky.length === 1 && rej.rejstrik.zakazky[0].soubor === ul1.soubor);
 const nact = await (await get(zakazky, 'http://x/api/zakazky?soubor=' + encodeURIComponent(ul1.soubor), cookieObch)).json();
 test('zakázka se načte zpět beze změny čísla', nact.ok && nact.zakazka.cislo === zak.cislo);
-zm.zamkniVariantu(zak.varianty[0], { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Test' });
+zamkniJakoAplikace(zak, zak.varianty[0], { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Test' });
 await post(zakazky, 'http://x/api/zakazky', { zakazka: zak }, cookieObch);   // uložit se zámkem
 const zakUtok = JSON.parse(JSON.stringify(zak));
 zakUtok.varianty[0].data.ock.zadani.sirka = 9.99;                            // pokus změnit odeslanou nabídku

@@ -248,5 +248,17 @@ test('shoda: jiná firma se pozná', (() => {
   return v.shodne === false && v.rozdily.includes('Název firmy');
 })());
 
+/* B68 (23. 9. 2026): typ a délka polí při zveřejnění. */
+{
+  const dlouhy = Object.assign({}, Fskut, { kapPozadavky: 'x'.repeat(20001) });
+  test('B68: text kapitoly nad 20 000 znaků se nezveřejní', fm.firmaLzeZverejnit(dlouhy).ok === false
+    && /Požadavky/.test(fm.firmaLzeZverejnit(dlouhy).duvod), fm.firmaLzeZverejnit(dlouhy).duvod);
+  test('B68: dlouhý, ale rozumný text kapitoly projde', fm.firmaLzeZverejnit(Object.assign({}, Fskut, { kapPozadavky: 'x'.repeat(5000) })).ok === true);
+  test('B68: objekt místo textu se nezveřejní', fm.firmaLzeZverejnit(Object.assign({}, Fskut, { dolozky: { a: 1 } })).ok === false);
+  const kratke = fm.FIRMA_POLE.find(p => p.typ !== 'textarea' && p.typ !== 'check');
+  test('B68: krátké pole nad 2000 znaků se nezveřejní',
+    !!kratke && fm.firmaLzeZverejnit(Object.assign({}, Fskut, { [kratke.id]: 'y'.repeat(2001) })).ok === false, kratke && kratke.id);
+}
+
 console.log(fail ? `\n${fail} CHYB` : '\nVŠECHNY TESTY FIRMA OK');
 process.exit(fail ? 1 : 0);

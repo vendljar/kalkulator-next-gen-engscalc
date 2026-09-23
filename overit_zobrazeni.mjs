@@ -858,6 +858,19 @@ test('ceník OCK založí trvalou položku do katalogu',
 /* Založíme obchodníka a odhlásíme se. */
 await page.evaluate(() => { nastPanel('uzivatele'); });
 await page.waitForFunction(() => { try { return ONLINE_STAV.uzivateleNacteno; } catch (e) { return false; } });
+/* #278 (23. 9. 2026): administrátor vidí, jestli je na serveru nastavený
+ * hlavní správce — přímo u správy uživatelů, ne v /api/zdravi. */
+test('#278: panel Uživatelé ukáže, že hlavní správce je nastavený',
+  await page.evaluate(() => /Hlavní správce je na serveru\s+nastavený/.test(
+    (document.querySelector('#nastaveni-panel .spravce-stav') || {}).textContent || '')));
+test('#278: nenastavený správce se ukáže jako varování s návodem',
+  await page.evaluate(() => {
+    const puv = ONLINE_STAV.ja.spravceNastaven;
+    ONLINE_STAV.ja.spravceNastaven = false;
+    const h = onlineUzivateleHtml();
+    ONLINE_STAV.ja.spravceNastaven = puv;
+    return /není na serveru\s+nastavený/.test(h) && h.includes('ADMIN_EMAIL');
+  }));
 await page.fill('#onlineUzEmail', 'obchodnik@priklad.cz');
 await page.fill('#onlineUzJmeno', 'Petr Novák');
 await page.fill('#onlineUzHeslo', 'ObchodniHeslo1');
