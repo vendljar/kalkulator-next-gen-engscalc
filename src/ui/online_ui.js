@@ -238,11 +238,42 @@ function onlineVerzeHlidkaStart() {
   /* Od 8. 9. 2026 rozdíl verzí stránku zablokuje (renderVerzeOverlay), tak
    * ať se na něj nečeká deset minut: dotaz každé 3 minuty a navíc při každém
    * návratu do záložky nebo okna — přesně tehdy se s aplikací začne pracovat. */
-  onlineVerzeCasovac = setInterval(onlineVerzeTik, 3 * 60 * 1000);
+  onlineVerzeCasovac = setInterval(() => { onlineVerzeTik(); onlineZobrazeniObnov(); }, 3 * 60 * 1000);
   if (typeof document !== 'undefined') {
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') onlineVerzeTik(); });
-    window.addEventListener('focus', () => onlineVerzeTik());
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { onlineVerzeTik(); onlineZobrazeniObnov(); } });
+    window.addEventListener('focus', () => { onlineVerzeTik(); onlineZobrazeniObnov(); });
   }
+}
+
+/* NASTAVENÍ ZOBRAZENÍ SE PŘIHLÁŠENÉMU OBCHODNÍKOVI OBNOVUJE SAMO
+ * (23. 9. 2026, hlášeno J. V.: „když vyberu skrýt, tak obchodník sekci
+ * stále vidí").
+ *
+ * Matice se dosud četla jen při přihlášení. Obchodník, který měl aplikaci
+ * otevřenou, tedy skrytou sekci viděl dál — až do obnovení stránky, a to
+ * i celé dny (stránka zůstává otevřená, viz hlídka verze výš). Teď se
+ * matice přečte znovu spolu s hlídkou verze: každé 3 minuty a při návratu
+ * do okna, nejčastěji jednou za minutu. Překresluje se, JEN když se něco
+ * změnilo — jinak by návrat do okna zbytečně sahal do obrazovky.
+ *
+ * Administrátora to vynechává: matici sám upravuje a ukládá (včetně
+ * odloženého uložení panelu za 800 ms), takže stažení by mu mohlo přepsat
+ * zaškrtnutí, které ještě neodešlo. */
+let onlineZobrazeniObnovCas = 0;
+function onlineZobrazeniObnov(vynutit) {
+  if (typeof ONLINE_STAV === 'undefined' || !ONLINE_STAV.ja || jeAdminOnline()) return Promise.resolve(false);
+  const ted = Date.now();
+  if (!vynutit && ted - onlineZobrazeniObnovCas < 60 * 1000) return Promise.resolve(false);
+  onlineZobrazeniObnovCas = ted;
+  return onlineApi('/api/zobrazeni').then(o => {
+    const nova = (o.zobrazeni && o.zobrazeni.matice) ? o.zobrazeni : null;
+    const otisk = z => JSON.stringify(z ? z.matice : null);
+    if (otisk(nova) === otisk(ONLINE_STAV.zobrazeni)) return false;
+    ONLINE_STAV.zobrazeni = nova;
+    onlineZobrazeniNasad(nova ? nova.matice : null);
+    if (typeof render === 'function') render();
+    return true;
+  }).catch(() => false);      // ticho: platí dál, co je načtené; hlásí se až chyba při přihlášení
 }
 function onlineVerzeTik() {
   return fetch('/api/zdravi').then(r => (r.ok ? r.json() : null)).then(z => {

@@ -114,7 +114,7 @@ function renderInputs() {
    * v gridu a sloupce by se zúžily tak, že se popisky lámou. */
   const sl = (obsah) => `<div>${obsah}</div>`;
   document.getElementById('inputs').innerHTML =
-    card('Zadání šachty',
+    kartaRezim('ock', 'zadani', 'Zadání šachty',
       `<div class="zadani-ctyri">`
       + sl(
         /* Vlastní obsluha (9. 9. 2026): přepnutí typu dosadí výchozí profily. */
@@ -191,11 +191,11 @@ function renderInputs() {
        * v ceníku varianty (`C.atypPrirazka`, sekce REŽIE), takže se pořád
        * mění u jednotlivé nabídky a starší nabídky se nepřepočítávají;
        * mění ji ten, kdo vidí ceník. */
-      '', false, 'ock-zadani') +
+      '', 'ock-zadani') +
     /* Stěny stojí hned za zadáním šachty: navazují na přepínač Opláštění
        o pár polí výš a patří k popisu stavby, ne k cenám. */
     oplasteniKarta() +
-    card('Dimenze profilů',
+    kartaRezim('ock', 'profily', 'Dimenze profilů',
       profRow('sloupek', 'Sloupek') + profRow('precnikBok', 'Příčníky bok/zadek') + profRow('sloupekPortal', 'Sloupek portálu') +
       profRow('precnikPortal', 'Příčníky portálu') + profRow('spojka', 'Spojka sloupků') + profRow('lemovani', 'Lemování ext. šachty') +
       /* Rezervy se zadávají v PROCENTECH (17. 8. večer): 30 = +30 % k množství
@@ -205,8 +205,8 @@ function renderInputs() {
       /* Karta je od 19. 8. 2026 ve výchozím stavu SBALENÁ (zadání J. V.):
        * dimenze se mění zřídka a obchodníka při běžné práci jen ruší.
        * Kliknutím na nadpis se karta kdykoli rozbalí. */
-      inp('Z.rezervaPlechyPct', { type: 'pct', l: 'Rezerva plechy (atyp)' }), true, 'ock-profily') +
-    card('Práce a režie',
+      inp('Z.rezervaPlechyPct', { type: 'pct', l: 'Rezerva plechy (atyp)' }), 'ock-profily', true) +
+    kartaRezim('ock', 'prace', 'Práce a režie',
       inp('Z.montazZakladHod', { l: 'Montáž – základ (1 os.)', step: 1, u: 'hod', klic: 'Z.montazZakladHod ← C.vychMontazZakladHod' }) +
       inp('Z.montazAtypHod', { l: 'Montáž – atyp navíc', step: 1, u: 'hod', klic: 'Z.montazAtypHod ← C.atypMontazPct' }) +
       inp('Z.projekceZakladHod', { l: 'Projekce – základ', step: 1, u: 'hod', klic: 'Z.projekceZakladHod ← C.vychProjekceZakladHod' }) +
@@ -224,7 +224,7 @@ function renderInputs() {
        * z celého základu kalkulace, příplatky z příplatků — jako dosud,
        * mění se jen zadávání (v datech zůstává desetinný podíl). */
       inp('Z.rezervaZakladPct', { type: 'pct', l: 'REZERVA základ', klic: 'Z.rezervaZakladPct ← C.atypRezervaZakladPct' }) +
-      inp('Z.rezervaPriplatkyPct', { type: 'pct', l: 'REZERVA příplatky', klic: 'Z.rezervaPriplatkyPct ← C.atypRezervaPriplatkyPct' }), false, 'ock-prace');
+      inp('Z.rezervaPriplatkyPct', { type: 'pct', l: 'REZERVA příplatky', klic: 'Z.rezervaPriplatkyPct ← C.atypRezervaPriplatkyPct' }), 'ock-prace');
 }
 
 /* ---- ceník → zadání pro jednu variantu (1. 9. 2026) ----
@@ -982,7 +982,7 @@ function oplasteniKarta() {
    * otisku (nález A1). Hlídá to `test_zamek_otisk.js` — a chytil to hned. */
   let opl = null;
   try { opl = (vypocetAkt() || {}).oplasteni || null; } catch (e) { opl = null; }
-  return card('Opláštění po stěnách (A–D)',
+  return kartaRezim('ock', 'oplasteniSteny', 'Opláštění po stěnách (A–D)',
     /* Každá stěna je JEDEN blok. Bez toho ji `.inputs .card .body` rozseká:
      * ten grid sází do sloupců každý `.row` zvlášť, takže hlavičky čtyř stěn
      * stály vedle sebe v ~290px sloupcích (popisek se lámal do svislého
@@ -1009,7 +1009,7 @@ function oplasteniKarta() {
       <b>Terče, lišty a plastové kotvy</b> se počítají z rozměrů šachty —
       typ opláštění s nimi zatím nehýbe.
       Režim po stěnách je vždy <b>mimo standard</b> — standard zná jen jednotné opláštění.</div>`,
-    false, 'ock-oplasteni-steny');
+    'ock-oplasteni-steny');
 }
 
 /* ---- vlastní ruční položky v jednotlivých sekcích ---- */
@@ -1839,7 +1839,7 @@ function renderOutputs() {
   document.getElementById('outputs').innerHTML =
     (elSouhrn ? '' : `<div class="card"><div class="body">${hlava}${marzeLista({ cast: 'ock' })}</div></div>`
       + kartaPoznamek) +
-    card('Cenová kalkulace', kalkulace, false, 'ock-kalkulace') +
+    kartaRezim('ock', 'kalkulace', 'Cenová kalkulace', kalkulace, 'ock-kalkulace') +
     /* Obě karty mají od 20. 8. 2026 režim sekce (zobrazit/skrýt/srolovat)
      * stejně jako sekce v tabulce kalkulace — dřív ho neměly, ačkoli je
      * obchodník vidí jako úplně stejné bloky. */

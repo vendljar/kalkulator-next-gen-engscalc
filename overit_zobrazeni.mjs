@@ -358,6 +358,45 @@ test('srolování karty ji zavře (třída closed) a jde rozbalit',
     return zavrena && otevrena;
   }));
 
+/* ---------- režim u VŠECH karet Kalkulace OCK (23. 9. 2026) ----------
+ * Zadání J. V.: „přidej skrývací a rolovací tlačítka do všech sekcí
+ * kalkulace OCK … stejný formát jako u detailu mezivýpočtu." Do té doby je
+ * měly jen sekce tabulky, Příplatky, Detail a Poznámky. */
+const KARTY_OCK = { 'ock-zadani': 'zadani', 'ock-profily': 'profily', 'ock-prace': 'prace',
+  'ock-kalkulace': 'kalkulace', 'ock-sleva': 'sleva', 'ock-zaokr': 'zaokr', 'ock-nabidka': 'nabidka' };
+const bezSelectu = await page.evaluate((karty) => {
+  prepniTab('kalk'); render();
+  return Object.entries(karty).filter(([id, k]) => {
+    const el = document.getElementById(id);
+    const h2 = el && el.querySelector(':scope > h2');
+    return !(h2 && h2.innerHTML.includes("sekceRezimSet('ock." + k + "'"));
+  }).map(([id]) => id);
+}, KARTY_OCK);
+test('každá karta Kalkulace OCK má v nadpisu select režimu', bezSelectu.length === 0, bezSelectu.join(', '));
+test('srolovaná karta má vedle selectu tlačítko „▸ rozbalit" jako Detail mezivýpočtů',
+  await page.evaluate(() => {
+    sekceRezimSet('ock.prace', 'srolovat');
+    prepniTab('kalk'); render();
+    const el = document.getElementById('ock-prace');
+    const ok = el.classList.contains('closed') && el.querySelector(':scope > h2').innerHTML.includes('▸ rozbalit');
+    sekceRozbal('ock.prace');
+    const otevrena = !document.getElementById('ock-prace').classList.contains('closed');
+    sekceRezimSet('ock.prace', 'zobrazit');
+    return ok && otevrena;
+  }));
+test('Dimenze profilů zůstávají ve výchozím stavu sbalené',
+  await page.evaluate(() => document.getElementById('ock-profily').classList.contains('closed')));
+test('administrátorovi skrytá karta zůstane i se štítkem „skrytá ostatním"',
+  await page.evaluate(() => {
+    sekceRezimSet('ock.profily', 'skryt');
+    prepniTab('kalk'); render();
+    const el = document.getElementById('ock-profily');
+    return !!el && el.innerHTML.includes('skrytá ostatním');
+  }));
+await page.waitForTimeout(400);
+await page.evaluate(() => { sekceRezimSet('ock.sleva', 'srolovat'); });
+await page.waitForTimeout(400);
+
 /* ---------- tisková tlačítka krycích listů (20. 8. 2026) ----------
  * Přestěhovala se dolů nad smlouvu, Word zmizel z obrazovky (funkce zůstala)
  * a obě PDF cesty jsou modré. */
@@ -861,6 +900,45 @@ test('skrytá sekce OCK (REŽIE) se obchodníkovi vůbec nekreslí',
     return !document.getElementById('ock-sek-rezie')
       && !!document.getElementById('ock-sek-hrubaOck');   // ostatní sekce zůstávají
   }));
+test('skrytá KARTA (Dimenze profilů) se obchodníkovi nekreslí',
+  await page.evaluate(() => { prepniTab('kalk'); render(); return !document.getElementById('ock-profily')
+    && !!document.getElementById('ock-prace'); }));
+test('a zmizí i její kotva v klouzající liště (stejně jako kotva skryté REŽIE)',
+  await page.evaluate(() => {
+    const h = document.getElementById('page-kalk').innerHTML;
+    return !h.includes('href="#ock-profily"') && !h.includes('href="#ock-sek-rezie"') && h.includes('href="#ock-prace"');
+  }));
+test('srolovaná karta (Sleva) je obchodníkovi sbalená a má „▸ rozbalit"',
+  await page.evaluate(() => {
+    const el = document.getElementById('ock-sleva');
+    return !!el && el.classList.contains('closed') && el.innerHTML.includes('▸ rozbalit');
+  }));
+/* Změna za chodu: administrátor skryje sekci, zatímco obchodník má aplikaci
+ * otevřenou. Dřív ji obchodník viděl až do obnovení stránky. Zápis jde
+ * rovnou do paměťového úložiště serveru — jako by ho udělal jiný prohlížeč. */
+{
+  const z = JSON.parse(pamet.get('program/zobrazeni'));
+  z.matice.sekce = Object.assign({}, z.matice.sekce, { 'ock.prace': 'skryt', 'ock.hrubaOck': 'skryt' });
+  pamet.set('program/zobrazeni', JSON.stringify(z));
+}
+test('před obnovou obchodník Práci a režii ještě vidí (načteno při přihlášení)',
+  await page.evaluate(() => !!document.getElementById('ock-prace')));
+test('obnova nastavení zobrazení změnu přinese a překreslí',
+  await page.evaluate(async () => await onlineZobrazeniObnov(true) === true));
+test('po obnově obchodník skrytou kartu i sekci tabulky nevidí',
+  await page.evaluate(() => !document.getElementById('ock-prace') && !document.getElementById('ock-sek-hrubaOck')
+    && !!document.getElementById('ock-sek-oplasteni')));
+test('beze změny na serveru se nepřekresluje (vrací false)',
+  await page.evaluate(async () => await onlineZobrazeniObnov(true) === false));
+/* Úklid: další kontroly počítají s viditelnou Hrubou OCK a Prací a režií. */
+{
+  const z = JSON.parse(pamet.get('program/zobrazeni'));
+  delete z.matice.sekce['ock.prace']; delete z.matice.sekce['ock.hrubaOck'];
+  pamet.set('program/zobrazeni', JSON.stringify(z));
+}
+test('a po vrácení volby se karta obchodníkovi zase ukáže',
+  await page.evaluate(async () => await onlineZobrazeniObnov(true) === true
+    && !!document.getElementById('ock-prace') && !!document.getElementById('ock-sek-hrubaOck')));
 test('obchodník nemá žádný select režimu sekce',
   await page.evaluate(() => !document.getElementById('page-kalk').innerHTML.includes('sekceRezimSet')));
 test('obchodník má „+ přidat položku", ale NE „… trvale"',

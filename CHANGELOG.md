@@ -8,6 +8,44 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v23.9.2 — 23. 9. 2026
+
+### Skrýt / srolovat u všech karet Kalkulace OCK; skrytí se obchodníkovi projeví hned
+
+Zadání J. V.: „přidej skrývací a rolovací tlačítka do všech sekcí kalkulace
+OCK a prověř funkčnost skrývání pro obchodníky. Přijde mi, že když vyberu
+skrýt, tak obchodník sekci stále vidí."
+
+**Co bylo špatně.** Volbu zobrazit / skrýt / srolovat měly jen sekce
+tabulky (Hrubá OCK, Opláštění, Volitelné, Režie), Příplatky, Detail
+mezivýpočtů a Interní poznámky. Karty Zadání šachty, Opláštění po stěnách,
+Dimenze profilů, Práce a režie, Cenová kalkulace, Sleva, Obchodní
+zaokrouhlení a Cenová nabídka (CN) ji neměly vůbec. A hlavně: obchodník
+dostával nastavení zobrazení jen při přihlášení. Kdo měl aplikaci otevřenou
+(stránka běží i celé dny), viděl skrytou sekci dál až do obnovení stránky.
+Změřeno v prohlížeči: v jednom okně skrytí fungovalo, u už přihlášeného
+obchodníka se neprojevilo.
+
+**Co platí teď.**
+- Všechny karty Kalkulace OCK mají v nadpisu stejný select a u srolované
+  karty tlačítko „▸ rozbalit" (stejný vzhled jako Detail mezivýpočtů).
+  Dimenze profilů zůstávají ve výchozím stavu sbalené. U PROJ se nic
+  nemění.
+- Přihlášený obchodník nebo vedoucí si nastavení zobrazení načte znovu
+  každé 3 minuty a při každém návratu do okna (nejčastěji jednou za
+  minutu). Překreslí se, jen když se něco změnilo. Administrátora to
+  vynechává, aby mu stažení nepřepsalo neuložené zaškrtnutí.
+- Kotva skryté sekce zmizí i z klouzající lišty (OCK i PROJ), aby
+  neukazovala do prázdna.
+
+Skrytá sekce se dál počítá, jen není vidět. Skrytím Zadání šachty by
+obchodník přišel o možnost zadat rozměry, takže tuto volbu používejte
+s rozmyslem.
+
+Testy: `overit_zobrazeni.mjs` (+13 kontrol: select u každé karty, rozbalení,
+skrytá karta i kotva u přihlášeného obchodníka, změna za chodu a její
+vrácení).
+
 ## v23.9.1 — 23. 9. 2026
 
 ### Nová tuzemská zakázka už nehlásí falešný rozdíl ceníku (K9-N31)

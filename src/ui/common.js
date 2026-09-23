@@ -1031,14 +1031,16 @@ function standardRozpis() {
  *
  * `event.stopPropagation()` u selectu je nutné: nadpis karty sám o sobě
  * sbaluje a rozbaluje, takže bez něj by každá změna volby kartu i překlopila. */
-function kartaRezim(oblast, sekceKey, title, inner, id = '') {
+function kartaRezim(oblast, sekceKey, title, inner, id = '', closed = false) {
   const rezim = sekceRezim(oblast, sekceKey);
   if (rezim === 'skryt') return '';
   const vpravo = jeAdmin() ? sekceRezimSelect(oblast, sekceKey)
     : (rezim === 'srolovat' ? sekceRozbalBtn(oblast, sekceKey) : '');
   const nadpis = `<span style="flex:1">${title}</span>`
     + (vpravo ? `<span onclick="event.stopPropagation()" style="font-weight:400">${vpravo}</span>` : '');
-  const zavreno = kartaZavrena(id, sekceSbalena(oblast, sekceKey));
+  /* `closed` = karta je ve výchozím stavu sbalená i bez volby „srolovat"
+   * (Dimenze profilů, 19. 8. 2026); ruční rozbalení nadpisem platí dál. */
+  const zavreno = kartaZavrena(id, sekceSbalena(oblast, sekceKey) || closed);
   return `<div class="card ${zavreno ? 'closed' : ''}"${id ? ` id="${id}"` : ''}>
     <h2 onclick="kartaPrepni(this)"
       style="display:flex;align-items:center;gap:12px">${nadpis}</h2>
@@ -1061,12 +1063,18 @@ const KOTVY_PROJ = {
  * záložky. Lišta je position:sticky, proto stojí ZA kartou hlavičky,
  * ne v ní – .card má overflow:hidden a sticky by uvnitř nefungovalo. */
 function kalkLista(ock) {
+  /* Třetí prvek = klíč režimu sekce (a u sekcí tabulky i karta, ve které
+   * leží). Kotva na SKRYTOU sekci by obchodníkovi ukazovala do prázdna
+   * a prozrazovala, že tam něco je — proto z lišty zmizí i ona (23. 9. 2026). */
   const chips = ock
-    ? [['ock-zadani', 'Zadání šachty'], ['ock-profily', 'Dimenze profilů'], ['ock-prace', 'Práce a režie'],
-       ['ock-kalkulace', 'Cenová kalkulace'], ['ock-sek-hrubaOck', 'Hrubá OCK'], ['ock-sek-oplasteni', 'Opláštění'],
-       ['ock-sek-volitelne', 'Volitelné'], ['ock-sek-rezie', 'Režie'], ['ock-priplatky', 'Příplatky'],
-       ['ock-sleva', 'Sleva'], ['ock-nabidka', 'Cenová nabídka']]
-    : PJ.sekce.map((s, i) => ['proj-sek-' + i, KOTVY_PROJ[s.key] || s.nazev])
+    ? [['ock-zadani', 'Zadání šachty', ['zadani']], ['ock-profily', 'Dimenze profilů', ['profily']],
+       ['ock-prace', 'Práce a režie', ['prace']], ['ock-kalkulace', 'Cenová kalkulace', ['kalkulace']],
+       ['ock-sek-hrubaOck', 'Hrubá OCK', ['kalkulace', 'hrubaOck']], ['ock-sek-oplasteni', 'Opláštění', ['kalkulace', 'oplasteni']],
+       ['ock-sek-volitelne', 'Volitelné', ['kalkulace', 'volitelne']], ['ock-sek-rezie', 'Režie', ['kalkulace', 'rezie']],
+       ['ock-priplatky', 'Příplatky', ['priplatky']], ['ock-sleva', 'Sleva', ['sleva']], ['ock-nabidka', 'Cenová nabídka', ['nabidka']]]
+        .filter(([, , kl]) => kl.every(k => sekceRezim('ock', k) !== 'skryt'))
+    : PJ.sekce.map((s, i) => ['proj-sek-' + i, KOTVY_PROJ[s.key] || s.nazev, s.key])
+        .filter(([, , k]) => sekceRezim('proj', k) !== 'skryt')
         .concat([['proj-sleva', 'Sleva'], ['proj-souhrn', 'Souhrn'], ['proj-nabidka', 'Cenová Nabídka']]);
   return `<div class="kalk-lista noprint">
     <button class="hist2 jsHistZpet" disabled onclick="historieZpet()">↶ Zpět</button>
@@ -1735,7 +1743,7 @@ function zamekStranyPovol() {
 function renderNabidkaOck() {
   const el = document.getElementById('kalk-nabidka');
   if (el) el.innerHTML = slevaKarta() + zaokrKarta()
-    + card('Cenová nabídka (CN)', nabidkaKarta(), false, 'ock-nabidka');
+    + kartaRezim('ock', 'nabidka', 'Cenová nabídka (CN)', nabidkaKarta(), 'ock-nabidka');
 }
 
 /* ---------- Sleva (ZAK-10): zadání, stropy dle role, schvalování ----------
@@ -1943,7 +1951,11 @@ function slevaKarta(kontext) {
       ${slevaPlati(SLC) ? '<span class="note" style="margin-left:8px">propíše se do ceny nabídky ↓</span>' : (+SLC.procenta > 0 ? '<span class="note" style="margin-left:8px">neschválená sleva se do nabídky nepropíše</span>' : '')}</div>
     ${dopad}${schvalBlok}${oddeleni}
     ${+SLC.procenta > 0 ? `<div class="btns" style="margin-top:6px"><button class="mini" onclick="${c.zrus}">Zrušit slevu</button></div>` : ''}`;
-  return card(c.nazev, inner, false, c.kotva);
+  /* Režim sekce i u slevy OCK (23. 9. 2026, zadání J. V.: „přidej skrývací
+   * a rolovací tlačítka do všech sekcí kalkulace OCK"). PROJ zůstává beze
+   * změny — zadání mířilo na OCK. */
+  return c.proj ? card(c.nazev, inner, false, c.kotva)
+    : kartaRezim('ock', 'sleva', c.nazev, inner, c.kotva);
 }
 
 /* Výsledky výpočtů pro libovolnou variantu (pro přehledy) */
