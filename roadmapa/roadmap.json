@@ -5097,6 +5097,110 @@
    "hotovoKdyz": "Splněno: nová sada test_oplasteni_zapnuti.js (31 kontrol). Klíčová je první: zapnutí režimu beze změny zadání nehne cenou na 32 zadáních napříč typem šachty, zasklením, průchozí šachtou, prohlubní i ATYP. Obrazovka i kontrola standardu ověřeny v prohlížeči.",
    "kde": "`src/ui/kalk_ock.js` (přepínač a karta stěn), `src/engine.js` (oplasteniVychoziTyp, oplasteniStenyVychozi), `src/techspec.js` (tsOplasteniRozsah), `src/preklad.js`, `src/ui/zamek_ui.js`, `src/test_oplasteni_zapnuti.js`",
    "pozn": "Výchozí podobu stěn skládá JÁDRO, ne obrazovka — jedině tak platí slib dávky #268, že zapnutí režimu nehne cenou. Kdyby si je obrazovka skládala po svém, rozešlo by se to při první změně pravidel a poznalo by se to až na ceně.\n\n**ROZHODNUTO J. V. 21. 9. 2026** (obě otevřené otázky z návrhu, oddíl „Otevřené k rozhodnutí\"): sazby práce a tmelení se počítají PO CELÉ PLOŠE bez ohledu na typ opláštění a u dělicí výšky, která nepadne na rozteč příčníků, se počítá SKUTEČNÁ plocha, ne celá tabule. Obojí je dnešní stav, takže rozhodnutí nic nemění — jen zavírá otázku, aby se o ní podruhé nespekulovalo. V kódu to drží `oplPlochaCelkem` u řádků PRÁCE OPLÁŠTĚNÍ a TMELENÍ a poměrové dělení plochy mezi pásy (`src/engine.js`). J. V. si obojí výslovně vyhradil k pozdější úpravě: „to kdyžtak upravíme v budoucnu\"."
+  },
+  {
+   "id": "321",
+   "vlna": "B",
+   "stav": "hotovo",
+   "hotovoV": "v23.9.1",
+   "dulezitost": "vysoka",
+   "slozitost": "S",
+   "nazev": "Nová česká zakázka hlásí falešný rozdíl ceníku (K9-N31)",
+   "proc": "Nález 9. testovacího kola (VYHODNOCENI_TESTU_KOLO9_2026-09-22): každá nová tuzemská zakázka hlásila nad tiskem i na záložce Ceník „liší se od dnešního ceníku … −100 %“. Planý poplach u každé zakázky učí varování přehlížet — i to skutečné. J. V. 23. 9.: „ano, oprav K9-N31“.",
+   "detail": "Nová zakázka brala holý DEFAULT_CENIK, přehled ceníku ji srovnává s ceníkem složeným pro tuzemskou řadu, kde jsou položky „jen zahraničí“ se zahraniční cenou nulové. `novaVariantaData` je teď nuluje hned (`cenikJenZahrVynuluj`), stejně jako přepočet. Na cenu to vliv nemá.",
+   "hotovoKdyz": "Nová tuzemská zakázka po založení nehlásí rozdíl ceníku; ověřeno testem i v sestavené aplikaci.",
+   "kde": "`src/zakazka.js` (novaVariantaData), test `src/test_cenik_rady.js`"
+  },
+  {
+   "id": "322",
+   "vlna": "B",
+   "stav": "hotovo",
+   "hotovoV": "v23.9.2",
+   "dulezitost": "vysoka",
+   "slozitost": "M",
+   "nazev": "Skrýt/srolovat u všech karet OCK; obchodník vidí skrytí hned",
+   "proc": "J. V. 23. 9. 2026: „přidej skrývací a rolovací tlačítka do všech sekcí kalkulace OCK a prověř funkčnost skrývání pro obchodníky. Přijde mi, že když vyberu skrýt, tak obchodník sekci stále vidí.“",
+   "detail": "Příčina: obchodník načítal nastavení zobrazení jen při přihlášení — s otevřenou aplikací skrytou sekci viděl až do obnovení stránky. Teď si ho přihlášený obchodník/vedoucí obnoví každé 3 minuty a při návratu do okna (`onlineZobrazeniObnov`, admina vynechává). Volbu a tlačítko „▸ rozbalit“ dostalo 8 karet: Zadání šachty, Opláštění po stěnách, Dimenze profilů, Práce a režie, Cenová kalkulace, Sleva, Obchodní zaokrouhlení, Cenová nabídka (CN). Kotvy skrytých sekcí zmizí z klouzající lišty.",
+   "hotovoKdyz": "Skrytá karta i sekce zmizí přihlášenému obchodníkovi bez obnovení stránky; každá karta Kalkulace OCK má volbu režimu.",
+   "kde": "`src/ui/common.js` (kartaRezim, kalkLista), `src/ui/online_ui.js`, `src/ui/kalk_ock.js`, test `overit_zobrazeni.mjs`"
+  },
+  {
+   "id": "323",
+   "vlna": "B",
+   "stav": "hotovo",
+   "hotovoV": "v23.9.2",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "nazev": "Harness overit_verzi padá den po commitu (CI na main)",
+   "proc": "CI na main (94a7267 z 22. 9., spuštěné 23. 9.) selhalo, ač týž commit na testu prošel. Každé CI spuštěné den po commitu by padalo.",
+   "detail": "overit_verzi vracel verzi z gitu přes `build.py --ver` a pojistka data (od 20. 8.) verzi ze včerejška odmítla i ve `finally`; dist zůstal na jiné verzi a overit_zobrazeni zablokoval překryv „nesoulad verzí“. Návrat verze teď vědomě obchází pojistku (`KNG_VERZE_MIMO_DEN=1`). Aplikace ani nasazení zasaženy nebyly.",
+   "hotovoKdyz": "Harness nad stavem main projde i den po commitu; CI na main zelené po sloučení.",
+   "kde": "`overit_verzi.mjs`",
+   "pozn": "Main zůstane v CI červený, dokud se oprava nesloučí."
+  },
+  {
+   "id": "324",
+   "vlna": "B",
+   "stav": "ceka",
+   "dulezitost": "vysoka",
+   "slozitost": "S",
+   "nazev": "Varovat, když chybí kapitoly IV.–VI. nabídky (K9-N32)",
+   "proc": "Nález 9. kola: online nabídce pro zákazníka chybí kapitoly IV.–VI. a doložky — ve Firmě nejsou vyplněné a aplikace mlčí. Zákazník dostane nabídku bez podmínek a nikdo si toho nevšimne.",
+   "detail": "Dvě části: 1) administrátor vyplní Nastavení → Firma (testovací i ostrý web) — mimo kód; 2) kód: kapitola se prázdná záměrně vypouští (firmaKapitola), chybí ale varování — v Nastavení → Firma u prázdné kapitoly a nad tiskem nabídky („kapitoly IV.–VI. nejsou vyplněné, nabídka odejde bez nich“).",
+   "hotovoKdyz": "S prázdnou kapitolou svítí varování v Nastavení i nad tiskem; test v harnessu.",
+   "kde": "`src/firma.js` (firmaKapitola), nabídka OCK/PROJ"
+  },
+  {
+   "id": "325",
+   "vlna": "B",
+   "stav": "blokovano",
+   "dulezitost": "vysoka",
+   "slozitost": "S",
+   "nazev": "Zveřejnit šablonu PROJ na serveru (K9-N33)",
+   "proc": "Nález 9. kola: nabídku PROJ nejde na testovacím webu vytvořit ve Wordu — šablona není zveřejněná. Přísný režim ji správně odmítá; chyba kódu to není.",
+   "detail": "Nastavení → Šablony → zveřejnit Sablona_NABIDKA_PROJ.docx na testovacím i ostrém webu. Šablona sama je v pořádku (overit_nabidka_proj_word 44/44, overit_sablony_online 21/21).",
+   "hotovoKdyz": "Nabídka PROJ ve Wordu vznikne na testovacím i ostrém webu.",
+   "kde": "administrace aplikace (Nastavení → Šablony)",
+   "cekaNa": "administrátor — zveřejnění šablony v Nastavení (23. 9. 2026)"
+  },
+  {
+   "id": "326",
+   "vlna": "C",
+   "stav": "blokovano",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "nazev": "EN/DE nabídka z české šablony — mutace, nebo odmítnout (K9-N34)",
+   "proc": "Nález 9. kola: anglická a německá nabídka ve Wordu se plní z české šablony, pevné texty zůstanou česky. Od 14. 9. aplikace varuje, dokument ale vznikne.",
+   "detail": "Návrh: zveřejnit EN a DE mutaci šablony; dokud nejsou, cizojazyčný dokument odmítnout stejně jako u PROJ.",
+   "hotovoKdyz": "Cizojazyčná nabídka má cizojazyčné pevné texty, nebo se bez mutace nevytvoří.",
+   "otazka": "Zveřejnit mutace EN/DE, nebo dokument bez mutace odmítnout?",
+   "cekaNa": "rozhodnutí J. V. (otázka v přehledu nálezů 23. 9. 2026)"
+  },
+  {
+   "id": "327",
+   "vlna": "C",
+   "stav": "blokovano",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "nazev": "Odstup světlé výšky 0,2 m natvrdo (K9-N35)",
+   "proc": "Nález 9. kola: světlá výška = výška podlaží − 0,2 m natvrdo; předloha 0216 má 0,25 m.",
+   "detail": "Když je 0,25 překlep: nechat 0,2 a konstantu jen pojmenovat. Když záměr: pole zadání s výchozí 0,2 (uložené zakázky se nezmění).",
+   "hotovoKdyz": "Rozhodnuto a zapsáno; případně pole zadání s testem.",
+   "kde": "`src/engine.js` (svetlaVyska)",
+   "otazka": "Je 0,25 m v předloze 0216 záměr, nebo překlep?",
+   "cekaNa": "rozhodnutí J. V. (otázka v přehledu nálezů 23. 9. 2026)"
+  },
+  {
+   "id": "328",
+   "vlna": "C",
+   "stav": "ceka",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "nazev": "Zablokované vyskakovací okno shodí tiskový náhled (K6)",
+   "proc": "Nález 9. kola: když prohlížeč zablokuje vyskakovací okno, tiskový náhled spadne na chybě bez vysvětlení.",
+   "detail": "window.open bez kontroly výsledku na 8 místech (zakazka_ui.js ×4, nabidka_proj_ui.js, kryci_ui.js, kryci_proj_ui.js, detail_ui.js). Při null hláška „Prohlížeč zablokoval okno s náhledem — povolte vyskakovací okna“.",
+   "hotovoKdyz": "Zablokované okno ukáže srozumitelnou hlášku na všech osmi místech; test v harnessu.",
+   "kde": "`src/ui/*_ui.js`"
   }
  ],
  "meta" : {
@@ -5537,6 +5641,14 @@
   },
   {
    "text": "Dávka 22. 9. 2026 pozdě večer (engscalc): další tři rozhodnutí J. V. Zahraniční zakázka má po přepnutí sazbu DPH 0 % i bez vyplněné odchylky v ceníku (#317), vnější lešení je u interiérové šachty zase příplatkem a technická specifikace se řídí cenou — statika i řádek „lešení kolem OCK\" (#318). Montáž beze změny; všech devět voleb P8 uzavřeno (#285)."
+  },
+  {
+   "text": "Noc 22.–23. 9. 2026 (engscalc): dávky R1–R5 z revize v22.9.9 (#319) a #320. R1 duplikace a přípony variant, interní poznámka v duplikátu, dodatkový text pod zámkem, obnova ze zálohy (N32, B60, B63, N39, N41, B64, T1); R2 ztráta práce po ručním přihlášení a při duplikaci (N34–N37); R3 pojistky ceníku (N33, N38); R4 server přepočítá výsledek nového zámku a razítkem hlásí rozpor (B59), mutační nástroj přežije přerušení (T5); R5 přeskočené testy se hlásí jako přeskočené (T2, T3). #320 jedno číslo varianty — platí číslo na papíře. Ověřeno: plná sada 159/1/1 (selhává jen stará příručka N17), 144/144 serverových mutací, CI zelené u všech šesti commitů.",
+   "hotovo": true
+  },
+  {
+   "text": "Dávka 23. 9. 2026 (engscalc): main posunut na v22.9.22 (pokyn J. V.). Nová tuzemská zakázka nehlásí falešný rozdíl ceníku (#321, K9-N31), volba skrýt/srolovat u všech karet Kalkulace OCK a obchodníkovi se skrytí projeví bez obnovení stránky (#322), harness overit_verzi nepadá den po commitu (#323 — kvůli němu je CI na main červené do dalšího sloučení). Nálezy 9. testovacího kola zapsány jako #324–#328. Ověřeno: plná sada 159/1/1, overit_zobrazeni 133/0, CI zelené u b31dd26, 5b98e58, 36daef8.",
+   "hotovo": true
   }
   ],
   "pravidla" : [
@@ -5623,8 +5735,8 @@
     "id" : "F"
    }
   ],
-  "build" : "v22.9.22 (engscalc)",
-  "stavKDatu" : "22. 9. 2026"
+  "build" : "v23.9.2 (engscalc)",
+  "stavKDatu" : "23. 9. 2026"
  },
  "_comment" : [
   "JEDINÝ ZDROJ PRAVDY pro roadmapu Kalkulátoru Next Gen.",
