@@ -31,6 +31,15 @@ const kontrola = (popis, podminka, detail = '') => {
 };
 
 const cti = () => readFileSync(verzeTxt, 'utf8').trim();
+/* NÁVRAT VERZE NESMÍ NARAZIT NA POJISTKU DATA (23. 9. 2026).
+ * build.py od 20. 8. odmítne `--ver`, které nesedí na dnešní den. Sada
+ * vrací verzi z gitu — a ta je z VČEREJŠKA, kdykoli CI běží den po commitu
+ * (tak se to stalo na main 23. 9. u commitu z 22. 9.). `--ver` pak spadl,
+ * a to i v bloku `finally`, takže v dist/ zůstala verze z lokálního buildu
+ * (v23.9.1) proti verze.txt v22.9.22 — a další harness (overit_zobrazeni)
+ * narazil na blokující překryv „nesoulad verzí". Vědomé obejití pojistky je
+ * tu správně: vrací se přesně ta verze, která v gitu je. */
+const VRACENI = { ...process.env, KNG_VERZE_MIMO_DEN: '1' };
 const build = (env = {}) => execFileSync('python3', ['build.py'], {
   cwd: koren, encoding: 'utf8', env: { ...process.env, ...env },
 });
@@ -72,12 +81,12 @@ try {
 
   /* 5) Ruční přepis --ver funguje i na serveru (poslední záchrana). */
   execFileSync('python3', ['build.py', '--ver', puvodni], {
-    cwd: koren, encoding: 'utf8', env: { ...process.env, NETLIFY: 'true' },
+    cwd: koren, encoding: 'utf8', env: { ...VRACENI, NETLIFY: 'true' },
   });
   kontrola('--ver přebije i serverový režim', cti() === puvodni, 'je ' + cti());
 } finally {
   writeFileSync(verzeTxt, puvodni + '\n');
-  execFileSync('python3', ['build.py', '--ver', puvodni], { cwd: koren, encoding: 'utf8' });
+  execFileSync('python3', ['build.py', '--ver', puvodni], { cwd: koren, encoding: 'utf8', env: VRACENI });
   if (zaloha != null) {
     const nyni = readFileSync(path.join(koren, 'dist/kalkulacka.html'), 'utf8');
     if (nyni !== zaloha) console.log('  (dist byl přesestaven na v' + puvodni + ')');

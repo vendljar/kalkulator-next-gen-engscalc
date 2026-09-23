@@ -46,6 +46,20 @@ Testy: `overit_zobrazeni.mjs` (+13 kontrol: select u každé karty, rozbalení,
 skrytá karta i kotva u přihlášeného obchodníka, změna za chodu a její
 vrácení).
 
+### CI: harness overit_verzi nepadá den po commitu
+
+Běh CI na main (commit 94a7267 z 22. 9., spuštěný 23. 9.) selhal ve dvou
+harnessech, ačkoli týž commit na testu den předtím prošel. `overit_verzi.mjs`
+vrací verzi z gitu příkazem `build.py --ver …` a pojistka data (od 20. 8.)
+verzi ze včerejška odmítla — i v bloku `finally`. V `dist/` tak zůstala verze
+z lokálního buildu a `overit_zobrazeni.mjs` narazil na blokující překryv
+„nesoulad verzí". Aplikace ani ostrý web to nezasáhlo (Netlify verzi jen
+přebírá). Návrat verze teď pojistku vědomě obchází (`KNG_VERZE_MIMO_DEN=1`).
+Ověřeno nad stavem main: bez opravy harness spadne, s ní 7/7 a
+overit_zobrazeni 121/0.
+
+---
+
 ## v23.9.1 — 23. 9. 2026
 
 ### Nová tuzemská zakázka už nehlásí falešný rozdíl ceníku (K9-N31)
