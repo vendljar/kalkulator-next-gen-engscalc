@@ -21,26 +21,21 @@
 import { readFileSync, existsSync } from 'fs';
 import { createRequire } from 'module';
 
-import { najdiPodklad, preskoc } from './nastroje/harness_podklady.mjs';
+import { najdiNejnovejsi, preskoc } from './nastroje/harness_podklady.mjs';
 const require = createRequire(import.meta.url);
 const { docxVyplnSablonu, zipPrecti, rozmeryObrazku } = require('./src/docxgen.js');
 
-/* ŠABLONA CN: v8 NAPŘED, v7 jako ústupek (22. 9. 2026).
+/* ŠABLONA CN: NEJNOVĚJŠÍ VERZE, KTERÁ JE PO RUCE (23. 9. 2026).
  *
- * Harness hledal výhradně `v7`. Ve složce `_CN` je dnes jen `v8` — a když
- * se v původním prostředí nějaká v7 ještě válela, sada „prošla" nad starou
- * šablonou. To není ověření, to je záměna: kontroluje se tím dokument, který
- * se zákazníkovi neposílá. Bere se proto nejdřív v8; která to nakonec byla,
+ * Do 22. 9. harness hledal napevno v8, případně v7 — jenže na Drive už od
+ * 17. 9. platila v10, takže ověřoval šablonu, se kterou se netiskne. Teď se
+ * bere soubor s nejvyšším číslem verze (najdiNejnovejsi); která to byla,
  * se vypíše, ať je to v protokolu vidět. */
-const KDE = [
-  '/home/claude/work/sablona/Sablona_NABIDKA_CN_v8.docx',
-  '/home/claude/work/deliver/Sablona_NABIDKA_CN_v8.docx',
-  '/home/claude/work/sablona/Sablona_NABIDKA_CN_v7.docx',
-  '/home/claude/work/deliver/Sablona_NABIDKA_CN_v7.docx',
-];
-const sablona = najdiPodklad('Sablona_NABIDKA_CN_v8.docx', KDE)
-  || najdiPodklad('Sablona_NABIDKA_CN_v7.docx', KDE);
-if (!sablona) preskoc('šablona Sablona_NABIDKA_CN (v8, případně v7)',
+const VZOR_CN = /^Sablona_NABIDKA_CN_v(\d+)\.docx$/;
+const KDE = ['/home/claude/work/sablona', '/home/claude/work/deliver'];
+const nalez = najdiNejnovejsi(VZOR_CN, KDE);
+const sablona = nalez ? nalez.cesta : null;
+if (!sablona) preskoc('šablona Sablona_NABIDKA_CN_v<číslo>.docx (bere se nejvyšší verze)',
   KDE.concat('$KNG_PODKLADY'));
 console.log('Šablona: ' + sablona);
 console.log('šablona: ' + sablona + '\n');
@@ -68,6 +63,14 @@ const zdroj = readFileSync(sablona);
 const bufer = () => zdroj.buffer.slice(zdroj.byteOffset, zdroj.byteOffset + zdroj.byteLength);
 
 const dekoduj = u8 => new TextDecoder().decode(u8);
+/* TITULNÍ OBRÁZEK JE OD v9 ÚVODNÍ FOTKA (23. 9. 2026). Ve v7/v8 byl na titulní
+ * straně pevný obrázek šachty (o:title=""), od v9 je to rámeček {{UVODNI_FOTO}},
+ * do kterého aplikace vloží fotku stavby — a bez fotky ho odstraní celý
+ * (stejné pravidlo jako u podpisu). U takové šablony dodáváme i fotku,
+ * jinak by kontroly „titulní obrázek zůstal" měřily záměrné odstranění. */
+const TITULNI_JE_FOTO = /<v:imagedata r:id="rId7" o:title="\{\{UVODNI_FOTO\}\}"/.test(
+  dekoduj((await zipPrecti(new Uint8Array(zdroj))).find(p => p.nazev === 'word/document.xml').data));
+console.log('titulní obrázek: ' + (TITULNI_JE_FOTO ? 'rámeček úvodní fotky {{UVODNI_FOTO}}' : 'pevný obrázek šablony'));
 async function vygeneruj(placeholders, obrazky) {
   const blob = await docxVyplnSablonu(bufer(), placeholders, [], obrazky);
   const polozky = await zipPrecti(new Uint8Array(await blob.arrayBuffer()));
@@ -106,7 +109,8 @@ console.log('\nnabídka přihlášeného uživatele');
 {
   const puvodni = await zipPrecti(new Uint8Array(zdroj));
   const puvodniPodpis = puvodni.find(p => p.nazev === 'word/media/image2.jpeg');
-  const { doc, najdi, polozky } = await vygeneruj(JA, { ZPRAC_PODPIS: PODPIS_PNG });
+  const { doc, najdi, polozky } = await vygeneruj(JA, Object.assign({ ZPRAC_PODPIS: PODPIS_PNG },
+    TITULNI_JE_FOTO ? { UVODNI_FOTO: PODPIS_PNG } : {}));
 
   for (const [k, v] of Object.entries(JA))
     test('v dokumentu je ' + k.replace('ZPRAC_', '').toLowerCase() + ' „' + v + '"', doc.includes(v), k);
@@ -143,9 +147,17 @@ console.log('\nnabídka přihlášeného uživatele');
   const podpisTvar = /<v:shape[^>]*>(?=<v:imagedata r:id="rId8")/.exec(doc);
   test('měnil se tvar podpisu, ne titulní obrázek', !!podpisTvar);
   const titulni = /<v:shape[^>]*style="([^"]*)"[^>]*>(?=<v:imagedata r:id="rId7")/.exec(doc);
-  test('titulní obrázek zůstal 261 × 347,3 pt',
-    titulni && titulni[1].includes('width:261pt') && titulni[1].includes('height:347.3pt'),
-    titulni && titulni[1]);
+  if (!TITULNI_JE_FOTO)
+    test('titulní obrázek zůstal 261 × 347,3 pt',
+      titulni && titulni[1].includes('width:261pt') && titulni[1].includes('height:347.3pt'),
+      titulni && titulni[1]);
+  else {
+    /* Fotka 6×2 px se do rámečku 261 × 347,3 vejde celá: omezí ji šířka. */
+    const w = titulni && parseFloat((/width:([\d.]+)pt/.exec(titulni[1]) || [])[1]);
+    const h = titulni && parseFloat((/height:([\d.]+)pt/.exec(titulni[1]) || [])[1]);
+    test('úvodní fotka se vešla do rámečku 261 × 347,3 pt (podpis ji nerozhodil)',
+      !!titulni && Math.abs(w - 261) < 0.02 && h <= 347.3 + 0.01 && Math.abs(h - 87) < 0.05, titulni && titulni[1]);
+  }
   const styl = /style="([^"]*)"/.exec(podpisTvar[0])[1];
   const sirka = parseFloat(/width:([\d.]+)pt/.exec(styl)[1]);
   const vyska = parseFloat(/height:([\d.]+)pt/.exec(styl)[1]);
@@ -159,7 +171,7 @@ console.log('\nnabídka přihlášeného uživatele');
 /* ---------- 2) uživatel bez nahraného podpisu ---------- */
 console.log('\nnabídka uživatele, který podpis nenahrál');
 {
-  const { doc, najdi } = await vygeneruj(JA, {});
+  const { doc, najdi } = await vygeneruj(JA, TITULNI_JE_FOTO ? { UVODNI_FOTO: PODPIS_PNG } : {});
   test('texty se doplnily i bez obrázku', doc.includes(JA.ZPRAC_JMENO) && doc.includes(JA.ZPRAC_EMAIL));
   /* Prázdný rámeček by v nabídce vypadal jako chyba tisku a cizí podpis
    * by byl horší než žádný — celý tvar proto musí zmizet. */

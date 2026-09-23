@@ -26,7 +26,7 @@
  * a vypíše, co hledal. Staré cesty zůstávají jako druhá možnost, aby se
  * v původním prostředí nic nerozbilo; nic se nemaže.
  */
-import { existsSync } from 'fs';
+import { existsSync, readdirSync } from 'fs';
 import { join, basename } from 'path';
 
 /* Vrací první existující cestu, nebo null.
@@ -39,6 +39,37 @@ export function najdiPodklad(jmeno, kandidati = []) {
   if (slozka) kde.push(join(slozka, jmeno));
   kde.push(...kandidati);
   return kde.find(p => existsSync(p)) || null;
+}
+
+/* NEJNOVĚJŠÍ VERZE PODLE ČÍSLA V NÁZVU (23. 9. 2026, harness šablony CN).
+ *
+ * Šablona nabídky se vydává jako `…_v7`, `…_v8`, … `…_v10`. Harness, který
+ * hledá jednu napevno zapsanou verzi, ověřuje dokument, se kterým se už
+ * netiskne — 22. 9. běžel nad v7/v8, zatímco na Drive platila v10. Tahle
+ * funkce vezme ve složkách (KNG_PODKLADY první) soubor s NEJVYŠŠÍM číslem
+ * verze. Číslo se porovnává jako číslo, ne jako text („v10" > „v9").
+ *
+ * `vzor` — RegExp s jednou skupinou pro číslo verze, např. /^Sablona_X_v(\d+)\.docx$/
+ * `slozky` — další složky k prohledání (nepovinné) */
+export function najdiNejnovejsi(vzor, slozky = []) {
+  const kde = [];
+  const slozka = String(process.env.KNG_PODKLADY || '').trim();
+  if (slozka) kde.push(slozka);
+  kde.push(...slozky);
+  let nej = null;
+  for (const s of kde) {
+    if (!existsSync(s)) continue;
+    let soubory = [];
+    try { soubory = readdirSync(s); } catch (e) { continue; }
+    for (const f of soubory) {
+      const m = vzor.exec(f);
+      if (!m) continue;
+      const v = Number(m[1]);
+      if (!nej || v > nej.verze) nej = { cesta: join(s, f), verze: v };
+    }
+    if (nej) return nej;          // první složka, ve které něco je, vyhrává (KNG_PODKLADY má přednost)
+  }
+  return nej;
 }
 
 /* Totéž pro SLOŽKU (příručka obchodníka se hledá podle vzoru jména, takže

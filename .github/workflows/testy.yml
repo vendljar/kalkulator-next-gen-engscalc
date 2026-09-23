@@ -119,6 +119,23 @@ jobs:
       - name: Mutační testování serverové vrstvy (netlify/mutace.mjs)
         run: node netlify/mutace.mjs
 
+  # Mutační testování VÝPOČETNÍHO JÁDRA (nález N19, 23. 9. 2026). Do té doby
+  # skript mutace_jadro.mjs v repozitáři vůbec nebyl, takže ho CI ani cloud
+  # nespustily a tři jeho kotvy mířily do prázdna. Vlastní job, ať běží
+  # souběžně se serverovými mutacemi a neprodlužuje je.
+  mutace-jadro:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Zadání mutací jádra sedí na kód (rychlá kontrola)
+        run: node mutace_jadro.mjs --kontrola
+      - name: Mutační testování jádra (mutace_jadro.mjs)
+        run: node mutace_jadro.mjs
+
   # Prohlížečové harnessy (nález N13, 14. 9. 2026). Do té doby jezdil v CI
   # jediný (overit_vypnuty_radek) a o tom, že se ostatní rozešly s aplikací,
   # se přišlo až při testovacím kole: overit_lista čekal rozměr, který nová

@@ -111,6 +111,13 @@ else
   selhalo=$((selhalo + 1)); seznam_selhani+=("zadání mutací"); printf '  ✗ %s\n' "zadání mutací nesedí na kód"
   sed 's/^/      /' /tmp/kng_mutace_kontrola.txt
 fi
+# Totéž pro mutace výpočetního jádra (N19, 23. 9. 2026).
+if ( cd .. && node mutace_jadro.mjs --kontrola ) > /tmp/kng_mutace_jadro_kontrola.txt 2>&1; then
+  proslo=$((proslo + 1)); printf '  ✓ %s\n' "zadání mutací jádra sedí na kód"
+else
+  selhalo=$((selhalo + 1)); seznam_selhani+=("zadání mutací jádra"); printf '  ✗ %s\n' "zadání mutací jádra nesedí na kód"
+  sed 's/^/      /' /tmp/kng_mutace_jadro_kontrola.txt
+fi
 
 # Sada v prohlížeči: běží z kořene (harnessy si dist/ hledají odtud), s
 # NODE_PATH kvůli globálně instalovanému playwrightu (platí jen pro require;

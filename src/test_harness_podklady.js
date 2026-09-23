@@ -152,5 +152,28 @@ function funkceZeSkriptu() {
   }
 }
 
+/* ---------- nejnovější verze šablony (23. 9. 2026) ----------
+ * Harness šablony CN bere soubor s nejvyšším číslem verze. „v10" musí
+ * porazit „v9" jako číslo, ne jako text, a KNG_PODKLADY má přednost. */
+{
+  const fs = require('fs'), os = require('os');
+  const d1 = fs.mkdtempSync(path.join(os.tmpdir(), 'kng-sab-'));
+  const d2 = fs.mkdtempSync(path.join(os.tmpdir(), 'kng-sab-'));
+  ['Sablona_NABIDKA_CN_v7.docx', 'Sablona_NABIDKA_CN_v9.docx', 'Sablona_NABIDKA_CN_v10.docx', 'Sablona_NABIDKA_PROJ.docx']
+    .forEach(f => fs.writeFileSync(path.join(d1, f), 'x'));
+  fs.writeFileSync(path.join(d2, 'Sablona_NABIDKA_CN_v11.docx'), 'x');
+  const zavolej = (env) => require('child_process').execFileSync('node', ['--input-type=module', '-e',
+    "import { najdiNejnovejsi } from " + JSON.stringify(PODKLADY) + ";"
+    + "const r = najdiNejnovejsi(/^Sablona_NABIDKA_CN_v(\\d+)\\.docx$/, [" + JSON.stringify(d2) + "]);"
+    + "console.log(JSON.stringify(r));"], { encoding: 'utf8', env: Object.assign({}, process.env, env) });
+  const r1 = JSON.parse(zavolej({ KNG_PODKLADY: d1 }));
+  test('šablona: v10 porazí v9 (číslo, ne text)', r1 && r1.verze === 10 && /_v10\.docx$/.test(r1.cesta), JSON.stringify(r1));
+  test('šablona: KNG_PODKLADY má přednost před dalšími složkami', r1 && r1.cesta.startsWith(d1), JSON.stringify(r1));
+  const r2 = JSON.parse(zavolej({ KNG_PODKLADY: '' }));
+  test('šablona: bez KNG_PODKLADY se hledá v dalších složkách', r2 && r2.verze === 11, JSON.stringify(r2));
+  const r3 = JSON.parse(zavolej({ KNG_PODKLADY: '/nikde-neni' }) || 'null');
+  test('šablona: neexistující KNG_PODKLADY nespadne a jde dál', r3 && r3.verze === 11, JSON.stringify(r3));
+}
+
 console.log('\n' + (fail ? 'SELHALO ' + fail + ' z ' + (ok + fail) : 'OK ' + ok));
 if (fail) process.exit(1);

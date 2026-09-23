@@ -8,6 +8,33 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v23.9.3 — noční dávka D3 (23.–24. 9. 2026): nástroje a testy, aplikace beze změny
+
+- **Mutační testování jádra je v repozitáři (N19).** `mutace_jadro.mjs`
+  (převzato ze zdrojáků v21.8.1, bez cen) do té doby v repozitáři chybělo,
+  takže ho nespustilo CI ani cloud. Šest kotev mířilo do prázdna, protože
+  se jádro od 17. 8. změnilo. Kotvy jsou opravené a přibyl rychlý režim
+  `--kontrola`, který pouští `spust_testy.sh` i CI. V CI je nový job
+  `mutace-jadro` s plným během.
+- **První běh ukázal 11 nechycených mutací z 52.** Dřív je hlídaly sady
+  shody s Excelem, které potřebují skutečný ceník a v repozitáři nejsou.
+  Nová sada `src/test_jadro_pojistky.js` (24 kontrol nad zkušebním ceníkem)
+  je hlídá chováním: DPH ze zaokrouhleného základu, sazby plechů podle
+  provedení, sazba statiky, zaokrouhlení příplatků, rozdíly Modelu 1
+  ($D$3, lemování, podesty, D19/D18), doprava, rezerva hodin a sazba
+  zaměření v PROJ. Teď je chyceno **52/52**.
+- **Harness šablony nabídky bere nejnovější verzi.** `overit_sablona.mjs`
+  hledal napevno v8/v7, a tak kontroloval šablonu, se kterou se už netiskne.
+  Nově ji vybírá `najdiNejnovejsi` (v10 porazí v9 jako číslo). Od v9 je
+  titulní obrázek rámečkem úvodní fotky, proto harness dodá i fotku.
+  Výsledek: v10 42/42, v7 42/42.
+- **T4, první krok.** Kontroly obrazovek zaokrouhlení OCK × PROJ se
+  přestaly ověřovat čtením zdrojáku (`test_zaokrouhleni.js`) a ověřuje je
+  nový harness `overit_zaokrouhleni.mjs` (12 kontrol, se sabotáží 3
+  selhání). Ostatní testy tvaru zdrojáku se přepisují postupně.
+
+---
+
 ## v23.9.3 — 23. 9. 2026 (noční dávka D1 + D2)
 
 ### D1 — drobnosti z 9. testovacího kola a revize v22.9.9

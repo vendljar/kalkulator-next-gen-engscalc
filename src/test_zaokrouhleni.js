@@ -479,30 +479,13 @@ test('cenaSDph: nečíselná cena je nula', cenaSDph(undefined, 0.21).sDph === 0
   test('marzePrehled: OCK zůstává na svém nastavení', pDve.ock.cena === pJedno.ock.cena);
 }
 
-/* Rozdělení musí být vidět i na obrazovkách, ne jen v jádře. Zdrojová
- * kontrola je tu proto, že opomenuté ZO v Kalkulaci PROJ by se v číslech
- * projevilo až u zákazníka – testem jádra ho nechytneme. */
-{
-  const fs3 = require('fs');
-  const prj = fs3.readFileSync(__dirname + '/ui/kalk_proj.js', 'utf8');
-  const zam = fs3.readFileSync(__dirname + '/ui/zamek_ui.js', 'utf8');
-  const zui = fs3.readFileSync(__dirname + '/ui/zaokrouhleni_ui.js', 'utf8');
-  const com = fs3.readFileSync(__dirname + '/ui/common.js', 'utf8');
-  const kui = fs3.readFileSync(__dirname + '/ui/kontroly_ui.js', 'utf8');
-  const mui = fs3.readFileSync(__dirname + '/ui/marze_ui.js', 'utf8');
-  test('Kalkulace PROJ počítá cenu z vlastního nastavení i vlastní slevy',
-  prj.includes('cenaNabidkyProj(r, SLP, ZOP)'));
-  test('Kalkulace PROJ nikde nesahá na zaokrouhlení OCK',
-    !/zaokrStav\([^)]*,\s*ZO\)/.test(prj) && !/cenaNabidkyProj\(r,\s*ZO\)/.test(prj));
-  test('zámek chrání i přepínače PROJ',
-    zam.includes("'zaokrProjSetKrok'") && zam.includes("'zaokrProjSetSmer'"));
-  test('karta PROJ má vlastní obsluhy',
-    zui.includes('function zaokrProjSetKrok') && zui.includes('function zaokrProjSetSmer'));
-  test('karta se jmenuje podle části', zui.includes('koncové ceny OCK') && zui.includes('koncové ceny PROJ'));
-  test('obrazovky mají stav ZOP', com.includes('ZOP') && com.includes('zaokrZajisti(v.data)'));
-  test('kontroly dostávají zaokrouhlení PROJ', kui.includes('zaokrProj:'));
-  test('lišta marže dostává zaokrouhlení PROJ', mui.includes('ZOP'));
-}
+/* Rozdělení OCK × PROJ na OBRAZOVKÁCH (vlastní krok, zámek, karta, kontroly)
+ * hlídal tenhle soubor do 23. 9. 2026 čtením zdrojáku — hledal v něm
+ * řetězce jako „cenaNabidkyProj(r, SLP, ZOP)". Takový test projde i tehdy,
+ * když se řetězec přestane volat (nález T4 z revize v22.9.9). Od 23. 9. to
+ * ověřuje CHOVÁNÍM v prohlížeči `overit_zaokrouhleni.mjs`: krok PROJ hýbe
+ * jen cenou projekce, zamčená varianta ho nepustí změnit, kontroly dostávají
+ * správné nastavení. */
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);
