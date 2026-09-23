@@ -148,6 +148,26 @@ const ZAHR = () => ({
     return DEFAULT_CENIK.marze === 0.42;
   })());
   test('nová zakázka je tuzemská', d.cenikRada === 'cr');
+
+  /* K9-N31 (9. testovací kolo, 23. 9. 2026): nová tuzemská zakázka hlásila
+   * „ceník se liší od dnešního" u položky „jen zahraničí", protože brala holý
+   * DEFAULT_CENIK, kdežto přehled srovnává s ceníkem složeným pro řadu
+   * (tam je taková položka v tuzemsku nula). Smyšlená čísla. */
+  const zaloha = JSON.parse(JSON.stringify(CENIK_ZAHR));
+  global.DEFAULT_CENIK.prekladyKc = 11000;
+  Object.assign(CENIK_ZAHR, { ceny: { 'C.prekladyKc': 13000 }, jenZahr: { 'C.prekladyKc': true } });
+  const n = zk.novaVariantaData();
+  test('K9-N31: nová tuzemská zakázka má položku „jen zahraničí" na nule', n.cenik.prekladyKc === 0, n.cenik.prekladyKc);
+  test('K9-N31: ceník aplikace se tím nezměnil', DEFAULT_CENIK.prekladyKc === 11000, DEFAULT_CENIK.prekladyKc);
+  const dnesni = cenikDnesniProRadu({ cenik: DEFAULT_CENIK, proj: { cenik: DEFAULT_CENIK_PROJ } }, CENIK_ZAHR, 'cr');
+  const pr = cenikPrehled({ data: n }, dnesni, { dnes: '2026-09-23' });
+  test('K9-N31: a přehled ceníku u ní nehlásí žádný rozdíl', pr.rozdily.length === 0 && !pr.varovat,
+    JSON.stringify(pr.rozdily));
+  /* Bez zahraniční ceny se nic nenuluje (stejné pravidlo jako v přepočtu). */
+  Object.assign(CENIK_ZAHR, { ceny: {}, jenZahr: { 'C.prekladyKc': true } });
+  const bez = zk.novaVariantaData();
+  test('K9-N31: bez zahraniční ceny položka zůstane, jak je v ceníku', bez.cenik.prekladyKc === 11000, bez.cenik.prekladyKc);
+  CENIK_ZAHR.ceny = zaloha.ceny; CENIK_ZAHR.jenZahr = zaloha.jenZahr;
 }
 
 /* ---------- zahraniční globální přirážka (3. 9. 2026) ----------

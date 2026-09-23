@@ -292,6 +292,19 @@ function novaVariantaData() {
      * přepsané nic, takže ji ceník řídí celou — viz zadaniZCeniku(). */
     zadaniRucni: {},
   };
+  /* NOVÁ ZAKÁZKA DOSTANE CENÍK UŽ SLOŽENÝ PRO TUZEMSKOU ŘADU (23. 9. 2026,
+   * nález K9-N31 z 9. testovacího kola).
+   *
+   * Přepočet i přehled „liší se od dnešního ceníku" srovnávají variantu
+   * s `cenikDnesniProRadu()`, která v tuzemské řadě nuluje položky „jen
+   * zahraničí" (P4, nález N6). Nová zakázka ale brala holý DEFAULT_CENIK,
+   * kde taková položka nese tuzemskou hodnotu — takže KAŽDÁ čerstvá
+   * tuzemská zakázka hned po založení hlásila rozdíl o −100 % u položky,
+   * kterou v tuzemsku nikdo nepočítá. Na cenu to vliv nemělo (výpočet
+   * položku v tuzemské řadě vynechává), jen obchodník dostával planý
+   * poplach. Teď se nuluje hned tady, stejně jako v přepočtu. */
+  if (typeof cenikJenZahrVynuluj === 'function' && typeof CENIK_ZAHR !== 'undefined')
+    cenikJenZahrVynuluj(data, CENIK_ZAHR);
   /* Rozsahy práce z ceníku (31. 8. 2026, zadání J. V.). Prázdná nebo nulová
    * ceníková položka nic neřídí a platí hodnota ze sestavení. */
   zadaniZCeniku(data);

@@ -8,6 +8,24 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v23.9.1 — 23. 9. 2026
+
+### Nová tuzemská zakázka už nehlásí falešný rozdíl ceníku (K9-N31)
+
+Nález z 9. testovacího kola. **Co bylo špatně:** každá nová tuzemská
+zakázka hned po založení ukazovala lištu „Ceník v této kalkulaci se liší od
+dnešního ceníku aplikace – 1 položka … −100 %". Šlo o položku označenou
+„jen zahraničí": přehled ji srovnává s ceníkem složeným pro tuzemskou řadu,
+kde je nulová, kdežto nová zakázka brala holý ceník aplikace. Na cenu to
+vliv nemělo, obchodník ale dostával planý poplach.
+
+**Co platí teď:** nová zakázka i nová varianta dostanou ceník už složený pro
+tuzemskou řadu — položky „jen zahraničí" se zahraniční cenou jsou na nule,
+stejně jako po přepočtu (`novaVariantaData` v `zakazka.js`). Test:
+`test_cenik_rady.js` (4 kontroly; bez opravy dvě selžou).
+
+---
+
 ## v22.9.22 — 22. 9. 2026
 
 ### Jedno číslo varianty — platí číslo na papíře (#320)
