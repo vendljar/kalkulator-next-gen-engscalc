@@ -8,6 +8,25 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## větev k13-nalezy (neuvolněno)
+
+Nálezy 13. testovacího kola (24. 9. 2026, test v24.9.6). Označení P1–P11
+podle zadání větve, v závorce číslo nálezu ze sešitu kola.
+
+- **P1 (K13-N53) — první varianta dostala po uložení příponu .3.** Nová
+  zakázka zakládala první variantu bez pole `pripona`. Po klonu založeném
+  před prvním uložením (klon .2) ji `zajistiZamek` při importu bral jako
+  chybějící a dal jí první volné číslo nad maximem. Vytištěná nabídka
+  „…9140“ se tak v aplikaci změnila na „…9140.3“. Obchodníkovi server
+  uložení odmítl (B56, 403), administrátorovi číslo v zámku tiše přepsal.
+  Oprava: první varianta má příponu 0 od založení a varianta bez přípony
+  na prvním místě dostane 0, pokud ji v zakázce ještě nikdo nemá. Testy:
+  `src/test_pripona_prvni.js` (bez opravy 6 z 12 selže), `test_prava`
+  +6 (bez opravy obchodník dostane 403). Uložená data se nemění; výpis
+  dotčených zakázek ze zálohy dělá `podklady/K13_pripona_vypis.mjs`.
+
+---
+
 ## v24.9.6 — dávka F4a (24. 9. 2026 večer): průchozí šachta, lešení, záporné hodiny
 
 Rozhodnutí J. V. 24. 9. večer.

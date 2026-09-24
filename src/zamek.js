@@ -482,9 +482,15 @@ function zajistiZamek(zak) {
   let volne = Math.max(0, ...zname.map(variantaPripona),
                        (typeof zak.priponaMax === 'number' && isFinite(zak.priponaMax))
                          ? Math.floor(zak.priponaMax) : 0);
+  /* Varianta bez přípony NA PRVNÍM MÍSTĚ je první varianta zakázky: holé
+   * číslo, pokud ho v zakázce ještě nikdo nemá (P1 / K13-N53, 24. 9. 2026).
+   * Dřív dostala 0 jen tehdy, když příponu neměla žádná varianta — po klonu
+   * založeném před prvním uložením (klon .2) tak vytištěná varianta 1
+   * dostala .3 a server obchodníkovi uložení odmítl (B56). */
+  const nulaObsazena = zname.some(v => variantaPripona(v) === 0);
   zak.varianty.forEach((v, i) => {
     if (typeof v.pripona === 'number') return;
-    if (i === 0 && !zname.length) { v.pripona = 0; return; }
+    if (i === 0 && !nulaObsazena) { v.pripona = 0; return; }
     volne = Math.max(volne + 1, i + 1);
     v.pripona = volne;
   });

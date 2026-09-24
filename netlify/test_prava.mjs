@@ -2233,6 +2233,31 @@ console.log('\n===== AUDIT B26 / B29: KID TRVALÝCH POLOŽEK A DUPLICITNÍ ID ==
     'vrátil ' + odpZ.status);
 }
 
+/* ---------- P1 (K13-N53): KLON PŘED PRVNÍM ULOŽENÍM ----------
+ * (test 13. kola, 24. 9. 2026) Varianta 1 vytištěná, klon založený dřív, než
+ * se zakázka poprvé uložila. Starší klient posílá variantu 1 BEZ pole
+ * `pripona` (novaZakazka ho nezakládala); server ji při importu přečísloval
+ * na .3 a obchodníkovi uložení odmítl (B56, 403). Musí projít s holým
+ * číslem v zámku — tak, jak šla nabídka na papír. */
+for (const [popis, bezPripony] of [['starší klient (varianta 1 bez přípony)', true],
+                                   ['dnešní klient', false]]) {
+  const cislo = bezPripony ? '2026 - OPR - CN - 0870' : '2026 - OPR - CN - 0871';
+  const z = zakazkaCislo(cislo);
+  if (bezPripony) delete z.varianty[0].pripona;
+  zamkniJakoAplikace(z, z.varianty[0], { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Matice práv',
+                                         cislo: zam.variantaCislo(z, z.varianty[0]) });
+  zam.klonujVariantu(z, z.varianty[0].id);
+  const odp = await post(zakazky, 'http://x/api/zakazky', { zakazka: z }, cObch);
+  test('P1 ' + popis + ': obchodník uloží zakázku s odeslanou variantou 1 a klonem (200)',
+    odp.status === 200, 'vrátil ' + odp.status);
+  const soubor = cislo.replace(/ /g, '') + '.json';
+  const ul = (await (await get(zakazky, 'http://x/api/zakazky?soubor=' + soubor, cAdmin)).json()).zakazka;
+  test('P1 ' + popis + ': číslo v zámku se nezměnilo (holé)',
+    ul && ul.varianty[0].zamek && ul.varianty[0].zamek.cislo === cislo, ul && ul.varianty[0].zamek);
+  test('P1 ' + popis + ': přípony 0 a 2',
+    ul && ul.varianty.map(v => v.pripona).join(',') === '0,2', ul && ul.varianty.map(v => v.pripona));
+}
+
 /* ---------- B55: POJISTKU ZVEŘEJNĚNÍ NEJDE VYPNOUT VYNECHÁNÍM POLE ----------
  * (bezpečnostní audit 22. 9. 2026)
  *
