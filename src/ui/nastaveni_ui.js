@@ -800,7 +800,12 @@ function nastSablony() {
       const m = (typeof onlineSablonaMeta === 'function') ? onlineSablonaMeta(t) : null;
       if (!m) return null;
       const j = t === typ ? '' : ' ' + t.slice(-2).toUpperCase();
-      return `verze ${m.verze}${j} (${esc(m.nazev)}, zveřejnil ${esc(m.zverejnil)} ${esc((m.kdy || '').slice(0, 10))})`;
+      /* Mutace starší než česká šablona (#334) — tisk z ní v přísném režimu
+       * neprojde, tak ať to administrátor vidí dřív než obchodník. */
+      const zastarala = t !== typ && typeof sablonaMutaceZastarala === 'function'
+        && sablonaMutaceZastarala(onlineSablonaMeta(typ), m);
+      return `verze ${m.verze}${j} (${esc(m.nazev)}, zveřejnil ${esc(m.zverejnil)} ${esc((m.kdy || '').slice(0, 10))})`
+        + (zastarala ? ' <b class="sablona-zastarala" style="color:#b45309">⚠ zastaralá — starší než česká šablona, přegenerujte a zveřejněte</b>' : '');
     }).filter(Boolean);
     return `<div class="note" style="margin-top:6px">☁ Na serveru: ${kusy.length
       ? kusy.join(' · ') : '<b>žádná šablona zatím zveřejněná</b>'}</div>`;

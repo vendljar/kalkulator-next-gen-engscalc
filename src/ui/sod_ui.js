@@ -89,6 +89,7 @@ async function sodWordGeneruj(typ, srv) {
                : (sablonyOnlineAktivni() ? ' POZOR: použita MÍSTNÍ šablona (měkký režim) – do zámku se to zapsalo.' : ''))
         + (mutaceChybi ? ' Pozor: pevný text šablony zůstal český – jazykovou mutaci šablony '
           + 'zveřejní administrátor v Nastavení → Šablony.' : '')
+        + (srv && srv.mutaceZastarala ? ' POZOR: ' + srv.mutaceZastarala : '')
         + zamcenoText);
     })
     .catch(err => {

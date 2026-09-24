@@ -8,6 +8,42 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v24.9.2 — dávka E3 (24. 9. 2026): cizojazyčná nabídka podle 10. kola
+
+- **13 příplatků má překlad EN/DE/FR (#335, K10-N38).** V anglické
+  nabídce se dosud tisklo česky třeba „LEŠENÍ - vnitřní" vedle
+  „SCAFFOLDING – external". Názvy drží terminologii sousedních hesel.
+  Nová sada `test_preklad_priplatky.js` (50 kontrol) bere názvy příplatků
+  přímo ze zdrojáku jádra, takže nový příplatek bez překladu ji shodí.
+  Obráceně: bez nových hesel selže 35 kontrol.
+- **Pevné texty šablony nabídky OCK jsou ve slovníku (#334, K10-N36).**
+  Jde o 24 textů v EN/DE/FR: nadpisy A./B./I./II., úvod, poznámky k ceně,
+  platební podmínky, kapitola V. šablony v10 a věta o předávacím
+  protokolu. Kontaktní blok firmy (web, telefon, IČ, PSČ a město, ulice,
+  název s právní formou, oddělovací čára) se nově pozná jako text, který
+  se nepřekládá. Vzory jsou úzké a test hlídá, že běžný text s číslem
+  pořád jde do překladu. Překladač šablony teď nad v10 i v11 nenechá
+  česky nic: v anglické i německé mutaci chybí 0 textů (dříve 31 u v10
+  a 27 u v11).
+- **Pojistka zastaralé jazykové mutace (#334, K10-N36/N37).** Mutace
+  EN/DE/FR zveřejněná dřív než platná česká šablona je zastaralá. V ostré
+  šlo o mutaci z v8 proti české v10: 17 % textu bylo česky a chyběl
+  řádek soklu. V přísném režimu se z takové mutace netiskne; hláška řekne
+  proč a že ji administrátor přegeneruje. Česká nabídka tím zastavená
+  není. V měkkém režimu se tiskne dál, ale s upozorněním. Nastavení →
+  Šablony u mutace ukáže „⚠ zastaralá". `overit_sablony_online.mjs` má
+  7 nových kontrol (28/28); obráceně bez pojistky selžou 3.
+- **Příručka obchodníka nezmiňuje testovací web** (pokyn J. V.:
+  obchodníkům přístupný nebude). Kapitola 4, heslo ve slovníčku a zmínky
+  v úvodu jsou pryč. Kapitoly jsou přečíslované (33 → 32) i se 40 odkazy
+  v textu. Kontrola v `manual/overit.js` je obrácená a nad starou
+  příručkou selže. Příručka nese v24.9.2.
+- **Postup vydání ve třech krocích:** 1) `test-draft` (rozpracované,
+  Netlify ho nenasazuje), 2) `test` (testovací web, před nahráním
+  `nastroje/pred_pushem.sh`), 3) `main` (ostrý web, CI běží samo).
+
+---
+
 ## 24. 9. 2026 — dávka E2: příručka obchodníka pro v24.9.1 (aplikace beze změny)
 
 - **Text příručky (`manual/obsah.json`) odpovídá v24.9.1.** Poslední

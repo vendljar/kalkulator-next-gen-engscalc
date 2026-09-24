@@ -173,6 +173,7 @@ async function nabidkaProjWordGeneruj(srv) {
                : (sablonyOnlineAktivni() ? ' POZOR: použita MÍSTNÍ šablona (měkký režim) – do zámku se to zapsalo.' : ''))
         + (mutaceChybi ? ' Pozor: pevný text šablony zůstal český – jazykovou mutaci šablony '
           + 'vyrobíte v Nastavení → Šablony.' : '')
+        + (srv && srv.mutaceZastarala ? ' POZOR: ' + srv.mutaceZastarala : '')
         + zamcenoText);
     })
     .catch(err => {

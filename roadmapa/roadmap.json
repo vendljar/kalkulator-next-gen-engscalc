@@ -5281,26 +5281,30 @@
   {
    "id": "334",
    "vlna": "B",
-   "stav": "ceka",
-   "dulezitost": "vysoka",
+   "stav": "blokovano",
+   "dulezitost": "",
    "slozitost": "M",
    "nazev": "EN/DE nabídka ve Wordu z 17 % česky — slovník šablony a pojistka zastaralé mutace (K10-N36, K10-N37)",
    "proc": "Kolo 10 (24. 9. 2026, ostrá v23.9.3): zveřejněné mutace EN/DE jsou z šablony v8, česká je v10; 31 řádků se tiskne česky a chybí řádek soklu (TS_SOKL). Aplikace to nepozná, protože mutace formálně existuje. Na testu v24.9.1 ověřeno: překladač nezná 31 textů v10 / 27 textů v11 (7 z nich adresa a IČ firmy).",
    "detail": "Návrh E3: (1) doplnit ~20 textů šablony do slovníku EN/DE (FR), adresu a IČ firmy vést jako neutrální; (2) pojistka: mutace zveřejněná dřív než česká šablona = zastaralá → v přísném režimu cizojazyčný dokument zastavit s hláškou, v Nastavení → Šablony štítek „zastaralá\"; (3) administrátor nahraje v11 a přegeneruje EN/DE (tím zmizí i K10-N37).",
    "hotovoKdyz": "Překladač nad v11 nechá česky jen neutrální texty; zastaralá mutace se nepoužije bez varování; test.",
-   "kde": "`src/preklad.js`, `src/ui/common.js` (sablonaProTisk), `src/ui/nastaveni_ui.js`"
+   "kde": "`src/preklad.js`, `src/ui/common.js` (sablonaProTisk), `src/ui/nastaveni_ui.js`",
+   "cekaNa": "administrátor: nahrát CN v11, zveřejnit a přegenerovat EN/DE mutace (test i ostrá)",
+   "pozn": "KÓD HOTOV v24.9.2 (E3): 24 textů šablony ve slovníku EN/DE/FR, kontaktní blok firmy neutrální — překladač nad v10 i v11 nenechá česky nic (dřív 31 / 27). Pojistka: mutace zveřejněná dřív než česká šablona se v přísném režimu nepoužije, Nastavení ukáže „zastaralá“ (overit_sablony_online +7, obráceně 3 selhání)."
   },
   {
    "id": "335",
    "vlna": "B",
-   "stav": "ceka",
-   "dulezitost": "vysoka",
+   "stav": "hotovo",
+   "dulezitost": "",
    "slozitost": "S",
    "nazev": "13 příplatků bez překladu EN/DE — tisknou se česky (K10-N38)",
    "proc": "Kolo 10: 13 z 23 příplatků nemá překlad; v anglické nabídce stojí „LEŠENÍ - vnitřní\" vedle „SCAFFOLDING – external\". Ověřeno na testu v24.9.1.",
    "detail": "Doplnit 13 hesel do slovníku EN/DE/FR (návrh Claude, kontrola odborných názvů J. V.) a test, že každý příplatek zkušebního ceníku má překlad ve všech jazycích.",
    "hotovoKdyz": "Žádný příplatek se v cizojazyčné nabídce netiskne česky; test.",
-   "kde": "`src/preklad.js`, test překladů"
+   "kde": "`src/preklad.js`, test překladů",
+   "hotovoV": "v24.9.2",
+   "pozn": "HOTOVO v24.9.2 (dávka E3): 13 příplatků přeloženo EN/DE/FR; test_preklad_priplatky.js bere názvy přímo z engine.js (50 kontrol, obráceně 35 selhání). Odborné názvy ke kontrole J. V. (přehled nálezů)."
   }
  ],
  "meta" : {
@@ -5765,6 +5769,10 @@
   {
    "text": "Odpoledne 24. 9. 2026 (engscalc), na pokyn J. V.: CI se spouští automaticky jen při nahrání na main (vydání), na testu se testuje lokálně (nastroje/pred_pushem.sh); dávka E2 — příručka obchodníka pro v24.9.1 s automatickými snímky nad zkušebním ceníkem (#333, N17).",
    "hotovo": true
+  },
+  {
+   "text": "Večer 24. 9. 2026 (engscalc), dávka E3 podle 10. kola: překlady 13 příplatků (#335) a pevných textů šablony, pojistka zastaralé jazykové mutace (#334); příručka bez testovacího webu; vydání ve třech krocích test-draft → test → main.",
+   "hotovo": true
   }
   ],
   "pravidla" : [
@@ -5851,7 +5859,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v24.9.1 (engscalc)",
+  "build" : "v24.9.2 (engscalc)",
   "stavKDatu" : "24. 9. 2026"
  },
  "_comment" : [

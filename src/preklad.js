@@ -629,6 +629,52 @@ const PREKLAD = {
   "MONTÁŽ ŠACHETNÍCH DVEŘÍ": ["LANDING DOOR INSTALLATION","MONTAGE DER SCHACHTTÜREN","MONTAGE DES PORTES PALIÈRES"],
   "LEŠENÍ - dokončení hlavy šachty": ["SCAFFOLDING – shaft head completion","GERÜST – Fertigstellung des Schachtkopfes","ÉCHAFAUDAGE – finition de la tête de gaine"],
   "LEŠENÍ - vnější": ["SCAFFOLDING – external","GERÜST – außen","ÉCHAFAUDAGE – extérieur"],
+  /* PŘÍPLATKY BEZ PŘEKLADU (#335, nález K10-N38 z 10. kola, 24. 9. 2026).
+   * V cizojazyčné nabídce se tiskly česky — „LEŠENÍ - vnitřní" stálo vedle
+   * „SCAFFOLDING – external". Názvy drží terminologii sousedních hesel
+   * (SILL EXTENSION PLATES, SCAFFOLDING – …, METAL SHEET COVER ON PIT EDGE).
+   * Úplnost hlídá test_preklad_priplatky.js nad názvy přímo z engine.js. */
+  "PŘECHODOVÉ PLECHY - NEREZ (MATERIÁL)": ["SILL EXTENSION PLATES - STAINLESS STEEL (MATERIAL)","SCHWELLENVERLÄNGERUNGSPLATTEN - EDELSTAHL (MATERIAL)","TÔLES DE PROLONGEMENT DE SEUIL - INOX (MATÉRIAU)"],
+  "PŘECHODOVÉ PLECHY - NEREZ (MONTÁŽ)": ["SILL EXTENSION PLATES - STAINLESS STEEL (INSTALLATION)","SCHWELLENVERLÄNGERUNGSPLATTEN - EDELSTAHL (MONTAGE)","TÔLES DE PROLONGEMENT DE SEUIL - INOX (MONTAGE)"],
+  "ZÁBRANY PROTI PÁDU DO ŠACHTY": ["FALL PROTECTION BARRIERS AT THE SHAFT","ABSTURZSICHERUNGEN AM SCHACHT","BARRIÈRES ANTICHUTE AUTOUR DE LA GAINE"],
+  "DEMONTÁŽ STÁVAJÍCÍHO OHRAZENÍ": ["DISMANTLING OF THE EXISTING SHAFT ENCLOSURE","DEMONTAGE DER BESTEHENDEN SCHACHTUMWEHRUNG","DÉMONTAGE DE L’ENCEINTE DE GAINE EXISTANTE"],
+  "MALBA SCHODNIC": ["PAINTING OF STAIR STRINGERS","ANSTRICH DER TREPPENWANGEN","PEINTURE DES LIMONS D’ESCALIER"],
+  "NÁTĚR CELÉHO OHRAZENÍ": ["COATING OF THE ENTIRE SHAFT ENCLOSURE","ANSTRICH DER GESAMTEN SCHACHTUMWEHRUNG","PEINTURE DE TOUTE L’ENCEINTE DE GAINE"],
+  "NÁTĚR POUZE OKOPOVÝCH PLECHŮ": ["COATING OF KICK PLATES ONLY","ANSTRICH NUR DER TRITTSCHUTZBLECHE","PEINTURE DES PLINTHES DE PROTECTION UNIQUEMENT"],
+  "PROSKLENÁ STĚNA VEDLE ŠACHTY": ["GLAZED WALL NEXT TO THE SHAFT","VERGLASTE WAND NEBEN DEM SCHACHT","PAROI VITRÉE À CÔTÉ DE LA GAINE"],
+  "DEŠŤOVÝ SVOD": ["RAINWATER DOWNPIPE","REGENFALLROHR","DESCENTE D’EAUX PLUVIALES"],
+  "LEŠENÍ - vnitřní": ["SCAFFOLDING – internal","GERÜST – innen","ÉCHAFAUDAGE – intérieur"],
+  "ÚPRAVY/NAPOJENÍ ZÁBRADLÍ (INT)": ["HANDRAIL ADJUSTMENTS/CONNECTION (INT)","ANPASSUNG/ANSCHLUSS DES HANDLAUFS (INT)","ADAPTATION/RACCORDEMENT DU GARDE-CORPS (INT)"],
+  "HÁKY NA MYTÍ ŠACHTY (EXT)": ["SHAFT CLEANING HOOKS (EXT)","HAKEN FÜR DIE SCHACHTREINIGUNG (EXT)","CROCHETS POUR LE NETTOYAGE DE LA GAINE (EXT)"],
+  "OPLECHOVÁNÍ SOKLU PROHLUBNĚ (EXT)": ["METAL SHEET COVER ON PIT EDGE (EXT)","BLECHABDECKUNG AM GRUBENRAND (EXT)","COUVERTINE EN TÔLE SUR LE BORD DE LA FOSSE (EXT)"],
+  /* PEVNÉ TEXTY ŠABLONY NABÍDKY OCK v10/v11 (#334, nález K10-N36 z 10. kola).
+   * Mutace EN/DE vyrobená z šablony překladačem (Nastavení → Šablony) je
+   * nechávala česky — v nabídce 0664 to bylo 31 řádků ze 184. Adresu, IČ
+   * a web firmy slovník schválně nemá: ty se nepřekládají (prekladNeutral). */
+  "Kancelář:": ["Office:","Büro:","Bureau :"],
+  "A. TECHNICKÁ ČÁST NABÍDKY:": ["A. TECHNICAL PART OF THE QUOTATION:","A. TECHNISCHER TEIL DES ANGEBOTS:","A. PARTIE TECHNIQUE DE L’OFFRE :"],
+  "B. OBCHODNÍ ČÁST NABÍDKY:": ["B. COMMERCIAL PART OF THE QUOTATION:","B. KAUFMÄNNISCHER TEIL DES ANGEBOTS:","B. PARTIE COMMERCIALE DE L’OFFRE :"],
+  "I. TECHNICKÁ SPECIFIKACE VÝTAHOVÉ ŠACHTY": ["I. TECHNICAL SPECIFICATION OF THE ELEVATOR SHAFT","I. TECHNISCHE SPEZIFIKATION DES AUFZUGSSCHACHTS","I. SPÉCIFICATION TECHNIQUE DE LA GAINE D’ASCENSEUR"],
+  "I. CENOVÁ NABÍDKA:": ["I. PRICE QUOTATION:","I. PREISANGEBOT:","I. OFFRE DE PRIX :"],
+  "II. ROZŠÍŘENÍ CENOVÉ NABÍDKY – Příplatky:": ["II. QUOTATION EXTENSIONS – Surcharges:","II. ERWEITERUNG DES ANGEBOTS – Zuschläge:","II. EXTENSIONS DE L’OFFRE – Suppléments :"],
+  "Pohled na objekt z ulice:": ["View of the building from the street:","Ansicht des Gebäudes von der Straße:","Vue du bâtiment depuis la rue :"],
+  "Přístavba výtahu do nové prosklené ocelové konstrukce výtahové šachty ke dvorní fasádě bytového domu na výše uvedené adrese.": ["Addition of an elevator in a new glazed steel elevator shaft structure at the courtyard facade of the residential building at the above address.","Anbau eines Aufzugs in eine neue verglaste Stahlkonstruktion des Aufzugsschachts an der Hoffassade des Wohnhauses unter der oben genannten Adresse.","Ajout d’un ascenseur dans une nouvelle structure métallique vitrée de gaine d’ascenseur sur la façade côté cour de l’immeuble d’habitation à l’adresse susmentionnée."],
+  "Naše nabídka obsahuje výrobu, dodání a stavbu MONTOVANÉ ocelové konstrukce výtahové šachty, včetně jejího opláštění izolačním dvojsklem v kombinaci s čirým vrstveným bezpečnostním sklem VSG. Specifikace provedení nabízené šachty je v technické části této nabídky.": ["Our quotation includes the manufacture, delivery and erection of a PREFABRICATED steel elevator shaft structure, including its cladding with insulating double glazing combined with clear laminated safety glass (VSG). The specification of the offered shaft is given in the technical part of this quotation.","Unser Angebot umfasst Herstellung, Lieferung und Montage einer MONTIERTEN Stahlkonstruktion des Aufzugsschachts einschließlich ihrer Verkleidung mit Isolierverglasung in Kombination mit klarem Verbundsicherheitsglas (VSG). Die Ausführungsspezifikation des angebotenen Schachts befindet sich im technischen Teil dieses Angebots.","Notre offre comprend la fabrication, la livraison et le montage d’une structure métallique PRÉFABRIQUÉE de gaine d’ascenseur, y compris son habillage en double vitrage isolant combiné à du verre feuilleté de sécurité clair (VSG). La spécification de la gaine proposée figure dans la partie technique de la présente offre."],
+  "Nabídka se skládá z Technické a Obchodní části. Objednatelem odsouhlasená Technická část bude použita jako příloha smlouvy o dílo nebo závazné objednávky.": ["The quotation consists of a Technical and a Commercial part. The Technical part approved by the client will be used as an annex to the contract for work or to the binding order.","Das Angebot besteht aus einem technischen und einem kaufmännischen Teil. Der vom Auftraggeber genehmigte technische Teil wird als Anlage zum Werkvertrag oder zur verbindlichen Bestellung verwendet.","L’offre se compose d’une partie technique et d’une partie commerciale. La partie technique approuvée par le maître d’ouvrage servira d’annexe au contrat d’entreprise ou à la commande ferme."],
+  "rozsah dodávky dle Technické části nabídky - A. TECHNICKÁ SPECIFIKACE VÝTAHOVÉ ŠACHTY": ["scope of supply according to the Technical part of the quotation - A. TECHNICAL SPECIFICATION OF THE ELEVATOR SHAFT","Lieferumfang gemäß technischem Teil des Angebots - A. TECHNISCHE SPEZIFIKATION DES AUFZUGSSCHACHTS","étendue de la fourniture selon la partie technique de l’offre - A. SPÉCIFICATION TECHNIQUE DE LA GAINE D’ASCENSEUR"],
+  "CELKEM za nabídku": ["TOTAL for the quotation","GESAMT für das Angebot","TOTAL de l’offre"],
+  "Poznámky k cenové nabídce: a. cena vychází z technické specifikace nabídky – viz výše": ["Notes on the price quotation: a. the price is based on the technical specification of the quotation – see above","Hinweise zum Preisangebot: a. Der Preis basiert auf der technischen Spezifikation des Angebots – siehe oben","Remarques sur l’offre de prix : a. le prix est basé sur la spécification technique de l’offre – voir ci-dessus"],
+  "b. DPH bude účtováno dle aktuálně platných daňových předpisů": ["b. VAT will be charged in accordance with the tax regulations in force","b. Die MwSt. wird nach den jeweils geltenden Steuervorschriften berechnet","b. la TVA sera facturée conformément à la réglementation fiscale en vigueur"],
+  "c. k úpravě celkové ceny může dojít po přesném zaměření a vyhodnocení statiky": ["c. the total price may be adjusted after a precise site survey and evaluation of the structural analysis","c. Der Gesamtpreis kann nach genauem Aufmaß und Auswertung der Statik angepasst werden","c. le prix total peut être ajusté après un relevé précis et l’évaluation de l’étude statique"],
+  "Cena díla je splatná v následujících dílčích splátkách:": ["The price of the work is payable in the following instalments:","Der Werkpreis ist in folgenden Teilzahlungen fällig:","Le prix de l’ouvrage est payable selon les acomptes suivants :"],
+  "Po ukončení všech výše uvedených prací a po řádném předání a převzetí celého díla předávacím protokolem bude vystaven konečný daňový doklad na zbývající část celkové ceny díla s vyúčtováním DPH v zákonné výši.": ["After completion of all the above work and proper handover and acceptance of the entire work by a handover report, a final tax invoice will be issued for the remaining part of the total price of the work, with VAT charged at the statutory rate.","Nach Abschluss aller oben genannten Arbeiten und ordnungsgemäßer Übergabe und Abnahme des gesamten Werks mit Übergabeprotokoll wird eine Schlussrechnung über den verbleibenden Teil des Gesamtpreises mit Abrechnung der MwSt. in gesetzlicher Höhe ausgestellt.","Après l’achèvement de tous les travaux susmentionnés et la réception en bonne et due forme de l’ensemble de l’ouvrage par procès-verbal, une facture finale sera émise pour le solde du prix total de l’ouvrage, avec la TVA au taux légal."],
+  "Poznámky k platebním podmínkám: v případě podepsané rámcové nebo subdodavatelské smlouvy, platí dohodnuté podmínky z těchto smluv. Bude-li potřeba upravit tyto standardní platební podmínky, jsme připraveni k jejich projednání na úrovni vedení společnosti.": ["Notes on payment terms: if a framework or subcontract agreement has been signed, the terms agreed in that agreement apply. Should these standard payment terms need to be adjusted, we are prepared to discuss them at management level.","Hinweise zu den Zahlungsbedingungen: Bei einem unterzeichneten Rahmen- oder Nachunternehmervertrag gelten die darin vereinbarten Bedingungen. Sollten diese Standard-Zahlungsbedingungen angepasst werden müssen, sind wir bereit, dies auf Ebene der Geschäftsleitung zu besprechen.","Remarques sur les conditions de paiement : en cas de contrat-cadre ou de contrat de sous-traitance signé, les conditions convenues dans ce contrat s’appliquent. Si ces conditions de paiement standard doivent être adaptées, nous sommes prêts à en discuter au niveau de la direction."],
+  "Splatnost faktur a platnost nabídky:": ["Invoice due dates and validity of the quotation:","Zahlungsziel der Rechnungen und Gültigkeit des Angebots:","Échéance des factures et validité de l’offre :"],
+  "Zahájení montáže cca 12 týdnů po podpisu SoD a předání finálních dispozičních výkresů celé technologie výtahu včetně silových účinků technologie výtahu na šachtu.": ["Installation will start approx. 12 weeks after the contract is signed and the final layout drawings of the entire elevator equipment, including the loads of the elevator equipment on the shaft, are handed over.","Die Montage beginnt ca. 12 Wochen nach Vertragsunterzeichnung und Übergabe der endgültigen Grundrisszeichnungen der gesamten Aufzugstechnik einschließlich der Lasten der Aufzugstechnik auf den Schacht.","Le montage commencera env. 12 semaines après la signature du contrat et la remise des plans d’implantation définitifs de l’ensemble de l’ascenseur, y compris les efforts de l’ascenseur sur la gaine."],
+  "Montáž ocelové konstrukce výtahové šachty cca 2-3 týdny.": ["Installation of the steel shaft structure takes approx. 2–3 weeks.","Die Montage der Stahlschachtkonstruktion dauert ca. 2–3 Wochen.","Le montage de la structure métallique de la gaine dure env. 2 à 3 semaines."],
+  "Následné opláštění konstrukce šachty cca 2 týdny.": ["Subsequent cladding of the shaft structure takes approx. 2 weeks.","Die anschließende Verkleidung der Schachtkonstruktion dauert ca. 2 Wochen.","L’habillage de la structure de la gaine dure ensuite env. 2 semaines."],
+  "Dokončovací práce do cca 3 týdnů po ukončení montáže technologie výtahu – všech šachetních dveří.": ["Finishing work will be done within approx. 3 weeks after installation of the elevator equipment – all landing doors – is completed.","Die abschließenden Arbeiten werden innerhalb von ca. 3 Wochen nach Abschluss der Montage der Aufzugstechnik – aller Schachttüren – durchgeführt.","Les travaux de finition seront réalisés dans un délai d’env. 3 semaines après l’achèvement du montage de l’ascenseur – de toutes les portes palières."],
+  "Předávací protokol z bodů 1. a 2. lze nahradit oboustranně podepsaným zápisem do montážního deníku.": ["The handover reports under items 1 and 2 may be replaced by an entry in the installation log signed by both parties.","Die Übergabeprotokolle zu den Punkten 1 und 2 können durch einen von beiden Seiten unterzeichneten Eintrag im Montagetagebuch ersetzt werden.","Les procès-verbaux de réception des points 1 et 2 peuvent être remplacés par une mention dans le journal de montage signée par les deux parties."],
 
   /* ---- TS-1: kontrola vyplnění technické specifikace (jen upozornění) ---- */
   "Kontrola vyplnění": ["Completeness check","Vollständigkeitsprüfung","Contrôle de complétude"],
@@ -780,6 +826,19 @@ function prekladNeutral(s) {
    *   – žádné písmenné slovo delší než 4 znaky (slova = text, ne kód). */
   if (/\d/.test(t) && /^[A-Z0-9][A-Z0-9\s.,:;/\\_+\-]*$/.test(t)
     && !/[A-Z]{5,}/.test(t)) return true;
+  /* KONTAKTNÍ BLOK FIRMY v patičce šablony (K10-N36, 24. 9. 2026): web,
+   * telefon, IČ/DIČ, PSČ s městem, ulice s číslem popisným/orientačním,
+   * název firmy s právní formou a oddělovací čára. Překládat se nemají —
+   * a dokud je překladač hlásil jako chybějící, mutace šablony vypadala
+   * nedodělaná, i když byla v pořádku. Vzory jsou úzké: ulice musí mít
+   * číslo s lomítkem, PSČ tvar „123 45 Město", název firmy právní formu. */
+  if (/^(www\.|https?:\/\/)\S+$/i.test(t)) return true;
+  if (/^(Tel|Mob|Fax)\.?\s*:?\s*[+\d][\d\s]+$/i.test(t)) return true;
+  if (/^(IČO?|DIČ)\s*:?\s*(CZ)?[\d\s]+$/i.test(t)) return true;
+  if (/^\d{3}\s?\d{2}\s+\S.*$/.test(t) && t.length <= 40) return true;
+  if (/^\S.* \d+\/\d+[a-z]?$/.test(t) && t.length <= 40) return true;
+  if (/^[A-Z][A-Z0-9 &.-]+ (s\.r\.o\.|a\.s\.|spol\. s r\.o\.)$/.test(t)) return true;
+  if (/^[_\-=–—\s]{5,}$/.test(t)) return true;
   return false;
 }
 

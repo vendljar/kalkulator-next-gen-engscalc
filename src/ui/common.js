@@ -450,6 +450,18 @@ const SABLONY = {};
  * Vrací Promise: objekt { data, nazev, zdroj:'server', verze, otisk, typ,
  * mutaceChybi } — nebo null („pokračuj místní cestou"; jen mimo přísný
  * režim) — nebo odmítnutí s českou větou, kterou jde rovnou ukázat. */
+/* ZASTARALÁ JAZYKOVÁ MUTACE (#334, nález K10-N36 z 10. kola, 24. 9. 2026).
+ * Mutace EN/DE/FR se vyrábí z české šablony (Nastavení → Šablony) a zveřejní
+ * zvlášť. Když se pak zveřejní novější česká šablona, mutace zůstane stará
+ * — v ostré to byla v8 proti české v10: 31 řádků česky a chybějící řádek
+ * soklu. Aplikace to nepoznala, protože mutace „existovala".
+ * Mutace je zastaralá, když byla zveřejněna DŘÍV než platná česká šablona.
+ * Chybí-li u jedné z nich čas zveřejnění, nerozhoduje se (nic se nehlásí). */
+function sablonaMutaceZastarala(meta, metaJ) {
+  if (!meta || !metaJ) return false;
+  const a = Date.parse(meta.kdy || ''), b = Date.parse(metaJ.kdy || '');
+  return isFinite(a) && isFinite(b) && b < a;
+}
 function sablonyOnlineAktivni() {
   return typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.bezi && !!ONLINE_STAV.ja;
 }
@@ -462,6 +474,19 @@ function sablonaProTisk(typ, lang) {
   const meta = onlineSablonaMeta(typ);
   const popis = (typeof dokumentPopis === 'function' && dokumentPopis(typ)) || typ;
 
+  if (metaJ && meta && sablonaMutaceZastarala(meta, metaJ)) {
+    const jazyk = { en: 'Anglická', de: 'Německá', fr: 'Francouzská' }[L] || L.toUpperCase();
+    const zprava = jazyk + ' mutace šablony „' + popis + '" (verze ' + metaJ.verze + ') je starší než platná '
+      + 'česká šablona (verze ' + meta.verze + ') — dokument by vyšel ze starého znění, zčásti česky. '
+      + 'Administrátor ji přegeneruje: Nastavení → Šablony → ' + L.toUpperCase() + ' → Zveřejnit online.';
+    /* Přísný režim zastaví (tiskla by se neaktuální smluvní nabídka);
+     * měkký tiskne dál, ale hlášku dostane volající v `mutaceZastarala`. */
+    if (rezim === 'prisny') return Promise.reject(new Error(zprava));
+    return onlineSablonaStahni(typJazyk)
+      .then(v => ({ data: v.data, nazev: v.nazev, zdroj: 'server', verze: v.verze, otisk: v.otisk,
+                    typ: typJazyk, mutaceChybi: false, mutaceZastarala: zprava }))
+      .catch(() => null);
+  }
   if (metaJ || meta) {
     const vybrany = metaJ ? typJazyk : typ;
     return onlineSablonaStahni(vybrany)

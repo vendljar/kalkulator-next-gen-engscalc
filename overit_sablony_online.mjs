@@ -238,6 +238,41 @@ const zal = await page.evaluate(() => onlineApi('/api/zaloha').then(o => ({
 test('záloha ke stažení nese rejstřík šablon', zal.maSablony && zal.verze === 1);
 test('záloha nese i samotný soubor šablony', zal.souborOk);
 
+/* ---------- 6) zastaralá jazyková mutace (#334, K10-N36, 24. 9. 2026) ----------
+ * V ostré byla zveřejněná EN/DE mutace z v8, česká šablona v10 — anglická
+ * nabídka vyšla z 17 % česky a aplikace to nepoznala. Mutace zveřejněná
+ * DŘÍV než platná česká šablona je zastaralá: v přísném režimu se z ní
+ * netiskne a Nastavení → Šablony to ukáže. */
+console.log('\nzastaralá jazyková mutace');
+/* Server odmítne zveřejnit soubor se stejným otiskem jako platná verze,
+ * proto každé zveřejnění dostane na konec jiný bajt (za koncem zipu —
+ * čtení archivu to neruší). */
+let poradi = 0;
+const zverejni = (typ, nazev) => page.evaluate(async ([b64, typ, nazev, n]) => {
+  const bin = atob(b64); const u8 = new Uint8Array(bin.length + 1);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  u8[bin.length] = n;
+  await new Promise(r => setTimeout(r, 30));          // ať mají zveřejnění různý čas
+  const o = await onlineSablonaZverejni(typ, nazev, u8.buffer, 'harness');
+  return o.verze;
+}, [sablonaB64, typ, nazev, ++poradi]);
+const tiskEn = () => page.evaluate(() =>
+  sablonaProTisk('nabidkaProj', 'en').then(s => 'prošlo:' + s.typ, e => e.message));
+await zverejni('nabidkaProj_en', 'Sablona_NABIDKA_PROJ_EN.docx');
+test('aktuální EN mutace se použije', /^prošlo:nabidkaProj_en$/.test(await tiskEn()), await tiskEn());
+await zverejni('nabidkaProj', 'Sablona_NABIDKA_PROJ.docx');      // novější česká → EN je teď zastaralá
+const zastaralaHlaska = await tiskEn();
+test('mutace starší než česká šablona se v přísném režimu odmítne', !/^prošlo/.test(zastaralaHlaska), zastaralaHlaska);
+test('hláška říká proč a kdo to napraví',
+  /starší než platná česká šablona/.test(zastaralaHlaska) && /Administrátor/.test(zastaralaHlaska), zastaralaHlaska);
+test('Nastavení → Šablony mutaci označí jako zastaralou',
+  await page.evaluate(() => /sablona-zastarala/.test(nastSablony())));
+test('česká nabídka se tím nezastaví',
+  /^prošlo/.test(await page.evaluate(() => sablonaProTisk('nabidkaProj', 'cz').then(() => 'prošlo', e => e.message))));
+await zverejni('nabidkaProj_en', 'Sablona_NABIDKA_PROJ_EN.docx'); // přegenerovaná a znovu zveřejněná
+test('po novém zveřejnění mutace tisk zase projde', /^prošlo:nabidkaProj_en$/.test(await tiskEn()), await tiskEn());
+test('a štítek „zastaralá" zmizí', await page.evaluate(() => !/sablona-zastarala/.test(nastSablony())));
+
 test('konzole zůstala čistá', chyby.length === 0, chyby.slice(0, 3));
 
 await prohlizec.close();
