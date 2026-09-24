@@ -513,6 +513,30 @@
   .pill.stara { background:#fdecec; color:#b3261e; }   /* hlídka zastaralé verze (19. 8. 2026) */
   .pill.mut { background:#eef1f5; color:var(--mut); }
   .note { color:var(--mut); font-size:12px; margin:6px 0; }
+  /* SPRÁVA ŠABLON (#349, 24. 9. 2026): tabulka dokument × jazyk, detail a průvodce. */
+  .sabl-tab { width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .sabl-tab th { text-align:left; font-size:11.5px; text-transform:uppercase; letter-spacing:.03em; color:var(--mut); background:var(--sec); padding:8px 10px; }
+  .sabl-tab td { padding:9px 10px; border-top:1px solid var(--line); vertical-align:top; }
+  .sabl-tab tr.sabl-radek { cursor:pointer; }
+  .sabl-tab tr.sabl-radek:hover td { background:#f7f9fc; }
+  .sabl-tab tr.sabl-vybrany td { background:#eaf0fb; }
+  .sabl-tab tr.sabl-vybrany td:first-child { box-shadow:inset 3px 0 0 var(--acc); }
+  .sabl-chip { display:inline-block; font-size:12px; font-weight:600; padding:2px 8px; border-radius:6px; border:1px solid transparent; white-space:nowrap; }
+  .sabl-chip.ok { background:#e3f1e6; color:#1e6b3a; border-color:#a9d3b4; }
+  .sabl-chip.warn { background:#fff1de; color:#9a4a06; border-color:#e9b872; }
+  .sabl-chip.miss { background:#fff; color:var(--mut); border:1px dashed #b9b5aa; }
+  .sabl-chip.na { color:#8a919c; }
+  .sabl-sub { display:block; font-size:11.5px; color:var(--mut); margin-top:2px; }
+  .sabl-panel { border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin:12px 0; background:var(--card); }
+  .sabl-kontrola { display:flex; gap:10px; align-items:baseline; padding:7px 0; border-top:1px solid var(--line); font-size:13px; }
+  .sabl-kontrola:first-child { border-top:0; }
+  .sabl-kontrola b.ok { color:var(--ok); } .sabl-kontrola b.warn { color:var(--warn); } .sabl-kontrola b.chyba { color:#b3261e; }
+  .sabl-chyba { background:#fdecea; border:1px solid #e7a39b; border-radius:8px; padding:10px 12px; margin:8px 0; color:#5b1a12; }
+  .sabl-banner { background:#fff4e5; border:1px solid #e9b872; border-radius:8px; padding:10px 12px; margin:8px 0; color:#6b3504; }
+  .sabl-kroky { display:flex; gap:6px; flex-wrap:wrap; margin:6px 0 10px; }
+  .sabl-kroky span { font-size:12px; padding:4px 10px; border-radius:99px; background:var(--sec); color:var(--mut); }
+  .sabl-kroky span.akt { background:var(--acc); color:#fff; font-weight:600; }
+  .sabl-kroky span.hot { background:#e3f1e6; color:#1e6b3a; }
   button { font:inherit; padding:7px 14px; border-radius:7px; border:1px solid var(--line); background:#fff; cursor:pointer; }
   button.primary { background:var(--acc); border-color:var(--acc); color:#fff; }
   button.mini { padding:3px 9px; font-size:12px; }

@@ -99,13 +99,120 @@ function sablonyZverejni(rej, info) {
     kdy: String(info.kdy || ''),
     poznamka: String(info.poznamka || ''),
   };
+  /* ZE KTERÉ ČESKÉ VERZE MUTACE VZNIKLA (#348, 24. 9. 2026). Otisk české
+   * šablony, ze které se jazyková verze vyrobila (nebo ke které se ručně
+   * doladila). Podle něj se pozná zastaralá mutace — obsahem, ne časem
+   * zveřejnění. Jen u jazykových typů a jen v platném tvaru. */
+  if (/_[a-z]{2}$/.test(info.typ) && sablonaOtiskPlatny(info.zdrojOtisk))
+    t.platna.zdrojOtisk = info.zdrojOtisk;
+  if (+info.vracenoZ > 0) t.platna.vracenoZ = +info.vracenoZ;
   out.typy[info.typ] = t;
   return out;
+}
+
+function sablonaOtiskPlatny(o) {
+  return typeof o === 'string' && /^[0-9a-f]{16}$/.test(o);
 }
 
 function sablonaPlatna(rej, typ) {
   const t = rej && rej.typy && rej.typy[typ];
   return (t && t.platna) || null;
+}
+
+/* Všechny známé verze typu (platná + historie), od nejnovější. */
+function sablonaVerze(rej, typ) {
+  const t = rej && rej.typy && rej.typy[typ];
+  if (!t) return [];
+  return [t.platna].concat(t.historie || []).filter(Boolean);
+}
+
+/* STAV JAZYKOVÉ VERZE (#348, 24. 9. 2026).
+ *
+ * Do 24. 9. se zastaralost poznávala jen podle času: mutace zveřejněná dřív
+ * než platná čeština = zastaralá. Jenže server stejný soubor podruhé
+ * nezveřejní, takže mutace vyrobená ze stejné češtiny zůstala po novém
+ * zveřejnění češtiny „starší" natrvalo — hláška „zastaralá" nešla odstranit.
+ * Mutace teď nese otisk české verze, ze které vznikla (`zdrojOtisk`);
+ * starší záznamy bez něj se posuzují postaru podle času.
+ *
+ * Vrací { stav: 'chybi' | 'aktualni' | 'zastarala' | 'bezZdroje',
+ *         meta, zVerze, podleCasu }. */
+function sablonaMutaceStav(rej, typ, lang) {
+  const m = sablonaPlatna(rej, typ + '_' + lang);
+  if (!m) return { stav: 'chybi', meta: null };
+  const cz = sablonaPlatna(rej, typ);
+  if (!cz) return { stav: 'bezZdroje', meta: m };
+  if (m.zdrojOtisk) {
+    const zdroj = sablonaVerze(rej, typ).find(v => v.otisk === m.zdrojOtisk);
+    return { stav: m.zdrojOtisk === cz.otisk ? 'aktualni' : 'zastarala', meta: m,
+             zVerze: zdroj ? zdroj.verze : null, podleCasu: false };
+  }
+  const a = Date.parse(cz.kdy || ''), b = Date.parse(m.kdy || '');
+  return { stav: (isFinite(a) && isFinite(b) && b < a) ? 'zastarala' : 'aktualni', meta: m,
+           zVerze: null, podleCasu: true };
+}
+
+/* JAZYK SOUBORU ŠABLONY (#348, 24. 9. 2026).
+ *
+ * 24. 9. se jako ČESKÁ šablona nabídky zveřejnil soubor „…_v11_DE.docx"
+ * a aplikace nic nenamítla. Odhad jazyka z odstavců: každý odstavec dostane
+ * body za typická slova a znaky každého jazyka; rozhoduje většina odstavců,
+ * které se daly zařadit. Odstavce jen se symboly, čísly nebo adresou se
+ * nezařadí (nemají žádný znak jazyka). Stačí to na rozlišení čeština ×
+ * němčina × angličtina × francouzština v obchodním textu; nejde o obecný
+ * detektor. */
+const SABLONA_JAZYK_ZNAKY = {
+  cz: /[ěřůťďň]/gi, de: /[äöüß]/gi, fr: /[àâçèêëîïôûœ]/gi, en: null,
+};
+const SABLONA_JAZYK_SLOVA = {
+  cz: ['se', 'na', 'je', 've', 'pro', 'ze', 'od', 'jsou', 'nebo', 'bude', 'dle', 'při', 'této', 'není',
+       'cena', 'šachty', 'dveří', 'objednatel', 'zhotovitel', 'nabídka', 'dodávka', 'montáž', 'včetně'],
+  en: ['the', 'and', 'of', 'for', 'with', 'is', 'are', 'by', 'be', 'shall', 'price', 'shaft', 'offer',
+       'delivery', 'including', 'customer', 'contractor', 'this', 'will'],
+  de: ['und', 'der', 'die', 'das', 'mit', 'für', 'ist', 'von', 'zu', 'auf', 'den', 'dem', 'wird', 'nicht',
+       'preis', 'schacht', 'angebot', 'lieferung', 'inklusive', 'auftraggeber', 'auftragnehmer'],
+  fr: ['le', 'la', 'les', 'des', 'et', 'pour', 'avec', 'est', 'du', 'une', 'sur', 'sont', 'prix', 'gaine',
+       'offre', 'livraison', 'compris', 'client', 'entrepreneur'],
+};
+function sablonaJazykOdhad(odstavce) {
+  const pocty = { cz: 0, en: 0, de: 0, fr: 0 };
+  let zarazeno = 0;
+  (Array.isArray(odstavce) ? odstavce : []).forEach(t => {
+    const text = String(t || '').replace(/\{\{[^}]*\}\}/g, ' ').toLowerCase();
+    const slova = text.split(/[^a-zà-ÿěščřžýáíéůúťďňœß]+/i).filter(Boolean);
+    if (!slova.length) return;
+    const body = {};
+    Object.keys(pocty).forEach(j => {
+      const mn = new Set(SABLONA_JAZYK_SLOVA[j]);
+      let b = slova.filter(w => mn.has(w)).length;
+      const zn = SABLONA_JAZYK_ZNAKY[j];
+      if (zn) b += 2 * ((text.match(zn) || []).length);
+      body[j] = b;
+    });
+    const max = Math.max.apply(null, Object.values(body));
+    if (max <= 0) return;
+    const viteze = Object.keys(body).filter(j => body[j] === max);
+    if (viteze.length !== 1) return;
+    pocty[viteze[0]]++;
+    zarazeno++;
+  });
+  let jazyk = null, podil = 0;
+  Object.keys(pocty).forEach(j => { if (zarazeno && pocty[j] / zarazeno > podil) { podil = pocty[j] / zarazeno; jazyk = j; } });
+  return { jazyk, podil, pocty, zarazeno };
+}
+
+/* Symboly {{…}} z odstavců šablony — seřazené, bez opakování. */
+function sablonaSymboly(odstavce) {
+  const mn = new Set();
+  (Array.isArray(odstavce) ? odstavce : []).forEach(t => {
+    String(t || '').replace(/\{\{\s*([A-Z0-9_]+)\s*\}\}/g, (_m, k) => { mn.add(k); return _m; });
+  });
+  return Array.from(mn).sort();
+}
+function sablonaSymbolyRozdil(stare, nove) {
+  const a = new Set(stare || []), b = new Set(nove || []);
+  return { pribylo: Array.from(b).filter(k => !a.has(k)).sort(),
+           ubylo: Array.from(a).filter(k => !b.has(k)).sort() };
 }
 
 /* Přepnutí režimu. Neznámá hodnota se tiše nezapíše — vrací se rejstřík
@@ -120,7 +227,9 @@ function sablonyRezimNastav(rej, rezim, kdo, kdy) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { SABLONY_ONLINE_TYPY, SABLONY_ONLINE_JAZYKY, SABLONA_MAX_B64,
+  module.exports = { sablonaOtiskPlatny, sablonaVerze, sablonaMutaceStav, sablonaJazykOdhad, sablonaSymboly,
+                     sablonaSymbolyRozdil, SABLONA_JAZYK_SLOVA,
+                     SABLONY_ONLINE_TYPY, SABLONY_ONLINE_JAZYKY, SABLONA_MAX_B64,
                      sablonaTypPlatny, sablonaJeDocxB64, sablonaOtisk,
                      sablonyNovyRejstrik, sablonaKlicSouboru, sablonyZverejni,
                      sablonaPlatna, sablonyRezimNastav };

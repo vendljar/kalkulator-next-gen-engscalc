@@ -858,6 +858,16 @@ function nastSablony() {
         ${r.rezimZmenil ? `Naposledy přepnul ${esc(r.rezimZmenil)} ${esc((r.rezimKdy || '').slice(0, 10))}.` : ''}</div>
       <div id="sablOnlineStav" class="note" style="margin-top:6px"></div></div>`;
   };
+  /* Přihlášený online: nová správa šablon (#349, sablony_sprava_ui.js).
+   * Stará obrazovka níž zůstává pro práci bez serveru. */
+  if (sablonyOnlineAktivni() && typeof sablonySpravaHtml === 'function')
+    return `${nastSmluvniStandardy()}
+    <div class="sec-title">Šablony dokumentů</div>
+    <div class="note">Platí to, co je zveřejněné na serveru — z toho tisknou všichni přihlášení. Česká šablona je zdroj,
+      ze kterého se vyrábějí jazykové verze; každá jazyková verze ví, ze které české verze vznikla.
+      ${jeAdmin() ? 'Klikněte na dokument v tabulce: dole se ukáže jeho detail, jazykové verze a historie.' : ''}</div>
+    ${sablonySpravaHtml()}
+    ${rezimBlok()}`;
   return `${nastSmluvniStandardy()}
 
     <div class="sec-title">Šablony dokumentů</div>

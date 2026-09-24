@@ -460,10 +460,13 @@ const SABLONY = {};
  * zvlášť. Když se pak zveřejní novější česká šablona, mutace zůstane stará
  * — v ostré to byla v8 proti české v10: 31 řádků česky a chybějící řádek
  * soklu. Aplikace to nepoznala, protože mutace „existovala".
- * Mutace je zastaralá, když byla zveřejněna DŘÍV než platná česká šablona.
- * Chybí-li u jedné z nich čas zveřejnění, nerozhoduje se (nic se nehlásí). */
+ * Od 24. 9. 2026 (#348) nese mutace otisk české šablony, ze které vznikla
+ * (`zdrojOtisk`): zastaralá je, když ten otisk nepatří platné české šabloně.
+ * Starší mutace bez otisku se posuzují postaru — zveřejněná DŘÍV než platná
+ * česká šablona = zastaralá. Chybí-li čas zveřejnění, nerozhoduje se. */
 function sablonaMutaceZastarala(meta, metaJ) {
   if (!meta || !metaJ) return false;
+  if (metaJ.zdrojOtisk) return metaJ.zdrojOtisk !== meta.otisk;
   const a = Date.parse(meta.kdy || ''), b = Date.parse(metaJ.kdy || '');
   return isFinite(a) && isFinite(b) && b < a;
 }

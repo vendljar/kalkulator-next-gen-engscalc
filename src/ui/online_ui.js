@@ -513,14 +513,20 @@ function onlineSablonaStahni(typ) {
 
 /* Zveřejnění šablony — volá obrazovka Nastavení → Šablony. Soubor jde na
  * server v base64; verzi, otisk i odmítnutí ne-Wordu řeší server. */
-function onlineSablonaZverejni(typ, nazev, arrayBuffer, poznamka) {
+function onlineSablonaZverejni(typ, nazev, arrayBuffer, poznamka, zdrojOtisk) {
   const u8 = new Uint8Array(arrayBuffer);
   let bin = '';
   const KROK = 32768;   // String.fromCharCode má strop na počet argumentů
   for (let i = 0; i < u8.length; i += KROK)
     bin += String.fromCharCode.apply(null, u8.subarray(i, i + KROK));
-  return onlineApi('/api/sablony', { akce: 'zverejnit', typ, nazev, data: btoa(bin),
-                                     poznamka: String(poznamka || '') })
+  const telo = { akce: 'zverejnit', typ, nazev, data: btoa(bin), poznamka: String(poznamka || '') };
+  if (zdrojOtisk) telo.zdrojOtisk = zdrojOtisk;           // jazyková verze: ze které češtiny (#348)
+  return onlineApi('/api/sablony', telo).then(o => onlineNactiSablony().then(() => o));
+}
+
+/* Vrácení starší verze (#349): server ji zveřejní znovu jako novou verzi. */
+function onlineSablonaVrat(typ, verze, poznamka) {
+  return onlineApi('/api/sablony', { akce: 'vratit', typ, verze: +verze, poznamka: String(poznamka || '') })
     .then(o => onlineNactiSablony().then(() => o));
 }
 

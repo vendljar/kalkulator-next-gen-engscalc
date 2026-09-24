@@ -49,7 +49,9 @@ const SADY = process.env.KNG_MUTACE_SADY
   ? process.env.KNG_MUTACE_SADY.split(',').map(s => s.trim()).filter(Boolean)
   : ['test_prava.mjs', 'test_funkce.mjs', 'test_obnova.mjs',
      /* F1 (24. 9. 2026): pojistky N43, N44 a B73 hlídají vlastní sady. */
-     'test_stary_tvar.mjs', 'test_klon_sleva.mjs', 'test_autor.mjs'];
+     'test_stary_tvar.mjs', 'test_klon_sleva.mjs', 'test_autor.mjs',
+     /* G1 (24. 9. 2026): zdroj jazykové verze a vrácení šablony. */
+     'test_sablony.mjs'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -155,6 +157,20 @@ const MUTACE = [
     hledej: '    zak.autor = stara.autor || relace.email;',
     nahrad: '    zak.autor = relace.email;',
     proc: 'autorem by se stal ten, kdo si zakázku naposledy otevřel — razítko by ztratilo smysl' },
+
+  /* ---------- správa šablon 24. 9. 2026, dávka G1 (#348, #349) ---------- */
+  { nazev: '#348: mutace k neplatné češtině projde', soubor: 'functions/sablony.mjs',
+    hledej: '      if (!cz || cz.otisk !== t.zdrojOtisk)',
+    nahrad: '      if (!cz)',
+    proc: 'jazyková verze vyrobená z nahrazené češtiny by se tvářila jako aktuální' },
+  { nazev: '#348: stejný soubor k nové češtině se odmítne', soubor: 'functions/sablony.mjs',
+    hledej: '    if (platna && platna.otisk === otisk && (!zdrojOtisk || platna.zdrojOtisk === zdrojOtisk))',
+    nahrad: '    if (platna && platna.otisk === otisk)',
+    proc: 'hláška „zastaralá" by po nové češtině nešla odstranit' },
+  { nazev: '#349: vrátit jde i platnou verzi', soubor: 'functions/sablony.mjs',
+    hledej: '    if (platna && platna.verze === meta.verze)',
+    nahrad: '    if (false)',
+    proc: 'zbytečná nová verze se stejným souborem by zaplevelila historii' },
 
   /* ---------- hloubkový test 24. 9. 2026, dávka F1 ---------- */
   { nazev: 'B73: autora existující zakázky určí klient', soubor: 'functions/zakazky.mjs',

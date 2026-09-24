@@ -101,6 +101,19 @@ function najdiSady() {
  * ============================================================ */
 const MUTACE = [
   /* ---------- centrální šablony (sablony_online.js, #139) ---------- */
+  /* #348 (24. 9. 2026): zdroj jazykové verze a jazyk souboru. */
+  { nazev: 'šablony: mutace k jiné češtině se tváří jako aktuální', soubor: 'sablony_online.js',
+    hledej: "    return { stav: m.zdrojOtisk === cz.otisk ? 'aktualni' : 'zastarala', meta: m,",
+    nahrad: "    return { stav: 'aktualni', meta: m,",
+    proc: 'po nové češtině by se tiskla anglická nabídka ze starého znění' },
+  { nazev: 'šablony: zdrojOtisk se nezapíše', soubor: 'sablony_online.js',
+    hledej: '    t.platna.zdrojOtisk = info.zdrojOtisk;',
+    nahrad: '    ;',
+    proc: 'mutace by nevěděla, ze které češtiny vznikla — zpátky k falešnému „zastaralá"' },
+  { nazev: 'šablony: německý text se počítá jako čeština', soubor: 'sablony_online.js',
+    hledej: "  cz: /[ěřůťďň]/gi, de: /[äöüß]/gi, fr: /[àâçèêëîïôûœ]/gi, en: null,",
+    nahrad: "  cz: /[ěřůťďňäöüß]/gi, de: null, fr: /[àâçèêëîïôûœ]/gi, en: null,",
+    proc: 'německý soubor by prošel jako česká šablona (stalo se 24. 9.)' },
   { nazev: 'šablony: projde i vymyšlený typ', soubor: 'sablony_online.js',
     hledej: '  if (SABLONY_ONLINE_TYPY.includes(typ)) return true;',
     nahrad: '  return true;',

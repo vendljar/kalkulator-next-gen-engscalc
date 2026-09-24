@@ -7,6 +7,10 @@
  * POST /api/sablony { akce:'zverejnit', typ, nazev, data, poznamka }
  *      → zveřejnit novou verzi — JEN Administrátor (stejné pravidlo jako
  *        „platný ceník může zveřejňovat jen administrátor")
+ *      (jazyková verze `typ_xx` může nést `zdrojOtisk` = otisk PLATNÉ české
+ *       šablony, ze které vznikla; jiný otisk → 409, #348)
+ * POST /api/sablony { akce:'vratit', typ, verze, poznamka }
+ *      → starší verzi zveřejní znovu jako novou verzi — JEN Administrátor (#349)
  * POST /api/sablony { akce:'rezim', rezim:'prisny'|'mekky' }
  *      → přepnout režim šablon — JEN Administrátor
  *
@@ -70,10 +74,26 @@ export default async (req) => {
       return json({ ok: false, chyba: 'Šablona je příliš velká (přes ~3,7 MB). Zmenšete v ní fotografie a zkuste to znovu.' }, 413);
     const otisk = g.sablonaOtisk(data);
     const platna = g.sablonaPlatna(rej, t.typ);
-    if (platna && platna.otisk === otisk)
+    /* Jazyková verze nese otisk české šablony, ze které vznikla (#348).
+     * Musí to být PLATNÁ česká šablona — jinak by se jako aktuální označila
+     * mutace vyrobená z verze, kterou mezitím někdo nahradil. */
+    const jeMutace = /_[a-z]{2}$/.test(t.typ);
+    let zdrojOtisk = '';
+    if (jeMutace && t.zdrojOtisk != null && t.zdrojOtisk !== '') {
+      if (!g.sablonaOtiskPlatny(t.zdrojOtisk))
+        return json({ ok: false, chyba: 'Neplatný otisk zdrojové české šablony.' }, 400);
+      const cz = g.sablonaPlatna(rej, t.typ.replace(/_[a-z]{2}$/, ''));
+      if (!cz || cz.otisk !== t.zdrojOtisk)
+        return json({ ok: false, chyba: 'Česká šablona se mezitím změnila – jazykovou verzi vyrobte znovu z platné české šablony.' }, 409);
+      zdrojOtisk = t.zdrojOtisk;
+    }
+    /* Stejný soubor podruhé nezveřejníme — LEDA že jazyková verze nově
+     * patří k jiné (platné) české šabloně. Bez té výjimky zůstala mutace
+     * po novém zveřejnění češtiny „zastaralá" natrvalo (#348). */
+    if (platna && platna.otisk === otisk && (!zdrojOtisk || platna.zdrojOtisk === zdrojOtisk))
       return json({ ok: false, chyba: 'Tahle šablona už je zveřejněná jako platná verze ' + platna.verze + ' – není co zveřejňovat.' }, 400);
     const novy = g.sablonyZverejni(rej, {
-      typ: t.typ, nazev: t.nazev, otisk,
+      typ: t.typ, nazev: t.nazev, otisk, zdrojOtisk,
       velikost: Math.round(data.length * 3 / 4),
       kdo: relace.email, poznamka: t.poznamka, kdy: new Date().toISOString(),
     });
@@ -85,6 +105,34 @@ export default async (req) => {
     await s.zapis(g.sablonaKlicSouboru(t.typ, verze), { nazev: String(t.nazev), data });
     await s.zapis('rejstrik', novy);
     return json({ ok: true, typ: t.typ, verze, otisk });
+  }
+
+  /* VRÁTIT STARŠÍ VERZI (#349, 24. 9. 2026). Stará verze se nepřepisuje ani
+   * neoživuje pod svým číslem — zveřejní se znovu jako NOVÁ verze se
+   * stejným souborem a poznámkou „vráceno z verze N". Historie tak zůstane
+   * úplná a je vidět, kdo a kdy vracel. */
+  if (t.akce === 'vratit') {
+    if (!g.sablonaTypPlatny(t.typ))
+      return json({ ok: false, chyba: 'Neznámý typ šablony.' }, 400);
+    const platna = g.sablonaPlatna(rej, t.typ);
+    const meta = g.sablonaVerze(rej, t.typ).find(v => v.verze === +t.verze);
+    if (!meta) return json({ ok: false, chyba: 'Verze ' + t.verze + ' šablony „' + t.typ + '" neexistuje.' }, 404);
+    if (platna && platna.verze === meta.verze)
+      return json({ ok: false, chyba: 'Verze ' + meta.verze + ' už je platná – není co vracet.' }, 400);
+    const soubor = await s.cti(g.sablonaKlicSouboru(t.typ, meta.verze));
+    if (!soubor || !soubor.data)
+      return json({ ok: false, chyba: 'Soubor verze ' + meta.verze + ' v úložišti chybí.' }, 404);
+    const novy = g.sablonyZverejni(rej, {
+      typ: t.typ, nazev: meta.nazev, otisk: meta.otisk, zdrojOtisk: meta.zdrojOtisk,
+      velikost: meta.velikost, kdo: relace.email, kdy: new Date().toISOString(),
+      poznamka: 'vráceno z verze ' + meta.verze + (t.poznamka ? ' – ' + String(t.poznamka) : ''),
+      vracenoZ: meta.verze,
+    });
+    if (!novy) return json({ ok: false, chyba: 'Vrácení se nepovedlo.' }, 400);
+    const verze = g.sablonaPlatna(novy, t.typ).verze;
+    await s.zapis(g.sablonaKlicSouboru(t.typ, verze), { nazev: meta.nazev, data: soubor.data });
+    await s.zapis('rejstrik', novy);
+    return json({ ok: true, typ: t.typ, verze, otisk: meta.otisk, vracenoZ: meta.verze });
   }
 
   return json({ ok: false, chyba: 'Neznámá akce.' }, 400);

@@ -669,8 +669,30 @@ async function docxPrelozSablonu(arrayBuffer, lang, stat) {
   return zipZapis(polozky);
 }
 
+/* TEXT ŠABLONY PRO KONTROLY (#348, 24. 9. 2026): odstavce z těla, záhlaví
+ * a zápatí (jen nejvnitřnější, stejně jako překlad) plus symboly z popisků
+ * obrázků (`descr="{{…}}"`). Nic se nemění — slouží ke kontrole jazyka
+ * a symbolů před zveřejněním. */
+async function docxTextSablony(arrayBuffer) {
+  const polozky = await zipPrecti(new Uint8Array(arrayBuffer));
+  const dekoder = new TextDecoder();
+  const odstavce = [];
+  for (const p of polozky) {
+    if (!/^word\/(document|header\d*|footer\d*)\.xml$/.test(p.nazev)) continue;
+    const xml = dekoder.decode(p.data);
+    odstavcoveSpany(xml).forEach(sp => {
+      const cely = xml.slice(sp.zac, sp.kon);
+      if (/<w:p(?:\s[^>]*[^/])?>/.test(cely.replace(/^<w:p(?:\s[^>]*)?>/, ''))) return;
+      const t = odstavecText(cely);
+      if (t.trim()) odstavce.push(t);
+    });
+    xml.replace(/descr="(\{\{[A-Z0-9_]+\}\})"/g, (_m, sym) => { odstavce.push(sym); return _m; });
+  }
+  return odstavce;
+}
+
 if (typeof module !== 'undefined')
-  module.exports = { docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
+  module.exports = { docxTextSablony, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
     odstranPrazdneTsRadky, jePrazdnaHodnota, klicePlaceholderu,
     docxVlozObrazky, rozmeryObrazku, dataUrlNaBajty,
     docxDokumentBlob, docxTeloZeSekci, docxSestavBlob, docxPar, docxEsc,
