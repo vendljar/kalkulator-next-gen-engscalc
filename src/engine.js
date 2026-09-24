@@ -439,6 +439,10 @@ const SVETLA_VYSKA_ODSTUP_M = 0.2;
 
 function vypocet(zadani, cenik, jekly, fixes = true) {
   const z = zadani, c = cenik;
+  /* Zadání bez objektu volitelných položek (ručně upravený nebo poškozený
+   * soubor) výpočet dřív shodilo celé — obrazovka zůstala prázdná (N57,
+   * 24. 9. 2026). Chybějící volba = nic nezaškrtnuto. */
+  const zVol = (z.volitelne && typeof z.volitelne === 'object') ? z.volitelne : {};
   const ext = z.typSachty === 'exteriérová';
   const D16 = ext ? 0 : 1;              // Excel konvence: 1=interiér, 0=exteriér
   const zapusteny = z.typPortalu === 'zapuštěný';
@@ -622,7 +626,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const podM21 = (z.sirka + 0.06) * (vyskaPodlazi - svetlaVyska + 0.06) * 2;
   const podestKs = podestKs0 * D16, podestKg = podKg1 * podestKs0 * D16, podestM2 = podM21 * podestKs0 * D16;
 
-  const prechodoveAno = z.volitelne.prechodove == null ? z.prechodovePlechy : z.volitelne.prechodove;
+  const prechodoveAno = zVol.prechodove == null ? z.prechodovePlechy : zVol.prechodove;
   /* PLECHY MAJÍ VŽDY DVĚ POLOŽKY (16. 9. 2026, vyjádření J. V. z 5. kola:
    * „Pokud jsou zaškrtnuté plechy, pak vždy musí být zaškrtnuta i jejich
    * montáž a vice versa. Tzn. Plechy mají vždy 2 položky. Uprav.").
@@ -643,7 +647,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
    * (viz `volitelneToggle`) a zakázka přejde pod nové pravidlo. Bez toho by
    * v ní zůstal duch: montáž natrvalo vypnutá a žádný přepínač, kterým to
    * vrátit — samostatné zaškrtávátko montáže už neexistuje. */
-  const prechMontAno = (z.volitelne.prechMont != null) ? !!z.volitelne.prechMont : prechodoveAno;
+  const prechMontAno = (zVol.prechMont != null) ? !!zVol.prechMont : prechodoveAno;
   /* MNOŽSTVÍ SE ŘÍDÍ TÝMŽ PŘEPÍNAČEM JAKO ZAHRNUTÍ (16. 9. 2026, nález J. V.:
    * „stále nám nefunguje zaškrtávání výchozích položek").
    *
@@ -1200,7 +1204,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const pp = c.priplatky;
 
   // ---------- VOLITELNÉ: katalog všech dostupných položek + příznak „zahrnuto“ (checkbox v tabulce) ----------
-  const v = z.volitelne;
+  const v = zVol;
   /* `prip` = klíč PŘÍPLATKU, který tuhle položku zastupuje, když není
    * zaškrtnutá (16. 9. 2026). Položka totiž žije na dvou místech: ve
    * VOLITELNÝCH je součástí základní ceny, v PŘÍPLATCÍCH si ji zákazník

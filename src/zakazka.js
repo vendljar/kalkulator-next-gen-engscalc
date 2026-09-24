@@ -744,6 +744,9 @@ function importZakazka(obj) {
         if (zo.nastupisteA == null) zo.nastupisteA = +zo.nastupiste || 0;
         if (zo.nastupisteC == null) zo.nastupisteC = 0;
         if (zo.patra == null) zo.patra = +zo.nastupiste || 0;
+        /* N57 (24. 9. 2026): bez objektu volitelných položek spadl výpočet.
+         * Doplní se prázdný — nic se tiše nezaškrtne ani nepřidá do ceny. */
+        if (!zo.volitelne || typeof zo.volitelne !== 'object' || Array.isArray(zo.volitelne)) zo.volitelne = {};
       }
       /* Migrace 12. 8. 2026 (#134): projekce dostala vlastní slevu.
        *
