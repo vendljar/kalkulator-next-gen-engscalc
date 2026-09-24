@@ -135,15 +135,19 @@ const FIRMA_POLE = [
   { id: 'kapPozadavky', sekce: 'Kapitoly nabídky', label: 'IV. Požadavky pro provedení realizace — česky', symbol: 'FIRMA_NAB_POZADAVKY', typ: 'textarea' },
   { id: 'kapPozadavkyEn', sekce: 'Kapitoly nabídky', label: 'IV. Požadavky pro provedení realizace — anglicky', symbol: 'FIRMA_NAB_POZADAVKY_EN', typ: 'textarea' },
   { id: 'kapPozadavkyDe', sekce: 'Kapitoly nabídky', label: 'IV. Požadavky pro provedení realizace — německy', symbol: 'FIRMA_NAB_POZADAVKY_DE', typ: 'textarea' },
+  { id: 'kapPozadavkyFr', sekce: 'Kapitoly nabídky', label: 'IV. Požadavky pro provedení realizace — francouzsky', symbol: 'FIRMA_NAB_POZADAVKY_FR', typ: 'textarea' },
   { id: 'kapTerminy', sekce: 'Kapitoly nabídky', label: 'V. Termíny realizace — česky', symbol: 'FIRMA_NAB_TERMINY', typ: 'textarea' },
   { id: 'kapTerminyEn', sekce: 'Kapitoly nabídky', label: 'V. Termíny realizace — anglicky', symbol: 'FIRMA_NAB_TERMINY_EN', typ: 'textarea' },
   { id: 'kapTerminyDe', sekce: 'Kapitoly nabídky', label: 'V. Termíny realizace — německy', symbol: 'FIRMA_NAB_TERMINY_DE', typ: 'textarea' },
+  { id: 'kapTerminyFr', sekce: 'Kapitoly nabídky', label: 'V. Termíny realizace — francouzsky', symbol: 'FIRMA_NAB_TERMINY_FR', typ: 'textarea' },
   { id: 'kapPredani', sekce: 'Kapitoly nabídky', label: 'VI. Předání díla — česky', symbol: 'FIRMA_NAB_PREDANI', typ: 'textarea' },
   { id: 'kapPredaniEn', sekce: 'Kapitoly nabídky', label: 'VI. Předání díla — anglicky', symbol: 'FIRMA_NAB_PREDANI_EN', typ: 'textarea' },
   { id: 'kapPredaniDe', sekce: 'Kapitoly nabídky', label: 'VI. Předání díla — německy', symbol: 'FIRMA_NAB_PREDANI_DE', typ: 'textarea' },
+  { id: 'kapPredaniFr', sekce: 'Kapitoly nabídky', label: 'VI. Předání díla — francouzsky', symbol: 'FIRMA_NAB_PREDANI_FR', typ: 'textarea' },
   { id: 'dolozky', sekce: 'Kapitoly nabídky', label: 'Doložky pod nabídkou — česky', symbol: 'FIRMA_NAB_DOLOZKY', typ: 'textarea' },
   { id: 'dolozkyEn', sekce: 'Kapitoly nabídky', label: 'Doložky pod nabídkou — anglicky', symbol: 'FIRMA_NAB_DOLOZKY_EN', typ: 'textarea' },
   { id: 'dolozkyDe', sekce: 'Kapitoly nabídky', label: 'Doložky pod nabídkou — německy', symbol: 'FIRMA_NAB_DOLOZKY_DE', typ: 'textarea' },
+  { id: 'dolozkyFr', sekce: 'Kapitoly nabídky', label: 'Doložky pod nabídkou — francouzsky', symbol: 'FIRMA_NAB_DOLOZKY_FR', typ: 'textarea' },
 ];
 
 /* ---------- KAPITOLY III.–VI. NABÍDKY (#282) ----------
@@ -157,10 +161,18 @@ const FIRMA_KAPITOLY = [
   { base: 'kapPredani',   cislo: 'VI.', nadpis: 'PŘEDÁNÍ DÍLA' },
   { base: 'dolozky',      cislo: '',    nadpis: 'DOLOŽKY' },
 ];
-/* Jazyky, ve kterých kapitoly existují. Francouzština schválně chybí:
- * podklad k ní nebyl dodán a smluvní podmínky se nevymýšlejí (rozhodnutí
- * J. V. 21. 9. 2026 — „francouzštinu zatím neřeš"). */
-const FIRMA_KAP_JAZYK = { cz: '', en: 'En', de: 'De' };
+/* Jazyky, ve kterých kapitoly existují. Francouzština přibyla 24. 9. 2026
+ * (N41c, dávka E4) jako POLE bez výchozího textu — smluvní podmínky se
+ * nevymýšlejí, francouzské znění dodá administrátor. Dokud ho nedodá,
+ * platí pro FR dosavadní chování: český text s upozorněním v nabídce
+ * (viz FIRMA_KAP_ZALOHA_CZ). */
+const FIRMA_KAP_JAZYK = { cz: '', en: 'En', de: 'De', fr: 'Fr' };
+/* Jazyky, u kterých se prázdné pole nahradí češtinou s upozorněním místo
+ * vypuštění kapitoly. U FR proto, že do 24. 9. 2026 FR nabídka češtinu
+ * s upozorněním tiskla a vyplněná FR pole zatím nikde nejsou — vypuštění
+ * kapitol by bylo horší než dosavadní stav. EN a DE mají výchozí texty,
+ * u nich prázdné pole znamená vědomé vypuštění (a hlásí ho kontrola). */
+const FIRMA_KAP_ZALOHA_CZ = { fr: true };
 
 /* Vrátí odrážky kapitoly pro daný jazyk.
  *
@@ -183,13 +195,17 @@ const FIRMA_KAP_JAZYK = { cz: '', en: 'En', de: 'De' };
 function firmaKapitola(f, base, jazyk) {
   const firma = f || {};
   const jaz = String(jazyk || 'cz').toLowerCase();
-  const znamy = Object.prototype.hasOwnProperty.call(FIRMA_KAP_JAZYK, jaz);
-  const klic = base + (znamy ? FIRMA_KAP_JAZYK[jaz] : '');
-  const syrovy = String(firma[klic] == null ? '' : firma[klic]);
+  let znamy = Object.prototype.hasOwnProperty.call(FIRMA_KAP_JAZYK, jaz);
+  let klic = base + (znamy ? FIRMA_KAP_JAZYK[jaz] : '');
   const nazev = String(firma.nazev || '').trim();
-  const radky = syrovy.split('\n')
+  const rozloz = k => String(firma[k] == null ? '' : firma[k]).split('\n')
     .map(r => r.replace(/\{FIRMA\}/g, nazev || '{FIRMA}').trim())
     .filter(r => r !== '');
+  let radky = rozloz(klic);
+  /* Prázdné francouzské znění → česky s upozorněním (FIRMA_KAP_ZALOHA_CZ). */
+  if (znamy && !radky.length && FIRMA_KAP_ZALOHA_CZ[jaz]) {
+    znamy = false; klic = base; radky = rozloz(base);
+  }
   return { radky, prazdne: radky.length === 0, jazykChybi: !znamy,
            chybi: !znamy || radky.length === 0, jazyk: jaz, klic };
 }

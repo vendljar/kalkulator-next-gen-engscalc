@@ -433,6 +433,10 @@ const DEFAULT_ZADANI = {
   nepocitat: [],
 };
 
+/* Odstup, o který je světlá výška podlaží menší než výška podlaží (m).
+ * Viz komentář u `svetlaVyska` ve výpočtu (K9-N35). */
+const SVETLA_VYSKA_ODSTUP_M = 0.2;
+
 function vypocet(zadani, cenik, jekly, fixes = true) {
   const z = zadani, c = cenik;
   const ext = z.typSachty === 'exteriérová';
@@ -473,7 +477,11 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
    * jako dosud — to je podmínka, aby se nepohnuly ceny stávajících zakázek. */
   const nastupistC = (z.pruchoziSachta && (+z.nastupisteC || 0) > 0) ? (+z.nastupisteC || 0) : 0;
   const vyskaPodlazi = pater >= 2 ? z.zdvih / (pater - 1) : 0;
-  const svetlaVyska = vyskaPodlazi - 0.2;
+  /* ODSTUP SVĚTLÉ VÝŠKY 0,2 m (K9-N35 / #327, 24. 9. 2026). Předloha zakázky
+   * 0216 má ve vzorci 0,25 m — je to překlep jednoho souboru, ostatní
+   * předlohy i Excel mají 0,2 m. Konstanta je jen pojmenovaná, hodnota se
+   * nemění (ceny uložených zakázek zůstávají). */
+  const svetlaVyska = vyskaPodlazi - SVETLA_VYSKA_ODSTUP_M;
   const vyskaProsklene = z.zdvih + z.prejezd;
   const sirkaDveri = (z.cistyVstupMm + 2 * z.sirkaRamuMm + 2 * 20) / 1000;
   /* LEŠENÍ U-DOKOLA — odstup od šachty (nález V2, rozhodnuto J. V. 14. 9. 2026).

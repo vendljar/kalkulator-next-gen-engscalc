@@ -415,5 +415,25 @@ KAPITOLY.forEach(base => {
     prazdna.ph.NAB_KAP_TERMINY === prazdna.ph.FIRMA_NAB_TERMINY, prazdna.ph.NAB_KAP_TERMINY);
 }
 
+/* ---------- FRANCOUZSKÉ KAPITOLY (N41c, 24. 9. 2026) ----------
+ * Do 24. 9. FR kapitoly neexistovaly a FR nabídka tiskla češtinu
+ * s upozorněním. Nově má Firma FR pole; vyplněné se použije, prázdné
+ * dál spadne na češtinu s upozorněním (nic se nevypustí). */
+{
+  const FR_TEXT = 'Premier point du procès-verbal\nSecond point';
+  const sFr = nahled('fr', f => { f.kapPredaniFr = FR_TEXT; });
+  test('N41c: vyplněné FR pole se v FR nabídce použije',
+    sFr.ph.FIRMA_NAB_PREDANI === FR_TEXT, sFr.ph.FIRMA_NAB_PREDANI);
+  test('N41c: a upozornění „překlad nebyl dodán" u ní není', sFr.ph.FIRMA_NAB_PREDANI_CHYBI === '', sFr.ph.FIRMA_NAB_PREDANI_CHYBI);
+  test('N41c: ostatní kapitoly bez FR textu jsou dál česky s upozorněním',
+    sFr.ph.FIRMA_NAB_POZADAVKY_CHYBI === '1' && String(sFr.ph.FIRMA_NAB_POZADAVKY).length > 0);
+  test('N41c: prázdné FR pole kapitolu nevypustí (záloha češtinou)',
+    fm.firmaKapitola(Object.assign({}, fm.DEFAULT_FIRMA, { kapTerminyFr: '  ' }), 'kapTerminy', 'fr').radky.length > 0);
+  test('N41c: anglická kapitola se na češtinu nevrací (prázdná EN = vědomě vypuštěná)',
+    fm.firmaKapitola(Object.assign({}, fm.DEFAULT_FIRMA, { kapTerminyEn: '' }), 'kapTerminy', 'en').prazdne === true);
+  test('N41c: formulář Firmy má FR pole pro všechny čtyři kapitoly',
+    ['kapPozadavkyFr', 'kapTerminyFr', 'kapPredaniFr', 'dolozkyFr'].every(id => fm.FIRMA_POLE.some(p => p.id === id && /_FR$/.test(p.symbol))));
+}
+
 console.log('\n' + (fail ? 'SELHALO ' + fail + ' z ' + (ok + fail) : 'OK ' + ok));
 if (fail) process.exit(1);
