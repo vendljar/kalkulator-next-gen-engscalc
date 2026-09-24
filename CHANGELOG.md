@@ -8,7 +8,39 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## 24. 9. 2026 — testy lokálně, CI jen ručně (aplikace beze změny)
+## 24. 9. 2026 — dávka E2: příručka obchodníka pro v24.9.1 (aplikace beze změny)
+
+- **Text příručky (`manual/obsah.json`) odpovídá v24.9.1.** Poslední
+  příručka byla z v17.9.3. Přibyl rámeček „Co je nového od příručky ze
+  17. 9. 2026" a upravilo se 18 kapitol. Hlavní témata:
+  - zmrazený Model 1 a nová podkapitola „Režim výpočtu";
+  - termín dodání s ATYP v kapitole V. a kontrola před nabídkou;
+  - kapitoly III.–VI. v nabídce;
+  - opláštění po stěnách;
+  - zakázka jen ke čtení a jedno číslo varianty;
+  - DPH 0 % u zahraničí;
+  - obnovení stránky bez ztráty práce;
+  - nové hlášky ve slovníčku.
+- **Snímky se pořizují automaticky (`manual/snimky_auto.mjs`).** Dosud se
+  fotily ručně v prohlížeči nad testovacím webem. Nástroj spustí aplikaci
+  lokálně se zkušebním ceníkem a vymyšlenými zakázkami, přihlásí se jako
+  obchodník a za zhruba 30 s pořídí všech 21 snímků (3 nové: režim
+  výpočtu, kapitola V. nabídky, panel kontrol). Snímky nenesou skutečné
+  ceny a příručka to říká. Výstup jde mimo repozitář; hotová příručka se
+  do repozitáře dál neukládá.
+- **`overit_manual.mjs` je přepsaný na nový tvar příručky (N17).** Do teď
+  hlídal srpnový tvar s 25 zapečenými PNG a nad každou novou příručkou
+  hlásil 13 falešných selhání. Nově pouští v Chromiu `manual/overit.js`
+  a přidává kontrolu verze proti `verze.txt` a povinná témata. Nad novou
+  příručkou prošlo 37 kontrol z 37. Nad starou v17.9.3 selhávají 4 kontroly
+  a všechny právem: stará verze, chybějící témata E1 a tři vysvětlivky,
+  které tam mířily na text, jenž na snímcích nebyl.
+- **CI:** automaticky běží jen při nahrání na main, jinak ručně (viz
+  záznam níž).
+
+---
+
+## 24. 9. 2026 — testy lokálně, CI jen při nahrání na main (aplikace beze změny)
 
 - **GitHub Actions běží automaticky jen při nahrání na main** (rozhodnutí
   J. V. 24. 9. 2026: „testovat lokálně", CI „když řeknu nahraj na main").

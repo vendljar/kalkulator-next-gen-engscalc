@@ -511,7 +511,7 @@
           "typ": "obrazek", "snimek": "smluvni-podminky",
           "titulek": "Smluvní a platební podmínky pod souhrnem nabídky OCK.",
           "odkazy": [
-            { "obsahuje": "není kopie", "text": "Klíčová věta: blok v nabídce a blok v krycím listu jsou **dva pohledy na jeden záznam**, ne dvě kopie." },
+            { "obsahuje": "ne kopie", "text": "Klíčová věta: blok v nabídce a blok v krycím listu jsou **dva pohledy na jeden záznam**, ne dvě kopie." },
             { "obsahuje": "z kalkulace", "text": "Poznámka u každého řádku říká, odkud se hodnota bere: *výchozí* je firemní standard, *z ceníku* nebo *z kalkulace* je dopočtená hodnota. Vlastní zápis přebije obojí a tlačítko ↺ vrátí automatiku." }
           ]
         },

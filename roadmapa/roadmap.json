@@ -5263,6 +5263,19 @@
    "kde": "`src/ui/common.js` (rezimRow), obsluha set()",
    "hotovoV": "v24.9.1",
    "pozn": "HOTOVO v24.9.1 (dávka E1): pojistka v set() — ne-administrátor nepřepne na Model 1 žádnou cestou; přepínač mu Model 1 nenabízí. Zakázka už v Modelu 1 se počítá beze změny, obchodník vidí „Model 1 (zmrazený)“ a smí ji převést na Model 2, zpět ne. Harness overit_zobrazeni.mjs +4 (obráceně 2 + 2 selhání)."
+  },
+  {
+   "id": "333",
+   "vlna": "E",
+   "stav": "hotovo",
+   "hotovoV": "v24.9.1",
+   "dulezitost": "",
+   "slozitost": "M",
+   "nazev": "Příručka obchodníka pro v24.9.1 a automatické snímky (N17)",
+   "proc": "Poslední příručka byla z v17.9.3; od té doby přibylo zhruba 60 dávek (Model 1 zmrazený, termín dodání s ATYP, opláštění po stěnách, jen ke čtení, obnovení stránky bez ztráty práce…). Harness overit_manual.mjs navíc hlídal srpnový tvar s PNG a nad každou novou příručkou hlásil 13 falešných selhání.",
+   "detail": "HOTOVO 24. 9. 2026 (dávka E2): manual/obsah.json přepsaný pro v24.9.1 (33 kapitol, rámeček „Co je nového“, 3 nové snímky). Nový manual/snimky_auto.mjs pořídí všech 21 snímků automaticky nad zkušebním ceníkem a vymyšlenými zakázkami (asi 30 s) — snímky už není nutné fotit ručně na testovacím webu a nenesou skutečné ceny. overit_manual.mjs přepsaný na nový tvar (pouští manual/overit.js v Chromiu + povinná témata): 37/37. Hotová příručka se do repozitáře neukládá.",
+   "hotovoKdyz": "Příručka nese aktuální verzi, overit_manual zelený, snímky jdou vyrobit bez ručního focení.",
+   "kde": "`manual/obsah.json`, `manual/snimky_auto.mjs`, `overit_manual.mjs`, `manual/overit.js`"
   }
  ],
  "meta" : {
@@ -5722,6 +5735,10 @@
   },
   {
    "text": "Dopoledne 24. 9. 2026 (engscalc), dávka E1 na pokyn J. V. („pusť E1 a slouč do main“; main = v23.9.3): Model 1 zmrazený pro ne-administrátory (#332), termín dodání s ATYP v kapitole V. + nové pravidlo kontrol (#330), šablona CN v11 se symboly kapitol připravená k nahrání (#331), hlídka noční zálohy (#152, 1. část).",
+   "hotovo": true
+  },
+  {
+   "text": "Odpoledne 24. 9. 2026 (engscalc), na pokyn J. V.: CI se spouští automaticky jen při nahrání na main (vydání), na testu se testuje lokálně (nastroje/pred_pushem.sh); dávka E2 — příručka obchodníka pro v24.9.1 s automatickými snímky nad zkušebním ceníkem (#333, N17).",
    "hotovo": true
   }
   ],
