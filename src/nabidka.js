@@ -290,6 +290,19 @@ function nabidkaData(zak, varianta, jekly, lang) {
     });
   }
 
+  /* KAPITOLA V. PRO WORD (#330/#331, 24. 9. 2026). Šablona v11 má v kapitole
+   * V. jeden symbol {{NAB_KAP_TERMINY}}: první řádek je termín dodání ze
+   * zakázky (s ATYP), pod ním text z Firmy. Jeden symbol místo dvou, aby
+   * při nevyplněné lhůtě nezůstal v dokumentu prázdný řádek tabulky.
+   * Popisek se překládá tady — odstavec se symbolem překlad šablony
+   * záměrně přeskakuje. */
+  {
+    const termin = String(placeholders.PODM_TERMIN_DODANI == null ? '' : placeholders.PODM_TERMIN_DODANI).trim();
+    placeholders.NAB_KAP_TERMINY = (termin ? [P('Termín dodání') + ': ' + termin] : [])
+      .concat(String(placeholders.FIRMA_NAB_TERMINY || '').split('\n').filter(r => r.trim() !== ''))
+      .join('\n');
+  }
+
   // Příplatky do sekce „II. Rozšíření cenové nabídky" – včetně množství a ceny.
   // Zahrnou se položky nevyřazené v kalkulaci (sloupec „Nabídka" v tabulce příplatků).
   const vynech = Zv.priplatkyVynechat || [];

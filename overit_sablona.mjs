@@ -200,6 +200,47 @@ console.log('\nnabídka vygenerovaná offline (firemní údaje)');
     (doc.match(/\{\{ZPRAC_[A-Z_]+\}\}/g) || []).join(' '));
 }
 
+/* ---------- 4) kapitoly IV.–VI. a doložky ze symbolů (šablona v11, #331) ----------
+ * Do v10 byly kapitoly v šabloně napsané natvrdo — úprava v Nastavení → Firma
+ * se do Wordu nedostala a termín dodání s ATYP (#330) taky ne. Od v11 je
+ * zdroj jeden: aplikace plní {{FIRMA_NAB_…}} a {{NAB_KAP_TERMINY}}
+ * (termín dodání ze zakázky + text kapitoly V. z Firmy). Starší šablona
+ * tyhle symboly nemá — pak se kontroly jen oznámí jako přeskočené. */
+console.log('\nkapitoly IV.–VI. a doložky ze symbolů (v11+)');
+{
+  const polozky = await zipPrecti(new Uint8Array(zdroj));
+  const doc0 = dekoduj(polozky.find(p => p.nazev === 'word/document.xml').data);
+  const KAP = ['FIRMA_NAB_POZADAVKY', 'NAB_KAP_TERMINY', 'FIRMA_NAB_PREDANI', 'FIRMA_NAB_DOLOZKY'];
+  if (!KAP.some(s => doc0.includes('{{' + s + '}}'))) {
+    console.log('  – přeskočeno: šablona je starší než v11 (kapitoly natvrdo)');
+  } else {
+    for (const s of KAP)
+      test('symbol {{' + s + '}} je v šabloně právě jednou', doc0.split('{{' + s + '}}').length === 2,
+        doc0.split('{{' + s + '}}').length - 1);
+    /* Pevné texty z v10 musí zmizet — jinak by v dokumentu stály dvakrát
+     * a „cca 12 týdnů" by dál odporovalo termínu s ATYP. */
+    for (const t of ['cca 12 týdnů', 'Montáž ocelové konstrukce výtahové šachty cca', 'Zajištění přístupu na místo realizace'])
+      test('pevný text „' + t + '" v šabloně už není', !doc0.includes(t));
+    const ph = {
+      FIRMA_NAB_POZADAVKY: 'Požadavek první\nPožadavek druhý',
+      NAB_KAP_TERMINY: 'Termín dodání: cca 16 týdnů (vč. 4 týdnů za ATYP)\nHarmonogram do 3 týdnů',
+      FIRMA_NAB_PREDANI: '1. protokol\n2. protokol',
+      FIRMA_NAB_DOLOZKY: 'Doložka A',
+    };
+    const { doc } = await vygeneruj(ph, TITULNI_JE_FOTO ? { UVODNI_FOTO: PODPIS_PNG } : {});
+    test('termín dodání s ATYP je v kapitole V.', doc.includes('Termín dodání: cca 16 týdnů (vč. 4 týdnů za ATYP)'));
+    test('víceřádková kapitola se zalomí (řádky spojené <w:br/>)', doc.includes('Požadavek první</w:t><w:br/><w:t') ||
+      /Požadavek první(?:<\/w:t>)?<w:br\/>/.test(doc));
+    test('doložky se doplnily', doc.includes('Doložka A'));
+    test('žádný symbol kapitol nezůstal', !/\{\{(FIRMA_NAB_|NAB_KAP_)[A-Z_]+\}\}/.test(doc),
+      (doc.match(/\{\{(FIRMA_NAB_|NAB_KAP_)[A-Z_]+\}\}/g) || []).join(' '));
+    const poradi = ['IV. POŽADAVKY', 'Požadavek první', 'V. TERMÍNY', 'Termín dodání:', 'VI. PŘEDÁNÍ', '1. protokol', 'DOLOŽKY', 'Doložka A', 'Vypracoval:']
+      .map(t => doc.indexOf(t));
+    test('kapitoly jdou ve správném pořadí a před blokem „Vypracoval:"',
+      poradi.every((x, i) => x >= 0 && (i === 0 || x > poradi[i - 1])), poradi.join(','));
+  }
+}
+
 function atobDelka(dataUrl) {
   return Buffer.from(String(dataUrl).split(',')[1], 'base64').length;
 }

@@ -402,6 +402,17 @@ KAPITOLY.forEach(base => {
   });
   test('#330: vzor zná i termín bez „cca" a bez ATYP', P.tr('12 týdnů', 'en') === '12 weeks', P.tr('12 týdnů', 'en'));
   test('#330: obecné „cca …" platí dál', P.tr('cca 3 dny', 'en') === 'approx. 3 dny');
+  /* Word v11 (#331): kapitola V. je jeden symbol — termín dodání + text z Firmy. */
+  const wv = String(atyp.ph.NAB_KAP_TERMINY || '').split('\n');
+  test('#331: {{NAB_KAP_TERMINY}} začíná termínem dodání s ATYP',
+    wv[0] === 'Termín dodání: cca 16 týdnů (vč. 4 týdnů za ATYP)', wv[0]);
+  test('#331: a pokračuje textem kapitoly V. z Firmy',
+    wv.slice(1).join('\n') === String(atyp.ph.FIRMA_NAB_TERMINY), wv.length);
+  const wvEn = String(nahled('en', lhuta, z => { z.atyp = true; }).ph.NAB_KAP_TERMINY || '').split('\n')[0];
+  test('#331: anglicky celý řádek přeložený (popisek i hodnota)',
+    wvEn === 'Delivery time: approx. 16 weeks (incl. 4 weeks for the non-standard design)', wvEn);
+  test('#331: bez lhůty ve Firmě symbol nese jen text kapitoly',
+    prazdna.ph.NAB_KAP_TERMINY === prazdna.ph.FIRMA_NAB_TERMINY, prazdna.ph.NAB_KAP_TERMINY);
 }
 
 console.log('\n' + (fail ? 'SELHALO ' + fail + ' z ' + (ok + fail) : 'OK ' + ok));
