@@ -158,6 +158,31 @@ const nula = await p.evaluate(async () => {
 zkus('kliknutí do pole s nulou ji označí', nula.priNule >= 1, JSON.stringify(nula));
 zkus('kliknutí do vyplněného čísla ho neoznačí (opravuje se jedna číslice)', nula.priCisle === 0, JSON.stringify(nula));
 
+/* N56 (rozhodnutí J. V. 24. 9. 2026): záporné hodiny ručně zadat nejde —
+ * montáž a projekce v OCK, hodiny i rezerva položek PROJ. */
+const hod = await p.evaluate(() => {
+  const texty = []; const puvH = window.hlaska; window.hlaska = t => { texty.push(String(t)); return Promise.resolve(); };
+  try {
+    const pred = { atyp: Z.montazAtypHod, zakl: Z.projekceZakladHod };
+    set('Z.montazAtypHod', -100); set('Z.projekceZakladHod', -5);
+    const po = { atyp: Z.montazAtypHod, zakl: Z.projekceZakladHod };
+    set('Z.montazAtypHod', 7); const kladne = Z.montazAtypHod;
+    const i = PJ.sekce.findIndex(x => (x.polozky || []).some(q => q.typ === 'hod'));
+    const j = PJ.sekce[i].polozky.findIndex(q => q.typ === 'hod');
+    const pH = PJ.sekce[i].polozky[j].hodiny, pR = PJ.sekce[i].polozky[j].rezerva;
+    pjSet(i, 'polozky.' + j + '.hodiny', -8); pjSet(i, 'polozky.' + j + '.rezerva', -34);
+    const pjPo = { h: PJ.sekce[i].polozky[j].hodiny, r: PJ.sekce[i].polozky[j].rezerva };
+    set('Z.montazAtypHod', pred.atyp);
+    const minAttr = !!document.querySelector('input[onchange*="Z.montazAtypHod"][min="0"]');
+    return { pred, po, kladne, pH, pR, pjPo, texty, minAttr };
+  } finally { window.hlaska = puvH; }
+});
+zkus('N56: záporné ATYP hodiny montáže ani základ projekce se neuloží', hod.po.atyp === hod.pred.atyp && hod.po.zakl === hod.pred.zakl, JSON.stringify(hod));
+zkus('N56: kladné hodiny projdou', hod.kladne === 7, JSON.stringify(hod));
+zkus('N56: záporné hodiny ani rezerva položky PROJ se neuloží', hod.pjPo.h === hod.pH && hod.pjPo.r === hod.pR, JSON.stringify(hod));
+zkus('N56: uživatel dostane hlášku, proč', hod.texty.length === 4 && hod.texty.every(t => /nemohou být záporné/.test(t)), JSON.stringify(hod.texty));
+zkus('N56: pole hodin má min="0"', hod.minAttr);
+
 zkus('za celý průchod nevznikla chyba v konzoli', konzole.length === 0, konzole.slice(0, 2).join(' | '));
 await b.close();
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');

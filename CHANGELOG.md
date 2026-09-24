@@ -8,6 +8,49 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v24.9.6 — dávka F4a (24. 9. 2026 večer): průchozí šachta, lešení, záporné hodiny
+
+Rozhodnutí J. V. 24. 9. večer.
+
+- **Průchozí šachta podle pravidla nástupišť (N46, N45).** Zadání:
+  „Nástupiště obsahuje světlíky, dveře, portály s plechy a nástupní plechy.
+  Nástupiště je všude tam, kde jsou dveře. Kde dveře nejsou, je provedeno
+  opláštění zvoleným materiálem po celé ploše.“
+  - Platí stejně pro čelní (A) i zadní (C) stěnu, ve standardu i v režimu
+    po stěnách (#295 „stejné pravidlo platí i po stěnách“).
+  - Stěna se dělí podle skutečných výšek. Patra pod nejvyšší stanicí mají
+    pás o výšce podlaží, nejvyšší patro pás hlavy (přejezd). Prohlubeň do
+    stěn nepatří, má vlastní sokl.
+  - Pás s dveřmi má sklo jen ve světlících, pás bez dveří se opláští celý.
+  - Každá stěna má jedno sklo a světlíky jsou z téhož skla jako jejich
+    stěna.
+  - Boční světlíky patří ke stěně s dveřmi (N45). Spojovací plechy
+    čelního rámu se počítají podle počtu stěn s dveřmi.
+  - Neprůchozí šachta se nemění. Zrcadlová šachta (A4C0 × A0C4) má
+    zrcadlové stěny. Zapnutí režimu po stěnách zase nehne cenou.
+  - Zadání nese jen počty dveří, proto se u nejvyššího patra předpokládají
+    dveře vpředu, má-li čelní stěna nějaké dveře.
+  - Detail výpočtu ukazuje rozpad stěn A a C na nástupiště a patra bez
+    dveří.
+  - Rozpracované průchozí zakázky se přecení (odsouhlaseno), odeslané
+    nabídky se zmrazeným výsledkem ne.
+- **Lešení při přepisu množství (N51, schváleno):** ve volitelných
+  položkách i v příplatcích se počítá metry × sazba + celá fixní část.
+  Přepis na 0 m = 0 Kč; dřív ve volitelných zůstal fix.
+- **Záporné hodiny ručně zadat nejde (N56):** hodiny montáže a projekce
+  (základ i ATYP) a hodiny i rezerva položek PROJ. Aplikace vrátí hlášku
+  a pole mají `min="0"`. Korekce hodin montáže od referenční šachty
+  (21 m, 6 nástupišť) zůstávají. Výpočet sám do minusu nejde.
+- Testy:
+  - nová sada `test_nastupiste.js` (20 kontrol, proti dosavadnímu jádru
+    13 selže);
+  - na nové pravidlo přepsány `test_oplasteni_zapnuti`,
+    `test_pruchozi_zadni`, `test_sklo_steny` a `test_prepisy`;
+  - `overit_zadani_detail` +5;
+  - mutace jádra +5.
+
+---
+
 ## v24.9.5 — dávka G1 (24. 9. 2026 večer): nová správa šablon dokumentů
 
 Podle vizuálního návrhu, který J. V. 24. 9. večer odsouhlasil („návrh
