@@ -1295,6 +1295,27 @@ console.log('\n===== AUDIT B17: PŮVOD POŽADAVKU =====\n');
     (await odhlaseni(new Request('http://x/api/odhlaseni', { headers: { cookie: cObch } }))).status === 405);
 }
 
+/* B78 (hloubkový test 24. 9. 2026): přihlášení relaci teprve zakládá, takže
+ * ho `prihlaseny()` nechránil — cizí stránka mohla prohlížeč přihlásit do
+ * účtu útočníka. */
+{
+  const U = UCTY['Obchodník'];
+  const prihl = (hlavicky, telo) => prihlaseni(new Request('http://x/api/prihlaseni', { method: 'POST',
+    headers: hlavicky, body: telo === undefined ? JSON.stringify({ email: U.email, heslo: U.heslo }) : telo }));
+  const cizi = await prihl({ origin: 'https://utocnik.example', host: 'kalkulator.example', 'content-type': 'application/json' });
+  test('B78: přihlášení s cizím Origin → 403 bez cookie', cizi.status === 403 && !cizi.headers.get('set-cookie'), cizi.status);
+  const nul = await prihl({ origin: 'null', host: 'kalkulator.example', 'content-type': 'application/json' });
+  test('B78: přihlášení z Origin „null" (sandbox) → 403', nul.status === 403, nul.status);
+  const form = await prihl({ 'content-type': 'application/x-www-form-urlencoded' }, 'email=a&heslo=b');
+  test('B78: formulářové tělo → 403', form.status === 403, form.status);
+  const multi = await prihl({ 'content-type': 'multipart/form-data; boundary=x' }, '--x--');
+  test('B78: multipart tělo → 403', multi.status === 403, multi.status);
+  const vlastni = await prihl({ origin: 'https://kalkulator.example', host: 'kalkulator.example', 'content-type': 'application/json' });
+  test('B78: přihlášení z vlastní adresy projde', vlastni.status === 200 && !!vlastni.headers.get('set-cookie'), vlastni.status);
+  const bez = await prihl({});
+  test('B78: bez Origin (curl, testy) projde', bez.status === 200, bez.status);
+}
+
 /* ============================================================
  * PLÁNOVANÁ FUNKCE
  * ============================================================ */

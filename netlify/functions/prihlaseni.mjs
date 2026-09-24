@@ -10,10 +10,21 @@
 import { uloziste, otiskHesla, hesloSedi, relaceCookie, json, ADMIN_EMAIL,
          profilZUctu, podpisCti, FALESNY_OTISK, POKUSY_MAX, POKUSY_IP_MAX,
          zpozdeniMs, pockej, pokusyZacatek, pokusyUspech, adresaKlienta,
-         EMAIL_MAX, HESLO_MAX, spravceNastaven } from '../lib/sdilene.mjs';
+         EMAIL_MAX, HESLO_MAX, spravceNastaven, cizihoPuvodu } from '../lib/sdilene.mjs';
 
 export default async (req) => {
   if (req.method !== 'POST') return json({ ok: false, chyba: 'Použijte POST.' }, 405);
+  /* Přihlášení z cizí stránky (nález B78 hloubkového testu 24. 9. 2026).
+   * Ostatní funkce odmítají cizí původ přes `prihlaseny()`, přihlášení ale
+   * relaci teprve zakládá — cizí stránka tak mohla prohlížeč obchodníka
+   * potichu přihlásit do SVÉHO účtu a zakázky by se ukládaly útočníkovi.
+   * Odmítá se cizí Origin, „null" (sandboxovaný rámec) i formulářový tvar
+   * těla; aplikace posílá JSON ze stejné adresy. */
+  const origin = req.headers.get('origin');
+  const ct = String(req.headers.get('content-type') || '').toLowerCase();
+  if (cizihoPuvodu(req) || origin === 'null'
+      || /^(application\/x-www-form-urlencoded|multipart\/form-data)/.test(ct))
+    return json({ ok: false, chyba: 'Přihlášení je možné jen z aplikace.' }, 403);
   let email = '', heslo = '';
   try { const t = await req.json(); email = String(t.email || '').trim().toLowerCase(); heslo = String(t.heslo || ''); }
   catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
