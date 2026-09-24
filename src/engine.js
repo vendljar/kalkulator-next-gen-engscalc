@@ -480,6 +480,12 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
    * je jich nula, takže se všechno, co na tomhle čísle visí, chová přesně
    * jako dosud — to je podmínka, aby se nepohnuly ceny stávajících zakázek. */
   const nastupistC = (z.pruchoziSachta && (+z.nastupisteC || 0) > 0) ? (+z.nastupisteC || 0) : 0;
+  /* STĚNY S DVEŘMI (N46, zadání J. V. 24. 9. 2026). Čelní rám nese spojovací
+   * plechy za každou stěnu, na které jsou dveře. Do 24. 9. se zdvojil, jakmile
+   * byly dveře vzadu — i u průchozí šachty, která vpředu dveře nemá (A0C4). */
+  const stenSDvermi = z.pruchoziSachta
+    ? Math.max((nastupisteCelkem(z) - nastupistC > 0 ? 1 : 0) + (nastupistC > 0 ? 1 : 0), 1)
+    : (nastupistC > 0 ? 2 : 1);
   const vyskaPodlazi = pater >= 2 ? z.zdvih / (pater - 1) : 0;
   /* ODSTUP SVĚTLÉ VÝŠKY 0,2 m (K9-N35 / #327, 24. 9. 2026). Předloha zakázky
    * 0216 má ve vzorci 0,25 m — je to překlep jednoho souboru, ostatní
@@ -555,7 +561,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     /* Spoje čelní strany se u PRŮCHOZÍ šachty počítají dvakrát (nález V37,
      * 14. 9. 2026): portály jsou na obou stěnách, takže i spoje. Neprůchozí
      * šachta a průchozí bez nástupišť C vycházejí přesně jako dosud. */
-    { key: 'celni',          spoju: ((ramy - 1) * 2 - 2) * (nastupistC > 0 ? 2 : 1) },
+    { key: 'celni',          spoju: ((ramy - 1) * 2 - 2) * stenSDvermi },
     { key: 'predsazene',     spoju: zapusteny ? 0 : 8 * nastupist },
     { key: 'portPricniky',   spoju: portPricniky * 2 + kratkePricniky },
     { key: 'sloupkyPortalu', spoju: sloupkyPortalu },
@@ -845,12 +851,63 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
    * Portály a světlíky: A nese světlík nad dveřmi i po stranách; C už má
    * své portály odečtené v `zadniPlneM2`. */
   const skloStenaB = bocniM2 / 2;
-  const skloSteny = {
-    A: svetlikM2 + svetlikBokM2,
-    B: skloStenaB,
-    C: zadniPlneM2,
-    D: skloStenaB,
-  };
+  /* PRŮCHOZÍ ŠACHTA: PRAVIDLO NÁSTUPIŠŤ (N45, N46 — zadání J. V. 24. 9. 2026).
+   *
+   * „Nástupiště obsahuje světlíky, dveře, portály s plechy a nástupní plechy.
+   * Nástupiště je všude tam, kde jsou dveře. Kde dveře nejsou, je provedeno
+   * opláštění zvoleným materiálem po celé ploše." Platí pro čelní (A) i zadní
+   * (C) stěnu stejně, ve standardu i v režimu po stěnách.
+   *
+   * Stěna A/C má výšku prosklení (zdvih + přejezd); prohlubeň do ní nepatří
+   * (má vlastní sokl). Dělí se na patra podle skutečných výšek: každé patro
+   * pod nejvyšší stanicí má pás o výšce podlaží, NEJVYŠŠÍ patro má pás
+   * o výšce přejezdu (hlava šachty nad poslední stanicí). Pás patra s dveřmi
+   * na té stěně je nástupiště — sklo jen ve světlících (nad dveřmi, po
+   * stranách); pás bez dveří se opláští celý. Portál s plechy a nástupní
+   * plech se počítají za všechny dveře A i C jako dosud.
+   *
+   * Zadání nese jen POČTY dveří na stěnách, ne jejich patra. Pro nejvyšší
+   * patro se proto bere: má-li čelní stěna nějaké dveře, jsou nahoře vpředu,
+   * jinak vzadu. U neprůchozí šachty (dveře v každém patře vpředu, vzadu
+   * žádné) vychází přesně totéž co dřív — čelní stěna jen světlíky, zadní
+   * celá; proto se tahle větev pouští jen u průchozí šachty.
+   *
+   * Do 24. 9. se čelní stěna počítala jen ze světlíků (A0C4: čelní stěna bez
+   * opláštění, levnější než A4C0) a zadní jako celá stěna mínus otvory dveří
+   * (sklo i kolem zadních dveří, kde je zároveň portál s plechy). Boční
+   * světlíky všech dveří šly do čelní stěny (N45). */
+  let skloSteny, nastupisteSten = null;
+  if (z.pruchoziSachta) {
+    const nA = Math.max(nastupist - nastupistC, 0);
+    const horniA = nA > 0, horniC = !horniA && nastupistC > 0;
+    const vpPas = pater >= 2 ? vyskaPodlazi : 0;
+    const nizsich = Math.max(pater - 1, 0);
+    const plochaNaMetr = vyskaProsklene > 0 ? zadniM2 / vyskaProsklene : 0;
+    const plne = (nDveri, nahore) => {
+      const dole = Math.min(Math.max(nDveri - (nahore ? 1 : 0), 0), nizsich);
+      return plochaNaMetr * ((nizsich - dole) * vpPas + (nahore ? 0 : z.prejezd));
+    };
+    const bokNaDvere = nastupist > 0 ? svetlikBokM2 / nastupist : 0;
+    /* Rozpad pro Detail výpočtu: co je na každé stěně nástupiště a co plné. */
+    nastupisteSten = {
+      vyskaPodlazi: vpPas, prejezd: z.prejezd, pater,
+      A: { dvere: nA, nahore: horniA, svetliky: svetlikM2 + bokNaDvere * nA, plne: plne(nA, horniA) },
+      C: { dvere: nastupistC, nahore: horniC, svetliky: svetlikZadniM2 + bokNaDvere * nastupistC, plne: plne(nastupistC, horniC) },
+    };
+    skloSteny = {
+      A: svetlikM2 + bokNaDvere * nA + plne(nA, horniA),
+      B: skloStenaB,
+      C: svetlikZadniM2 + bokNaDvere * nastupistC + plne(nastupistC, horniC),
+      D: skloStenaB,
+    };
+  } else {
+    skloSteny = {
+      A: svetlikM2 + svetlikBokM2,
+      B: skloStenaB,
+      C: zadniPlneM2,
+      D: skloStenaB,
+    };
+  }
 
   const skloBokyZadniM2 = skloSteny.B + skloSteny.D + skloSteny.C;
   const skloCelniM2 = skloSteny.A;
@@ -888,9 +945,13 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
    * STĚNÁCH UŽ CENOU HNE — u čelní stěny nahoru. Do 21. 9. 2026 to byla
    * podmínka návrhu; rozhodnutí J. V. ji vědomě ruší, protože „počítá se
    * skutečná plocha". Drží to test_oplasteni_zapnuti.js. */
-  const celniOtvoryKs = Math.max(nastupist - nastupistC, 0);
+  /* OD 24. 9. 2026 (N46): „stejné pravidlo platí i po stěnách" (J. V.).
+   * Základ po stěnách = plochy stěn podle pravidla nástupišť výš: patro
+   * s dveřmi nese jen světlíky, zbytek stěny se opláští zvoleným materiálem.
+   * Tím se mění rozhodnutí 21. 9. (#295 b, celá čelní stěna mínus otvory
+   * dveří): kolem dveří je portál s plechy, ne opláštění. */
   const oplZakladSteny = {
-    A: Math.max(zadniM2 - celniOtvoryKs * zadniOtvorM2, 0),
+    A: skloSteny.A,
     B: skloSteny.B,
     C: skloSteny.C,
     D: skloSteny.D,
@@ -1054,7 +1115,9 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
                         : cenaPrepisSurova != null) ? +cenaPrepisSurova : null;
     const cenaEff = cenaPrepis != null ? cenaPrepis : cena;
     let naklad;
-    if (opts.fix != null) naklad = mn * cenaEff + opts.fix;                    // lešení: m×cena + fixní část
+    /* Lešení: metry × sazba + CELÁ fixní část (N51, schváleno J. V. 24. 9. 2026).
+     * Přepis na 0 m znamená „lešení nenabízíme" — pak ani fix (dřív zůstal). */
+    if (opts.fix != null) naklad = (prepisJe && mn === 0) ? 0 : mn * cenaEff + opts.fix;
     else if (opts.naklad != null && cenaPrepis == null)
       naklad = prepis != null && mnozstvi ? opts.naklad * (mn / mnozstvi) : opts.naklad;
     else naklad = mn * cenaEff;
@@ -1408,7 +1471,13 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
      * počítá jen tehdy, když je z čeho: u nulového automatického množství
      * (a tedy nulového základu) by dělení nedávalo smysl. */
     let naklad;
-    if (opts.naklad != null && cenaPrepis == null) {
+    /* LEŠENÍ V PŘÍPLATCÍCH STEJNĚ JAKO VE VOLITELNÝCH (N51, schváleno J. V.
+     * 24. 9. 2026). Do 24. 9. se u přepsaného množství zkracovala poměrem
+     * i fixní část (postavení a doprava): 3 m místo 16,7 m dalo 4 796 místo
+     * 13 000. Teď metry × sazba + celý fix; přepis na 0 m = 0 Kč. */
+    if (opts.fix != null && cenaPrepis == null) {
+      naklad = (prepisJe && mn === 0) ? 0 : mn * cenaEff + opts.fix;
+    } else if (opts.naklad != null && cenaPrepis == null) {
       naklad = (prepisJe && mnozstvi) ? opts.naklad * (mn / mnozstvi) : opts.naklad;
     } else {
       naklad = mn * cenaEff;
@@ -1464,7 +1533,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
      * c.leseniFix. Dokud měla každá větev vlastní číslo, znamenalo přesunutí
      * lešení ze základní ceny do příplatků tichou změnu ceny o tisíce korun. */
     v.leseniVnitrni ? null : mkPrip('leseniVnitrni', 'LEŠENÍ - vnitřní', leseniVez, c.leseniVnitrniKc,
-      { cenaPath: 'C.leseniVnitrniKc', naklad: leseniVez * c.leseniVnitrniKc + c.leseniFix }),
+      { cenaPath: 'C.leseniVnitrniKc', fix: c.leseniFix }),
     v.leseniHlava ? null : mkPrip('leseniHlava', 'LEŠENÍ - dokončení hlavy šachty', z.prejezd, pp.leseniHlavaKc,
       { cenaPath: 'C.priplatky.leseniHlavaKc' }),
     /* VNĚJŠÍ LEŠENÍ U INTERIÉROVÉ ŠACHTY JE PŘÍPLATEK (22. 9. 2026 večer,
@@ -1482,7 +1551,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
      * z matice Výchozí by jinak u interiérové šachty příplatek schovalo,
      * aniž by lešení bylo kde jinde. */
     (!ext || !v.leseniVnejsi) ? mkPrip('leseniVnejsi', 'LEŠENÍ - vnější', leseniU, c.leseniVnejsiKc,
-      { cenaPath: 'C.leseniVnejsiKc', naklad: leseniU * c.leseniVnejsiKc + c.leseniFix }) : null,
+      { cenaPath: 'C.leseniVnejsiKc', fix: c.leseniFix }) : null,
     /* HÁKY, ZÁBRADLÍ a SOKL i mezi příplatky (16. 9. 2026, zadání J. V.:
      * „z volitelných položek do základní ceny přidej do příplatkových i ty
      * zbývající a ať se chovají stejně jako lešení").
@@ -1541,6 +1610,10 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
                 /* Rozpad zadní stěny pro Detail výpočtu (V37, 14. 9. 2026):
                  * patra bez nástupiště C jsou plné sklo, patra s nástupištěm
                  * mají portál a nad ním světlík. */
+                /* Od 24. 9. 2026 (N46) jde u průchozí šachty do ceny rozpad
+                 * `nastupisteSten`; zadniPlne/zadniPortaly zůstávají jen jako
+                 * údaj o celé stěně a otvorech (neprůchozí: beze změny). */
+                nastupisteSten,
                 zadniPlne: { m2: zadniPlneM2 },
                 zadniPortaly: { ks: nastupistC, m2: zadniPortalyM2, otvorM2: zadniOtvorM2,
                                   dvereM2: nastupistC * zadniOtvorM2, svetlikyM2: svetlikZadniM2 },

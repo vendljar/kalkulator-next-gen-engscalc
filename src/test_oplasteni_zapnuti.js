@@ -118,8 +118,22 @@ const zad = (e) => Object.assign(JSON.parse(JSON.stringify(DEFAULT_ZADANI)), e |
    * světlíky dají 50,1 m² na stěně, která má bez dveří 30,7 m². Režim po
    * stěnách počítá skutečnou stěnu, proto vyjde levněji. U reálného zadání
    * (patra odpovídají zdvihu) tenhle rozdíl nevzniká. */
-  test('cena jde nahoru u části zadání a dolů u jiné (viz komentář)',
-    vzrostlo > 0 && vzrostlo < pripady.length, { vzrostlo, celkem: pripady.length });
+  /* ZMĚNA PRAVIDLA 24. 9. 2026 (N46, zadání J. V.: „stejné pravidlo platí
+   * i po stěnách"). Nástupiště (patro s dveřmi) nese jen světlíky, zbytek
+   * stěny se opláští celý — ve standardu i po stěnách. Základ po stěnách je
+   * tedy TÝŽ jako plochy standardu a zapnutí režimu cenou NEHNE (vrací se
+   * původní slib #268; varianta b z 21. 9. je tím nahrazena). Předchozí
+   * odstavce popisují stav 21.–24. 9. */
+  let stejne = 0;
+  pripady.forEach(zm => {
+    const c = CENIK();
+    const std = vypocet(zad(zm), c, JEKLY, false);
+    const zPo = zad(zm); zPo.oplasteni = { rezim: 'poStenach', steny: oplasteniStenyVychozi(zPo, c) };
+    const po = vypocet(zPo, c, JEKLY, false);
+    if (Math.abs(po.souhrn.zakladCena - std.souhrn.zakladCena) < 0.5) stejne++;
+  });
+  test('N46: zapnutí režimu po stěnách nehne cenou (' + pripady.length + ' zadání)',
+    stejne === pripady.length, { stejne, celkem: pripady.length, vzrostlo });
   test('a případů bylo opravdu dost, aby to něco znamenalo', pripady.length >= 32, pripady.length);
 
   /* POJISTKA PROTI PRÁZDNÉMU TESTU: kdyby byl rozdíl u všech zadání nulový,
@@ -132,9 +146,18 @@ const zad = (e) => Object.assign(JSON.parse(JSON.stringify(DEFAULT_ZADANI)), e |
     const z2 = zad({ svetlikNadDvermi: false, svetlikyBoky: 0 });
     z2.oplasteni = { rezim: 'poStenach', steny: oplasteniStenyVychozi(z2, c) };
     const po1 = vypocet(z2, c, JEKLY, false);
-    test('u šachty bez světlíků čelní stěna plochu OPRAVDU získá',
-      po1.oplasteni.zakladSten.A > std1.zaskleni.steny.A + 1,
+    /* Od 24. 9. (N46): čelní stěna s dveřmi v každém patře je samé
+     * nástupiště — bez světlíků nemá opláštění ani po stěnách. Pojistka
+     * proti prázdnému testu je proto průchozí šachta bez dveří vpředu:
+     * tam čelní stěna plochu mít MUSÍ, v obou režimech stejnou. */
+    test('N46: u šachty bez světlíků je čelní stěna nástupiště — bez opláštění i po stěnách',
+      Math.abs(po1.oplasteni.zakladSten.A - std1.zaskleni.steny.A) < 0.005 && std1.zaskleni.steny.A < 0.005,
       { std: std1.zaskleni.steny.A, po: po1.oplasteni.zakladSten.A });
+    const z3 = zad({ svetlikNadDvermi: false, svetlikyBoky: 0, pruchoziSachta: true, nastupisteA: 0, nastupisteC: 4, patra: 4 });
+    z3.oplasteni = { rezim: 'poStenach', steny: oplasteniStenyVychozi(z3, c) };
+    const po3 = vypocet(z3, c, JEKLY, false);
+    test('N46: čelní stěna BEZ dveří (A0C4) plochu opravdu má, i po stěnách',
+      po3.oplasteni.zakladSten.A > 10, po3.oplasteni.zakladSten);
   }
 
   /* Kdyby výpočet v obou režimech vracel nulu, test výš by prošel naprázdno. */
@@ -364,11 +387,14 @@ const zad = (e) => Object.assign(JSON.parse(JSON.stringify(DEFAULT_ZADANI)), e |
         return vypocet(z, c, JEKLY, fixes);
       };
       const bez = spocti(false), se = spocti(true);
-      test('světlík nad dveřmi nemění základ zadní stěny' + sfx,
-        Math.abs(se.oplasteni.zakladSten.C - bez.oplasteni.zakladSten.C) < 0.005,
+      /* Od 24. 9. (N46) je nástupiště = dveře, portál, plechy a SVĚTLÍKY,
+       * takže zaškrtnutý světlík plochu stěny s dveřmi přidá. Hlídá se to,
+       * o co v N31 šlo: plochu (a cenu) nesmí UBRAT. */
+      test('světlík nad dveřmi základ zadní stěny nezmenší' + sfx,
+        se.oplasteni.zakladSten.C >= bez.oplasteni.zakladSten.C - 0.005,
         [bez.oplasteni.zakladSten.C, se.oplasteni.zakladSten.C]);
       test('ani čelní stěny' + sfx,
-        Math.abs(se.oplasteni.zakladSten.A - bez.oplasteni.zakladSten.A) < 0.005,
+        se.oplasteni.zakladSten.A >= bez.oplasteni.zakladSten.A - 0.005,
         [bez.oplasteni.zakladSten.A, se.oplasteni.zakladSten.A]);
       /* Celková plocha jen v OPRAVENÉM modelu. Model 1 je 1:1 s Excelem
        * včetně zdokumentované chyby šablony (engine.js, `bocniHl`: „D19
@@ -376,14 +402,16 @@ const zad = (e) => Object.assign(JSON.parse(JSON.stringify(DEFAULT_ZADANI)), e |
        * hloubka BOČNÍCH stěn. Stěny s nástupišti (A a C), o které v N31
        * šlo, hlídají kontroly výš v obou modelech. */
       if (fixes)
-        test('ani celkovou plochu opláštění' + sfx,
-          Math.abs(se.oplasteni.plochaCelkem - bez.oplasteni.plochaCelkem) < 0.005,
+        test('celková plocha opláštění přibude právě o světlíky na A a C' + sfx,
+          Math.abs((se.oplasteni.plochaCelkem - bez.oplasteni.plochaCelkem)
+            - ((se.oplasteni.zakladSten.A + se.oplasteni.zakladSten.C)
+              - (bez.oplasteni.zakladSten.A + bez.oplasteni.zakladSten.C))) < 0.005,
           [bez.oplasteni.plochaCelkem, se.oplasteni.plochaCelkem]);
       else
-        test('v Modelu 1 se liší jen boční stěny (chyba šablony D19/D18)' + sfx,
+        test('v Modelu 1 se navíc liší boční stěny (chyba šablony D19/D18)' + sfx,
           Math.abs((se.oplasteni.plochaCelkem - bez.oplasteni.plochaCelkem)
-            - ((se.oplasteni.zakladSten.B + se.oplasteni.zakladSten.D)
-              - (bez.oplasteni.zakladSten.B + bez.oplasteni.zakladSten.D))) < 0.005,
+            - ((se.oplasteni.zakladSten.A + se.oplasteni.zakladSten.B + se.oplasteni.zakladSten.C + se.oplasteni.zakladSten.D)
+              - (bez.oplasteni.zakladSten.A + bez.oplasteni.zakladSten.B + bez.oplasteni.zakladSten.C + bez.oplasteni.zakladSten.D))) < 0.005,
           [bez.oplasteni.plochaCelkem, se.oplasteni.plochaCelkem]);
       test('a zaškrtnutí světlíku cenu nesníží' + sfx,
         se.souhrn.zakladCena >= bez.souhrn.zakladCena, [bez.souhrn.zakladCena, se.souhrn.zakladCena]);

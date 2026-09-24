@@ -262,32 +262,31 @@ function renderDetail() {
      * neprůchozí se čtyřmi nástupišti. */
     ['Zadní stěna — celá plocha', `${z.zadni.ks} ks · ${M(z.zadni.m2, 2)} m²`,
       'ks = strop(výška prosklené / rozteč); m² = max(ks · šířka skla · výška skla; výška prosklené · šířka skla)'],
-    ...(Z.pruchoziSachta ? [
-      /* Rozpis odečtu na dveře + světlík (nález O10/V40, 15. 9. 2026). Do té
-       * doby tu stálo jen souhrnné číslo a nešlo z něj poznat, že se pás nad
-       * dveřmi neodečítá — a přitom se jako světlík přičítá v čelní stěně. */
-      ['Zadní stěna — nástupiště C (portál + světlík)',
-        `${(z.zadniPortaly || {}).ks || 0} ks · −${M((z.zadniPortaly || {}).m2 || 0, 2)} m²`,
-        `dveře ${M((z.zadniPortaly || {}).dvereM2 || 0, 2)} m² `
-        + `(šířka dveřního otvoru × 2,3 m = ${M((z.zadniPortaly || {}).otvorM2 || 0, 2)} m² na nástupiště) `
-        + `+ světlíky ${M((z.zadniPortaly || {}).svetlikyM2 || 0, 2)} m²; `
-        + 'odečítá se celý otvor až po výšku světlíku — pás nad dveřmi je sklo ČELNÍ stěny, '
-        + 'ne zadní, a v zadní stěně by se počítal podruhé'],
-      ['Zadní stěna — patra bez nástupiště C (plné sklo)',
-        `${M((z.zadniPlne || {}).m2 || 0, 2)} m²`,
-        'celá plocha zadní stěny minus otvory nástupišť C; do materiálu bočních a zadní stěny jde tohle'],
-      ['— z toho světlíky nad dveřmi C', `${(z.svetlikyZadni || {}).ks || 0} ks · ${M((z.svetlikyZadni || {}).m2 || 0, 2)} m²`,
-        'tahle plocha je odečtená od zadní stěny (řádek výš) a přičtená v „Světlíky / boky", '
-        + 'protože se světlíky počítají ze součtu nástupišť A + C. V ceně je tedy JEDNOU, '
-        + 'jako sklo čelní stěny'],
-    ] : []),
+    ...(Z.pruchoziSachta && z.nastupisteSten ? (() => {
+      /* PRŮCHOZÍ ŠACHTA — PRAVIDLO NÁSTUPIŠŤ (N46, zadání J. V. 24. 9. 2026):
+       * patro s dveřmi na stěně = nástupiště (dveře, portál s plechy, nástupní
+       * plech, světlíky), patro bez dveří = opláštění po celé ploše. Nejvyšší
+       * patro nese pás hlavy (přejezd), ostatní pás výšky podlaží. */
+      const n = z.nastupisteSten;
+      const radek = (st, nazev) => {
+        const x = n[st];
+        return [[`${nazev} — nástupiště (${x.dvere} ${x.dvere === 1 ? 'patro' : 'patra'} s dveřmi)`,
+          `světlíky ${M(x.svetliky, 2)} m²`,
+          'dveře, portál s plechy a nástupní plech se sklem neoceňují; sklo jen ve světlících nad dveřmi a po stranách'
+          + (x.nahore ? '; nejvyšší stanice je na téhle stěně (pás hlavy je nástupiště)' : '')],
+          [`${nazev} — patra bez dveří (opláštění po celé ploše)`, `${M(x.plne, 2)} m²`,
+          `pásy pater bez dveří: výška podlaží ${M(n.vyskaPodlazi, 2)} m`
+          + (x.nahore ? '' : `, nahoře pás hlavy ${M(n.prejezd, 2)} m (přejezd)`) + ' · šířka stěny']];
+      };
+      return radek('A', 'Čelní stěna A').concat(radek('C', 'Zadní stěna C'));
+    })() : []),
     ['Boční stěny', `${z.bocni.ks} ks · ${M(z.bocni.m2, 2)} m²`,
       'ks = zadní stěna · 2 (dvě strany); m² = max(ks · hloubka skla · výška skla; 2 · výška prosklené · hloubka skla)'],
     ['Světlíky / boky', `${z.svetliky.ks} ks · ${M(z.svetliky.m2, 2)} m² / ${z.svetlikyBoky.ks} ks · ${M(z.svetlikyBoky.m2, 2)} m²`,
       'světlík nad dveřmi: 1 ks na nástupiště × šířka skla · (světlá výška − 2,3); '
       + 'boky: krátké příčníky × zbylá šířka vedle dveří · 1,1'],
     ['Boční + zadní m²', `${M(z.bokyZadniM2, 2)} m²`, 'materiál boční/zadní stěna'],
-    ['Čelní m² (světlíky)', `${M(z.celniM2, 2)} m²`, 'materiál čelní stěna'],
+    ['Čelní m²', `${M(z.celniM2, 2)} m²`, Z.pruchoziSachta ? 'materiál čelní stěna: světlíky + patra bez dveří A' : 'materiál čelní stěna (světlíky)'],
     ['Zasklení celkem', `${M(z.celkemM2, 2)} m²`,
       'boční + zadní + čelní; každá skupina jde do ceny vlastním materiálem podle typu šachty'],
     /* KTERÉ SKLO SE POUŽIJE (nálezy V33 a V42, potvrzeno J. V. 15. 9. 2026).

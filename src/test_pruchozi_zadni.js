@@ -74,8 +74,12 @@ const z9003 = () => zad({
     blizko(za.zadniPortaly.m2, 2 * za.zadniPortaly.otvorM2), za.zadniPortaly.m2);
   test(`[${rezim}] plné sklo = celá stěna minus otvory`,
     blizko(za.zadniPlne.m2, za.zadni.m2 - za.zadniPortaly.m2), [za.zadniPlne.m2, za.zadni.m2, za.zadniPortaly.m2]);
-  test(`[${rezim}] do materiálu bočních a zadní stěny jde plné sklo, ne celá stěna`,
-    blizko(za.bokyZadniM2, za.bocni.m2 + za.zadniPlne.m2), [za.bokyZadniM2, za.bocni.m2, za.zadniPlne.m2]);
+  /* Od 24. 9. 2026 (N46, pravidlo nástupišť) jde do materiálu zadní stěny
+   * rozpad `nastupisteSten.C`: světlíky nástupišť C + patra bez dveří C.
+   * `zadniPlne` (celá stěna mínus otvory, V37/#296) je jen informativní. */
+  test(`[${rezim}] N46: do materiálu bočních a zadní stěny jde bok + zadní stěna podle nástupišť`,
+    blizko(za.bokyZadniM2, za.bocni.m2 + za.nastupisteSten.C.svetliky + za.nastupisteSten.C.plne),
+    [za.bokyZadniM2, za.bocni.m2, za.nastupisteSten.C]);
 
   /* ---------- 2) světlíky a spoje na zadní stěně ---------- */
 
@@ -105,9 +109,10 @@ const z9003 = () => zad({
     test(`[${rezim}] dohromady je světlíků tolik, kolik je nástupišť`,
       r.svetliky.ks + r.svetlikyZadni.ks === 4,
       [r.svetliky.ks, r.svetlikyZadni.ks]);
-    test(`[${rezim}] materiál čelní stěny nese jen čelní světlíky`,
-      blizko(r.celniM2, r.svetliky.m2 + r.svetlikyBoky.m2),
-      [r.celniM2, r.svetliky.m2, r.svetlikyBoky.m2, r.svetlikyZadni.m2]);
+    test(`[${rezim}] N46: materiál čelní stěny = světlíky nástupišť A + patra bez dveří A`,
+      blizko(r.celniM2, r.nastupisteSten.A.svetliky + r.nastupisteSten.A.plne)
+      && blizko(r.nastupisteSten.A.svetliky, r.svetliky.m2 + r.svetlikyBoky.m2 * 2 / 4),
+      [r.celniM2, r.nastupisteSten.A, r.svetliky.m2, r.svetlikyBoky.m2]);
     /* A hlavně to, co nález #296 pojmenoval: plocha položky čelní stěny
      * se nesmí vejít mimo čelní stěnu. */
     test(`[${rezim}] čelní položka se vejde do čelní stěny`,
@@ -159,15 +164,15 @@ const z9003 = () => zad({
       blizko(se.zadniPlne.m2 + se.zadniPortaly.m2, se.zadni.m2, 1e-9),
       [se.zadniPlne.m2, se.zadniPortaly.m2, se.zadni.m2]);
 
-    /* Jádro: zapnutí světlíku přidá sklo jen na ČELNÍ stěně — vzadu bylo
-     * nad dveřmi sklo tak jako tak. */
-    const cekano = bez.celkemM2 + se.svetliky.m2 + se.svetlikyBoky.m2;
-    test(`[${rezim}] zapnutí světlíku přidá sklo jen vepředu`,
+    /* Od 24. 9. 2026 (N46): nástupiště je i vzadu — nad zadními dveřmi
+     * je bez světlíku portál, ne sklo. Zapnutí světlíku proto přidá sklo na
+     * OBOU stěnách s dveřmi (světlíky A i C). */
+    const cekano = bez.celkemM2 + se.svetliky.m2 + se.svetlikyZadni.m2;
+    test(`[${rezim}] N46: zapnutí světlíku přidá světlíky vpředu i vzadu`,
       blizko(se.celkemM2, cekano, 1e-9),
       { bez: bez.celkemM2, se: se.celkemM2, cekano, svetlikyC: se.svetlikyZadni.m2 });
     test(`[${rezim}] a zadní stěna se tím nezmenší`,
-      se.zadniPlne.m2 >= bez.zadniPlne.m2 - 1e-9,
-      [se.zadniPlne.m2, bez.zadniPlne.m2]);
+      se.steny.C >= bez.steny.C - 1e-9, [se.steny.C, bez.steny.C]);
 
     /* Vypnutý světlík = dnešní chování, odečítá se jen dveřní otvor. */
     test(`[${rezim}] bez světlíku se odečítá jen dveřní otvor`,

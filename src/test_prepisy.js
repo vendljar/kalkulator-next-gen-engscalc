@@ -151,17 +151,19 @@ test('popis hodnoty u množství je holé číslo', P.prepisHodnotaText({ mapa: 
     prazdno && (prazdno.mnozstvi + '/' + prazdno.prepsano));
 
   /* Lešení má vlastní náklad (proměnná část × množství PLUS fixní částka).
-   * Přepis množství se do něj musí promítnout POMĚREM — jinak by fixní část
-   * buď spadla pod stůl, nebo se zněkolikanásobila. */
+   * Do 24. 9. 2026 se přepis promítal POMĚREM i do fixní části. N51
+   * (schváleno J. V. 24. 9.): metry × sazba + CELÁ fixní část, stejně jako
+   * ve volitelných položkách; přepis na 0 m = 0 Kč. */
   const zLes = zadani();
   zLes.volitelne.leseniVnejsi = false;
   const lesAuto = najdi(spocti(zLes), 'LEŠENÍ - vnější');
   const zLes2 = JSON.parse(JSON.stringify(zLes));
   zLes2.mnozstviPrepis = { 'LEŠENÍ - vnější': lesAuto.mnozstvi / 2 };
   const lesPul = najdi(spocti(zLes2), 'LEŠENÍ - vnější');
-  test('přepis množství u lešení nezahodí fixní část, přepočte ji poměrem',
-    Math.abs(lesPul.naklad - lesAuto.naklad / 2) < 0.01,
-    lesPul.naklad + ' vs ' + lesAuto.naklad / 2);
+  const cLes = ZC.zkusebniCenik();
+  test('N51: přepis množství u lešení = metry × sazba + celý fix',
+    Math.abs(lesPul.naklad - (lesAuto.mnozstvi / 2 * cLes.leseniVnejsiKc + cLes.leseniFix)) < 0.01,
+    lesPul.naklad + ' vs ' + (lesAuto.mnozstvi / 2 * cLes.leseniVnejsiKc + cLes.leseniFix));
   const zLes0 = JSON.parse(JSON.stringify(zLes));
   zLes0.mnozstviPrepis = { 'LEŠENÍ - vnější': 0 };
   test('a nula u lešení znamená opravdu nulu', najdi(spocti(zLes0), 'LEŠENÍ - vnější').naklad === 0);

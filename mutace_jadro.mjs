@@ -101,6 +101,28 @@ function najdiSady() {
  * ============================================================ */
 const MUTACE = [
   /* ---------- centrální šablony (sablony_online.js, #139) ---------- */
+  /* N46, N51 (24. 9. 2026): pravidlo nástupišť u průchozí šachty, lešení. */
+  { nazev: 'N46: patra bez dveří se neopláští', soubor: 'engine.js',
+    hledej: '      return plochaNaMetr * ((nizsich - dole) * vpPas + (nahore ? 0 : z.prejezd));',
+    nahrad: '      return 0;',
+    proc: 'průchozí A0C4 by měla čelní stěnu bez opláštění — levnější než zrcadlová A4C0' },
+  { nazev: 'N46: hlava se počítá vždy k patru bez dveří', soubor: 'engine.js',
+    hledej: '      return plochaNaMetr * ((nizsich - dole) * vpPas + (nahore ? 0 : z.prejezd));',
+    nahrad: '      return plochaNaMetr * ((nizsich - dole) * vpPas + z.prejezd);',
+    proc: 'hlava nad nejvyšší stanicí by se opláštila i tam, kde je nástupiště' },
+  { nazev: 'N45: boční světlíky všech dveří na čelní stěně', soubor: 'engine.js',
+    hledej: '      A: svetlikM2 + bokNaDvere * nA + plne(nA, horniA),',
+    nahrad: '      A: svetlikM2 + bokNaDvere * nastupist + plne(nA, horniA),',
+    proc: 'boční světlíky zadních dveří by se počítaly podruhé na čelní stěně' },
+  { nazev: 'N46: spoje čelního rámu zdvojené i bez dveří vpředu', soubor: 'engine.js',
+    hledej: '    ? Math.max((nastupisteCelkem(z) - nastupistC > 0 ? 1 : 0) + (nastupistC > 0 ? 1 : 0), 1)',
+    nahrad: '    ? (nastupistC > 0 ? 2 : 1)',
+    proc: 'A0C4 by nesla spojovací plechy za stěnu, na které žádné dveře nejsou' },
+  { nazev: 'N51: přepis lešení na 0 m nechá fix', soubor: 'engine.js',
+    hledej: '      naklad = (prepisJe && mn === 0) ? 0 : mn * cenaEff + opts.fix;',
+    nahrad: '      naklad = mn * cenaEff + opts.fix;',
+    proc: '„lešení nenabízíme" by v příplatcích stálo fixní částku' },
+
   /* #348 (24. 9. 2026): zdroj jazykové verze a jazyk souboru. */
   { nazev: 'šablony: mutace k jiné češtině se tváří jako aktuální', soubor: 'sablony_online.js',
     hledej: "    return { stav: m.zdrojOtisk === cz.otisk ? 'aktualni' : 'zastarala', meta: m,",
@@ -187,8 +209,8 @@ const MUTACE = [
    * volitelných? Přesně to se dělo v předloze (18 000 vs 15 000) a přesunutí
    * lešení mezi sekcemi tiše měnilo cenu. */
   { nazev: 'lešení: příplatek počítá fixní část z jiného zdroje než volitelné', soubor: 'engine.js',
-    hledej: "{ cenaPath: 'C.leseniVnitrniKc', naklad: leseniVez * c.leseniVnitrniKc + c.leseniFix }),",
-    nahrad: "{ cenaPath: 'C.leseniVnitrniKc', naklad: leseniVez * c.leseniVnitrniKc + 15000 }),",
+    hledej: "      { cenaPath: 'C.leseniVnitrniKc', fix: c.leseniFix }),",
+    nahrad: "      { cenaPath: 'C.leseniVnitrniKc', fix: 15000 }),",
     proc: 'přesun lešení ze základní ceny do příplatků by změnil cenu, aniž by o tom kdokoli věděl' },
 
   { nazev: 'lešení: hlava šachty by dostala vlastní fixní část', soubor: 'engine.js',
@@ -197,8 +219,8 @@ const MUTACE = [
     proc: 'nástavba už postaveného lešení by se účtovala, jako by se stavělo znovu' },
 
   { nazev: 'lešení: fixní část se do nákladu nepřičte', soubor: 'engine.js',
-    hledej: '    if (opts.fix != null) naklad = mn * cenaEff + opts.fix;',
-    nahrad: '    if (opts.fix != null) naklad = mn * cenaEff;',
+    hledej: '    if (opts.fix != null) naklad = (prepisJe && mn === 0) ? 0 : mn * cenaEff + opts.fix;',
+    nahrad: '    if (opts.fix != null) naklad = (prepisJe && mn === 0) ? 0 : mn * cenaEff;',
     proc: 'postavení a složení lešení bychom vozili zdarma u každé zakázky' },
 
   /* ---------- vynechání položky nebo celé sekce ze součtu (engine.js) ---------- */
