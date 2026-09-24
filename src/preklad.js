@@ -683,6 +683,7 @@ const PREKLAD = {
   "Současně platná sazba DPH": ["Currently applicable VAT rate","Derzeit gültiger MwSt.-Satz","Taux de TVA en vigueur"],
   "Splatnost faktur": ["Invoice due date","Zahlungsziel der Rechnungen","Échéance des factures"],
   "Platnost nabídky": ["Validity of the offer","Gültigkeit des Angebots","Validité de l'offre"],
+  "Termín dodání": ["Delivery time","Lieferzeit","Délai de livraison"],
   "PLATEBNÍ PODMÍNKY ZAMĚŘENÍ": ["PAYMENT TERMS – SURVEY","ZAHLUNGSBEDINGUNGEN – AUFMASS","CONDITIONS DE PAIEMENT – RELEVÉ"],
   "PLATEBNÍ PODMÍNKY STUDIE PROVEDITELNOSTI (SP)": ["PAYMENT TERMS – FEASIBILITY STUDY (SP)","ZAHLUNGSBEDINGUNGEN – MACHBARKEITSSTUDIE (SP)","CONDITIONS DE PAIEMENT – ÉTUDE DE FAISABILITÉ (SP)"],
   "PLATEBNÍ PODMÍNKY DPZ": ["PAYMENT TERMS – DPZ","ZAHLUNGSBEDINGUNGEN – DPZ","CONDITIONS DE PAIEMENT – DPZ"],
@@ -742,6 +743,14 @@ Object.keys(PREKLAD).forEach(k => { PREKLAD_IDX[prekladNorm(k)] = PREKLAD[k]; })
  * (rozměry, rozteče, počty – slovník je pokrýt nemůže) */
 const PREKLAD_VZORY = [
   { re: /^jekl\s+(\d+x\d+)$/i, en: 'SHS $1', de: 'Hohlprofil $1', fr: 'profilé creux $1' },
+  /* Termín dodání z krycího listu (#330): „cca 12 týdnů", „16 týdnů (vč.
+   * 4 týdnů za ATYP)". Stojí PŘED obecným „cca …", jinak by z něj vyšlo
+   * „approx. 12 týdnů" — půl věty česky. Náhrada je funkce, protože
+   * předpona i dovětek za ATYP jsou nepovinné. */
+  { re: /^(cca\s+)?(\d+)\s+týdn[ůy](?:\s+\(vč\.\s+(\d+)\s+týdn[ůy]\s+za\s+ATYP\))?$/i,
+    en: (m, c, n, a) => (c ? 'approx. ' : '') + n + ' weeks' + (a ? ' (incl. ' + a + ' weeks for the non-standard design)' : ''),
+    de: (m, c, n, a) => (c ? 'ca. ' : '') + n + ' Wochen' + (a ? ' (inkl. ' + a + ' Wochen für die Sonderausführung)' : ''),
+    fr: (m, c, n, a) => (c ? 'env. ' : '') + n + ' semaines' + (a ? ' (dont ' + a + ' semaines pour l\u2019exécution spéciale)' : '') },
   { re: /^cca\s+(.+)$/i, en: 'approx. $1', de: 'ca. $1', fr: 'env. $1' },
   { re: /^šířka\s+(.+?)\s+×\s+hloubka\s+(.+)$/i,
     en: 'width $1 × depth $2', de: 'Breite $1 × Tiefe $2', fr: 'largeur $1 × profondeur $2' },

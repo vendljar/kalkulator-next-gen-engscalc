@@ -466,7 +466,19 @@ function nabidkaNahledSekce(ph, lang) {
    ['V. TERMÍNY REALIZACE', 'FIRMA_NAB_TERMINY'],
    ['VI. PŘEDÁNÍ DÍLA', 'FIRMA_NAB_PREDANI'],
    ['DOLOŽKY', 'FIRMA_NAB_DOLOZKY']].forEach(([nazev, sym]) => {
-    const radky = kapRadky(sym);
+    let radky = kapRadky(sym);
+    /* TERMÍN DODÁNÍ JAKO PRVNÍ ODRÁŽKA KAPITOLY V. (#330, nález TD1,
+     * rozhodnutí J. V. 24. 9. 2026 k podkladu #277, bod 2).
+     *
+     * Krycí list počítá termín dodání i s prodloužením za ATYP (+4 týdny,
+     * zadání 21. 8. 2026) a skládá z něj {{PODM_TERMIN_DODANI}}. Do nabídky
+     * se ale nedostal: kapitola V. je text z Firmy a ten říkal pevné
+     * „cca 12 týdnů" i u atypické zakázky. Termín se proto bere ze zakázky
+     * (tentýž symbol, který dostane i wordová šablona v11) a zbytek
+     * kapitoly zůstává textem z Firmy. Prázdný termín se nevymýšlí —
+     * odrážka se vynechá (hlídá to kontrola před nabídkou). */
+    const termin = String(ph.PODM_TERMIN_DODANI == null ? '' : ph.PODM_TERMIN_DODANI).trim();
+    if (sym === 'FIRMA_NAB_TERMINY' && termin) radky = [['Termín dodání', termin]].concat(radky);
     /* Prázdná kapitola se vynechá i s nadpisem — stejné pravidlo jako
      * u prázdných řádků technické specifikace ve Wordu. */
     if (radky.length) sekce.push({ sekce: nazev, radky });

@@ -367,5 +367,42 @@ KAPITOLY.forEach(base => {
   test('ručně napsaná podmínka projde beze změny', P.tr(rucni, 'en') === rucni, P.tr(rucni, 'en'));
 }
 
+
+/* ---------- TERMÍN DODÁNÍ V KAPITOLE V. (#330, nález TD1, 24. 9. 2026) ----------
+ *
+ * Krycí list počítal termín dodání i s +4 týdny za ATYP, ale do nabídky se
+ * nedostal — kapitola V. byla jen text z Firmy („cca 12 týdnů") a atypický
+ * zákazník dostal o 4 týdny kratší termín. Rozhodnutí J. V. 24. 9. 2026:
+ * termín ze zakázky je první odrážka kapitoly V., zbytek zůstává z Firmy. */
+{
+  const lhuta = f => { f.terminDodaniOck = 'cca 12 týdnů'; f.terminAtypTydny = '4'; };
+  const kapV = (n) => (n.sekce.find(s => /^V\. /.test(s.sekce) || /^V\. /.test(String(s.sekce))) || { radky: [] }).radky;
+  const bezny = nahled('cz', lhuta, z => { z.atyp = false; });
+  const atyp = nahled('cz', lhuta, z => { z.atyp = true; });
+  test('#330: běžná zakázka má v kapitole V. první odrážku „Termín dodání: cca 12 týdnů"',
+    kapV(bezny)[0] && kapV(bezny)[0][0] === 'Termín dodání' && kapV(bezny)[0][1] === 'cca 12 týdnů', kapV(bezny)[0]);
+  test('#330: atypická zakázka nese prodloužený termín z krycího listu',
+    kapV(atyp)[0] && /^cca 16 týdnů \(vč\. 4 týdnů za ATYP\)$/.test(kapV(atyp)[0][1]), kapV(atyp)[0]);
+  test('#330: symbol pro Word nese totéž ({{PODM_TERMIN_DODANI}})',
+    atyp.ph.PODM_TERMIN_DODANI === kapV(atyp)[0][1], atyp.ph.PODM_TERMIN_DODANI);
+  test('#330: zbytek kapitoly V. zůstává textem z Firmy',
+    kapV(atyp).length > 1 && /Harmonogram/.test(kapV(atyp).map(r => r[0]).join('\n')));
+  const prazdna = nahled('cz', f => { f.terminDodaniOck = ''; });
+  test('#330: bez lhůty ve Firmě se termín nevymýšlí — odrážka chybí',
+    !kapV(prazdna).some(r => r[0] === 'Termín dodání'), kapV(prazdna)[0]);
+  const jenTermin = nahled('cz', f => { lhuta(f); f.kapTerminy = ''; });
+  test('#330: prázdný text kapitoly V. — kapitola zůstane s termínem dodání',
+    kapV(jenTermin).length === 1 && kapV(jenTermin)[0][0] === 'Termín dodání', kapV(jenTermin));
+  [['en', /^approx\. 16 weeks \(incl\. 4 weeks for the non-standard design\)$/, 'Delivery time'],
+   ['de', /^ca\. 16 Wochen \(inkl\. 4 Wochen für die Sonderausführung\)$/, 'Lieferzeit'],
+   ['fr', /^env\. 16 semaines \(dont 4 semaines pour l.exécution spéciale\)$/, 'Délai de livraison']].forEach(([jaz, re, popis]) => {
+    const n = nahled(jaz, lhuta, z => { z.atyp = true; });
+    const r = (n.sekce.find(s => s.radky.some(x => x[0] === popis)) || { radky: [] }).radky.find(x => x[0] === popis);
+    test('#330: ' + jaz + ' — termín dodání přeložený celý', !!r && re.test(r[1]), r);
+  });
+  test('#330: vzor zná i termín bez „cca" a bez ATYP', P.tr('12 týdnů', 'en') === '12 weeks', P.tr('12 týdnů', 'en'));
+  test('#330: obecné „cca …" platí dál', P.tr('cca 3 dny', 'en') === 'approx. 3 dny');
+}
+
 console.log('\n' + (fail ? 'SELHALO ' + fail + ' z ' + (ok + fail) : 'OK ' + ok));
 if (fail) process.exit(1);

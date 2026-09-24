@@ -341,6 +341,41 @@ const KONTROLY = [
     },
   },
   {
+    /* TERMÍN DODÁNÍ U ATYP (#330, nález TD1, 24. 9. 2026). Nabídka od teď
+     * nese termín ze zakázky jako první odrážku kapitoly V.; zbytek
+     * kapitoly je text z Firmy. Když v tom textu zůstala standardní lhůta
+     * („cca 12 týdnů") a zakázka je atypická, stojí v nabídce dvě různá
+     * čísla. A když ve Firmě standardní lhůta chybí, prodloužení za ATYP
+     * se do nabídky nedostane vůbec. Jen u ATYP — u běžné zakázky čísla
+     * souhlasí a pravidlo, které svítí pořád, se přestane číst. */
+    kod: 'terminAtyp', kde: 'Nabídka', nazev: 'Termín dodání u atypické zakázky',
+    zjisti(ctx) {
+      const z = ctx.zadani;
+      if (ctx.jenProj || !z || !z.atyp || !ctx.nast || !ctx.nast.firma) return null;
+      const f = ctx.nast.firma;
+      const hodn = id => String(f[id] == null ? '' : f[id]).trim();
+      const termin = String(ctx.terminDodani || '').trim();
+      if (!termin) {
+        return { text: 'Zakázka je atypická, ale nabídka neuvede termín dodání s prodloužením za ATYP — '
+          + 'v Nastavení → Firma → Smluvní standardy není vyplněná standardní lhůta dodání OCK '
+          + '(nebo je v krycím listu smazaná).' };
+      }
+      const cislo = t => { const m = String(t).match(/\d+/); return m ? parseInt(m[0], 10) : null; };
+      const zaklad = cislo(hodn('terminDodaniOck'));
+      const vNabidce = cislo(termin);
+      if (zaklad == null || vNabidce == null || zaklad === vNabidce) return null;
+      const kap = (typeof firmaKapitola === 'function')
+        ? firmaKapitola(f, 'kapTerminy', ctx.jazyk).radky.join('\n') : '';
+      const re = /(\d+)\s*(?:týdn|weeks?\b|wochen|semaines)/gi;
+      let m, koliduje = false;
+      while ((m = re.exec(kap))) if (parseInt(m[1], 10) === zaklad) koliduje = true;
+      if (!koliduje) return null;
+      return { text: 'V nabídce budou dva různé termíny: termín dodání „' + termin + '" a v textu kapitoly V. '
+        + 'z Firmy standardní lhůta ' + zaklad + ' týdnů. Vypusťte číslo z textu kapitoly V. '
+        + '(Nastavení → Firma → Kapitoly nabídky) — termín se doplňuje ze zakázky sám.' };
+    },
+  },
+  {
     kod: 'hlavicka', kde: 'Hlavička zakázky', nazev: 'Prázdná hlavička',
     zjisti(ctx) {
       const zak = ctx.zak;

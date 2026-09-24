@@ -154,8 +154,9 @@ const pravidla = kontrolyPravidla();
  * + „atypBezCeny" (obojí 30. 7. 2026; atypBezCeny má vlastní sadu
  * v test_atyp_katalog.js). 13. pravidlo „slevaProjMax" přibylo po auditu
  * 1. 8. 2026 (N4): globální sleva PROJ nad firemní maximum. */
-/* 14. pravidlo „kapitoly" přibylo 23. 9. 2026 (K9-N32). */
-test('pravidel je čtrnáct', pravidla.length === 14, pravidla.length);
+/* 14. pravidlo „kapitoly" přibylo 23. 9. 2026 (K9-N32), 15. „terminAtyp"
+ * 24. 9. 2026 (#330, TD1). */
+test('pravidel je patnáct', pravidla.length === 15, pravidla.length);
 test('kódy pravidel jsou jedinečné',
   new Set(pravidla.map(p => p.kod)).size === pravidla.length,
   pravidla.map(p => p.kod).join(','));
@@ -389,6 +390,32 @@ test('nekompletní kontext nic neshodí a nálezy dorazí',
   test('K9-N32: zakázka jen projekce pravidlo nemá (kapitoly jsou v nabídce OCK)',
     !kody(s(bez, { jenProj: true })).includes('kapitoly'));
   test('K9-N32: bez firmy v kontextu pravidlo mlčí', !kody(kontrolyProved({ nast: NAST })).includes('kapitoly'));
+}
+
+
+/* ---------- 10) termín dodání u atypické zakázky (24. 9. 2026, #330, TD1) ---------- */
+{
+  const fm = require('./firma.js');
+  global.firmaKapitola = fm.firmaKapitola;
+  const firma = Object.assign(fm.firmaDefault(), { terminDodaniOck: 'cca 12 týdnů', terminAtypTydny: '4' });
+  const s = (f, extra, atyp) => kontrolyProved(Object.assign({
+    nast: Object.assign({}, NAST, { firma: f }), zadani: Object.assign(kopie(eng.DEFAULT_ZADANI), { atyp: atyp !== false }),
+    terminDodani: 'cca 16 týdnů (vč. 4 týdnů za ATYP)' }, extra || {}));
+  const n = s(firma).nalezy.find(x => x.kod === 'terminAtyp');
+  test('#330: ATYP a v kapitole V. zůstala standardní lhůta — hlásí dvě různá čísla', !!n, JSON.stringify(kody(s(firma))));
+  test('#330: text jmenuje oba termíny a kde se opravuje',
+    !!n && /16 týdnů/.test(n.text) && /12 týdnů/.test(n.text) && /Kapitoly nabídky/.test(n.text), n && n.text);
+  test('#330: je to varování, ne zábrana', !!n && n.uroven === KONTROLY_UROVEN);
+  const bezCisla = Object.assign({}, firma, { kapTerminy: 'Zahájení montáže po podpisu SoD.\nMontáž cca 1-2 týdny.' });
+  test('#330: kapitola V. bez standardní lhůty nic nehlásí (1–2 týdny montáže nejsou termín dodání)',
+    !kody(s(bezCisla)).includes('terminAtyp'), JSON.stringify(kody(s(bezCisla))));
+  test('#330: běžná zakázka (bez ATYP) pravidlo nemá',
+    !kody(s(firma, { terminDodani: 'cca 12 týdnů' }, false)).includes('terminAtyp'));
+  test('#330: ATYP bez vyplněné lhůty ve Firmě — hlásí, že prodloužení v nabídce nebude',
+    /Smluvní standardy/.test((s(firma, { terminDodani: '' }).nalezy.find(x => x.kod === 'terminAtyp') || {}).text || ''));
+  test('#330: anglická kapitola se hlídá také (weeks)',
+    kody(s(Object.assign({}, firma, { kapTerminyEn: 'Installation will start approx. 12 weeks from contract signature.' }), { jazyk: 'en' })).includes('terminAtyp'));
+  test('#330: zakázka jen projekce pravidlo nemá', !kody(s(firma, { jenProj: true })).includes('terminAtyp'));
 }
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);

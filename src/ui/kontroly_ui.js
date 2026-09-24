@@ -53,6 +53,14 @@ function kontrolyCtxAkt() {
     zak: (typeof ZAK !== 'undefined') ? ZAK : null,
     /* Jazyk tisku — kapitoly nabídky má každý jazyk vlastní (K9-N32). */
     jazyk: (typeof tiskJazyk === 'function') ? tiskJazyk() : 'cz',
+    /* Termín dodání tak, jak půjde do nabídky (#330): z krycího listu,
+     * včetně ručního přepisu a prodloužení za ATYP. */
+    terminDodani: (() => {
+      try {
+        return (typeof kryciPodminkoveSymboly === 'function' && typeof ZAK !== 'undefined')
+          ? String(kryciPodminkoveSymboly(ZAK, aktivniVarianta(ZAK), JEKLY).PODM_TERMIN_DODANI || '') : '';
+      } catch (e) { return ''; }
+    })(),
     zaokr: (typeof ZO !== 'undefined') ? ZO : null,
     /* Od 4. 8. 2026 má PROJ vlastní obchodní zaokrouhlení (#38); kontroly
      * marže musí počítat s tím, které opravdu odejde v nabídce PROJ. */
