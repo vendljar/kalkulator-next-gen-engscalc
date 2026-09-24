@@ -138,14 +138,14 @@ function sablDetailHtml(rej, admin) {
       <span class="btns" style="margin:0">${akce}</span></div>`;
   }).join('') : '<div class="note">Plná moc je úřední dokument pro české úřady — tiskne se vždy česky.</div>';
   const historie = verze.length ? verze.map(v => `<div style="display:flex;gap:10px;font-size:12.5px;padding:3px 0;align-items:baseline">
-      <b style="width:34px">v${v.verze}</b><span style="flex:1">${esc(v.nazev)} · ${esc(sablDatum(v.kdy))} · ${esc(v.zverejnil || '')}${v.poznamka ? ' · ' + esc(v.poznamka) : ''}</span>
+      <b style="width:34px">v${esc(v.verze)}</b><span style="flex:1">${esc(v.nazev)} · ${esc(sablDatum(v.kdy))} · ${esc(v.zverejnil || '')}${v.poznamka ? ' · ' + esc(v.poznamka) : ''}</span>
       ${cz && v.verze === cz.verze ? '<span class="pill">platná</span>'
-        : (admin ? `<button class="mini" onclick="sablVrat('${escJs(d.typ)}',${+v.verze})">Vrátit</button>` : '')}</div>`).join('')
+        : (admin ? `<button class="mini" onclick="sablVrat('${escJs(d.typ)}','${escJs(+v.verze)}')">Vrátit</button>` : '')}</div>`).join('')
     : '<div class="note">Žádná verze zatím nebyla zveřejněna.</div>';
   return `<div class="sabl-panel">
     <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;justify-content:space-between">
       <div><div class="note" style="margin:0">Vybraný dokument</div><h3 style="margin:2px 0 6px">${esc(d.nazev)}</h3>
-        ${cz ? `<div>Platná česká verze <b>${cz.verze}</b> · <code>${esc(cz.nazev)}</code> · ${esc(sablDatum(cz.kdy))} · ${esc(cz.zverejnil || '')}</div>`
+        ${cz ? `<div>Platná česká verze <b>${esc(cz.verze)}</b> · <code>${esc(cz.nazev)}</code> · ${esc(sablDatum(cz.kdy))} · ${esc(cz.zverejnil || '')}</div>`
           : '<div><b>Česká šablona zatím není zveřejněná.</b> V přísném režimu se tento dokument nevytvoří.</div>'}</div>
       <div class="btns" style="margin:0">
         ${admin ? `<button class="primary" onclick="sablPruvodceStart('${escJs(d.typ)}')">Nahrát novou českou verzi…</button>` : ''}
@@ -163,6 +163,7 @@ function sablStahni(typ) {
 }
 async function sablVrat(typ, verze) {
   if (!jeAdmin()) return;
+  verze = +verze;
   if (!await potvrd('Vrátit šablonu na verzi ' + verze + '?\n\nZveřejní se znovu jako nová verze; nic se nesmaže '
     + 'a všichni budou tisknout z ní.' + (/_/.test(typ) ? '' : '\nJazykové verze vyrobené z jiné češtiny se označí jako zastaralé.'))) return;
   sablPrace('Vracím verzi ' + verze + '…');
@@ -273,7 +274,7 @@ function sablPruvodceHtml() {
   const hlavicka = `<div class="sabl-kroky">${kroky.map((n, i) =>
     `<span class="${i < aktIdx ? 'hot' : (i === aktIdx ? 'akt' : '')}">${i + 1} · ${esc(n)}</span>`).join('')}</div>
     <div><b>${esc(d.nazev)} — nová česká verze</b> · <code>${esc(p.soubor.nazev)}</code>
-      <span class="note">(${Math.round(p.soubor.data.byteLength / 1024)} kB · zatím nic nezveřejněno)</span></div>`;
+      <span class="note">(${esc(Math.round(p.soubor.data.byteLength / 1024))} kB · zatím nic nezveřejněno)</span></div>`;
   if (!k) return `<div class="sabl-panel" id="sablPruvodce">${hlavicka}<div class="note">Kontroluji…</div></div>`;
   if (p.krok === 'kontrola') {
     const lze = !k.chyby.length && !k.jinyJazyk;

@@ -582,8 +582,21 @@ function get(path) { return path.split('.').reduce((o, k) => o[k], rootObj()); }
  * se už nepíše. Cesty začínající „ZAK." jsou výjimka – to jsou údaje zakázky
  * (číslo, zákazník, hlavička), ne obsah konkrétní varianty; ty musí jít
  * upravit i tehdy, když je některá varianta zamčená. */
+/* ZÁPORNÉ HODINY RUČNĚ ZADAT NEJDE (N56, rozhodnutí J. V. 24. 9. 2026:
+ * „záporné hodiny nemůže být možné zadat ručně"). Týká se hodin montáže
+ * a projekce v OCK (základ i ATYP) a hodin a rezervy položek PROJ. Výpočet
+ * sám do minusu nejde (korekce montáže od referenční šachty zůstávají
+ * kladné); záporná částka v nabídce dřív vznikla jen překlepem. */
+const HODINY_BEZ_ZAPORU = /^(Z\.(montazZakladHod|montazAtypHod|projekceZakladHod|projekceAtypHod)|polozky\.\d+\.(hodiny|rezerva))$/;
+function hodinyZaporneOdmitni(path, v) {
+  if (!HODINY_BEZ_ZAPORU.test(String(path)) || !(typeof v === 'number' && v < 0)) return false;
+  if (typeof hlaska === 'function') hlaska('Hodiny nemohou být záporné. Zadejte 0 nebo kladné číslo.');
+  if (typeof render === 'function') render();
+  return true;
+}
 function set(path, v) {
   if (!cestaBezpecna(path)) return;
+  if (hodinyZaporneOdmitni(path, v)) return;
   /* Zámek čtení platí i na hlavičku (ZAK.*) — viz komentář u ZAMEK_CTENI. */
   if (typeof zamekCteniStop === 'function' && zamekCteniStop()) return;
   if (!path.startsWith('ZAK.') && typeof zamekStop === 'function' && zamekStop()) return;
@@ -709,7 +722,8 @@ function inp(path, opts = {}) {
    * odstěhovaly ze Zadání šachty do Detailu výpočtu (zadání J. V.) — vysvětlení
    * se tím neztratilo, jen přestalo zabírat řádek pod každým polem. */
   const tit = opts.t ? ` title="${esc(opts.t)}"` : '';
-  return `<div class="row"><label>${opts.l}</label><input type="number" step="${step}" value="${esc(val)}"${tit} onchange="set('${path}', +this.value)"><span class="u">${u}</span></div>`;
+  const min = opts.min != null ? ` min="${esc(opts.min)}"` : '';
+  return `<div class="row"><label>${opts.l}</label><input type="number" step="${step}"${min} value="${esc(val)}"${tit} onchange="set('${path}', +this.value)"><span class="u">${u}</span></div>`;
 }
 
 /* NULA SE NEMUSÍ MAZAT (10. 9. 2026, zadání J. V.: „nastav buňky tak, aby když

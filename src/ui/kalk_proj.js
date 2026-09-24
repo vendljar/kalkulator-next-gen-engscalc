@@ -30,6 +30,7 @@ function projVychoziZaklad(sekceKey, polozka) {
 function pjSekce(i) { return PJ.sekce[i]; }
 function pjSet(i, cesta, val) {
   if (typeof cestaBezpecna === 'function' && !cestaBezpecna(cesta)) return;
+  if (typeof hodinyZaporneOdmitni === 'function' && hodinyZaporneOdmitni(cesta, val)) return;   // N56a
   const ks = cesta.split('.'); const last = ks.pop();
   ks.reduce((o, k) => o[k], PJ.sekce[i])[last] = val;
   /* Úprava TRVALÉHO řádku (kid z ceníku PROJ) se propíše zpět do ceníku,
@@ -334,8 +335,8 @@ function renderProj() {
              ${p.sazbaPrepsana ? `<button class="mini noprint" onclick="pjPrepis(${i},${j},'sazbaPrepis','')" title="vrátit sazbu z ceníku (${num(p.sazbaZCeniku)} Kč)">↺</button>` : ''}`
           : num(p.sazbaKc);
         return `${tr}<td>${nazev}${stitekVyp}</td>
-          <td>${(col.admin || vlEd) ? `<input type="number" step="1" style="width:66px" value="${esc(+p.hodiny || 0)}" onchange="pjSet(${i}, 'polozky.${j}.hodiny', +this.value)">` : num(p.hodiny)}</td>
-          <td>${col.admin ? `<input type="number" step="1" style="width:66px" value="${esc(+p.rezerva || 0)}" onchange="pjSet(${i}, 'polozky.${j}.rezerva', +this.value)">` : num(p.rezerva)}</td>
+          <td>${(col.admin || vlEd) ? `<input type="number" step="1" min="0" style="width:66px" value="${esc(+p.hodiny || 0)}" onchange="pjSet(${i}, 'polozky.${j}.hodiny', +this.value)">` : num(p.hodiny)}</td>
+          <td>${col.admin ? `<input type="number" step="1" min="0" style="width:66px" value="${esc(+p.rezerva || 0)}" onchange="pjSet(${i}, 'polozky.${j}.rezerva', +this.value)">` : num(p.rezerva)}</td>
           <td>${num(p.hodinyCelkem)}</td>
           <td style="white-space:nowrap">${sazbaEd}</td>
           ${penize(p.naklad, marzeSekce(s, p.naklad), cena)}${pocitat}</tr>`;
