@@ -501,6 +501,16 @@ const PREKLAD = {
   "světlík nade dveřmi a na jedné straně š. dveří": ["Transom light above the door and on one side of the landing door","Oberlicht über der Tür und an einer Seite der Schachttür","Imposte vitrée au-dessus de la porte et d'un côté de la porte palière"],
   "světlík nade dveřmi a na obou stranách š. dveří": ["Transom light above the door and on both sides of the landing door","Oberlicht über der Tür und an beiden Seiten der Schachttür","Imposte vitrée au-dessus de la porte et des deux côtés de la porte palière"],
   "světlík nade dveřmi": ["Transom light above the door","Oberlicht über der Tür","Imposte vitrée au-dessus de la porte"],
+  /* N58, N58b (24. 9. 2026): výplň nad dveřmi a vedle nich. NÁVRH PŘEKLADU —
+   * čeká na odbornou kontrolu J. V. */
+  "plechové nadpraží nade dveřmi": ["Sheet-metal panel above the door","Blechpaneel über der Tür","Panneau en tôle au-dessus de la porte"],
+  "nadpraží z materiálu opláštění stěny": ["Panel above the door in the wall cladding material","Paneel über der Tür aus dem Verkleidungsmaterial der Wand","Panneau au-dessus de la porte dans le matériau du bardage de la paroi"],
+  "nadpraží nade dveřmi zajistí objednatel": ["Panel above the door provided by the client","Paneel über der Tür stellt der Auftraggeber","Panneau au-dessus de la porte fourni par le maître d'ouvrage"],
+  "plechová výplň na obou stranách dveří": ["Sheet-metal infill on both sides of the door","Blechfüllung an beiden Seiten der Tür","Remplissage en tôle des deux côtés de la porte"],
+  "plechová výplň na jedné straně dveří": ["Sheet-metal infill on one side of the door","Blechfüllung an einer Seite der Tür","Remplissage en tôle d'un côté de la porte"],
+  "výplň vedle dveří z materiálu opláštění stěny": ["Infill beside the door in the wall cladding material","Füllung neben der Tür aus dem Verkleidungsmaterial der Wand","Remplissage à côté de la porte dans le matériau du bardage de la paroi"],
+  "výplň vedle dveří zajistí objednatel": ["Infill beside the door provided by the client","Füllung neben der Tür stellt der Auftraggeber","Remplissage à côté de la porte fourni par le maître d'ouvrage"],
+  "lakovaný ocelový plech": ["Painted steel sheet","Lackiertes Stahlblech","Tôle d'acier laquée"],
   "šestiúhelník": ["Hexagon","Sechseck","Hexagone"],
   "tmelené a broušené styky desek, bílý nátěr aplikovaný na stavbě": ["Filled and sanded board joints, white paint applied on site","Verspachtelte und geschliffene Plattenstöße, weißer Anstrich bauseits","Joints de panneaux enduits et poncés, peinture blanche appliquée sur chantier"],
   "TYP KONSTRUKCE (ENG-M)": ["STRUCTURE TYPE (ENG-M)","KONSTRUKTIONSTYP (ENG-M)","TYPE DE STRUCTURE (ENG-M)"],

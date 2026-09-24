@@ -130,8 +130,10 @@ function renderDetail() {
       'ze zadání; předsazený portál přidá hodiny montáže i spoje, zasklení rozhoduje mezi terči a lištami'],
     ['Stříška nad nástupiště', `${+Z.striskaKs || 0} ks`,
       'počet kusů; nula znamená bez stříšky, každý kus násobí cenu i náklad'],
-    ['Světlík nad dveřmi / světlíky boky', `${Z.svetlikNadDvermi ? 'ano' : 'ne'} / ${Z.svetlikyBoky}`,
-      'ze zadání; světlík nad dveřmi přidá sklo nad každým nástupištěm, světlíky po bocích i sloupky portálu'],
+    ['Nad dveřmi / boky dveří', `${esc(({ bez: 'bez', sklo: 'sklo', plech: 'plech', material: 'materiál opláštění', stavba: 'zajistí stavba' })[nadDvermiVypln(Z)])}`
+      + ` / ${Z.svetlikyBoky}${Z.svetlikyBoky > 0 ? ' (' + esc(({ sklo: 'sklo', plech: 'plech', material: 'materiál opláštění', stavba: 'zajistí stavba' })[bokyVypln(Z)]) + ')' : ''}`,
+      'ze zadání (N58); sklo a materiál opláštění přidají sklo stěny, plech 8,5 kg/m² do plechů dveří s lakováním obou stran, '
+      + 'bez a zajistí stavba nic; boky přidají i sloupky portálu'],
     ['Čistý vstup / šířka rámu dveří', `${Z.cistyVstupMm} / ${Z.sirkaRamuMm} mm`,
       'ze zadání; z obojího vychází šířka otvoru šachetních dveří (krok 2)'],
   ]), 'dv-1');
@@ -167,7 +169,7 @@ function renderDetail() {
     ['Za portály (předsazené)', `${M(hn.portaly, 2)} h`,
       'předsazený portál: 1 h na nástupiště; zapuštěný 0'],
     ['Za světlík / světlíky boky', `${M(hn.svetlik, 2)} / ${M(hn.svetlikyBoky, 2)} h`,
-      'světlík: (světlík − 1) · nástupiště · 0,2 — BEZ světlíku tedy 0,2 h na nástupiště ubere; '
+      'světlík: (světlík − 1) · nástupiště · 0,2 — BEZ světlíku (i „zajistí stavba") tedy 0,2 h na nástupiště ubere, plechové nadpraží se montuje jako světlík; '
       + 'boky: světlíky boků · 0,5 · nástupiště'],
     ['Hodiny navíc celkem', `${M(r.montaz.hodinyNavicCelkem, 2)} h`, 'součet výše'],
     ['Montáž 1 osoba / 4 osoby', `${M(r.montaz.hod1osoba, 1)} h / ${M(r.montaz.hodCelkem, 1)} h`, `≈ ${M(r.montaz.dni, 1)} dní`],

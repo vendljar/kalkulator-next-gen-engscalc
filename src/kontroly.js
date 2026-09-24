@@ -150,6 +150,28 @@ const KONTROLY = [
     },
   },
   {
+    /* NAD DVEŘMI NIC (N58, rozhodnutí J. V. 24. 9. 2026). Volba „bez"
+     * nechává pole nad dveřmi neocenené — šířka stěny × (světlá výška −
+     * 2,3 m) na každé nástupiště. Může to být záměr (stavba dozdí), proto
+     * jen upozornění; pod 10 cm pole prakticky není a pravidlo mlčí. */
+    kod: 'nadDvermiBez', kde: 'Kalkulace OCK', nazev: 'Nad dveřmi zůstane otvor',
+    zjisti(ctx) {
+      const z = ctx.zadani;
+      if (!z) return null;
+      const volba = (typeof nadDvermiVypln === 'function') ? nadDvermiVypln(z)
+        : (z.nadDvermi || (z.svetlikNadDvermi ? 'sklo' : 'bez'));
+      if (volba !== 'bez') return null;
+      const o = (ctx.vysledek && ctx.vysledek.odvozene) || null;
+      const svetla = o ? o.svetlaVyska : null;
+      if (svetla == null || !isFinite(svetla)) return null;
+      const h = svetla - KONTROLY_VYSKA_DVERI;
+      if (h <= 0.1) return null;
+      return { text: 'Nad šachetními dveřmi je zvoleno „bez" — zůstane otvor vysoký '
+        + (Math.round(h * 100) / 100).toString().replace('.', ',') + ' m, který nic neoceňuje. '
+        + 'Zvolte sklo, plech, materiál opláštění, nebo „zajistí stavba" (pak to uvede specifikace).' };
+    },
+  },
+  {
     kod: 'oplasteniBezKonstrukce', kde: 'Kalkulace OCK', nazev: 'Opláštění bez konstrukce',
     zjisti(ctx) {
       const s = ctx.vysledek && ctx.vysledek.souctySekci;

@@ -151,6 +151,42 @@ function tsDvojsklo(Z) { return (Z || {}).typSachty !== 'interiérová'; }
  * i pás, který se do ceny nedostal — dělicí výšku nad horní hranou
  * prosklení nebo neklesající výšky — a zákazník ho viděl ve specifikaci,
  * ačkoli ho nikdo nenaceňoval. Poslední započítaný pás je „výš“. */
+/* Výplň nad dveřmi a vedle nich (N58, N58b) — jak ji vidí specifikace.
+ * Jádro má tutéž volbu v nadDvermiVypln / bokyVypln; techspec.js se ale
+ * načítá i bez jádra (testy, server), proto záložní převod starého
+ * zaškrtávátka přímo tady — stejné pravidlo: zaškrtnutý = sklo. */
+function tsVyplnDveri(Z) {
+  const z = Z || {};
+  const nad = (typeof nadDvermiVypln === 'function') ? nadDvermiVypln(z)
+    : (['bez', 'sklo', 'plech', 'material', 'stavba'].indexOf(z.nadDvermi) >= 0 ? z.nadDvermi
+       : (z.svetlikNadDvermi ? 'sklo' : 'bez'));
+  const bokyVypln_ = (typeof bokyVypln === 'function') ? bokyVypln(z)
+    : (['sklo', 'plech', 'material', 'stavba'].indexOf(z.bokyVypln) >= 0 ? z.bokyVypln : 'sklo');
+  const boky = +z.svetlikyBoky || 0;
+  const poStenach = !!(z.oplasteni && z.oplasteni.rezim === 'poStenach');
+  /* „Materiál opláštění" je ve standardu sklo stěny — tedy světlík. */
+  const sklo = v => v === 'sklo' || (v === 'material' && !poStenach);
+  return { nad, boky, bokyVypln: bokyVypln_, poStenach,
+           skloNad: sklo(nad), skloBoky: boky > 0 && sklo(bokyVypln_) };
+}
+function tsVyplnDveriCasti(Z) {
+  const v = tsVyplnDveri(Z);
+  const strana = v.boky === 2 ? 'na obou stranách' : 'na jedné straně';
+  if (v.skloNad && v.skloBoky) return ['světlík nade dveřmi a ' + strana + ' š. dveří'];
+  const casti = [];
+  if (v.skloNad) casti.push('světlík nade dveřmi');
+  else if (v.nad === 'plech') casti.push('plechové nadpraží nade dveřmi');
+  else if (v.nad === 'material') casti.push('nadpraží z materiálu opláštění stěny');
+  else if (v.nad === 'stavba') casti.push('nadpraží nade dveřmi zajistí objednatel');
+  if (v.boky > 0) {
+    if (v.skloBoky) casti.push('světlík ' + strana + ' š. dveří');
+    else if (v.bokyVypln === 'plech') casti.push('plechová výplň ' + strana + ' dveří');
+    else if (v.bokyVypln === 'material') casti.push('výplň vedle dveří z materiálu opláštění stěny');
+    else if (v.bokyVypln === 'stavba') casti.push('výplň vedle dveří zajistí objednatel');
+  }
+  return casti.length ? casti : ['bez světlíků'];
+}
+
 function tsOplasteniRozsah(Z, jazyk, r) {
   const z = Z || {};
   const o = z.oplasteni || {};
@@ -257,14 +293,15 @@ const TECHSPEC_DEF = [
       def: 'kontaktní, přes chemické kotvy do zdiva' },
     { id: 'portalyProstor', label: 'ŘEŠENÍ PORTÁLŮ (PROSTOROVÉ)', ciselnik: TS_C.portalyProstor,
       prefill: (r, Z) => Z.typPortalu === 'zapuštěný' ? 'bez předsazených portálů' : 'předsazený portál' },
-    { id: 'portalyCleneni', label: 'ŘEŠENÍ PORTÁLŮ (ČLENĚNÍ)', ciselnik: TS_C.portalyCleneni,
-      prefill: (r, Z) => {
-        if (Z.svetlikNadDvermi && Z.svetlikyBoky === 2) return 'světlík nade dveřmi a na obou stranách š. dveří';
-        if (Z.svetlikNadDvermi && Z.svetlikyBoky === 1) return 'světlík nade dveřmi a na jedné straně š. dveří';
-        if (Z.svetlikNadDvermi) return 'světlík nade dveřmi';
-        if (Z.svetlikyBoky === 2) return 'světlík na obou stranách š. dveří';
-        if (Z.svetlikyBoky === 1) return 'světlík na jedné straně š. dveří';
-        return 'bez světlíků';
+    /* Členění portálu podle výplně nad dveřmi a vedle nich (N58, N58b).
+     * Skleněné kombinace nesou dosavadní znění (slovník je zná); ostatní
+     * volby se skládají z částí, proto `jazykSam` — každá část se přeloží
+     * zvlášť a složená věta už slovníkem znovu nejde. */
+    { id: 'portalyCleneni', label: 'ŘEŠENÍ PORTÁLŮ (ČLENĚNÍ)', ciselnik: TS_C.portalyCleneni, jazykSam: true,
+      prefill: (r, Z, C, jazyk) => {
+        const T = (t) => (jazyk && jazyk !== 'cz' && typeof tr === 'function') ? tr(t, jazyk) : t;
+        const casti = tsVyplnDveriCasti(Z);
+        return casti.map(T).join(', ');
       } },
     { id: 'povrchovaUprava', label: 'POVRCHOVÁ ÚPRAVA KONSTRUKCE', ciselnik: TS_C.povrchovaUprava,
       def: 'matný ochranný lak, odstín RAL 7016' },
@@ -298,10 +335,14 @@ const TECHSPEC_DEF = [
       jazykSam: true, prefill: (r, Z, C, jazyk) => tsOplasteniRozsah(Z, jazyk, r) },
     { id: 'oplasteniPortalu', label: 'OPLÁŠTĚNÍ PORTÁLŮ NÁSTUPIŠŤ', ciselnik: TS_C.oplasteniPortalu, def: ' -' },
     { id: 'oplasteniNadsvetliku', label: 'OPLÁŠTĚNÍ NADSVĚTLÍKŮ', ciselnik: TS_C.oplasteniNadsvetliku,
-      prefill: (r, Z) => (Z.svetlikNadDvermi || Z.svetlikyBoky)
-        ? (tsDvojsklo(Z) ? 'izolační dvojskla vsazená do lakovaných rámečků'
-                         : 'vrstvené bezpečnostní sklo VSG vsazené do rámečků')
-        : ' -' },
+      prefill: (r, Z) => {
+        const v = tsVyplnDveri(Z);
+        if (v.skloNad || v.skloBoky)
+          return tsDvojsklo(Z) ? 'izolační dvojskla vsazená do lakovaných rámečků'
+                               : 'vrstvené bezpečnostní sklo VSG vsazené do rámečků';
+        if (v.nad === 'plech' || (v.boky && v.bokyVypln === 'plech')) return 'lakovaný ocelový plech';   // N58
+        return ' -';
+      } },
     /* Umístění se řídí ZPŮSOBEM ZASKLENÍ, ne typem šachty — stejným polem jako
      * ZPŮSOB KOTVENÍ o řádek níž. Sklo na terče se kotví zvenku, sklo mezi
      * příčníky leží v profilech; pevné „kotvené na vnější stranu" tvrdilo

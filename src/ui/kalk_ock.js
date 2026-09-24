@@ -153,11 +153,29 @@ function renderInputs() {
               <option value="poStenach" ${oplPoStenach() ? 'selected' : ''}>po stěnách A–D</option>
             </select><span class="u"></span></div>`
         + inp('Z.rohoveSloupky', { l: 'Počet sloupků', step: 1, u: 'ks' })
+        /* CO JE NAD DVEŘMI A VEDLE NICH (N58, N58b, zadání J. V. 24. 9. 2026).
+         * Světlík nad dveřmi se přesunul sem (mezi sloupky a boční světlíky)
+         * a je z něj rolovací menu výplně. Hodnota se čte přes
+         * nadDvermiVypln(): stará zakázka bez volby ukáže to, co znamenalo
+         * její zaškrtávátko (sklo / bez). */
+        + `<div class="row"><label>Světlík nad šachetními dveřmi</label>
+            <select style="width:150px" onchange="nadDvermiSet(this.value)">${NAD_DVERMI_POPISY.map(([v, t]) =>
+              `<option value="${v}" ${nadDvermiVypln(Z) === v ? 'selected' : ''}>${esc(t)}</option>`).join('')}
+            </select><span class="u"></span></div>`
         + inp('Z.svetlikyBoky', { type: 'sel', l: 'Světlíky na bocích dveří', o: [[0, 'bez'], [1, 'na jedné straně'], [2, 'na obou stranách']] })
-        + inp('Z.prechodovePlechy', { type: 'check', l: 'Přechodové plechy' })
+        + (Z.svetlikyBoky > 0
+          ? inp('Z.bokyVypln', { type: 'sel', l: 'Výplň boků dveří', o: BOKY_VYPLN_POPISY })
+          : '')
+        + inp('Z.prechodovePlechy', { type: 'check', l: 'Přechodové plechy' }))
+      + sl(
+        inp('Z.roztec', { l: 'Svislá rozteč příčníků', u: 'm' })
+        + inp('Z.sirkaRamuMm', { l: 'Šířka rámu dveří', step: 5, u: 'mm' })
+        + inp('Z.cistyVstupMm', { l: 'Čistý vstup – šířka', step: 10, u: 'mm' })
         /* Můstek (#163, 21. 8. 2026). Do výpočtu nevstupuje — je to vstup pro
          * kontrolu standardu a pro technickou specifikaci. Rozměry se ptají,
-         * jen když můstek je; prázdné pole znamená „nevyplněno", ne nulu. */
+         * jen když můstek je; prázdné pole znamená „nevyplněno", ne nulu.
+         * Od 24. 9. 2026 (N58, zadání J. V.) stojí ve 4. sloupci na místě,
+         * kde byl světlík nad dveřmi. */
         + `<div class="row"><label>Můstek mezi budovou a OCK</label>
             <input type="checkbox" ${Z.mustek ? 'checked' : ''} onchange="set('Z.mustek', this.checked)"><span class="u"></span></div>`
         + (Z.mustek
@@ -169,12 +187,7 @@ function renderInputs() {
                <input type="number" step="10" min="0" value="${esc(Z.mustekSirkaMm == null ? '' : Z.mustekSirkaMm)}"
                  placeholder="mm" title="standard: max na šířku OCK"
                  onchange="set('Z.mustekSirkaMm', this.value)"><span class="u">mm</span></div>`
-          : ''))
-      + sl(
-        inp('Z.roztec', { l: 'Svislá rozteč příčníků', u: 'm' })
-        + inp('Z.sirkaRamuMm', { l: 'Šířka rámu dveří', step: 5, u: 'mm' })
-        + inp('Z.cistyVstupMm', { l: 'Čistý vstup – šířka', step: 10, u: 'mm' })
-        + inp('Z.svetlikNadDvermi', { type: 'check', l: 'Světlík nad šachetními dveřmi' })
+          : '')
         /* ATYP má vlastní obsluhu (17. 8. večer): zaškrtnutí předvyplní všechny
          * čtyři rezervy a Zámečníka atyp z ceníku; odškrtnutí vrací pole, do
          * kterých nikdo ručně nesáhl — atypové přirážky bez atypu nemají co
@@ -574,6 +587,23 @@ function oplZmeneno() {
   render();
 }
 
+/* Volby výplně nad dveřmi a vedle nich (N58, N58b). Hodnoty jsou z jádra
+ * (NAD_DVERMI_VOLBY, BOKY_VYPLN_VOLBY), popisky podle zadání J. V. */
+const NAD_DVERMI_POPISY = [['bez', 'bez'], ['sklo', 'sklo'], ['plech', 'plech'],
+                           ['material', 'materiál opláštění'], ['stavba', 'zajistí stavba']];
+const BOKY_VYPLN_POPISY = [['sklo', 'sklo'], ['plech', 'plech'],
+                           ['material', 'materiál opláštění'], ['stavba', 'zajistí stavba']];
+
+/* Volba nad dveřmi. Staré zaškrtávátko `svetlikNadDvermi` se drží v souladu
+ * (sklo i materiál = pole je sklo stěny), aby ho nepoplety starší části
+ * dat a čtenáři mimo jádro. Zapisuje se AŽ po set(): když zápis zastaví
+ * zámek, nesmí se změnit ani to druhé pole. */
+function nadDvermiSet(v) {
+  if (NAD_DVERMI_VOLBY.indexOf(v) < 0) return;
+  set('Z.nadDvermi', v);
+  if (Z.nadDvermi === v) Z.svetlikNadDvermi = (v === 'sklo' || v === 'material');
+}
+
 function oplRezimSet(rezim) {
   const o = oplZadani();
   o.rezim = (rezim === 'poStenach') ? 'poStenach' : 'standard';
@@ -745,7 +775,7 @@ function oplStenaVarovani(k, opl) {
         + (sDvermi
           ? 'Stěna má dveře v každém patře, takže je celá nástupiště: kolem dveří je portál s plechy '
             + 'a nástupní plech, opláštění nese jen světlíky. Bez světlíků je plocha 0 m² — tak to má být. '
-            + 'Chcete-li nad dveřmi sklo, zaškrtněte světlík nad dveřmi.'
+            + 'Chcete-li nad dveřmi sklo, zvolte u „Světlík nad šachetními dveřmi" volbu sklo.'
           : 'Zkontrolujte rozměry šachty — výpočet u téhle stěny žádnou plochu nedává.');
   }
 

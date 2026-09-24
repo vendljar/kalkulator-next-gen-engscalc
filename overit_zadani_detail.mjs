@@ -183,6 +183,47 @@ zkus('N56: záporné hodiny ani rezerva položky PROJ se neuloží', hod.pjPo.h 
 zkus('N56: uživatel dostane hlášku, proč', hod.texty.length === 4 && hod.texty.every(t => /nemohou být záporné/.test(t)), JSON.stringify(hod.texty));
 zkus('N56: pole hodin má min="0"', hod.minAttr);
 
+/* N58, N58b (zadání J. V. 24. 9. 2026): Zadání šachty — světlík nad dveřmi
+ * je rolovací menu mezi počtem sloupků a světlíky na bocích, můstek ve
+ * 4. sloupci na jeho dřívějším místě; výplň boků se ukáže s boky. */
+const n58 = await p.evaluate(() => {
+  prepniTab('kalk'); render();
+  const lbl = t => [...document.querySelectorAll('#inputs .row > label')].find(l => l.textContent.trim() === t);
+  const sloupec = t => { const l = lbl(t); return l ? l.parentElement.parentElement : null; };
+  const poradi = (kontejner, t) => kontejner ? [...kontejner.querySelectorAll(':scope > .row > label')].map(l => l.textContent.trim()).indexOf(t) : -1;
+  const s3 = sloupec('Počet sloupků'), s4 = sloupec('Čistý vstup – šířka');
+  const nad = lbl('Světlík nad šachetními dveřmi');
+  const sel = nad && nad.parentElement.querySelector('select');
+  const volby = sel ? [...sel.options].map(o => o.textContent.trim()) : [];
+  const out = {
+    stejnySloupec: !!s3 && sloupec('Světlík nad šachetními dveřmi') === s3 && sloupec('Světlíky na bocích dveří') === s3,
+    poradi3: [poradi(s3, 'Počet sloupků'), poradi(s3, 'Světlík nad šachetními dveřmi'), poradi(s3, 'Světlíky na bocích dveří')],
+    mustekV4: !!s4 && sloupec('Můstek mezi budovou a OCK') === s4,
+    poradi4: [poradi(s4, 'Čistý vstup – šířka'), poradi(s4, 'Můstek mezi budovou a OCK'), poradi(s4, 'ATYP (nestandardní zakázka)')],
+    zadneZaskrtavatko: !document.querySelector('#inputs input[type=checkbox][onchange*="svetlikNadDvermi"]'),
+    volby, vybrano: sel ? sel.value : '',
+  };
+  nadDvermiSet('stavba');
+  out.poStavba = { nad: Z.nadDvermi, stary: Z.svetlikNadDvermi };
+  nadDvermiSet('sklo');
+  out.poSklo = { nad: Z.nadDvermi, stary: Z.svetlikNadDvermi };
+  out.bokyPred = !!lbl('Výplň boků dveří');
+  set('Z.svetlikyBoky', 2); render();
+  out.bokyPo = !!lbl('Výplň boků dveří');
+  set('Z.svetlikyBoky', 0); nadDvermiSet('plech'); render();
+  return out;
+});
+zkus('N58: světlík nad dveřmi je ve 3. sloupci mezi počtem sloupků a světlíky na bocích',
+  n58.stejnySloupec && n58.poradi3[0] >= 0 && n58.poradi3[0] < n58.poradi3[1] && n58.poradi3[1] < n58.poradi3[2], JSON.stringify(n58));
+zkus('N58: můstek je ve 4. sloupci za čistým vstupem a před ATYP',
+  n58.mustekV4 && n58.poradi4[0] < n58.poradi4[1] && n58.poradi4[1] < n58.poradi4[2], JSON.stringify(n58.poradi4));
+zkus('N58: menu nabízí bez / sklo / plech / materiál opláštění / zajistí stavba',
+  n58.volby.join('|') === 'bez|sklo|plech|materiál opláštění|zajistí stavba', n58.volby.join('|'));
+zkus('N58: staré zaškrtávátko zmizelo', n58.zadneZaskrtavatko);
+zkus('N58: volba se uloží a staré pole drží v souladu (stavba → ne, sklo → ano)',
+  n58.poStavba.nad === 'stavba' && n58.poStavba.stary === false && n58.poSklo.nad === 'sklo' && n58.poSklo.stary === true, JSON.stringify(n58));
+zkus('N58b: výplň boků se ukáže až s boky', !n58.bokyPred && n58.bokyPo, JSON.stringify(n58));
+
 zkus('za celý průchod nevznikla chyba v konzoli', konzole.length === 0, konzole.slice(0, 2).join(' | '));
 await b.close();
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');

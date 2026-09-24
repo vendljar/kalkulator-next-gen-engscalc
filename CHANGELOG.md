@@ -8,6 +8,39 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v24.9.7 — dávka N58 (24. 9. 2026 večer): co je nad dveřmi a vedle nich
+
+Rozhodnutí J. V. 24. 9. večer (vizuální návrh odsouhlasen: výchozí plech,
+sazby podle návrhu, boční pole ve stejné dávce).
+
+- **Nad šachetními dveřmi volba výplně (N58).** Do 24. 9. bylo
+  zaškrtávátko a bez něj se pole nad dveřmi (šířka stěny × (světlá výška
+  − 2,3 m) na každé nástupiště) neocenilo vůbec. Teď rolovací menu:
+  - *bez*: 0 Kč, kontrola před nabídkou upozorní na otvor;
+  - *sklo*: dřívější světlík (sklo stěny, lišty/terče);
+  - *plech*: 8,5 kg/m² do plechů dveří, práce +1 ks na nástupiště,
+    lakování obou stran, montáž jako u světlíku; záporná výška se ořízne
+    na nulu v obou modelech;
+  - *materiál opláštění*: materiál stěny (ve standardu sklo stěny,
+    v režimu po stěnách typ pásu);
+  - *zajistí stavba*: 0 Kč a věta ve specifikaci.
+  Výchozí volba nové zakázky je plech. Starší zakázky se převádějí beze
+  změny ceny (zaškrtnuto = sklo, nezaškrtnuto = bez) v obou modelech.
+- **Boční pole vedle dveří (N58b).** Pod *Světlíky na bocích dveří* se
+  s počtem stran objeví *Výplň boků dveří* (sklo, plech, materiál
+  opláštění, zajistí stavba). Plech a stavba berou plochu ze skla stěny,
+  portálové sloupky zůstávají. Chybějící volba = sklo jako dřív.
+- **Zadání šachty (úprava podle návrhu).** Světlík nad dveřmi je ve
+  3. sloupci mezi počtem sloupků a světlíky na bocích. Můstek mezi budovou
+  a OCK se přesunul do 4. sloupce na jeho dřívější místo.
+- **Specifikace:** ŘEŠENÍ PORTÁLŮ (ČLENĚNÍ) a OPLÁŠTĚNÍ NADSVĚTLÍKŮ podle
+  výplně. Skleněné kombinace mají dosavadní znění, nové texty se překládají
+  po částech. Nová hesla EN/DE/FR jsou **návrh, čeká na kontrolu J. V.**
+- Testy: `src/test_nadprazi.js` 48, `overit_zadani_detail` +6,
+  `test_kontroly` (16 pravidel), mutace jádra +8. Upraveny `overit_oplasteni`
+  (nová zakázka má plech, sklo se volí hodnotou) a `overit_lista`
+  (16 pravidel).
+
 ## v24.9.6 — dávka F4a (24. 9. 2026 večer): průchozí šachta, lešení, záporné hodiny
 
 Rozhodnutí J. V. 24. 9. večer.

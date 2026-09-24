@@ -370,7 +370,9 @@ zkus('N4: dělicí výška nad horní hranou se ohlásí',
  * takže čelní stěna vychází na 0 m² — a nové varování to právem hlásí.
  * „Správné zadání" se proto zkouší nad šachtou se světlíkem; jinak by tenhle
  * řádek vyžadoval, aby aplikace o nulové ploše mlčela. */
-const spravne = 'Z.svetlikNadDvermi = true; Z.oplasteni.steny.A.odM = 0;';
+/* Od N58 (24. 9. 2026) je nad dveřmi volba výplně a nová zakázka má plech;
+ * sklo nad dveřmi se volí hodnotou „sklo". */
+const spravne = "Z.nadDvermi = 'sklo'; Z.oplasteni.steny.A.odM = 0;";
 zkus('a správné zadání nevaruje', (await varovani(spravne)) === '', await varovani(spravne));
 
 /* N9: minimální výška pásu 2 px nesmí přetéct pruh — spodní pás by se
@@ -413,7 +415,7 @@ zkus('rozdělení stěn se vypnutím režimu nezahodí', prezilo === 2, prezilo)
     set('OCK.zadani.sirka', 1.6); set('OCK.zadani.hloubka', 1.4);
     set('OCK.zadani.zdvih', 9); set('OCK.zadani.prejezd', 3.5);
     set('OCK.zadani.prohluben', 1.1); set('OCK.zadani.nastupiste', 4);
-    set('OCK.zadani.svetlikNadDvermi', false);
+    set('OCK.zadani.nadDvermi', 'bez');   // N58: bez skla nad dveřmi
     set('OCK.zadani.svetlikyBoky', 0);
     oplRezimSet('poStenach');
     render();
@@ -449,7 +451,7 @@ zkus('rozdělení stěn se vypnutím režimu nezahodí', prezilo === 2, prezilo)
    * (a neposílá obchodníka hledat chybu v rozměrech). */
   zkus('N46: čelní stěna bez světlíků je nástupiště — plocha 0 m²', stav.a < 0.005, stav.a);
   zkus('N46: hláška vysvětlí, že jde o nástupiště a pomůže světlík',
-    /celá nástupiště/.test(stav.varA) && /světlík nad dveřmi/.test(stav.varA), stav.varA.slice(0, 200));
+    /celá nástupiště/.test(stav.varA) && /Světlík nad šachetními dveřmi/.test(stav.varA), stav.varA.slice(0, 200));
   zkus('ani u ostatních stěn', !/nedostane nic/i.test(stav.varB), stav.varB.slice(0, 120));
   /* Otvory dveří se ale odečetly — čelní stěna musí být MENŠÍ než zadní,
    * která u neprůchozí šachty žádné otvory nemá. Bez tohohle by kontrola
@@ -470,7 +472,7 @@ zkus('rozdělení stěn se vypnutím režimu nezahodí', prezilo === 2, prezilo)
     set('OCK.zadani.sirka', 1.6); set('OCK.zadani.hloubka', 1.4);
     set('OCK.zadani.zdvih', 3); set('OCK.zadani.prejezd', 3.5);
     set('OCK.zadani.prohluben', 1.1); set('OCK.zadani.nastupiste', 6);
-    set('OCK.zadani.svetlikNadDvermi', false);
+    set('OCK.zadani.nadDvermi', 'bez');   // N58: bez skla nad dveřmi
     set('OCK.zadani.svetlikyBoky', 0);
     oplRezimSet('poStenach');
     render();

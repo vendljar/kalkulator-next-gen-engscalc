@@ -174,6 +174,9 @@ const ZADANI_NOVA = {
   nastupiste: 5,
   prechodovePlechy: false,
   svetlikNadDvermi: false,
+  /* Nad dveřmi plechové nadpraží (N58, rozhodnutí J. V. 24. 9. 2026: výchozí
+   * volba nové zakázky je plech — pole nad dveřmi nesmí zůstat neoceněné). */
+  nadDvermi: 'plech',
 };
 
 /* ZÁKLAD PRO SLOUPEC VÝCHOZÍ (16. 9. 2026, nález J. V.: „stále nám nefunguje

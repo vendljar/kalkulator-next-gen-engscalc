@@ -437,6 +437,40 @@ const DEFAULT_ZADANI = {
  * Viz komentář u `svetlaVyska` ve výpočtu (K9-N35). */
 const SVETLA_VYSKA_ODSTUP_M = 0.2;
 
+/* CO JE NAD DVEŘMI A VEDLE NICH (N58 a N58b, rozhodnutí J. V. 24. 9. 2026).
+ *
+ * Do 24. 9. byl světlík nad šachetními dveřmi zaškrtávátko: zaškrtnutý =
+ * pole nad dveřmi (šířka stěny × (světlá výška − 2,3 m)) se zasklilo,
+ * nezaškrtnutý = pole se NEOCENILO VŮBEC (nálezy N58). Obdobně boční pole
+ * vedle dveří: světlíky, nebo nic.
+ *
+ * Teď je to volba výplně:
+ *   bez      — nic (0 Kč; kontrola před nabídkou upozorní na otvor)
+ *   sklo     — světlík, jako dřív zaškrtnutý (sklo své stěny, lišty/terče)
+ *   plech    — plechové nadpraží: 8,5 kg/m² do plechů dveří, práce +1 ks
+ *              na nástupiště, lakování obou stran; montáž jako u světlíku
+ *   material — materiál opláštění stěny: ve standardu sklo stěny, v režimu
+ *              po stěnách typ pásu, do kterého pole padne (tam se plocha
+ *              stěny oceňuje zvoleným typem)
+ *   stavba   — zajistí objednatel: 0 Kč, věta ve specifikaci
+ * Výchozí volba NOVÉ zakázky je plech (J. V.). Stará zakázka se převádí
+ * beze změny ceny: zaškrtnutý světlík = sklo, nezaškrtnutý = bez. */
+const NAD_DVERMI_VOLBY = ['bez', 'sklo', 'plech', 'material', 'stavba'];
+function nadDvermiVypln(z) {
+  const v = z && z.nadDvermi;
+  if (NAD_DVERMI_VOLBY.indexOf(v) >= 0) return v;
+  return (z && z.svetlikNadDvermi) ? 'sklo' : 'bez';
+}
+/* Boční pole: počet stran říká dál `svetlikyBoky` (0 / 1 / 2 — kde vedle
+ * dveří pole je), výplň volí `bokyVypln`. Chybějící = sklo (jako dřív). */
+const BOKY_VYPLN_VOLBY = ['sklo', 'plech', 'material', 'stavba'];
+function bokyVypln(z) {
+  const v = z && z.bokyVypln;
+  return BOKY_VYPLN_VOLBY.indexOf(v) >= 0 ? v : 'sklo';
+}
+const VYPLN_SKLENA = v => v === 'sklo' || v === 'material';
+const PLECH_NADPRAZI_KG_M2 = 8.5;   // stejný plech jako podesty (podKg1)
+
 function vypocet(zadani, cenik, jekly, fixes = true) {
   const z = zadani, c = cenik;
   /* Zadání bez objektu volitelných položek (ručně upravený nebo poškozený
@@ -447,7 +481,10 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const D16 = ext ? 0 : 1;              // Excel konvence: 1=interiér, 0=exteriér
   const zapusteny = z.typPortalu === 'zapuštěný';
   const terce = z.zaskleni === 'na terče';
-  const svetlik = z.svetlikNadDvermi ? 1 : 0;
+  const nadV = nadDvermiVypln(z), bokyV = bokyVypln(z);
+  const svetlik = VYPLN_SKLENA(nadV) ? 1 : 0;          // pole nad dveřmi je sklo stěny
+  const nadPlech = nadV === 'plech' ? 1 : 0;
+  const bokySklo = VYPLN_SKLENA(bokyV) ? 1 : 0, bokyPlech = bokyV === 'plech' ? 1 : 0;
 
   const jekl = (p) => {
     const j = jekly[p.dim];
@@ -514,7 +551,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     nastupiste: nastupist - 6,
     exterier: D16 === 1 ? 0 : 8 + (H - 21) * 0.5 * 1.5,
     portaly: zapusteny ? 0 : nastupist,
-    svetlik: (svetlik - 1) * nastupist * 0.2,
+    svetlik: ((svetlik || nadPlech) - 1) * nastupist * 0.2,   // N58: plechové nadpraží jako světlík
     svetlikyBoky: z.svetlikyBoky * 0.5 * nastupist,
   };
   const hodinyNavic = Object.values(hn).reduce((a, b) => a + b, 0);
@@ -701,10 +738,29 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const spojovaciKc = spojovaciRows.reduce((a, r) => a + r.celkem, 0);
   const nytovaniKs = (riplockM10 + nordlock) + riplockM8 + sroubM6;
 
+  /* Rozměry tabulí zasklení. Stojí před lakováním, protože plechové
+   * nadpraží a boční pole (N58) mají tutéž plochu jako světlík. */
+  const Asl = jSl.A / 1000, Bsl = jSl.B / 1000, Bpr = jPb.B / 1000, Apr = jPb.A / 1000;
+  const gTerc = { hl: z.hloubka + Bpr * 2 - 0.01, sir: z.sirka + Bpr * 2 + 0.02, vys: z.roztec - 0.016 };
+  const gLis = { hl: z.hloubka - Asl / 2 - 0.008, sir: z.sirka - Bsl * 2 - 0.008, vys: z.roztec - Apr - 0.008 };
+  const g = terce ? gTerc : gLis;
+
+  /* PLECHOVÉ NADPRAŽÍ A BOČNÍ POLE Z PLECHU (N58, N58b). Plocha je táž
+   * jako u světlíku: nad dveřmi šířka stěny × (světlá výška − 2,3 m) na
+   * každé nástupiště (A i C), vedle dveří šířka pole × 2,2 m. Záporná výška
+   * (podlaží pod 2,5 m) se ořízne na nulu v obou modelech — v předloze
+   * tahle volba není, takže není co zachovávat 1:1. */
+  const nadPlechM2 = nadPlech * nastupist * g.sir * Math.max(svetlaVyska - 2.3, 0);
+  const bokPoleSir = (g.sir - sirkaDveri - 0.04) / Math.max(1, z.svetlikyBoky);
+  const bokyPlechM2 = bokyPlech * kratkePricniky * bokPoleSir * 1.1;
+  const vyplnPlechM2 = nadPlechM2 + bokyPlechM2;
+  const vyplnPlechKg = vyplnPlechM2 * PLECH_NADPRAZI_KG_M2;
+
   /* ---------- lakování ---------- */
   const lakProfM2 = profM2 + (fixes ? lemM2 : 0);
   const lakProfBm = profM + (fixes ? dLemovani : 0);
-  const lakOplechM2 = oplDvereM2 + (fixes ? podestM2 : podM21 * podestKs0); // šablona podesty negatuje jen v ceně, ne v lakování
+  const lakOplechM2 = oplDvereM2 + (fixes ? podestM2 : podM21 * podestKs0) // šablona podesty negatuje jen v ceně, ne v lakování
+    + vyplnPlechM2 * 2;                                   // N58: plech nad/vedle dveří, obě strany
   const lakPlechKs = plechyKs, lakPlechM2 = plechyM2;
   const L = c.lak;
   const lakovna = L.lakovnaProfilBm * lakProfBm + L.lakovnaListaBm * listyCelkBm
@@ -719,10 +775,6 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const lakovaniKc = (L.rezim === 'tomas' ? tomas : lakovna) + lakVlastniKc;
 
   /* ---------- zasklení ---------- */
-  const Asl = jSl.A / 1000, Bsl = jSl.B / 1000, Bpr = jPb.B / 1000, Apr = jPb.A / 1000;
-  const gTerc = { hl: z.hloubka + Bpr * 2 - 0.01, sir: z.sirka + Bpr * 2 + 0.02, vys: z.roztec - 0.016 };
-  const gLis = { hl: z.hloubka - Asl / 2 - 0.008, sir: z.sirka - Bsl * 2 - 0.008, vys: z.roztec - Apr - 0.008 };
-  const g = terce ? gTerc : gLis;
   const zadniKs = Math.ceil(vyskaProsklene / z.roztec - 1e-9);
   const zadniM2 = Math.max(zadniKs * g.sir * g.vys, vyskaProsklene * g.sir);
   const bocniKs = zadniKs * 2;
@@ -777,7 +829,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
    * starší zakázky zaškrtnutý — tam to tedy hrozí. */
   const svetlikVyskaM = svetlaVyska - 2.3;
   const svetlikM2 = svetlikKs * g.sir * (fixes ? Math.max(svetlikVyskaM, 0) : svetlikVyskaM);
-  const svetlikBokKs = kratkePricniky;
+  const svetlikBokKs = bokySklo * kratkePricniky;   // N58b: boky z plechu / stavby nejsou sklo
   const svetlikBokM2 = svetlikBokKs * ((g.sir - sirkaDveri - 0.04) / Math.max(1, z.svetlikyBoky)) * 1.1;
 
   /* PRŮCHOZÍ ŠACHTA: ZADNÍ STĚNA NENÍ CELÁ PROSKLENÁ (nález V37, 14. 9. 2026).
@@ -1197,8 +1249,8 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     ext ? mkItem('PROFILY - LEMOVÁNÍ ŠACHTY (EXT)', lemKg, c.lemovaniKgKc, { cenaPath: 'C.lemovaniKgKc' }) : null,
     mkItem('PLECHY - HLAVNÍ KONSTRUKČNÍ PLECHY', plechyKgRez, ext ? c.powertechExt : c.powertechInt, { cenaPath: plechKey }),
     mkItem('PLECHY - ZASKLENÍ (TERČE/LIŠTY)', terceKg + listyKg, ext ? c.powertechExt : c.powertechInt, { cenaPath: plechKey }),
-    mkItem('PLECHY - OPLECH. DVEŘÍ A PODEST (MATERIÁL)', oplDvereKg + podestKg, ext ? c.powertechExt : c.powertechInt, { cenaPath: plechKey }),
-    mkItem('PLECHY - OPLECH. DVEŘÍ A PODEST (PRÁCE)', nastupist * 3, c.oplechPracKc, { cenaPath: 'C.oplechPracKc' }),
+    mkItem('PLECHY - OPLECH. DVEŘÍ A PODEST (MATERIÁL)', oplDvereKg + podestKg + vyplnPlechKg, ext ? c.powertechExt : c.powertechInt, { cenaPath: plechKey }),
+    mkItem('PLECHY - OPLECH. DVEŘÍ A PODEST (PRÁCE)', nastupist * (3 + nadPlech + bokyPlech), c.oplechPracKc, { cenaPath: 'C.oplechPracKc' }),
     mkItem('PLECHY - OPLECHOVÁNÍ OSTATNÍ (MATERIÁL)', z.oplechOstatniKg, ext ? c.powertechExt : c.powertechInt, { cenaPath: plechKey }),
     mkItem('PLECHY - OPLECHOVÁNÍ OSTATNÍ (PRÁCE)', z.oplechOstatniHod, c.oplechPracKc, { cenaPath: 'C.oplechPracKc' }),
     mkItem('SPOJOVACÍ MATERIÁL', 1, spojovaciKc, { naklad: spojovaciKc, cenaSkupina: 'C.spojovaci.*' }),
@@ -1602,6 +1654,8 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     plechy: { spojeRows, ks: plechyKs, kg: plechyKg, m2: plechyM2 },
     zaskleni: { rozmer: g, zadni: { ks: zadniKs, m2: zadniM2 }, bocni: { ks: bocniKs, m2: bocniM2 },
                 svetliky: { ks: svetlikKs, m2: svetlikM2 }, svetlikyBoky: { ks: svetlikBokKs, m2: svetlikBokM2 },
+                /* Výplň nad dveřmi a vedle nich (N58): volba a plocha plechu. */
+                vypln: { nad: nadV, boky: bokyV, nadPlechM2, bokyPlechM2 },
                 bokyZadniM2: skloBokyZadniM2, celniM2: skloCelniM2, celkemM2: skloCelkemM2,
                 /* Plocha po stěnách A–D (#268). Zatím jen se vydává — cenu
                  * pořád tvoří součty výš. Bude z ní stavět režim „opláštění
@@ -1742,4 +1796,4 @@ function cenikMigraceLeseni(cenik) {
   }
 }
 
-if (typeof module !== 'undefined') module.exports = { vypocet, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };
+if (typeof module !== 'undefined') module.exports = { vypocet, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, BOKY_VYPLN_VOLBY, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };
