@@ -182,12 +182,16 @@ test('dvě varianty se stejným ceníkem mají stejný otisk',
 
 /* ---------- přehled a varovná věta ---------- */
 const p = cenikPrehled(v, DNES(), { dnes: '2026-07-29', datum: '2025-05-01' });
-test('přehled u načtené zakázky varuje', p.varovat === true && p.souhrn.pocet === 5);
+/* Pět rozdílů, ale jen čtyři CENY: přirážka projekce je rozhodnutí zakázky
+ * (CENIK_ZAKAZKOVE) a do varování se od P4 / K13-N58 (24. 9. 2026) nepočítá.
+ * V seznamu rozdílů pro okno přepočtu zůstává. */
+test('přehled u načtené zakázky varuje', p.varovat === true && p.souhrn.pocet === 4 && p.rozdily.length === 5,
+  { pocet: p.souhrn.pocet, rozdily: p.rozdily.length });
 test('přehled zná datum, ke kterému se ceny vztahují',
   p.datum === '2025-05-01' && p.dni === 454, { datum: p.datum, dni: p.dni });
 const veta = cenikVarovaniText(p);
 test('věta řekne počet i nejvyšší změnu',
-  /5 položek/.test(veta) && /\+25 %/.test(veta), veta);
+  /4 položky/.test(veta) && /\+25 %/.test(veta), veta);
 test('věta řekne, z kdy ceny jsou', /1\. 5\. 2025/.test(veta) && /454 dny/.test(veta), veta);
 test('datum se vypisuje česky', cenikDatumCz('2026-01-06') === '6. 1. 2026');
 test('bez rozdílu se nevaruje', (() => {
@@ -202,7 +206,7 @@ const pKvit = cenikPrehled(v, DNES(), { dnes: '2026-07-29' });
 test('po potvrzení „ceny jsou dohodnuté" se přestane varovat',
   pKvit.kvitovano === true && pKvit.varovat === false);
 test('rozdíly se ale nepřestanou počítat – jen se z nich nedělá poplach',
-  pKvit.souhrn.pocet === 5);
+  pKvit.rozdily.length === 5 && pKvit.souhrn.pocet === 4);
 test('kvitance platí jen pro ten ceník, ke kterému se dala', (() => {
   const kopie = JSON.parse(JSON.stringify(v));
   kopie.data.cenik.cestovniKc = 12345;

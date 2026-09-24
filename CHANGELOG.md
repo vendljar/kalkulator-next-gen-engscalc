@@ -35,6 +35,25 @@ podle zadání větve, v závorce číslo nálezu ze sešitu kola.
   z náhledu nabídky OCK i PROJ; náhled se ptá před otevřením okna. Dotisk
   už zamčené varianty se neptá, plná moc a interní podklady beze změny.
   Harness `overit_online.mjs` +10 (bez opravy 6 selže).
+- **P3 (K13-N55) — falešný dialog „Ceník se změnil, změnily se 2 ceny“
+  u každé nové zakázky.** Příčina potvrzena: server při importu doplní
+  klíč, který v ceníku zakázky chybí, nulou (`cenikDoplnKlice`). Platný
+  ceník testu je ale starší než klíče `cetrisKc` a `zaskleniListyProjHod`
+  a nenese je vůbec. `cenikRozdily` pak bral 0 proti ničemu jako změnu
+  a přepočet klíče ze zakázky smazal. Oprava v `cenikRozdily` (varianta a):
+  chybějící klíč se porovnává jako nula, tedy stejně jako ho doplňuje
+  import. Nenulová hodnota proti chybějící i změna z nenuly na nulu se
+  hlásí dál. Varianta b (doplnit klíče do platného ceníku při načtení)
+  by změnila otisk platného ceníku, a tím zneplatnila dříve potvrzené
+  „ceny jsou dohodnuté“.
+- **P4 (K13-N58) — ruční sazba DPH se hlásila jako rozdíl ceníku.**
+  `cenikPrehled` nefiltroval zakázkové hodnoty (přirážka, DPH), přestože
+  je automatický přepočet vynechává. Varování i jeho souhrn je teď
+  nepočítají; v okně přepočtu zůstávají. Věta varování říká směr stejně
+  jako okno přepočtu: „nejvíc „X“ (dnes +25 % proti kalkulaci)“.
+  Testy: `src/test_k13_cenik.js` 16 (bez opravy 8 selže). Upraveno
+  `test_cenik_stari` (přirážka projekce už se do varování nepočítá)
+  a fixtura `overit_lista.mjs` (varování #35 potřebuje skutečnou cenu).
 
 ---
 
