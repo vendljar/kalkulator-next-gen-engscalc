@@ -1239,6 +1239,17 @@ console.log('\n===== AUDIT B15: SEBEUZAMČENÍ A ARCHIV =====\n');
     (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'role', email: eA, role: 'Obchodník' }, cA)).status === 400);
   test('B15: správce si nevypne vlastní účet',
     (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'aktivni', email: eA, aktivni: false }, cA)).status === 400);
+  /* B74 (hloubkový test 24. 9. 2026): pojistky hlídaly `=== false`, zápis
+   * bral `!!aktivni` — nula nebo prázdný řetězec účet vypnuly. */
+  for (const hod of [0, '', null, 'false']) {
+    test('B74: aktivni=' + JSON.stringify(hod) + ' vlastního účtu → 400',
+      (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'aktivni', email: eA, aktivni: hod }, cA)).status === 400);
+    test('B74: aktivni=' + JSON.stringify(hod) + ' hlavního účtu → 400',
+      (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'aktivni', email: ADMIN_EMAIL, aktivni: hod }, cA)).status === 400);
+  }
+  test('B74: archiv=1 → 400 (jen true/false)',
+    (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'archiv', email: 'terc@example.com', archiv: 1 }, cAdmin)).status === 400);
+  test('B74: hlavní účet se po pokusech pořád přihlásí', (await get(ja, 'http://x/api/ja', cAdmin)).status === 200);
   test('B15: správce je po obou pokusech pořád správce', (await get(ja, 'http://x/api/ja', cA)).status === 200);
   await post(uzivatele, 'http://x/api/uzivatele', { akce: 'zaloz', email: 'archiv@example.com', jmeno: 'Archiv', role: 'Obchodník', heslo: 'ArchivHeslo1' }, cAdmin);
   await post(uzivatele, 'http://x/api/uzivatele', { akce: 'archiv', email: 'archiv@example.com', archiv: true }, cAdmin);

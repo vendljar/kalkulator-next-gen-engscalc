@@ -195,6 +195,11 @@ export default async (req) => {
         return json({ ok: false, chyba: 'Vlastní roli si nesnižujte — o přístup byste přišli okamžitě. Požádejte jiného administrátora.' }, 400);
       ucet.role = t.role;
     } else if (t.akce === 'aktivni') {
+      /* Jen skutečné true/false (nález B74 hloubkového testu 24. 9. 2026).
+       * Pojistky níž hlídaly `=== false`, ale zápis bral `!!t.aktivni` —
+       * `aktivni: 0` nebo `""` tak vypnulo hlavní i vlastní účet. */
+      if (typeof t.aktivni !== 'boolean')
+        return json({ ok: false, chyba: 'Hodnota „aktivni" musí být true nebo false.' }, 400);
       if (email === ADMIN_EMAIL && t.aktivni === false)
         return json({ ok: false, chyba: 'Hlavní administrátorský účet nejde vypnout.' }, 400);
       if (email === relace.email && t.aktivni === false)
@@ -205,6 +210,8 @@ export default async (req) => {
         return json({ ok: false, chyba: 'Účet je archivovaný. Nejdřív zrušte archivaci, pak ho zapněte.' }, 400);
       ucet.aktivni = !!t.aktivni;
     } else if (t.akce === 'archiv') {
+      if (typeof t.archiv !== 'boolean')   // totéž co u 'aktivni' (B74)
+        return json({ ok: false, chyba: 'Hodnota „archiv" musí být true nebo false.' }, 400);
       /* Archivace (11. 8. 2026) — třetí stav vedle „zapnutý" a „vypnutý".
        *
        * Účet po odchodu kolegy se dnes vypne, ale zůstane v seznamu navždy.
