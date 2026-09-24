@@ -8,6 +8,54 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v24.9.5 — dávka G1 (24. 9. 2026 večer): nová správa šablon dokumentů
+
+Podle vizuálního návrhu, který J. V. 24. 9. večer odsouhlasil („návrh
+správy šablon vypadá super, ten nahraj do testu").
+
+- **Proč.** Jako česká šablona nabídky OCK se zveřejnil soubor
+  `…_v11_DE.docx` (verze 9) a jazykové verze EN/DE hlásily „zastaralá“,
+  i když byly nahrané moderní šablony. Příčiny:
+  - tlačítko „Nahrát .docx“ nahrávalo vždy do češtiny a jazyk
+    nekontrolovalo;
+  - doladěnou jazykovou verzi nešlo nahrát k jazyku;
+  - zastaralost se poznávala podle data zveřejnění a server stejný
+    soubor podruhé nezveřejní, takže hláška nešla odstranit.
+- **Nastavení → Šablony (online)** ukazuje jednu tabulku dokument ×
+  CZ/EN/DE/FR se stavem ze serveru. Po kliknutí na dokument se zobrazí
+  jeho detail s jazykovými verzemi a historií.
+- **Průvodce novou českou verzí:** vybere se soubor a proběhne kontrola:
+  - jazyk souboru (německý soubor se jako čeština nepustí a aplikace
+    nabídne „Uložit jako DE verzi“);
+  - symboly `{{…}}` a rozdíl proti platné verzi (chybějící symboly
+    ohlásí).
+
+  Pak aplikace sama vyrobí jazykové verze (ukáže, kolik procent se
+  přeložilo) a vše se zveřejní najednou.
+- **Jazykové verze u dokumentu:** „Přegenerovat z češtiny“, „Nahrát
+  doladěný soubor“ (aplikace zkontroluje, že je opravdu v tom jazyce a má
+  symboly platné češtiny), „Stáhnout“, „Nepřeložené fráze (CSV)“.
+- **Zastaralá podle obsahu:** jazyková verze nese otisk české verze, ze
+  které vznikla (`zdrojOtisk`). Server ho přijme jen k platné češtině
+  (jinak 409). Stejný soubor k nové češtině se dá zveřejnit znovu.
+  Starší záznamy bez otisku se posuzují postaru podle času.
+- **Vrátit:** starší verze se zveřejní znovu jako nová verze s poznámkou
+  „vráceno z verze N“. Nic se nepřepisuje ani nemaže.
+- Bez přihlášení k serveru zůstává původní obrazovka.
+- Testy:
+  - `test_sablony_online` +23;
+  - nová serverová sada `netlify/test_sablony.mjs` (19 kontrol, bez
+    opravy 10 selže);
+  - `overit_sablony_online` +20 (celkem 47): celý průvodce v prohlížeči
+    nad skutečnou šablonou CN v11 včetně vrácení verze;
+  - mutace jádra +3, serveru +3.
+- **Zjištěno při zkoušce na skutečných šablonách:** slovník přeloží
+  nabídku OCK na 100 %, nabídku PROJ jen na 26 % a smlouvy o dílo na
+  0–3 %. Jejich jazykové verze by tedy vyšly skoro celé česky. Průvodce
+  to ukáže (u verze pod 90 % varování); doplnění slovníku je v roadmapě.
+
+---
+
 ## v24.9.4 — dávka F1 (24. 9. 2026): bezpečnost a ztráta práce z hloubkového testu
 
 Opravy nejzávažnějších nálezů 20. kola (hloubkový test 24. 9. 2026). Ke
