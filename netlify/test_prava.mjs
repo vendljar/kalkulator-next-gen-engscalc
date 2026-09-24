@@ -1316,6 +1316,17 @@ console.log('\n===== AUDIT B17: PŮVOD POŽADAVKU =====\n');
   test('B78: bez Origin (curl, testy) projde', bez.status === 200, bez.status);
 }
 
+/* B82 (hloubkový test 24. 9. 2026): příloha s `javascript:` obsahem se neuloží. */
+{
+  const z = zakazkaCislo('2026 - OPR - CN - 0983');
+  z.prilohy = [{ id: 'pr1', nazev: 'smlouva.pdf', velikost: 10, data: 'javascript:alert(document.cookie)' }];
+  const r = await post(zakazky, 'http://x/api/zakazky', { zakazka: z }, cObch);
+  const t = await r.json();
+  test('B82: zakázka s přílohou javascript: → 400', r.status === 400 && /nepovoleným obsahem/.test(t.chyba || ''), t);
+  z.prilohy[0].data = 'data:application/pdf;base64,JVBERi0=';
+  test('B82: s platnou přílohou se uloží', (await post(zakazky, 'http://x/api/zakazky', { zakazka: z }, cObch)).status === 200);
+}
+
 /* ============================================================
  * PLÁNOVANÁ FUNKCE
  * ============================================================ */

@@ -349,6 +349,20 @@ test('uloIdProblemy najde špatnou variantu i přílohu, dobré nechá',
 test('čistá zakázka nemá žádný problém s id',
   uloIdProblemy({ varianty: [{ id: 'v1' }], poznamky: [], prilohy: [], aktivni: 'v1' }).length === 0);
 test('prázdná zakázka nepadá', uloIdProblemy(null).length === 0 && uloIdProblemy({}).length === 0);
+/* B82 (hloubkový test 24. 9. 2026): obsah přílohy jen jako data: adresa. */
+{
+  const zP = d => ({ varianty: [{ id: 'v1' }], prilohy: [{ id: 'pr1', nazev: 'a.pdf', data: d }], aktivni: 'v1' });
+  for (const zle of ['javascript:alert(1)', ' JavaScript:alert(1)', 'https://utocnik.example/x', 'vbscript:x', 'data', 42]) {
+    const pr = uloIdProblemy(zP(zle));
+    test('B82: příloha s obsahem ' + JSON.stringify(zle) + ' se odmítne', pr.length === 1 && pr[0].duvod === 'priloha', JSON.stringify(pr));
+  }
+  for (const dobre of ['data:application/pdf;base64,JVBERi0=', 'data:application/octet-stream;base64,AA==',
+                       'data:image/png;base64,iVBOR', 'data:text/plain;charset=utf-8;base64,YQ==', 'data:,', '', undefined]) {
+    test('B82: příloha s obsahem ' + JSON.stringify(dobre) + ' projde', uloIdProblemy(zP(dobre)).length === 0);
+  }
+  const t = uloIdProblemyText(uloIdProblemy(zP('javascript:alert(1)')));
+  test('B82: odmítnutí řekne proč (ne „identifikátor")', /nepovoleným obsahem/.test(t) && !/identifikátor/.test(t), t);
+}
 
 console.log('\n--- přibylé odemčení (B3) ---');
 const naDiskuB3 = { varianty: [{ id: 'v1', zamek: { zamceno: true, kdy: 'k', typ: 'nabidka' }, odemceni: [] },

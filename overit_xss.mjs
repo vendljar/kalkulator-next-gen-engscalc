@@ -13,6 +13,9 @@
  * vykreslí záložky pro obchodníka i administrátora a zkontroluje, že se nic
  * nespustilo. Payload jen zapíše značku do window.__XSS.
  *
+ * B82 — příloha zakázky s `javascript:` adresou se kliknutím na Stáhnout
+ *       spustila (hloubkový test 24. 9. 2026).
+ *
  * Spuštění: NODE_PATH=$(npm root -g) node overit_xss.mjs
  */
 import { createRequire } from 'module';
@@ -95,6 +98,19 @@ for (const [popis, typ] of [['JavaScript v typu pásu', "C.x');window.__XSS.push
   const r = await pokus(OPL(typ), { admin: true, zalozky: ['kalk'], akce: ZMEN });
   zkus('administrátor: ' + popis + ' se nespustí a prototyp zůstane čistý',
     r.xss.length === 0 && r.proto === undefined, JSON.stringify(r));
+}
+
+console.log('\nB82 — příloha s javascript: adresou');
+{
+  const PRIL = `z.prilohy = [{ id: 'pr1', nazev: 'smlouva.pdf', velikost: 10, kdy: '2026-09-01',
+    data: "javascript:window.__XSS.push('B82')" }];`;
+  const KLIK = `const b = [...document.querySelectorAll('button')].find(x => /prilohyStahni/.test(x.getAttribute('onclick') || ''));
+    if (!b) throw new Error('tlačítko Stáhnout nenalezeno'); b.click();`;
+  for (const admin of [false, true]) {
+    const r = await pokus(PRIL, { admin, zalozky: ['kalk'], akce: KLIK });
+    zkus(`${admin ? 'administrátor' : 'obchodník'}: Stáhnout přílohu s javascript: nic nespustí`,
+      r.xss.length === 0 && !r.chyby.length, JSON.stringify(r));
+  }
 }
 
 /* Sonda na sobě: kdyby payload neuměl spustit nic, všechny kontroly výš by

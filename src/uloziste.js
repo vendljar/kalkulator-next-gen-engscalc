@@ -681,6 +681,16 @@ function uloDuplicity(arr, kde, out) {
     videno.add(id);
   });
 }
+/* OBSAH PŘÍLOHY SMÍ BÝT JEN data: ADRESA (nález B82 hloubkového testu
+ * 24. 9. 2026). Tlačítko „Stáhnout" dává `p.data` do odkazu a klikne na
+ * něj — zakázka s `javascript:…` v příloze tak spustila skript tomu, kdo
+ * přílohu stahoval. Přílohy vznikaly jen přes FileReader.readAsDataURL,
+ * takže skutečná příloha vždy začíná `data:`. Prázdný obsah se toleruje
+ * (starší záznamy bez dat), stažení ho stejně odmítne. */
+function uloPrilohaDataBezpecna(data) {
+  if (data == null || data === '') return true;
+  return typeof data === 'string' && /^data:[\w.+-]*\/?[\w.+-]*(;[\w.+-]+=[^;,]*)*(;base64)?,/i.test(data);
+}
 function uloIdProblemy(zak) {
   const out = [];
   if (!zak) return out;
@@ -693,6 +703,7 @@ function uloIdProblemy(zak) {
   });
   (Array.isArray(zak.prilohy) ? zak.prilohy : []).forEach(p => {
     if (p && !uloIdBezpecne(p.id)) out.push({ kde: 'příloha', id: p.id });
+    if (p && !uloPrilohaDataBezpecna(p.data)) out.push({ kde: 'příloha', id: p.id, duvod: 'priloha' });
   });
   if (zak.aktivni != null && zak.aktivni !== '' && !uloIdBezpecne(zak.aktivni))
     out.push({ kde: 'aktivní varianta', id: zak.aktivni });
@@ -706,7 +717,8 @@ function uloIdProblemy(zak) {
 function uloIdProblemyText(problemy) {
   const dupl = problemy.filter(p => p.duvod === 'duplicita');
   const delka = problemy.filter(p => p.duvod === 'delka');
-  const tvar = problemy.filter(p => p.duvod !== 'duplicita' && p.duvod !== 'delka');
+  const priloha = problemy.filter(p => p.duvod === 'priloha');
+  const tvar = problemy.filter(p => p.duvod !== 'duplicita' && p.duvod !== 'delka' && p.duvod !== 'priloha');
   const casti = [];
   if (tvar.length) casti.push('identifikátor v nepovoleném tvaru (' + tvar.map(x => x.kde).join(', ')
     + ') — povolená jsou písmena, číslice, tečka, podtržítko a pomlčka');
@@ -715,6 +727,8 @@ function uloIdProblemyText(problemy) {
    * text — a člověk má vědět, že stačí zkrátit, ne přepsat znaky. */
   if (delka.length) casti.push('příliš dlouhý text (' + delka.map(x => x.kde).join(', ')
     + ') — nejvýš 200 znaků');
+  if (priloha.length) casti.push('přílohu s nepovoleným obsahem (' + priloha.map(x => x.id).join(', ')
+    + ') — příloha smí nést jen data souboru');
   return casti.join('; ');
 }
 
@@ -753,7 +767,7 @@ function uloZalohaHlidka(otisky, ted) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
+  module.exports = { uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
                      uloNorm, uloSlova, uloCisloVyplneno, uloKlicSouboru,
                      uloJmenoSouboru, uloJeZakazkovySoubor,
                      ULO_HLAVICKA_POLE, uloHlavickaChybi, uloHlavickaVyplnena, uloUlozeniStav,

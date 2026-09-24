@@ -67,6 +67,12 @@ function poznamkyPoleHotovo(v) {
 function prilohyStahni(id) {
   const zak = poznamkyZak(); if (!zak) return;
   const p = (zak.prilohy || []).find(x => x.id === id); if (!p) return;
+  /* Jen data: adresa (B82, 24. 9. 2026) — `javascript:` v odkazu by se
+   * kliknutím spustil. Server takovou zakázku už ani neuloží. */
+  if (!p.data || !uloPrilohaDataBezpecna(p.data)) {
+    if (typeof hlaska === 'function') hlaska('Přílohu „' + (p.nazev || id) + '" nejde stáhnout: nenese data souboru.');
+    return;
+  }
   const a = document.createElement('a');
   a.href = p.data; a.download = p.nazev;
   document.body.appendChild(a); a.click(); a.remove();
