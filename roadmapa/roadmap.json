@@ -5180,7 +5180,8 @@
    "detail": "Návrh: zveřejnit EN a DE mutaci šablony; dokud nejsou, cizojazyčný dokument odmítnout stejně jako u PROJ.",
    "hotovoKdyz": "Cizojazyčná nabídka má cizojazyčné pevné texty, nebo se bez mutace nevytvoří.",
    "otazka": "Zveřejnit mutace EN/DE, nebo dokument bez mutace odmítnout?",
-   "cekaNa": "rozhodnutí J. V. (otázka v přehledu nálezů 23. 9. 2026)"
+   "cekaNa": "nahrazeno #334 (kolo 10: mutace EN/DE existují, ale jsou zastaralé)",
+   "pozn": "Kolo 10 (24. 9. 2026): v ostré mutace EN/DE zveřejněné jsou (z v8), otázka „mutace, nebo odmítnout\" tím odpadla. Skutečný problém je zastaralá mutace — řeší #334."
   },
   {
    "id": "327",
@@ -5276,6 +5277,30 @@
    "detail": "HOTOVO 24. 9. 2026 (dávka E2): manual/obsah.json přepsaný pro v24.9.1 (33 kapitol, rámeček „Co je nového“, 3 nové snímky). Nový manual/snimky_auto.mjs pořídí všech 21 snímků automaticky nad zkušebním ceníkem a vymyšlenými zakázkami (asi 30 s) — snímky už není nutné fotit ručně na testovacím webu a nenesou skutečné ceny. overit_manual.mjs přepsaný na nový tvar (pouští manual/overit.js v Chromiu + povinná témata): 37/37. Hotová příručka se do repozitáře neukládá.",
    "hotovoKdyz": "Příručka nese aktuální verzi, overit_manual zelený, snímky jdou vyrobit bez ručního focení.",
    "kde": "`manual/obsah.json`, `manual/snimky_auto.mjs`, `overit_manual.mjs`, `manual/overit.js`"
+  },
+  {
+   "id": "334",
+   "vlna": "B",
+   "stav": "ceka",
+   "dulezitost": "vysoka",
+   "slozitost": "M",
+   "nazev": "EN/DE nabídka ve Wordu z 17 % česky — slovník šablony a pojistka zastaralé mutace (K10-N36, K10-N37)",
+   "proc": "Kolo 10 (24. 9. 2026, ostrá v23.9.3): zveřejněné mutace EN/DE jsou z šablony v8, česká je v10; 31 řádků se tiskne česky a chybí řádek soklu (TS_SOKL). Aplikace to nepozná, protože mutace formálně existuje. Na testu v24.9.1 ověřeno: překladač nezná 31 textů v10 / 27 textů v11 (7 z nich adresa a IČ firmy).",
+   "detail": "Návrh E3: (1) doplnit ~20 textů šablony do slovníku EN/DE (FR), adresu a IČ firmy vést jako neutrální; (2) pojistka: mutace zveřejněná dřív než česká šablona = zastaralá → v přísném režimu cizojazyčný dokument zastavit s hláškou, v Nastavení → Šablony štítek „zastaralá\"; (3) administrátor nahraje v11 a přegeneruje EN/DE (tím zmizí i K10-N37).",
+   "hotovoKdyz": "Překladač nad v11 nechá česky jen neutrální texty; zastaralá mutace se nepoužije bez varování; test.",
+   "kde": "`src/preklad.js`, `src/ui/common.js` (sablonaProTisk), `src/ui/nastaveni_ui.js`"
+  },
+  {
+   "id": "335",
+   "vlna": "B",
+   "stav": "ceka",
+   "dulezitost": "vysoka",
+   "slozitost": "S",
+   "nazev": "13 příplatků bez překladu EN/DE — tisknou se česky (K10-N38)",
+   "proc": "Kolo 10: 13 z 23 příplatků nemá překlad; v anglické nabídce stojí „LEŠENÍ - vnitřní\" vedle „SCAFFOLDING – external\". Ověřeno na testu v24.9.1.",
+   "detail": "Doplnit 13 hesel do slovníku EN/DE/FR (návrh Claude, kontrola odborných názvů J. V.) a test, že každý příplatek zkušebního ceníku má překlad ve všech jazycích.",
+   "hotovoKdyz": "Žádný příplatek se v cizojazyčné nabídce netiskne česky; test.",
+   "kde": "`src/preklad.js`, test překladů"
   }
  ],
  "meta" : {
