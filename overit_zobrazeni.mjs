@@ -1422,6 +1422,54 @@ test('pole bez rozepsané hodnoty se překreslením jen znovu zaostří',
     return !!ok;
   }));
 
+/* ---------- Model 1 je zmrazený pro ne-administrátory (#332, 24. 9. 2026) ----------
+ * Rozhodnutí J. V.: „model 1 zmraz pro použití mimo administrátory, tedy
+ * nepůjde na něj už přepnout". Obchodník nesmí Model 1 zvolit ani v přepínači,
+ * ani žádným jiným voláním set(); zakázku, která v Modelu 1 už je, smí převést
+ * na Model 2, zpátky ne. Administrátor přepíná oběma směry. */
+test('#332 obchodník u zakázky v Modelu 2 nemá v přepínači Model 1',
+  await page.evaluate(() => {
+    try {
+      NAST.jeAdmin = true; NAST.nahledRole = ''; set('OCK.fixes', true);
+      NAST.jeAdmin = false; NAST.nahledRole = 'Obchodník'; prepniTab('kalk'); render();
+      const h = document.getElementById('page-kalk').innerHTML;
+      return !/value="compat"/.test(h) && /rezim-vypoctu/.test(h);
+    } finally { NAST.jeAdmin = true; NAST.nahledRole = ''; render(); }
+  }));
+test('#332 obchodník nepřepne na Model 1 ani přímým set() — zůstane Model 2 a přijde hláška',
+  await page.evaluate(() => {
+    try {
+      NAST.jeAdmin = true; NAST.nahledRole = ''; set('OCK.fixes', true);
+      NAST.jeAdmin = false; NAST.nahledRole = 'Obchodník'; render();
+      window.__dlgTexty = [];
+      set('OCK.fixes', false);
+      return OCK.fixes === true && (window.__dlgTexty || []).some(t => /zmrazený/.test(t));
+    } finally { NAST.jeAdmin = true; NAST.nahledRole = ''; render(); }
+  }));
+test('#332 zakázka už v Modelu 1: obchodník vidí „Model 1 (zmrazený)", převede na Model 2, zpátky ne',
+  await page.evaluate(() => {
+    try {
+      NAST.jeAdmin = true; NAST.nahledRole = ''; set('OCK.fixes', false);
+      if (OCK.fixes !== false) return 'admin nepřepnul';
+      NAST.jeAdmin = false; NAST.nahledRole = 'Obchodník'; prepniTab('kalk'); render();
+      const h = document.getElementById('page-kalk').innerHTML;
+      const stitek = /Model 1 – 1:1 jako Excel \(zmrazený\)/.test(h);
+      set('OCK.fixes', true);
+      const naM2 = OCK.fixes === true;
+      set('OCK.fixes', false);
+      return stitek && naM2 && OCK.fixes === true;
+    } finally { NAST.jeAdmin = true; NAST.nahledRole = ''; set('OCK.fixes', true); render(); }
+  }));
+test('#332 administrátor přepíná oběma směry a štítek „zmrazený" u volby nemá',
+  await page.evaluate(() => {
+    NAST.jeAdmin = true; NAST.nahledRole = ''; prepniTab('kalk'); render();
+    const h = document.getElementById('page-kalk').innerHTML;
+    const volba = /value="compat"/.test(h) && !/\(zmrazený\)/.test(h);
+    set('OCK.fixes', false); const m1 = OCK.fixes === false;
+    set('OCK.fixes', true);
+    return volba && m1 && OCK.fixes === true;
+  }));
+
 test('žádná chyba JavaScriptu', chyby.length === 0, chyby.slice(0, 2).join(' | '));
 
 await prohlizec.close();

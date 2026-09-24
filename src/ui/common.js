@@ -561,6 +561,20 @@ function set(path, v) {
    *
    * Změna se zapisuje do protokolu zakázky, takže je dohledatelné kdo, kdy
    * a z čeho na co. Tichý přepis by byl horší než zákaz. */
+  /* MODEL 1 JE ZMRAZENÝ (rozhodnutí J. V. 24. 9. 2026, #332: „model 1 zmraz
+   * pro použití mimo administrátory, tedy nepůjde na něj už přepnout").
+   * Dál se rozvíjí jen Model 2. Na Model 1 přepne jen administrátor;
+   * zakázka, která v Modelu 1 už je, se počítá dál beze změny ceny
+   * a obchodník ji smí převést na Model 2 — zpátky už ne. Pojistka je
+   * tady, ne jen v přepínači, aby ji neobešlo žádné jiné volání set(). */
+  if (path === 'OCK.fixes' && !v && (typeof jeAdmin !== 'function' || !jeAdmin())) {
+    const t = 'Model 1 (1:1 jako Excel) je zmrazený — přepnout na něj smí jen administrátor. '
+      + 'Nové nabídky se počítají Modelem 2.';
+    if (typeof hlaska === 'function') hlaska(t);
+    else if (typeof progZprava === 'function') progZprava(t, 'varovani');
+    render();
+    return;
+  }
   if (path === 'ZAK.cislo' && typeof zakazkaMaOdeslanou === 'function' && zakazkaMaOdeslanou(ZAK)) {
     if (typeof jeAdmin !== 'function' || !jeAdmin()) {
       if (typeof progZprava === 'function')
@@ -1195,10 +1209,16 @@ function zakazkaHlavicka(ock) {
   const variantaRow = `<div class="row"><label>Otevřená varianta${ridiciPill}</label>
     <select class="cteni-ok" onchange="varAktivuj(this.value)" title="přepnout počítanou variantu">${opts}</select></div>`;
   const ridiciBtn = akt.ridici ? '' : `<div class="row"><label></label><button class="mini noprint" onclick="varRidici('${escJs(akt.id)}')">nastavit jako řídící (platná je „${esc(rid.nazev)}")</button></div>`;
-  const rezimRow = `<div class="row"><label>Režim výpočtu</label>
-    <select onchange="set('OCK.fixes', this.value==='fix')" title="přepnutí Model 2 – opravený / Model 1 – 1:1 jako Excel">
+  /* Model 1 je od 24. 9. 2026 zmrazený (#332): ne-administrátor ho v nabídce
+   * nemá. U zakázky, která v něm už je, vidí „Model 1 (zmrazený)" a může ji
+   * převést na Model 2; administrátor přepíná jako dřív. */
+  const rezimRow = (jeAdmin() || !OCK.fixes) ? `<div class="row"><label>Režim výpočtu</label>
+    <select class="rezim-vypoctu" onchange="set('OCK.fixes', this.value==='fix')" title="${jeAdmin()
+      ? 'přepnutí Model 2 – opravený / Model 1 – 1:1 jako Excel (Model 1 je zmrazený, přepnout na něj smí jen administrátor)'
+      : 'zakázka se počítá zmrazeným Modelem 1 — převést na Model 2 lze, zpět ne'}">
       <option value="fix" ${OCK.fixes ? 'selected' : ''}>Model 2 – opravený</option>
-      <option value="compat" ${!OCK.fixes ? 'selected' : ''}>Model 1 – 1:1 jako Excel</option></select></div>`;
+      <option value="compat" ${!OCK.fixes ? 'selected' : ''}>Model 1 – 1:1 jako Excel${jeAdmin() ? '' : ' (zmrazený)'}</option></select></div>`
+    : `<div class="row"><label>Režim výpočtu</label><div><span class="pill rezim-vypoctu" title="Model 1 je zmrazený; nové nabídky se počítají Modelem 2">Model 2 – opravený</span></div></div>`;
   const datumRow = `<div class="row na-konec"><label>Datum vytvoření</label>
     <input type="date" value="${esc(ZAK.datum)}" onchange="set('ZAK.datum', this.value)"></div>`;
 
