@@ -107,7 +107,7 @@ function kontrolySablonaNabidka(sleva, jazyk) {
   return null;
 }
 
-function kontrolyStavAkt() {function kontrolyStavAkt() {
+function kontrolyStavAkt() {
   if (typeof kontrolyProved !== 'function') return { varovat: false, nalezy: [], kody: [] };
   return kontrolyProved(kontrolyCtxAkt());
 }
