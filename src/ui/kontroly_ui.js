@@ -61,6 +61,13 @@ function kontrolyCtxAkt() {
           ? String(kryciPodminkoveSymboly(ZAK, aktivniVarianta(ZAK), JEKLY).PODM_TERMIN_DODANI || '') : '';
       } catch (e) { return ''; }
     })(),
+    /* Symboly šablony, ze které se tiskne nabídka OCK (P5) — null = nevíme. */
+    sablonaNabidka: (() => {
+      try {
+        return kontrolySablonaNabidka((typeof SL !== 'undefined') ? SL : null,
+          (typeof tiskJazyk === 'function') ? tiskJazyk() : 'cz');
+      } catch (e) { return null; }
+    })(),
     zaokr: (typeof ZO !== 'undefined') ? ZO : null,
     /* Od 4. 8. 2026 má PROJ vlastní obchodní zaokrouhlení (#38); kontroly
      * marže musí počítat s tím, které opravdu odejde v nabídce PROJ. */
@@ -69,7 +76,38 @@ function kontrolyCtxAkt() {
   };
 }
 
-function kontrolyStavAkt() {
+/* Symboly šablony nabídky OCK pro kontrolu „sleva ve Wordu" (P5 / K13-N56).
+ * Kontroly běží synchronně, šablona se stahuje ze serveru — proto cache
+ * podle typu a verze: první dotaz stažení jen spustí (a vrátí null = zatím
+ * nevíme, pravidlo mlčí), po stažení se překreslí. Stahuje se JEN když má
+ * varianta platnou slevu, jinak by každá zakázka tahala šablonu zbytečně. */
+const KONTROLY_SABLONA = { cache: {}, bezi: {} };
+function kontrolySablonaNabidka(sleva, jazyk) {
+  if (typeof slevaPlati !== 'function' || !slevaPlati(sleva)) return null;
+  if (typeof sablonyOnlineAktivni !== 'function' || !sablonyOnlineAktivni()) return null;
+  if (typeof onlineSablonaMeta !== 'function' || typeof onlineSablonaStahni !== 'function'
+      || typeof docxTextSablony !== 'function' || typeof sablonaSymboly !== 'function') return null;
+  const L = jazyk || 'cz';
+  const typ = (L !== 'cz' && onlineSablonaMeta('nabidka_' + L)) ? 'nabidka_' + L : 'nabidka';
+  const meta = onlineSablonaMeta(typ);
+  if (!meta) return null;
+  const klic = typ + '/' + meta.verze;
+  if (KONTROLY_SABLONA.cache[klic]) return KONTROLY_SABLONA.cache[klic];
+  if (!KONTROLY_SABLONA.bezi[klic]) {
+    KONTROLY_SABLONA.bezi[klic] = true;
+    onlineSablonaStahni(typ)
+      .then(v => v ? docxTextSablony(v.data) : [])
+      .then(odst => {
+        KONTROLY_SABLONA.cache[klic] = { typ, verze: meta.verze, nazev: meta.nazev || '',
+                                         symboly: sablonaSymboly(odst) };
+        if (typeof render === 'function') render();
+      })
+      .catch(() => { /* bez šablony pravidlo mlčí; další pokus po změně verze */ });
+  }
+  return null;
+}
+
+function kontrolyStavAkt() {function kontrolyStavAkt() {
   if (typeof kontrolyProved !== 'function') return { varovat: false, nalezy: [], kody: [] };
   return kontrolyProved(kontrolyCtxAkt());
 }

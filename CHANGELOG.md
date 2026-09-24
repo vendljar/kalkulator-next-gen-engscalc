@@ -73,6 +73,16 @@ podle zadání větve, v závorce číslo nálezu ze sešitu kola.
   lešení) a pevné texty online nabídky. Bez nových hesel selže právě na
   těchto čtyřech textech. Tisková lišta (netiskne se) a názvy ze
   zkušebního ceníku jsou z testu vyjmuté.
+- **P5 (K13-N56) — Word nabídka neukazuje schválenou slevu (prověřeno,
+  návrh v `podklady/K13_ROZBOR_2026-09-24.md`).** Aplikace symboly
+  `CENA_PRED_SLEVOU`, `SLEVA_PROC` a `SLEVA_KC` vydává, šablona v11 je
+  nemá a jiná cesta slevu do Wordu nevkládá (`ZAOKROUHLENI_KC` je vždy
+  prázdný). Nová kontrola před nabídkou `slevaWord`: varianta má platnou
+  slevu a šablona, ze které se tiskne, nemá `{{SLEVA_KC}}` → „Word slevu
+  neukáže, zákazník uvidí jen konečnou cenu“. Symboly šablony se zjišťují
+  na pozadí (stažení jen u varianty se slevou, cache podle verze), dokud
+  nejsou známé, pravidlo mlčí. Testy `src/test_k13_kontroly.js` 9,
+  `test_kontroly` (16 pravidel).
 
 ---
 
