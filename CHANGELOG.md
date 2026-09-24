@@ -8,6 +8,44 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v24.9.3 — dávka E4 (24. 9. 2026): obnova nanečisto, zámek, FR kapitoly, T4
+
+- **Zkouška obnovy nanečisto a postup obnovy (#152, 2. část).** Nová sada
+  `netlify/test_obnova_nanecisto.mjs` (20 kontrol) simuluje úplnou havárii
+  ve dvou krocích:
+  - Zmizí celá ostrá databáze a noční otisky zůstanou. Administrátor se
+    přihlásí náhradním heslem a obnoví noční otisk. Vrátí se zakázky
+    (i se zámkem odeslané nabídky), ceník v2, firma i účty; obchodník se
+    přihlásí původním heslem.
+  - Zmizí i zálohy. Obnova ze staženého souboru vrátí zakázky, ceník
+    a firmu. Účty ne, protože soubor otisky hesel nenese.
+
+  `podklady/POSTUP_OBNOVY_ZALOHY.md` popisuje tytéž situace s názvy
+  tlačítek z aplikace a čtvrtletní ruční náhled na testu.
+- **Vykreslení nezapisuje do zamčené varianty (N41d, ověřeno).**
+  `oplZadani()` a `oplStena()` doplňovaly chybějící opláštění, stěny
+  a pásy přímo do zadání i u odeslané nabídky. Pouhé otevření tak
+  přepsalo data dokladu. U zamčené varianty se výchozí podoba jen
+  spočítá. `overit_oplasteni.mjs` má 2 nové kontroly; bez opravy jedna
+  selže.
+- **Odstup světlé výšky 0,2 m je pojmenovaná konstanta (#327, K9-N35).**
+  Konstanta `SVETLA_VYSKA_ODSTUP_M` nese vysvětlení, že 0,25 m v předloze
+  0216 je překlep. Hodnota ani ceny se nemění. Mutace jádra 52/52.
+- **Francouzské kapitoly nabídky (N41c).** Nastavení → Firma má FR pole
+  kapitol IV.–VI. a doložek, bez výchozího textu (smluvní podmínky se
+  nevymýšlejí). Vyplněné FR znění se ve francouzské nabídce použije.
+  Prázdné pole dál spadne na češtinu s upozorněním a nic se nevypustí.
+  `test_nabidka_kapitoly` má 6 nových kontrol.
+- **T4, další krok.** Popisky zadání a detail výpočtu ověřuje prohlížeč
+  (`overit_zadani_detail.mjs`, 21 kontrol), ne regulární výrazy nad
+  zdrojákem. Sada hlídá i to, že má každý řádek detailu OCK a PROJ
+  vysvětlení. Obráceně: vyprázdněné vysvětlení sada chytí.
+  `test_zadani_popisky.js` si ponechal jen čistou funkci `nulaOznac`.
+- **Podklady Pipedrive** z nesloučené větve jsou v `podklady/` (návrh
+  zápisu a patch serverových funkcí, do kódu se zatím nepouští).
+
+---
+
 ## v24.9.2 — dávka E3 (24. 9. 2026): cizojazyčná nabídka podle 10. kola
 
 - **13 příplatků má překlad EN/DE/FR (#335, K10-N38).** V anglické

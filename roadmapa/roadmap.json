@@ -446,7 +446,7 @@
    "proc": "Nezávislá revize nad main v22.9.9 (dokument 2026-09-22_kalkulator_REVIZE_zmen_21-22_9_v22.9.9.md). J. V. 22. 9. večer: „prověř ještě postřehy a úpravy v přiložených md a posuď, zda dávají smysl.\" Každý nález prověřen proti větvi test (v22.9.16) — revize běžela před večerními dávkami.",
    "detail": "UŽ OPRAVENO NA TEST: N31 (pás světlíku nad zadními dveřmi v režimu po stěnách propadal z ceny) — odstranila ho #296. Změřeno na stejném zadání: v22.9.9 zadní stěna 8,01 m² se světlíkem, na test 33,06 m² s i bez něj. Na main vada trvá, dokud se test nesloučí.\n\nPLATÍ, STŘEDNÍ — navrženo opravit: N32 + B60 (duplikace: všechny varianty s příponou 0, kopíruje interní poznámku — B60 zavedla #311), N33 (vynulovaný ceník ztrácí značku „prázdný\" kvůli nenulovým sazbám DPH, tedy i zábranu tisku), N34 (po ručním přihlášení se neotevře poslední zakázka), N35 (společné dodatkové texty smaže nasazení online ceníku — zavedla #310), N36 (duplikace online zahodí neuložené změny), N37 („vrátit původní ceny\" po obnově zálohy z prohlížeče označí neuloženou práci za uloženou), B59 (výsledek NOVÉHO zámku server přebírá od klienta), T1 (cenový test režimu po stěnách chybí — proto prošel N31), T2 (overit_sablony_online končí kódem 0 i se selháním), T3 (5 harnessů se pro chybějící šablony přeskakuje a souhrn je počítá jako prošlé).\n\nPLATÍ, DROBNÉ: B61, B62, B63 (popisSet mimo ZAMEK_CHRANENE), N38 (změřeno: položka jen pro zahraničí po cestě ČR→zahr→ČR drží 50 000 místo 0), N39, N41 (pásy ve specifikaci, FR kapitoly, protokol × poznamkyText), T4, T5 (mimo jiné chybí obsluha SIGINT v mutace.mjs).\n\nINFORMATIVNÍ, BEZ ZÁSAHU NEBO JEN KOSMETIKA: B64 (obnova popisů bez očisty), B65, B66, B67 (režim složky je vypnutý), B68.\n\nDOPORUČENO NECHAT: N40 (nulovou sazbu ATYP nejde vyjádřit — vynulované sestavení na té náhradě stojí).",
    "hotovoKdyz": "J. V. rozhodl pořadí dávek a každá odešla s testem.",
-   "pozn": "HOTOVO v22.9.17 — dávka R1: N32 + B60, B63, N39, N41 část protokol × poznámka, B64, T1.\n\nHOTOVO v22.9.18 — dávka R2: N34, N35, N36, N37 (změřeno v prohlížeči).\n\nHOTOVO v22.9.19 — dávka R3: N33 (sazby DPH, přirážka, procenta a kurz se za důkaz cen nepočítají; test nad výchozími ceníky ze sestavení), N38 (návrat do tuzemska bere složenou tuzemskou řadu).\n\nHOTOVO v22.9.20 — dávka R4: B59 (server ověří výsledek nově odeslané nabídky a zapíše razítko shoda / nesouhlasí; rozpor uložení neodmítne, hlásí ho a drží v zámku), mutace větve role u B56 a čtyři mutace B59 (141 serverových mutací), obsluha SIGINT/SIGTERM/SIGHUP v mutace.mjs + sada test_mutace.mjs (část T5).\n\nHOTOVO v22.9.21 — dávka R5: T2 (selhání před přeskočením = selhání), T3 (přeskočení kódem 4, v souhrnu i v CI zvlášť a s důvodem), T5 (kód 2 a chybějící playwright pro import = přeskočení, obnova ADMIN_EMAIL v test_prava) + sada test_harness_podklady.js.\n\nNEŘEŠENO V R1–R5 (k rozhodnutí): mutace_jadro.mjs do repozitáře (N19); B57 a B58 z ranního auditu; drobné N41 (pásy ve specifikaci, FR kapitoly), B61, B62, B65–B68 a T4; N40 doporučeno nechat.\n\nHOTOVO v23.9.3 (noční dávky D1–D3): N41b, B57, B58, B61, B62, B68; B65–B67 zapsány v BEZPECNOST_MEZE.md; T4 první krok (zaokrouhlení). Zbývá N41c (FR znění), N41d (neověřeno) a T4 postupně."
+   "pozn": "HOTOVO v22.9.17 — dávka R1: N32 + B60, B63, N39, N41 část protokol × poznámka, B64, T1.\n\nHOTOVO v22.9.18 — dávka R2: N34, N35, N36, N37 (změřeno v prohlížeči).\n\nHOTOVO v22.9.19 — dávka R3: N33 (sazby DPH, přirážka, procenta a kurz se za důkaz cen nepočítají; test nad výchozími ceníky ze sestavení), N38 (návrat do tuzemska bere složenou tuzemskou řadu).\n\nHOTOVO v22.9.20 — dávka R4: B59 (server ověří výsledek nově odeslané nabídky a zapíše razítko shoda / nesouhlasí; rozpor uložení neodmítne, hlásí ho a drží v zámku), mutace větve role u B56 a čtyři mutace B59 (141 serverových mutací), obsluha SIGINT/SIGTERM/SIGHUP v mutace.mjs + sada test_mutace.mjs (část T5).\n\nHOTOVO v22.9.21 — dávka R5: T2 (selhání před přeskočením = selhání), T3 (přeskočení kódem 4, v souhrnu i v CI zvlášť a s důvodem), T5 (kód 2 a chybějící playwright pro import = přeskočení, obnova ADMIN_EMAIL v test_prava) + sada test_harness_podklady.js.\n\nNEŘEŠENO V R1–R5 (k rozhodnutí): mutace_jadro.mjs do repozitáře (N19); B57 a B58 z ranního auditu; drobné N41 (pásy ve specifikaci, FR kapitoly), B61, B62, B65–B68 a T4; N40 doporučeno nechat.\n\nHOTOVO v23.9.3 (noční dávky D1–D3): N41b, B57, B58, B61, B62, B68; B65–B67 zapsány v BEZPECNOST_MEZE.md; T4 první krok (zaokrouhlení). Zbývá N41c (FR znění), N41d (neověřeno) a T4 postupně.\n\nv24.9.3 (E4): N41d ověřen a opraven (vykreslení nezapisuje do zamčené varianty), N41c — FR pole kapitol ve Firmě (prázdné → čeština s upozorněním), T4 další krok (overit_zadani_detail.mjs). Zbývá T4 postupně (26 souborů)."
   },
   {
    "id": "320",
@@ -1279,9 +1279,10 @@
   {
    "zavisi" : [
     {
-     "typ" : "tvrda",
-     "id" : "112",
-     "proc" : "bez serverové vrstvy se na API nedá sáhnout"
+     "typ": "tvrda",
+     "id": "112",
+     "proc": "bez serverové vrstvy se na API nedá sáhnout",
+     "pozn": "24. 9. 2026: podklady z nesloučené větve claude/eager-carson-1xznt2 převzaty do podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md a podklady/PIPEDRIVE_UPRAVY_SERVERU_2026-09-22.patch (patch jde na dnešní kód použít; do kódu až s testy a mutacemi serveru)."
     }
    ],
    "nazev" : "CRM-12 — Pipedrive (zastřešující)",
@@ -3213,17 +3214,18 @@
    "kde" : "netlify/functions (plánovaná funkce zálohy), úložiště Blobs „zalohy\", administrace Netlify"
   },
   {
-   "dulezitost": "stredni",
+   "dulezitost": "",
    "proc": "Záloha, ze které se nikdy nezkusila obnova, není záloha. Jednorázové prověření (#151) doloží, že zálohy vznikají; tahle položka zajistí, že to tak zůstane a že se z otisku dá databáze skutečně postavit zpět.",
    "slozitost": "S",
    "detail": "Dvě části: 1) OPAKOVANÁ KONTROLA — dohodnout rytmus (návrh: jednou měsíčně) a formu: buď ruční minutová kontrola v aplikaci (datum posledního otisku v kartě Online databáze), nebo hlídka, která na chybějící čerstvou zálohu upozorní sama (naplánovaná úloha / kontrola při přihlášení administrátora s upozorněním, když je poslední otisk starší než 2 dny). 2) ZKOUŠKA OBNOVY — jednou za čtvrt roku vzít noční otisk a projít obnovu nanečisto (do oddělené větve/prostředí, ne do ostré databáze): načíst otisk, ověřit počty zakázek, verzi ceníku a přihlášení. Postup obnovy zapsat, aby se v nouzi nehledal.",
    "vlna": "E",
    "kde": "netlify/functions, ui/online_ui.js (karta Online databáze), provozní dokument s postupem obnovy",
-   "stav": "ceka",
+   "stav": "hotovo",
    "nazev": "Pravidelná kontrola záloh a zkouška obnovy",
    "hotovoKdyz": "Je dohodnutý a zapsaný rytmus kontrol, funguje upozornění na zastaralou zálohu (nebo je zapsán ruční postup) a proběhla první úspěšná zkouška obnovy se zapsaným postupem.",
    "id": "152",
-   "pozn": "Navazuje na #151. Nespouštět bez pokynu.\n\nČÁST 1 HOTOVA v24.9.1 (E1): hlídka noční zálohy — uloZalohaHlidka() v src/uloziste.js; poslední NOČNÍ otisk starší než 48 h nebo žádný = varování administrátorovi po přihlášení a v Nastavení → Databáze (dopořízená záloha při přihlášení ho už nezakryje). Testy test_uloziste +8, overit_online +5. Zbývá část 2: zkouška obnovy nanečisto a zapsaný postup."
+   "pozn": "Navazuje na #151. Nespouštět bez pokynu.\n\nČÁST 1 HOTOVA v24.9.1 (E1): hlídka noční zálohy — uloZalohaHlidka() v src/uloziste.js; poslední NOČNÍ otisk starší než 48 h nebo žádný = varování administrátorovi po přihlášení a v Nastavení → Databáze (dopořízená záloha při přihlášení ho už nezakryje). Testy test_uloziste +8, overit_online +5. Zbývá část 2: zkouška obnovy nanečisto a zapsaný postup.\n\nHOTOVO v24.9.3 (E4): 2. část — netlify/test_obnova_nanecisto.mjs (úplná havárie: obnova z nočního otisku i ze staženého souboru, 20 kontrol, běží před každým nahráním) a podklady/POSTUP_OBNOVY_ZALOHY.md (tři situace, čtvrtletní ruční náhled na testu).",
+   "hotovoV": "v24.9.3"
   },
   {
    "hotovoV" : "hotovo",
@@ -5186,8 +5188,8 @@
   {
    "id": "327",
    "vlna": "C",
-   "stav": "blokovano",
-   "dulezitost": "nizka",
+   "stav": "hotovo",
+   "dulezitost": "",
    "slozitost": "S",
    "nazev": "Odstup světlé výšky 0,2 m natvrdo (K9-N35)",
    "proc": "Nález 9. kola: světlá výška = výška podlaží − 0,2 m natvrdo; předloha 0216 má 0,25 m.",
@@ -5195,7 +5197,8 @@
    "hotovoKdyz": "Rozhodnuto a zapsáno; případně pole zadání s testem.",
    "kde": "`src/engine.js` (svetlaVyska)",
    "otazka": "Je 0,25 m v předloze 0216 záměr, nebo překlep?",
-   "cekaNa": "rozhodnutí J. V. (otázka v přehledu nálezů 23. 9. 2026)"
+   "hotovoV": "v24.9.3",
+   "pozn": "HOTOVO v24.9.3 (E4): výchozí odpověď — 0,25 m v předloze 0216 je překlep; odstup 0,2 m je pojmenovaná konstanta SVETLA_VYSKA_ODSTUP_M, ceny beze změny, mutace jádra 52/52."
   },
   {
    "id": "328",
@@ -5773,6 +5776,10 @@
   {
    "text": "Večer 24. 9. 2026 (engscalc), dávka E3 podle 10. kola: překlady 13 příplatků (#335) a pevných textů šablony, pojistka zastaralé jazykové mutace (#334); příručka bez testovacího webu; vydání ve třech krocích test-draft → test → main.",
    "hotovo": true
+  },
+  {
+   "text": "Večer 24. 9. 2026 (engscalc), dávka E4: zkouška obnovy nanečisto a postup obnovy (#152 hotovo), N41d vykreslení nezapisuje do zamčené varianty, #327 pojmenovaná konstanta 0,2 m, N41c FR pole kapitol, T4 další krok; podklady Pipedrive převzaty z nesloučené větve.",
+   "hotovo": true
   }
   ],
   "pravidla" : [
@@ -5859,7 +5866,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v24.9.2 (engscalc)",
+  "build" : "v24.9.3 (engscalc)",
   "stavKDatu" : "24. 9. 2026"
  },
  "_comment" : [
