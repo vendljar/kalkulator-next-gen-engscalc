@@ -177,7 +177,20 @@ export default async (req) => {
       return json({ ok: false, chyba: 'Neuloženo: '
         + k.problemy.map(ULO.uloProblemPopis).join('; ')
         + '. Pokračujte klonem varianty.' }, 409);
-    for (const sv of (stara.varianty || [])) {
+    /* STARŠÍ TVAR DAT NESMÍ ZABLOKOVAT ODESLANOU NABÍDKU (N43, hloubkový
+     * test 24. 9. 2026). Příchozí zakázka prošla `importZakazka` (výš), který
+     * doplňuje klíče přidané novějšími verzemi (cetrisKc, zaokrProj, kryciProj…)
+     * i do zamčených variant. Uložená verze je ale v úložišti ve starém tvaru
+     * — porovnání „znak po znaku" pak hlásilo změnu zamčené nabídky a vrátilo
+     * 409 celé zakázce, i když se nic nezměnilo. Porovnává se proto s KOPIÍ
+     * uložené verze, která prošla toutéž migrací (stejný princip jako
+     * ocistiZnacky). Zapisuje se dál jen `zak`; klíč zámku (zmrazený
+     * výsledek, číslo, otisk) kontroluje uloKontrolaZamku výš beze změny,
+     * takže skutečná změna dat odeslané nabídky se chytí dál. */
+    let staraPorovnani = stara;
+    try { staraPorovnani = globalThis.importZakazka(JSON.parse(JSON.stringify(stara))); ocistiZnacky(staraPorovnani); }
+    catch (e) { staraPorovnani = stara; }
+    for (const sv of (staraPorovnani.varianty || [])) {
       if (!(globalThis.variantaUzamcena && globalThis.variantaUzamcena(sv))) continue;
       const nv = (zak.varianty || []).find(v => v && v.id === sv.id);
       if (nv && JSON.stringify(nv.data) !== JSON.stringify(sv.data))

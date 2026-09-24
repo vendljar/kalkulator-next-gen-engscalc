@@ -507,6 +507,28 @@ zkus('rozdělení stěn se vypnutím režimu nezahodí', prezilo === 2, prezilo)
     vysl.pred + ' → ' + vysl.po.slice(0, 120));
 }
 
+/* ---------- N43 (klient): trvalá položka ceníku se do zamčené varianty nedoplní ----------
+ * syncVarianta doplňovala trvalé položky katalogu i do odeslané nabídky;
+ * server pak uložení odmítl a u zámku bez zmrazeného výsledku by se změnila
+ * cena dotisku. */
+{
+  const vysl = await p.evaluate(() => {
+    const v = aktivniVarianta(ZAK);
+    const puvKat = JSON.stringify(KATALOG);
+    zamkniVariantu(v, { typ: 'nabidka', kdo: 'harness', cislo: ZAK.cislo || 'X' });
+    const pred = JSON.stringify(v.data.ock.zadani);
+    katalogPridej(KATALOG, 'hrubaOck', { nazev: 'Harness trvalá položka', cena: 100 });
+    syncVarianta(); render();
+    const poZamcene = JSON.stringify(aktivniVarianta(ZAK).data.ock.zadani);
+    delete v.zamek; syncVarianta();
+    const poOdemcene = JSON.stringify(aktivniVarianta(ZAK).data.ock.zadani);
+    Object.keys(KATALOG).forEach(k => delete KATALOG[k]); Object.assign(KATALOG, JSON.parse(puvKat)); render();
+    return { zamcenaBeze: pred === poZamcene, odemcenaDoplni: pred !== poOdemcene };
+  });
+  zkus('N43: do zamčené varianty se trvalá položka ceníku nedoplní', vysl.zamcenaBeze);
+  zkus('N43: do odemčené ano (katalog dál funguje)', vysl.odemcenaDoplni);
+}
+
 zkus('za celý průchod nevznikla chyba v konzoli', konzole.length === 0, konzole.slice(0, 2).join(' | '));
 
 await b.close();

@@ -22,7 +22,7 @@ function kurzZrcadli(data) {
 function syncVarianta() {
   const v = aktivniVarianta(ZAK);
   ZAK.aktivni = v.id;
-  kurzZrcadli(v.data);
+  if (!(typeof variantaUzamcena === 'function' && variantaUzamcena(v))) kurzZrcadli(v.data);
   if (!v.data.kryci) v.data.kryci = { hodnoty: {} };
   if (!v.data.kryci.hodnoty) v.data.kryci.hodnoty = {};
   if (!v.data.kryciProj) v.data.kryciProj = { hodnoty: {} };     // krycí list PROJ (KLP-1)
@@ -45,10 +45,15 @@ function syncVarianta() {
   PJ = v.data.proj.zadani; PC = v.data.proj.cenik; TS = v.data.techspec;
   KL = v.data.kryci; KLP = v.data.kryciProj; SL = v.data.sleva; SLP = v.data.slevaProj;
   ZO = v.data.zaokr; ZOP = v.data.zaokrProj;
+  /* ZAMČENÁ VARIANTA SE NEDOPLŇUJE (N43, 24. 9. 2026). Trvalé položky
+   * ceníku zavedené PO odeslání nabídky do ní nepatří — u zámku bez
+   * zmrazeného výsledku by změnily cenu dotisku a server by uložení
+   * odmítl (data zamčené nabídky by se změnila). */
+  const zamcena = typeof variantaUzamcena === 'function' && variantaUzamcena(v);
   // trvalé (katalogové) položky ceníku → do zadání; idempotentní, páruje přes kid
-  katalogAplikuj(KATALOG, Z);
+  if (!zamcena) katalogAplikuj(KATALOG, Z);
   // totéž pro PROJ (19. 8. 2026): trvalé položky ceníku PROJ → do zadání PROJ
-  if (typeof projKatalogAplikuj === 'function') projKatalogAplikuj(PC, PJ);
+  if (!zamcena && typeof projKatalogAplikuj === 'function') projKatalogAplikuj(PC, PJ);
 }
 syncVarianta();
 

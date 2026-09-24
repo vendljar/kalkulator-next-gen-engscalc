@@ -461,12 +461,20 @@ export default async (req) => {
   if (casti.includes('zakazky') && maVlastni(zaloha, 'zakazky')) {
     const b = bilance();
     const s = await uloziste('zakazky');
+    /* N43 (24. 9. 2026): data zamčených variant se porovnávají až po stejné
+     * migraci na obou stranách — záloha i úložiště mohou nést starší tvar
+     * dat (viz komentář v zakazky.mjs). Zapisuje se dál to, co je v záloze. */
+    const migrovana = (z) => {
+      try { return typeof globalThis.importZakazka === 'function'
+        ? globalThis.importZakazka(JSON.parse(JSON.stringify(z))) : z; } catch (e) { return z; }
+    };
     const kontrolaZamku = (stara, nova) => {
       const k = ULO.uloKontrolaZamku(stara, nova);
       if (!k.ok) return 'uzamčená (odeslaná) nabídka: ' + k.problemy.map(ULO.uloProblemPopis).join('; ');
-      for (const sv of (stara.varianty || [])) {
+      const staraM = migrovana(stara), novaM = migrovana(nova);
+      for (const sv of (staraM.varianty || [])) {
         if (!(globalThis.variantaUzamcena && globalThis.variantaUzamcena(sv))) continue;
-        const nv = (nova.varianty || []).find(v => v && v.id === sv.id);
+        const nv = (novaM.varianty || []).find(v => v && v.id === sv.id);
         if (nv && !stejne(nv.data, sv.data)) {
           const cislo = (typeof globalThis.variantaCislo === 'function') ? globalThis.variantaCislo(stara, sv) : '';
           return 'změnila by se data uzamčené (odeslané) nabídky' + (cislo ? ' (' + cislo + ')' : '');
