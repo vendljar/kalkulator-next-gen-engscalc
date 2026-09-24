@@ -1,0 +1,88 @@
+diff --git a/netlify/functions/pd_deal.mjs b/netlify/functions/pd_deal.mjs
+index 384deb9..47c4c3b 100644
+--- a/netlify/functions/pd_deal.mjs
++++ b/netlify/functions/pd_deal.mjs
+@@ -11,8 +11,9 @@
+  * z CRM by byla přesně ten „odhad", který se do dokumentů nesmí dostat.
+  *
+  * Organizace a osoba se dotahují zvlášť, protože deal nese jen jejich ID.
+- * Jsou to dva dotazy navíc po 2 tokenech; načtení dealu tedy stojí 6 tokenů
+- * denního rozpočtu, což je proti seznamu (20) zanedbatelné.
++ * Jsou to dva dotazy navíc po 1 tokenu; načtení dealu tedy stojí 3 tokeny
++ * denního rozpočtu, což je proti jedné stránce seznamu (10) zanedbatelné.
++ * (Ceny podle x-token-cost ve specifikaci v2, ověřeno 22. 9. 2026.)
+  *
+  * Dvouúrovňový model objednatele (ověřeno na účtu 9. 8. 2026): `org_id`
+  * dealu bývá investor nebo majitel, kdežto skutečný objednatel — výtahová
+diff --git a/netlify/functions/pd_dealy.mjs b/netlify/functions/pd_dealy.mjs
+index ec5c8b2..9f17f03 100644
+--- a/netlify/functions/pd_dealy.mjs
++++ b/netlify/functions/pd_dealy.mjs
+@@ -10,9 +10,10 @@
+  * je objem, který stejně nikdo nečte. Detail si vyzvedne `/api/pd/deal`.
+  *
+  * Proč se hledá až na serveru a ne přes `Search API` Pipedrive: hledání tam
+- * stojí 40 tokenů denního rozpočtu (dvojnásobek seznamu) a má vlastní přísný
+- * krátkodobý limit 10 požadavků za 2 vteřiny. Při 308 dealech je levnější
+- * a rychlejší přinést otevřené případy jednou a filtrovat je tady. */
++ * stojí 20 tokenů denního rozpočtu (dvojnásobek stránky seznamu, x-token-cost
++ * ve specifikaci v2) a má vlastní přísný krátkodobý limit 10 požadavků za
++ * 2 vteřiny. Při 308 dealech je levnější a rychlejší přinést otevřené případy
++ * jednou a filtrovat je tady. */
+ import { uloziste, vyzadujRoli, json } from '../lib/sdilene.mjs';
+ const PD_CACHE_ULOZISTE = 'pd_cache';
+ const PD_CACHE_MS = 90 * 1000;
+@@ -44,10 +45,12 @@ export default async (req) => {
+ 
+   try {
+     /* Krátká cache seznamu (audit 22. 8. 2026, B19): každé volání stojí až
+-     * 10 stránek × 200 dealů (~20 tokenů denního rozpočtu Pipedrive). Bez
+-     * cache mohl kterýkoli přihlášený účet opakovaným hledáním odstavit
+-     * integraci všem. 90 s stačí — hledání a filtr se dělají nad cache, do
+-     * Pipedrive jde dotaz jednou za okno na každý stav. */
++     * 10 stránek × 10 tokenů, tedy až 100 tokenů denního rozpočtu Pipedrive
++     * (cena je za každý požadavek, ne za volání; při 308 dealech jsou to
++     * reálně 1–2 stránky). Bez cache mohl kterýkoli přihlášený účet
++     * opakovaným hledáním odstavit integraci všem. 90 s stačí — hledání
++     * a filtr se dělají nad cache, do Pipedrive jde dotaz jednou za okno
++     * na každý stav. */
+     const cache = await uloziste(PD_CACHE_ULOZISTE);
+     const klic = 'dealy:' + (stav || 'open');
+     const ulozene = await cache.cti(klic);
+diff --git a/netlify/functions/pd_pole.mjs b/netlify/functions/pd_pole.mjs
+index 8e77190..6c7bdd8 100644
+--- a/netlify/functions/pd_pole.mjs
++++ b/netlify/functions/pd_pole.mjs
+@@ -5,9 +5,10 @@
+  *                               (jen Administrátor)
+  *
+  * Proč cache: seznam vlastních polí se mění jednou za rok, ale potřebuje ho
+- * KAŽDÉ načtení dealu. Dotaz na seznam stojí 20 tokenů denního rozpočtu —
+- * bez cache by pár desítek načtení denně ukrojilo znatelný kus limitu jen za
+- * čtení něčeho, co se nemění. Platnost jeden den je kompromis: když se pole
++ * KAŽDÉ načtení dealu. Obnovení jsou dva dotazy po 10 tokenech (dealFields
++ * a organizationFields, x-token-cost ve specifikaci v2), tedy 20 za jedno
++ * obnovení — bez cache by pár desítek načtení denně ukrojilo znatelný kus
++ * limitu jen za čtení něčeho, co se nemění. Platnost jeden den je kompromis: když se pole
+  * v CRM přejmenuje, projeví se to nejpozději zítra a administrátor to umí
+  * uspíšit přepínačem `obnovit`.
+  *
+diff --git a/netlify/lib/pipedrive.mjs b/netlify/lib/pipedrive.mjs
+index 5e07fcd..98957f9 100644
+--- a/netlify/lib/pipedrive.mjs
++++ b/netlify/lib/pipedrive.mjs
+@@ -26,9 +26,11 @@
+ export const PD_TOKEN_PROMENNA = 'PIPEDRIVE_TOKEN';
+ export const PD_DOMENA_PROMENNA = 'PIPEDRIVE_DOMENA';
+ 
+-/* Kolik dealů se natáhne najednou. Seznam stojí 20 tokenů denního
+- * rozpočtu bez ohledu na velikost stránky, takže větší stránka je levnější
+- * než víc malých. Strop Pipedrive je 500. */
++/* Kolik dealů se natáhne najednou. Každý POŽADAVEK na seznam stojí
++ * 10 tokenů denního rozpočtu (x-token-cost ve specifikaci v2, ověřeno
++ * 22. 9. 2026) bez ohledu na velikost stránky, takže větší stránka je
++ * levnější než víc malých. Strop Pipedrive je 500. Pozor: cena je za
++ * každou stránku, takže pdVsechny() s deseti stránkami může stát až 100. */
+ export const PD_STRANKA = 200;
+ 
+ /* Kolikrát to zkusit znovu, když API odpoví 429 (vyčerpaný krátkodobý
