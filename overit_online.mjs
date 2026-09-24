@@ -1371,6 +1371,91 @@ test('lišta uzamčené varianty nabízí za Klonovat i Založit novou zakázku 
     ZAK = novaZakazka(); syncVarianta(); render(); });
 }
 
+/* ---- 10f) TISK Z NABÍDKY OTEVŘENÉ JEN KE ČTENÍ (P2 / K13-N54) ----
+ * Test 13. kola: Word ze zakázky otevřené jen ke čtení zamkl variantu JEN
+ * v prohlížeči, uložení se odmítlo a na serveru zámek nebyl. Teď se před
+ * dokumentem, který zamyká, aplikace zeptá: Zrušit = dokument nevznikne
+ * a nic se nezamkne; Odemknout = dokument vznikne a zámek se uloží. */
+{
+  const otevriCteni = async (cislo) => page.evaluate(async (cislo) => {
+    ZAK = novaZakazka(); ZAK.cislo = cislo; ZAK.nazevAkce = 'P2 tisk jen ke čtení';
+    syncVarianta(); render();
+    await onlineUloz();
+    const soubor = ONLINE_STAV.soubor;
+    window.volba = () => Promise.resolve('zahodit');
+    try { await onlineOtevri(soubor); } finally { delete window.volba; }
+    return { soubor, cteni: zamekCteniJe() };
+  }, cislo);
+  const zamekNaServeru = (soubor) => {
+    const z = JSON.parse(pamet.get('zakazky/z/' + soubor) || '{}');
+    return !!(z.varianty && z.varianty[0] && z.varianty[0].zamek && z.varianty[0].zamek.zamceno);
+  };
+  const pripravStuby = (odpoved) => page.evaluate((odpoved) => {
+    window.__p2 = { okna: 0, dokumenty: 0, dialog: '' };
+    window.potvrd = (t) => { window.__p2.dialog = String(t); return Promise.resolve(odpoved); };
+    window.__oknoPuv = window.__oknoPuv || window.oknoNahledu;
+    window.oknoNahledu = () => { window.__p2.okna++; return null; };
+    window.__dokPuv = window.__dokPuv || window.dokumentVygeneruj;
+    window.dokumentVygeneruj = () => { window.__p2.dokumenty++;
+      return Promise.resolve({ blob: new Blob(['x']), nazevSouboru: 'P2_harness' }); };
+    SABLONA_DOCX = { nazev: 'harness.docx', data: new ArrayBuffer(8) };
+  }, odpoved);
+  const stav = () => page.evaluate(() => ({ p2: window.__p2, cteni: zamekCteniJe(),
+    zamceno: variantaUzamcena(aktivniVarianta(ZAK)) }));
+
+  /* Zrušit — náhled k tisku i Word. */
+  const a = await otevriCteni('2026 - OPR - CN - 0764');
+  test('P2: zakázka je otevřená jen ke čtení', a.cteni === true, a);
+  await pripravStuby(false);
+  await page.evaluate(async () => { await nabidkaOckDokument(); await nabidkaWordGeneruj(null); });
+  const poZrus = await stav();
+  test('P2: před tiskem se aplikace zeptá (Odemknout a tisknout / Zrušit)',
+    /Tisk odešle nabídku a uzamkne variantu/.test(poZrus.p2.dialog), poZrus.p2.dialog);
+  test('P2: Zrušit — náhled k tisku se neotevře a Word nevznikne',
+    poZrus.p2.okna === 0 && poZrus.p2.dokumenty === 0, JSON.stringify(poZrus));
+  test('P2: Zrušit — varianta zůstala nezamčená a zakázka jen ke čtení',
+    !poZrus.zamceno && poZrus.cteni, JSON.stringify(poZrus));
+
+  /* Odemknout — Word vznikne, zámek se uloží na server. */
+  await pripravStuby(true);
+  await page.evaluate(async () => { await nabidkaWordGeneruj(null); });
+  await page.waitForTimeout(100);
+  const poOdem = await stav();
+  test('P2: Odemknout — zakázka je odemčená a Word vznikl',
+    !poOdem.cteni && poOdem.p2.dokumenty === 1, JSON.stringify(poOdem));
+  test('P2: Odemknout — varianta je zamčená jako odeslaná', poOdem.zamceno, JSON.stringify(poOdem));
+  await page.evaluate(async () => { await onlineUloz(); });
+  test('P2: po uložení (jako autosave) je zámek na serveru', zamekNaServeru(a.soubor), a.soubor);
+
+  /* Náhled k tisku s odemknutím: okno se otevře až po odpovědi. */
+  const b = await otevriCteni('2026 - OPR - CN - 0765');
+  await pripravStuby(true);
+  await page.evaluate(async () => { await nabidkaOckDokument(); });
+  const poNahled = await stav();
+  test('P2: náhled k tisku se po odemknutí otevře (okno až po dialogu)',
+    poNahled.p2.okna === 1 && !poNahled.cteni, JSON.stringify(poNahled));
+  test('P2: bez tisku z náhledu se nic nezamklo ani neuložilo', !poNahled.zamceno && !zamekNaServeru(b.soubor));
+
+  /* Dotisk už zamčené varianty v režimu čtení se neptá. */
+  await page.evaluate(async (soubor) => {
+    window.volba = () => Promise.resolve('zahodit');
+    try { await onlineOtevri(soubor); } finally { delete window.volba; }
+  }, a.soubor);
+  await pripravStuby(false);
+  await page.evaluate(async () => { await nabidkaWordGeneruj(null); });
+  const dotisk = await stav();
+  test('P2: dotisk odeslané nabídky v režimu čtení se neptá a Word vznikne',
+    dotisk.p2.dialog === '' && dotisk.p2.dokumenty === 1 && dotisk.cteni, JSON.stringify(dotisk));
+
+  await page.evaluate(() => {
+    window.oknoNahledu = window.__oknoPuv; window.dokumentVygeneruj = window.__dokPuv;
+    SABLONA_DOCX = null;
+    if (typeof zamekCteniVypni === 'function') zamekCteniVypni();
+    ZAK = novaZakazka(); syncVarianta(); render();
+  });
+  await dlgStub(page);
+}
+
 /* ---- 11) čistá konzole ---- */
 test('za celý průchod nevznikla nečekaná chyba v konzoli', chyby.length === 0, chyby);
 

@@ -154,6 +154,7 @@ async function nabidkaProjWordGeneruj(srv) {
   const varianta = (typeof nabidkaVarianta === 'function')
     ? await nabidkaVarianta()
     : ((typeof aktivniVarianta === 'function') ? aktivniVarianta(ZAK) : (ZAK.varianty || [])[0]);
+  if (typeof tiskZamekCteniPovol === 'function' && !(await tiskZamekCteniPovol('nabidkaProj', varianta))) { nabidkaProjStavText('Dokument nevznikl — nabídka je otevřená jen ke čtení.'); return; }   // P2 (K13-N54)
   dokumentVygeneruj('nabidkaProj', sablona.slice(0), ZAK, varianta, JEKLY, L)
     .then(res => {
       const a = document.createElement('a');
@@ -186,7 +187,7 @@ async function nabidkaProjWordGeneruj(srv) {
 }
 
 /* Kompletní tiskový náhled celé nabídky – všechny oddíly VZORu v pořadí. */
-function nabidkaProjNahled() {
+async function nabidkaProjNahled() {
   /* Pojistka pro případ, že by se sem někdo dostal jinudy než tlačítkem
    * (zhasnutým) – tiskový náhled je dokument pro zákazníka jako každý jiný. */
   if (typeof dokumentZabrana === 'function') {
@@ -197,6 +198,8 @@ function nabidkaProjNahled() {
     : ((typeof jazyk === 'function') ? jazyk() : 'cz');   // volba „Jazyk tisku" (#143)
   const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
   const akt = (typeof aktivniVarianta === 'function') ? aktivniVarianta(ZAK) : (ZAK.varianty || [])[0];
+  /* Ptát se PŘED otevřením okna náhledu (P2): tisk z náhledu zamyká. */
+  if (typeof tiskZamekCteniPovol === 'function' && !(await tiskZamekCteniPovol('nabidkaProjTisk', akt))) return;   // P2 (K13-N54)
   const d = nabidkaProjData(ZAK, akt, L);
   const p = d.placeholders;
 

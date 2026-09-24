@@ -172,6 +172,41 @@ function zamekKdo() {
 
 /* ---------- uzamčení tiskem ---------- */
 
+/* TISK Z NABÍDKY OTEVŘENÉ JEN KE ČTENÍ (P2 / K13-N54, 24. 9. 2026).
+ *
+ * Tlačítka tisku leží mimo bloky, které zámek čtení šedí, takže dokument šlo
+ * vytvořit i ze zakázky otevřené jen ke čtení. Zámek varianty pak vznikl jen
+ * v prohlížeči — uložení v režimu čtení se odmítá — a když obchodník zakázku
+ * zavřel, odeslaná nabídka zůstala na serveru odemčená.
+ *
+ * Varianta A (výchozí zadání): před dokumentem, který zamyká, se zeptat
+ * stejně jako při uložení. „Odemknout a tisknout" zakázku odemkne a dokument
+ * vznikne; zámek se pak uloží autosavem jako u každé jiné změny. Kdo
+ * odemknout nesmí, dostane důvod a dokument nevznikne.
+ *
+ * Ptá se jen u varianty, která ještě zamčená NENÍ: dotisk už odeslané
+ * nabídky nic nového nezamyká (zámek je v uložených datech) a čtení je pro
+ * něj přesně ten správný režim. Vrací Promise<boolean> — true = tisknout. */
+async function tiskZamekCteniPovol(typ, varianta) {
+  if (typeof zamekCteniJe !== 'function' || !zamekCteniJe()) return true;
+  if (typeof dokumentZamyka !== 'function' || !dokumentZamyka(typ)) return true;
+  if (varianta && typeof variantaUzamcena === 'function' && variantaUzamcena(varianta)) return true;
+  const ja = (typeof ONLINE_STAV !== 'undefined') ? ONLINE_STAV.ja : null;
+  const smi = (typeof zamekCteniSmiOdemknout !== 'function') || zamekCteniSmiOdemknout(ZAK, ja);
+  const uvod = 'Tisk odešle nabídku a uzamkne variantu. K tomu je potřeba zakázku odemknout.';
+  if (!smi) {
+    const duvod = (typeof zamekCteniDuvod === 'function') ? zamekCteniDuvod(ZAK, ja) : '';
+    await hlaska(uvod + (duvod ? '\n\n' + duvod : ''), { nadpis: 'Nabídka jen ke čtení' });
+    return false;
+  }
+  const ano = await potvrd(uvod + '\n\nZakázka je otevřená jen ke čtení, takže by se zámek '
+    + 'neuložil a odeslaná nabídka by na serveru zůstala odemčená.',
+    { nadpis: 'Nabídka jen ke čtení', ano: 'Odemknout a tisknout', ne: 'Zrušit' });
+  if (!ano) return false;
+  zamekCteniOdemkniUI();
+  return !zamekCteniJe();   // odemknutí mohl zastavit náhled (nahledStop)
+}
+
 /* Volá se ze dvou míst: po stažení nabídky do Wordu a z tiskového náhledu
  * (okno náhledu si sáhne přes window.opener). Zamykají jen dokumenty, které
  * jdou zákazníkovi – viz ZAMEK_DOKUMENTY v zamek.js. */

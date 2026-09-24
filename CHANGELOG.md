@@ -24,6 +24,17 @@ podle zadání větve, v závorce číslo nálezu ze sešitu kola.
   `src/test_pripona_prvni.js` (bez opravy 6 z 12 selže), `test_prava`
   +6 (bez opravy obchodník dostane 403). Uložená data se nemění; výpis
   dotčených zakázek ze zálohy dělá `podklady/K13_pripona_vypis.mjs`.
+- **P2 (K13-N54) — tisk ze zakázky otevřené jen ke čtení zamkl variantu
+  jen v prohlížeči.** Tlačítka tisku leží mimo šedé bloky režimu čtení.
+  Word i tisk z náhledu proto variantu zamkly, uložení se ale odmítlo
+  a odeslaná nabídka zůstala na serveru odemčená. Oprava (varianta A):
+  před dokumentem, který zamyká, se aplikace zeptá „Tisk odešle nabídku
+  a uzamkne variantu. K tomu je potřeba zakázku odemknout.“ s volbami
+  Odemknout a tisknout / Zrušit. Kdo odemknout nesmí, dostane důvod
+  a dokument nevznikne. Platí pro Word OCK i PROJ, smlouvy o dílo a tisk
+  z náhledu nabídky OCK i PROJ; náhled se ptá před otevřením okna. Dotisk
+  už zamčené varianty se neptá, plná moc a interní podklady beze změny.
+  Harness `overit_online.mjs` +10 (bez opravy 6 selže).
 
 ---
 
