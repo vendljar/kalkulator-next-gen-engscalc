@@ -10,10 +10,12 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ## 24. 9. 2026 — testy lokálně, CI jen ručně (aplikace beze změny)
 
-- **GitHub Actions se při pushi nespouští samo** (rozhodnutí J. V.
-  24. 9. 2026: „testovat lokálně"). Workflow `Testy` zůstává a spustí se
-  ručně: GitHub → Actions → Testy → Run workflow. Do té doby běžel při
-  každém pushi na test i main a opakoval to, co už proběhlo v sezení.
+- **GitHub Actions běží automaticky jen při nahrání na main** (rozhodnutí
+  J. V. 24. 9. 2026: „testovat lokálně", CI „když řeknu nahraj na main").
+  Na main se nahrává jen na pokyn, tedy při vydání na ostrý web; CI tam
+  poběží celé včetně mutací. Na větvi test se nespouští, ručně jde pustit
+  vždy (GitHub → Actions → Testy → Run workflow). Do té doby běželo při
+  každém pushi na test i main a opakovalo to, co už proběhlo v sezení.
 - **Nový `nastroje/pred_pushem.sh`** dělá totéž co CI, a to před pushem:
   kontrolu verze proti dni commitu, kontrolu CRLF, sady v Node a všechny
   prohlížečové harnessy. S přepínačem `--mutace` pustí i celý mutační běh
