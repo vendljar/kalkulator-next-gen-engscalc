@@ -5500,12 +5500,13 @@
    "stav": "blokovano",
    "dulezitost": "stredni",
    "slozitost": "S",
-   "cekaNa": "J. V.: co je nad dveřmi, když světlík není (a plech nadpraží / b opláštění stěny / c zajistí stavba); výchozí a",
+   "cekaNa": "J. V.: odsouhlasit vizuální návrh z 24. 9. (výchozí volba pro nové zakázky — návrh plech; sazby plechu nadpraží; stejné menu i pro boční pole N58b)",
    "nazev": "Prostor nad dveřmi bez světlíku se neoceňuje (N58)",
    "proc": "Dotaz J. V. 24. 9. večer. Bez zaškrtnutého světlíku nad dveřmi se pás mezi horní hranou dveří (2,3 m) a světlou výškou nepočítá ničím — ani sklem, ani plechem (oplechování dveří končí na 2,3 m, podesta je jen pás u stropu a jen v interiéru). Při výšce podlaží 3 m je to 0,5 m × šířka stěny na každé nástupiště.",
-   "detail": "Podle odpovědi: plech nadpraží (m² nebo bm), opláštění materiálem stěny, nebo text „zajistí objednatel\" ve specifikaci. Týká se všech šachet bez světlíku, i neprůchozích — mění cenu.",
+   "detail": "Zadání J. V. 24. 9. večer: v Zadání šachty přesunout „Světlík nad šachetními dveřmi\" mezi Počet sloupků a Světlíky na bocích dveří, udělat z něj rolovací menu (bez, sklo, plech, materiál opláštění, zajistí stavba); na jeho místo ve 4. sloupci přesunout Můstek mezi budovou a OCK. Návrh výpočtu: plocha = nástupiště × šířka stěny × max(světlá výška − 2,3; 0); sklo jako dnes, plech 8,5 kg/m² do řádku plechů + práce +1 ks + lakování obou stran, materiál = materiál stěny (po stěnách typ pásu), zajistí stavba = 0 Kč + text ve specifikaci, bez = 0 Kč + upozornění v kontrole. Migrace: true → sklo, false → bez (ceny beze změny). Ověřeno: oplechování dveří je lem 105 mm po obvodu otvoru (2 × 2,3 m + šířka otvoru), ne plocha ke sloupu; boční pole mezi otvorem a hranou stěny se oceňují jen jako boční světlík (N58b). N46: čelní stěnu jiným materiálem umí režim po stěnách A–D.",
    "hotovoKdyz": "Pás nad dveřmi má jasné ocenění nebo text ve specifikaci; test.",
-   "kde": "`src/engine.js` (zasklení, plechy), `src/techspec.js`"
+   "kde": "`src/engine.js` (zasklení, plechy), `src/techspec.js`",
+   "pozn": "Vizuální návrh a návrh výpočtu předány 24. 9. večer; čeká na odsouhlasení."
   },
   {
    "id": "350",
