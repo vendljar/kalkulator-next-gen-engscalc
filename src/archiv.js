@@ -251,6 +251,9 @@ function vytvorAlternativu(zak, zaznam, opts) {
 
   const rezim = ARCHIV_CENIKY[opts.cenik] ? opts.cenik : 'aktualni';
   const data = JSON.parse(JSON.stringify(zaznam.data));
+  /* Alternativa pro jiného zákazníka nepřebírá schválení slevy (N44,
+   * 24. 9. 2026) — viz slevaRozhodnutiZahod v zakazka.js. */
+  if (typeof slevaRozhodnutiZahod === 'function') slevaRozhodnutiZahod(data);
   if (rezim === 'aktualni') {
     const vzor = opts.vzorCeniku
       || ((typeof aktivniVarianta === 'function' ? aktivniVarianta(zak) : zak.varianty[0]) || {}).data;

@@ -1266,6 +1266,22 @@ function zakazkaCisloDalsi(cislo) {
   return s.slice(0, zacatek) + doplneno + s.slice(konec + 1);
 }
 
+/* ROZHODNUTÍ O SLEVĚ SE DO KOPIE NEPŘENÁŠÍ (duplikát; od 24. 9. 2026 i klon
+ * varianty a alternativa — nález N44 hloubkového testu). Procenta a
+ * poznámka zůstávají, zahodí se jen stav a schvalovatel. Převzaté „schváleno"
+ * by server bral jako nové rozhodnutí: obchodník by zakázku neuložil (403)
+ * a vedoucí by se uložením stal schvalovatelem slevy, kterou neviděl. */
+function slevaRozhodnutiZahod(data) {
+  ['sleva', 'slevaProj'].forEach(cast => {
+    const s = data && data[cast];
+    if (!s || typeof s !== 'object') return;
+    s.stav = '';
+    ['schvalil', 'schvalilEmail', 'schvalilKdy', 'schvalenoProc',
+     'zamitl', 'zamitlEmail', 'zamitlKdy', 'zamitnutoProc'].forEach(k => { delete s[k]; });
+  });
+  return data;
+}
+
 /* ---------- duplikace celé zakázky (P3, nález N5, 21. 9. 2026) ----------
  *
  * ZADÁNÍ: „Do Přehledu přidat akci Duplikovat jako novou zakázku (nové číslo
@@ -1371,13 +1387,7 @@ function zakazkaDuplikuj(zak, noveCislo) {
      * Zahazuje se jen ROZHODNUTÍ. Dokud ho někdo nezopakuje, `slevaPlati`
      * vrací false, takže se sleva do ceny nepropíše — nic se tiše neuplatní
      * ani tiše neztratí. */
-    ['sleva', 'slevaProj'].forEach(cast => {
-      const s = n.data && n.data[cast];
-      if (!s || typeof s !== 'object') return;
-      s.stav = '';
-      ['schvalil', 'schvalilEmail', 'schvalilKdy', 'schvalenoProc',
-       'zamitl', 'zamitlEmail', 'zamitlKdy', 'zamitnutoProc'].forEach(k => { delete s[k]; });
-    });
+    slevaRozhodnutiZahod(n.data);
     /* PŘÍPONY PODLE POŘADÍ, NE SAMÉ NULY (nález N32 revize v22.9.9).
      *
      * Do 22. 9. 2026 tu stálo `n.pripona = 0` pro každou variantu. Komentář
@@ -1410,7 +1420,7 @@ function zakazkaDuplikuj(zak, noveCislo) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { zakazkaDuplikuj, zakazkaCisloDalsi, ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, variantaDatum, dnesIso, ZADANI_NOVA, vychoziZakladVolitelne, zadaniRucniMapa, zadaniRucniJe,
+  module.exports = { slevaRozhodnutiZahod, zakazkaDuplikuj, zakazkaCisloDalsi, ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, variantaDatum, dnesIso, ZADANI_NOVA, vychoziZakladVolitelne, zadaniRucniMapa, zadaniRucniJe,
                      zadaniRucniZnac, zadaniRucniZrus, zadaniZCeniku, uvodniFotoObrazky, uvodniFotoSymboly, uvodniFotoPole, ZAKAZKA_SCHEMA, novaZakazka, novaVarianta, novaVariantaData,
                      nastavRidici, ridiciVarianta, aktivniVarianta, importZakazka, StorageAdapter,
                      zakazkaUnikatniId,
