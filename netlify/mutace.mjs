@@ -47,7 +47,9 @@ if (!process.env.ADMIN_EMAIL) process.env.ADMIN_EMAIL = 'spravce@priklad.cz';
  * je soubor zmutovaný. Běžný běh ji nenastavuje. */
 const SADY = process.env.KNG_MUTACE_SADY
   ? process.env.KNG_MUTACE_SADY.split(',').map(s => s.trim()).filter(Boolean)
-  : ['test_prava.mjs', 'test_funkce.mjs', 'test_obnova.mjs'];
+  : ['test_prava.mjs', 'test_funkce.mjs', 'test_obnova.mjs',
+     /* F1 (24. 9. 2026): pojistky N43, N44 a B73 hlídají vlastní sady. */
+     'test_stary_tvar.mjs', 'test_klon_sleva.mjs', 'test_autor.mjs'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -150,9 +152,51 @@ const MUTACE = [
     proc: 'účet po odcházejícím kolegovi by zmizel ze seznamu, ale dveře by mu zůstaly otevřené' },
 
   { nazev: 'autor zakázky se přepíše každým uložením', soubor: 'functions/zakazky.mjs',
-    hledej: '  } else if (!zak.autor) zak.autor = relace.email;',
-    nahrad: '  } else zak.autor = relace.email;',
+    hledej: '    zak.autor = stara.autor || relace.email;',
+    nahrad: '    zak.autor = relace.email;',
     proc: 'autorem by se stal ten, kdo si zakázku naposledy otevřel — razítko by ztratilo smysl' },
+
+  /* ---------- hloubkový test 24. 9. 2026, dávka F1 ---------- */
+  { nazev: 'B73: autora existující zakázky určí klient', soubor: 'functions/zakazky.mjs',
+    hledej: '    zak.autor = stara.autor || relace.email;',
+    nahrad: '    zak.autor = zak.autor || stara.autor || relace.email;',
+    proc: 'uložením by šlo zakázku přestěhovat v seznamu jinému obchodníkovi' },
+  { nazev: 'B73: jméno autora cizí zakázky od klienta', soubor: 'functions/zakazky.mjs',
+    hledej: '    if (stara.autorJmeno) zak.autorJmeno = stara.autorJmeno; else delete zak.autorJmeno;',
+    nahrad: '    ;',
+    proc: 'v seznamu by u zakázky stálo podvržené jméno obchodníka' },
+  { nazev: 'N43: server porovná zamčenou variantu s nemigrovanou uloženou verzí', soubor: 'functions/zakazky.mjs',
+    hledej: '    try { staraPorovnani = globalThis.importZakazka(JSON.parse(JSON.stringify(stara))); ocistiZnacky(staraPorovnani); }',
+    nahrad: '    try { }',
+    proc: 'odeslaná nabídka ve starším tvaru dat by po otevření nešla uložit (409)' },
+  { nazev: 'N44: klon varianty převezme schválení slevy', soubor: '../src/zamek.js',
+    hledej: "  if (typeof slevaRozhodnutiZahod === 'function') slevaRozhodnutiZahod(kopie.data);",
+    nahrad: '  ;',
+    proc: 'obchodník by zakázku s klonem neuložil, vedoucí by se stal schvalovatelem cizí slevy' },
+  { nazev: 'B74: zapnutí účtu bere i nebooleovskou hodnotu', soubor: 'functions/uzivatele.mjs',
+    hledej: "      if (typeof t.aktivni !== 'boolean')",
+    nahrad: '      if (false)',
+    proc: 'aktivni: 0 by obešlo pojistky a vypnulo hlavní i vlastní účet' },
+  { nazev: 'B74: archiv účtu bere i nebooleovskou hodnotu', soubor: 'functions/uzivatele.mjs',
+    hledej: "      if (typeof t.archiv !== 'boolean')",
+    nahrad: '      if (false)',
+    proc: 'archiv: 1 by prošlo mimo kontrolu typu' },
+  { nazev: 'B78: přihlášení přijme cizí Origin', soubor: 'functions/prihlaseni.mjs',
+    hledej: "  if (cizihoPuvodu(req) || origin === 'null'",
+    nahrad: "  if (origin === 'null'",
+    proc: 'cizí stránka by přihlásila prohlížeč oběti do účtu útočníka' },
+  { nazev: 'B78: přihlášení přijme Origin null', soubor: 'functions/prihlaseni.mjs',
+    hledej: "  if (cizihoPuvodu(req) || origin === 'null'",
+    nahrad: '  if (cizihoPuvodu(req)',
+    proc: 'sandboxovaný rámec cizí stránky by přihlášení provedl' },
+  { nazev: 'B78: přihlášení přijme formulářové tělo', soubor: 'functions/prihlaseni.mjs',
+    hledej: '      || /^(application\\/x-www-form-urlencoded|multipart\\/form-data)/.test(ct))',
+    nahrad: '      )',
+    proc: 'obyčejný formulář cizí stránky by přihlášení odeslal' },
+  { nazev: 'B82: příloha s javascript: projde uložením', soubor: '../src/uloziste.js',
+    hledej: '    if (p && !uloPrilohaDataBezpecna(p.data)) out.push(',
+    nahrad: '    if (false) out.push(',
+    proc: 'kliknutí na Stáhnout by spustilo skript z přílohy' },
 
   { nazev: 'zakázky jde převést i na archivovaný účet', soubor: 'functions/uzivatele.mjs',
     hledej: '      if (cil.aktivni === false || cil.archiv)',

@@ -275,14 +275,19 @@ const MUTACE = [
 
   /* ---------- montáž přechodových plechů: vlastní přepínač (#131) ---------- */
   { nazev: 'montáž přechodových plechů ignoruje vlastní přepínač', soubor: 'engine.js',
-    hledej: '  const prechMontAno = (z.volitelne.prechMont != null) ? !!z.volitelne.prechMont : prechodoveAno;',
+    hledej: '  const prechMontAno = (zVol.prechMont != null) ? !!zVol.prechMont : prechodoveAno;',
     nahrad: '  const prechMontAno = prechodoveAno;',
     proc: 'montáž by se nedala zaškrtnout ani odškrtnout samostatně – přesně to, co dělá vzorec v předloze' },
 
   { nazev: 'prázdný přepínač montáže se bere jako vypnuto', soubor: 'engine.js',
-    hledej: '  const prechMontAno = (z.volitelne.prechMont != null) ? !!z.volitelne.prechMont : prechodoveAno;',
-    nahrad: '  const prechMontAno = !!z.volitelne.prechMont;',
+    hledej: '  const prechMontAno = (zVol.prechMont != null) ? !!zVol.prechMont : prechodoveAno;',
+    nahrad: '  const prechMontAno = !!zVol.prechMont;',
     proc: 'montáž by zmizela ze všech starších zakázek, které přepínač ještě nemají – zase prázdno zaměněné za nulu' },
+
+  { nazev: 'N57: chybějící volitelné položky shodí výpočet', soubor: 'engine.js',
+    hledej: "  const zVol = (z.volitelne && typeof z.volitelne === 'object') ? z.volitelne : {};",
+    nahrad: '  const zVol = z.volitelne;',
+    proc: 'zakázka bez objektu volitelných (poškozený soubor) by nešla otevřít — prázdná obrazovka' },
 
   /* ---------- oddělení slev OCK a PROJ (#134, 12. 8. 2026) ---------- */
   /* Po #141 jsou souhrn.cena a souhrn.celkem totéž číslo (jedno procento,

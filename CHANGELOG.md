@@ -8,6 +8,51 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v24.9.4 — dávka F1 (24. 9. 2026): bezpečnost a ztráta práce z hloubkového testu
+
+Opravy nejzávažnějších nálezů 20. kola (hloubkový test 24. 9. 2026). Ke
+každé opravě je test. Každý test byl spuštěn i proti kódu bez opravy
+a v tom běhu selhal.
+
+- **Uložená zakázka nespustí cizí skript (B69, B70, B87).** Hodnoty ze
+  zakázky, které šly do obrazovky bez escapování, se teď escapují. Jde
+  o prostřední sloupec detailu výpočtu, sazbu DPH, hodiny a rezervu PROJ
+  a spojky a počty v odvozených parametrech. Typ pásu opláštění jádro
+  bere jen z číselníku. Cesta ceny v obsluze změny je escapovaná.
+  `set`/`pjSet`/`cenikSet` odmítnou `__proto__`, `constructor`
+  a `prototype`. Nová prohlížečová sada `overit_xss.mjs` (27 kontrol):
+  vkládá payload do dat zakázky a vykresluje všechny záložky pro
+  obchodníka i administrátora, místo aby četla zdroják (B87).
+- **Příloha nespustí skript (B82).** Obsah přílohy smí být jen `data:`
+  adresa. Server zakázku s `javascript:` v příloze neuloží ani neobnoví
+  a tlačítko Stáhnout takovou přílohu odmítne.
+- **Odeslanou nabídku ve starším tvaru dat jde uložit (N43).** Server
+  porovnával migrovaná data zamčené varianty s nemigrovanou uloženou
+  verzí a vracel 409 celé zakázce, i práci na odemčených variantách.
+  Teď porovnává migrované s migrovaným, stejně tak obnova. Skutečná
+  změna odeslané nabídky se dál odmítne. Do zamčené varianty klient
+  nedoplňuje katalog ani kurz. Nová sada `netlify/test_stary_tvar.mjs` (9).
+- **Klon varianty a alternativa nepřebírají schválení slevy (N44).**
+  Obchodník zakázku s klonem schválené varianty dřív neuložil (403).
+  Vedoucí se jejím uložením stal schvalovatelem slevy, kterou nikdy
+  neviděl. Kopie si teď nese procenta a poznámku, stav a schvalovatele
+  ne (stejně jako duplikát). Nová sada `netlify/test_klon_sleva.mjs` (13).
+- **Zadání bez volitelných položek neshodí výpočet (N57).** Import doplní
+  prázdný objekt a jádro samo nespadne. U běžné zakázky se výsledek
+  nemění. Nová sada `src/test_volitelne_chybi.js` (18).
+- **Autora existující zakázky server nebere od klienta (B73).** Uložením
+  se zakázka nedá přestěhovat jinému obchodníkovi. Nová sada
+  `netlify/test_autor.mjs` (11).
+- **Zapnutí a archiv účtu berou jen true/false (B74).** Hodnota `0` nebo
+  `""` obešla pojistky a vypnula i hlavní nebo vlastní účet. Teď vrátí 400.
+- **Přihlášení z cizí stránky se odmítne (B78).** Cizí Origin, Origin
+  `null` a formulářové tělo vrátí 403. Cizí stránka tak už nepřihlásí
+  prohlížeč obchodníka do účtu útočníka.
+- Příručka obchodníka má snímky a číslo verze pro v24.9.4, obsah je beze
+  změny.
+
+---
+
 ## v24.9.3 — dávka E4 (24. 9. 2026): obnova nanečisto, zámek, FR kapitoly, T4
 
 - **Zkouška obnovy nanečisto a postup obnovy (#152, 2. část).** Nová sada
