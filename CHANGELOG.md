@@ -8,6 +8,22 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## 24. 9. 2026 — testy lokálně, CI jen ručně (aplikace beze změny)
+
+- **GitHub Actions se při pushi nespouští samo** (rozhodnutí J. V.
+  24. 9. 2026: „testovat lokálně"). Workflow `Testy` zůstává a spustí se
+  ručně: GitHub → Actions → Testy → Run workflow. Do té doby běžel při
+  každém pushi na test i main a opakoval to, co už proběhlo v sezení.
+- **Nový `nastroje/pred_pushem.sh`** dělá totéž co CI, a to před pushem:
+  kontrolu verze proti dni commitu, kontrolu CRLF, sady v Node a všechny
+  prohlížečové harnessy. S přepínačem `--mutace` pustí i celý mutační běh
+  serveru a jádra (jen když se měnil server nebo jádro). Firemní šablony
+  se předávají přes `KNG_PODKLADY`.
+- **Jedna dávka = jeden push na test** na jejím konci (každý push je
+  nasazení na Netlify). Do main jen na pokyn „slouč".
+
+---
+
 ## v24.9.1 — dávka E1 (24. 9. 2026): rozhodnutí J. V. k #149 a #277
 
 - **Model 1 je zmrazený pro ne-administrátory (#332).** Rozhodnutí J. V.

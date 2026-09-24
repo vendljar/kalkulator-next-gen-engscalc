@@ -7,17 +7,18 @@
 # (sady, které ho potřebují, se přeskočí s kódem 3 stejně jako lokálně),
 # žádná tajemství (overit_online.mjs si nastavuje vlastní zkušební).
 #
-# Spouští se při každém pushi a pull requestu na main/test a ručně
-# (GitHub → Actions → Testy → Run workflow). Výsledek: zelená/červená
+# OD 24. 9. 2026 SE SPOUŠTÍ JEN RUČNĚ (GitHub → Actions → Testy → Run
+# workflow), rozhodnutí J. V. „testovat lokálně". Tytéž kroky před každým
+# pushem pouští nastroje/pred_pushem.sh v cloudovém sezení (s firemními
+# šablonami z Drive, které CI nemá); výsledek se zapisuje do CHANGELOG
+# a do přehledu nálezů. Do 24. 9. běželo při každém pushi a pull requestu
+# na main/test — tentýž běh tak probíhal dvakrát. Výsledek: zelená/červená
 # u commitu, podrobný výpis v záložce Actions, sestavený dist/ jako
 # artefakt ke stažení. Nasazení na Netlify tím NENÍ podmíněné — Netlify
 # staví dál sám; tohle je nezávislá kontrola.
 name: Testy
 
 on:
-  push:
-    branches: [main, test]
-  pull_request:
   workflow_dispatch:
 
 jobs:
