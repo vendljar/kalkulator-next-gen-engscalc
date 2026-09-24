@@ -279,7 +279,13 @@ export default async (req) => {
   if (!stara) {
     if (!zak.autor || zak.autor === relace.email || relace.role !== 'Administrátor')
       zak.autor = relace.email;
-  } else if (!zak.autor) zak.autor = relace.email;
+  } else {
+    /* U existující zakázky je autor ten z uložené verze — z těla požadavku
+     * se nebere (nález B73 hloubkového testu 24. 9. 2026). Do té doby šlo
+     * poslat cizí `autor` a zakázka se v seznamu přestěhovala jinému
+     * obchodníkovi, i s jeho jménem. */
+    zak.autor = stara.autor || relace.email;
+  }
   zak.upravil = relace.email;
   /* Totéž pro razítko zámku: NOVĚ vzniklý zámek (v uložené verzi varianta
    * zamčená nebyla) nese `kdo` z relace, ne z klienta. `kdy` se nechává —
@@ -344,6 +350,10 @@ export default async (req) => {
    * a nesmí jít podvrhnout. Zapisuje se při každém uložení, aby se
    * v seznamu projevila i změna jména v profilu. */
   if (zak.autor === relace.email && relace.jmeno) zak.autorJmeno = relace.jmeno;
+  else if (stara && stara.autor === zak.autor) {
+    /* Cizí zakázka: jméno autora zůstává z uložené verze, ne od klienta (B73). */
+    if (stara.autorJmeno) zak.autorJmeno = stara.autorJmeno; else delete zak.autorJmeno;
+  } else if (relace.role !== 'Administrátor') delete zak.autorJmeno;
 
   const razitko = ULO.uloRazitkoNove();
   zak.uloRazitko = razitko;
