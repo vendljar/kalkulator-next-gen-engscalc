@@ -83,6 +83,15 @@ podle zadání větve, v závorce číslo nálezu ze sešitu kola.
   na pozadí (stažení jen u varianty se slevou, cache podle verze), dokud
   nejsou známé, pravidlo mlčí. Testy `src/test_k13_kontroly.js` 9,
   `test_kontroly` (16 pravidel).
+- **P6 (K13-N57) — pevný „Popis záměru“ a věta o opláštění ve Wordu
+  (prověřeno, návrh v rozboru K13).** Šablona v11 tiskne natvrdo přístavbu
+  k dvorní fasádě a izolační dvojsklo i u interiérových šachet s čistým
+  VSG. Připravení zástupci pro upravenou šablonu: `POPIS_ZAMERU_OCK`
+  (vlastní text z hlavičky zakázky, jinak věta podle typu šachty
+  a průchodnosti) a `OPLASTENI_VETA` (z materiálu opláštění ve
+  specifikaci). Šablona v11 je zatím nepoužívá. **Znění vět je návrh ke
+  schválení J. V.**, překlady přibudou po schválení. Test
+  `test_k13_nabidka.js` +6.
 
 ---
 
