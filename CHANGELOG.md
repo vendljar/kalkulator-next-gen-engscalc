@@ -63,6 +63,16 @@ podle zadání větve, v závorce číslo nálezu ze sešitu kola.
   řádky v sekci DOPLŇKOVÉ KONSTRUKCE. Šablona v11 na ně zatím symbol
   nemá, doplní se se šablonou. Testy: `src/test_k13_nabidka.js` 10
   (bez opravy 8 selže), `test_nabidka` (13 řádků základních parametrů).
+- **P8 (K13-N60 + K12-N49) — nepřeložené texty cizojazyčné nabídky.**
+  Nová hesla EN/DE/FR pro „TECHNICKÁ ČÁST – SPECIFIKACE DODÁVKY“,
+  „žádné příplatky nejsou vybrány“, „nejsou součástí dodávky, viz
+  příplatkové ceny“ a „přirozené, do prostoru schodiště“. **Návrh
+  překladu, čeká na odbornou kontrolu J. V.** Test pokrytí
+  `src/test_k13_preklad.js` projde všechny hodnoty specifikace v nabídce
+  (TS_*) pro 16 zadání (interiér / exteriér, průchozí, přechodové plechy,
+  lešení) a pevné texty online nabídky. Bez nových hesel selže právě na
+  těchto čtyřech textech. Tisková lišta (netiskne se) a názvy ze
+  zkušebního ceníku jsou z testu vyjmuté.
 
 ---
 
