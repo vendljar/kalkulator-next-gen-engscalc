@@ -484,6 +484,29 @@ zkus('rozdělení stěn se vypnutím režimu nezahodí', prezilo === 2, prezilo)
   zkus('ne světlíky (stav před #295)', !/světlík/i.test(stav.varA), stav.varA.slice(0, 200));
 }
 
+/* ---------- N41d: vykreslení nesmí zapisovat do zamčené varianty ----------
+ * Revize v22.9.9 (N41d, neověřeno): oplStena() při každém vykreslení zakládá
+ * chybějící stěny a pásy PŘÍMO do zadání — i u zamčené (odeslané) varianty.
+ * Zamčená varianta je doklad toho, co odešlo zákazníkovi; obrazovka ji smí
+ * jen číst. Stav bez stěn v režimu po stěnách vznikne u ručně upraveného
+ * JSON nebo u staré zakázky, proto se tu nasimuluje přímo. */
+{
+  const vysl = await p.evaluate(() => {
+    const v = aktivniVarianta(ZAK);
+    Z.oplasteni = { rezim: 'poStenach', steny: null };
+    zamkniVariantu(v, { typ: 'nabidka', kdo: 'harness', cislo: ZAK.cislo || 'X' });
+    const pred = JSON.stringify(Z.oplasteni);
+    prepniTab('kalk'); render();
+    const karta = !!document.querySelector('#ock-oplasteni-steny .opl-stena');
+    const po = JSON.stringify(Z.oplasteni);
+    delete v.zamek; render();
+    return { pred, po, karta };
+  });
+  zkus('N41d: zamčená varianta po stěnách se vykreslí (4 stěny s výchozími pásy)', vysl.karta);
+  zkus('N41d: vykreslení do zadání zamčené varianty nic nezapsalo', vysl.pred === vysl.po,
+    vysl.pred + ' → ' + vysl.po.slice(0, 120));
+}
+
 zkus('za celý průchod nevznikla chyba v konzoli', konzole.length === 0, konzole.slice(0, 2).join(' | '));
 
 await b.close();

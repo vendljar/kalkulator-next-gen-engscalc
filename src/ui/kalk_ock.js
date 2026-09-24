@@ -504,8 +504,22 @@ const OPL_STENY_POPIS = { A: 'čelní stěna (dveře a světlíky)', B: 'boční
 const OPL_STENY = (typeof OPLASTENI_STENY !== 'undefined' ? OPLASTENI_STENY : ['A', 'B', 'C', 'D'])
   .map(k => ({ k, popis: OPL_STENY_POPIS[k] || '' }));
 
+/* ZAMČENÁ VARIANTA SE JEN ČTE (N41d z revize v22.9.9, ověřeno 24. 9. 2026).
+ * oplZadani() a oplStena() doplňovaly chybějící opláštění, stěny a pásy
+ * PŘÍMO do zadání — a volá je vykreslení obrazovky. U zamčené (odeslané)
+ * varianty tak pouhé otevření přepsalo data dokladu. U zamčené varianty
+ * se proto výchozí podoba jen spočítá a vrátí jako kopie; zapisuje se
+ * výhradně do varianty, kterou jde upravovat. */
+function oplJenCist() {
+  const v = (typeof aktivniVarianta === 'function' && typeof ZAK !== 'undefined') ? aktivniVarianta(ZAK) : null;
+  return !!(v && typeof variantaEditovatelna === 'function' && !variantaEditovatelna(v));
+}
 function oplZadani() {
-  if (!Z.oplasteni || typeof Z.oplasteni !== 'object') Z.oplasteni = { rezim: 'standard', steny: null };
+  if (!Z.oplasteni || typeof Z.oplasteni !== 'object') {
+    const vych = { rezim: 'standard', steny: null };
+    if (oplJenCist()) return vych;
+    Z.oplasteni = vych;
+  }
   return Z.oplasteni;
 }
 function oplPoStenach() { return oplZadani().rezim === 'poStenach'; }
@@ -515,6 +529,17 @@ function oplPoStenach() { return oplZadani().rezim === 'poStenach'; }
  * z jádra, takže sedí na to, co by na stěně bylo ve standardním režimu. */
 function oplStena(k) {
   const o = oplZadani();
+  const jenCist = oplJenCist();
+  const ulozena = o.steny && typeof o.steny === 'object' && o.steny[k] && typeof o.steny[k] === 'object'
+    ? o.steny[k] : null;
+  /* U zamčené varianty chybějící nebo prázdnou stěnu jen dopočítat. */
+  if (jenCist && !(ulozena && Array.isArray(ulozena.pasy) && ulozena.pasy.length)) {
+    const vych = (typeof oplasteniStenyVychozi === 'function')
+      ? oplasteniStenyVychozi(Z, aktivniVarianta(ZAK).data.cenik)[k]
+      : { odM: 0, pasy: [{ typ: 'bez', doM: null }] };
+    return { odM: ulozena && ulozena.odM != null ? ulozena.odM : (vych.odM != null ? vych.odM : 0),
+             pasy: JSON.parse(JSON.stringify(vych.pasy)) };
+  }
   if (!o.steny || typeof o.steny !== 'object') o.steny = {};
   if (!o.steny[k] || typeof o.steny[k] !== 'object') o.steny[k] = { odM: 0, pasy: [] };
   const st = o.steny[k];
