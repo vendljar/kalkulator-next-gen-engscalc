@@ -5404,15 +5404,16 @@
   {
    "id": "343",
    "vlna": "B",
-   "stav": "ceka",
+   "stav": "hotovo",
    "dulezitost": "vysoka",
    "slozitost": "M",
-   "nazev": "F4: průchozí šachta — dvojí boční světlíky (N45) a čelní stěna bez nástupišť A (N46)",
+   "nazev": "F4a: průchozí šachta — pravidlo nástupišť pro stěny A i C (N45, N46)",
    "proc": "Hloubkový test 24. 9. 2026 (20. kolo, v24.9.2; ověřeno na v24.9.3): N45 boční světlíky se počítají dvakrát (vyšší cena); N46 přesun nástupišť A → C mění cenu zrcadlové šachty.",
-   "detail": "N45 počítat jen z nástupišť A; N46 výchozí návrh: plné sklo za patra bez nástupiště A (A4C0 beze změny). Rozpracované zakázky se přecení, odeslané ne.",
+   "detail": "Zadání J. V. 24. 9. večer: „nástupiště obsahuje světlíky, dveře, portály s plechy a nástupní plechy; nástupiště je všude tam, kde jsou dveře. Kde dveře nejsou, je provedeno opláštění zvoleným materiálem po celé ploše.\" Stejně i po stěnách (#295). Světlíky ze skla své stěny. Stěna dělena podle skutečných výšek (pásy výšky podlaží, nejvyšší patro pás hlavy = přejezd; prohlubeň mimo stěny).",
    "hotovoKdyz": "Test průchozí šachty s bočními světlíky; A/C souměrnost podle rozhodnutí.",
-   "pozn": "J. V. 24. 9. večer: souhlas s přeceněním rozpracovaných průchozích zakázek (odeslané se nemění). N46 předložena názorně (dnes / mož. 1 / mož. 2); čeká potvrzení mož. 2 a odpověď na souměrnost patra s dveřmi C (portál + světlíky podle V37, nebo sklo kolem dveří podle #296).",
-   "kde": "`src/engine.js`"
+   "pozn": "HOTOVO v24.9.6 (F4a): test_nastupiste.js 20 (proti dosavadnímu jádru 13 selže), přepsané test_oplasteni_zapnuti/test_pruchozi_zadni/test_sklo_steny, mutace jádra +4. Zkušební ceník: A4C0 = A0C4 = 889 000 (interiér), A4C4 971 000 → 931 000. Předpoklad: nejvyšší stanice je vpředu, má-li čelní stěna dveře (zadání nese jen počty). Exteriér: čelní stěna VSG 4.4.1, ostatní dvojsklo — zrcadlová A0C4 proto o 36 000 levnější než A4C0 (ověřit s J. V.).",
+   "kde": "`src/engine.js`",
+   "hotovoV": "v24.9.6"
   },
   {
    "id": "344",
@@ -5422,9 +5423,10 @@
    "slozitost": "M",
    "nazev": "F4: soulad dokumentů, specifikace a příplatků (N48–N52, N55, N56)",
    "proc": "Hloubkový test 24. 9. 2026 (20. kolo, v24.9.2; ověřeno na v24.9.3): specifikace slibuje vyřazené položky (N48), u nabízených příplatků píše „zajistí objednatel\" (N49), VSG/SKN po stěnách i u Cetrisu (N50), lešení v příplatcích jinak (N51), dva pásy „jiné\" stejného názvu (N52), sleva v přehledu vs. tisk (N55), záporné hodiny (N56).",
-   "detail": "N49 schváleno (J. V. 24. 9. večer): u nabízeného příplatku „lze doplnit – viz příplatkové ceny“. N51 návrh: m × sazba + celý fix v obou místech, přepis 0 m = 0 Kč. N56 návrh: hodiny a ATYP hodiny bez záporných čísel, řádek nikdy pod 0 (Model 2 ořízne, Model 1 upozorní). N51 a N56 předloženy názorně, čekají potvrzení.",
+   "detail": "Hotovo v24.9.6: N51 (lešení m × sazba + celý fix v obou místech, 0 m = 0 Kč), N56 (záporné hodiny ručně zadat nejde — OCK montáž/projekce základ i ATYP, PROJ hodiny i rezerva; korekce montáže zůstávají). Zbývá: N48 specifikace slibuje vyřazené položky, N49 znění „lze doplnit – viz příplatkové ceny\" (schváleno), N50 VSG/SKN po stěnách u Cetrisu a „bez\", N52 dva pásy „jiné\" stejného názvu, N55 sleva v přehledu vs. tisk.",
    "hotovoKdyz": "Každý nález test.",
-   "kde": "`src/techspec.js`, `src/engine.js`, `src/zakazka.js`, `src/ui/kalk_proj.js`"
+   "kde": "`src/techspec.js`, `src/engine.js`, `src/zakazka.js`, `src/ui/kalk_proj.js`",
+   "pozn": "Část hotová ve v24.9.6 (N51, N56 — schváleno J. V. 24. 9. večer); zbytek čeká."
   },
   {
    "id": "345",
@@ -5449,7 +5451,8 @@
    "proc": "Hloubkový test 24. 9. 2026 (20. kolo, v24.9.2; ověřeno na v24.9.3): v rámci jednoho webu sdílí náhledy nasazení a nasazení jiných větví ostré úložiště Blobs i proměnné; u veřejného repa může pull request poslat kdokoli. B79 (osobní údaje v repu): J. V. 24. 9. večer rozhodl nechat, jak je.",
    "detail": "Branch deploys jen produkční větev, Deploy Previews vypnuté, Sensitive variable policy = Require approval, tajné proměnné jen v kontextu Production, rozdílné TAJEMSTVI_RELACE test × ostrý; výsledek zapsat do NASAZENI_NETLIFY.md.",
    "hotovoKdyz": "Nastavení ověřené na obou webech a zapsané.",
-   "kde": "`NASAZENI_NETLIFY.md`, nastavení Netlify"
+   "kde": "`NASAZENI_NETLIFY.md`, nastavení Netlify",
+   "pozn": "J. V. 24. 9. večer: ponechat v roadmapě k prověření, podle něj by nastavení mělo být v pořádku. Postup ověření (6 kroků) je v podkladu z 24. 9."
   },
   {
    "id": "347",
@@ -5466,26 +5469,55 @@
   {
    "id": "348",
    "vlna": "B",
-   "stav": "ceka",
+   "stav": "hotovo",
    "dulezitost": "vysoka",
    "slozitost": "S",
    "nazev": "Šablony: pojistky proti omylu při nahrání a falešné „zastaralá\" (ŠAB2)",
    "proc": "J. V. 24. 9. večer (snímek Nastavení → Šablony): jako česká šablona nabídky OCK je zveřejněný soubor Sablona_NABIDKA_CN_v11_DE.docx (verze 9) a EN/DE mutace hlásí „zastaralá\", přestože byly nahrány moderní šablony. Rozbor: (a) tlačítko „Nahrát .docx\" je jediné a vždy nahrává do češtiny, bez kontroly jazyka; (b) doladěnou mutaci nejde nahrát k jazyku; (c) zastaralost se určuje podle data zveřejnění a server identickou mutaci znovu nezveřejní („už je zveřejněná\"), takže po novém zveřejnění češtiny zůstane mutace „starší\" natrvalo.",
    "detail": "Kontrola jazyka při nahrání české šablony (odmítnout / nabídnout uložit jako EN/DE); nahrání doladěné mutace přímo k jazyku; mutace nese otisk české verze, ze které vznikla, a zastaralost se určí podle otisku; zveřejnění češtiny s mutacemi jako jeden krok.",
    "hotovoKdyz": "Německý soubor nejde omylem zveřejnit jako český; mutace vyrobená z platné češtiny se nikdy neoznačí jako zastaralá; testy.",
-   "kde": "`src/ui/nastaveni_ui.js`, `src/ui/common.js` (sablonaMutaceZastarala), `netlify/functions/sablony.mjs`"
+   "kde": "`src/ui/nastaveni_ui.js`, `src/ui/common.js` (sablonaMutaceZastarala), `netlify/functions/sablony.mjs`",
+   "hotovoV": "v24.9.5",
+   "pozn": "HOTOVO v24.9.5 (dávka G1): kontrola jazyka souboru v průvodci (německý soubor nabídne „Uložit jako DE verzi\"), doladěný soubor přímo k jazyku s kontrolou jazyka a symbolů, zdrojOtisk (server přijme jen k platné češtině, jinak 409; stejný soubor k nové češtině projde), zastaralost podle obsahu. test_sablony_online +23, netlify/test_sablony.mjs 19 (bez opravy 10 selže), overit_sablony_online 47, mutace jádra +3, serveru +3. Na ostrém/testovacím webu je dál potřeba zkontrolovat, co je zveřejněno jako česká nabídka OCK (verze 9 = …_v11_DE.docx) a případně použít „Vrátit\"."
   },
   {
    "id": "349",
    "vlna": "C",
-   "stav": "ceka",
+   "stav": "hotovo",
    "dulezitost": "stredni",
    "slozitost": "L",
    "nazev": "Šablony dokumentů: zjednodušená obrazovka (tabulka dokument × jazyk, průvodce nahráním, historie a vrácení)",
    "proc": "J. V. 24. 9. večer: práce se šablonami a jazykovými mutacemi je chaotická. Vizuální návrh předložen 24. 9. (3 plátna: přehled, nahrání s kontrolou, jazykové verze a zveřejnění najednou).",
    "detail": "Jedna tabulka dokument × CZ/EN/DE/FR se stavem každé buňky; zmizí dvojí stav „nahráno v prohlížeči\" × „na serveru\"; průvodce: soubor → kontrola (jazyk, symboly, rozdíl) → jazykové verze → zveřejnit najednou; historie verzí s „vrátit\"; režim přísný/měkký do pokročilých.",
    "hotovoKdyz": "Administrátor zvládne novou šablonu se všemi jazyky jedním průchodem; harness v prohlížeči.",
-   "kde": "`src/ui/nastaveni_ui.js`, `src/ui/online_ui.js`, `netlify/functions/sablony.mjs`"
+   "kde": "`src/ui/nastaveni_ui.js`, `src/ui/online_ui.js`, `netlify/functions/sablony.mjs`",
+   "hotovoV": "v24.9.5",
+   "pozn": "HOTOVO v24.9.5 (dávka G1) podle vizuálního návrhu odsouhlaseného J. V. 24. 9. večer: tabulka dokument × CZ/EN/DE/FR se stavem ze serveru, detail s jazykovými verzemi a historií, průvodce (soubor → kontrola → jazykové verze → zveřejnit najednou), „Vrátit\" starší verzi (server ji zveřejní znovu jako novou). Offline zůstává stará obrazovka."
+  },
+  {
+   "id": "351",
+   "vlna": "B",
+   "stav": "blokovano",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "cekaNa": "J. V.: co je nad dveřmi, když světlík není (a plech nadpraží / b opláštění stěny / c zajistí stavba); výchozí a",
+   "nazev": "Prostor nad dveřmi bez světlíku se neoceňuje (N58)",
+   "proc": "Dotaz J. V. 24. 9. večer. Bez zaškrtnutého světlíku nad dveřmi se pás mezi horní hranou dveří (2,3 m) a světlou výškou nepočítá ničím — ani sklem, ani plechem (oplechování dveří končí na 2,3 m, podesta je jen pás u stropu a jen v interiéru). Při výšce podlaží 3 m je to 0,5 m × šířka stěny na každé nástupiště.",
+   "detail": "Podle odpovědi: plech nadpraží (m² nebo bm), opláštění materiálem stěny, nebo text „zajistí objednatel\" ve specifikaci. Týká se všech šachet bez světlíku, i neprůchozích — mění cenu.",
+   "hotovoKdyz": "Pás nad dveřmi má jasné ocenění nebo text ve specifikaci; test.",
+   "kde": "`src/engine.js` (zasklení, plechy), `src/techspec.js`"
+  },
+  {
+   "id": "350",
+   "vlna": "B",
+   "stav": "ceka",
+   "dulezitost": "stredni",
+   "slozitost": "M",
+   "nazev": "Slovník šablon: nabídka PROJ a smlouvy o dílo (jazykové verze skoro celé česky)",
+   "proc": "Zkouška G1 nad skutečnými šablonami (24. 9. 2026): slovník přeloží nabídku OCK na 100 %, nabídku PROJ na 26 %, smlouvy o dílo na 0–3 %. Jejich EN/DE/FR verze by vyšly skoro celé česky; průvodce šablon to od v24.9.5 ukáže (pod 90 % varování).",
+   "detail": "Doplnit slovník pevných textů nabídky PROJ a obou SoD (návrh Claude, odborná a smluvní kontrola J. V. — smluvní texty se nepřekládají strojově bez kontroly), test pokrytí jako u nabídky OCK.",
+   "hotovoKdyz": "Průvodce ukáže u PROJ a SoD pokrytí přes 90 %; test.",
+   "kde": "`src/preklad.js`, test překladů šablon"
   }
  ],
  "meta" : {
