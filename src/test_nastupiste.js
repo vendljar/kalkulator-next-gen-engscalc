@@ -41,6 +41,17 @@ for (const typ of ['interiérová', 'exteriérová']) {
   }
 }
 
+/* Zrcadlová šachta v interiéru (jedno sklo na všech stěnách) stojí stejně —
+ * hlídá i spojovací plechy čelního rámu (podle počtu stěn s dveřmi). */
+{
+  const a = spocti('interiérová', 4, 0).r, b = spocti('interiérová', 0, 4).r;
+  const spoj = r => r.plechy.spojeRows.find(x => x.key === 'celni').spoju;
+  test('interiér: A4C0 a A0C4 stojí stejně', blizko(a.souhrn.zakladCena, b.souhrn.zakladCena, 0.5),
+    [a.souhrn.zakladCena, b.souhrn.zakladCena]);
+  test('spoje čelního rámu: jedna stěna s dveřmi = jednou (A0C4 jako A4C0)', spoj(a) === spoj(b), [spoj(a), spoj(b)]);
+  test('spoje čelního rámu: dveře na obou stěnách = dvakrát', spoj(spocti('interiérová', 2, 2).r) === 2 * spoj(a));
+}
+
 /* Stěna bez dveří = celá stěna; stěna s dveřmi v každém patře = jen světlíky. */
 {
   const { r } = spocti('interiérová', 4, 0);

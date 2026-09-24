@@ -694,11 +694,11 @@ function oplStenaVarovani(k, opl) {
 
   /* STĚNA, ZE KTERÉ SE DO CENY NEDOSTANE NIC (nález J. V. 21. 9. 2026).
    *
-   * POZOR, NÁSLEDUJÍCÍ ODSTAVCE POPISUJÍ STAV PŘED #295 — nechávají se kvůli
-   * historii. Dnes je čelní stěna celá stěna mínus otvory dveří a portálů
-   * (#295) a zadní stěna průchozí šachty se počítá stejně (#296); nula
-   * u nich vzniká jen tehdy, když otvory zaberou celou stěnu. Text
-   * varování níž to od 22. 9. 2026 říká (N39).
+   * POZOR, NÁSLEDUJÍCÍ ODSTAVCE POPISUJÍ STAV PŘED #295 a N46 — nechávají
+   * se kvůli historii. Od 24. 9. 2026 platí pravidlo nástupišť (N46): patro
+   * s dveřmi nese jen světlíky, patro bez dveří se opláští celé; stěna
+   * s dveřmi v každém patře má bez světlíků plochu 0 m² a varování níž to
+   * vysvětlí.
    *
    * Plocha se v režimu po stěnách bere z dosavadního výpočtu (`skloSteny`)
    * a pásy si ji dělí poměrem výšek — aby zapnutí režimu nehnulo cenou.
@@ -733,18 +733,20 @@ function oplStenaVarovani(k, opl) {
      * Nula tedy u těch dvou stěn znamená jediné: otvory zaberou celou
      * stěnu (nízká šachta s mnoha nástupišti). Stará věta posílala
      * obchodníka hledat světlíky, které s tím nemají nic společného. */
-    const otvoryC = k === 'C' && !!(Z && Z.pruchoziSachta) && (+(Z && Z.nastupisteC) || 0) > 0;
+    /* OD 24. 9. 2026 (N46, pravidlo nástupišť): patro s dveřmi je nástupiště
+     * — dveře, portál s plechy, nástupní plech a světlíky; opláštění nese jen
+     * světlíky. Stěna s dveřmi v každém patře (čelní stěna běžné šachty)
+     * má proto bez světlíků plochu 0 m² — to je správně, ne chyba. Hláška
+     * to vysvětlí, aby si obchodník nemyslel, že sklo přes celou stěnu je
+     * zdarma. */
+    const sDvermi = k === 'A' || (k === 'C' && !!(Z && Z.pruchoziSachta) && (+(Z && Z.nastupisteC) || 0) > 0);
     if (nadNulou.length && !jenBez && m2 < 0.005)
       nulova = 'Z téhle stěny se do ceny nedostane nic: nad úrovní nástupiště vychází 0 m². '
-        + (k === 'A'
-          ? 'Plocha čelní stěny je celá stěna mínus otvory dveří a portálů (šířka otvoru × 2,3 m '
-            + 'za každé nástupiště) — u téhle šachty otvory zaberou celou stěnu. Zkontrolujte '
-            + 'výšku šachty a počet nástupišť.'
-          : otvoryC
-            ? 'Plocha zadní stěny je celá stěna mínus otvory dveří a portálů na zadní straně — '
-              + 'u téhle šachty otvory zaberou celou stěnu. Zkontrolujte výšku šachty a počet '
-              + 'nástupišť vzadu.'
-            : 'Zkontrolujte rozměry šachty — dosavadní výpočet u téhle stěny žádnou plochu nedává.');
+        + (sDvermi
+          ? 'Stěna má dveře v každém patře, takže je celá nástupiště: kolem dveří je portál s plechy '
+            + 'a nástupní plech, opláštění nese jen světlíky. Bez světlíků je plocha 0 m² — tak to má být. '
+            + 'Chcete-li nad dveřmi sklo, zaškrtněte světlík nad dveřmi.'
+          : 'Zkontrolujte rozměry šachty — výpočet u téhle stěny žádnou plochu nedává.');
   }
 
   if (oplCelaVyska(k)) return nulova;

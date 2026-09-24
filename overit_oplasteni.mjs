@@ -443,14 +443,18 @@ zkus('rozdělení stěn se vypnutím režimu nezahodí', prezilo === 2, prezilo)
    * světlíků. Varování v kódu zůstává jako pojistka pro zadání, kde by
    * plocha vyšla nulová i tak (třeba dveře přes celou stěnu) — tady už ale
    * nemá co hlásit, a právě to se měří. */
-  zkus('čelní stěna bez světlíků teď plochu MÁ', stav.a > 1, stav.a);
-  zkus('a nehlásí se, že se do ceny nedostane nic',
-    !/nedostane nic/i.test(stav.varA), stav.varA.slice(0, 160));
+  /* ZMĚNA OČEKÁVÁNÍ 24. 9. 2026 (N46, pravidlo nástupišť J. V.): čelní
+   * stěna běžné šachty má dveře v každém patře, je tedy celá nástupiště —
+   * opláštění nese jen světlíky, bez nich 0 m². Varování to vysvětlí
+   * (a neposílá obchodníka hledat chybu v rozměrech). */
+  zkus('N46: čelní stěna bez světlíků je nástupiště — plocha 0 m²', stav.a < 0.005, stav.a);
+  zkus('N46: hláška vysvětlí, že jde o nástupiště a pomůže světlík',
+    /celá nástupiště/.test(stav.varA) && /světlík nad dveřmi/.test(stav.varA), stav.varA.slice(0, 200));
   zkus('ani u ostatních stěn', !/nedostane nic/i.test(stav.varB), stav.varB.slice(0, 120));
   /* Otvory dveří se ale odečetly — čelní stěna musí být MENŠÍ než zadní,
    * která u neprůchozí šachty žádné otvory nemá. Bez tohohle by kontrola
    * výš prošla i u výpočtu, který otvory ignoruje. */
-  zkus('a dveřní otvory jsou odečtené (čelní stěna < zadní)',
+  zkus('a čelní stěna je menší než zadní (zadní bez dveří je celá)',
     stav.a < stav.c - 1, { celni: stav.a, zadni: stav.c });
 }
 
@@ -479,9 +483,9 @@ zkus('rozdělení stěn se vypnutím režimu nezahodí', prezilo === 2, prezilo)
   /* Pojistka proti prázdné kontrole: stěna A tu opravdu vychází na nulu. */
   zkus('(zadání opravdu dává čelní stěnu 0 m²)', stav.zakladA === 0, stav.zakladA);
   zkus('varování u nulové čelní stěny se ukáže', /nedostane nic/.test(stav.varA), stav.varA.slice(0, 160));
-  zkus('a jako důvod jmenuje otvory dveří a portálů', /otvory dveří a portálů/.test(stav.varA),
+  /* Od 24. 9. 2026 (N46) je důvodem pravidlo nástupišť, ne otvory. */
+  zkus('N46: jako důvod jmenuje nástupiště (portál s plechy, jen světlíky)', /celá nástupiště/.test(stav.varA),
     stav.varA.slice(0, 200));
-  zkus('ne světlíky (stav před #295)', !/světlík/i.test(stav.varA), stav.varA.slice(0, 200));
 }
 
 /* ---------- N41d: vykreslení nesmí zapisovat do zamčené varianty ----------
