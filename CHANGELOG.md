@@ -8,6 +8,49 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v24.9.1 — dávka E1 (24. 9. 2026): rozhodnutí J. V. k #149 a #277
+
+- **Model 1 je zmrazený pro ne-administrátory (#332).** Rozhodnutí J. V.
+  z 24. 9.: dál se rozvíjí jen Model 2 a na Model 1 nepůjde přepnout.
+  Na Model 1 přepne jen administrátor. Pojistka je v `set()`, takže ji
+  neobejde ani jiné volání než přepínač. Zakázka, která v Modelu 1 už je,
+  se počítá dál beze změny ceny. Obchodník ji smí převést na Model 2,
+  zpátky ne, a u volby vidí štítek „Model 1 (zmrazený)". Harness
+  `overit_zobrazeni.mjs` +4. Ověřeno i obráceně: bez pojistky 2 selhání,
+  bez úpravy přepínače 2 selhání.
+- **Termín dodání s ATYP je v nabídce (#330, nález TD1).** Termín dodání
+  z krycího listu (`{{PODM_TERMIN_DODANI}}`) je první odrážkou kapitoly V.
+  v náhledu i v PDF. Zahrnuje prodloužení za ATYP i ruční přepis. Zbytek
+  kapitoly zůstává textem z Firmy. Když lhůta ve Firmě chybí, odrážka se
+  vynechá (nic se nevymýšlí). Překlad EN/DE/FR zajišťuje nový vzor, který
+  stojí před obecným „cca …", aby nevznikla půlka věty česky.
+  Nové 15. pravidlo kontrol před nabídkou **„Termín dodání u atypické
+  zakázky"** hlásí dva případy: kapitola V. z Firmy uvádí jinou lhůtu než
+  termín ze zakázky, nebo ve Firmě chybí standardní lhůta. Testy:
+  `test_nabidka_kapitoly` +11, `test_kontroly` +8. Obráceně: bez opravy
+  8 a 5 selhání.
+- **Šablona CN v11 (#331) — kapitoly ze symbolů, ne natvrdo.** Šablona je
+  připravená mimo repozitář a nahraje ji administrátor. Kapitoly IV.–VI.
+  a nové DOLOŽKY v ní plní `{{FIRMA_NAB_POZADAVKY}}`,
+  `{{FIRMA_NAB_PREDANI}}` a `{{FIRMA_NAB_DOLOZKY}}`. Kapitola V. je jeden
+  symbol `{{NAB_KAP_TERMINY}}`: termín dodání ze zakázky plus text z Firmy.
+  Jde o jeden symbol, aby při nevyplněné lhůtě nezůstal prázdný řádek
+  tabulky. Word i náhled teď tisknou kapitoly ze stejného zdroje.
+  `overit_sablona.mjs` má novou sadu pro v11+ (v11: 54/54). U starší
+  šablony sadu přeskočí a řekne to. `test_nabidka_kapitoly` +4.
+- **Hlídka noční zálohy (#152, první část).** Administrátor při přihlášení
+  dnešní otisk dopořídí sám, takže přehled záloh vypadal zdravě, i když
+  noční funkce neběžela. Nová `uloZalohaHlidka()` v `src/uloziste.js`
+  sleduje zvlášť poslední **noční** otisk. Když je starší než 48 hodin
+  (dvě zmeškané noci) nebo chybí, administrátor dostane varování po
+  přihlášení i v Nastavení → Databáze. Jinak tam vidí klidný řádek
+  s datem poslední noční zálohy. Obchodník hlídku nevidí. Testy:
+  `test_uloziste` +8, `overit_online` +5. Obráceně: bez filtru na noční
+  otisk 4 a 2 selhání. Zkouška obnovy nanečisto (2. část #152) zůstává
+  otevřená.
+
+---
+
 ## v23.9.3 — dávka D3 (23. 9. 2026 večer): nástroje a testy, aplikace beze změny
 
 - **Mutační testování jádra je v repozitáři (N19).** `mutace_jadro.mjs`

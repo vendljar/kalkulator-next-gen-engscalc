@@ -3213,17 +3213,17 @@
    "kde" : "netlify/functions (plánovaná funkce zálohy), úložiště Blobs „zalohy\", administrace Netlify"
   },
   {
-   "dulezitost" : "stredni",
-   "proc" : "Záloha, ze které se nikdy nezkusila obnova, není záloha. Jednorázové prověření (#151) doloží, že zálohy vznikají; tahle položka zajistí, že to tak zůstane a že se z otisku dá databáze skutečně postavit zpět.",
-   "slozitost" : "S",
-   "detail" : "Dvě části: 1) OPAKOVANÁ KONTROLA — dohodnout rytmus (návrh: jednou měsíčně) a formu: buď ruční minutová kontrola v aplikaci (datum posledního otisku v kartě Online databáze), nebo hlídka, která na chybějící čerstvou zálohu upozorní sama (naplánovaná úloha / kontrola při přihlášení administrátora s upozorněním, když je poslední otisk starší než 2 dny). 2) ZKOUŠKA OBNOVY — jednou za čtvrt roku vzít noční otisk a projít obnovu nanečisto (do oddělené větve/prostředí, ne do ostré databáze): načíst otisk, ověřit počty zakázek, verzi ceníku a přihlášení. Postup obnovy zapsat, aby se v nouzi nehledal.",
-   "vlna" : "E",
-   "kde" : "netlify/functions, ui/online_ui.js (karta Online databáze), provozní dokument s postupem obnovy",
-   "stav" : "ceka",
-   "nazev" : "Pravidelná kontrola záloh a zkouška obnovy",
-   "hotovoKdyz" : "Je dohodnutý a zapsaný rytmus kontrol, funguje upozornění na zastaralou zálohu (nebo je zapsán ruční postup) a proběhla první úspěšná zkouška obnovy se zapsaným postupem.",
-   "id" : "152",
-   "pozn" : "Navazuje na #151. Nespouštět bez pokynu."
+   "dulezitost": "stredni",
+   "proc": "Záloha, ze které se nikdy nezkusila obnova, není záloha. Jednorázové prověření (#151) doloží, že zálohy vznikají; tahle položka zajistí, že to tak zůstane a že se z otisku dá databáze skutečně postavit zpět.",
+   "slozitost": "S",
+   "detail": "Dvě části: 1) OPAKOVANÁ KONTROLA — dohodnout rytmus (návrh: jednou měsíčně) a formu: buď ruční minutová kontrola v aplikaci (datum posledního otisku v kartě Online databáze), nebo hlídka, která na chybějící čerstvou zálohu upozorní sama (naplánovaná úloha / kontrola při přihlášení administrátora s upozorněním, když je poslední otisk starší než 2 dny). 2) ZKOUŠKA OBNOVY — jednou za čtvrt roku vzít noční otisk a projít obnovu nanečisto (do oddělené větve/prostředí, ne do ostré databáze): načíst otisk, ověřit počty zakázek, verzi ceníku a přihlášení. Postup obnovy zapsat, aby se v nouzi nehledal.",
+   "vlna": "E",
+   "kde": "netlify/functions, ui/online_ui.js (karta Online databáze), provozní dokument s postupem obnovy",
+   "stav": "ceka",
+   "nazev": "Pravidelná kontrola záloh a zkouška obnovy",
+   "hotovoKdyz": "Je dohodnutý a zapsaný rytmus kontrol, funguje upozornění na zastaralou zálohu (nebo je zapsán ruční postup) a proběhla první úspěšná zkouška obnovy se zapsaným postupem.",
+   "id": "152",
+   "pozn": "Navazuje na #151. Nespouštět bez pokynu.\n\nČÁST 1 HOTOVA v24.9.1 (E1): hlídka noční zálohy — uloZalohaHlidka() v src/uloziste.js; poslední NOČNÍ otisk starší než 48 h nebo žádný = varování administrátorovi po přihlášení a v Nastavení → Databáze (dopořízená záloha při přihlášení ho už nezakryje). Testy test_uloziste +8, overit_online +5. Zbývá část 2: zkouška obnovy nanečisto a zapsaný postup."
   },
   {
    "hotovoV" : "hotovo",
@@ -5225,40 +5225,44 @@
   {
    "id": "330",
    "vlna": "B",
-   "stav": "ceka",
-   "dulezitost": "vysoka",
+   "stav": "hotovo",
+   "dulezitost": "",
    "slozitost": "S",
    "nazev": "Termín dodání s ATYP se do nabídky nedostane (TD1)",
    "proc": "Nalezeno 23. 9. 2026 při podkladu k #277. Krycí list počítá termín dodání i s +4 týdny za ATYP (zadání 21. 8. 2026) a skládá {{PODM_TERMIN_DODANI}} — ten ale nepoužívá ani šablona v10, ani náhled v aplikaci; kapitola V. všude říká pevné „cca 12 týdnů\".",
    "detail": "Návrh: termín dodání jako první odrážka kapitoly V. (náhled i Word), pevné číslo z textu Firmy vypustit. U atypické zakázky dnes zákazník dostane o 4 týdny kratší termín, než počítá krycí list.",
    "hotovoKdyz": "Nabídka u ATYP nese prodloužený termín z krycího listu; test v náhledu i ve Wordu.",
    "kde": "`src/kryci.js` (kryciTerminDodani), `src/nabidka.js` (kapitoly)",
-   "pozn": "ROZHODNUTÍ J. V. 24. 9. 2026: schváleno (podklad #277, bod 2). Pevné „cca 12 týdnů\" v textu kapitoly V. ve Firmě na webech upraví administrátor."
+   "pozn": "ROZHODNUTÍ J. V. 24. 9. 2026: schváleno (podklad #277, bod 2). Pevné „cca 12 týdnů\" v textu kapitoly V. ve Firmě na webech upraví administrátor.\n\nHOTOVO v24.9.1 (E1): termín dodání z krycího listu (s ATYP a ručním přepisem) je první odrážkou kapitoly V. v náhledu i PDF; ve Wordu přes {{NAB_KAP_TERMINY}} v šabloně v11 (#331). Překlad EN/DE/FR vzorem. Nové pravidlo kontrol „Termín dodání u atypické zakázky“ hlásí dvě různé lhůty (text kapitoly V. z Firmy × termín) i chybějící lhůtu ve Firmě. Testy test_nabidka_kapitoly +11, test_kontroly +8. Vypustit „cca 12 týdnů“ z textu Firmy na webech zůstává administrátorovi — kontrola na to upozorní.",
+   "hotovoV": "v24.9.1"
   },
   {
    "id": "331",
    "vlna": "B",
-   "stav": "ceka",
-   "dulezitost": "stredni",
+   "stav": "blokovano",
+   "dulezitost": "",
    "slozitost": "S",
    "nazev": "Šablona CN v11: kapitoly IV.–VI. ze symbolů, ne natvrdo",
    "proc": "Zjištěno 23. 9. 2026 (#277): náhled z aplikace bere kapitoly IV.–VI. z Nastavení → Firma, Word šablona v10 je má napsané natvrdo — úprava v Nastavení se do Wordu nedostane.",
    "detail": "Nahradit pevné texty v šabloně symboly {{FIRMA_NAB_POZADAVKY}}, {{FIRMA_NAB_TERMINY}}, {{FIRMA_NAB_PREDANI}} a doplnit {{FIRMA_NAB_DOLOZKY}}; aplikace je už vydává i jazykově. Šablonu připraví Claude, nahraje administrátor (Nastavení → Šablony); do repozitáře nepatří.",
    "hotovoKdyz": "Word i náhled tisknou kapitoly ze stejného zdroje; overit_sablona nad v11 zelený.",
    "kde": "šablona Sablona_NABIDKA_CN (Drive), `src/firma.js`",
-   "pozn": "ROZHODNUTÍ J. V. 24. 9. 2026: schváleno (podklad #277, bod 1). Šablonu v11 připraví Claude, na weby ji nahraje administrátor."
+   "pozn": "ROZHODNUTÍ J. V. 24. 9. 2026: schváleno (podklad #277, bod 1). Šablonu v11 připraví Claude, na weby ji nahraje administrátor.\n\nKÓD HOTOV v24.9.1 (E1), ŠABLONA PŘIPRAVENA 24. 9. 2026: v11 má kapitoly IV.–VI. a nové DOLOŽKY ze symbolů {{FIRMA_NAB_POZADAVKY}}, {{NAB_KAP_TERMINY}} (termín dodání + text kapitoly V.), {{FIRMA_NAB_PREDANI}}, {{FIRMA_NAB_DOLOZKY}}. overit_sablona.mjs nad v11 54/54. Předána J. V. mimo repozitář. Věta „Předávací protokol z bodů 1. a 2. …“ zůstala v šabloně pevná (ve Firmě není).",
+   "cekaNa": "nahrání šablony Sablona_NABIDKA_CN_v11.docx administrátorem (Nastavení → Šablony) na test i ostrý web"
   },
   {
    "id": "332",
    "vlna": "B",
-   "stav": "ceka",
-   "dulezitost": "vysoka",
+   "stav": "hotovo",
+   "dulezitost": "",
    "slozitost": "S",
    "nazev": "Zmrazit Model 1: přepnout na něj smí jen administrátor",
    "proc": "Rozhodnutí J. V. 24. 9. 2026: „dále už budeme rozpracovávat jen model 2, model 1 zůstává beze změny … model 1 zmraz pro použití mimo administrátory, tedy nepůjde na něj už přepnout.\"",
    "detail": "Přepínač Režim výpočtu (src/ui/common.js) nabídne Model 1 jen administrátorovi; ostatní na něj nepřepnou (a to ani voláním set('OCK.fixes') — pojistka i v obsluze). Nové zakázky jsou Model 2 (od 17. 9.). Uložené zakázky v Modelu 1 se počítají dál beze změny ceny; obchodník je smí převést na Model 2. Jádro (engine.js) se nemění.",
    "hotovoKdyz": "Obchodník ani vedoucí nepřepne variantu na Model 1; administrátor ano; staré zakázky v Modelu 1 mají stejnou cenu; test v prohlížeči.",
-   "kde": "`src/ui/common.js` (rezimRow), obsluha set()"
+   "kde": "`src/ui/common.js` (rezimRow), obsluha set()",
+   "hotovoV": "v24.9.1",
+   "pozn": "HOTOVO v24.9.1 (dávka E1): pojistka v set() — ne-administrátor nepřepne na Model 1 žádnou cestou; přepínač mu Model 1 nenabízí. Zakázka už v Modelu 1 se počítá beze změny, obchodník vidí „Model 1 (zmrazený)“ a smí ji převést na Model 2, zpět ne. Harness overit_zobrazeni.mjs +4 (obráceně 2 + 2 selhání)."
   }
  ],
  "meta" : {
@@ -5715,6 +5719,10 @@
   {
    "text": "Večer 23. 9. 2026 (engscalc), D4 — podklady k rozhodnutí: #149 Model 1 × 2 (12 rozdílů, nástroj porovnani_modelu.js, nález #329) a #277 oddíly nabídky (všechny čtyři už jsou; nálezy #330 termín dodání s ATYP a #331 šablona natvrdo).",
    "hotovo": true
+  },
+  {
+   "text": "Dopoledne 24. 9. 2026 (engscalc), dávka E1 na pokyn J. V. („pusť E1 a slouč do main“; main = v23.9.3): Model 1 zmrazený pro ne-administrátory (#332), termín dodání s ATYP v kapitole V. + nové pravidlo kontrol (#330), šablona CN v11 se symboly kapitol připravená k nahrání (#331), hlídka noční zálohy (#152, 1. část).",
+   "hotovo": true
   }
   ],
   "pravidla" : [
@@ -5801,7 +5809,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v23.9.3 (engscalc)",
+  "build" : "v24.9.1 (engscalc)",
   "stavKDatu" : "24. 9. 2026"
  },
  "_comment" : [

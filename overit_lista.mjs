@@ -911,7 +911,7 @@ ok('modul kontrol je v sestavení', k33.logika && k33.panelFn);
 // 11 = 10 z vlny B + „ico" (30. 7. 2026)
 /* 12 = 10 z vlny B + „ico" + „atypBezCeny" (obojí 30. 7. 2026). Číslo je tu
  * napevno schválně: omylem zdvojené pravidlo by se jinak nepoznalo. */
-ok(`pravidel je ${k33.pravidel} (čekám 14 – slevaProjMax po auditu, kapitoly 23. 9. 2026)`, k33.pravidel === 14);
+ok(`pravidel je ${k33.pravidel} (čekám 15 – slevaProjMax po auditu, kapitoly 23. 9., terminAtyp 24. 9. 2026)`, k33.pravidel === 15);
 ok('všechna pravidla jsou varování (úroveň 2)', k33.uroven);
 /* Sestavení nese ukázkový ceník, takže tohle pravidlo svítí vždycky – je to
  * zároveň důkaz, že se panel v čerstvé instalaci opravdu ukáže. */
