@@ -1144,7 +1144,7 @@ function bunkaCena(r) {
   if (r.vlastni)
     return `<input type="number" step="any" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="vlastniSet('${escJs(r.sekce)}', ${r.idx}, 'cena', this.value)">`;
   if (r.cenaPath)
-    return `<input type="number" step="any" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="set('${r.cenaPath}', +this.value)" title="jedn. cena z ceníku – změna se propíše i do Ceníku nákladů (obousměrně)">`;
+    return `<input type="number" step="any" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="set('${escJs(r.cenaPath)}', +this.value)" title="jedn. cena z ceníku – změna se propíše i do Ceníku nákladů (obousměrně)">`;
   const origJs = keyAttr(r.origNazev);
   return `<input type="number" step="any" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="cenaSet('${origJs}', this.value)" title="jedn. cena – ruční přepis (bez ceníkové vazby)">` +
     (r.cenaPrepsana ? ` <button class="mini noprint" title="vrátit vypočtenou cenu (${fmt(r.cenaAuto)})" onclick="cenaSet('${origJs}', '')">↺</button>` : '');
@@ -1760,7 +1760,7 @@ function renderOutputs() {
   const pripCena = (x) => x.vlastni
     ? `<input type="number" step="any" style="width:96px" value="${+(+x.cena).toFixed(2)}" onchange="priplatekVlastniSet(${+String(x.key).split(':')[1]}, 'cena', this.value)">`
     : (x.cenaPath
-        ? `<input type="number" step="any" style="width:96px" value="${+(+x.cena).toFixed(2)}" onchange="set('${x.cenaPath}', +this.value)" title="jedn. cena z ceníku – propíše se i do Ceníku (obousměrně)">`
+        ? `<input type="number" step="any" style="width:96px" value="${+(+x.cena).toFixed(2)}" onchange="set('${escJs(x.cenaPath)}', +this.value)" title="jedn. cena z ceníku – propíše se i do Ceníku (obousměrně)">`
         : fmt(x.cena));
   const pripHlava = (col.admin ? '<th title="zaškrtnuté položky se propíší do cenové nabídky">Nabídka</th>' : '')
     + '<th>Položka</th><th>Množství</th>' + (col.admin ? '<th>Jedn. cena</th>' : '')
@@ -1818,25 +1818,25 @@ function renderOutputs() {
     <tr><td>Světlá výška nástupiště</td><td>${num(o.svetlaVyska, 3)} m</td><td>Výška prosklené části</td><td>${num(o.vyskaProsklene, 3)} m</td></tr>
     <tr><td>Šířka otvoru š. dveří</td><td>${num(o.sirkaDveri, 3)} m</td><td>Lešení věž / U-dokola</td><td>${num(o.leseniVez, 2)} m / ${num(o.leseniU, 2)} m²</td></tr>
     <tr class="subhead"><td colspan="4">Konstrukce</td></tr>
-    <tr><td>Počet rámů</td><td>${p.ramy}</td><td>Portálové příčníky</td><td>${p.portPricniky}</td></tr>
-    <tr><td>Spojky sloupků</td><td>${p.spojky}</td><td>Počet čílek (int)</td><td>${p.pocetCilek}</td></tr>
+    <tr><td>Počet rámů</td><td>${esc(p.ramy)}</td><td>Portálové příčníky</td><td>${esc(p.portPricniky)}</td></tr>
+    <tr><td>Spojky sloupků</td><td>${esc(p.spojky)}</td><td>Počet čílek (int)</td><td>${esc(p.pocetCilek)}</td></tr>
     <tr class="subhead"><td colspan="4">Materiál</td></tr>
     <tr><td>Profily celkem</td><td>${num(r.profily.celkemM, 2)} m · ${num(r.profily.celkemKg, 1)} kg</td>
         <td>Lemování ext</td><td>${num(r.profily.lemovani.m, 2)} m · ${num(r.profily.lemovani.kg, 1)} kg</td></tr>
-    <tr><td>Konstrukční plechy</td><td>${r.plechy.ks} ks · ${num(r.plechy.kg, 1)} kg</td>
-        <td>Terče / lišty</td><td>${r.dily.terceKs} ks / ${num(r.dily.listyBm, 1)} bm</td></tr>
-    <tr><td>Oplechování dveří</td><td>${r.dily.oplDvereKs} ks · ${num(r.dily.oplDvereKg, 1)} kg</td>
-        <td>Přechodové plechy</td><td>${r.dily.prechKs} ks · ${num(r.dily.prechKg, 1)} kg</td></tr>
+    <tr><td>Konstrukční plechy</td><td>${esc(r.plechy.ks)} ks · ${num(r.plechy.kg, 1)} kg</td>
+        <td>Terče / lišty</td><td>${esc(r.dily.terceKs)} ks / ${num(r.dily.listyBm, 1)} bm</td></tr>
+    <tr><td>Oplechování dveří</td><td>${esc(r.dily.oplDvereKs)} ks · ${num(r.dily.oplDvereKg, 1)} kg</td>
+        <td>Přechodové plechy</td><td>${esc(r.dily.prechKs)} ks · ${num(r.dily.prechKg, 1)} kg</td></tr>
     <tr class="subhead"><td colspan="4">Zasklení (rozměr skla ${num(r.zaskleni.rozmer.sir, 3)}×${num(r.zaskleni.rozmer.vys, 3)} m)</td></tr>
-    <tr><td>Zadní stěna</td><td>${r.zaskleni.zadni.ks} ks · ${num(r.zaskleni.zadni.m2, 2)} m²</td>
-        <td>Boční stěny</td><td>${r.zaskleni.bocni.ks} ks · ${num(r.zaskleni.bocni.m2, 2)} m²</td></tr>
-    <tr><td>Světlíky</td><td>${r.zaskleni.svetliky.ks + r.zaskleni.svetlikyBoky.ks} ks · ${num(r.zaskleni.svetliky.m2 + r.zaskleni.svetlikyBoky.m2, 2)} m²</td>
+    <tr><td>Zadní stěna</td><td>${esc(r.zaskleni.zadni.ks)} ks · ${num(r.zaskleni.zadni.m2, 2)} m²</td>
+        <td>Boční stěny</td><td>${esc(r.zaskleni.bocni.ks)} ks · ${num(r.zaskleni.bocni.m2, 2)} m²</td></tr>
+    <tr><td>Světlíky</td><td>${esc(r.zaskleni.svetliky.ks + r.zaskleni.svetlikyBoky.ks)} ks · ${num(r.zaskleni.svetliky.m2 + r.zaskleni.svetlikyBoky.m2, 2)} m²</td>
         <td><b>Zasklení celkem</b></td><td><b>${num(r.zaskleni.celkemM2, 2)} m²</b></td></tr>
     <tr class="subhead"><td colspan="4">Práce</td></tr>
     <tr><td>Montáž – hodiny navíc</td><td>${num(r.montaz.hodinyNavicCelkem, 2)} h</td>
         <td>Montáž celkem (4 os.)</td><td>${num(r.montaz.hodCelkem, 1)} h · ${num(r.montaz.dni, 1)} dní</td></tr>
     <tr><td>Lakování – Tomáš</td><td>${fmt(r.lakovani.tomas)}</td><td>Lakování – lakovna</td><td>${fmt(r.lakovani.lakovna)}</td></tr>
-    <tr><td>Spojovací materiál</td><td>${fmt(r.spojovaci.celkem)}</td><td>Nýtování</td><td>${r.spojovaci.nytovaniKs} ks</td></tr>
+    <tr><td>Spojovací materiál</td><td>${fmt(r.spojovaci.celkem)}</td><td>Nýtování</td><td>${esc(r.spojovaci.nytovaniKs)} ks</td></tr>
     </table>`;
 
   /* Souhrn (základní cena, DPH, náklad, marže) stojí NAD zadáním šachty —

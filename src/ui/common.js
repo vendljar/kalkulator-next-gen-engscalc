@@ -562,12 +562,20 @@ const escJs = s => esc(String(s ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'
 const nazevBezZavorek = t => String(t || '').replace(/\s*\([^)]*\)/g, '').trim();
 
 function rootObj() { return { Z, C, OCK, PJ, PC, TS, ZAK, SL }; }
+/* CESTA DO DAT NESMÍ SAHAT NA PROTOTYP (B70, 24. 9. 2026). Cesty vznikají
+ * i z dat zakázky (typ pásu opláštění → sazba v ceníku); `C.__proto__.x`
+ * by jinak zapsal do Object.prototype celé stránky. */
+const CESTA_ZAKAZANE = new Set(['__proto__', 'constructor', 'prototype']);
+function cestaBezpecna(path) {
+  return typeof path === 'string' && path.split('.').every(k => k !== '' && !CESTA_ZAKAZANE.has(k));
+}
 function get(path) { return path.split('.').reduce((o, k) => o[k], rootObj()); }
 /* Zápis do dat aktivní varianty. Zámek (#34): do vytištěné = odeslané nabídky
  * se už nepíše. Cesty začínající „ZAK." jsou výjimka – to jsou údaje zakázky
  * (číslo, zákazník, hlavička), ne obsah konkrétní varianty; ty musí jít
  * upravit i tehdy, když je některá varianta zamčená. */
 function set(path, v) {
+  if (!cestaBezpecna(path)) return;
   /* Zámek čtení platí i na hlavičku (ZAK.*) — viz komentář u ZAMEK_CTENI. */
   if (typeof zamekCteniStop === 'function' && zamekCteniStop()) return;
   if (!path.startsWith('ZAK.') && typeof zamekStop === 'function' && zamekStop()) return;
@@ -1310,8 +1318,10 @@ function zakazkaHlavicka(ock) {
    * Vazba je zřejmá z ceníku, kde sekce SAZBY DPH klíče nese. */
   const dphSelect = (cesta, c, sazba) => `<div class="row"><label>Sazba DPH</label>
     <select onchange="set('${cesta}', +this.value)">${dphPredvolby(c, sazba).map(o =>
-      `<option value="${o.h}" ${Math.abs((+sazba || 0) - o.h) < 1e-9 ? 'selected' : ''}>${
-        Math.round(o.h * 10000) / 100} % ${o.l}</option>`).join('')}</select></div>`;
+      /* Sazba ze zakázky jde do value jen jako ČÍSLO (B69, 24. 9. 2026):
+       * uložená zakázka může nést v sazbě řetězec s HTML. */
+      `<option value="${esc(+o.h || 0)}" ${Math.abs((+sazba || 0) - (+o.h || 0)) < 1e-9 ? 'selected' : ''}>${
+        Math.round((+o.h || 0) * 10000) / 100} % ${esc(o.l)}</option>`).join('')}</select></div>`;
   const dphRow = dphSelect('C.dph', C, C.dph);
   // PROJ má vlastní sazbu DPH (ceník PROJ) – projekční práce bývají v jiné sazbě než stavební část
   /* Předvolby DPH bere projekce z ceníku OCK (2. 9. 2026: jeden zdroj pravdy).

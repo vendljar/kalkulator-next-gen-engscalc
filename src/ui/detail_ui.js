@@ -59,10 +59,18 @@ function dvKrok(nadpis, inner, id) {
 /* řádky: [popis, hodnota, vzorec/poznámka] – třetí sloupec řídí DET-1 */
 function dvTab(rows) {
   // popis (r[0]) a vzorec (r[2]) jsou text – mezi nimi i názvy položek z ceníku,
-  // které si uživatel může přejmenovat, proto escapujeme (#6). Prostřední sloupec
-  // r[1] je naopak stavěný v kódu a smí obsahovat <b> u souhrnných řádků.
+  // které si uživatel může přejmenovat, proto escapujeme (#6).
+  /* PROSTŘEDNÍ SLOUPEC SE ESCAPUJE TAKY (B69, hloubkový test 24. 9. 2026).
+   * Do 24. 9. se vkládal syrově s odůvodněním „stavěný v kódu" — jenže do
+   * něj jdou i hodnoty ze zakázky (rohové sloupky, typ portálu, zasklení,
+   * světlíky, čistý vstup, šířka rámu, název skla…). Uložená zakázka je
+   * libovolný JSON, takže řetězec s HTML se spustil každému, kdo zakázku
+   * otevřel, i administrátorovi. Tučné písmo souhrnných řádků se teď
+   * označuje výslovně objektem { tucne: … }, ne značkou v datech. */
+  const hodnota = v => (v && typeof v === 'object' && 'tucne' in v)
+    ? `<b>${esc(v.tucne)}</b>` : esc(v == null ? '' : v);
   return `<table class="dv">${rows.map(r =>
-    `<tr><td>${esc(r[0])}</td><td class="val">${r[1]}</td>${DETAIL_VZORCE
+    `<tr><td>${esc(r[0])}</td><td class="val">${hodnota(r[1])}</td>${DETAIL_VZORCE
       ? `<td class="f">${esc(r[2] || '')}</td>` : ''}</tr>`).join('')}</table>`;
 }
 
@@ -368,11 +376,11 @@ function renderDetail() {
       'náklady sekcí HRUBÁ OCK + OPLÁŠTĚNÍ + VOLITELNÉ + REŽIE, plus náklad rezervy'],
     ['Přirážka celkem', K(r.souhrn.zakladMarze),
       'cena před zaokrouhlením − náklad celkem; není to prostý součet procent, protože rezerva se přirážky účastní'],
-    ['ZÁKLADNÍ CENA bez DPH', `<b>${K0(r.souhrn.zakladCena)}</b>`,
+    ['ZÁKLADNÍ CENA bez DPH', { tucne: K0(r.souhrn.zakladCena) },
       'náklad + přirážka, zaokrouhleno ↑ na tisíce'],
     [`DPH ${M(C.dph * 100)} %`, K0(r.souhrn.zakladDph),
       'ze zaokrouhlené základní ceny; sazba je v ceníku'],
-    ['CELKEM s DPH', `<b>${K0(r.souhrn.zakladSDph)}</b>`, 'základní cena + DPH'],
+    ['CELKEM s DPH', { tucne: K0(r.souhrn.zakladSDph) }, 'základní cena + DPH'],
     ['Příplatky celkem (pokud vše)', K0(r.souhrn.priplatkyCena), 'ceník variant, mimo základní cenu'],
   ]), 'dv-12');
 

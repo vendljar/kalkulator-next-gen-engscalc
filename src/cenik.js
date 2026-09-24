@@ -375,6 +375,8 @@ function cenikGet(obj, cesta) {
   return ks.reduce((o, k) => (o == null ? undefined : o[k]), obj);
 }
 function cenikSet(obj, cesta, val) {
+  /* B70: segment cesty nesmí sáhnout na prototyp (viz cestaBezpecna v common.js). */
+  if (String(cesta).split('.').some(k => k === '__proto__' || k === 'constructor' || k === 'prototype')) return;
   const ks = cesta.split('.').slice(1), last = ks.pop();
   const cil = ks.reduce((o, k) => (o[k] = o[k] || {}), obj);
   cil[last] = val;

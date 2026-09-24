@@ -943,7 +943,12 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
       const podNulou = Math.min(horni, 0) - Math.min(dolni, 0);
       const m2 = (vyskaProsklene > 0 ? celkem * (nadNulou / vyskaProsklene) : 0)
         + podNulou * stenaSirka[k];
-      out.push({ stena: k, typ: String(p.typ || oplVychoziTyp(k)),
+      /* Typ pásu jen z číselníku (B70, hloubkový test 24. 9. 2026): typ je
+       * zároveň cesta k sazbě v ceníku (`cenaPath`) a ta jde do obsluhy
+       * v obrazovce. Neznámý typ z ručně upravené zakázky se nahradí
+       * výchozím typem stěny — nic jiného než číselník nemá smysl. */
+      const typOk = OPLASTENI_TYPY.some(t => t.id === p.typ);
+      out.push({ stena: k, typ: typOk ? p.typ : oplVychoziTyp(k),
         nazev: p.nazev || '', naklad: p.naklad, odM: dolni, doM: horni, m2 });
       dolni = horni;
     });
