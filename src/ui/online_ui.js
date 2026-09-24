@@ -1307,7 +1307,16 @@ function onlineZalohaAuto() {
         return true;
       }))
       .catch(e => { onlineZprava('Dnešní zálohu databáze se nepodařilo pořídit: ' + e.message, 'varovani'); return false; });
-  }).then(v => onlineZalohaDoSlozkyAuto().then(() => { render(); return v; }));
+  }).then(v => onlineZalohaDoSlozkyAuto().then(() => {
+    /* Hlídka noční zálohy (#152). Dopořízený dnešní otisk je „vynucený",
+     * noční otisky nepřepíše ani nezakryje — hlídka se proto smí ptát až
+     * teď. Hláška jde přes onlineZprava AŽ NAKONEC, aby ji nepřepsala
+     * zpráva o dnešní záloze; administrátor ji uvidí hned po přihlášení,
+     * ne až v Nastavení → Databáze. */
+    const hl = (typeof uloZalohaHlidka === 'function') ? uloZalohaHlidka(ONLINE_STAV.otisky, Date.now()) : null;
+    if (hl && hl.stara) onlineZprava(hl.text, 'varovani');
+    render(); return v;
+  }));
 }
 
 /* Odlití kopie na Disk Google. Jen když je složka opravdu připojená a
@@ -2052,8 +2061,14 @@ function renderOnlineKarta() {
          <button onclick="onlineZaloha(false)" ${ONLINE_STAV.pracuje ? 'disabled' : ''}>Stáhnout zálohu</button>
          <button onclick="onlineObnovaOtevri()" ${ONLINE_STAV.pracuje ? 'disabled' : ''}
            title="nalije zálohu zpátky do online databáze – nejdřív náhled, teprve pak obnova">Obnovit ze zálohy…</button>` : '';
+    /* Hlídka noční zálohy (#152): řádek s poslední noční zálohou, při
+     * výpadku delším než 48 hodin jako varování. */
+    const hlidka = (jeAdminOnline() && ONLINE_STAV.otiskyNacteno && typeof uloZalohaHlidka === 'function')
+      ? uloZalohaHlidka(ONLINE_STAV.otisky, Date.now()) : null;
     const zalohaRadek = jeAdminOnline()
-      ? `<div class="note" id="online-zalohy">${esc(onlineOtiskPopis())}</div>` : '';
+      ? `<div class="note" id="online-zalohy">${esc(onlineOtiskPopis())}</div>`
+        + (hlidka ? `<div id="online-zalohy-nocni" class="${hlidka.stara ? 'seznam-varovani' : 'note'}">${esc(hlidka.text)}</div>` : '')
+      : '';
     telo = `${hlaska}${onlineKolizeTlacitka()}${zalohaRadek}
       <div class="btns" style="margin-top:10px">
         <!-- V režimu čtení je tlačítko vypnuté a řekne proč (V41). Strážce

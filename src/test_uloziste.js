@@ -424,5 +424,31 @@ test('věta pro odmítnutí rozliší tvar a duplicitu',
   && /nepovoleném tvaru/.test(uloIdProblemyText(uloIdProblemy({ varianty: [{ id: "x'" }] }))));
 test('různá id nejsou duplicita', uloIdProblemy({ varianty: [{ id: 'v1' }, { id: 'v2' }], aktivni: 'v1' }).length === 0);
 
+/* ---------- hlídka noční zálohy (#152, 24. 9. 2026) ----------
+ * Administrátor při přihlášení dnešní otisk dopořídí sám, takže přehled
+ * záloh vypadá zdravě, i když noční funkce týdny neběží. Hlídá se proto
+ * zvlášť poslední NOČNÍ otisk; starší než 48 hodin = zmeškané dvě noci. */
+{
+  const H = U.uloZalohaHlidka;
+  const ted = Date.parse('2026-09-24T10:00:00Z');
+  const o = (den, zdroj, porizena) => ({ den, zdroj, porizena: porizena || den + 'T02:00:00Z', pocetZakazek: 3, pocetUctu: 2 });
+  const vcera = H([o('2026-09-24', 'vynuceno', '2026-09-24T08:00:00Z'), o('2026-09-23', 'nocni-otisk')], ted);
+  test('#152: noční záloha z minulé noci je v pořádku', vcera.stara === false && vcera.posledni.den === '2026-09-23', vcera);
+  test('#152: text jmenuje poslední noční zálohu', /^Poslední noční záloha: /.test(vcera.text), vcera.text);
+  const hranice = H([o('2026-09-22', 'nocni-otisk', '2026-09-22T10:00:00Z')], ted);
+  test('#152: přesně 48 hodin je ještě v pořádku (jedna zmeškaná noc se nehlásí)', hranice.stara === false && hranice.hodin === 48, hranice);
+  const stara = H([o('2026-09-24', 'vynuceno', '2026-09-24T08:00:00Z'), o('2026-09-23', 'vynuceno'), o('2026-09-20', 'nocni-otisk')], ted);
+  test('#152: noční záloha starší než 48 h se hlásí, i když ruční zálohy jsou čerstvé', stara.stara === true, stara);
+  test('#152: hláška říká, kdy naposledy, a kde to zkontrolovat',
+    /před 4 dny/.test(stara.text) && /zaloha_nocni/.test(stara.text) && /zakrývají/.test(stara.text), stara.text);
+  const zadna = H([o('2026-09-24', 'vynuceno'), o('2026-09-23T101010-pred-obnovou', 'pred-obnovou', '2026-09-23T10:10:10Z')], ted);
+  test('#152: bez jediné noční zálohy se hlásí taky (otisk před obnovou se nepočítá)',
+    zadna.stara === true && zadna.posledni === null && /není žádná noční/.test(zadna.text), zadna);
+  test('#152: prázdný nebo rozbitý vstup nic neshodí',
+    H(null, ted).stara === true && H([null, {}, { zdroj: 'nocni-otisk', den: 'x' }], ted).stara === true);
+  test('#152: bere nejnovější noční zálohu, ne první v seznamu',
+    H([o('2026-09-10', 'nocni-otisk'), o('2026-09-23', 'nocni-otisk')], ted).posledni.den === '2026-09-23');
+}
+
 console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
 process.exit(fail ? 1 : 0);

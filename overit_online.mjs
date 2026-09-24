@@ -44,6 +44,7 @@ import zobrazeni from './netlify/functions/zobrazeni.mjs';
 import popisyFn from './netlify/functions/popisy.mjs';
 import zakazniciFn from './netlify/functions/zakaznici.mjs';
 import zalohaVynuceno from './netlify/functions/zaloha_vynuceno.mjs';
+import { porizOtisk } from './netlify/lib/zalohovani.mjs';
 import sablonyFn from './netlify/functions/sablony.mjs';
 import analytikaFn from './netlify/functions/analytika.mjs';
 import obnovaFn from './netlify/functions/obnova.mjs';
@@ -674,6 +675,40 @@ test('přehled záloh se ukazuje v kartě Online databáze',
 test('přehled záloh neveze data zakázek ani hesla',
   await page.evaluate(() => { const t = JSON.stringify(ONLINE_STAV.otisky);
     return !t.includes('Samo do databáze') && !t.includes('heslo'); }));
+
+/* ---- 5c2) hlídka noční zálohy (#152, 24. 9. 2026) ----
+ * V harnessu noční funkce nikdy neběžela — jsou tu jen otisky dopořízené
+ * při přihlášení a ručně. Přesně ten stav, který dřív vypadal zdravě. */
+test('#152: bez noční zálohy dostane administrátor po přihlášení varování',
+  await page.evaluate(() => typeof uloZalohaHlidka === 'function'
+    && uloZalohaHlidka(ONLINE_STAV.otisky, Date.now()).stara === true));
+await page.evaluate(() => { otevriNastaveni(); nastPanel('databaze'); });
+await page.waitForTimeout(200);
+{
+  const html = await page.locator('#nastaveni-panel').innerHTML();
+  test('#152: Nastavení → Databáze ukazuje varování o noční záloze',
+    /id="online-zalohy-nocni" class="seznam-varovani"/.test(html) && /není žádná noční/.test(html),
+    (html.match(/online-zalohy-nocni[^<]*<?[^<]{0,200}/) || [''])[0]);
+}
+/* Noční otisk z minulé noci — pořídí ho tatáž serverová funkce jako
+ * naplánovaná zaloha_nocni, jen s klíčem včerejška. */
+await porizOtisk('nocni-otisk', '', new Date(Date.now() - 20 * 3600000).toISOString().slice(0, 10));
+await page.evaluate(() => onlineOtiskyNacti().then(() => render()));
+await page.waitForTimeout(200);
+{
+  const html = await page.locator('#nastaveni-panel').innerHTML();
+  test('#152: s čerstvou noční zálohou je řádek klidný a jmenuje ji',
+    /id="online-zalohy-nocni" class="note"/.test(html) && /Poslední noční záloha:/.test(html),
+    (html.match(/online-zalohy-nocni[^<]*<?[^<]{0,200}/) || [''])[0]);
+}
+test('#152: obchodník hlídku nevidí (jen administrátor)',
+  await page.evaluate(() => {
+    const ja = ONLINE_STAV.ja; ONLINE_STAV.ja = Object.assign({}, ja, { role: 'Obchodník' });
+    try { return !renderOnlineKarta().includes('online-zalohy-nocni'); }
+    finally { ONLINE_STAV.ja = ja; }
+  }));
+test('#152: (pojistka testu) administrátorovi karta hlídku ukazuje',
+  await page.evaluate(() => renderOnlineKarta().includes('online-zalohy-nocni')));
 
 /* ---- 5d) obnova databáze ze zálohy (7. 9. 2026) ----
  * Skutečný klient proti skutečné funkci /api/obnova: panel se otevře, bez

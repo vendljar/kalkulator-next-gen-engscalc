@@ -718,8 +718,42 @@ function uloIdProblemyText(problemy) {
   return casti.join('; ');
 }
 
+/* HLÍDKA NOČNÍ ZÁLOHY (#152, 24. 9. 2026).
+ *
+ * Noční funkce (zaloha_nocni) pořizuje otisk databáze sama. Kdyby přestala
+ * běžet, nikdo by si toho nevšiml: administrátor při přihlášení dnešní
+ * otisk dopořídí sám (onlineZalohaAuto) a přehled záloh pak vypadá zdravě.
+ * Hlídá se proto zvlášť NOČNÍ otisk (zdroj „nocni-otisk") — když je
+ * poslední starší než 48 hodin, zmeškala se aspoň dvě noci po sobě.
+ *
+ * Čistá funkce nad souhrny z /api/zaloha_vynuceno (bez dat), `ted`
+ * v milisekundách, aby šla zkoušet bez hodin. */
+const ULO_NOCNI_ZALOHA_MAX_HODIN = 48;
+function uloZalohaHlidka(otisky, ted) {
+  const seznam = Array.isArray(otisky) ? otisky : [];
+  const cas = o => { const t = Date.parse(o.porizena || o.den || ''); return isFinite(t) ? t : NaN; };
+  const nocni = seznam.filter(o => o && o.zdroj === 'nocni-otisk' && isFinite(cas(o)))
+    .sort((a, b) => cas(b) - cas(a));
+  const posledni = nocni[0] || null;
+  if (!posledni) {
+    return { posledni: null, hodin: null, stara: true,
+      text: 'Noční záloha databáze: mezi ' + seznam.length + ' posledními zálohami není žádná noční. '
+        + 'Zkontrolujte v Netlify naplánovanou funkci zaloha_nocni — zálohy pořízené ručně '
+        + 'nebo při přihlášení administrátora její výpadek zakrývají.' };
+  }
+  const hodin = Math.max(0, Math.floor(((+ted || Date.now()) - cas(posledni)) / 3600000));
+  const kdy = new Date(cas(posledni)).toLocaleString('cs-CZ');
+  const stara = hodin > ULO_NOCNI_ZALOHA_MAX_HODIN;
+  return { posledni, hodin, stara,
+    text: stara
+      ? 'Noční záloha databáze naposledy proběhla ' + kdy + ' — před ' + Math.floor(hodin / 24) + ' dny. '
+        + 'Noční funkce zřejmě neběží; zálohy pořízené ručně nebo při přihlášení administrátora to zakrývají. '
+        + 'Zkontrolujte v Netlify naplánovanou funkci zaloha_nocni.'
+      : 'Poslední noční záloha: ' + kdy + '.' };
+}
+
 if (typeof module !== 'undefined')
-  module.exports = { uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
+  module.exports = { uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
                      uloNorm, uloSlova, uloCisloVyplneno, uloKlicSouboru,
                      uloJmenoSouboru, uloJeZakazkovySoubor,
                      ULO_HLAVICKA_POLE, uloHlavickaChybi, uloHlavickaVyplnena, uloUlozeniStav,
