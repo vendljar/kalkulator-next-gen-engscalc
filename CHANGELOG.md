@@ -54,6 +54,15 @@ podle zadání větve, v závorce číslo nálezu ze sešitu kola.
   Testy: `src/test_k13_cenik.js` 16 (bez opravy 8 selže). Upraveno
   `test_cenik_stari` (přirážka projekce už se do varování nepočítá)
   a fixtura `overit_lista.mjs` (varování #35 potřebuje skutečnou cenu).
+- **P9 (K12-N48) — online nabídka tiskla „šířka - × hloubka -“.** Řádek
+  „ROZMĚR ŠACHTY – VNĚJŠÍ“ se v náhledu nabídky vynechá, když chybí obě
+  hodnoty (ruční přepis není vyplněný). Word ho vynechával už dřív.
+- **P10 (K12-N46) — stříšky v ceně, ale ne v nabídce.** Nové zástupce
+  `TS_PROSKLENA_STRISKA` a `TS_PROSKLENA_PRICKA` v datech nabídky. Když
+  pole nic neříká, jsou prázdné a řádek zmizí. Náhled nabídky má oba
+  řádky v sekci DOPLŇKOVÉ KONSTRUKCE. Šablona v11 na ně zatím symbol
+  nemá, doplní se se šablonou. Testy: `src/test_k13_nabidka.js` 10
+  (bez opravy 8 selže), `test_nabidka` (13 řádků základních parametrů).
 
 ---
 
