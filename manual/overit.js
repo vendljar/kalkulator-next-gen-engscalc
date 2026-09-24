@@ -121,8 +121,11 @@
     interni !== zkusebni, 'interní: ' + interni + ', zkušební: ' + zkusebni);
   test('příručka říká, že jména zákazníků jsou vymyšlená',
     /vymyšlená/i.test(text));
-  test('kapitola o testovacím webu je uvnitř',
-    /testengscalc/i.test(text) && /TESTOVACÍ PROSTŘEDÍ/i.test(text));
+  /* Od 24. 9. 2026 (J. V.): testovací web obchodníkům přístupný nebude
+   * a nemají ho používat — příručka o něm nesmí mluvit. Snímky z něj
+   * pocházet smějí (pořizují se tam nebo lokálně nad zkušebním ceníkem). */
+  test('příručka nezmiňuje testovací web',
+    !/testengscalc/i.test(text) && !/TESTOVACÍ PROSTŘEDÍ/i.test(text) && !/testovací(m|ho)? web/i.test(text));
   test('příručka vysvětluje pomlčku u nezahrnuté položky',
     /pomlčk/i.test(text));
   test('příručka popisuje dvojici přechodových plechů',
