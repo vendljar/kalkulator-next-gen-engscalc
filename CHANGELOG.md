@@ -8,6 +8,40 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v25.9.2 — rozhodnutí J. V. k rozboru K13, můstky počtem, šablony v12 (25. 9. 2026)
+
+- **Větev k13-nalezy sloučená do testu** (P1–P11 z 13. kola, viz oddíl
+  níže). Rozhodnutí J. V.: P1 oprava dat podle návrhu, P2 varianta A,
+  P5/P6/P10/P11 podle návrhu, P7 přes počet můstků.
+- **Můstky mezi budovou a OCK počtem kusů (P7 / K13-N59).**
+  - Pole v Zadání šachty hned pod čistým vstupem, výchozí 0. Stará
+    zakázka se zaškrtnutým můstkem = 1 ks.
+  - Nová ceníková položka *Můstek mezi budovou a OCK* (Kč/ks, Hrubá OCK)
+    a řádek v hrubé OCK. Řádek vzniká jen u zakázky s můstky.
+  - Specifikace: usazení čelní stěny podle počtu, střecha přes můstek
+    a nový řádek MŮSTKY (Word `{{TS_MUSTKY}}`, online nabídka).
+  - Kontrola před nabídkou `mustky`: chybějící cena, víc můstků než
+    nástupišť. Kontrola standardu počítá s počtem.
+  - Testy: `test_mustky.js` 30, `overit_zadani_detail` +3, mutace jádra +4.
+- **Sleva ve Wordu (P5):** bez slevy jsou `SLEVA_PROC` a `SLEVA_KC`
+  prázdné a docxgen vyhodí řádky slevy.
+- **Popis záměru (P6)** v online nabídce OCK a pole v kartě nabídky OCK.
+  Překlady vět jsou návrh ke kontrole.
+- **Úvod nabídky PROJ podle rozsahu (P11)**, pro šablonu symbol
+  `{{UVOD_NABIDKY_PROJ}}`. Test `test_uvod_proj.js` 11.
+- **Šablony (mimo repozitář, předané J. V.):**
+  - `Sablona_NABIDKA_CN_v12.docx`: popis záměru a věta o opláštění ze
+    zakázky, řádky slevy, příčka, stříška a můstky;
+  - jazykové verze EN/DE/FR se 100 % pokrytím slovníku;
+  - `Sablona_NABIDKA_PROJ_v2.docx` s podmíněným úvodem;
+  - `overit_sablona.mjs` má kontroly v12.
+- **P1 data:** `podklady/K13_pripona_oprava.mjs` (náhled + soubor pro
+  obnovu; odeslané zakázky se vypíší k ruční opravě).
+- Rozbor `podklady/K13_ROZBOR_2026-09-24.md` revidovaný (rozhodnutí,
+  dopad můstků, postup nahrání šablon).
+
+---
+
 ## v25.9.1 — Zadání šachty: pořadí polí (25. 9. 2026)
 
 Zadání J. V. obrázkem:

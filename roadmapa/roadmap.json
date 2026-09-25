@@ -5519,6 +5519,47 @@
    "detail": "Doplnit slovník pevných textů nabídky PROJ a obou SoD (návrh Claude, odborná a smluvní kontrola J. V. — smluvní texty se nepřekládají strojově bez kontroly), test pokrytí jako u nabídky OCK.",
    "hotovoKdyz": "Průvodce ukáže u PROJ a SoD pokrytí přes 90 %; test.",
    "kde": "`src/preklad.js`, test překladů šablon"
+  },
+  {
+   "id": "352",
+   "vlna": "B",
+   "stav": "hotovo",
+   "hotovoV": "v25.9.2",
+   "dulezitost": "vysoka",
+   "slozitost": "M",
+   "nazev": "Nálezy 13. testovacího kola P1–P11 (větev k13-nalezy)",
+   "proc": "Test 13. kola 24. 9. 2026: přípona první varianty .3 (odeslaná nabídka přečíslovaná), tisk v režimu čtení bez zámku na serveru, falešný dialog přepočtu u každé nové zakázky, DPH jako rozdíl ceníku, sleva a popis záměru ve Wordu, můstek bez ceny, nepřeložené texty, prázdný vnější rozměr, stříšky mimo nabídku, úvod PROJ slibující činnosti mimo rozsah.",
+   "detail": "P1–P4, P8–P10 opraveny 24. 9. ve větvi k13-nalezy; rozhodnutí J. V. 25. 9.: P1 oprava dat podle návrhu (skript), P2 varianta A, P5/P6/P10/P11 podle návrhu včetně šablony v12 a jazykových verzí, P7 přes počet můstků (#353). Větev sloučená do testu 25. 9.",
+   "hotovoKdyz": "Všechny body opravené s testy nebo s rozhodnutím; rozbor K13 revidovaný.",
+   "kde": "`src/zamek.js`, `src/cenik_stari.js`, `src/nabidka.js`, `src/nabidka_proj.js`, `src/docxgen.js`, `src/kontroly.js`, `podklady/K13_ROZBOR_2026-09-24.md`",
+   "pozn": "Čeká mimo kód: výpis a oprava dat P1 nad zálohou (test i ostrá), nahrání šablon v12 + EN/DE/FR a PROJ v2, kontrola překladů."
+  },
+  {
+   "id": "353",
+   "vlna": "B",
+   "stav": "hotovo",
+   "hotovoV": "v25.9.2",
+   "dulezitost": "stredni",
+   "slozitost": "M",
+   "nazev": "Můstky mezi budovou a OCK počtem kusů — cena, specifikace, nabídka (P7 / K13-N59)",
+   "proc": "Zadání J. V. 25. 9. 2026: místo zaškrtávátka počet kusů (0 = žádný) hned pod čistým vstupem; můstek se do nabídky nedostal a neměl cenu (K13-08).",
+   "detail": "mustkyKs (stará zakázka se zaškrtnutím = 1), ceníková položka Můstek (Kč/ks) a řádek v hrubé OCK jen při počtu > 0; usazení čelní stěny a střecha podle počtu, řádek MŮSTKY ve specifikaci a nabídce (TS_MUSTKY); kontrola chybějící ceny a počtu nad nástupiště; kontrola standardu.",
+   "hotovoKdyz": "Můstky se oceňují a propisují do dokumentů; test.",
+   "kde": "`src/engine.js`, `src/techspec.js`, `src/kontroly.js`, `src/standard_ock.js`, `src/ui/kalk_ock.js`",
+   "pozn": "test_mustky.js 30, overit_zadani_detail +3, mutace jádra +4. Cenu můstku doplní administrátor do ceníku."
+  },
+  {
+   "id": "354",
+   "vlna": "B",
+   "stav": "blokovano",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "cekaNa": "J. V.: které z návrhů 1–5 k můstkům (doporučeno 3 přechodové plechy a 4 zastřešení)",
+   "nazev": "Můstky — další zpřesnění výpočtu (návrhy 1–5 z rozboru K13)",
+   "proc": "Počet můstků otevírá přesnější výpočet: přechodový plech v nástupišti s můstkem odpadá, střecha přetažená přes můstek má plochu navíc, cena podle plochy, rozpad materiál/montáž, kotvení přes můstky.",
+   "detail": "Viz podklady/K13_ROZBOR_2026-09-24.md, P7 — Další možný dopad.",
+   "hotovoKdyz": "Schválené body promítnuté do výpočtu s testy.",
+   "kde": "`src/engine.js`, `src/techspec.js`"
   }
  ],
  "meta" : {
