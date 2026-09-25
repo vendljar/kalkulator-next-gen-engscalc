@@ -213,6 +213,12 @@ async function sablKontrolaSouboru(data, lang, symbolyVzor) {
   const symboly = sablonaSymboly(odstavce);
   const out = { jaz, symboly, rozdil: symbolyVzor ? sablonaSymbolyRozdil(symbolyVzor, symboly) : null, chyby: [], varovani: [] };
   if (!odstavce.length) out.chyby.push('V souboru není žádný text — je to šablona Word (.docx)?');
+  /* Poškozená struktura (25. 9. 2026): Word by soubor otevřel jen s opravou. */
+  if (typeof docxXmlVady === 'function') {
+    const vady = await docxXmlVady(data);
+    if (vady.length) out.chyby.push('Soubor je poškozený — Word by ho otevřel jen s opravou ('
+      + vady.join('; ') + '). Otevřete ho ve Wordu, uložte znovu a nahrajte.');
+  }
   if (!symboly.length) out.chyby.push('Soubor nemá žádné symboly {{…}} — aplikace by do něj nic nedosadila.');
   const podilCil = jaz.zarazeno ? (jaz.pocty[lang] || 0) / jaz.zarazeno : 0;
   if (jaz.jazyk && jaz.jazyk !== lang && jaz.podil >= SABL_JAZYK_PRAH)

@@ -698,8 +698,42 @@ async function docxTextSablony(arrayBuffer) {
   return odstavce;
 }
 
+/* KONTROLA STRUKTURY XML (25. 9. 2026). Šablona PROJ v2 vyšla ze skriptu
+ * s rozbitým document.xml — nenasytný regex smazal kus odstavce s textovým
+ * polem a nechal neuzavřené značky. Aplikace z ní přesto tiskla (dosazování
+ * jde přes text, ne přes strom), jenže Word takový soubor otevře jen
+ * s opravou. Tahle kontrola to pozná dřív, než se šablona zveřejní: projde
+ * značky dílů těla, záhlaví a zápatí a hlídá, že se párují. Vrací seznam
+ * vadných dílů s popisem (prázdný = v pořádku). */
+function xmlStrukturaVada(xml) {
+  const zas = [];
+  const re = /<(\/?)([A-Za-z_][\w:.-]*)((?:[^>"']|"[^"]*"|'[^']*')*?)(\/?)>/g;
+  let m;
+  const bez = String(xml).replace(/<\?[\s\S]*?\?>/g, '').replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, '');
+  while ((m = re.exec(bez))) {
+    if (m[4] === '/') continue;
+    if (m[1] === '/') {
+      const top = zas.pop();
+      if (top !== m[2]) return 'značka </' + m[2] + '> uzavírá <' + (top || '—') + '> (pozice ' + m.index + ')';
+    } else zas.push(m[2]);
+  }
+  return zas.length ? 'neuzavřená značka <' + zas[zas.length - 1] + '>' : '';
+}
+async function docxXmlVady(arrayBuffer) {
+  const polozky = await zipPrecti(new Uint8Array(arrayBuffer));
+  const dekoder = new TextDecoder();
+  const vady = [];
+  for (const p of polozky) {
+    if (!/^word\/(document|header\d*|footer\d*|styles|numbering)\.xml$/.test(p.nazev)) continue;
+    const v = xmlStrukturaVada(dekoder.decode(p.data));
+    if (v) vady.push(p.nazev + ': ' + v);
+  }
+  return vady;
+}
+
 if (typeof module !== 'undefined')
-  module.exports = { docxTextSablony, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
+  module.exports = { docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
     odstranPrazdneTsRadky, jePrazdnaHodnota, klicePlaceholderu,
     docxVlozObrazky, rozmeryObrazku, dataUrlNaBajty,
     docxDokumentBlob, docxTeloZeSekci, docxSestavBlob, docxPar, docxEsc,

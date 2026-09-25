@@ -126,6 +126,26 @@ console.log('\nšablona Sablona_NABIDKA_PROJ.docx');
   /* Vzorové hodnoty by v nabídce vypadaly jako skutečné údaje zákazníka. */
   for (const s of ['Xx xxx Kč', 'xx.xx.2026', 'OVP-CN-00xx', 'Zákazník ….'])
     test('vzorová hodnota „' + s + '" je nahrazená', !docS.includes(s));
+
+  /* STRUKTURA A JAZYKOVÉ VERZE (25. 9. 2026). Šablona PROJ v2 vyšla ze
+   * skriptu s rozbitým XML (Word ji otevřel jen s opravou) a tahle sada to
+   * nepoznala — dosazování jde přes text. Hlídá se teď strom značek
+   * a zároveň to, že slovník pokryje šablonu do EN/DE/FR celou. */
+  const dg = require(KOREN + 'src/docxgen.js');
+  const pr = require(KOREN + 'src/preklad.js');
+  Object.keys(pr).forEach(k => { globalThis[k] = pr[k]; });
+  const buf = readFileSync(sablona);
+  const ab = () => buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.length);
+  const vady = await dg.docxXmlVady(ab());
+  test('šablona má neporušenou strukturu XML (Word ji otevře bez opravy)', !vady.length, vady);
+  for (const L of ['en', 'de', 'fr']) {
+    const st = {};
+    const out = await dg.docxPrelozSablonu(ab(), L, st);
+    const vadyL = await dg.docxXmlVady(await out.arrayBuffer());
+    test(L.toUpperCase() + ' verze: slovník pokryje všechny pevné texty (' + st.procenta + ' %)',
+      st.chybi.length === 0, [...new Set(st.chybi)].slice(0, 5));
+    test(L.toUpperCase() + ' verze má neporušenou strukturu XML', !vadyL.length, vadyL);
+  }
 }
 
 /* ---------- 1) ovládání v aplikaci ---------- */
