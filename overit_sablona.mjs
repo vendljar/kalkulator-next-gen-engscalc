@@ -229,8 +229,13 @@ console.log('\nkapitoly IV.–VI. a doložky ze symbolů (v11+)');
     };
     const { doc } = await vygeneruj(ph, TITULNI_JE_FOTO ? { UVODNI_FOTO: PODPIS_PNG } : {});
     test('termín dodání s ATYP je v kapitole V.', doc.includes('Termín dodání: cca 16 týdnů (vč. 4 týdnů za ATYP)'));
-    test('víceřádková kapitola se zalomí (řádky spojené <w:br/>)', doc.includes('Požadavek první</w:t><w:br/><w:t') ||
-      /Požadavek první(?:<\/w:t>)?<w:br\/>/.test(doc));
+    /* P14 (K16-N81): zalomení stojí VEDLE textu (`</w:t><w:br/><w:t …>`),
+     * ne uvnitř `<w:t>` — tam ho Word nevykreslí. Do 25. 9. 2026 harness
+     * bral oba tvary, takže chybu nemohl ukázat. */
+    test('víceřádková kapitola se zalomí (</w:t><w:br/><w:t> — ne uvnitř textu)',
+      doc.includes('Požadavek první</w:t><w:br/><w:t xml:space="preserve">Požadavek druhý'));
+    test('P14: v celém dokumentu není zalomení uvnitř <w:t>',
+      !/<w:t(?:\s[^>]*)?>[^<]*<w:br\/>/.test(doc), (doc.match(/<w:t(?:\s[^>]*)?>[^<]*<w:br\/>/) || [''])[0].slice(0, 80));
     test('doložky se doplnily', doc.includes('Doložka A'));
     test('žádný symbol kapitol nezůstal', !/\{\{(FIRMA_NAB_|NAB_KAP_)[A-Z_]+\}\}/.test(doc),
       (doc.match(/\{\{(FIRMA_NAB_|NAB_KAP_)[A-Z_]+\}\}/g) || []).join(' '));

@@ -3,7 +3,7 @@
    Použití: node test_docxgen.js /cesta/k/Sablona_NABIDKA_CN_v3.docx [vystup.docx] */
 const fs = require('fs');
 const { docxVyplnSablonu, nahradPlaceholdery, zipPrecti, zipZapis,
-        odstranPrazdneTsRadky, expandujPriplatky } = require('./docxgen.js');
+        odstranPrazdneTsRadky, expandujPriplatky, docxPar, docxTeloZeSekci } = require('./docxgen.js');
 
 // --- data pro test na reálné šabloně: placeholdery z VÝCHOZÍHO zadání ---
 const eng = require('./engine.js');
@@ -35,17 +35,45 @@ const pocetRadku = x => (x.match(/<w:tr[\s>]/g) || []).length;
    * v seznamu řídicích znaků není — ale Word ho vykreslí jako MEZERU. Bez
    * převodu na `<w:br/>` by dvouřádková patička ve wordové nabídce skončila
    * na jednom řádku a nikdo by nepoznal proč. */
+  /* ZALOMENÍ PATŘÍ VEDLE TEXTU, NE DO NĚJ (P14 / K16-N81, 25. 9. 2026).
+   * Do té doby se `<w:br/>` vkládalo DOVNITŘ `<w:t>…</w:t>`. Jenže `w:t`
+   * smí podle OOXML nést jen text — zalomení je samostatný prvek běhu
+   * (`w:r`). Word takovou značku nevykreslí jako nový řádek (víceřádková
+   * kapitola, patička nebo dodatkový text skončily na jednom řádku). Text
+   * se proto před zalomením uzavře a za ním otevře znovu. */
+  const BR = '</w:t><w:br/><w:t xml:space="preserve">';
   test('konec řádku se ve Wordu stane zalomením, ne mezerou',
     nahradPlaceholdery('<w:t>{{PATICKA}}</w:t>', { PATICKA: 'první\ndruhý' })
-      === '<w:t>první<w:br/>druhý</w:t>');
+      === '<w:t>první' + BR + 'druhý</w:t>',
+    nahradPlaceholdery('<w:t>{{PATICKA}}</w:t>', { PATICKA: 'první\ndruhý' }));
+  test('P14: zalomení není uvnitř <w:t> (w:t nese podle OOXML jen text)',
+    !/<w:t(?:\s[^>]*)?>[^<]*<w:br\/>/.test(nahradPlaceholdery('<w:r><w:t>{{X}}</w:t></w:r>', { X: 'a\nb\nc' })));
   test('a text kolem zalomení se pořád escapuje',
     nahradPlaceholdery('<w:t>{{X}}</w:t>', { X: 'a<b\nc&d' })
-      === '<w:t>a&lt;b<w:br/>c&amp;d</w:t>');
+      === '<w:t>a&lt;b' + BR + 'c&amp;d</w:t>');
   /* CRLF ze schránky nebo z CRM nesmí udělat prázdný řádek navíc. */
   test('CRLF dá jedno zalomení, ne dvě',
-    nahradPlaceholdery('<w:t>{{X}}</w:t>', { X: 'a\r\nb' }) === '<w:t>a<w:br/>b</w:t>');
+    nahradPlaceholdery('<w:t>{{X}}</w:t>', { X: 'a\r\nb' }) === '<w:t>a' + BR + 'b</w:t>');
   test('jednořádková hodnota zůstává beze změny',
     nahradPlaceholdery('<w:t>{{X}}</w:t>', { X: 'bez zalomení' }) === '<w:t>bez zalomení</w:t>');
+  test('P14: víceřádková hodnota v symbolu rozděleném mezi běhy zůstane platné XML',
+    nahradPlaceholdery('<w:r><w:t>{{OBJ</w:t></w:r><w:r><w:t>EDNATEL}}</w:t></w:r>', { OBJEDNATEL: 'A\nB' })
+      === '<w:r><w:t>A' + BR + 'B</w:t></w:r>');
+  test('P14: text před symbolem zůstane v témže prvku textu',
+    nahradPlaceholdery('<w:r><w:t xml:space="preserve">Termín: {{T}}</w:t></w:r>', { T: '12 týdnů\nHarmonogram' })
+      === '<w:r><w:t xml:space="preserve">Termín: 12 týdnů' + BR + 'Harmonogram</w:t></w:r>');
+  /* Symbol mimo text (atribut, např. alternativní text tvaru): značka by
+   * v atributu rozbila XML — konec řádku se tam stane mezerou. */
+  test('P14: v atributu se konec řádku stane mezerou (značka by rozbila XML)',
+    nahradPlaceholdery('<wp:docPr id="1" descr="{{X}}"/><w:r><w:t>ok</w:t></w:r>', { X: 'a\nb' })
+      === '<wp:docPr id="1" descr="a b"/><w:r><w:t>ok</w:t></w:r>');
+  /* Dokument generovaný od nuly (krycí list): hodnota s koncem řádku se
+   * zalomí taky — do té doby ji Word vykreslil na jednom řádku. */
+  test('P14: dokument od nuly zalomí víceřádkovou hodnotu',
+    docxPar('řádek 1\nřádek 2').includes('řádek 1' + BR + 'řádek 2') && !/<w:t[^>]*>[^<]*\n/.test(docxPar('řádek 1\nřádek 2')),
+    docxPar('řádek 1\nřádek 2'));
+  test('P14: i v buňce tabulky krycího listu',
+    docxTeloZeSekci('Nadpis', [{ sekce: 'S', radky: [['Poznámka', 'první\ndruhá']] }]).includes('první' + BR + 'druhá'));
 
   // 2) odstranění prázdných řádků (syntetické tabulky)
   // (a) řádek s jediným prázdným TS_ symbolem zmizí

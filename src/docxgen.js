@@ -105,17 +105,34 @@ function xmlEsc(s) {
  * jako obyčejnou MEZERU. Dvouřádková patička by tak ve wordové nabídce
  * skončila na jednom řádku a nikdo by nepoznal proč.
  *
- * Řádky se proto spojují značkou `<w:br/>`, která uvnitř běhu (`<w:r>`)
- * znamená zalomení. Placeholder v běhu vždycky je, takže je to platné.
+ * ZALOMENÍ PATŘÍ VEDLE TEXTU, NE DO NĚJ (P14 / K16-N81, 25. 9. 2026).
+ * Do té doby se řádky spojovaly holou značkou `<w:br/>` — jenže symbol leží
+ * uvnitř `<w:t>…</w:t>` a `w:t` smí podle OOXML nést jen text. Zalomení je
+ * samostatný prvek běhu (`w:r`), takže Word značku uvnitř textu nevykreslil
+ * a víceřádkové kapitoly, patička i dodatkové texty dál skončily na jednom
+ * řádku. Text se proto před zalomením uzavře a za ním otevře znovu
+ * (`xml:space="preserve"`, ať nezmizí mezery na začátku řádku).
  * `\r` se zahazuje, aby se ze souboru s CRLF nedělaly prázdné řádky. */
-function xmlEscRadky(s) {
-  return String(s).replace(/\r/g, '').split('\n').map(xmlEsc).join('<w:br/>');
+const DOCX_ZALOMENI = '</w:t><w:br/><w:t xml:space="preserve">';
+function xmlEscRadky(s, vTextu) {
+  const radky = String(s).replace(/\r/g, '').split('\n').map(xmlEsc);
+  /* Mimo `<w:t>` (atribut, alternativní text tvaru) by značka rozbila XML —
+   * tam se konec řádku stane mezerou. */
+  return radky.join(vTextu === false ? ' ' : DOCX_ZALOMENI);
+}
+/* Leží místo `pos` uvnitř prvku textu `<w:t …>…</w:t>`? */
+function docxUvnitrTextu(xml, pos) {
+  const konec = xml.lastIndexOf('</w:t>', pos);
+  const zacatek = Math.max(xml.lastIndexOf('<w:t>', pos), xml.lastIndexOf('<w:t ', pos));
+  return zacatek > konec;
 }
 function nahradPlaceholdery(xml, ph) {
   // {{KLÍČ}} i rozdělené mezi runy: {{ / KLÍČ / }} mohou být proloženy XML tagy
-  return xml.replace(/\{(?:<[^>]+>)*\{((?:<[^>]+>|[A-Z0-9_])+)\}(?:<[^>]+>)*\}/g, (cely, vnitrek) => {
+  return xml.replace(/\{(?:<[^>]+>)*\{((?:<[^>]+>|[A-Z0-9_])+)\}(?:<[^>]+>)*\}/g, (cely, vnitrek, pos) => {
     const klic = vnitrek.replace(/<[^>]+>/g, '');
-    return ph[klic] != null ? xmlEscRadky(ph[klic]) : cely;
+    if (ph[klic] == null) return cely;
+    const hodnota = String(ph[klic]);
+    return xmlEscRadky(hodnota, /\n/.test(hodnota) ? docxUvnitrTextu(xml, pos) : true);
   });
 }
 
@@ -544,7 +561,9 @@ function docxPar(text, o) {
   const ppr = `<w:pPr>${o.fill ? `<w:shd w:val="clear" w:color="auto" w:fill="${o.fill}"/>` : ''}`
     + `<w:spacing w:after="${o.after != null ? o.after : 40}" w:line="240" w:lineRule="auto"/>`
     + (rpr ? `<w:rPr>${rpr}</w:rPr>` : '') + '</w:pPr>';
-  return `<w:p>${ppr}<w:r>${rpr ? `<w:rPr>${rpr}</w:rPr>` : ''}<w:t xml:space="preserve">${docxEsc(text)}</w:t></w:r></w:p>`;
+  /* Víceřádková hodnota se zalomí i v dokumentu od nuly (P14 / K16-N81). */
+  const radky = String(text == null ? '' : text).replace(/\r/g, '').split('\n').map(docxEsc).join(DOCX_ZALOMENI);
+  return `<w:p>${ppr}<w:r>${rpr ? `<w:rPr>${rpr}</w:rPr>` : ''}<w:t xml:space="preserve">${radky}</w:t></w:r></w:p>`;
 }
 function docxCell(inner, w, o) {
   o = o || {};
