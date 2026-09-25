@@ -246,8 +246,15 @@ for (const fixes of [false, true]) {
   test('porovnání ukazuje slevu PROJ', blizko(h('slevaProjPct'), 0.20), h('slevaProjPct'));
   test('sleva OCK je počítaná ze základu OCK',
     blizko(h('slevaKc'), ock.souhrn.zakladCena * 0.10), h('slevaKc'));
-  test('sleva PROJ je počítaná ze základu PROJ',
-    blizko(h('slevaProjKc'), proj.souhrn.celkem * 0.20), h('slevaProjKc'));
+  /* Od N55 (25. 9. 2026) jako v dokumentu: sleva = zaokrouhlený základ −
+   * koncová cena, takže platí „základ − sleva = cena" na haléř; od hrubého
+   * „základ × %" se liší jen o zaokrouhlení jednotlivých činností. */
+  test('sleva PROJ je počítaná ze základu PROJ (jako v dokumentu)',
+    blizko(h('slevaProjKc'), h('projZaklad') - h('projCelkem'), 0.01)
+      && Math.abs(h('slevaProjKc') - proj.souhrn.celkem * 0.20) <= proj.souhrn.celkem * 0.02,
+    [h('slevaProjKc'), h('projZaklad'), h('projCelkem'), proj.souhrn.celkem * 0.20]);
+  test('N55: sleva OCK v přehledu = základ − cena jako v dokumentu',
+    blizko(h('slevaKc'), h('ockZaklad') - h('ockPoSleve'), 0.01), [h('slevaKc'), h('ockZaklad'), h('ockPoSleve')]);
   test('celkem je součet obou částí po jejich vlastních slevách',
     blizko(h('celkemBezDph'), h('ockPoSleve') + h('projCelkem'), 0.01),
     [h('celkemBezDph'), h('ockPoSleve'), h('projCelkem')]);

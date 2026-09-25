@@ -964,11 +964,17 @@ function porovnaniVariant(zak, vypocty, opts) {
     } else if (c.ock && c.ock.souhrn) {
       const s = c.ock.souhrn;
       const p = Math.max(0, Math.min(1, +podil(d.sleva || {}) || 0));
-      h.ockZaklad = s.zakladCena;
+      /* SLEVA JAKO V DOKUMENTU (N55, hloubkový test 24. 9. 2026). Přehled
+       * i otisk zámku do té doby nesly slevu jako „hrubý základ × %" s haléři
+       * a nezaokrouhlený základ, kdežto nabídka tiskne zaokrouhlený základ
+       * a slevu jako jeho rozdíl ke koncové ceně (cenaNabidkyOck, #135) —
+       * fuzz našel rozdíl u 633 z 1000 zadání. Koncová cena se nemění.
+       * Otisky zámků pořízené dřív zůstávají, jak byly. */
+      const ockPred = s.zakladCena - s.zakladCena * p;
       h.slevaPct = p;
-      h.slevaKc = s.zakladCena * p;
-      const ockPred = s.zakladCena - h.slevaKc;
       h.ockPoSleve = zaokrOck(ockPred);
+      h.ockZaklad = zaokrOck(s.zakladCena);
+      h.slevaKc = Math.round((h.ockZaklad - h.ockPoSleve) * 100) / 100;
       zaokrCelkem = (zaokrCelkem || 0) + (h.ockPoSleve - ockPred);
       h.ockNaklad = s.zakladNaklad;
       h.marzeKc = h.ockPoSleve - s.zakladNaklad;
@@ -995,6 +1001,7 @@ function porovnaniVariant(zak, vypocty, opts) {
         ? cenaNabidkyProj(c.proj, d.slevaProj, (typeof zaokrProjZ === 'function') ? zaokrProjZ(d) : d.zaokr)
         : null;
       h.projCelkem = cnp ? cnp.cena : zaokrProj(projPred);
+      if (cnp) { h.projZaklad = cnp.zakladZaokr; h.slevaProjKc = cnp.slevaKcVykaz; }   // N55: jako v dokumentu
       zaokrCelkem = (zaokrCelkem || 0) + (h.projCelkem - projPred);
     } else {
       h.projZaklad = null;

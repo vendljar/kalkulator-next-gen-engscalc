@@ -483,5 +483,11 @@ test('kryciFaktura2Sync reaguje na ruční zálohu 70 %',
   kr.kryciFaktura2Sync({ zaloha1: '70 % – po podpisu smlouvy' }) === '20 % – po zahájení montáže',
   kr.kryciFaktura2Sync({ zaloha1: '70 % – po podpisu smlouvy' }));
 
+/* N55: krycí list nesmí zaokrouhlit haléře, které nabídka tiskne. */
+const sp = (t) => t.replace(/\s/g, ' ');
+test('N55: celá částka bez haléřů', sp(kr.kryciKc(123456)) === '123 456 Kč', kr.kryciKc(123456));
+test('N55: částka s haléři je nese', sp(kr.kryciKc(123456.5)) === '123 456,50 Kč', kr.kryciKc(123456.5));
+test('N55: prázdno je nula', sp(kr.kryciKc(null)) === '0 Kč');
+
 console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
 process.exit(fail ? 1 : 0);

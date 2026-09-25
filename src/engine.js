@@ -277,12 +277,23 @@ function oplRadky(podleTypu, mk, c) {
     if (ib >= 0) return 1;
     return a.localeCompare(b, 'cs');
   });
+  /* JEDINEČNÝ NÁZEV ŘÁDKU „JINÉ" (N52, hloubkový test 24. 9. 2026).
+   * Dva pásy „jiné" se stejným názvem a jinou sazbou dávají dva řádky
+   * (klíč nese i sazbu), ale se STEJNÝM názvem — a podle názvu se v kalkulaci
+   * řídí ruční přepis množství, ceny, vyřazení i výchozí stav. Přepis jednoho
+   * tak tiše zasáhl oba. Druhý a další řádek téhož názvu proto dostane
+   * pořadí v závorce; první zůstává, jak byl, takže u zakázek bez kolize
+   * se nic nemění. */
+  const pouzite = {};
   return klice.map(k => {
     const r = podleTypu[k];
     if (r.typ === 'jine') {
       /* Ruční sazba — položka nemá ceníkovou cestu, takže se cena zadává
        * v zadání a do ceníku se nepropisuje. */
-      return mk('OPLÁŠTĚNÍ - ' + (r.nazev || 'JINÉ').toUpperCase(), r.m2, +r.naklad || 0, {});
+      const zaklad = 'OPLÁŠTĚNÍ - ' + (r.nazev || 'JINÉ').toUpperCase();
+      pouzite[zaklad] = (pouzite[zaklad] || 0) + 1;
+      const nazev = pouzite[zaklad] > 1 ? zaklad + ' (' + pouzite[zaklad] + ')' : zaklad;
+      return mk(nazev, r.m2, +r.naklad || 0, {});
     }
     const def = OPLASTENI_TYPY.find(t => t.id === r.typ);
     /* Sazba se čte přímo z dat, ne přes `cenikGet()`: ten je v jiném modulu
@@ -1119,6 +1130,18 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const oplPlochaCelkem = oplRezim === 'poStenach'
     ? oplPasy.reduce((a, p) => a + (p.typ === OPL_BEZ ? 0 : p.m2), 0)
     : skloCelkemM2;
+  /* PLOCHA SKLA PRO PŘÍPLATKY VSG A SKN V REŽIMU PO STĚNÁCH (N50,
+   * hloubkový test 24. 9. 2026). Příplatky se do té doby počítaly
+   * z plochy standardního zasklení i tam, kde je stěna z Cetrisu nebo ji
+   * dodá stavba („bez") — u čtyř stěn „bez" vyšlo VSG i SKN přes 105 m².
+   * Po stěnách se teď berou jen skleněné pásy: fólie VSG ze všech skel,
+   * SKN (náhrada izolačního dvojskla) jen z pásů „Dvojsklo". Ve standardním
+   * režimu beze změny — Model 1 zůstává 1:1. */
+  const OPL_SKLA = ['C.skloBokyKc', 'C.skloCelniKc', 'C.skloVsg442Kc'];
+  const vsgFolieM2 = oplRezim === 'poStenach'
+    ? oplPasy.reduce((a, p) => a + (OPL_SKLA.indexOf(p.typ) >= 0 ? p.m2 : 0), 0) : skloCelkemM2;
+  const sknM2 = oplRezim === 'poStenach'
+    ? oplPasy.reduce((a, p) => a + (p.typ === 'C.skloBokyKc' ? p.m2 : 0), 0) : skloBokyZadniM2;
 
   /* ---------- montáž + projekce ---------- */
   const montazHod1 = z.montazZakladHod + hodinyNavic + z.montazAtypHod;
@@ -1571,8 +1594,8 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
              popisNabidka: popisZCeniku(nazev) };
   };
   let priplatky = [
-    mkPrip('vsgFolie', 'Sklo VSG s mléčnou fólií', skloCelkemM2, pp.vsgFolieM2, { cenaPath: 'C.priplatky.vsgFolieM2' }),
-    ext ? mkPrip('skn', 'Sklo SKN 176 (Ug=1,1) (EXT)', skloBokyZadniM2, pp.sknM2, { cenaPath: 'C.priplatky.sknM2' }) : null,
+    mkPrip('vsgFolie', 'Sklo VSG s mléčnou fólií', vsgFolieM2, pp.vsgFolieM2, { cenaPath: 'C.priplatky.vsgFolieM2' }),
+    ext ? mkPrip('skn', 'Sklo SKN 176 (Ug=1,1) (EXT)', sknM2, pp.sknM2, { cenaPath: 'C.priplatky.sknM2' }) : null,
     prechodoveAno ? null : mkPrip('prechMat', 'PŘECHODOVÉ PLECHY - NEREZ (MATERIÁL)', prechKg1 * nastupist, c.prechodoveKgKc, { cenaPath: 'C.prechodoveKgKc' }),
     /* Příplatková varianta jen tehdy, když montáž není už ve volitelných —
      * jinak by se táž práce naúčtovala dvakrát. */

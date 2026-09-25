@@ -162,5 +162,40 @@ REZIMY.forEach(([rezim, jm]) => {
   test('běžné pole dál bere ruční hodnotu', jine.text === 'ne' && jine.zdroj === 'ručně', jine);
 }
 
+/* N48 (hloubkový test 24. 9. 2026): specifikace nesmí slibovat položku,
+ * kterou obchodník z ceny vyřadil (seznam nepocitat nebo množství 0). */
+{
+  const T = (id, uprav) => hodnota(id, zadani(uprav), null, true).text;
+  const vyrad = (nazev) => z => { z.nepocitat = [nazev]; };
+  test('N48: 3D sken v ceně → ano', T('sken3d') === 'ano', T('sken3d'));
+  test('N48: 3D sken vyřazený → ne', T('sken3d', vyrad('ZAMĚŘENÍ 3D SKENEREM')) === 'ne');
+  test('N48: dílenská dokumentace vyřazená → ne', T('dilenskaDok', vyrad('DÍLENSKÁ DOKUMENTACE')) === 'ne');
+  test('N48: dílenská dokumentace s množstvím 0 → ne',
+    T('dilenskaDok', z => { z.mnozstviPrepis = { 'DÍLENSKÁ DOKUMENTACE': 0 }; }) === 'ne');
+  test('N48: vyřazená střecha (EXT) → není součástí nabídky', T('strecha', vyrad('ZASTŘEŠENÍ ŠACHTY (EXT)')) === 'není součástí nabídky');
+  test('N48: střecha v ceně zůstává', /pultová/.test(T('strecha')));
+  test('N48: vyřazená větrací mřížka → není součástí nabídky', T('odvetrani', vyrad('VĚTRACÍ MŘÍŽKA (EXT)')) === 'není součástí nabídky');
+  test('N48: vyřazený montážní nosník → není součástí nabídky', T('montazniNosnik', vyrad('PROFILY - MONTÁŽNÍ NOSNÍK')) === 'není součástí nabídky');
+  test('N48: nosník v ceně → na horním nosném rámu', T('montazniNosnik') === 'na horním nosném rámu OCK');
+  test('N48: přechodové plechy podle volby „v ceně", ne podle starého pole',
+    /nejsou součástí/.test(T('prechodovePlechy', z => { z.prechodovePlechy = true; z.volitelne.prechodove = false; }))
+    && /nerezový/.test(T('prechodovePlechy', z => { z.prechodovePlechy = false; z.volitelne.prechodove = true; })));
+  const rucne = tsm.tsHodnota(pole.sken3d, { hodnoty: { sken3d: 'ano' }, extra: [] },
+    eng.vypocet(zadani(vyrad('ZAMĚŘENÍ 3D SKENEREM')), ZC.zkusebniCenik(), JEKLY, true), zadani(), ZC.zkusebniCenik());
+  test('N48: ruční volba dál vyhrává', rucne.text === 'ano' && rucne.zdroj === 'ručně', rucne);
+}
+
+/* N49: nabízený příplatek → „lze doplnit – viz příplatkové ceny". */
+{
+  const T = (id, uprav) => hodnota(id, zadani(uprav), null, true).text;
+  test('N49: zábrany v nabídce → lze doplnit', T('zabranyVstupy') === tsm.TS_LZE_DOPLNIT, T('zabranyVstupy'));
+  test('N49: zábrany vynechané z nabídky → zajistí objednatel',
+    T('zabranyVstupy', z => { z.priplatkyVynechat = ['zabranyDvere']; }) === 'není součástí dodávky, zajistí objednatel');
+  test('N49: ventilátor v nabídce (EXT) → lze doplnit', T('neni2') === tsm.TS_LZE_DOPLNIT);
+  test('N49: interiér ventilátor nenabízí → není požadováno', T('neni2', z => { z.typSachty = 'interiérová'; }) === 'není požadováno');
+  test('N49: ohrazení proti pádu v nabídce → lze doplnit', T('ohrazeniProtiPadu') === tsm.TS_LZE_DOPLNIT);
+  test('N49: nové znění je v číselníku', tsm.TS_C.stavebniPrace.includes(tsm.TS_LZE_DOPLNIT) && tsm.TS_C.dodavkaPozn.includes(tsm.TS_LZE_DOPLNIT));
+}
+
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);

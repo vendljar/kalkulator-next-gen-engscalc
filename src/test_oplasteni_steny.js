@@ -167,5 +167,42 @@ const prace = (r) => plocha(r, 'PRÁCE OPLÁŠTĚNÍ');
     !!n && n.stav === 'mimo', n);
 }
 
+/* N50 (hloubkový test 24. 9. 2026): příplatky VSG fólie a SKN se po
+ * stěnách počítají jen ze skleněných pásů (SKN jen z dvojskla). */
+{
+  const prip = (r, key) => { const p = (r.priplatky || []).find(x => x.key === key); return p ? p.mnozstvi : null; };
+  const pas = (typ) => ({ odM: 0, pasy: [{ typ, doM: null }] });
+  const zm = { typSachty: 'exteriérová' };
+  const std = spocti(zm, { rezim: 'standard', steny: null }, true);
+  const vych = spocti(zm, PO_STENACH(null), true);
+  test('N50: výchozí stěny po stěnách = standard (VSG i SKN)',
+    blizko(prip(vych, 'vsgFolie'), prip(std, 'vsgFolie')) && blizko(prip(vych, 'skn'), prip(std, 'skn')),
+    [prip(vych, 'vsgFolie'), prip(std, 'vsgFolie'), prip(vych, 'skn'), prip(std, 'skn')]);
+  const bez = spocti(zm, PO_STENACH({ A: pas('bez'), B: pas('bez'), C: pas('bez'), D: pas('bez') }), true);
+  test('N50: všechny stěny „bez" → VSG i SKN nula', prip(bez, 'vsgFolie') === 0 && prip(bez, 'skn') === 0,
+    [prip(bez, 'vsgFolie'), prip(bez, 'skn')]);
+  const cetris = spocti(zm, PO_STENACH({ A: pas('C.skloCelniKc'), B: pas('C.cetrisKc'), C: pas('C.skloBokyKc'), D: pas('C.skloBokyKc') }), true);
+  test('N50: stěna z Cetrisu zmenší SKN i VSG', prip(cetris, 'skn') < prip(std, 'skn') && prip(cetris, 'vsgFolie') < prip(std, 'vsgFolie'),
+    [prip(cetris, 'skn'), prip(std, 'skn')]);
+  test('N50: SKN jen z dvojskla (VSG 4.4.1 na čele se nepočítá)', prip(cetris, 'skn') < prip(cetris, 'vsgFolie'));
+}
+
+/* N52: dva pásy „jiné" stejného názvu a jiné sazby = dva řádky s různým
+ * názvem, takže ruční přepis jednoho nezasáhne druhý. */
+{
+  const jine = (naklad) => ({ odM: 0, pasy: [{ typ: 'jine', nazev: 'Trapézový plech', naklad, doM: null }] });
+  const opl = PO_STENACH({ A: { odM: 0, pasy: [{ typ: 'C.skloCelniKc', doM: null }] }, B: jine(1000), C: jine(1500), D: { odM: 0, pasy: [{ typ: 'bez', doM: null }] } });
+  const r = spocti({}, opl, true);
+  const radky = r.sekce.oplasteni.filter(i => /TRAPÉZOVÝ/.test(i.origNazev));
+  test('N52: dva řádky „jiné" stejného názvu mají různé názvy', radky.length === 2 && radky[0].origNazev !== radky[1].origNazev,
+    radky.map(x => x.origNazev));
+  test('N52: první řádek si název nechá', radky.some(x => x.origNazev === 'OPLÁŠTĚNÍ - TRAPÉZOVÝ PLECH'));
+  const z2 = spocti({ cenyPrepis: { 'OPLÁŠTĚNÍ - TRAPÉZOVÝ PLECH (2)': 9999 } }, opl, true);
+  const r2 = z2.sekce.oplasteni.filter(i => /TRAPÉZOVÝ/.test(i.origNazev));
+  test('N52: ruční cena druhého řádku nezasáhne první',
+    r2.find(x => /\(2\)/.test(x.origNazev)).cena === 9999 && r2.find(x => !/\(2\)/.test(x.origNazev)).cena !== 9999,
+    r2.map(x => [x.origNazev, x.cena]));
+}
+
 console.log('\n' + (fail ? 'SELHALO ' + fail + ' z ' + (ok + fail) : 'OK ' + ok));
 if (fail) process.exit(1);

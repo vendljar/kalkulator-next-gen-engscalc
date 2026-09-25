@@ -95,10 +95,12 @@ const TS_C = { /* číselníky z listů _data (bez úvodní pomlčky) */
   dodavkaPozn: ['bezúplatně zajistí objednatel', 'bezúplatně zajistí majitel objektu', 'není řešeno',
     'není požadováno', 'není součástí nabídky', 'zajistí objednatel v rámci SP', 'zajistí objednatel',
     'lze doplnit - viz „Příplatky“', 'není součástí dodávky, zajistí objednatel',
-    'není součást dodávky, lze doplnit viz příplatkové ceny', 'je součástí dodávky'],
+    'není součást dodávky, lze doplnit viz příplatkové ceny', 'je součástí dodávky',
+    'lze doplnit – viz příplatkové ceny'],
   stavebniPrace: ['není součástí dodávky, zajistí objednatel', 'je součástí dodávky',
     'není součást dodávky, zajistí objednatel před montáží šachty', 'viz příplatky',
-    'není součást dodávky, lze doplnit viz příplatkové ceny', 'je součástí dodávky pouze po dobu stavby šachty',
+    'není součást dodávky, lze doplnit viz příplatkové ceny', 'lze doplnit – viz příplatkové ceny',
+    'je součástí dodávky pouze po dobu stavby šachty',
     'je součástí dodávky pro stavbu šachty i montáž výtahu', 'je součástí dodávky na celou dobu stavby',
     'je součástí dodávky pro dokončení opláštění v horním přejezdu',
     'je součástí dodávky pro provedení kompletního opláštění šachty', 'zůstane zachováno'],
@@ -332,6 +334,7 @@ const TECHSPEC_DEF = [
     { id: 'strecha', label: 'STŘECHA ŠACHTY', ciselnik: TS_C.strecha,
       prefill: (r, Z) => {
         if (Z.typSachty !== 'exteriérová') return 'bez zastřešení (OCK končí pod stropem)';
+        if (tsRadekVCene(r, 'hrubaOck', 'C.zastreseniM2Kc') === false) return 'není součástí nabídky';   // N48
         /* Můstek v každém nadzemním nástupišti = i v nejvyšším, střecha se
          * přes něj přetahuje k fasádě (číselník). Při menším počtu se neví,
          * kde můstky jsou, a střecha zůstává standardní. */
@@ -390,13 +393,16 @@ const TECHSPEC_DEF = [
   ] },
 
   { sekce: 'DOPLŇKOVÉ KONSTRUKCE', pole: [
-    { id: 'montazniNosnik', label: 'MONTÁŽNÍ NOSNÍK NEBO OKA', def: 'na horním nosném rámu OCK' },
+    { id: 'montazniNosnik', label: 'MONTÁŽNÍ NOSNÍK NEBO OKA',
+      prefill: (r) => tsRadekVCene(r, 'hrubaOck', 'C.montazniNosnik') === false
+        ? 'není součástí nabídky' : 'na horním nosném rámu OCK' },   // N48
     { id: 'pripravaKotveni', label: 'PŘÍPRAVA PRO KOTVENÍ VÝTAHU',
       def: 'ano, oválné otvory pro kotvení konzolí vodítek a šachetních dveří v příčnících OCK včetně dodávky T šroubů M12 s podložkou' },
     { id: 'prosklenaPricka', label: 'PROSKLENÁ PŘÍČKA VEDLE ŠACHTY', def: ' -' },
     { id: 'odvetrani', label: 'ODVĚTRÁNÍ ŠACHTY',
-      prefill: (r, Z) => Z.typSachty === 'exteriérová'
-        ? 'přirozené, větrací mřížka v horní i dolní části zadní stěny výtahové šachty' : 'přirozené, do prostoru schodiště' },
+      prefill: (r, Z) => Z.typSachty !== 'exteriérová' ? 'přirozené, do prostoru schodiště'
+        : tsRadekVCene(r, 'hrubaOck', 'C.vetraciMrizkaKc') === false ? 'není součástí nabídky'   // N48
+        : 'přirozené, větrací mřížka v horní i dolní části zadní stěny výtahové šachty' },
     /* Stříška se od 9. 9. 2026 zadává počtem kusů a může být i u interiérové
      * šachty, takže se text řídí tím počtem — ne typem šachty a průchozností. */
     { id: 'prosklenaStriska', label: 'PROSKLENÁ STŘÍŠKA',
@@ -418,8 +424,14 @@ const TECHSPEC_DEF = [
       prefill: (r, Z) => Z.typSachty !== 'exteriérová' && Z.volitelne.zabradli
         ? 'úpravy a napojení stávajícího zábradlí na podestách' : ' -' },
     { id: 'prechodovePlechy', label: 'PŘECHODOVÉ PLECHY V NÁSTUPIŠTÍCH',
-      prefill: (r, Z) => Z.prechodovePlechy
-        ? 'nerezový plech dle zaměření ve všech nástupištích' : 'nejsou součástí dodávky, viz příplatkové ceny' },
+      /* N48: rozhoduje, jestli jsou plechy V CENĚ (volitelná položka
+       * `prechodove` ve výsledku), ne staré pole Z.prechodovePlechy — to se
+       * s volbou ve sloupci „v ceně" mohlo rozejít. Bez výsledku jako dřív. */
+      prefill: (r, Z) => {
+        const kat = r && Array.isArray(r.volitelneKatalog) ? r.volitelneKatalog.find(x => x.key === 'prechodove') : null;
+        const ano = kat ? !!kat.zahrnuto : !!Z.prechodovePlechy;
+        return ano ? 'nerezový plech dle zaměření ve všech nástupištích' : 'nejsou součástí dodávky, viz příplatkové ceny';
+      } },
   ] },
 
   { sekce: 'STAVEBNÍ A PŘÍPRAVNÉ PRÁCE', pole: [
@@ -443,18 +455,24 @@ const TECHSPEC_DEF = [
       prefill: (r) => tsLeseniVnejsiVCene(r)
         ? 'je součástí dodávky pro provedení kompletního opláštění šachty'
         : 'není součást dodávky, lze doplnit viz příplatkové ceny' },
+    /* N49 (hloubkový test 24. 9. 2026): nabídka tyto věci nabízí jako
+     * příplatek, specifikace přitom psala „zajistí objednatel". Je-li
+     * příplatek v nabídce, platí znění schválené J. V.: „lze doplnit – viz
+     * příplatkové ceny". Ruční volba z číselníku dál vyhrává. */
     { id: 'ohrazeniProtiPadu', label: 'OHRAZENÍ ŠACHTY PROTI PÁDU', ciselnik: TS_C.stavebniPrace,
-      def: 'není součástí dodávky, zajistí objednatel' },
+      prefill: (r, Z) => tsPriplatekNabizen(r, Z, 'zabranyPad') ? TS_LZE_DOPLNIT : 'není součástí dodávky, zajistí objednatel' },
     { id: 'zabranyVstupy', label: 'ZÁBRANY DO DVEŘNÍCH VSTUPŮ', ciselnik: TS_C.stavebniPrace,
-      def: 'není součástí dodávky, zajistí objednatel' },
+      prefill: (r, Z) => tsPriplatekNabizen(r, Z, 'zabranyDvere') ? TS_LZE_DOPLNIT : 'není součástí dodávky, zajistí objednatel' },
     { id: 'zabradliSchodiste', label: 'ZÁBRADLÍ NA SCHODIŠTI', ciselnik: TS_C.stavebniPrace, def: ' -' },
   ] },
 
   { sekce: 'PROJEKČNÍ A PŘÍPRAVNÉ PRÁCE', pole: [
-    { id: 'sken3d', label: 'ZAMĚŘENÍ PROSTORŮ 3D SKENEREM', ciselnik: TS_C.anoNe, def: 'ano' },
+    { id: 'sken3d', label: 'ZAMĚŘENÍ PROSTORŮ 3D SKENEREM', ciselnik: TS_C.anoNe,
+      prefill: (r) => tsRadekVCene(r, 'rezie', 'C.sken3dKc') === false ? 'ne' : 'ano' },   // N48
     { id: 'vystupZamereni', label: 'VÝSTUP ZE ZAMĚŘENÍ PRO OBJEDNATELE', ciselnik: TS_C.anoNe,
       prefill: (r, Z) => Z.vystupZamereni ? 'ano' : 'ne' },
-    { id: 'dilenskaDok', label: 'ZPRACOVÁNÍ DÍLENSKÉ DOKUMENTACE', ciselnik: TS_C.anoNe, def: 'ano' },
+    { id: 'dilenskaDok', label: 'ZPRACOVÁNÍ DÍLENSKÉ DOKUMENTACE', ciselnik: TS_C.anoNe,
+      prefill: (r) => tsRadekVCene(r, 'rezie', 'C.projekceHodKc') === false ? 'ne' : 'ano' },   // N48
     /* STATIKA SE ŘÍDÍ CENOU (P8/6, pokyn J. V. 22. 9. 2026: „statiku nastav
      * tak, ať dokument respektuje to, co je v ceně").
      *
@@ -475,7 +493,8 @@ const TECHSPEC_DEF = [
 
   { sekce: 'SOUČÁSTÍ DODÁVKY NENÍ', volne: true, pole: [
     { id: 'neni1', label: 'OSVĚTLENÍ NÁSTUPIŠŤ', ciselnik: TS_C.dodavkaPozn, def: 'není součástí nabídky' },
-    { id: 'neni2', label: 'NUCENÉ VĚTRÁNÍ ŠACHTY VENTILÁTOREM', ciselnik: TS_C.dodavkaPozn, def: 'není požadováno' },
+    { id: 'neni2', label: 'NUCENÉ VĚTRÁNÍ ŠACHTY VENTILÁTOREM', ciselnik: TS_C.dodavkaPozn,
+      prefill: (r, Z) => tsPriplatekNabizen(r, Z, 'ventilator') ? TS_LZE_DOPLNIT : 'není požadováno' },   // N49
     /* Když je vnější lešení v ZÁKLADNÍ CENĚ, nesmí tu stát (P8/7 — návrh,
      * který J. V. 22. 9. 2026 schválil: „když je lešení vnější zaškrtnuté,
      * musí řádek LEŠENÍ KOLEM OCK… říct, že je v dodávce"). Řádek je ale
@@ -561,6 +580,24 @@ function tsLeseniVnejsiVCene(r) {
  * (štítek „vypnuto (množství 0)"). Nulová CENA při nenulovém množství
  * statiku nevypíná: to je statika zdarma, ale pořád se dělá. Řádek se hledá
  * podle ceníkové cesty; název může obchodník přejmenovat. */
+/* JE ŘÁDEK V CENĚ? (N48, hloubkový test 24. 9. 2026) — obecná podoba
+ * tsStatikaVCene: řádek s danou ceníkovou cestou mezi POČÍTANÝMI řádky sekce
+ * (`r.sekce.*` je už po filtru vyřazených položek) a s nenulovým množstvím.
+ * Specifikace a krycí list do té doby slibovaly 3D sken, dílenskou
+ * dokumentaci, střechu, mřížku i nosník, i když je obchodník z ceny vyřadil.
+ * Vrací null, když výsledek výpočtu není — pak platí dosavadní text. */
+function tsRadekVCene(r, sekce, cenaPath) {
+  if (!r || !r.sekce) return null;
+  return ((r.sekce[sekce]) || []).some(x => x.cenaPath === cenaPath && Number(x.mnozstvi) > 0);
+}
+/* Je příplatek NABÍZENÝ (v nabídce, ne vynechaný)? Stejné pravidlo jako
+ * v nabídce (nabidka.js) a krycím listu: v r.priplatky a ne v priplatkyVynechat. */
+function tsPriplatekNabizen(r, Z, key) {
+  return !!(r && (r.priplatky || []).some(x => x.key === key)
+    && !((Z && Z.priplatkyVynechat) || []).includes(key));
+}
+const TS_LZE_DOPLNIT = 'lze doplnit – viz příplatkové ceny';   // znění schválené J. V. (N49)
+
 function tsStatikaVCene(r) {
   const radky = (r && r.sekce && r.sekce.rezie) || [];
   return radky.some(x => (x.cenaPath === 'C.statikaKc' || x.origNazev === 'STATICKÉ POSOUZENÍ')
@@ -702,7 +739,7 @@ function tsKontrola(ts, r, Z, C, zak) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { TECHSPEC_DEF, TS_C, DEFAULT_TECHSPEC, tsHodnota, tsOplasteniRozsah,
+  module.exports = { tsRadekVCene, tsPriplatekNabizen, TS_LZE_DOPLNIT, TECHSPEC_DEF, TS_C, DEFAULT_TECHSPEC, tsHodnota, tsOplasteniRozsah,
     tsOdvozeno, tsLeseniVnejsiVCene, tsStatikaVCene,
     TS_C_KEY_OF, tsCiselnikKlic, tsCiselnikPouziti, tsPole, TS_C_ORIG, TS_DEF_ORIG,
     TS_HLAVICKA, TS_POVINNE, tsPrazdna, tsKontrola };

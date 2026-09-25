@@ -456,6 +456,7 @@ const PREKLAD = {
   "nejsou součástí konstrukce": ["Not part of the structure","Nicht Bestandteil der Konstruktion","Ne fait pas partie de la structure"],
   "není požadováno": ["Not required","Nicht erforderlich","Non requis"],
   "není řešeno": ["Not addressed","Nicht vorgesehen","Non traité"],
+  "lze doplnit – viz příplatkové ceny": ["Can be added – see surcharge prices", "Kann ergänzt werden – siehe Aufpreise", "Peut être ajouté – voir les prix des suppléments"],
   "není součást dodávky, lze doplnit viz příplatkové ceny": ["Not included in the delivery, can be added - see surcharge prices","Nicht im Lieferumfang, kann ergänzt werden - siehe Aufpreise","Non inclus dans la fourniture, peut être ajouté - voir les prix des suppléments"],
   "není součást dodávky, zajistí objednatel před montáží šachty": ["Not included in the delivery, provided by the customer before the shaft installation","Nicht im Lieferumfang, wird vom Besteller vor der Schachtmontage sichergestellt","Non inclus dans la fourniture, à la charge du client avant le montage de la gaine"],
   "není součástí dodávky, zajistí objednatel": ["Not included in the delivery, provided by the customer","Nicht im Lieferumfang, wird vom Besteller sichergestellt","Non inclus dans la fourniture, à la charge du client"],

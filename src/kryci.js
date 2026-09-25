@@ -325,7 +325,15 @@ function kryciMigraceZadrzne(h) {
   return h;
 }
 
-const kryciKc = n => Math.round(n || 0).toLocaleString('cs-CZ') + ' Kč';
+/* Celé koruny, jen když částka haléře nemá (N55, hloubkový test 24. 9.
+ * 2026): při vypnutém obchodním zaokrouhlení nese cena haléře a nabídka je
+ * tiskne, kdežto krycí list je zaokrouhlil na celé Kč — dva dokumenty téže
+ * zakázky tak uváděly jinou cenu. */
+const kryciKc = n => {
+  const x = Math.round((+n || 0) * 100) / 100;
+  return (Number.isInteger(x) ? x.toLocaleString('cs-CZ')
+    : x.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) + ' Kč';
+};
 
 /* KL-4: „Zaměření strojovna" se v aplikaci už jednou zadává – jako 3D zaměření
  * v technické specifikaci. Čte se přes tsHodnota(), aby platilo stejné pořadí
@@ -555,7 +563,7 @@ function kryciPodminkoveSymboly(zak, varianta, jekly, P) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { KRYCI_SEKCE, KRYCI_NABIDKA_SEKCE, KRYCI_DPH_SAZBY, KRYCI_POKUTY, kryciCtx, kryciHodnota,
+  module.exports = { kryciKc, KRYCI_SEKCE, KRYCI_NABIDKA_SEKCE, KRYCI_DPH_SAZBY, KRYCI_POKUTY, kryciCtx, kryciHodnota,
     kryciData, kryciMigraceZadrzne, kryciMigraceSazbaDph,
     PODM_PREFIX, kryciSymbolId, kryciCisloZTextu, kryciProcentoZTextu,
     kryciTerminDodani, kryciTerminDodaniText,
