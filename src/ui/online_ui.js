@@ -1013,6 +1013,7 @@ function onlineUloz(opts) {
       ONLINE_STAV.kolize = { soubor: ONLINE_STAV.soubor, kdo: String(e.data.kdo || ''),
                              naDisku: String(e.data.naDisku || ''), kdy: new Date().toISOString() };
       if (ONLINE_STAV.timer) { clearTimeout(ONLINE_STAV.timer); ONLINE_STAV.timer = null; }
+      ONLINE_STAV.kolize.kdoVy = e.data.kdoVy === true;   // týž účet, jiné okno (P7 / K16-N87)
       onlineZprava(onlineKolizeText(), 'varovani');
       return false;
     }
@@ -1029,9 +1030,17 @@ function onlineUloz(opts) {
 
 /* ---------- kolize verzí při zápisu (nález V27, 8. 9. 2026) ---------- */
 
+/* KDO A KDY (P7 / K16-N87, 25. 9. 2026): server posílá jméno z účtu (ne
+ * e-mail) a příznak `kdoVy`, když jde o týž účet v jiném okně či záložce —
+ * obchodník tak ví, jestli volat kolegovi, nebo zavřít druhou záložku.
+ * Čas je čas uložení verze, která na serveru leží. */
 function onlineKolizeText() {
   const k = ONLINE_STAV.kolize;
-  return 'Zakázku mezitím uložil ' + ((k && k.kdo) ? k.kdo : 'někdo jiný (nebo jiná záložka)')
+  const cas = (k && k.naDisku && typeof uloCasHhMm === 'function') ? uloCasHhMm(k.naDisku) : '';
+  const kdo = (k && k.kdo)
+    ? k.kdo + (k.kdoVy ? ' (váš účet — jiné okno nebo záložka)' : '')
+    : 'někdo jiný (nebo jiná záložka)';
+  return 'Zakázku mezitím uložil(a) ' + kdo + (cas ? ' v ' + cas : '')
     + ' — neuloženo. Zvolte: „Načíst znovu ze serveru" (moje změny se zahodí), '
     + 'nebo „Přepsat serverovou verzi" (moje změny přepíší tu na serveru).';
 }

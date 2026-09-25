@@ -198,6 +198,36 @@ zkus('K6: náhledy se při zablokovaném okně nesloží na chybě', blok.chyby.
 zkus('K6: každý nalezený náhled vysvětlí, co se stalo (' + blok.nahledy.length + ')',
   blok.nahledy.length >= 4 && blok.hlasek === blok.nahledy.length, JSON.stringify(blok));
 
+/* ---------- 8c) uzamčená varianta — tlačítka říkají, co udělají (P7 / K15-N68) ----------
+ * Text dialogu radil „OK = založit klon…, Zrušit = nechat vše beze změny",
+ * ale modál v aplikaci má tlačítka Ano a Ne. Obchodník nevěděl, co zmáčknout.
+ * Teď tlačítka nesou přímo to, co udělají, a text je nepopisuje. */
+const zamek = await (async () => {
+  await p.evaluate(() => {
+    ZAK = novaZakazka(); syncVarianta();
+    set('ZAK.cislo', '2026 - OPR - CN - 0901');
+    zamkniVariantu(aktivniVarianta(ZAK), { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'harness',
+      cislo: variantaCislo(ZAK, aktivniVarianta(ZAK)) });
+    prepniTab('kalk'); render();
+  });
+  const beh = p.evaluate(() => { mnozstviSet('cokoli', 5); });
+  await p.waitForSelector('#dlg', { timeout: 4000 });
+  const text = await modalText();
+  const ano = await p.locator('#dlg [data-dlg="ano"]').innerText();
+  const ne = await p.locator('#dlg [data-dlg="ne"]').innerText();
+  await klik('ano');
+  await beh;
+  await p.waitForTimeout(200);
+  return { text, ano, ne, variant: await p.evaluate(() => ZAK.varianty.length),
+           aktivniZamcena: await p.evaluate(() => variantaUzamcena(aktivniVarianta(ZAK))) };
+})();
+zkus('P7: dialog uzamčené varianty nemluví o tlačítkách OK / Zrušit, která nemá',
+  !/\bOK\s*=|Zrušit\s*=/.test(zamek.text), zamek.text);
+zkus('P7: tlačítko pro klon říká, co udělá', /klon/i.test(zamek.ano), zamek.ano);
+zkus('P7: druhé tlačítko říká, že se nic nezmění', /beze změny/i.test(zamek.ne), zamek.ne);
+zkus('P7: „Založit klon" založí klon a přepne se do něj',
+  zamek.variant === 2 && zamek.aktivniZamcena === false, JSON.stringify(zamek));
+
 /* ---------- 9) žádný nativní dialog se neobjevil ---------- */
 zkus('aplikace nepoužila jediný nativní dialog', nativni === 0, String(nativni));
 zkus('za celý průchod nevznikla chyba v konzoli', konzole.length === 0, konzole.slice(0, 2).join(' | '));

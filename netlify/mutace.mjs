@@ -578,6 +578,13 @@ const MUTACE = [
     hledej: "    if (cislo(a) || cislo(b)) { if (!(cislo(a) && cislo(b) && stejneCislo(a, b))) pridej(c); return; }",
     nahrad: "    if (cislo(a) || cislo(b)) return;",
     proc: 'ověření by prošlo i s podvrženými čísly — razítko by lhalo „shoda"' },
+  /* P7 (K16-N87): jméno do razítka „kdo naposledy uložil" píše server
+   * z relace. Bez toho by hláška o kolizi verzí nesla jméno, které poslal
+   * klient — a to si může napsat kdokoli. */
+  { nazev: 'P7: jméno „kdo naposledy uložil" se převezme od klienta', soubor: 'functions/zakazky.mjs',
+    hledej: "  if (relace.jmeno) zak.upravilJmeno = String(relace.jmeno); else delete zak.upravilJmeno;",
+    nahrad: "",
+    proc: 'hláška o kolizi verzí by jmenovala, koho si klient vymyslel' },
   /* P6 (K15-N67): „klíč jen v jednom výsledku není rozdíl" má výjimku —
    * jádro dokumentu. Bez ní by prošel podvrh, který souhrn vynechá. */
   { nazev: 'P6: chybějící jádro dokumentu (souhrn) projde jako shoda', soubor: '../src/zamek.js',

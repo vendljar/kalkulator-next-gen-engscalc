@@ -371,7 +371,8 @@ async function progZverejni(preddanaPozn) {
     if (naDisku && String(naDisku.razitko || '') !== PROG_STAV.razitko) {
       if (!await potvrd('Databázi programu ve složce mezitím změnil někdo jiný'
         + (naDisku.razitko ? ' (naposledy ' + String(naDisku.razitko).slice(0, 16).replace('T', ' ') + ')' : '')
-        + '.\n\nOK = zveřejnit přesto (jeho verze zůstane v historii)\nZrušit = nechat soubor být a nejdřív si ho načíst')) return false;
+        + '.\n\nZveřejnit přesto? Jeho verze zůstane v historii.',
+        { ano: 'Zveřejnit přesto', ne: 'Nechat soubor být a nejdřív ho načíst' })) return false;
       // Navázat na to, co je na disku, ne na to, co máme v paměti – jinak by
       // se cizí verze z historie ztratila.
       try { PROG_STAV.db = programNormalizuj(naDisku); } catch (e) { /* nečitelné, zakládá se znovu */ }

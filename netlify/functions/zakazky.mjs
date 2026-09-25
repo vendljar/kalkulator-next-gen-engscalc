@@ -13,6 +13,18 @@ import { jadro, jadroChyba } from '../lib/jadro.mjs';
 const ZAKAZKA_MAX_B = 4 * 1024 * 1024;
 const CISLO_MAX = 60;
 
+/* Jméno k e-mailu z účtů (P7 / K16-N87) — jen pro hlášku o kolizi verzí
+ * u zakázek uložených dřív, než se jméno začalo zapisovat. Jedno čtení,
+ * a jen když ke kolizi dojde; selhání není důvod hlášku neposlat. */
+async function jmenoUctu(email) {
+  const e = String(email || '').trim().toLowerCase();
+  if (!e) return '';
+  try {
+    const ucet = await (await uloziste('uzivatele')).cti(e);
+    return (ucet && ucet.jmeno) ? String(ucet.jmeno) : '';
+  } catch (err) { return ''; }
+}
+
 export default async (req) => {
   let ULO, SCHV, JEKLY;
   try { ({ ULO, SCHV, JEKLY } = await jadro()); } catch (e) { return jadroChyba(e); }
@@ -152,12 +164,25 @@ export default async (req) => {
    * kontrola neuplatní, aby nasazení nezastavilo rozdělanou práci. */
   if (stara && typeof t.ocekavaneRazitko === 'string' && t.prepsat !== true) {
     const kol = ULO.uloKolize(stara, t.ocekavaneRazitko);
-    if (kol.kolize)
+    if (kol.kolize) {
+      /* KOLIZE JMENUJE ČLOVĚKA, NE E-MAIL (P7 / K16-N87, 25. 9. 2026).
+       * Do té doby hláška zněla „Zakázku mezitím uložil jan@firma.cz" —
+       * nebo „někdo jiný", když e-mail chyběl. Jméno se bere z razítka
+       * uložené verze (`upravilJmeno`, píše ho server z relace), u starších
+       * zakázek se dohledá v účtech. Nic se nevymýšlí: účet bez jména
+       * zůstane e-mailem. `kdoVy` = týž účet, tedy jiné okno nebo záložka. */
+      const kdoEmail = String((t.ocekavaneRazitko ? stara.upravil : stara.autor) || stara.upravil || stara.autor || '');
+      const ulozeneJmeno = String((t.ocekavaneRazitko ? stara.upravilJmeno : stara.autorJmeno) || '');
+      const kdo = ulozeneJmeno || (await jmenoUctu(kdoEmail)) || kdoEmail;
+      const kdoVy = !!kdoEmail && kdoEmail.toLowerCase() === String(relace.email || '').toLowerCase();
       return json({ ok: false, kolize: true, naDisku: kol.naDisku,
-        kdo: stara.upravil || stara.autor || '',
+        kdo, kdoEmail, kdoVy,
         chyba: t.ocekavaneRazitko
-          ? 'Zakázku mezitím uložil ' + (stara.upravil || 'někdo jiný') + '. Načtěte ji znovu, nebo změny vědomě přepište.'
-          : 'Stejné číslo nabídky už používá uložená zakázka ' + jmeno + ' (' + (stara.autor || '') + '). Zvolte vlastní číslo, nebo ji vědomě přepište.' }, 409);
+          ? 'Zakázku mezitím uložil(a) ' + (kdo || 'někdo jiný') + (kdoVy ? ' (váš účet — jiné okno nebo záložka)' : '')
+            + '. Načtěte ji znovu, nebo změny vědomě přepište.'
+          : 'Stejné číslo nabídky už používá uložená zakázka ' + jmeno + (kdo ? ' (' + kdo + ')' : '')
+            + '. Zvolte vlastní číslo, nebo ji vědomě přepište.' }, 409);
+    }
   }
   if (stara) {
     /* Odemčení odeslané nabídky smí jen administrátor (audit 22. 8. 2026, B3).
@@ -297,6 +322,9 @@ export default async (req) => {
     zak.autor = stara.autor || relace.email;
   }
   zak.upravil = relace.email;
+  /* Jméno do razítka „kdo naposledy uložil" (P7 / K16-N87) — z relace, ne
+   * od klienta; kolize verzí ho pak ukáže místo e-mailu. */
+  if (relace.jmeno) zak.upravilJmeno = String(relace.jmeno); else delete zak.upravilJmeno;
   /* Totéž pro razítko zámku: NOVĚ vzniklý zámek (v uložené verzi varianta
    * zamčená nebyla) nese `kdo` z relace, ne z klienta. `kdy` se nechává —
    * je součástí klíče zámku a klient si ho drží v rozpracované kopii. */

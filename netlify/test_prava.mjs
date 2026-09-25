@@ -1340,6 +1340,53 @@ console.log('\n===== AUDIT B10: RAZÍTKO VERZE =====\n');
   test('B10: starší klient bez pole ocekavaneRazitko se nezastaví',
     (await post(zakazky, 'http://x/api/zakazky', { zakazka: nactena }, cObch)).status === 200);
 }
+{
+  /* P7 (K16-N87, 25. 9. 2026): kolize verzí jmenuje, KDO zakázku mezitím
+   * uložil — jménem z účtu, ne e-mailem. Týž účet (jiné okno, jiná
+   * záložka) se pozná zvlášť. */
+  const cVed = UCTY['Vedoucí'].cookie;
+  const nova = await (await post(zakazky, 'http://x/api/zakazky',
+    { zakazka: zakazkaCislo('2026 - OPR - CN - 0981'), ocekavaneRazitko: '' }, cObch)).json();
+  const soubor = 'http://x/api/zakazky?soubor=2026-OPR-CN-0981.json';
+  const zVed = (await (await get(zakazky, soubor, cVed)).json()).zakazka;
+  zVed.nazevAkce = 'Změna od vedoucího';
+  const ulozVed = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zVed, ocekavaneRazitko: nova.razitko }, cVed)).json();
+  test('K16-N87: příprava — vedoucí uložil novější verzi', ulozVed.ok === true, JSON.stringify(ulozVed));
+  const zObch = (await (await get(zakazky, soubor, cObch)).json()).zakazka;
+  test('K16-N87: server si ke „kdo naposledy uložil" píše jméno z relace',
+    zObch.upravilJmeno === 'Matice Vedoucí', zObch.upravilJmeno);
+  const kol = await post(zakazky, 'http://x/api/zakazky', { zakazka: zObch, ocekavaneRazitko: nova.razitko }, cObch);
+  const k = await kol.json();
+  test('K16-N87: kolize jmenuje kolegu jménem, e-mail nese zvlášť',
+    kol.status === 409 && k.kdo === 'Matice Vedoucí' && k.kdoEmail === UCTY['Vedoucí'].email && k.kdoVy === false, JSON.stringify(k));
+  test('K16-N87: a hláška serveru mluví jménem, ne e-mailem',
+    /Matice Vedoucí/.test(k.chyba) && !/@/.test(k.chyba), k.chyba);
+  /* Týž účet ve dvou oknech. */
+  const ted = (await (await get(zakazky, soubor, cObch)).json()).zakazka;
+  const okno1 = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: ted, ocekavaneRazitko: ulozVed.razitko }, cObch)).json();
+  const k2 = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: ted, ocekavaneRazitko: ulozVed.razitko }, cObch)).json();
+  test('K16-N87: kolize s vlastním jiným oknem se pozná (kdoVy)',
+    okno1.ok === true && k2.kolize === true && k2.kdoVy === true && k2.kdo === 'Matice Obchodník', JSON.stringify(k2));
+  /* Starší zakázka bez `upravilJmeno` (uložená před opravou): jméno se dohledá
+   * v účtech. Simulace: jméno z uložené verze se smaže přímo v úložišti. */
+  const s = await uloziste('zakazky');
+  const surova = await s.cti('z/2026-OPR-CN-0981.json');
+  delete surova.upravilJmeno; await s.zapis('z/2026-OPR-CN-0981.json', surova);
+  const k3 = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: ted, ocekavaneRazitko: ulozVed.razitko }, cVed)).json();
+  test('K16-N87: u starší zakázky bez jména se jméno dohledá v účtech',
+    k3.kolize === true && k3.kdo === 'Matice Obchodník' && k3.kdoVy === false, JSON.stringify(k3));
+  /* Jméno do razítka píše server z relace — klient ho nepodvrhne. */
+  const podvrh = (await (await get(zakazky, soubor, cObch)).json()).zakazka;
+  podvrh.upravilJmeno = 'Podvržené Jméno';
+  await post(zakazky, 'http://x/api/zakazky', { zakazka: podvrh }, cObch);
+  test('K16-N87: jméno „kdo naposledy uložil" nejde podvrhnout z klienta',
+    (await (await get(zakazky, soubor, cObch)).json()).zakazka.upravilJmeno === 'Matice Obchodník');
+  /* Stejné číslo, cizí zakázka (bez razítka): autor jménem. */
+  const cizi = await (await post(zakazky, 'http://x/api/zakazky',
+    { zakazka: zakazkaCislo('2026 - OPR - CN - 0981'), ocekavaneRazitko: '' }, cVed)).json();
+  test('K16-N87: „stejné číslo už používá…" jmenuje autora jménem',
+    cizi.kolize === true && /Matice Obchodník/.test(cizi.chyba) && !/@/.test(cizi.chyba), cizi.chyba);
+}
 
 console.log('\n===== AUDIT B14: VELIKOST ZAKÁZKY =====\n');
 {

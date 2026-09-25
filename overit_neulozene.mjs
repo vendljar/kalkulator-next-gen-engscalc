@@ -203,6 +203,38 @@ const rucne = await page.evaluate(async () => ({ v: await onlineUloz(), hlaska: 
 test('ruční uložení s vymazaným číslem se odmítne taky', rucne.v === false && /čísl/i.test(rucne.hlaska), rucne);
 test('ani potom v databázi „bez-cisla-…" není', !(await rejstrik()).some(x => /^bez-cisla-/.test(x)), await rejstrik());
 
+console.log('\n4) kolize verzí jmenuje kolegu jménem (P7 / K16-N87)');
+/* Kolega se přihlásí mimo stránku (přímo proti serverové funkci) a uloží
+ * tutéž zakázku; stránka pak ukládá se starším razítkem. */
+const ulozeno0781 = await page.evaluate(async () => {
+  set('ZAK.cislo', '2026 - OPR - CN - 0781');
+  const v = await onlineUloz();
+  const u = await onlineApi('/api/uzivatele', { akce: 'zaloz', email: 'kolega@priklad.cz',
+    jmeno: 'Kolega Zkušební', role: 'Obchodník', heslo: 'KolegaHeslo123' });
+  return { v, u: u.ok, kolize: ONLINE_STAV.kolize };
+});
+test('příprava: zakázka 0781 uložená, účet kolegy založený', ulozeno0781.v === true && ulozeno0781.u === true, ulozeno0781);
+const pr = await prihlaseni(new Request('http://x/api/prihlaseni', { method: 'POST',
+  body: JSON.stringify({ email: 'kolega@priklad.cz', heslo: 'KolegaHeslo123' }) }));
+const cKolega = (pr.headers.get('set-cookie') || '').split(';')[0];
+const zKolega = (await (await zakazky(new Request('http://x/api/zakazky?soubor=2026-OPR-CN-0781.json',
+  { headers: { cookie: cKolega } }))).json()).zakazka;
+zKolega.nazevAkce = 'Změna od kolegy';
+const odpKolega = await (await zakazky(new Request('http://x/api/zakazky', { method: 'POST', headers: { cookie: cKolega },
+  body: JSON.stringify({ zakazka: zKolega, ocekavaneRazitko: zKolega.uloRazitko }) }))).json();
+test('příprava: kolega zakázku mezitím uložil', odpKolega.ok === true, odpKolega);
+const kol = await page.evaluate(async () => {
+  set('ZAK.nazevAkce', 'Moje změna');
+  const v = await onlineUloz();
+  return { v, hlaska: ONLINE_STAV.hlaska, kolize: ONLINE_STAV.kolize, lista: (document.body.innerText.match(/Zakázku mezitím[^\n]*/) || [''])[0] };
+});
+test('kolize: hláška jmenuje kolegu jménem', kol.v === false && /Kolega Zkušební/.test(kol.hlaska), kol);
+test('kolize: v hlášce není e-mail', !/@/.test(kol.hlaska), kol.hlaska);
+test('kolize: hláška říká i čas uložení kolegovy verze', /v \d\d:\d\d/.test(kol.hlaska), kol.hlaska);
+test('kolize: totéž svítí pod lištou zakázky', /Kolega Zkušební/.test(kol.lista), kol.lista);
+await page.evaluate(() => onlineKolizePrepsat());
+await page.waitForTimeout(300);
+
 test('žádná chyba JavaScriptu', chyby.length === 0, chyby.slice(0, 2).join(' | '));
 
 await b.close(); server.close();

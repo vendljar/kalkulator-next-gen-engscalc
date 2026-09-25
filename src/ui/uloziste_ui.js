@@ -296,7 +296,8 @@ function uloUlozDoSlozky(opts) {
       }
       if (!await potvrd('Soubor ' + jmeno + ' se ve složce mezitím změnil'
         + (kol.naDisku ? ' (naposledy ' + kol.naDisku.slice(0, 16).replace('T', ' ') + ')' : '')
-        + '.\n\nOK = přepsat tím, co mám otevřené\nZrušit = nechat soubor na disku být')) return false;
+        + '.\n\nPřepsat ho tím, co máte otevřené?',
+        { ano: 'Přepsat tím, co mám otevřené', ne: 'Nechat soubor na disku být' })) return false;
     }
 
     // 3) vlastní zápis

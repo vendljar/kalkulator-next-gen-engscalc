@@ -113,12 +113,15 @@ async function zamekUpozorni(v) {
   const z = zamekInfo(v);
   const kdy = ((z && z.kdy) || '').slice(0, 10);
   const cislo = variantaCislo(ZAK, v);
+  /* Tlačítka nesou, co udělají (P7 / K15-N68, 25. 9. 2026). Text radil
+   * „OK = založit klon…, Zrušit = nechat vše beze změny" — jenže modál
+   * v aplikaci má tlačítka Ano / Ne, takže obchodník nevěděl, co zmáčknout. */
   const chce = await potvrd(
     `Varianta „${v.nazev}" (${cislo}) je uzamčená.\n\n`
     + `Byla ${kdy ? kdy + ' ' : ''}vytištěna jako ${(z && z.popis) || 'cenová nabídka'}, `
     + `a vytištěná nabídka se považuje za odeslanou zákazníkovi – proto se už needituje.\n\n`
-    + `OK = založit klon varianty (${variantaCisloDalsi()}) a pokračovat v něm\n`
-    + `Zrušit = nechat vše beze změny`);
+    + `Chcete pokračovat v klonu varianty (${variantaCisloDalsi()})?`,
+    { nadpis: 'Uzamčená varianta', ano: 'Založit klon a pokračovat v něm', ne: 'Nechat beze změny' });
   if (chce) zamekKlonUI(v.id);
   else render();   // vrátí do polí hodnoty ze zakázky (uživatel je mohl přepsat)
 }
