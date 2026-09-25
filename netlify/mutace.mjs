@@ -485,6 +485,22 @@ const MUTACE = [
     nahrad: "  const texty = (t && t.texty) || {};",
     proc: 'do ceníku každé nové zakázky by se vlil slovník libovolné velikosti' },
 
+  /* Dodatkové texty se ztrácely (25. 9. 2026): server přepisoval celou mapu. */
+  { nazev: 'zápis jednoho textu zahodí ostatní', soubor: 'functions/popisy.mjs',
+    hledej: "    nove = Object.assign({}, stare);",
+    nahrad: "    nove = {};",
+    proc: 'druhé okno by zase smazalo texty zapsané jinde (hlášení J. V. 25. 9.)' },
+
+  { nazev: 'celá mapa bez razítka zase maže', soubor: 'functions/popisy.mjs',
+    hledej: "    nove = Object.assign({}, stare, texty);        // `texty` už prošly očistou výš",
+    nahrad: "    nove = texty;",
+    proc: 'stránka otevřená před nasazením by starou mapou smazala nové texty' },
+
+  { nazev: 'razítko celé mapy se nekontroluje', soubor: 'functions/popisy.mjs',
+    hledej: "    if ((puvodni ? String(puvodni.kdy || '') : '') !== t.ocekavaneKdy)",
+    nahrad: "    if (false)",
+    proc: 'číselník uložený ze zastaralého okna by přepsal změny jiného správce' },
+
   /* Pojistky serverové vrstvy z auditu 22. 9. 2026 (B54–B56). */
 
   { nazev: 'server bez ADMIN_EMAIL obsluhuje chráněné cesty dál', soubor: 'lib/sdilene.mjs',

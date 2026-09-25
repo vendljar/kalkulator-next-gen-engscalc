@@ -280,7 +280,128 @@ function renderCenik() {
        </div>
        <div class="note" id="cenikStav">Export vytvoří <b>.xlsx</b> se dvěma listy (Ceník OCK, Ceník PROJ). Uprav ceny v Excelu a nahraj zpět tlačítkem Import – před uložením uvidíš přehled změn.</div>
        ${CENIK_POZN}
-     </div></div>`;
+     </div></div>
+     ${cenikPopisyKarta()}`;
+}
+
+/* ================= ČÍSELNÍK DODATKOVÝCH TEXTŮ (25. 9. 2026) =================
+ *
+ * Zadání J. V.: „z aplikace se mi v čase ztrácí dodatkové texty, které jsem
+ * tam vepsal. Myslím, že pro ně potřebujeme samostatný číselník, resp. pole
+ * v ceníku nákladů OCK, aby je trvale držel."
+ *
+ * Texty dál bydlí ve společné mapě aplikace (`/api/popisy`) — ta nemá verzi
+ * a nemusí se kvůli jedné větě zveřejňovat celý ceník. Nově má ale vlastní
+ * obrazovku: všechny položky, pod které se text dá napsat, na jednom místě,
+ * nezávisle na tom, která zakázka je otevřená. Zápis jde na server hned,
+ * po jednom textu (server ho sloučí, viz popisy.mjs), takže už se nepřepíšou
+ * navzájem dvě okna.
+ *
+ * Tlačítko „Najít texty v uložených zakázkách" je záchrana: text, který ze
+ * společné mapy zmizel, obvykle pořád leží v zakázce, kde byl napsaný. */
+const POPISY_CIS = { sber: null, hleda: false, chyba: '' };
+
+function cenikPopisySpolecne() {
+  return (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.popisy && ONLINE_STAV.popisy.texty)
+    ? ONLINE_STAV.popisy.texty : {};
+}
+
+function cenikPopisyKarta() {
+  if (typeof popisyCiselnik !== 'function' || typeof vypocet !== 'function') return '';
+  const admin = (typeof jeAdminOnline === 'function') ? jeAdminOnline() : false;
+  const online = typeof ONLINE_STAV !== 'undefined' && !!ONLINE_STAV.ja;
+  const texty = cenikPopisySpolecne();
+  let cis;
+  try {
+    cis = popisyCiselnik((z, c) => vypocet(z, c, JEKLY, (typeof OCK !== 'undefined' && OCK) ? OCK.fixes : true),
+      (typeof DEFAULT_ZADANI !== 'undefined') ? DEFAULT_ZADANI : {}, C, texty);
+  } catch (e) { return ''; }
+  const zak = (C && C.popisy) || {};
+  const sber = POPISY_CIS.sber;
+  const kandidati = (klic) => {
+    const sez = (sber && sber[klic]) || [];
+    if (!sez.length) return '';
+    return sez.slice(0, 3).map((x, i) => `<div class="note" style="margin:2px 0">
+        <b>${esc(x.cislo)}</b>${x.pocet > 1 ? ` (+${x.pocet - 1})` : ''}: „${esc(x.text)}"
+        ${admin ? `<button class="mini" onclick="cenikPopisPrevzit('${keyAttr(klic)}', ${i})">převzít</button>` : ''}
+      </div>`).join('');
+  };
+  const radek = (r) => {
+    const t = texty[r.klic] || '';
+    const tz = zak[r.klic];
+    const jinde = (typeof tz === 'string' && tz !== t)
+      ? `<div class="note" style="margin:2px 0">V otevřené zakázce: ${tz ? '„' + esc(tz) + '"' : '<i>vědomě bez textu</i>'}</div>` : '';
+    const pole = admin
+      ? `<input type="text" style="width:100%" value="${esc(t)}" maxlength="${POPISY_MAX_TEXT}"
+           placeholder="dodatkový text do cenové nabídky (nepovinné)"
+           onchange="cenikPopisUlozCis('${keyAttr(r.klic)}', this.value)">`
+      : (t ? esc(t) : '<span class="note">—</span>');
+    return `<tr><td class="c-nazev">${esc(r.klic)}<div class="note" style="margin:0">${esc(r.skupina)}
+        · ${r.typy.join(' + ')}</div></td><td>${pole}${jinde}${kandidati(r.klic)}</td></tr>`;
+  };
+  const osirele = cis.osirele.length ? `<tr><th colspan="2">Texty k položkám, které výpočet už nezná
+      (přejmenované nebo zrušené) — nic se nemaže, rozhodněte sami</th></tr>`
+    + cis.osirele.map(o => `<tr><td class="c-nazev">${esc(o.klic)}</td><td>${admin
+      ? `<input type="text" style="width:100%" value="${esc(o.text)}" maxlength="${POPISY_MAX_TEXT}"
+           onchange="cenikPopisUlozCis('${keyAttr(o.klic)}', this.value)">` : esc(o.text)}</td></tr>`).join('') : '';
+  const kdo = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.popisy && ONLINE_STAV.popisy.kdy)
+    ? `Naposledy změněno ${esc(String(ONLINE_STAV.popisy.kdy).slice(0, 16).replace('T', ' '))}
+       (${esc(ONLINE_STAV.popisy.kdo || '?')}).` : 'Zatím žádný text není uložený.';
+  return `<div class="card" id="cenikPopisyKarta"><h2 style="cursor:default">Dodatkové texty do cenové nabídky – číselník</h2>
+    <div class="body">
+      <div class="note">Text se tiskne v cenové nabídce pod názvem příplatku nebo volitelné položky.
+        Tady je <b>trvale uložený pro celou aplikaci</b> — nezávisle na zakázce i na verzi ceníku —
+        a předvyplní se do každé nové i rozpracované zakázky, která u položky vlastní text nemá.
+        Odeslané (uzamčené) nabídky se nemění. ${admin
+          ? 'Každá změna se uloží hned, když opustíte pole.'
+          : 'Texty zadává administrátor; ve své zakázce je můžete upravit v Kalkulaci OCK pod položkou.'}
+        ${online ? kdo : '<b>Nepřihlášeno — texty se načtou po přihlášení.</b>'}</div>
+      ${admin ? `<div class="btns" style="margin:6px 0">
+        <button onclick="cenikPopisySber()" ${POPISY_CIS.hleda ? 'disabled' : ''}>${POPISY_CIS.hleda
+          ? 'Hledám v uložených zakázkách…' : 'Najít texty v uložených zakázkách'}</button>
+        ${sber ? `<span class="note">Nalezeno u ${Object.keys(sber).length} položek (jen texty,
+          které se od číselníku liší).</span>` : ''}
+        ${POPISY_CIS.chyba ? `<span class="note" style="color:#b00">${esc(POPISY_CIS.chyba)}</span>` : ''}
+      </div>` : ''}
+      <div class="cenik-scroll"><table class="ceniktbl">
+        <tr><th class="c-nazev">Položka</th><th>Dodatkový text</th></tr>
+        ${cis.radky.map(radek).join('')}
+        ${osirele}
+      </table></div>
+    </div></div>`;
+}
+
+/* Uložení z číselníku. Do otevřené rozpracované zakázky se text doplní jen
+ * tam, kde vlastní nemá — stejné pravidlo jako při otevření zakázky. */
+function cenikPopisUlozCis(klic, text) {
+  if (typeof onlinePopisUloz !== 'function') return Promise.resolve(false);
+  return onlinePopisUloz(klic, text).then(ok => {
+    if (ok && typeof popisyDoplnChybejici === 'function' && typeof ZAK !== 'undefined' && ZAK) {
+      const v = aktivniVarianta(ZAK);
+      const zam = (typeof variantaUzamcena === 'function') && variantaUzamcena(v);
+      const t = String(text == null ? '' : text).trim();
+      if (!zam && t && v && v.data && v.data.cenik && popisyDoplnChybejici(v.data.cenik, { [klic]: t })
+        && typeof syncVarianta === 'function') syncVarianta();
+    }
+    render();
+    return ok;
+  });
+}
+
+function cenikPopisySber() {
+  if (typeof onlineApi !== 'function') return;
+  POPISY_CIS.hleda = true; POPISY_CIS.chyba = ''; render();
+  onlineApi('/api/popisy?sber=1').then(o => { POPISY_CIS.sber = (o && o.nalez) || {}; })
+    .catch(e => { POPISY_CIS.chyba = 'Hledání selhalo: ' + e.message; })
+    .then(() => { POPISY_CIS.hleda = false; render(); });
+}
+
+function cenikPopisPrevzit(klic, i) {
+  const x = POPISY_CIS.sber && POPISY_CIS.sber[klic] && POPISY_CIS.sber[klic][i];
+  if (!x) return;
+  cenikPopisUlozCis(klic, x.text).then(ok => {
+    if (ok && POPISY_CIS.sber) { delete POPISY_CIS.sber[klic]; render(); }
+  });
 }
 
 function renderCenikProj() {

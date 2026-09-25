@@ -372,7 +372,7 @@ function uloSrovnejSPlatnymCenikem() {
   /* Srovnaná značka je taky změna: zakázka spočítaná bez připojené složky si
    * v ceníku varianty nese „nejsou to ostrá data" a po otevření nad platným
    * ceníkem by jinak dál svítila červená lišta a dokument by byl zablokovaný. */
-  if ((r.prepocteno || r.orazitkovano || r.znacky) && typeof syncVarianta === 'function') syncVarianta();
+  if ((r.prepocteno || r.orazitkovano || r.znacky || r.popisy) && typeof syncVarianta === 'function') syncVarianta();
   return r;
 }
 

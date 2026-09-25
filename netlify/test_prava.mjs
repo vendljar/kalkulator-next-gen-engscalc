@@ -1153,6 +1153,58 @@ console.log('\n===== AUDIT B9: ÚPLNOST ZÁLOHY =====\n');
   test('B9: a taky dodatkové texty', 'popisy' in otisk && !!otisk.popisy);
 }
 
+console.log('\n===== DODATKOVÉ TEXTY SE NEZTRÁCEJÍ (25. 9. 2026) =====\n');
+{
+  /* Hlášení J. V.: „z aplikace se mi v čase ztrácí dodatkové texty". Do
+   * 25. 9. POST přepsal celou mapu tím, co poslal prohlížeč — druhá karta se
+   * starší mapou smazala texty zapsané jinde. */
+  const cti = async () => (await (await get(popisy, 'http://x/api/popisy', cObch)).json()).popisy;
+  await post(popisy, 'http://x/api/popisy', { klic: 'Text A', text: 'První okno.' }, cAdmin);
+  await post(popisy, 'http://x/api/popisy', { klic: 'Text B', text: 'Druhé okno.' }, cAdmin);
+  let p = await cti();
+  test('zápis po jednom textu: druhé okno nesmaže text prvního',
+    p.texty['Text A'] === 'První okno.' && p.texty['Text B'] === 'Druhé okno.', p.texty);
+  test('a nesmaže ani starší texty (B9)', p.texty['Sklo VSG'] === 'Věta do zálohy.', p.texty);
+
+  /* Starší prohlížeč (stránka otevřená před nasazením) posílá celou mapu bez
+   * razítka — ta smí jen doplnit a změnit, ne mazat. */
+  await post(popisy, 'http://x/api/popisy', { texty: { 'Text A': 'Opraveno starým oknem.' } }, cAdmin);
+  p = await cti();
+  test('celá mapa bez razítka nic nesmaže', p.texty['Text B'] === 'Druhé okno.'
+    && p.texty['Sklo VSG'] === 'Věta do zálohy.' && p.texty['Text A'] === 'Opraveno starým oknem.', p.texty);
+
+  const r409 = await post(popisy, 'http://x/api/popisy', { texty: {}, ocekavaneKdy: '2000-01-01T00:00:00Z' }, cAdmin);
+  test('celá mapa se zastaralým razítkem → 409, nic se nepřepíše', r409.status === 409, r409.status);
+  p = await cti();
+  test('po 409 texty zůstaly', Object.keys(p.texty).length >= 3, p.texty);
+
+  await post(popisy, 'http://x/api/popisy', { klic: 'Text B', text: '' }, cAdmin);
+  p = await cti();
+  test('prázdný text po jednom klíč smaže (a jen ten)',
+    !('Text B' in p.texty) && p.texty['Text A'] === 'Opraveno starým oknem.', p.texty);
+
+  const hist = await (await uloziste('program')).cti('popisy_historie');
+  test('předchozí stavy se drží v historii (dohledání bez zálohy)',
+    Array.isArray(hist) && hist.length >= 3 && hist.some(h => h.texty && h.texty['Text B'] === 'Druhé okno.'),
+    hist && hist.length);
+
+  const ro = await post(popisy, 'http://x/api/popisy', { klic: 'Text A', text: 'obchodník' }, cObch);
+  test('obchodník text po jednom neuloží (403)', ro.status === 403, ro.status);
+
+  /* Záchrana: text zapsaný v zakázce, který společná mapa nemá. */
+  const zz = zakazkaCislo('2026 - OPR - CN - 0990');
+  zz.varianty[0].data.cenik.popisy = { 'Ztracený text': 'Leží jen v zakázce.', 'Text A': 'Opraveno starým oknem.' };
+  await post(zakazky, 'http://x/api/zakazky', { zakazka: zz }, cObch);
+  const sb = await get(popisy, 'http://x/api/popisy?sber=1', cAdmin);
+  const nalez = (await sb.json()).nalez || {};
+  test('hledání v zakázkách najde text, který číselník nemá',
+    Array.isArray(nalez['Ztracený text']) && nalez['Ztracený text'][0].text === 'Leží jen v zakázce.'
+    && /0990/.test(nalez['Ztracený text'][0].cislo), nalez['Ztracený text']);
+  test('a nehlásí text, který číselník má stejný', !nalez['Text A'], nalez['Text A']);
+  const sbO = await get(popisy, 'http://x/api/popisy?sber=1', cObch);
+  test('hledání v zakázkách jen pro administrátora (403)', sbO.status === 403, sbO.status);
+}
+
 console.log('\n===== AUDIT B13: RAZÍTKA PŘI ZALOŽENÍ =====\n');
 {
   const cizi = zakazkaCislo('2026 - OPR - CN - 0970');
@@ -2335,8 +2387,15 @@ for (const [popis, bezPripony] of [['starší klient (varianta 1 bez přípony)'
   test('texty: prázdný text se neuloží', !('Prázdný' in po), JSON.stringify(po));
   test('texty: nepsaná hodnota se neuloží', !('Číslo' in po), JSON.stringify(po));
 
-  /* Smazání textu = poslat mapu bez něj. Nesmí zůstat viset prázdný klíč. */
-  await post(popisy, 'http://x/api/popisy', { texty: {} }, cAdmin);
+  /* Smazání textu = poslat mapu bez něj. Nesmí zůstat viset prázdný klíč.
+   * Od 25. 9. 2026 smí celá mapa mazat jen s razítkem posledního stavu
+   * (`ocekavaneKdy`) — mapa bez razítka jen doplňuje (texty se ztrácely,
+   * viz blok DODATKOVÉ TEXTY SE NEZTRÁCEJÍ). */
+  const bezRazitka = await post(popisy, 'http://x/api/popisy', { texty: {} }, cAdmin);
+  const zustalo = (await (await get(popisy, 'http://x/api/popisy', cAdmin)).json()).popisy;
+  test('texty: prázdná mapa BEZ razítka nic nesmaže',
+    bezRazitka.status === 200 && Object.keys(zustalo.texty).length > 0, JSON.stringify(zustalo.texty));
+  await post(popisy, 'http://x/api/popisy', { texty: {}, ocekavaneKdy: zustalo.kdy }, cAdmin);
   const prazdno = (await (await get(popisy, 'http://x/api/popisy', cAdmin)).json()).popisy.texty;
   test('texty: prázdnou mapou se text zruší', Object.keys(prazdno).length === 0, JSON.stringify(prazdno));
 }

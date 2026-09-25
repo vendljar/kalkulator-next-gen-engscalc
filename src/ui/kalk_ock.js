@@ -449,8 +449,20 @@ function popisSet(cesta, v) {
   if (typeof zamekStop === 'function' && zamekStop()) return;
   if (typeof cenikPopisNastav !== 'function') return;
   cenikPopisNastav(C, cesta, v);
+  /* Smazaný text, ke kterému existuje společný text aplikace, se zapíše jako
+   * prázdný řetězec — vědomé „tady text nechci". Bez toho by ho doplnění
+   * společných textů (`popisyDoplnChybejici`, 25. 9. 2026) při dalším
+   * otevření zakázky vrátilo. Administrátor tím zároveň společný text maže
+   * (onlinePopisUloz níž), takže u něj značka nezůstává. */
+  const prazdny = String(v == null ? '' : v).trim() === '';
+  const admin = typeof jeAdmin === 'function' && jeAdmin();
+  if (prazdny && !admin && typeof DEFAULT_CENIK !== 'undefined' && DEFAULT_CENIK.popisy
+    && typeof DEFAULT_CENIK.popisy[cesta] === 'string' && DEFAULT_CENIK.popisy[cesta].trim()) {
+    if (!C.popisy) C.popisy = {};
+    C.popisy[cesta] = '';
+  }
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
-  if (typeof jeAdmin === 'function' && jeAdmin() && typeof onlinePopisUloz === 'function')
+  if (admin && typeof onlinePopisUloz === 'function')
     onlinePopisUloz(cesta, v);
   render();
 }

@@ -101,7 +101,7 @@ function progSrovnejNedotcene(verzeInfo) {
       zadani += cenikDoZadani(v);
     });
   }
-  const n = r.prepocteno + r.orazitkovano + (r.znacky || 0) + zadani;
+  const n = r.prepocteno + r.orazitkovano + (r.znacky || 0) + (r.popisy || 0) + zadani;
   if (n && typeof syncVarianta === 'function') syncVarianta();
   return n;
 }

@@ -794,23 +794,26 @@ function onlinePopisyVlijZnovu() {
 /* Uložení JEDNOHO textu pro celou aplikaci. Smí jen administrátor — server
  * to hlídá znovu (403), tohle je jen to, aby se ostatním tlačítko nenabízelo.
  *
- * Posílá se CELÁ mapa, ne jeden klíč: úložiště drží jeden záznam a částečný
- * zápis by musel řešit souběh dvou správců slučováním na serveru. Map je
- * řádově stovky krátkých vět, takže na tom nezáleží. */
+ * POSÍLÁ SE JEN TEN JEDEN TEXT (25. 9. 2026, hlášení J. V. „dodatkové texty
+ * se mi v čase ztrácí"). Do té doby šla na server CELÁ mapa, jak si ji
+ * prohlížeč načetl při přihlášení — druhá karta nebo okno otevřené od rána
+ * tak při dalším zápisu smazalo všechno, co se mezitím zapsalo jinde, a po
+ * neúspěšném načtení mapy dokonce všechno kromě právě psaného textu.
+ * Server teď změnu sloučí se svým stavem a vrátí celou aktuální mapu. */
 function onlinePopisUloz(klic, text) {
   if (!jeAdminOnline()) return Promise.resolve(false);
-  const zaklad = (ONLINE_STAV.popisy && ONLINE_STAV.popisy.texty) ? ONLINE_STAV.popisy.texty : {};
-  const texty = Object.assign({}, zaklad);
   const t = String(text == null ? '' : text).trim();
-  if (t) texty[String(klic)] = t; else delete texty[String(klic)];
-  return onlineApi('/api/popisy', { texty }).then(() => {
-    ONLINE_STAV.popisy = { texty, kdo: (ONLINE_STAV.ja || {}).email || '', kdy: new Date().toISOString() };
+  return onlineApi('/api/popisy', { klic: String(klic), text: t }).then(o => {
+    ONLINE_STAV.popisy = (o && o.popisy) ? o.popisy
+      : { texty: Object.assign({}, (ONLINE_STAV.popisy || {}).texty || {}), kdo: '', kdy: '' };
     if (typeof popisyVlij === 'function' && typeof DEFAULT_CENIK !== 'undefined') {
       /* Vlití samo by starý text nepřepsalo (ceník má přednost), takže se
        * u tohohle jednoho klíče srovná výchozí ceník natvrdo — administrátor
-       * právě řekl, jak má znít. */
+       * právě řekl, jak má znít. Ostatní texty z odpovědi se doplní, kdyby
+       * je mezitím zapsal někdo jiný. */
       if (!DEFAULT_CENIK.popisy) DEFAULT_CENIK.popisy = {};
       if (t) DEFAULT_CENIK.popisy[String(klic)] = t; else delete DEFAULT_CENIK.popisy[String(klic)];
+      onlinePopisyVlijZnovu();
     }
     return true;
   }).catch(e => {

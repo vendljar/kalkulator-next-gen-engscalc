@@ -224,6 +224,38 @@ test('a nová zakázka si ho odnese', textPo.nova === 'Věta, která má přež�
 /* Úklid: text zpátky, ať další oddíly počítají s tím, s čím dosud. */
 await page.evaluate(async (klic) => { await onlinePopisUloz(klic, ''); }, KLIC_TEXTU);
 
+/* ---- 4a2) číselník dodatkových textů v Ceníku OCK (25. 9. 2026) ----
+ * Hlášení J. V.: „z aplikace se mi v čase ztrácí dodatkové texty". Druhé
+ * okno se starou mapou textů mazalo, co se mezitím zapsalo jinde. */
+{
+  await page.evaluate(() => { prepniTab('cenik'); render(); });
+  await page.waitForTimeout(200);
+  test('Ceník OCK má kartu číselníku dodatkových textů',
+    await page.locator('#cenikPopisyKarta').count() === 1);
+  const pole = page.locator('#cenikPopisyKarta tr', { hasText: 'Sklo VSG s mléčnou fólií' }).locator('input');
+  test('administrátor má u položky pole k zápisu', await pole.count() === 1);
+  await pole.fill('Mléčné sklo z číselníku.');
+  await pole.dispatchEvent('change');
+  await page.waitForTimeout(400);
+  /* Simulace druhého okna: mapa načtená dřív, bez právě uloženého textu. */
+  const stav = await page.evaluate(async () => {
+    ONLINE_STAV.popisy = { texty: {}, kdo: '', kdy: '' };
+    await onlinePopisUloz('VENTILÁTOR (EXT)', 'Druhé okno.');
+    const r = await (await fetch('/api/popisy', { credentials: 'same-origin' })).json();
+    return r.popisy.texty;
+  });
+  test('text z číselníku je na serveru', stav['Sklo VSG s mléčnou fólií'] === 'Mléčné sklo z číselníku.', stav);
+  test('druhé okno se starou mapou ho nesmazalo', stav['VENTILÁTOR (EXT)'] === 'Druhé okno.', stav);
+  const vZakazce = await page.evaluate(() => ((aktivniVarianta(ZAK).data.cenik.popisy) || {})['Sklo VSG s mléčnou fólií'] || '');
+  test('otevřená rozpracovaná zakázka text dostala', vZakazce === 'Mléčné sklo z číselníku.', vZakazce);
+  await page.evaluate(async () => {
+    await onlinePopisUloz('Sklo VSG s mléčnou fólií', '');
+    await onlinePopisUloz('VENTILÁTOR (EXT)', '');
+    delete (aktivniVarianta(ZAK).data.cenik.popisy || {})['Sklo VSG s mléčnou fólií'];
+    prepniTab('kalk'); render();
+  });
+}
+
 /* ---- 4b) firemní údaje online (4. 8. 2026) ----
  * Ceník sám nestačí. Obchodník složku _DB nemapuje, takže dokud firemní údaje
  * nejsou taky online, zůstane mu v hlavičce nabídky „Ukázková firma s.r.o."

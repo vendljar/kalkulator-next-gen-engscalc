@@ -365,6 +365,72 @@ function popisyVlij(cenik, texty) {
   return cenik;
 }
 
+/* Doplnění společných textů do ROZPRACOVANÉ zakázky (25. 9. 2026, hlášení
+ * J. V. „dodatkové texty se mi v čase ztrácí").
+ *
+ * Do té doby se společné texty vlévaly jen do výchozího ceníku, tedy do
+ * NOVÝCH zakázek. Kdo otevřel zakázku založenou dřív, než text napsal,
+ * pole měl prázdné — a vypadalo to, že text zmizel. Teď se doplní i do
+ * rozpracovaných variant, ale jen tam, kde klíč v ceníku varianty VŮBEC
+ * NENÍ: vlastní text zakázky se nepřepisuje a prázdný řetězec je vědomé
+ * „tady text nechci" (zapisuje ho `popisSet`, když obchodník text smaže).
+ * Uzamčené (odeslané) varianty sem volající vůbec nepouští. Vrací počet
+ * doplněných textů. */
+function popisyDoplnChybejici(cenik, texty) {
+  if (!cenik || !texty || typeof texty !== 'object') return 0;
+  let n = 0;
+  Object.keys(texty).forEach(k => {
+    const t = (typeof texty[k] === 'string') ? texty[k].trim() : '';
+    if (!t) return;
+    if (!cenik.popisy || typeof cenik.popisy !== 'object') cenik.popisy = {};
+    if (Object.prototype.hasOwnProperty.call(cenik.popisy, k)) return;
+    cenik.popisy[k] = t;
+    n++;
+  });
+  return n;
+}
+
+/* ČÍSELNÍK DODATKOVÝCH TEXTŮ (25. 9. 2026, zadání J. V.: „potřebujeme
+ * samostatný číselník, resp. pole v ceníku nákladů OCK, aby je trvale
+ * držel").
+ *
+ * Seznam všech položek, pod které se dodatkový text dá napsat — příplatky
+ * a volitelné položky s ceníkovou vazbou — pro exteriér i interiér. Počítá
+ * se výpočtem nad výchozím zadáním, ne ručním seznamem: nová položka v jádru
+ * se v číselníku objeví sama a přejmenovaná nezůstane viset pod starým
+ * názvem. Texty, jejichž položka už v jádru není, se nezahazují — vrací se
+ * zvlášť (`osirele`), aby je administrátor viděl a mohl rozhodnout.
+ *
+ * `vypocetFn(zadani, cenik)` dodá volající (v prohlížeči `vypocet`
+ * s JEKLY), díky tomu je funkce čistá a testuje se v Node. */
+function popisyCiselnik(vypocetFn, zadaniVychozi, cenik, texty) {
+  const radky = [], podle = {};
+  const t = popisyOciste(texty);
+  [['exteriérová', 'EXT'], ['interiérová', 'INT']].forEach(([typ, zn]) => {
+    let r = null;
+    try {
+      const z = JSON.parse(JSON.stringify(zadaniVychozi || {}));
+      z.typSachty = typ;
+      r = vypocetFn(z, cenik);
+    } catch (e) { r = null; }
+    if (!r) return;
+    const vloz = (it, skupina) => {
+      if (!it || it.vlastni || !it.cenaPath) return;
+      const klic = it.origNazev || it.nazev;
+      if (!klic) return;
+      if (!podle[klic]) {
+        podle[klic] = { klic, skupina, cenaPath: it.cenaPath, typy: [], text: t[klic] || '' };
+        radky.push(podle[klic]);
+      }
+      if (!podle[klic].typy.includes(zn)) podle[klic].typy.push(zn);
+    };
+    (r.priplatky || []).forEach(it => vloz(it, 'Příplatky'));
+    (r.volitelneKatalog || []).forEach(x => vloz(x && (x.it || x), 'Volitelné položky'));
+  });
+  const osirele = Object.keys(t).filter(k => !podle[k]).map(k => ({ klic: k, text: t[k] }));
+  return { radky, osirele };
+}
+
 function cenikVychozi(c, klic, zaklad) {
   const v = c ? c[klic] : null;
   return (typeof v === 'number' && isFinite(v) && v > 0) ? v : zaklad;
@@ -481,5 +547,5 @@ function cenikAplikuj(zmeny, C, PC) {
 if (typeof module !== 'undefined')
   module.exports = { CENIK_DEF, CENIK_DEF_PROJ, CENIK_JEN_ZAHR, cenikGet, cenikSet, cenikTyp, cenikVychozi,
     cenikPopis, cenikPopisNastav,
-    POPISY_MAX_KLIC, POPISY_MAX_TEXT, POPISY_MAX_POLOZEK, popisyOciste, popisyVlij,
+    POPISY_MAX_KLIC, POPISY_MAX_TEXT, POPISY_MAX_POLOZEK, popisyOciste, popisyVlij, popisyDoplnChybejici, popisyCiselnik,
     cenikSheetRows, cenikToSheets, cenikDiffZeSheets, cenikAplikuj, CENIK_HLAVICKA };

@@ -465,7 +465,7 @@ function cenikPrepocti(v, dnesni, opts) {
 function cenikPrepoctiRozpracovane(zak, dnesni, opts) {
   opts = opts || {};
   const vysledek = { prepocteno: 0, zmen: 0, zamcene: 0, dohodnute: 0,
-                     orazitkovano: 0, znacky: 0, varianty: [] };
+                     orazitkovano: 0, znacky: 0, popisy: 0, varianty: [] };
   if (!zak || !Array.isArray(zak.varianty)) return vysledek;
 
   /* ROZDĚLANÁ ZAKÁZKA (nález V23, 4. 9. 2026). Zakázka, která už má číslo
@@ -517,6 +517,14 @@ function cenikPrepoctiRozpracovane(zak, dnesni, opts) {
       vysledek.zamcene++;
       vysledek.varianty.push({ id: v.id, stav: 'zamcena', zmen: 0 });
       return;
+    }
+    /* Společné dodatkové texty (25. 9. 2026): rozpracovaná varianta dostane
+     * texty, které jí chybí — i ta s dohodnutými cenami, text není cena
+     * a otisk ceníku se jím nemění. Podrobně u `popisyDoplnChybejici`. */
+    if (typeof popisyDoplnChybejici === 'function' && v.data.cenik) {
+      const zdroj = (dnesniV && dnesniV.cenik && dnesniV.cenik.popisy)
+        || (dnesni && dnesni.cenik && dnesni.cenik.popisy) || null;
+      vysledek.popisy += popisyDoplnChybejici(v.data.cenik, zdroj);
     }
     if (cenikJeKvitovano(v, cenikOtisk(v.data))) {
       vysledek.dohodnute++;
