@@ -68,6 +68,14 @@ function kontrolyCtxAkt() {
           (typeof tiskJazyk === 'function') ? tiskJazyk() : 'cz');
       } catch (e) { return null; }
     })(),
+    /* Symboly šablony nabídky PROJ (P4 / K15-N66) — stahují se jen u zakázky
+     * se slevou projekce nebo s vlastními položkami PROJ; null = nevíme. */
+    sablonaNabidkaProj: (() => {
+      try {
+        return kontrolySablonaNabidkaProj((typeof SLP !== 'undefined') ? SLP : null, proj,
+          (typeof tiskJazyk === 'function') ? tiskJazyk() : 'cz');
+      } catch (e) { return null; }
+    })(),
     zaokr: (typeof ZO !== 'undefined') ? ZO : null,
     /* Od 4. 8. 2026 má PROJ vlastní obchodní zaokrouhlení (#38); kontroly
      * marže musí počítat s tím, které opravdu odejde v nabídce PROJ. */
@@ -84,11 +92,22 @@ function kontrolyCtxAkt() {
 const KONTROLY_SABLONA = { cache: {}, bezi: {} };
 function kontrolySablonaNabidka(sleva, jazyk) {
   if (typeof slevaPlati !== 'function' || !slevaPlati(sleva)) return null;
+  return kontrolySablonaSymboly('nabidka', jazyk);
+}
+/* Totéž pro nabídku PROJ (P4): stahuje se jen, když je co hlídat — schválená
+ * sleva projekce nebo vlastní položky PROJ, které se počítají. */
+function kontrolySablonaNabidkaProj(slevaProj, projVysledek, jazyk) {
+  const sleva = typeof slevaPlati === 'function' && slevaPlati(slevaProj);
+  const navic = typeof kontrolyProjNavic === 'function' && kontrolyProjNavic(projVysledek).length > 0;
+  if (!sleva && !navic) return null;
+  return kontrolySablonaSymboly('nabidkaProj', jazyk);
+}
+function kontrolySablonaSymboly(zaklad, jazyk) {
   if (typeof sablonyOnlineAktivni !== 'function' || !sablonyOnlineAktivni()) return null;
   if (typeof onlineSablonaMeta !== 'function' || typeof onlineSablonaStahni !== 'function'
       || typeof docxTextSablony !== 'function' || typeof sablonaSymboly !== 'function') return null;
   const L = jazyk || 'cz';
-  const typ = (L !== 'cz' && onlineSablonaMeta('nabidka_' + L)) ? 'nabidka_' + L : 'nabidka';
+  const typ = (L !== 'cz' && onlineSablonaMeta(zaklad + '_' + L)) ? zaklad + '_' + L : zaklad;
   const meta = onlineSablonaMeta(typ);
   if (!meta) return null;
   const klic = typ + '/' + meta.verze;

@@ -149,6 +149,9 @@ const TS_SEKCE_NAZVY = ['ZÁKLADNÍ PARAMETRY ŠACHTY', 'KONSTRUKČNÍ ŘEŠENÍ
   'PROJEKČNÍ A PŘÍPRAVNÉ PRÁCE', 'SOUČÁSTÍ DODÁVKY NENÍ'];
 
 const DOCX_SLEVA_KLICE = ['CENA_PRED_SLEVOU', 'SLEVA_PROC', 'SLEVA_KC'];
+/* Totéž pro nabídku PROJ (P4 / K15-N66): řádky „Cena před slevou" a „Sleva"
+ * zmizí, když projekce slevu nemá (prázdný PROJ_SLEVA_KC). */
+const DOCX_SLEVA_PROJ_KLICE = ['PROJ_CENA_PRED_SLEVOU', 'PROJ_SLEVA_PROC', 'PROJ_SLEVA_KC'];
 function jePrazdnaHodnota(v) {
   const t = String(v == null ? '' : v).trim();
   return t === '' || t === '-' || t === '–' || t === '—';
@@ -200,6 +203,8 @@ function odstranPrazdneTsRadky(xml, ph) {
      * zmizí, když nabídka slevu nemá (prázdný SLEVA_KC). Cena před slevou
      * se plní vždy, proto rozhoduje SLEVA_KC, ne hodnota v řádku. */
     else if (klice.some(k => DOCX_SLEVA_KLICE.includes(k)) && ('SLEVA_KC' in ph) && jePrazdnaHodnota(ph.SLEVA_KC))
+      kOdstr.push(sp);
+    else if (klice.some(k => DOCX_SLEVA_PROJ_KLICE.includes(k)) && ('PROJ_SLEVA_KC' in ph) && jePrazdnaHodnota(ph.PROJ_SLEVA_KC))
       kOdstr.push(sp);
   }
   // neodstraňuj nadřazený řádek kvůli vnořenému – ponech jen vnější z překrývajících

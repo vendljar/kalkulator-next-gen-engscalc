@@ -159,7 +159,9 @@ const pravidla = kontrolyPravidla();
  * a 17. „slevaWord" (P5 / K13-N56, test_k13_kontroly.js), obě 24. 9. 2026;
  * 18. „mustky" 25. 9. 2026 (P7 / K13-N59, test_mustky.js). */
 /* 19. „cenaNula" 25. 9. 2026 (P2 / K16-N75): nulová nebo nečíselná cena = zábrana. */
-test('pravidel je devatenáct', pravidla.length === 19, pravidla.length);
+/* 20. „slevaWordProj" a 21. „polozkyNavicWordProj" 25. 9. 2026 (P4 / K15-N66,
+ * K14-N64, test_k16_proj_word.js): šablona PROJ neukáže slevu / vlastní položky. */
+test('pravidel je dvacet jedna', pravidla.length === 21, pravidla.length);
 test('kódy pravidel jsou jedinečné',
   new Set(pravidla.map(p => p.kod)).size === pravidla.length,
   pravidla.map(p => p.kod).join(','));

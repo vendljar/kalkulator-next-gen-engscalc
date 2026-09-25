@@ -497,6 +497,23 @@ function nabidkaProjData(zak, varianta, lang) {
   };
   const radekVRozsahu = x => !Array.isArray(x) || x.length < 3 || vRozsahu(x[2]);
 
+  /* VLASTNÍ A TRVALÉ POLOŽKY V NABÍDCE (P4 / K14-N64, K15-N66, 25. 9. 2026).
+   * Položka, kterou obchodník do sekce přidal sám („+ přidat položku"), nebo
+   * trvalá z ceníku PROJ (kid) se promítla do ceny sekce, ale text nabídky
+   * ji neznal — zákazník platil za činnost, o které v nabídce nestálo nic.
+   * Vypisuje se u své sekce, jen když se počítá (není vyřazená, něco stojí)
+   * a sekce je v nabídce. Název je text obchodníka — slovník ho přeloží,
+   * jen když ho zná. */
+  const navicMapa = {};
+  (r.sekce || []).forEach(s => {
+    if (!cenaSekce(s.key)) return;
+    const jmena = (s.polozky || [])
+      .filter(p => p && p.vlastni && !p.vyrazeno && Math.abs(+p.naklad || 0) > 0)
+      .map(p => P(String(p.nazev || '').trim())).filter(Boolean);
+    if (jmena.length) navicMapa[s.key] = jmena;
+  });
+  const navicVypsano = {};
+
   const uvodOdst = nabidkaProjUvod(vRozsahu, P);   // P11: úvod podle rozsahu
   const bloky = NABIDKA_PROJ_DEF.filter(b => b.klic !== 'uvodNabidky' || uvodOdst.length)
     .filter(blokVRozsahu).map(b => {
@@ -572,7 +589,13 @@ function nabidkaProjData(zak, varianta, lang) {
      * který odkazuje (viz B). Nesmí spadnout do `neuvedena`: ten filtr níž
      * vyhazuje NEOCENĚNÉ činnosti, a tahle oceněná je — jen jinde. */
     const odkaz = b.odkaz && !neuvedena ? P(b.odkaz) : '';
-    return { typ: 'cena', nadpis: P(b.nadpis), popis, sekce: b.sekce || null,
+    /* Vlastní položky sekce k PRVNÍMU jejímu cenovému bloku (P4) — ne
+     * k paušálu a ne k odkazu na cenu uvedenou jinde. */
+    let navic = [];
+    if (b.sekce && !b.pausal && !odkaz && !neuvedena && navicMapa[b.sekce] && !navicVypsano[b.sekce]) {
+      navic = navicMapa[b.sekce]; navicVypsano[b.sekce] = true;
+    }
+    return { typ: 'cena', nadpis: P(b.nadpis), popis, sekce: b.sekce || null, navic,
       castka: odkaz ? odkaz
         : (neuvedena ? P('není součástí této nabídky') : kc(hodnota)
             + (b.jednotka ? ' / ' + P(b.jednotka) : '')),
@@ -656,6 +679,17 @@ function nabidkaProjData(zak, varianta, lang) {
     PROJ_CENA_VARIANTA: kc(mena.na(NABIDKA_PROJ_SAZBY.variantaSpKc)),
     PROJ_CENA_AD: kc(mena.na(NABIDKA_PROJ_SAZBY.autorskyDozorKcMesic)),
     PROJ_CELKEM_BEZ_DPH: kc(celkemBezDph),
+    /* Vlastní a trvalé položky pro Word (P4): souhrnně (název sekce, pod ním
+     * řádky „– položka") a po sekcích PROJ_NAVIC_<SEKCE>. Bez položek prázdné.
+     * Šablona v2 je zatím nemá — kontrola `polozkyNavicWordProj` to řekne. */
+    PROJ_POLOZKY_NAVIC: NABIDKA_PROJ_SEKCE.filter(k => navicMapa[k]).map(k => {
+      const s = r.sekce.find(x => x.key === k);
+      return P(s ? s.nazev : k) + ':\n' + navicMapa[k].map(n => '– ' + n).join('\n');
+    }).join('\n'),
+    ...NABIDKA_PROJ_SEKCE.reduce((o, k) => {
+      o['PROJ_NAVIC_' + k.toUpperCase()] = (navicMapa[k] || []).map(n => '– ' + n).join('\n');
+      return o;
+    }, {}),
     /* Rozpad slevy projekce. Prázdné, dokud žádná schválená sleva není —
      * nula v dokumentu vypadá jako „slevu jsme dali a byla nulová". */
     PROJ_CENA_PRED_SLEVOU: slevaKcNum ? kc(soucetSekci) : '',

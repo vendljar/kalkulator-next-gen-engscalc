@@ -228,8 +228,10 @@ async function nabidkaProjNahled() {
       return `<h2>${esc(b.nadpis)}</h2><table>${b.radky.map(r =>
         `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join('')}</table>`;
     /* cena */
+    /* Vlastní a trvalé položky sekce (P4 / K14-N64) — pod popisem ceny. */
     return `<table class="cena"><tr><td><b>${esc(b.nadpis)}</b><br>
-        <span class="popis">${esc(b.popis || '')}</span></td>
+        <span class="popis">${esc(b.popis || '')}</span>${(b.navic || []).map(n =>
+          `<br><span class="popis polozka-navic">– ${esc(n)}</span>`).join('')}</td>
       <td class="castka${b.neuvedena ? ' chybi' : ''}">${esc(b.castka)}${b.neuvedena ? '' : '<br><span class="popis">'
         + esc(P('bez DPH')) + '</span>'}</td></tr>
       ${b.hvezdicka ? `<tr><td colspan="2" class="popis">*) ${esc(b.hvezdicka)}</td></tr>` : ''}</table>`;

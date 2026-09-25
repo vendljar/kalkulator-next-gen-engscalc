@@ -56,6 +56,9 @@ await p.evaluate(() => {
   const bezZnacek = o => { if (o) { delete o.ukazkove; delete o.prazdny; } };
   [DEFAULT_CENIK, DEFAULT_CENIK_PROJ, C, PC, NAST.slevy, NAST.firma].forEach(bezZnacek);
   ZAK.varianty.forEach(v => { bezZnacek(v.data.cenik); bezZnacek(v.data.proj.cenik); });
+  /* P4 (K14-N64): vlastní položka sekce se musí v nabídce PROJ objevit. */
+  const zam = PJ.sekce.find(x => x.key === 'zamereni');
+  if (zam) zam.polozky.push({ nazev: 'Zkušební položka navíc', typ: 'fix', cena: 5000, vlastni: true });
   ZAK.cislo = '2026 - OVP - CN - 0365'; ZAK.nazevAkce = 'Zkouška nabídky';
   ZAK.objednatel = 'Zkušební zákazník'; ZAK.adresa = 'Ulice 1, Praha';
   render();
@@ -87,6 +90,9 @@ const stavDph = (o) => o.evaluate(() => {
     prepinac: !!document.getElementById('tiskDphCheck'),
   };
 });
+const textProj = await proj.evaluate(() => document.getElementById('dok').innerText);
+zkus('P4: vlastní položka PROJ je v online nabídce u své sekce', /– Zkušební položka navíc/.test(textProj)
+  && textProj.indexOf('Zkušební položka navíc') > textProj.indexOf('CENA ZA ZAMĚŘENÍ'), textProj.slice(0, 200));
 let s = await stavDph(proj);
 zkus('PROJ: nabídka se generuje bez DPH', s.bezDph && s.videt === 0, JSON.stringify(s));
 zkus('PROJ: řádky DPH v dokumentu existují (jen se netisknou)', s.radku >= 2, s.radku);

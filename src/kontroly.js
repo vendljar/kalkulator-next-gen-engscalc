@@ -485,6 +485,46 @@ const KONTROLY = [
     },
   },
   {
+    /* SLEVA PROJEKCE VE WORDU (P4 / K15-N66, 25. 9. 2026). Aplikace posílá
+     * do Wordu PROJ_CENA_PRED_SLEVOU, PROJ_SLEVA_PROC, PROJ_SLEVA_KC
+     * i součty, ale šablona nabídky PROJ v2 nemá ani jeden — zákazník vidí
+     * jen ceny činností, sleva je v nich rozpuštěná a neví o ní. Symboly
+     * šablony se znají stejně jako u OCK (ctx.sablonaNabidkaProj stahuje UI
+     * na pozadí); dokud je neznáme, pravidlo mlčí. */
+    kod: 'slevaWordProj', kde: 'Nabídka PROJ', nazev: 'Sleva projekce se ve Wordu neukáže',
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      if (typeof slevaPlati !== 'function' || !slevaPlati(ctx.slevaProj)) return null;
+      const s = ctx.sablonaNabidkaProj;
+      if (!s || !Array.isArray(s.symboly) || !s.symboly.length) return null;
+      if (s.symboly.indexOf('PROJ_SLEVA_KC') >= 0) return null;
+      return { text: 'Word slevu projekce neukáže, zákazník uvidí jen ceny činností (sleva je v nich rozpuštěná): '
+        + 'šablona nabídky PROJ' + (s.nazev ? ' „' + s.nazev + '"' : '') + (s.verze ? ' (verze ' + s.verze + ')' : '')
+        + ' nemá symbol {{PROJ_SLEVA_KC}}. Schválená sleva ' + (+ctx.slevaProj.procenta) + ' % je v ceně započtená; '
+        + 'cenu před slevou a slevu ukazuje jen online náhled nabídky PROJ. Do šablony patří '
+        + '{{PROJ_CENA_PRED_SLEVOU}}, {{PROJ_SLEVA_PROC}}, {{PROJ_SLEVA_KC}} a {{PROJ_CELKEM_BEZ_DPH}}.' };
+    },
+  },
+  {
+    /* VLASTNÍ POLOŽKY PROJEKCE VE WORDU (P4 / K14-N64). Položky přidané
+     * do kalkulace PROJ („+ přidat položku", trvalé z ceníku) jsou v ceně
+     * sekce i v online nabídce; do Wordu jdou symboly PROJ_POLOZKY_NAVIC
+     * (souhrnně) a PROJ_NAVIC_<SEKCE> — šablona v2 nemá ani jeden. */
+    kod: 'polozkyNavicWordProj', kde: 'Nabídka PROJ', nazev: 'Vlastní položky projekce se ve Wordu neukážou',
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      const navic = Array.isArray(ctx.projNavic) ? ctx.projNavic : kontrolyProjNavic(ctx.projVysledek);
+      if (!navic.length) return null;
+      const s = ctx.sablonaNabidkaProj;
+      if (!s || !Array.isArray(s.symboly) || !s.symboly.length) return null;
+      if (s.symboly.some(x => x === 'PROJ_POLOZKY_NAVIC' || /^PROJ_NAVIC_/.test(x))) return null;
+      return { text: 'Položky přidané do kalkulace PROJ (' + kontrolyVyctem(navic.map(n => '„' + n + '"'))
+        + ') wordová nabídka neukáže — šablona nabídky PROJ' + (s.nazev ? ' „' + s.nazev + '"' : '')
+        + ' nemá symbol {{PROJ_POLOZKY_NAVIC}} ani {{PROJ_NAVIC_<SEKCE>}}. V ceně sekcí jsou; '
+        + 'vypisuje je jen online náhled nabídky PROJ.' };
+    },
+  },
+  {
     kod: 'hlavicka', kde: 'Hlavička zakázky', nazev: 'Prázdná hlavička',
     zjisti(ctx) {
       const zak = ctx.zak;
@@ -524,6 +564,17 @@ const KONTROLY = [
 
 /* Katalog pravidel bez funkcí – pro nápovědu, protokol o kalkulaci (#41)
  * a pro test, že se pravidlo nikam neztratilo. */
+/* Názvy vlastních a trvalých položek PROJ, které se počítají (P4) — týž
+ * výběr jako v nabidkaProjData: vlastní, nevyřazená, něco stojí. */
+function kontrolyProjNavic(r) {
+  const out = [];
+  ((r && r.sekce) || []).forEach(s => (s.polozky || []).forEach(p => {
+    if (p && p.vlastni && !p.vyrazeno && Math.abs(+p.naklad || 0) > 0 && String(p.nazev || '').trim())
+      out.push(String(p.nazev).trim());
+  }));
+  return out;
+}
+
 function kontrolyPravidla() {
   return KONTROLY.map(r => ({ kod: r.kod, kde: r.kde, nazev: r.nazev,
     uroven: KONTROLY_UROVEN,
@@ -603,5 +654,5 @@ function kontrolyPotvrzeniPlati(potvrzeni, vysl) {
 if (typeof module !== 'undefined')
   module.exports = { KONTROLY_UROVEN, KONTROLY_UROVEN_ZABRANA,
                      KONTROLY_VYSKA_DVERI, kontrolyVyctem,
-                     kontrolyPravidla, kontrolyProved, kontrolyText,
+                     kontrolyPravidla, kontrolyProved, kontrolyText, kontrolyProjNavic,
                      kontrolyPotvrzeni, kontrolyPotvrzeniPlati };
