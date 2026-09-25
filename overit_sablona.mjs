@@ -241,6 +241,30 @@ console.log('\nkapitoly IV.–VI. a doložky ze symbolů (v11+)');
   }
 }
 
+/* ---------- v12: sleva, popis záměru, stříška/příčka, můstky ----------
+ * (25. 9. 2026, rozhodnutí J. V. k rozboru K13: P5, P6, P7, P10). Starší
+ * šablony tyhle symboly nemají, proto jen od v12. */
+if (nalez && +nalez.verze >= 12) {
+  console.log('\nšablona v12: sleva, popis záměru, doplňkové konstrukce');
+  const text = doc => (doc.match(/<w:t(?:\s[^>]*)?>[^<]*<\/w:t>/g) || []).map(t => t.replace(/<[^>]+>/g, '')).join('');
+  const zaklad = { POPIS_ZAMERU_OCK: 'Vestavba výtahu v nové ocelové konstrukci výtahové šachty do vnitřního prostoru objektu.',
+    OPLASTENI_VETA: 'Opláštění šachty: vrstvené bezpečnostní sklo VSG.', CENA_BEZ_DPH: '950 000 Kč',
+    CENA_PRED_SLEVOU: '1 000 000 Kč', TS_PROSKLENA_PRICKA: '', TS_PROSKLENA_STRISKA: '2× nad nástupišti',
+    TS_MUSTKY: '2 ks, hloubka 900 mm', TS_PRECHODOVE_PLECHY: 'nejsou součástí dodávky, viz příplatkové ceny' };
+  const se = text((await vygeneruj(Object.assign({}, zaklad, { SLEVA_PROC: '5', SLEVA_KC: '50 000 Kč' }))).doc);
+  const bez = text((await vygeneruj(Object.assign({}, zaklad, { SLEVA_PROC: '', SLEVA_KC: '' }))).doc);
+  test('v12: popis záměru ze zakázky, pevný odstavec o dvorní fasádě pryč',
+    se.includes(zaklad.POPIS_ZAMERU_OCK) && !se.includes('dvorní fasádě'));
+  test('v12: věta o opláštění ze specifikace, pevné dvojsklo pryč',
+    se.includes(zaklad.OPLASTENI_VETA) && !se.includes('izolačním dvojsklem'));
+  test('v12: se slevou řádky „Cena před slevou" a „Sleva"', se.includes('Cena před slevou') && se.includes('50 000 Kč'));
+  test('v12: bez slevy oba řádky zmizí', !bez.includes('Cena před slevou') && !bez.includes('Sleva'));
+  test('v12: stříška a můstky v doplňkových konstrukcích, prázdná příčka vynechaná',
+    se.includes('PROSKLENÁ STŘÍŠKA') && se.includes('2× nad nástupišti') && se.includes('MŮSTKY MEZI BUDOVOU A OCK')
+    && !se.includes('PROSKLENÁ PŘÍČKA'));
+  test('v12: nezůstal žádný nový symbol {{…}}', !/\{\{(POPIS_ZAMERU_OCK|OPLASTENI_VETA|SLEVA_|CENA_PRED|TS_MUSTKY|TS_PROSKLENA)/.test(se));
+}
+
 function atobDelka(dataUrl) {
   return Buffer.from(String(dataUrl).split(',')[1], 'base64').length;
 }
