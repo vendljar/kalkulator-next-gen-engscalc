@@ -1,4 +1,4 @@
-# Předávka — stav k 25. 9. 2026 v noci (dávky B a C kola 16)
+# Předávka — stav k 25. 9. 2026 v noci (dávky B, C a rozbor D kola 16)
 
 Na `main`: **v25.9.3** (+ oprava Node), tag `v25.9.3`.
 Na `test`: **v25.9.5**. Na `test-draft` a `k16-nalezy`: **v25.9.8** (dávky B
@@ -50,10 +50,18 @@ https://claude.ai/artifact/RmrdBw1QbyyBxDLhZcExTq
   overit_sablona, overit_nabidka_proj_word, overit_nabidky_dph, test_kontroly,
   overit_lista.
 
+## Rozbor D (#363) — hotov, čeká na rozhodnutí J. V.
+`podklady/K16_ROZBOR_2026-09-25.md`: P8 prázdné kapitoly ve Wordu a termín
+bez jednotky, P9 mapa `PODM_*` → `SOD_*`, P10 platební podmínky (devět míst,
+sedm rozporů), P11 PROJ u zahraniční varianty, P12 náklady u obchodníka.
+Kód se nezměnil. Nejnaléhavější: **P12 — kalkulace PROJ ukazuje obchodníkovi
+nákladové sazby** (sloupec „Sazba Kč/h · fix"), oprava je malá (varianta A),
+čeká jen na pokyn, co má obchodník vidět místo sazby.
+
 ## Další práce
-- Rozbor D = #363 (P8 kapitoly nabídky, P9/P10 SoD a platební podmínky,
-  P11/P12 zahraniční PROJ a náklady) → `podklady/K16_ROZBOR_2026-09-25.md`.
-  Po něm sloučit `k16-nalezy` do `test-draft` a navrhnout J. V. smazání větve.
+- Větev `k16-nalezy` splnila účel (#361–#363) a je sloučená do `test-draft`;
+  navrženo J. V. ji smazat (z cloudu to nejde). Další práce podle rozhodnutí
+  z rozboru D začne z `test-draft`.
 - Úkol pro šablonu PROJ (J. V.): tabulka součtu se symboly `PROJ_CELKEM_BEZ_DPH`,
   `PROJ_CENA_PRED_SLEVOU`, `PROJ_SLEVA_PROC`, `PROJ_SLEVA_KC`, `PROJ_DPH_KC`,
   `PROJ_CELKEM_S_DPH` a odstavec `{{PROJ_POLOZKY_NAVIC}}`.
@@ -85,38 +93,31 @@ https://claude.ai/artifact/RmrdBw1QbyyBxDLhZcExTq
 
 ## Čeká na J. V.
 - Pokyn k přenosu v25.9.8 do `test`, v25.9.x do `main`.
-- Soubory SoD (#350); texty kapitol nabídky (#363/P8); rozhodnutí P9–P12;
+- Soubory SoD (#350); texty kapitol nabídky; rozhodnutí P8–P12 z rozboru D
+  (otázky v `podklady/K16_ROZBOR_2026-09-25.md`, souhrnná tabulka nahoře);
   #355, #356 (můstky); #346 Netlify; #172 lokálně npm.
 - Odsouhlasit rozhodnutí z dávky B výš a překlady nových hesel z dávky C.
 
-## Prompt pro nové sezení (větev k16-nalezy)
-Sezení založit nad `vendljar/kalkulator-next-gen-engscalc`, větev `k16-nalezy`;
+## Prompt pro nové sezení (větev test-draft)
+Sezení založit nad `vendljar/kalkulator-next-gen-engscalc`, větev `test-draft`;
 přiložit šablony CN v12 (CZ/EN/DE/FR), Sablona_NABIDKA_PROJ_v2_opravena.docx
-a případně Sablona_SOD_REALIZACE.docx + Sablona_SOD_PROJEKCE.docx.
+(nebo novější PROJ se součtem) a případně Sablona_SOD_REALIZACE.docx
++ Sablona_SOD_PROJEKCE.docx.
 
 ```
-Pracuješ na Kalkulator Next Gen ve větvi k16-nalezy (repo vendljar/kalkulator-next-gen-engscalc).
-Pravidla větví (schváleno J. V. 25. 9. 2026, viz CLAUDE.md):
-- k16-nalezy je DOČASNÁ pracovní větev jen pro dávky B, C a rozbor D kola 16
-  (roadmapa #361–#363). Pracuj a pushuj v ní; po každé ucelené dávce ji převeď
-  do test-draft (fast-forward nebo merge). Po dokončení #361–#363 ji sluč do
-  test-draft a navrhni J. V. smazání (mazání větví z cloudu nejde — smaže ji on).
-- Trvalá předávací větev je test-draft; PREDAVKA.md veď v té větvi, kde pracuješ,
-  a při převodu ji přenes do test-draft.
-- Do test a main nic bez pokynu J. V.
+Pracuješ na Kalkulator Next Gen ve větvi test-draft (repo vendljar/kalkulator-next-gen-engscalc).
+Do test a main nic bez pokynu J. V.
 Než začneš:
-1. git fetch origin k16-nalezy test-draft && git checkout -B k16-nalezy origin/k16-nalezy
-2. Přečti CLAUDE.md a PREDAVKA.md (v této větvi) a skill kalkulator-next-gen.
+1. git fetch origin test-draft && git checkout -B test-draft origin/test-draft
+2. Přečti CLAUDE.md a PREDAVKA.md a skill kalkulator-next-gen.
 3. Připrav prostředí: symlink node_modules/playwright → $(npm root -g)/playwright;
    přiložené šablony dej do složky podkladů a pouštěj testy s KNG_PODKLADY=<složka>
    (PROJ šablonu pojmenuj Sablona_NABIDKA_PROJ.docx).
 4. Ověř výchozí stav: ADMIN_EMAIL=spravce@priklad.cz ./spust_testy.sh (má být 0 selhání).
-Úkol: dávka C z roadmapy #362 (P3 zbytek: překlad textu kolem symbolů po úsecích se
-zachováním běhů, mezera a slovník u „včetně DPH"; P4: vlastní/katalogové položky PROJ
-v nabídce online i ve Wordu, sleva a součet ve Wordu PROJ — symboly + kontrola slevaWord
-pro PROJ + úkol pro šablonu), pak rozbor D (#363) do podklady/K16_ROZBOR_2026-09-25.md.
+Úkol: zapracovat rozhodnutí J. V. k rozboru D kola 16
+(podklady/K16_ROZBOR_2026-09-25.md): <doplnit rozhodnutí k P8–P12>.
 U každého bodu: test, který bez opravy selže → oprava → vlastní commit. Pak build,
-nastroje/pred_pushem.sh, mutace (jen jeden běh naráz, na pozadí nástroje), CHANGELOG,
-roadmapa, PREDAVKA.md, push do k16-nalezy a převod do test-draft.
+nastroje/pred_pushem.sh, mutace (jen když se měnil server nebo jádro; jen jeden běh
+naráz, na pozadí nástroje), CHANGELOG, roadmapa, PREDAVKA.md, push do test-draft.
 Na konci tabulka úkolů ✅/⬜ a stav kontextu (get_session → context_usage).
 ```

@@ -51,6 +51,12 @@ chyceno** — i nové P6 (chybějící jádro dokumentu), P7 (jméno „kdo ulo�
 od klienta), P15 (nedoplněné adresy rejstříku) a přepsaná B59. Dávka C
 server ani jádro výpočtu nemění, mutační běh se pro ni neopakuje.
 
+**Rozbor D (#363)** — `podklady/K16_ROZBOR_2026-09-25.md`: prázdné kapitoly
+nabídky ve Wordu a termín bez jednotky (P8), symboly smlouvy o dílo z nabídky
+(P9), jedno znění platebních podmínek (P10), PROJ u zahraniční varianty (P11),
+náklady u obchodníka (P12 — kalkulace PROJ ukazuje obchodníkovi nákladové
+sazby). Kód se nemění, čeká se na rozhodnutí J. V.
+
 ---
 
 ## v25.9.7 — dávka B kola 16: neuložené změny, ověření zámku, dialogy, adresa, zalomení ve Wordu (25. 9. 2026)

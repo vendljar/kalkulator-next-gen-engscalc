@@ -5693,7 +5693,8 @@
    "slozitost" : "M",
    "nazev" : "Kolo 16, rozbor D: prázdné kapitoly, SoD z nabídky, platební podmínky, PROJ u zahraničí, náklady u obchodníka",
    "proc" : "Body „prověřit + návrh\" z podkladů kola 16 — kód se nemění bez rozhodnutí J. V.",
-   "detail" : "P8 (K16-N78, K9-N32, K12-N43) podmíněný blok kapitoly + termín s jednotkou; P9 (K16-N83) mapa PODM_* → SOD_*; P10 (K15-N71) jedno znění platebních podmínek; P11 (K15-N72) PROJ u zahraniční zakázky (návrh A); P12 (K16-N76) náklady u obchodníka a ceník bez nákladů. Rozbor do podklady/K16_ROZBOR_2026-09-25.md.",
+   "detail" : "ROZBOR HOTOV v25.9.8: `podklady/K16_ROZBOR_2026-09-25.md` (kód se nezměnil). P8 (K16-N78, K9-N32): Word nechá u prázdné kapitoly IV.–VI. nadpis i prázdný rámeček (náhled a PDF ji vypustí), texty v aplikaci slibují opak; termín „12\" odejde bez jednotky, přípona ATYP je vždy česky — návrh: značky bloku v šabloně v13 (A), holé číslo doplnit o „týdnů\". P9 (K16-N83): SoD plní symboly nabídky, objednatele a splátky PROJ, nikdy číslo smlouvy a termíny; mapa PODM_* → SOD_* s jistotou řádků; nález: po změně Nastavení může SoD nést jiné podmínky než odeslaná nabídka. P10 (K15-N71): platební podmínky na devíti místech, sedm rozporů (milníky OCK krycí list × Word, „Bez zálohy\" → „ve výši  (+ DPH)\", náhled PROJ z konstant, platnost 2 × 3 měsíce) — návrh B (firemní standard) hned, C (splátkový kalendář) jako cíl. P11 (K15-N72): řada Zahraničí mění u PROJ jen přirážku a DPH, nikdo o tom neví — návrh A (upozornit). P12 (K16-N76): kalkulace PROJ ukazuje obchodníkovi nákladové sazby (únik v rozhraní), server posílá ceník s náklady každému přihlášenému — návrh A hned. ZBÝVÁ: rozhodnutí J. V. a podle nich dávka oprav.",
+   "otazka" : "P8: Word A (šablona v13 se značkami), nebo hned B nad v12? Doplňovat „týdnů\" k holému číslu? P9: číslo smlouvy = číslo nabídky? Termíny SoD z krycího listu? Splátky PROJ dopočítat? Zmrazit v zámku i podmínky z Nastavení? P10: platí milníky krycího listu, nebo věty šablony? Fakturace měsíční, nebo po milnících? Platnost 2, nebo 3 měsíce? P11: liší se sazby PROJ v zahraničí? P12: co má obchodník vidět místo nákladové sazby PROJ; ceník bez nákladů = přehled, nebo utajení?",
    "cekaNa" : "J. V. — texty kapitol nabídky (Nastavení → Firma), rozhodnutí P9–P12; rozbor připraví Claude",
    "hotovoKdyz" : "Rozbor v podklady/K16_ROZBOR a rozhodnutí J. V. zapsaná.",
    "kde" : "`podklady/`"
@@ -6200,6 +6201,10 @@
   },
   {
    "text" : "Noc 25. 9. 2026 (engscalc, větev k16-nalezy), v25.9.8 — dávka C kola 16 (#362): P3 překlad šablon po úsecích kolem symbolů (CN v12 i PROJ v2 do EN/DE/FR bez českých odstavců), P4 vlastní položky, sleva a součet v nabídce PROJ (symboly + kontroly; šablona PROJ čeká na J. V.). Ověřeno: sady v Node, harnessy šablon, pred_pushem.",
+   "hotovo" : true
+  },
+  {
+   "text" : "Noc 25. 9. 2026 (engscalc, větev k16-nalezy), v25.9.8 — rozbor D kola 16 (#363): podklady/K16_ROZBOR_2026-09-25.md (P8 kapitoly a termín, P9 mapa SoD, P10 platební podmínky, P11 PROJ u zahraničí, P12 náklady u obchodníka); kód beze změny, čeká na rozhodnutí J. V.",
    "hotovo" : true
   }
   ],
