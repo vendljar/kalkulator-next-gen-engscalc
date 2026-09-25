@@ -5620,6 +5620,19 @@
     }
    ],
    "pozn" : "Commit 4f714a3 na test i test-draft. Na main se dostane s dalším vydáním; do té doby tam zůstává `\"22\"` — kdyby ostré nasazení spadlo stejně, pomůže i **Clear cache and deploy site**."
+  },
+  {
+   "id" : "359",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "hotovoV" : "test-draft 25. 9. 2026 (do dalšího vydání)",
+   "dulezitost" : "",
+   "slozitost" : "S",
+   "nazev" : "Šablony: v tabulce i název nahraného souboru",
+   "proc" : "J. V. 25. 9. 2026: „přestože jsem do šablon nahrál verzi 12 zobrazuje se verze 10“. Číslo v tabulce je pořadí zveřejnění na serveru, ne číslo z názvu souboru — bez názvu souboru nejde poznat, co je platné.",
+   "detail" : "Nastavení → Šablony: pod stavem každé buňky (čeština i jazykové verze) se ukazuje název nahraného souboru bez `.docx`, celý název v bublině. Výpočty ani šablony se nemění. Při té příležitosti ověřena šablona CN v12 od J. V. harnessem `overit_sablona.mjs` — 60 kontrol OK.",
+   "hotovoKdyz" : "Splněno: kontrola v prohlížeči (CZ v10 ukazuje Sablona_NABIDKA_CN_v12), nová kontrola v `overit_sablony_online.mjs`, sady v Node zelené.",
+   "kde" : "`src/ui/sablony_sprava_ui.js` (sablChip), `src/app_template.html` (.sabl-soubor)"
   }
  ],
  "meta" : {

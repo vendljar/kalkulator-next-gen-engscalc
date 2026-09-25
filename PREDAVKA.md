@@ -14,14 +14,15 @@ Poslední vydání: **v25.9.3** (větev `test`). Roadmapa: `roadmapa/roadmap.jso
   větev `main-ymk5ia` smazána.
 
 ## Rozdělané / čeká na přenos
-- `test-draft` je před `test` o roadmapu, CLAUDE.md a tento soubor — přenést
-  do `test` na pokyn J. V.
+- `test-draft` je před `test` o roadmapu (#358, #359), CLAUDE.md, tento soubor
+  a zobrazení názvu souboru šablony — přenést do `test` na pokyn J. V.
 - `main` = `test` (4f714a3, v25.9.3 + oprava Node), nahráno 25. 9. odpoledne;
   CI na main zelené (run 187), tag `v25.9.3` založil J. V. ručně
   (z cloudu tagy nahrát nejde — 403).
 - J. V. nahrál šablony CN v12 (CZ/EN/DE/FR); aplikace ukazuje „v10“, protože
-  číslo verze je pořadí zveřejnění na serveru, ne název souboru. Navrženo
-  ukazovat v tabulce i název souboru — čeká na souhlas J. V.
+  číslo verze je pořadí zveřejnění na serveru, ne název souboru. HOTOVO
+  na `test-draft` (#359): tabulka šablon ukazuje i název souboru. Šablona
+  CN v12 ověřena `overit_sablona.mjs` — 60/60 OK.
 
 ## Čeká na J. V.
 - #355, #356: potvrdit výpočet můstků ↔ přechodové plechy a zastřešení.
