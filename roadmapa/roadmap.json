@@ -5599,6 +5599,27 @@
    "detail": "Příčiny ztráty textů: (1) server při uložení přepsal celou mapu tím, co měl prohlížeč načteno při přihlášení — druhé okno mazalo texty jiného; (2) rozpracované zakázky společné texty nedostávaly. Oprava: zápis po jednom textu se slučuje na serveru, celá mapa maže jen s razítkem (409), historie 30 stavů, hledání textů v uložených zakázkách; doplnění do rozpracovaných zakázek při otevření; karta „Dodatkové texty do cenové nabídky – číselník“ v Ceníku OCK. Průvodce šablon: u jazyka „Nahrát vlastní verzi“ (kontrola jazyka a symbolů proti nové češtině, vrácení překladu aplikace), kontrola poškozeného XML. Slovník PROJ 162 hesel (EN/DE/FR 100 %), oprava šablony PROJ v2 (poškozené XML). P1: Nastavení → Databáze → Kontrola čísla první varianty.",
    "hotovoKdyz": "Splněno: test_popisy_trvale 19, test_prava +12, overit_online +9, overit_sablony_online +5, overit_nabidka_proj_word +7, test_docx_struktura 5, test_pripona_prvni +8, mutace serveru +3.",
    "kde": "`netlify/functions/popisy.mjs`, `src/cenik.js`, `src/cenik_stari.js`, `src/ui/cenik_ui.js`, `src/ui/online_ui.js`, `src/ui/kalk_ock.js`, `src/ui/sablony_sprava_ui.js`, `src/docxgen.js`, `src/preklad.js`, `src/zamek.js`, `src/ui/nastaveni_ui.js`"
+  },
+  {
+   "id" : "358",
+   "vlna" : "E",
+   "stav" : "hotovo",
+   "hotovoV" : "v25.9.3",
+   "dulezitost" : "",
+   "slozitost" : "S",
+   "nazev" : "Nasazení na Netlify: připnout přesnou verzi Node",
+   "proc" : "25. 9. 2026 spadlo nasazení větve test po 18 minutách na časový limit. J. V.: „na github jsme do testu poslali dávku která v netlify způsobila tohle … Můžeš to napravit?“ Bez přesné verze si Netlify při každém vydání Node sám vezme novou verzi, kterou nikdo netestoval.",
+   "detail" : "Příčina nebyla v kódu dávky: `NODE_VERSION = \"22\"` si po vydání Node 22.23.3 (23. 9.) vzalo novou verzi, její binárku nešlo rozbalit přes poškozenou složku v cache buildu a nvm začal kompilovat Node ze zdrojů. Oprava: `NODE_VERSION = \"22.23.2\"` s komentářem, proč; povýšení verze dělat vědomě a hlídat první nasazení.",
+   "hotovoKdyz" : "Splněno: nasazení větve test po opravě prošlo, aplikace běží (potvrdil J. V. 25. 9. 2026).",
+   "kde" : "`netlify.toml` ([build.environment])",
+   "zavisi" : [
+    {
+     "id" : "80",
+     "typ" : "doporuceno",
+     "proc" : "navazuje na nasazení na Netlify"
+    }
+   ],
+   "pozn" : "Commit 4f714a3 na test i test-draft. Na main se dostane s dalším vydáním; do té doby tam zůstává `\"22\"` — kdyby ostré nasazení spadlo stejně, pomůže i **Clear cache and deploy site**."
   }
  ],
  "meta" : {
@@ -6071,6 +6092,18 @@
   {
    "text": "Večer 24. 9. 2026 (engscalc), dávka E4: zkouška obnovy nanečisto a postup obnovy (#152 hotovo), N41d vykreslení nezapisuje do zamčené varianty, #327 pojmenovaná konstanta 0,2 m, N41c FR pole kapitol, T4 další krok; podklady Pipedrive převzaty z nesloučené větve.",
    "hotovo": true
+  },
+  {
+   "text" : "Ráno 25. 9. 2026 (engscalc), v25.9.1–v25.9.2: sloučena větev k13-nalezy (nálezy 13. kola, schváleno J. V.), P1–P11 z rozboru K13, můstky mezi budovou a OCK počtem kusů v ceně, specifikaci i nabídce (#352–#354), šablona nabídky OCK v12.",
+   "hotovo" : true
+  },
+  {
+   "text" : "Dopoledne 25. 9. 2026 (engscalc), v25.9.3: dodatkové texty se neztrácejí + číselník v Ceníku OCK, vlastní jazyková verze v průvodci šablon, slovník šablony PROJ (162 hesel), P1 v aplikaci (#357); do roadmapy #355 a #356 (můstky ↔ přechodové plechy a zastřešení).",
+   "hotovo" : true
+  },
+  {
+   "text" : "Odpoledne 25. 9. 2026 (engscalc): oprava nasazení na Netlify — připnut Node 22.23.2 (#358); web test znovu běží (potvrdil J. V.).",
+   "hotovo" : true
   }
   ],
   "pravidla" : [
@@ -6157,8 +6190,8 @@
     "id" : "F"
    }
   ],
-  "build" : "v24.9.3 (engscalc)",
-  "stavKDatu" : "24. 9. 2026"
+  "build" : "v25.9.3 (engscalc)",
+  "stavKDatu" : "25. 9. 2026"
  },
  "_comment" : [
   "JEDINÝ ZDROJ PRAVDY pro roadmapu Kalkulátoru Next Gen.",
