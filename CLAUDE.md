@@ -9,6 +9,14 @@ Komunikace česky. Know-how projektu je ve skillech `kalkulator-next-gen`,
 - Do `test` jen na pokyn J. V., do `main` až po jeho odsouhlasení.
 - Pomocné větve relací (`main-xxxx`, `k13-nalezy` apod.) se nepoužívají;
   práce z nich se přenese do `test-draft` a větev se smaže.
+- **Výjimka schválená J. V. 25. 9. 2026: `k16-nalezy`** — pracovní větev pro
+  dávky B, C a rozbor D kola 16 (roadmapa #361–#363). Vznikla z `test-draft`
+  (v25.9.6). Pracuje se v ní a pushuje se do ní; do `test-draft` se převádí
+  (fast-forward nebo merge) po každé ucelené dávce, dál platí `test` a `main`
+  jen na pokyn J. V. Po dokončení #361–#363 se sloučí do `test-draft`
+  a smaže. `PREDAVKA.md` se vede v té větvi, ve které se právě pracuje.
+- **Trvalá předávací větev je `test-draft`** — nové sezení bez jiného pokynu
+  začíná z ní (`PREDAVKA.md` + `CLAUDE.md`).
 
 ## Předávací soubor `PREDAVKA.md`
 
