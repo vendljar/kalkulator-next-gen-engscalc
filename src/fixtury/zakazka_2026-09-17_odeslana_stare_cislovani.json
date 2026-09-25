@@ -47,7 +47,7 @@
  },
  "varianty": [
   {
-   "id": "vmuhkhpo82",
+   "id": "vmuhkstzx2",
    "nazev": "Varianta 1",
    "zakaznik": "",
    "pozn": "",
@@ -526,7 +526,7 @@
    "pripona": 0
   },
   {
-   "id": "vmuhkhpo83",
+   "id": "vmuhkstzy3",
    "nazev": "Varianta 2",
    "zakaznik": "",
    "pozn": "",
@@ -3022,13 +3022,13 @@
      }
     ]
    },
-   "klonZ": "vmuhkhpo82",
+   "klonZ": "vmuhkstzx2",
    "klonZCislo": "2026 - OPR - CN - 0917",
    "datum": "2026-09-25",
    "pripona": 1
   },
   {
-   "id": "vmuhkhpo94",
+   "id": "vmuhkstzy4",
    "nazev": "Varianta 3",
    "zakaznik": "",
    "pozn": "",
@@ -3501,13 +3501,13 @@
     "zadaniRucni": {}
    },
    "zamek": null,
-   "klonZ": "vmuhkhpo83",
+   "klonZ": "vmuhkstzy3",
    "klonZCislo": "2026 - OPR - CN - 0917.2",
    "datum": "2026-09-25",
    "pripona": 2
   }
  ],
- "aktivni": "vmuhkhpo94",
+ "aktivni": "vmuhkstzy4",
  "autor": "obchodnik@priklad.cz",
  "autorJmeno": "Test Obchodník",
  "upravil": "obchodnik@priklad.cz",

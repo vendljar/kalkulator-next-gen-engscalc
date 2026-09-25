@@ -25,7 +25,7 @@
  },
  "varianty": [
   {
-   "id": "vmuhkhpo20",
+   "id": "vmuhkstzr0",
    "nazev": "Varianta 1",
    "zakaznik": "",
    "pozn": "",
@@ -478,7 +478,7 @@
    }
   },
   {
-   "id": "vmuhkhpo71",
+   "id": "vmuhkstzx1",
    "nazev": "Varianta 2",
    "zakaznik": "",
    "pozn": "",
@@ -898,12 +898,12 @@
     }
    },
    "zamek": null,
-   "klonZ": "vmuhkhpo20",
+   "klonZ": "vmuhkstzr0",
    "klonZCislo": "2026 - OPR - CN - 0801",
    "datum": "2026-08-08"
   }
  ],
- "aktivni": "vmuhkhpo20",
+ "aktivni": "vmuhkstzr0",
  "autor": "obchodnik@priklad.cz",
  "autorJmeno": "Test Obchodník",
  "upravil": "obchodnik@priklad.cz",

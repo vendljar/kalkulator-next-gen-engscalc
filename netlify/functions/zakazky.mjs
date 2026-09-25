@@ -9,9 +9,7 @@
  *   variantu zamčenou v uložené verzi). */
 import { uloziste, vyzadujRoli, json, serverVerze } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
-
-const ZAKAZKA_MAX_B = 4 * 1024 * 1024;
-const CISLO_MAX = 60;
+import { zakazkaPrijmi, zakazkaServerKontrola, ZAKAZKA_MAX_B } from '../lib/zakazka_kontrola.mjs';
 
 export default async (req) => {
   let ULO, SCHV, JEKLY;
@@ -78,72 +76,16 @@ export default async (req) => {
   let t; try { t = await req.json(); } catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
   if (JSON.stringify(t).length > ZAKAZKA_MAX_B)
     return json({ ok: false, chyba: 'Zakázka je příliš velká. Zmenšete přílohy.' }, 413);
-  /* importZakazka na nesmyslném vstupu vyhodí výjimku. Bez tohohle obalu by
-   * z ní vznikl pád funkce (Netlify vrátí holou 502) — a to je špatná odpověď
-   * hned dvakrát: uživatel se nedozví, co poslal špatně, a v odpovědi se může
-   * objevit kus vnitřku serveru. Odmítnutí patří sem, srozumitelně. */
-  let zak;
-  try { zak = globalThis.importZakazka(t.zakazka || {}); }
-  catch (e) { return json({ ok: false, chyba: 'Zakázku se nepodařilo přečíst: ' + e.message }, 400); }
-  const jmeno = ULO.uloJmenoSouboru(zak);
-  if (!jmeno) return json({ ok: false, chyba: 'Zakázka nemá vyplněné číslo nabídky.' }, 400);
-  if (String(zak.cislo || '').length > CISLO_MAX)
-    return json({ ok: false, chyba: 'Číslo nabídky je příliš dlouhé (nejvýš ' + CISLO_MAX + ' znaků).' }, 400);
 
-  /* Tvar identifikátorů (bezpečnostní audit 22. 8. 2026, nález B1). Id variant,
-   * poznámek a příloh jdou v obrazovce do onclick; obrazovka je od 22. 8.
-   * escapuje, ale server navíc nepustí dovnitř nic, co není písmeno, číslice,
-   * tečka, podtržítko nebo pomlčka. Dvě vrstvy — kdyby jedna selhala. */
-  /* Od 9. 9. 2026 (B26, B29) hlídá uloIdProblemy i `kid` trvalých položek
-   * ceníku uvnitř variant a jedinečnost id variant, poznámek a příloh. */
-  const spatnaId = ULO.uloIdProblemy(zak);
-  if (spatnaId.length)
-    return json({ ok: false, chyba: 'Zakázka nese ' + ULO.uloIdProblemyText(spatnaId) + '.' }, 400);
-
-  /* vytištěná (odeslaná) nabídka se nikdy nepřepíše. Dvě vrstvy:
-   * 1) TÁŽ kontrola jako u složky (uloKontrolaZamku) — zámek nesmí zmizet
-   *    ani se změnit; žádná druhá pravda o zámcích.
-   * 2) Serverová pojistka navíc: u zamčené varianty se nesmí změnit ANI DATA.
-   *    V aplikaci to hlídá obrazovka, ale server mluví s kýmkoli — upravený
-   *    klient by jinak mohl přepsat obsah odeslané nabídky a zámek si nechat. */
+  /* POJISTKY ZAKÁZKY STOJÍ V lib/zakazka_kontrola.mjs (P4 / B72, 25. 9. 2026)
+   * a volá je i obnova ze zálohy — dvě kopie by se rozešly (a rozešly).
+   * Tady zůstává jen to, co je vlastní ukládání z prohlížeče: strop
+   * velikosti, razítko verze proti souběhu (B10), zápis a rejstřík. */
+  const prijem = zakazkaPrijmi(t.zakazka, ULO);
+  if (!prijem.ok) return json({ ok: false, chyba: prijem.chyba }, prijem.status);
+  const { zak, jmeno } = prijem;
   const stara = await s.cti('z/' + jmeno);
-  /* Typy polí zadání a ceníku (#340, návrh P1): čísla, pravdy a volby musí
-   * mít tvar, jaký dává výchozí zadání. Varianty zamčené už v uložené verzi
-   * se přeskakují — doklad se neposuzuje. */
-  const spatneTypy = ULO.uloTypyProblemy(zak, stara);
-  if (spatneTypy.length)
-    return json({ ok: false, chyba: 'Zakázka nese ' + ULO.uloIdProblemyText(spatneTypy) + '.' }, 400);
 
-  /* ZNAČKY UKÁZKOVÉHO A PRÁZDNÉHO CENÍKU SE DO DATABÁZE NEUKLÁDAJÍ
-   * (P2, nálezy N2/N3, 21. 9. 2026).
-   *
-   * Příčinu řeší jádro (`cenikDoplnKlice` značky ze vzoru nedoplňuje);
-   * tohle je druhá obrana: značka může přijít i starším klientem, importem
-   * souboru nebo ze zakázky uložené dřív, než se oprava nasadila. Uložená
-   * značka je zákeřná v tom, že uzamčené varianty se při načtení
-   * nepřepočítávají — zůstala by tam napořád a vypínala tisk nabídky
-   * u zakázky, která ceník má (ostré 0383 a 377).
-   *
-   * STOJÍ TO PŘED KONTROLOU UZAMČENÝCH VARIANT, A TO SCHVÁLNĚ. Ta kontrola
-   * porovnává `data` uložené a příchozí varianty na shodu znak po znaku;
-   * kdyby se značky odstraňovaly až těsně před zápisem, uložená verze by
-   * je neměla, příchozí ano, a legitimní uložení by spadlo na 409 „změnila
-   * by se data uzamčené nabídky". Čistí se proto OBĚ strany: příchozí
-   * zakázka i kopie té uložené, kterou server drží jen pro porovnání
-   * (zapisuje se `zak`, `stara` se nikdy neukládá).
-   *
-   * Čistí se jen značky, ne ceny — obsahu ceníku se to nedotýká. */
-  const ocistiZnacky = (z) => {
-    if (!z || typeof globalThis.ukazkoveOcisti !== 'function') return;
-    for (const v of (z.varianty || [])) {
-      const d = (v && v.data) || null;
-      if (!d) continue;
-      globalThis.ukazkoveOcisti(d.cenik);
-      if (d.proj) globalThis.ukazkoveOcisti(d.proj.cenik);
-    }
-  };
-  ocistiZnacky(zak);
-  ocistiZnacky(stara);
   /* Razítko verze (audit 22. 8. 2026, B10). Klient posílá razítko verze, ze
    * které vyšel (`ocekavaneRazitko`). Když v databázi leží jiná verze —
    * kolega mezitím uložil, nebo jde o cizí zakázku pod stejným číslem — server
@@ -159,211 +101,13 @@ export default async (req) => {
           ? 'Zakázku mezitím uložil ' + (stara.upravil || 'někdo jiný') + '. Načtěte ji znovu, nebo změny vědomě přepište.'
           : 'Stejné číslo nabídky už používá uložená zakázka ' + jmeno + ' (' + (stara.autor || '') + '). Zvolte vlastní číslo, nebo ji vědomě přepište.' }, 409);
   }
-  if (stara) {
-    /* Odemčení odeslané nabídky smí jen administrátor (audit 22. 8. 2026, B3).
-     * uloKontrolaZamku bere zmizení zámku jako řádné, když přibyl záznam
-     * v odemceni[] — ale KDO ho přidal, do té doby nikdo na serveru neověřil.
-     * Teď: přibylo-li odemčení, vyžaduje se role Administrátor a razítko
-     * kdo/kdy se přepíše z relace, ne z toho, co poslal klient. */
-    const odemcene = ULO.uloOdemceniPribylo(stara, zak);
-    if (odemcene.length) {
-      if (relace.role !== 'Administrátor')
-        return json({ ok: false, chyba: 'Odemknout odeslanou (uzamčenou) nabídku smí jen '
-          + 'administrátor. Pokračujte klonem varianty.' }, 403);
-      for (const v of odemcene) {
-        const posledni = v.odemceni[v.odemceni.length - 1];
-        if (posledni && typeof posledni === 'object') {
-          posledni.kdo = relace.jmeno ? relace.jmeno + ' <' + relace.email + '>' : relace.email;
-          posledni.kdy = new Date().toISOString();
-        }
-      }
-    }
-    const k = ULO.uloKontrolaZamku(stara, zak);
-    if (!k.ok)
-      return json({ ok: false, chyba: 'Neuloženo: '
-        + k.problemy.map(ULO.uloProblemPopis).join('; ')
-        + '. Pokračujte klonem varianty.' }, 409);
-    /* STARŠÍ TVAR DAT NESMÍ ZABLOKOVAT ODESLANOU NABÍDKU (N43, hloubkový
-     * test 24. 9. 2026). Příchozí zakázka prošla `importZakazka` (výš), který
-     * doplňuje klíče přidané novějšími verzemi (cetrisKc, zaokrProj, kryciProj…)
-     * i do zamčených variant. Uložená verze je ale v úložišti ve starém tvaru
-     * — porovnání „znak po znaku" pak hlásilo změnu zamčené nabídky a vrátilo
-     * 409 celé zakázce, i když se nic nezměnilo. Porovnává se proto s KOPIÍ
-     * uložené verze, která prošla toutéž migrací (stejný princip jako
-     * ocistiZnacky). Zapisuje se dál jen `zak`; klíč zámku (zmrazený
-     * výsledek, číslo, otisk) kontroluje uloKontrolaZamku výš beze změny,
-     * takže skutečná změna dat odeslané nabídky se chytí dál. */
-    let staraPorovnani = stara;
-    try { staraPorovnani = globalThis.importZakazka(JSON.parse(JSON.stringify(stara))); ocistiZnacky(staraPorovnani); }
-    catch (e) { staraPorovnani = stara; }
-    for (const sv of (staraPorovnani.varianty || [])) {
-      if (!(globalThis.variantaUzamcena && globalThis.variantaUzamcena(sv))) continue;
-      const nv = (zak.varianty || []).find(v => v && v.id === sv.id);
-      if (nv && JSON.stringify(nv.data) !== JSON.stringify(sv.data))
-        return json({ ok: false, chyba: 'Neuloženo: změnila by se data uzamčené (odeslané) '
-          + 'nabídky. Pokračujte klonem varianty.' }, 409);
-    }
-    /* Razítka mimo klíč zámku (kdo, popis, šablona, tisky[], odemceni[])
-     * se u existujícího zámku berou z uložené verze (nález B62). Až PO
-     * razítku nového odemčení výš, aby se jeho kdo/kdy nepřepsalo. */
-    ULO.uloZamekRazitkaDrz(stara, zak);
-  }
 
-  /* ČÍSLO ODESLANÉ NABÍDKY MĚNÍ JEN ADMINISTRÁTOR — TAKY NA SERVERU
-   * (bezpečnostní audit 22. 9. 2026, nález B56).
-   *
-   * Do 22. 9. to hlídal jedině prohlížeč (`common.js`, rozhodnutí J. V.
-   * z 15. 9. 2026: „Pouze administrátor"). Server kontroloval u čísla jen
-   * délku — a právě u čísla je díra zákeřná: číslo určuje JMÉNO SOUBORU.
-   * Změnou čísla zakázka spadne pod jiné jméno, `stara` je tedy prázdná
-   * a VŠECHNY kontroly zámku výš se přeskočí. Odeslaná nabídka tak mohla
-   * dostat jiné číslo, než jaké má zákazník na papíře.
-   *
-   * Pozná se to ZE ZÁMKU SAMOTNÉHO, ne z uložené zakázky: `zamek.cislo`
-   * drží číslo z okamžiku odeslání (plní ho `variantaCislo` při zamykání).
-   * Kontrola je proto vnitřní a funguje i tam, kde není s čím porovnávat.
-   *
-   * Zámky pořízené před zavedením pole `cislo` ho mají prázdné — ty se
-   * přeskakují, jinak by oprava zablokovala historické zakázky.
-   *
-   * MEZ, KTEROU TOHLE NEZAVŘE: kdo si upraví klienta, může přepsat číslo
-   * i razítko v zámku najednou. Výsledek je ale nová zakázka pod novým
-   * jménem; původní soubor s původním číslem zůstává nedotčený, takže se
-   * stopa neztrácí. Tady jde o to, aby se číslo nedalo změnit NEDOPATŘENÍM
-   * ani běžným klientem. */
-  /* JEDNO ČÍSLO VARIANTY (#320, 22. 9. 2026). Zámek pořízený od #320 nese
-   * v `cislo` číslo z papíru (značka `cisloPapir`, je v klíči zámku) —
-   * u něj se hlídá CELÉ číslo, tedy i přípona: přečíslovat odeslanou nabídku
-   * .2 na .7 je stejná změna jako přepsat základ. Starší zámky mají v `cislo`
-   * příponu z dřívějšího číslování (první klon .1, na papíře .2); zakázka se
-   * při načtení přečíslovala podle papíru, takže u nich se hlídá jen ZÁKLAD
-   * čísla — jinak by migrace sama o sobě zablokovala každé uložení zakázky
-   * se starou odeslanou variantou. */
-  const jineCislo = [];
-  for (const v of (zak.varianty || [])) {
-    if (!(globalThis.variantaUzamcena && globalThis.variantaUzamcena(v))) continue;
-    const bylo = String((v.zamek && v.zamek.cislo) || '');
-    if (!bylo) continue;
-    const ted = String(globalThis.variantaCislo(zak, v) || '');
-    const sedi = v.zamek.cisloPapir ? bylo === ted : globalThis.zamekCisloZakladSedi(bylo, zak);
-    if (!sedi) jineCislo.push({ v, bylo, ted });
-  }
-  if (jineCislo.length) {
-    if (relace.role !== 'Administrátor')
-      return json({ ok: false, chyba: 'Neuloženo: zakázka má odeslanou (uzamčenou) nabídku '
-        + 'číslo ' + jineCislo[0].bylo + ', takže číslo smí změnit jen administrátor. '
-        + 'Požádejte ho o opravu — změna se zapisuje do protokolu zakázky.' }, 403);
-    /* Administrátor smí. Razítko v zámku pak srovná server, ať zakázka
-     * nezůstane natrvalo v rozporu sama se sebou a nepadala při každém
-     * dalším uložení kolegy. */
-    for (const x of jineCislo) x.v.zamek.cislo = x.ted;
-  }
-
-  /* Rozhodnutí o slevě (bezpečnostní audit 22. 8. 2026, nález B2). Stav
-   * „schváleno" / „zamítnuto" a jméno schvalovatele se do té doby přebíraly
-   * z prohlížeče. Teď je hlídá SCHV.schvalovaniServerKontrola proti stropům
-   * z programu (program/db.slevy) a roli z relace; razítka píše server. */
   const prog = await (await uloziste('program')).cti('db');
   const slevyNast = (prog && prog.platny && prog.platny.slevy) || {};
-  const rozhodnuti = SCHV.schvalovaniServerKontrola(stara, zak, relace, slevyNast);
-  if (!rozhodnuti.ok) return json({ ok: false, chyba: 'Neuloženo: ' + rozhodnuti.chyba }, 403);
-  /* Minimální marže u platné slevy (#341, B71): strop role nestačí, marži
-   * přepočítá server týmž jádrem jako prohlížeč. */
-  const marze = SCHV.schvalovaniServerMarze(stara, zak, JEKLY, slevyNast);
-  if (!marze.ok) return json({ ok: false, chyba: 'Neuloženo: ' + marze.chyba }, 403);
-
-  /* Autor zakázky (11. 8. 2026). Doteď se nikde nepsalo, kdo zakázku založil —
-   * rejstřík věděl jen, kdo do něj naposledy sáhl. Bez autora se ale nedá
-   * převést práce po odcházejícím kolegovi na někoho jiného, což je přesně
-   * to, kvůli čemu archivace účtů vznikla.
-   *
-   * Autor se zapisuje jen jednou, při prvním uložení. Kdyby se přepisoval
-   * pokaždé, „autorem" by se stal ten, kdo si zakázku naposledy otevřel
-   * a uložil — a razítko by ztratilo smysl. Kdo naposledy sáhl, je `upravil`. */
-  /* Razítka při založení (audit 22. 8. 2026, nález B13). Do té doby se
-   * `autor` u NOVÉ zakázky přebíral z těla požadavku, když tam byl — obchodník
-   * mohl založit zakázku „za" vedoucího. Teď: nová zakázka (v databázi ještě
-   * není) dostane autora z relace; cizího autora smí u nové zakázky ponechat
-   * jen administrátor (obnova ze souboru/zálohy — tam je razítko doklad).
-   * U existující se autor nepřepisuje (11. 8. 2026), viz níž. */
-  if (!stara) {
-    if (!zak.autor || zak.autor === relace.email || relace.role !== 'Administrátor')
-      zak.autor = relace.email;
-  } else {
-    /* U existující zakázky je autor ten z uložené verze — z těla požadavku
-     * se nebere (nález B73 hloubkového testu 24. 9. 2026). Do té doby šlo
-     * poslat cizí `autor` a zakázka se v seznamu přestěhovala jinému
-     * obchodníkovi, i s jeho jménem. */
-    zak.autor = stara.autor || relace.email;
-  }
-  zak.upravil = relace.email;
-  /* Totéž pro razítko zámku: NOVĚ vzniklý zámek (v uložené verzi varianta
-   * zamčená nebyla) nese `kdo` z relace, ne z klienta. `kdy` se nechává —
-   * je součástí klíče zámku a klient si ho drží v rozpracované kopii. */
-  /* ZMRAZENÝ VÝSLEDEK NOVÉHO ZÁMKU OVĚŘÍ SERVER (nález B59, revize v22.9.9,
-   * 22. 9. 2026).
-   *
-   * B53 chrání zmrazený výsledek PO zamčení — ale ten výsledek do té doby
-   * pořizoval jedině prohlížeč a server ho při vzniku zámku převzal, jak
-   * přišel. Upravený klient tak mohl zamknout nabídku s jinými čísly, než
-   * dávají data (třeba s větší slevou, než smí schválit), a od té chvíle ji
-   * B53 chránil jako pravdu.
-   *
-   * Server teď výsledek každého NOVÉHO zámku přepočítá tímž jádrem
-   * (zamekOvereni → zamekVysledekSpocti, tentýž kód, kterým ho pořizuje
-   * prohlížeč) a výsledek porovnání zapíše do zámku jako razítko `overeni`.
-   *
-   * PROČ RAZÍTKO A NE ODMÍTNUTÍ (rozhodnuto při opravě): v okamžiku uložení
-   * je dokument už vytištěný nebo stažený — server papír nezastaví. Odmítnutí
-   * by jen nechalo variantu v databázi odemčenou a dál upravitelnou, tedy
-   * horší stopu než zámek s rozporem zapsaným natrvalo. A poctivého obchodníka
-   * se stránkou načtenou těsně před nasazením nové verze (hlídka verze se
-   * ptá jednou za 10 minut) by zablokovalo: jeho výsledek spočítalo starší
-   * jádro a papír nese právě ta čísla — přesně ta se mají v zámku držet.
-   * Rozpor je proto vidět v liště zámku u každého, kdo variantu otevře,
-   * a hned v hlášce po uložení.
-   *
-   * Razítko píše VÝHRADNĚ server: u nového zámku ho spočítá, u zámku, který
-   * už v uložené verzi byl, ho převezme z ní (klientské `overeni` se zahodí
-   * v obou případech). Klíč zámku (uloZamekKlic) ho neobsahuje schválně —
-   * pracovní kopie v prohlížeči ho nemá a mít nemusí. */
-  const verzeServeru = serverVerze();
-  const sporne = [];
-  for (const v of (zak.varianty || [])) {
-    if (!v || !v.zamek || !v.zamek.zamceno) continue;
-    const sv = stara ? (stara.varianty || []).find(x => x && x.id === v.id) : null;
-    if (sv && sv.zamek && sv.zamek.zamceno) {                   // zámek už byl — nesahat
-      if (sv.zamek.overeni) v.zamek.overeni = sv.zamek.overeni;
-      else delete v.zamek.overeni;
-      continue;
-    }
-    /* NOVÝ ZÁMEK NESE ČÍSLO, KTERÉ DÁVAJÍ DATA (23. 9. 2026, nález B61).
-     * Kontrola B56 výš přeskakuje zámek s prázdným `cislo` (kvůli zámkům
-     * z doby před tím polem) — upravený klient tak mohl založit NOVÝ zámek
-     * s vymazaným číslem a zakázka pod jiným jménem souboru prošla bez
-     * porovnání. Nový zámek ale vzniká jedině v aplikaci od #320, která
-     * do něj píše číslo z papíru i značku `cisloPapir`; co se liší, není
-     * z aplikace. Odmítá se každému — i administrátorovi, protože jeho
-     * aplikace takový zámek vyrobit neumí. */
-    const cisloMaBy = String(globalThis.variantaCislo(zak, v) || '');
-    if (String(v.zamek.cislo || '') !== cisloMaBy || v.zamek.cisloPapir !== true)
-      return json({ ok: false, chyba: 'Neuloženo: nová odeslaná (uzamčená) nabídka nese jiné číslo ('
-        + (v.zamek.cislo || 'prázdné') + '), než dávají údaje zakázky (' + (cisloMaBy || 'prázdné')
-        + '). Obnovte stránku (Ctrl+F5) a nabídku vytiskněte znovu.' }, 409);
-    v.zamek.kdo = relace.jmeno ? relace.jmeno + ' <' + relace.email + '>' : relace.email;
-    const ov = globalThis.zamekOvereni(v, JEKLY, verzeServeru);
-    if (ov) v.zamek.overeni = ov; else delete v.zamek.overeni;
-    if (ov && ov.stav !== 'shoda') sporne.push({ cislo: v.zamek.cislo || globalThis.variantaCislo(zak, v), ov });
-  }
-  /* Jméno obchodníka do rejstříku (21. 8. 2026, zadání J. V.). Bere se
-   * z RELACE, ne od klienta — jméno v seznamu je stejné razítko jako autor
-   * a nesmí jít podvrhnout. Zapisuje se při každém uložení, aby se
-   * v seznamu projevila i změna jména v profilu. */
-  if (zak.autor === relace.email && relace.jmeno) zak.autorJmeno = relace.jmeno;
-  else if (stara && stara.autor === zak.autor) {
-    /* Cizí zakázka: jméno autora zůstává z uložené verze, ne od klienta (B73). */
-    if (stara.autorJmeno) zak.autorJmeno = stara.autorJmeno; else delete zak.autorJmeno;
-  } else if (relace.role !== 'Administrátor') delete zak.autorJmeno;
+  const kontrola = zakazkaServerKontrola(stara, zak, relace,
+    { ULO, SCHV, JEKLY, slevyNast, verzeServeru: serverVerze(), rezim: 'ulozeni' });
+  if (!kontrola.ok) return json({ ok: false, chyba: kontrola.chyba }, kontrola.status);
+  const sporne = kontrola.sporne;
 
   const razitko = ULO.uloRazitkoNove();
   zak.uloRazitko = razitko;

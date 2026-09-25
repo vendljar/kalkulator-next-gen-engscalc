@@ -47,7 +47,7 @@
  },
  "varianty": [
   {
-   "id": "vmuhkhpob5",
+   "id": "vmuhksu015",
    "nazev": "Varianta 1",
    "zakaznik": "",
    "pozn": "",
@@ -532,7 +532,7 @@
    "odemceni": [
     {
      "kdy": "2026-09-23T07:30:00.000Z",
-     "kdo": "Správce <spravce@priklad.cz>",
+     "kdo": "Druhý správce <spravce2@priklad.cz>",
      "duvod": "překlep v názvu akce",
      "zamek": {
       "zamceno": true,
@@ -2616,7 +2616,7 @@
    }
   },
   {
-   "id": "vmuhkhpod6",
+   "id": "vmuhksu026",
    "nazev": "Varianta 2",
    "zakaznik": "",
    "pozn": "",
@@ -3095,12 +3095,12 @@
    },
    "pripona": 2,
    "zamek": null,
-   "klonZ": "vmuhkhpob5",
+   "klonZ": "vmuhksu015",
    "klonZCislo": "2026 - OPR - CN - 0923",
    "datum": "2026-09-25"
   }
  ],
- "aktivni": "vmuhkhpod6",
+ "aktivni": "vmuhksu026",
  "priponySchema": 2,
  "autor": "obchodnik@priklad.cz",
  "autorJmeno": "Test Obchodník",

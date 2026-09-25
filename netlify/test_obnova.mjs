@@ -680,5 +680,74 @@ console.log('\n===== B47–B49, B52: dotažení obnovy po dávkách (19. kolo, 1
     ul && { klice: Object.keys(ul), kdo: ul.kdo.length, kdy: ul.kdy.length });
 }
 
+/* ===== P4 / B72 (25. 9. 2026): obnova prochází TÝMIŽ pojistkami jako uložení =====
+ * Do té doby měla obnova vlastní menší sadu kontrol (id, typy, zámky): pokusem
+ * prošla sleva 60 % „schválená" vymyšleným jménem. Teď obě cesty volají
+ * lib/zakazka_kontrola.mjs; tady se ověřuje to, co je pro obnovu zvláštní. */
+console.log('\n===== P4 / B72: obnova prochází týmiž pojistkami jako uložení =====');
+{
+  const JEKLY = require('../src/jekly.json');
+  const zalohaS = (jm, z) => ({ porizena: new Date().toISOString(), zakazky: { [jm]: z } });
+  const jmeno = (z) => z.cislo.replace(/\s+/g, '') + '.json';
+  const sCenikem = (z) => { const d = z.varianty[0].data; d.cenik = Object.assign(d.cenik, ZC.zkusebniCenik()); d.proj.cenik = Object.assign(d.proj.cenik, ZC.zkusebniCenikProj()); return z; };
+
+  /* a) sleva pod minimální marží „schválená" vymyšleným jménem — přeskočí se */
+  const zS = sCenikem(novaZak('2026 - OPR - CN - 0780', 'B72 sleva pod marží'));
+  zS.varianty[0].data.sleva = { procenta: 60, stav: 'schváleno', schvalil: 'Vymyšlený Schvalovatel', schvalilKdy: '2026-09-01T00:00:00.000Z', role: 'Obchodník', poznamka: '', schema: '' };
+  const oS = await obnovJson({ zdroj: { soubor: zalohaS(jmeno(zS), zS) }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['zakazky'] }, cookie);
+  test('B72: sleva 60 % pod minimální marží se obnovou nezapíše (přeskočeno s důvodem)',
+    oS.ok === true && oS.casti.zakazky.preskocene === 1 && /marž/.test(oS.casti.zakazky.duvody[0].duvod)
+    && (await ulz('zakazky').cti('z/' + jmeno(zS))) === null, oS.casti.zakazky);
+
+  /* b) sleva ve stropu se schválením — razítko ze zálohy zůstane (obnova nerozhoduje) */
+  const zR = sCenikem(novaZak('2026 - OPR - CN - 0781', 'B72 razítko schválení'));
+  zR.varianty[0].data.sleva = { procenta: 5, stav: 'schváleno', schvalil: 'Vedoucí Zkušební (Vedoucí)', schvalilEmail: 'ved@priklad.cz', schvalilKdy: '2026-09-01T00:00:00.000Z', role: 'Obchodník', poznamka: '', schema: '' };
+  const oR = await obnovJson({ zdroj: { soubor: zalohaS(jmeno(zR), zR) }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['zakazky'] }, cookie);
+  const ulR = await ulz('zakazky').cti('z/' + jmeno(zR));
+  test('B72: schválená sleva ve stropu se obnoví s razítkem ze zálohy, ne se jménem správce',
+    oR.casti.zakazky.nove === 1 && !!ulR && ulR.varianty[0].data.sleva.schvalil === 'Vedoucí Zkušební (Vedoucí)'
+    && ulR.varianty[0].data.sleva.schvalilEmail === 'ved@priklad.cz', [oR.casti.zakazky, ulR && ulR.varianty[0].data.sleva]);
+  test('B72: autor a razítko úprav zůstaly ze zálohy (obnova nepřepisuje doklad)', ulR.autor === zR.autor && ulR.upravil === zR.upravil);
+
+  /* c) odeslaná nabídka pod jiným číslem než údaje zakázky — obnova nepřepisuje, přeskočí */
+  const zC = sCenikem(novaZak('2026 - OPR - CN - 0782', 'B72 jiné číslo'));
+  zamkniJakoAplikace(zC, zC.varianty[0], { typ: 'nabidka', kdo: 'Test' });
+  zC.varianty[0].zamek.cislo = '2026 - OPR - CN - 0999';
+  const oC = await obnovJson({ zdroj: { soubor: zalohaS(jmeno(zC), zC) }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['zakazky'] }, cookie);
+  test('B72: odeslaná nabídka s číslem, které nesedí na zakázku, se z obnovy přeskočí (číslo se nepřepisuje)',
+    oC.casti.zakazky.preskocene === 1 && /jiné číslo/.test(oC.casti.zakazky.duvody[0].duvod)
+    && (await ulz('zakazky').cti('z/' + jmeno(zC))) === null, oC.casti.zakazky);
+
+  /* d) záloha se značkou ukázkového ceníku v zamčené variantě nad očištěnou uloženou verzí */
+  const zZ = sCenikem(novaZak('2026 - OPR - CN - 0783', 'B72 značky ceníku'));
+  zamkniJakoAplikace(zZ, zZ.varianty[0], { typ: 'nabidka', kdo: 'Test', vysledek: zm.zamekVysledekSpocti(zZ.varianty[0], JEKLY, 'test') });
+  const ulZ = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zZ }, cookie)).json();
+  test('B72: zakázka se zámkem uložena běžnou cestou', ulZ.ok === true, ulZ);
+  const ulozenaZ = await ulz('zakazky').cti('z/' + ulZ.soubor);
+  const zalZ = kopie(ulozenaZ); zalZ.varianty[0].data.cenik.ukazkove = true; zalZ.varianty[0].data.cenik.prazdny = true;
+  const oZ = await obnovJson({ zdroj: { soubor: zalohaS(ulZ.soubor, zalZ) }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['zakazky'] }, cookie);
+  const poZ = await ulz('zakazky').cti('z/' + ulZ.soubor);
+  test('B72/N43: záloha se značkou ukázkového ceníku v odeslané nabídce nehlásí změnu dat (obě strany po téže očistě)',
+    oZ.ok === true && oZ.casti.zakazky.preskocene === 0, oZ.casti.zakazky);
+  test('B72: obnova značku ukázkového ceníku do databáze nezapíše (zapisuje zkontrolovanou zakázku, ne syrovou zálohu)',
+    !!poZ && poZ.varianty[0].data.cenik.ukazkove === undefined && poZ.varianty[0].data.cenik.prazdny === undefined,
+    poZ && [poZ.varianty[0].data.cenik.ukazkove, poZ.varianty[0].data.cenik.prazdny]);
+
+  /* e) zámek bez razítka ověření ho obnovou dostane; „kdo odeslal" zůstává ze zálohy */
+  const zO = sCenikem(novaZak('2026 - OPR - CN - 0784', 'B72 ověření zámku'));
+  zm.zamkniVariantu(zO.varianty[0], { cislo: zm.variantaCislo(zO, zO.varianty[0]), typ: 'nabidka', kdo: 'Historický Obchodník <hist@priklad.cz>',
+    vysledek: zm.zamekVysledekSpocti(zO.varianty[0], JEKLY, 'v1.9.1') });
+  const oO = await obnovJson({ zdroj: { soubor: zalohaS(jmeno(zO), zO) }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['zakazky'] }, cookie);
+  const ulO = await ulz('zakazky').cti('z/' + jmeno(zO));
+  test('B72/B59: obnovený zámek dostane razítko ověření zmrazeného výsledku (shoda) a „kdo" zůstává ze zálohy',
+    oO.casti.zakazky.nove === 1 && !!ulO && ulO.varianty[0].zamek.overeni && ulO.varianty[0].zamek.overeni.stav === 'shoda'
+    && ulO.varianty[0].zamek.kdo === 'Historický Obchodník <hist@priklad.cz>', ulO && ulO.varianty[0].zamek);
+  /* Zámek pořízený před #320 (bez čísla z papíru) je v záloze historie — obnova ho nezastaví. */
+  const zP = sCenikem(novaZak('2026 - OPR - CN - 0785', 'B72 starý zámek'));
+  zm.zamkniVariantu(zP.varianty[0], { typ: 'nabidka', kdo: 'Test' }); delete zP.varianty[0].zamek.cisloPapir; zP.varianty[0].zamek.cislo = '';
+  const oP = await obnovJson({ zdroj: { soubor: zalohaS(jmeno(zP), zP) }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['zakazky'] }, cookie);
+  test('B72: zámek z doby před číslem z papíru se obnoví (B61 platí jen pro uložení nového zámku)', oP.casti.zakazky.nove === 1, oP.casti.zakazky);
+}
+
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);

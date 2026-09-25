@@ -93,6 +93,7 @@ function klientKontext() {
   const uzivatele = (await import('../netlify/functions/uzivatele.mjs')).default;
   const program = (await import('../netlify/functions/program.mjs')).default;
   const zakazky = (await import('../netlify/functions/zakazky.mjs')).default;
+  const obnova = (await import('../netlify/functions/obnova.mjs')).default;
   const { ADMIN_EMAIL } = await import('../netlify/lib/sdilene.mjs');
   const { ULO } = require('../netlify/lib/jadro_moduly.cjs');
   const zm = require('./zamek.js');
@@ -168,6 +169,13 @@ function klientKontext() {
     const u4 = await uloz(zmenena2, ulozena2.uloRazitko, cObch);
     test('server: ani změna ceníku odeslané nabídky neprojde (409)', u4.status === 409, u4);
 
+    /* 5) obnova ze zálohy ve starém tvaru nad novější uloženou verzí — tytéž
+     * pojistky jako uložení (P4), tedy i táž migrace a očista na obou stranách. */
+    const o = await (await post(obnova, 'http://x/api/obnova', { zdroj: { soubor: { porizena: '2026-09-25T00:00:00.000Z', zakazky: { [jmeno]: raw } } },
+      rezim: 'prepsat', nahled: true, casti: ['zakazky'] }, cAdmin)).json();
+    const duvody = (o.casti && o.casti.zakazky && o.casti.zakazky.duvody) || [];
+    test('obnova (N43/P4): záloha ve starším tvaru nehlásí změnu dat odeslané nabídky',
+      o.ok === true && !duvody.some(d => /uzam|odeslan/.test(d.duvod)), o.casti && o.casti.zakazky);
   }
 
   /* ---------- co je specifické pro jednotlivé fixtury ---------- */
