@@ -16,7 +16,9 @@ Poslední vydání: **v25.9.3** (větev `test`). Roadmapa: `roadmapa/roadmap.jso
 ## Rozdělané / čeká na přenos
 - `test-draft` je před `test` o roadmapu, CLAUDE.md a tento soubor — přenést
   do `test` na pokyn J. V.
-- `main` stále s `NODE_VERSION = "22"` — oprava dojde s dalším vydáním.
+- `main` = `test` (4f714a3, v25.9.3 + oprava Node), nahráno 25. 9. odpoledne;
+  CI na main běží (run 187). Tag `v25.9.3` z cloudu nahrát nejde (403) —
+  založit ručně přes GitHub → Releases.
 
 ## Čeká na J. V.
 - #355, #356: potvrdit výpočet můstků ↔ přechodové plechy a zastřešení.
