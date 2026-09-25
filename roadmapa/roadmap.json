@@ -5638,6 +5638,63 @@
    "detail" : "Nastavení → Šablony: pod stavem každé buňky (čeština i jazykové verze) se ukazuje název nahraného souboru bez `.docx`, celý název v bublině. Výpočty ani šablony se nemění. Při té příležitosti ověřena šablona CN v12 od J. V. harnessem `overit_sablona.mjs` — 60 kontrol OK.",
    "hotovoKdyz" : "Splněno: kontrola v prohlížeči (CZ v10 ukazuje Sablona_NABIDKA_CN_v12), nová kontrola v `overit_sablony_online.mjs`, sady v Node zelené.",
    "kde" : "`src/ui/sablony_sprava_ui.js` (sablChip), `src/app_template.html` (.sabl-soubor)"
+  },
+  {
+   "id" : "360",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "hotovoV" : "v25.9.6",
+   "dulezitost" : "",
+   "slozitost" : "M",
+   "nazev" : "Dávka A kola 16: role slevy z přihlášeného, zábrana nesmyslné nabídky, náhled",
+   "proc" : "Kolo 16 (25. 9. 2026, pohled obchodníka): obchodník si slevu nad strop „schválil\" volbou role zadavatele a uložení nadřízeným cizí žádost tiše schválilo (K16-N73, N74, VYSOKÁ); nabídka za 0 Kč šla vytisknout (N75); autosave v náhledu (N77); „Smazat vybrané\" u obchodníka (N89). J. V.: „ano, pusť se do dávky A tady\".",
+   "detail" : "P1: slevaNastav (role z ONLINE_STAV.ja při změně procent, výběr role pryč); schvalovaniServerKontrola přepíše roli z relace a bez změny procent nepustí cizí čeká → auto (SCHV_ROZHODNUTI_POLE); kontrola sleva/slevaProj: auto nad stropem role = zábrana. P2: rozmery + nové cenaNula = zábrana, engine cenaCislo (chybějící cena ≠ NaN). P13: nahledJakykoli, autosave i tiché onlineUloz v náhledu stojí, ruční se ptá. N89: vyber jen se smiZobrazit(uloziste.mazani). Nezahrnuto z promptu: min=\"0\" u číselných polí (kontrola to kryje).",
+   "hotovoKdyz" : "Splněno: netlify/test_obchodnik.mjs 24/24 (S5 dřív FAIL), test_kontroly +11, overit_schvalovani +4, overit_role_nahled +3, mutace P1 2/2, jádro 76/76.",
+   "kde" : "`src/schvalovani.js`, `src/kontroly.js`, `src/engine.js`, `src/ui/common.js`, `src/ui/online_ui.js`, `netlify/test_obchodnik.mjs`"
+  },
+  {
+   "id" : "361",
+   "vlna" : "B",
+   "stav" : "ceka",
+   "dulezitost" : "stredni",
+   "slozitost" : "M",
+   "nazev" : "Kolo 16, dávka B: neuložené změny, ověření zámku, dialogy, hledání adresy, zalomení ve Wordu",
+   "proc" : "Podklady kola 16 (PROMPT_PARALELNI_VETEV_K16.md, 25. 9. 2026) — drobnosti, které obchodníky obtěžují denně.",
+   "detail" : "P5 (K14-N65, N62, K15-N69): po startu a nové zakázce historieOznacUlozeno, razítko ceníku po tisku není změna uživatele, ruční uložení bez čísla odmítnout. P6 (K15-N67): zamekVysledekRozdily jen nad penězi a množstvím / ignorovat chybějící klíče. P7 (K15-N68, K16-N87): texty dialogu zámku (Ano/Ne), kolize verzí se jménem. P15 (K16-N85): adresa v rejstříku a hledání. P14 (K16-N81): \\n → <w:br/> v nahradPlaceholdery.",
+   "hotovoKdyz" : "Každý bod test, který bez opravy selže.",
+   "kde" : "`src/ui/historie.js`, `src/zamek.js`, `src/ui/zamek_ui.js`, `src/ui/online_ui.js`, `src/uloziste.js`, `src/docxgen.js`"
+  },
+  {
+   "id" : "362",
+   "vlna" : "B",
+   "stav" : "ceka",
+   "dulezitost" : "stredni",
+   "slozitost" : "M",
+   "nazev" : "Kolo 16, dávka C: překlad kolem symbolů + Word PROJ se slevou a vlastními položkami",
+   "proc" : "K14-N63, K16-N84 (česky zůstane „šířka × hloubka\", „€ … včetně DPH\", platební podmínky), K14-N64, K15-N66 (Word PROJ bez slevy a součtu, vlastní položky PROJ chybí).",
+   "detail" : "P3 zbytek: část hotová ve v25.9.5 (odstavec se symbolem přes slovník); zbývá překlad textu kolem symbolu bez celého odstavce ve slovníku, mezera a slovník u „včetně DPH\". P4: vlastní/katalogové položky PROJ v nabídce online i ve Wordu; sleva a součet ve Wordu PROJ (úkol pro šablonu + kontrola slevaWord pro PROJ). Po sloučení přegenerovat mutace šablon.",
+   "hotovoKdyz" : "Mutace z v12 bez českých odstavců kromě jmen a adres; Word PROJ se slevou nese částku slevy; test.",
+   "kde" : "`src/docxgen.js`, `src/preklad.js`, `src/nabidka_proj.js`, `src/ui/nabidka_proj_ui.js`",
+   "zavisi" : [
+    {
+     "id" : "350",
+     "typ" : "doporuceno",
+     "proc" : "týž překladač šablon"
+    }
+   ]
+  },
+  {
+   "id" : "363",
+   "vlna" : "B",
+   "stav" : "blokovano",
+   "dulezitost" : "stredni",
+   "slozitost" : "M",
+   "nazev" : "Kolo 16, rozbor D: prázdné kapitoly, SoD z nabídky, platební podmínky, PROJ u zahraničí, náklady u obchodníka",
+   "proc" : "Body „prověřit + návrh\" z podkladů kola 16 — kód se nemění bez rozhodnutí J. V.",
+   "detail" : "P8 (K16-N78, K9-N32, K12-N43) podmíněný blok kapitoly + termín s jednotkou; P9 (K16-N83) mapa PODM_* → SOD_*; P10 (K15-N71) jedno znění platebních podmínek; P11 (K15-N72) PROJ u zahraniční zakázky (návrh A); P12 (K16-N76) náklady u obchodníka a ceník bez nákladů. Rozbor do podklady/K16_ROZBOR_2026-09-25.md.",
+   "cekaNa" : "J. V. — texty kapitol nabídky (Nastavení → Firma), rozhodnutí P9–P12; rozbor připraví Claude",
+   "hotovoKdyz" : "Rozbor v podklady/K16_ROZBOR a rozhodnutí J. V. zapsaná.",
+   "kde" : "`podklady/`"
   }
  ],
  "meta" : {
@@ -6130,6 +6187,10 @@
   {
    "text" : "Večer 25. 9. 2026 (engscalc): v25.9.4 přenesena do test (pokyn J. V.); v25.9.5 — #344 N48, N49, N50, N52, N55 (dokumenty souhlasí s cenou) a #350 část: překlad odstavců se symboly v šablonách. Ověřeno: sady v Node, harnessy, mutace jádra 76/76.",
    "hotovo" : true
+  },
+  {
+   "text" : "Noc 25. 9. 2026 (engscalc), v25.9.6 — dávka A kola 16 (#360): P1 role slevy z relace, P2 zábrana nesmyslné nabídky, P13 náhled bez autosave, N89. v25.9.5 na test. Podklady kola 16 rozebrané, pořadí B/C/D v PREDAVKA.md.",
+   "hotovo" : true
   }
   ],
   "pravidla" : [
@@ -6216,7 +6277,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v25.9.5 (engscalc)",
+  "build" : "v25.9.6 (engscalc)",
   "stavKDatu" : "25. 9. 2026"
  },
  "_comment" : [

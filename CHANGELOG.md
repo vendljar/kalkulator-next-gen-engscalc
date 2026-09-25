@@ -8,6 +8,30 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v25.9.6 — dávka A kola 16: role slevy, zábrana nesmyslné nabídky, náhled (25. 9. 2026)
+
+- **Sleva nad strop už nejde „schválit" volbou role (P1 / K16-N73, K16-N74).**
+  Výběr „Role zadavatele" z karty slevy zmizel — roli určuje přihlášený,
+  který zadal procenta (karta ji jen ukáže). Server roli přepíše z relace
+  a cizí žádost „čeká na schválení" se uložením nadřízeného už neschválí
+  (bez změny procent se vrátí uložený stav). Sleva „schválená automaticky"
+  nad stropem role zadavatele zastaví tisk dokumentu.
+- **Nabídka s nesmyslným zadáním nebo nulovou cenou nevznikne (P2 / K16-N75,
+  K14-N61).** Nulový nebo záporný rozměr a nová kontrola „cena nabídky je
+  nulová nebo není číslo" jsou zábrana (odklepnout nejde). Nová prázdná
+  zakázka tedy tisknout nejde, dokud se nevyplní zdvih, šířka a hloubka.
+  Chybějící cena v ceníku už v součtu nedá NaN.
+- **Během náhledu se automaticky neukládá (P13 / K16-N77)**; ruční uložení
+  v rolovém náhledu se zeptá, že se zapíše pod administrátorem.
+- **„Smazat vybrané…" jen s právem mazat (N89)**, i v rolovém náhledu.
+- Nová serverová sada `netlify/test_obchodnik.mjs` — 24 scénářů pohledu
+  obchodníka z kola 16 (S5 před opravou selhával), zařazená i do mutací.
+
+Ověřeno: sady v Node, test_obchodnik 24/24, harnessy (kromě příručky a SoD),
+mutace jádra 76/76, mutace P1 2/2.
+
+---
+
 ## v25.9.5 — dokumenty souhlasí s cenou, překlad smluv se symboly (25. 9. 2026)
 
 Roadmapa #344 (F4 z hloubkového testu) a první část #350.
