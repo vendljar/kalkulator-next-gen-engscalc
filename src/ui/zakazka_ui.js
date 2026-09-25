@@ -69,7 +69,12 @@ async function varSet(id, k, val) {
   render();
 }
 async function novaZakazkaUI() {
-  if (!await potvrd('Založit novou prázdnou zakázku? Neuložené změny aktuální zakázky se ztratí.',
+  /* O neuložených změnách se mluví, jen když nějaké jsou (P5 / K14-N65,
+   * 25. 9. 2026) — do té doby to dialog tvrdil pokaždé, i nad zakázkou
+   * právě uloženou, a upozornění tím ztrácelo váhu. */
+  const neulozene = (typeof historieNeulozeno === 'function') && historieNeulozeno();
+  if (!await potvrd('Založit novou prázdnou zakázku?'
+    + (neulozene ? ' Neuložené změny aktuální zakázky se ztratí.' : ''),
     { nadpis: 'Nová zakázka' })) return;
   ZAK = novaZakazka(); syncVarianta();
   /* Výchozí zaškrtnutí položek (20. 8. 2026): sloupec Výchozí v kalkulaci
@@ -86,6 +91,12 @@ async function novaZakazkaUI() {
   if (typeof zakOdpojUlozeni === 'function') zakOdpojUlozeni();
   if (typeof seznamReset === 'function') seznamReset();   // #18 – viz nactiZakazku
   render(); prepniTab('kalk');
+  /* ČERSTVÁ ZAKÁZKA NEMÁ NEULOŽENÉ ZMĚNY (P5 / K14-N65, 25. 9. 2026).
+   * Otisk „naposledy uloženo" nesl předchozí zakázku, takže se nová
+   * porovnávala s ní — lišila se id varianty a klíčem protokolu a prohlížeč
+   * při zavření okna varoval před ztrátou změn, které nikdo neudělal.
+   * Posouvá se až po překreslení, aby zahrnul i to, co render dopočítá. */
+  if (typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
 }
 
 /* #18: tabulka variant má vlastní modul (seznam.js + ui/seznam_ui.js), protože

@@ -77,6 +77,27 @@ function progSrovnejNedotcene(verzeInfo) {
   if (typeof ZAK === 'undefined' || !ZAK || !Array.isArray(ZAK.varianty)) return 0;
   if (typeof cenikPrepoctiRozpracovane !== 'function'
     || typeof cenikDnesniData !== 'function') return 0;
+  /* RAZÍTKO CENÍKU NENÍ ZMĚNA UŽIVATELE (P5 / K14-N62, 25. 9. 2026).
+   *
+   * Tahle funkce vtiskne otevřené zakázce platný ceník sama — po zveřejnění
+   * nové verze, po přihlášení, po připojení složky. Otisk „naposledy
+   * uloženo" (`HIST.ulozenoJako`) se ale neposouval, takže od té chvíle
+   * zakázka hlásila neuložené změny, které nikdo neudělal: varování při
+   * zavření okna, dialog „Otevřít jinou zakázku", dotaz u nové zakázky.
+   * Přihlášení to obcházelo po svém (`onlinePoPrihlaseni`) — jen když razítko
+   * stihlo doběhnout dřív než posun otisku, což je závod.
+   *
+   * Stejné pravidlo jako u otevření zakázky (V35): přepočet na dnešní ceník
+   * se sám neukládá a nepočítá se za práci. Otisk se posune JEN tehdy, když
+   * před přepočtem nic rozepsaného nebylo — rozdělanou práci to neschová.
+   * Totéž pro otisk autosave (`ONLINE_STAV.posledni`), ať tlačítko Uložit
+   * nesvítí „čeká na uložení" kvůli něčemu, co se samo neuloží. */
+  const bezPrace = (typeof historieNeulozeno === 'function') && !historieNeulozeno();
+  let bezCekani = false;
+  try {
+    bezCekani = typeof ONLINE_STAV !== 'undefined' && !!ONLINE_STAV.posledni
+      && JSON.stringify(ZAK) === ONLINE_STAV.posledni;
+  } catch (e) { bezCekani = false; }
   const r = cenikPrepoctiRozpracovane(ZAK, cenikDnesniData(), Object.assign(
     { zahr: (typeof CENIK_ZAHR !== 'undefined') ? CENIK_ZAHR : null,
       build: (typeof buildVerze === 'function') ? buildVerze() : '' },
@@ -103,6 +124,10 @@ function progSrovnejNedotcene(verzeInfo) {
   }
   const n = r.prepocteno + r.orazitkovano + (r.znacky || 0) + (r.popisy || 0) + zadani;
   if (n && typeof syncVarianta === 'function') syncVarianta();
+  if (n && bezPrace && typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
+  if (n && bezCekani) {
+    try { ONLINE_STAV.posledni = JSON.stringify(ZAK); } catch (e) { /* nechat, jak bylo */ }
+  }
   return n;
 }
 

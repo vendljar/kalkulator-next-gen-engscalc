@@ -131,6 +131,22 @@ function uloHlavickaVyplnena(zak) {
   return uloHlavickaChybi(zak, 'ock').length === 0 || uloHlavickaChybi(zak, 'proj').length === 0;
 }
 
+/* BEZ ČÍSLA NABÍDKY SE NEUKLÁDÁ (P5 / K15-N69, 25. 9. 2026).
+ *
+ * Jméno souboru v databázi se skládá z čísla nabídky (`uloJmenoSouboru`).
+ * Zakázka bez čísla proto skončila jako „bez-cisla-<datum>-<id>.json" —
+ * záznam, který v seznamu nikdo nenajde a který po doplnění čísla zůstane
+ * ležet jako sirotek vedle správného souboru. Tudy vedly dvě cesty:
+ * ruční uložení mimo tlačítko v liště (karta Databáze, dialog „Otevřít
+ * jinou zakázku → Uložit změny") a autosave uložené zakázky, které někdo
+ * číslo vymazal — ten nepsal do jejího souboru, ale založil nový.
+ *
+ * Stačí číslo z jedné z hlaviček (stejné pořadí jako `uloJmenoSouboru`). */
+function uloMaCislo(zak) {
+  return uloCisloVyplneno(zak && zak.cislo)
+    || uloCisloVyplneno(((zak && zak.projHlavicka) || {}).cislo);
+}
+
 /* Čas posledního uložení jako „HH:MM". Nečitelný nebo chybějící čas vrací
  * prázdno — v liště je lepší čas neuvést než uvést vymyšlený; obchodník se
  * podle něj rozhoduje, jestli může zavřít notebook. */
@@ -170,6 +186,13 @@ function uloUlozeniStav(vstup) {
   if (ulozeno && !v.zmeneno)
     return { stav: 'ulozeno', muzeSam: true, chybi: nejmensi, cas,
       text: 'Uloženo v databázi jako ' + ulozeno + (cas ? ' v ' + cas : '') + '.' };
+  /* Uložená zakázka s vymazaným číslem (P5 / K15-N69): změny by nešly do
+   * jejího souboru, ale do nového „bez-cisla-…" — proto se nečeká, že se
+   * uloží samy, a řekne se, co chybí. */
+  if (ulozeno && !uloMaCislo(zak))
+    return { stav: 'vyplnit', muzeSam: false, chybi: ['Číslo nabídky (CN)'], cas,
+      text: 'Zakázka nemá číslo nabídky, takže se změny neukládají (bez čísla by vznikl záznam, '
+        + 'který v seznamu nejde najít). Vyplňte číslo v hlavičce.' };
   if (ulozeno)
     return { stav: 'ceka', muzeSam: true, chybi: nejmensi, cas,
       text: 'Změny se za chvíli uloží samy do databáze (' + ulozeno + ')'
@@ -921,7 +944,7 @@ if (typeof module !== 'undefined')
   module.exports = { uloTypyProblemy, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
                      uloNorm, uloSlova, uloCisloVyplneno, uloKlicSouboru,
                      uloJmenoSouboru, uloJeZakazkovySoubor,
-                     ULO_HLAVICKA_POLE, uloHlavickaChybi, uloHlavickaVyplnena, uloUlozeniStav,
+                     ULO_HLAVICKA_POLE, uloHlavickaChybi, uloHlavickaVyplnena, uloMaCislo, uloUlozeniStav,
                      uloCasHhMm,
                      ULO_ZALOHA_STARI_DNI, uloZalohaStariDni, uloZalohaRozhodni,
                      uloZalohaSmiPrepsat,

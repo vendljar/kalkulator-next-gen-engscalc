@@ -913,6 +913,20 @@ function onlineUloz(opts) {
         + 'pod vaším administrátorským účtem. Uložit?')
         .then(ok => ok ? onlineUloz(Object.assign({}, opts, { nahledPotvrzeno: true })) : false);
   }
+  /* BEZ ČÍSLA NABÍDKY SE NEUKLÁDÁ (P5 / K15-N69, 25. 9. 2026). Tlačítko
+   * v liště to hlídalo samo (stav „vyplnit"), ale do `onlineUloz()` vede
+   * víc cest — karta Databáze, dialog „Otevřít jinou zakázku → Uložit
+   * změny", autosave zakázky, které někdo číslo vymazal. Server pak založil
+   * „bez-cisla-….json", který v seznamu nikdo nenajde. Pravidlo drží model
+   * (`uloMaCislo`), stráž stojí u zápisu, ne u tlačítka. */
+  if (typeof uloMaCislo === 'function' && !uloMaCislo(ZAK)) {
+    if (!opts.tiche) {
+      onlineZprava('Zakázku nelze uložit bez čísla nabídky — vznikl by záznam, který v seznamu '
+        + 'nejde najít. Vyplňte číslo nabídky v hlavičce zakázky a uložte znovu.', 'varovani');
+      render();
+    }
+    return Promise.resolve(false);
+  }
   /* JEDEN ZÁPIS NAJEDNOU (nález V27, 8. 9. 2026). Ruční uložení, tlačítko
    * „Uložit online" v kartě a autosave se uměly sejít: druhý požadavek vyšel
    * se starým razítkem, server ho správně odmítl 409 a klient se ptal
@@ -1612,6 +1626,9 @@ function onlineTik() {
   /* Po kolizi verzí (V27) autosave stojí, dokud uživatel nezvolí cestu. */
   if (ONLINE_STAV.kolize) return;
   if (!ONLINE_STAV.soubor && !uloHlavickaVyplnena(ZAK)) return;
+  /* Uložená zakázka s vymazaným číslem by se zapsala do nového souboru
+   * „bez-cisla-…" (P5 / K15-N69) — počká, až číslo zase bude. */
+  if (typeof uloMaCislo === 'function' && !uloMaCislo(ZAK)) return;
   let text = '';
   try { text = JSON.stringify(ZAK); } catch (e) { return; }
   if (text === ONLINE_STAV.posledni) return;
