@@ -8,6 +8,41 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v25.9.4 — server hlídá minimální marži a typy polí zakázky, drobné nálezy 20. kola (25. 9. 2026)
+
+Dávka F2 + F3 z hloubkového testu 24. 9. 2026 (roadmapa #340, #341).
+
+- **Minimální marži u slevy ověřuje i server (#341, B71).** Do teď ji hlídal
+  jen prohlížeč; upravený klient uložil slevu pod firemním minimem jako
+  „schváleno automaticky". Server teď přepočítá základ části (OCK, PROJ
+  včetně dopravy) týmž jádrem a takovou slevu neuloží. Odeslané nabídky
+  (zamčené už dřív) se nepřepočítávají. Hláška číslo minima neprozradí.
+- **Server hlídá typy polí zadání a ceníku (#340, návrh P1).** Číslo musí být
+  číslo, prázdno nebo číslo jako text; volby (typ šachty, portál, zasklení,
+  režim opláštění, typ pásu, lakování) z nabídky; dimenze profilu tvaru
+  „80x80". Nic se nepřevádí — co nesedí, zastaví uložení a hláška řekne kde.
+  Druhá vrstva proti uloženému skriptu (B69, B70); platí i pro obnovu.
+- **Krycí list a smlouva PROJ u odeslané nabídky počítají ze zmrazeného
+  výsledku (N47)**, ne dnešním kódem — tvrdily jinou cenu, než odešla.
+- **Kontrola „méně než dvě nástupiště" zná průchozí šachtu (N53)** — sčítá
+  nástupiště A + C.
+- **Nová varianta se jmenuje podle svého čísla (N54)** — po smazání varianty
+  už nevzniknou dvě „Varianta 3".
+- **Tiskové okno (B84):** JSON ve skriptu se nedá ukončit značkou, jazyk
+  dokumentu jde přes escapování.
+- **Symbol v názvu příplatku se ve Wordu nerozvine (B86).**
+- Nastavení → Šablony: pod číslem verze i **název nahraného souboru**
+  (číslo je pořadí zveřejnění, ne číslo z názvu souboru).
+- Nasazení: připnutý Node 22.23.2 v `netlify.toml` (build padal na
+  kompilaci 22.23.3 ze zdrojů).
+
+Ověřeno: sady v Node zelené (test_schvalovani +13, test_uloziste +19,
+test_kontroly +2, test_kryci_proj_model +2, test_pripona_prvni +3,
+test_docxgen +3), test_prava 579, všechny prohlížečové harnessy včetně
+šablon CN v12 (60/60) a PROJ v2; nové mutace serveru 5/5 chycené.
+
+---
+
 ## v25.9.3 — dodatkové texty se neztrácejí, číselník, vlastní jazyková verze, šablona PROJ EN/DE/FR (25. 9. 2026)
 
 - **Dodatkové texty se ztrácely — dvě příčiny, obě opravené.**

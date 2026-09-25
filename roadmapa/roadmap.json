@@ -5367,28 +5367,30 @@
    "pozn": "HOTOVO v24.9.4 (F1c): test_autor 11, test_prava +18 (B74, B78, B82), test_uloziste +14, overit_xss +2, test_volitelne_chybi 18; obráceně vše selže."
   },
   {
-   "id": "340",
-   "vlna": "B",
-   "stav": "ceka",
-   "dulezitost": "vysoka",
-   "slozitost": "M",
-   "nazev": "F2: server převádí a kontroluje typy polí zakázky (návrh P1) + B84, B86, N47, N53, N54",
-   "proc": "Hloubkový test 24. 9. 2026 (20. kolo, v24.9.2; ověřeno na v24.9.3): server kontroluje jen id, kid, velikost a zámky; čísla a výčty zadání a ceníku jsou libovolný JSON. Druhá vrstva proti celé třídě B69/B70 i pro už uložené zakázky.",
-   "detail": "Typy podle DEFAULT_ZADANI/DEFAULT_CENIK v uloIdProblemy i importZakazka; B84 tiskové okno, B86 {{…}} v názvu příplatku, N47 krycí list PROJ ze zmrazeného výsledku, N53 kontrola stanic u průchozí šachty, N54 název nové varianty.",
-   "hotovoKdyz": "Pole nesprávného typu server odmítne nebo převede; testy.",
-   "kde": "`src/uloziste.js`, `src/zakazka.js`, `src/kryci_proj.js`, `src/kontroly.js`, `src/ui/zakazka_ui.js`"
+   "id" : "340",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "M",
+   "nazev" : "F2: server převádí a kontroluje typy polí zakázky (návrh P1) + B84, B86, N47, N53, N54",
+   "proc" : "Hloubkový test 24. 9. 2026 (20. kolo, v24.9.2; ověřeno na v24.9.3): server kontroluje jen id, kid, velikost a zámky; čísla a výčty zadání a ceníku jsou libovolný JSON. Druhá vrstva proti celé třídě B69/B70 i pro už uložené zakázky.",
+   "detail" : "Typy podle DEFAULT_ZADANI/DEFAULT_CENIK v uloIdProblemy i importZakazka; B84 tiskové okno, B86 {{…}} v názvu příplatku, N47 krycí list PROJ ze zmrazeného výsledku, N53 kontrola stanic u průchozí šachty, N54 název nové varianty. HOTOVO v25.9.4: P1 = `uloTypyProblemy` v `src/uloziste.js` (čísla, pravdy, výčty, dimenze, položky PROJ podle výchozího zadání/ceníku; nic se nepřevádí, 400 s cestou; zamčené varianty doklad) na `/api/zakazky` i v obnově. N47 krycí list PROJ z `vypocetProjZ`; N53 kontrola stanic přes `nastupisteCelkem`; N54 název nové varianty podle přípony; B84 JSON ve skriptu s \\u003c a `esc(L)`; B86 `{` z příplatku jako `&#123;`.",
+   "hotovoKdyz" : "Splněno: test_uloziste +19, test_prava +4, test_kontroly +2, test_kryci_proj_model +2, test_pripona_prvni +3, test_docxgen +3, mutace serveru 3/3, prohlížečová kontrola B84.",
+   "kde" : "`src/uloziste.js`, `src/zakazka.js`, `src/kryci_proj.js`, `src/kontroly.js`, `src/ui/zakazka_ui.js`",
+   "hotovoV" : "v25.9.4"
   },
   {
-   "id": "341",
-   "vlna": "B",
-   "stav": "ceka",
-   "dulezitost": "vysoka",
-   "slozitost": "M",
-   "nazev": "F3: minimální marži u slevy počítá server (B71)",
-   "proc": "Hloubkový test 24. 9. 2026 (20. kolo, v24.9.2; ověřeno na v24.9.3): schvalovaniServerKontrola hlídá jen strop role; upravený klient uloží „schváleno automaticky\" slevu pod minimální marží.",
-   "detail": "Server dopočítá marži jádrem (jadro_moduly.cjs už běží kvůli B59) a podmaržovou slevu odmítne; test a mutace.",
-   "hotovoKdyz": "Podmaržová sleva neprojde serverem; test a mutace.",
-   "kde": "`src/schvalovani.js`, `netlify/functions/zakazky.mjs`"
+   "id" : "341",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "M",
+   "nazev" : "F3: minimální marži u slevy počítá server (B71)",
+   "proc" : "Hloubkový test 24. 9. 2026 (20. kolo, v24.9.2; ověřeno na v24.9.3): schvalovaniServerKontrola hlídá jen strop role; upravený klient uloží „schváleno automaticky\" slevu pod minimální marží.",
+   "detail" : "Server dopočítá marži jádrem (jadro_moduly.cjs už běží kvůli B59) a podmaržovou slevu odmítne; test a mutace. HOTOVO v25.9.4: `schvalovaniServerMarze` v `src/schvalovani.js` přepočítá základ části (OCK zakladCena/zakladNaklad, PROJ celkem/naklad + doprava) týmž jádrem a platnou slevu pod minimem odmítne 403; varianta zamčená už v uložené verzi se nepřepočítává, nespočitatelná varianta uložení neshodí, hláška minimum neprozradí.",
+   "hotovoKdyz" : "Splněno: test_schvalovani +13, test_prava +6 (sady B2 s vypnutým minimem), mutace serveru 2/2.",
+   "kde" : "`src/schvalovani.js`, `netlify/functions/zakazky.mjs`",
+   "hotovoV" : "v25.9.4"
   },
   {
    "id": "342",
@@ -5626,7 +5628,7 @@
    "id" : "359",
    "vlna" : "B",
    "stav" : "hotovo",
-   "hotovoV" : "test-draft 25. 9. 2026 (do dalšího vydání)",
+   "hotovoV" : "v25.9.4",
    "dulezitost" : "",
    "slozitost" : "S",
    "nazev" : "Šablony: v tabulce i název nahraného souboru",
@@ -6118,6 +6120,10 @@
   {
    "text" : "Odpoledne 25. 9. 2026 (engscalc): oprava nasazení na Netlify — připnut Node 22.23.2 (#358); web test znovu běží (potvrdil J. V.).",
    "hotovo" : true
+  },
+  {
+   "text" : "Večer 25. 9. 2026 (engscalc), v25.9.4: F2 + F3 z hloubkového testu — server hlídá minimální marži u slevy (#341) a typy polí zakázky (#340 P1), N47, N53, N54, B84, B86; název souboru v tabulce šablon (#359). Uzavřeny #325, #331, #334, #326 (šablony CN v12 a PROJ v2 zveřejněny na testu i ostrém webu). Ověřeno: sady v Node, test_prava 579, všechny harnessy, mutace serveru.",
+   "hotovo" : true
   }
   ],
   "pravidla" : [
@@ -6204,7 +6210,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v25.9.3 (engscalc)",
+  "build" : "v25.9.4 (engscalc)",
   "stavKDatu" : "25. 9. 2026"
  },
  "_comment" : [
