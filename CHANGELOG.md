@@ -8,6 +8,32 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v25.9.5 — dokumenty souhlasí s cenou, překlad smluv se symboly (25. 9. 2026)
+
+Roadmapa #344 (F4 z hloubkového testu) a první část #350.
+
+- **Specifikace a krycí list neslibují vyřazené položky (N48).** 3D sken,
+  dílenská dokumentace, střecha, větrací mřížka a montážní nosník se řídí
+  tím, jestli jsou v ceně („ne" / „není součástí nabídky"); přechodové
+  plechy podle volby v ceně. Ruční volba ve specifikaci dál vyhrává.
+- **Nabízený příplatek ve specifikaci (N49):** zábrany do vstupů, ohrazení
+  proti pádu a ventilátor mají u nabízeného příplatku znění „lze doplnit –
+  viz příplatkové ceny" (schválené J. V.), jinak jako dřív.
+- **VSG fólie a SKN po stěnách (N50)** se počítají jen ze skleněných pásů;
+  SKN (náhrada dvojskla) jen z pásů „Dvojsklo". Standardní režim beze změny.
+- **Dva pásy „jiné" stejného názvu (N52)** — druhý řádek dostane pořadí
+  v závorce, ruční přepis jednoho nezasáhne druhý.
+- **Sleva v přehledu variant a v otisku zámku jako v dokumentu (N55)**;
+  krycí list OCK nese haléře, pokud je cena má.
+- **Překladač šablon přeloží i odstavec se symbolem {{…}} (#350)**, když ho
+  slovník zná a překlad nese tytéž symboly; ostatní průvodce vypíše zvlášť
+  (u smluv o dílo jsou to články s cenou, platbami a pokutami).
+
+Ověřeno: sady v Node zelené, všechny harnessy (kromě příručky a SoD —
+chybí podklady), mutace jádra 76/76 (3 nové).
+
+---
+
 ## v25.9.4 — server hlídá minimální marži a typy polí zakázky, drobné nálezy 20. kola (25. 9. 2026)
 
 Dávka F2 + F3 z hloubkového testu 24. 9. 2026 (roadmapa #340, #341).

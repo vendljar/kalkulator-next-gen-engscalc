@@ -1,38 +1,41 @@
-# Předávka — stav k 25. 9. 2026 večer
+# Předávka — stav k 25. 9. 2026 pozdě večer
 
-Poslední vydání na `main`: **v25.9.3** (+ oprava Node), tag `v25.9.3`.
-Na `test-draft`: **v25.9.4** — čeká na pokyn J. V. k přenosu do `test`.
+Na `main`: **v25.9.3** (+ oprava Node), tag `v25.9.3`.
+Na `test`: **v25.9.4** (přeneseno na pokyn J. V.).
+Na `test-draft`: **v25.9.5** — čeká na pokyn J. V. k přenosu do `test`.
 Roadmapa: `roadmapa/roadmap.json` (359 položek), publikovaná na
 https://claude.ai/artifact/RmrdBw1QbyyBxDLhZcExTq
 
-## Hotovo v dávce v25.9.4 (jen `test-draft`)
-- #341 (B71): server ověřuje minimální marži u platné slevy.
-- #340: P1 typy polí zadání a ceníku na serveru (i obnova) + N47, N53, N54,
-  B84, B86.
-- #359: tabulka šablon ukazuje i název souboru.
-- Uzavřeny #325, #331, #334, #326 — šablony CN v12 (CZ/EN/DE/FR) a PROJ v2
-  zveřejněny na testu i ostrém webu (potvrdil J. V.); CN v12 ověřena
-  `overit_sablona.mjs` 60/60, PROJ v2 `overit_nabidka_proj_word` 51 OK.
-- Ověřeno: sady v Node zelené, test_prava 579, všechny harnessy (kromě
-  overit_manual a overit_sod — chybí příručka a šablony SoD v cloudu),
-  mutace serveru 171/171 chycených (5 nových).
+## Hotovo v25.9.5 (jen `test-draft`)
+- #344: N48 (specifikace/krycí list neslibují vyřazené položky), N49 („lze
+  doplnit – viz příplatkové ceny" u nabízených příplatků), N50 (VSG/SKN po
+  stěnách jen ze skel), N52 (dva pásy „jiné"), N55 (sleva v přehledu jako
+  v dokumentu, krycí list s haléři).
+- #350 část: překladač šablon překládá i odstavce se symbolem {{…}}.
+- Ověřeno: sady v Node, harnessy (kromě příručky a SoD), mutace jádra 76/76.
+
+## Rozdělané
+- #350 slovník obou SoD — BLOKOVÁNO: šablony Sablona_SOD_REALIZACE.docx
+  a Sablona_SOD_PROJEKCE.docx jsou na Drive (složka se zprávami testů),
+  ale přesné odstavce je potřeba vzít ze souboru .docx — požádat J. V.
+  o nahrání do sezení. Text PROJEKCE (~90 odstavců) je čitelný přes
+  Google Drive read_file_content. Smluvní překlad = návrh ke kontrole J. V.;
+  zveřejnění jazykové verze je rozhodnutí administrátora (#157).
 
 ## Poznámky pro další sezení
-- Šablony pro harnessy: J. V. je nahrál do chatu 25. 9. (CN v12 + EN/DE/FR,
-  PROJ v2_opravena). V novém sezení je nemáme — požádat, nebo stáhnout
-  z Google Drive. `KNG_PODKLADY=<složka>` a PROJ pojmenovat
-  `Sablona_NABIDKA_PROJ.docx`.
-- Mutace serveru pouštět JEN JEDNOU naráz (běh na pozadí přes `setsid`
-  vypadá jako skončený, ale běží dál — dva běhy si mutace přepisují).
-  Po přerušení `grep -rn "if (false)" netlify src` a `git diff netlify`.
+- Šablony pro harnessy (CN v12 + EN/DE/FR, PROJ v2_opravena) v novém
+  sezení nejsou — požádat J. V. nebo stáhnout; `KNG_PODKLADY=<složka>`,
+  PROJ pojmenovat `Sablona_NABIDKA_PROJ.docx`.
+- Mutace serveru pouštět JEN JEDNOU naráz (setsid běh vypadá skončený, ale
+  běží dál). Po přerušení `grep -rn "if (false)" netlify src` a `git diff netlify`.
+- Čekací smyčky nepsat přes `pgrep -f` se stejným vzorem (chytí samy sebe).
 - Harnessy potřebují symlink `node_modules/playwright` → `$(npm root -g)/playwright`.
+- Komentář s doslovnou uzavírací značkou skriptu v src/ rozbije celou aplikaci.
 
 ## Čeká na J. V.
-- Pokyn k přenosu v25.9.4 z `test-draft` do `test` (a pak `main`).
-- #355, #356: výpočet můstků ↔ přechodové plechy a zastřešení.
-- #346: nastavení Netlify (6 kroků); #172: lokální `npm install --package-lock-only`
-  a Rate Limiting v Netlify.
+- Pokyn k přenosu v25.9.5 do `test` (a pak `main`).
+- Soubory SoD pro #350; #355, #356 (můstky); #346 Netlify; #172 lokálně npm.
 
 ## Další krok (lze spustit hned)
-- #350 slovník šablon pro smlouvy o dílo; #344 soulad dokumentů
-  (N48–N52, N55, N56); #345 přihlašování (B75–B83); #319 revize.
+- #345 přihlašování (B75–B83); #319 revize; N50 — potvrdit, že SKN se po
+  stěnách počítá jen z dvojskla.

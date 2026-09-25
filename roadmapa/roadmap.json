@@ -5419,17 +5419,18 @@
    "hotovoV": "v24.9.6"
   },
   {
-   "id": "344",
-   "vlna": "B",
-   "stav": "ceka",
-   "dulezitost": "stredni",
-   "slozitost": "M",
-   "nazev": "F4: soulad dokumentů, specifikace a příplatků (N48–N52, N55, N56)",
-   "proc": "Hloubkový test 24. 9. 2026 (20. kolo, v24.9.2; ověřeno na v24.9.3): specifikace slibuje vyřazené položky (N48), u nabízených příplatků píše „zajistí objednatel\" (N49), VSG/SKN po stěnách i u Cetrisu (N50), lešení v příplatcích jinak (N51), dva pásy „jiné\" stejného názvu (N52), sleva v přehledu vs. tisk (N55), záporné hodiny (N56).",
-   "detail": "Hotovo v24.9.6: N51 (lešení m × sazba + celý fix v obou místech, 0 m = 0 Kč), N56 (záporné hodiny ručně zadat nejde — OCK montáž/projekce základ i ATYP, PROJ hodiny i rezerva; korekce montáže zůstávají). Zbývá: N48 specifikace slibuje vyřazené položky, N49 znění „lze doplnit – viz příplatkové ceny\" (schváleno), N50 VSG/SKN po stěnách u Cetrisu a „bez\", N52 dva pásy „jiné\" stejného názvu, N55 sleva v přehledu vs. tisk.",
-   "hotovoKdyz": "Každý nález test.",
-   "kde": "`src/techspec.js`, `src/engine.js`, `src/zakazka.js`, `src/ui/kalk_proj.js`",
-   "pozn": "Část hotová ve v24.9.6 (N51, N56 — schváleno J. V. 24. 9. večer); zbytek čeká."
+   "id" : "344",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "M",
+   "nazev" : "F4: soulad dokumentů, specifikace a příplatků (N48–N52, N55, N56)",
+   "proc" : "Hloubkový test 24. 9. 2026 (20. kolo, v24.9.2; ověřeno na v24.9.3): specifikace slibuje vyřazené položky (N48), u nabízených příplatků píše „zajistí objednatel\" (N49), VSG/SKN po stěnách i u Cetrisu (N50), lešení v příplatcích jinak (N51), dva pásy „jiné\" stejného názvu (N52), sleva v přehledu vs. tisk (N55), záporné hodiny (N56).",
+   "detail" : "Hotovo v24.9.6: N51 (lešení m × sazba + celý fix v obou místech, 0 m = 0 Kč), N56 (záporné hodiny ručně zadat nejde — OCK montáž/projekce základ i ATYP, PROJ hodiny i rezerva; korekce montáže zůstávají). Zbývá: N48 specifikace slibuje vyřazené položky, N49 znění „lze doplnit – viz příplatkové ceny\" (schváleno), N50 VSG/SKN po stěnách u Cetrisu a „bez\", N52 dva pásy „jiné\" stejného názvu, N55 sleva v přehledu vs. tisk. HOTOVO v25.9.5: N48 tsRadekVCene (sken3d, dilenskaDok, strecha, odvetrani, montazniNosnik; přechodové plechy z volitelneKatalog), N49 tsPriplatekNabizen + „lze doplnit – viz příplatkové ceny\", N50 vsgFolieM2/sknM2 ze skleněných pásů po stěnách, N52 pořadí v závorce u druhého řádku „jiné\", N55 porovnaniVariant jako cenaNabidkyOck/Proj + kryciKc s haléři.",
+   "hotovoKdyz" : "Splněno: test_specifikace_cena +17, test_oplasteni_steny +7, test_slevy_oddeleni +1, test_kryci +3; mutace jádra 76/76 (3 nové).",
+   "kde" : "`src/techspec.js`, `src/engine.js`, `src/zakazka.js`, `src/ui/kalk_proj.js`",
+   "pozn" : "Část hotová ve v24.9.6 (N51, N56 — schváleno J. V. 24. 9. večer); zbytek čeká.",
+   "hotovoV" : "v25.9.5"
   },
   {
    "id": "345",
@@ -5512,16 +5513,17 @@
    "hotovoV": "v24.9.7"
   },
   {
-   "id": "350",
-   "vlna": "B",
-   "stav": "ceka",
-   "dulezitost": "stredni",
-   "slozitost": "M",
-   "nazev": "Slovník šablon: smlouvy o dílo (nabídka PROJ hotová ve v25.9.3)",
-   "proc": "Zkouška G1 nad skutečnými šablonami (24. 9. 2026): slovník přeloží nabídku OCK na 100 %, nabídku PROJ na 26 %, smlouvy o dílo na 0–3 %. Jejich EN/DE/FR verze by vyšly skoro celé česky; průvodce šablon to od v24.9.5 ukáže (pod 90 % varování).",
-   "detail": "Doplnit slovník pevných textů nabídky PROJ a obou SoD (návrh Claude, odborná a smluvní kontrola J. V. — smluvní texty se nepřekládají strojově bez kontroly), test pokrytí jako u nabídky OCK. — ČÁST PROJ HOTOVÁ 25. 9. 2026 (v25.9.3): 162 hesel šablony nabídky PROJ v2, pokrytí EN/DE/FR 100 % (test v overit_nabidka_proj_word). Zbývají obě smlouvy o dílo.",
-   "hotovoKdyz": "Průvodce ukáže u PROJ a SoD pokrytí přes 90 %; test.",
-   "kde": "`src/preklad.js`, test překladů šablon"
+   "id" : "350",
+   "vlna" : "B",
+   "stav" : "blokovano",
+   "dulezitost" : "stredni",
+   "slozitost" : "M",
+   "nazev" : "Slovník šablon: smlouvy o dílo (nabídka PROJ hotová ve v25.9.3)",
+   "proc" : "Zkouška G1 nad skutečnými šablonami (24. 9. 2026): slovník přeloží nabídku OCK na 100 %, nabídku PROJ na 26 %, smlouvy o dílo na 0–3 %. Jejich EN/DE/FR verze by vyšly skoro celé česky; průvodce šablon to od v24.9.5 ukáže (pod 90 % varování).",
+   "detail" : "Doplnit slovník pevných textů nabídky PROJ a obou SoD (návrh Claude, odborná a smluvní kontrola J. V. — smluvní texty se nepřekládají strojově bez kontroly), test pokrytí jako u nabídky OCK. — ČÁST PROJ HOTOVÁ 25. 9. 2026 (v25.9.3): 162 hesel šablony nabídky PROJ v2, pokrytí EN/DE/FR 100 % (test v overit_nabidka_proj_word). Zbývají obě smlouvy o dílo. 25. 9. 2026 večer (v25.9.5): překladač šablon nově přeloží i odstavec se symbolem {{…}}, když ho slovník zná a překlad nese tytéž symboly — ve smlouvách jsou to články s cenou, platbami a pokutami; neznámé vypíše průvodce zvlášť. ZBÝVÁ: slovník obou SoD (čeká na soubory Sablona_SOD_REALIZACE/PROJEKCE od J. V. a smluvní kontrolu překladu).",
+   "hotovoKdyz" : "Průvodce ukáže u PROJ a SoD pokrytí přes 90 %; test.",
+   "kde" : "`src/preklad.js`, test překladů šablon",
+   "cekaNa" : "J. V. — nahrát do sezení Sablona_SOD_REALIZACE.docx a Sablona_SOD_PROJEKCE.docx; smluvní kontrola návrhu překladu"
   },
   {
    "id": "352",
@@ -6124,6 +6126,10 @@
   {
    "text" : "Večer 25. 9. 2026 (engscalc), v25.9.4: F2 + F3 z hloubkového testu — server hlídá minimální marži u slevy (#341) a typy polí zakázky (#340 P1), N47, N53, N54, B84, B86; název souboru v tabulce šablon (#359). Uzavřeny #325, #331, #334, #326 (šablony CN v12 a PROJ v2 zveřejněny na testu i ostrém webu). Ověřeno: sady v Node, test_prava 579, všechny harnessy, mutace serveru.",
    "hotovo" : true
+  },
+  {
+   "text" : "Večer 25. 9. 2026 (engscalc): v25.9.4 přenesena do test (pokyn J. V.); v25.9.5 — #344 N48, N49, N50, N52, N55 (dokumenty souhlasí s cenou) a #350 část: překlad odstavců se symboly v šablonách. Ověřeno: sady v Node, harnessy, mutace jádra 76/76.",
+   "hotovo" : true
   }
   ],
   "pravidla" : [
@@ -6210,7 +6216,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v25.9.4 (engscalc)",
+  "build" : "v25.9.5 (engscalc)",
   "stavKDatu" : "25. 9. 2026"
  },
  "_comment" : [
