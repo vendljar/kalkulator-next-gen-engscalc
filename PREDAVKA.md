@@ -15,7 +15,7 @@ https://claude.ai/artifact/RmrdBw1QbyyBxDLhZcExTq
   `overit_sablona.mjs` 60/60, PROJ v2 `overit_nabidka_proj_word` 51 OK.
 - Ověřeno: sady v Node zelené, test_prava 579, všechny harnessy (kromě
   overit_manual a overit_sod — chybí příručka a šablony SoD v cloudu),
-  nové mutace serveru 5/5; celý mutační běh serveru viz commit dávky.
+  mutace serveru 171/171 chycených (5 nových).
 
 ## Poznámky pro další sezení
 - Šablony pro harnessy: J. V. je nahrál do chatu 25. 9. (CN v12 + EN/DE/FR,

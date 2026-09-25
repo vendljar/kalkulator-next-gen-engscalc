@@ -39,7 +39,7 @@ Dávka F2 + F3 z hloubkového testu 24. 9. 2026 (roadmapa #340, #341).
 Ověřeno: sady v Node zelené (test_schvalovani +13, test_uloziste +19,
 test_kontroly +2, test_kryci_proj_model +2, test_pripona_prvni +3,
 test_docxgen +3), test_prava 579, všechny prohlížečové harnessy včetně
-šablon CN v12 (60/60) a PROJ v2; nové mutace serveru 5/5 chycené.
+šablon CN v12 (60/60) a PROJ v2; mutace serveru 171/171 chycených (z toho 5 nových).
 
 ---
 
