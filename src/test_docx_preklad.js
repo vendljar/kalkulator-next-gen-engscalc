@@ -149,6 +149,24 @@ P.prekladSmaz('test & pokus');
     .filter(k => en.placeholders[k] == null || en.placeholders[k] === '');
   test('překlad neztratil žádný vyplněný placeholder', ztracene.length === 0, ztracene.join(','));
 
+  /* #350: odstavec se symbolem {{…}} se přeloží, když ho slovník zná celý
+   * a překlad nese tytéž symboly; jinak zůstane a vypíše se zvlášť. */
+  {
+    P.prekladNastav('Cena díla činí {{CENA}} bez DPH.', 'en', 'The contract price is {{CENA}} excl. VAT.');
+    P.prekladNastav('Záloha {{ZALOHA}} se platí předem.', 'en', 'The advance is paid beforehand.');   // ztratil symbol
+    const odst = (t) => '<w:p><w:r><w:t>' + t + '</w:t></w:r></w:p>';
+    const xml = '<w:body>' + odst('Cena díla ') .replace('</w:t></w:r></w:p>', '</w:t></w:r><w:r><w:t>činí {{CENA}} bez DPH.</w:t></w:r></w:p>')
+      + odst('Záloha {{ZALOHA}} se platí předem.') + odst('Neznámá věta {{X}}.') + odst('{{OBJEDNATEL}}') + '</w:body>';
+    const st = { celkem: 0, prelozeno: 0, neutralni: 0, chybi: [] };
+    const po = dg.docxPrelozXml(xml, 'en', st);
+    test('#350: známý odstavec se symbolem se přeloží i přes dva runy', po.includes('The contract price is {{CENA}} excl. VAT.'), po);
+    test('#350: překlad, který ztratil symbol, se nepoužije', po.includes('Záloha {{ZALOHA}} se platí předem.') && !po.includes('The advance'), po);
+    test('#350: neznámý odstavec se symbolem zůstane a vypíše se zvlášť',
+      po.includes('Neznámá věta {{X}}.') && (st.symbolove || []).includes('Neznámá věta {{X}}.'), JSON.stringify(st.symbolove));
+    test('#350: odstavec jen ze symbolů se nevypisuje', !(st.symbolove || []).includes('{{OBJEDNATEL}}'));
+    test('#350: do pokrytí se počítá jen přeložený odstavec se symbolem', st.celkem === 1 && st.prelozeno === 1, JSON.stringify(st));
+  }
+
   console.log(fail ? `\n${fail} CHYB (${ok} OK)` : `\nVŠECHNY TESTY DOCX-PŘEKLAD OK (${ok})`);
   process.exit(fail ? 1 : 0);
 })();

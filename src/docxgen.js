@@ -649,7 +649,29 @@ function docxPrelozXml(xml, lang, stat) {
     const sp = spany[i], cely = xml.slice(sp.zac, sp.kon);
     const text = odstavecText(cely);
     if (!text.trim()) continue;
-    if (/\{\{|\}\}/.test(text)) continue;                   // odstavec se symbolem {{…}} se nedotýkáme
+    /* ODSTAVEC SE SYMBOLEM {{…}} (#350, 25. 9. 2026). Do té doby se takový
+     * odstavec přeskakoval celý — u nabídek nevadilo, ve smlouvě o dílo jsou
+     * to ale právě články s cenou, platbami a pokutami („Celková cena díla
+     * byla dohodnuta na {{…}}"), takže by cizojazyčná smlouva měla klíčové
+     * věty česky. Teď se přeloží, když ho slovník zná celý (i se symboly)
+     * a překlad nese PŘESNĚ tytéž symboly — ztracený nebo přidaný symbol by
+     * v dokumentu tiše chyběl. Neznámý odstavec se symbolem se dál nechá
+     * být a do pokrytí se nepočítá; průvodce ho vypíše zvlášť (stat.symbolove),
+     * ať je vidět, co zůstane česky. */
+    if (/\{\{|\}\}/.test(text)) {
+      const sym = (t) => (String(t).match(/\{\{[^{}]*\}\}/g) || []).sort().join('|');
+      const ss = prelozit(text, lang);
+      if (ss && ss.prelozeno && ss.zdroj !== 'neutrální' && sym(ss.text) === sym(text)) {
+        stat.celkem++; stat.prelozeno++;
+        let n = 0;
+        const novy = cely.replace(/<w:t(?:\s[^>]*)?>[\s\S]*?<\/w:t>/g, () =>
+          '<w:t xml:space="preserve">' + (n++ === 0 ? xmlEsc(ss.text) : '') + '</w:t>');
+        xml = xml.slice(0, sp.zac) + novy + xml.slice(sp.kon);
+      } else if (!/^\s*(\{\{[^{}]*\}\}\s*)+$/.test(text)) {
+        (stat.symbolove = stat.symbolove || []).push(text);
+      }
+      continue;
+    }
     const st = prelozit(text, lang);
     stat.celkem++;
     if (st.zdroj === 'neutrální') { stat.neutralni++; continue; }
@@ -666,7 +688,7 @@ function docxPrelozXml(xml, lang, stat) {
  * stat (volitelně) se naplní statistikou: celkem/prelozeno/neutralni/chybi[]. */
 async function docxPrelozSablonu(arrayBuffer, lang, stat) {
   stat = stat || {};
-  stat.celkem = 0; stat.prelozeno = 0; stat.neutralni = 0; stat.chybi = [];
+  stat.celkem = 0; stat.prelozeno = 0; stat.neutralni = 0; stat.chybi = []; stat.symbolove = [];
   if (!lang || lang === 'cz') throw new Error('Zvolte cílový jazyk šablony (EN / DE / FR).');
   const polozky = await zipPrecti(new Uint8Array(arrayBuffer));
   const dekoder = new TextDecoder(), enkoder = new TextEncoder();

@@ -181,7 +181,10 @@ async function sablChybejici(typ, lang) {
     const stat = {};
     await docxPrelozSablonu(cz.data.slice(0), lang, stat);
     const csv = '\ufeff' + ['český text;překlad (' + lang.toUpperCase() + ')']
-      .concat(stat.chybi.map(t => '"' + t.replace(/"/g, '""') + '";')).join('\r\n');
+      .concat(stat.chybi.map(t => '"' + t.replace(/"/g, '""') + '";'))
+      /* #350: odstavce se symbolem {{…}}, které slovník nezná — zůstanou česky
+       * a do procent se nepočítají, proto se vypisují zvlášť. */
+      .concat((stat.symbolove || []).map(t => '"' + t.replace(/"/g, '""') + '";(odstavec se symbolem)')).join('\r\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     a.download = 'sablona_' + typ + '_nepreloz_' + lang + '.csv';
@@ -203,7 +206,8 @@ async function sablPregeneruj(typ, lang) {
     const nazev = zdroj.nazev.replace(/\.docx$/i, '') + '_' + lang.toUpperCase() + '.docx';
     sablPrace('');
     if (!await potvrd(lang.toUpperCase() + ' verze je připravená: přeloženo ' + stat.procenta + ' % odstavců'
-      + (stat.chybi.length ? ', ' + stat.chybi.length + ' zůstalo česky (seznam: „Nepřeložené fráze")' : '') + '.\n\n'
+      + (stat.chybi.length ? ', ' + stat.chybi.length + ' zůstalo česky (seznam: „Nepřeložené fráze")' : '')
+      + ((stat.symbolove || []).length ? '; česky zůstane i ' + stat.symbolove.length + ' odstavců se symbolem {{…}}' : '') + '.\n\n'
       + 'Zveřejnit ji k české verzi ' + cz.verze + '?')) return;
     sablPrace('Zveřejňuji…');
     const o = await onlineSablonaZverejni(typ + '_' + lang, nazev, data, 'vyrobeno z české verze ' + cz.verze, cz.otisk);
@@ -327,6 +331,7 @@ function sablPruvodceHtml() {
       : m.chyba
       ? `<div class="sabl-chyba">${esc(m.chyba)}</div>`
       : `<div>Přeloženo <b>${m.stat.procenta} %</b> odstavců${m.stat.chybi.length ? `, <b>${m.stat.chybi.length}</b> zůstalo česky` : ''}.</div>
+         ${(m.stat.symbolove || []).length ? `<div class="note" style="color:var(--warn)">Česky zůstane i ${m.stat.symbolove.length} odstavců se symbolem {{…}} (např. cena nebo platby) — jsou v seznamu „Nepřeložené fráze".</div>` : ''}
          ${m.stat.procenta < 90 ? '<div class="note" style="color:var(--warn)">Slovník tento dokument zatím nepokrývá — verze by vyšla z velké části česky.</div>' : ''}`;
     /* NAHRÁT VLASTNÍ VERZI (25. 9. 2026, zadání J. V.: „při nahrávání šablon
      * přidej možnost nahrát vlastní verzi jazykové mutace"). Soubor doladěný
