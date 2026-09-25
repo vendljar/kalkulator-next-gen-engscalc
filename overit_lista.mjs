@@ -915,7 +915,7 @@ ok('modul kontrol je v sestavení', k33.logika && k33.panelFn);
 // 11 = 10 z vlny B + „ico" (30. 7. 2026)
 /* 12 = 10 z vlny B + „ico" + „atypBezCeny" (obojí 30. 7. 2026). Číslo je tu
  * napevno schválně: omylem zdvojené pravidlo by se jinak nepoznalo. */
-ok(`pravidel je ${k33.pravidel} (čekám 18 – slevaProjMax po auditu, kapitoly 23. 9., terminAtyp, nadDvermiBez a slevaWord 24. 9., mustky 25. 9. 2026)`, k33.pravidel === 18);
+ok(`pravidel je ${k33.pravidel} (čekám 19 – slevaProjMax po auditu, kapitoly 23. 9., terminAtyp, nadDvermiBez a slevaWord 24. 9., mustky a cenaNula 25. 9. 2026)`, k33.pravidel === 19);
 ok('všechna pravidla jsou varování (úroveň 2)', k33.uroven);
 /* Sestavení nese ukázkový ceník, takže tohle pravidlo svítí vždycky – je to
  * zároveň důkaz, že se panel v čerstvé instalaci opravdu ukáže. */
@@ -944,6 +944,10 @@ ok('tlačítka nabídky nejsou zablokovaná',
 /* Odklepnutí se uloží k variantě a panel na tentýž stav zhasne do klidové
  * podoby; nový problém ho musí rozsvítit znovu. */
 const odklep = await p.evaluate(() => {
+  /* Od 25. 9. 2026 (P2 kola 16) je nulový rozměr ZÁBRANA a zábrana se
+   * odklepnout nedá — nová zakázka má zdvih, šířku i hloubku nulové. Tady se
+   * zkouší odklepnutí VAROVÁNÍ, proto se rozměry nejdřív vyplní. */
+  Z.zdvih = 9; Z.sirka = 1.6; Z.hloubka = 1.8; render();
   kontrolyPotvrd();
   const v = aktivniVarianta(ZAK);
   const poOdklepu = document.querySelector('#page-spec .kontroly-panel');
@@ -1537,7 +1541,7 @@ ok(`tlačítka nabídky zhasla (${zab.zhaslych}/${zab.tlacitek})`,
    zab.tlacitek > 0 && zab.zhaslych === zab.tlacitek);
 ok('zhasnuté tlačítko má v bublině důvod', /ceník/i.test(zab.titulek), zab.titulek);
 ok('kontroly hlásí zábranu vlastním příznakem',
-   zab.brani === true && zab.kodyBrani === 'ukazkovyCenik', zab.kodyBrani);
+   zab.brani === true && zab.kodyBrani.split(',').includes('ukazkovyCenik'), zab.kodyBrani);   // + „rozmery" u prázdné nové zakázky (P2)
 ok('zábrana se nedá odklepnout – tlačítko „Beru na vědomí" zůstává', zab.odklep === true);
 ok('registr dokumentů zná důvod odmítnutí', !!zab.duvod, zab.duvod);
 
