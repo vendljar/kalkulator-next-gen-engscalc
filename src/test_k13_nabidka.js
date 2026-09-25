@@ -87,5 +87,31 @@ const radky = (zak, L) => {
   test('P6: vlastní popis záměru z hlavičky má přednost', vl.POPIS_ZAMERU_OCK === 'Vestavba výtahu do zrcadla schodiště.', vl.POPIS_ZAMERU_OCK);
 }
 
+/* P6 v cizím jazyce (schváleno 25. 9. 2026, překlady ke kontrole). */
+{
+  const zak = zakazka(d => { d.ock.zadani.typSachty = 'interiérová'; });
+  const en = nabidkaData(zak, zak.varianty[0], JEKLY, 'en').placeholders;
+  test('P6 EN: popis záměru přeložený', en.POPIS_ZAMERU_OCK === 'Installation of a lift in a new steel lift shaft structure inside the building.', en.POPIS_ZAMERU_OCK);
+  test('P6 EN: věta o opláštění anglicky', /^Shaft cladding: /.test(en.OPLASTENI_VETA) && !/sklo/.test(en.OPLASTENI_VETA), en.OPLASTENI_VETA);
+}
+
+/* P5 (K13-N56, rozhodnutí J. V. 25. 9. 2026): řádky slevy ve Wordu. */
+{
+  const { odstranPrazdneTsRadky } = require('./docxgen.js');
+  const tr = t => '<w:tr><w:tc><w:p><w:r><w:t>' + t + '</w:t></w:r></w:p></w:tc></w:tr>';
+  const xml = '<w:tbl>' + tr('Cena před slevou {{CENA_PRED_SLEVOU}}') + tr('Sleva {{SLEVA_PROC}} % − {{SLEVA_KC}}')
+    + tr('Výtahová šachta {{CENA_BEZ_DPH}}') + '</w:tbl>';
+  const bez = odstranPrazdneTsRadky(xml, { CENA_PRED_SLEVOU: '100 Kč', SLEVA_PROC: '', SLEVA_KC: '', CENA_BEZ_DPH: '100 Kč' });
+  test('P5: bez slevy řádky „Cena před slevou" a „Sleva" zmizí, cena zůstane',
+    !/CENA_PRED_SLEVOU|SLEVA_KC/.test(bez) && /CENA_BEZ_DPH/.test(bez), bez);
+  const se = odstranPrazdneTsRadky(xml, { CENA_PRED_SLEVOU: '100 Kč', SLEVA_PROC: '5', SLEVA_KC: '5 Kč', CENA_BEZ_DPH: '95 Kč' });
+  test('P5: se slevou řádky zůstanou', /CENA_PRED_SLEVOU/.test(se) && /SLEVA_KC/.test(se));
+  const star = odstranPrazdneTsRadky(xml, {});
+  test('P5: šablona bez dat slevy (jiný dokument) se nemění', star === xml);
+  const zak = zakazka();
+  const ph = nabidkaData(zak, zak.varianty[0], JEKLY, 'cz').placeholders;
+  test('P5: nabídka bez slevy má SLEVA_KC i SLEVA_PROC prázdné', ph.SLEVA_KC === '' && ph.SLEVA_PROC === '', [ph.SLEVA_KC, ph.SLEVA_PROC]);
+}
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

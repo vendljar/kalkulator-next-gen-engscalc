@@ -201,7 +201,11 @@ function nabidkaData(zak, varianta, jekly, lang) {
     POPIS_ZAMERU_OCK: nabidkaPopisZameru(zak, Zv, P),
     OPLASTENI_VETA: (() => {
       const m = ts('materialOplasteni');
-      return nabidkaHodnotaChybi(m) ? '' : P('Opláštění šachty') + ': ' + m + '.';
+      /* Úvod věty se překládá tady, ne slovníkem: „Opláštění šachty" by se
+       * ve slovníku srazilo s nadpisem sekce OPLÁŠTĚNÍ ŠACHTY (velká písmena). */
+      const uvod = { cz: 'Opláštění šachty', en: 'Shaft cladding', de: 'Schachtverkleidung',
+                     fr: 'Bardage de la gaine' }[L] || 'Opláštění šachty';
+      return nabidkaHodnotaChybi(m) ? '' : uvod + ': ' + m + '.';
     })(),
     TS_PRECHODOVE_PLECHY: ts('prechodovePlechy'),
     /* Příčka a stříšky vedle šachty (P10 / K12-N46, 24. 9. 2026). Stříšky
@@ -240,8 +244,12 @@ function nabidkaData(zak, varianta, jekly, lang) {
     DPH_KC: kc(dphKcNum),
     CENA_S_DPH: kc(cenaSDphNum),
     CENA_PRED_SLEVOU: kc(cenaPredSlevou),
-    SLEVA_PROC: slevaP ? String(Math.round(slevaP * 10000) / 100) : '0',
-    SLEVA_KC: kc(slevaKcNum),
+    /* Bez slevy PRÁZDNÉ (P5 / K13-N56, rozhodnutí J. V. 25. 9. 2026): Word
+     * šablona v12 má řádky „Cena před slevou" a „Sleva" a docxgen je podle
+     * prázdného SLEVA_KC vyhodí — nabídka bez slevy je nemá mít. Dřív „0"
+     * a „0,00 Kč", které by se do dokumentu vypsaly. */
+    SLEVA_PROC: slevaP ? String(Math.round(slevaP * 10000) / 100) : '',
+    SLEVA_KC: slevaP ? kc(slevaKcNum) : '',
     /* Symbol zůstává kvůli starším šablonám, ale je VŽDY prázdný (#135):
      * zaokrouhlují se položky, takže žádný dorovnávací řádek nevzniká.
      * Kdyby se klíč zrušil, zůstal by v takové šabloně viset text {{…}}. */

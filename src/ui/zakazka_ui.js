@@ -486,6 +486,9 @@ function nabidkaKarta() {
     <b>Sablona_NABIDKA_CN.docx</b> (složka _CN). Vyplní se hlavička níže, kompletní technická specifikace
     (přesně jak je v záložce Technická specifikace OCK) a ceny z Kalkulace OCK. Popis záměru, platební
     podmínky, termíny a další příplatky doladíte ve Wordu; PDF: Soubor → Uložit jako → PDF.</div>
+    <div class="note" style="font-weight:600;margin-top:10px">Popis záměru (úvodní odstavec nabídky OCK i PROJ):</div>
+    <textarea rows="3" style="width:100%" placeholder="Prázdné = věta podle typu šachty (např. „Přístavba výtahu v nové ocelové konstrukci výtahové šachty k fasádě objektu.“)"
+      oninput="nabidkaProjPopis(this.value)">${esc(ZAK.popisZameru || '')}</textarea>
     <div class="note" style="font-weight:600;margin-top:8px">Co se vyplní do nabídky (živý náhled):</div>
     ${nahled}
     ${typeof kryciPodminkyBlok === 'function' ? kryciPodminkyBlok() : ''}
@@ -900,6 +903,11 @@ async function nabidkaOckDokument() {
       <tr><td>${esc(P('Datum'))}</td><td>${esc(p.DATUM)}</td></tr>
     </table>
     ${nabidkaFotoHtml()}
+    ${/* Popis záměru a věta o opláštění (P6 / K13-N57, schváleno J. V.
+       * 25. 9. 2026) — stejné znění jako v šabloně v12, text z hlavičky
+       * zakázky, jinak podle typu šachty. */
+      p.POPIS_ZAMERU_OCK ? `<h2>${esc(P('Popis záměru'))}</h2><p>${esc(p.POPIS_ZAMERU_OCK)}</p>`
+        + (p.OPLASTENI_VETA ? `<p>${esc(p.OPLASTENI_VETA)}</p>` : '') : ''}
     <h1 class="sekce">${esc('I. ' + P('TECHNICKÁ ČÁST – SPECIFIKACE DODÁVKY'))}</h1>
     ${sekceHtml}
     <h1 class="sekce">${esc(P('B. OBCHODNÍ ČÁST – CENOVÁ NABÍDKA'))}</h1>

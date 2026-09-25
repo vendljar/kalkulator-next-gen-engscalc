@@ -510,6 +510,11 @@ const PREKLAD = {
   /* N58, N58b (24. 9. 2026): výplň nad dveřmi a vedle nich. NÁVRH PŘEKLADU —
    * čeká na odbornou kontrolu J. V. */
   /* P7 / K13-N59 (25. 9. 2026): můstky. NÁVRH PŘEKLADU — kontrola J. V. */
+  /* P6 / K13-N57 (schváleno J. V. 25. 9. 2026): popis záměru a věta o opláštění.
+   * NÁVRH PŘEKLADU — kontrola J. V. */
+  "Přístavba výtahu v nové ocelové konstrukci výtahové šachty k fasádě objektu.": ["Addition of a lift in a new steel lift shaft structure attached to the building facade.","Anbau eines Aufzugs in einer neuen Stahlkonstruktion des Aufzugsschachts an der Gebäudefassade.","Ajout d'un ascenseur dans une nouvelle structure métallique de gaine accolée à la façade du bâtiment."],
+  "Vestavba výtahu v nové ocelové konstrukci výtahové šachty do vnitřního prostoru objektu.": ["Installation of a lift in a new steel lift shaft structure inside the building.","Einbau eines Aufzugs in einer neuen Stahlkonstruktion des Aufzugsschachts im Gebäudeinneren.","Installation d'un ascenseur dans une nouvelle structure métallique de gaine à l'intérieur du bâtiment."],
+  "Šachta je průchozí – nástupiště jsou na čelní i zadní straně.": ["The shaft is a through-type shaft – landings are on both the front and the rear side.","Der Schacht ist ein Durchladeschacht – Zugangsstellen befinden sich an der Vorder- und der Rückseite.","La gaine est traversante – les paliers se trouvent en façade avant et arrière."],
   "MŮSTKY MEZI BUDOVOU A OCK": ["BRIDGES BETWEEN THE BUILDING AND THE STEEL STRUCTURE","BRÜCKEN ZWISCHEN GEBÄUDE UND STAHLKONSTRUKTION","PASSERELLES ENTRE LE BÂTIMENT ET LA STRUCTURE MÉTALLIQUE"],
   "přisazena k fasádě, v jednom nástupišti přes můstek": ["Attached to the facade, at one landing via an access bridge","An die Fassade angebaut, an einer Zugangsstelle über eine Brücke","Accolée à la façade, à un palier par une passerelle"],
   "přisazena k podestám, v jednom nástupišti přes můstek": ["Attached to the landings, at one landing via an access bridge","An die Podeste angebaut, an einer Zugangsstelle über eine Brücke","Accolée aux paliers, à un palier par une passerelle"],

@@ -131,6 +131,7 @@ const TS_SEKCE_NAZVY = ['ZÁKLADNÍ PARAMETRY ŠACHTY', 'KONSTRUKČNÍ ŘEŠENÍ
   'OPLÁŠTĚNÍ ŠACHTY', 'DOPLŇKOVÉ KONSTRUKCE', 'STAVEBNÍ A PŘÍPRAVNÉ PRÁCE',
   'PROJEKČNÍ A PŘÍPRAVNÉ PRÁCE', 'SOUČÁSTÍ DODÁVKY NENÍ'];
 
+const DOCX_SLEVA_KLICE = ['CENA_PRED_SLEVOU', 'SLEVA_PROC', 'SLEVA_KC'];
 function jePrazdnaHodnota(v) {
   const t = String(v == null ? '' : v).trim();
   return t === '' || t === '-' || t === '–' || t === '—';
@@ -175,8 +176,14 @@ function odstranPrazdneTsRadky(xml, ph) {
   const kOdstr = [];
   for (const sp of radkoveSpany(xml)) {
     const obsah = vlastniObsahRadku(xml.slice(sp.zac, sp.kon));
-    const tsKlice = klicePlaceholderu(obsah).filter(k => k.startsWith('TS_'));
+    const klice = klicePlaceholderu(obsah);
+    const tsKlice = klice.filter(k => k.startsWith('TS_'));
     if (tsKlice.length && tsKlice.every(k => (k in ph) && jePrazdnaHodnota(ph[k]))) kOdstr.push(sp);
+    /* ŘÁDKY SLEVY (P5 / K13-N56, 25. 9. 2026): „Cena před slevou" a „Sleva"
+     * zmizí, když nabídka slevu nemá (prázdný SLEVA_KC). Cena před slevou
+     * se plní vždy, proto rozhoduje SLEVA_KC, ne hodnota v řádku. */
+    else if (klice.some(k => DOCX_SLEVA_KLICE.includes(k)) && ('SLEVA_KC' in ph) && jePrazdnaHodnota(ph.SLEVA_KC))
+      kOdstr.push(sp);
   }
   // neodstraňuj nadřazený řádek kvůli vnořenému – ponech jen vnější z překrývajících
   const vyber = kOdstr.filter(sp => !kOdstr.some(o => o !== sp && o.zac <= sp.zac && sp.kon <= o.kon && o.hloubka < sp.hloubka));
