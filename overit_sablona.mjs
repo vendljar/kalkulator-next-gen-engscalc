@@ -270,6 +270,33 @@ if (nalez && +nalez.verze >= 12) {
   test('v12: nezůstal žádný nový symbol {{…}}', !/\{\{(POPIS_ZAMERU_OCK|OPLASTENI_VETA|SLEVA_|CENA_PRED|TS_MUSTKY|TS_PROSKLENA)/.test(se));
 }
 
+/* ---------- JAZYKOVÉ MUTACE ŠABLONY CN (P3 / K14-N63, K16-N84, 25. 9. 2026) ----------
+ * Mutace z české šablony nesmí nechat česky žádný pevný text — ani odstavce
+ * se symbolem („Číslo nabídky: {{…}}", „{{CENA_S_DPH}} včetně DPH",
+ * platební podmínky). A překlad nesmí přestěhovat text přes tabulátor nebo
+ * zalomení, kterými šablona odděluje popisek od symbolu. */
+{
+  console.log('\njazykové mutace šablony (P3)');
+  const pr = require('./src/preklad.js');
+  Object.keys(pr).forEach(k => { globalThis[k] = pr[k]; });
+  const dg = require('./src/docxgen.js');
+  for (const L of ['en', 'de', 'fr']) {
+    const st = {};
+    const out = await dg.docxPrelozSablonu(bufer(), L, st);
+    const ab = await out.arrayBuffer();
+    test(L.toUpperCase() + ': žádný pevný text nezůstal česky', !(st.chybi || []).length, (st.chybi || []).slice(0, 3));
+    test(L.toUpperCase() + ': ani odstavec se symbolem', !(st.symbolove || []).length, (st.symbolove || []).slice(0, 3));
+    test(L.toUpperCase() + ': struktura XML je neporušená', !(await dg.docxXmlVady(ab)).length);
+    const doc = dekoduj((await zipPrecti(new Uint8Array(ab))).find(x => x.nazev === 'word/document.xml').data);
+    const i = doc.indexOf('{{CENA_S_DPH}}');
+    const odst = i < 0 ? '' : doc.slice(Math.max(doc.lastIndexOf('<w:p ', i), doc.lastIndexOf('<w:p>', i)), doc.indexOf('</w:p>', i));
+    const vDph = { en: 'including VAT', de: 'inkl. MwSt.', fr: 'TTC' }[L];
+    test(L.toUpperCase() + ': „' + vDph + '" zůstane za zalomením pod cenou',
+      i < 0 || (odst.indexOf('<w:br/>') > odst.indexOf('{{CENA_S_DPH}}') && odst.indexOf(vDph) > odst.indexOf('<w:br/>')),
+      odst.replace(/<w:rPr>[\s\S]*?<\/w:rPr>/g, '').slice(0, 200));
+  }
+}
+
 function atobDelka(dataUrl) {
   return Buffer.from(String(dataUrl).split(',')[1], 'base64').length;
 }

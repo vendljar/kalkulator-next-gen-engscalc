@@ -145,6 +145,9 @@ console.log('\nšablona Sablona_NABIDKA_PROJ.docx');
     test(L.toUpperCase() + ' verze: slovník pokryje všechny pevné texty (' + st.procenta + ' %)',
       st.chybi.length === 0, [...new Set(st.chybi)].slice(0, 5));
     test(L.toUpperCase() + ' verze má neporušenou strukturu XML', !vadyL.length, vadyL);
+    /* P3 (K14-N63, K16-N84): ani odstavce se symbolem nezůstanou česky. */
+    test(L.toUpperCase() + ' verze: přeložené jsou i odstavce se symboly {{…}} (P3)',
+      !(st.symbolove || []).length, (st.symbolove || []).slice(0, 5));
   }
 }
 

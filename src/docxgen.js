@@ -656,6 +656,83 @@ function odstavecText(odst) {
   const casti = odst.match(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g) || [];
   return casti.map(t => xmlUnesc(t.replace(/^<w:t(?:\s[^>]*)?>/, '').replace(/<\/w:t>$/, ''))).join('');
 }
+/* PŘEKLAD PO ÚSECÍCH MEZI SYMBOLY (P3 / K14-N63, K16-N84, 25. 9. 2026).
+ *
+ * Odstavec se symbolem {{…}}, který slovník nezná celý („Číslo nabídky:
+ * {{CISLO_NABIDKY}}", „{{CENA_S_DPH}} včetně DPH"), zůstával v cizojazyčné
+ * šabloně česky, i když slovník znal každý jeho kus. A v šablonách dělí text
+ * a symbol TABULÁTORY a ZALOMENÍ (`<w:tab/>`, `<w:br/>`) — překlad celého
+ * odstavce do prvního `<w:t>` by text přestěhoval přes ně a rozbil rozvržení.
+ *
+ * Proto se odstavec rozloží na ÚSEKY mezi symboly a oddělovači, přeloží se
+ * jejich jádra (bez okrajových mezer a znamének) a každé jádro se vrátí do
+ * běhu, kde začínalo. Symboly, tabulátory, zalomení i formátování běhů zůstávají
+ * na místě. Všechno, nebo nic: když některý úsek slovník nezná, zůstane česky
+ * celý odstavec (půlka věty v cizím jazyce je horší) a vypíše se.
+ * Dvojtečka a tečka na konci se srovnají podle originálu (francouzsky „ :").
+ * Vrací { ok, xml } nebo { ok: true, prazdne: true } (není co překládat —
+ * jen symboly, čísla a znaménka). */
+const DOCX_ODDELOVAC_RE = /<w:(?:tab|br|cr)(?:\s[^>]*)?\/>/;
+function docxMaOddelovace(odst) {
+  const zac = odst.search(/<w:t(?:\s[^>]*)?>/), kon = odst.lastIndexOf('</w:t>');
+  return zac >= 0 && kon > zac && DOCX_ODDELOVAC_RE.test(odst.slice(zac, kon));
+}
+function docxPrelozUseky(odst, lang, prelozit) {
+  const re = /<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>|<w:(?:tab|br|cr)(?:\s[^>]*)?\/>/g;
+  const uzly = [];                 // prvky textu: { zac, kon, pozice v T, text }
+  let T = '', m;                   // spojený text; oddělovač = \u0001
+  while ((m = re.exec(odst))) {
+    if (m[1] !== undefined) {                              // <w:t>…</w:t>
+      const text = xmlUnesc(m[1]);
+      uzly.push({ zac: m.index, kon: m.index + m[0].length, t: T.length, text });
+      T += text;
+    } else if (T.length) T += '\u0001';
+  }
+  const hranice = [];
+  const reSym = /\{\{[^{}]*\}\}/g;
+  while ((m = reSym.exec(T))) hranice.push([m.index, m.index + m[0].length]);
+  const useky = [];
+  const rozdel = (a, b) => {
+    let s = a;
+    for (let k = a; k <= b; k++) if (k === b || T[k] === '\u0001') { if (k > s) useky.push([s, k]); s = k + 1; }
+  };
+  let a = 0;
+  hranice.forEach(([s, e]) => { rozdel(a, s); a = e; });
+  rozdel(a, T.length);
+  const upravy = [];
+  for (const [s, e] of useky) {
+    const u = T.slice(s, e);
+    if (!/\p{L}/u.test(u)) continue;
+    const pred = u.match(/^[^\p{L}\p{N}]*/u)[0];
+    const za = u.slice(pred.length).match(/[^\p{L}\p{N}:.!?*]*$/u)[0];
+    const jadro = u.slice(pred.length, u.length - za.length);
+    if (!jadro) continue;
+    const st = prelozit(jadro, lang);
+    if (st && st.zdroj === 'neutrální') continue;
+    if (!st || !st.prelozeno) return { ok: false };
+    let pr = String(st.text);
+    const dvojtecka = /:\s*$/.test(jadro), maDvojtecku = /\s?:\s*$/.test(pr);
+    if (dvojtecka && !maDvojtecku) pr = pr.replace(/\s+$/, '') + (lang === 'fr' ? ' :' : ':');
+    else if (!dvojtecka && maDvojtecku) pr = pr.replace(/\s?:\s*$/, '');
+    if (/\.\s*$/.test(jadro) && !/[.!?…]\s*$/.test(pr)) pr += '.';
+    upravy.push({ s: s + pred.length, e: e - za.length, text: pr });
+  }
+  if (!upravy.length) return { ok: true, prazdne: true };
+  let novy = odst;
+  for (let i = uzly.length - 1; i >= 0; i--) {             // odzadu, ať sedí pozice
+    const n = uzly[i];
+    let t = '';
+    for (let k = 0; k < n.text.length; k++) {
+      const p = n.t + k;
+      const up = upravy.find(x => p >= x.s && p < x.e);
+      if (up) { if (p === up.s) t += up.text; continue; }
+      t += n.text[k];
+    }
+    if (t === n.text) continue;
+    novy = novy.slice(0, n.zac) + '<w:t xml:space="preserve">' + xmlEsc(t) + '</w:t>' + novy.slice(n.kon);
+  }
+  return { ok: true, xml: novy };
+}
 /* přeloží pevný text v jednom XML dílu dokumentu */
 function docxPrelozXml(xml, lang, stat) {
   const prelozit = typeof trStav === 'function' ? trStav : null;
@@ -680,15 +757,24 @@ function docxPrelozXml(xml, lang, stat) {
     if (/\{\{|\}\}/.test(text)) {
       const sym = (t) => (String(t).match(/\{\{[^{}]*\}\}/g) || []).sort().join('|');
       const ss = prelozit(text, lang);
-      if (ss && ss.prelozeno && ss.zdroj !== 'neutrální' && sym(ss.text) === sym(text)) {
+      /* Celý odstavec do prvního běhu jen tehdy, když text nedělí tabulátor
+       * ani zalomení — jinak by se přestěhoval přes ně (P3). */
+      if (ss && ss.prelozeno && ss.zdroj !== 'neutrální' && sym(ss.text) === sym(text) && !docxMaOddelovace(cely)) {
         stat.celkem++; stat.prelozeno++;
         let n = 0;
         const novy = cely.replace(/<w:t(?:\s[^>]*)?>[\s\S]*?<\/w:t>/g, () =>
           '<w:t xml:space="preserve">' + (n++ === 0 ? xmlEsc(ss.text) : '') + '</w:t>');
         xml = xml.slice(0, sp.zac) + novy + xml.slice(sp.kon);
-      } else if (!/^\s*(\{\{[^{}]*\}\}\s*)+$/.test(text)) {
-        (stat.symbolove = stat.symbolove || []).push(text);
+        continue;
       }
+      const u = docxPrelozUseky(cely, lang, prelozit);
+      if (u.ok && u.prazdne) continue;                      // jen symboly a znaménka
+      if (u.ok && sym(odstavecText(u.xml)) === sym(text)) {
+        stat.celkem++; stat.prelozeno++;
+        xml = xml.slice(0, sp.zac) + u.xml + xml.slice(sp.kon);
+        continue;
+      }
+      (stat.symbolove = stat.symbolove || []).push(text);
       continue;
     }
     const st = prelozit(text, lang);

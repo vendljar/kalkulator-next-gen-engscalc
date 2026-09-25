@@ -181,7 +181,9 @@ const PREKLAD = {
   "aktualizace": ["updated", "Aktualisierung", "mise à jour"],
   "Autorská práva – EngineersCZ si vyhrazuje vlastnické a autorské právo k ilustracím, výkresům, skicám a jiným dokumentům a vzorkům. Tyto musí být na požádání neprodleně vráceny a nesmí být předány třetím stranám bez souhlasu EngineersCZ.": ["Copyright - EngineersCZ reserves the ownership and copyright of illustrations, drawings, sketches and other documents and samples. These must be returned immediately on request and may not be passed on to third parties without EngineersCZ's consent.", "Urheberrechte: - An Abbildungen, Zeichnungen, Skizzen, sonstigen Unterlagen und Mustern behält sich EngineersCZ die Eigentums- und Urheberrechte vor; sie sind auf Verlangen unverzüglich zurückzusenden und dürfen nicht an Dritte ohne Einverständnis von EngineersCZ weitergegeben werden.", "Droits d’auteur – EngineersCZ se réserve la propriété et les droits d’auteur des illustrations, dessins, croquis et autres documents et échantillons. Ceux-ci doivent être restitués immédiatement sur demande et ne peuvent être transmis à des tiers sans l’accord d’EngineersCZ."],
   "b. k úpravě celkové ceny může dojít po přesném zaměření a vyhodnocení statiky": ["b. based on full site survey and statics report the final price may be modified", "b. Auf der Grundlage der vollständigen Vermessung vor Ort und des Statikberichts kann der Endpreis angepasst werden", "b. le prix final peut être ajusté après le relevé complet du site et le rapport de calcul statique"],
-  "bez DPH": ["Without VAT", "Ohne MwSt.", "hors TVA"],
+  /* „excl. VAT" / „zzgl. MwSt." ladí s „včetně DPH" (P3, 25. 9. 2026) —
+   * „Without VAT" s velkým W stálo uprostřed řádku za cenou. */
+  "bez DPH": ["excl. VAT", "zzgl. MwSt.", "hors TVA"],
   "Bez časového omezení v běžné pracovní době, možnost práce o víkendech": ["No time restrictions during normal working hours, possibility of working at weekends.", "Keine zeitlichen Einschränkungen während der normalen Arbeitszeiten, Möglichkeit der Arbeit an Wochenenden.", "Sans restriction horaire pendant les heures ouvrées normales, possibilité de travailler le week-end."],
   "cca": ["approx.", "ca.", "env."],
   "CHLAZENÍ POMOCÍ VENTILÁTORU": ["VENTILATION FAN IN THE SHAFT", "VENTILATOR IM SCHACHT", "VENTILATEUR DANS LA GAINE"],
@@ -961,6 +963,23 @@ const PREKLAD = {
   "ST": ["ST", "ST", "ST"],
   "POHLED NA OBJEKT": ["VIEW OF THE BUILDING", "ANSICHT DES GEBÄUDES", "VUE DU BÂTIMENT"],
   "Navazující PROJEKTOVÉ a INŽENÝRSKÉ ČINNOSTI": ["Follow-up DESIGN and ENGINEERING SERVICES", "Anschließende PLANUNGS- und INGENIEURLEISTUNGEN", "PRESTATIONS DE CONCEPTION et D'INGÉNIERIE ultérieures"],
+  /* ÚSEKY KOLEM SYMBOLŮ A PLATEBNÍ PODMÍNKY (P3 / K14-N63, K16-N84,
+   * 25. 9. 2026). Mutace šablon CN v12 a PROJ v2 nechávaly česky hlavičku
+   * („Email:", „Tel:", „Adresa stavby / projekt:"), „{{CENA_S_DPH}} včetně
+   * DPH", jednotky u cen PROJ a věty platebních podmínek se symbolem. Krátké
+   * popisky se překládají po úsecích (docxPrelozUseky), věty celé i se
+   * symboly. NÁVRH PŘEKLADU — čeká na odbornou kontrolu J. V. */
+  "Email": ["Email", "E-Mail", "E-mail"],
+  "Tel": ["Phone", "Tel.", "Tél."],
+  "Kontakt": ["Contact", "Kontakt", "Contact"],
+  "Adresa stavby / projekt": ["Site address / project", "Baustellenadresse / Projekt", "Adresse du chantier / projet"],
+  "včetně DPH": ["including VAT", "inkl. MwSt.", "TTC"],
+  "1 varianta": ["1 variant", "1 Variante", "1 variante"],
+  "DPH {{DPH_SAZBA}} % ({{DPH_NAZEV}} sazba)": ["VAT {{DPH_SAZBA}} % ({{DPH_NAZEV}} rate)", "MwSt. {{DPH_SAZBA}} % ({{DPH_NAZEV}})", "TVA {{DPH_SAZBA}} % (taux {{DPH_NAZEV}})"],
+  "Platnost této nabídky je {{PODM_PLATNOST_NABIDKY}} od data uvedeného v záhlaví.": ["This offer is valid for {{PODM_PLATNOST_NABIDKY}} from the date stated in the header.", "Dieses Angebot gilt {{PODM_PLATNOST_NABIDKY}} ab dem im Kopf angegebenen Datum.", "La présente offre est valable {{PODM_PLATNOST_NABIDKY}} à compter de la date indiquée dans l’en-tête."],
+  "Splatnost faktur {{PODM_SPLATNOST_DNI_CISLO}} dní ode dne vystavení.": ["Invoices are payable within {{PODM_SPLATNOST_DNI_CISLO}} days of the date of issue.", "Die Rechnungen sind innerhalb von {{PODM_SPLATNOST_DNI_CISLO}} Tagen ab Ausstellungsdatum zahlbar.", "Les factures sont payables sous {{PODM_SPLATNOST_DNI_CISLO}} jours à compter de leur date d’émission."],
+  "Po ukončení výroby, dodání materiálu na stavbu a po zahájení prací bude vystaven 2. dílčí daňový doklad ve výši {{PODM_FAKTURA2_PROC}} (+ DPH) z celkové ceny díla. Úhrada tohoto daňového dokladu je podmínkou pro předání díla objednateli.": ["After completion of production, delivery of the material to the site and commencement of the works, the 2nd partial tax invoice will be issued in the amount of {{PODM_FAKTURA2_PROC}} (+ VAT) of the total contract price. Payment of this invoice is a condition for the handover of the work to the client.", "Nach Abschluss der Fertigung, Lieferung des Materials auf die Baustelle und Beginn der Arbeiten wird die 2. Teilrechnung in Höhe von {{PODM_FAKTURA2_PROC}} (zzgl. MwSt.) des Gesamtpreises ausgestellt. Die Bezahlung dieser Rechnung ist Voraussetzung für die Übergabe des Werks an den Auftraggeber.", "Après l’achèvement de la fabrication, la livraison du matériel sur le chantier et le début des travaux, la 2e facture partielle sera émise pour un montant de {{PODM_FAKTURA2_PROC}} (+ TVA) du prix total de l’ouvrage. Le paiement de cette facture conditionne la remise de l’ouvrage au client."],
+  "1. dílčí daňový doklad ve výši {{PODM_ZALOHA1_PROC}} (+ DPH) z celkové ceny díla bude vystaven po podpisu SoD. Úhrada tohoto daňového dokladu je podmínkou pro dodržení předem dohodnutých realizačních termínů.": ["The 1st partial tax invoice in the amount of {{PODM_ZALOHA1_PROC}} (+ VAT) of the total contract price will be issued after the contract for work is signed. Payment of this invoice is a condition for meeting the agreed completion dates.", "Die 1. Teilrechnung in Höhe von {{PODM_ZALOHA1_PROC}} (zzgl. MwSt.) des Gesamtpreises wird nach Unterzeichnung des Werkvertrags ausgestellt. Die Bezahlung dieser Rechnung ist Voraussetzung für die Einhaltung der vorab vereinbarten Ausführungstermine.", "La 1re facture partielle d’un montant de {{PODM_ZALOHA1_PROC}} (+ TVA) du prix total de l’ouvrage sera émise après la signature du contrat d’entreprise. Le paiement de cette facture conditionne le respect des délais de réalisation convenus au préalable."],
 };
 
 /* ---- normalizace klíče (tolerance k mezerám, diakritickým uvozovkám,
