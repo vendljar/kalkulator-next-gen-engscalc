@@ -483,7 +483,9 @@ export default async (req) => {
       return '';
     };
     const overeniId = (k, v) => {
-      const p = ULO.uloIdProblemy(v);
+      /* #340: i obnova hlídá typy polí; zamčené varianty zálohy jsou doklad
+       * (proto se zakázka předá i jako „uložená verze" — zámky přeskočí). */
+      const p = ULO.uloIdProblemy(v).concat(ULO.uloTypyProblemy(v, v));
       return p.length ? ULO.uloIdProblemyText(p) : '';
     };
     await obnovMapu(b, s, zaloha.zakazky, rezim, zapisovat, 'z/', kontrolaZamku, overeniId);

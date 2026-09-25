@@ -1070,6 +1070,27 @@ console.log('\n===== #341 (B71): MINIMÁLNÍ MARŽE U SLEVY HLÍDÁ SERVER =====
     { cenik: cenikJinak(), cenikProj: ZC.zkusebniCenikProj(), slevy: { ...NAST_SL, minMarze: 0 } }, cAdmin);
 }
 
+console.log('\n===== #340 (P1): TYPY POLÍ ZAKÁZKY HLÍDÁ SERVER =====\n');
+{
+  const typ = zakazkaCislo('2026 - OPR - CN - 0975');
+  typ.varianty[0].data.cenik.dph = '<img src=x onerror=alert(1)>';
+  const odp = await post(zakazky, 'http://x/api/zakazky', { zakazka: typ }, cObch);
+  const telo = await odp.json();
+  test('#340: skript v číselném poli ceníku server odmítne (400)',
+    odp.status === 400 && /nesprávného typu/.test(telo.chyba || '') && /cenik\.dph/.test(telo.chyba || ''),
+    odp.status + ' ' + JSON.stringify(telo));
+  test('#340: hláška nevrací samotnou hodnotu', !/onerror/.test(telo.chyba || ''));
+  const vycet = zakazkaCislo('2026 - OPR - CN - 0976');
+  vycet.varianty[0].data.ock.zadani.typPortalu = "x' onmouseover='alert(1)";
+  const odpV = await post(zakazky, 'http://x/api/zakazky', { zakazka: vycet }, cObch);
+  test('#340: volbu mimo výčet server odmítne (400)', odpV.status === 400,
+    odpV.status + ' ' + JSON.stringify(await odpV.json()));
+  const dobra = zakazkaCislo('2026 - OPR - CN - 0977');
+  dobra.varianty[0].data.cenik.dph = '';
+  test('#340: prázdno v čísle („prázdno není nula") se uloží',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: dobra }, cObch)).status === 200);
+}
+
 /* ============================================================
  * BEZPEČNOSTNÍ AUDIT 22. 8. 2026 — 2. dávka: B4, B6, B7, B8, B9, B13
  * ============================================================ */

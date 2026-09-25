@@ -464,5 +464,40 @@ test('různá id nejsou duplicita', uloIdProblemy({ varianty: [{ id: 'v1' }, { i
     H([o('2026-09-10', 'nocni-otisk'), o('2026-09-23', 'nocni-otisk')], ted).posledni.den === '2026-09-23');
 }
 
+console.log('\n--- #340 (P1): typy polí zadání a ceníku ---');
+{
+  global.OPLASTENI_TYPY = eng.OPLASTENI_TYPY;
+  const T = U.uloTypyProblemy;
+  const nova = () => zk.novaZakazka();
+  const s1 = (fn) => { const z = nova(); fn(z.varianty[0].data); return T(z); };
+  test('#340: čerstvá zakázka projde', T(nova()).length === 0, JSON.stringify(T(nova())));
+  const XSS = '<img src=x onerror=alert(1)>';
+  test('#340: B69 — skript v sazbě DPH (číslo) neprojde', s1(d => { d.cenik.dph = XSS; }).some(p => /cenik\.dph/.test(p.kde)));
+  test('#340: B69 — skript v typu portálu (výčet) neprojde', s1(d => { d.ock.zadani.typPortalu = XSS; }).some(p => /typPortalu/.test(p.kde)));
+  test('#340: B69 — skript v zasklení neprojde', s1(d => { d.ock.zadani.zaskleni = '"><b>'; }).length === 1);
+  test('#340: skript v poli ano/ne (pravda) neprojde',
+    s1(d => { const k = Object.keys(d.ock.zadani).find(x => typeof eng.DEFAULT_ZADANI[x] === 'boolean'); d.ock.zadani[k] = XSS; }).length === 1);
+  test('#340: B70 — skript v typu pásu opláštění neprojde', s1(d => {
+    d.ock.zadani.oplasteni = { rezim: 'poStenach', steny: { A: { odM: 0, pasy: [{ typ: "x');alert(1);//", doM: null }] } } };
+  }).some(p => /pasy\[0\]\.typ/.test(p.kde)));
+  test('#340: platný pás opláštění projde', s1(d => {
+    d.ock.zadani.oplasteni = { rezim: 'poStenach', steny: { A: { odM: 0, pasy: [{ typ: 'C.cetrisKc', doM: 2.5 }, { typ: 'bez', doM: null }] } } };
+  }).length === 0);
+  test('#340: dimenze profilu jiného tvaru neprojde', s1(d => { d.ock.zadani.profily.sloupek.dim = '80x80<svg>'; }).length === 1);
+  test('#340: PROJ — text místo hodin neprojde', s1(d => { d.proj.zadani.sekce[0].polozky[0].hodiny = XSS; }).some(p => /hodiny/.test(p.kde)));
+  test('#340: PROJ — skript v sazbě položky neprojde', s1(d => { d.proj.zadani.sekce[0].polozky[0].sazba = XSS; }).length === 1);
+  test('#340: PROJ ceník — objekt místo čísla neprojde', s1(d => { const k = Object.keys(d.proj.cenik).find(x => typeof d.proj.cenik[x] === 'number'); d.proj.cenik[k] = { a: 1 }; }).length === 1);
+  test('#340: prázdno není nula — "" v čísle projde', s1(d => { d.cenik.dph = ''; d.ock.zadani.mustekSirkaMm = ''; }).length === 0);
+  test('#340: číslo jako text („12", „3,5") projde', s1(d => { d.ock.zadani.mustekSirkaMm = '1200'; d.cenik.dph = '0,21'; }).length === 0);
+  test('#340: volba Ano/Ne uložená jako 0/1 projde', s1(d => { const k = Object.keys(d.ock.zadani).find(x => typeof eng.DEFAULT_ZADANI[x] === 'boolean'); d.ock.zadani[k] = 1; }).length === 0);
+  test('#340: klíče mimo vzor se nekontrolují', s1(d => { d.ock.zadani.nejakyNovyKlic = XSS; }).length === 0);
+  const zam = nova(); zam.varianty[0].data.cenik.dph = 'starý tvar'; zam.varianty[0].zamek = { zamceno: true };
+  test('#340: varianta zamčená už v uložené verzi se neposuzuje (doklad)', T(zam, JSON.parse(JSON.stringify(zam))).length === 0);
+  test('#340: NOVĚ zamčená varianta se posuzuje', T(zam, null).length === 1);
+  const t = U.uloIdProblemyText(s1(d => { d.cenik.dph = XSS; }));
+  test('#340: hláška jmenuje cestu, ne hodnotu', /cenik\.dph/.test(t) && t.indexOf('<img') < 0, t);
+  test('#340: nesmyslné vstupy nepadají', T(null).length === 0 && T({ varianty: [null, {}, { data: 5 }, { data: { ock: 7, proj: 'x' } }] }).length >= 0);
+}
+
 console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
 process.exit(fail ? 1 : 0);

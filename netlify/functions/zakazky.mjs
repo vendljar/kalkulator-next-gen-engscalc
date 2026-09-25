@@ -107,6 +107,12 @@ export default async (req) => {
    *    V aplikaci to hlídá obrazovka, ale server mluví s kýmkoli — upravený
    *    klient by jinak mohl přepsat obsah odeslané nabídky a zámek si nechat. */
   const stara = await s.cti('z/' + jmeno);
+  /* Typy polí zadání a ceníku (#340, návrh P1): čísla, pravdy a volby musí
+   * mít tvar, jaký dává výchozí zadání. Varianty zamčené už v uložené verzi
+   * se přeskakují — doklad se neposuzuje. */
+  const spatneTypy = ULO.uloTypyProblemy(zak, stara);
+  if (spatneTypy.length)
+    return json({ ok: false, chyba: 'Zakázka nese ' + ULO.uloIdProblemyText(spatneTypy) + '.' }, 400);
 
   /* ZNAČKY UKÁZKOVÉHO A PRÁZDNÉHO CENÍKU SE DO DATABÁZE NEUKLÁDAJÍ
    * (P2, nálezy N2/N3, 21. 9. 2026).

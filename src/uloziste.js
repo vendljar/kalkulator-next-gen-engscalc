@@ -712,13 +712,160 @@ function uloIdProblemy(zak) {
   uloDuplicity(zak.prilohy, 'příloha', out);
   return out;
 }
+/* TYPY POLÍ ZAKÁZKY HLÍDÁ SERVER (#340, návrh P1 hloubkového testu
+ * 24. 9. 2026). Server do té doby kontroloval jen id, kid, velikost a zámky;
+ * čísla a volby zadání i ceníku mohly nést libovolný JSON. Na několika
+ * místech se taková hodnota kreslí do HTML (B69, B70) — escapování v UI je
+ * první vrstva, tohle je druhá, která kryje celou třídu i u zakázek, které
+ * už v databázi leží.
+ *
+ * Vzorem je výchozí zadání a ceník (DEFAULT_ZADANI, DEFAULT_ZADANI_PROJ,
+ * DEFAULT_CENIK, DEFAULT_CENIK_PROJ): kde vzor nese ČÍSLO, smí přijít číslo,
+ * prázdno ('' — „prázdno není nula"), null nebo text, který je číslem
+ * („12", „3,5"); kde nese PRAVDU/NEPRAVDU, smí přijít boolean, 0/1 nebo
+ * prázdno. Volby s pevným výčtem (typ šachty, portál, zasklení, režim
+ * opláštění, typ pásu, lakování) musí být z výčtu; dimenze profilu má tvar
+ * „80x80". Nic se nepřevádí — hodnota, která nesedí, zakázku zastaví
+ * a hláška řekne kde (převod by mlčky měnil data a Model 1 musí zůstat 1:1).
+ *
+ * Klíče, které vzor nezná, se nekontrolují (ruční přepisy, starší pole).
+ * Varianta zamčená už v uložené verzi se přeskakuje: odeslaná nabídka je
+ * doklad, její data server nemění ani neposuzuje (hlídá je B53) — a starší
+ * zámek může nést tvar dat z doby před změnou vzoru. */
+const ULO_CISLO_TEXT = /^\s*-?\d+(?:[.,]\d+)?\s*$/;
+const ULO_TOKEN = /^[A-Za-z0-9_.-]{0,80}$/;
+const ULO_DIMENZE = /^\d{1,4}(?:[x×]\d{1,4}){1,2}$/;
+const ULO_VYCTY = {
+  'ock.zadani.typSachty': ['exteriérová', 'interiérová'],
+  'ock.zadani.typPortalu': ['zapuštěný', 'předsazený'],
+  'ock.zadani.zaskleni': ['na terče', 'mezi příčníky'],
+  'ock.zadani.oplasteni.rezim': ['standard', 'poStenach'],
+  'cenik.lak.rezim': ['tomas', 'lakovna'],
+};
+/* Pole, která vzor vede jako '' nebo null, ale jsou to čísla. */
+const ULO_CISLA_NAVIC = ['ock.zadani.mustekHloubkaMm', 'ock.zadani.mustekSirkaMm',
+                         'ock.zadani.zamecnikAtypKc'];
+function uloCisloSedi(h) {
+  return h === null || h === undefined || h === ''
+    || (typeof h === 'number' && isFinite(h))
+    || (typeof h === 'string' && ULO_CISLO_TEXT.test(h));
+}
+function uloPravdaSedi(h) {
+  return h === null || h === undefined || h === '' || typeof h === 'boolean' || h === 0 || h === 1;
+}
+function uloTypyStrom(vzor, h, cesta, out) {
+  if (h === null || h === undefined) return;
+  if (typeof h !== 'object' || Array.isArray(h)) { out.push({ kde: cesta, duvod: 'typ' }); return; }
+  Object.keys(vzor).forEach(k => {
+    const v = vzor[k], x = h[k], c = cesta + '.' + k;
+    if (ULO_VYCTY[c]) {
+      if (x !== undefined && x !== null && x !== '' && ULO_VYCTY[c].indexOf(x) < 0) out.push({ kde: c, duvod: 'typ' });
+    } else if (ULO_CISLA_NAVIC.indexOf(c) >= 0 || typeof v === 'number') {
+      if (!uloCisloSedi(x)) out.push({ kde: c, duvod: 'typ' });
+    } else if (typeof v === 'boolean') {
+      if (!uloPravdaSedi(x)) out.push({ kde: c, duvod: 'typ' });
+    } else if (Array.isArray(v)) {
+      if (x !== undefined && x !== null && !Array.isArray(x)) out.push({ kde: c, duvod: 'typ' });
+    } else if (v && typeof v === 'object') {
+      uloTypyStrom(v, x, c, out);
+    }
+  });
+}
+/* Části, které vzor nepopíše (null nebo pole ve vzoru), mají vlastní pravidla. */
+function uloTypyOplasteni(opl, cesta, out) {
+  const steny = opl && opl.steny;
+  if (steny === null || steny === undefined) return;
+  if (typeof steny !== 'object' || Array.isArray(steny)) { out.push({ kde: cesta, duvod: 'typ' }); return; }
+  const typy = (typeof OPLASTENI_TYPY !== 'undefined') ? OPLASTENI_TYPY.map(t => t.id) : null;
+  Object.keys(steny).forEach(k => {
+    const st = steny[k], c = cesta + '.' + k;
+    if (st === null || st === undefined) return;
+    if (typeof st !== 'object' || Array.isArray(st)) { out.push({ kde: c, duvod: 'typ' }); return; }
+    if (!uloCisloSedi(st.odM)) out.push({ kde: c + '.odM', duvod: 'typ' });
+    if (st.pasy === null || st.pasy === undefined) return;
+    if (!Array.isArray(st.pasy)) { out.push({ kde: c + '.pasy', duvod: 'typ' }); return; }
+    st.pasy.forEach((p, i) => {
+      const cp = c + '.pasy[' + i + ']';
+      if (!p || typeof p !== 'object') { out.push({ kde: cp, duvod: 'typ' }); return; }
+      if (typy ? typy.indexOf(p.typ) < 0 : !ULO_TOKEN.test(String(p.typ || ''))) out.push({ kde: cp + '.typ', duvod: 'typ' });
+      if (!uloCisloSedi(p.doM)) out.push({ kde: cp + '.doM', duvod: 'typ' });
+    });
+  });
+}
+function uloTypyProfily(profily, cesta, out) {
+  if (!profily || typeof profily !== 'object') return;
+  Object.keys(profily).forEach(k => {
+    const p = profily[k];
+    if (p && typeof p === 'object' && p.dim !== undefined && p.dim !== null && p.dim !== ''
+        && !ULO_DIMENZE.test(String(p.dim))) out.push({ kde: cesta + '.' + k + '.dim', duvod: 'typ' });
+  });
+}
+const ULO_PROJ_CISLA = ['hodiny', 'rezerva', 'sazbaKc', 'cena', 'naklad', 'sazbaPrepis', 'cenaPrepis'];
+function uloTypyProj(zadani, cesta, out) {
+  const sekce = zadani && zadani.sekce;
+  if (sekce === null || sekce === undefined) return;
+  if (!Array.isArray(sekce)) { out.push({ kde: cesta + '.sekce', duvod: 'typ' }); return; }
+  sekce.forEach((s, i) => {
+    const cs = cesta + '.sekce[' + i + ']';
+    if (!s || typeof s !== 'object') { out.push({ kde: cs, duvod: 'typ' }); return; }
+    if (!ULO_TOKEN.test(String(s.key || ''))) out.push({ kde: cs + '.key', duvod: 'typ' });
+    if (!uloCisloSedi(s.prirazkaPct)) out.push({ kde: cs + '.prirazkaPct', duvod: 'typ' });
+    if (s.doprava && typeof s.doprava === 'object')
+      ['km', 'pausal'].forEach(k => { if (!uloCisloSedi(s.doprava[k])) out.push({ kde: cs + '.doprava.' + k, duvod: 'typ' }); });
+    if (s.polozky === null || s.polozky === undefined) return;
+    if (!Array.isArray(s.polozky)) { out.push({ kde: cs + '.polozky', duvod: 'typ' }); return; }
+    s.polozky.forEach((p, j) => {
+      const cp = cs + '.polozky[' + j + ']';
+      if (!p || typeof p !== 'object') { out.push({ kde: cp, duvod: 'typ' }); return; }
+      ULO_PROJ_CISLA.forEach(k => { if (!uloCisloSedi(p[k])) out.push({ kde: cp + '.' + k, duvod: 'typ' }); });
+      ['typ', 'sazba', 'fixKey'].forEach(k => {
+        if (p[k] !== undefined && p[k] !== null && !ULO_TOKEN.test(String(p[k]))) out.push({ kde: cp + '.' + k, duvod: 'typ' });
+      });
+      if (!uloPravdaSedi(p.vyrazeno)) out.push({ kde: cp + '.vyrazeno', duvod: 'typ' });
+    });
+  });
+}
+function uloTypyProblemy(zak, stara) {
+  const out = [];
+  if (!zak || !Array.isArray(zak.varianty)) return out;
+  const g = (n) => (typeof globalThis !== 'undefined' && globalThis[n]) || null;
+  const vzZad = (typeof DEFAULT_ZADANI !== 'undefined') ? DEFAULT_ZADANI : g('DEFAULT_ZADANI');
+  const vzCen = (typeof DEFAULT_CENIK !== 'undefined') ? DEFAULT_CENIK : g('DEFAULT_CENIK');
+  const vzCenP = (typeof DEFAULT_CENIK_PROJ !== 'undefined') ? DEFAULT_CENIK_PROJ : g('DEFAULT_CENIK_PROJ');
+  const stare = (stara && Array.isArray(stara.varianty)) ? stara.varianty : [];
+  zak.varianty.forEach(v => {
+    if (!v || !v.data || typeof v.data !== 'object') return;
+    const sv = stare.find(x => x && x.id === v.id);
+    if (sv && sv.zamek && sv.zamek.zamceno) return;                // doklad — nesahat
+    const d = v.data, pred = 'varianta ' + String(v.nazev || v.id || '?') + ': ';
+    const vlastni = [];
+    if (d.ock && typeof d.ock === 'object') {
+      if (vzZad) uloTypyStrom(vzZad, d.ock.zadani, 'ock.zadani', vlastni);
+      const z = d.ock.zadani;
+      if (z && typeof z === 'object') {
+        uloTypyOplasteni(z.oplasteni, 'ock.zadani.oplasteni.steny', vlastni);
+        uloTypyProfily(z.profily, 'ock.zadani.profily', vlastni);
+      }
+    }
+    if (vzCen) uloTypyStrom(vzCen, d.cenik, 'cenik', vlastni);
+    if (d.proj && typeof d.proj === 'object') {
+      uloTypyProj(d.proj.zadani, 'proj.zadani', vlastni);
+      if (vzCenP) uloTypyStrom(vzCenP, d.proj.cenik, 'proj.cenik', vlastni);
+    }
+    vlastni.forEach(p => out.push({ kde: pred + p.kde, duvod: 'typ' }));
+  });
+  return out;
+}
+
 /* Věta pro odmítnutí (server i obnova): tvar a duplicita se hlásí zvlášť,
  * aby člověk věděl, co má opravit. */
 function uloIdProblemyText(problemy) {
   const dupl = problemy.filter(p => p.duvod === 'duplicita');
   const delka = problemy.filter(p => p.duvod === 'delka');
   const priloha = problemy.filter(p => p.duvod === 'priloha');
-  const tvar = problemy.filter(p => p.duvod !== 'duplicita' && p.duvod !== 'delka' && p.duvod !== 'priloha');
+  const typ = problemy.filter(p => p.duvod === 'typ');
+  const tvar = problemy.filter(p => p.duvod !== 'duplicita' && p.duvod !== 'delka' && p.duvod !== 'priloha'
+    && p.duvod !== 'typ');
   const casti = [];
   if (tvar.length) casti.push('identifikátor v nepovoleném tvaru (' + tvar.map(x => x.kde).join(', ')
     + ') — povolená jsou písmena, číslice, tečka, podtržítko a pomlčka');
@@ -729,6 +876,10 @@ function uloIdProblemyText(problemy) {
     + ') — nejvýš 200 znaků');
   if (priloha.length) casti.push('přílohu s nepovoleným obsahem (' + priloha.map(x => x.id).join(', ')
     + ') — příloha smí nést jen data souboru');
+  /* Typy polí (#340): cesty, ne hodnoty — hodnota může být právě ten skript. */
+  if (typ.length) casti.push('hodnotu nesprávného typu (' + typ.slice(0, 5).map(x => x.kde).join(', ')
+    + (typ.length > 5 ? ' a další ' + (typ.length - 5) : '')
+    + ') — číselné pole nese text, nebo volba není z nabídky');
   return casti.join('; ');
 }
 
@@ -767,7 +918,7 @@ function uloZalohaHlidka(otisky, ted) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
+  module.exports = { uloTypyProblemy, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
                      uloNorm, uloSlova, uloCisloVyplneno, uloKlicSouboru,
                      uloJmenoSouboru, uloJeZakazkovySoubor,
                      ULO_HLAVICKA_POLE, uloHlavickaChybi, uloHlavickaVyplnena, uloUlozeniStav,

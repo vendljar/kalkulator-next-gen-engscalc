@@ -781,6 +781,22 @@ const MUTACE = [
     nahrad: "      continue;",
     proc: 'server by marži spočítal, ale podmaržovou slevu stejně pustil' },
 
+  /* ---------- #340 (P1): typy polí zakázky ---------- */
+  { nazev: '#340: typy polí zakázky se na serveru nekontrolují', soubor: 'functions/zakazky.mjs',
+    hledej: "  if (spatneTypy.length)\n    return json({ ok: false, chyba: 'Zakázka nese ' + ULO.uloIdProblemyText(spatneTypy) + '.' }, 400);",
+    nahrad: "  if (false)\n    return json({ ok: false, chyba: 'Zakázka nese ' + ULO.uloIdProblemyText(spatneTypy) + '.' }, 400);",
+    proc: 'skript uložený v číselném poli by se spustil tomu, kdo zakázku otevře (B69)' },
+
+  { nazev: '#340: číslo jako text se nekontroluje', soubor: '../src/uloziste.js',
+    hledej: "    || (typeof h === 'string' && ULO_CISLO_TEXT.test(h));",
+    nahrad: "    || (typeof h === 'string');",
+    proc: 'do čísla by šel libovolný text, třeba značka <img onerror>' },
+
+  { nazev: '#340: výčet voleb se nekontroluje', soubor: '../src/uloziste.js',
+    hledej: "      if (x !== undefined && x !== null && x !== '' && ULO_VYCTY[c].indexOf(x) < 0) out.push({ kde: c, duvod: 'typ' });",
+    nahrad: "      if (false) out.push({ kde: c, duvod: 'typ' });",
+    proc: 'typ portálu nebo zasklení by nesl skript, který se kreslí do volby' },
+
   /* ---------- zálohy ---------- */
   { nazev: 'zálohu stáhne kdokoli', soubor: 'functions/zaloha.mjs',
     hledej: '  const { chyba } = await vyzadujRoli(req, \'Administrátor\');',
