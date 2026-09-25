@@ -321,32 +321,73 @@ function zamekVysledekSpocti(v, jekly, build) {
  * ne čísla nabídky — ta se neporovnávají. */
 const ZAMEK_OVERENI_CASTI = ['ock', 'proj', 'kurzEurKc'];
 
+/* Částky, bez kterých žádný dokument nevznikne (cena bez DPH, DPH, s DPH
+ * u OCK; cena a celkem u PROJ; kurz EUR). Musí být v OBOU výsledcích —
+ * jinak by „chybějící klíč není rozdíl" (P6) pustil podvrh, který souhrn
+ * prostě vynechá, a server by mu dal razítko „shoda". */
+const ZAMEK_OVERENI_JADRO = ['ock.souhrn.zakladCena', 'ock.souhrn.zakladDph', 'ock.souhrn.zakladSDph',
+  'proj.souhrn.cena', 'proj.souhrn.celkem', 'kurzEurKc'];
+
 /* Porovná výsledek ze zámku s přepočtem. Obě strany mají projít JSONem
  * (klientská jím prošla cestou po síti — NaN je v ní null). Čísla se srovnávají
  * s tolerancí na poslední bit, ne na koruny: jádro používá jen sčítání,
  * násobení a zaokrouhlení, takže stejný kód nad stejnými daty dává shodu
  * přesnou a každý skutečný rozdíl je rozdíl. Vrací počet rozdílů a prvních
- * `max` cest — cesty, ne hodnoty: výsledek nese i náklady firmy. */
+ * `max` cest — cesty, ne hodnoty: výsledek nese i náklady firmy.
+ *
+ * JEN PENÍZE A MNOŽSTVÍ (P6 / K15-N67, 25. 9. 2026). Do té doby se porovnával
+ * celý strom znak po znaku — i názvy položek, dodatkové texty, příznaky a klíče,
+ * které přidala nebo ubrala jiná verze aplikace. Lišta zámku pak u poctivé
+ * nabídky hlásila „čísla nesouhlasí", stačilo tisknout ze stránky načtené před
+ * nasazením nové verze. Teď platí:
+ *   – porovnávají se ČÍSLA (peníze, množství, hodiny); číslo proti čemukoli
+ *     jinému (null z NaN, text) je rozdíl,
+ *   – texty a příznaky (ano/ne) se neporovnávají,
+ *   – klíč, který je jen v jednom výsledku, se přeskočí — kromě jádra
+ *     (ZAMEK_OVERENI_JADRO), to musí mít obě strany,
+ *   – řádky se párují podle názvu (`origNazev`, `nazev`, `key`), když jsou
+ *     v obou polích jednoznačné: položka navíc v jedné verzi pak ostatní
+ *     řádky neposune; jinak po pořadí. Řádek jen na jedné straně rozdílem
+ *     není — jeho částka se promítne do součtů, a ty se porovnávají. */
 function zamekVysledekRozdily(klient, server, max) {
   const lim = max || 5;
   const out = { pocet: 0, cesty: [] };
   const pridej = (c) => { out.pocet++; if (out.cesty.length < lim) out.cesty.push(c); };
   const stejneCislo = (a, b) => Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
+  const cislo = (x) => typeof x === 'number';
+  const idRadku = (o) => {
+    if (!o || typeof o !== 'object' || Array.isArray(o)) return '';
+    for (const k of ['origNazev', 'nazev', 'key']) if (typeof o[k] === 'string' && o[k]) return k + ':' + o[k];
+    return '';
+  };
+  const podleId = (pole) => {
+    const m = new Map();
+    for (const x of pole) { const id = idRadku(x); if (!id || m.has(id)) return null; m.set(id, x); }
+    return m;
+  };
   const projdi = (a, b, c) => {
-    if (a === b) return;
-    if (typeof a === 'number' && typeof b === 'number') { if (!stejneCislo(a, b)) pridej(c); return; }
-    const oa = !!a && typeof a === 'object', ob = !!b && typeof b === 'object';
-    if (!oa || !ob || Array.isArray(a) !== Array.isArray(b)) { pridej(c); return; }
+    if (a === undefined || b === undefined) return;          // klíč jen v jednom výsledku
+    if (cislo(a) || cislo(b)) { if (!(cislo(a) && cislo(b) && stejneCislo(a, b))) pridej(c); return; }
+    if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return;   // texty, příznaky, null
+    if (Array.isArray(a) !== Array.isArray(b)) return;       // jiný tvar = jiná verze, ne jiná čísla
     if (Array.isArray(a)) {
-      if (a.length !== b.length) pridej(c + '.length');
+      const mb = podleId(b);
+      if (mb && podleId(a)) {
+        a.forEach((x, i) => { const y = mb.get(idRadku(x)); if (y !== undefined) projdi(x, y, c + '[' + i + ']'); });
+        return;
+      }
       for (let i = 0; i < Math.min(a.length, b.length); i++) projdi(a[i], b[i], c + '[' + i + ']');
       return;
     }
-    const klice = Object.keys(a);
-    Object.keys(b).forEach(k => { if (klice.indexOf(k) < 0) klice.push(k); });
-    klice.forEach(k => projdi(a[k], b[k], c + '.' + k));
+    Object.keys(a).forEach(k => {
+      if (Object.prototype.hasOwnProperty.call(b, k)) projdi(a[k], b[k], c + '.' + k);
+    });
   };
   ZAMEK_OVERENI_CASTI.forEach(k => projdi(klient ? klient[k] : undefined, server ? server[k] : undefined, k));
+  const hodnota = (o, cesta) => cesta.split('.').reduce((x, k) => (x && typeof x === 'object') ? x[k] : undefined, o);
+  ZAMEK_OVERENI_JADRO.forEach(cesta => {
+    if (hodnota(klient, cesta) === undefined || hodnota(server, cesta) === undefined) pridej(cesta);
+  });
   return out;
 }
 
@@ -593,7 +634,7 @@ function zamekCteniDuvod(zak, ja) {
 
 if (typeof module !== 'undefined')
   module.exports = { zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
-                     zamekVysledekSpocti, ZAMEK_OVERENI_CASTI, zamekVysledekRozdily, zamekOvereni, zamekOvereniText,
+                     zamekVysledekSpocti, ZAMEK_OVERENI_CASTI, ZAMEK_OVERENI_JADRO, zamekVysledekRozdily, zamekOvereni, zamekOvereniText,
                      zamekCteniSmiOdemknout, zamekCteniDuvod, priponaPrvniNalez, priponaPrvniOprav,
                      variantaPripona, dalsiPriponaVarianty, variantaCislo,
                      PRIPONY_SCHEMA, variantaPriponaVZakazce, zamekCisloZakladSedi,

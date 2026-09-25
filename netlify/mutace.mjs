@@ -575,9 +575,15 @@ const MUTACE = [
     proc: 'dalším uložením by klient rozpor přepsal na „shoda" nebo ho smazal' },
 
   { nazev: 'B59: porovnání výsledku přehlédne změněnou částku', soubor: '../src/zamek.js',
-    hledej: "    if (typeof a === 'number' && typeof b === 'number') { if (!stejneCislo(a, b)) pridej(c); return; }",
-    nahrad: "    if (typeof a === 'number' && typeof b === 'number') return;",
+    hledej: "    if (cislo(a) || cislo(b)) { if (!(cislo(a) && cislo(b) && stejneCislo(a, b))) pridej(c); return; }",
+    nahrad: "    if (cislo(a) || cislo(b)) return;",
     proc: 'ověření by prošlo i s podvrženými čísly — razítko by lhalo „shoda"' },
+  /* P6 (K15-N67): „klíč jen v jednom výsledku není rozdíl" má výjimku —
+   * jádro dokumentu. Bez ní by prošel podvrh, který souhrn vynechá. */
+  { nazev: 'P6: chybějící jádro dokumentu (souhrn) projde jako shoda', soubor: '../src/zamek.js',
+    hledej: "    if (hodnota(klient, cesta) === undefined || hodnota(server, cesta) === undefined) pridej(cesta);",
+    nahrad: "",
+    proc: 'zmrazený výsledek bez souhrnu by dostal razítko „shoda" a dokumenty by tiskly prázdno' },
 
   /* ČR sloupec položky „jen zahraniční" (#290, druhé kolo revize).
    * Oprava sedí za `typeof` strážemi, takže se dá vypnout i omylem — třeba

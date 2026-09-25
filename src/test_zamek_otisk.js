@@ -179,14 +179,70 @@ function odesli(zak, v, opts) {
   test('B59: rozdíl v posledním bitu rozdílem není', zm.zamekVysledekRozdily(e, kopie()).pocet === 0);
   const k = kopie(); k.kurzEurKc = 25;
   test('B59: jiný kurz EUR je rozdíl', zm.zamekVysledekRozdily(k, kopie()).cesty[0] === 'kurzEurKc');
-  const s = kopie(); s.ock.sekce = s.ock.sekce || {};
-  const klicSekce = Object.keys(r.ock.sekce || {})[0];
-  if (klicSekce && Array.isArray(r.ock.sekce[klicSekce])) {
-    s.ock.sekce[klicSekce] = s.ock.sekce[klicSekce].slice(1);
-    test('B59: chybějící řádek sekce je rozdíl', zm.zamekVysledekRozdily(s, kopie()).pocet >= 1);
-  }
+  const klicSekce = Object.keys(r.ock.sekce || {}).find(k => Array.isArray(r.ock.sekce[k]) && r.ock.sekce[k].length > 2);
+  test('příprava: výsledek má sekci s řádky', !!klicSekce, Object.keys(r.ock.sekce || {}));
+  const s = kopie(); s.ock.sekce[klicSekce][1].sMarzi += 100;
+  test('B59: jiná cena řádku sekce je rozdíl', zm.zamekVysledekRozdily(s, kopie()).pocet >= 1);
+  const mn = kopie(); mn.ock.sekce[klicSekce][0].mnozstvi += 1;
+  test('P6: jiné množství řádku je rozdíl (množství se porovnává)', zm.zamekVysledekRozdily(mn, kopie()).pocet >= 1);
+
+  /* JEN PENÍZE A MNOŽSTVÍ, CHYBĚJÍCÍ KLÍČ NENÍ ROZDÍL (P6 / K15-N67, 25. 9. 2026).
+   *
+   * Lišta zámku hlásila „čísla odeslané nabídky nesouhlasí" i u poctivých
+   * nabídek. Porovnání bralo celý strom výsledku znak po znaku — i texty
+   * (název položky, dodatkový text), příznaky a klíče, které přidala nebo
+   * ubrala jiná verze aplikace. Stačilo, aby obchodník tiskl ze stránky
+   * načtené před nasazením nové verze. Rozpor v číslech se chytá dál. */
   const n = kopie(); n.ock.podvrzenyKlic = 1;
-  test('B59: přidaný klíč je rozdíl', zm.zamekVysledekRozdily(n, kopie()).cesty[0] === 'ock.podvrzenyKlic');
+  test('P6: klíč jen v jednom výsledku (jiná verze aplikace) rozdílem není',
+    zm.zamekVysledekRozdily(n, kopie()).pocet === 0, zm.zamekVysledekRozdily(n, kopie()));
+  const bezKlice = kopie(); delete bezKlice.ock.odvozene;
+  test('P6: chybějící klíč rozdílem není', zm.zamekVysledekRozdily(bezKlice, kopie()).pocet === 0,
+    zm.zamekVysledekRozdily(bezKlice, kopie()));
+  const txt = kopie(); txt.ock.sekce[klicSekce][0].nazev = 'Přejmenovaná položka';
+  txt.ock.sekce[klicSekce][0].popisNabidka = 'Nový dodatkový text';
+  test('P6: jiný text (název, dodatkový text) rozdílem není', zm.zamekVysledekRozdily(txt, kopie()).pocet === 0,
+    zm.zamekVysledekRozdily(txt, kopie()));
+  const prz = kopie(); prz.ock.sekce[klicSekce][0].prepsano = !prz.ock.sekce[klicSekce][0].prepsano;
+  test('P6: jiný příznak (ano/ne) rozdílem není', zm.zamekVysledekRozdily(prz, kopie()).pocet === 0);
+  const nan = kopie(); nan.ock.souhrn.zakladCena = null;         // NaN projde JSONem jako null
+  test('P6: číslo proti prázdnu (NaN) je rozdíl', zm.zamekVysledekRozdily(nan, kopie()).cesty[0] === 'ock.souhrn.zakladCena',
+    zm.zamekVysledekRozdily(nan, kopie()));
+  const str = kopie(); str.ock.souhrn.zakladCena = String(r.ock.souhrn.zakladCena + 1);
+  test('P6: číslo proti textu je rozdíl', zm.zamekVysledekRozdily(str, kopie()).pocet === 1);
+  /* Řádek navíc na začátku sekce (novější verze přidala položku): řádky se
+   * párují podle názvu, takže se ostatní neposunou a nehlásí se jako rozdíl. */
+  const radekNavic = kopie();
+  radekNavic.ock.sekce[klicSekce].unshift(Object.assign({}, radekNavic.ock.sekce[klicSekce][0],
+    { nazev: 'Nová položka verze X', origNazev: 'Nová položka verze X', sMarzi: 0, naklad: 0, marze: 0, mnozstvi: 0 }));
+  test('P6: řádek navíc jen v jednom výsledku ostatní řádky neposune',
+    zm.zamekVysledekRozdily(radekNavic, kopie()).pocet === 0, zm.zamekVysledekRozdily(radekNavic, kopie()));
+  const bezRadku = kopie(); bezRadku.ock.sekce[klicSekce].splice(1, 1);
+  test('P6: řádek, který v jednom výsledku chybí, rozdílem není (částka je v součtech)',
+    zm.zamekVysledekRozdily(bezRadku, kopie()).pocet === 0, zm.zamekVysledekRozdily(bezRadku, kopie()));
+  const prehozene = kopie(); prehozene.ock.sekce[klicSekce].reverse();
+  test('P6: jiné pořadí řádků rozdílem není', zm.zamekVysledekRozdily(prehozene, kopie()).pocet === 0,
+    zm.zamekVysledekRozdily(prehozene, kopie()));
+  const podvrhRadku = kopie(); podvrhRadku.ock.sekce[klicSekce].reverse();
+  podvrhRadku.ock.sekce[klicSekce][0].sMarzi += 1;
+  test('P6: a změněná cena se najde i v přeházených řádcích', zm.zamekVysledekRozdily(podvrhRadku, kopie()).pocet === 1,
+    zm.zamekVysledekRozdily(podvrhRadku, kopie()));
+  /* Jádro dokumentu musí mít obě strany — jinak by podvrh, který souhrn
+   * prostě vynechá, dostal razítko „shoda". */
+  const bezSouhrnu = kopie(); delete bezSouhrnu.ock.souhrn;
+  const rBez = zm.zamekVysledekRozdily(bezSouhrnu, kopie());
+  test('P6: výsledek bez souhrnu OCK (jádro dokumentu) shodný není',
+    rBez.pocet === 3 && rBez.cesty.indexOf('ock.souhrn.zakladCena') >= 0, rBez);
+  const prazdny = zm.zamekVysledekRozdily({ ock: {}, proj: {} }, kopie());
+  test('P6: prázdný podvrh {ock:{}, proj:{}} shodný není (chybí všech šest částek jádra)',
+    prazdny.pocet === zm.ZAMEK_OVERENI_JADRO.length, prazdny);
+  const bezKurzu = kopie(); delete bezKurzu.kurzEurKc;
+  test('P6: chybějící kurz EUR je rozdíl (bez něj nejde cizojazyčný dotisk)',
+    zm.zamekVysledekRozdily(bezKurzu, kopie()).cesty[0] === 'kurzEurKc');
+  /* Pole čísel (bez názvů) se dál porovnává po pořadí. */
+  const pole = kopie(); pole.ock.testCisla = [1, 2, 3]; const pole2 = kopie(); pole2.ock.testCisla = [1, 2, 4];
+  test('P6: pole čísel se porovná po pořadí', zm.zamekVysledekRozdily(pole, pole2).cesty[0] === 'ock.testCisla[2]',
+    zm.zamekVysledekRozdily(pole, pole2));
   const mnoho = kopie(); Object.keys(mnoho.ock.souhrn).forEach(x => { mnoho.ock.souhrn[x] = -12345; });
   const rm = zm.zamekVysledekRozdily(mnoho, kopie());
   test('B59: cest je nejvýš pět, počet rozdílů je celý', rm.cesty.length === 5 && rm.pocet > 5, rm);

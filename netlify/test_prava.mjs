@@ -921,6 +921,31 @@ const nactiB59 = async (soubor) => (await (await get(zakazky,
   test('B59: a razítko nedostane (ani podvržené)',
     !('overeni' in (await nactiB59('2026-OPR-CN-0853.json')).varianty[0].zamek));
 }
+{
+  /* P6 (K15-N67, 25. 9. 2026): poctivá nabídka ze stránky načtené před
+   * nasazením nové verze. Čísla sedí, liší se jen tvar — klíč navíc, klíč,
+   * který starší verze neměla, jiný text položky. Do opravy to server
+   * razítkoval „nesouhlasí" a lišta zámku strašila u každého, kdo nabídku
+   * otevřel. */
+  const z = odesliB59(zakazkaSCeny('2026 - OPR - CN - 0854'), (r) => {
+    r.ock.klicZeStarsiVerze = { poznamka: 'jen ve starší verzi', pocet: 3 };
+    delete r.ock.odvozene;
+    const sekce = Object.keys(r.ock.sekce).find(k => Array.isArray(r.ock.sekce[k]) && r.ock.sekce[k].length);
+    r.ock.sekce[sekce][0].popisNabidka = 'Dodatkový text z jiné verze';
+  });
+  const odp = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: z }, cObch)).json();
+  const ov = (await nactiB59('2026-OPR-CN-0854.json')).varianty[0].zamek.overeni;
+  test('P6: jiný tvar výsledku při stejných číslech = shoda (bez varování)',
+    odp.ok === true && !odp.varovani && ov && ov.stav === 'shoda', JSON.stringify({ odp, ov }));
+}
+{
+  /* …ale podvrh, který jádro dokumentu vynechá, shodu nedostane. */
+  const z = odesliB59(zakazkaSCeny('2026 - OPR - CN - 0855'), (r) => { delete r.ock.souhrn; });
+  await post(zakazky, 'http://x/api/zakazky', { zakazka: z }, cObch);
+  const ov = (await nactiB59('2026-OPR-CN-0855.json')).varianty[0].zamek.overeni;
+  test('P6: výsledek bez souhrnu OCK = nesouhlasí (jádro dokumentu chybí)',
+    ov && ov.stav === 'nesouhlasi' && ov.cesty.indexOf('ock.souhrn.zakladCena') >= 0, JSON.stringify(ov));
+}
 
 /* ============================================================
  * BEZPEČNOSTNÍ AUDIT 22. 8. 2026 — nálezy B1, B2, B3
