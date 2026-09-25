@@ -71,7 +71,7 @@ function sablPrace(text) { SABL_UI.prace = text || ''; nastRefresh(); }
 function sablBunkaCz(rej, typ) {
   const m = sablonaPlatna(rej, typ);
   if (!m) return { cls: 'miss', label: 'chybí', sub: 'nezveřejněno' };
-  return { cls: 'ok', label: '✓ v' + m.verze, sub: 'zveřejněno ' + sablDatum(m.kdy) };
+  return { cls: 'ok', label: '✓ v' + m.verze, sub: 'zveřejněno ' + sablDatum(m.kdy), soubor: m.nazev };
 }
 function sablBunkaJazyk(rej, typ, lang) {
   const st = sablonaMutaceStav(rej, typ, lang);
@@ -80,12 +80,17 @@ function sablBunkaJazyk(rej, typ, lang) {
   if (st.stav === 'bezZdroje') return { cls: 'warn', label: '⚠ bez češtiny', sub: 'česká šablona chybí', stav: st };
   if (st.stav === 'zastarala')
     return { cls: 'warn sablona-zastarala', label: '⚠ ' + (st.zVerze ? 'z v' + st.zVerze : 'zastaralá'),
-             sub: 'starší čeština – přegenerovat', stav: st };
+             sub: 'starší čeština – přegenerovat', soubor: st.meta && st.meta.nazev, stav: st };
   return { cls: 'ok', label: '✓ ' + (st.podleCasu ? 'v' + st.meta.verze : 'z v' + (cz ? cz.verze : '?')),
-           sub: st.podleCasu ? 'zveřejněno ' + sablDatum(st.meta.kdy) : 'k platné češtině', stav: st };
+           sub: st.podleCasu ? 'zveřejněno ' + sablDatum(st.meta.kdy) : 'k platné češtině',
+           soubor: st.meta && st.meta.nazev, stav: st };
 }
+/* Číslo „v10" je pořadí zveřejnění na serveru, ne číslo z názvu souboru —
+ * proto se pod ním ukazuje i nahraný soubor (J. V. 25. 9. 2026: nahrál CN v12
+ * a tabulka hlásila v10). */
 function sablChip(b) {
-  return `<span class="sabl-chip ${b.cls}">${esc(b.label)}</span><span class="sabl-sub">${esc(b.sub || '')}</span>`;
+  return `<span class="sabl-chip ${b.cls}">${esc(b.label)}</span><span class="sabl-sub">${esc(b.sub || '')}</span>`
+    + (b.soubor ? `<span class="sabl-sub sabl-soubor" title="${esc(b.soubor)}">${esc(String(b.soubor).replace(/\.docx$/i, ''))}</span>` : '');
 }
 
 /* ---------- hlavní obrazovka ---------- */

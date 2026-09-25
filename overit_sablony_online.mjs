@@ -176,6 +176,8 @@ test('rejstřík v aplikaci hned zná platnou verzi',
   zverejneni.meta && zverejneni.meta.verze === 1 && zverejneni.meta.zverejnil === 'spravce@priklad.cz');
 test('obrazovka Nastavení → Šablony verzi ukazuje (tabulka dokument × jazyk, #349)',
   await page.evaluate(() => /data-sabl-typ="nabidkaProj"[\s\S]*?✓ v1/.test(nastSablony())));
+test('pod číslem verze je i název nahraného souboru (v10 ≠ soubor v12, 25. 9.)',
+  await page.evaluate(() => /data-sabl-typ="nabidkaProj"[\s\S]*?sabl-soubor" title="Sablona_NABIDKA_PROJ\.docx"/.test(nastSablony())));
 test('obrazovka nabízí přepínač režimu',
   await page.evaluate(() => /PŘÍSNÝ|MĚKKÝ/.test(nastSablony())));
 
