@@ -53,7 +53,9 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* G1 (24. 9. 2026): zdroj jazykové verze a vrácení šablony. */
      'test_sablony.mjs',
      /* Dávka A kola 16 (25. 9. 2026): pohled obchodníka, role slevy (P1). */
-     'test_obchodnik.mjs'];
+     'test_obchodnik.mjs',
+     /* Dávka B kola 16 (25. 9. 2026): adresa stavby v rejstříku (P15). */
+     'test_rejstrik.mjs'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -585,6 +587,13 @@ const MUTACE = [
     hledej: "  if (relace.jmeno) zak.upravilJmeno = String(relace.jmeno); else delete zak.upravilJmeno;",
     nahrad: "",
     proc: 'hláška o kolizi verzí by jmenovala, koho si klient vymyslel' },
+  /* P15 (K16-N85): adresy starších záznamů rejstříku se doplňují po dávkách
+   * při ukládání — bez toho by se zakázky uložené před opravou podle adresy
+   * nenašly nikdy. */
+  { nazev: 'P15: adresy starších záznamů rejstříku se nedoplní', soubor: 'functions/zakazky.mjs',
+    hledej: "  const bezAdresy = ULO.uloRejstrikBezAdresy(stavajici).filter(x => x !== jmeno);",
+    nahrad: "  const bezAdresy = [];",
+    proc: 'starší zakázky by v hledání podle adresy stavby chyběly napořád' },
   /* P6 (K15-N67): „klíč jen v jednom výsledku není rozdíl" má výjimku —
    * jádro dokumentu. Bez ní by prošel podvrh, který souhrn vynechá. */
   { nazev: 'P6: chybějící jádro dokumentu (souhrn) projde jako shoda', soubor: '../src/zamek.js',

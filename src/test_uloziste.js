@@ -52,6 +52,7 @@ const zakazka = (cislo, opts) => {
   if (opts.nazevAkce != null) z.nazevAkce = opts.nazevAkce;
   if (opts.objednatel != null) z.objednatel = opts.objednatel;
   if (opts.datum != null) z.datum = opts.datum;
+  if (opts.adresa != null) z.adresa = opts.adresa;
   return z;
 };
 
@@ -159,6 +160,37 @@ test('hledání podle akce s diakritikou', uloHledej(R, 'Šachta').length === 1)
 test('dvě slova musí sedět obě', uloHledej(R, 'brno dvorak').length === 1);
 test('dvě slova z různých zakázek nevrátí nic', uloHledej(R, 'brno novak').length === 0);
 test('neznámé slovo nevrátí nic', uloHledej(R, 'xyz').length === 0);
+
+/* ---------- 5b) adresa stavby v rejstříku a v hledání (P15 / K16-N85, 25. 9. 2026) ----------
+ * Obchodník hledá zakázku podle místa („ta na Kornpfortstraße"), ne podle
+ * čísla. Rejstřík adresu stavby nenesl, takže ji hledání nemohlo najít. */
+{
+  const za = zakazka('2026 - OPR - CN - 0510', { nazevAkce: 'Bytový dům', objednatel: 'Stavby a. s.',
+    datum: '2026-07-26', adresa: 'Kornpfortstraße 12, Koblenz' });
+  const ra = uloRejstrikZaznam(za, { razitko: '2026-07-31T08:00:00.000Z' });
+  test('P15: záznam rejstříku nese adresu stavby', ra.adresa === 'Kornpfortstraße 12, Koblenz', JSON.stringify(ra));
+  test('P15: adresa přežije normalizaci', uloRejstrikNormalizuj([ra])[0].adresa === 'Kornpfortstraße 12, Koblenz');
+  const RA = uloRejstrikSloucit(R, ra);
+  test('P15: hledání podle adresy stavby (malými, bez diakritiky)', uloHledej(RA, 'kornpfortstra').length === 1,
+    JSON.stringify(uloHledej(RA, 'kornpfortstra')));
+  /* Německé „ß" se píše i jako „ss" — obojí musí najít totéž. */
+  test('P15: „strasse" najde „Straße" i naopak', uloHledej(RA, 'kornpfortstrasse').length === 1
+    && uloHledej(RA, 'Kornpfortstraße').length === 1, JSON.stringify(uloHledej(RA, 'kornpfortstrasse')));
+  test('P15: hledání podle města z adresy', uloHledej(RA, 'koblenz').length === 1);
+  test('P15: slovo z adresy se kombinuje s ostatními poli', uloHledej(RA, 'koblenz stavby').length === 1
+    && uloHledej(RA, 'koblenz dvorak').length === 0);
+  test('P15: zakázka bez adresy má v záznamu prázdnou adresu (ne chybějící)',
+    uloRejstrikZaznam(zakazka('2026 - OPR - CN - 0511')).adresa === '');
+  /* Starší záznamy adresu nemají — server je doplní postupně, takže je musí
+   * umět odlišit od záznamu, jehož zakázka adresu prázdnou opravdu má. */
+  const stary = uloRejstrikNormalizuj([{ soubor: 'stary.json', cislo: 'x' }])[0];
+  test('P15: starší záznam bez adresy zůstane po normalizaci BEZ klíče adresa', !('adresa' in stary), JSON.stringify(stary));
+  test('P15: uloRejstrikBezAdresy vrátí starší záznamy (bez nových i prázdných)',
+    JSON.stringify(U.uloRejstrikBezAdresy([{ soubor: 'stary.json' }, ra, { soubor: 'prazdna.json', adresa: '' }]))
+      === JSON.stringify(['stary.json']));
+  test('P15: uloRejstrikBezAdresy bere nejvýš zadaný počet',
+    U.uloRejstrikBezAdresy([{ soubor: 'a.json' }, { soubor: 'b.json' }, { soubor: 'c.json' }], 2).length === 2);
+}
 
 /* ---------- 6) pojistka na uzamčené varianty ---------- */
 

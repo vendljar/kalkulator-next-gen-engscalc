@@ -427,6 +427,23 @@ export default async (req) => {
         ? { ...z, autorJmeno: mapa[String(z.autor).toLowerCase()] } : z);
     } catch (e) { /* jména jsou pohodlí, ne podmínka uložení zakázky */ }
   }
+  /* ADRESY STAVEB U STARŠÍCH ZÁZNAMŮ (P15 / K16-N85, 25. 9. 2026).
+   *
+   * Hledání umí adresu stavby, jenže záznamy uložené dřív ji v rejstříku
+   * nemají — a zakázky, které se už neotevírají, by se podle adresy nenašly
+   * nikdy. Doplňují se proto po dávkách při ukládání: nejvýš
+   * ULO_ADRESY_DAVKA zakázek najednou, čtou se souběžně a jen dokud nějaký
+   * záznam klíč `adresa` nenese (pak se tahle větev přestane spouštět sama).
+   * Nečitelná zakázka se zkusí příště; zmizelá dostane prázdnou adresu. */
+  const bezAdresy = ULO.uloRejstrikBezAdresy(stavajici).filter(x => x !== jmeno);
+  if (bezAdresy.length) {
+    const nalezene = await Promise.all(bezAdresy.map(async (soubor) => {
+      try { const z = await s.cti('z/' + soubor); return [soubor, String((z && z.adresa) || '')]; }
+      catch (e) { return null; }
+    }));
+    const adresy = new Map(nalezene.filter(Boolean));
+    stavajici = stavajici.map(z => (z && adresy.has(z.soubor)) ? { ...z, adresa: adresy.get(z.soubor) } : z);
+  }
   const novy = ULO.uloRejstrikSloucit(stavajici,
     ULO.uloRejstrikZaznam(zak, { soubor: jmeno, razitko }));
   await s.zapis('_rejstrik', { schema: 1, zakazky: ULO.uloRejstrikSerad(novy), kdo: relace.email,

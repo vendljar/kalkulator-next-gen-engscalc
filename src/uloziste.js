@@ -35,7 +35,7 @@ function uloNorm(s) {
   if (typeof seznamNorm === 'function') return seznamNorm(s);
   return String(s == null ? '' : s)
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase().trim();
+    .toLowerCase().replace(/ß/g, 'ss').trim();
 }
 
 function uloSlova(dotaz) {
@@ -336,6 +336,11 @@ function uloRejstrikZaznam(zak, opts) {
     autorJmeno: String((zak && zak.autorJmeno) || ''),
     cislo: uloCisloVyplneno(zak && zak.cislo) ? String(zak.cislo).trim() : '',
     nazevAkce: String((zak && zak.nazevAkce) || ''),
+    /* Adresa stavby (P15 / K16-N85, 25. 9. 2026): obchodník hledá zakázku
+     * podle místa, ne podle čísla. Prázdný řetězec je platná hodnota
+     * („zakázka adresu nemá") — záznam bez klíče je starší, viz
+     * uloRejstrikBezAdresy. */
+    adresa: String((zak && zak.adresa) || ''),
     objednatel: String((zak && zak.objednatel) || ''),
     datum: String((zak && zak.datum) || ''),
     /* Druh zakázky pro filtr OCK × PROJ v přehledu nabídek. */
@@ -370,6 +375,9 @@ function uloRejstrikNormalizuj(x) {
       autorJmeno: String(z.autorJmeno || ''),
       cislo: String(z.cislo || ''),
       nazevAkce: String(z.nazevAkce || ''),
+      /* Adresa jen tam, kde záznam klíč nese: chybějící klíč znamená starší
+       * záznam, kterému ji server teprve doplní (P15). */
+      ...(typeof z.adresa === 'string' ? { adresa: z.adresa } : {}),
       objednatel: String(z.objednatel || ''),
       datum: String(z.datum || ''),
       jenProj: !!z.jenProj,
@@ -412,6 +420,18 @@ function uloRejstrikOdeber(rejstrik, soubor) {
   return uloRejstrikNormalizuj(rejstrik).filter(z => z.soubor !== String(soubor));
 }
 
+/* STARŠÍ ZÁZNAMY BEZ ADRESY STAVBY (P15 / K16-N85, 25. 9. 2026).
+ * Rejstřík vznikal postupně při ukládání, takže zakázky uložené před touhle
+ * změnou adresu v rejstříku nemají — a hledání by je podle adresy nenašlo.
+ * Server je proto doplňuje po dávkách při každém uložení (jedno čtení na
+ * zakázku, najednou nejvýš `max`). Vrací jména souborů, jejichž záznam klíč
+ * `adresa` vůbec nenese; prázdná adresa je hotová hodnota, ne „chybí". */
+const ULO_ADRESY_DAVKA = 25;
+function uloRejstrikBezAdresy(rejstrik, max) {
+  const lim = (typeof max === 'number' && max >= 0) ? max : ULO_ADRESY_DAVKA;
+  return uloRejstrikNormalizuj(rejstrik).filter(z => !('adresa' in z)).slice(0, lim).map(z => z.soubor);
+}
+
 /* Nejnovější nahoře – po otevření složky chce člověk nejčastěji to,
  * na čem dělal naposledy. */
 function uloRejstrikSerad(rejstrik) {
@@ -429,7 +449,8 @@ function uloHledej(rejstrik, dotaz) {
   return pole.filter(z => {
     /* Hledá se i ve jménu obchodníka (21. 8. 2026) — v seznamu je jeho
      * sloupec, takže se podle něj lidé přirozeně ptají. */
-    const text = uloNorm([z.cislo, z.nazevAkce, z.objednatel, z.datum, z.soubor,
+    /* …a v adrese stavby (P15 / K16-N85, 25. 9. 2026). */
+    const text = uloNorm([z.cislo, z.nazevAkce, z.adresa, z.objednatel, z.datum, z.soubor,
       z.autorJmeno, z.autor].join(' '));
     return slova.every(s => text.includes(s));
   });
@@ -951,7 +972,7 @@ if (typeof module !== 'undefined')
                      uloRazitkoNove, uloRazitko, uloKolize,
                      uloRejstrikZaznam, uloRejstrikNormalizuj, uloRejstrikSloucit,
                      uloDruhZakazky, uloObchodnik,
-                     uloRejstrikOdeber, uloRejstrikSerad, uloHledej,
+                     uloRejstrikOdeber, uloRejstrikSerad, uloHledej, uloRejstrikBezAdresy, ULO_ADRESY_DAVKA,
                      uloZamekKlic, uloPocetOdemceni, uloKontrolaZamku, uloProblemPopis,
                      uloOdemceniPribylo, ULO_ID_TVAR, uloIdBezpecne, uloIdProblemy,
                      uloIdProblemyText, uloKidProblemyProgramu };

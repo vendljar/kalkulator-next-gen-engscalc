@@ -2641,7 +2641,8 @@ function onlineRadekZakazky(z, vyber) {
   return `<tr class="${otevrena ? 'aktivni' : ''} radek-klik" onclick="prehledRadekOtevri(event, '${escJs(z.soubor)}')"
     title="kliknutím otevřete zakázku — souhrn a varianty se ukážou v sekcích níž">${chk}
     <td style="text-align:left">${esc(z.cislo || '(bez čísla)')}</td>
-    <td style="text-align:left;white-space:normal">${esc(z.nazevAkce || '—')}</td>
+    <td style="text-align:left;white-space:normal">${esc(z.nazevAkce || '—')}${z.adresa
+      ? `<div class="rejstrik-adresa" style="font-size:11px;color:#6b7686">${esc(z.adresa)}</div>` : ''}</td>
     <td style="text-align:left;white-space:normal">${esc(z.objednatel || '—')}</td>
     <td><span class="pill mut">${esc(druh)}</span>${rada}</td>
     <td>${esc(z.datum || '')}</td>
@@ -2700,7 +2701,8 @@ function naseptavacHodnoty() {
   const videno = {};
   const hodnoty = [];
   (ONLINE_STAV.rejstrik || []).forEach(z => {
-    [z.cislo, z.nazevAkce, z.objednatel,
+    /* Adresa stavby (P15 / K16-N85): co hledání najde, to má našeptávač nabídnout. */
+    [z.cislo, z.nazevAkce, z.adresa, z.objednatel,
       (typeof uloObchodnik === 'function' ? uloObchodnik(z) : z.autorJmeno)].forEach(h => {
       const t = String(h || '').trim();
       if (!t || t === '—' || videno[t.toLowerCase()]) return;
@@ -2868,7 +2870,7 @@ function prehledHledaniKarta() {
   return card('Vyhledání nabídek',
     bezDb + `<div class="seznam-ovladani noprint">
       <span class="nasept-wrap"><input type="search" class="seznam-hledat"
-        placeholder="Hledat číslo, akci, zákazníka, obchodníka…"
+        placeholder="Hledat číslo, akci, adresu stavby, zákazníka, obchodníka…"
         title="Hledá se v čísle nabídky, názvu akce, zákazníkovi, datu i jménu obchodníka. Při psaní se nabídka průběžně zužuje."
         value="${esc(p.hledat)}" autocomplete="off"
         oninput="prehledHledatSet(this.value); naseptavacKresli('naseptBoxPrehled', this.value, 'prehled')"
@@ -2900,7 +2902,7 @@ function onlinePanelZakazky() {
    * seznam variant (seznam_ui.js). */
   return `<div class="seznam-ovladani">
       <span class="nasept-wrap"><input type="text" class="seznam-hledat" id="onlineZakHledat"
-             placeholder="Hledat číslo, akci, zákazníka, obchodníka…"
+             placeholder="Hledat číslo, akci, adresu stavby, zákazníka, obchodníka…"
              title="Při psaní se nabídka průběžně zužuje."
              value="${esc(ONLINE_STAV.hledat)}" autocomplete="off"
              oninput="onlineHledatSet(this.value); naseptavacKresli('naseptBoxOnline', this.value, 'online')"

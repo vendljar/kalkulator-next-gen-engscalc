@@ -1264,6 +1264,27 @@ test('filtr zúží seznam na PROJ a hledání funguje i podle obchodníka',
     prehledHledatSet('');
     return jenProj === 1 && podleJmena === 1;
   }));
+/* P15 (K16-N85, 25. 9. 2026): obchodník hledá zakázku podle místa stavby. */
+test('P15: hledání i našeptávač najdou zakázku podle adresy stavby a řádek adresu ukáže',
+  await page.evaluate(() => {
+    ONLINE_STAV.ja = { email: 'a@b.cz', jmeno: 'Správce', role: 'Administrátor' };
+    NAST.jeAdmin = true;
+    ONLINE_STAV.rejstrik = [
+      { soubor: 'a.json', cislo: '2026 - OPR - CN - 1', nazevAkce: 'Šachta', objednatel: 'SVJ', adresa: 'Kornpfortstraße 12, Koblenz',
+        autor: 'a@b.cz', autorJmeno: 'Jan Novák', datum: '2026-08-01', variant: 1, odeslane: 0, upraveno: '' },
+      { soubor: 'b.json', cislo: '2026 - OVP - CN - 2', nazevAkce: 'Studie', objednatel: 'Firma',
+        autor: 'c@d.cz', autorJmeno: '', datum: '2026-08-02', variant: 1, odeslane: 0, upraveno: '' },
+    ];
+    prehledDruhSet('vse'); prehledHledatSet('koblenz');
+    const radky = [...document.querySelectorAll('#prehledHledaniTelo tr')].filter(r => r.querySelector('td'));
+    const vRadku = radky.length === 1 && /Kornpfortstraße 12, Koblenz/.test(radky[0].textContent);
+    prehledHledatSet('strasse');
+    const ss = [...document.querySelectorAll('#prehledHledaniTelo tr')].filter(r => r.querySelector('td')).length === 1;
+    prehledHledatSet('');
+    const nasept = naseptavacFiltr('kornpf');
+    const placeholder = (document.querySelector('#page-zakazka input.seznam-hledat') || {}).placeholder || '';
+    return vRadku && ss && nasept.length === 1 && nasept[0] === 'Kornpfortstraße 12, Koblenz' && /adres/.test(placeholder);
+  }));
 
 test('pole Zákazník našeptává z kartotéky i z rejstříku',
   await page.evaluate(() => {
