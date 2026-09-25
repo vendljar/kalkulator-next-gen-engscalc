@@ -41,17 +41,65 @@ const NABIDKA_PROJ_SAZBY = {
   platnostMesicu: 2,
 };
 
+/* ÚVOD NABÍDKY PROJ PODLE ROZSAHU (P11 / K12-N45, schváleno J. V. 25. 9. 2026).
+ *
+ * Do 25. 9. byl odstavec „Naše NABÍDKA a doporučení" pevný: sliboval
+ * zaměření, studii i projednání s Odborem památkové péče HMP i nabídkám,
+ * které nic z toho neobsahovaly (12. kolo čtyři z pěti, 13. kolo K13-01
+ * a K13-08), a nabídka jen na DPS začínala „v počáteční fázi nabízíme
+ * ZAMĚŘENÍ…". Teď věta = sekce: tiskne se, jen když je sekce v rozsahu.
+ * Věty se skládají do tří odstavců jako dřív (průzkum a studie; povolení;
+ * provedení). První věta nabídky vždy začíná „V rámci zamýšlené VÝSTAVBY
+ * VÝTAHU A VÝTAHOVÉ ŠACHTY" — proto má každá věta i podobu `prvni`. */
+const NABIDKA_PROJ_UVOD = [
+  [ { sekce: 'zamereni',
+      cz: 'V rámci zamýšlené VÝSTAVBY VÝTAHU A VÝTAHOVÉ ŠACHTY v počáteční fázi nabízíme ZAMĚŘENÍ a ZPRACOVÁNÍ VÝSTUPŮ ZE ZAMĚŘENÍ uvažovaného umístění výtahu.',
+      prvni: 'V rámci zamýšlené VÝSTAVBY VÝTAHU A VÝTAHOVÉ ŠACHTY v počáteční fázi nabízíme ZAMĚŘENÍ a ZPRACOVÁNÍ VÝSTUPŮ ZE ZAMĚŘENÍ uvažovaného umístění výtahu.' },
+    { sekce: 'studie',
+      cz: 'Z výsledku zaměření navrhneme varianty řešení a vybranou variantu zpracujeme ve STUDII PROVEDITELNOSTI.',
+      prvni: 'V rámci zamýšlené VÝSTAVBY VÝTAHU A VÝTAHOVÉ ŠACHTY navrhneme varianty řešení a vybranou variantu zpracujeme ve STUDII PROVEDITELNOSTI.' },
+    { sekce: 'projednani',
+      cz: 'Součástí nabídkové ceny je i projednání této studie s Odborem památkové péče HMP.',
+      prvni: 'V rámci zamýšlené VÝSTAVBY VÝTAHU A VÝTAHOVÉ ŠACHTY nabízíme projednání STUDIE PROVEDITELNOSTI s Odborem památkové péče HMP.' } ],
+  [ { sekce: 'dpz',
+      cz: 'Po vyjasnění technických detailů vypracujeme PROJEKTOVOU DOKUMENTACI PRO POVOLENÍ ZÁMĚRU (DPZ) obsahující projekt pro řízení o povolení záměru.',
+      prvni: 'V rámci zamýšlené VÝSTAVBY VÝTAHU A VÝTAHOVÉ ŠACHTY vypracujeme PROJEKTOVOU DOKUMENTACI PRO POVOLENÍ ZÁMĚRU (DPZ) obsahující projekt pro řízení o povolení záměru.' },
+    { sekce: 'ic',
+      cz: 'Součástí nabídky je i INŽENÝRSKÁ ČINNOST (vyřízení POVOLENÍ ZÁMĚRU).',
+      prvni: 'V rámci zamýšlené VÝSTAVBY VÝTAHU A VÝTAHOVÉ ŠACHTY nabízíme INŽENÝRSKOU ČINNOST (vyřízení POVOLENÍ ZÁMĚRU).' } ],
+  [ { sekce: 'dps',
+      cz: 'Po získání rozhodnutí stavebního úřadu o povolení záměru lze pokračovat PROVÁDĚCÍM PROJEKTEM (DPS).',
+      prvni: 'V rámci zamýšlené VÝSTAVBY VÝTAHU A VÝTAHOVÉ ŠACHTY nabízíme PROVÁDĚCÍ PROJEKT (DPS).' },
+    { sekce: 'ezc',
+      cz: 'Nabízíme i POLOŽKOVÝ ROZPOČET na samotnou realizaci stavby.',
+      prvni: 'V rámci zamýšlené VÝSTAVBY VÝTAHU A VÝTAHOVÉ ŠACHTY nabízíme POLOŽKOVÝ ROZPOČET na samotnou realizaci stavby.' } ],
+];
+const NABIDKA_PROJ_UVOD_ZAVER = 'Všechny nabízené činnosti jsou popsány na dalších stránkách naší nabídky.';
+
+/* Odstavce úvodu pro sekce v rozsahu. `vRozsahu(sekce)` rozhoduje stejně
+ * jako u ostatních bloků nabídky (sekce s cenou). */
+function nabidkaProjUvod(vRozsahu, P) {
+  const T = typeof P === 'function' ? P : (t => t);
+  let prvni = true;
+  const odst = [];
+  NABIDKA_PROJ_UVOD.forEach(skupina => {
+    const vety = skupina.filter(v => vRozsahu(v.sekce)).map(v => {
+      const t = prvni ? v.prvni : v.cz; prvni = false; return T(t);
+    });
+    if (vety.length) odst.push(vety.join(' '));
+  });
+  if (odst.length) odst.push(T(NABIDKA_PROJ_UVOD_ZAVER));
+  return odst;
+}
+
 /* Definice dokumentu – pořadí i znění podle VZORu.
  * typ: 'nadpis' | 'proza' | 'rozsah' | 'cena' | 'seznam' | 'pary' | 'pozn' */
 const NABIDKA_PROJ_DEF = [
   { typ: 'proza', nadpis: 'Popis záměru', klic: 'popisZameru', odstavce: [] },
 
-  { typ: 'proza', nadpis: 'Naše NABÍDKA a doporučení', odstavce: [
-    { cz: 'V rámci zamýšlené VÝSTAVBY VÝTAHU A VÝTAHOVÉ ŠACHTY, v počáteční fázi nabízíme ZAMĚŘENÍ a ZPRACOVÁNÍ VÝSTUPŮ ZE ZAMĚŘENÍ uvažovaného umístění výtahu. Z výsledku zaměření navrhneme varianty řešení. Vybranou variantu následně zpracujeme ve STUDII PROVEDITELNOSTI. Součástí nabídkové ceny je i projednání této studie s Odborem památkové péče HMP.' },
-    { cz: 'Po vyjasnění technických detailů (především s památkáři) vypracujeme PROJEKTOVOU DOKUMENTACI PRO POVOLENÍ ZÁMĚRU (DPZ) obsahující projekt pro řízení o povolení záměru a INŽENÝRSKOU ČINNOST (vyřízení POVOLENÍ ZÁMĚRU).' },
-    { cz: 'Po získání rozhodnutí stavebního úřadu o povolení záměru lze pokračovat PROVÁDĚCÍM PROJEKTEM a POLOŽKOVÝM ROZPOČTEM na samotnou realizaci stavby.' },
-    { cz: 'Všechny nabízené činnosti jsou popsány na dalších stránkách naší nabídky.' },
-  ] },
+  /* Úvod se skládá z vět podle sekcí v rozsahu (P11 / K12-N45, schváleno
+   * J. V. 25. 9. 2026) — viz NABIDKA_PROJ_UVOD a nabidkaProjUvod(). */
+  { typ: 'proza', nadpis: 'Naše NABÍDKA a doporučení', klic: 'uvodNabidky', odstavce: [] },
 
   { typ: 'nadpis', text: 'ROZSAH NABÍDKY' },
 
@@ -449,12 +497,15 @@ function nabidkaProjData(zak, varianta, lang) {
   };
   const radekVRozsahu = x => !Array.isArray(x) || x.length < 3 || vRozsahu(x[2]);
 
-  const bloky = NABIDKA_PROJ_DEF.filter(blokVRozsahu).map(b => {
+  const uvodOdst = nabidkaProjUvod(vRozsahu, P);   // P11: úvod podle rozsahu
+  const bloky = NABIDKA_PROJ_DEF.filter(b => b.klic !== 'uvodNabidky' || uvodOdst.length)
+    .filter(blokVRozsahu).map(b => {
     if (b.typ === 'nadpis') return { typ: 'nadpis', text: P(b.text) };
     if (b.typ === 'pozn') return { typ: 'pozn',
       radky: b.radky.filter(x => !x.sekce || vRozsahu(x.sekce)).map(proza) };
     if (b.typ === 'proza') {
       const odst = b.odstavce.map(proza);
+      if (b.klic === 'uvodNabidky') { odst.length = 0; uvodOdst.forEach(o => odst.push(o)); }
       if (b.klic === 'popisZameru') {
         const vlastni = (zak && zak.popisZameru || '').trim();
         odst.length = 0;
@@ -573,6 +624,10 @@ function nabidkaProjData(zak, varianta, lang) {
      * doplnit sem hlášku „nevyplněno" by znamenalo poslat ji zákazníkovi.
      * Online náhled má vlastní upozornění, tam ho vidí jen obchodník. */
     POPIS_ZAMERU: String((zak && zak.popisZameru) || '').trim(),
+    /* Úvod „Naše NABÍDKA a doporučení" podle rozsahu (P11) — pro šablonu,
+     * která místo pevného odstavce nese {{UVOD_NABIDKY_PROJ}}. Odstavce
+     * odděluje nový řádek. */
+    UVOD_NABIDKY_PROJ: uvodOdst.join('\n'),
     /* Ceny jednotlivých činností do šablony (#136, 12. 8. 2026). Wordová
      * nabídka PROJ je jinak sázená než ta online: text je natvrdo v šabloně
      * a doplňují se jen částky. Klíče odpovídají cenovým blokům v pořadí,
@@ -659,4 +714,4 @@ if (typeof dokumentRegistruj === 'function')
   });
 
 if (typeof module !== 'undefined')
-  module.exports = { nabidkaProjData, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE };
+  module.exports = { nabidkaProjData, nabidkaProjUvod, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE };
