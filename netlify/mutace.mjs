@@ -770,6 +770,17 @@ const MUTACE = [
     nahrad: "          sl.schvalilEmail = relace.email || '';",
     proc: 'v zakázce by stálo cizí jméno pod rozhodnutím' },
 
+  /* ---------- #341 (B71): minimální marže u slevy ---------- */
+  { nazev: '#341: minimální marže se na serveru nekontroluje', soubor: 'functions/zakazky.mjs',
+    hledej: "  if (!marze.ok) return json({ ok: false, chyba: 'Neuloženo: ' + marze.chyba }, 403);",
+    nahrad: "  if (false) return json({ ok: false, chyba: 'Neuloženo: ' + marze.chyba }, 403);",
+    proc: 'upravený klient by uložil slevu pod firemní minimální marží jako schválenou' },
+
+  { nazev: '#341: výsledek porovnání s minimem se ignoruje', soubor: '../src/schvalovani.js',
+    hledej: "      if (!slevaVyhodnot(z.zakladCena, z.zakladNaklad, sl, nast).podMarzi) continue;",
+    nahrad: "      continue;",
+    proc: 'server by marži spočítal, ale podmaržovou slevu stejně pustil' },
+
   /* ---------- zálohy ---------- */
   { nazev: 'zálohu stáhne kdokoli', soubor: 'functions/zaloha.mjs',
     hledej: '  const { chyba } = await vyzadujRoli(req, \'Administrátor\');',

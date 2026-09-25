@@ -297,5 +297,52 @@ test('žádost „čeká na schválení" obchodník uloží', r.ok === true);
 r = schvalovaniServerKontrola(null, { varianty: [{ id: 'v1' }, null, { id: 'v2', data: {} }] }, OBCH, NAST);
 test('varianty bez dat nepadají', r.ok === true);
 
+console.log('\n--- schvalovaniServerMarze (#341, B71) ---');
+global.vypocetProj = ep.vypocetProj;
+/* Skutečná varianta se spočitatelnými daty: server marži přepočítá sám. */
+function zakMarze(slOck, slProj, zamek) {
+  const z = zk.novaZakazka();
+  const v = z.varianty[0];
+  v.data.ock.fixes = true;
+  if (slOck) v.data.sleva = Object.assign(slevaDefault(), slOck);
+  if (slProj) v.data.slevaProj = Object.assign(slevaDefault(), slProj);
+  if (zamek) v.zamek = { zamceno: true };
+  return z;
+}
+const AUTO = (p) => ({ procenta: p, role: 'Administrátor', stav: SCHV_AUTO });
+let m = schvalovaniServerMarze(null, zakMarze(AUTO(POD_MARZI)), JEKLY, NAST);
+test('#341: podmaržová sleva OCK „schváleno automaticky" neprojde', m.ok === false, JSON.stringify(m));
+test('#341: hláška neprozradí číslo minimální marže (jediné % je sleva)', m.ok === false && (m.chyba.match(/%/g) || []).length === 1, m.chyba);
+m = schvalovaniServerMarze(null, zakMarze({ ...AUTO(POD_MARZI), stav: SCHV_SCHVALENO, schvalenoProc: POD_MARZI }), JEKLY, NAST);
+test('#341: ani lidsky „schválená" podmaržová sleva neprojde', m.ok === false);
+m = schvalovaniServerMarze(null, zakMarze(AUTO(DO_STROPU)), JEKLY, NAST);
+test('#341: sleva nad minimem projde', m.ok === true, JSON.stringify(m));
+m = schvalovaniServerMarze(null, zakMarze({ procenta: POD_MARZI, stav: SCHV_ZAMITNUTO }), JEKLY, NAST);
+test('#341: zamítnutá podmaržová sleva se uloží (do ceny se nepropíše)', m.ok === true);
+m = schvalovaniServerMarze(null, zakMarze({ procenta: POD_MARZI, stav: SCHV_CEKA }), JEKLY, NAST);
+test('#341: čekající žádost se uloží', m.ok === true);
+const vpr = zakMarze().varianty[0];
+const rp = ep.vypocetProj(vpr.data.proj.zadani, vpr.data.proj.cenik);
+let podProj = 90;
+for (let p = 1; p <= 95; p++) {
+  if (slevaVyhodnot(rp.souhrn.celkem, rp.souhrn.naklad + (rp.souhrn.doprava || 0), { procenta: p }, NAST).podMarzi) { podProj = p; break; }
+}
+m = schvalovaniServerMarze(null, zakMarze(null, AUTO(podProj)), JEKLY, NAST);
+test('#341: podmaržová sleva PROJ neprojde (základ projekce vč. dopravy)', m.ok === false && /projekční/.test(m.chyba), JSON.stringify(m));
+m = schvalovaniServerMarze(null, zakMarze(null, AUTO(Math.max(1, podProj - 1))), JEKLY, NAST);
+test('#341: sleva PROJ těsně nad hranicí projde', m.ok === true, JSON.stringify(m));
+const doklad = zakMarze(AUTO(POD_MARZI), null, true);
+m = schvalovaniServerMarze(JSON.parse(JSON.stringify(doklad)), doklad, JEKLY, NAST);
+test('#341: varianta zamčená už v uložené verzi se nepřepočítává (doklad)', m.ok === true);
+m = schvalovaniServerMarze(zakMarze(), doklad, JEKLY, NAST);
+test('#341: NOVĚ zamčená podmaržová varianta neprojde', m.ok === false);
+m = schvalovaniServerMarze(null, zakMarze(AUTO(POD_MARZI)), JEKLY, { ...NAST, minMarze: 0 });
+test('#341: bez nastaveného minima se nehlídá', m.ok === true);
+const rozbita = zakMarze(AUTO(POD_MARZI)); rozbita.varianty[0].data.ock = null;
+m = schvalovaniServerMarze(null, rozbita, JEKLY, NAST);
+test('#341: nespočitatelná varianta uložení neshodí', m.ok === true);
+test('#341: prázdné vstupy nepadají',
+  schvalovaniServerMarze(null, null, JEKLY, NAST).ok && schvalovaniServerMarze(null, { varianty: [null, {}] }, JEKLY, NAST).ok);
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

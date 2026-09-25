@@ -428,9 +428,66 @@ function schvalovaniServerKontrola(stara, nova, relace, nast) {
   return { ok: true };
 }
 
+/* MINIMÁLNÍ MARŽI U SLEVY OVĚŘUJE I SERVER (#341, nález B71 hloubkového
+ * testu 24. 9. 2026). schvalovaniServerKontrola hlídá jen strop role —
+ * marži nepočítala, takže upravený klient uložil „schváleno automaticky"
+ * (nebo si nechal schválit) slevu, po které nabídka klesne pod firemní
+ * minimum. Prohlížeč takovou slevu sám nikdy neuloží jako platnou
+ * (schvalovaniPrepocti ji přepne na „zamítnuto"), takže tahle kontrola
+ * poctivého obchodníka nezastaví — leda by měl načtené starší nastavení slev.
+ *
+ * Server spočítá základ TÉ ČÁSTI stejně jako prohlížeč (slevaZaklad
+ * v ui/common.js): OCK = souhrn.zakladCena / zakladNaklad, PROJ =
+ * souhrn.celkem / naklad + doprava. Minimum bere z programu (db.slevy).
+ *
+ * Co se nekontroluje a proč:
+ *  – varianta zamčená UŽ V ULOŽENÉ VERZI: odeslaná nabídka je doklad
+ *    a server ji nepřepočítává (stejně jako B53/B59);
+ *  – sleva, která neplatí (čeká, zamítnutá, 0 %): do ceny se nepropíše;
+ *  – varianta, kterou jádro nespočítá: bez výsledku nejde nic tvrdit a jádro
+ *    nespočítá ani tisk v prohlížeči — raději uložit než zahodit práci.
+ * Čísla marže se v hlášce neuvádějí: minimum je obchodní tajemství. */
+function schvalovaniZakladCasti(v, jekly, cast) {
+  const d = (v && v.data) || {};
+  try {
+    if (cast === 'proj') {
+      const r = vypocetProj(d.proj.zadani, d.proj.cenik);
+      if (!r || !r.souhrn) return null;
+      return { zakladCena: r.souhrn.celkem, zakladNaklad: r.souhrn.naklad + (r.souhrn.doprava || 0) };
+    }
+    const r = vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes);
+    if (!r || !r.souhrn) return null;
+    return { zakladCena: r.souhrn.zakladCena, zakladNaklad: r.souhrn.zakladNaklad };
+  } catch (e) { return null; }
+}
+function schvalovaniServerMarze(stara, nova, jekly, nast) {
+  nast = nast || {};
+  if (!(+nast.minMarze > 0)) return { ok: true };                 // minimum nenastavené — není co hlídat
+  const stare = (stara && Array.isArray(stara.varianty)) ? stara.varianty : [];
+  const zamcena = (v) => !!(v && v.zamek && v.zamek.zamceno);
+  for (const v of ((nova && Array.isArray(nova.varianty)) ? nova.varianty : [])) {
+    if (!v || !v.data) continue;
+    if (zamcena(stare.find(x => x && x.id === v.id))) continue;  // doklad — nepřepočítává se
+    for (const [pole, cast] of [['sleva', 'ock'], ['slevaProj', 'proj']]) {
+      const sl = v.data[pole];
+      if (!slevaPlati(sl)) continue;
+      const z = schvalovaniZakladCasti(v, jekly, cast);
+      if (!z || !isFinite(z.zakladCena) || !isFinite(z.zakladNaklad)) continue;
+      if (!slevaVyhodnot(z.zakladCena, z.zakladNaklad, sl, nast).podMarzi) continue;
+      return { ok: false, chyba: 'Sleva ' + (+sl.procenta || 0) + ' % ('
+        + (cast === 'proj' ? 'projekční práce' : 'výtahová šachta') + ', varianta „'
+        + String(v.nazev || v.id) + '") by stlačila nabídku pod firemní minimální marži, '
+        + 'takže ji nejde schválit ani propsat do ceny. Obnovte stránku (F5), aby se načetlo '
+        + 'platné nastavení slev, a slevu upravte.' };
+    }
+  }
+  return { ok: true };
+}
+
 if (typeof module !== 'undefined')
   module.exports = { SCHV_BEZ, SCHV_AUTO, SCHV_CEKA, SCHV_SCHVALENO, SCHV_ZAMITNUTO,
                      schvalovaniRozhodnutiKlic, schvalovaniServerKontrola,
+                     schvalovaniZakladCasti, schvalovaniServerMarze,
                      SCHV_PORADI, SCHV_POPIS, SCHV_ROLE_VYCHOZI,
                      schvalovaniKategorie, schvalovaniStrop, schvalovaniSmiRozhodnout,
                      schvalovaniKdoMuze, schvalovaniPrepocti,

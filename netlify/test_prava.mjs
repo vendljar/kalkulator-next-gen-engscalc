@@ -990,10 +990,13 @@ test('B3: razítko „kdo odemkl" píše server z relace, ne z těla',
 console.log('\n===== AUDIT B2: ROZHODNUTÍ O SLEVĚ =====\n');
 
 /* Stropy pro tuhle sadu: program má z přípravy jen minMarze; doplníme
- * ukázkové stropy (obchodník 3 %, vedoucí 10 %), jako v test_schvalovani.js. */
+ * ukázkové stropy (obchodník 3 %, vedoucí 10 %), jako v test_schvalovani.js.
+ * Minimální marže je tu VYPNUTÁ (0): sada prověřuje strop role a zkušební
+ * zakázka má marži tak nízkou, že by slevy 6 a 15 % od 25. 9. 2026 (#341)
+ * odmítla už kontrola marže. Marži prověřuje vlastní sada níž. */
 await post(program, 'http://x/api/program',
   { cenik: cenikJinak(), cenikProj: ZC.zkusebniCenikProj(),
-    slevy: { minMarze: 0.02, stropy: { 'Obchodník': 0.03, 'Vedoucí': 0.10, 'Administrátor': 1 } } }, cAdmin);
+    slevy: { minMarze: 0, stropy: { 'Obchodník': 0.03, 'Vedoucí': 0.10, 'Administrátor': 1 } } }, cAdmin);
 function slevaPodvrh(p) {
   return { procenta: p, schema: '', role: 'Obchodník', poznamka: '', stav: 'schváleno',
            schvalenoProc: p, schvalil: 'Vedoucí Podvržený', schvalilKdy: '2026-08-22T00:00:00Z' };
@@ -1029,6 +1032,43 @@ test('B2: vedoucí nemůže schválit slevu nad svůj strop (403)',
   (await post(zakazky, 'http://x/api/zakazky', { zakazka: slVedNad }, UCTY['Vedoucí'].cookie)).status === 403);
 test('B2: administrátor schválí i slevu nad stropem vedoucího',
   (await post(zakazky, 'http://x/api/zakazky', { zakazka: slVedNad }, cAdmin)).status === 200);
+
+console.log('\n===== #341 (B71): MINIMÁLNÍ MARŽE U SLEVY HLÍDÁ SERVER =====\n');
+{
+  /* Hranici dopočítáme týmž jádrem, které běží na serveru (načetlo se prvním
+   * voláním funkce), ať test nezávisí na konkrétním ceníku. */
+  const NAST_SL = { minMarze: 0.02, stropy: { 'Obchodník': 0.03, 'Vedoucí': 0.10, 'Administrátor': 1 } };
+  await post(program, 'http://x/api/program',
+    { cenik: cenikJinak(), cenikProj: ZC.zkusebniCenikProj(), slevy: NAST_SL }, cAdmin);
+  const JEK = require('../src/jekly.json');
+  const vzor = zakazkaCislo('2026 - OPR - CN - 0971');
+  const z = globalThis.schvalovaniZakladCasti(vzor.varianty[0], JEK, 'ock');
+  let pod = 0;
+  for (let p = 1; p <= 95 && !pod; p++)
+    if (globalThis.slevaVyhodnot(z.zakladCena, z.zakladNaklad, { procenta: p }, NAST_SL).podMarzi) pod = p;
+  test('#341: příprava — hranice marže se dala dopočítat', pod > 0, JSON.stringify(z));
+  const auto = (p) => ({ procenta: p, schema: '', role: 'Administrátor', poznamka: '', stav: 'schváleno automaticky' });
+  const podvrhM = zakazkaCislo('2026 - OPR - CN - 0971');
+  podvrhM.varianty[0].data.sleva = auto(pod);
+  const odp = await post(zakazky, 'http://x/api/zakazky', { zakazka: podvrhM }, cAdmin);
+  const telo = await odp.json();
+  test('#341: podmaržovou slevu „schváleno automaticky" server neuloží ani administrátorovi (403)',
+    odp.status === 403 && /minimální marži/.test(telo.chyba || ''), odp.status + ' ' + JSON.stringify(telo));
+  const ulozeno = await get(zakazky, 'http://x/api/zakazky?soubor=2026-OPR-CN-0971.json', cAdmin);
+  test('#341: odmítnutá zakázka v databázi nevznikla', ulozeno.status === 404, 'vrátil ' + ulozeno.status);
+  const ok = zakazkaCislo('2026 - OPR - CN - 0972');
+  ok.varianty[0].data.sleva = auto(pod - 1);
+  test('#341: sleva těsně nad minimem se uloží',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: ok }, cAdmin)).status === 200);
+  const zam = zakazkaCislo('2026 - OPR - CN - 0973');
+  zam.varianty[0].data.sleva = { ...auto(pod), stav: 'zamítnuto', zamitl: '' };
+  test('#341: automaticky zamítnutá podmaržová sleva se uloží (do ceny se nepropíše)',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: zam }, cObch)).status === 200);
+  /* Zpět na nastavení sady B2 (minimum vypnuté): další sady ukládají slevu
+   * 6 % nad zkušebním ceníkem a prověřují jiné věci než marži. */
+  await post(program, 'http://x/api/program',
+    { cenik: cenikJinak(), cenikProj: ZC.zkusebniCenikProj(), slevy: { ...NAST_SL, minMarze: 0 } }, cAdmin);
+}
 
 /* ============================================================
  * BEZPEČNOSTNÍ AUDIT 22. 8. 2026 — 2. dávka: B4, B6, B7, B8, B9, B13

@@ -261,6 +261,10 @@ export default async (req) => {
   const slevyNast = (prog && prog.platny && prog.platny.slevy) || {};
   const rozhodnuti = SCHV.schvalovaniServerKontrola(stara, zak, relace, slevyNast);
   if (!rozhodnuti.ok) return json({ ok: false, chyba: 'Neuloženo: ' + rozhodnuti.chyba }, 403);
+  /* Minimální marže u platné slevy (#341, B71): strop role nestačí, marži
+   * přepočítá server týmž jádrem jako prohlížeč. */
+  const marze = SCHV.schvalovaniServerMarze(stara, zak, JEKLY, slevyNast);
+  if (!marze.ok) return json({ ok: false, chyba: 'Neuloženo: ' + marze.chyba }, 403);
 
   /* Autor zakázky (11. 8. 2026). Doteď se nikde nepsalo, kdo zakázku založil —
    * rejstřík věděl jen, kdo do něj naposledy sáhl. Bez autora se ale nedá
