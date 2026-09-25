@@ -16,7 +16,7 @@ https://claude.ai/artifact/RmrdBw1QbyyBxDLhZcExTq
 - N89: „Smazat vybrané" jen s právem uloziste.mazani.
 - Nová sada `netlify/test_obchodnik.mjs` (24 scénářů, v mutacích serveru).
 - Ověřeno: sady v Node, harnessy (kromě příručky a SoD), jádro 76/76,
-  mutace serveru — viz CHANGELOG.
+  mutace serveru 173/173.
 
 ## Další práce — J. V. chce NOVOU VĚTEV (25. 9. 2026)
 - Dávka B = roadmapa #361, dávka C = #362, rozbor D = #363 (podklady kola 16:

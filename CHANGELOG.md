@@ -28,7 +28,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
   obchodníka z kola 16 (S5 před opravou selhával), zařazená i do mutací.
 
 Ověřeno: sady v Node, test_obchodnik 24/24, harnessy (kromě příručky a SoD),
-mutace jádra 76/76, mutace P1 2/2.
+mutace jádra 76/76, mutace serveru 173/173 (z toho 2 nové pro P1).
 
 ---
 
