@@ -8,6 +8,66 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v25.9.7 — dávka B kola 16: neuložené změny, ověření zámku, dialogy, adresa, zalomení ve Wordu (25. 9. 2026)
+
+Roadmapa #361, větev `k16-nalezy`.
+
+- **Žádné falešné „neuložené změny" (P5 / K14-N65, K14-N62).** Nová zakázka
+  posune otisk „naposledy uloženo" — do teď se porovnávala s tou předchozí,
+  takže prohlížeč při zavření okna varoval a dialog „Otevřít jinou zakázku"
+  se ptal na změny, které nikdo neudělal. Dotaz „Nová zakázka" mluví
+  o neuložených změnách jen tehdy, když nějaké jsou. Razítko platného ceníku,
+  které aplikace sama vtiskne otevřené zakázce (po zveřejnění ceníku,
+  po přihlášení), se za práci uživatele nepočítá — rozepsanou práci to ale
+  neschová.
+- **Bez čísla nabídky se neukládá (P5 / K15-N69).** Uložení z karty Databáze
+  nebo z dialogu „Otevřít jinou zakázku → Uložit změny" založilo záznam
+  „bez-cisla-….json", který v seznamu nikdo nenajde. Teď aplikace odmítne
+  s hláškou „vyplňte číslo nabídky v hlavičce"; autosave uložené zakázky,
+  které někdo číslo vymazal, počká (dřív by zapsal nový soubor vedle).
+- **Ověření odeslané nabídky jen nad penězi a množstvím (P6 / K15-N67).**
+  Lišta zámku hlásila „čísla nesouhlasí" i u poctivých nabídek tištěných ze
+  stránky načtené před nasazením nové verze — porovnávaly se i texty,
+  příznaky a klíče, které přidala nebo ubrala jiná verze. Teď se porovnávají
+  čísla, řádky se párují podle názvu a klíč jen v jednom výsledku se
+  přeskočí. Jádro dokumentu (cena bez DPH, DPH, s DPH, cena a celkem PROJ,
+  kurz EUR) musí být v obou — podvrh bez souhrnu dál neprojde.
+- **Dialogy říkají, co tlačítka udělají (P7 / K15-N68).** Dialog uzamčené
+  varianty radil „OK = založit klon…, Zrušit = …", ale modál má tlačítka
+  Ano / Ne. Teď „Založit klon a pokračovat v něm" / „Nechat beze změny";
+  totéž u dvou dialogů složky _DB. Nový hlídač v `test_dialogy.js`.
+- **Kolize verzí jmenuje člověka (P7 / K16-N87).** „Zakázku mezitím uložil
+  jan@firma.cz" → „Zakázku mezitím uložil(a) Jan Novák v 14:32"; týž účet
+  v jiném okně se pozná („váš účet — jiné okno nebo záložka"). Jméno píše
+  server z relace (`upravilJmeno`), u starších zakázek ho dohledá v účtech.
+- **Hledání podle adresy stavby (P15 / K16-N85).** Rejstřík nese adresu
+  stavby; hledání v Přehledu cenových nabídek i v okně Zakázky online ji
+  prohledává, našeptávač ji nabízí a seznam ji ukazuje pod názvem akce.
+  **Starší zakázky** doplňuje server po dávkách při ukládání (25 najednou),
+  takže se podle adresy najdou po několika uloženích kohokoli. „strasse"
+  najde „Straße".
+- **Zalomení řádků ve Wordu (P14 / K16-N81).** Víceřádkové hodnoty (kapitoly
+  nabídky, patička, dodatkové texty) se spojovaly značkou `<w:br/>` uvnitř
+  textu `<w:t>`, kde ji Word nevykreslí — skončily na jednom řádku. Teď se
+  text před zalomením uzavře (`</w:t><w:br/><w:t>`); totéž v krycích listech
+  generovaných od nuly.
+
+Testy (každý bod bez opravy selže): nový harness `overit_neulozene.mjs` 24,
+nová serverová sada `netlify/test_rejstrik.mjs` 14, `test_ulozeni` +9,
+`test_zamek_otisk` +17, `test_prava` +10, `test_uloziste` +11,
+`test_docxgen` +6, `test_dialogy` +1, `overit_dialogy` +4,
+`overit_zobrazeni` +1, `overit_sablona` zpřísněný na šabloně CN v12.
+Nové serverové mutace: P6 (jádro dokumentu), P7 (jméno z relace), P15
+(doplnění adres); mutace B59 přepsaná na nový kód porovnání.
+
+Ověřeno: sady v Node 143/0 (1 přeskočená — test.js není v exportu),
+`nastroje/pred_pushem.sh`: verze, CRLF, 40 ze 42 harnessů se šablonami
+CN v12 a PROJ v2 (`overit_manual` a `overit_sod` přeskočeny — chybí
+příručka a šablony SoD). Mutace serveru běžely po uzavření dávky (výsledek
+v další dávce).
+
+---
+
 ## v25.9.6 — dávka A kola 16: role slevy, zábrana nesmyslné nabídky, náhled (25. 9. 2026)
 
 - **Sleva nad strop už nejde „schválit" volbou role (P1 / K16-N73, K16-N74).**

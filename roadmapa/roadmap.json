@@ -5655,14 +5655,15 @@
   {
    "id" : "361",
    "vlna" : "B",
-   "stav" : "ceka",
+   "stav" : "hotovo",
+   "hotovoV" : "v25.9.7",
    "dulezitost" : "stredni",
    "slozitost" : "M",
    "nazev" : "Kolo 16, dávka B: neuložené změny, ověření zámku, dialogy, hledání adresy, zalomení ve Wordu",
-   "proc" : "Podklady kola 16 (PROMPT_PARALELNI_VETEV_K16.md, 25. 9. 2026) — drobnosti, které obchodníky obtěžují denně.",
-   "detail" : "P5 (K14-N65, N62, K15-N69): po startu a nové zakázce historieOznacUlozeno, razítko ceníku po tisku není změna uživatele, ruční uložení bez čísla odmítnout. P6 (K15-N67): zamekVysledekRozdily jen nad penězi a množstvím / ignorovat chybějící klíče. P7 (K15-N68, K16-N87): texty dialogu zámku (Ano/Ne), kolize verzí se jménem. P15 (K16-N85): adresa v rejstříku a hledání. P14 (K16-N81): \\n → <w:br/> v nahradPlaceholdery.",
-   "hotovoKdyz" : "Každý bod test, který bez opravy selže.",
-   "kde" : "`src/ui/historie.js`, `src/zamek.js`, `src/ui/zamek_ui.js`, `src/ui/online_ui.js`, `src/uloziste.js`, `src/docxgen.js`"
+   "proc" : "Podklady kola 16 (PROMPT_PARALELNI_VETEV_K16.md, 25. 9. 2026) — drobnosti, které obchodníky obtěžují denně: falešné varování o neuložených změnách, lišta zámku strašící u poctivých nabídek, dialog s tlačítky, která neexistují, kolize s e-mailem místo jména, zakázka nenalezitelná podle adresy, víceřádkové texty ve Wordu na jednom řádku.",
+   "detail" : "HOTOVO v25.9.7 (větev k16-nalezy). P5: nová zakázka posune otisk „naposledy uloženo\" (historieOznacUlozeno), dotaz „Nová zakázka\" mluví o neuložených změnách jen když jsou; razítko platného ceníku vtisknuté aplikací (progSrovnejNedotcene) není práce uživatele — otisk historie i autosave se posune, jen když nic rozepsaného nebylo; bez čísla nabídky se neukládá (uloMaCislo: onlineUloz odmítne s hláškou, autosave uložené zakázky s vymazaným číslem čeká, stav „vyplnit\"). P6: zamekVysledekRozdily porovnává jen čísla, texty a příznaky ne, klíč jen v jednom výsledku se přeskočí, řádky se párují podle názvu; jádro dokumentu (ZAMEK_OVERENI_JADRO) musí mít obě strany. P7: dialog uzamčené varianty a dva dialogy složky mají tlačítka s popisem akce (hlídač v test_dialogy); kolize verzí jmenuje člověka — server píše upravilJmeno z relace, u starších zakázek dohledá v účtech, vrací kdo/kdoEmail/kdoVy. P15: adresa stavby v rejstříku, v hledání, v našeptávači a pod názvem akce; starší záznamy doplňuje server po dávkách 25 při ukládání (uloRejstrikBezAdresy); „ss\" = „ß\". P14: zalomení </w:t><w:br/><w:t> místo <w:br/> uvnitř <w:t> (Word ho tam nevykreslil), i v dokumentech od nuly (docxPar).",
+   "hotovoKdyz" : "Splněno: overit_neulozene 24 (bez opravy 11 selže), netlify/test_rejstrik 14 (bez opravy 5), test_zamek_otisk +17 (bez opravy 9), test_prava +10, test_ulozeni +9, test_uloziste +11, test_docxgen +6 (bez opravy 9), overit_dialogy +4, test_dialogy +1, overit_zobrazeni +1, overit_sablona zpřísněný (bez opravy 2); nové mutace serveru P6, P7, P15.",
+   "kde" : "`src/ui/zakazka_ui.js`, `src/ui/program_ui.js`, `src/ui/online_ui.js`, `src/uloziste.js`, `src/seznam.js`, `src/zamek.js`, `src/ui/zamek_ui.js`, `src/docxgen.js`, `netlify/functions/zakazky.mjs`"
   },
   {
    "id" : "362",
@@ -6191,6 +6192,10 @@
   {
    "text" : "Noc 25. 9. 2026 (engscalc), v25.9.6 — dávka A kola 16 (#360): P1 role slevy z relace, P2 zábrana nesmyslné nabídky, P13 náhled bez autosave, N89. v25.9.5 na test. Podklady kola 16 rozebrané, pořadí B/C/D v PREDAVKA.md.",
    "hotovo" : true
+  },
+  {
+   "text" : "Noc 25. 9. 2026 (engscalc, větev k16-nalezy), v25.9.7 — dávka B kola 16 (#361): P5 falešné neuložené změny a uložení bez čísla, P6 ověření zámku jen nad čísly, P7 dialogy zámku a kolize se jménem, P15 hledání podle adresy stavby, P14 zalomení ve Wordu. Ověřeno: sady v Node, pred_pushem (harnessy s šablonami CN v12 a PROJ v2), mutace serveru.",
+   "hotovo" : true
   }
   ],
   "pravidla" : [
@@ -6277,7 +6282,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v25.9.6 (engscalc)",
+  "build" : "v25.9.7 (engscalc)",
   "stavKDatu" : "25. 9. 2026"
  },
  "_comment" : [
