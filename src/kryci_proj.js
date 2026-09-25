@@ -325,7 +325,13 @@ function kryciProjCtx(zak, varianta) {
   const sekce = {};
   let hodnota = '—', ocenene = '—', neocenene = '—';
   try {
-    const r = vypocetProj(d.proj.zadani, d.proj.cenik);
+    /* U odeslané nabídky ze ZMRAZENÉHO výsledku (N47, hloubkový test 24. 9.
+     * 2026): krycí list i smlouva PROJ počítaly dnešním kódem, takže u starší
+     * odeslané nabídky tvrdily jinou cenu, než odešla (nabídka 245 700,
+     * krycí list 272 700 nad zkušebním ceníkem). vypocetProjZ vrací otisk
+     * zámku, u rozpracované varianty počítá jako dřív. */
+    const r = (typeof vypocetProjZ === 'function' && vypocetProjZ(varianta))
+      || vypocetProj(d.proj.zadani, d.proj.cenik);
     r.sekce.forEach(s => { sekce[s.key] = { nazev: s.nazev, celkem: s.celkem }; });
     /* Stejná cena jako v nabídce PROJ, tj. po obchodním zaokrouhlení (#38);
      * ceny jednotlivých činností zůstávají nezaokrouhlené. */

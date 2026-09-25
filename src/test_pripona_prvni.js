@@ -132,5 +132,20 @@ const pres = z => zk.importZakazka(JSON.parse(JSON.stringify(z)));   // „ulož
   test('holé číslo u jiné varianty: neopravuje se (dvě stejná čísla)', !r.opraveno && z.varianty[0].pripona === 3, r);
 }
 
+/* N54 (hloubkový test 24. 9. 2026): tlačítko „Nová varianta" posílalo název
+ * podle POČTU variant — po smazání jedné vznikly dvě „Varianta 3". Klon bez
+ * vlastního názvu se pojmenuje podle přípony, kterou dostane. */
+{
+  const z = zk.novaZakazka();
+  const a2 = zm.klonujVariantu(z, z.varianty[0].id);
+  const a3 = zm.klonujVariantu(z, z.varianty[0].id);
+  z.varianty = z.varianty.filter(x => x.id !== a2.id);          // smazaná Varianta 2
+  const a4 = zm.klonujVariantu(z, z.varianty[0].id);
+  const jmena = z.varianty.map(x => x.nazev);
+  test('N54: po smazání varianty nevzniknou dva stejné názvy', new Set(jmena).size === jmena.length, JSON.stringify(jmena));
+  test('N54: název nové varianty nese její příponu', a4.nazev === 'Varianta ' + a4.pripona, a4.nazev + ' / .' + a4.pripona);
+  test('N54: a3 zůstala „Varianta 3"', a3.nazev === 'Varianta 3' && a3.pripona === 3, a3.nazev);
+}
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

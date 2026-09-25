@@ -2145,10 +2145,16 @@ function tiskListaSkript(hlasky, zamek) {
   }, hlasky || {});
   const z = (zamek && zamek.typ && typeof dokumentZamyka === 'function' && dokumentZamyka(zamek.typ))
     ? { typ: zamek.typ, varId: zamek.varId || '' } : null;
+  /* JSON uvnitř skriptu (B84, hloubkový test 24. 9. 2026): uzavírací značka
+   * skriptu v hlášce nebo id by skript ukončila a zbytek by se četl jako
+   * HTML. (Samotná značka tu v komentáři stát nesmí — aplikace je jeden
+   * vložený skript a ukončila by ho taky.) `<` se
+   * proto píše jako \u003c — pro JavaScript je to tentýž znak. */
+  const js = (x) => JSON.stringify(x).replace(/</g, '\\u003c');
   return '<scr' + 'ipt>'
     + 'var TISK_PUVODNI = null;\n'
-    + 'var TISK_HLASKY = ' + JSON.stringify(h) + ';\n'
-    + 'var TISK_ZAMEK = ' + JSON.stringify(z) + ';\n'
+    + 'var TISK_HLASKY = ' + js(h) + ';\n'
+    + 'var TISK_ZAMEK = ' + js(z) + ';\n'
     + 'var TISK_ZAMEK_KDY = 0;\n'
     + 'function tiskStav(t){var s=document.getElementById("tiskStav");if(s)s.textContent=t||"";}\n'
     + 'function tiskZamkni(){if(!TISK_ZAMEK)return;'

@@ -465,5 +465,24 @@ test('úklid sazby DPH se ostatních hodnot nedotkne',
 test('úklid sazby DPH nespadne na prázdném vstupu',
   kp.kryciProjMigraceSazbaDph(null) === null && kp.kryciProjMigraceSazbaDph(undefined) === undefined);
 
+console.log('\n--- N47: odeslaná nabídka — krycí list PROJ ze zmrazeného výsledku ---');
+{
+  nacti('./zamek.js');
+  const zN = zk.novaZakazka();
+  const vN = zN.varianty[0];
+  const dnes = vypocetProj(vN.data.proj.zadani, vN.data.proj.cenik);
+  /* Otisk zámku s jinou cenou, než dá dnešní výpočet — jako u nabídky,
+   * která odešla před změnou kódu nebo ceníku. */
+  const otisk = JSON.parse(JSON.stringify(dnes));
+  otisk.souhrn.celkem = Math.round(dnes.souhrn.celkem / 2);
+  otisk.sekce.forEach(s => { s.celkem = Math.round(s.celkem / 2); });
+  vN.zamek = { zamceno: true, typ: 'nabidkaProj', vysledek: { ock: null, proj: otisk, kurzEurKc: 0, build: 'test' } };
+  const cZ = kp.kryciProjCtx(zN, vN);
+  const cD = kp.kryciProjCtx(zN, Object.assign({}, vN, { zamek: null }));
+  test('N47: zamčená varianta bere hodnotu z otisku zámku, ne z dnešního výpočtu',
+    cZ.hodnota !== cD.hodnota, cZ.hodnota + ' × ' + cD.hodnota);
+  test('N47: rozpracovaná varianta počítá jako dřív', cD.hodnota !== '—');
+}
+
 console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
 process.exit(fail ? 1 : 0);

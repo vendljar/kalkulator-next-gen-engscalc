@@ -3,7 +3,7 @@
    Použití: node test_docxgen.js /cesta/k/Sablona_NABIDKA_CN_v3.docx [vystup.docx] */
 const fs = require('fs');
 const { docxVyplnSablonu, nahradPlaceholdery, zipPrecti, zipZapis,
-        odstranPrazdneTsRadky } = require('./docxgen.js');
+        odstranPrazdneTsRadky, expandujPriplatky } = require('./docxgen.js');
 
 // --- data pro test na reálné šabloně: placeholdery z VÝCHOZÍHO zadání ---
 const eng = require('./engine.js');
@@ -142,6 +142,18 @@ const pocetRadku = x => (x.match(/<w:tr[\s>]/g) || []).length;
     if (d.priplatky.length)
       test('příplatky v dokumentu (' + d.priplatky.length + ')', d.priplatky.every(p => xml.includes(p.nazev.replace(/&/g, '&amp;'))));
     console.log('výstup:', vystup);
+  }
+  /* B86 (hloubkový test 24. 9. 2026): symbol v NÁZVU příplatku se po
+   * rozvinutí tabulky nesmí rozvinout podruhé. */
+  {
+    const proto = '<w:tbl><w:tr><w:tc><w:p><w:r><w:t>{{PRIP_NAZEV}} {{PRIP_CENA}}</w:t></w:r></w:p></w:tc></w:tr></w:tbl>';
+    const xml = '<w:body>' + proto + '<w:p><w:r><w:t>{{FIRMA_ICO}}</w:t></w:r></w:p></w:body>';
+    const po = nahradPlaceholdery(expandujPriplatky(xml, [{ nazev: 'Zábrana {{FIRMA_ICO}}', popis: '', cena: '1 000 Kč' }]),
+      { FIRMA_ICO: '12345678' });
+    test('B86: symbol v názvu příplatku se nerozvine', po.includes('Zábrana &#123;&#123;FIRMA_ICO}}') && !po.includes('Zábrana 12345678'), po);
+    test('B86: symbol mimo příplatek se rozvine dál', po.includes('<w:t>12345678</w:t>'), po);
+    test('B86: běžný název příplatku zůstává beze změny',
+      expandujPriplatky(proto, [{ nazev: 'Střecha', cena: '5 Kč' }]).includes('Střecha 5 Kč'));
   }
   console.log(fail ? `\n${fail} TESTŮ SELHALO` : '\nVŠECHNY TESTY DOCXGEN OK');
   process.exit(fail ? 1 : 0);

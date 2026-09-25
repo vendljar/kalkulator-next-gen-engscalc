@@ -187,6 +187,13 @@ test('K1 nechá nulovou prohlubeň projít',
 /* K2 – jedno nástupiště. Výška podlaží by se dělila nulou. */
 const k2 = kontrolyProved(ctxZdravy(c => { c.zadani.nastupiste = 1; }));
 test('K2 pozná jediné nástupiště', kody(k2).includes('stanice'), JSON.stringify(kody(k2)));
+/* N53 (hloubkový test 24. 9. 2026): průchozí šachta má nástupiště po
+ * stranách A a C — A0 + C0 se 3 patry procházelo bez varování. */
+if (typeof nastupisteCelkem === 'undefined') global.nastupisteCelkem = require('./engine.js').nastupisteCelkem;
+const k2p = kontrolyProved(ctxZdravy(c => { Object.assign(c.zadani, { pruchoziSachta: true, nastupiste: 4, nastupisteA: 0, nastupisteC: 0, patra: 3 }); }));
+test('N53: průchozí šachta bez nástupišť (A0 + C0) varuje', kody(k2p).includes('stanice'), JSON.stringify(kody(k2p)));
+const k2pOk = kontrolyProved(ctxZdravy(c => { Object.assign(c.zadani, { pruchoziSachta: true, nastupiste: 0, nastupisteA: 3, nastupisteC: 1, patra: 3 }); }));
+test('N53: průchozí šachta A3 + C1 projde i s nulou v poli nastupiste', !kody(k2pOk).includes('stanice'), JSON.stringify(kody(k2pOk)));
 
 /* K3 – výšky nesedí. Ne „součet nesedí s výškou šachty": výška šachty je
  * v engine.js DOPOČÍTANÁ (prejezd + zdvih + prohlubeň), takže se s vlastním

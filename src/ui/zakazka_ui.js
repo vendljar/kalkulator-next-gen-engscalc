@@ -19,11 +19,13 @@ function varNova() {
    * překvapení, kterému se tu vyhýbáme. */
   if (typeof zamekCteniStop === 'function' && zamekCteniStop()) return;
   const zdroj = aktivniVarianta(ZAK);
-  const v = (typeof klonujVariantu === 'function')
-    ? klonujVariantu(ZAK, zdroj.id, { nazev: 'Varianta ' + (ZAK.varianty.length + 1) })
-    : null;
+  /* Název dá klonujVariantu podle PŘÍPONY („Varianta 3" = …555.3, #320).
+   * Do 25. 9. 2026 se sem posílal název podle počtu variant — po smazání
+   * jedné tak vznikly dvě „Varianta 3" a název neodpovídal číslu (N54). */
+  const v = (typeof klonujVariantu === 'function') ? klonujVariantu(ZAK, zdroj.id) : null;
   if (!v) {   // pojistka pro sestavení bez zamek.js
-    const z = novaVarianta('Varianta ' + (ZAK.varianty.length + 1),
+    const p = (typeof dalsiPriponaVarianty === 'function') ? dalsiPriponaVarianty(ZAK) : ZAK.varianty.length + 1;
+    const z = novaVarianta('Varianta ' + p,
       JSON.parse(JSON.stringify(zdroj.data)));
     if (typeof zakazkaUnikatniId === 'function') z.id = zakazkaUnikatniId(ZAK, z.id);   // B29
     ZAK.varianty.push(z); ZAK.aktivni = z.id;
@@ -386,7 +388,7 @@ function porovnaniPolozkyTisk() {
 
   const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
   if (!w) return;
-  w.document.write(`<!DOCTYPE html><html lang="${L}"><head><meta charset="utf-8">
+  w.document.write(`<!DOCTYPE html><html lang="${esc(L)}"><head><meta charset="utf-8">
     <title>${esc(T('Detail položek'))} ${esc(ZAK.cislo || '')}</title>
     <style>body{font:12px/1.5 "Segoe UI",sans-serif;color:#1a2332;max-width:1100px;margin:24px auto;padding:0 16px}
     h1{font-size:19px;margin-bottom:2px} h2{font-size:15px;margin:18px 0 2px}
@@ -434,7 +436,7 @@ function porovnaniTisk() {
 
   const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
   if (!w) return;
-  w.document.write(`<!DOCTYPE html><html lang="${L}"><head><meta charset="utf-8">
+  w.document.write(`<!DOCTYPE html><html lang="${esc(L)}"><head><meta charset="utf-8">
     <title>${esc(T('Porovnání variant'))} ${esc(ZAK.cislo || '')}</title>
     <style>body{font:13px/1.5 "Segoe UI",sans-serif;color:#1a2332;max-width:1000px;margin:24px auto;padding:0 16px}
     h1{font-size:19px;margin-bottom:2px} .sub{color:#6b7686;margin-bottom:14px}
@@ -656,7 +658,7 @@ async function nabidkaNahled() {
 
   const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
   if (!w) return;
-  w.document.write(`<!DOCTYPE html><html lang="${L === 'cz' ? 'cs' : L}"><head><meta charset="utf-8">
+  w.document.write(`<!DOCTYPE html><html lang="${esc(L === 'cz' ? 'cs' : L)}"><head><meta charset="utf-8">
     <title>${esc(data.nazevSouboru)}</title>
     <style>body{font:13px/1.5 "Segoe UI",sans-serif;color:#1a2332;max-width:860px;margin:24px auto;padding:0 16px}
     h1{font-size:19px} h2{font-size:13px;background:#eef2f8;padding:6px 10px;margin:18px 0 6px;text-transform:uppercase;letter-spacing:.03em}
@@ -859,7 +861,7 @@ async function nabidkaOckDokument() {
 
   const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
   if (!w) return;
-  w.document.write(`<!DOCTYPE html><html lang="${L === 'cz' ? 'cs' : L}"><head><meta charset="utf-8">
+  w.document.write(`<!DOCTYPE html><html lang="${esc(L === 'cz' ? 'cs' : L)}"><head><meta charset="utf-8">
     <title>${esc(data.nazevSouboru)}</title>
     <style>body{font:13px/1.55 "Segoe UI",sans-serif;color:#1a2332;max-width:860px;margin:24px auto;padding:0 16px}
     h1{font-size:20px;margin:6px 0} h1.sekce{font-size:15px;background:#1d4ed8;color:#fff;padding:7px 10px;margin:26px 0 10px;

@@ -237,8 +237,16 @@ function expandujPriplatky(xml, priplatky) {
   const t = najdiTabulku(xml, marker);
   if (!t) return xml;
   const proto = xml.slice(t.zac, t.kon);
+  /* Složená závorka z NÁZVU příplatku se nesmí stát symbolem (B86, hloubkový
+   * test 24. 9. 2026): celý dokument se po rozvinutí tabulky plní ještě
+   * jednou, takže příplatek pojmenovaný „{{FIRMA_ICO}}" by se ve Wordu
+   * rozvinul. Závorka z hodnot se proto vloží jako znaková entita &#123; —
+   * Word ukáže „{", ale symbol z ní nevznikne. Značka \uE000 (soukromá
+   * oblast Unicode) jen přečká escapování. */
+  const bezSymbolu = (v) => (v == null ? v : String(v).replace(/\{/g, '\uE000'));
   const kopie = (priplatky || []).map(p =>
-    nahradPlaceholdery(proto, { PRIP_NAZEV: p.nazev, PRIP_POPIS: p.popis, PRIP_CENA: p.cena }));
+    nahradPlaceholdery(proto, { PRIP_NAZEV: bezSymbolu(p.nazev), PRIP_POPIS: bezSymbolu(p.popis),
+                                PRIP_CENA: bezSymbolu(p.cena) }).replace(/\uE000/g, '&#123;'));
   return xml.slice(0, t.zac) + (kopie.length ? kopie.join('<w:p/>') : '<w:p/>') + xml.slice(t.kon);
 }
 

@@ -117,7 +117,10 @@ const KONTROLY = [
     zjisti(ctx) {
       const z = ctx.zadani;
       if (!z) return null;
-      const n = +z.nastupiste;
+      /* U průchozí šachty se nástupiště zadávají po stranách A a C
+       * (nastupisteCelkem); pole `nastupiste` tam nic neznamená, takže
+       * A0 + C0 procházelo bez varování (N53, hloubkový test 24. 9. 2026). */
+      const n = (typeof nastupisteCelkem === 'function') ? nastupisteCelkem(z) : +z.nastupiste;
       if (isFinite(n) && n >= 2) return null;
       /* Výška podlaží se počítá jako zdvih/(nástupiště−1); při jednom
        * nástupišti se dělí nulou a odvozené rozměry přestanou dávat smysl. */
