@@ -287,9 +287,23 @@ const MUTACE = [
     proc: 'projekce, statika a kancelář by se v nabídce ukázaly, ale do nákladové ceny by se nezapočítaly' },
 
   { nazev: 'příplatek za sklo SKN se nenabízí', soubor: 'engine.js',
-    hledej: "    ext ? mkPrip('skn', 'Sklo SKN 176 (Ug=1,1) (EXT)', skloBokyZadniM2, pp.sknM2, { cenaPath: 'C.priplatky.sknM2' }) : null,",
+    hledej: "    ext ? mkPrip('skn', 'Sklo SKN 176 (Ug=1,1) (EXT)', sknM2, pp.sknM2, { cenaPath: 'C.priplatky.sknM2' }) : null,",
     nahrad: '    null,',
     proc: 'nejčastěji poptávaný příplatek exteriérové šachty by z nabídky tiše zmizel' },
+
+  /* N50 a N52 (hloubkový test 24. 9. 2026) */
+  { nazev: 'N50: po stěnách se VSG počítá ze standardního zasklení', soubor: 'engine.js',
+    hledej: "    ? oplPasy.reduce((a, p) => a + (OPL_SKLA.indexOf(p.typ) >= 0 ? p.m2 : 0), 0) : skloCelkemM2;",
+    nahrad: "    ? skloCelkemM2 : skloCelkemM2;",
+    proc: 'fólie VSG by se účtovala i za stěny z Cetrisu nebo dodané stavbou' },
+  { nazev: 'N50: SKN po stěnách i z jiného skla než dvojskla', soubor: 'engine.js',
+    hledej: "    ? oplPasy.reduce((a, p) => a + (p.typ === 'C.skloBokyKc' ? p.m2 : 0), 0) : skloBokyZadniM2;",
+    nahrad: "    ? oplPasy.reduce((a, p) => a + (OPL_SKLA.indexOf(p.typ) >= 0 ? p.m2 : 0), 0) : skloBokyZadniM2;",
+    proc: 'SKN (náhrada dvojskla) by se účtovalo i za čelní VSG 4.4.1' },
+  { nazev: 'N52: dva řádky „jiné" téhož názvu', soubor: 'engine.js',
+    hledej: "      const nazev = pouzite[zaklad] > 1 ? zaklad + ' (' + pouzite[zaklad] + ')' : zaklad;",
+    nahrad: "      const nazev = zaklad;",
+    proc: 'ruční cena jednoho pásu „jiné" by přepsala i druhý se stejným názvem' },
 
   { nazev: 'příplatky se nezaokrouhlují nahoru', soubor: 'engine.js',
     hledej: "             naklad, sMarzi: CEIL(naklad * (1 + m), 1000), pozn: opts.pozn || ''",
