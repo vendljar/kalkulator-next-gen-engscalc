@@ -509,6 +509,10 @@ const PREKLAD = {
   "světlík nade dveřmi": ["Transom light above the door","Oberlicht über der Tür","Imposte vitrée au-dessus de la porte"],
   /* N58, N58b (24. 9. 2026): výplň nad dveřmi a vedle nich. NÁVRH PŘEKLADU —
    * čeká na odbornou kontrolu J. V. */
+  /* P7 / K13-N59 (25. 9. 2026): můstky. NÁVRH PŘEKLADU — kontrola J. V. */
+  "MŮSTKY MEZI BUDOVOU A OCK": ["BRIDGES BETWEEN THE BUILDING AND THE STEEL STRUCTURE","BRÜCKEN ZWISCHEN GEBÄUDE UND STAHLKONSTRUKTION","PASSERELLES ENTRE LE BÂTIMENT ET LA STRUCTURE MÉTALLIQUE"],
+  "přisazena k fasádě, v jednom nástupišti přes můstek": ["Attached to the facade, at one landing via an access bridge","An die Fassade angebaut, an einer Zugangsstelle über eine Brücke","Accolée à la façade, à un palier par une passerelle"],
+  "přisazena k podestám, v jednom nástupišti přes můstek": ["Attached to the landings, at one landing via an access bridge","An die Podeste angebaut, an einer Zugangsstelle über eine Brücke","Accolée aux paliers, à un palier par une passerelle"],
   "plechové nadpraží nade dveřmi": ["Sheet-metal panel above the door","Blechpaneel über der Tür","Panneau en tôle au-dessus de la porte"],
   "nadpraží z materiálu opláštění stěny": ["Panel above the door in the wall cladding material","Paneel über der Tür aus dem Verkleidungsmaterial der Wand","Panneau au-dessus de la porte dans le matériau du bardage de la paroi"],
   "nadpraží nade dveřmi zajistí objednatel": ["Panel above the door provided by the client","Paneel über der Tür stellt der Auftraggeber","Panneau au-dessus de la porte fourni par le maître d'ouvrage"],
@@ -819,6 +823,16 @@ const PREKLAD_VZORY = [
   { re: /^(\d+)x\s+sloupek,\s+ocelové uzavřené profily$/i,
     en: '$1× column, steel hollow sections', de: '$1× Stütze, Stahlhohlprofile',
     fr: '$1× poteau, profilés creux en acier' },
+  /* Můstky (P7, 25. 9. 2026): „2 ks, hloubka 900 mm, šířka 1300 mm" a usazení
+   * „přisazena k fasádě, v 3 nástupištích přes můstky". */
+  { re: /^(\d+) ks(?:, hloubka (\d+) mm)?(?:, šířka (\d+) mm)?$/i,
+    en: (m, n, h, s) => n + ' pcs' + (h ? ', depth ' + h + ' mm' : '') + (s ? ', width ' + s + ' mm' : ''),
+    de: (m, n, h, s) => n + ' Stk.' + (h ? ', Tiefe ' + h + ' mm' : '') + (s ? ', Breite ' + s + ' mm' : ''),
+    fr: (m, n, h, s) => n + ' pcs' + (h ? ', profondeur ' + h + ' mm' : '') + (s ? ', largeur ' + s + ' mm' : '') },
+  { re: /^přisazena k (fasádě|podestám), v (\d+) nástupištích přes můstky$/i,
+    en: (m, k, n) => 'Attached to the ' + (k === 'fasádě' ? 'facade' : 'landings') + ', at ' + n + ' landings via access bridges',
+    de: (m, k, n) => 'An ' + (k === 'fasádě' ? 'die Fassade' : 'die Podeste') + ' angebaut, an ' + n + ' Zugangsstellen über Brücken',
+    fr: (m, k, n) => 'Accolée ' + (k === 'fasádě' ? 'à la façade' : 'aux paliers') + ', à ' + n + ' paliers par des passerelles' },
   { re: /^(\d+)×\s*nad nástupišti$/i,
     en: '$1× over the landings', de: '$1× über den Zugangsstellen',
     fr: '$1× au-dessus des paliers' },

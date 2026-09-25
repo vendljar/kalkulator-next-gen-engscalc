@@ -156,8 +156,9 @@ const pravidla = kontrolyPravidla();
  * 1. 8. 2026 (N4): globální sleva PROJ nad firemní maximum. */
 /* 14. pravidlo „kapitoly" přibylo 23. 9. 2026 (K9-N32), 15. „terminAtyp"
  * 24. 9. 2026 (#330, TD1), 16. „nadDvermiBez" (N58, test_nadprazi.js)
- * a 17. „slevaWord" (P5 / K13-N56, test_k13_kontroly.js), obě 24. 9. 2026. */
-test('pravidel je sedmnáct', pravidla.length === 17, pravidla.length);
+ * a 17. „slevaWord" (P5 / K13-N56, test_k13_kontroly.js), obě 24. 9. 2026;
+ * 18. „mustky" 25. 9. 2026 (P7 / K13-N59, test_mustky.js). */
+test('pravidel je osmnáct', pravidla.length === 18, pravidla.length);
 test('kódy pravidel jsou jedinečné',
   new Set(pravidla.map(p => p.kod)).size === pravidla.length,
   pravidla.map(p => p.kod).join(','));

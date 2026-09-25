@@ -157,6 +157,24 @@ const MUTACE = [
     nahrad: "  const svetlikBokKs = kratkePricniky;",
     proc: 'boční pole z plechu by se zaplatilo dvakrát — jako sklo i jako plech' },
 
+  /* P7 / K13-N59 (25. 9. 2026): můstky počtem kusů. */
+  { nazev: 'P7: stará zakázka se zaškrtnutým můstkem = 0 ks', soubor: 'engine.js',
+    hledej: "  return (z && z.mustek) ? 1 : 0;",
+    nahrad: "  return 0;",
+    proc: 'zakázky s můstkem z doby před 25. 9. by ho ztratily z ceny i specifikace' },
+  { nazev: 'P7: můstky se v ceně neobjeví', soubor: 'engine.js',
+    hledej: "    mustky > 0 ? mkItem('MŮSTKY MEZI BUDOVOU A OCK', mustky, c.mustekKc, { cenaPath: 'C.mustekKc' }) : null,",
+    nahrad: "    null,",
+    proc: 'zpátky nález K13-N59 — můstek zadaný, v nabídce bez ceny' },
+  { nazev: 'P7: počítá se jen jeden můstek', soubor: 'engine.js',
+    hledej: "mkItem('MŮSTKY MEZI BUDOVOU A OCK', mustky,",
+    nahrad: "mkItem('MŮSTKY MEZI BUDOVOU A OCK', 1,",
+    proc: 'u šachty se třemi můstky by se dva nezaplatily' },
+  { nazev: 'P7: záporný počet můstků odečítá cenu', soubor: 'engine.js',
+    hledej: "return Math.max(0, Math.floor(+n));",
+    nahrad: "return Math.floor(+n);",
+    proc: 'překlep „-2" by nabídku zlevnil o dva můstky' },
+
   /* #348 (24. 9. 2026): zdroj jazykové verze a jazyk souboru. */
   { nazev: 'šablony: mutace k jiné češtině se tváří jako aktuální', soubor: 'sablony_online.js',
     hledej: "    return { stav: m.zdrojOtisk === cz.otisk ? 'aktualni' : 'zastarala', meta: m,",

@@ -202,8 +202,12 @@ const n58 = await p.evaluate(() => {
      * za opláštěním ve 3., přechodové plechy za čistým vstupem ve 4. */
     poradi2: [poradi(s2, 'Vnitřní hloubka'), poradi(s2, 'Počet nástupišť'), poradi(s2, 'Počet sloupků'), poradi(s2, 'Stříška nad nástupiště')],
     poradi3b: [poradi(s3, 'Opláštění'), poradi(s3, 'Typ portálů')],
-    mustekV4: !!s4 && sloupec('Můstek mezi budovou a OCK') === s4,
-    poradi4: [poradi(s4, 'Čistý vstup – šířka'), poradi(s4, 'Přechodové plechy'), poradi(s4, 'Můstek mezi budovou a OCK'), poradi(s4, 'ATYP (nestandardní zakázka)')],
+    mustekV4: !!s4 && sloupec('Můstky mezi budovou a OCK') === s4,
+    /* 25. 9. 2026: můstky jsou počet kusů hned pod čistým vstupem. */
+    poradi4: [poradi(s4, 'Čistý vstup – šířka'), poradi(s4, 'Můstky mezi budovou a OCK'), poradi(s4, 'Přechodové plechy'), poradi(s4, 'ATYP (nestandardní zakázka)')],
+    mustkyPole: (() => { const l = lbl('Můstky mezi budovou a OCK'); const i = l && l.parentElement.querySelector('input');
+      return i ? { typ: i.type, hodnota: i.value } : null; })(),
+    zadnyStaryMustek: !document.querySelector('#inputs input[type=checkbox][onchange*="Z.mustek"]'),
     zadneZaskrtavatko: !document.querySelector('#inputs input[type=checkbox][onchange*="svetlikNadDvermi"]'),
     volby, vybrano: sel ? sel.value : '',
   };
@@ -215,6 +219,11 @@ const n58 = await p.evaluate(() => {
   set('Z.svetlikyBoky', 2); render();
   out.bokyPo = !!lbl('Výplň boků dveří');
   set('Z.svetlikyBoky', 0); nadDvermiSet('plech'); render();
+  mustkySet(3);
+  out.mustky3 = { ks: Z.mustkyKs, stary: Z.mustek, rozmery: !!lbl('Hloubka můstku') };
+  mustkySet(-2);
+  out.mustkyZap = Z.mustkyKs;
+  mustkySet(0); render();
   return out;
 });
 zkus('25. 9.: 2. sloupec hloubka → počet nástupišť → počet sloupků → stříška',
@@ -223,13 +232,18 @@ zkus('25. 9.: typ portálů je ve 3. sloupci hned za opláštěním',
   n58.poradi3b[0] >= 0 && n58.poradi3b[1] === n58.poradi3b[0] + 1, JSON.stringify(n58.poradi3b));
 zkus('N58: světlík nad dveřmi je ve 3. sloupci mezi typem portálů a světlíky na bocích',
   n58.stejnySloupec && n58.poradi3[0] >= 0 && n58.poradi3[0] < n58.poradi3[1] && n58.poradi3[1] < n58.poradi3[2], JSON.stringify(n58));
-zkus('4. sloupec: čistý vstup → přechodové plechy → můstek → ATYP',
+zkus('25. 9.: můstky jsou číselné pole (výchozí 0), staré zaškrtávátko zmizelo',
+  n58.mustkyPole && n58.mustkyPole.typ === 'number' && n58.mustkyPole.hodnota === '0' && n58.zadnyStaryMustek, JSON.stringify(n58.mustkyPole));
+zkus('4. sloupec: čistý vstup → můstky → přechodové plechy → ATYP',
   n58.mustekV4 && n58.poradi4.every((x, i, a) => x >= 0 && (i === 0 || a[i - 1] < x)), JSON.stringify(n58.poradi4));
 zkus('N58: menu nabízí bez / sklo / plech / materiál opláštění / zajistí stavba',
   n58.volby.join('|') === 'bez|sklo|plech|materiál opláštění|zajistí stavba', n58.volby.join('|'));
 zkus('N58: staré zaškrtávátko zmizelo', n58.zadneZaskrtavatko);
 zkus('N58: volba se uloží a staré pole drží v souladu (stavba → ne, sklo → ano)',
   n58.poStavba.nad === 'stavba' && n58.poStavba.stary === false && n58.poSklo.nad === 'sklo' && n58.poSklo.stary === true, JSON.stringify(n58));
+zkus('25. 9.: 3 můstky se uloží, staré pole v souladu, ukážou se rozměry',
+  n58.mustky3.ks === 3 && n58.mustky3.stary === true && n58.mustky3.rozmery, JSON.stringify(n58.mustky3));
+zkus('25. 9.: záporný počet můstků = 0', n58.mustkyZap === 0, n58.mustkyZap);
 zkus('N58b: výplň boků se ukáže až s boky', !n58.bokyPred && n58.bokyPo, JSON.stringify(n58));
 
 zkus('za celý průchod nevznikla chyba v konzoli', konzole.length === 0, konzole.slice(0, 2).join(' | '));

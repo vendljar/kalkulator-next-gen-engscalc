@@ -372,8 +372,9 @@ function standardVyhodnot(z, vyskaM, std, pripl) {
     nalezy.push(_nalez('Opláštění', 'jednotné po celé šachtě', 'zadané po stěnách A–D'));
   }
 
-  /* --- můstek --- */
-  if (zad.mustek) {
+  /* --- můstek --- (od 25. 9. 2026 počet kusů; zaškrtnuté staré = 1) */
+  const mustkyKs = (typeof mustkyPocet === 'function') ? mustkyPocet(zad) : (zad.mustek ? 1 : 0);
+  if (mustkyKs > 0) {
     kontrol += 2;
     const h = _cislo(zad.mustekHloubkaMm);
     const sir = _cislo(zad.mustekSirkaMm);

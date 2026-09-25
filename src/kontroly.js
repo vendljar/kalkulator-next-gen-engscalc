@@ -172,6 +172,29 @@ const KONTROLY = [
     },
   },
   {
+    /* MŮSTKY (P7 / K13-N59, rozhodnutí J. V. 25. 9. 2026). Můstky se zadávají
+     * počtem a v kalkulaci mají vlastní řádek za ceníkovou cenu za kus.
+     * Dokud cena v ceníku chybí, jde řádek do nabídky za 0 Kč — to se musí
+     * říct. A víc můstků než nástupišť je překlep. */
+    kod: 'mustky', kde: 'Kalkulace OCK', nazev: 'Můstky mezi budovou a OCK',
+    zjisti(ctx) {
+      const z = ctx.zadani;
+      if (!z) return null;
+      const n = (typeof mustkyPocet === 'function') ? mustkyPocet(z) : (+z.mustkyKs || (z.mustek ? 1 : 0));
+      if (!n) return null;
+      const potize = [];
+      const nast = (typeof nastupisteCelkem === 'function') ? nastupisteCelkem(z) : +z.nastupiste;
+      if (isFinite(nast) && nast > 0 && n > nast)
+        potize.push('zadaných můstků (' + n + ') je víc než nástupišť (' + nast + ')');
+      const c = ctx.cenik;
+      if (c && !(+c.mustekKc > 0))
+        potize.push('v ceníku chybí cena můstku (Ceník → Hrubá OCK → Můstek mezi budovou a OCK), '
+          + 'takže ' + (n === 1 ? 'můstek jde' : 'můstky jdou') + ' do nabídky za 0 Kč');
+      if (!potize.length) return null;
+      return { text: 'Můstky mezi budovou a OCK: ' + kontrolyVyctem(potize) + '.' };
+    },
+  },
+  {
     kod: 'oplasteniBezKonstrukce', kde: 'Kalkulace OCK', nazev: 'Opláštění bez konstrukce',
     zjisti(ctx) {
       const s = ctx.vysledek && ctx.vysledek.souctySekci;

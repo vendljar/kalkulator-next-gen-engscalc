@@ -38,6 +38,7 @@ const CENIK_DEF = [
     ['C.vetraciMrizkaKc', 'Větrací mřížka (ext)', 'Kč/ks', ''],
     ['C.transportKc', 'Interní transport', 'Kč/cesta', ''],
     ['C.zastreseniM2Kc', 'Zastřešení šachty (ext)', 'Kč/m²', ''],
+    ['C.mustekKc', 'Můstek mezi budovou a OCK', 'Kč/ks', 'jeden můstek včetně montáže; počet se zadává v Zadání šachty'],
     ['C.oplechFasadaBmKc', 'Oplechování k fasádě (ext)', 'Kč/bm', ''],
   ]],
   /* ATYP (#7). Skupina se jmenuje stejně jako katalogová sekce `atyp` –

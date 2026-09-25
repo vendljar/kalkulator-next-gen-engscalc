@@ -77,6 +77,7 @@ const DEFAULT_CENIK = {  // HODNOTY VYNULOVÁNY pro GitHub (pripravit_github.py)
   powertechExt: 0, powertechInt: 0, // Kč/kg plechy
   montazniNosnik: 0, lemovaniKgKc: 0,
   oplechPracKc: 0, nytKc: 0, spodniRamKc: 0, cilkoKc: 0,
+  mustekKc: 0,                   // Můstek mezi budovou a OCK, Kč/ks (P7 / K13-N59, 25. 9. 2026)
   montazHodKc: 0, vetraciMrizkaKc: 0, transportKc: 0,
   zastreseniM2Kc: 0, oplechFasadaBmKc: 0,
   skloBokyKc: 0,  skloBokyNazev: '',
@@ -417,6 +418,10 @@ const DEFAULT_ZADANI = {
    * Prázdné rozměry znamenají „nevyplněno", ne nulu — kontrola standardu je
    * pak hlásí jako „nelze posoudit". */
   mustek: false, mustekHloubkaMm: '', mustekSirkaMm: '',
+  /* Od 25. 9. 2026 (zadání J. V.) se můstky zadávají POČTEM KUSŮ `mustkyKs`
+   * — 0 = žádné, jiné číslo = kolik jich na šachtě je. Klíč tu schválně
+   * NENÍ: import doplňuje chybějící klíče z tohoto vzoru a u staré zakázky
+   * se zaškrtnutým můstkem by tak vznikla nula. Čte se přes mustkyPocet(). */
   volitelneVychozi: {}, // výchozí zaškrtnutí volitelných { klíč: bool }
   /* Skla (vsgFolie, skn) jsou ve výchozím stavu MIMO nabídku (23. 8. 2026,
    * zadání J. V. — řeší nález N7). Šachta se počítá jako ocelová a obchodník
@@ -471,6 +476,15 @@ function bokyVypln(z) {
 const VYPLN_SKLENA = v => v === 'sklo' || v === 'material';
 const PLECH_NADPRAZI_KG_M2 = 8.5;   // stejný plech jako podesty (podKg1)
 
+/* POČET MŮSTKŮ MEZI BUDOVOU A OCK (P7 / K13-N59, zadání J. V. 25. 9. 2026).
+ * `mustkyKs` = kolik můstků na šachtě je (0 = žádný). Stará zakázka nese
+ * jen zaškrtávátko `mustek` — zaškrtnuté znamená jeden můstek. */
+function mustkyPocet(z) {
+  const n = z ? z.mustkyKs : undefined;
+  if (n !== undefined && n !== null && n !== '' && isFinite(+n)) return Math.max(0, Math.floor(+n));
+  return (z && z.mustek) ? 1 : 0;
+}
+
 function vypocet(zadani, cenik, jekly, fixes = true) {
   const z = zadani, c = cenik;
   /* Zadání bez objektu volitelných položek (ručně upravený nebo poškozený
@@ -482,6 +496,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const zapusteny = z.typPortalu === 'zapuštěný';
   const terce = z.zaskleni === 'na terče';
   const nadV = nadDvermiVypln(z), bokyV = bokyVypln(z);
+  const mustky = mustkyPocet(z);
   const svetlik = VYPLN_SKLENA(nadV) ? 1 : 0;          // pole nad dveřmi je sklo stěny
   const nadPlech = nadV === 'plech' ? 1 : 0;
   const bokySklo = VYPLN_SKLENA(bokyV) ? 1 : 0, bokyPlech = bokyV === 'plech' ? 1 : 0;
@@ -1273,6 +1288,12 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     mkItem('INTERNÍ TRANSPORT', 2, c.transportKc, { cenaPath: 'C.transportKc' }),
     ext ? mkItem('ZASTŘEŠENÍ ŠACHTY (EXT)', (z.sirka + 0.2) * (z.hloubka + 0.1), c.zastreseniM2Kc, { cenaPath: 'C.zastreseniM2Kc' }) : null,
     ext ? mkItem('OPLECHOVÁNÍ K FASÁDĚ (EXT)', (H - z.prohluben) * 2, c.oplechFasadaBmKc, { cenaPath: 'C.oplechFasadaBmKc' }) : null,
+    /* MŮSTKY (P7 / K13-N59, 25. 9. 2026). Do 25. 9. byl můstek jen evidenční
+     * údaj a v ceně nebyl nikde. Řádek vzniká JEN u zakázky s můstky, takže
+     * zakázky bez nich (i Model 1) mají seznam položek beze změny. Cena je
+     * ceníková položka za kus; prázdná v ceníku = 0 Kč a kontrola před
+     * nabídkou to řekne (pravidlo `mustkyBezCeny`). */
+    mustky > 0 ? mkItem('MŮSTKY MEZI BUDOVOU A OCK', mustky, c.mustekKc, { cenaPath: 'C.mustekKc' }) : null,
     ...vlastniProSekci('hrubaOck'),
     /* ATYP položky se v nabídce nevydělují do vlastní sekce – zákazník má vidět
      * jednu ocelovou konstrukci, ne účet za „něco navíc". Uvnitř kalkulace je
@@ -1796,4 +1817,4 @@ function cenikMigraceLeseni(cenik) {
   }
 }
 
-if (typeof module !== 'undefined') module.exports = { vypocet, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, BOKY_VYPLN_VOLBY, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };
+if (typeof module !== 'undefined') module.exports = { vypocet, mustkyPocet, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, BOKY_VYPLN_VOLBY, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };

@@ -155,6 +155,19 @@ function tsDvojsklo(Z) { return (Z || {}).typSachty !== 'interiérová'; }
  * Jádro má tutéž volbu v nadDvermiVypln / bokyVypln; techspec.js se ale
  * načítá i bez jádra (testy, server), proto záložní převod starého
  * zaškrtávátka přímo tady — stejné pravidlo: zaškrtnutý = sklo. */
+/* Počet můstků a nástupišť pro specifikaci (P7). Jádro má mustkyPocet
+ * a nastupisteCelkem; techspec.js se načítá i bez jádra, proto záloha. */
+function tsMustky(Z) {
+  if (typeof mustkyPocet === 'function') return mustkyPocet(Z || {});
+  const n = Z && Z.mustkyKs;
+  if (n !== undefined && n !== null && n !== '' && isFinite(+n)) return Math.max(0, Math.floor(+n));
+  return (Z && Z.mustek) ? 1 : 0;
+}
+function tsNastupiste(Z) {
+  if (typeof nastupisteCelkem === 'function') return nastupisteCelkem(Z || {});
+  return +(Z && Z.nastupiste) || 0;
+}
+
 function tsVyplnDveri(Z) {
   const z = Z || {};
   const nad = (typeof nadDvermiVypln === 'function') ? nadDvermiVypln(z)
@@ -264,10 +277,18 @@ const TECHSPEC_DEF = [
     { id: 'kabina', label: 'PRŮCHOZÍ KABINA', ciselnik: TS_C.pruchoziKabina,
       prefill: (r, Z) => Z.pruchoziSachta ? 'průchozí kabina' : 'neprůchozí kabina' },
     { id: 'pudorys', label: 'PŮDORYSNÉ ŘEŠENÍ ŠACHTY', ciselnik: TS_C.pudorys, def: 'pravoúhlý tvar' },
+    /* S můstky (P7 / K13-N59, 25. 9. 2026) se usazení čelní stěny řídí jejich
+     * počtem: v každém nadzemním nástupišti = „s nástupními můstky…" z číselníku,
+     * jinak věta s počtem. Bez můstků beze změny. */
     { id: 'usazeniCelni', label: 'USAZENÍ OCK – ČELNÍ STĚNA', ciselnik: TS_C.usazeniCelni,
-      prefill: (r, Z) => Z.typSachty === 'exteriérová'
-        ? 'přisazena k fasádě (dle odchylky podest od svislice)'
-        : 'přisazena k podestám (dle odchylky podest od svislice)' },
+      prefill: (r, Z) => {
+        const ext = Z.typSachty === 'exteriérová';
+        const n = tsMustky(Z), nast = tsNastupiste(Z);
+        const k = ext ? 'přisazena k fasádě' : 'přisazena k podestám';
+        if (!n) return k + ' (dle odchylky podest od svislice)';
+        if (nast > 1 && n >= nast - 1) return 's nástupními můstky ve všech nadzemních nástupištích';
+        return n === 1 ? k + ', v jednom nástupišti přes můstek' : k + ', v ' + n + ' nástupištích přes můstky';
+      } },
     { id: 'usazeniBocni', label: 'USAZENÍ OCK – BOČNÍ STĚNY', ciselnik: TS_C.usazeniBocni, def: ' -' },
     { id: 'usazeniLeva', label: 'USAZENÍ OCK – LEVÁ BOČNÍ STĚNA', ciselnik: TS_C.usazeniBocni, def: ' -' },
     { id: 'usazeniPrava', label: 'USAZENÍ OCK – PRAVÁ BOČNÍ STĚNA', ciselnik: TS_C.usazeniBocni, def: ' -' },
@@ -309,8 +330,16 @@ const TECHSPEC_DEF = [
       prefill: (r, Z) => Z.typSachty === 'exteriérová' && Z.volitelne.haky
         ? '3 ks závěsných ok pro výškové práce' : 'nejsou součástí konstrukce' },
     { id: 'strecha', label: 'STŘECHA ŠACHTY', ciselnik: TS_C.strecha,
-      prefill: (r, Z) => Z.typSachty === 'exteriérová'
-        ? 'plochá pultová střecha se sklonem na dvůr, RAL 3011' : 'bez zastřešení (OCK končí pod stropem)' },
+      prefill: (r, Z) => {
+        if (Z.typSachty !== 'exteriérová') return 'bez zastřešení (OCK končí pod stropem)';
+        /* Můstek v každém nadzemním nástupišti = i v nejvyšším, střecha se
+         * přes něj přetahuje k fasádě (číselník). Při menším počtu se neví,
+         * kde můstky jsou, a střecha zůstává standardní. */
+        const n = tsMustky(Z), nast = tsNastupiste(Z);
+        return (n && nast > 1 && n >= nast - 1)
+          ? 'plochá pultová střecha se sklonem na dvůr přetažená i přes nástupní můstek až k fasádě budovy, žlab není uvažován'
+          : 'plochá pultová střecha se sklonem na dvůr, RAL 3011';
+      } },
     { id: 'pozarni', label: 'POŽÁRNÍ KLASIFIKACE KONSTRUKCE', ciselnik: TS_C.pozarni,
       def: 'materiály DP1, opláštění bez deklarované požární odolnosti' },
   ], pozn: '** parametry profilů se mohou změnit po zpracování statického posouzení' },
@@ -377,6 +406,14 @@ const TECHSPEC_DEF = [
         return ks === 1 ? 'nad nástupištěm' : `${ks}× nad nástupišti`;
       } },
     { id: 'podchoziOck', label: 'PODCHOZÍ NOSNÁ OCK', def: ' -' },
+    /* Můstky do specifikace a nabídky (P7 / K13-N59, 25. 9. 2026). */
+    { id: 'mustky', label: 'MŮSTKY MEZI BUDOVOU A OCK',
+      prefill: (r, Z) => {
+        const n = tsMustky(Z);
+        if (!n) return ' -';
+        const h = +Z.mustekHloubkaMm || 0, s = +Z.mustekSirkaMm || 0;
+        return n + ' ks' + (h ? ', hloubka ' + h + ' mm' : '') + (s ? ', šířka ' + s + ' mm' : '');
+      } },
     { id: 'zabradliPodesty', label: 'ZÁBRADLÍ NA PODESTÁCH',
       prefill: (r, Z) => Z.typSachty !== 'exteriérová' && Z.volitelne.zabradli
         ? 'úpravy a napojení stávajícího zábradlí na podestách' : ' -' },

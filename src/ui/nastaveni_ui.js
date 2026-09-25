@@ -342,7 +342,7 @@ function nastStandard() {
     <div class="sec-title">Můstek mezi budovou a OCK</div>
     <div class="note" style="margin-top:0">Platí pro <b>venkovní i vnitřní</b> šachtu — limity jsou
       společné, proto stojí mimo obě tabulky (rozhodnutí J. V. 17. 9. 2026). Hlídá se jen tehdy,
-      když je můstek v zadání šachty zaškrtnutý.</div>
+      když má zakázka v zadání šachty aspoň jeden můstek (pole Můstky mezi budovou a OCK).</div>
     <div class="row"><label>Hloubka max <span class="note">(mezi budovou a OCK)</span></label>
       <input type="number" step="10" style="width:100px" value="${esc(s.mustek.hloubkaMaxMm)}"
         onchange="stdSet('mustek.hloubkaMaxMm', +this.value)"><span class="u">mm</span></div>

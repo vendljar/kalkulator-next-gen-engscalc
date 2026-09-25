@@ -211,6 +211,7 @@ function nabidkaData(zak, varianta, jekly, lang) {
      * symbol nemá — doplní se se šablonou. */
     TS_PROSKLENA_PRICKA: tsNeboPrazdno('prosklenaPricka'),
     TS_PROSKLENA_STRISKA: tsNeboPrazdno('prosklenaStriska'),
+    TS_MUSTKY: tsNeboPrazdno('mustky'),   // P7 / K13-N59: počet a rozměr můstků
     TS_LESENI_UVNITR: ts('leseniUvnitr'), TS_LESENI_VNE: ts('leseniVne'),
     TS_ZABRANY_VSTUPY: ts('zabranyVstupy'),
     TS_SKEN3D: ts('sken3d'), TS_VYSTUP_ZAMERENI: ts('vystupZamereni'),
@@ -461,6 +462,7 @@ function nabidkaNahledSekce(ph, lang) {
       ['ODVĚTRÁNÍ ŠACHTY', ph.TS_ODVETRANI], ['PODCHOZÍ NOSNÁ OCK', ph.TS_PODCHOZI_OCK],
       ...(ph.TS_PROSKLENA_PRICKA ? [['PROSKLENÁ PŘÍČKA VEDLE ŠACHTY', ph.TS_PROSKLENA_PRICKA]] : []),
       ...(ph.TS_PROSKLENA_STRISKA ? [['PROSKLENÁ STŘÍŠKA', ph.TS_PROSKLENA_STRISKA]] : []),   // P10 / K12-N46
+      ...(ph.TS_MUSTKY ? [['MŮSTKY MEZI BUDOVOU A OCK', ph.TS_MUSTKY]] : []),                   // P7 / K13-N59
       ['PŘECHODOVÉ PLECHY V NÁSTUPIŠTÍCH', ph.TS_PRECHODOVE_PLECHY],
       /* Sokl sem patří, jen když se dodává — jinak stojí níž mezi tím, co
        * součástí dodávky není. Rozhoduje to, který ze zástupců je vyplněný;

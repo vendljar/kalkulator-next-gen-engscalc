@@ -173,15 +173,14 @@ function renderInputs() {
         inp('Z.roztec', { l: 'Svislá rozteč příčníků', u: 'm' })
         + inp('Z.sirkaRamuMm', { l: 'Šířka rámu dveří', step: 5, u: 'mm' })
         + inp('Z.cistyVstupMm', { l: 'Čistý vstup – šířka', step: 10, u: 'mm' })
-        + inp('Z.prechodovePlechy', { type: 'check', l: 'Přechodové plechy' })
-        /* Můstek (#163, 21. 8. 2026). Do výpočtu nevstupuje — je to vstup pro
-         * kontrolu standardu a pro technickou specifikaci. Rozměry se ptají,
-         * jen když můstek je; prázdné pole znamená „nevyplněno", ne nulu.
-         * Od 24. 9. 2026 (N58, zadání J. V.) stojí ve 4. sloupci na místě,
-         * kde byl světlík nad dveřmi. */
-        + `<div class="row"><label>Můstek mezi budovou a OCK</label>
-            <input type="checkbox" ${Z.mustek ? 'checked' : ''} onchange="set('Z.mustek', this.checked)"><span class="u"></span></div>`
-        + (Z.mustek
+        /* MŮSTKY MEZI BUDOVOU A OCK (#163; od 25. 9. 2026 počet kusů, zadání
+         * J. V.). 0 = žádný, jiné číslo = kolik jich na šachtě je. Stojí hned
+         * pod čistým vstupem, nad přechodovými plechy. Rozměry se ptají, jen
+         * když můstky jsou; prázdné pole znamená „nevyplněno", ne nulu. */
+        + `<div class="row"><label>Můstky mezi budovou a OCK</label>
+            <input type="number" step="1" min="0" value="${esc(mustkyPocet(Z))}"
+              title="počet můstků; 0 = šachta nemá žádný" onchange="mustkySet(this.value)"><span class="u">ks</span></div>`
+        + (mustkyPocet(Z) > 0
           ? `<div class="row"><label>Hloubka můstku</label>
                <input type="number" step="10" min="0" value="${esc(Z.mustekHloubkaMm == null ? '' : Z.mustekHloubkaMm)}"
                  placeholder="mm" title="vzdálenost mezi budovou a OCK; standard max 1 000 mm"
@@ -191,6 +190,8 @@ function renderInputs() {
                  placeholder="mm" title="standard: max na šířku OCK"
                  onchange="set('Z.mustekSirkaMm', this.value)"><span class="u">mm</span></div>`
           : '')
+        + inp('Z.prechodovePlechy', { type: 'check', l: 'Přechodové plechy' })
+
         /* ATYP má vlastní obsluhu (17. 8. večer): zaškrtnutí předvyplní všechny
          * čtyři rezervy a Zámečníka atyp z ceníku; odškrtnutí vrací pole, do
          * kterých nikdo ručně nesáhl — atypové přirážky bez atypu nemají co
@@ -601,6 +602,16 @@ const BOKY_VYPLN_POPISY = [['sklo', 'sklo'], ['plech', 'plech'],
  * (sklo i materiál = pole je sklo stěny), aby ho nepoplety starší části
  * dat a čtenáři mimo jádro. Zapisuje se AŽ po set(): když zápis zastaví
  * zámek, nesmí se změnit ani to druhé pole. */
+/* Počet můstků (25. 9. 2026). Celé nezáporné číslo; staré zaškrtávátko
+ * `mustek` se drží v souladu (kontrola standardu i starší data ho čtou).
+ * Zapisuje se AŽ po set() — když zápis zastaví zámek, nemění se nic. */
+function mustkySet(v) {
+  const n = Math.max(0, Math.floor(+v || 0));
+  set('Z.mustkyKs', n);
+  if (Z.mustkyKs === n) Z.mustek = n > 0;
+  render();
+}
+
 function nadDvermiSet(v) {
   if (NAD_DVERMI_VOLBY.indexOf(v) < 0) return;
   set('Z.nadDvermi', v);
