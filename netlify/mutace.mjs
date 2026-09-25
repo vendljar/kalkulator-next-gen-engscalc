@@ -51,7 +51,9 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* F1 (24. 9. 2026): pojistky N43, N44 a B73 hlídají vlastní sady. */
      'test_stary_tvar.mjs', 'test_klon_sleva.mjs', 'test_autor.mjs',
      /* G1 (24. 9. 2026): zdroj jazykové verze a vrácení šablony. */
-     'test_sablony.mjs'];
+     'test_sablony.mjs',
+     /* Dávka A kola 16 (25. 9. 2026): pohled obchodníka, role slevy (P1). */
+     'test_obchodnik.mjs'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -769,6 +771,16 @@ const MUTACE = [
     hledej: "          sl.schvalil = jmeno; sl.schvalilEmail = relace.email || '';",
     nahrad: "          sl.schvalilEmail = relace.email || '';",
     proc: 'v zakázce by stálo cizí jméno pod rozhodnutím' },
+
+  /* ---------- P1 kola 16 (K16-N73, K16-N74): role slevy z relace ---------- */
+  { nazev: 'P1: role slevy se bere z dat, ne z relace', soubor: '../src/schvalovani.js',
+    hledej: "      if (zmenaProc) { if (role) sl.role = role; }",
+    nahrad: "      if (false) { if (role) sl.role = role; }",
+    proc: 'obchodník by si zvolil roli Administrátor a sleva nad strop by vypadala jako jeho' },
+  { nazev: 'P1: uložení nadřízeným schválí cizí žádost', soubor: '../src/schvalovani.js',
+    hledej: "      if (sl.stav === SCHV_AUTO && p > 0 && !autoBezeZmeny && !zmenaProc\n",
+    nahrad: "      if (false\n",
+    proc: 'vedoucí by zakázku jen otevřel a uložil a cizí sleva by byla „schválená" bez rozhodnutí' },
 
   /* ---------- #341 (B71): minimální marže u slevy ---------- */
   { nazev: '#341: minimální marže se na serveru nekontroluje', soubor: 'functions/zakazky.mjs',

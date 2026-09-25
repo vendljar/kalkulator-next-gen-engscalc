@@ -302,6 +302,28 @@ test('a řekne se proč', /uzamčená/.test(poslednihlaska), poslednihlaska);
 test('přepočet uzamčenou variantu nepřepisuje',
   (await stav()).schvalenoProc === 10, JSON.stringify(await stav()));
 
+/* ---------- P1 kola 16 (K16-N73): role slevy = role přihlášeného ---------- */
+const p1 = await page.evaluate(() => {
+  const puvodni = ONLINE_STAV.ja;
+  const s = slevaDefault();
+  ONLINE_STAV.ja = { email: 'v@x.cz', jmeno: 'Ved', role: 'Vedoucí' };
+  slevaNastav(s, 'procenta', 7);
+  const poZmene = s.role;
+  slevaNastav(s, 'role', 'Administrátor');
+  const poVolbe = s.role;
+  ONLINE_STAV.ja = null;
+  slevaNastav(s, 'procenta', 9);
+  const offline = s.role;
+  ONLINE_STAV.ja = puvodni;
+  return { poZmene, poVolbe, offline };
+});
+test('P1: změna procent zapíše roli přihlášeného', p1.poZmene === 'Vedoucí', JSON.stringify(p1));
+test('P1: roli slevy nejde zvolit', p1.poVolbe === 'Vedoucí', JSON.stringify(p1));
+test('P1: bez přihlášení zůstává role slevy', p1.offline === 'Vedoucí', JSON.stringify(p1));
+await page.evaluate(() => { prepniTab('kalk'); render(); });
+test('P1: karta slevy už nenabízí výběr „Role zadavatele"',
+  !(await page.locator('#ock-sleva').innerText()).includes('Role zadavatele'));
+
 test('žádná chyba JavaScriptu', chyby.length === 0, chyby.slice(0, 2).join(' | '));
 
 await prohlizec.close();

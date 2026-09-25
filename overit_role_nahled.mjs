@@ -321,6 +321,29 @@ test('obchodník kurz u zahraniční zakázky vidí', kurz.je && /25[.,]5/.test(
 test('ale nemá ho v čem přepsat (jen text, ne pole)', kurz.vstup === false);
 
 
+/* ---------- P13 a N89 kola 16 ---------- */
+const k16 = await page.evaluate(async () => {
+  const bylo = { ja: ONLINE_STAV.ja, role: NAST.nahledRole, fetch: window.fetch };
+  let volano = 0;
+  window.fetch = () => { volano++; return Promise.reject(new Error('nesmí se volat')); };
+  ONLINE_STAV.ja = { email: 'a@x.cz', jmeno: 'Admin', role: 'Administrátor' };
+  NAST.nahledRole = 'Obchodník';
+  const tiche = await onlineUloz({ tiche: true });
+  const jakykoli = nahledJakykoli();
+  NAST.nahledRole = bylo.role; ONLINE_STAV.ja = bylo.ja; window.fetch = bylo.fetch;
+  return { tiche, volano, jakykoli };
+});
+test('P13: v rolovém náhledu automatické uložení nic neodešle', k16.tiche === false && k16.volano === 0, JSON.stringify(k16));
+test('P13: rolový náhled se počítá jako náhled', k16.jakykoli === true);
+const n89 = await page.evaluate(() => {
+  const bylo = { role: NAST.nahledRole, mat: NAST.zobrazeni };
+  NAST.nahledRole = 'Obchodník';
+  const obch = smiZobrazit('uloziste.mazani');
+  NAST.nahledRole = bylo.role;
+  return { obch };
+});
+test('N89: obchodník (náhled) nemá právo na mazání zakázek → bez „Smazat vybrané"', n89.obch === false, JSON.stringify(n89));
+
 test('žádná chyba JavaScriptu', chyby.length === 0, chyby.slice(0, 2).join(' | '));
 
 await prohlizec.close();

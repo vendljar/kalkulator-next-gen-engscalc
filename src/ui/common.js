@@ -175,6 +175,11 @@ function smiPohledAdmina() {
 /* ---------- náhled pohledem konkrétního uživatele (20. 8. 2026) ---------- */
 
 function nahledAktivni() { return !!(NAST.nahledUzivatel && NAST.nahledUzivatel.email); }
+/* Jakýkoli náhled — účtu i role (P13 / K16-N77, 25. 9. 2026). Rolový náhled
+ * zápis dál neblokuje (administrátor v něm ladí), ale AUTOMATICKÉ ukládání
+ * v něm stojí: během náhledu „Obchodník" autosave uložil zakázku pod
+ * administrátorem, aniž by o tom kdo věděl. */
+function nahledJakykoli() { return nahledAktivni() || !!NAST.nahledRole; }
 
 /* Zapnutí: role vybraného účtu se stane rolí rozhraní. Pohled administrátora
  * se zhasne (`NAST.jeAdmin = false`), jinak by matice vůbec nezačala platit —
@@ -1914,15 +1919,29 @@ function slevaProjRefreshStav() { return slevaRefreshStavCast('proj'); }
  * ve které se poznámka NEnapsala, by jinak při nejbližším překreslení vrátila
  * starý text (audit 1. 8. 2026, N5). onchange pálí až při opuštění pole,
  * takže překreslení kurzor nekrade. */
+/* ROLE SLEVY = ROLE PŘIHLÁŠENÉHO (P1 / K16-N73, 25. 9. 2026). Výběr
+ * „Role zadavatele" z karty zmizel — obchodník si jím „schválil" slevu nad
+ * strop. Kdo mění procenta, je autor slevy; jeho role se zapíše do slevy
+ * (server ji stejně přepíše z relace). Bez přihlášení (soubor offline) zůstává
+ * role, jakou sleva má. Roli jinak změnit nejde. */
+function slevaRolePrihlaseneho() {
+  const ja = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV) ? ONLINE_STAV.ja : null;
+  return (ja && ja.role) || null;
+}
+function slevaNastav(obj, pole, val) {
+  if (!obj || pole === 'role') return false;
+  if (pole === 'procenta') {
+    obj.procenta = Math.max(0, +val || 0);
+    const r = slevaRolePrihlaseneho();
+    if (r) obj.role = r;
+  } else obj[pole] = val;
+  return true;
+}
 function slevaSet(pole, val) {
-  if (!SL) return;
-  if (pole === 'procenta') SL.procenta = Math.max(0, +val || 0); else SL[pole] = val;
-  render();
+  if (slevaNastav(typeof SL !== 'undefined' ? SL : null, pole, val)) render();
 }
 function slevaProjSet(pole, val) {
-  if (!SLP) return;
-  if (pole === 'procenta') SLP.procenta = Math.max(0, +val || 0); else SLP[pole] = val;
-  render();
+  if (slevaNastav(typeof SLP !== 'undefined' ? SLP : null, pole, val)) render();
 }
 /* `slevaSetSchvalitel` a `slevaSchval` tu skončily 5. 8. 2026: schvalování
  * má vlastní záložku (`ui/schvalovani_ui.js`). Pole `SL.schvalitel` ve
@@ -1956,7 +1975,6 @@ function slevaKarta(kontext) {
   const schemata = NAST.slevy.schemata || [];
   const schemaOpts = ['<option value="">— schéma slevy —</option>']
     .concat(schemata.map(s => `<option ${s.nazev === SLC.schema ? 'selected' : ''}>${esc(s.nazev)}</option>`)).join('');
-  const roleOpts = NAST.role.map(rr => `<option ${rr === SLC.role ? 'selected' : ''}>${esc(rr)}</option>`).join('');
   const strop = v.strop;
 
   /* Stavů je pět, ale „zamítnuto" znamená dvě různé věci: buď slevu srazila
@@ -2019,7 +2037,7 @@ function slevaKarta(kontext) {
 
   const inner = `<div class="zak-head" style="grid-template-columns:1fr 1fr 1fr">
       <div class="row"><label>Schéma slevy</label><select onchange="${c.fn}('schema', this.value)">${schemaOpts}</select></div>
-      <div class="row"><label>Role zadavatele</label><select onchange="${c.fn}('role', this.value)">${roleOpts}</select></div>
+      <div class="row"><label>Zadal (role)</label><span title="Role slevy se bere z přihlášeného uživatele, který zadal procenta; určuje strop, do kterého se sleva schválí sama.">${esc(SLC.role || '—')}</span></div>
       <div class="row"><label>Sleva</label><span class="pct-wrap"><input type="number" step="0.5" min="0" value="${+SLC.procenta || 0}" onchange="${c.fn}('procenta', this.value)"> %</span></div>
     </div>
     <div class="row" style="max-width:100%"><label>Poznámka ke slevě</label>

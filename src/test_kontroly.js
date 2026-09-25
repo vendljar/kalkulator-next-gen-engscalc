@@ -158,7 +158,8 @@ const pravidla = kontrolyPravidla();
  * 24. 9. 2026 (#330, TD1), 16. „nadDvermiBez" (N58, test_nadprazi.js)
  * a 17. „slevaWord" (P5 / K13-N56, test_k13_kontroly.js), obě 24. 9. 2026;
  * 18. „mustky" 25. 9. 2026 (P7 / K13-N59, test_mustky.js). */
-test('pravidel je osmnáct', pravidla.length === 18, pravidla.length);
+/* 19. „cenaNula" 25. 9. 2026 (P2 / K16-N75): nulová nebo nečíselná cena = zábrana. */
+test('pravidel je devatenáct', pravidla.length === 19, pravidla.length);
 test('kódy pravidel jsou jedinečné',
   new Set(pravidla.map(p => p.kod)).size === pravidla.length,
   pravidla.map(p => p.kod).join(','));
@@ -299,9 +300,10 @@ test('K10 nepovažuje holou předlohu čísla za vyplněné číslo',
 test('K10 mlčí u vyplněné hlavičky', !kody(zdravy).includes('hlavicka'));
 
 /* ---------- 4) víc problémů najednou ---------- */
+/* Od 25. 9. 2026 (P2) je nesmyslný rozměr zábrana, proto tu už šířka 0
+ * není — tahle část prověřuje souběh VAROVÁNÍ. Zábrany má oddíl níž. */
 const vic = kontrolyProved(ctxZdravy(c => {
   c.zadani.nastupiste = 1;
-  c.zadani.sirka = 0;
   c.zak = { cislo: '', nazevAkce: '', objednatel: '' };
 }));
 test('víc problémů se sejde v jednom seznamu', vic.nalezy.length >= 3, JSON.stringify(kody(vic)));
@@ -310,7 +312,38 @@ test('pořadí je stálé (podle pořadí pravidel)',
     pravidla.map(p => p.kod).filter(k => kody(vic).includes(k))), JSON.stringify(kody(vic)));
 test('žádný nález se neopakuje', new Set(kody(vic)).size === vic.nalezy.length);
 
-/* ---------- 5) blokuje jediná věc, a to vědomě ----------
+/* ---------- 5) blokují jen vědomé výjimky ----------
+ * Do 25. 9. 2026 jediná (prázdný ceník); od dávky A (P1, P2 kola 16) také
+ * nesmyslný rozměr, nulová cena a sleva „schválená automaticky" nad stropem
+ * role, která ji zadala. Ostatní zůstávají varováním. */
+{
+  const z1 = kontrolyProved(ctxZdravy(c => { c.zadani.sirka = 0; }));
+  test('P2: nesmyslný rozměr zastaví dokument', z1.brani && z1.kodyBrani.includes('rozmery'), JSON.stringify(z1.kodyBrani));
+  test('P2: zábrana se odklepnout nedá', kontrolyPotvrzeniPlati(kontrolyPotvrzeni(z1, 'x', 'y'), z1) === false);
+}
+/* ---------- 5a) dávka A kola 16 (P1, P2) ---------- */
+{
+  const brani = (fn) => kontrolyProved(ctxZdravy(fn));
+  test('P2: rozteč 0 → dokument nevznikne', brani(c => { c.zadani.roztec = 0; }).brani);
+  test('P2: zdvih −5 → dokument nevznikne', brani(c => { c.zadani.zdvih = -5; }).brani);
+  test('P2: zdvih jako text → dokument nevznikne', brani(c => { c.zadani.zdvih = 'abc'; }).brani);
+  const bezMustku = brani(c => { c.zadani.mustek = true; c.cenik = Object.assign({}, CENIK); delete c.cenik.mustekKc; });
+  test('P2: chybějící cena v ceníku nedá NaN v součtu', bezMustku.nalezy && isFinite(ctxZdravy(c => {
+    c.zadani.mustek = true; c.cenik = Object.assign({}, CENIK); delete c.cenik.mustekKc; }).vysledek.souhrn.zakladCena));
+  const nula = kontrolyProved(Object.assign(ctxZdravy(), { vysledek: { souhrn: { zakladCena: 0, zakladNaklad: 0 } } }));
+  test('P2: nulová cena OCK → cenaNula zastaví dokument', nula.brani && nula.kodyBrani.includes('cenaNula'), JSON.stringify(nula.kodyBrani));
+  const nan = kontrolyProved(Object.assign(ctxZdravy(), { vysledek: { souhrn: { zakladCena: NaN, zakladNaklad: 0 } } }));
+  test('P2: cena NaN → zastaví dokument', nan.kodyBrani.includes('cenaNula'));
+  test('P2: zdravá zakázka nic nezastaví', kontrolyProved(ctxZdravy()).brani === false, JSON.stringify(kontrolyProved(ctxZdravy()).kodyBrani));
+  const auto = (role, p) => kontrolyProved(ctxZdravy(c => {
+    c.sleva = Object.assign(sl.slevaDefault(), { procenta: p, role, stav: 'schváleno automaticky' }); }));
+  const stropObch = Math.round(((NAST.slevy.stropy || {})['Obchodník'] || 0.05) * 100);
+  test('P1: „schváleno automaticky" nad stropem role zadavatele → dokument nevznikne',
+    auto('Obchodník', stropObch + 1).kodyBrani.includes('sleva'), JSON.stringify(auto('Obchodník', stropObch + 1).kodyBrani));
+  test('P1: automaticky schválená sleva do stropu projde', !auto('Obchodník', Math.max(1, stropObch)).kodyBrani.includes('sleva'));
+}
+
+/* ---------- 5b) původní oddíl ----------
  * Pravidlo „nic se neblokuje natvrdo" (KONTROLY_UROVEN = 2) platí dál pro
  * všechna pravidla kromě prázdného ceníku. Testuje se obojí: že ostatní
  * nálezy zůstaly varováním, i že ta jedna výjimka opravdu zabírá. */
@@ -326,7 +359,7 @@ test('text varování nikde nepřikazuje ani neblokuje',
 test('zábrana má vlastní text, který se dá ukázat samostatně',
   k9.textBrani.length > 0 && k9.textBrani === n9.text, k9.textBrani);
 test('v katalogu pravidel je poznat, které umí zastavit dokument',
-  pravidla.filter(p => p.zabranaMozna).map(p => p.kod).join(',') === 'ukazkovyCenik',
+  pravidla.filter(p => p.zabranaMozna).map(p => p.kod).join(',') === 'rozmery,cenaNula,sleva,slevaProj,ukazkovyCenik',
   JSON.stringify(pravidla.filter(p => p.zabranaMozna).map(p => p.kod)));
 
 /* ---------- 6) dvě podoby textu ---------- */

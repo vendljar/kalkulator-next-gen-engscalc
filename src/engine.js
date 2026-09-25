@@ -1203,7 +1203,13 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     const cenaPrepisSurova = (!opts.cenaPath && z.cenyPrepis) ? z.cenyPrepis[nazev] : null;
     const cenaPrepis = ((typeof prepisPlati === 'function') ? prepisPlati(cenaPrepisSurova)
                         : cenaPrepisSurova != null) ? +cenaPrepisSurova : null;
-    const cenaEff = cenaPrepis != null ? cenaPrepis : cena;
+    /* CHYBĚJÍCÍ CENA NENÍ NaN (P2 / K14-N61, 25. 9. 2026): klíč, který
+     * starší zveřejněný ceník nemá (např. mustekKc), dával NaN a to se
+     * rozlezlo do celého součtu i do nabídky. Počítá se nulou; na chybějící
+     * cenu upozorní kontrola a nulovou nabídku zastaví pravidlo „cenaNula".
+     * Platná čísla (i Model 1) beze změny. */
+    const cenaCislo = (typeof cena === 'number' && isFinite(cena)) ? cena : (isFinite(+cena) ? +cena : 0);
+    const cenaEff = cenaPrepis != null ? cenaPrepis : cenaCislo;
     let naklad;
     /* Lešení: metry × sazba + CELÁ fixní část (N51, schváleno J. V. 24. 9. 2026).
      * Přepis na 0 m znamená „lešení nenabízíme" — pak ani fix (dřív zůstal). */

@@ -390,6 +390,9 @@ function schvalovaniRozhodnutiKlic(sl) {
     sp: sl.schvalenoProc, s: sl.schvalil || '', sk: sl.schvalilKdy || '',
     zp: sl.zamitnutoProc, z: sl.zamitl || '', zk: sl.zamitlKdy || '' });
 }
+/* Pole rozhodnutí, která se u vrácené žádosti obnoví z uložené verze. */
+const SCHV_ROZHODNUTI_POLE = ['stav', 'schvalenoProc', 'schvalil', 'schvalilKdy', 'schvalilEmail',
+                              'zamitnutoProc', 'zamitl', 'zamitlKdy', 'zamitlEmail', 'zamitnutoDuvod'];
 function schvalovaniServerKontrola(stara, nova, relace, nast) {
   relace = relace || {};
   const role = relace.role || '';
@@ -404,6 +407,15 @@ function schvalovaniServerKontrola(stara, nova, relace, nast) {
       if (!sl) continue;
       const p = +sl.procenta || 0;
       const ulozene = sv && sv.data ? sv.data[cast] : null;
+      /* ROLE SLEVY URČUJE RELACE, NE DATA (P1 / K16-N73, K16-N74, 25. 9.
+       * 2026). Karta slevy dřív nabízela „Role zadavatele" se všemi rolemi:
+       * obchodník zvolil Administrátora a prohlížeč mu slevu nad strop
+       * „schválil automaticky". Teď: kdo mění procenta, je autor slevy a její
+       * role je role jeho relace; bez změny procent se role z uložené verze
+       * přepsat nedá. */
+      const zmenaProc = !ulozene || (+ulozene.procenta || 0) !== p;
+      if (zmenaProc) { if (role) sl.role = role; }
+      else if (ulozene && ulozene.role != null) sl.role = ulozene.role;
       const klicNovy = schvalovaniRozhodnutiKlic(sl);
       if (klicNovy && klicNovy === schvalovaniRozhodnutiKlic(ulozene)) continue;   // beze změny
       if (klicNovy) {
@@ -420,6 +432,19 @@ function schvalovaniServerKontrola(stara, nova, relace, nast) {
         continue;
       }
       const autoBezeZmeny = !!ulozene && ulozene.stav === SCHV_AUTO && (+ulozene.procenta || 0) === p;
+      /* CIZÍ ŽÁDOST SE ULOŽENÍM NESCHVÁLÍ (P1 / K16-N74). Obchodník uložil
+       * 10 % jako „čeká"; vedoucí zakázku jen otevřel, jeho prohlížeč stav
+       * přepočítal na „schváleno automaticky" a uložení ho zapsalo — bez
+       * rozhodnutí a bez jména. Bez změny procent se automatické schválení
+       * přijme jen od téže role, jaká slevu zadala; jinak se vrací uložený
+       * stav. Schvaluje se výslovně (záložka Schvalování, razítko serveru). */
+      if (sl.stav === SCHV_AUTO && p > 0 && !autoBezeZmeny && !zmenaProc
+          && !(role && role === (ulozene && ulozene.role) && schvalovaniSmiRozhodnout(role, p, nast))) {
+        SCHV_ROZHODNUTI_POLE.forEach(k => {
+          if (ulozene && ulozene[k] !== undefined) sl[k] = ulozene[k]; else delete sl[k];
+        });
+        continue;
+      }
       if (sl.stav === SCHV_AUTO && p > 0 && !autoBezeZmeny && !schvalovaniSmiRozhodnout(role, p, nast))
         return { ok: false, chyba: 'Sleva ' + p + ' % je nad stropem role ' + (role || '?')
           + ' a nemůže být schválená automaticky — musí počkat na nadřízeného.' };

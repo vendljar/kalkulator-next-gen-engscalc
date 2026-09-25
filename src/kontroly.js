@@ -94,6 +94,7 @@ function kontrolyMarze(ctx) {
 const KONTROLY = [
   {
     kod: 'rozmery', kde: 'Kalkulace OCK', nazev: 'Nesmyslný rozměr nebo počet',
+    zabranaMozna: true,
     zjisti(ctx) {
       const z = ctx.zadani;
       if (!z) return null;
@@ -108,8 +109,38 @@ const KONTROLY = [
       kladne.forEach(([k, n]) => { const v = +z[k]; if (!isFinite(v) || v <= 0) spatne.push(n); });
       nezaporne.forEach(([k, n]) => { const v = +z[k]; if (!isFinite(v) || v < 0) spatne.push(n); });
       if (!spatne.length) return null;
-      return { text: 'V zadání je rozměr nebo počet, který nedává smysl: '
-        + kontrolyVyctem(spatne) + '. Čísla nad tím se z toho počítají dál.' };
+      /* ZÁBRANA od 25. 9. 2026 (P2 / K16-N75): rozteč 0 dala nabídku za
+       * 0 Kč, zdvih −5 nabídku za 433 000 Kč — a obojí šlo vytisknout. Není
+       * co vážit, je to omyl v zadání. */
+      return { uroven: KONTROLY_UROVEN_ZABRANA, text: 'V zadání je rozměr nebo počet, který nedává smysl: '
+        + kontrolyVyctem(spatne) + '. Dokument nevznikne, dokud se to neopraví.' };
+    },
+  },
+  {
+    /* CENA NABÍDKY MUSÍ BÝT KLADNÉ ČÍSLO (P2 / K16-N75 + K14-N61, 25. 9. 2026).
+     * Nula nebo NaN v ceně je vždy omyl (chybějící cena v ceníku, nesmyslné
+     * zadání) — nabídka za nula korun nesmí odejít. Projekce smí být nulová,
+     * když se neprodává; jen u zakázky „jen projekce" musí být kladná. */
+    kod: 'cenaNula', kde: 'Nabídka', nazev: 'Cena nabídky je nulová nebo není číslo',
+    zabranaMozna: true,
+    zjisti(ctx) {
+      /* Prázdný ceník (samé nuly) hlásí a zastavuje pravidlo „ukazkovyCenik"
+       * s přesnější větou — dvakrát totéž by jen mátlo. */
+      if (typeof ukazkoveStav === 'function') {
+        const u = ukazkoveStav({ cenik: ctx.cenik, cenikProj: ctx.cenikProj,
+          slevy: ctx.nast && ctx.nast.slevy, firma: ctx.nast && ctx.nast.firma });
+        if (u && u.prazdne) return null;
+      }
+      const o = !ctx.jenProj && ctx.vysledek && ctx.vysledek.souhrn ? ctx.vysledek.souhrn.zakladCena : undefined;
+      const pj = ctx.projVysledek && ctx.projVysledek.souhrn ? ctx.projVysledek.souhrn.celkem : undefined;
+      const spatne = [];
+      if (o !== undefined && !(Number(o) > 0)) spatne.push('výtahová šachta (OCK)');
+      if (pj !== undefined && (!isFinite(Number(pj)) || Number(pj) < 0 || (ctx.jenProj && !(Number(pj) > 0))))
+        spatne.push('projekční práce (PROJ)');
+      if (!spatne.length) return null;
+      return { uroven: KONTROLY_UROVEN_ZABRANA,
+        text: 'Cena nabídky vyšla nulová nebo to není číslo (' + kontrolyVyctem(spatne) + ') — '
+          + 'nejspíš chybí cena v ceníku nebo je nesmyslné zadání. Dokument nevznikne.' };
     },
   },
   {
@@ -244,6 +275,7 @@ const KONTROLY = [
   },
   {
     kod: 'sleva', kde: 'Nabídka', nazev: 'Sleva mimo rozsah nebo bez schválení',
+    zabranaMozna: true,
     zjisti(ctx) {
       if (ctx.jenProj) return null;   // ZAK-10 se počítá z ceny OCK; bez OCK není co hlídat
       const s = ctx.sleva;
@@ -268,6 +300,12 @@ const KONTROLY = [
       if (v.podMarzi && !schvalena)
         return { text: 'Sleva je tak velká, že by nabídku srazila pod firemní minimum marže; '
           + 'zůstává zamítnutá a do nabídky nevstoupí.' };
+      /* P1 (K16-N73, 25. 9. 2026): „schváleno automaticky" nad stropem role,
+       * která slevu zadala, je rozpor v datech (dřív šlo roli slevy zvolit) —
+       * taková nabídka nesmí odejít, slevu musí schválit nadřízený. */
+      if (v.nadStrop && s.stav === 'schváleno automaticky')
+        return { uroven: KONTROLY_UROVEN_ZABRANA, text: 'Sleva je označená jako schválená automaticky, '
+          + 'ale je nad stropem role, která ji zadala. Dokument nevznikne — slevu musí schválit nadřízený.' };
       if (v.nadStrop && !schvalena)
         return { text: 'Sleva je nad stropem role a nikdo ji zatím neschválil. '
           + 'Dokud schválená není, počítá se nabídka bez ní.' };
@@ -276,6 +314,7 @@ const KONTROLY = [
   },
   {
     kod: 'slevaProj', kde: 'Kalkulace PROJ', nazev: 'Sleva projekce mimo rozsah nebo bez schválení',
+    zabranaMozna: true,
     zjisti(ctx) {
       /* Zrcadlo pravidla „sleva" nad projekční částí (#134, 12. 8. 2026).
        * Do té doby tu bylo pravidlo „slevaProjMax", které hlídalo jen horní
@@ -307,6 +346,9 @@ const KONTROLY = [
       if (v.podMarzi && !schvalena)
         return { text: 'Sleva projekce je tak velká, že by projekční část srazila pod firemní '
           + 'minimum marže; zůstává zamítnutá a do nabídky nevstoupí.' };
+      if (v.nadStrop && s.stav === 'schváleno automaticky')   // P1 (K16-N73)
+        return { uroven: KONTROLY_UROVEN_ZABRANA, text: 'Sleva projekce je označená jako schválená '
+          + 'automaticky, ale je nad stropem role, která ji zadala. Dokument nevznikne — slevu musí schválit nadřízený.' };
       if (v.nadStrop && !schvalena)
         return { text: 'Sleva projekce je nad stropem role a nikdo ji zatím neschválil. '
           + 'Dokud schválená není, počítá se nabídka projekce bez ní.' };

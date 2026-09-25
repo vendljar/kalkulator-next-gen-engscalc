@@ -902,6 +902,17 @@ function onlineUloz(opts) {
     if (!opts.tiche) { onlineZprava('Nejdřív se přihlaste.', 'varovani'); render(); }
     return Promise.resolve(false);
   }
+  /* P13 (K16-N77): tiché (automatické) uložení během náhledu nic nezapíše —
+   * i když ho naplánovala změna těsně před zapnutím náhledu. Ruční uložení
+   * v rolovém náhledu se zeptá: zapíše se pod administrátorem, ne pod rolí,
+   * kterou se právě díváte. (Náhled účtu zápis blokuje celý, nahledStop.) */
+  if (typeof nahledJakykoli === 'function' && nahledJakykoli()) {
+    if (opts.tiche) return Promise.resolve(false);
+    if (NAST.nahledRole && !opts.nahledPotvrzeno && typeof potvrd === 'function')
+      return potvrd('Díváte se na aplikaci jako role „' + NAST.nahledRole + '", ale zakázka se uloží '
+        + 'pod vaším administrátorským účtem. Uložit?')
+        .then(ok => ok ? onlineUloz(Object.assign({}, opts, { nahledPotvrzeno: true })) : false);
+  }
   /* JEDEN ZÁPIS NAJEDNOU (nález V27, 8. 9. 2026). Ruční uložení, tlačítko
    * „Uložit online" v kartě a autosave se uměly sejít: druhý požadavek vyšel
    * se starým razítkem, server ho správně odmítl 409 a klient se ptal
@@ -1588,6 +1599,8 @@ function onlineTik() {
   if (!ONLINE_STAV.auto || !ONLINE_STAV.ja || ONLINE_STAV.pracuje) return;
   /* Bez zásahu uživatele se nezapisuje (nález V23-B) — viz `zmenaUzivatele`. */
   if (!ONLINE_STAV.zmenaUzivatele) return;
+  /* Během náhledu (role i účtu) se automaticky neukládá (P13 / K16-N77). */
+  if (typeof nahledJakykoli === 'function' && nahledJakykoli()) return;
   /* V zakázce otevřené jen ke čtení se zapisuje JEN zápisník (nález C6).
    *
    * Dřív tu stálo prosté `return` s vysvětlením „zamčené okno stejně žádnou
@@ -2791,7 +2804,10 @@ function renderPrehledHledaniTelo() {
   const el = document.getElementById('prehledHledaniTelo');
   if (!el) return;
   const radky = prehledNabidky();
-  const vyber = jeAdminOnline();
+  /* Hromadný výběr a „Smazat vybrané…" jen tomu, kdo smí mazat PODLE
+   * ZOBRAZENÍ — v rolovém náhledu „Obchodník" je administrátor pořád
+   * administrátorem serveru, ale tlačítko obchodníkovi nepatří (P16 / K16-N89). */
+  const vyber = jeAdminOnline() && smiZobrazit('uloziste.mazani');
   const vybranych = (ONLINE_STAV.prehled.vybrane || []).length;
   const lista = vyber
     ? `<div class="prehled-vyber noprint">
