@@ -308,20 +308,34 @@ function sablPruvodceHtml() {
   /* krok jazyky / zveřejnit */
   const karty = d.jazyky ? SABL_JAZYKY.map(([l, n]) => {
     const m = p.mutace[l];
-    const obsah = !m ? '<div class="note">Vyrábím…</div>' : m.chyba
+    const chybaVl = p.vlastniChyba && p.vlastniChyba[l];
+    const obsah = !m ? '<div class="note">Vyrábím…</div>'
+      : m.vlastni
+      ? `<div>Vlastní soubor: <b>${esc(m.nazev)}</b></div>
+         ${(m.varovani || []).map(t => `<div class="note" style="color:var(--warn)">⚠ ${esc(t)}</div>`).join('')}`
+      : m.chyba
       ? `<div class="sabl-chyba">${esc(m.chyba)}</div>`
       : `<div>Přeloženo <b>${m.stat.procenta} %</b> odstavců${m.stat.chybi.length ? `, <b>${m.stat.chybi.length}</b> zůstalo česky` : ''}.</div>
          ${m.stat.procenta < 90 ? '<div class="note" style="color:var(--warn)">Slovník tento dokument zatím nepokrývá — verze by vyšla z velké části česky.</div>' : ''}`;
+    /* NAHRÁT VLASTNÍ VERZI (25. 9. 2026, zadání J. V.: „při nahrávání šablon
+     * přidej možnost nahrát vlastní verzi jazykové mutace"). Soubor doladěný
+     * ve Wordu (nebo přeložený překladatelem) nahradí strojový překlad ještě
+     * před zveřejněním; projde stejnou kontrolou jako nahrání k jazyku. */
+    const tlVlastni = m ? `<button class="mini" onclick="sablPruvodceVlastni('${l}')">${m.vlastni ? 'Nahrát jiný soubor' : 'Nahrát vlastní verzi'}</button>` : '';
+    const tlZpet = (m && m.vlastni && m.stroj) ? `<button class="mini" onclick="sablPruvodceVlastniZpet('${l}')">Vrátit překlad aplikace</button>` : '';
     return `<div class="sabl-panel" style="margin:0;flex:1;min-width:220px">
       <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="sablVyb-${l}" ${p.vybrane[l] ? 'checked' : ''}
         ${m && !m.chyba ? '' : 'disabled'} onchange="sablPruvodceVyber('${l}', this.checked)"> <b>${esc(n)}</b></label>${obsah}
-      ${m && !m.chyba ? `<div class="btns" style="margin-top:6px"><button class="mini" onclick="sablPruvodceStahniMutaci('${l}')">Stáhnout a doladit ve Wordu</button></div>` : ''}
+      ${chybaVl ? `<div class="sabl-chyba">${esc(chybaVl)}</div>` : ''}
+      ${m ? `<div class="btns" style="margin-top:6px">${m.chyba ? '' : `<button class="mini" onclick="sablPruvodceStahniMutaci('${l}')">${m.vlastni ? 'Stáhnout' : 'Stáhnout a doladit ve Wordu'}</button>`}
+        ${tlVlastni}${tlZpet}</div>` : ''}
     </div>`;
   }).join('') : '';
   const vybrane = SABL_JAZYKY.filter(([l]) => p.vybrane[l]).map(([l]) => l.toUpperCase());
   return `<div class="sabl-panel" id="sablPruvodce">${hlavicka}
     ${d.jazyky ? `<div class="note">Jazykové verze aplikace vyrobila z nové češtiny. Zaškrtnuté se zveřejní spolu s ní;
-      ostatní zůstanou, jak jsou (a označí se jako zastaralé). Doladěný soubor lze nahrát i později přímo k jazyku.</div>
+      ostatní zůstanou, jak jsou (a označí se jako zastaralé). Místo překladu aplikace můžete u jazyka
+      <b>nahrát vlastní verzi</b> (doladěnou ve Wordu nebo od překladatele); doladěný soubor lze nahrát i později přímo k jazyku.</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin:8px 0">${karty}</div>` : ''}
     <div class="row" style="margin-top:8px"><label for="sablPozn">Poznámka ke změně</label>
       <input type="text" id="sablPozn" value="${esc(p.poznamka)}" onchange="SABL_UI.pruvodce.poznamka=this.value"></div>
@@ -340,6 +354,40 @@ async function sablPruvodceJakoJazyk() {
   const lang = p.kontrola.jinyJazyk, typ = p.typ, soubor = p.soubor;
   SABL_UI.pruvodce = null; nastRefresh();
   await sablNahrajJazyk(typ, lang, soubor);
+}
+/* Vlastní soubor místo strojového překladu (25. 9. 2026). Kontrola je táž
+ * jako u nahrání k jazyku: soubor musí být šablona se symboly, v tom
+ * jazyce, a proti NOVÉ české verzi (ne proti té platné) se hlídá, jestli mu
+ * nechybí symboly. Strojový překlad se schová, aby šel vrátit. */
+async function sablPruvodceVlastni(l, predvybrany) {
+  const p = SABL_UI.pruvodce; if (!p || !jeAdmin()) return;
+  const soubor = predvybrany || await sablVyberSoubor(); if (!soubor || SABL_UI.pruvodce !== p) return;
+  if (!p.vlastniChyba) p.vlastniChyba = {};
+  delete p.vlastniChyba[l];
+  sablPrace('Kontroluji ' + soubor.nazev + '…');
+  try {
+    const vzor = (p.kontrola && p.kontrola.symboly) || null;
+    const k = await sablKontrolaSouboru(soubor.data, l, vzor);
+    if (k.chyby.length) p.vlastniChyba[l] = 'Soubor nejde použít: ' + k.chyby.join(' ');
+    else if (k.jinyJazyk)
+      p.vlastniChyba[l] = 'Soubor „' + soubor.nazev + '" je ' + SABL_JAZYK_NAZEV[k.jinyJazyk] + ' ('
+        + Math.round(k.jaz.podil * 100) + ' % odstavců), ne ' + SABL_JAZYK_NAZEV[l] + '.';
+    else {
+      const puvodni = p.mutace[l];
+      p.mutace[l] = { data: soubor.data, nazev: soubor.nazev, vlastni: true,
+                      varovani: k.varovani.map(t => t.replace('platné české verzi', 'nové české verzi')),
+                      stroj: (puvodni && puvodni.vlastni) ? puvodni.stroj : puvodni };
+      p.vybrane[l] = true;
+    }
+  } catch (e) { p.vlastniChyba[l] = 'Soubor se nepodařilo přečíst: ' + e.message; }
+  sablPrace('');
+}
+function sablPruvodceVlastniZpet(l) {
+  const p = SABL_UI.pruvodce, m = p && p.mutace[l];
+  if (!m || !m.vlastni || !m.stroj) return;
+  p.mutace[l] = m.stroj;
+  if (p.vlastniChyba) delete p.vlastniChyba[l];
+  nastRefresh();
 }
 function sablPruvodceVyber(l, ano) { if (SABL_UI.pruvodce) SABL_UI.pruvodce.vybrane[l] = !!ano; nastRefresh(); }
 function sablPruvodceStahniMutaci(l) {
@@ -383,7 +431,8 @@ async function sablPruvodceZverejni() {
       try {
         const m = p.mutace[l];
         const oj = await onlineSablonaZverejni(p.typ + '_' + l, m.nazev, m.data,
-          'vyrobeno z české verze ' + o.verze + (p.poznamka ? ' – ' + p.poznamka : ''), o.otisk);
+          (m.vlastni ? 'vlastní soubor k české verzi ' : 'vyrobeno z české verze ') + o.verze
+          + (p.poznamka ? ' – ' + p.poznamka : ''), o.otisk);
         vysledky.push(l.toUpperCase() + ' v' + oj.verze);
       } catch (e) { vysledky.push(l.toUpperCase() + ': ' + e.message); }
     }

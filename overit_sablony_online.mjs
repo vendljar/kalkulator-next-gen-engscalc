@@ -367,6 +367,37 @@ else {
   });
   test('český soubor jako EN verze se odmítne', d2.en === 2 && d2.texty.some(t => /je česky/.test(t)), d2);
 
+  /* d3) vlastní jazyková verze přímo v průvodci (25. 9. 2026, zadání J. V.:
+   * „při nahrávání šablon přidej možnost nahrát vlastní verzi jazykové mutace") */
+  const d3 = await page.evaluate(async () => {
+    const u8 = new Uint8Array(window.__CZ.data.byteLength + 2); u8.set(new Uint8Array(window.__CZ.data)); u8[u8.length - 1] = 9;
+    await sablPruvodceStart('nabidka', { nazev: 'Sablona_NABIDKA_CN_v13.docx', data: u8.buffer });
+    await sablPruvodceDal();
+    const p = SABL_UI.pruvodce;
+    const html0 = nastSablony();
+    await sablPruvodceVlastni('en', window.__DE);                 // německý soubor jako angličtina
+    const chybaEn = (p.vlastniChyba || {}).en || '';
+    const enZustal = !p.mutace.en.vlastni;
+    await sablPruvodceVlastni('de', window.__DE);
+    const de = p.mutace.de;
+    const html1 = nastSablony();
+    p.vybrane = { de: true };
+    await sablPruvodceZverejni();
+    const rej = ONLINE_STAV.sablonyRejstrik;
+    const deMeta = sablonaPlatna(rej, 'nabidka_de');
+    return { tlacitko: /Nahrát vlastní verzi/.test(html0), chybaEn, enZustal,
+             deVlastni: !!de.vlastni, deStroj: !!de.stroj, vybranoDe: true,
+             html1: /Vlastní soubor: <b>Sablona_NABIDKA_CN_v11_DE.docx<\/b>/.test(html1) && /Vrátit překlad aplikace/.test(html1),
+             deStav: sablonaMutaceStav(rej, 'nabidka', 'de').stav, deVerze: deMeta && deMeta.verze,
+             popis: JSON.stringify(deMeta) };
+  });
+  test('průvodce nabízí u jazyka „Nahrát vlastní verzi"', d3.tlacitko, d3);
+  test('vlastní soubor ve špatném jazyce se odmítne a překlad aplikace zůstane',
+    /je německy/.test(d3.chybaEn) && d3.enZustal, d3);
+  test('vlastní DE soubor nahradí překlad aplikace (a ten jde vrátit)', d3.deVlastni && d3.deStroj && d3.html1, d3);
+  test('zveřejní se spolu s češtinou a je aktuální', d3.deStav === 'aktualni' && d3.deVerze === 3, d3);
+  test('v záznamu stojí, že je to vlastní soubor', /vlastní soubor k české verzi/.test(d3.popis), d3.popis);
+
   /* e) server: mutace s otiskem jiné než platné češtiny → 409 */
   const e = await page.evaluate(async () => {
     const cz = sablonaPlatna(ONLINE_STAV.sablonyRejstrik, 'nabidka');
@@ -383,7 +414,9 @@ else {
     return { verze: cz.verze, vracenoZ: cz.vracenoZ, otiskShoda: cz.otisk === sablonaVerze(rej, 'nabidka').find(v => v.verze === 1).otisk,
              stavEn: sablonaMutaceStav(rej, 'nabidka', 'en').stav, historie: sablonaVerze(rej, 'nabidka').length };
   });
-  test('vrácení zveřejní v1 znovu jako v3 a nic nesmaže', f.verze === 3 && f.vracenoZ === 1 && f.otiskShoda && f.historie === 3, f);
+  /* v3 je od 25. 9. 2026 čeština z kroku d3 (vlastní jazyková verze), takže
+   * vrácení je v4. */
+  test('vrácení zveřejní v1 znovu jako v4 a nic nesmaže', f.verze === 4 && f.vracenoZ === 1 && f.otiskShoda && f.historie === 4, f);
   test('EN vyrobená z v2 je po vrácení zastaralá', f.stavEn === 'zastarala', f);
 }
 
