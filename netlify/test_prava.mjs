@@ -1153,10 +1153,14 @@ console.log('\n===== AUDIT B4: LIMIT NA ADRESU =====\n');
   test('B4: jedno heslo na ' + (POKUSY_IP_MAX + 1) + ' e-mailů z jedné adresy skončí 429', posledni === 429, posledni);
   test('B4: jiná adresa není dotčená',
     (await zAdresy('nikdo999@example.com', 'spatne-heslo', '203.0.113.8')).status === 401);
+  /* Od B75 (25. 9. 2026) je limit ADRESY tvrdý: nad ním 429 bez ověření
+   * hesla i majiteli — ten se přihlásí odjinud nebo za čtvrt hodiny. Zásada
+   * #92 (správné heslo vždy projde) platí dál pro počítadlo E-MAILU, viz
+   * oddíl brzdy níž a netlify/test_prihlaseni.mjs. */
   const spravne = await zAdresy(UCTY['Obchodník'].email, UCTY['Obchodník'].heslo, '203.0.113.7');
-  test('B4: správné heslo projde i z adresy nad limitem (brzda nikdy nebrání majiteli)', spravne.status === 200, spravne.status);
-  test('B4: úspěch počítadlo adresy vynuluje',
-    (await zAdresy('nikdo1000@example.com', 'spatne-heslo', '203.0.113.7')).status === 401);
+  test('B75: z adresy nad limitem se odmítne i správné heslo (429)', spravne.status === 429, spravne.status);
+  test('B75: z jiné adresy se majitel přihlásí (limit adresy není zámek účtu)',
+    (await zAdresy(UCTY['Obchodník'].email, UCTY['Obchodník'].heslo, '203.0.113.9')).status === 200);
 }
 
 console.log('\n===== AUDIT B8: OČISTA DÁVKY ANALYTIKY =====\n');

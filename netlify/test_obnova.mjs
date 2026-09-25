@@ -441,16 +441,19 @@ test('účty pro B30/B31 založeny',
 const otiskB30 = await (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', {}, cookie)).json();
 test('otisk s oběma účty činnými pořízen', otiskB30.ok === true, otiskB30);
 test('archiv@ archivován', (await (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'archiv', email: 'archiv@priklad.cz', archiv: true }, cookie)).json()).ok === true);
-test('verze@ dostal reset hesla (hesloVerze 1)',
+/* Od B76 (25. 9. 2026) má nový účet verzi hesla už od založení (čas
+ * v milisekundách), reset ji zvedne o jedničku. */
+const verzePredResetem = (await ulz('uzivatele').cti('verze@priklad.cz')).hesloVerze;
+test('verze@ dostal reset hesla (hesloVerze o jednu výš než při založení)',
   (await (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'heslo', email: 'verze@priklad.cz', heslo: 'VerzeHeslo2' }, cookie)).json()).ok === true
-  && (await ulz('uzivatele').cti('verze@priklad.cz')).hesloVerze === 1);
+  && verzePredResetem > 0 && (await ulz('uzivatele').cti('verze@priklad.cz')).hesloVerze === verzePredResetem + 1);
 const o31 = await obnovJson({ zdroj: { otisk: otiskB30.den }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['uzivatele'] }, cookie);
 const arch = await ulz('uzivatele').cti('archiv@priklad.cz');
 test('B30: archivovaný zůstane archivovaný a vypnutý i po „přepsat" z otisku, kde byl činný',
   arch.archiv === true && arch.aktivni === false && !!arch.archivKdy
   && o31.casti.uzivatele.duvody.some(d => d.klic === 'archiv@priklad.cz' && /drží server/.test(d.duvod)), [arch, o31.casti.uzivatele]);
-test('B31: hesloVerze po obnově z otisku neklesne (zůstává 1)',
-  (await ulz('uzivatele').cti('verze@priklad.cz')).hesloVerze === 1 && o31.casti.uzivatele.prepsane >= 1, o31.casti.uzivatele);
+test('B31: hesloVerze po obnově z otisku neklesne (zůstává o jednu výš než v otisku)',
+  (await ulz('uzivatele').cti('verze@priklad.cz')).hesloVerze === verzePredResetem + 1 && o31.casti.uzivatele.prepsane >= 1, o31.casti.uzivatele);
 
 console.log('\n===== B50: vědomě znovu založený účet obnova nepřeskakuje =====');
 

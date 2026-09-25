@@ -55,7 +55,9 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* Dávka A kola 16 (25. 9. 2026): pohled obchodníka, role slevy (P1). */
      'test_obchodnik.mjs',
      /* A3 / P4 (25. 9. 2026): historické zakázky otevřít → uložit → obnovit. */
-     '../src/test_zamek_historie.js'];
+     '../src/test_zamek_historie.js',
+     /* B75–B78 (25. 9. 2026): přihlašování jako celek. */
+     'test_prihlaseni.mjs'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -132,8 +134,8 @@ const MUTACE = [
 
   /* ---------- brzda proti hádání hesel a čas odpovědi (#92, #93) ---------- */
   { nazev: 'brzda pustí neomezený počet pokusů', soubor: 'functions/prihlaseni.mjs',
-    hledej: '  if (pokusy.email.n > POKUSY_MAX || pokusy.adresa.n > POKUSY_IP_MAX)',
-    nahrad: '  if (false)',
+    hledej: '  if (pokusy.email.n > POKUSY_MAX)\n    return json({ ok: false, chyba: \'Příliš mnoho neúspěšných pokusů. Zkuste to za \'',
+    nahrad: '  if (false)\n    return json({ ok: false, chyba: \'Příliš mnoho neúspěšných pokusů. Zkuste to za \'',
     proc: 'hádání hesel by nic nezpomalilo a nikde by po něm nezůstala stopa' },
 
   { nazev: 'úspěšné přihlášení nevynuluje počítadlo', soubor: 'functions/prihlaseni.mjs',
@@ -344,9 +346,47 @@ const MUTACE = [
     proc: 'souběžné pokusy by brzdu obešly a 429 by nikdy nepřišlo' },
 
   { nazev: 'B4: limit na adresu se ignoruje', soubor: 'functions/prihlaseni.mjs',
-    hledej: "  if (pokusy.email.n > POKUSY_MAX || pokusy.adresa.n > POKUSY_IP_MAX)",
-    nahrad: "  if (pokusy.email.n > POKUSY_MAX)",
+    hledej: "  if (pokusyAdresaNadLimit(pokusy))\n    return json({ ok: false, chyba: 'Příliš mnoho neúspěšných pokusů z této adresy. Zkuste to za '",
+    nahrad: "  if (false)\n    return json({ ok: false, chyba: 'Příliš mnoho neúspěšných pokusů z této adresy. Zkuste to za '",
     proc: 'jedno heslo na sto e-mailů by na počítadle nikdy nenarostlo' },
+
+  /* ---------- přihlašování jako celek, B75–B78 (25. 9. 2026) ---------- */
+  { nazev: 'B75: limit adresy se rozhoduje až po ověření hesla', soubor: 'lib/sdilene.mjs',
+    hledej: "  return !!(pokusy && pokusy.adresa && pokusy.adresa.n > POKUSY_IP_MAX);",
+    nahrad: "  return false;",
+    proc: 'nad limitem adresy by se dál počítal scrypt a správné heslo prošlo (B75)' },
+  { nazev: 'B75: IPv6 se klíčuje celou adresou, ne po /64', soubor: 'lib/sdilene.mjs',
+    hledej: "  return 'ip6:' + ipv6Prefix64(a);",
+    nahrad: "  return 'ip6:' + a;",
+    proc: 'z jednoho /64 by šlo poslat každý pokus z jiné adresy a limit by nikdy nenarostl' },
+  { nazev: 'B75: úspěch vlastního účtu nuluje počítadlo adresy', soubor: 'lib/sdilene.mjs',
+    hledej: "  if (ip) await pokusyUber(pokusyIpKlic(ip));",
+    nahrad: "  if (ip) await pokusyReset(pokusyIpKlic(ip));",
+    proc: 'útočník s jedním účtem by mezi hádáním cizích hesel přihlašoval sebe a limit adresy by nikdy nenarostl' },
+  { nazev: 'B76: nový účet začíná na verzi hesla 0', soubor: 'functions/uzivatele.mjs',
+    hledej: "               hesloVerze: hesloVerzeNova() };          // B76: stará cookie nesmí ožít",
+    nahrad: "               };",
+    proc: 'cookie vydaná před smazáním účtu by po jeho znovuzaložení zase platila' },
+  { nazev: 'B76: vypnutí účtu nezvedne verzi hesla', soubor: 'functions/uzivatele.mjs',
+    hledej: "      if (!t.aktivni && ucet.aktivni !== false) ucet.hesloVerze = hesloVerzeUctu(ucet) + 1;",
+    nahrad: "      ;",
+    proc: 'cookie z doby před vypnutím účtu by po jeho zapnutí zase platila' },
+  { nazev: 'B76: archivace nezvedne verzi hesla', soubor: 'functions/uzivatele.mjs',
+    hledej: "        if (ucet.aktivni !== false) ucet.hesloVerze = hesloVerzeUctu(ucet) + 1;   // B76",
+    nahrad: "        ;",
+    proc: 'cookie z doby před archivací by po vrácení z archivu zase platila' },
+  { nazev: 'B77: změna vlastního hesla bez brzdy', soubor: 'functions/uzivatele.mjs',
+    hledej: "        if (pokusy.email.n > POKUSY_MAX)\n          return json({ ok: false, chyba: 'Příliš mnoho neúspěšných pokusů. Zkuste to za '",
+    nahrad: "        if (false)\n          return json({ ok: false, chyba: 'Příliš mnoho neúspěšných pokusů. Zkuste to za '",
+    proc: 'kdo má cookie nebo odemčený počítač, hádal by staré heslo bez omezení' },
+  { nazev: 'B77: změna hesla nevynuluje počítadlo (majitel by po překlepech uvízl)', soubor: 'functions/uzivatele.mjs',
+    hledej: "      await pokusyUspech(relace.email, ip);",
+    nahrad: "      ;",
+    proc: 'po deseti překlepech by se majitel nepřihlásil ani správným heslem' },
+  { nazev: 'B78: odhlášení přijme cizí Origin i formulářové tělo', soubor: 'functions/odhlaseni.mjs',
+    hledej: "  if (cizihoPuvodu(req) || origin === 'null'\n      || /^(application\\/x-www-form-urlencoded|multipart\\/form-data)/.test(ct))",
+    nahrad: "  if (false)",
+    proc: 'cizí stránka by obchodníka odhlásila uprostřed práce' },
 
   /* Kotva upravena 31. 8. 2026: očištěná dávka se drží v proměnné, protože
    * se z ní kromě slití plní i rozpad po uživatelích (#180). */

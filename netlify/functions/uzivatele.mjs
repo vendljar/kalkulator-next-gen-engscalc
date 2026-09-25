@@ -27,7 +27,16 @@
 import { uloziste, otiskHesla, hesloSedi, vyzadujRoli, json, ROLE, ADMIN_EMAIL,
          PODPIS_ULOZISTE, podpisZkontroluj, hesloVerzeUctu, relaceCookie,
          emailPlatny, hesloPlatne, HESLO_PRAVIDLO, SMAZANI_ULOZISTE,
-         bezHlavnihoUctu } from '../lib/sdilene.mjs';
+         bezHlavnihoUctu, POKUSY_MAX, zpozdeniMs, pockej, pokusyZacatek, pokusyUspech,
+         pokusyAdresaNadLimit, adresaKlienta } from '../lib/sdilene.mjs';
+
+/* VERZE HESLA NOVÉHO ÚČTU (B76, hloubkový test 24. 9. 2026). Relace nese
+ * verzi hesla účtu a účet bez pole má verzi 0 (B6). Smazaný a znovu založený
+ * účet tak začínal zase na nule — a cookie vydaná PŘED smazáním (12 hodin
+ * platnosti) v něm zase platila. Nový účet proto dostane verzi, kterou žádná
+ * dřívější relace nést nemůže: čas založení v milisekundách. Reset a změna
+ * hesla ji dál zvyšují o jedničku, obnova ze zálohy ji nikdy nesníží (B31). */
+const hesloVerzeNova = () => Date.now();
 
 /* Text z formuláře: ořízne okolní mezery a nepustí dál román. Telefon se
  * jinak NEUPRAVUJE — každý si ho píše po svém („+420 602 590 945",
@@ -74,8 +83,25 @@ export default async (req) => {
     if (t.akce === 'mojeheslo') {
       const ucet = await u.cti(relace.email);
       if (!ucet) return json({ ok: false, chyba: 'Účet neexistuje.' }, 404);
-      if (!hesloSedi(String(t.stare || ''), ucet.heslo))
+      /* BRZDA I NA STARÉ HESLO (B77, hloubkový test 24. 9. 2026). Kdo se
+       * dostal k odemčenému počítači nebo k cookie, mohl tudy hádat heslo
+       * bez omezení — a s ním účet převzít natrvalo. Počítadlo je TÉŽ jako
+       * u přihlášení (stejný e-mail, stejná adresa): nad limitem adresy 429
+       * hned, nad limitem e-mailu 429 jen u špatného hesla (#92 — majitel
+       * se správným heslem projde), úspěch počítadlo e-mailu vynuluje. */
+      const ip = adresaKlienta(req);
+      const pokusy = await pokusyZacatek(relace.email, ip);
+      if (pokusyAdresaNadLimit(pokusy))
+        return json({ ok: false, chyba: 'Příliš mnoho neúspěšných pokusů z této adresy. Zkuste to za '
+          + 'několik minut znovu, nebo se ozvěte správci.' }, 429);
+      await pockej(zpozdeniMs(pokusy.email.n));
+      if (!hesloSedi(String(t.stare || ''), ucet.heslo)) {
+        if (pokusy.email.n > POKUSY_MAX)
+          return json({ ok: false, chyba: 'Příliš mnoho neúspěšných pokusů. Zkuste to za '
+            + 'několik minut znovu, nebo se ozvěte správci.' }, 429);
         return json({ ok: false, chyba: 'Staré heslo nesouhlasí.' }, 401);
+      }
+      await pokusyUspech(relace.email, ip);
       if (!hesloPlatne(t.nove))
         return json({ ok: false, chyba: HESLO_PRAVIDLO }, 400);
       ucet.heslo = otiskHesla(t.nove);
@@ -158,7 +184,8 @@ export default async (req) => {
       ucet = { email, jmeno: text(t.jmeno), titul: text(t.titul, 40),
                funkce: text(t.funkce, 80), telefon: text(t.telefon, 40), role: t.role,
                heslo: otiskHesla(t.heslo), zalozen: new Date().toISOString(),
-               zalozil: relace.email, aktivni: true };
+               zalozil: relace.email, aktivni: true,
+               hesloVerze: hesloVerzeNova() };          // B76: stará cookie nesmí ožít
       /* ZNOVU ZALOŽENÝ ÚČET SE Z KNIHY SMAZANÝCH VYŠKRTNE (nález B50, 14. 9. 2026).
        *
        * Knihu čte obnova, aby z otisku neoživila účet, který mezitím někdo
@@ -208,6 +235,10 @@ export default async (req) => {
        * účet nikdy nepřihlásí. Nejdřív zrušit archiv, pak zapnout. */
       if (t.aktivni && ucet.archiv)
         return json({ ok: false, chyba: 'Účet je archivovaný. Nejdřív zrušte archivaci, pak ho zapněte.' }, 400);
+      /* Vypnutí zneplatní dosavadní relace i pro dobu po případném zapnutí
+       * (B76): vypnutý účet server nepustí (vyzadujRoli), ale cookie z doby
+       * před vypnutím by po zapnutí zase platila. */
+      if (!t.aktivni && ucet.aktivni !== false) ucet.hesloVerze = hesloVerzeUctu(ucet) + 1;
       ucet.aktivni = !!t.aktivni;
     } else if (t.akce === 'archiv') {
       if (typeof t.archiv !== 'boolean')   // totéž co u 'aktivni' (B74)
@@ -228,6 +259,7 @@ export default async (req) => {
         return json({ ok: false, chyba: 'Vlastní účet si nearchivujte — zamkl byste si dveře.' }, 400);
       ucet.archiv = !!t.archiv;
       if (ucet.archiv) {
+        if (ucet.aktivni !== false) ucet.hesloVerze = hesloVerzeUctu(ucet) + 1;   // B76
         ucet.aktivni = false;          // archivovaný účet se nikdy nepřihlásí
         ucet.archivKdy = new Date().toISOString();
         ucet.archivKdo = relace.email;
