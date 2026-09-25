@@ -17,8 +17,11 @@ Poslední vydání: **v25.9.3** (větev `test`). Roadmapa: `roadmapa/roadmap.jso
 - `test-draft` je před `test` o roadmapu, CLAUDE.md a tento soubor — přenést
   do `test` na pokyn J. V.
 - `main` = `test` (4f714a3, v25.9.3 + oprava Node), nahráno 25. 9. odpoledne;
-  CI na main běží (run 187). Tag `v25.9.3` z cloudu nahrát nejde (403) —
-  založit ručně přes GitHub → Releases.
+  CI na main zelené (run 187), tag `v25.9.3` založil J. V. ručně
+  (z cloudu tagy nahrát nejde — 403).
+- J. V. nahrál šablony CN v12 (CZ/EN/DE/FR); aplikace ukazuje „v10“, protože
+  číslo verze je pořadí zveřejnění na serveru, ne název souboru. Navrženo
+  ukazovat v tabulce i název souboru — čeká na souhlas J. V.
 
 ## Čeká na J. V.
 - #355, #356: potvrdit výpočet můstků ↔ přechodové plechy a zastřešení.
