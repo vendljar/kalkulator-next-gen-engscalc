@@ -94,6 +94,13 @@ function nabidkaData(zak, varianta, jekly, lang) {
     return h.prelozeno ? h.text : P(h.text);
   };
 
+  /* Pole, které v téhle zakázce nic neříká („ -"), vrací prázdno — řádek
+   * pak z dokumentu zmizí (docxgen i nabidkaNahledSekce). */
+  const tsNeboPrazdno = id => {
+    const t = ts(id);
+    return /^\s*-?\s*$/.test(String(t == null ? '' : t)) ? '' : t;
+  };
+
   // vnější rozměr: z ručního přepisu pole „ROZMĚR ŠACHTY – VNĚJŠÍ“, je-li ve tvaru „š × h“
   let sirkaVnejsi = ' -', hloubkaVnejsi = ' -';
   const mVnejsi = String(TSv.hodnoty.rozmerVnejsi || '').match(/(\d[\d\s]*)\D+(\d[\d\s]*)/);
@@ -185,7 +192,25 @@ function nabidkaData(zak, varianta, jekly, lang) {
     TS_PARAMETRY_KOTVY: ts('parametryKotvy'), TS_NAPOJENI_DVERI: ts('napojeniDveri'),
     TS_MONTAZNI_NOSNIK: ts('montazniNosnik'), TS_PRIPRAVA_KOTVENI: ts('pripravaKotveni'),
     TS_ODVETRANI: ts('odvetrani'), TS_PODCHOZI_OCK: ts('podchoziOck'),
+    /* POPIS ZÁMĚRU A VĚTA O OPLÁŠTĚNÍ (P6 / K13-N57, 24. 9. 2026). Šablona v11
+     * má natvrdo odstavec o přístavbě k dvorní fasádě a o izolačním dvojskle —
+     * tiskne se i u interiérových šachet s čistým VSG. Tihle zástupci jsou
+     * připravení pro upravenou šablonu (šablona v11 je zatím nepoužívá).
+     * Znění vět je NÁVRH ke schválení J. V. (podklady/K13_ROZBOR_2026-09-24.md);
+     * překlady přibudou po schválení. */
+    POPIS_ZAMERU_OCK: nabidkaPopisZameru(zak, Zv, P),
+    OPLASTENI_VETA: (() => {
+      const m = ts('materialOplasteni');
+      return nabidkaHodnotaChybi(m) ? '' : P('Opláštění šachty') + ': ' + m + '.';
+    })(),
     TS_PRECHODOVE_PLECHY: ts('prechodovePlechy'),
+    /* Příčka a stříšky vedle šachty (P10 / K12-N46, 24. 9. 2026). Stříšky
+     * jsou v základní ceně (sekce opláštění), technická specifikace je
+     * vypisuje, ale do nabídky se nedostávaly. Prázdná hodnota = řádek
+     * zmizí (Word i náhled), stejně jako u soklu. Šablona v11 na ně zatím
+     * symbol nemá — doplní se se šablonou. */
+    TS_PROSKLENA_PRICKA: tsNeboPrazdno('prosklenaPricka'),
+    TS_PROSKLENA_STRISKA: tsNeboPrazdno('prosklenaStriska'),
     TS_LESENI_UVNITR: ts('leseniUvnitr'), TS_LESENI_VNE: ts('leseniVne'),
     TS_ZABRANY_VSTUPY: ts('zabranyVstupy'),
     TS_SKEN3D: ts('sken3d'), TS_VYSTUP_ZAMERENI: ts('vystupZamereni'),
@@ -375,6 +400,27 @@ function nabidkaData(zak, varianta, jekly, lang) {
 /* Struktura náhledu podkladů – stejné sekce jako v technické specifikaci/nabídce.
  * lang = 'cz' | 'en' | 'de' | 'fr' – překládají se NÁZVY SEKCÍ a POPISKY řádků;
  * hodnoty už přeložené přicházejí v ph (nabidkaData). Neznámý výraz zůstává česky. */
+/* Popis záměru do nabídky OCK (P6). Vlastní text z hlavičky zakázky má
+ * přednost — pole `popisZameru` už existuje (dnes ho vyplňuje nabídka PROJ).
+ * Jinak věta složená podle typu šachty a průchodnosti. NÁVRH ZNĚNÍ. */
+function nabidkaPopisZameru(zak, Z, P) {
+  const vlastni = String((zak && zak.popisZameru) || '').trim();
+  if (vlastni) return vlastni;
+  const tr_ = typeof P === 'function' ? P : (t => t);
+  const z = Z || {};
+  const veta = z.typSachty === 'exteriérová'
+    ? 'Přístavba výtahu v nové ocelové konstrukci výtahové šachty k fasádě objektu.'
+    : 'Vestavba výtahu v nové ocelové konstrukci výtahové šachty do vnitřního prostoru objektu.';
+  const pruchozi = z.pruchoziSachta
+    ? ' ' + tr_('Šachta je průchozí – nástupiště jsou na čelní i zadní straně.') : '';
+  return tr_(veta) + pruchozi;
+}
+
+/* Hodnota zástupce, která nic neříká: prázdno nebo samotná pomlčka. */
+function nabidkaHodnotaChybi(x) {
+  return /^\s*-?\s*$/.test(String(x == null ? '' : x));
+}
+
 function nabidkaNahledSekce(ph, lang) {
   const L = lang || 'cz';
   const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
@@ -386,7 +432,11 @@ function nabidkaNahledSekce(ph, lang) {
       ['UMÍSTĚNÍ ŠACHTY', ph.TS_UMISTENI], ['UMÍSTĚNÍ VÝTAHOVÉHO STROJE', ph.TS_UMISTENI_STROJE],
       ['ULOŽENÍ KONSTRUKCE', ph.TS_ULOZENI], ['CELKOVÁ VÝŠKA KONSTRUKCE [m] *', ph.TS_VYSKA_CELKOVA],
       ['ROZMĚR ŠACHTY – VNITŘNÍ [mm] *', P('šířka') + ' ' + ph.TS_SIRKA_VNITRNI + ' × ' + P('hloubka') + ' ' + ph.TS_HLOUBKA_VNITRNI],
-      ['ROZMĚR ŠACHTY – VNĚJŠÍ [mm] *', P('šířka') + ' ' + ph.TS_SIRKA_VNEJSI + ' × ' + P('hloubka') + ' ' + ph.TS_HLOUBKA_VNEJSI],
+      /* Bez ručního přepisu vnějšího rozměru vycházelo „šířka - × hloubka -"
+       * (P9 / K12-N48, 24. 9. 2026). Word takový řádek vynechá, náhled teď
+       * taky — když chybí obě hodnoty. */
+      ...(nabidkaHodnotaChybi(ph.TS_SIRKA_VNEJSI) && nabidkaHodnotaChybi(ph.TS_HLOUBKA_VNEJSI) ? [] :
+        [['ROZMĚR ŠACHTY – VNĚJŠÍ [mm] *', P('šířka') + ' ' + ph.TS_SIRKA_VNEJSI + ' × ' + P('hloubka') + ' ' + ph.TS_HLOUBKA_VNEJSI]]),
       ['ZDVIH VÝTAHU [m] *', ph.TS_ZDVIH], ['DOLNÍ PŘEJEZD [mm]', ph.TS_DOLNI_PREJEZD],
       ['HORNÍ PŘEJEZD [mm]', ph.TS_HORNI_PREJEZD],
       ['POČET STANIC / NÁSTUPIŠŤ', ph.TS_STANICE + ' · ' + ph.TS_KABINA],
@@ -409,6 +459,8 @@ function nabidkaNahledSekce(ph, lang) {
     { sekce: 'DOPLŇKOVÉ KONSTRUKCE', radky: [
       ['MONTÁŽNÍ NOSNÍK NEBO OKA', ph.TS_MONTAZNI_NOSNIK], ['PŘÍPRAVA PRO KOTVENÍ VÝTAHU', ph.TS_PRIPRAVA_KOTVENI],
       ['ODVĚTRÁNÍ ŠACHTY', ph.TS_ODVETRANI], ['PODCHOZÍ NOSNÁ OCK', ph.TS_PODCHOZI_OCK],
+      ...(ph.TS_PROSKLENA_PRICKA ? [['PROSKLENÁ PŘÍČKA VEDLE ŠACHTY', ph.TS_PROSKLENA_PRICKA]] : []),
+      ...(ph.TS_PROSKLENA_STRISKA ? [['PROSKLENÁ STŘÍŠKA', ph.TS_PROSKLENA_STRISKA]] : []),   // P10 / K12-N46
       ['PŘECHODOVÉ PLECHY V NÁSTUPIŠTÍCH', ph.TS_PRECHODOVE_PLECHY],
       /* Sokl sem patří, jen když se dodává — jinak stojí níž mezi tím, co
        * součástí dodávky není. Rozhoduje to, který ze zástupců je vyplněný;
@@ -516,4 +568,4 @@ if (typeof dokumentRegistruj === 'function')
     builder: (zak, varianta, jekly, lang) => nabidkaData(zak, varianta, jekly, lang),
   });
 
-if (typeof module !== 'undefined') module.exports = { nabidkaData, nabidkaNahledSekce };
+if (typeof module !== 'undefined') module.exports = { nabidkaData, nabidkaNahledSekce, nabidkaPopisZameru };

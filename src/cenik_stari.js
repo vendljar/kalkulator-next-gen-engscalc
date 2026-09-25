@@ -189,6 +189,14 @@ function cenikRozdily(stara, nova) {
   cenikSledovane().forEach(p => {
     const a = cenikHodnota(stara, p.cesta), b = cenikHodnota(nova, p.cesta);
     if (a === undefined && b === undefined) return;
+    /* CHYBĚJÍCÍ KLÍČ = NULA (P3 / K13-N55, 24. 9. 2026). Import zakázky
+     * (klient i server) doplní klíč, který v uloženém ceníku chybí, nulou
+     * (cenikDoplnKlice v engine.js). Platný ceník starší než ten klíč ho
+     * nenese vůbec. Bez téhle rovnosti hlásila každá nová zakázka po
+     * otevření „Změnily se 2 ceny" (cetrisKc, zaskleniListyProjHod: 0 proti
+     * ničemu) a přepočet jí klíče smazal. Skutečná změna zůstává vidět:
+     * nenulová hodnota proti chybějící se hlásí dál. */
+    if ((a === undefined && b === 0) || (a === 0 && b === undefined)) return;
     const cislo = typeof a === 'number' && typeof b === 'number';
     if (cislo ? a === b : String(a == null ? '' : a) === String(b == null ? '' : b)) return;
     out.push({
@@ -317,6 +325,11 @@ function cenikPrehled(v, dnesni, opts) {
   const dnes = opts.dnes || new Date().toISOString().slice(0, 10);
   const data = (v && v.data) || null;
   const rozdily = data ? cenikRozdily(data, dnesni) : [];
+  /* Přirážka a sazba DPH jsou rozhodnutí zakázky, ne ceny (CENIK_ZAKAZKOVE).
+   * Automatický přepočet je vynechával, varování ne — ruční DPH 21 % pak
+   * svítilo jako „Sazba DPH −42,9 %" (P4 / K13-N58, 24. 9. 2026). V seznamu
+   * rozdílů (okno přepočtu) zůstávají, varování a jeho souhrn je nepočítají. */
+  const cenove = rozdily.filter(r => !cenikPatriZakazce(r.cesta));
   const otisk = data ? cenikOtisk(data) : '';
   const zamceno = !!(typeof variantaUzamcena === 'function' ? variantaUzamcena(v) : (v && v.zamek));
   const kvitovano = cenikJeKvitovano(v, otisk);
@@ -334,14 +347,14 @@ function cenikPrehled(v, dnesni, opts) {
   let verzeOdvozena = false;
   if (!verze && verzeDnes && data && rozdily.length === 0) { verze = verzeDnes; verzeOdvozena = true; }
   return {
-    rozdily, souhrn: cenikSouhrn(rozdily), otisk, zamceno, kvitovano,
+    rozdily, souhrn: cenikSouhrn(cenove), otisk, zamceno, kvitovano,
     datum, dni: cenikDniOd(datum, dnes),
     stariCeniku: cenikStariCeniku(dnes),
     verze, verzeOdvozena, verzeDnes,
     verzeText: cenikVerzeText(razitko),
     verzeDnesText: cenikVerzeText({ verze: verzeDnes, platnoOd: opts.platnoOd || '' }),
     verzeZaostava: !!(verze && verzeDnes && verze < verzeDnes),
-    varovat: rozdily.length > 0 && !kvitovano && !zamceno,
+    varovat: cenove.length > 0 && !kvitovano && !zamceno,
   };
 }
 
@@ -358,7 +371,9 @@ function cenikVarovaniText(p) {
   const kolik = s.pocet === 1 ? '1 položka' : (s.pocet < 5 ? s.pocet + ' položky' : s.pocet + ' položek');
   let t = 'Ceník v této kalkulaci se liší od dnešního ceníku aplikace – ' + kolik;
   if (s.nejvetsi && s.nejvetsi.zmena != null)
-    t += ', nejvíc „' + s.nejvetsi.popis + '" ' + cenikProcento(s.nejvetsi.zmena);
+    /* Směr jako v okně přepočtu (sloupce V kalkulaci → Dnes → Změna): změna
+     * je dnešní cena proti kalkulaci. Holé „−42,9 %" se četlo obráceně (P4). */
+    t += ', nejvíc „' + s.nejvetsi.popis + '" (dnes ' + cenikProcento(s.nejvetsi.zmena) + ' proti kalkulaci)';
   t += '.';
   if (p.datum) t += ' Ceny jsou z ' + cenikDatumCz(p.datum)
     + (p.dni != null && p.dni > 0 ? ' (před ' + p.dni + ' dny)' : '') + '.';

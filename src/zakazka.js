@@ -345,6 +345,10 @@ const ZAK_CISLO_PREDLOHA = '2026 - OPR - CN - ';
 function novaZakazka() {
   const v = novaVarianta('Varianta 1');
   v.ridici = true;
+  /* První varianta nese holé číslo od založení (P1 / K13-N53, 24. 9. 2026).
+   * Bez pole `pripona` ji zajistiZamek po klonu založeném před prvním
+   * uložením bral jako „chybějící" a dal jí .3 — i s vytištěnou nabídkou. */
+  v.pripona = 0;
   return {
     schema: ZAKAZKA_SCHEMA,
     cislo: ZAK_CISLO_PREDLOHA,

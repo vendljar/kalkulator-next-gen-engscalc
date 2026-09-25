@@ -72,6 +72,7 @@ async function sodWordGeneruj(typ, srv) {
   const varianta = (typeof nabidkaVarianta === 'function')
     ? await nabidkaVarianta()
     : ((typeof aktivniVarianta === 'function') ? aktivniVarianta(ZAK) : (ZAK.varianty || [])[0]);
+  if (typeof tiskZamekCteniPovol === 'function' && !(await tiskZamekCteniPovol(typ, varianta))) { sodStavText(typ, 'Dokument nevznikl — nabídka je otevřená jen ke čtení.'); return; }   // P2 (K13-N54)
   dokumentVygeneruj(typ, sablona.slice(0), ZAK, varianta, JEKLY, L)
     .then(res => {
       const a = document.createElement('a');

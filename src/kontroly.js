@@ -398,6 +398,25 @@ const KONTROLY = [
     },
   },
   {
+    /* SLEVA VE WORDU (P5 / K13-N56, 24. 9. 2026). Aplikace slevu do Wordu
+     * posílá (CENA_PRED_SLEVOU, SLEVA_PROC, SLEVA_KC), ale šablona nabídky
+     * v11 ty symboly nemá — zákazník ve Wordu vidí jen konečnou cenu, zatímco
+     * online náhled ukazuje cenu před slevou i slevu. Kontrola se ozve jen
+     * tehdy, když symboly šablony známe (ctx.sablonaNabidka stahuje UI na
+     * pozadí); nevíme-li, mlčí — hádat by znamenalo varovat naslepo. */
+    kod: 'slevaWord', kde: 'Nabídka', nazev: 'Sleva se ve Wordu neukáže',
+    zjisti(ctx) {
+      if (ctx.jenProj || typeof slevaPlati !== 'function' || !slevaPlati(ctx.sleva)) return null;
+      const s = ctx.sablonaNabidka;
+      if (!s || !Array.isArray(s.symboly) || !s.symboly.length) return null;
+      if (s.symboly.indexOf('SLEVA_KC') >= 0) return null;
+      return { text: 'Word slevu neukáže, zákazník uvidí jen konečnou cenu: šablona nabídky OCK'
+        + (s.nazev ? ' „' + s.nazev + '"' : '') + (s.verze ? ' (verze ' + s.verze + ')' : '')
+        + ' nemá symbol {{SLEVA_KC}}. Schválená sleva ' + (+ctx.sleva.procenta) + ' % je v ceně započtená; '
+        + 'cenu před slevou a slevu ukazuje jen online náhled nabídky.' };
+    },
+  },
+  {
     kod: 'hlavicka', kde: 'Hlavička zakázky', nazev: 'Prázdná hlavička',
     zjisti(ctx) {
       const zak = ctx.zak;

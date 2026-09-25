@@ -449,6 +449,10 @@ const histJson = await p.evaluate(() => {
   const v = z.varianty[0];
   v.nazev = 'Varianta 1';
   v.data.cenik.marze = 0.19;            // tehdejší přirážka – podle ní se pozná ceník
+  /* A tehdejší CENA. Přirážka je rozhodnutí zakázky a na „starší ceník" od
+   * P4 / K13-N58 (24. 9. 2026) sama neupozorňuje — varování #35 níž proto
+   * potřebuje skutečně jinou cenu. */
+  v.data.cenik.montazHodKc = 777;
   v.data.ock.zadani.pocetStanic = 7;        // tehdejší zadání – to se přebírá vždy
   zamkniVariantu(v, { typ: 'nabidkaTisk', cislo: variantaCislo(z, v),
     kdy: '2024-06-21T08:00:00.000Z', otisk: zamekOtisk({ celkemBezDph: 880000 }) });
@@ -546,8 +550,8 @@ await p.waitForTimeout(300);
 const lst = p.locator('#page-cenik .cenik-stari');
 ok('na záložce Ceník OCK svítí upozornění na starší ceník', await lst.count() === 1);
 const lstText = await lst.innerText();
-ok('věta pojmenuje největší změnu („Globální přirážka OCK")',
-   lstText.includes('Globální přirážka OCK') && /[+−-]?\d/.test(lstText));
+ok('věta pojmenuje největší změnu ceny („Montáž na stavbě"), ne přirážku (P4)',
+   lstText.includes('Montáž na stavbě') && !lstText.includes('Globální přirážka OCK'), lstText);
 ok('věta se odvolá na datum, ke kterému ceny patří', lstText.includes('Ceny jsou z '));
 ok('upozornění se netiskne', (await lst.getAttribute('class')).includes('noprint'));
 ok('stejné upozornění je i na záložce Ceník PROJ',
@@ -624,17 +628,17 @@ ok('po přepočtu už lišta nesvítí', await p.locator('#page-cenik .cenik-sta
 // „Ceny jsou dohodnuté" – ztišení bez přepisu cen
 const kvit = await p.evaluate(() => {
   const v = aktivniVarianta(ZAK);
-  v.data.cenik.marze = 0.19;             // zpět na dohodnutou cenu
+  v.data.cenik.montazHodKc = 777;        // zpět na dohodnutou cenu (přirážka by od P4 nevarovala)
   syncVarianta(); render();
   const pred = document.querySelectorAll('#page-cenik .cenik-stari').length;
   cenikDohodnute();
   const po = document.querySelectorAll('#page-cenik .cenik-stari').length;
   const v2 = aktivniVarianta(ZAK);
-  return { pred, po, marze: v2.data.cenik.marze, kdo: (v2.cenikKvitance || {}).kdo != null };
+  return { pred, po, montaz: v2.data.cenik.montazHodKc, kdo: (v2.cenikKvitance || {}).kdo != null };
 });
 ok('ruční změna ceny varování znovu rozsvítí', kvit.pred === 1);
 ok('„Ceny jsou dohodnuté" varování ztiší', kvit.po === 0);
-ok('ztišení ceny nepřepsalo (zůstává dohodnutá 0.19)', kvit.marze === 0.19);
+ok('ztišení ceny nepřepsalo (zůstává dohodnutá 777)', kvit.montaz === 777);
 ok('u kvitance je zapsáno, kdo ji dal', kvit.kdo);
 const znovu = await p.evaluate(() => {
   aktivniVarianta(ZAK).data.cenik.montazHodKc = 1;   // další změna ceníku
@@ -911,7 +915,7 @@ ok('modul kontrol je v sestavení', k33.logika && k33.panelFn);
 // 11 = 10 z vlny B + „ico" (30. 7. 2026)
 /* 12 = 10 z vlny B + „ico" + „atypBezCeny" (obojí 30. 7. 2026). Číslo je tu
  * napevno schválně: omylem zdvojené pravidlo by se jinak nepoznalo. */
-ok(`pravidel je ${k33.pravidel} (čekám 16 – slevaProjMax po auditu, kapitoly 23. 9., terminAtyp a nadDvermiBez 24. 9. 2026)`, k33.pravidel === 16);
+ok(`pravidel je ${k33.pravidel} (čekám 17 – slevaProjMax po auditu, kapitoly 23. 9., terminAtyp, nadDvermiBez a slevaWord 24. 9. 2026)`, k33.pravidel === 17);
 ok('všechna pravidla jsou varování (úroveň 2)', k33.uroven);
 /* Sestavení nese ukázkový ceník, takže tohle pravidlo svítí vždycky – je to
  * zároveň důkaz, že se panel v čerstvé instalaci opravdu ukáže. */

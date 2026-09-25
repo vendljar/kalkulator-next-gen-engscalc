@@ -57,6 +57,95 @@ sazby podle návrhu, boční pole ve stejné dávce).
   (nová zakázka má plech, sklo se volí hodnotou) a `overit_lista`
   (16 pravidel).
 
+---
+
+## Nálezy 13. kola — větev k13-nalezy (sloučeno do testu 25. 9. 2026, schválil J. V.)
+
+Nálezy 13. testovacího kola (24. 9. 2026, test v24.9.6). Označení P1–P11
+podle zadání větve, v závorce číslo nálezu ze sešitu kola.
+
+- **P1 (K13-N53) — první varianta dostala po uložení příponu .3.** Nová
+  zakázka zakládala první variantu bez pole `pripona`. Po klonu založeném
+  před prvním uložením (klon .2) ji `zajistiZamek` při importu bral jako
+  chybějící a dal jí první volné číslo nad maximem. Vytištěná nabídka
+  „…9140“ se tak v aplikaci změnila na „…9140.3“. Obchodníkovi server
+  uložení odmítl (B56, 403), administrátorovi číslo v zámku tiše přepsal.
+  Oprava: první varianta má příponu 0 od založení a varianta bez přípony
+  na prvním místě dostane 0, pokud ji v zakázce ještě nikdo nemá. Testy:
+  `src/test_pripona_prvni.js` (bez opravy 6 z 12 selže), `test_prava`
+  +6 (bez opravy obchodník dostane 403). Uložená data se nemění; výpis
+  dotčených zakázek ze zálohy dělá `podklady/K13_pripona_vypis.mjs`.
+- **P2 (K13-N54) — tisk ze zakázky otevřené jen ke čtení zamkl variantu
+  jen v prohlížeči.** Tlačítka tisku leží mimo šedé bloky režimu čtení.
+  Word i tisk z náhledu proto variantu zamkly, uložení se ale odmítlo
+  a odeslaná nabídka zůstala na serveru odemčená. Oprava (varianta A):
+  před dokumentem, který zamyká, se aplikace zeptá „Tisk odešle nabídku
+  a uzamkne variantu. K tomu je potřeba zakázku odemknout.“ s volbami
+  Odemknout a tisknout / Zrušit. Kdo odemknout nesmí, dostane důvod
+  a dokument nevznikne. Platí pro Word OCK i PROJ, smlouvy o dílo a tisk
+  z náhledu nabídky OCK i PROJ; náhled se ptá před otevřením okna. Dotisk
+  už zamčené varianty se neptá, plná moc a interní podklady beze změny.
+  Harness `overit_online.mjs` +10 (bez opravy 6 selže).
+- **P3 (K13-N55) — falešný dialog „Ceník se změnil, změnily se 2 ceny“
+  u každé nové zakázky.** Příčina potvrzena: server při importu doplní
+  klíč, který v ceníku zakázky chybí, nulou (`cenikDoplnKlice`). Platný
+  ceník testu je ale starší než klíče `cetrisKc` a `zaskleniListyProjHod`
+  a nenese je vůbec. `cenikRozdily` pak bral 0 proti ničemu jako změnu
+  a přepočet klíče ze zakázky smazal. Oprava v `cenikRozdily` (varianta a):
+  chybějící klíč se porovnává jako nula, tedy stejně jako ho doplňuje
+  import. Nenulová hodnota proti chybějící i změna z nenuly na nulu se
+  hlásí dál. Varianta b (doplnit klíče do platného ceníku při načtení)
+  by změnila otisk platného ceníku, a tím zneplatnila dříve potvrzené
+  „ceny jsou dohodnuté“.
+- **P4 (K13-N58) — ruční sazba DPH se hlásila jako rozdíl ceníku.**
+  `cenikPrehled` nefiltroval zakázkové hodnoty (přirážka, DPH), přestože
+  je automatický přepočet vynechává. Varování i jeho souhrn je teď
+  nepočítají; v okně přepočtu zůstávají. Věta varování říká směr stejně
+  jako okno přepočtu: „nejvíc „X“ (dnes +25 % proti kalkulaci)“.
+  Testy: `src/test_k13_cenik.js` 16 (bez opravy 8 selže). Upraveno
+  `test_cenik_stari` (přirážka projekce už se do varování nepočítá)
+  a fixtura `overit_lista.mjs` (varování #35 potřebuje skutečnou cenu).
+- **P9 (K12-N48) — online nabídka tiskla „šířka - × hloubka -“.** Řádek
+  „ROZMĚR ŠACHTY – VNĚJŠÍ“ se v náhledu nabídky vynechá, když chybí obě
+  hodnoty (ruční přepis není vyplněný). Word ho vynechával už dřív.
+- **P10 (K12-N46) — stříšky v ceně, ale ne v nabídce.** Nové zástupce
+  `TS_PROSKLENA_STRISKA` a `TS_PROSKLENA_PRICKA` v datech nabídky. Když
+  pole nic neříká, jsou prázdné a řádek zmizí. Náhled nabídky má oba
+  řádky v sekci DOPLŇKOVÉ KONSTRUKCE. Šablona v11 na ně zatím symbol
+  nemá, doplní se se šablonou. Testy: `src/test_k13_nabidka.js` 10
+  (bez opravy 8 selže), `test_nabidka` (13 řádků základních parametrů).
+- **P8 (K13-N60 + K12-N49) — nepřeložené texty cizojazyčné nabídky.**
+  Nová hesla EN/DE/FR pro „TECHNICKÁ ČÁST – SPECIFIKACE DODÁVKY“,
+  „žádné příplatky nejsou vybrány“, „nejsou součástí dodávky, viz
+  příplatkové ceny“ a „přirozené, do prostoru schodiště“. **Návrh
+  překladu, čeká na odbornou kontrolu J. V.** Test pokrytí
+  `src/test_k13_preklad.js` projde všechny hodnoty specifikace v nabídce
+  (TS_*) pro 16 zadání (interiér / exteriér, průchozí, přechodové plechy,
+  lešení) a pevné texty online nabídky. Bez nových hesel selže právě na
+  těchto čtyřech textech. Tisková lišta (netiskne se) a názvy ze
+  zkušebního ceníku jsou z testu vyjmuté.
+- **P5 (K13-N56) — Word nabídka neukazuje schválenou slevu (prověřeno,
+  návrh v `podklady/K13_ROZBOR_2026-09-24.md`).** Aplikace symboly
+  `CENA_PRED_SLEVOU`, `SLEVA_PROC` a `SLEVA_KC` vydává, šablona v11 je
+  nemá a jiná cesta slevu do Wordu nevkládá (`ZAOKROUHLENI_KC` je vždy
+  prázdný). Nová kontrola před nabídkou `slevaWord`: varianta má platnou
+  slevu a šablona, ze které se tiskne, nemá `{{SLEVA_KC}}` → „Word slevu
+  neukáže, zákazník uvidí jen konečnou cenu“. Symboly šablony se zjišťují
+  na pozadí (stažení jen u varianty se slevou, cache podle verze), dokud
+  nejsou známé, pravidlo mlčí. Testy `src/test_k13_kontroly.js` 9,
+  `test_kontroly` (16 pravidel).
+- **P6 (K13-N57) — pevný „Popis záměru“ a věta o opláštění ve Wordu
+  (prověřeno, návrh v rozboru K13).** Šablona v11 tiskne natvrdo přístavbu
+  k dvorní fasádě a izolační dvojsklo i u interiérových šachet s čistým
+  VSG. Připravení zástupci pro upravenou šablonu: `POPIS_ZAMERU_OCK`
+  (vlastní text z hlavičky zakázky, jinak věta podle typu šachty
+  a průchodnosti) a `OPLASTENI_VETA` (z materiálu opláštění ve
+  specifikaci). Šablona v11 je zatím nepoužívá. **Znění vět je návrh ke
+  schválení J. V.**, překlady přibudou po schválení. Test
+  `test_k13_nabidka.js` +6.
+
+---
+
 ## v24.9.6 — dávka F4a (24. 9. 2026 večer): průchozí šachta, lešení, záporné hodiny
 
 Rozhodnutí J. V. 24. 9. večer.

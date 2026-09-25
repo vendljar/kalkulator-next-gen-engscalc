@@ -177,7 +177,9 @@ test('kapitoly stojí až za cenou',
   sekce.findIndex(s => s.sekce === 'IV. POŽADAVKY PRO PROVEDENÍ REALIZACE')
     > sekce.findIndex(s => /CENOVÁ NABÍDKA/.test(s.sekce)),
   sekce.map(s => s.sekce).join(' | '));
-test('náhled: základní parametry 14 řádků', sekce[1].radky.length === 14, sekce[1].radky.length);
+/* 13 řádků: vnější rozměr tahle zakázka nemá (ruční přepis chybí), a řádek
+ * „šířka - × hloubka -" se od P9 / K12-N48 (24. 9. 2026) vynechává. */
+test('náhled: základní parametry 13 řádků (bez prázdného vnějšího rozměru)', sekce[1].radky.length === 13, sekce[1].radky.length);
 const dod = sekce[sekce.length - 1];
 test('poslední sekce je DODAVATEL', dod.sekce === 'DODAVATEL', dod.sekce);
 test('dodavatel obsahuje název firmy', dod.radky.some(r => r[1] === fm.DEFAULT_FIRMA.nazev),
