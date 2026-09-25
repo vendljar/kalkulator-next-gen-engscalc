@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v25.9.2 · sestaveno 25. 9. 2026 · nahrazuje příručku ze 17. 9. 2026 (v17.9.3)",
+  "verze": "Platí pro aplikaci v25.9.3 · sestaveno 25. 9. 2026 · nahrazuje příručku ze 17. 9. 2026 (v17.9.3)",
 
   "uvod": [
     {
@@ -424,7 +424,8 @@
         { "typ": "text", "text": "Podobně **oplechování soklu prohlubně**: je-li nabízené jako příplatek, specifikace u něj píše „nabízeno jako příplatek“, ne „není součástí nabídky“. Rozhoduje o tom týž sloupec **Nabídka**, ze kterého se skládá kapitola II." },
         { "typ": "podnadpis", "text": "Dodatkový text místo množství" },
         { "typ": "text", "text": "Pod každou ceníkovou položkou v příplatcích i ve volitelných je pole **dodatkový text do cenové nabídky (nepovinné)**. Co do něj napíšete, se v nabídce vytiskne pod názvem položky **místo množství** — zákazník tak místo „množství: 88,626“ čte, co si kupuje. Prázdné pole znamená, že se pod položkou nic netiskne." },
-        { "typ": "text", "text": "Výchozí texty pro celou firmu zadává administrátor a předvyplní se v každé nové zakázce. **Vaše úprava platí jen pro vaši zakázku** a výchozí text nikomu jinému nepřepíše. Odeslané nabídky se pozdější změnou textu nemění. V zamčené zakázce jde text změnit až po odemknutí, stejně jako cokoli jiného." }
+        { "typ": "text", "text": "Výchozí texty pro celou firmu zadává administrátor a předvyplní se v každé nové zakázce. **Vaše úprava platí jen pro vaši zakázku** a výchozí text nikomu jinému nepřepíše. Odeslané nabídky se pozdější změnou textu nemění. V zamčené zakázce jde text změnit až po odemknutí, stejně jako cokoli jiného." },
+        { "typ": "text", "text": "Výchozí texty najdete i pohromadě v **Ceníku OCK → Dodatkové texty do cenové nabídky – číselník** (pod ceníkem). Tam je vidíte pro všechny položky najednou; zapisuje je administrátor. Výchozí text se doplní i do **rozpracované** zakázky, která u položky vlastní text nemá — když ho ve své zakázce smažete, zůstane smazaný." }
       ]
     },
     {
@@ -766,7 +767,7 @@
           "typ": "ram", "nadpis": "Než něco nahlásíte: máte nejnovější verzi?",
           "odstavce": [
             "V hlavičce svítí číslo verze a pokud je na serveru novější, aplikace na to sama upozorní. Obnovte stránku (`Ctrl+F5`) — rozpracovaná nabídka se předtím uloží.",
-            "Tahle příručka platí k **v25.9.2**. Aplikace se mění několikrát denně, takže když se chování liší od popisu, může to být i tím."
+            "Tahle příručka platí k **v25.9.3**. Aplikace se mění několikrát denně, takže když se chování liší od popisu, může to být i tím."
           ]
         }
       ]

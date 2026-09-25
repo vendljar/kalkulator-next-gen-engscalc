@@ -535,6 +535,46 @@ function zajistiZamek(zak) {
  * Odemčení NEOTVÍRÁ uzamčenou (vytištěnou) variantu: ta má svůj vlastní
  * zámek a ten platí dál.
  * ============================================================ */
+/* PŘÍPONA PRVNÍ VARIANTY — nález a oprava dat (K13-P1, 25. 9. 2026).
+ *
+ * Kód je opravený od 24. 9. (nová zakázka dává první variantě 0), ale
+ * zakázky uložené předtím můžou mít u první varianty .3 místo holého čísla.
+ * Do 25. 9. se to dalo opravit jen skriptem nad staženou zálohou
+ * (podklady/K13_pripona_oprava.mjs); J. V.: „jak to mám udělat? nemůžeš to
+ * provést ty?" — teď to administrátor udělá tlačítkem v Nastavení →
+ * Databáze a logika je tady, jedna pro skript i pro aplikaci.
+ *
+ * „První varianta" = nejstarší (`vytvoreno`), která nevznikla klonem ani
+ * jako alternativa. Nález vrací null, když je v pořádku. */
+function priponaPrvniNalez(zak) {
+  if (!zak || !Array.isArray(zak.varianty) || !zak.varianty.length) return null;
+  const puvodni = zak.varianty.filter(v => v && !v.klonZ && !v.alternativaZ);
+  if (!puvodni.length) return null;
+  const prvni = puvodni.slice().sort((a, b) => String(a.vytvoreno || '').localeCompare(String(b.vytvoreno || '')))[0];
+  if (!(typeof prvni.pripona === 'number' && prvni.pripona > 0)) return null;
+  return {
+    id: prvni.id, nazev: prvni.nazev || prvni.id, pripona: prvni.pripona,
+    zamcena: variantaUzamcena(prvni),
+    cisloVZamku: (prvni.zamek && prvni.zamek.cislo) || '',
+    /* Holé číslo už drží jiná varianta — oprava by vyrobila dvě stejná
+     * čísla; tady musí rozhodnout člověk. */
+    holeZabrane: zak.varianty.some(v => v && v !== prvni && (v.pripona === 0 || v.pripona == null)),
+  };
+}
+/* Oprava na místě: první varianta dostane příponu 0. Uzamčenou (odeslanou)
+ * variantu NEOPRAVUJE — zámek nese číslo z papíru a server jeho změnu
+ * odmítne; postup je odemknout, opravit, znovu vytisknout. Vrací
+ * { opraveno, duvod }. */
+function priponaPrvniOprav(zak) {
+  const n = priponaPrvniNalez(zak);
+  if (!n) return { opraveno: false, duvod: 'v pořádku' };
+  if (n.zamcena) return { opraveno: false, duvod: 'odeslaná (uzamčená) varianta — nejdřív odemknout' };
+  if (n.holeZabrane) return { opraveno: false, duvod: 'holé číslo už má jiná varianta — rozhodne člověk' };
+  const v = zak.varianty.find(x => x && x.id === n.id);
+  v.pripona = 0;
+  return { opraveno: true, duvod: '.' + n.pripona + ' → holé číslo' };
+}
+
 function zamekCteniSmiOdemknout(zak, ja) {
   if (!ja || !ja.email) return true;                    // offline / bez přihlášení
   if (ja.role === 'Administrátor' || ja.role === 'Vedoucí') return true;
@@ -554,7 +594,7 @@ function zamekCteniDuvod(zak, ja) {
 if (typeof module !== 'undefined')
   module.exports = { zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
                      zamekVysledekSpocti, ZAMEK_OVERENI_CASTI, zamekVysledekRozdily, zamekOvereni, zamekOvereniText,
-                     zamekCteniSmiOdemknout, zamekCteniDuvod,
+                     zamekCteniSmiOdemknout, zamekCteniDuvod, priponaPrvniNalez, priponaPrvniOprav,
                      variantaPripona, dalsiPriponaVarianty, variantaCislo,
                      PRIPONY_SCHEMA, variantaPriponaVZakazce, zamekCisloZakladSedi,
                      klonujVariantu, zamekInfo, variantaUzamcena,

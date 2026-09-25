@@ -301,6 +301,15 @@ function renderCenik() {
  * společné mapy zmizel, obvykle pořád leží v zakázce, kde byl napsaný. */
 const POPISY_CIS = { sber: null, hleda: false, chyba: '' };
 
+/* Kandidáti z uložených zakázek pod řádkem číselníku (hledání `?sber=1`). */
+function cenikPopisyKandidati(klic, admin) {
+  const sez = (POPISY_CIS.sber && POPISY_CIS.sber[klic]) || [];
+  return sez.slice(0, 3).map((x, i) => `<div class="note" style="margin:2px 0">
+      <b>${esc(x.cislo)}</b>${x.pocet > 1 ? ` (+${esc(x.pocet - 1)})` : ''}: „${esc(x.text)}"
+      ${admin ? `<button class="mini" onclick="cenikPopisPrevzit('${keyAttr(klic)}', ${escJs(i)})">převzít</button>` : ''}
+    </div>`).join('');
+}
+
 function cenikPopisySpolecne() {
   return (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.popisy && ONLINE_STAV.popisy.texty)
     ? ONLINE_STAV.popisy.texty : {};
@@ -318,14 +327,6 @@ function cenikPopisyKarta() {
   } catch (e) { return ''; }
   const zak = (C && C.popisy) || {};
   const sber = POPISY_CIS.sber;
-  const kandidati = (klic) => {
-    const sez = (sber && sber[klic]) || [];
-    if (!sez.length) return '';
-    return sez.slice(0, 3).map((x, i) => `<div class="note" style="margin:2px 0">
-        <b>${esc(x.cislo)}</b>${x.pocet > 1 ? ` (+${x.pocet - 1})` : ''}: „${esc(x.text)}"
-        ${admin ? `<button class="mini" onclick="cenikPopisPrevzit('${keyAttr(klic)}', ${i})">převzít</button>` : ''}
-      </div>`).join('');
-  };
   const radek = (r) => {
     const t = texty[r.klic] || '';
     const tz = zak[r.klic];
@@ -337,7 +338,7 @@ function cenikPopisyKarta() {
            onchange="cenikPopisUlozCis('${keyAttr(r.klic)}', this.value)">`
       : (t ? esc(t) : '<span class="note">—</span>');
     return `<tr><td class="c-nazev">${esc(r.klic)}<div class="note" style="margin:0">${esc(r.skupina)}
-        · ${r.typy.join(' + ')}</div></td><td>${pole}${jinde}${kandidati(r.klic)}</td></tr>`;
+        · ${esc(r.typy.join(' + '))}</div></td><td>${pole}${jinde}${cenikPopisyKandidati(r.klic, admin)}</td></tr>`;
   };
   const osirele = cis.osirele.length ? `<tr><th colspan="2">Texty k položkám, které výpočet už nezná
       (přejmenované nebo zrušené) — nic se nemaže, rozhodněte sami</th></tr>`
@@ -345,8 +346,8 @@ function cenikPopisyKarta() {
       ? `<input type="text" style="width:100%" value="${esc(o.text)}" maxlength="${POPISY_MAX_TEXT}"
            onchange="cenikPopisUlozCis('${keyAttr(o.klic)}', this.value)">` : esc(o.text)}</td></tr>`).join('') : '';
   const kdo = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.popisy && ONLINE_STAV.popisy.kdy)
-    ? `Naposledy změněno ${esc(String(ONLINE_STAV.popisy.kdy).slice(0, 16).replace('T', ' '))}
-       (${esc(ONLINE_STAV.popisy.kdo || '?')}).` : 'Zatím žádný text není uložený.';
+    ? 'Naposledy změněno ' + String(ONLINE_STAV.popisy.kdy).slice(0, 16).replace('T', ' ')
+      + ' (' + (ONLINE_STAV.popisy.kdo || '?') + ').' : 'Zatím žádný text není uložený.';
   return `<div class="card" id="cenikPopisyKarta"><h2 style="cursor:default">Dodatkové texty do cenové nabídky – číselník</h2>
     <div class="body">
       <div class="note">Text se tiskne v cenové nabídce pod názvem příplatku nebo volitelné položky.
@@ -355,7 +356,7 @@ function cenikPopisyKarta() {
         Odeslané (uzamčené) nabídky se nemění. ${admin
           ? 'Každá změna se uloží hned, když opustíte pole.'
           : 'Texty zadává administrátor; ve své zakázce je můžete upravit v Kalkulaci OCK pod položkou.'}
-        ${online ? kdo : '<b>Nepřihlášeno — texty se načtou po přihlášení.</b>'}</div>
+        ${online ? esc(kdo) : '<b>Nepřihlášeno — texty se načtou po přihlášení.</b>'}</div>
       ${admin ? `<div class="btns" style="margin:6px 0">
         <button onclick="cenikPopisySber()" ${POPISY_CIS.hleda ? 'disabled' : ''}>${POPISY_CIS.hleda
           ? 'Hledám v uložených zakázkách…' : 'Najít texty v uložených zakázkách'}</button>

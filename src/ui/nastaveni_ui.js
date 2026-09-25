@@ -389,9 +389,100 @@ function nastDatabaze() {
   /* Ukázková data se kreslí jen na testovacím webu — karta se na ostrém
    * vrátí prázdná (testDataKarta se ptá serveru na PROSTREDI). */
   const testdata = (typeof testDataKarta === 'function') ? testDataKarta() : '';
+  const pripony = (typeof priponyKarta === 'function') ? priponyKarta() : '';
   return `<div class="note" style="margin-top:0">Spojení s databází, ukládání a zálohy.
       Zakázku samotnou ukládá tlačítko <b>Uložit zakázku</b> v liště nad kalkulací —
-      tady je jen to, co se nastavuje jednou.</div>${online}${slozka}${prenos}${testdata}`;
+      tady je jen to, co se nastavuje jednou.</div>${online}${slozka}${prenos}${testdata}${pripony}`;
+}
+
+/* ---------- kontrola přípony první varianty (K13-P1, 25. 9. 2026) ----------
+ *
+ * J. V. k postupu „stáhnout zálohu, spustit skript, poslat výpis": „jak to
+ * mám udělat? nemůžeš to provést ty?" Skript nad zálohou potřeboval Node
+ * a příkazovou řádku; tahle karta dělá totéž v aplikaci. Kontrola jen čte.
+ * Oprava ukládá běžnou cestou (server hlídá zámky i razítko verze) a jen
+ * u neodeslaných variant; odeslanou nejdřív administrátor odemkne. */
+const PRIPONY = { bezi: false, hotovo: false, nalezy: [], zprava: '', prohledano: 0 };
+
+function priponyKarta() {
+  if (!(typeof jeAdminOnline === 'function' && jeAdminOnline())) return '';
+  const radky = PRIPONY.nalezy.map(n => `<tr><td>${esc(n.cislo)}</td><td>${esc(n.nazev)}</td>
+      <td>.${n.pripona}</td><td>${n.opraveno ? '<b class="ok">✓ opraveno</b>'
+        : n.zamcena ? 'odeslaná — v zakázce ji odemkněte, pak znovu Opravit a nabídku znovu vytiskněte'
+        : n.holeZabrane ? 'holé číslo má jiná varianta — rozhodnout ručně'
+        : n.chyba ? '<span style="color:#b00">' + esc(n.chyba) + '</span>' : 'lze opravit'}</td></tr>`).join('');
+  const lze = PRIPONY.nalezy.filter(n => !n.opraveno && !n.zamcena && !n.holeZabrane).length;
+  return `<div class="card"><h2 style="cursor:default">Kontrola čísla první varianty (K13-P1)</h2><div class="body">
+    <div class="note" style="margin-top:0">Zakázky uložené před 24. 9. 2026 můžou mít u první varianty
+      příponu (např. „…555.3") místo holého čísla, které je na odeslaném papíře. Kontrola projde
+      všechny uložené zakázky a <b>nic nemění</b>. Oprava vrátí první variantě holé číslo — jen
+      u neodeslaných variant, ukládá se běžnou cestou (server hlídá zámky).</div>
+    <div class="btns" style="margin:6px 0">
+      <button onclick="priponyKontrola()" ${PRIPONY.bezi ? 'disabled' : ''}>Zkontrolovat zakázky</button>
+      ${lze ? `<button class="primary" onclick="priponyOprav()" ${PRIPONY.bezi ? 'disabled' : ''}>Opravit neodeslané (${lze})</button>` : ''}
+    </div>
+    ${PRIPONY.zprava ? `<div class="note">${esc(PRIPONY.zprava)}</div>` : ''}
+    ${radky ? `<table class="ceniktbl"><tr><th>Zakázka</th><th>Varianta</th><th>Přípona</th><th>Stav</th></tr>${radky}</table>` : ''}
+  </div></div>`;
+}
+
+async function priponyNactiZakazku(soubor) {
+  const o = await onlineApi('/api/zakazky?soubor=' + encodeURIComponent(soubor));
+  let z = o && o.zakazka;
+  if (typeof z === 'string') z = JSON.parse(z);
+  return z;
+}
+
+async function priponyKontrola() {
+  if (PRIPONY.bezi || typeof priponaPrvniNalez !== 'function') return;
+  Object.assign(PRIPONY, { bezi: true, hotovo: false, nalezy: [], zprava: 'Načítám seznam zakázek…', prohledano: 0 });
+  nastRefresh();
+  try {
+    const o = await onlineApi('/api/zakazky');
+    const seznam = ((o && o.rejstrik && o.rejstrik.zakazky) || []).map(r => r.soubor).filter(Boolean);
+    for (let i = 0; i < seznam.length; i += 8) {
+      const davka = await Promise.all(seznam.slice(i, i + 8).map(soubor =>
+        priponyNactiZakazku(soubor).then(z => [soubor, z], () => [soubor, null])));
+      davka.forEach(([soubor, z]) => {
+        PRIPONY.prohledano++;
+        const n = z && priponaPrvniNalez(z);
+        if (n) PRIPONY.nalezy.push(Object.assign({ soubor, cislo: String(z.cislo || soubor) }, n));
+      });
+      PRIPONY.zprava = 'Prohledáno ' + PRIPONY.prohledano + ' z ' + seznam.length + ' zakázek…';
+      nastRefresh();
+    }
+    PRIPONY.zprava = 'Prohledáno ' + PRIPONY.prohledano + ' zakázek, první varianta s příponou: '
+      + PRIPONY.nalezy.length + '.';
+  } catch (e) { PRIPONY.zprava = 'Kontrola selhala: ' + e.message; }
+  PRIPONY.bezi = false; PRIPONY.hotovo = true;
+  nastRefresh();
+}
+
+async function priponyOprav() {
+  if (PRIPONY.bezi) return;
+  const k = PRIPONY.nalezy.filter(n => !n.opraveno && !n.zamcena && !n.holeZabrane);
+  if (!k.length) return;
+  if (!await potvrd('Vrátit první variantě holé číslo u ' + k.length + ' zakázek?\n\n'
+    + k.map(n => n.cislo + ' (.' + n.pripona + ')').join('\n'))) return;
+  PRIPONY.bezi = true; nastRefresh();
+  let ok = 0;
+  for (const n of k) {
+    try {
+      /* Otevřená zakázka by po opravě na serveru měla v prohlížeči zastaralé
+       * razítko a další uložení by hlásilo kolizi — tu vynechat. */
+      if (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.soubor === n.soubor) {
+        n.chyba = 'zakázka je právě otevřená — zavřete ji a opravte znovu'; continue;
+      }
+      const z = await priponyNactiZakazku(n.soubor);
+      const r = priponaPrvniOprav(z);
+      if (!r.opraveno) { n.chyba = r.duvod; continue; }
+      await onlineApi('/api/zakazky', { zakazka: z,
+        ocekavaneRazitko: (typeof uloRazitko === 'function') ? uloRazitko(z) : String(z.uloRazitko || '') });
+      n.opraveno = true; delete n.chyba; ok++;
+    } catch (e) { n.chyba = 'neuloženo: ' + e.message; }
+  }
+  PRIPONY.zprava = 'Opraveno ' + ok + ' z ' + k.length + ' zakázek.';
+  PRIPONY.bezi = false; nastRefresh();
 }
 
 /* ---------- vnitřní záložka: Obecné ---------- */

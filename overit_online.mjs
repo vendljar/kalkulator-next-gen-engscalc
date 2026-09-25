@@ -256,6 +256,29 @@ await page.evaluate(async (klic) => { await onlinePopisUloz(klic, ''); }, KLIC_T
   });
 }
 
+/* ---- 4a3) kontrola a oprava přípony první varianty v aplikaci (K13-P1) ---- */
+{
+  const r = await page.evaluate(async () => {
+    const z = novaZakazka(); z.cislo = '2026 - OPR - CN - 8801'; z.nazevAkce = 'Přípona P1';
+    klonujVariantu(z, z.varianty[0].id);
+    z.varianty[0].pripona = 3;
+    await onlineApi('/api/zakazky', { zakazka: z });
+    const puvodniPotvrd = window.potvrd; window.potvrd = () => Promise.resolve(true);
+    await priponyKontrola();
+    const nalez = PRIPONY.nalezy.map(n => n.cislo + '.' + n.pripona);
+    await priponyOprav();
+    window.potvrd = puvodniPotvrd;
+    const ul = (await onlineApi('/api/zakazky?soubor=' + encodeURIComponent(PRIPONY.nalezy[0].soubor))).zakazka;
+    const karta = priponyKarta();
+    return { nalez, opraveno: PRIPONY.nalezy[0].opraveno, pripony: ul.varianty.map(v => v.pripona),
+             zprava: PRIPONY.zprava, karta: /Kontrola čísla první varianty/.test(karta) };
+  });
+  test('Nastavení → Databáze: karta kontroly přípon je', r.karta, r);
+  test('kontrola najde první variantu s .3', r.nalez.includes('2026 - OPR - CN - 8801.3'), r.nalez);
+  test('oprava ji na serveru vrátí na holé číslo, klon zůstane .2',
+    r.opraveno && r.pripony[0] === 0 && r.pripony[1] === 2, r);
+}
+
 /* ---- 4b) firemní údaje online (4. 8. 2026) ----
  * Ceník sám nestačí. Obchodník složku _DB nemapuje, takže dokud firemní údaje
  * nejsou taky online, zůstane mu v hlavičce nabídky „Ukázková firma s.r.o."

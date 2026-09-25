@@ -8,6 +8,42 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v25.9.3 — dodatkové texty se neztrácejí, číselník, vlastní jazyková verze, šablona PROJ EN/DE/FR (25. 9. 2026)
+
+- **Dodatkové texty se ztrácely — dvě příčiny, obě opravené.**
+  - Server při uložení textu přepsal celou mapu tím, co měl prohlížeč
+    načteno při přihlášení. Druhé okno (nebo karta otevřená od rána) tak
+    smazalo texty zapsané jinde. Teď se posílá jen měněný text a server ho
+    sloučí; celá mapa smí mazat jen s razítkem posledního stavu (jinak
+    409), starší prohlížeč jen doplňuje. Předchozí stavy (30) leží
+    v `popisy_historie`.
+  - Rozpracované zakázky společné texty nedostávaly (jen nové). Teď se
+    při otevření doplní tam, kde zakázka u položky text nemá; odeslané se
+    nemění, vědomě smazaný text se nevrací.
+- **Číselník dodatkových textů v Ceníku OCK** (karta pod ceníkem): všechny
+  příplatky a volitelné položky (EXT/INT) na jednom místě, administrátor
+  zapisuje, ostatní vidí. Texty k položkám, které výpočet už nezná, se
+  ukazují zvlášť. Tlačítko **Najít texty v uložených zakázkách**
+  (`/api/popisy?sber=1`) — záchrana ztracených textů, převzetí po jednom.
+- **Průvodce šablon: Nahrát vlastní verzi** u každého jazyka v kroku
+  Jazykové verze. Kontrola jazyka a symbolů proti nové češtině, překlad
+  aplikace jde vrátit, v záznamu „vlastní soubor k české verzi N“.
+- **Kontrola poškozeného souboru** (`docxXmlVady`): průvodce odmítne
+  šablonu s rozbitým XML. Šablona PROJ v2 z dopoledne ho měla (Word ji
+  otevřel jen s opravou) — předána opravená.
+- **Slovník šablony PROJ:** 162 hesel, EN/DE/FR pokrytí 100 %; kontaktní
+  řádky hlavičky jsou neutrální. `#350` zbývá jen pro smlouvy o dílo.
+- **K13-P1 v aplikaci:** Nastavení → Databáze → *Kontrola čísla první
+  varianty* — kontrola jen čte, oprava neodeslaných běžným uložením.
+- **Roadmapa:** body 3 a 4 k můstkům jako `#355` (přechodové plechy)
+  a `#356` (zastřešení) s detailem výpočtu a otázkami; `#357` tato dávka.
+- Testy: `test_popisy_trvale.js` 19, `test_docx_struktura.js` 5,
+  `test_pripona_prvni` +8, `test_prava` +12, `overit_online` +9,
+  `overit_sablony_online` +5, `overit_nabidka_proj_word` +7, mutace
+  serveru +3.
+
+---
+
 ## v25.9.2 — rozhodnutí J. V. k rozboru K13, můstky počtem, šablony v12 (25. 9. 2026)
 
 - **Větev k13-nalezy sloučená do testu** (P1–P11 z 13. kola, viz oddíl

@@ -282,6 +282,9 @@ const PROVERENO = {
       + 'viditelné „&amp;nbsp;“. Obě volání ho předávají literálem z kódu '
       + '(přirážka a sazba DPH); z dat ani od uživatele sem nic nevstupuje. '
       + 'Ostatní texty té funkce (title, reset) přes esc() prochází.',
+    'cenikPopisyKandidati(r.klic, admin)': 'hotové HTML kandidátů z uložených zakázek '
+      + '(číselník dodatkových textů, 25. 9. 2026) — číslo zakázky, počet i text jdou uvnitř '
+      + 'přes esc(), klíč do onclick přes keyAttr(), index přes escJs().',
   },
   'kalk_ock.js': {
     'col.admin ? pripNazev(x) : esc(x.nazev) + vypnutoHtml(x)':

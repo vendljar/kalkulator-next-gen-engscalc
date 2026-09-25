@@ -102,5 +102,35 @@ const pres = z => zk.importZakazka(JSON.parse(JSON.stringify(z)));   // „ulož
     u.varianty.map(v => v.pripona));
 }
 
+/* Nález a oprava dat v aplikaci (Nastavení → Databáze, 25. 9. 2026). */
+{
+  const z = zk.novaZakazka(); z.cislo = '2026 - OPR - CN - 7';
+  zm.klonujVariantu(z, z.varianty[0].id);
+  z.varianty[0].pripona = 3;                     // stav po chybě K13-N53
+  const n = zm.priponaPrvniNalez(z);
+  test('nález: první varianta s .3 se najde', n && n.pripona === 3 && !n.zamcena && !n.holeZabrane, n);
+  const r = zm.priponaPrvniOprav(z);
+  test('oprava: první varianta dostane holé číslo', r.opraveno && z.varianty[0].pripona === 0
+    && zm.variantaCislo(z, z.varianty[0]) === '2026 - OPR - CN - 7', r);
+  test('oprava: klon zůstane .2', z.varianty[1].pripona === 2);
+  test('po opravě už nález nic nehlásí', zm.priponaPrvniNalez(z) === null);
+  test('v pořádku zakázka: oprava nic nedělá', zm.priponaPrvniOprav(z).opraveno === false);
+}
+{
+  const z = zk.novaZakazka(); z.cislo = '2026 - OPR - CN - 8';
+  z.varianty[0].pripona = 3;
+  zm.zamkniVariantu(z.varianty[0], { typ: 'nabidka', cislo: '2026 - OPR - CN - 8.3' });
+  const r = zm.priponaPrvniOprav(z);
+  test('odeslaná varianta se neopravuje (nejdřív odemknout)', !r.opraveno && /odemknout/.test(r.duvod)
+    && z.varianty[0].pripona === 3, r);
+}
+{
+  const z = zk.novaZakazka(); z.cislo = 'X';
+  const k = zm.klonujVariantu(z, z.varianty[0].id);
+  z.varianty[0].pripona = 3; k.pripona = 0;       // holé číslo drží klon
+  const r = zm.priponaPrvniOprav(z);
+  test('holé číslo u jiné varianty: neopravuje se (dvě stejná čísla)', !r.opraveno && z.varianty[0].pripona === 3, r);
+}
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);
