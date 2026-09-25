@@ -1,0 +1,3130 @@
+{
+ "schema": 2,
+ "cislo": "2026 - OPR - CN - 0923",
+ "nazevAkce": "Historická C (23. 9. 2026)",
+ "adresa": "Zkušební 12, Praha",
+ "objednatel": "Zkušební objednatel s.r.o.",
+ "kontakt": "Jan Zkušební",
+ "jenProj": false,
+ "jenOck": false,
+ "ico": "12345678",
+ "dic": "",
+ "zastupci": {
+  "smluvniJmeno": "",
+  "smluvniPozice": "",
+  "smluvniTel": "",
+  "smluvniEmail": "",
+  "obchodniJmeno": "",
+  "obchodniTel": "",
+  "obchodniEmail": "",
+  "technickyJmeno": "",
+  "technickyTel": "",
+  "technickyEmail": "",
+  "fakturyEmail": "",
+  "fakturyTel": "",
+  "banka": "",
+  "ucet": "",
+  "zapis": ""
+ },
+ "adresaObjednatele": "",
+ "popisZameru": "",
+ "uvodniFoto": "",
+ "uvodniFotoNazev": "",
+ "uvodniFotoPopis": "",
+ "uvodniFotoProj": "",
+ "uvodniFotoProjNazev": "",
+ "uvodniFotoProjPopis": "",
+ "datum": "2026-09-23",
+ "projHlavicka": {
+  "cislo": "2026 - OPR - CN - ",
+  "nazevAkce": "",
+  "adresa": "",
+  "objednatel": "",
+  "kontakt": "",
+  "ico": "",
+  "adresaObjednatele": "",
+  "datum": "2026-09-25"
+ },
+ "varianty": [
+  {
+   "id": "vmuhkhpob5",
+   "nazev": "Varianta 1",
+   "zakaznik": "",
+   "pozn": "",
+   "ridici": true,
+   "vytvoreno": "2026-09-23T09:00:00.000Z",
+   "upraveno": "2026-09-23T09:30:00.000Z",
+   "data": {
+    "ock": {
+     "zadani": {
+      "prejezd": 0,
+      "zdvih": 14,
+      "prohluben": 0,
+      "sirka": 1.6,
+      "hloubka": 0,
+      "roztec": 1.25,
+      "rohoveSloupky": 4,
+      "nastupiste": 5,
+      "typSachty": "exteriérová",
+      "typPortalu": "zapuštěný",
+      "zaskleni": "na terče",
+      "svetlikNadDvermi": true,
+      "svetlikyBoky": 0,
+      "cistyVstupMm": 800,
+      "sirkaRamuMm": 100,
+      "prechodovePlechy": false,
+      "pruchoziSachta": false,
+      "atyp": false,
+      "vystupZamereni": false,
+      "nastupisteA": 5,
+      "nastupisteC": 0,
+      "patra": 5,
+      "striskaKs": 0,
+      "profily": {
+       "sloupek": {
+        "dim": "80x80",
+        "tl": 4
+       },
+       "precnikBok": {
+        "dim": "80x80",
+        "tl": 3
+       },
+       "sloupekPortal": {
+        "dim": "40x40",
+        "tl": 3
+       },
+       "precnikPortal": {
+        "dim": "80x40",
+        "tl": 3
+       },
+       "spojka": {
+        "dim": "70x70",
+        "tl": 3
+       },
+       "lemovani": {
+        "dim": "60x30",
+        "tl": 2
+       }
+      },
+      "rezervaProfilyPct": 0,
+      "rezervaPlechyPct": 0,
+      "montazZakladHod": 24,
+      "montazAtypHod": 0,
+      "projekceZakladHod": 50,
+      "projekceAtypHod": 0,
+      "zamecnikAtypKs": 0,
+      "zamecnikAtypKc": null,
+      "oplechOstatniKg": 10,
+      "oplechOstatniHod": 5,
+      "engineeringKs": 0,
+      "rezervaZakladPct": 0,
+      "rezervaPriplatkyPct": 0,
+      "volitelne": {
+       "prechodove": null,
+       "leseniVnitrni": true,
+       "leseniVnejsi": false,
+       "prechMont": null,
+       "leseniHlava": false,
+       "haky": true,
+       "zabradli": true,
+       "sokl": false
+      },
+      "oplasteni": {
+       "rezim": "standard",
+       "steny": null
+      },
+      "priplatkyVyber": null,
+      "mnozstviPrepis": {},
+      "volitelneVlastni": [],
+      "vlastniPolozky": {
+       "hrubaOck": [],
+       "atyp": [],
+       "oplasteni": [],
+       "volitelne": [],
+       "rezie": [],
+       "spojovaci": [],
+       "lakovani": []
+      },
+      "priplatkyVlastni": [],
+      "katalogOdebrane": [],
+      "nazvyPrepis": {},
+      "cenyPrepis": {},
+      "poradi": {},
+      "skryteProUzivatele": [],
+      "mustek": false,
+      "mustekHloubkaMm": "",
+      "mustekSirkaMm": "",
+      "volitelneVychozi": {},
+      "priplatkyVynechat": [
+       "vsgFolie",
+       "skn"
+      ],
+      "nepocitat": []
+     },
+     "fixes": true
+    },
+    "cenik": {
+     "ukazkove": true,
+     "prazdny": true,
+     "marze": 0.2,
+     "dph": 0.12,
+     "kurzEurKc": 0,
+     "profilasKgKc": 100,
+     "powertechExt": 200,
+     "powertechInt": 200,
+     "montazniNosnik": 1000,
+     "lemovaniKgKc": 100,
+     "oplechPracKc": 500,
+     "nytKc": 10,
+     "spodniRamKc": 5000,
+     "cilkoKc": 100,
+     "montazHodKc": 500,
+     "vetraciMrizkaKc": 5000,
+     "transportKc": 5000,
+     "zastreseniM2Kc": 5000,
+     "oplechFasadaBmKc": 500,
+     "skloBokyKc": 2000,
+     "skloBokyNazev": "dvojsklo čiré (zkušební)",
+     "skloCelniKc": 1000,
+     "skloCelniNazev": "bezpečnostní sklo čiré (zkušební)",
+     "skloVsg442Kc": 1200,
+     "cetrisKc": 0,
+     "popisy": {},
+     "praceOplasteniKc": 530,
+     "plastKotvyKc": 5000,
+     "tmeleniKc": 500,
+     "striskaDvurKc": 10000,
+     "cestovniKc": 10000,
+     "cisteniKc": 10000,
+     "prechodoveKgKc": 500,
+     "leseniVnitrniKc": 1000,
+     "leseniFix": 10000,
+     "leseniVnejsiKc": 500,
+     "hakyKc": 530,
+     "zabradliKc": 5000,
+     "soklBmKc": 5000,
+     "sken3dKc": 5000,
+     "vystupZamereniKc": 10000,
+     "engineeringKc": 10000,
+     "projekceHodKc": 1000,
+     "statikaKc": 1000,
+     "statikaHod": 10,
+     "rezieKancelareKc": 50000,
+     "zaskleniListyProjHod": 4,
+     "stavbyvedouciHod": 40,
+     "stavbyvedouciKc": 1000,
+     "prekladyKc": 0,
+     "atypPrirazka": 0.2,
+     "zamecnikAtypKc": 800,
+     "atypMontazPct": 0,
+     "atypProjekcePct": 0,
+     "atypZamecnikKc": null,
+     "atypRezervaZakladPct": 0,
+     "atypRezervaPriplatkyPct": 0,
+     "vychMontazZakladHod": 0,
+     "vychProjekceZakladHod": 0,
+     "vychOplechOstatniKg": 0,
+     "vychOplechOstatniHod": 0,
+     "dphZakladni": 0.21,
+     "dphSnizena": 0.12,
+     "dphNulova": 0,
+     "spojovaci": {
+      "riplockM10": 5,
+      "riplockM8": 5,
+      "nordlock": 10,
+      "nytM10": 5,
+      "nytM8": 5,
+      "nytM6": 5,
+      "tSrouby": 100,
+      "sroubM10": 5,
+      "sroubM8": 5,
+      "sroubM6": 5,
+      "zavitTyc": 200,
+      "chemKotva": 200
+     },
+     "lak": {
+      "rezim": "tomas",
+      "lakovnaProfilBm": 100,
+      "lakovnaListaBm": 120,
+      "lakovnaM2": 500,
+      "tomasProfilM2": 500,
+      "tomasListaBm": 50,
+      "tomasPlechKs": 50,
+      "tomasOplechM2": 500,
+      "tomasTercKs": 20
+     },
+     "priplatky": {
+      "vsgFolieM2": 500,
+      "sknM2": 500,
+      "medStrechaM2": 5000,
+      "ventilatorKc": 20000,
+      "zabranyDvereKc": 2000,
+      "madlaBmKc": 2000,
+      "leseniHlavaKc": 1000,
+      "montazDveriKc": 2000,
+      "prechMontKc": 1000
+     },
+     "zkusebni": true
+    },
+    "cenikRada": "cr",
+    "cenikRucni": {},
+    "proj": {
+     "zadani": {
+      "sekce": [
+       {
+        "key": "zamereni",
+        "nazev": "ZAMĚŘENÍ",
+        "doprava": {
+         "km": 0,
+         "pausal": 0
+        },
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Zaměření",
+          "typ": "hod",
+          "sazba": "zamereni",
+          "hodiny": 5,
+          "rezerva": 0,
+          "vyrazeno": true
+         },
+         {
+          "nazev": "Výstup",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 10,
+          "rezerva": 0,
+          "vyrazeno": true
+         }
+        ]
+       },
+       {
+        "key": "studie",
+        "nazev": "ST – STUDIE",
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Studie",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 24,
+          "rezerva": 0
+         },
+         {
+          "nazev": "Konzultace",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 4,
+          "rezerva": 0
+         }
+        ]
+       },
+       {
+        "key": "projednani",
+        "nazev": "PROJEDNÁNÍ STUDIE",
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Památkáři",
+          "typ": "fix",
+          "fixKey": "pamatkari"
+         },
+         {
+          "nazev": "Územní rozvoj",
+          "typ": "fix",
+          "fixKey": "uzemniRozvoj"
+         }
+        ]
+       },
+       {
+        "key": "dpz",
+        "nazev": "DPZ – DOKUMENTACE PRO POVOLENÍ ZÁMĚRU",
+        "doprava": {
+         "km": 0,
+         "pausal": 0
+        },
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Projektová dokumentace pro DOSS",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 52,
+          "rezerva": 0
+         },
+         {
+          "nazev": "Projektová dokumentace pro SÚ",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 6,
+          "rezerva": 0
+         },
+         {
+          "nazev": "Statika",
+          "typ": "hod",
+          "sazba": "statik",
+          "hodiny": 6,
+          "rezerva": 0
+         },
+         {
+          "nazev": "PBŘ",
+          "typ": "fix",
+          "fixKey": "pbr"
+         },
+         {
+          "nazev": "Studie osvitu (Praha 4 a 6)",
+          "typ": "fix",
+          "fixKey": "studieOsvitu"
+         },
+         {
+          "nazev": "Elektro projekt",
+          "typ": "fix",
+          "fixKey": "elektroDpz"
+         }
+        ]
+       },
+       {
+        "key": "ic",
+        "nazev": "IČ – INŽENÝRSKÁ ČINNOST",
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Inženýrská činnost",
+          "typ": "fix",
+          "fixKey": "ic"
+         }
+        ]
+       },
+       {
+        "key": "dps",
+        "nazev": "DPS – DOKUMENTACE PRO PROVEDENÍ STAVBY",
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Projekt pro DPS – stavební část",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 48,
+          "rezerva": 0
+         },
+         {
+          "nazev": "Statika",
+          "typ": "hod",
+          "sazba": "statik",
+          "hodiny": 6,
+          "rezerva": 0
+         },
+         {
+          "nazev": "Elektro projekt",
+          "typ": "fix",
+          "fixKey": "elektroDps"
+         }
+        ]
+       },
+       {
+        "key": "ezc",
+        "nazev": "EZC – EKONOMICKÁ ZADÁVACÍ ČÁST (celý projekt)",
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Ekonomická zadávací část",
+          "typ": "fix",
+          "fixKey": "ezc"
+         }
+        ]
+       },
+       {
+        "key": "kolaudace",
+        "nazev": "KOLAUDACE (pro 1 ks výtahu)",
+        "doprava": {
+         "km": 0,
+         "pausal": 0
+        },
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Kolaudace",
+          "typ": "fix",
+          "fixKey": "kolaudace"
+         }
+        ]
+       },
+       {
+        "key": "geodet",
+        "nazev": "GEODETICKÉ ZAMĚŘENÍ",
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Geodetické zaměření",
+          "typ": "fix",
+          "fixKey": "geodet"
+         }
+        ]
+       }
+      ]
+     },
+     "cenik": {
+      "ukazkove": true,
+      "prazdny": true,
+      "dph": 0.21,
+      "marze": 0.2,
+      "sazby": {
+       "projektant": 1000,
+       "statik": 1000,
+       "zamereni": 1000
+      },
+      "dopravaKmKc": 10,
+      "dopravaHodKc": 1000,
+      "dopravaPausalKc": 1000,
+      "kurzEurKc": 0,
+      "fixy": {
+       "pamatkari": 0,
+       "uzemniRozvoj": 0,
+       "pbr": 10000,
+       "studieOsvitu": 0,
+       "elektroDpz": 10000,
+       "ic": 20000,
+       "elektroDps": 10000,
+       "ezc": 20000,
+       "kolaudace": 10000,
+       "geodet": 0
+      },
+      "zkusebni": true
+     }
+    },
+    "techspec": {
+     "nazevAkce": "vestavba nové prosklené OCK výtahové šachty",
+     "hodnoty": {},
+     "extra": []
+    },
+    "kryci": {
+     "hodnoty": {}
+    },
+    "sleva": {
+     "procenta": 0,
+     "schema": "",
+     "role": "Obchodník",
+     "poznamka": "",
+     "stav": "",
+     "schvalil": "",
+     "schvalilKdy": ""
+    },
+    "slevaProj": {
+     "procenta": 0,
+     "schema": "",
+     "role": "Obchodník",
+     "poznamka": "",
+     "stav": "",
+     "schvalil": "",
+     "schvalilKdy": ""
+    },
+    "zaokr": {
+     "krok": 100,
+     "smer": "nahoru"
+    },
+    "zaokrProj": {
+     "krok": 100,
+     "smer": "nahoru"
+    },
+    "zadaniRucni": {}
+   },
+   "pripona": 0,
+   "odemceni": [
+    {
+     "kdy": "2026-09-23T07:30:00.000Z",
+     "kdo": "Správce <spravce@priklad.cz>",
+     "duvod": "překlep v názvu akce",
+     "zamek": {
+      "zamceno": true,
+      "kdy": "2026-09-22T14:00:00.000Z",
+      "typ": "nabidka",
+      "popis": "Cenová nabídka OCK (Word)",
+      "kdo": "Test Obchodník <obchodnik@priklad.cz>",
+      "cislo": "2026 - OPR - CN - 0923",
+      "cisloPapir": true,
+      "otisk": {
+       "ockZaklad": 636000,
+       "slevaPct": 0,
+       "slevaKc": 0,
+       "ockPoSleve": 636000,
+       "projZaklad": 271200,
+       "slevaProjPct": 0,
+       "slevaProjKc": 0,
+       "projCelkem": 271200,
+       "celkemBezDph": 907200,
+       "dphOckSazba": 0.12,
+       "dphOckKc": 76320,
+       "dphProjSazba": 0.21,
+       "dphProjKc": 56952,
+       "celkemSDph": 1040472.0000000001,
+       "priplatky": 86000
+      },
+      "vysledek": null,
+      "tisky": [
+       {
+        "kdy": "2026-09-22T14:00:00.000Z",
+        "typ": "nabidka",
+        "popis": "Cenová nabídka OCK (Word)",
+        "kdo": "Test Obchodník <obchodnik@priklad.cz>"
+       }
+      ]
+     }
+    }
+   ],
+   "zamek": {
+    "zamceno": true,
+    "kdy": "2026-09-23T08:00:00.000Z",
+    "typ": "nabidka",
+    "popis": "Cenová nabídka OCK (Word)",
+    "kdo": "Test Obchodník <obchodnik@priklad.cz>",
+    "cislo": "2026 - OPR - CN - 0923",
+    "cisloPapir": true,
+    "otisk": {
+     "ockZaklad": 800000,
+     "slevaPct": 0,
+     "slevaKc": 0,
+     "ockPoSleve": 800000,
+     "projZaklad": 271200,
+     "slevaProjPct": 0,
+     "slevaProjKc": 0,
+     "projCelkem": 271200,
+     "celkemBezDph": 1071200,
+     "dphOckSazba": 0.12,
+     "dphOckKc": 96000,
+     "dphProjSazba": 0.21,
+     "dphProjKc": 56952,
+     "celkemSDph": 1224152,
+     "priplatky": 157000
+    },
+    "vysledek": {
+     "ock": {
+      "odvozene": {
+       "vyskaSachty": 14,
+       "vyskaPodlazi": 3.5,
+       "svetlaVyska": 3.3,
+       "vyskaProsklene": 14,
+       "sirkaDveri": 1.04,
+       "leseniVez": 14,
+       "leseniU": 36.4
+      },
+      "parametry": {
+       "ramy": 15,
+       "portPricniky": 15,
+       "sloupkyPortalu": 0,
+       "kratkePricniky": 0,
+       "spojky": 20,
+       "pocetCilek": 0
+      },
+      "profily": {
+       "rows": [
+        {
+         "nazev": "Profil - sloupek",
+         "m": 55.2,
+         "j": {
+          "kg": 9.222,
+          "m2": 0.64,
+          "A": 80,
+          "B": 80
+         },
+         "kg": 509.0544,
+         "m2": 35.328
+        },
+        {
+         "nazev": "Profil - příčníky bok/zadek",
+         "m": 25.6,
+         "j": {
+          "kg": 7.173,
+          "m2": 0.64,
+          "A": 80,
+          "B": 80
+         },
+         "kg": 183.6288,
+         "m2": 16.384
+        },
+        {
+         "nazev": "Profil - sloupek portálu",
+         "m": 0,
+         "j": {
+          "kg": 3.405,
+          "m2": 0.16,
+          "A": 40,
+          "B": 40
+         },
+         "kg": 0,
+         "m2": 0
+        },
+        {
+         "nazev": "Profil - příčníky portálu",
+         "m": 24,
+         "j": {
+          "kg": 5.289,
+          "m2": 0.32,
+          "A": 80,
+          "B": 40
+         },
+         "kg": 126.93599999999999,
+         "m2": 7.68
+        },
+        {
+         "nazev": "Profil - spojka sloupků",
+         "m": 8,
+         "j": {
+          "kg": 6,
+          "m2": 0.49,
+          "A": 70,
+          "B": 70
+         },
+         "kg": 48,
+         "m2": 3.92
+        }
+       ],
+       "celkemM": 112.80000000000001,
+       "celkemKg": 867.6192,
+       "celkemM2": 63.312000000000005,
+       "lemovani": {
+        "m": 42,
+        "kg": 111.72,
+        "m2": 7.56
+       }
+      },
+      "plechy": {
+       "spojeRows": [
+        {
+         "key": "zadniRoh",
+         "spoju": 30,
+         "ks": 120,
+         "kg": 111.96000000000001,
+         "m2": 6.0600000000000005
+        },
+        {
+         "key": "celni",
+         "spoju": 26,
+         "ks": 78,
+         "kg": 36.894,
+         "m2": 1.99004
+        },
+        {
+         "key": "predsazene",
+         "spoju": 0,
+         "ks": 0,
+         "kg": 0,
+         "m2": 0
+        },
+        {
+         "key": "portPricniky",
+         "spoju": 30,
+         "ks": 60,
+         "kg": 3.75,
+         "m2": 0.35903999999999997
+        },
+        {
+         "key": "sloupkyPortalu",
+         "spoju": 0,
+         "ks": 0,
+         "kg": 0,
+         "m2": 0
+        },
+        {
+         "key": "spodniRamRoh",
+         "spoju": 4,
+         "ks": 12,
+         "kg": 48.1,
+         "m2": 1.983
+        },
+        {
+         "key": "kotveni",
+         "spoju": 6,
+         "ks": 24,
+         "kg": 18.72,
+         "m2": 1.0224
+        }
+       ],
+       "ks": 294,
+       "kg": 219.424,
+       "m2": 11.414480000000001
+      },
+      "zaskleni": {
+       "rozmer": {
+        "hl": 0.15,
+        "sir": 1.78,
+        "vys": 1.234
+       },
+       "zadni": {
+        "ks": 12,
+        "m2": 26.35824
+       },
+       "bocni": {
+        "ks": 24,
+        "m2": 4.442399999999999
+       },
+       "svetliky": {
+        "ks": 0,
+        "m2": 0
+       },
+       "svetlikyBoky": {
+        "ks": 0,
+        "m2": 0
+       },
+       "vypln": {
+        "nad": "plech",
+        "boky": "sklo",
+        "nadPlechM2": 8.9,
+        "bokyPlechM2": 0
+       },
+       "bokyZadniM2": 30.800639999999998,
+       "celniM2": 0,
+       "celkemM2": 30.800639999999998,
+       "steny": {
+        "A": 0,
+        "B": 2.2211999999999996,
+        "C": 26.35824,
+        "D": 2.2211999999999996
+       },
+       "nastupisteSten": null,
+       "zadniPlne": {
+        "m2": 26.35824
+       },
+       "zadniPortaly": {
+        "ks": 0,
+        "m2": 0,
+        "otvorM2": 2.392,
+        "dvereM2": 0,
+        "svetlikyM2": 0
+       },
+       "svetlikyZadni": {
+        "ks": 0,
+        "m2": 0
+       }
+      },
+      "dily": {
+       "terceKs": 110,
+       "terceKg": 16.5,
+       "listyKs": 0,
+       "listyBm": 0,
+       "listyKg": 0,
+       "oplDvereKs": 15,
+       "oplDvereKg": 25.168499999999998,
+       "oplDvereM2": 5.922,
+       "podestKs": 0,
+       "podestKg": 0,
+       "podestM2": 0,
+       "prechKs": 0,
+       "prechKg": 0
+      },
+      "spojovaci": {
+       "rows": [
+        {
+         "nazev": "riplock M10",
+         "ks": 910,
+         "cena": 5,
+         "celkem": 4550
+        },
+        {
+         "nazev": "riplock M8",
+         "ks": 120,
+         "cena": 5,
+         "celkem": 600
+        },
+        {
+         "nazev": "NordLock",
+         "ks": 0,
+         "cena": 10,
+         "celkem": 0
+        },
+        {
+         "nazev": "nýtovací matice M10",
+         "ks": 910,
+         "cena": 5,
+         "celkem": 4550
+        },
+        {
+         "nazev": "nýtovací matice M8",
+         "ks": 120,
+         "cena": 5,
+         "celkem": 600
+        },
+        {
+         "nazev": "nýtovací matice M6",
+         "ks": 220,
+         "cena": 5,
+         "celkem": 1100
+        },
+        {
+         "nazev": "T šrouby",
+         "ks": 54,
+         "cena": 100,
+         "celkem": 5400
+        },
+        {
+         "nazev": "Šrouby M10",
+         "ks": 910,
+         "cena": 5,
+         "celkem": 4550
+        },
+        {
+         "nazev": "Šrouby M8",
+         "ks": 120,
+         "cena": 5,
+         "celkem": 600
+        },
+        {
+         "nazev": "Šrouby M6",
+         "ks": 220,
+         "cena": 5,
+         "celkem": 1100
+        },
+        {
+         "nazev": "Závitové tyče M12",
+         "ks": 6,
+         "cena": 200,
+         "celkem": 1200
+        },
+        {
+         "nazev": "Chem. kotvy",
+         "ks": 7,
+         "cena": 200,
+         "celkem": 1400
+        }
+       ],
+       "celkem": 25650,
+       "nytovaniKs": 1250
+      },
+      "lakovani": {
+       "lakovna": 33488.240000000005,
+       "tomas": 64197,
+       "pouzito": 64197,
+       "rezim": "tomas",
+       "vlastniRows": [],
+       "vlastniKc": 0
+      },
+      "montaz": {
+       "hodinyNavic": {
+        "vyska": -3.5,
+        "sirka": 0,
+        "hloubka": 0,
+        "sloupky": 0,
+        "nastupiste": -1,
+        "exterier": 2.75,
+        "portaly": 0,
+        "svetlik": 0,
+        "svetlikyBoky": 0
+       },
+       "hodinyNavicCelkem": -1.75,
+       "hod1osoba": 22.25,
+       "hodCelkem": 89,
+       "dni": 2.78125
+      },
+      "nazvyPolozek": [
+       "PROFILY - HLAVNÍ NOSNÉ PRVKY",
+       "PROFILY - MONTÁŽNÍ NOSNÍK",
+       "PROFILY - LEMOVÁNÍ ŠACHTY (EXT)",
+       "PLECHY - HLAVNÍ KONSTRUKČNÍ PLECHY",
+       "PLECHY - ZASKLENÍ (TERČE/LIŠTY)",
+       "PLECHY - OPLECH. DVEŘÍ A PODEST (MATERIÁL)",
+       "PLECHY - OPLECH. DVEŘÍ A PODEST (PRÁCE)",
+       "PLECHY - OPLECHOVÁNÍ OSTATNÍ (MATERIÁL)",
+       "PLECHY - OPLECHOVÁNÍ OSTATNÍ (PRÁCE)",
+       "SPOJOVACÍ MATERIÁL",
+       "PRÁCE ZÁMEČNÍKA - NÝTOVÁNÍ",
+       "LAKOVÁNÍ (ŠACHTA, PLECHY, ZASKLENÍ, OPLECHOVÁNÍ)",
+       "MONTÁŽ NA STAVBĚ",
+       "VĚTRACÍ MŘÍŽKA (EXT)",
+       "INTERNÍ TRANSPORT",
+       "ZASTŘEŠENÍ ŠACHTY (EXT)",
+       "OPLECHOVÁNÍ K FASÁDĚ (EXT)",
+       "MATERIÁL boční + zadní stěna (dvojsklo čiré (zkušební))",
+       "MATERIÁL VSG 4.4.1",
+       "PRÁCE OPLÁŠTĚNÍ",
+       "PLASTOVÉ KOTVY",
+       "TMELENÍ (MAT. + PRÁCE) (EXT)",
+       "CESTOVNÍ NÁKLADY",
+       "ČIŠTĚNÍ",
+       "PŘECHODOVÉ PLECHY - NEREZ",
+       "LEŠENÍ - vnitřní",
+       "LEŠENÍ - vnější",
+       "PŘECHODOVÉ PLECHY - NEREZ (MONTÁŽ)",
+       "LEŠENÍ - dokončení hlavy šachty",
+       "HÁKY NA MYTÍ ŠACHTY (EXT)",
+       "ÚPRAVY/NAPOJENÍ ZÁBRADLÍ (INT)",
+       "OPLECHOVÁNÍ SOKLU PROHLUBNĚ (EXT)",
+       "ZAMĚŘENÍ 3D SKENEREM",
+       "VÝSTUP ZE ZAMĚŘENÍ PRO ZÁKAZNÍKA",
+       "DÍLENSKÁ DOKUMENTACE",
+       "STATICKÉ POSOUZENÍ",
+       "REŽIE KANCELÁŘE",
+       "PRÁCE STAVBYVEDOUCÍHO",
+       "PŘEKLADY CZ→DE",
+       "Sklo VSG s mléčnou fólií",
+       "Sklo SKN 176 (Ug=1,1) (EXT)",
+       "PŘECHODOVÉ PLECHY - NEREZ (MATERIÁL)",
+       "MADLA NA BOČNÍCH STĚNÁCH (dřevo, lak)",
+       "MADLA NA ZADNÍ STĚNĚ (dřevo, lak)",
+       "PŘÍPLATEK ZA STŘECHU V MĚDI (EXT)",
+       "VENTILÁTOR (EXT)",
+       "ZÁBRANY DO DVEŘNÍCH VSTUPŮ",
+       "ZÁBRANY PROTI PÁDU DO ŠACHTY",
+       "DEMONTÁŽ STÁVAJÍCÍHO OHRAZENÍ",
+       "MALBA SCHODNIC",
+       "NÁTĚR CELÉHO OHRAZENÍ",
+       "NÁTĚR POUZE OKOPOVÝCH PLECHŮ",
+       "PROSKLENÁ STĚNA VEDLE ŠACHTY",
+       "DEMONTÁŽ STÁVAJÍCÍHO VÝTAHU",
+       "DEŠŤOVÝ SVOD"
+      ],
+      "oplasteni": {
+       "rezim": "standard",
+       "vyska": 14,
+       "pasy": [],
+       "zakladSten": {
+        "A": 0,
+        "B": 2.2211999999999996,
+        "C": 26.35824,
+        "D": 2.2211999999999996
+       },
+       "sirkySten": {
+        "A": 1.78,
+        "B": 0.15,
+        "C": 1.78,
+        "D": 0.15
+       },
+       "plochaCelkem": 30.800639999999998,
+       "podleTypu": []
+      },
+      "sekce": {
+       "hrubaOck": [
+        {
+         "nazev": "PROFILY - HLAVNÍ NOSNÉ PRVKY",
+         "origNazev": "PROFILY - HLAVNÍ NOSNÉ PRVKY",
+         "nazevPrepsan": false,
+         "mnozstvi": 867.6192,
+         "mnozstviAuto": 867.6192,
+         "prepsano": false,
+         "cena": 100,
+         "cenaAuto": 100,
+         "cenaPrepsana": false,
+         "cenaPath": "C.profilasKgKc",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 86761.92,
+         "marze": 17352.384000000002,
+         "sMarzi": 104114.30399999999,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "PROFILY - MONTÁŽNÍ NOSNÍK",
+         "origNazev": "PROFILY - MONTÁŽNÍ NOSNÍK",
+         "nazevPrepsan": false,
+         "mnozstvi": 1,
+         "mnozstviAuto": 1,
+         "prepsano": false,
+         "cena": 1000,
+         "cenaAuto": 1000,
+         "cenaPrepsana": false,
+         "cenaPath": "C.montazniNosnik",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 1000,
+         "marze": 200,
+         "sMarzi": 1200,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "PROFILY - LEMOVÁNÍ ŠACHTY (EXT)",
+         "origNazev": "PROFILY - LEMOVÁNÍ ŠACHTY (EXT)",
+         "nazevPrepsan": false,
+         "mnozstvi": 111.72,
+         "mnozstviAuto": 111.72,
+         "prepsano": false,
+         "cena": 100,
+         "cenaAuto": 100,
+         "cenaPrepsana": false,
+         "cenaPath": "C.lemovaniKgKc",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 11172,
+         "marze": 2234.4,
+         "sMarzi": 13406.4,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "PLECHY - HLAVNÍ KONSTRUKČNÍ PLECHY",
+         "origNazev": "PLECHY - HLAVNÍ KONSTRUKČNÍ PLECHY",
+         "nazevPrepsan": false,
+         "mnozstvi": 219.424,
+         "mnozstviAuto": 219.424,
+         "prepsano": false,
+         "cena": 200,
+         "cenaAuto": 200,
+         "cenaPrepsana": false,
+         "cenaPath": "C.powertechExt",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 43884.8,
+         "marze": 8776.960000000001,
+         "sMarzi": 52661.76,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "PLECHY - ZASKLENÍ (TERČE/LIŠTY)",
+         "origNazev": "PLECHY - ZASKLENÍ (TERČE/LIŠTY)",
+         "nazevPrepsan": false,
+         "mnozstvi": 16.5,
+         "mnozstviAuto": 16.5,
+         "prepsano": false,
+         "cena": 200,
+         "cenaAuto": 200,
+         "cenaPrepsana": false,
+         "cenaPath": "C.powertechExt",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 3300,
+         "marze": 660,
+         "sMarzi": 3960,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "PLECHY - OPLECH. DVEŘÍ A PODEST (MATERIÁL)",
+         "origNazev": "PLECHY - OPLECH. DVEŘÍ A PODEST (MATERIÁL)",
+         "nazevPrepsan": false,
+         "mnozstvi": 100.8185,
+         "mnozstviAuto": 100.8185,
+         "prepsano": false,
+         "cena": 200,
+         "cenaAuto": 200,
+         "cenaPrepsana": false,
+         "cenaPath": "C.powertechExt",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 20163.7,
+         "marze": 4032.7400000000002,
+         "sMarzi": 24196.44,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "PLECHY - OPLECH. DVEŘÍ A PODEST (PRÁCE)",
+         "origNazev": "PLECHY - OPLECH. DVEŘÍ A PODEST (PRÁCE)",
+         "nazevPrepsan": false,
+         "mnozstvi": 20,
+         "mnozstviAuto": 20,
+         "prepsano": false,
+         "cena": 500,
+         "cenaAuto": 500,
+         "cenaPrepsana": false,
+         "cenaPath": "C.oplechPracKc",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 10000,
+         "marze": 2000,
+         "sMarzi": 12000,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "PLECHY - OPLECHOVÁNÍ OSTATNÍ (MATERIÁL)",
+         "origNazev": "PLECHY - OPLECHOVÁNÍ OSTATNÍ (MATERIÁL)",
+         "nazevPrepsan": false,
+         "mnozstvi": 10,
+         "mnozstviAuto": 10,
+         "prepsano": false,
+         "cena": 200,
+         "cenaAuto": 200,
+         "cenaPrepsana": false,
+         "cenaPath": "C.powertechExt",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 2000,
+         "marze": 400,
+         "sMarzi": 2400,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "PLECHY - OPLECHOVÁNÍ OSTATNÍ (PRÁCE)",
+         "origNazev": "PLECHY - OPLECHOVÁNÍ OSTATNÍ (PRÁCE)",
+         "nazevPrepsan": false,
+         "mnozstvi": 5,
+         "mnozstviAuto": 5,
+         "prepsano": false,
+         "cena": 500,
+         "cenaAuto": 500,
+         "cenaPrepsana": false,
+         "cenaPath": "C.oplechPracKc",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 2500,
+         "marze": 500,
+         "sMarzi": 3000,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "SPOJOVACÍ MATERIÁL",
+         "origNazev": "SPOJOVACÍ MATERIÁL",
+         "nazevPrepsan": false,
+         "mnozstvi": 1,
+         "mnozstviAuto": 1,
+         "prepsano": false,
+         "cena": 25650,
+         "cenaAuto": 25650,
+         "cenaPrepsana": false,
+         "cenaPath": null,
+         "popisNabidka": "",
+         "cenaSkupina": "C.spojovaci.*",
+         "fix": null,
+         "naklad": 25650,
+         "marze": 5130,
+         "sMarzi": 30780,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "PRÁCE ZÁMEČNÍKA - NÝTOVÁNÍ",
+         "origNazev": "PRÁCE ZÁMEČNÍKA - NÝTOVÁNÍ",
+         "nazevPrepsan": false,
+         "mnozstvi": 1250,
+         "mnozstviAuto": 1250,
+         "prepsano": false,
+         "cena": 10,
+         "cenaAuto": 10,
+         "cenaPrepsana": false,
+         "cenaPath": "C.nytKc",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 12500,
+         "marze": 2500,
+         "sMarzi": 15000,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "LAKOVÁNÍ (ŠACHTA, PLECHY, ZASKLENÍ, OPLECHOVÁNÍ)",
+         "origNazev": "LAKOVÁNÍ (ŠACHTA, PLECHY, ZASKLENÍ, OPLECHOVÁNÍ)",
+         "nazevPrepsan": false,
+         "mnozstvi": 1,
+         "mnozstviAuto": 1,
+         "prepsano": false,
+         "cena": 64197,
+         "cenaAuto": 64197,
+         "cenaPrepsana": false,
+         "cenaPath": null,
+         "popisNabidka": "",
+         "cenaSkupina": "C.lak.*",
+         "fix": null,
+         "naklad": 64197,
+         "marze": 12839.400000000001,
+         "sMarzi": 77036.4,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "MONTÁŽ NA STAVBĚ",
+         "origNazev": "MONTÁŽ NA STAVBĚ",
+         "nazevPrepsan": false,
+         "mnozstvi": 89,
+         "mnozstviAuto": 89,
+         "prepsano": false,
+         "cena": 500,
+         "cenaAuto": 500,
+         "cenaPrepsana": false,
+         "cenaPath": "C.montazHodKc",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 44500,
+         "marze": 8900,
+         "sMarzi": 53400,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "VĚTRACÍ MŘÍŽKA (EXT)",
+         "origNazev": "VĚTRACÍ MŘÍŽKA (EXT)",
+         "nazevPrepsan": false,
+         "mnozstvi": 2,
+         "mnozstviAuto": 2,
+         "prepsano": false,
+         "cena": 5000,
+         "cenaAuto": 5000,
+         "cenaPrepsana": false,
+         "cenaPath": "C.vetraciMrizkaKc",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 10000,
+         "marze": 2000,
+         "sMarzi": 12000,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "INTERNÍ TRANSPORT",
+         "origNazev": "INTERNÍ TRANSPORT",
+         "nazevPrepsan": false,
+         "mnozstvi": 2,
+         "mnozstviAuto": 2,
+         "prepsano": false,
+         "cena": 5000,
+         "cenaAuto": 5000,
+         "cenaPrepsana": false,
+         "cenaPath": "C.transportKc",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 10000,
+         "marze": 2000,
+         "sMarzi": 12000,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "ZASTŘEŠENÍ ŠACHTY (EXT)",
+         "origNazev": "ZASTŘEŠENÍ ŠACHTY (EXT)",
+         "nazevPrepsan": false,
+         "mnozstvi": 0.18000000000000002,
+         "mnozstviAuto": 0.18000000000000002,
+         "prepsano": false,
+         "cena": 5000,
+         "cenaAuto": 5000,
+         "cenaPrepsana": false,
+         "cenaPath": "C.zastreseniM2Kc",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 900.0000000000001,
+         "marze": 180.00000000000003,
+         "sMarzi": 1080,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "OPLECHOVÁNÍ K FASÁDĚ (EXT)",
+         "origNazev": "OPLECHOVÁNÍ K FASÁDĚ (EXT)",
+         "nazevPrepsan": false,
+         "mnozstvi": 28,
+         "mnozstviAuto": 28,
+         "prepsano": false,
+         "cena": 500,
+         "cenaAuto": 500,
+         "cenaPrepsana": false,
+         "cenaPath": "C.oplechFasadaBmKc",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 14000,
+         "marze": 2800,
+         "sMarzi": 16800,
+         "pozn": "",
+         "vlastni": false
+        }
+       ],
+       "oplasteni": [
+        {
+         "nazev": "MATERIÁL boční + zadní stěna (dvojsklo čiré (zkušební))",
+         "origNazev": "MATERIÁL boční + zadní stěna (dvojsklo čiré (zkušební))",
+         "nazevPrepsan": false,
+         "mnozstvi": 30.800639999999998,
+         "mnozstviAuto": 30.800639999999998,
+         "prepsano": false,
+         "cena": 2000,
+         "cenaAuto": 2000,
+         "cenaPrepsana": false,
+         "cenaPath": "C.skloBokyKc",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 61601.28,
+         "marze": 12320.256000000001,
+         "sMarzi": 73921.536,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "MATERIÁL VSG 4.4.1",
+         "origNazev": "MATERIÁL VSG 4.4.1",
+         "nazevPrepsan": false,
+         "mnozstvi": 0,
+         "mnozstviAuto": 0,
+         "prepsano": false,
+         "cena": 1000,
+         "cenaAuto": 1000,
+         "cenaPrepsana": false,
+         "cenaPath": "C.skloCelniKc",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 0,
+         "marze": 0,
+         "sMarzi": 0,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "PRÁCE OPLÁŠTĚNÍ",
+         "origNazev": "PRÁCE OPLÁŠTĚNÍ",
+         "nazevPrepsan": false,
+         "mnozstvi": 30.800639999999998,
+         "mnozstviAuto": 30.800639999999998,
+         "prepsano": false,
+         "cena": 530,
+         "cenaAuto": 530,
+         "cenaPrepsana": false,
+         "cenaPath": "C.praceOplasteniKc",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 16324.339199999999,
+         "marze": 3264.86784,
+         "sMarzi": 19589.207039999998,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "PLASTOVÉ KOTVY",
+         "origNazev": "PLASTOVÉ KOTVY",
+         "nazevPrepsan": false,
+         "mnozstvi": 1,
+         "mnozstviAuto": 1,
+         "prepsano": false,
+         "cena": 5000,
+         "cenaAuto": 5000,
+         "cenaPrepsana": false,
+         "cenaPath": "C.plastKotvyKc",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 5000,
+         "marze": 1000,
+         "sMarzi": 6000,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "TMELENÍ (MAT. + PRÁCE) (EXT)",
+         "origNazev": "TMELENÍ (MAT. + PRÁCE) (EXT)",
+         "nazevPrepsan": false,
+         "mnozstvi": 30.800639999999998,
+         "mnozstviAuto": 30.800639999999998,
+         "prepsano": false,
+         "cena": 500,
+         "cenaAuto": 500,
+         "cenaPrepsana": false,
+         "cenaPath": "C.tmeleniKc",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 15400.32,
+         "marze": 3080.0640000000003,
+         "sMarzi": 18480.384,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "CESTOVNÍ NÁKLADY",
+         "origNazev": "CESTOVNÍ NÁKLADY",
+         "nazevPrepsan": false,
+         "mnozstvi": 1,
+         "mnozstviAuto": 1,
+         "prepsano": false,
+         "cena": 10000,
+         "cenaAuto": 10000,
+         "cenaPrepsana": false,
+         "cenaPath": "C.cestovniKc",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 10000,
+         "marze": 2000,
+         "sMarzi": 12000,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "ČIŠTĚNÍ",
+         "origNazev": "ČIŠTĚNÍ",
+         "nazevPrepsan": false,
+         "mnozstvi": 1,
+         "mnozstviAuto": 1,
+         "prepsano": false,
+         "cena": 10000,
+         "cenaAuto": 10000,
+         "cenaPrepsana": false,
+         "cenaPath": "C.cisteniKc",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 10000,
+         "marze": 2000,
+         "sMarzi": 12000,
+         "pozn": "",
+         "vlastni": false
+        }
+       ],
+       "volitelne": [
+        {
+         "nazev": "LEŠENÍ - vnitřní",
+         "origNazev": "LEŠENÍ - vnitřní",
+         "nazevPrepsan": false,
+         "mnozstvi": 14,
+         "mnozstviAuto": 14,
+         "prepsano": false,
+         "cena": 1000,
+         "cenaAuto": 1000,
+         "cenaPrepsana": false,
+         "cenaPath": "C.leseniVnitrniKc",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": 10000,
+         "naklad": 24000,
+         "marze": 4800,
+         "sMarzi": 28800,
+         "pozn": "+ fix 10000 Kč",
+         "vlastni": false,
+         "key": "leseniVnitrni",
+         "zahrnuto": true,
+         "prip": "leseniVnitrni"
+        },
+        {
+         "nazev": "HÁKY NA MYTÍ ŠACHTY (EXT)",
+         "origNazev": "HÁKY NA MYTÍ ŠACHTY (EXT)",
+         "nazevPrepsan": false,
+         "mnozstvi": 3,
+         "mnozstviAuto": 3,
+         "prepsano": false,
+         "cena": 530,
+         "cenaAuto": 530,
+         "cenaPrepsana": false,
+         "cenaPath": "C.hakyKc",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 1590,
+         "marze": 318,
+         "sMarzi": 1908,
+         "pozn": "",
+         "vlastni": false,
+         "key": "haky",
+         "zahrnuto": true,
+         "prip": "haky"
+        }
+       ],
+       "rezie": [
+        {
+         "nazev": "ZAMĚŘENÍ 3D SKENEREM",
+         "origNazev": "ZAMĚŘENÍ 3D SKENEREM",
+         "nazevPrepsan": false,
+         "mnozstvi": 1,
+         "mnozstviAuto": 1,
+         "prepsano": false,
+         "cena": 5000,
+         "cenaAuto": 5000,
+         "cenaPrepsana": false,
+         "cenaPath": "C.sken3dKc",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 5000,
+         "marze": 1000,
+         "sMarzi": 6000,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "VÝSTUP ZE ZAMĚŘENÍ PRO ZÁKAZNÍKA",
+         "origNazev": "VÝSTUP ZE ZAMĚŘENÍ PRO ZÁKAZNÍKA",
+         "nazevPrepsan": false,
+         "mnozstvi": 0.5,
+         "mnozstviAuto": 0.5,
+         "prepsano": false,
+         "cena": 10000,
+         "cenaAuto": 10000,
+         "cenaPrepsana": false,
+         "cenaPath": "C.vystupZamereniKc",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 5000,
+         "marze": 1000,
+         "sMarzi": 6000,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "DÍLENSKÁ DOKUMENTACE",
+         "origNazev": "DÍLENSKÁ DOKUMENTACE",
+         "nazevPrepsan": false,
+         "mnozstvi": 50,
+         "mnozstviAuto": 50,
+         "prepsano": false,
+         "cena": 1000,
+         "cenaAuto": 1000,
+         "cenaPrepsana": false,
+         "cenaPath": "C.projekceHodKc",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 50000,
+         "marze": 10000,
+         "sMarzi": 60000,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "STATICKÉ POSOUZENÍ",
+         "origNazev": "STATICKÉ POSOUZENÍ",
+         "nazevPrepsan": false,
+         "mnozstvi": 10,
+         "mnozstviAuto": 10,
+         "prepsano": false,
+         "cena": 1000,
+         "cenaAuto": 1000,
+         "cenaPrepsana": false,
+         "cenaPath": "C.statikaKc",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 10000,
+         "marze": 2000,
+         "sMarzi": 12000,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "REŽIE KANCELÁŘE",
+         "origNazev": "REŽIE KANCELÁŘE",
+         "nazevPrepsan": false,
+         "mnozstvi": 1,
+         "mnozstviAuto": 1,
+         "prepsano": false,
+         "cena": 50000,
+         "cenaAuto": 50000,
+         "cenaPrepsana": false,
+         "cenaPath": "C.rezieKancelareKc",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 50000,
+         "marze": 10000,
+         "sMarzi": 60000,
+         "pozn": "",
+         "vlastni": false
+        },
+        {
+         "nazev": "PRÁCE STAVBYVEDOUCÍHO",
+         "origNazev": "PRÁCE STAVBYVEDOUCÍHO",
+         "nazevPrepsan": false,
+         "mnozstvi": 40,
+         "mnozstviAuto": 40,
+         "prepsano": false,
+         "cena": 1000,
+         "cenaAuto": 1000,
+         "cenaPrepsana": false,
+         "cenaPath": "C.stavbyvedouciKc",
+         "popisNabidka": "",
+         "cenaSkupina": null,
+         "fix": null,
+         "naklad": 40000,
+         "marze": 8000,
+         "sMarzi": 48000,
+         "pozn": "",
+         "vlastni": false
+        }
+       ]
+      },
+      "volitelneKatalog": [
+       {
+        "nazev": "PŘECHODOVÉ PLECHY - NEREZ",
+        "origNazev": "PŘECHODOVÉ PLECHY - NEREZ",
+        "nazevPrepsan": false,
+        "mnozstvi": 0,
+        "mnozstviAuto": 0,
+        "prepsano": false,
+        "cena": 500,
+        "cenaAuto": 500,
+        "cenaPrepsana": false,
+        "cenaPath": "C.prechodoveKgKc",
+        "popisNabidka": "",
+        "cenaSkupina": null,
+        "fix": null,
+        "naklad": 0,
+        "marze": 0,
+        "sMarzi": 0,
+        "pozn": "",
+        "vlastni": false,
+        "key": "prechodove",
+        "zahrnuto": false,
+        "prip": "prechMat"
+       },
+       {
+        "nazev": "LEŠENÍ - vnitřní",
+        "origNazev": "LEŠENÍ - vnitřní",
+        "nazevPrepsan": false,
+        "mnozstvi": 14,
+        "mnozstviAuto": 14,
+        "prepsano": false,
+        "cena": 1000,
+        "cenaAuto": 1000,
+        "cenaPrepsana": false,
+        "cenaPath": "C.leseniVnitrniKc",
+        "popisNabidka": "",
+        "cenaSkupina": null,
+        "fix": 10000,
+        "naklad": 24000,
+        "marze": 4800,
+        "sMarzi": 28800,
+        "pozn": "+ fix 10000 Kč",
+        "vlastni": false,
+        "key": "leseniVnitrni",
+        "zahrnuto": true,
+        "prip": "leseniVnitrni"
+       },
+       {
+        "nazev": "LEŠENÍ - vnější",
+        "origNazev": "LEŠENÍ - vnější",
+        "nazevPrepsan": false,
+        "mnozstvi": 36.4,
+        "mnozstviAuto": 36.4,
+        "prepsano": false,
+        "cena": 500,
+        "cenaAuto": 500,
+        "cenaPrepsana": false,
+        "cenaPath": "C.leseniVnejsiKc",
+        "popisNabidka": "",
+        "cenaSkupina": null,
+        "fix": 10000,
+        "naklad": 28200,
+        "marze": 5640,
+        "sMarzi": 33840,
+        "pozn": "+ fix 10000 Kč",
+        "vlastni": false,
+        "key": "leseniVnejsi",
+        "zahrnuto": false,
+        "prip": "leseniVnejsi"
+       },
+       {
+        "nazev": "PŘECHODOVÉ PLECHY - NEREZ (MONTÁŽ)",
+        "origNazev": "PŘECHODOVÉ PLECHY - NEREZ (MONTÁŽ)",
+        "nazevPrepsan": false,
+        "mnozstvi": 0,
+        "mnozstviAuto": 0,
+        "prepsano": false,
+        "cena": 1000,
+        "cenaAuto": 1000,
+        "cenaPrepsana": false,
+        "cenaPath": "C.priplatky.prechMontKc",
+        "popisNabidka": "",
+        "cenaSkupina": null,
+        "fix": null,
+        "naklad": 0,
+        "marze": 0,
+        "sMarzi": 0,
+        "pozn": "",
+        "vlastni": false,
+        "key": "prechMont",
+        "zahrnuto": false,
+        "prip": "prechMont"
+       },
+       {
+        "nazev": "LEŠENÍ - dokončení hlavy šachty",
+        "origNazev": "LEŠENÍ - dokončení hlavy šachty",
+        "nazevPrepsan": false,
+        "mnozstvi": 0,
+        "mnozstviAuto": 0,
+        "prepsano": false,
+        "cena": 1000,
+        "cenaAuto": 1000,
+        "cenaPrepsana": false,
+        "cenaPath": "C.priplatky.leseniHlavaKc",
+        "popisNabidka": "",
+        "cenaSkupina": null,
+        "fix": null,
+        "naklad": 0,
+        "marze": 0,
+        "sMarzi": 0,
+        "pozn": "",
+        "vlastni": false,
+        "key": "leseniHlava",
+        "zahrnuto": false,
+        "prip": "leseniHlava"
+       },
+       {
+        "nazev": "HÁKY NA MYTÍ ŠACHTY (EXT)",
+        "origNazev": "HÁKY NA MYTÍ ŠACHTY (EXT)",
+        "nazevPrepsan": false,
+        "mnozstvi": 3,
+        "mnozstviAuto": 3,
+        "prepsano": false,
+        "cena": 530,
+        "cenaAuto": 530,
+        "cenaPrepsana": false,
+        "cenaPath": "C.hakyKc",
+        "popisNabidka": "",
+        "cenaSkupina": null,
+        "fix": null,
+        "naklad": 1590,
+        "marze": 318,
+        "sMarzi": 1908,
+        "pozn": "",
+        "vlastni": false,
+        "key": "haky",
+        "zahrnuto": true,
+        "prip": "haky"
+       },
+       {
+        "nazev": "OPLECHOVÁNÍ SOKLU PROHLUBNĚ (EXT)",
+        "origNazev": "OPLECHOVÁNÍ SOKLU PROHLUBNĚ (EXT)",
+        "nazevPrepsan": false,
+        "mnozstvi": 1.6,
+        "mnozstviAuto": 1.6,
+        "prepsano": false,
+        "cena": 5000,
+        "cenaAuto": 5000,
+        "cenaPrepsana": false,
+        "cenaPath": "C.soklBmKc",
+        "popisNabidka": "",
+        "cenaSkupina": null,
+        "fix": null,
+        "naklad": 8000,
+        "marze": 1600,
+        "sMarzi": 9600,
+        "pozn": "",
+        "vlastni": false,
+        "key": "sokl",
+        "zahrnuto": false,
+        "prip": "sokl"
+       }
+      ],
+      "souctySekci": {
+       "hrubaOck": {
+        "naklad": 362529.42000000004,
+        "marze": 72505.884,
+        "sMarzi": 435035.304
+       },
+       "oplasteni": {
+        "naklad": 118325.9392,
+        "marze": 23665.18784,
+        "sMarzi": 141991.12704
+       },
+       "volitelne": {
+        "naklad": 25590,
+        "marze": 5118,
+        "sMarzi": 30708
+       },
+       "rezie": {
+        "naklad": 160000,
+        "marze": 32000,
+        "sMarzi": 192000
+       }
+      },
+      "rezerva": {
+       "naklad": 0,
+       "marze": 0,
+       "sMarzi": 0
+      },
+      "priplatky": [
+       {
+        "key": "vsgFolie",
+        "nazev": "Sklo VSG s mléčnou fólií",
+        "origNazev": "Sklo VSG s mléčnou fólií",
+        "nazevPrepsan": false,
+        "mnozstvi": 30.800639999999998,
+        "mnozstviAuto": 30.800639999999998,
+        "prepsano": false,
+        "cena": 500,
+        "cenaAuto": 500,
+        "cenaPrepsana": false,
+        "cenaPath": "C.priplatky.vsgFolieM2",
+        "naklad": 15400.32,
+        "sMarzi": 19000,
+        "pozn": "",
+        "vlastni": false,
+        "popisNabidka": ""
+       },
+       {
+        "key": "skn",
+        "nazev": "Sklo SKN 176 (Ug=1,1) (EXT)",
+        "origNazev": "Sklo SKN 176 (Ug=1,1) (EXT)",
+        "nazevPrepsan": false,
+        "mnozstvi": 30.800639999999998,
+        "mnozstviAuto": 30.800639999999998,
+        "prepsano": false,
+        "cena": 500,
+        "cenaAuto": 500,
+        "cenaPrepsana": false,
+        "cenaPath": "C.priplatky.sknM2",
+        "naklad": 15400.32,
+        "sMarzi": 19000,
+        "pozn": "",
+        "vlastni": false,
+        "popisNabidka": ""
+       },
+       {
+        "key": "prechMat",
+        "nazev": "PŘECHODOVÉ PLECHY - NEREZ (MATERIÁL)",
+        "origNazev": "PŘECHODOVÉ PLECHY - NEREZ (MATERIÁL)",
+        "nazevPrepsan": false,
+        "mnozstvi": 8.84,
+        "mnozstviAuto": 8.84,
+        "prepsano": false,
+        "cena": 500,
+        "cenaAuto": 500,
+        "cenaPrepsana": false,
+        "cenaPath": "C.prechodoveKgKc",
+        "naklad": 4420,
+        "sMarzi": 6000,
+        "pozn": "",
+        "vlastni": false,
+        "popisNabidka": ""
+       },
+       {
+        "key": "prechMont",
+        "nazev": "PŘECHODOVÉ PLECHY - NEREZ (MONTÁŽ)",
+        "origNazev": "PŘECHODOVÉ PLECHY - NEREZ (MONTÁŽ)",
+        "nazevPrepsan": false,
+        "mnozstvi": 5,
+        "mnozstviAuto": 5,
+        "prepsano": false,
+        "cena": 1000,
+        "cenaAuto": 1000,
+        "cenaPrepsana": false,
+        "cenaPath": "C.priplatky.prechMontKc",
+        "naklad": 5000,
+        "sMarzi": 6000,
+        "pozn": "",
+        "vlastni": false,
+        "popisNabidka": ""
+       },
+       {
+        "key": "madlaBoky",
+        "nazev": "MADLA NA BOČNÍCH STĚNÁCH (dřevo, lak)",
+        "origNazev": "MADLA NA BOČNÍCH STĚNÁCH (dřevo, lak)",
+        "nazevPrepsan": false,
+        "mnozstvi": 1.536,
+        "mnozstviAuto": 1.536,
+        "prepsano": false,
+        "cena": 2000,
+        "cenaAuto": 2000,
+        "cenaPrepsana": false,
+        "cenaPath": "C.priplatky.madlaBmKc",
+        "naklad": 3072,
+        "sMarzi": 4000,
+        "pozn": "",
+        "vlastni": false,
+        "popisNabidka": ""
+       },
+       {
+        "key": "madlaZadni",
+        "nazev": "MADLA NA ZADNÍ STĚNĚ (dřevo, lak)",
+        "origNazev": "MADLA NA ZADNÍ STĚNĚ (dřevo, lak)",
+        "nazevPrepsan": false,
+        "mnozstvi": 8.448,
+        "mnozstviAuto": 8.448,
+        "prepsano": false,
+        "cena": 2000,
+        "cenaAuto": 2000,
+        "cenaPrepsana": false,
+        "cenaPath": "C.priplatky.madlaBmKc",
+        "naklad": 16896,
+        "sMarzi": 21000,
+        "pozn": "",
+        "vlastni": false,
+        "popisNabidka": ""
+       },
+       {
+        "key": "medStrecha",
+        "nazev": "PŘÍPLATEK ZA STŘECHU V MĚDI (EXT)",
+        "origNazev": "PŘÍPLATEK ZA STŘECHU V MĚDI (EXT)",
+        "nazevPrepsan": false,
+        "mnozstvi": 0.18000000000000002,
+        "mnozstviAuto": 0.18000000000000002,
+        "prepsano": false,
+        "cena": 5000,
+        "cenaAuto": 5000,
+        "cenaPrepsana": false,
+        "cenaPath": "C.priplatky.medStrechaM2",
+        "naklad": 900.0000000000001,
+        "sMarzi": 2000,
+        "pozn": "",
+        "vlastni": false,
+        "popisNabidka": ""
+       },
+       {
+        "key": "ventilator",
+        "nazev": "VENTILÁTOR (EXT)",
+        "origNazev": "VENTILÁTOR (EXT)",
+        "nazevPrepsan": false,
+        "mnozstvi": 1,
+        "mnozstviAuto": 1,
+        "prepsano": false,
+        "cena": 20000,
+        "cenaAuto": 20000,
+        "cenaPrepsana": false,
+        "cenaPath": "C.priplatky.ventilatorKc",
+        "naklad": 20000,
+        "sMarzi": 24000,
+        "pozn": "",
+        "vlastni": false,
+        "popisNabidka": ""
+       },
+       {
+        "key": "zabranyDvere",
+        "nazev": "ZÁBRANY DO DVEŘNÍCH VSTUPŮ",
+        "origNazev": "ZÁBRANY DO DVEŘNÍCH VSTUPŮ",
+        "nazevPrepsan": false,
+        "mnozstvi": 5,
+        "mnozstviAuto": 5,
+        "prepsano": false,
+        "cena": 2000,
+        "cenaAuto": 2000,
+        "cenaPrepsana": false,
+        "cenaPath": "C.priplatky.zabranyDvereKc",
+        "naklad": 10000,
+        "sMarzi": 12000,
+        "pozn": "",
+        "vlastni": false,
+        "popisNabidka": ""
+       },
+       {
+        "key": "zabranyPad",
+        "nazev": "ZÁBRANY PROTI PÁDU DO ŠACHTY",
+        "origNazev": "ZÁBRANY PROTI PÁDU DO ŠACHTY",
+        "nazevPrepsan": false,
+        "mnozstvi": 5,
+        "mnozstviAuto": 5,
+        "prepsano": false,
+        "cena": 0,
+        "cenaAuto": 0,
+        "cenaPrepsana": false,
+        "cenaPath": "C.priplatky.zabranyPadKc",
+        "naklad": 0,
+        "sMarzi": 0,
+        "pozn": "",
+        "vlastni": false,
+        "popisNabidka": ""
+       },
+       {
+        "key": "demontazOhrazeni",
+        "nazev": "DEMONTÁŽ STÁVAJÍCÍHO OHRAZENÍ",
+        "origNazev": "DEMONTÁŽ STÁVAJÍCÍHO OHRAZENÍ",
+        "nazevPrepsan": false,
+        "mnozstvi": 1,
+        "mnozstviAuto": 1,
+        "prepsano": false,
+        "cena": 0,
+        "cenaAuto": 0,
+        "cenaPrepsana": false,
+        "cenaPath": "C.priplatky.demontazOhrazeniKc",
+        "naklad": 0,
+        "sMarzi": 0,
+        "pozn": "",
+        "vlastni": false,
+        "popisNabidka": ""
+       },
+       {
+        "key": "malbaSchodnic",
+        "nazev": "MALBA SCHODNIC",
+        "origNazev": "MALBA SCHODNIC",
+        "nazevPrepsan": false,
+        "mnozstvi": 1,
+        "mnozstviAuto": 1,
+        "prepsano": false,
+        "cena": 0,
+        "cenaAuto": 0,
+        "cenaPrepsana": false,
+        "cenaPath": "C.priplatky.malbaSchodnicKc",
+        "naklad": 0,
+        "sMarzi": 0,
+        "pozn": "",
+        "vlastni": false,
+        "popisNabidka": ""
+       },
+       {
+        "key": "naterOhrazeni",
+        "nazev": "NÁTĚR CELÉHO OHRAZENÍ",
+        "origNazev": "NÁTĚR CELÉHO OHRAZENÍ",
+        "nazevPrepsan": false,
+        "mnozstvi": 1,
+        "mnozstviAuto": 1,
+        "prepsano": false,
+        "cena": 0,
+        "cenaAuto": 0,
+        "cenaPrepsana": false,
+        "cenaPath": "C.priplatky.naterOhrazeniKc",
+        "naklad": 0,
+        "sMarzi": 0,
+        "pozn": "",
+        "vlastni": false,
+        "popisNabidka": ""
+       },
+       {
+        "key": "naterOkopovych",
+        "nazev": "NÁTĚR POUZE OKOPOVÝCH PLECHŮ",
+        "origNazev": "NÁTĚR POUZE OKOPOVÝCH PLECHŮ",
+        "nazevPrepsan": false,
+        "mnozstvi": 1,
+        "mnozstviAuto": 1,
+        "prepsano": false,
+        "cena": 0,
+        "cenaAuto": 0,
+        "cenaPrepsana": false,
+        "cenaPath": "C.priplatky.naterOkopovychKc",
+        "naklad": 0,
+        "sMarzi": 0,
+        "pozn": "",
+        "vlastni": false,
+        "popisNabidka": ""
+       },
+       {
+        "key": "prosklenaStena",
+        "nazev": "PROSKLENÁ STĚNA VEDLE ŠACHTY",
+        "origNazev": "PROSKLENÁ STĚNA VEDLE ŠACHTY",
+        "nazevPrepsan": false,
+        "mnozstvi": 1,
+        "mnozstviAuto": 1,
+        "prepsano": false,
+        "cena": 0,
+        "cenaAuto": 0,
+        "cenaPrepsana": false,
+        "cenaPath": "C.priplatky.prosklenaStenaKc",
+        "naklad": 0,
+        "sMarzi": 0,
+        "pozn": "",
+        "vlastni": false,
+        "popisNabidka": ""
+       },
+       {
+        "key": "demontazVytahu",
+        "nazev": "DEMONTÁŽ STÁVAJÍCÍHO VÝTAHU",
+        "origNazev": "DEMONTÁŽ STÁVAJÍCÍHO VÝTAHU",
+        "nazevPrepsan": false,
+        "mnozstvi": 1,
+        "mnozstviAuto": 1,
+        "prepsano": false,
+        "cena": 0,
+        "cenaAuto": 0,
+        "cenaPrepsana": false,
+        "cenaPath": "C.priplatky.demontazVytahuKc",
+        "naklad": 0,
+        "sMarzi": 0,
+        "pozn": "",
+        "vlastni": false,
+        "popisNabidka": ""
+       },
+       {
+        "key": "destovySvod",
+        "nazev": "DEŠŤOVÝ SVOD",
+        "origNazev": "DEŠŤOVÝ SVOD",
+        "nazevPrepsan": false,
+        "mnozstvi": 1,
+        "mnozstviAuto": 1,
+        "prepsano": false,
+        "cena": 0,
+        "cenaAuto": 0,
+        "cenaPrepsana": false,
+        "cenaPath": "C.priplatky.destovySvodKc",
+        "naklad": 0,
+        "sMarzi": 0,
+        "pozn": "",
+        "vlastni": false,
+        "popisNabidka": ""
+       },
+       {
+        "key": "leseniHlava",
+        "nazev": "LEŠENÍ - dokončení hlavy šachty",
+        "origNazev": "LEŠENÍ - dokončení hlavy šachty",
+        "nazevPrepsan": false,
+        "mnozstvi": 0,
+        "mnozstviAuto": 0,
+        "prepsano": false,
+        "cena": 1000,
+        "cenaAuto": 1000,
+        "cenaPrepsana": false,
+        "cenaPath": "C.priplatky.leseniHlavaKc",
+        "naklad": 0,
+        "sMarzi": 0,
+        "pozn": "",
+        "vlastni": false,
+        "popisNabidka": ""
+       },
+       {
+        "key": "leseniVnejsi",
+        "nazev": "LEŠENÍ - vnější",
+        "origNazev": "LEŠENÍ - vnější",
+        "nazevPrepsan": false,
+        "mnozstvi": 36.4,
+        "mnozstviAuto": 36.4,
+        "prepsano": false,
+        "cena": 500,
+        "cenaAuto": 500,
+        "cenaPrepsana": false,
+        "cenaPath": "C.leseniVnejsiKc",
+        "naklad": 28200,
+        "sMarzi": 34000,
+        "pozn": "",
+        "vlastni": false,
+        "popisNabidka": ""
+       },
+       {
+        "key": "sokl",
+        "nazev": "OPLECHOVÁNÍ SOKLU PROHLUBNĚ (EXT)",
+        "origNazev": "OPLECHOVÁNÍ SOKLU PROHLUBNĚ (EXT)",
+        "nazevPrepsan": false,
+        "mnozstvi": 1.6,
+        "mnozstviAuto": 1.6,
+        "prepsano": false,
+        "cena": 5000,
+        "cenaAuto": 5000,
+        "cenaPrepsana": false,
+        "cenaPath": "C.soklBmKc",
+        "naklad": 8000,
+        "sMarzi": 10000,
+        "pozn": "",
+        "vlastni": false,
+        "popisNabidka": ""
+       }
+      ],
+      "souhrn": {
+       "zakladNaklad": 666445.3592000001,
+       "zakladMarze": 133289.07183999987,
+       "zakladCena": 800000,
+       "zakladDph": 96000,
+       "zakladSDph": 896000.0000000001,
+       "priplatkyCena": 157000,
+       "priplatkyDph": 18840,
+       "priplatkySDph": 175840.00000000003
+      }
+     },
+     "proj": {
+      "sekce": [
+       {
+        "key": "zamereni",
+        "nazev": "ZAMĚŘENÍ",
+        "polozky": [
+         {
+          "nazev": "Zaměření",
+          "typ": "hod",
+          "sazba": "zamereni",
+          "hodiny": 5,
+          "rezerva": 0,
+          "vyrazeno": true,
+          "hodinyCelkem": 5,
+          "sazbaKc": 1000,
+          "sazbaZCeniku": 1000,
+          "sazbaPrepsana": false,
+          "naklad": 0
+         },
+         {
+          "nazev": "Výstup",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 10,
+          "rezerva": 0,
+          "vyrazeno": true,
+          "hodinyCelkem": 10,
+          "sazbaKc": 1000,
+          "sazbaZCeniku": 1000,
+          "sazbaPrepsana": false,
+          "naklad": 0
+         }
+        ],
+        "naklad": 0,
+        "marze": 0,
+        "cena": 0,
+        "dopravaKc": 0,
+        "cenaSDopravou": 0,
+        "prirazkaPct": null,
+        "pouzitePct": 20,
+        "celkem": 0
+       },
+       {
+        "key": "studie",
+        "nazev": "ST – STUDIE",
+        "polozky": [
+         {
+          "nazev": "Studie",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 24,
+          "rezerva": 0,
+          "vyrazeno": false,
+          "hodinyCelkem": 24,
+          "sazbaKc": 1000,
+          "sazbaZCeniku": 1000,
+          "sazbaPrepsana": false,
+          "naklad": 24000
+         },
+         {
+          "nazev": "Konzultace",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 4,
+          "rezerva": 0,
+          "vyrazeno": false,
+          "hodinyCelkem": 4,
+          "sazbaKc": 1000,
+          "sazbaZCeniku": 1000,
+          "sazbaPrepsana": false,
+          "naklad": 4000
+         }
+        ],
+        "naklad": 28000,
+        "marze": 5600,
+        "cena": 33600,
+        "dopravaKc": 0,
+        "cenaSDopravou": 33600,
+        "prirazkaPct": null,
+        "pouzitePct": 20,
+        "celkem": 33600
+       },
+       {
+        "key": "projednani",
+        "nazev": "PROJEDNÁNÍ STUDIE",
+        "polozky": [
+         {
+          "nazev": "Památkáři",
+          "typ": "fix",
+          "fixKey": "pamatkari",
+          "vyrazeno": false,
+          "hodinyCelkem": 0,
+          "sazbaKc": null,
+          "cenaZCeniku": 0,
+          "cenaPrepsana": false,
+          "cenaEfekt": 0,
+          "naklad": 0
+         },
+         {
+          "nazev": "Územní rozvoj",
+          "typ": "fix",
+          "fixKey": "uzemniRozvoj",
+          "vyrazeno": false,
+          "hodinyCelkem": 0,
+          "sazbaKc": null,
+          "cenaZCeniku": 0,
+          "cenaPrepsana": false,
+          "cenaEfekt": 0,
+          "naklad": 0
+         }
+        ],
+        "naklad": 0,
+        "marze": 0,
+        "cena": 0,
+        "dopravaKc": 0,
+        "cenaSDopravou": 0,
+        "prirazkaPct": null,
+        "pouzitePct": 20,
+        "celkem": 0
+       },
+       {
+        "key": "dpz",
+        "nazev": "DPZ – DOKUMENTACE PRO POVOLENÍ ZÁMĚRU",
+        "polozky": [
+         {
+          "nazev": "Projektová dokumentace pro DOSS",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 52,
+          "rezerva": 0,
+          "vyrazeno": false,
+          "hodinyCelkem": 52,
+          "sazbaKc": 1000,
+          "sazbaZCeniku": 1000,
+          "sazbaPrepsana": false,
+          "naklad": 52000
+         },
+         {
+          "nazev": "Projektová dokumentace pro SÚ",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 6,
+          "rezerva": 0,
+          "vyrazeno": false,
+          "hodinyCelkem": 6,
+          "sazbaKc": 1000,
+          "sazbaZCeniku": 1000,
+          "sazbaPrepsana": false,
+          "naklad": 6000
+         },
+         {
+          "nazev": "Statika",
+          "typ": "hod",
+          "sazba": "statik",
+          "hodiny": 6,
+          "rezerva": 0,
+          "vyrazeno": false,
+          "hodinyCelkem": 6,
+          "sazbaKc": 1000,
+          "sazbaZCeniku": 1000,
+          "sazbaPrepsana": false,
+          "naklad": 6000
+         },
+         {
+          "nazev": "PBŘ",
+          "typ": "fix",
+          "fixKey": "pbr",
+          "vyrazeno": false,
+          "hodinyCelkem": 0,
+          "sazbaKc": null,
+          "cenaZCeniku": 10000,
+          "cenaPrepsana": false,
+          "cenaEfekt": 10000,
+          "naklad": 10000
+         },
+         {
+          "nazev": "Studie osvitu (Praha 4 a 6)",
+          "typ": "fix",
+          "fixKey": "studieOsvitu",
+          "vyrazeno": false,
+          "hodinyCelkem": 0,
+          "sazbaKc": null,
+          "cenaZCeniku": 0,
+          "cenaPrepsana": false,
+          "cenaEfekt": 0,
+          "naklad": 0
+         },
+         {
+          "nazev": "Elektro projekt",
+          "typ": "fix",
+          "fixKey": "elektroDpz",
+          "vyrazeno": false,
+          "hodinyCelkem": 0,
+          "sazbaKc": null,
+          "cenaZCeniku": 10000,
+          "cenaPrepsana": false,
+          "cenaEfekt": 10000,
+          "naklad": 10000
+         }
+        ],
+        "naklad": 84000,
+        "marze": 16800,
+        "cena": 100800,
+        "dopravaKc": 0,
+        "cenaSDopravou": 100800,
+        "prirazkaPct": null,
+        "pouzitePct": 20,
+        "celkem": 100800
+       },
+       {
+        "key": "ic",
+        "nazev": "IČ – INŽENÝRSKÁ ČINNOST",
+        "polozky": [
+         {
+          "nazev": "Inženýrská činnost",
+          "typ": "fix",
+          "fixKey": "ic",
+          "vyrazeno": false,
+          "hodinyCelkem": 0,
+          "sazbaKc": null,
+          "cenaZCeniku": 20000,
+          "cenaPrepsana": false,
+          "cenaEfekt": 20000,
+          "naklad": 20000
+         }
+        ],
+        "naklad": 20000,
+        "marze": 4000,
+        "cena": 24000,
+        "dopravaKc": 0,
+        "cenaSDopravou": 24000,
+        "prirazkaPct": null,
+        "pouzitePct": 20,
+        "celkem": 24000
+       },
+       {
+        "key": "dps",
+        "nazev": "DPS – DOKUMENTACE PRO PROVEDENÍ STAVBY",
+        "polozky": [
+         {
+          "nazev": "Projekt pro DPS – stavební část",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 48,
+          "rezerva": 0,
+          "vyrazeno": false,
+          "hodinyCelkem": 48,
+          "sazbaKc": 1000,
+          "sazbaZCeniku": 1000,
+          "sazbaPrepsana": false,
+          "naklad": 48000
+         },
+         {
+          "nazev": "Statika",
+          "typ": "hod",
+          "sazba": "statik",
+          "hodiny": 6,
+          "rezerva": 0,
+          "vyrazeno": false,
+          "hodinyCelkem": 6,
+          "sazbaKc": 1000,
+          "sazbaZCeniku": 1000,
+          "sazbaPrepsana": false,
+          "naklad": 6000
+         },
+         {
+          "nazev": "Elektro projekt",
+          "typ": "fix",
+          "fixKey": "elektroDps",
+          "vyrazeno": false,
+          "hodinyCelkem": 0,
+          "sazbaKc": null,
+          "cenaZCeniku": 10000,
+          "cenaPrepsana": false,
+          "cenaEfekt": 10000,
+          "naklad": 10000
+         }
+        ],
+        "naklad": 64000,
+        "marze": 12800,
+        "cena": 76800,
+        "dopravaKc": 0,
+        "cenaSDopravou": 76800,
+        "prirazkaPct": null,
+        "pouzitePct": 20,
+        "celkem": 76800
+       },
+       {
+        "key": "ezc",
+        "nazev": "EZC – EKONOMICKÁ ZADÁVACÍ ČÁST (celý projekt)",
+        "polozky": [
+         {
+          "nazev": "Ekonomická zadávací část",
+          "typ": "fix",
+          "fixKey": "ezc",
+          "vyrazeno": false,
+          "hodinyCelkem": 0,
+          "sazbaKc": null,
+          "cenaZCeniku": 20000,
+          "cenaPrepsana": false,
+          "cenaEfekt": 20000,
+          "naklad": 20000
+         }
+        ],
+        "naklad": 20000,
+        "marze": 4000,
+        "cena": 24000,
+        "dopravaKc": 0,
+        "cenaSDopravou": 24000,
+        "prirazkaPct": null,
+        "pouzitePct": 20,
+        "celkem": 24000
+       },
+       {
+        "key": "kolaudace",
+        "nazev": "KOLAUDACE (pro 1 ks výtahu)",
+        "polozky": [
+         {
+          "nazev": "Kolaudace",
+          "typ": "fix",
+          "fixKey": "kolaudace",
+          "vyrazeno": false,
+          "hodinyCelkem": 0,
+          "sazbaKc": null,
+          "cenaZCeniku": 10000,
+          "cenaPrepsana": false,
+          "cenaEfekt": 10000,
+          "naklad": 10000
+         }
+        ],
+        "naklad": 10000,
+        "marze": 2000,
+        "cena": 12000,
+        "dopravaKc": 0,
+        "cenaSDopravou": 12000,
+        "prirazkaPct": null,
+        "pouzitePct": 20,
+        "celkem": 12000
+       },
+       {
+        "key": "geodet",
+        "nazev": "GEODETICKÉ ZAMĚŘENÍ",
+        "polozky": [
+         {
+          "nazev": "Geodetické zaměření",
+          "typ": "fix",
+          "fixKey": "geodet",
+          "vyrazeno": false,
+          "hodinyCelkem": 0,
+          "sazbaKc": null,
+          "cenaZCeniku": 0,
+          "cenaPrepsana": false,
+          "cenaEfekt": 0,
+          "naklad": 0
+         }
+        ],
+        "naklad": 0,
+        "marze": 0,
+        "cena": 0,
+        "dopravaKc": 0,
+        "cenaSDopravou": 0,
+        "prirazkaPct": null,
+        "pouzitePct": 20,
+        "celkem": 0
+       }
+      ],
+      "souhrn": {
+       "naklad": 226000,
+       "marze": 45200,
+       "doprava": 0,
+       "cena": 271200,
+       "celkem": 271200
+      }
+     },
+     "kurzEurKc": 0,
+     "build": "v23.9.3",
+     "kdy": "2026-09-23T08:00:00.000Z"
+    },
+    "sablona": {
+     "zdroj": "server",
+     "verze": 9,
+     "otisk": "abc",
+     "nazev": "Sablona_NABIDKA_CN_v11.docx"
+    },
+    "overeni": {
+     "stav": "shoda",
+     "rozdilu": 0,
+     "kdy": "2026-09-23T08:00:01.000Z",
+     "verze": "23.9.3"
+    },
+    "tisky": [
+     {
+      "kdy": "2026-09-23T08:00:00.000Z",
+      "typ": "nabidka",
+      "popis": "Cenová nabídka OCK (Word)",
+      "kdo": "Test Obchodník <obchodnik@priklad.cz>"
+     },
+     {
+      "kdy": "2026-09-23T15:20:00.000Z",
+      "typ": "nabidkaTisk",
+      "popis": "Cenová nabídka OCK (tisk)",
+      "kdo": "Test Obchodník <obchodnik@priklad.cz>"
+     }
+    ]
+   }
+  },
+  {
+   "id": "vmuhkhpod6",
+   "nazev": "Varianta 2",
+   "zakaznik": "",
+   "pozn": "",
+   "ridici": false,
+   "vytvoreno": "2026-09-23T16:00:00.000Z",
+   "upraveno": "2026-09-23T16:00:00.000Z",
+   "data": {
+    "ock": {
+     "zadani": {
+      "prejezd": 0,
+      "zdvih": 14,
+      "prohluben": 0,
+      "sirka": 1.6,
+      "hloubka": 0,
+      "roztec": 1.25,
+      "rohoveSloupky": 4,
+      "nastupiste": 5,
+      "typSachty": "exteriérová",
+      "typPortalu": "zapuštěný",
+      "zaskleni": "na terče",
+      "svetlikNadDvermi": true,
+      "svetlikyBoky": 0,
+      "cistyVstupMm": 800,
+      "sirkaRamuMm": 100,
+      "prechodovePlechy": false,
+      "pruchoziSachta": false,
+      "atyp": false,
+      "vystupZamereni": false,
+      "nastupisteA": 5,
+      "nastupisteC": 0,
+      "patra": 5,
+      "striskaKs": 0,
+      "profily": {
+       "sloupek": {
+        "dim": "80x80",
+        "tl": 4
+       },
+       "precnikBok": {
+        "dim": "80x80",
+        "tl": 3
+       },
+       "sloupekPortal": {
+        "dim": "40x40",
+        "tl": 3
+       },
+       "precnikPortal": {
+        "dim": "80x40",
+        "tl": 3
+       },
+       "spojka": {
+        "dim": "70x70",
+        "tl": 3
+       },
+       "lemovani": {
+        "dim": "60x30",
+        "tl": 2
+       }
+      },
+      "rezervaProfilyPct": 0,
+      "rezervaPlechyPct": 0,
+      "montazZakladHod": 24,
+      "montazAtypHod": 0,
+      "projekceZakladHod": 50,
+      "projekceAtypHod": 0,
+      "zamecnikAtypKs": 0,
+      "zamecnikAtypKc": null,
+      "oplechOstatniKg": 10,
+      "oplechOstatniHod": 5,
+      "engineeringKs": 0,
+      "rezervaZakladPct": 0,
+      "rezervaPriplatkyPct": 0,
+      "volitelne": {
+       "prechodove": null,
+       "leseniVnitrni": true,
+       "leseniVnejsi": false,
+       "prechMont": null,
+       "leseniHlava": false,
+       "haky": true,
+       "zabradli": true,
+       "sokl": false
+      },
+      "oplasteni": {
+       "rezim": "standard",
+       "steny": null
+      },
+      "priplatkyVyber": null,
+      "mnozstviPrepis": {},
+      "volitelneVlastni": [],
+      "vlastniPolozky": {
+       "hrubaOck": [],
+       "atyp": [],
+       "oplasteni": [],
+       "volitelne": [],
+       "rezie": [],
+       "spojovaci": [],
+       "lakovani": []
+      },
+      "priplatkyVlastni": [],
+      "katalogOdebrane": [],
+      "nazvyPrepis": {},
+      "cenyPrepis": {},
+      "poradi": {},
+      "skryteProUzivatele": [],
+      "mustek": false,
+      "mustekHloubkaMm": "",
+      "mustekSirkaMm": "",
+      "volitelneVychozi": {},
+      "priplatkyVynechat": [
+       "vsgFolie",
+       "skn"
+      ],
+      "nepocitat": []
+     },
+     "fixes": true
+    },
+    "cenik": {
+     "ukazkove": true,
+     "prazdny": true,
+     "marze": 0.2,
+     "dph": 0.12,
+     "kurzEurKc": 0,
+     "profilasKgKc": 100,
+     "powertechExt": 200,
+     "powertechInt": 200,
+     "montazniNosnik": 1000,
+     "lemovaniKgKc": 100,
+     "oplechPracKc": 500,
+     "nytKc": 10,
+     "spodniRamKc": 5000,
+     "cilkoKc": 100,
+     "montazHodKc": 500,
+     "vetraciMrizkaKc": 5000,
+     "transportKc": 5000,
+     "zastreseniM2Kc": 5000,
+     "oplechFasadaBmKc": 500,
+     "skloBokyKc": 2000,
+     "skloBokyNazev": "dvojsklo čiré (zkušební)",
+     "skloCelniKc": 1000,
+     "skloCelniNazev": "bezpečnostní sklo čiré (zkušební)",
+     "skloVsg442Kc": 1200,
+     "cetrisKc": 0,
+     "popisy": {},
+     "praceOplasteniKc": 530,
+     "plastKotvyKc": 5000,
+     "tmeleniKc": 500,
+     "striskaDvurKc": 10000,
+     "cestovniKc": 10000,
+     "cisteniKc": 10000,
+     "prechodoveKgKc": 500,
+     "leseniVnitrniKc": 1000,
+     "leseniFix": 10000,
+     "leseniVnejsiKc": 500,
+     "hakyKc": 530,
+     "zabradliKc": 5000,
+     "soklBmKc": 5000,
+     "sken3dKc": 5000,
+     "vystupZamereniKc": 10000,
+     "engineeringKc": 10000,
+     "projekceHodKc": 1000,
+     "statikaKc": 1000,
+     "statikaHod": 10,
+     "rezieKancelareKc": 50000,
+     "zaskleniListyProjHod": 4,
+     "stavbyvedouciHod": 40,
+     "stavbyvedouciKc": 1000,
+     "prekladyKc": 0,
+     "atypPrirazka": 0.2,
+     "zamecnikAtypKc": 800,
+     "atypMontazPct": 0,
+     "atypProjekcePct": 0,
+     "atypZamecnikKc": null,
+     "atypRezervaZakladPct": 0,
+     "atypRezervaPriplatkyPct": 0,
+     "vychMontazZakladHod": 0,
+     "vychProjekceZakladHod": 0,
+     "vychOplechOstatniKg": 0,
+     "vychOplechOstatniHod": 0,
+     "dphZakladni": 0.21,
+     "dphSnizena": 0.12,
+     "dphNulova": 0,
+     "spojovaci": {
+      "riplockM10": 5,
+      "riplockM8": 5,
+      "nordlock": 10,
+      "nytM10": 5,
+      "nytM8": 5,
+      "nytM6": 5,
+      "tSrouby": 100,
+      "sroubM10": 5,
+      "sroubM8": 5,
+      "sroubM6": 5,
+      "zavitTyc": 200,
+      "chemKotva": 200
+     },
+     "lak": {
+      "rezim": "tomas",
+      "lakovnaProfilBm": 100,
+      "lakovnaListaBm": 120,
+      "lakovnaM2": 500,
+      "tomasProfilM2": 500,
+      "tomasListaBm": 50,
+      "tomasPlechKs": 50,
+      "tomasOplechM2": 500,
+      "tomasTercKs": 20
+     },
+     "priplatky": {
+      "vsgFolieM2": 500,
+      "sknM2": 500,
+      "medStrechaM2": 5000,
+      "ventilatorKc": 20000,
+      "zabranyDvereKc": 2000,
+      "madlaBmKc": 2000,
+      "leseniHlavaKc": 1000,
+      "montazDveriKc": 2000,
+      "prechMontKc": 1000
+     },
+     "zkusebni": true
+    },
+    "cenikRada": "cr",
+    "cenikRucni": {},
+    "proj": {
+     "zadani": {
+      "sekce": [
+       {
+        "key": "zamereni",
+        "nazev": "ZAMĚŘENÍ",
+        "doprava": {
+         "km": 0,
+         "pausal": 0
+        },
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Zaměření",
+          "typ": "hod",
+          "sazba": "zamereni",
+          "hodiny": 5,
+          "rezerva": 0,
+          "vyrazeno": true
+         },
+         {
+          "nazev": "Výstup",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 10,
+          "rezerva": 0,
+          "vyrazeno": true
+         }
+        ]
+       },
+       {
+        "key": "studie",
+        "nazev": "ST – STUDIE",
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Studie",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 24,
+          "rezerva": 0
+         },
+         {
+          "nazev": "Konzultace",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 4,
+          "rezerva": 0
+         }
+        ]
+       },
+       {
+        "key": "projednani",
+        "nazev": "PROJEDNÁNÍ STUDIE",
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Památkáři",
+          "typ": "fix",
+          "fixKey": "pamatkari"
+         },
+         {
+          "nazev": "Územní rozvoj",
+          "typ": "fix",
+          "fixKey": "uzemniRozvoj"
+         }
+        ]
+       },
+       {
+        "key": "dpz",
+        "nazev": "DPZ – DOKUMENTACE PRO POVOLENÍ ZÁMĚRU",
+        "doprava": {
+         "km": 0,
+         "pausal": 0
+        },
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Projektová dokumentace pro DOSS",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 52,
+          "rezerva": 0
+         },
+         {
+          "nazev": "Projektová dokumentace pro SÚ",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 6,
+          "rezerva": 0
+         },
+         {
+          "nazev": "Statika",
+          "typ": "hod",
+          "sazba": "statik",
+          "hodiny": 6,
+          "rezerva": 0
+         },
+         {
+          "nazev": "PBŘ",
+          "typ": "fix",
+          "fixKey": "pbr"
+         },
+         {
+          "nazev": "Studie osvitu (Praha 4 a 6)",
+          "typ": "fix",
+          "fixKey": "studieOsvitu"
+         },
+         {
+          "nazev": "Elektro projekt",
+          "typ": "fix",
+          "fixKey": "elektroDpz"
+         }
+        ]
+       },
+       {
+        "key": "ic",
+        "nazev": "IČ – INŽENÝRSKÁ ČINNOST",
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Inženýrská činnost",
+          "typ": "fix",
+          "fixKey": "ic"
+         }
+        ]
+       },
+       {
+        "key": "dps",
+        "nazev": "DPS – DOKUMENTACE PRO PROVEDENÍ STAVBY",
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Projekt pro DPS – stavební část",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 48,
+          "rezerva": 0
+         },
+         {
+          "nazev": "Statika",
+          "typ": "hod",
+          "sazba": "statik",
+          "hodiny": 6,
+          "rezerva": 0
+         },
+         {
+          "nazev": "Elektro projekt",
+          "typ": "fix",
+          "fixKey": "elektroDps"
+         }
+        ]
+       },
+       {
+        "key": "ezc",
+        "nazev": "EZC – EKONOMICKÁ ZADÁVACÍ ČÁST (celý projekt)",
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Ekonomická zadávací část",
+          "typ": "fix",
+          "fixKey": "ezc"
+         }
+        ]
+       },
+       {
+        "key": "kolaudace",
+        "nazev": "KOLAUDACE (pro 1 ks výtahu)",
+        "doprava": {
+         "km": 0,
+         "pausal": 0
+        },
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Kolaudace",
+          "typ": "fix",
+          "fixKey": "kolaudace"
+         }
+        ]
+       },
+       {
+        "key": "geodet",
+        "nazev": "GEODETICKÉ ZAMĚŘENÍ",
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Geodetické zaměření",
+          "typ": "fix",
+          "fixKey": "geodet"
+         }
+        ]
+       }
+      ]
+     },
+     "cenik": {
+      "ukazkove": true,
+      "prazdny": true,
+      "dph": 0.21,
+      "marze": 0.2,
+      "sazby": {
+       "projektant": 1000,
+       "statik": 1000,
+       "zamereni": 1000
+      },
+      "dopravaKmKc": 10,
+      "dopravaHodKc": 1000,
+      "dopravaPausalKc": 1000,
+      "kurzEurKc": 0,
+      "fixy": {
+       "pamatkari": 0,
+       "uzemniRozvoj": 0,
+       "pbr": 10000,
+       "studieOsvitu": 0,
+       "elektroDpz": 10000,
+       "ic": 20000,
+       "elektroDps": 10000,
+       "ezc": 20000,
+       "kolaudace": 10000,
+       "geodet": 0
+      },
+      "zkusebni": true
+     }
+    },
+    "techspec": {
+     "nazevAkce": "vestavba nové prosklené OCK výtahové šachty",
+     "hodnoty": {},
+     "extra": []
+    },
+    "kryci": {
+     "hodnoty": {}
+    },
+    "sleva": {
+     "procenta": 0,
+     "schema": "",
+     "role": "Obchodník",
+     "poznamka": "",
+     "stav": ""
+    },
+    "slevaProj": {
+     "procenta": 0,
+     "schema": "",
+     "role": "Obchodník",
+     "poznamka": "",
+     "stav": ""
+    },
+    "zaokr": {
+     "krok": 100,
+     "smer": "nahoru"
+    },
+    "zaokrProj": {
+     "krok": 100,
+     "smer": "nahoru"
+    },
+    "zadaniRucni": {}
+   },
+   "pripona": 2,
+   "zamek": null,
+   "klonZ": "vmuhkhpob5",
+   "klonZCislo": "2026 - OPR - CN - 0923",
+   "datum": "2026-09-25"
+  }
+ ],
+ "aktivni": "vmuhkhpod6",
+ "priponySchema": 2,
+ "autor": "obchodnik@priklad.cz",
+ "autorJmeno": "Test Obchodník",
+ "upravil": "obchodnik@priklad.cz",
+ "uloRazitko": "2026-09-23T10:00:00.000Z",
+ "priponaMax": 2,
+ "poznamky": [],
+ "prilohy": [
+  {
+   "id": "pr1",
+   "nazev": "zamereni.pdf",
+   "velikost": 8,
+   "kdy": "2026-09-23T09:00:00.000Z",
+   "data": "data:application/pdf;base64,JVBERi0="
+  }
+ ],
+ "prilohySmazane": [],
+ "poznamkyText": "Odemčeno kvůli překlepu, znovu odesláno 23. 9.",
+ "protokol": [
+  {
+   "kdy": "2026-09-23T08:00:00.000Z",
+   "kdo": "obchodnik@priklad.cz",
+   "co": "tisk nabídky"
+  }
+ ],
+ "protokolKlic": "p-0923"
+}

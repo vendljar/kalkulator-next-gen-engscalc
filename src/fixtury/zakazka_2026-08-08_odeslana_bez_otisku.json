@@ -1,0 +1,911 @@
+{
+ "schema": 2,
+ "cislo": "2026 - OPR - CN - 0801",
+ "nazevAkce": "Historická A (8. 8. 2026)",
+ "adresa": "Zkušební 12, Praha",
+ "objednatel": "Zkušební objednatel s.r.o.",
+ "kontakt": "Jan Zkušební",
+ "jenProj": false,
+ "ico": "12345678",
+ "adresaObjednatele": "",
+ "popisZameru": "",
+ "uvodniFoto": "",
+ "uvodniFotoNazev": "",
+ "uvodniFotoPopis": "",
+ "datum": "2026-08-08",
+ "projHlavicka": {
+  "cislo": "2026 - OPR - CN - ",
+  "nazevAkce": "",
+  "adresa": "",
+  "objednatel": "",
+  "kontakt": "",
+  "ico": "",
+  "adresaObjednatele": "",
+  "datum": "2026-09-25"
+ },
+ "varianty": [
+  {
+   "id": "vmuhkhpo20",
+   "nazev": "Varianta 1",
+   "zakaznik": "",
+   "pozn": "",
+   "ridici": true,
+   "vytvoreno": "2026-08-08T09:00:00.000Z",
+   "upraveno": "2026-08-08T09:30:00.000Z",
+   "data": {
+    "ock": {
+     "zadani": {
+      "prejezd": 0,
+      "zdvih": 14,
+      "prohluben": 0,
+      "sirka": 0,
+      "hloubka": 0,
+      "roztec": 1.25,
+      "rohoveSloupky": 4,
+      "nastupiste": 5,
+      "typSachty": "exteriérová",
+      "typPortalu": "zapuštěný",
+      "zaskleni": "na terče",
+      "svetlikNadDvermi": true,
+      "svetlikyBoky": 0,
+      "cistyVstupMm": 800,
+      "sirkaRamuMm": 100,
+      "prechodovePlechy": false,
+      "pruchoziSachta": false,
+      "atyp": false,
+      "vystupZamereni": false,
+      "rezervaProfilyPct": 0,
+      "rezervaPlechyPct": 0,
+      "montazZakladHod": 24,
+      "montazAtypHod": 0,
+      "projekceZakladHod": 50,
+      "projekceAtypHod": 0,
+      "zamecnikAtypKs": 0,
+      "zamecnikAtypKc": null,
+      "oplechOstatniKg": 10,
+      "oplechOstatniHod": 5,
+      "engineeringKs": 0,
+      "rezervaZakladPct": 0,
+      "rezervaPriplatkyPct": 0,
+      "volitelne": {
+       "prechodove": null,
+       "leseniVnitrni": true,
+       "leseniVnejsi": false,
+       "haky": true,
+       "zabradli": true,
+       "sokl": false
+      },
+      "priplatkyVyber": null,
+      "mnozstviPrepis": {
+       "MATERIÁL čelní stěna (bezpečnostní sklo čiré (zkušební))": 12
+      },
+      "volitelneVlastni": [
+       {
+        "nazev": "Ruční položka ze srpna",
+        "mnozstvi": 1,
+        "cena": 1500
+       }
+      ],
+      "nazvyPrepis": {},
+      "cenyPrepis": {},
+      "profily": {
+       "sloupek": {
+        "dim": "80x80",
+        "tl": 4
+       },
+       "precnikBok": {
+        "dim": "80x80",
+        "tl": 3
+       },
+       "sloupekPortal": {
+        "dim": "40x40",
+        "tl": 3
+       },
+       "precnikPortal": {
+        "dim": "80x40",
+        "tl": 3
+       },
+       "spojka": {
+        "dim": "70x70",
+        "tl": 3
+       },
+       "lemovani": {
+        "dim": "60x30",
+        "tl": 2
+       }
+      }
+     },
+     "fixes": true
+    },
+    "cenik": {
+     "ukazkove": true,
+     "prazdny": true,
+     "marze": 0.2,
+     "dph": 0.12,
+     "profilasKgKc": 100,
+     "powertechExt": 200,
+     "powertechInt": 200,
+     "montazniNosnik": 1000,
+     "lemovaniKgKc": 100,
+     "oplechPracKc": 500,
+     "nytKc": 10,
+     "spodniRamKc": 5000,
+     "cilkoKc": 100,
+     "montazHodKc": 500,
+     "vetraciMrizkaKc": 5000,
+     "transportKc": 5000,
+     "zastreseniM2Kc": 5000,
+     "oplechFasadaBmKc": 500,
+     "skloBokyKc": 2000,
+     "skloBokyNazev": "dvojsklo čiré (zkušební)",
+     "skloCelniKc": 1000,
+     "skloCelniNazev": "bezpečnostní sklo čiré (zkušební)",
+     "praceOplasteniKc": 530,
+     "plastKotvyKc": 5000,
+     "tmeleniKc": 500,
+     "striskaDvurKc": 10000,
+     "cestovniKc": 10000,
+     "cisteniKc": 10000,
+     "prechodoveKgKc": 500,
+     "leseniVnitrniKc": 1000,
+     "leseniVnejsiKc": 500,
+     "hakyKc": 530,
+     "zabradliKc": 5000,
+     "soklBmKc": 5000,
+     "sken3dKc": 5000,
+     "vystupZamereniKc": 10000,
+     "engineeringKc": 10000,
+     "projekceHodKc": 1000,
+     "statikaKc": 1000,
+     "statikaHod": 10,
+     "rezieKancelareKc": 50000,
+     "stavbyvedouciHod": 40,
+     "stavbyvedouciKc": 1000,
+     "atypPrirazka": 0.2,
+     "zamecnikAtypKc": 800,
+     "spojovaci": {
+      "riplockM10": 5,
+      "riplockM8": 5,
+      "nordlock": 10,
+      "nytM10": 5,
+      "nytM8": 5,
+      "nytM6": 5,
+      "tSrouby": 100,
+      "sroubM10": 5,
+      "sroubM8": 5,
+      "sroubM6": 5,
+      "zavitTyc": 200,
+      "chemKotva": 200
+     },
+     "lak": {
+      "rezim": "tomas",
+      "lakovnaProfilBm": 100,
+      "lakovnaListaBm": 120,
+      "lakovnaM2": 500,
+      "tomasProfilM2": 500,
+      "tomasListaBm": 50,
+      "tomasPlechKs": 50,
+      "tomasOplechM2": 500,
+      "tomasTercKs": 20
+     },
+     "priplatky": {
+      "vsgFolieM2": 500,
+      "sknM2": 500,
+      "medStrechaM2": 5000,
+      "ventilatorKc": 20000,
+      "zabranyDvereKc": 2000,
+      "madlaBmKc": 2000,
+      "leseniHlavaKc": 1000,
+      "montazDveriKc": 2000,
+      "prechMontKc": 1000,
+      "leseniHlavaFix": 0
+     },
+     "zkusebni": true,
+     "leseniVnitrniFix": 10000,
+     "leseniVnejsiFix": 10000
+    },
+    "proj": {
+     "zadani": {
+      "sekce": [
+       {
+        "key": "zamereni",
+        "nazev": "ZAMĚŘENÍ",
+        "doprava": {
+         "km": 0,
+         "pausal": 0
+        },
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Zaměření",
+          "typ": "hod",
+          "sazba": "zamereni",
+          "hodiny": 5,
+          "rezerva": 0,
+          "vyrazeno": true
+         },
+         {
+          "nazev": "Výstup",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 10,
+          "rezerva": 0,
+          "vyrazeno": true
+         }
+        ]
+       },
+       {
+        "key": "studie",
+        "nazev": "ST – STUDIE",
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Studie",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 24,
+          "rezerva": 0
+         },
+         {
+          "nazev": "Konzultace",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 4,
+          "rezerva": 0
+         }
+        ]
+       },
+       {
+        "key": "projednani",
+        "nazev": "PROJEDNÁNÍ STUDIE",
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Památkáři",
+          "typ": "fix",
+          "fixKey": "pamatkari"
+         },
+         {
+          "nazev": "Územní rozvoj",
+          "typ": "fix",
+          "fixKey": "uzemniRozvoj"
+         }
+        ]
+       },
+       {
+        "key": "dpz",
+        "nazev": "DPZ – DOKUMENTACE PRO POVOLENÍ ZÁMĚRU",
+        "doprava": {
+         "km": 0,
+         "pausal": 0
+        },
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Projektová dokumentace pro DOSS",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 52,
+          "rezerva": 0
+         },
+         {
+          "nazev": "Projektová dokumentace pro SÚ",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 6,
+          "rezerva": 0
+         },
+         {
+          "nazev": "Statika",
+          "typ": "hod",
+          "sazba": "statik",
+          "hodiny": 6,
+          "rezerva": 0
+         },
+         {
+          "nazev": "PBŘ",
+          "typ": "fix",
+          "fixKey": "pbr"
+         },
+         {
+          "nazev": "Studie osvitu (Praha 4 a 6)",
+          "typ": "fix",
+          "fixKey": "studieOsvitu"
+         },
+         {
+          "nazev": "Elektro projekt",
+          "typ": "fix",
+          "fixKey": "elektroDpz"
+         }
+        ]
+       },
+       {
+        "key": "ic",
+        "nazev": "IČ – INŽENÝRSKÁ ČINNOST",
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Inženýrská činnost",
+          "typ": "fix",
+          "fixKey": "ic"
+         }
+        ]
+       },
+       {
+        "key": "dps",
+        "nazev": "DPS – DOKUMENTACE PRO PROVEDENÍ STAVBY",
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Projekt pro DPS – stavební část",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 48,
+          "rezerva": 0
+         },
+         {
+          "nazev": "Statika",
+          "typ": "hod",
+          "sazba": "statik",
+          "hodiny": 6,
+          "rezerva": 0
+         },
+         {
+          "nazev": "Elektro projekt",
+          "typ": "fix",
+          "fixKey": "elektroDps"
+         }
+        ]
+       },
+       {
+        "key": "ezc",
+        "nazev": "EZC – EKONOMICKÁ ZADÁVACÍ ČÁST (celý projekt)",
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Ekonomická zadávací část",
+          "typ": "fix",
+          "fixKey": "ezc"
+         }
+        ]
+       },
+       {
+        "key": "kolaudace",
+        "nazev": "KOLAUDACE (pro 1 ks výtahu)",
+        "doprava": {
+         "km": 0,
+         "pausal": 0
+        },
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Kolaudace",
+          "typ": "fix",
+          "fixKey": "kolaudace"
+         }
+        ]
+       },
+       {
+        "key": "geodet",
+        "nazev": "GEODETICKÉ ZAMĚŘENÍ",
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Geodetické zaměření",
+          "typ": "fix",
+          "fixKey": "geodet"
+         }
+        ]
+       }
+      ],
+      "slevaPct": -5
+     },
+     "cenik": {
+      "ukazkove": true,
+      "prazdny": true,
+      "marze": 0.2,
+      "sazby": {
+       "projektant": 1000,
+       "statik": 1000,
+       "zamereni": 1000
+      },
+      "dopravaKmKc": 10,
+      "dopravaPausalKc": 1000,
+      "zkusebni": true
+     }
+    },
+    "techspec": {
+     "nazevAkce": "vestavba nové prosklené OCK výtahové šachty",
+     "hodnoty": {},
+     "extra": []
+    },
+    "kryci": {
+     "hodnoty": {
+      "zadrzne": "ANO 10 %",
+      "sazbaDph": "21 %",
+      "terminDodani": "12 týdnů od podpisu"
+     }
+    },
+    "sleva": {
+     "procenta": 0,
+     "schema": "",
+     "role": "Vedoucí obchodu",
+     "poznamka": "",
+     "stav": "",
+     "schvalil": "",
+     "schvalilKdy": ""
+    },
+    "zaokr": {
+     "krok": 100,
+     "smer": "nahoru"
+    },
+    "zaokrProj": {
+     "krok": 100,
+     "smer": "nahoru"
+    }
+   },
+   "zamek": {
+    "zamceno": true,
+    "kdy": "2026-08-08T09:12:00.000Z",
+    "typ": "nabidka",
+    "popis": "Cenová nabídka OCK (Word)",
+    "kdo": "Test Obchodník <obchodnik@priklad.cz>",
+    "otisk": {
+     "ockZaklad": 636000,
+     "slevaPct": 0,
+     "slevaKc": 0,
+     "ockPoSleve": 636000,
+     "projZaklad": 271200,
+     "slevaProjPct": 0,
+     "slevaProjKc": 0,
+     "projCelkem": 271200,
+     "celkemBezDph": 907200,
+     "dphOckSazba": 0.12,
+     "dphOckKc": 76320,
+     "dphProjSazba": 0.21,
+     "dphProjKc": 56952,
+     "celkemSDph": 1040472.0000000001,
+     "priplatky": 86000
+    },
+    "tisky": [
+     {
+      "kdy": "2026-08-08T09:12:00.000Z",
+      "typ": "nabidka",
+      "popis": "Cenová nabídka OCK (Word)",
+      "kdo": "Test Obchodník <obchodnik@priklad.cz>"
+     }
+    ]
+   }
+  },
+  {
+   "id": "vmuhkhpo71",
+   "nazev": "Varianta 2",
+   "zakaznik": "",
+   "pozn": "",
+   "ridici": false,
+   "vytvoreno": "2026-08-08T11:00:00.000Z",
+   "upraveno": "2026-08-08T11:00:00.000Z",
+   "data": {
+    "ock": {
+     "zadani": {
+      "prejezd": 0,
+      "zdvih": 14,
+      "prohluben": 0,
+      "sirka": 0,
+      "hloubka": 0,
+      "roztec": 1.25,
+      "rohoveSloupky": 4,
+      "nastupiste": 5,
+      "typSachty": "exteriérová",
+      "typPortalu": "zapuštěný",
+      "zaskleni": "na terče",
+      "svetlikNadDvermi": true,
+      "svetlikyBoky": 0,
+      "cistyVstupMm": 800,
+      "sirkaRamuMm": 100,
+      "prechodovePlechy": false,
+      "pruchoziSachta": false,
+      "atyp": false,
+      "vystupZamereni": false,
+      "rezervaProfilyPct": 0,
+      "rezervaPlechyPct": 0,
+      "montazZakladHod": 24,
+      "montazAtypHod": 0,
+      "projekceZakladHod": 50,
+      "projekceAtypHod": 0,
+      "zamecnikAtypKs": 0,
+      "zamecnikAtypKc": null,
+      "oplechOstatniKg": 10,
+      "oplechOstatniHod": 5,
+      "engineeringKs": 0,
+      "rezervaZakladPct": 0,
+      "rezervaPriplatkyPct": 0,
+      "volitelne": {
+       "prechodove": null,
+       "leseniVnitrni": true,
+       "leseniVnejsi": false,
+       "haky": true,
+       "zabradli": true,
+       "sokl": false
+      },
+      "priplatkyVyber": null,
+      "mnozstviPrepis": {
+       "MATERIÁL čelní stěna (bezpečnostní sklo čiré (zkušební))": 12
+      },
+      "volitelneVlastni": [
+       {
+        "nazev": "Ruční položka ze srpna",
+        "mnozstvi": 1,
+        "cena": 1500
+       }
+      ],
+      "nazvyPrepis": {},
+      "cenyPrepis": {},
+      "profily": {
+       "sloupek": {
+        "dim": "80x80",
+        "tl": 4
+       },
+       "precnikBok": {
+        "dim": "80x80",
+        "tl": 3
+       },
+       "sloupekPortal": {
+        "dim": "40x40",
+        "tl": 3
+       },
+       "precnikPortal": {
+        "dim": "80x40",
+        "tl": 3
+       },
+       "spojka": {
+        "dim": "70x70",
+        "tl": 3
+       },
+       "lemovani": {
+        "dim": "60x30",
+        "tl": 2
+       }
+      }
+     },
+     "fixes": true
+    },
+    "cenik": {
+     "ukazkove": true,
+     "prazdny": true,
+     "marze": 0.2,
+     "dph": 0.12,
+     "profilasKgKc": 100,
+     "powertechExt": 200,
+     "powertechInt": 200,
+     "montazniNosnik": 1000,
+     "lemovaniKgKc": 100,
+     "oplechPracKc": 500,
+     "nytKc": 10,
+     "spodniRamKc": 5000,
+     "cilkoKc": 100,
+     "montazHodKc": 500,
+     "vetraciMrizkaKc": 5000,
+     "transportKc": 5000,
+     "zastreseniM2Kc": 5000,
+     "oplechFasadaBmKc": 500,
+     "skloBokyKc": 2000,
+     "skloBokyNazev": "dvojsklo čiré (zkušební)",
+     "skloCelniKc": 1000,
+     "skloCelniNazev": "bezpečnostní sklo čiré (zkušební)",
+     "praceOplasteniKc": 530,
+     "plastKotvyKc": 5000,
+     "tmeleniKc": 500,
+     "striskaDvurKc": 10000,
+     "cestovniKc": 10000,
+     "cisteniKc": 10000,
+     "prechodoveKgKc": 500,
+     "leseniVnitrniKc": 1000,
+     "leseniVnejsiKc": 500,
+     "hakyKc": 530,
+     "zabradliKc": 5000,
+     "soklBmKc": 5000,
+     "sken3dKc": 5000,
+     "vystupZamereniKc": 10000,
+     "engineeringKc": 10000,
+     "projekceHodKc": 1000,
+     "statikaKc": 1000,
+     "statikaHod": 10,
+     "rezieKancelareKc": 50000,
+     "stavbyvedouciHod": 40,
+     "stavbyvedouciKc": 1000,
+     "atypPrirazka": 0.2,
+     "zamecnikAtypKc": 800,
+     "spojovaci": {
+      "riplockM10": 5,
+      "riplockM8": 5,
+      "nordlock": 10,
+      "nytM10": 5,
+      "nytM8": 5,
+      "nytM6": 5,
+      "tSrouby": 100,
+      "sroubM10": 5,
+      "sroubM8": 5,
+      "sroubM6": 5,
+      "zavitTyc": 200,
+      "chemKotva": 200
+     },
+     "lak": {
+      "rezim": "tomas",
+      "lakovnaProfilBm": 100,
+      "lakovnaListaBm": 120,
+      "lakovnaM2": 500,
+      "tomasProfilM2": 500,
+      "tomasListaBm": 50,
+      "tomasPlechKs": 50,
+      "tomasOplechM2": 500,
+      "tomasTercKs": 20
+     },
+     "priplatky": {
+      "vsgFolieM2": 500,
+      "sknM2": 500,
+      "medStrechaM2": 5000,
+      "ventilatorKc": 20000,
+      "zabranyDvereKc": 2000,
+      "madlaBmKc": 2000,
+      "leseniHlavaKc": 1000,
+      "montazDveriKc": 2000,
+      "prechMontKc": 1000,
+      "leseniHlavaFix": 0
+     },
+     "zkusebni": true,
+     "leseniVnitrniFix": 10000,
+     "leseniVnejsiFix": 10000
+    },
+    "proj": {
+     "zadani": {
+      "sekce": [
+       {
+        "key": "zamereni",
+        "nazev": "ZAMĚŘENÍ",
+        "doprava": {
+         "km": 0,
+         "pausal": 0
+        },
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Zaměření",
+          "typ": "hod",
+          "sazba": "zamereni",
+          "hodiny": 5,
+          "rezerva": 0,
+          "vyrazeno": true
+         },
+         {
+          "nazev": "Výstup",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 10,
+          "rezerva": 0,
+          "vyrazeno": true
+         }
+        ]
+       },
+       {
+        "key": "studie",
+        "nazev": "ST – STUDIE",
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Studie",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 24,
+          "rezerva": 0
+         },
+         {
+          "nazev": "Konzultace",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 4,
+          "rezerva": 0
+         }
+        ]
+       },
+       {
+        "key": "projednani",
+        "nazev": "PROJEDNÁNÍ STUDIE",
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Památkáři",
+          "typ": "fix",
+          "fixKey": "pamatkari"
+         },
+         {
+          "nazev": "Územní rozvoj",
+          "typ": "fix",
+          "fixKey": "uzemniRozvoj"
+         }
+        ]
+       },
+       {
+        "key": "dpz",
+        "nazev": "DPZ – DOKUMENTACE PRO POVOLENÍ ZÁMĚRU",
+        "doprava": {
+         "km": 0,
+         "pausal": 0
+        },
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Projektová dokumentace pro DOSS",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 52,
+          "rezerva": 0
+         },
+         {
+          "nazev": "Projektová dokumentace pro SÚ",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 6,
+          "rezerva": 0
+         },
+         {
+          "nazev": "Statika",
+          "typ": "hod",
+          "sazba": "statik",
+          "hodiny": 6,
+          "rezerva": 0
+         },
+         {
+          "nazev": "PBŘ",
+          "typ": "fix",
+          "fixKey": "pbr"
+         },
+         {
+          "nazev": "Studie osvitu (Praha 4 a 6)",
+          "typ": "fix",
+          "fixKey": "studieOsvitu"
+         },
+         {
+          "nazev": "Elektro projekt",
+          "typ": "fix",
+          "fixKey": "elektroDpz"
+         }
+        ]
+       },
+       {
+        "key": "ic",
+        "nazev": "IČ – INŽENÝRSKÁ ČINNOST",
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Inženýrská činnost",
+          "typ": "fix",
+          "fixKey": "ic"
+         }
+        ]
+       },
+       {
+        "key": "dps",
+        "nazev": "DPS – DOKUMENTACE PRO PROVEDENÍ STAVBY",
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Projekt pro DPS – stavební část",
+          "typ": "hod",
+          "sazba": "projektant",
+          "hodiny": 48,
+          "rezerva": 0
+         },
+         {
+          "nazev": "Statika",
+          "typ": "hod",
+          "sazba": "statik",
+          "hodiny": 6,
+          "rezerva": 0
+         },
+         {
+          "nazev": "Elektro projekt",
+          "typ": "fix",
+          "fixKey": "elektroDps"
+         }
+        ]
+       },
+       {
+        "key": "ezc",
+        "nazev": "EZC – EKONOMICKÁ ZADÁVACÍ ČÁST (celý projekt)",
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Ekonomická zadávací část",
+          "typ": "fix",
+          "fixKey": "ezc"
+         }
+        ]
+       },
+       {
+        "key": "kolaudace",
+        "nazev": "KOLAUDACE (pro 1 ks výtahu)",
+        "doprava": {
+         "km": 0,
+         "pausal": 0
+        },
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Kolaudace",
+          "typ": "fix",
+          "fixKey": "kolaudace"
+         }
+        ]
+       },
+       {
+        "key": "geodet",
+        "nazev": "GEODETICKÉ ZAMĚŘENÍ",
+        "prirazkaPct": null,
+        "polozky": [
+         {
+          "nazev": "Geodetické zaměření",
+          "typ": "fix",
+          "fixKey": "geodet"
+         }
+        ]
+       }
+      ],
+      "slevaPct": -5
+     },
+     "cenik": {
+      "ukazkove": true,
+      "prazdny": true,
+      "marze": 0.2,
+      "sazby": {
+       "projektant": 1000,
+       "statik": 1000,
+       "zamereni": 1000
+      },
+      "dopravaKmKc": 10,
+      "dopravaPausalKc": 1000,
+      "zkusebni": true
+     }
+    },
+    "techspec": {
+     "nazevAkce": "vestavba nové prosklené OCK výtahové šachty",
+     "hodnoty": {},
+     "extra": []
+    },
+    "kryci": {
+     "hodnoty": {
+      "zadrzne": "ANO 10 %",
+      "sazbaDph": "21 %",
+      "terminDodani": "12 týdnů od podpisu"
+     }
+    },
+    "sleva": {
+     "procenta": 0,
+     "schema": "",
+     "role": "Vedoucí obchodu",
+     "poznamka": "",
+     "stav": "",
+     "schvalil": "",
+     "schvalilKdy": ""
+    },
+    "zaokr": {
+     "krok": 100,
+     "smer": "nahoru"
+    },
+    "zaokrProj": {
+     "krok": 100,
+     "smer": "nahoru"
+    }
+   },
+   "zamek": null,
+   "klonZ": "vmuhkhpo20",
+   "klonZCislo": "2026 - OPR - CN - 0801",
+   "datum": "2026-08-08"
+  }
+ ],
+ "aktivni": "vmuhkhpo20",
+ "autor": "obchodnik@priklad.cz",
+ "autorJmeno": "Test Obchodník",
+ "upravil": "obchodnik@priklad.cz",
+ "uloRazitko": "2026-08-08T10:00:00.000Z"
+}

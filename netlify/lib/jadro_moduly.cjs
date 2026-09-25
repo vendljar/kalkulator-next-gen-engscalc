@@ -47,7 +47,20 @@ Object.assign(globalThis, require('../../src/schvalovani.js'));   // serverová 
 Object.assign(globalThis, require('../../src/zaokrouhleni.js'));
 Object.assign(globalThis, require('../../src/marze.js'));
 Object.assign(globalThis, require('../../src/kontroly.js'));
+/* MIGRACE ZAKÁZKY MUSÍ NA SERVERU BĚŽET STEJNĚ JAKO V PROHLÍŽEČI (A3 / N43,
+ * 25. 9. 2026). `importZakazka` volá přes `typeof` stráže i migrace krycího
+ * listu (kryci.js: zadržné „ANO 10 %" → Ano + procento, zahození sazby DPH;
+ * kryci_proj.js) a doplnění zápisníku a protokolu (poznamky.js, protokol.js).
+ * Bez těchto modulů server migroval MÉNĚ než prohlížeč: porovnání „migrované
+ * s migrovaným" (oprava N43 z v24.9.4) pak u zakázky se starším krycím listem
+ * v zamčené variantě zase hlásilo 409 „změnila by se data uzamčené nabídky".
+ * Doloženo fixturou zakazka_2026-08-08_odeslana_bez_otisku.json
+ * v src/test_zamek_historie.js. Pořadí jako v CORE build.py. */
+Object.assign(globalThis, require('../../src/poznamky.js'));
+Object.assign(globalThis, require('../../src/protokol.js'));
 Object.assign(globalThis, require('../../src/firma.js'));
+Object.assign(globalThis, require('../../src/kryci.js'));        // migrace krycího listu (A3 / N43)
+Object.assign(globalThis, require('../../src/kryci_proj.js'));
 Object.assign(globalThis, require('../../src/cenik.js'));
 Object.assign(globalThis, require('../../src/cenik_stari.js'));
 /* Řady ceníku (#181): server očišťuje zahraniční odchylky týmž kódem jako
