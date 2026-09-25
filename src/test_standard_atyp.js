@@ -128,7 +128,10 @@ const kalk = fs.readFileSync(__dirname + '/ui/kalk_ock.js', 'utf8');
   const zadaniBlok = (kalk.match(/const sl = \(obsah\)[\s\S]*?document\.getElementById\('inputs'\)[\s\S]*?\n\}/) || [''])[0];
   const checkboxy = zadaniBlok.match(/<input type="checkbox"[^>]*>/g) || [];
   const sOnclick = checkboxy.filter(c => /onclick=/.test(c));
-  test('v Zadání šachty se našla zaškrtávátka', checkboxy.length >= 3, checkboxy.length);
+  /* Ručně psaná zaškrtávátka (ostatní jdou přes inp()): Opláštění/ATYP.
+   * Od 25. 9. 2026 je můstek číselné pole (počet kusů), takže jich je o jedno
+   * méně — hlídá se, že nějaká zbyla, ne jejich počet. */
+  test('v Zadání šachty se našla zaškrtávátka', checkboxy.length >= 1, checkboxy.length);
   test('žádné zaškrtávátko v Zadání šachty neběží přes onclick', sOnclick.length === 0, sOnclick);
   test('všechna zaškrtávátka mají onchange',
     checkboxy.every(c => /onchange=/.test(c)), checkboxy.filter(c => !/onchange=/.test(c)));
