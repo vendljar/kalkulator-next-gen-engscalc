@@ -5668,14 +5668,15 @@
   {
    "id" : "362",
    "vlna" : "B",
-   "stav" : "ceka",
+   "stav" : "hotovo",
+   "hotovoV" : "v25.9.8",
    "dulezitost" : "stredni",
    "slozitost" : "M",
    "nazev" : "Kolo 16, dávka C: překlad kolem symbolů + Word PROJ se slevou a vlastními položkami",
    "proc" : "K14-N63, K16-N84 (česky zůstane „šířka × hloubka\", „€ … včetně DPH\", platební podmínky), K14-N64, K15-N66 (Word PROJ bez slevy a součtu, vlastní položky PROJ chybí).",
-   "detail" : "P3 zbytek: část hotová ve v25.9.5 (odstavec se symbolem přes slovník); zbývá překlad textu kolem symbolu bez celého odstavce ve slovníku, mezera a slovník u „včetně DPH\". P4: vlastní/katalogové položky PROJ v nabídce online i ve Wordu; sleva a součet ve Wordu PROJ (úkol pro šablonu + kontrola slevaWord pro PROJ). Po sloučení přegenerovat mutace šablon.",
-   "hotovoKdyz" : "Mutace z v12 bez českých odstavců kromě jmen a adres; Word PROJ se slevou nese částku slevy; test.",
-   "kde" : "`src/docxgen.js`, `src/preklad.js`, `src/nabidka_proj.js`, `src/ui/nabidka_proj_ui.js`",
+   "detail" : "HOTOVO v25.9.8 (větev k16-nalezy). P3: docxPrelozUseky — odstavec se symbolem, který slovník nezná celý, se přeloží po úsecích mezi symboly, tabulátory a zalomeními; každé jádro úseku zůstává ve svém běhu, dvojtečka/tečka podle originálu (FR „ :\"), všechno, nebo nic. Celý odstavec do prvního běhu jen bez tabulátoru a zalomení (docxMaOddelovace). Slovník: Email, Tel, Kontakt, Adresa stavby / projekt, včetně DPH, 1 varianta, řádek DPH se sazbou, platnost nabídky, splatnost faktur, obě věty dílčích daňových dokladů; „bez DPH\" → excl. VAT / zzgl. MwSt. (návrh ke kontrole J. V.). Mutace CN v12 i PROJ v2 do EN/DE/FR bez českých odstavců, XML bez vad. P4: vlastní a trvalé položky PROJ v online nabídce u své sekce, symboly PROJ_POLOZKY_NAVIC a PROJ_NAVIC_<SEKCE>; řádky slevy PROJ ve Wordu zmizí bez slevy; kontroly slevaWordProj a polozkyNavicWordProj (symboly šablony PROJ na pozadí). ZBÝVÁ na straně J. V.: šablona PROJ se součtem, slevou a {{PROJ_POLOZKY_NAVIC}}; přegenerovat jazykové mutace šablon.",
+   "hotovoKdyz" : "Splněno: test_docx_preklad +15 (bez opravy 13 selže), overit_sablona +12 na CN v12 (bez opravy 6), overit_nabidka_proj_word +3, test_k16_proj_word 30 (bez opravy padá), overit_nabidky_dph +1 (bez opravy selže); Word PROJ se slevou nese částku slevy na šabloně se symboly (syntetická šablona v testu).",
+   "kde" : "`src/docxgen.js`, `src/preklad.js`, `src/nabidka_proj.js`, `src/ui/nabidka_proj_ui.js`, `src/kontroly.js`, `src/ui/kontroly_ui.js`",
    "zavisi" : [
     {
      "id" : "350",
@@ -6196,6 +6197,10 @@
   {
    "text" : "Noc 25. 9. 2026 (engscalc, větev k16-nalezy), v25.9.7 — dávka B kola 16 (#361): P5 falešné neuložené změny a uložení bez čísla, P6 ověření zámku jen nad čísly, P7 dialogy zámku a kolize se jménem, P15 hledání podle adresy stavby, P14 zalomení ve Wordu. Ověřeno: sady v Node, pred_pushem (harnessy s šablonami CN v12 a PROJ v2), mutace serveru.",
    "hotovo" : true
+  },
+  {
+   "text" : "Noc 25. 9. 2026 (engscalc, větev k16-nalezy), v25.9.8 — dávka C kola 16 (#362): P3 překlad šablon po úsecích kolem symbolů (CN v12 i PROJ v2 do EN/DE/FR bez českých odstavců), P4 vlastní položky, sleva a součet v nabídce PROJ (symboly + kontroly; šablona PROJ čeká na J. V.). Ověřeno: sady v Node, harnessy šablon, pred_pushem.",
+   "hotovo" : true
   }
   ],
   "pravidla" : [
@@ -6282,7 +6287,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v25.9.7 (engscalc)",
+  "build" : "v25.9.8 (engscalc)",
   "stavKDatu" : "25. 9. 2026"
  },
  "_comment" : [

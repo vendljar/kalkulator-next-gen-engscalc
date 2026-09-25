@@ -1,8 +1,8 @@
-# Předávka — stav k 25. 9. 2026 v noci (dávka B kola 16)
+# Předávka — stav k 25. 9. 2026 v noci (dávky B a C kola 16)
 
 Na `main`: **v25.9.3** (+ oprava Node), tag `v25.9.3`.
-Na `test`: **v25.9.5**. Na `test-draft` a `k16-nalezy`: **v25.9.7** (dávka B
-kola 16) — čeká na pokyn J. V. k přenosu do `test`.
+Na `test`: **v25.9.5**. Na `test-draft` a `k16-nalezy`: **v25.9.8** (dávky B
+a C kola 16) — čeká na pokyn J. V. k přenosu do `test`.
 Roadmapa: `roadmapa/roadmap.json` (363 položek), publikovaná na
 https://claude.ai/artifact/RmrdBw1QbyyBxDLhZcExTq
 
@@ -25,8 +25,8 @@ https://claude.ai/artifact/RmrdBw1QbyyBxDLhZcExTq
 - Ověřeno: sady v Node 143/0, `nastroje/pred_pushem.sh`: 40 ze 42 harnessů
   se šablonami CN v12 + PROJ v2 (`overit_manual` a `overit_sod` se přeskočí —
   chybí příručka a šablony SoD, pred_pushem je hlásí jako ✗).
-  **Mutace serveru pro v25.9.7 se spouštěly po pushi** — výsledek viz
-  CHANGELOG další dávky (nové mutace P6, P7, P15; mutace B59 přepsaná).
+  Mutace serveru (spuštěné po pushi): **176 ze 176 chyceno** (nové P6, P7,
+  P15; mutace B59 přepsaná).
 
 ## Rozhodnutí udělaná v dávce B (k odsouhlasení J. V.)
 - Bez čísla nabídky se už NEUKLÁDÁ ani autosave dříve uložené zakázky, které
@@ -37,15 +37,28 @@ https://claude.ai/artifact/RmrdBw1QbyyBxDLhZcExTq
   neuloženou práci a sám se neukládá — stejně jako při otevření zakázky (V35).
 - Hledání bere „ß" jako „ss" (týká se i hledání variant).
 
+## Hotovo v25.9.8 (větev `k16-nalezy` → `test-draft`) — roadmapa #362
+- P3 (K14-N63, K16-N84): překlad šablon po úsecích mezi symboly, tabulátory
+  a zalomeními (`docxPrelozUseky`), každý úsek ve svém běhu, všechno, nebo nic.
+  CN v12 i PROJ v2 do EN/DE/FR bez českého odstavce. Nová hesla slovníku jsou
+  **návrh překladu ke kontrole J. V.** („bez DPH" → „excl. VAT" / „zzgl. MwSt.").
+- P4 (K14-N64, K15-N66): vlastní a trvalé položky PROJ v online nabídce u své
+  sekce; symboly `{{PROJ_POLOZKY_NAVIC}}` a `{{PROJ_NAVIC_<SEKCE>}}`; řádky slevy
+  PROJ ve Wordu zmizí bez slevy; kontroly `slevaWordProj` a `polozkyNavicWordProj`
+  (pravidel kontrol 21).
+- Nové testy: `src/test_k16_proj_word.js` (30), rozšíření test_docx_preklad,
+  overit_sablona, overit_nabidka_proj_word, overit_nabidky_dph, test_kontroly,
+  overit_lista.
+
 ## Další práce
-- Dávka C = roadmapa #362 (překlad kolem symbolů v šablonách, Word PROJ se
-  slevou a vlastními položkami), rozbor D = #363 — pokračuje se ve větvi
-  `k16-nalezy`. Zjištěno pro C: EN/DE/FR mutace CN v12 nechá česky 15
-  odstavců se symboly (hlavička „Číslo nabídky:" + tabulátory, platební
-  podmínky, „{{CENA_S_DPH}}<br>včetně DPH"), PROJ v2 12 odstavců. Symbol
-  a text dělí tabulátory a `<w:br/>` — překlad celého odstavce do prvního
-  `<w:t>` by rozbil rozvržení, potřeba překládat po úsecích mezi symboly
-  a zachovat běhy. Šablona PROJ v2 nemá symbol součtu ani slevy.
+- Rozbor D = #363 (P8 kapitoly nabídky, P9/P10 SoD a platební podmínky,
+  P11/P12 zahraniční PROJ a náklady) → `podklady/K16_ROZBOR_2026-09-25.md`.
+  Po něm sloučit `k16-nalezy` do `test-draft` a navrhnout J. V. smazání větve.
+- Úkol pro šablonu PROJ (J. V.): tabulka součtu se symboly `PROJ_CELKEM_BEZ_DPH`,
+  `PROJ_CENA_PRED_SLEVOU`, `PROJ_SLEVA_PROC`, `PROJ_SLEVA_KC`, `PROJ_DPH_KC`,
+  `PROJ_CELKEM_S_DPH` a odstavec `{{PROJ_POLOZKY_NAVIC}}`.
+- Po nasazení přegenerovat jazykové mutace šablon (dodané CN v12 EN/DE nesou
+  české odstavce z doby před P3).
 - #350 slovník SoD: čeká na soubory Sablona_SOD_REALIZACE/PROJEKCE od J. V.
 
 ## Poznámky pro další sezení
@@ -71,10 +84,10 @@ https://claude.ai/artifact/RmrdBw1QbyyBxDLhZcExTq
   jedné projde.
 
 ## Čeká na J. V.
-- Pokyn k přenosu v25.9.7 do `test`, v25.9.x do `main`.
+- Pokyn k přenosu v25.9.8 do `test`, v25.9.x do `main`.
 - Soubory SoD (#350); texty kapitol nabídky (#363/P8); rozhodnutí P9–P12;
   #355, #356 (můstky); #346 Netlify; #172 lokálně npm.
-- Odsouhlasit rozhodnutí z dávky B výš.
+- Odsouhlasit rozhodnutí z dávky B výš a překlady nových hesel z dávky C.
 
 ## Prompt pro nové sezení (větev k16-nalezy)
 Sezení založit nad `vendljar/kalkulator-next-gen-engscalc`, větev `k16-nalezy`;

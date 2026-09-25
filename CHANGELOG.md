@@ -8,6 +8,51 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v25.9.8 — dávka C kola 16: překlad šablon kolem symbolů, nabídka PROJ s vlastními položkami (25. 9. 2026)
+
+Roadmapa #362, větev `k16-nalezy`.
+
+- **Cizojazyčné šablony bez českých zbytků (P3 / K14-N63, K16-N84).**
+  Mutace šablony CN v12 do EN/DE/FR nechávala česky 15 odstavců se symbolem
+  (PROJ v2 dvanáct): hlavičku „Číslo nabídky: {{…}}", „Email:", „Tel:",
+  „{{CENA_S_DPH}} včetně DPH", jednotky u cen PROJ („/ měsíc", „dní")
+  a věty platebních podmínek. Odstavec se symbolem se teď překládá po
+  úsecích mezi symboly, tabulátory a zalomeními a každý úsek zůstává ve
+  svém běhu — tabulátory mezi popiskem a symbolem ani zalomení pod cenou se
+  nepohnou (dosavadní překlad celého odstavce by text přestěhoval přes ně).
+  Všechno, nebo nic: neznámý úsek nechá odstavec česky a průvodce šablon
+  ho vypíše. Nová hesla slovníku (platnost nabídky, splatnost, obě věty
+  dílčích daňových dokladů, řádek DPH se sazbou, „včetně DPH" …) jsou
+  **návrh překladu ke kontrole J. V.**; „bez DPH" je nově „excl. VAT" /
+  „zzgl. MwSt." (ladí s „including VAT" / „inkl. MwSt."). Výsledek: CN v12
+  i PROJ v2 do EN/DE/FR bez jediného českého odstavce, XML bez vad.
+  **Po nasazení je potřeba jazykové mutace v Nastavení → Šablony
+  přegenerovat** — dodané soubory CN v12 EN/DE nesou 6 českých odstavců.
+- **Vlastní položky v nabídce PROJ (P4 / K14-N64).** Položka přidaná do
+  sekce PROJ („+ přidat položku") nebo trvalá z ceníku PROJ byla v ceně
+  sekce, ale text nabídky o ní mlčel. Online nabídka ji vypíše pod popisem
+  ceny své sekce; pro Word jdou symboly `{{PROJ_POLOZKY_NAVIC}}` (souhrnně)
+  a `{{PROJ_NAVIC_<SEKCE>}}`.
+- **Sleva a součet ve Wordu PROJ (P4 / K15-N66).** Aplikace součet a slevu
+  posílá (`PROJ_CELKEM_BEZ_DPH`, `PROJ_CENA_PRED_SLEVOU`, `PROJ_SLEVA_PROC`,
+  `PROJ_SLEVA_KC`, `PROJ_DPH_KC`, `PROJ_CELKEM_S_DPH`), šablona PROJ v2 je
+  nemá. Řádky slevy PROJ ve wordové tabulce zmizí, když sleva není. Nové
+  kontroly před nabídkou „Sleva projekce se ve Wordu neukáže" a „Vlastní
+  položky projekce se ve Wordu neukážou". **Úkol pro šablonu PROJ (J. V.):**
+  doplnit tabulku součtu se symboly výš a `{{PROJ_POLOZKY_NAVIC}}`.
+
+Testy (každý bod bez opravy selže): `test_docx_preklad` +15,
+`overit_sablona` +12 (šablona CN v12, EN/DE/FR), `overit_nabidka_proj_word`
++3, nová sada `src/test_k16_proj_word.js` 30, `overit_nabidky_dph` +1;
+počet pravidel kontrol 19 → 21.
+
+Mutace serveru nad v25.9.7 (spuštěné po pushi dávky B): **176 ze 176
+chyceno** — i nové P6 (chybějící jádro dokumentu), P7 (jméno „kdo uložil"
+od klienta), P15 (nedoplněné adresy rejstříku) a přepsaná B59. Dávka C
+server ani jádro výpočtu nemění, mutační běh se pro ni neopakuje.
+
+---
+
 ## v25.9.7 — dávka B kola 16: neuložené změny, ověření zámku, dialogy, adresa, zalomení ve Wordu (25. 9. 2026)
 
 Roadmapa #361, větev `k16-nalezy`.
