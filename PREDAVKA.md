@@ -42,3 +42,35 @@ https://claude.ai/artifact/RmrdBw1QbyyBxDLhZcExTq
 - Pokyn k přenosu v25.9.6 do `test`, v25.9.x do `main`.
 - Soubory SoD (#350); texty kapitol nabídky (#363/P8); rozhodnutí P9–P12;
   #355, #356 (můstky); #346 Netlify; #172 lokálně npm.
+
+## Prompt pro nové sezení (větev k16-nalezy)
+Sezení založit nad `vendljar/kalkulator-next-gen-engscalc`, větev `k16-nalezy`;
+přiložit šablony CN v12 (CZ/EN/DE/FR), Sablona_NABIDKA_PROJ_v2_opravena.docx
+a případně Sablona_SOD_REALIZACE.docx + Sablona_SOD_PROJEKCE.docx.
+
+```
+Pracuješ na Kalkulator Next Gen ve větvi k16-nalezy (repo vendljar/kalkulator-next-gen-engscalc).
+Pravidla větví (schváleno J. V. 25. 9. 2026, viz CLAUDE.md):
+- k16-nalezy je DOČASNÁ pracovní větev jen pro dávky B, C a rozbor D kola 16
+  (roadmapa #361–#363). Pracuj a pushuj v ní; po každé ucelené dávce ji převeď
+  do test-draft (fast-forward nebo merge). Po dokončení #361–#363 ji sluč do
+  test-draft a navrhni J. V. smazání (mazání větví z cloudu nejde — smaže ji on).
+- Trvalá předávací větev je test-draft; PREDAVKA.md veď v té větvi, kde pracuješ,
+  a při převodu ji přenes do test-draft.
+- Do test a main nic bez pokynu J. V.
+Než začneš:
+1. git fetch origin k16-nalezy test-draft && git checkout -B k16-nalezy origin/k16-nalezy
+2. Přečti CLAUDE.md a PREDAVKA.md (v této větvi) a skill kalkulator-next-gen.
+3. Připrav prostředí: symlink node_modules/playwright → $(npm root -g)/playwright;
+   přiložené šablony dej do složky podkladů a pouštěj testy s KNG_PODKLADY=<složka>
+   (PROJ šablonu pojmenuj Sablona_NABIDKA_PROJ.docx).
+4. Ověř výchozí stav: ADMIN_EMAIL=spravce@priklad.cz ./spust_testy.sh (má být 0 selhání).
+Úkol: dávka B z roadmapy #361 — P5 (falešné „neuložené změny", uložení bez čísla),
+P6 (ověření zámku jen nad penězi a množstvím), P7 (texty dialogů zámku a kolize verzí
+se jménem), P15 (hledání podle adresy stavby), P14/K16-N81 (zalomení řádků ve Wordu).
+U každého bodu: test, který bez opravy selže → oprava → vlastní commit. Pak build,
+nastroje/pred_pushem.sh, mutace (jen jeden běh naráz, na pozadí nástroje), CHANGELOG,
+roadmapa, PREDAVKA.md, push do k16-nalezy a převod do test-draft.
+Na konci tabulka úkolů ✅/⬜ a stav kontextu (get_session → context_usage).
+Pokračuj dávkou C (#362) a rozborem D (#363), dokud je kontext pod 60 %.
+```
