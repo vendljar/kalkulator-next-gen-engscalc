@@ -1,8 +1,7 @@
 # Předávka — stav k 25. 9. 2026 pozdě večer
 
 Na `main`: **v25.9.3** (+ oprava Node), tag `v25.9.3`.
-Na `test`: **v25.9.4** (přeneseno na pokyn J. V.).
-Na `test-draft`: **v25.9.5** — čeká na pokyn J. V. k přenosu do `test`.
+Na `test` i `test-draft`: **v25.9.5** (přeneseno na pokyn J. V. 25. 9. večer).
 Roadmapa: `roadmapa/roadmap.json` (359 položek), publikovaná na
 https://claude.ai/artifact/RmrdBw1QbyyBxDLhZcExTq
 
@@ -33,8 +32,22 @@ https://claude.ai/artifact/RmrdBw1QbyyBxDLhZcExTq
 - Komentář s doslovnou uzavírací značkou skriptu v src/ rozbije celou aplikaci.
 
 ## Čeká na J. V.
-- Pokyn k přenosu v25.9.5 do `test` (a pak `main`).
+- Pokyn k přenosu v25.9.5 z `test` do `main`.
 - Soubory SoD pro #350; #355, #356 (můstky); #346 Netlify; #172 lokálně npm.
+
+## Kolo 16 (podklady J. V. 25. 9. večer: PROMPT_PARALELNI_VETEV_K16.md, VYHODNOCENI_TESTU_KOLO16, test_obchodnik16.mjs)
+- Prompt počítá s větví `k16-nalezy` z 4f714a3 (v25.9.3) — dnes zastaralé:
+  v25.9.4/9.5 už sahají do schvalovani.js, zakazky.mjs, uloziste.js,
+  kontroly.js, docxgen.js, techspec.js (P1, P2, P3 by kolidovaly).
+- test_obchodnik16 nad v25.9.5: 21/22, padá jen S5 (vedoucí otevře a uloží
+  „čeká" s rolí Administrátor → „schváleno automaticky", schvalil prázdné).
+  → P1 je skutečná VYSOKÁ chyba i po #341.
+- P3 z části hotové v25.9.5 (odstavec se symbolem přes slovník); run-level
+  překlad kolem symbolů + „včetně DPH" zbývá.
+- Soubor audit-2026-09-24-zapis-sezeni.md je z JINÉHO projektu (Portfolio
+  Tracker / Lovable), s kalkulátorem nesouvisí.
+- Návrh pořadí: dávka A (P1, P2, P13, P16-N89), B (P5, P6, P7, P15, P14-N81),
+  C (P3 zbytek + P4), rozbor D (P8, P9, P10, P11, P12) do podklady/K16_ROZBOR.
 
 ## Další krok (lze spustit hned)
 - #345 přihlašování (B75–B83); #319 revize; N50 — potvrdit, že SKN se po
