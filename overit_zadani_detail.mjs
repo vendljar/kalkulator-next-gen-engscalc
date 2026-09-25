@@ -191,15 +191,19 @@ const n58 = await p.evaluate(() => {
   const lbl = t => [...document.querySelectorAll('#inputs .row > label')].find(l => l.textContent.trim() === t);
   const sloupec = t => { const l = lbl(t); return l ? l.parentElement.parentElement : null; };
   const poradi = (kontejner, t) => kontejner ? [...kontejner.querySelectorAll(':scope > .row > label')].map(l => l.textContent.trim()).indexOf(t) : -1;
-  const s3 = sloupec('Počet sloupků'), s4 = sloupec('Čistý vstup – šířka');
+  const s2 = sloupec('Počet nástupišť'), s3 = sloupec('Typ portálů'), s4 = sloupec('Čistý vstup – šířka');
   const nad = lbl('Světlík nad šachetními dveřmi');
   const sel = nad && nad.parentElement.querySelector('select');
   const volby = sel ? [...sel.options].map(o => o.textContent.trim()) : [];
   const out = {
     stejnySloupec: !!s3 && sloupec('Světlík nad šachetními dveřmi') === s3 && sloupec('Světlíky na bocích dveří') === s3,
-    poradi3: [poradi(s3, 'Počet sloupků'), poradi(s3, 'Světlík nad šachetními dveřmi'), poradi(s3, 'Světlíky na bocích dveří')],
+    poradi3: [poradi(s3, 'Typ portálů'), poradi(s3, 'Světlík nad šachetními dveřmi'), poradi(s3, 'Světlíky na bocích dveří')],
+    /* 25. 9. 2026: nástupiště → sloupky → stříška ve 2. sloupci, typ portálů
+     * za opláštěním ve 3., přechodové plechy za čistým vstupem ve 4. */
+    poradi2: [poradi(s2, 'Vnitřní hloubka'), poradi(s2, 'Počet nástupišť'), poradi(s2, 'Počet sloupků'), poradi(s2, 'Stříška nad nástupiště')],
+    poradi3b: [poradi(s3, 'Opláštění'), poradi(s3, 'Typ portálů')],
     mustekV4: !!s4 && sloupec('Můstek mezi budovou a OCK') === s4,
-    poradi4: [poradi(s4, 'Čistý vstup – šířka'), poradi(s4, 'Můstek mezi budovou a OCK'), poradi(s4, 'ATYP (nestandardní zakázka)')],
+    poradi4: [poradi(s4, 'Čistý vstup – šířka'), poradi(s4, 'Přechodové plechy'), poradi(s4, 'Můstek mezi budovou a OCK'), poradi(s4, 'ATYP (nestandardní zakázka)')],
     zadneZaskrtavatko: !document.querySelector('#inputs input[type=checkbox][onchange*="svetlikNadDvermi"]'),
     volby, vybrano: sel ? sel.value : '',
   };
@@ -213,10 +217,14 @@ const n58 = await p.evaluate(() => {
   set('Z.svetlikyBoky', 0); nadDvermiSet('plech'); render();
   return out;
 });
-zkus('N58: světlík nad dveřmi je ve 3. sloupci mezi počtem sloupků a světlíky na bocích',
+zkus('25. 9.: 2. sloupec hloubka → počet nástupišť → počet sloupků → stříška',
+  n58.poradi2.every((x, i, a) => x >= 0 && (i === 0 || a[i - 1] + 1 === x)), JSON.stringify(n58.poradi2));
+zkus('25. 9.: typ portálů je ve 3. sloupci hned za opláštěním',
+  n58.poradi3b[0] >= 0 && n58.poradi3b[1] === n58.poradi3b[0] + 1, JSON.stringify(n58.poradi3b));
+zkus('N58: světlík nad dveřmi je ve 3. sloupci mezi typem portálů a světlíky na bocích',
   n58.stejnySloupec && n58.poradi3[0] >= 0 && n58.poradi3[0] < n58.poradi3[1] && n58.poradi3[1] < n58.poradi3[2], JSON.stringify(n58));
-zkus('N58: můstek je ve 4. sloupci za čistým vstupem a před ATYP',
-  n58.mustekV4 && n58.poradi4[0] < n58.poradi4[1] && n58.poradi4[1] < n58.poradi4[2], JSON.stringify(n58.poradi4));
+zkus('4. sloupec: čistý vstup → přechodové plechy → můstek → ATYP',
+  n58.mustekV4 && n58.poradi4.every((x, i, a) => x >= 0 && (i === 0 || a[i - 1] < x)), JSON.stringify(n58.poradi4));
 zkus('N58: menu nabízí bez / sklo / plech / materiál opláštění / zajistí stavba',
   n58.volby.join('|') === 'bez|sklo|plech|materiál opláštění|zajistí stavba', n58.volby.join('|'));
 zkus('N58: staré zaškrtávátko zmizelo', n58.zadneZaskrtavatko);

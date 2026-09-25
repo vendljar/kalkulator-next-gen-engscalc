@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v24.9.7 · sestaveno 24. 9. 2026 · nahrazuje příručku ze 17. 9. 2026 (v17.9.3)",
+  "verze": "Platí pro aplikaci v25.9.1 · sestaveno 25. 9. 2026 · nahrazuje příručku ze 17. 9. 2026 (v17.9.3)",
 
   "uvod": [
     {
@@ -250,10 +250,10 @@
             { "popisek": "ATYP (nestandardní zakázka)", "cely": ".row", "text": "Zaškrtávátko zůstalo, ale políčko na procenta přirážky vedle něj **zmizelo** — viz kapitola 14." }
           ]
         },
-        { "typ": "text", "text": "Mezi způsobem zasklení a počtem sloupků přibyl přepínač **Opláštění**: **jednotné (standard)**, nebo **po stěnách A–D**. Většina zakázek zůstává u jednotného; co umí režim po stěnách, je v kapitole 13." },
+        { "typ": "text", "text": "Mezi způsobem zasklení a typem portálů přibyl přepínač **Opláštění**: **jednotné (standard)**, nebo **po stěnách A–D**. Většina zakázek zůstává u jednotného; co umí režim po stěnách, je v kapitole 13." },
         { "typ": "podnadpis", "text": "Co je nad dveřmi a vedle nich" },
-        { "typ": "text", "text": "**Světlík nad šachetními dveřmi** už není zaškrtávátko. Stojí ve třetím sloupci mezi *Počtem sloupků* a *Světlíky na bocích dveří* a je to rolovací menu s volbami **bez, sklo, plech, materiál opláštění, zajistí stavba**. Pole nad dveřmi (šířka stěny × výška od horní hrany dveří ke stropu) se tak vždycky ocení tím, co tam opravdu bude: *sklo* je dřívější světlík, *plech* je lakované plechové nadpraží, *materiál opláštění* je materiál stěny a *zajistí stavba* se neoceňuje, ale uvede se ve specifikaci. Při volbě *bez* upozorní kontrola před nabídkou, že nad dveřmi zůstane otvor. Nová nabídka začíná s plechem." },
-        { "typ": "text", "text": "Když zvolíte **světlíky na bocích dveří**, objeví se pod nimi **Výplň boků dveří** se stejnými volbami (sklo, plech, materiál opláštění, zajistí stavba). **Můstek mezi budovou a OCK** se přestěhoval do čtvrtého sloupce, na místo bývalého zaškrtávátka světlíku. Starší zakázky se nemění: zaškrtnutý světlík je teď *sklo*, nezaškrtnutý *bez*." },
+        { "typ": "text", "text": "**Světlík nad šachetními dveřmi** už není zaškrtávátko. Stojí ve třetím sloupci mezi *Typem portálů* a *Světlíky na bocích dveří* a je to rolovací menu s volbami **bez, sklo, plech, materiál opláštění, zajistí stavba**. Pole nad dveřmi (šířka stěny × výška od horní hrany dveří ke stropu) se tak vždycky ocení tím, co tam opravdu bude: *sklo* je dřívější světlík, *plech* je lakované plechové nadpraží, *materiál opláštění* je materiál stěny a *zajistí stavba* se neoceňuje, ale uvede se ve specifikaci. Při volbě *bez* upozorní kontrola před nabídkou, že nad dveřmi zůstane otvor. Nová nabídka začíná s plechem." },
+        { "typ": "text", "text": "Když zvolíte **světlíky na bocích dveří**, objeví se pod nimi **Výplň boků dveří** se stejnými volbami (sklo, plech, materiál opláštění, zajistí stavba). **Můstek mezi budovou a OCK** se přestěhoval do čtvrtého sloupce, na místo bývalého zaškrtávátka světlíku. Od 25. 9. je ve druhém sloupci pod sebou *Počet nástupišť*, *Počet sloupků* a *Stříška*, *Typ portálů* je ve třetím sloupci hned pod *Opláštěním* a *Přechodové plechy* ve čtvrtém pod *Čistým vstupem*. Starší zakázky se nemění: zaškrtnutý světlík je teď *sklo*, nezaškrtnutý *bez*." },
         { "typ": "podnadpis", "text": "Tři drobnosti při psaní čísel" },
         { "typ": "text", "text": "**Číselná pole už nemají klikací šipky.** Malé šipečky nahoru/dolů se daly trefit omylem při rolování a hodnota se tiše změnila. Číslo se teď píše, nebo se mění šipkami na klávesnici." },
         { "typ": "text", "text": "**Nula se v poli sama označí.** Kliknete do pole s nulou a nula se vybere celá — můžete rovnou psát, nemusíte ji mazat." },
@@ -765,7 +765,7 @@
           "typ": "ram", "nadpis": "Než něco nahlásíte: máte nejnovější verzi?",
           "odstavce": [
             "V hlavičce svítí číslo verze a pokud je na serveru novější, aplikace na to sama upozorní. Obnovte stránku (`Ctrl+F5`) — rozpracovaná nabídka se předtím uloží.",
-            "Tahle příručka platí k **v24.9.7**. Aplikace se mění několikrát denně, takže když se chování liší od popisu, může to být i tím."
+            "Tahle příručka platí k **v25.9.1**. Aplikace se mění několikrát denně, takže když se chování liší od popisu, může to být i tím."
           ]
         }
       ]

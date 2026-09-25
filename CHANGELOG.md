@@ -8,6 +8,22 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v25.9.1 — Zadání šachty: pořadí polí (25. 9. 2026)
+
+Zadání J. V. obrázkem:
+
+- 2. sloupec: vnitřní šířka, hloubka, **počet nástupišť** (na místě typu
+  portálů), **počet sloupků**, stříška.
+- 3. sloupec: způsob zasklení, opláštění, **typ portálů** (na místě počtu
+  sloupků), světlík nad dveřmi, světlíky na bocích.
+- 4. sloupec: rozteč, šířka rámu, čistý vstup, **přechodové plechy**,
+  můstek, ATYP.
+
+Výpočet ani data se nemění. Harness `overit_zadani_detail` hlídá pořadí
+ve všech třech sloupcích.
+
+---
+
 ## v24.9.7 — dávka N58 (24. 9. 2026 večer): co je nad dveřmi a vedle nich
 
 Rozhodnutí J. V. 24. 9. večer (vizuální návrh odsouhlasen: výchozí plech,

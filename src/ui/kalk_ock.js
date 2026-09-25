@@ -133,8 +133,11 @@ function renderInputs() {
       + sl(
         inp('Z.sirka', { l: 'Vnitřní šířka', u: 'm' })
         + inp('Z.hloubka', { l: 'Vnitřní hloubka', u: 'm' })
-        + inp('Z.typPortalu', { type: 'sel', l: 'Typ portálů', o: [['zapuštěný', 'zapuštěný'], ['předsazený', 'předsazený']] })
+        /* Pořadí polí 25. 9. 2026 (zadání J. V. obrázkem): nástupiště na místě
+         * typu portálů, pod ně počet sloupků; typ portálů ve 3. sloupci
+         * za opláštěním, přechodové plechy ve 4. sloupci za čistým vstupem. */
         + nastupisteRadek()
+        + inp('Z.rohoveSloupky', { l: 'Počet sloupků', step: 1, u: 'ks' })
         /* Popisný text pod polem se 10. 9. 2026 přestěhoval do Detailu výpočtu
          * (zadání J. V.); v zadání zůstal jako tooltip, aby nezabíral řádek. */
         + inp('Z.striskaKs', {
@@ -152,9 +155,9 @@ function renderInputs() {
               <option value="standard" ${oplPoStenach() ? '' : 'selected'}>jednotné (standard)</option>
               <option value="poStenach" ${oplPoStenach() ? 'selected' : ''}>po stěnách A–D</option>
             </select><span class="u"></span></div>`
-        + inp('Z.rohoveSloupky', { l: 'Počet sloupků', step: 1, u: 'ks' })
+        + inp('Z.typPortalu', { type: 'sel', l: 'Typ portálů', o: [['zapuštěný', 'zapuštěný'], ['předsazený', 'předsazený']] })
         /* CO JE NAD DVEŘMI A VEDLE NICH (N58, N58b, zadání J. V. 24. 9. 2026).
-         * Světlík nad dveřmi se přesunul sem (mezi sloupky a boční světlíky)
+         * Světlík nad dveřmi se přesunul sem (mezi typ portálů a boční světlíky)
          * a je z něj rolovací menu výplně. Hodnota se čte přes
          * nadDvermiVypln(): stará zakázka bez volby ukáže to, co znamenalo
          * její zaškrtávátko (sklo / bez). */
@@ -165,12 +168,12 @@ function renderInputs() {
         + inp('Z.svetlikyBoky', { type: 'sel', l: 'Světlíky na bocích dveří', o: [[0, 'bez'], [1, 'na jedné straně'], [2, 'na obou stranách']] })
         + (Z.svetlikyBoky > 0
           ? inp('Z.bokyVypln', { type: 'sel', l: 'Výplň boků dveří', o: BOKY_VYPLN_POPISY })
-          : '')
-        + inp('Z.prechodovePlechy', { type: 'check', l: 'Přechodové plechy' }))
+          : ''))
       + sl(
         inp('Z.roztec', { l: 'Svislá rozteč příčníků', u: 'm' })
         + inp('Z.sirkaRamuMm', { l: 'Šířka rámu dveří', step: 5, u: 'mm' })
         + inp('Z.cistyVstupMm', { l: 'Čistý vstup – šířka', step: 10, u: 'mm' })
+        + inp('Z.prechodovePlechy', { type: 'check', l: 'Přechodové plechy' })
         /* Můstek (#163, 21. 8. 2026). Do výpočtu nevstupuje — je to vstup pro
          * kontrolu standardu a pro technickou specifikaci. Rozměry se ptají,
          * jen když můstek je; prázdné pole znamená „nevyplněno", ne nulu.
