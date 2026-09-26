@@ -8,6 +8,75 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v26.9.1 — testovací sekvence z hloubkového testu (A1–A5) a opravy B72, B75–B78, N43 na serveru (26. 9. 2026)
+
+Roadmapa #364 (nová), #342 hotovo, #345 z části. Zadání J. V. 25. 9. 2026
+„testovací sekvence do repa": každý nález se nejdřív ověřil v aktuálním kódu
+(Pravidlo 0), každý nový test má doloženo, že před opravou selže.
+
+**Pravidlo 0 — už opravené dřív, přeskočeno:** B69, B70, B71, N47, N53, N54
+(v25.9.4), B73, B74, N43 klient, N44 (v24.9.4), N45, N51 (v24.9.6), N56,
+N57 (v24.9.7), N48, N49, N50, N52, N55 (v25.9.5). **N46 se neopravuje** bez
+pokynu J. V. — fuzz rozdíl jen hlásí (INFO), „čeká na rozhodnutí J. V.".
+
+**Opraveno:**
+- **N43 na serveru — server migruje zakázku stejnými moduly jako prohlížeč.**
+  `netlify/lib/jadro_moduly.cjs` neměl `kryci.js`, `kryci_proj.js`,
+  `poznamky.js` a `protokol.js`; starší odeslaná zakázka se po otevření
+  a uložení v prohlížeči (kde migrace doběhly) na serveru porovnala s
+  nemigrovanou podobou a skončila 409 „data uzamčené varianty se změnila".
+- **B72 / P4 — obnova ze zálohy prochází stejnými kontrolami jako uložení.**
+  Nová `netlify/lib/zakazka_kontrola.mjs`: `zakazkaPrijmi()` +
+  `zakazkaServerKontrola(stara, nova, relace, {rezim})` volají `/api/zakazky`
+  i `obnova.mjs`. Obnova už nepustí slevu pod marží ani „schválenou"
+  vymyšleným jménem, nepřepíše číslo odeslané nabídky, nezapíše značky
+  ukázkových dat, doplní chybějící ověření zámku a nechá razítka i autora
+  být. Sleva a marže se porovnávají proti migrované uložené podobě (jinak
+  uložení zakázky z doby před 12. 8. razítkovalo slevu znovu).
+- **B75–B78 — přihlášení jako celek.** Nad limitem adresy 429 PŘED ověřením
+  hesla (scrypt se nepočítá); IPv6 po /64; úspěch cizího účtu počítadlo
+  adresy nenuluje; `hesloVerze` při založení, vypnutí i archivaci účtu
+  (stará cookie neplatí); brzda i u změny vlastního hesla; odhlášení odmítá
+  cizí Origin, `null` a formulářový Content-Type.
+
+**Nové testy (A1–A5), každý s pojistkou proti prázdnému testu:**
+- A1 `src/test_fuzz_invarianty.js` — deterministický fuzz (seed 20260925,
+  2000 zadání OCK a PROJ): žádné NaN, součty, tisíce, DPH a zahraniční
+  řada, jedinečné klíče (N52), volitelné položky (delta), „nepočítat",
+  přepis nákladu, po stěnách vs. jednotné, zrcadlení stěn, N46 jen INFO.
+  Pojistka: 8 záměrných rozbití jádra, všech 8 chyceno.
+- A2 `src/test_escape.js` — hlídač ČLENSKÝCH VÝRAZŮ bez ohledu na jméno
+  (přesně tvar B69: `Z.typPortalu`, `C.dph`, `p.hodiny`), 63 prověřených
+  výrazů s důvodem. `overit_xss.mjs` — otráví VŠECHNA pole zakázky i ostatní
+  zdroje dat (firma, profil, účty, rejstřík, kartotéka, zálohy, žádosti,
+  standard), obě role, 13 záložek + všechny panely Nastavení; 207 kontrol.
+  Pojistka: čtyři rozbitá místa → 16 selhání se jmény cest.
+- A3 `src/test_zamek_historie.js` + `src/fixtury/` (3 historické tvary
+  zakázek z 8. 8., 17. 9. a 23. 9.): klient otevře → server uloží (200) →
+  změna 409 → obnova nanečisto bez hlášky o zámku. Před opravou jádra
+  serveru 3 selhání.
+- A4 `nastroje/kontrola_udaju.py` + `nastroje/povolene_kontakty.txt` —
+  e-maily, telefony a tajemství mimo povolený seznam (B79 ponecháno
+  rozhodnutím J. V., výskyty jsou v seznamu). Pojistka: podstrčený soubor
+  s 5 nálezy → 5 hlášeno.
+- A5 `nastroje/testovaci_kolo.sh` — celá sekvence jedním příkazem
+  (sestavení → všechny sady a harnessy → mutace jádra → mutace serveru →
+  statické kontroly → souhrn s počty, nenulový kód). `pred_pushem.sh` je
+  obal, CI volá tentýž skript — žádný druhý seznam kroků.
+- `netlify/test_prihlaseni.mjs` (43; proti kódu před opravou 21 selhalo),
+  9 testů B72 v `test_obnova.mjs` (před P4 4 + 3 selhaly), 14 nových
+  mutací serveru (P4 5, B75–B78 9), `test_mutace.mjs` čte cíl mutace ze
+  seznamu (po přesunu B59 do lib měřil prázdno).
+
+**Nálezy mimo zadání (k rozhodnutí J. V.):** #365 zakázka s neznámým
+rozměrem profilu (mimo tabulku JEKLY) nejde otevřít; skutečný telefon
+a jméno kolegy v `overit_nabidka_proj_word.mjs` (dočasně v povoleném
+seznamu, viz #346). CSP bez `'unsafe-inline'` zůstává jen návrhem.
+
+Ověřeno: OVERENO_DOPLNIT
+
+---
+
 ## v25.9.6 — dávka A kola 16: role slevy, zábrana nesmyslné nabídky, náhled (25. 9. 2026)
 
 - **Sleva nad strop už nejde „schválit" volbou role (P1 / K16-N73, K16-N74).**
