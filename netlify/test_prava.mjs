@@ -602,6 +602,30 @@ test('vypnutý účet nepracuje dál ani s už vydanou relací',
 test('vypnutý účet se nedozví ani, kdo je přihlášen',
   (await get(ja, 'http://x/api/ja', cVypnuty)).status === 401);
 
+/* DVĚ NEZÁVISLÉ POJISTKY, DVA TESTY (26. 9. 2026). Vypnutí přes /api/uzivatele
+ * od B76 zvedá i verzi hesla, takže tři testy výš by prošly i bez kontroly
+ * příznaku `aktivni` — relaci by odmítla verze. Mutace „vypnutý účet se
+ * nepozná" (if (false) místo if (ucet.aktivni === false)) proto v prvním kole
+ * 26. 9. 2026 přežila (186 z 187). Tady se účet vypne PŘÍMO V ÚLOŽIŠTI bez
+ * změny verze — tak vypadá záznam upravený ručně, obnovený ze zálohy nebo
+ * vypnutý starší cestou — a relace musí skončit jen na tom příznaku. */
+await post(uzivatele, 'http://x/api/uzivatele',
+  { akce: 'zaloz', email: 'vypnuty.primo@example.com', jmeno: 'Vypnutý v úložišti',
+    role: 'Obchodník', heslo: 'VypnutyHeslo2' }, cAdmin);
+const cVypnutyPrimo = await prihlas('vypnuty.primo@example.com', 'VypnutyHeslo2');
+test('účet vypnutý přímo v úložišti: před vypnutím pracuje',
+  (await get(ja, 'http://x/api/ja', cVypnutyPrimo)).status === 200);
+{
+  const u = globalThis.__TEST_ULOZISTE('uzivatele');
+  const ucet = await u.cti('vypnuty.primo@example.com');
+  ucet.aktivni = false;                       // verze hesla zůstává — jediná pojistka je příznak
+  await u.zapis('vypnuty.primo@example.com', ucet);
+}
+test('účet vypnutý přímo v úložišti (verze hesla beze změny) nepracuje dál s vydanou relací',
+  (await get(zakazky, 'http://x/api/zakazky', cVypnutyPrimo)).status === 401);
+test('účet vypnutý přímo v úložišti se nedozví ani, kdo je přihlášen',
+  (await get(ja, 'http://x/api/ja', cVypnutyPrimo)).status === 401);
+
 /* Opačný směr: povýšení se má projevit hned, jinak by správce musel kolegu
  * posílat, ať se odhlásí a přihlásí — a to nikdo neudělá. */
 await post(uzivatele, 'http://x/api/uzivatele',
