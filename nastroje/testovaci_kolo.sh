@@ -11,7 +11,9 @@
 # hlásí jako PŘESKOČENÉ, nikdy jako prošlé.
 #
 # Pořadí kroků:
-#   build          sestavení bez zvýšení verze (KNG_NEZVYSOVAT_VERZI=1 python3 build.py)
+#   build          kontrola verze (build.py --kontrola-verze — špatná verze padne hned,
+#                  ne po dvaceti minutách sad) + sestavení bez zvýšení verze
+#                  (KNG_NEZVYSOVAT_VERZI=1 python3 build.py)
 #   sady           spust_testy.sh --smoke: všechny src/test_*.js (včetně test.js),
 #                  všechny netlify/test_*.mjs, rychlé kontroly zadání mutací,
 #                  smoke.mjs a VŠECHNY overit_*.mjs — globem, žádný ruční seznam
@@ -82,9 +84,18 @@ krok() {
 }
 
 # ---------- kroky ----------
-build() { KNG_NEZVYSOVAT_VERZI=1 python3 build.py; }
+build() {
+  # Verze se ověří ještě před sestavením a před sadami (nález 10. 9. 2026,
+  # hlídá src/test_build_info.js): špatná verze má spadnout za vteřinu, ne
+  # po dvaceti minutách. Statické kontroly na konci ji ověří znovu jako
+  # závěrečnou bránu — obojí trvá zlomek vteřiny.
+  python3 build.py --kontrola-verze || return 1
+  KNG_NEZVYSOVAT_VERZI=1 python3 build.py
+}
 
-sady() { bash ./spust_testy.sh --smoke; }
+sady() {
+  bash ./spust_testy.sh --smoke
+}
 poznamka_sady() {
   local r; r="$(grep -o 'Souhrn: [0-9]* prošlo, [0-9]* selhalo, [0-9]* přeskočeno' "$1" | tail -1 | sed 's/^Souhrn: //')"
   # přeskočené sady (nic neověřily) do závěru
@@ -125,7 +136,7 @@ poznamka_staticke() { grep -o 'STATICKE_KONTROLY: [0-9]* z 3 prošly' "$1" | tai
 
 # ---------- běh ----------
 echo "TESTOVACÍ KOLO — kroky: $KROKY   (logy: $LOGY)"
-chce build         && krok build         "sestavení (bez zvýšení verze)"      build
+chce build         && krok build         "kontrola verze + sestavení"         build
 chce sady          && krok sady          "sady: Node, server, prohlížeč"       sady
 chce mutace-jadro  && krok mutace_jadro  "mutace jádra (mutace_jadro.mjs)"     mutace_jadro
 chce mutace-server && krok mutace_server "mutace serveru (netlify/mutace.mjs)" mutace_server
@@ -141,6 +152,11 @@ printf '%s\n' "${souhrn[@]}"
 if [ "${#preskocene[@]}" -gt 0 ]; then
   echo "Přeskočené sady (nic neověřily):"
   printf '  – %s\n' "${preskocene[@]}"
+  # V GitHub Actions i jako upozornění běhu (T3, revize v22.9.9): přeskočená
+  # kontrola, o které se mlčí, je totéž co kontrola, která neexistuje.
+  if [ "${GITHUB_ACTIONS:-}" = "true" ]; then
+    echo "::warning title=Přeskočené sady (nic neověřily)::${preskocene[*]}"
+  fi
 fi
 if [ "$selhalo" -eq 0 ]; then
   echo "Výsledek: VŠE ZELENÉ."
