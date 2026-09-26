@@ -73,7 +73,7 @@ rozměrem profilu (mimo tabulku JEKLY) nejde otevřít; skutečný telefon
 a jméno kolegy v `overit_nabidka_proj_word.mjs` (dočasně v povoleném
 seznamu, viz #346). CSP bez `'unsafe-inline'` zůstává jen návrhem.
 
-Ověřeno: OVERENO_DOPLNIT
+Ověřeno: celé kolo `nastroje/testovaci_kolo.sh` 26. 9. 2026 (38 min): kontrola verze + sestavení ✓; sady 182 prošlo, 0 selhalo, 6 přeskočeno (test.js — skutečný ceník není v repozitáři; overit_manual, overit_nabidka_proj_word, overit_sablona, overit_sablony_online, overit_sod — firemní podklady mimo repozitář, KNG_PODKLADY); mutace jádra chycených 76 z 76; mutace serveru 187 z 187 (z toho 14 nových); statické kontroly 3 z 3. Dvě předchozí kola téhož dne našla a bylo opraveno: `test_mutace.mjs` po přesunu B59 měřil prázdno; mutace „vypnutý účet se nepozná“ přežila (dvě nezávislé pojistky, jeden test — doplněn cílený test v `test_prava.mjs`); dva testy struktury CI četly workflow (přesměrovány na testovaci_kolo.sh, kontrola verze přesunuta na začátek kola); souhrn kola nevypisoval přeskočené sady (pole v podshellu).
 
 ---
 

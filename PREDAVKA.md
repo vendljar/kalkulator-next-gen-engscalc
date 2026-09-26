@@ -23,7 +23,7 @@ Roadmapa: `roadmapa/roadmap.json` (365 položek), stránka se generuje
   `nastroje/testovaci_kolo.sh` (pred_pushem.sh = obal, CI volá tentýž
   skript), `netlify/test_prihlaseni.mjs`, +9 testů B72, +14 mutací serveru.
   U každého je v commitu doloženo selhání před opravou.
-- **Ověřeno celým kolem:** OVERENO_DOPLNIT
+- **Ověřeno celým kolem:** celé kolo `nastroje/testovaci_kolo.sh` 26. 9. 2026 (38 min): kontrola verze + sestavení ✓; sady 182 prošlo, 0 selhalo, 6 přeskočeno (test.js — skutečný ceník není v repozitáři; overit_manual, overit_nabidka_proj_word, overit_sablona, overit_sablony_online, overit_sod — firemní podklady mimo repozitář, KNG_PODKLADY); mutace jádra chycených 76 z 76; mutace serveru 187 z 187 (z toho 14 nových); statické kontroly 3 z 3. Dvě předchozí kola téhož dne našla a bylo opraveno: `test_mutace.mjs` po přesunu B59 měřil prázdno; mutace „vypnutý účet se nepozná“ přežila (dvě nezávislé pojistky, jeden test — doplněn cílený test v `test_prava.mjs`); dva testy struktury CI četly workflow (přesměrovány na testovaci_kolo.sh, kontrola verze přesunuta na začátek kola); souhrn kola nevypisoval přeskočené sady (pole v podshellu).
 
 ## Čeká na J. V. (rozhodnutí)
 - **N46** (nástupiště A ↔ C u zrcadlové šachty, #343 „ověřit s J. V."): fuzz
