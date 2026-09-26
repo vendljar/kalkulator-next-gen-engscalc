@@ -445,6 +445,162 @@ test('seznam PROVERENO neobsahuje zastaralé záznamy', nepouzite.length === 0,
   '\n      už se v kódu nevyskytují:\n      ' + nepouzite.join('\n      ')
   + '\n      → smažte je ze seznamu PROVERENO v src/test_escape.js');
 
+/* ================================================================
+ * HLÍDAČ ČLENSKÝCH VÝRAZŮ — BEZ OHLEDU NA JMÉNO (A2, 25. 9. 2026, nález B87)
+ * ================================================================
+ * Hlídač výš pozná hodnotu od uživatele podle JMÉNA (RIZIKO). Hloubkový test
+ * 24. 9. 2026 (B69) ukázal, že to nestačí: `${Z.typPortalu}`, `${C.dph}` ani
+ * `${p.hodiny}` na žádné jméno ze seznamu nevypadají, a přesto je to text ze
+ * zakázky — server číselná pole nepřetypovává, takže uložená zakázka v nich
+ * nese cokoli, a administrátorovi to běželo pod jeho relací.
+ *
+ * Tenhle hlídač proto nehledí na jméno, ale na TVAR: každý členský výraz
+ * (`a.b`, `a[b]`, `a.b.c`) na řádku, který skládá HTML, je přístup do dat,
+ * a bez esc()/escJs() se hlásí — ať se vlastnost jmenuje jakkoli. Bezpečné je
+ * jen to, co je bezpečné z definice jazyka (`.length` je vždy číslo), nebo co
+ * je v PROVERENO_CLENY ručně prověřené i s důvodem. Důvod má být takový, aby
+ * se dal při další revizi ověřit ve zdroji („z konstanty X", „počet z Y").
+ * Že hlídač B69 opravdu pozná, dokazuje sonda pod ním; že v prohlížeči
+ * skutečně nic neběží, dokazuje overit_xss.mjs — tohle je jeho statický
+ * protějšek, který běží v každé sadě a bez Chromia. */
+const CLEN = /^[A-Za-z_$][\w$]*(\s*(\.[A-Za-z_$][\w$]*|\[[^\]]+\]|\?\.[A-Za-z_$][\w$]*))+$/;
+/* Řádek skládá HTML: začátek značky, přiřazení innerHTML nebo atribut. Je to
+ * přísnější než u hlídače jmen (tam stačí ostrá závorka): `>` má i porovnání
+ * `Z.svetlikyBoky > 0` na řádku, který jen skládá text pro esc() o kus dál. */
+const HTML_RADEK = /<[a-zA-Z\/!]|innerHTML|title=|value=|placeholder=|class=|href=|src=/;
+const clenBezpecny = t => /\.length$/.test(t);
+
+/* Prověřeno 25. 9. 2026 při zavedení hlídače. U každého výrazu je napsáno,
+ * odkud hodnota přichází — kdyby se zdroj změnil na data, řádek ze seznamu
+ * patří pryč a hodnota do esc(). */
+const PROVERENO_CLENY = {
+  'analytika_ui.js': {
+    'p.zakazky': 'počet ze serverové analytiky (/api/analytika sčítá záznamy) — číslo',
+    'p.kalkulace': 'počet ze serverové analytiky — číslo',
+    'p.tiskyWord': 'počet ze serverové analytiky — číslo',
+    'p.tiskyNahled': 'počet ze serverové analytiky — číslo',
+    'p.prihlaseni': 'počet ze serverové analytiky — číslo',
+    'p.chyby': 'počet ze serverové analytiky — číslo',
+    'p.dnu': 'počet dnů se záznamem (server: dvojice.length) — číslo',
+    'c.zakazky': 'součet za období z týchž počtů — číslo',
+    'c.kalkulace': 'součet za období — číslo',
+    'c.tiskyWord': 'součet za období — číslo',
+    'c.tiskyNahled': 'součet za období — číslo',
+    'c.prihlaseni': 'součet za období — číslo',
+    'c.chyby': 'součet za období — číslo',
+  },
+  'archiv_ui.js': { 's.pocet': 'počet kalkulací v souboru archivu (archivSouboryHtml) — číslo' },
+  'cenik_stari_ui.js': {
+    's.zdrazeni': 'počet zdražených položek z porovnání ceníků — číslo',
+    's.zlevneni': 'počet zlevněných položek — číslo',
+    's.textove': 'počet textových změn — číslo',
+  },
+  'common.js': {
+    'opts.l': 'popisek pole inp(): všechna volání předávají literál z kódu; větev s klíčem skládá literál + klicChip(), který escapuje uvnitř',
+    'o[0]': 'hodnota volby výběru inp({type:sel}) — literální seznamy v kódu a konstanta BOKY_VYPLN_POPISY',
+    'o[1]': 'popisek volby výběru — tytéž literální seznamy',
+    'tridy[v.stav]': 'CSS třída z pevné mapy `tridy` podle stavu kontroly standardu',
+    'v.kontrol': 'počet kontrolovaných pravidel standardu (standardVyhodnot) — číslo',
+    'c.fn': 'jméno funkce z konfigurace karty slevy v kódu (slevaKarta: literály slevaSet/slevaProjSet)',
+    'c.zrus': 'volání z téže konfigurace karty slevy — literál v kódu',
+    'x.akce': 'onclick z literálů v zapisSelhani() (nastdbUlozHned(), progZverejni())',
+    'x.stahni': 'onclick z literálů v zapisSelhani() (nastdbStahni(), progStahni())',
+  },
+  'detail_ui.js': { 'kopie.innerHTML': 'kopie už vykresleného detailu (escapovaného při render) do tiskového okna' },
+  'kalk_ock.js': { 'r.idx': 'pořadový index vlastní položky z forEach v kódu — číslo' },
+  'kryci_proj_ui.js': {
+    'opts.src': 'popis zdroje automatiky z konstanty KRYCI_SEKCE (src: literál)',
+    'p.bind': 'cesta k poli z konstanty KRYCI_SEKCE (bind: literál)',
+  },
+  'kryci_ui.js': {
+    'opts.src': 'popis zdroje automatiky z konstanty KRYCI_SEKCE (src: literál)',
+    'p.bind': 'cesta k poli z konstanty KRYCI_SEKCE (bind: literál)',
+  },
+  'nastaveni_ui.js': {
+    'n.pripona': 'přípona varianty z priponyKontrola (zamek.js: pripona = pořadí varianty) — číslo',
+    'p.symbol': 'symbol šablony z konstanty FIRMA_POLE (symbol: literál)',
+    's.vTabulce': 'počet řádků nahrané tabulky slovníku — číslo',
+    's.vAplikaci': 'počet hesel aplikace — číslo',
+    's.shodne': 'počet shodných překladů — číslo',
+    's.doplnit': 'počet překladů k doplnění — číslo',
+    's.nove': 'počet nových hesel — číslo',
+  },
+  'online_ui.js': {
+    'b.nove': 'počet z náhledu obnovy (server sčítá) — číslo',
+    'b.prepsane': 'počet z náhledu obnovy — číslo',
+    'b.bezeZmeny': 'počet z náhledu obnovy — číslo',
+    'b.preskocene': 'počet z náhledu obnovy — číslo',
+    'z.odeslane': 'počet odeslaných variant v záznamu rejstříku (uloRejstrikZaznam: filter().length) — číslo',
+    'z.variant': 'počet variant v záznamu rejstříku (varianty.length) — číslo',
+  },
+  'sablony_sprava_ui.js': {
+    'b.cls': 'CSS třída z literálů v sablStav() (ok / warn / …)',
+    'm.stat.procenta': 'procento přeložených odstavců — číslo',
+  },
+  'schvalovani_ui.js': { 'SCHV_CIZI.prohledano': 'počet prohledaných zakázek ze serveru — číslo' },
+  'techspec_ui.js': {
+    'j.vlajka': 'emoji vlajky z konstanty JAZYKY (preklad.js)',
+    'pokr.prelozeno': 'počet přeložených frází (prekladPokryti) — číslo',
+    'pokr.celkem': 'počet frází — číslo',
+    'pokr.procenta': 'procento pokrytí — číslo',
+    'k.pocet': 'počet nevyplněných povinných polí — číslo',
+  },
+  'uloziste_ui.js': {
+    'z.odeslane': 'počet odeslaných variant v záznamu rejstříku — číslo',
+    'z.variant': 'počet variant v záznamu rejstříku — číslo',
+  },
+  'zakazka_ui.js': {
+    'POR_STAV_ZNAK[k]': 'znak stavu z konstanty POR_STAV_ZNAK',
+    'POR_STAV_ZNAK[it.stav]': 'znak stavu z konstanty POR_STAV_ZNAK',
+    'it.stav': 'stav položky porovnání z pevného výčtu (pridano/odebrano/zmeneno/shodne) — klíče konstanty POR_STAV_ZNAK',
+    's.pocty[k]': 'počet položek ve stavu — číslo',
+    's.pocty.shodne': 'počet shodných položek — číslo',
+    'NABIDKA_FOTO_NAZVY[c]': 'název nabídky z konstanty NABIDKA_FOTO_NAZVY',
+  },
+  'zaokrouhleni_ui.js': {
+    'k.krok': 'krok zaokrouhlení z konstanty ZAOKR_KROKY — číslo',
+    's.smer': 'směr zaokrouhlení z konstanty ZAOKR_SMERY — literál',
+  },
+};
+
+const noveCleny = [], nepouziteCleny = [];
+for (const f of fs.readdirSync(uiDir).sort()) {
+  if (!f.endsWith('.js')) continue;
+  const videno = new Set();
+  fs.readFileSync(uiDir + '/' + f, 'utf8').split('\n').forEach((r, i) => {
+    if (!HTML_RADEK.test(r)) return;
+    const ven = [];
+    for (const v of vyrazy(r)) listy(v, ven);
+    for (const v of ven) {
+      if (hodnotaBezpecna(v)) continue;
+      const norm = v.replace(/\s+/g, ' ').trim();
+      if (RIZIKO.test(norm)) continue;          // to hlásí hlídač jmen výš
+      if (!CLEN.test(norm) || clenBezpecny(norm)) continue;
+      videno.add(norm);
+      if (!(PROVERENO_CLENY[f] && Object.prototype.hasOwnProperty.call(PROVERENO_CLENY[f], norm)))
+        noveCleny.push(f + ':' + (i + 1) + '  ${' + norm + '}');
+    }
+  });
+  for (const k of Object.keys(PROVERENO_CLENY[f] || {}))
+    if (!videno.has(k)) nepouziteCleny.push(f + '  ${' + k + '}');
+}
+test('žádný nový neescapovaný členský výraz (přístup do dat) v HTML v src/ui/ — bez ohledu na jméno', noveCleny.length === 0,
+  '\n      nalezeno ' + noveCleny.length + ':\n      ' + noveCleny.join('\n      ')
+  + '\n      → obalte hodnotu esc() / escJs(); je-li to prokazatelně číslo z kódu'
+  + '\n        nebo konstanta, dopište výraz do PROVERENO_CLENY v src/test_escape.js'
+  + '\n        i s důvodem, který jde ověřit ve zdroji.');
+test('seznam PROVERENO_CLENY neobsahuje zastaralé záznamy', nepouziteCleny.length === 0,
+  '\n      už se v kódu nevyskytují:\n      ' + nepouziteCleny.join('\n      '));
+/* Sonda hlídače na sobě: přesně ty výrazy z nálezu B69, které hlídač jmen
+ * neviděl, musí tenhle hlídač chytit — a escapované či číselné pustit. */
+test('hlídač členů pozná B69 (Z.typPortalu, C.dph, p.hodiny, s.pocty[k]) i bez jména v RIZIKO',
+  ['Z.typPortalu', 'C.dph', 'p.hodiny', 's.pocty[k]', 'v.data.ock.zadani.zaskleni']
+    .every(v => CLEN.test(v) && !hodnotaBezpecna(v) && !RIZIKO.test(v) && !clenBezpecny(v))
+  && ['esc(Z.typPortalu)', '+Z.striskaKs || 0', "'literal'", 'escJs(p.kid)'].every(hodnotaBezpecna)
+  && clenBezpecny('rows.length') && !CLEN.test('fn(p.x)') && !CLEN.test('i')
+  && HTML_RADEK.test('<td>${Z.typPortalu}</td>') && HTML_RADEK.test('value="${C.dph}"')
+  && !HTML_RADEK.test("` / ${Z.svetlikyBoky}${Z.svetlikyBoky > 0 ? 'x' : ''}`"));
+
 /* Poslední pojistka: HTML se skládá jen v src/ui/. Kdyby někdo začal sázet
  * do stránky text i odjinud, tenhle hlídač by o tom nevěděl. */
 const mimoUi = fs.readdirSync(__dirname)
