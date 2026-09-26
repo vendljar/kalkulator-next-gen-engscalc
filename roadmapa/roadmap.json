@@ -5395,14 +5395,16 @@
   {
    "id": "342",
    "vlna": "B",
-   "stav": "ceka",
+   "stav": "hotovo",
    "dulezitost": "stredni",
    "slozitost": "M",
    "nazev": "F3: obnova ze zálohy projde stejnými kontrolami jako uložení (B72, návrh P4)",
    "proc": "Hloubkový test 24. 9. 2026 (20. kolo, v24.9.2; ověřeno na v24.9.3): obnova zakázek nemá pojistky běžného uložení (schválení, ověření výsledku zámku, číslo, razítka). Pokusem prošla sleva 60 % „schválená\" vymyšleným jménem.",
    "detail": "Jedna kontrolní funkce zakazkaServerKontrola(stara, nova, relace) pro /api/zakazky i obnovu; mutace míří na obě.",
    "hotovoKdyz": "Podvržená záloha neprojde; test a mutace.",
-   "kde": "`netlify/functions/obnova.mjs`, `netlify/functions/zakazky.mjs`"
+   "kde": "`netlify/functions/obnova.mjs`, `netlify/functions/zakazky.mjs`",
+   "hotovoV": "v26.9.1",
+   "pozn": "Hotovo 26. 9. 2026 (testovací sekvence, #364): netlify/lib/zakazka_kontrola.mjs — jedna funkce zakazkaServerKontrola(stara, nova, relace) pro /api/zakazky i obnovu (režim ulozeni/obnova: v obnově se nezapisují razítka ani autor, sleva a marže se porovnávají proti migrované uložené podobě). 9 nových testů B72 v test_obnova.mjs (proti kódu před P4: 4 + 3 selhaly), 5 nových mutací P4."
   },
   {
    "id": "343",
@@ -5442,7 +5444,8 @@
    "proc": "Hloubkový test 24. 9. 2026 (20. kolo, v24.9.2; ověřeno na v24.9.3): brzda přihlášení se obejde souběhem a IPv6 (B75), stará cookie po znovuzaložení účtu (B76), mojeheslo bez brzdy (B77), /api/pd/* každému (B80), analytika a Object.prototype (B81), CSV vzorce (B83), matice zobrazení jen v UI (B88).",
    "detail": "Návrh P11; nad limitem 429 bez ověření, IPv6 po /64, hesloVerze při založení.",
    "hotovoKdyz": "Testy a mutace serveru.",
-   "kde": "`netlify/functions/prihlaseni.mjs`, `netlify/lib/sdilene.mjs`, `uzivatele.mjs`, `pd_*.mjs`, `src/analytika.js`, `src/ui/techspec_ui.js`"
+   "kde": "`netlify/functions/prihlaseni.mjs`, `netlify/lib/sdilene.mjs`, `uzivatele.mjs`, `pd_*.mjs`, `src/analytika.js`, `src/ui/techspec_ui.js`",
+   "pozn": "26. 9. 2026 (#364): B75, B76, B77 a B78 HOTOVO v v26.9.1 — limit adresy 429 před scryptem, IPv6 po /64, úspěch cizího účtu nenuluje počítadlo adresy, hesloVerze při založení/vypnutí/archivaci, brzda u mojeheslo, původ a Content-Type u odhlášení; nová sada netlify/test_prihlaseni.mjs (43; proti starému kódu 21 selhalo), 9 mutací. ZBÝVÁ: B80 (/api/pd/*), B81 (analytika, Object.prototype), B83 (CSV vzorce), B88 (matice jen v UI)."
   },
   {
    "id": "346",
@@ -5456,7 +5459,7 @@
    "detail": "Branch deploys jen produkční větev, Deploy Previews vypnuté, Sensitive variable policy = Require approval, tajné proměnné jen v kontextu Production, rozdílné TAJEMSTVI_RELACE test × ostrý; výsledek zapsat do NASAZENI_NETLIFY.md.",
    "hotovoKdyz": "Nastavení ověřené na obou webech a zapsané.",
    "kde": "`NASAZENI_NETLIFY.md`, nastavení Netlify",
-   "pozn": "J. V. 24. 9. večer: ponechat v roadmapě k prověření, podle něj by nastavení mělo být v pořádku. Postup ověření (6 kroků) je v podkladu z 24. 9."
+   "pozn": "J. V. 24. 9. večer: ponechat v roadmapě k prověření, podle něj by nastavení mělo být v pořádku. Postup ověření (6 kroků) je v podkladu z 24. 9. 26. 9. 2026 (A4, #364): statická kontrola nastroje/kontrola_udaju.py hlídá e-maily, telefony a tajemství mimo povolený seznam nastroje/povolene_kontakty.txt; dosavadní výskyty (rozhodnutí B79) jsou v seznamu. NOVÝ NÁLEZ k rozhodnutí J. V.: skutečný telefon kolegy (a jeho jméno) v harnessu overit_nabidka_proj_word.mjs jako kontrola „v šabloně nezůstal\" — dočasně v povoleném seznamu."
   },
   {
    "id": "347",
@@ -5695,6 +5698,31 @@
    "cekaNa" : "J. V. — texty kapitol nabídky (Nastavení → Firma), rozhodnutí P9–P12; rozbor připraví Claude",
    "hotovoKdyz" : "Rozbor v podklady/K16_ROZBOR a rozhodnutí J. V. zapsaná.",
    "kde" : "`podklady/`"
+  },
+  {
+   "id": "364",
+   "vlna": "B",
+   "stav": "hotovo",
+   "hotovoV": "v26.9.1",
+   "dulezitost": "vysoka",
+   "slozitost": "L",
+   "nazev": "Testovací sekvence z hloubkového testu (A1–A5) + opravy B72, B75–B78, N43 (server) a P4",
+   "proc": "Prompt J. V. 25. 9. 2026 „testovací sekvence do repa\": nálezy hloubkového testu 24. 9. 2026 se měly ověřit v aktuálním kódu (Pravidlo 0), trvající opravit s testem před/po a doplnit chybějící druhy testů.",
+   "detail": "A1 src/test_fuzz_invarianty.js (deterministický fuzz, 2000 zadání OCK + PROJ, invarianty I1–I11, P1–P4; N46 hlásí rozdíl jen jako INFO). A2 hlídač členských výrazů v test_escape.js (bez ohledu na jméno, 63 prověřených výrazů) + overit_xss.mjs otravuje VŠECHNA pole zakázky i ostatní zdroje dat, obě role, 13 záložek a všechny panely Nastavení (207 kontrol). A3 src/test_zamek_historie.js + 3 fixtury starších tvarů zakázek (server migruje stejnými moduly jako prohlížeč — kryci, kryci_proj, poznamky, protokol v jadro_moduly.cjs). A4 nastroje/kontrola_udaju.py + povolene_kontakty.txt. A5 nastroje/testovaci_kolo.sh (build → sady → mutace jádra → mutace serveru → statické kontroly → souhrn, nenulový kód), pred_pushem.sh jen obal, CI volá tentýž skript. Opravy: P4/B72 (#342), B75–B78 (část #345). Pravidlo 0: B69, B70, B71, B73, B74, N44, N45, N47–N57 už opravené dřív (v24.9.4–v25.9.5), N46 se neopravuje bez pokynu J. V.",
+   "hotovoKdyz": "Celé kolo zelené včetně obou mutací; každý nový test doložen selháním před opravou.",
+   "kde": "src/test_fuzz_invarianty.js, src/test_zamek_historie.js, src/fixtury/, src/test_escape.js, overit_xss.mjs, netlify/lib/zakazka_kontrola.mjs, netlify/test_prihlaseni.mjs, nastroje/testovaci_kolo.sh, nastroje/kontrola_udaju.py"
+  },
+  {
+   "id": "365",
+   "vlna": "B",
+   "stav": "ceka",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "nazev": "Zakázka s neznámým rozměrem profilu nejde otevřít (nález A2-1 z 26. 9. 2026)",
+   "proc": "Obecný XSS harness (A2) při otrávení všech polí zadání OCK shodil vykreslení Kalkulace i Detailu OCK: Z.profily.*.dim mimo tabulku JEKLY → JEKLY[p.dim].kg v ui/kalk_ock.js. Server hodnotu neověřuje; uložená zakázka s takovou hodnotou (změna tabulky profilů, ruční zásah) se pak nikomu neotevře.",
+   "detail": "Návrh: v UI neznámý profil ukázat jako „neznámý rozměr\" s možností vybrat jiný (kalk_ock.js řádky s JEKLY[p.dim]), případně na serveru odmítnout dim mimo JEKLY. Harness zatím dim a tl neotravuje (řídicí klíče).",
+   "cekaNa": "J. V.: zda opravit v UI (tolerantně), na serveru (odmítnout), nebo nechat",
+   "kde": "src/ui/kalk_ock.js, netlify/lib/zakazka_kontrola.mjs"
   }
  ],
  "meta" : {

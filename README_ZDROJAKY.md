@@ -32,6 +32,22 @@ Výsledek je jediný soubor bez jakýchkoli závislostí – stačí ho otevří
 
 ## Jak spustit testy
 
+Celé testovací kolo jedním příkazem (od 26. 9. 2026, A5):
+
+    bash nastroje/testovaci_kolo.sh                # sestavení → všechny sady → mutace jádra → mutace serveru → statické kontroly → souhrn
+    bash nastroje/testovaci_kolo.sh --bez-mutaci   # totéž bez mutací (dávka, která nesáhla do jádra ani serveru)
+
+Skript končí jedním souhrnem s počty (prošlo / selhalo / přeskočeno, chycené
+mutace) a nenulovým návratovým kódem, když cokoli selhalo. Přeskočené sady
+(chybí playwright, firemní podklad, skutečný ceník) vypíše jmenovitě — nikdy
+je nepočítá jako prošlé. `nastroje/pred_pushem.sh` je jen obal nad ním a CI
+(`.github/workflows/testy.yml`) volá tentýž skript, takže seznam kroků je
+jediný. Statické kontroly zahrnují i `nastroje/kontrola_udaju.py` — e-maily,
+telefony a tajemství mimo povolený seznam `nastroje/povolene_kontakty.txt`
+(repozitář je veřejný).
+
+Jen sady v Node:
+
     ./spust_testy.sh
 
 Skript pustí všechny sady a na konci vypíše souhrn; návratový kód 0 znamená,

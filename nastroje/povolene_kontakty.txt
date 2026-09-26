@@ -1,0 +1,53 @@
+# POVOLENÉ KONTAKTY VE VEŘEJNÉM REPOZITÁŘI (A4, 25. 9. 2026)
+#
+# Čte nastroje/kontrola_udaju.py. Řádek = přesná e-mailová adresa, celá doména
+# zápisem *@domena, nebo telefonní číslo. Cokoli jiného ve stromu hlásí kontrola
+# jako nález a pred_pushem.sh / testovaci_kolo.sh skončí červeně.
+#
+# Smyšlené domény testů a příkladů (RFC 2606 example.*; priklad.cz, zkusebni.cz
+# a krátké domény jsou zkušební účty serverových sad a harnessů):
+*@example.com
+*@example.cz
+*@priklad.cz
+*@zkusebni.cz
+*@x.cz
+*@b.cz
+*@d.cz
+*@y.cz
+*@eng.cz
+*@svj.cz
+*@firma.cz
+
+# Ponecháno rozhodnutím J. V. 24. 9. 2026 (nález B79 „osobní údaje v repu":
+# nechat, jak je). Adresa hlavního správce v návodu k nasazení (NASAZENI_NETLIFY.md),
+# telefon jako vzor formátu v poli profilu (ui/online_ui.js, uzivatele.mjs,
+# test_profil.mjs) a firemní pevná linka v pevném textu šablony
+# (test_preklad_priplatky.js). Kdyby se J. V. rozhodl jinak, stačí je odsud
+# smazat a kontrola je nahlásí.
+vendl.jaroslav@engineers-cz.cz
++420 602 590 945
++420 252 546 463
+
+# Smyšlená čísla v testech a harnessech (kulaté nebo evidentně nepravé):
++420 000 000 000
++420 000 000 001
++420 111 222 333
++420 111 222 999
++420 123 456 789
++420 555 444 333
++420 601 000 111
++420 601 111 222
++420 602 000 000
++420 602 333 444
++420 603 555 666
++420 777 111 222
++420 999 888 777
+
+# NÁLEZ 25. 9. 2026 — ČEKÁ NA ROZHODNUTÍ J. V.: telefon kolegy, z jehož nabídky
+# vznikl vzor šablony PROJ, stojí v harnessu overit_nabidka_proj_word.mjs jako
+# kontrola „v šabloně nezůstal telefon kolegy" (spolu s jeho jménem). Je to
+# skutečné číslo ve veřejném repozitáři. Dočasně povoleno, aby kolo neskončilo
+# červeně kvůli rozhodnutí, které je na J. V.; možnosti: nechat (jako B79),
+# nebo kontrolu přepsat na obecné „v šabloně není žádný telefon ani e-mail"
+# a číslo i jméno ze zdrojáků odstranit.
++420 724 323 407
