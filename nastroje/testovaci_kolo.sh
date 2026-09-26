@@ -98,15 +98,21 @@ sady() {
 }
 poznamka_sady() {
   local r; r="$(grep -o 'Souhrn: [0-9]* prošlo, [0-9]* selhalo, [0-9]* přeskočeno' "$1" | tail -1 | sed 's/^Souhrn: //')"
-  # přeskočené sady (nic neověřily) do závěru
+  printf '%s' "${r:-bez souhrnu}"
+}
+# Přeskočené sady (nic neověřily) ze souhrnu spust_testy.sh — jedna na řádek.
+# Volá se až v závěru, ne z poznámky kroku: ta běží v $(…), tedy v podshellu,
+# a pole naplněné tam by se ztratilo (první kolo 26. 9. 2026 seznam nevypsalo).
+preskocene_ze_sady() {
   local v=0 l
+  [ -f "$1" ] || return 0
   while IFS= read -r l; do
     if [ "$v" -eq 1 ]; then
-      case "$l" in "  – "*) preskocene+=("${l#  – }") ;; *) v=0 ;; esac
+      case "$l" in "  – "*) printf '%s\n' "${l#  – }" ;; *) v=0 ;; esac
     fi
     [ "$l" = "Přeskočeno (nic neověřily):" ] && v=1
   done < "$1"
-  printf '%s' "${r:-bez souhrnu}"
+  return 0
 }
 
 mutace_jadro() { node mutace_jadro.mjs; }
@@ -146,6 +152,7 @@ for k in build sady mutace-jadro mutace-server staticke; do
 done
 
 # ---------- souhrn ----------
+while IFS= read -r l; do [ -n "$l" ] && preskocene+=("$l"); done < <(preskocene_ze_sady "$LOGY/sady.log")
 echo; echo "════════════════════════════════════════════════════════════"
 echo "TESTOVACÍ KOLO — souhrn (celkem $(cas $(( $(date +%s) - zacatek ))))"
 printf '%s\n' "${souhrn[@]}"
