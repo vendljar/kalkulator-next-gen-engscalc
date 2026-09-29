@@ -38,7 +38,11 @@ async function dokumentVygeneruj(typ, templateArrayBuffer, zak, varianta, jekly,
   }
   // Režim B – vyplnění existující .docx šablony placeholdery {{...}}
   if (typeof def.builder !== 'function') throw new Error('Dokument „' + typ + '" nemá builder ani generate.');
-  const data = def.builder(zak, varianta, jekly, lang);
+  /* Builder, který potřebuje vědět, co šablona umí (def.sablonaSymboly —
+   * např. nabídka PROJ: má šablona řádek slevy?), dostane její symboly. */
+  const sablona = def.sablonaSymboly && templateArrayBuffer
+    ? { symboly: await dokumentSymbolySablony(templateArrayBuffer) } : null;
+  const data = def.builder(zak, varianta, jekly, lang, sablona);
   /* data.obrazky = { SYMBOL: 'data:image/…' } – obrázky, které se v šabloně
    * vymění za tvar označený alternativním textem {{SYMBOL}} (#146: sken
    * podpisu a razítka zpracovatele). Builder, který žádné nedodá, se chová
@@ -47,8 +51,17 @@ async function dokumentVygeneruj(typ, templateArrayBuffer, zak, varianta, jekly,
     data.priplatky || [], data.obrazky || {});
   return { blob, nazevSouboru: data.nazevSouboru, data };
 }
+/* Symboly {{…}} šablony (tělo, záhlaví, zápatí) — i rozdělené mezi běhy. */
+async function dokumentSymbolySablony(templateArrayBuffer) {
+  const polozky = await zipPrecti(new Uint8Array(templateArrayBuffer.slice(0)));
+  const dekoder = new TextDecoder();
+  const mn = new Set();
+  polozky.filter(p => /^word\/(document|header\d*|footer\d*)\.xml$/.test(p.nazev))
+    .forEach(p => klicePlaceholderu(dekoder.decode(p.data)).forEach(k => mn.add(k)));
+  return mn;
+}
 /* seznam typů daného „druhu" (např. všechny krycí listy) dle prefixu */
 function dokumentTypyPrefix(prefix) { return Object.keys(DOKUMENTY).filter(t => t.indexOf(prefix) === 0); }
 
 if (typeof module !== 'undefined')
-  module.exports = { DOKUMENTY, dokumentRegistruj, dokumentDef, dokumentTypy, dokumentTypyPrefix, dokumentVygeneruj };
+  module.exports = { DOKUMENTY, dokumentRegistruj, dokumentDef, dokumentTypy, dokumentTypyPrefix, dokumentVygeneruj, dokumentSymbolySablony };

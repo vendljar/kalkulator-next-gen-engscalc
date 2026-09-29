@@ -43,6 +43,10 @@ function nabidkaProjKarta() {
   const rekap = d.rekapitulace.length
     ? `<table style="max-width:640px;margin-top:8px">
        ${d.rekapitulace.map(r => `<tr><td>${esc(r[0])}</td><td style="text-align:right">${esc(r[1])}</td></tr>`).join('')}
+       ${/* Činnosti stojí za cenu před slevou (29. 9. 2026) — sleva vlastním
+            řádkem, jinak by se rekapitulace nesečetla do celku. */ ''}
+       ${p.PROJ_SLEVA_KC ? `<tr><td>Cena před slevou</td><td style="text-align:right">${esc(p.PROJ_CENA_PRED_SLEVOU)}</td></tr>
+       <tr><td>Sleva ${esc(p.PROJ_SLEVA_PROC)} %</td><td style="text-align:right">− ${esc(p.PROJ_SLEVA_KC)}</td></tr>` : ''}
        <tr class="tot"><td><b>CELKEM bez DPH</b></td><td style="text-align:right"><b>${esc(p.PROJ_CELKEM_BEZ_DPH)}</b></td></tr>
        </table>`
     : `<div class="note">Zatím není oceněná žádná činnost – doplňte hodiny a fixní náklady v sekcích Kalkulace PROJ výše.

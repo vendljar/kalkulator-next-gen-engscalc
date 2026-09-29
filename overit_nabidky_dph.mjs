@@ -150,6 +150,45 @@ zkus('PROJ: podpis s razítkem má dvojnásobnou velikost (336 px)',
   podpis === 'bez podpisu' || /max-height:\s*336px/.test(podpis), podpis);
 await proj2.close();
 
+/* Sleva projekce (nález J. V. 29. 9. 2026): činnosti za cenu PŘED slevou,
+ * rekapitulace se musí sečíst — řádky = cena před slevou, − sleva = celkem.
+ * Do opravy stály činnosti po slevě a „DPZ + IČ" nedalo cenu před slevou. */
+/* Sleva cestou obchodníka (slevaProjSet): přirážka 30 % a strop role 20 %,
+ * aby 14 % prošlo automaticky (marže po slevě 10,55 % nad minimem 10 %). */
+const puvodniMarze = await p.evaluate(() => {
+  const m = PC.marze;
+  PC.marze = 0.3;
+  NAST.slevy.stropy = Object.assign({}, NAST.slevy.stropy, { 'Obchodník': 0.2 });
+  render();
+  slevaProjSet('procenta', 14);
+  render();
+  return m;
+});
+zkus('příprava: sleva projekce 14 % je schválená automaticky',
+  await p.evaluate(() => aktivniVarianta(ZAK).data.slevaProj.stav) === 'schváleno automaticky');
+const proj3 = await nabidka('nabidkaProjNahled');
+const rek = await proj3.evaluate(() => [...document.querySelectorAll('table.rekap tr')]
+  .map(tr => [...tr.cells].map(td => td.innerText.trim())));
+const kc = t => +String(t || '').replace(/[^\d,]/g, '').replace(',', '.');
+const iPred = rek.findIndex(r => /Cena před slevou/.test(r[0]));
+const radkySlevy = rek.find(r => /^Sleva/.test(r[0])) || [];
+const celkem = rek.find(r => /CELKEM bez DPH/.test(r[0])) || [];
+const soucetCinnosti = rek.slice(0, Math.max(0, iPred)).reduce((a, r) => a + kc(r[1]), 0);
+zkus('PROJ se slevou: rekapitulace má řádek ceny před slevou i slevy', iPred > 0 && radkySlevy.length === 2, JSON.stringify(rek));
+zkus('PROJ se slevou: součet činností = cena před slevou',
+  iPred > 0 && Math.abs(soucetCinnosti - kc(rek[iPred][1])) < 0.005, soucetCinnosti + ' × ' + (rek[iPred] || [])[1]);
+zkus('PROJ se slevou: cena před slevou − sleva = CELKEM bez DPH',
+  iPred > 0 && Math.abs(kc(rek[iPred][1]) - kc(radkySlevy[1]) - kc(celkem[1])) < 0.005, JSON.stringify(rek.slice(iPred)));
+const cenaDpz = await proj3.evaluate(() => {
+  const t = [...document.querySelectorAll('table.cena')].find(x => /POVOLENÍ ZÁMĚRU \(DPZ\)/.test(x.innerText));
+  return t ? t.querySelector('td.castka').innerText.split('\n')[0].trim() : '';
+});
+const dpzRekap = (rek.find(r => /^DPZ/.test(r[0])) || [])[1] || '';
+zkus('PROJ se slevou: cena DPZ v textu nabídky = řádek DPZ v rekapitulaci (před slevou)',
+  !!cenaDpz && kc(cenaDpz) === kc(dpzRekap), cenaDpz + ' × ' + dpzRekap);
+await proj3.close();
+await p.evaluate((m) => { slevaProjSet('procenta', 0); PC.marze = m; render(); }, puvodniMarze);
+
 /* ---------- nabídka OCK ---------- */
 await p.evaluate(() => { prepniTab('spec'); render(); });
 const ock = await nabidka('nabidkaOckDokument');

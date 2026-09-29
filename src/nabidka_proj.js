@@ -352,8 +352,11 @@ const NABIDKA_PROJ_SEKCE = ['zamereni', 'studie', 'projednani', 'dpz', 'ic', 'dp
 /* Sestaví data nabídky PROJ z varianty zakázky.
  * lang = 'cz' | 'en' | 'de' | 'fr' – překládají se nadpisy a krátké popisky;
  * souvislá próza ({ cz: … }) zůstává česky (nic se nevymýšlí).
- * Vrací { placeholders, bloky, rekapitulace, souhrn, jazyk, nazevSouboru }. */
-function nabidkaProjData(zak, varianta, lang) {
+ * Vrací { placeholders, bloky, rekapitulace, souhrn, jazyk, nazevSouboru }.
+ *
+ * moznosti.slevaZvlast (výchozí true) — viz „ČINNOSTI ZA CENU PŘED SLEVOU" níž:
+ * false = ceny činností po slevě (šablona bez řádku slevy, smlouva o dílo). */
+function nabidkaProjData(zak, varianta, lang, moznosti) {
   const L = lang || 'cz';
   const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
   const d = (varianta && varianta.data) || {};
@@ -410,7 +413,18 @@ function nabidkaProjData(zak, varianta, lang) {
       cenyPo[s.key] = mena.na(cenyPo[s.key]);
     }
   });
-  const cenaSekce = key => (cenyPo[key] == null ? null : cenyPo[key]);
+  /* ČINNOSTI ZA CENU PŘED SLEVOU (29. 9. 2026, nález J. V.: „DPZ a IČ by
+   * mělo být za cenu před slevou", „chyba v součtu při udělení slevy").
+   * Nabídka, která slevu vypisuje vlastním řádkem (online nabídka, šablona
+   * s {{PROJ_SLEVA_KC}}), ukazuje činnosti za cenu PŘED slevou: součet řádků
+   * = cena před slevou, − sleva = celkem. Do té doby tu stály ceny po slevě
+   * a rekapitulace se nesečetla (70 100 + 28 000 ≠ „cena před slevou 114 100").
+   * Dokument BEZ řádku slevy (šablona PROJ v2, smlouva o dílo) nese dál ceny
+   * po slevě (rozpuštěná sleva, #134) — tam musí činnosti dát cenu, kterou
+   * zákazník platí. Celkem po slevě se počítá vždy z cen po slevě. */
+  const slevaZvlast = !(moznosti && moznosti.slevaZvlast === false);
+  const cenyZobr = slevaZvlast ? cenyPred : cenyPo;
+  const cenaSekce = key => (cenyZobr[key] == null ? null : cenyZobr[key]);
 
   /* DPH: přednost má vlastní sazba projekční části (ceník PROJ). Starší zakázky
    * ji nemají – tam se použije dosud platná sazba z ceníku OCK, ať se čísla
@@ -421,7 +435,7 @@ function nabidkaProjData(zak, varianta, lang) {
   /* Součty se skládají ze sekcí uvedených v TÉTO nabídce (ne z r.souhrn),
    * aby dokument dával součet sám v sobě. */
   const soucetSekci = NABIDKA_PROJ_SEKCE.reduce((a, k) => a + (cenyPred[k] || 0), 0);
-  const celkemBezDph = NABIDKA_PROJ_SEKCE.reduce((a, k) => a + (cenaSekce(k) || 0), 0);
+  const celkemBezDph = NABIDKA_PROJ_SEKCE.reduce((a, k) => a + (cenaSekce(k) ? (cenyPo[k] || 0) : 0), 0);
   /* Sleva se vykazuje jako ROZDÍL zaokrouhlených částek, ne jako procento
    * z nezaokrouhleného základu. Jen tak platí „cena před slevou − sleva =
    * celkem" na korunu; jinak by v nabídce zbyl haléřový rozdíl, který nemá
@@ -740,12 +754,24 @@ function nabidkaProjData(zak, varianta, lang) {
               dphPct: dphPct, dphKc: dphKc, sDph: celkemBezDph + dphKc } };
 }
 
+/* Ukáže šablona slevu vlastním řádkem? Rozhoduje symbol {{PROJ_SLEVA_KC}}.
+ * Bez informace o šabloně (náhled v aplikaci) platí ano. */
+function nabidkaProjSlevaZvlast(sablona) {
+  if (!sablona || !sablona.symboly) return true;
+  const sym = sablona.symboly;
+  return typeof sym.has === 'function' ? sym.has('PROJ_SLEVA_KC') : Array.from(sym).indexOf('PROJ_SLEVA_KC') >= 0;
+}
+
 /* registrace do jednotného registru dokumentů (dokumenty.js) */
 if (typeof dokumentRegistruj === 'function')
   dokumentRegistruj('nabidkaProj', {
     nazev: 'Cenová nabídka PROJ (OVP-CN)', sablona: 'Sablona_NABIDKA_PROJ.docx',
-    builder: (zak, varianta, jekly, lang) => nabidkaProjData(zak, varianta, lang),
+    /* Šablona s řádkem slevy dostane činnosti za cenu před slevou, šablona
+     * bez něj (PROJ v2) po slevě — dokument se pokaždé sečte sám v sobě. */
+    sablonaSymboly: true,
+    builder: (zak, varianta, jekly, lang, sablona) => nabidkaProjData(zak, varianta, lang,
+      { slevaZvlast: nabidkaProjSlevaZvlast(sablona) }),
   });
 
 if (typeof module !== 'undefined')
-  module.exports = { nabidkaProjData, nabidkaProjUvod, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE };
+  module.exports = { nabidkaProjData, nabidkaProjSlevaZvlast, nabidkaProjUvod, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE };

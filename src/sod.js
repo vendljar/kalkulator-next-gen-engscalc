@@ -99,7 +99,9 @@ function sodData(zak, varianta, jekly, lang) {
 /* SoD projekčních prací — stejná data jako nabídka PROJ (hlavička PROJ,
  * číslo OVP), jiné jméno souboru. */
 function sodProjData(zak, varianta, lang) {
-  const d = nabidkaProjData(zak, varianta, lang);
+  /* Smlouva nese cenu díla: činnosti po slevě, ať se sečtou na cenu, kterou
+   * objednatel platí (řádek slevy smlouva nemá). */
+  const d = nabidkaProjData(zak, varianta, lang, { slevaZvlast: false });
   const L = d.jazyk || 'cz';
   const nazev = ('SOD_PROJ_' + (d.placeholders.CISLO_NABIDKY || 'OVP-CN')
     + (varianta && varianta.zakaznik ? '_' + varianta.zakaznik : '')
