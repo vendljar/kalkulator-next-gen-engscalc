@@ -8,6 +8,33 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v29.9.1 — nabídka PROJ se slevou sčítá rekapitulaci; rozhodnutí k rozboru D (29. 9. 2026)
+
+Větev `test-draft`.
+
+- **Nabídka PROJ se slevou: činnosti za cenu před slevou (#364).** Nález
+  J. V. 29. 9. 2026: „DPZ a IČ by mělo být za cenu před slevou" a „chyba
+  v součtu při udělení slevy". Rekapitulace vypisovala činnosti už po slevě
+  (DPZ 70 100 + IČ 28 000) a pod nimi „Cena před slevou 114 100 − Sleva
+  16 000 = CELKEM 98 100" — řádky se do ceny před slevou nesečetly. Online
+  nabídka a Word se šablonou, která má řádek slevy (`{{PROJ_SLEVA_KC}}`),
+  teď vypisují činnosti za cenu před slevou (tutéž jako bez slevy):
+  činnosti → cena před slevou → sleva → CELKEM bez DPH. Šablona PROJ v2
+  (bez řádku slevy) a smlouva o dílo PROJ nesou ceny po slevě jako dosud —
+  jinak by součet v nich neodpovídal ceně, kterou zákazník platí. Karta
+  nabídky PROJ v aplikaci ukazuje v rekapitulaci taky cenu před slevou
+  a slevu. Ceny činností jsou zaokrouhlené obchodním zaokrouhlením PROJ
+  (na stokoruny nahoru) stejně jako bez slevy — DPZ 81 510 Kč z kalkulace
+  je v nabídce 81 600 Kč; sleva je rozdíl zaokrouhlených částek.
+- **Rozhodnutí J. V. k rozboru D** jsou zapsaná na začátku
+  `podklady/K16_ROZBOR_2026-09-25.md`; roadmapa #363 uzavřená, práce podle
+  rozhodnutí v nových položkách #365–#370.
+
+Testy: nová sada `src/test_proj_sleva_nabidka.js` 13 (bez opravy 6
+selže), `overit_nabidky_dph` +5 (bez opravy nesedí součet).
+
+---
+
 ## v25.9.8 — dávka C kola 16: překlad šablon kolem symbolů, nabídka PROJ s vlastními položkami (25. 9. 2026)
 
 Roadmapa #362, větev `k16-nalezy`.

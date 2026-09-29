@@ -5688,16 +5688,148 @@
   {
    "id" : "363",
    "vlna" : "B",
-   "stav" : "blokovano",
-   "dulezitost" : "stredni",
+   "stav" : "hotovo",
+   "hotovoV" : "v29.9.1",
+   "dulezitost" : "",
    "slozitost" : "M",
    "nazev" : "Kolo 16, rozbor D: prázdné kapitoly, SoD z nabídky, platební podmínky, PROJ u zahraničí, náklady u obchodníka",
    "proc" : "Body „prověřit + návrh\" z podkladů kola 16 — kód se nemění bez rozhodnutí J. V.",
-   "detail" : "ROZBOR HOTOV v25.9.8: `podklady/K16_ROZBOR_2026-09-25.md` (kód se nezměnil). P8 (K16-N78, K9-N32): Word nechá u prázdné kapitoly IV.–VI. nadpis i prázdný rámeček (náhled a PDF ji vypustí), texty v aplikaci slibují opak; termín „12\" odejde bez jednotky, přípona ATYP je vždy česky — návrh: značky bloku v šabloně v13 (A), holé číslo doplnit o „týdnů\". P9 (K16-N83): SoD plní symboly nabídky, objednatele a splátky PROJ, nikdy číslo smlouvy a termíny; mapa PODM_* → SOD_* s jistotou řádků; nález: po změně Nastavení může SoD nést jiné podmínky než odeslaná nabídka. P10 (K15-N71): platební podmínky na devíti místech, sedm rozporů (milníky OCK krycí list × Word, „Bez zálohy\" → „ve výši  (+ DPH)\", náhled PROJ z konstant, platnost 2 × 3 měsíce) — návrh B (firemní standard) hned, C (splátkový kalendář) jako cíl. P11 (K15-N72): řada Zahraničí mění u PROJ jen přirážku a DPH, nikdo o tom neví — návrh A (upozornit). P12 (K16-N76): kalkulace PROJ ukazuje obchodníkovi nákladové sazby (únik v rozhraní), server posílá ceník s náklady každému přihlášenému — návrh A hned. ZBÝVÁ: rozhodnutí J. V. a podle nich dávka oprav.",
-   "otazka" : "P8: Word A (šablona v13 se značkami), nebo hned B nad v12? Doplňovat „týdnů\" k holému číslu? P9: číslo smlouvy = číslo nabídky? Termíny SoD z krycího listu? Splátky PROJ dopočítat? Zmrazit v zámku i podmínky z Nastavení? P10: platí milníky krycího listu, nebo věty šablony? Fakturace měsíční, nebo po milnících? Platnost 2, nebo 3 měsíce? P11: liší se sazby PROJ v zahraničí? P12: co má obchodník vidět místo nákladové sazby PROJ; ceník bez nákladů = přehled, nebo utajení?",
-   "cekaNa" : "J. V. — texty kapitol nabídky (Nastavení → Firma), rozhodnutí P9–P12; rozbor připraví Claude",
+   "detail" : "ROZHODNUTO J. V. 29. 9. 2026 (tabulka na začátku podklady/K16_ROZBOR_2026-09-25.md): P8 varianta A + termín v týdnech → #365; P9 vlastní řada čísel smluv, termíny a podpisy z krycího listu, zámek zmrazí podmínky → #366; P10 vše z krycího listu, 2 měsíce, „bez DPH\", návrh plánu plateb → #367; P11 PROJ u zahraničí nerealizujeme → #368; P12 náklady obchodníkovi do budoucna vypnout → #369. ROZBOR HOTOV v25.9.8: `podklady/K16_ROZBOR_2026-09-25.md` (kód se nezměnil). P8 (K16-N78, K9-N32): Word nechá u prázdné kapitoly IV.–VI. nadpis i prázdný rámeček (náhled a PDF ji vypustí), texty v aplikaci slibují opak; termín „12\" odejde bez jednotky, přípona ATYP je vždy česky — návrh: značky bloku v šabloně v13 (A), holé číslo doplnit o „týdnů\". P9 (K16-N83): SoD plní symboly nabídky, objednatele a splátky PROJ, nikdy číslo smlouvy a termíny; mapa PODM_* → SOD_* s jistotou řádků; nález: po změně Nastavení může SoD nést jiné podmínky než odeslaná nabídka. P10 (K15-N71): platební podmínky na devíti místech, sedm rozporů (milníky OCK krycí list × Word, „Bez zálohy\" → „ve výši  (+ DPH)\", náhled PROJ z konstant, platnost 2 × 3 měsíce) — návrh B (firemní standard) hned, C (splátkový kalendář) jako cíl. P11 (K15-N72): řada Zahraničí mění u PROJ jen přirážku a DPH, nikdo o tom neví — návrh A (upozornit). P12 (K16-N76): kalkulace PROJ ukazuje obchodníkovi nákladové sazby (únik v rozhraní), server posílá ceník s náklady každému přihlášenému — návrh A hned. ZBÝVÁ: rozhodnutí J. V. a podle nich dávka oprav.",
    "hotovoKdyz" : "Rozbor v podklady/K16_ROZBOR a rozhodnutí J. V. zapsaná.",
    "kde" : "`podklady/`"
+  },
+  {
+   "id" : "364",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "hotovoV" : "v29.9.1",
+   "dulezitost" : "",
+   "slozitost" : "S",
+   "nazev" : "Nabídka PROJ se slevou: činnosti za cenu před slevou, rekapitulace se sečte",
+   "proc" : "J. V. 29. 9. 2026 (snímky nabídky se slevou 14 %): „Ta sleva se nepropisuje správně do cenové nabídky: DPZ a IČ by mělo být za cenu před slevou\" a „V nabídce PROJ máme chybu v součtu při udělení slevy.\" Rekapitulace vypisovala činnosti už po slevě a pod nimi cenu před slevou − slevu; řádky se nesečetly.",
+   "detail" : "HOTOVO v29.9.1: nabídka, která slevu ukazuje vlastním řádkem (online nabídka, šablona s {{PROJ_SLEVA_KC}}), vypisuje činnosti za cenu před slevou — součet řádků = cena před slevou, − sleva = celkem. Šablona bez řádku slevy (PROJ v2) a smlouva o dílo PROJ nesou ceny po slevě (sečtou se na cenu, kterou zákazník platí). dokumentVygeneruj předává builderu symboly šablony. Karta nabídky PROJ v aplikaci ukazuje cenu před slevou a slevu.",
+   "hotovoKdyz" : "Splněno: src/test_proj_sleva_nabidka.js 13 (bez opravy 6 selže), overit_nabidky_dph +5 (bez opravy součet selže).",
+   "kde" : "`src/nabidka_proj.js`, `src/dokumenty.js`, `src/sod.js`, `src/ui/nabidka_proj_ui.js`",
+   "zavisi" : []
+  },
+  {
+   "id" : "365",
+   "vlna" : "B",
+   "stav" : "ceka",
+   "dulezitost" : "stredni",
+   "slozitost" : "M",
+   "nazev" : "P8: prázdné kapitoly ve Wordu (značky bloku, šablona CN v13 s mutacemi) a termín v týdnech",
+   "proc" : "K16-N78, K9-N32: Word nechá u prázdné kapitoly IV.–VI. nadpis i prázdný rámeček; termín „12\" odejde bez jednotky a přípona ATYP je vždy česky. Rozhodnutí J. V. 29. 9. 2026: varianta A (značky v šabloně), holé číslo doplnit o „týdnů\"; nové šablony vždy i s jazykovými mutacemi.",
+   "detail" : "Generátor: úsek mezi značkami {{KAP_…_ZAC}} a {{KAP_…_KON}} zmizí i s nadpisem, když je kapitola prázdná, jinak zmizí jen značky. Šablona CN v13 (CZ/EN/DE/FR) se značkami kolem kapitol IV.–VI. a doložek. Termín: holé číslo → „N týdnů\", přípona ATYP přes slovník. Opravit texty, které vypuštění ve Wordu slibovaly.",
+   "hotovoKdyz" : "Prázdná kapitola ve Wordu v13 nenechá nadpis ani rámeček (test na šabloně i generátoru), termín „12\" odejde jako „12 týdnů\" i v EN/DE/FR.",
+   "kde" : "`src/docxgen.js`, `src/kryci.js`, `src/preklad.js`, šablony CN v13",
+   "zavisi" : [
+    {
+     "id" : "363",
+     "typ" : "tvrda",
+     "proc" : "rozhodnutí P8"
+    }
+   ]
+  },
+  {
+   "id" : "366",
+   "vlna" : "B",
+   "stav" : "ceka",
+   "dulezitost" : "stredni",
+   "slozitost" : "M",
+   "nazev" : "P9: smlouva o dílo z krycího listu — termíny, podpisy, zmrazení podmínek, vlastní řada čísel",
+   "proc" : "K16-N83: SoD plní jen symboly nabídky, objednatele a splátky PROJ; číslo smlouvy a termíny nikdy, podpisy objednatele jen u PROJ, a po změně Nastavení může nést jiné podmínky než odeslaná nabídka. Rozhodnutí J. V. 29. 9. 2026: vlastní řada čísel smluv, termíny z krycího listu, podpisy i do SoD OCK, zámek zmrazí i podmínky z Nastavení.",
+   "detail" : "Zámek zapíše předvyplněné podmínky krycího listu do varianty (zmrazí je); SOD_TERMIN_MONTAZ_OD a SOD_TERMIN_DOKONCENI z krycího listu OCK; OBJEDNATEL_PODPIS_* a kontakty i v SoD OCK; číslo smlouvy z vlastní řady (podoba řady v návrhu #367).",
+   "hotovoKdyz" : "Test: SoD OCK nese termíny a podpisy z krycího listu; po zámku a změně Nastavení zůstanou podmínky odeslané nabídky.",
+   "kde" : "`src/sod.js`, `src/kryci.js`, `src/kryci_proj.js`, `src/ui/zamek_ui.js`",
+   "zavisi" : [
+    {
+     "id" : "363",
+     "typ" : "tvrda",
+     "proc" : "rozhodnutí P9"
+    },
+    {
+     "id" : "350",
+     "typ" : "doporuceno",
+     "proc" : "šablony SoD pro ověření symbolů"
+    }
+   ]
+  },
+  {
+   "id" : "367",
+   "vlna" : "B",
+   "stav" : "ceka",
+   "dulezitost" : "vysoka",
+   "slozitost" : "L",
+   "nazev" : "P10: platební podmínky z krycího listu — 2 měsíce, splatnost, „bez DPH\", po milnících, záruka + návrh plánu plateb",
+   "proc" : "K15-N71: platební podmínky žijí na devíti místech a v sedmi bodech si odporují. Rozhodnutí J. V. 29. 9. 2026: vše se dotahuje z krycího listu, při rozporu má přednost krycí list; standard 50 / 40 / 10; platnost 2 měsíce; splatnost z krycího listu; znění „bez DPH\"; fakturace většinou po milnících, může být i měsíční; pro plán plateb PROJ (4 znění) a „vše z krycího listu\" připravit návrh.",
+   "detail" : "Hned: platnost 2 měsíce všude a skloňování, náhled PROJ bere splatnost a platnost z krycího listu, způsob fakturace výchozí po milnících (volba měsíční), záruka z krycího listu, věty „bez DPH\". Návrh: jak by krycí list řídil celé znění podmínek v nabídce, Wordu a SoD (OCK i PROJ), včetně splátek SoD PROJ a řady čísel smluv.",
+   "hotovoKdyz" : "Náhled, Word i SoD berou podmínky z krycího listu; návrh odsouhlasený J. V.",
+   "kde" : "`src/kryci.js`, `src/kryci_proj.js`, `src/firma.js`, `src/nabidka.js`, `src/nabidka_proj.js`, `src/preklad.js`",
+   "zavisi" : [
+    {
+     "id" : "363",
+     "typ" : "tvrda",
+     "proc" : "rozhodnutí P10"
+    }
+   ]
+  },
+  {
+   "id" : "368",
+   "vlna" : "B",
+   "stav" : "ceka",
+   "dulezitost" : "stredni",
+   "slozitost" : "S",
+   "nazev" : "P11: projekce u zahraniční varianty se nerealizuje",
+   "proc" : "K15-N72: řada Zahraničí mění u PROJ jen přirážku a DPH, sazby a fixy zůstávají tuzemské a nikdo o tom neví. Rozhodnutí J. V. 29. 9. 2026: „zahraniční zakázky PROJ nerealizujeme\".",
+   "detail" : "Zahraniční varianta s oceněnou projekcí: kontrola před nabídkou PROJ a věta v dialogu přepnutí řady.",
+   "hotovoKdyz" : "Test kontroly (zahraniční řada + cena PROJ = ozve se; tuzemská nebo PROJ bez ceny = mlčí).",
+   "kde" : "`src/kontroly.js`, `src/ui/common.js`",
+   "zavisi" : [
+    {
+     "id" : "363",
+     "typ" : "tvrda",
+     "proc" : "rozhodnutí P11"
+    }
+   ]
+  },
+  {
+   "id" : "369",
+   "vlna" : "B",
+   "stav" : "ceka",
+   "dulezitost" : "nizka",
+   "slozitost" : "S–M",
+   "nazev" : "P12: vypnout náklady v zobrazení obchodníka (sazby PROJ, ceník)",
+   "proc" : "K16-N76: kalkulace PROJ ukazuje obchodníkovi nákladové sazby a server posílá ceník s náklady každému přihlášenému. J. V. 29. 9. 2026: „náklady zatím obchodník vidí, ale do budoucna bychom je v jeho zobrazení měli vypnout\".",
+   "detail" : "Až přijde čas: sloupec sazby v Kalkulaci PROJ jen s právem na náklady (klíč matice zobrazení), opravit kontroly.cisla, stažení JSON zakázky bez ceníků; případně GET /api/program bez historie verzí (varianty v podklady/K16_ROZBOR_2026-09-25.md, P12).",
+   "hotovoKdyz" : "Obchodník v zobrazení nevidí nákladové sazby ani náklady.",
+   "kde" : "`src/ui/kalk_proj.js`, `src/zobrazeni.js`, `src/ui/kontroly_ui.js`",
+   "zavisi" : [
+    {
+     "id" : "363",
+     "typ" : "tvrda",
+     "proc" : "rozhodnutí P12"
+    }
+   ]
+  },
+  {
+   "id" : "370",
+   "vlna" : "B",
+   "stav" : "ceka",
+   "dulezitost" : "stredni",
+   "slozitost" : "M",
+   "nazev" : "Šablona nabídky PROJ v3 se součtem, slevou a vlastními položkami + EN/DE/FR",
+   "proc" : "K15-N66, K14-N64: šablona PROJ v2 nemá symboly součtu, slevy ani vlastních položek, takže Word PROJ slevu neukáže (jen rozpuštěnou v cenách). J. V. 29. 9. 2026: nové šablony vždy i s jazykovými mutacemi.",
+   "detail" : "Šablona PROJ v3 (CZ/EN/DE/FR): rekapitulace se symboly PROJ_CELKEM_BEZ_DPH, PROJ_CENA_PRED_SLEVOU, PROJ_SLEVA_PROC, PROJ_SLEVA_KC, PROJ_DPH_KC, PROJ_CELKEM_S_DPH a odstavec {{PROJ_POLOZKY_NAVIC}}; ceny činností se v ní ukážou před slevou (#364).",
+   "hotovoKdyz" : "overit_nabidka_proj_word projde se šablonou v3 i s mutacemi; kontroly slevaWordProj a polozkyNavicWordProj mlčí.",
+   "kde" : "šablony PROJ v3 (podklady J. V.)",
+   "zavisi" : [
+    {
+     "id" : "364",
+     "typ" : "doporuceno",
+     "proc" : "ceny před slevou v šabloně s řádkem slevy"
+    }
+   ]
   }
  ],
  "meta" : {
@@ -6206,6 +6338,10 @@
   {
    "text" : "Noc 25. 9. 2026 (engscalc, větev k16-nalezy), v25.9.8 — rozbor D kola 16 (#363): podklady/K16_ROZBOR_2026-09-25.md (P8 kapitoly a termín, P9 mapa SoD, P10 platební podmínky, P11 PROJ u zahraničí, P12 náklady u obchodníka); kód beze změny, čeká na rozhodnutí J. V.",
    "hotovo" : true
+  },
+  {
+   "text" : "29. 9. 2026 (engscalc, test-draft), v29.9.1 — oprava nabídky PROJ se slevou (#364: činnosti za cenu před slevou, rekapitulace se sečte) a zápis rozhodnutí J. V. k rozboru D (#363 → položky #365–#370). Ověřeno: sady v Node, test_proj_sleva_nabidka 13, overit_nabidky_dph 24, overit_nabidka_proj_word 54, pred_pushem.",
+   "hotovo" : true
   }
   ],
   "pravidla" : [
@@ -6292,8 +6428,8 @@
     "id" : "F"
    }
   ],
-  "build" : "v25.9.8 (engscalc)",
-  "stavKDatu" : "25. 9. 2026"
+  "build" : "v29.9.1 (engscalc)",
+  "stavKDatu" : "29. 9. 2026"
  },
  "_comment" : [
   "JEDINÝ ZDROJ PRAVDY pro roadmapu Kalkulátoru Next Gen.",
