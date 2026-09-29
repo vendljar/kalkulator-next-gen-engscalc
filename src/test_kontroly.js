@@ -159,7 +159,8 @@ const pravidla = kontrolyPravidla();
  * a 17. „slevaWord" (P5 / K13-N56, test_k13_kontroly.js), obě 24. 9. 2026;
  * 18. „mustky" 25. 9. 2026 (P7 / K13-N59, test_mustky.js). */
 /* 19. „cenaNula" 25. 9. 2026 (P2 / K16-N75): nulová nebo nečíselná cena = zábrana. */
-test('pravidel je devatenáct', pravidla.length === 19, pravidla.length);
+/* 20 od 29. 9. 2026: profilNeznamy (#365). */
+test('pravidel je dvacet', pravidla.length === 20, pravidla.length);
 test('kódy pravidel jsou jedinečné',
   new Set(pravidla.map(p => p.kod)).size === pravidla.length,
   pravidla.map(p => p.kod).join(','));
@@ -359,7 +360,7 @@ test('text varování nikde nepřikazuje ani neblokuje',
 test('zábrana má vlastní text, který se dá ukázat samostatně',
   k9.textBrani.length > 0 && k9.textBrani === n9.text, k9.textBrani);
 test('v katalogu pravidel je poznat, které umí zastavit dokument',
-  pravidla.filter(p => p.zabranaMozna).map(p => p.kod).join(',') === 'rozmery,cenaNula,sleva,slevaProj,ukazkovyCenik',
+  pravidla.filter(p => p.zabranaMozna).map(p => p.kod).join(',') === 'rozmery,profilNeznamy,cenaNula,sleva,slevaProj,ukazkovyCenik',
   JSON.stringify(pravidla.filter(p => p.zabranaMozna).map(p => p.kod)));
 
 /* ---------- 6) dvě podoby textu ---------- */
