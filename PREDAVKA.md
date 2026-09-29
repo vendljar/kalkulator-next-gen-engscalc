@@ -32,8 +32,8 @@ Roadmapa: `roadmapa/roadmap.json` (365 položek), stránka se generuje
 | Sezení | Odkaz | Větev | Účel |
 |---|---|---|---|
 | Komplexní test v29.9.1 (21. kolo) | https://claude.ai/code/session_01Rg7AoGDDV38bi1DN71TR8N | `claude/komplexni-test-v29.9.1` | kolo, audit, protokol, prompty, tato předávka |
-| Opravy v29.9.1 (koordinace) | <!--ODKAZ_OPRAVY--> | `claude/opravy-v29.9.1` | na pokyn J. V. spustí každý ze šesti promptů jako samostatné sezení s větví `claude/oprava-<id>-v29.9.1` |
-| Testování po opravách v29.9.1 (22. kolo) | <!--ODKAZ_TEST--> | `claude/testovani-po-opravach` | čeká na pokyn J. V.; pak komplexní testovací procedura nad opraveným kódem |
+| Opravy v29.9.1 (koordinace) | https://claude.ai/code/session_013Zhv7LTN1Z7hAfzcNik7Cw | `claude/opravy-v29.9.1` | na pokyn J. V. spustí každý ze šesti promptů jako samostatné sezení s větví `claude/oprava-<id>-v29.9.1` |
+| Testování po opravách v29.9.1 (22. kolo) | https://claude.ai/code/session_011bKm7zw36TH8By3Ef7rF1i | `claude/testovani-po-opravach` | čeká na pokyn J. V.; pak komplexní testovací procedura nad opraveným kódem |
 
 Soubory 21. kola (poslané v chatu sezení 21. kola; device bridge v cloudu není —
 **do Output documents je nahraje J. V.**, 22. kolo si je odtud stáhne):
