@@ -1008,10 +1008,12 @@ const PREKLAD_VZORY = [
    * 4 týdnů za ATYP)". Stojí PŘED obecným „cca …", jinak by z něj vyšlo
    * „approx. 12 týdnů" — půl věty česky. Náhrada je funkce, protože
    * předpona i dovětek za ATYP jsou nepovinné. */
-  { re: /^(cca\s+)?(\d+)\s+týdn[ůy](?:\s+\(vč\.\s+(\d+)\s+týdn[ůy]\s+za\s+ATYP\))?$/i,
-    en: (m, c, n, a) => (c ? 'approx. ' : '') + n + ' weeks' + (a ? ' (incl. ' + a + ' weeks for the non-standard design)' : ''),
-    de: (m, c, n, a) => (c ? 'ca. ' : '') + n + ' Wochen' + (a ? ' (inkl. ' + a + ' Wochen für die Sonderausführung)' : ''),
-    fr: (m, c, n, a) => (c ? 'env. ' : '') + n + ' semaines' + (a ? ' (dont ' + a + ' semaines pour l\u2019exécution spéciale)' : '') },
+  /* „1 týden" i jednotné číslo v cizím jazyce (P8b, 29. 9. 2026: aplikace
+   * doplňuje jednotku k holému číslu a skloňuje). */
+  { re: /^(cca\s+)?(\d+)\s+týd(?:n[ůy]|en)(?:\s+\(vč\.\s+(\d+)\s+týdn[ůy]\s+za\s+ATYP\))?$/i,
+    en: (m, c, n, a) => (c ? 'approx. ' : '') + n + (n === '1' ? ' week' : ' weeks') + (a ? ' (incl. ' + a + ' weeks for the non-standard design)' : ''),
+    de: (m, c, n, a) => (c ? 'ca. ' : '') + n + (n === '1' ? ' Woche' : ' Wochen') + (a ? ' (inkl. ' + a + ' Wochen für die Sonderausführung)' : ''),
+    fr: (m, c, n, a) => (c ? 'env. ' : '') + n + (n === '1' ? ' semaine' : ' semaines') + (a ? ' (dont ' + a + ' semaines pour l\u2019exécution spéciale)' : '') },
   { re: /^cca\s+(.+)$/i, en: 'approx. $1', de: 'ca. $1', fr: 'env. $1' },
   { re: /^šířka\s+(.+?)\s+×\s+hloubka\s+(.+)$/i,
     en: 'width $1 × depth $2', de: 'Breite $1 × Tiefe $2', fr: 'largeur $1 × profondeur $2' },

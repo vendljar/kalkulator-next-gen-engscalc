@@ -206,7 +206,9 @@ const KRYCI_SEKCE = [
    * se do nabídky nedávají — ty se domlouvají až u smlouvy. */
   { sekce: 'Termín dodání', pole: [
     { id: 'terminDodani', label: 'Termín dodání OCK', verze: ['bo', 'techdata'],
-      prefill: c => kryciTerminDodani(c), src: 'Nastavení → Firma (+ ATYP)' },
+      prefill: c => kryciTerminDodani(c), src: 'Nastavení → Firma (+ ATYP)',
+      /* ruční „10" odejde jako „10 týdnů" (P8b) */
+      normalizuj: v => kryciTerminSJednotkou(v) },
   ] },
   { sekce: 'Termíny', pole: [
     { id: 'terminPrevzeti', label: 'Převzetí staveniště k montáži šachty', verze: ['bo', 'techdata'], typ: 'date' },
@@ -417,15 +419,32 @@ function kryciCtx(zak, varianta, jekly) {
  * Když v ní žádné číslo není (nebo lhůta není vyplněná vůbec), NIC SE
  * NEVYMÝŠLÍ — vrátí se, co tam je, a k tomu poznámka o atypu; termín pak
  * doplní člověk. Stejné pravidlo jako u cen. */
+/* JEDNOTKA U HOLÉHO ČÍSLA (P8b, rozhodnutí J. V. 29. 9. 2026: „číslo
+ * doplnit o týdnů"). Termín se v aplikaci počítá v týdnech (ATYP přičítá
+ * týdny k prvnímu číslu), holé „12" tedy jsou týdny — jen to v nabídce
+ * nestálo („Termín dodání: 12") a termín s ATYP se nedal přeložit. Doplňuje
+ * se jen k holému číslu (případně „cca 12"); věta s vlastní jednotkou nebo
+ * datem zůstává, jak ji kdo napsal. */
+function kryciTydnu(n) {
+  const k = Math.abs(parseInt(n, 10) || 0);
+  return k === 1 ? 'týden' : (k >= 2 && k <= 4 ? 'týdny' : 'týdnů');
+}
+function kryciTerminSJednotkou(text) {
+  const t = String(text == null ? '' : text).trim();
+  const m = t.match(/^(cca\s*)?(\d+)$/i);
+  return m ? (m[1] ? 'cca ' : '') + m[2] + ' ' + kryciTydnu(m[2]) : t;
+}
 function kryciTerminDodaniText(zakladniText, atyp, tydnyNavic) {
-  const zaklad = String(zakladniText == null ? '' : zakladniText).trim();
+  const zaklad = kryciTerminSJednotkou(zakladniText);
   const navic = Math.round(+String(tydnyNavic == null ? '' : tydnyNavic).replace(',', '.')) || 0;
   if (!atyp || navic <= 0) return zaklad;
   const m = zaklad.match(/\d+/);
   if (!m) return zaklad ? (zaklad + ' + ' + navic + ' týdnů (ATYP)') : '';
-  const nove = String(parseInt(m[0], 10) + navic);
-  return zaklad.slice(0, m.index) + nove + zaklad.slice(m.index + m[0].length)
-    + ' (vč. ' + navic + ' týdnů za ATYP)';
+  const nove = parseInt(m[0], 10) + navic;
+  /* „2 týdny" + 4 = „6 týdnů": tvar slova za číslem se srovná s novým číslem. */
+  const zbytek = zaklad.slice(m.index + m[0].length)
+    .replace(/^(\s+)týd(?:en|ny|nů)(?=$|[\s,.;:)])/, (x, mezera) => mezera + kryciTydnu(nove));
+  return zaklad.slice(0, m.index) + nove + zbytek + ' (vč. ' + navic + ' týdnů za ATYP)';
 }
 
 function kryciTerminDodani(c) {
@@ -441,7 +460,8 @@ function kryciHodnota(pole, kl, c) {
    * v hlavičce kalkulace — ruční přepis se proto nečte ani tady. */
   if (!pole.bind && !pole.dphBind) {   // provázaná pole (bind) čtou přímo ze ZAK, ne z ručních přepisů
     const h = (kl && kl.hodnoty) || {};
-    if (h[pole.id] !== undefined && h[pole.id] !== '') return h[pole.id];
+    if (h[pole.id] !== undefined && h[pole.id] !== '')
+      return typeof pole.normalizuj === 'function' ? pole.normalizuj(h[pole.id]) : h[pole.id];
   }
   if (pole.prefill) { try { const v = pole.prefill(c); if (v != null && v !== '') return v; } catch (e) {} }
   return '';
@@ -566,6 +586,6 @@ if (typeof module !== 'undefined')
   module.exports = { kryciKc, KRYCI_SEKCE, KRYCI_NABIDKA_SEKCE, KRYCI_DPH_SAZBY, KRYCI_POKUTY, kryciCtx, kryciHodnota,
     kryciData, kryciMigraceZadrzne, kryciMigraceSazbaDph,
     PODM_PREFIX, kryciSymbolId, kryciCisloZTextu, kryciProcentoZTextu,
-    kryciTerminDodani, kryciTerminDodaniText,
+    kryciTerminDodani, kryciTerminDodaniText, kryciTerminSJednotkou, kryciTydnu,
     kryciSymbolyZeSekci, kryciPodminkoveSymboly,
     kryciFaktura2Dopocet, kryciFaktura2Sync };
