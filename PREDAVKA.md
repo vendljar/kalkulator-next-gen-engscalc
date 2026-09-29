@@ -21,8 +21,8 @@ v `git show 9a48ee8:PREDAVKA.md`.
 | — | — | ✅ celé kolo č. 1 | | v29.9.4 | sady 189/1/1, mutace 76/76 + 196/196, statické 3/3 | selhal jen overit_online (fixtura B112) — opraveno, 189/0 |
 | B97 | střední | ✅ opraveno | f3db355 | v29.9.5 | test_prihlaseni 45/5 → 50/0 | mutace +2, chycené 2/2; B75 ×3 chycené |
 | B98 | střední | ✅ opraveno | b814ebb | v29.9.6 | test_obnova 160/6 → 166/0 | mutace +2, chycené 2/2; P4 ×5 chycené |
-| B99 | střední | ✅ opraveno | (tento commit) | v29.9.7 | test_sablona_obsah 1/1 → 27/0; test_sablony 19/3 → 22/0 | mutace +1, chycená; firemní šablony projdou |
-| — | — | ⬜ celé kolo č. 2 | | | | po B99 |
+| B99 | střední | ✅ opraveno | 350cb1b | v29.9.7 | test_sablona_obsah 1/1 → 27/0; test_sablony 19/3 → 22/0 | mutace +1, chycená; firemní šablony projdou |
+| — | — | ⬜ celé kolo č. 2 (běží) | | v29.9.7 | | po B99 |
 
 ## B111 — co je hotovo (v29.9.2)
 - Pravidlo 0 potvrzeno: server 980 000 → 617 000 Kč (OCK), 271 200 → 162 720
