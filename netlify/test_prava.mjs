@@ -1115,6 +1115,91 @@ console.log('\n===== #340 (P1): TYPY POLÍ ZAKÁZKY HLÍDÁ SERVER =====\n');
     (await post(zakazky, 'http://x/api/zakazky', { zakazka: dobra }, cObch)).status === 200);
 }
 
+console.log('\n===== B96: KROK OBCHODNÍHO ZAOKROUHLENÍ HLÍDÁ SERVER =====\n');
+{
+  /* 21. kolo (29. 9. 2026): obchodník uložil variantu bez slevy s krokem
+   * ⌊z/2⌋+1 směrem dolů a cena nabídky OCK klesla z 980 000 na 490 001 Kč
+   * (marže −66 %) — výčet kroků platil jen pro <select> v UI. Stropy jako
+   * v zadání: Obchodník 3 %, Vedoucí 10 %, minimální marže 10 %. Před
+   * opravou útoky vracely 200. */
+  const NAST_B96 = { minMarze: 0.10, stropy: { 'Obchodník': 0.03, 'Vedoucí': 0.10, 'Administrátor': 1 } };
+  await post(program, 'http://x/api/program',
+    { cenik: cenikJinak(), cenikProj: ZC.zkusebniCenikProj(), slevy: NAST_B96 }, cAdmin);
+  const ZR = require('../src/zaokrouhleni.js');
+  let cisloB96 = 9601;   // vlastní rozsah 9601–9640 (0980–0999 patří dalším oddílům)
+  const novaB96 = () => zakazkaSCeny('2026 - OPR - CN - ' + (cisloB96++));
+  const ulozB96 = async (z, c, extra) => { const r = await post(zakazky, 'http://x/api/zakazky', Object.assign({ zakazka: z }, extra || {}), c);
+    return { status: r.status, ...(await r.json()) }; };
+  const vzor = novaB96();
+  const zaklad = globalThis.vypocet(vzor.varianty[0].data.ock.zadani, vzor.varianty[0].data.cenik, JEKLY_T, {}).souhrn.zakladCena;
+  const krokUtok = Math.floor(zaklad / 2) + 1;
+  const cenaUtok = ZR.zaokrouhli(zaklad, { krok: krokUtok, smer: 'dolu' });
+  test('B96: příprava — základ OCK zkušební zakázky ' + zaklad + ' Kč, krok ' + krokUtok + ' dolů by dal ' + cenaUtok + ' Kč',
+    zaklad > 0 && cenaUtok < zaklad * 0.51, { zaklad, krokUtok, cenaUtok });
+
+  /* 1) útok: krok mimo výčet u OCK */
+  const z1 = novaB96(); z1.varianty[0].data.zaokr = { krok: krokUtok, smer: 'dolu' };
+  const r1 = await ulozB96(z1, cObch);
+  test('B96: obchodník s krokem ⌊z/2⌋+1 (mimo výčet) → 400 s cestou „varianta …: zaokr.krok"',
+    r1.status === 400 && /varianta [^:]+: zaokr\.krok/.test(r1.chyba || ''), r1);
+  test('B96: odmítnutá zakázka v databázi nevznikla (GET → 404)',
+    (await get(zakazky, 'http://x/api/zakazky?soubor=' + encodeURIComponent(z1.cislo.replace(/\s+/g, '') + '.json'), cAdmin)).status === 404);
+  /* 2) totéž u PROJ */
+  const z2 = novaB96(); z2.varianty[0].data.zaokrProj = { krok: 12345, smer: 'dolu' };
+  const r2 = await ulozB96(z2, cObch);
+  test('B96: krok mimo výčet v zaokrProj → 400', r2.status === 400 && /zaokrProj\.krok/.test(r2.chyba || ''), r2);
+  /* 3) směr mimo výčet */
+  for (const smer of ['x', 'dolů']) {
+    const z3 = novaB96(); z3.varianty[0].data.zaokr = { krok: 1000, smer };
+    const r3 = await ulozB96(z3, cObch);
+    test('B96: směr „' + smer + '" mimo výčet → 400', r3.status === 400, r3);
+  }
+  /* 4) oprava nesmí zablokovat běžnou práci: celý výčet projde */
+  let vse = 0, zle = [];
+  for (const k of ZR.ZAOKR_KROKY) for (const s of ZR.ZAOKR_SMERY) {
+    const z4 = novaB96(); z4.varianty[0].data.zaokr = { krok: k.krok, smer: s.smer }; z4.varianty[0].data.zaokrProj = { krok: k.krok, smer: s.smer };
+    const r4 = await ulozB96(z4, cObch); vse++; if (r4.status !== 200) zle.push(k.krok + '/' + s.smer + ': ' + r4.status + ' ' + (r4.chyba || ''));
+  }
+  test('B96: všech ' + vse + ' kombinací ZAOKR_KROKY × ZAOKR_SMERY (OCK i PROJ) se uloží (200)', vse === ZR.ZAOKR_KROKY.length * ZR.ZAOKR_SMERY.length && !zle.length, zle);
+  const z4t = novaB96(); z4t.varianty[0].data.zaokr = { krok: '1000', smer: 'nahoru' };
+  test('B96: krok zapsaný jako text („1000") se toleruje (200)', (await ulozB96(z4t, cObch)).status === 200);
+  /* 5) nový zámek s krokem mimo výčet nevznikne (žádné „shoda") */
+  const z5 = novaB96(); z5.varianty[0].data.zaokr = { krok: krokUtok, smer: 'dolu' }; odesliB59(z5);
+  const r5 = await ulozB96(z5, cObch);
+  test('B96: nový zámek (odeslání) s krokem mimo výčet → 400, zámek nevznikne', r5.status === 400, r5);
+  /* 6) doklad: varianta zamčená už v uložené verzi s krokem mimo výčet
+   * (vložená přímo do úložiště, jako by vznikla před opravou) */
+  const z6 = novaB96(); const r6 = await ulozB96(z6, cAdmin);
+  const klic6 = 'zakazky/z/' + r6.soubor;
+  const ul6 = JSON.parse(pamet.get(klic6)); ul6.varianty[0].data.zaokr = { krok: krokUtok, smer: 'dolu' };
+  zam.zamkniVariantu(ul6.varianty[0], { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Historie', cislo: zam.variantaCislo(ul6, ul6.varianty[0]),
+    vysledek: zam.zamekVysledekSpocti(ul6.varianty[0], JEKLY_T, 'v-historie') });
+  pamet.set(klic6, JSON.stringify(ul6));
+  const g6 = await nactiB59(r6.soubor);
+  const a6 = zk.importZakazka(JSON.parse(JSON.stringify(g6))); a6.nazevAkce += ' (poznámka)';
+  const r6a = await ulozB96(a6, cObch, { ocekavaneRazitko: g6.uloRazitko });
+  test('B96: varianta zamčená už v uložené verzi s krokem mimo výčet se beze změny uloží (200 — doklad)', r6a.status === 200, r6a);
+  const g6b = await nactiB59(r6.soubor);
+  const b6 = zk.importZakazka(JSON.parse(JSON.stringify(g6b))); b6.varianty[0].data.zaokr = { krok: krokUtok + 1, smer: 'dolu' };
+  const r6b = await ulozB96(b6, cObch, { ocekavaneRazitko: g6b.uloRazitko });
+  test('B96: změna téže zamčené varianty → 409 (hlídá zámek, ne kontrola kroku)', r6b.status === 409, r6b);
+  /* 6b) detekční skript najde zamčenou variantu s krokem mimo výčet */
+  const { detekuj } = await import('../nastroje/detekce_zneuziti.mjs');
+  const nal6 = detekuj({ zakazky: { [r6.soubor]: await nactiB59(r6.soubor) } });
+  test('B96: detekční skript najde v záloze zamčenou variantu s krokem mimo výčet',
+    nal6.length === 1 && nal6[0].kontrola === 'B96' && nal6[0].zamcena && /zaokr: krok 490001/.test(nal6[0].mista[0]), nal6);
+  /* 7) obnova ze zálohy: nezamčená varianta s krokem mimo výčet se přeskočí */
+  const z7 = novaB96(); z7.varianty[0].data.zaokr = { krok: krokUtok, smer: 'dolu' };
+  const jm7 = z7.cislo.replace(/\s+/g, '') + '.json';
+  const o7 = await (await post(obnova, 'http://x/api/obnova', { zdroj: { soubor: { porizena: new Date().toISOString(), zakazky: { [jm7]: z7 } } },
+    rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['zakazky'] }, cAdmin)).json();
+  const zk7 = o7.casti && o7.casti.zakazky;
+  test('B96: obnova ze zálohy s krokem mimo výčet → zakázka přeskočena s důvodem (zaokr.krok)',
+    !!zk7 && zk7.preskocene === 1 && /zaokr\.krok/.test(JSON.stringify(zk7.duvody || [])) && !pamet.has('zakazky/z/' + jm7), zk7 || o7);
+  await post(program, 'http://x/api/program',
+    { cenik: cenikJinak(), cenikProj: ZC.zkusebniCenikProj(), slevy: { ...NAST_B96, minMarze: 0 } }, cAdmin);
+}
+
 /* ============================================================
  * BEZPEČNOSTNÍ AUDIT 22. 8. 2026 — 2. dávka: B4, B6, B7, B8, B9, B13
  * ============================================================ */

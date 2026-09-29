@@ -45,17 +45,19 @@ const r1 = await p.evaluate(() => {
   const cenaOck = () => cenaNabidkyOck(vypocetAkt(), SL, ZO).cena;
   zaokrSetKrok(0); zaokrProjSetKrok(0);
   const proj0 = cenaProj(), ock0 = cenaOck();
-  zaokrProjSetKrok(100000); zaokrProjSetSmer('nahoru');
+  /* Nejvyšší krok z výčtu (B96, 29. 9. 2026: do té doby 100 000 Kč —
+   * hodnota mimo výčet, kterou dnes odmítne UI i server). */
+  zaokrProjSetKrok(10000); zaokrProjSetSmer('nahoru');
   const proj1 = cenaProj(), ock1 = cenaOck();
   zaokrProjSetKrok(0);
-  zaokrSetKrok(100000); zaokrSetSmer('nahoru');
+  zaokrSetKrok(10000); zaokrSetSmer('nahoru');
   const proj2 = cenaProj(), ock2 = cenaOck();
   zaokrSetKrok(0);
   return { proj0, proj1, proj2, ock0, ock1, ock2, zo: JSON.stringify(ZO), zop: JSON.stringify(ZOP),
            oddelene: ZO !== ZOP };
 });
 test('OCK a PROJ mají každé vlastní objekt nastavení', r1.oddelene, r1.zo + ' / ' + r1.zop);
-test('krok PROJ zaokrouhlí cenu projekce', r1.proj1 % 100000 === 0 && r1.proj1 >= r1.proj0, JSON.stringify(r1));
+test('krok PROJ zaokrouhlí cenu projekce', r1.proj1 % 10000 === 0 && r1.proj1 >= r1.proj0, JSON.stringify(r1));
 test('a cenou šachty (OCK) nehne', r1.ock1 === r1.ock0, JSON.stringify(r1));
 test('krok OCK nehne cenou projekce', r1.proj2 === r1.proj0, JSON.stringify(r1));
 
@@ -87,11 +89,11 @@ const r3 = await p.evaluate(async () => {
   const pred = [ZO.krok, ZOP.krok];
   /* Zámek odpoví hláškou (dialog) — tu zavřeme, ať test nečeká. */
   const zavri = () => document.querySelectorAll('#dlg [data-dlg]').forEach(x => x.click());
-  try { zaokrProjSetKrok(5); } catch (e) {}
+  try { zaokrProjSetKrok(100); } catch (e) {}
   zavri();
   try { zaokrProjSetSmer('dolu'); } catch (e) {}
   zavri();
-  try { zaokrSetKrok(5); } catch (e) {}
+  try { zaokrSetKrok(100); } catch (e) {}
   zavri();
   await new Promise(r => setTimeout(r, 50)); zavri();
   return { pred, po: [ZO.krok, ZOP.krok], smer: ZOP.smer };
@@ -99,6 +101,29 @@ const r3 = await p.evaluate(async () => {
 test('krok PROJ zůstal', r3.po[1] === r3.pred[1], JSON.stringify(r3));
 test('směr PROJ zůstal', r3.smer === 'nahoru', JSON.stringify(r3));
 test('krok OCK zůstal', r3.po[0] === r3.pred[0], JSON.stringify(r3));
+
+console.log('\nB96: krok a směr jen z výčtu (29. 9. 2026)');
+const r4 = await p.evaluate(async () => {
+  ZAK = novaZakazka(); syncVarianta(); render();
+  const texty = []; const puvodni = window.hlaska;
+  window.hlaska = (t) => { texty.push(String(t)); return Promise.resolve(); };
+  zaokrSetKrok(1000); zaokrProjSetKrok(1000);
+  zaokrSetKrok(490001); zaokrProjSetKrok(12345); zaokrSetSmer('dolů'); zaokrProjSetSmer('x');
+  const po = { ock: JSON.stringify(ZO), proj: JSON.stringify(ZOP) };
+  /* uložená hodnota mimo výčet (zakázka z doby před opravou) */
+  ZO.krok = 490001; prepniTab('kalk'); render();
+  const karta = document.getElementById('ock-zaokr');
+  const sel = karta ? karta.querySelector('select[onchange^="zaokrSetKrok"]') : null;
+  const zobrazeno = sel ? sel.options[sel.selectedIndex].text : '';
+  ZO.krok = 1000; render();
+  window.hlaska = puvodni;
+  return { po, texty, zobrazeno };
+});
+test('B96: krok mimo výčet z konzole (zaokrSetKrok(490001)) se nezapíše', JSON.parse(r4.po.ock).krok === 1000, JSON.stringify(r4));
+test('B96: totéž u PROJ a u směru (OCK i PROJ)', JSON.parse(r4.po.proj).krok === 1000
+  && JSON.parse(r4.po.ock).smer !== 'dolů' && JSON.parse(r4.po.proj).smer !== 'x', JSON.stringify(r4.po));
+test('B96: obchodník dostane hlášku, že jde jen o hodnoty z nabídky', r4.texty.length === 4 && /z nabídky/.test(r4.texty[0]), JSON.stringify(r4.texty));
+test('B96: uložený krok mimo výčet ukáže <select> jako „mimo nabídku", ne „bez zaokrouhlení"', /mimo nabídku/.test(r4.zobrazeno), r4.zobrazeno);
 
 test('za celý průchod žádná chyba stránky', chyby.length === 0, chyby.join(' | '));
 await b.close();

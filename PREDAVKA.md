@@ -16,8 +16,8 @@ v `git show 9a48ee8:PREDAVKA.md`.
 | ID | Vážnost | Stav | Commit | Verze | Testy před / po | Poznámka |
 |----|---------|------|--------|-------|-----------------|----------|
 | B111 | vysoká | ✅ opraveno | a25edfd | v29.9.2 | test_zaporne 3 OK/19 FAIL → 24/0; overit_zaporne 5/10 → 15/0; test_kontroly 97/8 → 105/0 | mutace +3, chycené 3/3 |
-| B96 | vysoká | ⬜ další na řadě | | | | |
-| B112 | vysoká | ⬜ | | | | |
+| B96 | vysoká | ✅ opraveno | (tento commit) | v29.9.3 | test_prava 587/7 → 595/0; test_uloziste 161/1 → 172/0; overit_zaokrouhleni 12/4 → 16/0 | mutace +2, chycené; bod 4 jen návrh |
+| B112 | vysoká | ⬜ další na řadě | | | | |
 | — | — | ⬜ celé kolo č. 1 | | | | po B112 |
 | B97 | střední | ⬜ | | | | |
 | B98 | střední | ⬜ | | | | |
@@ -48,14 +48,31 @@ a harnessu: overit_lista 271/271, overit_manual 37/37,
 overit_nabidka_proj_word 51/51, overit_sablony_online 53/53. Statické
 kontroly 3 z 3.
 
+## B96 — co je hotovo (v29.9.3)
+- Pravidlo 0 potvrzeno: obchodník, sleva 0 %, `zaokr {krok: 490001, smer:
+  'dolu'}` → 200 a cena OCK 980 000 → 490 001 Kč.
+- Server `uloZaokrProblemy()` (přes `uloProVarianty()`), volání hned za B111.
+  UI setterů jen z výčtu, `<select>` ukáže hodnotu mimo výčet.
+  `overit_zaokrouhleni.mjs` přešel z kroku 100 000 (mimo výčet) na 10 000.
+- **Bod 4 — návrh, nerealizováno (čeká na J. V.):** serverová kontrola marže
+  z KONCOVÉ ceny (`cenaNabidkyOck/Proj`), kdykoli je nižší než základ, i bez
+  platné slevy. Pokryla by B96 a u B112 změnu přirážky; **nepokryla by B111**
+  ani změnu jednotkové ceny v ceníku (náklad klesne stejným poměrem jako
+  cena, marže vyjde stejná). Proto každá cesta má vlastní kontrolu a bod 4
+  je jen obrana do hloubky — hlavně pro zaokrouhlení z výčtu (u PROJ až
+  9 999 Kč × počet činností). Zapsáno v `BEZPECNOST_MEZE.md`.
+
 ## Rozhodnutí podle výchozího návrhu — čekají na potvrzení J. V.
 - **B111:** zápornou položku, množství ani hodiny nesmí nikdo, ani
   administrátor (dobropis ne; jako N56).
+- **B96 bod 4:** marže z koncové ceny i bez slevy — jen návrh, nerealizováno.
 
 ## Co čeká na J. V.
 - Spustit `node nastroje/detekce_zneuziti.mjs <záloha ostré databáze>`
   (Nastavení → Databáze → Zálohovat teď) — najde dřívější zneužití
-  (záporné položky, i v odeslaných nabídkách).
+  (záporné položky B111, krok/směr zaokrouhlení mimo výčet B96, i
+  v odeslaných nabídkách).
+- Rozhodnout bod 4 B96 (marže z koncové ceny i bez slevy).
 - Potvrdit rozhodnutí výše.
 
 ## Při slučování do test-draft (očekávaný konflikt)
@@ -88,6 +105,8 @@ N46 se neopravuje bez pokynu J. V.
   `git status` a `grep -rn "if (false)" netlify src`.
 
 ## Další krok
-B96 (příloha B): krok a směr zaokrouhlení z výčtu na serveru
-(`uloZaokrProblemy` přes `uloProVarianty`), UI setterů a `<select>`,
-detekce v `nastroje/detekce_zneuziti.mjs`, testy v `netlify/test_prava.mjs`.
+B112 (příloha C): ceník varianty a přepisy proti uložené verzi / zveřejněnému
+ceníku / jiné variantě podle role a matice (`uloCenikProblemy` přes
+`uloProVarianty`, volání hned za B96), testy v `netlify/test_prava.mjs`,
+pak **celé kolo č. 1** (`KNG_PODKLADY=/home/user/kng_podklady bash
+nastroje/testovaci_kolo.sh`, před tím kopie příručky pro aktuální verzi).

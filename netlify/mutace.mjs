@@ -869,6 +869,17 @@ const MUTACE = [
     nahrad: "    const vlastni = [];\n    fn(v, sv, vlastni);",
     proc: 'odeslaná nabídka z doby před opravou by se nedala uložit ani beze změny — server by posuzoval doklad' },
 
+  /* ---------- B96 (29. 9. 2026): krok obchodního zaokrouhlení ---------- */
+  { nazev: 'B96: kontrola zaokrouhlení se nevolá', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "  if (zaokr.length) return odmitni(400, 'Zakázka nese ' + ULO.uloIdProblemyText(zaokr) + '.');",
+    nahrad: "  if (false) return odmitni(400, 'Zakázka nese ' + ULO.uloIdProblemyText(zaokr) + '.');",
+    proc: 'obchodník by krokem 490 001 Kč srazil cenu nabídky na polovinu bez schválení' },
+
+  { nazev: 'B96: výčet kroků se nekontroluje', soubor: '../src/uloziste.js',
+    hledej: "    if (!kroky.some(x => x.krok === n)) return true;",
+    nahrad: "    if (false) return true;",
+    proc: 'jakýkoli kladný krok by prošel — výčet by zase platil jen pro <select> v UI' },
+
   /* ---------- zálohy ---------- */
   { nazev: 'zálohu stáhne kdokoli', soubor: 'functions/zaloha.mjs',
     hledej: '  const { chyba } = await vyzadujRoli(req, \'Administrátor\');',

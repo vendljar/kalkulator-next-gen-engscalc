@@ -91,6 +91,9 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   /* Záporná částka, množství nebo hodiny (B111, 29. 9. 2026) — nikomu. */
   const zaporne = ULO.uloZaporneProblemy(zak, stara);
   if (zaporne.length) return odmitni(400, 'Zakázka nese ' + ULO.uloIdProblemyText(zaporne) + '.');
+  /* Krok a směr obchodního zaokrouhlení z výčtu (B96, 29. 9. 2026). */
+  const zaokr = ULO.uloZaokrProblemy(zak, stara);
+  if (zaokr.length) return odmitni(400, 'Zakázka nese ' + ULO.uloIdProblemyText(zaokr) + '.');
 
   ocistiZnacky(zak);
   ocistiZnacky(stara);

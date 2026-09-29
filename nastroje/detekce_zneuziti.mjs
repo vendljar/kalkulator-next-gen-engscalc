@@ -1,11 +1,12 @@
 /* DETEKCE DŘÍVĚJŠÍHO OBCHÁZENÍ SCHVALOVÁNÍ V ZÁLOZE DATABÁZE
- * (jednorázový nástroj, 29. 9. 2026 — B111, třída „koncová cena bez
- * schválení").
+ * (jednorázový nástroj, 29. 9. 2026 — B111 a B96, třída „koncová cena
+ * bez schválení").
  *
  * PROČ
  * Do opravy B111 přijal server vlastní položku se zápornou cenou nebo
- * množstvím, záporné hodiny i záporné přepisy — obchodník tak mohl snížit
- * cenu nabídky bez schválení a beze stopy v dokumentu. Oprava brání novým
+ * množstvím, záporné hodiny i záporné přepisy, do opravy B96 krok
+ * obchodního zaokrouhlení mimo výčet — obchodník tak mohl snížit cenu
+ * nabídky bez schválení a beze stopy v dokumentu. Oprava brání novým
  * případům; tenhle skript najde ty, které už v databázi leží (i ve
  * variantách zamčených = odeslaných, které server jako doklad neposuzuje).
  *
@@ -32,6 +33,13 @@ const KONTROLY = [
   { kod: 'B111', nazev: 'záporná částka, množství nebo hodiny',
     najdi: (v) => ULO.uloZaporneVZadani(v.data.ock && v.data.ock.zadani, v.data.proj && v.data.proj.zadani)
       .filter(p => p.duvod === 'zaporne') },
+  /* B96: krok nebo směr obchodního zaokrouhlení mimo výčet (ZAOKR_KROKY,
+   * ZAOKR_SMERY) — do opravy server přijal jakékoli kladné číslo a krok
+   * ⌊cena/2⌋+1 srazil cenu nabídky na polovinu. */
+  { kod: 'B96', nazev: 'obchodní zaokrouhlení mimo nabídku',
+    najdi: (v) => [['zaokr', v.data.zaokr], ['zaokrProj', v.data.zaokrProj]]
+      .filter(([, z]) => ULO.uloZaokrVadne(z))
+      .map(([k, z]) => ({ kde: k + ': krok ' + JSON.stringify(z && z.krok) + ', směr ' + JSON.stringify(z && z.smer) })) },
 ];
 
 export function detekuj(zaloha) {

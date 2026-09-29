@@ -8,6 +8,46 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v29.9.3 — B96: krok obchodního zaokrouhlení hlídá server (29. 9. 2026)
+
+Druhý ze šesti nálezů 21. kola (větev `claude/oprava-sesti-nalezu-v29.9.1`).
+Roadmapa #373, #38.
+
+**Vysoký nález B96 — obchodník krokem zaokrouhlení snížil cenu nabídky
+skoro o polovinu bez schválení.** Varianta bez slevy s `zaokr = { krok:
+⌊z/2⌋+1, smer: 'dolu' }`: cena OCK 980 000 → 490 001 Kč (marže −66 %),
+uložení 200, nový zámek dostal „shoda" (zaokrouhlení do výsledku jádra
+nevstupuje), rejstřík schvalování nic. Výčet `ZAOKR_KROKY`/`ZAOKR_SMERY`
+platil jen pro `<select>`; `zaokrSetKrok(490001)` z konzole prošel.
+
+- **Server:** `uloZaokrProblemy()` v `src/uloziste.js` (přes společnou
+  `uloProVarianty()`), volaná hned za kontrolou B111. `data.zaokr`
+  i `data.zaokrProj` musí být objekt s krokem z výčtu (číslo i číslo jako
+  text) a směrem z výčtu; chybějící nastavení se toleruje, nic se
+  nepřevádí. Odmítnutí 400 „… obchodní zaokrouhlení mimo nabídku (varianta
+  X: zaokr.krok) …". Varianta zamčená v uložené verzi se přeskakuje.
+  Sémantika `zaokrKrok` v jádře beze změny (princip dokladu).
+- **UI:** `zaokrSetKrok`, `zaokrProjSetKrok`, `zaokrSetSmer`,
+  `zaokrProjSetSmer` přijmou jen hodnoty z výčtu (jinak hláška); uložená
+  hodnota mimo výčet se v `<select>` ukáže jako „mimo nabídku — nepovolené"
+  místo zavádějícího „bez zaokrouhlení".
+- **Detekce:** `nastroje/detekce_zneuziti.mjs` hledá i krok/směr mimo výčet
+  (i v zamčených variantách).
+- **Bod 4 (marže z koncové ceny i bez slevy)** jen jako návrh do
+  `BEZPECNOST_MEZE.md` a `PREDAVKA.md` — nerealizováno, čeká na J. V.
+- `overit_zaokrouhleni.mjs` zkoušel oddělení OCK/PROJ krokem 100 000 Kč
+  (mimo výčet) — přepnuto na 10 000 Kč; zámek se zkouší krokem z výčtu.
+
+**Testy (pojistka proti prázdnému testu):** `netlify/test_prava.mjs` oddíl
+„B96" (13 kontrol; před opravou 587 prošlo / 7 selhalo → 595 / 0, kontrola
+detekčního skriptu přibyla po opravě), `src/test_uloziste.js` (+11; před
+opravou 161 / 1 — funkce neexistovala), `overit_zaokrouhleni.mjs` (+4; před
+opravou 12 OK / 4 FAIL → 16 / 0). Mutace serveru +2 („kontrola zaokrouhlení
+se nevolá", „výčet kroků se nekontroluje") — chycené; sdílenou mutaci
+přeskakování zamčené varianty chytá nově i `test_prava`.
+
+---
+
 ## v29.9.2 — B111: záporná vlastní položka, množství ani hodiny neprojdou (29. 9. 2026)
 
 Větev `claude/oprava-sesti-nalezu-v29.9.1` (z v29.9.1 = 9a48ee8), první ze

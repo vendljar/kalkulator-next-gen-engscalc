@@ -961,6 +961,51 @@ function uloZaporneProblemy(zak, stara) {
   });
 }
 
+/* KROK A SMĚR OBCHODNÍHO ZAOKROUHLENÍ (B96, 29. 9. 2026).
+ *
+ * Výčet ZAOKR_KROKY (0–10 000 Kč) a ZAOKR_SMERY platil jen pro <select>
+ * v UI; jádro (zaokrKrok) bere jakékoli kladné číslo. Obchodník uložil
+ * variantu bez slevy s krokem ⌊z/2⌋+1 směrem dolů a cena nabídky OCK
+ * klesla z 980 000 na 490 001 Kč (marže −66 %) — bez schválení, nový zámek
+ * dostal „shoda" (zaokrouhlení do výsledku jádra nevstupuje) a dokument
+ * tiskne už zaokrouhlený základ. Sémantika zaokrKrok se NEMĚNÍ (změnila by
+ * cenu už odeslaných nabídek); hranicí je server: data.zaokr i
+ * data.zaokrProj musí být objekt s krokem z výčtu (číslo i číslo jako
+ * text) a směrem z výčtu. Chybějící nastavení (null) nebo chybějící směr
+ * se toleruje — čte se jako „bez zaokrouhlení" / „dolů". Nic se nepřevádí.
+ * Výčty se čtou přes globalThis (na serveru je načítá jadro_moduly.cjs). */
+function uloZaokrVycty() {
+  let kroky = (typeof ZAOKR_KROKY !== 'undefined') ? ZAOKR_KROKY : uloGlobal('ZAOKR_KROKY');
+  let smery = (typeof ZAOKR_SMERY !== 'undefined') ? ZAOKR_SMERY : uloGlobal('ZAOKR_SMERY');
+  /* V Node bez jádra v globalThis (jednotkové testy) si výčty načte sám;
+   * bez nich by kontrola mlčky pustila všechno. */
+  if ((!kroky || !smery) && typeof require === 'function') {
+    try { const zr = require('./zaokrouhleni.js'); kroky = kroky || zr.ZAOKR_KROKY; smery = smery || zr.ZAOKR_SMERY; } catch (e) { /* nic */ }
+  }
+  return { kroky: kroky || [], smery: smery || [] };
+}
+function uloZaokrVadne(z) {
+  if (z === null || z === undefined) return false;
+  if (typeof z !== 'object' || Array.isArray(z)) return true;
+  const vycty = uloZaokrVycty();
+  const kroky = vycty.kroky, smery = vycty.smery;
+  const k = z.krok;
+  if (k !== null && k !== undefined && k !== '') {
+    if (!uloCisloSedi(k)) return true;
+    const n = typeof k === 'number' ? k : parseFloat(String(k).replace(',', '.'));
+    if (!kroky.some(x => x.krok === n)) return true;
+  }
+  const s = z.smer;
+  if (s !== null && s !== undefined && s !== '' && !smery.some(x => x.smer === s)) return true;
+  return false;
+}
+function uloZaokrProblemy(zak, stara) {
+  return uloProVarianty(zak, stara, (v, sv, out) => {
+    if (uloZaokrVadne(v.data.zaokr)) out.push({ kde: 'zaokr.krok', duvod: 'zaokr' });
+    if (uloZaokrVadne(v.data.zaokrProj)) out.push({ kde: 'zaokrProj.krok', duvod: 'zaokr' });
+  });
+}
+
 /* Věta pro odmítnutí (server i obnova): tvar a duplicita se hlásí zvlášť,
  * aby člověk věděl, co má opravit. */
 function uloIdProblemyText(problemy) {
@@ -969,8 +1014,9 @@ function uloIdProblemyText(problemy) {
   const priloha = problemy.filter(p => p.duvod === 'priloha');
   const typ = problemy.filter(p => p.duvod === 'typ');
   const zaporne = problemy.filter(p => p.duvod === 'zaporne');
+  const zaokr = problemy.filter(p => p.duvod === 'zaokr');
   const tvar = problemy.filter(p => p.duvod !== 'duplicita' && p.duvod !== 'delka' && p.duvod !== 'priloha'
-    && p.duvod !== 'typ' && p.duvod !== 'zaporne');
+    && p.duvod !== 'typ' && p.duvod !== 'zaporne' && p.duvod !== 'zaokr');
   const casti = [];
   if (tvar.length) casti.push('identifikátor v nepovoleném tvaru (' + tvar.map(x => x.kde).join(', ')
     + ') — povolená jsou písmena, číslice, tečka, podtržítko a pomlčka');
@@ -989,6 +1035,9 @@ function uloIdProblemyText(problemy) {
   if (zaporne.length) casti.push('zápornou částku nebo množství (' + zaporne.slice(0, 5).map(x => x.kde).join(', ')
     + (zaporne.length > 5 ? ' a další ' + (zaporne.length - 5) : '')
     + ') — cena, množství ani hodiny nesmějí být záporné; snížení ceny zadejte jako slevu, ta jde přes schvalování');
+  /* B96: krok nebo směr obchodního zaokrouhlení mimo nabídku. */
+  if (zaokr.length) casti.push('obchodní zaokrouhlení mimo nabídku (' + zaokr.map(x => x.kde).join(', ')
+    + ') — krok i směr zaokrouhlení musí být z nabídky v kartě „Obchodní zaokrouhlení"; větší snížení ceny je sleva, ta jde přes schvalování');
   return casti.join('; ');
 }
 
@@ -1027,7 +1076,7 @@ function uloZalohaHlidka(otisky, ted) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { uloTypyProblemy, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
+  module.exports = { uloTypyProblemy, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, uloZaokrVadne, uloZaokrProblemy, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
                      uloNorm, uloSlova, uloCisloVyplneno, uloKlicSouboru,
                      uloJmenoSouboru, uloJeZakazkovySoubor,
                      ULO_HLAVICKA_POLE, uloHlavickaChybi, uloHlavickaVyplnena, uloUlozeniStav,

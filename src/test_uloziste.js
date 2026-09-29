@@ -499,5 +499,34 @@ console.log('\n--- #340 (P1): typy polí zadání a ceníku ---');
   test('#340: nesmyslné vstupy nepadají', T(null).length === 0 && T({ varianty: [null, {}, { data: 5 }, { data: { ock: 7, proj: 'x' } }] }).length >= 0);
 }
 
+/* B96 (29. 9. 2026): krok a směr obchodního zaokrouhlení musí být z výčtu
+ * (ZAOKR_KROKY, ZAOKR_SMERY) — jádro bere jakékoli kladné číslo a krok
+ * 490 001 Kč srazil cenu nabídky na polovinu bez schválení. Před opravou
+ * funkce uloZaokrProblemy neexistovala. */
+{
+  const Z = U.uloZaokrProblemy;
+  test('B96: funkce uloZaokrProblemy existuje', typeof Z === 'function');
+  if (typeof Z === 'function') {
+    const zz = (zaokr, zaokrProj) => { const z = novaZakazka(); z.cislo = '2026 - OPR - CN - 0596';
+      z.varianty[0].nazev = 'A'; z.varianty[0].data.zaokr = zaokr; if (zaokrProj !== undefined) z.varianty[0].data.zaokrProj = zaokrProj; return z; };
+    const p1 = Z(zz({ krok: 490001, smer: 'dolu' }));
+    test('B96: krok mimo výčet se nahlásí s cestou „varianta A: zaokr.krok"', p1.length === 1 && p1[0].kde === 'varianta A: zaokr.krok', JSON.stringify(p1));
+    test('B96: hláška mluví o zaokrouhlení', /zaokrouhlení/.test(U.uloIdProblemyText(p1)), U.uloIdProblemyText(p1));
+    test('B96: krok mimo výčet v zaokrProj se nahlásí zvlášť', Z(zz({ krok: 100, smer: 'nahoru' }, { krok: 12345, smer: 'dolu' })).map(x => x.kde).join() === 'varianta A: zaokrProj.krok');
+    test('B96: směr mimo výčet („dolů" s diakritikou) se nahlásí', Z(zz({ krok: 100, smer: 'dolů' })).length === 1);
+    test('B96: záporný krok se nahlásí', Z(zz({ krok: -100, smer: 'dolu' })).length === 1);
+    test('B96: nastavení, které není objekt, se nahlásí', Z(zz(5)).length === 1);
+    const ZR = require('./zaokrouhleni.js');
+    test('B96: všechny kombinace výčtu projdou',
+      ZR.ZAOKR_KROKY.every(k => ZR.ZAOKR_SMERY.every(s => Z(zz({ krok: k.krok, smer: s.smer }, { krok: k.krok, smer: s.smer })).length === 0)));
+    test('B96: krok jako text („1000") a chybějící nastavení se tolerují', Z(zz({ krok: '1000', smer: 'dolu' })).length === 0
+      && Z(zz(null, null)).length === 0 && Z(zz({ krok: 0 })).length === 0);
+    const stara = zz({ krok: 490001, smer: 'dolu' }); zamkniVariantu(stara.varianty[0], { typ: 'nabidka', kdo: 'Test' });
+    const nova = JSON.parse(JSON.stringify(stara));
+    test('B96: varianta zamčená už v uložené verzi se přeskočí (doklad)', Z(nova, stara).length === 0);
+    test('B96: bez uložené verze se táž zamčená varianta posoudí', Z(nova, null).length === 1);
+  }
+}
+
 console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
 process.exit(fail ? 1 : 0);

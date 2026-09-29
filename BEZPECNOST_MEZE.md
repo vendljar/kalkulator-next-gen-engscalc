@@ -66,6 +66,38 @@ kapitol na 20 000. Stejnou kontrolou jde klient i server (`/api/firma`).
 
 ---
 
+## Třída „koncová cena bez schválení" (B96, B111, B112 — 29. 9. 2026)
+
+Komplexní test 29. 9. 2026 našel tři cesty, jak obchodník snížil cenu
+nabídky bez schválení slevy. Každá má vlastní serverovou kontrolu hned za
+typy polí (`zakazkaServerKontrola`, uložení i obnova):
+
+- **B111** — záporná částka, množství nebo hodiny (`uloZaporneProblemy`):
+  nikdo, ani administrátor.
+- **B96** — krok a směr obchodního zaokrouhlení jen z výčtu `ZAOKR_KROKY` ×
+  `ZAOKR_SMERY` (`uloZaokrProblemy`). Sémantika `zaokrKrok` v jádře se
+  nezměnila — změnila by cenu už odeslaných nabídek.
+- **B112** — ceník varianty a skryté přepisy proti uložené verzi (doplní se
+  s opravou B112).
+
+**Co zůstává vědomě (roadmapa #38 „nic se neblokuje"):**
+- Zaokrouhlení *z výčtu* směrem dolů smí cenu snížit o méně než jeden krok
+  — nejvýš 9 999 Kč u OCK; u PROJ se zaokrouhluje každá činnost zvlášť,
+  takže až 9 999 Kč × počet činností. Lišta marže to jen ohlásí.
+- Server nepočítá marži z **koncové** ceny (po zaokrouhlení) — kontrola
+  marže B71 (`schvalovaniServerMarze`) běží jen u platné slevy a počítá
+  z ceny před zaokrouhlením. Návrh (bod 4 zadání B96, nerealizováno, čeká
+  na rozhodnutí J. V.): kdykoli je koncová cena nižší než základ, ověřit
+  marži z koncové ceny i bez slevy. Pokryl by B96 (náklad se nemění, cena
+  klesne) a u B112 změnu přirážky, **nepokryl by** B111 ani změnu
+  jednotkové ceny v ceníku (záporná položka nebo nižší sazba sníží náklad
+  i cenu stejným poměrem, marže vyjde stejná) — proto každá cesta potřebuje
+  vlastní kontrolu a bod 4 je jen obrana do hloubky.
+- Varianta zamčená už v uložené verzi se neposuzuje (doklad, B53). Starší
+  zneužití v databázi najde `nastroje/detekce_zneuziti.mjs` (jen čte).
+
+---
+
 ## Zbytkové meze uzavřených nálezů
 
 ### B61 — zámek pod jiným jménem souboru
