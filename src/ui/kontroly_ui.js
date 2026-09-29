@@ -39,6 +39,14 @@ function kontrolyCtxAkt() {
     zadani: Z,
     vysledek: ock,
     jenProj: (typeof ZAK !== 'undefined') && !!ZAK.jenProj,
+    /* Řada ceníku varianty (P11): projekci u zahraniční zakázky hlídá
+     * pravidlo projZahranici. */
+    cenikRada: (() => {
+      try {
+        const v = aktivniVarianta(ZAK);
+        return (typeof cenikRadaPlatna === 'function') ? cenikRadaPlatna(v && v.data && v.data.cenikRada) : 'cr';
+      } catch (e) { return 'cr'; }
+    })(),
     projZadani: PJ,
     projVysledek: proj,
     cenik: C,

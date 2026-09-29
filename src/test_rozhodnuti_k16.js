@@ -6,7 +6,8 @@
  *          aby nabídka neříkala „Termín dodání: 12" a aby se termín s ATYP
  *          dal přeložit (dřív „16 (vč. 4 týdnů za ATYP)" zůstalo česky).
  *   P10.1 — platnost nabídky 2 měsíce i v náhradních hodnotách, skloňování.
- *   P10.2 — náhled nabídky PROJ bere splatnost a platnost z krycího listu. */
+ *   P10.2 — náhled nabídky PROJ bere splatnost a platnost z krycího listu.
+ *   P11   — zahraniční varianta s oceněnou projekcí: kontrola a věta v dialogu. */
 const fs = require('fs');
 const nacti = (f) => { const m = require(f); Object.keys(m).forEach(k => { if (global[k] === undefined) global[k] = m[k]; }); return m; };
 const ZC = require('./zkusebni_cenik.js');
@@ -101,6 +102,28 @@ test('P10.1: „5 měsíců" a „45 dní" se přeloží (vzor, ne jen slovník)
   test('P10.2: bez přepisu platí předvyplněné hodnoty (14 dní, 2 měsíce)',
     obch0 && obch0.radky.some(r => r[1] === '14 dní') && obch0.radky.some(r => r[1] === '2 měsíce'), obch0 && obch0.radky);
 }
+
+/* ---------------- P11: projekce u zahraniční varianty ----------------
+ * J. V. 29. 9. 2026: „zahraniční zakázky PROJ nerealizujeme". Řada
+ * Zahraničí u projekce mění jen přirážku a DPH (sazby a fixy zůstávají
+ * tuzemské) a nikdo o tom nevěděl. Kontrola před nabídkou to řekne. */
+const K = nacti('./kontroly.js');
+const nalez = (ctx, kod) => (K.kontrolyProved(ctx).nalezy || []).find(n => n.kod === kod);
+const projR = { souhrn: { celkem: 120000 }, sekce: [] };
+const nZahr = nalez({ cenikRada: 'zahr', projVysledek: projR, zak: { jenOck: false } }, 'projZahranici');
+test('P11: zahraniční varianta s oceněnou projekcí → kontrola se ozve', !!nZahr);
+test('P11: věta říká, že projekci u zahraničních zakázek nerealizujeme, a co s tím',
+  !!nZahr && /nerealizujeme/.test(nZahr.text) && /tuzemsk/.test(nZahr.text), nZahr && nZahr.text);
+test('P11: je to varování, dokument OCK nezastaví', !!nZahr && nZahr.uroven === K.KONTROLY_UROVEN);
+test('P11: tuzemská varianta mlčí', !nalez({ cenikRada: 'cr', projVysledek: projR, zak: {} }, 'projZahranici'));
+test('P11: projekce bez ceny mlčí', !nalez({ cenikRada: 'zahr', projVysledek: { souhrn: { celkem: 0 } }, zak: {} }, 'projZahranici'));
+test('P11: zakázka jen realizace mlčí', !nalez({ cenikRada: 'zahr', projVysledek: projR, zak: { jenOck: true } }, 'projZahranici'));
+test('P11: kontroly v aplikaci dostanou řadu ceníku varianty',
+  /cenikRada:/.test(fs.readFileSync(__dirname + '/ui/kontroly_ui.js', 'utf8')));
+test('P11: dialog přepnutí na zahraniční ceník o projekci mluví',
+  /nerealizujeme/.test(fs.readFileSync(__dirname + '/ui/common.js', 'utf8').slice(
+    fs.readFileSync(__dirname + '/ui/common.js', 'utf8').indexOf('async function cenikRadaPrepniUI'))
+    .slice(0, 4000)));
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

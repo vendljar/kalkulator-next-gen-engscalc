@@ -1655,7 +1655,11 @@ async function cenikRadaPrepniUI(rada) {
     + '\n\nRuční přepisy v zakázce se nemění. Sazba DPH jde v zahraničí na 0 % '
     + '(pokud ceník neurčuje jinou), při návratu do tuzemska zpět na tuzemskou; globální '
     + 'přirážka se přepne, když pro ni ceník odchylku má. Co jste si v téhle nabídce '
-    + 'nastavil sám, zůstává.')) return;
+    + 'nastavil sám, zůstává.'
+    /* P11 (rozhodnutí J. V. 29. 9. 2026): projekce se u zahraničí nedělá. */
+    + (r === 'zahr' && !ZAK.jenOck ? '\n\nProjekci u zahraničních zakázek nerealizujeme: '
+      + 'projekci z varianty vyřaďte (zakázka jen realizace). Zahraniční ceník u ní mění jen '
+      + 'přirážku a DPH, sazby a fixy zůstávají tuzemské.' : ''))) return;
 
   const vysl = cenikRadaPrepni(d, cr, zahr, r);
   v.upraveno = new Date().toISOString();

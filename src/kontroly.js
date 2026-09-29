@@ -525,6 +525,24 @@ const KONTROLY = [
     },
   },
   {
+    /* PROJEKCE U ZAHRANIČNÍ ZAKÁZKY (P11 / K15-N72, rozhodnutí J. V.
+     * 29. 9. 2026: „zahraniční zakázky PROJ nerealizujeme"). Řada Zahraničí
+     * u projekce mění jen přirážku a DPH, sazby a fixy zůstávají tuzemské —
+     * a nikdo o tom nevěděl. Varování, ne zábrana: realizaci (OCK) téže
+     * varianty zastavit nesmí. */
+    kod: 'projZahranici', kde: 'Nabídka PROJ', nazev: 'Projekce u zahraniční zakázky',
+    zjisti(ctx) {
+      if (ctx.cenikRada !== 'zahr') return null;
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      const r = ctx.projVysledek;
+      if (!r || !r.souhrn || !(Number(r.souhrn.celkem) > 0)) return null;
+      return { text: 'Varianta počítá se zahraničním ceníkem a má oceněnou projekci. Projekci u zahraničních '
+        + 'zakázek nerealizujeme — a její sazby a fixy by navíc zůstaly tuzemské (zahraniční ceník u projekce '
+        + 'mění jen přirážku a DPH). Projekci z varianty vyřaďte (zakázka jen realizace), nebo variantu '
+        + 'vraťte na tuzemský ceník.' };
+    },
+  },
+  {
     kod: 'hlavicka', kde: 'Hlavička zakázky', nazev: 'Prázdná hlavička',
     zjisti(ctx) {
       const zak = ctx.zak;
