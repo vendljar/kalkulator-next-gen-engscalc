@@ -22,7 +22,7 @@ v `git show 9a48ee8:PREDAVKA.md`.
 | B97 | střední | ✅ opraveno | f3db355 | v29.9.5 | test_prihlaseni 45/5 → 50/0 | mutace +2, chycené 2/2; B75 ×3 chycené |
 | B98 | střední | ✅ opraveno | b814ebb | v29.9.6 | test_obnova 160/6 → 166/0 | mutace +2, chycené 2/2; P4 ×5 chycené |
 | B99 | střední | ✅ opraveno | 350cb1b | v29.9.7 | test_sablona_obsah 1/1 → 27/0; test_sablony 19/3 → 22/0 | mutace +1, chycená; firemní šablony projdou |
-| — | — | ⬜ celé kolo č. 2 (běží) | | v29.9.7 | | po B99 |
+| — | — | ✅ celé kolo č. 2 | | v29.9.7 | sady 191/0/1, mutace 76/76 + 199/201 → po doplnění testů 201/201 | 2 nechycené mutace = zdvojená obrana, doplněny testy |
 
 ## B111 — co je hotovo (v29.9.2)
 - Pravidlo 0 potvrzeno: server 980 000 → 617 000 Kč (OCK), 271 200 → 162 720
@@ -153,6 +153,19 @@ Tři serverové kontroly B111 → B96 → B112 na jednom místě se snesly.
   pole PAGE; SoD projekce: footer, numbering, pole PAGE; plná moc: customXml,
   footer, pole PAGE. Žádná makra, vložené objekty, ActiveX ani pole
   INCLUDE/DDE. Všechny kontrolou projdou.
+
+## Celé kolo č. 2 (v29.9.7, commit f12e836; 54 min 43 s)
+- kontrola verze + sestavení ✓; **sady 191 prošlo, 0 selhalo, 1 přeskočeno**
+  (test.js); **mutace jádra 76 z 76**; statické kontroly 3 z 3;
+- **mutace serveru 199 z 201** — dvě nechycené, obě důsledek zdvojené
+  obrany: „zveřejnění šablony přijme i ne-Word" (ne-Word teď odmítne i B99)
+  a „B16: délky při přihlášení bez stropu" (obří e-mail teď nezaloží
+  počítadlo ani díky B97). Doplněny testy, které rozliší právě první
+  pojistku (hláška „není .docx"; obří HESLO u platného e-mailu nezaloží
+  počítadlo) — obě mutace pak chycené; krok mutací serveru z kola
+  zopakován celý (výsledek níže / v závěru).
+- strom po běhu čistý, `if (false)` nikde; `dist/kalkulacka_v29.9.8.html`
+  (N61) smazán.
 
 ## Rozhodnutí podle výchozího návrhu — čekají na potvrzení J. V.
 - **B111:** zápornou položku, množství ani hodiny nesmí nikdo, ani

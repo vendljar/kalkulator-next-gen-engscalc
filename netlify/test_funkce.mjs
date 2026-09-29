@@ -349,9 +349,13 @@ const DOCX2 = await docxB64('verze 2');   // jiná data = jiný otisk
 {
   const cObch2 = cookieObch;   // relace z r2 už po změnách hesla neplatí (B6)
 
-  test('šablony: PDF se odmítne už při zveřejnění',
-    (await post(sablonyFn, 'http://x/api/sablony',
-      { akce: 'zverejnit', typ: 'nabidka', nazev: 'x.pdf', data: 'JVBERi0xLjQK' }, cookie)).status === 400);
+  /* Hláška se hlídá doslova (29. 9. 2026): od B99 by PDF odmítla i kontrola
+   * obsahu šablony („nejde rozbalit"), takže samotný stav 400 by nepoznal,
+   * že zmizela první pojistka „není .docx" (mutace „přijme i ne-Word"). */
+  const pdfOdp = await post(sablonyFn, 'http://x/api/sablony',
+      { akce: 'zverejnit', typ: 'nabidka', nazev: 'x.pdf', data: 'JVBERi0xLjQK' }, cookie);
+  test('šablony: PDF se odmítne už při zveřejnění (hláška „není .docx")',
+    pdfOdp.status === 400 && /není \.docx/.test((await pdfOdp.json()).chyba || ''));
   test('šablony: neznámý typ se odmítne',
     (await post(sablonyFn, 'http://x/api/sablony',
       { akce: 'zverejnit', typ: 'faktura', nazev: 'x.docx', data: DOCX1 }, cookie)).status === 400);

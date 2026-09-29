@@ -1645,6 +1645,13 @@ console.log('\n===== AUDIT B16: DÉLKY A TVAR =====\n');
   const sPokusy = await uloziste('pokusy');
   test('B16: obří e-mail nezaložil klíč v počítadle pokusů',
     !(await sPokusy.seznam()).some(k => k.length > 260));
+  /* Obří HESLO u platného e-mailu (29. 9. 2026): strop délky ho odmítne dřív,
+   * než se pokus započítá — počítadlo e-mailu nevznikne. Od B97 obří e-mail
+   * nezaloží počítadlo ani bez stropu (neplatný tvar), takže jen tahle
+   * kontrola pozná, že zmizel strop délky (mutace „B16: délky bez stropu"). */
+  const ph = await post(prihlaseni, 'http://x/api/prihlaseni', { email: 'obri.heslo@example.com', heslo: 'H'.repeat(201) });
+  test('B16: obří heslo vrátí 401 a nezaloží počítadlo e-mailu (strop délky je před počítáním pokusů)',
+    ph.status === 401 && !(await sPokusy.seznam()).some(k => /obri\.heslo@example\.com/.test(k)));
 }
 
 console.log('\n===== AUDIT B17: PŮVOD POŽADAVKU =====\n');
