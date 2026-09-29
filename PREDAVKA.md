@@ -1,61 +1,74 @@
-# Předávka — stav k 26. 9. 2026
+# Předávka — stav k 29. 9. 2026
 
-Na `main`: **v25.9.3** (+ oprava Node), tag `v25.9.3`.
-Na `test`: **v25.9.5**. Na `test-draft`: **v25.9.6** (dávka A kola 16).
-Na `claude/pensive-curie-s6yzs3` (tohle sezení, nad `test-draft`): **v26.9.1**
-— testovací sekvence A1–A5 + opravy B72/P4, B75–B78, N43 (server). Čeká na
-pokyn J. V. k přenosu do `test-draft` (fast-forward) a dál.
+Na `main`: **v25.9.3**. Na `test`: **v29.9.3**. Na `test-draft`: **v29.9.3**
+(kolo 16 — dávky B, C, rozbor D a rozhodnutí J. V. k rozboru D; tamní
+PREDAVKA.md popisuje tu práci).
+Na `claude/pensive-curie-s6yzs3`: **v26.9.1** — testovací sekvence A1–A5
++ opravy B72/P4, B75–B78, N43 (server); čeká na pokyn J. V. k přenosu.
+Na `claude/stoic-cerf-j915ax` (tohle sezení, nad pensive-curie): **v29.9.1**
+— oprava #365. Do `test-draft`, `test` ani `main` nic — rozhoduje J. V.
 Roadmapa: `roadmapa/roadmap.json` (365 položek), stránka se generuje
 `python3 roadmapa/roadmapa.py`.
 
-## Hotovo v26.9.1 — roadmapa #364 (podrobně CHANGELOG.md)
-- **Pravidlo 0:** B69, B70, B71, B73, B74, N43 (klient), N44, N45, N47–N57
-  už byly opravené (v24.9.4–v25.9.5) — přeskočeno. **N46 neopraveno** (bez
-  pokynu J. V.; fuzz ho hlásí jen jako INFO).
-- **Opraveno:** N43 na serveru (`jadro_moduly.cjs` + kryci, kryci_proj,
-  poznamky, protokol), B72/P4 (`netlify/lib/zakazka_kontrola.mjs` — jedna
-  kontrola pro uložení i obnovu; #342 hotovo), B75–B78 (přihlášení jako
-  celek; část #345 — zbývá B80, B81, B83, B88).
-- **Nové testy:** A1 `src/test_fuzz_invarianty.js`, A2 hlídač členů
-  v `src/test_escape.js` + obecný oddíl v `overit_xss.mjs` (207 kontrol),
-  A3 `src/test_zamek_historie.js` + `src/fixtury/*.json`, A4
-  `nastroje/kontrola_udaju.py` + `nastroje/povolene_kontakty.txt`, A5
-  `nastroje/testovaci_kolo.sh` (pred_pushem.sh = obal, CI volá tentýž
-  skript), `netlify/test_prihlaseni.mjs`, +9 testů B72, +14 mutací serveru.
-  U každého je v commitu doloženo selhání před opravou.
-- **Ověřeno celým kolem:** celé kolo `nastroje/testovaci_kolo.sh` 26. 9. 2026 (38 min): kontrola verze + sestavení ✓; sady 182 prošlo, 0 selhalo, 6 přeskočeno (test.js — skutečný ceník není v repozitáři; overit_manual, overit_nabidka_proj_word, overit_sablona, overit_sablony_online, overit_sod — firemní podklady mimo repozitář, KNG_PODKLADY); mutace jádra chycených 76 z 76; mutace serveru 187 z 187 (z toho 14 nových); statické kontroly 3 z 3. Dvě předchozí kola téhož dne našla a bylo opraveno: `test_mutace.mjs` po přesunu B59 měřil prázdno; mutace „vypnutý účet se nepozná“ přežila (dvě nezávislé pojistky, jeden test — doplněn cílený test v `test_prava.mjs`); dva testy struktury CI četly workflow (přesměrovány na testovaci_kolo.sh, kontrola verze přesunuta na začátek kola); souhrn kola nevypisoval přeskočené sady (pole v podshellu).
+## Hotovo v29.9.1 — roadmapa #365 (podrobně CHANGELOG.md)
+- **Pravidlo 0:** nález trval — výpočet padal na „Neznámá dimenze
+  profilu", `ui/kalk_ock.js` na `JEKLY[p.dim].kg`, server zakázku uložil
+  i obnovil.
+- **Výpočet:** `jekl()` v `src/engine.js` u rozměru/tloušťky mimo katalog
+  jeklů dosadí nulovou hmotnost i plochu, profil zapíše do
+  `vysledek.profily.nezname` (nová `profilyNezname()`). Platná data beze
+  změny (otisky v `src/test_profil_neznamy.js`).
+- **Kontrola `profilNeznamy`** (`src/kontroly.js`) = ZÁBRANA; pravidel 20.
+- **UI:** volba „neznámý rozměr: …" / „neznámá: …" se štítkem „mimo
+  katalog", tolerantní `zkontrolujTl()`.
+- **Server:** `netlify/lib/zakazka_kontrola.mjs` — neznámý rozměr v
+  neuzamčené variantě → 400 (uložení i obnova), uzamčená se nekontroluje.
+- **Testy:** `src/test_profil_neznamy.js` (22), `test_kontroly.js`,
+  `overit_lista.mjs`, `overit_xss.mjs` (A2 otravuje i `dim`, `tl`), nový
+  `overit_profil_neznamy.mjs` (10), `netlify/test_obnova.mjs` blok #365;
+  mutace jádra +4 (`JADRA` nově i `kontroly.js`), serveru +2. U každého
+  commitu je doloženo selhání před opravou.
+- **Ověřeno celým kolem:** kolo 29. 9. běží (sady, harnessy a mutace jádra 80/80 zelené) — výsledek doplní následující commit.
 
-## Čeká na J. V. (rozhodnutí)
-- **N46** (nástupiště A ↔ C u zrcadlové šachty, #343 „ověřit s J. V."): fuzz
-  I8a/I8b hlásí rozdíly jen jako INFO; oprava až na pokyn.
-- **#365 (nález A2-1):** zakázka s rozměrem profilu mimo tabulku JEKLY shodí
-  vykreslení Kalkulace i Detailu OCK (`JEKLY[p.dim].kg` v `ui/kalk_ock.js`);
-  opravit v UI, na serveru, nebo nechat?
-- **Telefon a jméno kolegy** v `overit_nabidka_proj_word.mjs` (kontrola „v
-  šabloně nezůstal"): skutečný údaj ve veřejném repu; dočasně v povoleném
-  seznamu `nastroje/povolene_kontakty.txt` s poznámkou (viz #346 / B79).
-- **CSP bez `'unsafe-inline'`:** jen návrh (nikde needitováno).
-- Pokyn k přenosu větve sezení → `test-draft` → `test` → `main`.
-- Dál platí z minula: soubory SoD (#350), kolo 16 dávky B/C/D (#361–#363),
-  #355, #356, #346 Netlify, #172 lokálně npm.
+## Pozor při slučování do `test-draft`
+- **Čísla roadmapy kolidují.** Tady (i v pensive-curie) je #364 =
+  testovací sekvence A1–A5 a #365 = tento nález; v `test-draft` je #364 =
+  sleva PROJ v nabídce a #365 = P8 (značky bloků, CN v13). Čísla přiděluje
+  ten, kdo slučuje — návrh: #364 → #371, #365 → #372 (test-draft končí
+  na #370).
+- **Verze:** v29.9.1 je tady oprava #365, v `test-draft` jiná dávka (sleva
+  PROJ). Při sloučení se verze určí podle dne sloučení (`build.py`).
+- CHANGELOG.md a PREDAVKA.md přepsaly obě větve — sloučit ručně.
+- Pořadí: nejdřív pensive-curie (A1–A5), pak tahle větev (stojí na ní).
+
+## Čeká na J. V.
+- Pokyn k přenosu pensive-curie a této větve do `test-draft` a dál.
+- **N46** (nástupiště A ↔ C u zrcadlové šachty): neopraveno, fuzz ho hlásí
+  jen jako INFO.
+- **Platební podmínky z krycího listu** (návrh
+  `podklady/NAVRH_PLATEBNI_PODMINKY_2026-09-29.md` v `test-draft`, tamní
+  #366/#367): 29. 9. hotový klikací prototyp
+  https://claude.ai/artifact/6sbxbaAsBpphfPfE2wnM3a (krycí list OCK
+  a PROJ, náhled nabídky CZ/EN/DE/FR, smlouvy a tisku, číslo smlouvy,
+  pět otázek s kopírováním odpovědí). Soubor prototypu není v repozitáři.
+  Čeká se na odpovědi na 5 otázek → pak etapa A.
+- Z pensive-curie dál: telefon a jméno kolegy v
+  `overit_nabidka_proj_word.mjs` (#346 / B79), CSP bez `'unsafe-inline'`.
 
 ## Poznámky pro další sezení
 - **Testy jedním příkazem:** `bash nastroje/testovaci_kolo.sh` (celé kolo,
   ~50 min) nebo `--bez-mutaci`; `--jen sady` apod. Mutační běh nepřerušovat.
-  Logy kroků v `$KNG_KOLO_LOGY` nebo v mktemp složce vypsané v souhrnu.
-- `netlify/test_mutace.mjs` spouští skutečnou mutaci (B59) a posílá signály —
-  nepouštět souběžně s mutačním během.
-- Nový smyšlený kontakt v testu → zapsat do `nastroje/povolene_kontakty.txt`
-  s důvodem, jinak statická kontrola (a CI) skončí červeně.
-- Harnessy potřebují `node_modules/playwright` (symlink na `$(npm root -g)`)
-  a `ADMIN_EMAIL=spravce@priklad.cz` (testovaci_kolo.sh ho nastaví sám);
-  šablony pro harnessy přes `KNG_PODKLADY=<složka>` — jinak se hlásí jako
-  přeskočené (nic neověřily).
+  Firemní šablony pro harnessy přes `KNG_PODKLADY=<složka>`.
+- `profilyNezname()` z `engine.js` volá i server (přes `globalThis`
+  z `jadro_moduly.cjs`) — při přejmenování hlídá mutace serveru.
+- `netlify/test_mutace.mjs` spouští skutečnou mutaci (B59) — nepouštět
+  souběžně s mutačním během.
+- Nový smyšlený kontakt v testu → `nastroje/povolene_kontakty.txt`
+  s důvodem, jinak statická kontrola skončí červeně.
+- Harnessy potřebují `node_modules/playwright` a
+  `ADMIN_EMAIL=spravce@priklad.cz` (testovaci_kolo.sh ho nastaví sám).
 - Komentář uvnitř `KOD_STRANKY` v `overit_xss.mjs` nesmí obsahovat zpětné
-  apostrofy (je to template literal). Komentář s uzavírací značkou skriptu
-  v `src/` rozbije celou aplikaci.
+  apostrofy (template literal).
 - Server musí načítat v `jadro_moduly.cjs` tytéž moduly migrací jako
-  prohlížeč (pořadí CORE v build.py) — jinak se odeslané zakázky po
-  uložení liší (N43). Hlídá `src/test_zamek_historie.js`.
-- Sezení 25.–26. 9. běželo přes 1,5 M tokenů kontextu bez pádu díky
-  automatickému shrnutí; přesto předávku psát po každé dávce.
+  prohlížeč (pořadí CORE v build.py) — hlídá `src/test_zamek_historie.js`.
+- Předávku psát po každé dávce; kontext hlídat přes `get_session`.

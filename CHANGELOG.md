@@ -8,6 +8,61 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v29.9.1 — #365: zakázka s neznámým rozměrem profilu jde otevřít (29. 9. 2026)
+
+Roadmapa #365 hotovo (nález A2-1 z 26. 9. 2026). Větev
+`claude/stoic-cerf-j915ax` nad `claude/pensive-curie-s6yzs3` (v26.9.1);
+rozsah jen #365, N46 se neopravuje. **Pravidlo 0:** nález trval —
+`vypocet()` padal na „Neznámá dimenze profilu: 999x999" / „Dimenze 80x80
+nemá tloušťku 99 mm", `ui/kalk_ock.js` sám na `JEKLY[p.dim].kg`
+(`renderInputs` i `zkontrolujTl`) a server takovou zakázku uložil
+i obnovil — pak se nikomu neotevřela.
+
+**Opraveno:**
+- **Výpočet nespadne, ale chybu nezamlčí.** `jekl()` v `src/engine.js`
+  u rozměru mimo katalog jeklů (nebo tloušťky, kterou rozměr nemá) dosadí
+  nulovou hmotnost i plochu a profil zapíše do `vysledek.profily.nezname`
+  („sloupek: 999x999 / 4 mm"). Seznam dává nová `profilyNezname(zadani,
+  jekly)`; lemování jen u exteriérové šachty (interiérová ho nepočítá).
+  Platná data se nezměnila ani o korunu — otisky výsledku výchozího
+  zadání (interiér i exteriér, Model 1 i 2) jsou stejné jako před změnou.
+- **Kontrola `profilNeznamy` = ZÁBRANA** (`src/kontroly.js`,
+  `zabranaMozna`): „Rozměr profilu … není v katalogu jeklů — vyberte
+  platný. Dokument nevznikne, dokud se to neopraví." Cena s nulovým
+  profilem se tak nikdy nevytiskne. Pravidel je 20.
+- **Zadání šachty ukáže pravdu** (`src/ui/kalk_ock.js`): ve výběru navíc
+  zvýrazněná volba „neznámý rozměr: 999x999" (u tloušťky „neznámá: 99")
+  a štítek „mimo katalog"; ostatní volby jsou platné rozměry. Po výběru
+  platného rozměru `zkontrolujTl()` dosadí platnou tloušťku jako dřív,
+  u neznámého nic nemění a nepadá.
+- **Server odmítne nová špatná data, stará nezablokuje**
+  (`netlify/lib/zakazka_kontrola.mjs`, uložení i obnova): neznámý rozměr
+  nebo tloušťka v NEUZAMČENÉ variantě → 400 „… rozměr profilu není
+  v katalogu jeklů (CN … — sloupek: 999x999 / 4 mm). Vyberte v zadání
+  šachty platný rozměr"; obnova zakázku přeskočí s důvodem. Uzamčená
+  (odeslaná) varianta se nemění, proto se nekontroluje. Katalog je týž
+  `JEKLY` z `jadro()`, seznam dává táž funkce jádra.
+
+**Testy — každý doložen selháním před opravou (ve zprávě commitu):**
+- nová sada `src/test_profil_neznamy.js` (22 testů; bez opravy 5 prošlo,
+  14 selhalo — prošly jen otisky platných dat), `src/test_kontroly.js`
+  (bez opravy 2 selhání) a `overit_lista.mjs` (20 pravidel);
+- `overit_xss.mjs` (A2) otravuje nově i `dim` a `tl` — komentář o nálezu
+  A2-1 smazán; bez opravy UI 4 ✕ „vykreslení nespadlo" (`reading 'kg'`),
+  teď 207 OK;
+- nový harness `overit_profil_neznamy.mjs` (10 kontrol v prohlížeči; bez
+  opravy UI 5 ✕);
+- `netlify/test_obnova.mjs` — blok #365 (bez opravy 4 selhání, teď 165 OK);
+- mutace: jádro +4 (`JADRA` nově i `kontroly.js` — zábrana je jediné, co
+  brání vytisknout nulový profil), server +2 (neznámý rozměr se
+  nekontroluje; kontroluje se i odeslaná varianta). `--kontrola`: jádro
+  80, server 189 úseků, každý právě jednou.
+
+**Ověřeno celým kolem** `nastroje/testovaci_kolo.sh` 29. 9. 2026:
+kolo běží (sady, harnessy a mutace jádra 80/80 už zelené) — výsledek doplní následující commit.
+
+---
+
 ## v26.9.1 — testovací sekvence z hloubkového testu (A1–A5) a opravy B72, B75–B78, N43 na serveru (26. 9. 2026)
 
 Roadmapa #364 (nová), #342 hotovo, #345 z části. Zadání J. V. 25. 9. 2026

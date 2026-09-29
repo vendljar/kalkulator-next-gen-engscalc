@@ -5715,14 +5715,16 @@
   {
    "id": "365",
    "vlna": "B",
-   "stav": "ceka",
+   "stav": "hotovo",
+   "hotovoV": "v29.9.1",
    "dulezitost": "nizka",
    "slozitost": "S",
    "nazev": "Zakázka s neznámým rozměrem profilu nejde otevřít (nález A2-1 z 26. 9. 2026)",
    "proc": "Obecný XSS harness (A2) při otrávení všech polí zadání OCK shodil vykreslení Kalkulace i Detailu OCK: Z.profily.*.dim mimo tabulku JEKLY → JEKLY[p.dim].kg v ui/kalk_ock.js. Server hodnotu neověřuje; uložená zakázka s takovou hodnotou (změna tabulky profilů, ruční zásah) se pak nikomu neotevře.",
-   "detail": "Návrh: v UI neznámý profil ukázat jako „neznámý rozměr\" s možností vybrat jiný (kalk_ock.js řádky s JEKLY[p.dim]), případně na serveru odmítnout dim mimo JEKLY. Harness zatím dim a tl neotravuje (řídicí klíče).",
-   "cekaNa": "J. V.: zda opravit v UI (tolerantně), na serveru (odmítnout), nebo nechat",
-   "kde": "src/ui/kalk_ock.js, netlify/lib/zakazka_kontrola.mjs"
+   "detail": "HOTOVO v29.9.1 (29. 9. 2026, větev claude/stoic-cerf-j915ax nad pensive-curie). Výpočet: jekl() v engine.js u rozměru nebo tloušťky mimo katalog jeklů dosadí nulovou hmotnost i plochu a profil zapíše do vysledek.profily.nezname (nová profilyNezname(), lemování jen u exteriérové šachty); platná data beze změny (otisky Model 1 i 2). Kontrola profilNeznamy = ZÁBRANA („Rozměr profilu … není v katalogu jeklů — vyberte platný. Dokument nevznikne, dokud se to neopraví.“). UI: výběr ukáže zvýrazněnou volbu „neznámý rozměr: 999x999“ (u tloušťky „neznámá: 99“) se štítkem „mimo katalog“, zkontrolujTl je tolerantní. Server: zakazkaServerKontrola (uložení i obnova) odmítne neznámý dim/tl v neuzamčené variantě (400), uzamčenou nekontroluje. Testy: test_profil_neznamy.js (22), test_kontroly.js a overit_lista.mjs (20 pravidel), overit_xss.mjs A2 otravuje i dim a tl, nový overit_profil_neznamy.mjs (10), test_obnova.mjs blok #365; mutace jádra +4 (JADRA nově i kontroly.js), serveru +2.",
+   "hotovoKdyz": "Zakázka s neznámým rozměrem profilu se otevře, dokument s nulovým profilem nevznikne, server nová špatná data odmítne; celé testovací kolo zelené.",
+   "kde": "src/engine.js (profilyNezname, jekl), src/kontroly.js (profilNeznamy), src/ui/kalk_ock.js (renderInputs, zkontrolujTl), netlify/lib/zakazka_kontrola.mjs, src/test_profil_neznamy.js, overit_profil_neznamy.mjs, netlify/test_obnova.mjs, overit_xss.mjs",
+   "pozn": "Chování podle promptu J. V. z 29. 9. 2026 (UI tolerantně + zábrana + server odmítne neuzamčenou variantu). **Pozor při slučování do test-draft:** tam jsou #364 a #365 obsazené jinými položkami (sleva PROJ v nabídce, P8) — čísla této větve přidělí ten, kdo slučuje (návrh #371 a #372)."
   }
  ],
  "meta" : {
@@ -6219,6 +6221,10 @@
   {
    "text" : "Noc 25. 9. 2026 (engscalc), v25.9.6 — dávka A kola 16 (#360): P1 role slevy z relace, P2 zábrana nesmyslné nabídky, P13 náhled bez autosave, N89. v25.9.5 na test. Podklady kola 16 rozebrané, pořadí B/C/D v PREDAVKA.md.",
    "hotovo" : true
+  },
+  {
+   "text" : "29. 9. 2026 (engscalc, větev claude/stoic-cerf-j915ax nad pensive-curie), v29.9.1 — #365: zakázka s neznámým rozměrem profilu jde otevřít (výpočet bez výjimky + zábrana profilNeznamy, výběr „neznámý rozměr“ v zadání šachty, server 400 u neuzamčené varianty). Ověřeno celým kolem: kolo běží, výsledek doplní následující commit.",
+   "hotovo" : true
   }
   ],
   "pravidla" : [
@@ -6305,8 +6311,8 @@
     "id" : "F"
    }
   ],
-  "build" : "v25.9.6 (engscalc)",
-  "stavKDatu" : "25. 9. 2026"
+  "build" : "v29.9.1 (engscalc, větev claude/stoic-cerf-j915ax)",
+  "stavKDatu" : "29. 9. 2026"
  },
  "_comment" : [
   "JEDINÝ ZDROJ PRAVDY pro roadmapu Kalkulátoru Next Gen.",
