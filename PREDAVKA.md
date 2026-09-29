@@ -162,10 +162,30 @@ Tři serverové kontroly B111 → B96 → B112 na jednom místě se snesly.
   a „B16: délky při přihlášení bez stropu" (obří e-mail teď nezaloží
   počítadlo ani díky B97). Doplněny testy, které rozliší právě první
   pojistku (hláška „není .docx"; obří HESLO u platného e-mailu nezaloží
-  počítadlo) — obě mutace pak chycené; krok mutací serveru z kola
-  zopakován celý (výsledek níže / v závěru).
+  počítadlo) — obě mutace pak chycené. Krok mutací serveru z kola
+  zopakován celý (`testovaci_kolo.sh --jen mutace-server,staticke`, commit
+  1e0db4f): **201 z 201 chycených**, statické 3 z 3 — VŠE ZELENÉ (36 min).
 - strom po běhu čistý, `if (false)` nikde; `dist/kalkulacka_v29.9.8.html`
   (N61) smazán.
+
+## ZÁVĚR ÚKOLU 1 (29. 9. 2026 večer)
+Všech šest nálezů opraveno, každý s testem, který před opravou selže,
+a s mutací; hlava větve po závěru viz `git log` (verze v29.9.7). Obě celá
+kola: č. 1 (v29.9.4) sady 189/1/1 (overit_online — fixtura B112, opraveno
+→ 189/0), mutace 76/76 + 196/196; č. 2 (v29.9.7) sady 191/0/1, mutace
+76/76 + 199/201 → po doplnění dvou testů 201/201. Testování pokračuje
+v sezení „Testování po opravách v29.9.1 (22. kolo)":
+https://claude.ai/code/session_011bKm7zw36TH8By3Ef7rF1i — J. V. mu řekne
+větev `claude/oprava-sesti-nalezu-v29.9.1` a commit.
+
+**Tagy a releasy (ověřeno přes GitHub 29. 9.):** tagy existují jen
+v29.9.4, v29.9.3, v25.9.3, v24.9.3, v23.9.3, v22.9.22, v22.9.16, v22.9.9,
+v21.9.16, v21.9.2, v18.9.1 (releasy u všech). **Tag v29.9.1 na GitHubu
+není** (zadání ho uvádí jako hlavu `claude/pensive-curie-s6yzs3`). Čísla
+v29.9.2–v29.9.4 této větve **kolidují** s linií `test-draft` (v29.9.3
+a v29.9.4 tam mají tag) — ty netagovat; pro 22. kolo stačí jeden tag
+v29.9.7 na hlavě této větve (odkaz v závěrečné zprávě). Při slučování do
+test-draft se čísla verzí srovnají (build.py dá další pořadí dne).
 
 ## Rozhodnutí podle výchozího návrhu — čekají na potvrzení J. V.
 - **B111:** zápornou položku, množství ani hodiny nesmí nikdo, ani
