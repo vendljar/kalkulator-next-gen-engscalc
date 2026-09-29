@@ -67,7 +67,7 @@ rozhodnutí), prototyp https://claude.ai/artifact/6sbxbaAsBpphfPfE2wnM3a.
   SoD PROJ jde s etapou B) odblokované.
 
 ## Další krok — nové sezení (29. 9. 2026 večer, pokyn J. V.)
-Sezení: @@SEZENI@@ — dostalo zadání níže (oddíl „Prompt nového sezení").
+Sezení: https://claude.ai/code/session_01XFo3AzDzkjt8xGnMVH53p7 — dostalo zadání níže (oddíl „Prompt nového sezení").
 1. **Oprava šesti nálezů 21. kola** (B111, B96, B112, B97, B98, B99) přesně
    podle `podklady/PROMPT_oprava_sesti_nalezu_v29.9.1.md` — větev
    `claude/oprava-sesti-nalezu-v29.9.1` z `9a48ee8`, dvě celá kola, do
@@ -125,7 +125,7 @@ Sezení: @@SEZENI@@ — dostalo zadání níže (oddíl „Prompt nového sezen�
   nejvyšší id v cílové větvi.
 
 ## Prompt nového sezení (29. 9. 2026 večer)
-Poslaný při založení sezení @@SEZENI@@; když sezení spadne, nové dostane
+Poslaný při založení sezení https://claude.ai/code/session_01XFo3AzDzkjt8xGnMVH53p7; když sezení spadne, nové dostane
 tentýž text (úkol 1 pak pokračuje podle POKRAČOVÁNÍ v zadání oprav).
 
 ```
@@ -145,6 +145,7 @@ STAV K 29. 9. 2026 VEČER
 
 ÚKOL 1 — OPRAVA ŠESTI NÁLEZŮ 21. KOLA (nejdřív)
 Proveď beze změny zadání v souboru podklady/PROMPT_oprava_sesti_nalezu_v29.9.1.md (git show origin/test-draft:podklady/PROMPT_oprava_sesti_nalezu_v29.9.1.md) — celé, včetně příloh A–F: větev claude/oprava-sesti-nalezu-v29.9.1 z commitu 9a48ee86f66f83e7c71b1f6c94189f6f2663634d (neexistuje, založ ji), pořadí B111 → B96 → B112 → celé kolo 1 → B97 → B98 → B99 → celé kolo 2, závěr pro J. V. Toto zadání má přednost před čímkoli níže.
+Sezení se otevře na test-draft — větev oprav z něj NEzakládej: git fetch origin claude/pensive-curie-s6yzs3 && git checkout -B claude/oprava-sesti-nalezu-v29.9.1 9a48ee86f66f83e7c71b1f6c94189f6f2663634d (když už na GitHubu existuje, pokračuj na ní podle POKRAČOVÁNÍ).
 Doplňky z předchozího sezení (zadání neruší):
 - #372 (neznámý rozměr profilu) je opravený jen v test-draft; v kódu 9a48ee8 ho neopravuj. V test-draft stojí serverový blok #372 hned za uloTypyProblemy v netlify/lib/zakazka_kontrola.mjs a je tam i razítko upravilJmeno (P7) — při pozdějším slučování do test-draft se volání B111/B96/B112 a blok #372 zařadí za sebe (konflikt na tomto místě je očekávaný; zapiš to do PREDAVKA.md).
 - Šablony z Disku slož do složky pro KNG_PODKLADY: CN v13 (+EN/DE/FR) jako nejvyšší verze, kopii CN i jako Sablona_NABIDKA_CN_v11.docx, PROJ šablonu pojmenuj Sablona_NABIDKA_PROJ.docx; přidej SoD realizace/projekce, plnou moc a příručku, ať overit_sod/overit_manual neběží naprázdno. Nic z podkladů necommitovat.
