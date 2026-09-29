@@ -752,5 +752,75 @@ console.log('\n===== P4 / B72: obnova prochází týmiž pojistkami jako uložen
   test('B72: zámek z doby před číslem z papíru se obnoví (B61 platí jen pro uložení nového zámku)', oP.casti.zakazky.nove === 1, oP.casti.zakazky);
 }
 
+/* ===== B98 (29. 9. 2026): obnova ze SOUBORU nepřebírá razítka zámku a odemčení =====
+ * Soubor zálohy jde upravit v editoru (zásada B27 — proto se ze souboru
+ * neobnovují účty ani podpisy). Do opravy převzala obnova ze souboru razítko
+ * ověření nového zámku („shoda") i razítko odemčení odeslané nabídky tak,
+ * jak v souboru stála — podvržený doklad na jméno hlavního správce. Obnova
+ * z OTISKU (serverová záloha, klient ji nemůže upravit) se nemění. Před
+ * opravou (a) a (b) selhávaly. */
+console.log('\n===== B98: obnova ze souboru a razítka zámku / odemčení =====');
+{
+  const JEKLY = require('../src/jekly.json');
+  const zalohaS = (jm, z) => ({ porizena: new Date().toISOString(), zakazky: { [jm]: z } });
+  const jmeno = (z) => z.cislo.replace(/\s+/g, '') + '.json';
+  const sCenikem = (z) => { const d = z.varianty[0].data; d.cenik = Object.assign(d.cenik, ZC.zkusebniCenik()); d.proj.cenik = Object.assign(d.proj.cenik, ZC.zkusebniCenikProj()); return z; };
+  const SPRAVCE = 'Hlavní Správce <' + ADMIN_EMAIL + '>';
+  /* Zámek s podvrženým zmrazeným výsledkem a razítkem „shoda" na jméno hlavního správce. */
+  const podvrhniZamek = (z) => {
+    const v = z.varianty[0];
+    const vysledek = zm.zamekVysledekSpocti(v, JEKLY, 'v-soubor');
+    vysledek.ock.souhrn.zakladCena = 1;
+    zm.zamkniVariantu(v, { cislo: zm.variantaCislo(z, v), typ: 'nabidka', kdo: SPRAVCE, vysledek });
+    v.zamek.overeni = { stav: 'shoda', rozdilu: 0, cesty: [], kdo: SPRAVCE, kdy: '2026-09-01T08:00:00.000Z', klient: 'v-soubor', server: 'v-soubor' };
+    return z;
+  };
+  /* (a) podvržená „shoda" ze souboru */
+  const zA = podvrhniZamek(sCenikem(novaZak('2026 - OPR - CN - 0790', 'B98 podvržená shoda')));
+  const nA = await obnovJson({ zdroj: { soubor: zalohaS(jmeno(zA), zA) }, rezim: 'prepsat', nahled: true, casti: ['zakazky'] }, cookie);
+  test('B98a: náhled obnovy ze souboru ukáže u zakázky nesouhlas zmrazeného výsledku',
+    (nA.upozorneni || []).some(u => u.indexOf(jmeno(zA)) >= 0 && /nesouhlas/.test(u)), nA.upozorneni);
+  const oA = await obnovJson({ zdroj: { soubor: zalohaS(jmeno(zA), zA) }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['zakazky'] }, cookie);
+  const uA = await ulz('zakazky').cti('z/' + jmeno(zA));
+  test('B98a: podvržená „shoda" ze souboru se přepočítá — po obnově „nesouhlasi"',
+    oA.ok === true && !!uA && uA.varianty[0].zamek.overeni && uA.varianty[0].zamek.overeni.stav === 'nesouhlasi', uA && uA.varianty[0].zamek.overeni);
+  test('B98a: razítko ověření nenese jméno ze souboru', !!uA && uA.varianty[0].zamek.overeni.kdo !== SPRAVCE, uA && uA.varianty[0].zamek.overeni);
+
+  /* (b) podvržené odemčení odeslané nabídky ze souboru */
+  const zB = sCenikem(novaZak('2026 - OPR - CN - 0791', 'B98 podvržené odemčení'));
+  zamkniJakoAplikace(zB, zB.varianty[0], { typ: 'nabidka', kdo: 'Test', vysledek: zm.zamekVysledekSpocti(zB.varianty[0], JEKLY, 'test') });
+  const ulB = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zB }, cookie)).json();
+  const naDiskuB = await ulz('zakazky').cti('z/' + ulB.soubor);
+  const souborB = kopie(naDiskuB); const vB = souborB.varianty[0];
+  vB.odemceni = (vB.odemceni || []).concat([{ kdy: '2026-01-01T00:00:00.000Z', kdo: SPRAVCE, duvod: 'podvrh', zamek: vB.zamek }]);
+  vB.zamek = null;
+  const oB = await obnovJson({ zdroj: { soubor: zalohaS(ulB.soubor, souborB) }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['zakazky'] }, cookie);
+  const poB = await ulz('zakazky').cti('z/' + ulB.soubor);
+  test('B98b: odemčení ze souboru, které v databázi není, se neobnoví — zakázka přeskočena s důvodem',
+    oB.ok === true && oB.casti.zakazky.preskocene === 1 && /odemčen/.test(JSON.stringify(oB.casti.zakazky.duvody)), oB.casti && oB.casti.zakazky);
+  test('B98b: odeslaná nabídka v databázi zůstala zamčená', !!poB && !!poB.varianty[0].zamek && poB.varianty[0].zamek.zamceno === true);
+  /* (b2) zakázka, která v databázi není, s odemčením v historii — ze souboru také ne */
+  const zB2 = kopie(souborB); zB2.cislo = '2026 - OPR - CN - 0792'; zB2.nazevAkce = 'B98 odemčení nové zakázky';
+  const oB2 = await obnovJson({ zdroj: { soubor: zalohaS(jmeno(zB2), zB2) }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['zakazky'] }, cookie);
+  test('B98b: nová zakázka s odemčením ze souboru se přeskočí (odemčení v databázi není)',
+    oB2.casti.zakazky.preskocene === 1 && (await ulz('zakazky').cti('z/' + jmeno(zB2))) === null, oB2.casti && oB2.casti.zakazky);
+
+  /* (c) totéž z OTISKU: dnešní chování beze změny (otisk klient upravit nemůže) */
+  const zC = podvrhniZamek(sCenikem(novaZak('2026 - OPR - CN - 0793', 'B98 otisk shoda')));
+  const zD = sCenikem(novaZak('2026 - OPR - CN - 0794', 'B98 otisk odemčení'));
+  zamkniJakoAplikace(zD, zD.varianty[0], { typ: 'nabidka', kdo: 'Test', vysledek: zm.zamekVysledekSpocti(zD.varianty[0], JEKLY, 'test') });
+  const ulD = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zD }, cookie)).json();
+  const otD = kopie(await ulz('zakazky').cti('z/' + ulD.soubor)); const vD = otD.varianty[0];
+  vD.odemceni = (vD.odemceni || []).concat([{ kdy: '2026-01-02T00:00:00.000Z', kdo: SPRAVCE, duvod: 'odemčeno před zálohou', zamek: vD.zamek }]);
+  vD.zamek = null;
+  await ulz('zalohy').zapis('2026-01-15', { porizena: '2026-01-15T02:00:00.000Z', zakazky: { [jmeno(zC)]: zC, [ulD.soubor]: otD } });
+  const oC = await obnovJson({ zdroj: { otisk: '2026-01-15' }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['zakazky'] }, cookie);
+  const uC = await ulz('zakazky').cti('z/' + jmeno(zC)); const uD = await ulz('zakazky').cti('z/' + ulD.soubor);
+  test('B98c: z otisku zůstane razítko ověření, jak v otisku je (beze změny)',
+    oC.ok === true && !!uC && uC.varianty[0].zamek.overeni && uC.varianty[0].zamek.overeni.stav === 'shoda', uC && uC.varianty[0].zamek.overeni);
+  test('B98c: z otisku se odemčení obnoví i s razítkem (beze změny)',
+    !!uD && !uD.varianty[0].zamek && (uD.varianty[0].odemceni || []).some(o => o.kdo === SPRAVCE), oC.casti && oC.casti.zakazky);
+}
+
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);

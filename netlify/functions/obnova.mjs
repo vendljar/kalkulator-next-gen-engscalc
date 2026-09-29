@@ -472,8 +472,10 @@ export default async (req) => {
     if (!mapa || typeof mapa !== 'object' || Array.isArray(mapa)) preskoc(b, '*', 'záloha tuto část nenese');
     else {
       const prog = await sProg.cti('db');
+      /* zeSouboru (B98): razítka zámku a odemčení z nahraného souboru nejsou
+       * doklad — viz lib/zakazka_kontrola.mjs. */
       const ctx = { ULO, SCHV, JEKLY, slevyNast: (prog && prog.platny && prog.platny.slevy) || {},
-                    verzeServeru: serverVerze(), rezim: 'obnova' };
+                    verzeServeru: serverVerze(), rezim: 'obnova', zeSouboru: zdrojPopis.typ === 'soubor' };
       for (const [k, v] of Object.entries(mapa)) {
         if (!k || k.length > KLIC_MAX) { preskoc(b, k, 'nepřijatelný klíč'); continue; }
         if (v == null || typeof v !== 'object') { preskoc(b, k, 'poškozený záznam (není objekt)'); continue; }
@@ -488,6 +490,12 @@ export default async (req) => {
         if (!prijem.ok) { preskoc(b, klic, prijem.chyba); continue; }
         const kontrola = zakazkaServerKontrola(stary, prijem.zak, relace, ctx);
         if (!kontrola.ok) { preskoc(b, klic, kontrola.chyba); continue; }
+        /* Nesouhlas zmrazeného výsledku odeslané nabídky (B98 — ze souboru se
+         * ověřuje znovu): zakázka se zapíše s razítkem „nesouhlasi" a náhled
+         * to řekne u konkrétní zakázky. */
+        for (const sp of (kontrola.sporne || []))
+          upozorneni.push('Zakázka ' + k + ': ' + (globalThis.zamekOvereniText ? globalThis.zamekOvereniText(sp.ov)
+            : 'zmrazený výsledek odeslané nabídky nesouhlasí s přepočtem serveru') + ' (' + (sp.cislo || '') + ')');
         if (zapisovat) await s.zapis(klic, kontrola.zak);
         if (stary == null) b.nove++; else b.prepsane++;
       }

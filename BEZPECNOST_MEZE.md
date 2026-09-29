@@ -120,6 +120,21 @@ typy polí (`zakazkaServerKontrola`, uložení i obnova):
 
 ---
 
+## Obnova ze zálohy: soubor × otisk (B98, 29. 9. 2026)
+
+**Soubor zálohy** jde upravit v editoru, proto se z něj neobnovují účty ani
+podpisy (B27), razítko ověření nového zámku se počítá znovu a odemčení,
+které v databázi není, zakázku přeskočí. **Otisk na serveru** klient
+upravit nemůže — z něj se razítka zámku, ověření i odemčení přebírají, jak
+jsou. Vědomě zůstává:
+- kdo má přístup k úložišti Netlify Blobs (správce webu), může otisk
+  změnit — obnova z otisku mu věří, stejně jako databáze sama;
+- obnova ze souboru přeskočí i zakázku s odemčením v historii, když se
+  obnovuje do prázdné databáze — taková zakázka se obnoví z otisku;
+- zámek, který v databázi už je, se obnovou neposuzuje (doklad, B53).
+
+---
+
 ## Zbytkové meze uzavřených nálezů
 
 ### B61 — zámek pod jiným jménem souboru

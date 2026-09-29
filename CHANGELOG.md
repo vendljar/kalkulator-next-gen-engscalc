@@ -8,6 +8,38 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v29.9.6 — B98: obnova ze souboru nepřebírá razítka zámku a odemčení (29. 9. 2026)
+
+Pátý ze šesti nálezů 21. kola (větev `claude/oprava-sesti-nalezu-v29.9.1`).
+Roadmapa #373.
+
+**Nález B98 (střední) — podvržený doklad na jméno jiného správce.** Obnova
+ze SOUBORU zálohy převzala (a) razítko ověření nového zámku — zmrazený
+výsledek se `zakladCena = 1` a razítkem „shoda" na hlavního správce se
+zapsal jako shoda, ačkoli běžné uložení dá „nesouhlasi"; (b) odemčení
+odeslané nabídky s razítkem na hlavního správce a libovolným datem. Soubor
+jde upravit v editoru — přesně hrozba, kvůli které B27 zakázal obnovu účtů
+a podpisů ze souboru.
+
+- `netlify/functions/obnova.mjs` předává `zeSouboru` (zdroj = nahraný
+  soubor, i po dávkách).
+- `netlify/lib/zakazka_kontrola.mjs`: ze souboru se ověření každého nového
+  zámku spočítá **vždy znovu** (`zamekOvereni`); nesouhlas se zapíše jako
+  „nesouhlasi" a náhled obnovy ho ukáže u zakázky (`upozorneni`).
+  **Odemčení, které v databázi není** (i u zakázky, která v databázi vůbec
+  není), zakázku přeskočí s důvodem — výchozí návrh J. V.
+- Obnova z **otisku** (serverová záloha, klient ji upravit nemůže) přebírá
+  razítka dál, jak byla. Jedna kontrola pro uložení i obnovu (B72/P4) platí
+  dál; kotva mutace P4 „obnova nedoplní ověření" přešla na nový blok.
+
+**Testy (pojistka proti prázdnému testu):** `netlify/test_obnova.mjs`
+oddíl „B98" (8 kontrol; před opravou 160 OK / 6 FAIL → 166 / 0; dvě kontroly
+obnovy z otisku procházejí před i po — hlídají, že se nezměnila). Mutace
+serveru +2 („obnova nechá ověření ze souboru", „obnova převezme odemčení
+ze souboru") — chycené 2 z 2; mutace P4 ×5 dál chycené.
+
+---
+
 ## v29.9.5 — B97: e-mailový klíč brzdy přihlášení už nezasáhne počítadlo adresy (29. 9. 2026)
 
 Čtvrtý ze šesti nálezů 21. kola (větev `claude/oprava-sesti-nalezu-v29.9.1`).

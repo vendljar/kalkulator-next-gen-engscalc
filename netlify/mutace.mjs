@@ -352,6 +352,17 @@ const MUTACE = [
     nahrad: "  if (false)\n    return json({ ok: false, chyba: 'Příliš mnoho neúspěšných pokusů z této adresy. Zkuste to za '",
     proc: 'jedno heslo na sto e-mailů by na počítadle nikdy nenarostlo' },
 
+  /* ---------- B98 (29. 9. 2026): obnova ze souboru a razítka ---------- */
+  { nazev: 'B98: obnova nechá ověření zámku ze souboru', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "      if (zeSouboru || !v.zamek.overeni) {",
+    nahrad: "      if (!v.zamek.overeni) {",
+    proc: 'podvržená „shoda" zmrazeného výsledku na jméno hlavního správce by se obnovou zapsala jako doklad' },
+
+  { nazev: 'B98: obnova převezme odemčení ze souboru', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "  if (zeSouboru && ULO.uloOdemceniPribylo(stara, zak).length)",
+    nahrad: "  if (false && ULO.uloOdemceniPribylo(stara, zak).length)",
+    proc: 'upravený soubor zálohy by odemkl odeslanou nabídku s razítkem na cizí jméno a libovolným datem' },
+
   /* ---------- B97 (29. 9. 2026): jmenné prostory počítadel pokusů ---------- */
   { nazev: 'B97: e-mailový klíč bez předpony', soubor: 'lib/sdilene.mjs',
     hledej: "function pokusyKlic(email) { return 'e:' + String(email || '').trim().toLowerCase(); }",
@@ -1107,7 +1118,9 @@ const MUTACE = [
     nahrad: "  const cil = zak;",
     proc: 'v obnovené zakázce by pod slevou stálo jméno správce místo toho, kdo ji tehdy schválil' },
   { nazev: 'P4: obnova nedoplní ověření výsledku zámku', soubor: 'lib/zakazka_kontrola.mjs',
-    hledej: "      if (!v.zamek.overeni) {\n        const ov = globalThis.zamekOvereni(v, JEKLY, verzeServeru);\n        if (ov) v.zamek.overeni = ov;\n      }",
+    /* Kotva upravená s B98 (29. 9. 2026): blok teď počítá ověření i ze
+     * souboru; mutace ho dál vyřadí celý — obnova by neověřila nic. */
+    hledej: "      if (zeSouboru || !v.zamek.overeni) {\n        const ov = globalThis.zamekOvereni(v, JEKLY, verzeServeru);\n        if (ov) v.zamek.overeni = ov; else if (zeSouboru) delete v.zamek.overeni;\n        if (zeSouboru && ov && ov.stav !== 'shoda') sporne.push({ cislo: v.zamek.cislo || cisloVarianty(zak, v), ov });\n      }",
     nahrad: "      ;",
     proc: 'obnovená odeslaná nabídka by nesla neověřený zmrazený výsledek bez razítka' },
   { nazev: 'B62: z historie tisků jde ubrat', soubor: '../src/uloziste.js',

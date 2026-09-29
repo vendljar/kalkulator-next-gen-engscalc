@@ -20,7 +20,7 @@ v `git show 9a48ee8:PREDAVKA.md`.
 | B112 | vysoká | ✅ opraveno | 57fe11f (+ harness) | v29.9.4 | test_prava 608/15 → 623/0; overit_cenik_prava 4/2 → 6/0 | mutace +4, chycené 4/4 |
 | — | — | ✅ celé kolo č. 1 | | v29.9.4 | sady 189/1/1, mutace 76/76 + 196/196, statické 3/3 | selhal jen overit_online (fixtura B112) — opraveno, 189/0 |
 | B97 | střední | ✅ opraveno | f3db355 | v29.9.5 | test_prihlaseni 45/5 → 50/0 | mutace +2, chycené 2/2; B75 ×3 chycené |
-| B98 | střední | ⬜ | | | | |
+| B98 | střední | ✅ opraveno | (tento commit) | v29.9.6 | test_obnova 160/6 → 166/0 | mutace +2, chycené 2/2; P4 ×5 chycené |
 | B99 | střední | ⬜ | | | | podklady z Disku jsou (viz níže) |
 | — | — | ⬜ celé kolo č. 2 | | | | po B99 |
 
@@ -126,6 +126,16 @@ Tři serverové kontroly B111 → B96 → B112 na jednom místě se snesly.
   e-mailové počítadlo, adresu počítá. Odložené B108 (klouzavé okno), zbytek
   B77, B106, B107, B4 souběh — neřešeno (jen evidence).
 
+## B98 — co je hotovo (v29.9.6)
+- Pravidlo 0 potvrzeno: obnova ze souboru zapsala podvrženou „shodu"
+  zmrazeného výsledku (zakladCena 1) na jméno hlavního správce i odemčení
+  odeslané nabídky s razítkem hlavního správce a libovolným datem.
+- Ze souboru: ověření nového zámku vždy znovu (nesouhlas → „nesouhlasi"
+  + upozornění v náhledu u zakázky); odemčení, které v databázi není →
+  zakázka přeskočena s důvodem. Z otisku beze změny (BEZPECNOST_MEZE.md).
+- Odložené B100 (firma/zákazníci/šablony bez očisty), zbytek B32, B104,
+  B109 — neřešeno (jen evidence).
+
 ## Rozhodnutí podle výchozího návrhu — čekají na potvrzení J. V.
 - **B111:** zápornou položku, množství ani hodiny nesmí nikdo, ani
   administrátor (dobropis ne; jako N56).
@@ -133,6 +143,8 @@ Tři serverové kontroly B111 → B96 → B112 na jednom místě se snesly.
 - **B112:** vedeno jako nový nález B112 (vysoká); B88 dál jen čtecí strana
   (informativní).
 - **B97:** vážnost střední.
+- **B98:** odemčení ze souboru, které v databázi není → zakázku přeskočit
+  s důvodem v náhledu obnovy (i zakázku, která v databázi není vůbec).
 
 ## Co čeká na J. V.
 - Spustit `node nastroje/detekce_zneuziti.mjs <záloha ostré databáze>`
@@ -174,5 +186,6 @@ N46 se neopravuje bez pokynu J. V.
   `git status` a `grep -rn "if (false)" netlify src`.
 
 ## Další krok
-B98 (příloha E): obnova ze souboru — ověření nového zámku vždy znovu,
-odemčení, které v databázi není, přeskočit s důvodem; z otisku beze změny.
+B99 (příloha F): kontrola obsahu šablon DOCX (nový modul
+`src/sablona_obsah.js`, server, průvodce, generátor), pak **celé kolo č. 2**
+a závěr pro J. V.
