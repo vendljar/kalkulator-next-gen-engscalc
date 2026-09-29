@@ -1,10 +1,11 @@
-# Předávka — stav k 26. 9. 2026
+# Předávka — stav k 29. 9. 2026
 
 Na `main`: **v25.9.3** (+ oprava Node), tag `v25.9.3`.
 Na `test`: **v25.9.5**. Na `test-draft`: **v25.9.6** (dávka A kola 16).
-Na `claude/pensive-curie-s6yzs3` (tohle sezení, nad `test-draft`): **v26.9.1**
-— testovací sekvence A1–A5 + opravy B72/P4, B75–B78, N43 (server). Čeká na
-pokyn J. V. k přenosu do `test-draft` (fast-forward) a dál.
+Na `claude/pensive-curie-s6yzs3` (tohle sezení, nad `test-draft`): **v29.9.1**
+(kód = v26.9.1, 29. 9. jen předávka) — testovací sekvence A1–A5 + opravy B72/P4, B75–B78, N43 (server). Pravidlo
+J. V. (29. 9. 2026): úpravy se dělají vždy promptem do paralelní větve; větev
+zůstává, o sloučení rozhoduje J. V.
 Roadmapa: `roadmapa/roadmap.json` (365 položek), stránka se generuje
 `python3 roadmapa/roadmapa.py`.
 
@@ -29,13 +30,14 @@ Roadmapa: `roadmapa/roadmap.json` (365 položek), stránka se generuje
 - **N46** (nástupiště A ↔ C u zrcadlové šachty, #343 „ověřit s J. V."): fuzz
   I8a/I8b hlásí rozdíly jen jako INFO; oprava až na pokyn.
 - **#365 (nález A2-1):** zakázka s rozměrem profilu mimo tabulku JEKLY shodí
-  vykreslení Kalkulace i Detailu OCK (`JEKLY[p.dim].kg` v `ui/kalk_ock.js`);
-  opravit v UI, na serveru, nebo nechat?
+  vykreslení Kalkulace i Detailu OCK (`JEKLY[p.dim].kg` v `ui/kalk_ock.js`).
+  J. V. 29. 9. 2026 rozhodl opravit; prompt k opravě připraven
+  (`2026-09-29_PROMPT_CLAUDE_CODE_oprava_365_neznamy_profil.md`, má ho J. V.),
+  oprava poběží v samostatné paralelní větvi nad touto.
 - **Telefon a jméno kolegy** v `overit_nabidka_proj_word.mjs` (kontrola „v
   šabloně nezůstal"): skutečný údaj ve veřejném repu; dočasně v povoleném
   seznamu `nastroje/povolene_kontakty.txt` s poznámkou (viz #346 / B79).
 - **CSP bez `'unsafe-inline'`:** jen návrh (nikde needitováno).
-- Pokyn k přenosu větve sezení → `test-draft` → `test` → `main`.
 - Dál platí z minula: soubory SoD (#350), kolo 16 dávky B/C/D (#361–#363),
   #355, #356, #346 Netlify, #172 lokálně npm.
 

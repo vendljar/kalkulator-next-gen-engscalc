@@ -8,6 +8,15 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v29.9.1 — jen předávka (29. 9. 2026)
+
+Kód beze změny proti v26.9.1. `PREDAVKA.md` podle pravidla J. V. (úpravy se
+dělají vždy promptem do paralelní větve, větev zůstává, o sloučení rozhoduje
+J. V.) a rozhodnutí opravit #365 samostatným promptem. Verze zvednuta jen
+kvůli konvenci verze = den posledního commitu (`build.py --kontrola-verze`).
+
+---
+
 ## v26.9.1 — testovací sekvence z hloubkového testu (A1–A5) a opravy B72, B75–B78, N43 na serveru (26. 9. 2026)
 
 Roadmapa #364 (nová), #342 hotovo, #345 z části. Zadání J. V. 25. 9. 2026
