@@ -6397,7 +6397,7 @@
    "hotovo" : true
   },
   {
-   "text" : "29. 9. 2026 (engscalc, test-draft), v29.9.4 — sloučení větví claude/pensive-curie-s6yzs3 (testovací sekvence A1–A5 + opravy B72/P4, B75–B78, N43 na serveru; #371, ve větvi #364) a claude/stoic-cerf-j915ax (#372) do test-draft na pokyn J. V.; razítko upravilJmeno (P7) přeneseno do společné kontroly uložení. Rozhodnutí J. V. k platebním podmínkám zapsaná (návrh, oddíl 7): pořadí etap B → A → C, číslo smlouvy ručním polem; #366 a #367 odblokované. Ověřeno celým kolem: @@KOLO_SLOUCENI@@",
+   "text" : "29. 9. 2026 (engscalc, test-draft), v29.9.4 — sloučení větví claude/pensive-curie-s6yzs3 (testovací sekvence A1–A5 + opravy B72/P4, B75–B78, N43 na serveru; #371, ve větvi #364) a claude/stoic-cerf-j915ax (#372) do test-draft na pokyn J. V.; razítko upravilJmeno (P7) přeneseno do společné kontroly uložení. Rozhodnutí J. V. k platebním podmínkám zapsaná (návrh, oddíl 7): pořadí etap B → A → C, číslo smlouvy ručním polem; #366 a #367 odblokované. Ověřeno celým kolem: VŠE ZELENÉ — sady 193 prošlo, 0 selhalo, 3 přeskočeno z 196; mutace jádra 80/80, serveru 192/192; statické kontroly 3/3 (47 min).",
    "hotovo" : true
   }
   ],

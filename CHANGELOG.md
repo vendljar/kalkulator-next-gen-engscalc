@@ -27,7 +27,12 @@ B72/P4, B75–B78, N43 na serveru, záznam níže) a `claude/stoic-cerf-j915ax`
   serveru nesou i `test_rejstrik.mjs`; mutací jádra 80, serveru 192.
 
 **Ověřeno celým kolem** `nastroje/testovaci_kolo.sh` 29. 9. 2026:
-@@KOLO_SLOUCENI@@
+VŠE ZELENÉ (47 min 2 s) — kontrola verze + sestavení ✓; sady 193 prošlo,
+0 selhalo, 3 přeskočeno z 196 (test.js — shoda s Excelem není v exportu
+pro GitHub; overit_manual.mjs a overit_sod.mjs — firemní podklad mimo
+repozitář); mutace jádra chycených 80 z 80; mutace serveru 192 z 192;
+statické kontroly 3 z 3. Šablony pro harnessy: CN v13 (+EN/DE/FR)
+a PROJ v3 přes KNG_PODKLADY.
 
 ### #372 — zakázka s neznámým rozměrem profilu jde otevřít
 

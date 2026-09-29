@@ -24,7 +24,11 @@ Roadmapa: `roadmapa/roadmap.json` (372 položek), stránka se generuje
   a testech); razítko `upravilJmeno` (P7) přestěhováno do společné kontroly
   uložení a mutace P7 za ním; pravidel kontroly 23; mutace jádra 80,
   serveru 192.
-- **Ověřeno celým kolem:** @@KOLO_SLOUCENI@@
+- **Ověřeno celým kolem:** celé kolo 29. 9. 2026 nad sloučeným stavem (47 min)
+  VŠE ZELENÉ: sestavení ✓; sady 193 prošlo, 0 selhalo, 3 přeskočeno z 196
+  (test.js — shoda s Excelem; overit_manual, overit_sod — firemní podklad
+  mimo repozitář); mutace jádra 80 z 80; mutace serveru 192 z 192;
+  statické kontroly 3 z 3.
 
 ## Hotovo dřív v test-draft (v29.9.1–v29.9.3)
 - #364 nabídka PROJ se slevou (činnosti za cenu před slevou, rekapitulace
