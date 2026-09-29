@@ -19,7 +19,7 @@ v `git show 9a48ee8:PREDAVKA.md`.
 | B96 | vysoká | ✅ opraveno | 3c3dd6d | v29.9.3 | test_prava 587/7 → 595/0; test_uloziste 161/1 → 172/0; overit_zaokrouhleni 12/4 → 16/0 | mutace +2, chycené; bod 4 jen návrh |
 | B112 | vysoká | ✅ opraveno | 57fe11f (+ harness) | v29.9.4 | test_prava 608/15 → 623/0; overit_cenik_prava 4/2 → 6/0 | mutace +4, chycené 4/4 |
 | — | — | ✅ celé kolo č. 1 | | v29.9.4 | sady 189/1/1, mutace 76/76 + 196/196, statické 3/3 | selhal jen overit_online (fixtura B112) — opraveno, 189/0 |
-| B97 | střední | ✅ opraveno | (tento commit) | v29.9.5 | test_prihlaseni 45/5 → 50/0 | mutace +2, chycené 2/2; B75 ×3 chycené |
+| B97 | střední | ✅ opraveno | f3db355 | v29.9.5 | test_prihlaseni 45/5 → 50/0 | mutace +2, chycené 2/2; B75 ×3 chycené |
 | B98 | střední | ⬜ | | | | |
 | B99 | střední | ⬜ | | | | podklady z Disku jsou (viz níže) |
 | — | — | ⬜ celé kolo č. 2 | | | | po B99 |
