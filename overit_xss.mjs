@@ -146,14 +146,8 @@ console.log('\nA2 — všechna pole zakázky i ostatní zdroje dat, obě role, v
 const KOD_STRANKY = `
   window.__XSS = [];
   const PAY = (c) => "');window.__XSS.push('" + c + "');//\\"><img src=x onerror=\\"window.__XSS.push('" + c + "')\\">";
-  /* dim a tl jsou klíče do tabulky JEKLY (rozměr a tloušťka profilu):
-   * s neznámou hodnotou spadne vykreslení Kalkulace i Detailu OCK na
-   * JEKLY[p.dim].kg (kalk_ock.js) — zakázka pak nejde otevřít. Je to
-   * řídicí klíč, ne text do stránky, proto se tu neotravuje; nález je
-   * zapsán ve zprávě z 25. 9. 2026 (A2-1) k rozhodnutí J. V. */
   const SKIP = new Set(['schema', 'priponySchema', 'aktivni', 'cenikRada', 'typ', 'sazba', 'fixKey', 'rezim',
-                        'smer', 'stav', 'druh', 'role', 'ridici', 'varianta', 'zapnuto', 'jazyk', 'cast', 'zamceno',
-                        'dim', 'tl']);
+                        'smer', 'stav', 'druh', 'role', 'ridici', 'varianta', 'zapnuto', 'jazyk', 'cast', 'zamceno']);
   /* Projde strom a každý textový i číselný list nahradí payloadem se značkou
    * své cesty. Parametr jen omezuje cesty, jenText vynechá čísla (tam, kde je
    * počítá server a klient je jen vypisuje). */
