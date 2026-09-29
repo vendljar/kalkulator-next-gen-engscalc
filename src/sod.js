@@ -92,6 +92,9 @@ function sodData(zak, varianta, jekly, lang) {
     + (L !== 'cz' ? '_' + L.toUpperCase() : ''));
   sodObjednatelDoplna(d.placeholders, zak);
   sodVedouciMontaziDoplna(d.placeholders);
+  /* Termíny, podpisy a kopie faktur z krycího listu OCK (P9.2, P9.4 —
+   * rozhodnutí J. V. 29. 9. 2026). Co obchodník nevyplnil, zůstane {{…}}. */
+  if (typeof kryciSodSymboly === 'function') kryciSodSymboly(zak, varianta, jekly, d.placeholders);
   return Object.assign({}, d,
     { nazevSouboru: nazev.replace(/[\\/:*?"<>|]+/g, '-') });
 }

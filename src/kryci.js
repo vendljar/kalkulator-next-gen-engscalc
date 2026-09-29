@@ -211,9 +211,13 @@ const KRYCI_SEKCE = [
       normalizuj: v => kryciTerminSJednotkou(v) },
   ] },
   { sekce: 'Termíny', pole: [
-    { id: 'terminPrevzeti', label: 'Převzetí staveniště k montáži šachty', verze: ['bo', 'techdata'], typ: 'date' },
+    /* `sod`: termín jde i do smlouvy o dílo (P9.2, rozhodnutí J. V.
+     * 29. 9. 2026 „data z krycího listu"). Prázdný zůstane ve Wordu {{…}}. */
+    { id: 'terminPrevzeti', label: 'Převzetí staveniště k montáži šachty', verze: ['bo', 'techdata'], typ: 'date',
+      sod: 'SOD_TERMIN_MONTAZ_OD' },
     { id: 'terminMontaz', label: 'Ukončení montáže šachty a předání montáži výtahu', verze: ['bo', 'techdata'], typ: 'date' },
-    { id: 'terminPredani', label: 'Konečné předání díla', verze: ['bo', 'techdata'], typ: 'date' },
+    { id: 'terminPredani', label: 'Konečné předání díla', verze: ['bo', 'techdata'], typ: 'date',
+      sod: 'SOD_TERMIN_DOKONCENI' },
     { id: 'terminJine', label: 'Jiné termíny', verze: ['bo', 'techdata'], typ: 'textarea' },
   ] },
   { sekce: 'Rozsah a odchylky', pole: [
@@ -248,6 +252,24 @@ const KRYCI_SEKCE = [
     { id: 'atypProhluben', label: 'Atyp napojení u prohlubně', verze: ['techdata'], typ: 'textarea' },
     { id: 'atypTvar', label: 'Netradiční tvar OCK (např. 5 stěn)', verze: ['techdata'], typ: 'textarea' },
     { id: 'atypJiny', label: 'Jiný atyp (domluva na schůzce na stavbě)', verze: ['techdata'], typ: 'textarea' },
+  ] },
+  /* PODPISY A KOPIE DO SMLOUVY REALIZACE (P9.4, rozhodnutí J. V. 29. 9. 2026:
+   * „podpisy a kontakty objednatele i do SoD OCK"). Dosud je nesl jen krycí
+   * list PROJ, takže SoD realizace nechávala {{OBJEDNATEL_PODPIS2_*}}
+   * a kopie faktur vždy prázdné. Co už obchodník vyplnil v krycím listu
+   * PROJ, se sem předvyplní — objednatel je u obou smluv týž. */
+  { sekce: 'Smlouva o dílo — podpisy a kopie (SoD realizace)', pole: [
+    { id: 'objPodpisFirma', label: 'Zákazník — firma v podpisové doložce', verze: ['bo'], sod: 'OBJEDNATEL_PODPIS_FIRMA',
+      prefill: c => kryciZKrycihoListuProj(c, 'objPodpisFirma') || (c.zak && c.zak.objednatel) || '',
+      src: 'krycí list PROJ / hlavička zakázky' },
+    { id: 'objPodpis2Jmeno', label: 'Druhý podepisující za zákazníka — jméno', verze: ['bo'], sod: 'OBJEDNATEL_PODPIS2_JMENO',
+      prefill: c => kryciZKrycihoListuProj(c, 'objPodpis2Jmeno'), src: 'u SVJ podepisují zpravidla dva členové výboru' },
+    { id: 'objPodpis2Funkce', label: '— funkce druhého podepisujícího', verze: ['bo'], sod: 'OBJEDNATEL_PODPIS2_FUNKCE',
+      prefill: c => kryciZKrycihoListuProj(c, 'objPodpis2Funkce'), src: 'krycí list PROJ' },
+    { id: 'objKopie1', label: 'Faktury v kopii na (1)', verze: ['bo'], sod: 'OBJEDNATEL_KONTAKT_KOPIE1',
+      prefill: c => kryciZKrycihoListuProj(c, 'objKopie1'), src: 'krycí list PROJ' },
+    { id: 'objKopie2', label: 'Faktury v kopii na (2)', verze: ['bo'], sod: 'OBJEDNATEL_KONTAKT_KOPIE2',
+      prefill: c => kryciZKrycihoListuProj(c, 'objKopie2'), src: 'krycí list PROJ' },
   ] },
   /* KL-7: patička z předlohy. 20. 8. 2026 (zadání J. V.) přejmenovaná na
    * „Ostatní" — nejsou to podpisy, ale doprovodné údaje listu; „Dne" se
@@ -576,6 +598,35 @@ function kryciSymbolyZeSekci(sekce, nazvy, hodnota, P) {
   return out;
 }
 
+/* Ruční hodnota z krycího listu PROJ téže varianty (P9.4 — podpisy a kopie
+ * se do krycího listu OCK předvyplní, ať se nepíšou dvakrát). */
+function kryciZKrycihoListuProj(c, id) {
+  const d = (c && c.varianta && c.varianta.data) || {};
+  const h = (d.kryciProj && d.kryciProj.hodnoty) || {};
+  return String(h[id] == null ? '' : h[id]).trim();
+}
+function kryciDatumCz(iso) {
+  const m = String(iso == null ? '' : iso).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? m[3] + '.' + m[2] + '.' + m[1] : String(iso == null ? '' : iso);
+}
+
+/* Symboly smlouvy o dílo realizace z krycího listu OCK (P9.2, P9.4): pole
+ * s klíčem `sod`. Plní se jen neprázdné — co chybí, zůstane ve Wordu {{…}}
+ * k doplnění (prázdné plnění by symbol beze stopy smazalo). Datum ve tvaru
+ * jako v nabídce (DD.MM.RRRR). */
+function kryciSodSymboly(zak, varianta, jekly, placeholders) {
+  const P = placeholders || {};
+  const c = kryciCtx(zak, varianta, jekly);
+  const kl = (varianta && varianta.data && varianta.data.kryci) || { hodnoty: {} };
+  KRYCI_SEKCE.forEach(s => s.pole.forEach(p => {
+    if (!p.sod) return;
+    let v = String(kryciHodnota(p, kl, c) || '').trim();
+    if (v && p.typ === 'date') v = kryciDatumCz(v);
+    if (v) P[p.sod] = v;
+  }));
+  return P;
+}
+
 function kryciPodminkoveSymboly(zak, varianta, jekly, P) {
   const c = kryciCtx(zak, varianta, jekly);
   const kl = (varianta && varianta.data && varianta.data.kryci) || { hodnoty: {} };
@@ -587,5 +638,6 @@ if (typeof module !== 'undefined')
     kryciData, kryciMigraceZadrzne, kryciMigraceSazbaDph,
     PODM_PREFIX, kryciSymbolId, kryciCisloZTextu, kryciProcentoZTextu,
     kryciTerminDodani, kryciTerminDodaniText, kryciTerminSJednotkou, kryciTydnu,
-    kryciSymbolyZeSekci, kryciPodminkoveSymboly,
+    kryciSymbolyZeSekci, kryciPodminkoveSymboly, kryciSodSymboly, kryciDatumCz,
+    kryciZKrycihoListuProj,
     kryciFaktura2Dopocet, kryciFaktura2Sync };

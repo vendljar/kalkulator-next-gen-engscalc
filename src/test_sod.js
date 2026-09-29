@@ -212,5 +212,36 @@ test('vedoucí montáží se překládá z firemního údaje na smluvní symbol'
 test('a bez firemního údaje se symbol nevyrobí',
   sodVedouciMontaziDoplna({}).SOD_VEDOUCI_MONTAZI === undefined);
 
+// ---- P9 (rozhodnutí J. V. 29. 9. 2026): SoD OCK z krycího listu -------------
+/* „Termíny SoD OCK z krycího listu" a „podpisy a kontakty objednatele i do
+ * SoD OCK" — dřív je nesla jen SoD projekce, SoD realizace nechala
+ * {{SOD_TERMIN_*}} i {{OBJEDNATEL_PODPIS2_*}} vždy prázdné k doplnění. */
+{
+  const z9 = novaZakazka();
+  z9.cislo = '2026 - OPR - CN - 0156'; z9.objednatel = 'SVJ Devátá';
+  z9.nazevAkce = 'P9 — smlouva z krycího listu'; z9.adresa = 'Zkušební 9, Praha';
+  const v9 = z9.varianty[0];
+  v9.data.kryci = { hodnoty: { terminPrevzeti: '2026-11-02', terminPredani: '2027-01-15',
+    objPodpis2Jmeno: 'Petr Druhý', objPodpis2Funkce: 'místopředseda výboru' } };
+  v9.data.kryciProj = { hodnoty: { objKopie1: 'clen1@svj.cz' } };
+  const ph9 = sodData(z9, v9, JEKLY, 'cz').placeholders;
+  test('P9.2: převzetí staveniště z krycího listu OCK → SOD_TERMIN_MONTAZ_OD',
+    ph9.SOD_TERMIN_MONTAZ_OD === '02.11.2026', ph9.SOD_TERMIN_MONTAZ_OD);
+  test('P9.2: konečné předání díla → SOD_TERMIN_DOKONCENI',
+    ph9.SOD_TERMIN_DOKONCENI === '15.01.2027', ph9.SOD_TERMIN_DOKONCENI);
+  test('P9.4: SoD OCK nese druhého podepisujícího z krycího listu OCK',
+    ph9.OBJEDNATEL_PODPIS2_JMENO === 'Petr Druhý' && ph9.OBJEDNATEL_PODPIS2_FUNKCE === 'místopředseda výboru',
+    [ph9.OBJEDNATEL_PODPIS2_JMENO, ph9.OBJEDNATEL_PODPIS2_FUNKCE]);
+  test('P9.4: firma v podpisové doložce se předvyplní z hlavičky zakázky',
+    ph9.OBJEDNATEL_PODPIS_FIRMA === 'SVJ Devátá', ph9.OBJEDNATEL_PODPIS_FIRMA);
+  test('P9.4: co už je vyplněné v krycím listu PROJ, se do SoD OCK předvyplní',
+    ph9.OBJEDNATEL_KONTAKT_KOPIE1 === 'clen1@svj.cz', ph9.OBJEDNATEL_KONTAKT_KOPIE1);
+  test('P9: nevyplněné pole zůstává ve Wordu {{…}} k doplnění',
+    ph9.OBJEDNATEL_KONTAKT_KOPIE2 === undefined && ph9.SOD_CISLO_SMLOUVY === undefined);
+  const prazdne = sodData(z9, Object.assign({}, v9, { data: Object.assign({}, v9.data, { kryci: { hodnoty: {} } }) }), JEKLY, 'cz').placeholders;
+  test('P9.2: bez termínu v krycím listu se SOD_TERMIN_* neplní', prazdne.SOD_TERMIN_MONTAZ_OD === undefined
+    && prazdne.SOD_TERMIN_DOKONCENI === undefined);
+}
+
 console.log('\nPASS=' + passes + ' FAIL=' + fails);
 process.exit(fails ? 1 : 0);
