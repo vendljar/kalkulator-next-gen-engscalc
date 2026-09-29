@@ -89,6 +89,23 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   if (spatneTypy.length)
     return odmitni(400, 'Zakázka nese ' + ULO.uloIdProblemyText(spatneTypy) + '.');
 
+  /* NEZNÁMÝ ROZMĚR PROFILU (#365, nález A2-1 z 26. 9. 2026). Zakázka
+   * s rozměrem mimo katalog jeklů (nebo s tloušťkou, kterou rozměr nemá) se
+   * dřív uložila i obnovila — a pak se nikomu neotevřela. Neuzamčená varianta
+   * s takovým profilem se odmítne; uzamčená (odeslaná) se nemění, a proto se
+   * nekontroluje — jinak by zakázka po změně katalogu nešla uložit vůbec.
+   * Katalog je týž JEKLY, se kterým server počítá, a seznam dává táž funkce
+   * jádra jako výpočet (profilyNezname). */
+  const nezname = [];
+  for (const v of (zak.varianty || [])) {
+    if (!v || zamcena(v)) continue;
+    const nez = globalThis.profilyNezname(v.data && v.data.ock && v.data.ock.zadani, JEKLY);
+    if (nez.length) nezname.push((cisloVarianty(zak, v) || v.nazev || v.id) + ' — ' + nez.join(', '));
+  }
+  if (nezname.length)
+    return odmitni(400, veta('rozměr profilu není v katalogu jeklů (' + nezname.join('; ')
+      + '). Vyberte v zadání šachty platný rozměr'));
+
   ocistiZnacky(zak);
   ocistiZnacky(stara);
 

@@ -752,5 +752,53 @@ console.log('\n===== P4 / B72: obnova prochází týmiž pojistkami jako uložen
   test('B72: zámek z doby před číslem z papíru se obnoví (B61 platí jen pro uložení nového zámku)', oP.casti.zakazky.nove === 1, oP.casti.zakazky);
 }
 
+/* ===== #365 (nález A2-1 z 26. 9. 2026): neznámý rozměr profilu do databáze nesmí =====
+ * Zakázka s rozměrem profilu mimo katalog jeklů (nebo s tloušťkou, kterou
+ * rozměr nemá) se dřív uložila i obnovila — a pak se nikomu neotevřela.
+ * Neuzamčená varianta s takovým profilem se teď odmítne (uložení 400,
+ * obnova ji přeskočí s důvodem); uzamčená (odeslaná) se nemění, a proto
+ * se nekontroluje — jinak by zakázka po změně katalogu nešla uložit vůbec. */
+console.log('\n===== #365: neznámý rozměr profilu v neuzamčené variantě se neuloží ani neobnoví =====');
+{
+  const JEKLY = require('../src/jekly.json');
+  const zalohaS = (jm, z) => ({ porizena: new Date().toISOString(), zakazky: { [jm]: z } });
+  const jmeno = (z) => z.cislo.replace(/\s+/g, '') + '.json';
+  const sCenikem = (z) => { const d = z.varianty[0].data; d.cenik = Object.assign(d.cenik, ZC.zkusebniCenik()); d.proj.cenik = Object.assign(d.proj.cenik, ZC.zkusebniCenikProj()); return z; };
+
+  const zU = sCenikem(novaZak('2026 - OPR - CN - 0790', '#365 neznámý rozměr'));
+  zU.varianty[0].data.ock.zadani.profily.sloupek.dim = '999x999';
+  const rU = await post(zakazky, 'http://x/api/zakazky', { zakazka: zU }, cookie);
+  const jU = await rU.json();
+  test('#365: uložení zakázky s neznámým rozměrem profilu → 400 s názvem profilu',
+    rU.status === 400 && jU.ok === false && /katalogu jeklů/.test(jU.chyba || '') && /sloupek: 999x999/.test(jU.chyba || ''), [rU.status, jU]);
+  test('#365: … a v databázi nic není', (await ulz('zakazky').cti('z/' + jmeno(zU))) === null);
+
+  const zT = sCenikem(novaZak('2026 - OPR - CN - 0791', '#365 neznámá tloušťka'));
+  zT.varianty[0].data.ock.zadani.profily.sloupek.dim = '80x80';
+  zT.varianty[0].data.ock.zadani.profily.sloupek.tl = 99;
+  const rT = await post(zakazky, 'http://x/api/zakazky', { zakazka: zT }, cookie);
+  const jT = await rT.json();
+  test('#365: neznámá tloušťka (80x80 / 99 mm) → 400', rT.status === 400 && /80x80 \/ 99 mm/.test(jT.chyba || ''), [rT.status, jT]);
+
+  const oN = await obnovJson({ zdroj: { soubor: zalohaS(jmeno(zU), zU) }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['zakazky'] }, cookie);
+  test('#365: obnova zakázku s neznámým rozměrem přeskočí s důvodem a nezapíše',
+    oN.ok === true && oN.casti.zakazky.preskocene === 1 && /katalogu jeklů/.test((oN.casti.zakazky.duvody[0] || {}).duvod || '')
+    && (await ulz('zakazky').cti('z/' + jmeno(zU))) === null, oN.casti && oN.casti.zakazky);
+
+  const zL = sCenikem(novaZak('2026 - OPR - CN - 0792', '#365 odeslaná s neznámým rozměrem'));
+  zL.varianty[0].data.ock.zadani.profily.sloupek.dim = '999x999';
+  zamkniJakoAplikace(zL, zL.varianty[0], { typ: 'nabidka', kdo: 'Test', vysledek: zm.zamekVysledekSpocti(zL.varianty[0], JEKLY, 'test') });
+  const jL = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zL }, cookie)).json();
+  test('#365: uzamčená (odeslaná) varianta se nekontroluje — uloží se jako dřív', jL.ok === true, jL);
+  const zL2 = kopie(zL); zL2.cislo = '2026 - OPR - CN - 0793'; delete zL2.varianty[0].zamek;
+  zamkniJakoAplikace(zL2, zL2.varianty[0], { typ: 'nabidka', kdo: 'Test', vysledek: zm.zamekVysledekSpocti(zL2.varianty[0], JEKLY, 'test') });
+  const oL = await obnovJson({ zdroj: { soubor: zalohaS(jmeno(zL2), zL2) }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['zakazky'] }, cookie);
+  test('#365: … a obnoví se jako dřív', oL.ok === true && oL.casti.zakazky.nove === 1 && oL.casti.zakazky.preskocene === 0, oL.casti && oL.casti.zakazky);
+
+  const zV = sCenikem(novaZak('2026 - OPR - CN - 0794', '#365 platný rozměr'));
+  const jV = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zV }, cookie)).json();
+  test('#365: platné profily projdou beze změny', jV.ok === true, jV);
+}
+
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);
