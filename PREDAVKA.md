@@ -9,24 +9,25 @@ zůstává, o sloučení rozhoduje J. V.
 Roadmapa: `roadmapa/roadmap.json` (365 položek), stránka se generuje
 `python3 roadmapa/roadmapa.py`.
 
-## Tag v29.9.1 a komplexní test v novém sezení (29. 9. 2026)
-- Tag **`v29.9.1`** označuje tuto dávku (hlava větve
-  `claude/pensive-curie-s6yzs3`). Na rozdíl od dřívějších tagů NENÍ na `main`
-  — je to stav k testu, ne vydání.
+## Komplexní test v novém sezení (29. 9. 2026)
 - Komplexní testovací procedura (skill `testovaci-procedura-kng`) běží
-  v samostatném sezení nad tagem, se zadáním níže. Výsledky (protokol,
-  bezpečnostní audit, prompty k opravám) přijdou odtamtud; kód se opravuje
-  jen promptem do paralelní větve.
+  v samostatném sezení „Komplexní test v29.9.1“ (jeho větev
+  `claude/komplexni-test-v29.9.1`) nad commitem `9a48ee8` — hlavou této větve
+  v okamžiku předání; kód = v26.9.1. Výsledky (protokol, bezpečnostní audit,
+  prompty k opravám) přijdou odtamtud; kód se opravuje jen promptem do
+  paralelní větve.
+- Tag se pro tuto dávku nezakládá (J. V. 29. 9. 2026: „tento tag používat
+  nebudeme“). Zadání sezení níže je bez odstavce o tagu.
 
 ```
-Komplexní testovací procedura Kalkulator Next Gen nad tagem v29.9.1
+Komplexní testovací procedura Kalkulator Next Gen nad commitem 9a48ee8 (dávka v29.9.1)
 (repozitář vendljar/kalkulator-next-gen-engscalc). Komunikace česky, nikdy
 AskUserQuestion — ptej se prózou s navrženými výchozími odpověďmi. Dodrž
 skilly kalkulator-next-gen a testovaci-procedura-kng (kroky 0–9 včetně
 bezpečnostního auditu). Kde se skill rozchází s tímto zadáním, platí zadání.
 
 CO SE TESTUJE
-Tag v29.9.1 (hlava větve claude/pensive-curie-s6yzs3; kód = v26.9.1,
+Commit 9a48ee8 (hlava větve claude/pensive-curie-s6yzs3; kód = v26.9.1,
 v29.9.1 je jen předávka). Obsah dávky: testovací sekvence A1–A5
 (src/test_fuzz_invarianty.js, hlídač členských výrazů v src/test_escape.js
 a obecný oddíl overit_xss.mjs, src/test_zamek_historie.js + src/fixtury/,
@@ -34,17 +35,17 @@ nastroje/kontrola_udaju.py + nastroje/povolene_kontakty.txt,
 nastroje/testovaci_kolo.sh) a opravy N43 na serveru (jadro_moduly.cjs),
 B72/P4 (netlify/lib/zakazka_kontrola.mjs), B75–B78 (přihlášení, nová sada
 netlify/test_prihlaseni.mjs). Podrobně CHANGELOG.md (v26.9.1, v29.9.1)
-a PREDAVKA.md v tagu.
+a PREDAVKA.md v tomto commitu.
 
 VĚTEV A PRAVIDLA
-- Pracuj jen ve své větvi (přidělí ji sezení, vychází z tagu). Do test-draft,
+- Pracuj jen ve své větvi (přidělí ji sezení, vychází z tohoto commitu). Do test-draft,
   test ani main nic. Pravidlo J. V. 29. 9. 2026: úpravy se dělají vždy
-  promptem do paralelní větve. CLAUDE.md v tagu ještě jmenuje test-draft —
+  promptem do paralelní větve. CLAUDE.md ještě jmenuje test-draft —
   toto zadání má přednost.
 - Procedura jen testuje a čte (pravidlo 7 skillu): zdrojáky se v tomto
   sezení nemění. Každá odchylka od očekávání je nález do protokolu
   (pravidlo 6). Ke každému nálezu, který chce opravu, připrav samostatný
-  prompt pro paralelní větev: repo a větev nad tagem, Pravidlo 0 (nejdřív
+  prompt pro paralelní větev: repo a větev nad tímto commitem, Pravidlo 0 (nejdřív
   ověřit, že vada trvá), požadované chování, testy s pojistkou proti
   prázdnému testu (selže před opravou, projde po ní), konvence, dokumentace.
 - Nikdy needituj dist/*. Žádné ceny, firemní ani osobní údaje do repozitáře
@@ -53,7 +54,7 @@ VĚTEV A PRAVIDLA
 
 PROSTŘEDÍ (krok 0 skillu platí takto)
 - Zdrojáky se NEstahují ze zipu na Disku: pracovní strom je klon repozitáře
-  na tagu v29.9.1. Pevná cesta /home/claude/work/kng už není potřeba —
+  na tomto commitu. Pevná cesta /home/claude/work/kng už není potřeba —
   harnessy od 22. 9. 2026 hledají firemní podklady ve složce z KNG_PODKLADY.
 - Firemní podklady (v repozitáři nejsou, NIKDY je necommituj): konektorem
   Google Drive (složka Kalkulator NextGen: Output documents, šablona CN i
