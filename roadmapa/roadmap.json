@@ -5715,13 +5715,14 @@
   {
    "id" : "365",
    "vlna" : "B",
-   "stav" : "ceka",
-   "dulezitost" : "stredni",
+   "stav" : "hotovo",
+   "hotovoV" : "v29.9.3",
+   "dulezitost" : "",
    "slozitost" : "M",
    "nazev" : "P8: prázdné kapitoly ve Wordu (značky bloku, šablona CN v13 s mutacemi) a termín v týdnech",
    "proc" : "K16-N78, K9-N32: Word nechá u prázdné kapitoly IV.–VI. nadpis i prázdný rámeček; termín „12\" odejde bez jednotky a přípona ATYP je vždy česky. Rozhodnutí J. V. 29. 9. 2026: varianta A (značky v šabloně), holé číslo doplnit o „týdnů\"; nové šablony vždy i s jazykovými mutacemi.",
-   "detail" : "HOTOVO v29.9.2: P8b — holé číslo termínu dostane jednotku („12\" → „12 týdnů\", česky skloňované, po ATYP srovnané s novým číslem), i ruční přepis v krycím listu; vzor slovníku zná „týden\" a jednotné číslo v EN/DE/FR. ZBÝVÁ: Generátor: úsek mezi značkami {{KAP_…_ZAC}} a {{KAP_…_KON}} zmizí i s nadpisem, když je kapitola prázdná, jinak zmizí jen značky. Šablona CN v13 (CZ/EN/DE/FR) se značkami kolem kapitol IV.–VI. a doložek. Termín: holé číslo → „N týdnů\", přípona ATYP přes slovník. Opravit texty, které vypuštění ve Wordu slibovaly.",
-   "hotovoKdyz" : "Prázdná kapitola ve Wordu v13 nenechá nadpis ani rámeček (test na šabloně i generátoru), termín „12\" odejde jako „12 týdnů\" i v EN/DE/FR.",
+   "detail" : "HOTOVO v29.9.3: P8A — generátor maže úsek mezi značkami {{X_ZAC}} … {{X_KON}}, když jsou všechny symboly v něm prázdné (odstranPrazdneBloky), jinak jen značky; šablona CN v13 (CZ/EN/DE/FR, nastroje/vyrob_sablony.js) obaluje kapitoly IV., V., VI. a doložky; texty kontrol a Nastavení už vypuštění ve Wordu u starších šablon neslibují. HOTOVO v29.9.2: P8b — holé číslo termínu dostane jednotku („12\" → „12 týdnů\", česky skloňované, po ATYP srovnané s novým číslem), i ruční přepis v krycím listu; vzor slovníku zná „týden\" a jednotné číslo v EN/DE/FR. ZBÝVÁ: Generátor: úsek mezi značkami {{KAP_…_ZAC}} a {{KAP_…_KON}} zmizí i s nadpisem, když je kapitola prázdná, jinak zmizí jen značky. Šablona CN v13 (CZ/EN/DE/FR) se značkami kolem kapitol IV.–VI. a doložek. Termín: holé číslo → „N týdnů\", přípona ATYP přes slovník. Opravit texty, které vypuštění ve Wordu slibovaly.",
+   "hotovoKdyz" : "Splněno: src/test_bloky_sablony.js 19, overit_sablona 83/83 s CN v13 (prázdná IV. a VI. zmizí i s nadpisem a větou o protokolu), test_rozhodnuti_k16 (P8b) 12.",
    "kde" : "`src/docxgen.js`, `src/kryci.js`, `src/preklad.js`, šablony CN v13",
    "zavisi" : [
     {
@@ -5734,12 +5735,12 @@
   {
    "id" : "366",
    "vlna" : "B",
-   "stav" : "ceka",
+   "stav" : "blokovano",
    "dulezitost" : "stredni",
    "slozitost" : "M",
    "nazev" : "P9: smlouva o dílo z krycího listu — termíny, podpisy, zmrazení podmínek, vlastní řada čísel",
    "proc" : "K16-N83: SoD plní jen symboly nabídky, objednatele a splátky PROJ; číslo smlouvy a termíny nikdy, podpisy objednatele jen u PROJ, a po změně Nastavení může nést jiné podmínky než odeslaná nabídka. Rozhodnutí J. V. 29. 9. 2026: vlastní řada čísel smluv, termíny z krycího listu, podpisy i do SoD OCK, zámek zmrazí i podmínky z Nastavení.",
-   "detail" : "HOTOVO v29.9.2: P9.2 termíny SoD OCK z krycího listu (převzetí → SOD_TERMIN_MONTAZ_OD, předání → SOD_TERMIN_DOKONCENI), P9.4 sekce „Smlouva o dílo — podpisy a kopie (SoD realizace)\" v krycím listu OCK (předvyplní se z krycího listu PROJ), P9.5 zámek při prvním zamčení opíše předvyplněné podmínky krycích listů do data.kryci/kryciProj.zmrazeno (platí jen, dokud je varianta zamčená). ZBÝVÁ: P9.1 vlastní řada čísel smluv a P9.3 dopočet splátek SoD PROJ — podle návrhu k #367; symbol ukončení montáže a ověření symbolů se šablonami SoD (#350). Zámek zapíše předvyplněné podmínky krycího listu do varianty (zmrazí je); SOD_TERMIN_MONTAZ_OD a SOD_TERMIN_DOKONCENI z krycího listu OCK; OBJEDNATEL_PODPIS_* a kontakty i v SoD OCK; číslo smlouvy z vlastní řady (podoba řady v návrhu #367).",
+   "detail" : "NÁVRH v29.9.3: podklady/NAVRH_PLATEBNI_PODMINKY_2026-09-29.md, oddíly 3 a 4. HOTOVO v29.9.2: P9.2 termíny SoD OCK z krycího listu (převzetí → SOD_TERMIN_MONTAZ_OD, předání → SOD_TERMIN_DOKONCENI), P9.4 sekce „Smlouva o dílo — podpisy a kopie (SoD realizace)\" v krycím listu OCK (předvyplní se z krycího listu PROJ), P9.5 zámek při prvním zamčení opíše předvyplněné podmínky krycích listů do data.kryci/kryciProj.zmrazeno (platí jen, dokud je varianta zamčená). ZBÝVÁ: P9.1 vlastní řada čísel smluv a P9.3 dopočet splátek SoD PROJ — podle návrhu k #367; symbol ukončení montáže a ověření symbolů se šablonami SoD (#350). Zámek zapíše předvyplněné podmínky krycího listu do varianty (zmrazí je); SOD_TERMIN_MONTAZ_OD a SOD_TERMIN_DOKONCENI z krycího listu OCK; OBJEDNATEL_PODPIS_* a kontakty i v SoD OCK; číslo smlouvy z vlastní řady (podoba řady v návrhu #367).",
    "hotovoKdyz" : "Test: SoD OCK nese termíny a podpisy z krycího listu; po zámku a změně Nastavení zůstanou podmínky odeslané nabídky.",
    "kde" : "`src/sod.js`, `src/kryci.js`, `src/kryci_proj.js`, `src/ui/zamek_ui.js`",
    "zavisi" : [
@@ -5753,17 +5754,19 @@
      "typ" : "doporuceno",
      "proc" : "šablony SoD pro ověření symbolů"
     }
-   ]
+   ],
+   "cekaNa" : "J. V. — odsouhlasit návrh podklady/NAVRH_PLATEBNI_PODMINKY_2026-09-29.md (řada čísel smluv, dopočet splátek SoD PROJ); šablony SoD (#350)",
+   "otazka" : "Formát a počátek řady čísel smluv, serverové počítadlo, nebo ruční pole? Sčítat splátky SoD PROJ podle milníku?"
   },
   {
    "id" : "367",
    "vlna" : "B",
-   "stav" : "ceka",
+   "stav" : "blokovano",
    "dulezitost" : "vysoka",
    "slozitost" : "L",
    "nazev" : "P10: platební podmínky z krycího listu — 2 měsíce, splatnost, „bez DPH\", po milnících, záruka + návrh plánu plateb",
    "proc" : "K15-N71: platební podmínky žijí na devíti místech a v sedmi bodech si odporují. Rozhodnutí J. V. 29. 9. 2026: vše se dotahuje z krycího listu, při rozporu má přednost krycí list; standard 50 / 40 / 10; platnost 2 měsíce; splatnost z krycího listu; znění „bez DPH\"; fakturace většinou po milnících, může být i měsíční; pro plán plateb PROJ (4 znění) a „vše z krycího listu\" připravit návrh.",
-   "detail" : "HOTOVO v29.9.2: 10.1 platnost 2 měsíce i v náhradních hodnotách + skloňování, 10.2 náhled PROJ bere splatnost a platnost z krycího listu PROJ, 10.4 slovník zná věty o dílčích dokladech se zněním „(bez DPH)\", 10.5 způsob fakturace výběrem Po milnících / Měsíční (výchozí po milnících, staré „Náš standard / měsíční\" se čte jako po milnících), 10.7 záruka v kapitole V. z krycího listu (věta o záruce z Firmy vypadne). ZBÝVÁ: návrh 10.3 („vše z krycího listu\") a 10.6 (plán plateb PROJ), věty „(bez DPH)\" do šablony CN v13. Hned: platnost 2 měsíce všude a skloňování, náhled PROJ bere splatnost a platnost z krycího listu, způsob fakturace výchozí po milnících (volba měsíční), záruka z krycího listu, věty „bez DPH\". Návrh: jak by krycí list řídil celé znění podmínek v nabídce, Wordu a SoD (OCK i PROJ), včetně splátek SoD PROJ a řady čísel smluv.",
+   "detail" : "NÁVRH v29.9.3: podklady/NAVRH_PLATEBNI_PODMINKY_2026-09-29.md — krycí list jako jediný zdroj; OCK platební kalendář (procento + milník, předvolby, součet 100 %, symbol {{PODM_PLATEBNI_KALENDAR}} pro CN v14 a SoD); PROJ plán plateb po činnostech s předvolbami, ze kterého se odvodí nabídka, krycí list, SoD (dopočet splátek) i Nastavení. Věty „(bez DPH)\" jsou v šabloně CN v13. HOTOVO v29.9.2: 10.1 platnost 2 měsíce i v náhradních hodnotách + skloňování, 10.2 náhled PROJ bere splatnost a platnost z krycího listu PROJ, 10.4 slovník zná věty o dílčích dokladech se zněním „(bez DPH)\", 10.5 způsob fakturace výběrem Po milnících / Měsíční (výchozí po milnících, staré „Náš standard / měsíční\" se čte jako po milnících), 10.7 záruka v kapitole V. z krycího listu (věta o záruce z Firmy vypadne). ZBÝVÁ: návrh 10.3 („vše z krycího listu\") a 10.6 (plán plateb PROJ), věty „(bez DPH)\" do šablony CN v13. Hned: platnost 2 měsíce všude a skloňování, náhled PROJ bere splatnost a platnost z krycího listu, způsob fakturace výchozí po milnících (volba měsíční), záruka z krycího listu, věty „bez DPH\". Návrh: jak by krycí list řídil celé znění podmínek v nabídce, Wordu a SoD (OCK i PROJ), včetně splátek SoD PROJ a řady čísel smluv.",
    "hotovoKdyz" : "Náhled, Word i SoD berou podmínky z krycího listu; návrh odsouhlasený J. V.",
    "kde" : "`src/kryci.js`, `src/kryci_proj.js`, `src/firma.js`, `src/nabidka.js`, `src/nabidka_proj.js`, `src/preklad.js`",
    "zavisi" : [
@@ -5772,7 +5775,9 @@
      "typ" : "tvrda",
      "proc" : "rozhodnutí P10"
     }
-   ]
+   ],
+   "cekaNa" : "J. V. — odsouhlasit návrh podklady/NAVRH_PLATEBNI_PODMINKY_2026-09-29.md (platební kalendář OCK, plán plateb PROJ)",
+   "otazka" : "Tři firemní milníky OCK a věty o podmínce úhrady? Znění věty pro měsíční fakturaci? Čtyři předvolby plánu plateb PROJ a výchozí? Pořadí etap A → B → C?"
   },
   {
    "id" : "368",
@@ -5816,13 +5821,14 @@
   {
    "id" : "370",
    "vlna" : "B",
-   "stav" : "ceka",
-   "dulezitost" : "stredni",
+   "stav" : "hotovo",
+   "hotovoV" : "v29.9.3",
+   "dulezitost" : "",
    "slozitost" : "M",
    "nazev" : "Šablona nabídky PROJ v3 se součtem, slevou a vlastními položkami + EN/DE/FR",
    "proc" : "K15-N66, K14-N64: šablona PROJ v2 nemá symboly součtu, slevy ani vlastních položek, takže Word PROJ slevu neukáže (jen rozpuštěnou v cenách). J. V. 29. 9. 2026: nové šablony vždy i s jazykovými mutacemi.",
-   "detail" : "Šablona PROJ v3 (CZ/EN/DE/FR): rekapitulace se symboly PROJ_CELKEM_BEZ_DPH, PROJ_CENA_PRED_SLEVOU, PROJ_SLEVA_PROC, PROJ_SLEVA_KC, PROJ_DPH_KC, PROJ_CELKEM_S_DPH a odstavec {{PROJ_POLOZKY_NAVIC}}; ceny činností se v ní ukážou před slevou (#364).",
-   "hotovoKdyz" : "overit_nabidka_proj_word projde se šablonou v3 i s mutacemi; kontroly slevaWordProj a polozkyNavicWordProj mlčí.",
+   "detail" : "HOTOVO v29.9.3: šablona PROJ v3 + EN/DE/FR (nastroje/vyrob_sablony.js z PROJ v2): rekapitulace před „Vypracoval\" (cena před slevou, sleva, CELKEM bez DPH; řádky slevy bez slevy zmizí), blok {{PROJ_POLOZKY_NAVIC}} v značkách (zmizí bez vlastních položek). Soubory předány J. V. k nahrání v Nastavení → Šablony. Šablona PROJ v3 (CZ/EN/DE/FR): rekapitulace se symboly PROJ_CELKEM_BEZ_DPH, PROJ_CENA_PRED_SLEVOU, PROJ_SLEVA_PROC, PROJ_SLEVA_KC, PROJ_DPH_KC, PROJ_CELKEM_S_DPH a odstavec {{PROJ_POLOZKY_NAVIC}}; ceny činností se v ní ukážou před slevou (#364).",
+   "hotovoKdyz" : "Splněno: overit_nabidka_proj_word 63/63 se šablonou v3 (se slevou činnosti před slevou, vlastní položka v bloku), s v2 dál 54/54.",
    "kde" : "šablony PROJ v3 (podklady J. V.)",
    "zavisi" : [
     {
@@ -6347,6 +6353,10 @@
   {
    "text" : "29. 9. 2026 (engscalc, test-draft), v29.9.2 — rozhodnutí J. V. k rozboru D: P8b termín v týdnech, P9.2/9.4 SoD OCK z krycího listu, P9.5 zámek zmrazí podmínky, P10.1/10.2/10.4/10.5/10.7 platební podmínky, P11 kontrola PROJ u zahraničí (#365–#368). Ověřeno: sady v Node, test_rozhodnuti_k16 50, test_sod 49, overit_online 190, pred_pushem.",
    "hotovo" : true
+  },
+  {
+   "text" : "29. 9. 2026 (engscalc, test-draft), v29.9.3 — P8A značky bloků v generátoru, šablony CN v13 a PROJ v3 s EN/DE/FR (nastroje/vyrob_sablony.js), návrh platebních podmínek z krycího listu (podklady/NAVRH_PLATEBNI_PODMINKY_2026-09-29.md). Ověřeno: test_bloky_sablony 19, overit_sablona 83 (v13), overit_nabidka_proj_word 63 (v3), sady v Node, pred_pushem.",
+   "hotovo" : true
   }
   ],
   "pravidla" : [
@@ -6433,7 +6443,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v29.9.2 (engscalc)",
+  "build" : "v29.9.3 (engscalc)",
   "stavKDatu" : "29. 9. 2026"
  },
  "_comment" : [

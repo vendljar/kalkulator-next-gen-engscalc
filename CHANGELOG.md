@@ -8,6 +8,37 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v29.9.3 — prázdné kapitoly ve Wordu, šablony CN v13 a PROJ v3, návrh platebních podmínek (29. 9. 2026)
+
+Větev `test-draft`.
+
+- **Prázdná kapitola zmizí z Wordu i s nadpisem (P8 varianta A, #365).**
+  Generátor zná značky bloků: šablona obalí kapitolu odstavci
+  `{{KAP_IV_ZAC}}` … `{{KAP_IV_KON}}` a když jsou všechny symboly uvnitř
+  prázdné, zmizí celý blok (nadpis, rámeček, u VI. i věta o předávacím
+  protokolu); jinak zmizí jen značky. Starší šablona bez značek se chová
+  jako dřív — texty kontrol a Nastavení to teď říkají poctivě.
+- **Šablona CN v13 (CZ/EN/DE/FR)** = v12 + značky kapitol IV., V., VI.
+  a doložek + věty o dílčích daňových dokladech „(bez DPH)" (P10.4).
+- **Šablona PROJ v3 (CZ/EN/DE/FR, #370)** = v2 + rekapitulace před
+  „Vypracoval" (cena před slevou, sleva, CELKEM bez DPH — řádky slevy bez
+  slevy zmizí) a blok vlastních položek `{{PROJ_POLOZKY_NAVIC}}` (zmizí,
+  když žádné nejsou). Se šablonou v3 stojí činnosti ve Wordu za cenu před
+  slevou jako v online nabídce (#364).
+- Šablony vyrábí `nastroje/vyrob_sablony.js` z dodaných v12 / PROJ v2
+  a jazykové mutace týmž překladem šablon jako aplikace; každý soubor
+  ověří (platné XML, symboly shodné s češtinou, nic česky). **Soubory
+  předány J. V. — nahrát v Nastavení → Šablony** (šablony nejsou
+  v repozitáři).
+- **Návrh platebních podmínek z krycího listu** (P10.3, P10.6, P9.1, P9.3)
+  v `podklady/NAVRH_PLATEBNI_PODMINKY_2026-09-29.md` — čeká na odsouhlasení.
+
+Testy: nová sada `src/test_bloky_sablony.js` 19 (bez opravy padá),
+`overit_sablona` +10 (šablona v13: 83/83), `overit_nabidka_proj_word` +9
+(šablona v3: 63/63); se staršími šablonami v12 / PROJ v2 dál 73/73 a 54/54.
+
+---
+
 ## v29.9.2 — rozhodnutí J. V. k rozboru D: termín, smlouva, platební podmínky, PROJ u zahraničí (29. 9. 2026)
 
 Větev `test-draft`. Podklad: tabulka rozhodnutí v `podklady/K16_ROZBOR_2026-09-25.md`.

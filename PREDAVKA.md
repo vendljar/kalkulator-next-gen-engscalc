@@ -1,7 +1,7 @@
 # Předávka — stav k 29. 9. 2026 (rozhodnutí k rozboru D kola 16)
 
 Na `main`: **v25.9.3** (+ oprava Node), tag `v25.9.3`.
-Na `test`: **v25.9.6**. Na `test-draft`: **v29.9.2** — čeká na pokyn J. V.
+Na `test`: **v25.9.6**. Na `test-draft`: **v29.9.3** — čeká na pokyn J. V.
 k přenosu do `test`. Větev `k16-nalezy` (v25.9.8) splnila účel a je
 sloučená do `test-draft`; navrženo J. V. ji smazat (z cloudu to nejde).
 Roadmapa: `roadmapa/roadmap.json` (370 položek), stará publikace
@@ -23,22 +23,28 @@ https://claude.ai/artifact/RmrdBw1QbyyBxDLhZcExTq (není aktuální).
   platí jen u zamčené varianty) (#366), P10.1/10.2/10.4/10.5/10.7 (#367),
   P11 kontrola `projZahranici` (#368, hotovo). Nová sada `src/test_rozhodnuti_k16.js`.
 
-## Rozpracováno — další kroky
-1. P8A: značky bloků v generátoru ({{KAP_…_ZAC}} / {{KAP_…_KON}}) + šablona
-   CN v13 (CZ/EN/DE/FR) se značkami a větami „(bez DPH)" (#365); šablona
-   PROJ v3 se součtem, slevou a `{{PROJ_POLOZKY_NAVIC}}` (CZ/EN/DE/FR, #370).
-   Šablony vyrábět skriptem z v12 / PROJ v2 (podklady ve scratchpadu sezení,
-   `KNG_PODKLADY`); J. V. je nahraje v Nastavení → Šablony.
-2. Návrh pro J. V.: „vše z krycího listu" (10.3), koncept plánu plateb PROJ
-   (10.6), řada čísel smluv (P9.1), splátky SoD PROJ (P9.3) —
-   `podklady/NAVRH_PLATEBNI_PODMINKY_2026-09-29.md`.
+## Hotovo v29.9.3 (`test-draft`)
+- P8A značky bloků v generátoru (`odstranPrazdneBloky`), šablony CN v13
+  a PROJ v3 i s EN/DE/FR (`nastroje/vyrob_sablony.js <podklady> [výstup]`),
+  soubory předány J. V. (nejsou v repozitáři; kopie ve scratchpadu sezení
+  `sablony_nove/`). #365 a #370 hotovo.
+- Návrh `podklady/NAVRH_PLATEBNI_PODMINKY_2026-09-29.md` (10.3, 10.6, P9.1,
+  P9.3) — #366 a #367 blokované na odsouhlasení.
+
+## Další práce
+- Po odsouhlasení návrhu: etapa A (OCK platební kalendář + šablona CN v14),
+  B (PROJ plán plateb + šablona PROJ v4), C (číslo smlouvy ze serverové řady).
+- #369 (vypnout náklady obchodníkovi) — až řekne J. V.
+- Harnessy se šablonami v13/v3: složit složku podkladů s v13 (nejvyšší verze
+  CN) a PROJ v3 pojmenovanou `Sablona_NABIDKA_PROJ.docx`.
 
 ## Čeká na J. V.
 - Pokyn k přenosu `test-draft` do `test`, pak do `main`.
 - Soubory SoD (#350) — bez nich nejde ověřit symboly smluv.
 - Odsouhlasit rozhodnutí z dávky B (bez čísla se neukládá; přepočet po
   zveřejnění ceníku není neuložená změna; „ß" = „ss") a překlady z dávky C.
-- Úkoly z dávky C: po nasazení přegenerovat jazykové mutace šablon.
+- Nahrát šablony CN v13 a PROJ v3 (+ EN/DE/FR) v Nastavení → Šablony.
+- Odsouhlasit návrh platebních podmínek (otázky v oddílu 6 návrhu).
 
 ## Poznámky pro další sezení
 - Šablony pro harnessy (CN v12 + EN/DE/FR, PROJ v2_opravena) v novém sezení
