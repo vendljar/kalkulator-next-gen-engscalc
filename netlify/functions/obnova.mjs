@@ -84,8 +84,9 @@
 import { randomBytes } from 'node:crypto';
 import { uloziste, vyzadujRoli, json, ADMIN_EMAIL, ROLE, hostitel, emailPlatny,
          podpisZkontroluj, hesloVerzeUctu, SMAZANI_ULOZISTE,
-         bezHlavnihoUctu } from '../lib/sdilene.mjs';
+         bezHlavnihoUctu, serverVerze } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
+import { zakazkaPrijmi, zakazkaServerKontrola } from '../lib/zakazka_kontrola.mjs';
 import { porizOtisk, klicPredObnovou, OTISK_KLIC } from '../lib/zalohovani.mjs';
 
 export const OBNOVA_CASTI = ['program', 'firma', 'zobrazeni', 'popisy', 'zakazky', 'uzivatele',
@@ -269,8 +270,8 @@ export default async (req) => {
    * a „podpis hlavního administrátora mění jen on sám"). Bez té adresy
    * ochrany neplatí, takže se obnova neobsluhuje (B54, 22. 9. 2026). */
   { const stop = bezHlavnihoUctu(); if (stop) return stop; }
-  let ULO;
-  try { ({ ULO } = await jadro()); } catch (e) { return jadroChyba(e); }
+  let ULO, SCHV, JEKLY;
+  try { ({ ULO, SCHV, JEKLY } = await jadro()); } catch (e) { return jadroChyba(e); }
 
   let t; try { t = await req.json(); } catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
   if (!t || typeof t !== 'object') return json({ ok: false, chyba: 'Chybí tělo požadavku.' }, 400);
@@ -455,40 +456,42 @@ export default async (req) => {
     vysledek[cast] = b;
   }
 
-  /* Zakázky: pojistka 3 — stejná kontrola zámků jako při ukládání;
-   * a tvar i jedinečnost id jako při ukládání (B32, 9. 9. 2026). */
+  /* Zakázky: pojistka 3 — TYTÉŽ POJISTKY JAKO PŘI UKLÁDÁNÍ (P4 / B72,
+   * 25. 9. 2026). Do té doby měla obnova vlastní menší sadu (tvar id, typy,
+   * zámky) a mimo ni prošla obnovou sleva 60 % „schválená" vymyšleným jménem
+   * (B72) nebo záloha se značkou ukázkového ceníku hlásila změnu odeslané
+   * nabídky. Teď obě cesty volají lib/zakazka_kontrola.mjs; rozdíly režimu
+   * „obnova" (razítka ze zálohy zůstávají, číslo se nepřepisuje) jsou
+   * popsané tam. Zapisuje se zakázka po migraci a očistě — stejně jako při
+   * uložení z prohlížeče. */
   let rejstrik = null;
   if (casti.includes('zakazky') && maVlastni(zaloha, 'zakazky')) {
     const b = bilance();
     const s = await uloziste('zakazky');
-    /* N43 (24. 9. 2026): data zamčených variant se porovnávají až po stejné
-     * migraci na obou stranách — záloha i úložiště mohou nést starší tvar
-     * dat (viz komentář v zakazky.mjs). Zapisuje se dál to, co je v záloze. */
-    const migrovana = (z) => {
-      try { return typeof globalThis.importZakazka === 'function'
-        ? globalThis.importZakazka(JSON.parse(JSON.stringify(z))) : z; } catch (e) { return z; }
-    };
-    const kontrolaZamku = (stara, nova) => {
-      const k = ULO.uloKontrolaZamku(stara, nova);
-      if (!k.ok) return 'uzamčená (odeslaná) nabídka: ' + k.problemy.map(ULO.uloProblemPopis).join('; ');
-      const staraM = migrovana(stara), novaM = migrovana(nova);
-      for (const sv of (staraM.varianty || [])) {
-        if (!(globalThis.variantaUzamcena && globalThis.variantaUzamcena(sv))) continue;
-        const nv = (novaM.varianty || []).find(v => v && v.id === sv.id);
-        if (nv && !stejne(nv.data, sv.data)) {
-          const cislo = (typeof globalThis.variantaCislo === 'function') ? globalThis.variantaCislo(stara, sv) : '';
-          return 'změnila by se data uzamčené (odeslané) nabídky' + (cislo ? ' (' + cislo + ')' : '');
+    const mapa = zaloha.zakazky;
+    if (!mapa || typeof mapa !== 'object' || Array.isArray(mapa)) preskoc(b, '*', 'záloha tuto část nenese');
+    else {
+      const prog = await sProg.cti('db');
+      const ctx = { ULO, SCHV, JEKLY, slevyNast: (prog && prog.platny && prog.platny.slevy) || {},
+                    verzeServeru: serverVerze(), rezim: 'obnova' };
+      for (const [k, v] of Object.entries(mapa)) {
+        if (!k || k.length > KLIC_MAX) { preskoc(b, k, 'nepřijatelný klíč'); continue; }
+        if (v == null || typeof v !== 'object') { preskoc(b, k, 'poškozený záznam (není objekt)'); continue; }
+        const klic = 'z/' + k;
+        const stary = await s.cti(klic);
+        if (stary != null && stejne(stary, v)) { b.bezeZmeny++; continue; }
+        if (stary != null && rezim === 'doplnit') {
+          preskoc(b, klic, 'na serveru už je a liší se — režim „doplnit" nepřepisuje'); continue;
         }
+        /* Kopie: importZakazka mění objekt na místě a záloha je zdroj. */
+        const prijem = zakazkaPrijmi(JSON.parse(JSON.stringify(v)), ULO);
+        if (!prijem.ok) { preskoc(b, klic, prijem.chyba); continue; }
+        const kontrola = zakazkaServerKontrola(stary, prijem.zak, relace, ctx);
+        if (!kontrola.ok) { preskoc(b, klic, kontrola.chyba); continue; }
+        if (zapisovat) await s.zapis(klic, kontrola.zak);
+        if (stary == null) b.nove++; else b.prepsane++;
       }
-      return '';
-    };
-    const overeniId = (k, v) => {
-      /* #340: i obnova hlídá typy polí; zamčené varianty zálohy jsou doklad
-       * (proto se zakázka předá i jako „uložená verze" — zámky přeskočí). */
-      const p = ULO.uloIdProblemy(v).concat(ULO.uloTypyProblemy(v, v));
-      return p.length ? ULO.uloIdProblemyText(p) : '';
-    };
-    await obnovMapu(b, s, zaloha.zakazky, rezim, zapisovat, 'z/', kontrolaZamku, overeniId);
+    }
     vysledek.zakazky = b;
     /* V náhledu a v dávce se rejstřík nestaví — jen se spočítá, kolik zakázek
      * by v něm bylo (existující + nové). Dávky ho přestaví jednou na konci. */

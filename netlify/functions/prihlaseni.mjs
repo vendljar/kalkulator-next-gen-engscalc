@@ -8,8 +8,8 @@
  *         aby se z času odpovědi nedalo přečíst, které adresy existují.
  */
 import { uloziste, otiskHesla, hesloSedi, relaceCookie, json, ADMIN_EMAIL,
-         profilZUctu, podpisCti, FALESNY_OTISK, POKUSY_MAX, POKUSY_IP_MAX,
-         zpozdeniMs, pockej, pokusyZacatek, pokusyUspech, adresaKlienta,
+         profilZUctu, podpisCti, FALESNY_OTISK, POKUSY_MAX,
+         zpozdeniMs, pockej, pokusyZacatek, pokusyUspech, pokusyAdresaNadLimit, adresaKlienta,
          EMAIL_MAX, HESLO_MAX, spravceNastaven, cizihoPuvodu } from '../lib/sdilene.mjs';
 
 export default async (req) => {
@@ -40,7 +40,17 @@ export default async (req) => {
    * platily stejně jako ty popořadě. Správné heslo počítadla vynuluje. */
   const ip = adresaKlienta(req);
   const pokusy = await pokusyZacatek(email, ip);
-  await pockej(Math.max(zpozdeniMs(pokusy.email.n), pokusy.adresa.n > POKUSY_IP_MAX ? 2000 : 0));
+  /* LIMIT ADRESY SE ROZHODUJE PŘED OVĚŘENÍM HESLA (B75, hloubkový test
+   * 24. 9. 2026; do té doby se i nad limitem počítal scrypt a správné heslo
+   * prošlo). Zásada #92 „brzda nikdy nebrání správnému heslu" platí dál pro
+   * počítadlo E-MAILU: to je ta obrana proti zamknutí majitele cizími pokusy.
+   * Počítadlo ADRESY je jiný případ — kdo z jedné adresy poslal přes šedesát
+   * špatných hesel za čtvrt hodiny, není majitel, který se spletl; a hádání
+   * nesmí ani zaměstnávat server scryptem. Odmítá se hned, 429. */
+  if (pokusyAdresaNadLimit(pokusy))
+    return json({ ok: false, chyba: 'Příliš mnoho neúspěšných pokusů z této adresy. Zkuste to za '
+      + 'několik minut znovu, nebo se ozvěte správci.' }, 429);
+  await pockej(zpozdeniMs(pokusy.email.n));
 
   const u = await uloziste('uzivatele');
   let ucet = await u.cti(email);
@@ -73,7 +83,7 @@ export default async (req) => {
       podpis: await podpisCti(ucet.email) }, 200, { 'Set-Cookie': cookie });
   }
 
-  if (pokusy.email.n > POKUSY_MAX || pokusy.adresa.n > POKUSY_IP_MAX)
+  if (pokusy.email.n > POKUSY_MAX)
     return json({ ok: false, chyba: 'Příliš mnoho neúspěšných pokusů. Zkuste to za '
       + 'několik minut znovu, nebo se ozvěte správci.' }, 429);
   return json({ ok: false, chyba: 'Nesprávný e-mail nebo heslo.' }, 401);

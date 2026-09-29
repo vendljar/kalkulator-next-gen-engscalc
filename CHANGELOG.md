@@ -8,6 +8,86 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v29.9.4 — sloučení do test-draft: testovací sekvence A1–A5 (#371) a neznámý rozměr profilu (#372) (29. 9. 2026)
+
+Na pokyn J. V. 29. 9. 2026 sloučeny do `test-draft` větve
+`claude/pensive-curie-s6yzs3` (v26.9.1 — testovací sekvence A1–A5 a opravy
+B72/P4, B75–B78, N43 na serveru, záznam níže) a `claude/stoic-cerf-j915ax`
+(oprava #372, ve větvi v29.9.1 — záznam následuje). Tag `v29.9.4`.
+
+**Při sloučení:**
+- Roadmapa: položky z větví přečíslovány — #364 → **#371**, #365 → **#372**
+  (v `test-draft` jsou #364 a #365 jiné úkoly); odkazy „#365" v kódu,
+  testech a názvech mutací opraveny na #372.
+- Razítko „kdo naposledy uložil" jménem (`upravilJmeno`, P7 z v25.9.7) se
+  s ostatními pojistkami uložení přestěhovalo do společné
+  `netlify/lib/zakazka_kontrola.mjs` (jen při uložení; obnova nechá razítko
+  ze zálohy); mutace P7 přesměrována tamtéž.
+- Pravidel kontroly je 23 (22 z `test-draft` + `profilNeznamy`); sady mutací
+  serveru nesou i `test_rejstrik.mjs`; mutací jádra 80, serveru 192.
+
+**Ověřeno celým kolem** `nastroje/testovaci_kolo.sh` 29. 9. 2026:
+@@KOLO_SLOUCENI@@
+
+### #372 — zakázka s neznámým rozměrem profilu jde otevřít
+
+Roadmapa #372 hotovo (nález A2-1 z 26. 9. 2026). Větev
+`claude/stoic-cerf-j915ax` nad `claude/pensive-curie-s6yzs3` (v26.9.1);
+rozsah jen #372, N46 se neopravuje. **Pravidlo 0:** nález trval —
+`vypocet()` padal na „Neznámá dimenze profilu: 999x999" / „Dimenze 80x80
+nemá tloušťku 99 mm", `ui/kalk_ock.js` sám na `JEKLY[p.dim].kg`
+(`renderInputs` i `zkontrolujTl`) a server takovou zakázku uložil
+i obnovil — pak se nikomu neotevřela.
+
+**Opraveno:**
+- **Výpočet nespadne, ale chybu nezamlčí.** `jekl()` v `src/engine.js`
+  u rozměru mimo katalog jeklů (nebo tloušťky, kterou rozměr nemá) dosadí
+  nulovou hmotnost i plochu a profil zapíše do `vysledek.profily.nezname`
+  („sloupek: 999x999 / 4 mm"). Seznam dává nová `profilyNezname(zadani,
+  jekly)`; lemování jen u exteriérové šachty (interiérová ho nepočítá).
+  Platná data se nezměnila ani o korunu — otisky výsledku výchozího
+  zadání (interiér i exteriér, Model 1 i 2) jsou stejné jako před změnou.
+- **Kontrola `profilNeznamy` = ZÁBRANA** (`src/kontroly.js`,
+  `zabranaMozna`): „Rozměr profilu … není v katalogu jeklů — vyberte
+  platný. Dokument nevznikne, dokud se to neopraví." Cena s nulovým
+  profilem se tak nikdy nevytiskne. Pravidel je 20.
+- **Zadání šachty ukáže pravdu** (`src/ui/kalk_ock.js`): ve výběru navíc
+  zvýrazněná volba „neznámý rozměr: 999x999" (u tloušťky „neznámá: 99")
+  a štítek „mimo katalog"; ostatní volby jsou platné rozměry. Po výběru
+  platného rozměru `zkontrolujTl()` dosadí platnou tloušťku jako dřív,
+  u neznámého nic nemění a nepadá.
+- **Server odmítne nová špatná data, stará nezablokuje**
+  (`netlify/lib/zakazka_kontrola.mjs`, uložení i obnova): neznámý rozměr
+  nebo tloušťka v NEUZAMČENÉ variantě → 400 „… rozměr profilu není
+  v katalogu jeklů (CN … — sloupek: 999x999 / 4 mm). Vyberte v zadání
+  šachty platný rozměr"; obnova zakázku přeskočí s důvodem. Uzamčená
+  (odeslaná) varianta se nemění, proto se nekontroluje. Katalog je týž
+  `JEKLY` z `jadro()`, seznam dává táž funkce jádra.
+
+**Testy — každý doložen selháním před opravou (ve zprávě commitu):**
+- nová sada `src/test_profil_neznamy.js` (22 testů; bez opravy 5 prošlo,
+  14 selhalo — prošly jen otisky platných dat), `src/test_kontroly.js`
+  (bez opravy 2 selhání) a `overit_lista.mjs` (20 pravidel);
+- `overit_xss.mjs` (A2) otravuje nově i `dim` a `tl` — komentář o nálezu
+  A2-1 smazán; bez opravy UI 4 ✕ „vykreslení nespadlo" (`reading 'kg'`),
+  teď 207 OK;
+- nový harness `overit_profil_neznamy.mjs` (10 kontrol v prohlížeči; bez
+  opravy UI 5 ✕);
+- `netlify/test_obnova.mjs` — blok #372 (bez opravy 4 selhání, teď 165 OK);
+- mutace: jádro +4 (`JADRA` nově i `kontroly.js` — zábrana je jediné, co
+  brání vytisknout nulový profil), server +2 (neznámý rozměr se
+  nekontroluje; kontroluje se i odeslaná varianta). `--kontrola`: jádro
+  80, server 189 úseků, každý právě jednou.
+
+**Ověřeno celým kolem ve větvi** `nastroje/testovaci_kolo.sh` 29. 9. 2026:
+VŠE ZELENÉ (62 min 51 s) — kontrola verze + sestavení ✓; sady 187 prošlo,
+0 selhalo, 3 přeskočeno z 190 (test.js — shoda s Excelem není v exportu
+pro GitHub; overit_manual.mjs a overit_sod.mjs — firemní podklad mimo
+repozitář, KNG_PODKLADY); mutace jádra chycených 80 z 80 (4 nové); mutace
+serveru 189 z 189 (2 nové); statické kontroly 3 z 3.
+
+---
+
 ## v29.9.3 — prázdné kapitoly ve Wordu, šablony CN v13 a PROJ v3, návrh platebních podmínek (29. 9. 2026)
 
 Větev `test-draft`.
@@ -108,6 +188,75 @@ Větev `test-draft`.
 
 Testy: nová sada `src/test_proj_sleva_nabidka.js` 13 (bez opravy 6
 selže), `overit_nabidky_dph` +5 (bez opravy nesedí součet).
+
+---
+
+## v26.9.1 — testovací sekvence z hloubkového testu (A1–A5) a opravy B72, B75–B78, N43 na serveru (26. 9. 2026)
+
+Roadmapa #371 (nová), #342 hotovo, #345 z části. Zadání J. V. 25. 9. 2026
+„testovací sekvence do repa": každý nález se nejdřív ověřil v aktuálním kódu
+(Pravidlo 0), každý nový test má doloženo, že před opravou selže.
+
+**Pravidlo 0 — už opravené dřív, přeskočeno:** B69, B70, B71, N47, N53, N54
+(v25.9.4), B73, B74, N43 klient, N44 (v24.9.4), N45, N51 (v24.9.6), N56,
+N57 (v24.9.7), N48, N49, N50, N52, N55 (v25.9.5). **N46 se neopravuje** bez
+pokynu J. V. — fuzz rozdíl jen hlásí (INFO), „čeká na rozhodnutí J. V.".
+
+**Opraveno:**
+- **N43 na serveru — server migruje zakázku stejnými moduly jako prohlížeč.**
+  `netlify/lib/jadro_moduly.cjs` neměl `kryci.js`, `kryci_proj.js`,
+  `poznamky.js` a `protokol.js`; starší odeslaná zakázka se po otevření
+  a uložení v prohlížeči (kde migrace doběhly) na serveru porovnala s
+  nemigrovanou podobou a skončila 409 „data uzamčené varianty se změnila".
+- **B72 / P4 — obnova ze zálohy prochází stejnými kontrolami jako uložení.**
+  Nová `netlify/lib/zakazka_kontrola.mjs`: `zakazkaPrijmi()` +
+  `zakazkaServerKontrola(stara, nova, relace, {rezim})` volají `/api/zakazky`
+  i `obnova.mjs`. Obnova už nepustí slevu pod marží ani „schválenou"
+  vymyšleným jménem, nepřepíše číslo odeslané nabídky, nezapíše značky
+  ukázkových dat, doplní chybějící ověření zámku a nechá razítka i autora
+  být. Sleva a marže se porovnávají proti migrované uložené podobě (jinak
+  uložení zakázky z doby před 12. 8. razítkovalo slevu znovu).
+- **B75–B78 — přihlášení jako celek.** Nad limitem adresy 429 PŘED ověřením
+  hesla (scrypt se nepočítá); IPv6 po /64; úspěch cizího účtu počítadlo
+  adresy nenuluje; `hesloVerze` při založení, vypnutí i archivaci účtu
+  (stará cookie neplatí); brzda i u změny vlastního hesla; odhlášení odmítá
+  cizí Origin, `null` a formulářový Content-Type.
+
+**Nové testy (A1–A5), každý s pojistkou proti prázdnému testu:**
+- A1 `src/test_fuzz_invarianty.js` — deterministický fuzz (seed 20260925,
+  2000 zadání OCK a PROJ): žádné NaN, součty, tisíce, DPH a zahraniční
+  řada, jedinečné klíče (N52), volitelné položky (delta), „nepočítat",
+  přepis nákladu, po stěnách vs. jednotné, zrcadlení stěn, N46 jen INFO.
+  Pojistka: 8 záměrných rozbití jádra, všech 8 chyceno.
+- A2 `src/test_escape.js` — hlídač ČLENSKÝCH VÝRAZŮ bez ohledu na jméno
+  (přesně tvar B69: `Z.typPortalu`, `C.dph`, `p.hodiny`), 63 prověřených
+  výrazů s důvodem. `overit_xss.mjs` — otráví VŠECHNA pole zakázky i ostatní
+  zdroje dat (firma, profil, účty, rejstřík, kartotéka, zálohy, žádosti,
+  standard), obě role, 13 záložek + všechny panely Nastavení; 207 kontrol.
+  Pojistka: čtyři rozbitá místa → 16 selhání se jmény cest.
+- A3 `src/test_zamek_historie.js` + `src/fixtury/` (3 historické tvary
+  zakázek z 8. 8., 17. 9. a 23. 9.): klient otevře → server uloží (200) →
+  změna 409 → obnova nanečisto bez hlášky o zámku. Před opravou jádra
+  serveru 3 selhání.
+- A4 `nastroje/kontrola_udaju.py` + `nastroje/povolene_kontakty.txt` —
+  e-maily, telefony a tajemství mimo povolený seznam (B79 ponecháno
+  rozhodnutím J. V., výskyty jsou v seznamu). Pojistka: podstrčený soubor
+  s 5 nálezy → 5 hlášeno.
+- A5 `nastroje/testovaci_kolo.sh` — celá sekvence jedním příkazem
+  (sestavení → všechny sady a harnessy → mutace jádra → mutace serveru →
+  statické kontroly → souhrn s počty, nenulový kód). `pred_pushem.sh` je
+  obal, CI volá tentýž skript — žádný druhý seznam kroků.
+- `netlify/test_prihlaseni.mjs` (43; proti kódu před opravou 21 selhalo),
+  9 testů B72 v `test_obnova.mjs` (před P4 4 + 3 selhaly), 14 nových
+  mutací serveru (P4 5, B75–B78 9), `test_mutace.mjs` čte cíl mutace ze
+  seznamu (po přesunu B59 do lib měřil prázdno).
+
+**Nálezy mimo zadání (k rozhodnutí J. V.):** #372 zakázka s neznámým
+rozměrem profilu (mimo tabulku JEKLY) nejde otevřít; skutečný telefon
+a jméno kolegy v `overit_nabidka_proj_word.mjs` (dočasně v povoleném
+seznamu, viz #346). CSP bez `'unsafe-inline'` zůstává jen návrhem.
+
+Ověřeno: celé kolo `nastroje/testovaci_kolo.sh` 26. 9. 2026 (38 min): kontrola verze + sestavení ✓; sady 182 prošlo, 0 selhalo, 6 přeskočeno (test.js — skutečný ceník není v repozitáři; overit_manual, overit_nabidka_proj_word, overit_sablona, overit_sablony_online, overit_sod — firemní podklady mimo repozitář, KNG_PODKLADY); mutace jádra chycených 76 z 76; mutace serveru 187 z 187 (z toho 14 nových); statické kontroly 3 z 3. Dvě předchozí kola téhož dne našla a bylo opraveno: `test_mutace.mjs` po přesunu B59 měřil prázdno; mutace „vypnutý účet se nepozná“ přežila (dvě nezávislé pojistky, jeden test — doplněn cílený test v `test_prava.mjs`); dva testy struktury CI četly workflow (přesměrovány na testovaci_kolo.sh, kontrola verze přesunuta na začátek kola); souhrn kola nevypisoval přeskočené sady (pole v podshellu).
 
 ---
 

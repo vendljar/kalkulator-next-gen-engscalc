@@ -32,3 +32,18 @@ Cloudové sezení může spadnout (25. 9. 2026: „Prompt is too long“ po
    nad 75 % aktualizovat `PREDAVKA.md` a doporučit nové sezení.
 4. Rozdělanou práci nenechávat jen v kontejneru — radši commit „WIP“ do
    `test-draft` než ztráta.
+
+## Testy (od 26. 9. 2026)
+
+- Jediný seznam kroků je `nastroje/testovaci_kolo.sh` (sestavení bez zvýšení
+  verze → `spust_testy.sh --smoke` → mutace jádra → mutace serveru → statické
+  kontroly → souhrn s počty, nenulový kód při selhání). `nastroje/pred_pushem.sh`
+  je obal (`--mutace` = celé kolo), CI volá tentýž skript. Mutační běh se
+  nikdy nepřerušuje.
+- Každý nový test musí mít pojistku proti prázdnému testu: doložit, že před
+  opravou selže a po opravě projde (napsat do commitu).
+- Statická kontrola osobních údajů a tajemství: `nastroje/kontrola_udaju.py`,
+  povolený seznam `nastroje/povolene_kontakty.txt` (nový smyšlený kontakt v
+  testu se tam zapíše s důvodem; skutečný do repa nepatří).
+- N46 (nástupiště A ↔ C u zrcadlové šachty) se neopravuje bez pokynu J. V. —
+  fuzz `src/test_fuzz_invarianty.js` rozdíl jen hlásí jako INFO.

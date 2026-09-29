@@ -222,7 +222,32 @@ export async function pokusyNeuspech(email) {
  * byl správně, ale náhrada pro testy ho nemá a ostrý běh by se nedal v cloudu
  * ověřit. Zůstává jako otevřená část nálezu B4 pro lokální ověření. */
 export const POKUSY_IP_MAX = 60;
-export function pokusyIpKlic(ip) { return 'ip:' + String(ip || '').trim().slice(0, 64); }
+/* KLÍČ POČÍTADLA ADRESY (B75, hloubkový test 24. 9. 2026). Do té doby se
+ * počítala doslovná adresa. U IPv6 má ale jeden připojený stroj běžně celý
+ * blok /64 (2^64 adres) a útočník by každý pokus poslal z jiné — počítadlo
+ * adresy by nikdy nenarostlo. IPv6 se proto klíčuje po /64 (prvních 64 bitů),
+ * IPv4 celá; adresa IPv4 zapsaná jako IPv6 (::ffff:1.2.3.4) je IPv4. */
+export function pokusyIpKlic(ip) {
+  const a = String(ip || '').trim().slice(0, 64);
+  if (a.indexOf(':') < 0) return 'ip:' + a;
+  const v4 = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i.exec(a);
+  if (v4) return 'ip:' + v4[1];
+  return 'ip6:' + ipv6Prefix64(a);
+}
+/* Prvních 64 bitů IPv6 jako čtyři skupiny bez úvodních nul; neplatný zápis
+ * se vrátí, jak je (počítá se aspoň doslova). */
+export function ipv6Prefix64(a) {
+  const bezZony = String(a || '').split('%')[0].toLowerCase();
+  const casti = bezZony.split('::');
+  if (casti.length > 2) return bezZony;
+  const hlava = casti[0] ? casti[0].split(':') : [];
+  const ocas = casti.length === 2 && casti[1] ? casti[1].split(':') : [];
+  const chybi = 8 - hlava.length - ocas.length;
+  if (chybi < 0 || (casti.length === 1 && chybi !== 0)) return bezZony;
+  const skupiny = hlava.concat(Array(Math.max(chybi, 0)).fill('0'), ocas);
+  if (skupiny.length !== 8 || skupiny.some(g => !/^[0-9a-f]{1,4}$/.test(g))) return bezZony;
+  return skupiny.slice(0, 4).map(g => g.replace(/^0+(?=.)/, '')).join(':') + '::/64';
+}
 export function adresaKlienta(req) {
   try {
     return (req.headers.get('x-nf-client-connection-ip')
@@ -236,9 +261,25 @@ export async function pokusyZacatek(email, ip) {
   if (ip) a = await pokusyNeuspech(pokusyIpKlic(ip));
   return { email: z, adresa: a };
 }
+/* Je adresa nad limitem? Rozhoduje se PŘED ověřením hesla (B75): kdo z jedné
+ * adresy vyčerpal limit, dostane 429 bez počítání scryptu. Není to zámek
+ * účtu — majitel se přihlásí odjinud, počítadlo za čtvrt hodiny vyprší. */
+export function pokusyAdresaNadLimit(pokusy) {
+  return !!(pokusy && pokusy.adresa && pokusy.adresa.n > POKUSY_IP_MAX);
+}
+/* ÚSPĚCH NULUJE POČÍTADLO E-MAILU, ADRESE JEN VRÁTÍ TENHLE POKUS (B75).
+ * Do 25. 9. 2026 úspěšné přihlášení vynulovalo i počítadlo adresy — útočník
+ * s jedním vlastním účtem tak mezi hádáním cizích hesel jednou za čas
+ * přihlásil sebe a limit adresy nikdy nenarostl. Teď se úspěch na adrese
+ * jen nepočítá jako neúspěch; cizí neúspěchy z téže adresy zůstávají. */
 export async function pokusyUspech(email, ip) {
   await pokusyReset(email);
-  if (ip) await pokusyReset(pokusyIpKlic(ip));
+  if (ip) await pokusyUber(pokusyIpKlic(ip));
+}
+export async function pokusyUber(klic) {
+  const s = await uloziste(POKUSY_ULOZISTE);
+  const z = await pokusyStav(klic);
+  await s.zapis(pokusyKlic(klic), { n: Math.max(0, z.n - 1), posledni: z.posledni || Date.now() });
 }
 
 export async function pokusyReset(email) {

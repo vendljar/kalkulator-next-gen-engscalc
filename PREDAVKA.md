@@ -1,81 +1,103 @@
-# Předávka — stav k 29. 9. 2026 (rozhodnutí k rozboru D kola 16)
+# Předávka — stav k 29. 9. 2026 (sloučení do test-draft, v29.9.4)
 
 Na `main`: **v25.9.3** (+ oprava Node), tag `v25.9.3`.
-Na `test` a `test-draft`: **v29.9.3** (převedeno 29. 9. 2026 na pokyn J. V.,
-fast-forward 11a8f9a → 2184f9d). Šablony CN v13 a PROJ v3 (+ EN/DE/FR) má
-J. V. nahrané v Nastavení → Šablony (29. 9. 2026).
-Větev `k16-nalezy` (v25.9.8) splnila účel a je sloučená do `test-draft`;
-navrženo J. V. ji smazat (z cloudu to nejde).
-Roadmapa: `roadmapa/roadmap.json` (370 položek), stará publikace
-https://claude.ai/artifact/RmrdBw1QbyyBxDLhZcExTq (není aktuální).
+Na `test`: **v29.9.3**. Na `test-draft`: **v29.9.4**, tag `v29.9.4` —
+sloučeny větve `claude/pensive-curie-s6yzs3` (testovací sekvence A1–A5,
+#371) a `claude/stoic-cerf-j915ax` (#372) na pokyn J. V. 29. 9. 2026.
+Obě větve i `k16-nalezy` jsou sloučené — navrženo J. V. je smazat (z cloudu
+to nejde).
+Roadmapa: `roadmapa/roadmap.json` (372 položek), stránka se generuje
+`python3 roadmapa/roadmapa.py`.
 
-## Hotovo v29.9.1 (`test-draft`)
-- #364 nabídka PROJ se slevou: činnosti za cenu před slevou, rekapitulace
-  se sečte (nález J. V. 29. 9.). Šablona bez `{{PROJ_SLEVA_KC}}` (PROJ v2)
-  a SoD PROJ dál po slevě. `dokumentVygeneruj` předává builderu symboly
-  šablony (`def.sablonaSymboly`).
-- Rozhodnutí J. V. k rozboru D zapsaná (tabulka na začátku
-  `podklady/K16_ROZBOR_2026-09-25.md`), #363 uzavřena, nové #365–#370.
-- Dávky B (v25.9.7) a C (v25.9.8) kola 16: viz CHANGELOG; mutace serveru
-  nad v25.9.7 176/176.
+## Hotovo v29.9.4 — sloučení (podrobně CHANGELOG.md)
+- **#371 (ve větvi #364), v26.9.1:** testovací sekvence A1–A5 — fuzz
+  (`src/test_fuzz_invarianty.js`), hlídač členských výrazů a obecný
+  `overit_xss.mjs`, historické zakázky (`src/test_zamek_historie.js`
+  + `src/fixtury/`), statická kontrola údajů (`nastroje/kontrola_udaju.py`),
+  jedno testovací kolo `nastroje/testovaci_kolo.sh`; opravy B72/P4 (jedna
+  kontrola zakázky pro uložení i obnovu — `netlify/lib/zakazka_kontrola.mjs`),
+  B75–B78 (přihlášení), N43 na serveru.
+- **#372 (ve větvi #365):** zakázka s neznámým rozměrem profilu jde otevřít —
+  výpočet bez výjimky, zábrana `profilNeznamy`, volba „neznámý rozměr"
+  v zadání šachty, server odmítne neuzamčenou variantu.
+- **Při sloučení:** #364/#365 z větví přečíslovány na #371/#372 (i v kódu
+  a testech); razítko `upravilJmeno` (P7) přestěhováno do společné kontroly
+  uložení a mutace P7 za ním; pravidel kontroly 23; mutace jádra 80,
+  serveru 192.
+- **Ověřeno celým kolem:** @@KOLO_SLOUCENI@@
 
-## Hotovo v29.9.2 (`test-draft`) — rozhodnutí k rozboru D
-- P8b termín v týdnech (#365), P9.2/P9.4 SoD OCK z krycího listu, P9.5 zámek
-  zmrazí předvyplněné podmínky (`data.kryci.zmrazeno`, `data.kryciProj.zmrazeno`,
-  platí jen u zamčené varianty) (#366), P10.1/10.2/10.4/10.5/10.7 (#367),
-  P11 kontrola `projZahranici` (#368, hotovo). Nová sada `src/test_rozhodnuti_k16.js`.
+## Hotovo dřív v test-draft (v29.9.1–v29.9.3)
+- #364 nabídka PROJ se slevou (činnosti za cenu před slevou, rekapitulace
+  se sečte), rozhodnutí J. V. k rozboru D kola 16 (tabulka v
+  `podklady/K16_ROZBOR_2026-09-25.md`), P8b termín v týdnech, P9.2/P9.4/P9.5
+  (SoD OCK z krycího listu, zámek zmrazí podmínky), P10.1/10.2/10.4/10.5/10.7,
+  P11 `projZahranici`, P8A značky bloků + šablony CN v13 a PROJ v3 (+EN/DE/FR).
 
-## Hotovo v29.9.3 (`test-draft`)
-- P8A značky bloků v generátoru (`odstranPrazdneBloky`), šablony CN v13
-  a PROJ v3 i s EN/DE/FR (`nastroje/vyrob_sablony.js <podklady> [výstup]`),
-  soubory předány J. V. (nejsou v repozitáři; kopie ve scratchpadu sezení
-  `sablony_nove/`). #365 a #370 hotovo.
-- Návrh `podklady/NAVRH_PLATEBNI_PODMINKY_2026-09-29.md` (10.3, 10.6, P9.1,
-  P9.3) — #366 a #367 blokované na odsouhlasení.
+## Platební podmínky z krycího listu — ROZHODNUTO 29. 9. 2026
+Návrh `podklady/NAVRH_PLATEBNI_PODMINKY_2026-09-29.md` (oddíl 7 =
+rozhodnutí), prototyp https://claude.ai/artifact/6sbxbaAsBpphfPfE2wnM3a.
+- OCK: tři firemní milníky, jak jsou; věty o podmínce úhrady u 1. a 2.
+  splátky jako dnes; měsíční fakturace větou „Fakturace probíhá měsíčně
+  podle skutečně provedených prací."
+- PROJ: čtyři předvolby, výchozí „Standard po činnostech"; splátky SoD PROJ
+  se stejným milníkem sečíst do jedné platby; šablona SoD PROJ dostane
+  seznam plateb jedním symbolem místo 8 pevných řádků.
+- Číslo smlouvy: ruční pole v krycím listu s návrhem dalšího čísla, formát
+  `2026 - OPR - SOD - 0001` (realizace) a `2026 OVP SOD 0001` (projekce),
+  navázat na papírové smlouvy.
+- **Pořadí etap: B → A → C** (PROJ plán plateb → OCK platební kalendář →
+  číslo smlouvy). Roadmapa #367 (etapy B a A) a #366 (etapa C; dopočet
+  SoD PROJ jde s etapou B) odblokované.
 
-## Další práce
-- Po odsouhlasení návrhu: etapa A (OCK platební kalendář + šablona CN v14),
-  B (PROJ plán plateb + šablona PROJ v4), C (číslo smlouvy ze serverové řady).
-- #369 (vypnout náklady obchodníkovi) — až řekne J. V.
-- Harnessy se šablonami v13/v3: složit složku podkladů s v13 (nejvyšší verze
-  CN) a PROJ v3 pojmenovanou `Sablona_NABIDKA_PROJ.docx`.
+## Další krok
+- **Etapa B** (#367): plán plateb PROJ v krycím listu PROJ (model činnost →
+  splátky procento + milník), předvolby v Nastavení → Firma (výchozí
+  Standard po činnostech), nabídka PROJ online + šablona PROJ v4 z plánu,
+  dopočet splátek SoD PROJ sečtených podle milníku + symbol seznamu plateb
+  (nová šablona SoD PROJ). Test před opravou → oprava → commit po bodech.
 
 ## Čeká na J. V.
-- Pokyn k přenosu `test` do `main` (po vyzkoušení v29.9.3 na testovacím webu).
-- Soubory SoD (#350) — bez nich nejde ověřit symboly smluv.
-- Odsouhlasit rozhodnutí z dávky B (bez čísla se neukládá; přepočet po
-  zveřejnění ceníku není neuložená změna; „ß" = „ss") a překlady z dávky C.
-- Odsouhlasit návrh platebních podmínek (otázky v oddílu 6 návrhu).
+- **Poslední číslo papírových smluv** realizace (OPR) a projekce (OVP),
+  na které má řada navázat — v odpovědi „v poznámce", poznámka nepřišla.
+- Pokyn k přenosu `test-draft` (v29.9.4) do `test` a dál do `main`.
+- Soubory SoD (#350) — bez nich nejde ověřit symboly smluv (i pro etapu B).
+- **N46** (nástupiště A ↔ C u zrcadlové šachty): neopraveno, fuzz hlásí INFO.
+- Z dřívějška: rozhodnutí z dávky B kola 16 (bez čísla se neukládá; přepočet
+  po zveřejnění ceníku není neuložená změna; „ß" = „ss") a překlady z dávky C;
+  telefon a jméno kolegy v `overit_nabidka_proj_word.mjs` (#346 / B79);
+  CSP bez `'unsafe-inline'`; #369 (vypnout náklady obchodníkovi).
 
 ## Poznámky pro další sezení
-- Platné šablony od 29. 9. 2026: CN v13 (+ EN/DE/FR) a PROJ v3 (+ EN/DE/FR).
-  V novém sezení nejsou — požádat J. V., nebo je vyrobit
-  `node nastroje/vyrob_sablony.js <složka s CN v12 a PROJ v2> [výstup]`.
-  `KNG_PODKLADY=<složka>`: CN v13 jako nejvyšší verze, PROJ v3 pojmenovat
-  `Sablona_NABIDKA_PROJ.docx`, pro `overit_sablony_online.mjs` kopie CN
-  i jako `Sablona_NABIDKA_CN_v11.docx`.
-- Harnessy a serverové sady pouštět s `ADMIN_EMAIL=spravce@priklad.cz`
-  (statické importy čtou proměnnou dřív, než ji harness nastaví; nastroje/pred_pushem.sh
-  ji nastaví sám).
-- Mutace serveru jen jednou naráz, spouštět přes běh na pozadí nástroje (ne
-  setsid) a NIKDY souběžně s pred_pushem ani s úpravami `src/`/`netlify/`
-  (runner soubory dočasně mění). Po přerušení `grep -rn "if (false)" netlify src`
-  a `git diff netlify src`.
-- Kontejner běží v UTC: verze vDEN.MĚSÍC se měří k datu posledního commitu —
-  dávku uzavřít a commitnout před půlnocí UTC, nebo ji sestavit s novým dnem.
-- Čekací smyčky nepsat přes `pgrep -f` se stejným vzorem (chytí samy sebe).
-- Harnessy potřebují symlink `node_modules/playwright` → `$(npm root -g)/playwright`
-  (a `node_modules/playwright-core` → `…/playwright/node_modules/playwright-core`).
-- LibreOffice v kontejneru nemá Writer — vykreslení .docx se ověřit nedá,
-  jen strukturou XML.
-- Komentář s doslovnou uzavírací značkou skriptu v src/ rozbije celou aplikaci.
-- Dvě nezávislé pojistky potřebují každá vlastní cílený test, jinak mutace
-  jedné projde.
+- **Testy jedním příkazem:** `bash nastroje/testovaci_kolo.sh` (celé kolo
+  ~65 min) nebo `--bez-mutaci`, `--jen sady` apod. Mutační běh nepřerušovat,
+  spouštět na pozadí nástroje (ne setsid); po přerušení
+  `grep -rn "if (false)" netlify src` a `git diff netlify src`.
+- Šablony pro harnessy: `KNG_PODKLADY=<složka>` s CN v13 (+EN/DE/FR) jako
+  nejvyšší verzí, CN i jako `Sablona_NABIDKA_CN_v11.docx` a PROJ v3
+  pojmenovanou `Sablona_NABIDKA_PROJ.docx`. V novém sezení nejsou — požádat
+  J. V., nebo `node nastroje/vyrob_sablony.js <CN v12 a PROJ v2> [výstup]`.
+- Harnessy a serverové sady s `ADMIN_EMAIL=spravce@priklad.cz`
+  (testovaci_kolo.sh ho nastaví sám); symlink `node_modules/playwright`
+  → `$(npm root -g)/playwright`.
+- Pojistky uložení i obnovy stojí v `netlify/lib/zakazka_kontrola.mjs`
+  (ne v `functions/zakazky.mjs`) — tam patří i nové kontroly zakázky.
+- `profilyNezname()` z `engine.js` volá i server (přes `globalThis`).
+- Server musí načítat v `jadro_moduly.cjs` tytéž moduly migrací jako
+  prohlížeč (pořadí CORE v build.py) — hlídá `src/test_zamek_historie.js`.
+- Nový smyšlený kontakt v testu → `nastroje/povolene_kontakty.txt`.
+- Komentář uvnitř `KOD_STRANKY` v `overit_xss.mjs` nesmí obsahovat zpětné
+  apostrofy; komentář s doslovnou uzavírací značkou skriptu v `src/`
+  rozbije celou aplikaci.
+- Kontejner běží v UTC: verze vDEN.MĚSÍC se měří k datu posledního commitu.
+- LibreOffice v kontejneru nemá Writer — .docx jen strukturou XML.
+- Dvě nezávislé pojistky potřebují každá vlastní cílený test.
+- Čísla roadmapy přiděluje ten, kdo slučuje — před přidáním položky zjistit
+  nejvyšší id v cílové větvi.
 
 ## Prompt pro nové sezení (větev test-draft)
-Sezení založit nad `vendljar/kalkulator-next-gen-engscalc`, větev `test-draft`;
-přiložit šablony CN v13 (CZ/EN/DE/FR), PROJ v3 (CZ/EN/DE/FR) a případně
-Sablona_SOD_REALIZACE.docx + Sablona_SOD_PROJEKCE.docx.
+Sezení založit nad `vendljar/kalkulator-next-gen-engscalc`, větev
+`test-draft`; přiložit šablony CN v13 (CZ/EN/DE/FR), PROJ v3 (CZ/EN/DE/FR)
+a Sablona_SOD_REALIZACE.docx + Sablona_SOD_PROJEKCE.docx.
 
 ```
 Pracuješ na Kalkulator Next Gen ve větvi test-draft (repo vendljar/kalkulator-next-gen-engscalc).
@@ -86,11 +108,11 @@ Než začneš:
 3. Připrav prostředí: symlink node_modules/playwright → $(npm root -g)/playwright;
    přiložené šablony dej do složky podkladů a pouštěj testy s KNG_PODKLADY=<složka>
    (PROJ šablonu pojmenuj Sablona_NABIDKA_PROJ.docx).
-4. Ověř výchozí stav: ADMIN_EMAIL=spravce@priklad.cz ./spust_testy.sh (má být 0 selhání).
-Úkol: zapracovat rozhodnutí J. V. k rozboru D kola 16
-(podklady/K16_ROZBOR_2026-09-25.md): <doplnit rozhodnutí k P8–P12>.
-U každého bodu: test, který bez opravy selže → oprava → vlastní commit. Pak build,
-nastroje/pred_pushem.sh, mutace (jen když se měnil server nebo jádro; jen jeden běh
-naráz, na pozadí nástroje), CHANGELOG, roadmapa, PREDAVKA.md, push do test-draft.
-Na konci tabulka úkolů ✅/⬜ a stav kontextu (get_session → context_usage).
+4. Ověř výchozí stav: bash nastroje/testovaci_kolo.sh --bez-mutaci (má být vše zelené).
+Úkol: etapa B platebních podmínek (#367) podle podklady/NAVRH_PLATEBNI_PODMINKY_2026-09-29.md,
+oddíly 3 a 7: plán plateb PROJ v krycím listu PROJ, předvolby v Nastavení, nabídka PROJ
+z plánu, dopočet splátek SoD PROJ sečtených podle milníku + seznam plateb jedním symbolem.
+U každého bodu: test, který bez opravy selže → oprava → vlastní commit. Pak build, celé kolo
+nastroje/testovaci_kolo.sh (mutace nepřerušovat), CHANGELOG, roadmapa, PREDAVKA.md, push do
+test-draft. Na konci tabulka úkolů ✅/⬜ a stav kontextu (get_session → context_usage).
 ```

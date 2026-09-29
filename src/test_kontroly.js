@@ -161,7 +161,9 @@ const pravidla = kontrolyPravidla();
 /* 19. „cenaNula" 25. 9. 2026 (P2 / K16-N75): nulová nebo nečíselná cena = zábrana. */
 /* 20. „slevaWordProj" a 21. „polozkyNavicWordProj" 25. 9. 2026 (P4 / K15-N66,
  * K14-N64, test_k16_proj_word.js): šablona PROJ neukáže slevu / vlastní položky. */
-test('pravidel je dvacet dva', pravidla.length === 22, pravidla.length);
+/* 22. „projZahranici" 29. 9. 2026 (P11) a 23. „profilNeznamy" 29. 9. 2026
+ * (#372, dřív #365 ve větvi claude/stoic-cerf-j915ax): neznámý rozměr profilu. */
+test('pravidel je dvacet tři', pravidla.length === 23, pravidla.length);
 test('kódy pravidel jsou jedinečné',
   new Set(pravidla.map(p => p.kod)).size === pravidla.length,
   pravidla.map(p => p.kod).join(','));
@@ -361,7 +363,7 @@ test('text varování nikde nepřikazuje ani neblokuje',
 test('zábrana má vlastní text, který se dá ukázat samostatně',
   k9.textBrani.length > 0 && k9.textBrani === n9.text, k9.textBrani);
 test('v katalogu pravidel je poznat, které umí zastavit dokument',
-  pravidla.filter(p => p.zabranaMozna).map(p => p.kod).join(',') === 'rozmery,cenaNula,sleva,slevaProj,ukazkovyCenik',
+  pravidla.filter(p => p.zabranaMozna).map(p => p.kod).join(',') === 'rozmery,profilNeznamy,cenaNula,sleva,slevaProj,ukazkovyCenik',
   JSON.stringify(pravidla.filter(p => p.zabranaMozna).map(p => p.kod)));
 
 /* ---------- 6) dvě podoby textu ---------- */

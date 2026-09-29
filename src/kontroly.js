@@ -117,6 +117,21 @@ const KONTROLY = [
     },
   },
   {
+    /* NEZNÁMÝ ROZMĚR PROFILU (#372, nález A2-1 z 26. 9. 2026). Výpočet
+     * s rozměrem mimo katalog jeklů už nepadá — dosadí nulovou hmotnost
+     * a plochu. Právě proto nesmí taková cena odejít: dokud se nevybere
+     * platný rozměr, dokument nevznikne. */
+    kod: 'profilNeznamy', kde: 'Kalkulace OCK', nazev: 'Rozměr profilu není v katalogu jeklů',
+    zabranaMozna: true,
+    zjisti(ctx) {
+      const nez = ctx.vysledek && ctx.vysledek.profily && ctx.vysledek.profily.nezname;
+      if (!Array.isArray(nez) || !nez.length) return null;
+      return { uroven: KONTROLY_UROVEN_ZABRANA,
+        text: 'Rozměr profilu ' + kontrolyVyctem(nez) + ' není v katalogu jeklů — vyberte platný. '
+          + 'Dokument nevznikne, dokud se to neopraví.' };
+    },
+  },
+  {
     /* CENA NABÍDKY MUSÍ BÝT KLADNÉ ČÍSLO (P2 / K16-N75 + K14-N61, 25. 9. 2026).
      * Nula nebo NaN v ceně je vždy omyl (chybějící cena v ceníku, nesmyslné
      * zadání) — nabídka za nula korun nesmí odejít. Projekce smí být nulová,

@@ -69,21 +69,16 @@ function preskocS(argumenty) {
     sKontrolouPred.indexOf('overit_sablony_online.mjs') >= 0, sKontrolouPred);
 }
 
-/* ---------- 3) krok CI s harnessy — skutečný blok z workflow ---------- */
-function blokZWorkflow() {
-  const yml = fs.readFileSync(path.join(KOREN, '.github/workflows/testy.yml'), 'utf8').split('\n');
-  const i = yml.findIndex(l => /- name: Prohlížečové harnessy \(všechny overit_\*\.mjs\)/.test(l));
-  if (i < 0) return null;
-  const j = yml.findIndex((l, k) => k > i && /^\s+run: \|\s*$/.test(l));
-  const odsazeni = (yml[j + 1].match(/^\s*/) || [''])[0].length;
-  const radky = [];
-  for (let k = j + 1; k < yml.length; k++) {
-    const l = yml[k];
-    if (l.trim() && (l.match(/^\s*/) || [''])[0].length < odsazeni) break;
-    radky.push(l.slice(odsazeni));
-  }
-  return radky.join('\n');
-}
+/* ---------- 3) CI a testovací kolo: přeskočení se hlásí i v GitHub Actions ----------
+ * Do 26. 9. 2026 měl workflow vlastní smyčku přes harnessy a tenhle oddíl ji
+ * pouštěl s podstrčenými harnessy. Od té doby (A5) workflow jen volá
+ * nastroje/testovaci_kolo.sh a harnessy pouští spust_testy.sh --smoke —
+ * mechaniku přeskočení (kódy 4 a 2, PŘESKOČENO místo prošlo) hlídá oddíl 4
+ * na skutečné funkci spust_prohlizec. Tady se hlídá, co by jinak mohlo tiše
+ * zmizet: že CI kolo opravdu volá (a nemá vlastní seznam), že kolo pouští
+ * harnessy globem přes spust_testy.sh --smoke a že přeskočené sady vypíše
+ * jmenovitě i jako upozornění běhu (::warning) — přeskočená kontrola,
+ * o které se mlčí, je totéž co kontrola, která neexistuje (T3). */
 function podstrcHarnessy(dir, kody) {
   Object.entries(kody).forEach(([jmeno, kod]) => {
     const telo = kod === 'playwright'
@@ -93,28 +88,19 @@ function podstrcHarnessy(dir, kody) {
   });
 }
 {
-  const blok = blokZWorkflow();
-  test('T3: krok s harnessy se ve workflow našel', !!blok && /for f in overit_\*\.mjs/.test(blok));
-  if (blok) {
-    const spust = (kody) => {
-      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kng-ci-'));
-      podstrcHarnessy(dir, kody);
-      /* Tak, jak krok pouští GitHub: bash -e -o pipefail. */
-      const r = spawnSync('bash', ['--noprofile', '--norc', '-eo', 'pipefail', '-c', blok],
-        { cwd: dir, encoding: 'utf8' });
-      fs.rmSync(dir, { recursive: true, force: true });
-      return { kod: r.status, vystup: String(r.stdout || '') + String(r.stderr || '') };
-    };
-    const a = spust({ 'overit_a.mjs': 0, 'overit_b.mjs': 4 });
-    test('T3: CI — přeskočený harness krok neshodí', a.kod === 0, a);
-    test('T3: CI — ale nehlásí ho jako OK, nýbrž PŘESKOČENO',
-      /PŘESKOČENO overit_b\.mjs/.test(a.vystup) && !/OK overit_b\.mjs/.test(a.vystup), a.vystup);
-    test('T3: CI — přeskočení je vidět i jako upozornění běhu', /::warning[^\n]*overit_b\.mjs/.test(a.vystup), a.vystup);
-    test('T3: CI — souhrn neříká „všechny prošly"',
-      !/Všechny harnessy prošly/.test(a.vystup) && /Prošlo 1 harnessů/.test(a.vystup), a.vystup);
-    const b = spust({ 'overit_a.mjs': 0, 'overit_b.mjs': 4, 'overit_c.mjs': 1 });
-    test('T3: CI — skutečné selhání krok dál shodí', b.kod === 1 && /Selhaly tyto harnessy: overit_c\.mjs/.test(b.vystup), b);
-  }
+  const yml = fs.readFileSync(path.join(KOREN, '.github/workflows/testy.yml'), 'utf8');
+  const kolo = fs.readFileSync(path.join(KOREN, 'nastroje/testovaci_kolo.sh'), 'utf8');
+  test('T3: CI volá testovací kolo (--bez-mutaci = sady i harnessy)',
+    /run: bash nastroje\/testovaci_kolo\.sh --bez-mutaci/.test(yml));
+  test('T3: CI nemá vlastní smyčku přes harnessy ani vlastní výčet sad',
+    !/for f in overit_\*\.mjs/.test(yml) && !/bash \.\/spust_testy\.sh/.test(yml));
+  test('T3: kolo pouští harnessy globem přes spust_testy.sh --smoke',
+    /^\s*bash \.\/spust_testy\.sh --smoke/m.test(kolo));
+  test('T3: kolo vypíše přeskočené sady jmenovitě a v GitHub Actions i jako ::warning',
+    /Přeskočené sady \(nic neověřily\)/.test(kolo) && /GITHUB_ACTIONS/.test(kolo)
+    && /::warning[^\n]*[Pp]řeskočen/.test(kolo));
+  test('T3: souhrn kola přebírá počet přeskočených ze spust_testy.sh (nikdy je nepočítá jako prošlé)',
+    /prošlo, \[0-9\]\* selhalo, \[0-9\]\* přeskočeno/.test(kolo));
 }
 
 /* ---------- 4) spust_testy.sh --smoke — skutečná funkce spust_prohlizec ---------- */

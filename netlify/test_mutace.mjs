@@ -28,9 +28,27 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const KOREN = dirname(fileURLToPath(import.meta.url));
-const CIL = resolve(KOREN, 'functions/zakazky.mjs');
 const MUTACE = 'B59: server výsledek nového zámku neověří';
-const ZNAK_MUTACE = '    const ov = null;';        // `nahrad` té mutace v mutace.mjs
+/* CÍLOVÝ SOUBOR A ZNAČKA MUTACE SE ČTOU Z mutace.mjs (26. 9. 2026). Do té
+ * doby byly zapsané natvrdo (functions/zakazky.mjs, `const ov = null;`).
+ * Když se kontrola B59 přestěhovala do lib/zakazka_kontrola.mjs (P4), sada
+ * měřila prázdno: mutace se do „cílového" souboru nikdy nezapsala, zástupná
+ * sada prošla hned a signál neměl co přerušit — osm kontrol červených, ale
+ * z jiného důvodu, než hlídají. Teď se soubor i náhrada berou ze záznamu
+ * mutace, takže přesun kontroly sadu nerozbije. */
+const zdrojMutaci = readFileSync(resolve(KOREN, 'mutace.mjs'), 'utf8');
+const zaznam = (() => {
+  const i = zdrojMutaci.indexOf("nazev: '" + MUTACE + "'");
+  if (i < 0) return null;
+  const kus = zdrojMutaci.slice(i, zdrojMutaci.indexOf('proc:', i));
+  const soubor = (kus.match(/soubor:\s*'([^']*)'/) || [])[1];
+  const nahradLit = (kus.match(/nahrad:\s*("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/) || [])[1];
+  const nahrad = nahradLit ? new Function('return ' + nahradLit)() : null;   // eslint-disable-line no-new-func
+  return { soubor, nahrad };
+})();
+const CIL = resolve(KOREN, (zaznam && zaznam.soubor) || 'functions/zakazky.mjs');
+/* První řádek náhrady stačí jako značka — v původním souboru není. */
+const ZNAK_MUTACE = (zaznam && zaznam.nahrad) ? zaznam.nahrad.split('\n')[0] : '    const ov = null;';
 
 let ok = 0, fail = 0;
 const test = (n, cond, info) => {
@@ -41,8 +59,9 @@ const pockej = (ms) => new Promise(r => setTimeout(r, ms));
 
 const puvodni = readFileSync(CIL, 'utf8');
 test('příprava: cílový soubor mutaci ještě nenese', !puvodni.includes(ZNAK_MUTACE));
-test('příprava: mutace v seznamu existuje',
-  readFileSync(resolve(KOREN, 'mutace.mjs'), 'utf8').includes("nazev: '" + MUTACE + "'"));
+test('příprava: mutace v seznamu existuje', !!zaznam);
+test('příprava: záznam mutace nese soubor i náhradu (' + ((zaznam && zaznam.soubor) || '?') + ')',
+  !!(zaznam && zaznam.soubor && zaznam.nahrad && ZNAK_MUTACE.trim()));
 
 const dir = mkdtempSync(join(tmpdir(), 'kng-mutace-'));
 const ZNACKA = join(dir, 'sada-bezi.txt');

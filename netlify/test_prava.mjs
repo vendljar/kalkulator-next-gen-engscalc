@@ -602,6 +602,30 @@ test('vypnutý účet nepracuje dál ani s už vydanou relací',
 test('vypnutý účet se nedozví ani, kdo je přihlášen',
   (await get(ja, 'http://x/api/ja', cVypnuty)).status === 401);
 
+/* DVĚ NEZÁVISLÉ POJISTKY, DVA TESTY (26. 9. 2026). Vypnutí přes /api/uzivatele
+ * od B76 zvedá i verzi hesla, takže tři testy výš by prošly i bez kontroly
+ * příznaku `aktivni` — relaci by odmítla verze. Mutace „vypnutý účet se
+ * nepozná" (if (false) místo if (ucet.aktivni === false)) proto v prvním kole
+ * 26. 9. 2026 přežila (186 z 187). Tady se účet vypne PŘÍMO V ÚLOŽIŠTI bez
+ * změny verze — tak vypadá záznam upravený ručně, obnovený ze zálohy nebo
+ * vypnutý starší cestou — a relace musí skončit jen na tom příznaku. */
+await post(uzivatele, 'http://x/api/uzivatele',
+  { akce: 'zaloz', email: 'vypnuty.primo@example.com', jmeno: 'Vypnutý v úložišti',
+    role: 'Obchodník', heslo: 'VypnutyHeslo2' }, cAdmin);
+const cVypnutyPrimo = await prihlas('vypnuty.primo@example.com', 'VypnutyHeslo2');
+test('účet vypnutý přímo v úložišti: před vypnutím pracuje',
+  (await get(ja, 'http://x/api/ja', cVypnutyPrimo)).status === 200);
+{
+  const u = globalThis.__TEST_ULOZISTE('uzivatele');
+  const ucet = await u.cti('vypnuty.primo@example.com');
+  ucet.aktivni = false;                       // verze hesla zůstává — jediná pojistka je příznak
+  await u.zapis('vypnuty.primo@example.com', ucet);
+}
+test('účet vypnutý přímo v úložišti (verze hesla beze změny) nepracuje dál s vydanou relací',
+  (await get(zakazky, 'http://x/api/zakazky', cVypnutyPrimo)).status === 401);
+test('účet vypnutý přímo v úložišti se nedozví ani, kdo je přihlášen',
+  (await get(ja, 'http://x/api/ja', cVypnutyPrimo)).status === 401);
+
 /* Opačný směr: povýšení se má projevit hned, jinak by správce musel kolegu
  * posílat, ať se odhlásí a přihlásí — a to nikdo neudělá. */
 await post(uzivatele, 'http://x/api/uzivatele',
@@ -1178,10 +1202,14 @@ console.log('\n===== AUDIT B4: LIMIT NA ADRESU =====\n');
   test('B4: jedno heslo na ' + (POKUSY_IP_MAX + 1) + ' e-mailů z jedné adresy skončí 429', posledni === 429, posledni);
   test('B4: jiná adresa není dotčená',
     (await zAdresy('nikdo999@example.com', 'spatne-heslo', '203.0.113.8')).status === 401);
+  /* Od B75 (25. 9. 2026) je limit ADRESY tvrdý: nad ním 429 bez ověření
+   * hesla i majiteli — ten se přihlásí odjinud nebo za čtvrt hodiny. Zásada
+   * #92 (správné heslo vždy projde) platí dál pro počítadlo E-MAILU, viz
+   * oddíl brzdy níž a netlify/test_prihlaseni.mjs. */
   const spravne = await zAdresy(UCTY['Obchodník'].email, UCTY['Obchodník'].heslo, '203.0.113.7');
-  test('B4: správné heslo projde i z adresy nad limitem (brzda nikdy nebrání majiteli)', spravne.status === 200, spravne.status);
-  test('B4: úspěch počítadlo adresy vynuluje',
-    (await zAdresy('nikdo1000@example.com', 'spatne-heslo', '203.0.113.7')).status === 401);
+  test('B75: z adresy nad limitem se odmítne i správné heslo (429)', spravne.status === 429, spravne.status);
+  test('B75: z jiné adresy se majitel přihlásí (limit adresy není zámek účtu)',
+    (await zAdresy(UCTY['Obchodník'].email, UCTY['Obchodník'].heslo, '203.0.113.9')).status === 200);
 }
 
 console.log('\n===== AUDIT B8: OČISTA DÁVKY ANALYTIKY =====\n');

@@ -54,6 +54,10 @@ const SADY = process.env.KNG_MUTACE_SADY
      'test_sablony.mjs',
      /* Dávka A kola 16 (25. 9. 2026): pohled obchodníka, role slevy (P1). */
      'test_obchodnik.mjs',
+     /* A3 / P4 (25. 9. 2026): historické zakázky otevřít → uložit → obnovit. */
+     '../src/test_zamek_historie.js',
+     /* B75–B78 (25. 9. 2026): přihlašování jako celek. */
+     'test_prihlaseni.mjs',
      /* Dávka B kola 16 (25. 9. 2026): adresa stavby v rejstříku (P15). */
      'test_rejstrik.mjs'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
@@ -132,8 +136,8 @@ const MUTACE = [
 
   /* ---------- brzda proti hádání hesel a čas odpovědi (#92, #93) ---------- */
   { nazev: 'brzda pustí neomezený počet pokusů', soubor: 'functions/prihlaseni.mjs',
-    hledej: '  if (pokusy.email.n > POKUSY_MAX || pokusy.adresa.n > POKUSY_IP_MAX)',
-    nahrad: '  if (false)',
+    hledej: '  if (pokusy.email.n > POKUSY_MAX)\n    return json({ ok: false, chyba: \'Příliš mnoho neúspěšných pokusů. Zkuste to za \'',
+    nahrad: '  if (false)\n    return json({ ok: false, chyba: \'Příliš mnoho neúspěšných pokusů. Zkuste to za \'',
     proc: 'hádání hesel by nic nezpomalilo a nikde by po něm nezůstala stopa' },
 
   { nazev: 'úspěšné přihlášení nevynuluje počítadlo', soubor: 'functions/prihlaseni.mjs',
@@ -157,9 +161,9 @@ const MUTACE = [
     nahrad: '        ;',
     proc: 'účet po odcházejícím kolegovi by zmizel ze seznamu, ale dveře by mu zůstaly otevřené' },
 
-  { nazev: 'autor zakázky se přepíše každým uložením', soubor: 'functions/zakazky.mjs',
-    hledej: '    zak.autor = stara.autor || relace.email;',
-    nahrad: '    zak.autor = relace.email;',
+  { nazev: 'autor zakázky se přepíše každým uložením', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: '      zak.autor = stara.autor || relace.email;',
+    nahrad: '      zak.autor = relace.email;',
     proc: 'autorem by se stal ten, kdo si zakázku naposledy otevřel — razítko by ztratilo smysl' },
 
   /* ---------- správa šablon 24. 9. 2026, dávka G1 (#348, #349) ---------- */
@@ -177,15 +181,24 @@ const MUTACE = [
     proc: 'zbytečná nová verze se stejným souborem by zaplevelila historii' },
 
   /* ---------- hloubkový test 24. 9. 2026, dávka F1 ---------- */
-  { nazev: 'B73: autora existující zakázky určí klient', soubor: 'functions/zakazky.mjs',
-    hledej: '    zak.autor = stara.autor || relace.email;',
-    nahrad: '    zak.autor = zak.autor || stara.autor || relace.email;',
+  { nazev: 'B73: autora existující zakázky určí klient', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: '      zak.autor = stara.autor || relace.email;',
+    nahrad: '      zak.autor = zak.autor || stara.autor || relace.email;',
     proc: 'uložením by šlo zakázku přestěhovat v seznamu jinému obchodníkovi' },
-  { nazev: 'B73: jméno autora cizí zakázky od klienta', soubor: 'functions/zakazky.mjs',
-    hledej: '    if (stara.autorJmeno) zak.autorJmeno = stara.autorJmeno; else delete zak.autorJmeno;',
-    nahrad: '    ;',
+  { nazev: 'B73: jméno autora cizí zakázky od klienta', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: '      if (stara.autorJmeno) zak.autorJmeno = stara.autorJmeno; else delete zak.autorJmeno;',
+    nahrad: '      ;',
     proc: 'v seznamu by u zakázky stálo podvržené jméno obchodníka' },
-  { nazev: 'N43: server porovná zamčenou variantu s nemigrovanou uloženou verzí', soubor: 'functions/zakazky.mjs',
+  /* #372 (nález A2-1, 29. 9. 2026): neznámý rozměr profilu do databáze nesmí. */
+  { nazev: '#372: server neznámý rozměr profilu nekontroluje', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "    if (nez.length) nezname.push((cisloVarianty(zak, v) || v.nazev || v.id) + ' — ' + nez.join(', '));",
+    nahrad: "    if (false) nezname.push((cisloVarianty(zak, v) || v.nazev || v.id) + ' — ' + nez.join(', '));",
+    proc: 'zakázka s rozměrem mimo katalog jeklů by se uložila i obnovila — a pak se nikomu neotevřela' },
+  { nazev: '#372: server kontroluje profily i v odeslané (uzamčené) variantě', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: '    if (!v || zamcena(v)) continue;\n    const nez = globalThis.profilyNezname(',
+    nahrad: '    if (!v) continue;\n    const nez = globalThis.profilyNezname(',
+    proc: 'po změně katalogu jeklů by zakázka s odeslanou nabídkou nešla uložit vůbec' },
+  { nazev: 'N43: server porovná zamčenou variantu s nemigrovanou uloženou verzí', soubor: 'lib/zakazka_kontrola.mjs',
     hledej: '    try { staraPorovnani = globalThis.importZakazka(JSON.parse(JSON.stringify(stara))); ocistiZnacky(staraPorovnani); }',
     nahrad: '    try { }',
     proc: 'odeslaná nabídka ve starším tvaru dat by po otevření nešla uložit (409)' },
@@ -344,9 +357,47 @@ const MUTACE = [
     proc: 'souběžné pokusy by brzdu obešly a 429 by nikdy nepřišlo' },
 
   { nazev: 'B4: limit na adresu se ignoruje', soubor: 'functions/prihlaseni.mjs',
-    hledej: "  if (pokusy.email.n > POKUSY_MAX || pokusy.adresa.n > POKUSY_IP_MAX)",
-    nahrad: "  if (pokusy.email.n > POKUSY_MAX)",
+    hledej: "  if (pokusyAdresaNadLimit(pokusy))\n    return json({ ok: false, chyba: 'Příliš mnoho neúspěšných pokusů z této adresy. Zkuste to za '",
+    nahrad: "  if (false)\n    return json({ ok: false, chyba: 'Příliš mnoho neúspěšných pokusů z této adresy. Zkuste to za '",
     proc: 'jedno heslo na sto e-mailů by na počítadle nikdy nenarostlo' },
+
+  /* ---------- přihlašování jako celek, B75–B78 (25. 9. 2026) ---------- */
+  { nazev: 'B75: limit adresy se rozhoduje až po ověření hesla', soubor: 'lib/sdilene.mjs',
+    hledej: "  return !!(pokusy && pokusy.adresa && pokusy.adresa.n > POKUSY_IP_MAX);",
+    nahrad: "  return false;",
+    proc: 'nad limitem adresy by se dál počítal scrypt a správné heslo prošlo (B75)' },
+  { nazev: 'B75: IPv6 se klíčuje celou adresou, ne po /64', soubor: 'lib/sdilene.mjs',
+    hledej: "  return 'ip6:' + ipv6Prefix64(a);",
+    nahrad: "  return 'ip6:' + a;",
+    proc: 'z jednoho /64 by šlo poslat každý pokus z jiné adresy a limit by nikdy nenarostl' },
+  { nazev: 'B75: úspěch vlastního účtu nuluje počítadlo adresy', soubor: 'lib/sdilene.mjs',
+    hledej: "  if (ip) await pokusyUber(pokusyIpKlic(ip));",
+    nahrad: "  if (ip) await pokusyReset(pokusyIpKlic(ip));",
+    proc: 'útočník s jedním účtem by mezi hádáním cizích hesel přihlašoval sebe a limit adresy by nikdy nenarostl' },
+  { nazev: 'B76: nový účet začíná na verzi hesla 0', soubor: 'functions/uzivatele.mjs',
+    hledej: "               hesloVerze: hesloVerzeNova() };          // B76: stará cookie nesmí ožít",
+    nahrad: "               };",
+    proc: 'cookie vydaná před smazáním účtu by po jeho znovuzaložení zase platila' },
+  { nazev: 'B76: vypnutí účtu nezvedne verzi hesla', soubor: 'functions/uzivatele.mjs',
+    hledej: "      if (!t.aktivni && ucet.aktivni !== false) ucet.hesloVerze = hesloVerzeUctu(ucet) + 1;",
+    nahrad: "      ;",
+    proc: 'cookie z doby před vypnutím účtu by po jeho zapnutí zase platila' },
+  { nazev: 'B76: archivace nezvedne verzi hesla', soubor: 'functions/uzivatele.mjs',
+    hledej: "        if (ucet.aktivni !== false) ucet.hesloVerze = hesloVerzeUctu(ucet) + 1;   // B76",
+    nahrad: "        ;",
+    proc: 'cookie z doby před archivací by po vrácení z archivu zase platila' },
+  { nazev: 'B77: změna vlastního hesla bez brzdy', soubor: 'functions/uzivatele.mjs',
+    hledej: "        if (pokusy.email.n > POKUSY_MAX)\n          return json({ ok: false, chyba: 'Příliš mnoho neúspěšných pokusů. Zkuste to za '",
+    nahrad: "        if (false)\n          return json({ ok: false, chyba: 'Příliš mnoho neúspěšných pokusů. Zkuste to za '",
+    proc: 'kdo má cookie nebo odemčený počítač, hádal by staré heslo bez omezení' },
+  { nazev: 'B77: změna hesla nevynuluje počítadlo (majitel by po překlepech uvízl)', soubor: 'functions/uzivatele.mjs',
+    hledej: "      await pokusyUspech(relace.email, ip);",
+    nahrad: "      ;",
+    proc: 'po deseti překlepech by se majitel nepřihlásil ani správným heslem' },
+  { nazev: 'B78: odhlášení přijme cizí Origin i formulářové tělo', soubor: 'functions/odhlaseni.mjs',
+    hledej: "  if (cizihoPuvodu(req) || origin === 'null'\n      || /^(application\\/x-www-form-urlencoded|multipart\\/form-data)/.test(ct))",
+    nahrad: "  if (false)",
+    proc: 'cizí stránka by obchodníka odhlásila uprostřed práce' },
 
   /* Kotva upravena 31. 8. 2026: očištěná dávka se drží v proměnné, protože
    * se z ní kromě slití plní i rozpad po uživatelích (#180). */
@@ -375,12 +426,12 @@ const MUTACE = [
     nahrad: "    } });",
     proc: 'po obnově by zmizela kartotéka zákazníků, podpisy i práva zobrazení' },
 
-  { nazev: 'B13: autor nové zakázky se bere od klienta', soubor: 'functions/zakazky.mjs',
-    hledej: "    if (!zak.autor || zak.autor === relace.email || relace.role !== 'Administrátor')",
-    nahrad: "    if (!zak.autor)",
+  { nazev: 'B13: autor nové zakázky se bere od klienta', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "      if (!zak.autor || zak.autor === relace.email || relace.role !== 'Administrátor')",
+    nahrad: "      if (!zak.autor)",
     proc: 'obchodník by založil zakázku „za" vedoucího' },
 
-  { nazev: 'B13: razítko zámku se bere od klienta', soubor: 'functions/zakazky.mjs',
+  { nazev: 'B13: razítko zámku se bere od klienta', soubor: 'lib/zakazka_kontrola.mjs',
     hledej: "    v.zamek.kdo = relace.jmeno ? relace.jmeno + ' <' + relace.email + '>' : relace.email;",
     nahrad: "    v.zamek.kdo = v.zamek.kdo || relace.email;",
     proc: 'pod odeslanou nabídkou by stálo cizí jméno' },
@@ -526,7 +577,7 @@ const MUTACE = [
     proc: 'soubor zálohy by do databáze dostal texty bez stropu délky, počtu i tvaru' },
 
   { nazev: 'změna čísla odeslané nabídky se na serveru nehlídá',
-    soubor: 'functions/zakazky.mjs',
+    soubor: 'lib/zakazka_kontrola.mjs',
     hledej: "  if (jineCislo.length) {",
     nahrad: "  if (false) {",
     proc: 'odeslaná nabídka by dostala jiné číslo, než jaké má zákazník na papíře (B56)' },
@@ -535,14 +586,14 @@ const MUTACE = [
    * kontrolu; tahle jen rozhodnutí „smí jen administrátor" — kontrola by
    * běžela a razítko srovnala, jen by nikoho nezastavila. */
   { nazev: 'B56: číslo odeslané nabídky smí změnit kdokoli (větev role)',
-    soubor: 'functions/zakazky.mjs',
-    hledej: "  if (jineCislo.length) {\n    if (relace.role !== 'Administrátor')",
-    nahrad: "  if (jineCislo.length) {\n    if (false)",
+    soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "    if (relace.role !== 'Administrátor')\n      return odmitni(403, 'Neuloženo: zakázka má odeslanou",
+    nahrad: "    if (false)\n      return odmitni(403, 'Neuloženo: zakázka má odeslanou",
     proc: 'obchodník by přečísloval odeslanou nabídku a server by mu razítko v zámku ještě srovnal (B56)' },
 
   /* Jedno číslo varianty (#320, 22. 9. 2026). */
   { nazev: '#320: u nového zámku se hlídá jen základ čísla',
-    soubor: 'functions/zakazky.mjs',
+    soubor: 'lib/zakazka_kontrola.mjs',
     hledej: "    const sedi = v.zamek.cisloPapir ? bylo === ted : globalThis.zamekCisloZakladSedi(bylo, zak);",
     nahrad: "    const sedi = globalThis.zamekCisloZakladSedi(bylo, zak);",
     proc: 'odeslanou nabídku .2 by šlo přečíslovat na .7 — dotisk by nesl jiné číslo, než má zákazník' },
@@ -559,19 +610,19 @@ const MUTACE = [
 
   /* Ověření zmrazeného výsledku NOVÉHO zámku (B59, revize v22.9.9). */
   { nazev: 'B59: server výsledek nového zámku neověří',
-    soubor: 'functions/zakazky.mjs',
-    hledej: "    const ov = globalThis.zamekOvereni(v, JEKLY, verzeServeru);",
-    nahrad: "    const ov = null;",
+    soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "    const ov = globalThis.zamekOvereni(v, JEKLY, verzeServeru);\n    if (ov) v.zamek.overeni = ov; else delete v.zamek.overeni;",
+    nahrad: "    const ov = null;\n    if (ov) v.zamek.overeni = ov; else delete v.zamek.overeni;",
     proc: 'upravený klient by zamkl nabídku s jinými čísly, než dávají data, a B53 by je chránil jako pravdu' },
 
   { nazev: 'B59: server věří razítku ověření u nového zámku',
-    soubor: 'functions/zakazky.mjs',
+    soubor: 'lib/zakazka_kontrola.mjs',
     hledej: "    if (ov) v.zamek.overeni = ov; else delete v.zamek.overeni;",
     nahrad: "    if (ov && !v.zamek.overeni) v.zamek.overeni = ov;",
     proc: 'upravený klient by k podvrženému výsledku rovnou přiložil „shoda"' },
 
   { nazev: 'B59: razítko ověření u uloženého zámku mění klient',
-    soubor: 'functions/zakazky.mjs',
+    soubor: 'lib/zakazka_kontrola.mjs',
     hledej: "      if (sv.zamek.overeni) v.zamek.overeni = sv.zamek.overeni;\n      else delete v.zamek.overeni;",
     nahrad: "",
     proc: 'dalším uložením by klient rozpor přepsal na „shoda" nebo ho smazal' },
@@ -583,8 +634,10 @@ const MUTACE = [
   /* P7 (K16-N87): jméno do razítka „kdo naposledy uložil" píše server
    * z relace. Bez toho by hláška o kolizi verzí nesla jméno, které poslal
    * klient — a to si může napsat kdokoli. */
-  { nazev: 'P7: jméno „kdo naposledy uložil" se převezme od klienta', soubor: 'functions/zakazky.mjs',
-    hledej: "  if (relace.jmeno) zak.upravilJmeno = String(relace.jmeno); else delete zak.upravilJmeno;",
+  /* Při sloučení s A1–A5 (29. 9. 2026) se razítko přestěhovalo se zbytkem
+   * pojistek uložení do lib/zakazka_kontrola.mjs. */
+  { nazev: 'P7: jméno „kdo naposledy uložil" se převezme od klienta', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "    if (relace.jmeno) zak.upravilJmeno = String(relace.jmeno); else delete zak.upravilJmeno;",
     nahrad: "",
     proc: 'hláška o kolizi verzí by jmenovala, koho si klient vymyslel' },
   /* P15 (K16-N85): adresy starších záznamů rejstříku se doplňují po dávkách
@@ -612,7 +665,7 @@ const MUTACE = [
 
   /* ---------- značky ukázkového ceníku (P2, nálezy N2/N3) ----------
    * Vypnuly tisk nabídky na ostrých zakázkách 0383 a 377. */
-  { nazev: 'server ukládá značky ukázkového ceníku', soubor: 'functions/zakazky.mjs',
+  { nazev: 'server ukládá značky ukázkového ceníku', soubor: 'lib/zakazka_kontrola.mjs',
     hledej: "  ocistiZnacky(zak);",
     nahrad: "  void 0;",
     proc: 'značka „ukázkový ceník" by se uložila k zakázce a u uzamčené varianty vypnula tisk nabídky' },
@@ -738,12 +791,12 @@ const MUTACE = [
     nahrad: '      if (false)',
     proc: 'doklad o tom, co odešlo zákazníkovi, by zmizel jedním přehlédnutým kliknutím' },
 
-  { nazev: 'uzamčenou nabídku lze přepsat', soubor: 'functions/zakazky.mjs',
+  { nazev: 'uzamčenou nabídku lze přepsat', soubor: 'lib/zakazka_kontrola.mjs',
     hledej: '    const k = ULO.uloKontrolaZamku(stara, zak);\n    if (!k.ok)',
     nahrad: '    const k = ULO.uloKontrolaZamku(stara, zak);\n    if (false)',
     proc: 'odeslaná nabídka by se dala tiše změnit — a zákazník má jinou verzi' },
 
-  { nazev: 'data uzamčené varianty lze změnit', soubor: 'functions/zakazky.mjs',
+  { nazev: 'data uzamčené varianty lze změnit', soubor: 'lib/zakazka_kontrola.mjs',
     hledej: '      if (nv && JSON.stringify(nv.data) !== JSON.stringify(sv.data))',
     nahrad: '      if (false)',
     proc: 'zámek by zůstal, ale ceny pod ním by se změnily' },
@@ -754,7 +807,7 @@ const MUTACE = [
     nahrad: '  if (a.toString() !== b.toString()) return null;',
     proc: 'z doby odpovědi by šlo podpis relace hádat po znacích' },
 
-  { nazev: 'B1: id ze zakázky se berou, jak přijdou', soubor: 'functions/zakazky.mjs',
+  { nazev: 'B1: id ze zakázky se berou, jak přijdou', soubor: 'lib/zakazka_kontrola.mjs',
     hledej: '  const spatnaId = ULO.uloIdProblemy(zak);\n  if (spatnaId.length)',
     nahrad: '  const spatnaId = ULO.uloIdProblemy(zak);\n  if (false)',
     proc: 'do id varianty by šel schovat skript, který se spustí tomu, kdo zakázku otevře' },
@@ -764,19 +817,19 @@ const MUTACE = [
     nahrad: "const ULO_ID_TVAR = /^[A-Za-z0-9._'()-]{1,80}$/;",
     proc: 'apostrof a závorky stačí k ukončení řetězce v onclick' },
 
-  { nazev: 'B3: odemknout přes odemceni[] smí kdokoli', soubor: 'functions/zakazky.mjs',
-    hledej: "      if (relace.role !== 'Administrátor')\n        return json({ ok: false, chyba: 'Odemknout odeslanou",
-    nahrad: "      if (false)\n        return json({ ok: false, chyba: 'Odemknout odeslanou",
+  { nazev: 'B3: odemknout přes odemceni[] smí kdokoli', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "      if (relace.role !== 'Administrátor')\n        return odmitni(403, 'Odemknout odeslanou",
+    nahrad: "      if (false)\n        return odmitni(403, 'Odemknout odeslanou",
     proc: 'obchodník by dvěma zápisy přepsal odeslanou nabídku' },
 
-  { nazev: 'B3: razítko „kdo odemkl" se bere od klienta', soubor: 'functions/zakazky.mjs',
+  { nazev: 'B3: razítko „kdo odemkl" se bere od klienta', soubor: 'lib/zakazka_kontrola.mjs',
     hledej: "          posledni.kdo = relace.jmeno ? relace.jmeno + ' <' + relace.email + '>' : relace.email;",
     nahrad: "          posledni.kdo = posledni.kdo || relace.email;",
     proc: 'záznam o odemčení by tvrdil, že to udělal někdo jiný' },
 
-  { nazev: 'B2: rozhodnutí o slevě se nekontroluje', soubor: 'functions/zakazky.mjs',
-    hledej: "  if (!rozhodnuti.ok) return json({ ok: false, chyba: 'Neuloženo: ' + rozhodnuti.chyba }, 403);",
-    nahrad: "  if (false) return json({ ok: false, chyba: 'Neuloženo: ' + rozhodnuti.chyba }, 403);",
+  { nazev: 'B2: rozhodnutí o slevě se nekontroluje', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "  if (!rozhodnuti.ok) return odmitni(403, veta(rozhodnuti.chyba));",
+    nahrad: "  if (false) return odmitni(403, veta(rozhodnuti.chyba));",
     proc: 'obchodník by si slevu schválil sám a do nabídky by odešla' },
 
   { nazev: 'B2: strop role se při rozhodnutí ignoruje', soubor: '../src/schvalovani.js',
@@ -805,9 +858,9 @@ const MUTACE = [
     proc: 'vedoucí by zakázku jen otevřel a uložil a cizí sleva by byla „schválená" bez rozhodnutí' },
 
   /* ---------- #341 (B71): minimální marže u slevy ---------- */
-  { nazev: '#341: minimální marže se na serveru nekontroluje', soubor: 'functions/zakazky.mjs',
-    hledej: "  if (!marze.ok) return json({ ok: false, chyba: 'Neuloženo: ' + marze.chyba }, 403);",
-    nahrad: "  if (false) return json({ ok: false, chyba: 'Neuloženo: ' + marze.chyba }, 403);",
+  { nazev: '#341: minimální marže se na serveru nekontroluje', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "  if (!marze.ok) return odmitni(403, veta(marze.chyba));",
+    nahrad: "  if (false) return odmitni(403, veta(marze.chyba));",
     proc: 'upravený klient by uložil slevu pod firemní minimální marží jako schválenou' },
 
   { nazev: '#341: výsledek porovnání s minimem se ignoruje', soubor: '../src/schvalovani.js',
@@ -816,9 +869,9 @@ const MUTACE = [
     proc: 'server by marži spočítal, ale podmaržovou slevu stejně pustil' },
 
   /* ---------- #340 (P1): typy polí zakázky ---------- */
-  { nazev: '#340: typy polí zakázky se na serveru nekontrolují', soubor: 'functions/zakazky.mjs',
-    hledej: "  if (spatneTypy.length)\n    return json({ ok: false, chyba: 'Zakázka nese ' + ULO.uloIdProblemyText(spatneTypy) + '.' }, 400);",
-    nahrad: "  if (false)\n    return json({ ok: false, chyba: 'Zakázka nese ' + ULO.uloIdProblemyText(spatneTypy) + '.' }, 400);",
+  { nazev: '#340: typy polí zakázky se na serveru nekontrolují', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "  if (spatneTypy.length)\n    return odmitni(400, 'Zakázka nese ' + ULO.uloIdProblemyText(spatneTypy) + '.');",
+    nahrad: "  if (false)\n    return odmitni(400, 'Zakázka nese ' + ULO.uloIdProblemyText(spatneTypy) + '.');",
     proc: 'skript uložený v číselném poli by se spustil tomu, kdo zakázku otevře (B69)' },
 
   { nazev: '#340: číslo jako text se nekontroluje', soubor: '../src/uloziste.js',
@@ -940,8 +993,8 @@ const MUTACE = [
     proc: 'z otisku by se zapsal podpis jako SVG se skriptem' },
 
   { nazev: 'B32: zakázky z obnovy neprocházejí kontrolou id', soubor: 'functions/obnova.mjs',
-    hledej: "      return p.length ? ULO.uloIdProblemyText(p) : '';",
-    nahrad: "      return '';",
+    hledej: "        if (!prijem.ok) { preskoc(b, klic, prijem.chyba); continue; }",
+    nahrad: "        if (false) { preskoc(b, klic, prijem.chyba); continue; }",
     proc: 'obnova by do databáze vrátila zakázku s id, které server při ukládání odmítá' },
 
   /* ---------- 19. testovací kolo a audit 14. 9. 2026 (B45, B47–B52) ---------- */
@@ -998,14 +1051,37 @@ const MUTACE = [
     hledej: "        if (ucet && !ucet.smazano) { preskoc(bs, email,",
     nahrad: "        if (false) { preskoc(bs, email,",
     proc: 'kniha by tvrdila, že je smazaný kolega, který pracuje' },
-  { nazev: 'B61: nový zámek s prázdným nebo cizím číslem projde', soubor: 'functions/zakazky.mjs',
+  { nazev: 'B61: nový zámek s prázdným nebo cizím číslem projde', soubor: 'lib/zakazka_kontrola.mjs',
     hledej: "    if (String(v.zamek.cislo || '') !== cisloMaBy || v.zamek.cisloPapir !== true)",
     nahrad: "    if (false)",
     proc: 'odeslaná nabídka by vznikla pod jiným číslem bez jakéhokoli porovnání' },
-  { nazev: 'B62: razítka existujícího zámku bere server od klienta', soubor: 'functions/zakazky.mjs',
+  { nazev: 'B62: razítka existujícího zámku bere server od klienta', soubor: 'lib/zakazka_kontrola.mjs',
     hledej: "    ULO.uloZamekRazitkaDrz(stara, zak);",
     nahrad: "    void 0;",
     proc: '„kdo odeslal" a historii tisků by přepsal kterýkoli přihlášený' },
+  /* P4 / B72 (25. 9. 2026): jedna kontrolní funkce zakázky pro uložení
+   * i obnovu (lib/zakazka_kontrola.mjs). Obnova ji musí volat a zapsat
+   * to, co prošlo — ne syrovou zálohu. */
+  { nazev: 'P4: obnova nevolá společnou kontrolu zakázky', soubor: 'functions/obnova.mjs',
+    hledej: "        if (!kontrola.ok) { preskoc(b, klic, kontrola.chyba); continue; }",
+    nahrad: "        if (false) { preskoc(b, klic, kontrola.chyba); continue; }",
+    proc: 'obnovou by prošla sleva pod minimální marží i změněná data odeslané nabídky (B72)' },
+  { nazev: 'P4: obnova zapíše syrovou zálohu místo zkontrolované zakázky', soubor: 'functions/obnova.mjs',
+    hledej: "        if (zapisovat) await s.zapis(klic, kontrola.zak);",
+    nahrad: "        if (zapisovat) await s.zapis(klic, v);",
+    proc: 'do databáze by se vrátila značka ukázkového ceníku a nemigrovaný tvar zakázky' },
+  { nazev: 'P4: obnova přepíše číslo odeslané nabídky jako administrátor', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "    if (obnova)\n      return odmitni(409, 'odeslaná (uzamčená) nabídka nese jiné číslo (' + jineCislo[0].bylo + ') než údaje zakázky ('",
+    nahrad: "    if (false)\n      return odmitni(409, 'odeslaná (uzamčená) nabídka nese jiné číslo (' + jineCislo[0].bylo + ') než údaje zakázky ('",
+    proc: 'záloha s nabídkou pod jiným číslem by se obnovila s tiše srovnaným zámkem' },
+  { nazev: 'P4: obnova přepíše razítko schválení slevy osobou, která obnovuje', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "  const cil = obnova ? JSON.parse(JSON.stringify(zak)) : zak;",
+    nahrad: "  const cil = zak;",
+    proc: 'v obnovené zakázce by pod slevou stálo jméno správce místo toho, kdo ji tehdy schválil' },
+  { nazev: 'P4: obnova nedoplní ověření výsledku zámku', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "      if (!v.zamek.overeni) {\n        const ov = globalThis.zamekOvereni(v, JEKLY, verzeServeru);\n        if (ov) v.zamek.overeni = ov;\n      }",
+    nahrad: "      ;",
+    proc: 'obnovená odeslaná nabídka by nesla neověřený zmrazený výsledek bez razítka' },
   { nazev: 'B62: z historie tisků jde ubrat', soubor: '../src/uloziste.js',
     hledej: "    const out = s.map(x => JSON.parse(JSON.stringify(x))).concat(n.slice(s.length));",
     nahrad: "    const out = n;",

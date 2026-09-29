@@ -94,12 +94,23 @@ function renderInputs() {
     if (key === 'lemovani' && !ext)
       return `<div class="row"><label>${label}</label>
         <span class="note" style="width:158px;display:inline-block">— (jen exteriérová šachta)</span><span class="u"></span></div>`;
-    const tls = Object.keys(JEKLY[p.dim].kg);
+    /* NEZNÁMÝ ROZMĚR NEBO TLOUŠŤKA (#372, nález A2-1). Rozměr mimo katalog
+     * jeklů shodil celé vykreslení (`JEKLY[p.dim].kg`). Teď výběr ukáže pravdu:
+     * navíc volbu „neznámý rozměr: …" (zvýrazněnou), ostatní volby jsou platné
+     * rozměry; po výběru platného dosadí zkontrolujTl platnou tloušťku.
+     * Dokument s neznámým profilem zastaví kontrola „profilNeznamy". */
+    const j = JEKLY[p.dim];
+    const tls = j ? Object.keys(j.kg) : [];
+    const tlZnama = tls.includes(String(p.tl));
+    const nezn = !j || !tlZnama;
     return `<div class="row"><label>${label}</label>
-      <select style="width:86px" onchange="set('Z.profily.${escJs(key)}.dim', this.value); zkontrolujTl('${escJs(key)}')">${dims.map(d =>
+      <select style="width:86px"${j ? '' : ' class="neg"'} onchange="set('Z.profily.${escJs(key)}.dim', this.value); zkontrolujTl('${escJs(key)}')">${
+        j ? '' : `<option selected class="neg" value="${esc(p.dim)}">neznámý rozměr: ${esc(p.dim)}</option>`}${dims.map(d =>
         `<option ${d === p.dim ? 'selected' : ''}>${esc(d)}</option>`).join('')}</select>
-      <select style="width:64px" onchange="set('Z.profily.${escJs(key)}.tl', +this.value)">${tls.map(t =>
-        `<option ${+t === p.tl ? 'selected' : ''} value="${esc(t)}">${esc(t)}</option>`).join('')}</select></div>`;
+      <select style="width:64px"${tlZnama ? '' : ' class="neg"'} onchange="set('Z.profily.${escJs(key)}.tl', +this.value)">${
+        tlZnama ? '' : `<option selected class="neg" value="${esc(p.tl)}">neznámá: ${esc(p.tl)}</option>`}${tls.map(t =>
+        `<option ${+t === p.tl ? 'selected' : ''} value="${esc(t)}">${esc(t)}</option>`).join('')}</select>${
+        nezn ? ' <span class="pill neg" title="Rozměr nebo tloušťka není v katalogu jeklů — vyberte platný. Dokument nevznikne, dokud se to neopraví.">mimo katalog</span>' : ''}</div>`;
   };
   /* ZADÁNÍ ŠACHTY VE ČTYŘECH PEVNÝCH SLOUPCÍCH (9. 9. 2026, zadání J. V.,
    * odsouhlaseno nad vizuálním návrhem).
@@ -1932,7 +1943,10 @@ function renderOutputs() {
 }
 
 function zkontrolujTl(key) {
-  const p = Z.profily[key], tls = Object.keys(JEKLY[p.dim].kg);
-  if (!tls.includes(String(p.tl))) p.tl = +tls[Math.floor(tls.length / 2)];
+  /* Tolerantně (#372): u rozměru mimo katalog tloušťku nechá, jak je
+   * (neznámý rozměr zůstává vidět a hlídá ho kontrola), u platného dosadí
+   * platnou tloušťku jako dřív. */
+  const p = Z.profily[key], j = JEKLY[p.dim], tls = j ? Object.keys(j.kg) : [];
+  if (tls.length && !tls.includes(String(p.tl))) p.tl = +tls[Math.floor(tls.length / 2)];
   render();
 }

@@ -496,6 +496,22 @@ function mustkyPocet(z) {
   return (z && z.mustek) ? 1 : 0;
 }
 
+/* PROFILY MIMO KATALOG JEKLŮ (#372). Seznam profilů zadání, jejichž rozměr
+ * v katalogu není nebo nemá zadanou tloušťku — „sloupek: 999x999 / 4 mm".
+ * Lemování se u interiérové šachty nepočítá (engine ho bere jen u exteriéru),
+ * proto se ani nehlásí. Tutéž funkci volá server při uložení a obnově. */
+const PROFILY_NAZVY = { sloupek: 'sloupek', precnikBok: 'příčníky bok/zadek', sloupekPortal: 'sloupek portálu',
+  precnikPortal: 'příčníky portálu', spojka: 'spojka sloupků', lemovani: 'lemování' };
+function profilyNezname(zadani, jekly) {
+  const z = (zadani && typeof zadani === 'object') ? zadani : {};
+  const pr = (z.profily && typeof z.profily === 'object') ? z.profily : {};
+  const ext = z.typSachty === 'exteriérová';
+  return Object.keys(PROFILY_NAZVY)
+    .filter(k => pr[k] && typeof pr[k] === 'object' && (k !== 'lemovani' || ext))
+    .filter(k => { const j = (jekly || {})[pr[k].dim]; return !j || !j.kg || j.kg[String(pr[k].tl)] == null; })
+    .map(k => PROFILY_NAZVY[k] + ': ' + pr[k].dim + ' / ' + pr[k].tl + ' mm');
+}
+
 function vypocet(zadani, cenik, jekly, fixes = true) {
   const z = zadani, c = cenik;
   /* Zadání bez objektu volitelných položek (ručně upravený nebo poškozený
@@ -512,12 +528,20 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const nadPlech = nadV === 'plech' ? 1 : 0;
   const bokySklo = VYPLN_SKLENA(bokyV) ? 1 : 0, bokyPlech = bokyV === 'plech' ? 1 : 0;
 
+  /* NEZNÁMÝ ROZMĚR PROFILU (#372, nález A2-1 z 26. 9. 2026). Do té doby tu
+   * rozměr mimo katalog jeklů (nebo tloušťka, kterou rozměr nemá) vyhodil
+   * výjimku a padl celý výpočet — render() ukázal červený pruh, Kalkulace OCK
+   * zůstala prázdná a zakázka se nikomu neotevřela. Teď se dosadí nulová
+   * hmotnost i plocha a profil se zapíše do výsledku (profily.nezname);
+   * kontrola „profilNeznamy" pak zastaví dokument, takže cena s nulovým
+   * profilem se nikdy nevytiskne. Platná data se nemění ani o korunu. */
+  const nezname = profilyNezname(z, jekly);
   const jekl = (p) => {
-    const j = jekly[p.dim];
-    if (!j) throw new Error('Neznámá dimenze profilu: ' + p.dim);
-    const kg = j.kg[String(p.tl)];
-    if (kg == null) throw new Error(`Dimenze ${p.dim} nemá tloušťku ${p.tl} mm`);
-    return { kg, m2: j.m2, A: j.A, B: j.B };
+    const j = jekly[(p || {}).dim];
+    const kg = j ? j.kg[String(p.tl)] : undefined;
+    if (kg != null) return { kg, m2: j.m2, A: j.A, B: j.B };
+    const m = String((p || {}).dim || '').match(/^(\d+)x(\d+)$/);
+    return { kg: 0, m2: 0, A: j ? j.A : (m ? +m[1] : 0), B: j ? j.B : (m ? +m[2] : 0) };
   };
 
   /* ---------- odvozené parametry ---------- */
@@ -1700,7 +1724,9 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   return {
     odvozene: { vyskaSachty: H, vyskaPodlazi, svetlaVyska, vyskaProsklene, sirkaDveri, leseniVez, leseniU },
     parametry: { ramy, portPricniky, sloupkyPortalu, kratkePricniky, spojky, pocetCilek },
-    profily: { rows: profilyRows, celkemM: profM, celkemKg: profKg, celkemM2: profM2, lemovani: { m: dLemovani, kg: lemKg, m2: lemM2 } },
+    profily: { rows: profilyRows, celkemM: profM, celkemKg: profKg, celkemM2: profM2, lemovani: { m: dLemovani, kg: lemKg, m2: lemM2 },
+               /* jen u neznámého rozměru — platný výsledek zůstává beze změny (#372) */
+               ...(nezname.length ? { nezname } : {}) },
     plechy: { spojeRows, ks: plechyKs, kg: plechyKg, m2: plechyM2 },
     zaskleni: { rozmer: g, zadni: { ks: zadniKs, m2: zadniM2 }, bocni: { ks: bocniKs, m2: bocniM2 },
                 svetliky: { ks: svetlikKs, m2: svetlikM2 }, svetlikyBoky: { ks: svetlikBokKs, m2: svetlikBokM2 },
@@ -1846,4 +1872,4 @@ function cenikMigraceLeseni(cenik) {
   }
 }
 
-if (typeof module !== 'undefined') module.exports = { vypocet, mustkyPocet, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, BOKY_VYPLN_VOLBY, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };
+if (typeof module !== 'undefined') module.exports = { vypocet, profilyNezname, mustkyPocet, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, BOKY_VYPLN_VOLBY, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };
