@@ -6223,7 +6223,7 @@
    "hotovo" : true
   },
   {
-   "text" : "29. 9. 2026 (engscalc, větev claude/stoic-cerf-j915ax nad pensive-curie), v29.9.1 — #365: zakázka s neznámým rozměrem profilu jde otevřít (výpočet bez výjimky + zábrana profilNeznamy, výběr „neznámý rozměr“ v zadání šachty, server 400 u neuzamčené varianty). Ověřeno celým kolem: kolo běží, výsledek doplní následující commit.",
+   "text" : "29. 9. 2026 (engscalc, větev claude/stoic-cerf-j915ax nad pensive-curie), v29.9.1 — #365: zakázka s neznámým rozměrem profilu jde otevřít (výpočet bez výjimky + zábrana profilNeznamy, výběr „neznámý rozměr“ v zadání šachty, server 400 u neuzamčené varianty). Ověřeno celým kolem: VŠE ZELENÉ — sady 187 prošlo, 0 selhalo, 3 přeskočeno z 190; mutace jádra 80/80, serveru 189/189; statické kontroly 3/3 (62 min).",
    "hotovo" : true
   }
   ],

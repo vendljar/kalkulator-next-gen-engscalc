@@ -28,7 +28,11 @@ Roadmapa: `roadmapa/roadmap.json` (365 položek), stránka se generuje
   `overit_profil_neznamy.mjs` (10), `netlify/test_obnova.mjs` blok #365;
   mutace jádra +4 (`JADRA` nově i `kontroly.js`), serveru +2. U každého
   commitu je doloženo selhání před opravou.
-- **Ověřeno celým kolem:** kolo 29. 9. běží (sady, harnessy a mutace jádra 80/80 zelené) — výsledek doplní následující commit.
+- **Ověřeno celým kolem:** celé kolo `nastroje/testovaci_kolo.sh` 29. 9. 2026
+  (62 min 51 s) VŠE ZELENÉ: sestavení ✓; sady 187 prošlo, 0 selhalo,
+  3 přeskočeno z 190 (test.js — shoda s Excelem; overit_manual,
+  overit_sod — firemní podklad mimo repozitář); mutace jádra 80 z 80;
+  mutace serveru 189 z 189; statické kontroly 3 z 3.
 
 ## Pozor při slučování do `test-draft`
 - **Čísla roadmapy kolidují.** Tady (i v pensive-curie) je #364 =

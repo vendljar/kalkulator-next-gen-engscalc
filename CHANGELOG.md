@@ -59,7 +59,11 @@ i obnovil — pak se nikomu neotevřela.
   80, server 189 úseků, každý právě jednou.
 
 **Ověřeno celým kolem** `nastroje/testovaci_kolo.sh` 29. 9. 2026:
-kolo běží (sady, harnessy a mutace jádra 80/80 už zelené) — výsledek doplní následující commit.
+VŠE ZELENÉ (62 min 51 s) — kontrola verze + sestavení ✓; sady 187 prošlo,
+0 selhalo, 3 přeskočeno z 190 (test.js — shoda s Excelem není v exportu
+pro GitHub; overit_manual.mjs a overit_sod.mjs — firemní podklad mimo
+repozitář, KNG_PODKLADY); mutace jádra chycených 80 z 80 (4 nové); mutace
+serveru 189 z 189 (2 nové); statické kontroly 3 z 3.
 
 ---
 
