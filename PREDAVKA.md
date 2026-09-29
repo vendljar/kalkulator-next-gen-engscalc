@@ -1,175 +1,110 @@
-# Předávka — stav k 29. 9. 2026
+# Předávka — stav k 29. 9. 2026 (komplexní test v29.9.1)
 
 Na `main`: **v25.9.3** (+ oprava Node), tag `v25.9.3`.
 Na `test`: **v25.9.5**. Na `test-draft`: **v25.9.6** (dávka A kola 16).
-Na `claude/pensive-curie-s6yzs3` (tohle sezení, nad `test-draft`): **v29.9.1**
-(kód = v26.9.1, 29. 9. jen předávka) — testovací sekvence A1–A5 + opravy B72/P4, B75–B78, N43 (server). Pravidlo
-J. V. (29. 9. 2026): úpravy se dělají vždy promptem do paralelní větve; větev
-zůstává, o sloučení rozhoduje J. V.
+Na `claude/pensive-curie-s6yzs3`: **v29.9.1** (kód = v26.9.1, 29. 9. jen předávka) —
+testovací sekvence A1–A5 + opravy B72/P4, B75–B78, N43 (server). Tag `v29.9.1`
+na její hlavu (`9a48ee8`) zakládá J. V. ručně.
+Na `claude/komplexni-test-v29.9.1` (tohle sezení, nad `9a48ee8`): **jen tahle
+předávka** — kód beze změny, výsledky komplexní testovací procedury.
+Pravidlo J. V. (29. 9. 2026): úpravy se dělají vždy promptem do paralelní
+větve; o sloučení rozhoduje J. V.
 Roadmapa: `roadmapa/roadmap.json` (365 položek), stránka se generuje
 `python3 roadmapa/roadmapa.py`.
 
-## Tag v29.9.1 a komplexní test v novém sezení (29. 9. 2026)
-- Tag **`v29.9.1`** označuje tuto dávku (hlava větve
-  `claude/pensive-curie-s6yzs3`). Na rozdíl od dřívějších tagů NENÍ na `main`
-  — je to stav k testu, ne vydání.
-- Komplexní testovací procedura (skill `testovaci-procedura-kng`) běží
-  v samostatném sezení nad tagem, se zadáním níže. Výsledky (protokol,
-  bezpečnostní audit, prompty k opravám) přijdou odtamtud; kód se opravuje
-  jen promptem do paralelní větve.
+## Výsledek komplexní testovací procedury 29. 9. 2026 (21. kolo)
 
-```
-Komplexní testovací procedura Kalkulator Next Gen nad tagem v29.9.1
-(repozitář vendljar/kalkulator-next-gen-engscalc). Komunikace česky, nikdy
-AskUserQuestion — ptej se prózou s navrženými výchozími odpověďmi. Dodrž
-skilly kalkulator-next-gen a testovaci-procedura-kng (kroky 0–9 včetně
-bezpečnostního auditu). Kde se skill rozchází s tímto zadáním, platí zadání.
+**Verdikt: VYHOVUJE S NÁLEZY.** Automatizované kolo je celé zelené, audit našel
+**3 vysoké nálezy jedné třídy „koncová cena bez schválení" (B111, B96, B112)** —
+každý potvrzený dvěma nezávislými čteními s pokusem — a 3 střední.
 
-CO SE TESTUJE
-Tag v29.9.1 (hlava větve claude/pensive-curie-s6yzs3; kód = v26.9.1,
-v29.9.1 je jen předávka). Obsah dávky: testovací sekvence A1–A5
-(src/test_fuzz_invarianty.js, hlídač členských výrazů v src/test_escape.js
-a obecný oddíl overit_xss.mjs, src/test_zamek_historie.js + src/fixtury/,
-nastroje/kontrola_udaju.py + nastroje/povolene_kontakty.txt,
-nastroje/testovaci_kolo.sh) a opravy N43 na serveru (jadro_moduly.cjs),
-B72/P4 (netlify/lib/zakazka_kontrola.mjs), B75–B78 (přihlášení, nová sada
-netlify/test_prihlaseni.mjs). Podrobně CHANGELOG.md (v26.9.1, v29.9.1)
-a PREDAVKA.md v tagu.
+- **Celé kolo** `KNG_PODKLADY=<složka> bash nastroje/testovaci_kolo.sh` (45 min 32 s):
+  kontrola verze + sestavení ✓; **sady 187 prošlo, 0 selhalo, 1 přeskočeno** (jen
+  `test.js` — skutečný ceník); **mutace jádra 76 z 76**; **mutace serveru 187 z 187**
+  (0 chybně zadaných); **statické kontroly 3 z 3**; strom po běhu čistý.
+- Podklady z Disku (mimo repozitář): šablony CN v13 + EN/DE/FR, CN v11, PROJ
+  (v2_opravena), SoD realizace a projekce, plná moc, příručka v25.9.3 (číslo verze
+  přepsáno podle kroku 0.7 skillu). Se všemi podklady se nic dalšího nepřeskočilo.
+- Počty po sadách (každá sada zvlášť po kole): 185 sad, všechny kód 0, 9 291
+  kontrol OK, 0 FAIL — mimo jiné `test_prava` 582, `test_prihlaseni` 43,
+  `test_obnova` 158, `overit_xss` 207, `test_zamek_historie` 56.
+- Krok 6 skillu (`pripravit_github.py` a spol.) v repozitáři není — nahrazuje ho
+  statická kontrola `nastroje/kontrola_udaju.py` (350 souborů čistých); podle
+  zadání, ne nález.
+- **Opravy v26.9.1 drží:** B72/P4, B75, B76, B78, N43 (server). **B77 jen z poloviny**
+  (akce „heslo" na vlastní účet správce projde bez starého hesla a brzdy).
+  Regrese B1–B95 a N43–N57: **0 regresí**.
 
-VĚTEV A PRAVIDLA
-- Pracuj jen ve své větvi (přidělí ji sezení, vychází z tagu). Do test-draft,
-  test ani main nic. Pravidlo J. V. 29. 9. 2026: úpravy se dělají vždy
-  promptem do paralelní větve. CLAUDE.md v tagu ještě jmenuje test-draft —
-  toto zadání má přednost.
-- Procedura jen testuje a čte (pravidlo 7 skillu): zdrojáky se v tomto
-  sezení nemění. Každá odchylka od očekávání je nález do protokolu
-  (pravidlo 6). Ke každému nálezu, který chce opravu, připrav samostatný
-  prompt pro paralelní větev: repo a větev nad tagem, Pravidlo 0 (nejdřív
-  ověřit, že vada trvá), požadované chování, testy s pojistkou proti
-  prázdnému testu (selže před opravou, projde po ní), konvence, dokumentace.
-- Nikdy needituj dist/*. Žádné ceny, firemní ani osobní údaje do repozitáře
-  ani do protokolu, nic z _soukrome/. Konce řádků LF. Mutační běh se nikdy
-  nepřerušuje.
+### Nálezy (číslování pokračuje od B96 a N59)
 
-PROSTŘEDÍ (krok 0 skillu platí takto)
-- Zdrojáky se NEstahují ze zipu na Disku: pracovní strom je klon repozitáře
-  na tagu v29.9.1. Pevná cesta /home/claude/work/kng už není potřeba —
-  harnessy od 22. 9. 2026 hledají firemní podklady ve složce z KNG_PODKLADY.
-- Firemní podklady (v repozitáři nejsou, NIKDY je necommituj): konektorem
-  Google Drive (složka Kalkulator NextGen: Output documents, šablona CN i
-  ve složce _CN) stáhni do jedné složky MIMO repozitář a nastav KNG_PODKLADY:
-  Sablona_NABIDKA_CN_v<nejvyšší>.docx (i jazykové mutace EN/DE/FR, jsou-li),
-  Sablona_NABIDKA_CN_v11.docx (část overit_sablony_online),
-  Sablona_NABIDKA_PROJ.docx (z Sablona_NABIDKA_PROJ_v2_opravena.docx,
-  přejmenovat), Sablona_SOD_REALIZACE.docx, Sablona_SOD_PROJEKCE.docx,
-  Sablona_PLNA_MOC.docx a nejnovější *_MANUAL_OBCHODNIK.html (overit_manual
-  chce v názvu aktuální verzi — postupuj podle skillu). Když konektor nebo
-  soubor chybí, řekni J. V. jednou větou, co má přiložit, a pokračuj;
-  dotčené harnessy se hlásí jako PŘESKOČENÉ (nic neověřily), nikdy jako
-  prošlé.
-- Playwright: symlinky node_modules/playwright a node_modules/playwright-core
-  na $(npm root -g)/…, nikdy playwright install.
-- test.js a test_proj.js (shoda s Excelem) potřebují ostrý ceník — v cloudu
-  se přeskočí vždy; známé omezení, ne nález.
-- Z Drive stáhni i poslední TESTOVACI_PROTOKOL_*.xlsx a poslední
-  *_BEZPECNOSTNI_AUDIT_*.md — navazuje se na ně, nikdy prázdná tabulka.
+| ID | Vážnost | Nález | Prompt |
+|---|---|---|---|
+| **B96** | **vysoká** | Server nekontroluje krok obchodního zaokrouhlení (`zaokr`, `zaokrProj`): obchodník (jedno volání z konzole) sníží cenu OCK těsně pod polovinu bez schválení a pod marži; táž sleva procentem 403 i u administrátora; nový zámek „shoda", dokument slevu neukáže. | B96 |
+| **B111** | **vysoká** | Vlastní položka se zápornou cenou/množstvím projde v **běžném UI** obchodníka i na serveru: cena −37 % (PROJ −40 %) bez schválení; marže se neukáže, kontroly a fronta schvalování mlčí, nabídka bez stopy. N56 drží jen v UI. | B111 |
+| **B112** | **vysoká** (ruční požadavek) | Zápisová strana B88: ceník varianty (přirážka, jednotkové ceny) a skryté přepisy hlídá jen UI; z konzole cena −25 až −42 %. | B112 |
+| B97 | střední | Kolize klíčů e-mailu a adresy v úložišti `pokusy`: anonym e-mailem `ip:<adresa>` zablokuje přihlášení celé cizí adrese (regrese B33 vlivem B75). | přihlášení a účty |
+| B98 | střední | Obnova ze souboru převezme podvržené razítko ověření nového zámku i odemčení. | obnova |
+| B99 | střední | Šablona Wordu se zveřejní bez kontroly externích vztahů, maker a OLE. | šablony |
+| B100–B104 | nízká | obnova: firma/zákazníci/šablony bez očisty; smazání rozhodnutí o slevě; otisk zámku bez ověření; `?sber=1` padá na klíči z Object.prototype; historie textů mimo zálohu | obnova · schvalování · sběr |
+| B105–B110 | informativní | datum schválení od klienta; tělo null → 500; bootstrap bez hesloVerze; klouzavé okno brzdy; CHANGELOG B72; slepá místa hlídačů XSS | různé |
+| B77, B32, B4 | zbytky | vlastní heslo správce; klíč a 4 MB v obnově; souběh brzdy | přihlášení · obnova · — |
+| N59–N61 | drobné | kryci_proj.js bez fixtury; šablona PROJ s webovou adresou .eu (v2_opravena i v3); `overit_verzi.mjs` nechá v `dist/` soubor s vyšší verzí | testy · J. V. · testy |
 
-AUTOMATIZOVANÁ ČÁST (kroky 1–5 skillu) = jeden příkaz
-    KNG_PODKLADY=<složka> bash nastroje/testovaci_kolo.sh
-(kontrola verze + sestavení bez zvýšení verze → všechny sady v Node i na
-serveru → smoke + všechny overit_*.mjs → mutace jádra → mutace serveru →
-statické kontroly → souhrn s počty). Trvá kolem 40 minut: pusť na pozadí,
-počkej na konec, NEPŘERUŠUJ. Když overit_verzi.mjs narazí na jiný den než
-29. 9., pusť kolo s KNG_VERZE_MIMO_DEN=1 — to není nález.
-Základ z 26. 9. 2026 (bez podkladů): sady 182 prošlo / 0 selhalo /
-6 přeskočeno, mutace jádra 76/76, mutace serveru 187/187, statické kontroly
-3/3. S podklady má zůstat přeskočený jen test.js; každé jiné číslo je nález,
-nebo musí být v protokolu vysvětlené.
-Krok 6 skillu (pripravit_github.py, zkontroluj_pred_gitem.py,
-vyrob_vzorky.py) v repozitáři není — nahrazuje ho statická kontrola
-nastroje/kontrola_udaju.py uvnitř kola; zapiš to do protokolu, není to nález.
-
-BEZPEČNOSTNÍ AUDIT (krok 7)
-Regrese VŠECH známých nálezů (audit 22. 8. 2026 a hloubkový test 24. 9. 2026:
-B1…B88, N43…N57); u B72, B75, B76, B77, B78 a N43 (server) ověř opravu.
-Nové nálezy ve třech čočkách nad netlify/ a server/ (v období se měnily).
-Subagenti jen čtou, každý nález doloží soubor:řádek, vysoké ověř druhým
-nezávislým čtením. Dej jim netlify/test_prava.mjs, netlify/test_prihlaseni.mjs
-a netlify/mutace.mjs s pokynem „uveď, co testy NEhlídají".
-
-ZNÁMÉ A ROZHODNUTÉ — uvést stav, nehlásit jako nové
-- N46 se neopravuje bez pokynu J. V. (fuzz ho hlásí jen jako INFO).
-- #365 (rozměr profilu mimo tabulku JEKLY shodí Kalkulaci OCK) — oprava běží
-  v paralelním sezení; proto overit_xss.mjs zatím neotravuje dim a tl.
-- Telefon a jméno kolegy v overit_nabidka_proj_word.mjs — čeká na
-  rozhodnutí J. V. (dočasně v nastroje/povolene_kontakty.txt).
-- CSP bez 'unsafe-inline' — jen návrh. B79 ponecháno rozhodnutím J. V.
-  B80, B81, B83, B88 (#345) jsou otevřené.
-
-VÝSTUPY (kroky 8–9)
-- TESTOVACI_PROTOKOL_<RRRR-MM-DD>_v29.9.1.xlsx (navázaný na poslední,
-  struktura listů beze změny, vzorce Souhrnu roztažené na poslední řádek),
-  <RRRR-MM-DD>_kalkulator_BEZPECNOSTNI_AUDIT_v29.9.1.md, STAV .md
-  a prompty k opravám (.md, jeden na nález nebo ucelenou skupinu) — vše
-  přes SendUserFile. Device bridge v cloudu není: řekni to jednou větou.
-- Do své větve commitni jen PREDAVKA.md (výsledky, nálezy, prompty, co čeká
-  na J. V.) — protokol ani podklady ne. Commit v jiný den než 29. 9.:
-  kontrola verze měří den posledního commitu, proto zvedni verzi
-  (python3 build.py) a zapiš do CHANGELOG „jen předávka" (vzor v29.9.1).
-- Na konci tabulka úkolů ✅/⬜ a spotřeba kontextu (get_session →
-  context_usage; nad 60 % upozornit, nad 75 % přepsat předávku a doporučit
-  nové sezení).
-```
-
-## Hotovo v26.9.1 — roadmapa #364 (podrobně CHANGELOG.md)
-- **Pravidlo 0:** B69, B70, B71, B73, B74, N43 (klient), N44, N45, N47–N57
-  už byly opravené (v24.9.4–v25.9.5) — přeskočeno. **N46 neopraveno** (bez
-  pokynu J. V.; fuzz ho hlásí jen jako INFO).
-- **Opraveno:** N43 na serveru (`jadro_moduly.cjs` + kryci, kryci_proj,
-  poznamky, protokol), B72/P4 (`netlify/lib/zakazka_kontrola.mjs` — jedna
-  kontrola pro uložení i obnovu; #342 hotovo), B75–B78 (přihlášení jako
-  celek; část #345 — zbývá B80, B81, B83, B88).
-- **Nové testy:** A1 `src/test_fuzz_invarianty.js`, A2 hlídač členů
-  v `src/test_escape.js` + obecný oddíl v `overit_xss.mjs` (207 kontrol),
-  A3 `src/test_zamek_historie.js` + `src/fixtury/*.json`, A4
-  `nastroje/kontrola_udaju.py` + `nastroje/povolene_kontakty.txt`, A5
-  `nastroje/testovaci_kolo.sh` (pred_pushem.sh = obal, CI volá tentýž
-  skript), `netlify/test_prihlaseni.mjs`, +9 testů B72, +14 mutací serveru.
-  U každého je v commitu doloženo selhání před opravou.
-- **Ověřeno celým kolem:** celé kolo `nastroje/testovaci_kolo.sh` 26. 9. 2026 (38 min): kontrola verze + sestavení ✓; sady 182 prošlo, 0 selhalo, 6 přeskočeno (test.js — skutečný ceník není v repozitáři; overit_manual, overit_nabidka_proj_word, overit_sablona, overit_sablony_online, overit_sod — firemní podklady mimo repozitář, KNG_PODKLADY); mutace jádra chycených 76 z 76; mutace serveru 187 z 187 (z toho 14 nových); statické kontroly 3 z 3. Dvě předchozí kola téhož dne našla a bylo opraveno: `test_mutace.mjs` po přesunu B59 měřil prázdno; mutace „vypnutý účet se nepozná“ přežila (dvě nezávislé pojistky, jeden test — doplněn cílený test v `test_prava.mjs`); dva testy struktury CI četly workflow (přesměrovány na testovaci_kolo.sh, kontrola verze přesunuta na začátek kola); souhrn kola nevypisoval přeskočené sady (pole v podshellu).
+Výstupy (v chatu sezení, do Output documents je nahraje J. V. — device bridge
+v cloudu není): `TESTOVACI_PROTOKOL_2026-09-29_v29.9.1.xlsx` (281 kontrol:
+257 VYHOVUJE, 19 NEVYHOVUJE, 5 NEOVĚŘENO — shoda s Excelem a ostré zakázky se
+v cloudu neověřují), `2026-09-29_kalkulator_BEZPECNOSTNI_AUDIT_v29.9.1.md`,
+`2026-09-29_kalkulator_v29.9.1_STAV_komplexni_test.md` a prompty
+`2026-09-29_PROMPT_*.md` (B111; B96; B112; přihlášení a účty; obnova ze souboru; šablony
+Wordu; schvalování a zámek; sběr textů; testovací mezery). Každý prompt je
+samostatný pro paralelní větev nad `9a48ee8`: Pravidlo 0, požadované chování,
+testy s pojistkou proti prázdnému testu, konvence, dokumentace.
 
 ## Čeká na J. V. (rozhodnutí)
-- **N46** (nástupiště A ↔ C u zrcadlové šachty, #343 „ověřit s J. V."): fuzz
-  I8a/I8b hlásí rozdíly jen jako INFO; oprava až na pokyn.
-- **#365 (nález A2-1):** zakázka s rozměrem profilu mimo tabulku JEKLY shodí
-  vykreslení Kalkulace i Detailu OCK (`JEKLY[p.dim].kg` v `ui/kalk_ock.js`).
-  J. V. 29. 9. 2026 rozhodl opravit; prompt k opravě připraven
-  (`2026-09-29_PROMPT_CLAUDE_CODE_oprava_365_neznamy_profil.md`, má ho J. V.),
-  oprava poběží v samostatné paralelní větvi nad touto.
-- **Telefon a jméno kolegy** v `overit_nabidka_proj_word.mjs` (kontrola „v
-  šabloně nezůstal"): skutečný údaj ve veřejném repu; dočasně v povoleném
-  seznamu `nastroje/povolene_kontakty.txt` s poznámkou (viz #346 / B79).
-- **CSP bez `'unsafe-inline'`:** jen návrh (nikde needitováno).
-- Dál platí z minula: soubory SoD (#350), kolo 16 dávky B/C/D (#361–#363),
-  #355, #356, #346 Netlify, #172 lokálně npm.
+- **B111, B96, B112:** pustit opravy prioritně, tři samostatné paralelní větve
+  (výchozí návrh: ano, B111 první — jde v běžném UI); rozhodnout, zda server
+  počítá marži z koncové ceny i bez slevy (návrh: ano pro kroky mimo výčet).
+- **B111:** smí administrátor zápornou položku (dobropis)? Návrh: ne, jako N56.
+- **B112:** nové číslo (návrh), nebo B88b? B88 dál jen čtecí strana.
+- **B97:** vážnost střední (návrh) nebo nízká (DoS).
+- **B4 souběh a B6 odhlášení:** opravit, nebo zapsat do `BEZPECNOST_MEZE.md`
+  (návrh: zapsat).
+- **N60:** opravit webovou adresu v šabloně PROJ (v2_opravena i v3) a v dalším
+  kole přejít s harnessem na PROJ v3.
+- **Příručka:** na Disku je v25.9.3, `manual/obsah.json` mluví jen o v25.9.3 —
+  novou příručku vyrobit (návrh: až po opravě B96).
+- Dál platí: **N46** (bez pokynu se neopravuje, fuzz jen INFO), **#365** (oprava
+  v paralelním sezení; `overit_xss.mjs` zatím neotravuje `dim` a `tl`), **telefon
+  a jméno kolegy** v `overit_nabidka_proj_word.mjs` (dočasně v
+  `nastroje/povolene_kontakty.txt`), **CSP bez `'unsafe-inline'`** (jen návrh),
+  **B79** ponecháno, **B80, B81, B83, B88** (#345) otevřené; soubory SoD (#350),
+  kolo 16 dávky B/C/D (#361–#363), #355, #356, #346 Netlify, #172 lokálně npm.
+- **Před ostrým nasazením lokálně:** `test.js`/`test_proj.js` se skutečným
+  ceníkem, porovnání s ostrými zakázkami, vizuální kontrola PDF/Wordu,
+  `curl -I` na `/api/*` (no-store, nosniff — B37), nastavení náhledů Netlify (B85).
 
 ## Poznámky pro další sezení
-- **Testy jedním příkazem:** `bash nastroje/testovaci_kolo.sh` (celé kolo,
-  ~50 min) nebo `--bez-mutaci`; `--jen sady` apod. Mutační běh nepřerušovat.
-  Logy kroků v `$KNG_KOLO_LOGY` nebo v mktemp složce vypsané v souhrnu.
-- `netlify/test_mutace.mjs` spouští skutečnou mutaci (B59) a posílá signály —
-  nepouštět souběžně s mutačním během.
-- Nový smyšlený kontakt v testu → zapsat do `nastroje/povolene_kontakty.txt`
-  s důvodem, jinak statická kontrola (a CI) skončí červeně.
-- Harnessy potřebují `node_modules/playwright` (symlink na `$(npm root -g)`)
-  a `ADMIN_EMAIL=spravce@priklad.cz` (testovaci_kolo.sh ho nastaví sám);
-  šablony pro harnessy přes `KNG_PODKLADY=<složka>` — jinak se hlásí jako
-  přeskočené (nic neověřily).
+- **Stahování z Disku:** malé soubory vrací konektor přímo (base64), velké uloží
+  do souboru v `tool-results/` — dekódovat Pythonem, nikdy nekopírovat base64
+  ručně. Protokol ani podklady do repozitáře nepatří.
+- **Kolo jedním příkazem** běží na pozadí ~45 min a mutace přepisují pracovní
+  strom — hook „necommitnuté změny" během kola hlásí právě je; necommitovat,
+  počkat na konec a ověřit `git status`. Auditní subagenti čtou čistou kopii
+  (`git archive HEAD | tar -x -C <složka>`), zprávy ať zapisují do souborů
+  (předávaná zpráva se usekává).
+- **Počty po sadách** pro protokol: po kole (ne souběžně s mutacemi) spustit
+  každou sadu zvlášť a vzít souhrn „N OK, M FAIL" / „N prošlo, M selhalo" /
+  „PASS=N FAIL=M".
+- **Protokol:** Výsledek „NEOVĚŘENO" pro kontroly, které v cloudu nemohou běžet
+  (shoda s Excelem, ostré zakázky) — nepočítá se do VYHOVUJE ani NEVYHOVUJE.
+  V protokolu 24. 9. byly řádky B78, B85, B91 listu Nálezy omylem sloučené
+  přes A:F a prázdné — v protokolu 29. 9. opraveno.
+- Testy jedním příkazem: `bash nastroje/testovaci_kolo.sh` (celé kolo) nebo
+  `--bez-mutaci`; `--jen sady` apod. Logy kroků v `$KNG_KOLO_LOGY`.
+- `netlify/test_mutace.mjs` spouští skutečnou mutaci (B59) — nepouštět souběžně
+  s mutačním během.
+- Nový smyšlený kontakt v testu → `nastroje/povolene_kontakty.txt` s důvodem.
 - Komentář uvnitř `KOD_STRANKY` v `overit_xss.mjs` nesmí obsahovat zpětné
-  apostrofy (je to template literal). Komentář s uzavírací značkou skriptu
-  v `src/` rozbije celou aplikaci.
-- Server musí načítat v `jadro_moduly.cjs` tytéž moduly migrací jako
-  prohlížeč (pořadí CORE v build.py) — jinak se odeslané zakázky po
-  uložení liší (N43). Hlídá `src/test_zamek_historie.js`.
-- Sezení 25.–26. 9. běželo přes 1,5 M tokenů kontextu bez pádu díky
-  automatickému shrnutí; přesto předávku psát po každé dávce.
+  apostrofy; komentář s uzavírací značkou skriptu v `src/` rozbije aplikaci.
+- Server musí načítat v `jadro_moduly.cjs` tytéž moduly migrací jako prohlížeč
+  (pořadí CORE v build.py) — N43; `kryci_proj.js` zatím bez hlídače (N59).
