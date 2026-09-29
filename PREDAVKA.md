@@ -1,7 +1,7 @@
 # Předávka — stav k 29. 9. 2026 (rozhodnutí k rozboru D kola 16)
 
 Na `main`: **v25.9.3** (+ oprava Node), tag `v25.9.3`.
-Na `test`: **v25.9.6**. Na `test-draft`: **v29.9.1** — čeká na pokyn J. V.
+Na `test`: **v25.9.6**. Na `test-draft`: **v29.9.2** — čeká na pokyn J. V.
 k přenosu do `test`. Větev `k16-nalezy` (v25.9.8) splnila účel a je
 sloučená do `test-draft`; navrženo J. V. ji smazat (z cloudu to nejde).
 Roadmapa: `roadmapa/roadmap.json` (370 položek), stará publikace
@@ -17,21 +17,20 @@ https://claude.ai/artifact/RmrdBw1QbyyBxDLhZcExTq (není aktuální).
 - Dávky B (v25.9.7) a C (v25.9.8) kola 16: viz CHANGELOG; mutace serveru
   nad v25.9.7 176/176.
 
-## Rozpracováno — pořadí práce podle rozhodnutí z 29. 9. (úkoly sezení)
-1. P8b termín „N týdnů" + přípona ATYP přes slovník (#365).
-2. P10.1/10.2 platnost 2 měsíce všude + skloňování; náhled PROJ bere
-   splatnost a platnost z krycího listu PROJ (#367).
-3. P11 kontrola „zahraniční varianta s projekcí" (#368).
-4. P9.2/9.4/9.5: SoD OCK termíny a podpisy z krycího listu, zámek zmrazí
-   předvyplněné podmínky (#366).
-5. P10.4/10.5/10.7: znění „bez DPH", fakturace výchozí po milnících (volba
-   měsíční), záruka z krycího listu (#367).
-6. P8A: značky bloků v generátoru + šablona CN v13 (CZ/EN/DE/FR) se
-   značkami a zněním „bez DPH" (#365); šablona PROJ v3 se součtem, slevou
-   a `{{PROJ_POLOZKY_NAVIC}}` (CZ/EN/DE/FR, #370). Šablony se vyrábějí
-   skriptem z v12 / PROJ v2 (ve scratchpadu sezení, `KNG_PODKLADY`).
-7. Návrh pro J. V.: „vše z krycího listu" (10.3), koncept plánu plateb
-   PROJ (10.6), řada čísel smluv (P9.1), splátky SoD PROJ (P9.3) —
+## Hotovo v29.9.2 (`test-draft`) — rozhodnutí k rozboru D
+- P8b termín v týdnech (#365), P9.2/P9.4 SoD OCK z krycího listu, P9.5 zámek
+  zmrazí předvyplněné podmínky (`data.kryci.zmrazeno`, `data.kryciProj.zmrazeno`,
+  platí jen u zamčené varianty) (#366), P10.1/10.2/10.4/10.5/10.7 (#367),
+  P11 kontrola `projZahranici` (#368, hotovo). Nová sada `src/test_rozhodnuti_k16.js`.
+
+## Rozpracováno — další kroky
+1. P8A: značky bloků v generátoru ({{KAP_…_ZAC}} / {{KAP_…_KON}}) + šablona
+   CN v13 (CZ/EN/DE/FR) se značkami a větami „(bez DPH)" (#365); šablona
+   PROJ v3 se součtem, slevou a `{{PROJ_POLOZKY_NAVIC}}` (CZ/EN/DE/FR, #370).
+   Šablony vyrábět skriptem z v12 / PROJ v2 (podklady ve scratchpadu sezení,
+   `KNG_PODKLADY`); J. V. je nahraje v Nastavení → Šablony.
+2. Návrh pro J. V.: „vše z krycího listu" (10.3), koncept plánu plateb PROJ
+   (10.6), řada čísel smluv (P9.1), splátky SoD PROJ (P9.3) —
    `podklady/NAVRH_PLATEBNI_PODMINKY_2026-09-29.md`.
 
 ## Čeká na J. V.

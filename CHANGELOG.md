@@ -8,6 +8,51 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v29.9.2 — rozhodnutí J. V. k rozboru D: termín, smlouva, platební podmínky, PROJ u zahraničí (29. 9. 2026)
+
+Větev `test-draft`. Podklad: tabulka rozhodnutí v `podklady/K16_ROZBOR_2026-09-25.md`.
+
+- **Termín dodání v týdnech (P8b, #365).** Holé číslo termínu dostane
+  jednotku: „12" → „12 týdnů", „cca 3" → „cca 3 týdny" (česky skloňované,
+  po přičtení ATYP srovnané s novým číslem: „2 týdny" + 4 → „6 týdnů").
+  Platí i pro ruční přepis v krycím listu. Termín s ATYP se tím dá přeložit
+  celý (dřív „16 (vč. 4 týdnů za ATYP)" zůstalo v cizí nabídce česky).
+- **Platnost 2 měsíce, splatnost z krycího listu (P10.1, P10.2, #367).**
+  Náhled nabídky PROJ tiskne splatnost a platnost z krycího listu PROJ
+  (přepis 45 dní dřív viděl jen Word). Náhradní platnost PROJ 2 měsíce
+  (dřív 3), počet měsíců se skloňuje („5 měsíců", ne „5 měsíce"). Slovník
+  zná lhůty „N měsíc/e/ů" a „N dní" obecně.
+- **Způsob fakturace po milnících, nebo měsíční (P10.5).** Pole v krycím
+  listu OCK je výběr, výchozí „Po milnících" (standard 50 / 40 / 10 nesou
+  pole záloha, dílčí a konečná faktura). Dosavadní výchozí „Náš standard /
+  měsíční" uložené v Nastavení se čte jako „Po milnících".
+- **Záruka z krycího listu (P10.7).** Kapitola V. nabídky (online i Word)
+  nese „Záruka: N měsíců" z krycího listu; věta o záruce z textu Firmy
+  („5 let záruka na celé dílo.") se vynechá — krycí list má přednost.
+- **Věty „(bez DPH)" ve slovníku (P10.4).** Obě věty o dílčích daňových
+  dokladech ve znění „(bez DPH)" pro šablonu CN v13 (EN/DE/FR).
+- **Smlouva o dílo realizace z krycího listu (P9.2, P9.4, #366).** Termín
+  převzetí staveniště → `{{SOD_TERMIN_MONTAZ_OD}}`, konečné předání →
+  `{{SOD_TERMIN_DOKONCENI}}`; nová sekce krycího listu OCK „Smlouva o dílo —
+  podpisy a kopie" (firma v podpisové doložce, druhý podepisující, kopie
+  faktur) se předvyplní z krycího listu PROJ. Nevyplněné zůstane ve Wordu
+  `{{…}}` k doplnění.
+- **Zámek drží i podmínky předvyplněné z Nastavení (P9.5).** Při prvním
+  zamčení po tisku se předvyplněné hodnoty krycích listů OCK i PROJ opíšou
+  do zakázky; dokud je varianta zamčená, platí ony, ne dnešní Nastavení.
+  Server je uloží a zámek dál ověří jako shodný.
+- **Projekci u zahraničí nerealizujeme (P11, #368).** Nová kontrola před
+  nabídkou (varování): zahraniční ceník + oceněná projekce → vyřadit
+  projekci, nebo vrátit tuzemský ceník. Dialog přepnutí ceníku říká totéž.
+  Pravidel kontrol je 22.
+
+Testy (každý bod bez opravy selže): nová sada `src/test_rozhodnuti_k16.js`
+50, `test_sod` +7, `overit_online` +1 (zmrazené podmínky uloží server);
+upravené `test_nabidka_kapitoly`, `test_standardy`, `test_kontroly`,
+`overit_lista` na nové chování. Server ani jádro výpočtu se neměnily.
+
+---
+
 ## v29.9.1 — nabídka PROJ se slevou sčítá rekapitulaci; rozhodnutí k rozboru D (29. 9. 2026)
 
 Větev `test-draft`.
