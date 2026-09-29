@@ -7,7 +7,9 @@
  *          dal přeložit (dřív „16 (vč. 4 týdnů za ATYP)" zůstalo česky).
  *   P10.1 — platnost nabídky 2 měsíce i v náhradních hodnotách, skloňování.
  *   P10.2 — náhled nabídky PROJ bere splatnost a platnost z krycího listu.
- *   P11   — zahraniční varianta s oceněnou projekcí: kontrola a věta v dialogu. */
+ *   P11   — zahraniční varianta s oceněnou projekcí: kontrola a věta v dialogu.
+ *   P9.5  — zámek zmrazí i podmínky krycího listu předvyplněné z Nastavení
+ *          (P9.2 a P9.4 — smlouva o dílo z krycího listu — hlídá test_sod.js). */
 const fs = require('fs');
 const nacti = (f) => { const m = require(f); Object.keys(m).forEach(k => { if (global[k] === undefined) global[k] = m[k]; }); return m; };
 const ZC = require('./zkusebni_cenik.js');
@@ -124,6 +126,46 @@ test('P11: dialog přepnutí na zahraniční ceník o projekci mluví',
   /nerealizujeme/.test(fs.readFileSync(__dirname + '/ui/common.js', 'utf8').slice(
     fs.readFileSync(__dirname + '/ui/common.js', 'utf8').indexOf('async function cenikRadaPrepniUI'))
     .slice(0, 4000)));
+
+/* ---------------- P9.5: zámek zmrazí i podmínky předvyplněné z Nastavení ----------------
+ * J. V. 29. 9. 2026: „ano". Po odeslání zamrzly jen ruční přepisy krycího
+ * listu; co bylo předvyplněné z Nastavení (platnost, fakturace, termín), se
+ * počítalo znovu — smlouva vystavená po změně Nastavení nesla jiné podmínky
+ * než odeslaná nabídka. */
+{
+  const z5 = zk.novaZakazka();
+  z5.cislo = '2026 - OPR - CN - 0406'; z5.nazevAkce = 'Zámek drží podmínky'; z5.objednatel = 'Zkušební s.r.o.';
+  const v5 = z5.varianty[0];
+  const puvodni = global.NAST.firma.platnostNabidky;
+  global.NAST.firma.platnostNabidky = '2 měsíce';
+  v5.data.kryci = { hodnoty: { splatnostDni: '30' } };            // ruční přepis
+  kr.kryciZmrazPodminky(z5, v5, JEKLY);
+  kp.kryciProjZmrazPodminky(z5, v5);
+  v5.zamek = { zamceno: true };
+  global.NAST.firma.platnostNabidky = '3 měsíce';                 // Nastavení se po odeslání změní
+  test('P9.5: zamčená varianta drží platnost z doby odeslání (krycí list OCK)',
+    kr.kryciPodminkoveSymboly(z5, v5, JEKLY).PODM_PLATNOST_NABIDKY === '2 měsíce',
+    kr.kryciPodminkoveSymboly(z5, v5, JEKLY).PODM_PLATNOST_NABIDKY);
+  test('P9.5: … i v krycím listu PROJ',
+    kp.kryciProjPodminkoveSymboly(z5, v5).PODM_PLATNOST_NABIDKY === '2 měsíce',
+    kp.kryciProjPodminkoveSymboly(z5, v5).PODM_PLATNOST_NABIDKY);
+  test('P9.5: ruční přepis platí dál a do zmrazených hodnot se nekopíruje',
+    kr.kryciPodminkoveSymboly(z5, v5, JEKLY).PODM_SPLATNOST_DNI === '30'
+    && !('splatnostDni' in (v5.data.kryci.zmrazeno || {})));
+  test('P9.5: zmrazují se jen pole s předvyplněním (bez polí provázaných se zakázkou)',
+    Object.keys(v5.data.kryci.zmrazeno || {}).length > 0
+    && Object.keys(v5.data.kryci.zmrazeno).every(id => { const p = pole(id); return p && p.prefill && !p.bind && !p.dphBind; }),
+    Object.keys(v5.data.kryci.zmrazeno || {}));
+  v5.zamek = null;                                                // odemčení
+  test('P9.5: po odemčení platí zase Nastavení',
+    kr.kryciPodminkoveSymboly(z5, v5, JEKLY).PODM_PLATNOST_NABIDKY === '3 měsíce'
+    && kp.kryciProjPodminkoveSymboly(z5, v5).PODM_PLATNOST_NABIDKY === '3 měsíce');
+  const ui = fs.readFileSync(__dirname + '/ui/zamek_ui.js', 'utf8');
+  const poTisku = ui.slice(ui.indexOf('function zamekPoTisku'), ui.indexOf('function zamekPoTisku') + 3000);
+  test('P9.5: první zamčení po tisku podmínky zmrazí (OCK i PROJ)',
+    /if \(prvni\)[\s\S]*kryciZmrazPodminky\(/.test(poTisku) && /kryciProjZmrazPodminky\(/.test(poTisku));
+  global.NAST.firma.platnostNabidky = puvodni;
+}
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

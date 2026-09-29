@@ -428,6 +428,9 @@ function kryciCtx(zak, varianta, jekly) {
     hodnota, priplatky, firma, typProduktu,
     sken3d: kryciSken3d(d, rOck),
     projAno: key => (projSekce[key] > 0 ? 'Ano' : 'Ne'),
+    /* Podmínky zmrazené při odeslání (P9.5) — platí jen, dokud je varianta
+     * zamčená; po odemčení nebo v klonu se předvyplňuje zase z Nastavení. */
+    zmrazeno: (varianta && varianta.zamek && varianta.zamek.zamceno && d.kryci && d.kryci.zmrazeno) || null,
   };
 }
 /* ---------- termín dodání a přirážka za ATYP (21. 8. 2026) ----------
@@ -484,6 +487,8 @@ function kryciHodnota(pole, kl, c) {
     const h = (kl && kl.hodnoty) || {};
     if (h[pole.id] !== undefined && h[pole.id] !== '')
       return typeof pole.normalizuj === 'function' ? pole.normalizuj(h[pole.id]) : h[pole.id];
+    /* zamčená varianta: předvyplnění z doby odeslání (P9.5) */
+    if (c && c.zmrazeno && c.zmrazeno[pole.id] !== undefined) return c.zmrazeno[pole.id];
   }
   if (pole.prefill) { try { const v = pole.prefill(c); if (v != null && v !== '') return v; } catch (e) {} }
   return '';
@@ -627,6 +632,34 @@ function kryciSodSymboly(zak, varianta, jekly, placeholders) {
   return P;
 }
 
+/* ZÁMEK DRŽÍ I PŘEDVYPLNĚNÉ PODMÍNKY (P9.5, rozhodnutí J. V. 29. 9. 2026).
+ * Po odeslání zamrzly jen ruční přepisy krycího listu (jsou v datech
+ * varianty); co bylo předvyplněné z Nastavení (platnost, fakturace, termín,
+ * obchodník, datum), se počítalo znovu — smlouva vystavená po změně
+ * Nastavení tak mohla nést jiné podmínky, než jaké odešly v nabídce.
+ * Při prvním zamčení se proto předvyplněné hodnoty opíšou do
+ * data.kryci.zmrazeno; data zamčené varianty hlídá server, takže je nikdo
+ * nepřepíše. Pole provázaná se zakázkou (bind) se nezmrazují — mají vlastní
+ * zdroj. Vrací počet zmrazených polí. */
+function kryciZmrazPodminky(zak, varianta, jekly) {
+  if (!varianta || !varianta.data) return 0;
+  const d = varianta.data;
+  if (!d.kryci || typeof d.kryci !== 'object') d.kryci = { hodnoty: {} };
+  const h = d.kryci.hodnoty || {};
+  const c = kryciCtx(zak, varianta, jekly);
+  c.zmrazeno = null;                         // čerstvě z Nastavení, ne ze staršího zmrazení
+  const out = {};
+  KRYCI_SEKCE.forEach(s => s.pole.forEach(p => {
+    if (p.bind || p.dphBind || typeof p.prefill !== 'function') return;
+    if (h[p.id] !== undefined && h[p.id] !== '') return;      // ruční přepis už je v datech
+    let v = '';
+    try { v = p.prefill(c); } catch (e) { v = ''; }
+    if (v != null && v !== '') out[p.id] = String(v);
+  }));
+  d.kryci.zmrazeno = out;
+  return Object.keys(out).length;
+}
+
 function kryciPodminkoveSymboly(zak, varianta, jekly, P) {
   const c = kryciCtx(zak, varianta, jekly);
   const kl = (varianta && varianta.data && varianta.data.kryci) || { hodnoty: {} };
@@ -638,6 +671,6 @@ if (typeof module !== 'undefined')
     kryciData, kryciMigraceZadrzne, kryciMigraceSazbaDph,
     PODM_PREFIX, kryciSymbolId, kryciCisloZTextu, kryciProcentoZTextu,
     kryciTerminDodani, kryciTerminDodaniText, kryciTerminSJednotkou, kryciTydnu,
-    kryciSymbolyZeSekci, kryciPodminkoveSymboly, kryciSodSymboly, kryciDatumCz,
+    kryciSymbolyZeSekci, kryciPodminkoveSymboly, kryciSodSymboly, kryciZmrazPodminky, kryciDatumCz,
     kryciZKrycihoListuProj,
     kryciFaktura2Dopocet, kryciFaktura2Sync };

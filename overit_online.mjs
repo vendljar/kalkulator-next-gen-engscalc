@@ -1352,8 +1352,14 @@ test('lišta uzamčené varianty nabízí za Klonovat i Založit novou zakázku 
     const z = d.zakazka.varianty[0].zamek || {};
     return { overeni: z.overeni || null, klient: buildVerze(), hlaska: ONLINE_STAV.hlaska,
              typ: ONLINE_STAV.hlaskaTyp, castka: ((z.vysledek || {}).ock || {}).souhrn
-               ? z.vysledek.ock.souhrn.zakladCena : null };
+               ? z.vysledek.ock.souhrn.zakladCena : null,
+             /* P9.5: podmínky krycích listů zmrazené při odeslání, jak je server uložil */
+             zmrazeno: ((d.zakazka.varianty[0].data || {}).kryci || {}).zmrazeno || null,
+             zmrazenoProj: ((d.zakazka.varianty[0].data || {}).kryciProj || {}).zmrazeno || null };
   }, ceniky);
+  test('P9.5: zamčení po tisku zmrazí podmínky krycího listu OCK i PROJ a server je uloží',
+    !!(poctiva.zmrazeno && poctiva.zmrazeno.platnostNabidky && poctiva.zmrazenoProj && poctiva.zmrazenoProj.platnostNabidky),
+    JSON.stringify([poctiva.zmrazeno && poctiva.zmrazeno.platnostNabidky, poctiva.zmrazenoProj && poctiva.zmrazenoProj.platnostNabidky]));
   test('B59: nabídka zamčená tiskem v prohlížeči má u serveru shodu',
     poctiva.overeni && poctiva.overeni.stav === 'shoda' && poctiva.overeni.rozdilu === 0,
     JSON.stringify(poctiva));

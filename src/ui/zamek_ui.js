@@ -233,6 +233,11 @@ function zamekPoTisku(typ, varId, sablona) {
      * Výsledek skládá zamekVysledekSpocti — TÝŽ kód, kterým ho server při
      * prvním uložení zámku ověřuje (B59). */
     vysledek = zamekVysledekSpocti(v, JEKLY, (typeof buildVerze === 'function') ? buildVerze() : '');
+    /* S nabídkou zamrznou i podmínky krycích listů předvyplněné z Nastavení
+     * (P9.5, rozhodnutí J. V. 29. 9. 2026) — pozdější smlouva ani dotisk
+     * nesmí nést jiné podmínky, než jaké odešly. */
+    try { if (typeof kryciZmrazPodminky === 'function') kryciZmrazPodminky(ZAK, v, JEKLY); } catch (e) {}
+    try { if (typeof kryciProjZmrazPodminky === 'function') kryciProjZmrazPodminky(ZAK, v); } catch (e) {}
   }
   zamkniVariantu(v, { typ, kdo: zamekKdo(), cislo: variantaCislo(ZAK, v), otisk, vysledek,
                       sablona: sablona || null });

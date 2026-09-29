@@ -366,7 +366,29 @@ function kryciProjCtx(zak, varianta) {
   /* Od 19. 8. 2026 je hlavička jedna společná — popisek zdroje je pro
    * všechna pole stejný a nikam neposílá. */
   const hlSrc = klic => 'hlavička zakázky (společná)';
-  return { zak, hl, hlSrc, sekce, hodnota, ocenene, neocenene, dph, firma, sazby };
+  /* Podmínky zmrazené při odeslání (P9.5) — jen dokud je varianta zamčená. */
+  const zmrazeno = (varianta && varianta.zamek && varianta.zamek.zamceno && d.kryciProj && d.kryciProj.zmrazeno) || null;
+  return { zak, hl, hlSrc, sekce, hodnota, ocenene, neocenene, dph, firma, sazby, zmrazeno };
+}
+
+/* Totéž co kryciZmrazPodminky v kryci.js, nad krycím listem PROJ (P9.5). */
+function kryciProjZmrazPodminky(zak, varianta) {
+  if (!varianta || !varianta.data) return 0;
+  const d = varianta.data;
+  if (!d.kryciProj || typeof d.kryciProj !== 'object') d.kryciProj = { hodnoty: {} };
+  const h = d.kryciProj.hodnoty || {};
+  const c = kryciProjCtx(zak, varianta);
+  c.zmrazeno = null;
+  const out = {};
+  KRYCI_PROJ_SEKCE.forEach(s => s.pole.forEach(p => {
+    if (p.bind || p.dphBind || typeof p.prefill !== 'function') return;
+    if (h[p.id] !== undefined && h[p.id] !== '') return;
+    let v = '';
+    try { v = p.prefill(c); } catch (e) { v = ''; }
+    if (v != null && v !== '') out[p.id] = String(v);
+  }));
+  d.kryciProj.zmrazeno = out;
+  return Object.keys(out).length;
 }
 
 /* KL-7: totéž jako kryciMigraceSazbaDph() v kryci.js, jen nad úložištěm PROJ —
@@ -411,6 +433,8 @@ function kryciProjHodnota(pole, kl, c) {
   if (!pole.bind && !pole.dphBind) {   // provázaná pole (bind) čtou přímo ze ZAK, ne z ručních přepisů
     const h = (kl && kl.hodnoty) || {};
     if (h[pole.id] !== undefined && h[pole.id] !== '') return h[pole.id];
+    /* zamčená varianta: předvyplnění z doby odeslání (P9.5) */
+    if (c && c.zmrazeno && c.zmrazeno[pole.id] !== undefined) return c.zmrazeno[pole.id];
   }
   if (pole.prefill) { try { const v = pole.prefill(c); if (v != null && v !== '') return v; } catch (e) {} }
   return '';
@@ -465,4 +489,4 @@ function kryciProjPodminkoveSymboly(zak, varianta, P) {
 if (typeof module !== 'undefined')
   module.exports = { KRYCI_PROJ_SEKCE, KRYCI_POKUTY_SAZBY, KRYCI_PROJ_NABIDKA_SEKCE, KRYCI_PROJ_CINNOSTI, kryciProjCtx,
     kryciProjHodnota, kryciProjData, kryciProjMigraceSazbaDph, kryciProjPodminkoveSymboly,
-    kryciProjSekceKc, kryciProjSodSymboly, kryciProjMesicu };
+    kryciProjSekceKc, kryciProjSodSymboly, kryciProjMesicu, kryciProjZmrazPodminky };
