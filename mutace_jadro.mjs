@@ -57,7 +57,9 @@ const SRC = resolve(KOREN, 'src');
 /* Od 12. 8. 2026 (#134) sem patří i zaokrouhleni.js a marze.js: sleva se
  * skládá s cenou právě tam a rozdělení slev OCK/PROJ se hlídá stejně
  * přísně jako samotný výpočet. */
-const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sablony_online.js'];
+/* kontroly.js od 29. 9. 2026 (#365): zábrana „profilNeznamy" je jediné, co
+ * brání vytisknout cenu s nulovým profilem — patří k jádru jako výpočet sám. */
+const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sablony_online.js', 'kontroly.js'];
 /* Filtr = první argument, který není přepínač (stejně jako netlify/mutace.mjs). */
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 /* --kontrola (23. 9. 2026, nález N19): jen ověří, že každý hledaný úsek je
@@ -100,6 +102,23 @@ function najdiSady() {
  *   proc   … co by se v praxi pokazilo, kdyby tuhle chybu někdo udělal doopravdy
  * ============================================================ */
 const MUTACE = [
+  /* ---------- neznámý rozměr profilu (#365, nález A2-1, 29. 9. 2026) ---------- */
+  { nazev: '#365: jekl u neznámého rozměru vyhodí výjimku místo náhrady', soubor: 'engine.js',
+    hledej: '    return { kg: 0, m2: 0, A: j ? j.A : (m ? +m[1] : 0), B: j ? j.B : (m ? +m[2] : 0) };',
+    nahrad: "    throw new Error('Neznámá dimenze profilu: ' + (p || {}).dim);",
+    proc: 'zakázka s rozměrem mimo katalog jeklů by znovu shodila celé vykreslení a nešla otevřít' },
+  { nazev: '#365: neznámé profily se do výsledku nezapíšou', soubor: 'engine.js',
+    hledej: '    .map(k => PROFILY_NAZVY[k] + \': \' + pr[k].dim + \' / \' + pr[k].tl + \' mm\');',
+    nahrad: '    .map(k => PROFILY_NAZVY[k] + \': \' + pr[k].dim + \' / \' + pr[k].tl + \' mm\').slice(0, 0);',
+    proc: 'cena s nulovou hmotností profilu by prošla bez zábrany až do nabídky; server by ji uložil' },
+  { nazev: '#365: kontrola profilNeznamy nehlásí', soubor: 'kontroly.js',
+    hledej: '      if (!Array.isArray(nez) || !nez.length) return null;',
+    nahrad: '      return null;',
+    proc: 'nabídka s nulovou cenou profilu by se vytiskla a odešla zákazníkovi' },
+  { nazev: '#365: neznámý profil jen varuje, nezastaví dokument', soubor: 'kontroly.js',
+    hledej: "      return { uroven: KONTROLY_UROVEN_ZABRANA,\n        text: 'Rozměr profilu '",
+    nahrad: "      return { uroven: KONTROLY_UROVEN,\n        text: 'Rozměr profilu '",
+    proc: 'varování jde odklepnout — dokument s nulovým profilem by vznikl' },
   /* ---------- centrální šablony (sablony_online.js, #139) ---------- */
   /* N46, N51 (24. 9. 2026): pravidlo nástupišť u průchozí šachty, lešení. */
   { nazev: 'N46: patra bez dveří se neopláští', soubor: 'engine.js',
