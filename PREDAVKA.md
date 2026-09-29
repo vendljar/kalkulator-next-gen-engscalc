@@ -1,12 +1,22 @@
 # Předávka — stav k 29. 9. 2026 (sloučení do test-draft, v29.9.4)
 
 Na `main`: **v25.9.3** (+ oprava Node), tag `v25.9.3`.
-Na `test`: **v29.9.3**. Na `test-draft`: **v29.9.4** (tag `v29.9.4` jen
-lokálně — push tagů z cloudového sezení odmítnut, HTTP 403; viz Čeká na J. V.) —
-sloučeny větve `claude/pensive-curie-s6yzs3` (testovací sekvence A1–A5,
-#371) a `claude/stoic-cerf-j915ax` (#372) na pokyn J. V. 29. 9. 2026.
-Obě větve i `k16-nalezy` jsou sloučené — navrženo J. V. je smazat (z cloudu
-to nejde).
+Na `test`: **v29.9.3**. Na `test-draft`: **v29.9.4** — sloučeny větve
+`claude/pensive-curie-s6yzs3` (testovací sekvence A1–A5, #371) a
+`claude/stoic-cerf-j915ax` (#372) na pokyn J. V. 29. 9. 2026. Tag `v29.9.4`
+na GitHubu zatím není (push tagů i mazání větví z cloudu odmítne proxy,
+HTTP 403) — J. V. dostal 29. 9. odkaz na release, viz Čeká na J. V.
+
+**Větve k 29. 9. 2026 večer:**
+- `k16-nalezy` a `claude/stoic-cerf-j915ax` jsou celé v `test-draft` —
+  J. V. je smaže (pokyn 29. 9., z cloudu to nejde).
+- `claude/pensive-curie-s6yzs3` má po sloučení **3 další commity** jiného
+  sezení (PREDAVKA, CHANGELOG, verze 29.9.1 — „úpravy vždy promptem do
+  paralelní větve", tag v29.9.1 se nepoužil) a `claude/komplexni-test-v29.9.1`
+  **5 commitů** (výsledky komplexní testovací procedury nad v29.9.1,
+  rozhodnutí J. V. „šest oprav teď, zbytek po dalším testování", odkazy na
+  sezení oprav). Do `test-draft` nesloučené, nemazat — sloučit, až skončí
+  sezení oprav (PREDAVKA.md tam má přednost pro jejich práci).
 Roadmapa: `roadmapa/roadmap.json` (372 položek), stránka se generuje
 `python3 roadmapa/roadmapa.py`.
 
@@ -62,9 +72,11 @@ rozhodnutí), prototyp https://claude.ai/artifact/6sbxbaAsBpphfPfE2wnM3a.
   (nová šablona SoD PROJ). Test před opravou → oprava → commit po bodech.
 
 ## Čeká na J. V.
-- **Tag `v29.9.4`** vytvořit na GitHubu ručně nad aktuálním `test-draft`
-  (Releases → Draft a new release → tag `v29.9.4`, cíl `test-draft`), nebo
-  lokálně `git fetch origin && git tag v29.9.4 origin/test-draft && git push origin v29.9.4`.
+- **Release `v29.9.4`** — odkazem z chatu 29. 9. (releases/new s tagem
+  `v29.9.4` nad `test-draft` po commitu s touto předávkou); ostatní tagy
+  v18.9.1 … v25.9.3 release mají.
+- **Smazat větve** `k16-nalezy` a `claude/stoic-cerf-j915ax`
+  (https://github.com/vendljar/kalkulator-next-gen-engscalc/branches).
 - **Poslední číslo papírových smluv** realizace (OPR) a projekce (OVP),
   na které má řada navázat — v odpovědi „v poznámce", poznámka nepřišla.
 - Pokyn k přenosu `test-draft` (v29.9.4) do `test` a dál do `main`.

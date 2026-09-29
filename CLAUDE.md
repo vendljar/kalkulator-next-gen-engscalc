@@ -15,8 +15,24 @@ Komunikace česky. Know-how projektu je ve skillech `kalkulator-next-gen`,
   (fast-forward nebo merge) po každé ucelené dávce, dál platí `test` a `main`
   jen na pokyn J. V. Po dokončení #361–#363 se sloučí do `test-draft`
   a smaže. `PREDAVKA.md` se vede v té větvi, ve které se právě pracuje.
+  (Splněno: sloučeno do `test-draft`, čeká jen na smazání — viz níže.)
 - **Trvalá předávací větev je `test-draft`** — nové sezení bez jiného pokynu
   začíná z ní (`PREDAVKA.md` + `CLAUDE.md`).
+
+## Tagy, releasy a mazání větví (pokyn J. V. 29. 9. 2026)
+
+- Z cloudového sezení nejde pushnout tag ani smazat vzdálenou větev (proxy
+  vrací HTTP 403) — neobcházet, udělá to J. V.
+- **Ke každé verzi, která má dostat tag, poslat J. V. odkaz** na nový release
+  s předvyplněným tagem a cílem:
+  `https://github.com/vendljar/kalkulator-next-gen-engscalc/releases/new?tag=vD.M.N&target=<plný SHA>&title=…`
+  a na konci dávky vypsat verze, které release ještě nemají (tagy a releasy
+  ověřit přes GitHub, ne odhadem).
+- Tagy jsou jednoduché (lightweight) ve tvaru `vDEN.MĚSÍC.pořadí`.
+- Sloučené pomocné větve maže J. V. — poslat odkaz
+  `https://github.com/vendljar/kalkulator-next-gen-engscalc/branches/all?query=<větev>`.
+  Ke smazání navrhnout jen větev, která je celá v `test-draft`
+  (`git merge-base --is-ancestor origin/<větev> origin/test-draft`).
 
 ## Předávací soubor `PREDAVKA.md`
 
