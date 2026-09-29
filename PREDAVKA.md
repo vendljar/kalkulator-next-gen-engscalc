@@ -15,7 +15,7 @@ v `git show 9a48ee8:PREDAVKA.md`.
 
 | ID | Vážnost | Stav | Commit | Verze | Testy před / po | Poznámka |
 |----|---------|------|--------|-------|-----------------|----------|
-| B111 | vysoká | ✅ opraveno | (tento commit) | v29.9.2 | test_zaporne 3 OK/19 FAIL → 24/0; overit_zaporne 5/10 → 15/0; test_kontroly 97/8 → 105/0 | mutace +3, chycené 3/3 |
+| B111 | vysoká | ✅ opraveno | a25edfd | v29.9.2 | test_zaporne 3 OK/19 FAIL → 24/0; overit_zaporne 5/10 → 15/0; test_kontroly 97/8 → 105/0 | mutace +3, chycené 3/3 |
 | B96 | vysoká | ⬜ další na řadě | | | | |
 | B112 | vysoká | ⬜ | | | | |
 | — | — | ⬜ celé kolo č. 1 | | | | po B112 |
@@ -37,6 +37,16 @@ v `git show 9a48ee8:PREDAVKA.md`.
 - Kontroly: `zapornaPolozka` (zábrana), pravidel je 20.
 - `nastroje/detekce_zneuziti.mjs <zaloha.json>` — jen čte; B96 do něj
   přidá kontrolu kroku zaokrouhlení.
+
+## Kontrola po B111 (pred_pushem.sh = kolo bez mutací)
+185 prošlo, 4 selhalo, 1 přeskočeno (test.js — skutečný ceník). Selhání:
+`overit_lista` (čekal 19 pravidel — doplněno na 20, opraveno druhým commitem),
+`overit_manual` (příručka pro v29.9.2 na Disku není → krok 0.7),
+`overit_nabidka_proj_word` a `overit_sablony_online` (šablona PROJ v3 je
+novější než kód → PROJ v2_opravena jako v 21. kole). Po úpravě podkladů
+a harnessu: overit_lista 271/271, overit_manual 37/37,
+overit_nabidka_proj_word 51/51, overit_sablony_online 53/53. Statické
+kontroly 3 z 3.
 
 ## Rozhodnutí podle výchozího návrhu — čekají na potvrzení J. V.
 - **B111:** zápornou položku, množství ani hodiny nesmí nikdo, ani
@@ -64,9 +74,13 @@ N46 se neopravuje bez pokynu J. V.
 
 ## Prostředí (pro další sezení)
 - Podklady (mimo repozitář, necommitovat): `/home/user/kng_podklady` —
-  CN v13 + EN/DE/FR, CN v11 (= kopie v13), PROJ = `Sablona_NABIDKA_PROJ_v3`
-  z Disku, SoD realizace/projekce, plná moc, příručka v25.9.3. Stahuje se
-  konektorem Drive (hledat podle názvu). Seznam: scratchpad `podklady.md`.
+  CN v13 + EN/DE/FR, CN v11 (= kopie v13), **PROJ = `Sablona_NABIDKA_PROJ_v2_opravena`**
+  (v3 je novější než kód této větve — nese symboly `{{BLOK_NAVIC_ZAC}}`,
+  `{{PROJ_POLOZKY_NAVIC}}`, které kód v26.9.1 nezná; leží vedle jako `.bak`),
+  SoD realizace/projekce, plná moc, příručka v25.9.3 — **před každým kolem
+  kopie s přepsaným číslem verze** (krok 0.7 skillu,
+  `2026-09-29_kalkulator_v<verze>_MANUAL_OBCHODNIK.html`). Stahuje se
+  konektorem Drive (hledat podle názvu).
 - `ADMIN_EMAIL=spravce@priklad.cz`; `node_modules/playwright` →
   `$(npm root -g)/playwright`, `playwright-core` →
   `…/playwright/node_modules/playwright-core`.
