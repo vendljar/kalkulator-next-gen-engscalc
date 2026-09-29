@@ -1,9 +1,11 @@
 # Předávka — stav k 29. 9. 2026 (rozhodnutí k rozboru D kola 16)
 
 Na `main`: **v25.9.3** (+ oprava Node), tag `v25.9.3`.
-Na `test`: **v25.9.6**. Na `test-draft`: **v29.9.3** — čeká na pokyn J. V.
-k přenosu do `test`. Větev `k16-nalezy` (v25.9.8) splnila účel a je
-sloučená do `test-draft`; navrženo J. V. ji smazat (z cloudu to nejde).
+Na `test` a `test-draft`: **v29.9.3** (převedeno 29. 9. 2026 na pokyn J. V.,
+fast-forward 11a8f9a → 2184f9d). Šablony CN v13 a PROJ v3 (+ EN/DE/FR) má
+J. V. nahrané v Nastavení → Šablony (29. 9. 2026).
+Větev `k16-nalezy` (v25.9.8) splnila účel a je sloučená do `test-draft`;
+navrženo J. V. ji smazat (z cloudu to nejde).
 Roadmapa: `roadmapa/roadmap.json` (370 položek), stará publikace
 https://claude.ai/artifact/RmrdBw1QbyyBxDLhZcExTq (není aktuální).
 
@@ -39,17 +41,19 @@ https://claude.ai/artifact/RmrdBw1QbyyBxDLhZcExTq (není aktuální).
   CN) a PROJ v3 pojmenovanou `Sablona_NABIDKA_PROJ.docx`.
 
 ## Čeká na J. V.
-- Pokyn k přenosu `test-draft` do `test`, pak do `main`.
+- Pokyn k přenosu `test` do `main` (po vyzkoušení v29.9.3 na testovacím webu).
 - Soubory SoD (#350) — bez nich nejde ověřit symboly smluv.
 - Odsouhlasit rozhodnutí z dávky B (bez čísla se neukládá; přepočet po
   zveřejnění ceníku není neuložená změna; „ß" = „ss") a překlady z dávky C.
-- Nahrát šablony CN v13 a PROJ v3 (+ EN/DE/FR) v Nastavení → Šablony.
 - Odsouhlasit návrh platebních podmínek (otázky v oddílu 6 návrhu).
 
 ## Poznámky pro další sezení
-- Šablony pro harnessy (CN v12 + EN/DE/FR, PROJ v2_opravena) v novém sezení
-  nejsou — požádat J. V.; `KNG_PODKLADY=<složka>`, PROJ jako `Sablona_NABIDKA_PROJ.docx`,
-  pro `overit_sablony_online.mjs` kopie CN v12 i jako `Sablona_NABIDKA_CN_v11.docx`.
+- Platné šablony od 29. 9. 2026: CN v13 (+ EN/DE/FR) a PROJ v3 (+ EN/DE/FR).
+  V novém sezení nejsou — požádat J. V., nebo je vyrobit
+  `node nastroje/vyrob_sablony.js <složka s CN v12 a PROJ v2> [výstup]`.
+  `KNG_PODKLADY=<složka>`: CN v13 jako nejvyšší verze, PROJ v3 pojmenovat
+  `Sablona_NABIDKA_PROJ.docx`, pro `overit_sablony_online.mjs` kopie CN
+  i jako `Sablona_NABIDKA_CN_v11.docx`.
 - Harnessy a serverové sady pouštět s `ADMIN_EMAIL=spravce@priklad.cz`
   (statické importy čtou proměnnou dřív, než ji harness nastaví; nastroje/pred_pushem.sh
   ji nastaví sám).
@@ -70,9 +74,8 @@ https://claude.ai/artifact/RmrdBw1QbyyBxDLhZcExTq (není aktuální).
 
 ## Prompt pro nové sezení (větev test-draft)
 Sezení založit nad `vendljar/kalkulator-next-gen-engscalc`, větev `test-draft`;
-přiložit šablony CN v12 (CZ/EN/DE/FR), Sablona_NABIDKA_PROJ_v2_opravena.docx
-(nebo novější PROJ se součtem) a případně Sablona_SOD_REALIZACE.docx
-+ Sablona_SOD_PROJEKCE.docx.
+přiložit šablony CN v13 (CZ/EN/DE/FR), PROJ v3 (CZ/EN/DE/FR) a případně
+Sablona_SOD_REALIZACE.docx + Sablona_SOD_PROJEKCE.docx.
 
 ```
 Pracuješ na Kalkulator Next Gen ve větvi test-draft (repo vendljar/kalkulator-next-gen-engscalc).
