@@ -427,7 +427,10 @@ const KONTROLY = [
       if (!chybi.length) return null;
       return { text: 'Nabídka odejde bez ' + kontrolyVyctem(chybi.map(k => k.popis))
         + ' — v Nastavení → Firma → Kapitoly nabídky nejsou vyplněné'
-        + (jaz !== 'cz' ? ' (jazyk ' + jaz.toUpperCase() + ')' : '') + '. Prázdná kapitola se z nabídky vypustí i s nadpisem.' };
+        + (jaz !== 'cz' ? ' (jazyk ' + jaz.toUpperCase() + ')' : '') + '. Prázdná kapitola se z online nabídky '
+        /* Word ji vypustí jen se šablonou CN v13 a novější (značky kapitol,
+         * P8A 29. 9. 2026); starší šablona nechá nadpis a prázdný rámeček. */
+        + 'vypustí i s nadpisem; Word jen se šablonou CN v13 a novější — ve starší zůstane nadpis a prázdný rámeček.' };
     },
   },
   {

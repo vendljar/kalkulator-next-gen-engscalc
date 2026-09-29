@@ -319,7 +319,8 @@ function nabidkaData(zak, varianta, jekly, lang) {
       placeholders[sym] = radky.join('\n');
       /* Příznak znamená „tenhle jazyk aplikace u kapitol nezná, text je
        * česky" — ne „pole je prázdné". Prázdná kapitola se z dokumentu
-       * vypustí i s nadpisem a upozorňovat na ni není na co. */
+       * vypustí i s nadpisem (Word od šablony CN v13 se značkami kapitol,
+       * P8A 29. 9. 2026) a upozorňovat na ni není na co. */
       placeholders[sym + '_CHYBI'] = k.jazykChybi ? '1' : '';
     });
   }

@@ -823,7 +823,8 @@ function nastKapitolyNabidky() {
   const prazdneCz = (typeof firmaKapitolyPrazdne === 'function') ? firmaKapitolyPrazdne(f, 'cz') : [];
   const varovani = prazdneCz.length
     ? `<div class="cenik-stari kapitoly-chybi" style="margin:4px 0 8px">⚠ Česky nevyplněno: ${
-        esc(prazdneCz.map(k => k.popis).join(', '))}. Nabídka tyto kapitoly <b>vypustí</b> i s nadpisem —
+        esc(prazdneCz.map(k => k.popis).join(', '))}. Nabídka tyto kapitoly <b>vypustí</b> i s nadpisem
+        (Word jen se šablonou CN v13 a novější, starší nechá nadpis a prázdný rámeček) —
         zákazník je nedostane. Vyplňte je níž.</div>` : '';
   return `<div class="sec-title">Kapitoly nabídky III.–VI.</div>${varovani}
     <div class="note" style="margin-top:0">Texty, které se tisknou pod cenou v <b>každé</b> nabídce.
@@ -831,7 +832,7 @@ function nastKapitolyNabidky() {
       <b>Kapitola III. Platební podmínky se tady nevyplňuje</b> — skládá se ze zálohy, splatnosti
       a platnosti nabídky z krycího listu, aby se dvě místa nemohla rozejít.
       Každý jazyk má vlastní pole: smluvní podmínky se <b>nepřekládají strojově</b>. Jazyk, který
-      necháte prázdný, nabídka <b>vypustí i s nadpisem</b>; francouzština se zatím neřeší a vytiskne
+      necháte prázdný, nabídka <b>vypustí i s nadpisem</b> (Word od šablony CN v13); francouzština se zatím neřeší a vytiskne
       češtinu s upozorněním. Značka <code>{FIRMA}</code> se nahradí názvem firmy.</div>
     ${(typeof FIRMA_KAPITOLY !== 'undefined' ? FIRMA_KAPITOLY : []).map(blok).join('')}`;
 }

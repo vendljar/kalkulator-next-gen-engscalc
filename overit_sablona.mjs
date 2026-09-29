@@ -246,6 +246,40 @@ console.log('\nkapitoly IV.–VI. a doložky ze symbolů (v11+)');
   }
 }
 
+/* ---------- v13: značky kapitol — prázdná kapitola zmizí i s nadpisem ----------
+ * (P8 varianta A, rozhodnutí J. V. 29. 9. 2026). Do v12 nechal Word
+ * u prázdné kapitoly nadpis a prázdný orámovaný rámeček (u VI. i větu
+ * o předávacím protokolu). v13 obaluje kapitoly odstavci {{KAP_…_ZAC}}
+ * a {{KAP_…_KON}}; starší šablona je nemá — kontroly se přeskočí.
+ * Tady i věty o dílčích dokladech „(bez DPH)" (P10.4). */
+console.log('\nv13: značky kapitol a znění „(bez DPH)"');
+{
+  const polozky = await zipPrecti(new Uint8Array(zdroj));
+  const doc0 = dekoduj(polozky.find(p => p.nazev === 'word/document.xml').data);
+  if (!doc0.includes('{{KAP_IV_ZAC}}')) {
+    console.log('  – přeskočeno: šablona je starší než v13 (bez značek kapitol)');
+  } else {
+    for (const k of ['KAP_IV', 'KAP_V', 'KAP_VI', 'KAP_DOLOZKY'])
+      test('značky {{' + k + '_ZAC}} a {{' + k + '_KON}} jsou v šabloně právě jednou',
+        doc0.split('{{' + k + '_ZAC}}').length === 2 && doc0.split('{{' + k + '_KON}}').length === 2);
+    test('věty o dílčích dokladech jsou „(bez DPH)", ne „(+ DPH)"',
+      (doc0.match(/\(bez DPH\)/g) || []).length === 2 && !doc0.includes('(+ DPH)'));
+    const plne = { FIRMA_NAB_POZADAVKY: 'Požadavek první', NAB_KAP_TERMINY: 'Termín dodání: 12 týdnů',
+      FIRMA_NAB_PREDANI: '1. protokol', FIRMA_NAB_DOLOZKY: 'Doložka A' };
+    const obr = TITULNI_JE_FOTO ? { UVODNI_FOTO: PODPIS_PNG } : {};
+    const { doc: sPlnymi } = await vygeneruj(plne, obr);
+    test('vyplněné kapitoly zůstanou, značky v dokumentu nejsou',
+      sPlnymi.includes('IV. POŽADAVKY') && sPlnymi.includes('DOLOŽKY') && !/_ZAC\}\}|_KON\}\}/.test(sPlnymi));
+    const { doc: bezIV } = await vygeneruj(Object.assign({}, plne, { FIRMA_NAB_POZADAVKY: '', FIRMA_NAB_PREDANI: '' }), obr);
+    test('prázdná kapitola IV. zmizí i s nadpisem', !bezIV.includes('IV. POŽADAVKY') && !bezIV.includes('{{FIRMA_NAB_POZADAVKY}}'));
+    test('prázdná kapitola VI. zmizí i s větou o předávacím protokolu',
+      !bezIV.includes('VI. PŘEDÁNÍ') && !bezIV.includes('Předávací protokol'));
+    test('ostatní kapitoly zůstanou', bezIV.includes('V. TERMÍNY') && bezIV.includes('Termín dodání: 12 týdnů') && bezIV.includes('Doložka A'));
+    const vada = require('./src/docxgen.js').xmlStrukturaVada(bezIV);
+    test('dokument bez prázdných kapitol je platné XML', !vada, vada);
+  }
+}
+
 /* ---------- v12: sleva, popis záměru, stříška/příčka, můstky ----------
  * (25. 9. 2026, rozhodnutí J. V. k rozboru K13: P5, P6, P7, P10). Starší
  * šablony tyhle symboly nemají, proto jen od v12. */

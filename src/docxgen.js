@@ -164,6 +164,58 @@ function klicePlaceholderu(fragment) {
   });
   return klice;
 }
+/* ZNAČKY BLOKŮ: PRÁZDNÁ KAPITOLA ZMIZÍ I S NADPISEM (P8 varianta A,
+ * K16-N78 / K9-N32; rozhodnutí J. V. 29. 9. 2026).
+ *
+ * Word nabídky nechával u prázdné kapitoly IV.–VI. nadpis i prázdný
+ * orámovaný rámeček (u VI. i osiřelou větu o předávacím protokolu), náhled
+ * a PDF kapitolu vypustily. Šablona (CN v13) proto obalí každý blok
+ * odstavci se značkami {{JMENO_ZAC}} … {{JMENO_KON}}. Když jsou VŠECHNY
+ * symboly uvnitř bloku prázdné, zmizí celý blok i se značkami; jinak zmizí
+ * jen značky. Symbol, který aplikace nezná (není v `ph`), blok drží —
+ * zůstane vidět a někdo si ho všimne. Značky, které nejsou ve stejné úrovni
+ * dokumentu (tělo × buňka tabulky), obsah nemažou: vypadne jen značka
+ * (v buňce se nahradí prázdným odstavcem, buňka bez odstavce by byla vada).
+ * Šablona bez značek se chová jako dřív. */
+const DOCX_ZNACKA_BLOKU_RE = /^\s*\{\{([A-Z0-9_]+?)_(ZAC|KON)\}\}\s*$/;
+function docxZnackyBloku(xml) {
+  return odstavcoveSpany(xml).map(sp => {
+    const m = odstavecText(xml.slice(sp.zac, sp.kon)).match(DOCX_ZNACKA_BLOKU_RE);
+    return m ? { zac: sp.zac, kon: sp.kon, jmeno: m[1], typ: m[2] } : null;
+  }).filter(Boolean);
+}
+function docxVBunce(xml, pos) {
+  const pred = xml.slice(0, pos);
+  return (pred.match(/<w:tc[\s>]/g) || []).length > (pred.match(/<\/w:tc>/g) || []).length;
+}
+function docxVyvazene(fr) {
+  const n = re => (fr.match(re) || []).length;
+  return n(/<w:tbl[\s>]/g) === n(/<\/w:tbl>/g) && n(/<w:tr[\s>]/g) === n(/<\/w:tr>/g)
+    && n(/<w:tc[\s>]/g) === n(/<\/w:tc>/g) && n(/<w:p(?:\s[^>]*)?(?<!\/)>/g) === n(/<\/w:p>/g);
+}
+function odstranPrazdneBloky(xml, ph) {
+  if (!/_(?:ZAC|KON)(?:<[^>]+>)*\}/.test(xml)) return xml;       // šablona bez značek
+  const bezZnacky = (x, z) => (docxVBunce(x, z.zac) ? '<w:p/>' : '');
+  for (let kolo = 0; kolo < 500; kolo++) {
+    const zn = docxZnackyBloku(xml);
+    let par = null;                          // nejvnitřnější pár: ZAC hned následovaný svým KON
+    for (let i = 0; i < zn.length - 1 && !par; i++)
+      if (zn[i].typ === 'ZAC' && zn[i + 1].typ === 'KON' && zn[i + 1].jmeno === zn[i].jmeno) par = [zn[i], zn[i + 1]];
+    if (!par) break;
+    const [a, b] = par;
+    const uvnitr = xml.slice(a.kon, b.zac);
+    const klice = klicePlaceholderu(uvnitr);
+    const prazdny = klice.length > 0 && docxVyvazene(uvnitr)
+      && klice.every(k => ph && ph[k] != null && jePrazdnaHodnota(ph[k]));
+    xml = prazdny ? xml.slice(0, a.zac) + xml.slice(b.kon)
+      : xml.slice(0, a.zac) + bezZnacky(xml, a) + uvnitr + bezZnacky(xml, b) + xml.slice(b.kon);
+  }
+  /* značky bez páru nebo zkřížené: jen pryč, obsah zůstává */
+  docxZnackyBloku(xml).sort((p, q) => q.zac - p.zac)
+    .forEach(z => { xml = xml.slice(0, z.zac) + bezZnacky(xml, z) + xml.slice(z.kon); });
+  return xml;
+}
+
 /* páry <w:tr>…</w:tr> se správným párováním (počítání vnoření – tabulka v tabulce) */
 function radkoveSpany(xml) {
   const ev = [];
@@ -540,6 +592,7 @@ async function docxVyplnSablonu(arrayBuffer, placeholders, priplatky, obrazky) {
         po = expandujPriplatky(po, priplatky);
         po = odstranPrazdneTsRadky(po, placeholders);   // prázdné/„-“ řádky TS pryč
       }
+      po = odstranPrazdneBloky(po, placeholders);       // prázdné kapitoly se značkami pryč (P8A)
       po = nahradPlaceholdery(po, placeholders);
       if (po !== pred) nahrad++;
       p.data = enkoder.encode(po);
@@ -874,7 +927,7 @@ async function docxXmlVady(arrayBuffer) {
 
 if (typeof module !== 'undefined')
   module.exports = { docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
-    odstranPrazdneTsRadky, jePrazdnaHodnota, klicePlaceholderu,
+    odstranPrazdneTsRadky, jePrazdnaHodnota, klicePlaceholderu, odstranPrazdneBloky, docxZnackyBloku,
     docxVlozObrazky, rozmeryObrazku, dataUrlNaBajty,
     docxDokumentBlob, docxTeloZeSekci, docxSestavBlob, docxPar, docxEsc,
     docxPrelozSablonu, docxPrelozXml, odstavcoveSpany, odstavecText, xmlUnesc };
