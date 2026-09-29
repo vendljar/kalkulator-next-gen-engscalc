@@ -3,12 +3,17 @@
 Komunikace česky. Know-how projektu je ve skillech `kalkulator-next-gen`,
 `roadmapa-kng` a `testovaci-procedura-kng`.
 
-## Větve (pokyn J. V. 25. 9. 2026)
+## Větve (pokyn J. V. 25. 9. 2026, upraveno 29. 9. 2026)
 
-- Změny se nahrávají VŽDY do `test-draft`.
+- **Od 29. 9. 2026 (pravidlo J. V.): úpravy se dělají vždy promptem do
+  paralelní větve** (`claude/…`, založená nad commitem, který určí prompt).
+  Větev zůstává, o sloučení do `test-draft` rozhoduje J. V. Určuje-li prompt
+  větev a zakazuje `test-draft`, platí prompt.
+- `test-draft` je integrační větev: slučuje se do ní na pokyn J. V. (sezení
+  při tom řeší konflikty a pouští celé testovací kolo).
 - Do `test` jen na pokyn J. V., do `main` až po jeho odsouhlasení.
-- Pomocné větve relací (`main-xxxx`, `k13-nalezy` apod.) se nepoužívají;
-  práce z nich se přenese do `test-draft` a větev se smaže.
+- Staré pomocné větve relací (`main-xxxx`, `k13-nalezy` apod.) se po
+  sloučení mažou (viz Tagy, releasy a mazání větví).
 - **Výjimka schválená J. V. 25. 9. 2026: `k16-nalezy`** — pracovní větev pro
   dávky B, C a rozbor D kola 16 (roadmapa #361–#363). Vznikla z `test-draft`
   (v25.9.6). Pracuje se v ní a pushuje se do ní; do `test-draft` se převádí
@@ -17,7 +22,8 @@ Komunikace česky. Know-how projektu je ve skillech `kalkulator-next-gen`,
   a smaže. `PREDAVKA.md` se vede v té větvi, ve které se právě pracuje.
   (Splněno: sloučeno do `test-draft`, čeká jen na smazání — viz níže.)
 - **Trvalá předávací větev je `test-draft`** — nové sezení bez jiného pokynu
-  začíná z ní (`PREDAVKA.md` + `CLAUDE.md`).
+  začíná z ní (`PREDAVKA.md` + `CLAUDE.md`); paralelní větev si vede vlastní
+  `PREDAVKA.md` (u slučování se sloučí ručně).
 
 ## Tagy, releasy a mazání větví (pokyn J. V. 29. 9. 2026)
 
@@ -42,12 +48,13 @@ Cloudové sezení může spadnout (25. 9. 2026: „Prompt is too long“ po
 1. **Na začátku sezení** přečíst `PREDAVKA.md` na `test-draft`.
 2. **Po každé ucelené dávce** (a vždy před delší prací) přepsat
    `PREDAVKA.md`: co je hotovo, co je rozdělané, na co se čeká, otevřené
-   otázky pro J. V., další krok. Commitnout a pushnout do `test-draft`.
+   otázky pro J. V., další krok. Commitnout a pushnout do větve, ve které
+   se pracuje (u sloučení do `test-draft`).
 3. **Hlídat limit sezení:** zjistit `context_usage` nástrojem `get_session`
    (bez `session_id`) na konci každé dávky. Nad 60 % limitu upozornit J. V.,
    nad 75 % aktualizovat `PREDAVKA.md` a doporučit nové sezení.
 4. Rozdělanou práci nenechávat jen v kontejneru — radši commit „WIP“ do
-   `test-draft` než ztráta.
+   své větve než ztráta.
 
 ## Testy (od 26. 9. 2026)
 
