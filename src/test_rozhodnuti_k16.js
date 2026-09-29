@@ -4,7 +4,9 @@
  * Každý oddíl hlídá jedno rozhodnutí; bez opravy jeho testy selžou.
  *   P8b  — holé číslo termínu dodání dostane jednotku („12" → „12 týdnů"),
  *          aby nabídka neříkala „Termín dodání: 12" a aby se termín s ATYP
- *          dal přeložit (dřív „16 (vč. 4 týdnů za ATYP)" zůstalo česky). */
+ *          dal přeložit (dřív „16 (vč. 4 týdnů za ATYP)" zůstalo česky).
+ *   P10.1 — platnost nabídky 2 měsíce i v náhradních hodnotách, skloňování.
+ *   P10.2 — náhled nabídky PROJ bere splatnost a platnost z krycího listu. */
 const fs = require('fs');
 const nacti = (f) => { const m = require(f); Object.keys(m).forEach(k => { if (global[k] === undefined) global[k] = m[k]; }); return m; };
 const ZC = require('./zkusebni_cenik.js');
@@ -55,6 +57,50 @@ test('P8b: … i německy a francouzsky',
   pr.tr(sAtyp, 'de') === '16 Wochen (inkl. 4 Wochen für die Sonderausführung)'
   && /^16 semaines/.test(pr.tr(sAtyp, 'fr')), [pr.tr(sAtyp, 'de'), pr.tr(sAtyp, 'fr')]);
 test('P8b: jednotné číslo se přeloží („1 týden" → „1 week")', pr.tr('1 týden', 'en') === '1 week', pr.tr('1 týden', 'en'));
+
+/* ---------------- P10.1 / P10.2: platnost 2 měsíce, splatnost z krycího listu ----------------
+ * J. V. 29. 9. 2026: „standardizuj na 2 měsíce"; „splatnost by se měla
+ * tisknout z krycího listu". Náhled nabídky PROJ tiskl splatnost a platnost
+ * z konstant — přepis v krycím listu PROJ (třeba 45 dní) neviděl, Word ano. */
+const kp = nacti('./kryci_proj.js');
+const np = nacti('./nabidka_proj.js');
+const polePROJ = id => [].concat(...kp.KRYCI_PROJ_SEKCE.map(s => s.pole)).find(p => p.id === id);
+const cP = kp.kryciProjCtx(zak, v);
+test('P10.1: platnost PROJ bez firemní hodnoty = 2 měsíce (ne 3)',
+  kp.kryciProjHodnota(polePROJ('platnostNabidky'), { hodnoty: {} },
+    Object.assign({}, cP, { firma: { platnostNabidky: '' }, sazby: Object.assign({}, cP.sazby, { platnostMesicu: 2 }) })) === '2 měsíce');
+test('P10.1: počet měsíců se skloňuje (5 měsíců, 1 měsíc)',
+  kp.kryciProjHodnota(polePROJ('platnostNabidky'), { hodnoty: {} },
+    Object.assign({}, cP, { firma: { platnostNabidky: '' }, sazby: Object.assign({}, cP.sazby, { platnostMesicu: 5 }) })) === '5 měsíců'
+  && kp.kryciProjHodnota(polePROJ('platnostNabidky'), { hodnoty: {} },
+    Object.assign({}, cP, { firma: { platnostNabidky: '' }, sazby: Object.assign({}, cP.sazby, { platnostMesicu: 1 }) })) === '1 měsíc');
+test('P10.1: náhradní sazby krycího listu PROJ mají platnost 2 měsíce',
+  /platnostMesicu:\s*2\b/.test(fs.readFileSync(__dirname + '/kryci_proj.js', 'utf8'))
+  && !/platnostMesicu:\s*3\b/.test(fs.readFileSync(__dirname + '/kryci_proj.js', 'utf8')));
+test('P10.1: „5 měsíců" a „45 dní" se přeloží (vzor, ne jen slovník)',
+  pr.tr('5 měsíců', 'en') === '5 months' && pr.tr('45 dní', 'de') === '45 Tage' && pr.tr('1 měsíc', 'fr') === '1 mois',
+  [pr.tr('5 měsíců', 'en'), pr.tr('45 dní', 'de'), pr.tr('1 měsíc', 'fr')]);
+{
+  const z2 = zk.novaZakazka();
+  z2.cislo = '2026 OVP CN 0405'; z2.nazevAkce = 'Splatnost z krycího listu'; z2.objednatel = 'SVJ';
+  const v2 = z2.varianty[0];
+  v2.data.proj.cenik = ZC.zkusebniCenikProj();
+  v2.data.kryciProj = { hodnoty: { splatnostDni: '45', platnostNabidky: '1 měsíc' } };
+  const d = np.nabidkaProjData(z2, v2);
+  const obch = d.bloky.find(b => b.typ === 'pary' && b.radky.some(r => /Splatnost faktur/.test(r[0])));
+  const radek = re => obch && (obch.radky.find(r => re.test(r[0])) || [])[1];
+  test('P10.2: náhled nabídky PROJ tiskne splatnost z krycího listu PROJ (45 dní)', radek(/Splatnost/) === '45 dní', obch && obch.radky);
+  test('P10.2: … a platnost z krycího listu PROJ (1 měsíc)', radek(/Platnost/) === '1 měsíc', obch && obch.radky);
+  const dEn = np.nabidkaProjData(z2, v2, 'en');
+  const obchEn = dEn.bloky.find(b => b.typ === 'pary' && b.radky.some(r => /Invoice/.test(r[0])));
+  test('P10.2: v anglické nabídce přeloženě (45 days, 1 month)',
+    obchEn && obchEn.radky.some(r => r[1] === '45 days') && obchEn.radky.some(r => r[1] === '1 month'), obchEn && obchEn.radky);
+  v2.data.kryciProj = { hodnoty: {} };
+  const d0 = np.nabidkaProjData(z2, v2);
+  const obch0 = d0.bloky.find(b => b.typ === 'pary' && b.radky.some(r => /Splatnost faktur/.test(r[0])));
+  test('P10.2: bez přepisu platí předvyplněné hodnoty (14 dní, 2 měsíce)',
+    obch0 && obch0.radky.some(r => r[1] === '14 dní') && obch0.radky.some(r => r[1] === '2 měsíce'), obch0 && obch0.radky);
+}
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

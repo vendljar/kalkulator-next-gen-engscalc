@@ -194,7 +194,7 @@ const KRYCI_PROJ_SEKCE = [
      * OCK stála natvrdo jiná hodnota. Teď je zdroj jeden pro obojí a hodnota
      * z ceníku slouží už jen jako náhrada, kdyby firemní pole bylo prázdné. */
     { id: 'platnostNabidky', label: 'Platnost nabídky', verze: ['bo'],
-      prefill: c => firmaHodnota(c.firma, 'platnostNabidky') || (c.sazby.platnostMesicu + ' měsíce'),
+      prefill: c => firmaHodnota(c.firma, 'platnostNabidky') || kryciProjMesicu(c.sazby.platnostMesicu),
       src: 'Nastavení → Firma' },
     { id: 'zpusobFakturace', label: 'Způsob fakturace', verze: ['bo'],
       prefill: c => firmaHodnota(c.firma, 'zpusobFakturaceProj') || 'po dokončení jednotlivých stupňů dokumentace',
@@ -345,7 +345,8 @@ function kryciProjCtx(zak, varianta) {
   } catch (e) {}
   const firma = (typeof firmaAktualni === 'function') ? firmaAktualni() : {};
   const sazby = (typeof NABIDKA_PROJ_SAZBY !== 'undefined') ? NABIDKA_PROJ_SAZBY
-    : { splatnostDni: 14, platnostMesicu: 3, dphPct: 21, autorskyDozorKcMesic: 35000, autorskyDozorMaxHodin: 30, variantaSpKc: 8500 };
+    /* platnost 2 měsíce jako všude jinde (P10.1, rozhodnutí J. V. 29. 9. 2026) */
+    : { splatnostDni: 14, platnostMesicu: 2, dphPct: 21, autorskyDozorKcMesic: 35000, autorskyDozorMaxHodin: 30, variantaSpKc: 8500 };
   // DPH: přednost má vlastní sazba projekční části, jinak dosud platná z ceníku OCK
   const dph = (d.proj && d.proj.cenik && d.proj.cenik.dph != null) ? Math.round(d.proj.cenik.dph * 100)
     : (d.cenik && d.cenik.dph != null) ? Math.round(d.cenik.dph * 100) : sazby.dphPct;
@@ -397,6 +398,13 @@ function kryciProjSodSymboly(zak, varianta, placeholders) {
 }
 
 /* hodnota pole: ruční přepis (data.kryciProj.hodnoty) > prefill > '' */
+/* „2 měsíce", „5 měsíců", „1 měsíc" — náhradní platnost nabídky se skloňuje
+ * (dřív „5 měsíce"; P10.1, 29. 9. 2026). Nečíselnou hodnotu nechá být. */
+function kryciProjMesicu(n) {
+  const k = parseInt(n, 10);
+  if (!isFinite(k)) return String(n == null ? '' : n);
+  return k + ' ' + (k === 1 ? 'měsíc' : (k >= 2 && k <= 4 ? 'měsíce' : 'měsíců'));
+}
 function kryciProjHodnota(pole, kl, c) {
   /* `dphBind` je totéž provázání jako `bind`, jen mířené do sazby DPH
    * v hlavičce Kalkulace PROJ — ruční přepis se proto nečte ani tady. */
@@ -457,4 +465,4 @@ function kryciProjPodminkoveSymboly(zak, varianta, P) {
 if (typeof module !== 'undefined')
   module.exports = { KRYCI_PROJ_SEKCE, KRYCI_POKUTY_SAZBY, KRYCI_PROJ_NABIDKA_SEKCE, KRYCI_PROJ_CINNOSTI, kryciProjCtx,
     kryciProjHodnota, kryciProjData, kryciProjMigraceSazbaDph, kryciProjPodminkoveSymboly,
-    kryciProjSekceKc, kryciProjSodSymboly };
+    kryciProjSekceKc, kryciProjSodSymboly, kryciProjMesicu };

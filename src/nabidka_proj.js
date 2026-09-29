@@ -455,6 +455,15 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
     return v ? kc(v) : P('není součástí této nabídky');
   };
 
+  /* Podmínky z krycího listu PROJ ({{PODM_…}}) — spočítají se jednou a berou
+   * je blok obchodních podmínek i symboly pro Word. */
+  let podmProjCache = null;
+  const podmProj = () => {
+    if (!podmProjCache) podmProjCache = (typeof kryciProjPodminkoveSymboly === 'function')
+      ? kryciProjPodminkoveSymboly(zak, varianta, P) : {};
+    return podmProjCache;
+  };
+
   /* --- rozbalení definice do bloků připravených k vykreslení --- */
   const proza = o => (o && typeof o === 'object' && o.cz !== undefined) ? o.cz : P(o);
 
@@ -575,11 +584,22 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
       return { typ: 'rozsah', nadpis: P(b.nadpis), uvod: (b.uvod || []).map(proza), radky };
     }
     if (b.typ === 'pary') {
-      if (b.klic === 'obchodni') return { typ: 'pary', nadpis: P(b.nadpis), radky: [
-        [P('Současně platná sazba DPH'), dphPct + ' %'],
-        [P('Splatnost faktur'), NABIDKA_PROJ_SAZBY.splatnostDni + ' ' + P('dní')],
-        [P('Platnost nabídky'), NABIDKA_PROJ_SAZBY.platnostMesicu + ' ' + P('měsíce')],
-      ] };
+      /* Splatnost a platnost z KRYCÍHO LISTU PROJ (P10.2, rozhodnutí J. V.
+       * 29. 9. 2026: „splatnost by se měla tisknout z krycího listu"). Do té
+       * doby tu stály konstanty, takže přepis v krycím listu (45 dní) viděl
+       * Word ({{PODM_…}}), ale online nabídka ne. Prázdné pole krycího listu
+       * nahradí výchozí hodnota, jako dosud. */
+      if (b.klic === 'obchodni') {
+        const podm = podmProj();
+        const splatnost = String(podm.PODM_SPLATNOST_DNI == null ? '' : podm.PODM_SPLATNOST_DNI).trim();
+        const platnost = String(podm.PODM_PLATNOST_NABIDKY == null ? '' : podm.PODM_PLATNOST_NABIDKY).trim();
+        return { typ: 'pary', nadpis: P(b.nadpis), radky: [
+          [P('Současně platná sazba DPH'), dphPct + ' %'],
+          [P('Splatnost faktur'), /^\d+$/.test(splatnost) ? P(splatnost + ' dní')
+            : (splatnost || P(NABIDKA_PROJ_SAZBY.splatnostDni + ' dní'))],
+          [P('Platnost nabídky'), platnost || P(NABIDKA_PROJ_SAZBY.platnostMesicu + ' měsíce')],
+        ] };
+      }
       return { typ: 'pary', nadpis: P(b.nadpis),
         radky: b.radky.filter(radekVRozsahu).map(x => [P(x[0]), P(x[1])]) };
     }
@@ -728,8 +748,7 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
 
   /* Smluvní a platební podmínky PROJ (#147) – tytéž symboly {{PODM_…}} jako
    * u OCK, jen ze druhého krycího listu. */
-  if (typeof kryciProjPodminkoveSymboly === 'function')
-    Object.assign(placeholders, kryciProjPodminkoveSymboly(zak, varianta, P));
+  Object.assign(placeholders, podmProj());
 
   /* Název a popisek úvodní fotky jako textové symboly — obrázek jde zvlášť
    * (viz `obrazky` níž), tohle je popisek pod něj. */
