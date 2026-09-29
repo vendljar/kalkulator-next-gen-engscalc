@@ -34,6 +34,10 @@ const KRYCI_POKUTY = ['0', '0,05 % / den', '0,1 % / den'];
 const KRYCI_ZALOHY = ['Bez zálohy', '30 % – po podpisu smlouvy',
                       '50 % – po podpisu smlouvy', '70 % – po podpisu smlouvy'];
 
+/* Způsob fakturace OCK (P10.5, 29. 9. 2026). */
+const KRYCI_FAKTURACE = ['Po milnících', 'Měsíční'];
+const KRYCI_FAKTURACE_STARY_VYCHOZI = 'Náš standard / měsíční';
+
 /* Limit smluvních pokut (12. 8. 2026). Do té doby volné pole s jediným
  * předvyplněným zněním. Obě varianty se v praxi používají a pletly se —
  * rozdíl mezi „UPLATNĚN" a „NEUPLATNĚN" je jedno slovo a znamená opak.
@@ -154,8 +158,16 @@ const KRYCI_SEKCE = [
     { id: 'platnostNabidky', label: 'Platnost nabídky', verze: ['bo'],
       prefill: c => firmaHodnota(c.firma, 'platnostNabidky') || '2 měsíce',
       src: 'Nastavení → Firma' },
-    { id: 'zpusobFakturace', label: 'Způsob fakturace', verze: ['bo'],
-      prefill: c => firmaHodnota(c.firma, 'zpusobFakturaceOck') || 'Náš standard / měsíční',
+    /* Způsob fakturace výběrem (P10.5, rozhodnutí J. V. 29. 9. 2026: „náš
+     * standard je 50, 40, 10"; „většinou po milnících, ale může být
+     * i měsíční"). Milníky a procenta nesou pole záloha / dílčí / konečná
+     * faktura níž. Dosavadní výchozí „Náš standard / měsíční" z Nastavení si
+     * s milníky odporovalo — čte se jako „Po milnících". */
+    { id: 'zpusobFakturace', label: 'Způsob fakturace', verze: ['bo'], typ: 'vyber', o: KRYCI_FAKTURACE,
+      prefill: c => {
+        const f = firmaHodnota(c.firma, 'zpusobFakturaceOck');
+        return (!f || f === KRYCI_FAKTURACE_STARY_VYCHOZI) ? KRYCI_FAKTURACE[0] : f;
+      },
       src: 'Nastavení → Firma' },
     { id: 'zaloha1', label: 'Záloha / dílčí faktura č. 1', verze: ['bo'],
       typ: 'vyber', o: KRYCI_ZALOHY, prefill: () => KRYCI_ZALOHY[2], src: 'výchozí' },
@@ -667,7 +679,7 @@ function kryciPodminkoveSymboly(zak, varianta, jekly, P) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { kryciKc, KRYCI_SEKCE, KRYCI_NABIDKA_SEKCE, KRYCI_DPH_SAZBY, KRYCI_POKUTY, kryciCtx, kryciHodnota,
+  module.exports = { kryciKc, KRYCI_SEKCE, KRYCI_NABIDKA_SEKCE, KRYCI_DPH_SAZBY, KRYCI_POKUTY, KRYCI_FAKTURACE, kryciCtx, kryciHodnota,
     kryciData, kryciMigraceZadrzne, kryciMigraceSazbaDph,
     PODM_PREFIX, kryciSymbolId, kryciCisloZTextu, kryciProcentoZTextu,
     kryciTerminDodani, kryciTerminDodaniText, kryciTerminSJednotkou, kryciTydnu,

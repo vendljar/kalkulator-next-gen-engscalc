@@ -271,7 +271,7 @@ const DEFAULT_FIRMA = {
    * natvrdo v kryci.js a kryci_proj.js. Kdo si je v Nastavení → Firma
    * přepíše, změní je jednou pro celou firmu. */
   platnostNabidky: '2 měsíce',
-  zpusobFakturaceOck: 'Náš standard / měsíční',
+  zpusobFakturaceOck: 'Po milnících',   // P10.5 (29. 9. 2026): dřív „Náš standard / měsíční"
   zpusobFakturaceProj: 'po dokončení jednotlivých stupňů dokumentace',
   rozsahDefinice: 'je definován přílohou ke smlouvě (specifikace)',
   /* Prázdná lhůta = „nemáme ji nastavenou"; nabídka pak termín neuvádí

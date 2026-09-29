@@ -845,7 +845,7 @@ function nastSmluvniStandardy() {
    * záložní věta ukazuje jako nápověda v poli i pod ním. */
   const ZALOHA = {
     platnostNabidky: '2 měsíce',
-    zpusobFakturaceOck: 'Náš standard / měsíční',
+    zpusobFakturaceOck: 'Po milnících',
     zpusobFakturaceProj: 'po dokončení jednotlivých stupňů dokumentace',
     rozsahDefinice: 'je definován přílohou ke smlouvě (specifikace)',
   };

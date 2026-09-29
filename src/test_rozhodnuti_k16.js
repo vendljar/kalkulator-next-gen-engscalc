@@ -9,7 +9,8 @@
  *   P10.2 — náhled nabídky PROJ bere splatnost a platnost z krycího listu.
  *   P11   — zahraniční varianta s oceněnou projekcí: kontrola a věta v dialogu.
  *   P9.5  — zámek zmrazí i podmínky krycího listu předvyplněné z Nastavení
- *          (P9.2 a P9.4 — smlouva o dílo z krycího listu — hlídá test_sod.js). */
+ *          (P9.2 a P9.4 — smlouva o dílo z krycího listu — hlídá test_sod.js).
+ *   P10.5 — způsob fakturace: výběr po milnících / měsíční, výchozí po milnících. */
 const fs = require('fs');
 const nacti = (f) => { const m = require(f); Object.keys(m).forEach(k => { if (global[k] === undefined) global[k] = m[k]; }); return m; };
 const ZC = require('./zkusebni_cenik.js');
@@ -165,6 +166,25 @@ test('P11: dialog přepnutí na zahraniční ceník o projekci mluví',
   test('P9.5: první zamčení po tisku podmínky zmrazí (OCK i PROJ)',
     /if \(prvni\)[\s\S]*kryciZmrazPodminky\(/.test(poTisku) && /kryciProjZmrazPodminky\(/.test(poTisku));
   global.NAST.firma.platnostNabidky = puvodni;
+}
+
+/* ---------------- P10.5: způsob fakturace po milnících, může být měsíční ----------------
+ * J. V. 29. 9. 2026: „náš standard je 50, 40, 10, vše se musí dotahovat
+ * z krycího listu"; „způsob fakturace většinou po milnících, ale může být
+ * i měsíční". Výchozí „Náš standard / měsíční" si s milníky odporovalo. */
+{
+  const pf = pole('zpusobFakturace');
+  test('P10.5: způsob fakturace je výběr (po milnících / měsíční)',
+    pf.typ === 'vyber' && pf.o.indexOf('Po milnících') >= 0 && pf.o.indexOf('Měsíční') >= 0, [pf.typ, pf.o]);
+  const pref = firma => pf.prefill(Object.assign({}, c, { firma }));
+  test('P10.5: výchozí je po milnících', pref({}) === 'Po milnících', pref({}));
+  test('P10.5: dosavadní výchozí „Náš standard / měsíční" z Nastavení se čte jako po milnících',
+    pref({ zpusobFakturaceOck: 'Náš standard / měsíční' }) === 'Po milnících');
+  test('P10.5: měsíční nebo vlastní znění z Nastavení platí', pref({ zpusobFakturaceOck: 'Měsíční' }) === 'Měsíční'
+    && pref({ zpusobFakturaceOck: 'dle dohody' }) === 'dle dohody');
+  test('P10.5: firemní výchozí hodnota je po milnících', global.firmaDefault().zpusobFakturaceOck === 'Po milnících');
+  test('P10.5: standard 50 / 40 / 10 v krycím listu', pole('zaloha1').prefill(c) === '50 % – po podpisu smlouvy'
+    && /^40 %/.test(pole('faktura2').prefill(c)) && /^10 %/.test(pole('fakturaKonc').prefill(c)));
 }
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
