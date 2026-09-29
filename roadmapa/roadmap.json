@@ -5738,12 +5738,12 @@
   {
    "id" : "366",
    "vlna" : "B",
-   "stav" : "blokovano",
+   "stav" : "ceka",
    "dulezitost" : "stredni",
    "slozitost" : "M",
    "nazev" : "P9: smlouva o dílo z krycího listu — termíny, podpisy, zmrazení podmínek, vlastní řada čísel",
    "proc" : "K16-N83: SoD plní jen symboly nabídky, objednatele a splátky PROJ; číslo smlouvy a termíny nikdy, podpisy objednatele jen u PROJ, a po změně Nastavení může nést jiné podmínky než odeslaná nabídka. Rozhodnutí J. V. 29. 9. 2026: vlastní řada čísel smluv, termíny z krycího listu, podpisy i do SoD OCK, zámek zmrazí i podmínky z Nastavení.",
-   "detail" : "NÁVRH v29.9.3: podklady/NAVRH_PLATEBNI_PODMINKY_2026-09-29.md, oddíly 3 a 4. HOTOVO v29.9.2: P9.2 termíny SoD OCK z krycího listu (převzetí → SOD_TERMIN_MONTAZ_OD, předání → SOD_TERMIN_DOKONCENI), P9.4 sekce „Smlouva o dílo — podpisy a kopie (SoD realizace)\" v krycím listu OCK (předvyplní se z krycího listu PROJ), P9.5 zámek při prvním zamčení opíše předvyplněné podmínky krycích listů do data.kryci/kryciProj.zmrazeno (platí jen, dokud je varianta zamčená). ZBÝVÁ: P9.1 vlastní řada čísel smluv a P9.3 dopočet splátek SoD PROJ — podle návrhu k #367; symbol ukončení montáže a ověření symbolů se šablonami SoD (#350). Zámek zapíše předvyplněné podmínky krycího listu do varianty (zmrazí je); SOD_TERMIN_MONTAZ_OD a SOD_TERMIN_DOKONCENI z krycího listu OCK; OBJEDNATEL_PODPIS_* a kontakty i v SoD OCK; číslo smlouvy z vlastní řady (podoba řady v návrhu #367).",
+   "detail" : "ROZHODNUTO J. V. 29. 9. 2026 (oddíl 7 návrhu): P9.1 číslo smlouvy = ruční pole v krycím listu s návrhem dalšího čísla (ne serverová řada), formát „2026 - OPR - SOD - 0001“ (realizace) a „2026 OVP SOD 0001“ (projekce), navázat na papírové smlouvy; doporučena kontrola jedinečnosti při uložení (k potvrzení). P9.3 dopočet splátek SoD PROJ jde s etapou B v #367. Etapa C je v pořadí poslední (B → A → C). NÁVRH v29.9.3: podklady/NAVRH_PLATEBNI_PODMINKY_2026-09-29.md, oddíly 3 a 4. HOTOVO v29.9.2: P9.2 termíny SoD OCK z krycího listu (převzetí → SOD_TERMIN_MONTAZ_OD, předání → SOD_TERMIN_DOKONCENI), P9.4 sekce „Smlouva o dílo — podpisy a kopie (SoD realizace)\" v krycím listu OCK (předvyplní se z krycího listu PROJ), P9.5 zámek při prvním zamčení opíše předvyplněné podmínky krycích listů do data.kryci/kryciProj.zmrazeno (platí jen, dokud je varianta zamčená). ZBÝVÁ: P9.1 vlastní řada čísel smluv a P9.3 dopočet splátek SoD PROJ — podle návrhu k #367; symbol ukončení montáže a ověření symbolů se šablonami SoD (#350). Zámek zapíše předvyplněné podmínky krycího listu do varianty (zmrazí je); SOD_TERMIN_MONTAZ_OD a SOD_TERMIN_DOKONCENI z krycího listu OCK; OBJEDNATEL_PODPIS_* a kontakty i v SoD OCK; číslo smlouvy z vlastní řady (podoba řady v návrhu #367).",
    "hotovoKdyz" : "Test: SoD OCK nese termíny a podpisy z krycího listu; po zámku a změně Nastavení zůstanou podmínky odeslané nabídky.",
    "kde" : "`src/sod.js`, `src/kryci.js`, `src/kryci_proj.js`, `src/ui/zamek_ui.js`",
    "zavisi" : [
@@ -5756,21 +5756,25 @@
      "id" : "350",
      "typ" : "doporuceno",
      "proc" : "šablony SoD pro ověření symbolů"
+    },
+    {
+     "id" : "367",
+     "typ" : "doporuceno",
+     "proc" : "pořadí etap B → A → C (rozhodnutí J. V. 29. 9. 2026)"
     }
    ],
-   "cekaNa" : "J. V. — odsouhlasit návrh podklady/NAVRH_PLATEBNI_PODMINKY_2026-09-29.md (řada čísel smluv, dopočet splátek SoD PROJ); šablony SoD (#350)",
-   "otazka" : "Formát a počátek řady čísel smluv, serverové počítadlo, nebo ruční pole? Sčítat splátky SoD PROJ podle milníku?"
+   "otazka" : "Poslední číslo papírové smlouvy realizace (OPR) a projekce (OVP), na které má řada navázat (v odpovědi 29. 9. „v poznámce“, poznámka nepřišla)."
   },
   {
    "id" : "367",
    "vlna" : "B",
-   "stav" : "blokovano",
+   "stav" : "ceka",
    "dulezitost" : "vysoka",
    "slozitost" : "L",
    "nazev" : "P10: platební podmínky z krycího listu — 2 měsíce, splatnost, „bez DPH\", po milnících, záruka + návrh plánu plateb",
    "proc" : "K15-N71: platební podmínky žijí na devíti místech a v sedmi bodech si odporují. Rozhodnutí J. V. 29. 9. 2026: vše se dotahuje z krycího listu, při rozporu má přednost krycí list; standard 50 / 40 / 10; platnost 2 měsíce; splatnost z krycího listu; znění „bez DPH\"; fakturace většinou po milnících, může být i měsíční; pro plán plateb PROJ (4 znění) a „vše z krycího listu\" připravit návrh.",
-   "detail" : "NÁVRH v29.9.3: podklady/NAVRH_PLATEBNI_PODMINKY_2026-09-29.md — krycí list jako jediný zdroj; OCK platební kalendář (procento + milník, předvolby, součet 100 %, symbol {{PODM_PLATEBNI_KALENDAR}} pro CN v14 a SoD); PROJ plán plateb po činnostech s předvolbami, ze kterého se odvodí nabídka, krycí list, SoD (dopočet splátek) i Nastavení. Věty „(bez DPH)\" jsou v šabloně CN v13. HOTOVO v29.9.2: 10.1 platnost 2 měsíce i v náhradních hodnotách + skloňování, 10.2 náhled PROJ bere splatnost a platnost z krycího listu PROJ, 10.4 slovník zná věty o dílčích dokladech se zněním „(bez DPH)\", 10.5 způsob fakturace výběrem Po milnících / Měsíční (výchozí po milnících, staré „Náš standard / měsíční\" se čte jako po milnících), 10.7 záruka v kapitole V. z krycího listu (věta o záruce z Firmy vypadne). ZBÝVÁ: návrh 10.3 („vše z krycího listu\") a 10.6 (plán plateb PROJ), věty „(bez DPH)\" do šablony CN v13. Hned: platnost 2 měsíce všude a skloňování, náhled PROJ bere splatnost a platnost z krycího listu, způsob fakturace výchozí po milnících (volba měsíční), záruka z krycího listu, věty „bez DPH\". Návrh: jak by krycí list řídil celé znění podmínek v nabídce, Wordu a SoD (OCK i PROJ), včetně splátek SoD PROJ a řady čísel smluv.",
-   "hotovoKdyz" : "Náhled, Word i SoD berou podmínky z krycího listu; návrh odsouhlasený J. V.",
+   "detail" : "ROZHODNUTO J. V. 29. 9. 2026 (oddíl 7 návrhu, po vyzkoušení prototypu): OCK tři firemní milníky, věty o podmínce úhrady u 1. a 2. splátky, měsíční fakturace větou „Fakturace probíhá měsíčně podle skutečně provedených prací.“; PROJ čtyři předvolby, výchozí Standard po činnostech, splátky SoD PROJ se stejným milníkem sečíst, šablona SoD PROJ se seznamem plateb jedním symbolem. POŘADÍ: nejdřív etapa B (PROJ plán plateb + šablona PROJ v4 + dopočet SoD PROJ, bod P9.3 z #366), pak etapa A (OCK platební kalendář + šablona CN v14 + SoD OCK). NÁVRH v29.9.3: podklady/NAVRH_PLATEBNI_PODMINKY_2026-09-29.md — krycí list jako jediný zdroj; OCK platební kalendář (procento + milník, předvolby, součet 100 %, symbol {{PODM_PLATEBNI_KALENDAR}} pro CN v14 a SoD); PROJ plán plateb po činnostech s předvolbami, ze kterého se odvodí nabídka, krycí list, SoD (dopočet splátek) i Nastavení. Věty „(bez DPH)\" jsou v šabloně CN v13. HOTOVO v29.9.2: 10.1 platnost 2 měsíce i v náhradních hodnotách + skloňování, 10.2 náhled PROJ bere splatnost a platnost z krycího listu PROJ, 10.4 slovník zná věty o dílčích dokladech se zněním „(bez DPH)\", 10.5 způsob fakturace výběrem Po milnících / Měsíční (výchozí po milnících, staré „Náš standard / měsíční\" se čte jako po milnících), 10.7 záruka v kapitole V. z krycího listu (věta o záruce z Firmy vypadne). ZBÝVÁ: návrh 10.3 („vše z krycího listu\") a 10.6 (plán plateb PROJ), věty „(bez DPH)\" do šablony CN v13. Hned: platnost 2 měsíce všude a skloňování, náhled PROJ bere splatnost a platnost z krycího listu, způsob fakturace výchozí po milnících (volba měsíční), záruka z krycího listu, věty „bez DPH\". Návrh: jak by krycí list řídil celé znění podmínek v nabídce, Wordu a SoD (OCK i PROJ), včetně splátek SoD PROJ a řady čísel smluv.",
+   "hotovoKdyz" : "Etapa B i A hotové: náhled, Word i SoD (OCK i PROJ) berou platební podmínky z krycího listu; test před opravou → po opravě.",
    "kde" : "`src/kryci.js`, `src/kryci_proj.js`, `src/firma.js`, `src/nabidka.js`, `src/nabidka_proj.js`, `src/preklad.js`",
    "zavisi" : [
     {
@@ -5779,8 +5783,7 @@
      "proc" : "rozhodnutí P10"
     }
    ],
-   "cekaNa" : "J. V. — odsouhlasit návrh podklady/NAVRH_PLATEBNI_PODMINKY_2026-09-29.md (platební kalendář OCK, plán plateb PROJ)",
-   "otazka" : "Tři firemní milníky OCK a věty o podmínce úhrady? Znění věty pro měsíční fakturaci? Čtyři předvolby plánu plateb PROJ a výchozí? Pořadí etap A → B → C?"
+   "pozn" : "Etapa C (číslo smlouvy) je #366. Prototyp: https://claude.ai/artifact/6sbxbaAsBpphfPfE2wnM3a"
   },
   {
    "id" : "368",
@@ -6394,7 +6397,7 @@
    "hotovo" : true
   },
   {
-   "text" : "29. 9. 2026 (engscalc, test-draft), v29.9.4 — sloučení větví claude/pensive-curie-s6yzs3 (testovací sekvence A1–A5 + opravy B72/P4, B75–B78, N43 na serveru; #371, ve větvi #364) a claude/stoic-cerf-j915ax (#372) do test-draft na pokyn J. V.; razítko upravilJmeno (P7) přeneseno do společné kontroly uložení. Ověřeno celým kolem: @@KOLO_SLOUCENI@@",
+   "text" : "29. 9. 2026 (engscalc, test-draft), v29.9.4 — sloučení větví claude/pensive-curie-s6yzs3 (testovací sekvence A1–A5 + opravy B72/P4, B75–B78, N43 na serveru; #371, ve větvi #364) a claude/stoic-cerf-j915ax (#372) do test-draft na pokyn J. V.; razítko upravilJmeno (P7) přeneseno do společné kontroly uložení. Rozhodnutí J. V. k platebním podmínkám zapsaná (návrh, oddíl 7): pořadí etap B → A → C, číslo smlouvy ručním polem; #366 a #367 odblokované. Ověřeno celým kolem: @@KOLO_SLOUCENI@@",
    "hotovo" : true
   }
   ],

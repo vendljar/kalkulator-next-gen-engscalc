@@ -5,7 +5,8 @@ listu, připrav návrh jak by to mohlo fungovat a vypadat"), **P10.6** („to je
 chaotické, můžeš zkusit navrhnout koncept?"), **P9.1** (číslo smlouvy =
 vlastní řada) a **P9.3** (splátky SoD PROJ z krycího listu a dopočítat)
 z rozboru D kola 16 (`podklady/K16_ROZBOR_2026-09-25.md`). Roadmapa #367
-a #366. **Kód se podle tohoto návrhu zatím nemění** — čeká na odsouhlasení.
+a #366. **Odsouhlaseno J. V. 29. 9. 2026 — rozhodnutí v oddílu 7**
+(po vyzkoušení prototypu https://claude.ai/artifact/6sbxbaAsBpphfPfE2wnM3a).
 
 Co už platí od v29.9.2: platnost 2 měsíce, splatnost a platnost v nabídce
 PROJ z krycího listu, způsob fakturace „Po milnících / Měsíční", záruka
@@ -192,3 +193,37 @@ Doporučené pořadí A → B → C; C je nezávislá a jde udělat kdykoli.
 4. **Číslo smlouvy:** formát řady, počáteční číslo (navazuje na dosavadní
    papírové smlouvy?), serverové počítadlo, nebo ruční pole?
 5. **Pořadí etap** A → B → C?
+
+---
+
+## 7. Rozhodnutí J. V. 29. 9. 2026
+
+Odpovědi z prototypu (oddíl „Otázky"), doslova převzaté volby:
+
+| # | otázka | rozhodnutí |
+|---|---|---|
+| 1 | milníky OCK | tři firemní milníky, jak jsou; věty o podmínce úhrady **ano — u 1. a 2. splátky jako dnes** |
+| 2 | měsíční fakturace | znění „Fakturace probíhá měsíčně podle skutečně provedených prací." |
+| 3 | plán plateb PROJ | čtyři předvolby **souhlas**; splátky smlouvy se stejným milníkem **sečíst do jedné platby**; výchozí předvolba **Standard po činnostech**; šablona SoD PROJ: **seznam plateb jedním symbolem** místo 8 pevných řádků |
+| 4 | číslo smlouvy | **ruční pole s návrhem dalšího čísla** (ne serverová řada); formát realizace `2026 - OPR - SOD - 0001`, projekce `2026 OVP SOD 0001`; počáteční číslo **navázat na papírové smlouvy** |
+| 5 | pořadí etap | **B → A → C** |
+
+Co z toho plyne pro práci:
+
+- **Etapa B (první)** — PROJ plán plateb: model v krycím listu PROJ,
+  předvolby v Nastavení → Firma (výchozí Standard po činnostech), nabídka
+  PROJ online + šablona PROJ v4 z plánu, dopočet splátek SoD PROJ sečtených
+  podle milníku a nový symbol se seznamem plateb pro šablonu SoD PROJ
+  (8 pevných řádků `SODP_PLATBA1_KC` … `SODP_PLATBA8_KC` nahradí; převod
+  starších zakázek zachová ručně zadané částky).
+- **Etapa A (druhá)** — OCK platební kalendář podle oddílu 2 beze změny;
+  věty o podmínce úhrady jen u milníků „po podpisu smlouvy o dílo"
+  a „po ukončení výroby, dodání materiálu na stavbu a zahájení prací".
+- **Etapa C (třetí)** — číslo smlouvy jako ruční pole v krycím listu:
+  aplikace navrhne další číslo podle uložených smluv (a čísla, na které se
+  navazuje), obchodník ho může přepsat. Serverové počítadlo odpadá; proti
+  zdvojení doporučuji aspoň kontrolu jedinečnosti při uložení (prototyp
+  ukazuje, jak ke zdvojení dojde) — k potvrzení při etapě C.
+- **Chybí:** poslední číslo papírové smlouvy realizace (OPR) a projekce
+  (OVP), na které se má navázat — v odpovědi „v poznámce", poznámka
+  nepřišla.
