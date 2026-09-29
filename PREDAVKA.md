@@ -1,7 +1,8 @@
 # Předávka — stav k 29. 9. 2026 (sloučení do test-draft, v29.9.4)
 
 Na `main`: **v25.9.3** (+ oprava Node), tag `v25.9.3`.
-Na `test`: **v29.9.3**. Na `test-draft`: **v29.9.4**, tag `v29.9.4` —
+Na `test`: **v29.9.3**. Na `test-draft`: **v29.9.4** (tag `v29.9.4` jen
+lokálně — push tagů z cloudového sezení odmítnut, HTTP 403; viz Čeká na J. V.) —
 sloučeny větve `claude/pensive-curie-s6yzs3` (testovací sekvence A1–A5,
 #371) a `claude/stoic-cerf-j915ax` (#372) na pokyn J. V. 29. 9. 2026.
 Obě větve i `k16-nalezy` jsou sloučené — navrženo J. V. je smazat (z cloudu
@@ -61,6 +62,9 @@ rozhodnutí), prototyp https://claude.ai/artifact/6sbxbaAsBpphfPfE2wnM3a.
   (nová šablona SoD PROJ). Test před opravou → oprava → commit po bodech.
 
 ## Čeká na J. V.
+- **Tag `v29.9.4`** vytvořit na GitHubu ručně nad aktuálním `test-draft`
+  (Releases → Draft a new release → tag `v29.9.4`, cíl `test-draft`), nebo
+  lokálně `git fetch origin && git tag v29.9.4 origin/test-draft && git push origin v29.9.4`.
 - **Poslední číslo papírových smluv** realizace (OPR) a projekce (OVP),
   na které má řada navázat — v odpovědi „v poznámce", poznámka nepřišla.
 - Pokyn k přenosu `test-draft` (v29.9.4) do `test` a dál do `main`.
