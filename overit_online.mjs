@@ -1341,6 +1341,18 @@ test('lišta uzamčené varianty nabízí za Klonovat i Založit novou zakázku 
    * nedokázala. Smyšlený zkušební ceník (týž jako v Node sadách). */
   const ZKC = require('./src/zkusebni_cenik.js');
   const ceniky = { ock: ZKC.zkusebniCenik(), proj: ZKC.zkusebniCenikProj() };
+  /* Od B112 (29. 9. 2026) uloží obchodník jen ceník, který administrátor
+   * zveřejnil (nebo ten z uložené verze či jiné varianty). Zkušební ceník se
+   * proto nejdřív zveřejní přímo serverovou funkcí pod administrátorem —
+   * do té doby si ho harness podstrčil jen v prohlížeči obchodníka. */
+  {
+    const rA = await prihlaseni(new Request('http://x/api/prihlaseni', { method: 'POST',
+      body: JSON.stringify({ email: 'spravce@priklad.cz', heslo: 'Zkusebni.Heslo.123' }) }));
+    const cA = (rA.headers.get('set-cookie') || '').split(';')[0];
+    const rp = await (await program(new Request('http://x/api/program', { method: 'POST', headers: { cookie: cA },
+      body: JSON.stringify({ cenik: ceniky.ock, cenikProj: ceniky.proj, poznamka: 'B59 zkušební ceník (harness)' }) }))).json();
+    test('B59: příprava — zkušební ceník zveřejněn administrátorem', rp.ok === true, JSON.stringify(rp).slice(0, 200));
+  }
   const poctiva = await page.evaluate(async (ceniky) => {
     ZAK = novaZakazka(); ZAK.cislo = '2026 - OPR - CN - 0761'; ZAK.nazevAkce = 'B59 poctivá';
     aktivniVarianta(ZAK).data.cenik = ceniky.ock; aktivniVarianta(ZAK).data.proj.cenik = ceniky.proj;

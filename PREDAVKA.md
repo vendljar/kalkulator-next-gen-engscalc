@@ -17,8 +17,8 @@ v `git show 9a48ee8:PREDAVKA.md`.
 |----|---------|------|--------|-------|-----------------|----------|
 | B111 | vysoká | ✅ opraveno | a25edfd | v29.9.2 | test_zaporne 3 OK/19 FAIL → 24/0; overit_zaporne 5/10 → 15/0; test_kontroly 97/8 → 105/0 | mutace +3, chycené 3/3 |
 | B96 | vysoká | ✅ opraveno | 3c3dd6d | v29.9.3 | test_prava 587/7 → 595/0; test_uloziste 161/1 → 172/0; overit_zaokrouhleni 12/4 → 16/0 | mutace +2, chycené; bod 4 jen návrh |
-| B112 | vysoká | ✅ opraveno | (tento commit) | v29.9.4 | test_prava 608/15 → 623/0; overit_cenik_prava 4/2 → 6/0 | mutace +4, chycené 4/4 |
-| — | — | ⬜ celé kolo č. 1 (běží) | | v29.9.4 | | po B112 |
+| B112 | vysoká | ✅ opraveno | 57fe11f (+ harness) | v29.9.4 | test_prava 608/15 → 623/0; overit_cenik_prava 4/2 → 6/0 | mutace +4, chycené 4/4 |
+| — | — | ✅ celé kolo č. 1 | | v29.9.4 | sady 189/1/1, mutace 76/76 + 196/196, statické 3/3 | selhal jen overit_online (fixtura B112) — opraveno, 189/0 |
 | B97 | střední | ⬜ | | | | |
 | B98 | střední | ⬜ | | | | |
 | B99 | střední | ⬜ | | | | podklady z Disku jsou (viz níže) |
@@ -104,6 +104,20 @@ zaokrouhlení mimo výčet, ceník a přepisy bez práva) — při uložení i o
    zadává obchodník vědomě — to je rozhodnutí produktu, ne díra.
 Poznámka: dokumenty (Word, PDF) vznikají v prohlížeči — upravený klient si
 může vyrobit cokoli; server chrání uložený doklad, zámky a rejstřík.
+
+## Celé kolo č. 1 (v29.9.4, commit 57fe11f; 64 min 34 s)
+`KNG_PODKLADY=/home/user/kng_podklady bash nastroje/testovaci_kolo.sh`:
+- kontrola verze + sestavení ✓;
+- **sady 189 prošlo, 1 selhalo, 1 přeskočeno** (test.js — skutečný ceník);
+  selhal `overit_online.mjs`: oddíl B59 si zkušební ceník podstrčil jen
+  v prohlížeči obchodníka a ukládal — B112 to odmítl 403 a harness pak visel
+  (ukončen po ~12 min, mutace ještě neběžely). Oprava: harness zkušební
+  ceník nejdřív zveřejní pod administrátorem (commit po 57fe11f);
+  `overit_online.mjs` pak **189 OK, 0 FAIL**;
+- **mutace jádra 76 z 76**, **mutace serveru 196 z 196** (0 chybně zadaných);
+- statické kontroly 3 z 3; strom po běhu čistý, `if (false)` nikde;
+  `dist/kalkulacka_v29.9.5.html` (N61) smazán.
+Tři serverové kontroly B111 → B96 → B112 na jednom místě se snesly.
 
 ## Rozhodnutí podle výchozího návrhu — čekají na potvrzení J. V.
 - **B111:** zápornou položku, množství ani hodiny nesmí nikdo, ani
