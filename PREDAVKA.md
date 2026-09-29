@@ -16,7 +16,7 @@ v `git show 9a48ee8:PREDAVKA.md`.
 | ID | Vážnost | Stav | Commit | Verze | Testy před / po | Poznámka |
 |----|---------|------|--------|-------|-----------------|----------|
 | B111 | vysoká | ✅ opraveno | a25edfd | v29.9.2 | test_zaporne 3 OK/19 FAIL → 24/0; overit_zaporne 5/10 → 15/0; test_kontroly 97/8 → 105/0 | mutace +3, chycené 3/3 |
-| B96 | vysoká | ✅ opraveno | (tento commit) | v29.9.3 | test_prava 587/7 → 595/0; test_uloziste 161/1 → 172/0; overit_zaokrouhleni 12/4 → 16/0 | mutace +2, chycené; bod 4 jen návrh |
+| B96 | vysoká | ✅ opraveno | 3c3dd6d | v29.9.3 | test_prava 587/7 → 595/0; test_uloziste 161/1 → 172/0; overit_zaokrouhleni 12/4 → 16/0 | mutace +2, chycené; bod 4 jen návrh |
 | B112 | vysoká | ⬜ další na řadě | | | | |
 | — | — | ⬜ celé kolo č. 1 | | | | po B112 |
 | B97 | střední | ⬜ | | | | |
@@ -61,6 +61,10 @@ kontroly 3 z 3.
   cena, marže vyjde stejná). Proto každá cesta má vlastní kontrolu a bod 4
   je jen obrana do hloubky — hlavně pro zaokrouhlení z výčtu (u PROJ až
   9 999 Kč × počet činností). Zapsáno v `BEZPECNOST_MEZE.md`.
+
+## Kontrola po B96 (pred_pushem.sh)
+189 prošlo, 0 selhalo, 1 přeskočeno (test.js); statické kontroly 3 z 3 —
+VŠE ZELENÉ (podklady: PROJ v2_opravena, příručka s číslem v29.9.3).
 
 ## Rozhodnutí podle výchozího návrhu — čekají na potvrzení J. V.
 - **B111:** zápornou položku, množství ani hodiny nesmí nikdo, ani
