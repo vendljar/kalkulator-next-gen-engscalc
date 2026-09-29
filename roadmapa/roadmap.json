@@ -5783,7 +5783,7 @@
      "proc" : "rozhodnutí P10"
     }
    ],
-   "pozn" : "Etapa C (číslo smlouvy) je #366. Prototyp: https://claude.ai/artifact/6sbxbaAsBpphfPfE2wnM3a"
+   "pozn" : "Etapa C (číslo smlouvy) je #366. Prototyp: https://claude.ai/artifact/6sbxbaAsBpphfPfE2wnM3a 29. 9. 2026 (větev claude/etapa-b-plan-plateb-proj, v29.9.5): ETAPA B ROZPRACOVANÁ — krok 1 hotový: jádro src/plan_plateb.js (předvolby, dopočet SoD z ceny po slevě, sčítání podle milníku, kontroly, převod sodpPlatba1–8) s testem 36/36. Zbývá zapojení (krycí list PROJ, Firma, nabídka PROJ v4, SoD symbol, zábrany, převod starších zakázek) — viz PREDAVKA.md větve a podklady/ETAPA_B_PODKLAD_2026-09-29.md."
   },
   {
    "id" : "368",

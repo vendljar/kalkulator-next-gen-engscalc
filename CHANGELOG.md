@@ -8,6 +8,35 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v29.9.5 — etapa B plateb PROJ, krok 1: jádro plánu plateb (29. 9. 2026)
+
+Větev `claude/etapa-b-plan-plateb-proj` (z `test-draft` v29.9.4). Roadmapa
+#367 (etapa B rozpracovaná), #366 (P9.3). Rozhodnutí J. V. 29. 9.: čtyři
+předvolby, výchozí Standard po činnostech, sčítání splátek se stejným
+milníkem, dopočet SoD PROJ z ceny činnosti po slevě.
+
+- **Nový modul `src/plan_plateb.js`** (CORE za `zpracovatel.js`; zatím bez
+  zapojení do UI a dokumentů): katalog 14 milníků projekce, předvolby
+  Standard po činnostech (= dnešní procenta v `nabidka_proj.js`), Záloha +
+  zbytek po předání (0/30/50/70 %), 100 % po dokončení stupně a Vlastní;
+  `planRadkyCinnosti`, `planPlatebDopocet` (procento × cena po slevě, celé
+  koruny, zaokrouhlení nese poslední splátka činnosti, splátky se stejným
+  milníkem sečtené, ruční přepis částky, osiřelé přepisy), `planPlatebKontrola`
+  (100 % u nabízené činnosti, kladná procenta, známý milník, součet = cena
+  díla), `planCastkaZTextu`, `planPlatebZeStarych` (převod `sodpPlatba1–8`).
+  Autorský dozor stojí mimo splátky.
+- Výchozí návrh J. V. použitý v jádru: projednání 100 % po předání vyjádření
+  OPP HMP (Q1), geodet 100 % po předání zaměření (Q2), splátky na celé
+  koruny, poslední dorovná (Q4).
+- `podklady/ETAPA_B_PODKLAD_2026-09-29.md` — rozbor dnešního kódu, datový
+  model, místa zapojení, dotčené testy, otázky Q1–Q12.
+
+**Testy (pojistka proti prázdnému testu):** `src/test_plan_plateb.js`
+(nová, 36 kontrol vč. fuzzu 300 zakázek; před zavedením modulu 0 prošlo /
+1 selhalo) → 36 / 0.
+
+---
+
 ## v29.9.4 — sloučení do test-draft: testovací sekvence A1–A5 (#371) a neznámý rozměr profilu (#372) (29. 9. 2026)
 
 Na pokyn J. V. 29. 9. 2026 sloučeny do `test-draft` větve
