@@ -8,6 +8,52 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v29.9.4 — B112: ceník varianty a skryté přepisy podle role hlídá server (29. 9. 2026)
+
+Třetí ze šesti nálezů 21. kola (větev `claude/oprava-sesti-nalezu-v29.9.1`),
+zápisová strana B88. Roadmapa #373, #345, nová #374 (zbývající cesty třídy).
+
+**Vysoký nález B112 — obchodník ručním požadavkem snížil cenu nabídky o
+25–42 % bez schválení.** Přirážka varianty 0,20 → −0,10: OCK 980 000 →
+735 000 Kč (−25 %); přirážka PROJ −0,30: 271 200 → 158 200 Kč (−41,7 %);
+cena profilů 100 → 1 Kč/kg: −14,2 %; přepis množství hlavních položek
+a vlastní % sekce PROJ −50 — vše 200. V prohlížeči `set('C.marze', -0.1)`
+z konzole a běžné uložení → uloženo. Ceník a přepisy hlídala jen matice
+zobrazení v UI.
+
+- **Server:** `uloCenikProblemy()` v `src/uloziste.js` (přes
+  `uloProVarianty()`), volaná hned za kontrolou B96, odmítnutí **403**
+  „Ceník varianty smí měnit jen administrátor nebo role, které to povoluje
+  matice zobrazení …". Administrátor smí vždy; ostatním rozhoduje matice
+  uložená na serveru (`program/zobrazeni`, jinak výchozí): bez `tab.cenik`
+  / `tab.cenikproj` musí každá hodnota ceníku OCK / PROJ být z uložené verze
+  téže varianty, ze zveřejněného ceníku (platná i dřívější verze, složená
+  pro řadu varianty, po týchž migracích jako import) nebo z jiné uložené
+  varianty (klon); přirážka se uvolní právem `pole.prirazka`. Porovnává se
+  po položkách — přepočet jen vybraných položek je běžná práce. Dodatkové
+  texty (popisy) a sazba DPH se nehlídají. Přepisy (`mnozstviPrepis`,
+  `cenyPrepis`, PROJ `prirazkaPct`, `sazbaPrepis`, `cenaPrepis`) smí měnit
+  jen role s právem `sloupce.naklad` — v UI se zadávají jen ve sloupcích,
+  které to právo ukazuje (i ruční množství příplatků). Varianta zamčená
+  v uložené verzi se přeskakuje; bez zveřejněného ceníku se ceník nehlídá.
+- `netlify/functions/zakazky.mjs` čte pro kontrolu matici zobrazení (jen
+  u neadministrátora) a předává zveřejněné ceníky.
+- **Testy upravené kvůli realistickým datům:** fixtury `test_prava.mjs`
+  (`zakazkaCislo`, `zakazkaSCeny`) nesou ceník jako aplikace po přihlášení
+  — platný zveřejněný; B26 (tvar `kid` trvalé položky) a očista značek
+  ceníku v `test_funkce.mjs` ukládají pod administrátorem (trvalou položku
+  i vlastní ceník varianty zakládá jen on).
+
+**Testy (pojistka proti prázdnému testu):** `netlify/test_prava.mjs` oddíl
+„B112" (28 kontrol; před opravou 608 prošlo / 15 selhalo → 623 / 0 —
+všechny útoky i hranice rolí dnes 200), `overit_cenik_prava.mjs` (nový
+harness, 6 kontrol; před opravou 4 / 2 — podvrh uložen, cena 735 000 Kč).
+Mutace serveru +4 („ceník varianty se nehlídá", „přepis množství se
+nehlídá", „matice se na serveru nečte", „zveřejněný ceník se nebere za
+kandidáta") — chycené 4 z 4.
+
+---
+
 ## v29.9.3 — B96: krok obchodního zaokrouhlení hlídá server (29. 9. 2026)
 
 Druhý ze šesti nálezů 21. kola (větev `claude/oprava-sesti-nalezu-v29.9.1`).

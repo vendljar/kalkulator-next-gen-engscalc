@@ -495,7 +495,9 @@ const DOCX2 = 'UEsDBBQABgAIAAAAIQ' + 'B'.repeat(400);   // jiná data = jiný ot
   zn.cislo = '2026 - OPR - CN - 0778'; zn.nazevAkce = 'Značky ceníku';
   const d0 = zn.varianty[0].data;
   d0.cenik = Object.assign({}, d0.cenik, { montazHodKc: 850, dph: 21 });
-  const ulZ = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zn }, cookieObch)).json();
+  /* Ukládá administrátor: vlastní cenu v ceníku varianty (montazHodKc 850)
+   * obchodník od B112 (29. 9. 2026) neuloží. Očista značek na roli nezávisí. */
+  const ulZ = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zn }, cookie)).json();
   const naZ = await (await get(zakazky, 'http://x/api/zakazky?soubor='
     + encodeURIComponent(ulZ.soubor), cookieObch)).json();
   const cZ = naZ.zakazka.varianty[0].data.cenik;
@@ -508,7 +510,7 @@ const DOCX2 = 'UEsDBBQABgAIAAAAIQ' + 'B'.repeat(400);   // jiná data = jiný ot
   const zn2 = JSON.parse(JSON.stringify(naZ.zakazka));
   zn2.varianty[0].data.cenik.ukazkove = true;
   zn2.varianty[0].data.cenik.prazdny = true;
-  const ul2 = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zn2 }, cookieObch)).json();
+  const ul2 = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zn2 }, cookie)).json();
   const na2 = await (await get(zakazky, 'http://x/api/zakazky?soubor='
     + encodeURIComponent(ul2.soubor || ulZ.soubor), cookieObch)).json();
   const c2 = na2.zakazka.varianty[0].data.cenik;

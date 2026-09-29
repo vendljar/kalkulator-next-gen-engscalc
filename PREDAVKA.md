@@ -17,8 +17,8 @@ v `git show 9a48ee8:PREDAVKA.md`.
 |----|---------|------|--------|-------|-----------------|----------|
 | B111 | vysoká | ✅ opraveno | a25edfd | v29.9.2 | test_zaporne 3 OK/19 FAIL → 24/0; overit_zaporne 5/10 → 15/0; test_kontroly 97/8 → 105/0 | mutace +3, chycené 3/3 |
 | B96 | vysoká | ✅ opraveno | 3c3dd6d | v29.9.3 | test_prava 587/7 → 595/0; test_uloziste 161/1 → 172/0; overit_zaokrouhleni 12/4 → 16/0 | mutace +2, chycené; bod 4 jen návrh |
-| B112 | vysoká | ⬜ další na řadě | | | | |
-| — | — | ⬜ celé kolo č. 1 | | | | po B112 |
+| B112 | vysoká | ✅ opraveno | (tento commit) | v29.9.4 | test_prava 608/15 → 623/0; overit_cenik_prava 4/2 → 6/0 | mutace +4, chycené 4/4 |
+| — | — | ⬜ celé kolo č. 1 (běží) | | v29.9.4 | | po B112 |
 | B97 | střední | ⬜ | | | | |
 | B98 | střední | ⬜ | | | | |
 | B99 | střední | ⬜ | | | | podklady z Disku jsou (viz níže) |
@@ -66,17 +66,60 @@ kontroly 3 z 3.
 189 prošlo, 0 selhalo, 1 přeskočeno (test.js); statické kontroly 3 z 3 —
 VŠE ZELENÉ (podklady: PROJ v2_opravena, příručka s číslem v29.9.3).
 
+## B112 — co je hotovo (v29.9.4)
+- Pravidlo 0 potvrzeno: server — přirážka −0,10 (OCK −25 %), PROJ −0,30
+  (−41,7 %), profily 100 → 1 Kč/kg (−14,2 %), přepisy — vše 200;
+  prohlížeč — `set('C.marze', -0.1)` z konzole a uložení → uloženo.
+- Server `uloCenikProblemy()` (přes `uloProVarianty()`), volání hned za B96,
+  **403**. Admin vždy; jinak matice ze serveru: ceník OCK `tab.cenik`, PROJ
+  `tab.cenikproj`, přirážka `pole.prirazka`, přepisy `sloupce.naklad`.
+- **Ověřeno v UI, které přepisy obchodník legitimně smí:** žádný. Ruční
+  množství (i u příplatků — zadání J. V. 2. 9.), ruční cena, sazba a fixní
+  částka PROJ i vlastní % sekce se zadávají jen ve sloupcích, které ukazuje
+  právo `sloupce.naklad` (`kalkSloupce()` → `col.admin`); výchozí matice ho
+  nikomu nedává. Server se řídí týmž klíčem. **Otázka pro J. V.:** mají
+  obchodníci upravovat množství příplatků (jak říká zadání z 2. 9.)? Pak
+  jim dát `sloupce.naklad` (ukáže i náklady), nebo zavést samostatné právo.
+- Ceník se porovnává po položkách (přepočet vybraných položek nechává
+  směs); kandidáti: uložená verze téže varianty, zveřejněné ceníky (platná
+  + historie, složené pro řadu, po týchž migracích jako import — lešení,
+  fixy PROJ, doplnění klíčů), jiné uložené varianty (klon); ceník sestavení
+  jen celý nebo u klíče, který zveřejněný ceník nemá. Popisy a DPH volně.
+- Testy upravené kvůli realistickým datům (nikoli oslabené): fixtury
+  `test_prava` nesou platný zveřejněný ceník; B26 v `test_prava`
+  a očista značek v `test_funkce` ukládají pod administrátorem.
+
+## Závěr: třída „koncová cena bez schválení" po B111 + B96 + B112
+Tři doložené cesty jsou zavřené na serveru (záporná položka, krok
+zaokrouhlení mimo výčet, ceník a přepisy bez práva) — při uložení i obnově.
+**Třída tím zavřená není úplně**; zůstává (roadmapa **#374**):
+1. hodiny a rezerva **standardních** položek PROJ a cena trvalé položky
+   s `kid` v zadání — UI je ukazuje jen se `sloupce.naklad`, server nehlídá,
+   kdo je změnil (stejná díra jako B112, jen jiná pole);
+2. obchodní zaokrouhlení **z výčtu** dolů (OCK < 10 000 Kč, PROJ až
+   9 999 Kč × počet činností) — vědomě podle #38;
+3. bod 4 B96 (marže z koncové ceny i bez slevy) — obrana do hloubky,
+   nerealizováno;
+4. rozsah práce v kartě „Práce a režie" (hodiny montáže, projekce)
+   zadává obchodník vědomě — to je rozhodnutí produktu, ne díra.
+Poznámka: dokumenty (Word, PDF) vznikají v prohlížeči — upravený klient si
+může vyrobit cokoli; server chrání uložený doklad, zámky a rejstřík.
+
 ## Rozhodnutí podle výchozího návrhu — čekají na potvrzení J. V.
 - **B111:** zápornou položku, množství ani hodiny nesmí nikdo, ani
   administrátor (dobropis ne; jako N56).
 - **B96 bod 4:** marže z koncové ceny i bez slevy — jen návrh, nerealizováno.
+- **B112:** vedeno jako nový nález B112 (vysoká); B88 dál jen čtecí strana
+  (informativní).
 
 ## Co čeká na J. V.
 - Spustit `node nastroje/detekce_zneuziti.mjs <záloha ostré databáze>`
   (Nastavení → Databáze → Zálohovat teď) — najde dřívější zneužití
   (záporné položky B111, krok/směr zaokrouhlení mimo výčet B96, i
   v odeslaných nabídkách).
-- Rozhodnout bod 4 B96 (marže z koncové ceny i bez slevy).
+- Rozhodnout bod 4 B96 (marže z koncové ceny i bez slevy) a #374
+  (zbývající cesty třídy „koncová cena").
+- Množství příplatků obchodníkem (zadání 2. 9.) vs. právo `sloupce.naklad`.
 - Potvrdit rozhodnutí výše.
 
 ## Při slučování do test-draft (očekávaný konflikt)
@@ -109,8 +152,7 @@ N46 se neopravuje bez pokynu J. V.
   `git status` a `grep -rn "if (false)" netlify src`.
 
 ## Další krok
-B112 (příloha C): ceník varianty a přepisy proti uložené verzi / zveřejněnému
-ceníku / jiné variantě podle role a matice (`uloCenikProblemy` přes
-`uloProVarianty`, volání hned za B96), testy v `netlify/test_prava.mjs`,
-pak **celé kolo č. 1** (`KNG_PODKLADY=/home/user/kng_podklady bash
-nastroje/testovaci_kolo.sh`, před tím kopie příručky pro aktuální verzi).
+**Celé kolo č. 1** nad v29.9.4 (`KNG_PODKLADY=/home/user/kng_podklady bash
+nastroje/testovaci_kolo.sh`, před tím kopie příručky pro aktuální verzi),
+výsledek sem. Pak B97 (příloha D): předpona „e:" e-mailového klíče brzdy
+přihlášení, neplatný e-mail zvedá jen počítadlo adresy.

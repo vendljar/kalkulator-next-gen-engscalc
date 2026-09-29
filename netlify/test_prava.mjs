@@ -159,10 +159,25 @@ await post(program, 'http://x/api/program',
   { cenik: cenikJinak(), cenikProj: ZC.zkusebniCenikProj(), slevy: { minMarze: 0.1 } }, cAdmin);
 
 /* Jedna uložená zakázka, aby šlo testovat čtení konkrétního souboru. */
+/* Ceník varianty jako v aplikaci (29. 9. 2026, B112): po přihlášení nese
+ * nová zakázka PLATNÝ ZVEŘEJNĚNÝ ceník (progPouzij → novaZakazka). Fixtura
+ * do té doby brala ceník sestavení (samé nuly), který aplikace přihlášenému
+ * nikdy nepošle — a od B112 ho server obchodníkovi neuloží, protože není
+ * uložený, zveřejněný ani z jiné varianty. Čte se přímo z paměťového
+ * úložiště, tedy vždy verze, která právě platí. */
+function cenikPlatnyTed() {
+  const db = pamet.has('program/db') ? JSON.parse(pamet.get('program/db')) : null;
+  return db && db.platny && db.platny.cenik ? db.platny : null;
+}
 function zakazkaCislo(cislo) {
   const z = zk.novaZakazka();
   z.cislo = cislo;
   z.nazevAkce = 'Matice práv';
+  const p = cenikPlatnyTed();
+  if (p) {
+    z.varianty[0].data.cenik = JSON.parse(JSON.stringify(p.cenik));
+    z.varianty[0].data.proj.cenik = JSON.parse(JSON.stringify(p.cenikProj || {}));
+  }
   return z;
 }
 const ulozena = await (await post(zakazky, 'http://x/api/zakazky',
@@ -858,8 +873,9 @@ function zakazkaSCeny(cislo) {
   const z = zakazkaCislo(cislo);
   const v = z.varianty[0];
   Object.assign(v.data.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2, nastupiste: 4 });
-  v.data.cenik = ZC.zkusebniCenik();
-  v.data.proj.cenik = ZC.zkusebniCenikProj();
+  /* Ceník: platný zveřejněný (zakazkaCislo) — zkušební ceník se liší jen
+   * cenou profilů (cenikJinak). Bez zveřejněného ceníku zkušební. */
+  if (!cenikPlatnyTed()) { v.data.cenik = ZC.zkusebniCenik(); v.data.proj.cenik = ZC.zkusebniCenikProj(); }
   return z;
 }
 /* Zamčení přesně tak, jak ho dělá prohlížeč (zamekPoTisku). `uprav` smí
@@ -1187,7 +1203,7 @@ console.log('\n===== B96: KROK OBCHODNÍHO ZAOKROUHLENÍ HLÍDÁ SERVER =====\n'
   const { detekuj } = await import('../nastroje/detekce_zneuziti.mjs');
   const nal6 = detekuj({ zakazky: { [r6.soubor]: await nactiB59(r6.soubor) } });
   test('B96: detekční skript najde v záloze zamčenou variantu s krokem mimo výčet',
-    nal6.length === 1 && nal6[0].kontrola === 'B96' && nal6[0].zamcena && /zaokr: krok 490001/.test(nal6[0].mista[0]), nal6);
+    nal6.length === 1 && nal6[0].kontrola === 'B96' && nal6[0].zamcena && nal6[0].mista[0].indexOf('zaokr: krok ' + krokUtok) === 0, nal6);
   /* 7) obnova ze zálohy: nezamčená varianta s krokem mimo výčet se přeskočí */
   const z7 = novaB96(); z7.varianty[0].data.zaokr = { krok: krokUtok, smer: 'dolu' };
   const jm7 = z7.cislo.replace(/\s+/g, '') + '.json';
@@ -1198,6 +1214,129 @@ console.log('\n===== B96: KROK OBCHODNÍHO ZAOKROUHLENÍ HLÍDÁ SERVER =====\n'
     !!zk7 && zk7.preskocene === 1 && /zaokr\.krok/.test(JSON.stringify(zk7.duvody || [])) && !pamet.has('zakazky/z/' + jm7), zk7 || o7);
   await post(program, 'http://x/api/program',
     { cenik: cenikJinak(), cenikProj: ZC.zkusebniCenikProj(), slevy: { ...NAST_B96, minMarze: 0 } }, cAdmin);
+}
+
+console.log('\n===== B112: CENÍK VARIANTY A SKRYTÉ PŘEPISY PODLE ROLE HLÍDÁ SERVER =====\n');
+{
+  /* 21. kolo (29. 9. 2026), zápisová strana B88: obchodník ručním
+   * požadavkem snížil cenu nabídky o 25–42 % — přirážka varianty 0,20 →
+   * −0,10 (OCK −25 %), PROJ −0,30 (−41,7 %), cena profilů 100 → 1 (−14 %),
+   * přepis množství a vlastní % sekce PROJ −50. Ceník a přepisy hlídalo jen
+   * UI (matice zobrazení). Před opravou vše 200. Pravidlo: role bez práva
+   * (tab.cenik, tab.cenikproj, pole.prirazka, sloupce.naklad — matice na
+   * serveru, jinak výchozí) smí mít v ceníku jen hodnoty z uložené verze,
+   * ze zveřejněného ceníku (i dřívější verze) nebo z jiné uložené varianty. */
+  const NAST_B112 = { minMarze: 0, stropy: { 'Obchodník': 0.03, 'Vedoucí': 0.10, 'Administrátor': 1 } };
+  const zverejni = async (c, cp) => (await (await post(program, 'http://x/api/program',
+    { cenik: c, cenikProj: cp, slevy: NAST_B112 }, cAdmin)).json());
+  const zv = await zverejni(ZC.zkusebniCenik(), ZC.zkusebniCenikProj());
+  test('B112: příprava — zveřejněn zkušební ceník', zv.ok === true, zv);
+  await post(zobrazeni, 'http://x/api/zobrazeni', { matice: {} }, cAdmin);
+  let cisloB112 = 9641;   // vlastní rozsah 9641–9699
+  const novaB112 = () => zakazkaSCeny('2026 - OPR - CN - ' + (cisloB112++));
+  const ulozB112 = async (z, c, extra) => { const r = await post(zakazky, 'http://x/api/zakazky', Object.assign({ zakazka: z }, extra || {}), c);
+    return { status: r.status, ...(await r.json()) }; };
+  /* Administrátor uloží zakázku, role `cookie` ji otevře, provede `zmena`
+   * a uloží. Vrací odpověď serveru. */
+  const upravB112 = async (zmena, cookie, priprava) => {
+    const z = novaB112(); if (priprava) priprava(z);
+    const r = await ulozB112(z, cAdmin);
+    if (r.status !== 200) return { status: 'příprava ' + r.status, chyba: r.chyba };
+    const g = await nactiB59(r.soubor);
+    const a = zk.importZakazka(JSON.parse(JSON.stringify(g)));
+    zmena(a);
+    return ulozB112(a, cookie, { ocekavaneRazitko: g.uloRazitko });
+  };
+  const d0 = (a) => a.varianty[0].data;
+  const cObchB = cObch, cVedB = UCTY['Vedoucí'].cookie;
+
+  /* 1–8) útoky ručním požadavkem → 403 */
+  const r1 = await upravB112(a => { d0(a).cenik.marze = 0.05; }, cObchB);
+  test('B112: obchodník sníží přirážku varianty 0,20 → 0,05 → 403 „Ceník varianty smí měnit jen …"',
+    r1.status === 403 && /Ceník varianty/.test(r1.chyba || '') && /cenik\.marze/.test(r1.chyba || ''), r1);
+  const r2 = await upravB112(a => { d0(a).cenik.marze = -0.10; }, cObchB);
+  test('B112: přirážka −0,10 → 403', r2.status === 403, r2);
+  const r3 = await upravB112(a => { d0(a).cenik.profilasKgKc = 1; }, cObchB);
+  test('B112: cena profilů 100 → 1 Kč/kg → 403', r3.status === 403 && /profilasKgKc/.test(r3.chyba || ''), r3);
+  const r3b = await upravB112(a => { delete d0(a).cenik.profilasKgKc; }, cObchB);
+  test('B112: smazaná položka ceníku (jádro by počítalo nulu) → 403', r3b.status === 403, r3b);
+  const r4 = await upravB112(a => { d0(a).proj.cenik.marze = -0.30; }, cObchB);
+  test('B112: přirážka PROJ −0,30 → 403', r4.status === 403 && /proj\.cenik\.marze/.test(r4.chyba || ''), r4);
+  const r5 = await upravB112(a => { d0(a).ock.zadani.mnozstviPrepis = { 'MONTÁŽ NA STAVBĚ': 0 }; }, cObchB);
+  test('B112: přepis množství hlavní položky na 0 → 403', r5.status === 403 && /mnozstviPrepis/.test(r5.chyba || ''), r5);
+  const r5b = await upravB112(a => { d0(a).ock.zadani.cenyPrepis = { 'LIBOVOLNÁ POLOŽKA': 1 }; }, cObchB);
+  test('B112: přepis jednotkové ceny (cenyPrepis) → 403', r5b.status === 403, r5b);
+  const r6 = await upravB112(a => { d0(a).proj.zadani.sekce[0].prirazkaPct = -50; }, cObchB);
+  test('B112: vlastní % sekce PROJ −50 → 403', r6.status === 403 && /prirazkaPct/.test(r6.chyba || ''), r6);
+  const r7 = await upravB112(a => { const p = d0(a).proj.zadani.sekce.flatMap(s => s.polozky).find(x => x.typ === 'hod'); p.sazbaPrepis = 1; }, cObchB);
+  test('B112: přepis sazby PROJ (sazbaPrepis) → 403', r7.status === 403 && /sazbaPrepis/.test(r7.chyba || ''), r7);
+  const r7b = await upravB112(a => { const p = d0(a).proj.zadani.sekce.flatMap(s => s.polozky).find(x => x.fixKey); p.cenaPrepis = 1; }, cObchB);
+  test('B112: přepis fixní částky PROJ (cenaPrepis) → 403', r7b.status === 403 && /cenaPrepis/.test(r7b.chyba || ''), r7b);
+  const r8 = await upravB112(a => { d0(a).cenik.marze = 0.05; }, cVedB);
+  test('B112: vedoucí (bez práva v matici) sníží přirážku → 403', r8.status === 403, r8);
+
+  /* 9–14) oprava nesmí blokovat běžnou práci */
+  const r9 = await upravB112(a => { d0(a).cenik.marze = 0.05; d0(a).cenik.profilasKgKc = 1; d0(a).proj.cenik.marze = 0.1;
+    d0(a).ock.zadani.mnozstviPrepis = { 'MONTÁŽ NA STAVBĚ': 10 }; d0(a).proj.zadani.sekce[0].prirazkaPct = -50; }, cAdmin);
+  test('B112: administrátor smí ceník i přepisy změnit (200)', r9.status === 200, r9);
+  const r10 = await upravB112(a => { a.nazevAkce += ' (upraveno)'; d0(a).ock.zadani.zdvih = 12; }, cObchB);
+  test('B112: obchodník s nezměněným ceníkem uloží změnu zadání (200)', r10.status === 200, r10);
+  const r11 = await ulozB112(novaB112(), cObchB);
+  test('B112: nová zakázka obchodníka s ceníkem shodným se zveřejněným (200)', r11.status === 200, r11);
+  const r12 = await upravB112(a => { d0(a).cenik.popisy = Object.assign({}, d0(a).cenik.popisy, { 'C.profilasKgKc': 'Dodatkový text obchodníka' }); }, cObchB);
+  test('B112: změna jen dodatkových textů ceníku (popisy) projde (200)', r12.status === 200, r12);
+  const r12b = await upravB112(a => { d0(a).cenik.dph = 0; d0(a).proj.cenik.dph = 0; }, cObchB);
+  test('B112: sazbu DPH (hlavička zakázky) smí obchodník změnit (200)', r12b.status === 200, r12b);
+  const r13 = await upravB112(a => { a.varianty[0].nazev = 'A'; zam.klonujVariantu(a, a.varianty[0].id); }, cObchB,
+    z => { d0(z).cenik.marze = 0.30; d0(z).ock.zadani.mnozstviPrepis = { 'MONTÁŽ NA STAVBĚ': 40 }; d0(z).proj.zadani.sekce[0].prirazkaPct = 15; });
+  test('B112: klon uložené varianty s ceníkem a přepisy od administrátora projde (200)', r13.status === 200, r13);
+  const r13b = await upravB112(a => { zam.klonujVariantu(a, a.varianty[0].id); a.varianty[1].data.cenik.marze = 0.01; }, cObchB);
+  test('B112: klon s vlastní přirážkou (nová varianta mimo zveřejněný ceník) → 403', r13b.status === 403, r13b);
+
+  /* 15–17) právo v matici uložené na serveru */
+  await post(zobrazeni, 'http://x/api/zobrazeni', { matice: { 'pole.prirazka': { 'Obchodník': true, 'Vedoucí': false } } }, cAdmin);
+  const r15 = await upravB112(a => { d0(a).cenik.marze = 0.05; d0(a).proj.cenik.marze = 0.1; }, cObchB);
+  test('B112: obchodník s právem pole.prirazka v matici smí změnit přirážku (200)', r15.status === 200, r15);
+  const r15b = await upravB112(a => { d0(a).cenik.profilasKgKc = 1; }, cObchB);
+  test('B112: … ale ne jednotkovou cenu ceníku (403)', r15b.status === 403, r15b);
+  await post(zobrazeni, 'http://x/api/zobrazeni', { matice: { 'tab.cenik': { 'Obchodník': true, 'Vedoucí': false } } }, cAdmin);
+  const r16 = await upravB112(a => { d0(a).cenik.profilasKgKc = 1; }, cObchB);
+  test('B112: obchodník s právem tab.cenik smí změnit ceník OCK (200)', r16.status === 200, r16);
+  const r16b = await upravB112(a => { d0(a).proj.cenik.marze = -0.30; }, cObchB);
+  test('B112: … ale ne ceník PROJ (403)', r16b.status === 403, r16b);
+  await post(zobrazeni, 'http://x/api/zobrazeni', { matice: { 'sloupce.naklad': { 'Obchodník': true, 'Vedoucí': false } } }, cAdmin);
+  const r17 = await upravB112(a => { d0(a).ock.zadani.mnozstviPrepis = { 'MONTÁŽ NA STAVBĚ': 10 }; d0(a).proj.zadani.sekce[0].prirazkaPct = 5; }, cObchB);
+  test('B112: obchodník s právem sloupce.naklad (sloupce, kde se přepisy zadávají) smí přepsat (200)', r17.status === 200, r17);
+  await post(zobrazeni, 'http://x/api/zobrazeni', { matice: {} }, cAdmin);
+
+  /* 18) přepočet po položkách na novou verzi ceníku: směs uložené a zveřejněné */
+  const z18 = novaB112(); const r18a = await ulozB112(z18, cAdmin);
+  const novy = ZC.zkusebniCenik(); novy.profilasKgKc = 120; novy.montazHodKc = (+novy.montazHodKc || 0) + 50;
+  const zv2 = await zverejni(novy, ZC.zkusebniCenikProj());
+  const g18 = await nactiB59(r18a.soubor); const a18 = zk.importZakazka(JSON.parse(JSON.stringify(g18)));
+  d0(a18).cenik.profilasKgKc = 120;   // jen jedna položka převzata z nové verze
+  const r18 = await ulozB112(a18, cObchB, { ocekavaneRazitko: g18.uloRazitko });
+  test('B112: přepočet vybrané položky na novou verzi ceníku (směs uložené a zveřejněné) projde (200)', zv2.ok && r18.status === 200, [zv2.ok, r18]);
+  /* 21) nová zakázka založená ještě ze starší zveřejněné verze */
+  const r21 = await ulozB112(novaB112(), cObchB);
+  test('B112: nová zakázka s ceníkem dřívější zveřejněné verze projde (200)', r21.status === 200, r21);
+
+  /* 19) nový zámek se změněnou přirážkou */
+  const r19 = await upravB112(a => { d0(a).cenik.marze = 0.05; odesliB59(a); }, cObchB);
+  test('B112: odeslání (nový zámek) se sníženou přirážkou → 403', r19.status === 403, r19);
+  /* 20) doklad: zamčená varianta s ceníkem mimo pravidla (vložená do úložiště) */
+  const z20 = novaB112(); const r20a = await ulozB112(z20, cAdmin);
+  const k20 = 'zakazky/z/' + r20a.soubor; const u20 = JSON.parse(pamet.get(k20));
+  u20.varianty[0].data.cenik.marze = 0.01;
+  zam.zamkniVariantu(u20.varianty[0], { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Historie', cislo: zam.variantaCislo(u20, u20.varianty[0]),
+    vysledek: zam.zamekVysledekSpocti(u20.varianty[0], JEKLY_T, 'v-historie') });
+  pamet.set(k20, JSON.stringify(u20));
+  const g20 = await nactiB59(r20a.soubor); const a20 = zk.importZakazka(JSON.parse(JSON.stringify(g20))); a20.nazevAkce += ' (poznámka)';
+  const r20 = await ulozB112(a20, cObchB, { ocekavaneRazitko: g20.uloRazitko });
+  test('B112: odeslaná varianta s ceníkem mimo pravidla se beze změny uloží (200 — doklad)', r20.status === 200, r20);
+
+  await post(program, 'http://x/api/program',
+    { cenik: cenikJinak(), cenikProj: ZC.zkusebniCenikProj(), slevy: { ...NAST_B112, minMarze: 0 } }, cAdmin);
 }
 
 /* ============================================================
@@ -2232,7 +2371,10 @@ console.log('\n===== AUDIT B26 / B29: KID TRVALÝCH POLOŽEK A DUPLICITNÍ ID ==
   const zOk = zakazkaCislo('2026 - OPR - CN - 0962');
   const d3 = zOk.varianty[0].data; d3.proj = d3.proj || {}; d3.proj.cenik = d3.proj.cenik || {};
   d3.proj.cenik.vlastniPolozky = { zamereni: [{ kid: 'pk7', nazev: 'x', typ: 'fix', cena: 1 }, { nazev: 'ruční bez kid', typ: 'fix', cena: 1 }] };
-  const rOk = await uloz(zOk);
+  /* Trvalou položku do ceníku PROJ zakládá jen administrátor („+ přidat
+   * položku trvale"); od B112 (29. 9. 2026) ji obchodník do ceníku varianty
+   * nepřidá ani ručním požadavkem. Tvar kid se proto ověřuje pod správcem. */
+  const rOk = await post(zakazky, 'http://x/api/zakazky', { zakazka: zOk }, cAdmin);
   test('B26: běžný kid (pk7) a ruční položka bez kid projdou', rOk.status === 200, 'vrátil ' + rOk.status);
 
   /* B51 (19. kolo, 14. 9. 2026): vlastní PŘÍPLATKY nesou kid taky. Kontrola

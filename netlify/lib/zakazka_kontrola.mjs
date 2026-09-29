@@ -94,6 +94,9 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   /* Krok a směr obchodního zaokrouhlení z výčtu (B96, 29. 9. 2026). */
   const zaokr = ULO.uloZaokrProblemy(zak, stara);
   if (zaokr.length) return odmitni(400, 'Zakázka nese ' + ULO.uloIdProblemyText(zaokr) + '.');
+  /* Ceník varianty a skryté přepisy podle role a matice (B112, 29. 9. 2026). */
+  const cenik = ULO.uloCenikProblemy(zak, stara, { role: relace.role, matice: ctx.matice, program: ctx.program, importuj: globalThis.importZakazka });
+  if (cenik.length) return odmitni(403, veta(ULO.uloCenikProblemyText(cenik)));
 
   ocistiZnacky(zak);
   ocistiZnacky(stara);

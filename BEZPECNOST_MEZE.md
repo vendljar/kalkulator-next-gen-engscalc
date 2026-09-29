@@ -77,8 +77,12 @@ typy polí (`zakazkaServerKontrola`, uložení i obnova):
 - **B96** — krok a směr obchodního zaokrouhlení jen z výčtu `ZAOKR_KROKY` ×
   `ZAOKR_SMERY` (`uloZaokrProblemy`). Sémantika `zaokrKrok` v jádře se
   nezměnila — změnila by cenu už odeslaných nabídek.
-- **B112** — ceník varianty a skryté přepisy proti uložené verzi (doplní se
-  s opravou B112).
+- **B112** — ceník varianty a skryté přepisy podle role (`uloCenikProblemy`):
+  role bez práva v matici uložené na serveru (`tab.cenik`, `tab.cenikproj`,
+  `pole.prirazka`; přepisy `sloupce.naklad`) smí mít v ceníku jen hodnoty
+  z uložené verze téže varianty, ze zveřejněného ceníku (platná i dřívější
+  verze) nebo z jiné uložené varianty; přepisy nezmění. Administrátor smí
+  vždy.
 
 **Co zůstává vědomě (roadmapa #38 „nic se neblokuje"):**
 - Zaokrouhlení *z výčtu* směrem dolů smí cenu snížit o méně než jeden krok
@@ -95,6 +99,24 @@ typy polí (`zakazkaServerKontrola`, uložení i obnova):
   vlastní kontrolu a bod 4 je jen obrana do hloubky.
 - Varianta zamčená už v uložené verzi se neposuzuje (doklad, B53). Starší
   zneužití v databázi najde `nastroje/detekce_zneuziti.mjs` (jen čte).
+- **B112 porovnává po položkách, ne celý ceník:** přepočet jen vybraných
+  položek na novou verzi je běžná práce, takže ceník smí být směsí uložené
+  verze, zveřejněných verzí a jiných variant. Role bez práva si tak může
+  u jednotlivé položky vybrat nižší z hodnot, které kdy schválil
+  administrátor — nikdy hodnotu, kterou nikdo nezveřejnil.
+- **Ceník sestavení se bere jen celý** (zakázka založená bez načteného
+  ceníku; v repozitáři samé nuly, nabídku zastaví zábrana `ukazkovyCenik`),
+  a u klíče, který zveřejněný ceník nemá, hodnota ze sestavení. Dokud se
+  žádný ceník nezveřejnil, ceník se nehlídá (není s čím porovnat).
+- **Sazba DPH** se nehlídá — vybírá ji v hlavičce každý a cenu bez DPH,
+  kterou hlídá schvalování, nemění.
+- **Hlídá se jen zápis. Čtecí strana B88 zůstává**: ceník a náklady jsou
+  v DOM každé role (výpočet běží v prohlížeči), matice zobrazení je pro
+  čtení věc pohodlí, ne bezpečnosti.
+- **Zbývající cesty třídy (neřešeno, #374):** hodiny a rezerva
+  standardních položek PROJ a cena trvalé položky (s `kid`) v zadání — UI je
+  ukazuje jen s právem `sloupce.naklad`, server nehlídá, kdo je změnil;
+  obchodní zaokrouhlení z výčtu; marže z koncové ceny (bod 4 B96).
 
 ---
 

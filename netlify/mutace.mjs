@@ -880,6 +880,27 @@ const MUTACE = [
     nahrad: "    if (false) return true;",
     proc: 'jakýkoli kladný krok by prošel — výčet by zase platil jen pro <select> v UI' },
 
+  /* ---------- B112 (29. 9. 2026): ceník varianty a přepisy podle role ---------- */
+  { nazev: 'B112: ceník varianty se nehlídá (kontrola se nevolá)', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "  if (cenik.length) return odmitni(403, veta(ULO.uloCenikProblemyText(cenik)));",
+    nahrad: "  if (false) return odmitni(403, veta(ULO.uloCenikProblemyText(cenik)));",
+    proc: 'obchodník by přirážkou −0,10 z konzole snížil cenu nabídky o 25 % bez schválení' },
+
+  { nazev: 'B112: přepis množství se nehlídá', soubor: '../src/uloziste.js',
+    hledej: "      if (!shoda) out.push({ kde: 'ock.zadani.' + k.split('\\u0000')[0] + '[' + (iO) + ']', duvod: 'cenik' });",
+    nahrad: "      if (false) out.push({ kde: 'ock.zadani.' + k.split('\\u0000')[0] + '[' + (iO) + ']', duvod: 'cenik' });",
+    proc: 'přepis množství hlavních položek na nulu by prošel každé roli' },
+
+  { nazev: 'B112: matice zobrazení se na serveru nečte (každá role smí vše)', soubor: '../src/uloziste.js',
+    hledej: "  const smi = (klic) => !!(smiF && smiF(role, klic, opts.matice || null));",
+    nahrad: "  const smi = (klic) => true;",
+    proc: 'ceník a přepisy by hlídalo zase jen UI — zápisová strana B88' },
+
+  { nazev: 'B112: zveřejněný ceník se nebere za kandidáta (jen uložená verze)', soubor: '../src/uloziste.js',
+    hledej: "      const kand = [kSvm].concat(kZv, kJine).filter(Boolean);",
+    nahrad: "      const kand = [kSvm].concat(kJine).filter(Boolean);",
+    proc: 'nová zakázka ani přepočet na platný ceník by obchodníkovi neprošly — oprava by blokovala běžnou práci' },
+
   /* ---------- zálohy ---------- */
   { nazev: 'zálohu stáhne kdokoli', soubor: 'functions/zaloha.mjs',
     hledej: '  const { chyba } = await vyzadujRoli(req, \'Administrátor\');',
