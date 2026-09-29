@@ -11,7 +11,8 @@
  *   P9.5  — zámek zmrazí i podmínky krycího listu předvyplněné z Nastavení
  *          (P9.2 a P9.4 — smlouva o dílo z krycího listu — hlídá test_sod.js).
  *   P10.5 — způsob fakturace: výběr po milnících / měsíční, výchozí po milnících.
- *   P10.7 — záruka v kapitole V. z krycího listu (krycí list má přednost). */
+ *   P10.7 — záruka v kapitole V. z krycího listu (krycí list má přednost).
+ *   P10.4 — věty o dílčích dokladech „(bez DPH)" má slovník. */
 const fs = require('fs');
 const nacti = (f) => { const m = require(f); Object.keys(m).forEach(k => { if (global[k] === undefined) global[k] = m[k]; }); return m; };
 const ZC = require('./zkusebni_cenik.js');
@@ -214,6 +215,21 @@ const nb = nacti('./nabidka.js');
   v7.data.kryci = { hodnoty: {} };
   const d60 = nb.nabidkaData(z7, v7, JEKLY, 'cz');
   test('P10.7: bez přepisu platí výchozích 60 měsíců z krycího listu', /Záruka: 60 měsíců/.test(d60.placeholders.NAB_KAP_TERMINY));
+}
+
+/* ---------------- P10.4: nové znění podmínek, ale „bez DPH" ----------------
+ * J. V. 29. 9. 2026: „použij nové ale bez DPH" — věty 50 / 40 / 10 z šablony
+ * CN v12 nesly „(+ DPH)", starší slovník „(bez DPH)". Nová šablona (v13)
+ * píše „(bez DPH)" a slovník ty věty zná. */
+{
+  const v1 = '1. dílčí daňový doklad ve výši {{PODM_ZALOHA1_PROC}} (bez DPH) z celkové ceny díla bude vystaven po podpisu SoD. Úhrada tohoto daňového dokladu je podmínkou pro dodržení předem dohodnutých realizačních termínů.';
+  const v2 = 'Po ukončení výroby, dodání materiálu na stavbu a po zahájení prací bude vystaven 2. dílčí daňový doklad ve výši {{PODM_FAKTURA2_PROC}} (bez DPH) z celkové ceny díla. Úhrada tohoto daňového dokladu je podmínkou pro předání díla objednateli.';
+  const st1 = pr.trStav(v1, 'en'), st2 = pr.trStav(v2, 'de');
+  test('P10.4: věta o 1. dílčím dokladu „(bez DPH)" má překlad (EN, „excl. VAT")',
+    st1.prelozeno && /excl\. VAT/.test(st1.text) && /\{\{PODM_ZALOHA1_PROC\}\}/.test(st1.text), st1);
+  test('P10.4: věta o 2. dílčím dokladu „(bez DPH)" má překlad (DE, „zzgl. MwSt.")',
+    st2.prelozeno && /zzgl\. MwSt\./.test(st2.text) && /\{\{PODM_FAKTURA2_PROC\}\}/.test(st2.text), st2);
+  test('P10.4: i francouzsky', pr.trStav(v1, 'fr').prelozeno && /hors TVA/.test(pr.trStav(v1, 'fr').text), pr.trStav(v1, 'fr'));
 }
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
