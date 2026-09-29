@@ -10,7 +10,8 @@
  *   P11   — zahraniční varianta s oceněnou projekcí: kontrola a věta v dialogu.
  *   P9.5  — zámek zmrazí i podmínky krycího listu předvyplněné z Nastavení
  *          (P9.2 a P9.4 — smlouva o dílo z krycího listu — hlídá test_sod.js).
- *   P10.5 — způsob fakturace: výběr po milnících / měsíční, výchozí po milnících. */
+ *   P10.5 — způsob fakturace: výběr po milnících / měsíční, výchozí po milnících.
+ *   P10.7 — záruka v kapitole V. z krycího listu (krycí list má přednost). */
 const fs = require('fs');
 const nacti = (f) => { const m = require(f); Object.keys(m).forEach(k => { if (global[k] === undefined) global[k] = m[k]; }); return m; };
 const ZC = require('./zkusebni_cenik.js');
@@ -185,6 +186,34 @@ test('P11: dialog přepnutí na zahraniční ceník o projekci mluví',
   test('P10.5: firemní výchozí hodnota je po milnících', global.firmaDefault().zpusobFakturaceOck === 'Po milnících');
   test('P10.5: standard 50 / 40 / 10 v krycím listu', pole('zaloha1').prefill(c) === '50 % – po podpisu smlouvy'
     && /^40 %/.test(pole('faktura2').prefill(c)) && /^10 %/.test(pole('fakturaKonc').prefill(c)));
+}
+
+/* ---------------- P10.7: krycí list má vždy přednost (záruka) ----------------
+ * Krycí list má „Doba trvání záruky (měsíců)" 60, výchozí text kapitoly V.
+ * z Firmy větu „5 let záruka na celé dílo." — dvě místa pro jeden údaj.
+ * Nabídka teď bere záruku z krycího listu a větu o záruce z Firmy vynechá. */
+nacti('./format.js'); nacti('./zamek.js'); nacti('./zpracovatel.js'); nacti('./dokumenty.js');
+const nb = nacti('./nabidka.js');
+{
+  const z7 = zk.novaZakazka();
+  z7.cislo = '2026 - OPR - CN - 0407'; z7.nazevAkce = 'Záruka z krycího listu'; z7.objednatel = 'Zkušební s.r.o.';
+  const v7 = z7.varianty[0];
+  v7.data.kryci = { hodnoty: { zarukaMesicu: '36' } };
+  const d = nb.nabidkaData(z7, v7, JEKLY, 'cz');
+  const kap = d.placeholders.NAB_KAP_TERMINY;
+  test('P10.7: kapitola V. ve Wordu nese záruku z krycího listu', /(^|\n)Záruka: 36 měsíců($|\n)/.test(kap), kap);
+  test('P10.7: věta o záruce z Firmy („5 let záruka…") v ní není', !/5 let záruka/.test(kap), kap);
+  test('P10.7: ostatní text kapitoly z Firmy zůstává', /Harmonogram montáže/.test(kap), kap);
+  const online = nb.nabidkaNahledSekce(d.placeholders, 'cz').find(s => /^V\. /.test(s.sekce));
+  const radkyV = online ? online.radky.map(r => [typeof r[0] === 'object' ? r[0].hotovo : r[0], r[1]]) : [];
+  test('P10.7: online kapitola V. má řádek Záruka z krycího listu', radkyV.some(r => r[0] === 'Záruka' && r[1] === '36 měsíců'), radkyV);
+  test('P10.7: … a větu o záruce z Firmy vynechá', !radkyV.some(r => /záruk/i.test(r[0]) && r[0] !== 'Záruka'), radkyV);
+  v7.data.cenik.kurzEurKc = 25;                                  // cizí jazyk = eura, bez kurzu dokument nevznikne
+  const dEn = nb.nabidkaData(z7, v7, JEKLY, 'en');
+  test('P10.7: anglicky „Warranty: 36 months"', /Warranty: 36 months/.test(dEn.placeholders.NAB_KAP_TERMINY), dEn.placeholders.NAB_KAP_TERMINY);
+  v7.data.kryci = { hodnoty: {} };
+  const d60 = nb.nabidkaData(z7, v7, JEKLY, 'cz');
+  test('P10.7: bez přepisu platí výchozích 60 měsíců z krycího listu', /Záruka: 60 měsíců/.test(d60.placeholders.NAB_KAP_TERMINY));
 }
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);

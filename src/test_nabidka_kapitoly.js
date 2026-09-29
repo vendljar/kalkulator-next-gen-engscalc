@@ -391,8 +391,10 @@ KAPITOLY.forEach(base => {
   test('#330: bez lhůty ve Firmě se termín nevymýšlí — odrážka chybí',
     !kapV(prazdna).some(r => r[0] === 'Termín dodání'), kapV(prazdna)[0]);
   const jenTermin = nahled('cz', f => { lhuta(f); f.kapTerminy = ''; });
-  test('#330: prázdný text kapitoly V. — kapitola zůstane s termínem dodání',
-    kapV(jenTermin).length === 1 && kapV(jenTermin)[0][0] === 'Termín dodání', kapV(jenTermin));
+  /* Od 29. 9. 2026 (P10.7) nese kapitola V. navíc záruku z krycího listu. */
+  test('#330: prázdný text kapitoly V. — kapitola zůstane s termínem dodání (a zárukou z krycího listu)',
+    kapV(jenTermin).length === 2 && kapV(jenTermin)[0][0] === 'Termín dodání' && kapV(jenTermin)[1][0] === 'Záruka',
+    kapV(jenTermin));
   [['en', /^approx\. 16 weeks \(incl\. 4 weeks for the non-standard design\)$/, 'Delivery time'],
    ['de', /^ca\. 16 Wochen \(inkl\. 4 Wochen für die Sonderausführung\)$/, 'Lieferzeit'],
    ['fr', /^env\. 16 semaines \(dont 4 semaines pour l.exécution spéciale\)$/, 'Délai de livraison']].forEach(([jaz, re, popis]) => {
@@ -406,13 +408,16 @@ KAPITOLY.forEach(base => {
   const wv = String(atyp.ph.NAB_KAP_TERMINY || '').split('\n');
   test('#331: {{NAB_KAP_TERMINY}} začíná termínem dodání s ATYP',
     wv[0] === 'Termín dodání: cca 16 týdnů (vč. 4 týdnů za ATYP)', wv[0]);
-  test('#331: a pokračuje textem kapitoly V. z Firmy',
-    wv.slice(1).join('\n') === String(atyp.ph.FIRMA_NAB_TERMINY), wv.length);
+  /* P10.7 (29. 9. 2026): věta o záruce z Firmy vypadne a na konec přijde
+   * záruka z krycího listu — krycí list má přednost. */
+  const bezZaruky = t => String(t).split('\n').filter(r => !/záruk/i.test(r)).join('\n');
+  test('#331: a pokračuje textem kapitoly V. z Firmy (bez věty o záruce), záruka z krycího listu na konci',
+    wv.slice(1, -1).join('\n') === bezZaruky(atyp.ph.FIRMA_NAB_TERMINY) && wv[wv.length - 1] === 'Záruka: 60 měsíců', wv);
   const wvEn = String(nahled('en', lhuta, z => { z.atyp = true; }).ph.NAB_KAP_TERMINY || '').split('\n')[0];
   test('#331: anglicky celý řádek přeložený (popisek i hodnota)',
     wvEn === 'Delivery time: approx. 16 weeks (incl. 4 weeks for the non-standard design)', wvEn);
-  test('#331: bez lhůty ve Firmě symbol nese jen text kapitoly',
-    prazdna.ph.NAB_KAP_TERMINY === prazdna.ph.FIRMA_NAB_TERMINY, prazdna.ph.NAB_KAP_TERMINY);
+  test('#331: bez lhůty ve Firmě symbol nese jen text kapitoly (a záruku z krycího listu)',
+    prazdna.ph.NAB_KAP_TERMINY === bezZaruky(prazdna.ph.FIRMA_NAB_TERMINY) + '\nZáruka: 60 měsíců', prazdna.ph.NAB_KAP_TERMINY);
 }
 
 /* ---------- FRANCOUZSKÉ KAPITOLY (N41c, 24. 9. 2026) ----------

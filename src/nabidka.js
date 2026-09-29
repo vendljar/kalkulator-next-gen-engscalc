@@ -330,10 +330,20 @@ function nabidkaData(zak, varianta, jekly, lang) {
    * při nevyplněné lhůtě nezůstal v dokumentu prázdný řádek tabulky.
    * Popisek se překládá tady — odstavec se symbolem překlad šablony
    * záměrně přeskakuje. */
+  /* ZÁRUKA Z KRYCÍHO LISTU (P10.7, rozhodnutí J. V. 29. 9. 2026: „krycí
+   * list má vždy přednost"). Záruka měla dvě místa: pole krycího listu
+   * („Doba trvání záruky (měsíců)", výchozí 60) a větu „5 let záruka na celé
+   * dílo." ve výchozím textu kapitoly V. z Firmy. Kapitola teď nese řádek
+   * „Záruka: N měsíců" z krycího listu a větu o záruce z Firmy vynechá. */
   {
     const termin = String(placeholders.PODM_TERMIN_DODANI == null ? '' : placeholders.PODM_TERMIN_DODANI).trim();
-    placeholders.NAB_KAP_TERMINY = (termin ? [P('Termín dodání') + ': ' + termin] : [])
-      .concat(String(placeholders.FIRMA_NAB_TERMINY || '').split('\n').filter(r => r.trim() !== ''))
+    const zaruka = nabidkaZarukaText(placeholders.PODM_ZARUKA_MESICU);
+    const obsah = (termin ? [P('Termín dodání') + ': ' + termin] : [])
+      .concat(String(placeholders.FIRMA_NAB_TERMINY || '').split('\n')
+        .filter(r => r.trim() !== '' && !nabidkaJeVetaOZaruce(r, L)));
+    /* Záruka jen ke kapitole, která má i jiný obsah — prázdná kapitola
+     * zmizí celá jako dosud (hlídá ji kontrola „Nevyplněné kapitoly"). */
+    placeholders.NAB_KAP_TERMINY = obsah.concat(obsah.length && zaruka ? [P('Záruka') + ': ' + P(zaruka)] : [])
       .join('\n');
   }
 
@@ -428,6 +438,22 @@ function nabidkaPopisZameru(zak, Z, P) {
 /* Hodnota zástupce, která nic neříká: prázdno nebo samotná pomlčka. */
 function nabidkaHodnotaChybi(x) {
   return /^\s*-?\s*$/.test(String(x == null ? '' : x));
+}
+
+/* „60" → „60 měsíců" (česky; do cizího jazyka převede slovník). Nečíselnou
+ * hodnotu z krycího listu nechá, jak je. */
+function nabidkaZarukaText(mesicu) {
+  const t = String(mesicu == null ? '' : mesicu).trim();
+  if (!/^\d+$/.test(t)) return t;
+  const k = parseInt(t, 10);
+  return k + ' ' + (k === 1 ? 'měsíc' : (k >= 2 && k <= 4 ? 'měsíce' : 'měsíců'));
+}
+/* Věta o záruce v textu kapitoly z Firmy (v jazyce nabídky nebo česky —
+ * francouzská kapitola bez překladu je česká). */
+const NABIDKA_ZARUKA_RE = { cz: /záruk/i, en: /warrant|guarantee/i, de: /garantie|gewährleistung/i, fr: /garantie/i };
+function nabidkaJeVetaOZaruce(text, lang) {
+  const t = String(text || '');
+  return NABIDKA_ZARUKA_RE.cz.test(t) || !!(NABIDKA_ZARUKA_RE[lang] && NABIDKA_ZARUKA_RE[lang].test(t));
 }
 
 function nabidkaNahledSekce(ph, lang) {
@@ -554,6 +580,13 @@ function nabidkaNahledSekce(ph, lang) {
      * odrážka se vynechá (hlídá to kontrola před nabídkou). */
     const termin = String(ph.PODM_TERMIN_DODANI == null ? '' : ph.PODM_TERMIN_DODANI).trim();
     if (sym === 'FIRMA_NAB_TERMINY' && termin) radky = [['Termín dodání', termin]].concat(radky);
+    /* Záruka z krycího listu, věta o záruce z Firmy pryč (P10.7). */
+    if (sym === 'FIRMA_NAB_TERMINY') {
+      radky = radky.filter(r => !(r[0] && typeof r[0] === 'object' && nabidkaJeVetaOZaruce(r[0].hotovo, L)));
+      const zaruka = nabidkaZarukaText(ph.PODM_ZARUKA_MESICU);
+      if (zaruka && radky.some(r => !(r[0] && typeof r[0] === 'object' && /⚠/.test(r[0].hotovo || ''))))
+        radky = radky.concat([['Záruka', zaruka]]);
+    }
     /* Prázdná kapitola se vynechá i s nadpisem — stejné pravidlo jako
      * u prázdných řádků technické specifikace ve Wordu. */
     if (radky.length) sekce.push({ sekce: nazev, radky });
