@@ -19,7 +19,7 @@ v `git show 9a48ee8:PREDAVKA.md`.
 | B96 | vysoká | ✅ opraveno | 3c3dd6d | v29.9.3 | test_prava 587/7 → 595/0; test_uloziste 161/1 → 172/0; overit_zaokrouhleni 12/4 → 16/0 | mutace +2, chycené; bod 4 jen návrh |
 | B112 | vysoká | ✅ opraveno | 57fe11f (+ harness) | v29.9.4 | test_prava 608/15 → 623/0; overit_cenik_prava 4/2 → 6/0 | mutace +4, chycené 4/4 |
 | — | — | ✅ celé kolo č. 1 | | v29.9.4 | sady 189/1/1, mutace 76/76 + 196/196, statické 3/3 | selhal jen overit_online (fixtura B112) — opraveno, 189/0 |
-| B97 | střední | ⬜ | | | | |
+| B97 | střední | ✅ opraveno | (tento commit) | v29.9.5 | test_prihlaseni 45/5 → 50/0 | mutace +2, chycené 2/2; B75 ×3 chycené |
 | B98 | střední | ⬜ | | | | |
 | B99 | střední | ⬜ | | | | podklady z Disku jsou (viz níže) |
 | — | — | ⬜ celé kolo č. 2 | | | | po B99 |
@@ -119,12 +119,20 @@ může vyrobit cokoli; server chrání uložený doklad, zámky a rejstřík.
   `dist/kalkulacka_v29.9.5.html` (N61) smazán.
 Tři serverové kontroly B111 → B96 → B112 na jednom místě se snesly.
 
+## B97 — co je hotovo (v29.9.5)
+- Pravidlo 0 potvrzeno: 61× e-mail „ip:198.51.100.55" z jiné adresy → majitel
+  z napadené adresy 429 i se správným heslem; totéž IPv6 a „Změnit moje heslo".
+- Předpona „e:" u e-mailového klíče; neplatný tvar e-mailu nezakládá
+  e-mailové počítadlo, adresu počítá. Odložené B108 (klouzavé okno), zbytek
+  B77, B106, B107, B4 souběh — neřešeno (jen evidence).
+
 ## Rozhodnutí podle výchozího návrhu — čekají na potvrzení J. V.
 - **B111:** zápornou položku, množství ani hodiny nesmí nikdo, ani
   administrátor (dobropis ne; jako N56).
 - **B96 bod 4:** marže z koncové ceny i bez slevy — jen návrh, nerealizováno.
 - **B112:** vedeno jako nový nález B112 (vysoká); B88 dál jen čtecí strana
   (informativní).
+- **B97:** vážnost střední.
 
 ## Co čeká na J. V.
 - Spustit `node nastroje/detekce_zneuziti.mjs <záloha ostré databáze>`
@@ -166,7 +174,5 @@ N46 se neopravuje bez pokynu J. V.
   `git status` a `grep -rn "if (false)" netlify src`.
 
 ## Další krok
-**Celé kolo č. 1** nad v29.9.4 (`KNG_PODKLADY=/home/user/kng_podklady bash
-nastroje/testovaci_kolo.sh`, před tím kopie příručky pro aktuální verzi),
-výsledek sem. Pak B97 (příloha D): předpona „e:" e-mailového klíče brzdy
-přihlášení, neplatný e-mail zvedá jen počítadlo adresy.
+B98 (příloha E): obnova ze souboru — ověření nového zámku vždy znovu,
+odemčení, které v databázi není, přeskočit s důvodem; z otisku beze změny.

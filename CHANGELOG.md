@@ -8,6 +8,38 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v29.9.5 — B97: e-mailový klíč brzdy přihlášení už nezasáhne počítadlo adresy (29. 9. 2026)
+
+Čtvrtý ze šesti nálezů 21. kola (větev `claude/oprava-sesti-nalezu-v29.9.1`).
+Roadmapa #373, #345. Vážnost střední (výchozí návrh, čeká na potvrzení J. V.).
+
+**Nález B97 — anonym zablokoval přihlášení celé cizí adrese.** Počítadlo
+e-mailu (klíč = e-mail malými písmeny) a počítadlo adresy (`ip:<adresa>`,
+`ip6:<prefix>::/64`) ležela v témže úložišti `pokusy` bez předpony. 61×
+„přihlášení" s e-mailem `ip:198.51.100.55` z jiné adresy zvedlo počítadlo
+adresy oběti a ta dostala 429 i se správným heslem (od B75 se limit adresy
+rozhoduje před ověřením hesla); totéž „Změnit moje heslo".
+
+- `netlify/lib/sdilene.mjs`: e-mailový klíč nese předponu **`e:`**, funkce
+  nad syrovým klíčem (`pokusyStavKlic`, `pokusyNeuspechKlic`,
+  `pokusyResetKlic`, `pokusyUber`) a e-mailové (`pokusyStav`,
+  `pokusyNeuspech`, `pokusyReset`) jsou oddělené. Migrace není potřeba —
+  počítadla žijí čtvrt hodiny.
+- `pokusyZacatek`: e-mail neplatného tvaru (`emailPlatny`) žádné e-mailové
+  počítadlo nezakládá ani nezvedá; počítadlo adresy se započítá vždy.
+  Odpověď stejná 401 jako u špatného hesla. Platí pro přihlášení
+  i `mojeheslo`.
+- Oprava B75 (429 před scryptem, IPv6 po /64, cizí úspěch nenuluje) platí
+  dál; kotva mutace B75 „úspěch nuluje i adresu" přešla na
+  `pokusyResetKlic`, aby dál zkoušela totéž.
+
+**Testy (pojistka proti prázdnému testu):** `netlify/test_prihlaseni.mjs`
+oddíl „B97" (7 kontrol; před opravou 45 prošlo / 5 selhalo → 50 / 0).
+Mutace serveru +2 („e-mailový klíč bez předpony", „neplatný e-mail zvedá
+e-mailové počítadlo") — chycené 2 z 2; mutace B75 ×3 dál chycené.
+
+---
+
 ## v29.9.4 — B112: ceník varianty a skryté přepisy podle role hlídá server (29. 9. 2026)
 
 Třetí ze šesti nálezů 21. kola (větev `claude/oprava-sesti-nalezu-v29.9.1`),

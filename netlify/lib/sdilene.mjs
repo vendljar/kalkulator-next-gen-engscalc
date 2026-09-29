@@ -184,24 +184,40 @@ export function pockej(ms) {
   return new Promise((hotovo) => setTimeout(hotovo, ms));
 }
 
-function pokusyKlic(email) { return String(email || '').trim().toLowerCase(); }
+/* JMENNÉ PROSTORY POČÍTADEL (B97, 29. 9. 2026). Počítadlo e-mailu mělo za
+ * klíč e-mail malými písmeny BEZ předpony, počítadlo adresy „ip:<adresa>"
+ * nebo „ip6:<prefix>::/64" — obojí v tomtéž úložišti „pokusy". Anonym, který
+ * se 61× „přihlásil" e-mailem „ip:198.51.100.55", tak zvedl počítadlo ADRESY
+ * cizího člověka a ten dostal 429 i se správným heslem (od B75 se limit
+ * adresy rozhoduje před ověřením hesla). E-mailový klíč proto nese předponu
+ * „e:" a obě rodiny klíčů se nikdy nepotkají. Migrace není potřeba:
+ * počítadla žijí jen čtvrt hodiny (POKUSY_OKNO_MS), starý klíč bez předpony
+ * sám vyprší. Funkce …Klic pracují se syrovým klíčem úložiště, e-mailové
+ * funkce (pokusyStav/Neuspech/Reset) klíč skládají samy. */
+function pokusyKlic(email) { return 'e:' + String(email || '').trim().toLowerCase(); }
 
-export async function pokusyStav(email) {
+async function pokusyStavKlic(klic) {
   const s = await uloziste(POKUSY_ULOZISTE);
-  const z = await s.cti(pokusyKlic(email));
+  const z = await s.cti(klic);
   /* Po uplynutí okna se počítadlo zapomíná. Bez toho by se neúspěchy
    * sčítaly napříč měsíci a člověk, který si jednou za čas splete heslo,
    * by se jednoho dne bez příčiny nepřihlásil. */
   if (!z || (Date.now() - (z.posledni || 0)) > POKUSY_OKNO_MS) return { n: 0, posledni: 0 };
   return { n: z.n || 0, posledni: z.posledni || 0 };
 }
-
-export async function pokusyNeuspech(email) {
+async function pokusyNeuspechKlic(klic) {
   const s = await uloziste(POKUSY_ULOZISTE);
-  const z = { n: (await pokusyStav(email)).n + 1, posledni: Date.now() };
-  await s.zapis(pokusyKlic(email), z);
+  const z = { n: (await pokusyStavKlic(klic)).n + 1, posledni: Date.now() };
+  await s.zapis(klic, z);
   return z;
 }
+export async function pokusyResetKlic(klic) {
+  const s = await uloziste(POKUSY_ULOZISTE);
+  await s.zapis(klic, { n: 0, posledni: 0 });
+}
+
+export async function pokusyStav(email) { return pokusyStavKlic(pokusyKlic(email)); }
+export async function pokusyNeuspech(email) { return pokusyNeuspechKlic(pokusyKlic(email)); }
 
 /* ---------- souběh a druhý limit na adresu (audit 22. 8. 2026, nález B4) ----
  *
@@ -254,11 +270,15 @@ export function adresaKlienta(req) {
       || (req.headers.get('x-forwarded-for') || '').split(',')[0] || '').trim();
   } catch (e) { return ''; }
 }
-/* Započítá pokus pro e-mail i adresu a vrátí stav obou. */
+/* Započítá pokus pro e-mail i adresu a vrátí stav obou. E-mail neplatného
+ * tvaru (B97) žádné e-mailové počítadlo nezakládá ani nezvedá — takový účet
+ * neexistuje (emailPlatny hlídá založení) a obří nebo podvržený klíč nemá co
+ * dělat v úložišti. Počítadlo ADRESY se ale započítá vždy, jinak by šlo
+ * hádat bez brzdy. Odpověď volajícího zůstává stejná jako u špatného hesla. */
 export async function pokusyZacatek(email, ip) {
-  const z = await pokusyNeuspech(email);
+  const z = emailPlatny(email) ? await pokusyNeuspech(email) : { n: 0, posledni: 0 };
   let a = { n: 0, posledni: 0 };
-  if (ip) a = await pokusyNeuspech(pokusyIpKlic(ip));
+  if (ip) a = await pokusyNeuspechKlic(pokusyIpKlic(ip));
   return { email: z, adresa: a };
 }
 /* Je adresa nad limitem? Rozhoduje se PŘED ověřením hesla (B75): kdo z jedné
@@ -278,14 +298,11 @@ export async function pokusyUspech(email, ip) {
 }
 export async function pokusyUber(klic) {
   const s = await uloziste(POKUSY_ULOZISTE);
-  const z = await pokusyStav(klic);
-  await s.zapis(pokusyKlic(klic), { n: Math.max(0, z.n - 1), posledni: z.posledni || Date.now() });
+  const z = await pokusyStavKlic(klic);
+  await s.zapis(klic, { n: Math.max(0, z.n - 1), posledni: z.posledni || Date.now() });
 }
 
-export async function pokusyReset(email) {
-  const s = await uloziste(POKUSY_ULOZISTE);
-  await s.zapis(pokusyKlic(email), { n: 0, posledni: 0 });
-}
+export async function pokusyReset(email) { return pokusyResetKlic(pokusyKlic(email)); }
 
 /* ---------- relace (HMAC cookie) ---------- */
 function tajemstvi() {

@@ -185,5 +185,54 @@ console.log('\n===== B78: původ požadavku na odhlášení =====');
   test('B78: GET se dál odmítá (405)', (await odhlaseni(new Request('http://x/api/odhlaseni', { headers: { cookie: c } }))).status === 405);
 }
 
+/* ---------- B97 (29. 9. 2026): kolize klíčů e-mailu a adresy ----------
+ * Počítadlo e-mailu (klíč = e-mail malými písmeny) a počítadlo adresy
+ * („ip:<adresa>", „ip6:<prefix>::/64") ležela v tomtéž úložišti bez
+ * předpony. Anonym, který se 61× „přihlásil" e-mailem „ip:198.51.100.55",
+ * zvedl počítadlo ADRESY cizího člověka a ten dostal 429 i se správným
+ * heslem (od B75 se limit adresy rozhoduje před ověřením hesla). Před
+ * opravou tahle část selhávala; oddíl stojí na konci, protože mění heslo. */
+console.log('\n===== B97: e-mailový klíč nesmí zasáhnout počítadlo adresy =====');
+{
+  const utok = async (emailKlic, ipUtocnika) => {
+    for (let i = 0; i <= POKUSY_IP_MAX; i++) await prihlas(emailKlic, 'spatne', ipUtocnika);
+  };
+  /* IPv4 */
+  const IP_OBETI = '198.51.100.55';
+  await utok('ip:' + IP_OBETI, '203.0.113.10');
+  const r1 = await prihlas('obet@priklad.cz', 'ObetHeslo1', IP_OBETI);
+  test('B97: po ' + (POKUSY_IP_MAX + 1) + ' pokusech s e-mailem „ip:<adresa>" z jiné adresy se majitel z napadené adresy přihlásí (200)',
+    r1.status === 200, r1.status);
+  /* IPv6 (klíč po /64) */
+  const IP6_OBETI = '2001:db8:97:1::abcd';
+  await utok('ip6:' + ipv6Prefix64(IP6_OBETI), '203.0.113.11');
+  const r2 = await prihlas('obet@priklad.cz', 'ObetHeslo1', IP6_OBETI);
+  test('B97: totéž pro „ip6:<prefix>::/64" — majitel z napadeného bloku IPv6 se přihlásí (200)', r2.status === 200, r2.status);
+  /* Neplatný tvar e-mailu nezakládá e-mailové počítadlo, adresu ale počítá */
+  const IP_N = '198.51.100.60';
+  let posledni = 0;
+  for (let i = 0; i <= POKUSY_IP_MAX; i++) posledni = (await prihlas('neplatny-tvar-' + (i % 3), 'spatne', IP_N)).status;
+  test('B97: e-mail neplatného tvaru dál zvedá počítadlo ADRESY (61. pokus z téže adresy → 429)', posledni === 429, posledni);
+  const klice = [...pamet.keys()].filter(k => k.startsWith('pokusy/'));
+  test('B97: e-mail neplatného tvaru nezaložil žádné e-mailové počítadlo',
+    !klice.some(k => /neplatny-tvar/.test(k)), klice.filter(k => /neplatny/.test(k)));
+  test('B97: odpověď na neplatný tvar je stejná jako na špatné heslo (401, stejná hláška)',
+    await (async () => { const r = await prihlas('neplatny-tvar-x', 'spatne', '198.51.100.61'); const t = await r.json();
+      const r2b = await prihlas('obet@priklad.cz', 'spatne', '198.51.100.62'); const t2 = await r2b.json();
+      return r.status === 401 && t.chyba === t2.chyba; })());
+  /* Jmenné prostory se nepřekrývají: e-mailové počítadlo má předponu */
+  await prihlas('jmenny.prostor@priklad.cz', 'spatne', '198.51.100.63');
+  const kp = [...pamet.keys()].filter(k => k.startsWith('pokusy/'));
+  test('B97: počítadlo e-mailu leží pod předponou „e:" (nikdy nesplyne s „ip:"/„ip6:")',
+    kp.includes('pokusy/e:jmenny.prostor@priklad.cz') && !kp.includes('pokusy/jmenny.prostor@priklad.cz'), kp.filter(k => /jmenny/.test(k)));
+  /* mojeheslo nejde zablokovat e-mailovým klíčem */
+  const IP_M = '198.51.100.70';
+  const cObet = cookieZ(await prihlas('obet@priklad.cz', 'ObetHeslo1', IP_M));
+  await utok('ip:' + IP_M, '203.0.113.12');
+  const rm = await post(uzivatele, 'http://x/api/uzivatele', { akce: 'mojeheslo', stare: 'ObetHeslo1', nove: 'ObetHeslo2x' },
+    { cookie: cObet, 'x-nf-client-connection-ip': IP_M });
+  test('B97: „Změnit moje heslo" z napadené adresy projde se správným heslem (200)', rm.status === 200, rm.status);
+}
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

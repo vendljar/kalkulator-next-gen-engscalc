@@ -352,6 +352,17 @@ const MUTACE = [
     nahrad: "  if (false)\n    return json({ ok: false, chyba: 'Příliš mnoho neúspěšných pokusů z této adresy. Zkuste to za '",
     proc: 'jedno heslo na sto e-mailů by na počítadle nikdy nenarostlo' },
 
+  /* ---------- B97 (29. 9. 2026): jmenné prostory počítadel pokusů ---------- */
+  { nazev: 'B97: e-mailový klíč bez předpony', soubor: 'lib/sdilene.mjs',
+    hledej: "function pokusyKlic(email) { return 'e:' + String(email || '').trim().toLowerCase(); }",
+    nahrad: "function pokusyKlic(email) { return String(email || '').trim().toLowerCase(); }",
+    proc: 'anonym by e-mailem „ip:<adresa>" zablokoval přihlášení celé cizí adrese' },
+
+  { nazev: 'B97: neplatný e-mail zvedá e-mailové počítadlo', soubor: 'lib/sdilene.mjs',
+    hledej: "  const z = emailPlatny(email) ? await pokusyNeuspech(email) : { n: 0, posledni: 0 };",
+    nahrad: "  const z = await pokusyNeuspech(email);",
+    proc: 'libovolný řetězec by zakládal klíč v úložišti pokusů (i podvržený klíč adresy)' },
+
   /* ---------- přihlašování jako celek, B75–B78 (25. 9. 2026) ---------- */
   { nazev: 'B75: limit adresy se rozhoduje až po ověření hesla', soubor: 'lib/sdilene.mjs',
     hledej: "  return !!(pokusy && pokusy.adresa && pokusy.adresa.n > POKUSY_IP_MAX);",
@@ -363,7 +374,7 @@ const MUTACE = [
     proc: 'z jednoho /64 by šlo poslat každý pokus z jiné adresy a limit by nikdy nenarostl' },
   { nazev: 'B75: úspěch vlastního účtu nuluje počítadlo adresy', soubor: 'lib/sdilene.mjs',
     hledej: "  if (ip) await pokusyUber(pokusyIpKlic(ip));",
-    nahrad: "  if (ip) await pokusyReset(pokusyIpKlic(ip));",
+    nahrad: "  if (ip) await pokusyResetKlic(pokusyIpKlic(ip));",
     proc: 'útočník s jedním účtem by mezi hádáním cizích hesel přihlašoval sebe a limit adresy by nikdy nenarostl' },
   { nazev: 'B76: nový účet začíná na verzi hesla 0', soubor: 'functions/uzivatele.mjs',
     hledej: "               hesloVerze: hesloVerzeNova() };          // B76: stará cookie nesmí ožít",
