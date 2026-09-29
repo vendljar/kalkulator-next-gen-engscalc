@@ -256,6 +256,63 @@ test('alternativní text obrázku se po výměně vyprázdnil',
 test('popisek fotky se dosadil jako text', doc.includes('Bytový dům, pohled z ulice')
   || !doc.includes('UVODNI_FOTO_POPIS'));
 
+/* ---------- 2b) šablona PROJ v3: rekapitulace a vlastní položky ----------
+ * (29. 9. 2026; K15-N66, K14-N64, oprava součtu #364). Šablona v3 má před
+ * „Vypracoval" rekapitulaci (cena před slevou, sleva, CELKEM bez DPH) a blok
+ * {{PROJ_POLOZKY_NAVIC}}. Se slevou stojí činnosti za cenu PŘED slevou;
+ * řádky slevy i blok položek bez obsahu zmizí. Starší šablona je nemá. */
+{
+  const docSablony = dekoduj((await zipPrecti(new Uint8Array(zdroj))).find(x => x.nazev === 'word/document.xml').data);
+  if (!docSablony.includes('{{PROJ_SLEVA_KC}}')) {
+    console.log('\nšablona PROJ v3 — přeskočeno (šablona nemá rekapitulaci se slevou)');
+  } else {
+    console.log('\nšablona PROJ v3: rekapitulace a vlastní položky');
+    const text = x => x.replace(/<[^>]+>/g, '');
+    test('v3 bez slevy: rekapitulace s CELKEM bez DPH', text(doc).includes('REKAPITULACE CENOVÉ NABÍDKY')
+      && text(doc).includes('CELKEM bez DPH') && doc.includes(vysledek.celkem));
+    test('v3 bez slevy: řádky slevy nejsou', !text(doc).includes('Cena před slevou') && !/Sleva\s*%/.test(text(doc)));
+    test('v3 bez vlastních položek: blok položek zmizel', !text(doc).includes('Další položky zahrnuté v ceně'));
+    test('v3: značky bloků v dokumentu nejsou', !/_ZAC\}\}|_KON\}\}/.test(doc));
+    const se = await p.evaluate(async (sablonaB64) => {
+      const bin = atob(sablonaB64);
+      const u8 = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+      const puvodniMarze = PC.marze;
+      PC.marze = 0.3;
+      NAST.slevy.stropy = Object.assign({}, NAST.slevy.stropy, { 'Obchodník': 0.2 });
+      const zam = PJ.sekce.find(x => x.key === 'zamereni');
+      zam.polozky.push({ nazev: 'Zaměření sklepa navíc', typ: 'fix', cena: 5000, vlastni: true });
+      render();
+      slevaProjSet('procenta', 14);
+      render();
+      const varianta = aktivniVarianta(ZAK);
+      const stav = varianta.data.slevaProj.stav;
+      const res = await dokumentVygeneruj('nabidkaProj', u8.buffer, ZAK, varianta, JEKLY, 'cz');
+      const bajty = new Uint8Array(await res.blob.arrayBuffer());
+      let s = '';
+      for (let i = 0; i < bajty.length; i++) s += String.fromCharCode(bajty[i]);
+      const d = nabidkaProjData(ZAK, varianta);                 // online = činnosti před slevou
+      const out = { docx: btoa(s), stav, ph: d.placeholders };
+      slevaProjSet('procenta', 0);
+      zam.polozky.pop();
+      PC.marze = puvodniMarze;
+      render();
+      return out;
+    }, b64);
+    const docSe = dekoduj((await zipPrecti(new Uint8Array(Buffer.from(se.docx, 'base64')))).find(x => x.nazev === 'word/document.xml').data);
+    const t = text(docSe);
+    test('příprava: sleva projekce 14 % je schválená', se.stav === 'schváleno automaticky', se.stav);
+    test('v3 se slevou: cena před slevou, sleva 14 % i CELKEM', t.includes('Cena před slevou') && t.includes(se.ph.PROJ_CENA_PRED_SLEVOU)
+      && /Sleva\s*14\s*%/.test(t) && t.includes(se.ph.PROJ_SLEVA_KC) && t.includes(se.ph.PROJ_CELKEM_BEZ_DPH), t.slice(t.indexOf('REKAPITULACE'), t.indexOf('REKAPITULACE') + 300));
+    test('v3 se slevou: činnosti stojí za cenu před slevou (jako online nabídka)',
+      t.includes(se.ph.PROJ_CENA_ZAMERENI) && t.includes(se.ph.PROJ_CENA_DPZ), [se.ph.PROJ_CENA_ZAMERENI, se.ph.PROJ_CENA_DPZ]);
+    test('v3: vlastní položka je v bloku „Další položky zahrnuté v ceně"',
+      t.includes('Další položky zahrnuté v ceně') && t.indexOf('Zaměření sklepa navíc') > t.indexOf('Další položky zahrnuté v ceně'));
+    test('v3 se slevou: v dokumentu nezůstal žádný symbol {{…}}', !/\{\{[A-Z0-9_]+\}\}/.test(docSe),
+      (docSe.match(/\{\{[A-Z0-9_]+\}\}/g) || []).slice(0, 6).join(' '));
+  }
+}
+
 /* ---------- 3) zámek varianty ---------- */
 console.log('\nzámek po vytištění');
 test('typ dokumentu „nabidkaProj" je v rejstříku zámků',
