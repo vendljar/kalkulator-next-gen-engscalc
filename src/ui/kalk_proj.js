@@ -92,6 +92,7 @@ async function pjPolozkaDel(i, j) {
  * Prázdné pole = přepis není a platí ceník; nula je platný přepis
  * („děláme zdarma"), proto se tu rozlišuje prázdno, ne nepravda. */
 function pjPrepis(i, j, pole, hodnota) {
+  if (typeof zaporneOdmitni === 'function' && zaporneOdmitni(hodnota)) return;   // B111
   const p = PJ.sekce[i].polozky[j];
   if (hodnota === '' || hodnota === null) delete p[pole];
   else p[pole] = +hodnota || 0;
@@ -347,13 +348,13 @@ function renderProj() {
        * Teď se zapisuje přepis do zakázky; ceník se mění v záložce Ceník PROJ. */
       const fixEd = col.admin
         ? (p.fixKey
-          ? `<input type="number" step="500" class="prepis-ed${p.cenaPrepsana ? ' aktivni' : ''}" style="width:86px" value="${p.cenaPrepsana ? esc(p.cenaEfekt) : ''}"
+          ? `<input type="number" step="500" min="0" class="prepis-ed${p.cenaPrepsana ? ' aktivni' : ''}" style="width:86px" value="${p.cenaPrepsana ? esc(p.cenaEfekt) : ''}"
                placeholder="${num(p.cenaZCeniku)}" onchange="pjPrepis(${i},${j},'cenaPrepis',this.value)"
                title="cena jen pro tuto zakázku (prázdné = ${num(p.cenaZCeniku)} Kč z Ceníku nákladů PROJ)">
              ${p.cenaPrepsana ? `<button class="mini noprint" onclick="pjPrepis(${i},${j},'cenaPrepis','')" title="vrátit cenu z ceníku (${num(p.cenaZCeniku)} Kč)">↺</button>` : ''}`
-          : `<input type="number" step="500" style="width:86px" value="${esc(p.cena)}" onchange="pjSet(${i}, 'polozky.${j}.cena', +this.value)">`)
+          : `<input type="number" step="500" min="0" style="width:86px" value="${esc(p.cena)}" onchange="pjSet(${i}, 'polozky.${j}.cena', +this.value)">`)
         : (vlEd && !p.fixKey
-          ? `<input type="number" step="500" style="width:86px" value="${esc(p.cena)}" title="částka této položky (jen pro tuto zakázku)" onchange="pjSet(${i}, 'polozky.${j}.cena', +this.value)">`
+          ? `<input type="number" step="500" min="0" style="width:86px" value="${esc(p.cena)}" title="částka této položky (jen pro tuto zakázku)" onchange="pjSet(${i}, 'polozky.${j}.cena', +this.value)">`
           : num(p.cenaEfekt));
       return `${tr}<td>${nazev}${stitekVyp}</td>
         <td colspan="3" class="note" style="text-align:right">${p.fixKey

@@ -57,7 +57,9 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* A3 / P4 (25. 9. 2026): historické zakázky otevřít → uložit → obnovit. */
      '../src/test_zamek_historie.js',
      /* B75–B78 (25. 9. 2026): přihlašování jako celek. */
-     'test_prihlaseni.mjs'];
+     'test_prihlaseni.mjs',
+     /* B111 (29. 9. 2026): záporná částka, množství a hodiny. */
+     'test_zaporne.mjs'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -850,6 +852,22 @@ const MUTACE = [
     hledej: "      if (x !== undefined && x !== null && x !== '' && ULO_VYCTY[c].indexOf(x) < 0) out.push({ kde: c, duvod: 'typ' });",
     nahrad: "      if (false) out.push({ kde: c, duvod: 'typ' });",
     proc: 'typ portálu nebo zasklení by nesl skript, který se kreslí do volby' },
+
+  /* ---------- B111 (29. 9. 2026): záporná částka, množství, hodiny ---------- */
+  { nazev: 'B111: záporná položka projde (kontrola se nevolá)', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "  if (zaporne.length) return odmitni(400, 'Zakázka nese ' + ULO.uloIdProblemyText(zaporne) + '.');",
+    nahrad: "  if (false) return odmitni(400, 'Zakázka nese ' + ULO.uloIdProblemyText(zaporne) + '.');",
+    proc: 'obchodník by vlastní položkou −302 167 Kč snížil cenu nabídky o 37 % bez schválení' },
+
+  { nazev: 'B111: záporné číslo se nepozná', soubor: '../src/uloziste.js',
+    hledej: "  if (typeof h === 'number') return h < 0;",
+    nahrad: "  if (typeof h === 'number') return false;",
+    proc: 'záporná cena, množství i hodiny by prošly — kontrola by hlídala jen text' },
+
+  { nazev: 'B111/B96/B112: varianta zamčená v uložené verzi se nepřeskakuje', soubor: '../src/uloziste.js',
+    hledej: "    if (sv && sv.zamek && sv.zamek.zamceno) return;                // doklad — nesahat\n    const vlastni = [];\n    fn(v, sv, vlastni);",
+    nahrad: "    const vlastni = [];\n    fn(v, sv, vlastni);",
+    proc: 'odeslaná nabídka z doby před opravou by se nedala uložit ani beze změny — server by posuzoval doklad' },
 
   /* ---------- zálohy ---------- */
   { nazev: 'zálohu stáhne kdokoli', soubor: 'functions/zaloha.mjs',

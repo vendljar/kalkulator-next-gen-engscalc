@@ -691,7 +691,7 @@
    "detail" : "Tři úrovně podle toho, jak jistě víme, že jde o chybu. Úroveň 1 tvrdý zákaz (záporné množství či cena, nulový počet zastávek, výška šachty menší než součet nutných výšek, sleva nad 100 %, méně než 2 zastávky). Úroveň 2 červené varování u výsledku, které nepustí nabídku ven bez potvrzení (nulová nebo záporná marže, cena pod nákladem, oplášťování bez konstrukce, ATYP bez projekční položky, sleva nad limit role, hlavní položka ručně přepsaná na 0). Úroveň 3 žlutá poznámka (hodnota mimo obvyklý rozsah proti historii, počet ručních přepisů, kalkulace bez technické specifikace, starý ceník, prázdné pole propisující se do krycího listu). Technicky čistá funkce `kontroly.js` nad rozpadem z enginu — testovatelná stejně jako výpočet. Rámec S–M, náplň roste s počtem pravidel.",
    "vlna" : "B",
    "id" : "33",
-   "pozn" : "hotovo ve v30.7.10. Podle tvého pokynu z 30. 7. 2026 („pouze rozsviť varování před nabídkou\") se nikde nic netvrdě neblokuje — ani nejzávažnější nález nezabrání vytištění, jen se rozsvítí nad tlačítky. Odchylka od návrhu: místo vyskakovacího potvrzení je to stálý panel v kartě, aby se dal nález přečíst i bez pokusu o tisk. ÚKLID 16. 9. 2026: odsud zmizelo pole `cekaNa` — hotová položka nemůže na nic čekat a strašila v přehledu „Na co se čeká“. To, co se tím myslelo (seznam pravidel od J. V. a tabulka souvislostí z technické specifikace), drží vazba na #20 jako DOPORUČENÉ pořadí: kontroly jedou s výchozí sadou pravidel a #20 je jen rozšíří, nebrání jim.",
+   "pozn" : "hotovo ve v30.7.10. Podle tvého pokynu z 30. 7. 2026 („pouze rozsviť varování před nabídkou\") se nikde nic netvrdě neblokuje — ani nejzávažnější nález nezabrání vytištění, jen se rozsvítí nad tlačítky. Odchylka od návrhu: místo vyskakovacího potvrzení je to stálý panel v kartě, aby se dal nález přečíst i bez pokusu o tisk. ÚKLID 16. 9. 2026: odsud zmizelo pole `cekaNa` — hotová položka nemůže na nic čekat a strašila v přehledu „Na co se čeká“. To, co se tím myslelo (seznam pravidel od J. V. a tabulka souvislostí z technické specifikace), drží vazba na #20 jako DOPORUČENÉ pořadí: kontroly jedou s výchozí sadou pravidel a #20 je jen rozšíří, nebrání jim. — 29. 9. 2026 (B111, v29.9.2): záporná částka, množství nebo hodiny je tvrdá zábrana (pravidlo zapornaPolozka) a hlídá ji i server — úroveň 1, jak #33 původně plánoval.",
    "hotovoV" : "v30.7.10",
    "nazev" : "Kontrola logických chyb při zadání — bránit zjevným pochybením, na sporné upozornit",
    "zavisi" : [
@@ -5723,6 +5723,19 @@
    "detail": "Návrh: v UI neznámý profil ukázat jako „neznámý rozměr\" s možností vybrat jiný (kalk_ock.js řádky s JEKLY[p.dim]), případně na serveru odmítnout dim mimo JEKLY. Harness zatím dim a tl neotravuje (řídicí klíče).",
    "cekaNa": "J. V.: zda opravit v UI (tolerantně), na serveru (odmítnout), nebo nechat",
    "kde": "src/ui/kalk_ock.js, netlify/lib/zakazka_kontrola.mjs"
+  },
+  {
+   "id": "373",
+   "vlna": "B",
+   "stav": "ceka",
+   "dulezitost": "vysoka",
+   "slozitost": "L",
+   "nazev": "Oprava šesti nálezů 21. kola (B111, B96, B112, B97, B98, B99)",
+   "proc": "Komplexní test 29. 9. 2026 (21. kolo, v29.9.1) našel tři vysoké nálezy třídy „koncová cena bez schválení“ (B111 záporná vlastní položka, B96 krok zaokrouhlení, B112 ceník a přepisy jen v UI) a tři střední (B97 kolize klíčů brzdy přihlášení, B98 razítka z obnovy ze souboru, B99 obsah šablon DOCX).",
+   "detail": "Jedna větev claude/oprava-sesti-nalezu-v29.9.1 z v29.9.1, nálezy postupně, každý s testem před/po a mutací. B111 hotovo ve v29.9.2 (server uloZaporneProblemy, UI min=0 a hláška, zábrana zapornaPolozka, nastroje/detekce_zneuziti.mjs).",
+   "hotovoKdyz": "Všech šest nálezů opraveno s testem, který před opravou selže; dvě celá testovací kola zelená; o sloučení do test-draft rozhodne J. V.",
+   "kde": "src/uloziste.js, netlify/lib/zakazka_kontrola.mjs, src/kontroly.js, src/ui/kalk_ock.js, src/ui/kalk_proj.js, netlify/test_zaporne.mjs, overit_zaporne.mjs, nastroje/detekce_zneuziti.mjs",
+   "zavisi": [{"typ": "doporuceno", "id": "33", "proc": "B111 dotahuje úroveň 1 kontrol (záporná cena a množství)"}, {"typ": "doporuceno", "id": "345", "proc": "B112 je zápisová strana B88, B97 navazuje na B75"}]
   }
  ],
  "meta" : {

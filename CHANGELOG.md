@@ -8,6 +8,52 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v29.9.2 — B111: záporná vlastní položka, množství ani hodiny neprojdou (29. 9. 2026)
+
+Větev `claude/oprava-sesti-nalezu-v29.9.1` (z v29.9.1 = 9a48ee8), první ze
+šesti nálezů 21. kola. Roadmapa #373 (nová), #33.
+
+**Vysoký nález B111 — obchodník v běžném UI snížil cenu nabídky bez
+schválení.** „+ přidat položku" s cenou −302 167 Kč: cena OCK 980 000 →
+617 000 Kč (−37 %), PROJ „+ přidat fixní položku" −90 400 Kč: 271 200 →
+162 720 Kč (−40 %); uložení 200, žádná lišta, rejstřík schvalování nic.
+Záporná položka sníží vykázaný náklad i cenu stejným poměrem, takže marže
+vypadala zdravě (B71 ji nepozná) a v dokumentu po ní nezůstala stopa.
+
+- **Server (hranice):** nová `uloZaporneProblemy()` v `src/uloziste.js`,
+  volaná v `zakazkaServerKontrola` hned za `uloTypyProblemy` (uložení
+  i obnova, B72/P4). Odmítne 400 „Zakázka nese zápornou částku nebo
+  množství (varianta X: <cesta>)" u ceny a množství vlastních položek OCK
+  (`vlastniPolozky.<sekce>[]`, `volitelneVlastni[]`, `priplatkyVlastni[]`,
+  i typ polí), u přepisů `mnozstviPrepis`/`cenyPrepis`, hodin N56 (dosud
+  jen v UI) a u PROJ `cena`, `hodiny`, `rezerva`, `cenaPrepis`,
+  `sazbaPrepis`. Výjimku nemá nikdo, ani administrátor (výchozí návrh,
+  čeká na potvrzení J. V.). Varianta zamčená už v uložené verzi se
+  přeskakuje (doklad) — společná pomocná `uloProVarianty()` pro B111, B96
+  a B112.
+- **UI:** `min="0"` u polí vlastních položek, příplatků a přepisů OCK
+  i PROJ; `zaporneOdmitni()` v `vlastniSet`, `priplatekVlastniSet`,
+  `mnozstviSet`, `cenaSet`, `pjPrepis` a `HODINY_BEZ_ZAPORU` rozšířené
+  o `polozky.N.cena` — hláška „Částka ani množství nemohou být záporné.
+  Snížení ceny zadejte jako slevu — ta jde přes schvalování."
+- **Odmítnutí serveru je vidět u tlačítka „Uložit zakázku"** — dosud se
+  „Neuloženo online: …" psalo jen do panelu Databáze.
+- **Kontroly:** nové pravidlo `zapornaPolozka` (zábrana) pro už uložené
+  zakázky — dokument nevznikne, dokud se položka neopraví.
+- **Detekce dřívějšího zneužití:** `nastroje/detekce_zneuziti.mjs
+  <zaloha.json>` (jen čte; spustí J. V.) vypíše varianty se zápornou
+  položkou, množstvím nebo hodinami, i zamčené.
+
+**Testy (pojistka proti prázdnému testu):** `netlify/test_zaporne.mjs`
+(nová, 24 kontrol; proti kódu před opravou 3 OK / 19 FAIL — dvě kontroly
+detekčního skriptu přibyly po opravě), `overit_zaporne.mjs` (nový harness,
+15 kontrol; před opravou 5 prošlo / 10 selhalo), `src/test_kontroly.js`
+(+7; před opravou 8 selhalo včetně počtu pravidel). Mutace serveru +3
+(„záporná položka projde", „záporné číslo se nepozná", „zamčená varianta se
+nepřeskakuje") — chycené 3 z 3.
+
+---
+
 ## v29.9.1 — jen předávka (29. 9. 2026)
 
 Kód beze změny proti v26.9.1. `PREDAVKA.md` podle pravidla J. V. (úpravy se

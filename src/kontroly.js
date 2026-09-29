@@ -117,6 +117,28 @@ const KONTROLY = [
     },
   },
   {
+    /* ZÁPORNÁ POLOŽKA (B111, 29. 9. 2026). Server zápornou částku, množství
+     * ani hodiny od opravy nepřijme; zakázka uložená dřív ji ale nést může
+     * (rozpracovaná varianta, záloha). Záporná položka snižuje cenu nabídky
+     * bez schválení a v dokumentu po ní nezůstane stopa — proto zábrana:
+     * dokument nevznikne, dokud se položka neopraví. Seznam míst dává
+     * uloZaporneVZadani z uloziste.js (táž funkce jako na serveru). */
+    kod: 'zapornaPolozka', kde: 'Nabídka', nazev: 'Záporná částka, množství nebo hodiny',
+    zabranaMozna: true,
+    zjisti(ctx) {
+      const f = (typeof uloZaporneVZadani === 'function') ? uloZaporneVZadani
+        : (typeof require === 'function' ? require('./uloziste.js').uloZaporneVZadani : null);
+      if (!f) return null;
+      const nal = f(ctx.jenProj ? null : ctx.zadani, ctx.projZadani).filter(p => p.duvod === 'zaporne');
+      if (!nal.length) return null;
+      const ock = nal.some(p => p.kde.indexOf('ock.') === 0), proj = nal.some(p => p.kde.indexOf('proj.') === 0);
+      const kde = [ock ? 'kalkulace OCK' : '', proj ? 'kalkulace PROJ' : ''].filter(Boolean);
+      return { uroven: KONTROLY_UROVEN_ZABRANA,
+        text: 'V zakázce je záporná částka, množství nebo hodiny (' + kontrolyVyctem(kde) + '). '
+          + 'Snížení ceny se zadává jako sleva, která jde přes schvalování. Dokument nevznikne, dokud se to neopraví.' };
+    },
+  },
+  {
     /* CENA NABÍDKY MUSÍ BÝT KLADNÉ ČÍSLO (P2 / K16-N75 + K14-N61, 25. 9. 2026).
      * Nula nebo NaN v ceně je vždy omyl (chybějící cena v ceníku, nesmyslné
      * zadání) — nabídka za nula korun nesmí odejít. Projekce smí být nulová,

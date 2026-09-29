@@ -88,6 +88,9 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   const spatneTypy = ULO.uloTypyProblemy(zak, stara);
   if (spatneTypy.length)
     return odmitni(400, 'Zakázka nese ' + ULO.uloIdProblemyText(spatneTypy) + '.');
+  /* Záporná částka, množství nebo hodiny (B111, 29. 9. 2026) — nikomu. */
+  const zaporne = ULO.uloZaporneProblemy(zak, stara);
+  if (zaporne.length) return odmitni(400, 'Zakázka nese ' + ULO.uloIdProblemyText(zaporne) + '.');
 
   ocistiZnacky(zak);
   ocistiZnacky(stara);
