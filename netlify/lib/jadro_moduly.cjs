@@ -69,6 +69,9 @@ Object.assign(globalThis, require('../../src/cenik_stari.js'));
 Object.assign(globalThis, require('../../src/cenik_rady.js'));
 Object.assign(globalThis, require('../../src/konfigurace.js'));
 Object.assign(globalThis, require('../../src/sablony_online.js'));
+/* Kontrola obsahu šablony Wordu (B99): čte ZIP přes docxgen.js (vyžádá si ho
+ * sama až při kontrole — jinak dokumentové moduly na server nepatří). */
+Object.assign(globalThis, require('../../src/sablona_obsah.js'));
 Object.assign(globalThis, require('../../src/analytika.js'));
 Object.assign(globalThis, require('../../src/program.js'));
 Object.assign(globalThis, require('../../src/ukazkove.js'));

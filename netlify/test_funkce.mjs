@@ -338,8 +338,13 @@ test('prohlížeč hlavní účet nepoznává podle e-mailu, ale podle příznak
  * krok tiše selhal, obchodník by tiskl ze staré šablony a nikdo by to
  * nepoznal — přesně to, kvůli čemu centrální šablony vznikly. */
 const sablonyFn = (await import('./functions/sablony.mjs')).default;
-const DOCX1 = 'UEsDBBQABgAIAAAAIQ' + 'A'.repeat(400);   // „soubor" verze 1 (ZIP hlavička)
-const DOCX2 = 'UEsDBBQABgAIAAAAIQ' + 'B'.repeat(400);   // jiná data = jiný otisk
+/* Skutečný minimální .docx ze zdejšího generátoru (B99, 29. 9. 2026): server
+ * od té doby šablonu rozbalí a zkontroluje obsah — pouhá hlavička „UEsDB"
+ * s výplní by neprošla. Jiný text = jiná data = jiný otisk. */
+const DG_B99 = require('../src/docxgen.js');
+const docxB64 = async (t) => Buffer.from(await DG_B99.docxDokumentBlob('Šablona ' + t + ' {{FIRMA_NAZEV}}', []).arrayBuffer()).toString('base64');
+const DOCX1 = await docxB64('verze 1');   // „soubor" verze 1
+const DOCX2 = await docxB64('verze 2');   // jiná data = jiný otisk
 
 {
   const cObch2 = cookieObch;   // relace z r2 už po změnách hesla neplatí (B6)

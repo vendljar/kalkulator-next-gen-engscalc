@@ -352,6 +352,12 @@ const MUTACE = [
     nahrad: "  if (false)\n    return json({ ok: false, chyba: 'Příliš mnoho neúspěšných pokusů z této adresy. Zkuste to za '",
     proc: 'jedno heslo na sto e-mailů by na počítadle nikdy nenarostlo' },
 
+  /* ---------- B99 (29. 9. 2026): obsah šablony Wordu ---------- */
+  { nazev: 'B99: kontrola obsahu šablony se na serveru nevolá', soubor: 'functions/sablony.mjs',
+    hledej: "    if (vadyObsahu.length)\n      return json({ ok: false, chyba: g.sablonaObsahVadyText(vadyObsahu) }, 400);",
+    nahrad: "    if (false)\n      return json({ ok: false, chyba: g.sablonaObsahVadyText(vadyObsahu) }, 400);",
+    proc: 'EN šablona s vnější šablonou Wordu (makra z cizího serveru) by se zveřejnila a šla ke každému zákazníkovi' },
+
   /* ---------- B98 (29. 9. 2026): obnova ze souboru a razítka ---------- */
   { nazev: 'B98: obnova nechá ověření zámku ze souboru', soubor: 'lib/zakazka_kontrola.mjs',
     hledej: "      if (zeSouboru || !v.zamek.overeni) {",

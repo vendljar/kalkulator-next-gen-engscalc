@@ -8,6 +8,49 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v29.9.7 — B99: šablony Wordu bez maker, vložených objektů a vnějších vztahů (29. 9. 2026)
+
+Šestý ze šesti nálezů 21. kola (větev `claude/oprava-sesti-nalezu-v29.9.1`).
+Roadmapa #373.
+
+**Nález B99 (střední, integrita dokumentů).** Server ověřil jen začátek ZIPu
+(„UEsDB"), průvodce text, jazyk, symboly a strukturu XML; generátor
+i překlad kopírují zbytek ZIPu beze změny. Syntetická šablona s
+`word/_rels/settings.xml.rels` → `attachedTemplate`
+`https://example.invalid/x.dotm` (`TargetMode="External"`) prošla
+zveřejněním (200) i kontrolami průvodce a generátor ji přenesl do
+vygenerované nabídky — EN nabídka by si u zákazníka stáhla cizí šablonu
+s makry.
+
+- **Nový modul `src/sablona_obsah.js`** (CORE v `build.py` hned za
+  `sablony_online.js`, na serveru v `jadro_moduly.cjs` ve stejném pořadí):
+  `sablonaObsahVadyZipu()` nad rozbaleným ZIPem, `sablonaObsahVady()` pro
+  ArrayBuffer / base64. Odmítá vnější vztahy kromě hypertextových odkazů
+  **http(s) a mailto** (mailto nese dnešní šablona PROJ — bez něj by
+  neprošla; odkaz Word sám nestahuje), typy vztahů attachedTemplate,
+  oleObject, package, aFChunk, vbaProject, frame, subDocument, části
+  `word/embeddings/*`, `vbaProject*.bin`, ActiveX, typ obsahu macroEnabled
+  a pole INCLUDETEXT, INCLUDEPICTURE, DDE, DDEAUTO (i rozdělená do běhů).
+- Volá ho **server** při zveřejnění (`/api/sablony` → 400 s českou hláškou,
+  co vadí; nečitelný ZIP je taky vada), **průvodce** (`sablKontrolaSouboru`,
+  i „Nahrát vlastní verzi") a **generátor i překlad** (`docxVyplnSablonu`,
+  `docxPrelozSablonu` — obrana do hloubky: odmítnout, ne tiše vyhodit).
+- Dnešní firemní šablony (CN v13 + EN/DE/FR, CN v11, PROJ v2_opravena i v3,
+  SoD realizace a projekce, plná moc) kontrolou projdou.
+- Serverové sady posílaly jako šablonu jen řetězec „UEsDB…" — teď skutečný
+  minimální .docx z generátoru (`test_sablony`, `test_funkce`, řádek matice
+  v `test_prava`).
+
+**Testy (pojistka proti prázdnému testu):** `src/test_sablona_obsah.js`
+(nová, 27 kontrol; před opravou 1 prošlo / 1 selhalo — modul neexistoval,
+s modulem bez zapojení 25 / 2), `netlify/test_sablony.mjs` (+3; před
+opravou 19 / 3 — zveřejnění s attachedTemplate 200 → 22 / 0). Mutace
+serveru +1 („kontrola obsahu šablony se na serveru nevolá") — chycená.
+Harnessy s firemními šablonami: overit_sablona 60, overit_sablony_online
+53, overit_sod 25, overit_nabidka_proj_word 51 — vše OK.
+
+---
+
 ## v29.9.6 — B98: obnova ze souboru nepřebírá razítka zámku a odemčení (29. 9. 2026)
 
 Pátý ze šesti nálezů 21. kola (větev `claude/oprava-sesti-nalezu-v29.9.1`).

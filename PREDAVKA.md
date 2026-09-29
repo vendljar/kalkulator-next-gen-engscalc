@@ -21,7 +21,7 @@ v `git show 9a48ee8:PREDAVKA.md`.
 | — | — | ✅ celé kolo č. 1 | | v29.9.4 | sady 189/1/1, mutace 76/76 + 196/196, statické 3/3 | selhal jen overit_online (fixtura B112) — opraveno, 189/0 |
 | B97 | střední | ✅ opraveno | f3db355 | v29.9.5 | test_prihlaseni 45/5 → 50/0 | mutace +2, chycené 2/2; B75 ×3 chycené |
 | B98 | střední | ✅ opraveno | b814ebb | v29.9.6 | test_obnova 160/6 → 166/0 | mutace +2, chycené 2/2; P4 ×5 chycené |
-| B99 | střední | ⬜ | | | | podklady z Disku jsou (viz níže) |
+| B99 | střední | ✅ opraveno | (tento commit) | v29.9.7 | test_sablona_obsah 1/1 → 27/0; test_sablony 19/3 → 22/0 | mutace +1, chycená; firemní šablony projdou |
 | — | — | ⬜ celé kolo č. 2 | | | | po B99 |
 
 ## B111 — co je hotovo (v29.9.2)
@@ -136,6 +136,24 @@ Tři serverové kontroly B111 → B96 → B112 na jednom místě se snesly.
 - Odložené B100 (firma/zákazníci/šablony bez očisty), zbytek B32, B104,
   B109 — neřešeno (jen evidence).
 
+## B99 — co je hotovo (v29.9.7)
+- Pravidlo 0 potvrzeno: syntetická šablona s vnějším `attachedTemplate`
+  → zveřejnění 200, průvodce (docxXmlVady) nic nenašel, generátor i překlad
+  přenesly `settings.xml.rels` s `example.invalid` do výsledku.
+- `src/sablona_obsah.js` volá server, průvodce i generátor/překlad.
+- **Odchylka od zadání:** vnější hypertextové odkazy se povolují na
+  `http(s):` **i `mailto:`** — dnešní šablona PROJ nese 2× mailto (zadání
+  chce, aby firemní šablony prošly); mailto Word sám neotevírá.
+- **Vztahy ve firemních šablonách** (29. 9., podklady z Disku):
+  CN v13 + EN/DE/FR a CN v11: header, footer, footnotes, endnotes,
+  numbering, settings, styles, theme, webSettings, fontTable, image ×3,
+  hyperlink (vnější, http) ×1; PROJ v2_opravena (i v3): totéž + customXml ×4,
+  custom-properties, image ×12, hyperlink vnější http ×1 a mailto ×2, pole
+  PAGE / MERGEFORMAT; SoD realizace: customXml, footer ×3, header, image ×1,
+  pole PAGE; SoD projekce: footer, numbering, pole PAGE; plná moc: customXml,
+  footer, pole PAGE. Žádná makra, vložené objekty, ActiveX ani pole
+  INCLUDE/DDE. Všechny kontrolou projdou.
+
 ## Rozhodnutí podle výchozího návrhu — čekají na potvrzení J. V.
 - **B111:** zápornou položku, množství ani hodiny nesmí nikdo, ani
   administrátor (dobropis ne; jako N56).
@@ -186,6 +204,6 @@ N46 se neopravuje bez pokynu J. V.
   `git status` a `grep -rn "if (false)" netlify src`.
 
 ## Další krok
-B99 (příloha F): kontrola obsahu šablon DOCX (nový modul
-`src/sablona_obsah.js`, server, průvodce, generátor), pak **celé kolo č. 2**
-a závěr pro J. V.
+**Celé kolo č. 2** nad v29.9.7 (před tím kopie příručky pro aktuální verzi),
+výsledek sem, závěr pro J. V. Potom úkol 2 — etapa B platebních podmínek
+v nové větvi `claude/etapa-b-plan-plateb-proj` z `origin/test-draft`.

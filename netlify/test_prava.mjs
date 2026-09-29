@@ -199,6 +199,10 @@ const cookieRole = (r) => (r === 'nepřihlášený' ? null : UCTY[r].cookie);
 const PRIHLASENY_OK = { 'nepřihlášený': 401, 'Obchodník': 'ok', 'Vedoucí': 'ok', 'Administrátor': 'ok' };
 const JEN_ADMIN = { 'nepřihlášený': 401, 'Obchodník': 403, 'Vedoucí': 403, 'Administrátor': 'ok' };
 
+/* Šablona pro řádek zveřejnění: skutečný .docx (B99 — server obsah rozbalí
+ * a zkontroluje; samotná hlavička „UEsDB" už neprojde). */
+const DOCX_MATICE = Buffer.from(await require('../src/docxgen.js')
+  .docxDokumentBlob('Šablona matice {{FIRMA_NAZEV}}', []).arrayBuffer()).toString('base64');
 const MATICE = [
   { fn: zdravi, soubor: 'zdravi.mjs', nazev: 'zdraví (GET /api/zdravi)', metoda: 'GET',
     url: 'http://x/api/zdravi',
@@ -452,7 +456,7 @@ const MATICE = [
 
   { fn: sablonyFn, soubor: 'sablony.mjs', nazev: 'šablony — zveřejnění (POST /api/sablony)',
     metoda: 'POST', url: 'http://x/api/sablony',
-    telo: () => ({ akce: 'zverejnit', typ: 'nabidka', nazev: 'x.docx', data: 'UEsDBAAA' }),
+    telo: () => ({ akce: 'zverejnit', typ: 'nabidka', nazev: 'x.docx', data: DOCX_MATICE }),
     proc: 'výměna šablony mění dokumenty celé firmy — to je rozhodnutí administrátora',
     prava: JEN_ADMIN },
 
