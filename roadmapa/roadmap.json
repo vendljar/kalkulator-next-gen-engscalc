@@ -5912,7 +5912,8 @@
    "detail": "Rozbor jádra v30.9.3: sklo nad dveřmi ve standardu = sklo čelní stěny a její zasklení (drží); v režimu po stěnách se plocha světlíků ocení typy pásů stěny A (Cetris → „sklo“ jako Cetris, „bez — dodá stavba“ → 0 Kč). Materiál opláštění se počítá stejně jako sklo (čelní stěna), stěny B–D se nečtou. Návrh s maketou a výpočtem: https://claude.ai/artifact/2x3pM2fGfAQaXz7ziUVxbE — plocha boků = min(N; nástupiště) × mezera × 2,2 m, konstrukce (sloupek portálu +1, krátké příčníky +2) a montáž 0,5 h na světlík, sklo podle stěny A, materiál podle stěn B–D (převažující podle plochy), boky „bez“ s upozorněním v kontrole, převod starších zakázek beze změny ceny.",
    "otazka": "Odpovědi J. V. na otázky 1–7 návrhu (výchozí odpovědi jsou v návrhu).",
    "kde": "src/engine.js (nadDvermiVypln, bokyVypln, VYPLN_SKLENA, zasklení, oplZakladSteny), src/ui/kalk_ock.js (Zadání šachty), src/techspec.js, src/kontroly.js",
-   "zavisi": [{"typ": "doporuceno", "id": "351", "proc": "navazuje na volbu výplně nad dveřmi a vedle nich (N58, N58b)"}]
+   "zavisi": [{"typ": "doporuceno", "id": "351", "proc": "navazuje na volbu výplně nad dveřmi a vedle nich (N58, N58b)"}],
+   "pozn": "J. V. 30. 9. 2026: „s tvými návrhy řešení bočních světlíků souhlasím\" (výchozí odpovědi 1–7); u nadpraží „zajistí stavba\" zrušit −0,2 h montáže. Realizace ve větvi claude/svetliky-u-dveri-375."
   }
  ],
  "meta" : {

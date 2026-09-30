@@ -1,9 +1,9 @@
-# Předávka — stav k 30. 9. 2026 (v30.9.3 na test-draft, v30.9.1 na test i main)
+# Předávka — stav k 30. 9. 2026 (v30.9.3 na test-draft i test, v30.9.1 na main)
 
-Na `main` i `test`: **v30.9.1** (opravy šesti nálezů 21. kola; `main`
-fast-forward na `test` na pokyn J. V. 30. 9. 2026 „pošli aktuální test do
-main" — ostrá aplikace se z `main` nasazuje sama; tag i release v30.9.1
-existují). Na `test-draft`: **v30.9.3** — etapa B platebních podmínek
+Na `main`: **v30.9.1** (pokyn J. V. 30. 9. 2026 „pošli aktuální test do
+main"; ostrá aplikace se z `main` nasazuje sama). Na `test`: **v30.9.3**
+(pokyn J. V. 30. 9. odpoledne „co máme aktuálně v draftu pošli už do testu").
+Všechny tagy v29.9.3–v30.9.3 vydané a odsouhlasené (J. V. 30. 9.). Na `test-draft`: **v30.9.3** — etapa B platebních podmínek
 (plán plateb projekce, #367; v30.9.2 z větve `claude/etapa-b-plan-plateb-v30.9.1`)
 a Q5 (dřívější záloha se přepne na předvolbu sama; větev
 `claude/etapa-b-q5-zaloha-automaticky`) — obojí na pokyn J. V. „výstup pošli
@@ -28,6 +28,30 @@ z cloudu pushnout nejde — proxy HTTP 403, viz CLAUDE.md).
   (předávka + prompt šesti oprav).
 Roadmapa: `roadmapa/roadmap.json` (375 položek, nejvyšší #375), stránka se
 generuje `python3 roadmapa/roadmapa.py`.
+
+## ROZDĚLANÉ 30. 9. 2026 odpoledne — dávka K18 + světlíky (integrační větev `claude/davka-k18-svetliky`)
+Zadání J. V. 30. 9. (odpoledne), rozděleno do čtyř paralelních větví z
+`test-draft` cd7a1ec; po dokončení je integrátor sloučí do
+`claude/davka-k18-svetliky`, sestaví v30.9.4, pustí celé kolo a převede do
+`test-draft`:
+- `claude/svetliky-u-dveri-375` — #375 podle návrhu
+  https://claude.ai/artifact/2x3pM2fGfAQaXz7ziUVxbE (J. V.: „s tvými návrhy
+  řešení bočních světlíků souhlasím" = výchozí odpovědi 1–7); navíc u světlíku
+  nad dveřmi při „zajistí stavba" zrušit odpočet montáže −0,2 h na nástupiště
+  („bez" −0,2 h zatím ponechává — Excel, Model 1).
+- `claude/k18-drobnosti` — zaměření 3D skenerem v krycím listu / specifikaci
+  svázat s Režií kalkulace OCK (množství 0 → „ne", jako výstup ze zaměření);
+  opláštění po stěnách nesmí samo dělat ATYP („Toto změň na standard");
+  zdvih nejvýš 99 m (K17-N91; zábrana „rozmery", UI max).
+- `claude/k18-nalezy-word-preklady` — K18-N92 (cena geodetického zaměření
+  ve Wordu PROJ: blok v šabloně PROJ v4 + kontrola), N93 („Warranty 60
+  měsíců"), N95 (úvod a termíny PROJ v cizím jazyce), N96 (dodatkový text
+  z ceníku v cizí nabídce), N97 (opláštění po stěnách: všechny materiály).
+- `claude/ock-platebni-podminky-nabidka` — K18-N94 („Bez zálohy" bez rozbité
+  věty) a měsíční fakturace OCK v nabídce větou „Fakturace probíhá měsíčně
+  podle skutečně provedených prací." (etapa A podle návrhu 29. 9.).
+Když sezení spadne: podívat se na stav těch větví (`git log origin/<větev>`),
+dokončit a sloučit podle tohoto seznamu.
 
 ## Hotovo v30.9.2 — etapa B: plán plateb projekce (podrobně CHANGELOG.md)
 Jeden plán plateb PROJ (krycí list PROJ), nabídka PROJ, tisk krycího listu,
