@@ -582,11 +582,15 @@ function nabidkaNahledSekce(ph, lang) {
     const termin = String(ph.PODM_TERMIN_DODANI == null ? '' : ph.PODM_TERMIN_DODANI).trim();
     if (sym === 'FIRMA_NAB_TERMINY' && termin) radky = [['Termín dodání', termin]].concat(radky);
     /* Záruka z krycího listu, věta o záruce z Firmy pryč (P10.7). */
+    /* Hodnota se překládá stejně jako ve Wordu (K18-N93, 30. 9. 2026): popisek
+     * řádku přeloží `popisek` níž, hodnotu ne — všech 22 cizojazyčných
+     * nabídek tak psalo „Warranty 60 měsíců". „60 měsíců" převede vzor
+     * v preklad.js; nečíselný text z krycího listu projde beze změny. */
     if (sym === 'FIRMA_NAB_TERMINY') {
       radky = radky.filter(r => !(r[0] && typeof r[0] === 'object' && nabidkaJeVetaOZaruce(r[0].hotovo, L)));
       const zaruka = nabidkaZarukaText(ph.PODM_ZARUKA_MESICU);
       if (zaruka && radky.some(r => !(r[0] && typeof r[0] === 'object' && /⚠/.test(r[0].hotovo || ''))))
-        radky = radky.concat([['Záruka', zaruka]]);
+        radky = radky.concat([['Záruka', P(zaruka)]]);
     }
     /* Prázdná kapitola se vynechá i s nadpisem — stejné pravidlo jako
      * u prázdných řádků technické specifikace ve Wordu. */

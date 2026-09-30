@@ -8,6 +8,9 @@
  *         hlídá test_sablona_proj_v4.js; tady je kontrola „cenaWordProj",
  *         která se ozve, když šablona cenu nabízené činnosti nemá kam dát,
  *         a stažení symbolů šablony i kvůli oceněnému geodetu.
+ *   N93 — online nabídka OCK v EN/DE/FR psala „Warranty 60 měsíců" (všech
+ *         22 cizojazyčných nabídek): kapitola V. náhledu přeložila popisek,
+ *         hodnotu z krycího listu ne. Word ({{NAB_KAP_TERMINY}}) ji překládal.
  *
  * Spuštění: cd src && node test_k18_nalezy.js */
 const fs = require('fs');
@@ -128,6 +131,34 @@ global.NAST = { firma: global.firmaDefault() };
   test('N92: bez slevy, vlastních položek, plánu i geodetu se šablona nestahuje', stazeno.length === 0, stazeno);
   ui.kontrolySablonaNabidkaProj(null, p09.r, 'cz');
   test('N92: s oceněným geodetem se šablona PROJ stáhne (pravidlo pak ví, co v ní je)', stazeno.indexOf('nabidkaProj') >= 0, stazeno);
+}
+
+/* ======================= N93: záruka v cizojazyčné online nabídce ======================= */
+const JEKLY = JSON.parse(fs.readFileSync(__dirname + '/jekly.json', 'utf8'));
+nacti('./zpracovatel.js'); nacti('./dokumenty.js');
+const NB = nacti('./nabidka.js');
+{
+  const z = zk.novaZakazka();
+  z.cislo = '2026 - OPR - CN - 0493'; z.nazevAkce = 'Záruka v cizím jazyce'; z.objednatel = 'Zkušební GmbH';
+  const v = z.varianty[0];
+  v.data.cenik = ZC.zkusebniCenik();
+  v.data.cenik.kurzEurKc = 25;                 // cizí jazyk = eura, bez kurzu dokument nevznikne
+  const zarukaOnline = (L) => {
+    const sek = NB.nabidkaNahledSekce(NB.nabidkaData(z, v, JEKLY, L).placeholders, L);
+    const r = [].concat(...sek.map(s => s.radky)).find(x => x[0] === { cz: 'Záruka', en: 'Warranty', de: 'Gewährleistung', fr: 'Garantie' }[L]);
+    return r ? r[1] : null;
+  };
+  test('N93: česká online nabídka dál „Záruka | 60 měsíců"', zarukaOnline('cz') === '60 měsíců', zarukaOnline('cz'));
+  test('N93: anglická online nabídka „Warranty | 60 months" (dřív „60 měsíců")', zarukaOnline('en') === '60 months', zarukaOnline('en'));
+  test('N93: německá „Gewährleistung | 60 Monate"', zarukaOnline('de') === '60 Monate', zarukaOnline('de'));
+  test('N93: francouzská „Garantie | 60 mois"', zarukaOnline('fr') === '60 mois', zarukaOnline('fr'));
+  v.data.kryci = { hodnoty: { zarukaMesicu: '36' } };
+  test('N93: přepis v krycím listu (36) se přeloží taky', zarukaOnline('en') === '36 months', zarukaOnline('en'));
+  test('N93: Word (kapitola V., {{NAB_KAP_TERMINY}}) zůstává přeložený',
+    /(^|\n)Warranty: 36 months($|\n)/.test(NB.nabidkaData(z, v, JEKLY, 'en').placeholders.NAB_KAP_TERMINY));
+  /* Co napíše obchodník ručně, projde beze změny (slovník ho nezná). */
+  v.data.kryci = { hodnoty: { zarukaMesicu: 'dle smlouvy o dílo' } };
+  test('N93: nečíselný text záruky z krycího listu projde beze změny', zarukaOnline('en') === 'dle smlouvy o dílo', zarukaOnline('en'));
 }
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
