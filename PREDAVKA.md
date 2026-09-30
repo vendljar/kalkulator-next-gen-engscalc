@@ -87,6 +87,7 @@ B103, B104; #345: B80/B81/B83/B85/B88; B79 ponecháno; N46, N59, N60 (J. V.), N6
 | Komplexní test v29.9.1 (21. kolo) | `claude/komplexni-test-v29.9.1` | kolo, audit, prompty 21. kola |
 | Opravy v29.9.1 | `claude/oprava-sesti-nalezu-v29.9.1` | šest oprav (v29.9.2–v29.9.7), sloučeno do test-draft (v30.9.1) |
 | Testování po opravách (22. kolo) | `claude/testovani-po-opravach` | toto sezení — kolo, audit, protokol, prompty, tato předávka |
+| Opravy nálezů 22. kola / 23. kolo | `claude/oprava-<id>-...` (přidělí J. V.) | navazující sezení `session_0152gTk16B8GKboeQJxTy49m` (https://claude.ai/code/session_0152gTk16B8GKboeQJxTy49m) — čeká na pokyn J. V., spustí opravy B113–B118 a odložené promptem do paralelních větví; 23. kolo po opravách |
 
 ## Prostředí (pro další sezení)
 - Podklady (mimo repozitář): `/home/user/kng_podklady` — CN v13 (+EN/DE/FR),
