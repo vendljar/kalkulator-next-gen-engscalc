@@ -101,6 +101,20 @@ function klRow(id, label, opts = {}) {
   const val = klVal(id, pref);
   const manual = klManual(id);
   let field;
+  /* Odvozený řádek (30. 9. 2026, Zaměření strojovna — J. V.: „když je
+   * v kalkulaci 0, tak je v krycím listu položka automaticky ve stavu ne"):
+   * hodnota jde z kalkulace a je jen ke čtení. Ruční přepis by ji nepřebil
+   * (kryciHodnota), takže ho obrazovka nenabízí; dřívější přepis uložený
+   * v zakázce se jen ohlásí, že neplatí. */
+  if (opts.odvozene && pref !== '') {
+    const volby = Array.isArray(opts.o) ? opts.o : [pref];
+    const radia = volby.map(x => `<label><input type="radio" disabled ${String(pref) === String(x) ? 'checked' : ''}
+        value="${esc(x)}">${esc(x)}</label>`).join('');
+    const neplati = manual && String(val) !== String(pref)
+      ? ` <span class="note" style="font-size:10px">(dřívější ruční „${esc(val)}" neplatí)</span>` : '';
+    return `<div class="kl-row kl-odvozene"><div class="lbl">${label}</div><div><div class="kl-radio">${radia}</div></div>
+      <div class="src"><span class="note" style="font-size:10px">${esc(opts.src || 'z kalkulace')}</span>${neplati}</div></div>`;
+  }
   if (opts.type === 'dph' && opts.dphBind) {
     /* Bez „ručně" a bez ↺: není co vracet, hodnota nikdy nebyla ruční. */
     return `<div class="kl-row"><div class="lbl">${label}</div><div>${klDphPole(opts.dphBind)}</div>
@@ -210,7 +224,8 @@ function renderKryci() {
       }
       const pref = p.prefill ? p.prefill(c) : null;
       return klRow(p.id, p.label + ' ' + znacka(p.verze),
-        { prefill: pref, type: p.typ, o: p.o, src: p.src, ph: p.ph, dphBind: p.dphBind });
+        { prefill: pref, type: p.typ, o: p.o, src: p.src, ph: p.ph, dphBind: p.dphBind,
+          odvozene: !!p.odvozene && !(c && c.zamceno) });
     }).join('');
     return `<h3>${s.sekce}</h3>${rows}`;
   }).join('');

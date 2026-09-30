@@ -193,6 +193,27 @@ test('3D zaměření se přebírá z technické specifikace jako Ano/Ne',
   const cS = kr.kryciCtx(zak, vS, JEKLY);
   test('3D sken v ceně → Zaměření strojovna „Ano" i přes ruční „ne" ve specifikaci',
     cS.sken3d === 'Ano', cS.sken3d);
+  /* Zadání J. V. 30. 9. 2026: „když je v kalkulaci 0, tak je v krycím listu
+   * položka automaticky ve stavu ne". Ruční přepis ŘÁDKU KRYCÍHO LISTU
+   * (kliknuté „Ano" z doby, kdy zaměření v ceně bylo) proto cenu nepřebije —
+   * řádek je odvozený stejně jako pole ve specifikaci. Zamčená varianta
+   * drží, co se odeslalo. */
+  const zs = pole('zamereniStrojovna');
+  test('ruční „Ano" v krycím listu u 3D skenu vypnutého v Režii → „Ne"',
+    kr.kryciHodnota(zs, { hodnoty: { zamereniStrojovna: 'Ano' } }, cBez) === 'Ne',
+    kr.kryciHodnota(zs, { hodnoty: { zamereniStrojovna: 'Ano' } }, cBez));
+  test('ruční „Ne" v krycím listu u 3D skenu v ceně → „Ano"',
+    kr.kryciHodnota(zs, { hodnoty: { zamereniStrojovna: 'Ne' } }, cS) === 'Ano',
+    kr.kryciHodnota(zs, { hodnoty: { zamereniStrojovna: 'Ne' } }, cS));
+  const cZam = Object.assign({}, cBez, { zamceno: true, zmrazeno: null });
+  test('zamčená varianta: ruční hodnota z doby odeslání zůstává',
+    kr.kryciHodnota(zs, { hodnoty: { zamereniStrojovna: 'Ano' } }, cZam) === 'Ano',
+    kr.kryciHodnota(zs, { hodnoty: { zamereniStrojovna: 'Ano' } }, cZam));
+  test('když se odvodit nedá (prázdná hodnota), platí ruční přepis',
+    kr.kryciHodnota(zs, { hodnoty: { zamereniStrojovna: 'Ano' } }, Object.assign({}, cBez, { sken3d: '' })) === 'Ano',
+    kr.kryciHodnota(zs, { hodnoty: { zamereniStrojovna: 'Ano' } }, Object.assign({}, cBez, { sken3d: '' })));
+  test('kontext krycího listu nese stav zámku varianty',
+    cBez.zamceno === false, cBez.zamceno);
 }
 test('oceněná sekce kalkulace PROJ znamená ANO',
   c.projAno('dps') === (rProj.sekce.find(s => s.key === 'dps').celkem > 0 ? 'Ano' : 'Ne'),

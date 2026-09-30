@@ -145,6 +145,24 @@ const k4 = await p.evaluate(() => {
 zkus('do nabídky jde „ne" a krycí list (Zaměření strojovna) říká „Ne"',
   k4.nabidka === 'ne' && k4.kryci === 'Ne', k4);
 zkus('ruční hodnota v datech zůstala (nic se nemaže)', k4.vDatech === 'ano', k4);
+/* Řádek krycího listu (J. V. 30. 9. 2026: „když je v kalkulaci 0, tak je
+ * v krycím listu položka automaticky ve stavu ne"): ani „Ano" kliknuté
+ * v krycím listu dřív kalkulaci nepřebije — řádek je jen ke čtení. */
+await p.evaluate(() => { prepniTab('kryci'); klSet('zamereniStrojovna', 'Ano'); render(); });
+const k4b = await p.evaluate(() => {
+  const r = [...document.querySelectorAll('#page-kryci .kl-row')]
+    .find(x => /Zaměření strojovna/.test((x.querySelector('.lbl') || {}).textContent || ''));
+  if (!r) return null;
+  const radia = [...r.querySelectorAll('input[type=radio]')];
+  const word = kryciData(ZAK, aktivniVarianta(ZAK), JEKLY, 'bo').sekce
+    .reduce((a, s) => a.concat(s.radky), []).find(x => x[0] === 'Zaměření strojovna');
+  return { zaskrtnuto: (radia.find(x => x.checked) || {}).value,
+    jenCist: radia.length === 2 && radia.every(x => x.disabled), text: r.innerText, word: word && word[1] };
+});
+zkus('krycí list: dřívější ruční „Ano" neplatí, řádek ukazuje „Ne" jen ke čtení',
+  k4b && k4b.zaskrtnuto === 'Ne' && k4b.jenCist && /neplatí/.test(k4b.text), k4b);
+zkus('a Word krycího listu tiskne „Ne"', k4b && k4b.word === 'Ne', k4b);
+await p.evaluate(() => { klReset('zamereniStrojovna'); });
 await p.evaluate(() => { delete TS.hodnoty.sken3d; prepniTab('kalk'); mnozstviSet('ZAMĚŘENÍ 3D SKENEREM', ''); render(); });
 const k5 = await radekSpec('ZAMĚŘENÍ PROSTORŮ 3D SKENEREM');
 zkus('po vrácení množství je zpátky „ano"', k5 && k5.hodnota === 'ano', k5);

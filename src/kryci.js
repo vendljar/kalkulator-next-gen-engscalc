@@ -236,7 +236,11 @@ const KRYCI_SEKCE = [
     { id: 'odchylky', label: 'Jiné odchylky oproti smluvnímu standardu', verze: ['bo'], typ: 'textarea', ph: 'popis odchylek…' },
     /* KL-4: zaměření prostor je položka kalkulace (3D skener v režii OCK,
      * v technické specifikaci pole `sken3d`). Není důvod se na ně ptát znovu. */
-    { id: 'zamereniStrojovna', label: 'Zaměření strojovna', verze: ['bo', 'techdata'], typ: 'radio', o: ['Ano', 'Ne'], prefill: c => c.sken3d, src: 'z technické specifikace (3D zaměření)' },
+    /* Od 30. 9. 2026 (J. V.: „když je v kalkulaci 0, tak je v krycím listu
+     * položka automaticky ve stavu ne") je řádek ODVOZENÝ (`odvozene`) —
+     * ruční přepis z dřívějška cenu nepřebije, viz kryciHodnota. */
+    { id: 'zamereniStrojovna', label: 'Zaměření strojovna', verze: ['bo', 'techdata'], typ: 'radio', o: ['Ano', 'Ne'], prefill: c => c.sken3d, odvozene: true,
+      src: 'z kalkulace OCK (Režie → ZAMĚŘENÍ 3D SKENEREM)' },
     { id: 'situacniFoto', label: 'Situační fotografie', verze: ['bo', 'techdata'], prefill: () => 'Ve složce', src: 'výchozí' },
     { id: 'cenaNezahrnuje', label: 'Cena nezahrnuje', verze: ['bo'], prefill: () => 'dle CN', src: 'výchozí' },
     { id: 'rozsah', label: 'Rozsah', verze: ['bo'],
@@ -446,6 +450,8 @@ function kryciCtx(zak, varianta, jekly) {
     /* Podmínky zmrazené při odeslání (P9.5) — platí jen, dokud je varianta
      * zamčená; po odemčení nebo v klonu se předvyplňuje zase z Nastavení. */
     zmrazeno: (varianta && varianta.zamek && varianta.zamek.zamceno && d.kryci && d.kryci.zmrazeno) || null,
+    /* Zamčená varianta drží i u odvozených řádků to, co se odeslalo. */
+    zamceno: !!(varianta && varianta.zamek && varianta.zamek.zamceno),
   };
 }
 /* ---------- termín dodání a přirážka za ATYP (21. 8. 2026) ----------
@@ -496,6 +502,13 @@ function kryciTerminDodani(c) {
 
 /* hodnota pole: ruční přepis (data.kryci.hodnoty) > prefill > '' */
 function kryciHodnota(pole, kl, c) {
+  /* Odvozený řádek (`odvozene`, 30. 9. 2026 — Zaměření strojovna): hodnotu
+   * určuje kalkulace, ruční přepis se nečte (v datech zůstává). Zamčená
+   * varianta jde starou cestou (drží, co se odeslalo), a když se hodnota
+   * odvodit nedá, platí ruční přepis jako dřív. */
+  if (pole.odvozene && pole.prefill && !(c && c.zamceno)) {
+    try { const v = pole.prefill(c); if (v != null && v !== '') return v; } catch (e) {}
+  }
   /* `dphBind` je totéž provázání jako `bind`, jen mířené do sazby DPH
    * v hlavičce kalkulace — ruční přepis se proto nečte ani tady. */
   if (!pole.bind && !pole.dphBind) {   // provázaná pole (bind) čtou přímo ze ZAK, ne z ručních přepisů
