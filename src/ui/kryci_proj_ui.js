@@ -83,13 +83,16 @@ function kryciProjPodminkyBlok() {
   let c = null;
   try { c = kryciProjCtx(ZAK, aktivniVarianta(ZAK)); } catch (e) { c = null; }
   const sekceHtml = KRYCI_PROJ_SEKCE.filter(s => KRYCI_PROJ_NABIDKA_SEKCE.indexOf(s.sekce) >= 0).map(s => {
-    const rows = s.pole.filter(p => !p.bind).map(p => {
+    /* Pole dřívějšího znění (`stary`) a tiskové řádky plánu (`plan`) —
+     * viz kryciProjPoleViditelne; plán se edituje kartou pod sekcí. */
+    const rows = s.pole.filter(p => !p.bind && !p.plan && kryciProjPoleViditelne(p, c)).map(p => {
       let pref = null;
       if (p.prefill && c) { try { pref = p.prefill(c); } catch (e) { pref = null; } }
       const zdroj = typeof p.src === 'function' ? (c ? p.src(c) : '') : p.src;
       return klpRow(p.id, p.label, { prefill: pref, type: p.typ, o: p.o, src: zdroj, ph: p.ph, dphBind: p.dphBind });
     }).join('');
-    return `<h3>${s.sekce}</h3>${rows}`;
+    const plan = (s.sekce === 'Platební podmínky' && typeof planKlpKarta === 'function') ? planKlpKarta(c) : '';
+    return `<h3>${s.sekce}</h3>${rows}${plan}`;
   }).join('');
   /* Sbalovací karta, ve výchozím stavu otevřená — viz kryciPodminkyBlok().
    * Rovněž bez id (nabidkaProjKarta() se vykresluje v Kalkulaci PROJ i v
@@ -113,7 +116,10 @@ function renderKryciProj() {
       : '<span class="pill kl-verze" title="jen Backoffice">BO</span>');
 
   const sekceHtml = KRYCI_PROJ_SEKCE.map(s => {
-    const rows = s.pole.map(p => {
+    /* Plán plateb (etapa B): pole dřívějšího znění (`stary`) jen u odeslané
+     * nabídky z doby před plánem, tiskové řádky plánu (`plan`) se neukazují —
+     * místo nich karta plánu a tabulka plateb smlouvy. */
+    const rows = s.pole.filter(p => !p.plan && kryciProjPoleViditelne(p, c)).map(p => {
       const zdroj = typeof p.src === 'function' ? p.src(c) : p.src;   // popisek zdroje smí být i funkce
       if (p.bind) {   // obousměrné provázání s hlavičkou zakázky – žádný ruční přepis
         /* Je-li pole v hlavičce PROJ prázdné, zobrazí se hodnota z hlavičky OCK
@@ -132,7 +138,9 @@ function renderKryciProj() {
       return klpRow(p.id, p.label + ' ' + znacka(p.verze),
         { prefill: pref, type: p.typ, o: p.o, src: zdroj, ph: p.ph, dphBind: p.dphBind });
     }).join('');
-    return `<h3>${s.sekce}</h3>${rows}`;
+    const plan = (s.sekce === 'Platební podmínky' && typeof planKlpKarta === 'function') ? planKlpKarta(c) : '';
+    const platby = (/^Smlouva o dílo — splátky/.test(s.sekce) && typeof planKlpPlatbyKarta === 'function') ? planKlpPlatbyKarta(c) : '';
+    return `<h3>${s.sekce}</h3>${platby}${rows}${plan}`;
   }).join('');
 
   el.innerHTML = `<div class="kl-doc">

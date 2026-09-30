@@ -51,6 +51,11 @@ const ZAMEK_CHRANENE = [
   'sdItemSet', 'sdItemAdd', 'sdItemDel', 'sdItemMove', 'sdDefSet', 'sdDefVlastni', 'sdResetVse',
   // Krycí listy
   'klSet', 'klReset', 'klpSet', 'klpReset',
+  /* Plán plateb projekce v krycím listu PROJ (etapa B, 30. 9. 2026) —
+   * zapisuje do data.kryciProj.planPlateb mimo klpSet (předvolba, splátky,
+   * ruční částky plateb smlouvy). */
+  'planKlpPredvolba', 'planKlpZaloha', 'planKlpProcento', 'planKlpMilnik', 'planKlpMilnikText',
+  'planKlpPridej', 'planKlpOdeber', 'planKlpPosun', 'planKlpVratitCinnost', 'planKlpPrepis', 'planKlpPrepisZrus',
   // Kalkulace PROJ a text nabídky PROJ
   'pjSet', 'pjPolozkaAdd', 'pjPolozkaDel', 'nabidkaProjPopis',
   // Sleva (mění cenu, která už odešla zákazníkovi)

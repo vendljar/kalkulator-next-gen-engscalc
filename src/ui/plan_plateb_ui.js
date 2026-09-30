@@ -159,3 +159,204 @@ function nastPlanPlatebProj() {
       <tbody>${radkyKatalogu}</tbody></table></div>
     ${admin ? '<div class="btns" style="margin-top:6px"><button class="mini" onclick="planFirmaMilnikPridej()">+ přidat milník</button></div>' : ''}`;
 }
+
+/* ---------- krycí list PROJ: plán plateb zakázky ----------
+ * Plán je ŘÍDKÝ (data.kryciProj.planPlateb): ukládá se předvolba, záloha,
+ * jen UPRAVENÉ činnosti a ruční částky plateb smlouvy. Neupravená činnost
+ * bere řádky z předvolby, takže změna firemního Standardu se do
+ * rozpracované zakázky propíše sama; odeslaná nabídka má snímek.
+ * Vstupní funkce níž jsou v ZAMEK_CHRANENE (zámek varianty, náhled). */
+function planKlpData() {
+  if (!KLP.planPlateb || typeof KLP.planPlateb !== 'object') KLP.planPlateb = { v: 1 };
+  return KLP.planPlateb;
+}
+function planKlpEf() { return nabidkaProjPlatby(ZAK, aktivniVarianta(ZAK), 'cz'); }
+function planKlpUlozeno() { aktivniVarianta(ZAK).upraveno = new Date().toISOString(); render(); }
+/* Řádky činnosti ke změně: poprvé se zhmotní z předvolby do plan.cinnosti. */
+function planKlpRadky(k) {
+  const plan = planKlpData();
+  if (!plan.cinnosti || typeof plan.cinnosti !== 'object') plan.cinnosti = {};
+  if (!Array.isArray(plan.cinnosti[k]) || !plan.cinnosti[k].length) {
+    const ef = planKlpEf();
+    plan.cinnosti[k] = planRadkyCinnosti(k, plan, ef.firemni)
+      .map(r => r.m === 'vlastni' ? { p: r.p, m: 'vlastni', t: r.t || '' } : { p: r.p, m: r.m });
+  }
+  return plan.cinnosti[k];
+}
+const planKlpCislo = (v) => { const n = parseFloat(String(v == null ? '' : v).replace(/[\s ]/g, '').replace(',', '.')); return isFinite(n) ? n : 0; };
+
+async function planKlpPredvolba(v) {
+  if (PLAN_PROJ_PREDVOLBY.indexOf(v) < 0) return;
+  const plan = planKlpData();
+  const ef = planKlpEf();
+  if (v === 'vlastni') {
+    /* Vlastní = obchodník upravuje řádky sám; začíná od toho, co právě vidí. */
+    plan.cinnosti = plan.cinnosti && typeof plan.cinnosti === 'object' ? plan.cinnosti : {};
+    PLAN_PROJ_SEKCE.forEach(k => { if (+ef.ceny[k] > 0 && !(Array.isArray(plan.cinnosti[k]) && plan.cinnosti[k].length)) planKlpRadky(k); });
+    plan.predvolba = 'vlastni';
+    planKlpUlozeno();
+    return;
+  }
+  const upr = PLAN_PROJ_SEKCE.filter(k => plan.cinnosti && Array.isArray(plan.cinnosti[k]) && plan.cinnosti[k].length);
+  const prep = plan.prepis && Object.keys(plan.prepis).length;
+  if (upr.length || prep) {
+    const ok = await potvrd('Změna předvolby zahodí ' + [upr.length ? 'upravené splátky (' + upr.map(k => PLAN_PROJ_ZKRATKY[k]).join(', ') + ')' : '',
+      prep ? 'ruční částky plateb smlouvy' : ''].filter(Boolean).join(' a ') + '. Pokračovat?', { ano: 'Změnit předvolbu' });
+    if (!ok) { render(); return; }
+  }
+  plan.predvolba = v;
+  delete plan.cinnosti;
+  delete plan.prepis;
+  planKlpUlozeno();
+}
+function planKlpZaloha(v) {
+  const z = +v;
+  if (PLAN_PROJ_ZALOHY.indexOf(z) < 0) return;
+  planKlpData().zaloha = z;
+  planKlpUlozeno();
+}
+function planKlpProcento(k, i, v) {
+  const r = planKlpRadky(k);
+  if (!r[i]) return;
+  r[i].p = Math.round(planKlpCislo(v) * 100) / 100;
+  planKlpUlozeno();
+}
+function planKlpMilnik(k, i, id) {
+  const r = planKlpRadky(k);
+  if (!r[i]) return;
+  r[i].m = String(id || '');
+  if (r[i].m === 'vlastni') r[i].t = r[i].t || ''; else delete r[i].t;
+  planKlpUlozeno();
+}
+function planKlpMilnikText(k, i, t) {
+  const r = planKlpRadky(k);
+  if (!r[i]) return;
+  r[i].t = String(t == null ? '' : t).slice(0, 300);
+  planKlpUlozeno();
+}
+function planKlpPridej(k) {
+  const r = planKlpRadky(k);
+  if (r.length >= 10) { hlaska('Činnost má nejvýš 10 splátek.'); return; }
+  const zbyva = Math.max(0, Math.round((100 - r.reduce((a, x) => a + (+x.p || 0), 0)) * 100) / 100);
+  const ef = planKlpEf();
+  r.push({ p: zbyva, m: (ef.firemni.predani || {})[k] || 'podpis' });
+  planKlpUlozeno();
+}
+function planKlpOdeber(k, i) {
+  const r = planKlpRadky(k);
+  if (r.length <= 1 || !r[i]) return;
+  r.splice(i, 1);
+  planKlpUlozeno();
+}
+function planKlpPosun(k, i, d) {
+  const r = planKlpRadky(k), j = i + d;
+  if (!r[i] || !r[j]) return;
+  const x = r[i]; r[i] = r[j]; r[j] = x;
+  planKlpUlozeno();
+}
+function planKlpVratitCinnost(k) {
+  const plan = planKlpData();
+  if (plan.cinnosti) delete plan.cinnosti[k];
+  planKlpUlozeno();
+}
+function planKlpPrepis(klic, v) {
+  const plan = planKlpData();
+  const t = String(v == null ? '' : v).trim();
+  if (!plan.prepis || typeof plan.prepis !== 'object') plan.prepis = {};
+  if (!t) { delete plan.prepis[klic]; planKlpUlozeno(); return; }
+  const kc = planCastkaZTextu(t);
+  if (kc === null) { hlaska('Částku „' + t + '" nejde přečíst — napište číslo v korunách, např. 95 880 nebo 95 880,50.'); render(); return; }
+  plan.prepis[klic] = kc;
+  planKlpUlozeno();
+}
+function planKlpPrepisZrus(klic) {
+  const plan = planKlpData();
+  if (plan.prepis) delete plan.prepis[klic];
+  planKlpUlozeno();
+}
+
+/* Karta plánu plateb v krycím listu PROJ (a v podmínkách u nabídky PROJ). */
+function planKlpKarta(c) {
+  const ef = c && c.planEf;
+  if (!ef || ef.stary) return '';
+  const v = aktivniVarianta(ZAK);
+  const edit = typeof variantaEditovatelna !== 'function' || variantaEditovatelna(v);
+  const dis = edit ? '' : ' disabled';
+  const plan = ef.plan || {};
+  const f = ef.firemni;
+  const pv = planPredvolba(plan, f);
+  const upr = planUpraveno(plan, f, ef.ceny);
+  const fmt = ef.mena.fmt;
+  const nabizene = PLAN_PROJ_SEKCE.filter(k => +ef.ceny[k] > 0);
+  const volbyMil = (vybrany) => f.milniky.map(m => `<option value="${esc(m.id)}"${m.id === vybrany ? ' selected' : ''}>${esc(m.cz)}</option>`).join('')
+    + `<option value="vlastni"${vybrany === 'vlastni' ? ' selected' : ''}>Vlastní text…</option>`
+    + (vybrany !== 'vlastni' && !f.milniky.some(m => m.id === vybrany) ? `<option value="${esc(vybrany)}" selected>(milník není v katalogu)</option>` : '');
+  const cinnost = (k) => {
+    const radky = planRadkyCinnosti(k, plan, f);
+    const soucet = Math.round(radky.reduce((a, r) => a + (isFinite(r.p) ? r.p : 0), 0) * 100) / 100;
+    const ok100 = soucet === 100;
+    const upravena = planCinnostUpravena(k, plan, f);
+    const tr = radky.map((r, i) => `<tr><td class="num">${i + 1}</td>
+      <td class="nowrap"><input type="text" class="plan-pct" inputmode="decimal" value="${esc(String(r.p).replace('.', ','))}"
+        onchange="planKlpProcento('${escJs(k)}', ${i}, this.value)"${dis}> %</td>
+      <td><select onchange="planKlpMilnik('${escJs(k)}', ${i}, this.value)"${dis}>${volbyMil(r.m)}</select>
+        ${r.m === 'vlastni' ? `<input type="text" value="${esc(r.t || '')}" maxlength="300" placeholder="milník podle dohody se zákazníkem" style="margin-top:4px"
+          onchange="planKlpMilnikText('${escJs(k)}', ${i}, this.value)"${dis}>` : ''}</td>
+      <td class="nowrap">${edit ? `<button class="mini" title="výš" onclick="planKlpPosun('${escJs(k)}', ${i}, -1)"${i === 0 ? ' disabled' : ''}>↑</button><button class="mini" title="níž" onclick="planKlpPosun('${escJs(k)}', ${i}, 1)"${i === radky.length - 1 ? ' disabled' : ''}>↓</button><button class="mini" title="odebrat splátku" onclick="planKlpOdeber('${escJs(k)}', ${i})"${radky.length === 1 ? ' disabled' : ''}>✕</button>` : ''}</td></tr>`).join('');
+    return `<div class="plan-cin"><div class="plan-cin-hlava"><b>${esc(PLAN_PROJ_ZKRATKY[k])}</b> <span>${esc(PLAN_PROJ_NAZVY[k])}</span>
+        <span class="note" style="margin:0">cena po slevě ${esc(fmt(ef.ceny[k]))}</span>
+        <span class="pill${ok100 ? '' : ' bad'}">${ok100 ? 'součet 100 % ✓' : 'součet ' + esc(planPct(soucet)) + ' — musí být 100 %'}</span>
+        ${upravena && pv !== 'vlastni' ? '<span class="pill warn">upraveno</span>' : ''}
+        ${upravena && edit ? `<button class="mini" title="vrátit řádky z předvolby" onclick="planKlpVratitCinnost('${escJs(k)}')">↺ předvolba</button>` : ''}</div>
+      <table class="plan-tab"><tbody>${tr}</tbody></table>
+      ${edit ? `<button class="mini" onclick="planKlpPridej('${escJs(k)}')">+ splátka</button>` : ''}</div>`;
+  };
+  const zalohy = PLAN_PROJ_ZALOHY.map(z => `<option value="${z}"${planZalohaEf(plan, f) === z ? ' selected' : ''}>${z ? 'Záloha ' + z + ' %' : 'Bez zálohy'}</option>`).join('');
+  const nenabizene = PLAN_PROJ_SEKCE.filter(k => !(+ef.ceny[k] > 0)).map(k => PLAN_PROJ_ZKRATKY[k]);
+  const nedostatky = (ef.kontrola || []).map(x => esc(x.text)).join('<br>');
+  const vychozi = planPredvolba(null, f);
+  return `<div class="plan-karta" style="margin:10px 0 4px">
+    <h3>Plán plateb ${upr ? '<span class="pill warn">upraveno</span>' : ''} ${ef.zmrazeny ? '<span class="pill mut">zmrazeno při odeslání</span>' : ''}</h3>
+    <div class="note" style="margin-top:0">Jeden plán pro <b>nabídku PROJ</b>, tištěný <b>krycí list</b> a <b>platby smlouvy o dílo</b>
+      (dopočítají se níž v „Smlouva o dílo — splátky"). Jen nabízené činnosti; součet u každé musí být 100 %.</div>
+    <div class="row"><label>Předvolba</label>
+      <select class="plan-sel" onchange="planKlpPredvolba(this.value)"${dis}>${PLAN_PROJ_PREDVOLBY.map(x => `<option value="${esc(x)}"${x === pv ? ' selected' : ''}>${esc(PLAN_PROJ_PREDVOLBY_NAZVY[x])}${x === vychozi ? ' (výchozí)' : ''}</option>`).join('')}</select></div>
+    ${pv === 'zaloha' ? `<div class="row"><label>Záloha</label><select class="plan-sel" onchange="planKlpZaloha(this.value)"${dis}>${zalohy}</select></div>` : ''}
+    ${nabizene.length ? nabizene.map(cinnost).join('') : '<div class="note">Není nabízena žádná činnost s cenou — plán plateb je prázdný.</div>'}
+    ${nenabizene.length && nabizene.length ? `<div class="note">Neoceněné činnosti se v plánu neuvádějí (${esc(nenabizene.join(', '))}).</div>` : ''}
+    <div class="note">Autorský dozor se fakturuje měsíčně podle skutečně odpracovaných hodin, mimo platby smlouvy.</div>
+    ${nedostatky ? `<div class="note" style="color:#b91c1c"><b>Plán plateb má nedostatky:</b><br>${nedostatky}</div>` : ''}
+  </div>`;
+}
+
+/* Platby smlouvy o dílo PROJ dopočtené z plánu (krycí list, sekce
+ * „Smlouva o dílo — splátky"): milník, složení, dopočet, ruční částka, ↺. */
+function planKlpPlatbyKarta(c) {
+  const ef = c && c.planEf;
+  if (!ef || ef.stary) return '';
+  const v = aktivniVarianta(ZAK);
+  const edit = typeof variantaEditovatelna !== 'function' || variantaEditovatelna(v);
+  const dis = edit ? '' : ' disabled';
+  const d = ef.dopocet;
+  const fmt = ef.mena.fmt;
+  const cislo = (x) => (Math.round(x * 100) / 100).toLocaleString('cs-CZ', { maximumFractionDigits: 2 });
+  if (!d.platby.length) return '<div class="note">Není nabízena žádná činnost s cenou — smlouva nemá co rozpočítat.</div>';
+  const radky = d.platby.map((x, i) => `<tr${x.prepsano ? ' class="prepsano"' : ''}><td class="num">${i + 1}</td>
+    <td>${esc(x.text || '(milník chybí)')}</td>
+    <td class="note" style="font-size:11.5px">${esc(x.casti.map(q => planPct(q.p) + ' ' + PLAN_PROJ_ZKRATKY[q.k]).join(' + '))}</td>
+    <td class="num">${esc(fmt(x.vypocet))}</td>
+    <td class="num"><input type="text" class="plan-kc" inputmode="decimal" value="${x.prepsano ? esc(cislo(x.castka)) : ''}" placeholder="${esc(cislo(x.vypocet))}"
+      title="prázdné = dopočet" onchange="planKlpPrepis('${escJs(x.klic)}', this.value)"${dis}></td>
+    <td class="nowrap">${x.prepsano && edit ? `<button class="mini" title="vrátit dopočet" onclick="planKlpPrepisZrus('${escJs(x.klic)}')">↺</button>` : ''}</td></tr>`).join('');
+  const osirele = (d.osirele || []).map(o => `<div class="note" style="color:#b45309">Ruční částka ${esc(fmt(o.castka))} patří k platbě, která v plánu už není (${esc(o.klic)}) —
+    do smlouvy nejde. ${edit ? `<button class="mini" onclick="planKlpPrepisZrus('${escJs(o.klic)}')">Odebrat</button>` : ''}</div>`).join('');
+  return `<div class="plan-karta" style="margin:8px 0">
+    <div class="tbl-wrap"><table class="plan-tab"><thead><tr><th class="num">#</th><th>milník</th><th>složení</th>
+      <th class="num">dopočet</th><th class="num">ve smlouvě</th><th></th></tr></thead>
+      <tbody>${radky}</tbody>
+      <tfoot><tr><td></td><td colspan="2"><b>součet plateb</b> · cena díla ${esc(fmt(d.cena))}</td><td></td>
+        <td class="num"><span class="pill${d.sedi ? '' : ' bad'}">${esc(fmt(d.soucet))}${d.sedi ? ' ✓' : ''}</span></td><td></td></tr></tfoot></table></div>
+    ${osirele}
+    <div class="note">Prázdné pole = dopočet (procento × cena činnosti po slevě, zaokrouhlení nese poslední splátka činnosti).
+      Částku lze přepsat ručně; součet plateb musí dát cenu díla.</div></div>`;
+}

@@ -227,6 +227,86 @@ function planPlatebZeStarych(hodnoty) {
   return { prepis, necitelne };
 }
 
+/* ---------- plán varianty (krok 3 etapy B: krycí list PROJ) ----------
+ * Pořadí zdrojů (podklad 3.7): plán varianty (data.kryciProj.planPlateb)
+ * → u ODESLANÉ (zamčené) varianty snímek z doby odeslání (zmrazenoPlan) →
+ * u zamčené varianty z doby před plánem plateb nic: `stary` = dokumenty
+ * tisknou pevné bloky a ruční splátky jako dřív (odeslaná nabídka se nesmí
+ * změnit, A1 / P9.5). Firemní plán čte jen rozpracovaná varianta. */
+function planPlatebVarianty(varianta, firma) {
+  const kl = (varianta && varianta.data && varianta.data.kryciProj) || {};
+  const plan = kl.planPlateb && typeof kl.planPlateb === 'object' ? kl.planPlateb : null;
+  if (varianta && varianta.zamek && varianta.zamek.zamceno) {
+    const z = kl.zmrazenoPlan;
+    if (!z || typeof z !== 'object' || !z.cinnosti) return { plan: null, firemni: PLAN_PROJ_VYCHOZI, zmrazeny: false, stary: true };
+    const firemni = Object.assign({}, PLAN_PROJ_VYCHOZI, { milniky: Array.isArray(z.milniky) ? z.milniky : [] });
+    return { plan: { v: 1, predvolba: z.predvolba, zaloha: z.zaloha, cinnosti: z.cinnosti, prepis: plan && plan.prepis },
+             firemni, zmrazeny: true, stary: false };
+  }
+  return { plan, firemni: planFirmaPlan(firma), zmrazeny: false, stary: false };
+}
+/* Snímek plánu při prvním zamčení: splátky všech nabízených činností
+ * i s texty milníků z katalogu té doby — pozdější změna firemního plánu
+ * (texty, Standard, záloha) odeslanou nabídku ani smlouvu nezmění. */
+function planPlatebSnimek(plan, firemni, ceny) {
+  const f = planFiremni(firemni);
+  const cinnosti = {}, pouzite = new Set();
+  PLAN_PROJ_SEKCE.forEach(k => {
+    if (!(+((ceny || {})[k]) > 0)) return;
+    cinnosti[k] = planRadkyCinnosti(k, plan, f).map(r => {
+      const x = { p: r.p, m: r.m };
+      if (r.m === 'vlastni') x.t = r.t || ''; else pouzite.add(r.m);
+      return x;
+    });
+  });
+  const pv = planPredvolba(plan, f);
+  const z = plan && plan.zaloha != null && plan.zaloha !== '' ? +plan.zaloha : +f.zalohaPct;
+  return { v: 1, predvolba: pv, zaloha: isFinite(z) ? z : 0, cinnosti,
+    milniky: f.milniky.filter(m => pouzite.has(m.id)).map(m => ({ id: m.id, cz: m.cz })) };
+}
+/* Jsou řádky činnosti jiné než v předvolbě? (štítek „upraveno") */
+function planCinnostUpravena(k, plan, firemni) {
+  const upr = plan && plan.cinnosti && plan.cinnosti[k];
+  if (!Array.isArray(upr) || !upr.length) return false;
+  const vzor = planRadkyCinnosti(k, Object.assign({}, plan, { cinnosti: {} }), firemni);
+  const a = planRadkyCinnosti(k, plan, firemni);
+  return a.length !== vzor.length || a.some((r, i) => r.p !== vzor[i].p || r.m !== vzor[i].m || r.m === 'vlastni');
+}
+function planUpraveno(plan, firemni, ceny) {
+  if (planPredvolba(plan, firemni) === 'vlastni') return false;
+  return PLAN_PROJ_SEKCE.some(k => (!ceny || +ceny[k] > 0) && planCinnostUpravena(k, plan, firemni));
+}
+function planZalohaEf(plan, firemni) {
+  const f = planFiremni(firemni);
+  const z = plan && plan.zaloha != null && plan.zaloha !== '' ? +plan.zaloha : +f.zalohaPct;
+  return z >= 0 && z < 100 ? z : 0;
+}
+/* „Standard po činnostech" / „Záloha 30 % + zbytek po předání" / „Bez
+ * zálohy — 100 % po předání" / … (+ „upraveno"). */
+function planPopisPredvolby(plan, firemni, ceny) {
+  const pv = planPredvolba(plan, firemni);
+  let t = PLAN_PROJ_PREDVOLBY_NAZVY[pv];
+  if (pv === 'zaloha') { const z = planZalohaEf(plan, firemni); t = z ? 'Záloha ' + z + ' % + zbytek po předání' : 'Bez zálohy — 100 % po předání'; }
+  return t + (planUpraveno(plan, firemni, ceny) ? ' (upraveno)' : '');
+}
+/* „50 % po podpisu smlouvy / objednávky · 50 % po zhotovení výstupů …" */
+function planRadekText(r) { return planPct(r.p) + ' ' + (r.t || '(milník chybí)'); }
+function planCinnostText(k, plan, firemni) { return planRadkyCinnosti(k, plan, firemni).map(planRadekText).join(' · '); }
+/* Způsob fakturace projekce odvozený z předvolby (výchozí návrh Q10):
+ * dřív věta z Nastavení → Firma, která se s procenty nabídky rozcházela.
+ * Věta z Firmy zůstává pro předvolbu „100 % po dokončení stupně". */
+function planZpusobFakturace(plan, firemni, vetaFirmy) {
+  const pv = planPredvolba(plan, firemni);
+  if (planUpraveno(plan, firemni) || pv === 'vlastni') return 'podle dohodnutého plánu plateb';
+  if (pv === 'zaloha') {
+    const z = planZalohaEf(plan, firemni);
+    return z ? 'záloha ' + z + ' % po podpisu smlouvy, zbytek po předání jednotlivých stupňů dokumentace'
+      : 'po předání jednotlivých stupňů dokumentace';
+  }
+  if (pv === 'sto') return String(vetaFirmy || '').trim() || 'po dokončení jednotlivých stupňů dokumentace';
+  return 'po milnících jednotlivých činností podle plánu plateb';
+}
+
 /* ---------- firemní plán (Nastavení → Firma, krok 2 etapy B) ----------
  * Administrátor smí upravit katalog milníků, výchozí předvolbu, zálohu,
  * Standard po činnostech a milník „po předání". Zveřejňuje se s firemními
@@ -300,4 +380,6 @@ if (typeof module !== 'undefined')
   module.exports = { PLAN_PROJ_SEKCE, PLAN_PROJ_PREDVOLBY, PLAN_PROJ_ZALOHY, PLAN_PROJ_MILNIKY, PLAN_PROJ_VYCHOZI,
     PLAN_PROJ_ZKRATKY, PLAN_PROJ_NAZVY, PLAN_PROJ_PREDVOLBY_NAZVY,
     PLAN_SODP_STARE, planFiremni, planFirmaPlan, planPct, planPredvolba, planMilnikText, planRadkyCinnosti, planPlatebDopocet,
-    planPlatebKontrola, planCastkaZTextu, planPlatebZeStarych, planPlatebFirmaVady, planPlatebFirmaCisty };
+    planPlatebKontrola, planCastkaZTextu, planPlatebZeStarych, planPlatebFirmaVady, planPlatebFirmaCisty,
+    planPlatebVarianty, planPlatebSnimek, planCinnostUpravena, planUpraveno, planZalohaEf, planPopisPredvolby,
+    planRadekText, planCinnostText, planZpusobFakturace, planKlicPlatby };

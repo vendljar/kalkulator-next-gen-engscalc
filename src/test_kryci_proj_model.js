@@ -400,10 +400,14 @@ const radky = (dd) => [].concat(...dd.sekce.map(s => s.radky));
 const labely = (dd) => radky(dd).map(r => r[0]);
 const najdiRadek = (dd, label) => (radky(dd).find(r => r[0] === label) || [])[1];
 
+/* Etapa B plánu plateb (30. 9. 2026): řádky plánu (`plan`) a pole dřívějšího
+ * znění zálohy a splátek (`stary`) se tisknou podle varianty — počítá se
+ * proto jen s poli, která jsou pro tuto variantu vidět. */
+const vidi = (p) => kp.kryciProjPoleViditelne(p, kp.kryciProjCtx(zak, v));
 test('verze Backoffice obsahuje jen pole své verze',
-  radky(dBo).length === VSECHNA_POLE.filter(p => p.verze.includes('bo')).length, radky(dBo).length);
+  radky(dBo).length === VSECHNA_POLE.filter(p => p.verze.includes('bo') && vidi(p)).length, radky(dBo).length);
 test('verze Techdata obsahuje jen pole své verze',
-  radky(dTd).length === VSECHNA_POLE.filter(p => p.verze.includes('techdata')).length, radky(dTd).length);
+  radky(dTd).length === VSECHNA_POLE.filter(p => p.verze.includes('techdata') && vidi(p)).length, radky(dTd).length);
 test('sekce bez jediného řádku se do dokumentu nedostane',
   dBo.sekce.every(s => s.radky.length > 0) && dTd.sekce.every(s => s.radky.length > 0));
 /* Ceny činností vidí backoffice, technické oddělení jen stupně.

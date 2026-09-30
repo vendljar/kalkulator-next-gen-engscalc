@@ -349,16 +349,13 @@ const NABIDKA_PROJ_DEF = [
  * figuruje dvakrát (samostatně jako ZA a jako část 1 studie). */
 const NABIDKA_PROJ_SEKCE = ['zamereni', 'studie', 'projednani', 'dpz', 'ic', 'dps', 'ezc', 'kolaudace', 'geodet'];
 
-/* Sestaví data nabídky PROJ z varianty zakázky.
- * lang = 'cz' | 'en' | 'de' | 'fr' – překládají se nadpisy a krátké popisky;
- * souvislá próza ({ cz: … }) zůstává česky (nic se nevymýšlí).
- * Vrací { placeholders, bloky, rekapitulace, souhrn, jazyk, nazevSouboru }.
- *
- * moznosti.slevaZvlast (výchozí true) — viz „ČINNOSTI ZA CENU PŘED SLEVOU" níž:
- * false = ceny činností po slevě (šablona bez řádku slevy, smlouva o dílo). */
-function nabidkaProjData(zak, varianta, lang, moznosti) {
+/* CENY ČINNOSTÍ NABÍDKY PROJ (vyčleněno 30. 9. 2026 z nabidkaProjData pro
+ * plán plateb — etapa B, #367). Jeden výpočet cen po sekcích před slevou
+ * a po ní pro nabídku, krycí list i smlouvu o dílo: plán plateb dopočítává
+ * splátky z TÉŽE ceny činnosti po slevě, jakou tiskne nabídka. Vrací
+ * { r, mena, zaokrP, slevaPodilProj, pSleva, cenyPred, cenyPo }. */
+function nabidkaProjCeny(varianta, lang) {
   const L = lang || 'cz';
-  const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
   const d = (varianta && varianta.data) || {};
   const pj = d.proj || {};
   /* Odeslaná nabídka vydá svůj otisk (A1). */
@@ -375,12 +372,6 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
     : { eur: false, na: n => n,
         fmt: (typeof formatKc2 === 'function') ? formatKc2
           : n => (+n || 0).toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Kč' };
-  const kc = mena.fmt;
-  const datumCz = iso => {
-    if (!iso) return '';
-    const [y, m, dd] = String(iso).split('-');
-    return dd && m && y ? `${dd}.${m}.${y}` : String(iso);
-  };
 
   /* ZAOKROUHLUJÍ SE POLOŽKY, NE CELEK (#135, 12. 8. 2026).
    *
@@ -413,6 +404,52 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
       cenyPo[s.key] = mena.na(cenyPo[s.key]);
     }
   });
+  return { r, mena, zaokrP, slevaPodilProj, pSleva, cenyPred, cenyPo };
+}
+
+/* PLÁN PLATEB ZAKÁZKY (etapa B, #367). Efektivní plán varianty
+ * (planPlatebVarianty v plan_plateb.js) nad cenami činností PO SLEVĚ — týmiž,
+ * které tiskne nabídka bez řádku slevy a smlouva o dílo; nabízená činnost =
+ * činnost s cenou. V eurech platí jen dopočet (ruční částky smlouvy jsou
+ * v korunách). Vrací { plan, firemni, zmrazeny, stary, ceny, eur, mena,
+ * dopocet, kontrola } nebo null, když modul plánu v sestavení není.
+ * `stary` = odeslaná nabídka z doby před plánem plateb: dokumenty tisknou
+ * pevné bloky a ruční splátky jako dřív. */
+function nabidkaProjPlatby(zak, varianta, lang) {
+  if (typeof planPlatebVarianty !== 'function') return null;
+  const firma = (typeof firmaAktualni === 'function') ? firmaAktualni() : null;
+  const ef = planPlatebVarianty(varianta, firma);
+  const c = nabidkaProjCeny(varianta, lang);
+  const ceny = {};
+  NABIDKA_PROJ_SEKCE.forEach(k => { const v = +c.cenyPo[k]; if (v > 0 && isFinite(v)) ceny[k] = v; });
+  const plan = (ef.plan && c.mena.eur) ? Object.assign({}, ef.plan, { prepis: {} }) : ef.plan;
+  return Object.assign({}, ef, { ceny, eur: !!c.mena.eur, mena: c.mena,
+    dopocet: planPlatebDopocet(ceny, plan, ef.firemni),
+    kontrola: ef.stary ? [] : planPlatebKontrola(ceny, plan, ef.firemni) });
+}
+
+/* Sestaví data nabídky PROJ z varianty zakázky.
+ * lang = 'cz' | 'en' | 'de' | 'fr' – překládají se nadpisy a krátké popisky;
+ * souvislá próza ({ cz: … }) zůstává česky (nic se nevymýšlí).
+ * Vrací { placeholders, bloky, rekapitulace, souhrn, jazyk, nazevSouboru }.
+ *
+ * moznosti.slevaZvlast (výchozí true) — viz „ČINNOSTI ZA CENU PŘED SLEVOU" níž:
+ * false = ceny činností po slevě (šablona bez řádku slevy, smlouva o dílo). */
+function nabidkaProjData(zak, varianta, lang, moznosti) {
+  const L = lang || 'cz';
+  const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
+  const d = (varianta && varianta.data) || {};
+  const pj = d.proj || {};
+  /* Otisk / výpočet, měna, obchodní zaokrouhlení, sleva a ceny sekcí před
+   * slevou i po ní — viz nabidkaProjCeny (jeden zdroj i pro plán plateb). */
+  const { r, mena, slevaPodilProj, cenyPred, cenyPo } = nabidkaProjCeny(varianta, L);
+  const kc = mena.fmt;
+  const datumCz = iso => {
+    if (!iso) return '';
+    const [y, m, dd] = String(iso).split('-');
+    return dd && m && y ? `${dd}.${m}.${y}` : String(iso);
+  };
+
   /* ČINNOSTI ZA CENU PŘED SLEVOU (29. 9. 2026, nález J. V.: „DPZ a IČ by
    * mělo být za cenu před slevou", „chyba v součtu při udělení slevy").
    * Nabídka, která slevu vypisuje vlastním řádkem (online nabídka, šablona
@@ -793,4 +830,4 @@ if (typeof dokumentRegistruj === 'function')
   });
 
 if (typeof module !== 'undefined')
-  module.exports = { nabidkaProjData, nabidkaProjSlevaZvlast, nabidkaProjUvod, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE };
+  module.exports = { nabidkaProjData, nabidkaProjCeny, nabidkaProjPlatby, nabidkaProjSlevaZvlast, nabidkaProjUvod, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE };
