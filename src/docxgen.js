@@ -576,9 +576,24 @@ function docxVlozObrazky(polozky, obrazky) {
   return zasahu;
 }
 
+/* OBRANA DO HLOUBKY (B99, 29. 9. 2026): generátor i překlad kopírují zbytek
+ * ZIPu (vztahy, settings.xml.rels, vložené objekty) beze změny. Šablona
+ * s vnějším attachedTemplate, makry nebo poli INCLUDE… a DDE se proto odmítne
+ * i tady — ne tiše vyčistí: zveřejněná šablona má takové prvky odmítnout
+ * už server a průvodce (src/sablona_obsah.js). */
+function docxObsahZkontroluj(polozky) {
+  let so = null;
+  if (typeof sablonaObsahVadyZipu === 'function') so = { sablonaObsahVadyZipu, sablonaObsahVadyText: (typeof sablonaObsahVadyText === 'function') ? sablonaObsahVadyText : null };
+  else if (typeof require === 'function') { try { so = require('./sablona_obsah.js'); } catch (e) { so = null; } }
+  if (!so) return;
+  const vady = so.sablonaObsahVadyZipu(polozky);
+  if (vady.length) throw new Error(so.sablonaObsahVadyText ? so.sablonaObsahVadyText(vady) : 'Šablona obsahuje nepovolené prvky: ' + vady.join('; '));
+}
+
 /* ---------- hlavní funkce: vyplní šablonu a vrátí Blob .docx ---------- */
 async function docxVyplnSablonu(arrayBuffer, placeholders, priplatky, obrazky) {
   const polozky = await zipPrecti(new Uint8Array(arrayBuffer));
+  docxObsahZkontroluj(polozky);                                      // B99
   const dekoder = new TextDecoder(), enkoder = new TextEncoder();
   /* Obrázky nejdřív: pracují s alternativním textem {{…}}, který by textová
    * náhrada mohla považovat za neznámý symbol a nechat v dokumentu. */
@@ -854,6 +869,7 @@ async function docxPrelozSablonu(arrayBuffer, lang, stat) {
   stat.celkem = 0; stat.prelozeno = 0; stat.neutralni = 0; stat.chybi = []; stat.symbolove = [];
   if (!lang || lang === 'cz') throw new Error('Zvolte cílový jazyk šablony (EN / DE / FR).');
   const polozky = await zipPrecti(new Uint8Array(arrayBuffer));
+  docxObsahZkontroluj(polozky);                                      // B99
   const dekoder = new TextDecoder(), enkoder = new TextEncoder();
   let dotceno = 0;
   for (const p of polozky) {
@@ -926,7 +942,7 @@ async function docxXmlVady(arrayBuffer) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
+  module.exports = { docxObsahZkontroluj, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
     odstranPrazdneTsRadky, jePrazdnaHodnota, klicePlaceholderu, odstranPrazdneBloky, docxZnackyBloku,
     docxVlozObrazky, rozmeryObrazku, dataUrlNaBajty,
     docxDokumentBlob, docxTeloZeSekci, docxSestavBlob, docxPar, docxEsc,

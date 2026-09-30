@@ -691,7 +691,7 @@
    "detail" : "Tři úrovně podle toho, jak jistě víme, že jde o chybu. Úroveň 1 tvrdý zákaz (záporné množství či cena, nulový počet zastávek, výška šachty menší než součet nutných výšek, sleva nad 100 %, méně než 2 zastávky). Úroveň 2 červené varování u výsledku, které nepustí nabídku ven bez potvrzení (nulová nebo záporná marže, cena pod nákladem, oplášťování bez konstrukce, ATYP bez projekční položky, sleva nad limit role, hlavní položka ručně přepsaná na 0). Úroveň 3 žlutá poznámka (hodnota mimo obvyklý rozsah proti historii, počet ručních přepisů, kalkulace bez technické specifikace, starý ceník, prázdné pole propisující se do krycího listu). Technicky čistá funkce `kontroly.js` nad rozpadem z enginu — testovatelná stejně jako výpočet. Rámec S–M, náplň roste s počtem pravidel.",
    "vlna" : "B",
    "id" : "33",
-   "pozn" : "hotovo ve v30.7.10. Podle tvého pokynu z 30. 7. 2026 („pouze rozsviť varování před nabídkou\") se nikde nic netvrdě neblokuje — ani nejzávažnější nález nezabrání vytištění, jen se rozsvítí nad tlačítky. Odchylka od návrhu: místo vyskakovacího potvrzení je to stálý panel v kartě, aby se dal nález přečíst i bez pokusu o tisk. ÚKLID 16. 9. 2026: odsud zmizelo pole `cekaNa` — hotová položka nemůže na nic čekat a strašila v přehledu „Na co se čeká“. To, co se tím myslelo (seznam pravidel od J. V. a tabulka souvislostí z technické specifikace), drží vazba na #20 jako DOPORUČENÉ pořadí: kontroly jedou s výchozí sadou pravidel a #20 je jen rozšíří, nebrání jim.",
+   "pozn" : "hotovo ve v30.7.10. Podle tvého pokynu z 30. 7. 2026 („pouze rozsviť varování před nabídkou\") se nikde nic netvrdě neblokuje — ani nejzávažnější nález nezabrání vytištění, jen se rozsvítí nad tlačítky. Odchylka od návrhu: místo vyskakovacího potvrzení je to stálý panel v kartě, aby se dal nález přečíst i bez pokusu o tisk. ÚKLID 16. 9. 2026: odsud zmizelo pole `cekaNa` — hotová položka nemůže na nic čekat a strašila v přehledu „Na co se čeká“. To, co se tím myslelo (seznam pravidel od J. V. a tabulka souvislostí z technické specifikace), drží vazba na #20 jako DOPORUČENÉ pořadí: kontroly jedou s výchozí sadou pravidel a #20 je jen rozšíří, nebrání jim. — 29. 9. 2026 (B111, v29.9.2): záporná částka, množství nebo hodiny je tvrdá zábrana (pravidlo zapornaPolozka) a hlídá ji i server — úroveň 1, jak #33 původně plánoval.",
    "hotovoV" : "v30.7.10",
    "nazev" : "Kontrola logických chyb při zadání — bránit zjevným pochybením, na sporné upozornit",
    "zavisi" : [
@@ -910,7 +910,8 @@
    "detail" : "Nabídky s cenou [řádově miliony Kč] vypadají jako výstup z tabulky, ne jako obchodní rozhodnutí. Zaokrouhluje se JEN koncová cena: u OCK cena po schválené slevě, u PROJ součet činností. Ceny položek, sekcí a příplatků zůstávají beze změny – jinak by se rozešly řádky s celkem. Nastavení (krok 100 / 500 / 1 000 / 5 000 / 10 000 Kč, směr dolů / na nejbližší / nahoru) platilo do 4. 8. 2026 pro celou variantu včetně PROJ; od té doby má každá část nabídky vlastní přepínač — viz #89. Nová varianta má od 30. 7. 2026 rovnou zapnuto nahoru na stokoruny: je to nejmenší krok, který nabídku zbaví vzhledu výstupu z tabulky, a směr nahoru proto, aby zaokrouhlení neukrajovalo z marže – rozdíl je nejvýš [řádově stokoruny]. Na OCK bez slevy se nic nezmění, protože engine základní cenu už zaokrouhluje nahoru na tisíce; projeví se to u slev a u PROJ. Zakázka uložená ještě před #38 pole zaokrouhlení vůbec nemá a dostane výslovně vypnuto, ne výchozí nastavení – její cena už mohla odejít zákazníkovi a otevřením v novější verzi se změnit nesmí. Rozdíl proti spočtené ceně se nikdy neschovává do slevy – je to vlastní řádek v hlavičce kalkulace, v obou nabídkách, v krycím listu i v porovnání variant (řádek se schová, když je rozdíl všude nulový). Hlavní přínos není matematika, ale sjednocení: koncovou cenu skládala kopie vzorce zakladCena × (1 − sleva) na pěti místech, teď ji skládá jediná dvojice funkcí cenaNabidkyOck / cenaNabidkyProj. Rozejití dokumentů je jediná chyba, kterou by zákazník uviděl – hlídá ji overit_lista.mjs v prohlížeči nad všemi místy naráz. Zaokrouhlením dolů se nikdy nenabídne nula. Nic se neblokuje (pravidlo vlny B): zaokrouhlení, které srazí marži pod minimum, jen rozsvítí lištu #36. Přepínače jsou v ZAMEK_CHRANENE (#34), protože mění cenu, která už mohla odejít zákazníkovi.",
    "vlna" : "B",
    "dulezitost" : "nizka",
-   "slozitost" : "S"
+   "slozitost" : "S",
+   "pozn": "29. 9. 2026 (B96, v29.9.3): výčet kroků a směrů hlídá i server — do té doby platil jen pro <select> a krok ⌊cena/2⌋+1 srazil cenu nabídky na polovinu. Zaokrouhlení z výčtu se dál neblokuje (o méně než jeden krok)."
   },
   {
    "kde" : "src/uloziste.js (složka, rejstřík, prodleva zápisu, filtr jmen); src/ui/uloziste_ui.js (karta Úložiště, připojení složky, hlášky); src/archiv.js a src/seznam.js (čtení ze složky); overit_uloziste.mjs (21 kontrol) a overit_uloziste_cyklus.mjs (32 kontrol)",
@@ -5445,7 +5446,7 @@
    "detail": "Návrh P11; nad limitem 429 bez ověření, IPv6 po /64, hesloVerze při založení.",
    "hotovoKdyz": "Testy a mutace serveru.",
    "kde": "`netlify/functions/prihlaseni.mjs`, `netlify/lib/sdilene.mjs`, `uzivatele.mjs`, `pd_*.mjs`, `src/analytika.js`, `src/ui/techspec_ui.js`",
-   "pozn": "26. 9. 2026 (#364): B75, B76, B77 a B78 HOTOVO v v26.9.1 — limit adresy 429 před scryptem, IPv6 po /64, úspěch cizího účtu nenuluje počítadlo adresy, hesloVerze při založení/vypnutí/archivaci, brzda u mojeheslo, původ a Content-Type u odhlášení; nová sada netlify/test_prihlaseni.mjs (43; proti starému kódu 21 selhalo), 9 mutací. ZBÝVÁ: B80 (/api/pd/*), B81 (analytika, Object.prototype), B83 (CSV vzorce), B88 (matice jen v UI)."
+   "pozn": "26. 9. 2026 (#364): B75, B76, B77 a B78 HOTOVO v v26.9.1 — limit adresy 429 před scryptem, IPv6 po /64, úspěch cizího účtu nenuluje počítadlo adresy, hesloVerze při založení/vypnutí/archivaci, brzda u mojeheslo, původ a Content-Type u odhlášení; nová sada netlify/test_prihlaseni.mjs (43; proti starému kódu 21 selhalo), 9 mutací. ZBÝVÁ: B80 (/api/pd/*), B81 (analytika, Object.prototype), B83 (CSV vzorce), B88 (matice jen v UI). 29. 9. 2026 (v29.9.4): ZÁPISOVÁ strana B88 opravena jako B112 — server hlídá ceník varianty a přepisy podle role a matice uložené na serveru. Čtecí strana B88 (ceník v DOM každé role) zůstává informativní. 29. 9. 2026 (v29.9.5): B97 — kolize klíčů e-mailu a adresy v brzdě přihlášení opravena (předpona „e:\")."
   },
   {
    "id": "346",
@@ -5871,6 +5872,34 @@
    "hotovoKdyz": "Zakázka s neznámým rozměrem profilu se otevře, dokument s nulovým profilem nevznikne, server nová špatná data odmítne; celé testovací kolo zelené.",
    "kde": "src/engine.js (profilyNezname, jekl), src/kontroly.js (profilNeznamy), src/ui/kalk_ock.js (renderInputs, zkontrolujTl), netlify/lib/zakazka_kontrola.mjs, src/test_profil_neznamy.js, overit_profil_neznamy.mjs, netlify/test_obnova.mjs, overit_xss.mjs",
    "pozn": "Chování podle promptu J. V. z 29. 9. 2026 (UI tolerantně + zábrana + server odmítne neuzamčenou variantu). Přečíslováno při sloučení do test-draft 29. 9. 2026 — ve větvi claude/stoic-cerf-j915ax vedeno jako #365 (odkazy v kódu a názvy testů přepsány na #372)."
+  },
+  {
+   "id": "373",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "vysoka",
+   "slozitost": "L",
+   "nazev": "Oprava šesti nálezů 21. kola (B111, B96, B112, B97, B98, B99)",
+   "proc": "Komplexní test 29. 9. 2026 (21. kolo, v29.9.1) našel tři vysoké nálezy třídy „koncová cena bez schválení“ (B111 záporná vlastní položka, B96 krok zaokrouhlení, B112 ceník a přepisy jen v UI) a tři střední (B97 kolize klíčů brzdy přihlášení, B98 razítka z obnovy ze souboru, B99 obsah šablon DOCX).",
+   "detail": "Jedna větev claude/oprava-sesti-nalezu-v29.9.1 z v29.9.1, nálezy postupně, každý s testem před/po a mutací. B111 hotovo ve v29.9.2 (server uloZaporneProblemy, UI min=0 a hláška, zábrana zapornaPolozka, nastroje/detekce_zneuziti.mjs). B96 hotovo ve v29.9.3 (server uloZaokrProblemy — krok a směr jen z výčtu, UI setterů a <select>, detekce v nastroje/detekce_zneuziti.mjs; bod 4 marže z koncové ceny jen návrh). B112 hotovo ve v29.9.4 (server uloCenikProblemy — ceník varianty po položkách proti uložené verzi / zveřejněným ceníkům / jiné variantě, přepisy jen se sloupce.naklad, matice ze serveru). B97 hotovo ve v29.9.5 (předpona „e:\" e-mailového klíče brzdy přihlášení, neplatný e-mail nezakládá e-mailové počítadlo). B98 hotovo ve v29.9.6 (obnova ze souboru: ověření nového zámku znovu, odemčení, které v databázi není, přeskočit; z otisku beze změny). B99 hotovo ve v29.9.7 (src/sablona_obsah.js — kontrola obsahu šablon Wordu na serveru, v průvodci i v generátoru).",
+   "hotovoKdyz": "Všech šest nálezů opraveno s testem, který před opravou selže; dvě celá testovací kola zelená; o sloučení do test-draft rozhodne J. V.",
+   "kde": "src/uloziste.js, netlify/lib/zakazka_kontrola.mjs, netlify/functions/zakazky.mjs, netlify/functions/obnova.mjs, netlify/lib/sdilene.mjs, netlify/functions/sablony.mjs, src/sablona_obsah.js, src/docxgen.js, src/kontroly.js, src/ui/kalk_ock.js, src/ui/kalk_proj.js, src/ui/zaokrouhleni_ui.js, netlify/test_zaporne.mjs, overit_zaporne.mjs, overit_cenik_prava.mjs, src/test_sablona_obsah.js, nastroje/detekce_zneuziti.mjs",
+   "zavisi": [{"typ": "doporuceno", "id": "33", "proc": "B111 dotahuje úroveň 1 kontrol (záporná cena a množství)"}, {"typ": "doporuceno", "id": "345", "proc": "B112 je zápisová strana B88, B97 navazuje na B75"}],
+   "hotovoV": "v30.9.1",
+   "pozn": "Ve větvi claude/oprava-sesti-nalezu-v29.9.1 (z 9a48ee8) jako v29.9.2–v29.9.7, obě celá kola zelená. Na pokyn J. V. 30. 9. 2026 („pushni novinky do testu“) sloučeno do test-draft jako v30.9.1 a převedeno do test. Zbývající cesty třídy „koncová cena“ vede #374."
+  },
+  {
+   "id": "374",
+   "vlna": "B",
+   "stav": "ceka",
+   "dulezitost": "stredni",
+   "slozitost": "M",
+   "nazev": "Třída „koncová cena bez schválení“ — zbývající cesty po B111, B96 a B112",
+   "proc": "Závěr opravy šesti nálezů 21. kola (29. 9. 2026): B111, B96 a B112 zavřely tři doložené cesty, jak snížit cenu nabídky bez schválení. Server ale dál nehlídá, KDO mění další pole zadání, která UI ukazuje jen s právem sloupce.naklad.",
+   "detail": "Otevřené: (1) hodiny a rezerva STANDARDNÍCH položek PROJ (obchodník je v UI nevidí jako pole, ručním požadavkem je sníží); (2) cena trvalé položky s kid v zadání OCK/PROJ (v UI jen administrátor); (3) obchodní zaokrouhlení z výčtu — až 9 999 Kč u OCK, u PROJ × počet činností (#38 „nic se neblokuje“); (4) bod 4 B96 — marže z koncové ceny i bez slevy (obrana do hloubky; nepokryje B111 ani změnu jednotkové ceny). Návrh: pole zadání vázaná v UI na sloupce.naklad hlídat stejně jako přepisy B112 (role bez práva je proti uložené verzi nezmění).",
+   "otazka": "Chce J. V. dotáhnout (1) a (2) stejným pravidlem jako přepisy B112, a realizovat bod 4?",
+   "kde": "src/uloziste.js (uloCenikProblemy — vzor), netlify/lib/zakazka_kontrola.mjs, src/ui/kalk_proj.js (hodiny/rezerva pod col.admin)",
+   "zavisi": [{"typ": "doporuceno", "id": "373", "proc": "navazuje na B111, B96 a B112"}]
   }
  ],
  "meta" : {
@@ -6485,8 +6514,8 @@
     "id" : "F"
    }
   ],
-  "build" : "v29.9.4 (engscalc)",
-  "stavKDatu" : "29. 9. 2026"
+  "build" : "v30.9.1 (engscalc)",
+  "stavKDatu" : "30. 9. 2026"
  },
  "_comment" : [
   "JEDINÝ ZDROJ PRAVDY pro roadmapu Kalkulátoru Next Gen.",

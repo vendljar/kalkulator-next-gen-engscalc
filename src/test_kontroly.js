@@ -163,7 +163,9 @@ const pravidla = kontrolyPravidla();
  * K14-N64, test_k16_proj_word.js): šablona PROJ neukáže slevu / vlastní položky. */
 /* 22. „projZahranici" 29. 9. 2026 (P11) a 23. „profilNeznamy" 29. 9. 2026
  * (#372, dřív #365 ve větvi claude/stoic-cerf-j915ax): neznámý rozměr profilu. */
-test('pravidel je dvacet tři', pravidla.length === 23, pravidla.length);
+/* 24. „zapornaPolozka" 29. 9. 2026 (B111, větev claude/oprava-sesti-nalezu-v29.9.1):
+ * záporná částka, množství nebo hodiny = zábrana. */
+test('pravidel je dvacet čtyři', pravidla.length === 24, pravidla.length);
 test('kódy pravidel jsou jedinečné',
   new Set(pravidla.map(p => p.kod)).size === pravidla.length,
   pravidla.map(p => p.kod).join(','));
@@ -363,7 +365,7 @@ test('text varování nikde nepřikazuje ani neblokuje',
 test('zábrana má vlastní text, který se dá ukázat samostatně',
   k9.textBrani.length > 0 && k9.textBrani === n9.text, k9.textBrani);
 test('v katalogu pravidel je poznat, které umí zastavit dokument',
-  pravidla.filter(p => p.zabranaMozna).map(p => p.kod).join(',') === 'rozmery,profilNeznamy,cenaNula,sleva,slevaProj,ukazkovyCenik',
+  pravidla.filter(p => p.zabranaMozna).map(p => p.kod).join(',') === 'rozmery,profilNeznamy,zapornaPolozka,cenaNula,sleva,slevaProj,ukazkovyCenik',
   JSON.stringify(pravidla.filter(p => p.zabranaMozna).map(p => p.kod)));
 
 /* ---------- 6) dvě podoby textu ---------- */
@@ -462,6 +464,27 @@ test('nekompletní kontext nic neshodí a nálezy dorazí',
   test('#330: anglická kapitola se hlídá také (weeks)',
     kody(s(Object.assign({}, firma, { kapTerminyEn: 'Installation will start approx. 12 weeks from contract signature.' }), { jazyk: 'en' })).includes('terminAtyp'));
   test('#330: zakázka jen projekce pravidlo nemá', !kody(s(firma, { jenProj: true })).includes('terminAtyp'));
+}
+
+/* B111 (29. 9. 2026) — záporná vlastní položka, množství nebo hodiny je
+ * zábrana: dokument nevznikne, dokud se to neopraví. Kladná položka
+ * pravidlo nespustí. Před opravou pravidlo neexistovalo (kód chyběl). */
+{
+  const sKladnou = kontrolyProved(ctxZdravy(c => { c.zadani.vlastniPolozky.hrubaOck = [{ nazev: 'Úprava', mnozstvi: 1, cena: 302167 }]; }));
+  test('B111: kladná vlastní položka pravidlo zapornaPolozka nespustí', !kody(sKladnou).includes('zapornaPolozka'), JSON.stringify(kody(sKladnou)));
+  const sZap = kontrolyProved(ctxZdravy(c => { c.zadani.vlastniPolozky.hrubaOck = [{ nazev: 'Úprava', mnozstvi: 1, cena: -302167 }]; }));
+  const nZap = sZap.nalezy.find(x => x.kod === 'zapornaPolozka');
+  test('B111: záporná vlastní položka OCK → kód zapornaPolozka', !!nZap, JSON.stringify(kody(sZap)));
+  test('B111: zapornaPolozka je zábrana (brani true, v kodyBrani)', !!nZap && nZap.uroven === KONTROLY_UROVEN_ZABRANA
+    && sZap.brani === true && sZap.kodyBrani.includes('zapornaPolozka'), JSON.stringify({ brani: sZap.brani, kodyBrani: sZap.kodyBrani }));
+  test('B111: zábranu nejde odklepnout', !kontrolyPotvrzeniPlati(kontrolyPotvrzeni(sZap, 'x'), sZap));
+  const sMn = kontrolyProved(ctxZdravy(c => { c.zadani.mnozstviPrepis = { 'MONTÁŽ NA STAVBĚ': -5 }; }));
+  test('B111: záporný přepis množství → zapornaPolozka', kody(sMn).includes('zapornaPolozka'), JSON.stringify(kody(sMn)));
+  const sHod = kontrolyProved(ctxZdravy(c => { c.zadani.montazZakladHod = -24; }));
+  test('B111/N56: záporné hodiny montáže → zapornaPolozka', kody(sHod).includes('zapornaPolozka'), JSON.stringify(kody(sHod)));
+  const sProj = kontrolyProved(ctxZdravy(c => { c.projZadani.sekce[0].polozky.push({ nazev: 'Úprava', typ: 'fix', cena: -90400, vlastni: true }); }));
+  const nProj = sProj.nalezy.find(x => x.kod === 'zapornaPolozka');
+  test('B111: záporná fixní položka PROJ → zapornaPolozka a text jmenuje kalkulaci PROJ', !!nProj && /PROJ/.test(nProj.text), nProj && nProj.text);
 }
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);

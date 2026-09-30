@@ -72,6 +72,12 @@ export function zakazkaPrijmi(telo, ULO) {
 export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   const { ULO, SCHV, JEKLY } = ctx;
   const obnova = ctx.rezim === 'obnova';
+  /* Obnova ze SOUBORU (B98, 29. 9. 2026): soubor zálohy jde upravit
+   * v editoru (zásada B27), razítka z něj proto nejsou doklad — ověření
+   * nového zámku se spočítá znovu a odemčení, které v databázi není, se
+   * neobnoví. Obnova z OTISKU (serverová záloha, klient ji upravit nemůže)
+   * razítka přebírá, jak byla. */
+  const zeSouboru = obnova && ctx.zeSouboru === true;
   const slevyNast = ctx.slevyNast || {};
   const verzeServeru = ctx.verzeServeru || '';
   relace = relace || {};
@@ -88,6 +94,15 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   const spatneTypy = ULO.uloTypyProblemy(zak, stara);
   if (spatneTypy.length)
     return odmitni(400, 'Zakázka nese ' + ULO.uloIdProblemyText(spatneTypy) + '.');
+  /* Záporná částka, množství nebo hodiny (B111, 29. 9. 2026) — nikomu. */
+  const zaporne = ULO.uloZaporneProblemy(zak, stara);
+  if (zaporne.length) return odmitni(400, 'Zakázka nese ' + ULO.uloIdProblemyText(zaporne) + '.');
+  /* Krok a směr obchodního zaokrouhlení z výčtu (B96, 29. 9. 2026). */
+  const zaokr = ULO.uloZaokrProblemy(zak, stara);
+  if (zaokr.length) return odmitni(400, 'Zakázka nese ' + ULO.uloIdProblemyText(zaokr) + '.');
+  /* Ceník varianty a skryté přepisy podle role a matice (B112, 29. 9. 2026). */
+  const cenik = ULO.uloCenikProblemy(zak, stara, { role: relace.role, matice: ctx.matice, program: ctx.program, importuj: globalThis.importZakazka });
+  if (cenik.length) return odmitni(403, veta(ULO.uloCenikProblemyText(cenik)));
 
   /* NEZNÁMÝ ROZMĚR PROFILU (#372, nález A2-1 z 26. 9. 2026). Zakázka
    * s rozměrem mimo katalog jeklů (nebo s tloušťkou, kterou rozměr nemá) se
@@ -124,9 +139,18 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
     catch (e) { staraPorovnani = stara; }
   }
 
+  /* Odemčení ze souboru, které v databázi není (B98): i u zakázky, která
+   * v databázi vůbec není — uloOdemceniPribylo(null, …) vrátí každou
+   * variantu s odemčením v historii. Výchozí návrh J. V.: přeskočit
+   * s důvodem (orazítkovat relací obnovujícího by tvrdilo, že odemkl on). */
+  if (zeSouboru && ULO.uloOdemceniPribylo(stara, zak).length)
+    return odmitni(409, 'odemčení odeslané nabídky, které v databázi není, se ze souboru neobnovuje '
+      + '(soubor zálohy jde upravit, razítko odemčení z něj není doklad) — obnovte zakázku ze serverového otisku');
+
   if (stara) {
     /* Odemčení odeslané nabídky smí jen administrátor (B3); razítko kdo/kdy
-     * píše server z relace — v obnově zůstává razítko ze zálohy (doklad). */
+     * píše server z relace — v obnově z otisku zůstává razítko ze zálohy
+     * (doklad), obnova ze souboru sem s novým odemčením nedojde (B98). */
     const odemcene = ULO.uloOdemceniPribylo(stara, zak);
     if (odemcene.length) {
       if (relace.role !== 'Administrátor')
@@ -232,9 +256,14 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
       continue;
     }
     if (obnova) {
-      if (!v.zamek.overeni) {
+      /* Ze souboru se ověření počítá VŽDY znovu (B98) — podvržená „shoda" na
+       * jméno jiného správce by jinak prošla. Nesouhlas se zapíše, jak je
+       * („nesouhlasi"), a obnova ho ohlásí v náhledu (sporne). Z otisku se
+       * doplní jen tam, kde chybí. */
+      if (zeSouboru || !v.zamek.overeni) {
         const ov = globalThis.zamekOvereni(v, JEKLY, verzeServeru);
-        if (ov) v.zamek.overeni = ov;
+        if (ov) v.zamek.overeni = ov; else if (zeSouboru) delete v.zamek.overeni;
+        if (zeSouboru && ov && ov.stav !== 'shoda') sporne.push({ cislo: v.zamek.cislo || cisloVarianty(zak, v), ov });
       }
       continue;
     }

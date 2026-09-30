@@ -66,6 +66,75 @@ kapitol na 20 000. Stejnou kontrolou jde klient i server (`/api/firma`).
 
 ---
 
+## Třída „koncová cena bez schválení" (B96, B111, B112 — 29. 9. 2026)
+
+Komplexní test 29. 9. 2026 našel tři cesty, jak obchodník snížil cenu
+nabídky bez schválení slevy. Každá má vlastní serverovou kontrolu hned za
+typy polí (`zakazkaServerKontrola`, uložení i obnova):
+
+- **B111** — záporná částka, množství nebo hodiny (`uloZaporneProblemy`):
+  nikdo, ani administrátor.
+- **B96** — krok a směr obchodního zaokrouhlení jen z výčtu `ZAOKR_KROKY` ×
+  `ZAOKR_SMERY` (`uloZaokrProblemy`). Sémantika `zaokrKrok` v jádře se
+  nezměnila — změnila by cenu už odeslaných nabídek.
+- **B112** — ceník varianty a skryté přepisy podle role (`uloCenikProblemy`):
+  role bez práva v matici uložené na serveru (`tab.cenik`, `tab.cenikproj`,
+  `pole.prirazka`; přepisy `sloupce.naklad`) smí mít v ceníku jen hodnoty
+  z uložené verze téže varianty, ze zveřejněného ceníku (platná i dřívější
+  verze) nebo z jiné uložené varianty; přepisy nezmění. Administrátor smí
+  vždy.
+
+**Co zůstává vědomě (roadmapa #38 „nic se neblokuje"):**
+- Zaokrouhlení *z výčtu* směrem dolů smí cenu snížit o méně než jeden krok
+  — nejvýš 9 999 Kč u OCK; u PROJ se zaokrouhluje každá činnost zvlášť,
+  takže až 9 999 Kč × počet činností. Lišta marže to jen ohlásí.
+- Server nepočítá marži z **koncové** ceny (po zaokrouhlení) — kontrola
+  marže B71 (`schvalovaniServerMarze`) běží jen u platné slevy a počítá
+  z ceny před zaokrouhlením. Návrh (bod 4 zadání B96, nerealizováno, čeká
+  na rozhodnutí J. V.): kdykoli je koncová cena nižší než základ, ověřit
+  marži z koncové ceny i bez slevy. Pokryl by B96 (náklad se nemění, cena
+  klesne) a u B112 změnu přirážky, **nepokryl by** B111 ani změnu
+  jednotkové ceny v ceníku (záporná položka nebo nižší sazba sníží náklad
+  i cenu stejným poměrem, marže vyjde stejná) — proto každá cesta potřebuje
+  vlastní kontrolu a bod 4 je jen obrana do hloubky.
+- Varianta zamčená už v uložené verzi se neposuzuje (doklad, B53). Starší
+  zneužití v databázi najde `nastroje/detekce_zneuziti.mjs` (jen čte).
+- **B112 porovnává po položkách, ne celý ceník:** přepočet jen vybraných
+  položek na novou verzi je běžná práce, takže ceník smí být směsí uložené
+  verze, zveřejněných verzí a jiných variant. Role bez práva si tak může
+  u jednotlivé položky vybrat nižší z hodnot, které kdy schválil
+  administrátor — nikdy hodnotu, kterou nikdo nezveřejnil.
+- **Ceník sestavení se bere jen celý** (zakázka založená bez načteného
+  ceníku; v repozitáři samé nuly, nabídku zastaví zábrana `ukazkovyCenik`),
+  a u klíče, který zveřejněný ceník nemá, hodnota ze sestavení. Dokud se
+  žádný ceník nezveřejnil, ceník se nehlídá (není s čím porovnat).
+- **Sazba DPH** se nehlídá — vybírá ji v hlavičce každý a cenu bez DPH,
+  kterou hlídá schvalování, nemění.
+- **Hlídá se jen zápis. Čtecí strana B88 zůstává**: ceník a náklady jsou
+  v DOM každé role (výpočet běží v prohlížeči), matice zobrazení je pro
+  čtení věc pohodlí, ne bezpečnosti.
+- **Zbývající cesty třídy (neřešeno, #374):** hodiny a rezerva
+  standardních položek PROJ a cena trvalé položky (s `kid`) v zadání — UI je
+  ukazuje jen s právem `sloupce.naklad`, server nehlídá, kdo je změnil;
+  obchodní zaokrouhlení z výčtu; marže z koncové ceny (bod 4 B96).
+
+---
+
+## Obnova ze zálohy: soubor × otisk (B98, 29. 9. 2026)
+
+**Soubor zálohy** jde upravit v editoru, proto se z něj neobnovují účty ani
+podpisy (B27), razítko ověření nového zámku se počítá znovu a odemčení,
+které v databázi není, zakázku přeskočí. **Otisk na serveru** klient
+upravit nemůže — z něj se razítka zámku, ověření i odemčení přebírají, jak
+jsou. Vědomě zůstává:
+- kdo má přístup k úložišti Netlify Blobs (správce webu), může otisk
+  změnit — obnova z otisku mu věří, stejně jako databáze sama;
+- obnova ze souboru přeskočí i zakázku s odemčením v historii, když se
+  obnovuje do prázdné databáze — taková zakázka se obnoví z otisku;
+- zámek, který v databázi už je, se obnovou neposuzuje (doklad, B53).
+
+---
+
 ## Zbytkové meze uzavřených nálezů
 
 ### B61 — zámek pod jiným jménem souboru

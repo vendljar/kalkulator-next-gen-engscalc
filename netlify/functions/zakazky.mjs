@@ -127,10 +127,16 @@ export default async (req) => {
     }
   }
 
-  const prog = await (await uloziste('program')).cti('db');
+  const sProg = await uloziste('program');
+  const prog = await sProg.cti('db');
   const slevyNast = (prog && prog.platny && prog.platny.slevy) || {};
+  /* Matice zobrazení a zveřejněné ceníky pro kontrolu B112 (kdo smí měnit
+   * ceník varianty a přepisy). Administrátor matici nepotřebuje — čte se
+   * jen pro ostatní role. */
+  const zobr = relace.role === 'Administrátor' ? null : await sProg.cti('zobrazeni');
   const kontrola = zakazkaServerKontrola(stara, zak, relace,
-    { ULO, SCHV, JEKLY, slevyNast, verzeServeru: serverVerze(), rezim: 'ulozeni' });
+    { ULO, SCHV, JEKLY, slevyNast, verzeServeru: serverVerze(), rezim: 'ulozeni',
+      program: prog, matice: (zobr && zobr.matice) || null });
   if (!kontrola.ok) return json({ ok: false, chyba: kontrola.chyba }, kontrola.status);
   const sporne = kontrola.sporne;
 

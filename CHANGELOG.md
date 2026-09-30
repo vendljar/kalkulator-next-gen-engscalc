@@ -8,6 +8,266 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v30.9.1 — sloučení do test-draft: opravy šesti nálezů 21. kola (B111, B96, B112, B97, B98, B99) (30. 9. 2026)
+
+Na pokyn J. V. 30. 9. 2026 („pushni novinky do testu“) sloučena do
+`test-draft` větev `claude/oprava-sesti-nalezu-v29.9.1` (hlava 148e1c4,
+roadmapa **#373**) a výsledek převeden do `test`. Větev vznikla nad 9a48ee8
+(v29.9.1 ve větvi `claude/pensive-curie-s6yzs3`, jen předávka — kód jako
+v26.9.1), tedy před sloučením v29.9.4; její opravy nesly vlastní čísla
+v29.9.2–v29.9.7, která se kryjí s čísly v `test-draft`. Záznamy větve jsou
+proto níže jako podkapitoly s číslem „ve větvi“. Tag `v30.9.1`.
+Rozpracovaná etapa B platebních podmínek (`claude/etapa-b-plan-plateb-proj`,
+v29.9.5 ve větvi) zůstává ve své větvi, dokud nebude hotová.
+
+**Při sloučení:**
+- `netlify/lib/zakazka_kontrola.mjs` (sloučeno bez konfliktu, ověřeno
+  čtením): kontroly B111 (záporné), B96 (zaokrouhlení) a B112 (ceník
+  a přepisy) stojí za kontrolou typů polí a před kontrolou neznámého rozměru
+  profilu (#372); obnova ze souboru (B98) a razítko `upravilJmeno` (P7) vedle
+  sebe beze změny.
+- Pravidel kontroly je 24 (23 z `test-draft` + `zapornaPolozka`), zábrany
+  v pořadí rozmery, profilNeznamy, zapornaPolozka, cenaNula, sleva,
+  slevaProj, ukazkovyCenik (`src/test_kontroly.js`, `overit_lista.mjs`).
+- `netlify/test_obnova.mjs`: bloky #372 a B98 nesly stejná čísla zakázek
+  (0790–0794, sdílená databáze sady) — B98 přečíslován na 0800–0804.
+- `src/docxgen.js` exportuje `docxObsahZkontroluj` (B99) i
+  `odstranPrazdneBloky` / `docxZnackyBloku` (P8A); sady mutací serveru nesou
+  `test_rejstrik.mjs` i `test_zaporne.mjs`.
+- Roadmapa: #373 hotovo, #374 (zbývající cesty třídy „koncová cena“) čeká;
+  čísla z větve jsou v `test-draft` volná, nic se nepřečíslovalo.
+
+**Ověřeno celým kolem** — výsledek doplní další commit.
+
+### B99: šablony Wordu bez maker, vložených objektů a vnějších vztahů (ve větvi v29.9.7, 29. 9. 2026)
+
+Šestý ze šesti nálezů 21. kola (větev `claude/oprava-sesti-nalezu-v29.9.1`).
+Roadmapa #373.
+
+**Nález B99 (střední, integrita dokumentů).** Server ověřil jen začátek ZIPu
+(„UEsDB"), průvodce text, jazyk, symboly a strukturu XML; generátor
+i překlad kopírují zbytek ZIPu beze změny. Syntetická šablona s
+`word/_rels/settings.xml.rels` → `attachedTemplate`
+`https://example.invalid/x.dotm` (`TargetMode="External"`) prošla
+zveřejněním (200) i kontrolami průvodce a generátor ji přenesl do
+vygenerované nabídky — EN nabídka by si u zákazníka stáhla cizí šablonu
+s makry.
+
+- **Nový modul `src/sablona_obsah.js`** (CORE v `build.py` hned za
+  `sablony_online.js`, na serveru v `jadro_moduly.cjs` ve stejném pořadí):
+  `sablonaObsahVadyZipu()` nad rozbaleným ZIPem, `sablonaObsahVady()` pro
+  ArrayBuffer / base64. Odmítá vnější vztahy kromě hypertextových odkazů
+  **http(s) a mailto** (mailto nese dnešní šablona PROJ — bez něj by
+  neprošla; odkaz Word sám nestahuje), typy vztahů attachedTemplate,
+  oleObject, package, aFChunk, vbaProject, frame, subDocument, části
+  `word/embeddings/*`, `vbaProject*.bin`, ActiveX, typ obsahu macroEnabled
+  a pole INCLUDETEXT, INCLUDEPICTURE, DDE, DDEAUTO (i rozdělená do běhů).
+- Volá ho **server** při zveřejnění (`/api/sablony` → 400 s českou hláškou,
+  co vadí; nečitelný ZIP je taky vada), **průvodce** (`sablKontrolaSouboru`,
+  i „Nahrát vlastní verzi") a **generátor i překlad** (`docxVyplnSablonu`,
+  `docxPrelozSablonu` — obrana do hloubky: odmítnout, ne tiše vyhodit).
+- Dnešní firemní šablony (CN v13 + EN/DE/FR, CN v11, PROJ v2_opravena i v3,
+  SoD realizace a projekce, plná moc) kontrolou projdou.
+- Serverové sady posílaly jako šablonu jen řetězec „UEsDB…" — teď skutečný
+  minimální .docx z generátoru (`test_sablony`, `test_funkce`, řádek matice
+  v `test_prava`).
+
+**Testy (pojistka proti prázdnému testu):** `src/test_sablona_obsah.js`
+(nová, 27 kontrol; před opravou 1 prošlo / 1 selhalo — modul neexistoval,
+s modulem bez zapojení 25 / 2), `netlify/test_sablony.mjs` (+3; před
+opravou 19 / 3 — zveřejnění s attachedTemplate 200 → 22 / 0). Mutace
+serveru +1 („kontrola obsahu šablony se na serveru nevolá") — chycená.
+Harnessy s firemními šablonami: overit_sablona 60, overit_sablony_online
+53, overit_sod 25, overit_nabidka_proj_word 51 — vše OK.
+
+### B98: obnova ze souboru nepřebírá razítka zámku a odemčení (ve větvi v29.9.6, 29. 9. 2026)
+
+Pátý ze šesti nálezů 21. kola (větev `claude/oprava-sesti-nalezu-v29.9.1`).
+Roadmapa #373.
+
+**Nález B98 (střední) — podvržený doklad na jméno jiného správce.** Obnova
+ze SOUBORU zálohy převzala (a) razítko ověření nového zámku — zmrazený
+výsledek se `zakladCena = 1` a razítkem „shoda" na hlavního správce se
+zapsal jako shoda, ačkoli běžné uložení dá „nesouhlasi"; (b) odemčení
+odeslané nabídky s razítkem na hlavního správce a libovolným datem. Soubor
+jde upravit v editoru — přesně hrozba, kvůli které B27 zakázal obnovu účtů
+a podpisů ze souboru.
+
+- `netlify/functions/obnova.mjs` předává `zeSouboru` (zdroj = nahraný
+  soubor, i po dávkách).
+- `netlify/lib/zakazka_kontrola.mjs`: ze souboru se ověření každého nového
+  zámku spočítá **vždy znovu** (`zamekOvereni`); nesouhlas se zapíše jako
+  „nesouhlasi" a náhled obnovy ho ukáže u zakázky (`upozorneni`).
+  **Odemčení, které v databázi není** (i u zakázky, která v databázi vůbec
+  není), zakázku přeskočí s důvodem — výchozí návrh J. V.
+- Obnova z **otisku** (serverová záloha, klient ji upravit nemůže) přebírá
+  razítka dál, jak byla. Jedna kontrola pro uložení i obnovu (B72/P4) platí
+  dál; kotva mutace P4 „obnova nedoplní ověření" přešla na nový blok.
+
+**Testy (pojistka proti prázdnému testu):** `netlify/test_obnova.mjs`
+oddíl „B98" (8 kontrol; před opravou 160 OK / 6 FAIL → 166 / 0; dvě kontroly
+obnovy z otisku procházejí před i po — hlídají, že se nezměnila). Mutace
+serveru +2 („obnova nechá ověření ze souboru", „obnova převezme odemčení
+ze souboru") — chycené 2 z 2; mutace P4 ×5 dál chycené.
+
+### B97: e-mailový klíč brzdy přihlášení už nezasáhne počítadlo adresy (ve větvi v29.9.5, 29. 9. 2026)
+
+Čtvrtý ze šesti nálezů 21. kola (větev `claude/oprava-sesti-nalezu-v29.9.1`).
+Roadmapa #373, #345. Vážnost střední (výchozí návrh, čeká na potvrzení J. V.).
+
+**Nález B97 — anonym zablokoval přihlášení celé cizí adrese.** Počítadlo
+e-mailu (klíč = e-mail malými písmeny) a počítadlo adresy (`ip:<adresa>`,
+`ip6:<prefix>::/64`) ležela v témže úložišti `pokusy` bez předpony. 61×
+„přihlášení" s e-mailem `ip:198.51.100.55` z jiné adresy zvedlo počítadlo
+adresy oběti a ta dostala 429 i se správným heslem (od B75 se limit adresy
+rozhoduje před ověřením hesla); totéž „Změnit moje heslo".
+
+- `netlify/lib/sdilene.mjs`: e-mailový klíč nese předponu **`e:`**, funkce
+  nad syrovým klíčem (`pokusyStavKlic`, `pokusyNeuspechKlic`,
+  `pokusyResetKlic`, `pokusyUber`) a e-mailové (`pokusyStav`,
+  `pokusyNeuspech`, `pokusyReset`) jsou oddělené. Migrace není potřeba —
+  počítadla žijí čtvrt hodiny.
+- `pokusyZacatek`: e-mail neplatného tvaru (`emailPlatny`) žádné e-mailové
+  počítadlo nezakládá ani nezvedá; počítadlo adresy se započítá vždy.
+  Odpověď stejná 401 jako u špatného hesla. Platí pro přihlášení
+  i `mojeheslo`.
+- Oprava B75 (429 před scryptem, IPv6 po /64, cizí úspěch nenuluje) platí
+  dál; kotva mutace B75 „úspěch nuluje i adresu" přešla na
+  `pokusyResetKlic`, aby dál zkoušela totéž.
+
+**Testy (pojistka proti prázdnému testu):** `netlify/test_prihlaseni.mjs`
+oddíl „B97" (7 kontrol; před opravou 45 prošlo / 5 selhalo → 50 / 0).
+Mutace serveru +2 („e-mailový klíč bez předpony", „neplatný e-mail zvedá
+e-mailové počítadlo") — chycené 2 z 2; mutace B75 ×3 dál chycené.
+
+### B112: ceník varianty a skryté přepisy podle role hlídá server (ve větvi v29.9.4, 29. 9. 2026)
+
+Třetí ze šesti nálezů 21. kola (větev `claude/oprava-sesti-nalezu-v29.9.1`),
+zápisová strana B88. Roadmapa #373, #345, nová #374 (zbývající cesty třídy).
+
+**Vysoký nález B112 — obchodník ručním požadavkem snížil cenu nabídky o
+25–42 % bez schválení.** Přirážka varianty 0,20 → −0,10: OCK 980 000 →
+735 000 Kč (−25 %); přirážka PROJ −0,30: 271 200 → 158 200 Kč (−41,7 %);
+cena profilů 100 → 1 Kč/kg: −14,2 %; přepis množství hlavních položek
+a vlastní % sekce PROJ −50 — vše 200. V prohlížeči `set('C.marze', -0.1)`
+z konzole a běžné uložení → uloženo. Ceník a přepisy hlídala jen matice
+zobrazení v UI.
+
+- **Server:** `uloCenikProblemy()` v `src/uloziste.js` (přes
+  `uloProVarianty()`), volaná hned za kontrolou B96, odmítnutí **403**
+  „Ceník varianty smí měnit jen administrátor nebo role, které to povoluje
+  matice zobrazení …". Administrátor smí vždy; ostatním rozhoduje matice
+  uložená na serveru (`program/zobrazeni`, jinak výchozí): bez `tab.cenik`
+  / `tab.cenikproj` musí každá hodnota ceníku OCK / PROJ být z uložené verze
+  téže varianty, ze zveřejněného ceníku (platná i dřívější verze, složená
+  pro řadu varianty, po týchž migracích jako import) nebo z jiné uložené
+  varianty (klon); přirážka se uvolní právem `pole.prirazka`. Porovnává se
+  po položkách — přepočet jen vybraných položek je běžná práce. Dodatkové
+  texty (popisy) a sazba DPH se nehlídají. Přepisy (`mnozstviPrepis`,
+  `cenyPrepis`, PROJ `prirazkaPct`, `sazbaPrepis`, `cenaPrepis`) smí měnit
+  jen role s právem `sloupce.naklad` — v UI se zadávají jen ve sloupcích,
+  které to právo ukazuje (i ruční množství příplatků). Varianta zamčená
+  v uložené verzi se přeskakuje; bez zveřejněného ceníku se ceník nehlídá.
+- `netlify/functions/zakazky.mjs` čte pro kontrolu matici zobrazení (jen
+  u neadministrátora) a předává zveřejněné ceníky.
+- **Testy upravené kvůli realistickým datům:** fixtury `test_prava.mjs`
+  (`zakazkaCislo`, `zakazkaSCeny`) nesou ceník jako aplikace po přihlášení
+  — platný zveřejněný; B26 (tvar `kid` trvalé položky) a očista značek
+  ceníku v `test_funkce.mjs` ukládají pod administrátorem (trvalou položku
+  i vlastní ceník varianty zakládá jen on).
+
+**Testy (pojistka proti prázdnému testu):** `netlify/test_prava.mjs` oddíl
+„B112" (28 kontrol; před opravou 608 prošlo / 15 selhalo → 623 / 0 —
+všechny útoky i hranice rolí dnes 200), `overit_cenik_prava.mjs` (nový
+harness, 6 kontrol; před opravou 4 / 2 — podvrh uložen, cena 735 000 Kč).
+Mutace serveru +4 („ceník varianty se nehlídá", „přepis množství se
+nehlídá", „matice se na serveru nečte", „zveřejněný ceník se nebere za
+kandidáta") — chycené 4 z 4.
+
+### B96: krok obchodního zaokrouhlení hlídá server (ve větvi v29.9.3, 29. 9. 2026)
+
+Druhý ze šesti nálezů 21. kola (větev `claude/oprava-sesti-nalezu-v29.9.1`).
+Roadmapa #373, #38.
+
+**Vysoký nález B96 — obchodník krokem zaokrouhlení snížil cenu nabídky
+skoro o polovinu bez schválení.** Varianta bez slevy s `zaokr = { krok:
+⌊z/2⌋+1, smer: 'dolu' }`: cena OCK 980 000 → 490 001 Kč (marže −66 %),
+uložení 200, nový zámek dostal „shoda" (zaokrouhlení do výsledku jádra
+nevstupuje), rejstřík schvalování nic. Výčet `ZAOKR_KROKY`/`ZAOKR_SMERY`
+platil jen pro `<select>`; `zaokrSetKrok(490001)` z konzole prošel.
+
+- **Server:** `uloZaokrProblemy()` v `src/uloziste.js` (přes společnou
+  `uloProVarianty()`), volaná hned za kontrolou B111. `data.zaokr`
+  i `data.zaokrProj` musí být objekt s krokem z výčtu (číslo i číslo jako
+  text) a směrem z výčtu; chybějící nastavení se toleruje, nic se
+  nepřevádí. Odmítnutí 400 „… obchodní zaokrouhlení mimo nabídku (varianta
+  X: zaokr.krok) …". Varianta zamčená v uložené verzi se přeskakuje.
+  Sémantika `zaokrKrok` v jádře beze změny (princip dokladu).
+- **UI:** `zaokrSetKrok`, `zaokrProjSetKrok`, `zaokrSetSmer`,
+  `zaokrProjSetSmer` přijmou jen hodnoty z výčtu (jinak hláška); uložená
+  hodnota mimo výčet se v `<select>` ukáže jako „mimo nabídku — nepovolené"
+  místo zavádějícího „bez zaokrouhlení".
+- **Detekce:** `nastroje/detekce_zneuziti.mjs` hledá i krok/směr mimo výčet
+  (i v zamčených variantách).
+- **Bod 4 (marže z koncové ceny i bez slevy)** jen jako návrh do
+  `BEZPECNOST_MEZE.md` a `PREDAVKA.md` — nerealizováno, čeká na J. V.
+- `overit_zaokrouhleni.mjs` zkoušel oddělení OCK/PROJ krokem 100 000 Kč
+  (mimo výčet) — přepnuto na 10 000 Kč; zámek se zkouší krokem z výčtu.
+
+**Testy (pojistka proti prázdnému testu):** `netlify/test_prava.mjs` oddíl
+„B96" (13 kontrol; před opravou 587 prošlo / 7 selhalo → 595 / 0, kontrola
+detekčního skriptu přibyla po opravě), `src/test_uloziste.js` (+11; před
+opravou 161 / 1 — funkce neexistovala), `overit_zaokrouhleni.mjs` (+4; před
+opravou 12 OK / 4 FAIL → 16 / 0). Mutace serveru +2 („kontrola zaokrouhlení
+se nevolá", „výčet kroků se nekontroluje") — chycené; sdílenou mutaci
+přeskakování zamčené varianty chytá nově i `test_prava`.
+
+### B111: záporná vlastní položka, množství ani hodiny neprojdou (ve větvi v29.9.2, 29. 9. 2026)
+
+Větev `claude/oprava-sesti-nalezu-v29.9.1` (z v29.9.1 = 9a48ee8), první ze
+šesti nálezů 21. kola. Roadmapa #373 (nová), #33.
+
+**Vysoký nález B111 — obchodník v běžném UI snížil cenu nabídky bez
+schválení.** „+ přidat položku" s cenou −302 167 Kč: cena OCK 980 000 →
+617 000 Kč (−37 %), PROJ „+ přidat fixní položku" −90 400 Kč: 271 200 →
+162 720 Kč (−40 %); uložení 200, žádná lišta, rejstřík schvalování nic.
+Záporná položka sníží vykázaný náklad i cenu stejným poměrem, takže marže
+vypadala zdravě (B71 ji nepozná) a v dokumentu po ní nezůstala stopa.
+
+- **Server (hranice):** nová `uloZaporneProblemy()` v `src/uloziste.js`,
+  volaná v `zakazkaServerKontrola` hned za `uloTypyProblemy` (uložení
+  i obnova, B72/P4). Odmítne 400 „Zakázka nese zápornou částku nebo
+  množství (varianta X: <cesta>)" u ceny a množství vlastních položek OCK
+  (`vlastniPolozky.<sekce>[]`, `volitelneVlastni[]`, `priplatkyVlastni[]`,
+  i typ polí), u přepisů `mnozstviPrepis`/`cenyPrepis`, hodin N56 (dosud
+  jen v UI) a u PROJ `cena`, `hodiny`, `rezerva`, `cenaPrepis`,
+  `sazbaPrepis`. Výjimku nemá nikdo, ani administrátor (výchozí návrh,
+  čeká na potvrzení J. V.). Varianta zamčená už v uložené verzi se
+  přeskakuje (doklad) — společná pomocná `uloProVarianty()` pro B111, B96
+  a B112.
+- **UI:** `min="0"` u polí vlastních položek, příplatků a přepisů OCK
+  i PROJ; `zaporneOdmitni()` v `vlastniSet`, `priplatekVlastniSet`,
+  `mnozstviSet`, `cenaSet`, `pjPrepis` a `HODINY_BEZ_ZAPORU` rozšířené
+  o `polozky.N.cena` — hláška „Částka ani množství nemohou být záporné.
+  Snížení ceny zadejte jako slevu — ta jde přes schvalování."
+- **Odmítnutí serveru je vidět u tlačítka „Uložit zakázku"** — dosud se
+  „Neuloženo online: …" psalo jen do panelu Databáze.
+- **Kontroly:** nové pravidlo `zapornaPolozka` (zábrana) pro už uložené
+  zakázky — dokument nevznikne, dokud se položka neopraví.
+- **Detekce dřívějšího zneužití:** `nastroje/detekce_zneuziti.mjs
+  <zaloha.json>` (jen čte; spustí J. V.) vypíše varianty se zápornou
+  položkou, množstvím nebo hodinami, i zamčené.
+
+**Testy (pojistka proti prázdnému testu):** `netlify/test_zaporne.mjs`
+(nová, 24 kontrol; proti kódu před opravou 3 OK / 19 FAIL — dvě kontroly
+detekčního skriptu přibyly po opravě), `overit_zaporne.mjs` (nový harness,
+15 kontrol; před opravou 5 prošlo / 10 selhalo), `src/test_kontroly.js`
+(+7; před opravou 8 selhalo včetně počtu pravidel). Mutace serveru +3
+(„záporná položka projde", „záporné číslo se nepozná", „zamčená varianta se
+nepřeskakuje") — chycené 3 z 3.
+
+---
+
 ## v29.9.4 — sloučení do test-draft: testovací sekvence A1–A5 (#371) a neznámý rozměr profilu (#372) (29. 9. 2026)
 
 Na pokyn J. V. 29. 9. 2026 sloučeny do `test-draft` větve

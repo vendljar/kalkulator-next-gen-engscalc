@@ -72,6 +72,12 @@ export default async (req) => {
       return json({ ok: false, chyba: 'Soubor není .docx (Word) — zveřejnit jde jen šablona Wordu.' }, 400);
     if (data.length > g.SABLONA_MAX_B64)
       return json({ ok: false, chyba: 'Šablona je příliš velká (přes ~3,7 MB). Zmenšete v ní fotografie a zkuste to znovu.' }, 413);
+    /* Obsah šablony (B99, 29. 9. 2026): vnější vztahy, makra, vložené
+     * objekty a pole INCLUDE… a DDE — Word by je u zákazníka načítal mimo
+     * dokument. Stejná funkce jako průvodce a generátor. */
+    const vadyObsahu = await g.sablonaObsahVady(data);
+    if (vadyObsahu.length)
+      return json({ ok: false, chyba: g.sablonaObsahVadyText(vadyObsahu) }, 400);
     const otisk = g.sablonaOtisk(data);
     const platna = g.sablonaPlatna(rej, t.typ);
     /* Jazyková verze nese otisk české šablony, ze které vznikla (#348).

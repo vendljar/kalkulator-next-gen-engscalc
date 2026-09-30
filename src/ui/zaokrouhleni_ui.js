@@ -21,10 +21,26 @@
  * jsou v ZAMEK_CHRANENE, protože mění cenu, která už odešla zákazníkovi.
  * ============================================================ */
 
-function zaokrSetKrok(val) { ZO.krok = Math.max(0, +val || 0); render(); }
-function zaokrSetSmer(val) { ZO.smer = val; render(); }
-function zaokrProjSetKrok(val) { ZOP.krok = Math.max(0, +val || 0); render(); }
-function zaokrProjSetSmer(val) { ZOP.smer = val; render(); }
+/* Jen hodnoty z výčtu (B96, 29. 9. 2026). Do té doby šlo z konzole zapsat
+ * zaokrSetKrok(490001) a cenu nabídky tím srazit na polovinu; hranicí je
+ * server (uloZaokrProblemy), tady jde o to, aby UI samo nic mimo výčet
+ * nezapsalo a obchodník věděl proč. */
+function zaokrKrokZVyctu(val) {
+  const n = +val;
+  return (typeof ZAOKR_KROKY !== 'undefined' && ZAOKR_KROKY.some(k => k.krok === n)) ? n : null;
+}
+function zaokrSmerZVyctu(val) {
+  return (typeof ZAOKR_SMERY !== 'undefined' && ZAOKR_SMERY.some(s => s.smer === val)) ? val : null;
+}
+function zaokrMimoVycet() {
+  if (typeof hlaska === 'function') hlaska('Zaokrouhlení jde nastavit jen na hodnotu z nabídky. '
+    + 'Větší snížení ceny je sleva — ta jde přes schvalování.');
+  render();
+}
+function zaokrSetKrok(val) { const n = zaokrKrokZVyctu(val); if (n === null) return zaokrMimoVycet(); ZO.krok = n; render(); }
+function zaokrSetSmer(val) { const v = zaokrSmerZVyctu(val); if (v === null) return zaokrMimoVycet(); ZO.smer = v; render(); }
+function zaokrProjSetKrok(val) { const n = zaokrKrokZVyctu(val); if (n === null) return zaokrMimoVycet(); ZOP.krok = n; render(); }
+function zaokrProjSetSmer(val) { const v = zaokrSmerZVyctu(val); if (v === null) return zaokrMimoVycet(); ZOP.smer = v; render(); }
 
 /* Dopad na tu část nabídky, o kterou jde. Spadne-li výpočet, řádek se prostě
  * neukáže – karta je informace o ceně, ne hlásič chyb výpočtu. */
@@ -43,10 +59,17 @@ function zaokrKarta(kontext) {
   if (typeof zaokrDefault !== 'function') return '';
   const proj = kontext === 'proj';
   const st = proj ? ZOP : ZO;
-  const krokOpts = ZAOKR_KROKY.map(k =>
-    `<option value="${k.krok}" ${zaokrKrok(st) === k.krok ? 'selected' : ''}>${esc(k.popis)}</option>`).join('');
-  const smerOpts = ZAOKR_SMERY.map(s =>
-    `<option value="${s.smer}" ${zaokrSmer(st) === s.smer ? 'selected' : ''}>${esc(s.popis)}</option>`).join('');
+  /* Uložená hodnota mimo výčet (B96): <select> bez zvolené možnosti ukázal
+   * první — „bez zaokrouhlení" —, i když se cena zaokrouhlovala. Taková
+   * hodnota se ukáže jako vlastní, nevolitelná možnost s upozorněním. */
+  const krokJinak = zaokrKrok(st) > 0 && !ZAOKR_KROKY.some(k => k.krok === zaokrKrok(st));
+  const smerJinak = !!(st && st.smer) && !ZAOKR_SMERY.some(s => s.smer === st.smer);
+  const krokOpts = (krokJinak ? `<option value="" selected disabled>mimo nabídku: ${esc(fmt0(zaokrKrok(st)))} — nepovolené</option>` : '')
+    + ZAOKR_KROKY.map(k =>
+    `<option value="${k.krok}" ${!krokJinak && zaokrKrok(st) === k.krok ? 'selected' : ''}>${esc(k.popis)}</option>`).join('');
+  const smerOpts = (smerJinak ? `<option value="" selected disabled>mimo nabídku — nepovolené</option>` : '')
+    + ZAOKR_SMERY.map(s =>
+    `<option value="${s.smer}" ${!smerJinak && zaokrSmer(st) === s.smer ? 'selected' : ''}>${esc(s.popis)}</option>`).join('');
   const zapnuto = zaokrZapnuto(st);
 
   const c = zapnuto ? (proj ? zaokrDopadProj() : zaokrDopadOck()) : null;

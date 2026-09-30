@@ -592,10 +592,26 @@ function get(path) { return path.split('.').reduce((o, k) => o[k], rootObj()); }
  * a projekce v OCK (základ i ATYP) a hodin a rezervy položek PROJ. Výpočet
  * sám do minusu nejde (korekce montáže od referenční šachty zůstávají
  * kladné); záporná částka v nabídce dřív vznikla jen překlepem. */
-const HODINY_BEZ_ZAPORU = /^(Z\.(montazZakladHod|montazAtypHod|projekceZakladHod|projekceAtypHod)|polozky\.\d+\.(hodiny|rezerva))$/;
+/* B111 (29. 9. 2026): totéž platí pro částku položky PROJ (polozky.N.cena)
+ * — záporná vlastní fixní položka snížila cenu PROJ o 40 % bez schválení.
+ * Hranicí je server (uloZaporneProblemy); tohle je jen hláška na místě. */
+const HODINY_BEZ_ZAPORU = /^(Z\.(montazZakladHod|montazAtypHod|projekceZakladHod|projekceAtypHod)|polozky\.\d+\.(hodiny|rezerva|cena))$/;
 function hodinyZaporneOdmitni(path, v) {
   if (!HODINY_BEZ_ZAPORU.test(String(path)) || !(typeof v === 'number' && v < 0)) return false;
   if (typeof hlaska === 'function') hlaska('Hodiny nemohou být záporné. Zadejte 0 nebo kladné číslo.');
+  if (typeof render === 'function') render();
+  return true;
+}
+/* ZÁPORNÁ ČÁSTKA NEBO MNOŽSTVÍ (B111, 29. 9. 2026): vlastní položky,
+ * příplatky a ruční přepisy množství a ceny. Záporná položka snižovala cenu
+ * nabídky bez schválení a beze stopy v dokumentu; snížení ceny patří do
+ * slevy, která jde přes schvalování. Server stejnou věc odmítne sám
+ * (uloZaporneProblemy) — tady jde jen o srozumitelnou hlášku hned u pole. */
+function zaporneOdmitni(v) {
+  const n = (typeof v === 'number') ? v : (typeof v === 'string' && v.trim() !== '' ? +String(v).replace(',', '.') : NaN);
+  if (!(n < 0)) return false;
+  if (typeof hlaska === 'function')
+    hlaska('Částka ani množství nemohou být záporné. Snížení ceny zadejte jako slevu — ta jde přes schvalování.');
   if (typeof render === 'function') render();
   return true;
 }

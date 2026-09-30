@@ -427,6 +427,7 @@ function keyAttr(s) { return escJs(s); }
 
 /* ---- ruční přepis množství (klíčem je PŮVODNÍ název položky) ---- */
 function mnozstviSet(nazev, v) {
+  if (typeof zaporneOdmitni === 'function' && zaporneOdmitni(v)) return;   // B111
   if (!Z.mnozstviPrepis) Z.mnozstviPrepis = {};
   if (v === '' || v == null) delete Z.mnozstviPrepis[nazev]; else Z.mnozstviPrepis[nazev] = +v;
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
@@ -508,6 +509,7 @@ function popisRadekVol(r, cols) {
 }
 /* ---- ruční přepis jedn. ceny u položek bez ceníkové vazby ---- */
 function cenaSet(orig, v) {
+  if (typeof zaporneOdmitni === 'function' && zaporneOdmitni(v)) return;   // B111
   if (!Z.cenyPrepis) Z.cenyPrepis = {};
   if (v === '' || v == null) delete Z.cenyPrepis[orig]; else Z.cenyPrepis[orig] = +v;
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
@@ -1137,6 +1139,7 @@ function vlastniDoCeniku(sekce, i) {
 function vlastniSet(sekce, i, k, v) {
   const p = vlastniPolozkyArr(sekce)[i];
   if (!p) return;
+  if (k !== 'nazev' && typeof zaporneOdmitni === 'function' && zaporneOdmitni(v)) return;   // B111
   const puvodni = p.nazev;
   p[k] = k === 'nazev' ? v : +v;
   // přejmenování vlastní položky – přestěhuj ruční přepisy klíčované názvem (#4)
@@ -1204,18 +1207,18 @@ function bunkaNazev(r, sekceKey) {
 }
 function bunkaMnozstvi(r) {
   if (r.vlastni)
-    return `<input type="number" step="any" style="width:86px" value="${+(+r.mnozstvi).toFixed(3)}" onchange="vlastniSet('${escJs(r.sekce)}', ${r.idx}, 'mnozstvi', this.value)">`;
+    return `<input type="number" step="any" min="0" style="width:86px" value="${+(+r.mnozstvi).toFixed(3)}" onchange="vlastniSet('${escJs(r.sekce)}', ${r.idx}, 'mnozstvi', this.value)">`;
   const origJs = keyAttr(r.origNazev);
-  return `<input type="number" step="any" style="width:86px" value="${+(+r.mnozstvi).toFixed(3)}" onchange="mnozstviSet('${origJs}', this.value)" title="množství lze ručně přepsat">` +
+  return `<input type="number" step="any" min="0" style="width:86px" value="${+(+r.mnozstvi).toFixed(3)}" onchange="mnozstviSet('${origJs}', this.value)" title="množství lze ručně přepsat">` +
     (r.prepsano ? ` <button class="mini noprint" title="vrátit vypočtené množství (${num(r.mnozstviAuto, 3)})" onclick="mnozstviSet('${origJs}', '')">↺</button>` : '');
 }
 function bunkaCena(r) {
   if (r.vlastni)
-    return `<input type="number" step="any" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="vlastniSet('${escJs(r.sekce)}', ${r.idx}, 'cena', this.value)">`;
+    return `<input type="number" step="any" min="0" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="vlastniSet('${escJs(r.sekce)}', ${r.idx}, 'cena', this.value)">`;
   if (r.cenaPath)
-    return `<input type="number" step="any" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="set('${escJs(r.cenaPath)}', +this.value)" title="jedn. cena z ceníku – změna se propíše i do Ceníku nákladů (obousměrně)">`;
+    return `<input type="number" step="any" min="0" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="set('${escJs(r.cenaPath)}', +this.value)" title="jedn. cena z ceníku – změna se propíše i do Ceníku nákladů (obousměrně)">`;
   const origJs = keyAttr(r.origNazev);
-  return `<input type="number" step="any" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="cenaSet('${origJs}', this.value)" title="jedn. cena – ruční přepis (bez ceníkové vazby)">` +
+  return `<input type="number" step="any" min="0" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="cenaSet('${origJs}', this.value)" title="jedn. cena – ruční přepis (bez ceníkové vazby)">` +
     (r.cenaPrepsana ? ` <button class="mini noprint" title="vrátit vypočtenou cenu (${fmt(r.cenaAuto)})" onclick="cenaSet('${origJs}', '')">↺</button>` : '');
 }
 /* ---- stabilní klíč řádku (pro pořadí a viditelnost) ---- */
@@ -1379,7 +1382,7 @@ function radekKalk(r, sekceKey) {
     ? `<div class="vol-name">${gripHtml(r, sekceKey)}${bunkaNazev(r, sekceKey)}${bezCenyHtml(r)}${vypnutoHtml(r)}</div>`
     : vlastniEd
       ? `<input type="text" class="nazev-ed" style="width:55%" value="${esc(r.nazev)}" onchange="vlastniSet('${escJs(r.sekce)}', ${r.idx}, 'nazev', this.value)">
-         à <input type="number" step="any" style="width:96px" value="${+(+r.cena).toFixed(2)}" title="jednotková cena této položky (jen pro tuto zakázku)"
+         à <input type="number" step="any" min="0" style="width:96px" value="${+(+r.cena).toFixed(2)}" title="jednotková cena této položky (jen pro tuto zakázku)"
            onchange="vlastniSet('${escJs(r.sekce)}', ${r.idx}, 'cena', this.value)"> Kč
          <button class="mini noprint" title="odebrat vlastní položku" onclick="vlastniDel('${escJs(r.sekce)}', ${r.idx})">✕</button>`
       : esc(r.nazev) + poznHtml(r) + bezCenyHtml(r) + vypnutoHtml(r)}</td>`;
@@ -1513,10 +1516,10 @@ function tblVolitelne(katalog, sum) {
           : `<input type="checkbox" ${r.zahrnuto ? 'checked' : ''} onchange="volitelneToggle('${escJs(r.key)}', this.checked)" title="zahrnout do základní ceny"> `;
         c = vlEdV
           ? `<td style="white-space:normal">${chkU}<input type="text" class="nazev-ed" style="width:55%" value="${esc(r.nazev)}" onchange="vlastniSet('volitelne', ${r.idx}, 'nazev', this.value)">
-               à <input type="number" step="any" style="width:96px" value="${+(+r.cena).toFixed(2)}" title="jednotková cena této položky (jen pro tuto zakázku)"
+               à <input type="number" step="any" min="0" style="width:96px" value="${+(+r.cena).toFixed(2)}" title="jednotková cena této položky (jen pro tuto zakázku)"
                  onchange="vlastniSet('volitelne', ${r.idx}, 'cena', this.value)"> Kč
                <button class="mini noprint" title="odebrat vlastní položku" onclick="vlastniDel('volitelne', ${r.idx})">✕</button></td>
-             <td style="white-space:nowrap"><input type="number" step="any" style="width:86px" value="${+(+r.mnozstvi).toFixed(3)}" onchange="vlastniSet('volitelne', ${r.idx}, 'mnozstvi', this.value)"></td>`
+             <td style="white-space:nowrap"><input type="number" step="any" min="0" style="width:86px" value="${+(+r.mnozstvi).toFixed(3)}" onchange="vlastniSet('volitelne', ${r.idx}, 'mnozstvi', this.value)"></td>`
           : `<td style="white-space:normal">${chkU}${esc(r.nazev) + poznHtml(r) + vypnutoHtml(r)}</td><td style="white-space:nowrap">${num(r.mnozstvi, 3)}</td>`;
       }
       /* NEZAŠKRTNUTÝ ŘÁDEK NEUKAZUJE ČÁSTKU (16. 9. 2026, nález J. V.:
@@ -1674,6 +1677,7 @@ function priplatekDoCeniku(i) {
 function priplatekVlastniSet(i, k, v) {
   const p = Z.priplatkyVlastni[i];
   if (!p) return;
+  if (k !== 'nazev' && typeof zaporneOdmitni === 'function' && zaporneOdmitni(v)) return;   // B111
   const puvodni = p.nazev;
   p[k] = k === 'nazev' ? v : +v;
   if (k === 'nazev' && puvodni && puvodni !== p.nazev) prepisyPrejmenuj(Z, puvodni, p.nazev);
@@ -1821,13 +1825,13 @@ function renderOutputs() {
    * které vrátí vypočtené množství; prázdné pole = platí výpočet. */
   const pripMnozstvi = (x) => {
     if (x.vlastni)
-      return `<input type="number" step="any" style="width:80px" value="${+(+x.mnozstvi).toFixed(3)}" onchange="priplatekVlastniSet(${+String(x.key).split(':')[1]}, 'mnozstvi', this.value)">`;
+      return `<input type="number" step="any" min="0" style="width:80px" value="${+(+x.mnozstvi).toFixed(3)}" onchange="priplatekVlastniSet(${+String(x.key).split(':')[1]}, 'mnozstvi', this.value)">`;
     const origJs = keyAttr(x.origNazev);
     return `<input type="number" step="any" style="width:80px" value="${+(+x.mnozstvi).toFixed(3)}" onchange="mnozstviSet('${origJs}', this.value)" title="množství lze ručně přepsat (prázdné = vypočtené)">`
       + (x.prepsano ? ` <button class="mini noprint" title="vrátit vypočtené množství (${num(x.mnozstviAuto, 3)})" onclick="mnozstviSet('${origJs}', '')">↺</button>` : '');
   };
   const pripCena = (x) => x.vlastni
-    ? `<input type="number" step="any" style="width:96px" value="${+(+x.cena).toFixed(2)}" onchange="priplatekVlastniSet(${+String(x.key).split(':')[1]}, 'cena', this.value)">`
+    ? `<input type="number" step="any" min="0" style="width:96px" value="${+(+x.cena).toFixed(2)}" onchange="priplatekVlastniSet(${+String(x.key).split(':')[1]}, 'cena', this.value)">`
     : (x.cenaPath
         ? `<input type="number" step="any" style="width:96px" value="${+(+x.cena).toFixed(2)}" onchange="set('${escJs(x.cenaPath)}', +this.value)" title="jedn. cena z ceníku – propíše se i do Ceníku (obousměrně)">`
         : fmt(x.cena));

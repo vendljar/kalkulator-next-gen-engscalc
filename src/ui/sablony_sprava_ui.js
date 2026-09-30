@@ -228,6 +228,13 @@ async function sablKontrolaSouboru(data, lang, symbolyVzor) {
     if (vady.length) out.chyby.push('Soubor je poškozený — Word by ho otevřel jen s opravou ('
       + vady.join('; ') + '). Otevřete ho ve Wordu, uložte znovu a nahrajte.');
   }
+  /* Prvky mimo dokument (B99, 29. 9. 2026): vnější vztahy (attachedTemplate
+   * na cizí server), makra, vložené objekty, pole INCLUDE… a DDE. Stejná
+   * kontrola jako při zveřejnění na serveru — tady dřív, než se soubor pošle. */
+  if (typeof sablonaObsahVady === 'function') {
+    const vadyObsahu = await sablonaObsahVady(data);
+    if (vadyObsahu.length) out.chyby.push(sablonaObsahVadyText(vadyObsahu));
+  }
   if (!symboly.length) out.chyby.push('Soubor nemá žádné symboly {{…}} — aplikace by do něj nic nedosadila.');
   const podilCil = jaz.zarazeno ? (jaz.pocty[lang] || 0) / jaz.zarazeno : 0;
   if (jaz.jazyk && jaz.jazyk !== lang && jaz.podil >= SABL_JAZYK_PRAH)

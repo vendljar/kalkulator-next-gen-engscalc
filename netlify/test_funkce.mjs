@@ -338,15 +338,24 @@ test('prohlížeč hlavní účet nepoznává podle e-mailu, ale podle příznak
  * krok tiše selhal, obchodník by tiskl ze staré šablony a nikdo by to
  * nepoznal — přesně to, kvůli čemu centrální šablony vznikly. */
 const sablonyFn = (await import('./functions/sablony.mjs')).default;
-const DOCX1 = 'UEsDBBQABgAIAAAAIQ' + 'A'.repeat(400);   // „soubor" verze 1 (ZIP hlavička)
-const DOCX2 = 'UEsDBBQABgAIAAAAIQ' + 'B'.repeat(400);   // jiná data = jiný otisk
+/* Skutečný minimální .docx ze zdejšího generátoru (B99, 29. 9. 2026): server
+ * od té doby šablonu rozbalí a zkontroluje obsah — pouhá hlavička „UEsDB"
+ * s výplní by neprošla. Jiný text = jiná data = jiný otisk. */
+const DG_B99 = require('../src/docxgen.js');
+const docxB64 = async (t) => Buffer.from(await DG_B99.docxDokumentBlob('Šablona ' + t + ' {{FIRMA_NAZEV}}', []).arrayBuffer()).toString('base64');
+const DOCX1 = await docxB64('verze 1');   // „soubor" verze 1
+const DOCX2 = await docxB64('verze 2');   // jiná data = jiný otisk
 
 {
   const cObch2 = cookieObch;   // relace z r2 už po změnách hesla neplatí (B6)
 
-  test('šablony: PDF se odmítne už při zveřejnění',
-    (await post(sablonyFn, 'http://x/api/sablony',
-      { akce: 'zverejnit', typ: 'nabidka', nazev: 'x.pdf', data: 'JVBERi0xLjQK' }, cookie)).status === 400);
+  /* Hláška se hlídá doslova (29. 9. 2026): od B99 by PDF odmítla i kontrola
+   * obsahu šablony („nejde rozbalit"), takže samotný stav 400 by nepoznal,
+   * že zmizela první pojistka „není .docx" (mutace „přijme i ne-Word"). */
+  const pdfOdp = await post(sablonyFn, 'http://x/api/sablony',
+      { akce: 'zverejnit', typ: 'nabidka', nazev: 'x.pdf', data: 'JVBERi0xLjQK' }, cookie);
+  test('šablony: PDF se odmítne už při zveřejnění (hláška „není .docx")',
+    pdfOdp.status === 400 && /není \.docx/.test((await pdfOdp.json()).chyba || ''));
   test('šablony: neznámý typ se odmítne',
     (await post(sablonyFn, 'http://x/api/sablony',
       { akce: 'zverejnit', typ: 'faktura', nazev: 'x.docx', data: DOCX1 }, cookie)).status === 400);
@@ -495,7 +504,9 @@ const DOCX2 = 'UEsDBBQABgAIAAAAIQ' + 'B'.repeat(400);   // jiná data = jiný ot
   zn.cislo = '2026 - OPR - CN - 0778'; zn.nazevAkce = 'Značky ceníku';
   const d0 = zn.varianty[0].data;
   d0.cenik = Object.assign({}, d0.cenik, { montazHodKc: 850, dph: 21 });
-  const ulZ = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zn }, cookieObch)).json();
+  /* Ukládá administrátor: vlastní cenu v ceníku varianty (montazHodKc 850)
+   * obchodník od B112 (29. 9. 2026) neuloží. Očista značek na roli nezávisí. */
+  const ulZ = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zn }, cookie)).json();
   const naZ = await (await get(zakazky, 'http://x/api/zakazky?soubor='
     + encodeURIComponent(ulZ.soubor), cookieObch)).json();
   const cZ = naZ.zakazka.varianty[0].data.cenik;
@@ -508,7 +519,7 @@ const DOCX2 = 'UEsDBBQABgAIAAAAIQ' + 'B'.repeat(400);   // jiná data = jiný ot
   const zn2 = JSON.parse(JSON.stringify(naZ.zakazka));
   zn2.varianty[0].data.cenik.ukazkove = true;
   zn2.varianty[0].data.cenik.prazdny = true;
-  const ul2 = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zn2 }, cookieObch)).json();
+  const ul2 = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zn2 }, cookie)).json();
   const na2 = await (await get(zakazky, 'http://x/api/zakazky?soubor='
     + encodeURIComponent(ul2.soubor || ulZ.soubor), cookieObch)).json();
   const c2 = na2.zakazka.varianty[0].data.cenik;

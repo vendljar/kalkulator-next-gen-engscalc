@@ -267,7 +267,15 @@ function zakUlozUI() {
     ZAKULO_STAV.uklada = true;
     render();   // tlačítko hned ukáže „Ukládám…"
     const beh = kanal === 'online' ? onlineUloz() : uloUlozDoSlozky();
-    return beh.then(v => { ZAKULO_STAV.uklada = false; render(); return v; },
+    /* Odmítnutí serveru (400/403/409 — záporná položka B111, ceník B112 …)
+     * psal onlineUloz jen do panelu Databáze; u tlačítka „Uložit zakázku"
+     * nebylo vidět nic (29. 9. 2026). Kolize verzí má vlastní hlášku pod
+     * lištou, proto se nezdvojuje. */
+    return beh.then(v => {
+      ZAKULO_STAV.uklada = false;
+      if (v === false && kanal === 'online' && typeof ONLINE_STAV !== 'undefined' && !ONLINE_STAV.kolize
+          && ONLINE_STAV.hlaskaTyp === 'varovani' && ONLINE_STAV.hlaska) zakUlozeniZprava(ONLINE_STAV.hlaska, 'varovani');
+      render(); return v; },
       e => { ZAKULO_STAV.uklada = false; render(); throw e; });
   }
   ulozZakazku();

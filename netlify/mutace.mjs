@@ -59,7 +59,9 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* B75–B78 (25. 9. 2026): přihlašování jako celek. */
      'test_prihlaseni.mjs',
      /* Dávka B kola 16 (25. 9. 2026): adresa stavby v rejstříku (P15). */
-     'test_rejstrik.mjs'];
+     'test_rejstrik.mjs',
+     /* B111 (29. 9. 2026): záporná částka, množství a hodiny. */
+     'test_zaporne.mjs'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -361,6 +363,34 @@ const MUTACE = [
     nahrad: "  if (false)\n    return json({ ok: false, chyba: 'Příliš mnoho neúspěšných pokusů z této adresy. Zkuste to za '",
     proc: 'jedno heslo na sto e-mailů by na počítadle nikdy nenarostlo' },
 
+  /* ---------- B99 (29. 9. 2026): obsah šablony Wordu ---------- */
+  { nazev: 'B99: kontrola obsahu šablony se na serveru nevolá', soubor: 'functions/sablony.mjs',
+    hledej: "    if (vadyObsahu.length)\n      return json({ ok: false, chyba: g.sablonaObsahVadyText(vadyObsahu) }, 400);",
+    nahrad: "    if (false)\n      return json({ ok: false, chyba: g.sablonaObsahVadyText(vadyObsahu) }, 400);",
+    proc: 'EN šablona s vnější šablonou Wordu (makra z cizího serveru) by se zveřejnila a šla ke každému zákazníkovi' },
+
+  /* ---------- B98 (29. 9. 2026): obnova ze souboru a razítka ---------- */
+  { nazev: 'B98: obnova nechá ověření zámku ze souboru', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "      if (zeSouboru || !v.zamek.overeni) {",
+    nahrad: "      if (!v.zamek.overeni) {",
+    proc: 'podvržená „shoda" zmrazeného výsledku na jméno hlavního správce by se obnovou zapsala jako doklad' },
+
+  { nazev: 'B98: obnova převezme odemčení ze souboru', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "  if (zeSouboru && ULO.uloOdemceniPribylo(stara, zak).length)",
+    nahrad: "  if (false && ULO.uloOdemceniPribylo(stara, zak).length)",
+    proc: 'upravený soubor zálohy by odemkl odeslanou nabídku s razítkem na cizí jméno a libovolným datem' },
+
+  /* ---------- B97 (29. 9. 2026): jmenné prostory počítadel pokusů ---------- */
+  { nazev: 'B97: e-mailový klíč bez předpony', soubor: 'lib/sdilene.mjs',
+    hledej: "function pokusyKlic(email) { return 'e:' + String(email || '').trim().toLowerCase(); }",
+    nahrad: "function pokusyKlic(email) { return String(email || '').trim().toLowerCase(); }",
+    proc: 'anonym by e-mailem „ip:<adresa>" zablokoval přihlášení celé cizí adrese' },
+
+  { nazev: 'B97: neplatný e-mail zvedá e-mailové počítadlo', soubor: 'lib/sdilene.mjs',
+    hledej: "  const z = emailPlatny(email) ? await pokusyNeuspech(email) : { n: 0, posledni: 0 };",
+    nahrad: "  const z = await pokusyNeuspech(email);",
+    proc: 'libovolný řetězec by zakládal klíč v úložišti pokusů (i podvržený klíč adresy)' },
+
   /* ---------- přihlašování jako celek, B75–B78 (25. 9. 2026) ---------- */
   { nazev: 'B75: limit adresy se rozhoduje až po ověření hesla', soubor: 'lib/sdilene.mjs',
     hledej: "  return !!(pokusy && pokusy.adresa && pokusy.adresa.n > POKUSY_IP_MAX);",
@@ -372,7 +402,7 @@ const MUTACE = [
     proc: 'z jednoho /64 by šlo poslat každý pokus z jiné adresy a limit by nikdy nenarostl' },
   { nazev: 'B75: úspěch vlastního účtu nuluje počítadlo adresy', soubor: 'lib/sdilene.mjs',
     hledej: "  if (ip) await pokusyUber(pokusyIpKlic(ip));",
-    nahrad: "  if (ip) await pokusyReset(pokusyIpKlic(ip));",
+    nahrad: "  if (ip) await pokusyResetKlic(pokusyIpKlic(ip));",
     proc: 'útočník s jedním účtem by mezi hádáním cizích hesel přihlašoval sebe a limit adresy by nikdy nenarostl' },
   { nazev: 'B76: nový účet začíná na verzi hesla 0', soubor: 'functions/uzivatele.mjs',
     hledej: "               hesloVerze: hesloVerzeNova() };          // B76: stará cookie nesmí ožít",
@@ -884,6 +914,54 @@ const MUTACE = [
     nahrad: "      if (false) out.push({ kde: c, duvod: 'typ' });",
     proc: 'typ portálu nebo zasklení by nesl skript, který se kreslí do volby' },
 
+  /* ---------- B111 (29. 9. 2026): záporná částka, množství, hodiny ---------- */
+  { nazev: 'B111: záporná položka projde (kontrola se nevolá)', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "  if (zaporne.length) return odmitni(400, 'Zakázka nese ' + ULO.uloIdProblemyText(zaporne) + '.');",
+    nahrad: "  if (false) return odmitni(400, 'Zakázka nese ' + ULO.uloIdProblemyText(zaporne) + '.');",
+    proc: 'obchodník by vlastní položkou −302 167 Kč snížil cenu nabídky o 37 % bez schválení' },
+
+  { nazev: 'B111: záporné číslo se nepozná', soubor: '../src/uloziste.js',
+    hledej: "  if (typeof h === 'number') return h < 0;",
+    nahrad: "  if (typeof h === 'number') return false;",
+    proc: 'záporná cena, množství i hodiny by prošly — kontrola by hlídala jen text' },
+
+  { nazev: 'B111/B96/B112: varianta zamčená v uložené verzi se nepřeskakuje', soubor: '../src/uloziste.js',
+    hledej: "    if (sv && sv.zamek && sv.zamek.zamceno) return;                // doklad — nesahat\n    const vlastni = [];\n    fn(v, sv, vlastni);",
+    nahrad: "    const vlastni = [];\n    fn(v, sv, vlastni);",
+    proc: 'odeslaná nabídka z doby před opravou by se nedala uložit ani beze změny — server by posuzoval doklad' },
+
+  /* ---------- B96 (29. 9. 2026): krok obchodního zaokrouhlení ---------- */
+  { nazev: 'B96: kontrola zaokrouhlení se nevolá', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "  if (zaokr.length) return odmitni(400, 'Zakázka nese ' + ULO.uloIdProblemyText(zaokr) + '.');",
+    nahrad: "  if (false) return odmitni(400, 'Zakázka nese ' + ULO.uloIdProblemyText(zaokr) + '.');",
+    proc: 'obchodník by krokem 490 001 Kč srazil cenu nabídky na polovinu bez schválení' },
+
+  { nazev: 'B96: výčet kroků se nekontroluje', soubor: '../src/uloziste.js',
+    hledej: "    if (!kroky.some(x => x.krok === n)) return true;",
+    nahrad: "    if (false) return true;",
+    proc: 'jakýkoli kladný krok by prošel — výčet by zase platil jen pro <select> v UI' },
+
+  /* ---------- B112 (29. 9. 2026): ceník varianty a přepisy podle role ---------- */
+  { nazev: 'B112: ceník varianty se nehlídá (kontrola se nevolá)', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "  if (cenik.length) return odmitni(403, veta(ULO.uloCenikProblemyText(cenik)));",
+    nahrad: "  if (false) return odmitni(403, veta(ULO.uloCenikProblemyText(cenik)));",
+    proc: 'obchodník by přirážkou −0,10 z konzole snížil cenu nabídky o 25 % bez schválení' },
+
+  { nazev: 'B112: přepis množství se nehlídá', soubor: '../src/uloziste.js',
+    hledej: "      if (!shoda) out.push({ kde: 'ock.zadani.' + k.split('\\u0000')[0] + '[' + (iO) + ']', duvod: 'cenik' });",
+    nahrad: "      if (false) out.push({ kde: 'ock.zadani.' + k.split('\\u0000')[0] + '[' + (iO) + ']', duvod: 'cenik' });",
+    proc: 'přepis množství hlavních položek na nulu by prošel každé roli' },
+
+  { nazev: 'B112: matice zobrazení se na serveru nečte (každá role smí vše)', soubor: '../src/uloziste.js',
+    hledej: "  const smi = (klic) => !!(smiF && smiF(role, klic, opts.matice || null));",
+    nahrad: "  const smi = (klic) => true;",
+    proc: 'ceník a přepisy by hlídalo zase jen UI — zápisová strana B88' },
+
+  { nazev: 'B112: zveřejněný ceník se nebere za kandidáta (jen uložená verze)', soubor: '../src/uloziste.js',
+    hledej: "      const kand = [kSvm].concat(kZv, kJine).filter(Boolean);",
+    nahrad: "      const kand = [kSvm].concat(kJine).filter(Boolean);",
+    proc: 'nová zakázka ani přepočet na platný ceník by obchodníkovi neprošly — oprava by blokovala běžnou práci' },
+
   /* ---------- zálohy ---------- */
   { nazev: 'zálohu stáhne kdokoli', soubor: 'functions/zaloha.mjs',
     hledej: '  const { chyba } = await vyzadujRoli(req, \'Administrátor\');',
@@ -1079,7 +1157,9 @@ const MUTACE = [
     nahrad: "  const cil = zak;",
     proc: 'v obnovené zakázce by pod slevou stálo jméno správce místo toho, kdo ji tehdy schválil' },
   { nazev: 'P4: obnova nedoplní ověření výsledku zámku', soubor: 'lib/zakazka_kontrola.mjs',
-    hledej: "      if (!v.zamek.overeni) {\n        const ov = globalThis.zamekOvereni(v, JEKLY, verzeServeru);\n        if (ov) v.zamek.overeni = ov;\n      }",
+    /* Kotva upravená s B98 (29. 9. 2026): blok teď počítá ověření i ze
+     * souboru; mutace ho dál vyřadí celý — obnova by neověřila nic. */
+    hledej: "      if (zeSouboru || !v.zamek.overeni) {\n        const ov = globalThis.zamekOvereni(v, JEKLY, verzeServeru);\n        if (ov) v.zamek.overeni = ov; else if (zeSouboru) delete v.zamek.overeni;\n        if (zeSouboru && ov && ov.stav !== 'shoda') sporne.push({ cislo: v.zamek.cislo || cisloVarianty(zak, v), ov });\n      }",
     nahrad: "      ;",
     proc: 'obnovená odeslaná nabídka by nesla neověřený zmrazený výsledek bez razítka' },
   { nazev: 'B62: z historie tisků jde ubrat', soubor: '../src/uloziste.js',
