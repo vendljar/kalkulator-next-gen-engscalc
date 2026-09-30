@@ -8,6 +8,117 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v30.9.4 — světlíky u šachetních dveří (#375), nálezy 18. kola, platební podmínky OCK, zdvih nejvýš 99 m (30. 9. 2026)
+
+Pokyn J. V. 30. 9. 2026: „co máme aktuálně v draftu pošli už do testu"
+(`test` = v30.9.3, cd7a1ec), „s tvými návrhy řešení bočních světlíků
+souhlasím", odpočet −0,2 h u nadsvětlíku „zajistí stavba" zrušit, svázat
+zaměření v kalkulaci s položkou krycího listu, opravit K18-N92 až N97,
+opláštění po stěnách „změň na standard", měsíční fakturaci „prověř a
+nastav", maximální zdvih 99 m. Práce ve čtyřech paralelních větvích
+z `test-draft`, sloučených v integrační větvi `claude/davka-k18-svetliky`:
+`claude/svetliky-u-dveri-375` (#375), `claude/k18-drobnosti` (B1–B3),
+`claude/k18-nalezy-word-preklady` (N92, N93, N95–N97) a
+`claude/ock-platebni-podminky-nabidka` (N94 + měsíční fakturace, #367
+etapa A část 1). Roadmapa #375 a #376 hotovo, #367 doplněno, nová #377.
+
+**Světlíky u šachetních dveří (#375)**
+- Světlíky na bocích dveří mají tytéž volby jako světlík nad dveřmi (bez,
+  sklo, plech, materiál opláštění, zajistí stavba); nová zakázka začíná na
+  „bez". Pod nimi pole **Celkem světlíků na bocích dveří** — automaticky
+  nástupiště × 2, ručně se štítkem „ručně" a ↺ (`bokyPocet*`,
+  `Z.svetlikyBokyKs`).
+- Ocenění po dveřích (dveře se dvěma / jedním / žádným světlíkem), plocha
+  min(N, D) × mezera × 2,2, konstrukce na kus světlíku; plech 8,5 kg/m²
+  lakovaný z obou stran. **Sklo** = sklo stěny s dveřmi (po stěnách
+  převažující sklo stěny A, jinak standardní sklo čelní stěny),
+  **materiál opláštění** = převažující materiál stěn B, C, D (Cetris za m²
+  bez lišt a terčů), **zajistí stavba** = naše konstrukce, výplň 0 Kč.
+  Po stěnách už světlíky nejsou v pásech stěny A, mají vlastní řádky.
+- Nadsvětlík **„zajistí stavba" už neubírá 0,2 h montáže na nástupiště**
+  (oba modely); „bez" ubírá dál (Model 1 = Excel).
+- Kontrola **bokyDveri** (31. pravidlo): mezera vedle dveří při „bez",
+  N = 0, N > 2 × dveře, N < dveře. Specifikace: nový řádek SVĚTLÍKY
+  U ŠACHETNÍCH DVEŘÍ a symbol `{{TS_SVETLIKY_DVERI}}` (šablona CN ho zatím
+  nemá); překlad EN/DE/FR je návrh ke kontrole. Detail výpočtu ukazuje
+  počet, rozložení a materiál. Server ověřuje `nadDvermi`/`bokyDveri`
+  výčtem a `svetlikyBokyKs` jako číslo.
+- Starší zakázky se převedou beze změny ceny (`svetlikyBokyMigrace`
+  v importZakazka u všech variant; ověřeno 29 760 konfiguracemi proti
+  předchozímu jádru, commitnutý test 192 zadání). **Cena se mění** jen
+  u rozpracovaných zakázek: materiál opláštění u světlíků (dřív sklo
+  čelní stěny), sklo po stěnách s nesklenou stěnou A, nadsvětlík
+  „zajistí stavba" (+0,2 h × nástupiště) a oprava chyby (strany 0
+  s uloženou výplní „plech" už neúčtují práci na plech). Zamčené
+  varianty drží zmrazený výsledek.
+
+**Drobnosti B1–B3 (rozhodnutí J. V. 30. 9. 2026)**
+- **B1 — zaměření:** ZAMĚŘENÍ PROSTORŮ 3D SKENEREM ve specifikaci je
+  odvozené jako statika z položky ZAMĚŘENÍ 3D SKENEREM v Režii OCK
+  (`tsSken3dVCene`; množství 0 nebo vyřazení = „ne"); řádek **Zaměření
+  strojovna** krycího listu OCK je odvozený taky (`odvozene` v
+  `KRYCI_SEKCE`, jen ke čtení, dřívější ruční „Ano" se ohlásí jako
+  neplatné; zamčená varianta drží, co se odeslalo).
+- **B2 — po stěnách není atyp:** `standardVyhodnot` už nehlásí režim po
+  stěnách jako mimo standard; posuzuje se stejně jako jednotné opláštění.
+  Automaticky zaškrtnutý ATYP uklidí `standardAtypUklid`; ručně
+  zaškrtnutý ATYP ani odeslané nabídky se nemění.
+- **B3 — zdvih nejvýš 99 m (K17-N91):** `KONTROLY_ZDVIH_MAX_M = 99`
+  v pravidle „rozmery" (zábrana), pole Zdvih má max 99 a upozornění;
+  hodnota se neořezává. Server beze změny (odmítnutí by zastavilo
+  ukládání rozpracované zakázky).
+
+**Nálezy 18. kola**
+- **K18-N92:** šablona PROJ v4 (`nastroje/vyrob_sablony.js --proj-v4`)
+  má pod seznamem geodetických prací cenovou tabulku v bloku
+  `{{CENA_GEODET_ZAC}}…{{CENA_GEODET_KON}}` se symbolem
+  `{{PROJ_CENA_GEODET_BLOK}}` (bez geodetu blok zmizí). Kontrola
+  **cenaWordProj**: nabízená činnost s cenou, pro kterou šablona nemá
+  symbol → varování.
+- **K18-N93:** záruka v cizojazyčné online nabídce OCK jde přes překlad
+  („Warranty 60 months").
+- **K18-N94 + měsíční fakturace (#367 etapa A část 1):** nabídka OCK
+  tiskne platební kalendář z krycího listu — splátka s 0 % se vynechá
+  a doklady se přečíslují, způsob fakturace „Měsíční" dá větu
+  „Fakturace probíhá měsíčně podle skutečně provedených prací." místo
+  50/40/10 (`kryciPlatebniKalendar`, `{{PODM_PLATEBNI_KALENDAR}}`,
+  `{{PODM_FAKTURACE_MESICNE}}`, `rozvinRadkyZaRadek` v docxgen). Umí to
+  šablona **CN v14** (`--cn-v14`, 112 symbolů); se starší šablonou
+  varuje kontrola **platbyWordOck**. Odeslaná varianta bez značky
+  `pravidlaPlateb` tiskne věty v13 jako dřív.
+- **K18-N95:** úvod a termíny nabídky PROJ v EN/DE/FR přeložené
+  (23 hesel slovníku, návrh ke kontrole); mutace šablony PROJ v4 bez
+  napůl českých řádků.
+- **K18-N96:** kontrola **dodatekCesky** — dodatkový text z ceníku, který
+  slovník nepřeloží, v cizojazyčné nabídce → varování s výčtem položek.
+- **K18-N97:** materiál opláštění po stěnách vyjmenuje specifikace
+  i nabídka se stěnami („Sklo VSG 4.4.1 (stěna A); Cetris (stěny B, D)…").
+
+**Šablony (mimo repozitář, předány J. V.):** Sablona_NABIDKA_CN_v14.docx
+a Sablona_NABIDKA_PROJ_v4.docx, obě s mutacemi EN/DE/FR.
+
+**Příručka:** světlíky u dveří, nadsvětlík „zajistí stavba", po stěnách
+není atyp, platební podmínky OCK, 3D zaměření a Zaměření strojovna;
+`podklady/OBRAZOVKA_OPLASTENI.md` opravený.
+
+**Zjištěno, neopraveno (#377, čeká na J. V.):** zábrany z kontroly
+(rozmery včetně stropu zdvihu, profilNeznamy, zapornaPolozka, cenaNula…)
+neblokují tlačítka dokumentů — `dokumentZabrana()` hlídá jen ukázkový
+ceník a plán plateb PROJ.
+
+Testy (pojistka proti prázdnému testu, podrobně v commitech větví):
+test_svetliky_boky 19/88 → 107/0, test_platby_ock 11/47 → 77/0,
+test_k18_nalezy (oddíly N92–N97) vše selhávalo → 71/0,
+test_sablona_proj_v4 25/12 → 40/0, test_specifikace_cena 57/14 → 71/0,
+test_kryci 119/3 → 127/0 (dvě dávky), test_oplasteni_steny 26/11 → 37/0,
+test_kontroly (31 pravidel), overit_oplasteni 64/7 → 71/0,
+overit_specifikace_cena 17/6 → 25/0, overit_zadani_detail 39/3 → 53/0,
+overit_sablona (sekce v14) → 102/0, overit_lista → 31 pravidel.
+Mutace jádra 88 → 111 úseků (+2 B3, +3 platbyWordOck, +3 N92, +3 N96,
++12 #375), všechny nové chycené.
+
+---
+
 ## v30.9.3 — Q5: dřívější záloha se přepne na předvolbu sama; `main` = v30.9.1 (30. 9. 2026)
 
 Větev `claude/etapa-b-q5-zaloha-automaticky` (z `test-draft` v30.9.2).
