@@ -188,6 +188,10 @@ function nabidkaData(zak, varianta, jekly, lang) {
     TS_TYP_OPLASTENI: ts('typOplasteni'), TS_MATERIAL_OPLASTENI: ts('materialOplasteni'),
     TS_POVRCH_OPLASTENI: ts('povrchOplasteni'), TS_OPLASTENI_CELA: ts('oplasteniCela'),
     TS_ROZSAH_OPLASTENI: ts('rozsahOplasteni'), TS_OPLASTENI_NADSVETLIKU: ts('oplasteniNadsvetliku'),
+    /* Světlíky u šachetních dveří s počtem a materiálem (#375, 30. 9. 2026).
+     * Šablona v11 na ně zatím symbol nemá — doplní se do ní; online nabídka
+     * řádek ukazuje hned. Bez světlíků prázdné = řádek zmizí. */
+    TS_SVETLIKY_DVERI: tsNeboPrazdno('svetlikyDveri'),
     TS_UMISTENI_OPLASTENI: ts('umisteniOplasteni'), TS_KOTVENI_OPLASTENI: ts('kotveniOplasteni'),
     TS_PARAMETRY_KOTVY: ts('parametryKotvy'), TS_NAPOJENI_DVERI: ts('napojeniDveri'),
     TS_MONTAZNI_NOSNIK: ts('montazniNosnik'), TS_PRIPRAVA_KOTVENI: ts('pripravaKotveni'),
@@ -490,6 +494,7 @@ function nabidkaNahledSekce(ph, lang) {
       ['TYP OPLÁŠTĚNÍ', ph.TS_TYP_OPLASTENI], ['MATERIÁL OPLÁŠTĚNÍ', ph.TS_MATERIAL_OPLASTENI],
       ['POVRCHOVÁ ÚPRAVA OPLÁŠTĚNÍ', ph.TS_POVRCH_OPLASTENI], ['OPLÁŠTĚNÍ ČELA POD NÁSTUPIŠTĚM', ph.TS_OPLASTENI_CELA],
       ['ROZSAH OPLÁŠTĚNÍ', ph.TS_ROZSAH_OPLASTENI], ['OPLÁŠTĚNÍ NADSVĚTLÍKŮ', ph.TS_OPLASTENI_NADSVETLIKU],
+      ...(ph.TS_SVETLIKY_DVERI ? [['SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ', ph.TS_SVETLIKY_DVERI]] : []),   // #375
       ['VNĚJŠÍ OPLÁŠTĚNÍ ŠACHTY', ph.TS_UMISTENI_OPLASTENI], ['ZPŮSOB KOTVENÍ OPLÁŠTĚNÍ', ph.TS_KOTVENI_OPLASTENI],
       ['VZHLED KOTVENÍ ZASKLENÍ', ph.TS_PARAMETRY_KOTVY], ['NAPOJENÍ ŠACHETNÍCH DVEŘÍ', ph.TS_NAPOJENI_DVERI]] },
     { sekce: 'DOPLŇKOVÉ KONSTRUKCE', radky: [

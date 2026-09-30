@@ -177,6 +177,10 @@ const ZADANI_NOVA = {
   /* Nad dveřmi plechové nadpraží (N58, rozhodnutí J. V. 24. 9. 2026: výchozí
    * volba nové zakázky je plech — pole nad dveřmi nesmí zůstat neoceněné). */
   nadDvermi: 'plech',
+  /* Světlíky na bocích dveří „bez" (#375, rozhodnutí J. V. 30. 9. 2026).
+   * Je-li vedle dveří mezera, upozorní na ni kontrola před nabídkou. Počet
+   * světlíků zůstává prázdný = automaticky nástupiště × 2, až se zvolí výplň. */
+  bokyDveri: 'bez',
 };
 
 /* ZÁKLAD PRO SLOUPEC VÝCHOZÍ (16. 9. 2026, nález J. V.: „stále nám nefunguje
@@ -754,6 +758,16 @@ function importZakazka(obj) {
         /* N57 (24. 9. 2026): bez objektu volitelných položek spadl výpočet.
          * Doplní se prázdný — nic se tiše nezaškrtne ani nepřidá do ceny. */
         if (!zo.volitelne || typeof zo.volitelne !== 'object' || Array.isArray(zo.volitelne)) zo.volitelne = {};
+        /* Migrace 30. 9. 2026 (#375): světlíky na bocích dveří z počtu stran
+         * na volbu jako nad dveřmi a počet světlíků — beze změny ceny (viz
+         * svetlikyBokyMigrace v engine.js; ověřeno proti jádru v30.9.3).
+         * Běží u VŠECH variant, i odeslaných, stejně jako převod stříšky
+         * a nástupišť výš: jen doplní klíče, výsledek se nehne a zmrazený
+         * otisk odeslané nabídky zůstává. Kdyby odeslanou vynechala, server
+         * by při odemčení administrátorem porovnal převedená data odemčené
+         * varianty s nepřevedenou uloženou verzí a uložení odmítl (409).
+         * Guard kvůli Node testům, které zakazka.js načítají bez engine.js. */
+        if (typeof svetlikyBokyMigrace === 'function') svetlikyBokyMigrace(zo);
       }
       /* Migrace 12. 8. 2026 (#134): projekce dostala vlastní slevu.
        *

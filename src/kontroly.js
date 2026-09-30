@@ -243,6 +243,48 @@ const KONTROLY = [
     },
   },
   {
+    /* SVĚTLÍKY NA BOCÍCH DVEŘÍ (#375, rozhodnutí J. V. 30. 9. 2026). Boky
+     * „bez" nechávají mezeru vedle dveří neocenenou (šířka stěny − otvor
+     * dveří − 0,04 m na každých dveřích) — stejně jako „bez" nad dveřmi, jen
+     * upozornění; pod 2 cm mezera prakticky není. Dál se hlídá počet
+     * světlíků: víc než dva u každých dveří, dveře bez světlíku (mezera
+     * u nich zůstane) a nulový počet u zvolené výplně. Mezera se bere
+     * z výsledku jádra (rozměr skla, otvor dveří), volba a počet ze zadání
+     * — i u odeslané nabídky se zmrazeným otiskem z doby před #375. */
+    kod: 'bokyDveri', kde: 'Kalkulace OCK', nazev: 'Světlíky na bocích dveří',
+    zjisti(ctx) {
+      const z = ctx.zadani;
+      const r = ctx.vysledek;
+      if (!z || typeof bokyVypln !== 'function' || typeof bokyPocet !== 'function') return null;
+      const volba = bokyVypln(z), n = bokyPocet(z);
+      const dvere = (typeof nastupisteCelkem === 'function') ? nastupisteCelkem(z) : +z.nastupiste;
+      const sir = r && r.zaskleni && r.zaskleni.rozmer ? +r.zaskleni.rozmer.sir : NaN;
+      const otvor = r && r.odvozene ? +r.odvozene.sirkaDveri : NaN;
+      const mezera = sir - otvor - 0.04;
+      const mezeraJe = isFinite(mezera) && mezera > 0.02;
+      const m = () => (Math.round(mezera * 100) / 100).toString().replace('.', ',') + ' m';
+      if (volba === 'bez') {
+        if (!mezeraJe || !(dvere > 0)) return null;
+        return { text: 'Na bocích šachetních dveří je zvoleno „bez" — vedle dveří zůstane mezera '
+          + m() + ' na každém nástupišti, kterou nic neoceňuje. '
+          + 'Zvolte sklo, plech, materiál opláštění, nebo „zajistí stavba" (pak to uvede specifikace).' };
+      }
+      const potize = [];
+      if (!(n > 0)) potize.push('počet je 0 — zvolte u boků „bez", nebo zadejte počet');
+      else {
+        if (isFinite(dvere) && n > 2 * dvere)
+          potize.push('zadaných světlíků (' + n + ') je víc než dva u každých dveří (' + (2 * dvere) + ')');
+        if (isFinite(dvere) && n < dvere) {
+          const bez = dvere - n;
+          potize.push((bez === 1 ? 'u 1 dveří nebude boční světlík' : 'u ' + bez + ' dveří nebude boční světlík')
+            + (mezeraJe ? ' — mezera ' + m() + ' tam zůstane neoceněná' : ''));
+        }
+      }
+      if (!potize.length) return null;
+      return { text: 'Světlíky na bocích dveří: ' + kontrolyVyctem(potize) + '.' };
+    },
+  },
+  {
     /* MŮSTKY (P7 / K13-N59, rozhodnutí J. V. 25. 9. 2026). Můstky se zadávají
      * počtem a v kalkulaci mají vlastní řádek za ceníkovou cenu za kus.
      * Dokud cena v ceníku chybí, jde řádek do nabídky za 0 Kč — to se musí

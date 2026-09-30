@@ -529,6 +529,23 @@ const PREKLAD = {
   "výplň vedle dveří z materiálu opláštění stěny": ["Infill beside the door in the wall cladding material","Füllung neben der Tür aus dem Verkleidungsmaterial der Wand","Remplissage à côté de la porte dans le matériau du bardage de la paroi"],
   "výplň vedle dveří zajistí objednatel": ["Infill beside the door provided by the client","Füllung neben der Tür stellt der Auftraggeber","Remplissage à côté de la porte fourni par le maître d'ouvrage"],
   "lakovaný ocelový plech": ["Painted steel sheet","Lackiertes Stahlblech","Tôle d'acier laquée"],
+  /* #375 (30. 9. 2026): světlíky u šachetních dveří — členění portálů při
+   * různém počtu bočních světlíků a nový řádek specifikace s počtem
+   * a materiálem (skládá ho vzor v PREKLAD_VZORY níž z těchto hesel).
+   * NÁVRH PŘEKLADU — čeká na odbornou kontrolu J. V. */
+  "světlík nade dveřmi a na bocích š. dveří": ["Transom light above the door and at the sides of the landing door","Oberlicht über der Tür und an den Seiten der Schachttür","Imposte vitrée au-dessus de la porte et sur les côtés de la porte palière"],
+  "světlíky na bocích š. dveří": ["Transom lights at the sides of the landing door","Oberlichter an den Seiten der Schachttür","Impostes vitrées sur les côtés de la porte palière"],
+  "plechová výplň na bocích dveří": ["Sheet-metal infill at the sides of the door","Blechfüllung an den Seiten der Tür","Remplissage en tôle sur les côtés de la porte"],
+  "SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ": ["LIGHTS AT THE LANDING DOORS","LICHTER AN DEN SCHACHTTÜREN","IMPOSTES DES PORTES PALIÈRES"],
+  "Světlík nad šachetními dveřmi": ["Transom light above the landing doors","Oberlicht über den Schachttüren","Imposte vitrée au-dessus des portes palières"],
+  "Nadpraží nad šachetními dveřmi": ["Panel above the landing doors","Paneel über den Schachttüren","Panneau au-dessus des portes palières"],
+  "Nadpraží nad šachetními dveřmi zajistí objednatel": ["Panel above the landing doors provided by the client","Paneel über den Schachttüren stellt der Auftraggeber","Panneau au-dessus des portes palières fourni par le maître d'ouvrage"],
+  "Světlíky na bocích dveří": ["Side lights beside the landing doors","Seitenlichter neben den Schachttüren","Impostes latérales des portes palières"],
+  "izolační dvojsklo": ["insulating double glazing","Isolierverglasung","double vitrage isolant"],
+  "plech": ["sheet metal","Blech","tôle"],
+  "výplň zajistí objednatel": ["infill provided by the client","Füllung stellt der Auftraggeber","remplissage fourni par le maître d'ouvrage"],
+  "na terče": ["on glazing fixing points","auf Befestigungspunkten der Verglasung","sur pastilles de vitrage"],
+  "v lištách": ["in trims","in Leisten","dans des baguettes"],
   "šestiúhelník": ["Hexagon","Sechseck","Hexagone"],
   "tmelené a broušené styky desek, bílý nátěr aplikovaný na stavbě": ["Filled and sanded board joints, white paint applied on site","Verspachtelte und geschliffene Plattenstöße, weißer Anstrich bauseits","Joints de panneaux enduits et poncés, peinture blanche appliquée sur chantier"],
   "TYP KONSTRUKCE (ENG-M)": ["STRUCTURE TYPE (ENG-M)","KONSTRUKTIONSTYP (ENG-M)","TYPE DE STRUCTURE (ENG-M)"],
@@ -1026,9 +1043,46 @@ function prekladNorm(s) {
 const PREKLAD_IDX = {};
 Object.keys(PREKLAD).forEach(k => { PREKLAD_IDX[prekladNorm(k)] = PREKLAD[k]; });
 
+/* Světlíky u šachetních dveří (#375, 30. 9. 2026) — věta technické
+ * specifikace z tsSvetlikyDveri (techspec.js): části po středníku, v každé
+ * popisek, „N ks", materiál (u průchozí šachty i „(stěna A)") a uchycení.
+ * Vzor pustí JEN slova, která ta funkce skládá a která slovník zná; ruční
+ * název typu „jiné" jím neprojde a věta zůstane viditelně nepřeložená
+ * (cizojazyčný název materiálu si vymýšlet nesmíme). */
+const PREKLAD_SVETLIKY_CAST = '(?:(?:Světlík nad šachetními dveřmi|Nadpraží nad šachetními dveřmi|Světlíky na bocích dveří): \\d+ ks'
+  + '(?:, (?:sklo VSG 4\\.4\\.1|sklo VSG 4\\.4\\.2|izolační dvojsklo|Cetris|plech|výplň zajistí objednatel)(?: \\(stěna [AC]\\))?)*'
+  + '(?:, (?:na terče|v lištách))?|Nadpraží nad šachetními dveřmi zajistí objednatel)';
+const PREKLAD_SVETLIKY_RE = new RegExp('^' + PREKLAD_SVETLIKY_CAST + '(?:; ' + PREKLAD_SVETLIKY_CAST + ')*$');
+function prekladSvetlikyDveri(text, lang) {
+  const ks = { en: 'pcs', de: 'Stk.', fr: 'pcs' }[lang] || 'ks';
+  /* Jen slovník, ne trStav: kdyby správce heslo části smazal, trStav by
+   * sáhl zpátky na tenhle vzor a zacyklil se. Chybějící heslo zůstane česky. */
+  const j = JAZYK_IDX[lang];
+  const T = s => { const hit = PREKLAD_IDX[prekladNorm(s)]; return (hit && hit[j]) ? hit[j] : s; };
+  /* Uprostřed věty malé písmeno (anglicky, francouzsky); němčina má
+   * podstatná jména velkým. Zkratky („VSG") se nemění — mění se jen první znak. */
+  const male = s => (lang === 'de' ? s : s.charAt(0).toLowerCase() + s.slice(1));
+  return String(text).split('; ').map(cast => {
+    const i = cast.indexOf(': ');
+    if (i < 0) return T(cast);
+    const polozky = cast.slice(i + 2).split(', ').map(p => {
+      let m = p.match(/^(\d+) ks$/);
+      if (m) return m[1] + ' ' + ks;
+      m = p.match(/^(.+) \(stěna ([AC])\)$/);
+      if (m) return male(T(m[1])) + ' (' + male(T('stěna')) + ' ' + m[2] + ')';
+      return male(T(p));
+    });
+    return T(cast.slice(0, i)) + ': ' + polozky.join(', ');
+  }).join('; ');
+}
+
 /* ---- vzory pro řetězce s čísly, které se generují za běhu ----
  * (rozměry, rozteče, počty – slovník je pokrýt nemůže) */
 const PREKLAD_VZORY = [
+  /* #375: věta o světlících u šachetních dveří (viz prekladSvetlikyDveri výš).
+   * NÁVRH PŘEKLADU — čeká na odbornou kontrolu J. V. */
+  { re: PREKLAD_SVETLIKY_RE, en: m => prekladSvetlikyDveri(m, 'en'), de: m => prekladSvetlikyDveri(m, 'de'),
+    fr: m => prekladSvetlikyDveri(m, 'fr') },
   { re: /^jekl\s+(\d+x\d+)$/i, en: 'SHS $1', de: 'Hohlprofil $1', fr: 'profilé creux $1' },
   /* Plán plateb projekce (etapa B, 30. 9. 2026): „30 % z nabídkové ceny za DPZ",
    * „12,5 % z nabídkové ceny za tuto činnost" — procento libovolné. */

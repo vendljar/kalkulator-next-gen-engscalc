@@ -72,8 +72,10 @@ const VSE = ['kalk', 'detail', 'spec', 'proj', 'detailproj', 'cenik'];
 const POLE = [
   ['sazba DPH OCK (C.dph)', "d.cenik.dph = PAY('C.dph');"],
   ['sazba DPH PROJ (PC.dph)', "d.proj.cenik.dph = PAY('PC.dph');"],
-  ...['typPortalu', 'zaskleni', 'svetlikyBoky', 'cistyVstupMm', 'sirkaRamuMm', 'rohoveSloupky']
+  ...['typPortalu', 'zaskleni', 'svetlikyBoky', 'nadDvermi', 'bokyDveri', 'cistyVstupMm', 'sirkaRamuMm', 'rohoveSloupky']
     .map(k => ['zadání Z.' + k, `d.ock.zadani.${k} = PAY('Z.${k}');`]),
+  /* #375: počet bočních světlíků se kreslí, jen když boky nejsou „bez". */
+  ['zadání Z.svetlikyBokyKs (boky sklo)', "d.ock.zadani.bokyDveri = 'sklo'; d.ock.zadani.svetlikyBokyKs = PAY('Z.svetlikyBokyKs');"],
   ['název skla v ceníku zakázky', "d.ock.zadani.typSachty='exteriérová'; d.cenik.skloBokyNazev = '<img src=x onerror=window.__XSS.push`sklo`>';"],
   ['hodiny položky PROJ', "const s=d.proj.zadani.sekce.find(x=>x.polozky&&x.polozky.some(p=>p.typ==='hod'&&!p.vyrazeno)); s.polozky.find(p=>p.typ==='hod'&&!p.vyrazeno).hodiny = PAY('PJ.hodiny');"],
   ['rezerva položky PROJ', "const s=d.proj.zadani.sekce.find(x=>x.polozky&&x.polozky.some(p=>p.typ==='hod'&&!p.vyrazeno)); s.polozky.find(p=>p.typ==='hod'&&!p.vyrazeno).rezerva = PAY('PJ.rezerva');"],

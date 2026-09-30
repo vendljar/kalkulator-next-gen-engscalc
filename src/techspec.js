@@ -170,36 +170,104 @@ function tsNastupiste(Z) {
   return +(Z && Z.nastupiste) || 0;
 }
 
-function tsVyplnDveri(Z) {
+/* OD #375 (30. 9. 2026) čte specifikace z VÝSLEDKU JÁDRA, čím se světlíky
+ * opravdu vyplní (`r.zaskleni.vypln.material` — sklo stěny s dveřmi,
+ * materiál stěn B, C, D, deska, zajistí stavba) a kolik bočních světlíků
+ * je. Bez výsledku (test nad samotným techspec.js) platí dřívější odhad ze
+ * zadání: sklo je sklo, materiál jen ve standardu. */
+function tsVyplnDveri(Z, r) {
   const z = Z || {};
+  const volby = ['bez', 'sklo', 'plech', 'material', 'stavba'];
   const nad = (typeof nadDvermiVypln === 'function') ? nadDvermiVypln(z)
-    : (['bez', 'sklo', 'plech', 'material', 'stavba'].indexOf(z.nadDvermi) >= 0 ? z.nadDvermi
-       : (z.svetlikNadDvermi ? 'sklo' : 'bez'));
-  const bokyVypln_ = (typeof bokyVypln === 'function') ? bokyVypln(z)
-    : (['sklo', 'plech', 'material', 'stavba'].indexOf(z.bokyVypln) >= 0 ? z.bokyVypln : 'sklo');
-  const boky = +z.svetlikyBoky || 0;
+    : (volby.indexOf(z.nadDvermi) >= 0 ? z.nadDvermi : (z.svetlikNadDvermi ? 'sklo' : 'bez'));
+  const boky = (typeof bokyVypln === 'function') ? bokyVypln(z)
+    : (volby.indexOf(z.bokyDveri) >= 0 ? z.bokyDveri
+       : (+z.svetlikyBoky > 0 ? (['sklo', 'plech', 'material', 'stavba'].indexOf(z.bokyVypln) >= 0 ? z.bokyVypln : 'sklo') : 'bez'));
+  const dvere = tsNastupiste(z);
+  const vypln = r && r.zaskleni && r.zaskleni.vypln;
+  const bokyKs = (vypln && vypln.bokyKs != null) ? +vypln.bokyKs
+    : ((typeof bokyPocet === 'function') ? bokyPocet(z) : (boky === 'bez' ? 0 : (+z.svetlikyBoky || 0) * dvere));
   const poStenach = !!(z.oplasteni && z.oplasteni.rezim === 'poStenach');
-  /* „Materiál opláštění" je ve standardu sklo stěny — tedy světlík. */
-  const sklo = v => v === 'sklo' || (v === 'material' && !poStenach);
-  return { nad, boky, bokyVypln: bokyVypln_, poStenach,
-           skloNad: sklo(nad), skloBoky: boky > 0 && sklo(bokyVypln_) };
+  const mat = vypln && vypln.material ? vypln.material : null;
+  /* Druh výplně: z jádra; bez něj sklo = sklo a materiál ve standardu sklo. */
+  const druh = (volba, kde) => {
+    const x = mat && mat[kde] && mat[kde].A;
+    if (x && x.druh) return x.druh;
+    if (volba === 'sklo' || (volba === 'material' && !poStenach)) return 'sklo';
+    return volba;
+  };
+  const nadDruh = druh(nad, 'nad'), bokyDruh = druh(boky, 'boky');
+  return { nad, boky, bokyKs, dvere, poStenach, mat, nadDruh, bokyDruh,
+           skloNad: nadDruh === 'sklo', skloBoky: boky !== 'bez' && bokyKs > 0 && bokyDruh === 'sklo',
+           /* Jde o dvě strany u všech dveří / jednu u všech? Jinak „na bocích". */
+           strana: bokyKs > 0 && bokyKs === 2 * dvere ? 'na obou stranách'
+             : (bokyKs > 0 && bokyKs === dvere ? 'na jedné straně' : null) };
 }
-function tsVyplnDveriCasti(Z) {
-  const v = tsVyplnDveri(Z);
-  const strana = v.boky === 2 ? 'na obou stranách' : 'na jedné straně';
-  if (v.skloNad && v.skloBoky) return ['světlík nade dveřmi a ' + strana + ' š. dveří'];
+function tsVyplnDveriCasti(Z, r) {
+  const v = tsVyplnDveri(Z, r);
+  if (v.skloNad && v.skloBoky)
+    return [v.strana ? 'světlík nade dveřmi a ' + v.strana + ' š. dveří' : 'světlík nade dveřmi a na bocích š. dveří'];
   const casti = [];
   if (v.skloNad) casti.push('světlík nade dveřmi');
-  else if (v.nad === 'plech') casti.push('plechové nadpraží nade dveřmi');
-  else if (v.nad === 'material') casti.push('nadpraží z materiálu opláštění stěny');
-  else if (v.nad === 'stavba') casti.push('nadpraží nade dveřmi zajistí objednatel');
-  if (v.boky > 0) {
-    if (v.skloBoky) casti.push('světlík ' + strana + ' š. dveří');
-    else if (v.bokyVypln === 'plech') casti.push('plechová výplň ' + strana + ' dveří');
-    else if (v.bokyVypln === 'material') casti.push('výplň vedle dveří z materiálu opláštění stěny');
-    else if (v.bokyVypln === 'stavba') casti.push('výplň vedle dveří zajistí objednatel');
+  else if (v.nadDruh === 'plech') casti.push('plechové nadpraží nade dveřmi');
+  else if (v.nadDruh === 'material' || v.nadDruh === 'deska') casti.push('nadpraží z materiálu opláštění stěny');
+  else if (v.nadDruh === 'stavba') casti.push('nadpraží nade dveřmi zajistí objednatel');
+  if (v.boky !== 'bez' && v.bokyKs > 0) {
+    if (v.skloBoky) casti.push(v.strana ? 'světlík ' + v.strana + ' š. dveří' : 'světlíky na bocích š. dveří');
+    else if (v.bokyDruh === 'plech') casti.push(v.strana ? 'plechová výplň ' + v.strana + ' dveří' : 'plechová výplň na bocích dveří');
+    else if (v.bokyDruh === 'material' || v.bokyDruh === 'deska') casti.push('výplň vedle dveří z materiálu opláštění stěny');
+    else if (v.bokyDruh === 'stavba') casti.push('výplň vedle dveří zajistí objednatel');
   }
   return casti.length ? casti : ['bez světlíků'];
+}
+
+/* Materiál světlíku do věty specifikace (#375). Názvy jsou hesla slovníku
+ * (preklad.js); ruční „jiné" nese název, který napsal obchodník. */
+const TS_SVETLIK_MATERIAL = { 'C.skloCelniKc': 'sklo VSG 4.4.1', 'C.skloVsg442Kc': 'sklo VSG 4.4.2',
+  'C.skloBokyKc': 'izolační dvojsklo', 'C.cetrisKc': 'Cetris' };
+function tsSvetlikMaterial(x) {
+  if (!x || !x.typ) return '';
+  if (x.typ === 'jine') return x.nazev || 'jiné opláštění';
+  return TS_SVETLIK_MATERIAL[x.typ] || String(x.typ);
+}
+/* Stěna, jejíž světlíky specifikace popisuje: čelní A; u průchozí šachty bez
+ * dveří vpředu zadní C. */
+function tsSvetlikStena(Z) {
+  const z = Z || {};
+  return (z.pruchoziSachta && !((+z.nastupisteA || 0) > 0)) ? 'C' : 'A';
+}
+/* Materiál světlíků jedné volby (nad dveřmi / boky) — u průchozí šachty
+ * s dveřmi na obou stěnách a různým sklem obě stěny. */
+function tsSvetlikMaterialText(v, kde, Z) {
+  const m = v.mat && v.mat[kde];
+  if (!m) return '';
+  const z = Z || {};
+  const obe = !!z.pruchoziSachta && (+z.nastupisteA || 0) > 0 && (+z.nastupisteC || 0) > 0;
+  const a = tsSvetlikMaterial(m.A), c = tsSvetlikMaterial(m.C);
+  if (obe && a && c && a !== c) return a + ' (stěna A), ' + c + ' (stěna C)';
+  return tsSvetlikMaterial(m[tsSvetlikStena(z)]);
+}
+/* SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ — věta s počtem a materiálem (#375, zadání
+ * 30. 9. 2026: „Světlíky na bocích dveří: 10 ks, sklo VSG 4.4.1, na terče").
+ * Nad dveřmi počet dveří, na bocích počet bočních světlíků; bez výplně nic. */
+function tsSvetlikyDveri(Z, r) {
+  const z = Z || {};
+  const v = tsVyplnDveri(z, r);
+  const zask = z.zaskleni === 'mezi příčníky' ? 'v lištách' : 'na terče';
+  const cast = (popisek, ks, druh, kde) => {
+    if (druh === 'stavba') return kde === 'nad' ? 'Nadpraží nad šachetními dveřmi zajistí objednatel'
+      : popisek + ': ' + ks + ' ks, výplň zajistí objednatel';
+    if (druh === 'plech') return popisek + ': ' + ks + ' ks, plech';
+    const mat = tsSvetlikMaterialText(v, kde, z);
+    if (druh === 'sklo') return popisek + ': ' + ks + ' ks' + (mat ? ', ' + mat : '') + ', ' + zask;
+    return popisek + ': ' + ks + ' ks' + (mat ? ', ' + mat : '');
+  };
+  const casti = [];
+  if (v.nad !== 'bez' && v.dvere > 0)
+    casti.push(cast(v.nadDruh === 'sklo' ? 'Světlík nad šachetními dveřmi' : 'Nadpraží nad šachetními dveřmi',
+      v.dvere, v.nadDruh, 'nad'));
+  if (v.boky !== 'bez' && v.bokyKs > 0) casti.push(cast('Světlíky na bocích dveří', v.bokyKs, v.bokyDruh, 'boky'));
+  return casti.length ? casti.join('; ') : ' -';
 }
 
 function tsOplasteniRozsah(Z, jazyk, r) {
@@ -323,7 +391,7 @@ const TECHSPEC_DEF = [
     { id: 'portalyCleneni', label: 'ŘEŠENÍ PORTÁLŮ (ČLENĚNÍ)', ciselnik: TS_C.portalyCleneni, jazykSam: true,
       prefill: (r, Z, C, jazyk) => {
         const T = (t) => (jazyk && jazyk !== 'cz' && typeof tr === 'function') ? tr(t, jazyk) : t;
-        const casti = tsVyplnDveriCasti(Z);
+        const casti = tsVyplnDveriCasti(Z, r);
         return casti.map(T).join(', ');
       } },
     { id: 'povrchovaUprava', label: 'POVRCHOVÁ ÚPRAVA KONSTRUKCE', ciselnik: TS_C.povrchovaUprava,
@@ -366,15 +434,36 @@ const TECHSPEC_DEF = [
     { id: 'rozsahOplasteni', label: 'ROZSAH OPLÁŠTĚNÍ', def: 'kompletní opláštění šachty',
       jazykSam: true, prefill: (r, Z, C, jazyk) => tsOplasteniRozsah(Z, jazyk, r) },
     { id: 'oplasteniPortalu', label: 'OPLÁŠTĚNÍ PORTÁLŮ NÁSTUPIŠŤ', ciselnik: TS_C.oplasteniPortalu, def: ' -' },
+    /* Od #375 (30. 9. 2026) podle skla, kterým se světlíky OPRAVDU počítají
+     * (výsledek jádra): „sklo" je sklo stěny s dveřmi — u exteriéru VSG
+     * 4.4.1, nikoli dvojsklo boků, které se sem do té doby psalo podle typu
+     * šachty; dvojsklo dává „materiál opláštění" (stěny B, C, D). Deska
+     * z materiálu opláštění má vlastní název. Bez výsledku jako dřív. */
     { id: 'oplasteniNadsvetliku', label: 'OPLÁŠTĚNÍ NADSVĚTLÍKŮ', ciselnik: TS_C.oplasteniNadsvetliku,
       prefill: (r, Z) => {
-        const v = tsVyplnDveri(Z);
-        if (v.skloNad || v.skloBoky)
-          return tsDvojsklo(Z) ? 'izolační dvojskla vsazená do lakovaných rámečků'
-                               : 'vrstvené bezpečnostní sklo VSG vsazené do rámečků';
-        if (v.nad === 'plech' || (v.boky && v.bokyVypln === 'plech')) return 'lakovaný ocelový plech';   // N58
+        const v = tsVyplnDveri(Z, r);
+        if (v.skloNad || v.skloBoky) {
+          const x = v.mat && v.mat[v.skloNad ? 'nad' : 'boky'];
+          const typ = x ? (x[tsSvetlikStena(Z)] || {}).typ : null;
+          const dvojsklo = typ ? typ === 'C.skloBokyKc' : tsDvojsklo(Z);
+          return dvojsklo ? 'izolační dvojskla vsazená do lakovaných rámečků'
+                          : 'vrstvené bezpečnostní sklo VSG vsazené do rámečků';
+        }
+        if (v.nadDruh === 'plech' || (v.boky !== 'bez' && v.bokyKs > 0 && v.bokyDruh === 'plech'))
+          return 'lakovaný ocelový plech';   // N58
+        const deska = v.nadDruh === 'deska' ? 'nad' : (v.boky !== 'bez' && v.bokyKs > 0 && v.bokyDruh === 'deska' ? 'boky' : '');
+        if (deska) {
+          const x = v.mat[deska][tsSvetlikStena(Z)] || {};
+          return x.typ === 'C.cetrisKc' ? 'cementotřískové desky' : (tsSvetlikMaterial(x) || ' -');
+        }
         return ' -';
       } },
+    /* SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ (#375): počet a materiál nad dveřmi i na
+     * bocích („Světlíky na bocích dveří: 10 ks, sklo VSG 4.4.1, na terče").
+     * Věta se skládá česky; do cizích jazyků ji překládá vzor ve slovníku
+     * (PREKLAD_VZORY), který zná jen slova, jež sem skládá tahle funkce. */
+    { id: 'svetlikyDveri', label: 'SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ',
+      prefill: (r, Z) => tsSvetlikyDveri(Z, r) },
     /* Umístění se řídí ZPŮSOBEM ZASKLENÍ, ne typem šachty — stejným polem jako
      * ZPŮSOB KOTVENÍ o řádek níž. Sklo na terče se kotví zvenku, sklo mezi
      * příčníky leží v profilech; pevné „kotvené na vnější stranu" tvrdilo
@@ -740,6 +829,7 @@ function tsKontrola(ts, r, Z, C, zak) {
 
 if (typeof module !== 'undefined')
   module.exports = { tsRadekVCene, tsPriplatekNabizen, TS_LZE_DOPLNIT, TECHSPEC_DEF, TS_C, DEFAULT_TECHSPEC, tsHodnota, tsOplasteniRozsah,
+    tsVyplnDveri, tsVyplnDveriCasti, tsSvetlikyDveri,
     tsOdvozeno, tsLeseniVnejsiVCene, tsStatikaVCene,
     TS_C_KEY_OF, tsCiselnikKlic, tsCiselnikPouziti, tsPole, TS_C_ORIG, TS_DEF_ORIG,
     TS_HLAVICKA, TS_POVINNE, tsPrazdna, tsKontrola };

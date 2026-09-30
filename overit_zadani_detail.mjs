@@ -215,10 +215,7 @@ const n58 = await p.evaluate(() => {
   out.poStavba = { nad: Z.nadDvermi, stary: Z.svetlikNadDvermi };
   nadDvermiSet('sklo');
   out.poSklo = { nad: Z.nadDvermi, stary: Z.svetlikNadDvermi };
-  out.bokyPred = !!lbl('Výplň boků dveří');
-  set('Z.svetlikyBoky', 2); render();
-  out.bokyPo = !!lbl('Výplň boků dveří');
-  set('Z.svetlikyBoky', 0); nadDvermiSet('plech'); render();
+  nadDvermiSet('plech'); render();
   mustkySet(3);
   out.mustky3 = { ks: Z.mustkyKs, stary: Z.mustek, rozmery: !!lbl('Hloubka můstku') };
   mustkySet(-2);
@@ -244,7 +241,69 @@ zkus('N58: volba se uloží a staré pole drží v souladu (stavba → ne, sklo 
 zkus('25. 9.: 3 můstky se uloží, staré pole v souladu, ukážou se rozměry',
   n58.mustky3.ks === 3 && n58.mustky3.stary === true && n58.mustky3.rozmery, JSON.stringify(n58.mustky3));
 zkus('25. 9.: záporný počet můstků = 0', n58.mustkyZap === 0, n58.mustkyZap);
-zkus('N58b: výplň boků se ukáže až s boky', !n58.bokyPred && n58.bokyPo, JSON.stringify(n58));
+
+/* #375 (rozhodnutí J. V. 30. 9. 2026): světlíky na bocích dveří mají tytéž
+ * volby jako nad dveřmi, výchozí „bez"; pod nimi „Celkem světlíků na bocích
+ * dveří" jen při výplni — automaticky nástupiště × 2, ruční přepis se označí
+ * a ↺ vrátí výpočet. Stará „Výplň boků dveří" zmizela. */
+const s375 = await p.evaluate(() => {
+  prepniTab('kalk'); render();
+  const lbl = t => [...document.querySelectorAll('#inputs .row > label')].find(l => l.textContent.trim().indexOf(t) === 0);
+  const radky = () => { const l = lbl('Typ portálů'); return l ? [...l.parentElement.parentElement.querySelectorAll(':scope > .row > label')]
+    .map(x => x.textContent.trim()) : []; };
+  const pole = () => { const l = lbl('Celkem světlíků na bocích dveří'); return l ? l.parentElement.querySelector('input') : null; };
+  const zpet = () => { const l = lbl('Celkem světlíků na bocích dveří'); return l ? l.parentElement.querySelector('button') : null; };
+  const rucne = () => { const l = lbl('Celkem světlíků na bocích dveří'); return !!(l && l.querySelector('.pill')); };
+  const bokySel = () => { const l = lbl('Světlíky na bocích dveří'); return l ? l.parentElement.querySelector('select') : null; };
+  const out = {};
+  out.volby = bokySel() ? [...bokySel().options].map(o => o.textContent.trim()) : [];
+  out.vychozi = bokySel() ? bokySel().value : '';
+  out.poleBez = !!pole();
+  out.staraVypln = !!lbl('Výplň boků dveří');
+  const puvNast = Z.nastupiste;
+  set('Z.nastupiste', 5);
+  bokyDveriSet('sklo');
+  out.poSklo = { data: Z.bokyDveri, pole: !!pole(), hodnota: pole() && pole().value, rucne: rucne(), zpet: !!zpet() };
+  const r = radky();
+  out.poradi = [r.indexOf('Světlík nad šachetními dveřmi'), r.indexOf('Světlíky na bocích dveří'),
+    r.findIndex(t => t.indexOf('Celkem světlíků na bocích dveří') === 0)];
+  set('Z.nastupiste', 6); out.auto6 = pole() && pole().value;
+  pole().value = '7'; pole().dispatchEvent(new Event('change'));
+  out.rucni = { data: Z.svetlikyBokyKs, hodnota: pole() && pole().value, rucne: rucne(), zpet: !!zpet() };
+  set('Z.nastupiste', 8); out.rucniPoZmene = pole() && pole().value;
+  zpet().click();
+  out.poZpet = { data: Z.svetlikyBokyKs, hodnota: pole() && pole().value, rucne: rucne(), zpet: !!zpet() };
+  /* Starší zakázka (počet stran 1, výplň plech): volba ukáže plech, počet
+   * = počet dveří (ručně) — a přepnutí výplně počet nezdvojí. */
+  delete Z.bokyDveri; delete Z.svetlikyBokyKs; Z.svetlikyBoky = 1; Z.bokyVypln = 'plech'; render();
+  out.stara = { volba: bokySel() && bokySel().value, hodnota: pole() && pole().value, rucne: rucne() };
+  bokyDveriSet('stavba');
+  out.staraPoZmene = { data: Z.bokyDveri, ks: Z.svetlikyBokyKs, hodnota: pole() && pole().value };
+  bokyDveriSet('bez');
+  out.zpetBez = { data: Z.bokyDveri, pole: !!pole() };
+  set('Z.nastupiste', puvNast); render();
+  return out;
+});
+zkus('#375: boky nabízejí bez / sklo / plech / materiál opláštění / zajistí stavba',
+  s375.volby.join('|') === 'bez|sklo|plech|materiál opláštění|zajistí stavba', s375.volby.join('|'));
+zkus('#375: nová zakázka má boky „bez" a pole s počtem se neukáže', s375.vychozi === 'bez' && !s375.poleBez, JSON.stringify(s375));
+zkus('#375: stará „Výplň boků dveří" zmizela', !s375.staraVypln);
+zkus('#375: po volbě skla se ukáže počet 10 (5 nástupišť × 2), bez štítku „ručně" a bez ↺',
+  s375.poSklo.data === 'sklo' && s375.poSklo.pole && s375.poSklo.hodnota === '10' && !s375.poSklo.rucne && !s375.poSklo.zpet,
+  JSON.stringify(s375.poSklo));
+zkus('#375: pole s počtem stojí hned pod světlíky na bocích (pod světlíkem nad dveřmi)',
+  s375.poradi[0] >= 0 && s375.poradi[1] === s375.poradi[0] + 1 && s375.poradi[2] === s375.poradi[1] + 1, JSON.stringify(s375.poradi));
+zkus('#375: automatika jde s nástupišti (6 → 12)', s375.auto6 === '12', s375.auto6);
+zkus('#375: ruční počet se uloží, označí „ručně" a nabídne ↺',
+  s375.rucni.data === 7 && s375.rucni.hodnota === '7' && s375.rucni.rucne && s375.rucni.zpet, JSON.stringify(s375.rucni));
+zkus('#375: ruční počet nejde s nástupišti', s375.rucniPoZmene === '7', s375.rucniPoZmene);
+zkus('#375: ↺ vrátí výpočet (8 nástupišť × 2 = 16)', s375.poZpet.data === '' && s375.poZpet.hodnota === '16' && !s375.poZpet.rucne && !s375.poZpet.zpet,
+  JSON.stringify(s375.poZpet));
+zkus('#375: starší zakázka (1 strana, plech) ukáže plech a počet dveří jako ruční',
+  s375.stara.volba === 'plech' && s375.stara.hodnota === '8' && s375.stara.rucne, JSON.stringify(s375.stara));
+zkus('#375: přepnutí výplně u starší zakázky počet nezdvojí (převod na nový tvar)',
+  s375.staraPoZmene.data === 'stavba' && s375.staraPoZmene.ks === 8 && s375.staraPoZmene.hodnota === '8', JSON.stringify(s375.staraPoZmene));
+zkus('#375: zpět na „bez" pole zmizí', s375.zpetBez.data === 'bez' && !s375.zpetBez.pole, JSON.stringify(s375.zpetBez));
 
 zkus('za celý průchod nevznikla chyba v konzoli', konzole.length === 0, konzole.slice(0, 2).join(' | '));
 await b.close();

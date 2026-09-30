@@ -167,7 +167,9 @@ const pravidla = kontrolyPravidla();
  * záporná částka, množství nebo hodiny = zábrana. */
 /* 25.–27. „planPlateb100", „planPlatebSoucet" (zábrany) a „planPlatebWordProj"
  * 30. 9. 2026 (etapa B plánu plateb, test_plan_plateb_sod.js). */
-test('pravidel je dvacet sedm', pravidla.length === 27, pravidla.length);
+/* 28. „bokyDveri" 30. 9. 2026 (#375, test_svetliky_boky.js): mezera vedle
+ * dveří při bocích „bez" a počet bočních světlíků. */
+test('pravidel je dvacet osm', pravidla.length === 28, pravidla.length);
 test('kódy pravidel jsou jedinečné',
   new Set(pravidla.map(p => p.kod)).size === pravidla.length,
   pravidla.map(p => p.kod).join(','));

@@ -81,13 +81,27 @@ const platny = spocti(zadani());
 test('s platným zadáním kontrola mlčí', !!platny.r && !nalez(platny.r));
 
 /* --- 3) platná data: výsledek bajt po bajtu jako před opravou --- */
+/* SVĚTLÍKY U DVEŘÍ (#375, 30. 9. 2026): výsledek dostal nová pole (počet
+ * bočních světlíků, rozložení po dveřích, materiál; pásy bez světlíků)
+ * a popisné `zaskleni.vypln.boky` říká u zakázky bez bočních světlíků
+ * pravdu („bez"; dřív „sklo", i když boky nebyly). Do otisku proto nevstupují.
+ * Otisky jsou přepočítané z jádra v30.9.3 (před #375) po téže očistě
+ * a nové jádro dává bajt po bajtu totéž — ceny ani mezivýsledky se nehnuly. */
+const OTISK_BEZ = ['bokyKs', 'bokyKsAuto', 'bokyKsRucne', 'dvere', 'dvereDva', 'dvereJeden', 'dvereBez',
+  'mezera', 'nadM2', 'bokyM2', 'material', 'boky'];
+const otiskOcisti = r => {
+  const x = JSON.parse(JSON.stringify(r));
+  OTISK_BEZ.forEach(k => { delete x.zaskleni.vypln[k]; });
+  delete x.oplasteni.zakladPasu; delete x.oplasteni.svetliky;
+  return x;
+};
 const OTISKY = {
-  'interiérová M1': '7cf95cb2edb41556', 'interiérová M2': 'adbab633b194d889',
-  'exteriérová M1': 'ce2754a02ccccbf6', 'exteriérová M2': '8a2937fdea734316',
+  'interiérová M1': '3e1a08b9085b572e', 'interiérová M2': 'ee70861796207bb6',
+  'exteriérová M1': 'b57c60c38e8245e6', 'exteriérová M2': '0e338ef1b802eb4f',
 };
 for (const typ of ['interiérová', 'exteriérová']) for (const fixes of [false, true]) {
   const { r, chyba } = spocti(zadani(z => { z.typSachty = typ; }), fixes);
-  const otisk = r ? crypto.createHash('sha256').update(JSON.stringify(r)).digest('hex').slice(0, 16) : chyba;
+  const otisk = r ? crypto.createHash('sha256').update(JSON.stringify(otiskOcisti(r))).digest('hex').slice(0, 16) : chyba;
   const klic = typ + (fixes ? ' M2' : ' M1');
   test('platné zadání ' + klic + ': výsledek beze změny (otisk)', otisk === OTISKY[klic], otisk);
 }

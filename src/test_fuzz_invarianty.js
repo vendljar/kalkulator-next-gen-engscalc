@@ -162,6 +162,11 @@ function genZadani() {
   /* Nad dveřmi: nová volba, nebo starý tvar zaškrtávátka (migrace v jádře). */
   if (sance(0.2)) { delete z.nadDvermi; z.svetlikNadDvermi = sance(0.5); } else z.nadDvermi = pick(E.NAD_DVERMI_VOLBY);
   if (sance(0.8)) z.bokyVypln = pick(E.BOKY_VYPLN_VOLBY);
+  /* Boky (#375): polovina zadání v novém tvaru — volba jako nad dveřmi
+   * a počet světlíků prázdný (automaticky), ruční, nula i víc než dva na
+   * dveře; druhá polovina ve starém tvaru (počet stran), který jádro čte
+   * jako dřív. */
+  if (sance(0.5)) { z.bokyDveri = pick(E.BOKY_DVERI_VOLBY); z.svetlikyBokyKs = pick(['', '', 0, 1, 3, 7, 30]); }
   z.profily = kop(E.PROFILY_VYCHOZI[typ]);
   z.volitelne = { prechodove: pick([null, null, true, false]), leseniVnitrni: sance(0.5), leseniVnejsi: sance(0.5),
                   prechMont: null, leseniHlava: sance(0.3), haky: sance(0.5), zabradli: sance(0.5), sokl: sance(0.5) };
@@ -390,8 +395,15 @@ function overOck(i, z, c, fixes) {
     const zrc = kop(z); zrc.nastupisteA = z.nastupisteC; zrc.nastupisteC = z.nastupisteA;
     if (zrc.oplasteni && zrc.oplasteni.steny) { const t = zrc.oplasteni.steny.A; zrc.oplasteni.steny.A = zrc.oplasteni.steny.C; zrc.oplasteni.steny.C = t; }
     const jednostranna = !(+z.nastupisteA || 0) || !(+z.nastupisteC || 0);
+    /* „Materiál opláštění" u světlíků je po stěnách materiál stěn B, C, D
+     * (rozhodnutí J. V. 30. 9. 2026, #375) — zrcadlení A ↔ C mění, která
+     * stěna se do něj počítá, takže zrcadlová šachta smí mít světlíky z jiného
+     * materiálu. Symetrie se u ní nehlídá; ve standardu je materiál vždy sklo
+     * boků a zad a hlídá se dál. */
+    const materialPoStenach = !!(z.oplasteni && z.oplasteni.rezim === 'poStenach')
+      && (E.nadDvermiVypln(z) === 'material' || E.bokyVypln(z) === 'material');
     const a = E.vypocet(z, stejneSklo, J, fixes), b = E.vypocet(zrc, stejneSklo, J, fixes);
-    if (jednostranna) over('I8a zrcadlová šachta (A ↔ C) při stejném skle stojí stejně a má zrcadlové stěny',
+    if (jednostranna && !materialPoStenach) over('I8a zrcadlová šachta (A ↔ C) při stejném skle stojí stejně a má zrcadlové stěny',
       blizko(a.souhrn.zakladCena, b.souhrn.zakladCena) && blizko(sumSekci(a), sumSekci(b))
       && blizko(a.zaskleni.steny.A, b.zaskleni.steny.C, 1e-9) && blizko(a.zaskleni.steny.C, b.zaskleni.steny.A, 1e-9)
       && blizko(a.zaskleni.steny.B, b.zaskleni.steny.B, 1e-9) && blizko(a.zaskleni.steny.D, b.zaskleni.steny.D, 1e-9)
