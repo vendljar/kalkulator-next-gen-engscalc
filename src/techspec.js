@@ -467,8 +467,21 @@ const TECHSPEC_DEF = [
   ] },
 
   { sekce: 'PROJEKČNÍ A PŘÍPRAVNÉ PRÁCE', pole: [
-    { id: 'sken3d', label: 'ZAMĚŘENÍ PROSTORŮ 3D SKENEREM', ciselnik: TS_C.anoNe,
-      prefill: (r) => tsRadekVCene(r, 'rezie', 'C.sken3dKc') === false ? 'ne' : 'ano' },   // N48
+    /* 3D ZAMĚŘENÍ SE ŘÍDÍ CENOU (rozhodnutí J. V. 30. 9. 2026: „svázání
+     * zaměření v kalkulaci a odpovídající položky"). V Režii Kalkulace OCK
+     * měla položka ZAMĚŘENÍ 3D SKENEREM množství 0 (štítek „vypnuto
+     * (množství 0)") a specifikace dál tvrdila „ano". Od N48 (24. 9.) se
+     * pole jen předvyplňovalo, takže ruční volba — i ta z doby, kdy
+     * zaměření v ceně ještě bylo — cenu přebila.
+     *
+     * Teď je ODVOZENÉ stejně jako statika níž: ruční hodnota se nepoužije
+     * (v datech zůstává) a obrazovka řekne, kde se zaměření vypíná. Totéž
+     * čte krycí list („Zaměření strojovna", kryciSken3d v kryci.js). `def`
+     * platí jen do prvního výpočtu — ve výchozí kalkulaci je sken v ceně. */
+    { id: 'sken3d', label: 'ZAMĚŘENÍ PROSTORŮ 3D SKENEREM', ciselnik: TS_C.anoNe, def: 'ano',
+      odvozene: (r) => tsSken3dVCene(r) ? 'ano' : 'ne',
+      odvozenePopis: 'Řídí se cenou: „ano", když je v Kalkulaci OCK (sekce Režie) položka '
+        + 'ZAMĚŘENÍ 3D SKENEREM s nenulovým množstvím. Zaměření vypnete tam — množstvím 0.' },
     { id: 'vystupZamereni', label: 'VÝSTUP ZE ZAMĚŘENÍ PRO OBJEDNATELE', ciselnik: TS_C.anoNe,
       prefill: (r, Z) => Z.vystupZamereni ? 'ano' : 'ne' },
     { id: 'dilenskaDok', label: 'ZPRACOVÁNÍ DÍLENSKÉ DOKUMENTACE', ciselnik: TS_C.anoNe,
@@ -601,6 +614,17 @@ const TS_LZE_DOPLNIT = 'lze doplnit – viz příplatkové ceny';   // znění s
 function tsStatikaVCene(r) {
   const radky = (r && r.sekce && r.sekce.rezie) || [];
   return radky.some(x => (x.cenaPath === 'C.statikaKc' || x.origNazev === 'STATICKÉ POSOUZENÍ')
+    && Number(x.mnozstvi) > 0);
+}
+
+/* Je 3D zaměření v ceně? (30. 9. 2026) Totéž pravidlo jako u statiky:
+ * řádek ZAMĚŘENÍ 3D SKENEREM mezi POČÍTANÝMI řádky režie s nenulovým
+ * množstvím; nulová cena zaměření nevypíná (je to zaměření zdarma). Hledá
+ * se podle ceníkové cesty, záložně podle původního názvu — přejmenování
+ * ani zmrazený otisk odeslané nabídky ho neschová. */
+function tsSken3dVCene(r) {
+  const radky = (r && r.sekce && r.sekce.rezie) || [];
+  return radky.some(x => (x.cenaPath === 'C.sken3dKc' || x.origNazev === 'ZAMĚŘENÍ 3D SKENEREM')
     && Number(x.mnozstvi) > 0);
 }
 
@@ -740,6 +764,6 @@ function tsKontrola(ts, r, Z, C, zak) {
 
 if (typeof module !== 'undefined')
   module.exports = { tsRadekVCene, tsPriplatekNabizen, TS_LZE_DOPLNIT, TECHSPEC_DEF, TS_C, DEFAULT_TECHSPEC, tsHodnota, tsOplasteniRozsah,
-    tsOdvozeno, tsLeseniVnejsiVCene, tsStatikaVCene,
+    tsOdvozeno, tsLeseniVnejsiVCene, tsStatikaVCene, tsSken3dVCene,
     TS_C_KEY_OF, tsCiselnikKlic, tsCiselnikPouziti, tsPole, TS_C_ORIG, TS_DEF_ORIG,
     TS_HLAVICKA, TS_POVINNE, tsPrazdna, tsKontrola };

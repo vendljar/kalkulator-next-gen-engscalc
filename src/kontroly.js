@@ -54,6 +54,15 @@ const KONTROLY_UROVEN_ZABRANA = 1;
  * hlídala jiný výtah, než se počítá. */
 const KONTROLY_VYSKA_DVERI = 2.3;
 
+/* HORNÍ HRANICE ZDVIHU v metrech (K17-N91, rozhodnutí J. V. 30. 9. 2026:
+ * „Nastav maximální zdvih na 99 m."). Nález: zdvih 1 000 000 000 m dal
+ * nabídku za 51,6 bil. Kč bez jediného varování — pravidlo „rozmery" do té
+ * doby hlídalo jen kladnost. Hranici má JEN zdvih (pokyn zněl na zdvih);
+ * ostatní rozměry dál jen na kladnost. Totéž číslo čte pole Zdvih v zadání
+ * šachty (max a upozornění u pole, ui/kalk_ock.js) — jedno místo, ať se
+ * pole a kontrola nerozejdou. */
+const KONTROLY_ZDVIH_MAX_M = 99;
+
 /* Výčet do věty („šířka šachty, hloubka šachty a rozteč"). */
 function kontrolyVyctem(pole) {
   const k = (pole || []).filter(Boolean);
@@ -108,12 +117,20 @@ const KONTROLY = [
       const spatne = [];
       kladne.forEach(([k, n]) => { const v = +z[k]; if (!isFinite(v) || v <= 0) spatne.push(n); });
       nezaporne.forEach(([k, n]) => { const v = +z[k]; if (!isFinite(v) || v < 0) spatne.push(n); });
-      if (!spatne.length) return null;
+      /* Zdvih nad hranicí 99 m (K17-N91, 30. 9. 2026) — posuzuje se jen
+       * zdvih, který prošel kladností; jinak by o něm věta mluvila dvakrát. */
+      const zdvih = +z.zdvih;
+      const vysoky = spatne.indexOf('zdvih') < 0 && zdvih > KONTROLY_ZDVIH_MAX_M;
+      if (!spatne.length && !vysoky) return null;
       /* ZÁBRANA od 25. 9. 2026 (P2 / K16-N75): rozteč 0 dala nabídku za
        * 0 Kč, zdvih −5 nabídku za 433 000 Kč — a obojí šlo vytisknout. Není
-       * co vážit, je to omyl v zadání. */
-      return { uroven: KONTROLY_UROVEN_ZABRANA, text: 'V zadání je rozměr nebo počet, který nedává smysl: '
-        + kontrolyVyctem(spatne) + '. Dokument nevznikne, dokud se to neopraví.' };
+       * co vážit, je to omyl v zadání. Totéž platí pro zdvih nad hranicí. */
+      const vety = [];
+      if (spatne.length) vety.push('V zadání je rozměr nebo počet, který nedává smysl: ' + kontrolyVyctem(spatne) + '.');
+      if (vysoky) vety.push('Zdvih ' + zdvih.toLocaleString('cs-CZ', { maximumFractionDigits: 3 })
+        + ' m je nad nejvyšším povoleným zdvihem ' + KONTROLY_ZDVIH_MAX_M + ' m — '
+        + 'nejspíš jde o překlep (zdvih se zadává v metrech).');
+      return { uroven: KONTROLY_UROVEN_ZABRANA, text: vety.join(' ') + ' Dokument nevznikne, dokud se to neopraví.' };
     },
   },
   {
@@ -770,6 +787,6 @@ function kontrolyPotvrzeniPlati(potvrzeni, vysl) {
 
 if (typeof module !== 'undefined')
   module.exports = { KONTROLY_UROVEN, KONTROLY_UROVEN_ZABRANA,
-                     KONTROLY_VYSKA_DVERI, kontrolyVyctem,
+                     KONTROLY_VYSKA_DVERI, KONTROLY_ZDVIH_MAX_M, kontrolyVyctem,
                      kontrolyPravidla, kontrolyProved, kontrolyText, kontrolyProjNavic,
                      kontrolyPotvrzeni, kontrolyPotvrzeniPlati };

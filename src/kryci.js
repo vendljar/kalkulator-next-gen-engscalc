@@ -373,7 +373,10 @@ const kryciKc = n => {
 
 /* KL-4: „Zaměření strojovna" se v aplikaci už jednou zadává – jako 3D zaměření
  * v technické specifikaci. Čte se přes tsHodnota(), aby platilo stejné pořadí
- * ruční > z kalkulace > výchozí jako v samotné technické specifikaci. */
+ * jako v samotné technické specifikaci. Od 30. 9. 2026 (rozhodnutí J. V.) je
+ * tam 3D zaměření ODVOZENÉ z ceny: položka ZAMĚŘENÍ 3D SKENEREM v Režii
+ * s množstvím 0 (nebo vyřazená) dá „Ne" i přes ruční „ano" ve specifikaci.
+ * Ruční přepis tohoto řádku v krycím listu zůstává, jak byl (kryciHodnota). */
 function kryciSken3d(d, rOck) {
   try {
     if (typeof TECHSPEC_DEF === 'undefined' || typeof tsHodnota !== 'function') return '';

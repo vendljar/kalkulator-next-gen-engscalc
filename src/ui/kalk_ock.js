@@ -56,6 +56,21 @@ function patraVarovani() {
     se nedá spočítat výška podlaží a rozměry vycházejí nulové.</div>`;
 }
 
+/* HORNÍ HRANICE ZDVIHU (K17-N91, rozhodnutí J. V. 30. 9. 2026: „Nastav
+ * maximální zdvih na 99 m."). Zdvih 1 000 000 000 m dal nabídku za
+ * 51,6 bil. Kč bez varování. Pole má max (šipky přes hranici nepustí), ale
+ * napsané číslo se NEOŘEZÁVÁ — tiché oříznutí by z překlepu udělalo jinou
+ * nabídku, než jakou obchodník zadal. Místo toho se u pole řekne nahlas, co
+ * je špatně; zábranu hlásí kontrola „rozmery" (kontroly.js). Hranice je
+ * jedna konstanta KONTROLY_ZDVIH_MAX_M. */
+function zdvihVarovani() {
+  const v = +Z.zdvih;
+  if (!(v > KONTROLY_ZDVIH_MAX_M)) return '';
+  return `<div class="note warn zdvih-nad-max" style="margin:-2px 0 8px">Zdvih je nad nejvyšším povoleným
+    zdvihem ${esc(KONTROLY_ZDVIH_MAX_M)} m — nejspíš překlep (zdvih se zadává v metrech). Kontrola před
+    nabídkou to hlásí jako zábranu, opravte zadání.</div>`;
+}
+
 /* Přepnutí typu šachty dosadí výchozí dimenze profilů (9. 9. 2026, zadání
  * J. V.). Interiérová a exteriérová šachta se liší profily i zasklením, a
  * obchodník je dosud musel po přepnutí přenastavovat ručně — tedy na ně
@@ -134,7 +149,8 @@ function renderInputs() {
             <option ${ext ? 'selected' : ''} value="exteriérová">exteriérová</option>
             <option ${ext ? '' : 'selected'} value="interiérová">interiérová</option>
           </select><span class="u"></span></div>`
-        + inp('Z.zdvih', { l: 'Zdvih', u: 'm' })
+        + inp('Z.zdvih', { l: 'Zdvih', u: 'm', max: KONTROLY_ZDVIH_MAX_M })
+        + zdvihVarovani()
         + inp('Z.prejezd', { l: 'Horní přejezd', u: 'm' })
         + inp('Z.prohluben', { l: 'Prohlubeň', u: 'm' })
         + `<div class="row"><label>Průchozí šachta</label>
@@ -609,9 +625,12 @@ function oplCelaVyska(k) {
 
 function oplZmeneno() {
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
-  /* Ručně zadaný náklad u typu „jiné" znamená atyp — stejně jako ručně
-   * přepsané množství. Automatiku pouští `set()`; tady se na ni musí
-   * sáhnout zvlášť, protože zapisujeme mimo něj. */
+  /* Automat ATYP pouští `set()`; tady se na něj musí sáhnout zvlášť, protože
+   * zapisujeme mimo něj. Samotný režim po stěnách ani materiál stěny atyp
+   * od 30. 9. 2026 nedělají (rozhodnutí J. V., viz standard_ock.js), stěny
+   * ale mění plochu skel, a tím i příplatky, které kontrola standardu čte
+   * (jednotypovost zasklení). A přepnutí musí umět vypnout ATYP, který
+   * automat zaškrtl dřív — i ten podle pravidla platného do 30. 9. */
   if (typeof standardAtypAutomat === 'function') standardAtypAutomat();
   render();
 }
@@ -1101,10 +1120,15 @@ function oplasteniKarta() {
      * neplní, je horší než mlčení — obchodník podle něj čeká u Cetrisu nižší
      * cenu, která nepřijde. Jestli se terče a lišty MAJÍ vázat na sklo, je
      * otázka na J. V. (zapsáno v roadmapě). */
+    /* Věta o standardu přepsána 30. 9. 2026 (rozhodnutí J. V.: „je to záměr?
+     * Ne není. Toto změň na standard."). Do té doby tu stálo „Režim po
+     * stěnách je vždy mimo standard" a kontrola standardu u něj hlásila atyp
+     * i se čtyřmi stejnými stěnami — viz standard_ock.js. */
     + `<div class="note">Záporná hodnota u „Opláštění začíná" sahá <b>do prohlubně</b>.
       <b>Terče, lišty a plastové kotvy</b> se počítají z rozměrů šachty —
       typ opláštění s nimi zatím nehýbe.
-      Režim po stěnách je vždy <b>mimo standard</b> — standard zná jen jednotné opláštění.</div>`,
+      Režim po stěnách sám o sobě atyp nedělá — <b>standard OCK</b> se posuzuje stejně
+      jako u jednotného opláštění (profil sloupku, rozměry, způsob zasklení, počet sloupků, můstek).</div>`,
     'ock-oplasteni-steny');
 }
 
