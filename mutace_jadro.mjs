@@ -156,6 +156,15 @@ const MUTACE = [
     hledej: "      return { uroven: KONTROLY_UROVEN_ZABRANA,\n        text: 'Rozměr profilu '",
     nahrad: "      return { uroven: KONTROLY_UROVEN,\n        text: 'Rozměr profilu '",
     proc: 'varování jde odklepnout — dokument s nulovým profilem by vznikl' },
+  /* ---------- horní hranice zdvihu 99 m (K17-N91, 30. 9. 2026) ---------- */
+  { nazev: 'K17-N91: zdvih nad 99 m projde bez zábrany', soubor: 'kontroly.js',
+    hledej: "      const vysoky = spatne.indexOf('zdvih') < 0 && zdvih > KONTROLY_ZDVIH_MAX_M;",
+    nahrad: '      const vysoky = false;',
+    proc: 'zdvih 1 000 000 000 m by zase dal nabídku za biliony korun bez jediného varování' },
+  { nazev: 'K17-N91: zdvih přesně 99 m se zastaví', soubor: 'kontroly.js',
+    hledej: "      const vysoky = spatne.indexOf('zdvih') < 0 && zdvih > KONTROLY_ZDVIH_MAX_M;",
+    nahrad: "      const vysoky = spatne.indexOf('zdvih') < 0 && zdvih >= KONTROLY_ZDVIH_MAX_M;",
+    proc: 'maximální zdvih je 99 m včetně (rozhodnutí J. V.) — šachta s přesně 99 m by nešla vytisknout' },
   /* ---------- centrální šablony (sablony_online.js, #139) ---------- */
   /* N46, N51 (24. 9. 2026): pravidlo nástupišť u průchozí šachty, lešení. */
   { nazev: 'N46: patra bez dveří se neopláští', soubor: 'engine.js',

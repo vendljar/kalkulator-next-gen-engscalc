@@ -744,7 +744,11 @@ function inp(path, opts = {}) {
    * se tím neztratilo, jen přestalo zabírat řádek pod každým polem. */
   const tit = opts.t ? ` title="${esc(opts.t)}"` : '';
   const min = opts.min != null ? ` min="${esc(opts.min)}"` : '';
-  return `<div class="row"><label>${opts.l}</label><input type="number" step="${step}"${min} value="${esc(val)}"${tit} onchange="set('${path}', +this.value)"><span class="u">${u}</span></div>`;
+  /* `max` (30. 9. 2026, K17-N91 — zdvih nejvýš 99 m): prohlížeč jen nepustí
+   * šipky přes hranici; napsané číslo se uloží, jak je (tiché oříznutí by
+   * z překlepu udělalo jinou nabídku). Co je nad hranicí, řekne volající. */
+  const max = opts.max != null ? ` max="${esc(opts.max)}"` : '';
+  return `<div class="row"><label>${opts.l}</label><input type="number" step="${step}"${min}${max} value="${esc(val)}"${tit} onchange="set('${path}', +this.value)"><span class="u">${u}</span></div>`;
 }
 
 /* NULA SE NEMUSÍ MAZAT (10. 9. 2026, zadání J. V.: „nastav buňky tak, aby když

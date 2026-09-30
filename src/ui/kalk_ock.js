@@ -56,6 +56,21 @@ function patraVarovani() {
     se nedá spočítat výška podlaží a rozměry vycházejí nulové.</div>`;
 }
 
+/* HORNÍ HRANICE ZDVIHU (K17-N91, rozhodnutí J. V. 30. 9. 2026: „Nastav
+ * maximální zdvih na 99 m."). Zdvih 1 000 000 000 m dal nabídku za
+ * 51,6 bil. Kč bez varování. Pole má max (šipky přes hranici nepustí), ale
+ * napsané číslo se NEOŘEZÁVÁ — tiché oříznutí by z překlepu udělalo jinou
+ * nabídku, než jakou obchodník zadal. Místo toho se u pole řekne nahlas, co
+ * je špatně; zábranu hlásí kontrola „rozmery" (kontroly.js). Hranice je
+ * jedna konstanta KONTROLY_ZDVIH_MAX_M. */
+function zdvihVarovani() {
+  const v = +Z.zdvih;
+  if (!(v > KONTROLY_ZDVIH_MAX_M)) return '';
+  return `<div class="note warn zdvih-nad-max" style="margin:-2px 0 8px">Zdvih je nad nejvyšším povoleným
+    zdvihem ${esc(KONTROLY_ZDVIH_MAX_M)} m — nejspíš překlep (zdvih se zadává v metrech). Kontrola před
+    nabídkou to hlásí jako zábranu, opravte zadání.</div>`;
+}
+
 /* Přepnutí typu šachty dosadí výchozí dimenze profilů (9. 9. 2026, zadání
  * J. V.). Interiérová a exteriérová šachta se liší profily i zasklením, a
  * obchodník je dosud musel po přepnutí přenastavovat ručně — tedy na ně
@@ -134,7 +149,8 @@ function renderInputs() {
             <option ${ext ? 'selected' : ''} value="exteriérová">exteriérová</option>
             <option ${ext ? '' : 'selected'} value="interiérová">interiérová</option>
           </select><span class="u"></span></div>`
-        + inp('Z.zdvih', { l: 'Zdvih', u: 'm' })
+        + inp('Z.zdvih', { l: 'Zdvih', u: 'm', max: KONTROLY_ZDVIH_MAX_M })
+        + zdvihVarovani()
         + inp('Z.prejezd', { l: 'Horní přejezd', u: 'm' })
         + inp('Z.prohluben', { l: 'Prohlubeň', u: 'm' })
         + `<div class="row"><label>Průchozí šachta</label>

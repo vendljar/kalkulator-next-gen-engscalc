@@ -75,6 +75,37 @@ const patra = await p.evaluate(() => {
 });
 zkus('průchozí šachta bez počtu pater ukáže varování „aspoň 2"', patra);
 
+/* ---------- 2b) horní hranice zdvihu 99 m (K17-N91, rozhodnutí J. V. 30. 9. 2026) ----------
+ * „zdvih 1 000 000 000 m dá nabídku 51,6 bil. Kč bez varování." Pole má
+ * max="99" a nad hranicí svítí u pole upozornění. Napsaná hodnota se
+ * NEOŘEZÁVÁ — tiché oříznutí by z překlepu udělalo jinou nabídku. Zábranu
+ * v kontrole před nabídkou hlídá src/test_kontroly.js. */
+const zdvih = await p.evaluate(() => {
+  /* Nová nabídka začíná s nulovými rozměry (#231) a ty samy hlásí zábranu
+   * „rozmery" — vyplní se proto platně, ať zábranu dělá jen zdvih. */
+  const puvodni = { zdvih: Z.zdvih, sirka: Z.sirka, hloubka: Z.hloubka, prejezd: Z.prejezd, prohluben: Z.prohluben };
+  Object.assign(Z, { sirka: 1.51, hloubka: 1.515, prejezd: 2.7, prohluben: 1.05 });
+  prepniTab('kalk'); render();
+  const pole = () => document.querySelector("#ock-zadani input[onchange^=\"set('Z.zdvih'\"]");
+  const napis = (hodnota) => { const el = pole(); el.value = hodnota; el.dispatchEvent(new Event('change', { bubbles: true })); };
+  const upozorneni = () => { const u = document.querySelector('#ock-zadani .zdvih-nad-max'); return u ? u.textContent.replace(/\s+/g, ' ').trim() : ''; };
+  const zabrana = () => kontrolyProved(kontrolyCtxAkt()).kodyBrani.indexOf('rozmery') >= 0;
+  const max = pole() ? pole().getAttribute('max') : null;
+  napis('1000000000');
+  const obr = { ulozeno: Z.zdvih, upozorneni: upozorneni(), zabrana: zabrana() };
+  napis('99');
+  const hranice = { ulozeno: Z.zdvih, upozorneni: upozorneni(), zabrana: zabrana() };
+  Object.assign(Z, puvodni); render();
+  return { max, obr, hranice };
+});
+zkus('K17-N91: pole Zdvih má max="99"', zdvih.max === '99', zdvih.max);
+zkus('K17-N91: zdvih 1 000 000 000 m se uloží, jak byl napsán (žádné tiché oříznutí)',
+  zdvih.obr.ulozeno === 1e9, zdvih.obr.ulozeno);
+zkus('K17-N91: u pole svítí upozornění na hranici 99 m', /99 m/.test(zdvih.obr.upozorneni), zdvih.obr.upozorneni);
+zkus('K17-N91: a kontrola před nabídkou hlásí zábranu „rozmery"', zdvih.obr.zabrana);
+zkus('K17-N91: zdvih přesně 99 m upozornění ani zábranu nemá',
+  zdvih.hranice.ulozeno === 99 && zdvih.hranice.upozorneni === '' && !zdvih.hranice.zabrana, JSON.stringify(zdvih.hranice));
+
 /* ---------- 3) + 4) detail výpočtu OCK ---------- */
 console.log('\ndetail výpočtu');
 /* Sloupec vysvětlení je v tabulkách detailu `table.dv` buňka `td.f`

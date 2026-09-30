@@ -335,6 +335,28 @@ test('žádný nález se neopakuje', new Set(kody(vic)).size === vic.nalezy.leng
   test('P2: rozteč 0 → dokument nevznikne', brani(c => { c.zadani.roztec = 0; }).brani);
   test('P2: zdvih −5 → dokument nevznikne', brani(c => { c.zadani.zdvih = -5; }).brani);
   test('P2: zdvih jako text → dokument nevznikne', brani(c => { c.zadani.zdvih = 'abc'; }).brani);
+
+  /* HORNÍ HRANICE ZDVIHU (K17-N91, rozhodnutí J. V. 30. 9. 2026). Nález:
+   * „zdvih 1 000 000 000 m dá nabídku 51,6 bil. Kč bez varování." J. V.:
+   * „Nastav maximální zdvih na 99 m." Hranici má JEN zdvih. */
+  const obr = brani(c => { c.zadani.zdvih = 1e9; });
+  test('K17-N91: zdvih 1 000 000 000 m → zábrana „rozmery"',
+    obr.brani && obr.kodyBrani.includes('rozmery'), JSON.stringify(obr.kodyBrani));
+  const nObr = obr.nalezy.find(x => x.kod === 'rozmery') || {};
+  test('K17-N91: věta jmenuje zdvih a hranici 99 m', /Zdvih/.test(nObr.text || '') && /99 m/.test(nObr.text || ''), nObr.text);
+  test('K17-N91: a říká, že dokument nevznikne', /Dokument nevznikne/.test(nObr.text || ''), nObr.text);
+  test('K17-N91: zábrana se odklepnout nedá', kontrolyPotvrzeniPlati(kontrolyPotvrzeni(obr, 'x', 'y'), obr) === false);
+  test('K17-N91: zdvih přesně 99 m projde', !kody(brani(c => { c.zadani.zdvih = 99; })).includes('rozmery'));
+  test('K17-N91: zdvih 99,01 m už ne', brani(c => { c.zadani.zdvih = 99.01; }).kodyBrani.includes('rozmery'));
+  test('K17-N91: zdvih uložený jako text „150" se posoudí jako číslo',
+    brani(c => { c.zadani.zdvih = '150'; }).kodyBrani.includes('rozmery'));
+  test('K17-N91: jiné rozměry hranici nemají (šířka, hloubka, přejezd, prohlubeň 150 m)',
+    ['sirka', 'hloubka', 'prejezd', 'prohluben'].every(k => !kody(brani(c => { c.zadani[k] = 150; })).includes('rozmery')));
+  const obe = brani(c => { c.zadani.zdvih = 1e9; c.zadani.roztec = 0; });
+  const tObe = (obe.nalezy.find(x => x.kod === 'rozmery') || {}).text || '';
+  test('K17-N91: s dalším nesmyslným rozměrem jeden nález a obě věci ve větě',
+    obe.nalezy.filter(x => x.kod === 'rozmery').length === 1 && /rozteč/.test(tObe) && /99 m/.test(tObe), tObe);
+  test('K17-N91: hranice je jedna konstanta (čte ji i pole Zdvih v zadání)', kt.KONTROLY_ZDVIH_MAX_M === 99, kt.KONTROLY_ZDVIH_MAX_M);
   const bezMustku = brani(c => { c.zadani.mustek = true; c.cenik = Object.assign({}, CENIK); delete c.cenik.mustekKc; });
   test('P2: chybějící cena v ceníku nedá NaN v součtu', bezMustku.nalezy && isFinite(ctxZdravy(c => {
     c.zadani.mustek = true; c.cenik = Object.assign({}, CENIK); delete c.cenik.mustekKc; }).vysledek.souhrn.zakladCena));
