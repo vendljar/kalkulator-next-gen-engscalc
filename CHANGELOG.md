@@ -8,6 +8,83 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v30.9.2 — etapa B platebních podmínek: plán plateb projekce (30. 9. 2026)
+
+Větev `claude/etapa-b-plan-plateb-v30.9.1` (z `test-draft` v30.9.1, pokyn
+J. V. 30. 9. 2026 „pokračuj etapou B v nové větvi … výstup pošli zatím do
+test-draft"). Roadmapa **#367** (etapa B hotová, etapa A zbývá) a **#366**
+(bod P9.3 — dopočet plateb SoD PROJ). Rozhodnutí J. V. 29. 9. 2026: čtyři
+předvolby, výchozí Standard po činnostech, splátky SoD PROJ se stejným
+milníkem sečtené, šablona SoD PROJ se seznamem plateb jedním symbolem.
+Plán plateb je JEDEN (krycí list PROJ); nabídka PROJ, tištěný krycí list,
+smlouva o dílo PROJ a Nastavení → Firma ho jen čtou.
+
+- **Jádro `src/plan_plateb.js`** (CORE za `zpracovatel.js`, i mezi jádry
+  mutačního testu): katalog 14 milníků, předvolby Standard po činnostech
+  (= dnešní procenta nabídky), Záloha + zbytek po předání (0/30/50/70 %),
+  100 % po dokončení stupně, Vlastní; dopočet plateb smlouvy (procento ×
+  cena činnosti po slevě, celé koruny, zaokrouhlení nese poslední splátka
+  činnosti, stejný milník sečtený, ruční přepis, osiřelé přepisy); kontroly
+  (100 % u činnosti, kladná procenta, známý milník, součet = cena díla);
+  plán varianty (rozpracovaná → firemní plán, odeslaná → snímek, odeslaná
+  bez snímku → jako dřív); snímek při prvním zamčení; převod starších
+  ručních splátek; kontrola tvaru firemního plánu.
+- **Nastavení → Smlouvy / Šablony → Plán plateb projekce** (administrátor):
+  výchozí předvolba, záloha, Standard po činnostech (převzetím z otevřené
+  zakázky — výchozí návrh Q8), milník „po předání", katalog milníků (text,
+  přidat, odebrat jen nepoužitý), vady plánu. Zveřejňuje se s firemními
+  údaji (`firmaKZverejneni`, kontrola tvaru na serveru i v prohlížeči).
+- **Krycí list PROJ**: karta Plán plateb (předvolba, splátky nabízených
+  činností — procento, milník z katalogu nebo vlastní text, ↑ ↓ ✕,
+  + splátka, ↺ předvolba, součet 100 %, nedostatky) a v sekci „Smlouva
+  o dílo — splátky" tabulka plateb (milník, složení, dopočet, ruční částka,
+  ↺, součet proti ceně díla). Záloha, fakturace po stupních, způsob
+  fakturace (nově z předvolby, Q10) a ruční splátky 1–8 zůstávají jen
+  u odeslané nabídky z doby před plánem; tisk nese řádky „Plán plateb".
+- **Nabídka PROJ** (online i Word): bloky „PLATEBNÍ PODMÍNKY …" jen
+  nabízených činností z plánu (DPS a EZC zvlášť, nově i projednání
+  a geodet); symboly `{{PROJ_PLATBY_<ČINNOST>}}` a `{{PROJ_PLATEBNI_PODMINKY}}`
+  pro šablonu **PROJ v4** — vyrobí ji `node nastroje/vyrob_sablony.js
+  --proj-v4 <podklady>` z PROJ v3 (i EN/DE/FR). Překlady nadpisů, řádků
+  „Platba …" a vzor „N % z nabídkové ceny za …".
+- **Smlouva o dílo PROJ**: `{{SODP_PLATEBNI_KALENDAR}}` — odstavec (odrážka)
+  za každou platbu větou „Platba ve výši … + DPH proběhne …"; šablonu
+  **SoD PROJ v2** vyrobí `node nastroje/vyrob_sablony.js --sod-proj
+  <podklady>` ze stávající. Stará šablona s osmi pevnými platbami dostane
+  `SODP_PLATBAn_KC` u plateb se stejným milníkem; plán s platbou, kterou
+  neumí, smlouvu nevyrobí (s vysvětlením).
+- **Zábrany** (J. V.: dokument nevznikne, odklepnout nejde): pravidla
+  `planPlateb100` a `planPlatebSoucet`, varování `planPlatebWordProj`
+  (šablona bez plánu a plán jiný než Standard); skutečná brána v
+  `dokumentZabrana(typ)` pro nabídku PROJ (Word i náhled) a smlouvu o dílo
+  PROJ. Pravidel kontroly 27.
+- **Převod starších zakázek** (Q5): ruční splátky `sodpPlatba1–8` platí jako
+  ruční částky plateb se stejným milníkem (nečitelná se ohlásí), dřívější
+  záloha se nabídne tlačítkem jako předvolba; nic se nepřepisuje samo.
+- Výpočet cen činností nabídky PROJ vyčleněn do `nabidkaProjCeny` (beze
+  změny chování) — plán počítá z téže ceny po slevě jako nabídka.
+
+**Výchozí návrhy použité do rozhodnutí J. V.** (podklad oddíl 5): Q1
+projednání 100 % po předání vyjádření OPP HMP; Q2 geodet 100 % po předání
+zaměření; Q4 celé koruny, poslední splátka dorovná; Q5 starší zálohu
+nepřepínat, nabídnout; Q8 Standard převzetím z otevřené zakázky; Q10
+způsob fakturace z předvolby; Q11 řádek smlouvy větou dřívější šablony;
+Q12 řádky „Platba … / N % z nabídkové ceny za …".
+
+**Testy (pojistka proti prázdnému testu — každý doložen selháním před
+změnou ve zprávách commitů):** `src/test_plan_plateb.js` 65,
+`src/test_plan_plateb_kryci.js` 41, `src/test_plan_plateb_sod.js` 24,
+`src/test_sablona_proj_v4.js` 20, `src/test_firma.js` +8,
+`netlify/test_funkce.mjs` +2, `overit_plan_plateb.mjs` 40 (prohlížeč),
+`overit_sod.mjs` (SoD PROJ z nové šablony), upravené `test_kontroly`,
+`test_kryci_proj_model`, `test_nabidka_proj`, `overit_lista` (27 pravidel).
+Mutace jádra +5, serveru +1 — chycené všechny (mutace „neoceněná činnost"
+byla nejdřív NECHYCENÁ, doplněn cílený test).
+
+**Ověřeno celým kolem** — výsledek doplní další commit.
+
+---
+
 ## v30.9.1 — sloučení do test-draft: opravy šesti nálezů 21. kola (B111, B96, B112, B97, B98, B99) (30. 9. 2026)
 
 Na pokyn J. V. 30. 9. 2026 („pushni novinky do testu“) sloučena do
