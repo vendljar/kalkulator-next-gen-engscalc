@@ -64,7 +64,9 @@ kontroly 31, mutace jádra 111 úseků):
   poslány J. V. v sezení 30. 9. večer (v repozitáři nejsou).
 - Příručka (`manual/obsah.json`) a `podklady/OBRAZOVKA_OPLASTENI.md`
   opravené; roadmapa #375 a #376 hotovo, #367 doplněno, **nová #377**.
-- **Celé kolo nad d7e2f32 BĚŽÍ** (spuštěno 30. 9. večer) — výsledek doplní integrátor.
+- **Ověřeno celým kolem** nad d7e2f32 (62 min 5 s): VŠE ZELENÉ — sady 207
+  prošlo, 0 selhalo, 1 přeskočeno (test.js); mutace jádra 111 z 111; mutace
+  serveru 207 z 207; statické kontroly 3 z 3. Po kole strom čistý.
 
 ## Hotovo v30.9.2 — etapa B: plán plateb projekce (podrobně CHANGELOG.md)
 Jeden plán plateb PROJ (krycí list PROJ), nabídka PROJ, tisk krycího listu,

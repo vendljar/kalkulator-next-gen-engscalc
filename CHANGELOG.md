@@ -117,6 +117,12 @@ overit_sablona (sekce v14) → 102/0, overit_lista → 31 pravidel.
 Mutace jádra 88 → 111 úseků (+2 B3, +3 platbyWordOck, +3 N92, +3 N96,
 +12 #375), všechny nové chycené.
 
+**Ověřeno celým kolem** (`nastroje/testovaci_kolo.sh`, nad d7e2f32): VŠE ZELENÉ
+za 62 min 5 s — sady 207 prošlo, 0 selhalo, 1 přeskočeno (test.js); mutace
+jádra 111 z 111; mutace serveru 207 z 207; statické kontroly 3 z 3. Po kole
+strom čistý. Převedeno do `test-draft` (fast-forward), `test` zůstává na
+v30.9.3 a `main` na v30.9.1.
+
 ---
 
 ## v30.9.3 — Q5: dřívější záloha se přepne na předvolbu sama; `main` = v30.9.1 (30. 9. 2026)
