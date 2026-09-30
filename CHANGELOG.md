@@ -14,8 +14,9 @@ Větev `claude/etapa-b-q5-zaloha-automaticky` (z `test-draft` v30.9.2).
 Rozhodnutí J. V. 30. 9. 2026 k otázkám etapy B: **Q5 — „zálohu přepni
 automaticky"**; Q9 a Q10 potvrzeny; Q1, Q2, Q4, Q11 a Q12 bez námitky
 (platí výchozí návrh); body revize a (brána v korunách) a b (server
-nekontroluje tvar plánu ve variantě) „zatím OK"; Q8 vysvětleno, čeká na
-odpověď. Týž den na pokyn J. V. „pošli aktuální test do main": **`main`
+nekontroluje tvar plánu ve variantě) „zatím OK"; **Q8 „ponechat"** —
+firemní Standard po činnostech se dál mění převzetím splátek z krycího
+listu otevřené zakázky (tlačítko v Nastavení), bez zvláštního editoru. Týž den na pokyn J. V. „pošli aktuální test do main": **`main`
 fast-forward na `test`** (fde25ff, v30.9.1 — tag i release existují).
 
 - **Dřívější záloha krycího listu PROJ** (uložená volba „Bez zálohy" /

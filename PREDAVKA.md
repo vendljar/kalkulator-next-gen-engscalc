@@ -105,10 +105,9 @@ prototyp https://claude.ai/artifact/6sbxbaAsBpphfPfE2wnM3a.
   geodetického zaměření", Q4 celé koruny, poslední splátka dorovná, Q11
   řádek smlouvy „Platba ve výši … + DPH proběhne …", Q12 řádky nabídky
   „Platba {milník} – N % z nabídkové ceny za {činnost}".
-- **Čeká — Q8** (J. V.: „nerozumím", vysvětleno v sezení): jak administrátor
-  mění firemní „Standard po činnostech" — dnes převzetím splátek upravených
-  v krycím listu otevřené zakázky (tlačítko v Nastavení), alternativa přímý
-  editor v Nastavení. Výchozí návrh: nechat převzetí.
+- **Q8 „ponechat":** firemní „Standard po činnostech" se dál mění převzetím
+  splátek upravených v krycím listu otevřené zakázky (Nastavení → Smlouvy /
+  Šablony → „Převzít Standard z otevřené zakázky"), bez zvláštního editoru.
 
 ## Rozhodnutí z oprav v30.9.1 podle výchozího návrhu — čekají na potvrzení J. V.
 - **B111:** zápornou položku, množství ani hodiny nesmí nikdo, ani
@@ -126,7 +125,7 @@ prototyp https://claude.ai/artifact/6sbxbaAsBpphfPfE2wnM3a.
   https://github.com/vendljar/kalkulator-next-gen-engscalc/branches).
 - **Nahrát šablony** nabídky PROJ v4 (+EN/DE/FR) a SoD PROJ v2 (Nastavení →
   Šablony) — až do verze s etapou B; v30.9.1 nové symboly nezná.
-- Odpověď na Q8 (výše) a pokyn k etapám A a C.
+- Pokyn k etapám A a C.
 - Rozhodnout nálezy 22. kola (`claude/testovani-po-opravach`), bod 4 B96
   a **#374** (zbývající cesty třídy „koncová cena": hodiny a rezerva
   standardních položek PROJ, cena trvalé položky s kid, zaokrouhlení
@@ -197,7 +196,7 @@ Zbytek B77, B100–B110, zbytek B32, B4 souběh, B6, N59–N61 (větev
   nejvyšší id v cílové větvi.
 
 ## Další krok
-Čeká se na J. V. (výše): releasy v30.9.2 a v30.9.3, šablony, odpověď na Q8,
-rozhodnutí o nálezech 22. kola, pokyn k etapě A (OCK platební kalendář)
+Čeká se na J. V. (výše): releasy v30.9.2 a v30.9.3, šablony, rozhodnutí
+o nálezech 22. kola, pokyn k etapě A (OCK platební kalendář)
 a C (číslo smlouvy, #366) a ke sloučení `test-draft` do `test`. Nová práce
 vždy v paralelní větvi (`claude/…`) z `test-draft`.
