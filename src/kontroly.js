@@ -602,8 +602,10 @@ const KONTROLY = [
   },
   {
     /* PLÁN PLATEB VE WORDU (etapa B, vzor slevaWordProj). Šablona PROJ v2/v3
-     * má platební podmínky natvrdo (procenta Standardu) — plán jiný než
-     * Standard bez úprav by Word nevytiskl. Varování, ne zábrana: online
+     * má platební podmínky natvrdo (procenta a texty výchozího Standardu
+     * z kódu) — plán, který se od nich liší (jiná předvolba, úprava, firemní
+     * Standard, přepsaný text milníku), by Word nevytiskl (planShodaSeStarou-
+     * Sablonou, revize etapy B 30. 9. 2026). Varování, ne zábrana: online
      * náhled a krycí list plán ukazují, smlouva ho nese; řešením je šablona
      * PROJ v4 (nastroje/vyrob_sablony.js --proj-v4). */
     kod: 'planPlatebWordProj', kde: 'Nabídka PROJ', nazev: 'Plán plateb se ve Wordu neukáže',
@@ -611,11 +613,11 @@ const KONTROLY = [
       if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
       const pl = ctx.platbyProj;
       if (!pl || pl.stary || typeof planPredvolba !== 'function') return null;
-      if (planPredvolba(pl.plan, pl.firemni) === 'std' && !planUpraveno(pl.plan, pl.firemni, pl.ceny)) return null;
+      if (planShodaSeStarouSablonou(pl.plan, pl.firemni, pl.ceny)) return null;
       const s = ctx.sablonaNabidkaProj;
       if (!s || !Array.isArray(s.symboly) || !s.symboly.length) return null;
       if (s.symboly.some(x => /^PROJ_PLATBY_/.test(x) || x === 'PROJ_PLATEBNI_PODMINKY')) return null;
-      return { text: 'Word vytiskne pevné platební podmínky Standardu, ne plán plateb zakázky ('
+      return { text: 'Word vytiskne pevné platební podmínky šablony (výchozí Standard z doby před plánem plateb), ne plán plateb zakázky ('
         + planPopisPredvolby(pl.plan, pl.firemni, pl.ceny) + '): šablona nabídky PROJ' + (s.nazev ? ' „' + s.nazev + '"' : '')
         + (s.verze ? ' (verze ' + s.verze + ')' : '') + ' nemá symboly {{PROJ_PLATBY_…}}. Plán ukazuje online náhled nabídky '
         + 'a krycí list, smlouva o dílo ho nese. Nahrajte šablonu nabídky PROJ v4.' };

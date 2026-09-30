@@ -114,11 +114,11 @@ function kontrolySablonaNabidka(sleva, jazyk) {
 function kontrolySablonaNabidkaProj(slevaProj, projVysledek, jazyk) {
   const sleva = typeof slevaPlati === 'function' && slevaPlati(slevaProj);
   const navic = typeof kontrolyProjNavic === 'function' && kontrolyProjNavic(projVysledek).length > 0;
-  /* Plán plateb jiný než Standard bez úprav (etapa B) — pravidlo planPlatebWordProj. */
+  /* Plán plateb, který šablona v2/v3 nevytiskne (etapa B) — pravidlo planPlatebWordProj. */
   let plan = false;
   try {
     const pl = (typeof nabidkaProjPlatby === 'function') ? nabidkaProjPlatby(ZAK, aktivniVarianta(ZAK), 'cz') : null;
-    plan = !!(pl && !pl.stary && (planPredvolba(pl.plan, pl.firemni) !== 'std' || planUpraveno(pl.plan, pl.firemni, pl.ceny)));
+    plan = !!(pl && !pl.stary && !planShodaSeStarouSablonou(pl.plan, pl.firemni, pl.ceny));
   } catch (e) { plan = false; }
   if (!sleva && !navic && !plan) return null;
   return kontrolySablonaSymboly('nabidkaProj', jazyk);

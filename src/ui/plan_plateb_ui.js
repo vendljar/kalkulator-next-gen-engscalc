@@ -53,13 +53,27 @@ function planFirmaPouziti(p) {
   });
   return out;
 }
-function planFirmaMilnikOdeber(i) {
+/* Nepoužitý milník může mít vybraný splátka rozpracované zakázky (krycí
+ * list PROJ) — ta by pak hlásila neznámý milník a dokument by nevznikl.
+ * Zakázky tady projít nejde, proto se odebrání zeptá (revize etapy B,
+ * 30. 9. 2026). Odeslaným nabídkám nevadí: mají snímek i s texty. */
+async function planFirmaMilnikOdeber(i) {
+  if (!jeAdmin()) { hlaska('Plán plateb firmy smí měnit jen administrátor.'); return; }
+  const f = NAST.firma && NAST.firma.planPlatebProj;
+  const p0 = f && typeof f === 'object' ? f : PLAN_PROJ_VYCHOZI;
+  const m = Array.isArray(p0.milniky) ? p0.milniky[i] : null;
+  if (!m || typeof m !== 'object') return;
+  const kde = planFirmaPouziti(p0).get(m.id);
+  if (kde && kde.length) { hlaska('Milník se používá (' + kde.join(', ') + '). Nejdřív ho v těch místech nahraďte jiným.'); return; }
+  const ok = await potvrd('Odebrat milník „' + (m.cz || m.id) + '" z katalogu?\n\n'
+    + 'Mohou ho mít vybraný splátky rozpracovaných zakázek (krycí list PROJ). U nich pak plán plateb ohlásí '
+    + 'neznámý milník a nabídka PROJ ani smlouva nevznikne, dokud obchodník splátce nevybere jiný. '
+    + 'Odeslaných nabídek se to nedotkne.', { ano: 'Odebrat' });
+  if (!ok) return;
   planFirmaUpravit(p => {
-    const m = p.milniky[i];
-    if (!m) return false;
-    const kde = planFirmaPouziti(p).get(m.id);
-    if (kde && kde.length) { hlaska('Milník se používá (' + kde.join(', ') + '). Nejdřív ho v těch místech nahraďte jiným.'); return false; }
-    p.milniky.splice(i, 1);
+    const j = p.milniky.findIndex(x => x && x.id === m.id);
+    if (j < 0) return false;
+    p.milniky.splice(j, 1);
   });
 }
 function planFirmaPredani(k, id) {
@@ -105,8 +119,23 @@ async function planFirmaVratit() {
   if (ok) firmaSet('planPlatebProj', undefined);
 }
 
+/* Poškozený firemní plán (obnova zálohy zapisuje firmu doslova, ručně
+ * upravená data) nesmí shodit Nastavení — administrátor musí dostat aspoň
+ * vysvětlení a „Vrátit výchozí z kódu". Zakázky mezitím používají výchozí
+ * plán (planFirmaPlan vadný plán nepustí). Revize etapy B, 30. 9. 2026. */
 function nastPlanPlatebProj() {
   if (typeof PLAN_PROJ_VYCHOZI === 'undefined') return '';
+  try { return nastPlanPlatebProjKarta(); } catch (e) {
+    let vady = [];
+    try { vady = planPlatebFirmaVady((NAST.firma || {}).planPlatebProj); } catch (x) { vady = []; }
+    const vadyHtml = vady.map(v => esc(v)).join('<br>');
+    return `<div class="sec-title">Plán plateb projekce <span class="pill bad">poškozený</span></div>
+      <div class="note" style="color:#b91c1c">Firemní plán plateb nejde zobrazit (${esc(e.message)}). Zakázky používají
+        výchozí plán z kódu, dokud ho nevrátíte nebo neopravíte.${vadyHtml ? '<br>' + vadyHtml : ''}</div>
+      ${jeAdmin() ? '<div class="btns" style="margin-top:6px"><button class="mini" onclick="planFirmaVratit()">Vrátit výchozí z kódu</button></div>' : ''}`;
+  }
+}
+function nastPlanPlatebProjKarta() {
   const f = NAST.firma || {};
   const vlastni = !!(f.planPlatebProj && typeof f.planPlatebProj === 'object');
   const p = vlastni ? f.planPlatebProj : PLAN_PROJ_VYCHOZI;
@@ -215,19 +244,29 @@ async function planKlpPredvolba(v) {
   planKlpUlozeno();
 }
 /* Dřívější záloha z krycího listu (krok 7, Q5): nepřepíná se sama —
- * obchodník ji jedním tlačítkem použije jako předvolbu „Záloha X %". */
-function planKlpZalohaZeStare(z) {
+ * obchodník ji jedním tlačítkem použije jako předvolbu „Záloha X %".
+ * Upravené splátky předvolba zahodí — jen po potvrzení, jako při změně
+ * předvolby; ruční částky plateb (i převzaté ze starších) zůstávají. */
+async function planKlpZalohaZeStare(z) {
+  const zal = +z;
+  if (PLAN_PROJ_ZALOHY.indexOf(zal) < 0) return;
   const plan = planKlpData();
+  const upr = PLAN_PROJ_SEKCE.filter(k => plan.cinnosti && Array.isArray(plan.cinnosti[k]) && plan.cinnosti[k].length);
+  if (upr.length && !(await potvrd('Předvolba „' + (zal ? 'Záloha ' + zal + ' %' : 'Bez zálohy') + '" zahodí upravené splátky ('
+    + upr.map(k => PLAN_PROJ_ZKRATKY[k]).join(', ') + '). Pokračovat?', { ano: 'Použít předvolbu' }))) { render(); return; }
   plan.predvolba = 'zaloha';
-  plan.zaloha = PLAN_PROJ_ZALOHY.indexOf(+z) >= 0 ? +z : 0;
+  plan.zaloha = zal;
   delete plan.cinnosti;
   planKlpUlozeno();
 }
+/* Uložená hodnota je text volby („Bez zálohy", „Záloha 30 %" —
+ * KRYCI_PROJ_ZALOHY) nebo vlastní znění; procento se hledá kdekoli v textu
+ * (do revize 30. 9. 2026 jen na začátku, takže volby nepoznalo). */
 function planStaraZaloha() {
   const h = (typeof KLP !== 'undefined' && KLP && KLP.hodnoty) || {};
   const t = String(h.zaloha == null ? '' : h.zaloha).trim();
   if (!t) return null;
-  const m = /^(\d+)\s*%/.exec(t);
+  const m = /(\d+)\s*%/.exec(t);
   return { text: t, pct: /bez zálohy/i.test(t) ? 0 : (m ? +m[1] : null) };
 }
 function planKlpZaloha(v) {
@@ -257,7 +296,7 @@ function planKlpMilnikText(k, i, t) {
 }
 function planKlpPridej(k) {
   const r = planKlpRadky(k);
-  if (r.length >= 10) { hlaska('Činnost má nejvýš 10 splátek.'); return; }
+  if (r.length >= PLAN_PROJ_MAX_SPLATEK) { hlaska('Činnost má nejvýš ' + PLAN_PROJ_MAX_SPLATEK + ' splátek.'); return; }
   const zbyva = Math.max(0, Math.round((100 - r.reduce((a, x) => a + (+x.p || 0), 0)) * 100) / 100);
   const ef = planKlpEf();
   r.push({ p: zbyva, m: (ef.firemni.predani || {})[k] || 'podpis' });
@@ -363,7 +402,7 @@ function planKlpStareZneni(ef, plan, edit) {
       + ' — doplňte částku v tabulce plateb.');
   const sz = (!plan || !plan.predvolba) ? planStaraZaloha() : null;
   if (sz) kusy.push('Dřívější znění krycího listu: záloha „' + esc(sz.text) + '".'
-    + (edit && sz.pct != null ? ` <button class="mini" onclick="planKlpZalohaZeStare(${escJs(sz.pct)})">Použít jako předvolbu ${esc(sz.pct ? 'Záloha ' + sz.pct + ' %' : 'Bez zálohy')}</button>` : ''));
+    + (edit && sz.pct != null && PLAN_PROJ_ZALOHY.indexOf(sz.pct) >= 0 ? ` <button class="mini" onclick="planKlpZalohaZeStare(${escJs(sz.pct)})">Použít jako předvolbu ${esc(sz.pct ? 'Záloha ' + sz.pct + ' %' : 'Bez zálohy')}</button>` : ''));
   return kusy.length ? `<div class="note" style="color:#b45309">${kusy.join('<br>')}</div>` : '';
 }
 
@@ -405,12 +444,18 @@ function planKlpPlatbyKarta(c) {
  * smlouva navíc potřebuje součet plateb = cena díla. Odeslaná nabídka z doby
  * před plánem se nehlídá (tiskne se, jak odešla). Volá dokumentZabrana(typ). */
 const PLAN_DOKUMENTY = ['nabidkaProj', 'nabidkaProjTisk', 'sodProj'];
-function planPlatebZabranaDokumentu(typ) {
+function planPlatebZabranaDokumentu(typ, varianta) {
   const t = String(typ || '').replace(/_(en|de|fr)$/, '');
   if (PLAN_DOKUMENTY.indexOf(t) < 0 || typeof nabidkaProjPlatby !== 'function' || typeof ZAK === 'undefined') return '';
   if (ZAK.jenOck) return '';
+  /* Varianta, ZE KTERÉ dokument vzniká — po odpovědi „Ne" v nabidkaVarianta
+   * je to řídící, ne otevřená (revize etapy B, 30. 9. 2026). Plán, který
+   * nejde spočítat, dokument nepustí (dřív se výjimka tiše spolkla). */
+  const v = varianta || aktivniVarianta(ZAK);
   let pl = null;
-  try { pl = nabidkaProjPlatby(ZAK, aktivniVarianta(ZAK), 'cz'); } catch (e) { pl = null; }
+  try { pl = nabidkaProjPlatby(ZAK, v, 'cz'); } catch (e) {
+    return 'Plán plateb projekce nejde spočítat (' + e.message + ') — dokument nevznikne.';
+  }
   if (!pl || pl.stary) return '';
   const vady = (pl.kontrola || []).filter(k => t === 'sodProj' || k.kod !== 'soucet');
   if (!vady.length) return '';

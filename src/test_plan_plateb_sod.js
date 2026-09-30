@@ -13,7 +13,9 @@
  *   – stará šablona (8 pevných plateb): symboly SODP_PLATBAn_KC z plánu tam,
  *     kde má platba stejný milník; plán s platbou, kterou stará šablona
  *     nemá, smlouvu nevyrobí (chyba s vysvětlením) — smlouva by nesouhlasila,
- *   – odeslaná nabídka z doby před plánem: ruční splátky jako dřív.
+ *   – odeslaná nabídka z doby před plánem: ruční splátky jako dřív a nová
+ *     šablona z nich dostane seznam plateb; prázdný seznam zůstane {{…}},
+ *   – varování ve Wordu srovnává se Standardem Z KÓDU (co tiskne šablona v3).
  * Před krokem 5 symbol ani rozvinutí odstavce neexistovaly — sada selže.
  *
  * Spuštění: cd src && node test_plan_plateb_sod.js */
@@ -108,15 +110,33 @@ const sablona = (...symboly) => ({ symboly: new Set(symboly) });
   test('bez informace o šabloně (náhled) se nic neodmítá', (() => { try { sod.sodProjData(z2, v2, 'cz'); return true; } catch (e) { return false; } })());
 }
 
-/* 4) odeslaná nabídka z doby před plánem: ruční splátky jako dřív */
+/* 4) odeslaná nabídka z doby před plánem: ruční splátky jako dřív. Nová
+ * šablona se seznamem plateb dostane tytéž splátky větou s milníky osmi
+ * pevných plateb staré šablony (revize etapy B, 30. 9. 2026 — do opravy
+ * zůstal {{SODP_PLATEBNI_KALENDAR}} nevyplněný a ruční částky z krycího
+ * listu se musely ve Wordu psát znovu). Bez ručních splátek, a stejně tak
+ * bez jediné oceněné činnosti, zůstane symbol ve Wordu vidět (dřív ho
+ * prázdný seznam beze stopy smazal). */
 {
   const z = novaZ(), v = z.varianty[0];
   v.data.kryciProj.hodnoty = { sodpPlatba1: '110 000 Kč', sodpPlatba2: '20 000 Kč' };
   zamkniVariantu(v, { typ: 'nabidkaProj', kdo: 'Test', cislo: '2026 - OVP - CN - 404' });
   const d = sod.sodProjData(z, v, 'cz', sablona('SODP_PLATBA1_KC', 'SODP_PLATBA2_KC'));
-  test('odeslaná bez snímku: SODP_PLATBA1/2_KC z ručních polí, seznam plateb se nevyrábí',
-    d.placeholders.SODP_PLATBA1_KC === '110 000 Kč' && d.placeholders.SODP_PLATBA2_KC === '20 000 Kč' && d.placeholders.SODP_PLATEBNI_KALENDAR === undefined,
-    [d.placeholders.SODP_PLATBA1_KC, d.placeholders.SODP_PLATEBNI_KALENDAR]);
+  test('odeslaná bez snímku: SODP_PLATBA1/2_KC z ručních polí',
+    d.placeholders.SODP_PLATBA1_KC === '110 000 Kč' && d.placeholders.SODP_PLATBA2_KC === '20 000 Kč',
+    [d.placeholders.SODP_PLATBA1_KC, d.placeholders.SODP_PLATBA2_KC]);
+  const d2 = sod.sodProjData(z, v, 'cz', sablona('SODP_PLATEBNI_KALENDAR'));
+  test('odeslaná bez snímku + nová šablona: seznam plateb z ručních splátek s milníky staré šablony',
+    d2.placeholders.SODP_PLATEBNI_KALENDAR === 'Platba ve výši 110 000 Kč + DPH proběhne po podpisu smlouvy / objednávky.\n'
+      + 'Platba ve výši 20 000 Kč + DPH proběhne po zhotovení výstupů ze zaměření.', d2.placeholders.SODP_PLATEBNI_KALENDAR);
+  const z2 = novaZ(), v2 = z2.varianty[0];
+  zamkniVariantu(v2, { typ: 'nabidkaProj', kdo: 'Test', cislo: '2026 - OVP - CN - 404' });
+  test('odeslaná bez snímku a bez ručních splátek: seznam plateb zůstane {{…}} k doplnění',
+    sod.sodProjData(z2, v2, 'cz', sablona('SODP_PLATEBNI_KALENDAR')).placeholders.SODP_PLATEBNI_KALENDAR === undefined);
+  const z3 = novaZ(), v3 = z3.varianty[0];
+  v3.data.proj.zadani.sekce.forEach(s => (s.polozky || []).forEach(p => { p.vyrazeno = true; }));
+  const k3 = sod.sodProjData(z3, v3, 'cz', sablona('SODP_PLATEBNI_KALENDAR')).placeholders.SODP_PLATEBNI_KALENDAR;
+  test('žádná oceněná činnost: seznam plateb se prázdným textem nesmaže (zůstane {{…}})', k3 === undefined, JSON.stringify(k3));
 }
 
 /* 5) pravidla kontrol (etapa B, krok 6): zábrany a varování ve Wordu */
@@ -148,6 +168,25 @@ const sablona = (...symboly) => ({ symboly: new Set(symboly) });
   v.data.kryciProj.planPlateb = null;
   test('šablona v3 + Standard bez úprav: varování mlčí (v3 tiskne Standard)',
     kody(ctx({ symboly: ['PROJ_CELKEM_BEZ_DPH'] })).indexOf('planPlatebWordProj') < 0);
+  /* Šablona v3 tiskne Standard Z KÓDU; firemní Standard ani přepsaný text
+   * milníku Word nevytiskne (revize etapy B — do opravy se srovnávalo
+   * s firemním Standardem: varování mlčelo, a naopak varovalo u zakázky
+   * vrácené přesně na to, co v3 tiskne). */
+  const v3 = ['PROJ_CELKEM_BEZ_DPH'];
+  const fs3 = JSON.parse(JSON.stringify(PP.PLAN_PROJ_VYCHOZI));
+  fs3.standard.dpz = [{ p: 40, m: 'podpis' }, { p: 40, m: 'dpz_doss' }, { p: 20, m: 'dpz_su' }];
+  global.NAST.firma.planPlatebProj = fs3;
+  test('šablona v3 + firemní Standard jiný než výchozí: varování planPlatebWordProj',
+    kody(ctx({ symboly: v3 })).indexOf('planPlatebWordProj') >= 0, kody(ctx({ symboly: v3 })));
+  const ft = JSON.parse(JSON.stringify(PP.PLAN_PROJ_VYCHOZI));
+  ft.milniky.find(m => m.id === 'podpis').cz = 'po podpisu smlouvy o dílo';
+  global.NAST.firma.planPlatebProj = ft;
+  test('šablona v3 + přepsaný text milníku v katalogu: varování', kody(ctx({ symboly: v3 })).indexOf('planPlatebWordProj') >= 0);
+  global.NAST.firma.planPlatebProj = fs3;
+  v.data.kryciProj.planPlateb = { v: 1, cinnosti: { dpz: [{ p: 50, m: 'podpis' }, { p: 30, m: 'dpz_doss' }, { p: 20, m: 'dpz_su' }] } };
+  test('zakázka vrácená na výchozí Standard (= co tiskne v3): varování mlčí', kody(ctx({ symboly: v3 })).indexOf('planPlatebWordProj') < 0);
+  delete global.NAST.firma.planPlatebProj;
+  v.data.kryciProj.planPlateb = null;
   z.jenOck = true;
   v.data.kryciProj.planPlateb = { v: 1, cinnosti: { dpz: [{ p: 10, m: 'podpis' }] } };
   test('zakázka jen OCK: pravidla plánu mlčí', !kody(ctx()).some(k => /^planPlateb/.test(k)));

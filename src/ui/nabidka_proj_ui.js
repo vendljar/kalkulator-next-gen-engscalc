@@ -195,14 +195,14 @@ async function nabidkaProjNahled() {
   /* Pojistka pro případ, že by se sem někdo dostal jinudy než tlačítkem
    * (zhasnutým) – tiskový náhled je dokument pro zákazníka jako každý jiný.
    * Typ dokumentu kvůli bráně plánu plateb (etapa B). */
+  const akt = (typeof aktivniVarianta === 'function') ? aktivniVarianta(ZAK) : (ZAK.varianty || [])[0];
   if (typeof dokumentZabrana === 'function') {
-    const duvod = dokumentZabrana('nabidkaProjTisk');
+    const duvod = dokumentZabrana('nabidkaProjTisk', akt);
     if (duvod) { hlaska(duvod); return; }
   }
   const L = (typeof tiskJazyk === 'function') ? tiskJazyk()
     : ((typeof jazyk === 'function') ? jazyk() : 'cz');   // volba „Jazyk tisku" (#143)
   const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
-  const akt = (typeof aktivniVarianta === 'function') ? aktivniVarianta(ZAK) : (ZAK.varianty || [])[0];
   /* Ptát se PŘED otevřením okna náhledu (P2): tisk z náhledu zamyká. */
   if (typeof tiskZamekCteniPovol === 'function' && !(await tiskZamekCteniPovol('nabidkaProjTisk', akt))) return;   // P2 (K13-N54)
   const d = nabidkaProjData(ZAK, akt, L);

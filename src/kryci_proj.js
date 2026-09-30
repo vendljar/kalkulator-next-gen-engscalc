@@ -426,15 +426,20 @@ function kryciProjPlatbyText(pl) {
     + (d.sedi ? '' : '\nSoučet plateb ' + fmt(d.soucet) + ' nesouhlasí s cenou díla ' + fmt(d.cena) + '.');
 }
 /* Snímek plánu plateb při prvním zamčení (P9.5 pro plán): pozdější změna
- * firemního plánu odeslanou nabídku ani smlouvu nezmění. */
+ * firemního plánu odeslanou nabídku ani smlouvu nezmění. Bere se při
+ * KAŽDÉM prvním zamčení (zamekPoTisku sem chodí jen tehdy) a přepíše, co
+ * v datech je — stejně jako `zmrazeno`. Klon odeslané varianty i varianta
+ * odemčená správcem nesou snímek předlohy / dřívějšího odeslání; kdyby
+ * zůstal, zamčená varianta by tiskla cizí plán (revize etapy B, 30. 9.
+ * 2026). Zamčenou variantu (dotisk) nepřepíše nic. */
 function kryciProjZmrazPlan(zak, varianta) {
   if (!varianta || !varianta.data || typeof nabidkaProjPlatby !== 'function' || typeof planPlatebSnimek !== 'function') return false;
   const d = varianta.data;
   if (!d.kryciProj || typeof d.kryciProj !== 'object') d.kryciProj = { hodnoty: {} };
-  if (d.kryciProj.zmrazenoPlan) return false;
+  if (varianta.zamek && varianta.zamek.zamceno) return false;
   let pl = null;
   try { pl = nabidkaProjPlatby(zak, varianta, 'cz'); } catch (e) { pl = null; }
-  if (!pl || pl.stary) return false;
+  if (!pl || pl.stary) { delete d.kryciProj.zmrazenoPlan; return false; }
   d.kryciProj.zmrazenoPlan = planPlatebSnimek(pl.plan, pl.firemni, pl.ceny);
   return true;
 }
@@ -448,9 +453,12 @@ function kryciProjZmrazPodminky(zak, varianta) {
   const c = kryciProjCtx(zak, varianta);
   c.zmrazeno = null;
   const out = {};
+  /* U plánu plateb (etapa B) se pole `stary` ruční hodnotou starší verze
+   * neřídí (nejde vidět ani smazat) — zmrazí se jejich předvyplnění. */
+  const plan = !c.planStary;
   KRYCI_PROJ_SEKCE.forEach(s => s.pole.forEach(p => {
     if (p.bind || p.dphBind || typeof p.prefill !== 'function') return;
-    if (h[p.id] !== undefined && h[p.id] !== '') return;
+    if (!(plan && p.stary) && h[p.id] !== undefined && h[p.id] !== '') return;
     let v = '';
     try { v = p.prefill(c); } catch (e) { v = ''; }
     if (v != null && v !== '') out[p.id] = String(v);
@@ -553,8 +561,17 @@ function kryciProjPodminkoveSymboly(zak, varianta, P) {
   if (typeof kryciSymbolyZeSekci !== 'function') return {};
   const c = kryciProjCtx(zak, varianta);
   const kl = (varianta && varianta.data && varianta.data.kryciProj) || { hodnoty: {} };
-  return kryciSymbolyZeSekci(KRYCI_PROJ_SEKCE, KRYCI_PROJ_NABIDKA_SEKCE,
-    p => kryciProjHodnota(p, kl, c), P);
+  /* Pole nahrazená plánem plateb (`stary`, etapa B) jdou do symbolů jen
+   * u odeslané nabídky z doby před plánem — jinak by šablona tiskla zálohu
+   * a fakturaci po stupních, které plán neplatí. Způsob fakturace zůstává
+   * (odvozený z předvolby, Q10) a ruční hodnota starší verze ho nepřebije:
+   * pole nejde vidět ani smazat (revize etapy B, 30. 9. 2026). */
+  const plan = !c.planStary;
+  const sekce = KRYCI_PROJ_SEKCE.map(s => Object.assign({}, s, {
+    pole: s.pole.filter(p => kryciProjPoleViditelne(p, c) || (plan && p.id === 'zpusobFakturace')) }));
+  const bezRucnich = { hodnoty: {} };
+  return kryciSymbolyZeSekci(sekce, KRYCI_PROJ_NABIDKA_SEKCE,
+    p => kryciProjHodnota(p, (plan && p.stary) ? bezRucnich : kl, c), P);
 }
 
 if (typeof module !== 'undefined')

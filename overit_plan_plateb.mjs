@@ -18,6 +18,10 @@
  *   4) převod starší zakázky: ruční splátky sodpPlatba1–8 převzaté jako ruční
  *      částky plateb (nečitelná se ohlásí), dřívější záloha nabídnutá
  *      tlačítkem jako předvolba, první zápis převzaté částky zhmotní.
+ * Revize etapy B (30. 9. 2026): odebrání milníku se zeptá, poškozený firemní
+ * plán neshodí Nastavení, klon odeslané varianty zamkne svůj plán, brána
+ * hlídá variantu, ze které dokument vzniká, dřívější záloha „Záloha 30 %“
+ * se pozná a převod se před zahozením úprav zeptá.
  *
  * Spuštění: node overit_plan_plateb.mjs
  */
@@ -84,6 +88,34 @@ const pred = await p.evaluate(() => NAST.firma.planPlatebProj.milniky.length);
 await p.evaluate(() => { const i = NAST.firma.planPlatebProj.milniky.findIndex(m => m.id === 'podpis'); planFirmaMilnikOdeber(i); });
 await odklikni();
 zkus('použitý milník („po podpisu") odebrat nejde', await p.evaluate(() => NAST.firma.planPlatebProj.milniky.length) === pred);
+/* nepoužitý milník: odebrání se zeptá — mohou ho mít splátky rozpracovaných
+ * zakázek (revize etapy B; dřív zmizel bez ptaní a zakázkám se zablokovaly dokumenty) */
+await p.evaluate(() => { const i = NAST.firma.planPlatebProj.milniky.findIndex(m => m.id === 'vyber'); planFirmaMilnikOdeber(i); });
+await p.waitForTimeout(120);
+const dotazOdeb = await p.evaluate(() => { const d = document.getElementById('dlg'); return d ? d.textContent : ''; });
+await odmitni();
+zkus('odebrání nepoužitého milníku se zeptá a varuje před rozpracovanými zakázkami; po „Ne" zůstane',
+  /rozpracovaných zakázek/.test(dotazOdeb) && await p.evaluate(() => NAST.firma.planPlatebProj.milniky.some(m => m.id === 'vyber')), dotazOdeb.slice(0, 160));
+await p.evaluate(() => { const i = NAST.firma.planPlatebProj.milniky.findIndex(m => m.id === 'vyber'); planFirmaMilnikOdeber(i); });
+await odklikni();
+await p.waitForTimeout(80);
+zkus('po potvrzení se nepoužitý milník odebere', await p.evaluate(() => !NAST.firma.planPlatebProj.milniky.some(m => m.id === 'vyber')));
+/* poškozený firemní plán (obnova zálohy, ruční úprava dat) nesmí shodit Nastavení */
+const poskozeny = await p.evaluate(() => {
+  const puv = NAST.firma.planPlatebProj;
+  NAST.firma.planPlatebProj = { v: 1, vychozi: 'std', zalohaPct: 50, milniky: [null, 5], standard: { dpz: 'x' }, predani: {} };
+  let chyba = '';
+  try { renderNastaveni(); } catch (e) { chyba = e.message; }
+  const o = document.getElementById('nastaveni-overlay');
+  const t = o ? o.textContent : '';
+  const r = { chyba, karta: /Plán plateb projekce/.test(t), poskozeny: /nejde zobrazit/.test(t),
+    vratit: [...(o ? o.querySelectorAll('button') : [])].some(b => /Vrátit výchozí z kódu/.test(b.textContent)) };
+  NAST.firma.planPlatebProj = puv;
+  try { renderNastaveni(); } catch (e) {}
+  return r;
+});
+zkus('poškozený firemní plán: Nastavení se vykreslí s vysvětlením a tlačítkem „Vrátit výchozí z kódu"',
+  !poskozeny.chyba && poskozeny.karta && poskozeny.poskozeny && poskozeny.vratit, JSON.stringify(poskozeny));
 zkus('zveřejňovaná kopie firmy nese plán', await p.evaluate(() => { const k = firmaKZverejneni(NAST.firma); return !!k.planPlatebProj && k.planPlatebProj.vychozi === 'zaloha'; }));
 
 /* převzetí Standardu z otevřené zakázky */
@@ -192,6 +224,19 @@ await p.evaluate(() => planKlpProcento('dpz', 0, '10'));
 await odmitni();
 zkus('zamčená varianta: zápis do plánu zámek odmítne', await p.evaluate(() => variantaUzamcena(aktivniVarianta(ZAK)) && !(KLP.planPlateb.cinnosti && KLP.planPlateb.cinnosti.dpz)));
 /* odeslaná nabídka z doby před plánem plateb (bez snímku): krycí list jako dřív */
+/* klon odeslané varianty (revize etapy B): první tisk klonu zamkne JEHO plán,
+ * ne zděděný snímek předlohy */
+await p.evaluate(() => { zamekKlonUI(aktivniVarianta(ZAK).id); });
+await p.waitForTimeout(120);
+await p.evaluate(() => { planKlpPredvolba('sto'); });
+await p.waitForTimeout(80);
+await p.evaluate(() => { const v = aktivniVarianta(ZAK); if (!v.zamek) zamekPoTisku('nabidkaProj', v.id); });
+await p.waitForTimeout(150);
+const klon = await p.evaluate(() => ({ klon: !!aktivniVarianta(ZAK).klonZ, zamceny: variantaUzamcena(aktivniVarianta(ZAK)),
+  snimek: KLP.zmrazenoPlan ? KLP.zmrazenoPlan.predvolba : null,
+  dpz: nabidkaProjPlatby(ZAK, aktivniVarianta(ZAK), 'cz').dopocet.cinnosti.dpz.map(r => r.p + ':' + r.m).join() }));
+zkus('klon odeslané varianty: první tisk zamkne plán klonu (100 % po dokončení), ne zděděný snímek (Záloha 30 %)',
+  klon.klon && klon.zamceny && klon.snimek === 'sto' && /^100:/.test(klon.dpz), JSON.stringify(klon));
 await p.evaluate(() => { delete KLP.zmrazenoPlan; render(); });
 k = await kl();
 zkus('odeslaná nabídka bez snímku: karta plánu se neukáže, pole zálohy ano (tiskne se, jak odešla)', k.karty === 0 && k.stareZaloha, JSON.stringify(k));
@@ -220,23 +265,70 @@ const brana2 = await p.evaluate(() => ({ nabidka: dokumentZabrana('nabidkaProj')
 zkus('ruční částka rozbije jen součet: nabídka PROJ vznikne, smlouva ne', brana2.nabidka === '' && /nesouhlasí s cenou díla/.test(brana2.sod), JSON.stringify(brana2));
 await p.evaluate(() => { delete KLP.planPlateb; render(); });
 zkus('zdravý plán: žádná zábrana', await p.evaluate(() => dokumentZabrana('nabidkaProj') === '' && dokumentZabrana('sodProj') === ''));
+/* brána hlídá variantu, ZE KTERÉ dokument vzniká (revize etapy B): Word nabídky
+ * PROJ i smlouva se po odpovědi „Ne" vyrábějí z řídící varianty (nabidkaVarianta),
+ * zatímco otevřená může být jiná. Dřív se kontrolovala vždy otevřená. */
+const dveVarianty = await p.evaluate(async () => {
+  ZAK = novaZakazka(); syncVarianta();
+  const a = aktivniVarianta(ZAK);
+  a.data.kryciProj = a.data.kryciProj || { hodnoty: {} };
+  a.data.kryciProj.planPlateb = { v: 1, cinnosti: { dpz: [{ p: 50, m: 'podpis' }, { p: 40, m: 'dpz_su' }] } };
+  const b = klonujVariantu(ZAK, a.id);
+  b.data.kryciProj.planPlateb = null;
+  syncVarianta(); render();
+  const chyba = async (v) => { try { await dokumentVygeneruj('sodProj', new ArrayBuffer(8), ZAK, v, JEKLY); return ''; } catch (e) { return e.message; } };
+  const r = { ridiciJeA: ridiciVarianta(ZAK).id === a.id, otevrenaJeB: aktivniVarianta(ZAK).id === b.id,
+    otevrena: dokumentZabrana('sodProj'), ridici: dokumentZabrana('sodProj', a), vygRidici: await chyba(a) };
+  ZAK.aktivni = a.id; syncVarianta();
+  r.vygZdravaPriVadneOtevrene = await chyba(b);
+  ZAK = novaZakazka(); syncVarianta(); render();
+  return r;
+});
+zkus('řídící varianta s vadou plánu se zastaví, i když je otevřená jiná (zdravá)',
+  dveVarianty.ridiciJeA && dveVarianty.otevrenaJeB && dveVarianty.otevrena === ''
+  && /Plán plateb projekce má nedostatky/.test(dveVarianty.ridici) && /Plán plateb projekce má nedostatky/.test(dveVarianty.vygRidici), JSON.stringify(dveVarianty));
+zkus('zdravá varianta se nezastaví kvůli vadě jiné (otevřené) varianty', !/Plán plateb/.test(dveVarianty.vygZdravaPriVadneOtevrene), dveVarianty.vygZdravaPriVadneOtevrene);
 
 /* ---------------------------------------------------------------- */
 console.log('\n4) převod starší zakázky: ruční splátky a dřívější záloha');
+/* Dřívější záloha krycího listu PROJ je uložená textem volby („Záloha 30 %",
+ * KRYCI_PROJ_ZALOHY). Do revize 30. 9. 2026 ji převod nepoznal (hledal
+ * „30 %" na začátku) a tlačítko se ukázalo jen u „Bez zálohy". */
 await p.evaluate(() => { ZAK = novaZakazka(); syncVarianta();
-  KLP.hodnoty = { sodpPlatba1: '110 000 Kč', sodpPlatba6: 'viz příloha', zaloha: '30 % – po podpisu smlouvy' }; render(); prepniTab('kryciproj'); });
+  KLP.hodnoty = { sodpPlatba1: '110 000 Kč', sodpPlatba6: 'viz příloha', zaloha: 'Záloha 30 %' }; render(); prepniTab('kryciproj'); });
 await p.waitForTimeout(150);
 const st = await p.evaluate(() => { const t = document.getElementById('page-kryciproj').textContent;
   return { prevzate: /Ruční splátky smlouvy z dřívějšího krycího listu jsou převzaté/.test(t), necitelna: /Nečitelná ruční splátka: „viz příloha"/.test(t),
-    zaloha: /záloha „30 % – po podpisu smlouvy"/.test(t),
+    zaloha: /záloha „Záloha 30 %"/.test(t),
     tlacitko: [...document.querySelectorAll('#page-kryciproj button')].some(b => /Použít jako předvolbu Záloha 30 %/.test(b.textContent)),
     prepsano: document.querySelectorAll('#page-kryciproj .plan-tab tr.prepsano').length }; });
 zkus('karta plánu ukáže převzaté ruční splátky, nečitelnou částku a dřívější zálohu s tlačítkem', st.prevzate && st.necitelna && st.zaloha && st.tlacitko && st.prepsano === 1, JSON.stringify(st));
-await p.evaluate(() => planKlpZalohaZeStare(30));
+await p.evaluate(() => { planKlpZalohaZeStare(30); });
+await p.waitForTimeout(80);
 zkus('tlačítko použije dřívější zálohu jako předvolbu Záloha 30 %', await p.evaluate(() => KLP.planPlateb.predvolba === 'zaloha' && KLP.planPlateb.zaloha === 30));
 zkus('první zápis do plánu ruční splátku zhmotní (nezahodí ji)', await p.evaluate(() => KLP.planPlateb.prepis && KLP.planPlateb.prepis.podpis === 110000));
 await p.evaluate(() => planKlpPrepis('dps_predani', '5 000'));
 zkus('další ruční částka se přidá k převzaté', await p.evaluate(() => KLP.planPlateb.prepis.podpis === 110000 && KLP.planPlateb.prepis.dps_predani === 5000));
+/* vlastní znění dřívější zálohy, které předvolba nezná (40 %): jen text, bez
+ * tlačítka — dřív nabídlo „Záloha 40 %" a uložilo předvolbu bez zálohy */
+await p.evaluate(() => { ZAK = novaZakazka(); syncVarianta(); KLP.hodnoty = { zaloha: '40 % po podpisu smlouvy' }; render(); });
+const st40 = await p.evaluate(() => { const t = document.getElementById('page-kryciproj').textContent;
+  return { text: /záloha „40 % po podpisu smlouvy"/.test(t),
+    tlacitko: [...document.querySelectorAll('#page-kryciproj button')].some(b => /Použít jako předvolbu/.test(b.textContent)) }; });
+zkus('dřívější záloha 40 % (předvolba ji nezná): ukáže se znění, tlačítko ne', st40.text && !st40.tlacitko, JSON.stringify(st40));
+/* upravené splátky: převod dřívější zálohy se před jejich zahozením zeptá */
+await p.evaluate(() => { ZAK = novaZakazka(); syncVarianta(); KLP.hodnoty = { zaloha: 'Záloha 50 %' };
+  KLP.planPlateb = { v: 1, cinnosti: { dpz: [{ p: 100, m: 'dpz_su' }] } }; render(); });
+await p.evaluate(() => { planKlpZalohaZeStare(50); });
+await odmitni();
+await p.waitForTimeout(80);
+zkus('upravené splátky: převod dřívější zálohy se zeptá a po „Ne" nic nezmění',
+  await p.evaluate(() => !KLP.planPlateb.predvolba && !!(KLP.planPlateb.cinnosti && KLP.planPlateb.cinnosti.dpz)), await p.evaluate(() => JSON.stringify(KLP.planPlateb)));
+await p.evaluate(() => { planKlpZalohaZeStare(50); });
+await odklikni();
+await p.waitForTimeout(80);
+zkus('po potvrzení předvolba Záloha 50 % a úpravy pryč',
+  await p.evaluate(() => KLP.planPlateb.predvolba === 'zaloha' && KLP.planPlateb.zaloha === 50 && !KLP.planPlateb.cinnosti), await p.evaluate(() => JSON.stringify(KLP.planPlateb)));
 await p.evaluate(() => { ZAK = novaZakazka(); syncVarianta(); render(); });
 
 zkus('žádná chyba stránky', chyby.length === 0, chyby.join(' | '));

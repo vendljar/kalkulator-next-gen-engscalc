@@ -354,11 +354,18 @@ test('sekce zobrazené u nabídky PROJ se v krycím listu opravdu jmenují stejn
   kp.KRYCI_PROJ_NABIDKA_SEKCE.filter(n => !kp.KRYCI_PROJ_SEKCE.some(s => s.sekce === n)).join(','));
 test('všechny symboly mají prefix PODM_',
   Object.keys(sym).every(k => k.indexOf(kr.PODM_PREFIX) === 0));
+/* Jen pole, která jsou u varianty vidět: řádky plánu plateb (`plan`) a pole
+ * dřívějšího znění zálohy a fakturace (`stary`) se řídí variantou stejně
+ * jako v tisku (revize etapy B, 30. 9. 2026 — do té doby plnila symboly
+ * i skrytá pole). Tahle sada modul plánu nenačítá, platí tu dřívější znění. */
 const poleNabidky = [].concat(...kp.KRYCI_PROJ_SEKCE
-  .filter(s => kp.KRYCI_PROJ_NABIDKA_SEKCE.includes(s.sekce)).map(s => s.pole));
+  .filter(s => kp.KRYCI_PROJ_NABIDKA_SEKCE.includes(s.sekce)).map(s => s.pole.filter(p => kp.kryciProjPoleViditelne(p, c))));
 test('každé pole zobrazené u nabídky PROJ má svůj symbol',
   poleNabidky.every(p => (kr.PODM_PREFIX + kr.kryciSymbolId(p.id)) in sym),
   poleNabidky.filter(p => !((kr.PODM_PREFIX + kr.kryciSymbolId(p.id)) in sym)).map(p => p.id).join(','));
+test('řádky plánu plateb, které u varianty nejsou vidět, symbol nemají',
+  c.planStary && !('PODM_PLAN_PREDVOLBA' in sym) && !('PODM_PLAN_DPZ' in sym) && 'PODM_ZALOHA' in sym,
+  Object.keys(sym).filter(k => /^PODM_(PLAN|ZALOHA)/.test(k)).join(','));
 test('symbol nikdy není undefined', Object.keys(sym).every(k => typeof sym[k] === 'string'));
 /* Řádky činností do šablony nepatří – rozsah prací má nabídka vlastní. */
 test('činnosti se do podmínkových symbolů nedostávají',

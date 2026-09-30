@@ -5,7 +5,10 @@
  *     (PROJ_CELKEM_BEZ_DPH), i se schválenou slevou; nabízené = oceněné činnosti,
  *   – efektivní plán varianty: rozpracovaná → firemní plán, odeslaná se
  *     snímkem → snímek, odeslaná bez snímku → „starý" krycí list,
- *   – snímek při prvním zamčení (kryciProjZmrazPodminky) a jen jednou,
+ *   – snímek při prvním zamčení (kryciProjZmrazPodminky) — i u klonu odeslané
+ *     varianty a po odemčení správcem; zamčenou variantu dotisk nepřepíše,
+ *   – zamčená varianta pod firemním Standardem se nehlásí „upraveno“,
+ *     poškozený snímek výpočet neshodí, obří pole splátek se ořízne,
  *   – viditelnost polí (dřívější záloha / ruční splátky × řádky plánu),
  *   – tisk krycího listu (pevný počet řádků plánu), způsob fakturace z předvolby
  *     (výchozí návrh Q10), popis předvolby, eura bez ručních částek.
@@ -86,8 +89,9 @@ for (const sleva of [0, 10]) {
     Object.keys(snimek.cinnosti).sort().join() === Object.keys(NP.nabidkaProjPlatby(z, v, 'cz').ceny).sort().join()
     && snimek.cinnosti.dpz.map(r => r.p + ':' + r.m).join() === '30:podpis,70:dpz_su'
     && snimek.milniky.find(m => m.id === 'podpis').cz === 'po podpisu smlouvy / objednávky', snimek);
-  test('druhé zmrazení snímek nepřepíše', kp.kryciProjZmrazPlan(z, v) === false && v.data.kryciProj.zmrazenoPlan === snimek);
   zamkniVariantu(v, { typ: 'nabidkaProj', kdo: 'Test', cislo: '2026 - OVP - CN - 402' });
+  test('zamčená varianta: další zmrazení (dotisk odeslané nabídky) snímek nepřepíše',
+    kp.kryciProjZmrazPlan(z, v) === false && v.data.kryciProj.zmrazenoPlan === snimek);
   const platby = () => NP.nabidkaProjPlatby(z, v, 'cz').dopocet.platby.map(x => x.klic + ':' + x.text + ':' + x.castka).join('|');
   const pred = platby();
   const f2 = JSON.parse(JSON.stringify(PP.PLAN_PROJ_VYCHOZI)); f2.milniky[0].cz = 'po podpisu (nové znění)'; f2.zalohaPct = 70; f2.vychozi = 'sto';
@@ -100,6 +104,85 @@ for (const sleva of [0, 10]) {
   e = PP.planPlatebVarianty(v, global.NAST.firma);
   test('zamčená varianta bez snímku (z doby před plánem): „starý" krycí list', e.stary && kp.kryciProjCtx(z, v).planStary);
   test('„starý" krycí list: plán nehlásí nedostatky (tiskne se, jak odešel)', NP.nabidkaProjPlatby(z, v, 'cz').kontrola.length === 0);
+}
+
+/* 3b) klon odeslané varianty a odemčení správcem (revize etapy B, 30. 9. 2026):
+ * první zamčení vezme snímek z VLASTNÍHO plánu varianty. Do opravy nechal
+ * kryciProjZmrazPlan zděděný snímek předlohy — zamčený klon pak tiskl
+ * a smlouvu dopočítal z plánu předlohy (u činnosti navíc hlásil neznámý
+ * milník a zábrana ho zablokovala natrvalo). */
+{
+  const z = novaZ(0), a = z.varianty[0];
+  const zamkni = (v) => { kp.kryciProjZmrazPodminky(z, v); zamkniVariantu(v, { typ: 'nabidkaProj', kdo: 'Test', cislo: '2026 - OVP - CN - 402' }); };
+  zamkni(a);
+  const snA = JSON.stringify(a.data.kryciProj.zmrazenoPlan);
+  const b = klonujVariantu(z, a.id);
+  test('klon odeslané varianty: zděděný snímek rozpracovaný klon nečte', !!b.data.kryciProj.zmrazenoPlan
+    && !PP.planPlatebVarianty(b, global.NAST.firma).zmrazeny);
+  b.data.kryciProj.planPlateb = { v: 1, predvolba: 'zaloha', zaloha: 30 };
+  zamkni(b);
+  const eb = PP.planPlatebVarianty(b, global.NAST.firma);
+  test('první zamčení klonu vezme snímek z plánu klonu (Záloha 30 %), ne předlohy (Standard)',
+    eb.zmrazeny && eb.plan.predvolba === 'zaloha' && eb.plan.zaloha === 30
+    && eb.plan.cinnosti.dpz.map(r => r.p + ':' + r.m).join() === '30:podpis,70:dpz_su', eb.plan);
+  const plb = NP.nabidkaProjPlatby(z, b, 'cz');
+  test('zamčený klon: splátky smlouvy podle plánu klonu, bez nedostatků',
+    plb.dopocet.cinnosti.dpz.map(r => r.p).join() === '30,70' && plb.kontrola.length === 0, plb.kontrola);
+  test('snímek předlohy zůstal beze změny', JSON.stringify(a.data.kryciProj.zmrazenoPlan) === snA);
+  const od = odemkniVariantu(b, { jeAdmin: true, duvod: 'oprava plánu plateb', kdo: 'Test' });
+  b.data.kryciProj.planPlateb = { v: 1, predvolba: 'sto' };
+  zamkni(b);
+  test('odemčení správcem, úprava a nové zamčení: snímek nového plánu (100 % po dokončení stupně)',
+    od.ok && PP.planPlatebVarianty(b, global.NAST.firma).plan.predvolba === 'sto', od);
+}
+
+/* 3c) zamčená varianta pod VLASTNÍM firemním Standardem se nehlásí jako
+ * „upraveno" (revize etapy B): snímek nese, které činnosti byly při odeslání
+ * upravené. Do opravy se zamčený plán srovnával se Standardem z kódu. */
+{
+  const f = JSON.parse(JSON.stringify(PP.PLAN_PROJ_VYCHOZI));
+  f.standard.dpz = [{ p: 40, m: 'podpis' }, { p: 40, m: 'dpz_doss' }, { p: 20, m: 'dpz_su' }];
+  global.NAST.firma.planPlatebProj = f;
+  const z = novaZ(0), v = z.varianty[0];
+  const ceny = NP.nabidkaProjPlatby(z, v, 'cz').ceny;
+  test('předpoklad: firemní Standard je platný a rozpracovaná varianta není „upraveno"',
+    PP.planPlatebFirmaVady(f).length === 0 && !PP.planUpraveno(null, PP.planFirmaPlan(global.NAST.firma), ceny));
+  kp.kryciProjZmrazPodminky(z, v);
+  zamkniVariantu(v, { typ: 'nabidkaProj', kdo: 'Test', cislo: '2026 - OVP - CN - 402' });
+  const e = PP.planPlatebVarianty(v, global.NAST.firma);
+  test('zamčená varianta pod firemním Standardem: ne „upraveno", popis „Standard po činnostech"',
+    e.zmrazeny && !PP.planUpraveno(e.plan, e.firemni, ceny) && PP.planPopisPredvolby(e.plan, e.firemni, ceny) === 'Standard po činnostech',
+    PP.planPopisPredvolby(e.plan, e.firemni, ceny));
+  const hod = (label) => ((kp.kryciProjData(z, v, JEKLY, 'bo').sekce.flatMap(s => s.radky).find(x => x[0] === label)) || [])[1];
+  test('tisk zamčeného krycího listu: „Plán plateb" bez „(upraveno)"', hod('Plán plateb') === 'Standard po činnostech', hod('Plán plateb'));
+  const z2 = novaZ(0), v2 = z2.varianty[0];
+  v2.data.kryciProj.planPlateb = { v: 1, cinnosti: { dpz: [{ p: 100, m: 'dpz_su' }] } };
+  kp.kryciProjZmrazPodminky(z2, v2);
+  zamkniVariantu(v2, { typ: 'nabidkaProj', kdo: 'Test', cislo: '2026 - OVP - CN - 403' });
+  const e2 = PP.planPlatebVarianty(v2, global.NAST.firma);
+  test('zamčená varianta se skutečnou úpravou zůstane „upraveno" (jen DPZ)', PP.planUpraveno(e2.plan, e2.firemni, ceny)
+    && PP.planCinnostUpravena('dpz', e2.plan, e2.firemni) && !PP.planCinnostUpravena('ic', e2.plan, e2.firemni));
+  delete global.NAST.firma.planPlatebProj;
+}
+
+/* 3d) poškozený snímek (ruční úprava dat, import — server kryciProj
+ * nekontroluje): výpočet plateb nespadne a obří pole splátek neucpe
+ * prohlížeč (revize etapy B). */
+{
+  const z = novaZ(0), v = z.varianty[0];
+  kp.kryciProjZmrazPodminky(z, v);
+  zamkniVariantu(v, { typ: 'nabidkaProj', kdo: 'Test', cislo: '2026 - OVP - CN - 402' });
+  v.data.kryciProj.zmrazenoPlan.milniky.unshift(null, 5, { cz: 'bez klíče' });
+  let chyba = '';
+  try { NP.nabidkaProjPlatby(z, v, 'cz'); } catch (e) { chyba = e.message; }
+  test('snímek s poškozeným katalogem milníků: výpočet plateb nespadne', chyba === '', chyba);
+  v.data.kryciProj.zmrazenoPlan.cinnosti.dpz = Array.from({ length: 5000 }, () => ({ p: 1, m: 'podpis' }));
+  const plan = PP.planPlatebVarianty(v, global.NAST.firma).plan;
+  let pl = null;
+  try { pl = NP.nabidkaProjPlatby(z, v, 'cz'); } catch (e) { pl = null; }
+  test('obří pole splátek se ořízne na 10 a plán hlásí nedostatek',
+    PP.planRadkyCinnosti('dpz', plan, PP.PLAN_PROJ_VYCHOZI).length === 10 && !!pl && pl.kontrola.some(k => k.kod === 'procenta'),
+    PP.planRadkyCinnosti('dpz', plan, PP.PLAN_PROJ_VYCHOZI).length);
 }
 
 /* 4) viditelnost polí a tisk krycího listu */
@@ -156,6 +239,25 @@ for (const sleva of [0, 10]) {
   test('symbol PODM_ZPUSOB_FAKTURACE nabídky PROJ jde z předvolby',
     /^záloha 50 % po podpisu smlouvy/.test(kp.kryciProjPodminkoveSymboly(z, v, null).PODM_ZPUSOB_FAKTURACE || ''),
     kp.kryciProjPodminkoveSymboly(z, v, null).PODM_ZPUSOB_FAKTURACE);
+  /* Pole nahrazená plánem (`stary`) do symbolů {{PODM_…}} nepatří a ruční
+   * hodnota starší verze nepřebije způsob fakturace z předvolby (revize
+   * etapy B: skrytá pole plnila zálohu a fakturaci po stupních, které plán
+   * neplatí, a ruční znění způsobu fakturace nešlo vidět ani smazat). */
+  v.data.kryciProj.hodnoty = { zpusobFakturace: 'měsíčně', zaloha: 'Záloha 70 %', faktDps: '100 % předem' };
+  const sy = kp.kryciProjPodminkoveSymboly(z, v, null);
+  test('symboly PODM_: ruční způsob fakturace starší verze nepřebije předvolbu',
+    /^záloha 50 % po podpisu smlouvy/.test(sy.PODM_ZPUSOB_FAKTURACE || ''), sy.PODM_ZPUSOB_FAKTURACE);
+  test('symboly PODM_: dřívější záloha a fakturace po stupních se u plánu neplní (zůstanou {{…}})',
+    sy.PODM_ZALOHA === undefined && sy.PODM_ZALOHA_PROC === undefined && sy.PODM_FAKT_DPS === undefined && sy.PODM_FAKT_ZAMERENI === undefined,
+    [sy.PODM_ZALOHA, sy.PODM_ZALOHA_PROC, sy.PODM_FAKT_DPS]);
+  kp.kryciProjZmrazPodminky(z, v);
+  test('zmrazení u plánu vezme způsob fakturace z předvolby, ne ruční starší hodnotu',
+    /^záloha 50 % po podpisu smlouvy/.test(v.data.kryciProj.zmrazeno.zpusobFakturace || ''), v.data.kryciProj.zmrazeno);
+  const z3 = novaZ(0), v3 = z3.varianty[0];
+  v3.data.kryciProj.hodnoty = { zaloha: 'Záloha 70 %' };
+  zamkniVariantu(v3, { typ: 'nabidkaProj', kdo: 'Test', cislo: '2026 - OVP - CN - 405' });
+  test('odeslaná nabídka z doby před plánem: PODM_ZALOHA z dřívějšího pole (jak odešla)',
+    kp.kryciProjPodminkoveSymboly(z3, v3, null).PODM_ZALOHA === 'Záloha 70 %', kp.kryciProjPodminkoveSymboly(z3, v3, null).PODM_ZALOHA);
 }
 
 /* 6) eura: ruční částky (v korunách) se v cizojazyčné smlouvě neuplatní */

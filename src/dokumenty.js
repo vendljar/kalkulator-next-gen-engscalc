@@ -24,9 +24,11 @@ async function dokumentVygeneruj(typ, templateArrayBuffer, zak, varianta, jekly,
    * zhasnutá už v UI, ale sem vede jediná cesta ke každému dokumentu –
    * tudíž je to jediné místo, kde stačí hlídat jednou. Zábrana žije v UI
    * vrstvě (ui/ukazkove_ui.js), protože potřebuje stav běžící aplikace;
-   * v Node testech funkce neexistuje a podmínka je tím pádem neškodná. */
+   * v Node testech funkce neexistuje a podmínka je tím pádem neškodná.
+   * Varianta jde s sebou: dokument může vznikat z řídící varianty, ne
+   * z otevřené (nabidkaVarianta; plán plateb — revize etapy B 30. 9. 2026). */
   if (typeof dokumentZabrana === 'function') {
-    const duvod = dokumentZabrana(typ);
+    const duvod = dokumentZabrana(typ, varianta);
     if (duvod) throw new Error(duvod);
   }
   const def = DOKUMENTY[typ];

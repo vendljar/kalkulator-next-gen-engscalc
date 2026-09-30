@@ -126,12 +126,24 @@ function sodProjData(zak, varianta, lang, sablona) {
  * s osmi pevnými platbami dostane SODP_PLATBAn_KC u plateb se stejným
  * milníkem — a když plán obsahuje platbu, kterou stará šablona vyjádřit
  * neumí, smlouva nevznikne (nesouhlasila by s nabídkou ani s cenou díla).
- * Odeslaná nabídka z doby před plánem (`stary`) nese ruční splátky jako dřív. */
+ * Odeslaná nabídka z doby před plánem (`stary`) nese ruční splátky jako dřív
+ * (SODP_PLATBAn_KC z krycího listu) a nová šablona z nich dostane seznam
+ * plateb větou s milníky osmi pevných plateb staré šablony (revize etapy B,
+ * 30. 9. 2026). Prázdný seznam symbol neplní — zůstane ve Wordu vidět. */
 function sodProjPlatby(d, sablona) {
   const pl = d && d.platbyProj;
-  if (!pl || pl.stary || typeof planSodKalendar !== 'function') return;
+  if (!pl || typeof planSodKalendar !== 'function') return;
+  if (pl.stary) {
+    const radky = PLAN_SODP_STARE.map((m, i) => {
+      const kc = d.placeholders['SODP_PLATBA' + (i + 1) + '_KC'];
+      return kc ? { castka: kc, text: planMilnikText({ m }, PLAN_PROJ_VYCHOZI) } : null;
+    }).filter(Boolean);
+    if (radky.length) d.placeholders.SODP_PLATEBNI_KALENDAR = planSodKalendar({ platby: radky }, x => String(x));
+    return;
+  }
   const fmt = (pl.mena && pl.mena.fmt) || null;
-  d.placeholders.SODP_PLATEBNI_KALENDAR = planSodKalendar(pl.dopocet, fmt);
+  const kalendar = planSodKalendar(pl.dopocet, fmt);
+  if (kalendar) d.placeholders.SODP_PLATEBNI_KALENDAR = kalendar;
   const stare = planSodStareSymboly(pl.dopocet, fmt);
   Object.assign(d.placeholders, stare.symboly);
   const sym = sablona && sablona.symboly;

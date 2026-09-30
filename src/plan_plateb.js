@@ -37,6 +37,10 @@
 const PLAN_PROJ_SEKCE = ['zamereni', 'studie', 'projednani', 'dpz', 'ic', 'dps', 'ezc', 'kolaudace', 'geodet'];
 const PLAN_PROJ_PREDVOLBY = ['std', 'zaloha', 'sto', 'vlastni'];
 const PLAN_PROJ_ZALOHY = [0, 30, 50, 70];
+/* Nejvýš splátek jedné činnosti (editor krycího listu, firemní Standard).
+ * Delší pole z poškozených dat se ořízne — obří pole by ucpalo prohlížeč
+ * každému, kdo zakázku otevře (revize etapy B, 30. 9. 2026). */
+const PLAN_PROJ_MAX_SPLATEK = 10;
 /* Id milníků jsou stálá (klíč plateb a ručních přepisů), pořadí katalogu =
  * pořadí plateb ve SoD. Texty jsou z prototypu plánu plateb (29. 9. 2026). */
 const PLAN_PROJ_MILNIKY = [
@@ -126,7 +130,7 @@ function planRadkyCinnosti(k, plan, firemni) {
   const kopie = (radky) => (Array.isArray(radky) ? radky : []).map(r => ({
     p: +(r && r.p), m: String((r && r.m) || ''), t: planMilnikText(r, f) }));
   const upr = plan && plan.cinnosti && plan.cinnosti[k];
-  if (Array.isArray(upr) && upr.length) return kopie(upr);
+  if (Array.isArray(upr) && upr.length) return kopie(upr.slice(0, PLAN_PROJ_MAX_SPLATEK));
   const pv = planPredvolba(plan, f);
   const predani = f.predani[k] || PLAN_PROJ_VYCHOZI.predani[k];
   if (pv === 'zaloha') {
@@ -146,7 +150,7 @@ const planHal = (x) => Math.round(x * 100) / 100;
  * nabízené činnosti (cena > 0), jak je dává nabidkaProjData. */
 function planPlatebDopocet(ceny, plan, firemni) {
   const f = planFiremni(firemni);
-  const poradi = f.milniky.map(m => m.id);
+  const poradi = f.milniky.map(m => m && m.id);
   const skupiny = new Map();
   const cinnosti = {};
   let cena = 0;
@@ -248,9 +252,23 @@ function planPlatebVarianty(varianta, firma) {
   const prepis = plan && plan.prepis !== undefined ? plan.prepis : (zeStarych ? zeStarych.prepis : undefined);
   if (varianta && varianta.zamek && varianta.zamek.zamceno) {
     const z = kl.zmrazenoPlan;
-    if (!z || typeof z !== 'object' || !z.cinnosti) return { plan: null, firemni: PLAN_PROJ_VYCHOZI, zmrazeny: false, stary: true };
-    const firemni = Object.assign({}, PLAN_PROJ_VYCHOZI, { milniky: Array.isArray(z.milniky) ? z.milniky : [] });
-    return { plan: { v: 1, predvolba: z.predvolba, zaloha: z.zaloha, cinnosti: z.cinnosti, prepis },
+    if (!z || typeof z !== 'object' || !z.cinnosti || typeof z.cinnosti !== 'object')
+      return { plan: null, firemni: PLAN_PROJ_VYCHOZI, zmrazeny: false, stary: true };
+    /* Snímek žije v datech zakázky a server ho nekontroluje — poškozený
+     * záznam (ruční úprava, import) nesmí shodit nabídku ani smlouvu. */
+    const milniky = (Array.isArray(z.milniky) ? z.milniky : [])
+      .filter(m => m && typeof m === 'object' && typeof m.id === 'string')
+      .map(m => ({ id: m.id, cz: String(m.cz == null ? '' : m.cz) }));
+    const cinnosti = {};
+    PLAN_PROJ_SEKCE.forEach(k => {
+      if (Array.isArray(z.cinnosti[k])) cinnosti[k] = z.cinnosti[k].filter(r => r && typeof r === 'object');
+    });
+    const firemni = Object.assign({}, PLAN_PROJ_VYCHOZI, { milniky });
+    /* `upravene` = činnosti upravené proti předvolbě V DOBĚ ODESLÁNÍ (štítek
+     * „upraveno"); zamčený plán se nesrovnává se Standardem z kódu, pod
+     * kterým neodešel (revize etapy B, 30. 9. 2026). */
+    const upravene = Array.isArray(z.upravene) ? z.upravene.filter(k => PLAN_PROJ_SEKCE.indexOf(k) >= 0) : undefined;
+    return { plan: { v: 1, predvolba: z.predvolba, zaloha: z.zaloha, cinnosti, prepis, upravene },
              firemni, zmrazeny: true, stary: false, zeStarych };
   }
   const ef = zeStarych ? Object.assign({ v: 1 }, plan || {}, { prepis }) : plan;
@@ -273,10 +291,12 @@ function planPlatebSnimek(plan, firemni, ceny) {
   const pv = planPredvolba(plan, f);
   const z = plan && plan.zaloha != null && plan.zaloha !== '' ? +plan.zaloha : +f.zalohaPct;
   return { v: 1, predvolba: pv, zaloha: isFinite(z) ? z : 0, cinnosti,
-    milniky: f.milniky.filter(m => pouzite.has(m.id)).map(m => ({ id: m.id, cz: m.cz })) };
+    milniky: f.milniky.filter(m => pouzite.has(m.id)).map(m => ({ id: m.id, cz: m.cz })),
+    upravene: Object.keys(cinnosti).filter(k => planCinnostUpravena(k, plan, f)) };
 }
 /* Jsou řádky činnosti jiné než v předvolbě? (štítek „upraveno") */
 function planCinnostUpravena(k, plan, firemni) {
+  if (plan && Array.isArray(plan.upravene)) return plan.upravene.indexOf(k) >= 0;   // zamčený: ze snímku
   const upr = plan && plan.cinnosti && plan.cinnosti[k];
   if (!Array.isArray(upr) || !upr.length) return false;
   const vzor = planRadkyCinnosti(k, Object.assign({}, plan, { cinnosti: {} }), firemni);
@@ -286,6 +306,24 @@ function planCinnostUpravena(k, plan, firemni) {
 function planUpraveno(plan, firemni, ceny) {
   if (planPredvolba(plan, firemni) === 'vlastni') return false;
   return PLAN_PROJ_SEKCE.some(k => (!ceny || +ceny[k] > 0) && planCinnostUpravena(k, plan, firemni));
+}
+/* Vytiskne šablona nabídky PROJ z doby před plánem (v2/v3) totéž co plán?
+ * Její pevné bloky nesou Standard Z KÓDU (PLAN_PROJ_VYCHOZI) s výchozími
+ * texty milníků — jiná předvolba, úprava, firemní Standard ani přepsaný
+ * text katalogu ve Wordu nebudou. Porovnávají se nabízené činnosti, které
+ * pevný blok mají; projednání a geodet ho neměly (nabídka o nich mlčí,
+ * nerozporuje). Pravidlo planPlatebWordProj (revize etapy B, 30. 9. 2026 —
+ * do té doby se srovnávalo s firemním Standardem). */
+const PLAN_PROJ_STARE_BLOKY = ['zamereni', 'studie', 'dpz', 'ic', 'dps', 'ezc', 'kolaudace'];
+function planShodaSeStarouSablonou(plan, firemni, ceny) {
+  const f = planFiremni(firemni);
+  return PLAN_PROJ_STARE_BLOKY.every(k => {
+    if (ceny && !(+ceny[k] > 0)) return true;
+    const a = planRadkyCinnosti(k, plan, f);
+    const vzor = PLAN_PROJ_VYCHOZI.standard[k];
+    return a.length === vzor.length && a.every((r, i) => r.p === vzor[i].p && r.m === vzor[i].m
+      && r.t === planMilnikText(vzor[i], PLAN_PROJ_VYCHOZI));
+  });
 }
 function planZalohaEf(plan, firemni) {
   const f = planFiremni(firemni);
@@ -416,4 +454,5 @@ if (typeof module !== 'undefined')
     PLAN_SODP_STARE, planFiremni, planFirmaPlan, planPct, planPredvolba, planMilnikText, planRadkyCinnosti, planPlatebDopocet,
     planPlatebKontrola, planCastkaZTextu, planPlatebZeStarych, planPlatebFirmaVady, planPlatebFirmaCisty,
     planPlatebVarianty, planPlatebSnimek, planCinnostUpravena, planUpraveno, planZalohaEf, planPopisPredvolby,
+    PLAN_PROJ_MAX_SPLATEK, PLAN_PROJ_STARE_BLOKY, planShodaSeStarouSablonou,
     planRadekText, planCinnostText, planZpusobFakturace, planKlicPlatby, planSodKalendar, planSodStareSymboly };
