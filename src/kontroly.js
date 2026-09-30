@@ -565,6 +565,63 @@ const KONTROLY = [
     },
   },
   {
+    /* PLÁN PLATEB PROJEKCE — 100 % U ČINNOSTI (etapa B, #367, rozhodnutí J. V.
+     * 29. 9. 2026: „součet u každé činnosti 100 %, dokument nevznikne,
+     * odklepnout nejde"). Splátky nabízené činnosti musí dát 100 %, mít
+     * kladná procenta a známý milník. Skutečná brána je v dokumentZabrana
+     * (nabídka PROJ, náhled, smlouva) — tohle pravidlo ji ukáže předem. */
+    kod: 'planPlateb100', kde: 'Plán plateb PROJ', nazev: 'Plán plateb projekce nedává 100 % nebo nemá milník',
+    zabranaMozna: true,
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      const pl = ctx.platbyProj;
+      if (!pl || pl.stary) return null;
+      const v = (pl.kontrola || []).filter(k => k.kod !== 'soucet');
+      if (!v.length) return null;
+      return { uroven: KONTROLY_UROVEN_ZABRANA,
+        text: 'Plán plateb projekce: ' + v.map(x => x.text).join(' ')
+          + ' Nabídka PROJ ani smlouva nevznikne, dokud se to neopraví (krycí list PROJ → Plán plateb).' };
+    },
+  },
+  {
+    /* PLATBY SMLOUVY PROJ = CENA DÍLA (etapa B, P9.3). Dopočet sedí vždy;
+     * nesouhlas vznikne jen ruční částkou v tabulce plateb krycího listu.
+     * Zastaví smlouvu o dílo PROJ (nabídka platby v korunách nenese). */
+    kod: 'planPlatebSoucet', kde: 'Plán plateb PROJ', nazev: 'Platby smlouvy PROJ nedávají cenu díla',
+    zabranaMozna: true,
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      const pl = ctx.platbyProj;
+      if (!pl || pl.stary || !pl.dopocet || pl.dopocet.sedi) return null;
+      const f = (pl.mena && pl.mena.fmt) || (n => String(n));
+      return { uroven: KONTROLY_UROVEN_ZABRANA,
+        text: 'Součet plateb smlouvy o dílo PROJ (' + f(pl.dopocet.soucet) + ') nesouhlasí s cenou díla (' + f(pl.dopocet.cena)
+          + ') — upravte ruční částky v krycím listu PROJ (Smlouva o dílo — splátky) nebo vraťte dopočet (↺). '
+          + 'Smlouva nevznikne, dokud se to neopraví.' };
+    },
+  },
+  {
+    /* PLÁN PLATEB VE WORDU (etapa B, vzor slevaWordProj). Šablona PROJ v2/v3
+     * má platební podmínky natvrdo (procenta Standardu) — plán jiný než
+     * Standard bez úprav by Word nevytiskl. Varování, ne zábrana: online
+     * náhled a krycí list plán ukazují, smlouva ho nese; řešením je šablona
+     * PROJ v4 (nastroje/vyrob_sablony.js --proj-v4). */
+    kod: 'planPlatebWordProj', kde: 'Nabídka PROJ', nazev: 'Plán plateb se ve Wordu neukáže',
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      const pl = ctx.platbyProj;
+      if (!pl || pl.stary || typeof planPredvolba !== 'function') return null;
+      if (planPredvolba(pl.plan, pl.firemni) === 'std' && !planUpraveno(pl.plan, pl.firemni, pl.ceny)) return null;
+      const s = ctx.sablonaNabidkaProj;
+      if (!s || !Array.isArray(s.symboly) || !s.symboly.length) return null;
+      if (s.symboly.some(x => /^PROJ_PLATBY_/.test(x) || x === 'PROJ_PLATEBNI_PODMINKY')) return null;
+      return { text: 'Word vytiskne pevné platební podmínky Standardu, ne plán plateb zakázky ('
+        + planPopisPredvolby(pl.plan, pl.firemni, pl.ceny) + '): šablona nabídky PROJ' + (s.nazev ? ' „' + s.nazev + '"' : '')
+        + (s.verze ? ' (verze ' + s.verze + ')' : '') + ' nemá symboly {{PROJ_PLATBY_…}}. Plán ukazuje online náhled nabídky '
+        + 'a krycí list, smlouva o dílo ho nese. Nahrajte šablonu nabídky PROJ v4.' };
+    },
+  },
+  {
     /* PROJEKCE U ZAHRANIČNÍ ZAKÁZKY (P11 / K15-N72, rozhodnutí J. V.
      * 29. 9. 2026: „zahraniční zakázky PROJ nerealizujeme"). Řada Zahraničí
      * u projekce mění jen přirážku a DPH, sazby a fixy zůstávají tuzemské —

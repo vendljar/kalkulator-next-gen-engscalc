@@ -101,7 +101,7 @@ function sodData(zak, varianta, jekly, lang) {
 
 /* SoD projekčních prací — stejná data jako nabídka PROJ (hlavička PROJ,
  * číslo OVP), jiné jméno souboru. */
-function sodProjData(zak, varianta, lang) {
+function sodProjData(zak, varianta, lang, sablona) {
   /* Smlouva nese cenu díla: činnosti po slevě, ať se sečtou na cenu, kterou
    * objednatel platí (řádek slevy smlouva nemá). */
   const d = nabidkaProjData(zak, varianta, lang, { slevaZvlast: false });
@@ -114,8 +114,33 @@ function sodProjData(zak, varianta, lang) {
    * v krycím listu PROJ (23. 8. 2026) — smlouva si je odtud vyzvedne.
    * Co obchodník nevyplnil, zůstane ve Wordu vidět jako {{…}}. */
   if (typeof kryciProjSodSymboly === 'function') kryciProjSodSymboly(zak, varianta, d.placeholders);
+  sodProjPlatby(d, sablona);
   return Object.assign({}, d,
     { nazevSouboru: nazev.replace(/[\\/:*?"<>|]+/g, '-') });
+}
+
+/* PLATBY SMLOUVY Z PLÁNU PLATEB (etapa B, P9.3 — rozhodnutí J. V. 29. 9. 2026).
+ * Dopočet: procento × cena činnosti po slevě, splátky se stejným milníkem
+ * sečtené, ruční částka z krycího listu platí. Nová šablona má seznam plateb
+ * jedním symbolem {{SODP_PLATEBNI_KALENDAR}} (odstavec za platbu); stará
+ * s osmi pevnými platbami dostane SODP_PLATBAn_KC u plateb se stejným
+ * milníkem — a když plán obsahuje platbu, kterou stará šablona vyjádřit
+ * neumí, smlouva nevznikne (nesouhlasila by s nabídkou ani s cenou díla).
+ * Odeslaná nabídka z doby před plánem (`stary`) nese ruční splátky jako dřív. */
+function sodProjPlatby(d, sablona) {
+  const pl = d && d.platbyProj;
+  if (!pl || pl.stary || typeof planSodKalendar !== 'function') return;
+  const fmt = (pl.mena && pl.mena.fmt) || null;
+  d.placeholders.SODP_PLATEBNI_KALENDAR = planSodKalendar(pl.dopocet, fmt);
+  const stare = planSodStareSymboly(pl.dopocet, fmt);
+  Object.assign(d.placeholders, stare.symboly);
+  const sym = sablona && sablona.symboly;
+  const ma = (k) => !!sym && (typeof sym.has === 'function' ? sym.has(k) : Array.from(sym).indexOf(k) >= 0);
+  if (sym && !ma('SODP_PLATEBNI_KALENDAR') && stare.navic.length)
+    throw new Error('Šablona smlouvy o dílo PROJ má jen osm pevných plateb ({{SODP_PLATBA1_KC}} … {{SODP_PLATBA8_KC}}) '
+      + 'a plán plateb má platby, které v ní nejsou (' + stare.navic.map(x => x.text || x.klic).join('; ') + '). '
+      + 'Smlouva by nesouhlasila s nabídkou ani s cenou díla. Nahrajte šablonu SoD PROJ se seznamem plateb '
+      + '{{SODP_PLATEBNI_KALENDAR}} (Nastavení → Smlouvy / Šablony), nebo upravte plán plateb v krycím listu PROJ.');
 }
 
 /* Plná moc — vyřizuje se pro OBJEKT (povolení, jednání s úřady), ne pro
@@ -150,7 +175,9 @@ if (typeof dokumentRegistruj === 'function') {
   });
   dokumentRegistruj('sodProj', {
     nazev: 'Smlouva o dílo — projekční práce', sablona: 'Sablona_SOD_PROJEKCE.docx',
-    builder: (zak, varianta, jekly, lang) => sodProjData(zak, varianta, lang),
+    /* Symboly šablony: stará (8 pevných plateb) × nová se seznamem plateb. */
+    sablonaSymboly: true,
+    builder: (zak, varianta, jekly, lang, sablona) => sodProjData(zak, varianta, lang, sablona),
   });
   dokumentRegistruj('plnaMoc', {
     nazev: 'Plná moc', sablona: 'Sablona_PLNA_MOC.docx',

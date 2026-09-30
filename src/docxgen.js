@@ -184,6 +184,25 @@ function docxZnackyBloku(xml) {
     return m ? { zac: sp.zac, kon: sp.kon, jmeno: m[1], typ: m[2] } : null;
   }).filter(Boolean);
 }
+/* ODSTAVEC ZA KAŽDÝ ŘÁDEK (etapa B plánu plateb, 30. 9. 2026). Seznam
+ * plateb smlouvy o dílo PROJ stojí v šabloně jako JEDEN odstavec (odrážka)
+ * se symbolem; každá platba má být vlastní odrážkou, jako bylo osm pevných
+ * řádků. Pro symboly z tohoto seznamu se proto odstavec zopakuje za každý
+ * neprázdný řádek hodnoty (i s číslováním a stylem). Ostatní víceřádkové
+ * symboly se dál lámou uvnitř odstavce (<w:br/>, viz xmlEscRadky). */
+const DOCX_ODSTAVCE_ZA_RADEK = ['SODP_PLATEBNI_KALENDAR'];
+function rozvinOdstavceZaRadek(xml, ph) {
+  DOCX_ODSTAVCE_ZA_RADEK.forEach(klic => {
+    if (!ph || ph[klic] == null) return;
+    const radky = String(ph[klic]).replace(/\r/g, '').split('\n').filter(r => r.trim() !== '');
+    if (radky.length < 2) return;
+    xml = xml.replace(/<w:p[\s>](?:(?!<\/w:p>)[\s\S])*?<\/w:p>/g, (p) => {
+      if (klicePlaceholderu(p).indexOf(klic) < 0) return p;
+      return radky.map(r => nahradPlaceholdery(p, { [klic]: r })).join('');
+    });
+  });
+  return xml;
+}
 function docxVBunce(xml, pos) {
   const pred = xml.slice(0, pos);
   return (pred.match(/<w:tc[\s>]/g) || []).length > (pred.match(/<\/w:tc>/g) || []).length;
@@ -608,6 +627,7 @@ async function docxVyplnSablonu(arrayBuffer, placeholders, priplatky, obrazky) {
         po = odstranPrazdneTsRadky(po, placeholders);   // prázdné/„-“ řádky TS pryč
       }
       po = odstranPrazdneBloky(po, placeholders);       // prázdné kapitoly se značkami pryč (P8A)
+      po = rozvinOdstavceZaRadek(po, placeholders);     // seznam plateb: odstavec za platbu (etapa B)
       po = nahradPlaceholdery(po, placeholders);
       if (po !== pred) nahrad++;
       p.data = enkoder.encode(po);
@@ -942,7 +962,7 @@ async function docxXmlVady(arrayBuffer) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { docxObsahZkontroluj, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
+  module.exports = { docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
     odstranPrazdneTsRadky, jePrazdnaHodnota, klicePlaceholderu, odstranPrazdneBloky, docxZnackyBloku,
     docxVlozObrazky, rozmeryObrazku, dataUrlNaBajty,
     docxDokumentBlob, docxTeloZeSekci, docxSestavBlob, docxPar, docxEsc,

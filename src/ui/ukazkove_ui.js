@@ -93,11 +93,18 @@ function ukazkoveTiskLista() {
  * z čeho počítat." Dokument spočítaný z nul není nabídka za nula korun,
  * je to prázdný formulář s razítkem – a ten se zákazníkovi poslat nesmí.
  * Vrací důvod (text), nebo prázdný řetězec, když je cesta volná. */
-function dokumentZabrana() {
-  if (typeof ukazkoveBraniDokumentu !== 'function') return '';
-  const s = ukazkoveStavAkt();
-  if (!ukazkoveBraniDokumentu(s)) return '';
-  return ukazkoveKratce(s, !ukazkoveSlozkaSmi());
+function dokumentZabrana(typ) {
+  if (typeof ukazkoveBraniDokumentu === 'function') {
+    const s = ukazkoveStavAkt();
+    if (ukazkoveBraniDokumentu(s)) return ukazkoveKratce(s, !ukazkoveSlozkaSmi());
+  }
+  /* Plán plateb projekce s vadou (etapa B) — jen dokumenty PROJ, které ho
+   * nesou (typ dokumentu předává dokumentVygeneruj i náhled nabídky PROJ). */
+  if (typ && typeof planPlatebZabranaDokumentu === 'function') {
+    const duvod = planPlatebZabranaDokumentu(typ);
+    if (duvod) return duvod;
+  }
+  return '';
 }
 
 /* Panel na místo tlačítek. Vysvětluje, co se má stát, ne jen že to nejde –

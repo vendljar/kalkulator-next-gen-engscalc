@@ -85,6 +85,13 @@ function kontrolyCtxAkt() {
       } catch (e) { return null; }
     })(),
     zaokr: (typeof ZO !== 'undefined') ? ZO : null,
+    /* Plán plateb projekce (etapa B) — 100 % u činností, platby smlouvy. */
+    platbyProj: (() => {
+      try {
+        return (typeof nabidkaProjPlatby === 'function' && typeof ZAK !== 'undefined')
+          ? nabidkaProjPlatby(ZAK, aktivniVarianta(ZAK), 'cz') : null;
+      } catch (e) { return null; }
+    })(),
     /* Od 4. 8. 2026 má PROJ vlastní obchodní zaokrouhlení (#38); kontroly
      * marže musí počítat s tím, které opravdu odejde v nabídce PROJ. */
     zaokrProj: (typeof ZOP !== 'undefined' && ZOP) ? ZOP
@@ -107,7 +114,13 @@ function kontrolySablonaNabidka(sleva, jazyk) {
 function kontrolySablonaNabidkaProj(slevaProj, projVysledek, jazyk) {
   const sleva = typeof slevaPlati === 'function' && slevaPlati(slevaProj);
   const navic = typeof kontrolyProjNavic === 'function' && kontrolyProjNavic(projVysledek).length > 0;
-  if (!sleva && !navic) return null;
+  /* Plán plateb jiný než Standard bez úprav (etapa B) — pravidlo planPlatebWordProj. */
+  let plan = false;
+  try {
+    const pl = (typeof nabidkaProjPlatby === 'function') ? nabidkaProjPlatby(ZAK, aktivniVarianta(ZAK), 'cz') : null;
+    plan = !!(pl && !pl.stary && (planPredvolba(pl.plan, pl.firemni) !== 'std' || planUpraveno(pl.plan, pl.firemni, pl.ceny)));
+  } catch (e) { plan = false; }
+  if (!sleva && !navic && !plan) return null;
   return kontrolySablonaSymboly('nabidkaProj', jazyk);
 }
 function kontrolySablonaSymboly(zaklad, jazyk) {

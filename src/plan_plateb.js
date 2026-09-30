@@ -194,16 +194,18 @@ function planPlatebKontrola(ceny, plan, firemni) {
     if (!(+((ceny || {})[k]) > 0)) return;
     const radky = planRadkyCinnosti(k, plan, f);
     const soucet = radky.reduce((a, r) => a + (isFinite(r.p) ? r.p : 0), 0);
+    const zkr = PLAN_PROJ_ZKRATKY[k] || k;
     if (radky.some(r => !(r.p > 0) || !isFinite(r.p)))
-      out.push({ kod: 'kladne', k, text: 'Splátka s nulovým, záporným nebo chybějícím procentem (' + k + ').' });
+      out.push({ kod: 'kladne', k, text: 'Splátka činnosti ' + zkr + ' má nulové, záporné nebo chybějící procento.' });
     if (Math.round(soucet * 100) !== 10000)
-      out.push({ kod: 'procenta', k, text: 'Splátky činnosti ' + k + ' nedávají 100 % (součet ' + soucet + ' %).' });
+      out.push({ kod: 'procenta', k, text: 'Splátky činnosti ' + zkr + ' nedávají 100 % (součet ' + planPct(soucet) + ').' });
     if (radky.some(r => !r.t))
-      out.push({ kod: 'milnik', k, text: 'Splátka činnosti ' + k + ' nemá známý milník (vyberte z katalogu nebo napište text).' });
+      out.push({ kod: 'milnik', k, text: 'Splátka činnosti ' + zkr + ' nemá známý milník (vyberte z katalogu nebo napište text).' });
   });
   const d = planPlatebDopocet(ceny, plan, f);
+  const kc = (n) => (+n || 0).toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Kč';
   if (!d.sedi)
-    out.push({ kod: 'soucet', text: 'Součet plateb smlouvy (' + d.soucet + ' Kč) se neshoduje s cenou díla (' + d.cena + ' Kč).' });
+    out.push({ kod: 'soucet', text: 'Součet plateb smlouvy (' + kc(d.soucet) + ') nesouhlasí s cenou díla (' + kc(d.cena) + ').' });
   return out;
 }
 
@@ -236,14 +238,23 @@ function planPlatebZeStarych(hodnoty) {
 function planPlatebVarianty(varianta, firma) {
   const kl = (varianta && varianta.data && varianta.data.kryciProj) || {};
   const plan = kl.planPlateb && typeof kl.planPlateb === 'object' ? kl.planPlateb : null;
+  /* PŘEVOD STARŠÍCH ZAKÁZEK (krok 7, podklad 3.7). Ruční splátky smlouvy
+   * z dřívějšího krycího listu (sodpPlatba1–8) platí jako ruční částky
+   * plateb se stejným milníkem, dokud plán nemá vlastní (plan.prepis) —
+   * líně, bez zápisu do dat (parita prohlížeč × server, zamčené varianty).
+   * Zhmotní je až první zápis do plánu (planKlpData v UI). */
+  const stare = (!plan || plan.prepis === undefined) ? planPlatebZeStarych(kl.hodnoty) : null;
+  const zeStarych = stare && (Object.keys(stare.prepis).length || stare.necitelne.length) ? stare : null;
+  const prepis = plan && plan.prepis !== undefined ? plan.prepis : (zeStarych ? zeStarych.prepis : undefined);
   if (varianta && varianta.zamek && varianta.zamek.zamceno) {
     const z = kl.zmrazenoPlan;
     if (!z || typeof z !== 'object' || !z.cinnosti) return { plan: null, firemni: PLAN_PROJ_VYCHOZI, zmrazeny: false, stary: true };
     const firemni = Object.assign({}, PLAN_PROJ_VYCHOZI, { milniky: Array.isArray(z.milniky) ? z.milniky : [] });
-    return { plan: { v: 1, predvolba: z.predvolba, zaloha: z.zaloha, cinnosti: z.cinnosti, prepis: plan && plan.prepis },
-             firemni, zmrazeny: true, stary: false };
+    return { plan: { v: 1, predvolba: z.predvolba, zaloha: z.zaloha, cinnosti: z.cinnosti, prepis },
+             firemni, zmrazeny: true, stary: false, zeStarych };
   }
-  return { plan, firemni: planFirmaPlan(firma), zmrazeny: false, stary: false };
+  const ef = zeStarych ? Object.assign({ v: 1 }, plan || {}, { prepis }) : plan;
+  return { plan: ef, firemni: planFirmaPlan(firma), zmrazeny: false, stary: false, zeStarych };
 }
 /* Snímek plánu při prvním zamčení: splátky všech nabízených činností
  * i s texty milníků z katalogu té doby — pozdější změna firemního plánu
@@ -305,6 +316,29 @@ function planZpusobFakturace(plan, firemni, vetaFirmy) {
   }
   if (pv === 'sto') return String(vetaFirmy || '').trim() || 'po dokončení jednotlivých stupňů dokumentace';
   return 'po milnících jednotlivých činností podle plánu plateb';
+}
+
+/* ---------- smlouva o dílo PROJ (krok 5 etapy B) ----------
+ * Seznam plateb pro {{SODP_PLATEBNI_KALENDAR}} — větou, jakou nesla stará
+ * šablona u každé z osmi pevných plateb: „Platba ve výši 95 880,00 Kč + DPH
+ * proběhne po podpisu smlouvy / objednávky." (formát řádku k potvrzení
+ * J. V., Q11). `fmt` = formát částky dokumentu (mena.fmt). */
+function planSodKalendar(dopocet, fmt) {
+  const f = typeof fmt === 'function' ? fmt : (n => String(n));
+  return ((dopocet && dopocet.platby) || []).map(x => 'Platba ve výši ' + f(x.castka) + ' + DPH proběhne '
+    + String(x.text || '(milník chybí)').replace(/[.\s]+$/, '') + '.').join('\n');
+}
+/* Stará šablona SoD PROJ má osm pevných plateb s milníky napsanými v šabloně
+ * (PLAN_SODP_STARE). Symboly SODP_PLATBAn_KC se plní z plateb plánu se
+ * stejným milníkem; `navic` = platby, které stará šablona vyjádřit neumí. */
+function planSodStareSymboly(dopocet, fmt) {
+  const f = typeof fmt === 'function' ? fmt : (n => String(n));
+  const out = {}, navic = [];
+  ((dopocet && dopocet.platby) || []).forEach(x => {
+    const i = PLAN_SODP_STARE.indexOf(x.klic);
+    if (i < 0) navic.push(x); else out['SODP_PLATBA' + (i + 1) + '_KC'] = f(x.castka);
+  });
+  return { symboly: out, navic };
 }
 
 /* ---------- firemní plán (Nastavení → Firma, krok 2 etapy B) ----------
@@ -382,4 +416,4 @@ if (typeof module !== 'undefined')
     PLAN_SODP_STARE, planFiremni, planFirmaPlan, planPct, planPredvolba, planMilnikText, planRadkyCinnosti, planPlatebDopocet,
     planPlatebKontrola, planCastkaZTextu, planPlatebZeStarych, planPlatebFirmaVady, planPlatebFirmaCisty,
     planPlatebVarianty, planPlatebSnimek, planCinnostUpravena, planUpraveno, planZalohaEf, planPopisPredvolby,
-    planRadekText, planCinnostText, planZpusobFakturace, planKlicPlatby };
+    planRadekText, planCinnostText, planZpusobFakturace, planKlicPlatby, planSodKalendar, planSodStareSymboly };

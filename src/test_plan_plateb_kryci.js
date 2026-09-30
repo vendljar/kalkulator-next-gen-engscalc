@@ -169,5 +169,27 @@ for (const sleva of [0, 10]) {
     && Math.round(en.dopocet.cena) === Math.round(NP.nabidkaProjData(z, v, 'en', { slevaZvlast: false }).souhrn.bezDph), [en.dopocet.cena]);
 }
 
+/* 7) převod starších zakázek (krok 7): ruční splátky sodpPlatba1–8 */
+{
+  const z = novaZ(0), v = z.varianty[0];
+  v.data.kryciProj.hodnoty = { sodpPlatba1: '110 000 Kč', sodpPlatba6: 'viz příloha', zaloha: '30 % – po podpisu smlouvy' };
+  const e = PP.planPlatebVarianty(v, global.NAST.firma);
+  test('starší zakázka: ruční splátka 1 platí jako ruční částka platby „po podpisu"', e.plan && e.plan.prepis.podpis === 110000 && !!e.zeStarych, e.plan);
+  test('nečitelná ruční splátka se nezahodí (k upozornění)', e.zeStarych && e.zeStarych.necitelne.length === 1 && e.zeStarych.necitelne[0].id === 'sodpPlatba6');
+  const pl = NP.nabidkaProjPlatby(z, v, 'cz');
+  test('platba „po podpisu" je ve smlouvě ručně 110 000 Kč a součet hlídá kontrola',
+    pl.dopocet.platby.find(x => x.klic === 'podpis').prepsano && pl.dopocet.platby.find(x => x.klic === 'podpis').castka === 110000
+    && pl.kontrola.some(k => k.kod === 'soucet'), pl.dopocet.platby.map(x => x.klic + ':' + x.castka));
+  test('převod nic nezapsal do dat (líně)', v.data.kryciProj.planPlateb === undefined || v.data.kryciProj.planPlateb === null);
+  v.data.kryciProj.planPlateb = { v: 1, prepis: {} };
+  test('plán s vlastními ručními částkami (i prázdnými) dřívější splátky nebere', !PP.planPlatebVarianty(v, global.NAST.firma).zeStarych
+    && !NP.nabidkaProjPlatby(z, v, 'cz').dopocet.platby.some(x => x.prepsano));
+  delete v.data.kryciProj.planPlateb;
+  kp.kryciProjZmrazPodminky(z, v);
+  zamkniVariantu(v, { typ: 'nabidkaProj', kdo: 'Test', cislo: '2026 - OVP - CN - 402' });
+  test('odeslaná (se snímkem): dřívější ruční splátka platí stejně jako před odesláním',
+    NP.nabidkaProjPlatby(z, v, 'cz').dopocet.platby.find(x => x.klic === 'podpis').castka === 110000);
+}
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

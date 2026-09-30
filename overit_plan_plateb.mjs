@@ -12,6 +12,12 @@
  *      částka, součet proti ceně díla), tisk krycího listu, snímek při
  *      zamčení (změna firmy odeslanou nabídku nezmění, zápis zámek odmítne),
  *      odeslaná nabídka z doby před plánem se chová jako dřív.
+ *   3) zábrany: plán s vadou zastaví nabídku PROJ (Word i náhled) a smlouvu,
+ *      ruční částka mimo součet jen smlouvu; dokumenty OCK a panel bez typu
+ *      dokumentu to neovlivní.
+ *   4) převod starší zakázky: ruční splátky sodpPlatba1–8 převzaté jako ruční
+ *      částky plateb (nečitelná se ohlásí), dřívější záloha nabídnutá
+ *      tlačítkem jako předvolba, první zápis převzaté částky zhmotní.
  *
  * Spuštění: node overit_plan_plateb.mjs
  */
@@ -190,6 +196,48 @@ await p.evaluate(() => { delete KLP.zmrazenoPlan; render(); });
 k = await kl();
 zkus('odeslaná nabídka bez snímku: karta plánu se neukáže, pole zálohy ano (tiskne se, jak odešla)', k.karty === 0 && k.stareZaloha, JSON.stringify(k));
 await p.evaluate(() => { delete NAST.firma.planPlatebProj; ZAK = novaZakazka(); syncVarianta(); render(); });
+
+/* ---------------------------------------------------------------- */
+console.log('\n3) zábrany: plán s vadou nepustí nabídku PROJ ani smlouvu');
+await p.evaluate(() => { ZAK = novaZakazka(); syncVarianta(); KLP.planPlateb = { v: 1, cinnosti: { dpz: [{ p: 50, m: 'podpis' }, { p: 40, m: 'dpz_su' }] } }; render(); });
+const brana = await p.evaluate(() => ({
+  nabidka: dokumentZabrana('nabidkaProj'), tisk: dokumentZabrana('nabidkaProjTisk'), sod: dokumentZabrana('sodProj'),
+  bezTypu: dokumentZabrana(), ock: dokumentZabrana('nabidka'), kontroly: kontrolyStavAkt().kodyBrani,
+}));
+zkus('DPZ 90 %: nabídka PROJ (Word i náhled) i smlouva mají zábranu s důvodem',
+  /nedávají 100 %/.test(brana.nabidka) && /nabídka PROJ nevznikne/.test(brana.nabidka) && !!brana.tisk && /smlouva o dílo nevznikne/.test(brana.sod), JSON.stringify(brana));
+zkus('zábrana plánu neblokuje dokumenty OCK ani obecný panel (volání bez typu)', brana.bezTypu === '' && brana.ock === '', JSON.stringify(brana));
+zkus('panel kontrol hlásí zábranu planPlateb100', brana.kontroly.indexOf('planPlateb100') >= 0, JSON.stringify(brana.kontroly));
+const zamitnuto = await p.evaluate(async () => { try { await dokumentVygeneruj('sodProj', new ArrayBuffer(8), ZAK, aktivniVarianta(ZAK), JEKLY); return ''; } catch (e) { return e.message; } });
+zkus('dokumentVygeneruj smlouvu o dílo PROJ odmítne s důvodem plánu', /Plán plateb projekce má nedostatky/.test(zamitnuto), zamitnuto);
+const okna = await p.evaluate(() => { window.__okna = 0; const puv = window.open; window.open = (...a) => { window.__okna++; return puv.apply(window, a); }; nabidkaProjNahled(); return true; });
+await p.waitForTimeout(150);
+const dlgText = await p.evaluate(() => { const d = document.getElementById('dlg'); return d ? d.innerText : ''; });
+zkus('náhled nabídky PROJ se neotevře a uživatel dostane důvod', /Plán plateb projekce má nedostatky/.test(dlgText) && await p.evaluate(() => window.__okna === 0), dlgText.slice(0, 120));
+await odklikni();
+await p.evaluate(() => { KLP.planPlateb = { v: 1, prepis: { podpis: 1 } }; render(); });
+const brana2 = await p.evaluate(() => ({ nabidka: dokumentZabrana('nabidkaProj'), sod: dokumentZabrana('sodProj') }));
+zkus('ruční částka rozbije jen součet: nabídka PROJ vznikne, smlouva ne', brana2.nabidka === '' && /nesouhlasí s cenou díla/.test(brana2.sod), JSON.stringify(brana2));
+await p.evaluate(() => { delete KLP.planPlateb; render(); });
+zkus('zdravý plán: žádná zábrana', await p.evaluate(() => dokumentZabrana('nabidkaProj') === '' && dokumentZabrana('sodProj') === ''));
+
+/* ---------------------------------------------------------------- */
+console.log('\n4) převod starší zakázky: ruční splátky a dřívější záloha');
+await p.evaluate(() => { ZAK = novaZakazka(); syncVarianta();
+  KLP.hodnoty = { sodpPlatba1: '110 000 Kč', sodpPlatba6: 'viz příloha', zaloha: '30 % – po podpisu smlouvy' }; render(); prepniTab('kryciproj'); });
+await p.waitForTimeout(150);
+const st = await p.evaluate(() => { const t = document.getElementById('page-kryciproj').textContent;
+  return { prevzate: /Ruční splátky smlouvy z dřívějšího krycího listu jsou převzaté/.test(t), necitelna: /Nečitelná ruční splátka: „viz příloha"/.test(t),
+    zaloha: /záloha „30 % – po podpisu smlouvy"/.test(t),
+    tlacitko: [...document.querySelectorAll('#page-kryciproj button')].some(b => /Použít jako předvolbu Záloha 30 %/.test(b.textContent)),
+    prepsano: document.querySelectorAll('#page-kryciproj .plan-tab tr.prepsano').length }; });
+zkus('karta plánu ukáže převzaté ruční splátky, nečitelnou částku a dřívější zálohu s tlačítkem', st.prevzate && st.necitelna && st.zaloha && st.tlacitko && st.prepsano === 1, JSON.stringify(st));
+await p.evaluate(() => planKlpZalohaZeStare(30));
+zkus('tlačítko použije dřívější zálohu jako předvolbu Záloha 30 %', await p.evaluate(() => KLP.planPlateb.predvolba === 'zaloha' && KLP.planPlateb.zaloha === 30));
+zkus('první zápis do plánu ruční splátku zhmotní (nezahodí ji)', await p.evaluate(() => KLP.planPlateb.prepis && KLP.planPlateb.prepis.podpis === 110000));
+await p.evaluate(() => planKlpPrepis('dps_predani', '5 000'));
+zkus('další ruční částka se přidá k převzaté', await p.evaluate(() => KLP.planPlateb.prepis.podpis === 110000 && KLP.planPlateb.prepis.dps_predani === 5000));
+await p.evaluate(() => { ZAK = novaZakazka(); syncVarianta(); render(); });
 
 zkus('žádná chyba stránky', chyby.length === 0, chyby.join(' | '));
 await b.close();

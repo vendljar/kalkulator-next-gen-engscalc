@@ -36,7 +36,7 @@ const KOREN = fileURLToPath(new URL('.', import.meta.url));
 
 import { najdiPodklady, preskoc } from './nastroje/harness_podklady.mjs';
 const require = createRequire(import.meta.url);
-const { zipPrecti } = require(KOREN + 'src/docxgen.js');
+const { zipPrecti, zipZapis } = require(KOREN + 'src/docxgen.js');
 
 /* Šablony se hledají i v `KNG_PODKLADY` — do 22. 9. 2026 jen na pevné cestě
  * z cizího prostředí, takže se tahle sada mimo ně nemohla spustit nikdy. */
@@ -123,6 +123,18 @@ console.log('\nvygenerované smlouvy a plná moc');
 const b64 = {};
 for (const [typ, cesta] of Object.entries(SABLONY_SOUBORY))
   b64[typ] = readFileSync(cesta).toString('base64');
+/* Šablona SoD PROJ se seznamem plateb (etapa B plánu plateb, 30. 9. 2026):
+ * vyrobí ji z dodané šablony tentýž nástroj, jaký dostal J. V.
+ * (nastroje/vyrob_sablony.js --sod-proj) — osm pevných plateb nahradí
+ * {{SODP_PLATEBNI_KALENDAR}}. Stará šablona s plánem, jehož platby v ní nejsou,
+ * smlouvu vyrobit nesmí (nesouhlasila by s nabídkou ani s cenou díla). */
+{
+  const { sodProjV2 } = require(KOREN + 'nastroje/vyrob_sablony.js');
+  const casti = await zipPrecti(new Uint8Array(readFileSync(SABLONY_SOUBORY.sodProj)));
+  const d = casti.find(x => x.nazev === 'word/document.xml');
+  d.data = new TextEncoder().encode(sodProjV2(new TextDecoder().decode(d.data)));
+  b64.sodProjV2 = Buffer.from(new Uint8Array(await zipZapis(casti).arrayBuffer())).toString('base64');
+}
 
 const vysledek = await p.evaluate(async (sablonyB64) => {
   const buf = s => {
@@ -132,8 +144,10 @@ const vysledek = await p.evaluate(async (sablonyB64) => {
   };
   const varianta = aktivniVarianta(ZAK);
   const out = {};
+  try { await dokumentVygeneruj('sodProj', buf(sablonyB64.sodProj), ZAK, varianta, JEKLY, 'cz'); out.sodProjStara = ''; }
+  catch (e) { out.sodProjStara = e.message; }
   for (const typ of ['sod', 'sodProj', 'plnaMoc']) {
-    const res = await dokumentVygeneruj(typ, buf(sablonyB64[typ]), ZAK, varianta, JEKLY, 'cz');
+    const res = await dokumentVygeneruj(typ, buf(sablonyB64[typ === 'sodProj' ? 'sodProjV2' : typ]), ZAK, varianta, JEKLY, 'cz');
     const bajty = new Uint8Array(await res.blob.arrayBuffer());
     let s = ''; for (let i = 0; i < bajty.length; i++) s += String.fromCharCode(bajty[i]);
     out[typ] = { docx: btoa(s), nazevSouboru: res.nazevSouboru };
@@ -168,8 +182,14 @@ const docText = async typ => {
   test('SoD projekce: název souboru začíná SOD_PROJ_',
     vysledek.sodProj.nazevSouboru.indexOf('SOD_PROJ_') === 0, vysledek.sodProj.nazevSouboru);
   test('SoD projekce nese cenu z nabídky PROJ', holy.includes(vysledek.cenaProj), vysledek.cenaProj);
-  test('symboly SODP_* (platby po fázích) zůstaly viditelné',
+  test('symboly SODP_* bez hodnoty (pokuta, správní poplatky) zůstaly viditelné',
     /\{\{SODP_[A-Z0-9_]+\}\}/.test(holy));
+  const platby = (holy.match(/Platba ve výši [\d\s\u00a0]+,\d\d Kč \+ DPH proběhne/g) || []).length;
+  test('SoD projekce (šablona se seznamem plateb): platby z plánu, každá vlastní odrážkou',
+    platby >= 2 && !/SODP_PLATEBNI_KALENDAR/.test(holy)
+    && (doc.match(/<w:p[\s>](?:(?!<\/w:p>)[\s\S])*?Platba ve výši/g) || []).length === platby, platby);
+  test('SoD projekce se starou šablonou (8 pevných plateb) a plánem, který v ní nejde vyjádřit: smlouva nevznikne a řekne proč',
+    /SODP_PLATEBNI_KALENDAR/.test(vysledek.sodProjStara || ''), vysledek.sodProjStara);
 }
 {
   const doc = await docText('plnaMoc');

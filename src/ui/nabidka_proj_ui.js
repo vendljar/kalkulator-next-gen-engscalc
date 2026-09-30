@@ -193,9 +193,10 @@ async function nabidkaProjWordGeneruj(srv) {
 /* Kompletní tiskový náhled celé nabídky – všechny oddíly VZORu v pořadí. */
 async function nabidkaProjNahled() {
   /* Pojistka pro případ, že by se sem někdo dostal jinudy než tlačítkem
-   * (zhasnutým) – tiskový náhled je dokument pro zákazníka jako každý jiný. */
+   * (zhasnutým) – tiskový náhled je dokument pro zákazníka jako každý jiný.
+   * Typ dokumentu kvůli bráně plánu plateb (etapa B). */
   if (typeof dokumentZabrana === 'function') {
-    const duvod = dokumentZabrana();
+    const duvod = dokumentZabrana('nabidkaProjTisk');
     if (duvod) { hlaska(duvod); return; }
   }
   const L = (typeof tiskJazyk === 'function') ? tiskJazyk()

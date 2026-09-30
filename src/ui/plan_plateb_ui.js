@@ -168,6 +168,11 @@ function nastPlanPlatebProj() {
  * Vstupní funkce níž jsou v ZAMEK_CHRANENE (zámek varianty, náhled). */
 function planKlpData() {
   if (!KLP.planPlateb || typeof KLP.planPlateb !== 'object') KLP.planPlateb = { v: 1 };
+  /* Převod starší zakázky (krok 7): ruční splátky sodpPlatba1–8 se při
+   * prvním zápisu do plánu zhmotní jako ruční částky plateb — jinak by je
+   * první úprava tiše zahodila. Původní pole zůstávají v datech. */
+  if (KLP.planPlateb.prepis === undefined && typeof planPlatebZeStarych === 'function')
+    KLP.planPlateb.prepis = planPlatebZeStarych(KLP.hodnoty).prepis;
   return KLP.planPlateb;
 }
 function planKlpEf() { return nabidkaProjPlatby(ZAK, aktivniVarianta(ZAK), 'cz'); }
@@ -206,8 +211,24 @@ async function planKlpPredvolba(v) {
   }
   plan.predvolba = v;
   delete plan.cinnosti;
-  delete plan.prepis;
+  plan.prepis = {};            // prázdné, ne chybějící: dřívější ruční splátky se nevrátí
   planKlpUlozeno();
+}
+/* Dřívější záloha z krycího listu (krok 7, Q5): nepřepíná se sama —
+ * obchodník ji jedním tlačítkem použije jako předvolbu „Záloha X %". */
+function planKlpZalohaZeStare(z) {
+  const plan = planKlpData();
+  plan.predvolba = 'zaloha';
+  plan.zaloha = PLAN_PROJ_ZALOHY.indexOf(+z) >= 0 ? +z : 0;
+  delete plan.cinnosti;
+  planKlpUlozeno();
+}
+function planStaraZaloha() {
+  const h = (typeof KLP !== 'undefined' && KLP && KLP.hodnoty) || {};
+  const t = String(h.zaloha == null ? '' : h.zaloha).trim();
+  if (!t) return null;
+  const m = /^(\d+)\s*%/.exec(t);
+  return { text: t, pct: /bez zálohy/i.test(t) ? 0 : (m ? +m[1] : null) };
 }
 function planKlpZaloha(v) {
   const z = +v;
@@ -326,7 +347,24 @@ function planKlpKarta(c) {
     ${nenabizene.length && nabizene.length ? `<div class="note">Neoceněné činnosti se v plánu neuvádějí (${esc(nenabizene.join(', '))}).</div>` : ''}
     <div class="note">Autorský dozor se fakturuje měsíčně podle skutečně odpracovaných hodin, mimo platby smlouvy.</div>
     ${nedostatky ? `<div class="note" style="color:#b91c1c"><b>Plán plateb má nedostatky:</b><br>${nedostatky}</div>` : ''}
+    ${planKlpStareZneni(ef, plan, edit)}
   </div>`;
+}
+/* Dřívější znění krycího listu (krok 7): ruční splátky převzaté do plateb,
+ * nečitelné částky, záloha jako nabídnutá předvolba. */
+function planKlpStareZneni(ef, plan, edit) {
+  const kusy = [];
+  const zs = ef.zeStarych;
+  if (zs && Object.keys(zs.prepis).length)
+    kusy.push('Ruční splátky smlouvy z dřívějšího krycího listu jsou převzaté jako ruční částky plateb se stejným milníkem ('
+      + esc(Object.keys(zs.prepis).length + '×') + ') — zkontrolujte je v tabulce plateb níž.');
+  if (zs && zs.necitelne.length)
+    kusy.push('Nečitelná ruční splátka: ' + zs.necitelne.map(n => '„' + esc(n.text) + '" (' + esc(n.id) + ')').join(', ')
+      + ' — doplňte částku v tabulce plateb.');
+  const sz = (!plan || !plan.predvolba) ? planStaraZaloha() : null;
+  if (sz) kusy.push('Dřívější znění krycího listu: záloha „' + esc(sz.text) + '".'
+    + (edit && sz.pct != null ? ` <button class="mini" onclick="planKlpZalohaZeStare(${escJs(sz.pct)})">Použít jako předvolbu ${esc(sz.pct ? 'Záloha ' + sz.pct + ' %' : 'Bez zálohy')}</button>` : ''));
+  return kusy.length ? `<div class="note" style="color:#b45309">${kusy.join('<br>')}</div>` : '';
 }
 
 /* Platby smlouvy o dílo PROJ dopočtené z plánu (krycí list, sekce
@@ -359,4 +397,23 @@ function planKlpPlatbyKarta(c) {
     ${osirele}
     <div class="note">Prázdné pole = dopočet (procento × cena činnosti po slevě, zaokrouhlení nese poslední splátka činnosti).
       Částku lze přepsat ručně; součet plateb musí dát cenu díla.</div></div>`;
+}
+
+/* ---------- brána dokumentů PROJ (etapa B, zábrany J. V. 29. 9. 2026) ----------
+ * Plán plateb s vadou (součet činnosti ≠ 100 %, nekladné procento, chybějící
+ * milník) nesmí do nabídky PROJ (Word i náhled) ani do smlouvy o dílo PROJ;
+ * smlouva navíc potřebuje součet plateb = cena díla. Odeslaná nabídka z doby
+ * před plánem se nehlídá (tiskne se, jak odešla). Volá dokumentZabrana(typ). */
+const PLAN_DOKUMENTY = ['nabidkaProj', 'nabidkaProjTisk', 'sodProj'];
+function planPlatebZabranaDokumentu(typ) {
+  const t = String(typ || '').replace(/_(en|de|fr)$/, '');
+  if (PLAN_DOKUMENTY.indexOf(t) < 0 || typeof nabidkaProjPlatby !== 'function' || typeof ZAK === 'undefined') return '';
+  if (ZAK.jenOck) return '';
+  let pl = null;
+  try { pl = nabidkaProjPlatby(ZAK, aktivniVarianta(ZAK), 'cz'); } catch (e) { pl = null; }
+  if (!pl || pl.stary) return '';
+  const vady = (pl.kontrola || []).filter(k => t === 'sodProj' || k.kod !== 'soucet');
+  if (!vady.length) return '';
+  return 'Plán plateb projekce má nedostatky — ' + (t === 'sodProj' ? 'smlouva o dílo' : 'nabídka PROJ')
+    + ' nevznikne, dokud se neopraví (krycí list PROJ → Plán plateb): ' + vady.map(v => v.text).join(' ');
 }

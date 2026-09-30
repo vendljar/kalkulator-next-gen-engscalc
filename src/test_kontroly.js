@@ -165,7 +165,9 @@ const pravidla = kontrolyPravidla();
  * (#372, dřív #365 ve větvi claude/stoic-cerf-j915ax): neznámý rozměr profilu. */
 /* 24. „zapornaPolozka" 29. 9. 2026 (B111, větev claude/oprava-sesti-nalezu-v29.9.1):
  * záporná částka, množství nebo hodiny = zábrana. */
-test('pravidel je dvacet čtyři', pravidla.length === 24, pravidla.length);
+/* 25.–27. „planPlateb100", „planPlatebSoucet" (zábrany) a „planPlatebWordProj"
+ * 30. 9. 2026 (etapa B plánu plateb, test_plan_plateb_sod.js). */
+test('pravidel je dvacet sedm', pravidla.length === 27, pravidla.length);
 test('kódy pravidel jsou jedinečné',
   new Set(pravidla.map(p => p.kod)).size === pravidla.length,
   pravidla.map(p => p.kod).join(','));
@@ -365,7 +367,7 @@ test('text varování nikde nepřikazuje ani neblokuje',
 test('zábrana má vlastní text, který se dá ukázat samostatně',
   k9.textBrani.length > 0 && k9.textBrani === n9.text, k9.textBrani);
 test('v katalogu pravidel je poznat, které umí zastavit dokument',
-  pravidla.filter(p => p.zabranaMozna).map(p => p.kod).join(',') === 'rozmery,profilNeznamy,zapornaPolozka,cenaNula,sleva,slevaProj,ukazkovyCenik',
+  pravidla.filter(p => p.zabranaMozna).map(p => p.kod).join(',') === 'rozmery,profilNeznamy,zapornaPolozka,cenaNula,sleva,slevaProj,ukazkovyCenik,planPlateb100,planPlatebSoucet',
   JSON.stringify(pravidla.filter(p => p.zabranaMozna).map(p => p.kod)));
 
 /* ---------- 6) dvě podoby textu ---------- */

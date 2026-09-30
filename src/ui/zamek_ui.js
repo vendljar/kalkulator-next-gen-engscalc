@@ -56,6 +56,7 @@ const ZAMEK_CHRANENE = [
    * ruční částky plateb smlouvy). */
   'planKlpPredvolba', 'planKlpZaloha', 'planKlpProcento', 'planKlpMilnik', 'planKlpMilnikText',
   'planKlpPridej', 'planKlpOdeber', 'planKlpPosun', 'planKlpVratitCinnost', 'planKlpPrepis', 'planKlpPrepisZrus',
+  'planKlpZalohaZeStare',
   // Kalkulace PROJ a text nabídky PROJ
   'pjSet', 'pjPolozkaAdd', 'pjPolozkaDel', 'nabidkaProjPopis',
   // Sleva (mění cenu, která už odešla zákazníkovi)
