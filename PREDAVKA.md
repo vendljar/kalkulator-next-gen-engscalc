@@ -4,8 +4,8 @@ Na `main`: **v25.9.3** (+ oprava Node), tag `v25.9.3`.
 Na `test-draft` i `test`: **v30.9.1** — na pokyn J. V. 30. 9. 2026
 („pushni novinky do testu") sloučena větev `claude/oprava-sesti-nalezu-v29.9.1`
 (opravy šesti nálezů 21. kola, roadmapa #373) a `test` převeden na
-`test-draft`. Releasy **v29.9.3** a **v29.9.4** vydané; **v30.9.1** — odkaz
-na release poslán J. V. (tagy z cloudu pushnout nejde — proxy HTTP 403,
+`test-draft`. Releasy **v29.9.3**, **v29.9.4** a **v29.9.7** (hlava větve oprav pro
+22. kolo) vydané; **v30.9.1** — odkaz na release poslán J. V. (tagy z cloudu pushnout nejde — proxy HTTP 403,
 viz CLAUDE.md).
 
 **Větve k 30. 9. 2026:**
@@ -49,7 +49,10 @@ Střední:
   kontrolou typů a před #372 (Git sloučil sám, ověřeno čtením); pravidel
   kontroly 24; B98 v `netlify/test_obnova.mjs` přečíslován na zakázky
   0800–0804 (0790–0794 má #372); roadmapa #373 hotovo, #374 čeká.
-- **Ověřeno celým kolem:** VÝSLEDEK DOPLNÍ DALŠÍ COMMIT.
+- **Ověřeno celým kolem** 30. 9. 2026 nad sloučeným stavem (69 min 50 s):
+  VŠE ZELENÉ — sestavení ✓; sady 199 prošlo, 0 selhalo, 1 přeskočeno z 200
+  (test.js — shoda s Excelem); mutace jádra 80 z 80; mutace serveru 206
+  z 206; statické kontroly 3 z 3.
 - Ve větvi obě celá kola zelená (v29.9.4 a v29.9.7 větve, mutace serveru
   201/201). Testování po opravách: sezení „Testování po opravách v29.9.1
   (22. kolo)" https://claude.ai/code/session_011bKm7zw36TH8By3Ef7rF1i.
@@ -99,8 +102,8 @@ rozhodnutí), prototyp https://claude.ai/artifact/6sbxbaAsBpphfPfE2wnM3a.
   zaokrouhlení z výčtu); množství příplatků obchodníkem vs. `sloupce.naklad`.
 - **Poslední číslo papírových smluv** realizace (OPR) a projekce (OVP)
   pro etapu C.
-- Soubory SoD (#350) — `Sablona_SOD_PROJEKCE.docx` potřebuje i etapa B
-  (symbol seznamu plateb).
+- Soubory SoD (#350) — bez nich nejde ověřit symboly smluv (i pro etapu B:
+  symbol seznamu plateb v šabloně SoD PROJ).
 - Pokyn k přenosu `test` do `main`.
 - **N46** (nástupiště A ↔ C u zrcadlové šachty): neopraveno, fuzz hlásí INFO.
 - Z dřívějška: rozhodnutí z dávky B kola 16 (bez čísla se neukládá; přepočet

@@ -5886,7 +5886,7 @@
    "kde": "src/uloziste.js, netlify/lib/zakazka_kontrola.mjs, netlify/functions/zakazky.mjs, netlify/functions/obnova.mjs, netlify/lib/sdilene.mjs, netlify/functions/sablony.mjs, src/sablona_obsah.js, src/docxgen.js, src/kontroly.js, src/ui/kalk_ock.js, src/ui/kalk_proj.js, src/ui/zaokrouhleni_ui.js, netlify/test_zaporne.mjs, overit_zaporne.mjs, overit_cenik_prava.mjs, src/test_sablona_obsah.js, nastroje/detekce_zneuziti.mjs",
    "zavisi": [{"typ": "doporuceno", "id": "33", "proc": "B111 dotahuje úroveň 1 kontrol (záporná cena a množství)"}, {"typ": "doporuceno", "id": "345", "proc": "B112 je zápisová strana B88, B97 navazuje na B75"}],
    "hotovoV": "v30.9.1",
-   "pozn": "Ve větvi claude/oprava-sesti-nalezu-v29.9.1 (z 9a48ee8) jako v29.9.2–v29.9.7, obě celá kola zelená. Na pokyn J. V. 30. 9. 2026 („pushni novinky do testu“) sloučeno do test-draft jako v30.9.1 a převedeno do test. Zbývající cesty třídy „koncová cena“ vede #374."
+   "pozn": "Ve větvi claude/oprava-sesti-nalezu-v29.9.1 (z 9a48ee8) jako v29.9.2–v29.9.7, obě celá kola zelená. Na pokyn J. V. 30. 9. 2026 („pushni novinky do testu“) sloučeno do test-draft jako v30.9.1 a převedeno do test. Zbývající cesty třídy „koncová cena“ vede #374. Celé kolo nad sloučeným stavem 30. 9. 2026 VŠE ZELENÉ (sady 199/0/1, mutace jádra 80/80, serveru 206/206, statické 3/3)."
   },
   {
    "id": "374",

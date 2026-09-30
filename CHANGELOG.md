@@ -37,7 +37,14 @@ v29.9.5 ve větvi) zůstává ve své větvi, dokud nebude hotová.
 - Roadmapa: #373 hotovo, #374 (zbývající cesty třídy „koncová cena“) čeká;
   čísla z větve jsou v `test-draft` volná, nic se nepřečíslovalo.
 
-**Ověřeno celým kolem** — výsledek doplní další commit.
+**Ověřeno celým kolem** `nastroje/testovaci_kolo.sh` 30. 9. 2026 nad
+sloučeným stavem (commit 6ee8e83): VŠE ZELENÉ (69 min 50 s) — kontrola
+verze + sestavení ✓; sady 199 prošlo, 0 selhalo, 1 přeskočeno z 200
+(test.js — shoda s Excelem není v exportu pro GitHub; overit_manual.mjs
+a overit_sod.mjs běžely s podklady přes KNG_PODKLADY); mutace jádra
+chycených 80 z 80; mutace serveru 206 z 206 (192 z `test-draft` + 14
+z větve oprav); statické kontroly 3 z 3. Šablony pro harnessy: CN v13
+(+EN/DE/FR) a PROJ v3.
 
 ### B99: šablony Wordu bez maker, vložených objektů a vnějších vztahů (ve větvi v29.9.7, 29. 9. 2026)
 
