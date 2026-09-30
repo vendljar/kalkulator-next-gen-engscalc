@@ -81,7 +81,38 @@ změnou ve zprávách commitů):** `src/test_plan_plateb.js` 65,
 Mutace jádra +5, serveru +1 — chycené všechny (mutace „neoceněná činnost"
 byla nejdřív NECHYCENÁ, doplněn cílený test).
 
-**Ověřeno celým kolem** — výsledek doplní další commit.
+**Revize před sloučením (30. 9. 2026).** Dvě nezávislé revize celé etapy
+(výpočet a dokumenty; obrazovky, zámek a ukládání) — obě vážné vady našly
+obě. Opraveno v 843ff63, verze zůstává v30.9.2 (sestavení f4094a5 nikam
+neodešlo):
+- **Snímek plánu u klonu a po odemčení** (blokující): snímek se bere při
+  každém prvním zamčení. Klon odeslané varianty i varianta odemčená
+  správcem nesly snímek předlohy — zamčené pak tiskly a smlouvu dopočítaly
+  z cizího plánu a činnost navíc zablokovala zábrana natrvalo.
+- **Brána dokumentu hlídá variantu, ze které dokument vzniká** (závažná):
+  Word nabídky PROJ i smlouva po odpovědi „Ne" vznikají z řídící varianty;
+  brána kontrolovala otevřenou (vadnou řídící pustila, zdravou zastavila
+  kvůli jiné). Plán, který nejde spočítat, dokument zastaví.
+- menší: převod dřívější zálohy pozná uložené „Záloha 30 %" (tlačítko jen
+  u 0/30/50/70 %, před zahozením upravených splátek se zeptá); zamčená
+  varianta pod firemním Standardem se nehlásí „upraveno"; varování
+  `planPlatebWordProj` srovnává se Standardem z kódu (co tiskne šablona
+  v2/v3 — firemní Standard i přepsaný text milníku varují); symboly
+  `{{PODM_…}}` nabídky PROJ jen z viditelných polí (skrytá záloha a
+  fakturace po stupních se neplní, způsob fakturace z předvolby); smlouva
+  starší odeslané nabídky s novou šablonou dostane seznam plateb z ručních
+  splátek a prázdný seznam symbol nesmaže; poškozený snímek ani firemní
+  plán nic neshodí (pole splátek oříznuté na 10, Nastavení s vysvětlením
+  a „Vrátit výchozí"); odebrání nepoužitého milníku z katalogu se zeptá.
+Nové testy napsané před opravou nad f4094a5 selhaly (`test_plan_plateb_kryci`
+10 z 56, `test_plan_plateb_sod` 5 z 30, `overit_plan_plateb` 8 z 49, nový test
+v `test_kryci_proj_model`), po opravě prošly; mutace jádra +2 (kotev 87).
+
+**Ověřeno celým kolem** (`nastroje/testovaci_kolo.sh`): nad f4094a5 (před
+revizí) VŠE ZELENÉ za 70 min 40 s — sady 204 prošlo, 0 selhalo,
+1 přeskočeno (test.js — shoda s Excelem není v exportu); mutace jádra 85
+z 85; mutace serveru 207 z 207; statické kontroly 3 z 3. Nad 843ff63
+(s opravami revize): kolo běží — výsledek doplní další commit.
 
 ---
 

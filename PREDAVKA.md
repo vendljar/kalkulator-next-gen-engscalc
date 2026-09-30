@@ -36,8 +36,26 @@ starších zakázek bez ztráty ručních částek. **Etapy A a C až na pokyn J
 | 5. SoD PROJ: `{{SODP_PLATEBNI_KALENDAR}}`, most na starou šablonu | ✅ | 40a44da | `src/sod.js`, `rozvinOdstavceZaRadek` v `docxgen.js`, `--sod-proj` |
 | 6. Zábrany `planPlateb100`, `planPlatebSoucet`, varování `planPlatebWordProj`, brána `dokumentZabrana(typ)` | ✅ | 40a44da | pravidel kontroly 27 |
 | 7. Převod starších zakázek (`sodpPlatba1–8`, záloha tlačítkem) | ✅ | 40a44da | nic se nepřepisuje samo |
-| 8. Mutace (+5 jádro, +1 server), příručka, sestavení v30.9.2, CHANGELOG, roadmapa | ✅ | 2d4f6f4 + sestavení | celé kolo: viz CHANGELOG v30.9.2 |
-| 9. Celé kolo zelené → fast-forward `test-draft` | ⏳ | | `test` se nemění |
+| 8. Mutace (+5 jádro, +1 server), příručka, sestavení v30.9.2, CHANGELOG, roadmapa | ✅ | 2d4f6f4, f4094a5 | celé kolo nad f4094a5 zelené (70 min 40 s) |
+| 9. Revize (dvě nezávislé) a opravy nálezů F1–F9 s testy | ✅ | 843ff63 | viz „Revize" níž; verze zůstává v30.9.2 |
+| 10. Celé kolo nad opravami → fast-forward `test-draft` | ⏳ | | `test` se nemění |
+
+## Revize před sloučením (30. 9. 2026)
+Dvě nezávislé revize (výpočet a dokumenty; obrazovky, zámek, ukládání):
+- **F1 blokující** — `kryciProjZmrazPlan` nechával zděděný snímek (klon
+  odeslané varianty, odemčení správcem) → zamčená varianta tiskla cizí plán.
+  Snímek se teď bere při každém prvním zamčení.
+- **F2 závažný** — brána plánu kontrolovala otevřenou variantu, dokument
+  vzniká i z řídící (`nabidkaVarianta`) → `dokumentZabrana(typ, varianta)`.
+- F3 převod „Záloha 30 %", F4 štítek „upraveno" u zamčené, F5 varování ve
+  Wordu proti Standardu z kódu (`planShodaSeStarouSablonou`), F6 `PODM_*` jen
+  z viditelných polí, F7 SoD starší odeslané nabídky s novou šablonou
+  + prázdný seznam plateb zůstane `{{…}}`, F8 odolnost vůči poškozeným datům
+  (snímek, pole splátek ≤ 10, panel Nastavení), F9 odebrání milníku se zeptá.
+- Designové body k rozhodnutí J. V. (neopraveno, jen hlášeno): brána počítá
+  plán v korunách, takže nesedící ruční částka v Kč zastaví i cizojazyčnou
+  smlouvu (ta ruční částky nebere — eura se dopočítají); vlastní text
+  milníku zůstane v EN/DE/FR česky bez varování (Q9).
 
 ## Šablony pro J. V. (nejsou v repozitáři)
 Vyrobené z podkladů Disku nástrojem `nastroje/vyrob_sablony.js`, poslané
@@ -75,7 +93,8 @@ firemní plán) — možné navazující zpřísnění.
   `git status` a `grep -rn "if (false)" netlify src`.
 
 ## Další krok
-Po zeleném kole fast-forward `test-draft` na hlavu větve (ověřit, že
-`origin/test-draft` je pořád fde25ff). Pak čekat na J. V.: potvrzení
-výchozích návrhů, nahrání šablon, pokyn k etapě A (OCK platební kalendář)
-a C (číslo smlouvy, #366), sloučení do `test`.
+Po zeleném kole nad 843ff63 zapsat výsledek (CHANGELOG, roadmapa #367)
+a fast-forward `test-draft` na hlavu větve (ověřit, že `origin/test-draft`
+je pořád fde25ff). Pak čekat na J. V.: potvrzení výchozích návrhů
+a designových bodů revize, nahrání šablon, pokyn k etapě A (OCK platební
+kalendář) a C (číslo smlouvy, #366), sloučení do `test`.
