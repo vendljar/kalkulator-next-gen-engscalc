@@ -18,6 +18,9 @@
  *         nabídky nepřeloží: ceník má jedno znění pro všechny jazyky
  *         (cenik.popisy, klíč = název položky) a ručně psaný text aplikace
  *         nepřekládá. Kontrola „dodatekCesky" řekne, u které položky.
+ *   N97 — u opláštění po stěnách uváděla nabídka (a technická specifikace)
+ *         jen jeden materiál — ten ze standardního režimu. Po stěnách teď
+ *         MATERIÁL OPLÁŠTĚNÍ vyjmenuje materiály se stěnami, i v EN/DE/FR.
  *
  * Spuštění: cd src && node test_k18_nalezy.js */
 const fs = require('fs');
@@ -272,6 +275,78 @@ const NB = nacti('./nabidka.js');
   test('N96: bez slovníku (preklad.js) se nehádá — mlčí', !nalez(ctxS({ [MADLA]: 'dubové madlo' }, 'en')));
   global.trStav = trS;
 }
+
+/* ======================= N97: materiál opláštění po stěnách ======================= */
+{
+  const eng = require('./engine.js');
+  const TS = require('./techspec.js');
+  const pole = TS.TECHSPEC_DEF.reduce((a, s) => a.concat(s.pole), []).find(p => p.id === 'materialOplasteni');
+  const CZ_CHARS = /[ěščřžůťďňýáíú]/i;
+  /* Exteriér: A sklo VSG 4.4.1, B dvojsklo do 2,2 m a nad ním Cetris,
+   * C „bez — dodá stavba", D dvojsklo (výchozí). */
+  const zadaniPoStenach = (uprav) => {
+    const z = JSON.parse(JSON.stringify(eng.DEFAULT_ZADANI));
+    z.typSachty = 'exteriérová';
+    const c = ZC.zkusebniCenik();
+    z.oplasteni = { rezim: 'poStenach', steny: eng.oplasteniStenyVychozi(z, c) };
+    z.oplasteni.steny.B.pasy = [{ typ: 'C.skloBokyKc', doM: 2.2 }, { typ: 'C.cetrisKc', doM: null }];
+    z.oplasteni.steny.C.pasy = [{ typ: 'bez', doM: null }];
+    if (uprav) uprav(z);
+    return { z, c, r: eng.vypocet(z, c, JEKLY, false) };
+  };
+  const hodnota = (Z, C, r, jazyk, hodnoty) => TS.tsHodnota(pole, { hodnoty: hodnoty || {}, extra: [] }, r, Z, C, jazyk);
+
+  /* Standardní režim se nemění — věta z číselníku, překládá ji volající. */
+  const std = JSON.parse(JSON.stringify(eng.DEFAULT_ZADANI)); std.typSachty = 'exteriérová';
+  const rStd = eng.vypocet(std, ZC.zkusebniCenik(), JEKLY, false);
+  const hStd = hodnota(std, ZC.zkusebniCenik(), rStd, 'en');
+  test('N97: standardní režim beze změny (exteriér: dvojsklo s VSG, číselník; překládá volající)',
+    hodnota(std, ZC.zkusebniCenik(), rStd, 'cz').text === 'izolační dvojsklo v kombinaci s vrstveným bezpečnostním sklem VSG'
+    && hStd.text === 'izolační dvojsklo v kombinaci s vrstveným bezpečnostním sklem VSG' && !hStd.prelozeno, hStd);
+
+  const ps = zadaniPoStenach();
+  const cz = hodnota(ps.z, ps.c, ps.r, 'cz').text;
+  test('N97: po stěnách vyjmenuje materiály se stěnami (CZ)',
+    cz === 'Sklo VSG 4.4.1 (stěna A); Dvojsklo (boky + záda) (stěny B, D); Cetris (stěna B); bez — dodá stavba (stěna C)', cz);
+  ['en', 'de', 'fr'].forEach(L => {
+    const h = hodnota(ps.z, ps.c, ps.r, L);
+    test('N97 ' + L.toUpperCase() + ': materiály po stěnách přeložené a hlášené jako přeložené', h.prelozeno === true
+      && !CZ_CHARS.test(h.text) && /\bA\)/.test(h.text) && /B, D\)/.test(h.text) && h.text.split('; ').length === 4, h);
+  });
+  test('N97 EN: znění („Wall A", „Walls B, D", názvy typů ze slovníku)', hodnota(ps.z, ps.c, ps.r, 'en').text
+    === 'Laminated safety glass VSG 4.4.1 (Wall A); Double glazing (sides + rear) (Walls B, D); Cement-bonded particle board (Wall B); None — supplied by the building contractor (Wall C)',
+    hodnota(ps.z, ps.c, ps.r, 'en').text);
+  /* Ruční název typu „jiné" projde beze změny (napsal ho obchodník). */
+  const psJ = zadaniPoStenach(z => { z.oplasteni.steny.D.pasy = [{ typ: 'jine', nazev: 'Trapézový plech', naklad: 1200, doM: null }]; });
+  test('N97: ruční název u typu „jiné" projde beze změny i v EN', /Trapézový plech \(Wall D\)/.test(hodnota(psJ.z, psJ.c, psJ.r, 'en').text),
+    hodnota(psJ.z, psJ.c, psJ.r, 'en').text);
+  /* N41b: pás, který jádro nezapočítá, se jako materiál neuvádí. */
+  const psN = zadaniPoStenach(z => {
+    const H = eng.vypocet(z, ZC.zkusebniCenik(), JEKLY, false).oplasteni.vyska;
+    z.oplasteni.steny.B.pasy = [{ typ: 'C.skloBokyKc', doM: H + 5 }, { typ: 'C.cetrisKc', doM: null }];
+  });
+  test('N97: pás, který jádro nezapočítá (N41b), se mezi materiály neobjeví', !/Cetris/.test(hodnota(psN.z, psN.c, psN.r, 'cz').text)
+    && /Dvojsklo \(boky \+ záda\) \(stěny B, D\)/.test(hodnota(psN.z, psN.c, psN.r, 'cz').text),
+    hodnota(psN.z, psN.c, psN.r, 'cz').text);
+  test('N97: ruční hodnota ve specifikaci má dál přednost', hodnota(ps.z, ps.c, ps.r, 'cz', { materialOplasteni: 'dle výkresu' }).text === 'dle výkresu');
+
+  /* Nabídka: symbol TS_MATERIAL_OPLASTENI i věta o opláštění. */
+  const z = zk.novaZakazka(); z.cislo = '2026 - OPR - CN - 0497';
+  const v = z.varianty[0];
+  v.data.cenik = Object.assign(ZC.zkusebniCenik(), { kurzEurKc: 25 });
+  v.data.ock.zadani = ps.z;
+  const dCz = NB.nabidkaData(z, v, JEKLY, 'cz'), dEn = NB.nabidkaData(z, v, JEKLY, 'en');
+  test('N97: nabídka (Word i online) nese materiály po stěnách', dCz.placeholders.TS_MATERIAL_OPLASTENI === cz
+    && /\(stěny B, D\)/.test(dCz.placeholders.OPLASTENI_VETA), [dCz.placeholders.TS_MATERIAL_OPLASTENI, dCz.placeholders.OPLASTENI_VETA]);
+  test('N97: anglická nabídka je nese přeložené', /\(Walls B, D\)/.test(dEn.placeholders.TS_MATERIAL_OPLASTENI)
+    && !CZ_CHARS.test(dEn.placeholders.TS_MATERIAL_OPLASTENI), dEn.placeholders.TS_MATERIAL_OPLASTENI);
+  const radek = NB.nabidkaNahledSekce(dEn.placeholders, 'en').map(s => s.radky).reduce((a, x) => a.concat(x), [])
+    .find(r => r[0] === PR_TR('MATERIÁL OPLÁŠTĚNÍ', 'en'));
+  test('N97: online náhled nabídky (EN) má řádek materiálu po stěnách', !!radek && radek[1] === dEn.placeholders.TS_MATERIAL_OPLASTENI
+    && /\(Walls B, D\)/.test(radek[1]), radek);
+}
+
+function PR_TR(t, L) { return require('./preklad.js').tr(t, L); }
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

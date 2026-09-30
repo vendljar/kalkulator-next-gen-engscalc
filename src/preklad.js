@@ -415,6 +415,9 @@ const PREKLAD = {
      vypadají divně, ve větě o stěně dávají smysl. */
   "opláštění po stěnách": ["Cladding by walls","Verkleidung nach Wänden","Bardage par parois"],
   "stěna": ["Wall","Wand","Paroi"],
+  /* Množné číslo pro MATERIÁL OPLÁŠTĚNÍ po stěnách („Dvojsklo (stěny B, D)",
+   * K18-N97, 30. 9. 2026 — návrh ke kontrole J. V.). */
+  "stěny": ["Walls","Wände","Parois"],
   "do výšky": ["up to","bis","jusqu'à"],
   "od výšky": ["from","ab","à partir de"],
   "výš": ["above","darüber","au-dessus"],

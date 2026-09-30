@@ -202,6 +202,39 @@ function tsVyplnDveriCasti(Z) {
   return casti.length ? casti : ['bez světlíků'];
 }
 
+/* Je opláštění rozdělené po stěnách (#268)? */
+function tsOplPoStenach(Z) {
+  const o = (Z && Z.oplasteni) || {};
+  return o.rezim === 'poStenach' && !!o.steny;
+}
+/* Název typu pásu (#268). Název se NEPŘEVÁDÍ na malá písmena: „Sklo VSG
+ * 4.4.1" by z toho vyšlo jako „sklo vsg 4.4.1" a zkratka by přestala být
+ * zkratkou. Ruční název u typu „jiné" napsal obchodník — ten se nepřekládá,
+ * protože ho slovník nezná a vymýšlet si cizojazyčný název materiálu nesmíme. */
+function tsOplTypNazev(p, T) {
+  if (p.typ === 'jine') return (p.nazev || T('jiné opláštění'));
+  const nazvy = (typeof OPLASTENI_TYPY !== 'undefined') ? OPLASTENI_TYPY : [];
+  const d = nazvy.find(t => t.id === p.typ);
+  return d ? T(d.nazev) : String(p.typ);
+}
+/* Pásy stěn A–D, jak je popisuje specifikace: podle jádra
+ * (`r.oplasteni.pasy`, N41b), bez výsledku výpočtu ze zadání. Stěna bez
+ * plochy ve výpočtu nic nemá a vynechá se. [{ stena, odM, pasy }] */
+function tsOplPasyPoStenach(o, r) {
+  const klice = (typeof OPLASTENI_STENY !== 'undefined') ? OPLASTENI_STENY : ['A', 'B', 'C', 'D'];
+  const out = [];
+  klice.forEach(k => {
+    const st = o.steny && o.steny[k];
+    if (!st || !Array.isArray(st.pasy) || !st.pasy.length) return;
+    const spoctene = (r && r.oplasteni && r.oplasteni.rezim === 'poStenach' && Array.isArray(r.oplasteni.pasy))
+      ? r.oplasteni.pasy.filter(p => p.stena === k) : null;
+    const zdroj = spoctene || st.pasy;
+    if (!zdroj.length) return;
+    out.push({ stena: k, odM: +st.odM || 0, pasy: zdroj });
+  });
+  return out;
+}
+
 function tsOplasteniRozsah(Z, jazyk, r) {
   const z = Z || {};
   const o = z.oplasteni || {};
@@ -209,40 +242,52 @@ function tsOplasteniRozsah(Z, jazyk, r) {
    * nikdy netrefil. Bez jazyka (nebo v češtině) vrací `tr` originál, takže
    * česká cesta zůstává přesně taková, jaká byla. */
   const T = (s) => (jazyk && jazyk !== 'cz' && typeof tr === 'function') ? tr(s, jazyk) : s;
-  if (o.rezim !== 'poStenach' || !o.steny) return T('kompletní opláštění šachty');
-  const nazvy = (typeof OPLASTENI_TYPY !== 'undefined') ? OPLASTENI_TYPY : [];
-  const jmeno = (p) => {
-    if (p.typ === 'jine') return (p.nazev || T('jiné opláštění'));
-    const d = nazvy.find(t => t.id === p.typ);
-    /* Název se NEPŘEVÁDÍ na malá písmena: „Sklo VSG 4.4.1" by z toho vyšlo
-     * jako „sklo vsg 4.4.1" a zkratka by přestala být zkratkou.
-     * Ruční název u typu „jiné" napsal obchodník — ten se nepřekládá, protože
-     * ho slovník nezná a vymýšlet si cizojazyčný název materiálu nesmíme. */
-    return d ? T(d.nazev) : String(p.typ);
-  };
+  if (!tsOplPoStenach(z)) return T('kompletní opláštění šachty');
   const cislo = (x) => (typeof formatCislo === 'function')
     ? formatCislo(x) : String(Math.round((+x || 0) * 100) / 100).replace('.', ',');
-  const klice = (typeof OPLASTENI_STENY !== 'undefined') ? OPLASTENI_STENY : ['A', 'B', 'C', 'D'];
-  const casti = [];
-  klice.forEach(k => {
-    const st = o.steny[k];
-    if (!st || !Array.isArray(st.pasy) || !st.pasy.length) return;
-    const odM = +st.odM || 0;
-    const spoctene = (r && r.oplasteni && r.oplasteni.rezim === 'poStenach' && Array.isArray(r.oplasteni.pasy))
-      ? r.oplasteni.pasy.filter(p => p.stena === k) : null;
-    const zdroj = spoctene || st.pasy;
-    if (!zdroj.length) return;       // stěna bez plochy — ve výpočtu nic nemá
+  const casti = tsOplPasyPoStenach(o, r).map(({ stena, odM, pasy: zdroj }) => {
     const pasy = zdroj.map((p, i) => {
       const posledni = (i === zdroj.length - 1);
-      if (zdroj.length === 1) return jmeno(p);
-      return posledni ? jmeno(p) + ' ' + T('výš')
-        : jmeno(p) + ' ' + T('do výšky') + ' ' + cislo(p.doM) + ' m';
+      if (zdroj.length === 1) return tsOplTypNazev(p, T);
+      return posledni ? tsOplTypNazev(p, T) + ' ' + T('výš')
+        : tsOplTypNazev(p, T) + ' ' + T('do výšky') + ' ' + cislo(p.doM) + ' m';
     });
-    casti.push(T('stěna') + ' ' + k + ': ' + pasy.join(', ')
-      + (odM < 0 ? ' (' + T('od výšky') + ' ' + cislo(odM) + ' m, ' + T('tedy do prohlubně') + ')' : ''));
+    return T('stěna') + ' ' + stena + ': ' + pasy.join(', ')
+      + (odM < 0 ? ' (' + T('od výšky') + ' ' + cislo(odM) + ' m, ' + T('tedy do prohlubně') + ')' : '');
   });
   if (!casti.length) return T('kompletní opláštění šachty');
   return T('opláštění po stěnách') + ' — ' + casti.join('; ');
+}
+
+/* MATERIÁL OPLÁŠTĚNÍ PŘI REŽIMU PO STĚNÁCH (K18-N97, 30. 9. 2026). Řádek
+ * MATERIÁL OPLÁŠTĚNÍ se předvyplňoval jedním materiálem standardního režimu
+ * (dvojsklo s VSG, u interiéru VSG) i tehdy, když byla šachta po stěnách
+ * z různých materiálů — nabídka a specifikace tak uváděly jiný plášť, než
+ * jaký se naceňoval. Po stěnách teď vyjmenuje materiály v pořadí, v jakém
+ * se na stěnách A–D objeví, a ke každému stěny: „Sklo VSG 4.4.1 (stěna A);
+ * Dvojsklo (boky + záda) (stěny B, D); Cetris (stěna B)". Výšky pásů uvádí
+ * řádek ROZSAH OPLÁŠTĚNÍ, pásy se berou stejně jako tam (podle jádra).
+ * „bez — dodá stavba" se uvádí taky — i to je odpověď na otázku, z čeho
+ * je stěna. Větu skládá rovnou v cílovém jazyce (kusy slovníkem); ve
+ * standardním režimu vrací větu z číselníku česky a překládá ji volající
+ * jako dosud (proto je `jazykSam` u pole funkce). */
+function tsOplasteniMaterial(Z, jazyk, r) {
+  const z = Z || {};
+  const standard = tsDvojsklo(z)
+    ? 'izolační dvojsklo v kombinaci s vrstveným bezpečnostním sklem VSG'
+    : 'vrstvené bezpečnostní sklo VSG';
+  if (!tsOplPoStenach(z)) return standard;
+  const T = (s) => (jazyk && jazyk !== 'cz' && typeof tr === 'function') ? tr(s, jazyk) : s;
+  const materialy = [];
+  tsOplPasyPoStenach(z.oplasteni, r).forEach(({ stena, pasy }) => pasy.forEach(p => {
+    const klic = p.typ === 'jine' ? 'jine:' + String(p.nazev || '') : String(p.typ);
+    let m = materialy.find(x => x.klic === klic);
+    if (!m) { m = { klic, nazev: tsOplTypNazev(p, T), steny: [] }; materialy.push(m); }
+    if (m.steny.indexOf(stena) < 0) m.steny.push(stena);
+  }));
+  if (!materialy.length) return T(standard);
+  return materialy.map(m => m.nazev + ' (' + T(m.steny.length > 1 ? 'stěny' : 'stěna') + ' '
+    + m.steny.join(', ') + ')').join('; ');
 }
 
 /* Definice dokumentu: sekce → pole. prefill(r, Z, C) vrací text z kalkulace OCK
@@ -349,10 +394,11 @@ const TECHSPEC_DEF = [
 
   { sekce: 'OPLÁŠTĚNÍ ŠACHTY', pole: [
     { id: 'typOplasteni', label: 'TYP OPLÁŠTĚNÍ', ciselnik: TS_C.typOplasteni, def: 'plnostěnné' },
+    /* Po stěnách materiály se stěnami, větu skládá prefill v cílovém jazyce
+     * (K18-N97); ve standardním režimu věta z číselníku jako dosud. */
     { id: 'materialOplasteni', label: 'MATERIÁL OPLÁŠTĚNÍ', ciselnik: TS_C.materialOplasteni,
-      prefill: (r, Z) => tsDvojsklo(Z)
-        ? 'izolační dvojsklo v kombinaci s vrstveným bezpečnostním sklem VSG'
-        : 'vrstvené bezpečnostní sklo VSG' },
+      jazykSam: Z => tsOplPoStenach(Z),
+      prefill: (r, Z, C, jazyk) => tsOplasteniMaterial(Z, jazyk, r) },
     /* Povrch se u exteriéru bere z názvu ceníkové položky pro boky — a to je
      * právě ta položka, ze které se u exteriéru počítá. U interiéru se z ní
      * nepočítá nic, takže by její název popisoval sklo, které v nabídce není. */
@@ -611,7 +657,10 @@ function tsHodnota(pole, ts, vysledekOck, Z, C, jazyk) {
   if (pole.prefill && vysledekOck) {
     try {
       const t = pole.prefill(vysledekOck, Z, C, jazyk);
-      return { text: t, zdroj: 'z kalkulace', prelozeno: !!(jazyk && jazyk !== 'cz' && pole.jazykSam) };
+      /* `jazykSam` smí být i funkce zadání (K18-N97: materiál opláštění si
+       * větu skládá sám jen v režimu po stěnách). */
+      const sam = (typeof pole.jazykSam === 'function') ? !!pole.jazykSam(Z) : !!pole.jazykSam;
+      return { text: t, zdroj: 'z kalkulace', prelozeno: !!(jazyk && jazyk !== 'cz' && sam) };
     }
     catch (e) { /* spadne-li prefill, použij výchozí */ }
   }
@@ -739,7 +788,7 @@ function tsKontrola(ts, r, Z, C, zak) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { tsRadekVCene, tsPriplatekNabizen, TS_LZE_DOPLNIT, TECHSPEC_DEF, TS_C, DEFAULT_TECHSPEC, tsHodnota, tsOplasteniRozsah,
+  module.exports = { tsRadekVCene, tsPriplatekNabizen, TS_LZE_DOPLNIT, TECHSPEC_DEF, TS_C, DEFAULT_TECHSPEC, tsHodnota, tsOplasteniRozsah, tsOplasteniMaterial, tsOplPoStenach,
     tsOdvozeno, tsLeseniVnejsiVCene, tsStatikaVCene,
     TS_C_KEY_OF, tsCiselnikKlic, tsCiselnikPouziti, tsPole, TS_C_ORIG, TS_DEF_ORIG,
     TS_HLAVICKA, TS_POVINNE, tsPrazdna, tsKontrola };
