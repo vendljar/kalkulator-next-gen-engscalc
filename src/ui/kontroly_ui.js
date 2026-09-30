@@ -77,7 +77,9 @@ function kontrolyCtxAkt() {
       } catch (e) { return null; }
     })(),
     /* Symboly šablony nabídky PROJ (P4 / K15-N66) — stahují se jen u zakázky
-     * se slevou projekce nebo s vlastními položkami PROJ; null = nevíme. */
+     * se slevou projekce, s vlastními položkami PROJ, s plánem plateb, který
+     * starší šablona nevytiskne, nebo s oceněným geodetickým zaměřením
+     * (K18-N92); null = nevíme. */
     sablonaNabidkaProj: (() => {
       try {
         return kontrolySablonaNabidkaProj((typeof SLP !== 'undefined') ? SLP : null, proj,
@@ -111,16 +113,23 @@ function kontrolySablonaNabidka(sleva, jazyk) {
 }
 /* Totéž pro nabídku PROJ (P4): stahuje se jen, když je co hlídat — schválená
  * sleva projekce nebo vlastní položky PROJ, které se počítají. */
+/* Oceněné geodetické zaměření (K18-N92, pravidlo cenaWordProj): šablony PROJ
+ * v2 a v3 pro jeho cenu nemají místo, takže Word nesečte činnosti do CELKEM.
+ * Ostatní činnosti symbol ceny ve všech známých šablonách mají — kdyby ho
+ * vlastní šablona neměla, pravidlo to pozná, jakmile se šablona stáhne
+ * kvůli čemukoli z tohoto seznamu. Stahovat ji u každé zakázky s projekcí
+ * by bylo zbytečné (viz výš). */
 function kontrolySablonaNabidkaProj(slevaProj, projVysledek, jazyk) {
   const sleva = typeof slevaPlati === 'function' && slevaPlati(slevaProj);
   const navic = typeof kontrolyProjNavic === 'function' && kontrolyProjNavic(projVysledek).length > 0;
+  const geodet = ((projVysledek && projVysledek.sekce) || []).some(s => s && s.key === 'geodet' && Number(s.celkem) > 0);
   /* Plán plateb, který šablona v2/v3 nevytiskne (etapa B) — pravidlo planPlatebWordProj. */
   let plan = false;
   try {
     const pl = (typeof nabidkaProjPlatby === 'function') ? nabidkaProjPlatby(ZAK, aktivniVarianta(ZAK), 'cz') : null;
     plan = !!(pl && !pl.stary && !planShodaSeStarouSablonou(pl.plan, pl.firemni, pl.ceny));
   } catch (e) { plan = false; }
-  if (!sleva && !navic && !plan) return null;
+  if (!sleva && !navic && !plan && !geodet) return null;
   return kontrolySablonaSymboly('nabidkaProj', jazyk);
 }
 function kontrolySablonaSymboly(zaklad, jazyk) {

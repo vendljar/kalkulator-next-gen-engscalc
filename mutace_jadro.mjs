@@ -104,6 +104,19 @@ function najdiSady() {
  *   proc   … co by se v praxi pokazilo, kdyby tuhle chybu někdo udělal doopravdy
  * ============================================================ */
 const MUTACE = [
+  /* ---------- K18-N92: cena činnosti ve Wordu PROJ (30. 9. 2026) ---------- */
+  { nazev: 'K18-N92: šablona bez symbolu ceny nabízené činnosti se nepozná', soubor: 'kontroly.js',
+    hledej: '    return !ma.some(x => symboly.indexOf(x) >= 0);',
+    nahrad: '    return false;',
+    proc: 'Word PROJ ze šablony v3 by tiskl činnosti, které se nesečtou do CELKEM (P09: 18 200 Kč × 41 600 Kč), bez varování' },
+  { nazev: 'K18-N92: blok ceny (…_BLOK) se za symbol ceny nepočítá', soubor: 'kontroly.js',
+    hledej: "    const ma = [mapa[s.key], mapa[s.key] + '_BLOK'];",
+    nahrad: '    const ma = [mapa[s.key]];',
+    proc: 'šablona PROJ v4 s cenou geodetu v bloku by dál hlásila, že cenu nemá — varování by svítilo pořád' },
+  { nazev: 'K18-N92: „část 1" studie se počítá za cenu zaměření i vedle studie', soubor: 'kontroly.js',
+    hledej: "    if (s.key === 'zamereni' && !nabizena('studie') && !nabizena('projednani')) ma.push('PROJ_CENA_SP1');",
+    nahrad: "    if (s.key === 'zamereni') ma.push('PROJ_CENA_SP1');",
+    proc: 'u zaměření se studií nese „část 1" jen odkaz na cenu výše — šablona bez ceny zaměření by prošla' },
   /* ---------- plán plateb projekce (etapa B, 30. 9. 2026) ---------- */
   { nazev: 'plán plateb: poslední splátka nenese zaokrouhlení', soubor: 'plan_plateb.js',
     hledej: '      const kc = i < radky.length - 1 ? Math.round(c * (r.p || 0) / 100) : planHal(zbyva);',

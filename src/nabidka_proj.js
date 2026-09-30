@@ -356,6 +356,25 @@ const NABIDKA_PROJ_DEF = [
  * figuruje dvakrát (samostatně jako ZA a jako část 1 studie). */
 const NABIDKA_PROJ_SEKCE = ['zamereni', 'studie', 'projednani', 'dpz', 'ic', 'dps', 'ezc', 'kolaudace', 'geodet'];
 
+/* SYMBOL CENY ČINNOSTI V ŠABLONĚ PROJ (K18-N92, 30. 9. 2026). Šablona PROJ v3
+ * pro cenu geodetického zaměření neměla místo, a tak Word ukázal jiné částky,
+ * než kolik dávalo CELKEM (zakázka P09: ve Wordu vidět 18 200 Kč, CELKEM
+ * 41 600 Kč). Mapa říká, kterým symbolem šablona cenu činnosti ukazuje —
+ * podle ní kontrola `cenaWordProj` pozná šablonu, která cenu nabízené
+ * činnosti neukáže. „Část 1" studie ({{PROJ_CENA_SP1}}) je zaměření podruhé
+ * a má vlastní pravidlo (odkaz na cenu výše), proto v mapě není.
+ *
+ * Ke každému symbolu dostane šablona i podobu `…_BLOK`: PRÁZDNOU, když se
+ * činnost nenabízí. Patří do bloku se značkami {{…_ZAC}}/{{…_KON}}, který pak
+ * zmizí celý i s nadpisem (šablona PROJ v4 tak má blok CENA_GEODET). Pevný
+ * odstavec bez značek nese dál {{PROJ_CENA_<X>}} s větou „není součástí této
+ * nabídky" — prázdná buňka ceny by v něm vypadala jako chyba. */
+const NABIDKA_PROJ_CENA_SYMBOL = {
+  zamereni: 'PROJ_CENA_ZAMERENI', studie: 'PROJ_CENA_SP2', projednani: 'PROJ_CENA_SP3',
+  dpz: 'PROJ_CENA_DPZ', ic: 'PROJ_CENA_IC', dps: 'PROJ_CENA_DPS', ezc: 'PROJ_CENA_EZC',
+  kolaudace: 'PROJ_CENA_KOLAUDACE', geodet: 'PROJ_CENA_GEODET',
+};
+
 /* Bloky platebních podmínek z plánu plateb (etapa B): nadpis bloku, konec
  * věty „N % z nabídkové ceny za …" a jméno symbolu šablony PROJ v4
  * ({{PROJ_PLATBY_<symbol>}} mezi značkami {{PLATBY_<symbol>_ZAC/_KON}}).
@@ -792,6 +811,14 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
     PROJ_CENA_EZC: cenaSymbol('ezc'),
     PROJ_CENA_KOLAUDACE: cenaSymbol('kolaudace'),
     PROJ_CENA_GEODET: cenaSymbol('geodet'),
+    /* … a jejich podoba pro blok se značkami (K18-N92): u činnosti, která se
+     * nenabízí, PRÁZDNÁ — blok {{CENA_<X>_ZAC}}…{{CENA_<X>_KON}} pak zmizí
+     * celý (šablona PROJ v4: cena geodetického zaměření). */
+    ...Object.keys(NABIDKA_PROJ_CENA_SYMBOL).reduce((o, k) => {
+      const v = cenaSekce(k);
+      o[NABIDKA_PROJ_CENA_SYMBOL[k] + '_BLOK'] = v ? kc(v) : '';
+      return o;
+    }, {}),
     /* Paušály z ceníku nabídky — ve vzoru byly napsané natvrdo v textu. */
     PROJ_CENA_VARIANTA: kc(mena.na(NABIDKA_PROJ_SAZBY.variantaSpKc)),
     PROJ_CENA_AD: kc(mena.na(NABIDKA_PROJ_SAZBY.autorskyDozorKcMesic)),
@@ -897,4 +924,4 @@ if (typeof dokumentRegistruj === 'function')
   });
 
 if (typeof module !== 'undefined')
-  module.exports = { nabidkaProjData, nabidkaProjCeny, nabidkaProjPlatby, NABIDKA_PROJ_PLATBY, nabidkaProjSlevaZvlast, nabidkaProjUvod, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE };
+  module.exports = { nabidkaProjData, nabidkaProjCeny, nabidkaProjPlatby, NABIDKA_PROJ_PLATBY, nabidkaProjSlevaZvlast, nabidkaProjUvod, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE, NABIDKA_PROJ_CENA_SYMBOL };

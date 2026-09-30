@@ -565,6 +565,36 @@ const KONTROLY = [
     },
   },
   {
+    /* CENA ČINNOSTI VE WORDU (K18-N92, 30. 9. 2026, vzor slevaWordProj).
+     * Šablona PROJ v3 nemá místo pro cenu geodetického zaměření, CELKEM ji
+     * přitom obsahuje — zakázka P09 měla ve Wordu vidět 18 200 Kč a CELKEM
+     * 41 600 Kč. Pravidlo se ozve, když nabízená činnost s cenou nemá
+     * v šabloně svůj symbol (NABIDKA_PROJ_CENA_SYMBOL v nabidka_proj.js).
+     *
+     * VAROVÁNÍ, NE ZÁBRANA — stejně jako ostatní pravidla o Wordu
+     * (slevaWord, slevaWordProj, polozkyNavicWordProj, planPlatebWordProj):
+     * symboly šablony se stahují na pozadí, takže zábrana by dokument
+     * zastavovala podle toho, jestli stažení už doběhlo; vadu nezpůsobila
+     * data zakázky, ale šablona, kterou obchodník opravit nemůže (nahrává
+     * ji administrátor) — zábrana by mu vzala i Word, který si umí doplnit
+     * ručně; online náhled a PDF cenu ukazují správně. Oprava je šablona
+     * PROJ v4 (nastroje/vyrob_sablony.js --proj-v4), která blok ceny
+     * geodetického zaměření má. */
+    kod: 'cenaWordProj', kde: 'Nabídka PROJ', nazev: 'Cena činnosti se ve Wordu neukáže',
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      const s = ctx.sablonaNabidkaProj;
+      if (!s || !Array.isArray(s.symboly) || !s.symboly.length) return null;
+      const chybi = kontrolyProjCenyBezSymbolu(ctx.projVysledek, s.symboly);
+      if (!chybi.length) return null;
+      return { text: 'Word nabídky PROJ neukáže cenu za ' + kontrolyVyctem(chybi.map(c => c.nazev))
+        + ': šablona nabídky PROJ' + (s.nazev ? ' „' + s.nazev + '"' : '') + (s.verze ? ' (verze ' + s.verze + ')' : '')
+        + ' pro ni nemá symbol ' + kontrolyVyctem(chybi.map(c => '{{' + c.symbol + '}}'))
+        + '. V CELKEM cena započtená je, takže se částky činností ve Wordu do CELKEM nesečtou. '
+        + 'Správně ji ukazuje online náhled nabídky PROJ. Nahrajte šablonu nabídky PROJ v4.' };
+    },
+  },
+  {
     /* PLÁN PLATEB PROJEKCE — 100 % U ČINNOSTI (etapa B, #367, rozhodnutí J. V.
      * 29. 9. 2026: „součet u každé činnosti 100 %, dokument nevznikne,
      * odklepnout nejde"). Splátky nabízené činnosti musí dát 100 %, mít
@@ -692,6 +722,26 @@ function kontrolyProjNavic(r) {
   return out;
 }
 
+/* Nabízené činnosti PROJ s cenou, jejichž cenu šablona neukáže (K18-N92):
+ * [{ key, nazev, symbol }]. Nabízená = sekce s kladnou cenou (tatáž, kterou
+ * nabídka tiskne). Šablona ji ukáže symbolem z NABIDKA_PROJ_CENA_SYMBOL nebo
+ * jeho podobou `…_BLOK`; zaměření i symbolem „části 1" studie
+ * ({{PROJ_CENA_SP1}}), dokud se studie nenabízí — pak tam stojí jen odkaz
+ * na cenu zaměření výše (nabidkaProjData). Bez mapy (modul nabídky PROJ
+ * není načtený — server ho záměrně nemá, viz jadro_moduly.cjs) se nehádá
+ * a vrací se prázdno. */
+function kontrolyProjCenyBezSymbolu(r, symboly) {
+  const mapa = (typeof NABIDKA_PROJ_CENA_SYMBOL !== 'undefined') ? NABIDKA_PROJ_CENA_SYMBOL : null;
+  if (!mapa || !Array.isArray(symboly)) return [];
+  const sekce = ((r && r.sekce) || []).filter(s => s && mapa[s.key] && Number(s.celkem) > 0);
+  const nabizena = k => sekce.some(s => s.key === k);
+  return sekce.filter(s => {
+    const ma = [mapa[s.key], mapa[s.key] + '_BLOK'];
+    if (s.key === 'zamereni' && !nabizena('studie') && !nabizena('projednani')) ma.push('PROJ_CENA_SP1');
+    return !ma.some(x => symboly.indexOf(x) >= 0);
+  }).map(s => ({ key: s.key, nazev: String(s.nazev || s.key), symbol: mapa[s.key] }));
+}
+
 function kontrolyPravidla() {
   return KONTROLY.map(r => ({ kod: r.kod, kde: r.kde, nazev: r.nazev,
     uroven: KONTROLY_UROVEN,
@@ -771,5 +821,5 @@ function kontrolyPotvrzeniPlati(potvrzeni, vysl) {
 if (typeof module !== 'undefined')
   module.exports = { KONTROLY_UROVEN, KONTROLY_UROVEN_ZABRANA,
                      KONTROLY_VYSKA_DVERI, kontrolyVyctem,
-                     kontrolyPravidla, kontrolyProved, kontrolyText, kontrolyProjNavic,
+                     kontrolyPravidla, kontrolyProved, kontrolyText, kontrolyProjNavic, kontrolyProjCenyBezSymbolu,
                      kontrolyPotvrzeni, kontrolyPotvrzeniPlati };

@@ -29,6 +29,13 @@
  *           {{PLATBY_<X>_ZAC}}/{{PLATBY_<X>_KON}}, nadpis a {{PROJ_PLATBY_<X>}}
  *           (řádky „Platba … – N % z nabídkové ceny za …"); nenabízená činnost
  *           zmizí i s nadpisem. Blok autorského dozoru zůstává.
+ *           + CENA GEODETICKÉHO ZAMĚŘENÍ (K18-N92, 30. 9. 2026): v3 měla jen
+ *           seznam „Provedení zaměření geodetem / Zpracování geometrického
+ *           plánu" bez ceny, a tak Word nesečetl činnosti do CELKEM. Pod seznam
+ *           přijde cenová tabulka ve stavbě ostatních (vzor = tabulka ceny IČ)
+ *           se symbolem {{PROJ_CENA_GEODET_BLOK}} mezi značkami
+ *           {{CENA_GEODET_ZAC}}/{{CENA_GEODET_KON}}: nenabízené geodetické
+ *           zaměření cenu nemá a blok zmizí (seznam zůstává jako dosud).
  *
  * SoD PROJ se seznamem plateb (etapa B, 30. 9. 2026) — samostatný režim:
  *   node nastroje/vyrob_sablony.js --sod-proj <složka podkladů> [výstupní složka]
@@ -50,7 +57,7 @@ const nacti = f => { const m = require(path.join(SRC, f)); Object.keys(m).forEac
 nacti('preklad.js');
 const dg = nacti('docxgen.js');
 const so = nacti('sablony_online.js');
-const { NABIDKA_PROJ_PLATBY } = require(path.join(SRC, 'nabidka_proj.js'));
+const { NABIDKA_PROJ_PLATBY, NABIDKA_PROJ_DEF, NABIDKA_PROJ_CENA_SYMBOL } = require(path.join(SRC, 'nabidka_proj.js'));
 
 const REZIM = /^--/.test(process.argv[2] || '') ? process.argv[2] : '';
 const REZIM_V4 = REZIM === '--proj-v4', REZIM_SOD = REZIM === '--sod-proj';
@@ -217,7 +224,70 @@ function projV4(xml) {
       + znacka('PLATBY_' + d.symbol + '_KON');
   }).join('');
   body = body.slice(0, top[iZac].zac) + bloky + body.slice(top[iAd].zac);
+  body = projV4CenaGeodetu(body);
   return t.pred + body + t.po;
+}
+
+/* Odstavec bez atributů (w14:paraId, rsid…) — kopie odstavce ze vzoru nesmí
+ * v dokumentu zopakovat id, které už v něm je. */
+const odstavecBezId = p => p.replace(/^<w:p\b[^>]*>/, '<w:p>');
+
+/* CENOVÁ TABULKA ČINNOSTI VE STAVBĚ VZORU (K18-N92). Cenové tabulky šablony
+ * PROJ mají jeden řádek: vlevo nadpis, popis a „bez DPH", vpravo částka.
+ * Vlastnosti tabulky, řádku, buněk, odstavců i písma se berou ze vzoru; texty
+ * jsou nové a odstavce se skládají znovu (bez id). Vzor jiné stavby = chyba,
+ * nic se nehádá. `texty` = [nadpis, popis]; „bez DPH" se opíše ze vzoru. */
+function cenovaTabulka(vzor, texty, symbol) {
+  const tblPr = (vzor.match(/<w:tblPr>[\s\S]*?<\/w:tblPr>/) || [''])[0];
+  const tblGrid = (vzor.match(/<w:tblGrid>[\s\S]*?<\/w:tblGrid>/) || [''])[0];
+  const radky = vzor.match(/<w:tr[\s>][\s\S]*?<\/w:tr>/g) || [];
+  const bunky = radky.length === 1 ? (radky[0].match(/<w:tc[\s>][\s\S]*?<\/w:tc>/g) || []) : [];
+  const odstavce = b => b.match(/<w:p[\s>][\s\S]*?<\/w:p>/g) || [];
+  const vlevo = bunky.length === 2 ? odstavce(bunky[0]) : [], vpravo = bunky.length === 2 ? odstavce(bunky[1]) : [];
+  if (!tblPr || !tblGrid || vlevo.length < 3 || vpravo.length < 1)
+    chyba('PROJ: vzorová cenová tabulka nemá čekanou stavbu (jeden řádek, vlevo nadpis–popis–„bez DPH", vpravo částka)');
+  const trPr = (radky[0].match(/<w:trPr>[\s\S]*?<\/w:trPr>/) || [''])[0];
+  const tcPr = b => (b.match(/<w:tcPr>[\s\S]*?<\/w:tcPr>/) || [''])[0];
+  const pPr = p => (p.match(/<w:pPr>[\s\S]*?<\/w:pPr>/) || [''])[0];
+  const rPr = p => (p.replace(/<w:pPr>[\s\S]*?<\/w:pPr>/, '').match(/<w:rPr>[\s\S]*?<\/w:rPr>/) || [''])[0];
+  const odst = (vz, text) => '<w:p>' + pPr(vz) + '<w:r>' + rPr(vz) + '<w:t xml:space="preserve">'
+    + dg.docxEsc(text) + '</w:t></w:r></w:p>';
+  return '<w:tbl>' + tblPr + tblGrid + '<w:tr>' + trPr
+    + '<w:tc>' + tcPr(bunky[0]) + odst(vlevo[0], texty[0]) + odst(vlevo[1], texty[1]) + odst(vlevo[2], textPrvku(vlevo[2])) + '</w:tc>'
+    + '<w:tc>' + tcPr(bunky[1]) + odst(vpravo[0], symbol) + '</w:tc>'
+    + '</w:tr></w:tbl>';
+}
+
+/* CENA GEODETICKÉHO ZAMĚŘENÍ V PROJ v4 (K18-N92). Pod seznam geodetického
+ * zaměření (v3 ho má v ROZŠÍŘENÉ NABÍDCE bez nadpisu i bez ceny) přijde blok
+ * {{CENA_GEODET_ZAC}}, mezera, cenová tabulka a {{CENA_GEODET_KON}}. Symbol
+ * je podoba `…_BLOK` (nabidka_proj.js): prázdná, když se geodetické zaměření
+ * nenabízí, takže blok zmizí a dokument vypadá jako z v3. Texty nadpisu
+ * a popisu jsou tytéž jako v online nabídce (NABIDKA_PROJ_DEF), vzor stavby je
+ * tabulka ceny IČ — tatáž, ze které bere v3 rekapitulaci. Blok stojí hned za
+ * seznamem, jako u IČ: plovoucí seznam se tak ukotví k mezeře a cenová
+ * tabulka jde pod něj. Šablona, která cenu geodetu už má, druhou nedostane. */
+function projV4CenaGeodetu(body) {
+  const symbol = NABIDKA_PROJ_CENA_SYMBOL.geodet;
+  const sym = dg.klicePlaceholderu(body);
+  if (sym.indexOf(symbol) >= 0 || sym.indexOf(symbol + '_BLOK') >= 0) return body;
+  const seznam = NABIDKA_PROJ_DEF.find(b => b.typ === 'seznam' && b.sekce === 'geodet');
+  const cena = NABIDKA_PROJ_DEF.find(b => b.typ === 'cena' && b.sekce === 'geodet');
+  if (!seznam || !cena) chyba('nabidka_proj.js nemá blok geodetického zaměření — nemám odkud vzít texty');
+  const top = prvkyTela(body);
+  const txt = el => textPrvku(body.slice(el.zac, el.kon));
+  const iSeznam = top.findIndex(el => el.tag === 'tbl' && seznam.radky.every(r => txt(el).indexOf(r) >= 0));
+  if (iSeznam < 0) chyba('PROJ: nenašel jsem seznam geodetického zaměření („' + seznam.radky.join('" / „')
+    + '") — nevím, kam patří jeho cena');
+  const iVzor = top.findIndex(el => el.tag === 'tbl' && dg.klicePlaceholderu(body.slice(el.zac, el.kon)).indexOf('PROJ_CENA_IC') >= 0);
+  if (iVzor < 0) chyba('PROJ: nenašel jsem vzor cenové tabulky (IČ) pro cenu geodetického zaměření');
+  const tabulka = cenovaTabulka(body.slice(top[iVzor].zac, top[iVzor].kon), [cena.nadpis, cena.popis], '{{' + symbol + '_BLOK}}');
+  /* Mezera jako u vzoru: prázdný odstavec, který stojí před tabulkou ceny IČ. */
+  const pred = top[iVzor - 1];
+  const mezera = (pred && pred.tag === 'p' && !txt(pred)) ? odstavecBezId(body.slice(pred.zac, pred.kon))
+    : '<w:p><w:pPr><w:pStyle w:val="Bezmezer"/></w:pPr></w:p>';
+  const blok = znacka('CENA_GEODET_ZAC') + mezera + tabulka + znacka('CENA_GEODET_KON');
+  return body.slice(0, top[iSeznam].kon) + blok + body.slice(top[iSeznam].kon);
 }
 
 /* ---------- SoD PROJ v2: seznam plateb jedním symbolem ---------- */
