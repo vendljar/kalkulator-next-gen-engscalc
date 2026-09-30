@@ -112,7 +112,10 @@ v `test_kryci_proj_model`), po opravě prošly; mutace jádra +2 (kotev 87).
 revizí) VŠE ZELENÉ za 70 min 40 s — sady 204 prošlo, 0 selhalo,
 1 přeskočeno (test.js — shoda s Excelem není v exportu); mutace jádra 85
 z 85; mutace serveru 207 z 207; statické kontroly 3 z 3. Nad 843ff63
-(s opravami revize): kolo běží — výsledek doplní další commit.
+(s opravami revize) VŠE ZELENÉ za 72 min 17 s — sady 204 prošlo, 0 selhalo,
+1 přeskočeno; mutace jádra 87 z 87; mutace serveru 207 z 207; statické
+kontroly 3 z 3. Po kole strom čistý, `if (false)` mimo zadání mutací a testy
+nikde. Větev převedena do `test-draft` (fast-forward), `test` beze změny.
 
 ---
 

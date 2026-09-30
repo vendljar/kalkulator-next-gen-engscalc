@@ -5784,7 +5784,7 @@
      "proc" : "rozhodnutí P10"
     }
    ],
-   "pozn" : "Etapa C (číslo smlouvy) je #366. Prototyp: https://claude.ai/artifact/6sbxbaAsBpphfPfE2wnM3a. Etapa B hotová ve v30.9.2 — výchozí návrhy Q1, Q2, Q4, Q5, Q8, Q10–Q12 čekají na potvrzení J. V.; šablony PROJ v4 (+EN/DE/FR) a SoD PROJ v2 k nahrání do aplikace (vyrábí je nastroje/vyrob_sablony.js)."
+   "pozn" : "Etapa C (číslo smlouvy) je #366. Prototyp: https://claude.ai/artifact/6sbxbaAsBpphfPfE2wnM3a. Etapa B hotová ve v30.9.2 — výchozí návrhy Q1, Q2, Q4, Q5, Q8, Q10–Q12 čekají na potvrzení J. V.; šablony PROJ v4 (+EN/DE/FR) a SoD PROJ v2 k nahrání do aplikace (vyrábí je nastroje/vyrob_sablony.js). Revize před sloučením (dvě nezávislé): opravy F1–F9 v 843ff63 (snímek plánu u klonu a po odemčení, brána dokumentu podle varianty, sedm menších); celé kolo nad opravami VŠE ZELENÉ (mutace jádra 87 z 87, serveru 207 z 207); převedeno do test-draft."
   },
   {
    "id" : "368",

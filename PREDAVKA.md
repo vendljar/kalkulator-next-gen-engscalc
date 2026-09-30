@@ -38,7 +38,7 @@ starších zakázek bez ztráty ručních částek. **Etapy A a C až na pokyn J
 | 7. Převod starších zakázek (`sodpPlatba1–8`, záloha tlačítkem) | ✅ | 40a44da | nic se nepřepisuje samo |
 | 8. Mutace (+5 jádro, +1 server), příručka, sestavení v30.9.2, CHANGELOG, roadmapa | ✅ | 2d4f6f4, f4094a5 | celé kolo nad f4094a5 zelené (70 min 40 s) |
 | 9. Revize (dvě nezávislé) a opravy nálezů F1–F9 s testy | ✅ | 843ff63 | viz „Revize" níž; verze zůstává v30.9.2 |
-| 10. Celé kolo nad opravami → fast-forward `test-draft` | ⏳ | | `test` se nemění |
+| 10. Celé kolo nad opravami → fast-forward `test-draft` | ✅ | 843ff63 | kolo VŠE ZELENÉ (72 min 17 s: 204/0/1, jádro 87 z 87, server 207 z 207, statické 3 z 3); `test` beze změny |
 
 ## Revize před sloučením (30. 9. 2026)
 Dvě nezávislé revize (výpočet a dokumenty; obrazovky, zámek, ukládání):
@@ -93,8 +93,8 @@ firemní plán) — možné navazující zpřísnění.
   `git status` a `grep -rn "if (false)" netlify src`.
 
 ## Další krok
-Po zeleném kole nad 843ff63 zapsat výsledek (CHANGELOG, roadmapa #367)
-a fast-forward `test-draft` na hlavu větve (ověřit, že `origin/test-draft`
-je pořád fde25ff). Pak čekat na J. V.: potvrzení výchozích návrhů
-a designových bodů revize, nahrání šablon, pokyn k etapě A (OCK platební
-kalendář) a C (číslo smlouvy, #366), sloučení do `test`.
+Etapa B je v `test-draft` (fast-forward z této větve). Čeká se na J. V.:
+release v30.9.2 (odkaz v sezení), potvrzení výchozích návrhů a designových
+bodů revize, nahrání šablon PROJ v4 a SoD PROJ v2 do verze s etapou B,
+pokyn k etapě A (OCK platební kalendář) a C (číslo smlouvy, #366),
+sloučení do `test`.
