@@ -104,6 +104,32 @@ function najdiSady() {
  *   proc   … co by se v praxi pokazilo, kdyby tuhle chybu někdo udělal doopravdy
  * ============================================================ */
 const MUTACE = [
+  /* ---------- K18-N92: cena činnosti ve Wordu PROJ (30. 9. 2026) ---------- */
+  { nazev: 'K18-N92: šablona bez symbolu ceny nabízené činnosti se nepozná', soubor: 'kontroly.js',
+    hledej: '    return !ma.some(x => symboly.indexOf(x) >= 0);',
+    nahrad: '    return false;',
+    proc: 'Word PROJ ze šablony v3 by tiskl činnosti, které se nesečtou do CELKEM (P09: 18 200 Kč × 41 600 Kč), bez varování' },
+  { nazev: 'K18-N92: blok ceny (…_BLOK) se za symbol ceny nepočítá', soubor: 'kontroly.js',
+    hledej: "    const ma = [mapa[s.key], mapa[s.key] + '_BLOK'];",
+    nahrad: '    const ma = [mapa[s.key]];',
+    proc: 'šablona PROJ v4 s cenou geodetu v bloku by dál hlásila, že cenu nemá — varování by svítilo pořád' },
+  { nazev: 'K18-N92: „část 1" studie se počítá za cenu zaměření i vedle studie', soubor: 'kontroly.js',
+    hledej: "    if (s.key === 'zamereni' && !nabizena('studie') && !nabizena('projednani')) ma.push('PROJ_CENA_SP1');",
+    nahrad: "    if (s.key === 'zamereni') ma.push('PROJ_CENA_SP1');",
+    proc: 'u zaměření se studií nese „část 1" jen odkaz na cenu výše — šablona bez ceny zaměření by prošla' },
+  /* ---------- K18-N96: dodatkový text v cizojazyčné nabídce (30. 9. 2026) ---------- */
+  { nazev: 'K18-N96: český dodatkový text v cizí nabídce se nepozná', soubor: 'kontroly.js',
+    hledej: "        .filter(p => { const t = String(p.popisNabidka || '').trim(); return t && !trStav(t, jaz).prelozeno; })",
+    nahrad: '        .filter(p => false)',
+    proc: 'anglická nabídka by odešla s českou větou pod příplatkem a nikdo by se to nedozvěděl' },
+  { nazev: 'K18-N96: vynechaný příplatek se hlásí, i když se netiskne', soubor: 'kontroly.js',
+    hledej: '      const vNabidce = r.priplatky.filter(p => p && !vynech.includes(p.key));',
+    nahrad: '      const vNabidce = r.priplatky.filter(p => p);',
+    proc: 'varování by svítilo kvůli textu, který v nabídce vůbec není — přestalo by se číst' },
+  { nazev: 'K18-N96: sloučené přechodové plechy hlásí svůj text', soubor: 'kontroly.js',
+    hledej: "      const slouceny = plechy.every(k => vNabidce.some(p => p.key === k));",
+    nahrad: '      const slouceny = false;',
+    proc: 'sloučené plechy tisknou „materiál a montáž", ne svůj text — varování by lhalo' },
   /* ---------- plán plateb projekce (etapa B, 30. 9. 2026) ---------- */
   { nazev: 'plán plateb: poslední splátka nenese zaokrouhlení', soubor: 'plan_plateb.js',
     hledej: '      const kc = i < radky.length - 1 ? Math.round(c * (r.p || 0) / 100) : planHal(zbyva);',

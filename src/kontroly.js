@@ -488,6 +488,39 @@ const KONTROLY = [
     },
   },
   {
+    /* DODATKOVÝ TEXT V CIZOJAZYČNÉ NABÍDCE (K18-N96, 30. 9. 2026). Pod
+     * příplatkem v kapitole II. tiskne nabídka dodatkový text z ceníku
+     * (#267, cenik.popisy — klíč = název položky). Ceník ho má v JEDNOM
+     * znění pro všechny jazyky a text napsaný člověkem aplikace nepřekládá
+     * (projde beze změny), takže anglická nabídka nesla českou větu a nikdo
+     * se to nedozvěděl. Jazykové varianty textů ceník nemá (číselník #267
+     * i /api/popisy drží jeden řetězec) — proto varování, ne překlad.
+     * Rozhoduje totéž, co tiskne nabidkaData: příplatek v nabídce (ne
+     * vynechaný) s neprázdným textem; sloučené přechodové plechy (obě půlky
+     * v nabídce) vlastní text netisknou. Text, který slovník zná (nebo který
+     * je neutrální), se přeloží a nehlásí se; bez slovníku se nehádá. */
+    kod: 'dodatekCesky', kde: 'Nabídka', nazev: 'Dodatkový text zůstane v cizojazyčné nabídce česky',
+    zjisti(ctx) {
+      const jaz = String(ctx.jazyk || 'cz').toLowerCase();
+      if (ctx.jenProj || jaz === 'cz' || typeof trStav !== 'function') return null;
+      const r = ctx.vysledek;
+      if (!r || !Array.isArray(r.priplatky)) return null;
+      const vynech = (ctx.zadani && ctx.zadani.priplatkyVynechat) || [];
+      const vNabidce = r.priplatky.filter(p => p && !vynech.includes(p.key));
+      const plechy = ['prechMat', 'prechMont'];
+      const slouceny = plechy.every(k => vNabidce.some(p => p.key === k));
+      const cesky = vNabidce.filter(p => !(slouceny && plechy.includes(p.key)))
+        .filter(p => { const t = String(p.popisNabidka || '').trim(); return t && !trStav(t, jaz).prelozeno; })
+        .map(p => String(p.nazev || p.origNazev || p.key));
+      if (!cesky.length) return null;
+      return { text: 'Nabídka v jazyce ' + jaz.toUpperCase() + ' ponese česky dodatkový text '
+        + (cesky.length === 1 ? 'u položky ' : 'u položek ') + kontrolyVyctem(cesky.map(n => '„' + n + '"'))
+        + ': ceník má dodatkový text v jednom znění pro všechny jazyky a text napsaný ručně aplikace nepřekládá. '
+        + 'Přepište ho u zakázky do jazyka nabídky (Kalkulace OCK, pole pod položkou), nebo ho smažte — '
+        + 'administrátorovi se tím změní i společný text pro všechny nabídky.' };
+    },
+  },
+  {
     /* TERMÍN DODÁNÍ U ATYP (#330, nález TD1, 24. 9. 2026). Nabídka od teď
      * nese termín ze zakázky jako první odrážku kapitoly V.; zbytek
      * kapitoly je text z Firmy. Když v tom textu zůstala standardní lhůta
@@ -607,6 +640,36 @@ const KONTROLY = [
         + ') wordová nabídka neukáže — šablona nabídky PROJ' + (s.nazev ? ' „' + s.nazev + '"' : '')
         + ' nemá symbol {{PROJ_POLOZKY_NAVIC}} ani {{PROJ_NAVIC_<SEKCE>}}. V ceně sekcí jsou; '
         + 'vypisuje je jen online náhled nabídky PROJ.' };
+    },
+  },
+  {
+    /* CENA ČINNOSTI VE WORDU (K18-N92, 30. 9. 2026, vzor slevaWordProj).
+     * Šablona PROJ v3 nemá místo pro cenu geodetického zaměření, CELKEM ji
+     * přitom obsahuje — zakázka P09 měla ve Wordu vidět 18 200 Kč a CELKEM
+     * 41 600 Kč. Pravidlo se ozve, když nabízená činnost s cenou nemá
+     * v šabloně svůj symbol (NABIDKA_PROJ_CENA_SYMBOL v nabidka_proj.js).
+     *
+     * VAROVÁNÍ, NE ZÁBRANA — stejně jako ostatní pravidla o Wordu
+     * (slevaWord, slevaWordProj, polozkyNavicWordProj, planPlatebWordProj):
+     * symboly šablony se stahují na pozadí, takže zábrana by dokument
+     * zastavovala podle toho, jestli stažení už doběhlo; vadu nezpůsobila
+     * data zakázky, ale šablona, kterou obchodník opravit nemůže (nahrává
+     * ji administrátor) — zábrana by mu vzala i Word, který si umí doplnit
+     * ručně; online náhled a PDF cenu ukazují správně. Oprava je šablona
+     * PROJ v4 (nastroje/vyrob_sablony.js --proj-v4), která blok ceny
+     * geodetického zaměření má. */
+    kod: 'cenaWordProj', kde: 'Nabídka PROJ', nazev: 'Cena činnosti se ve Wordu neukáže',
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      const s = ctx.sablonaNabidkaProj;
+      if (!s || !Array.isArray(s.symboly) || !s.symboly.length) return null;
+      const chybi = kontrolyProjCenyBezSymbolu(ctx.projVysledek, s.symboly);
+      if (!chybi.length) return null;
+      return { text: 'Word nabídky PROJ neukáže cenu za ' + kontrolyVyctem(chybi.map(c => c.nazev))
+        + ': šablona nabídky PROJ' + (s.nazev ? ' „' + s.nazev + '"' : '') + (s.verze ? ' (verze ' + s.verze + ')' : '')
+        + ' pro ni nemá symbol ' + kontrolyVyctem(chybi.map(c => '{{' + c.symbol + '}}'))
+        + '. V CELKEM cena započtená je, takže se částky činností ve Wordu do CELKEM nesečtou. '
+        + 'Správně ji ukazuje online náhled nabídky PROJ. Nahrajte šablonu nabídky PROJ v4.' };
     },
   },
   {
@@ -755,6 +818,26 @@ function kontrolyPlatbyDuvody(kal) {
   return out;
 }
 
+/* Nabízené činnosti PROJ s cenou, jejichž cenu šablona neukáže (K18-N92):
+ * [{ key, nazev, symbol }]. Nabízená = sekce s kladnou cenou (tatáž, kterou
+ * nabídka tiskne). Šablona ji ukáže symbolem z NABIDKA_PROJ_CENA_SYMBOL nebo
+ * jeho podobou `…_BLOK`; zaměření i symbolem „části 1" studie
+ * ({{PROJ_CENA_SP1}}), dokud se studie nenabízí — pak tam stojí jen odkaz
+ * na cenu zaměření výše (nabidkaProjData). Bez mapy (modul nabídky PROJ
+ * není načtený — server ho záměrně nemá, viz jadro_moduly.cjs) se nehádá
+ * a vrací se prázdno. */
+function kontrolyProjCenyBezSymbolu(r, symboly) {
+  const mapa = (typeof NABIDKA_PROJ_CENA_SYMBOL !== 'undefined') ? NABIDKA_PROJ_CENA_SYMBOL : null;
+  if (!mapa || !Array.isArray(symboly)) return [];
+  const sekce = ((r && r.sekce) || []).filter(s => s && mapa[s.key] && Number(s.celkem) > 0);
+  const nabizena = k => sekce.some(s => s.key === k);
+  return sekce.filter(s => {
+    const ma = [mapa[s.key], mapa[s.key] + '_BLOK'];
+    if (s.key === 'zamereni' && !nabizena('studie') && !nabizena('projednani')) ma.push('PROJ_CENA_SP1');
+    return !ma.some(x => symboly.indexOf(x) >= 0);
+  }).map(s => ({ key: s.key, nazev: String(s.nazev || s.key), symbol: mapa[s.key] }));
+}
+
 function kontrolyPravidla() {
   return KONTROLY.map(r => ({ kod: r.kod, kde: r.kde, nazev: r.nazev,
     uroven: KONTROLY_UROVEN,
@@ -834,5 +917,5 @@ function kontrolyPotvrzeniPlati(potvrzeni, vysl) {
 if (typeof module !== 'undefined')
   module.exports = { KONTROLY_UROVEN, KONTROLY_UROVEN_ZABRANA,
                      KONTROLY_VYSKA_DVERI, KONTROLY_ZDVIH_MAX_M, kontrolyVyctem,
-                     kontrolyPravidla, kontrolyProved, kontrolyText, kontrolyProjNavic, kontrolyPlatbyDuvody,
+                     kontrolyPravidla, kontrolyProved, kontrolyText, kontrolyProjNavic, kontrolyPlatbyDuvody, kontrolyProjCenyBezSymbolu,
                      kontrolyPotvrzeni, kontrolyPotvrzeniPlati };

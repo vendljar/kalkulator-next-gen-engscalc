@@ -169,7 +169,11 @@ const pravidla = kontrolyPravidla();
  * 30. 9. 2026 (etapa B plánu plateb, test_plan_plateb_sod.js). */
 /* 28. „platbyWordOck" 30. 9. 2026 (etapa A platebních podmínek OCK, D1 + D2,
  * test_platby_ock.js): šablona CN v13 nevytiskne bez zálohy ani měsíční fakturaci. */
-test('pravidel je dvacet osm', pravidla.length === 28, pravidla.length);
+/* 29. „cenaWordProj" 30. 9. 2026 (K18-N92, test_k18_nalezy.js): šablona PROJ
+ * nemá symbol ceny nabízené činnosti (v3 a geodetické zaměření). */
+/* 30. „dodatekCesky" 30. 9. 2026 (K18-N96, test_k18_nalezy.js): dodatkový
+ * text z ceníku zůstane v cizojazyčné nabídce česky. */
+test('pravidel je třicet', pravidla.length === 30, pravidla.length);
 test('kódy pravidel jsou jedinečné',
   new Set(pravidla.map(p => p.kod)).size === pravidla.length,
   pravidla.map(p => p.kod).join(','));
