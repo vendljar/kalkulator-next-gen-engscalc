@@ -5784,7 +5784,7 @@
      "proc" : "rozhodnutí P10"
     }
    ],
-   "pozn" : "Etapa C (číslo smlouvy) je #366. Prototyp: https://claude.ai/artifact/6sbxbaAsBpphfPfE2wnM3a. Etapa B hotová ve v30.9.2 — výchozí návrhy Q1, Q2, Q4, Q5, Q8, Q10–Q12 čekají na potvrzení J. V.; šablony PROJ v4 (+EN/DE/FR) a SoD PROJ v2 k nahrání do aplikace (vyrábí je nastroje/vyrob_sablony.js). Revize před sloučením (dvě nezávislé): opravy F1–F9 v 843ff63 (snímek plánu u klonu a po odemčení, brána dokumentu podle varianty, sedm menších); celé kolo nad opravami VŠE ZELENÉ (mutace jádra 87 z 87, serveru 207 z 207); převedeno do test-draft. Rozhodnutí J. V. 30. 9.: Q5 dřívější záloha se přepne na předvolbu automaticky (v30.9.3), Q9 a Q10 potvrzeny, Q1/Q2/Q4/Q11/Q12 bez námitky, body revize a/b zatím OK; Q8 (úprava firemního Standardu převzetím ze zakázky, nebo přímý editor v Nastavení) vysvětleno — čeká na odpověď."
+   "pozn" : "Etapa C (číslo smlouvy) je #366. Prototyp: https://claude.ai/artifact/6sbxbaAsBpphfPfE2wnM3a. Etapa B hotová ve v30.9.2 — výchozí návrhy Q1, Q2, Q4, Q5, Q8, Q10–Q12 čekají na potvrzení J. V.; šablony PROJ v4 (+EN/DE/FR) a SoD PROJ v2 k nahrání do aplikace (vyrábí je nastroje/vyrob_sablony.js). Revize před sloučením (dvě nezávislé): opravy F1–F9 v 843ff63 (snímek plánu u klonu a po odemčení, brána dokumentu podle varianty, sedm menších); celé kolo nad opravami VŠE ZELENÉ (mutace jádra 87 z 87, serveru 207 z 207); převedeno do test-draft. Rozhodnutí J. V. 30. 9.: Q5 dřívější záloha se přepne na předvolbu automaticky (v30.9.3), Q9 a Q10 potvrzeny, Q1/Q2/Q4/Q11/Q12 bez námitky, body revize a/b zatím OK; Q8 (úprava firemního Standardu převzetím ze zakázky, nebo přímý editor v Nastavení) vysvětleno — čeká na odpověď. Q8 „ponechat“ (J. V. 30. 9.) — otázky etapy B uzavřené. v30.9.3: celé kolo VŠE ZELENÉ (mutace jádra 88 z 88, serveru 207 z 207), převedeno do test-draft."
   },
   {
    "id" : "368",
@@ -5900,6 +5900,19 @@
    "otazka": "Chce J. V. dotáhnout (1) a (2) stejným pravidlem jako přepisy B112, a realizovat bod 4?",
    "kde": "src/uloziste.js (uloCenikProblemy — vzor), netlify/lib/zakazka_kontrola.mjs, src/ui/kalk_proj.js (hodiny/rezerva pod col.admin)",
    "zavisi": [{"typ": "doporuceno", "id": "373", "proc": "navazuje na B111, B96 a B112"}]
+  },
+  {
+   "id": "375",
+   "vlna": "B",
+   "stav": "ceka",
+   "dulezitost": "stredni",
+   "slozitost": "M",
+   "nazev": "Světlíky u šachetních dveří — stejné volby nad dveřmi i na bocích, počet bočních světlíků",
+   "proc": "Zadání J. V. 30. 9. 2026: „Světlík nad šachetními dveřmi“ a „Světlíky na bocích dveří“ mají ukazovat stejné možnosti; sklo nad dveřmi má respektovat zasklení čelní stěny a materiál opláštění opláštění stěn B, C, D; pod boky nové pole „Celkem světlíků na bocích dveří“ (nástupiště × 2, obchodník přepíše), boky ve výchozím stavu „bez“. Navazuje na N58/N58b (#351): boky tehdy zůstaly napůl (počet stran + výplň bez volby „bez“) a otázka mezery vedle dveří je otevřená.",
+   "detail": "Rozbor jádra v30.9.3: sklo nad dveřmi ve standardu = sklo čelní stěny a její zasklení (drží); v režimu po stěnách se plocha světlíků ocení typy pásů stěny A (Cetris → „sklo“ jako Cetris, „bez — dodá stavba“ → 0 Kč). Materiál opláštění se počítá stejně jako sklo (čelní stěna), stěny B–D se nečtou. Návrh s maketou a výpočtem: https://claude.ai/artifact/2x3pM2fGfAQaXz7ziUVxbE — plocha boků = min(N; nástupiště) × mezera × 2,2 m, konstrukce (sloupek portálu +1, krátké příčníky +2) a montáž 0,5 h na světlík, sklo podle stěny A, materiál podle stěn B–D (převažující podle plochy), boky „bez“ s upozorněním v kontrole, převod starších zakázek beze změny ceny.",
+   "otazka": "Odpovědi J. V. na otázky 1–7 návrhu (výchozí odpovědi jsou v návrhu).",
+   "kde": "src/engine.js (nadDvermiVypln, bokyVypln, VYPLN_SKLENA, zasklení, oplZakladSteny), src/ui/kalk_ock.js (Zadání šachty), src/techspec.js, src/kontroly.js",
+   "zavisi": [{"typ": "doporuceno", "id": "351", "proc": "navazuje na volbu výplně nad dveřmi a vedle nich (N58, N58b)"}]
   }
  ],
  "meta" : {

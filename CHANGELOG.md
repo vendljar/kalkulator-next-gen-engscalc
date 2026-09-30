@@ -34,7 +34,11 @@ fast-forward na `test`** (fde25ff, v30.9.1 — tag i release existují).
   po úpravě prošly. Mutace jádra +1 „dřívější záloha se nepřepne"
   (chycená, kotev 88).
 
-**Ověřeno celým kolem** — výsledek doplní další commit.
+**Ověřeno celým kolem** (`nastroje/testovaci_kolo.sh`, nad 8cb2534): VŠE ZELENÉ
+za 71 min 53 s — sady 204 prošlo, 0 selhalo, 1 přeskočeno (test.js); mutace
+jádra 88 z 88; mutace serveru 207 z 207; statické kontroly 3 z 3. Po kole
+strom čistý. Převedeno do `test-draft` (fast-forward), `test` a `main`
+zůstávají na v30.9.1.
 
 ---
 

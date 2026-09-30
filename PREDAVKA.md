@@ -26,7 +26,7 @@ pushnout nejde — proxy HTTP 403, viz CLAUDE.md).
   `claude/pensive-curie-s6yzs3` (zbývá předávka fd1be2b),
   `claude/komplexni-test-v29.9.1` (výsledky 21. kola), `claude/opravy-v29.9.1`
   (předávka + prompt šesti oprav).
-Roadmapa: `roadmapa/roadmap.json` (374 položek, nejvyšší #374), stránka se
+Roadmapa: `roadmapa/roadmap.json` (375 položek, nejvyšší #375), stránka se
 generuje `python3 roadmapa/roadmapa.py`.
 
 ## Hotovo v30.9.2 — etapa B: plán plateb projekce (podrobně CHANGELOG.md)
@@ -64,6 +64,10 @@ ruční přepis; zábrany (100 % u činnosti, součet plateb = cena díla).
 - **Ověřeno celým kolem** 30. 9. 2026 nad 843ff63 (72 min 17 s): VŠE ZELENÉ —
   sady 204 prošlo, 0 selhalo, 1 přeskočeno (test.js); mutace jádra 87 z 87;
   mutace serveru 207 z 207; statické kontroly 3 z 3.
+- **v30.9.3 — Q5:** dřívější záloha krycího listu se přepne na předvolbu
+  plánu sama (líně, první zápis ji zhmotní). Celé kolo nad 8cb2534 VŠE
+  ZELENÉ (71 min 53 s: sady 204/0/1, mutace jádra 88 z 88, serveru 207 z 207,
+  statické 3 z 3).
 
 ## Hotovo v30.9.1 — opravy šesti nálezů 21. kola (podrobně CHANGELOG.md)
 B111 záporné položky, B96 krok zaokrouhlení, B112 ceník varianty a přepisy
@@ -126,6 +130,10 @@ prototyp https://claude.ai/artifact/6sbxbaAsBpphfPfE2wnM3a.
 - **Nahrát šablony** nabídky PROJ v4 (+EN/DE/FR) a SoD PROJ v2 (Nastavení →
   Šablony) — až do verze s etapou B; v30.9.1 nové symboly nezná.
 - Pokyn k etapám A a C.
+- **Světlíky u šachetních dveří (#375):** odpovědi na otázky 1–7 návrhu
+  https://claude.ai/artifact/2x3pM2fGfAQaXz7ziUVxbE (stejné volby nad dveřmi
+  i na bocích, pole Celkem světlíků na bocích dveří, sklo podle stěny A,
+  materiál podle stěn B–D; otevřená otázka mezery vedle dveří z #351).
 - Rozhodnout nálezy 22. kola (`claude/testovani-po-opravach`), bod 4 B96
   a **#374** (zbývající cesty třídy „koncová cena": hodiny a rezerva
   standardních položek PROJ, cena trvalé položky s kid, zaokrouhlení
@@ -196,7 +204,8 @@ Zbytek B77, B100–B110, zbytek B32, B4 souběh, B6, N59–N61 (větev
   nejvyšší id v cílové větvi.
 
 ## Další krok
-Čeká se na J. V. (výše): releasy v30.9.2 a v30.9.3, šablony, rozhodnutí
+Čeká se na J. V. (výše): releasy v30.9.2 a v30.9.3, šablony, odpovědi
+k návrhu světlíků (#375, pak realizace v paralelní větvi), rozhodnutí
 o nálezech 22. kola, pokyn k etapě A (OCK platební kalendář)
 a C (číslo smlouvy, #366) a ke sloučení `test-draft` do `test`. Nová práce
 vždy v paralelní větvi (`claude/…`) z `test-draft`.
