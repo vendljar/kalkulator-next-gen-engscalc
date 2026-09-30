@@ -130,6 +130,11 @@ const MUTACE = [
     hledej: '  if (plan && Array.isArray(plan.upravene)) return plan.upravene.indexOf(k) >= 0;',
     nahrad: '  if (false) return false;',
     proc: 'odeslaná nabídka pod firemním Standardem by v krycím listu hlásila „upraveno“' },
+  /* Q5 (rozhodnutí J. V. 30. 9. 2026). */
+  { nazev: 'plán plateb: dřívější záloha se nepřepne na předvolbu', soubor: 'plan_plateb.js',
+    hledej: "  const zal = zalohaZeStarych && zalohaZeStarych.lze ? { predvolba: 'zaloha', zaloha: zalohaZeStarych.pct } : null;",
+    nahrad: '  const zal = null;',
+    proc: 'starší zakázka se zálohou 30 % by tiskla Standard — obchodník by zálohu musel znovu nastavit ručně' },
   { nazev: 'plán plateb: vada plánu jen varuje, nezastaví dokument', soubor: 'kontroly.js',
     hledej: "      return { uroven: KONTROLY_UROVEN_ZABRANA,\n        text: 'Plán plateb projekce: '",
     nahrad: "      return { uroven: KONTROLY_UROVEN,\n        text: 'Plán plateb projekce: '",

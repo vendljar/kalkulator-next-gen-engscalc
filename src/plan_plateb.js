@@ -233,6 +233,22 @@ function planPlatebZeStarych(hodnoty) {
   return { prepis, necitelne };
 }
 
+/* Dřívější záloha krycího listu PROJ (pole `zaloha`: text volby „Bez
+ * zálohy" / „Záloha 30 %" z KRYCI_PROJ_ZALOHY, nebo vlastní znění). Q5
+ * (rozhodnutí J. V. 30. 9. 2026): rozpracovaná zakázka, jejíž plán ještě
+ * nemá předvolbu, se na „Záloha X % + zbytek po předání" přepne SAMA
+ * (do té doby ji jen nabízelo tlačítko). Vlastní znění, které předvolba
+ * neumí (třeba 40 %), se jen ohlásí (`lze: false`). Počítá se jen se
+ * zálohou, kterou obchodník v krycím listu opravdu zvolil (uložená
+ * hodnota) — předvyplněná volba v datech není. */
+function planZalohaZeStarych(hodnoty) {
+  const t = String(hodnoty && typeof hodnoty === 'object' && hodnoty.zaloha != null ? hodnoty.zaloha : '').trim();
+  if (!t) return null;
+  const m = /(\d+)\s*%/.exec(t);
+  const pct = /bez zálohy/i.test(t) ? 0 : (m ? +m[1] : null);
+  return { text: t, pct, lze: pct !== null && PLAN_PROJ_ZALOHY.indexOf(pct) >= 0 };
+}
+
 /* ---------- plán varianty (krok 3 etapy B: krycí list PROJ) ----------
  * Pořadí zdrojů (podklad 3.7): plán varianty (data.kryciProj.planPlateb)
  * → u ODESLANÉ (zamčené) varianty snímek z doby odeslání (zmrazenoPlan) →
@@ -271,8 +287,12 @@ function planPlatebVarianty(varianta, firma) {
     return { plan: { v: 1, predvolba: z.predvolba, zaloha: z.zaloha, cinnosti, prepis, upravene },
              firemni, zmrazeny: true, stary: false, zeStarych };
   }
-  const ef = zeStarych ? Object.assign({ v: 1 }, plan || {}, { prepis }) : plan;
-  return { plan: ef, firemni: planFirmaPlan(firma), zmrazeny: false, stary: false, zeStarych };
+  /* Dřívější záloha → předvolba (Q5), líně jako ruční splátky; zhmotní ji
+   * první zápis do plánu (planKlpData v UI). */
+  const zalohaZeStarych = (!plan || !plan.predvolba) ? planZalohaZeStarych(kl.hodnoty) : null;
+  const zal = zalohaZeStarych && zalohaZeStarych.lze ? { predvolba: 'zaloha', zaloha: zalohaZeStarych.pct } : null;
+  const ef = (zeStarych || zal) ? Object.assign({ v: 1 }, plan || {}, { prepis }, zal || {}) : plan;
+  return { plan: ef, firemni: planFirmaPlan(firma), zmrazeny: false, stary: false, zeStarych, zalohaZeStarych };
 }
 /* Snímek plánu při prvním zamčení: splátky všech nabízených činností
  * i s texty milníků z katalogu té doby — pozdější změna firemního plánu
@@ -452,6 +472,7 @@ if (typeof module !== 'undefined')
   module.exports = { PLAN_PROJ_SEKCE, PLAN_PROJ_PREDVOLBY, PLAN_PROJ_ZALOHY, PLAN_PROJ_MILNIKY, PLAN_PROJ_VYCHOZI,
     PLAN_PROJ_ZKRATKY, PLAN_PROJ_NAZVY, PLAN_PROJ_PREDVOLBY_NAZVY,
     PLAN_SODP_STARE, planFiremni, planFirmaPlan, planPct, planPredvolba, planMilnikText, planRadkyCinnosti, planPlatebDopocet,
+    planZalohaZeStarych,
     planPlatebKontrola, planCastkaZTextu, planPlatebZeStarych, planPlatebFirmaVady, planPlatebFirmaCisty,
     planPlatebVarianty, planPlatebSnimek, planCinnostUpravena, planUpraveno, planZalohaEf, planPopisPredvolby,
     PLAN_PROJ_MAX_SPLATEK, PLAN_PROJ_STARE_BLOKY, planShodaSeStarouSablonou,

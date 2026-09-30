@@ -274,8 +274,14 @@ for (const sleva of [0, 10]) {
 /* 7) převod starších zakázek (krok 7): ruční splátky sodpPlatba1–8 */
 {
   const z = novaZ(0), v = z.varianty[0];
-  v.data.kryciProj.hodnoty = { sodpPlatba1: '110 000 Kč', sodpPlatba6: 'viz příloha', zaloha: '30 % – po podpisu smlouvy' };
+  v.data.kryciProj.hodnoty = { sodpPlatba1: '110 000 Kč', sodpPlatba6: 'viz příloha', zaloha: 'Záloha 30 %' };
   const e = PP.planPlatebVarianty(v, global.NAST.firma);
+  /* Q5 (rozhodnutí J. V. 30. 9. 2026): dřívější záloha krycího listu se
+   * přepne AUTOMATICKY na předvolbu „Záloha X % + zbytek po předání" —
+   * do té doby se jen nabízela tlačítkem. Líně, bez zápisu do dat. */
+  test('Q5: dřívější záloha „Záloha 30 %" přepne předvolbu sama na Zálohu 30 %',
+    e.plan && e.plan.predvolba === 'zaloha' && e.plan.zaloha === 30 && !!e.zalohaZeStarych && e.zalohaZeStarych.lze === true
+    && NP.nabidkaProjPlatby(z, v, 'cz').dopocet.cinnosti.dpz.map(r => r.p + ':' + r.m).join() === '30:podpis,70:dpz_su', e.plan);
   test('starší zakázka: ruční splátka 1 platí jako ruční částka platby „po podpisu"', e.plan && e.plan.prepis.podpis === 110000 && !!e.zeStarych, e.plan);
   test('nečitelná ruční splátka se nezahodí (k upozornění)', e.zeStarych && e.zeStarych.necitelne.length === 1 && e.zeStarych.necitelne[0].id === 'sodpPlatba6');
   const pl = NP.nabidkaProjPlatby(z, v, 'cz');
@@ -291,6 +297,37 @@ for (const sleva of [0, 10]) {
   zamkniVariantu(v, { typ: 'nabidkaProj', kdo: 'Test', cislo: '2026 - OVP - CN - 402' });
   test('odeslaná (se snímkem): dřívější ruční splátka platí stejně jako před odesláním',
     NP.nabidkaProjPlatby(z, v, 'cz').dopocet.platby.find(x => x.klic === 'podpis').castka === 110000);
+  test('Q5: snímek při odeslání nese převzatou předvolbu Záloha 30 %',
+    v.data.kryciProj.zmrazenoPlan.predvolba === 'zaloha' && v.data.kryciProj.zmrazenoPlan.zaloha === 30, v.data.kryciProj.zmrazenoPlan);
+}
+
+/* 7b) Q5: které znění dřívější zálohy se přepne a které ne */
+{
+  const ef = (hodnoty, plan) => { const z = novaZ(0), v = z.varianty[0]; v.data.kryciProj.hodnoty = hodnoty;
+    if (plan) v.data.kryciProj.planPlateb = plan; const e = PP.planPlatebVarianty(v, global.NAST.firma);
+    return { e: Object.assign({}, e, { plan: e.plan || {} }), z, v }; };
+  let r = ef({ zaloha: 'Bez zálohy' });
+  test('Q5: „Bez zálohy" → předvolba Záloha 0 % (100 % po předání)', r.e.plan.predvolba === 'zaloha' && r.e.plan.zaloha === 0
+    && NP.nabidkaProjPlatby(r.z, r.v, 'cz').dopocet.cinnosti.dpz.map(x => x.p + ':' + x.m).join() === '100:dpz_su', r.e.plan);
+  r = ef({ zaloha: 'Záloha 70 %' });
+  test('Q5: „Záloha 70 %" → předvolba Záloha 70 %', r.e.plan.predvolba === 'zaloha' && r.e.plan.zaloha === 70, r.e.plan);
+  r = ef({ zaloha: '40 % po podpisu smlouvy' });
+  test('Q5: vlastní znění, které předvolba nezná (40 %), se nepřepne — jen ohlásí',
+    PP.planPredvolba(r.e.plan, r.e.firemni) === 'std' && !!r.e.zalohaZeStarych && r.e.zalohaZeStarych.lze === false && r.e.zalohaZeStarych.pct === 40,
+    [r.e.plan, r.e.zalohaZeStarych]);
+  r = ef({ zaloha: 'Záloha 30 %' }, { v: 1, predvolba: 'std' });
+  test('Q5: plán s vlastní předvolbou se dřívější zálohou nepřepíše', r.e.plan.predvolba === 'std' && !r.e.zalohaZeStarych, r.e.plan);
+  r = ef({ zaloha: 'Záloha 50 %' }, { v: 1, cinnosti: { ic: [{ p: 100, m: 'ic_povoleni' }] } });
+  test('Q5: upravené splátky bez předvolby zůstanou, ostatní činnosti jdou z převzaté zálohy',
+    r.e.plan.predvolba === 'zaloha' && r.e.plan.zaloha === 50
+    && NP.nabidkaProjPlatby(r.z, r.v, 'cz').dopocet.cinnosti.ic.map(x => x.p + ':' + x.m).join() === '100:ic_povoleni'
+    && NP.nabidkaProjPlatby(r.z, r.v, 'cz').dopocet.cinnosti.dpz.map(x => x.p + ':' + x.m).join() === '50:podpis,50:dpz_su', r.e.plan);
+  r = ef({ zaloha: 'Záloha 30 %' });
+  test('Q5: převod nic nezapsal do dat (líně)', r.v.data.kryciProj.planPlateb === undefined);
+  const zl = novaZ(0), vl = zl.varianty[0];
+  vl.data.kryciProj.hodnoty = { zaloha: 'Záloha 30 %' };
+  zamkniVariantu(vl, { typ: 'nabidkaProj', kdo: 'Test', cislo: '2026 - OVP - CN - 406' });
+  test('Q5: odeslaná nabídka z doby před plánem se nepřepíná (tiskne se, jak odešla)', PP.planPlatebVarianty(vl, global.NAST.firma).stary === true);
 }
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);

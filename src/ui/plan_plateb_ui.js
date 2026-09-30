@@ -202,6 +202,12 @@ function planKlpData() {
    * první úprava tiše zahodila. Původní pole zůstávají v datech. */
   if (KLP.planPlateb.prepis === undefined && typeof planPlatebZeStarych === 'function')
     KLP.planPlateb.prepis = planPlatebZeStarych(KLP.hodnoty).prepis;
+  /* Dřívější záloha přepnutá na předvolbu (Q5, J. V. 30. 9. 2026) se tu
+   * zhmotní — až dosud platila jen líně (planPlatebVarianty). */
+  if (!KLP.planPlateb.predvolba && typeof planZalohaZeStarych === 'function') {
+    const z = planZalohaZeStarych(KLP.hodnoty);
+    if (z && z.lze) { KLP.planPlateb.predvolba = 'zaloha'; KLP.planPlateb.zaloha = z.pct; }
+  }
   return KLP.planPlateb;
 }
 function planKlpEf() { return nabidkaProjPlatby(ZAK, aktivniVarianta(ZAK), 'cz'); }
@@ -242,32 +248,6 @@ async function planKlpPredvolba(v) {
   delete plan.cinnosti;
   plan.prepis = {};            // prázdné, ne chybějící: dřívější ruční splátky se nevrátí
   planKlpUlozeno();
-}
-/* Dřívější záloha z krycího listu (krok 7, Q5): nepřepíná se sama —
- * obchodník ji jedním tlačítkem použije jako předvolbu „Záloha X %".
- * Upravené splátky předvolba zahodí — jen po potvrzení, jako při změně
- * předvolby; ruční částky plateb (i převzaté ze starších) zůstávají. */
-async function planKlpZalohaZeStare(z) {
-  const zal = +z;
-  if (PLAN_PROJ_ZALOHY.indexOf(zal) < 0) return;
-  const plan = planKlpData();
-  const upr = PLAN_PROJ_SEKCE.filter(k => plan.cinnosti && Array.isArray(plan.cinnosti[k]) && plan.cinnosti[k].length);
-  if (upr.length && !(await potvrd('Předvolba „' + (zal ? 'Záloha ' + zal + ' %' : 'Bez zálohy') + '" zahodí upravené splátky ('
-    + upr.map(k => PLAN_PROJ_ZKRATKY[k]).join(', ') + '). Pokračovat?', { ano: 'Použít předvolbu' }))) { render(); return; }
-  plan.predvolba = 'zaloha';
-  plan.zaloha = zal;
-  delete plan.cinnosti;
-  planKlpUlozeno();
-}
-/* Uložená hodnota je text volby („Bez zálohy", „Záloha 30 %" —
- * KRYCI_PROJ_ZALOHY) nebo vlastní znění; procento se hledá kdekoli v textu
- * (do revize 30. 9. 2026 jen na začátku, takže volby nepoznalo). */
-function planStaraZaloha() {
-  const h = (typeof KLP !== 'undefined' && KLP && KLP.hodnoty) || {};
-  const t = String(h.zaloha == null ? '' : h.zaloha).trim();
-  if (!t) return null;
-  const m = /(\d+)\s*%/.exec(t);
-  return { text: t, pct: /bez zálohy/i.test(t) ? 0 : (m ? +m[1] : null) };
 }
 function planKlpZaloha(v) {
   const z = +v;
@@ -400,9 +380,13 @@ function planKlpStareZneni(ef, plan, edit) {
   if (zs && zs.necitelne.length)
     kusy.push('Nečitelná ruční splátka: ' + zs.necitelne.map(n => '„' + esc(n.text) + '" (' + esc(n.id) + ')').join(', ')
       + ' — doplňte částku v tabulce plateb.');
-  const sz = (!plan || !plan.predvolba) ? planStaraZaloha() : null;
-  if (sz) kusy.push('Dřívější znění krycího listu: záloha „' + esc(sz.text) + '".'
-    + (edit && sz.pct != null && PLAN_PROJ_ZALOHY.indexOf(sz.pct) >= 0 ? ` <button class="mini" onclick="planKlpZalohaZeStare(${escJs(sz.pct)})">Použít jako předvolbu ${esc(sz.pct ? 'Záloha ' + sz.pct + ' %' : 'Bez zálohy')}</button>` : ''));
+  /* Dřívější záloha (Q5, J. V. 30. 9. 2026): přepnutá na předvolbu sama —
+   * jen se řekne odkud; vlastní znění, které předvolba neumí, se ohlásí. */
+  const zz = ef.zalohaZeStarych;
+  if (zz) kusy.push(zz.lze
+    ? 'Předvolba „' + esc(planPopisPredvolby(plan, ef.firemni, ef.ceny)) + '" převzatá z dřívějšího krycího listu (záloha „' + esc(zz.text) + '").'
+    : 'Dřívější znění krycího listu: záloha „' + esc(zz.text) + '" — předvolba Záloha zná jen 30, 50 a 70 % nebo bez zálohy; '
+      + 'nastavte splátky ručně.');
   return kusy.length ? `<div class="note" style="color:#b45309">${kusy.join('<br>')}</div>` : '';
 }
 

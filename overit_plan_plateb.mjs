@@ -16,12 +16,12 @@
  *      ruční částka mimo součet jen smlouvu; dokumenty OCK a panel bez typu
  *      dokumentu to neovlivní.
  *   4) převod starší zakázky: ruční splátky sodpPlatba1–8 převzaté jako ruční
- *      částky plateb (nečitelná se ohlásí), dřívější záloha nabídnutá
- *      tlačítkem jako předvolba, první zápis převzaté částky zhmotní.
+ *      částky plateb (nečitelná se ohlásí), dřívější záloha přepnutá na
+ *      předvolbu sama (Q5, J. V. 30. 9. 2026), první zápis převod zhmotní.
  * Revize etapy B (30. 9. 2026): odebrání milníku se zeptá, poškozený firemní
  * plán neshodí Nastavení, klon odeslané varianty zamkne svůj plán, brána
  * hlídá variantu, ze které dokument vzniká, dřívější záloha „Záloha 30 %“
- * se pozná a převod se před zahozením úprav zeptá.
+ * se pozná (od Q5 se přepne sama).
  *
  * Spuštění: node overit_plan_plateb.mjs
  */
@@ -292,43 +292,40 @@ zkus('zdravá varianta se nezastaví kvůli vadě jiné (otevřené) varianty', 
 /* ---------------------------------------------------------------- */
 console.log('\n4) převod starší zakázky: ruční splátky a dřívější záloha');
 /* Dřívější záloha krycího listu PROJ je uložená textem volby („Záloha 30 %",
- * KRYCI_PROJ_ZALOHY). Do revize 30. 9. 2026 ji převod nepoznal (hledal
- * „30 %" na začátku) a tlačítko se ukázalo jen u „Bez zálohy". */
+ * KRYCI_PROJ_ZALOHY). Q5 (rozhodnutí J. V. 30. 9. 2026): přepne se na
+ * předvolbu „Záloha X % + zbytek po předání" SAMA — do té doby ji nabízelo
+ * tlačítko. Líně: do dat se zapíše až s prvním zápisem do plánu. */
 await p.evaluate(() => { ZAK = novaZakazka(); syncVarianta();
   KLP.hodnoty = { sodpPlatba1: '110 000 Kč', sodpPlatba6: 'viz příloha', zaloha: 'Záloha 30 %' }; render(); prepniTab('kryciproj'); });
 await p.waitForTimeout(150);
-const st = await p.evaluate(() => { const t = document.getElementById('page-kryciproj').textContent;
+const st = await p.evaluate(() => { const el = document.getElementById('page-kryciproj'); const t = el.textContent;
+  const sel = (fn) => [...el.querySelectorAll('select')].find(s => new RegExp(fn + '\\(').test(s.getAttribute('onchange') || ''));
   return { prevzate: /Ruční splátky smlouvy z dřívějšího krycího listu jsou převzaté/.test(t), necitelna: /Nečitelná ruční splátka: „viz příloha"/.test(t),
-    zaloha: /záloha „Záloha 30 %"/.test(t),
-    tlacitko: [...document.querySelectorAll('#page-kryciproj button')].some(b => /Použít jako předvolbu Záloha 30 %/.test(b.textContent)),
-    prepsano: document.querySelectorAll('#page-kryciproj .plan-tab tr.prepsano').length }; });
-zkus('karta plánu ukáže převzaté ruční splátky, nečitelnou částku a dřívější zálohu s tlačítkem', st.prevzate && st.necitelna && st.zaloha && st.tlacitko && st.prepsano === 1, JSON.stringify(st));
-await p.evaluate(() => { planKlpZalohaZeStare(30); });
-await p.waitForTimeout(80);
-zkus('tlačítko použije dřívější zálohu jako předvolbu Záloha 30 %', await p.evaluate(() => KLP.planPlateb.predvolba === 'zaloha' && KLP.planPlateb.zaloha === 30));
-zkus('první zápis do plánu ruční splátku zhmotní (nezahodí ji)', await p.evaluate(() => KLP.planPlateb.prepis && KLP.planPlateb.prepis.podpis === 110000));
+    predvolba: sel('planKlpPredvolba') ? sel('planKlpPredvolba').value : null, zaloha: sel('planKlpZaloha') ? sel('planKlpZaloha').value : null,
+    poznamka: /převzatá z dřívějšího krycího listu \(záloha „Záloha 30 %"\)/.test(t),
+    tlacitko: [...el.querySelectorAll('button')].some(b => /Použít jako předvolbu/.test(b.textContent)),
+    prepsano: el.querySelectorAll('.plan-tab tr.prepsano').length, nezapsano: KLP.planPlateb === undefined || KLP.planPlateb === null }; });
+zkus('Q5: dřívější záloha „Záloha 30 %" přepne předvolbu sama (Záloha 30 %), s poznámkou, bez tlačítka a bez zápisu do dat',
+  st.predvolba === 'zaloha' && st.zaloha === '30' && st.poznamka && !st.tlacitko && st.nezapsano, JSON.stringify(st));
+zkus('karta plánu ukáže převzaté ruční splátky a nečitelnou částku', st.prevzate && st.necitelna && st.prepsano === 1, JSON.stringify(st));
 await p.evaluate(() => planKlpPrepis('dps_predani', '5 000'));
-zkus('další ruční částka se přidá k převzaté', await p.evaluate(() => KLP.planPlateb.prepis.podpis === 110000 && KLP.planPlateb.prepis.dps_predani === 5000));
-/* vlastní znění dřívější zálohy, které předvolba nezná (40 %): jen text, bez
- * tlačítka — dřív nabídlo „Záloha 40 %" a uložilo předvolbu bez zálohy */
+zkus('první zápis do plánu zhmotní převzatou předvolbu i ruční splátku (nezahodí je) a přidá novou částku',
+  await p.evaluate(() => KLP.planPlateb.predvolba === 'zaloha' && KLP.planPlateb.zaloha === 30
+    && KLP.planPlateb.prepis.podpis === 110000 && KLP.planPlateb.prepis.dps_predani === 5000), await p.evaluate(() => JSON.stringify(KLP.planPlateb)));
+/* vlastní znění dřívější zálohy, které předvolba nezná (40 %): jen upozornění,
+ * předvolba zůstane výchozí firemní */
 await p.evaluate(() => { ZAK = novaZakazka(); syncVarianta(); KLP.hodnoty = { zaloha: '40 % po podpisu smlouvy' }; render(); });
-const st40 = await p.evaluate(() => { const t = document.getElementById('page-kryciproj').textContent;
-  return { text: /záloha „40 % po podpisu smlouvy"/.test(t),
-    tlacitko: [...document.querySelectorAll('#page-kryciproj button')].some(b => /Použít jako předvolbu/.test(b.textContent)) }; });
-zkus('dřívější záloha 40 % (předvolba ji nezná): ukáže se znění, tlačítko ne', st40.text && !st40.tlacitko, JSON.stringify(st40));
-/* upravené splátky: převod dřívější zálohy se před jejich zahozením zeptá */
-await p.evaluate(() => { ZAK = novaZakazka(); syncVarianta(); KLP.hodnoty = { zaloha: 'Záloha 50 %' };
-  KLP.planPlateb = { v: 1, cinnosti: { dpz: [{ p: 100, m: 'dpz_su' }] } }; render(); });
-await p.evaluate(() => { planKlpZalohaZeStare(50); });
-await odmitni();
-await p.waitForTimeout(80);
-zkus('upravené splátky: převod dřívější zálohy se zeptá a po „Ne" nic nezmění',
-  await p.evaluate(() => !KLP.planPlateb.predvolba && !!(KLP.planPlateb.cinnosti && KLP.planPlateb.cinnosti.dpz)), await p.evaluate(() => JSON.stringify(KLP.planPlateb)));
-await p.evaluate(() => { planKlpZalohaZeStare(50); });
-await odklikni();
-await p.waitForTimeout(80);
-zkus('po potvrzení předvolba Záloha 50 % a úpravy pryč',
-  await p.evaluate(() => KLP.planPlateb.predvolba === 'zaloha' && KLP.planPlateb.zaloha === 50 && !KLP.planPlateb.cinnosti), await p.evaluate(() => JSON.stringify(KLP.planPlateb)));
+const st40 = await p.evaluate(() => { const el = document.getElementById('page-kryciproj'); const t = el.textContent;
+  const sel = [...el.querySelectorAll('select')].find(s => /planKlpPredvolba\(/.test(s.getAttribute('onchange') || ''));
+  return { text: /záloha „40 % po podpisu smlouvy"/.test(t), predvolba: sel ? sel.value : null,
+    tlacitko: [...el.querySelectorAll('button')].some(b => /Použít jako předvolbu/.test(b.textContent)) }; });
+zkus('dřívější záloha 40 % (předvolba ji nezná): ukáže se znění, předvolba zůstane Standard, bez tlačítka',
+  st40.text && st40.predvolba === 'std' && !st40.tlacitko, JSON.stringify(st40));
+/* plán s vlastní předvolbou: dřívější záloha už nic nemění ani nehlásí */
+await p.evaluate(() => { ZAK = novaZakazka(); syncVarianta(); KLP.hodnoty = { zaloha: 'Záloha 70 %' }; KLP.planPlateb = { v: 1, predvolba: 'sto' }; render(); });
+zkus('plán s vlastní předvolbou (100 %) se dřívější zálohou nepřepne',
+  await p.evaluate(() => nabidkaProjPlatby(ZAK, aktivniVarianta(ZAK), 'cz').dopocet.cinnosti.dpz.map(r => r.p + ':' + r.m).join() === '100:dpz_su'
+    && !/převzatá z dřívějšího krycího listu/.test(document.getElementById('page-kryciproj').textContent)));
 await p.evaluate(() => { ZAK = novaZakazka(); syncVarianta(); render(); });
 
 zkus('žádná chyba stránky', chyby.length === 0, chyby.join(' | '));
