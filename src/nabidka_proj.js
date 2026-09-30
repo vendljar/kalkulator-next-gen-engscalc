@@ -293,32 +293,39 @@ const NABIDKA_PROJ_DEF = [
   ] },
   { typ: 'pary', nadpis: 'DPH, SPLATNOST FAKTUR A PLATNOST NABÍDKY', klic: 'obchodni', radky: [] },
 
-  { typ: 'pary', nadpis: 'PLATEBNÍ PODMÍNKY ZAMĚŘENÍ', sekce: 'zamereni', radky: [
+  /* PLÁN PLATEB (etapa B, #367, 30. 9. 2026): platební podmínky činností
+   * z plánu plateb krycího listu PROJ — jen nabízené činnosti, řádky
+   * „Platba <milník>" / „N % z nabídkové ceny za …". Pevné bloky níž
+   * (`stary`) zůstávají pro odeslané nabídky z doby před plánem (tisknou se,
+   * jak odešly). Autorský dozor je měsíčně a v plánu není — jeho blok platí
+   * vždy. */
+  { typ: 'platby' },
+  { typ: 'pary', stary: true, nadpis: 'PLATEBNÍ PODMÍNKY ZAMĚŘENÍ', sekce: 'zamereni', radky: [
     ['Platba po podpisu objednávky zaměření', '50 % z celkové ceny za zaměření'],
     ['Platba po ZHOTOVENÍ VÝSTUPŮ ze ZAMĚŘENÍ', '50 % z celkové ceny za zaměření'],
   ] },
-  { typ: 'pary', nadpis: 'PLATEBNÍ PODMÍNKY STUDIE PROVEDITELNOSTI (SP)', sekce: 'studie', radky: [
+  { typ: 'pary', stary: true, nadpis: 'PLATEBNÍ PODMÍNKY STUDIE PROVEDITELNOSTI (SP)', sekce: 'studie', radky: [
     ['Platba po podpisu objednávky studie proveditelnosti', '50 % z celkové ceny za studii'],
     ['Platba po předání studie proveditelnosti', '40 % z celkové ceny za studii'],
     ['Platba po předání vyjádření odboru památkové péče HMP', '10 % z celkové ceny za studii'],
   ] },
-  { typ: 'pary', nadpis: 'PLATEBNÍ PODMÍNKY DPZ', sekce: 'dpz', radky: [
+  { typ: 'pary', stary: true, nadpis: 'PLATEBNÍ PODMÍNKY DPZ', sekce: 'dpz', radky: [
     ['Platba po podpisu objednávky', '50 % z nabídkové ceny za DPZ'],
     ['Platba po dokončení dokumentace pro povolení záměru v rozsahu pro podání na dotčené orgány', '30 % z nabídkové ceny za DPZ'],
     ['Platba po dokončení dokumentace pro povolení záměru v rozsahu pro podání na stavební úřad', '20 % z nabídkové ceny za DPZ'],
   ] },
-  { typ: 'pary', nadpis: 'PLATEBNÍ PODMÍNKY INŽENÝRSKÉ ČINNOSTI (IČ)', sekce: 'ic', radky: [
+  { typ: 'pary', stary: true, nadpis: 'PLATEBNÍ PODMÍNKY INŽENÝRSKÉ ČINNOSTI (IČ)', sekce: 'ic', radky: [
     ['Platba po podpisu objednávky', '50 % z nabídkové ceny za IČ'],
     ['Platba po získání stanovisek dotčených orgánů a po podání dokumentace na stavební úřad a zahájení řízení', '30 % z nabídkové ceny za IČ'],
     ['Platba po vydání povolení záměru', '20 % z nabídkové ceny za IČ'],
   ] },
-  { typ: 'pary', nadpis: 'PLATEBNÍ PODMÍNKY DPS A EZC', sekce: ['dps', 'ezc'], radky: [
+  { typ: 'pary', stary: true, nadpis: 'PLATEBNÍ PODMÍNKY DPS A EZC', sekce: ['dps', 'ezc'], radky: [
     ['Platba po podpisu objednávky dokumentace pro provedení stavby (DPS)', '50 % z nabídkové ceny za tuto činnost'],
     ['Platba po předání kompletní dokumentace pro provedení stavby (DPS)', '50 % z nabídkové ceny za tuto činnost'],
     ['Platba po podpisu objednávky ekonomické zadávací části (EZC)', '50 % z nabídkové ceny za tuto činnost'],
     ['Platba po předání ekonomické zadávací části (EZC)', '50 % z nabídkové ceny za tuto činnost'],
   ] },
-  { typ: 'pary', nadpis: 'PLATEBNÍ PODMÍNKY PRO ZAJIŠTĚNÍ KOLAUDAČNÍHO ŘÍZENÍ', sekce: 'kolaudace', radky: [
+  { typ: 'pary', stary: true, nadpis: 'PLATEBNÍ PODMÍNKY PRO ZAJIŠTĚNÍ KOLAUDAČNÍHO ŘÍZENÍ', sekce: 'kolaudace', radky: [
     ['Platba před zahájením kolaudačního řízení', '50 % z celkové ceny za tuto činnost'],
     ['Platba po vydání kolaudačního rozhodnutí', '50 % z celkové ceny za tuto činnost'],
   ] },
@@ -348,6 +355,28 @@ const NABIDKA_PROJ_DEF = [
  * Pořadí = pořadí v dokumentu; 'zamereni' je jen jednou, i když ve VZORu
  * figuruje dvakrát (samostatně jako ZA a jako část 1 studie). */
 const NABIDKA_PROJ_SEKCE = ['zamereni', 'studie', 'projednani', 'dpz', 'ic', 'dps', 'ezc', 'kolaudace', 'geodet'];
+
+/* Bloky platebních podmínek z plánu plateb (etapa B): nadpis bloku, konec
+ * věty „N % z nabídkové ceny za …" a jméno symbolu šablony PROJ v4
+ * ({{PROJ_PLATBY_<symbol>}} mezi značkami {{PLATBY_<symbol>_ZAC/_KON}}).
+ * Nadpisy navazují na dosavadní bloky; DPS a EZC mají od plánu každá svůj. */
+const NABIDKA_PROJ_PLATBY = {
+  zamereni: { nadpis: 'PLATEBNÍ PODMÍNKY ZAMĚŘENÍ', za: 'za zaměření', symbol: 'ZAMERENI' },
+  studie: { nadpis: 'PLATEBNÍ PODMÍNKY STUDIE PROVEDITELNOSTI (SP)', za: 'za studii', symbol: 'STUDIE' },
+  projednani: { nadpis: 'PLATEBNÍ PODMÍNKY PROJEDNÁNÍ STUDIE', za: 'za projednání', symbol: 'PROJEDNANI' },
+  dpz: { nadpis: 'PLATEBNÍ PODMÍNKY DPZ', za: 'za DPZ', symbol: 'DPZ' },
+  ic: { nadpis: 'PLATEBNÍ PODMÍNKY INŽENÝRSKÉ ČINNOSTI (IČ)', za: 'za IČ', symbol: 'IC' },
+  dps: { nadpis: 'PLATEBNÍ PODMÍNKY DPS', za: 'za DPS', symbol: 'DPS' },
+  ezc: { nadpis: 'PLATEBNÍ PODMÍNKY EZC', za: 'za EZC', symbol: 'EZC' },
+  kolaudace: { nadpis: 'PLATEBNÍ PODMÍNKY PRO ZAJIŠTĚNÍ KOLAUDAČNÍHO ŘÍZENÍ', za: 'za tuto činnost', symbol: 'KOLAUDACE' },
+  geodet: { nadpis: 'PLATEBNÍ PODMÍNKY GEODETICKÉHO ZAMĚŘENÍ', za: 'za geodetické zaměření', symbol: 'GEODET' },
+};
+/* Ze kterých pevných bloků se u odeslané nabídky z doby před plánem plní
+ * symboly šablony v4 (DPS a EZC měly jeden společný blok — řádky 1–2 jsou
+ * DPS, 3–4 EZC). Projednání a geodet pevný blok neměly. */
+const NABIDKA_PROJ_PLATBY_STARE = { zamereni: ['PLATEBNÍ PODMÍNKY ZAMĚŘENÍ'], studie: ['PLATEBNÍ PODMÍNKY STUDIE PROVEDITELNOSTI (SP)'],
+  dpz: ['PLATEBNÍ PODMÍNKY DPZ'], ic: ['PLATEBNÍ PODMÍNKY INŽENÝRSKÉ ČINNOSTI (IČ)'], dps: ['PLATEBNÍ PODMÍNKY DPS A EZC', 0, 2],
+  ezc: ['PLATEBNÍ PODMÍNKY DPS A EZC', 2, 4], kolaudace: ['PLATEBNÍ PODMÍNKY PRO ZAJIŠTĚNÍ KOLAUDAČNÍHO ŘÍZENÍ'] };
 
 /* CENY ČINNOSTÍ NABÍDKY PROJ (vyčleněno 30. 9. 2026 z nabidkaProjData pro
  * plán plateb — etapa B, #367). Jeden výpočet cen po sekcích před slevou
@@ -415,11 +444,11 @@ function nabidkaProjCeny(varianta, lang) {
  * dopocet, kontrola } nebo null, když modul plánu v sestavení není.
  * `stary` = odeslaná nabídka z doby před plánem plateb: dokumenty tisknou
  * pevné bloky a ruční splátky jako dřív. */
-function nabidkaProjPlatby(zak, varianta, lang) {
+function nabidkaProjPlatby(zak, varianta, lang, spoctene) {
   if (typeof planPlatebVarianty !== 'function') return null;
   const firma = (typeof firmaAktualni === 'function') ? firmaAktualni() : null;
   const ef = planPlatebVarianty(varianta, firma);
-  const c = nabidkaProjCeny(varianta, lang);
+  const c = spoctene || nabidkaProjCeny(varianta, lang);
   const ceny = {};
   NABIDKA_PROJ_SEKCE.forEach(k => { const v = +c.cenyPo[k]; if (v > 0 && isFinite(v)) ceny[k] = v; });
   const plan = (ef.plan && c.mena.eur) ? Object.assign({}, ef.plan, { prepis: {} }) : ef.plan;
@@ -442,8 +471,13 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
   const pj = d.proj || {};
   /* Otisk / výpočet, měna, obchodní zaokrouhlení, sleva a ceny sekcí před
    * slevou i po ní — viz nabidkaProjCeny (jeden zdroj i pro plán plateb). */
-  const { r, mena, slevaPodilProj, cenyPred, cenyPo } = nabidkaProjCeny(varianta, L);
+  const cenyNabidky = nabidkaProjCeny(varianta, L);
+  const { r, mena, slevaPodilProj, cenyPred, cenyPo } = cenyNabidky;
   const kc = mena.fmt;
+  /* Plán plateb (etapa B). Bez modulu plánu nebo u odeslané nabídky z doby
+   * před plánem (`stary`) platí pevné bloky platebních podmínek jako dřív. */
+  const platbyProj = (typeof nabidkaProjPlatby === 'function') ? nabidkaProjPlatby(zak, varianta, L, cenyNabidky) : null;
+  const planStary = !platbyProj || !!platbyProj.stary;
   const datumCz = iso => {
     if (!iso) return '';
     const [y, m, dd] = String(iso).split('-');
@@ -575,8 +609,18 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
   const navicVypsano = {};
 
   const uvodOdst = nabidkaProjUvod(vRozsahu, P);   // P11: úvod podle rozsahu
+  /* Řádky plánu po činnostech — pro bloky online nabídky i symboly šablony v4. */
+  const platbyRadky = {};
+  if (!planStary) NABIDKA_PROJ_SEKCE.forEach(k => {
+    if (!(+platbyProj.ceny[k] > 0) || !NABIDKA_PROJ_PLATBY[k]) return;
+    platbyRadky[k] = planRadkyCinnosti(k, platbyProj.plan, platbyProj.firemni)
+      .map(x => [P('Platba ' + (x.t || '(milník chybí)')), P(planPct(x.p) + ' z nabídkové ceny ' + NABIDKA_PROJ_PLATBY[k].za)]);
+  });
+  const platbyBloky = Object.keys(platbyRadky).map(k => ({ typ: 'pary', nadpis: P(NABIDKA_PROJ_PLATBY[k].nadpis), sekce: k, radky: platbyRadky[k] }));
   const bloky = NABIDKA_PROJ_DEF.filter(b => b.klic !== 'uvodNabidky' || uvodOdst.length)
+    .filter(b => planStary ? b.typ !== 'platby' : !b.stary)
     .filter(blokVRozsahu).map(b => {
+    if (b.typ === 'platby') return platbyBloky;
     if (b.typ === 'nadpis') return { typ: 'nadpis', text: P(b.text) };
     if (b.typ === 'pozn') return { typ: 'pozn',
       radky: b.radky.filter(x => !x.sekce || vRozsahu(x.sekce)).map(proza) };
@@ -674,6 +718,8 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
       neuvedena: neuvedena,
       hvezdicka: b.hvezdicka ? P(b.hvezdicka) : '' };
   })
+    /* blok 'platby' se rozvinul na blok za každou nabízenou činnost */
+    .reduce((a, x) => a.concat(x), [])
     /* neoceněný cenový blok se od 17. 8. 2026 vynechává (dřív nesl větu
      * „není součástí této nabídky") a s ním i bloky/řádky jeho sekce výše;
      * prázdné zbytky (rozsah bez řádků) se neukazují také */
@@ -787,6 +833,27 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
    * u OCK, jen ze druhého krycího listu. */
   Object.assign(placeholders, podmProj());
 
+  /* PLATEBNÍ PODMÍNKY ČINNOSTÍ PRO ŠABLONU PROJ v4 (etapa B). Řádky
+   * „Platba … – N % z nabídkové ceny za …" oddělené koncem řádku; u
+   * nenabízené činnosti prázdné — blok {{PLATBY_<X>_ZAC}}…{{PLATBY_<X>_KON}}
+   * i s nadpisem zmizí (odstranPrazdneBloky). Odeslaná nabídka z doby před
+   * plánem plní symboly pevnými řádky, jaké odešly. Souhrn všech bloků
+   * nese {{PROJ_PLATEBNI_PODMINKY}} pro šablonu s jedním místem. */
+  const radkyStare = (k) => {
+    const [nadpis, od, po] = NABIDKA_PROJ_PLATBY_STARE[k] || [];
+    const b = nadpis && NABIDKA_PROJ_DEF.find(x => x.stary && x.nadpis === nadpis);
+    if (!b || !vRozsahu(k)) return null;
+    return b.radky.slice(od || 0, po || b.radky.length).map(x => [P(x[0]), P(x[1])]);
+  };
+  const souhrnPlateb = [];
+  NABIDKA_PROJ_SEKCE.forEach(k => {
+    const def = NABIDKA_PROJ_PLATBY[k];
+    const radky = planStary ? radkyStare(k) : platbyRadky[k];
+    placeholders['PROJ_PLATBY_' + def.symbol] = radky ? radky.map(x => x[0] + ' – ' + x[1]).join('\n') : '';
+    if (radky) souhrnPlateb.push(P(def.nadpis) + ':\n' + placeholders['PROJ_PLATBY_' + def.symbol]);
+  });
+  placeholders.PROJ_PLATEBNI_PODMINKY = souhrnPlateb.join('\n\n');
+
   /* Název a popisek úvodní fotky jako textové symboly — obrázek jde zvlášť
    * (viz `obrazky` níž), tohle je popisek pod něj. */
   if (typeof uvodniFotoSymboly === 'function')
@@ -796,7 +863,7 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
     + (varianta && varianta.zakaznik ? '_' + varianta.zakaznik : '')
     + (L !== 'cz' ? '_' + L.toUpperCase() : '')).replace(/[\\/:*?"<>|]+/g, '-');
 
-  return { placeholders, bloky, rekapitulace, jazyk: L, nazevSouboru,
+  return { placeholders, bloky, rekapitulace, jazyk: L, nazevSouboru, platbyProj,
     /* Úvodní fotka nabídky PROJ. Je to VLASTNÍ fotka projekční nabídky
      * (zak.uvodniFotoProj), ne ta z nabídky OCK: obě nabídky odcházejí
      * samostatně a projekce se často prodává bez šachty. Když ji šablona
@@ -830,4 +897,4 @@ if (typeof dokumentRegistruj === 'function')
   });
 
 if (typeof module !== 'undefined')
-  module.exports = { nabidkaProjData, nabidkaProjCeny, nabidkaProjPlatby, nabidkaProjSlevaZvlast, nabidkaProjUvod, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE };
+  module.exports = { nabidkaProjData, nabidkaProjCeny, nabidkaProjPlatby, NABIDKA_PROJ_PLATBY, nabidkaProjSlevaZvlast, nabidkaProjUvod, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE };

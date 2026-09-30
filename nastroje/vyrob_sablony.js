@@ -20,6 +20,16 @@
  *           CELKEM bez DPH; řádky slevy bez slevy zmizí) a blok vlastních
  *           položek {{PROJ_POLOZKY_NAVIC}} (zmizí, když žádné nejsou).
  *
+ * PROJ v4 (etapa B plánu plateb, 30. 9. 2026) — samostatný režim:
+ *   node nastroje/vyrob_sablony.js --proj-v4 <složka podkladů> [výstupní složka]
+ * Vstup:  Sablona_NABIDKA_PROJ.docx (PROJ v3 — s rekapitulací slevy)
+ * Výstup: Sablona_NABIDKA_PROJ_v4.docx + _EN/_DE/_FR
+ * PROJ v4 = v3, v níž pevné bloky „PLATEBNÍ PODMÍNKY ZAMĚŘENÍ" … „…KOLAUDAČNÍHO
+ *           ŘÍZENÍ" nahradí blok za každou činnost plánu plateb: značky
+ *           {{PLATBY_<X>_ZAC}}/{{PLATBY_<X>_KON}}, nadpis a {{PROJ_PLATBY_<X>}}
+ *           (řádky „Platba … – N % z nabídkové ceny za …"); nenabízená činnost
+ *           zmizí i s nadpisem. Blok autorského dozoru zůstává.
+ *
  * Jazykové mutace vyrábí tentýž překlad šablony, jaký používá aplikace
  * v Nastavení → Šablony (docxPrelozSablonu); skript vypíše, co zůstalo
  * česky, a každý soubor ověří (platné XML, symboly shodné s češtinou).
@@ -32,10 +42,12 @@ const nacti = f => { const m = require(path.join(SRC, f)); Object.keys(m).forEac
 nacti('preklad.js');
 const dg = nacti('docxgen.js');
 const so = nacti('sablony_online.js');
+const { NABIDKA_PROJ_PLATBY } = require(path.join(SRC, 'nabidka_proj.js'));
 
-const PODKLADY = process.argv[2] || process.env.KNG_PODKLADY;
-const VYSTUP = process.argv[3] || PODKLADY;
-if (!PODKLADY) { console.error('Použití: node nastroje/vyrob_sablony.js <složka podkladů> [výstupní složka]'); process.exit(2); }
+const REZIM_V4 = process.argv[2] === '--proj-v4';
+const ARGY = REZIM_V4 ? process.argv.slice(3) : process.argv.slice(2);
+const PODKLADY = ARGY[0] || process.env.KNG_PODKLADY;
+const VYSTUP = ARGY[1] || PODKLADY;
 
 const JAZYKY = ['en', 'de', 'fr'];
 const chyba = t => { throw new Error(t); };
@@ -152,6 +164,53 @@ function projV3(xml) {
   return t.pred + body + t.po;
 }
 
+/* ---------- PROJ v4: platební podmínky z plánu plateb ----------
+ * V PROJ v3 je každý blok platebních podmínek samostatná tabulka: první
+ * řádek nese nadpis („PLATEBNÍ PODMÍNKY ZAMĚŘENÍ:"), další řádky platby.
+ * Nahrazuje se rozsah od tabulky zaměření po tabulku autorského dozoru
+ * (ta zůstává): za každou činnost plánu tabulka se stejnými vlastnostmi,
+ * nadpisovým řádkem ze vzoru a jedním sloučeným řádkem se symbolem. */
+function projV4(xml) {
+  const t = tělo(xml);
+  let body = t.body;
+  const top = prvkyTela(body);
+  const txt = el => textPrvku(body.slice(el.zac, el.kon));
+  const sym = dg.klicePlaceholderu(body);
+  if (sym.some(k => /^PROJ_PLATBY_/.test(k))) chyba('PROJ: šablona už platební podmínky z plánu plateb má — není co doplnit');
+  if (sym.indexOf('PROJ_SLEVA_KC') < 0) chyba('PROJ: vstup není PROJ v3 (chybí rekapitulace se slevou) — nejdřív vyrobte v3');
+  const iZac = top.findIndex(el => /^PLATEBNÍ PODMÍNKY ZAMĚŘENÍ\s*:/.test(txt(el)));
+  if (iZac < 0) chyba('PROJ: nenašel jsem blok „PLATEBNÍ PODMÍNKY ZAMĚŘENÍ"');
+  const iAd = top.findIndex((el, i) => i > iZac && /^PLATEBNÍ PODMÍNKY AUTORSKÉHO DOZORU\s*:/.test(txt(el)));
+  if (iAd < 0) chyba('PROJ: za platebními podmínkami zaměření jsem nenašel blok „PLATEBNÍ PODMÍNKY AUTORSKÉHO DOZORU"');
+  const vzor = body.slice(top[iZac].zac, top[iZac].kon);
+  if (top[iZac].tag !== 'tbl') chyba('PROJ: blok „PLATEBNÍ PODMÍNKY ZAMĚŘENÍ" není tabulka, jak čekám (PROJ v3)');
+  const tblPr = (vzor.match(/<w:tblPr>[\s\S]*?<\/w:tblPr>/) || [''])[0];
+  const tblGrid = (vzor.match(/<w:tblGrid>[\s\S]*?<\/w:tblGrid>/) || [''])[0];
+  const sirka = (tblGrid.match(/w:w="(\d+)"/g) || []).reduce((a, x) => a + (+x.replace(/\D/g, '')), 0);
+  const radek1 = (vzor.match(/<w:tr[\s>][\s\S]*?<\/w:tr>/) || [''])[0];
+  const pNadpis = (radek1.match(/<w:p[\s>](?:(?!<\/w:p>)[\s\S])*PLATEBNÍ PODMÍNKY[\s\S]*?<\/w:p>/) || [''])[0];
+  const pPr = (pNadpis.match(/<w:pPr>[\s\S]*?<\/w:pPr>/) || [''])[0];
+  const rPr = (pNadpis.replace(/<w:pPr>[\s\S]*?<\/w:pPr>/, '').match(/<w:rPr>[\s\S]*?<\/w:rPr>/) || [''])[0];
+  if (!tblPr || !tblGrid || !sirka || !radek1 || !pNadpis || !pPr || !rPr)
+    chyba('PROJ: tabulka „PLATEBNÍ PODMÍNKY ZAMĚŘENÍ" nemá čekanou stavbu (vlastnosti, mřížka, nadpisový řádek)');
+  const nadpisovy = text => radek1.replace(pNadpis, '<w:p>' + pPr + '<w:r>' + rPr + '<w:t xml:space="preserve">'
+    + dg.docxEsc(text) + '</w:t></w:r></w:p>');
+  const obsahovy = jmeno => '<w:tr><w:trPr><w:trHeight w:val="346"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="' + sirka + '" w:type="dxa"/>'
+    + '<w:gridSpan w:val="' + (tblGrid.match(/<w:gridCol[\s>/]/g) || []).length + '"/></w:tcPr>'
+    + '<w:p><w:pPr><w:pStyle w:val="Bezmezer"/><w:spacing w:before="60" w:after="60" w:line="300" w:lineRule="auto"/></w:pPr>'
+    + '<w:r><w:rPr><w:rFonts w:cs="Calibri"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr>'
+    + '<w:t xml:space="preserve">{{' + jmeno + '}}</w:t></w:r></w:p></w:tc></w:tr>';
+  const prazdny = '<w:p><w:pPr><w:pStyle w:val="Bezmezer"/></w:pPr></w:p>';
+  const bloky = Object.keys(NABIDKA_PROJ_PLATBY).map(k => {
+    const d = NABIDKA_PROJ_PLATBY[k];
+    return znacka('PLATBY_' + d.symbol + '_ZAC')
+      + '<w:tbl>' + tblPr + tblGrid + nadpisovy(d.nadpis + ':') + obsahovy('PROJ_PLATBY_' + d.symbol) + '</w:tbl>' + prazdny
+      + znacka('PLATBY_' + d.symbol + '_KON');
+  }).join('');
+  body = body.slice(0, top[iZac].zac) + bloky + body.slice(top[iAd].zac);
+  return t.pred + body + t.po;
+}
+
 /* ---------- společné: přepis document.xml, zápis, mutace, ověření ---------- */
 async function vyrob(vstup, uprava) {
   const polozky = await dg.zipPrecti(new Uint8Array(fs.readFileSync(vstup)));
@@ -185,14 +244,20 @@ async function ulozSMutacemi(bajty, zaklad) {
   return vysledek;
 }
 
-(async () => {
+async function hlavni() {
+  if (!PODKLADY) {
+    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4] <složka podkladů> [výstupní složka]');
+    process.exit(2);
+  }
   const cnVstup = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v12.docx');
   const projVstup = path.join(PODKLADY, 'Sablona_NABIDKA_PROJ.docx');
-  [cnVstup, projVstup].forEach(f => { if (!fs.existsSync(f)) chyba('Chybí vstupní šablona ' + f); });
+  (REZIM_V4 ? [projVstup] : [cnVstup, projVstup]).forEach(f => { if (!fs.existsSync(f)) chyba('Chybí vstupní šablona ' + f); });
   if (!fs.existsSync(VYSTUP)) fs.mkdirSync(VYSTUP, { recursive: true });
-  const vse = []
-    .concat(await ulozSMutacemi(await vyrob(cnVstup, cnV13), 'Sablona_NABIDKA_CN_v13'))
-    .concat(await ulozSMutacemi(await vyrob(projVstup, projV3), 'Sablona_NABIDKA_PROJ_v3'));
+  const vse = REZIM_V4
+    ? await ulozSMutacemi(await vyrob(projVstup, projV4), 'Sablona_NABIDKA_PROJ_v4')
+    : []
+      .concat(await ulozSMutacemi(await vyrob(cnVstup, cnV13), 'Sablona_NABIDKA_CN_v13'))
+      .concat(await ulozSMutacemi(await vyrob(projVstup, projV3), 'Sablona_NABIDKA_PROJ_v3'));
   let problemu = 0;
   for (const v of vse) {
     const prob = v.vady.length + (v.ubylo || []).length + (v.pribylo || []).length + (v.cesky || []).length;
@@ -206,4 +271,8 @@ async function ulozSMutacemi(bajty, zaklad) {
   }
   console.log('\nVýstup: ' + VYSTUP + (problemu ? '\nPROBLÉMŮ: ' + problemu : '\nBez problémů.'));
   process.exit(problemu ? 1 : 0);
-})().catch(e => { console.error('CHYBA: ' + e.message); process.exit(1); });
+}
+
+/* Úpravy document.xml jdou testovat bez souborů (src/test_sablona_proj_v4.js). */
+if (require.main === module) hlavni().catch(e => { console.error('CHYBA: ' + e.message); process.exit(1); });
+module.exports = { cnV13, projV3, projV4 };

@@ -768,6 +768,24 @@ const PREKLAD = {
   "PLATEBNÍ PODMÍNKY DPS A EZC": ["PAYMENT TERMS – DPS AND EZC","ZAHLUNGSBEDINGUNGEN – DPS UND EZC","CONDITIONS DE PAIEMENT – DPS ET EZC"],
   "PLATEBNÍ PODMÍNKY PRO ZAJIŠTĚNÍ KOLAUDAČNÍHO ŘÍZENÍ": ["PAYMENT TERMS – FINAL BUILDING APPROVAL","ZAHLUNGSBEDINGUNGEN – BAUABNAHME","CONDITIONS DE PAIEMENT – RÉCEPTION DES TRAVAUX"],
   "PLATEBNÍ PODMÍNKY AUTORSKÉHO DOZORU": ["PAYMENT TERMS – DESIGNER'S SITE SUPERVISION","ZAHLUNGSBEDINGUNGEN – PLANERISCHE OBJEKTÜBERWACHUNG","CONDITIONS DE PAIEMENT – SUIVI ARCHITECTURAL"],
+  /* PLÁN PLATEB PROJEKCE (etapa B, #367, 30. 9. 2026): nadpisy bloků pro
+   * činnosti, které dřív platební podmínky neměly nebo je měly společné
+   * (DPS a EZC zvlášť, projednání studie, geodet), a řádky „Platba …" pro
+   * katalog milníků. Procenta řádků („50 % z nabídkové ceny za DPZ") bere
+   * vzor v PREKLAD_VZORY. Vlastní milník obchodníka zůstane česky.
+   * „Platba po zhotovení výstupů ze zaměření" najde heslo „Platba po
+   * ZHOTOVENÍ VÝSTUPŮ ze ZAMĚŘENÍ" (slovník nerozlišuje velikost písmen). */
+  "PLATEBNÍ PODMÍNKY PROJEDNÁNÍ STUDIE": ["PAYMENT TERMS – APPROVAL OF THE STUDY","ZAHLUNGSBEDINGUNGEN – ABSTIMMUNG DER STUDIE","CONDITIONS DE PAIEMENT – INSTRUCTION DE L'ÉTUDE"],
+  "PLATEBNÍ PODMÍNKY DPS": ["PAYMENT TERMS – DPS","ZAHLUNGSBEDINGUNGEN – DPS","CONDITIONS DE PAIEMENT – DPS"],
+  "PLATEBNÍ PODMÍNKY EZC": ["PAYMENT TERMS – EZC","ZAHLUNGSBEDINGUNGEN – EZC","CONDITIONS DE PAIEMENT – EZC"],
+  "PLATEBNÍ PODMÍNKY GEODETICKÉHO ZAMĚŘENÍ": ["PAYMENT TERMS – LAND SURVEY","ZAHLUNGSBEDINGUNGEN – GEODÄTISCHE VERMESSUNG","CONDITIONS DE PAIEMENT – RELEVÉ GÉOMÈTRE"],
+  "Platba po podpisu smlouvy / objednávky": ["Payment after signing the contract / order", "Zahlung nach Unterzeichnung des Vertrags / der Bestellung", "Paiement après signature du contrat / de la commande"],
+  "Platba po dokončení dokumentace pro povolení záměru v rozsahu pro podání na dotčené orgány": ["Payment after completion of the documentation for the project permit to the extent required for submission to the authorities concerned", "Zahlung nach Fertigstellung der Unterlagen für die Vorhabengenehmigung im für die Einreichung bei den betroffenen Behörden erforderlichen Umfang", "Paiement après achèvement du dossier de demande d'autorisation dans la mesure requise pour le dépôt auprès des autorités concernées"],
+  "Platba po dokončení dokumentace pro povolení záměru v rozsahu pro podání na stavební úřad": ["Payment after completion of the documentation for the project permit to the extent required for submission to the building authority", "Zahlung nach Fertigstellung der Unterlagen für die Vorhabengenehmigung im für die Einreichung beim Bauamt erforderlichen Umfang", "Paiement après achèvement du dossier de demande d'autorisation dans la mesure requise pour le dépôt auprès du service de l'urbanisme"],
+  "Platba po vydání pravomocného povolení záměru": ["Payment after the project permit has become final", "Zahlung nach Erteilung der rechtskräftigen Vorhabengenehmigung", "Paiement après délivrance de l'autorisation définitive du projet"],
+  "Platba po předání kompletní dokumentace pro provedení stavby (DPS)": ["Payment after handover of the complete detailed design documentation (DPS)", "Zahlung nach Übergabe der vollständigen Ausführungsplanung (DPS)", "Paiement après remise du dossier d'exécution complet (DPS)"],
+  "Platba po doporučení dodavatele realizace": ["Payment after recommendation of the construction contractor", "Zahlung nach Empfehlung des Ausführungsunternehmens", "Paiement après recommandation de l'entreprise de réalisation"],
+  "Platba po předání geodetického zaměření": ["Payment after handover of the land survey", "Zahlung nach Übergabe der geodätischen Vermessung", "Paiement après remise du relevé géomètre"],
   "TERMÍNY": ["SCHEDULE","TERMINE","DÉLAIS"],
   "REKAPITULACE CENOVÉ NABÍDKY": ["SUMMARY OF THE PRICE QUOTATION","ZUSAMMENFASSUNG DES PREISANGEBOTS","RÉCAPITULATIF DE L'OFFRE DE PRIX"],
   /* "CELKEM bez DPH" / "CELKEM s DPH" se NEpřidávají – normalizace klíčů
@@ -1012,6 +1030,15 @@ Object.keys(PREKLAD).forEach(k => { PREKLAD_IDX[prekladNorm(k)] = PREKLAD[k]; })
  * (rozměry, rozteče, počty – slovník je pokrýt nemůže) */
 const PREKLAD_VZORY = [
   { re: /^jekl\s+(\d+x\d+)$/i, en: 'SHS $1', de: 'Hohlprofil $1', fr: 'profilé creux $1' },
+  /* Plán plateb projekce (etapa B, 30. 9. 2026): „30 % z nabídkové ceny za DPZ",
+   * „12,5 % z nabídkové ceny za tuto činnost" — procento libovolné. */
+  { re: /^(\d+(?:,\d+)?)\s*%\s+z nabídkové ceny za (zaměření|studii|projednání|DPZ|IČ|DPS|EZC|tuto činnost|geodetické zaměření)$/,
+    en: (m, p, c) => p.replace(',', '.') + ' % of the quoted price for ' + ({ 'zaměření': 'the survey', 'studii': 'the study', 'projednání': 'the approval of the study',
+      'tuto činnost': 'this service', 'geodetické zaměření': 'the land survey' }[c] || c),
+    de: (m, p, c) => p + ' % des Angebotspreises für ' + ({ 'zaměření': 'das Aufmaß', 'studii': 'die Studie', 'projednání': 'die Abstimmung der Studie',
+      'tuto činnost': 'diese Leistung', 'geodetické zaměření': 'die geodätische Vermessung' }[c] || c),
+    fr: (m, p, c) => p + ' % du prix proposé pour ' + ({ 'zaměření': 'le relevé', 'studii': "l'étude", 'projednání': "l'instruction de l'étude",
+      'DPZ': 'le DPZ', 'IČ': "l'IČ", 'DPS': 'le DPS', 'EZC': "l'EZC", 'tuto činnost': 'cette prestation', 'geodetické zaměření': 'le relevé géomètre' }[c] || c) },
   /* Termín dodání z krycího listu (#330): „cca 12 týdnů", „16 týdnů (vč.
    * 4 týdnů za ATYP)". Stojí PŘED obecným „cca …", jinak by z něj vyšlo
    * „approx. 12 týdnů" — půl věty česky. Náhrada je funkce, protože

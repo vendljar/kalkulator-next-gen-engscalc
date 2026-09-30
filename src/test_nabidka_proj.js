@@ -45,7 +45,9 @@ const d = nabidkaProjData(zak, v);
 const r = vypocetProj(v.data.proj.zadani, v.data.proj.cenik);
 
 /* --- 1) struktura dokumentu podle VZORu --- */
-const TYPY = ['nadpis', 'proza', 'rozsah', 'cena', 'seznam', 'pary', 'pozn'];
+/* 'platby' (etapa B, 30. 9. 2026): platební podmínky činností z plánu plateb —
+ * rozvine se na blok 'pary' za každou nabízenou činnost. */
+const TYPY = ['nadpis', 'proza', 'rozsah', 'cena', 'seznam', 'pary', 'pozn', 'platby'];
 test('definice není prázdná a má rozumný rozsah', NABIDKA_PROJ_DEF.length >= 30, NABIDKA_PROJ_DEF.length);
 test('všechny bloky mají známý typ',
   NABIDKA_PROJ_DEF.every(b => TYPY.includes(b.typ)),
