@@ -30,6 +30,19 @@
  *           (řádky „Platba … – N % z nabídkové ceny za …"); nenabízená činnost
  *           zmizí i s nadpisem. Blok autorského dozoru zůstává.
  *
+ * CN v14 (etapa A platebních podmínek OCK, 30. 9. 2026) — samostatný režim:
+ *   node nastroje/vyrob_sablony.js --cn-v14 <složka podkladů> [výstupní složka]
+ * Vstup:  Sablona_NABIDKA_CN_v13.docx
+ * Výstup: Sablona_NABIDKA_CN_v14.docx + _EN/_DE/_FR
+ * CN v14 = v13, v níž tabulku kapitoly III. s pevnými větami o třech dílčích
+ *           dokladech nahradí dvě tabulky ve značkách bloků: splátky
+ *           ({{PLATBY_SPLATKY_ZAC/_KON}}, hlavička z v13 a jeden řádek
+ *           s odrážkou a {{PODM_PLATEBNI_KALENDAR}} — aplikace ho zopakuje za
+ *           každou větu) a měsíční fakturace ({{PLATBY_MESICNE_ZAC/_KON}},
+ *           „Způsob fakturace:" a {{PODM_FAKTURACE_MESICNE}}). Nepotřebná
+ *           tabulka zmizí; „Bez zálohy" dá dvě věty správně očíslované (D1),
+ *           měsíční fakturace jednu schválenou větu (D2).
+ *
  * SoD PROJ se seznamem plateb (etapa B, 30. 9. 2026) — samostatný režim:
  *   node nastroje/vyrob_sablony.js --sod-proj <složka podkladů> [výstupní složka]
  * Vstup:  Sablona_SOD_PROJEKCE.docx (osm pevných plateb SODP_PLATBA1–8_KC)
@@ -53,7 +66,7 @@ const so = nacti('sablony_online.js');
 const { NABIDKA_PROJ_PLATBY } = require(path.join(SRC, 'nabidka_proj.js'));
 
 const REZIM = /^--/.test(process.argv[2] || '') ? process.argv[2] : '';
-const REZIM_V4 = REZIM === '--proj-v4', REZIM_SOD = REZIM === '--sod-proj';
+const REZIM_V4 = REZIM === '--proj-v4', REZIM_SOD = REZIM === '--sod-proj', REZIM_CN14 = REZIM === '--cn-v14';
 const ARGY = REZIM ? process.argv.slice(3) : process.argv.slice(2);
 const PODKLADY = ARGY[0] || process.env.KNG_PODKLADY;
 const VYSTUP = ARGY[1] || PODKLADY;
@@ -220,6 +233,80 @@ function projV4(xml) {
   return t.pred + body + t.po;
 }
 
+/* ---------- CN v14: platební podmínky z platebního kalendáře OCK ----------
+ * V CN v13 je kapitola III. tabulka o jednom sloupci: tmavý řádek „Cena díla
+ * je splatná v následujících dílčích splátkách:" a pod ním tři orámované
+ * řádky s pevnými větami (odrážky a, b, c): 1. dílčí doklad s
+ * {{PODM_ZALOHA1_PROC}}, 2. dílčí s {{PODM_FAKTURA2_PROC}} a konečný. Věty
+ * teď skládá aplikace (kryciPlatebniSymboly), takže v14 nese:
+ *   {{PLATBY_SPLATKY_ZAC}} [hlavička z v13] [a) {{PODM_PLATEBNI_KALENDAR}}] {{PLATBY_SPLATKY_KON}}
+ *   {{PLATBY_MESICNE_ZAC}} [Způsob fakturace:] [{{PODM_FAKTURACE_MESICNE}}] {{PLATBY_MESICNE_KON}}
+ * Řádek kalendáře má odstavec věty z v13 (odrážka, odsazení, písmo prvního
+ * běhu); věta o měsíční fakturaci totéž bez odrážky. Kopie řádků nenesou
+ * w14:paraId, ať se identifikátory v dokumentu nezdvojí. Když tabulka nemá
+ * čekanou stavbu, skončí chybou — nic se nehádá. */
+function radkyTabulky(tab) {
+  const re = /<(\/?)w:(tbl|tr)(?=[\s>/])[^>]*?(\/?)>/g;
+  const out = [];
+  let hloubka = 0, zac = -1, m;
+  while ((m = re.exec(tab))) {
+    const [cely, konec, tag, samo] = m;
+    if (samo === '/') continue;
+    if (tag === 'tbl') { hloubka += konec ? -1 : 1; continue; }
+    if (hloubka !== 1) continue;                               // řádky vnořených tabulek ne
+    if (!konec) zac = m.index;
+    else if (zac >= 0) { out.push(tab.slice(zac, m.index + cely.length)); zac = -1; }
+  }
+  return out;
+}
+const CN_HLAVICKA_SPLATEK = 'Cena díla je splatná v následujících dílčích splátkách:';
+const CN_HLAVICKA_MESICNE = 'Způsob fakturace:';
+/* Word píše za jednopísmennou předložkou nezlomitelnou mezeru („v následujících"). */
+const bezNbsp = s => String(s).replace(/ /g, ' ');
+const CN_HLAVICKA_SPLATEK_RE = new RegExp('(<w:t(?:\\s[^>]*)?>)' + CN_HLAVICKA_SPLATEK.split(' ').join('(?: |\\u00a0|&#160;)') + '(</w:t>)');
+function cnV14(xml) {
+  const t = tělo(xml);
+  let body = t.body;
+  const sym = dg.klicePlaceholderu(body);
+  if (sym.indexOf('PODM_PLATEBNI_KALENDAR') >= 0) chyba('CN: šablona už platební kalendář {{PODM_PLATEBNI_KALENDAR}} má — není co doplnit');
+  if (sym.indexOf('KAP_IV_ZAC') < 0) chyba('CN: vstup není CN v13 (chybí značky kapitol {{KAP_…}}) — nejdřív vyrobte v13');
+  const top = prvkyTela(body);
+  const tabulky = top.filter(el => {
+    if (el.tag !== 'tbl') return false;
+    const k = dg.klicePlaceholderu(body.slice(el.zac, el.kon));
+    return k.indexOf('PODM_ZALOHA1_PROC') >= 0 && k.indexOf('PODM_FAKTURA2_PROC') >= 0;
+  });
+  if (tabulky.length !== 1)
+    chyba('CN: čekám právě jednu tabulku s větami o dílčích dokladech ({{PODM_ZALOHA1_PROC}}, {{PODM_FAKTURA2_PROC}}), je jich ' + tabulky.length);
+  const el = tabulky[0];
+  const tab = body.slice(el.zac, el.kon);
+  const radky = radkyTabulky(tab);
+  const tblPr = (tab.match(/<w:tblPr>[\s\S]*?<\/w:tblPr>/) || [''])[0];
+  const tblGrid = (tab.match(/<w:tblGrid>[\s\S]*?<\/w:tblGrid>/) || [''])[0];
+  const maSym = (r, k) => dg.klicePlaceholderu(r).indexOf(k) >= 0;
+  if (radky.length !== 4 || !tblPr || !tblGrid || bezNbsp(textPrvku(radky[0])) !== CN_HLAVICKA_SPLATEK
+      || !maSym(radky[1], 'PODM_ZALOHA1_PROC') || !maSym(radky[2], 'PODM_FAKTURA2_PROC') || !/konečný daňový doklad/.test(textPrvku(radky[3])))
+    chyba('CN: tabulka vět o dílčích dokladech nemá čekanou stavbu (hlavička „' + CN_HLAVICKA_SPLATEK + '" a tři řádky vět)');
+  const odstavce = (radky[1].match(/<w:p[\s>](?:(?!<\/w:p>)[\s\S])*?<\/w:p>/g) || []);
+  const pVeta = odstavce.find(p => maSym(p, 'PODM_ZALOHA1_PROC'));
+  const pPr = pVeta ? (pVeta.match(/<w:pPr>[\s\S]*?<\/w:pPr>/) || [''])[0] : '';
+  const rPr = pVeta ? (pVeta.replace(pPr, '').match(/<w:rPr>[\s\S]*?<\/w:rPr>/) || [''])[0] : '';
+  if (!pVeta || !/<w:numPr>/.test(pPr) || !rPr)
+    chyba('CN: odstavec věty o 1. dílčím dokladu nemá čekanou stavbu (odrážka, písmo běhu)');
+  const bezId = s => s.replace(/\sw14:(?:paraId|textId)="[^"]*"/g, '');
+  const odstavec = (vlastnosti, jmeno) => '<w:p>' + vlastnosti + '<w:r>' + rPr + '<w:t xml:space="preserve">{{' + jmeno + '}}</w:t></w:r></w:p>';
+  const radekKalendare = radky[1].replace(pVeta, () => odstavec(pPr, 'PODM_PLATEBNI_KALENDAR'));
+  const pPrBezOdrazky = pPr.replace(/<w:numPr>[\s\S]*?<\/w:numPr>/, '').replace(/<w:ind\s[^>]*\/>/, '');
+  const radekMesicne = bezId(radky[1].replace(pVeta, () => odstavec(pPrBezOdrazky, 'PODM_FAKTURACE_MESICNE')));
+  const hlavickaMesicne = bezId(radky[0].replace(CN_HLAVICKA_SPLATEK_RE, (x, a, b) => a + CN_HLAVICKA_MESICNE + b));
+  if (textPrvku(hlavickaMesicne) !== CN_HLAVICKA_MESICNE) chyba('CN: text hlavičky „' + CN_HLAVICKA_SPLATEK + '" není v jednom běhu — nic nehádám');
+  const splatky = '<w:tbl>' + tblPr + tblGrid + radky[0] + radekKalendare + '</w:tbl>';
+  const mesicne = '<w:tbl>' + tblPr + tblGrid + hlavickaMesicne + radekMesicne + '</w:tbl>';
+  body = body.slice(0, el.zac) + znacka('PLATBY_SPLATKY_ZAC') + splatky + znacka('PLATBY_SPLATKY_KON')
+    + znacka('PLATBY_MESICNE_ZAC') + mesicne + znacka('PLATBY_MESICNE_KON') + body.slice(el.kon);
+  return t.pred + body + t.po;
+}
+
 /* ---------- SoD PROJ v2: seznam plateb jedním symbolem ---------- */
 function sodProjV2(xml) {
   const t = tělo(xml);
@@ -274,13 +361,14 @@ async function ulozSMutacemi(bajty, zaklad) {
 
 async function hlavni() {
   if (!PODKLADY) {
-    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --sod-proj] <složka podkladů> [výstupní složka]');
+    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --sod-proj | --cn-v14] <složka podkladů> [výstupní složka]');
     process.exit(2);
   }
   const cnVstup = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v12.docx');
+  const cn13Vstup = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v13.docx');
   const projVstup = path.join(PODKLADY, 'Sablona_NABIDKA_PROJ.docx');
   const sodVstup = path.join(PODKLADY, 'Sablona_SOD_PROJEKCE.docx');
-  (REZIM_V4 ? [projVstup] : REZIM_SOD ? [sodVstup] : [cnVstup, projVstup])
+  (REZIM_V4 ? [projVstup] : REZIM_SOD ? [sodVstup] : REZIM_CN14 ? [cn13Vstup] : [cnVstup, projVstup])
     .forEach(f => { if (!fs.existsSync(f)) chyba('Chybí vstupní šablona ' + f); });
   if (!fs.existsSync(VYSTUP)) fs.mkdirSync(VYSTUP, { recursive: true });
   if (REZIM_SOD) {
@@ -297,6 +385,7 @@ async function hlavni() {
   }
   const vse = REZIM_V4
     ? await ulozSMutacemi(await vyrob(projVstup, projV4), 'Sablona_NABIDKA_PROJ_v4')
+    : REZIM_CN14 ? await ulozSMutacemi(await vyrob(cn13Vstup, cnV14), 'Sablona_NABIDKA_CN_v14')
     : []
       .concat(await ulozSMutacemi(await vyrob(cnVstup, cnV13), 'Sablona_NABIDKA_CN_v13'))
       .concat(await ulozSMutacemi(await vyrob(projVstup, projV3), 'Sablona_NABIDKA_PROJ_v3'));
@@ -317,4 +406,4 @@ async function hlavni() {
 
 /* Úpravy document.xml jdou testovat bez souborů (src/test_sablona_proj_v4.js). */
 if (require.main === module) hlavni().catch(e => { console.error('CHYBA: ' + e.message); process.exit(1); });
-module.exports = { cnV13, projV3, projV4, sodProjV2 };
+module.exports = { cnV13, cnV14, projV3, projV4, sodProjV2 };

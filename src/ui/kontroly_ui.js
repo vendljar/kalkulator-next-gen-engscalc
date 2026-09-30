@@ -35,6 +35,13 @@ function kontrolyCtxAkt() {
    * (rozměry, nástupiště) je právě na takový stav. */
   try { ock = vypocetAkt(); } catch (e) {}
   try { proj = vypocetProjAkt(); } catch (e) {}
+  /* Platební kalendář OCK z krycího listu (etapa A, D1 + D2) — pravidlo
+   * platbyWordOck; podle něj se stahuje i šablona nabídky. */
+  let platbyOck = null;
+  try {
+    platbyOck = (typeof kryciPlatebniKalendar === 'function' && typeof ZAK !== 'undefined')
+      ? kryciPlatebniKalendar(ZAK, aktivniVarianta(ZAK), JEKLY) : null;
+  } catch (e) { platbyOck = null; }
   return {
     zadani: Z,
     vysledek: ock,
@@ -69,11 +76,12 @@ function kontrolyCtxAkt() {
           ? String(kryciPodminkoveSymboly(ZAK, aktivniVarianta(ZAK), JEKLY).PODM_TERMIN_DODANI || '') : '';
       } catch (e) { return ''; }
     })(),
+    platbyOck,
     /* Symboly šablony, ze které se tiskne nabídka OCK (P5) — null = nevíme. */
     sablonaNabidka: (() => {
       try {
         return kontrolySablonaNabidka((typeof SL !== 'undefined') ? SL : null,
-          (typeof tiskJazyk === 'function') ? tiskJazyk() : 'cz');
+          (typeof tiskJazyk === 'function') ? tiskJazyk() : 'cz', platbyOck);
       } catch (e) { return null; }
     })(),
     /* Symboly šablony nabídky PROJ (P4 / K15-N66) — stahují se jen u zakázky
@@ -105,8 +113,13 @@ function kontrolyCtxAkt() {
  * nevíme, pravidlo mlčí), po stažení se překreslí. Stahuje se JEN když má
  * varianta platnou slevu, jinak by každá zakázka tahala šablonu zbytečně. */
 const KONTROLY_SABLONA = { cache: {}, bezi: {} };
-function kontrolySablonaNabidka(sleva, jazyk) {
-  if (typeof slevaPlati !== 'function' || !slevaPlati(sleva)) return null;
+/* Od etapy A (30. 9. 2026) i kvůli platebním podmínkám: šablona se stáhne,
+ * když kalendář OCK obsahuje něco, co šablona v13 s pevnými větami nevytiskne
+ * (bez zálohy, splátka s 0 %, měsíční fakturace — kontrolyPlatbyDuvody). */
+function kontrolySablonaNabidka(sleva, jazyk, platby) {
+  const sleva_ = typeof slevaPlati === 'function' && slevaPlati(sleva);
+  const platby_ = typeof kontrolyPlatbyDuvody === 'function' && kontrolyPlatbyDuvody(platby).length > 0;
+  if (!sleva_ && !platby_) return null;
   return kontrolySablonaSymboly('nabidka', jazyk);
 }
 /* Totéž pro nabídku PROJ (P4): stahuje se jen, když je co hlídat — schválená

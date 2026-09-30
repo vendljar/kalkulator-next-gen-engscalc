@@ -672,7 +672,133 @@ function kryciZmrazPodminky(zak, varianta, jekly) {
     if (v != null && v !== '') out[p.id] = String(v);
   }));
   d.kryci.zmrazeno = out;
+  /* Značka pravidel platebních podmínek, pod kterými nabídka odešla (D1/D2,
+   * 30. 9. 2026) — zamčená varianta bez ní odešla dřív a tiskne se jako
+   * dřív (kryciPlatbyStary). */
+  d.kryci.pravidlaPlateb = KRYCI_PRAVIDLA_PLATEB;
   return Object.keys(out).length;
+}
+
+/* ---------- PLATEBNÍ PODMÍNKY NABÍDKY OCK (etapa A, část 1 — 30. 9. 2026) ----------
+ *
+ * D1 (nález K18-N94): volba „Bez zálohy" dala ve Wordu větu „1. dílčí daňový
+ * doklad ve výši  (bez DPH)…" bez procenta. Šablona CN v13 má tři pevné věty
+ * a do první dosazuje {{PODM_ZALOHA1_PROC}}, které u „Bez zálohy" nic nenese.
+ * Splátka s 0 % se proto vynechá celá a zbylé dílčí doklady se přečíslují
+ * podle pořadí (návrh platebních podmínek 29. 9. 2026, oddíl 2: „doklad se
+ * pojmenuje sám podle pořadí") — dílčí faktura 2 (100 % − záloha − konečná,
+ * kryciFaktura2Dopocet) se pak tiskne jako 1. dílčí daňový doklad.
+ *
+ * D2 (rozhodnutí J. V. 29. 9. 2026, pokyn 30. 9.: „teď už by to mělo být
+ * možné, prověř to a nastav"): měsíční fakturace z krycího listu se do
+ * nabídky promítne schválenou větou místo vět o splátkách. Milníky zůstávají
+ * tři firemní, věty o podmínce úhrady u 1. a 2. splátky jako dnes.
+ *
+ * Znění vět je znění šablony CN v13 — slovník (preklad.js) je zná, v cizím
+ * jazyce je přeloží vzor s pořadím a procentem. Věty skládá aplikace pro
+ * šablonu CN v14 ({{PODM_PLATEBNI_KALENDAR}} — řádek tabulky za větu,
+ * {{PODM_FAKTURACE_MESICNE}} — tabulka měsíční fakturace; vyrábí je
+ * nastroje/vyrob_sablony.js --cn-v14). Dosavadní symboly {{PODM_ZALOHA1_PROC}}
+ * a spol. se plní beze změny, takže šablona v13 tiskne jako dřív; co
+ * nevytiskne, hlásí kontrola platbyWordOck.
+ *
+ * ODESLANÁ NABÍDKA SE NEMĚNÍ (P9.5 / A1): zamčená varianta bez značky
+ * `pravidlaPlateb` odešla pod dřívějším pravidlem („měsíční fakturace se do
+ * nabídky nepromítne, tiskne se 50/40/10") a tiskne se dál přesně větami v13
+ * (i s prázdným procentem, jak odešla). Značku zapíše kryciZmrazPodminky při
+ * prvním zamčení. */
+const KRYCI_PRAVIDLA_PLATEB = 1;
+const KRYCI_FAKTURACE_MESICNE_VETA = 'Fakturace probíhá měsíčně podle skutečně provedených prací.';
+const kryciVetaZalohy = (poradi, proc) => poradi + '. dílčí daňový doklad ve výši ' + proc
+  + ' (bez DPH) z celkové ceny díla bude vystaven po podpisu SoD. Úhrada tohoto daňového dokladu je podmínkou pro dodržení předem dohodnutých realizačních termínů.';
+const kryciVetaFaktury2 = (poradi, proc) => 'Po ukončení výroby, dodání materiálu na stavbu a po zahájení prací bude vystaven '
+  + poradi + '. dílčí daňový doklad ve výši ' + proc + ' (bez DPH) z celkové ceny díla. Úhrada tohoto daňového dokladu je podmínkou pro předání díla objednateli.';
+const KRYCI_VETA_KONECNA = 'Po ukončení všech výše uvedených prací a po řádném předání a převzetí celého díla předávacím protokolem '
+  + 'bude vystaven konečný daňový doklad na zbývající část celkové ceny díla s vyúčtováním DPH v zákonné výši.';
+/* Věty šablony CN v13 se symboly — klíče slovníku, ze kterých vznikly EN/DE/FR v13. */
+const KRYCI_VETY_V13 = [kryciVetaZalohy(1, '{{PODM_ZALOHA1_PROC}}'), kryciVetaFaktury2(2, '{{PODM_FAKTURA2_PROC}}'), KRYCI_VETA_KONECNA];
+
+/* Procento splátky z textu krycího listu: „Bez zálohy" = 0, jinak první číslo
+ * se znakem % (kryciProcentoZTextu); text bez procenta = neznámé (null) —
+ * nic se nedopočítává. */
+function kryciPlatbaProcento(text) {
+  const t = String(text == null ? '' : text);
+  if (/bez\s+zálohy/i.test(t)) return { pct: 0, proc: '' };
+  const proc = kryciProcentoZTextu(t);
+  const pct = proc ? parseFloat(proc.replace(',', '.')) : NaN;
+  return isFinite(pct) ? { pct, proc } : { pct: null, proc: '' };
+}
+
+/* Zamčená varianta, která odešla před pravidly D1/D2 (bez značky). */
+function kryciPlatbyStary(varianta) {
+  const d = (varianta && varianta.data) || {};
+  return !!(varianta && varianta.zamek && varianta.zamek.zamceno) && !(d.kryci && +d.kryci.pravidlaPlateb >= 1);
+}
+
+/* PLATEBNÍ KALENDÁŘ NABÍDKY z krycího listu varianty:
+ * { stary, mesicne, splatky: [{ id, text, pct, proc, poradi }], vynechane: [id],
+ *   necitelne: [id], hodnoty: { zaloha1, faktura2, fakturaKonc, zpusobFakturace } }.
+ * `poradi` = pořadí dílčího dokladu (1, 2), u konečného null. Kontext je
+ * lehký: pole platebních podmínek předvyplňuje jen Firma a zmrazení
+ * odeslané varianty — výpočet nabídky, který spouští kryciCtx, tu netřeba
+ * (test_platby_ock.js hlídá, že hodnoty sedí se symboly {{PODM_…}}). */
+function kryciPlatebniKalendar(zak, varianta, jekly) {
+  const d = (varianta && varianta.data) || {};
+  const kl = d.kryci || { hodnoty: {} };
+  const c = { zak, varianta, firma: (typeof firmaAktualni === 'function') ? firmaAktualni() : {},
+    zmrazeno: (varianta && varianta.zamek && varianta.zamek.zamceno && d.kryci && d.kryci.zmrazeno) || null };
+  const pole = {};
+  KRYCI_SEKCE.forEach(s => s.pole.forEach(p => { pole[p.id] = p; }));
+  const hodn = id => {
+    let v = '';
+    try { v = pole[id] ? kryciHodnota(pole[id], kl, c) : ''; } catch (e) { v = ''; }
+    return String(v == null ? '' : v);
+  };
+  const hodnoty = { zaloha1: hodn('zaloha1'), faktura2: hodn('faktura2'), fakturaKonc: hodn('fakturaKonc'),
+    zpusobFakturace: hodn('zpusobFakturace') };
+  const stary = kryciPlatbyStary(varianta);
+  /* Jen volba „Měsíční" z výběru. Vlastní znění (i dřívější „Náš standard
+   * / měsíční", P10.5) je dohoda, kterou aplikace nečte. */
+  const mesicne = !stary && hodnoty.zpusobFakturace.trim().toLowerCase() === KRYCI_FAKTURACE[1].toLowerCase();
+  const splatky = [], vynechane = [], necitelne = [];
+  let poradi = 0;
+  ['zaloha1', 'faktura2', 'fakturaKonc'].forEach(id => {
+    const text = hodnoty[id];
+    const konecna = id === 'fakturaKonc';
+    const { pct, proc } = kryciPlatbaProcento(text);
+    if (pct === 0) { vynechane.push(id); return; }
+    if (pct === null && !konecna) {
+      necitelne.push(id);
+      if (!text.trim()) return;                    // prázdné pole se netiskne (prázdno není nula)
+    }
+    splatky.push({ id, text, pct, proc, poradi: konecna ? null : ++poradi });
+  });
+  return { stary, mesicne, splatky, vynechane, necitelne, hodnoty };
+}
+
+/* Symboly pro šablonu CN v14 (a online náhled) z kalendáře. P = překlad
+ * hodnot do jazyka nabídky (tr), lang jen kvůli francouzské dvojtečce.
+ * Konečný doklad nese větu „na zbývající část" — procento nepotřebuje;
+ * dílčí doklad bez čitelného procenta dostane řádek „1. dílčí faktura:
+ * <text krycího listu>" (vlastní znění zůstane, jak ho obchodník napsal). */
+function kryciPlatebniSymboly(kal, P, lang) {
+  const tr_ = (typeof P === 'function') ? P : (x => x);
+  if (!kal) return {};
+  if (kal.stary) {
+    const h = kal.hodnoty || {};
+    const vety = KRYCI_VETY_V13.map(v => String(tr_(v))
+      .replace('{{PODM_ZALOHA1_PROC}}', () => kryciProcentoZTextu(h.zaloha1))
+      .replace('{{PODM_FAKTURA2_PROC}}', () => kryciProcentoZTextu(h.faktura2)));
+    return { PODM_PLATEBNI_KALENDAR: vety.join('\n'), PODM_FAKTURACE_MESICNE: '' };
+  }
+  if (kal.mesicne) return { PODM_PLATEBNI_KALENDAR: '', PODM_FAKTURACE_MESICNE: tr_(KRYCI_FAKTURACE_MESICNE_VETA) };
+  const dvojtecka = lang === 'fr' ? ' : ' : ': ';
+  const vety = (kal.splatky || []).map(s => {
+    if (s.id === 'fakturaKonc') return tr_(KRYCI_VETA_KONECNA);
+    if (s.pct === null) return tr_(s.poradi + '. dílčí faktura') + dvojtecka + tr_(s.text);
+    return tr_(s.id === 'zaloha1' ? kryciVetaZalohy(s.poradi, s.proc) : kryciVetaFaktury2(s.poradi, s.proc));
+  });
+  return { PODM_PLATEBNI_KALENDAR: vety.join('\n'), PODM_FAKTURACE_MESICNE: '' };
 }
 
 function kryciPodminkoveSymboly(zak, varianta, jekly, P) {
@@ -688,4 +814,6 @@ if (typeof module !== 'undefined')
     kryciTerminDodani, kryciTerminDodaniText, kryciTerminSJednotkou, kryciTydnu,
     kryciSymbolyZeSekci, kryciPodminkoveSymboly, kryciSodSymboly, kryciZmrazPodminky, kryciDatumCz,
     kryciZKrycihoListuProj,
-    kryciFaktura2Dopocet, kryciFaktura2Sync };
+    kryciFaktura2Dopocet, kryciFaktura2Sync,
+    KRYCI_PRAVIDLA_PLATEB, KRYCI_FAKTURACE_MESICNE_VETA, KRYCI_VETY_V13, kryciPlatbaProcento, kryciPlatbyStary,
+    kryciPlatebniKalendar, kryciPlatebniSymboly };

@@ -542,6 +542,34 @@ const KONTROLY = [
     },
   },
   {
+    /* PLATEBNÍ PODMÍNKY OCK VE WORDU (etapa A, D1 + D2 — 30. 9. 2026; vzor
+     * slevaWord a planPlatebWordProj). Šablona CN v13 má tři pevné věty
+     * o dílčích dokladech: splátku s 0 % nevynechá (u „Bez zálohy" zůstane
+     * první věta bez procenta, K18-N94), procento vlastního znění nepřečte
+     * a měsíční fakturaci neukáže vůbec. Umí to až šablona CN v14
+     * ({{PODM_PLATEBNI_KALENDAR}}, {{PODM_FAKTURACE_MESICNE}}; vyrábí ji
+     * nastroje/vyrob_sablony.js --cn-v14). Varování, ne zábrana: s v13 se
+     * tiskne jako dřív a online náhled podmínky ukazuje správně. Mlčí, dokud
+     * šablonu neznáme, a u nabídky odeslané před pravidly (tiskne se beze
+     * změny). */
+    kod: 'platbyWordOck', kde: 'Nabídka', nazev: 'Platební podmínky OCK se ve Wordu neukážou správně',
+    zjisti(ctx) {
+      if (ctx.jenProj) return null;
+      const kal = ctx.platbyOck;
+      const duvody = kontrolyPlatbyDuvody(kal);
+      if (!duvody.length) return null;
+      const s = ctx.sablonaNabidka;
+      if (!s || !Array.isArray(s.symboly) || !s.symboly.length) return null;
+      const chybi = ['PODM_PLATEBNI_KALENDAR'].concat(kal.mesicne ? ['PODM_FAKTURACE_MESICNE'] : [])
+        .filter(k => s.symboly.indexOf(k) < 0);
+      if (!chybi.length) return null;
+      return { text: 'Word vytiskne pevné věty šablony o dílčích dokladech, ne platební podmínky zakázky: '
+        + kontrolyVyctem(duvody) + '. Šablona nabídky OCK' + (s.nazev ? ' „' + s.nazev + '"' : '')
+        + (s.verze ? ' (verze ' + s.verze + ')' : '') + ' nemá symbol ' + chybi.map(k => '{{' + k + '}}').join(' ani ')
+        + '. Online náhled nabídky podmínky ukazuje správně. Nahrajte šablonu nabídky OCK v14 (Nastavení → Smlouvy / Šablony).' };
+    },
+  },
+  {
     /* SLEVA PROJEKCE VE WORDU (P4 / K15-N66, 25. 9. 2026). Aplikace posílá
      * do Wordu PROJ_CENA_PRED_SLEVOU, PROJ_SLEVA_PROC, PROJ_SLEVA_KC
      * i součty, ale šablona nabídky PROJ v2 nemá ani jeden — zákazník vidí
@@ -709,6 +737,24 @@ function kontrolyProjNavic(r) {
   return out;
 }
 
+/* Co z platebního kalendáře OCK (kryciPlatebniKalendar) šablona CN v13
+ * s pevnými větami nevytiskne — prázdný seznam = vytiskne správně (výchozí
+ * 50 / 40 / 10) nebo jde o nabídku odeslanou před pravidly. Sdílí ho
+ * pravidlo platbyWordOck a UI, které podle něj šablonu stahuje. */
+function kontrolyPlatbyDuvody(kal) {
+  if (!kal || kal.stary || !Array.isArray(kal.splatky)) return [];
+  if (kal.mesicne) return ['měsíční fakturaci neukáže (vytiskne splátky)'];
+  const out = [];
+  const vyn = Array.isArray(kal.vynechane) ? kal.vynechane : [];
+  if (vyn.indexOf('zaloha1') >= 0) out.push('u nabídky bez zálohy zůstane věta o 1. dílčím dokladu bez procenta');
+  if (vyn.some(id => id !== 'zaloha1')) out.push('splátku s 0 % nevynechá');
+  (Array.isArray(kal.necitelne) ? kal.necitelne : []).forEach(id => {
+    const t = String(((kal.hodnoty || {})[id]) || '').trim();
+    if (t) out.push('procento splátky „' + t + '" nepřečte (ve větě zůstane prázdné místo)');
+  });
+  return out;
+}
+
 function kontrolyPravidla() {
   return KONTROLY.map(r => ({ kod: r.kod, kde: r.kde, nazev: r.nazev,
     uroven: KONTROLY_UROVEN,
@@ -788,5 +834,5 @@ function kontrolyPotvrzeniPlati(potvrzeni, vysl) {
 if (typeof module !== 'undefined')
   module.exports = { KONTROLY_UROVEN, KONTROLY_UROVEN_ZABRANA,
                      KONTROLY_VYSKA_DVERI, KONTROLY_ZDVIH_MAX_M, kontrolyVyctem,
-                     kontrolyPravidla, kontrolyProved, kontrolyText, kontrolyProjNavic,
+                     kontrolyPravidla, kontrolyProved, kontrolyText, kontrolyProjNavic, kontrolyPlatbyDuvody,
                      kontrolyPotvrzeni, kontrolyPotvrzeniPlati };

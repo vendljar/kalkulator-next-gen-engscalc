@@ -654,7 +654,8 @@ async function nabidkaNahled() {
   const data = nabidkaData(ZAK, await nabidkaVarianta(), JEKLY, L);
   const p = data.placeholders;
   const radek = (l, v) => `<tr><td style="font-weight:600">${esc(l)}</td><td>${esc(v)}</td></tr>`;
-  const sekceHtml = nabidkaNahledSekce(p, L).map(s =>
+  /* platební kalendář OCK: splátky a měsíční fakturace podle týchž pravidel jako Word (D1/D2) */
+  const sekceHtml = nabidkaNahledSekce(p, L, data.platbyOck).map(s =>
     `<h2>${esc(s.sekce)}</h2><table>${s.radky.map(r => radek(r[0], r[1])).join('')}</table>`).join('');
   const nadpisPripl = `<h2>${esc('II. ' + P('ROZŠÍŘENÍ CENOVÉ NABÍDKY – PŘÍPLATKY'))}</h2>`;
   const priplatkyHtml = data.priplatky.length
@@ -836,7 +837,7 @@ async function nabidkaOckDokument() {
   /* sekce z nabidka.js: [0] hlavička (tiskne se jako tabulka nahoře),
    * pak technická část, obchodní část (rozepsaná níže vlastní tabulkou)
    * a nakonec nepovinný Dodavatel. */
-  const vse = nabidkaNahledSekce(p, L);
+  const vse = nabidkaNahledSekce(p, L, data.platbyOck);   // platební kalendář OCK (D1/D2)
   let iObchod = vse.findIndex(s => s.radky.some(r => r[1] === p.CENA_S_DPH));
   if (iObchod < 0) iObchod = vse.length - 1;
   const radek = (l, v) => `<tr><td>${esc(l)}</td><td>${esc(v)}</td></tr>`;
