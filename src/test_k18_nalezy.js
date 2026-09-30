@@ -184,7 +184,11 @@ const NB = nacti('./nabidka.js');
   const iTerm = NP.NABIDKA_PROJ_DEF.indexOf(terminy);
   const pozn = NP.NABIDKA_PROJ_DEF[iTerm + 1];
   const textyTerminu = [].concat(...terminy.radky.map(r => [r[0], r[1]]))
-    .concat((pozn.radky || []).map(x => (x && typeof x === 'object') ? x.cz : x));
+    .concat((pozn.radky || []).map(x => (x && typeof x === 'object') ? x.cz : x))
+    /* Šablona PROJ (v3/v4) má dva řádky termínů rozdělené do dvou odstavců;
+     * první půlky z nich vzor „cca …" přeložil jen napůl (jazykové mutace
+     * v4: „approx. do 4 týdnů od podání žádosti"). */
+    .concat(['cca do 4 týdnů od podání žádosti', 'cca 2 měsíce od podání žádosti']);
   ['en', 'de', 'fr'].forEach(L => {
     const U = L.toUpperCase();
     const uvodCesky = vety.concat(NP.NABIDKA_PROJ_UVOD_ZAVER || 'Všechny nabízené činnosti jsou popsány na dalších stránkách naší nabídky.')

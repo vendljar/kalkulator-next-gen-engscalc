@@ -870,6 +870,13 @@ const PREKLAD = {
     "approx. 2 months from submission of the application + 1 month for the project permit to become final",
     "ca. 2 Monate nach Antragstellung + 1 Monat bis zur Rechtskraft der Vorhabengenehmigung",
     "environ 2 mois après le dépôt de la demande + 1 mois pour que l'autorisation du projet devienne définitive"],
+  /* Šablona PROJ má tyto dva řádky termínů rozdělené do dvou odstavců
+   * (druhé půlky slovník znal) — mutace v4 tiskly „approx. do 4 týdnů od
+   * podání žádosti". */
+  "cca do 4 týdnů od podání žádosti": ["approx. within 4 weeks of submission of the application",
+    "ca. innerhalb von 4 Wochen nach Antragstellung", "environ dans les 4 semaines suivant le dépôt de la demande"],
+  "cca 2 měsíce od podání žádosti": ["approx. 2 months from submission of the application",
+    "ca. 2 Monate nach Antragstellung", "environ 2 mois après le dépôt de la demande"],
   "cca do 6 týdnů od schválení dokumentace a povolení záměru stavebním úřadem": [
     "approx. within 6 weeks of approval of the documentation and of the project permit by the building authority",
     "ca. innerhalb von 6 Wochen nach Genehmigung der Unterlagen und der Vorhabengenehmigung durch das Bauamt",

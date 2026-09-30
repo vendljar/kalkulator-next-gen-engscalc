@@ -242,6 +242,21 @@ const vypln = (ph) => dg.nahradPlaceholdery(dg.odstranPrazdneBloky(v4, ph), ph);
     const text = dg.xmlUnesc((doc.match(/<w:t(?:\s[^>]*)?>[^<]*<\/w:t>/g) || []).map(t => t.replace(/<[^>]+>/g, '')).join(''));
     test('N92 (skutečná v3): vyplněná v4 s geodetem ukáže jeho cenu', text.indexOf('CENA ZA GEODETICKÉ ZAMĚŘENÍ') >= 0
       && text.indexOf(ph.PROJ_CENA_GEODET_BLOK) >= 0 && !/CENA_GEODET_/.test(doc));
+    /* K18-N95: jazykové mutace v4 bez napůl českých vět (vzor „cca …"
+     * dřív z „cca do 4 týdnů od podání žádosti" udělal „approx. do 4 týdnů
+     * od podání žádosti" a počítal to za přeložené). Neutrální řádky
+     * (adresa, IČ) a zkratka IČ se nepočítají. */
+    const ab4 = await (await dg.zipZapis(casti.map(c => (c.nazev === 'word/document.xml'
+      ? { nazev: c.nazev, data: new TextEncoder().encode(xml4) } : c)))).arrayBuffer();
+    for (const L of ['en', 'de', 'fr']) {
+      const out = await dg.docxPrelozSablonu(ab4.slice(0), L, {});
+      const c2 = await dg.zipPrecti(new Uint8Array(await out.arrayBuffer()));
+      const x2 = new TextDecoder().decode(c2.find(x => x.nazev === 'word/document.xml').data);
+      const cesky = (x2.match(/<w:p[\s>][\s\S]*?<\/w:p>/g) || [])
+        .map(p => dg.xmlUnesc((p.match(/<w:t(?:\s[^>]*)?>[^<]*<\/w:t>/g) || []).map(t => t.replace(/<[^>]+>/g, '')).join('')))
+        .filter(t => /[ěščřžůťďňýáíú]/i.test(t.replace(/\(IČ\)|\bIČ\b|\{\{[^}]*\}\}/g, '')) && !prekladNeutral(t));
+      test('N95 (skutečná v3): jazyková mutace v4 ' + L.toUpperCase() + ' bez české ani napůl přeložené věty', cesky.length === 0, cesky);
+    }
   }
   console.log(`\n${ok} prošlo, ${fail} selhalo`);
   process.exit(fail ? 1 : 0);
