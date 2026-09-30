@@ -609,9 +609,12 @@ function oplCelaVyska(k) {
 
 function oplZmeneno() {
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
-  /* Ručně zadaný náklad u typu „jiné" znamená atyp — stejně jako ručně
-   * přepsané množství. Automatiku pouští `set()`; tady se na ni musí
-   * sáhnout zvlášť, protože zapisujeme mimo něj. */
+  /* Automat ATYP pouští `set()`; tady se na něj musí sáhnout zvlášť, protože
+   * zapisujeme mimo něj. Samotný režim po stěnách ani materiál stěny atyp
+   * od 30. 9. 2026 nedělají (rozhodnutí J. V., viz standard_ock.js), stěny
+   * ale mění plochu skel, a tím i příplatky, které kontrola standardu čte
+   * (jednotypovost zasklení). A přepnutí musí umět vypnout ATYP, který
+   * automat zaškrtl dřív — i ten podle pravidla platného do 30. 9. */
   if (typeof standardAtypAutomat === 'function') standardAtypAutomat();
   render();
 }
@@ -1101,10 +1104,15 @@ function oplasteniKarta() {
      * neplní, je horší než mlčení — obchodník podle něj čeká u Cetrisu nižší
      * cenu, která nepřijde. Jestli se terče a lišty MAJÍ vázat na sklo, je
      * otázka na J. V. (zapsáno v roadmapě). */
+    /* Věta o standardu přepsána 30. 9. 2026 (rozhodnutí J. V.: „je to záměr?
+     * Ne není. Toto změň na standard."). Do té doby tu stálo „Režim po
+     * stěnách je vždy mimo standard" a kontrola standardu u něj hlásila atyp
+     * i se čtyřmi stejnými stěnami — viz standard_ock.js. */
     + `<div class="note">Záporná hodnota u „Opláštění začíná" sahá <b>do prohlubně</b>.
       <b>Terče, lišty a plastové kotvy</b> se počítají z rozměrů šachty —
       typ opláštění s nimi zatím nehýbe.
-      Režim po stěnách je vždy <b>mimo standard</b> — standard zná jen jednotné opláštění.</div>`,
+      Režim po stěnách sám o sobě atyp nedělá — <b>standard OCK</b> se posuzuje stejně
+      jako u jednotného opláštění (profil sloupku, rozměry, způsob zasklení, počet sloupků, můstek).</div>`,
     'ock-oplasteni-steny');
 }
 

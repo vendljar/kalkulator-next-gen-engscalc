@@ -151,20 +151,78 @@ const prace = (r) => plocha(r, 'PRÁCE OPLÁŠTĚNÍ');
     !!radek && !radek.cenaPath, radek && radek.cenaPath);
 }
 
-/* ---------- 6) kontrola standardu ---------- */
+/* ---------- 6) kontrola standardu ----------
+ *
+ * ZMĚNA PRAVIDLA 30. 9. 2026 (rozhodnutí J. V.). Do té doby byl režim po
+ * stěnách „mimo standard z definice" (standard zná jen jednotné opláštění)
+ * a kontrola u každé takové šachty hlásila atyp — i když byly všechny stěny
+ * stejné. Automat pak zaškrtl ATYP: cena asi +28 %, termín +4 týdny (nález
+ * z testování). J. V.: „je to záměr? Ne není. Toto změň na standard."
+ *
+ * Režim po stěnách sám o sobě je tedy standard. Atyp smí přijít jen z týchž
+ * pravidel jako ve standardním režimu — profil sloupku, rozměry, způsob
+ * zasklení, počet sloupků, můstek. Hlídá se to přímo: vyhodnocení po
+ * stěnách se musí SHODOVAT s vyhodnocením téhož zadání v jednotném režimu,
+ * včetně nálezů a počtu kontrolovaných pravidel. */
 {
   const std = SO.standardOciste({});
-  const zad = (opl) => Object.assign({
+  const zad = (opl, zm) => Object.assign({
     typSachty: 'interiérová', sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2,
     zaskleni: 'na terče', profily: { sloupek: { dim: '80x50' } }, rohoveSloupky: 4, mustek: false,
-  }, opl ? { oplasteni: opl } : {});
-  test('standardní režim projde', SO.standardVyhodnot(zad(null), 13.4, std, []).stav === 'standard');
-  const v = SO.standardVyhodnot(zad({ rezim: 'poStenach', steny: null }), 13.4, std, []);
-  test('opláštění po stěnách je VŽDY atyp', v.stav === 'atyp', v.stav);
-  const n = v.nalezy.find(x => /Opláštění/.test(x.co));
-  /* „mimo standard", ne „nelze posoudit": posoudit to jde, odpověď je ne. */
-  test('a hlásí se jako mimo standard, ne jako chybějící údaj',
-    !!n && n.stav === 'mimo', n);
+  }, opl ? { oplasteni: opl } : {}, zm || {});
+  const vyhodnot = (opl, zm, vyska) => SO.standardVyhodnot(zad(opl, zm), vyska == null ? 13.4 : vyska, std, []);
+  const shodne = (a, b) => a.stav === b.stav && a.kontrol === b.kontrol
+    && JSON.stringify(a.nalezy) === JSON.stringify(b.nalezy);
+  const kratce = v => ({ stav: v.stav, kontrol: v.kontrol, nalezy: v.nalezy });
+  const ctyri = (typ) => PO_STENACH(['A', 'B', 'C', 'D'].reduce((o, k) => {
+    o[k] = { odM: 0, pasy: [{ typ, doM: null }] }; return o; }, {}));
+
+  test('standardní režim projde', vyhodnot(null).stav === 'standard');
+  const vych = vyhodnot(PO_STENACH(null));
+  test('30. 9.: po stěnách s výchozími stěnami je STANDARD, ne atyp', vych.stav === 'standard', kratce(vych));
+  test('a nehlásí žádný nález', vych.nalezy.length === 0, vych.nalezy);
+  test('30. 9.: čtyři stejné stěny (VSG 4.4.2) jsou standard',
+    vyhodnot(ctyri('C.skloVsg442Kc')).stav === 'standard', kratce(vyhodnot(ctyri('C.skloVsg442Kc'))));
+
+  /* Stejné zadání, dva režimy, stejná odpověď — i tam, kde odpověď je atyp
+   * nebo „nelze posoudit". Poslední případ je materiál mimo standard
+   * (sklo do rámečku u venkovní šachty, kde standard připouští jen terče):
+   * po stěnách se chová přesně jako dosud v jednotném režimu. */
+  const pripady = [
+    ['beze změny', {}],
+    ['profil sloupku mimo standard', { profily: { sloupek: { dim: '100x100' } } }],
+    ['šířka nad limit', { sirka: 2.0 }],
+    ['pět sloupků', { rohoveSloupky: 5 }],
+    ['můstek bez rozměrů (nelze posoudit)', { mustek: true }],
+    ['exteriér se sklem do rámečku (zasklení mimo standard)',
+      { typSachty: 'exteriérová', zaskleni: 'mezi příčníky', profily: { sloupek: { dim: '80x80' } } }],
+  ];
+  pripady.forEach(([jm, zm]) => {
+    const a = vyhodnot(null, zm), b = vyhodnot(PO_STENACH(null), zm);
+    test('po stěnách hodnotí stejně jako jednotný režim: ' + jm + ' (' + a.stav + ')', shodne(a, b), { jednotne: kratce(a), poStenach: kratce(b) });
+  });
+  const vysoka = [vyhodnot(null, {}, 31), vyhodnot(PO_STENACH(null), {}, 31)];
+  test('po stěnách hodnotí stejně jako jednotný režim: výška nad limit (' + vysoka[0].stav + ')',
+    shodne(vysoka[0], vysoka[1]), vysoka.map(kratce));
+  /* Pojistka proti prázdnému testu: mezi případy musí být skutečný atyp
+   * i „nelze posoudit" — jinak by shoda nic neříkala. */
+  test('mezi porovnanými případy je atyp i „nelze posoudit"',
+    pripady.some(([, zm]) => vyhodnot(null, zm).stav === 'atyp')
+      && pripady.some(([, zm]) => vyhodnot(null, zm).stav === 'nelze'));
+  const zasklMimo = vyhodnot(PO_STENACH(null), pripady[5][1]);
+  test('zasklení mimo standard je po stěnách dál atyp (nález „Opláštění (exteriér)")',
+    zasklMimo.stav === 'atyp' && zasklMimo.nalezy.some(n => n.co === 'Opláštění (exteriér)' && n.stav === 'mimo'), kratce(zasklMimo));
+
+  /* MATERIÁL STĚNY standard nezná — tabulka má jen způsoby zasklení. Cetris,
+   * „jiné" ani „bez — dodá stavba" proto samy nález nepřidají (dřív je
+   * schoval plošný atyp celého režimu). Kdyby J. V. chtěl, aby „jiné" s ruční
+   * sazbou bylo atyp, je to samostatné pravidlo — viz otevřená otázka. */
+  const jine = PO_STENACH({ A: { odM: 0, pasy: [{ typ: 'C.skloVsg442Kc', doM: null }] },
+    B: { odM: 0, pasy: [{ typ: 'C.cetrisKc', doM: null }] },
+    C: { odM: 0, pasy: [{ typ: 'jine', doM: null, nazev: 'Trapézový plech', naklad: 900 }] },
+    D: { odM: 0, pasy: [{ typ: 'bez', doM: null }] } });
+  test('stěny z Cetrisu, „jiného" materiálu a „bez" samy atyp nedělají',
+    shodne(vyhodnot(jine), vyhodnot(null)), kratce(vyhodnot(jine)));
 }
 
 /* N50 (hloubkový test 24. 9. 2026): příplatky VSG fólie a SKN se po

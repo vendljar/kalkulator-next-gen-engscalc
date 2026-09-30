@@ -535,6 +535,69 @@ zkus('rozdělení stěn se vypnutím režimu nezahodí', prezilo === 2, prezilo)
   zkus('N43: do odemčené ano (katalog dál funguje)', vysl.odemcenaDoplni);
 }
 
+/* ---------- 30. 9. 2026: režim po stěnách sám ATYP nedělá (rozhodnutí J. V.) ----------
+ * Nález z testování: „Opláštění po stěnách se vždy počítá jako ATYP, i když
+ * jsou všechny stěny stejné. Cena tím stoupne asi o 28 % a termín o 4 týdny."
+ * J. V.: „je to záměr? Ne není. Toto změň na standard." Jednotkový test
+ * (src/test_oplasteni_steny.js) hlídá kontrolu standardu; tady se ověřuje
+ * celá cesta, kterou nevidí: přepnutí režimu → kontrola standardu → automat
+ * ATYP → přirážky v ceně → termín dodání v podmínkách nabídky. Ceník je
+ * zkušební — z nulového by se přirážka nepoznala. */
+{
+  const ZC = require(path.resolve('src/zkusebni_cenik.js'));
+  const vysl = await p.evaluate(([cen]) => {
+    Object.assign(DEFAULT_CENIK, cen); delete DEFAULT_CENIK.prazdny;
+    NAST.firma = Object.assign({}, NAST.firma || {},
+      { terminDodaniOck: '12 týdnů od podpisu smlouvy', terminAtypTydny: '4' });
+    ZAK = novaZakazka(); syncVarianta();
+    Object.assign(Z, { typSachty: 'exteriérová', sirka: 1.51, hloubka: 1.515, zdvih: 17.325, prejezd: 2.7,
+      prohluben: 1.05, nastupiste: 6, rohoveSloupky: 4, zaskleni: 'na terče', atyp: false });
+    Z.profily = JSON.parse(JSON.stringify(PROFILY_VYCHOZI['exteriérová']));
+    delete Z.atypAutomat; delete Z.atypRucneVypnut;
+    prepniTab('kalk'); render();
+    let poleTermin = null;
+    KRYCI_SEKCE.forEach(s => s.pole.forEach(q => { if (q.id === 'terminDodani') poleTermin = q; }));
+    const stav = () => {
+      const v = aktivniVarianta(ZAK);
+      return { atyp: !!Z.atyp, automat: !!Z.atypAutomat, std: standardVysledek().stav,
+        cena: vypocetAkt().souhrn.zakladCena,
+        termin: kryciHodnota(poleTermin, v.data.kryci || { hodnoty: {} }, kryciCtx(ZAK, v, JEKLY)) };
+    };
+    const pred = stav();
+    oplRezimSet('poStenach');
+    const po = stav();
+    const karta = document.getElementById('ock-oplasteni-steny');
+    po.karta = karta ? karta.innerText.replace(/\s+/g, ' ') : '';
+    /* Stěna B z Cetrisu: jiný materiál stěny, pořád žádný ATYP. */
+    oplPasSet('B', 0, 'typ', 'C.cetrisKc');
+    const cetris = stav();
+    /* Pojistka proti prázdnému testu: zasklení mimo standard venkovní šachty
+     * (sklo do rámečku) je atyp dál — automat ATYP zaškrtne a termín se
+     * prodlouží, stejně jako v jednotném režimu. */
+    set('Z.zaskleni', 'mezi příčníky');
+    const mimo = stav();
+    set('Z.zaskleni', 'na terče');
+    const zpet = stav();
+    return { pred, po, cetris, mimo, zpet };
+  }, [ZC.zkusebniCenik()]);
+  const J = x => JSON.stringify(x);
+  zkus('(výchozí šachta je standardní, bez ATYP, s cenou a termínem 12 týdnů)',
+    vysl.pred.std === 'standard' && !vysl.pred.atyp && vysl.pred.cena > 0 && /^12 týdnů/.test(vysl.pred.termin), J(vysl.pred));
+  zkus('30. 9.: po přepnutí na opláštění po stěnách zůstává STANDARD OCK', vysl.po.std === 'standard', J(vysl.po));
+  zkus('30. 9.: ATYP se po přepnutí sám nezaškrtne', !vysl.po.atyp && !vysl.po.automat, J(vysl.po));
+  zkus('30. 9.: cena se nezmění — žádné přirážky ATYP (plocha stěn je od N46 stejná)',
+    Math.abs(vysl.po.cena - vysl.pred.cena) < 0.5, vysl.pred.cena + ' → ' + vysl.po.cena);
+  zkus('30. 9.: termín dodání se neprodlouží o 4 týdny', vysl.po.termin === vysl.pred.termin,
+    vysl.pred.termin + ' → ' + vysl.po.termin);
+  zkus('30. 9.: karta stěn už netvrdí, že je režim vždy mimo standard, a říká, podle čeho se standard posuzuje',
+    !/vždy mimo standard/.test(vysl.po.karta) && /sám o sobě atyp nedělá/.test(vysl.po.karta), vysl.po.karta.slice(-400));
+  zkus('30. 9.: stěna z Cetrisu ATYP taky nezapne', vysl.cetris.std === 'standard' && !vysl.cetris.atyp, J(vysl.cetris));
+  zkus('zasklení mimo standard je po stěnách dál atyp: ATYP se zaškrtne a termín prodlouží',
+    vysl.mimo.std === 'atyp' && vysl.mimo.atyp && vysl.mimo.automat && /^16 týdnů/.test(vysl.mimo.termin), J(vysl.mimo));
+  zkus('a po návratu do standardu automat svůj ATYP zase vypne',
+    vysl.zpet.std === 'standard' && !vysl.zpet.atyp && vysl.zpet.termin === vysl.pred.termin, J(vysl.zpet));
+}
+
 zkus('za celý průchod nevznikla chyba v konzoli', konzole.length === 0, konzole.slice(0, 2).join(' | '));
 
 await b.close();

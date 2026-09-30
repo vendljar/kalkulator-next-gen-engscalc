@@ -217,8 +217,9 @@ function patraProVypocet(z) {
  * Typ JE ceníková cesta — díky tomu se sazba nehledá v žádné druhé tabulce
  * a nové sklo v ceníku se ve výběru objeví samo. Dvě výjimky nemají cestu:
  * „bez" (dodá stavba, nepočítá se nikam) a „jiné" (název i náklad zadá
- * obchodník ručně; ruční náklad je vždycky atyp, stejně jako ručně přepsané
- * množství).
+ * obchodník ručně). Kontrola standardu materiál stěn nehodnotí — režim po
+ * stěnách je od 30. 9. 2026 sám o sobě standard (rozhodnutí J. V., viz
+ * standard_ock.js); do té doby byl atyp celý.
  *
  * `kde` říká, kde se typ nabízí — pravidla interiér/exteriér jsou táž jako
  * u `skloVolba()`. Cetris a „jiné" jsou vždy. */

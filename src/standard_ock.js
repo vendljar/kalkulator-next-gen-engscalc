@@ -358,19 +358,22 @@ function standardVyhodnot(z, vyskaM, std, pripl) {
     }
   }
 
-  /* --- opláštění po stěnách (#268, 18. 9. 2026) ---
+  /* --- opláštění po stěnách: SAMO O SOBĚ STANDARD (rozhodnutí J. V. 30. 9. 2026) ---
    *
-   * Standard zná jen jednotné opláštění celé šachty — tabulka výš má jeden
-   * povolený způsob zasklení na větev, ne čtyři. Šachta, které si obchodník
-   * skládá stěny po pásech, tedy standardní být nemůže z definice.
+   * Od #268 (18. 9. 2026) tu stál vlastní nález „Opláštění: jednotné po celé
+   * šachtě × zadané po stěnách A–D" — režim po stěnách byl mimo standard
+   * z definice. Hlásil se ale u KAŽDÉ takové šachty, i když byly všechny
+   * stěny stejné, a automat na něj zaškrtl ATYP: cena asi +28 %, termín
+   * +4 týdny (nález z testování). J. V.: „je to záměr? Ne není. Toto změň
+   * na standard."
    *
-   * Není to nález o rozměru, ale o KONSTRUKČNÍM ŘEŠENÍ, proto se nehlásí
-   * jako překročený limit, ale jako vlastní řádek. A je to „mimo standard",
-   * ne „nelze posoudit": posoudit to jde, odpověď je prostě ne. */
-  if (String(((zad.oplasteni || {}).rezim) || 'standard') === 'poStenach') {
-    kontrol++;
-    nalezy.push(_nalez('Opláštění', 'jednotné po celé šachtě', 'zadané po stěnách A–D'));
-  }
+   * Režim po stěnách proto žádný vlastní nález nemá. Atyp smí přijít jen
+   * z týchž pravidel jako v jednotném režimu — profil sloupku, rozměry,
+   * způsob zasklení, jednotypovost skel, počet sloupků, můstek; všechna čtou
+   * zadání, které má šachta v obou režimech stejné. Materiál jednotlivých
+   * stěn (sklo, Cetris, „jiné", „bez — dodá stavba") tabulka standardu
+   * nezná, a proto ho nehodnotí. Hlídá src/test_oplasteni_steny.js (shoda
+   * vyhodnocení obou režimů) a overit_oplasteni.mjs (ATYP, cena, termín). */
 
   /* --- můstek --- (od 25. 9. 2026 počet kusů; zaškrtnuté staré = 1) */
   const mustkyKs = (typeof mustkyPocet === 'function') ? mustkyPocet(zad) : (zad.mustek ? 1 : 0);
