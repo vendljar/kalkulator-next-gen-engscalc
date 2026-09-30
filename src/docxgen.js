@@ -190,7 +190,10 @@ function docxZnackyBloku(xml) {
  * řádků. Pro symboly z tohoto seznamu se proto odstavec zopakuje za každý
  * neprázdný řádek hodnoty (i s číslováním a stylem). Ostatní víceřádkové
  * symboly se dál lámou uvnitř odstavce (<w:br/>, viz xmlEscRadky). */
-const DOCX_ODSTAVCE_ZA_RADEK = ['SODP_PLATEBNI_KALENDAR'];
+/* {{PODM_PLATEBNI_KALENDAR}} (věty o dílčích dokladech nabídky OCK, šablona
+ * CN v14) je tu pro šablonu, která by ho nesla v obyčejném odstavci; v CN v14
+ * stojí v řádku tabulky a rozvine ho rozvinRadkyZaRadek níž (ta běží dřív). */
+const DOCX_ODSTAVCE_ZA_RADEK = ['SODP_PLATEBNI_KALENDAR', 'PODM_PLATEBNI_KALENDAR'];
 function rozvinOdstavceZaRadek(xml, ph) {
   DOCX_ODSTAVCE_ZA_RADEK.forEach(klic => {
     if (!ph || ph[klic] == null) return;
@@ -200,6 +203,30 @@ function rozvinOdstavceZaRadek(xml, ph) {
       if (klicePlaceholderu(p).indexOf(klic) < 0) return p;
       return radky.map(r => nahradPlaceholdery(p, { [klic]: r })).join('');
     });
+  });
+  return xml;
+}
+/* ŘÁDEK TABULKY ZA KAŽDÝ ŘÁDEK HODNOTY (etapa A platebních podmínek OCK,
+ * 30. 9. 2026). V šabloně CN v13 stojí každá věta o dílčím daňovém dokladu
+ * ve vlastním orámovaném řádku tabulky s písmenem a), b), c). Šablona v14 má
+ * místo tří pevných řádků jeden se symbolem {{PODM_PLATEBNI_KALENDAR}}
+ * a aplikace ho zopakuje za každou větu (i s rámečkem a číslováním) — bez
+ * zálohy tedy dva řádky, výchozích 50 / 40 / 10 tři jako dřív. Rozvíjí se
+ * nejvnitřnější řádek se symbolem; bez neprázdného řádku hodnoty zůstane
+ * řádek, jak je (prázdnou tabulku odstraní značky bloku, které běží dřív). */
+const DOCX_RADKY_ZA_RADEK = ['PODM_PLATEBNI_KALENDAR'];
+function rozvinRadkyZaRadek(xml, ph) {
+  DOCX_RADKY_ZA_RADEK.forEach(klic => {
+    if (!ph || ph[klic] == null) return;
+    const radky = String(ph[klic]).replace(/\r/g, '').split('\n').filter(r => r.trim() !== '');
+    if (!radky.length) return;
+    radkoveSpany(xml)
+      .filter(sp => klicePlaceholderu(vlastniObsahRadku(xml.slice(sp.zac, sp.kon))).indexOf(klic) >= 0)
+      .sort((a, b) => b.zac - a.zac)                               // odzadu, ať sedí pozice
+      .forEach(sp => {
+        const radek = xml.slice(sp.zac, sp.kon);
+        xml = xml.slice(0, sp.zac) + radky.map(r => nahradPlaceholdery(radek, { [klic]: r })).join('') + xml.slice(sp.kon);
+      });
   });
   return xml;
 }
@@ -627,6 +654,7 @@ async function docxVyplnSablonu(arrayBuffer, placeholders, priplatky, obrazky) {
         po = odstranPrazdneTsRadky(po, placeholders);   // prázdné/„-“ řádky TS pryč
       }
       po = odstranPrazdneBloky(po, placeholders);       // prázdné kapitoly se značkami pryč (P8A)
+      po = rozvinRadkyZaRadek(po, placeholders);        // věty o dílčích dokladech OCK: řádek tabulky za větu (etapa A)
       po = rozvinOdstavceZaRadek(po, placeholders);     // seznam plateb: odstavec za platbu (etapa B)
       po = nahradPlaceholdery(po, placeholders);
       if (po !== pred) nahrad++;
@@ -962,7 +990,7 @@ async function docxXmlVady(arrayBuffer) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
+  module.exports = { docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
     odstranPrazdneTsRadky, jePrazdnaHodnota, klicePlaceholderu, odstranPrazdneBloky, docxZnackyBloku,
     docxVlozObrazky, rozmeryObrazku, dataUrlNaBajty,
     docxDokumentBlob, docxTeloZeSekci, docxSestavBlob, docxPar, docxEsc,

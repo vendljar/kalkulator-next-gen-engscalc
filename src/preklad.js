@@ -1006,6 +1006,13 @@ const PREKLAD = {
   "Záruka": ["Warranty", "Gewährleistung", "Garantie"],
   /* Šablona PROJ v3 (29. 9. 2026): nadpis bloku vlastních položek {{PROJ_POLOZKY_NAVIC}}. */
   "Další položky zahrnuté v ceně:": ["Additional items included in the price:", "Weitere im Preis enthaltene Positionen:", "Autres postes compris dans le prix :"],
+  /* PLATEBNÍ PODMÍNKY OCK — měsíční fakturace (D2, rozhodnutí J. V. 29. 9. 2026:
+   * znění „Fakturace probíhá měsíčně podle skutečně provedených prací.") a obě
+   * volby způsobu fakturace (P10.5; řádek „Způsob fakturace" v cizojazyčném
+   * náhledu dosud zůstával česky). NÁVRH PŘEKLADU — ke kontrole J. V. */
+  "Fakturace probíhá měsíčně podle skutečně provedených prací.": ["Invoicing takes place monthly according to the work actually performed.", "Die Abrechnung erfolgt monatlich nach den tatsächlich erbrachten Leistungen.", "La facturation est effectuée mensuellement selon les travaux réellement exécutés."],
+  "Po milnících": ["By milestones", "Nach Meilensteinen", "Par étapes"],
+  "Měsíční": ["Monthly", "Monatlich", "Mensuel"],
 };
 
 /* ---- normalizace klíče (tolerance k mezerám, diakritickým uvozovkám,
@@ -1026,10 +1033,32 @@ function prekladNorm(s) {
 const PREKLAD_IDX = {};
 Object.keys(PREKLAD).forEach(k => { PREKLAD_IDX[prekladNorm(k)] = PREKLAD[k]; });
 
+/* Pořadí dílčího dokladu v cizím jazyce (1st / 2nd, 1re / 2e — faktura je
+ * ve francouzštině ženského rodu); německy stačí „1.". */
+function prekladPoradiEn(n) {
+  const k = parseInt(n, 10), d = k % 100;
+  return k + ((d >= 11 && d <= 13) ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[k % 10] || 'th'));
+}
+function prekladPoradiFr(n) { return parseInt(n, 10) === 1 ? '1re' : parseInt(n, 10) + 'e'; }
+
 /* ---- vzory pro řetězce s čísly, které se generují za běhu ----
  * (rozměry, rozteče, počty – slovník je pokrýt nemůže) */
 const PREKLAD_VZORY = [
   { re: /^jekl\s+(\d+x\d+)$/i, en: 'SHS $1', de: 'Hohlprofil $1', fr: 'profilé creux $1' },
+  /* Věty o dílčích daňových dokladech nabídky OCK s pořadím a procentem
+   * (etapa A, D1 — 30. 9. 2026): „Bez zálohy" vynechá první splátku a dílčí
+   * faktura 2 se tiskne jako „1. dílčí daňový doklad". Znění je znění šablony
+   * CN v13 a jejích překladů ve slovníku (P10.4 „bez DPH"), jen pořadí
+   * a procento jsou proměnné; test_platby_ock.js hlídá, že výchozí věty
+   * vyjdou přesně jako přeložená šablona v13. */
+  { re: /^(\d+)\. dílčí daňový doklad ve výši (\d+(?:[.,]\d+)?) % \(bez DPH\) z celkové ceny díla bude vystaven po podpisu SoD\. Úhrada tohoto daňového dokladu je podmínkou pro dodržení předem dohodnutých realizačních termínů\.$/,
+    en: (m, n, p) => 'The ' + prekladPoradiEn(n) + ' partial tax invoice in the amount of ' + p.replace(',', '.') + ' % (excl. VAT) of the total contract price will be issued after the contract for work is signed. Payment of this invoice is a condition for meeting the agreed completion dates.',
+    de: (m, n, p) => 'Die ' + n + '. Teilrechnung in Höhe von ' + p + ' % (zzgl. MwSt.) des Gesamtpreises wird nach Unterzeichnung des Werkvertrags ausgestellt. Die Bezahlung dieser Rechnung ist Voraussetzung für die Einhaltung der vorab vereinbarten Ausführungstermine.',
+    fr: (m, n, p) => 'La ' + prekladPoradiFr(n) + ' facture partielle d’un montant de ' + p + ' % (hors TVA) du prix total de l’ouvrage sera émise après la signature du contrat d’entreprise. Le paiement de cette facture conditionne le respect des délais de réalisation convenus au préalable.' },
+  { re: /^Po ukončení výroby, dodání materiálu na stavbu a po zahájení prací bude vystaven (\d+)\. dílčí daňový doklad ve výši (\d+(?:[.,]\d+)?) % \(bez DPH\) z celkové ceny díla\. Úhrada tohoto daňového dokladu je podmínkou pro předání díla objednateli\.$/,
+    en: (m, n, p) => 'After completion of production, delivery of the material to the site and commencement of the works, the ' + prekladPoradiEn(n) + ' partial tax invoice will be issued in the amount of ' + p.replace(',', '.') + ' % (excl. VAT) of the total contract price. Payment of this invoice is a condition for the handover of the work to the client.',
+    de: (m, n, p) => 'Nach Abschluss der Fertigung, Lieferung des Materials auf die Baustelle und Beginn der Arbeiten wird die ' + n + '. Teilrechnung in Höhe von ' + p + ' % (zzgl. MwSt.) des Gesamtpreises ausgestellt. Die Bezahlung dieser Rechnung ist Voraussetzung für die Übergabe des Werks an den Auftraggeber.',
+    fr: (m, n, p) => 'Après l’achèvement de la fabrication, la livraison du matériel sur le chantier et le début des travaux, la ' + prekladPoradiFr(n) + ' facture partielle sera émise pour un montant de ' + p + ' % (hors TVA) du prix total de l’ouvrage. Le paiement de cette facture conditionne la remise de l’ouvrage au client.' },
   /* Plán plateb projekce (etapa B, 30. 9. 2026): „30 % z nabídkové ceny za DPZ",
    * „12,5 % z nabídkové ceny za tuto činnost" — procento libovolné. */
   { re: /^(\d+(?:,\d+)?)\s*%\s+z nabídkové ceny za (zaměření|studii|projednání|DPZ|IČ|DPS|EZC|tuto činnost|geodetické zaměření)$/,

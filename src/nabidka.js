@@ -280,6 +280,18 @@ function nabidkaData(zak, varianta, jekly, lang) {
   if (typeof kryciPodminkoveSymboly === 'function')
     Object.assign(placeholders, kryciPodminkoveSymboly(zak, varianta, jekly, P));
 
+  /* PLATEBNÍ KALENDÁŘ OCK (etapa A, D1 + D2 — 30. 9. 2026). Věty o dílčích
+   * dokladech skládá aplikace: splátka s 0 % („Bez zálohy") se vynechá
+   * a ostatní se přečíslují, měsíční fakturace dá jednu schválenou větu.
+   * Šablona CN v14 je bere z {{PODM_PLATEBNI_KALENDAR}} a
+   * {{PODM_FAKTURACE_MESICNE}}; v13 tiskne pevné věty jako dřív (kontrola
+   * platbyWordOck). Online náhled dostane týž kalendář (platbyOck). */
+  let platbyOck = null;
+  if (typeof kryciPlatebniKalendar === 'function') {
+    platbyOck = kryciPlatebniKalendar(zak, varianta, jekly);
+    Object.assign(placeholders, kryciPlatebniSymboly(platbyOck, P, L));
+  }
+
   /* KAPITOLY IV.–VI. A DOLOŽKY (#282, nálezy N15 a N16 kola 6).
    *
    * Wordová šablona je má, aplikace je neuměla — tiskla tedy nabídku bez
@@ -409,7 +421,7 @@ function nabidkaData(zak, varianta, jekly, lang) {
    * strana Wordu vozila fotografii cizí stavby ze šablony. */
   Object.assign(placeholders,
     typeof uvodniFotoSymboly === 'function' ? uvodniFotoSymboly(zak) : {});
-  return { placeholders, priplatky: priplatkyList, jazyk: L,
+  return { placeholders, priplatky: priplatkyList, jazyk: L, platbyOck,
            /* sken podpisu s razítkem (#146) + úvodní fotka stavby */
            obrazky: Object.assign({},
              typeof zpracovatelObrazky === 'function' ? zpracovatelObrazky() : {},
@@ -457,7 +469,9 @@ function nabidkaJeVetaOZaruce(text, lang) {
   return NABIDKA_ZARUKA_RE.cz.test(t) || !!(NABIDKA_ZARUKA_RE[lang] && NABIDKA_ZARUKA_RE[lang].test(t));
 }
 
-function nabidkaNahledSekce(ph, lang) {
+/* `platby` = platební kalendář OCK z nabidkaData (platbyOck). Bez něj (starší
+ * volající) řádky kapitoly III. jako dřív. */
+function nabidkaNahledSekce(ph, lang, platby) {
   const L = lang || 'cz';
   const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
   const sekce = [
@@ -555,13 +569,23 @@ function nabidkaNahledSekce(ph, lang) {
     return hlavicka.concat(radky.map(r => [{ hotovo: r }, '']));
   };
 
-  const platebni = [
-    ['1. dílčí faktura', ph.PODM_ZALOHA1], ['2. dílčí faktura', ph.PODM_FAKTURA2],
-    ['Konečná faktura', ph.PODM_FAKTURA_KONC],
+  /* SPLÁTKY PODLE TÝCHŽ PRAVIDEL JAKO WORD (etapa A, D1 + D2 — 30. 9. 2026).
+   * Splátka s 0 % („Bez zálohy") řádek nemá a ostatní dílčí faktury se
+   * přečíslují; měsíční fakturace má místo splátek jeden řádek „Způsob
+   * fakturace" se schválenou větou. Hodnoty jsou texty krycího listu
+   * (přeložené v nabidkaData). Odeslaná nabídka z doby před pravidly
+   * (platby.stary) i volající bez kalendáře mají řádky jako dřív. */
+  const nove = !!(platby && !platby.stary && Array.isArray(platby.splatky));
+  const hodnotaSplatky = { zaloha1: ph.PODM_ZALOHA1, faktura2: ph.PODM_FAKTURA2, fakturaKonc: ph.PODM_FAKTURA_KONC };
+  const splatkyRadky = !nove
+    ? [['1. dílčí faktura', ph.PODM_ZALOHA1], ['2. dílčí faktura', ph.PODM_FAKTURA2], ['Konečná faktura', ph.PODM_FAKTURA_KONC]]
+    : (platby.mesicne ? [['Způsob fakturace', ph.PODM_FAKTURACE_MESICNE]]
+      : platby.splatky.map(s => [s.poradi ? s.poradi + '. dílčí faktura' : 'Konečná faktura', hodnotaSplatky[s.id]]));
+  const platebni = splatkyRadky.concat([
     ['Splatnost faktur (dní)', ph.PODM_SPLATNOST_DNI],
     ['Platnost nabídky', ph.PODM_PLATNOST_NABIDKY],
-    ['Způsob fakturace', ph.PODM_ZPUSOB_FAKTURACE],
-  ].filter(r => String(r[1] == null ? '' : r[1]).trim() !== '');
+  ], nove && platby.mesicne ? [] : [['Způsob fakturace', ph.PODM_ZPUSOB_FAKTURACE]])
+    .filter(r => String(r[1] == null ? '' : r[1]).trim() !== '');
   if (platebni.length) sekce.push({ sekce: 'III. PLATEBNÍ PODMÍNKY', radky: platebni });
 
   [['IV. POŽADAVKY PRO PROVEDENÍ REALIZACE', 'FIRMA_NAB_POZADAVKY'],
