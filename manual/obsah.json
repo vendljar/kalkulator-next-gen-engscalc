@@ -489,7 +489,7 @@
       "id": "kap-podminky",
       "nadpis": "21. Smluvní a platební podmínky",
       "bloky": [
-        { "typ": "text", "text": "Pod cenou najdete blok **Smluvní a platební podmínky** — zvlášť pro OCK a zvlášť pro PROJ. Je tam splatnost faktur, způsob fakturace, rozpis záloh a dílčích faktur, zádržné, smluvní pokuty, sazba DPH, délka záruky a u OCK i **Termín dodání OCK** (kapitola 14)." },
+        { "typ": "text", "text": "Pod cenou najdete blok **Smluvní a platební podmínky** — zvlášť pro OCK a zvlášť pro PROJ. Je tam splatnost faktur, způsob fakturace, rozpis záloh a dílčích faktur, zádržné, smluvní pokuty, sazba DPH, délka záruky a u OCK i **Termín dodání OCK** (kapitola 14). U projekce nahradil zálohu a fakturaci po stupních jeden **plán plateb** — splátky nabízených činností, ze kterých se skládá nabídka PROJ i smlouva o dílo (kapitola 24)." },
         {
           "typ": "obrazek", "snimek": "smluvni-podminky",
           "titulek": "Smluvní a platební podmínky pod souhrnem nabídky OCK.",
@@ -610,7 +610,8 @@
         {
           "typ": "seznam",
           "polozky": [
-            { "pojem": "Splátky SoD projekce", "vyklad": "Osm plateb podle milníků smlouvy plus správní poplatky a pokuta za prodlení se součinností. U každé splátky je v poznámce vidět, které sekci kalkulace obsahem odpovídá a kolik ta sekce stojí. **Částky se nedopočítávají samy** — milníky smlouvy se se sekcemi nekryjí jedna ku jedné a aplikace si částku nevymýšlí." },
+            { "pojem": "Plán plateb", "vyklad": "V sekci Platební podmínky zvolíte **předvolbu** (Standard po činnostech, Záloha + zbytek po předání, 100 % po dokončení stupně, nebo Vlastní) a u každé **nabízené** činnosti vidíte splátky — procento a milník. Splátky jdou upravit (↺ vrátí předvolbu); u každé činnosti musí dát dohromady 100 %. Z plánu se skládají platební podmínky nabídky PROJ i platby smlouvy o dílo." },
+            { "pojem": "Platby smlouvy o dílo PROJ", "vyklad": "**Dopočítají se samy**: procento × cena činnosti po slevě, platby se stejným milníkem se sečtou do jedné (třeba „po podpisu smlouvy“ za všechny činnosti). Každou částku jde v tabulce plateb přepsat ručně (↺ vrátí dopočet); součet plateb ale musí dát cenu díla, jinak smlouva nevznikne. Pod tabulkou zůstávají správní poplatky a pokuta za prodlení se součinností." },
             { "pojem": "Podpisy a kopie", "vyklad": "Firma v podpisové doložce, druhý podepisující (u SVJ podepisují zpravidla dva členové výboru) a dvě adresy, kam mají chodit faktury v kopii." },
             { "pojem": "Plná moc", "vyklad": "Zmocnitel (jméno, datum narození, trvale bytem) a osoba, která jedná za nás." }
           ]

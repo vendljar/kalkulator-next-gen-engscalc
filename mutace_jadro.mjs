@@ -59,7 +59,9 @@ const SRC = resolve(KOREN, 'src');
  * přísně jako samotný výpočet. */
 /* kontroly.js od 29. 9. 2026 (#372): zábrana „profilNeznamy" je jediné, co
  * brání vytisknout cenu s nulovým profilem — patří k jádru jako výpočet sám. */
-const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sablony_online.js', 'kontroly.js'];
+/* plan_plateb.js od 30. 9. 2026 (etapa B platebních podmínek): dopočítává
+ * částky plateb smlouvy o dílo PROJ — čísla, která jdou zákazníkovi. */
+const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sablony_online.js', 'kontroly.js', 'plan_plateb.js'];
 /* Filtr = první argument, který není přepínač (stejně jako netlify/mutace.mjs). */
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 /* --kontrola (23. 9. 2026, nález N19): jen ověří, že každý hledaný úsek je
@@ -102,6 +104,27 @@ function najdiSady() {
  *   proc   … co by se v praxi pokazilo, kdyby tuhle chybu někdo udělal doopravdy
  * ============================================================ */
 const MUTACE = [
+  /* ---------- plán plateb projekce (etapa B, 30. 9. 2026) ---------- */
+  { nazev: 'plán plateb: poslední splátka nenese zaokrouhlení', soubor: 'plan_plateb.js',
+    hledej: '      const kc = i < radky.length - 1 ? Math.round(c * (r.p || 0) / 100) : planHal(zbyva);',
+    nahrad: '      const kc = Math.round(c * (r.p || 0) / 100);',
+    proc: 'součet plateb smlouvy by se lišil od ceny díla o haléře až koruny — smlouva by nesouhlasila s nabídkou' },
+  { nazev: 'plán plateb: splátky se stejným milníkem se nesečtou', soubor: 'plan_plateb.js',
+    hledej: '      const klic = planKlicPlatby(r);',
+    nahrad: "      const klic = planKlicPlatby(r) + '|' + k;",
+    proc: 'smlouva by měla „po podpisu" zvlášť za každou činnost místo jedné platby (rozhodnutí J. V. 29. 9.)' },
+  { nazev: 'plán plateb: neoceněná činnost dostane splátky', soubor: 'plan_plateb.js',
+    hledej: '    if (!(c > 0) || !isFinite(c)) return;',
+    nahrad: '    if (!isFinite(c)) return;',
+    proc: 'smlouva by vypsala platby za činnost, která není součástí nabídky' },
+  { nazev: 'plán plateb: součet činnosti mimo 100 % se nepozná', soubor: 'plan_plateb.js',
+    hledej: "    if (Math.round(soucet * 100) !== 10000)\n      out.push({ kod: 'procenta'",
+    nahrad: "    if (false)\n      out.push({ kod: 'procenta'",
+    proc: 'nabídka i smlouva by odešly se splátkami na 90 % ceny činnosti' },
+  { nazev: 'plán plateb: vada plánu jen varuje, nezastaví dokument', soubor: 'kontroly.js',
+    hledej: "      return { uroven: KONTROLY_UROVEN_ZABRANA,\n        text: 'Plán plateb projekce: '",
+    nahrad: "      return { uroven: KONTROLY_UROVEN,\n        text: 'Plán plateb projekce: '",
+    proc: 'varování jde odklepnout — nabídka se splátkami mimo 100 % by vznikla' },
   /* ---------- neznámý rozměr profilu (#372, nález A2-1, 29. 9. 2026) ---------- */
   { nazev: '#372: jekl u neznámého rozměru vyhodí výjimku místo náhrady', soubor: 'engine.js',
     hledej: '    return { kg: 0, m2: 0, A: j ? j.A : (m ? +m[1] : 0), B: j ? j.B : (m ? +m[2] : 0) };',

@@ -363,6 +363,12 @@ const MUTACE = [
     nahrad: "  if (false)\n    return json({ ok: false, chyba: 'Příliš mnoho neúspěšných pokusů z této adresy. Zkuste to za '",
     proc: 'jedno heslo na sto e-mailů by na počítadle nikdy nenarostlo' },
 
+  /* ---------- etapa B (30. 9. 2026): firemní plán plateb projekce ---------- */
+  { nazev: 'plán plateb: vadný firemní plán server zveřejní', soubor: '../src/firma.js',
+    hledej: '  if (vadyPlanu.length)',
+    nahrad: '  if (false)',
+    proc: 'poškozený plán (součet ≠ 100 %, neznámý milník) by se rozeslal všem obchodníkům' },
+
   /* ---------- B99 (29. 9. 2026): obsah šablony Wordu ---------- */
   { nazev: 'B99: kontrola obsahu šablony se na serveru nevolá', soubor: 'functions/sablony.mjs',
     hledej: "    if (vadyObsahu.length)\n      return json({ ok: false, chyba: g.sablonaObsahVadyText(vadyObsahu) }, 400);",

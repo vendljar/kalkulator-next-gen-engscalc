@@ -54,6 +54,12 @@ test('splátky „po podpisu" ze ZA, DPZ a IČ se sečtou do jedné platby (20 0
   !!podpis && podpis.castka === 110000 && podpis.casti.length === 3, podpis);
 test('pořadí plateb podle katalogu milníků (po podpisu první)', d.platby[0].klic === 'podpis' && d.platby.map(p => p.klic).join() === 'podpis,za_vystupy,dpz_doss,dpz_su,ic_podani,ic_povoleni', d.platby.map(p => p.klic));
 test('neoceněná (nenabízená) činnost do plateb nevstoupí', !d.platby.some(p => p.casti.some(c => c.k === 'dps')));
+/* Nulová cena, ne chybějící klíč (mutace jádra 30. 9. 2026): činnost s cenou 0
+ * nesmí dostat splátky ani prázdné řádky platby — jádro to hlídá samo, ne
+ * jen volající, který nabízené činnosti filtruje. */
+const d0 = PP.planPlatebDopocet({ dpz: 120000, ic: 0, dps: 0 }, null, F);
+test('činnost s cenou 0 splátky nedostane (ani nulové platby)', !d0.cinnosti.ic && !d0.cinnosti.dps
+  && !d0.platby.some(p => p.casti.some(c => c.k === 'ic' || c.k === 'dps')) && d0.platby.every(p => p.castka > 0), d0.platby.map(p => p.klic + ':' + p.castka));
 const dh = PP.planPlatebDopocet({ studie: 33333.33 }, null, F);
 const st = dh.cinnosti.studie;
 test('zaokrouhlení nese poslední splátka činnosti (celé koruny, poslední dorovná na haléř)',
