@@ -345,9 +345,13 @@ const NABIDKA_PROJ_DEF = [
     ['Zpracování dokumentace pro provedení stavby (DPS)', 'cca do 6 týdnů od schválení dokumentace a povolení záměru stavebním úřadem', 'dps'],
     ['Ekonomická zadávací část (EZC)', 'do 2 týdnů od zpracování projektu pro provedení stavby', 'ezc'],
   ] },
+  /* Poznámky pod TERMÍNY se od K18-N95 (30. 9. 2026) PŘEKLÁDAJÍ — do té doby
+   * byly { cz } (souvislá próza zůstává česky) z doby, kdy je slovník neznal.
+   * Od překladu šablony PROJ (25. 9. 2026) je zná a jazykové mutace Wordu je
+   * tisknou přeložené; online nabídka v EN/DE/FR je nechávala česky. */
   { typ: 'pozn', radky: [
-    { cz: '*) Termíny pro vyjádření dotčených orgánů a stavebního úřadu nejsou závazné. Jedná se o termíny, které nemůže zhotovitel z velké části ovlivnit.' },
-    { cz: 'Termíny zpracování mohou být upraveny dle volných kapacit zhotovitele v okamžiku objednání.' },
+    '*) Termíny pro vyjádření dotčených orgánů a stavebního úřadu nejsou závazné. Jedná se o termíny, které nemůže zhotovitel z velké části ovlivnit.',
+    'Termíny zpracování mohou být upraveny dle volných kapacit zhotovitele v okamžiku objednání.',
   ] },
 ];
 
@@ -924,4 +928,4 @@ if (typeof dokumentRegistruj === 'function')
   });
 
 if (typeof module !== 'undefined')
-  module.exports = { nabidkaProjData, nabidkaProjCeny, nabidkaProjPlatby, NABIDKA_PROJ_PLATBY, nabidkaProjSlevaZvlast, nabidkaProjUvod, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE, NABIDKA_PROJ_CENA_SYMBOL };
+  module.exports = { nabidkaProjData, nabidkaProjCeny, nabidkaProjPlatby, NABIDKA_PROJ_PLATBY, nabidkaProjSlevaZvlast, nabidkaProjUvod, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_UVOD_ZAVER, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE, NABIDKA_PROJ_CENA_SYMBOL };

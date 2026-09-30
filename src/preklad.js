@@ -787,6 +787,96 @@ const PREKLAD = {
   "Platba po doporučení dodavatele realizace": ["Payment after recommendation of the construction contractor", "Zahlung nach Empfehlung des Ausführungsunternehmens", "Paiement après recommandation de l'entreprise de réalisation"],
   "Platba po předání geodetického zaměření": ["Payment after handover of the land survey", "Zahlung nach Übergabe der geodätischen Vermessung", "Paiement après remise du relevé géomètre"],
   "TERMÍNY": ["SCHEDULE","TERMINE","DÉLAIS"],
+  /* ÚVOD A TERMÍNY NABÍDKY PROJ (K18-N95, 30. 9. 2026 — NÁVRH ke kontrole
+   * J. V.). Věty úvodu „Naše NABÍDKA a doporučení" (NABIDKA_PROJ_UVOD, každá
+   * v podobě uprostřed odstavce i jako první věta nabídky) a řádky TERMÍNŮ
+   * online nabídky, které slovník neznal — v EN/DE/FR zůstávaly česky,
+   * „cca …" z nich vzor udělal napůl („approx. do 4 týdnů od podání…").
+   * Terminologie navazuje na hesla výš (SURVEY / AUFMASS / RELEVÉ, PROJECT
+   * PERMIT / VORHABENGENEHMIGUNG / AUTORISATION DU PROJET…); řádky termínů
+   * skládají už přeložené kusy ze šablony PROJ. */
+  "V rámci zamýšlené VÝSTAVBY VÝTAHU A VÝTAHOVÉ ŠACHTY v počáteční fázi nabízíme ZAMĚŘENÍ a ZPRACOVÁNÍ VÝSTUPŮ ZE ZAMĚŘENÍ uvažovaného umístění výtahu.": [
+    "As part of the planned CONSTRUCTION OF THE LIFT AND LIFT SHAFT, in the initial phase we offer a SURVEY and PROCESSING OF THE SURVEY OUTPUTS for the intended lift location.",
+    "Im Rahmen des geplanten BAUS DES AUFZUGS UND DES AUFZUGSSCHACHTS bieten wir in der Anfangsphase das AUFMASS und die AUSWERTUNG DES AUFMASSES für den vorgesehenen Aufzugsstandort an.",
+    "Dans le cadre de la CONSTRUCTION prévue DE L'ASCENSEUR ET DE LA GAINE D'ASCENSEUR, nous proposons dans la phase initiale le RELEVÉ et le TRAITEMENT DES LIVRABLES DU RELEVÉ pour l'emplacement envisagé de l'ascenseur."],
+  "Z výsledku zaměření navrhneme varianty řešení a vybranou variantu zpracujeme ve STUDII PROVEDITELNOSTI.": [
+    "Based on the survey results, we will propose alternative solutions and elaborate the selected alternative in a FEASIBILITY STUDY.",
+    "Auf Grundlage des Aufmaßes schlagen wir Lösungsvarianten vor und arbeiten die gewählte Variante in einer MACHBARKEITSSTUDIE aus.",
+    "À partir des résultats du relevé, nous proposerons des variantes de solution et développerons la variante retenue dans une ÉTUDE DE FAISABILITÉ."],
+  "V rámci zamýšlené VÝSTAVBY VÝTAHU A VÝTAHOVÉ ŠACHTY navrhneme varianty řešení a vybranou variantu zpracujeme ve STUDII PROVEDITELNOSTI.": [
+    "As part of the planned CONSTRUCTION OF THE LIFT AND LIFT SHAFT, we will propose alternative solutions and elaborate the selected alternative in a FEASIBILITY STUDY.",
+    "Im Rahmen des geplanten BAUS DES AUFZUGS UND DES AUFZUGSSCHACHTS schlagen wir Lösungsvarianten vor und arbeiten die gewählte Variante in einer MACHBARKEITSSTUDIE aus.",
+    "Dans le cadre de la CONSTRUCTION prévue DE L'ASCENSEUR ET DE LA GAINE D'ASCENSEUR, nous proposerons des variantes de solution et développerons la variante retenue dans une ÉTUDE DE FAISABILITÉ."],
+  "Součástí nabídkové ceny je i projednání této studie s Odborem památkové péče HMP.": [
+    "The quoted price also includes the approval of this study with the Prague heritage preservation department.",
+    "Im Angebotspreis ist auch die Abstimmung dieser Studie mit dem Denkmalschutzamt der Hauptstadt Prag enthalten.",
+    "Le prix proposé comprend également l'instruction de cette étude auprès du service du patrimoine de la Ville de Prague."],
+  "V rámci zamýšlené VÝSTAVBY VÝTAHU A VÝTAHOVÉ ŠACHTY nabízíme projednání STUDIE PROVEDITELNOSTI s Odborem památkové péče HMP.": [
+    "As part of the planned CONSTRUCTION OF THE LIFT AND LIFT SHAFT, we offer the approval of the FEASIBILITY STUDY with the Prague heritage preservation department.",
+    "Im Rahmen des geplanten BAUS DES AUFZUGS UND DES AUFZUGSSCHACHTS bieten wir die Abstimmung der MACHBARKEITSSTUDIE mit dem Denkmalschutzamt der Hauptstadt Prag an.",
+    "Dans le cadre de la CONSTRUCTION prévue DE L'ASCENSEUR ET DE LA GAINE D'ASCENSEUR, nous proposons l'instruction de l'ÉTUDE DE FAISABILITÉ auprès du service du patrimoine de la Ville de Prague."],
+  "Po vyjasnění technických detailů vypracujeme PROJEKTOVOU DOKUMENTACI PRO POVOLENÍ ZÁMĚRU (DPZ) obsahující projekt pro řízení o povolení záměru.": [
+    "Once the technical details have been clarified, we will prepare the DOCUMENTATION FOR THE PROJECT PERMIT (DPZ), containing the design for the project permit procedure.",
+    "Nach Klärung der technischen Details erstellen wir die UNTERLAGEN FÜR DIE VORHABENGENEHMIGUNG (DPZ) mit der Planung für das Genehmigungsverfahren.",
+    "Une fois les détails techniques clarifiés, nous établirons le DOSSIER DE DEMANDE D'AUTORISATION (DPZ) contenant le projet pour la procédure d'autorisation."],
+  "V rámci zamýšlené VÝSTAVBY VÝTAHU A VÝTAHOVÉ ŠACHTY vypracujeme PROJEKTOVOU DOKUMENTACI PRO POVOLENÍ ZÁMĚRU (DPZ) obsahující projekt pro řízení o povolení záměru.": [
+    "As part of the planned CONSTRUCTION OF THE LIFT AND LIFT SHAFT, we will prepare the DOCUMENTATION FOR THE PROJECT PERMIT (DPZ), containing the design for the project permit procedure.",
+    "Im Rahmen des geplanten BAUS DES AUFZUGS UND DES AUFZUGSSCHACHTS erstellen wir die UNTERLAGEN FÜR DIE VORHABENGENEHMIGUNG (DPZ) mit der Planung für das Genehmigungsverfahren.",
+    "Dans le cadre de la CONSTRUCTION prévue DE L'ASCENSEUR ET DE LA GAINE D'ASCENSEUR, nous établirons le DOSSIER DE DEMANDE D'AUTORISATION (DPZ) contenant le projet pour la procédure d'autorisation."],
+  "Součástí nabídky je i INŽENÝRSKÁ ČINNOST (vyřízení POVOLENÍ ZÁMĚRU).": [
+    "The offer also includes ENGINEERING SERVICES (obtaining the PROJECT PERMIT).",
+    "Das Angebot umfasst auch INGENIEURLEISTUNGEN (Erwirkung der VORHABENGENEHMIGUNG).",
+    "L'offre comprend également l'ASSISTANCE ADMINISTRATIVE (obtention de l'AUTORISATION DU PROJET)."],
+  "V rámci zamýšlené VÝSTAVBY VÝTAHU A VÝTAHOVÉ ŠACHTY nabízíme INŽENÝRSKOU ČINNOST (vyřízení POVOLENÍ ZÁMĚRU).": [
+    "As part of the planned CONSTRUCTION OF THE LIFT AND LIFT SHAFT, we offer ENGINEERING SERVICES (obtaining the PROJECT PERMIT).",
+    "Im Rahmen des geplanten BAUS DES AUFZUGS UND DES AUFZUGSSCHACHTS bieten wir INGENIEURLEISTUNGEN an (Erwirkung der VORHABENGENEHMIGUNG).",
+    "Dans le cadre de la CONSTRUCTION prévue DE L'ASCENSEUR ET DE LA GAINE D'ASCENSEUR, nous proposons l'ASSISTANCE ADMINISTRATIVE (obtention de l'AUTORISATION DU PROJET)."],
+  "Po získání rozhodnutí stavebního úřadu o povolení záměru lze pokračovat PROVÁDĚCÍM PROJEKTEM (DPS).": [
+    "Once the building authority's decision on the project permit has been obtained, the work can continue with the DETAILED DESIGN DOCUMENTATION (DPS).",
+    "Nach Erhalt der Entscheidung des Bauamts über die Vorhabengenehmigung kann mit der AUSFÜHRUNGSPLANUNG (DPS) fortgefahren werden.",
+    "Après obtention de la décision du service de l'urbanisme sur l'autorisation du projet, il est possible de poursuivre avec le DOSSIER D'EXÉCUTION (DPS)."],
+  "V rámci zamýšlené VÝSTAVBY VÝTAHU A VÝTAHOVÉ ŠACHTY nabízíme PROVÁDĚCÍ PROJEKT (DPS).": [
+    "As part of the planned CONSTRUCTION OF THE LIFT AND LIFT SHAFT, we offer the DETAILED DESIGN DOCUMENTATION (DPS).",
+    "Im Rahmen des geplanten BAUS DES AUFZUGS UND DES AUFZUGSSCHACHTS bieten wir die AUSFÜHRUNGSPLANUNG (DPS) an.",
+    "Dans le cadre de la CONSTRUCTION prévue DE L'ASCENSEUR ET DE LA GAINE D'ASCENSEUR, nous proposons le DOSSIER D'EXÉCUTION (DPS)."],
+  "Nabízíme i POLOŽKOVÝ ROZPOČET na samotnou realizaci stavby.": [
+    "We also offer an ITEMISED BUDGET for the construction works themselves.",
+    "Wir bieten auch eine KOSTENBERECHNUNG NACH POSITIONEN für die eigentliche Bauausführung an.",
+    "Nous proposons également un BUDGET DÉTAILLÉ pour la réalisation des travaux elle-même."],
+  "V rámci zamýšlené VÝSTAVBY VÝTAHU A VÝTAHOVÉ ŠACHTY nabízíme POLOŽKOVÝ ROZPOČET na samotnou realizaci stavby.": [
+    "As part of the planned CONSTRUCTION OF THE LIFT AND LIFT SHAFT, we offer an ITEMISED BUDGET for the construction works themselves.",
+    "Im Rahmen des geplanten BAUS DES AUFZUGS UND DES AUFZUGSSCHACHTS bieten wir eine KOSTENBERECHNUNG NACH POSITIONEN für die eigentliche Bauausführung an.",
+    "Dans le cadre de la CONSTRUCTION prévue DE L'ASCENSEUR ET DE LA GAINE D'ASCENSEUR, nous proposons un BUDGET DÉTAILLÉ pour la réalisation des travaux elle-même."],
+  "Všechny nabízené činnosti jsou popsány na dalších stránkách naší nabídky.": [
+    "All services offered are described on the following pages of our offer.",
+    "Alle angebotenen Leistungen sind auf den folgenden Seiten unseres Angebots beschrieben.",
+    "Toutes les prestations proposées sont décrites dans les pages suivantes de notre offre."],
+  "ZAMĚŘENÍ na stavbě do 4 týdnů od objednání a předání plné moci; zpracování VÝSTUPŮ do 4–6 týdnů od zaměření": [
+    "On-site SURVEY within 4 weeks of the order and handover of the power of attorney; processing of the OUTPUTS within 4–6 weeks of the survey",
+    "AUFMASS vor Ort innerhalb von 4 Wochen nach Bestellung und Übergabe der Vollmacht; Auswertung der ERGEBNISSE innerhalb von 4–6 Wochen nach dem Aufmaß",
+    "RELEVÉ sur site dans les 4 semaines suivant la commande et la remise de la procuration ; traitement des LIVRABLES dans les 4 à 6 semaines suivant le relevé"],
+  "Zajištění stanovisek dotčených orgánů *)": ["Obtaining the opinions of the authorities concerned *)",
+    "Einholung der Stellungnahmen der betroffenen Behörden *)", "Obtention des avis des autorités concernées *)"],
+  "cca do 4 týdnů od podání žádosti (v případě potřeby stanoviska hygieny a/nebo památkové péče cca do 2,5 měsíce)": [
+    "approx. within 4 weeks of submission of the application (if opinions of the public health authority and/or heritage preservation are required, approx. up to 2.5 months)",
+    "ca. innerhalb von 4 Wochen nach Antragstellung (falls Stellungnahmen des Gesundheitsamts und/oder des Denkmalschutzes erforderlich sind, ca. bis zu 2,5 Monate)",
+    "environ dans les 4 semaines suivant le dépôt de la demande (si des avis de l'autorité sanitaire et/ou du patrimoine sont nécessaires, environ jusqu'à 2,5 mois)"],
+  "Inženýrská činnost (IČ) – vyřízení povolení záměru *)": ["Engineering Services (IČ) – obtaining the project permit *)",
+    "Ingenieurleistungen (IČ) – Erwirkung der Vorhabengenehmigung *)", "Assistance administrative (IČ) – obtention de l'autorisation du projet *)"],
+  "cca 2 měsíce od podání žádosti + 1 měsíc na nabytí právní moci povolení záměru": [
+    "approx. 2 months from submission of the application + 1 month for the project permit to become final",
+    "ca. 2 Monate nach Antragstellung + 1 Monat bis zur Rechtskraft der Vorhabengenehmigung",
+    "environ 2 mois après le dépôt de la demande + 1 mois pour que l'autorisation du projet devienne définitive"],
+  "cca do 6 týdnů od schválení dokumentace a povolení záměru stavebním úřadem": [
+    "approx. within 6 weeks of approval of the documentation and of the project permit by the building authority",
+    "ca. innerhalb von 6 Wochen nach Genehmigung der Unterlagen und der Vorhabengenehmigung durch das Bauamt",
+    "environ dans les 6 semaines suivant l'approbation du dossier et l'autorisation du projet par le service de l'urbanisme"],
+  /* Druhá poznámka pod TERMÍNY v online nabídce (šablona má totéž s překlepy
+   * „můžou být upraven" — heslo níž); znění překladu je z něj převzaté. */
+  "Termíny zpracování mohou být upraveny dle volných kapacit zhotovitele v okamžiku objednání.": [
+    "Processing times may be adjusted according to the contractor's available capacity at the time of the order.",
+    "Die Bearbeitungsfristen können je nach freien Kapazitäten des Auftragnehmers zum Zeitpunkt der Bestellung angepasst werden.",
+    "Les délais de traitement peuvent être ajustés en fonction des capacités disponibles du prestataire au moment de la commande."],
   "REKAPITULACE CENOVÉ NABÍDKY": ["SUMMARY OF THE PRICE QUOTATION","ZUSAMMENFASSUNG DES PREISANGEBOTS","RÉCAPITULATIF DE L'OFFRE DE PRIX"],
   /* "CELKEM bez DPH" / "CELKEM s DPH" se NEpřidávají – normalizace klíčů
    * (prekladNorm) je case-insensitive, takže se použijí již existující hesla

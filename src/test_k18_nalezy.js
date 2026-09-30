@@ -11,6 +11,9 @@
  *   N93 — online nabídka OCK v EN/DE/FR psala „Warranty 60 měsíců" (všech
  *         22 cizojazyčných nabídek): kapitola V. náhledu přeložila popisek,
  *         hodnotu z krycího listu ne. Word ({{NAB_KAP_TERMINY}}) ji překládal.
+ *   N95 — úvod („Naše NABÍDKA a doporučení") a termíny nabídky PROJ zůstávaly
+ *         v cizím jazyce česky: slovník neznal věty úvodu ani několik řádků
+ *         a poznámek TERMÍNŮ (vzor „cca …" z nich dělal „approx. do 4 týdnů…").
  *
  * Spuštění: cd src && node test_k18_nalezy.js */
 const fs = require('fs');
@@ -159,6 +162,58 @@ const NB = nacti('./nabidka.js');
   /* Co napíše obchodník ručně, projde beze změny (slovník ho nezná). */
   v.data.kryci = { hodnoty: { zarukaMesicu: 'dle smlouvy o dílo' } };
   test('N93: nečíselný text záruky z krycího listu projde beze změny', zarukaOnline('en') === 'dle smlouvy o dílo', zarukaOnline('en'));
+}
+
+/* ======================= N95: úvod a termíny nabídky PROJ v cizím jazyce ======================= */
+{
+  const PR = require('./preklad.js');
+  /* Česká písmena, která EN/DE/FR nemají — zbytek češtiny v překladu (vzor
+   * „cca …" přeloží jen předponu). Zkratka IČ zůstává i v překladu. */
+  const CESKE = /[ěščřžůťďňýáíú]/i;
+  const cesky = t => CESKE.test(String(t).replace(/\(IČ\)/g, ''));
+  const vety = [...new Set([].concat(...NP.NABIDKA_PROJ_UVOD.map(sk => [].concat(...sk.map(v => [v.cz, v.prvni])))))];
+  test('příprava: úvod má 13 různých vět (7 činností, u zaměření je první věta tatáž)', vety.length === 13, vety.length);
+  const terminy = NP.NABIDKA_PROJ_DEF.find(b => b.typ === 'pary' && b.nadpis === 'TERMÍNY');
+  const iTerm = NP.NABIDKA_PROJ_DEF.indexOf(terminy);
+  const pozn = NP.NABIDKA_PROJ_DEF[iTerm + 1];
+  const textyTerminu = [].concat(...terminy.radky.map(r => [r[0], r[1]]))
+    .concat((pozn.radky || []).map(x => (x && typeof x === 'object') ? x.cz : x));
+  ['en', 'de', 'fr'].forEach(L => {
+    const U = L.toUpperCase();
+    const uvodCesky = vety.concat(NP.NABIDKA_PROJ_UVOD_ZAVER || 'Všechny nabízené činnosti jsou popsány na dalších stránkách naší nabídky.')
+      .filter(v => { const s = PR.trStav(v, L); return !s.prelozeno || cesky(s.text); });
+    test('N95 ' + U + ': slovník zná všechny věty úvodu nabídky PROJ i závěrečnou větu', uvodCesky.length === 0, uvodCesky);
+    const termCesky = textyTerminu.filter(t => { const s = PR.trStav(t, L); return !s.prelozeno || cesky(s.text); });
+    test('N95 ' + U + ': řádky TERMÍNŮ i poznámky pod nimi se přeloží celé', termCesky.length === 0, termCesky);
+  });
+  /* Celá cesta: online nabídka i symbol úvodu pro Word, všechny činnosti. */
+  const z = zk.novaZakazka(); z.cislo = '2026 - OVP - CN - 0495';
+  const v = z.varianty[0];
+  v.data.proj.cenik = ZC.zkusebniCenikProj();
+  v.data.proj.cenik.kurzEurKc = 25;
+  v.data.proj.zadani.sekce.forEach(s => (s.polozky || []).forEach(p => { p.vyrazeno = false; }));
+  v.data.proj.cenik.fixy.pamatkari = 5000; v.data.proj.cenik.fixy.geodet = 19500;
+  ['en', 'de', 'fr'].forEach(L => {
+    const U = L.toUpperCase();
+    const d = NP.nabidkaProjData(z, v, L);
+    const nadpisUvodu = PR.tr('Naše NABÍDKA a doporučení', L), nadpisTerm = PR.tr('TERMÍNY', L);
+    const uvod = d.bloky.find(b => b.typ === 'proza' && b.nadpis === nadpisUvodu);
+    test('N95 ' + U + ': online úvod nabídky PROJ je přeložený (všechny činnosti v rozsahu)',
+      !!uvod && uvod.odstavce.length === 4 && !uvod.odstavce.some(cesky), uvod && uvod.odstavce);
+    test('N95 ' + U + ': Word {{UVOD_NABIDKY_PROJ}} je přeložený', !!d.placeholders.UVOD_NABIDKY_PROJ && !cesky(d.placeholders.UVOD_NABIDKY_PROJ),
+      d.placeholders.UVOD_NABIDKY_PROJ);
+    const iT = d.bloky.findIndex(b => b.typ === 'pary' && b.nadpis === nadpisTerm);
+    const tb = d.bloky[iT], pb = d.bloky[iT + 1];
+    test('N95 ' + U + ': online TERMÍNY bez češtiny (řádky i hodnoty)', !!tb && tb.radky.length === 10 && !tb.radky.some(r => cesky(r[0]) || cesky(r[1])),
+      tb && tb.radky.filter(r => cesky(r[0]) || cesky(r[1])));
+    test('N95 ' + U + ': poznámky pod TERMÍNY přeložené', !!pb && pb.typ === 'pozn' && pb.radky.length === 2 && !pb.radky.some(cesky), pb && pb.radky);
+  });
+  /* Česká nabídka se nemění. */
+  const cz = NP.nabidkaProjData(z, v, 'cz');
+  test('N95 CZ: úvod i termíny zůstávají česky, beze změny', cz.bloky.some(b => b.typ === 'pary' && b.nadpis === 'TERMÍNY'
+    && b.radky[4][0] === 'Zajištění stanovisek dotčených orgánů *)')
+    && cz.bloky.some(b => b.typ === 'pozn' && b.radky[0] === '*) Termíny pro vyjádření dotčených orgánů a stavebního úřadu nejsou závazné. Jedná se o termíny, které nemůže zhotovitel z velké části ovlivnit.')
+    && /^V rámci zamýšlené VÝSTAVBY VÝTAHU A VÝTAHOVÉ ŠACHTY v počáteční fázi nabízíme ZAMĚŘENÍ/.test(cz.placeholders.UVOD_NABIDKY_PROJ));
 }
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
