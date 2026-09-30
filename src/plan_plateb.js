@@ -1,0 +1,210 @@
+/* ============================================================
+ * PLÁN PLATEB PROJEKCE (etapa B platebních podmínek, roadmapa #367,
+ * rozhodnutí J. V. 29. 9. 2026 — podklady/NAVRH_PLATEBNI_PODMINKY_2026-09-29.md,
+ * oddíl 3 a 7; bod P9.3 z #366).
+ *
+ * PROČ. Platby projekce žily na třech místech, která spolu nemluvila:
+ * pevná procenta po činnostech v nabídce PROJ (nabidka_proj.js), záloha
+ * 30/50/70 % v krycím listu PROJ a věta „100 % po dokončení stupně"
+ * v Nastavení → Firma; splátky SoD PROJ se psaly ručně do osmi pevných
+ * polí (sodpPlatba1–8) a nikdo nehlídal, že dají cenu díla. Plán plateb je
+ * JEDEN: pro každou nabízenou činnost splátky „procento + milník". Nabídka,
+ * krycí list i SoD ho jen čtou.
+ *
+ * TENHLE MODUL je čisté jádro bez DOM (prohlížeč i server, stejný kód):
+ *   – katalog milníků projekce a čtyři předvolby (PLAN_PROJ_VYCHOZI; firma si
+ *     je smí upravit v Nastavení → Firma — `firemni` parametr všech funkcí),
+ *   – řádky splátek činnosti podle předvolby (planRadkyCinnosti),
+ *   – dopočet plateb SoD: procento × cena činnosti PO SLEVĚ, splátky se
+ *     stejným milníkem se sečtou do jedné platby, zaokrouhlení nese poslední
+ *     splátka činnosti (celé koruny, poslední dorovná na haléř), ruční přepis
+ *     částky platí (planPlatebDopocet),
+ *   – kontroly pro zábranu dokumentu: 100 % u každé nabízené činnosti,
+ *     kladná procenta, známý milník, součet plateb = cena díla
+ *     (planPlatebKontrola),
+ *   – převod starších ručních splátek SoD (planPlatebZeStarych).
+ * Autorský dozor se fakturuje měsíčně a do splátek nepatří — v seznamu
+ * činností není.
+ *
+ * DATA VARIANTY (zapojí je další bod etapy B): data.kryciProj.planPlateb =
+ *   { v:1, predvolba:'std'|'zaloha'|'sto'|'vlastni', zaloha:0|30|50|70,
+ *     cinnosti:{ <k>:[{ p, m, t? }] },   // jen upravené činnosti
+ *     prepis:{ <klíč platby>: Kč } }      // ruční částky plateb SoD
+ * Chybějící plán = výchozí předvolba firmy. Nic se nezapisuje při importu
+ * (parita prohlížeč × server, zamčené varianty — N43).
+ * ============================================================ */
+
+const PLAN_PROJ_SEKCE = ['zamereni', 'studie', 'projednani', 'dpz', 'ic', 'dps', 'ezc', 'kolaudace', 'geodet'];
+const PLAN_PROJ_PREDVOLBY = ['std', 'zaloha', 'sto', 'vlastni'];
+const PLAN_PROJ_ZALOHY = [0, 30, 50, 70];
+/* Id milníků jsou stálá (klíč plateb a ručních přepisů), pořadí katalogu =
+ * pořadí plateb ve SoD. Texty jsou z prototypu plánu plateb (29. 9. 2026). */
+const PLAN_PROJ_MILNIKY = [
+  { id: 'podpis', cz: 'po podpisu smlouvy / objednávky' },
+  { id: 'za_vystupy', cz: 'po zhotovení výstupů ze zaměření' },
+  { id: 'sp_predani', cz: 'po předání studie proveditelnosti' },
+  { id: 'sp_pamatky', cz: 'po předání vyjádření odboru památkové péče HMP' },
+  { id: 'dpz_doss', cz: 'po dokončení dokumentace pro povolení záměru v rozsahu pro podání na dotčené orgány' },
+  { id: 'dpz_su', cz: 'po dokončení dokumentace pro povolení záměru v rozsahu pro podání na stavební úřad' },
+  { id: 'ic_podani', cz: 'po získání stanovisek dotčených orgánů a po podání dokumentace na stavební úřad a zahájení řízení' },
+  { id: 'ic_povoleni', cz: 'po vydání pravomocného povolení záměru' },
+  { id: 'dps_predani', cz: 'po předání kompletní dokumentace pro provedení stavby (DPS)' },
+  { id: 'ezc_predani', cz: 'po předání ekonomické zadávací části (EZC)' },
+  { id: 'vyber', cz: 'po doporučení dodavatele realizace' },
+  { id: 'kol_pred', cz: 'před zahájením kolaudačního řízení' },
+  { id: 'kol_po', cz: 'po vydání kolaudačního rozhodnutí' },
+  { id: 'geo_predani', cz: 'po předání geodetického zaměření' },
+];
+const PLAN_PROJ_VYCHOZI = {
+  v: 1, vychozi: 'std', zalohaPct: 50,
+  milniky: PLAN_PROJ_MILNIKY,
+  /* Standard po činnostech = dnešní procenta pevných bloků nabídky PROJ.
+   * Projednání a geodet dnes blok nemají — výchozí návrh J. V. (Q1, Q2):
+   * 100 % po předání vyjádření OPP HMP, resp. po předání zaměření. */
+  standard: {
+    zamereni: [{ p: 50, m: 'podpis' }, { p: 50, m: 'za_vystupy' }],
+    studie: [{ p: 50, m: 'podpis' }, { p: 40, m: 'sp_predani' }, { p: 10, m: 'sp_pamatky' }],
+    projednani: [{ p: 100, m: 'sp_pamatky' }],
+    dpz: [{ p: 50, m: 'podpis' }, { p: 30, m: 'dpz_doss' }, { p: 20, m: 'dpz_su' }],
+    ic: [{ p: 50, m: 'podpis' }, { p: 30, m: 'ic_podani' }, { p: 20, m: 'ic_povoleni' }],
+    dps: [{ p: 50, m: 'podpis' }, { p: 50, m: 'dps_predani' }],
+    ezc: [{ p: 50, m: 'podpis' }, { p: 50, m: 'ezc_predani' }],
+    kolaudace: [{ p: 50, m: 'kol_pred' }, { p: 50, m: 'kol_po' }],
+    geodet: [{ p: 100, m: 'geo_predani' }],
+  },
+  /* Milník „po předání" činnosti — pro předvolby Záloha a 100 %. */
+  predani: { zamereni: 'za_vystupy', studie: 'sp_predani', projednani: 'sp_pamatky', dpz: 'dpz_su',
+             ic: 'ic_povoleni', dps: 'dps_predani', ezc: 'ezc_predani', kolaudace: 'kol_po', geodet: 'geo_predani' },
+};
+/* Pořadí ručních splátek starší šablony SoD PROJ (sodpPlatba1–8, krycí list). */
+const PLAN_SODP_STARE = ['podpis', 'za_vystupy', 'dpz_doss', 'dpz_su', 'ic_povoleni', 'dps_predani', 'ezc_predani', 'vyber'];
+
+function planFiremni(f) {
+  const ok = f && typeof f === 'object' && Array.isArray(f.milniky) && f.standard && f.predani;
+  return ok ? f : PLAN_PROJ_VYCHOZI;
+}
+function planPredvolba(plan, firemni) {
+  const f = planFiremni(firemni);
+  const p = plan && plan.predvolba;
+  if (PLAN_PROJ_PREDVOLBY.indexOf(p) >= 0) return p;
+  return PLAN_PROJ_PREDVOLBY.indexOf(f.vychozi) >= 0 ? f.vychozi : 'std';
+}
+function planMilnikText(r, firemni) {
+  if (!r) return null;
+  if (r.m === 'vlastni') { const t = String(r.t == null ? '' : r.t).trim(); return t || null; }
+  const m = planFiremni(firemni).milniky.find(x => x && x.id === r.m);
+  return m ? String(m.cz || '') : null;
+}
+/* Řádky splátek jedné činnosti: [{ p, m, t }] (t = text milníku, null =
+ * neznámý milník). Upravená činnost (plan.cinnosti[k]) má přednost v každé
+ * předvolbě; Vlastní bez úpravy spadne na Standard. */
+function planRadkyCinnosti(k, plan, firemni) {
+  const f = planFiremni(firemni);
+  const kopie = (radky) => (Array.isArray(radky) ? radky : []).map(r => ({
+    p: +(r && r.p), m: String((r && r.m) || ''), t: planMilnikText(r, f) }));
+  const upr = plan && plan.cinnosti && plan.cinnosti[k];
+  if (Array.isArray(upr) && upr.length) return kopie(upr);
+  const pv = planPredvolba(plan, f);
+  const predani = f.predani[k] || PLAN_PROJ_VYCHOZI.predani[k];
+  if (pv === 'zaloha') {
+    let z = plan && plan.zaloha != null && plan.zaloha !== '' ? +plan.zaloha : +f.zalohaPct;
+    if (!(z >= 0 && z < 100)) z = 0;
+    return kopie(z > 0 ? [{ p: z, m: 'podpis' }, { p: 100 - z, m: predani }] : [{ p: 100, m: predani }]);
+  }
+  if (pv === 'sto') return kopie([{ p: 100, m: predani }]);
+  return kopie((f.standard && f.standard[k]) || PLAN_PROJ_VYCHOZI.standard[k]);
+}
+function planKlicPlatby(r) {
+  return r.m === 'vlastni' ? 'v:' + String(r.t || '').trim().toLowerCase() : r.m;
+}
+const planHal = (x) => Math.round(x * 100) / 100;
+
+/* Dopočet plateb SoD PROJ. `ceny` = { činnost: cena PO SLEVĚ } — jen
+ * nabízené činnosti (cena > 0), jak je dává nabidkaProjData. */
+function planPlatebDopocet(ceny, plan, firemni) {
+  const f = planFiremni(firemni);
+  const poradi = f.milniky.map(m => m.id);
+  const skupiny = new Map();
+  const cinnosti = {};
+  let cena = 0;
+  PLAN_PROJ_SEKCE.forEach(k => {
+    const c = +((ceny || {})[k]);
+    if (!(c > 0) || !isFinite(c)) return;
+    cena += c;
+    const radky = planRadkyCinnosti(k, plan, f);
+    let zbyva = c;
+    cinnosti[k] = radky.map((r, i) => {
+      /* Celé koruny; zaokrouhlení nese poslední splátka činnosti, takže
+       * součet činnosti je přesně její cena (na haléř). */
+      const kc = i < radky.length - 1 ? Math.round(c * (r.p || 0) / 100) : planHal(zbyva);
+      zbyva -= kc;
+      const klic = planKlicPlatby(r);
+      if (!skupiny.has(klic)) skupiny.set(klic, { klic, text: r.t, vypocet: 0, casti: [] });
+      const g = skupiny.get(klic);
+      g.vypocet = planHal(g.vypocet + kc);
+      g.casti.push({ k, p: r.p, kc });
+      return Object.assign({}, r, { kc, klic });
+    });
+  });
+  const prepis = (plan && plan.prepis && typeof plan.prepis === 'object') ? plan.prepis : {};
+  const index = (klic) => { const i = poradi.indexOf(klic); return i < 0 ? poradi.length : i; };
+  const vlastniPoradi = [...skupiny.keys()];
+  const platby = [...skupiny.values()].sort((a, b) => (index(a.klic) - index(b.klic))
+    || (vlastniPoradi.indexOf(a.klic) - vlastniPoradi.indexOf(b.klic))).map(g => {
+    const pr = prepis[g.klic];
+    const ma = pr !== undefined && pr !== null && pr !== '' && isFinite(+pr);
+    return Object.assign(g, { castka: ma ? planHal(+pr) : g.vypocet, prepsano: ma });
+  });
+  const osirele = Object.keys(prepis).filter(k => !skupiny.has(k) && prepis[k] !== '' && prepis[k] != null)
+    .map(k => ({ klic: k, castka: +prepis[k] }));
+  const soucet = planHal(platby.reduce((a, p) => a + p.castka, 0));
+  cena = planHal(cena);
+  return { platby, soucet, cena, sedi: Math.round(soucet * 100) === Math.round(cena * 100), osirele, cinnosti };
+}
+
+/* Nálezy pro zábranu dokumentu: [{ kod, k?, text }]. Hlídají se jen
+ * nabízené činnosti — plán nenabízené činnosti nikoho nezavazuje. */
+function planPlatebKontrola(ceny, plan, firemni) {
+  const f = planFiremni(firemni);
+  const out = [];
+  PLAN_PROJ_SEKCE.forEach(k => {
+    if (!(+((ceny || {})[k]) > 0)) return;
+    const radky = planRadkyCinnosti(k, plan, f);
+    const soucet = radky.reduce((a, r) => a + (isFinite(r.p) ? r.p : 0), 0);
+    if (radky.some(r => !(r.p > 0) || !isFinite(r.p)))
+      out.push({ kod: 'kladne', k, text: 'Splátka s nulovým, záporným nebo chybějícím procentem (' + k + ').' });
+    if (Math.round(soucet * 100) !== 10000)
+      out.push({ kod: 'procenta', k, text: 'Splátky činnosti ' + k + ' nedávají 100 % (součet ' + soucet + ' %).' });
+    if (radky.some(r => !r.t))
+      out.push({ kod: 'milnik', k, text: 'Splátka činnosti ' + k + ' nemá známý milník (vyberte z katalogu nebo napište text).' });
+  });
+  const d = planPlatebDopocet(ceny, plan, f);
+  if (!d.sedi)
+    out.push({ kod: 'soucet', text: 'Součet plateb smlouvy (' + d.soucet + ' Kč) se neshoduje s cenou díla (' + d.cena + ' Kč).' });
+  return out;
+}
+
+/* „95 880 Kč", „95 880,50 Kč", nezlomitelné mezery → číslo; jinak null. */
+function planCastkaZTextu(t) {
+  const s = String(t == null ? '' : t).replace(/[\s  ]/g, '').replace(/(Kč|CZK|,-|\.-)$/i, '').replace(',', '.');
+  return /^\d+(\.\d{1,2})?$/.test(s) ? +s : null;
+}
+/* Starší ruční splátky SoD (krycí list, sodpPlatba1–8) → přepisy plateb
+ * plánu. Nečitelná částka se nezahodí: vrátí se k upozornění. */
+function planPlatebZeStarych(hodnoty) {
+  const h = hodnoty && typeof hodnoty === 'object' ? hodnoty : {};
+  const prepis = {}, necitelne = [];
+  PLAN_SODP_STARE.forEach((klic, i) => {
+    const id = 'sodpPlatba' + (i + 1);
+    const t = h[id];
+    if (t === undefined || t === null || String(t).trim() === '') return;
+    const kc = planCastkaZTextu(t);
+    if (kc === null) necitelne.push({ id, klic, text: String(t) }); else prepis[klic] = kc;
+  });
+  return { prepis, necitelne };
+}
+
+if (typeof module !== 'undefined')
+  module.exports = { PLAN_PROJ_SEKCE, PLAN_PROJ_PREDVOLBY, PLAN_PROJ_ZALOHY, PLAN_PROJ_MILNIKY, PLAN_PROJ_VYCHOZI,
+    PLAN_SODP_STARE, planFiremni, planPredvolba, planMilnikText, planRadkyCinnosti, planPlatebDopocet,
+    planPlatebKontrola, planCastkaZTextu, planPlatebZeStarych };
