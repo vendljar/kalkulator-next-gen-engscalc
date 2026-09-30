@@ -8,9 +8,9 @@ existují). Na `test-draft`: **v30.9.3** — etapa B platebních podmínek
 a Q5 (dřívější záloha se přepne na předvolbu sama; větev
 `claude/etapa-b-q5-zaloha-automaticky`) — obojí na pokyn J. V. „výstup pošli
 zatím do test-draft"; do `test` jen na pokyn J. V.
-Releasy **v29.9.3**, **v29.9.4**, **v29.9.7** a **v30.9.1** vydané;
-**v30.9.2** a **v30.9.3** — odkazy na release poslané J. V. (tagy z cloudu
-pushnout nejde — proxy HTTP 403, viz CLAUDE.md).
+Releasy **v29.9.3**, **v29.9.4**, **v29.9.7**, **v30.9.1** a **v30.9.2** vydané
+(v30.9.2 J. V. 30. 9.); **v30.9.3** — odkaz na release poslán J. V. (tagy
+z cloudu pushnout nejde — proxy HTTP 403, viz CLAUDE.md).
 
 **Větve k 30. 9. 2026** (ověřeno `git merge-base --is-ancestor`):
 - **Celé v `test-draft` — J. V. je smaže, až nebudou potřeba:**
@@ -124,7 +124,7 @@ prototyp https://claude.ai/artifact/6sbxbaAsBpphfPfE2wnM3a.
 - **B99:** vnější odkazy `http(s):` a `mailto:` v šabloně zůstávají povolené.
 
 ## Čeká na J. V.
-- **Releasy v30.9.2 a v30.9.3** (odkazy v závěrečné zprávě sezení) a **smazat větve**,
+- **Release v30.9.3** (odkaz v závěrečné zprávě sezení) a **smazat větve**,
   které jsou celé v `test-draft` (seznam výše;
   https://github.com/vendljar/kalkulator-next-gen-engscalc/branches).
 - **Nahrát šablony** nabídky PROJ v4 (+EN/DE/FR) a SoD PROJ v2 (Nastavení →
@@ -204,7 +204,7 @@ Zbytek B77, B100–B110, zbytek B32, B4 souběh, B6, N59–N61 (větev
   nejvyšší id v cílové větvi.
 
 ## Další krok
-Čeká se na J. V. (výše): releasy v30.9.2 a v30.9.3, šablony, odpovědi
+Čeká se na J. V. (výše): release v30.9.3, šablony, odpovědi
 k návrhu světlíků (#375, pak realizace v paralelní větvi), rozhodnutí
 o nálezech 22. kola, pokyn k etapě A (OCK platební kalendář)
 a C (číslo smlouvy, #366) a ke sloučení `test-draft` do `test`. Nová práce
