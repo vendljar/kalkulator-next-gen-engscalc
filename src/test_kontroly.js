@@ -173,7 +173,9 @@ const pravidla = kontrolyPravidla();
  * nemá symbol ceny nabízené činnosti (v3 a geodetické zaměření). */
 /* 30. „dodatekCesky" 30. 9. 2026 (K18-N96, test_k18_nalezy.js): dodatkový
  * text z ceníku zůstane v cizojazyčné nabídce česky. */
-test('pravidel je třicet', pravidla.length === 30, pravidla.length);
+/* 31. „bokyDveri" 30. 9. 2026 (#375, test_svetliky_boky.js): mezera vedle
+ * dveří při bocích „bez" a počet bočních světlíků. */
+test('pravidel je třicet jedna', pravidla.length === 31, pravidla.length);
 test('kódy pravidel jsou jedinečné',
   new Set(pravidla.map(p => p.kod)).size === pravidla.length,
   pravidla.map(p => p.kod).join(','));

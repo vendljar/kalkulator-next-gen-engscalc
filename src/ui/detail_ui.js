@@ -56,6 +56,26 @@ function dvSkloPopis(Z, C) {
 function dvKrok(nadpis, inner, id) {
   return `<div class="dv-krok"${id ? ` id="${esc(id)}"` : ''}><h3>${esc(nadpis)}</h3><div class="dv-body">${inner}</div></div>`;
 }
+
+/* Popisky voleb výplně u dveří (N58, #375) — tytéž jako v Zadání šachty. */
+const DV_VYPLN_POPIS = { bez: 'bez', sklo: 'sklo', plech: 'plech', material: 'materiál opláštění', stavba: 'zajistí stavba' };
+/* Čím se světlíky u dveří vyplní (#375) — věta z výsledku jádra, ne vlastní
+ * úvaha obrazovky. Otisk odeslané nabídky z doby před #375 materiál nenese. */
+function dvSvetlikMaterial(r, kde, Z) {
+  const m = r && r.zaskleni && r.zaskleni.vypln && r.zaskleni.vypln.material && r.zaskleni.vypln.material[kde];
+  if (!m || !m.A) return '—';
+  const jeden = x => (x.druh === 'sklo' || x.druh === 'deska')
+    ? ((typeof oplTypNazev === 'function') ? oplTypNazev(x.typ, x.nazev) : String(x.typ || ''))
+      + (x.druh === 'deska' ? ' (deska, bez lišt a terčů)' : '')
+    : ({ bez: 'nic', plech: 'plech', stavba: 'zajistí stavba (výplň 0 Kč)' })[x.druh] || '—';
+  /* Stěna C se ukáže, jen když na ní jsou dveře (průchozí šachta). */
+  const z = Z || {};
+  const maA = !z.pruchoziSachta || (+z.nastupisteA || 0) > 0;
+  const maC = !!z.pruchoziSachta && (+z.nastupisteC || 0) > 0;
+  const a = jeden(m.A), c = jeden(m.C || m.A);
+  if (maA && maC && a !== c) return 'stěna A: ' + a + ' · stěna C: ' + c;
+  return maA ? a : c;
+}
 /* řádky: [popis, hodnota, vzorec/poznámka] – třetí sloupec řídí DET-1 */
 function dvTab(rows) {
   // popis (r[0]) a vzorec (r[2]) jsou text – mezi nimi i názvy položek z ceníku,
@@ -130,10 +150,14 @@ function renderDetail() {
       'ze zadání; předsazený portál přidá hodiny montáže i spoje, zasklení rozhoduje mezi terči a lištami'],
     ['Stříška nad nástupiště', `${+Z.striskaKs || 0} ks`,
       'počet kusů; nula znamená bez stříšky, každý kus násobí cenu i náklad'],
-    ['Nad dveřmi / boky dveří', `${esc(({ bez: 'bez', sklo: 'sklo', plech: 'plech', material: 'materiál opláštění', stavba: 'zajistí stavba' })[nadDvermiVypln(Z)])}`
-      + ` / ${Z.svetlikyBoky}${Z.svetlikyBoky > 0 ? ' (' + esc(({ sklo: 'sklo', plech: 'plech', material: 'materiál opláštění', stavba: 'zajistí stavba' })[bokyVypln(Z)]) + ')' : ''}`,
-      'ze zadání (N58); sklo a materiál opláštění přidají sklo stěny, plech 8,5 kg/m² do plechů dveří s lakováním obou stran, '
-      + 'bez a zajistí stavba nic; boky přidají i sloupky portálu'],
+    /* #375 (30. 9. 2026): boky mají tytéž volby jako nad dveřmi a vlastní
+     * počet světlíků — dřívější „počet stran" v zadání už není. */
+    ['Nad dveřmi / boky dveří', (DV_VYPLN_POPIS[nadDvermiVypln(Z)] || '') + ' / '
+      + (DV_VYPLN_POPIS[bokyVypln(Z)] || '')
+      + (bokyVypln(Z) !== 'bez' ? ', ' + bokyPocet(Z) + ' ks' + (bokyPocetRucne(Z) ? ' (ručně)' : ' (nástupiště × 2)') : ''),
+      'ze zadání (N58, #375); sklo = sklo stěny s dveřmi, materiál opláštění = materiál stěn B, C, D, plech 8,5 kg/m² '
+      + 'do plechů dveří s lakováním obou stran, zajistí stavba = konstrukce naše, výplň 0 Kč, bez = nic; '
+      + 'počet bočních světlíků je automaticky nástupiště × 2, obchodník ho může přepsat'],
     ['Čistý vstup / šířka rámu dveří', `${Z.cistyVstupMm} / ${Z.sirkaRamuMm} mm`,
       'ze zadání; z obojího vychází šířka otvoru šachetních dveří (krok 2)'],
   ]), 'dv-1');
@@ -169,8 +193,8 @@ function renderDetail() {
     ['Za portály (předsazené)', `${M(hn.portaly, 2)} h`,
       'předsazený portál: 1 h na nástupiště; zapuštěný 0'],
     ['Za světlík / světlíky boky', `${M(hn.svetlik, 2)} / ${M(hn.svetlikyBoky, 2)} h`,
-      'světlík: (světlík − 1) · nástupiště · 0,2 — BEZ světlíku (i „zajistí stavba") tedy 0,2 h na nástupiště ubere, plechové nadpraží se montuje jako světlík; '
-      + 'boky: světlíky boků · 0,5 · nástupiště'],
+      'světlík: jen volba „bez" ubere 0,2 h na nástupiště (tak počítá předloha); sklo, plech, materiál i „zajistí stavba" '
+      + 'se montují jako světlík (stavba od 30. 9. 2026, rozhodnutí J. V.); boky: 0,5 h na každý boční světlík'],
     ['Hodiny navíc celkem', `${M(r.montaz.hodinyNavicCelkem, 2)} h`, 'součet výše'],
     ['Montáž 1 osoba / 4 osoby', `${M(r.montaz.hod1osoba, 1)} h / ${M(r.montaz.hodCelkem, 1)} h`, `≈ ${M(r.montaz.dni, 1)} dní`],
   ]), 'dv-3');
@@ -179,7 +203,7 @@ function renderDetail() {
   const krKonstr = dvKrok('4. Parametry konstrukce', dvTab([
     ['Počet rámů', `${p.ramy}`, 'strop(H / rozteč + 2) + korekce int/ext'],
     ['Portálové příčníky', `${p.portPricniky}`, '3 · nástupiště'],
-    ['Sloupky portálu', `${p.sloupkyPortalu}`, 'nástupiště · světlíky boky'],
+    ['Sloupky portálu', `${p.sloupkyPortalu}`, 'jeden na každý světlík na bocích dveří (počet ze zadání)'],
     ['Krátké příčníky', `${p.kratkePricniky}`, 'sloupky portálu · 2'],
     ['Spojky sloupků', `${p.spojky}`, 'strop(H/4)·rohové + rohové'],
     ['Počet čílek (int)', `${p.pocetCilek}`, '(rámy·6 + portál·2 + krátké) · int'],
@@ -191,7 +215,7 @@ function renderDetail() {
   const PROF_VZOREC = {
     'Profil - sloupek': 'H · rohové sloupky − 0,2 · rohové sloupky',
     'Profil - příčníky bok/zadek': '(2 · hloubka + šířka) · rámy + šířka',
-    'Profil - sloupek portálu': '2,2 · nástupiště · světlíky boků (+ předsazený: nástupiště · světlá výška · 2)',
+    'Profil - sloupek portálu': '2,2 · světlíky na bocích dveří (+ předsazený: nástupiště · světlá výška · 2)',
     'Profil - příčníky portálu': 'portálové příčníky · šířka + sloupky portálu · (šířka − otvor dveří) · 2',
     'Profil - spojka sloupků': 'spojky · 0,4',
   };
@@ -285,9 +309,18 @@ function renderDetail() {
     ['Boční stěny', `${z.bocni.ks} ks · ${M(z.bocni.m2, 2)} m²`,
       'ks = zadní stěna · 2 (dvě strany); m² = max(ks · hloubka skla · výška skla; 2 · výška prosklené · hloubka skla)'],
     ['Světlíky / boky', `${z.svetliky.ks} ks · ${M(z.svetliky.m2, 2)} m² / ${z.svetlikyBoky.ks} ks · ${M(z.svetlikyBoky.m2, 2)} m²`,
-      'světlík nad dveřmi: 1 ks na nástupiště × šířka skla · (světlá výška − 2,3); '
-      + 'boky: krátké příčníky × zbylá šířka vedle dveří · 1,1'],
-    ['Boční + zadní m²', `${M(z.bokyZadniM2, 2)} m²`, 'materiál boční/zadní stěna'],
+      'jen skleněné; světlík nad dveřmi: 1 ks na nástupiště × šířka skla · (světlá výška − 2,3); '
+      + 'boky: tabule po 1,1 m (dvě na světlík), plocha min(světlíky; dveře) × mezera vedle dveří × 2,2 m'],
+    ...(z.vypln && z.vypln.bokyKs != null ? [
+      ['Boční světlíky po dveřích', z.vypln.bokyKs + ' ks: se dvěma ' + z.vypln.dvereDva + ' · s jedním '
+        + z.vypln.dvereJeden + ' · bez ' + z.vypln.dvereBez + ' dveří',
+        `mezera vedle dveří ${M(z.vypln.mezera, 3)} m (šířka stěny − otvor dveří − 0,04); dveře se dvěma = max(0; min(N; 2 · dveře) − dveře), `
+        + 's jedním = min(N; dveře) − se dvěma (stojí u sloupku, světlík přes celou mezeru), bez = dveře − min(N; dveře)'],
+      ['Světlíky u dveří — čím se vyplní', 'nad dveřmi: ' + dvSvetlikMaterial(r, 'nad', Z) + ' · boky: ' + dvSvetlikMaterial(r, 'boky', Z),
+        'sklo = sklo stěny s dveřmi a její zasklení (po stěnách typ skla té stěny, a není-li ze skla, sklo stěny ze standardu); '
+        + 'materiál opláštění = materiál stěn B, C, D, převažující podle plochy („bez — dodá stavba" = zajistí stavba) — rozhodnutí J. V. 30. 9. 2026'],
+    ] : []),
+    ['Boční + zadní m²', `${M(z.bokyZadniM2, 2)} m²`, 'materiál boční/zadní stěna; ve standardu sem patří i světlíky u dveří z materiálu opláštění (#375 — materiál stěn B, C, D)'],
     ['Čelní m²', `${M(z.celniM2, 2)} m²`, Z.pruchoziSachta ? 'materiál čelní stěna: světlíky + patra bez dveří A' : 'materiál čelní stěna (světlíky)'],
     ['Zasklení celkem', `${M(z.celkemM2, 2)} m²`,
       'boční + zadní + čelní; každá skupina jde do ceny vlastním materiálem podle typu šachty'],

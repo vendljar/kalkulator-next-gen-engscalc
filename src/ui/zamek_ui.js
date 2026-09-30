@@ -41,6 +41,9 @@ const ZAMEK_CHRANENE = [
    * dosadit hodnotu na existující cestu. Zámek je proto musí hlídat zvlášť,
    * jinak by šlo měnit plášť odeslané nabídky. */
   'oplRezimSet', 'oplCelaVyskaSet', 'oplOdSet', 'oplPasSet', 'oplPasPridej', 'oplPasSmaz',
+  /* Světlíky na bocích dveří (#375, 30. 9. 2026): před zápisem převádějí
+   * starší zadání na nový tvar mimo `set()` — zámek musí stát před tím. */
+  'bokyDveriSet', 'bokyKsSet', 'bokyKsZpet',
   'priplatekNabidka', 'priplatekVlastniAdd', 'priplatekVlastniDel',
   'priplatekVlastniSet', 'priplatekDoCeniku',
   'sirotciUklidVse', 'sirotekUklid',

@@ -139,6 +139,11 @@ function renderInputs() {
    * skládá pole vlastním gridem (auto-fill) — bez přebití by vznikl grid
    * v gridu a sloupce by se zúžily tak, že se popisky lámou. */
   const sl = (obsah) => `<div>${obsah}</div>`;
+  /* Výsledek jádra jednou pro celé zadání — bubliny u světlíků z něj čtou,
+   * čím se světlík vyplní (#375). Spadne-li výpočet, zadání se vykreslí
+   * i bez nich. */
+  let rAkt = null;
+  try { rAkt = vypocetAkt(); } catch (e) { rAkt = null; }
   document.getElementById('inputs').innerHTML =
     kartaRezim('ock', 'zadani', 'Zadání šachty',
       `<div class="zadani-ctyri">`
@@ -189,13 +194,17 @@ function renderInputs() {
          * nadDvermiVypln(): stará zakázka bez volby ukáže to, co znamenalo
          * její zaškrtávátko (sklo / bez). */
         + `<div class="row"><label>Světlík nad šachetními dveřmi</label>
-            <select style="width:150px" onchange="nadDvermiSet(this.value)">${NAD_DVERMI_POPISY.map(([v, t]) =>
+            <select style="width:150px" onchange="nadDvermiSet(this.value)" title="${esc(svetlikVyplnTitulek('nad', rAkt))}">${NAD_DVERMI_POPISY.map(([v, t]) =>
               `<option value="${v}" ${nadDvermiVypln(Z) === v ? 'selected' : ''}>${esc(t)}</option>`).join('')}
             </select><span class="u"></span></div>`
-        + inp('Z.svetlikyBoky', { type: 'sel', l: 'Světlíky na bocích dveří', o: [[0, 'bez'], [1, 'na jedné straně'], [2, 'na obou stranách']] })
-        + (Z.svetlikyBoky > 0
-          ? inp('Z.bokyVypln', { type: 'sel', l: 'Výplň boků dveří', o: BOKY_VYPLN_POPISY })
-          : ''))
+        /* SVĚTLÍKY NA BOCÍCH DVEŘÍ (#375, rozhodnutí J. V. 30. 9. 2026): tytéž
+         * volby jako nad dveřmi (dřív počet stran a pod ním „Výplň boků
+         * dveří"). Pod volbou počet světlíků, jen když boky nejsou „bez". */
+        + `<div class="row"><label>Světlíky na bocích dveří</label>
+            <select style="width:150px" onchange="bokyDveriSet(this.value)" title="${esc(svetlikVyplnTitulek('boky', rAkt))}">${NAD_DVERMI_POPISY.map(([v, t]) =>
+              `<option value="${v}" ${bokyVypln(Z) === v ? 'selected' : ''}>${esc(t)}</option>`).join('')}
+            </select><span class="u"></span></div>`
+        + bokyKsRadek())
       + sl(
         inp('Z.roztec', { l: 'Svislá rozteč příčníků', u: 'm' })
         + inp('Z.sirkaRamuMm', { l: 'Šířka rámu dveří', step: 5, u: 'mm' })
@@ -636,11 +645,65 @@ function oplZmeneno() {
 }
 
 /* Volby výplně nad dveřmi a vedle nich (N58, N58b). Hodnoty jsou z jádra
- * (NAD_DVERMI_VOLBY, BOKY_VYPLN_VOLBY), popisky podle zadání J. V. */
+ * (NAD_DVERMI_VOLBY), popisky podle zadání J. V. Od #375 (30. 9. 2026) mají
+ * světlíky na bocích dveří TYTÉŽ volby — dřívější „Výplň boků dveří" bez
+ * volby „bez" zanikla. */
 const NAD_DVERMI_POPISY = [['bez', 'bez'], ['sklo', 'sklo'], ['plech', 'plech'],
                            ['material', 'materiál opláštění'], ['stavba', 'zajistí stavba']];
-const BOKY_VYPLN_POPISY = [['sklo', 'sklo'], ['plech', 'plech'],
-                           ['material', 'materiál opláštění'], ['stavba', 'zajistí stavba']];
+
+/* Bublina u volby světlíků (#375): co volby znamenají a čím se světlík TEĎ
+ * vyplní. Materiál se bere z výsledku jádra (`vypocetAkt`, u odeslané
+ * nabídky zmrazený otisk), ne z vlastního přepočtu obrazovky — jinak by
+ * bublina při první změně pravidel tvrdila něco jiného, než z čeho je cena.
+ * Otisk z doby před #375 materiál nenese; pak zůstane jen vysvětlení. */
+function svetlikVyplnTitulek(kde, r) {
+  const zaklad = 'sklo = sklo stěny s dveřmi a její zasklení; materiál opláštění = materiál stěn B, C, D '
+    + '(liší-li se, převažující podle plochy)';
+  const m = r && r.zaskleni && r.zaskleni.vypln && r.zaskleni.vypln.material
+    && r.zaskleni.vypln.material[kde] && r.zaskleni.vypln.material[kde].A;
+  if (!m) return zaklad;
+  const co = (m.druh === 'sklo' || m.druh === 'deska') ? oplTypNazev(m.typ, m.nazev)
+    : ({ plech: 'plech', stavba: 'zajistí stavba (výplň 0 Kč)', bez: 'nic' })[m.druh] || '';
+  return zaklad + (co ? '. Teď: ' + co : '');
+}
+
+/* Počet světlíků na bocích dveří (#375). Prázdno = automaticky počet
+ * nástupišť × 2 (jde se změnou nástupišť); číslo = ruční přepis, který
+ * obrazovka označí a ↺ ho vrátí na výpočet — stejně jako přepis množství
+ * v kalkulaci. Víc než dva na dveře se uloží, jen na to upozorní kontrola. */
+function bokyKsRadek() {
+  if (bokyVypln(Z) === 'bez') return '';
+  const auto = bokyPocetAuto(Z), n = bokyPocet(Z), rucne = bokyPocetRucne(Z);
+  return `<div class="row"><label>Celkem světlíků na bocích dveří${rucne
+      ? ' <span class="pill mut" title="zadáno ručně — výpočet by dal ' + esc(auto) + '">ručně</span>' : ''}</label>
+      <span class="par"><input type="number" step="1" min="0" value="${esc(n)}"
+        title="${esc(rucne ? 'zadáno ručně; výpočet: počet nástupišť × 2 = ' + auto
+          : 'počet nástupišť × 2 — přepište, když jich je jinak')}"
+        onchange="bokyKsSet(this.value)">${rucne
+        ? `<button class="mini noprint" title="${esc('vrátit výpočet: počet nástupišť × 2 = ' + auto)}" onclick="bokyKsZpet()">↺</button>` : ''}</span>
+      <span class="u">ks</span></div>`;
+}
+
+/* Zápisy do boků (#375). Starší zakázka (počet stran) se nejdřív převede na
+ * nový tvar — jinak by nová volba bez uloženého počtu spadla na automatiku
+ * a jedna strana by se potichu zdvojila. Převod mění jen tvar dat, ne cenu.
+ * Funkce jsou v ZAMEK_CHRANENE: převod i zápis projdou jen u varianty, do
+ * které se smí psát (zámek, náhled). */
+function bokyDveriSet(v) {
+  if (NAD_DVERMI_VOLBY.indexOf(v) < 0) return;
+  if (typeof svetlikyBokyMigrace === 'function') svetlikyBokyMigrace(Z);
+  set('Z.bokyDveri', v);
+}
+function bokyKsSet(v) {
+  if (typeof svetlikyBokyMigrace === 'function') svetlikyBokyMigrace(Z);
+  const s = String(v == null ? '' : v).trim().replace(',', '.');
+  /* Prázdné pole = automatika; záporné číslo = 0 (jako u můstků). */
+  set('Z.svetlikyBokyKs', s === '' ? '' : Math.max(0, Math.floor(+s || 0)));
+}
+function bokyKsZpet() {
+  if (typeof svetlikyBokyMigrace === 'function') svetlikyBokyMigrace(Z);
+  set('Z.svetlikyBokyKs', '');
+}
 
 /* Volba nad dveřmi. Staré zaškrtávátko `svetlikNadDvermi` se drží v souladu
  * (sklo i materiál = pole je sklo stěny), aby ho nepoplety starší části
@@ -828,7 +891,11 @@ function oplStenaVarovani(k, opl) {
      * to vysvětlí, aby si obchodník nemyslel, že sklo přes celou stěnu je
      * zdarma. */
     const sDvermi = k === 'A' || (k === 'C' && !!(Z && Z.pruchoziSachta) && (+(Z && Z.nastupisteC) || 0) > 0);
-    if (nadNulou.length && !jenBez && m2 < 0.005)
+    /* Od #375 (30. 9. 2026) se světlíky u dveří do pásů nepočítají — mají
+     * vlastní materiál. Stěna, která nese světlíky, tedy není „bez ceny". */
+    const svetM2 = (Array.isArray(opl.svetliky) ? opl.svetliky : [])
+      .filter(x => x.stena === k).reduce((a, x) => a + (+x.m2 || 0), 0);
+    if (nadNulou.length && !jenBez && m2 < 0.005 && svetM2 < 0.005)
       nulova = 'Z téhle stěny se do ceny nedostane nic: nad úrovní nástupiště vychází 0 m². '
         + (sDvermi
           ? 'Stěna má dveře v každém patře, takže je celá nástupiště: kolem dveří je portál s plechy '
@@ -999,9 +1066,13 @@ function oplNakresStena(k, opl) {
    * za který se nic nepočítá. S číslem je to na první pohled vidět. */
   const stenaM2 = pasy.reduce((a, p) => a + (p.typ === 'bez' ? 0 : (+p.m2 || 0)), 0);
   const cis = v => (typeof formatCislo === 'function') ? formatCislo(v) : String(Math.round(v * 100) / 100);
-  const popisek = `<div class="opl-nakres-pata${stenaM2 > 0 ? '' : ' opl-nakres-nic'}">${
-    stenaM2 > 0 ? esc(cis(stenaM2)) + ' m²'
-      : 'bez plochy k opláštění'}</div>`;
+  /* Světlíky u dveří na téhle stěně (#375) se oceňují zvlášť svým materiálem,
+   * ne pásy — pod obrázkem se připíšou, jinak by čelní stěna ukazovala
+   * „bez plochy", ačkoli se v ní světlíky platí. */
+  const svetM2 = ((opl && opl.svetliky) || []).filter(x => x.stena === k).reduce((a, x) => a + (+x.m2 || 0), 0);
+  const popisek = `<div class="opl-nakres-pata${stenaM2 > 0 || svetM2 > 0 ? '' : ' opl-nakres-nic'}">${
+    stenaM2 > 0 ? esc(cis(stenaM2)) + ' m²' : (svetM2 > 0 ? '' : 'bez plochy k opláštění')}${
+    svetM2 > 0 ? (stenaM2 > 0 ? ' + ' : '') + 'světlíky u dveří ' + esc(cis(svetM2)) + ' m²' : ''}</div>`;
 
   return `<div class="opl-nakres">
       <div class="opl-bar" style="height:${celkemPx.toFixed(1)}px">${kusy}</div>
@@ -1126,7 +1197,11 @@ function oplasteniKarta() {
      * i se čtyřmi stejnými stěnami — viz standard_ock.js. */
     + `<div class="note">Záporná hodnota u „Opláštění začíná" sahá <b>do prohlubně</b>.
       <b>Terče, lišty a plastové kotvy</b> se počítají z rozměrů šachty —
-      typ opláštění s nimi zatím nehýbe.
+      typ opláštění s nimi zatím nehýbe; jen světlík u dveří z desky (materiál opláštění = Cetris
+      nebo jiné) terče ani lišty nemá.
+      <b>Světlíky u dveří</b> se do pásů stěny nepočítají: oceňují se zvlášť podle volby v zadání
+      šachty — sklo = sklo stěny s dveřmi (není-li stěna ze skla, sklo čelní stěny ze standardu),
+      materiál opláštění = převažující materiál stěn B, C, D.
       Režim po stěnách sám o sobě atyp nedělá — <b>standard OCK</b> se posuzuje stejně
       jako u jednotného opláštění (profil sloupku, rozměry, způsob zasklení, počet sloupků, můstek).</div>`,
     'ock-oplasteni-steny');

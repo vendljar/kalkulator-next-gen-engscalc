@@ -92,8 +92,17 @@ for (const fixes of [true, false]) {
 /* 3) Materiál opláštění a zajistí stavba. */
 {
   test('materiál opláštění ve standardu = sklo', spocti({ nadDvermi: 'material' }).souhrn.zakladCena === spocti({ nadDvermi: 'sklo' }).souhrn.zakladCena);
+  /* ZMĚNA 30. 9. 2026 (#375, rozhodnutí J. V.): „zajistí stavba" už neubírá
+   * montáž 0,2 h na nástupiště (volba v předloze není, platí v obou modelech);
+   * výplň zůstává za 0 Kč. „Bez" ubírá dál jako předloha. Podrobně hlídá
+   * test_svetliky_boky.js. */
   const st = spocti({ nadDvermi: 'stavba' }), bez = spocti({ nadDvermi: 'bez' });
-  test('zajistí stavba = 0 Kč (jako bez)', st.souhrn.zakladCena === bez.souhrn.zakladCena);
+  const nastSt = E.nastupisteCelkem(Object.assign(kop(E.DEFAULT_ZADANI), { typSachty: 'interiérová' }));
+  test('zajistí stavba: výplň 0 Kč (opláštění jako „bez", žádný plech)',
+    blizko(st.souctySekci.oplasteni.naklad, bez.souctySekci.oplasteni.naklad) && st.zaskleni.vypln.nadPlechM2 === 0);
+  test('zajistí stavba: montáž bez odečtu 0,2 h, „bez" s odečtem (#375)',
+    st.montaz.hodinyNavic.svetlik === 0 && blizko(bez.montaz.hodinyNavic.svetlik, -0.2 * nastSt, 1e-9),
+    [st.montaz.hodinyNavic.svetlik, bez.montaz.hodinyNavic.svetlik]);
 }
 
 /* 4) Průchozí šachta: plech nad dveřmi na A i C. */

@@ -497,7 +497,7 @@ const PROVERENO_CLENY = {
   },
   'common.js': {
     'opts.l': 'popisek pole inp(): všechna volání předávají literál z kódu; větev s klíčem skládá literál + klicChip(), který escapuje uvnitř',
-    'o[0]': 'hodnota volby výběru inp({type:sel}) — literální seznamy v kódu a konstanta BOKY_VYPLN_POPISY',
+    'o[0]': 'hodnota volby výběru inp({type:sel}) — literální seznamy v kódu (konstanta BOKY_VYPLN_POPISY zanikla s #375, 30. 9. 2026)',
     'o[1]': 'popisek volby výběru — tytéž literální seznamy',
     'tridy[v.stav]': 'CSS třída z pevné mapy `tridy` podle stavu kontroly standardu',
     'v.kontrol': 'počet kontrolovaných pravidel standardu (standardVyhodnot) — číslo',

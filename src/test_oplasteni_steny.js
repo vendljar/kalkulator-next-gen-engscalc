@@ -236,9 +236,20 @@ const prace = (r) => plocha(r, 'PRÁCE OPLÁŠTĚNÍ');
   test('N50: výchozí stěny po stěnách = standard (VSG i SKN)',
     blizko(prip(vych, 'vsgFolie'), prip(std, 'vsgFolie')) && blizko(prip(vych, 'skn'), prip(std, 'skn')),
     [prip(vych, 'vsgFolie'), prip(std, 'vsgFolie'), prip(vych, 'skn'), prip(std, 'skn')]);
-  const bez = spocti(zm, PO_STENACH({ A: pas('bez'), B: pas('bez'), C: pas('bez'), D: pas('bez') }), true);
-  test('N50: všechny stěny „bez" → VSG i SKN nula', prip(bez, 'vsgFolie') === 0 && prip(bez, 'skn') === 0,
-    [prip(bez, 'vsgFolie'), prip(bez, 'skn')]);
+  /* ZMĚNA 30. 9. 2026 (#375, rozhodnutí J. V.): světlík nad dveřmi volby
+   * „sklo" zůstává sklem i tehdy, když je stěna A „bez — dodá stavba" (sklo
+   * čelní stěny ze standardu, VSG 4.4.1). Fólii VSG tedy nese on, stěny samy
+   * nic; SKN (náhrada dvojskla) zůstává nulové. Zadání bez světlíku drží
+   * původní smysl N50: ze stěn „bez" nevznikne VSG ani SKN. */
+  const vsech4bez = PO_STENACH({ A: pas('bez'), B: pas('bez'), C: pas('bez'), D: pas('bez') });
+  const bez = spocti(zm, vsech4bez, true);
+  test('N50 + #375: všechny stěny „bez" → VSG jen ze skleněného světlíku nad dveřmi, SKN nula',
+    blizko(prip(bez, 'vsgFolie'), bez.zaskleni.svetliky.m2) && bez.zaskleni.svetliky.m2 > 0 && prip(bez, 'skn') === 0,
+    [prip(bez, 'vsgFolie'), bez.zaskleni.svetliky.m2, prip(bez, 'skn')]);
+  const bezSvetliku = spocti(Object.assign({ nadDvermi: 'bez' }, zm), vsech4bez, true);
+  test('N50: všechny stěny „bez" a bez světlíků → VSG i SKN nula',
+    prip(bezSvetliku, 'vsgFolie') === 0 && prip(bezSvetliku, 'skn') === 0,
+    [prip(bezSvetliku, 'vsgFolie'), prip(bezSvetliku, 'skn')]);
   const cetris = spocti(zm, PO_STENACH({ A: pas('C.skloCelniKc'), B: pas('C.cetrisKc'), C: pas('C.skloBokyKc'), D: pas('C.skloBokyKc') }), true);
   test('N50: stěna z Cetrisu zmenší SKN i VSG', prip(cetris, 'skn') < prip(std, 'skn') && prip(cetris, 'vsgFolie') < prip(std, 'vsgFolie'),
     [prip(cetris, 'skn'), prip(std, 'skn')]);

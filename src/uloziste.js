@@ -788,7 +788,13 @@ const ULO_VYCTY = {
 };
 /* Pole, která vzor vede jako '' nebo null, ale jsou to čísla. */
 const ULO_CISLA_NAVIC = ['ock.zadani.mustekHloubkaMm', 'ock.zadani.mustekSirkaMm',
-                         'ock.zadani.zamecnikAtypKc'];
+                         'ock.zadani.zamecnikAtypKc', 'ock.zadani.svetlikyBokyKs'];
+/* Volby výplně nad dveřmi a na bocích dveří (N58, #375). Ve vzoru (DEFAULT_ZADANI)
+ * schválně nejsou — chybějící volba znamená starší zakázku, kterou jádro čte
+ * po staru —, proto se hlídají zvlášť, jen když v zadání jsou. Seznam je
+ * NAD_DVERMI_VOLBY z engine.js (shodu hlídá test_svetliky_boky.js). */
+const ULO_VYPLN_DVERI = ['bez', 'sklo', 'plech', 'material', 'stavba'];
+const ULO_VYCTY_MIMO_VZOR = { nadDvermi: ULO_VYPLN_DVERI, bokyDveri: ULO_VYPLN_DVERI };
 function uloCisloSedi(h) {
   return h === null || h === undefined || h === ''
     || (typeof h === 'number' && isFinite(h))
@@ -887,6 +893,11 @@ function uloTypyProblemy(zak, stara) {
       if (vzZad) uloTypyStrom(vzZad, d.ock.zadani, 'ock.zadani', vlastni);
       const z = d.ock.zadani;
       if (z && typeof z === 'object') {
+        Object.keys(ULO_VYCTY_MIMO_VZOR).forEach(k => {
+          const x = z[k];
+          if (x !== undefined && x !== null && x !== '' && ULO_VYCTY_MIMO_VZOR[k].indexOf(x) < 0)
+            vlastni.push({ kde: 'ock.zadani.' + k, duvod: 'typ' });
+        });
         uloTypyOplasteni(z.oplasteni, 'ock.zadani.oplasteni.steny', vlastni);
         uloTypyProfily(z.profily, 'ock.zadani.profily', vlastni);
       }
@@ -1380,7 +1391,7 @@ function uloZalohaHlidka(otisky, ted) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { uloTypyProblemy, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
+  module.exports = { uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
                      uloNorm, uloSlova, uloCisloVyplneno, uloKlicSouboru,
                      uloJmenoSouboru, uloJeZakazkovySoubor,
                      ULO_HLAVICKA_POLE, uloHlavickaChybi, uloHlavickaVyplnena, uloMaCislo, uloUlozeniStav,
