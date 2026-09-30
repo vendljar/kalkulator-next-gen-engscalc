@@ -8,6 +8,18 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v30.9.1 — jen předávka (22. kolo, testování po opravách, 30. 9. 2026)
+
+Kód beze změny. Testovací kolo nad commitem `148e1c4` (v29.9.7, sloučené opravy
+šesti nálezů 21. kola): sady 191/0/1, mutace jádra 76/76, mutace serveru 201/201,
+statické 3/3 — vše zelené; opravy 21. kola drží, 0 regresí. Audit: nové nálezy
+B113–B118 (2 vysoké — třída „koncová cena" #374, 1 střední — oprava B99
+obejitelná, 3 nízké) a trvající odložené (B100, B77-zbytek, B106–B108, B4, B6).
+`PREDAVKA.md` do větve `claude/testovani-po-opravach`. Verze zvednuta jen kvůli
+konvenci verze = den posledního commitu (`build.py --kontrola-verze`).
+
+---
+
 ## v29.9.1 — jen předávka (29. 9. 2026)
 
 Kód beze změny proti v26.9.1. `PREDAVKA.md` podle pravidla J. V. (úpravy se
