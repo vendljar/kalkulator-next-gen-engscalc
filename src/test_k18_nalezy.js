@@ -14,6 +14,10 @@
  *   N95 — úvod („Naše NABÍDKA a doporučení") a termíny nabídky PROJ zůstávaly
  *         v cizím jazyce česky: slovník neznal věty úvodu ani několik řádků
  *         a poznámek TERMÍNŮ (vzor „cca …" z nich dělal „approx. do 4 týdnů…").
+ *   N96 — dodatkový text z ceníku (popis příplatku v kapitole II.) se do cizí
+ *         nabídky nepřeloží: ceník má jedno znění pro všechny jazyky
+ *         (cenik.popisy, klíč = název položky) a ručně psaný text aplikace
+ *         nepřekládá. Kontrola „dodatekCesky" řekne, u které položky.
  *
  * Spuštění: cd src && node test_k18_nalezy.js */
 const fs = require('fs');
@@ -214,6 +218,59 @@ const NB = nacti('./nabidka.js');
     && b.radky[4][0] === 'Zajištění stanovisek dotčených orgánů *)')
     && cz.bloky.some(b => b.typ === 'pozn' && b.radky[0] === '*) Termíny pro vyjádření dotčených orgánů a stavebního úřadu nejsou závazné. Jedná se o termíny, které nemůže zhotovitel z velké části ovlivnit.')
     && /^V rámci zamýšlené VÝSTAVBY VÝTAHU A VÝTAHOVÉ ŠACHTY v počáteční fázi nabízíme ZAMĚŘENÍ/.test(cz.placeholders.UVOD_NABIDKY_PROJ));
+}
+
+/* ======================= N96: dodatkový text z ceníku v cizí nabídce ======================= */
+{
+  const eng = require('./engine.js');
+  const MADLA = 'MADLA NA BOČNÍCH STĚNÁCH (dřevo, lak)', ZADNI = 'MADLA NA ZADNÍ STĚNĚ (dřevo, lak)';
+  const PL_MAT = 'PŘECHODOVÉ PLECHY - NEREZ (MATERIÁL)', PL_MONT = 'PŘECHODOVÉ PLECHY - NEREZ (MONTÁŽ)';
+  const ctxS = (popisy, jazyk, uprav) => {
+    const zadani = JSON.parse(JSON.stringify(eng.DEFAULT_ZADANI));
+    const cenik = Object.assign(ZC.zkusebniCenik(), { popisy });
+    if (uprav) uprav(zadani);
+    return { zadani, cenik, jazyk, vysledek: eng.vypocet(zadani, cenik, JEKLY, true) };
+  };
+  const nalez = ctx => K.kontrolyProved(ctx).nalezy.find(n => n.kod === 'dodatekCesky');
+  const pravidlo = K.kontrolyPravidla().find(p => p.kod === 'dodatekCesky');
+  test('N96: pravidlo dodatekCesky je v katalogu a je to varování', !!pravidlo && !pravidlo.zabranaMozna, pravidlo);
+
+  /* Premisa: dodatkový text jde do cizí nabídky tak, jak je napsaný. */
+  {
+    const z = zk.novaZakazka(); z.cislo = '2026 - OPR - CN - 0496';
+    const v = z.varianty[0];
+    v.data.cenik = Object.assign(ZC.zkusebniCenik(), { kurzEurKc: 25, popisy: { [MADLA]: 'dubové madlo, lakované' } });
+    const p = NB.nabidkaData(z, v, JEKLY, 'en').priplatky.find(x => /HANDRAIL|MADLA/i.test(x.nazev));
+    test('premisa: anglická nabídka tiskne dodatkový text česky (ceník nemá jazykové varianty)', !!p && p.popis === 'dubové madlo, lakované', p);
+  }
+  const n1 = nalez(ctxS({ [MADLA]: 'dubové madlo, lakované' }, 'en'));
+  test('N96: anglická nabídka s českým dodatkovým textem → varování jmenuje položku a jazyk',
+    !!n1 && n1.uroven === K.KONTROLY_UROVEN && n1.text.indexOf('„' + MADLA + '"') >= 0 && /\bEN\b/.test(n1.text), n1 && n1.text);
+  test('N96: věta řekne, proč (ceník má jedno znění, ručně psaný text se nepřekládá) a co s tím',
+    !!n1 && /nepřekládá/.test(n1.text) && /Kalkulac/.test(n1.text) && /administrátor/.test(n1.text), n1 && n1.text);
+  test('N96: česká nabídka nic nehlásí', !nalez(ctxS({ [MADLA]: 'dubové madlo, lakované' }, 'cz')));
+  test('N96: bez jazyka tisku (starší kontext) mlčí', !nalez(ctxS({ [MADLA]: 'dubové madlo, lakované' })));
+  test('N96: text, který slovník zná, se přeloží — nehlásí', !nalez(ctxS({ [MADLA]: 'materiál a montáž' }, 'de')));
+  test('N96: vynechaný příplatek (sloupec Nabídka) se netiskne — nehlásí',
+    !nalez(ctxS({ [MADLA]: 'dubové madlo, lakované' }, 'en', z => { z.priplatkyVynechat = (z.priplatkyVynechat || []).concat('madlaBoky'); })));
+  const n2 = nalez(ctxS({ [MADLA]: 'dubové madlo', [ZADNI]: 'madlo na zadní stěně' }, 'fr'));
+  test('N96: dvě položky → obě jmenované (FR)', !!n2 && n2.text.indexOf(MADLA) >= 0 && n2.text.indexOf(ZADNI) >= 0 && /položek/.test(n2.text) && /\bFR\b/.test(n2.text), n2 && n2.text);
+  /* Přechodové plechy: jsou-li v nabídce obě, sloučí se do „Přechodové plechy
+   * — materiál a montáž" a jejich vlastní text se netiskne (nabidka.js). */
+  const plechyObe = z => { z.volitelne = Object.assign({}, z.volitelne, { prechodove: false, prechMont: false }); };
+  const obe = ctxS({ [PL_MAT]: 'nerezový plech tl. 1,5 mm' }, 'en', plechyObe);
+  test('příprava: obě půlky přechodových plechů jsou mezi příplatky',
+    ['prechMat', 'prechMont'].every(k => obe.vysledek.priplatky.some(p => p.key === k)), obe.vysledek.priplatky.map(p => p.key));
+  test('N96: sloučené přechodové plechy vlastní text netisknou — nehlásí', !nalez(obe));
+  const jedna = ctxS({ [PL_MAT]: 'nerezový plech tl. 1,5 mm' }, 'en',
+    z => { plechyObe(z); z.priplatkyVynechat = (z.priplatkyVynechat || []).concat('prechMont'); });
+  test('N96: zůstane-li jen jedna půlka, text se tiskne — varování', !!nalez(jedna) && nalez(jedna).text.indexOf(PL_MAT) >= 0, nalez(jedna));
+  test('N96: zakázka jen projekce mlčí (dodatkové texty má nabídka OCK)',
+    !nalez(Object.assign(ctxS({ [MADLA]: 'dubové madlo' }, 'en'), { jenProj: true })));
+  const trS = global.trStav;
+  delete global.trStav;
+  test('N96: bez slovníku (preklad.js) se nehádá — mlčí', !nalez(ctxS({ [MADLA]: 'dubové madlo' }, 'en')));
+  global.trStav = trS;
 }
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);

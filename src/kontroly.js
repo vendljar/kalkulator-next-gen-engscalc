@@ -471,6 +471,39 @@ const KONTROLY = [
     },
   },
   {
+    /* DODATKOVÝ TEXT V CIZOJAZYČNÉ NABÍDCE (K18-N96, 30. 9. 2026). Pod
+     * příplatkem v kapitole II. tiskne nabídka dodatkový text z ceníku
+     * (#267, cenik.popisy — klíč = název položky). Ceník ho má v JEDNOM
+     * znění pro všechny jazyky a text napsaný člověkem aplikace nepřekládá
+     * (projde beze změny), takže anglická nabídka nesla českou větu a nikdo
+     * se to nedozvěděl. Jazykové varianty textů ceník nemá (číselník #267
+     * i /api/popisy drží jeden řetězec) — proto varování, ne překlad.
+     * Rozhoduje totéž, co tiskne nabidkaData: příplatek v nabídce (ne
+     * vynechaný) s neprázdným textem; sloučené přechodové plechy (obě půlky
+     * v nabídce) vlastní text netisknou. Text, který slovník zná (nebo který
+     * je neutrální), se přeloží a nehlásí se; bez slovníku se nehádá. */
+    kod: 'dodatekCesky', kde: 'Nabídka', nazev: 'Dodatkový text zůstane v cizojazyčné nabídce česky',
+    zjisti(ctx) {
+      const jaz = String(ctx.jazyk || 'cz').toLowerCase();
+      if (ctx.jenProj || jaz === 'cz' || typeof trStav !== 'function') return null;
+      const r = ctx.vysledek;
+      if (!r || !Array.isArray(r.priplatky)) return null;
+      const vynech = (ctx.zadani && ctx.zadani.priplatkyVynechat) || [];
+      const vNabidce = r.priplatky.filter(p => p && !vynech.includes(p.key));
+      const plechy = ['prechMat', 'prechMont'];
+      const slouceny = plechy.every(k => vNabidce.some(p => p.key === k));
+      const cesky = vNabidce.filter(p => !(slouceny && plechy.includes(p.key)))
+        .filter(p => { const t = String(p.popisNabidka || '').trim(); return t && !trStav(t, jaz).prelozeno; })
+        .map(p => String(p.nazev || p.origNazev || p.key));
+      if (!cesky.length) return null;
+      return { text: 'Nabídka v jazyce ' + jaz.toUpperCase() + ' ponese česky dodatkový text '
+        + (cesky.length === 1 ? 'u položky ' : 'u položek ') + kontrolyVyctem(cesky.map(n => '„' + n + '"'))
+        + ': ceník má dodatkový text v jednom znění pro všechny jazyky a text napsaný ručně aplikace nepřekládá. '
+        + 'Přepište ho u zakázky do jazyka nabídky (Kalkulace OCK, pole pod položkou), nebo ho smažte — '
+        + 'administrátorovi se tím změní i společný text pro všechny nabídky.' };
+    },
+  },
+  {
     /* TERMÍN DODÁNÍ U ATYP (#330, nález TD1, 24. 9. 2026). Nabídka od teď
      * nese termín ze zakázky jako první odrážku kapitoly V.; zbytek
      * kapitoly je text z Firmy. Když v tom textu zůstala standardní lhůta
