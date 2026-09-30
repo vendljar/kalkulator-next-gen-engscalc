@@ -5784,7 +5784,7 @@
      "proc" : "rozhodnutí P10"
     }
    ],
-   "pozn" : "Etapa C (číslo smlouvy) je #366. Prototyp: https://claude.ai/artifact/6sbxbaAsBpphfPfE2wnM3a. Etapa B hotová ve v30.9.2 — výchozí návrhy Q1, Q2, Q4, Q5, Q8, Q10–Q12 čekají na potvrzení J. V.; šablony PROJ v4 (+EN/DE/FR) a SoD PROJ v2 k nahrání do aplikace (vyrábí je nastroje/vyrob_sablony.js). Revize před sloučením (dvě nezávislé): opravy F1–F9 v 843ff63 (snímek plánu u klonu a po odemčení, brána dokumentu podle varianty, sedm menších); celé kolo nad opravami VŠE ZELENÉ (mutace jádra 87 z 87, serveru 207 z 207); převedeno do test-draft."
+   "pozn" : "Etapa C (číslo smlouvy) je #366. Prototyp: https://claude.ai/artifact/6sbxbaAsBpphfPfE2wnM3a. Etapa B hotová ve v30.9.2 — výchozí návrhy Q1, Q2, Q4, Q5, Q8, Q10–Q12 čekají na potvrzení J. V.; šablony PROJ v4 (+EN/DE/FR) a SoD PROJ v2 k nahrání do aplikace (vyrábí je nastroje/vyrob_sablony.js). Revize před sloučením (dvě nezávislé): opravy F1–F9 v 843ff63 (snímek plánu u klonu a po odemčení, brána dokumentu podle varianty, sedm menších); celé kolo nad opravami VŠE ZELENÉ (mutace jádra 87 z 87, serveru 207 z 207); převedeno do test-draft. Rozhodnutí J. V. 30. 9.: Q5 dřívější záloha se přepne na předvolbu automaticky (v30.9.3), Q9 a Q10 potvrzeny, Q1/Q2/Q4/Q11/Q12 bez námitky, body revize a/b zatím OK; Q8 (úprava firemního Standardu převzetím ze zakázky, nebo přímý editor v Nastavení) vysvětleno — čeká na odpověď."
   },
   {
    "id" : "368",
@@ -6514,7 +6514,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v30.9.2 (engscalc)",
+  "build" : "v30.9.3 (engscalc)",
   "stavKDatu" : "30. 9. 2026"
  },
  "_comment" : [

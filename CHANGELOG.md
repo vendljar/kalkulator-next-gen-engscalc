@@ -8,6 +8,35 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v30.9.3 — Q5: dřívější záloha se přepne na předvolbu sama; `main` = v30.9.1 (30. 9. 2026)
+
+Větev `claude/etapa-b-q5-zaloha-automaticky` (z `test-draft` v30.9.2).
+Rozhodnutí J. V. 30. 9. 2026 k otázkám etapy B: **Q5 — „zálohu přepni
+automaticky"**; Q9 a Q10 potvrzeny; Q1, Q2, Q4, Q11 a Q12 bez námitky
+(platí výchozí návrh); body revize a (brána v korunách) a b (server
+nekontroluje tvar plánu ve variantě) „zatím OK"; Q8 vysvětleno, čeká na
+odpověď. Týž den na pokyn J. V. „pošli aktuální test do main": **`main`
+fast-forward na `test`** (fde25ff, v30.9.1 — tag i release existují).
+
+- **Dřívější záloha krycího listu PROJ** (uložená volba „Bez zálohy" /
+  „Záloha 30 / 50 / 70 %") se u rozpracované zakázky, jejíž plán plateb
+  ještě nemá předvolbu, přepne na předvolbu „Záloha X % + zbytek po
+  předání" sama — do té doby ji nabízelo tlačítko. Líně jako ruční splátky
+  (`planZalohaZeStarych` v `planPlatebVarianty`, bez zápisu do dat); první
+  zápis do plánu převod zhmotní. Plán s vlastní předvolbou ani odeslaná
+  nabídka z doby před plánem se nepřepínají; upravené splátky zůstanou.
+  Vlastní znění, které předvolba neumí (třeba 40 %), se jen ohlásí.
+  Tlačítko „Použít jako předvolbu" a `planKlpZalohaZeStare` zrušeny.
+- Příručka: věta u hesla „Plán plateb".
+- Testy (pojistka proti prázdnému testu): nové testy nad kódem bez úpravy
+  selhaly — `test_plan_plateb_kryci` 6 z 65, `overit_plan_plateb` 2 z 47;
+  po úpravě prošly. Mutace jádra +1 „dřívější záloha se nepřepne"
+  (chycená, kotev 88).
+
+**Ověřeno celým kolem** — výsledek doplní další commit.
+
+---
+
 ## v30.9.2 — etapa B platebních podmínek: plán plateb projekce (30. 9. 2026)
 
 Větev `claude/etapa-b-plan-plateb-v30.9.1` (z `test-draft` v30.9.1, pokyn

@@ -1,17 +1,20 @@
-# Předávka — stav k 30. 9. 2026 (v30.9.2 na test-draft, v30.9.1 na test)
+# Předávka — stav k 30. 9. 2026 (v30.9.3 na test-draft, v30.9.1 na test i main)
 
-Na `main`: **v25.9.3** (+ oprava Node), tag `v25.9.3`.
-Na `test`: **v30.9.1** (opravy šesti nálezů 21. kola, release vydaný J. V.
-30. 9.). Na `test-draft`: **v30.9.2** — etapa B platebních podmínek (plán
-plateb projekce, #367) z větve `claude/etapa-b-plan-plateb-v30.9.1`
-(fast-forward na pokyn J. V. 30. 9. 2026 „pokračuj etapou B v nové větvi…
-výstup pošli zatím do test-draft"); do `test` jen na pokyn J. V.
+Na `main` i `test`: **v30.9.1** (opravy šesti nálezů 21. kola; `main`
+fast-forward na `test` na pokyn J. V. 30. 9. 2026 „pošli aktuální test do
+main" — ostrá aplikace se z `main` nasazuje sama; tag i release v30.9.1
+existují). Na `test-draft`: **v30.9.3** — etapa B platebních podmínek
+(plán plateb projekce, #367; v30.9.2 z větve `claude/etapa-b-plan-plateb-v30.9.1`)
+a Q5 (dřívější záloha se přepne na předvolbu sama; větev
+`claude/etapa-b-q5-zaloha-automaticky`) — obojí na pokyn J. V. „výstup pošli
+zatím do test-draft"; do `test` jen na pokyn J. V.
 Releasy **v29.9.3**, **v29.9.4**, **v29.9.7** a **v30.9.1** vydané;
-**v30.9.2** — odkaz na release poslán J. V. (tagy z cloudu pushnout nejde —
-proxy HTTP 403, viz CLAUDE.md).
+**v30.9.2** a **v30.9.3** — odkazy na release poslané J. V. (tagy z cloudu
+pushnout nejde — proxy HTTP 403, viz CLAUDE.md).
 
 **Větve k 30. 9. 2026** (ověřeno `git merge-base --is-ancestor`):
 - **Celé v `test-draft` — J. V. je smaže, až nebudou potřeba:**
+  `claude/etapa-b-q5-zaloha-automaticky` (v30.9.3),
   `claude/etapa-b-plan-plateb-v30.9.1` (v30.9.2), `claude/oprava-sesti-nalezu-v29.9.1`
   (v30.9.1), `k16-nalezy` a `claude/stoic-cerf-j915ax` (z dřívějška).
 - **Nahrazená, ne celá v `test-draft`:** `claude/etapa-b-plan-plateb-proj`
@@ -89,18 +92,23 @@ prototyp https://claude.ai/artifact/6sbxbaAsBpphfPfE2wnM3a.
   (projekce), navázat na papírové smlouvy.
 - **Pořadí etap: B → A → C.** A a C až na pokyn J. V.
 
-## Výchozí návrhy etapy B — čekají na potvrzení J. V.
-Q1 projednání 100 % „po předání vyjádření odboru památkové péče HMP";
-Q2 geodet 100 % „po předání geodetického zaměření"; Q4 celé koruny, poslední
-splátka činnosti dorovná; Q5 dřívější záloha se nepřepíná sama (tlačítko);
-Q8 Standard se v Nastavení mění převzetím z otevřené zakázky; Q9 nové texty
-přes slovník, vlastní text milníku zůstává v EN/DE/FR česky (bez varování);
-Q10 způsob fakturace z předvolby; Q11 řádek smlouvy „Platba ve výši … + DPH
-proběhne …"; Q12 řádky nabídky „Platba {milník} – N % z nabídkové ceny za
-{činnost}". Z revize: brána počítá plán v korunách — nesedící ruční částka
-v Kč zastaví i cizojazyčnou smlouvu (ta ruční částky nebere, eura se
-dopočítají); server nekontroluje tvar `planPlateb` / `zmrazenoPlan` ve
-variantě (jen firemní plán).
+## Otázky etapy B — rozhodnutí J. V. 30. 9. 2026
+- **Q5 změněno:** dřívější záloha se přepne na předvolbu **automaticky**
+  (hotovo ve v30.9.3).
+- **Potvrzeno:** Q9 (nové texty přes slovník, vlastní text milníku zůstává
+  v EN/DE/FR česky, bez varování), Q10 (způsob fakturace z předvolby),
+  body revize a (brána počítá plán v korunách — nesedící ruční částka v Kč
+  zastaví i cizojazyčnou smlouvu) a b (server nekontroluje tvar plánu ve
+  variantě) — „zatím OK".
+- **Bez námitky (platí výchozí návrh):** Q1 projednání 100 % „po předání
+  vyjádření odboru památkové péče HMP", Q2 geodet 100 % „po předání
+  geodetického zaměření", Q4 celé koruny, poslední splátka dorovná, Q11
+  řádek smlouvy „Platba ve výši … + DPH proběhne …", Q12 řádky nabídky
+  „Platba {milník} – N % z nabídkové ceny za {činnost}".
+- **Čeká — Q8** (J. V.: „nerozumím", vysvětleno v sezení): jak administrátor
+  mění firemní „Standard po činnostech" — dnes převzetím splátek upravených
+  v krycím listu otevřené zakázky (tlačítko v Nastavení), alternativa přímý
+  editor v Nastavení. Výchozí návrh: nechat převzetí.
 
 ## Rozhodnutí z oprav v30.9.1 podle výchozího návrhu — čekají na potvrzení J. V.
 - **B111:** zápornou položku, množství ani hodiny nesmí nikdo, ani
@@ -113,12 +121,12 @@ variantě (jen firemní plán).
 - **B99:** vnější odkazy `http(s):` a `mailto:` v šabloně zůstávají povolené.
 
 ## Čeká na J. V.
-- **Release v30.9.2** (odkaz v závěrečné zprávě sezení) a **smazat větve**,
+- **Releasy v30.9.2 a v30.9.3** (odkazy v závěrečné zprávě sezení) a **smazat větve**,
   které jsou celé v `test-draft` (seznam výše;
   https://github.com/vendljar/kalkulator-next-gen-engscalc/branches).
 - **Nahrát šablony** nabídky PROJ v4 (+EN/DE/FR) a SoD PROJ v2 (Nastavení →
   Šablony) — až do verze s etapou B; v30.9.1 nové symboly nezná.
-- Potvrdit výchozí návrhy etapy B (výše) a pokyn k etapám A a C.
+- Odpověď na Q8 (výše) a pokyn k etapám A a C.
 - Rozhodnout nálezy 22. kola (`claude/testovani-po-opravach`), bod 4 B96
   a **#374** (zbývající cesty třídy „koncová cena": hodiny a rezerva
   standardních položek PROJ, cena trvalé položky s kid, zaokrouhlení
@@ -131,7 +139,9 @@ variantě (jen firemní plán).
 - Soubory SoD (#350) — bez nich nejde ověřit symboly smluv (i pro etapu B:
   symbol seznamu plateb v šabloně SoD PROJ). SoD PROJ v2 je vyrobená
   z `Sablona_SOD_PROJEKCE.docx` z Disku.
-- Pokyn k přenosu `test-draft` do `test` a `test` do `main`.
+- Pokyn k přenosu `test-draft` do `test` (a dál do `main`).
+- Po nasazení v30.9.1 na ostrou: spustit detekci zneužití (níž) nad zálohou
+  ostré databáze.
 - **N46** (nástupiště A ↔ C u zrcadlové šachty): neopraveno, fuzz hlásí INFO.
 - Z dřívějška: rozhodnutí z dávky B kola 16 (bez čísla se neukládá; přepočet
   po zveřejnění ceníku není neuložená změna; „ß" = „ss") a překlady z dávky C;
@@ -187,7 +197,7 @@ Zbytek B77, B100–B110, zbytek B32, B4 souběh, B6, N59–N61 (větev
   nejvyšší id v cílové větvi.
 
 ## Další krok
-Čeká se na J. V. (výše): release v30.9.2, šablony, potvrzení výchozích
-návrhů etapy B, rozhodnutí o nálezech 22. kola, pokyn k etapě A (OCK
-platební kalendář) a C (číslo smlouvy, #366) a ke sloučení `test-draft`
-do `test`. Nová práce vždy v paralelní větvi (`claude/…`) z `test-draft`.
+Čeká se na J. V. (výše): releasy v30.9.2 a v30.9.3, šablony, odpověď na Q8,
+rozhodnutí o nálezech 22. kola, pokyn k etapě A (OCK platební kalendář)
+a C (číslo smlouvy, #366) a ke sloučení `test-draft` do `test`. Nová práce
+vždy v paralelní větvi (`claude/…`) z `test-draft`.
