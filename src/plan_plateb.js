@@ -76,12 +76,35 @@ const PLAN_PROJ_VYCHOZI = {
   predani: { zamereni: 'za_vystupy', studie: 'sp_predani', projednani: 'sp_pamatky', dpz: 'dpz_su',
              ic: 'ic_povoleni', dps: 'dps_predani', ezc: 'ezc_predani', kolaudace: 'kol_po', geodet: 'geo_predani' },
 };
+/* Názvy činností pro člověka: zkratka do vět kontrol a „složení" plateb,
+ * celý název do editoru plánu. */
+const PLAN_PROJ_ZKRATKY = { zamereni: 'ZA', studie: 'SP', projednani: 'projednání', dpz: 'DPZ', ic: 'IČ',
+  dps: 'DPS', ezc: 'EZC', kolaudace: 'kolaudace', geodet: 'geodet' };
+const PLAN_PROJ_NAZVY = { zamereni: 'Zaměření', studie: 'Studie proveditelnosti', projednani: 'Projednání studie',
+  dpz: 'Dokumentace pro povolení záměru (DPZ)', ic: 'Inženýrská činnost (IČ)',
+  dps: 'Dokumentace pro provedení stavby (DPS)', ezc: 'Ekonomická zadávací část (EZC)',
+  kolaudace: 'Zajištění kolaudačního řízení', geodet: 'Geodetické zaměření' };
+const PLAN_PROJ_PREDVOLBY_NAZVY = { std: 'Standard po činnostech', zaloha: 'Záloha + zbytek po předání',
+  sto: '100 % po dokončení stupně', vlastni: 'Vlastní' };
 /* Pořadí ručních splátek starší šablony SoD PROJ (sodpPlatba1–8, krycí list). */
 const PLAN_SODP_STARE = ['podpis', 'za_vystupy', 'dpz_doss', 'dpz_su', 'ic_povoleni', 'dps_predani', 'ezc_predani', 'vyber'];
 
 function planFiremni(f) {
   const ok = f && typeof f === 'object' && Array.isArray(f.milniky) && f.standard && f.predani;
   return ok ? f : PLAN_PROJ_VYCHOZI;
+}
+/* Firemní plán, jak platí pro zakázky: z firemních údajů (Nastavení →
+ * Firma, zveřejněné na serveru), a jen když má platný tvar — rozepsaný
+ * nebo poškozený plán nesmí rozbít nabídku ani smlouvu, platí pak výchozí
+ * z kódu (administrátor vady vidí v Nastavení). */
+function planFirmaPlan(firma) {
+  const p = firma && typeof firma === 'object' ? firma.planPlatebProj : null;
+  return planFiremni(p && !planPlatebFirmaVady(p).length ? p : null);
+}
+/* 50 → „50 %", 12.5 → „12,5 %" (texty plánu, česky). */
+function planPct(p) {
+  const n = +p;
+  return (isFinite(n) ? String(Math.round(n * 100) / 100).replace('.', ',') : '?') + ' %';
 }
 function planPredvolba(plan, firemni) {
   const f = planFiremni(firemni);
@@ -204,7 +227,77 @@ function planPlatebZeStarych(hodnoty) {
   return { prepis, necitelne };
 }
 
+/* ---------- firemní plán (Nastavení → Firma, krok 2 etapy B) ----------
+ * Administrátor smí upravit katalog milníků, výchozí předvolbu, zálohu,
+ * Standard po činnostech a milník „po předání". Zveřejňuje se s firemními
+ * údaji (firma.js → /api/firma) a čte ho každá nabídka a smlouva — proto
+ * stejná kontrola tvaru v prohlížeči i na serveru a čistá kopie jen se
+ * známými klíči (vzor B68: objekt místo textu nebo megabajt v jednom poli
+ * by zpomalil každé přihlášení). Chybějící plán (undefined) je v pořádku:
+ * platí výchozí z kódu. */
+const PLAN_FIRMA_MAX_MILNIKU = 40, PLAN_FIRMA_MAX_TEXT = 300, PLAN_FIRMA_MAX_RADKU = 10;
+const PLAN_ID_TVAR = /^[a-z0-9_]{1,30}$/;
+function planPlatebFirmaVady(f) {
+  if (f === undefined || f === null) return [];
+  if (typeof f !== 'object' || Array.isArray(f)) return ['plán plateb projekce není objekt'];
+  const v = [];
+  if (f.v !== undefined && f.v !== 1) v.push('neznámá verze tvaru plánu (' + String(f.v).slice(0, 10) + ')');
+  if (PLAN_PROJ_PREDVOLBY.indexOf(f.vychozi) < 0) v.push('výchozí předvolba musí být jedna ze čtyř (Standard, Záloha, 100 %, Vlastní)');
+  if (PLAN_PROJ_ZALOHY.indexOf(f.zalohaPct) < 0) v.push('záloha musí být 0, 30, 50 nebo 70 %');
+  const ids = new Set();
+  if (!Array.isArray(f.milniky) || !f.milniky.length) v.push('katalog milníků je prázdný');
+  else {
+    if (f.milniky.length > PLAN_FIRMA_MAX_MILNIKU) v.push('katalog má víc než ' + PLAN_FIRMA_MAX_MILNIKU + ' milníků');
+    f.milniky.forEach((m, i) => {
+      const id = m && m.id, cz = m && m.cz;
+      if (typeof id !== 'string' || !PLAN_ID_TVAR.test(id) || id === 'vlastni')
+        v.push('milník ' + (i + 1) + ' nemá platný klíč (malá písmena, číslice a podtržítko, ne „vlastni")');
+      else if (ids.has(id)) v.push('klíč milníku „' + id + '" je v katalogu dvakrát');
+      else ids.add(id);
+      if (typeof cz !== 'string' || !cz.trim()) v.push('milník ' + (i + 1) + ' nemá text');
+      else if (cz.length > PLAN_FIRMA_MAX_TEXT) v.push('text milníku ' + (i + 1) + ' je delší než ' + PLAN_FIRMA_MAX_TEXT + ' znaků');
+    });
+    if (!ids.has('podpis')) v.push('katalog musí mít milník „podpis" (po podpisu smlouvy) — stojí na něm předvolba Záloha');
+  }
+  const cinnost = (k) => PLAN_PROJ_ZKRATKY[k] || k;
+  if (!f.standard || typeof f.standard !== 'object' || Array.isArray(f.standard)) v.push('Standard po činnostech chybí');
+  else Object.keys(f.standard).forEach(k => {
+    if (PLAN_PROJ_SEKCE.indexOf(k) < 0) { v.push('Standard obsahuje neznámou činnost „' + String(k).slice(0, 30) + '"'); return; }
+    const r = f.standard[k];
+    if (!Array.isArray(r) || !r.length) { v.push('Standard ' + cinnost(k) + ' nemá žádnou splátku'); return; }
+    if (r.length > PLAN_FIRMA_MAX_RADKU) v.push('Standard ' + cinnost(k) + ' má víc než ' + PLAN_FIRMA_MAX_RADKU + ' splátek');
+    let soucet = 0;
+    r.forEach((x, i) => {
+      const p = x && x.p;
+      if (typeof p !== 'number' || !isFinite(p) || !(p > 0) || p > 100)
+        v.push('Standard ' + cinnost(k) + ', splátka ' + (i + 1) + ': procento musí být kladné číslo do 100');
+      else soucet += p;
+      if (!x || !ids.has(x.m)) v.push('Standard ' + cinnost(k) + ', splátka ' + (i + 1) + ': milník není v katalogu');
+    });
+    if (Math.round(soucet * 100) !== 10000) v.push('Standard ' + cinnost(k) + ' nedává 100 % (součet ' + planHal(soucet) + ' %)');
+  });
+  if (!f.predani || typeof f.predani !== 'object' || Array.isArray(f.predani)) v.push('milníky „po předání" chybí');
+  else Object.keys(f.predani).forEach(k => {
+    if (PLAN_PROJ_SEKCE.indexOf(k) < 0) v.push('„po předání" obsahuje neznámou činnost „' + String(k).slice(0, 30) + '"');
+    else if (!ids.has(f.predani[k])) v.push('„po předání" u ' + cinnost(k) + ': milník není v katalogu');
+  });
+  return v;
+}
+/* Čistá hluboká kopie jen se známými klíči (pro zápis na server a srovnání
+ * se zveřejněnou verzí). Předpokládá platný tvar — volá se po kontrole. */
+function planPlatebFirmaCisty(f) {
+  const radky = (r) => (Array.isArray(r) ? r : []).map(x => ({ p: +x.p, m: String(x.m) }));
+  const out = { v: 1, vychozi: f.vychozi, zalohaPct: f.zalohaPct,
+    milniky: f.milniky.map(m => ({ id: String(m.id), cz: String(m.cz) })), standard: {}, predani: {} };
+  PLAN_PROJ_SEKCE.forEach(k => {
+    if (f.standard && f.standard[k]) out.standard[k] = radky(f.standard[k]);
+    if (f.predani && f.predani[k]) out.predani[k] = String(f.predani[k]);
+  });
+  return out;
+}
+
 if (typeof module !== 'undefined')
   module.exports = { PLAN_PROJ_SEKCE, PLAN_PROJ_PREDVOLBY, PLAN_PROJ_ZALOHY, PLAN_PROJ_MILNIKY, PLAN_PROJ_VYCHOZI,
-    PLAN_SODP_STARE, planFiremni, planPredvolba, planMilnikText, planRadkyCinnosti, planPlatebDopocet,
-    planPlatebKontrola, planCastkaZTextu, planPlatebZeStarych };
+    PLAN_PROJ_ZKRATKY, PLAN_PROJ_NAZVY, PLAN_PROJ_PREDVOLBY_NAZVY,
+    PLAN_SODP_STARE, planFiremni, planFirmaPlan, planPct, planPredvolba, planMilnikText, planRadkyCinnosti, planPlatebDopocet,
+    planPlatebKontrola, planCastkaZTextu, planPlatebZeStarych, planPlatebFirmaVady, planPlatebFirmaCisty };

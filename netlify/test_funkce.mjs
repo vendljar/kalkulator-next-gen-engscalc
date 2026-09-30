@@ -199,6 +199,24 @@ test('obchodník si firmu přečte', fCteni.ok && fCteni.firma.udaje.nazev === S
 test('zveřejněná firma nese, kdo a kdy',
   fCteni.firma.kdo === ADMIN_EMAIL && /^\d{4}-\d{2}-\d{2}T/.test(fCteni.firma.kdy));
 test('zveřejněná firma nenese značku ukázkových dat', fCteni.firma.udaje.ukazkove === undefined);
+/* Etapa B platebních podmínek (30. 9. 2026): firemní plán plateb projekce
+ * jde se zveřejněním na server a zpět k obchodníkovi; vadný tvar server
+ * odmítne toutéž kontrolou jako prohlížeč (plan_plateb.js). Do té doby
+ * kopie pro server nesla jen textová pole a logo. */
+{
+  const PPm = require('../src/plan_plateb.js');
+  const plan = JSON.parse(JSON.stringify(PPm.PLAN_PROJ_VYCHOZI)); plan.vychozi = 'zaloha'; plan.zalohaPct = 70;
+  const sPlanem = Object.assign(JSON.parse(JSON.stringify(SKUT)), { planPlatebProj: plan });
+  const rP = await (await post(firma, 'http://x/api/firma', { udaje: sPlanem }, cookie)).json();
+  const cP = await (await get(firma, 'http://x/api/firma', cookieObch)).json();
+  const pP = (cP.firma && cP.firma.udaje && cP.firma.udaje.planPlatebProj) || {};
+  test('plán plateb projekce se zveřejní a obchodník ho přečte', rP.ok === true && pP.vychozi === 'zaloha' && pP.zalohaPct === 70
+    && Array.isArray(pP.milniky) && pP.milniky.length === plan.milniky.length, pP);
+  const vadny = Object.assign(JSON.parse(JSON.stringify(SKUT)), { planPlatebProj: Object.assign({}, plan, { standard: { dpz: [{ p: 90, m: 'podpis' }] } }) });
+  const rV = await post(firma, 'http://x/api/firma', { udaje: vadny }, cookie);
+  test('vadný plán plateb projekce server odmítne (400) a řekne proč', rV.status === 400 && /plán plateb/i.test((await rV.json()).chyba || ''));
+  await post(firma, 'http://x/api/firma', { udaje: SKUT }, cookie);
+}
 
 /* 5) zakázky: uložení, rejstřík, načtení, ochrana zámku */
 Object.assign(globalThis, require('../src/format.js'), require('../src/engine.js'), require('../src/engine_proj.js'), require('../src/techspec.js'), require('../src/sleva.js'), require('../src/zaokrouhleni.js'), require('../src/zamek.js'));

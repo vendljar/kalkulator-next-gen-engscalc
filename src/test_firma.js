@@ -260,5 +260,29 @@ test('shoda: jiná firma se pozná', (() => {
     !!kratke && fm.firmaLzeZverejnit(Object.assign({}, Fskut, { [kratke.id]: 'y'.repeat(2001) })).ok === false, kratke && kratke.id);
 }
 
+/* Plán plateb projekce (etapa B platebních podmínek, krok 2, 30. 9. 2026).
+ * Firemní výchozí plán (katalog milníků, předvolby) se zveřejňuje spolu
+ * s firemními údaji — do té doby kopie pro server nesla jen textová pole
+ * formuláře a logo, takže by se obchodníkovi nikdy nedostal. */
+{
+  const PP = require('./plan_plateb.js');
+  const plan = JSON.parse(JSON.stringify(PP.PLAN_PROJ_VYCHOZI)); plan.vychozi = 'zaloha'; plan.zalohaPct = 30;
+  const sPlanem = Object.assign({}, Fskut, { planPlatebProj: plan });
+  test('plán plateb: platný firemní plán zveřejnění nezastaví', fm.firmaLzeZverejnit(sPlanem).ok === true, fm.firmaLzeZverejnit(sPlanem).duvod);
+  const kz = fm.firmaKZverejneni(sPlanem);
+  test('plán plateb: kopie pro server ho nese', !!kz.planPlatebProj && kz.planPlatebProj.vychozi === 'zaloha'
+    && kz.planPlatebProj.zalohaPct === 30 && kz.planPlatebProj.milniky.length === plan.milniky.length, kz.planPlatebProj);
+  test('plán plateb: kopie je čistá (cizí klíč neputuje)',
+    (fm.firmaKZverejneni(Object.assign({}, Fskut, { planPlatebProj: Object.assign({}, plan, { cizi: '<x>' }) })).planPlatebProj || { cizi: 'plán chybí' }).cizi === undefined);
+  test('plán plateb: bez plánu kopie klíč nemá (platí výchozí z kódu)', fm.firmaKZverejneni(Fskut).planPlatebProj === undefined);
+  const vadny = Object.assign({}, Fskut, { planPlatebProj: Object.assign({}, plan, { vychozi: 'xyz' }) });
+  test('plán plateb: vadný tvar se nezveřejní a řekne proč', fm.firmaLzeZverejnit(vadny).ok === false
+    && /plán plateb/i.test(fm.firmaLzeZverejnit(vadny).duvod), fm.firmaLzeZverejnit(vadny).duvod);
+  test('plán plateb: vadný tvar kopie pro server nenese', fm.firmaKZverejneni(vadny).planPlatebProj === undefined);
+  const sh = fm.firmaShodaSOnline(sPlanem, fm.firmaKZverejneni(Fskut));
+  test('plán plateb: změna plánu je rozdíl proti zveřejněné kopii', sh.shodne === false && sh.rozdily.some(r => /Plán plateb/.test(r)), sh);
+  test('plán plateb: stejný plán rozdíl není', fm.firmaShodaSOnline(sPlanem, kz).shodne === true, fm.firmaShodaSOnline(sPlanem, kz));
+}
+
 console.log(fail ? `\n${fail} CHYB` : '\nVŠECHNY TESTY FIRMA OK');
 process.exit(fail ? 1 : 0);

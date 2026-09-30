@@ -110,5 +110,59 @@ for (let i = 1; i <= 300; i++) {
 }
 test('fuzz 300 zakázek: součet plateb = cena díla na haléř, nic záporného ani NaN', spatne === 0, spatne);
 
+/* 9) Firemní plán plateb (Nastavení → Firma, krok 2 etapy B, 30. 9. 2026).
+ * Administrátor smí upravit katalog milníků, výchozí předvolbu, zálohu,
+ * Standard po činnostech a milník „po předání"; zveřejňuje se se
+ * firemními údaji a server ho kontroluje TOUTÉŽ funkcí jako prohlížeč.
+ * Před krokem 2 validátor ani čistá kopie neexistovaly. */
+const FV = PP.planPlatebFirmaVady, FC = PP.planPlatebFirmaCisty;
+test('9: validátor a čistá kopie firemního plánu existují', typeof FV === 'function' && typeof FC === 'function');
+if (typeof FV === 'function' && typeof FC === 'function') {
+  const kopie = () => JSON.parse(JSON.stringify(F));
+  const s = (fn) => { const k = kopie(); fn(k); return k; };
+  test('9: výchozí plán z kódu je platný', FV(F).length === 0, FV(F));
+  test('9: chybějící plán nevadí — platí výchozí z kódu', FV(undefined).length === 0 && FV(null).length === 0);
+  const vadne = [
+    ['není objekt', 'text'],
+    ['pole místo objektu', []],
+    ['neznámá výchozí předvolba', s(k => { k.vychozi = 'xyz'; })],
+    ['záloha mimo výčet 0/30/50/70', s(k => { k.zalohaPct = 45; })],
+    ['id milníku s mezerou', s(k => { k.milniky.push({ id: 'po predani', cz: 'po předání' }); })],
+    ['zdvojené id milníku', s(k => { k.milniky.push({ id: 'podpis', cz: 'jinak' }); })],
+    ['milník bez textu', s(k => { k.milniky.push({ id: 'prazdny', cz: '  ' }); })],
+    ['text milníku přes 300 znaků', s(k => { k.milniky.push({ id: 'dlouhy', cz: 'x'.repeat(301) }); })],
+    ['víc než 40 milníků', s(k => { for (let i = 0; i < 30; i++) k.milniky.push({ id: 'm' + i, cz: 'milník ' + i }); })],
+    ['katalog bez „po podpisu" (předvolba Záloha ho potřebuje)', s(k => {
+      k.milniky = k.milniky.filter(m => m.id !== 'podpis');
+      Object.keys(k.standard).forEach(c => { k.standard[c] = [{ p: 100, m: k.predani[c] }]; }); })],
+    ['id „vlastni" v katalogu', s(k => { k.milniky.push({ id: 'vlastni', cz: 'vlastní' }); })],
+    ['Standard DPZ dává 90 %', s(k => { k.standard.dpz[2].p = 10; })],
+    ['Standard s neznámým milníkem', s(k => { k.standard.ic[1].m = 'neexistuje'; })],
+    ['Standard se záporným procentem', s(k => { k.standard.dps = [{ p: 150, m: 'podpis' }, { p: -50, m: 'dps_predani' }]; })],
+    ['Standard bez řádků', s(k => { k.standard.ezc = []; })],
+    ['Standard neznámé činnosti', s(k => { k.standard.dozor = [{ p: 100, m: 'podpis' }]; })],
+    ['Standard s víc než 10 splátkami', s(k => { k.standard.geodet = Array.from({ length: 11 }, (_, i) => ({ p: i < 10 ? 9 : 10, m: 'podpis' })); })],
+    ['„po předání" s neznámým milníkem', s(k => { k.predani.dps = 'nic'; })],
+    ['„po předání" neznámé činnosti', s(k => { k.predani.dozor = 'podpis'; })],
+    ['verze tvaru jiná než 1', s(k => { k.v = 2; })],
+  ];
+  vadne.forEach(([n, f]) => test('9: vadný firemní plán se pozná — ' + n, FV(f).length > 0, FV(f)));
+  test('9: vada se vypíše lidsky (věta, ne kód)', FV(s(k => { k.standard.dpz[2].p = 10; })).some(v => /DPZ|dpz/.test(v) && /100/.test(v)),
+    FV(s(k => { k.standard.dpz[2].p = 10; })));
+  const upr = s(k => { k.vychozi = 'zaloha'; k.zalohaPct = 30; k.milniky.push({ id: 'predani_klic', cz: 'po předání klíčů' });
+    k.standard.geodet = [{ p: 50, m: 'podpis' }, { p: 50, m: 'predani_klic' }]; });
+  test('9: upravený, ale správný plán projde', FV(upr).length === 0, FV(upr));
+  const cis = FC(Object.assign(s(k => { k.milniky[0].navic = '<b>'; k.standard.zamereni[0].navic = 1; }), { cizi: 1 }));
+  test('9: čistá kopie nese jen známé klíče',
+    cis.cizi === undefined && cis.milniky.every(m => Object.keys(m).sort().join() === 'cz,id')
+    && cis.standard.zamereni.every(r => Object.keys(r).sort().join() === 'm,p'), cis);
+  const orig = kopie(), c2 = FC(orig); c2.milniky[0].cz = 'změněno'; c2.standard.dpz[0].p = 1;
+  test('9: čistá kopie je hluboká (změna kopie nesáhne na originál)', orig.milniky[0].cz !== 'změněno' && orig.standard.dpz[0].p === 50);
+  test('9: upravený firemní plán řídí předvolby (Záloha 30 % z firmy, geodet z firemního Standardu)',
+    pct(PP.planRadkyCinnosti('dpz', { predvolba: 'zaloha' }, upr)) === '30/70'
+    && PP.planRadkyCinnosti('geodet', { predvolba: 'std' }, upr)[1].t === 'po předání klíčů' && PP.planPredvolba(null, upr) === 'zaloha'
+    && pct(PP.planRadkyCinnosti('geodet', null, upr)) === '30/70');
+}
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

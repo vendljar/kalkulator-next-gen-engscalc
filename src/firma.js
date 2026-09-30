@@ -486,7 +486,25 @@ function firmaLzeZverejnit(f) {
     return { ok: false, duvod: 'Pole ' + spatne.map(p => '„' + p.label + '“').join(', ')
       + ' nemá platný tvar nebo je příliš dlouhé (nejvýš ' + FIRMA_POLE_MAX + ' znaků, u textů kapitol '
       + FIRMA_TEXT_MAX + ').' };
+  /* PLÁN PLATEB PROJEKCE (etapa B, 30. 9. 2026) — není textové pole
+   * formuláře, ale strukturovaný výchozí plán; tvar hlídá plan_plateb.js
+   * (táž funkce na serveru). Chybějící plán nevadí — platí výchozí z kódu. */
+  const vadyPlanu = firmaPlanVady(f.planPlatebProj);
+  if (vadyPlanu.length)
+    return { ok: false, duvod: 'Plán plateb projekce (Nastavení → Smlouvy / Šablony) nemá platný tvar: '
+      + vadyPlanu.slice(0, 5).join('; ') + (vadyPlanu.length > 5 ? ' …' : '') + '.' };
   return { ok: true, duvod: '' };
+}
+/* plan_plateb.js je v prohlížeči globální (CORE), v Node se načte vedle —
+ * vzor kontroly.js (uloZaporneVZadani). */
+function firmaPlanModul() {
+  if (typeof planPlatebFirmaVady === 'function')
+    return { planPlatebFirmaVady, planPlatebFirmaCisty };
+  return (typeof require === 'function') ? require('./plan_plateb.js') : null;
+}
+function firmaPlanVady(plan) {
+  const m = firmaPlanModul();
+  return m ? m.planPlatebFirmaVady(plan) : [];
 }
 const FIRMA_POLE_MAX = 2000, FIRMA_TEXT_MAX = 20000;
 
@@ -504,6 +522,11 @@ function firmaKZverejneni(f) {
    * nabídky. Cokoli jiného se tiše zahodí (logo je volitelné). */
   if (f && f.logo && /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(String(f.logo)))
     { out.logo = f.logo; out.logoNazev = f.logoNazev || ''; }
+  /* Plán plateb projekce jen platný a jen čistá kopie (známé klíče). */
+  if (f && f.planPlatebProj && !firmaPlanVady(f.planPlatebProj).length) {
+    const m = firmaPlanModul();
+    if (m) out.planPlatebProj = m.planPlatebFirmaCisty(f.planPlatebProj);
+  }
   return out;
 }
 
@@ -547,6 +570,8 @@ function firmaShodaSOnline(mistni, online) {
   /* Logo není v FIRMA_POLE (není to textové pole formuláře), ale do dokumentů
    * jde a zveřejňuje se s sebou – vyměněné logo je změna jako každá jiná. */
   if (String((a.logo || '')).trim() !== String((b.logo || '')).trim()) rozdily.push('Logo');
+  if (JSON.stringify(a.planPlatebProj || null) !== JSON.stringify(b.planPlatebProj || null))
+    rozdily.push('Plán plateb projekce');
   return { maOnline: true, shodne: rozdily.length === 0, rozdily };
 }
 

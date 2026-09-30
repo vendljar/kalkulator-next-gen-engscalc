@@ -868,6 +868,8 @@ function nastSmluvniStandardy() {
       <b>záložní věta napsaná v kódu</b> — je vidět jako šedá nápověda v poli.</div>
     ${pole.map(radek).join('')}
 
+    ${typeof nastPlanPlatebProj === 'function' ? nastPlanPlatebProj() : ''}
+
     ${nastKapitolyNabidky()}
 
     <div class="sec-title">Logo firmy</div>
