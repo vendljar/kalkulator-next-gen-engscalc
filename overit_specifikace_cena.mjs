@@ -120,6 +120,35 @@ zkus('u interiérové šachty je vnější lešení mezi příplatky', int.pripl
 zkus('ne v základní ceně', !int.vZaklade, int);
 zkus('a obchodník ho v kalkulaci vidí', int.naObrazovce, int);
 
+/* ---------- 6) ZAMĚŘENÍ 3D SKENEREM se řídí cenou (rozhodnutí J. V. 30. 9. 2026) ----------
+ * Položka ZAMĚŘENÍ 3D SKENEREM v Režii Kalkulace OCK měla množství 0,
+ * specifikace přitom dál tvrdila „ano". Teď je pole odvozené jako statika:
+ * jen ke čtení, s vysvětlením, a ruční hodnota ze starší zakázky neplatí. */
+await p.evaluate(() => { delete TS.hodnoty.sken3d; prepniTab('kalk'); mnozstviSet('ZAMĚŘENÍ 3D SKENEREM', ''); render(); });
+const k1 = await radekSpec('ZAMĚŘENÍ PROSTORŮ 3D SKENEREM');
+zkus('3D sken v ceně: řádek je jen ke čtení a ukazuje „ano"',
+  k1 && k1.maVstup === false && k1.hodnota === 'ano', k1);
+zkus('a říká, kde se zaměření vypíná (Režie, množstvím 0), se štítkem „z kalkulace"',
+  k1 && /Řídí se cenou/.test(k1.text) && /Režie/.test(k1.text) && /z kalkulace/.test(k1.text), k1 && k1.text);
+await p.evaluate(() => { prepniTab('kalk'); mnozstviSet('ZAMĚŘENÍ 3D SKENEREM', 0); render(); });
+const k2 = await radekSpec('ZAMĚŘENÍ PROSTORŮ 3D SKENEREM');
+zkus('po vypnutí 3D skenu množstvím 0 ukazuje specifikace „ne"', k2 && k2.hodnota === 'ne', k2);
+await p.evaluate(() => { TS.hodnoty.sken3d = 'ano'; render(); });
+const k3 = await radekSpec('ZAMĚŘENÍ PROSTORŮ 3D SKENEREM');
+zkus('ruční „ano" bez skenu v ceně se ukáže jako neplatné',
+  k3 && k3.hodnota === 'ne' && /Ruční hodnota „ano“ se nepoužije/.test(k3.text), k3 && k3.text);
+const k4 = await p.evaluate(() => {
+  const d = nabidkaData(ZAK, aktivniVarianta(ZAK), JEKLY, 'cz');
+  const c = kryciCtx(ZAK, aktivniVarianta(ZAK), JEKLY);
+  return { nabidka: d.placeholders.TS_SKEN3D, kryci: c.sken3d, vDatech: TS.hodnoty.sken3d };
+});
+zkus('do nabídky jde „ne" a krycí list (Zaměření strojovna) říká „Ne"',
+  k4.nabidka === 'ne' && k4.kryci === 'Ne', k4);
+zkus('ruční hodnota v datech zůstala (nic se nemaže)', k4.vDatech === 'ano', k4);
+await p.evaluate(() => { delete TS.hodnoty.sken3d; prepniTab('kalk'); mnozstviSet('ZAMĚŘENÍ 3D SKENEREM', ''); render(); });
+const k5 = await radekSpec('ZAMĚŘENÍ PROSTORŮ 3D SKENEREM');
+zkus('po vrácení množství je zpátky „ano"', k5 && k5.hodnota === 'ano', k5);
+
 zkus('za celý průchod nevznikla chyba v konzoli', konzole.length === 0, konzole);
 await b.close();
 console.log(`\n${ok} OK, ${fail} FAIL`);

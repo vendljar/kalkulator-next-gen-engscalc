@@ -152,12 +152,60 @@ REZIMY.forEach(([rezim, jm]) => {
   });
 });
 
-/* Pojistka proti prázdnému testu: odvozená pole jsou opravdu dvě
+/* ---------- ZAMĚŘENÍ 3D SKENEREM (rozhodnutí J. V. 30. 9. 2026) ----------
+ *
+ * „Svázání zaměření v kalkulaci a odpovídající položky": v Režii Kalkulace
+ * OCK měla položka ZAMĚŘENÍ 3D SKENEREM množství 0 (štítek „vypnuto
+ * (množství 0)"), specifikace přitom v sekci PROJEKČNÍ A PŘÍPRAVNÉ PRÁCE
+ * dál tvrdila „ano". Od N48 (24. 9.) se pole jen PŘEDVYPLŇOVALO, takže ruční
+ * volba — i ta z doby, kdy zaměření v ceně ještě bylo — cenu přebila.
+ * Teď je ODVOZENÉ stejně jako statika: řídí se cenou, ruční hodnota se
+ * nepoužije (v datech zůstává) a obrazovka řekne, kde se zaměření vypíná. */
+REZIMY.forEach(([rezim, jm]) => {
+  const sfx = ' [' + jm + ']';
+  const sken0 = z => { z.mnozstviPrepis = { 'ZAMĚŘENÍ 3D SKENEREM': 0 }; };
+  const vych = hodnota('sken3d', zadani(), null, rezim);
+  test('3D sken v ceně → „ano", odvozené z kalkulace' + sfx,
+    vych.text === 'ano' && vych.odvozeno === true && vych.zdroj === 'z kalkulace', vych);
+  const nula = hodnota('sken3d', zadani(sken0), null, rezim);
+  test('3D sken vypnutý množstvím 0 → „ne", odvozené z kalkulace' + sfx,
+    nula.text === 'ne' && nula.odvozeno === true, nula);
+  const vyr = hodnota('sken3d', zadani(z => { z.nepocitat = ['ZAMĚŘENÍ 3D SKENEREM']; }), null, rezim);
+  test('3D sken vyřazený z počítání → „ne"' + sfx, vyr.text === 'ne' && vyr.odvozeno === true, vyr);
+  /* RUČNÍ HODNOTA CENU NEPŘEBIJE — to je celý smysl změny. */
+  const rucneAno = hodnota('sken3d', zadani(sken0), { sken3d: 'ano' }, rezim);
+  test('ruční „ano" bez skenu v ceně se nepoužije → „ne"' + sfx, rucneAno.text === 'ne', rucneAno);
+  const rucneNe = hodnota('sken3d', zadani(), { sken3d: 'ne' }, rezim);
+  test('ruční „ne" se skenem v ceně se nepoužije → „ano"' + sfx, rucneNe.text === 'ano', rucneNe);
+});
+{
+  /* Řádek se hledá podle ceníkové cesty — přejmenování ho neschová. */
+  const z = zadani(zz => { zz.nazvyPrepis = { 'ZAMĚŘENÍ 3D SKENEREM': 'Laserové zaměření' }; });
+  test('přejmenovaný 3D sken se pořád pozná', hodnota('sken3d', z, null, true).text === 'ano');
+  /* Nulová CENA při nenulovém množství zaměření nevypíná (jako u statiky). */
+  const r = eng.vypocet(zadani(), Object.assign(ZC.zkusebniCenik(), { sken3dKc: 0 }), JEKLY, true);
+  const h = tsm.tsHodnota(pole.sken3d, { hodnoty: {}, extra: [] }, r, zadani(), {});
+  test('3D sken zdarma (cena 0, množství > 0) → „ano"', h.text === 'ano', h);
+  test('pole říká, kde se zaměření vypíná (Režie, množství 0) — jako statika',
+    /Řídí se cenou/.test(pole.sken3d.odvozenePopis || '') && /Režie/.test(pole.sken3d.odvozenePopis || '')
+      && /ZAMĚŘENÍ 3D SKENEREM/.test(pole.sken3d.odvozenePopis || ''), pole.sken3d.odvozenePopis);
+  /* Ruční hodnota se nemaže — jen se nepoužije. */
+  const ts = { hodnoty: { sken3d: 'ano' }, extra: [] };
+  tsm.tsHodnota(pole.sken3d, ts, eng.vypocet(zadani(zz => { zz.nepocitat = ['ZAMĚŘENÍ 3D SKENEREM']; }),
+    ZC.zkusebniCenik(), JEKLY, true), zadani(), {});
+  test('ruční hodnota 3D skenu zůstává v datech', ts.hodnoty.sken3d === 'ano', ts.hodnoty);
+  /* Bez výsledku výpočtu (před prvním přepočtem) platí výchozí „ano" —
+   * položka je ve výchozí kalkulaci v ceně. */
+  const bez = tsm.tsHodnota(pole.sken3d, { hodnoty: {}, extra: [] }, null, zadani(), {});
+  test('bez výsledku výpočtu platí výchozí „ano"', bez.text === 'ano', bez);
+}
+
+/* Pojistka proti prázdnému testu: odvozená pole jsou opravdu tři
  * a ostatní pole specifikace se chovají jako dřív (ruční hodnota platí). */
 {
   const odvozena = Object.keys(pole).filter(id => typeof pole[id].odvozene === 'function');
-  test('odvozená pole jsou právě statika a lešení kolem OCK',
-    odvozena.sort().join(',') === 'neni3,statika', odvozena);
+  test('odvozená pole jsou právě statika, 3D sken a lešení kolem OCK',
+    odvozena.sort().join(',') === 'neni3,sken3d,statika', odvozena);
   const jine = hodnota('dilenskaDok', zadani(), { dilenskaDok: 'ne' }, true);
   test('běžné pole dál bere ruční hodnotu', jine.text === 'ne' && jine.zdroj === 'ručně', jine);
 }
@@ -180,9 +228,16 @@ REZIMY.forEach(([rezim, jm]) => {
   test('N48: přechodové plechy podle volby „v ceně", ne podle starého pole',
     /nejsou součástí/.test(T('prechodovePlechy', z => { z.prechodovePlechy = true; z.volitelne.prechodove = false; }))
     && /nerezový/.test(T('prechodovePlechy', z => { z.prechodovePlechy = false; z.volitelne.prechodove = true; })));
+  /* Do 30. 9. 2026 tu stálo „N48: ruční volba dál vyhrává". Od rozhodnutí
+   * J. V. z 30. 9. se 3D sken řídí cenou jako statika (oddíl výš), takže
+   * ruční „ano" u vyřazeného skenu už neplatí. U dílenské dokumentace
+   * ruční volba vyhrává dál — ta se zatím jen předvyplňuje. */
   const rucne = tsm.tsHodnota(pole.sken3d, { hodnoty: { sken3d: 'ano' }, extra: [] },
     eng.vypocet(zadani(vyrad('ZAMĚŘENÍ 3D SKENEREM')), ZC.zkusebniCenik(), JEKLY, true), zadani(), ZC.zkusebniCenik());
-  test('N48: ruční volba dál vyhrává', rucne.text === 'ano' && rucne.zdroj === 'ručně', rucne);
+  test('N48 → 30. 9.: ruční „ano" u vyřazeného 3D skenu už nevyhrává', rucne.text === 'ne' && rucne.odvozeno === true, rucne);
+  const rucneDil = tsm.tsHodnota(pole.dilenskaDok, { hodnoty: { dilenskaDok: 'ano' }, extra: [] },
+    eng.vypocet(zadani(vyrad('DÍLENSKÁ DOKUMENTACE')), ZC.zkusebniCenik(), JEKLY, true), zadani(), ZC.zkusebniCenik());
+  test('N48: u dílenské dokumentace ruční volba dál vyhrává', rucneDil.text === 'ano' && rucneDil.zdroj === 'ručně', rucneDil);
 }
 
 /* N49: nabízený příplatek → „lze doplnit – viz příplatkové ceny". */

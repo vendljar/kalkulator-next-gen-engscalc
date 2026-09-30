@@ -174,6 +174,26 @@ test('typ šachty (interiérová / exteriérová) přijde z kalkulace OCK',
  * na jednu otázku a nevědět, která platí. */
 test('3D zaměření se přebírá z technické specifikace jako Ano/Ne',
   c.sken3d === 'Ano' || c.sken3d === 'Ne' || c.sken3d === '', JSON.stringify(c.sken3d));
+/* Od rozhodnutí J. V. 30. 9. 2026 se 3D zaměření ŘÍDÍ CENOU (ve specifikaci
+ * je odvozené jako statika). Krycí list ho čte přes tsHodnota, takže položka
+ * vypnutá v Režii množstvím 0 musí dát „Ne" — i když specifikace nese ruční
+ * „ano" z doby, kdy zaměření v ceně ještě bylo. A naopak. */
+{
+  const vBez = zk.novaVarianta('Bez 3D skenu', JSON.parse(JSON.stringify(v.data)));
+  vBez.data.ock.zadani.mnozstviPrepis = { 'ZAMĚŘENÍ 3D SKENEREM': 0 };
+  vBez.data.techspec = { hodnoty: { sken3d: 'ano' }, extra: [] };
+  const cBez = kr.kryciCtx(zak, vBez, JEKLY);
+  test('3D sken vypnutý v Režii → Zaměření strojovna „Ne" i přes ruční „ano" ve specifikaci',
+    cBez.sken3d === 'Ne', cBez.sken3d);
+  test('a řádek krycího listu se tak i předvyplní',
+    kr.kryciHodnota(pole('zamereniStrojovna'), { hodnoty: {} }, cBez) === 'Ne',
+    kr.kryciHodnota(pole('zamereniStrojovna'), { hodnoty: {} }, cBez));
+  const vS = zk.novaVarianta('S 3D skenem', JSON.parse(JSON.stringify(v.data)));
+  vS.data.techspec = { hodnoty: { sken3d: 'ne' }, extra: [] };
+  const cS = kr.kryciCtx(zak, vS, JEKLY);
+  test('3D sken v ceně → Zaměření strojovna „Ano" i přes ruční „ne" ve specifikaci',
+    cS.sken3d === 'Ano', cS.sken3d);
+}
 test('oceněná sekce kalkulace PROJ znamená ANO',
   c.projAno('dps') === (rProj.sekce.find(s => s.key === 'dps').celkem > 0 ? 'Ano' : 'Ne'),
   c.projAno('dps'));
