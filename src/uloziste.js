@@ -786,9 +786,12 @@ const ULO_VYCTY = {
   'ock.zadani.oplasteni.rezim': ['standard', 'poStenach'],
   'cenik.lak.rezim': ['tomas', 'lakovna'],
 };
-/* Pole, která vzor vede jako '' nebo null, ale jsou to čísla. */
+/* Pole, která vzor vede jako '' nebo null, ale jsou to čísla. Šířka bočního
+ * světlíku (#381) se kreslí do `value` pole v zadání — text místo čísla
+ * se proto nepřijme ani tady. */
 const ULO_CISLA_NAVIC = ['ock.zadani.mustekHloubkaMm', 'ock.zadani.mustekSirkaMm',
-                         'ock.zadani.zamecnikAtypKc', 'ock.zadani.svetlikyBokyKs'];
+                         'ock.zadani.zamecnikAtypKc', 'ock.zadani.svetlikyBokyKs',
+                         'ock.zadani.svetlikyBokySirkaMm'];
 /* Volby výplně nad dveřmi a na bocích dveří (N58, #375). Ve vzoru (DEFAULT_ZADANI)
  * schválně nejsou — chybějící volba znamená starší zakázku, kterou jádro čte
  * po staru —, proto se hlídají zvlášť, jen když v zadání jsou. Seznam je

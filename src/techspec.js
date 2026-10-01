@@ -197,7 +197,10 @@ function tsVyplnDveri(Z, r) {
     return volba;
   };
   const nadDruh = druh(nad, 'nad'), bokyDruh = druh(boky, 'boky');
-  return { nad, boky, bokyKs, dvere, poStenach, mat, nadDruh, bokyDruh,
+  /* Ruční šířka bočního světlíku v m (#381): z jádra, které ji vydá jen
+   * v Modelu 2 při ručním počtu — jinak null (i u otisku z doby před ní). */
+  const sirkaRucne = (vypln && vypln.sirkaRucne != null && isFinite(+vypln.sirkaRucne)) ? +vypln.sirkaRucne : null;
+  return { nad, boky, bokyKs, dvere, poStenach, mat, nadDruh, bokyDruh, sirkaRucne,
            skloNad: nadDruh === 'sklo', skloBoky: boky !== 'bez' && bokyKs > 0 && bokyDruh === 'sklo',
            /* Jde o dvě strany u všech dveří / jednu u všech? Jinak „na bocích". */
            strana: bokyKs > 0 && bokyKs === 2 * dvere ? 'na obou stranách'
@@ -282,18 +285,22 @@ function tsSvetlikMaterialText(v, kde, Z) {
 }
 /* SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ — věta s počtem a materiálem (#375, zadání
  * 30. 9. 2026: „Světlíky na bocích dveří: 10 ks, sklo VSG 4.4.1, na terče").
- * Nad dveřmi počet dveří, na bocích počet bočních světlíků; bez výplně nic. */
+ * Nad dveřmi počet dveří, na bocích počet bočních světlíků; bez výplně nic.
+ * Ruční šířku bočního světlíku (#381, jen Model 2) věta uvede hned za počtem
+ * („5 ks, šířka 600 mm" — výchozí odpověď otázky 6 návrhu); předpočítaná
+ * šířka se neuvádí. */
 function tsSvetlikyDveri(Z, r) {
   const z = Z || {};
   const v = tsVyplnDveri(z, r);
   const zask = z.zaskleni === 'mezi příčníky' ? 'v lištách' : 'na terče';
   const cast = (popisek, ks, druh, kde) => {
+    const kusy = ks + ' ks' + (kde === 'boky' && v.sirkaRucne != null ? ', šířka ' + Math.round(v.sirkaRucne * 1000) + ' mm' : '');
     if (druh === 'stavba') return kde === 'nad' ? 'Nadpraží nad šachetními dveřmi zajistí objednatel'
-      : popisek + ': ' + ks + ' ks, výplň zajistí objednatel';
-    if (druh === 'plech') return popisek + ': ' + ks + ' ks, plech';
+      : popisek + ': ' + kusy + ', výplň zajistí objednatel';
+    if (druh === 'plech') return popisek + ': ' + kusy + ', plech';
     const mat = tsSvetlikMaterialText(v, kde, z);
-    if (druh === 'sklo') return popisek + ': ' + ks + ' ks' + (mat ? ', ' + mat : '') + ', ' + zask;
-    return popisek + ': ' + ks + ' ks' + (mat ? ', ' + mat : '');
+    if (druh === 'sklo') return popisek + ': ' + kusy + (mat ? ', ' + mat : '') + ', ' + zask;
+    return popisek + ': ' + kusy + (mat ? ', ' + mat : '');
   };
   const casti = [];
   if (v.nad !== 'bez' && v.dvere > 0)

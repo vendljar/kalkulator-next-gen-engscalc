@@ -204,7 +204,9 @@ function renderInputs() {
             <select style="width:150px" onchange="bokyDveriSet(this.value)" title="${esc(svetlikVyplnTitulek('boky', rAkt))}">${NAD_DVERMI_POPISY.map(([v, t]) =>
               `<option value="${v}" ${bokyVypln(Z) === v ? 'selected' : ''}>${esc(t)}</option>`).join('')}
             </select><span class="u"></span></div>`
-        + bokyKsRadek())
+        + bokyKsRadek()
+        /* Šířka bočního světlíku (#381): jen Model 2 a ruční počet. */
+        + bokySirkaRadek(rAkt))
       + sl(
         inp('Z.roztec', { l: 'Svislá rozteč příčníků', u: 'm' })
         + inp('Z.sirkaRamuMm', { l: 'Šířka rámu dveří', step: 5, u: 'mm' })
@@ -725,7 +727,75 @@ function bokyKsSet(v) {
 }
 function bokyKsZpet() {
   if (typeof svetlikyBokyMigrace === 'function') svetlikyBokyMigrace(Z);
+  /* ↺ u počtu vrací automatiku celou — ruční šířka bočního světlíku (#381)
+   * patří k ručnímu počtu, takže se zahodí taky (zapisuje se před set(),
+   * aby obojí prošlo jedním překreslením; zámek hlídá obal funkce). */
+  if (Z.svetlikyBokySirkaMm !== undefined && Z.svetlikyBokySirkaMm !== '') Z.svetlikyBokySirkaMm = '';
   set('Z.svetlikyBokyKs', '');
+}
+
+/* ŠÍŘKA BOČNÍHO SVĚTLÍKU (#381, rozhodnutí J. V. 1. 10. 2026: „s návrhem
+ * šířky bočního světlíku souhlasím, zapracuj ho pro model 2 (modelu 1 nic
+ * neměň)").
+ *
+ * Řádek stojí hned pod počtem a ukáže se JEN v Modelu 2, u výplně jiné než
+ * „bez", při RUČNÍM počtu a aspoň jednom světlíku (otázka 1 návrhu).
+ * Hodnota = ruční šířka, nebo předpočítaná zaokrouhlená na mm — ta, při
+ * které vyjde plocha jako dřív (jeden světlík u dveří = celá mezera, dva =
+ * polovina, smíšené = průměr). Ruční šířka nese štítek „ručně" a ↺.
+ * Všechna čísla bere z výsledku jádra (`vypocetAkt`, u odeslané nabídky
+ * zmrazený otisk) — nápověda tak nemůže tvrdit nic jiného než cena; věty
+ * o nálezu jsou tytéž jako v kontrole před nabídkou (kontrolyBokySirka). */
+function bokySirkaDvere(n) { return n + (n >= 1 && n <= 4 ? ' dveře' : ' dveří'); }
+function bokySirkaRadek(r) {
+  if (typeof OCK === 'undefined' || !OCK || !OCK.fixes) return '';
+  if (bokyVypln(Z) === 'bez' || !bokyPocetRucne(Z)) return '';
+  const n = bokyPocet(Z);
+  if (!(n > 0)) return '';
+  const v = (r && r.zaskleni && r.zaskleni.vypln) || null;
+  /* Otisk z doby před #381 předpočítanou šířku nenese — plocha v něm je
+   * právě ta podle rozložení, takže se z ní dopočítá. */
+  const pred = v ? (v.sirkaPredpocitana != null ? +v.sirkaPredpocitana : (+v.bokyKs > 0 ? +v.bokyM2 / (2.2 * +v.bokyKs) : NaN)) : NaN;
+  const predMm = isFinite(pred) ? Math.round(pred * 1000) : null;
+  const rucniMm = bokySirkaRucniMm(Z);
+  const rucne = rucniMm != null;
+  const hodnota = rucne ? rucniMm : (predMm != null ? predMm : '');
+  const mezMm = v && isFinite(+v.mezera) ? Math.round(+v.mezera * 1000) : null;
+  let napoveda = '';
+  if (rucne) napoveda = 'zadáno ručně' + (predMm != null ? '; předpočítaná šířka ' + predMm + ' mm' : '');
+  else if (v && mezMm != null) {
+    const dva = +v.dvereDva || 0, jeden = +v.dvereJeden || 0, bez = +v.dvereBez || 0;
+    const slozeni = [];
+    if (dva) slozeni.push(bokySirkaDvere(dva) + ' se dvěma (po ' + Math.round(+v.mezera * 500) + ' mm)');
+    if (jeden) slozeni.push(bokySirkaDvere(jeden) + ' s jedním (' + mezMm + ' mm)');
+    if (bez) slozeni.push(bokySirkaDvere(bez) + ' bez světlíku');
+    napoveda = 'předpočítáno z mezery vedle dveří ' + mezMm + ' mm: ' + slozeni.join(', ') + (dva && jeden ? ' → průměr' : '');
+  }
+  const k = (typeof kontrolyBokySirka === 'function') ? kontrolyBokySirka(r) : { zabrana: [], upozorneni: [] };
+  const titulPred = predMm != null ? 'předpočítaná šířka ' + predMm + ' mm' : 'předpočítaná šířka';
+  return `<div class="row boky-sirka"><label>Šířka bočního světlíku${rucne
+      ? ' <span class="pill mut" title="' + esc('zadáno ručně; ' + titulPred) + '">ručně</span>' : ''}</label>
+      <span class="par"><input type="number" step="1" min="0" value="${esc(hodnota)}"
+        title="${esc(rucne ? 'zadáno ručně; ' + titulPred
+          : 'šířka jednoho bočního světlíku — přepište, když je jiná (plocha boků = počet × šířka × 2,2 m)')}"
+        onchange="bokySirkaSet(this.value)">${rucne
+        ? `<button class="mini noprint" title="${esc('vrátit ' + titulPred)}" onclick="bokySirkaZpet()">↺</button>` : ''}</span>
+      <span class="u">mm</span></div>`
+    + (napoveda ? `<div class="note boky-sirka-napoveda" style="margin:-2px 0 6px">${esc(napoveda)}</div>` : '')
+    + k.zabrana.map(t => `<div class="note boky-sirka-zabrana" style="margin:-2px 0 6px;color:#b91c1c;font-weight:600">${esc(t)}</div>`).join('')
+    + k.upozorneni.map(t => `<div class="note boky-sirka-upozorneni" style="margin:-2px 0 6px;color:var(--warn)">${esc(t)}</div>`).join('');
+}
+/* Zápis šířky (#381). Prázdné pole = předpočítaná (prázdno není nula);
+ * jinak celé mm, záporné = 0. Starší zadání se nejdřív převede na nový tvar
+ * jako u počtu. Obě funkce jsou v ZAMEK_CHRANENE (zámek varianty, náhled). */
+function bokySirkaSet(v) {
+  if (typeof svetlikyBokyMigrace === 'function') svetlikyBokyMigrace(Z);
+  const s = String(v == null ? '' : v).trim().replace(',', '.');
+  set('Z.svetlikyBokySirkaMm', s === '' || !isFinite(+s) ? '' : Math.max(0, Math.round(+s)));
+}
+function bokySirkaZpet() {
+  if (typeof svetlikyBokyMigrace === 'function') svetlikyBokyMigrace(Z);
+  set('Z.svetlikyBokySirkaMm', '');
 }
 
 /* Volba nad dveřmi. Staré zaškrtávátko `svetlikNadDvermi` se drží v souladu

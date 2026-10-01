@@ -86,9 +86,12 @@ test('s platným zadáním kontrola mlčí', !!platny.r && !nalez(platny.r));
  * a popisné `zaskleni.vypln.boky` říká u zakázky bez bočních světlíků
  * pravdu („bez"; dřív „sklo", i když boky nebyly). Do otisku proto nevstupují.
  * Otisky jsou přepočítané z jádra v30.9.3 (před #375) po téže očistě
- * a nové jádro dává bajt po bajtu totéž — ceny ani mezivýsledky se nehnuly. */
+ * a nové jádro dává bajt po bajtu totéž — ceny ani mezivýsledky se nehnuly.
+ * Totéž platí pro šířku bočního světlíku (#381, 1. 10. 2026): tři nová pole
+ * (předpočítaná, ruční a použitá šířka) do otisku nevstupují, otisky se
+ * nemění. */
 const OTISK_BEZ = ['bokyKs', 'bokyKsAuto', 'bokyKsRucne', 'dvere', 'dvereDva', 'dvereJeden', 'dvereBez',
-  'mezera', 'nadM2', 'bokyM2', 'material', 'boky'];
+  'mezera', 'nadM2', 'bokyM2', 'material', 'boky', 'sirkaPredpocitana', 'sirkaRucne', 'sirka'];
 const otiskOcisti = r => {
   const x = JSON.parse(JSON.stringify(r));
   OTISK_BEZ.forEach(k => { delete x.zaskleni.vypln[k]; });
