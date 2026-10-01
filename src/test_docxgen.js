@@ -183,6 +183,18 @@ const pocetRadku = x => (x.match(/<w:tr[\s>]/g) || []).length;
     test('B86: běžný název příplatku zůstává beze změny',
       expandujPriplatky(proto, [{ nazev: 'Střecha', cena: '5 Kč' }]).includes('Střecha 5 Kč'));
   }
+  /* DVOJÍ PROCENTO (rozbor šablon SoD, 1. 10. 2026): šablona SoD PROJ píše
+   * „{{PODM_POKUTA_SPLATNOST_PROC}} % z dlužné částky" a hodnota je „0,05 %".
+   * Před opravou vyšlo „0,05 % %". */
+  {
+    const ph = { P: '0,05 %', L: '10 %', C: '12' };
+    const po = nahradPlaceholdery('<w:p><w:r><w:t>ve výši {{P}} % z dlužné částky; strop {{L}}</w:t></w:r><w:r><w:t xml:space="preserve"> % z ceny</w:t></w:r></w:p>'
+      + '<w:p><w:r><w:t>sazba {{L}}</w:t></w:r></w:p><w:p><w:r><w:t>% na začátku dalšího odstavce, {{C}} %</w:t></w:r></w:p>', ph);
+    test('% v šabloně za symbolem: znak z hodnoty se vypustí (i přes hranici běhu)',
+      po.includes('ve výši 0,05 % z dlužné') && po.includes('strop 10</w:t>') && !/% %/.test(po.replace(/<[^>]+>/g, '')), po);
+    test('hodnota s % bez % v šabloně zůstane, další odstavec se nepočítá', po.includes('sazba 10 %</w:t>'), po);
+    test('hodnota bez % se nemění', po.includes('12 %</w:t>'), po);
+  }
   console.log(fail ? `\n${fail} TESTŮ SELHALO` : '\nVŠECHNY TESTY DOCXGEN OK');
   process.exit(fail ? 1 : 0);
 })();

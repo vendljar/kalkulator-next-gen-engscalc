@@ -173,8 +173,16 @@ const docText = async typ => {
   test('SoD realizace nese objednatele', holy.includes('SVJ Zkušební 11'));
   test('známé symboly jsou vyplněné (OBJEDNATEL, CENA_BEZ_DPH, FIRMA_*)',
     !/\{\{(OBJEDNATEL|CENA_BEZ_DPH|FIRMA_NAZEV|FIRMA_ICO)\}\}/.test(holy));
-  test('symboly SOD_* zůstaly VIDITELNÉ k ručnímu doplnění',
+  test('symboly SOD_* bez dat (číslo smlouvy, datum podpisu…) zůstaly VIDITELNÉ k ručnímu doplnění',
     /\{\{SOD_[A-Z0-9_]+\}\}/.test(holy), (holy.match(/\{\{SOD_[A-Z0-9_]+\}\}/g) || []).length);
+  /* K18-N100 (1. 10. 2026): záruka a splátky z krycího listu OCK. */
+  test('K18-N100: záruka a splátky z krycího listu jsou vyplněné (žádný {{SOD_ZARUKA…}} ani {{SOD_SPLATKA…}})',
+    !/\{\{SOD_(ZARUKA_MESICU|SPLATKA\d_PROC)\}\}/.test(holy) && /po dobu 60 měsíců/.test(holy),
+    (holy.match(/\{\{SOD_(ZARUKA|SPLATKA)[A-Z0-9_]*\}\}/g) || []).join(', '));
+  test('K18-N100: splátky 50 / 40 / 10 %, věta o druhé dílčí platbě (opláštění) zmizela',
+    /smlouvy o dílo 50 % z celkové ceny/.test(holy) && /šachty 40 % z celkové ceny/.test(holy)
+      && /zbývajících 10 % z celkové ceny/.test(holy) && !/základního opláštění konstrukce a předání/.test(holy));
+  test('ve smlouvě není dvojí procento („% %")', !/%\s*%/.test(holy), (holy.match(/.{30}%\s*%.{10}/g) || []).join(' | '));
 }
 {
   const doc = await docText('sodProj');
@@ -184,6 +192,7 @@ const docText = async typ => {
   test('SoD projekce nese cenu z nabídky PROJ', holy.includes(vysledek.cenaProj), vysledek.cenaProj);
   test('symboly SODP_* bez hodnoty (pokuta, správní poplatky) zůstaly viditelné',
     /\{\{SODP_[A-Z0-9_]+\}\}/.test(holy));
+  test('SoD projekce: ve smlouvě není dvojí procento („% %")', !/%\s*%/.test(holy), (holy.match(/.{30}%\s*%.{10}/g) || []).join(' | '));
   const platby = (holy.match(/Platba ve výši [\d\s\u00a0]+,\d\d Kč \+ DPH proběhne/g) || []).length;
   test('SoD projekce (šablona se seznamem plateb): platby z plánu, každá vlastní odrážkou',
     platby >= 2 && !/SODP_PLATEBNI_KALENDAR/.test(holy)

@@ -5968,6 +5968,31 @@
    "kde": "src/cenik.js, src/engine.js, src/nabidka.js, src/kontroly.js, src/cenik_stari.js, src/uloziste.js, src/ui/cenik_ui.js, src/ui/kalk_ock.js, src/ui/online_ui.js, netlify/functions/popisy.mjs",
    "zavisi": ["267", "376"],
    "pozn": "Skutečný překlad firemní věty u SKN vyplní J. V. v číselníku na ostrém webu (do repozitáře nepatří)."
+  },
+  {
+   "id" : "380",
+   "vlna" : "B",
+   "stav" : "ceka",
+   "dulezitost" : "vysoka",
+   "slozitost" : "M",
+   "nazev" : "Smlouvy o dílo podle aktuálních šablon (K18-N100, N101, návrh SoD)",
+   "proc" : "Zadání J. V. 1. 10. 2026: „připrav návrh úpravy sod a aktualizaci online generátoru cenových nabídek a sod, aby funkčně odpovídal aktuálním šablonám“. 18. kolo na ostré (v30.9.1): SoD realizace nechávala záruku a splátky {{…}} (K18-N100, střední), SoD projekce vkládala platby do pevných vět bez vazby na nabízené činnosti a součet nekontrolovala (K18-N101, nízká).",
+   "detail" : "HOTOVO ve větvi claude/sod-generator-sablony: SoD realizace bere záruku, splátky (platební kalendář krycího listu, bez zálohy, měsíční fakturace) a předání k montáži z krycího listu OCK; šablona SoD realizace v2 se seznamem splátek {{SOD_PLATEBNI_KALENDAR}} (nastroje/vyrob_sablony.js --sod-real); stará šablona SoD PROJ nese jen věty plateb, které plán má, součet plateb = cena díla se kontroluje i u ruční splátky; dvojí procento „% %“ ve smlouvách opraveno. ZBÝVÁ podle rozhodnutí J. V. (návrh v artefaktu): nová pole krycího listu OCK pro termíny opláštění, osazení dveří, stavební připravenosti a konce montáže OK, pokuta za den prodlení zákazníka (SOD_POKUTA_DENNI), druh místa plnění, pevné datum 19.06.2026 v šabloně SoD realizace, pokuta za prodlení zhotovitele (dnes symbol splatnosti), rozsah díla SoD PROJ napsaný natvrdo (DPZ+DSP).",
+   "hotovoKdyz" : "SoD realizace i projekce ze šablon v2 nesou z aplikace všechno, co krycí list a hlavička znají; ve Wordu zůstávají jen symboly, pro které data nejsou (číslo smlouvy #366, datum podpisu); testy před opravou → po opravě.",
+   "kde" : "`src/sod.js`, `src/kryci.js`, `src/docxgen.js`, `src/plan_plateb.js`, `nastroje/vyrob_sablony.js`",
+   "zavisi" : [
+    {
+     "id" : "367",
+     "typ" : "doporuceno",
+     "proc" : "platební podmínky z krycího listu (etapa A)"
+    },
+    {
+     "id" : "366",
+     "typ" : "doporuceno",
+     "proc" : "číslo smlouvy (etapa C)"
+    }
+   ],
+   "otazka" : "Otázky k návrhu SoD (artefakt 1. 10. 2026): nová pole termínů a pokuty v krycím listu OCK, náhrada pevného data v šabloně, pokuta zhotovitele, rozsah SoD PROJ."
   }
  ],
  "meta" : {

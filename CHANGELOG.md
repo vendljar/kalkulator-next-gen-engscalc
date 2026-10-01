@@ -91,6 +91,54 @@ administrátor. Roadmapa #379 (navazuje na #267) hotovo.
 
 ---
 
+## (připraveno pro v1.10.x) — smlouvy o dílo podle aktuálních šablon: K18-N100, K18-N101, dvojí procento (1. 10. 2026)
+
+Zadání J. V. 1. 10. 2026 (úkoly 3 a 4): „připrav návrh úpravy sod a aktualizaci
+online generátoru cenových nabídek a sod, aby funkčně odpovídal aktuálním
+šablonám" + nálezy K18-N100 a K18-N101 z 18. kola na ostré (v30.9.1).
+Větev `claude/sod-generator-sablony` z `test-draft` (643faa8). Rozbor
+symbolů všech aktuálních šablon a návrh pro J. V. je v artefaktu (odkaz
+v PREDAVKA.md); šablony v repozitáři nejsou.
+
+**K18-N100 — SoD realizace: záruka, splátky, předání k montáži**
+- Záruka z krycího listu OCK do `{{SOD_ZARUKA_MESICU}}` (jen číslo, šablona
+  píše „měsíců" sama); ruční přepis platí, zamčená varianta drží odeslané.
+- Splátky z TÉHOŽ platebního kalendáře jako nabídka (`kryciPlatebniKalendar`,
+  nová `kryciSodPlatby`): šablona v1 (čtyři pevné věty) dostane 1 ← záloha,
+  2 ← dílčí faktura, 4 ← konečná; věta 3 (druhá dílčí platba, kterou krycí
+  list nemá) a věta zálohy při „Bez zálohy" zmizí celé. Měsíční fakturaci
+  v1 vyjádřit neumí — smlouva nevznikne a řekne proč.
+- Nová šablona **SoD realizace v2** (`node nastroje/vyrob_sablony.js
+  --sod-real <podklady>`): místo čtyř vět jeden odstavec
+  `{{SOD_PLATEBNI_KALENDAR}}`, aplikace ho zopakuje za každou splátku
+  (bez zálohy = dvě věty, měsíční = věta o měsíční fakturaci).
+- Pole krycího listu „Ukončení montáže šachty a předání montáži výtahu"
+  plní `{{SOD_TERMIN_PREDANI_K_MONTAZI}}`.
+
+**K18-N101 — SoD projekce: platby k nenabízené činnosti, součet**
+- Tester zkoušel P18 na ostré **v30.9.1** (před plánem plateb, šablona
+  SOD_PROJEKCE v1). Ve v30.9.4 zbývalo: věta staré šablony o platbě, kterou
+  plán nemá, zůstala s `{{SODP_PLATBAn_KC}}` (u projekce bez zaměření
+  „… při předání 2D výstupů ze zaměření"); ruční splátky odeslané nabídky
+  z doby před plánem se proti ceně díla nekontrolovaly.
+- Generátor Wordu umí odstranit odstavec, o kterém builder řekne, že do
+  dokumentu nepatří (`odstavcePryc`, `odstranOdstavceSeSymboly`); stará
+  šablona tak nese jen věty plateb, které plán má.
+- Se šablonou v ruce builder vždy kontroluje součet plateb proti ceně díla
+  (plán i ruční splátky); ruční splátka k nenabízené činnosti smlouvu
+  zastaví s vysvětlením. Náhled bez šablony se neodmítá.
+
+**Dvojí procento ve smlouvách** — šablony SoD píšou „{{PODM_POKUTA_SPLATNOST_PROC}} %",
+symbol ale nese „0,05 %" → „0,05 % %". Generátor znak z hodnoty vypustí,
+když za symbolem v témže odstavci % následuje.
+
+**Testy:** `src/test_sod_realizace.js` (nová sada, 25: před opravou 10
+selhalo a sada spadla, po opravě 0), `src/test_plan_plateb_sod.js`
+(oddíl 7, 11 nových: před opravou 8 selhalo, po 0), `src/test_docxgen.js`
+(3 nové: před 1 selhal, po 0), `overit_sod.mjs` se skutečnými šablonami
+(4 nové: před opravou 2 z 31 selhaly, po 31 OK). Mutace jádra: nový úsek
+K18-N101 (plan_plateb.js) — chycená.
+
 ## v30.9.4 — světlíky u šachetních dveří (#375), nálezy 18. kola, platební podmínky OCK, zdvih nejvýš 99 m (30. 9. 2026)
 
 Pokyn J. V. 30. 9. 2026: „co máme aktuálně v draftu pošli už do testu"

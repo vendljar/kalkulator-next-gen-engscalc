@@ -126,12 +126,25 @@ function docxUvnitrTextu(xml, pos) {
   const zacatek = Math.max(xml.lastIndexOf('<w:t>', pos), xml.lastIndexOf('<w:t ', pos));
   return zacatek > konec;
 }
+/* DVOJÍ PROCENTO (1. 10. 2026, rozbor šablon SoD). Symboly PODM_*_PROC nesou
+ * procento i se znakem („0,05 %") — tak je chtějí šablony nabídek. Šablona
+ * smlouvy o dílo ale píše znak sama („ve výši {{PODM_POKUTA_SPLATNOST_PROC}} %
+ * z dlužné částky"), takže smlouva tiskla „0,05 % %". Když hodnota končí
+ * znakem % a text šablony za symbolem (do konce odstavce, bez značek) začíná
+ * týmž znakem, znak z hodnoty se vypustí. Jinak se nemění nic. */
+function docxZaSymbolemProcento(xml, konec) {
+  const kp = xml.indexOf('</w:p>', konec);
+  const usek = xml.slice(konec, kp < 0 ? konec + 400 : Math.min(kp, konec + 400)).replace(/<[^>]+>/g, '');
+  return /^[\s\u00a0]*%/.test(usek);
+}
 function nahradPlaceholdery(xml, ph) {
   // {{KLÍČ}} i rozdělené mezi runy: {{ / KLÍČ / }} mohou být proloženy XML tagy
   return xml.replace(/\{(?:<[^>]+>)*\{((?:<[^>]+>|[A-Z0-9_])+)\}(?:<[^>]+>)*\}/g, (cely, vnitrek, pos) => {
     const klic = vnitrek.replace(/<[^>]+>/g, '');
     if (ph[klic] == null) return cely;
-    const hodnota = String(ph[klic]);
+    let hodnota = String(ph[klic]);
+    if (/%\s*$/.test(hodnota) && docxZaSymbolemProcento(xml, pos + cely.length))
+      hodnota = hodnota.replace(/[\s\u00a0]*%\s*$/, '');
     return xmlEscRadky(hodnota, /\n/.test(hodnota) ? docxUvnitrTextu(xml, pos) : true);
   });
 }
@@ -193,7 +206,9 @@ function docxZnackyBloku(xml) {
 /* {{PODM_PLATEBNI_KALENDAR}} (věty o dílčích dokladech nabídky OCK, šablona
  * CN v14) je tu pro šablonu, která by ho nesla v obyčejném odstavci; v CN v14
  * stojí v řádku tabulky a rozvine ho rozvinRadkyZaRadek níž (ta běží dřív). */
-const DOCX_ODSTAVCE_ZA_RADEK = ['SODP_PLATEBNI_KALENDAR', 'PODM_PLATEBNI_KALENDAR'];
+/* {{SOD_PLATEBNI_KALENDAR}} — splátky smlouvy o dílo realizace z krycího
+ * listu OCK (šablona SoD realizace v2, K18-N100, 1. 10. 2026). */
+const DOCX_ODSTAVCE_ZA_RADEK = ['SODP_PLATEBNI_KALENDAR', 'PODM_PLATEBNI_KALENDAR', 'SOD_PLATEBNI_KALENDAR'];
 function rozvinOdstavceZaRadek(xml, ph) {
   DOCX_ODSTAVCE_ZA_RADEK.forEach(klic => {
     if (!ph || ph[klic] == null) return;
@@ -229,6 +244,23 @@ function rozvinRadkyZaRadek(xml, ph) {
       });
   });
   return xml;
+}
+/* ODSTAVEC S VĚTOU, KTERÁ DO DOKUMENTU NEPATŘÍ (K18-N101, 1. 10. 2026).
+ * Stará šablona SoD PROJ má osm pevných vět „Platba ve výši
+ * {{SODP_PLATBAn_KC}} + DPH proběhne …" s milníky napsanými v šabloně.
+ * Platba, kterou plán plateb nemá (činnost se nenabízí, nebo předvolba
+ * u ní neplatí), tam do v30.9.4 zůstávala jako {{…}} ve větě o činnosti,
+ * kterou zakázka nemá („… při předání 2D výstupů ze zaměření" u projekce
+ * bez zaměření). Builder proto může říct, které symboly v dokumentu NEMAJÍ
+ * BÝT (`odstavcePryc`) — odstavec s takovým symbolem zmizí celý. Je to
+ * výslovný seznam od builderu, ne pravidlo „prázdný symbol = pryč": symbol,
+ * o kterém builder nic neví, zůstává dál viditelný k doplnění. */
+function odstranOdstavceSeSymboly(xml, klice) {
+  const k = Array.isArray(klice) ? klice.filter(Boolean) : [];
+  if (!k.length) return xml;
+  /* v buňce tabulky zůstane prázdný odstavec — buňka bez odstavce je vada */
+  return xml.replace(/<w:p[\s>](?:(?!<\/w:p>)[\s\S])*?<\/w:p>/g, (p, pos) =>
+    (klicePlaceholderu(p).some(x => k.indexOf(x) >= 0) ? (docxVBunce(xml, pos) ? '<w:p/>' : '') : p));
 }
 function docxVBunce(xml, pos) {
   const pred = xml.slice(0, pos);
@@ -637,7 +669,7 @@ function docxObsahZkontroluj(polozky) {
 }
 
 /* ---------- hlavní funkce: vyplní šablonu a vrátí Blob .docx ---------- */
-async function docxVyplnSablonu(arrayBuffer, placeholders, priplatky, obrazky) {
+async function docxVyplnSablonu(arrayBuffer, placeholders, priplatky, obrazky, volby) {
   const polozky = await zipPrecti(new Uint8Array(arrayBuffer));
   docxObsahZkontroluj(polozky);                                      // B99
   const dekoder = new TextDecoder(), enkoder = new TextEncoder();
@@ -653,6 +685,7 @@ async function docxVyplnSablonu(arrayBuffer, placeholders, priplatky, obrazky) {
         po = expandujPriplatky(po, priplatky);
         po = odstranPrazdneTsRadky(po, placeholders);   // prázdné/„-“ řádky TS pryč
       }
+      po = odstranOdstavceSeSymboly(po, volby && volby.odstavcePryc);   // věty, které do dokumentu nepatří (K18-N101)
       po = odstranPrazdneBloky(po, placeholders);       // prázdné kapitoly se značkami pryč (P8A)
       po = rozvinRadkyZaRadek(po, placeholders);        // věty o dílčích dokladech OCK: řádek tabulky za větu (etapa A)
       po = rozvinOdstavceZaRadek(po, placeholders);     // seznam plateb: odstavec za platbu (etapa B)
@@ -991,7 +1024,7 @@ async function docxXmlVady(arrayBuffer) {
 
 if (typeof module !== 'undefined')
   module.exports = { docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
-    odstranPrazdneTsRadky, jePrazdnaHodnota, klicePlaceholderu, odstranPrazdneBloky, docxZnackyBloku,
+    odstranPrazdneTsRadky, jePrazdnaHodnota, klicePlaceholderu, odstranPrazdneBloky, odstranOdstavceSeSymboly, docxZnackyBloku,
     docxVlozObrazky, rozmeryObrazku, dataUrlNaBajty,
     docxDokumentBlob, docxTeloZeSekci, docxSestavBlob, docxPar, docxEsc,
     docxPrelozSablonu, docxPrelozXml, odstavcoveSpany, odstavecText, xmlUnesc };

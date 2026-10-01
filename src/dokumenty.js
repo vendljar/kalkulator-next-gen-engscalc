@@ -50,7 +50,7 @@ async function dokumentVygeneruj(typ, templateArrayBuffer, zak, varianta, jekly,
    * podpisu a razítka zpracovatele). Builder, který žádné nedodá, se chová
    * jako dřív. */
   const blob = await docxVyplnSablonu(templateArrayBuffer, data.placeholders,
-    data.priplatky || [], data.obrazky || {});
+    data.priplatky || [], data.obrazky || {}, { odstavcePryc: data.odstavcePryc || [] });
   return { blob, nazevSouboru: data.nazevSouboru, data };
 }
 /* Symboly {{…}} šablony (tělo, záhlaví, zápatí) — i rozdělené mezi běhy. */

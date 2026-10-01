@@ -119,16 +119,18 @@ const sablona = (...symboly) => ({ symboly: new Set(symboly) });
  * prázdný seznam beze stopy smazal). */
 {
   const z = novaZ(), v = z.varianty[0];
-  v.data.kryciProj.hodnoty = { sodpPlatba1: '110 000 Kč', sodpPlatba2: '20 000 Kč' };
+  /* Zkušební zakázka nabízí studii, DPZ, IČ, DPS, EZC a kolaudaci za
+   * 271 200 Kč (bez zaměření). Ruční splátky dávají cenu díla (K18-N101). */
+  v.data.kryciProj.hodnoty = { sodpPlatba1: '251 200 Kč', sodpPlatba3: '20 000 Kč' };
   zamkniVariantu(v, { typ: 'nabidkaProj', kdo: 'Test', cislo: '2026 - OVP - CN - 404' });
-  const d = sod.sodProjData(z, v, 'cz', sablona('SODP_PLATBA1_KC', 'SODP_PLATBA2_KC'));
-  test('odeslaná bez snímku: SODP_PLATBA1/2_KC z ručních polí',
-    d.placeholders.SODP_PLATBA1_KC === '110 000 Kč' && d.placeholders.SODP_PLATBA2_KC === '20 000 Kč',
-    [d.placeholders.SODP_PLATBA1_KC, d.placeholders.SODP_PLATBA2_KC]);
+  const d = sod.sodProjData(z, v, 'cz', sablona('SODP_PLATBA1_KC', 'SODP_PLATBA3_KC'));
+  test('odeslaná bez snímku: SODP_PLATBA1/3_KC z ručních polí',
+    d.placeholders.SODP_PLATBA1_KC === '251 200 Kč' && d.placeholders.SODP_PLATBA3_KC === '20 000 Kč',
+    [d.placeholders.SODP_PLATBA1_KC, d.placeholders.SODP_PLATBA3_KC]);
   const d2 = sod.sodProjData(z, v, 'cz', sablona('SODP_PLATEBNI_KALENDAR'));
   test('odeslaná bez snímku + nová šablona: seznam plateb z ručních splátek s milníky staré šablony',
-    d2.placeholders.SODP_PLATEBNI_KALENDAR === 'Platba ve výši 110 000 Kč + DPH proběhne po podpisu smlouvy / objednávky.\n'
-      + 'Platba ve výši 20 000 Kč + DPH proběhne po zhotovení výstupů ze zaměření.', d2.placeholders.SODP_PLATEBNI_KALENDAR);
+    d2.placeholders.SODP_PLATEBNI_KALENDAR === 'Platba ve výši 251 200 Kč + DPH proběhne po podpisu smlouvy / objednávky.\n'
+      + 'Platba ve výši 20 000 Kč + DPH proběhne po dokončení dokumentace pro povolení záměru v rozsahu pro podání na dotčené orgány.', d2.placeholders.SODP_PLATEBNI_KALENDAR);
   const z2 = novaZ(), v2 = z2.varianty[0];
   zamkniVariantu(v2, { typ: 'nabidkaProj', kdo: 'Test', cislo: '2026 - OVP - CN - 404' });
   test('odeslaná bez snímku a bez ručních splátek: seznam plateb zůstane {{…}} k doplnění',
@@ -194,6 +196,92 @@ const sablona = (...symboly) => ({ symboly: new Set(symboly) });
 
 /* 6) registrace: builder dostane symboly šablony */
 test('dokument sodProj si vyžádá symboly šablony (sablonaSymboly)', !!(dok.DOKUMENTY.sodProj && dok.DOKUMENTY.sodProj.sablonaSymboly === true));
+
+/* 7) K18-N101 (ostrá v30.9.1, zakázka P18: DPZ + IČ + DPS bez zaměření,
+ * šablona SoD PROJ v1 s osmi pevnými platbami; 1. 10. 2026).
+ * Nenabízená činnost nesmí dostat větu a součet plateb se kontroluje proti
+ * ceně díla i u staré šablony. Před opravou: věty plateb, které plán nemá,
+ * zůstaly s {{SODP_PLATBAn_KC}} (odstavcePryc neexistovalo), builder
+ * součet nekontroloval a ruční splátka k zaměření prošla. */
+const VSECH_OSM = ['SODP_PLATBA1_KC', 'SODP_PLATBA2_KC', 'SODP_PLATBA3_KC', 'SODP_PLATBA4_KC',
+  'SODP_PLATBA5_KC', 'SODP_PLATBA6_KC', 'SODP_PLATBA7_KC', 'SODP_PLATBA8_KC', 'PROJ_CELKEM_BEZ_DPH'];
+const p18 = () => {
+  const z = novaZ(), v = z.varianty[0];
+  v.data.proj.zadani.sekce.forEach(s => { if (['dpz', 'ic', 'dps'].indexOf(s.key) < 0) (s.polozky || []).forEach(p => { p.vyrazeno = true; }); });
+  return { z, v };
+};
+const hazi = (fn) => { try { fn(); return ''; } catch (e) { return e.message || String(e); } };
+{
+  /* a) plán, který stará šablona umí (záloha 50 % + zbytek po předání) */
+  const { z, v } = p18();
+  v.data.kryciProj.planPlateb = { v: 1, predvolba: 'zaloha', zaloha: 50 };
+  let d = null;
+  const ch = hazi(() => { d = sod.sodProjData(z, v, 'cz', sablona(...VSECH_OSM)); });
+  test('N101: P18 + stará šablona + plán z jejích milníků: smlouva vznikne', !ch && !!d, ch);
+  const pryc = (d && d.odstavcePryc) || [];
+  test('N101: věta o zaměření (platba 2), DPZ pro dotčené orgány (3), EZC (7) a výběru (8) jde pryč',
+    ['SODP_PLATBA2_KC', 'SODP_PLATBA3_KC', 'SODP_PLATBA7_KC', 'SODP_PLATBA8_KC'].every(k => pryc.indexOf(k) >= 0)
+      && ['SODP_PLATBA1_KC', 'SODP_PLATBA4_KC', 'SODP_PLATBA5_KC', 'SODP_PLATBA6_KC'].every(k => pryc.indexOf(k) < 0), pryc);
+  const plnene = ['SODP_PLATBA1_KC', 'SODP_PLATBA4_KC', 'SODP_PLATBA5_KC', 'SODP_PLATBA6_KC']
+    .map(k => +String(d && d.placeholders[k] || '').replace(/[^\d,]/g, '').replace(',', '.'));
+  test('N101: součet plateb staré šablony = cena díla', d && Math.round(plnene.reduce((a, b) => a + b, 0) * 100) === Math.round(d.souhrn.bezDph * 100), [plnene, d && d.souhrn.bezDph]);
+  test('N101: bez šablony (náhled) se nic nemaže', !sod.sodProjData(z, v, 'cz').odstavcePryc);
+  const nova = sod.sodProjData(z, v, 'cz', sablona('SODP_PLATEBNI_KALENDAR'));
+  test('N101: nová šablona se seznamem plateb nic nemaže', !nova.odstavcePryc);
+  test('N101: docxgen umí odstranit odstavec se symbolem', typeof dg.odstranOdstavceSeSymboly === 'function');
+  if (typeof dg.odstranOdstavceSeSymboly === 'function') {
+    const od = (t) => '<w:p><w:r><w:t>' + t + '</w:t></w:r></w:p>';
+    const xml = '<w:body>' + od('Platba ve výši {{SODP_PLATBA1_KC}} + DPH proběhne po podpisu smlouvy.')
+      + od('Platba ve výši {{SODP_PLATBA2_KC}} + DPH proběhne při předání 2D výstupů ze zaměření.')
+      + '<w:tbl><w:tr><w:tc>' + od('{{SODP_PLATBA8_KC}}') + '</w:tc></w:tr></w:tbl>' + od('{{NEZNAMY}}') + '</w:body>';
+    const vy = dg.odstranOdstavceSeSymboly(xml, ['SODP_PLATBA2_KC', 'SODP_PLATBA8_KC']);
+    test('N101: věta o zaměření zmizí celá, ostatní zůstanou', !/zaměření/.test(vy) && /po podpisu/.test(vy) && /NEZNAMY/.test(vy), vy);
+    test('N101: v buňce tabulky zůstane prázdný odstavec (platné XML)', /<w:tc><w:p\/><\/w:tc>/.test(vy) && !dg.xmlStrukturaVada(vy), vy);
+  }
+}
+{
+  /* b) ruční částka rozbije součet: smlouva nevznikne ani se starou, ani s novou šablonou */
+  const { z, v } = p18();
+  v.data.kryciProj.planPlateb = { v: 1, predvolba: 'zaloha', zaloha: 50, prepis: { podpis: 30000 } };
+  const ch1 = hazi(() => sod.sodProjData(z, v, 'cz', sablona(...VSECH_OSM)));
+  const ch2 = hazi(() => sod.sodProjData(z, v, 'cz', sablona('SODP_PLATEBNI_KALENDAR')));
+  test('N101: součet ≠ cena díla, stará šablona: smlouva nevznikne a řekne proč', /nesouhlasí s cenou díla/.test(ch1), ch1);
+  test('N101: součet ≠ cena díla, nová šablona: smlouva nevznikne a řekne proč', /nesouhlasí s cenou díla/.test(ch2), ch2);
+  test('N101: náhled bez šablony se neodmítá', hazi(() => sod.sodProjData(z, v, 'cz')) === '');
+}
+{
+  /* c) P18 přesně jak ji tester zadal: ruční splátky 30 000 / 20 000 / 15 000 Kč
+   * (převedené na plán; 20 000 Kč ke zaměření, které nabídka nemá) */
+  const { z, v } = p18();
+  v.data.kryciProj.hodnoty = { sodpPlatba1: '30 000 Kč', sodpPlatba2: '20 000 Kč', sodpPlatba3: '15 000 Kč' };
+  const ch = hazi(() => sod.sodProjData(z, v, 'cz', sablona('SODP_PLATEBNI_KALENDAR')));
+  test('N101: P18 se splátkami 65 000 Kč proti ceně díla: smlouva nevznikne', /nesouhlasí s cenou díla/.test(ch), ch);
+}
+{
+  /* d) odeslaná nabídka z doby před plánem (ruční splátky jako dřív) */
+  const zamkni = (v) => zamkniVariantu(v, { typ: 'nabidkaProj', kdo: 'Test', cislo: '2026 - OVP - CN - 404' });
+  const a = p18();
+  a.v.data.kryciProj.hodnoty = { sodpPlatba1: '100 000 Kč', sodpPlatba2: '20 000 Kč' };
+  zamkni(a.v);
+  const ch = hazi(() => sod.sodProjData(a.z, a.v, 'cz', sablona(...VSECH_OSM)));
+  test('N101: ruční splátka ke zaměření, které nabídka nemá: smlouva nevznikne a řekne proč', /splátka 2 .*patří k činnosti, kterou nabídka nemá/.test(ch), ch);
+  const cena = Object.values(NP.nabidkaProjPlatby(a.z, a.v, 'cz').ceny).reduce((x, y) => x + y, 0);
+  const b = p18();
+  b.v.data.kryciProj.hodnoty = { sodpPlatba1: '100 000 Kč' };
+  zamkni(b.v);
+  const ch2 = hazi(() => sod.sodProjData(b.z, b.v, 'cz', sablona(...VSECH_OSM)));
+  test('N101: ruční splátky odeslané nabídky ≠ cena díla: smlouva nevznikne', /součet ručních splátek .* nesouhlasí s cenou díla/.test(ch2), ch2);
+  const c = p18();
+  const kc = (n) => n.toLocaleString('cs-CZ') + ' Kč';
+  c.v.data.kryciProj.hodnoty = { sodpPlatba1: kc(cena - 20000), sodpPlatba4: kc(20000) };
+  zamkni(c.v);
+  let d = null;
+  const ch3 = hazi(() => { d = sod.sodProjData(c.z, c.v, 'cz', sablona(...VSECH_OSM)); });
+  test('N101: ruční splátky = cena díla: smlouva vznikne', ch3 === '' && !!d, ch3);
+  const pryc = (d && d.odstavcePryc) || [];
+  test('N101: věta nenabízené činnosti zmizí, nevyplněná nabízená zůstane k doplnění',
+    pryc.indexOf('SODP_PLATBA2_KC') >= 0 && pryc.indexOf('SODP_PLATBA7_KC') >= 0 && pryc.indexOf('SODP_PLATBA3_KC') < 0 && pryc.indexOf('SODP_PLATBA6_KC') < 0, pryc);
+}
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

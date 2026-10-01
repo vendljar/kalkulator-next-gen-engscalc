@@ -227,7 +227,11 @@ const KRYCI_SEKCE = [
      * 29. 9. 2026 „data z krycího listu"). Prázdný zůstane ve Wordu {{…}}. */
     { id: 'terminPrevzeti', label: 'Převzetí staveniště k montáži šachty', verze: ['bo', 'techdata'], typ: 'date',
       sod: 'SOD_TERMIN_MONTAZ_OD' },
-    { id: 'terminMontaz', label: 'Ukončení montáže šachty a předání montáži výtahu', verze: ['bo', 'techdata'], typ: 'date' },
+    /* Do SoD jako „předání konstrukce k montáži výtahu k …" (rozbor šablon
+     * SoD, 1. 10. 2026 — šablona SOD_REALIZACE v1 to pole nesla, aplikace ho
+     * neplnila, ač krycí list datum má). */
+    { id: 'terminMontaz', label: 'Ukončení montáže šachty a předání montáži výtahu', verze: ['bo', 'techdata'], typ: 'date',
+      sod: 'SOD_TERMIN_PREDANI_K_MONTAZI' },
     { id: 'terminPredani', label: 'Konečné předání díla', verze: ['bo', 'techdata'], typ: 'date',
       sod: 'SOD_TERMIN_DOKONCENI' },
     { id: 'terminJine', label: 'Jiné termíny', verze: ['bo', 'techdata'], typ: 'textarea' },
@@ -657,6 +661,12 @@ function kryciSodSymboly(zak, varianta, jekly, placeholders) {
     if (v && p.typ === 'date') v = kryciDatumCz(v);
     if (v) P[p.sod] = v;
   }));
+  /* Záruka (K18-N100): šablona píše „po dobu {{SOD_ZARUKA_MESICU}} měsíců",
+   * do symbolu jde jen číslo z krycího listu (zamčená varianta z doby
+   * odeslání). Bez čísla zůstane {{…}} k doplnění. */
+  const pz = KRYCI_SEKCE.reduce((a, s) => a || s.pole.find(p => p.id === 'zarukaMesicu'), null);
+  const zaruka = pz ? kryciCisloZTextu(kryciHodnota(pz, kl, c)) : '';
+  if (zaruka) P.SOD_ZARUKA_MESICU = zaruka;
   return P;
 }
 
@@ -814,6 +824,74 @@ function kryciPlatebniSymboly(kal, P, lang) {
   return { PODM_PLATEBNI_KALENDAR: vety.join('\n'), PODM_FAKTURACE_MESICNE: '' };
 }
 
+/* ---------- SMLOUVA O DÍLO REALIZACE: ZÁRUKA A SPLÁTKY (K18-N100, 1. 10. 2026) ----------
+ *
+ * Ostrá v30.9.1 (C19, šablona SOD_REALIZACE v1): smlouva převzala cenu
+ * a termíny, ale {{SOD_ZARUKA_MESICU}} a {{SOD_SPLATKA1–4_PROC}} zůstaly
+ * k ručnímu doplnění, ač krycí list nese 60 měsíců a 50 / 40 / 10.
+ * Rozhodnutí J. V. 29. 9. 2026: platební podmínky se dotahují z krycího
+ * listu a při rozporu má krycí list přednost (#367, 10.3).
+ *
+ * Zdroj je TÝŽ platební kalendář jako u nabídky (kryciPlatebniKalendar):
+ * „Bez zálohy" splátku vynechá, „Měsíční" dá větu o měsíční fakturaci,
+ * zamčená varianta čte hodnoty z doby odeslání (zmrazeno).
+ *
+ * Šablona v2 (nastroje/vyrob_sablony.js --sod-real) má místo čtyř pevných
+ * vět jeden odstavec {{SOD_PLATEBNI_KALENDAR}} — generátor ho zopakuje za
+ * každou splátku. Šablona v1 má čtyři pevné věty s milníky smlouvy
+ * (po podpisu / po montáži konstrukce / po opláštění / po předání):
+ *   1 ← záloha, 2 ← dílčí faktura, 4 ← konečná („zbývajících …"),
+ *   věta 3 (druhá dílčí platba, kterou krycí list nemá) a věta zálohy
+ *   při „Bez zálohy" zmizí (`odstavcePryc`). Měsíční fakturaci ani víc
+ *   dílčích plateb v1 vyjádřit neumí — smlouva pak nevznikne a řekne proč.
+ * Splátka bez čitelného procenta zůstane ve v1 jako {{…}} k doplnění.
+ * Vrací { symboly, odstavcePryc, chyba }. */
+const KRYCI_SOD_VETA_ZALOHY = 'při uzavření této smlouvy o dílo';
+const KRYCI_SOD_VETA_KONECNA = 'po provedení celého díla zhotovitele a jeho předání a převzetí bez vad a nedodělků bránících provozu výtahu zbývajících';
+function kryciSodMilnik(text) {
+  /* „40 % – po zahájení montáže" → „po zahájení montáže"; text bez pomlčky
+   * zůstane celý (vlastní znění obchodníka). */
+  const t = String(text == null ? '' : text).trim();
+  const m = t.match(/^\s*-?\d+(?:[.,]\d+)?\s*%\s*[–—-]\s*(.+)$/);
+  return m ? m[1].trim() : t;
+}
+function kryciSodPlatby(zak, varianta, jekly, sablona) {
+  const kal = kryciPlatebniKalendar(zak, varianta, jekly);
+  const sym = sablona && sablona.symboly;
+  const ma = (k) => !!sym && (typeof sym.has === 'function' ? sym.has(k) : Array.from(sym).indexOf(k) >= 0);
+  const symboly = {}, odstavcePryc = [];
+  const cislo = (proc) => String(proc || '').replace(/\s*%\s*$/, '');
+  /* seznam plateb (šablona v2, náhled) */
+  const radky = kal.mesicne ? [KRYCI_FAKTURACE_MESICNE_VETA] : kal.splatky.map(sp => {
+    if (sp.pct === null) return String(sp.text).trim();
+    if (sp.id === 'zaloha1') return KRYCI_SOD_VETA_ZALOHY + ' ' + sp.proc + ' z celkové ceny díla';
+    if (sp.id === 'fakturaKonc') return KRYCI_SOD_VETA_KONECNA + ' ' + sp.proc + ' z celkové ceny díla';
+    return kryciSodMilnik(sp.text) + ' ' + sp.proc + ' z celkové ceny díla';
+  }).filter(Boolean);
+  if (radky.length) symboly.SOD_PLATEBNI_KALENDAR = radky.join('\n');
+  const stara = !!sym && !ma('SOD_PLATEBNI_KALENDAR') && ['SOD_SPLATKA1_PROC', 'SOD_SPLATKA2_PROC', 'SOD_SPLATKA3_PROC', 'SOD_SPLATKA4_PROC'].some(ma);
+  /* šablona v1 (i bez informace o šabloně se symboly v1 plní — náhled) */
+  const sp = id => kal.splatky.find(x => x.id === id);
+  const z = sp('zaloha1'), f2 = sp('faktura2'), k = sp('fakturaKonc');
+  if (!kal.mesicne) {
+    if (z && z.pct !== null) symboly.SOD_SPLATKA1_PROC = cislo(z.proc);
+    if (f2 && f2.pct !== null) symboly.SOD_SPLATKA2_PROC = cislo(f2.proc);
+    if (k && k.pct !== null) symboly.SOD_SPLATKA4_PROC = cislo(k.proc);
+  }
+  let chyba = '';
+  if (stara) {
+    if (kal.mesicne)
+      chyba = 'Šablona smlouvy o dílo realizace má čtyři pevné splátky a měsíční fakturaci z krycího listu OCK vyjádřit neumí. '
+        + 'Nahrajte šablonu SoD realizace se seznamem plateb {{SOD_PLATEBNI_KALENDAR}} (Nastavení → Smlouvy / Šablony), nebo změňte způsob fakturace v krycím listu OCK.';
+    else {
+      if (kal.vynechane.indexOf('zaloha1') >= 0) odstavcePryc.push('SOD_SPLATKA1_PROC');
+      if (kal.vynechane.indexOf('faktura2') >= 0) odstavcePryc.push('SOD_SPLATKA2_PROC');
+      odstavcePryc.push('SOD_SPLATKA3_PROC');
+    }
+  }
+  return { symboly, odstavcePryc, chyba, kalendar: kal };
+}
+
 function kryciPodminkoveSymboly(zak, varianta, jekly, P) {
   const c = kryciCtx(zak, varianta, jekly);
   const kl = (varianta && varianta.data && varianta.data.kryci) || { hodnoty: {} };
@@ -829,4 +907,4 @@ if (typeof module !== 'undefined')
     kryciZKrycihoListuProj,
     kryciFaktura2Dopocet, kryciFaktura2Sync,
     KRYCI_PRAVIDLA_PLATEB, KRYCI_FAKTURACE_MESICNE_VETA, KRYCI_VETY_V13, kryciPlatbaProcento, kryciPlatbyStary,
-    kryciPlatebniKalendar, kryciPlatebniSymboly };
+    kryciPlatebniKalendar, kryciPlatebniSymboly, kryciSodPlatby, kryciSodMilnik };
