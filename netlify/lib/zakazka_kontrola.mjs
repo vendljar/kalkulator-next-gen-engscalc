@@ -110,10 +110,25 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
    * s takovým profilem se odmítne; uzamčená (odeslaná) se nemění, a proto se
    * nekontroluje — jinak by zakázka po změně katalogu nešla uložit vůbec.
    * Katalog je týž JEKLY, se kterým server počítá, a seznam dává táž funkce
-   * jádra jako výpočet (profilyNezname). */
+   * jádra jako výpočet (profilyNezname).
+   *
+   * „Uzamčená" znamená ZAMČENÁ UŽ V ULOŽENÉ VERZI (P1 / K19-N102, 1. 10.
+   * 2026). Do té doby se přeskakovala každá varianta, která PŘIŠLA zamčená —
+   * zámek, který server ještě neviděl, ale ověřuje až níž (B61, B59)
+   * a porovnání s uloženou verzí bere jen varianty zamčené v ní. Tisk se
+   * zámkem tak v ostré v30.9.1 uložil 10 zakázek s profilem mimo katalog
+   * a v testu v1.10.1 prošla záměrná zkouška K19T-C070 (zámek bez
+   * dokumentu). Nově zamčená varianta se proto kontroluje jako nezamčená.
+   * Obnova bere zámek ze zálohy jako doklad (viz hlavička souboru) —
+   * u ní platí zámek z příchozích dat jako dřív. */
+  const zamcenaDriv = (v) => {
+    if (obnova) return zamcena(v);
+    const sv = stara ? (stara.varianty || []).find(x => x && x.id === v.id) : null;
+    return !!sv && zamcena(sv);
+  };
   const nezname = [];
   for (const v of (zak.varianty || [])) {
-    if (!v || zamcena(v)) continue;
+    if (!v || zamcenaDriv(v)) continue;
     const nez = globalThis.profilyNezname(v.data && v.data.ock && v.data.ock.zadani, JEKLY);
     if (nez.length) nezname.push((cisloVarianty(zak, v) || v.nazev || v.id) + ' — ' + nez.join(', '));
   }

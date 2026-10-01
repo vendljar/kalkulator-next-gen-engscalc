@@ -8,6 +8,47 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## větev claude/k19-nalezy (neuvolněno)
+
+Nálezy 19. kola (1. 10. 2026, ostrá v30.9.1 + test v1.10.1) podle promptu
+J. V. Větev z `b5253c9` (v1.10.1); o sloučení rozhoduje J. V. Označení
+P1–P6 z promptu, v závorce číslo nálezu kola.
+
+### P1 (K19-N102) — pojistka #372 a nově zamčená varianta
+
+- **Příčina:** `netlify/lib/zakazka_kontrola.mjs` přeskakoval v kontrole
+  neznámého rozměru profilu (#372) každou variantu, která do serveru PŘIŠLA
+  zamčená. Porovnání zamčených variant s uloženou verzí bere jen varianty
+  zamčené v uložené verzi, takže zámek, který server ještě neviděl, prošel
+  oběma kontrolami. V ostré v30.9.1 tak tisk se zámkem uložil 10 zakázek
+  s profilem mimo katalog jeklů, v testu v1.10.1 záměrná zkouška K19T-C070
+  (zámek bez dokumentu + uložení).
+- **Oprava:** při uložení se přeskakuje jen varianta zamčená UŽ V ULOŽENÉ
+  VERZI (stejné `id`, `variantaUzamcena`); nově zamčená se kontroluje jako
+  nezamčená. Obnova ze zálohy beze změny — zámek ze zálohy je doklad (stejně
+  jako u ostatních pojistek v režimu obnovy).
+- **Testy** (`netlify/test_obnova.mjs`): (a) nová zakázka se zámkem jen
+  v příchozích datech a spojkou 70x40 / 3 mm → 400 a v databázi nic;
+  (a2) uložená zakázka, zámek přidaný až v požadavku → 400, uložená verze
+  beze změny; (b) varianta zamčená už v uložené verzi s profilem, který
+  katalog (po změně) nemá → uloží se; (c) nezamčená → 400 jako dřív. Před
+  opravou 176 OK / 4 FAIL (a, a2), po opravě 180 OK / 0 FAIL. Nová mutace
+  serveru „K19-N102 (P1)" chycena (4 selhání), kotva mutace „#372 kontroluje
+  profily i v odeslané variantě" posunuta na `zamcenaDriv` (chycena testem b).
+- **Prověřeno, zda další kontroly téhož souboru nepřeskakují varianty
+  zamčené jen v příchozích datech:** ne. Typy polí (`uloTypyProblemy`),
+  záporné hodnoty (B111), zaokrouhlení (B96), ceník a přepisy podle role
+  (B112, přes `uloProVarianty`), minimální marže (`schvalovaniServerMarze`),
+  shoda dat zamčené varianty (N43) i razítka zámku (B59, B61) se řídí
+  zámkem v ULOŽENÉ verzi; nový zámek navíc projde ověřením čísla z papíru
+  a výsledku. **Návrh (neměněno):** obnova ze SOUBORU (B98 — soubor jde
+  upravit) bere zámek ze zálohy jako doklad i pro #372; kdo by v editoru
+  připsal zámek k variantě s profilem mimo katalog, obnovou ji do databáze
+  dostane (obnovu smí jen administrátor). Výchozí návrh: ponechat; přísnější
+  varianta = u `zeSouboru` kontrolovat jen zámek, který leží v databázi.
+
+---
+
 ## v1.10.1 — dávka 1. 10. 2026: SoD podle šablon, zábrany blokují dokumenty, šířka bočního světlíku, dodatkové texty (1. 10. 2026)
 
 Zadání J. V. 1. 10. 2026 (úkoly 1–4) a jeho rozhodnutí během dne: návrh SoD

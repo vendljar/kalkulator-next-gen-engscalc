@@ -784,11 +784,62 @@ console.log('\n===== #372: neznámý rozměr profilu v neuzamčené variantě se
     oN.ok === true && oN.casti.zakazky.preskocene === 1 && /katalogu jeklů/.test((oN.casti.zakazky.duvody[0] || {}).duvod || '')
     && (await ulz('zakazky').cti('z/' + jmeno(zU))) === null, oN.casti && oN.casti.zakazky);
 
-  const zL = sCenikem(novaZak('2026 - OPR - CN - 0792', '#372 odeslaná s neznámým rozměrem'));
-  zL.varianty[0].data.ock.zadani.profily.sloupek.dim = '999x999';
+  /* P1 (K19-N102, 1. 10. 2026): varianta zamčená JEN v příchozích datech
+   * (zámek, který server ještě neviděl) se kontroluje jako nezamčená. Do
+   * opravy pojistka přeskočila každou variantu, která přišla zamčená —
+   * v ostré v30.9.1 tak tisk se zámkem uložil 10 zakázek s profilem mimo
+   * katalog, v testu v1.10.1 záměrná zkouška K19T-C070 (zámek bez
+   * dokumentu + uložení). Před opravou (a) a (a2) selhávaly (uloženo 200). */
+  const zL = sCenikem(novaZak('2026 - OPR - CN - 0792', '#372 nově zamčená s neznámým rozměrem'));
+  zL.varianty[0].data.ock.zadani.profily.spojka.dim = '70x40';
+  zL.varianty[0].data.ock.zadani.profily.spojka.tl = 3;
   zamkniJakoAplikace(zL, zL.varianty[0], { typ: 'nabidka', kdo: 'Test', vysledek: zm.zamekVysledekSpocti(zL.varianty[0], JEKLY, 'test') });
-  const jL = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zL }, cookie)).json();
-  test('#372: uzamčená (odeslaná) varianta se nekontroluje — uloží se jako dřív', jL.ok === true, jL);
+  const rL = await post(zakazky, 'http://x/api/zakazky', { zakazka: zL }, cookie);
+  const jL = await rL.json();
+  test('P1 (K19-N102) a: nová zakázka s variantou zamčenou jen v příchozích datech a spojkou 70x40 / 3 mm → 400',
+    rL.status === 400 && /katalogu jeklů/.test(jL.chyba || '') && /spojka sloupků: 70x40 \/ 3 mm/.test(jL.chyba || ''), [rL.status, jL]);
+  test('P1 a: … a v databázi nic není', (await ulz('zakazky').cti('z/' + jmeno(zL))) === null);
+
+  /* a2) uložená zakázka, varianta v uložené verzi NEzamčená, zamčená až
+   * v příchozích datech (běžná cesta „tisk se zámkem → uložení") */
+  const zN = sCenikem(novaZak('2026 - OPR - CN - 0795', '#372 zámek až při tisku'));
+  const jN0 = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zN }, cookie)).json();
+  test('P1 a2: výchozí zakázka s platnými profily uložena', jN0.ok === true, jN0);
+  const zN2 = kopie(zN);
+  zN2.varianty[0].data.ock.zadani.profily.spojka.dim = '70x40';
+  zN2.varianty[0].data.ock.zadani.profily.spojka.tl = 3;
+  zamkniJakoAplikace(zN2, zN2.varianty[0], { typ: 'nabidka', kdo: 'Test', vysledek: zm.zamekVysledekSpocti(zN2.varianty[0], JEKLY, 'test') });
+  const rN = await post(zakazky, 'http://x/api/zakazky', { zakazka: zN2 }, cookie);
+  const jN = await rN.json();
+  test('P1 a2: uložená zakázka, varianta nově zamčená s profilem mimo katalog → 400', rN.status === 400 && /katalogu jeklů/.test(jN.chyba || ''), [rN.status, jN]);
+  const ulN = await ulz('zakazky').cti('z/' + jmeno(zN));
+  test('P1 a2: … uložená verze zůstala nezamčená s platným profilem',
+    !!ulN && !ulN.varianty[0].zamek && ulN.varianty[0].data.ock.zadani.profily.spojka.dim !== '70x40', ulN && ulN.varianty[0].data.ock.zadani.profily.spojka);
+
+  /* b) varianta zamčená UŽ V ULOŽENÉ VERZI s profilem, který katalog
+   * (po změně) nemá — doklad se nekontroluje, zakázka se dál uloží */
+  const zB = sCenikem(novaZak('2026 - OPR - CN - 0796', '#372 odeslaná před změnou katalogu'));
+  zamkniJakoAplikace(zB, zB.varianty[0], { typ: 'nabidka', kdo: 'Test', vysledek: zm.zamekVysledekSpocti(zB.varianty[0], JEKLY, 'test') });
+  const jB0 = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zB }, cookie)).json();
+  test('P1 b: zakázka s odeslanou nabídkou uložena', jB0.ok === true, jB0);
+  /* „změna katalogu": uložená verze nese rozměr, který dnešní katalog nemá */
+  const ulB = await ulz('zakazky').cti('z/' + jB0.soubor);
+  ulB.varianty[0].data.ock.zadani.profily.spojka.dim = '70x40';
+  ulB.varianty[0].data.ock.zadani.profily.spojka.tl = 3;
+  await ulz('zakazky').zapis('z/' + jB0.soubor, ulB);
+  const zB2 = kopie(ulB); zB2.nazev = '#372 odeslaná — přejmenovaná akce';
+  const rB = await post(zakazky, 'http://x/api/zakazky', { zakazka: zB2 }, cookie);
+  const jB = await rB.json();
+  test('P1 b: varianta zamčená už v uložené verzi s profilem mimo katalog se nekontroluje — uloží se', rB.status === 200 && jB.ok === true, [rB.status, jB]);
+
+  /* c) nezamčená varianta s profilem mimo katalog → 400 jako dřív */
+  const zC = sCenikem(novaZak('2026 - OPR - CN - 0797', '#372 nezamčená 70x40/3'));
+  zC.varianty[0].data.ock.zadani.profily.spojka.dim = '70x40';
+  zC.varianty[0].data.ock.zadani.profily.spojka.tl = 3;
+  const rC = await post(zakazky, 'http://x/api/zakazky', { zakazka: zC }, cookie);
+  test('P1 c: nezamčená varianta se spojkou 70x40 / 3 mm → 400 jako dřív', rC.status === 400, rC.status);
+
+  /* Obnova (z otisku i ze souboru) bere zámek ze zálohy jako doklad — beze změny. */
   const zL2 = kopie(zL); zL2.cislo = '2026 - OPR - CN - 0793'; delete zL2.varianty[0].zamek;
   zamkniJakoAplikace(zL2, zL2.varianty[0], { typ: 'nabidka', kdo: 'Test', vysledek: zm.zamekVysledekSpocti(zL2.varianty[0], JEKLY, 'test') });
   const oL = await obnovJson({ zdroj: { soubor: zalohaS(jmeno(zL2), zL2) }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['zakazky'] }, cookie);
