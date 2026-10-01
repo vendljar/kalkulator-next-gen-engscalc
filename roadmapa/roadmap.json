@@ -5995,6 +5995,26 @@
     }
    ],
    "otazka" : "Otázky k návrhu SoD (artefakt 1. 10. 2026): nová pole termínů a pokuty v krycím listu OCK, náhrada pevného data v šabloně, pokuta zhotovitele, rozsah SoD PROJ."
+  },
+  {
+   "id" : "381",
+   "vlna" : "B",
+   "stav" : "blokovano",
+   "dulezitost" : "stredni",
+   "slozitost" : "S–M",
+   "nazev" : "Šířka bočního světlíku při ručním počtu světlíků",
+   "proc" : "Dotaz J. V. 1. 10. 2026: „jaktože se při změně počtu světlíků nezmění množství materiálu (sklo vsg 4.4.1)? znamená to, že se pro výpočet posune vstup na stranu a plocha tedy zůstane stejná? pokud je to tak, asi by bylo dobré, kdyby v případě ruční úpravy vyskočilo další pole (řádek pod celkem světlíků na bocích dveří) s názvem Šířka bočního světlíku, ve kterém by byla šířka předem předpočítaná a obchodník by měl možnost jí ještě změnit.“ Ověřeno v jádru: podle otázky 1 návrhu #375 (30. 9. 2026) dveře s jedním světlíkem stojí u sloupku a světlík vyplní celou mezeru, takže plocha boků je od D do 2D světlíků stejná (u zakázky ze snímku 5 × 0,60 m × 2,2 m = 6,60 m²); obchodník to na obrazovce nevidí.",
+   "detail" : "NÁVRH (artefakt https://claude.ai/artifact/7tNaMb8Fu1tNt9ADCyYheL): pole „Šířka bočního světlíku“ (mm) pod „Celkem světlíků na bocích dveří“, jen při ručním počtu; předpočítaná šířka = taková, při které vyjde dnešní plocha (jeden světlík u dveří = celá mezera, dva = polovina, smíšené = průměr) — dokud ji nikdo nepřepíše, počítá se přesná hodnota a cena se nemění; ruční šířka se štítkem „ručně“ a ↺; plocha boků pak = počet × šířka × 2,2 m pro všechny výplně; ↺ u počtu šířku zahodí; kontrola bokyDveri: světlík širší než mezera / světlíky se nevejdou = zábrana, zbytek mezery = upozornění; Detail mezivýpočtů, specifikace („5 ks, šířka 600 mm“), příručka, testy, mutace jádra. Osm otázek s výchozími odpověďmi je v artefaktu.",
+   "hotovoKdyz" : "Pole se ukáže při ručním počtu, předpočítaná šířka nemění cenu, ruční šířka mění plochu výplně boků; kontrola hlídá šířku proti mezeře; test před → po opravě.",
+   "kde" : "`src/engine.js` (bokyM2, bokyPocet*), `src/ui/kalk_ock.js` (bokyKsRadek), `src/kontroly.js` (bokyDveri), `src/techspec.js`",
+   "zavisi" : [
+    {
+     "id" : "375",
+     "typ" : "tvrda",
+     "proc" : "boční světlíky po kusech"
+    }
+   ],
+   "cekaNa" : "J. V. — odsouhlasit návrh pole „Šířka bočního světlíku“ (artefakt 1. 10. 2026)"
   }
  ],
  "meta" : {
