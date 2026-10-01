@@ -5940,6 +5940,20 @@
    "detail": "Návrh: dokumentZabrana(typ, varianta) doplnit o zábrany z kontrolyProved (jen pravidla, která se týkají daného dokumentu, s hláškou, co opravit), test v prohlížeči. Pozor na pravidla, která čtou symboly šablony stažené na pozadí — ta jsou záměrně varování. Čeká na souhlas J. V.",
    "kde": "src/dokumenty.js, src/kontroly.js, src/ui/kontroly_ui.js",
    "zavisi": ["376"]
+  },
+  {
+   "id": "378",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "",
+   "slozitost": "S",
+   "nazev": "Model 2 neubírá montáž 0,2 h na nástupiště u nadsvětlíku „bez“",
+   "proc": "Zadání J. V. 1. 10. 2026: „v modelu 2 přestaň ubírat 0,2h montáže na nástupiště v případě nadsvětlík bez“. Odpočet je převzatý z excelové předlohy (nezaškrtnutý světlík); rám nad dveřmi se ale montuje i bez výplně, takže Model 2 montáž podhodnocoval.",
+   "detail": "HOTOVO (větev claude/model2-nadsvetlik-bez, připraveno pro v1.10.x): v `hn.svetlik` jádra se odpočet −0,2 h × nástupiště při „bez“ dělá jen v Modelu 1 (`!fixes`), Model 1 se nemění ani o korunu (1:1 Excel, hlídá i test_kornpfortstrasse). „Zajistí stavba“ neubírá v žádném modelu dál (#375). Testy: test_nadprazi.js (nový úsek 3b — oba modely, interiér i exteriér, rozdíl M2 − M1 = 0,2 h × nástupiště; „zajistí stavba“ v obou modelech) a test_svetliky_boky.js (úsek 6 rozdělen po modelech); před opravou 6 selhání, po ní 0. Mutace jádra: dva nové úseky (#378 Model 2 zase ubírá / Model 1 přestane ubírat), oba chycené; úseky N58 a #375 přepsané na nový tvar řádku. Nápověda v Detailu mezivýpočtů podle modelu, příručka (kapitola o světlíku nad dveřmi), podklad #149 (13. rozdíl) a nastroje/porovnani_modelu.js (vzor G + složka montáže).",
+   "hotovoKdyz": "Model 2 má u „bez“ hodinyNavic.svetlik = 0, Model 1 −0,2 × nástupiště; spust_testy.sh zelené, mutace #378 chycené.",
+   "kde": "`src/engine.js` (`hn.svetlik`), `src/test_nadprazi.js`, `src/test_svetliky_boky.js`, `mutace_jadro.mjs`, `src/ui/detail_ui.js`, `manual/obsah.json`",
+   "hotovoV": "v1.10.x (připraveno)",
+   "zavisi": [{"id": "375", "typ": "doporuceno", "proc": "navazuje na zrušení odpočtu u „zajistí stavba“"}]
   }
  ],
  "meta" : {

@@ -40,6 +40,8 @@ const VZORY = [
   { id: 'D', popis: 'exteriér, ATYP s rezervami 30 % (základ i příplatky)', z: zad({ typSachty: 'exteriérová', atyp: true, rezervaZakladPct: 0.3, rezervaPriplatkyPct: 0.3 }) },
   { id: 'E', popis: 'nízká podlaží (světlá výška pod 2,3 m) se světlíkem', z: zad({ typSachty: 'exteriérová', zdvih: 6, nastupiste: 4, svetlikNadDvermi: true }) },
   { id: 'F', popis: 'starší zakázka: zámečník ATYP v kusech (2 ks)', z: zad({ typSachty: 'exteriérová', zamecnikAtypKs: 2 }) },
+  /* #378 (1. 10. 2026): „bez" nad dveřmi ubírá montáž jen v Modelu 1. */
+  { id: 'G', popis: 'nad dveřmi „bez" (bez světlíku i výplně)', z: zad({ typSachty: 'interiérová', nadDvermi: 'bez' }) },
 ];
 
 /* Složky, ve kterých se modely liší — a která čísla rozdílu odpovídají. */
@@ -58,6 +60,7 @@ const SLOZKY = [
   { nazev: 'Zámečník ATYP (Kč)', rozdily: '10', f: r => { const x = radek(r, /ZÁMEČNÍKA - OSTATNÍ/); return x ? x.naklad : 0; } },
   { nazev: 'Opláštění — náklad sekce (Kč)', rozdily: '6, 8, 9', f: r => soucetSekce(r, 'oplasteni') },
   { nazev: 'Rezerva základu (Kč, s přirážkou)', rozdily: '11', f: r => r.rezerva.sMarzi },
+  { nazev: 'Montáž — hodiny navíc za světlík nad dveřmi (h)', rozdily: '13', f: r => r.montaz.hodinyNavic.svetlik, jednotka: 'h' },
   { nazev: 'Základní cena (Kč, zaokrouhlená)', rozdily: 'vše', f: r => r.souhrn.zakladCena, hlavni: true },
   { nazev: 'Příplatky celkem (Kč, vč. rezervy)', rozdily: '12', f: r => r.souhrn.priplatkyCena, hlavni: true },
 ];

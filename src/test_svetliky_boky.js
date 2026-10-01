@@ -16,7 +16,8 @@
  *      stěny A, jinak sklo čelní stěny ze standardu — žádné dělení do pásů),
  *      materiál = stěny B, C, D (převažující podle plochy, deska bez lišt
  *      a terčů, „bez — dodá stavba" = zajistí stavba),
- *   6) nad dveřmi: „zajistí stavba" neubírá montáž 0,2 h, „bez" ano (oba modely),
+ *   6) nad dveřmi: „zajistí stavba" neubírá montáž 0,2 h (oba modely), „bez"
+ *      ji ubírá jen v Modelu 1 (#378, rozhodnutí J. V. 1. 10. 2026),
  *   7) průchozí šachta: boční světlíky podle dveří na stěnách A a C,
  *   8) převod starších zakázek beze změny ceny (i import zakázky),
  *   9) kontrola před nabídkou, technická specifikace a překlad, nabídka,
@@ -241,11 +242,17 @@ test('záporný ruční počet = 0', () => E.bokyPocet(zad({ bokyDveri: 'sklo', 
 for (const fixes of [true, false]) {
   const M = fixes ? 'Model 2' : 'Model 1';
   const bez = spocti(zad({ nadDvermi: 'bez' }), fixes), st = spocti(zad({ nadDvermi: 'stavba' }), fixes);
-  test(M + ': nad dveřmi „bez" ubírá montáž 0,2 h na nástupiště (jako předloha)', () => blizko(bez.montaz.hodinyNavic.svetlik, -1));
+  /* #378 (rozhodnutí J. V. 1. 10. 2026): odpočet 0,2 h × nástupiště při „bez"
+   * zůstává jen v Modelu 1 (1:1 předloha); Model 2 ho nedělá. */
+  if (fixes) test(M + ': nad dveřmi „bez" montáž neubírá (#378, rozhodnutí J. V. 1. 10. 2026)',
+    () => bez.montaz.hodinyNavic.svetlik === 0, () => bez.montaz.hodinyNavic.svetlik);
+  else test(M + ': nad dveřmi „bez" ubírá montáž 0,2 h na nástupiště (jako předloha)',
+    () => blizko(bez.montaz.hodinyNavic.svetlik, -1), () => bez.montaz.hodinyNavic.svetlik);
   test(M + ': „zajistí stavba" montáž neubírá (rozhodnutí J. V. 30. 9. 2026)', () => st.montaz.hodinyNavic.svetlik === 0);
-  test(M + ': „zajistí stavba" je o montáž dražší než „bez", výplň 0 Kč', () =>
-    blizko(mn(st, 'MONTÁŽ NA STAVBĚ') - mn(bez, 'MONTÁŽ NA STAVBĚ'), 0.2 * 5 * 4, 1e-9)
-    && blizko(st.souctySekci.oplasteni.naklad, bez.souctySekci.oplasteni.naklad, 1e-6));
+  test(M + ': ' + (fixes ? '„zajistí stavba" má stejnou montáž jako „bez"' : '„zajistí stavba" je o montáž dražší než „bez"') + ', výplň 0 Kč', () =>
+    blizko(mn(st, 'MONTÁŽ NA STAVBĚ') - mn(bez, 'MONTÁŽ NA STAVBĚ'), fixes ? 0 : 0.2 * 5 * 4, 1e-9)
+    && blizko(st.souctySekci.oplasteni.naklad, bez.souctySekci.oplasteni.naklad, 1e-6),
+    () => [mn(st, 'MONTÁŽ NA STAVBĚ'), mn(bez, 'MONTÁŽ NA STAVBĚ')]);
 }
 {
   /* Model 1 napodobuje chybu předlohy (buňka D19 místo D18): hloubka bočního

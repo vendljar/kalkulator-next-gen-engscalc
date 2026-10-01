@@ -94,15 +94,46 @@ for (const fixes of [true, false]) {
   test('materiál opláštění ve standardu = sklo', spocti({ nadDvermi: 'material' }).souhrn.zakladCena === spocti({ nadDvermi: 'sklo' }).souhrn.zakladCena);
   /* ZMĚNA 30. 9. 2026 (#375, rozhodnutí J. V.): „zajistí stavba" už neubírá
    * montáž 0,2 h na nástupiště (volba v předloze není, platí v obou modelech);
-   * výplň zůstává za 0 Kč. „Bez" ubírá dál jako předloha. Podrobně hlídá
+   * výplň zůstává za 0 Kč. ZMĚNA 1. 10. 2026 (#378, rozhodnutí J. V.): „bez"
+   * ubírá jen v Modelu 1 (jako předloha), Model 2 už ne. Podrobně hlídá
    * test_svetliky_boky.js. */
-  const st = spocti({ nadDvermi: 'stavba' }), bez = spocti({ nadDvermi: 'bez' });
   const nastSt = E.nastupisteCelkem(Object.assign(kop(E.DEFAULT_ZADANI), { typSachty: 'interiérová' }));
-  test('zajistí stavba: výplň 0 Kč (opláštění jako „bez", žádný plech)',
-    blizko(st.souctySekci.oplasteni.naklad, bez.souctySekci.oplasteni.naklad) && st.zaskleni.vypln.nadPlechM2 === 0);
-  test('zajistí stavba: montáž bez odečtu 0,2 h, „bez" s odečtem (#375)',
-    st.montaz.hodinyNavic.svetlik === 0 && blizko(bez.montaz.hodinyNavic.svetlik, -0.2 * nastSt, 1e-9),
-    [st.montaz.hodinyNavic.svetlik, bez.montaz.hodinyNavic.svetlik]);
+  for (const fixes of [true, false]) {
+    const M = fixes ? 'M2' : 'M1';
+    const st = spocti({ nadDvermi: 'stavba' }, fixes), bez = spocti({ nadDvermi: 'bez' }, fixes);
+    test('zajistí stavba (' + M + '): výplň 0 Kč (opláštění jako „bez", žádný plech)',
+      blizko(st.souctySekci.oplasteni.naklad, bez.souctySekci.oplasteni.naklad) && st.zaskleni.vypln.nadPlechM2 === 0);
+    test('zajistí stavba (' + M + '): montáž bez odečtu 0,2 h (#375), „bez" ' + (fixes ? 'taky bez odečtu (#378)' : 's odečtem (předloha)'),
+      st.montaz.hodinyNavic.svetlik === 0 && blizko(bez.montaz.hodinyNavic.svetlik, fixes ? 0 : -0.2 * nastSt, 1e-9),
+      [st.montaz.hodinyNavic.svetlik, bez.montaz.hodinyNavic.svetlik]);
+  }
+}
+
+/* 3b) #378 (zadání J. V. 1. 10. 2026: „v modelu 2 přestaň ubírat 0,2 h montáže
+ * na nástupiště v případě nadsvětlík bez"). Model 1 ubírá dál −0,2 h ×
+ * nástupiště jako předloha (1:1 Excel), Model 2 ne — „bez" se v něm montuje
+ * stejně jako sklo, plech, materiál i „zajistí stavba". */
+for (const typ of ['interiérová', 'exteriérová']) {
+  const nast = E.nastupisteCelkem(Object.assign(kop(E.DEFAULT_ZADANI), { typSachty: typ }));
+  const m1 = { bez: spocti({ nadDvermi: 'bez' }, false, typ), sklo: spocti({ nadDvermi: 'sklo' }, false, typ) };
+  const m2 = { bez: spocti({ nadDvermi: 'bez' }, true, typ), sklo: spocti({ nadDvermi: 'sklo' }, true, typ) };
+  test('#378 Model 1, ' + typ + ': „bez" ubírá 0,2 h × nástupiště (' + nast + ')',
+    blizko(m1.bez.montaz.hodinyNavic.svetlik, -0.2 * nast, 1e-9)
+      && blizko(m1.sklo.montaz.hodinyNavicCelkem - m1.bez.montaz.hodinyNavicCelkem, 0.2 * nast, 1e-9),
+    [m1.bez.montaz.hodinyNavic.svetlik, m1.sklo.montaz.hodinyNavicCelkem, m1.bez.montaz.hodinyNavicCelkem]);
+  test('#378 Model 2, ' + typ + ': „bez" neubírá nic — hodiny navíc stejné jako u skla',
+    m2.bez.montaz.hodinyNavic.svetlik === 0
+      && blizko(m2.sklo.montaz.hodinyNavicCelkem, m2.bez.montaz.hodinyNavicCelkem, 1e-9)
+      && blizko(m2.sklo.montaz.hodCelkem, m2.bez.montaz.hodCelkem, 1e-9),
+    [m2.bez.montaz.hodinyNavic.svetlik, m2.sklo.montaz.hodinyNavicCelkem, m2.bez.montaz.hodinyNavicCelkem]);
+}
+{
+  /* Model 2 nad Modelem 1 u „bez": hodiny navíc se liší přesně o odpočet. */
+  const nast = E.nastupisteCelkem(Object.assign(kop(E.DEFAULT_ZADANI), { typSachty: 'interiérová' }));
+  const m1 = spocti({ nadDvermi: 'bez' }, false), m2 = spocti({ nadDvermi: 'bez' }, true);
+  test('#378: „bez" — Model 2 má o 0,2 h × nástupiště víc hodin navíc než Model 1',
+    blizko(m2.montaz.hodinyNavicCelkem - m1.montaz.hodinyNavicCelkem, 0.2 * nast, 1e-9),
+    [m1.montaz.hodinyNavicCelkem, m2.montaz.hodinyNavicCelkem]);
 }
 
 /* 4) Průchozí šachta: plech nad dveřmi na A i C. */

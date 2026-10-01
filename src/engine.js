@@ -491,7 +491,8 @@ const SVETLA_VYSKA_ODSTUP_M = 0.2;
  *              stavba" znamená zajistí stavba. Do 30. 9. se počítal jako sklo.
  *   stavba   — nad dveřmi už NEUBÍRÁ montáž 0,2 h na nástupiště (volba
  *              v předloze není, platí v obou modelech); „bez" ji ubírá dál
- *              jako předloha (Model 1 zůstává 1:1). */
+ *              jako předloha jen v Modelu 1 (zůstává 1:1), Model 2 od
+ *              1. 10. 2026 ne (#378, rozhodnutí J. V.). */
 const NAD_DVERMI_VOLBY = ['bez', 'sklo', 'plech', 'material', 'stavba'];
 function nadDvermiVypln(z) {
   const v = z && z.nadDvermi;
@@ -689,11 +690,13 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     nastupiste: nastupist - 6,
     exterier: D16 === 1 ? 0 : 8 + (H - 21) * 0.5 * 1.5,
     portaly: zapusteny ? 0 : nastupist,
-    /* −0,2 h na nástupiště JEN při „bez" (předloha: nezaškrtnutý světlík).
-     * Plech se montuje jako světlík (N58); „zajistí stavba" od 30. 9. 2026
-     * montáž neubírá (rozhodnutí J. V., #375 — volba v předloze není, platí
-     * v obou modelech). */
-    svetlik: (nadV === 'bez' ? -1 : 0) * nastupist * 0.2,
+    /* −0,2 h na nástupiště JEN při „bez" a JEN v Modelu 1 (předloha:
+     * nezaškrtnutý světlík; Model 1 zůstává 1:1 Excel). Model 2 od 1. 10.
+     * 2026 neubírá (rozhodnutí J. V., #378: „v modelu 2 přestaň ubírat 0,2 h
+     * montáže na nástupiště v případě nadsvětlík bez"). Plech se montuje jako
+     * světlík (N58); „zajistí stavba" od 30. 9. 2026 montáž neubírá v žádném
+     * modelu (rozhodnutí J. V., #375 — volba v předloze není). */
+    svetlik: (!fixes && nadV === 'bez' ? -1 : 0) * nastupist * 0.2,
     svetlikyBoky: bokyKs * 0.5,                      // #375: 0,5 h na každý boční světlík
   };
   const hodinyNavic = Object.values(hn).reduce((a, b) => a + b, 0);

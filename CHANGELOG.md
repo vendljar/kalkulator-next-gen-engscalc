@@ -8,6 +8,29 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## (připraveno pro v1.10.x) — Model 2 neubírá montáž u nadsvětlíku „bez“ (1. 10. 2026)
+
+Zadání J. V. 1. 10. 2026: „v modelu 2 přestaň ubírat 0,2h montáže na
+nástupiště v případě nadsvětlík bez“. Větev `claude/model2-nadsvetlik-bez`
+(nad `test-draft` v30.9.4), roadmapa #378 hotovo.
+
+- **Jádro** (`src/engine.js`, `hn.svetlik`): odpočet −0,2 h × nástupiště
+  při světlíku nad dveřmi „bez“ se dělá **jen v Modelu 1** (1:1 Excel —
+  nemění se ani o korunu). Model 2 neubírá u žádné volby; „zajistí stavba“
+  neubírá v žádném modelu dál (#375).
+- **Testy:** `test_nadprazi.js` — nový úsek 3b (oba modely, interiér
+  i exteriér, rozdíl M2 − M1 = 0,2 h × nástupiště) a úsek „zajistí stavba“
+  pro oba modely; `test_svetliky_boky.js` — úsek 6 rozdělen po modelech.
+  Před opravou 6 selhání (4 + 2), po ní 0.
+- **Mutace jádra:** nové úseky „#378: Model 2 zase ubírá montáž při ‚bez‘“
+  a „#378: Model 1 přestane ubírat“ — oba chycené (test_nadprazi.js,
+  test_kornpfortstrasse.js); úseky N58 a #375 přepsané na nový tvar řádku
+  (chycené dál).
+- **Nápověda a texty:** Detail mezivýpočtů (`src/ui/detail_ui.js`) popisuje
+  odpočet podle modelu; příručka (světlík nad dveřmi); podklad #149
+  (13. rozdíl M1 × M2); `nastroje/porovnani_modelu.js` — vzor G a složka
+  „Montáž — hodiny navíc za světlík nad dveřmi“.
+
 ## v30.9.4 — světlíky u šachetních dveří (#375), nálezy 18. kola, platební podmínky OCK, zdvih nejvýš 99 m (30. 9. 2026)
 
 Pokyn J. V. 30. 9. 2026: „co máme aktuálně v draftu pošli už do testu"

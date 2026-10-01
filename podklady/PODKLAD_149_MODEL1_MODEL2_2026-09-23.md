@@ -36,6 +36,14 @@
 | 11 | Rezerva základu | z ceny **s přirážkou** a přirážka ještě jednou | z nákladu, přirážka jednou | rezerva > 0 (ATYP) | ↓ |
 | 12 | Rezerva příplatků | z ceny s přirážkou | z nákladu | rezerva příplatků > 0 | ↓ |
 
+> **Doplněno 1. 10. 2026 (#378, rozhodnutí J. V.):** 13. rozdíl — světlík
+> nad dveřmi „bez“: Model 1 jako předloha ubírá montáž **−0,2 h na
+> nástupiště**, Model 2 neubírá nic („bez“ se montuje stejně jako sklo,
+> plech, materiál i „zajistí stavba“). Směr ceny M2 proti M1: ↑ (montáž).
+> V `nastroje/porovnani_modelu.js` je k tomu vzor G a složka „Montáž —
+> hodiny navíc za světlík nad dveřmi“; tabulky níž jsou z 23. 9. a ten
+> rozdíl neobsahují.
+
 ## Dopad na vzorových zakázkách (zkušební ceník)
 
 | Vzor | Zakázka | Základní cena M2 − M1 | Příplatky M2 − M1 | Co to táhne |

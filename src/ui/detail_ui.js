@@ -193,8 +193,11 @@ function renderDetail() {
     ['Za portály (předsazené)', `${M(hn.portaly, 2)} h`,
       'předsazený portál: 1 h na nástupiště; zapuštěný 0'],
     ['Za světlík / světlíky boky', `${M(hn.svetlik, 2)} / ${M(hn.svetlikyBoky, 2)} h`,
-      'světlík: jen volba „bez" ubere 0,2 h na nástupiště (tak počítá předloha); sklo, plech, materiál i „zajistí stavba" '
-      + 'se montují jako světlík (stavba od 30. 9. 2026, rozhodnutí J. V.); boky: 0,5 h na každý boční světlík'],
+      (OCK.fixes
+        ? 'světlík: Model 2 montáž neubírá u žádné volby („bez" od 1. 10. 2026, rozhodnutí J. V.; Model 1 jako předloha ubírá při „bez" 0,2 h na nástupiště)'
+        : 'světlík: jen volba „bez" ubere 0,2 h na nástupiště (tak počítá předloha; Model 2 od 1. 10. 2026 neubírá); sklo, plech, materiál i „zajistí stavba" '
+          + 'se montují jako světlík (stavba od 30. 9. 2026, rozhodnutí J. V.)')
+      + '; boky: 0,5 h na každý boční světlík'],
     ['Hodiny navíc celkem', `${M(r.montaz.hodinyNavicCelkem, 2)} h`, 'součet výše'],
     ['Montáž 1 osoba / 4 osoby', `${M(r.montaz.hod1osoba, 1)} h / ${M(r.montaz.hodCelkem, 1)} h`, `≈ ${M(r.montaz.dni, 1)} dní`],
   ]), 'dv-3');
