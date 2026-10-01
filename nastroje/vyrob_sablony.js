@@ -58,6 +58,13 @@
  *         {{SODP_PLATEBNI_KALENDAR}}; aplikace ho zopakuje za každou platbu.
  *         Smlouva je jen česky — jazykové mutace se nevyrábějí.
  *
+ * SoD realizace se splátkami z krycího listu (K18-N100, 1. 10. 2026):
+ *   node nastroje/vyrob_sablony.js --sod-real <složka podkladů> [výstupní složka]
+ * Vstup:  Sablona_SOD_REALIZACE.docx (čtyři pevné splátky SOD_SPLATKA1–4_PROC)
+ * Výstup: Sablona_SOD_REALIZACE_v2.docx — čtyři odstavce splátek nahradí
+ *         jeden se symbolem {{SOD_PLATEBNI_KALENDAR}} (odstavec za splátku).
+ *         Jen česky, jako SoD PROJ.
+ *
  * Jazykové mutace vyrábí tentýž překlad šablony, jaký používá aplikace
  * v Nastavení → Šablony (docxPrelozSablonu); skript vypíše, co zůstalo
  * česky, a každý soubor ověří (platné XML, symboly shodné s češtinou).
@@ -74,6 +81,7 @@ const { NABIDKA_PROJ_PLATBY, NABIDKA_PROJ_DEF, NABIDKA_PROJ_CENA_SYMBOL } = requ
 
 const REZIM = /^--/.test(process.argv[2] || '') ? process.argv[2] : '';
 const REZIM_V4 = REZIM === '--proj-v4', REZIM_SOD = REZIM === '--sod-proj', REZIM_CN14 = REZIM === '--cn-v14';
+const REZIM_SOD_REAL = REZIM === '--sod-real';
 const ARGY = REZIM ? process.argv.slice(3) : process.argv.slice(2);
 const PODKLADY = ARGY[0] || process.env.KNG_PODKLADY;
 const VYSTUP = ARGY[1] || PODKLADY;
@@ -396,6 +404,31 @@ function sodProjV2(xml) {
   return t.pred + body + t.po;
 }
 
+/* ---------- SoD realizace v2: splátky z krycího listu jedním symbolem ----------
+ * (K18-N100, 1. 10. 2026) Čtyři odstavce „při uzavření … {{SOD_SPLATKA1_PROC}} %
+ * z celkové ceny díla" … „zbývajících {{SOD_SPLATKA4_PROC}} %" nahradí jeden
+ * odstavec (stejná odrážka a písmo) se symbolem {{SOD_PLATEBNI_KALENDAR}};
+ * aplikace ho zopakuje za každou splátku platebního kalendáře krycího listu
+ * OCK (bez zálohy = bez věty o záloze, měsíční fakturace = jedna věta).
+ * Nic jiného se v šabloně nemění. */
+function sodRealV2(xml) {
+  const t = tělo(xml);
+  let body = t.body;
+  const top = prvkyTela(body);
+  const sym = dg.klicePlaceholderu(body);
+  if (sym.indexOf('SOD_PLATEBNI_KALENDAR') >= 0) chyba('SoD realizace: šablona už seznam splátek {{SOD_PLATEBNI_KALENDAR}} má');
+  const idx = [1, 2, 3, 4].map(n => top.findIndex(el => el.tag === 'p'
+    && dg.klicePlaceholderu(body.slice(el.zac, el.kon)).indexOf('SOD_SPLATKA' + n + '_PROC') >= 0));
+  if (idx.some(i => i < 0)) chyba('SoD realizace: nenašel jsem všechny čtyři odstavce s {{SOD_SPLATKA1_PROC}} … {{SOD_SPLATKA4_PROC}}');
+  if (idx.some((i, j) => j && i !== idx[j - 1] + 1)) chyba('SoD realizace: odstavce splátek nejdou po sobě — nic nehádám');
+  const vzor = body.slice(top[idx[0]].zac, top[idx[0]].kon);
+  const pPr = (vzor.match(/<w:pPr>[\s\S]*?<\/w:pPr>/) || [''])[0];
+  const rPr = (vzor.replace(/<w:pPr>[\s\S]*?<\/w:pPr>/, '').match(/<w:rPr>[\s\S]*?<\/w:rPr>/) || [''])[0];
+  const novy = '<w:p>' + pPr + '<w:r>' + rPr + '<w:t xml:space="preserve">{{SOD_PLATEBNI_KALENDAR}}</w:t></w:r></w:p>';
+  body = body.slice(0, top[idx[0]].zac) + novy + body.slice(top[idx[3]].kon);
+  return t.pred + body + t.po;
+}
+
 /* ---------- společné: přepis document.xml, zápis, mutace, ověření ---------- */
 async function vyrob(vstup, uprava) {
   const polozky = await dg.zipPrecti(new Uint8Array(fs.readFileSync(vstup)));
@@ -431,23 +464,24 @@ async function ulozSMutacemi(bajty, zaklad) {
 
 async function hlavni() {
   if (!PODKLADY) {
-    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --sod-proj | --cn-v14] <složka podkladů> [výstupní složka]');
+    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --sod-proj | --sod-real | --cn-v14] <složka podkladů> [výstupní složka]');
     process.exit(2);
   }
   const cnVstup = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v12.docx');
   const cn13Vstup = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v13.docx');
   const projVstup = path.join(PODKLADY, 'Sablona_NABIDKA_PROJ.docx');
   const sodVstup = path.join(PODKLADY, 'Sablona_SOD_PROJEKCE.docx');
-  (REZIM_V4 ? [projVstup] : REZIM_SOD ? [sodVstup] : REZIM_CN14 ? [cn13Vstup] : [cnVstup, projVstup])
+  const sodRealVstup = path.join(PODKLADY, 'Sablona_SOD_REALIZACE.docx');
+  (REZIM_V4 ? [projVstup] : REZIM_SOD ? [sodVstup] : REZIM_SOD_REAL ? [sodRealVstup] : REZIM_CN14 ? [cn13Vstup] : [cnVstup, projVstup])
     .forEach(f => { if (!fs.existsSync(f)) chyba('Chybí vstupní šablona ' + f); });
   if (!fs.existsSync(VYSTUP)) fs.mkdirSync(VYSTUP, { recursive: true });
-  if (REZIM_SOD) {
-    const bajty = await vyrob(sodVstup, sodProjV2);
-    const soubor = path.join(VYSTUP, 'Sablona_SOD_PROJEKCE_v2.docx');
+  if (REZIM_SOD || REZIM_SOD_REAL) {
+    const bajty = REZIM_SOD ? await vyrob(sodVstup, sodProjV2) : await vyrob(sodRealVstup, sodRealV2);
+    const soubor = path.join(VYSTUP, REZIM_SOD ? 'Sablona_SOD_PROJEKCE_v2.docx' : 'Sablona_SOD_REALIZACE_v2.docx');
     fs.writeFileSync(soubor, bajty);
     const vady = await dg.docxXmlVady(bajty.slice().buffer);
     const sym = await symbolyASablona(bajty);
-    const zbylo = sym.filter(k => /^SODP_PLATBA\d_KC$/.test(k));
+    const zbylo = sym.filter(k => REZIM_SOD ? /^SODP_PLATBA\d_KC$/.test(k) : /^SOD_SPLATKA\d_PROC$/.test(k));
     console.log((vady.length || zbylo.length ? '✗ ' : '✓ ') + path.basename(soubor) + ' — symbolů ' + sym.length
       + (vady.length ? '\n    vady XML: ' + vady.join('; ') : '') + (zbylo.length ? '\n    zbyly symboly: ' + zbylo.join(', ') : ''));
     console.log('\nVýstup: ' + VYSTUP);
@@ -476,4 +510,4 @@ async function hlavni() {
 
 /* Úpravy document.xml jdou testovat bez souborů (src/test_sablona_proj_v4.js). */
 if (require.main === module) hlavni().catch(e => { console.error('CHYBA: ' + e.message); process.exit(1); });
-module.exports = { cnV13, cnV14, projV3, projV4, sodProjV2 };
+module.exports = { cnV13, cnV14, projV3, projV4, sodProjV2, sodRealV2 };

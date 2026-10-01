@@ -206,7 +206,9 @@ function docxZnackyBloku(xml) {
 /* {{PODM_PLATEBNI_KALENDAR}} (věty o dílčích dokladech nabídky OCK, šablona
  * CN v14) je tu pro šablonu, která by ho nesla v obyčejném odstavci; v CN v14
  * stojí v řádku tabulky a rozvine ho rozvinRadkyZaRadek níž (ta běží dřív). */
-const DOCX_ODSTAVCE_ZA_RADEK = ['SODP_PLATEBNI_KALENDAR', 'PODM_PLATEBNI_KALENDAR'];
+/* {{SOD_PLATEBNI_KALENDAR}} — splátky smlouvy o dílo realizace z krycího
+ * listu OCK (šablona SoD realizace v2, K18-N100, 1. 10. 2026). */
+const DOCX_ODSTAVCE_ZA_RADEK = ['SODP_PLATEBNI_KALENDAR', 'PODM_PLATEBNI_KALENDAR', 'SOD_PLATEBNI_KALENDAR'];
 function rozvinOdstavceZaRadek(xml, ph) {
   DOCX_ODSTAVCE_ZA_RADEK.forEach(klic => {
     if (!ph || ph[klic] == null) return;

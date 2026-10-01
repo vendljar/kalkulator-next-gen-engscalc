@@ -84,7 +84,7 @@ function sodVedouciMontaziDoplna(placeholders) {
 }
 
 /* SoD realizace (OCK) — stejná data jako nabídka OCK, jiné jméno souboru. */
-function sodData(zak, varianta, jekly, lang) {
+function sodData(zak, varianta, jekly, lang, sablona) {
   const d = nabidkaData(zak, varianta, jekly, lang);
   const L = d.jazyk || 'cz';
   const nazev = ('SOD_' + (d.placeholders.CISLO_NABIDKY || 'CN')
@@ -95,8 +95,16 @@ function sodData(zak, varianta, jekly, lang) {
   /* Termíny, podpisy a kopie faktur z krycího listu OCK (P9.2, P9.4 —
    * rozhodnutí J. V. 29. 9. 2026). Co obchodník nevyplnil, zůstane {{…}}. */
   if (typeof kryciSodSymboly === 'function') kryciSodSymboly(zak, varianta, jekly, d.placeholders);
+  /* Splátky z platebního kalendáře krycího listu (K18-N100). */
+  let odstavcePryc;
+  if (typeof kryciSodPlatby === 'function') {
+    const pl = kryciSodPlatby(zak, varianta, jekly, sablona);
+    if (pl.chyba) throw new Error(pl.chyba);
+    Object.assign(d.placeholders, pl.symboly);
+    if (pl.odstavcePryc.length) odstavcePryc = pl.odstavcePryc;
+  }
   return Object.assign({}, d,
-    { nazevSouboru: nazev.replace(/[\\/:*?"<>|]+/g, '-') });
+    { nazevSouboru: nazev.replace(/[\\/:*?"<>|]+/g, '-') }, odstavcePryc ? { odstavcePryc } : {});
 }
 
 /* SoD projekčních prací — stejná data jako nabídka PROJ (hlavička PROJ,
@@ -238,7 +246,9 @@ function plnaMocData(zak, varianta) {
 if (typeof dokumentRegistruj === 'function') {
   dokumentRegistruj('sod', {
     nazev: 'Smlouva o dílo — realizace (OCK)', sablona: 'Sablona_SOD_REALIZACE.docx',
-    builder: (zak, varianta, jekly, lang) => sodData(zak, varianta, jekly, lang),
+    /* Symboly šablony: v1 (čtyři pevné splátky) × v2 se seznamem plateb (K18-N100). */
+    sablonaSymboly: true,
+    builder: (zak, varianta, jekly, lang, sablona) => sodData(zak, varianta, jekly, lang, sablona),
   });
   dokumentRegistruj('sodProj', {
     nazev: 'Smlouva o dílo — projekční práce', sablona: 'Sablona_SOD_PROJEKCE.docx',
