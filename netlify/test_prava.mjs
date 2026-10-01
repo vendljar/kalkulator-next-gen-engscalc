@@ -1314,6 +1314,11 @@ console.log('\n===== B112: CENÍK VARIANTY A SKRYTÉ PŘEPISY PODLE ROLE HLÍDÁ
   test('B112: nová zakázka obchodníka s ceníkem shodným se zveřejněným (200)', r11.status === 200, r11);
   const r12 = await upravB112(a => { d0(a).cenik.popisy = Object.assign({}, d0(a).cenik.popisy, { 'C.profilasKgKc': 'Dodatkový text obchodníka' }); }, cObchB);
   test('B112: změna jen dodatkových textů ceníku (popisy) projde (200)', r12.status === 200, r12);
+  /* #379 (K18-N96): jazykové varianty dodatků jsou text jako `popisy` —
+   * nová zakázka si je odnese z výchozího ceníku, i když je zveřejněný
+   * ceník nemá; obchodníkovi se kvůli nim uložení nesmí odmítnout. */
+  const r12j = await upravB112(a => { d0(a).cenik.popisyJazyky = { 'Ukázková položka': { de: 'Beispielzusatz' } }; }, cObchB);
+  test('B112: jazykové varianty dodatků (popisyJazyky) obchodník uloží (200)', r12j.status === 200, r12j);
   const r12b = await upravB112(a => { d0(a).cenik.dph = 0; d0(a).proj.cenik.dph = 0; }, cObchB);
   test('B112: sazbu DPH (hlavička zakázky) smí obchodník změnit (200)', r12b.status === 200, r12b);
   const r13 = await upravB112(a => { a.varianty[0].nazev = 'A'; zam.klonujVariantu(a, a.varianty[0].id); }, cObchB,
@@ -2797,6 +2802,60 @@ for (const [popis, bezPripony] of [['starší klient (varianta 1 bez přípony)'
   await post(popisy, 'http://x/api/popisy', { texty: {}, ocekavaneKdy: zustalo.kdy }, cAdmin);
   const prazdno = (await (await get(popisy, 'http://x/api/popisy', cAdmin)).json()).popisy.texty;
   test('texty: prázdnou mapou se text zruší', Object.keys(prazdno).length === 0, JSON.stringify(prazdno));
+}
+
+/* ---------- JAZYKOVÉ VARIANTY DODATKOVÝCH TEXTŮ (#379, nález K18-N96) ----------
+ * (1. 10. 2026)
+ *
+ * Ručně psaný dodatkový text slovník nezná, takže v cizojazyčné nabídce
+ * zůstával česky. Administrátor k němu teď vyplní EN/DE/FR. Server hlídá
+ * totéž co u českého textu: kdo smí zapisovat (jen administrátor), tvar
+ * (jen en/de/fr, jen řetězce), řídicí znaky a strop délky — a varianta bez
+ * českého textu se neuloží. Texty jsou smyšlené. */
+{
+  const K = 'Ukázková položka N96';
+  const cti = async (c) => (await (await get(popisy, 'http://x/api/popisy', c || cAdmin)).json()).popisy;
+  const r1 = await post(popisy, 'http://x/api/popisy', { klic: K, text: 'Ukázkový dodatek SKN',
+    jazyky: { en: 'Sample addendum', de: 'Beispiel\u0007zusatz\nSKN', fr: 7, it: 'testo', cz: 'x' } }, cAdmin);
+  const p1 = await cti(cObch);
+  const j1 = (p1 && p1.jazyky && p1.jazyky[K]) || {};
+  test('N96 texty: administrátor uloží jazykové varianty a přečte je i obchodník',
+    r1.status === 200 && j1.en === 'Sample addendum', JSON.stringify(p1 && p1.jazyky));
+  test('N96 texty: jen klíče en/de/fr a jen řetězce (fr: 7, it, cz se zahodí)',
+    JSON.stringify(Object.keys(j1).sort()) === '["de","en"]', JSON.stringify(j1));
+  test('N96 texty: řídicí znaky pryč, zalomení řádku → mezera', j1.de === 'Beispielzusatz SKN', JSON.stringify(j1));
+
+  await post(popisy, 'http://x/api/popisy', { klic: K, jazyky: { fr: 'f'.repeat(1000) } }, cAdmin);
+  const p2 = await cti();
+  test('N96 texty: zápis jedné varianty bez `text` nechá český text i ostatní jazyky',
+    p2.texty[K] === 'Ukázkový dodatek SKN' && p2.jazyky[K].en === 'Sample addendum', JSON.stringify(p2));
+  test('N96 texty: strop délky varianty jako u českého textu (300)',
+    (p2.jazyky[K].fr || '').length === 300, (p2.jazyky[K].fr || '').length);
+
+  await post(popisy, 'http://x/api/popisy', { klic: K, jazyky: { de: '' } }, cAdmin);
+  const p3 = await cti();
+  test('N96 texty: prázdná varianta jazyka se smaže, ostatní zůstanou',
+    !('de' in p3.jazyky[K]) && p3.jazyky[K].en === 'Sample addendum', JSON.stringify(p3.jazyky));
+
+  const r4 = await post(popisy, 'http://x/api/popisy', { klic: 'Položka bez textu N96', jazyky: { en: 'orphan' } }, cAdmin);
+  const p4 = await cti();
+  test('N96 texty: varianta bez českého textu se neuloží',
+    r4.status === 200 && !('Položka bez textu N96' in (p4.jazyky || {})), JSON.stringify(p4.jazyky));
+
+  const ro = await post(popisy, 'http://x/api/popisy', { klic: K, jazyky: { en: 'obchodník' } }, cObch);
+  const p5 = await cti();
+  test('N96 texty: obchodník varianty pro celou aplikaci nezapíše (403)',
+    ro.status === 403 && p5.jazyky[K].en === 'Sample addendum', ro.status);
+
+  await post(popisy, 'http://x/api/popisy', { texty: { [K]: 'Ukázkový dodatek SKN' }, jazyky: 'není objekt' }, cAdmin);
+  const p6 = await cti();
+  test('N96 texty: celá mapa s nesmyslnými variantami nic nerozbije ani nesmaže',
+    p6.jazyky[K] && p6.jazyky[K].en === 'Sample addendum', JSON.stringify(p6.jazyky));
+
+  await post(popisy, 'http://x/api/popisy', { klic: K, text: '' }, cAdmin);
+  const p7 = await cti();
+  test('N96 texty: smazání českého textu vezme varianty s sebou',
+    !(K in p7.texty) && !(K in (p7.jazyky || {})), JSON.stringify(p7));
 }
 
 /* ---------- B54: SERVER BEZ ADRESY HLAVNÍHO ÚČTU ----------

@@ -1104,7 +1104,7 @@ function uloB112Zdroj(n, soubor) {
   }
   return null;
 }
-const ULO_CENIK_VOLNE = ['popisy', 'dph', 'rada', 'jenZahr', 'ukazkove', 'prazdny'];
+const ULO_CENIK_VOLNE = ['popisy', 'popisyJazyky', 'dph', 'rada', 'jenZahr', 'ukazkove', 'prazdny'];
 /* Prázdno („", null, chybí) je jedna hodnota; číslo i číslo jako text se
  * porovnávají číselně. */
 function uloB112Hodnota(x) {

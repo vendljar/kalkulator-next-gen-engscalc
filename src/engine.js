@@ -1451,6 +1451,23 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     const v = c.popisy[String(nazev)];
     return (typeof v === 'string') ? v : '';
   };
+  /* Jazykové varianty dodatkového textu (#379, K18-N96): { en, de, fr },
+   * jen vyplněné. Vlastnost dostane jen položka, která variantu má — výstup
+   * výpočtu bez variant zůstává beze změny (Model 1, zmrazené otisky). Do
+   * zmrazeného výsledku odeslané nabídky se dostanou s ním, takže co se
+   * odeslalo, to drží — stejně jako český text. */
+  const popisJazykyZCeniku = (nazev) => {
+    const j = (nazev && c && c.popisyJazyky) ? c.popisyJazyky[String(nazev)] : null;
+    if (!j || typeof j !== 'object') return null;
+    const out = {};
+    ['en', 'de', 'fr'].forEach(l => { if (typeof j[l] === 'string' && j[l].trim()) out[l] = j[l].trim(); });
+    return Object.keys(out).length ? out : null;
+  };
+  const sJazyky = (it, nazev) => {
+    const j = popisJazykyZCeniku(nazev);
+    if (j) it.popisNabidkaJazyky = j;
+    return it;
+  };
   const mkItem = (nazev, mnozstvi, cena, opts = {}) => {
     zapisNazev(nazev);
     // klíčem pro přepisy je PŮVODNÍ název položky
@@ -1850,7 +1867,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
       naklad = mn * cenaEff;
     }
     const novyNazev = z.nazvyPrepis ? z.nazvyPrepis[nazev] : null;
-    return { key, nazev: novyNazev || nazev, origNazev: nazev, nazevPrepsan: !!novyNazev,
+    return sJazyky({ key, nazev: novyNazev || nazev, origNazev: nazev, nazevPrepsan: !!novyNazev,
              mnozstvi: mn, mnozstviAuto: mnozstvi, prepsano: prepisJe,
              cena: cenaEff, cenaAuto: cena, cenaPrepsana: cenaPrepis != null, cenaPath: opts.cenaPath || null,
              naklad, sMarzi: CEIL(naklad * (1 + m), 1000), pozn: opts.pozn || '', vlastni: !!opts.vlastni,
@@ -1862,7 +1879,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
               * a v Node by tu nebyl vidět, takže by jádro v testech vracelo
               * prázdno a v aplikaci text. Jediným zapisovatelem zůstává
               * cenikPopisNastav() — tvar {cesta: text} se drží tam. */
-             popisNabidka: popisZCeniku(nazev) };
+             popisNabidka: popisZCeniku(nazev) }, nazev);
   };
   let priplatky = [
     mkPrip('vsgFolie', 'Sklo VSG s mléčnou fólií', vsgFolieM2, pp.vsgFolieM2, { cenaPath: 'C.priplatky.vsgFolieM2' }),

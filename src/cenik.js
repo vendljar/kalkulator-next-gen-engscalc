@@ -352,16 +352,108 @@ function popisyOciste(vstup) {
   return out;
 }
 
+/* JAZYKOVÉ VARIANTY DODATKOVÝCH TEXTŮ (#379, nález K18-N96, 1. 10. 2026).
+ *
+ * Dodatkový text píše člověk a aplikace ho nepřekládá — slovník zná jen
+ * věty, které jsou v kódu. Firemní věta z ceníku proto v každé anglické,
+ * německé i francouzské nabídce zůstávala česky (od v30.9.4 o tom aspoň
+ * varovala kontrola „dodatekCesky"). Skutečné znění vět do slovníku
+ * nepatří (repozitář je veřejný a věty nejsou naše k vymýšlení), takže
+ * překlad dodá ten, kdo text napsal: administrátor ho v číselníku vyplní
+ * vedle českého (EN / DE / FR, každý nepovinně).
+ *
+ * TVAR: vedle mapy `popisy` (klíč → český text) stojí `popisyJazyky`
+ * (klíč → { en, de, fr }). Samostatná mapa, ne objekt místo řetězce:
+ * všechno, co dnes `popisy` čte (výpočet, porovnání ceníků, starší
+ * prohlížeče, zálohy), zůstává beze změny a starší data platí dál.
+ *
+ * OČISTA (prohlížeč i server tímtéž kódem): jen klíče en/de/fr, jen
+ * řetězce, řídicí znaky pryč (zalomení a tabulátor → mezera, ostatní
+ * vypustit), strop délky jako u českého textu. S mapou `texty` se navíc
+ * zahodí varianty klíčů, které český text nemají — varianta bez českého
+ * textu by se nikdy netiskla a jen by v datech strašila. */
+const POPISY_JAZYKY = ['en', 'de', 'fr'];
+function popisJazykCisty(x) {
+  if (typeof x !== 'string') return '';
+  return x.replace(/[\t\n\r]/g, ' ').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+    .trim().slice(0, POPISY_MAX_TEXT).trim();
+}
+function popisyJazykyOciste(vstup, texty) {
+  const v = (vstup && typeof vstup === 'object' && !Array.isArray(vstup)) ? vstup : {};
+  const t = (texty && typeof texty === 'object') ? texty : null;
+  const out = {};
+  let kolik = 0;
+  Object.keys(v).forEach(k => {
+    if (kolik >= POPISY_MAX_POLOZEK) return;
+    const klic = String(k == null ? '' : k).trim();
+    if (!klic || klic.length > POPISY_MAX_KLIC) return;
+    if (t && !(typeof t[klic] === 'string' && t[klic].trim())) return;
+    const j = v[k];
+    if (!j || typeof j !== 'object' || Array.isArray(j)) return;
+    const radek = {};
+    POPISY_JAZYKY.forEach(l => { const s = popisJazykCisty(j[l]); if (s) radek[l] = s; });
+    if (!Object.keys(radek).length) return;
+    out[klic] = radek;
+    kolik++;
+  });
+  return out;
+}
+/* Varianta textu pro jazyk tisku, nebo ''. */
+function cenikPopisJazyk(c, klic, jazyk) {
+  const j = c && c.popisyJazyky && c.popisyJazyky[String(klic)];
+  const v = j && typeof j === 'object' ? j[String(jazyk || '').toLowerCase()] : '';
+  return (typeof v === 'string') ? v.trim() : '';
+}
+/* Doplní jazykové varianty do ceníku, ale JEN k textu, který je v ceníku
+ * DOSLOVA týž jako společný český text. Varianta je překlad konkrétní věty:
+ * obchodník, který si text u zakázky přepsal, by s ní dostal do cizí
+ * nabídky překlad něčeho jiného, než co stojí v české. Existující varianta
+ * jazyka se nepřepisuje (zakázka je pán, stejně jako u českého textu).
+ * Vrací počet doplněných jazykových textů. */
+function popisyJazykyDoplnChybejici(cenik, texty, jazyky) {
+  if (!cenik || !texty || !jazyky || typeof jazyky !== 'object') return 0;
+  const j = popisyJazykyOciste(jazyky, texty);
+  let n = 0;
+  Object.keys(j).forEach(k => {
+    const cz = (cenik.popisy && typeof cenik.popisy[k] === 'string') ? cenik.popisy[k].trim() : '';
+    if (!cz || cz !== String(texty[k]).trim()) return;
+    if (!cenik.popisyJazyky || typeof cenik.popisyJazyky !== 'object') cenik.popisyJazyky = {};
+    const cil = (cenik.popisyJazyky[k] && typeof cenik.popisyJazyky[k] === 'object') ? cenik.popisyJazyky[k] : {};
+    POPISY_JAZYKY.forEach(l => {
+      if (j[k][l] && !(typeof cil[l] === 'string' && cil[l].trim())) { cil[l] = j[k][l]; n++; }
+    });
+    if (Object.keys(cil).length) cenik.popisyJazyky[k] = cil;
+  });
+  return n;
+}
+/* Český text položky se v zakázce změnil (`popisSet`): varianty se srovnají
+ * s ním. Je-li nový text týž jako společný, převezmou se společné varianty;
+ * jinak se varianty u položky zahodí — překlad staré věty by do cizí
+ * nabídky přinesl něco jiného, než říká česká (a kontrola „dodatekCesky"
+ * pak řekne, že text zůstane česky). */
+function popisJazykySrovnej(cenik, klic, spolecneTexty, spolecneJazyky) {
+  if (!cenik) return;
+  const k = String(klic);
+  const cz = (cenik.popisy && typeof cenik.popisy[k] === 'string') ? cenik.popisy[k].trim() : '';
+  if (cenik.popisyJazyky && typeof cenik.popisyJazyky === 'object') delete cenik.popisyJazyky[k];
+  if (cenik.popisyJazyky && !Object.keys(cenik.popisyJazyky).length) delete cenik.popisyJazyky;
+  if (!cz || !spolecneTexty) return;
+  popisyJazykyDoplnChybejici(cenik, { [k]: spolecneTexty[k] }, spolecneJazyky ? { [k]: spolecneJazyky[k] } : null);
+}
+
 /* Vlije texty do ceníku (na místě), ale JEN tam, kde ceník vlastní text
  * nemá. Zveřejněný ceník je konkrétnější zdroj: kdyby ho společná mapa
- * přebila, správce by změnu textu ve zveřejněné verzi nikdy neprosadil. */
-function popisyVlij(cenik, texty) {
+ * přebila, správce by změnu textu ve zveřejněné verzi nikdy neprosadil.
+ * Jazykové varianty (#379) jdou za českým textem: jen k položce, jejíž
+ * český text v ceníku je týž jako společný. */
+function popisyVlij(cenik, texty, jazyky) {
   if (!cenik) return cenik;
   const t = popisyOciste(texty);
   if (!cenik.popisy) cenik.popisy = {};
   Object.keys(t).forEach(k => {
     if (typeof cenik.popisy[k] !== 'string' || !cenik.popisy[k].trim()) cenik.popisy[k] = t[k];
   });
+  if (jazyky) popisyJazykyDoplnChybejici(cenik, t, jazyky);
   return cenik;
 }
 
@@ -548,4 +640,5 @@ if (typeof module !== 'undefined')
   module.exports = { CENIK_DEF, CENIK_DEF_PROJ, CENIK_JEN_ZAHR, cenikGet, cenikSet, cenikTyp, cenikVychozi,
     cenikPopis, cenikPopisNastav,
     POPISY_MAX_KLIC, POPISY_MAX_TEXT, POPISY_MAX_POLOZEK, popisyOciste, popisyVlij, popisyDoplnChybejici, popisyCiselnik,
+    POPISY_JAZYKY, popisyJazykyOciste, cenikPopisJazyk, popisyJazykyDoplnChybejici, popisJazykySrovnej,
     cenikSheetRows, cenikToSheets, cenikDiffZeSheets, cenikAplikuj, CENIK_HLAVICKA };

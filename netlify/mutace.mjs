@@ -592,6 +592,22 @@ const MUTACE = [
     nahrad: "    if (false)",
     proc: 'číselník uložený ze zastaralého okna by přepsal změny jiného správce' },
 
+  /* Jazykové varianty dodatkových textů (#379, nález K18-N96, 1. 10. 2026). */
+  { nazev: 'N96: jazykové varianty dodatků bez závěrečné očisty', soubor: 'functions/popisy.mjs',
+    hledej: "  noveJaz = globalThis.popisyJazykyOciste(noveJaz, nove);",
+    nahrad: "  noveJaz = noveJaz;",
+    proc: 'varianty smazaného textu by zůstaly viset a překlad by se dal uložit k položce bez českého textu' },
+
+  { nazev: 'N96: zápis varianty bez `text` smaže český dodatek', soubor: 'functions/popisy.mjs',
+    hledej: "    if ('text' in t) {",
+    nahrad: "    if (true) {",
+    proc: 'administrátor by doplněním překladu v číselníku smazal český text položky' },
+
+  { nazev: 'N96: jazykové varianty dodatků se v ceníku zakázky hlídají jako ceny', soubor: '../src/uloziste.js',
+    hledej: "const ULO_CENIK_VOLNE = ['popisy', 'popisyJazyky', 'dph',",
+    nahrad: "const ULO_CENIK_VOLNE = ['popisy', 'dph',",
+    proc: 'obchodník by neuložil zakázku, jejíž ceník si odnesl překlady dodatků z výchozího ceníku' },
+
   /* Pojistky serverové vrstvy z auditu 22. 9. 2026 (B54–B56). */
 
   { nazev: 'server bez ADMIN_EMAIL obsluhuje chráněné cesty dál', soubor: 'lib/sdilene.mjs',

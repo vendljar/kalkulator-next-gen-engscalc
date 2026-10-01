@@ -535,8 +535,10 @@ const KONTROLY = [
      * (#267, cenik.popisy — klíč = název položky). Ceník ho má v JEDNOM
      * znění pro všechny jazyky a text napsaný člověkem aplikace nepřekládá
      * (projde beze změny), takže anglická nabídka nesla českou větu a nikdo
-     * se to nedozvěděl. Jazykové varianty textů ceník nemá (číselník #267
-     * i /api/popisy drží jeden řetězec) — proto varování, ne překlad.
+     * se to nedozvěděl. Od 1. 10. 2026 (#379) má číselník k textu jazykové
+     * varianty EN/DE/FR (`cenik.popisyJazyky`, výpočet je nese u položky
+     * jako `popisNabidkaJazyky`) — položka s variantou jazyka tisku se
+     * vytiskne v ní a nehlásí se. Varování zůstává pro text bez varianty.
      * Rozhoduje totéž, co tiskne nabidkaData: příplatek v nabídce (ne
      * vynechaný) s neprázdným textem; sloučené přechodové plechy (obě půlky
      * v nabídce) vlastní text netisknou. Text, který slovník zná (nebo který
@@ -552,13 +554,20 @@ const KONTROLY = [
       const plechy = ['prechMat', 'prechMont'];
       const slouceny = plechy.every(k => vNabidce.some(p => p.key === k));
       const cesky = vNabidce.filter(p => !(slouceny && plechy.includes(p.key)))
-        .filter(p => { const t = String(p.popisNabidka || '').trim(); return t && !trStav(t, jaz).prelozeno; })
+        .filter(p => {
+          const t = String(p.popisNabidka || '').trim();
+          if (!t) return false;
+          const j = p.popisNabidkaJazyky && p.popisNabidkaJazyky[jaz];
+          if (typeof j === 'string' && j.trim()) return false;     // jazyková varianta (#379)
+          return !trStav(t, jaz).prelozeno;
+        })
         .map(p => String(p.nazev || p.origNazev || p.key));
       if (!cesky.length) return null;
       return { text: 'Nabídka v jazyce ' + jaz.toUpperCase() + ' ponese česky dodatkový text '
         + (cesky.length === 1 ? 'u položky ' : 'u položek ') + kontrolyVyctem(cesky.map(n => '„' + n + '"'))
-        + ': ceník má dodatkový text v jednom znění pro všechny jazyky a text napsaný ručně aplikace nepřekládá. '
-        + 'Přepište ho u zakázky do jazyka nabídky (Kalkulace OCK, pole pod položkou), nebo ho smažte — '
+        + ': text nemá jazykovou variantu ' + jaz.toUpperCase() + ' a text napsaný ručně aplikace nepřekládá. '
+        + 'Variantu doplní administrátor v Ceníku nákladů OCK (číselník dodatkových textů, sloupec ' + jaz.toUpperCase() + '); '
+        + 'jinak přepište text u zakázky do jazyka nabídky (Kalkulace OCK, pole pod položkou), nebo ho smažte — '
         + 'administrátorovi se tím změní i společný text pro všechny nabídky.' };
     },
   },
