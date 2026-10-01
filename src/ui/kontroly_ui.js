@@ -174,6 +174,41 @@ function kontrolyStavAkt() {
   return kontrolyProved(kontrolyCtxAkt());
 }
 
+/* Kontroly nad VARIANTOU, ze které dokument vzniká (#377, 1. 10. 2026).
+ * Otevřená varianta = kontrolyStavAkt() (globály Z, C, PJ… jsou její).
+ * Jiná varianta (řídící po odpovědi „Ne" v nabidkaVarianta) se posoudí
+ * nad vlastními daty — stačí to, co čtou pravidla se zábranou (zadání,
+ * výsledky, ceníky, slevy, hlavička); šablony a termíny (jen varování)
+ * se pro ni nestahují. Zamčená varianta vydá svůj zmrazený výsledek
+ * (vypocetZ), takže se posuzuje to, co odešlo. */
+function kontrolyCtxVarianta(v) {
+  const d = (v && v.data) || {};
+  let ock = null, proj = null;
+  try { ock = (typeof vypocetZ === 'function') ? vypocetZ(v, JEKLY) : null; } catch (e) {}
+  try { proj = (typeof vypocetProjZ === 'function') ? vypocetProjZ(v) : null; } catch (e) {}
+  return {
+    zadani: d.ock ? d.ock.zadani : null,
+    vysledek: ock,
+    jenProj: (typeof ZAK !== 'undefined') && !!ZAK.jenProj,
+    projZadani: d.proj ? d.proj.zadani : null,
+    projVysledek: proj,
+    cenik: d.cenik || null,
+    cenikProj: d.proj ? d.proj.cenik : null,
+    sleva: d.sleva || null,
+    slevaProj: d.slevaProj || null,
+    nast: (typeof NAST !== 'undefined') ? NAST : null,
+    zak: (typeof ZAK !== 'undefined') ? ZAK : null,
+    zaokr: d.zaokr || null,
+    zaokrProj: d.zaokrProj || d.zaokr || null,
+  };
+}
+function kontrolyStavVarianta(v) {
+  if (typeof kontrolyProved !== 'function') return { varovat: false, nalezy: [], kody: [] };
+  const akt = (typeof aktivniVarianta === 'function' && typeof ZAK !== 'undefined') ? aktivniVarianta(ZAK) : null;
+  if (!v || v === akt || (akt && v.id === akt.id)) return kontrolyStavAkt();
+  return kontrolyProved(kontrolyCtxVarianta(v));
+}
+
 /* Právo na částky – jedno pravidlo pro celou aplikaci, půjčené od marže. */
 function kontrolySmiCisla() {
   if (typeof marzeSmiCisla === 'function') return marzeSmiCisla();
@@ -208,22 +243,32 @@ function kontrolyPanel() {
   }
   const cisla = kontrolySmiCisla();
   const plati = (typeof kontrolyPotvrzeniPlati === 'function') && kontrolyPotvrzeniPlati(p, s);
-  const polozky = s.nalezy.map(n => `<li>
-      <span class="kde">${esc(n.kde)}</span>
+  const polozky = s.nalezy.map(n => `<li${n.uroven === KONTROLY_UROVEN_ZABRANA ? ' class="zabrana"' : ''}>
+      <span class="kde">${n.uroven === KONTROLY_UROVEN_ZABRANA ? '⛔ ' : ''}${esc(n.kde)}</span>
       <span class="txt">${esc(n.text)}${cisla && n.detail ? ' <span class="detail">' + esc(n.detail) + '</span>' : ''}</span>
     </li>`).join('');
+  /* #377: zábrana se neodklepává — dokumenty, kterých se týká, jsou
+   * zhasnuté, dokud se nález neopraví (brána v dokumentZabrana). Tlačítko
+   * „Beru na vědomí" zůstává pro varování vedle ní: odklepnutí se uloží
+   * a platí, jakmile se zábrana opraví (kontrolyPotvrzeniPlati). */
+  const zabrana = s.brani
+    ? `<div class="kontroly-zabrana"><b>⛔ Zábrana:</b> dokumenty, kterých se nález označený ⛔ týká,
+        nevzniknou, dokud se neopraví — tlačítka jsou zhasnutá a bublina nad nimi řekne, co opravit.
+        Zábranu odklepnout nejde.</div>`
+    : '';
   const patka = plati
     ? `<div class="kontroly-odklep">✔ Odklepnuto${p.kdo ? ' (' + esc(p.kdo) + ')' : ''}
         ${p.kdy ? esc(String(p.kdy).slice(0, 10)) : ''} – nabídku lze vytvořit.</div>`
     : `<div class="kontroly-btns">
         <button class="mini" onclick="kontrolyPotvrd()">Beru na vědomí, pokračovat</button>
-        <span class="pozn">Nic se neblokuje. Odklepnutí se uloží k variantě, aby bylo dohledatelné,
-          že se na to někdo díval.</span>
+        <span class="pozn">${s.brani ? 'Varování se neblokují, zábrana ano.' : 'Nic se neblokuje.'}
+          Odklepnutí se uloží k variantě, aby bylo dohledatelné, že se na to někdo díval.</span>
       </div>`;
   return `<div class="kontroly-panel${plati ? ' odklepnuto' : ''}">
     <div class="kontroly-hlava"><span class="ikona">${plati ? '⚠' : '⚠'}</span>
       <b>Než nabídku odešlete – ${s.nalezy.length === 1 ? 'jedna věc' : s.nalezy.length + ' věci k ověření'}:</b></div>
     <ul class="kontroly-seznam">${polozky}</ul>
+    ${zabrana}
     ${patka}
   </div>`;
 }

@@ -76,6 +76,9 @@ await p.evaluate(([c, cp]) => {
   ZAK.nazevAkce = 'Přístavba výtahu – zkouška SoD';
   Object.assign(ZAK.projHlavicka, { objednatel: 'SVJ Zkušební 11',
     adresa: 'Zkušební 11, 100 00 Praha', nazevAkce: 'Projekce – zkouška SoD' });
+  /* Nulové rozměry nové zakázky jsou zábrana „rozmery", která od #377
+   * (1. 10. 2026) smlouvu o dílo OCK nepustí — rozměry vzorové šachty. */
+  Object.assign(Z, { prejezd: 2.7, zdvih: 12, prohluben: 1.05, sirka: 1.51, hloubka: 1.515 });
   render();
 }, [ZC.zkusebniCenik(), ZC.zkusebniCenikProj()]);
 await p.waitForTimeout(300);

@@ -244,7 +244,10 @@ await p.evaluate(() => { delete NAST.firma.planPlatebProj; ZAK = novaZakazka(); 
 
 /* ---------------------------------------------------------------- */
 console.log('\n3) zábrany: plán s vadou nepustí nabídku PROJ ani smlouvu');
-await p.evaluate(() => { ZAK = novaZakazka(); syncVarianta(); KLP.planPlateb = { v: 1, cinnosti: { dpz: [{ p: 50, m: 'podpis' }, { p: 40, m: 'dpz_su' }] } }; render(); });
+/* Rozměry vzorové šachty: nulové rozměry nové zakázky jsou zábrana „rozmery",
+ * která od #377 (1. 10. 2026) zastaví dokumenty OCK sama. */
+await p.evaluate(() => { ZAK = novaZakazka(); syncVarianta(); KLP.planPlateb = { v: 1, cinnosti: { dpz: [{ p: 50, m: 'podpis' }, { p: 40, m: 'dpz_su' }] } };
+  Object.assign(Z, { prejezd: 2.7, zdvih: 12, prohluben: 1.05, sirka: 1.51, hloubka: 1.515 }); render(); });
 const brana = await p.evaluate(() => ({
   nabidka: dokumentZabrana('nabidkaProj'), tisk: dokumentZabrana('nabidkaProjTisk'), sod: dokumentZabrana('sodProj'),
   bezTypu: dokumentZabrana(), ock: dokumentZabrana('nabidka'), kontroly: kontrolyStavAkt().kodyBrani,

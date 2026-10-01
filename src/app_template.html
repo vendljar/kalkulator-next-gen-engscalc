@@ -814,6 +814,11 @@
   .kontroly-btns { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:9px; }
   .kontroly-btns .pozn { font-size:11.5px; opacity:.8; }
   .kontroly-odklep { margin-top:9px; font-size:11.5px; opacity:.85; }
+  /* Zábrana z kontroly před nabídkou (#377, 1. 10. 2026): nález ⛔ a řádek
+     pod seznamem červeně — dokument, kterého se týká, nevznikne. */
+  .kontroly-seznam li.zabrana .kde, .kontroly-seznam li.zabrana .txt { color:#991b1b; }
+  .kontroly-zabrana { margin-top:9px; padding:6px 9px; background:#fef2f2; border:1px solid #fca5a5;
+    color:#7f1d1d; border-radius:6px; font-size:12px; line-height:1.5; }
   /* Zábrana: nenahraný ceník (30. 7. 2026). Červená, ne žlutá – kontroly výš
      jsou otázky k zodpovězení, tohle je konec cesty. Panel stojí přímo nad
      tlačítky, která zhasla, aby bylo vidět proč. */

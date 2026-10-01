@@ -520,12 +520,15 @@ function nabidkaKarta() {
  * na pokyn J. V. se přestěhoval na KONEC záložky Technická specifikace OCK —
  * obchodník projde specifikaci a rovnou pod ní dokument vytvoří. */
 function nabidkaDokumentyBlok() {
-  const zab = (typeof ukazkoveZabranaAttr === 'function') ? ukazkoveZabranaAttr() : '';
+  /* Typ dokumentu (#377): zábrany z kontroly před nabídkou (zdvih, profil,
+   * záporná položka, nulová cena, sleva nad stropem) zhasnou tlačítka OCK. */
+  const zabTisk = (typeof ukazkoveZabranaAttr === 'function') ? ukazkoveZabranaAttr('nabidkaTisk') : '';
+  const zab = (typeof ukazkoveZabranaAttr === 'function') ? ukazkoveZabranaAttr('nabidka') : '';
   return `${nabidkaFotoKarta()}
     ${typeof kontrolyPanel === 'function' ? kontrolyPanel() : ''}
     ${typeof ukazkoveZabranaPanel === 'function' ? ukazkoveZabranaPanel() : ''}
     <div class="btns" style="margin-top:10px">
-      <button class="primary"${zab} onclick="nabidkaOckDokument()">Kompletní náhled a tisk nabídky</button>
+      <button class="primary"${zabTisk} onclick="nabidkaOckDokument()">Kompletní náhled a tisk nabídky</button>
       <button${zab} onclick="nabidkaWord()">Vytvořit nabídku (Word)</button>
       <button onclick="nabidkaNahled()">Kompletní náhled podkladů</button>
       ${typeof tiskJazykVyber === 'function' ? tiskJazykVyber() : ''}
@@ -609,6 +612,8 @@ async function nabidkaWordGeneruj(srv) {
     + (srv ? ' [serverová verze ' + srv.verze + ']' : ''));
   // varianta se určuje jednou dopředu – potřebujeme ji i pro zámek (#34)
   const varianta = await nabidkaVarianta();
+  /* Zábrany z kontroly před nabídkou (#377) — hláška dřív než chyba z registru. */
+  if (typeof dokumentZabranaHlas === 'function' && dokumentZabranaHlas('nabidka', varianta, nabidkaStavText)) return;
   if (typeof tiskZamekCteniPovol === 'function' && !(await tiskZamekCteniPovol('nabidka', varianta))) { nabidkaStavText('Dokument nevznikl — nabídka je otevřená jen ke čtení.'); return; }   // P2 (K13-N54)
   // jednotný registr dokumentů (dokumenty.js) – stejná cesta jako krycí list apod.
   dokumentVygeneruj('nabidka', sablona.slice(0), ZAK, varianta, JEKLY, L)
@@ -829,6 +834,8 @@ async function nabidkaOckDokument() {
     : ((typeof jazyk === 'function') ? jazyk() : 'cz');   // volba „Jazyk tisku" (#143)
   const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
   const varianta = await nabidkaVarianta();   // drží se kvůli zámku (#34)
+  /* Zábrany z kontroly před nabídkou nad variantou, ze které náhled vzniká (#377). */
+  if (typeof dokumentZabranaHlas === 'function' && dokumentZabranaHlas('nabidkaTisk', varianta, nabidkaStavText)) return;
   /* Ptát se PŘED otevřením okna náhledu (P2): tisk z náhledu zamyká. */
   if (typeof tiskZamekCteniPovol === 'function' && !(await tiskZamekCteniPovol('nabidkaTisk', varianta))) { return; }   // P2 (K13-N54)
   const data = nabidkaData(ZAK, varianta, JEKLY, L);

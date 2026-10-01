@@ -72,6 +72,8 @@ async function sodWordGeneruj(typ, srv) {
   const varianta = (typeof nabidkaVarianta === 'function')
     ? await nabidkaVarianta()
     : ((typeof aktivniVarianta === 'function') ? aktivniVarianta(ZAK) : (ZAK.varianty || [])[0]);
+  /* Zábrany (#377, plán plateb) — hláška dřív než chyba z registru. */
+  if (typeof dokumentZabranaHlas === 'function' && dokumentZabranaHlas(typ, varianta, t => sodStavText(typ, t))) return;
   if (typeof tiskZamekCteniPovol === 'function' && !(await tiskZamekCteniPovol(typ, varianta))) { sodStavText(typ, 'Dokument nevznikl — nabídka je otevřená jen ke čtení.'); return; }   // P2 (K13-N54)
   dokumentVygeneruj(typ, sablona.slice(0), ZAK, varianta, JEKLY, L)
     .then(res => {
@@ -103,7 +105,7 @@ async function sodWordGeneruj(typ, srv) {
 
 /* ---------- karta v Kalkulaci OCK: smlouva o dílo — realizace ---------- */
 function sodKarta() {
-  const zab = (typeof ukazkoveZabranaAttr === 'function') ? ukazkoveZabranaAttr() : '';
+  const zab = (typeof ukazkoveZabranaAttr === 'function') ? ukazkoveZabranaAttr('sod') : '';   // #377
   return `<div class="note" style="font-weight:600;margin-top:14px">Smlouva o dílo — realizace (Word):</div>
     <div class="note">Smlouva se plní <b>stejnými daty jako cenová nabídka</b> (hlavička zakázky, cena bez DPH,
       platební podmínky z krycího listu, firemní údaje) – cenu si nikdy nepočítá sama, takže se s nabídkou
@@ -119,7 +121,9 @@ function sodKarta() {
 
 /* ---------- karta v Kalkulaci PROJ: SoD projekce + plná moc ---------- */
 function sodProjKarta() {
-  const zab = (typeof ukazkoveZabranaAttr === 'function') ? ukazkoveZabranaAttr() : '';
+  /* #377: SoD PROJ hlídá zábrany projekce, plná moc jen prázdný ceník. */
+  const zab = (typeof ukazkoveZabranaAttr === 'function') ? ukazkoveZabranaAttr('sodProj') : '';
+  const zabPm = (typeof ukazkoveZabranaAttr === 'function') ? ukazkoveZabranaAttr('plnaMoc') : '';
   return `<div class="note" style="font-weight:600;margin-top:14px">Smlouva o dílo a plná moc (Word):</div>
     <div class="note">Smlouva o dílo na projekční práce nese <b>cenu z nabídky PROJ</b> (číslo nabídky, celkem
       bez DPH, podmínky z krycího listu PROJ). Symboly <code>{{SODP_…}}</code> (platby po fázích, termíny
@@ -128,7 +132,7 @@ function sodProjKarta() {
       PROJ, případně OCK); údaje zmocnitele <code>{{PM_…}}</code> se doplní ručně a varianta se <b>nezamyká</b>.</div>
     <div class="btns" style="margin-top:6px">
       <button class="primary"${zab} onclick="sodWord('sodProj')">Vytvořit smlouvu o dílo PROJ (Word)</button>
-      <button class="primary"${zab} onclick="sodWord('plnaMoc')">Vytvořit plnou moc (Word)</button>
+      <button class="primary"${zabPm} onclick="sodWord('plnaMoc')">Vytvořit plnou moc (Word)</button>
     </div>
     <div class="note sodStav_sodProj" style="margin-top:4px"></div>
     <div class="note sodStav_plnaMoc"></div>`;

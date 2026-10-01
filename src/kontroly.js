@@ -10,6 +10,9 @@
  * podíval přes rameno těsně před odesláním. Nic víc. (Jedenáctá – kontrolní
  * číslice IČO – přibyla 30. 7. 2026 spolu s polem v hlavičce.)
  *
+ * (Od 25. 9. 2026 má několik pravidel úroveň ZÁBRANA a od 1. 10. 2026, #377,
+ * opravdu zastaví dokumenty, kterých se týkají — viz BRÁNA DOKUMENTŮ níž.
+ * Ostatní pravidla zůstávají varováním, jak píše tento odstavec.)
  * NIC SE NEBLOKUJE. Zadání z 30. 7. 2026 je v tomhle jednoznačné: „pouze
  * rozsviť varování před nabídkou". Všechna pravidla mají úroveň 2 –
  * upozornění. Důvod je praktický, ne měkký: tvrdá zábrana v cenotvorbě se
@@ -103,7 +106,7 @@ function kontrolyMarze(ctx) {
 const KONTROLY = [
   {
     kod: 'rozmery', kde: 'Kalkulace OCK', nazev: 'Nesmyslný rozměr nebo počet',
-    zabranaMozna: true,
+    zabranaMozna: true, strany: ['ock'],
     zjisti(ctx) {
       const z = ctx.zadani;
       if (!z) return null;
@@ -139,7 +142,7 @@ const KONTROLY = [
      * a plochu. Právě proto nesmí taková cena odejít: dokud se nevybere
      * platný rozměr, dokument nevznikne. */
     kod: 'profilNeznamy', kde: 'Kalkulace OCK', nazev: 'Rozměr profilu není v katalogu jeklů',
-    zabranaMozna: true,
+    zabranaMozna: true, strany: ['ock'],
     zjisti(ctx) {
       const nez = ctx.vysledek && ctx.vysledek.profily && ctx.vysledek.profily.nezname;
       if (!Array.isArray(nez) || !nez.length) return null;
@@ -166,6 +169,9 @@ const KONTROLY = [
       const ock = nal.some(p => p.kde.indexOf('ock.') === 0), proj = nal.some(p => p.kde.indexOf('proj.') === 0);
       const kde = [ock ? 'kalkulace OCK' : '', proj ? 'kalkulace PROJ' : ''].filter(Boolean);
       return { uroven: KONTROLY_UROVEN_ZABRANA,
+        /* Strana podle místa nálezu (#377): záporná položka v kalkulaci PROJ
+         * nesmí zastavit nabídku OCK a naopak. */
+        strany: [ock ? 'ock' : '', proj ? 'proj' : ''].filter(Boolean),
         text: 'V zakázce je záporná částka, množství nebo hodiny (' + kontrolyVyctem(kde) + '). '
           + 'Snížení ceny se zadává jako sleva, která jde přes schvalování. Dokument nevznikne, dokud se to neopraví.' };
     },
@@ -193,6 +199,9 @@ const KONTROLY = [
         spatne.push('projekční práce (PROJ)');
       if (!spatne.length) return null;
       return { uroven: KONTROLY_UROVEN_ZABRANA,
+        /* #377: zastaví jen dokumenty té části, jejíž cena je vadná. */
+        strany: [spatne.indexOf('výtahová šachta (OCK)') >= 0 ? 'ock' : '',
+          spatne.indexOf('projekční práce (PROJ)') >= 0 ? 'proj' : ''].filter(Boolean),
         text: 'Cena nabídky vyšla nulová nebo to není číslo (' + kontrolyVyctem(spatne) + ') — '
           + 'nejspíš chybí cena v ceníku nebo je nesmyslné zadání. Dokument nevznikne.' };
     },
@@ -371,7 +380,7 @@ const KONTROLY = [
   },
   {
     kod: 'sleva', kde: 'Nabídka', nazev: 'Sleva mimo rozsah nebo bez schválení',
-    zabranaMozna: true,
+    zabranaMozna: true, strany: ['ock'],
     zjisti(ctx) {
       if (ctx.jenProj) return null;   // ZAK-10 se počítá z ceny OCK; bez OCK není co hlídat
       const s = ctx.sleva;
@@ -410,7 +419,7 @@ const KONTROLY = [
   },
   {
     kod: 'slevaProj', kde: 'Kalkulace PROJ', nazev: 'Sleva projekce mimo rozsah nebo bez schválení',
-    zabranaMozna: true,
+    zabranaMozna: true, strany: ['proj'],
     zjisti(ctx) {
       /* Zrcadlo pravidla „sleva" nad projekční částí (#134, 12. 8. 2026).
        * Do té doby tu bylo pravidlo „slevaProjMax", které hlídalo jen horní
@@ -883,8 +892,8 @@ function kontrolyProjCenyBezSymbolu(r, symboly) {
 function kontrolyPravidla() {
   return KONTROLY.map(r => ({ kod: r.kod, kde: r.kde, nazev: r.nazev,
     uroven: KONTROLY_UROVEN,
-    /* Jestli pravidlo umí zvednout ruku a dokument zastavit. Dnes jediné –
-     * `ukazkovyCenik` při prázdném ceníku. V nápovědě i v protokolu má být
+    /* Jestli pravidlo umí zvednout ruku a dokument zastavit (které dokumenty,
+     * viz BRÁNA DOKUMENTŮ níž, #377). V nápovědě i v protokolu má být
      * poznat, které pravidlo se dá odklepnout a které ne. */
     zabranaMozna: !!r.zabranaMozna }));
 }
@@ -911,6 +920,10 @@ function kontrolyProved(ctx) {
       if (!v) return;
       nalezy.push({ kod: r.kod, kde: r.kde, nazev: r.nazev,
         uroven: v.uroven || KONTROLY_UROVEN,
+        /* Které části zakázky se nález týká (#377) — podle toho brána
+         * dokumentů rozhodne, který dokument zastaví. Bez údaje = obě. */
+        strany: (Array.isArray(v.strany) && v.strany.length) ? v.strany.slice()
+          : (Array.isArray(r.strany) ? r.strany.slice() : ['ock', 'proj']),
         text: v.text, detail: v.detail || '' });
     });
   }
@@ -920,6 +933,69 @@ function kontrolyProved(ctx) {
             * volající nemusel prohledávat nálezy a nemohl na to zapomenout. */
            brani: zabrany.length > 0, kodyBrani: zabrany.map(n => n.kod),
            textBrani: zabrany.map(n => n.text).join(' ') };
+}
+
+/* ---------- BRÁNA DOKUMENTŮ (#377, 1. 10. 2026) ----------
+ * Zábrana (úroveň 1) říkala „Dokument nevznikne, dokud se to neopraví",
+ * ale do v30.9.4 ji brána dokumentů (dokumentZabrana v ui/ukazkove_ui.js)
+ * nečetla — hlídala jen prázdný ceník a plán plateb PROJ. Zdvih −5 m
+ * i 1 000 000 000 m dal nabídku. Tady je rozhodnutí, KTERÝ dokument která
+ * zábrana zastaví; UI jen dodá výsledek kontrol nad variantou, ze které
+ * dokument vzniká (kontrolyStavVarianta v ui/kontroly_ui.js).
+ *
+ *   zábrana (kód)         strana  zastaví dokumenty
+ *   --------------------  ------  -----------------------------------------
+ *   rozmery               OCK     nabídka OCK (Word + náhled/tisk), SoD OCK,
+ *   profilNeznamy         OCK       krycí list OCK (Backoffice i Techdata)
+ *   sleva (nad stropem)   OCK
+ *   slevaProj             PROJ    nabídka PROJ (Word + náhled/tisk), SoD PROJ,
+ *                                   krycí list PROJ (Backoffice i Techdata)
+ *   zapornaPolozka        podle místa nálezu (kalkulace OCK / PROJ)
+ *   cenaNula              podle části s vadnou cenou (OCK / PROJ)
+ *   ukazkovyCenik         —       hlídá ukazkoveBraniDokumentu (všechny)
+ *   planPlateb100/Soucet  —       hlídá planPlatebZabranaDokumentu (PROJ)
+ *
+ * Plná moc nenese cenu ani rozměry — žádná zábrana z kontrol ji nezastaví.
+ * Krycí listy ano: nesou cenu i rozměry do backoffice a výroby, nesmysl by
+ * odešel dál jen jinými dveřmi. „Kompletní náhled podkladů" (nabidkaNahled)
+ * není dokument pro zákazníka, ale kontrolní pohled na vstupy — zůstává
+ * otevřený, je to místo, kde se chyba hledá.
+ * Pravidla nad symboly šablon (slevaWord, platbyWordOck, slevaWordProj,
+ * polozkyNavicWordProj, cenaWordProj, planPlatebWordProj) a dodatekCesky
+ * jsou ZÁMĚRNĚ varování (šablona se stahuje na pozadí, náhled dokument
+ * ukáže správně) — úroveň 1 nemají, takže sem nikdy nedojdou. */
+const KONTROLY_DOKUMENTY_STRANY = {
+  ock: ['nabidka', 'nabidkaTisk', 'sod', 'kryci'],
+  proj: ['nabidkaProj', 'nabidkaProjTisk', 'sodProj', 'kryciproj'],
+};
+/* Zábrany, které hlídá jiná (přesnější) brána — tady se přeskakují, aby
+ * hláška nezazněla dvakrát a plán plateb dál rozlišoval nabídku a smlouvu. */
+const KONTROLY_BRANA_JINDE = ['ukazkovyCenik', 'planPlateb100', 'planPlatebSoucet'];
+
+/* Typ dokumentu → strana ('ock' | 'proj' | ''). Jazyková přípona (_en…)
+ * a verze krycího listu (kryci_bo, kryciproj_techdata) se odříznou. */
+function kontrolyDokumentStrana(typ) {
+  let t = String(typ || '').replace(/_(en|de|fr)$/, '');
+  if (/^kryciproj(_|$)/.test(t)) t = 'kryciproj';
+  else if (/^kryci(_|$)/.test(t)) t = 'kryci';
+  if (KONTROLY_DOKUMENTY_STRANY.ock.indexOf(t) >= 0) return 'ock';
+  if (KONTROLY_DOKUMENTY_STRANY.proj.indexOf(t) >= 0) return 'proj';
+  return '';
+}
+
+/* Zábrany z výsledku kontrolyProved, které zastaví dokument `typ`.
+ * Vrací hlášku (název pravidla + text nálezu — co opravit), nebo ''.
+ * Tatáž věta jde do bubliny zhasnutého tlačítka i do hlášky při pokusu
+ * o tisk (dokumentZabrana). */
+function kontrolyZabranaDokumentu(vysl, typ) {
+  const strana = kontrolyDokumentStrana(typ);
+  if (!strana || !vysl || !Array.isArray(vysl.nalezy)) return '';
+  const zab = vysl.nalezy.filter(n => n.uroven === KONTROLY_UROVEN_ZABRANA
+    && KONTROLY_BRANA_JINDE.indexOf(n.kod) < 0
+    && (!Array.isArray(n.strany) || n.strany.indexOf(strana) >= 0));
+  if (!zab.length) return '';
+  return 'Kontrola před nabídkou — dokument nevznikne, dokud se neopraví: '
+    + zab.map(n => n.nazev + ': ' + n.text).join(' | ');
 }
 
 /* Text pro člověka. opts.cisla = smí vidět částky (administrátor / KPI marže).
@@ -960,4 +1036,5 @@ if (typeof module !== 'undefined')
   module.exports = { KONTROLY_UROVEN, KONTROLY_UROVEN_ZABRANA,
                      KONTROLY_VYSKA_DVERI, KONTROLY_ZDVIH_MAX_M, kontrolyVyctem,
                      kontrolyPravidla, kontrolyProved, kontrolyText, kontrolyProjNavic, kontrolyPlatbyDuvody, kontrolyProjCenyBezSymbolu,
-                     kontrolyPotvrzeni, kontrolyPotvrzeniPlati };
+                     kontrolyPotvrzeni, kontrolyPotvrzeniPlati,
+                     KONTROLY_DOKUMENTY_STRANY, KONTROLY_BRANA_JINDE, kontrolyDokumentStrana, kontrolyZabranaDokumentu };

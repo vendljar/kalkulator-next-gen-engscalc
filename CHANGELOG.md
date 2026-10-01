@@ -8,6 +8,61 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## (připraveno pro v1.10.x) — zábrany z kontroly před nabídkou blokují dokumenty (#377) (1. 10. 2026)
+
+Větev `claude/zabrany-blokuji-dokumenty` nad `test-draft` (643faa8, v30.9.4).
+Pokyn J. V. 1. 10. 2026 k návrhu #377: „2. je za mě OK, nepotřebujeme k tomu
+nález". Pravidla se zábranou psala „Dokument nevznikne, dokud se to
+neopraví", ale brána dokumentů `dokumentZabrana` je nečetla — zdvih −5 m
+i 1 000 000 000 m dal nabídku (ověřeno ve v30.9.4).
+
+**Co se změnilo**
+- `kontrolyZabranaDokumentu(vysl, typ)` v `src/kontroly.js` rozhoduje, který
+  dokument která zábrana zastaví; nález nese `strany` (OCK / PROJ):
+
+  | zábrana | zastaví |
+  |---|---|
+  | `rozmery` (i zdvih nad 99 m), `profilNeznamy`, `sleva` nad stropem | nabídka OCK (Word i náhled/tisk), SoD OCK, krycí list OCK |
+  | `slevaProj` nad stropem | nabídka PROJ (Word i náhled/tisk), SoD PROJ, krycí list PROJ |
+  | `zapornaPolozka`, `cenaNula` | dokumenty té strany, kde nález je |
+  | `ukazkovyCenik` (prázdný), `planPlateb100/Soucet` | beze změny — vlastní brány |
+  | plná moc | žádná zábrana z kontrol |
+  | „Kompletní náhled podkladů" | nic — kontrolní pohled na vstupy, ne dokument |
+
+  Pravidla nad symboly šablon stahovanými na pozadí (`slevaWord`,
+  `platbyWordOck`, `slevaWordProj`, `polozkyNavicWordProj`, `cenaWordProj`,
+  `planPlatebWordProj`) a `dodatekCesky` zůstávají varováním — neblokují.
+- `dokumentZabrana(typ, varianta)` (`src/ui/ukazkove_ui.js`) se ptá kontrol nad
+  variantou, ZE KTERÉ dokument vzniká (`kontrolyStavVarianta` v
+  `src/ui/kontroly_ui.js`; řídící varianta po odpovědi „Ne" se posoudí nad
+  vlastními daty, zamčená nad zmrazeným výsledkem).
+- Tlačítka dostala typ dokumentu (`ukazkoveZabranaAttr(typ)`): náhled a Word
+  nabídky OCK i PROJ, SoD OCK a PROJ, plná moc, tisk krycích listů. Hláška =
+  název pravidla + text nálezu, stejná v bublině zhasnutého tlačítka i při
+  pokusu o tisk (`dokumentZabranaHlas` — hláška místo „Chyba:" z registru).
+  Vedlejší účinek typu u tlačítek: vadný plán plateb PROJ teď zhasne
+  i tlačítka nabídky a smlouvy PROJ (do teď zůstala živá a zastavilo je až
+  generování).
+- Panel kontrol značí zábrany ⛔ (červeně) a pod seznamem říká, že dokument
+  nevznikne a zábrana se neodklepává; „Beru na vědomí" zůstává pro varování.
+- Příručka (kapitola 23 a slovníček hlášek): dokument nevznikne, dokud
+  zábrana trvá.
+- Nová zakázka má rozměry nulové = zábrana `rozmery`: dokumenty OCK vzniknou
+  až po vyplnění rozměrů. Harnessy, které tiskly z čerstvé zakázky
+  (`overit_dialogy`, `overit_lista`, `overit_nabidky_dph`, `overit_online`,
+  `overit_plan_plateb`, `overit_sod`), proto vyplní rozměry vzorové šachty
+  (nabídky DPH i zkušební ceník OCK; P2 v `overit_online` bránu vypne — testuje
+  dotaz na odemčení, ne zábrany).
+
+**Testy:** `src/test_kontroly.js` +15 (před opravou 1 selhání — funkce
+chyběla, po opravě 130/0); nový `overit_zabrany_dokumenty.mjs` (před opravou
+11 selhání z 24, po opravě 24/0); mutace jádra +5 úseků „#377" (kontroly.js,
+`--kontrola` 116 úseků v pořádku, běh jen úseku #377: chycených 5 z 5).
+
+**Otázka pro J. V.:** zábrana platí i pro zamčenou (odeslanou) variantu —
+dotisk odeslané nabídky s historicky „neplatnými" daty neprojde (cesta: klon
+a oprava). Výchozí odpověď: tak to nechat.
+
 ## v30.9.4 — světlíky u šachetních dveří (#375), nálezy 18. kola, platební podmínky OCK, zdvih nejvýš 99 m (30. 9. 2026)
 
 Pokyn J. V. 30. 9. 2026: „co máme aktuálně v draftu pošli už do testu"

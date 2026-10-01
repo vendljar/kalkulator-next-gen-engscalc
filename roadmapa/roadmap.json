@@ -5932,13 +5932,15 @@
   {
    "id": "377",
    "vlna": "B",
-   "stav": "ceka",
+   "stav": "hotovo",
+   "hotovoV": "v1.10.x",
    "dulezitost": "vysoka",
    "slozitost": "S",
-   "nazev": "Zábrany z kontroly před nabídkou neblokují tlačítka dokumentů",
+   "nazev": "Zábrany z kontroly před nabídkou blokují dokumenty, kterých se týkají",
    "proc": "Zjištěno při B3 (30. 9. 2026): pravidla s úrovní zábrany (rozmery — i nový strop zdvihu 99 m, profilNeznamy, zapornaPolozka, cenaNula…) nastaví v kontrole brani = true, ale dokumentZabrana() hlídá jen prázdný ukázkový ceník a plán plateb PROJ. Zdvih −5 m i 1 000 000 000 m tak dál dá „Kompletní náhled a tisk nabídky“ i „Vytvořit nabídku (Word)“.",
-   "detail": "Návrh: dokumentZabrana(typ, varianta) doplnit o zábrany z kontrolyProved (jen pravidla, která se týkají daného dokumentu, s hláškou, co opravit), test v prohlížeči. Pozor na pravidla, která čtou symboly šablony stažené na pozadí — ta jsou záměrně varování. Čeká na souhlas J. V.",
-   "kde": "src/dokumenty.js, src/kontroly.js, src/ui/kontroly_ui.js",
+   "detail": "Úkol (dřív návrh): J. V. 1. 10. 2026 „2. je za mě OK, nepotřebujeme k tomu nález“. HOTOVO ve větvi claude/zabrany-blokuji-dokumenty (připraveno pro v1.10.x). kontrolyZabranaDokumentu (kontroly.js, tabulka v komentáři): zábrany rozmery, profilNeznamy a sleva zastaví dokumenty OCK (nabídka Word + náhled/tisk, SoD OCK, krycí list OCK), slevaProj dokumenty PROJ (nabídka Word + náhled/tisk, SoD PROJ, krycí list PROJ), zapornaPolozka a cenaNula podle strany nálezu; plnou moc žádná. Prázdný ceník a plán plateb dál hlídají jejich vlastní brány. Pravidla nad symboly šablon (slevaWord, platbyWordOck, slevaWordProj, polozkyNavicWordProj, cenaWordProj, planPlatebWordProj) a dodatekCesky zůstávají varováním. dokumentZabrana(typ, varianta) posuzuje variantu, ze které dokument vzniká (kontrolyStavVarianta); tlačítka dostala typ dokumentu (ukazkoveZabranaAttr(typ)), hláška = název pravidla + text nálezu, stejná v bublině i při pokusu o tisk (dokumentZabranaHlas). Panel kontrol značí zábrany ⛔. „Kompletní náhled podkladů“ zůstává otevřený (kontrolní pohled, ne dokument). Nová zakázka má nulové rozměry = zábrana rozmery, dokumenty OCK vzniknou až po vyplnění rozměrů (harnessy tisku z čerstvé zakázky proto rozměry vyplní). Testy: test_kontroly.js (+15), overit_zabrany_dokumenty.mjs (24), mutace jádra +5 (chycených 5/5).",
+   "kde": "src/kontroly.js, src/ui/kontroly_ui.js, src/ui/ukazkove_ui.js, src/ui/zakazka_ui.js, src/ui/nabidka_proj_ui.js, src/ui/sod_ui.js, src/ui/kryci_ui.js, src/ui/kryci_proj_ui.js, overit_zabrany_dokumenty.mjs",
+   "pozn": "Otázka pro J. V.: zábrana platí i pro zamčenou (odeslanou) variantu — dotisk odeslané nabídky s historicky „neplatnými“ daty (např. zdvih nad 99 m z doby před 30. 9.) neprojde, cesta je klon a oprava. Výchozí odpověď: tak to nechat (nesmysl nemá odejít ani podruhé).",
    "zavisi": ["376"]
   }
  ],

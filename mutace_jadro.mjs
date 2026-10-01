@@ -104,6 +104,27 @@ function najdiSady() {
  *   proc   … co by se v praxi pokazilo, kdyby tuhle chybu někdo udělal doopravdy
  * ============================================================ */
 const MUTACE = [
+  /* ---------- #377: zábrany blokují dokumenty, kterých se týkají (1. 10. 2026) ---------- */
+  { nazev: '#377: brána dokumentů zábrany z kontrol nepouští dál', soubor: 'kontroly.js',
+    hledej: "  if (!zab.length) return '';\n  return 'Kontrola před nabídkou",
+    nahrad: "  if (true) return '';\n  return 'Kontrola před nabídkou",
+    proc: 'zdvih −5 m nebo 1 000 000 000 m by zase dal nabídku — stav před #377' },
+  { nazev: '#377: zábrana OCK zastaví i dokumenty PROJ (strana se nehlídá)', soubor: 'kontroly.js',
+    hledej: '    && (!Array.isArray(n.strany) || n.strany.indexOf(strana) >= 0));',
+    nahrad: '    && true);',
+    proc: 'nesmyslný zdvih v OCK by zablokoval nabídku i smlouvu projekce, které s ním nemají nic společného' },
+  { nazev: '#377: záporná položka se přiřadí vždy oběma stranám', soubor: 'kontroly.js',
+    hledej: "        strany: [ock ? 'ock' : '', proj ? 'proj' : ''].filter(Boolean),",
+    nahrad: "        strany: ['ock', 'proj'],",
+    proc: 'záporná položka v kalkulaci PROJ by zastavila i nabídku OCK' },
+  { nazev: '#377: plán plateb se hlásí dvakrát (brána jinde se nepřeskočí)', soubor: 'kontroly.js',
+    hledej: "    && KONTROLY_BRANA_JINDE.indexOf(n.kod) < 0",
+    nahrad: "    && true",
+    proc: 'plán plateb by zastavil i dokumenty, které podle jeho brány smějí vzniknout (nabídka PROJ při nesedícím součtu plateb smlouvy)' },
+  { nazev: '#377: krycí list OCK zábranu nehlídá', soubor: 'kontroly.js',
+    hledej: "  ock: ['nabidka', 'nabidkaTisk', 'sod', 'kryci'],",
+    nahrad: "  ock: ['nabidka', 'nabidkaTisk', 'sod'],",
+    proc: 'nesmyslný rozměr by odešel do backoffice a výroby krycím listem' },
   /* ---------- K18-N92: cena činnosti ve Wordu PROJ (30. 9. 2026) ---------- */
   { nazev: 'K18-N92: šablona bez symbolu ceny nabízené činnosti se nepozná', soubor: 'kontroly.js',
     hledej: '    return !ma.some(x => symboly.indexOf(x) >= 0);',

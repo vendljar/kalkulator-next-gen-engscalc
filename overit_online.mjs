@@ -1465,6 +1465,12 @@ test('lišta uzamčené varianty nabízí za Klonovat i Založit novou zakázku 
   };
   const pripravStuby = (odpoved) => page.evaluate((odpoved) => {
     window.__p2 = { okna: 0, dokumenty: 0, dialog: '' };
+    /* Zábrany dokumentů (#377) tu nejsou předmětem — platný ceník serveru je
+     * v tomhle místě harnessu nulový (zábrana „cenaNula"). Brána se vypne,
+     * zkouší se jen dotaz „Odemknout a tisknout"; zábrany hlídá
+     * overit_zabrany_dokumenty.mjs. */
+    window.__zabPuv = window.__zabPuv || window.dokumentZabrana;
+    window.dokumentZabrana = () => '';
     window.potvrd = (t) => { window.__p2.dialog = String(t); return Promise.resolve(odpoved); };
     window.__oknoPuv = window.__oknoPuv || window.oknoNahledu;
     window.oknoNahledu = () => { window.__p2.okna++; return null; };
@@ -1521,7 +1527,7 @@ test('lišta uzamčené varianty nabízí za Klonovat i Založit novou zakázku 
     dotisk.p2.dialog === '' && dotisk.p2.dokumenty === 1 && dotisk.cteni, JSON.stringify(dotisk));
 
   await page.evaluate(() => {
-    window.oknoNahledu = window.__oknoPuv; window.dokumentVygeneruj = window.__dokPuv;
+    window.oknoNahledu = window.__oknoPuv; window.dokumentVygeneruj = window.__dokPuv; if (window.__zabPuv) window.dokumentZabrana = window.__zabPuv;
     SABLONA_DOCX = null;
     if (typeof zamekCteniVypni === 'function') zamekCteniVypni();
     ZAK = novaZakazka(); syncVarianta(); render();
