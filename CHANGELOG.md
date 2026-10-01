@@ -8,7 +8,19 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## (připraveno pro v1.10.x) — dodatkové texty: číselník má přednost před zveřejněným ceníkem (1. 10. 2026)
+## v1.10.1 — dávka 1. 10. 2026: SoD podle šablon, zábrany blokují dokumenty, šířka bočního světlíku, dodatkové texty (1. 10. 2026)
+
+Zadání J. V. 1. 10. 2026 (úkoly 1–4) a jeho rozhodnutí během dne: návrh SoD
+— výchozí odpovědi platí, datum podpisu = aktuální datum; „s návrhem šířky
+bočního světlíku souhlasím, zapracuj ho pro model 2 (modelu 1 nic neměň)
+a vše pošli do testu"; kontrola dodatkového textu, který se v testu
+nepropisoval. Každý úkol vlastní větev z `test-draft` (643faa8), integrace
+`claude/davka-1-10`, převod do `test-draft` a `test` rychlým posunem.
+Roadmapa #377–#382.
+
+**Ověřeno celým kolem** nad d596290: __KOLO__.
+
+### Dodatkové texty: číselník má přednost před zveřejněným ceníkem
 
 Hlášení J. V. 1. 10. 2026: „proč se mi při načtení nové zakázky nepropisuje
 dodatkový text přestože v ceníku ho mám … Tento problém eviduju jen v testu,
@@ -37,7 +49,7 @@ z integrační `claude/davka-1-10`; roadmapa #382.
   28 OK; nový `overit_popisy_prednost.mjs` — před opravou 5 z 9 selhalo, po
   opravě 11 OK. Příručka (kapitola o dodatkových textech).
 
-## (připraveno pro v1.10.x) — šířka bočního světlíku při ručním počtu (#381, Model 2) (1. 10. 2026)
+### Šířka bočního světlíku při ručním počtu (#381, Model 2)
 
 Rozhodnutí J. V. 1. 10. 2026: „s návrhem šířky bočního světlíku souhlasím,
 zapracuj ho pro model 2 (modelu 1 nic neměň)“ (návrh
@@ -107,7 +119,7 @@ Obchodník to na obrazovce neviděl a nemohl změnit.
   a složka „Plocha boků vedle dveří“. Příručka (Zadání šachty, kapitola
   zábran).
 
-## (připraveno pro v1.10.x) — Model 2 neubírá montáž u nadsvětlíku „bez“ (1. 10. 2026)
+### Model 2 neubírá montáž u nadsvětlíku „bez“
 
 Zadání J. V. 1. 10. 2026: „v modelu 2 přestaň ubírat 0,2h montáže na
 nástupiště v případě nadsvětlík bez“. Větev `claude/model2-nadsvetlik-bez`
@@ -130,7 +142,7 @@ nástupiště v případě nadsvětlík bez“. Větev `claude/model2-nadsvetlik
   (13. rozdíl M1 × M2); `nastroje/porovnani_modelu.js` — vzor G a složka
   „Montáž — hodiny navíc za světlík nad dveřmi“.
 
-## (připraveno pro v1.10.x) — překlady dodatkových textů do cizojazyčné nabídky, K18-N96 (1. 10. 2026)
+### Překlady dodatkových textů do cizojazyčné nabídky, K18-N96
 
 Větev `claude/k18-n96-dodatky-preklady` (nad `test-draft` 643faa8, v30.9.4).
 Nález K18-N96, J. V. ho zvýšil na STŘEDNÍ: v ostrém ceníku je u SKN
@@ -190,7 +202,7 @@ administrátor. Roadmapa #379 (navazuje na #267) hotovo.
 
 ---
 
-## (připraveno pro v1.10.x) — smlouvy o dílo podle aktuálních šablon: K18-N100, K18-N101, dvojí procento (1. 10. 2026)
+### Smlouvy o dílo podle aktuálních šablon: K18-N100, K18-N101, dvojí procento
 
 Zadání J. V. 1. 10. 2026 (úkoly 3 a 4): „připrav návrh úpravy sod a aktualizaci
 online generátoru cenových nabídek a sod, aby funkčně odpovídal aktuálním
@@ -278,7 +290,7 @@ kotvami: před 1 selhal, po 0), `overit_sod.mjs` (18 nových nad skutečnou
 šablonou v1, v2 z ní vyrobenou a krycím listem v aplikaci: před úpravou 12
 z 39 selhalo a harness spadl, po úpravě 49 OK).
 
-## (připraveno pro v1.10.x) — zábrany z kontroly před nabídkou blokují dokumenty (#377) (1. 10. 2026)
+### Zábrany z kontroly před nabídkou blokují dokumenty (#377)
 
 Větev `claude/zabrany-blokuji-dokumenty` nad `test-draft` (643faa8, v30.9.4).
 Pokyn J. V. 1. 10. 2026 k návrhu #377: „2. je za mě OK, nepotřebujeme k tomu

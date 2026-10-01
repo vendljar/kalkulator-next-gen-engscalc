@@ -1,46 +1,56 @@
-# Předávka — stav k 1. 10. 2026 (dávka 1. 10.: integrační větev `claude/davka-1-10`, v1.10.1)
+# Předávka — stav k 1. 10. 2026 (v1.10.1 na test-draft i test, v30.9.1 na main)
 
-Na `main`: **v30.9.1**, na `test` = `test-draft`: **v30.9.4** (643faa8; J. V.
-1. 10. „pošli test-draft do testu"). Releasy vydané do **v30.9.4** včetně
-(ověřeno přes GitHub 1. 10.). Sezení 1. 10. 2026 navázalo na
-session_01XFo3AzDzkjt8xGnMVH53p7 (78 % kontextu).
+Na `main`: **v30.9.1**. Na `test-draft` = `test`: **v1.10.1** (pokyn J. V.
+1. 10. 2026: „s návrhem šířky bočního světlíku souhlasím, zapracuj ho pro
+model 2 (modelu 1 nic neměň) a vše pošli do testu"). Převod rychlým posunem
+z integrační větve `claude/davka-1-10` po zeleném celém kole (__KOLO__).
+Releasy vydané do **v30.9.4** včetně (ověřeno přes GitHub 1. 10.); odkaz na
+release **v1.10.1** poslán J. V. (tag z cloudu pushnout nejde — HTTP 403).
+Sezení 1. 10. navázalo na session_01XFo3AzDzkjt8xGnMVH53p7.
 
-## Dávka 1. 10. 2026 — pět větví z `test-draft` (643faa8) + integrace
-Pravidlo J. V. 29. 9.: každý úkol vlastní větev, do `test-draft` jen na jeho
-pokyn. Integrační větev **`claude/davka-1-10`** = všechny níže sloučené,
-konflikty jen v CHANGELOG/roadmapě/mutace_jadro.mjs (obě strany ponechány).
-Verze 1.10.1 (číslo release se přidělí při převodu do `test-draft`).
+## Hotovo v1.10.1 — dávka 1. 10. 2026 (podrobně CHANGELOG.md)
+Každý úkol vlastní větev; integrace `claude/davka-1-10` (konflikty jen
+v CHANGELOG, roadmapě, mutace_jadro.mjs, overit_sod.mjs a zamek_ui.js —
+obě strany ponechány).
 
-| Úkol | Větev | Stav | Roadmapa |
-|---|---|---|---|
-| 1 Model 2: nadsvětlík „bez" bez odpočtu 0,2 h (Model 1 ubírá dál) | `claude/model2-nadsvetlik-bez` | hotovo | #378 |
-| 2 Zábrany z kontroly blokují dokumenty, kterých se týkají | `claude/zabrany-blokuji-dokumenty` | hotovo | #377 |
-| 3 Návrh SoD + generátor podle aktuálních šablon; K18-N100, N101, „% %" | `claude/sod-generator-sablony` | hotovo + rozhodnutí J. V. se zapracovávají | #380 |
-| 4 K18-N96 překlady dodatkových textů (číselník EN/DE/FR) | `claude/k18-n96-dodatky-preklady` | hotovo | #379 |
-| Dotaz 1. 10.: šířka bočního světlíku | — (jen návrh) | čeká na J. V. | #381 |
+| Úkol | Větev | Roadmapa |
+|---|---|---|
+| Model 2: nadsvětlík „bez" bez odpočtu 0,2 h (Model 1 ubírá dál) | `claude/model2-nadsvetlik-bez` | #378 |
+| Zábrany z kontroly blokují dokumenty své strany (OCK × PROJ) | `claude/zabrany-blokuji-dokumenty` | #377 |
+| K18-N96: překlady dodatkových textů EN/DE/FR v číselníku | `claude/k18-n96-dodatky-preklady` | #379 |
+| Návrh SoD + generátor podle šablon, K18-N100, K18-N101, „% %", rozhodnutí J. V. (termíny, místo plnění, denní pokuta, datum podpisu = datum tisku, pokuta zhotovitele, šablony v2) | `claude/sod-generator-sablony` | #380 |
+| Šířka bočního světlíku při ručním počtu — jen Model 2 | `claude/sirka-bocniho-svetliku-381` | #381 |
+| Dodatkové texty: číselník má přednost před zveřejněným ceníkem | `claude/ciselnik-prednost-dodatku` | #382 |
 
-**Návrhy (artefakty):** SoD a šablony https://claude.ai/artifact/GXZGaJBMR9PQXnp9bz6Xwh
-(rozhodnutí J. V. 1. 10.: výchozí odpovědi platí, KROMĚ bodu 10 — datum
-podpisu = aktuální datum; bod 7 znění rozsahu SoD PROJ čeká na odsouhlasení),
+**Návrhy (artefakty):** SoD a šablony https://claude.ai/artifact/GXZGaJBMR9PQXnp9bz6Xwh,
 šířka bočního světlíku https://claude.ai/artifact/7tNaMb8Fu1tNt9ADCyYheL.
 Šablony SoD realizace v2 a SoD PROJ v2 poslány J. V. (vyrábí je
-`nastroje/vyrob_sablony.js --sod-real | --sod-proj`, necommitují se).
+`nastroje/vyrob_sablony.js --sod-real | --sod-proj`, necommitují se) —
+nahrát v Nastavení → Smlouvy / Šablony.
 
-**K18-N101:** tester zkoušel P18 na ostré **v30.9.1** (před plánem plateb).
+**K18-N101:** tester zkoušel P18 na ostré v30.9.1 (před plánem plateb).
+**#382:** v testu nese zveřejněný ceník u SKN starší text — nově má
+přednost číselník; zakázku založenou dřív srovná tlačítko v číselníku.
 
 **Podklady v cloudu:** šablony CN v14, PROJ v4 (+EN/DE/FR), PROJ v3 (jako
 Sablona_NABIDKA_PROJ.docx), SoD, plná moc a příručka staženy konektorem
 Disku do `/home/user/kng_podklady` — velké soubory se uloží do
 `…/tool-results/…txt` (JSON s base64), kontext nezahltí (viz skill).
+Aktualizovaný skill (nové znění zásady o symbolech SoD + rozhodnutí 1. 10.)
+poslán J. V. jako `2026-10-01_kalkulator_v1.10.1_skill.skill`.
 
 ## Čeká na J. V.
-- Pořadí slučování do `test-draft` (návrh: celé `claude/davka-1-10` najednou,
-  nebo po větvích 1 → 4 → 3 → 2) a release v1.10.1.
-- Odsouhlasit návrh #381 (šířka bočního světlíku) a znění rozsahu SoD PROJ (bod 7).
-- Nahrát šablony SoD v2 v Nastavení → Smlouvy / Šablony; vyplnit překlad
-  firemní věty SKN v číselníku na ostrém webu (#379).
-- Etapa C (#366): poslední čísla papírových smluv OPR a OVP.
-- Otázka #377: zábrana platí i pro dotisk zamčené varianty (výchozí: ano).
+- Release v1.10.1 (odkaz poslán) a případně převod do `main`.
+- SoD: znění rozsahu SoD PROJ (bod 7 návrhu), čísla papírových smluv OPR
+  a OVP pro etapu C (#366); otázky agentů s výchozími odpověďmi (datum
+  podpisu i v SoD PROJ — výchozí ano; slepené „V Praze, dne …" v šabloně
+  SoD realizace — výchozí opravit ve v2; pokuta za prodlení splatnosti „0"
+  — výchozí ve v2 větu vypustit).
+- #381 otázky (výchozí: ponechat) — tolerance 0,5 mm, dvě věty kontroly,
+  ruční šířka po změně počtu, zábrana i u „zajistí stavba", krycí list bez šířky.
+- #377: zábrana platí i pro dotisk zamčené varianty (výchozí: ano).
+- Vyplnit překlad firemní věty SKN v číselníku na ostrém webu (#379);
+  nahrát šablony SoD v2.
 
 ## Předchozí stav (30. 9. 2026)
 
