@@ -312,6 +312,60 @@ zkus('pod každým nákresem stojí plocha stěny, nebo že žádná není',
 zkus('pod kartou je legenda s plochami podle typu',
   nakres.legendaKusu >= 2 && /celkem k opláštění/.test(nakres.legenda), nakres.legendaKusu);
 
+/* ---------- ZAROVNÁNÍ POLÍ STĚNY (zadání J. V. 1. 10. 2026) ----------
+ *
+ * „Zarovnej datová pole u různého opláštění zprava" (snímek s modrou
+ * linkou): materiál pásu „až nahoru" stál o kus vedle materiálu ostatních
+ * pásů (vedle něj je místo pole výšky kratší text „po horní hranu"),
+ * „Opláštění začíná" stálo jinde než dělicí výšky a název a sazba „jiné"
+ * mimo sloupce úplně. Ve stejném sloupci stěn (A a C vlevo, B a D vpravo)
+ * musí každý druh pole končit na téže svislé hraně. Měří se z obrazovky
+ * a prvky se hledají podle obsluhy, ne podle nových tříd — kontrola tak
+ * platí i proti sestavení před opravou (tam selže). Stav: A a C rozdělené
+ * (C se třemi pásy, z toho „jiné"), B rozdělená s dolní mezí v prohlubni,
+ * D po celé výšce. */
+{
+  const m = await p.evaluate(() => {
+    const steny = [...document.querySelectorAll('#ock-oplasteni-steny .opl-stena')];
+    const hrana = (el, h) => Math.round(el.getBoundingClientRect()[h] * 10) / 10;
+    const s = (st, sel, re) => [...st.querySelectorAll(sel)]
+      .filter(e => re.test(e.getAttribute('onchange') || e.getAttribute('onclick') || ''));
+    return steny.map((st, i) => ({
+      k: 'ABCD'[i],
+      sloupec: Math.round(st.getBoundingClientRect().left),
+      material: s(st, 'select', /oplPasSet\(.*'typ'/).map(e => hrana(e, 'right')),
+      vyska: s(st, 'input', /'doM'|oplOdSet/).map(e => hrana(e, 'right')),
+      nazev: s(st, 'input', /'nazev'/).map(e => hrana(e, 'right')),
+      sazba: s(st, 'input', /'naklad'/).map(e => hrana(e, 'right')),
+      krizek: s(st, 'button', /oplPasSmaz/).map(e => hrana(e, 'left')),
+      celaVyska: s(st, 'input', /oplCelaVyskaSet/).map(e => hrana(e, 'left')),
+    }));
+  });
+  const sloupce = [...new Set(m.map(x => x.sloupec))].map(l => m.filter(x => x.sloupec === l));
+  const stejne = (pole) => pole.length > 0 && Math.max(...pole) - Math.min(...pole) <= 0.5;
+  const vse = (sl, klic) => sl.flatMap(x => x[klic]);
+  const popis = (sl, klic) => sl.map(x => x.k + ': ' + x[klic].join(', ')).join(' | ');
+  zkus('(předpoklad: dva sloupce stěn — A a C vlevo, B a D vpravo)',
+    sloupce.length === 2 && sloupce.every(sl => sl.length === 2), JSON.stringify(m.map(x => x.k + '@' + x.sloupec)));
+  zkus('(pojistka proti prázdné kontrole: změřeno 5 + 3 polí materiálu, 5 + 2 výšek, název a sazba „jiné")',
+    vse(sloupce[0], 'material').length === 5 && vse(sloupce[1], 'material').length === 3
+    && vse(sloupce[0], 'vyska').length === 5 && vse(sloupce[1], 'vyska').length === 2
+    && vse(m, 'nazev').length === 1 && vse(m, 'sazba').length === 1, JSON.stringify(m));
+  sloupce.forEach(sl => {
+    const kde = sl.map(x => x.k).join(' a ');
+    zkus('stěny ' + kde + ': materiál končí u všech pásů (i „až nahoru") i u stěny po celé výšce na téže hraně',
+      stejne(vse(sl, 'material')), popis(sl, 'material'));
+    zkus('stěny ' + kde + ': dělicí výšky i „Opláštění začíná" končí na téže hraně',
+      stejne(vse(sl, 'vyska')), popis(sl, 'vyska'));
+    zkus('stěny ' + kde + ': křížky pásů začínají na téže hraně', stejne(vse(sl, 'krizek')), popis(sl, 'krizek'));
+    zkus('stěny ' + kde + ': „po celé výšce" stojí u rozdělené i nerozdělené stěny na stejném místě',
+      stejne(vse(sl, 'celaVyska')), popis(sl, 'celaVyska'));
+  });
+  const c = m.find(x => x.k === 'C');
+  zkus('„jiné": název končí s materiálem a sazba s výškou (ve sloupcích stěny)',
+    stejne([...c.nazev, ...c.material]) && stejne([...c.sazba, ...c.vyska]), JSON.stringify(c));
+}
+
 /* ---------- NÁLEZY NEZÁVISLÉ REVIZE (21. 9. 2026) ---------- */
 
 /* N1: sloučení stěny zpět nesmí zahodit ruční název a sazbu u typu „jiné".

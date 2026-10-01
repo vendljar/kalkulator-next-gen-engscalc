@@ -1041,7 +1041,7 @@ function oplTypSelect(k, i) {
    * a při nejbližším překreslení by se to do dat i zapsalo. */
   const zname = typy.some(t => t.id === p.typ);
   const navic = zname ? '' : `<option value="${esc(p.typ)}" selected>${esc(p.typ)} (z jiného typu šachty)</option>`;
-  return `<select style="width:190px" onchange="oplPasSet('${escJs(k)}', ${+i}, 'typ', this.value)">
+  return `<select class="opl-s1" style="width:190px" onchange="oplPasSet('${escJs(k)}', ${+i}, 'typ', this.value)">
       ${navic}${typy.map(t => `<option value="${esc(t.id)}" ${t.id === p.typ ? 'selected' : ''}>${esc(t.nazev)}</option>`).join('')}
     </select>`;
 }
@@ -1052,13 +1052,16 @@ function oplJineHtml(k, i) {
   /* Ruční název i sazba patří do zadání, ne do ceníku: je to jednorázové
    * řešení téhle zakázky. Do ceníku se nepropisují schválně — jinak by se
    * jednorázovost stala sazbou pro všechny. */
-  return `<span class="par">
-      <input type="text" style="width:150px" placeholder="název opláštění"
+  /* Řádek ve sloupcích stěny (1. 10. 2026): název pod materiálem, sazba pod
+   * výškou — do té doby volný kus řádku pod pásem, mimo sloupce. */
+  return `<div class="row opl-jine"><label></label><span class="par opl-sloupce">
+      <input class="opl-s1" type="text" style="width:190px" placeholder="název opláštění"
         value="${esc(p.nazev || '')}" onchange="oplPasSet('${escJs(k)}', ${+i}, 'nazev', this.value)">
-      <input type="number" step="any" style="width:100px" placeholder="Kč/m²"
+      <input class="opl-s2" type="number" step="any" style="width:90px" placeholder="sazba"
         title="náklad za m²; ruční sazba znamená atyp"
         value="${esc(p.naklad == null ? '' : p.naklad)}" onchange="oplPasSet('${escJs(k)}', ${+i}, 'naklad', this.value)">
-    </span>`;
+      <span class="opl-s3 opl-jednotka">Kč/m²</span>
+    </span><span class="u"></span></div>`;
 }
 
 /* ---------- NÁKRES STĚNY (#281) ----------
@@ -1196,11 +1199,21 @@ function oplStenaHtml(s, opl) {
    * za nulu bez ohledu na to, jestli je stěna rozdělená. */
   const varovaniHtml = varovani
     ? `<div class="seznam-varovani">Stěna ${esc(k)}: ${esc(varovani)}</div>` : '';
+  /* SLOUPCE STĚNY (zadání J. V. 1. 10. 2026: „Zarovnej datová pole u různého
+   * opláštění zprava"). Každý řádek stěny skládá svá pole do týchž tří
+   * sloupců (`.opl-sloupce` v app_template.html): materiál | výška | křížek.
+   * Dokud stála pole za sebou, posunul každý jinak široký prvek ty před sebou
+   * — materiál pásu „až nahoru" (vedle něj „po horní hranu" místo pole
+   * výšky) stál o kus jinde než u ostatních pásů a u stěny po celé výšce,
+   * „Opláštění začíná" jinde než dělicí výšky. Řádek bez materiálu
+   * (hlavička rozdělené stěny, „+ přidat pás", „Opláštění začíná") má jen
+   * sloupce výška | křížek (`opl-bez1`) — popisek smí zabrat i místo
+   * prvního sloupce a nezalomí se zbytečně, výška stojí pořád pod výškou. */
   const hlava = `<div class="row"><label title="${esc(s.popis)}">Stěna ${esc(k)}
       <span class="note" style="font-weight:400"> — ${esc(s.popis)}</span></label>
-    <span class="par">
+    <span class="par opl-sloupce${cela ? '' : ' opl-bez1'}">
       ${cela ? oplTypSelect(k, 0) : ''}
-      <label style="font-weight:400" title="celá stěna je z jednoho materiálu">
+      <label class="opl-s23" style="font-weight:400" title="celá stěna je z jednoho materiálu">
         <input type="checkbox" ${cela ? 'checked' : ''}
           onchange="oplCelaVyskaSet('${escJs(k)}', this.checked)"> po celé výšce</label>
     </span><span class="u"></span></div>`
@@ -1217,13 +1230,13 @@ function oplStenaHtml(s, opl) {
   const pasy = st.pasy.map((p, i) => {
     const posledni = (i === st.pasy.length - 1);
     return `<div class="row"><label style="font-weight:400">Pás ${i + 1}${posledni ? ' (až nahoru)' : ''}</label>
-      <span class="par">${oplTypSelect(k, i)}
-        ${posledni ? '<span class="note">po horní hranu</span>'
-          : `<input type="number" step="0.01" style="width:90px" placeholder="do (m)"
+      <span class="par opl-sloupce">${oplTypSelect(k, i)}
+        ${posledni ? '<span class="note opl-s2">po horní hranu</span>'
+          : `<input class="opl-s2" type="number" step="0.01" style="width:90px" placeholder="do (m)"
               title="dělicí výška — kde tenhle pás končí a začíná další"
               value="${esc(p.doM == null ? '' : p.doM)}"
               onchange="oplPasSet('${escJs(k)}', ${+i}, 'doM', this.value)">`}
-        ${st.pasy.length > 1 ? `<button class="mini" title="odebrat pás"
+        ${st.pasy.length > 1 ? `<button class="mini opl-s3" title="odebrat pás"
           onclick="oplPasSmaz('${escJs(k)}', ${+i})">✕</button>` : ''}
       </span><span class="u"></span></div>`
       + oplJineHtml(k, i);
@@ -1238,12 +1251,12 @@ function oplStenaHtml(s, opl) {
    * se týká jich. */
   return obal(hlava
     + pasy
-    + `<div class="row"><label></label><span class="par">
-        <button class="mini" onclick="oplPasPridej('${escJs(k)}')">+ přidat pás</button></span><span class="u"></span></div>`
+    + `<div class="row"><label></label><span class="par opl-sloupce opl-bez1">
+        <button class="mini opl-s23 opl-vpravo" onclick="oplPasPridej('${escJs(k)}')">+ přidat pás</button></span><span class="u"></span></div>`
     + `<div class="row"><label style="font-weight:400">Opláštění začíná</label>
-        <input type="number" step="0.01" style="width:90px"
+        <span class="par opl-sloupce opl-bez1"><input class="opl-s2" type="number" step="0.01" style="width:90px"
           title="výška, od které se opláštění počítá; záporná hodnota sahá do prohlubně"
-          value="${esc(st.odM)}" onchange="oplOdSet('${escJs(k)}', this.value)"><span class="u">m</span></div>`
+          value="${esc(st.odM)}" onchange="oplOdSet('${escJs(k)}', this.value)"><span class="opl-s3 opl-jednotka">m</span></span><span class="u"></span></div>`
     + varovaniHtml);
 }
 
