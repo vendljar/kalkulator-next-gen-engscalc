@@ -29,7 +29,7 @@ Verze se nezvyšovala (`verze.txt` = 1.10.1, sestavení s
 
 ## Celé kolo
 
-Viz oddíl níž (doplní se po doběhnutí `nastroje/testovaci_kolo.sh`).
+Celé kolo nad b2b901b (kód P1 + P3; další commity jen dokumentace) VŠE ZELENÉ (64 min 16 s): sady 215 prošlo, 0 selhalo, 1 přeskočeno (test.js — skutečný ceník v repozitáři není), mutace jádra 130 z 130, mutace serveru 211 z 211, statické kontroly 3 z 3; s firemními podklady (KNG_PODKLADY: šablony CN v14, CN v11, PROJ v3, SoD, plná moc, příručka přejmenovaná na v1.10.1). Po kole `git status` čistý, `grep "if (false)"` jen komentář v test_prava.mjs.
 
 ## Čeká na J. V.
 

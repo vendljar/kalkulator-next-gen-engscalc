@@ -14,6 +14,8 @@ Nálezy 19. kola (1. 10. 2026, ostrá v30.9.1 + test v1.10.1) podle promptu
 J. V. Větev z `b5253c9` (v1.10.1); o sloučení rozhoduje J. V. Označení
 P1–P6 z promptu, v závorce číslo nálezu kola.
 
+**Ověřeno celým kolem:** celé kolo nad b2b901b (kód P1 + P3; další commity jen dokumentace) VŠE ZELENÉ (64 min 16 s): sady 215 prošlo, 0 selhalo, 1 přeskočeno (test.js — skutečný ceník v repozitáři není), mutace jádra 130 z 130, mutace serveru 211 z 211, statické kontroly 3 z 3; s firemními podklady (KNG_PODKLADY: šablony CN v14, CN v11, PROJ v3, SoD, plná moc, příručka přejmenovaná na v1.10.1). Po kole `git status` čistý, `grep "if (false)"` jen komentář v test_prava.mjs.
+
 ### P1 (K19-N102) — pojistka #372 a nově zamčená varianta
 
 - **Příčina:** `netlify/lib/zakazka_kontrola.mjs` přeskakoval v kontrole
