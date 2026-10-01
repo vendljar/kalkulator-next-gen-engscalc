@@ -18,9 +18,10 @@ okolo), prověř to. Text vedle dveří zůstane 1,50 m je podle mně špatně.
 Prověř to a dej mi vědět. Ad tvoje otázky: 1) nech to tak jak to aktuálně
 je, 2) Nezobrazuj nápovědu. aktualizuj roadmapu a zopakuj mi otevřené
 body znovu.“ Každý úkol vlastní větev z `test-draft` (b5253c9), integrace
-`claude/davka-1-10-2` (bez konfliktů). Roadmapa #383–#385, #381.
+`claude/davka-1-10-2` (bez konfliktů), převod do `test-draft` a `test` rychlým
+posunem na pokyn J. V. („po zeleném kole to pošli do testu“). Roadmapa #383–#385, #381.
 
-**Ověřeno celým kolem:** běží (výsledek se doplní).
+**Ověřeno celým kolem:** VŠE ZELENÉ (84 min 29 s) nad 7d544b7 — sady 214 prošlo, 0 selhalo, 1 přeskočeno (test.js — skutečný ceník v repozitáři není), mutace jádra 131 z 131, mutace serveru 210 z 210, statické kontroly 3 z 3; s firemními podklady (KNG_PODKLADY: šablony CN v14, CN v11, PROJ v3, SoD, plná moc, příručka). Převod do `test-draft` a `test` rychlým posunem na pokyn J. V. 1. 10. 2026: „po zeleném kole to pošli do testu“.
 
 ### Plán plateb PROJ: výchozí předvolba Záloha 70 % + zbytek po předání (#383)
 

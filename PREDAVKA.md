@@ -1,10 +1,11 @@
-# Předávka — stav k 1. 10. 2026 odpoledne (v1.10.2 v integrační větvi; test-draft = test = v1.10.1; main = v30.9.1)
+# Předávka — stav k 1. 10. 2026 večer (v1.10.2 na test-draft i test, v30.9.1 na main)
 
-Na `main`: **v30.9.1**. Na `test-draft` = `test`: **v1.10.1** (b5253c9).
-Připraveno: **v1.10.2** v integrační větvi **`claude/davka-1-10-2`**
-(dávka 1. 10. odpoledne). Do `test-draft` jde až na pokyn J. V. (rychlý
-posun, kód je nad b5253c9). Releasy vydané do **v1.10.1** včetně (ověřeno
-přes GitHub 1. 10. odpoledne); **v1.10.2 release ani tag ještě nemá**.
+Na `main`: **v30.9.1**. Na `test-draft` = `test`: **v1.10.2** (pokyn J. V.
+1. 10. 2026: „po zeleném kole to pošli do testu“) — rychlý posun z integrační
+větve **`claude/davka-1-10-2`** po zeleném celém kole. Releasy vydané do
+**v1.10.1** včetně (ověřeno přes GitHub 1. 10. odpoledne); **v1.10.2 release
+ani tag ještě nemá** — odkaz na release poslán J. V. (tag z cloudu pushnout
+nejde — HTTP 403).
 Sezení session_01RJSPgrM27cZ1mGsJWPdfWv navázalo na
 session_01H73EkBoAG3hp8ic9PHKqwS.
 
@@ -37,15 +38,13 @@ přijdou z Disku přímo ve výsledku nástroje — vytáhnout je z přepisu
 sezení (JSONL), viz skript v sezení.
 
 ## Celé kolo nad v1.10.2
-Běží (`bash nastroje/testovaci_kolo.sh` s `KNG_PODKLADY`) — výsledek
-se doplní. Dílčí ověření před integrací: ./spust_testy.sh v každé větvi
+VŠE ZELENÉ (84 min 29 s) nad 7d544b7 — sady 214 prošlo, 0 selhalo, 1 přeskočeno (test.js — skutečný ceník v repozitáři není), mutace jádra 131 z 131, mutace serveru 210 z 210, statické kontroly 3 z 3; s firemními podklady (KNG_PODKLADY: šablony CN v14, CN v11, PROJ v3, SoD, plná moc, příručka). Dílčí ověření před integrací: ./spust_testy.sh v každé větvi
 164/0/1; harnessy plan_plateb 49/0, oplasteni 82/0, svetliky_sirka 24/0,
 xss 215/0, smoke 50/0; mutace jádra --kontrola 131 úseků.
 
 ## Čeká na J. V.
-- Pokyn k převodu `claude/davka-1-10-2` (v1.10.2) do `test-draft`
-  (a případně `test`); pak release v1.10.2 (odkaz v odpovědi sezení).
-- Převod v1.10.1 (nebo v1.10.2) do `main`.
+- Release v1.10.2 (odkaz poslán; tag z cloudu nejde).
+- Převod v1.10.2 do `main` (výchozí: až po vyzkoušení v testu).
 - #383: výchozí plán platí i pro rozpracované zakázky bez uložené
   předvolby (výchozí: ano, jako každá změna firemního plánu); je-li
   v Nastavení → Firma uložený vlastní plán firmy, má přednost — nastavit
@@ -62,12 +61,13 @@ xss 215/0, smoke 50/0; mutace jádra --kontrola 131 úseků.
 - #377: zábrana platí i pro dotisk zamčené varianty (výchozí: ano).
 - Vyplnit překlad firemní věty SKN v číselníku na ostrém webu (#379);
   nahrát šablony SoD v2.
+- Smazat sloučené větve (celé v `test-draft`, ověřeno `git merge-base --is-ancestor` 1. 10. večer; mazání z cloudu nejde — HTTP 403): `claude/ciselnik-prednost-dodatku`, `claude/davka-1-10`, `claude/davka-k18-svetliky`, `claude/etapa-b-plan-plateb-v30.9.1`, `claude/etapa-b-q5-zaloha-automaticky`, `claude/k18-drobnosti`, `claude/k18-n96-dodatky-preklady`, `claude/k18-nalezy-word-preklady`, `claude/model2-nadsvetlik-bez`, `claude/ock-platebni-podminky-nabidka`, `claude/oprava-sesti-nalezu-v29.9.1`, `claude/sirka-bocniho-svetliku-381`, `claude/sod-generator-sablony`, `claude/stoic-cerf-j915ax`, `claude/svetliky-u-dveri-375`, `claude/zabrany-blokuji-dokumenty`, `claude/davka-1-10-2`, `claude/plan-plateb-zaloha-70`, `claude/oplasteni-zarovnani-poli`, `claude/svetlik-zbytek-vedle-dveri`. `k16-nalezy` celá v `test-draft` není (2 commity navíc: rozbor D kola 16, v25.9.8) — nemazat bez kontroly.
 
 ## Další krok
-- Doplnit výsledek celého kola do CHANGELOG, PREDAVKA a roadmapy
-  (`meta.poradi`, poslední řádek) a pushnout `claude/davka-1-10-2`.
-- Na pokyn J. V. rychlý posun `test-draft` (a `test`) na
-  `claude/davka-1-10-2`, odkaz na release v1.10.2.
+- Paralelní větev **`claude/k19-nalezy`** (nálezy 19. kola, P1–P6, z `b5253c9`)
+  běží v samostatném sezení podle promptu J. V. — viz odkaz níž; o sloučení
+  rozhoduje J. V.
+- Čekat na odpovědi J. V. k otevřeným bodům výš.
 
 ## Předchozí stav (1. 10. 2026 dopoledne — v1.10.1 na test-draft i test, v30.9.1 na main)
 

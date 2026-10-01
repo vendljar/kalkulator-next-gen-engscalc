@@ -6049,7 +6049,7 @@
    "stav" : "hotovo",
    "dulezitost" : "",
    "slozitost" : "S",
-   "hotovoV" : "v1.10.2 (větev claude/plan-plateb-zaloha-70, integrace claude/davka-1-10-2)",
+   "hotovoV" : "v1.10.2 (větev claude/plan-plateb-zaloha-70, integrace claude/davka-1-10-2, v test-draft a test)",
    "nazev" : "Plán plateb PROJ: výchozí předvolba Záloha 70 % + zbytek po předání",
    "proc" : "Pokyn J. V. 1. 10. 2026: „Nastav plán plateb viz příloha jako výchozí standard“ (snímek krycího listu PROJ: Předvolba „Záloha + zbytek po předání“, Záloha 70 %). Do té doby začínala nová zakázka na Standardu po činnostech (50 / 30 / 20 …) a předvolba Záloha nabízela 50 %.",
    "detail" : "HOTOVO: PLAN_PROJ_VYCHOZI.vychozi = zaloha, zalohaPct = 70 (src/plan_plateb.js). Nová zakázka i rozpracovaná varianta bez uložené předvolby: 70 % po podpisu smlouvy + 30 % po předání každé nabízené činnosti, způsob fakturace „záloha 70 % po podpisu smlouvy, zbytek po předání jednotlivých stupňů dokumentace“, SoD PROJ to dopočítá. Odeslané nabídky mají snímek plánu; firemní plán z Nastavení → Firma (je-li uložený) má přednost. Šablona nabídky PROJ v3 (pevné podmínky Standardu) u nové zakázky varuje „Plán plateb se ve Wordu neukáže“ — řešením je PROJ v4. Testy: test_plan_plateb (nový úsek 0), test_plan_plateb_kryci, test_plan_plateb_sod, test_sablona_proj_v4, overit_plan_plateb — proti původnímu kódu 13 selhání, po změně 0. Příručka.",
@@ -6069,7 +6069,7 @@
    "stav" : "hotovo",
    "dulezitost" : "",
    "slozitost" : "S",
-   "hotovoV" : "v1.10.2 (větev claude/oplasteni-zarovnani-poli, integrace claude/davka-1-10-2)",
+   "hotovoV" : "v1.10.2 (větev claude/oplasteni-zarovnani-poli, integrace claude/davka-1-10-2, v test-draft a test)",
    "nazev" : "Opláštění po stěnách: datová pole stěny zarovnaná ve sloupcích",
    "proc" : "Pokyn J. V. 1. 10. 2026: „Zarovnej datová pole u různého opláštění zprava viz např. modrá linka“ — materiál pásu „až nahoru“ přečníval materiál ostatních pásů, „Opláštění začíná“ stálo jinde než dělicí výšky.",
    "detail" : "HOTOVO: pole řádků stěny v pevném rastru `.opl-sloupce` materiál (190 px) | výška (90 px) | křížek (30 px), zarovnaném doprava; řádky bez materiálu (hlavička rozdělené stěny, „+ přidat pás“, „Opláštění začíná“) jen výška | křížek, takže se popisek nezalomí víc než dřív; „jiné“: název pod materiálem, sazba pod výškou, jednotka Kč/m². Výpočet beze změny. Test overit_oplasteni.mjs (úsek ZAROVNÁNÍ POLÍ STĚNY, měří hrany z obrazovky): před 5 FAIL, po 0.",
@@ -6089,7 +6089,7 @@
    "stav" : "hotovo",
    "dulezitost" : "",
    "slozitost" : "S",
-   "hotovoV" : "v1.10.2 (větev claude/svetlik-zbytek-vedle-dveri, integrace claude/davka-1-10-2)",
+   "hotovoV" : "v1.10.2 (větev claude/svetlik-zbytek-vedle-dveri, integrace claude/davka-1-10-2, v test-draft a test)",
    "nazev" : "Šířka bočního světlíku: zbytek mezery u jedněch dveří (rám dveří ověřen)",
    "proc" : "Dotazy J. V. 1. 10. 2026: „Text vedle dveří zůstane 1,50 m je podle mně špatně. Prověř to a dej mi vědět.“ a „ve výpočtu šířky světlíků zřejmě nezohledňujeme šířku rámu dveří x2 (rám obchází dveře okolo), prověř to.“",
    "detail" : "PROVĚŘENO: rám dveří se počítá dvakrát už teď — otvor dveří = čistý vstup + 2 × rám + 2 × 20 mm (sirkaDveri, vzorec z Excelu, oba modely), mezera = šířka skla − otvor − 40 mm (zakázka J. V.: 1 680 − 1 040 − 40 = 600 mm); drží to nový úsek testu 4b. Věta „Vedle dveří zůstane 1,50 m šířky…“ nesla součet přes všechny dveře (5 × 300 mm) a zněla jako zbytek u jedněch dveří. HOTOVO: „Vedle každých dveří zůstane neoceněných 300 mm (mezera 600 mm − světlík 300 mm), u 5 dveří celkem 1,50 m.“; dva u dveří „− 2 světlíky po … mm“; smíšené rozložení jen součet a z čeho vznikl; dveře bez světlíku se do zbytku nepočítají (hlásí je pravidlo počtu). Cena ani zábrany se nemění. Testy: test_svetliky_sirka.js (před 8 FAIL, po 0), overit_svetliky_sirka.mjs (před 1 FAIL, po 0), mutace jádra +3 úseky.",
@@ -6637,9 +6637,9 @@
     "pozn" : "Celé kolo nad a7889c5 VŠE ZELENÉ (sady 210/0/1, jádro 121/121, server 210/210); finální nad d596290 VŠE ZELENÉ (sady 214/0/1, jádro 128/128, server 210/210, statické 3/3; 59 min 7 s)."
    },
   {
-   "text" : "1. 10. 2026 odpoledne (engscalc, integrační větev claude/davka-1-10-2 — čeká na pokyn J. V. k převodu do test-draft), v1.10.2 — výchozí plán plateb PROJ Záloha 70 % + zbytek po předání (#383), zarovnání polí opláštění po stěnách (#384), věta o zbytku mezery vedle dveří u jedněch dveří + ověření rámu dveří (#385); rozhodnutí J. V. k #381 (mezera mezi příčníky ponechat, nápověda s výpočtem mezery ne).",
+   "text" : "1. 10. 2026 odpoledne (engscalc, test-draft + test), v1.10.2 — výchozí plán plateb PROJ Záloha 70 % + zbytek po předání (#383), zarovnání polí opláštění po stěnách (#384), věta o zbytku mezery vedle dveří u jedněch dveří + ověření rámu dveří (#385); rozhodnutí J. V. k #381 (mezera mezi příčníky ponechat, nápověda s výpočtem mezery ne). Integrace claude/davka-1-10-2, převod do test-draft a test na pokyn J. V.",
    "hotovo" : true,
-   "pozn" : "Celé kolo nad integrační větví běží (výsledek se doplní)."
+   "pozn" : "Celé kolo nad 7d544b7 VŠE ZELENÉ (84 min 29 s): sady 214/0/1, jádro 131/131, server 210/210, statické 3/3."
   }
   ],
   "pravidla" : [
