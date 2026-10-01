@@ -69,7 +69,11 @@ Obchodník to na obrazovce neviděl a nemohl změnit.
 - **Mutace jádra:** +7 úseků „#381: …“ (Model 1 čte šířku, automatika čte
   šířku, plocha z jedné tabule, předpočítaná z poloviny výšky, kontrola
   šířky vypnutá, širší než mezera se nepozná, zábrana jen upozorní);
+  filtrovaný běh `node mutace_jadro.mjs "#381"`: **chycených 7 z 7**
+  (všechny `test_svetliky_sirka.js`), pracovní kopie po běhu beze změny;
   `--kontrola` 128 úseků.
+- `./spust_testy.sh --smoke` (s `KNG_PODKLADY`): 212 prošlo, 0 selhalo,
+  1 přeskočeno (`test.js` — skutečný ceník v repozitáři není).
 - Podklad #149: 14. rozdíl M1 × M2; `nastroje/porovnani_modelu.js` vzor H
   a složka „Plocha boků vedle dveří“. Příručka (Zadání šachty, kapitola
   zábran).
