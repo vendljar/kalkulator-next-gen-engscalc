@@ -126,12 +126,25 @@ function docxUvnitrTextu(xml, pos) {
   const zacatek = Math.max(xml.lastIndexOf('<w:t>', pos), xml.lastIndexOf('<w:t ', pos));
   return zacatek > konec;
 }
+/* DVOJÍ PROCENTO (1. 10. 2026, rozbor šablon SoD). Symboly PODM_*_PROC nesou
+ * procento i se znakem („0,05 %") — tak je chtějí šablony nabídek. Šablona
+ * smlouvy o dílo ale píše znak sama („ve výši {{PODM_POKUTA_SPLATNOST_PROC}} %
+ * z dlužné částky"), takže smlouva tiskla „0,05 % %". Když hodnota končí
+ * znakem % a text šablony za symbolem (do konce odstavce, bez značek) začíná
+ * týmž znakem, znak z hodnoty se vypustí. Jinak se nemění nic. */
+function docxZaSymbolemProcento(xml, konec) {
+  const kp = xml.indexOf('</w:p>', konec);
+  const usek = xml.slice(konec, kp < 0 ? konec + 400 : Math.min(kp, konec + 400)).replace(/<[^>]+>/g, '');
+  return /^[\s\u00a0]*%/.test(usek);
+}
 function nahradPlaceholdery(xml, ph) {
   // {{KLÍČ}} i rozdělené mezi runy: {{ / KLÍČ / }} mohou být proloženy XML tagy
   return xml.replace(/\{(?:<[^>]+>)*\{((?:<[^>]+>|[A-Z0-9_])+)\}(?:<[^>]+>)*\}/g, (cely, vnitrek, pos) => {
     const klic = vnitrek.replace(/<[^>]+>/g, '');
     if (ph[klic] == null) return cely;
-    const hodnota = String(ph[klic]);
+    let hodnota = String(ph[klic]);
+    if (/%\s*$/.test(hodnota) && docxZaSymbolemProcento(xml, pos + cely.length))
+      hodnota = hodnota.replace(/[\s\u00a0]*%\s*$/, '');
     return xmlEscRadky(hodnota, /\n/.test(hodnota) ? docxUvnitrTextu(xml, pos) : true);
   });
 }
