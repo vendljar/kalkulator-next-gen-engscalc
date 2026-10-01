@@ -49,12 +49,52 @@ v PREDAVKA.md); šablony v repozitáři nejsou.
 symbol ale nese „0,05 %" → „0,05 % %". Generátor znak z hodnoty vypustí,
 když za symbolem v témže odstavci % následuje.
 
+**Rozhodnutí J. V. 1. 10. 2026** (k návrhu SoD: souhlas s výchozími
+odpověďmi, u bodu 10 změna) — ve větvi `claude/sod-generator-sablony`:
+- Krycí list OCK, sekce **Termíny** — nová nepovinná data bez předvyplnění,
+  pořadí podle průběhu stavby: *Finální podklady od dodavatele výtahu do*
+  (`{{SOD_TERMIN_PODKLADY_VYTAH}}`, jen šablona v2), *Stavební připravenost
+  zákazníka do* (`{{SOD_TERMIN_PRIPRAVENOST}}`), *Konec montáže ocelové
+  konstrukce* (`{{SOD_TERMIN_MONTAZ_DO}}`), *Opláštění od / do*
+  (`{{SOD_TERMIN_OPLASTENI_OD/DO}}`), *Osazení šachetních dveří zákazníkem
+  do* (`{{SOD_TERMIN_DVERE}}`). Prázdné pole symbol neplní (zůstane `{{…}}`),
+  datum jde do smlouvy jako DD.MM.RRRR.
+- Sekce „Smlouva o dílo — podpisy a kopie (SoD realizace)" se jmenuje
+  **„Smlouva o dílo (SoD realizace)"** a přibyly v ní: **místo plnění**
+  (výběr bytový dům / rodinný dům / administrativní budova / jiné znění, bez
+  předvyplnění → `{{SOD_MISTO_PLNENI_DRUH}}`; výběr bez předvyplnění začíná
+  volbou „— nevybráno —"), **denní pokuta za prodlení zákazníka** (stavební
+  připravenost, převzetí díla; bez předvyplnění → `{{SOD_POKUTA_DENNI}}`)
+  a **datum podpisu smlouvy** (předvyplněné datem tisku →
+  `{{SOD_DATUM_PODPISU}}`; zamčení varianty ho NEzmrazí — smlouva tištěná
+  později nese den tisku, ne den odeslání nabídky; ruční přepis platí).
+  Nic z toho nejde do cenové nabídky (sekce nejsou v `KRYCI_NABIDKA_SEKCE`).
+- **Pokuta za prodlení zhotovitele** ve šablonách v2 z krycího listu:
+  SoD realizace `{{PODM_POKUTA_DODAVKA_PROC}}` (prodlení dodávky), SoD PROJ
+  `{{PODM_POKUTA_TERMIN_PROC}}` (prodlení s odevzdáním); věta o prodlení
+  objednatele s placením zůstává se splatností. Pokuta „0" (i „0 %",
+  „bez pokuty") větu ze smlouvy vypustí (`odstavcePryc`, jen když ji šablona
+  má), vlastní znění bez procenta nechá symbol viditelný `{{…}}`. Šablony
+  v1 beze změny.
+- **Výroba šablon v2** (`nastroje/vyrob_sablony.js --sod-real / --sod-proj`):
+  přepojení symbolu pokuty ve větě o prodlení zhotovitele a v SoD realizace
+  pevné datum „19.06.2026" ve větě o podkladech dodavatele výtahu →
+  `{{SOD_TERMIN_PODKLADY_VYTAH}}`. Datum je v XML rozdělené do běhů — přepisuje
+  se po znacích, formátování zůstává; když ve větě není právě jedno datum na
+  jejím konci, výroba skončí chybou. Skript vypíše, co nahradil, a ověří
+  symboly i XML.
+
 **Testy:** `src/test_sod_realizace.js` (nová sada, 25: před opravou 10
 selhalo a sada spadla, po opravě 0), `src/test_plan_plateb_sod.js`
 (oddíl 7, 11 nových: před opravou 8 selhalo, po 0), `src/test_docxgen.js`
 (3 nové: před 1 selhal, po 0), `overit_sod.mjs` se skutečnými šablonami
 (4 nové: před opravou 2 z 31 selhaly, po 31 OK). Mutace jádra: nový úsek
-K18-N101 (plan_plateb.js) — chycená.
+K18-N101 (plan_plateb.js) — chycená. K rozhodnutí J. V. 1. 10.:
+`src/test_rozhodnuti_sod.js` (nová sada, 72: před úpravou 25 selhalo
+a sada spadla, po úpravě 0), `src/test_sod_realizace.js` (výroba v2 s novými
+kotvami: před 1 selhal, po 0), `overit_sod.mjs` (18 nových nad skutečnou
+šablonou v1, v2 z ní vyrobenou a krycím listem v aplikaci: před úpravou 12
+z 39 selhalo a harness spadl, po úpravě 49 OK).
 
 ## v30.9.4 — světlíky u šachetních dveří (#375), nálezy 18. kola, platební podmínky OCK, zdvih nejvýš 99 m (30. 9. 2026)
 

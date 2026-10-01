@@ -605,6 +605,8 @@
       "bloky": [
         { "typ": "text", "text": "Smlouva o dílo nese cenu z nabídky a k tomu zástupce a kontakty zákazníka, bankovní spojení a zápis v rejstříku. Ty se vyplňují v krycím listu v sekci **Zástupci a kontakty zákazníka** — a stačí jednou: krycí list OCK a PROJ sdílejí tatáž pole. Osoba ve věcech smluvních je zároveň ta, která smlouvu podepisuje, proto má i kolonku pozice." },
         { "typ": "text", "text": "Co nevyplníte, **zůstane ve Wordu vidět jako `{{…}}`** a doplníte to ručně. Je to schválně: prázdné pole by symbol beze stopy smazalo a chybějící údaj by si nikdo nevšiml." },
+        { "typ": "podnadpis", "text": "Co si smlouva o dílo realizace (OCK) bere z krycího listu" },
+        { "typ": "text", "text": "**Termíny, místo plnění, denní pokuta a datum podpisu** se do smlouvy o dílo realizace berou z **Krycího listu zakázky OCK** — ve Wordu je dopisovat nemusíte. Termíny vyplníte v sekci **Termíny** (podklady od dodavatele výtahu, stavební připravenost zákazníka, montáž a opláštění od–do, předání montáži výtahu, osazení šachetních dveří, konečné předání), místo plnění (bytový dům, rodinný dům, administrativní budova nebo vlastní znění), denní pokutu za prodlení zákazníka a datum podpisu v sekci **Smlouva o dílo (SoD realizace)**. Datum podpisu je předvyplněné dnešním dnem, tedy dnem tisku smlouvy — i když nabídka odešla dřív; jiné datum zapíšete ručně. Pokuta za prodlení zhotovitele se ve smlouvě řídí pokutou za prodlení dodávky z platebních podmínek: při „0“ věta ve smlouvě nebude." },
         { "typ": "podnadpis", "text": "Co navíc potřebuje projekce" },
         { "typ": "text", "text": "V **Krycím listu PROJ** (verze Backoffice) jsou pole pro věci, které se dřív dopisovaly ručně ve Wordu:" },
         {
