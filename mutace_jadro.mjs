@@ -388,6 +388,19 @@ const MUTACE = [
     hledej: "        return { uroven: KONTROLY_UROVEN_ZABRANA, text: vety.join(' ') + ' Dokument nevznikne, dokud se to neopraví.' };",
     nahrad: "        return { text: vety.join(' ') + ' Dokument nevznikne, dokud se to neopraví.' };",
     proc: 'šachta, která se postavit nedá, by odešla v nabídce — varování se dá odklepnout (otázka 5 návrhu)' },
+  /* Zbytek mezery a rám dveří (dotazy J. V. 1. 10. 2026). */
+  { nazev: 'zbytek mezery: věta zase nese součet místo zbytku u dveří', soubor: 'kontroly.js',
+    hledej: "          + ' zůstane neoceněných ' + mm(mMm - po * wMm) + ' mm (mezera '",
+    nahrad: "          + ' zůstane neoceněných ' + mm(zbytek) + ' mm (mezera '",
+    proc: 'obchodník by zase četl „vedle dveří zůstane 1 500 mm" u šachty široké 1,5 m (J. V. 1. 10. 2026)' },
+  { nazev: 'zbytek mezery: dveře bez světlíku se do zbytku počítají podruhé', soubor: 'kontroly.js',
+    hledej: "    const sSvetlikem = dva + jeden;",
+    nahrad: "    const sSvetlikem = d;",
+    proc: 'mezera u dveří bez světlíku by se hlásila dvakrát (pravidlo počtu i zbytek) a zbytek by vyšel větší, než je' },
+  { nazev: 'rám dveří se do otvoru počítá jen jednou', soubor: 'engine.js',
+    hledej: "  const sirkaDveri = (z.cistyVstupMm + 2 * z.sirkaRamuMm + 2 * 20) / 1000;",
+    nahrad: "  const sirkaDveri = (z.cistyVstupMm + z.sirkaRamuMm + 2 * 20) / 1000;",
+    proc: 'mezera vedle dveří i boční světlíky by vyšly o šířku rámu větší (dotaz J. V. 1. 10. 2026 — rám obchází dveře z obou stran)' },
 
   /* P7 / K13-N59 (25. 9. 2026): můstky počtem kusů. */
   { nazev: 'P7: stará zakázka se zaškrtnutým můstkem = 0 ks', soubor: 'engine.js',

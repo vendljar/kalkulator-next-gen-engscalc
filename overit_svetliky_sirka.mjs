@@ -129,9 +129,10 @@ s = await stav();
 zkus('šířka 300 mm se uloží jako číslo a označí „ručně" s ↺', s.data === 300 && s.hodnota === '300' && s.rucne && s.zpet
   && /předpočítaná šířka 600 mm/.test(s.pillTitul), JSON.stringify(s));
 zkus('kalkulace: MATERIÁL VSG 4.4.1 6,6 → 3,3 m² (5 × 0,3 × 2,2)', s.vsg === '3.3' && Math.abs(s.bokyM2 - 3.3) < 1e-9, s.vsg);
-zkus('nápověda „zadáno ručně; předpočítaná šířka 600 mm" a oranžové upozornění na zbytek 1,50 m',
+zkus('nápověda „zadáno ručně; předpočítaná šířka 600 mm" a oranžové upozornění na zbytek 300 mm u dveří (celkem 1,50 m)',
   s.pod.length === 2 && s.pod[0].text === 'zadáno ručně; předpočítaná šířka 600 mm'
-  && /boky-sirka-upozorneni/.test(s.pod[1].trida) && s.pod[1].text === 'Vedle dveří zůstane 1,50 m šířky, kterou nic neoceňuje.',
+  && /boky-sirka-upozorneni/.test(s.pod[1].trida)
+  && s.pod[1].text === 'Vedle každých dveří zůstane neoceněných 300 mm (mezera 600 mm − světlík 300 mm), u 5 dveří celkem 1,50 m.',
   JSON.stringify(s.pod));
 const det = await p.evaluate(() => { prepniTab('detail'); render(); const t = document.getElementById('page-detail').textContent; prepniTab('kalk'); render(); return t; });
 zkus('Detail mezivýpočtů: mezera 600 mm, šířka předpočítaná / použitá 600 mm / 300 mm (ručně), plocha boků 3,3 m² = 5 × 0,3 × 2,2',

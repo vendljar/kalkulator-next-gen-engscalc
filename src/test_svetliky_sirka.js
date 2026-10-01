@@ -186,6 +186,25 @@ test('konstrukce a montáž dál po kusech (sloupky portálu, krátké příčn�
   test('smíšené 7 ks × 400 mm ručně = 6,16 m²', () => blizko(vy(spocti(zad({ svetlikyBokyKs: 7, svetlikyBokySirkaMm: 400 }))).bokyM2, 6.16, 1e-9));
 }
 
+/* ---------- 4b) rám dveří v mezeře (dotaz J. V. 1. 10. 2026) ----------
+ * „ve výpočtu šířky světlíků zřejmě nezohledňujeme šířku rámu dveří x2
+ * (rám obchází dveře okolo)". Zohledňujeme: otvor dveří = čistý vstup
+ * + 2 × šířka rámu + 2 × 20 mm (engine.js, sirkaDveri — vzorec z Excelu,
+ * oba modely) a mezera vedle dveří = šířka skla − otvor − 40 mm. Kontrola
+ * drží, že rám ubírá z mezery dvakrát. */
+{
+  const mez = (x, fixes) => spocti(zad(x), fixes).zaskleni.vypln.mezera;
+  for (const fixes of [true, false]) {
+    const m = fixes ? 'Model 2' : 'Model 1';
+    test(m + ': otvor dveří = 800 + 2 × 100 + 2 × 20 = 1 040 mm, mezera 1 680 − 1 040 − 40 = 600 mm',
+      () => blizko(spocti(zad(), fixes).odvozene.sirkaDveri, 1.04, 1e-12) && blizko(mez({}, fixes), 0.6, 1e-12),
+      () => [spocti(zad(), fixes).odvozene.sirkaDveri, mez({}, fixes)]);
+    test(m + ': rám o 50 mm širší ubere z mezery 100 mm (rám po obou stranách dveří)',
+      () => blizko(mez({ sirkaRamuMm: 150 }, fixes), 0.5, 1e-12) && blizko(mez({ sirkaRamuMm: 0 }, fixes), 0.8, 1e-12),
+      () => [mez({ sirkaRamuMm: 150 }, fixes), mez({ sirkaRamuMm: 0 }, fixes)]);
+  }
+}
+
 /* ---------- 5) kontrola před nabídkou ---------- */
 {
   const sl = require('./sleva.js'); global.slevaPodil = sl.slevaPodil;
@@ -213,16 +232,44 @@ test('konstrukce a montáž dál po kusech (sloupky portálu, krátké příčn�
   test('7 ks × 429 mm (zaokrouhlená předpočítaná šířka) projde, 7 × 430 mm už se nevejde',
     () => !nal(zad({ svetlikyBokyKs: 7, svetlikyBokySirkaMm: 429 }))
       && (nal(zad({ svetlikyBokyKs: 7, svetlikyBokySirkaMm: 430 })) || {}).uroven === kt.KONTROLY_UROVEN_ZABRANA);
+  /* ZBYTEK MEZERY PO DVEŘÍCH (J. V. 1. 10. 2026: „Text vedle dveří zůstane
+   * 1,50 m je podle mně špatně"). Věta do té doby nesla součet přes všechny
+   * dveře a zněla jako zbytek u jedněch dveří; teď říká zbytek u jedněch
+   * dveří, z čeho vznikl, a součet zvlášť. */
   const n300 = nal(zad({ svetlikyBokyKs: 5, svetlikyBokySirkaMm: 300 }));
-  test('5 × 300 mm: UPOZORNĚNÍ „Vedle dveří zůstane 1,50 m šířky, kterou nic neoceňuje."',
-    () => !!n300 && n300.uroven !== kt.KONTROLY_UROVEN_ZABRANA && n300.text === 'Vedle dveří zůstane 1,50 m šířky, kterou nic neoceňuje.',
+  test('5 × 300 mm (snímek J. V.): UPOZORNĚNÍ se zbytkem u jedněch dveří a součtem zvlášť',
+    () => !!n300 && n300.uroven !== kt.KONTROLY_UROVEN_ZABRANA
+      && n300.text === 'Vedle každých dveří zůstane neoceněných 300 mm (mezera 600 mm − světlík 300 mm), u 5 dveří celkem 1,50 m.',
     () => n300);
+  const zb = (x, fixes) => kt.kontrolyBokySirka(spocti(zad(x), fixes)).upozorneni;
+  test('10 × 250 mm (dva u každých dveří): zbytek 100 mm u dveří, celkem 0,50 m',
+    () => zb({ svetlikyBokyKs: 10, svetlikyBokySirkaMm: 250 })[0]
+      === 'Vedle každých dveří zůstane neoceněných 100 mm (mezera 600 mm − 2 světlíky po 250 mm), u 5 dveří celkem 0,50 m.',
+    () => zb({ svetlikyBokyKs: 10, svetlikyBokySirkaMm: 250 }));
+  test('smíšené 7 × 371 mm (šířka je průměr): jen součet a z čeho vznikl',
+    () => zb({ svetlikyBokyKs: 7, svetlikyBokySirkaMm: 371 })[0]
+      === 'Vedle dveří zůstane neoceněných celkem 0,40 m (mezery u 5 dveří 3,00 m − 7 světlíků po 371 mm).',
+    () => zb({ svetlikyBokyKs: 7, svetlikyBokySirkaMm: 371 }));
+  test('smíšené 3 světlíky u 2 dveří: „3 světlíky" (1. pád množného čísla)',
+    () => zb({ nastupiste: 2, svetlikyBokyKs: 3, svetlikyBokySirkaMm: 300 })[0]
+      === 'Vedle dveří zůstane neoceněných celkem 0,30 m (mezery u 2 dveří 1,20 m − 3 světlíky po 300 mm).',
+    () => zb({ nastupiste: 2, svetlikyBokyKs: 3, svetlikyBokySirkaMm: 300 }));
+  test('jedny dveře: zbytek bez součtu', () => zb({ nastupiste: 1, svetlikyBokyKs: 1, svetlikyBokySirkaMm: 300 })[0]
+    === 'Vedle dveří zůstane neoceněných 300 mm (mezera 600 mm − světlík 300 mm).',
+    () => zb({ nastupiste: 1, svetlikyBokyKs: 1, svetlikyBokySirkaMm: 300 }));
+  test('mezi příčníky (mezera 252 mm), 5 × 200 mm: zbytek 52 mm u dveří, celkem 0,26 m',
+    () => zb({ zaskleni: 'mezi příčníky', svetlikyBokyKs: 5, svetlikyBokySirkaMm: 200 })[0]
+      === 'Vedle každých dveří zůstane neoceněných 52 mm (mezera 252 mm − světlík 200 mm), u 5 dveří celkem 0,26 m.',
+    () => zb({ zaskleni: 'mezi příčníky', svetlikyBokyKs: 5, svetlikyBokySirkaMm: 200 }));
   test('… upozornění dokument nezastaví', () => !stav(zad({ svetlikyBokyKs: 5, svetlikyBokySirkaMm: 300 })).brani);
-  test('zbytek do 5 mm se nehlásí (5 × 599 mm), 10 mm už ano (5 × 598 mm)',
-    () => !nal(zad({ svetlikyBokyKs: 5, svetlikyBokySirkaMm: 599 })) && /0,01 m šířky/.test((nal(zad({ svetlikyBokyKs: 5, svetlikyBokySirkaMm: 598 })) || {}).text || ''));
+  test('zbytek do 5 mm se nehlásí (5 × 599 mm), 10 mm už ano (5 × 598 mm: 2 mm u dveří, celkem 0,01 m)',
+    () => !nal(zad({ svetlikyBokyKs: 5, svetlikyBokySirkaMm: 599 }))
+      && /zůstane neoceněných 2 mm \(mezera 600 mm − světlík 598 mm\), u 5 dveří celkem 0,01 m\./.test((nal(zad({ svetlikyBokyKs: 5, svetlikyBokySirkaMm: 598 })) || {}).text || ''));
   const n3 = nal(zad({ svetlikyBokyKs: 3, svetlikyBokySirkaMm: 300 }));
-  test('3 ks × 300 mm: hlásí dveře bez světlíku i zbytek 2,10 m', () => !!n3 && /u 2 dveří nebude boční světlík/.test(n3.text)
-    && /Vedle dveří zůstane 2,10 m šířky/.test(n3.text) && n3.uroven !== kt.KONTROLY_UROVEN_ZABRANA, () => n3);
+  test('3 ks × 300 mm: dveře bez světlíku hlásí pravidlo počtu, zbytek jen u dveří se světlíkem (ne „2,10 m")',
+    () => !!n3 && /u 2 dveří nebude boční světlík — mezera 0,6 m tam zůstane neoceněná/.test(n3.text)
+      && n3.text.indexOf('Vedle každých dveří se světlíkem zůstane neoceněných 300 mm (mezera 600 mm − světlík 300 mm), u 3 dveří celkem 0,90 m.') >= 0
+      && !/2,10 m/.test(n3.text) && n3.uroven !== kt.KONTROLY_UROVEN_ZABRANA, () => n3);
   test('Model 1: šířka se nehlídá ani při 750 mm (bez nálezu, nic nebrání)',
     () => !nal(zad({ svetlikyBokyKs: 5, svetlikyBokySirkaMm: 750 }), false) && !stav(zad({ svetlikyBokyKs: 5, svetlikyBokySirkaMm: 750 }), false).brani);
   test('automatický počet s uloženou šířkou 750 mm: nic se nehlídá', () => !nal(zad({ svetlikyBokyKs: '', svetlikyBokySirkaMm: 750 })));
