@@ -5774,7 +5774,7 @@
    "slozitost" : "L",
    "nazev" : "P10: platební podmínky z krycího listu — 2 měsíce, splatnost, „bez DPH\", po milnících, záruka + návrh plánu plateb",
    "proc" : "K15-N71: platební podmínky žijí na devíti místech a v sedmi bodech si odporují. Rozhodnutí J. V. 29. 9. 2026: vše se dotahuje z krycího listu, při rozporu má přednost krycí list; standard 50 / 40 / 10; platnost 2 měsíce; splatnost z krycího listu; znění „bez DPH\"; fakturace většinou po milnících, může být i měsíční; pro plán plateb PROJ (4 znění) a „vše z krycího listu\" připravit návrh.",
-   "detail" : "ROZHODNUTO J. V. 29. 9. 2026 (oddíl 7 návrhu, po vyzkoušení prototypu): OCK tři firemní milníky, věty o podmínce úhrady u 1. a 2. splátky, měsíční fakturace větou „Fakturace probíhá měsíčně podle skutečně provedených prací.“; PROJ čtyři předvolby, výchozí Standard po činnostech, splátky SoD PROJ se stejným milníkem sečíst, šablona SoD PROJ se seznamem plateb jedním symbolem. POŘADÍ: nejdřív etapa B (PROJ plán plateb + šablona PROJ v4 + dopočet SoD PROJ, bod P9.3 z #366), pak etapa A (OCK platební kalendář + šablona CN v14 + SoD OCK). NÁVRH v29.9.3: podklady/NAVRH_PLATEBNI_PODMINKY_2026-09-29.md — krycí list jako jediný zdroj; OCK platební kalendář (procento + milník, předvolby, součet 100 %, symbol {{PODM_PLATEBNI_KALENDAR}} pro CN v14 a SoD); PROJ plán plateb po činnostech s předvolbami, ze kterého se odvodí nabídka, krycí list, SoD (dopočet splátek) i Nastavení. Věty „(bez DPH)\" jsou v šabloně CN v13. HOTOVO v29.9.2: 10.1 platnost 2 měsíce i v náhradních hodnotách + skloňování, 10.2 náhled PROJ bere splatnost a platnost z krycího listu PROJ, 10.4 slovník zná věty o dílčích dokladech se zněním „(bez DPH)\", 10.5 způsob fakturace výběrem Po milnících / Měsíční (výchozí po milnících, staré „Náš standard / měsíční\" se čte jako po milnících), 10.7 záruka v kapitole V. z krycího listu (věta o záruce z Firmy vypadne). ZBÝVÁ: návrh 10.3 („vše z krycího listu\") a 10.6 (plán plateb PROJ), věty „(bez DPH)\" do šablony CN v13. Hned: platnost 2 měsíce všude a skloňování, náhled PROJ bere splatnost a platnost z krycího listu, způsob fakturace výchozí po milnících (volba měsíční), záruka z krycího listu, věty „bez DPH\". Návrh: jak by krycí list řídil celé znění podmínek v nabídce, Wordu a SoD (OCK i PROJ), včetně splátek SoD PROJ a řady čísel smluv. ETAPA B HOTOVÁ ve v30.9.2 (větev claude/etapa-b-plan-plateb-v30.9.1, sloučeno do test-draft): src/plan_plateb.js (předvolby, dopočet, kontroly, snímek, převod starších), plán v krycím listu PROJ, Nastavení → Smlouvy / Šablony (firemní plán), nabídka PROJ online + symboly PROJ_PLATBY_* (šablona PROJ v4: nastroje/vyrob_sablony.js --proj-v4), smlouva o dílo PROJ se {{SODP_PLATEBNI_KALENDAR}} (šablona SoD PROJ v2: --sod-proj), zábrany planPlateb100/planPlatebSoucet a brána dokumentů. Zbývá etapa A (OCK platební kalendář). ETAPA A ČÁST 1 HOTOVÁ ve v30.9.4 (větev claude/ock-platebni-podminky-nabidka): nabídka OCK tiskne platební kalendář z krycího listu — splátka s 0 % (Bez zálohy, K18-N94) se vynechá a doklady se přečíslují, způsob fakturace „Měsíční“ dá větu „Fakturace probíhá měsíčně podle skutečně provedených prací.“ místo 50/40/10 (online náhled i Word: symboly {{PODM_PLATEBNI_KALENDAR}} a {{PODM_FAKTURACE_MESICNE}}, šablona CN v14 z nastroje/vyrob_sablony.js --cn-v14, kontrola platbyWordOck). ZBÝVÁ z etapy A: smlouva o dílo OCK (symboly SOD_SPLATKA* aplikace neplní, šablona SoD nové symboly nemá — potřeby J. V.), 10.3 „vše z krycího listu“.",
+   "detail" : "ROZHODNUTO J. V. 29. 9. 2026 (oddíl 7 návrhu, po vyzkoušení prototypu): OCK tři firemní milníky, věty o podmínce úhrady u 1. a 2. splátky, měsíční fakturace větou „Fakturace probíhá měsíčně podle skutečně provedených prací.“; PROJ čtyři předvolby, výchozí Standard po činnostech, splátky SoD PROJ se stejným milníkem sečíst, šablona SoD PROJ se seznamem plateb jedním symbolem. POŘADÍ: nejdřív etapa B (PROJ plán plateb + šablona PROJ v4 + dopočet SoD PROJ, bod P9.3 z #366), pak etapa A (OCK platební kalendář + šablona CN v14 + SoD OCK). NÁVRH v29.9.3: podklady/NAVRH_PLATEBNI_PODMINKY_2026-09-29.md — krycí list jako jediný zdroj; OCK platební kalendář (procento + milník, předvolby, součet 100 %, symbol {{PODM_PLATEBNI_KALENDAR}} pro CN v14 a SoD); PROJ plán plateb po činnostech s předvolbami, ze kterého se odvodí nabídka, krycí list, SoD (dopočet splátek) i Nastavení. Věty „(bez DPH)\" jsou v šabloně CN v13. HOTOVO v29.9.2: 10.1 platnost 2 měsíce i v náhradních hodnotách + skloňování, 10.2 náhled PROJ bere splatnost a platnost z krycího listu PROJ, 10.4 slovník zná věty o dílčích dokladech se zněním „(bez DPH)\", 10.5 způsob fakturace výběrem Po milnících / Měsíční (výchozí po milnících, staré „Náš standard / měsíční\" se čte jako po milnících), 10.7 záruka v kapitole V. z krycího listu (věta o záruce z Firmy vypadne). ZBÝVÁ: návrh 10.3 („vše z krycího listu\") a 10.6 (plán plateb PROJ), věty „(bez DPH)\" do šablony CN v13. Hned: platnost 2 měsíce všude a skloňování, náhled PROJ bere splatnost a platnost z krycího listu, způsob fakturace výchozí po milnících (volba měsíční), záruka z krycího listu, věty „bez DPH\". Návrh: jak by krycí list řídil celé znění podmínek v nabídce, Wordu a SoD (OCK i PROJ), včetně splátek SoD PROJ a řady čísel smluv. ETAPA B HOTOVÁ ve v30.9.2 (větev claude/etapa-b-plan-plateb-v30.9.1, sloučeno do test-draft): src/plan_plateb.js (předvolby, dopočet, kontroly, snímek, převod starších), plán v krycím listu PROJ, Nastavení → Smlouvy / Šablony (firemní plán), nabídka PROJ online + symboly PROJ_PLATBY_* (šablona PROJ v4: nastroje/vyrob_sablony.js --proj-v4), smlouva o dílo PROJ se {{SODP_PLATEBNI_KALENDAR}} (šablona SoD PROJ v2: --sod-proj), zábrany planPlateb100/planPlatebSoucet a brána dokumentů. Zbývá etapa A (OCK platební kalendář). ETAPA A ČÁST 1 HOTOVÁ ve v30.9.4 (větev claude/ock-platebni-podminky-nabidka): nabídka OCK tiskne platební kalendář z krycího listu — splátka s 0 % (Bez zálohy, K18-N94) se vynechá a doklady se přečíslují, způsob fakturace „Měsíční“ dá větu „Fakturace probíhá měsíčně podle skutečně provedených prací.“ místo 50/40/10 (online náhled i Word: symboly {{PODM_PLATEBNI_KALENDAR}} a {{PODM_FAKTURACE_MESICNE}}, šablona CN v14 z nastroje/vyrob_sablony.js --cn-v14, kontrola platbyWordOck). ZBÝVÁ z etapy A: smlouva o dílo OCK (symboly SOD_SPLATKA* aplikace neplní, šablona SoD nové symboly nemá — potřeby J. V.), 10.3 „vše z krycího listu“. — OD v1.10.2 (#383, pokyn J. V. 1. 10. 2026 „Nastav plán plateb viz příloha jako výchozí standard“): výchozí předvolba nové zakázky je Záloha + zbytek po předání se zálohou 70 % (dřív Standard po činnostech, záloha 50 %).",
    "hotovoKdyz" : "Etapa B i A hotové: náhled, Word i SoD (OCK i PROJ) berou platební podmínky z krycího listu; test před opravou → po opravě.",
    "kde" : "`src/kryci.js`, `src/kryci_proj.js`, `src/firma.js`, `src/nabidka.js`, `src/nabidka_proj.js`, `src/preklad.js`",
    "zavisi" : [
@@ -6006,7 +6006,8 @@
    "slozitost" : "S–M",
    "nazev" : "Šířka bočního světlíku při ručním počtu světlíků",
    "proc" : "Dotaz J. V. 1. 10. 2026: „jaktože se při změně počtu světlíků nezmění množství materiálu (sklo vsg 4.4.1)? znamená to, že se pro výpočet posune vstup na stranu a plocha tedy zůstane stejná? pokud je to tak, asi by bylo dobré, kdyby v případě ruční úpravy vyskočilo další pole (řádek pod celkem světlíků na bocích dveří) s názvem Šířka bočního světlíku, ve kterém by byla šířka předem předpočítaná a obchodník by měl možnost jí ještě změnit.“ Ověřeno v jádru: podle otázky 1 návrhu #375 (30. 9. 2026) dveře s jedním světlíkem stojí u sloupku a světlík vyplní celou mezeru, takže plocha boků je od D do 2D světlíků stejná (u zakázky ze snímku 5 × 0,60 m × 2,2 m = 6,60 m²); obchodník to na obrazovce nevidí.",
-   "detail" : "HOTOVO ve větvi claude/sirka-bocniho-svetliku-381 — schváleno J. V. 1. 10. 2026: „s návrhem šířky bočního světlíku souhlasím, zapracuj ho pro model 2 (modelu 1 nic neměň)“; výchozí odpovědi otázek 1–6 a 8 platí, otázka 7 změněna: **jen Model 2** (v Modelu 1 se pole neukáže a výpočet je beze změny ani při uložené šířce). Zapracováno: data Z.svetlikyBokySirkaMm (prázdno / chybí = předpočítaná, číslo = celé mm; server ji hlídá jako číslo); jádro (bokySirkaRucniMm, plocha boků = N × šířka × 2,2 m jen v Modelu 2 při ručním počtu a N > 0; výsledek vydává vypln.sirkaPredpocitana / sirkaRucne / sirka); řádek „Šířka bočního světlíku“ pod počtem s nápovědou, štítkem „ručně“ a ↺ (bokySirkaSet / bokySirkaZpet v ZAMEK_CHRANENE; ↺ u počtu šířku smaže); kontrola bokyDveri (jen Model 2, ruční šířka: širší než mezera / nevejdou se = zábrana zastavující dokumenty OCK, zbytek nad 5 mm = upozornění); Detail mezivýpočtů (mezera, předpočítaná a použitá šířka, plocha boků); specifikace a nabídka „…, 5 ks, šířka 300 mm, …“ s překladem EN/DE/FR (návrh překladu); příručka; podklad #149 (14. rozdíl M1 × M2). Testy: src/test_svetliky_sirka.js, overit_svetliky_sirka.mjs, mutace jádra „#381“. — PŮVODNÍ NÁVRH (artefakt https://claude.ai/artifact/7tNaMb8Fu1tNt9ADCyYheL): pole „Šířka bočního světlíku“ (mm) pod „Celkem světlíků na bocích dveří“, jen při ručním počtu; předpočítaná šířka = taková, při které vyjde dnešní plocha (jeden světlík u dveří = celá mezera, dva = polovina, smíšené = průměr) — dokud ji nikdo nepřepíše, počítá se přesná hodnota a cena se nemění; ruční šířka se štítkem „ručně“ a ↺; plocha boků pak = počet × šířka × 2,2 m pro všechny výplně; ↺ u počtu šířku zahodí; kontrola bokyDveri: světlík širší než mezera / světlíky se nevejdou = zábrana, zbytek mezery = upozornění; Detail mezivýpočtů, specifikace („5 ks, šířka 600 mm“), příručka, testy, mutace jádra. Osm otázek s výchozími odpověďmi je v artefaktu.",
+   "detail" : "HOTOVO ve větvi claude/sirka-bocniho-svetliku-381 — schváleno J. V. 1. 10. 2026: „s návrhem šířky bočního světlíku souhlasím, zapracuj ho pro model 2 (modelu 1 nic neměň)“; výchozí odpovědi otázek 1–6 a 8 platí, otázka 7 změněna: **jen Model 2** (v Modelu 1 se pole neukáže a výpočet je beze změny ani při uložené šířce). Zapracováno: data Z.svetlikyBokySirkaMm (prázdno / chybí = předpočítaná, číslo = celé mm; server ji hlídá jako číslo); jádro (bokySirkaRucniMm, plocha boků = N × šířka × 2,2 m jen v Modelu 2 při ručním počtu a N > 0; výsledek vydává vypln.sirkaPredpocitana / sirkaRucne / sirka); řádek „Šířka bočního světlíku“ pod počtem s nápovědou, štítkem „ručně“ a ↺ (bokySirkaSet / bokySirkaZpet v ZAMEK_CHRANENE; ↺ u počtu šířku smaže); kontrola bokyDveri (jen Model 2, ruční šířka: širší než mezera / nevejdou se = zábrana zastavující dokumenty OCK, zbytek nad 5 mm = upozornění); Detail mezivýpočtů (mezera, předpočítaná a použitá šířka, plocha boků); specifikace a nabídka „…, 5 ks, šířka 300 mm, …“ s překladem EN/DE/FR (návrh překladu); příručka; podklad #149 (14. rozdíl M1 × M2). Testy: src/test_svetliky_sirka.js, overit_svetliky_sirka.mjs, mutace jádra „#381“. — PŮVODNÍ NÁVRH (artefakt https://claude.ai/artifact/7tNaMb8Fu1tNt9ADCyYheL): pole „Šířka bočního světlíku“ (mm) pod „Celkem světlíků na bocích dveří“, jen při ručním počtu; předpočítaná šířka = taková, při které vyjde dnešní plocha (jeden světlík u dveří = celá mezera, dva = polovina, smíšené = průměr) — dokud ji nikdo nepřepíše, počítá se přesná hodnota a cena se nemění; ruční šířka se štítkem „ručně“ a ↺; plocha boků pak = počet × šířka × 2,2 m pro všechny výplně; ↺ u počtu šířku zahodí; kontrola bokyDveri: světlík širší než mezera / světlíky se nevejdou = zábrana, zbytek mezery = upozornění; Detail mezivýpočtů, specifikace („5 ks, šířka 600 mm“), příručka, testy, mutace jádra. Osm otázek s výchozími odpověďmi je v artefaktu. — ROZHODNUTÍ J. V. 1. 10. 2026 odpoledne (dotaz „proč se mi při přepnutí způsobu zasklení na mezi příčníky změní šířka bočního světlíku?“ — předpočítaná šířka = mezera vedle dveří, která se měří ze šířky skla: na terče vnitřní šířka + 2 × příčník + 0,02 m, mezi příčníky vnitřní šířka − 2 × sloupek − 0,008 m; v zakázce J. V. 600 mm × 252 mm): 1) mezera u zasklení mezi příčníky dál ze šířky skla mezi sloupky — ponechat; 2) nápověda s výpočtem mezery se nezobrazuje. Věta o zbytku mezery upřesněna v #385.",
+   "otazka" : "Zbývá potvrdit (výchozí odpovědi: ponechat): tolerance zaokrouhlení 0,5 mm na světlík; dvě různé věty kontroly (širší než mezera / nevejdou se); ruční šířka zůstane i po změně počtu světlíků; zábrana i u výplně „zajistí stavba“; krycí list šířku neuvádí.",
    "hotovoKdyz" : "Pole se ukáže při ručním počtu, předpočítaná šířka nemění cenu, ruční šířka mění plochu výplně boků; kontrola hlídá šířku proti mezeře; test před → po opravě.",
    "kde" : "`src/engine.js` (bokyM2, bokySirkaRucniMm, vypln.sirka*), `src/ui/kalk_ock.js` (bokySirkaRadek, bokySirkaSet, bokySirkaZpet, bokyKsZpet), `src/kontroly.js` (bokyDveri, kontrolyBokySirka), `src/techspec.js` (tsSvetlikyDveri), `src/preklad.js` (PREKLAD_SVETLIKY_CAST), `src/ui/detail_ui.js` (dvBokySirkaRadky), `src/uloziste.js` (ULO_CISLA_NAVIC), `src/ui/zamek_ui.js`",
    "zavisi" : [
@@ -6039,6 +6040,66 @@
      "id" : "379",
      "typ" : "doporuceno",
      "proc" : "překlady dodatkových textů"
+    }
+   ]
+  },
+  {
+   "id" : "383",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "S",
+   "hotovoV" : "v1.10.2 (větev claude/plan-plateb-zaloha-70, integrace claude/davka-1-10-2)",
+   "nazev" : "Plán plateb PROJ: výchozí předvolba Záloha 70 % + zbytek po předání",
+   "proc" : "Pokyn J. V. 1. 10. 2026: „Nastav plán plateb viz příloha jako výchozí standard“ (snímek krycího listu PROJ: Předvolba „Záloha + zbytek po předání“, Záloha 70 %). Do té doby začínala nová zakázka na Standardu po činnostech (50 / 30 / 20 …) a předvolba Záloha nabízela 50 %.",
+   "detail" : "HOTOVO: PLAN_PROJ_VYCHOZI.vychozi = zaloha, zalohaPct = 70 (src/plan_plateb.js). Nová zakázka i rozpracovaná varianta bez uložené předvolby: 70 % po podpisu smlouvy + 30 % po předání každé nabízené činnosti, způsob fakturace „záloha 70 % po podpisu smlouvy, zbytek po předání jednotlivých stupňů dokumentace“, SoD PROJ to dopočítá. Odeslané nabídky mají snímek plánu; firemní plán z Nastavení → Firma (je-li uložený) má přednost. Šablona nabídky PROJ v3 (pevné podmínky Standardu) u nové zakázky varuje „Plán plateb se ve Wordu neukáže“ — řešením je PROJ v4. Testy: test_plan_plateb (nový úsek 0), test_plan_plateb_kryci, test_plan_plateb_sod, test_sablona_proj_v4, overit_plan_plateb — proti původnímu kódu 13 selhání, po změně 0. Příručka.",
+   "hotovoKdyz" : "Nová zakázka má v krycím listu PROJ předvolbu „Záloha + zbytek po předání“ se zálohou 70 %; testy před → po změně.",
+   "kde" : "`src/plan_plateb.js` (PLAN_PROJ_VYCHOZI), `overit_plan_plateb.mjs`, `src/test_plan_plateb*.js`",
+   "zavisi" : [
+    {
+     "id" : "367",
+     "typ" : "tvrda",
+     "proc" : "plán plateb projekce (etapa B)"
+    }
+   ]
+  },
+  {
+   "id" : "384",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "S",
+   "hotovoV" : "v1.10.2 (větev claude/oplasteni-zarovnani-poli, integrace claude/davka-1-10-2)",
+   "nazev" : "Opláštění po stěnách: datová pole stěny zarovnaná ve sloupcích",
+   "proc" : "Pokyn J. V. 1. 10. 2026: „Zarovnej datová pole u různého opláštění zprava viz např. modrá linka“ — materiál pásu „až nahoru“ přečníval materiál ostatních pásů, „Opláštění začíná“ stálo jinde než dělicí výšky.",
+   "detail" : "HOTOVO: pole řádků stěny v pevném rastru `.opl-sloupce` materiál (190 px) | výška (90 px) | křížek (30 px), zarovnaném doprava; řádky bez materiálu (hlavička rozdělené stěny, „+ přidat pás“, „Opláštění začíná“) jen výška | křížek, takže se popisek nezalomí víc než dřív; „jiné“: název pod materiálem, sazba pod výškou, jednotka Kč/m². Výpočet beze změny. Test overit_oplasteni.mjs (úsek ZAROVNÁNÍ POLÍ STĚNY, měří hrany z obrazovky): před 5 FAIL, po 0.",
+   "hotovoKdyz" : "Materiál, výška a křížek všech řádků stěn ve stejném sloupci končí na téže hraně; harness před → po úpravě.",
+   "kde" : "`src/ui/kalk_ock.js` (oplStenaHtml, oplTypSelect, oplJineHtml), `src/app_template.html` (.opl-sloupce), `overit_oplasteni.mjs`",
+   "zavisi" : [
+    {
+     "id" : "268",
+     "typ" : "tvrda",
+     "proc" : "karta opláštění po stěnách"
+    }
+   ]
+  },
+  {
+   "id" : "385",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "S",
+   "hotovoV" : "v1.10.2 (větev claude/svetlik-zbytek-vedle-dveri, integrace claude/davka-1-10-2)",
+   "nazev" : "Šířka bočního světlíku: zbytek mezery u jedněch dveří (rám dveří ověřen)",
+   "proc" : "Dotazy J. V. 1. 10. 2026: „Text vedle dveří zůstane 1,50 m je podle mně špatně. Prověř to a dej mi vědět.“ a „ve výpočtu šířky světlíků zřejmě nezohledňujeme šířku rámu dveří x2 (rám obchází dveře okolo), prověř to.“",
+   "detail" : "PROVĚŘENO: rám dveří se počítá dvakrát už teď — otvor dveří = čistý vstup + 2 × rám + 2 × 20 mm (sirkaDveri, vzorec z Excelu, oba modely), mezera = šířka skla − otvor − 40 mm (zakázka J. V.: 1 680 − 1 040 − 40 = 600 mm); drží to nový úsek testu 4b. Věta „Vedle dveří zůstane 1,50 m šířky…“ nesla součet přes všechny dveře (5 × 300 mm) a zněla jako zbytek u jedněch dveří. HOTOVO: „Vedle každých dveří zůstane neoceněných 300 mm (mezera 600 mm − světlík 300 mm), u 5 dveří celkem 1,50 m.“; dva u dveří „− 2 světlíky po … mm“; smíšené rozložení jen součet a z čeho vznikl; dveře bez světlíku se do zbytku nepočítají (hlásí je pravidlo počtu). Cena ani zábrany se nemění. Testy: test_svetliky_sirka.js (před 8 FAIL, po 0), overit_svetliky_sirka.mjs (před 1 FAIL, po 0), mutace jádra +3 úseky.",
+   "hotovoKdyz" : "Věta pod polem šířky i v kontrole říká zbytek u jedněch dveří a součet zvlášť; test rámu dveří; testy před → po.",
+   "kde" : "`src/kontroly.js` (kontrolyBokySirka), `src/test_svetliky_sirka.js`, `overit_svetliky_sirka.mjs`, `mutace_jadro.mjs`",
+   "zavisi" : [
+    {
+     "id" : "381",
+     "typ" : "tvrda",
+     "proc" : "ruční šířka bočního světlíku"
     }
    ]
   }
@@ -6574,7 +6635,12 @@
     "text" : "1. 10. 2026 (engscalc, test-draft + test), v1.10.1 — dávka 1. 10.: Model 2 nadsvětlík „bez“ (#378), zábrany blokují dokumenty (#377), překlady dodatkových textů K18-N96 (#379), SoD podle aktuálních šablon + K18-N100/N101 + rozhodnutí J. V. (#380), šířka bočního světlíku jen Model 2 (#381), číselník dodatkových textů má přednost (#382). Integrace claude/davka-1-10, převod do test-draft a test na pokyn J. V.",
     "hotovo" : true,
     "pozn" : "Celé kolo nad a7889c5 VŠE ZELENÉ (sady 210/0/1, jádro 121/121, server 210/210); finální nad d596290 VŠE ZELENÉ (sady 214/0/1, jádro 128/128, server 210/210, statické 3/3; 59 min 7 s)."
-   }
+   },
+  {
+   "text" : "1. 10. 2026 odpoledne (engscalc, integrační větev claude/davka-1-10-2 — čeká na pokyn J. V. k převodu do test-draft), v1.10.2 — výchozí plán plateb PROJ Záloha 70 % + zbytek po předání (#383), zarovnání polí opláštění po stěnách (#384), věta o zbytku mezery vedle dveří u jedněch dveří + ověření rámu dveří (#385); rozhodnutí J. V. k #381 (mezera mezi příčníky ponechat, nápověda s výpočtem mezery ne).",
+   "hotovo" : true,
+   "pozn" : "Celé kolo nad integrační větví běží (výsledek se doplní)."
+  }
   ],
   "pravidla" : [
    "GitHub (INFRA-14), rosti.cz (INFRA-15) a Apps Script se bez výslovného pokynu nespouští ani neaktualizují.",
@@ -6660,7 +6726,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v1.10.1 (engscalc)",
+  "build" : "v1.10.2 (engscalc)",
   "stavKDatu" : "1. 10. 2026"
  },
  "_comment" : [

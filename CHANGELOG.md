@@ -8,6 +8,92 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v1.10.2 — dávka 1. 10. 2026 odpoledne: výchozí plán plateb PROJ, zarovnání polí opláštění, zbytek mezery vedle dveří (1. 10. 2026)
+
+Zadání J. V. 1. 10. 2026 odpoledne (navazující sezení po v1.10.1): „Nastav
+plán plateb viz příloha jako výchozí standard. Zarovnej datová pole
+u různého opláštění zprava viz např. modrá linka obr. ve výpočtu šířky
+světlíků zřejmě nezohledňujeme šířku rámu dveří x2 (rám obchází dveře
+okolo), prověř to. Text vedle dveří zůstane 1,50 m je podle mně špatně.
+Prověř to a dej mi vědět. Ad tvoje otázky: 1) nech to tak jak to aktuálně
+je, 2) Nezobrazuj nápovědu. aktualizuj roadmapu a zopakuj mi otevřené
+body znovu.“ Každý úkol vlastní větev z `test-draft` (b5253c9), integrace
+`claude/davka-1-10-2` (bez konfliktů). Roadmapa #383–#385, #381.
+
+**Ověřeno celým kolem:** běží (výsledek se doplní).
+
+### Plán plateb PROJ: výchozí předvolba Záloha 70 % + zbytek po předání (#383)
+
+Větev `claude/plan-plateb-zaloha-70`. Snímek J. V.: krycí list PROJ
+s předvolbou „Záloha + zbytek po předání“ a zálohou 70 %.
+
+- **Výchozí plán z kódu** (`PLAN_PROJ_VYCHOZI` v `src/plan_plateb.js`):
+  výchozí předvolba Standard po činnostech → **Záloha + zbytek po
+  předání**, záloha v předvolbě 50 % → **70 %**. Nová zakázka má u každé
+  nabízené činnosti 70 % po podpisu smlouvy a 30 % po předání činnosti,
+  způsob fakturace „záloha 70 % po podpisu smlouvy, zbytek po předání
+  jednotlivých stupňů dokumentace“, smlouva o dílo PROJ to dopočítá.
+- Platí i pro **rozpracovanou** variantu, která předvolbu nemá uloženou
+  (plán je řídký — jako u každé změny firemního plánu). Odeslané nabídky
+  mají snímek plánu a nemění se. Firma s vlastním plánem v Nastavení →
+  Firma má vlastní výchozí předvolbu a zálohu, ty mají přednost.
+- Šablona nabídky PROJ v3 má platební podmínky natvrdo (Standard) — u nové
+  zakázky s v3 teď varuje pravidlo „Plán plateb se ve Wordu neukáže“;
+  řešením je šablona PROJ v4.
+- **Testy** (proti původnímu kódu → po změně): `test_plan_plateb.js`
+  4 FAIL → 70/0 (nový úsek 0 — výchozí předvolba, řádky 70/30, popis,
+  věta fakturace, dopočet SoD); `test_plan_plateb_kryci.js` 3 FAIL → 66/0;
+  `test_plan_plateb_sod.js` 1 FAIL → 49/0; `test_sablona_proj_v4.js`
+  1 FAIL → 33/0; `overit_plan_plateb.mjs` 4 FAIL → 49/0. Testy Standardu
+  běží nad firmou s výchozím Standardem. Příručka (Plán plateb).
+
+### Opláštění po stěnách: pole stěny v pevných sloupcích (#384)
+
+Větev `claude/oplasteni-zarovnani-poli`. Snímek J. V. s modrou linkou:
+materiál pásu „až nahoru“ přečníval materiál ostatních pásů.
+
+- **Příčina:** pole řádku stěny se skládala za sebe, každý jinak široký
+  prvek posunul ty před sebou (vedle pásu „až nahoru“ je místo pole výšky
+  kratší text „po horní hranu“; „Opláštění začíná“ nemělo křížek;
+  název a sazba „jiné“ byly mimo sloupce).
+- **Oprava** (`src/ui/kalk_ock.js`, `src/app_template.html`): rastr
+  `.opl-sloupce` materiál (190 px) | výška (90 px) | křížek (30 px),
+  zarovnaný doprava; řádky bez materiálu (hlavička rozdělené stěny,
+  „+ přidat pás“, „Opláštění začíná“) mají jen sloupce výška | křížek,
+  takže popisek se na užším okně nezalomí víc než dřív. „jiné“: název
+  pod materiálem, sazba pod výškou, jednotka Kč/m². Výpočet beze změny.
+- **Test:** `overit_oplasteni.mjs` nový úsek „ZAROVNÁNÍ POLÍ STĚNY“ (měří
+  hrany z obrazovky) — proti sestavení před úpravou 77 OK / 5 FAIL, po ní
+  82 / 0; `overit_xss.mjs` 215/0, `smoke.mjs` 50/0.
+
+### Šířka bočního světlíku: zbytek mezery u jedněch dveří; rám dveří ověřen (#385)
+
+Větev `claude/svetlik-zbytek-vedle-dveri`.
+
+- **Rám dveří** se do mezery vedle dveří počítá **dvakrát už teď**: otvor
+  dveří = čistý vstup + 2 × šířka rámu + 2 × 20 mm (`sirkaDveri`, vzorec
+  z Excelu, oba modely), mezera = šířka skla − otvor − 40 mm. Zakázka ze
+  snímku: 800 + 2 × 100 + 40 = 1 040 mm; 1 680 − 1 040 − 40 = 600 mm.
+  Kód se nemění; nový úsek testu 4b to drží (pojistka dočasnou mutací
+  „rám jednou“: 4 kontroly selžou).
+- **Věta o zbytku** (`kontrolyBokySirka`, jen Model 2 s ruční šířkou):
+  „Vedle dveří zůstane 1,50 m šířky…“ nesla součet přes všechny dveře
+  a zněla jako zbytek u jedněch dveří. Nově „Vedle každých dveří zůstane
+  neoceněných 300 mm (mezera 600 mm − světlík 300 mm), u 5 dveří celkem
+  1,50 m.“; dva u dveří „− 2 světlíky po … mm“; smíšené rozložení jen
+  součet a z čeho vznikl; dveře bez světlíku se do zbytku nepočítají
+  (hlásí je pravidlo počtu). Cena ani zábrany se nemění.
+- **Testy:** `test_svetliky_sirka.js` — proti původnímu kódu 61/8, po
+  změně 69/0; `overit_svetliky_sirka.mjs` 23/1 → 24/0; mutace jádra +3
+  úseky (věta nese součet, dveře bez světlíku podruhé, rám jednou).
+
+### Rozhodnutí J. V. k #381 (1. 10. 2026 odpoledne)
+
+- Mezera vedle dveří u zasklení mezi příčníky dál vychází ze šířky skla
+  mezi sloupky (shodně s Excelem a Modelem 1) — **ponechat**.
+- Nápověda s výpočtem mezery („šířka skla … − otvor dveří … − 40 mm“) se
+  **nezobrazuje** — nic se nepřidává.
+
 ## v1.10.1 — dávka 1. 10. 2026: SoD podle šablon, zábrany blokují dokumenty, šířka bočního světlíku, dodatkové texty (1. 10. 2026)
 
 Zadání J. V. 1. 10. 2026 (úkoly 1–4) a jeho rozhodnutí během dne: návrh SoD

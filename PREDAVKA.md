@@ -1,4 +1,75 @@
-# Předávka — stav k 1. 10. 2026 (v1.10.1 na test-draft i test, v30.9.1 na main)
+# Předávka — stav k 1. 10. 2026 odpoledne (v1.10.2 v integrační větvi; test-draft = test = v1.10.1; main = v30.9.1)
+
+Na `main`: **v30.9.1**. Na `test-draft` = `test`: **v1.10.1** (b5253c9).
+Připraveno: **v1.10.2** v integrační větvi **`claude/davka-1-10-2`**
+(dávka 1. 10. odpoledne). Do `test-draft` jde až na pokyn J. V. (rychlý
+posun, kód je nad b5253c9). Releasy vydané do **v1.10.1** včetně (ověřeno
+přes GitHub 1. 10. odpoledne); **v1.10.2 release ani tag ještě nemá**.
+Sezení session_01RJSPgrM27cZ1mGsJWPdfWv navázalo na
+session_01H73EkBoAG3hp8ic9PHKqwS.
+
+## Hotovo v1.10.2 — dávka 1. 10. 2026 odpoledne (podrobně CHANGELOG.md)
+Zadání J. V. (snímky): výchozí plán plateb, zarovnání polí opláštění,
+prověřit rám dveří a větu „Vedle dveří zůstane 1,50 m“, odpovědi na
+otázky k #381, roadmapa, otevřené body. Každý úkol vlastní větev
+z `test-draft` (b5253c9), integrace bez konfliktů.
+
+| Úkol | Větev | Roadmapa |
+|---|---|---|
+| Plán plateb PROJ: výchozí předvolba Záloha 70 % + zbytek po předání | `claude/plan-plateb-zaloha-70` | #383 |
+| Opláštění po stěnách: pole stěny v pevných sloupcích (materiál / výška / křížek) | `claude/oplasteni-zarovnani-poli` | #384 |
+| Věta o zbytku mezery u jedněch dveří + test rámu dveří (rám se počítá 2× už teď) | `claude/svetlik-zbytek-vedle-dveri` | #385 |
+| Rozhodnutí J. V. k #381: mezeru mezi příčníky ponechat, nápovědu s výpočtem mezery nezobrazovat | (jen záznam) | #381 |
+
+Vysvětlení pro J. V. (změna šířky bočního světlíku při přepnutí zasklení):
+mezera vedle dveří se měří ze šířky skla — na terče 1 500 + 2 × 80 + 20 =
+1 680 mm, mezi příčníky 1 500 − 2 × 80 − 8 = 1 332 mm; otvor dveří 800 +
+2 × 100 + 40 = 1 040 mm; mezera 600 mm × 252 mm; plocha 6,600 × 2,772 m².
+
+**Podklady v cloudu:** šablony CN v14, CN v11, PROJ v3 (jako
+`Sablona_NABIDKA_PROJ.docx`), SoD realizace, SoD projekce, plná moc
+a příručka v25.9.3 staženy konektorem Disku do `/home/user/kng_podklady`
+(mimo repozitář). Pro `overit_manual.mjs` kopie příručky s verzí
+přepsanou na v1.10.2 (`2026-10-01_kalkulator_v1.10.2_MANUAL_OBCHODNIK.html`
+— postup ze skillu testovací procedury; skutečná příručka v1.10.2 se
+v cloudu vyrobit nedá, chybí snímky z testovacího webu). Malé soubory
+přijdou z Disku přímo ve výsledku nástroje — vytáhnout je z přepisu
+sezení (JSONL), viz skript v sezení.
+
+## Celé kolo nad v1.10.2
+Běží (`bash nastroje/testovaci_kolo.sh` s `KNG_PODKLADY`) — výsledek
+se doplní. Dílčí ověření před integrací: ./spust_testy.sh v každé větvi
+164/0/1; harnessy plan_plateb 49/0, oplasteni 82/0, svetliky_sirka 24/0,
+xss 215/0, smoke 50/0; mutace jádra --kontrola 131 úseků.
+
+## Čeká na J. V.
+- Pokyn k převodu `claude/davka-1-10-2` (v1.10.2) do `test-draft`
+  (a případně `test`); pak release v1.10.2 (odkaz v odpovědi sezení).
+- Převod v1.10.1 (nebo v1.10.2) do `main`.
+- #383: výchozí plán platí i pro rozpracované zakázky bez uložené
+  předvolby (výchozí: ano, jako každá změna firemního plánu); je-li
+  v Nastavení → Firma uložený vlastní plán firmy, má přednost — nastavit
+  tam předvolbu a zálohu, nebo „Vrátit výchozí z kódu“; šablona nabídky
+  PROJ v3 vytiskne natvrdo Standard → nahrát PROJ v4 (výchozí: nahrát).
+- #385: znění věty o zbytku (výchozí: ponechat nové znění).
+- SoD: znění rozsahu SoD PROJ (bod 7 návrhu), čísla papírových smluv OPR
+  a OVP pro etapu C (#366); datum podpisu i v SoD PROJ (výchozí ano);
+  slepené „V Praze, dne …" v šabloně SoD realizace (výchozí opravit ve v2);
+  pokuta za prodlení splatnosti „0" (výchozí ve v2 větu vypustit).
+- #381 zbývající otázky (výchozí: ponechat) — tolerance 0,5 mm, dvě věty
+  kontroly, ruční šířka po změně počtu, zábrana i u „zajistí stavba",
+  krycí list bez šířky.
+- #377: zábrana platí i pro dotisk zamčené varianty (výchozí: ano).
+- Vyplnit překlad firemní věty SKN v číselníku na ostrém webu (#379);
+  nahrát šablony SoD v2.
+
+## Další krok
+- Doplnit výsledek celého kola do CHANGELOG, PREDAVKA a roadmapy
+  (`meta.poradi`, poslední řádek) a pushnout `claude/davka-1-10-2`.
+- Na pokyn J. V. rychlý posun `test-draft` (a `test`) na
+  `claude/davka-1-10-2`, odkaz na release v1.10.2.
+
+## Předchozí stav (1. 10. 2026 dopoledne — v1.10.1 na test-draft i test, v30.9.1 na main)
 
 Na `main`: **v30.9.1**. Na `test-draft` = `test`: **v1.10.1** (pokyn J. V.
 1. 10. 2026: „s návrhem šířky bočního světlíku souhlasím, zapracuj ho pro
