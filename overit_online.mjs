@@ -256,6 +256,58 @@ await page.evaluate(async (klic) => { await onlinePopisUloz(klic, ''); }, KLIC_T
   });
 }
 
+/* ---- 4a2b) překlady dodatkových textů v číselníku (#379, K18-N96, 1. 10. 2026) ----
+ * Ručně psaný text slovník nezná — do cizí nabídky šel česky. Administrátor
+ * k textu v číselníku vyplní EN/DE/FR; tady se ověřuje, že se pole ukážou,
+ * uloží na server a dostanou se do výchozího ceníku i do otevřené zakázky.
+ * Texty jsou smyšlené. */
+{
+  const KL = 'Sklo VSG s mléčnou fólií';
+  await page.evaluate(() => { prepniTab('cenik'); render(); });
+  await page.waitForTimeout(200);
+  const radek = () => page.locator('#cenikPopisyKarta tr', { hasText: KL });
+  test('#379: bez českého textu se pole překladů nekreslí',
+    await radek().locator('input[data-popis-jazyk]').count() === 0);
+  const cz = radek().locator('input:not([data-popis-jazyk])');
+  await cz.fill('Ukázkový dodatek VSG');
+  await cz.dispatchEvent('change');
+  await page.waitForTimeout(400);
+  test('#379: s českým textem má administrátor pole EN, DE a FR',
+    await radek().locator('input[data-popis-jazyk]').count() === 3
+      && await radek().locator('input[data-popis-jazyk="de"]').count() === 1);
+  const de = radek().locator('input[data-popis-jazyk="de"]');
+  await de.fill('Beispielzusatz VSG');
+  await de.dispatchEvent('change');
+  await page.waitForTimeout(400);
+  const st = await page.evaluate(async (k) => {
+    const r = await (await fetch('/api/popisy', { credentials: 'same-origin' })).json();
+    const v = aktivniVarianta(ZAK);
+    return { server: ((r.popisy || {}).jazyky || {})[k] || null, cz: (r.popisy.texty || {})[k],
+      vychozi: ((DEFAULT_CENIK.popisyJazyky || {})[k] || {}).de || '',
+      zakazka: ((v.data.cenik.popisyJazyky || {})[k] || {}).de || '',
+      nova: ((novaZakazka().varianty[0].data.cenik.popisyJazyky || {})[k] || {}).de || '' };
+  }, KL);
+  test('#379: překlad DE je na serveru a český text zůstal',
+    !!st.server && st.server.de === 'Beispielzusatz VSG' && !st.server.en && st.cz === 'Ukázkový dodatek VSG', st);
+  test('#379: překlad je ve výchozím ceníku (nová zakázka si ho odnese)',
+    st.vychozi === 'Beispielzusatz VSG' && st.nova === 'Beispielzusatz VSG', st);
+  test('#379: otevřená rozpracovaná zakázka překlad dostala', st.zakazka === 'Beispielzusatz VSG', st);
+  test('#379: po překreslení pole drží uložený překlad',
+    await radek().locator('input[data-popis-jazyk="de"]').inputValue() === 'Beispielzusatz VSG');
+  /* Úklid: smazání českého textu vezme na serveru i překlady. */
+  const po = await page.evaluate(async (k) => {
+    await onlinePopisUloz(k, '');
+    const v = aktivniVarianta(ZAK);
+    delete (v.data.cenik.popisy || {})[k];
+    delete (v.data.cenik.popisyJazyky || {})[k];
+    const r = await (await fetch('/api/popisy', { credentials: 'same-origin' })).json();
+    prepniTab('kalk'); render();
+    return { jazyky: (r.popisy || {}).jazyky || {}, vychozi: (DEFAULT_CENIK.popisyJazyky || {})[k] || null };
+  }, KL);
+  test('#379: smazání českého textu vezme překlady s sebou (server i výchozí ceník)',
+    !(KL in po.jazyky) && !po.vychozi, po);
+}
+
 /* ---- 4a3) kontrola a oprava přípony první varianty v aplikaci (K13-P1) ---- */
 {
   const r = await page.evaluate(async () => {

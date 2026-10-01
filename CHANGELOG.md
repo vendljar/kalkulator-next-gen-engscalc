@@ -31,6 +31,66 @@ nástupiště v případě nadsvětlík bez“. Větev `claude/model2-nadsvetlik
   (13. rozdíl M1 × M2); `nastroje/porovnani_modelu.js` — vzor G a složka
   „Montáž — hodiny navíc za světlík nad dveřmi“.
 
+## (připraveno pro v1.10.x) — překlady dodatkových textů do cizojazyčné nabídky, K18-N96 (1. 10. 2026)
+
+Větev `claude/k18-n96-dodatky-preklady` (nad `test-draft` 643faa8, v30.9.4).
+Nález K18-N96, J. V. ho zvýšil na STŘEDNÍ: v ostrém ceníku je u SKN
+skutečná firemní věta, slovník ji nezná, takže v každé anglické, německé
+i francouzské nabídce zůstala česky (v30.9.4 o tom jen varovala kontrola
+`dodatekCesky`). Firemní věty do slovníku nepatří — překlad dodá
+administrátor. Roadmapa #379 (navazuje na #267) hotovo.
+
+**Číselník dodatkových textů (Ceník OCK)**
+- Pod českým textem položky jsou pole **EN / DE / FR** (nepovinná, jen
+  administrátor; obchodník vidí vyplněné překlady jako text). Každé pole se
+  uloží hned po opuštění (`onlinePopisJazykyUloz` → `POST /api/popisy
+  { klic, jazyky }`), český text se tím nemění. Bez českého textu se pole
+  nekreslí.
+- V Kalkulaci OCK pod polem dodatkového textu štítek „Překlad do nabídky:
+  EN, DE…", má-li text v zakázce překlad.
+
+**Data a nabídka**
+- Vedle `cenik.popisy` stojí `cenik.popisyJazyky` (klíč → `{ en, de, fr }`),
+  společná mapa na serveru nese `jazyky` vedle `texty`. Starší data platí
+  beze změny.
+- Překlad patří ke konkrétnímu českému znění: do výchozího ceníku
+  i rozpracované zakázky se doplní jen k témuž textu (`popisyVlij`,
+  `popisyJazykyDoplnChybejici`, otevření zakázky v `cenik_stari.js`),
+  přepis textu v zakázce překlady u položky zahodí (`popisJazykySrovnej`
+  v `popisSet`). Existující překlad zakázky se nepřepisuje.
+- Výpočet dává překlady příplatku jako `popisNabidkaJazyky` (jen když
+  existují — výstup bez nich je beze změny, Model 1 netknutý), takže se
+  zmrazí s odeslanou nabídkou: co odešlo, to drží.
+- `nabidkaData` v EN/DE/FR tiskne překlad jazyka tisku — online náhled
+  i Word jdou toutéž cestou. Bez překladu dosavadní chování (slovník →
+  jinak česky) a varování `dodatekCesky` jen tehdy; jeho text nově radí
+  doplnit překlad v číselníku.
+
+**Server**
+- `/api/popisy`: tvar `{ klic, jazyky }` bez `text` mění jen překlady
+  (po jazycích, prázdný smaže), celá mapa smí nést `jazyky`. Očista
+  `popisyJazykyOciste` (src/cenik.js, týž kód v prohlížeči): jen klíče
+  en/de/fr, jen řetězce, řídicí znaky pryč (zalomení → mezera), strop 300
+  znaků jako u českého textu, překlad položky bez českého textu se zahodí
+  (smazání českého textu vezme překlady s sebou). Práva jako u českého
+  textu (jen administrátor).
+- B112: `popisyJazyky` je volný text ceníku zakázky (jako `popisy`) —
+  obchodníkovi se kvůli překladům odneseným z výchozího ceníku uložení
+  neodmítne.
+
+**Testy**
+- `src/test_n96_dodatky_jazyky.js` (nová sada, 35 testů): před opravou
+  15 + 3 FAIL, po opravě 35 OK.
+- `netlify/test_prava.mjs`: blok N96 (10 testů) před opravou 4 FAIL a pád
+  sady, B112 `popisyJazyky` před opravou 403; po opravě 645 prošlo, 0 selhalo.
+- `overit_online.mjs` oddíl 4a2b (7 testů): se starým UI FAIL „pole EN,
+  DE a FR", po opravě 197 OK.
+- Mutace serveru: 3 nové (N96), filtrovaný běh 3/3 chycené. Mutace jádra:
+  N96 kontrola upravena na nový kód + 2 nové; filtrovaný běh `k18-n96`
+  5/5 chycených.
+
+---
+
 ## v30.9.4 — světlíky u šachetních dveří (#375), nálezy 18. kola, platební podmínky OCK, zdvih nejvýš 99 m (30. 9. 2026)
 
 Pokyn J. V. 30. 9. 2026: „co máme aktuálně v draftu pošli už do testu"

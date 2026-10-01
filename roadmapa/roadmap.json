@@ -5954,6 +5954,20 @@
    "kde": "`src/engine.js` (`hn.svetlik`), `src/test_nadprazi.js`, `src/test_svetliky_boky.js`, `mutace_jadro.mjs`, `src/ui/detail_ui.js`, `manual/obsah.json`",
    "hotovoV": "v1.10.x (připraveno)",
    "zavisi": [{"id": "375", "typ": "doporuceno", "proc": "navazuje na zrušení odpočtu u „zajistí stavba“"}]
+  },
+  {
+   "id": "379",
+   "vlna": "B",
+   "stav": "hotovo",
+   "hotovoV": "v1.10.x (větev claude/k18-n96-dodatky-preklady)",
+   "dulezitost": "stredni",
+   "slozitost": "M",
+   "nazev": "Jazykové varianty dodatkových textů (K18-N96)",
+   "proc": "Nález K18-N96, J. V. ho zvýšil na STŘEDNÍ: v ostrém ceníku je u SKN skutečná firemní věta, slovník ji nezná, takže v každé německé, anglické i francouzské nabídce zůstala česky. Ve v30.9.4 bylo jen varování dodatekCesky. Firemní věty do slovníku (veřejný repozitář) nepatří.",
+   "detail": "HOTOVO (navazuje na #267). Číselník dodatkových textů (Ceník OCK) má pod českým textem pole EN/DE/FR (nepovinná, jen administrátor, ukládá se hned přes /api/popisy { klic, jazyky }). Data: vedle cenik.popisy mapa cenik.popisyJazyky (klíč → { en, de, fr }); společná mapa na serveru nese jazyky vedle texty. Varianta patří ke konkrétnímu českému znění: do zakázky se doplní jen k témuž textu, přepis textu v zakázce ji zahodí. Výpočet ji dává příplatku (popisNabidkaJazyky), takže se zmrazí s odeslanou nabídkou. nabidkaData (online náhled i Word) tiskne variantu jazyka tisku, bez ní dosavadní cesta (slovník → česky); dodatekCesky hlásí jen text bez varianty. Server: popisyJazykyOciste (jen en/de/fr, řetězce, řídicí znaky, strop 300, varianta bez českého textu pryč), práva jako u českého textu; B112 bere popisyJazyky jako volný text.",
+   "kde": "src/cenik.js, src/engine.js, src/nabidka.js, src/kontroly.js, src/cenik_stari.js, src/uloziste.js, src/ui/cenik_ui.js, src/ui/kalk_ock.js, src/ui/online_ui.js, netlify/functions/popisy.mjs",
+   "zavisi": ["267", "376"],
+   "pozn": "Skutečný překlad firemní věty u SKN vyplní J. V. v číselníku na ostrém webu (do repozitáře nepatří)."
   }
  ],
  "meta" : {

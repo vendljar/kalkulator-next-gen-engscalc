@@ -390,11 +390,24 @@ function nabidkaData(zak, varianta, jekly, lang) {
    * nedodělek; prostě popis nemá, jako ho nemá dnes. Poznámka z výpočtu
    * (`pozn`) se k textu připojí v závorce, jako se dosud připojovala
    * k množství — nese věci jako „v základní ceně“. */
-  const popisPolozky = (p) => {
+  /* JAZYKOVÁ VARIANTA TEXTU (#379, nález K18-N96, 1. 10. 2026). Ručně
+   * psaný text slovník nezná, takže v cizí nabídce zůstával česky. Má-li
+   * položka variantu pro jazyk tisku (administrátor ji vyplnil v číselníku
+   * dodatkových textů), vytiskne se ta — beze slovníku, je to hotový text.
+   * Bez varianty platí dosavadní cesta: slovník, jinak česky (a kontrola
+   * „dodatekCesky" na to upozorní). Česká nabídka variantu nečte nikdy. */
+  const textPolozky = (p) => {
     const t = String(p.popisNabidka || '').trim();
+    if (!t) return '';
+    const j = (L !== 'cz' && p.popisNabidkaJazyky) ? p.popisNabidkaJazyky[L] : '';
+    if (typeof j === 'string' && j.trim()) return j.trim();
+    return P(t);
+  };
+  const popisPolozky = (p) => {
+    const t = textPolozky(p);
     const pz = p.pozn ? P(p.pozn) : '';
-    if (t && pz) return P(t) + ' (' + pz + ')';
-    if (t) return P(t);
+    if (t && pz) return t + ' (' + pz + ')';
+    if (t) return t;
     return pz ? '(' + pz + ')' : '';
   };
   const priplatkyList = [];

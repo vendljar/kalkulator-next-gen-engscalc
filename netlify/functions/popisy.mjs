@@ -12,9 +12,16 @@
  * ho nikdo jiný neviděl. Tahle mapa stojí vedle ceníku, nemá verzi a zapisuje
  * se jedním polem.
  *
- * GET  /api/popisy  → { ok, popisy: { texty, kdo, kdy } | null } — každý přihlášený
- * POST /api/popisy { klic, text } | { texty, ocekavaneKdy } | { texty } → uložit — JEN Administrátor
- *      (tvary a proč jich je víc: u zápisu níž)
+ * GET  /api/popisy  → { ok, popisy: { texty, jazyky?, kdo, kdy } | null } — každý přihlášený
+ * POST /api/popisy { klic, text } | { klic, jazyky } | { texty, jazyky?, ocekavaneKdy } | { texty, jazyky? }
+ *      → uložit — JEN Administrátor (tvary a proč jich je víc: u zápisu níž)
+ *
+ * JAZYKOVÉ VARIANTY (#379, nález K18-N96, 1. 10. 2026): `jazyky` = { klíč:
+ * { en, de, fr } } — překlad dodatkového textu do cizojazyčné nabídky, který
+ * vyplní administrátor (slovník ručně psané věty nezná). Stejná práva jako
+ * český text a očista tímtéž kódem jako v prohlížeči (`popisyJazykyOciste`
+ * ze src/cenik.js): jen klíče en/de/fr, jen řetězce, bez řídicích znaků,
+ * strop délky jako u českého textu; varianta bez českého textu se zahodí.
  *
  * Ukládá se do úložiště `program` pod klíč `popisy`, aby to noční otisk
  * i ruční záloha braly s sebou jedním čtením — stejný vzor jako matice
@@ -93,6 +100,10 @@ export default async (req) => {
   const texty = globalThis.popisyOciste(t && t.texty);
   const puvodni = (await s.cti('popisy')) || null;
   const stare = (puvodni && puvodni.texty && typeof puvodni.texty === 'object') ? puvodni.texty : {};
+  const stareJaz = (puvodni && puvodni.jazyky && typeof puvodni.jazyky === 'object') ? puvodni.jazyky : {};
+  /* Jazykové varianty z požadavku (#379) — očištěné, ještě bez vazby na
+   * české texty (ta se srovná až nad výsledkem, viz konec). */
+  const jazykyVstup = (t && t.jazyky !== undefined) ? globalThis.popisyJazykyOciste(t.jazyky) : null;
 
   /* TEXTY SE ZTRÁCELY (hlášeno J. V. 25. 9. 2026: „z aplikace se mi v čase
    * ztrácí dodatkové texty"). Do 25. 9. POST vždy PŘEPSAL celou mapu tím, co
@@ -111,21 +122,45 @@ export default async (req) => {
    *                                nikdy nemaže (mazat smí jen tvar s klíčem
    *                                nebo s razítkem). */
   let nove;
+  let noveJaz = Object.assign({}, stareJaz);
   if (t && typeof t.klic === 'string') {
     const klic = t.klic.trim();
     if (!klic) return json({ ok: false, chyba: 'Chybí název položky.' }, 400);
     nove = Object.assign({}, stare);
-    const jeden = globalThis.popisyOciste({ [klic]: t.text });
-    if (jeden[klic]) nove[klic] = jeden[klic]; else delete nove[klic];
+    /* `{ klic, jazyky }` BEZ `text` mění jen varianty — český text zůstane.
+     * Bez té výjimky by chybějící `text` znamenal smazání (prázdný text). */
+    if ('text' in t) {
+      const jeden = globalThis.popisyOciste({ [klic]: t.text });
+      if (jeden[klic]) nove[klic] = jeden[klic]; else delete nove[klic];
+    }
     nove = globalThis.popisyOciste(nove);
+    if (t.jazyky !== undefined) {
+      /* Varianty jedné položky se slučují po jazycích: poslaný jazyk
+       * s prázdným textem variantu smaže, neposlaný zůstane. */
+      const vstup = (t.jazyky && typeof t.jazyky === 'object' && !Array.isArray(t.jazyky)) ? t.jazyky : {};
+      const radek = Object.assign({}, noveJaz[klic] || {});
+      globalThis.POPISY_JAZYKY.forEach(l => {
+        if (!(l in vstup)) return;
+        const c = globalThis.popisyJazykyOciste({ [klic]: { [l]: vstup[l] } });
+        if (c[klic] && c[klic][l]) radek[l] = c[klic][l]; else delete radek[l];
+      });
+      noveJaz[klic] = radek;
+    }
   } else if (t && typeof t.ocekavaneKdy === 'string') {
     if ((puvodni ? String(puvodni.kdy || '') : '') !== t.ocekavaneKdy)
       return json({ ok: false, konflikt: true, popisy: puvodni,
         chyba: 'Dodatkové texty mezitím změnil někdo jiný (nebo jiné okno). Načtěte je znovu a změnu zopakujte.' }, 409);
     nove = texty;
+    if (jazykyVstup) noveJaz = jazykyVstup;
   } else {
     nove = Object.assign({}, stare, texty);        // `texty` už prošly očistou výš
+    if (jazykyVstup) Object.keys(jazykyVstup).forEach(k => {
+      noveJaz[k] = Object.assign({}, noveJaz[k] || {}, jazykyVstup[k]);
+    });
   }
+  /* Varianty se drží jen u položek s českým textem (smazaný text vezme
+   * varianty s sebou) a znovu projdou očistou — i ty uložené dřív. */
+  noveJaz = globalThis.popisyJazykyOciste(noveJaz, nove);
 
   /* Předchozí stav se nezahazuje: posledních 30 verzí leží vedle mapy
    * (`popisy_historie`), takže ztracený text jde dohledat i bez zálohy. */
@@ -136,7 +171,7 @@ export default async (req) => {
     hist.unshift(puvodni);
     await s.zapis('popisy_historie', hist.slice(0, 30));
   }
-  const zaznam = { texty: nove, kdo: relace.email, kdy: new Date().toISOString() };
+  const zaznam = { texty: nove, jazyky: noveJaz, kdo: relace.email, kdy: new Date().toISOString() };
   await s.zapis('popisy', zaznam);
   return json({ ok: true, kdy: zaznam.kdy, pocet: Object.keys(nove).length, popisy: zaznam });
 };

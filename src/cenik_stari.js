@@ -525,6 +525,12 @@ function cenikPrepoctiRozpracovane(zak, dnesni, opts) {
       const zdroj = (dnesniV && dnesniV.cenik && dnesniV.cenik.popisy)
         || (dnesni && dnesni.cenik && dnesni.cenik.popisy) || null;
       vysledek.popisy += popisyDoplnChybejici(v.data.cenik, zdroj);
+      /* Jazykové varianty textů (#379, K18-N96) jdou za českým textem:
+       * doplní se jen k položce, jejíž text v zakázce je týž jako společný. */
+      const zdrojJ = (dnesniV && dnesniV.cenik && dnesniV.cenik.popisyJazyky)
+        || (dnesni && dnesni.cenik && dnesni.cenik.popisyJazyky) || null;
+      if (zdroj && zdrojJ && typeof popisyJazykyDoplnChybejici === 'function')
+        vysledek.popisy += popisyJazykyDoplnChybejici(v.data.cenik, zdroj, zdrojJ);
     }
     if (cenikJeKvitovano(v, cenikOtisk(v.data))) {
       vysledek.dohodnute++;

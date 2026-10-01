@@ -285,8 +285,13 @@ const PROVERENO = {
     'cenikPopisyKandidati(r.klic, admin)': 'hotové HTML kandidátů z uložených zakázek '
       + '(číselník dodatkových textů, 25. 9. 2026) — číslo zakázky, počet i text jdou uvnitř '
       + 'přes esc(), klíč do onclick přes keyAttr(), index přes escJs().',
+    'cenikPopisJazykyHtml(r.klic, t, admin)': 'hotové HTML polí překladů dodatkového textu '
+      + '(#379, K18-N96, 1. 10. 2026) — překlad i kód jazyka jdou uvnitř přes esc(), '
+      + 'klíč a jazyk do onchange přes keyAttr().',
   },
   'kalk_ock.js': {
+    'popisJazykyStitek(klic, t)': 'hotové HTML štítku „Překlad do nabídky: EN, DE" '
+      + '(#379, K18-N96) — kódy jazyků jdou uvnitř přes esc(), ostatní je literál.',
     'col.admin ? pripNazev(x) : esc(x.nazev) + vypnutoHtml(x)':
       'obě větve escapují – pripNazev skládá HTML přes esc() uvnitř; vypnutoHtml je hotové HTML štítku (text je literál, popis přes esc())',
     'label': 'popisek řádku / KPI psaný vývojářem (profRow, sumRadek, kpiLine)',
