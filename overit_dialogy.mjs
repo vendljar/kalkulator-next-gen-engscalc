@@ -167,7 +167,11 @@ zkus('každá otázka dostane svou odpověď',
   await p.evaluate(([c, cp]) => {
     Object.assign(DEFAULT_CENIK, c); delete DEFAULT_CENIK.prazdny;
     Object.assign(DEFAULT_CENIK_PROJ, cp); delete DEFAULT_CENIK_PROJ.prazdny;
-    ZAK = novaZakazka(); syncVarianta(); render();
+    /* Nulové rozměry nové zakázky jsou zábrana „rozmery", která od #377
+     * (1. 10. 2026) zastaví nabídku i krycí list OCK ještě před oknem —
+     * rozměry vzorové šachty, ať se zkouší zablokované okno. */
+    ZAK = novaZakazka(); syncVarianta();
+    Object.assign(Z, { prejezd: 2.7, zdvih: 12, prohluben: 1.05, sirka: 1.51, hloubka: 1.515 }); render();
   }, [ZCd.zkusebniCenik(), ZCd.zkusebniCenikProj()]);
 }
 const blok = await p.evaluate(async () => {

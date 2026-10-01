@@ -932,8 +932,12 @@ ok('panel kontrol je v kartě cenové nabídky (Technická specifikace)', await 
 ok('panel vyjmenuje nálezy',
    await p.locator('#page-spec .kontroly-panel .kontroly-seznam li').count() >= 1);
 
-/* Nic se neblokuje: tlačítka nabídky zůstávají funkční i s rozsvíceným panelem. */
+/* Varování neblokují: tlačítka nabídky zůstávají funkční i s rozsvíceným
+ * panelem. Od #377 (1. 10. 2026) zábrana tlačítka zhasíná — nulové rozměry
+ * nové zakázky jsou zábrana „rozmery", proto se rozměry nejdřív vyplní
+ * (zbydou jen varování, např. ukázkový ceník). */
 const tlacitka = await p.evaluate(() => {
+  Z.zdvih = 9; Z.sirka = 1.6; Z.hloubka = 1.8; render();
   const b = [...document.querySelectorAll('#page-spec button')]
     .filter(x => /tisk nabídky|nabídku \(Word\)/i.test(x.textContent));
   return { pocet: b.length, zakazana: b.filter(x => x.disabled).length };

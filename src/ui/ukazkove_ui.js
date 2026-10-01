@@ -105,7 +105,29 @@ function dokumentZabrana(typ, varianta) {
     const duvod = planPlatebZabranaDokumentu(typ, varianta);
     if (duvod) return duvod;
   }
+  /* Zábrany z kontroly před nabídkou (#377, 1. 10. 2026) — rozměry, profil
+   * mimo katalog, záporná položka, nulová cena, sleva nad stropem. Které
+   * zábrany zastaví který dokument, rozhoduje kontrolyZabranaDokumentu
+   * (tabulka v kontroly.js); posuzuje se varianta, ZE KTERÉ dokument vzniká.
+   * Bez typu (panel prázdného ceníku) se neptá — ten mluví jen o ceníku. */
+  if (typ && typeof kontrolyZabranaDokumentu === 'function' && typeof kontrolyStavVarianta === 'function') {
+    let vysl = null;
+    try { vysl = kontrolyStavVarianta(varianta || null); } catch (e) { vysl = null; }
+    const duvod = kontrolyZabranaDokumentu(vysl, typ);
+    if (duvod) return duvod;
+  }
   return '';
+}
+
+/* Pojistka v obsluze tlačítka: zábrana → hláška (stejná věta jako v bublině
+ * zhasnutého tlačítka) a stavový řádek; vrací true, když dokument nevznikne. */
+function dokumentZabranaHlas(typ, varianta, stav) {
+  if (typeof dokumentZabrana !== 'function') return false;
+  const duvod = dokumentZabrana(typ, varianta);
+  if (!duvod) return false;
+  if (typeof stav === 'function') stav('Dokument nevznikl — ' + duvod);
+  if (typeof hlaska === 'function') hlaska(duvod, { nadpis: 'Dokument nelze vytvořit' });
+  return true;
 }
 
 /* Panel na místo tlačítek. Vysvětluje, co se má stát, ne jen že to nejde –
@@ -131,8 +153,13 @@ function ukazkoveZabranaPanel() {
   </div>`;
 }
 
-/* Atribut do tlačítek, která vytvářejí dokument (`<button ${ukazkoveZabranaAttr()}>`). */
-function ukazkoveZabranaAttr() {
-  const duvod = dokumentZabrana();
+/* Atribut do tlačítek, která vytvářejí dokument (`<button ${ukazkoveZabranaAttr('nabidka')}>`).
+ * Typ dokumentu (#377) zapne i zábrany z kontroly před nabídkou a plánu
+ * plateb — posuzuje se otevřená varianta (z té tlačítko dokument nabízí;
+ * řídící hlídá dokumentZabrana při generování). */
+function ukazkoveZabranaAttr(typ) {
+  const duvod = typ
+    ? dokumentZabrana(typ, (typeof aktivniVarianta === 'function' && typeof ZAK !== 'undefined') ? aktivniVarianta(ZAK) : null)
+    : dokumentZabrana();
   return duvod ? ` disabled title="${esc(duvod)}"` : '';
 }

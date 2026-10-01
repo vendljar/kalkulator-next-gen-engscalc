@@ -592,7 +592,8 @@
           "typ": "obrazek", "snimek": "kontroly-pred-nabidkou",
           "titulek": "Panel kontrol před nabídkou s varováním."
         },
-        { "typ": "text", "text": "**Nic se neblokuje.** Nález buď opravíte, nebo tlačítkem **Beru na vědomí, pokračovat** potvrdíte, že o něm víte. Potvrzení se uloží k variantě i s vaším jménem, aby bylo dohledatelné, že se na to někdo díval. Přibude-li potom nový nález, panel se rozsvítí znovu." },
+        { "typ": "text", "text": "**Varování se neblokují.** Nález buď opravíte, nebo tlačítkem **Beru na vědomí, pokračovat** potvrdíte, že o něm víte. Potvrzení se uloží k variantě i s vaším jménem, aby bylo dohledatelné, že se na to někdo díval. Přibude-li potom nový nález, panel se rozsvítí znovu." },
+        { "typ": "text", "text": "**Zábrana (⛔) je výjimka: dokument nevznikne, dokud zábrana trvá** (od 1. 10. 2026). Zábranou je nesmyslný rozměr (třeba zdvih záporný nebo nad 99 m), rozměr profilu mimo katalog jeklů, záporná částka, množství nebo hodiny, nulová cena nabídky a sleva označená jako schválená automaticky nad stropem role. Tlačítka dokumentů, kterých se zábrana týká, jsou zhasnutá a bublina nad nimi (i hláška při pokusu o tisk) řekne, co opravit. Zábrana v kalkulaci OCK zastaví nabídku OCK (náhled i Word), smlouvu o dílo OCK a krycí list OCK; zábrana v kalkulaci PROJ totéž u projekce. Plnou moc nezastaví žádná. Odklepnout zábranu nejde — po opravě se tlačítka sama rozsvítí. Hlídá se varianta, ze které dokument vzniká (i řídící, když tisknete z ní)." },
         { "typ": "text", "text": "Od 23. a 24. 9. 2026 přibyla dvě pravidla, která se týkají textu nabídky:" },
         {
           "typ": "seznam",
@@ -748,7 +749,7 @@
             { "pojem": "Nabídka je otevřená jen ke čtení", "vyklad": "Běžný stav uložené nabídky. Klikněte na **Odemknout k úpravám**. Kapitola 8." },
             { "pojem": "Model 1 (1:1 jako Excel) je zmrazený…", "vyklad": "Pokusil jste se přepnout zakázku na Model 1. To smí jen administrátor; nabídky se počítají Modelem 2. Kapitola 10." },
             { "pojem": "Ceník se od posledního uložení změnil", "vyklad": "Rozpracovaná zakázka se přepočítala na platný ceník. Dialog ukáže, o kolik se hnula cena, a nabídne vrácení původních cen. Kapitola 22." },
-            { "pojem": "Než nabídku odešlete – …", "vyklad": "Kontroly před nabídkou něco našly. Opravte to, nebo potvrďte, že o tom víte. Nic se neblokuje. Kapitola 23." },
+            { "pojem": "Než nabídku odešlete – …", "vyklad": "Kontroly před nabídkou něco našly. Varování opravte, nebo potvrďte, že o něm víte. Nález označený ⛔ je zábrana — dokument nevznikne, dokud ji neopravíte. Kapitola 23." },
             { "pojem": "Nabídka odejde bez … — v Nastavení → Firma → Kapitoly nabídky nejsou vyplněné", "vyklad": "Některá kapitola IV.–VI. nebo doložky chybí pro jazyk tisku a z nabídky by se vypustila. Řekněte administrátorovi. Kapitola 23." },
             { "pojem": "V nabídce budou dva různé termíny…", "vyklad": "Atypová zakázka má prodloužený termín dodání, ale text kapitoly V. uvádí standardní lhůtu. Kapitola 14." },
             { "pojem": "Prohlížeč zablokoval okno s náhledem…", "vyklad": "Povolte pro stránku kalkulačky vyskakovací okna a klikněte znovu. Kapitola 23." },

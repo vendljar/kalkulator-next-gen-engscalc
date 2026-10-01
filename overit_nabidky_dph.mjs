@@ -61,6 +61,9 @@ await p.evaluate(() => {
   if (zam) zam.polozky.push({ nazev: 'Zkušební položka navíc', typ: 'fix', cena: 5000, vlastni: true });
   ZAK.cislo = '2026 - OVP - CN - 0365'; ZAK.nazevAkce = 'Zkouška nabídky';
   ZAK.objednatel = 'Zkušební zákazník'; ZAK.adresa = 'Ulice 1, Praha';
+  /* Nulové rozměry nové zakázky jsou zábrana „rozmery", která od #377
+   * (1. 10. 2026) nabídku OCK nepustí — rozměry vzorové šachty. */
+  Object.assign(Z, { prejezd: 2.7, zdvih: 12, prohluben: 1.05, sirka: 1.51, hloubka: 1.515 });
   render();
 });
 
@@ -190,6 +193,13 @@ await proj3.close();
 await p.evaluate((m) => { slevaProjSet('procenta', 0); PC.marze = m; render(); }, puvodniMarze);
 
 /* ---------- nabídka OCK ---------- */
+/* Ceník OCK sestavení je nulový — nabídka za 0 Kč je zábrana „cenaNula",
+ * která od #377 (1. 10. 2026) náhled nepustí. Zkušební ceník z repozitáře. */
+{
+  const { createRequire } = await import('module');
+  const ZC = createRequire(import.meta.url)('./src/zkusebni_cenik.js');
+  await p.evaluate((c) => { Object.assign(C, c); delete C.prazdny; delete C.ukazkove; }, ZC.zkusebniCenik());
+}
 await p.evaluate(() => { prepniTab('spec'); render(); });
 const ock = await nabidka('nabidkaOckDokument');
 s = await stavDph(ock);

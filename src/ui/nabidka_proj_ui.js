@@ -74,9 +74,9 @@ function nabidkaProjKarta() {
       <!-- cteni-ok: tisk a Word nic nezapisují, v režimu čtení (zámek okna)
            zůstávají živé — bez třídy by je CSS .cteni-zamceno v #proj-telo
            vypnulo (hlášení J. V. 7. 9. 2026: „nemůžu zakázku ani vytisknout"). -->
-      <button class="primary cteni-ok"${typeof ukazkoveZabranaAttr === 'function' ? ukazkoveZabranaAttr() : ''}
+      <button class="primary cteni-ok"${typeof ukazkoveZabranaAttr === 'function' ? ukazkoveZabranaAttr('nabidkaProjTisk') : ''}
         onclick="nabidkaProjNahled()">Kompletní náhled a tisk nabídky</button>
-      <button class="cteni-ok"${typeof ukazkoveZabranaAttr === 'function' ? ukazkoveZabranaAttr() : ''}
+      <button class="cteni-ok"${typeof ukazkoveZabranaAttr === 'function' ? ukazkoveZabranaAttr('nabidkaProj') : ''}
         onclick="nabidkaProjWord()">Vytvořit nabídku PROJ (Word)</button>
       ${typeof tiskJazykVyber === 'function' ? tiskJazykVyber() : ''}
     </div>
@@ -158,6 +158,8 @@ async function nabidkaProjWordGeneruj(srv) {
   const varianta = (typeof nabidkaVarianta === 'function')
     ? await nabidkaVarianta()
     : ((typeof aktivniVarianta === 'function') ? aktivniVarianta(ZAK) : (ZAK.varianty || [])[0]);
+  /* Zábrany (#377, plán plateb) — hláška dřív než chyba z registru. */
+  if (typeof dokumentZabranaHlas === 'function' && dokumentZabranaHlas('nabidkaProj', varianta, nabidkaProjStavText)) return;
   if (typeof tiskZamekCteniPovol === 'function' && !(await tiskZamekCteniPovol('nabidkaProj', varianta))) { nabidkaProjStavText('Dokument nevznikl — nabídka je otevřená jen ke čtení.'); return; }   // P2 (K13-N54)
   dokumentVygeneruj('nabidkaProj', sablona.slice(0), ZAK, varianta, JEKLY, L)
     .then(res => {
@@ -198,7 +200,7 @@ async function nabidkaProjNahled() {
   const akt = (typeof aktivniVarianta === 'function') ? aktivniVarianta(ZAK) : (ZAK.varianty || [])[0];
   if (typeof dokumentZabrana === 'function') {
     const duvod = dokumentZabrana('nabidkaProjTisk', akt);
-    if (duvod) { hlaska(duvod); return; }
+    if (duvod) { hlaska(duvod, { nadpis: 'Dokument nelze vytvořit' }); return; }
   }
   const L = (typeof tiskJazyk === 'function') ? tiskJazyk()
     : ((typeof jazyk === 'function') ? jazyk() : 'cz');   // volba „Jazyk tisku" (#143)

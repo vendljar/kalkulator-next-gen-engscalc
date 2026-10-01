@@ -519,5 +519,57 @@ test('nekompletní kontext nic neshodí a nálezy dorazí',
   test('B111: záporná fixní položka PROJ → zapornaPolozka a text jmenuje kalkulaci PROJ', !!nProj && /PROJ/.test(nProj.text), nProj && nProj.text);
 }
 
+/* #377 (1. 10. 2026) — ZÁBRANY BLOKUJÍ DOKUMENTY, kterých se týkají.
+ * Do v30.9.4 brána dokumentů zábrany z kontrol nečetla (zdvih −5 m dal
+ * nabídku). kontrolyZabranaDokumentu rozhoduje, který dokument zastaví:
+ * OCK pravidla jen dokumenty OCK, PROJ pravidla jen PROJ, plnou moc nic.
+ * Před opravou funkce neexistovala (všechny testy oddílu selžou). */
+{
+  const zd = kt.kontrolyZabranaDokumentu || (() => { throw new Error('kontrolyZabranaDokumentu chybí'); });
+  const zkus = (n, fn) => { try { fn(); } catch (e) { test(n, false, e.message); } };
+  zkus('#377: brána dokumentů', () => {
+    const zdvih = kontrolyProved(ctxZdravy(c => { c.zadani.zdvih = 120; }));
+    const hl = zd(zdvih, 'nabidka');
+    test('#377: zdvih 120 m zastaví nabídku OCK (Word)', /Nesmyslný rozměr nebo počet/.test(hl) && /99 m/.test(hl), hl);
+    test('#377: … i náhled/tisk, SoD OCK a krycí list OCK (BO, Techdata, jazyk)',
+      ['nabidkaTisk', 'sod', 'kryci_bo', 'kryci_techdata', 'nabidka_en'].every(t => zd(zdvih, t) === hl));
+    test('#377: zábrana OCK nezastaví dokumenty PROJ ani plnou moc',
+      ['nabidkaProj', 'nabidkaProjTisk', 'sodProj', 'kryciproj_bo', 'plnaMoc'].every(t => zd(zdvih, t) === ''));
+    test('#377: neznámý typ / bez typu nic nezastaví', zd(zdvih, '') === '' && zd(zdvih, 'jinyDokument') === '');
+    test('#377: po opravě zdvihu cesta volná', zd(kontrolyProved(ctxZdravy(c => { c.zadani.zdvih = 12; })), 'nabidka') === '');
+    test('#377: zdvih −5 zastaví nabídku OCK', zd(kontrolyProved(ctxZdravy(c => { c.zadani.zdvih = -5; })), 'nabidka') !== '');
+
+    const sp = kontrolyProved(ctxZdravy(c => {
+      c.slevaProj = Object.assign(sl.slevaDefault(), { procenta: 50, role: 'Obchodník', stav: 'schváleno automaticky' }); }));
+    test('#377: sleva projekce nad stropem zastaví nabídku a SoD PROJ',
+      sp.kodyBrani.includes('slevaProj') && /Sleva projekce/.test(zd(sp, 'nabidkaProj')) && zd(sp, 'sodProj') !== '' && zd(sp, 'kryciproj_techdata') !== '',
+      JSON.stringify(sp.kodyBrani));
+    test('#377: … a nezastaví dokumenty OCK ani plnou moc', ['nabidka', 'nabidkaTisk', 'sod', 'kryci_bo', 'plnaMoc'].every(t => zd(sp, t) === ''));
+
+    const zapProj = kontrolyProved(ctxZdravy(c => { c.projZadani.sekce[0].polozky.push({ nazev: 'Úprava', typ: 'fix', cena: -90400, vlastni: true }); }));
+    test('#377: záporná položka PROJ zastaví PROJ, ne OCK', zd(zapProj, 'nabidkaProj') !== '' && zd(zapProj, 'nabidka') === '');
+    const zapOck = kontrolyProved(ctxZdravy(c => { c.zadani.vlastniPolozky.hrubaOck = [{ nazev: 'Úprava', mnozstvi: 1, cena: -302167 }]; }));
+    test('#377: záporná položka OCK zastaví OCK, ne PROJ', zd(zapOck, 'nabidka') !== '' && zd(zapOck, 'nabidkaProj') === '');
+    const nula = kontrolyProved(Object.assign(ctxZdravy(), { vysledek: { souhrn: { zakladCena: 0, zakladNaklad: 0 } } }));
+    test('#377: nulová cena OCK zastaví OCK, ne PROJ', zd(nula, 'sod') !== '' && zd(nula, 'sodProj') === '');
+
+    test('#377: hláška nese název pravidla i text nálezu',
+      (() => { const n = zdvih.nalezy.find(x => x.kod === 'rozmery'); return hl.indexOf(n.nazev + ': ' + n.text) >= 0; })(), hl);
+    /* Zábrany hlídané jinde (prázdný ceník, plán plateb) se tu nezdvojují. */
+    const fake = { nalezy: [{ kod: 'ukazkovyCenik', uroven: KONTROLY_UROVEN_ZABRANA, nazev: 'x', text: 'y' },
+      { kod: 'planPlateb100', uroven: KONTROLY_UROVEN_ZABRANA, nazev: 'x', text: 'y', strany: ['ock', 'proj'] }] };
+    test('#377: prázdný ceník a plán plateb nechává brána jejich vlastním hlídačům',
+      zd(fake, 'nabidka') === '' && zd(fake, 'nabidkaProj') === '');
+    /* Varování (úroveň 2) — ani pravidla nad symboly šablon — nic nezastaví. */
+    const war = { nalezy: ['slevaWord', 'platbyWordOck', 'cenaWordProj', 'planPlatebWordProj', 'dodatekCesky', 'marze']
+      .map(k => ({ kod: k, uroven: KONTROLY_UROVEN, nazev: k, text: k })) };
+    test('#377: varování (i nad symboly šablon) dokument nezastaví', ['nabidka', 'nabidkaProj', 'sod', 'sodProj'].every(t => zd(war, t) === ''));
+    const pr = kontrolyPravidla();
+    test('#377: pravidla nad šablonami nemají zábranu',
+      ['slevaWord', 'platbyWordOck', 'slevaWordProj', 'polozkyNavicWordProj', 'cenaWordProj', 'planPlatebWordProj', 'dodatekCesky']
+        .every(k => { const r = pr.find(x => x.kod === k); return r && !r.zabranaMozna; }));
+  });
+}
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

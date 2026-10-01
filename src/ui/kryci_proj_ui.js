@@ -108,7 +108,8 @@ function renderKryciProj() {
   const el = document.getElementById('page-kryciproj'); if (!el) return;
   const c = kryciProjCtx(ZAK, aktivniVarianta(ZAK));   // kontext prefillů (jeden zdroj pravdy: KRYCI_PROJ_SEKCE)
   /* Prázdný ceník zhasíná výstupy – krycí list nese ceny stejně jako nabídka. */
-  const zab = (typeof ukazkoveZabranaAttr === 'function') ? ukazkoveZabranaAttr() : '';
+  /* #377: i zábrany z kontroly před nabídkou (strana PROJ). */
+  const zab = (typeof ukazkoveZabranaAttr === 'function') ? ukazkoveZabranaAttr('kryciproj_bo') : '';
 
   const znacka = verze => verze.includes('bo') && verze.includes('techdata')
     ? '<span class="pill mut kl-verze" title="v obou verzích">BO+Tech</span>'
@@ -176,8 +177,8 @@ function kryciProjTiskPohled(verze) {
   /* Pojistka pro případ, že by se sem někdo dostal jinudy než tlačítkem
    * (zhasnutým) – tiskový náhled je dokument pro zákazníka jako každý jiný. */
   if (typeof dokumentZabrana === 'function') {
-    const duvod = dokumentZabrana();
-    if (duvod) { hlaska(duvod); return; }
+    const duvod = dokumentZabrana('kryciproj_' + verze, aktivniVarianta(ZAK));   // #377
+    if (duvod) { hlaska(duvod, { nadpis: 'Dokument nelze vytvořit' }); return; }
   }
   const v = aktivniVarianta(ZAK);
   const e2 = esc;   // #6: sjednoceno se sdíleným escapováním (ošetří i uvozovky a apostrof)
