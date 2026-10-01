@@ -76,7 +76,8 @@ const KONTROLY_ZDVIH_MAX_M = 99;
  *   – světlíky se vedle dveří nevejdou     → ZÁBRANA (počet × šířka >
  *     dveře × mezera),
  *   – jinak zbytek mezery nad 5 mm         → upozornění (zbytek nic
- *     neoceňuje; obchodník případně přidá položku).
+ *     neoceňuje; obchodník případně přidá položku). Od 1. 10. 2026 věta
+ *     říká zbytek u jedněch dveří a součet zvlášť (viz níž).
  * Šířka se zadává v celých mm, takže každý světlík smí nést zaokrouhlení
  * do 0,5 mm — zaokrouhlená předpočítaná šířka (smíšené rozložení) tak
  * zábranu nespustí.
@@ -107,8 +108,35 @@ function kontrolyBokySirka(r) {
     out.zabrana.push('Boční světlíky se vedle dveří nevejdou: ' + n + ' × ' + wMm + ' mm = ' + metry(n * wMm / 1000)
       + ' m, mezery u ' + d + ' dveří jsou celkem ' + metry(d * mMm / 1000) + ' m. Zmenšete šířku nebo počet světlíků.');
   } else {
-    const zbytek = d * mMm - n * wMm;
-    if (zbytek > 5) out.upozorneni.push('Vedle dveří zůstane ' + metry(zbytek / 1000) + ' m šířky, kterou nic neoceňuje.');
+    /* ZBYTEK MEZERY (J. V. 1. 10. 2026: „Text vedle dveří zůstane 1,50 m
+     * je podle mně špatně"). Do té doby věta nesla SOUČET přes všechny dveře
+     * (5 × (600 − 300) mm = 1,50 m), ale zněla, jako by 1,50 m zbylo vedle
+     * jedněch dveří — u šachty široké 1,5 m nesmysl. Teď říká zbytek u
+     * JEDNĚCH dveří, z čeho vznikl, a součet zvlášť. Dveře bez světlíku
+     * hlásí pravidlo počtu („u 2 dveří nebude boční světlík — mezera … tam
+     * zůstane neoceněná"), do zbytku se proto nepočítají podruhé (dřív je
+     * věta přičítala: 3 × 300 mm u 5 dveří = „2,10 m"). Smíšené rozložení
+     * (u některých dveří jeden, u jiných dva světlíky) má jen průměrnou
+     * šířku — tam věta uvádí součet a z čeho vznikl. Práh 5 mm platí pro
+     * součet jako dřív. */
+    const dva = isFinite(+v.dvereDva) ? +v.dvereDva : Math.max(0, Math.min(n, 2 * d) - d);
+    const jeden = isFinite(+v.dvereJeden) ? +v.dvereJeden : Math.min(n, d) - dva;
+    const sSvetlikem = dva + jeden;
+    const zbytek = sSvetlikem * mMm - n * wMm;
+    if (zbytek > 5 && sSvetlikem > 0) {
+      const mm = x => String(Math.round(x));
+      if (!dva || !jeden) {
+        const po = dva ? 2 : 1;
+        out.upozorneni.push('Vedle ' + (sSvetlikem > 1 ? 'každých ' : '') + 'dveří' + (d > sSvetlikem ? ' se světlíkem' : '')
+          + ' zůstane neoceněných ' + mm(mMm - po * wMm) + ' mm (mezera ' + mm(mMm) + ' mm − '
+          + (po === 1 ? 'světlík ' + wMm + ' mm' : '2 světlíky po ' + wMm + ' mm') + ')'
+          + (sSvetlikem > 1 ? ', u ' + sSvetlikem + ' dveří celkem ' + metry(zbytek / 1000) + ' m' : '') + '.');
+      } else {
+        out.upozorneni.push('Vedle dveří zůstane neoceněných celkem ' + metry(zbytek / 1000) + ' m (mezery u '
+          + sSvetlikem + ' dveří ' + metry(sSvetlikem * mMm / 1000) + ' m − ' + n
+          + (n >= 2 && n <= 4 ? ' světlíky' : ' světlíků') + ' po ' + wMm + ' mm).');
+      }
+    }
   }
   return out;
 }
