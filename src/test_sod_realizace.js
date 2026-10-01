@@ -124,13 +124,20 @@ const hodnoty = (v, h) => { v.data.kryci = v.data.kryci || { hodnoty: {} }; v.da
   test('vyrob_sablony umí SoD realizace v2 (sodRealV2)', !!(VS && typeof VS.sodRealV2 === 'function'));
   if (VS && VS.sodRealV2) {
     const p = (t) => '<w:p><w:pPr><w:numPr><w:ilvl w:val="1"/><w:numId w:val="25"/></w:numPr></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>' + t + '</w:t></w:r></w:p>';
+    /* Od rozhodnutí J. V. 1. 10. 2026 (Q5, Q6) v2 přepojí i pokutu zhotovitele
+     * a pevné datum podkladů dodavatele výtahu — šablona bez těch vět se
+     * nevyrobí (podrobně test_rozhodnuti_sod.js). */
     const xml = '<w:document><w:body>' + p('Cena bude hrazena:') + [1, 2, 3, 4].map(n => p('věta {{SOD_SPLATKA' + n + '_PROC}} %')).join('')
-      + p('Splatnost {{PODM_SPLATNOST_DNI_CISLO}}') + '<w:sectPr/></w:body></w:document>';
+      + p('Splatnost {{PODM_SPLATNOST_DNI_CISLO}}')
+      + p('Zhotovitel se zavazuje zaplatit objednateli smluvní pokutu ve výši {{PODM_POKUTA_SPLATNOST_PROC}} % z ceny díla.')
+      + p('Objednatel se zavazuje k zajištění stavební připravenosti nejdéle k {{SOD_TERMIN_PRIPRAVENOST}} a k dodání podkladů do 19.06.2026.')
+      + '<w:sectPr/></w:body></w:document>';
     const vy = VS.sodRealV2(xml);
     const k = dg.klicePlaceholderu(vy);
     test('v2: čtyři věty splátek nahradí jeden odstavec {{SOD_PLATEBNI_KALENDAR}} se stejnou odrážkou a písmem',
-      k.join() === 'SOD_PLATEBNI_KALENDAR,PODM_SPLATNOST_DNI_CISLO' && /<w:numId w:val="25"\/><\/w:numPr><\/w:pPr><w:r><w:rPr><w:b\/><\/w:rPr><w:t xml:space="preserve">\{\{SOD_PLATEBNI_KALENDAR\}\}/.test(vy)
-        && /Cena bude hrazena/.test(vy), vy);
+      k.join() === 'SOD_PLATEBNI_KALENDAR,PODM_SPLATNOST_DNI_CISLO,PODM_POKUTA_DODAVKA_PROC,SOD_TERMIN_PRIPRAVENOST,SOD_TERMIN_PODKLADY_VYTAH'
+        && /<w:numId w:val="25"\/><\/w:numPr><\/w:pPr><w:r><w:rPr><w:b\/><\/w:rPr><w:t xml:space="preserve">\{\{SOD_PLATEBNI_KALENDAR\}\}/.test(vy)
+        && /Cena bude hrazena/.test(vy), [k.join(), vy]);
     test('v2 z v2 se nevyrobí podruhé', hazi(() => VS.sodRealV2(vy)) !== '');
   }
 }

@@ -496,6 +496,21 @@ function kryciProjSodSymboly(zak, varianta, placeholders) {
   return P;
 }
 
+/* Hodnota jednoho pole podmínek krycího listu PROJ bez výpočtu kalkulace
+ * (pokuta za nedodržení termínu do smlouvy o dílo — rozhodnutí J. V.
+ * 1. 10. 2026, Q6): ruční přepis > zmrazené při odeslání > předvyplnění.
+ * Pole plánu plateb (`vypocet`) a provázaná pole tudy nejdou — ta potřebují
+ * celý kontext (kryciProjCtx). */
+function kryciProjPoleHodnota(zak, varianta, id) {
+  const d = (varianta && varianta.data) || {};
+  const c = { zak, zmrazeno: (varianta && varianta.zamek && varianta.zamek.zamceno && d.kryciProj && d.kryciProj.zmrazeno) || null };
+  const p = KRYCI_PROJ_SEKCE.reduce((a, s) => a || s.pole.find(x => x.id === id), null);
+  if (!p || typeof p.vypocet === 'function' || p.bind || p.dphBind) return '';
+  let v = '';
+  try { v = kryciProjHodnota(p, d.kryciProj || { hodnoty: {} }, c); } catch (e) { v = ''; }
+  return String(v == null ? '' : v);
+}
+
 /* hodnota pole: ruční přepis (data.kryciProj.hodnoty) > prefill > '' */
 /* „2 měsíce", „5 měsíců", „1 měsíc" — náhradní platnost nabídky se skloňuje
  * (dřív „5 měsíce"; P10.1, 29. 9. 2026). Nečíselnou hodnotu nechá být. */
@@ -578,4 +593,4 @@ if (typeof module !== 'undefined')
   module.exports = { KRYCI_PROJ_SEKCE, KRYCI_POKUTY_SAZBY, KRYCI_PROJ_NABIDKA_SEKCE, KRYCI_PROJ_CINNOSTI, kryciProjCtx,
     kryciProjHodnota, kryciProjData, kryciProjMigraceSazbaDph, kryciProjPodminkoveSymboly,
     kryciProjSekceKc, kryciProjSodSymboly, kryciProjMesicu, kryciProjZmrazPodminky,
-    KRYCI_PROJ_PLAN_CINNOSTI, kryciProjPoleViditelne, kryciProjPlatbyText, kryciProjZmrazPlan };
+    KRYCI_PROJ_PLAN_CINNOSTI, kryciProjPoleViditelne, kryciProjPlatbyText, kryciProjZmrazPlan, kryciProjPoleHodnota };

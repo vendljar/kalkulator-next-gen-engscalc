@@ -141,7 +141,13 @@ function klRow(id, label, opts = {}) {
      * to jen v paměti obrazovky (KL_JINA) — do zakázky se ukládá jenom to,
      * co je opravdu napsané. Uložený soubor tak nenese stav rozbalovátka. */
     const jina = KL_JINA[id] || (klManual(id) && opts.o.indexOf(String(val)) < 0);
-    const volby = opts.o.map(x =>
+    /* Výběr BEZ předvyplnění (místo plnění smlouvy, 1. 10. 2026) začíná
+     * prázdnou volbou — jinak by prohlížeč ukázal jako vybranou první
+     * položku seznamu, ačkoli v datech nic není a do smlouvy nic nejde.
+     * Návrat na prázdnou volbu ruční hodnotu smaže (klVyber → klSet ''). */
+    const prazdna = pref === ''
+      ? `<option value="" ${!jina && String(val) === '' ? 'selected' : ''}>— nevybráno —</option>` : '';
+    const volby = prazdna + opts.o.map(x =>
       `<option value="${esc(x)}" ${!jina && String(val) === String(x) ? 'selected' : ''}>${esc(x)}</option>`).join('');
     field = `<select onchange="klVyber('${escJs(id)}', this.value)">${volby}`
       + `<option value="${KL_JINE_ZNENI}" ${jina ? 'selected' : ''}>jiné znění…</option></select>`
