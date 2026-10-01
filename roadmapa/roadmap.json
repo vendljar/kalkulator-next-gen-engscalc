@@ -6573,7 +6573,7 @@
    {
     "text" : "1. 10. 2026 (engscalc, test-draft + test), v1.10.1 — dávka 1. 10.: Model 2 nadsvětlík „bez“ (#378), zábrany blokují dokumenty (#377), překlady dodatkových textů K18-N96 (#379), SoD podle aktuálních šablon + K18-N100/N101 + rozhodnutí J. V. (#380), šířka bočního světlíku jen Model 2 (#381), číselník dodatkových textů má přednost (#382). Integrace claude/davka-1-10, převod do test-draft a test na pokyn J. V.",
     "hotovo" : true,
-    "pozn" : "Celé kolo nad a7889c5 VŠE ZELENÉ (sady 210/0/1, jádro 121/121, server 210/210); finální nad d596290 sady 214/0/1, jádro 128/128, server dobíhá."
+    "pozn" : "Celé kolo nad a7889c5 VŠE ZELENÉ (sady 210/0/1, jádro 121/121, server 210/210); finální nad d596290 VŠE ZELENÉ (sady 214/0/1, jádro 128/128, server 210/210, statické 3/3; 59 min 7 s)."
    }
   ],
   "pravidla" : [

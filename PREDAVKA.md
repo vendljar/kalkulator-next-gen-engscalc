@@ -3,9 +3,9 @@
 Na `main`: **v30.9.1**. Na `test-draft` = `test`: **v1.10.1** (pokyn J. V.
 1. 10. 2026: „s návrhem šířky bočního světlíku souhlasím, zapracuj ho pro
 model 2 (modelu 1 nic neměň) a vše pošli do testu"). Převod rychlým posunem
-z integrační větve `claude/davka-1-10` po zeleném celém kole (finální kolo nad d596290 — sady 214 prošlo, 0 selhalo, 1 přeskočeno (test.js), mutace jádra 128 z 128; na pokyn J. V. „potřeboval bych to už odeslat do testu" převedeno ještě před doběhnutím mutací serveru (výsledek se dopíše); předchozí celé kolo nad a7889c5 (úkoly 1–4 bez SoD rozhodnutí, #381 a #382) VŠE ZELENÉ: sady 210/0/1, mutace jádra 121 z 121, serveru 210 z 210, statické 3 z 3).
-Releasy vydané do **v30.9.4** včetně (ověřeno přes GitHub 1. 10.); odkaz na
-release **v1.10.1** poslán J. V. (tag z cloudu pushnout nejde — HTTP 403).
+z integrační větve `claude/davka-1-10` po zeleném celém kole (finální celé kolo nad d596290 VŠE ZELENÉ (59 min 7 s): sady 214 prošlo, 0 selhalo, 1 přeskočeno (test.js), mutace jádra 128 z 128, mutace serveru 210 z 210, statické 3 z 3; kód v1.10.1 (373861f) je s d596290 shodný, liší se jen CHANGELOG, PREDAVKA a roadmapa; na pokyn J. V. „potřeboval bych to už odeslat do testu" převedeno ještě před doběhnutím mutací serveru, výsledek dopsán po doběhnutí; předchozí celé kolo nad a7889c5 (úkoly 1–4 bez SoD rozhodnutí, #381 a #382) VŠE ZELENÉ: sady 210/0/1, mutace jádra 121 z 121, serveru 210 z 210, statické 3 z 3).
+Releasy vydané do **v1.10.1** včetně (ověřeno přes GitHub 1. 10. — tag
+v1.10.1 i release založil J. V.; z cloudu tag pushnout nejde — HTTP 403).
 Sezení 1. 10. navázalo na session_01XFo3AzDzkjt8xGnMVH53p7.
 
 ## Hotovo v1.10.1 — dávka 1. 10. 2026 (podrobně CHANGELOG.md)
@@ -40,7 +40,7 @@ Aktualizovaný skill (nové znění zásady o symbolech SoD + rozhodnutí 1. 10.
 poslán J. V. jako `2026-10-01_kalkulator_v1.10.1_skill.skill`.
 
 ## Čeká na J. V.
-- Release v1.10.1 (odkaz poslán) a případně převod do `main`.
+- Převod v1.10.1 do `main` (release v1.10.1 už vydán).
 - SoD: znění rozsahu SoD PROJ (bod 7 návrhu), čísla papírových smluv OPR
   a OVP pro etapu C (#366); otázky agentů s výchozími odpověďmi (datum
   podpisu i v SoD PROJ — výchozí ano; slepené „V Praze, dne …" v šabloně
@@ -51,6 +51,15 @@ poslán J. V. jako `2026-10-01_kalkulator_v1.10.1_skill.skill`.
 - #377: zábrana platí i pro dotisk zamčené varianty (výchozí: ano).
 - Vyplnit překlad firemní věty SKN v číselníku na ostrém webu (#379);
   nahrát šablony SoD v2.
+
+## Další krok
+- Navazující sezení (založené 1. 10. ze sezení session_01H73EkBoAG3hp8ic9PHKqwS)
+  nejdřív vysvětlí J. V., proč se při přepnutí zasklení „na terče" →
+  „mezi příčníky" změní předpočítaná šířka bočního světlíku (mezera vedle
+  dveří se měří z šířky skleněné plochy: na terče vnitřní šířka + 2 × příčník
+  + 0,02 m, mezi příčníky vnitřní šířka − 2 × sloupek − 0,008 m; v příkladu
+  J. V. 600 mm × 252 mm) a nabídne otázku s výchozí odpovědí. Bez pokynu
+  J. V. se nic nemění.
 
 ## Předchozí stav (30. 9. 2026)
 
