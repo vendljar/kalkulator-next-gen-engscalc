@@ -119,8 +119,8 @@ const MUTACE = [
     proc: 'u zaměření se studií nese „část 1" jen odkaz na cenu výše — šablona bez ceny zaměření by prošla' },
   /* ---------- K18-N96: dodatkový text v cizojazyčné nabídce (30. 9. 2026) ---------- */
   { nazev: 'K18-N96: český dodatkový text v cizí nabídce se nepozná', soubor: 'kontroly.js',
-    hledej: "        .filter(p => { const t = String(p.popisNabidka || '').trim(); return t && !trStav(t, jaz).prelozeno; })",
-    nahrad: '        .filter(p => false)',
+    hledej: "          return !trStav(t, jaz).prelozeno;",
+    nahrad: '          return false;',
     proc: 'anglická nabídka by odešla s českou větou pod příplatkem a nikdo by se to nedozvěděl' },
   { nazev: 'K18-N96: vynechaný příplatek se hlásí, i když se netiskne', soubor: 'kontroly.js',
     hledej: '      const vNabidce = r.priplatky.filter(p => p && !vynech.includes(p.key));',
@@ -130,6 +130,15 @@ const MUTACE = [
     hledej: "      const slouceny = plechy.every(k => vNabidce.some(p => p.key === k));",
     nahrad: '      const slouceny = false;',
     proc: 'sloučené plechy tisknou „materiál a montáž", ne svůj text — varování by lhalo' },
+  /* ---------- K18-N96 / #379: jazykové varianty dodatků (1. 10. 2026) ---------- */
+  { nazev: 'K18-N96: kontrola nevidí jazykovou variantu dodatku', soubor: 'kontroly.js',
+    hledej: "          if (typeof j === 'string' && j.trim()) return false;     // jazyková varianta (#379)",
+    nahrad: '',
+    proc: 'varování by svítilo i u textu, který má překlad — přestalo by se číst' },
+  { nazev: 'K18-N96: výpočet nenese jazykové varianty dodatku', soubor: 'engine.js',
+    hledej: '    if (j) it.popisNabidkaJazyky = j;',
+    nahrad: '',
+    proc: 'německá nabídka by i s vyplněným překladem tiskla českou větu' },
   /* ---------- plán plateb projekce (etapa B, 30. 9. 2026) ---------- */
   { nazev: 'plán plateb: poslední splátka nenese zaokrouhlení', soubor: 'plan_plateb.js',
     hledej: '      const kc = i < radky.length - 1 ? Math.round(c * (r.p || 0) / 100) : planHal(zbyva);',

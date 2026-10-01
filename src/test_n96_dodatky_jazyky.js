@@ -181,6 +181,30 @@ const sknRadek = (z, v, L) => NB.nabidkaData(z, v, JEKLY, L).priplatky.find(x =>
   } else test('doplnění: popisyJazykyDoplnChybejici existuje', false);
 }
 
+/* ======================= otevření rozpracované zakázky ======================= */
+{
+  const cs = nacti('./cenik_stari.js');
+  const cenik = ZC.zkusebniCenik();
+  const dnesni = { cenik: Object.assign(JSON.parse(JSON.stringify(cenik)),
+    { popisy: { [SKN]: CZ }, popisyJazyky: { [SKN]: VAR } }), proj: { cenik: {} } };
+  const mk = (id, popisy) => ({ id, data: { cenik: Object.assign(JSON.parse(JSON.stringify(cenik)), { popisy }), ock: { zadani: {} } } });
+  const bezTextu = mk('v1', {}), stejny = mk('v2', { [SKN]: CZ }), vlastni = mk('v3', { [SKN]: 'Vlastní věta' }),
+    zamcena = mk('v4', { [SKN]: CZ });
+  zamcena.zamek = { zamceno: true, typ: 'nabidka', cislo: 'X' };
+  const zak = { cislo: '2026 - OPR - CN - 2', varianty: [bezTextu, stejny, vlastni, zamcena] };
+  const r = cs.cenikPrepoctiRozpracovane(zak, dnesni, {});
+  test('otevření: zakázka bez textu dostane český text i varianty',
+    bezTextu.data.cenik.popisy[SKN] === CZ && (bezTextu.data.cenik.popisyJazyky || {})[SKN]
+      && bezTextu.data.cenik.popisyJazyky[SKN].de === VAR.de, bezTextu.data.cenik);
+  test('otevření: zakázka s týmž textem dostane varianty',
+    !!(stejny.data.cenik.popisyJazyky || {})[SKN], stejny.data.cenik.popisyJazyky);
+  test('otevření: zakázka s vlastní větou varianty nedostane', !vlastni.data.cenik.popisyJazyky, vlastni.data.cenik.popisyJazyky);
+  test('otevření: uzamčená (odeslaná) varianta se nezmění', !zamcena.data.cenik.popisyJazyky);
+  test('otevření: doplnění se hlásí (autosave ho uloží)', r.popisy === 1 + 3 + 3, r.popisy);
+  const r2 = cs.cenikPrepoctiRozpracovane(zak, dnesni, {});
+  test('otevření: podruhé už nic nedoplňuje', r2.popisy === 0, r2.popisy);
+}
+
 /* ======================= uzamčená (odeslaná) nabídka ======================= */
 {
   const { z, v } = zakazka({ [SKN]: CZ }, { [SKN]: VAR });

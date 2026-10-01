@@ -787,7 +787,8 @@ function onlineNactiPopisy() {
 function onlinePopisyVlijZnovu() {
   if (typeof popisyVlij !== 'function' || typeof DEFAULT_CENIK === 'undefined') return false;
   if (!ONLINE_STAV.popisy) return false;
-  popisyVlij(DEFAULT_CENIK, ONLINE_STAV.popisy.texty);
+  /* S jazykovými variantami (#379, K18-N96) — jdou jen k týmž českým textům. */
+  popisyVlij(DEFAULT_CENIK, ONLINE_STAV.popisy.texty, ONLINE_STAV.popisy.jazyky || null);
   return true;
 }
 
@@ -813,12 +814,45 @@ function onlinePopisUloz(klic, text) {
        * je mezitím zapsal někdo jiný. */
       if (!DEFAULT_CENIK.popisy) DEFAULT_CENIK.popisy = {};
       if (t) DEFAULT_CENIK.popisy[String(klic)] = t; else delete DEFAULT_CENIK.popisy[String(klic)];
+      onlinePopisJazykyDoVychoziho(klic);
       onlinePopisyVlijZnovu();
     }
     return true;
   }).catch(e => {
     onlineZprava('Dodatkový text se nepodařilo uložit pro celou aplikaci: ' + e.message
       + ' V téhle zakázce zůstává zapsaný.', 'varovani');
+    return false;
+  });
+}
+
+/* Jazykové varianty společného textu do výchozího ceníku natvrdo (#379):
+ * administrátor je právě změnil, takže vlití („jen kde chybí") nestačí.
+ * Varianta patří jen k témuž českému textu, jinak se z výchozího ceníku
+ * u položky zahodí. */
+function onlinePopisJazykyDoVychoziho(klic) {
+  if (typeof DEFAULT_CENIK === 'undefined' || !ONLINE_STAV.popisy) return;
+  const k = String(klic);
+  const sp = ONLINE_STAV.popisy;
+  const j = sp.jazyky && sp.jazyky[k];
+  const cz = DEFAULT_CENIK.popisy && DEFAULT_CENIK.popisy[k];
+  if (j && cz && sp.texty && sp.texty[k] === cz) {
+    if (!DEFAULT_CENIK.popisyJazyky) DEFAULT_CENIK.popisyJazyky = {};
+    DEFAULT_CENIK.popisyJazyky[k] = Object.assign({}, j);
+  } else if (DEFAULT_CENIK.popisyJazyky) delete DEFAULT_CENIK.popisyJazyky[k];
+}
+
+/* Uložení JAZYKOVÝCH VARIANT jednoho textu (#379, nález K18-N96). Posílá
+ * se jen to, co se změnilo ({ en } / { de } / { fr }; prázdný text variantu
+ * smaže), server ji sloučí se svým stavem — stejně jako u českého textu.
+ * Český text se tím nemění. Jen administrátor; server to hlídá znovu. */
+function onlinePopisJazykyUloz(klic, jazyky) {
+  if (!jeAdminOnline()) return Promise.resolve(false);
+  return onlineApi('/api/popisy', { klic: String(klic), jazyky: jazyky || {} }).then(o => {
+    if (o && o.popisy) ONLINE_STAV.popisy = o.popisy;
+    onlinePopisJazykyDoVychoziho(klic);
+    return true;
+  }).catch(e => {
+    onlineZprava('Překlad dodatkového textu se nepodařilo uložit: ' + e.message, 'varovani');
     return false;
   });
 }

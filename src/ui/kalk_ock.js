@@ -498,6 +498,16 @@ function popisSet(cesta, v) {
     if (!C.popisy) C.popisy = {};
     C.popisy[cesta] = '';
   }
+  /* Jazykové varianty (#379, K18-N96) patří ke konkrétnímu znění: nový
+   * text = staré překlady pryč, návrat na společný text = společné překlady.
+   * Administrátorův text se právě stává společným, proto se srovnává s ním. */
+  if (typeof popisJazykySrovnej === 'function' && typeof DEFAULT_CENIK !== 'undefined') {
+    const t = String(v == null ? '' : v).trim();
+    const spol = admin ? Object.assign({}, DEFAULT_CENIK.popisy || {}, { [cesta]: t }) : (DEFAULT_CENIK.popisy || {});
+    const spolJ = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.popisy && ONLINE_STAV.popisy.jazyky)
+      || DEFAULT_CENIK.popisyJazyky || null;
+    popisJazykySrovnej(C, cesta, spol, spolJ);
+  }
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
   if (admin && typeof onlinePopisUloz === 'function')
     onlinePopisUloz(cesta, v);
@@ -527,7 +537,20 @@ function popisRadekHtml(r, cols) {
     <input type="text" style="width:100%" value="${esc(t)}" maxlength="${POPISY_MAX_TEXT}"
       placeholder="dodatkový text do cenové nabídky (nepovinné)"
       title="${esc(naped)}"
-      onchange="popisSet('${keyAttr(klic)}', this.value)"></td></tr>`;
+      onchange="popisSet('${keyAttr(klic)}', this.value)">${popisJazykyStitek(klic, t)}</td></tr>`;
+}
+/* Které překlady text v téhle zakázce má (#379, K18-N96) — aby obchodník
+ * věděl, že do cizí nabídky nepůjde česká věta. Vyplňují se v číselníku
+ * dodatkových textů (Ceník nákladů OCK), ne tady. */
+function popisJazykyStitek(klic, t) {
+  if (!t || typeof cenikPopisJazyk !== 'function') return '';
+  const jazyky = (typeof POPISY_JAZYKY !== 'undefined') ? POPISY_JAZYKY : ['en', 'de', 'fr'];
+  const ma = jazyky.filter(l => cenikPopisJazyk(C, klic, l));
+  /* Bez překladu se nic nepíše: většina nabídek je česká a trvalá věta pod
+   * každým textem by se přestala číst. Cizí nabídku pohlídá „dodatekCesky". */
+  if (!ma.length) return '';
+  return `<div class="note popis-jazyky-stitek" style="margin:1px 0 0">Překlad do nabídky: ${esc(ma.map(l => l.toUpperCase()).join(', '))}${
+    ma.length < jazyky.length ? ' (ostatní jazyky ponesou český text)' : ''}</div>`;
 }
 function popisRadekVol(r, cols) {
   return popisRadekHtml(r, cols);

@@ -310,6 +310,35 @@ function cenikPopisyKandidati(klic, admin) {
     </div>`).join('');
 }
 
+/* Jazykové varianty společných textů (#379, nález K18-N96). */
+function cenikPopisyJazykySpolecne() {
+  return (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.popisy && ONLINE_STAV.popisy.jazyky)
+    ? ONLINE_STAV.popisy.jazyky : {};
+}
+
+/* Pole překladů pod českým textem v číselníku (#379, nález K18-N96).
+ * Slovník ručně psané věty nezná, takže bez překladu by text v cizí
+ * nabídce zůstal česky. Každý jazyk je nepovinný; prázdný = platí dosavadní
+ * chování (slovník, jinak česky — a kontrola „dodatekCesky" to ohlásí).
+ * Bez českého textu se pole nekreslí: varianta by se nikdy netiskla. */
+function cenikPopisJazykyHtml(klic, t, admin) {
+  if (!t) return '';
+  const j = cenikPopisyJazykySpolecne()[klic] || {};
+  const jazyky = (typeof POPISY_JAZYKY !== 'undefined') ? POPISY_JAZYKY : ['en', 'de', 'fr'];
+  if (!admin) {
+    const vypl = jazyky.filter(l => j[l]);
+    return vypl.length ? `<div class="note" style="margin:2px 0">${vypl.map(l =>
+      `<b>${esc(l.toUpperCase())}:</b> ${esc(j[l])}`).join(' · ')}</div>` : '';
+  }
+  return `<div class="popis-jazyky" style="display:flex;gap:6px;margin-top:3px;flex-wrap:wrap">${jazyky.map(l =>
+    `<label style="flex:1;min-width:150px;display:flex;gap:4px;align-items:center"><span class="note"
+       style="margin:0">${esc(l.toUpperCase())}</span><input type="text" style="flex:1"
+       data-popis-jazyk="${esc(l)}" value="${esc(j[l] || '')}" maxlength="${POPISY_MAX_TEXT}"
+       placeholder="překlad (nepovinné)"
+       title="Text do nabídky v jazyce ${esc(l.toUpperCase())}. Prázdné pole = v nabídce zůstane český text (nebo překlad ze slovníku, zná-li ho)."
+       onchange="cenikPopisJazykUlozCis('${keyAttr(klic)}', '${keyAttr(l)}', this.value)"></label>`).join('')}</div>`;
+}
+
 function cenikPopisySpolecne() {
   return (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.popisy && ONLINE_STAV.popisy.texty)
     ? ONLINE_STAV.popisy.texty : {};
@@ -338,7 +367,7 @@ function cenikPopisyKarta() {
            onchange="cenikPopisUlozCis('${keyAttr(r.klic)}', this.value)">`
       : (t ? esc(t) : '<span class="note">—</span>');
     return `<tr><td class="c-nazev">${esc(r.klic)}<div class="note" style="margin:0">${esc(r.skupina)}
-        · ${esc(r.typy.join(' + '))}</div></td><td>${pole}${jinde}${cenikPopisyKandidati(r.klic, admin)}</td></tr>`;
+        · ${esc(r.typy.join(' + '))}</div></td><td>${pole}${cenikPopisJazykyHtml(r.klic, t, admin)}${jinde}${cenikPopisyKandidati(r.klic, admin)}</td></tr>`;
   };
   const osirele = cis.osirele.length ? `<tr><th colspan="2">Texty k položkám, které výpočet už nezná
       (přejmenované nebo zrušené) — nic se nemaže, rozhodněte sami</th></tr>`
@@ -353,7 +382,10 @@ function cenikPopisyKarta() {
       <div class="note">Text se tiskne v cenové nabídce pod názvem příplatku nebo volitelné položky.
         Tady je <b>trvale uložený pro celou aplikaci</b> — nezávisle na zakázce i na verzi ceníku —
         a předvyplní se do každé nové i rozpracované zakázky, která u položky vlastní text nemá.
-        Odeslané (uzamčené) nabídky se nemění. ${admin
+        Odeslané (uzamčené) nabídky se nemění.
+        Pod českým textem jsou <b>překlady EN / DE / FR</b> (nepovinné): ručně psaný text aplikace
+        nepřekládá, takže do anglické, německé a francouzské nabídky jde vyplněný překlad, jinak česká věta.
+        Po změně českého textu překlady zkontrolujte — patří ke znění, ke kterému byly napsané. ${admin
           ? 'Každá změna se uloží hned, když opustíte pole.'
           : 'Texty zadává administrátor; ve své zakázce je můžete upravit v Kalkulaci OCK pod položkou.'}
         ${online ? esc(kdo) : '<b>Nepřihlášeno — texty se načtou po přihlášení.</b>'}</div>
@@ -382,6 +414,26 @@ function cenikPopisUlozCis(klic, text) {
       const zam = (typeof variantaUzamcena === 'function') && variantaUzamcena(v);
       const t = String(text == null ? '' : text).trim();
       if (!zam && t && v && v.data && v.data.cenik && popisyDoplnChybejici(v.data.cenik, { [klic]: t })
+        && typeof syncVarianta === 'function') syncVarianta();
+    }
+    render();
+    return ok;
+  });
+}
+
+/* Uložení jednoho překladu z číselníku (#379). Do otevřené rozpracované
+ * zakázky se doplní jen tam, kde má týž český text a překlad toho jazyka
+ * ještě nemá — stejné pravidlo jako při otevření zakázky. */
+function cenikPopisJazykUlozCis(klic, jazyk, text) {
+  if (typeof onlinePopisJazykyUloz !== 'function') return Promise.resolve(false);
+  const t = String(text == null ? '' : text).trim();
+  return onlinePopisJazykyUloz(klic, { [jazyk]: t }).then(ok => {
+    if (ok && t && typeof popisyJazykyDoplnChybejici === 'function' && typeof ZAK !== 'undefined' && ZAK) {
+      const v = aktivniVarianta(ZAK);
+      const zam = (typeof variantaUzamcena === 'function') && variantaUzamcena(v);
+      const sp = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.popisy) || {};
+      if (!zam && v && v.data && v.data.cenik && sp.texty
+        && popisyJazykyDoplnChybejici(v.data.cenik, { [klic]: sp.texty[klic] }, { [klic]: { [jazyk]: t } })
         && typeof syncVarianta === 'function') syncVarianta();
     }
     render();
