@@ -1,4 +1,48 @@
-# Předávka — stav k 30. 9. 2026 večer (v30.9.4 na test-draft, v30.9.3 na test, v30.9.1 na main)
+# Předávka — stav k 1. 10. 2026 (dávka 1. 10.: integrační větev `claude/davka-1-10`, v1.10.1)
+
+Na `main`: **v30.9.1**, na `test` = `test-draft`: **v30.9.4** (643faa8; J. V.
+1. 10. „pošli test-draft do testu"). Releasy vydané do **v30.9.4** včetně
+(ověřeno přes GitHub 1. 10.). Sezení 1. 10. 2026 navázalo na
+session_01XFo3AzDzkjt8xGnMVH53p7 (78 % kontextu).
+
+## Dávka 1. 10. 2026 — pět větví z `test-draft` (643faa8) + integrace
+Pravidlo J. V. 29. 9.: každý úkol vlastní větev, do `test-draft` jen na jeho
+pokyn. Integrační větev **`claude/davka-1-10`** = všechny níže sloučené,
+konflikty jen v CHANGELOG/roadmapě/mutace_jadro.mjs (obě strany ponechány).
+Verze 1.10.1 (číslo release se přidělí při převodu do `test-draft`).
+
+| Úkol | Větev | Stav | Roadmapa |
+|---|---|---|---|
+| 1 Model 2: nadsvětlík „bez" bez odpočtu 0,2 h (Model 1 ubírá dál) | `claude/model2-nadsvetlik-bez` | hotovo | #378 |
+| 2 Zábrany z kontroly blokují dokumenty, kterých se týkají | `claude/zabrany-blokuji-dokumenty` | hotovo | #377 |
+| 3 Návrh SoD + generátor podle aktuálních šablon; K18-N100, N101, „% %" | `claude/sod-generator-sablony` | hotovo + rozhodnutí J. V. se zapracovávají | #380 |
+| 4 K18-N96 překlady dodatkových textů (číselník EN/DE/FR) | `claude/k18-n96-dodatky-preklady` | hotovo | #379 |
+| Dotaz 1. 10.: šířka bočního světlíku | — (jen návrh) | čeká na J. V. | #381 |
+
+**Návrhy (artefakty):** SoD a šablony https://claude.ai/artifact/GXZGaJBMR9PQXnp9bz6Xwh
+(rozhodnutí J. V. 1. 10.: výchozí odpovědi platí, KROMĚ bodu 10 — datum
+podpisu = aktuální datum; bod 7 znění rozsahu SoD PROJ čeká na odsouhlasení),
+šířka bočního světlíku https://claude.ai/artifact/7tNaMb8Fu1tNt9ADCyYheL.
+Šablony SoD realizace v2 a SoD PROJ v2 poslány J. V. (vyrábí je
+`nastroje/vyrob_sablony.js --sod-real | --sod-proj`, necommitují se).
+
+**K18-N101:** tester zkoušel P18 na ostré **v30.9.1** (před plánem plateb).
+
+**Podklady v cloudu:** šablony CN v14, PROJ v4 (+EN/DE/FR), PROJ v3 (jako
+Sablona_NABIDKA_PROJ.docx), SoD, plná moc a příručka staženy konektorem
+Disku do `/home/user/kng_podklady` — velké soubory se uloží do
+`…/tool-results/…txt` (JSON s base64), kontext nezahltí (viz skill).
+
+## Čeká na J. V.
+- Pořadí slučování do `test-draft` (návrh: celé `claude/davka-1-10` najednou,
+  nebo po větvích 1 → 4 → 3 → 2) a release v1.10.1.
+- Odsouhlasit návrh #381 (šířka bočního světlíku) a znění rozsahu SoD PROJ (bod 7).
+- Nahrát šablony SoD v2 v Nastavení → Smlouvy / Šablony; vyplnit překlad
+  firemní věty SKN v číselníku na ostrém webu (#379).
+- Etapa C (#366): poslední čísla papírových smluv OPR a OVP.
+- Otázka #377: zábrana platí i pro dotisk zamčené varianty (výchozí: ano).
+
+## Předchozí stav (30. 9. 2026)
 
 Na `main`: **v30.9.1** (pokyn J. V. 30. 9. 2026 „pošli aktuální test do
 main"; ostrá aplikace se z `main` nasazuje sama). Na `test`: **v30.9.3**
