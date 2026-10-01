@@ -85,6 +85,17 @@ P1–P6 z promptu, v závorce číslo nálezu kola.
   množství, takže dnes je obchodník dorovná ručně. Dopad jen na zakázky
   s ručním přepisem skla a zaškrtnutým příplatkem.
 
+### P2, P4, P5, P6 (K19-N104, N107, N109, N114) — rozbor, kód beze změny
+
+Body „prověřit + návrh" — rozbor s variantami a výchozími návrhy
+v `podklady/K19_ROZBOR_2026-10-01.md`, čeká na rozhodnutí J. V.:
+P2 prosklená prohlubeň (výchozí: zkratka „prosklít i prohlubeň" pro
+všechny stěny + nápověda), P4 volba druhu skla (výchozí: nápověda „jiné
+sklo = po stěnách", volba skla až po rozhodnutí o položkách ceníku),
+P5 statika opláštění (výchozí: jen hodiny `statikaHod` v ceníku), P6
+projekce u zahraniční zakázky (výchozí: přepnutí na zahraniční řadu
+nabídne „jen realizace").
+
 ---
 
 ## v1.10.1 — dávka 1. 10. 2026: SoD podle šablon, zábrany blokují dokumenty, šířka bočního světlíku, dodatkové texty (1. 10. 2026)

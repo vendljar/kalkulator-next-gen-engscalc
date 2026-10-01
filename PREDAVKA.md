@@ -1,3 +1,59 @@
+# Předávka větve `claude/k19-nalezy` — nálezy 19. kola (1. 10. 2026 večer)
+
+Paralelní větev podle promptu J. V. z 1. 10. 2026 (nálezy 19. kola, ostrá
+v30.9.1 + test v1.10.1), založená z **`b5253c9` (v1.10.1)**. O sloučení do
+`test-draft` rozhoduje J. V.; nic se nemerguje do `test-draft`, `test` ani
+`main`. Sezení session_01WRbkr4tfxtUB1k8PR37dUR (založené ze
+session_01RJSPgrM27cZ1mGsJWPdfWv). Hlavní předávka je dál
+`PREDAVKA.md` na `test-draft` (od 1. 10. večer v1.10.2).
+
+**Pozor při slučování:** `test-draft` = v1.10.2 (3298278) měnila
+`mutace_jadro.mjs`, `src/kontroly.js`, `src/plan_plateb.js`,
+`src/ui/kalk_ock.js` a `src/app_template.html`; tahle větev mění
+`mutace_jadro.mjs` (dvě mutace P3) — čekat konflikt jen tam (přidané
+řádky na různých místech). CHANGELOG a PREDAVKA sloučit ručně.
+
+## Hotovo (podrobně CHANGELOG.md, oddíl „větev claude/k19-nalezy")
+
+| # | Nález | Co | Stav | Commit |
+|---|---|---|---|---|
+| P1 | K19-N102 | #372 kontroluje i nově zamčenou variantu (zámek jen v příchozích datech) | ✅ oprava; test_obnova 176/4 → 180/0; mutace serveru +1 | 283e76f |
+| P3 | K19-N105 | ruční přepis plochy skla posune PRÁCI OPLÁŠTĚNÍ a TMELENÍ; Detail výpočtu „z ručně přepsané plochy skla" | ✅ oprava; nová sada test_prepis_skla_prace 31/22 → 53/0; mutace jádra +2 | b2b901b |
+| P2 | K19-N104 | prosklená prohlubeň | ✅ rozbor `podklady/K19_ROZBOR_2026-10-01.md` | — |
+| P4 | K19-N107 | volba druhu skla | ✅ rozbor | — |
+| P5 | K19-N109 | statika opláštění | ✅ rozbor | — |
+| P6 | K19-N114 | projekce u zahraniční zakázky | ✅ rozbor | — |
+
+Verze se nezvyšovala (`verze.txt` = 1.10.1, sestavení s
+`KNG_NEZVYSOVAT_VERZI=1`); číslo verze dá J. V. / integrace při sloučení.
+
+## Celé kolo
+
+Viz oddíl níž (doplní se po doběhnutí `nastroje/testovaci_kolo.sh`).
+
+## Čeká na J. V.
+
+- Rozhodnutí k P2, P4, P5, P6 (výchozí návrhy v rozboru; odpovězte jen
+  tam, kde se chcete odchýlit).
+- P1: obnova ze SOUBORU bere zámek ze zálohy jako doklad i pro #372
+  (výchozí: ponechat; přísnější varianta v CHANGELOG).
+- P3: rozpracované (nezamčené) zakázky s ručním přepisem skla se po
+  otevření přepočítají (PRÁCE/TMELENÍ) — výchozí: ano, to je smysl opravy;
+  příplatky VSG/SKN sjednotit s efektivní plochou skla v další dávce
+  (výchozí: ano).
+- Sloučení větve do `test-draft` (rozhoduje J. V.).
+- Ověření po sloučení: P1 novou TEST zakázkou; P3 K19T-C088 v klonu
+  varianty proti listu „OCK – test × Excel".
+
+## Další krok
+
+Čekat na rozhodnutí J. V. k rozboru; po pokynu zapracovat zvolené
+varianty v téhle větvi (každý bod vlastní commit + test před/po).
+
+---
+
+# Předchozí obsah (stav `b5253c9`, v1.10.1 — kopie z test-draft)
+
 # Předávka — stav k 1. 10. 2026 (v1.10.1 na test-draft i test, v30.9.1 na main)
 
 Na `main`: **v30.9.1**. Na `test-draft` = `test`: **v1.10.1** (pokyn J. V.
