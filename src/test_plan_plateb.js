@@ -19,11 +19,36 @@ const test = (n, cond, info) => { if (cond) { ok++; console.log('OK   ' + n); } 
 
 test('modul src/plan_plateb.js existuje', !!PP);
 if (!PP) { console.log(`\n${ok} prošlo, ${fail} selhalo`); process.exit(1); }
-const F = PP.PLAN_PROJ_VYCHOZI;
+/* VÝCHOZÍ PLÁN Z KÓDU (rozhodnutí J. V. 1. 10. 2026: „Nastav plán plateb
+ * viz příloha jako výchozí standard" — snímek s předvolbou „Záloha + zbytek
+ * po předání" a zálohou 70 %). Do té doby byl výchozí Standard po
+ * činnostech se zálohou 50 % v předvolbě Záloha. Úseky 1–5 níž počítají
+ * Standard a dopočty nad ním — pouštějí se proto nad firemním plánem, který
+ * má výchozí předvolbu Standard (platná konfigurace: administrátor ji volí
+ * v Nastavení → Firma). Výchozí z kódu hlídá úsek 0. */
+const V = PP.PLAN_PROJ_VYCHOZI;
+const F = Object.assign({}, V, { vychozi: 'std', zalohaPct: 50 });
 const pct = (radky) => radky.map(r => r.p).join('/');
 
+/* 0) výchozí plán z kódu: Záloha 70 % + zbytek po předání */
+test('výchozí předvolba z kódu je „Záloha + zbytek po předání" se zálohou 70 %',
+  PP.planPredvolba(null, V) === 'zaloha' && V.zalohaPct === 70 && PP.planZalohaEf(null, V) === 70, [V.vychozi, V.zalohaPct]);
+test('výchozí plán: každá činnost 70 % po podpisu + 30 % po předání',
+  PP.PLAN_PROJ_SEKCE.every(k => JSON.stringify(PP.planRadkyCinnosti(k, null, V).map(r => [r.p, r.m])) === JSON.stringify([[70, 'podpis'], [30, V.predani[k]]])),
+  PP.PLAN_PROJ_SEKCE.map(k => k + ':' + PP.planRadkyCinnosti(k, null, V).map(r => r.p + ' ' + r.m).join('+')));
+test('výchozí plán: popis „Záloha 70 % + zbytek po předání" a věta způsobu fakturace se zálohou 70 %',
+  PP.planPopisPredvolby(null, V) === 'Záloha 70 % + zbytek po předání'
+  && PP.planZpusobFakturace(null, V) === 'záloha 70 % po podpisu smlouvy, zbytek po předání jednotlivých stupňů dokumentace',
+  [PP.planPopisPredvolby(null, V), PP.planZpusobFakturace(null, V)]);
+test('výchozí plán je platný firemní plán (bez vad)', PP.planPlatebFirmaVady(V).length === 0, PP.planPlatebFirmaVady(V));
+const dV = PP.planPlatebDopocet({ zamereni: 40000, dpz: 120000, ic: 60000 }, null, V);
+test('výchozí plán: dopočet SoD 154 000 po podpisu (70 % z 220 000) + 30 % po předání každé činnosti',
+  dV.sedi && dV.platby.map(p => p.klic + ':' + p.castka).join() === 'podpis:154000,za_vystupy:12000,dpz_su:36000,ic_povoleni:18000',
+  dV.platby.map(p => p.klic + ':' + p.castka));
+
 /* 1) Standard = dnešní procenta pevných bloků nabídky PROJ (nabidka_proj.js) */
-test('výchozí předvolba je Standard po činnostech', PP.planPredvolba(null, F) === 'std');
+test('předvolba Standard po činnostech (firma s výchozím Standardem)', PP.planPredvolba(null, F) === 'std'
+  && PP.planPredvolba({ predvolba: 'std' }, V) === 'std');
 const def = NP.NABIDKA_PROJ_DEF || [];
 const blok = (s) => def.find(b => b.typ === 'pary' && /^PLATEBNÍ PODMÍNKY/.test(b.nadpis || '') && [].concat(b.sekce || []).indexOf(s) >= 0);
 const procentaBloku = (s) => ((blok(s) || {}).radky || []).map(r => +((/(\d+)\s*%/.exec(r[1]) || [])[1]));

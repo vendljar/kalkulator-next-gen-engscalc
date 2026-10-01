@@ -59,8 +59,18 @@ const PLAN_PROJ_MILNIKY = [
   { id: 'kol_po', cz: 'po vydání kolaudačního rozhodnutí' },
   { id: 'geo_predani', cz: 'po předání geodetického zaměření' },
 ];
+/* VÝCHOZÍ PŘEDVOLBA NOVÉ ZAKÁZKY = „Záloha + zbytek po předání" se zálohou
+ * 70 % (rozhodnutí J. V. 1. 10. 2026: „Nastav plán plateb viz příloha jako
+ * výchozí standard" — snímek krycího listu PROJ s touto předvolbou). Do té
+ * doby Standard po činnostech se zálohou 50 % v předvolbě Záloha.
+ *
+ * Platí pro každou ROZPRACOVANOU variantu, která předvolbu nemá uloženou
+ * (plán je řídký — předvolba se zapíše až volbou v krycím listu), tak jako
+ * každá změna firemního plánu. Odeslaná nabídka má snímek (planPlatebSnimek)
+ * a nezmění se. Firma s vlastním plánem v Nastavení → Firma má vlastní
+ * výchozí předvolbu a zálohu — ty mají přednost (planFirmaPlan). */
 const PLAN_PROJ_VYCHOZI = {
-  v: 1, vychozi: 'std', zalohaPct: 50,
+  v: 1, vychozi: 'zaloha', zalohaPct: 70,
   milniky: PLAN_PROJ_MILNIKY,
   /* Standard po činnostech = dnešní procenta pevných bloků nabídky PROJ.
    * Projednání a geodet dnes blok nemají — výchozí návrh J. V. (Q1, Q2):

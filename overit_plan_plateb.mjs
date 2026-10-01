@@ -156,6 +156,7 @@ const kl = () => p.evaluate(() => {
   const sel = [...el.querySelectorAll('select')].find(s => /planKlpPredvolba/.test(s.getAttribute('onchange') || ''));
   return {
     karty: karty.length, predvolba: sel ? sel.value : null,
+    zaloha: (([...el.querySelectorAll('select')].find(s => /planKlpZaloha/.test(s.getAttribute('onchange') || ''))) || {}).value || null,
     cinnosti: el.querySelectorAll('.plan-cin').length, nabizene: Object.keys(ef.ceny).length,
     stareZaloha: [...el.querySelectorAll('select')].some(s => /klpVyber\('zaloha'/.test(s.getAttribute('onchange') || '')),
     staraSplatka: [...el.querySelectorAll('input')].some(i => /klpSet\('sodpPlatba1'/.test(i.getAttribute('onchange') || '')),
@@ -167,15 +168,25 @@ const kl = () => p.evaluate(() => {
   };
 });
 let k = await kl();
-zkus('karta plánu i tabulka plateb smlouvy se vykreslily (výchozí předvolba Standard)', k.karty === 2 && k.predvolba === 'std', JSON.stringify(k));
+/* Výchozí plán nové zakázky = „Záloha + zbytek po předání" se zálohou 70 %
+ * (rozhodnutí J. V. 1. 10. 2026; do té doby Standard po činnostech). */
+zkus('karta plánu i tabulka plateb smlouvy se vykreslily (výchozí předvolba Záloha + zbytek po předání, záloha 70 %)',
+  k.karty === 2 && k.predvolba === 'zaloha' && k.zaloha === '70', JSON.stringify(k));
+zkus('výchozí plán: u každé nabízené činnosti 70 % po podpisu + 30 % po předání',
+  await p.evaluate(() => { const ef = nabidkaProjPlatby(ZAK, aktivniVarianta(ZAK), 'cz'); return Object.keys(ef.ceny).every(c => ef.dopocet.cinnosti[c].map(r => r.p + ':' + r.m).join() === '70:podpis,30:' + ef.firemni.predani[c]); }));
 zkus('karta ukazuje právě nabízené činnosti', k.cinnosti === k.nabizene && k.nabizene > 0, k.cinnosti + ' / ' + k.nabizene);
 zkus('pole dřívějšího znění (záloha, ruční splátky 1–8) se v krycím listu neukazují', !k.stareZaloha && !k.staraSplatka);
 zkus('tabulka plateb má řádek za každou platbu a součet sedí s cenou díla', k.platbyRadku === k.platby && k.sedi && k.soucet === k.cena, JSON.stringify(k));
+await p.evaluate(() => planKlpPredvolba('std'));
+await p.waitForTimeout(150);
+k = await kl();
+zkus('předvolba Standard po činnostech: DPZ 50/30/20', k.predvolba === 'std'
+  && await p.evaluate(() => nabidkaProjPlatby(ZAK, aktivniVarianta(ZAK), 'cz').dopocet.cinnosti.dpz.map(r => r.p).join('/') === '50/30/20'), JSON.stringify(k.plan));
 await p.evaluate(() => planKlpPredvolba('zaloha'));
 await p.waitForTimeout(150);
 k = await kl();
-zkus('předvolba Záloha: u činností 50 % po podpisu + 50 % po předání', k.predvolba === 'zaloha'
-  && await p.evaluate(() => { const ef = nabidkaProjPlatby(ZAK, aktivniVarianta(ZAK), 'cz'); return Object.keys(ef.ceny).every(c => ef.dopocet.cinnosti[c].map(r => r.p + ':' + r.m).join() === '50:podpis,50:' + ef.firemni.predani[c]); }), JSON.stringify(k.plan));
+zkus('předvolba Záloha: u činností 70 % po podpisu + 30 % po předání (výchozí záloha 70 %)', k.predvolba === 'zaloha' && k.zaloha === '70'
+  && await p.evaluate(() => { const ef = nabidkaProjPlatby(ZAK, aktivniVarianta(ZAK), 'cz'); return Object.keys(ef.ceny).every(c => ef.dopocet.cinnosti[c].map(r => r.p + ':' + r.m).join() === '70:podpis,30:' + ef.firemni.predani[c]); }), JSON.stringify(k.plan));
 await p.evaluate(() => planKlpZaloha('30'));
 zkus('záloha 30 %: první splátka DPZ je 30 %', await p.evaluate(() => nabidkaProjPlatby(ZAK, aktivniVarianta(ZAK), 'cz').dopocet.cinnosti.dpz[0].p === 30));
 await p.evaluate(() => planKlpPredvolba('std'));
@@ -320,10 +331,11 @@ zkus('první zápis do plánu zhmotní převzatou předvolbu i ruční splátku 
 await p.evaluate(() => { ZAK = novaZakazka(); syncVarianta(); KLP.hodnoty = { zaloha: '40 % po podpisu smlouvy' }; render(); });
 const st40 = await p.evaluate(() => { const el = document.getElementById('page-kryciproj'); const t = el.textContent;
   const sel = [...el.querySelectorAll('select')].find(s => /planKlpPredvolba\(/.test(s.getAttribute('onchange') || ''));
-  return { text: /záloha „40 % po podpisu smlouvy"/.test(t), predvolba: sel ? sel.value : null,
+  const selZ = [...el.querySelectorAll('select')].find(s => /planKlpZaloha\(/.test(s.getAttribute('onchange') || ''));
+  return { text: /záloha „40 % po podpisu smlouvy"/.test(t), predvolba: sel ? sel.value : null, zaloha: selZ ? selZ.value : null,
     tlacitko: [...el.querySelectorAll('button')].some(b => /Použít jako předvolbu/.test(b.textContent)) }; });
-zkus('dřívější záloha 40 % (předvolba ji nezná): ukáže se znění, předvolba zůstane Standard, bez tlačítka',
-  st40.text && st40.predvolba === 'std' && !st40.tlacitko, JSON.stringify(st40));
+zkus('dřívější záloha 40 % (předvolba ji nezná): ukáže se znění, předvolba zůstane výchozí (Záloha 70 %), bez tlačítka',
+  st40.text && st40.predvolba === 'zaloha' && st40.zaloha === '70' && !st40.tlacitko, JSON.stringify(st40));
 /* plán s vlastní předvolbou: dřívější záloha už nic nemění ani nehlásí */
 await p.evaluate(() => { ZAK = novaZakazka(); syncVarianta(); KLP.hodnoty = { zaloha: 'Záloha 70 %' }; KLP.planPlateb = { v: 1, predvolba: 'sto' }; render(); });
 zkus('plán s vlastní předvolbou (100 %) se dřívější zálohou nepřepne',

@@ -140,10 +140,20 @@ const vypln = (ph) => dg.nahradPlaceholdery(dg.odstranPrazdneBloky(v4, ph), ph);
   const ph = d.placeholders;
   test('symboly PROJ_PLATBY_* jsou vyplněné právě u nabízených činností', Object.keys(NP.NABIDKA_PROJ_PLATBY).every(k =>
     (+ceny[k] > 0) === !!String(ph['PROJ_PLATBY_' + NP.NABIDKA_PROJ_PLATBY[k].symbol] || '').trim()), Object.keys(ceny));
-  test('DPZ: řádky „Platba … – N % z nabídkové ceny za DPZ" (Standard 50/30/20)',
-    ph.PROJ_PLATBY_DPZ.split('\n').join(' | ') === 'Platba po podpisu smlouvy / objednávky – 50 % z nabídkové ceny za DPZ | '
-      + 'Platba po dokončení dokumentace pro povolení záměru v rozsahu pro podání na dotčené orgány – 30 % z nabídkové ceny za DPZ | '
-      + 'Platba po dokončení dokumentace pro povolení záměru v rozsahu pro podání na stavební úřad – 20 % z nabídkové ceny za DPZ', ph.PROJ_PLATBY_DPZ);
+  /* Výchozí plán nové zakázky je od 1. 10. 2026 Záloha 70 % + zbytek po
+   * předání (rozhodnutí J. V.); Standard po činnostech je jedna z předvoleb. */
+  test('DPZ: řádky „Platba … – N % z nabídkové ceny za DPZ" (výchozí plán: záloha 70 % + 30 % po předání)',
+    ph.PROJ_PLATBY_DPZ.split('\n').join(' | ') === 'Platba po podpisu smlouvy / objednávky – 70 % z nabídkové ceny za DPZ | '
+      + 'Platba po dokončení dokumentace pro povolení záměru v rozsahu pro podání na stavební úřad – 30 % z nabídkové ceny za DPZ', ph.PROJ_PLATBY_DPZ);
+  {
+    const zs = novaZ(), vs = zs.varianty[0];
+    vs.data.kryciProj.planPlateb = { v: 1, predvolba: 'std' };
+    const phs = NP.nabidkaProjData(zs, vs, 'cz').placeholders;
+    test('DPZ: předvolba Standard po činnostech dá řádky 50/30/20',
+      phs.PROJ_PLATBY_DPZ.split('\n').join(' | ') === 'Platba po podpisu smlouvy / objednávky – 50 % z nabídkové ceny za DPZ | '
+        + 'Platba po dokončení dokumentace pro povolení záměru v rozsahu pro podání na dotčené orgány – 30 % z nabídkové ceny za DPZ | '
+        + 'Platba po dokončení dokumentace pro povolení záměru v rozsahu pro podání na stavební úřad – 20 % z nabídkové ceny za DPZ', phs.PROJ_PLATBY_DPZ);
+  }
   const doc = vypln(ph);
   test('vyplněná v4: nenabízené zaměření zmizelo i s nadpisem, DPZ zůstalo', !/PLATEBNÍ PODMÍNKY ZAMĚŘENÍ/.test(doc) && /PLATEBNÍ PODMÍNKY DPZ/.test(doc)
     && /30 % z nabídkové ceny za DPZ/.test(doc), doc.length);

@@ -60,7 +60,9 @@ const sablona = (...symboly) => ({ symboly: new Set(symboly) });
     /^Platba ve výši [\d\s ]+,\d\d Kč \+ DPH proběhne po podpisu smlouvy \/ objednávky\.$/.test((k || '').split('\n')[0]), (k || '').split('\n')[0]);
   const soucet = (k || '').split('\n').map(r => +((/ve výši ([\d\s ]+,\d\d) Kč/.exec(r) || [])[1] || '0').replace(/[\s ]/g, '').replace(',', '.')).reduce((a, b) => a + b, 0);
   test('součet plateb v symbolu = cena díla smlouvy (PROJ_CELKEM_BEZ_DPH)', Math.round(soucet * 100) === Math.round(d.souhrn.bezDph * 100), [soucet, d.souhrn.bezDph]);
-  v.data.kryciProj.planPlateb = { v: 1, prepis: { podpis: 100000, dpz_doss: pl.dopocet.platby.find(x => x.klic === 'dpz_doss').vypocet + (pl.dopocet.platby.find(x => x.klic === 'podpis').vypocet - 100000) } };
+  /* Dorovnává platba „po dokončení DPZ pro stavební úřad" — tu má výchozí
+   * plán (od 1. 10. 2026 Záloha 70 %) i Standard po činnostech. */
+  v.data.kryciProj.planPlateb = { v: 1, prepis: { podpis: 100000, dpz_su: pl.dopocet.platby.find(x => x.klic === 'dpz_su').vypocet + (pl.dopocet.platby.find(x => x.klic === 'podpis').vypocet - 100000) } };
   const d2 = sod.sodProjData(z, v, 'cz', sablona('SODP_PLATEBNI_KALENDAR'));
   test('ruční částka platby jde do smlouvy (součet dorovnaný jinou platbou)', /^Platba ve výši 100[\s ]000,00 Kč/.test(d2.placeholders.SODP_PLATEBNI_KALENDAR), d2.placeholders.SODP_PLATEBNI_KALENDAR);
 }
@@ -98,7 +100,9 @@ const sablona = (...symboly) => ({ symboly: new Set(symboly) });
       !chyba && d && /^[\d\s ]+,\d\d Kč$/.test(d.placeholders.SODP_PLATBA1_KC || ''), chyba || (d && d.placeholders.SODP_PLATBA1_KC));
     test('platba, kterou plán nemá (8 — výběr dodavatele), zůstane jako {{…}}', d && d.placeholders.SODP_PLATBA8_KC === undefined);
   } else test('zkušební zadání bez studie a kolaudace (předpoklad testu)', false, ceny);
-  /* Standard: IČ 30 % „po podání na stavební úřad" stará šablona nemá */
+  /* Výchozí plán (od 1. 10. 2026 Záloha 70 %): platbu „po předání studie
+   * proveditelnosti" stará šablona nemá (Standard by narazil na IČ 30 %
+   * „po získání stanovisek …") */
   const z2 = novaZ(), v2 = z2.varianty[0];
   let chyba2 = '';
   try { sod.sodProjData(z2, v2, 'cz', stara); } catch (e) { chyba2 = e.message; }
@@ -151,6 +155,8 @@ const sablona = (...symboly) => ({ symboly: new Set(symboly) });
   const z = novaZ(), v = z.varianty[0];
   const ctx = (sablona) => ({ zak: z, platbyProj: NP.nabidkaProjPlatby(z, v, 'cz'), sablonaNabidkaProj: sablona || null });
   const kody = (c) => KO.kontrolyProved(c).nalezy.map(n => n.kod);
+  test('zdravý výchozí plán (Záloha 70 %) mlčí', !kody(ctx()).some(k => /^planPlateb/.test(k)), kody(ctx()));
+  v.data.kryciProj.planPlateb = { v: 1, predvolba: 'std' };
   test('zdravý plán (Standard) mlčí', !kody(ctx()).some(k => /^planPlateb/.test(k)), kody(ctx()));
   v.data.kryciProj.planPlateb = { v: 1, cinnosti: { dpz: [{ p: 50, m: 'podpis' }, { p: 40, m: 'dpz_su' }] } };
   let r = KO.kontrolyProved(ctx());
@@ -168,19 +174,29 @@ const sablona = (...symboly) => ({ symboly: new Set(symboly) });
   test('šablona v4 s PROJ_PLATBY_*: varování mlčí',
     kody(ctx({ symboly: ['PROJ_CELKEM_BEZ_DPH', 'PROJ_PLATBY_DPZ'] })).indexOf('planPlatebWordProj') < 0);
   v.data.kryciProj.planPlateb = null;
+  /* Výchozí plán z kódu je od 1. 10. 2026 Záloha 70 % (rozhodnutí J. V.) —
+   * šablona v3 má natvrdo Standard, takže nová zakázka s v3 varuje. */
+  test('šablona v3 + výchozí plán (Záloha 70 %): varování planPlatebWordProj (v3 tiskne Standard)',
+    kody(ctx({ symboly: ['PROJ_CELKEM_BEZ_DPH'] })).indexOf('planPlatebWordProj') >= 0, kody(ctx({ symboly: ['PROJ_CELKEM_BEZ_DPH'] })));
+  test('šablona v4 + výchozí plán: varování mlčí',
+    kody(ctx({ symboly: ['PROJ_CELKEM_BEZ_DPH', 'PROJ_PLATBY_DPZ'] })).indexOf('planPlatebWordProj') < 0);
+  v.data.kryciProj.planPlateb = { v: 1, predvolba: 'std' };
   test('šablona v3 + Standard bez úprav: varování mlčí (v3 tiskne Standard)',
     kody(ctx({ symboly: ['PROJ_CELKEM_BEZ_DPH'] })).indexOf('planPlatebWordProj') < 0);
+  v.data.kryciProj.planPlateb = null;
   /* Šablona v3 tiskne Standard Z KÓDU; firemní Standard ani přepsaný text
    * milníku Word nevytiskne (revize etapy B — do opravy se srovnávalo
    * s firemním Standardem: varování mlčelo, a naopak varovalo u zakázky
    * vrácené přesně na to, co v3 tiskne). */
   const v3 = ['PROJ_CELKEM_BEZ_DPH'];
   const fs3 = JSON.parse(JSON.stringify(PP.PLAN_PROJ_VYCHOZI));
+  fs3.vychozi = 'std';                  // firma s výchozím Standardem (výchozí z kódu je Záloha 70 %)
   fs3.standard.dpz = [{ p: 40, m: 'podpis' }, { p: 40, m: 'dpz_doss' }, { p: 20, m: 'dpz_su' }];
   global.NAST.firma.planPlatebProj = fs3;
   test('šablona v3 + firemní Standard jiný než výchozí: varování planPlatebWordProj',
     kody(ctx({ symboly: v3 })).indexOf('planPlatebWordProj') >= 0, kody(ctx({ symboly: v3 })));
   const ft = JSON.parse(JSON.stringify(PP.PLAN_PROJ_VYCHOZI));
+  ft.vychozi = 'std';
   ft.milniky.find(m => m.id === 'podpis').cz = 'po podpisu smlouvy o dílo';
   global.NAST.firma.planPlatebProj = ft;
   test('šablona v3 + přepsaný text milníku v katalogu: varování', kody(ctx({ symboly: v3 })).indexOf('planPlatebWordProj') >= 0);
