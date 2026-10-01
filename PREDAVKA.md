@@ -65,8 +65,10 @@ xss 215/0, smoke 50/0; mutace jádra --kontrola 131 úseků.
 
 ## Další krok
 - Paralelní větev **`claude/k19-nalezy`** (nálezy 19. kola, P1–P6, z `b5253c9`)
-  běží v samostatném sezení podle promptu J. V. — viz odkaz níž; o sloučení
-  rozhoduje J. V.
+  běží v samostatném sezení podle promptu J. V. (pokyn 1. 10. 2026 „rozběhni
+  následující prompt“): session_01WRbkr4tfxtUB1k8PR37dUR
+  (https://claude.ai/code/session_01WRbkr4tfxtUB1k8PR37dUR). Vlastní
+  `PREDAVKA.md` vede ve své větvi; o sloučení rozhoduje J. V.
 - Čekat na odpovědi J. V. k otevřeným bodům výš.
 
 ## Předchozí stav (1. 10. 2026 dopoledne — v1.10.1 na test-draft i test, v30.9.1 na main)
