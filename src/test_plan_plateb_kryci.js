@@ -141,6 +141,9 @@ for (const sleva of [0, 10]) {
  * upravené. Do opravy se zamčený plán srovnával se Standardem z kódu. */
 {
   const f = JSON.parse(JSON.stringify(PP.PLAN_PROJ_VYCHOZI));
+  /* Firma s výchozí předvolbou Standard — od 1. 10. 2026 je výchozí z kódu
+   * Záloha 70 % (rozhodnutí J. V.), tady jde o firemní Standard. */
+  f.vychozi = 'std';
   f.standard.dpz = [{ p: 40, m: 'podpis' }, { p: 40, m: 'dpz_doss' }, { p: 20, m: 'dpz_su' }];
   global.NAST.firma.planPlatebProj = f;
   const z = novaZ(0), v = z.varianty[0];
@@ -200,9 +203,11 @@ for (const sleva of [0, 10]) {
   const d = kp.kryciProjData(z, v, JEKLY, 'bo');
   const r = [].concat(...d.sekce.map(s => s.radky));
   const hod = (label) => (r.find(x => x[0] === label) || [])[1];
-  test('tisk: „Plán plateb" = Standard po činnostech', hod('Plán plateb') === 'Standard po činnostech', hod('Plán plateb'));
-  test('tisk: DPZ po splátkách, neoceněné ZA „není součástí nabídky"',
-    /^50 % po podpisu smlouvy \/ objednávky · 30 % po dokončení/.test(hod('Plán plateb — DPZ') || '') && hod('Plán plateb — ZA') === 'není součástí nabídky',
+  /* Výchozí plán nové zakázky = Záloha 70 % + zbytek po předání
+   * (rozhodnutí J. V. 1. 10. 2026; do té doby Standard po činnostech). */
+  test('tisk: „Plán plateb" nové zakázky = Záloha 70 % + zbytek po předání', hod('Plán plateb') === 'Záloha 70 % + zbytek po předání', hod('Plán plateb'));
+  test('tisk: DPZ po splátkách 70 % po podpisu + 30 % po předání, neoceněné ZA „není součástí nabídky"',
+    /^70 % po podpisu smlouvy \/ objednávky · 30 % po dokončení dokumentace pro povolení záměru v rozsahu pro podání na stavební úřad$/.test(hod('Plán plateb — DPZ') || '') && hod('Plán plateb — ZA') === 'není součástí nabídky',
     [hod('Plán plateb — DPZ'), hod('Plán plateb — ZA')]);
   test('tisk: platby smlouvy po řádcích „Platba N — milník: částka"', /^Platba 1 — po podpisu smlouvy \/ objednávky: [\d\s ]+,\d\d Kč/.test(hod('Platby smlouvy (z plánu plateb)') || '')
     && (hod('Platby smlouvy (z plánu plateb)') || '').split('\n').length === NP.nabidkaProjPlatby(z, v, 'cz').dopocet.platby.length, hod('Platby smlouvy (z plánu plateb)'));
@@ -221,7 +226,10 @@ for (const sleva of [0, 10]) {
 {
   const F = PP.PLAN_PROJ_VYCHOZI;
   test('Standard → „po milnících jednotlivých činností podle plánu plateb"',
-    PP.planZpusobFakturace(null, F, 'věta firmy') === 'po milnících jednotlivých činností podle plánu plateb');
+    PP.planZpusobFakturace({ predvolba: 'std' }, F, 'věta firmy') === 'po milnících jednotlivých činností podle plánu plateb');
+  test('výchozí plán (zakázka bez předvolby) → „záloha 70 % po podpisu smlouvy, zbytek po předání …"',
+    PP.planZpusobFakturace(null, F, 'věta firmy') === 'záloha 70 % po podpisu smlouvy, zbytek po předání jednotlivých stupňů dokumentace',
+    PP.planZpusobFakturace(null, F, 'věta firmy'));
   test('Záloha 30 % → věta se zálohou', /^záloha 30 % po podpisu smlouvy/.test(PP.planZpusobFakturace({ predvolba: 'zaloha', zaloha: 30 }, F)));
   test('Bez zálohy → „po předání jednotlivých stupňů dokumentace"', PP.planZpusobFakturace({ predvolba: 'zaloha', zaloha: 0 }, F) === 'po předání jednotlivých stupňů dokumentace');
   test('100 % po dokončení stupně → věta z Nastavení → Firma', PP.planZpusobFakturace({ predvolba: 'sto' }, F, 'po odevzdání každého stupně') === 'po odevzdání každého stupně');
@@ -313,7 +321,8 @@ for (const sleva of [0, 10]) {
   test('Q5: „Záloha 70 %" → předvolba Záloha 70 %', r.e.plan.predvolba === 'zaloha' && r.e.plan.zaloha === 70, r.e.plan);
   r = ef({ zaloha: '40 % po podpisu smlouvy' });
   test('Q5: vlastní znění, které předvolba nezná (40 %), se nepřepne — jen ohlásí',
-    PP.planPredvolba(r.e.plan, r.e.firemni) === 'std' && !!r.e.zalohaZeStarych && r.e.zalohaZeStarych.lze === false && r.e.zalohaZeStarych.pct === 40,
+    !r.e.plan.predvolba && PP.planPredvolba(r.e.plan, r.e.firemni) === PP.PLAN_PROJ_VYCHOZI.vychozi
+    && PP.planZalohaEf(r.e.plan, r.e.firemni) === PP.PLAN_PROJ_VYCHOZI.zalohaPct && !!r.e.zalohaZeStarych && r.e.zalohaZeStarych.lze === false && r.e.zalohaZeStarych.pct === 40,
     [r.e.plan, r.e.zalohaZeStarych]);
   r = ef({ zaloha: 'Záloha 30 %' }, { v: 1, predvolba: 'std' });
   test('Q5: plán s vlastní předvolbou se dřívější zálohou nepřepíše', r.e.plan.predvolba === 'std' && !r.e.zalohaZeStarych, r.e.plan);
