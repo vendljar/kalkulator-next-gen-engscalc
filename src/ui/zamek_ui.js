@@ -43,7 +43,7 @@ const ZAMEK_CHRANENE = [
   'oplRezimSet', 'oplCelaVyskaSet', 'oplOdSet', 'oplPasSet', 'oplPasPridej', 'oplPasSmaz',
   /* Světlíky na bocích dveří (#375, 30. 9. 2026): před zápisem převádějí
    * starší zadání na nový tvar mimo `set()` — zámek musí stát před tím. */
-  'bokyDveriSet', 'bokyKsSet', 'bokyKsZpet',
+  'bokyDveriSet', 'bokyKsSet', 'bokyKsZpet', 'cenikPopisDoZakazky',
   'priplatekNabidka', 'priplatekVlastniAdd', 'priplatekVlastniDel',
   'priplatekVlastniSet', 'priplatekDoCeniku',
   'sirotciUklidVse', 'sirotekUklid',

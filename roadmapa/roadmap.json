@@ -6016,6 +6016,31 @@
     }
    ],
    "cekaNa" : "J. V. — odsouhlasit návrh pole „Šířka bočního světlíku“ (artefakt 1. 10. 2026)"
+  },
+  {
+   "id" : "382",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "S",
+   "hotovoV" : "v1.10.1",
+   "nazev" : "Dodatkové texty: číselník má přednost před textem zveřejněného ceníku",
+   "proc" : "Hlášení J. V. 1. 10. 2026: „Ještě zkontroluj proč se mi při načtení nové zakázky nepropisuje dodatkový text přestože v ceníku ho mám … Tento problém eviduju jen v testu, v main text propsaný mám. ale možná je to jen náhoda díky nějaké historické posloupnosti.“",
+   "detail" : "HOTOVO (větev claude/ciselnik-prednost-dodatku): příčina — popisyVlij vlévala číselník do výchozího ceníku jen tam, kde zveřejněný ceník vlastní text neměl (rozhodnutí 22. 9., před zavedením číselníku 25. 9.); zveřejněný ceník v testu nesl u SKN starší krátký text. Nově má číselník přednost, text ceníku zůstává náhradou; číselník ukáže odlišný text zveřejněného ceníku a nabídne „použít text z číselníku v otevřené zakázce“; překlady staré věty se zahodí. Testy: test_cenik_popisy.js (4 z 28 → 28 OK), overit_popisy_prednost.mjs (5 z 9 → 11 OK).",
+   "hotovoKdyz" : "Nová zakázka dostane text z číselníku i při jiném textu ve zveřejněném ceníku; test před → po opravě.",
+   "kde" : "`src/cenik.js` (popisyVlij), `src/ui/online_ui.js` (onlinePopisyVlijZnovu), `src/ui/cenik_ui.js` (číselník)",
+   "zavisi" : [
+    {
+     "id" : "267",
+     "typ" : "doporuceno",
+     "proc" : "společné dodatkové texty"
+    },
+    {
+     "id" : "379",
+     "typ" : "doporuceno",
+     "proc" : "překlady dodatkových textů"
+    }
+   ]
   }
  ],
  "meta" : {

@@ -441,18 +441,39 @@ function popisJazykySrovnej(cenik, klic, spolecneTexty, spolecneJazyky) {
   popisyJazykyDoplnChybejici(cenik, { [k]: spolecneTexty[k] }, spolecneJazyky ? { [k]: spolecneJazyky[k] } : null);
 }
 
-/* Vlije texty do ceníku (na místě), ale JEN tam, kde ceník vlastní text
- * nemá. Zveřejněný ceník je konkrétnější zdroj: kdyby ho společná mapa
- * přebila, správce by změnu textu ve zveřejněné verzi nikdy neprosadil.
- * Jazykové varianty (#379) jdou za českým textem: jen k položce, jejíž
- * český text v ceníku je týž jako společný. */
-function popisyVlij(cenik, texty, jazyky) {
+/* Vlije společné texty (číselník, `/api/popisy`) do VÝCHOZÍHO ceníku, ze
+ * kterého si je odnese každá nová zakázka.
+ *
+ * Do 1. 10. 2026 se vlévaly JEN tam, kde zveřejněný ceník vlastní text
+ * neměl („zveřejněná verze je konkrétnější zdroj", 22. 9. 2026). Od 25. 9.
+ * je ale místem pro tyhle texty číselník — „trvale uložený pro celou
+ * aplikaci, nezávisle na zakázce i na verzi ceníku" — a starší text, který
+ * si zveřejněný ceník nesl s sebou, ho tiše přebíjel. Hlášení J. V.
+ * 1. 10. 2026: „při načtení nové zakázky se nepropisuje dodatkový text
+ * přestože v ceníku ho mám" — v testu nesl zveřejněný ceník u SKN starší
+ * krátký text a každá nová zakázka dostala ten místo věty z číselníku.
+ *
+ * Proto má číselník PŘEDNOST: kde má text, platí jeho znění; text
+ * zveřejněného ceníku zůstává jen náhradou u položek, pro které číselník
+ * nic nemá (nic se tím neztratí). Přepsaný text zveřejněného ceníku se
+ * zapíše do `odlisne` (klíč → text), aby ho číselník ukázal. Jazykové
+ * varianty přepsaného textu patřily jiné větě — zahodí se a doplní se ty
+ * z číselníku (#379). Rozpracované a odeslané zakázky se tím nemění: mají
+ * vlastní kopii ceníku. */
+function popisyVlij(cenik, texty, jazyky, odlisne) {
   if (!cenik) return cenik;
   const t = popisyOciste(texty);
   if (!cenik.popisy) cenik.popisy = {};
+  const pj = () => cenik.popisyJazyky && typeof cenik.popisyJazyky === 'object';
   Object.keys(t).forEach(k => {
-    if (typeof cenik.popisy[k] !== 'string' || !cenik.popisy[k].trim()) cenik.popisy[k] = t[k];
+    const puv = (typeof cenik.popisy[k] === 'string') ? cenik.popisy[k].trim() : '';
+    if (puv === t[k]) return;
+    if (puv && odlisne && typeof odlisne === 'object' && !Object.prototype.hasOwnProperty.call(odlisne, k))
+      odlisne[k] = puv;
+    cenik.popisy[k] = t[k];
+    if (pj()) delete cenik.popisyJazyky[k];
   });
+  if (pj() && !Object.keys(cenik.popisyJazyky).length) delete cenik.popisyJazyky;
   if (jazyky) popisyJazykyDoplnChybejici(cenik, t, jazyky);
   return cenik;
 }

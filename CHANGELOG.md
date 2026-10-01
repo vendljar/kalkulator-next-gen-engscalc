@@ -8,6 +8,35 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## (připraveno pro v1.10.x) — dodatkové texty: číselník má přednost před zveřejněným ceníkem (1. 10. 2026)
+
+Hlášení J. V. 1. 10. 2026: „proč se mi při načtení nové zakázky nepropisuje
+dodatkový text přestože v ceníku ho mám … Tento problém eviduju jen v testu,
+v main text propsaný mám." Větev `claude/ciselnik-prednost-dodatku`
+z integrační `claude/davka-1-10`; roadmapa #382.
+
+- **Příčina:** dodatkové texty mají dva zdroje — číselník (`/api/popisy`)
+  a kopii ve zveřejněném ceníku. `popisyVlij` vlévala číselník do výchozího
+  ceníku jen tam, kde zveřejněný ceník vlastní text neměl (rozhodnutí
+  22. 9. 2026, ještě před zavedením číselníku). Zveřejněný ceník v testu nese
+  u SKN starší krátký text, takže každá nová zakázka dostala ten a dlouhá
+  věta z číselníku se nepropsala; v ostrém ceníku tam text zřejmě není,
+  proto to ostrá verze nevykazuje. Úprava textu v číselníku platila jen do
+  obnovení stránky.
+- **Oprava:** číselník má přednost (jak slibuje jeho popis „nezávisle na
+  verzi ceníku"); text zveřejněného ceníku zůstává náhradou u položek, pro
+  které číselník text nemá. Překlady staré věty se u přepsaného textu
+  zahodí a doplní se ty z číselníku (#379). Rozpracované a odeslané
+  zakázky se nemění (mají vlastní kopii).
+- **Číselník** ukáže, když zveřejněný ceník nese jiný text, a u otevřené
+  zakázky s jiným textem nabídne tlačítko **použít text z číselníku
+  v otevřené zakázce** (jen rozpracovaná varianta; zámek a náhled hlídá
+  ZAMEK_CHRANENE).
+- **Testy:** `src/test_cenik_popisy.js` (přednost číselníku, náhrada ceníku,
+  záznam odlišných textů, překlady) — před opravou 4 z 28 selhaly, po opravě
+  28 OK; nový `overit_popisy_prednost.mjs` — před opravou 5 z 9 selhalo, po
+  opravě 11 OK. Příručka (kapitola o dodatkových textech).
+
 ## (připraveno pro v1.10.x) — Model 2 neubírá montáž u nadsvětlíku „bez“ (1. 10. 2026)
 
 Zadání J. V. 1. 10. 2026: „v modelu 2 přestaň ubírat 0,2h montáže na

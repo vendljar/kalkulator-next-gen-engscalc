@@ -157,14 +157,30 @@ const test = (n, cond, info) => {
   test('počet položek má strop',
     Object.keys(ck.popisyOciste(mnoho)).length === ck.POPISY_MAX_POLOZEK);
 
-  /* PŘEDNOST MÁ ZVEŘEJNĚNÝ CENÍK. Kdyby ho společná mapa přebila, správce by
-   * změnu textu ve zveřejněné verzi nikdy neprosadil — mapa by ji přepsala
-   * při každém přihlášení. */
-  const cenik = { popisy: { 'Sklo VSG': 'z ceníku' } };
-  ck.popisyVlij(cenik, { 'Sklo VSG': 'ze společné mapy', 'Madlo': 'nový text' });
-  test('ceník má přednost před společnou mapou', cenik.popisy['Sklo VSG'] === 'z ceníku',
-    cenik.popisy['Sklo VSG']);
+  /* PŘEDNOST MÁ ČÍSELNÍK (od 1. 10. 2026). Do té doby ji měl zveřejněný
+   * ceník — a starší text, který si nesl, tiše přebíjel číselník: hlášení
+   * J. V. 1. 10. 2026 „při načtení nové zakázky se nepropisuje dodatkový
+   * text přestože v ceníku ho mám" (test: zveřejněný ceník nesl u SKN
+   * krátký text, číselník celou větu). Text ceníku zůstává náhradou tam,
+   * kde číselník nic nemá. Před opravou tyto testy selžou (ceník vyhrál). */
+  const cenik = { popisy: { 'Sklo VSG': 'z ceníku', 'Sklo SKN': 'Provedení vnějších skel', 'Jen v ceníku': 'zůstane' },
+    popisyJazyky: { 'Sklo SKN': { de: 'Alte Übersetzung' } } };
+  const odlisne = {};
+  ck.popisyVlij(cenik, { 'Sklo VSG': 'ze společné mapy', 'Madlo': 'nový text',
+    'Sklo SKN': 'Provedení vnějších skel opláštění šachty (ukázková věta)' }, null, odlisne);
+  test('číselník má přednost před textem zveřejněného ceníku', cenik.popisy['Sklo VSG'] === 'ze společné mapy'
+    && cenik.popisy['Sklo SKN'] === 'Provedení vnějších skel opláštění šachty (ukázková věta)', cenik.popisy);
   test('co ceník nemá, se doplní', cenik.popisy['Madlo'] === 'nový text');
+  test('text ceníku zůstává tam, kde číselník nic nemá', cenik.popisy['Jen v ceníku'] === 'zůstane');
+  test('přepsané texty zveřejněného ceníku se vrátí k zobrazení v číselníku',
+    odlisne['Sklo VSG'] === 'z ceníku' && odlisne['Sklo SKN'] === 'Provedení vnějších skel'
+      && !('Madlo' in odlisne) && !('Jen v ceníku' in odlisne), odlisne);
+  test('překlad staré věty ceníku se u přepsaného textu zahodí', !cenik.popisyJazyky || !cenik.popisyJazyky['Sklo SKN'],
+    cenik.popisyJazyky);
+  const znovu = {};
+  ck.popisyVlij(cenik, { 'Sklo VSG': 'ze společné mapy' }, null, znovu);
+  test('opakované vlití stejného textu nic nemění ani nehlásí', Object.keys(znovu).length === 0
+    && cenik.popisy['Sklo VSG'] === 'ze společné mapy', znovu);
 
   /* Ceník bez mapy popisů je běžný stav (starší zveřejněná verze). */
   const prazdny = {};

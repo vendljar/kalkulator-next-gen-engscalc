@@ -359,15 +359,26 @@ function cenikPopisyKarta() {
   const radek = (r) => {
     const t = texty[r.klic] || '';
     const tz = zak[r.klic];
+    /* Otevřená zakázka má jiný text: ukázat ho a nabídnout převzetí textu
+     * z číselníku (jen rozpracovaná varianta; 1. 10. 2026). */
+    const lzePrevzit = t && typeof cenikPopisDoZakazkyLze === 'function' && cenikPopisDoZakazkyLze();
     const jinde = (typeof tz === 'string' && tz !== t)
-      ? `<div class="note" style="margin:2px 0">V otevřené zakázce: ${tz ? '„' + esc(tz) + '"' : '<i>vědomě bez textu</i>'}</div>` : '';
+      ? `<div class="note" style="margin:2px 0">V otevřené zakázce: ${tz ? '„' + esc(tz) + '"' : '<i>vědomě bez textu</i>'}${lzePrevzit
+        ? ` <button class="mini noprint" onclick="cenikPopisDoZakazky('${keyAttr(r.klic)}')"
+            title="nahradit text otevřené zakázky textem z číselníku">použít text z číselníku v otevřené zakázce</button>` : ''}</div>` : '';
+    /* Zveřejněný ceník nese u položky jiný (starší) text — do nových zakázek
+     * jde od 1. 10. 2026 text z číselníku (popisyVlij). */
+    const zCen = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.popisyZCeniku) ? ONLINE_STAV.popisyZCeniku[r.klic] : '';
+    const jinyCenik = (zCen && zCen !== t)
+      ? `<div class="note" style="margin:2px 0">Zveřejněný ceník má u položky jiný text: „${esc(zCen)}" —
+          do nových zakázek jde text z číselníku${t ? '' : ' (číselník je prázdný, platí text ceníku)'}.</div>` : '';
     const pole = admin
       ? `<input type="text" style="width:100%" value="${esc(t)}" maxlength="${POPISY_MAX_TEXT}"
            placeholder="dodatkový text do cenové nabídky (nepovinné)"
            onchange="cenikPopisUlozCis('${keyAttr(r.klic)}', this.value)">`
       : (t ? esc(t) : '<span class="note">—</span>');
     return `<tr><td class="c-nazev">${esc(r.klic)}<div class="note" style="margin:0">${esc(r.skupina)}
-        · ${esc(r.typy.join(' + '))}</div></td><td>${pole}${cenikPopisJazykyHtml(r.klic, t, admin)}${jinde}${cenikPopisyKandidati(r.klic, admin)}</td></tr>`;
+        · ${esc(r.typy.join(' + '))}</div></td><td>${pole}${cenikPopisJazykyHtml(r.klic, t, admin)}${jinde}${jinyCenik}${cenikPopisyKandidati(r.klic, admin)}</td></tr>`;
   };
   const osirele = cis.osirele.length ? `<tr><th colspan="2">Texty k položkám, které výpočet už nezná
       (přejmenované nebo zrušené) — nic se nemaže, rozhodněte sami</th></tr>`
@@ -439,6 +450,28 @@ function cenikPopisJazykUlozCis(klic, jazyk, text) {
     render();
     return ok;
   });
+}
+
+/* Převzetí textu z číselníku do OTEVŘENÉ zakázky (1. 10. 2026). Zakázka
+ * založená dřív nese vlastní kopii textu, kterou číselník nepřepisuje
+ * („vlastní text zakázky se nepřepisuje") — tímhle tlačítkem ji obchodník
+ * nebo správce srovná vědomě. Jen rozpracovaná varianta (zámek, náhled). */
+function cenikPopisDoZakazkyLze() {
+  if (typeof ZAK === 'undefined' || !ZAK || typeof C === 'undefined' || !C) return false;
+  const v = aktivniVarianta(ZAK);
+  return !((typeof variantaUzamcena === 'function') && variantaUzamcena(v));
+}
+function cenikPopisDoZakazky(klic) {
+  if (typeof zamekStop === 'function' && zamekStop()) return;
+  if (!cenikPopisDoZakazkyLze()) return;
+  const spol = cenikPopisySpolecne();
+  const t = String(spol[klic] || '').trim();
+  if (!t || typeof cenikPopisNastav !== 'function') return;
+  cenikPopisNastav(C, klic, t);
+  if (typeof popisJazykySrovnej === 'function')
+    popisJazykySrovnej(C, klic, spol, (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.popisy && ONLINE_STAV.popisy.jazyky) || null);
+  aktivniVarianta(ZAK).upraveno = new Date().toISOString();
+  render();
 }
 
 function cenikPopisySber() {

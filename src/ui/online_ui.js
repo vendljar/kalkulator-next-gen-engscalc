@@ -784,11 +784,16 @@ function onlineNactiPopisy() {
  * stalo pokaždé: každá nová zakázka až do dalšího přihlášení vznikala bez
  * textů. Proto se vlévají i na konci `progPouzij`, tedy po každé výměně —
  * pořadí požadavků pak nerozhoduje. */
-function onlinePopisyVlijZnovu() {
+function onlinePopisyVlijZnovu(cerstvy) {
   if (typeof popisyVlij !== 'function' || typeof DEFAULT_CENIK === 'undefined') return false;
   if (!ONLINE_STAV.popisy) return false;
   /* S jazykovými variantami (#379, K18-N96) — jdou jen k týmž českým textům. */
-  popisyVlij(DEFAULT_CENIK, ONLINE_STAV.popisy.texty, ONLINE_STAV.popisy.jazyky || null);
+  /* Číselník má přednost před textem zveřejněného ceníku (1. 10. 2026);
+   * texty, kterými se zveřejněný ceník liší, si pamatuje ONLINE_STAV.popisyZCeniku
+   * — ukazuje je číselník. `cerstvy` = výchozí ceník se právě vyměnil za
+   * zveřejněný (progPouzij), seznam se sestaví znovu. */
+  if (cerstvy || !ONLINE_STAV.popisyZCeniku) ONLINE_STAV.popisyZCeniku = {};
+  popisyVlij(DEFAULT_CENIK, ONLINE_STAV.popisy.texty, ONLINE_STAV.popisy.jazyky || null, ONLINE_STAV.popisyZCeniku);
   return true;
 }
 

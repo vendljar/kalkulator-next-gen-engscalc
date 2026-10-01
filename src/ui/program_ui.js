@@ -161,7 +161,7 @@ function progPouzij(zaznam) {
    * `konfigNahradVMiste` výš je z výchozího ceníku smazala. Dřív než
    * srovnání otevřené zakázky níž, ať s výchozím ceníkem nic nepracuje
    * v neúplném stavu. */
-  if (typeof onlinePopisyVlijZnovu === 'function') onlinePopisyVlijZnovu();
+  if (typeof onlinePopisyVlijZnovu === 'function') onlinePopisyVlijZnovu(true);
   progSrovnejNedotcene({ verze: zaznam.verze, platnoOd: zaznam.platnoOd || '' });
 }
 
