@@ -92,6 +92,12 @@ const PLAN_PROJ_PREDVOLBY_NAZVY = { std: 'Standard po činnostech', zaloha: 'Zá
   sto: '100 % po dokončení stupně', vlastni: 'Vlastní' };
 /* Pořadí ručních splátek starší šablony SoD PROJ (sodpPlatba1–8, krycí list). */
 const PLAN_SODP_STARE = ['podpis', 'za_vystupy', 'dpz_doss', 'dpz_su', 'ic_povoleni', 'dps_predani', 'ezc_predani', 'vyber'];
+/* K čemu patří věta každé z osmi pevných plateb staré šablony SoD PROJ
+ * (K18-N101, 1. 10. 2026): platba po podpisu ke všemu, ostatní k činnosti,
+ * o které věta mluví (výběr dodavatele navazuje na ekonomickou zadávací
+ * část). Nenabízená činnost větu ve smlouvě mít nesmí. */
+const PLAN_SODP_STARE_CINNOST = { podpis: null, za_vystupy: 'zamereni', dpz_doss: 'dpz', dpz_su: 'dpz',
+  ic_povoleni: 'ic', dps_predani: 'dps', ezc_predani: 'ezc', vyber: 'ezc' };
 
 function planFiremni(f) {
   const ok = f && typeof f === 'object' && Array.isArray(f.milniky) && f.standard && f.predani;
@@ -471,7 +477,7 @@ function planPlatebFirmaCisty(f) {
 if (typeof module !== 'undefined')
   module.exports = { PLAN_PROJ_SEKCE, PLAN_PROJ_PREDVOLBY, PLAN_PROJ_ZALOHY, PLAN_PROJ_MILNIKY, PLAN_PROJ_VYCHOZI,
     PLAN_PROJ_ZKRATKY, PLAN_PROJ_NAZVY, PLAN_PROJ_PREDVOLBY_NAZVY,
-    PLAN_SODP_STARE, planFiremni, planFirmaPlan, planPct, planPredvolba, planMilnikText, planRadkyCinnosti, planPlatebDopocet,
+    PLAN_SODP_STARE, PLAN_SODP_STARE_CINNOST, planFiremni, planFirmaPlan, planPct, planPredvolba, planMilnikText, planRadkyCinnosti, planPlatebDopocet,
     planZalohaZeStarych,
     planPlatebKontrola, planCastkaZTextu, planPlatebZeStarych, planPlatebFirmaVady, planPlatebFirmaCisty,
     planPlatebVarianty, planPlatebSnimek, planCinnostUpravena, planUpraveno, planZalohaEf, planPopisPredvolby,

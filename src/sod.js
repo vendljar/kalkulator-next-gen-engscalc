@@ -129,16 +129,57 @@ function sodProjData(zak, varianta, lang, sablona) {
  * Odeslaná nabídka z doby před plánem (`stary`) nese ruční splátky jako dřív
  * (SODP_PLATBAn_KC z krycího listu) a nová šablona z nich dostane seznam
  * plateb větou s milníky osmi pevných plateb staré šablony (revize etapy B,
- * 30. 9. 2026). Prázdný seznam symbol neplní — zůstane ve Wordu vidět. */
+ * 30. 9. 2026). Prázdný seznam symbol neplní — zůstane ve Wordu vidět.
+ *
+ * K18-N101 (ostrá v30.9.1, P18 bez zaměření; 1. 10. 2026): součet plateb se
+ * se šablonou v ruce kontroluje proti ceně díla vždy (plán i ruční splátky
+ * odeslané nabídky) a věta staré šablony o platbě, kterou zakázka nemá,
+ * zmizí celá (`odstavcePryc` → docxgen). Ruční splátka k nenabízené
+ * činnosti smlouvu zastaví s vysvětlením. */
 function sodProjPlatby(d, sablona) {
   const pl = d && d.platbyProj;
   if (!pl || typeof planSodKalendar !== 'function') return;
+  const sym = sablona && sablona.symboly;
+  const ma = (k) => !!sym && (typeof sym.has === 'function' ? sym.has(k) : Array.from(sym).indexOf(k) >= 0);
+  /* STARÁ ŠABLONA = osm pevných vět s milníky, bez seznamu plateb. Bez
+   * informace o šabloně (online náhled, testy) se nic neodmítá ani nemaže. */
+  const stara = !!sym && !ma('SODP_PLATEBNI_KALENDAR')
+    && PLAN_SODP_STARE.some((m, i) => ma('SODP_PLATBA' + (i + 1) + '_KC'));
+  const kcFmt = (n) => (+n || 0).toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Kč';
+  const nabizi = (m) => { const k = PLAN_SODP_STARE_CINNOST[m]; return !k || +((pl.ceny || {})[k]) > 0; };
+  const odstavcePryc = [];
   if (pl.stary) {
     const radky = PLAN_SODP_STARE.map((m, i) => {
       const kc = d.placeholders['SODP_PLATBA' + (i + 1) + '_KC'];
-      return kc ? { castka: kc, text: planMilnikText({ m }, PLAN_PROJ_VYCHOZI) } : null;
+      return kc ? { castka: kc, text: planMilnikText({ m }, PLAN_PROJ_VYCHOZI), m, i } : null;
     }).filter(Boolean);
     if (radky.length) d.placeholders.SODP_PLATEBNI_KALENDAR = planSodKalendar({ platby: radky }, x => String(x));
+    if (sym) {
+      /* K18-N101: ruční splátka u činnosti, kterou nabídka nemá, by ve
+       * smlouvě nesla větu o cizí práci („… při předání 2D výstupů ze
+       * zaměření" u projekce bez zaměření). */
+      const cizi = radky.filter(r => !nabizi(r.m));
+      if (cizi.length)
+        throw new Error('Smlouva o dílo PROJ nevznikne: ruční splátka ' + cizi.map(r => (r.i + 1) + ' (' + r.castka + ', „' + r.text + '")').join(', ')
+          + ' patří k činnosti, kterou nabídka nemá. Opravte splátky v krycím listu PROJ (Smlouva o dílo — splátky).');
+      /* Součet ručních splátek = cena díla (K18-N101; v korunách — ruční
+       * částky jsou v Kč, cizojazyčný dokument se nekontroluje). */
+      if (radky.length && !pl.eur) {
+        const necitelne = radky.filter(r => planCastkaZTextu(r.castka) === null);
+        const soucet = radky.reduce((a, r) => a + (planCastkaZTextu(r.castka) || 0), 0);
+        const cena = Object.keys(pl.ceny || {}).reduce((a, k) => a + (+pl.ceny[k] || 0), 0);
+        if (necitelne.length || Math.round(soucet * 100) !== Math.round(cena * 100))
+          throw new Error('Smlouva o dílo PROJ nevznikne: '
+            + (necitelne.length ? 'ruční splátku ' + necitelne.map(r => '„' + r.castka + '"').join(', ') + ' nejde přečíst jako částku v Kč'
+              : 'součet ručních splátek (' + kcFmt(soucet) + ') nesouhlasí s cenou díla (' + kcFmt(cena) + ')')
+            + '. Opravte splátky v krycím listu PROJ (Smlouva o dílo — splátky).');
+      }
+      /* Věta nenabízené činnosti ze staré šablony zmizí. */
+      if (stara) PLAN_SODP_STARE.forEach((m, i) => {
+        if (!nabizi(m) && !d.placeholders['SODP_PLATBA' + (i + 1) + '_KC']) odstavcePryc.push('SODP_PLATBA' + (i + 1) + '_KC');
+      });
+    }
+    if (odstavcePryc.length) d.odstavcePryc = odstavcePryc;
     return;
   }
   const fmt = (pl.mena && pl.mena.fmt) || null;
@@ -146,13 +187,27 @@ function sodProjPlatby(d, sablona) {
   if (kalendar) d.placeholders.SODP_PLATEBNI_KALENDAR = kalendar;
   const stare = planSodStareSymboly(pl.dopocet, fmt);
   Object.assign(d.placeholders, stare.symboly);
-  const sym = sablona && sablona.symboly;
-  const ma = (k) => !!sym && (typeof sym.has === 'function' ? sym.has(k) : Array.from(sym).indexOf(k) >= 0);
-  if (sym && !ma('SODP_PLATEBNI_KALENDAR') && stare.navic.length)
+  if (!sym) return;
+  /* Součet plateb = cena díla i bez kontroly před dokumentem (K18-N101).
+   * Zábrana planPlatebSoucet totéž ukáže předem a zastaví tlačítko; tady je
+   * pojistka builderu, ať smlouva s jiným součtem nevznikne žádnou cestou. */
+  if (pl.dopocet && !pl.dopocet.sedi) {
+    const f = fmt || kcFmt;
+    throw new Error('Smlouva o dílo PROJ nevznikne: součet plateb (' + f(pl.dopocet.soucet) + ') nesouhlasí s cenou díla ('
+      + f(pl.dopocet.cena) + '). Upravte ruční částky v krycím listu PROJ (Plán plateb) nebo vraťte dopočet (↺).');
+  }
+  if (stara && stare.navic.length)
     throw new Error('Šablona smlouvy o dílo PROJ má jen osm pevných plateb ({{SODP_PLATBA1_KC}} … {{SODP_PLATBA8_KC}}) '
       + 'a plán plateb má platby, které v ní nejsou (' + stare.navic.map(x => x.text || x.klic).join('; ') + '). '
       + 'Smlouva by nesouhlasila s nabídkou ani s cenou díla. Nahrajte šablonu SoD PROJ se seznamem plateb '
       + '{{SODP_PLATEBNI_KALENDAR}} (Nastavení → Smlouvy / Šablony), nebo upravte plán plateb v krycím listu PROJ.');
+  /* Pevná věta staré šablony, ke které plán platbu nemá (nenabízená činnost,
+   * předvolba bez té platby), zmizí celá — v dokumentu by zůstala věta
+   * o práci, která se neplatí, s {{…}} místo částky (K18-N101). */
+  if (stara) {
+    PLAN_SODP_STARE.forEach((m, i) => { const k = 'SODP_PLATBA' + (i + 1) + '_KC'; if (!(k in stare.symboly)) odstavcePryc.push(k); });
+    if (odstavcePryc.length) d.odstavcePryc = odstavcePryc;
+  }
 }
 
 /* Plná moc — vyřizuje se pro OBJEKT (povolení, jednání s úřady), ne pro
