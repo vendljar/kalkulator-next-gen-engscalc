@@ -6569,7 +6569,12 @@
   {
    "text" : "29. 9. 2026 (engscalc, test-draft), v29.9.4 — sloučení větví claude/pensive-curie-s6yzs3 (testovací sekvence A1–A5 + opravy B72/P4, B75–B78, N43 na serveru; #371, ve větvi #364) a claude/stoic-cerf-j915ax (#372) do test-draft na pokyn J. V.; razítko upravilJmeno (P7) přeneseno do společné kontroly uložení. Rozhodnutí J. V. k platebním podmínkám zapsaná (návrh, oddíl 7): pořadí etap B → A → C, číslo smlouvy ručním polem; #366 a #367 odblokované. Ověřeno celým kolem: VŠE ZELENÉ — sady 193 prošlo, 0 selhalo, 3 přeskočeno z 196; mutace jádra 80/80, serveru 192/192; statické kontroly 3/3 (47 min).",
    "hotovo" : true
-  }
+  },
+   {
+    "text" : "1. 10. 2026 (engscalc, test-draft + test), v1.10.1 — dávka 1. 10.: Model 2 nadsvětlík „bez“ (#378), zábrany blokují dokumenty (#377), překlady dodatkových textů K18-N96 (#379), SoD podle aktuálních šablon + K18-N100/N101 + rozhodnutí J. V. (#380), šířka bočního světlíku jen Model 2 (#381), číselník dodatkových textů má přednost (#382). Integrace claude/davka-1-10, převod do test-draft a test na pokyn J. V.",
+    "hotovo" : true,
+    "pozn" : "Celé kolo nad a7889c5 VŠE ZELENÉ (sady 210/0/1, jádro 121/121, server 210/210); finální nad d596290 sady 214/0/1, jádro 128/128, server dobíhá."
+   }
   ],
   "pravidla" : [
    "GitHub (INFRA-14), rosti.cz (INFRA-15) a Apps Script se bez výslovného pokynu nespouští ani neaktualizují.",
@@ -6655,8 +6660,8 @@
     "id" : "F"
    }
   ],
-  "build" : "v30.9.3 (engscalc)",
-  "stavKDatu" : "30. 9. 2026"
+  "build" : "v1.10.1 (engscalc)",
+  "stavKDatu" : "1. 10. 2026"
  },
  "_comment" : [
   "JEDINÝ ZDROJ PRAVDY pro roadmapu Kalkulátoru Next Gen.",

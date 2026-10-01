@@ -18,7 +18,7 @@ nepropisoval. Každý úkol vlastní větev z `test-draft` (643faa8), integrace
 `claude/davka-1-10`, převod do `test-draft` a `test` rychlým posunem.
 Roadmapa #377–#382.
 
-**Ověřeno celým kolem** nad d596290: __KOLO__.
+**Ověřeno celým kolem** nad d596290: finální kolo nad d596290 — sady 214 prošlo, 0 selhalo, 1 přeskočeno (test.js), mutace jádra 128 z 128; na pokyn J. V. „potřeboval bych to už odeslat do testu" převedeno ještě před doběhnutím mutací serveru (výsledek se dopíše); předchozí celé kolo nad a7889c5 (úkoly 1–4 bez SoD rozhodnutí, #381 a #382) VŠE ZELENÉ: sady 210/0/1, mutace jádra 121 z 121, serveru 210 z 210, statické 3 z 3.
 
 ### Dodatkové texty: číselník má přednost před zveřejněným ceníkem
 

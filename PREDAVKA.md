@@ -3,7 +3,7 @@
 Na `main`: **v30.9.1**. Na `test-draft` = `test`: **v1.10.1** (pokyn J. V.
 1. 10. 2026: „s návrhem šířky bočního světlíku souhlasím, zapracuj ho pro
 model 2 (modelu 1 nic neměň) a vše pošli do testu"). Převod rychlým posunem
-z integrační větve `claude/davka-1-10` po zeleném celém kole (__KOLO__).
+z integrační větve `claude/davka-1-10` po zeleném celém kole (finální kolo nad d596290 — sady 214 prošlo, 0 selhalo, 1 přeskočeno (test.js), mutace jádra 128 z 128; na pokyn J. V. „potřeboval bych to už odeslat do testu" převedeno ještě před doběhnutím mutací serveru (výsledek se dopíše); předchozí celé kolo nad a7889c5 (úkoly 1–4 bez SoD rozhodnutí, #381 a #382) VŠE ZELENÉ: sady 210/0/1, mutace jádra 121 z 121, serveru 210 z 210, statické 3 z 3).
 Releasy vydané do **v30.9.4** včetně (ověřeno přes GitHub 1. 10.); odkaz na
 release **v1.10.1** poslán J. V. (tag z cloudu pushnout nejde — HTTP 403).
 Sezení 1. 10. navázalo na session_01XFo3AzDzkjt8xGnMVH53p7.
