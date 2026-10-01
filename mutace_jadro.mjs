@@ -104,6 +104,10 @@ function najdiSady() {
  *   proc   … co by se v praxi pokazilo, kdyby tuhle chybu někdo udělal doopravdy
  * ============================================================ */
 const MUTACE = [
+  { nazev: 'K18-N101: věta staré šablony SoD PROJ o zaměření patří ke všemu', soubor: 'plan_plateb.js',
+    hledej: "const PLAN_SODP_STARE_CINNOST = { podpis: null, za_vystupy: 'zamereni', dpz_doss: 'dpz', dpz_su: 'dpz',",
+    nahrad: "const PLAN_SODP_STARE_CINNOST = { podpis: null, za_vystupy: null, dpz_doss: 'dpz', dpz_su: 'dpz',",
+    proc: 'smlouva PROJ bez zaměření by dostala větu „… při předání 2D výstupů ze zaměření" (K18-N101)' },
   /* ---------- K18-N92: cena činnosti ve Wordu PROJ (30. 9. 2026) ---------- */
   { nazev: 'K18-N92: šablona bez symbolu ceny nabízené činnosti se nepozná', soubor: 'kontroly.js',
     hledej: '    return !ma.some(x => symboly.indexOf(x) >= 0);',
