@@ -420,7 +420,8 @@ function renderDetail() {
   /* 11–13) cenové sekce, rezerva, souhrn */
   const sekceBlok = (nazev, rows, sum) => {
     const rr = rows.map(x =>
-      `<tr><td>${esc(x.nazev)}</td><td class="val">${M(x.mnozstvi, 3)} × ${K(x.cena)}${x.fix ? ' + fix ' + K0(x.fix) : ''}</td>
+      /* P3 (K19-N105): množství PRÁCE / TMELENÍ z ručně přepsané plochy skla. */
+      `<tr><td>${esc(x.nazev)}${x.zPrepisuSkla ? ' <span class="note">(z ručně přepsané plochy skla)</span>' : ''}</td><td class="val">${M(x.mnozstvi, 3)} × ${K(x.cena)}${x.fix ? ' + fix ' + K0(x.fix) : ''}</td>
        <td class="val">${K(x.naklad)}</td><td class="val">+ ${K(x.marze)}</td><td class="val">${K(x.sMarzi)}</td></tr>`).join('');
     return `<div style="font-weight:700;margin:10px 0 4px">${esc(nazev)}</div>
       <table class="dv"><tr class="f"><td>Položka</td><td class="val">Množství × jedn. cena</td><td class="val">Náklad</td><td class="val">Přirážka</td><td class="val">vč. přirážky</td></tr>

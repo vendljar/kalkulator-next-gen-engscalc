@@ -1431,10 +1431,33 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   /* Plocha, ze které se počítá PRÁCE a TMELENÍ: po celé ploše (J. V.), tedy
    * i přes typy — ale bez stěn, které nedodáváme. Světlíky u dveří k ní
    * patří (sklo i deska jsou naše opláštění). */
+  /* RUČNÍ PŘEPIS PLOCHY SKLA POSUNE I PRÁCI A TMELENÍ (P3 / K19-N105,
+   * 1. 10. 2026). V Excelu je PRÁCE OPLÁŠTĚNÍ součtem buněk ploch skel
+   * a TMELENÍ navazuje na sklo, takže ruční úprava plochy skla posune
+   * i práci. Aplikace brala plochu práce vždy z geometrie a přepis platil
+   * jen na řádku skla (K19T-C071: sklo boků přepsáno na 93,2 m², práce
+   * 213,8 m², Excel 120,6 m²). Ve standardním režimu se proto berou
+   * EFEKTIVNÍ plochy skel — přepis řádku skla boků/zad a čelního skla
+   * (`mnozstviPrepis[název]`, týž klíč a táž sémantika „prázdno není nula"
+   * jako v mkItem), jinak vypočtená hodnota. Bez přepisu beze změny
+   * (Model 1 zůstává 1:1). Ruční přepis přímo na řádku PRÁCE / TMELENÍ má
+   * dál přednost (mkItem). Režim po stěnách beze změny — jiná výška
+   * prosklení patří tam, ne do přepisu. Příplatky VSG / SKN zůstávají na
+   * geometrii (doporučení v CHANGELOG). */
+  const skloPrepisM2 = (nazev) => {
+    const p = z.mnozstviPrepis ? z.mnozstviPrepis[nazev] : null;
+    const plati = (typeof prepisPlati === 'function') ? prepisPlati(p) : p != null;
+    return plati ? +p : null;
+  };
+  const skloBokyPrepis = oplRezim === 'poStenach' ? null : skloPrepisM2(skloRada.boky.nazev);
+  const skloCelniPrepis = oplRezim === 'poStenach' ? null : skloPrepisM2(skloRada.celni.nazev);
+  const oplZPrepisuSkla = skloBokyPrepis != null || skloCelniPrepis != null;
   const oplPlochaCelkem = oplRezim === 'poStenach'
     ? oplPasy.reduce((a, p) => a + (p.typ === OPL_BEZ ? 0 : p.m2), 0)
       + oplSvetliky.reduce((a, p) => a + p.m2, 0)
-    : skloCelkemM2;
+    : (oplZPrepisuSkla
+      ? (skloBokyPrepis != null ? skloBokyPrepis : skloBokyZadniM2) + (skloCelniPrepis != null ? skloCelniPrepis : skloCelniM2)
+      : skloCelkemM2);
   /* PLOCHA SKLA PRO PŘÍPLATKY VSG A SKN V REŽIMU PO STĚNÁCH (N50,
    * hloubkový test 24. 9. 2026). Příplatky se do té doby počítaly
    * z plochy standardního zasklení i tam, kde je stěna z Cetrisu nebo ji
@@ -1655,6 +1678,13 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     ...vlastniProSekci('atyp').map(oznacAtyp),
   ].filter(Boolean);
 
+  /* Značka pro Detail výpočtu (P3): množství PRÁCE / TMELENÍ vyšlo
+   * z ručně přepsané plochy skla. Vlastnost dostane jen řádek, kde přepis
+   * skla platí a řádek sám přepsaný není — výstup bez přepisu se nemění. */
+  const sPlochouSkla = (it) => {
+    if (oplZPrepisuSkla && !it.prepsano) it.zPrepisuSkla = true;
+    return it;
+  };
   const oplasteni = [
     /* Které sklo kam (9. 9. 2026) rozhoduje typ šachty a způsob zasklení —
      * viz skloVolba(). Názvy řádků nese táž funkce, protože se na ně věší
@@ -1670,9 +1700,9 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     /* Práce i tmelení se počítají PO CELÉ PLOŠE, ne po typech (rozhodnutí
      * J. V. 18. 9. 2026) — proto `oplPlochaCelkem`, která je ve standardu
      * totožná se `skloCelkemM2`. */
-    mkItem('PRÁCE OPLÁŠTĚNÍ', oplPlochaCelkem, c.praceOplasteniKc, { cenaPath: 'C.praceOplasteniKc' }),
+    sPlochouSkla(mkItem('PRÁCE OPLÁŠTĚNÍ', oplPlochaCelkem, c.praceOplasteniKc, { cenaPath: 'C.praceOplasteniKc' })),
     mkItem('PLASTOVÉ KOTVY', terce ? 1 : 0, c.plastKotvyKc, { cenaPath: 'C.plastKotvyKc' }),
-    ext ? mkItem('TMELENÍ (MAT. + PRÁCE) (EXT)', oplPlochaCelkem, c.tmeleniKc, { cenaPath: 'C.tmeleniKc' }) : null,
+    ext ? sPlochouSkla(mkItem('TMELENÍ (MAT. + PRÁCE) (EXT)', oplPlochaCelkem, c.tmeleniKc, { cenaPath: 'C.tmeleniKc' })) : null,
     /* STŘÍŠKA JE POČET KUSŮ, NE ZAŠKRTÁVÁTKO (9. 9. 2026, zadání J. V.).
      *
      * Do 9. 9. ji zapínala „Průchozí šachta" a byla vždy právě jedna, a jen

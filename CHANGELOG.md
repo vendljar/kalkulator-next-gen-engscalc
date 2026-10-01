@@ -47,6 +47,44 @@ P1–P6 z promptu, v závorce číslo nálezu kola.
   dostane (obnovu smí jen administrátor). Výchozí návrh: ponechat; přísnější
   varianta = u `zeSouboru` kontrolovat jen zámek, který leží v databázi.
 
+### P3 (K19-N105) — ruční přepis plochy skla posune PRÁCI OPLÁŠTĚNÍ a TMELENÍ
+
+- **Příčina:** v Excelu je PRÁCE OPLÁŠTĚNÍ součtem ploch skel a TMELENÍ
+  navazuje na sklo, takže ruční úprava plochy skla posune i práci.
+  V aplikaci platil ruční přepis množství (`mnozstviPrepis[název]`) jen na
+  řádku skla; `oplPlochaCelkem` se ve standardním režimu brala z geometrie
+  (K19T-C071: sklo boků přepsáno na 93,2 m², práce 213,8 m², Excel
+  120,6 m²; K19T-C088 +11,5 % proti Excelu). Ruční přepis skla nese 13
+  převedených zakázek.
+- **Oprava (`src/engine.js`):** ve standardním režimu se pro PRÁCI
+  a TMELENÍ berou efektivní plochy skel — přepis řádku skla boků/zad
+  a čelního skla (týž klíč a táž sémantika „prázdno není nula" jako
+  u řádku), jinak vypočtená hodnota. Ruční přepis přímo na řádku PRÁCE
+  OPLÁŠTĚNÍ / TMELENÍ má dál přednost. Režim po stěnách beze změny.
+  V Detailu výpočtu (krok 11, sekce OPLÁŠTĚNÍ) nese řádek PRÁCE / TMELENÍ
+  poznámku „(z ručně přepsané plochy skla)"; značku `zPrepisuSkla` dostane
+  jen řádek, kde přepis skla platí, takže výstup bez přepisu se nemění.
+- **Dopad na uložené zakázky:** bez ručního přepisu skla žádný (Model 1
+  zůstává 1:1 — `nastroje/porovnani_modelu.js` před i po opravě shodný
+  výstup, předlohy v sadách beze změny). Odeslané (zamčené) nabídky drží
+  zmrazený výsledek. **Rozpracovaná (nezamčená) zakázka s ručním přepisem
+  skla se po otevření přepočítá** — PRÁCE a TMELENÍ se srovnají s přepsaným
+  sklem (to je smysl opravy; ověření J. V.: K19T-C088 v klonu varianty).
+- **Testy:** nová sada `src/test_prepis_skla_prace.js` (exteriér
+  i interiér × Model 1 i 2: bez přepisu beze změny; přepis skla boků →
+  PRÁCE i TMELENÍ = přepsané sklo boků + čelní sklo; přepis čelního skla;
+  přepis přímo na PRÁCI vyhrává; interiér bez tmelení jen PRÁCE; prázdný
+  přepis nic nemění; po stěnách beze změny). Před opravou 31 OK / 22 FAIL,
+  po opravě 53 OK / 0 FAIL.
+- **Doporučení k příplatkům VSG a SKN (neměněno):** `vsgFolieM2`
+  (standardně celé sklo) a `sknM2` (sklo boků a zad) se ve standardním
+  režimu dál berou z geometrie. Fólie VSG i SKN jsou úpravou TÉHOŽ skla,
+  takže by logicky měly sledovat efektivní plochu stejně jako PRÁCE
+  (VSG = přepsané sklo boků + čelní, SKN = přepsané sklo boků). Výchozí
+  návrh: sjednotit v další dávce; příplatky mají vlastní ruční přepis
+  množství, takže dnes je obchodník dorovná ručně. Dopad jen na zakázky
+  s ručním přepisem skla a zaškrtnutým příplatkem.
+
 ---
 
 ## v1.10.1 — dávka 1. 10. 2026: SoD podle šablon, zábrany blokují dokumenty, šířka bočního světlíku, dodatkové texty (1. 10. 2026)
