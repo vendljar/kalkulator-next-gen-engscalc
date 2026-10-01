@@ -37,6 +37,76 @@ z integrační `claude/davka-1-10`; roadmapa #382.
   28 OK; nový `overit_popisy_prednost.mjs` — před opravou 5 z 9 selhalo, po
   opravě 11 OK. Příručka (kapitola o dodatkových textech).
 
+## (připraveno pro v1.10.x) — šířka bočního světlíku při ručním počtu (#381, Model 2) (1. 10. 2026)
+
+Rozhodnutí J. V. 1. 10. 2026: „s návrhem šířky bočního světlíku souhlasím,
+zapracuj ho pro model 2 (modelu 1 nic neměň)“ (návrh
+https://claude.ai/artifact/7tNaMb8Fu1tNt9ADCyYheL; výchozí odpovědi otázek
+1–6 a 8 platí, otázka 7 změněna: **jen Model 2**). Větev
+`claude/sirka-bocniho-svetliku-381` (nad integrační větví
+`claude/davka-1-10`), roadmapa #381 hotovo.
+
+Proč: podle #375 stojí dveře s jedním bočním světlíkem u sloupku a světlík
+vyplní celou mezeru vedle dveří, takže plocha boků je od D do 2D světlíků
+stejná (zakázka ze snímku J. V.: 5 × 0,60 m × 2,2 m = 6,60 m² pro 5 i 10 ks).
+Obchodník to na obrazovce neviděl a nemohl změnit.
+
+- **Data:** `Z.svetlikyBokySirkaMm` — prázdno / chybí = předpočítaná šířka,
+  číslo = ruční šířka jednoho bočního světlíku v celých mm (prázdno není
+  nula). Starší zakázky klíč nemají → cena beze změny. Server ho hlídá jako
+  číslo (`ULO_CISLA_NAVIC`).
+- **Jádro** (`src/engine.js`): jen v **Modelu 2** při ručním počtu, N > 0
+  a platné šířce W je plocha boků N × W × 2,2 m — čte ji sklo, plech (kg
+  i lakování), materiál opláštění, „zajistí stavba“, průchozí šachta i režim
+  po stěnách. Konstrukce a montáž dál po kusech. **Model 1 šířku nečte**
+  (ani při uložené hodnotě), automatický počet ji ignoruje v obou modelech.
+  Výsledek vydává `zaskleni.vypln.sirkaPredpocitana` (dnešní plocha /
+  (2,2 × N)), `sirkaRucne` (v Modelu 1 vždy null) a `sirka` (použitá).
+- **Zadání šachty:** řádek **Šířka bočního světlíku** (mm) hned pod počtem —
+  jen Model 2, výplň ≠ „bez“, ruční počet, N > 0. Hodnota = ruční šířka
+  nebo zaokrouhlená předpočítaná; ruční nese štítek „ručně“ a ↺. Pod řádkem
+  nápověda („předpočítáno z mezery vedle dveří 600 mm: 5 dveří s jedním
+  (600 mm)“, smíšené „… → průměr“; nebo „zadáno ručně; předpočítaná šířka
+  … mm“) a červená / oranžová věta z kontroly. ↺ u počtu ruční šířku smaže.
+  `bokySirkaSet`, `bokySirkaZpet` jsou v `ZAMEK_CHRANENE`.
+- **Kontrola** `bokyDveri` (jen Model 2, jen s ruční šířkou — model pozná
+  z výsledku jádra, takže platí i pro zmrazený otisk a server): světlík
+  širší než mezera nebo N × W > D × M = **zábrana**, která zastaví nabídku,
+  SoD i krycí list OCK (brána dokumentů #377, pravidlo má `zabranaMozna`);
+  jinak zbytek mezery nad 5 mm = upozornění „Vedle dveří zůstane … m šířky,
+  kterou nic neoceňuje.“ Tolerance zaokrouhlení 0,5 mm na světlík
+  (zaokrouhlená předpočítaná šířka zábranu nespustí).
+- **Detail mezivýpočtů:** mezera vedle dveří, předpočítaná / použitá šířka
+  a plocha boků se vzorcem. **Specifikace a nabídka:** „Světlíky na bocích
+  dveří: 5 ks, šířka 300 mm, sklo VSG 4.4.1, na terče“ jen při ruční šířce;
+  překlad EN/DE/FR vzorem s obecným heslem „šířka“, které slovník už má
+  (NÁVRH PŘEKLADU — ke kontrole J. V.).
+- **Testy (pojistka proti prázdnému testu):** nová `src/test_svetliky_sirka.js`
+  (60 kontrol: zakázka ze snímku 6,60 → 3,30 / 4,95 m², plech v kg, Model 1
+  se šířkou v datech bajt po bajtu shodný ve 1 120 zadáních, automatika,
+  smíšené 7 ks = 5 · 0,6 / 7 m, kontrola 750 / 700 / 10 × 400 / 300 mm,
+  specifikace, překlad, nabídka, server) — před opravou 16 prošlo / 44
+  selhalo, po ní 60 / 0. Nový harness `overit_svetliky_sirka.mjs`
+  (24 kontrol) — proti sestavení před opravou 6 OK / 18 FAIL, po ní 24 / 0.
+  `overit_xss.mjs` + pole šířky. Upravené: `test_kontroly.js` (bokyDveri
+  mezi pravidly se zábranou), `test_profil_neznamy.js` (tři nová pole
+  `vypln` mimo otisk — otisky beze změny).
+- **Porovnání jader:** 13 824 zadání (oba modely, int/ext, terče/lišty,
+  všechny výplně, starší tvar boků, počty, šířky, průchozí, po stěnách)
+  proti jádru před #381 — rozdíl jen u Modelu 2 s ručním počtem a šířkou
+  (2 976 zadání), všude jinde bajt po bajtu shoda.
+- **Mutace jádra:** +7 úseků „#381: …“ (Model 1 čte šířku, automatika čte
+  šířku, plocha z jedné tabule, předpočítaná z poloviny výšky, kontrola
+  šířky vypnutá, širší než mezera se nepozná, zábrana jen upozorní);
+  filtrovaný běh `node mutace_jadro.mjs "#381"`: **chycených 7 z 7**
+  (všechny `test_svetliky_sirka.js`), pracovní kopie po běhu beze změny;
+  `--kontrola` 128 úseků.
+- `./spust_testy.sh --smoke` (s `KNG_PODKLADY`): 212 prošlo, 0 selhalo,
+  1 přeskočeno (`test.js` — skutečný ceník v repozitáři není).
+- Podklad #149: 14. rozdíl M1 × M2; `nastroje/porovnani_modelu.js` vzor H
+  a složka „Plocha boků vedle dveří“. Příručka (Zadání šachty, kapitola
+  zábran).
+
 ## (připraveno pro v1.10.x) — Model 2 neubírá montáž u nadsvětlíku „bez“ (1. 10. 2026)
 
 Zadání J. V. 1. 10. 2026: „v modelu 2 přestaň ubírat 0,2h montáže na

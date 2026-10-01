@@ -42,8 +42,10 @@ const ZAMEK_CHRANENE = [
    * jinak by šlo měnit plášť odeslané nabídky. */
   'oplRezimSet', 'oplCelaVyskaSet', 'oplOdSet', 'oplPasSet', 'oplPasPridej', 'oplPasSmaz',
   /* Světlíky na bocích dveří (#375, 30. 9. 2026): před zápisem převádějí
-   * starší zadání na nový tvar mimo `set()` — zámek musí stát před tím. */
-  'bokyDveriSet', 'bokyKsSet', 'bokyKsZpet', 'cenikPopisDoZakazky',
+   * starší zadání na nový tvar mimo `set()` — zámek musí stát před tím.
+   * Šířka bočního světlíku (#381, 1. 10. 2026) totéž; `bokyKsZpet` navíc
+   * mimo `set()` maže ruční šířku. */
+  'bokyDveriSet', 'bokyKsSet', 'bokyKsZpet', 'bokySirkaSet', 'bokySirkaZpet', 'cenikPopisDoZakazky',
   'priplatekNabidka', 'priplatekVlastniAdd', 'priplatekVlastniDel',
   'priplatekVlastniSet', 'priplatekDoCeniku',
   'sirotciUklidVse', 'sirotekUklid',

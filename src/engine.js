@@ -389,6 +389,11 @@ const DEFAULT_ZADANI = {
    * starší zakázku, která se čte po staru (počet stran `svetlikyBoky`);
    * nová zakázka ji dostane ze ZADANI_NOVA v zakazka.js. */
   svetlikyBokyKs: '',
+  /* Šířka JEDNOHO bočního světlíku v mm (#381, jen Model 2 a jen při ručním
+   * počtu): prázdno = předpočítaná (taková, při které vyjde plocha jako
+   * dřív), číslo = ruční šířka obchodníka. Prázdno není nula. Starší
+   * zakázka klíč nemá — čte se jako prázdno, takže se cena nemění. */
+  svetlikyBokySirkaMm: '',
   cistyVstupMm: 800, sirkaRamuMm: 100, prechodovePlechy: true,
   pruchoziSachta: false, atyp: false, vystupZamereni: false,
   /* Průchozí šachta (9. 9. 2026): nástupiště zvlášť na čelní (A) a zadní (C)
@@ -545,6 +550,18 @@ function bokyPocetRucne(z) {
   if (bokyVypln(z) === 'bez') return false;
   if (!bokyNovyTvar(z)) return (+z.svetlikyBoky || 0) !== 2;
   return bokyPocetRucni(z) != null;
+}
+/* ŠÍŘKA BOČNÍHO SVĚTLÍKU (#381, rozhodnutí J. V. 1. 10. 2026: „s návrhem
+ * šířky bočního světlíku souhlasím, zapracuj ho pro model 2 (modelu 1 nic
+ * neměň)"). Ruční šířka JEDNOHO bočního světlíku v celých mm, nebo null
+ * (= předpočítaná). Prázdno není nula: prázdné pole i chybějící klíč (starší
+ * zakázka) je předpočítaná šířka, nula je platná ruční šířka. Jestli se
+ * šířka vůbec použije (Model 2, ruční počet, aspoň jeden světlík), rozhoduje
+ * výpočet — tahle funkce jen čte zadání. */
+function bokySirkaRucniMm(z) {
+  const v = z ? z.svetlikyBokySirkaMm : undefined;
+  if (v === undefined || v === null || String(v).trim() === '' || !isFinite(+v)) return null;
+  return Math.max(0, Math.round(+v));
 }
 /* PŘEVOD STARŠÍ ZAKÁZKY NA NOVÝ TVAR — BEZE ZMĚNY CENY (#375).
  *   strany 0 → boky „bez";
@@ -1013,8 +1030,31 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   /* Plocha výplně boků = min(N; dveře) × mezera × 2,2 m. Zapsaná po
    * tabulích 1,1 m (dvě na světlík) tak jako do 30. 9., takže zakázka se
    * světlíky na jedné nebo obou stranách vyjde na haléř stejně jako dřív. */
-  const bokyM2 = bokyKs > 0
+  const bokyM2Rozlozeni = bokyKs > 0
     ? (4 * bokyDvereDva) * (bokMezera / 2) * 1.1 + (2 * bokyDvereJeden) * bokMezera * 1.1 : 0;
+  /* ŠÍŘKA BOČNÍHO SVĚTLÍKU (#381, rozhodnutí J. V. 1. 10. 2026: „s návrhem
+   * šířky bočního světlíku souhlasím, zapracuj ho pro model 2 (modelu 1 nic
+   * neměň)"; výchozí odpovědi otázek 1–6 a 8 návrhu platí).
+   *
+   * Plocha výš je od D do 2D světlíků stejná (dveře s jedním světlíkem stojí
+   * u sloupku, světlík přes celou mezeru) a obchodník neviděl proč. Teď vidí
+   * šířku JEDNOHO světlíku:
+   *   – PŘEDPOČÍTANÁ = plocha podle rozložení / (2,2 m × N) — jeden u dveří
+   *     celá mezera, dva polovina, smíšené rozložení průměr. Dokud ji nikdo
+   *     nepřepíše, platí plocha výš — cena se nehne ani o haléř, ani
+   *     u starších zakázek (klíč chybí = předpočítaná);
+   *   – RUČNÍ šířka (jen MODEL 2, jen při ručním počtu a aspoň jednom
+   *     světlíku): plocha = N × šířka × 2,2 m pro všechny výplně (sklo,
+   *     plech, materiál opláštění, zajistí stavba). Konstrukce (sloupky,
+   *     příčníky, terče) a montáž se dál počítají po kusech.
+   * MODEL 1 ruční šířku nečte (zůstává 1:1, rozhodnutí J. V.) a ani ji
+   * nevydá — kontrola ji proto v Modelu 1 nehlídá a specifikace neuvádí.
+   * Automatický počet (nástupiště × 2) ji ignoruje v obou modelech. */
+  const bokySirkaMm = bokySirkaRucniMm(z);
+  const bokySirkaPlati = !!fixes && bokyPocetRucne(z) && bokyKs > 0 && bokySirkaMm != null;
+  const bokySirkaPredpocitana = bokyKs > 0 ? bokyM2Rozlozeni / (2.2 * bokyKs) : 0;
+  const bokySirkaRucne = bokySirkaPlati ? bokySirkaMm / 1000 : null;
+  const bokyM2 = bokySirkaPlati ? bokyKs * bokySirkaRucne * 2.2 : bokyM2Rozlozeni;
 
   /* PLECHOVÉ NADPRAŽÍ A BOČNÍ POLE Z PLECHU (N58, N58b). Plocha je táž
    * jako u světlíku: nad dveřmi šířka stěny × (světlá výška − 2,3 m) na
@@ -2001,6 +2041,12 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
                          dvere: dvereCelkem, dvereDva: bokyDvereDva, dvereJeden: bokyDvereJeden,
                          dvereBez: bokyDvereBez, mezera: bokMezera,
                          nadM2: nadPoleM2.A + nadPoleM2.C, bokyM2,
+                         /* Šířka jednoho bočního světlíku v m (#381):
+                          * předpočítaná (plocha podle rozložení / 2,2 / N),
+                          * ruční (jen Model 2 při ručním počtu, jinak null)
+                          * a ta, ze které je plocha boků. */
+                         sirkaPredpocitana: bokySirkaPredpocitana, sirkaRucne: bokySirkaRucne,
+                         sirka: bokySirkaRucne != null ? bokySirkaRucne : bokySirkaPredpocitana,
                          material: { nad: nadRozres, boky: bokyRozres } },
                 bokyZadniM2: skloBokyZadniM2, celniM2: skloCelniM2, celkemM2: skloCelkemM2,
                 /* Plocha po stěnách A–D (#268). Zatím jen se vydává — cenu
@@ -2145,4 +2191,4 @@ function cenikMigraceLeseni(cenik) {
   }
 }
 
-if (typeof module !== 'undefined') module.exports = { vypocet, profilyNezname, mustkyPocet, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, BOKY_VYPLN_VOLBY, BOKY_DVERI_VOLBY, bokyPocet, bokyPocetAuto, bokyPocetRucni, bokyPocetRucne, svetlikyBokyMigrace, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };
+if (typeof module !== 'undefined') module.exports = { vypocet, profilyNezname, mustkyPocet, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, BOKY_VYPLN_VOLBY, BOKY_DVERI_VOLBY, bokyPocet, bokyPocetAuto, bokyPocetRucni, bokyPocetRucne, bokySirkaRucniMm, svetlikyBokyMigrace, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };

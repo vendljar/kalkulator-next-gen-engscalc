@@ -43,6 +43,15 @@
 > V `nastroje/porovnani_modelu.js` je k tomu vzor G a složka „Montáž —
 > hodiny navíc za světlík nad dveřmi“; tabulky níž jsou z 23. 9. a ten
 > rozdíl neobsahují.
+>
+> **Doplněno 1. 10. 2026 (#381, rozhodnutí J. V.):** 14. rozdíl — šířka
+> bočního světlíku. Při **ručním** počtu bočních světlíků smí obchodník
+> v Modelu 2 zadat šířku jednoho světlíku; plocha výplně boků je pak počet ×
+> šířka × 2,2 m. Model 1 šířku nečte (plocha jako dosud: min(počet; dveře) ×
+> mezera vedle dveří × 2,2 m). Bez zadané šířky se modely neliší. Směr ceny
+> M2 proti M1: ↓ nebo beze změny — širší světlík, než dovoluje mezera
+> (sám nebo součtem u všech dveří), zastaví dokument zábranou. Vzor H
+> a složka „Plocha boků vedle dveří“ v `nastroje/porovnani_modelu.js`.
 
 ## Dopad na vzorových zakázkách (zkušební ceník)
 

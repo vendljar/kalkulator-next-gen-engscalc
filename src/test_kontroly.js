@@ -396,8 +396,10 @@ test('text varování nikde nepřikazuje ani neblokuje',
   !/nesmí|zakázán|zakázan|blokov|nelze pokračovat|nelze odeslat/i.test(textVse), textVse);
 test('zábrana má vlastní text, který se dá ukázat samostatně',
   k9.textBrani.length > 0 && k9.textBrani === n9.text, k9.textBrani);
+/* bokyDveri od #381 (1. 10. 2026): ruční šířka bočního světlíku v Modelu 2
+ * širší než mezera vedle dveří nebo „nevejdou se" zastaví dokumenty OCK. */
 test('v katalogu pravidel je poznat, které umí zastavit dokument',
-  pravidla.filter(p => p.zabranaMozna).map(p => p.kod).join(',') === 'rozmery,profilNeznamy,zapornaPolozka,cenaNula,sleva,slevaProj,ukazkovyCenik,planPlateb100,planPlatebSoucet',
+  pravidla.filter(p => p.zabranaMozna).map(p => p.kod).join(',') === 'rozmery,profilNeznamy,zapornaPolozka,cenaNula,bokyDveri,sleva,slevaProj,ukazkovyCenik,planPlateb100,planPlatebSoucet',
   JSON.stringify(pravidla.filter(p => p.zabranaMozna).map(p => p.kod)));
 
 /* ---------- 6) dvě podoby textu ---------- */

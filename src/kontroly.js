@@ -66,6 +66,53 @@ const KONTROLY_VYSKA_DVERI = 2.3;
  * pole a kontrola nerozejdou. */
 const KONTROLY_ZDVIH_MAX_M = 99;
 
+/* ŠÍŘKA BOČNÍHO SVĚTLÍKU PROTI MEZEŘE VEDLE DVEŘÍ (#381, rozhodnutí J. V.
+ * 1. 10. 2026 — výchozí odpovědi otázek 3 a 5 návrhu, jen Model 2).
+ *
+ * Ruční šířka jednoho světlíku mění plochu boků (počet × šířka × 2,2 m).
+ * Hlídá se proti mezeře vedle dveří (šířka stěny − otvor dveří − 0,04 m):
+ *   – světlík širší než mezera            → ZÁBRANA (taková šachta se
+ *     postavit nedá a cena by nesla výplň navíc),
+ *   – světlíky se vedle dveří nevejdou     → ZÁBRANA (počet × šířka >
+ *     dveře × mezera),
+ *   – jinak zbytek mezery nad 5 mm         → upozornění (zbytek nic
+ *     neoceňuje; obchodník případně přidá položku).
+ * Šířka se zadává v celých mm, takže každý světlík smí nést zaokrouhlení
+ * do 0,5 mm — zaokrouhlená předpočítaná šířka (smíšené rozložení) tak
+ * zábranu nespustí.
+ *
+ * MODEL zná kontrola z výsledku jádra: `vypln.sirkaRucne` vydá jádro jen
+ * v Modelu 2 při ručním počtu světlíků, v Modelu 1 je vždy null (šířku
+ * nečte). Platí to stejně pro otevřenou variantu, pro zmrazený otisk
+ * odeslané nabídky i pro server (sluzba.js), kde se model zvlášť
+ * nepředává. Otisk z doby před #381 šířku nemá — nehlídá se nic.
+ *
+ * Vrací { zabrana: [věty], upozorneni: [věty] }; tytéž věty ukazuje
+ * nápověda pod polem šířky v zadání (ui/kalk_ock.js), ať pole a kontrola
+ * neříkají každé něco jiného. */
+function kontrolyBokySirka(r) {
+  const out = { zabrana: [], upozorneni: [] };
+  const v = r && r.zaskleni && r.zaskleni.vypln;
+  if (!v || v.sirkaRucne === null || v.sirkaRucne === undefined) return out;
+  const n = +v.bokyKs, d = +v.dvere, w = +v.sirkaRucne, m = +v.mezera;
+  if (!(n > 0) || !isFinite(w) || !isFinite(m) || !isFinite(d)) return out;
+  const wMm = Math.round(w * 1000), mMm = m * 1000;
+  const metry = x => (Math.round(x * 100) / 100).toFixed(2).replace('.', ',');
+  const sirsi = wMm > mMm + 0.5;
+  const nevejdou = n * wMm > d * mMm + 0.5 * n;
+  if (sirsi) {
+    out.zabrana.push('Boční světlík (' + wMm + ' mm) je širší než mezera vedle dveří (' + Math.round(mMm) + ' mm) — '
+      + 'vedle dveří se nevejde. Zmenšete šířku, nebo ji vraťte na předpočítanou (↺).');
+  } else if (nevejdou) {
+    out.zabrana.push('Boční světlíky se vedle dveří nevejdou: ' + n + ' × ' + wMm + ' mm = ' + metry(n * wMm / 1000)
+      + ' m, mezery u ' + d + ' dveří jsou celkem ' + metry(d * mMm / 1000) + ' m. Zmenšete šířku nebo počet světlíků.');
+  } else {
+    const zbytek = d * mMm - n * wMm;
+    if (zbytek > 5) out.upozorneni.push('Vedle dveří zůstane ' + metry(zbytek / 1000) + ' m šířky, kterou nic neoceňuje.');
+  }
+  return out;
+}
+
 /* Výčet do věty („šířka šachty, hloubka šachty a rozteč"). */
 function kontrolyVyctem(pole) {
   const k = (pole || []).filter(Boolean);
@@ -276,8 +323,14 @@ const KONTROLY = [
      * světlíků: víc než dva u každých dveří, dveře bez světlíku (mezera
      * u nich zůstane) a nulový počet u zvolené výplně. Mezera se bere
      * z výsledku jádra (rozměr skla, otvor dveří), volba a počet ze zadání
-     * — i u odeslané nabídky se zmrazeným otiskem z doby před #375. */
+     * — i u odeslané nabídky se zmrazeným otiskem z doby před #375.
+     *
+     * Od #381 (1. 10. 2026) hlídá i RUČNÍ ŠÍŘKU bočního světlíku (jen
+     * Model 2, viz kontrolyBokySirka): širší než mezera nebo „nevejdou se"
+     * je ZÁBRANA — zastaví dokumenty OCK (BRÁNA DOKUMENTŮ níž); zbytek
+     * mezery jen upozorní. Bez ruční šířky zůstává pravidlo upozorněním. */
     kod: 'bokyDveri', kde: 'Kalkulace OCK', nazev: 'Světlíky na bocích dveří',
+    zabranaMozna: true, strany: ['ock'],
     zjisti(ctx) {
       const z = ctx.zadani;
       const r = ctx.vysledek;
@@ -306,8 +359,16 @@ const KONTROLY = [
             + (mezeraJe ? ' — mezera ' + m() + ' tam zůstane neoceněná' : ''));
         }
       }
-      if (!potize.length) return null;
-      return { text: 'Světlíky na bocích dveří: ' + kontrolyVyctem(potize) + '.' };
+      /* Ruční šířka bočního světlíku (#381) — zábrana nejdřív, pak počet,
+       * nakonec zbytek mezery. */
+      const sirka = kontrolyBokySirka(r);
+      if (!potize.length && !sirka.zabrana.length && !sirka.upozorneni.length) return null;
+      const vety = sirka.zabrana.slice();
+      if (potize.length) vety.push('Světlíky na bocích dveří: ' + kontrolyVyctem(potize) + '.');
+      vety.push(...sirka.upozorneni);
+      if (sirka.zabrana.length)
+        return { uroven: KONTROLY_UROVEN_ZABRANA, text: vety.join(' ') + ' Dokument nevznikne, dokud se to neopraví.' };
+      return { text: vety.join(' ') };
     },
   },
   {
@@ -957,6 +1018,8 @@ function kontrolyProved(ctx) {
  *   rozmery               OCK     nabídka OCK (Word + náhled/tisk), SoD OCK,
  *   profilNeznamy         OCK       krycí list OCK (Backoffice i Techdata)
  *   sleva (nad stropem)   OCK
+ *   bokyDveri             OCK       (jen ruční šířka bočního světlíku v Modelu 2:
+ *                                    širší než mezera / nevejdou se — #381)
  *   slevaProj             PROJ    nabídka PROJ (Word + náhled/tisk), SoD PROJ,
  *                                   krycí list PROJ (Backoffice i Techdata)
  *   zapornaPolozka        podle místa nálezu (kalkulace OCK / PROJ)
@@ -1043,7 +1106,7 @@ function kontrolyPotvrzeniPlati(potvrzeni, vysl) {
 
 if (typeof module !== 'undefined')
   module.exports = { KONTROLY_UROVEN, KONTROLY_UROVEN_ZABRANA,
-                     KONTROLY_VYSKA_DVERI, KONTROLY_ZDVIH_MAX_M, kontrolyVyctem,
+                     KONTROLY_VYSKA_DVERI, KONTROLY_ZDVIH_MAX_M, kontrolyVyctem, kontrolyBokySirka,
                      kontrolyPravidla, kontrolyProved, kontrolyText, kontrolyProjNavic, kontrolyPlatbyDuvody, kontrolyProjCenyBezSymbolu,
                      kontrolyPotvrzeni, kontrolyPotvrzeniPlati,
                      KONTROLY_DOKUMENTY_STRANY, KONTROLY_BRANA_JINDE, kontrolyDokumentStrana, kontrolyZabranaDokumentu };

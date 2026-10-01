@@ -76,6 +76,8 @@ const POLE = [
     .map(k => ['zadání Z.' + k, `d.ock.zadani.${k} = PAY('Z.${k}');`]),
   /* #375: počet bočních světlíků se kreslí, jen když boky nejsou „bez". */
   ['zadání Z.svetlikyBokyKs (boky sklo)', "d.ock.zadani.bokyDveri = 'sklo'; d.ock.zadani.svetlikyBokyKs = PAY('Z.svetlikyBokyKs');"],
+  /* #381: šířka bočního světlíku se kreslí jen v Modelu 2 při ručním počtu. */
+  ['zadání Z.svetlikyBokySirkaMm (Model 2, ruční počet)', "d.ock.fixes = true; d.ock.zadani.bokyDveri = 'sklo'; d.ock.zadani.svetlikyBokyKs = 5; d.ock.zadani.svetlikyBokySirkaMm = PAY('Z.svetlikyBokySirkaMm');"],
   ['název skla v ceníku zakázky', "d.ock.zadani.typSachty='exteriérová'; d.cenik.skloBokyNazev = '<img src=x onerror=window.__XSS.push`sklo`>';"],
   ['hodiny položky PROJ', "const s=d.proj.zadani.sekce.find(x=>x.polozky&&x.polozky.some(p=>p.typ==='hod'&&!p.vyrazeno)); s.polozky.find(p=>p.typ==='hod'&&!p.vyrazeno).hodiny = PAY('PJ.hodiny');"],
   ['rezerva položky PROJ', "const s=d.proj.zadani.sekce.find(x=>x.polozky&&x.polozky.some(p=>p.typ==='hod'&&!p.vyrazeno)); s.polozky.find(p=>p.typ==='hod'&&!p.vyrazeno).rezerva = PAY('PJ.rezerva');"],

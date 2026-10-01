@@ -76,6 +76,26 @@ function dvSvetlikMaterial(r, kde, Z) {
   if (maA && maC && a !== c) return 'stěna A: ' + a + ' · stěna C: ' + c;
   return maA ? a : c;
 }
+/* Šířka bočního světlíku (#381, rozhodnutí J. V. 1. 10. 2026) — tři řádky
+ * Detailu z výsledku jádra (`vypln`): mezera vedle dveří, předpočítaná
+ * a použitá šířka a plocha boků. Ruční šířku jádro vydá jen v Modelu 2 při
+ * ručním počtu; v Modelu 1 je vždy předpočítaná (šířku nečte). */
+function dvBokySirkaRadky(v, M) {
+  const mm = x => Math.round(+x * 1000) + ' mm';
+  const n = +v.bokyKs || 0;
+  const rucne = v.sirkaRucne != null;
+  return [
+    ['Mezera vedle dveří', mm(v.mezera), `šířka stěny − otvor dveří − 0,04 m = ${M(v.mezera, 3)} m na každých dveřích`],
+    ['Šířka bočního světlíku — předpočítaná / použitá', mm(v.sirkaPredpocitana) + ' / ' + mm(v.sirka) + (rucne ? ' (ručně)' : ''),
+      'předpočítaná = plocha podle rozložení / (2,2 m × ' + n + ' světlíků) — u dveří s jedním světlíkem celá mezera, se dvěma polovina, '
+      + 'smíšené rozložení průměr; ruční šířku zadává obchodník v Modelu 2 při ručním počtu světlíků (rozhodnutí J. V. 1. 10. 2026)'
+      + ((typeof OCK !== 'undefined' && OCK && OCK.fixes) ? '' : ' — Model 1 ruční šířku nečte')],
+    ['Plocha boků (výplň vedle dveří)', `${M(v.bokyM2, 2)} m²`,
+      (rucne ? `počet × šířka × 2,2 m = ${n} × ${M(v.sirkaRucne, 3)} × 2,2`
+        : 'min(N; dveře) × mezera × 2,2 m (tabule po 1,1 m: se dvěma 4 × půl mezery, s jedním 2 × celá mezera)')
+      + '; z téže plochy počítá sklo, plech, materiál opláštění i „zajistí stavba" (výplň 0 Kč)'],
+  ];
+}
 /* řádky: [popis, hodnota, vzorec/poznámka] – třetí sloupec řídí DET-1 */
 function dvTab(rows) {
   // popis (r[0]) a vzorec (r[2]) jsou text – mezi nimi i názvy položek z ceníku,
@@ -154,10 +174,14 @@ function renderDetail() {
      * počet světlíků — dřívější „počet stran" v zadání už není. */
     ['Nad dveřmi / boky dveří', (DV_VYPLN_POPIS[nadDvermiVypln(Z)] || '') + ' / '
       + (DV_VYPLN_POPIS[bokyVypln(Z)] || '')
-      + (bokyVypln(Z) !== 'bez' ? ', ' + bokyPocet(Z) + ' ks' + (bokyPocetRucne(Z) ? ' (ručně)' : ' (nástupiště × 2)') : ''),
+      + (bokyVypln(Z) !== 'bez' ? ', ' + bokyPocet(Z) + ' ks' + (bokyPocetRucne(Z) ? ' (ručně)' : ' (nástupiště × 2)') : '')
+      /* #381: ruční šířka bočního světlíku — jen Model 2 a ruční počet. */
+      + (OCK.fixes && bokyPocetRucne(Z) && bokyPocet(Z) > 0 && bokySirkaRucniMm(Z) != null
+        ? ', šířka ' + bokySirkaRucniMm(Z) + ' mm (ručně)' : ''),
       'ze zadání (N58, #375); sklo = sklo stěny s dveřmi, materiál opláštění = materiál stěn B, C, D, plech 8,5 kg/m² '
       + 'do plechů dveří s lakováním obou stran, zajistí stavba = konstrukce naše, výplň 0 Kč, bez = nic; '
-      + 'počet bočních světlíků je automaticky nástupiště × 2, obchodník ho může přepsat'],
+      + 'počet bočních světlíků je automaticky nástupiště × 2, obchodník ho může přepsat; '
+      + 'při ručním počtu v Modelu 2 i šířku jednoho světlíku (#381)'],
     ['Čistý vstup / šířka rámu dveří', `${Z.cistyVstupMm} / ${Z.sirkaRamuMm} mm`,
       'ze zadání; z obojího vychází šířka otvoru šachetních dveří (krok 2)'],
   ]), 'dv-1');
@@ -319,6 +343,10 @@ function renderDetail() {
         + z.vypln.dvereJeden + ' · bez ' + z.vypln.dvereBez + ' dveří',
         `mezera vedle dveří ${M(z.vypln.mezera, 3)} m (šířka stěny − otvor dveří − 0,04); dveře se dvěma = max(0; min(N; 2 · dveře) − dveře), `
         + 's jedním = min(N; dveře) − se dvěma (stojí u sloupku, světlík přes celou mezeru), bez = dveře − min(N; dveře)'],
+      /* ŠÍŘKA BOČNÍHO SVĚTLÍKU (#381, rozhodnutí J. V. 1. 10. 2026): mezera,
+       * předpočítaná a použitá šířka a plocha boků, ze které počítá sklo,
+       * plech i materiál opláštění. Otisk z doby před #381 šířku nemá. */
+      ...(z.vypln.bokyKs > 0 && z.vypln.sirkaPredpocitana != null ? dvBokySirkaRadky(z.vypln, M) : []),
       ['Světlíky u dveří — čím se vyplní', 'nad dveřmi: ' + dvSvetlikMaterial(r, 'nad', Z) + ' · boky: ' + dvSvetlikMaterial(r, 'boky', Z),
         'sklo = sklo stěny s dveřmi a její zasklení (po stěnách typ skla té stěny, a není-li ze skla, sklo stěny ze standardu); '
         + 'materiál opláštění = materiál stěn B, C, D, převažující podle plochy („bez — dodá stavba" = zajistí stavba) — rozhodnutí J. V. 30. 9. 2026'],

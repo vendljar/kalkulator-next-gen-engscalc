@@ -42,6 +42,9 @@ const VZORY = [
   { id: 'F', popis: 'starší zakázka: zámečník ATYP v kusech (2 ks)', z: zad({ typSachty: 'exteriérová', zamecnikAtypKs: 2 }) },
   /* #378 (1. 10. 2026): „bez" nad dveřmi ubírá montáž jen v Modelu 1. */
   { id: 'G', popis: 'nad dveřmi „bez" (bez světlíku i výplně)', z: zad({ typSachty: 'interiérová', nadDvermi: 'bez' }) },
+  /* #381 (1. 10. 2026): ruční šířku bočního světlíku čte jen Model 2. */
+  { id: 'H', popis: 'boční světlíky sklo, ručně 6 ks, šířka 300 mm', z: zad({ typSachty: 'exteriérová', nadDvermi: 'plech',
+    bokyDveri: 'sklo', svetlikyBokyKs: 6, svetlikyBokySirkaMm: 300 }) },
 ];
 
 /* Složky, ve kterých se modely liší — a která čísla rozdílu odpovídají. */
@@ -61,6 +64,7 @@ const SLOZKY = [
   { nazev: 'Opláštění — náklad sekce (Kč)', rozdily: '6, 8, 9', f: r => soucetSekce(r, 'oplasteni') },
   { nazev: 'Rezerva základu (Kč, s přirážkou)', rozdily: '11', f: r => r.rezerva.sMarzi },
   { nazev: 'Montáž — hodiny navíc za světlík nad dveřmi (h)', rozdily: '13', f: r => r.montaz.hodinyNavic.svetlik, jednotka: 'h' },
+  { nazev: 'Plocha boků vedle dveří (m²)', rozdily: '14', f: r => r.zaskleni.vypln.bokyM2, jednotka: 'm²' },
   { nazev: 'Základní cena (Kč, zaokrouhlená)', rozdily: 'vše', f: r => r.souhrn.zakladCena, hlavni: true },
   { nazev: 'Příplatky celkem (Kč, vč. rezervy)', rozdily: '12', f: r => r.souhrn.priplatkyCena, hlavni: true },
 ];
