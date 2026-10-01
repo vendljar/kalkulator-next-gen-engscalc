@@ -56,14 +56,20 @@
  * Výstup: Sablona_SOD_PROJEKCE_v2.docx — osm odstavců „Platba ve výši …"
  *         nahradí jeden odstavec (stejná odrážka a písmo) se symbolem
  *         {{SODP_PLATEBNI_KALENDAR}}; aplikace ho zopakuje za každou platbu.
+ *         Věta o prodlení zhotovitele nese pokutu za nedodržení termínu
+ *         {{PODM_POKUTA_TERMIN_PROC}} (rozhodnutí J. V. 1. 10. 2026, Q6).
  *         Smlouva je jen česky — jazykové mutace se nevyrábějí.
  *
  * SoD realizace se splátkami z krycího listu (K18-N100, 1. 10. 2026):
  *   node nastroje/vyrob_sablony.js --sod-real <složka podkladů> [výstupní složka]
  * Vstup:  Sablona_SOD_REALIZACE.docx (čtyři pevné splátky SOD_SPLATKA1–4_PROC)
  * Výstup: Sablona_SOD_REALIZACE_v2.docx — čtyři odstavce splátek nahradí
- *         jeden se symbolem {{SOD_PLATEBNI_KALENDAR}} (odstavec za splátku).
- *         Jen česky, jako SoD PROJ.
+ *         jeden se symbolem {{SOD_PLATEBNI_KALENDAR}} (odstavec za splátku);
+ *         věta o prodlení zhotovitele nese pokutu za prodlení dodávky
+ *         {{PODM_POKUTA_DODAVKA_PROC}} a pevné datum podkladů dodavatele
+ *         výtahu nahradí {{SOD_TERMIN_PODKLADY_VYTAH}} (rozhodnutí J. V.
+ *         1. 10. 2026, Q5 a Q6). Jen česky, jako SoD PROJ.
+ * Oba režimy vypíšou, co nahradily, a ověří XML a symboly výstupu.
  *
  * Jazykové mutace vyrábí tentýž překlad šablony, jaký používá aplikace
  * v Nastavení → Šablony (docxPrelozSablonu); skript vypíše, co zůstalo
@@ -385,8 +391,72 @@ function projV4CenaGeodetu(body) {
   return body.slice(0, top[iSeznam].kon) + blok + body.slice(top[iSeznam].kon);
 }
 
-/* ---------- SoD PROJ v2: seznam plateb jedním symbolem ---------- */
-function sodProjV2(xml) {
+/* ---------- přepis textu odstavce přes hranice běhů (1. 10. 2026) ----------
+ * Rozhodnutí J. V. k návrhu SoD (Q5, Q6): v šablonách smluv v2 se mění
+ * symbol pokuty ve větě o prodlení zhotovitele a pevné datum ve větě
+ * o podkladech dodavatele výtahu. Word dělí text odstavce do běhů (<w:r>)
+ * podle revizí a kontroly pravopisu — datum „19.06.2026" leží v šabloně SoD
+ * realizace ve třech bězích („19", „.06.202", „6") a tečka za ním ve čtvrtém.
+ * Znaky spojeného textu odstavce se proto mapují na běhy: náhrada přijde do
+ * běhu, ve kterém úsek začíná (s jeho formátováním), ze zbylých běhů se
+ * znaky úseku jen vypustí. Vlastnosti odstavce, ostatní běhy i jejich text
+ * zůstávají, jak jsou. */
+const escTextu = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function prepisUsekOdstavce(odst, zac, kon, nahrada) {
+  const re = /<w:t(\s[^>]*)?>([\s\S]*?)<\/w:t>/g;
+  const uzly = [];
+  let T = 0, m;
+  while ((m = re.exec(odst))) {
+    const text = dg.xmlUnesc(m[2]);
+    uzly.push({ zac: m.index, kon: m.index + m[0].length, attr: m[1] || '', t: T, text });
+    T += text.length;
+  }
+  if (!(zac >= 0 && kon > zac && kon <= T)) chyba('přepis odstavce: úsek ' + zac + '–' + kon + ' leží mimo jeho text (' + T + ' znaků)');
+  let novy = odst;
+  for (let i = uzly.length - 1; i >= 0; i--) {              // odzadu, ať sedí pozice
+    const n = uzly[i];
+    const a = Math.max(zac, n.t) - n.t, b = Math.min(kon, n.t + n.text.length) - n.t;
+    if (a >= b) continue;                                     // běh úsek nenese
+    const prvni = zac >= n.t && zac < n.t + n.text.length;
+    const text = n.text.slice(0, a) + (prvni ? nahrada : '') + n.text.slice(b);
+    const attr = (/^\s|\s$/.test(text) && !/xml:space=/.test(n.attr)) ? n.attr + ' xml:space="preserve"' : n.attr;
+    novy = novy.slice(0, n.zac) + '<w:t' + attr + '>' + escTextu(text) + '</w:t>' + novy.slice(n.kon);
+  }
+  return novy;
+}
+/* Nejvnitřnější odstavce dokumentu, jejichž spojený text splní podmínku.
+ * Podmínka dostane text s nezlomitelnými mezerami převedenými na obyčejné
+ * (Word je píše za jednopísmennou předložkou: „V případě", „z ceny"). */
+function odstavceSTextem(xml, podminka) {
+  return dg.odstavcoveSpany(xml).filter(sp => {
+    const p = xml.slice(sp.zac, sp.kon);
+    return !/<w:p(?:\s[^>]*[^/])?>/.test(p.replace(/^<w:p(?:\s[^>]*)?>/, '')) && podminka(dg.odstavecText(p).replace(/\u00a0/g, ' '));
+  });
+}
+/* Symbol ve větě vybrané podle textu (Q5/Q6): PRÁVĚ JEDEN odstavec se
+ * symbolem `stary`, jehož text vyhovuje `jeVeta`, a v něm symbol právě
+ * jednou — jinak chyba, nic se nehádá. Ostatní výskyty symbolu (věta
+ * o prodlení zákazníka s placením) zůstávají. */
+function prepojSymbolVety(body, kde, popisVety, jeVeta, stary, novy) {
+  const s = '{{' + stary + '}}';
+  const sp = odstavceSTextem(body, t => t.indexOf(s) >= 0 && jeVeta(t));
+  if (sp.length !== 1) chyba(kde + ': čekám právě jednu větu ' + popisVety + ' se symbolem ' + s + ', je jich ' + sp.length + ' — nic nehádám');
+  const p = body.slice(sp[0].zac, sp[0].kon);
+  const t = dg.odstavecText(p);
+  const i = t.indexOf(s);
+  if (t.indexOf(s, i + 1) >= 0) chyba(kde + ': symbol ' + s + ' je ve větě ' + popisVety + ' víckrát — nic nehádám');
+  return body.slice(0, sp[0].zac) + prepisUsekOdstavce(p, i, i + s.length, '{{' + novy + '}}') + body.slice(sp[0].kon);
+}
+
+/* ---------- SoD PROJ v2: seznam plateb jedním symbolem ----------
+ * + POKUTA ZA PRODLENÍ ZHOTOVITELE (rozhodnutí J. V. 1. 10. 2026, Q6): ve větě
+ * „V případě prodlení zhotovitele s plněním dle bodu III. … {{…}} % z ceny
+ * části Díla v prodlení" stál symbol pokuty za prodlení s placením; v2 nese
+ * pokutu za nedodržení termínu z krycího listu PROJ {{PODM_POKUTA_TERMIN_PROC}}
+ * (pole „Smluvní pokuta – prodlení s odevzdáním"). Věta o prodlení objednatele
+ * s úhradou zůstává s {{PODM_POKUTA_SPLATNOST_PROC}}. `zaznam` (nepovinný)
+ * dostane popis provedených náhrad. */
+function sodProjV2(xml, zaznam) {
   const t = tělo(xml);
   let body = t.body;
   const top = prvkyTela(body);
@@ -401,6 +471,11 @@ function sodProjV2(xml) {
   const rPr = (vzor.replace(/<w:pPr>[\s\S]*?<\/w:pPr>/, '').match(/<w:rPr>[\s\S]*?<\/w:rPr>/) || [''])[0];
   const novy = '<w:p>' + pPr + '<w:r>' + rPr + '<w:t xml:space="preserve">{{SODP_PLATEBNI_KALENDAR}}</w:t></w:r></w:p>';
   body = body.slice(0, top[idx[0]].zac) + novy + body.slice(top[idx[7]].kon);
+  const z = Array.isArray(zaznam) ? zaznam : [];
+  z.push('osm odstavců plateb {{SODP_PLATBA1_KC}} … {{SODP_PLATBA8_KC}} → jeden {{SODP_PLATEBNI_KALENDAR}}');
+  body = prepojSymbolVety(body, 'SoD PROJ', 'o prodlení zhotovitele', tx => /prodlení zhotovitele/i.test(tx),
+    'PODM_POKUTA_SPLATNOST_PROC', 'PODM_POKUTA_TERMIN_PROC');
+  z.push('věta o prodlení zhotovitele: {{PODM_POKUTA_SPLATNOST_PROC}} → {{PODM_POKUTA_TERMIN_PROC}}');
   return t.pred + body + t.po;
 }
 
@@ -410,13 +485,42 @@ function sodProjV2(xml) {
  * odstavec (stejná odrážka a písmo) se symbolem {{SOD_PLATEBNI_KALENDAR}};
  * aplikace ho zopakuje za každou splátku platebního kalendáře krycího listu
  * OCK (bez zálohy = bez věty o záloze, měsíční fakturace = jedna věta).
- * Nic jiného se v šabloně nemění. */
-function sodRealV2(xml) {
+ *
+ * Rozhodnutí J. V. 1. 10. 2026 k návrhu SoD:
+ *   Q5 — ve větě „Zhotovitel se zavazuje zaplatit objednateli smluvní pokutu
+ *        ve výši {{…}} % z ceny díla …" stál symbol pokuty za prodlení
+ *        s placením; v2 nese pokutu za prodlení dodávky z krycího listu OCK
+ *        {{PODM_POKUTA_DODAVKA_PROC}}. Věta o prodlení objednatele s placením
+ *        zůstává s {{PODM_POKUTA_SPLATNOST_PROC}}.
+ *   Q6 — pevné datum na konci věty „… k dodání kompletních finálních podkladů
+ *        od dodavatele technologie výtahu … do DD.MM.RRRR." (v1: 19.06.2026)
+ *        nahradí {{SOD_TERMIN_PODKLADY_VYTAH}} (pole krycího listu OCK).
+ *        Datum se hledá vzorem v odstavci se {{SOD_TERMIN_PRIPRAVENOST}};
+ *        když v něm není PRÁVĚ JEDNO a na konci věty o podkladech, skript
+ *        skončí chybou.
+ * Nic jiného se v šabloně nemění. `zaznam` (nepovinný) dostane popis
+ * provedených náhrad. */
+const DATUM_V_TEXTU_RE = /(\d{1,2})\.\s?(\d{1,2})\.\s?(\d{4})/g;
+function sodRealDatumPodkladu(body) {
+  const sp = odstavceSTextem(body, t => t.indexOf('{{SOD_TERMIN_PRIPRAVENOST}}') >= 0);
+  if (sp.length !== 1) chyba('SoD realizace: čekám právě jednu větu se {{SOD_TERMIN_PRIPRAVENOST}} (stavební připravenost a podklady dodavatele výtahu), je jich ' + sp.length + ' — nic nehádám');
+  const p = body.slice(sp[0].zac, sp[0].kon);
+  const t = dg.odstavecText(p);
+  const data = Array.from(t.matchAll(DATUM_V_TEXTU_RE));
+  if (data.length !== 1) chyba('SoD realizace: ve větě o stavební připravenosti a podkladech dodavatele výtahu čekám právě jedno datum DD.MM.RRRR, je jich ' + data.length + ' — nic nehádám');
+  const m = data[0];
+  if (!/podklad/i.test(t.slice(0, m.index)) || !/^\s*\.?\s*$/.test(t.slice(m.index + m[0].length)))
+    chyba('SoD realizace: datum ' + m[0] + ' není na konci věty o podkladech dodavatele výtahu („… do DD.MM.RRRR.") — nic nehádám');
+  return { body: body.slice(0, sp[0].zac) + prepisUsekOdstavce(p, m.index, m.index + m[0].length, '{{SOD_TERMIN_PODKLADY_VYTAH}}') + body.slice(sp[0].kon),
+    datum: m[0] };
+}
+function sodRealV2(xml, zaznam) {
   const t = tělo(xml);
   let body = t.body;
   const top = prvkyTela(body);
   const sym = dg.klicePlaceholderu(body);
   if (sym.indexOf('SOD_PLATEBNI_KALENDAR') >= 0) chyba('SoD realizace: šablona už seznam splátek {{SOD_PLATEBNI_KALENDAR}} má');
+  if (sym.indexOf('SOD_TERMIN_PODKLADY_VYTAH') >= 0) chyba('SoD realizace: šablona už termín podkladů {{SOD_TERMIN_PODKLADY_VYTAH}} má');
   const idx = [1, 2, 3, 4].map(n => top.findIndex(el => el.tag === 'p'
     && dg.klicePlaceholderu(body.slice(el.zac, el.kon)).indexOf('SOD_SPLATKA' + n + '_PROC') >= 0));
   if (idx.some(i => i < 0)) chyba('SoD realizace: nenašel jsem všechny čtyři odstavce s {{SOD_SPLATKA1_PROC}} … {{SOD_SPLATKA4_PROC}}');
@@ -426,6 +530,14 @@ function sodRealV2(xml) {
   const rPr = (vzor.replace(/<w:pPr>[\s\S]*?<\/w:pPr>/, '').match(/<w:rPr>[\s\S]*?<\/w:rPr>/) || [''])[0];
   const novy = '<w:p>' + pPr + '<w:r>' + rPr + '<w:t xml:space="preserve">{{SOD_PLATEBNI_KALENDAR}}</w:t></w:r></w:p>';
   body = body.slice(0, top[idx[0]].zac) + novy + body.slice(top[idx[3]].kon);
+  const z = Array.isArray(zaznam) ? zaznam : [];
+  z.push('čtyři odstavce splátek {{SOD_SPLATKA1_PROC}} … {{SOD_SPLATKA4_PROC}} → jeden {{SOD_PLATEBNI_KALENDAR}}');
+  body = prepojSymbolVety(body, 'SoD realizace', 'o prodlení zhotovitele („Zhotovitel se zavazuje zaplatit objednateli …")',
+    tx => /zhotovitel se zavazuje zaplatit objednateli/i.test(tx), 'PODM_POKUTA_SPLATNOST_PROC', 'PODM_POKUTA_DODAVKA_PROC');
+  z.push('věta o prodlení zhotovitele: {{PODM_POKUTA_SPLATNOST_PROC}} → {{PODM_POKUTA_DODAVKA_PROC}}');
+  const dat = sodRealDatumPodkladu(body);
+  body = dat.body;
+  z.push('věta o podkladech dodavatele výtahu: pevné datum ' + dat.datum + ' → {{SOD_TERMIN_PODKLADY_VYTAH}}');
   return t.pred + body + t.po;
 }
 
@@ -476,16 +588,35 @@ async function hlavni() {
     .forEach(f => { if (!fs.existsSync(f)) chyba('Chybí vstupní šablona ' + f); });
   if (!fs.existsSync(VYSTUP)) fs.mkdirSync(VYSTUP, { recursive: true });
   if (REZIM_SOD || REZIM_SOD_REAL) {
-    const bajty = REZIM_SOD ? await vyrob(sodVstup, sodProjV2) : await vyrob(sodRealVstup, sodRealV2);
+    const vstup = REZIM_SOD ? sodVstup : sodRealVstup;
+    const zaznam = [];
+    const bajty = await vyrob(vstup, x => (REZIM_SOD ? sodProjV2 : sodRealV2)(x, zaznam));
     const soubor = path.join(VYSTUP, REZIM_SOD ? 'Sablona_SOD_PROJEKCE_v2.docx' : 'Sablona_SOD_REALIZACE_v2.docx');
     fs.writeFileSync(soubor, bajty);
     const vady = await dg.docxXmlVady(bajty.slice().buffer);
+    const symVstup = await symbolyASablona(new Uint8Array(fs.readFileSync(vstup)));
     const sym = await symbolyASablona(bajty);
+    const rozdil = so.sablonaSymbolyRozdil(symVstup, sym);
     const zbylo = sym.filter(k => REZIM_SOD ? /^SODP_PLATBA\d_KC$/.test(k) : /^SOD_SPLATKA\d_PROC$/.test(k));
-    console.log((vady.length || zbylo.length ? '✗ ' : '✓ ') + path.basename(soubor) + ' — symbolů ' + sym.length
-      + (vady.length ? '\n    vady XML: ' + vady.join('; ') : '') + (zbylo.length ? '\n    zbyly symboly: ' + zbylo.join(', ') : ''));
+    /* Co v2 nést MUSÍ (rozhodnutí J. V. 1. 10. 2026): seznam plateb, pokutu
+     * zhotovitele z krycího listu, u realizace termín podkladů dodavatele
+     * výtahu — a věta o prodlení objednatele s placením zůstává. */
+    const musi = REZIM_SOD ? ['SODP_PLATEBNI_KALENDAR', 'PODM_POKUTA_TERMIN_PROC', 'PODM_POKUTA_SPLATNOST_PROC']
+      : ['SOD_PLATEBNI_KALENDAR', 'PODM_POKUTA_DODAVKA_PROC', 'PODM_POKUTA_SPLATNOST_PROC', 'SOD_TERMIN_PODKLADY_VYTAH'];
+    const chybi = musi.filter(k => sym.indexOf(k) < 0);
+    const text = (await dg.docxTextSablony(bajty.slice().buffer)).join('\n');
+    const datum = REZIM_SOD ? [] : (text.match(DATUM_V_TEXTU_RE) || []);
+    const prob = vady.length + zbylo.length + chybi.length + datum.length;
+    console.log((prob ? '✗ ' : '✓ ') + path.basename(soubor) + ' — symbolů ' + sym.length + ' (vstup ' + path.basename(vstup) + ': ' + symVstup.length + ')'
+      + zaznam.map(r => '\n    nahrazeno: ' + r).join('')
+      + (rozdil.pribylo.length ? '\n    přibyly symboly: ' + rozdil.pribylo.join(', ') : '')
+      + (rozdil.ubylo.length ? '\n    ubyly symboly: ' + rozdil.ubylo.join(', ') : '')
+      + (vady.length ? '\n    vady XML: ' + vady.join('; ') : '\n    XML: bez vad')
+      + (zbylo.length ? '\n    zbyly symboly: ' + zbylo.join(', ') : '')
+      + (chybi.length ? '\n    chybí symboly: ' + chybi.join(', ') : '')
+      + (datum.length ? '\n    zůstalo pevné datum: ' + datum.join(', ') : ''));
     console.log('\nVýstup: ' + VYSTUP);
-    process.exit(vady.length || zbylo.length ? 1 : 0);
+    process.exit(prob ? 1 : 0);
   }
   const vse = REZIM_V4
     ? await ulozSMutacemi(await vyrob(projVstup, projV4), 'Sablona_NABIDKA_PROJ_v4')
@@ -510,4 +641,4 @@ async function hlavni() {
 
 /* Úpravy document.xml jdou testovat bez souborů (src/test_sablona_proj_v4.js). */
 if (require.main === module) hlavni().catch(e => { console.error('CHYBA: ' + e.message); process.exit(1); });
-module.exports = { cnV13, cnV14, projV3, projV4, sodProjV2, sodRealV2 };
+module.exports = { cnV13, cnV14, projV3, projV4, sodProjV2, sodRealV2, prepisUsekOdstavce };

@@ -93,18 +93,43 @@ function sodData(zak, varianta, jekly, lang, sablona) {
   sodObjednatelDoplna(d.placeholders, zak);
   sodVedouciMontaziDoplna(d.placeholders);
   /* Termíny, podpisy a kopie faktur z krycího listu OCK (P9.2, P9.4 —
-   * rozhodnutí J. V. 29. 9. 2026). Co obchodník nevyplnil, zůstane {{…}}. */
+   * rozhodnutí J. V. 29. 9. 2026), od 1. 10. 2026 i místo plnění, denní
+   * pokuta a datum podpisu (Q2–Q4, Q10). Co obchodník nevyplnil, zůstane {{…}}. */
   if (typeof kryciSodSymboly === 'function') kryciSodSymboly(zak, varianta, jekly, d.placeholders);
   /* Splátky z platebního kalendáře krycího listu (K18-N100). */
-  let odstavcePryc;
+  const odstavcePryc = [];
   if (typeof kryciSodPlatby === 'function') {
     const pl = kryciSodPlatby(zak, varianta, jekly, sablona);
     if (pl.chyba) throw new Error(pl.chyba);
     Object.assign(d.placeholders, pl.symboly);
-    if (pl.odstavcePryc.length) odstavcePryc = pl.odstavcePryc;
+    odstavcePryc.push(...pl.odstavcePryc);
   }
+  /* Pokuta za prodlení zhotovitele = pokuta za prodlení dodávky (Q5). */
+  if (typeof kryciPoleHodnota === 'function')
+    odstavcePryc.push(...sodPokutaZhotovitele(d.placeholders, sablona, 'PODM_POKUTA_DODAVKA_PROC',
+      kryciPoleHodnota(zak, varianta, 'pokutaDodavka')));
   return Object.assign({}, d,
-    { nazevSouboru: nazev.replace(/[\\/:*?"<>|]+/g, '-') }, odstavcePryc ? { odstavcePryc } : {});
+    { nazevSouboru: nazev.replace(/[\\/:*?"<>|]+/g, '-') }, odstavcePryc.length ? { odstavcePryc } : {});
+}
+
+/* POKUTA ZA PRODLENÍ ZHOTOVITELE (rozhodnutí J. V. 1. 10. 2026 k návrhu SoD,
+ * Q5 a Q6). Šablony v2 nesou ve větě o prodlení zhotovitele sazbu z krycího
+ * listu — SoD realizace pokutu za prodlení dodávky {{PODM_POKUTA_DODAVKA_PROC}},
+ * SoD projekce pokutu za nedodržení termínu {{PODM_POKUTA_TERMIN_PROC}}
+ * (v1 tam měly symbol pokuty za prodlení s placením a mají ho dál).
+ *   – „0" (bez pokuty): věta zmizí celá — vrátí se symbol pro odstavcePryc,
+ *     ale JEN když ho šablona má (bez informace o šabloně se nic nemaže),
+ *   – vlastní znění bez čitelného procenta: symbol se z dat vyřadí, aby
+ *     zůstal ve Wordu vidět jako {{…}} (prázdno by dalo „ve výši  % z ceny"),
+ *   – procento: symbol se vyplní jako dosud (PODM_*_PROC z krycího listu).
+ * Vrací seznam symbolů, jejichž odstavce do smlouvy nepatří. */
+function sodPokutaZhotovitele(placeholders, sablona, symbol, text) {
+  const sym = sablona && sablona.symboly;
+  const ma = !!sym && (typeof sym.has === 'function' ? sym.has(symbol) : Array.from(sym).indexOf(symbol) >= 0);
+  const stav = (typeof kryciPokutaStav === 'function') ? kryciPokutaStav(text) : 'necitelne';
+  if (stav === 'nula') return ma ? [symbol] : [];
+  if (stav !== 'procento' && placeholders) delete placeholders[symbol];
+  return [];
 }
 
 /* SoD projekčních prací — stejná data jako nabídka PROJ (hlavička PROJ,
@@ -123,6 +148,12 @@ function sodProjData(zak, varianta, lang, sablona) {
    * Co obchodník nevyplnil, zůstane ve Wordu vidět jako {{…}}. */
   if (typeof kryciProjSodSymboly === 'function') kryciProjSodSymboly(zak, varianta, d.placeholders);
   sodProjPlatby(d, sablona);
+  /* Pokuta za prodlení zhotovitele = pokuta za nedodržení termínu (Q6). */
+  if (typeof kryciProjPoleHodnota === 'function') {
+    const pryc = sodPokutaZhotovitele(d.placeholders, sablona, 'PODM_POKUTA_TERMIN_PROC',
+      kryciProjPoleHodnota(zak, varianta, 'pokutaTermin'));
+    if (pryc.length) d.odstavcePryc = (d.odstavcePryc || []).concat(pryc);
+  }
   return Object.assign({}, d,
     { nazevSouboru: nazev.replace(/[\\/:*?"<>|]+/g, '-') });
 }
@@ -263,4 +294,4 @@ if (typeof dokumentRegistruj === 'function') {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { sodData, sodProjData, plnaMocData, sodObjednatelDoplna, sodVedouciMontaziDoplna };
+  module.exports = { sodData, sodProjData, plnaMocData, sodObjednatelDoplna, sodVedouciMontaziDoplna, sodPokutaZhotovitele };
