@@ -91,7 +91,9 @@ await page.evaluate(() => {
 await page.evaluate(() => { window.__dlgTexty = []; });
 await page.evaluate(() => cenikRadaPrepniUI('zahr'));
 await page.waitForTimeout(300);
-posledniDialog = await dlgPosledni(page);
+/* Od P6 (K19-N114) po přepnutí následuje dotaz na „jen realizace" —
+ * dialog s dopadem je proto první, ne poslední. */
+posledniDialog = await page.evaluate(() => (window.__dlgTexty || []).find(t => /Dotkne se to/.test(t)) || '');
 test('přepnutí se nejdřív zeptá a vypíše dopad',
   /Dotkne se to \d+ ceníkových položek/.test(posledniDialog), posledniDialog.slice(0, 80));
 test('řada se přepnula',
@@ -311,6 +313,43 @@ test('a návrat vrátí tuzemskou přirážku projekce',
   await page.evaluate(() => aktivniVarianta(ZAK).data.proj.cenik.marze === 0.55),
   await page.evaluate(() => aktivniVarianta(ZAK).data.proj.cenik.marze));
 await page.evaluate(() => { cenikZahrSet('PC.marze', ''); });
+
+/* ---------- P6 (K19-N114, 2. 10. 2026): přepnutí na zahraničí nabídne „jen realizace" ----------
+ * Stub potvrd odpovídá Ano. Nejdřív čistý stav: tuzemská řada, zakázka
+ * počítá obě strany bez vědomé volby. */
+await page.evaluate(() => { cenikRadaPrepniUI('cr'); });
+await page.waitForTimeout(200);
+await page.evaluate(() => { ZAK.jenOck = false; ZAK.jenProj = false; ZAK.obeStrany = false; ZAK.cislo = '2026 - OPR - CN - 9901'; render(); window.__dlgTexty = []; });
+await page.evaluate(() => cenikRadaPrepniUI('zahr'));
+await page.waitForTimeout(300);
+const p6a = await page.evaluate(() => ({ jenOck: ZAK.jenOck, texty: window.__dlgTexty.slice() }));
+test('P6: po přepnutí na zahraniční ceník se zeptá na „jen realizace"',
+  p6a.texty.some(t => /Zakázka jen realizace/.test(t) && /celou zakázku/.test(t)), p6a.texty.map(t => t.slice(0, 40)).join(' | '));
+test('P6: odpověď Ano nastaví zakázku jen jako realizaci (strana PROJ zešedne)',
+  p6a.jenOck === true && await page.evaluate(() => stranaZamcena(ZAK, 'proj')));
+await page.evaluate(() => { window.__dlgTexty = []; });
+await page.evaluate(() => cenikRadaPrepniUI('cr'));
+await page.waitForTimeout(300);
+const p6b = await page.evaluate(() => ({ jenOck: ZAK.jenOck, texty: window.__dlgTexty.slice() }));
+test('P6: návrat do tuzemska nabídne zase počítat projekci a Ano „jen realizace" zruší',
+  p6b.texty.some(t => /Počítat zase i projekci/.test(t)) && p6b.jenOck === false, JSON.stringify(p6b.jenOck));
+/* Odpověď Ne: zakázka zůstane, jak byla. */
+await page.evaluate(() => { window.potvrd = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(!/Zakázka jen realizace/.test(String(t))); }; });
+await page.evaluate(() => cenikRadaPrepniUI('zahr'));
+await page.waitForTimeout(300);
+test('P6: odpověď Ne projekci ponechá', await page.evaluate(() => ZAK.jenOck === false && cenikRadaVarianty(aktivniVarianta(ZAK).data) === 'zahr'));
+await page.evaluate(() => cenikRadaPrepniUI('cr'));
+await page.waitForTimeout(200);
+/* Zakázka s číslem projekce (OVP) — vědomá projekce, nenabízí se. */
+await dlgStub(page);
+await page.evaluate(() => { ZAK.cislo = '2026 - OVP - CN - 9902'; render(); window.__dlgTexty = []; });
+await page.evaluate(() => cenikRadaPrepniUI('zahr'));
+await page.waitForTimeout(300);
+test('P6: zakázka s číslem projekce (OVP) se na „jen realizace" neptá',
+  await page.evaluate(() => !window.__dlgTexty.some(t => /Zakázka jen realizace/.test(t)) && ZAK.jenOck === false));
+await page.evaluate(() => { cenikRadaPrepniUI('cr'); });
+await page.waitForTimeout(200);
+await page.evaluate(() => { ZAK.cislo = ''; ZAK.jenOck = false; render(); });
 
 /* ---------- 7) uzamčená varianta se nepřepíná ---------- */
 test('uzamčená (odeslaná) varianta se nepřepne',

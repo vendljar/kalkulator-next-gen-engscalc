@@ -140,7 +140,37 @@ P1–P6 z promptu, v závorce číslo nálezu kola.
   kontrol v prohlížeči, 78 OK / 0 FAIL (před 71). Dvě nové mutace jádra
   chyceny (2 z 2).
 
-### P2, P4, P5, P6 (K19-N104, N107, N109, N114) — rozbor, kód beze změny
+### P4 (K19-N107) — nápověda „jiné sklo = opláštění po stěnách" (rozhodnutí J. V. 2. 10. 2026: výchozí návrh B)
+
+- Druh skla ve standardním režimu dál určuje typ šachty a způsob zasklení
+  (`skloVolba`); jiné sklo jde přes opláštění po stěnách (typ skla
+  z ceníku nebo „jiné" s vlastním názvem a sazbou). Věta to teď říká
+  v bublině u názvu řádku skla boků/zad i čelního skla (jen ve standardním
+  režimu), u volby Opláštění v zadání šachty a v Detailu výpočtu u řádku
+  „Které sklo se počítá". Výpočet ani dokumenty beze změny.
+- **Testy:** `overit_oplasteni.mjs` +2 kontroly (řádky skla nápovědu nesou,
+  PRÁCE OPLÁŠTĚNÍ ne, volba opláštění ano), 80 OK / 0 FAIL.
+
+### P6 (K19-N114) — přepnutí na zahraniční ceník nabídne „jen realizace" (rozhodnutí J. V. 2. 10. 2026: výchozí návrh A)
+
+- Po přepnutí varianty na zahraniční řadu ceníku se aplikace zeptá
+  „Zakázka jen realizace — projekci nepočítat?" (výchozí Ano). Ano nastaví
+  `ZAK.jenOck` (strana PROJ zešedne, krycí list PROJ, SoD PROJ a plán
+  plateb PROJ se nepoužijí, kontroly projekce mlčí) a zapíše to do
+  protokolu. Dialog říká, že volba platí pro celou zakázku (všechny
+  varianty) a jak ji vrátit („Počítat i tuhle stranu"). Po návratu VŠECH
+  variant na tuzemský ceník nabídne opak (výchozí Ne). Nenabízí se, když
+  zakázka nese číslo projekce (OVP ve společném čísle nebo vlastní číslo
+  ve starší hlavičce PROJ), když je už jen realizace / jen projekce, nebo
+  když obchodník vědomě zvolil počítat obě strany. Rozhoduje
+  `zahrJenRealizaceNabidnout` (`src/zakazka.js`), zápis jde přes `set()`
+  (zámek i náhled ho hlídají). Kontrola `projZahranici` beze změny.
+- **Testy:** nová sada `src/test_zahr_jen_realizace.js` 12 OK / 0 FAIL (před
+  zavedením padá — funkce chyběla); `overit_zahranicni.mjs` +5 kontrol
+  (dotaz, Ano, návrat, Ne, OVP) a test dialogu s dopadem hledá svůj text
+  mezi dialogy, 45 OK / 0 FAIL (před 40).
+
+### P2, P4, P5, P6 — rozbor (1. 10. 2026; rozhodnuto 2. 10., viz oddíly výš)
 
 Body „prověřit + návrh" — rozbor s variantami a výchozími návrhy
 v `podklady/K19_ROZBOR_2026-10-01.md`, čeká na rozhodnutí J. V.:

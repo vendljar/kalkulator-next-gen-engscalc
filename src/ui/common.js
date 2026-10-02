@@ -1676,10 +1676,11 @@ async function cenikRadaPrepniUI(rada) {
     + '(pokud ceník neurčuje jinou), při návratu do tuzemska zpět na tuzemskou; globální '
     + 'přirážka se přepne, když pro ni ceník odchylku má. Co jste si v téhle nabídce '
     + 'nastavil sám, zůstává.'
-    /* P11 (rozhodnutí J. V. 29. 9. 2026): projekce se u zahraničí nedělá. */
-    + (r === 'zahr' && !ZAK.jenOck ? '\n\nProjekci u zahraničních zakázek nerealizujeme: '
-      + 'projekci z varianty vyřaďte (zakázka jen realizace). Zahraniční ceník u ní mění jen '
-      + 'přirážku a DPH, sazby a fixy zůstávají tuzemské.' : ''))) return;
+    /* P11 (rozhodnutí J. V. 29. 9. 2026): projekce se u zahraničí nedělá.
+     * Od P6 (K19-N114, 2. 10. 2026) se na „jen realizace" hned zeptá. */
+    + (r === 'zahr' && !ZAK.jenOck ? '\n\nProjekci u zahraničních zakázek nerealizujeme. Zahraniční '
+      + 'ceník u ní mění jen přirážku a DPH, sazby a fixy zůstávají tuzemské — po přepnutí se '
+      + 'zeptám, zda zakázku nastavit jen jako realizaci.' : ''))) return;
 
   const vysl = cenikRadaPrepni(d, cr, zahr, r);
   v.upraveno = new Date().toISOString();
@@ -1690,12 +1691,45 @@ async function cenikRadaPrepniUI(rada) {
         + (vysl.chranene && vysl.chranene.length
           ? ', ponecháno ručně nastavených: ' + vysl.chranene.length : '') });
   syncVarianta(); render();
+  await zahrJenRealizaceDotaz(r);
   /* Co se NEZMĚNILO, je stejně důležité jako co se změnilo: obchodník jinak
    * čeká zahraniční přirážku a v nabídce má pořád svou vlastní. */
   if (vysl.chranene && vysl.chranene.length)
     hlaska('Ceník je přepnutý na ' + nazev + '.\n\nBeze změny zůstalo, co jste si v téhle '
       + 'nabídce nastavil sám:\n' + vysl.chranene.map(x => '• ' + x.popis).join('\n')
       + '\n\nChcete-li i tady hodnotu z ceníku, přepište ji ručně.');
+}
+
+/* P6 (K19-N114, rozhodnutí J. V. 2. 10. 2026): po přepnutí na zahraniční
+ * řadu nabídne „zakázka jen realizace" (výchozí Ano), po návratu všech
+ * variant do tuzemska opak. Rozhoduje zahrJenRealizaceNabidnout (zakazka.js);
+ * zápis jde přes set(), takže ho hlídá zámek i náhled jako každý jiný. */
+async function zahrJenRealizaceDotaz(rada) {
+  if (typeof zahrJenRealizaceNabidnout !== 'function') return;
+  const rady = (ZAK.varianty || []).map(x => (typeof cenikRadaVarianty === 'function') ? cenikRadaVarianty(x && x.data) : 'cr');
+  const co = zahrJenRealizaceNabidnout(ZAK, rada, rady);
+  if (!co) return;
+  const v = aktivniVarianta(ZAK);
+  const zapis = (text) => { if (typeof protokolZapis === 'function')
+    protokolZapis(ZAK, { kde: 'Kalkulace OCK', varianta: v && v.id, variantaNazev: v && v.nazev,
+      kdo: (typeof zamekKdo === 'function') ? zamekKdo() : '', co: text }); };
+  if (co === 'jenOck') {
+    if (!await potvrd('Zakázka jen realizace — projekci nepočítat?\n\n'
+      + 'Projekci u zahraničních zakázek nerealizujeme. Strana PROJ zešedne (krycí list PROJ, '
+      + 'smlouva PROJ a plán plateb PROJ se nepoužijí) a kontroly projekce přestanou hlásit.\n\n'
+      + 'Platí pro celou zakázku, tedy pro všechny její varianty. Vrátit jde tlačítkem '
+      + '„Počítat i tuhle stranu" v šedé liště Kalkulace PROJ.',
+      { ano: 'Ano, jen realizace', ne: 'Ne, projekci ponechat' })) return;
+    set('ZAK.obeStrany', false);
+    set('ZAK.jenOck', true);
+    if (ZAK.jenOck === true) zapis('Zakázka nastavena jen jako realizace (zahraniční ceník)');
+  } else if (co === 'obeStrany') {
+    if (!await potvrd('Všechny varianty teď počítají s tuzemským ceníkem.\n\n'
+      + 'Zakázka je nastavená jen jako realizace. Počítat zase i projekci?',
+      { ano: 'Ano, počítat i projekci', ne: 'Ne, ponechat jen realizaci', vychoziNe: true })) return;
+    set('ZAK.jenOck', false);
+    if (ZAK.jenOck === false) zapis('Zakázka zase počítá i projekci (tuzemský ceník)');
+  }
 }
 
 /* ---------- ZÁMEK OTEVŘENÉ ZAKÁZKY: JEN PRO ČTENÍ (4. 9. 2026) ----------

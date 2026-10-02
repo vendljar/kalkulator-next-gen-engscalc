@@ -610,6 +610,36 @@ function zakazkaCisloVedouci(zak) {
 
 const STRANA_NAZEV = { ock: 'Kalkulaci OCK', proj: 'Kalkulaci PROJ' };
 
+/* ZAHRANIČNÍ ŘADA CENÍKU A „JEN REALIZACE" (P6 / K19-N114, rozhodnutí J. V.
+ * 2. 10. 2026 — výchozí návrh). Projekci u zahraničních zakázek
+ * nerealizujeme (P11, 29. 9. 2026); nová zakázka ale dostane výchozí
+ * oceněné sekce PROJ a přepnutí varianty na zahraniční ceník je nechalo
+ * být — kontrola `projZahranici` pak upozornila u každé zahraniční zakázky.
+ * Po přepnutí se proto aplikace zeptá, zda zakázku rovnou nastavit jen jako
+ * realizaci (`jenOck` — strana PROJ zešedne, kontroly PROJ mlčí); při
+ * návratu všech variant na tuzemský ceník nabídne opak.
+ *
+ * `jenOck` je vlastnost ZAKÁZKY, řada ceníku vlastnost VARIANTY — dialog
+ * to musí říct. Nenabízí se, když zakázka nese číslo projekce (OVP,
+ * vědomá projekce) nebo když obchodník vědomě zvolil „počítat obě strany"
+ * (`obeStrany`). `varianty` = pole řad ceníku všech variant ('cr' / 'zahr'). */
+function zahrJenRealizaceNabidnout(zak, rada, varianty) {
+  if (!zak) return null;
+  const rady = Array.isArray(varianty) ? varianty : [];
+  if (rada === 'zahr') {
+    if (zak.jenOck || zak.jenProj || zak.obeStrany) return null;
+    /* Číslo projekce: řada OVP ve společném čísle, nebo vlastní číslo
+     * v (starší) hlavičce PROJ. Ne stranaMaCislo — ta u zakázky bez
+     * projHlavicka bere společné číslo za číslo obou stran. */
+    const ph = zak.projHlavicka;
+    if (/ovp/i.test(String(zak.cislo || '')) || (ph && hlavickaVyplneno(ph.cislo))) return null;
+    return 'jenOck';
+  }
+  /* zpět na tuzemskou: jen když už žádná varianta nepočítá zahraničním ceníkem */
+  if (zak.jenOck && !rady.some(r => r === 'zahr')) return 'obeStrany';
+  return null;
+}
+
 /* ---------- číslo nabídky s číslem varianty (19. 8. 2026) ----------
  * Zadání J. V.: „Pokud má kalkulace variantu (např. varianta 2), pak se
  * v čísle nabídky označí jako tečka a číslo varianty (2026 - OPR - CN -
@@ -1458,7 +1488,7 @@ if (typeof module !== 'undefined')
                      ZAK_HLAVICKA_POLE, zajistiProjHlavicku, projHlavicka,
                      projHlavickaEfektivni, projHlavickaZOck, projCisloNabidky,
                      cisloSVariantou, zakazkaDuplicita,
-                     stranaCislo, stranaMaCislo, zakazkaVedouciStrana, stranaZamcena,
+                     stranaCislo, stranaMaCislo, zakazkaVedouciStrana, stranaZamcena, zahrJenRealizaceNabidnout,
                      zakazkaCisloVedouci, STRANA_NAZEV,
                      ZAK_CISLO_PREDLOHA, hlavickaVyplneno,
                      icoNormalizuj, icoVyplneno, icoPlatne,
