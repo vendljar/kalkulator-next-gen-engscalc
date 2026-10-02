@@ -90,10 +90,24 @@ const rada = await (async () => {
   await p.waitForSelector('#dlg', { timeout: 4000 });
   const text = await modalText();
   await klik('ano');
+  /* P6 (K19-N114, 2. 10. 2026): po přepnutí na zahraniční ceník následuje
+   * druhý modál „Zakázka jen realizace?". Bez odpovědi by přepnutí nikdy
+   * nedoběhlo (a harness by čekal donekonečna) — odpoví se Ne, ať zbytek
+   * běhu pracuje se zakázkou, která počítá obě strany. */
+  await p.waitForFunction(() => {
+    const t = document.querySelector('#dlg .dlg-text');
+    return !!t && /Zakázka jen realizace/.test(t.innerText);
+  }, null, { timeout: 4000 });
+  const text2 = await modalText();
+  await klik('ne');
   await beh;
-  return { text, rada: await p.evaluate(() => cenikRadaVarianty(aktivniVarianta(ZAK).data)),
-           cena: await p.evaluate(() => aktivniVarianta(ZAK).data.cenik.montazHodKc) };
+  return { text, text2, rada: await p.evaluate(() => cenikRadaVarianty(aktivniVarianta(ZAK).data)),
+           cena: await p.evaluate(() => aktivniVarianta(ZAK).data.cenik.montazHodKc),
+           jenOck: await p.evaluate(() => ZAK.jenOck) };
 })();
+zkus('P6: po přepnutí na zahraniční ceník se modálem zeptá na „jen realizace" (celá zakázka)',
+  /Zakázka jen realizace/.test(rada.text2) && /celou zakázku/.test(rada.text2), rada.text2.slice(0, 90));
+zkus('P6: odpověď Ne projekci ponechá a modál zmizí', rada.jenOck === false && (await modalVidet()) === false, String(rada.jenOck));
 zkus('přepínač ceníku se ptá modálem a vypíše dopad',
   /Dotkne se to \d+ ceníkových položek/.test(rada.text), rada.text.slice(0, 90));
 zkus('potvrzení přepne řadu i cenu', rada.rada === 'zahr' && rada.cena === 1234,

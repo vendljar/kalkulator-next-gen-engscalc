@@ -171,6 +171,11 @@ P1–P6 z promptu, v závorce číslo nálezu kola.
   zavedením padá — funkce chyběla); `overit_zahranicni.mjs` +5 kontrol
   (dotaz, Ano, návrat, Ne, OVP) a test dialogu s dopadem hledá svůj text
   mezi dialogy, 45 OK / 0 FAIL (před 40).
+  `overit_dialogy.mjs` (skutečné modály): přepnutí na zahraniční ceník teď
+  otevře druhý modál, který harness dřív neobsloužil a čekal donekonečna
+  (první celé kolo nad v2.10.1 se na něm zastavilo — přerušeno ještě před
+  mutacemi a spuštěno znovu); +2 kontroly (dotaz na celou zakázku, odpověď
+  Ne), 26 OK / 0 FAIL.
 
 ### P2, P4, P5, P6 — rozbor (1. 10. 2026; rozhodnuto 2. 10., viz oddíly výš)
 
