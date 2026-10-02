@@ -266,6 +266,65 @@ function oplasteniStenyVychozi(z, c) {
   });
   return out;
 }
+/* PROSKLÍT I PROHLUBEŇ (P2 / K19-N104, rozhodnutí J. V. 2. 10. 2026).
+ *
+ * Prosklená prohlubeň jde jen po stěnách: „Opláštění začíná" (`odM`) se
+ * zápornou hodnotou sahá do prohlubně. Obchodník ji musel u každé ze čtyř
+ * stěn napsat zvlášť. Zkratka nastaví všem stěnám `odM = −prohlubeň`
+ * (a ze standardu přepne na po stěnách s výchozími typy stěn). Jádro počítá
+ * dál dnešní cestou po stěnách — výpočet se nemění, Model 1 taky ne.
+ *
+ * Stav se NEUKLÁDÁ jako příznak, ODVOZUJE se z dolních mezí (stejně jako
+ * „po celé výšce" v obrazovce): příznak by se s pásy dřív nebo později
+ * rozešel. Zaškrtnuto = po stěnách a všechny čtyři stěny začínají přesně
+ * v −prohlubeň. */
+const OPL_PROHLUBEN_TOL = 1e-9;
+function oplasteniProhlubenVse(z) {
+  const zz = z || {}, o = zz.oplasteni || {};
+  const hl = +zz.prohluben || 0;
+  if (o.rezim !== 'poStenach' || !(hl > 0) || !o.steny || typeof o.steny !== 'object') return false;
+  return OPLASTENI_STENY.every(k => {
+    const st = o.steny[k];
+    return !!st && typeof st === 'object' && Math.abs((+st.odM || 0) + hl) < OPL_PROHLUBEN_TOL;
+  });
+}
+/* Zapnout: po stěnách, chybějící stěny z výchozí podoby (jádro, ne
+ * obrazovka — viz oplasteniStenyVychozi), všem `odM = −prohlubeň`.
+ * Vypnout: stěnám, které začínají v −prohlubeň, vrátí 0; ruční jiné meze
+ * a rozdělení na pásy zůstávají, režim po stěnách taky. */
+function oplasteniProhlubenNastav(z, c, ano) {
+  if (!z || typeof z !== 'object') return z;
+  const hl = +z.prohluben || 0;
+  if (!z.oplasteni || typeof z.oplasteni !== 'object') z.oplasteni = { rezim: 'standard', steny: null };
+  const o = z.oplasteni;
+  if (ano) {
+    o.rezim = 'poStenach';
+    const vych = oplasteniStenyVychozi(z, c);
+    if (!o.steny || typeof o.steny !== 'object') o.steny = {};
+    OPLASTENI_STENY.forEach(k => {
+      const st = o.steny[k];
+      if (!st || typeof st !== 'object' || !Array.isArray(st.pasy) || !st.pasy.length) o.steny[k] = vych[k];
+      o.steny[k].odM = hl > 0 ? -hl : 0;
+    });
+  } else if (o.steny && typeof o.steny === 'object') {
+    OPLASTENI_STENY.forEach(k => {
+      const st = o.steny[k];
+      if (st && typeof st === 'object' && hl > 0 && Math.abs((+st.odM || 0) + hl) < OPL_PROHLUBEN_TOL) st.odM = 0;
+    });
+  }
+  return z;
+}
+/* Změna hloubky prohlubně: když zkratka platila (všechny stěny v −stará),
+ * posune meze na −nová. Jinak se nesahá na nic — ruční meze patří
+ * obchodníkovi. Vrací true, když se něco posunulo. */
+function oplasteniProhlubenSleduj(z, stara) {
+  if (!z || !z.oplasteni || z.oplasteni.rezim !== 'poStenach') return false;
+  const hlStara = +stara || 0, hl = +z.prohluben || 0;
+  if (!(hlStara > 0) || Math.abs(hl - hlStara) < OPL_PROHLUBEN_TOL) return false;
+  if (!oplasteniProhlubenVse(Object.assign({}, z, { prohluben: hlStara }))) return false;
+  OPLASTENI_STENY.forEach(k => { z.oplasteni.steny[k].odM = hl > 0 ? -hl : 0; });
+  return true;
+}
 /* Řádky kalkulace ze součtu ploch podle typu. Pořadí je dané pořadím
  * v OPLASTENI_TYPY, aby se kalkulace nepřeskupovala podle toho, kterou
  * stěnu obchodník vyplnil dřív; „jiné" jdou nakonec, abecedně. */
@@ -2232,4 +2291,4 @@ function cenikMigraceLeseni(cenik) {
   }
 }
 
-if (typeof module !== 'undefined') module.exports = { vypocet, profilyNezname, mustkyPocet, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, BOKY_VYPLN_VOLBY, BOKY_DVERI_VOLBY, bokyPocet, bokyPocetAuto, bokyPocetRucni, bokyPocetRucne, bokySirkaRucniMm, svetlikyBokyMigrace, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };
+if (typeof module !== 'undefined') module.exports = { vypocet, profilyNezname, mustkyPocet, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, BOKY_VYPLN_VOLBY, BOKY_DVERI_VOLBY, bokyPocet, bokyPocetAuto, bokyPocetRucni, bokyPocetRucne, bokySirkaRucniMm, svetlikyBokyMigrace, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, oplasteniProhlubenVse, oplasteniProhlubenNastav, oplasteniProhlubenSleduj, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };

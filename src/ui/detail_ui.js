@@ -351,6 +351,11 @@ function renderDetail() {
         'sklo = sklo stěny s dveřmi a její zasklení (po stěnách typ skla té stěny, a není-li ze skla, sklo stěny ze standardu); '
         + 'materiál opláštění = materiál stěn B, C, D, převažující podle plochy („bez — dodá stavba" = zajistí stavba) — rozhodnutí J. V. 30. 9. 2026'],
     ] : []),
+    /* P2 (K19-N104): prohlubeň prosklená zkratkou — všechny stěny od −prohlubeň. */
+    ...((typeof oplasteniProhlubenVse === 'function' && oplasteniProhlubenVse(Z)) ? [
+      ['Prosklená prohlubeň', `všechny stěny od −${M(Z.prohluben, 2)} m`,
+        'zkratka „Prosklít i prohlubeň" v zadání šachty: opláštění po stěnách, každá stěna začíná v −prohlubeň; '
+        + 'plocha pod nulou se počítá skutečnou šířkou stěny (krok opláštění po stěnách)']] : []),
     ['Boční + zadní m²', `${M(z.bokyZadniM2, 2)} m²`, 'materiál boční/zadní stěna; ve standardu sem patří i světlíky u dveří z materiálu opláštění (#375 — materiál stěn B, C, D)'],
     ['Čelní m²', `${M(z.celniM2, 2)} m²`, Z.pruchoziSachta ? 'materiál čelní stěna: světlíky + patra bez dveří A' : 'materiál čelní stěna (světlíky)'],
     ['Zasklení celkem', `${M(z.celkemM2, 2)} m²`,

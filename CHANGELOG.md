@@ -118,6 +118,28 @@ P1–P6 z promptu, v závorce číslo nálezu kola.
   0 FAIL. `test_kontroly.js`: pravidel 32. Tři nové mutace jádra chyceny
   (3 z 3).
 
+### P2 (K19-N104) — zkratka „Prosklít i prohlubeň" (rozhodnutí J. V. 2. 10. 2026: výchozí návrh)
+
+- **Zadání šachty:** pod polem Prohlubeň zaškrtávátko „Prosklít i
+  prohlubeň". Zaškrtnutí nastaví všem čtyřem stěnám „Opláštění začíná" =
+  −prohlubeň a jednotné opláštění přepne na opláštění po stěnách
+  s výchozími typy stěn (ty skládá jádro, `oplasteniStenyVychozi`).
+  Odškrtnutí vrátí meze, které začínají v −prohlubeň, na 0 (rozdělení
+  stěn a režim po stěnách zůstávají). Změna hloubky prohlubně meze posune,
+  dokud zkratka platí; ruční mez u jedné stěny ji zruší. Stav se odvozuje
+  z mezí (`oplasteniProhlubenVse`), žádný příznak v datech. Pole Prohlubeň
+  i zaškrtávátko nesou nápovědu; u nulové prohlubně je zakázané. Zámek
+  varianty obě obsluhy hlídá (`zamek_ui.js`).
+- **Výpočet beze změny:** jádro počítá dnešní cestou po stěnách (plocha pod
+  nulou skutečnou šířkou stěny); nezaškrtnuté = dnešní stav, Model 1 1:1.
+- **Detail výpočtu** (krok 8): řádek „Prosklená prohlubeň — všechny stěny
+  od −X m". Technická specifikace beze změny (ROZSAH OPLÁŠTĚNÍ už píše „od
+  výšky −X m, tedy do prohlubně").
+- **Testy:** nová sada `src/test_prohluben_sklo.js` 33 OK / 0 FAIL (před
+  zavedením padá — funkce v jádře chyběly); `overit_oplasteni.mjs` +7
+  kontrol v prohlížeči, 78 OK / 0 FAIL (před 71). Dvě nové mutace jádra
+  chyceny (2 z 2).
+
 ### P2, P4, P5, P6 (K19-N104, N107, N109, N114) — rozbor, kód beze změny
 
 Body „prověřit + návrh" — rozbor s variantami a výchozími návrhy

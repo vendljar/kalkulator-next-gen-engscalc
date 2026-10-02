@@ -41,6 +41,8 @@ const ZAMEK_CHRANENE = [
    * dosadit hodnotu na existující cestu. Zámek je proto musí hlídat zvlášť,
    * jinak by šlo měnit plášť odeslané nabídky. */
   'oplRezimSet', 'oplCelaVyskaSet', 'oplOdSet', 'oplPasSet', 'oplPasPridej', 'oplPasSmaz',
+  /* Zkratka „prosklít i prohlubeň" (P2 / K19-N104, 2. 10. 2026) — totéž. */
+  'prohlubenSkloSet', 'prohlubenSet',
   /* Světlíky na bocích dveří (#375, 30. 9. 2026): před zápisem převádějí
    * starší zadání na nový tvar mimo `set()` — zámek musí stát před tím.
    * Šířka bočního světlíku (#381, 1. 10. 2026) totéž; `bokyKsZpet` navíc

@@ -157,7 +157,14 @@ function renderInputs() {
         + inp('Z.zdvih', { l: 'Zdvih', u: 'm', max: KONTROLY_ZDVIH_MAX_M })
         + zdvihVarovani()
         + inp('Z.prejezd', { l: 'Horní přejezd', u: 'm' })
-        + inp('Z.prohluben', { l: 'Prohlubeň', u: 'm' })
+        /* Prohlubeň + zkratka „prosklít i prohlubeň" (P2 / K19-N104,
+         * 2. 10. 2026). Vlastní obsluha: změna hloubky posune dolní meze
+         * stěn, dokud zkratka platí (oplasteniProhlubenSleduj). */
+        + `<div class="row"><label>Prohlubeň</label>
+            <input type="number" step="any" value="${esc(Z.prohluben)}"
+              title="Prosklení i v prohlubni: zaškrtněte „Prosklít i prohlubeň" — všechny stěny pak začínají v −prohlubeň (opláštění po stěnách)."
+              onchange="prohlubenSet(this.value)"><span class="u">m</span></div>`
+        + prohlubenSkloRadek()
         + `<div class="row"><label>Průchozí šachta</label>
             <input type="checkbox" ${Z.pruchoziSachta ? 'checked' : ''}
               onchange="pruchoziPrepni(this.checked)"><span class="u"></span></div>`
@@ -816,6 +823,38 @@ function nadDvermiSet(v) {
   if (NAD_DVERMI_VOLBY.indexOf(v) < 0) return;
   set('Z.nadDvermi', v);
   if (Z.nadDvermi === v) Z.svetlikNadDvermi = (v === 'sklo' || v === 'material');
+}
+
+/* PROSKLÍT I PROHLUBEŇ (P2 / K19-N104, rozhodnutí J. V. 2. 10. 2026).
+ * Zaškrtávátko pod polem Prohlubeň. Stav se odvozuje z dolních mezí stěn
+ * (oplasteniProhlubenVse v jádře), žádný příznak v datech. Zapnutí přepne
+ * jednotné opláštění na po stěnách s výchozími typy stěn — to není cenově
+ * úplně neutrální (pásy a skutečné šířky stěn), proto jen po vědomém
+ * zaškrtnutí a s větou v nápovědě. */
+function prohlubenSkloRadek() {
+  const hl = +Z.prohluben || 0;
+  const cis = v => (typeof formatCislo === 'function') ? formatCislo(v) : String(Math.round(v * 100) / 100);
+  const ano = (typeof oplasteniProhlubenVse === 'function') && oplasteniProhlubenVse(Z);
+  const tit = hl > 0
+    ? 'Všem čtyřem stěnám nastaví „Opláštění začíná" = −' + cis(hl) + ' m (prosklení i v prohlubni). '
+      + 'Jednotné opláštění se tím přepne na opláštění po stěnách A–D s výchozími typy stěn. '
+      + 'Změna hloubky prohlubně meze posune, dokud je zaškrtnuto; ruční změna u jedné stěny zkratku zruší.'
+    : 'Prohlubeň je nulová — není co prosklít.';
+  return `<div class="row"><label style="font-weight:400">Prosklít i prohlubeň</label>
+    <input type="checkbox" ${ano ? 'checked' : ''} ${hl > 0 ? '' : 'disabled'} title="${esc(tit)}"
+      onchange="prohlubenSkloSet(this.checked)"><span class="u"></span></div>`;
+}
+function prohlubenSkloSet(ano) {
+  const v = aktivniVarianta(ZAK);
+  oplasteniProhlubenNastav(Z, v && v.data && v.data.cenik, !!ano);
+  oplZmeneno();
+}
+function prohlubenSet(val) {
+  const stara = +Z.prohluben || 0;
+  set('Z.prohluben', +val);
+  /* Zámek nebo náhled zápis zastaví — pak se meze stěn nesmí hnout. */
+  if (+Z.prohluben === +val && typeof oplasteniProhlubenSleduj === 'function'
+      && oplasteniProhlubenSleduj(Z, stara)) oplZmeneno();
 }
 
 function oplRezimSet(rezim) {
