@@ -175,7 +175,9 @@ const pravidla = kontrolyPravidla();
  * text z ceníku zůstane v cizojazyčné nabídce česky. */
 /* 31. „bokyDveri" 30. 9. 2026 (#375, test_svetliky_boky.js): mezera vedle
  * dveří při bocích „bez" a počet bočních světlíků. */
-test('pravidel je třicet jedna', pravidla.length === 31, pravidla.length);
+/* 32. „statikaDvakrat" 2. 10. 2026 (P5 / K19-N109, test_statika_oplasteni.js):
+ * ručně přepsaná statika OCK a zároveň řádek statiky opláštění z ceníku. */
+test('pravidel je třicet dva', pravidla.length === 32, pravidla.length);
 test('kódy pravidel jsou jedinečné',
   new Set(pravidla.map(p => p.kod)).size === pravidla.length,
   pravidla.map(p => p.kod).join(','));

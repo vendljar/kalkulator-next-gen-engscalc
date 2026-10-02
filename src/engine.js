@@ -99,7 +99,7 @@ const DEFAULT_CENIK = {  // HODNOTY VYNULOVÁNY pro GitHub (pripravit_github.py)
   prechodoveKgKc: 0, leseniVnitrniKc: 0, leseniFix: 0,
   leseniVnejsiKc: 0, hakyKc: 0, zabradliKc: 0, soklBmKc: 0,
   sken3dKc: 0, vystupZamereniKc: 0, engineeringKc: 0,
-  projekceHodKc: 0, statikaKc: 0, statikaHod: 0, rezieKancelareKc: 0,
+  projekceHodKc: 0, statikaKc: 0, statikaHod: 0, statikaOplHod: 0, rezieKancelareKc: 0,
   /* Projekce navíc při zasklení mezi příčníky (9. 9. 2026). V repozitáři je
    * jako každá jiná ceníková hodnota NULA — skutečný ceník sem dosadí své
    * číslo. Prázdná hodnota znamená „výchozí 4 hodiny" (viz vypocet), takže
@@ -265,6 +265,65 @@ function oplasteniStenyVychozi(z, c) {
     out[k] = { odM: 0, pasy: [{ typ: oplasteniVychoziTyp(z, c, k), doM: null }] };
   });
   return out;
+}
+/* PROSKLÍT I PROHLUBEŇ (P2 / K19-N104, rozhodnutí J. V. 2. 10. 2026).
+ *
+ * Prosklená prohlubeň jde jen po stěnách: „Opláštění začíná" (`odM`) se
+ * zápornou hodnotou sahá do prohlubně. Obchodník ji musel u každé ze čtyř
+ * stěn napsat zvlášť. Zkratka nastaví všem stěnám `odM = −prohlubeň`
+ * (a ze standardu přepne na po stěnách s výchozími typy stěn). Jádro počítá
+ * dál dnešní cestou po stěnách — výpočet se nemění, Model 1 taky ne.
+ *
+ * Stav se NEUKLÁDÁ jako příznak, ODVOZUJE se z dolních mezí (stejně jako
+ * „po celé výšce" v obrazovce): příznak by se s pásy dřív nebo později
+ * rozešel. Zaškrtnuto = po stěnách a všechny čtyři stěny začínají přesně
+ * v −prohlubeň. */
+const OPL_PROHLUBEN_TOL = 1e-9;
+function oplasteniProhlubenVse(z) {
+  const zz = z || {}, o = zz.oplasteni || {};
+  const hl = +zz.prohluben || 0;
+  if (o.rezim !== 'poStenach' || !(hl > 0) || !o.steny || typeof o.steny !== 'object') return false;
+  return OPLASTENI_STENY.every(k => {
+    const st = o.steny[k];
+    return !!st && typeof st === 'object' && Math.abs((+st.odM || 0) + hl) < OPL_PROHLUBEN_TOL;
+  });
+}
+/* Zapnout: po stěnách, chybějící stěny z výchozí podoby (jádro, ne
+ * obrazovka — viz oplasteniStenyVychozi), všem `odM = −prohlubeň`.
+ * Vypnout: stěnám, které začínají v −prohlubeň, vrátí 0; ruční jiné meze
+ * a rozdělení na pásy zůstávají, režim po stěnách taky. */
+function oplasteniProhlubenNastav(z, c, ano) {
+  if (!z || typeof z !== 'object') return z;
+  const hl = +z.prohluben || 0;
+  if (!z.oplasteni || typeof z.oplasteni !== 'object') z.oplasteni = { rezim: 'standard', steny: null };
+  const o = z.oplasteni;
+  if (ano) {
+    o.rezim = 'poStenach';
+    const vych = oplasteniStenyVychozi(z, c);
+    if (!o.steny || typeof o.steny !== 'object') o.steny = {};
+    OPLASTENI_STENY.forEach(k => {
+      const st = o.steny[k];
+      if (!st || typeof st !== 'object' || !Array.isArray(st.pasy) || !st.pasy.length) o.steny[k] = vych[k];
+      o.steny[k].odM = hl > 0 ? -hl : 0;
+    });
+  } else if (o.steny && typeof o.steny === 'object') {
+    OPLASTENI_STENY.forEach(k => {
+      const st = o.steny[k];
+      if (st && typeof st === 'object' && hl > 0 && Math.abs((+st.odM || 0) + hl) < OPL_PROHLUBEN_TOL) st.odM = 0;
+    });
+  }
+  return z;
+}
+/* Změna hloubky prohlubně: když zkratka platila (všechny stěny v −stará),
+ * posune meze na −nová. Jinak se nesahá na nic — ruční meze patří
+ * obchodníkovi. Vrací true, když se něco posunulo. */
+function oplasteniProhlubenSleduj(z, stara) {
+  if (!z || !z.oplasteni || z.oplasteni.rezim !== 'poStenach') return false;
+  const hlStara = +stara || 0, hl = +z.prohluben || 0;
+  if (!(hlStara > 0) || Math.abs(hl - hlStara) < OPL_PROHLUBEN_TOL) return false;
+  if (!oplasteniProhlubenVse(Object.assign({}, z, { prohluben: hlStara }))) return false;
+  OPLASTENI_STENY.forEach(k => { z.oplasteni.steny[k].odM = hl > 0 ? -hl : 0; });
+  return true;
 }
 /* Řádky kalkulace ze součtu ploch podle typu. Pořadí je dané pořadím
  * v OPLASTENI_TYPY, aby se kalkulace nepřeskupovala podle toho, kterou
@@ -1431,10 +1490,33 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   /* Plocha, ze které se počítá PRÁCE a TMELENÍ: po celé ploše (J. V.), tedy
    * i přes typy — ale bez stěn, které nedodáváme. Světlíky u dveří k ní
    * patří (sklo i deska jsou naše opláštění). */
+  /* RUČNÍ PŘEPIS PLOCHY SKLA POSUNE I PRÁCI A TMELENÍ (P3 / K19-N105,
+   * 1. 10. 2026). V Excelu je PRÁCE OPLÁŠTĚNÍ součtem buněk ploch skel
+   * a TMELENÍ navazuje na sklo, takže ruční úprava plochy skla posune
+   * i práci. Aplikace brala plochu práce vždy z geometrie a přepis platil
+   * jen na řádku skla (K19T-C071: sklo boků přepsáno na 93,2 m², práce
+   * 213,8 m², Excel 120,6 m²). Ve standardním režimu se proto berou
+   * EFEKTIVNÍ plochy skel — přepis řádku skla boků/zad a čelního skla
+   * (`mnozstviPrepis[název]`, týž klíč a táž sémantika „prázdno není nula"
+   * jako v mkItem), jinak vypočtená hodnota. Bez přepisu beze změny
+   * (Model 1 zůstává 1:1). Ruční přepis přímo na řádku PRÁCE / TMELENÍ má
+   * dál přednost (mkItem). Režim po stěnách beze změny — jiná výška
+   * prosklení patří tam, ne do přepisu. Příplatky VSG / SKN zůstávají na
+   * geometrii (doporučení v CHANGELOG). */
+  const skloPrepisM2 = (nazev) => {
+    const p = z.mnozstviPrepis ? z.mnozstviPrepis[nazev] : null;
+    const plati = (typeof prepisPlati === 'function') ? prepisPlati(p) : p != null;
+    return plati ? +p : null;
+  };
+  const skloBokyPrepis = oplRezim === 'poStenach' ? null : skloPrepisM2(skloRada.boky.nazev);
+  const skloCelniPrepis = oplRezim === 'poStenach' ? null : skloPrepisM2(skloRada.celni.nazev);
+  const oplZPrepisuSkla = skloBokyPrepis != null || skloCelniPrepis != null;
   const oplPlochaCelkem = oplRezim === 'poStenach'
     ? oplPasy.reduce((a, p) => a + (p.typ === OPL_BEZ ? 0 : p.m2), 0)
       + oplSvetliky.reduce((a, p) => a + p.m2, 0)
-    : skloCelkemM2;
+    : (oplZPrepisuSkla
+      ? (skloBokyPrepis != null ? skloBokyPrepis : skloBokyZadniM2) + (skloCelniPrepis != null ? skloCelniPrepis : skloCelniM2)
+      : skloCelkemM2);
   /* PLOCHA SKLA PRO PŘÍPLATKY VSG A SKN V REŽIMU PO STĚNÁCH (N50,
    * hloubkový test 24. 9. 2026). Příplatky se do té doby počítaly
    * z plochy standardního zasklení i tam, kde je stěna z Cetrisu nebo ji
@@ -1655,6 +1737,13 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     ...vlastniProSekci('atyp').map(oznacAtyp),
   ].filter(Boolean);
 
+  /* Značka pro Detail výpočtu (P3): množství PRÁCE / TMELENÍ vyšlo
+   * z ručně přepsané plochy skla. Vlastnost dostane jen řádek, kde přepis
+   * skla platí a řádek sám přepsaný není — výstup bez přepisu se nemění. */
+  const sPlochouSkla = (it) => {
+    if (oplZPrepisuSkla && !it.prepsano) it.zPrepisuSkla = true;
+    return it;
+  };
   const oplasteni = [
     /* Které sklo kam (9. 9. 2026) rozhoduje typ šachty a způsob zasklení —
      * viz skloVolba(). Názvy řádků nese táž funkce, protože se na ně věší
@@ -1670,9 +1759,9 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     /* Práce i tmelení se počítají PO CELÉ PLOŠE, ne po typech (rozhodnutí
      * J. V. 18. 9. 2026) — proto `oplPlochaCelkem`, která je ve standardu
      * totožná se `skloCelkemM2`. */
-    mkItem('PRÁCE OPLÁŠTĚNÍ', oplPlochaCelkem, c.praceOplasteniKc, { cenaPath: 'C.praceOplasteniKc' }),
+    sPlochouSkla(mkItem('PRÁCE OPLÁŠTĚNÍ', oplPlochaCelkem, c.praceOplasteniKc, { cenaPath: 'C.praceOplasteniKc' })),
     mkItem('PLASTOVÉ KOTVY', terce ? 1 : 0, c.plastKotvyKc, { cenaPath: 'C.plastKotvyKc' }),
-    ext ? mkItem('TMELENÍ (MAT. + PRÁCE) (EXT)', oplPlochaCelkem, c.tmeleniKc, { cenaPath: 'C.tmeleniKc' }) : null,
+    ext ? sPlochouSkla(mkItem('TMELENÍ (MAT. + PRÁCE) (EXT)', oplPlochaCelkem, c.tmeleniKc, { cenaPath: 'C.tmeleniKc' })) : null,
     /* STŘÍŠKA JE POČET KUSŮ, NE ZAŠKRTÁVÁTKO (9. 9. 2026, zadání J. V.).
      *
      * Do 9. 9. ji zapínala „Průchozí šachta" a byla vždy právě jedna, a jen
@@ -1769,6 +1858,17 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
       { cenaPath: 'C.projekceHodKc',
         pozn: zaskleniProjHod ? `+ ${zaskleniProjHod} hod za zasklení mezi příčníky (lišty)` : '' }),
     mkItem('STATICKÉ POSOUZENÍ', c.statikaHod, c.statikaKc, { cenaPath: 'C.statikaKc' }),
+    /* STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ (P5 / K19-N109, rozhodnutí J. V.
+     * 2. 10. 2026). Excel 2026 má dva řádky — statika OCK a statika
+     * opláštění; aplikace měla jen první a převod 13 zakázek se dorovnával
+     * ručním přepisem hodin. Druhý řádek má vlastní hodiny v ceníku
+     * (`C.statikaOplHod`) a sdílí sazbu `C.statikaKc`. Vzniká JEN u šachty
+     * s opláštěním (plocha PRÁCE OPLÁŠTĚNÍ > 0) a jen při hodinách > 0 —
+     * s ceníkem bez položky (nebo s nulou) se seznam položek nemění, Model 1
+     * zůstává 1:1. `+… || 0`: starší zveřejněný ceník klíč nemá. */
+    (+c.statikaOplHod || 0) > 0 && oplPlochaCelkem > 0
+      ? mkItem('STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ', +c.statikaOplHod || 0, c.statikaKc, { cenaPath: 'C.statikaKc' })
+      : null,
     mkItem('REŽIE KANCELÁŘE', 1, c.rezieKancelareKc, { cenaPath: 'C.rezieKancelareKc' }),
     mkItem('PRÁCE STAVBYVEDOUCÍHO', c.stavbyvedouciHod, c.stavbyvedouciKc, { cenaPath: 'C.stavbyvedouciKc' }),
     /* `|| 0`: starší ceníky (a zkušební sady) položku nemají a bez toho by
@@ -2191,4 +2291,4 @@ function cenikMigraceLeseni(cenik) {
   }
 }
 
-if (typeof module !== 'undefined') module.exports = { vypocet, profilyNezname, mustkyPocet, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, BOKY_VYPLN_VOLBY, BOKY_DVERI_VOLBY, bokyPocet, bokyPocetAuto, bokyPocetRucni, bokyPocetRucne, bokySirkaRucniMm, svetlikyBokyMigrace, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };
+if (typeof module !== 'undefined') module.exports = { vypocet, profilyNezname, mustkyPocet, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, BOKY_VYPLN_VOLBY, BOKY_DVERI_VOLBY, bokyPocet, bokyPocetAuto, bokyPocetRucni, bokyPocetRucne, bokySirkaRucniMm, svetlikyBokyMigrace, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, oplasteniProhlubenVse, oplasteniProhlubenNastav, oplasteniProhlubenSleduj, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };

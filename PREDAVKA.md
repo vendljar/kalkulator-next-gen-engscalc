@@ -1,4 +1,54 @@
-# Předávka — stav k 1. 10. 2026 večer (v1.10.2 na test-draft i test, v30.9.1 na main)
+# Předávka — stav k 2. 10. 2026 (v2.10.1 na test-draft i test, v30.9.1 na main)
+
+Na `main`: **v30.9.1**. Na `test-draft` = `test`: **v2.10.1** (pokyn J. V.
+2. 10. 2026: „souhlasím s výchozími návrhy, zapracuj P2, P4, P6; P5 —
+statiku udělej tak, jak jsem navrhoval, ve dvou řádcích. Vypiš, které
+konkrétní zakázky z ostré verze tím budou dotčeny. P3 ok; P1 OK. připrav,
+otestuj a pošli do testu. tag je releasnutý"). Paralelní větev
+**`claude/k19-nalezy`** (z `b5253c9`) sloučena přes integrační větev
+**`claude/davka-2-10`** nad v1.10.2 (8a7b069); konflikty jen v CHANGELOG
+a PREDAVKA. Sezení session_01WRbkr4tfxtUB1k8PR37dUR.
+
+## Hotovo v2.10.1 — nálezy 19. kola (podrobně CHANGELOG.md)
+
+| # | Nález | Co | Testy |
+|---|---|---|---|
+| P1 | K19-N102 | #372 kontroluje i nově zamčenou variantu (zámek jen v příchozích datech) | test_obnova 176/4 → 180/0; mutace serveru +1 |
+| P2 | K19-N104 | zkratka „Prosklít i prohlubeň" (všem stěnám odM = −prohlubeň) | test_prohluben_sklo 33/0; overit_oplasteni +7; mutace jádra +2 |
+| P3 | K19-N105 | ruční přepis plochy skla posune PRÁCI OPLÁŠTĚNÍ a TMELENÍ | test_prepis_skla_prace 31/22 → 53/0; mutace jádra +2 |
+| P4 | K19-N107 | nápověda „jiné sklo = opláštění po stěnách" | overit_oplasteni +2 |
+| P5 | K19-N109 | statika ve dvou řádcích: nová položka ceníku `C.statikaOplHod` (výchozí 0), kontrola `statikaDvakrat` | test_statika_oplasteni 16/22 → 38/0; mutace jádra +3 |
+| P6 | K19-N114 | přepnutí na zahraniční ceník nabídne „jen realizace" | test_zahr_jen_realizace 12/0; overit_zahranicni 40 → 45 |
+
+Rozbor s variantami: `podklady/K19_ROZBOR_2026-10-01.md`.
+
+## Celé kolo nad v2.10.1
+
+(doplní se po doběhnutí)
+
+## Čeká na J. V.
+
+- **P5:** nastavit v Ceníku OCK (REŽIE) „Statické posouzení opláštění –
+  hodin" (např. 6) a zveřejnit — do té doby se nic nemění. Dotčené
+  zakázky viz CHANGELOG v2.10.1 (testovací K19 jsou zamčené; 13 s ručně
+  dorovnanou statikou hlídá kontrola `statikaDvakrat`).
+- **P3:** příplatky VSG/SKN navázat na přepsanou plochu skla (výchozí:
+  ano, další dávka).
+- Release v2.10.1 (odkaz poslán; tag z cloudu nejde — HTTP 403).
+- Převod do `main` (výchozí: až po vyzkoušení v testu).
+- Smazat sloučené větve `claude/k19-nalezy` a `claude/davka-2-10` (celé
+  v `test-draft`) — mazání z cloudu nejde.
+- Ostatní otevřené body z 1. 10. níž beze změny.
+
+## Další krok
+
+Čekat na vyzkoušení v testu: P1 novou TEST zakázkou, P3 K19T-C088
+v klonu varianty proti „OCK – test × Excel", P2/P4/P6 proklikem, P5 po
+nastavení hodin v ceníku.
+
+---
+
+# Předchozí stav (1. 10. 2026 večer — v1.10.2)
 
 Na `main`: **v30.9.1**. Na `test-draft` = `test`: **v1.10.2** (pokyn J. V.
 1. 10. 2026: „po zeleném kole to pošli do testu“) — rychlý posun z integrační

@@ -652,6 +652,55 @@ zkus('rozdělení stěn se vypnutím režimu nezahodí', prezilo === 2, prezilo)
     vysl.zpet.std === 'standard' && !vysl.zpet.atyp && vysl.zpet.termin === vysl.pred.termin, J(vysl.zpet));
 }
 
+/* ---------- P2 (K19-N104, 2. 10. 2026): zkratka „Prosklít i prohlubeň" ----------
+ * Čerstvá stránka (standardní opláštění). Zaškrtnutí pod polem Prohlubeň
+ * přepne na po stěnách a všem stěnám nastaví „Opláštění začíná" = −prohlubeň;
+ * změna hloubky meze posune; odškrtnutí je vrátí na 0. */
+await p.goto(KDE);
+await p.waitForTimeout(600);
+{
+  const cb = p.locator('input[onchange^="prohlubenSkloSet"]');
+  zkus('P2: pod polem Prohlubeň je zaškrtávátko „Prosklít i prohlubeň" (nezaškrtnuté)',
+    await cb.count() === 1 && !(await cb.isChecked()), await cb.count());
+  zkus('P2: pole Prohlubeň nese nápovědu k prosklení prohlubně',
+    /Prosklít i prohlubeň/.test(await p.locator('input[onchange^="prohlubenSet"]').getAttribute('title') || ''));
+  zkus('P2: u nové zakázky (prohlubeň 0) je zaškrtávátko zakázané', await cb.isDisabled());
+  /* P4 (K19-N107): nápověda „jiné sklo = po stěnách" u řádku skla ve standardu a u volby opláštění. */
+  const p4 = await p.evaluate(() => {
+    const sv = skloVolba(Z, aktivniVarianta(ZAK).data.cenik);
+    const tit = (n) => { const i = [...document.querySelectorAll('input.nazev-ed')].find(x => x.value === n); return i ? i.title : null; };
+    return { boky: tit(sv.boky.nazev), celni: tit(sv.celni.nazev), prace: tit('PRÁCE OPLÁŠTĚNÍ'),
+      volba: (document.querySelector('select[onchange^="oplRezimSet"]') || {}).title || '' };
+  });
+  zkus('P4: řádek skla boků i čelního skla nese nápovědu „jiné sklo = opláštění po stěnách"',
+    /po stěnách A–D/.test(p4.boky || '') && /po stěnách A–D/.test(p4.celni || ''), JSON.stringify(p4));
+  zkus('P4: jiný řádek (PRÁCE OPLÁŠTĚNÍ) ji nenese a volba opláštění ano',
+    p4.prace != null && !/po stěnách A–D/.test(p4.prace) && /po stěnách A–D/.test(p4.volba), JSON.stringify(p4));
+  await p.evaluate(() => {
+    set('OCK.zadani.sirka', 1.6); set('OCK.zadani.hloubka', 1.4);
+    set('OCK.zadani.zdvih', 9); set('OCK.zadani.prejezd', 3.5); set('OCK.zadani.prohluben', 1.1);
+  });
+  await p.waitForTimeout(250);
+  await p.locator('input[onchange^="prohlubenSkloSet"]').check();
+  await p.waitForTimeout(250);
+  const po = await p.evaluate(() => ({ rezim: Z.oplasteni.rezim, hl: Z.prohluben,
+    meze: ['A', 'B', 'C', 'D'].map(k => Z.oplasteni.steny[k].odM),
+    karta: document.querySelectorAll('#ock-oplasteni-steny').length,
+    cb: document.querySelector('input[onchange^="prohlubenSkloSet"]').checked }));
+  zkus('P2: zaškrtnutí přepne na opláštění po stěnách a kreslí kartu stěn', po.rezim === 'poStenach' && po.karta === 1, JSON.stringify(po));
+  zkus('P2: všechny čtyři stěny začínají v −prohlubeň a zaškrtávátko zůstane zaškrtnuté',
+    po.meze.every(m => m === -po.hl) && po.cb, JSON.stringify(po));
+  const pole = p.locator('input[onchange^="prohlubenSet"]');
+  await pole.fill('1.5'); await pole.dispatchEvent('change');
+  await p.waitForTimeout(250);
+  const meze2 = await p.evaluate(() => ['A', 'B', 'C', 'D'].map(k => Z.oplasteni.steny[k].odM));
+  zkus('P2: změna hloubky prohlubně meze stěn posune (−1,5 m)', meze2.every(m => m === -1.5), JSON.stringify(meze2));
+  await p.locator('input[onchange^="prohlubenSkloSet"]').uncheck();
+  await p.waitForTimeout(250);
+  const meze3 = await p.evaluate(() => ['A', 'B', 'C', 'D'].map(k => Z.oplasteni.steny[k].odM));
+  zkus('P2: odškrtnutí vrátí meze na 0', meze3.every(m => m === 0), JSON.stringify(meze3));
+}
+
 zkus('za celý průchod nevznikla chyba v konzoli', konzole.length === 0, konzole.slice(0, 2).join(' | '));
 
 await b.close();

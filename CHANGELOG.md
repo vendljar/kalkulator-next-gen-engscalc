@@ -8,6 +8,183 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v2.10.1 — nálezy 19. kola P1–P6 (větev claude/k19-nalezy), 2. 10. 2026
+
+Sloučeno do `test-draft` nad v1.10.2 a převedeno do `test` na pokyn J. V. 2. 10. 2026 („souhlasím s výchozími návrhy, zapracuj P2, P4, P6; P5 — statiku udělej tak, jak jsem navrhoval, ve dvou řádcích … P3 ok; P1 OK. připrav, otestuj a pošli do testu"). Integrační větev `claude/davka-2-10`, konflikty jen v CHANGELOG a PREDAVKA.
+
+Nálezy 19. kola (1. 10. 2026, ostrá v30.9.1 + test v1.10.1) podle promptu
+J. V. Větev z `b5253c9` (v1.10.1); o sloučení rozhoduje J. V. Označení
+P1–P6 z promptu, v závorce číslo nálezu kola.
+
+**Ověřeno celým kolem:** celé kolo nad b2b901b (kód P1 + P3; další commity jen dokumentace) VŠE ZELENÉ (64 min 16 s): sady 215 prošlo, 0 selhalo, 1 přeskočeno (test.js — skutečný ceník v repozitáři není), mutace jádra 130 z 130, mutace serveru 211 z 211, statické kontroly 3 z 3; s firemními podklady (KNG_PODKLADY: šablony CN v14, CN v11, PROJ v3, SoD, plná moc, příručka přejmenovaná na v1.10.1). Po kole `git status` čistý, `grep "if (false)"` jen komentář v test_prava.mjs.
+
+### P1 (K19-N102) — pojistka #372 a nově zamčená varianta
+
+- **Příčina:** `netlify/lib/zakazka_kontrola.mjs` přeskakoval v kontrole
+  neznámého rozměru profilu (#372) každou variantu, která do serveru PŘIŠLA
+  zamčená. Porovnání zamčených variant s uloženou verzí bere jen varianty
+  zamčené v uložené verzi, takže zámek, který server ještě neviděl, prošel
+  oběma kontrolami. V ostré v30.9.1 tak tisk se zámkem uložil 10 zakázek
+  s profilem mimo katalog jeklů, v testu v1.10.1 záměrná zkouška K19T-C070
+  (zámek bez dokumentu + uložení).
+- **Oprava:** při uložení se přeskakuje jen varianta zamčená UŽ V ULOŽENÉ
+  VERZI (stejné `id`, `variantaUzamcena`); nově zamčená se kontroluje jako
+  nezamčená. Obnova ze zálohy beze změny — zámek ze zálohy je doklad (stejně
+  jako u ostatních pojistek v režimu obnovy).
+- **Testy** (`netlify/test_obnova.mjs`): (a) nová zakázka se zámkem jen
+  v příchozích datech a spojkou 70x40 / 3 mm → 400 a v databázi nic;
+  (a2) uložená zakázka, zámek přidaný až v požadavku → 400, uložená verze
+  beze změny; (b) varianta zamčená už v uložené verzi s profilem, který
+  katalog (po změně) nemá → uloží se; (c) nezamčená → 400 jako dřív. Před
+  opravou 176 OK / 4 FAIL (a, a2), po opravě 180 OK / 0 FAIL. Nová mutace
+  serveru „K19-N102 (P1)" chycena (4 selhání), kotva mutace „#372 kontroluje
+  profily i v odeslané variantě" posunuta na `zamcenaDriv` (chycena testem b).
+- **Prověřeno, zda další kontroly téhož souboru nepřeskakují varianty
+  zamčené jen v příchozích datech:** ne. Typy polí (`uloTypyProblemy`),
+  záporné hodnoty (B111), zaokrouhlení (B96), ceník a přepisy podle role
+  (B112, přes `uloProVarianty`), minimální marže (`schvalovaniServerMarze`),
+  shoda dat zamčené varianty (N43) i razítka zámku (B59, B61) se řídí
+  zámkem v ULOŽENÉ verzi; nový zámek navíc projde ověřením čísla z papíru
+  a výsledku. **Návrh (neměněno):** obnova ze SOUBORU (B98 — soubor jde
+  upravit) bere zámek ze zálohy jako doklad i pro #372; kdo by v editoru
+  připsal zámek k variantě s profilem mimo katalog, obnovou ji do databáze
+  dostane (obnovu smí jen administrátor). Výchozí návrh: ponechat; přísnější
+  varianta = u `zeSouboru` kontrolovat jen zámek, který leží v databázi.
+
+### P3 (K19-N105) — ruční přepis plochy skla posune PRÁCI OPLÁŠTĚNÍ a TMELENÍ
+
+- **Příčina:** v Excelu je PRÁCE OPLÁŠTĚNÍ součtem ploch skel a TMELENÍ
+  navazuje na sklo, takže ruční úprava plochy skla posune i práci.
+  V aplikaci platil ruční přepis množství (`mnozstviPrepis[název]`) jen na
+  řádku skla; `oplPlochaCelkem` se ve standardním režimu brala z geometrie
+  (K19T-C071: sklo boků přepsáno na 93,2 m², práce 213,8 m², Excel
+  120,6 m²; K19T-C088 +11,5 % proti Excelu). Ruční přepis skla nese 13
+  převedených zakázek.
+- **Oprava (`src/engine.js`):** ve standardním režimu se pro PRÁCI
+  a TMELENÍ berou efektivní plochy skel — přepis řádku skla boků/zad
+  a čelního skla (týž klíč a táž sémantika „prázdno není nula" jako
+  u řádku), jinak vypočtená hodnota. Ruční přepis přímo na řádku PRÁCE
+  OPLÁŠTĚNÍ / TMELENÍ má dál přednost. Režim po stěnách beze změny.
+  V Detailu výpočtu (krok 11, sekce OPLÁŠTĚNÍ) nese řádek PRÁCE / TMELENÍ
+  poznámku „(z ručně přepsané plochy skla)"; značku `zPrepisuSkla` dostane
+  jen řádek, kde přepis skla platí, takže výstup bez přepisu se nemění.
+- **Dopad na uložené zakázky:** bez ručního přepisu skla žádný (Model 1
+  zůstává 1:1 — `nastroje/porovnani_modelu.js` před i po opravě shodný
+  výstup, předlohy v sadách beze změny). Odeslané (zamčené) nabídky drží
+  zmrazený výsledek. **Rozpracovaná (nezamčená) zakázka s ručním přepisem
+  skla se po otevření přepočítá** — PRÁCE a TMELENÍ se srovnají s přepsaným
+  sklem (to je smysl opravy; ověření J. V.: K19T-C088 v klonu varianty).
+- **Testy:** nová sada `src/test_prepis_skla_prace.js` (exteriér
+  i interiér × Model 1 i 2: bez přepisu beze změny; přepis skla boků →
+  PRÁCE i TMELENÍ = přepsané sklo boků + čelní sklo; přepis čelního skla;
+  přepis přímo na PRÁCI vyhrává; interiér bez tmelení jen PRÁCE; prázdný
+  přepis nic nemění; po stěnách beze změny). Před opravou 31 OK / 22 FAIL,
+  po opravě 53 OK / 0 FAIL.
+- **Doporučení k příplatkům VSG a SKN (neměněno):** `vsgFolieM2`
+  (standardně celé sklo) a `sknM2` (sklo boků a zad) se ve standardním
+  režimu dál berou z geometrie. Fólie VSG i SKN jsou úpravou TÉHOŽ skla,
+  takže by logicky měly sledovat efektivní plochu stejně jako PRÁCE
+  (VSG = přepsané sklo boků + čelní, SKN = přepsané sklo boků). Výchozí
+  návrh: sjednotit v další dávce; příplatky mají vlastní ruční přepis
+  množství, takže dnes je obchodník dorovná ručně. Dopad jen na zakázky
+  s ručním přepisem skla a zaškrtnutým příplatkem.
+
+### P5 (K19-N109) — statické posouzení ve dvou řádcích (rozhodnutí J. V. 2. 10. 2026)
+
+- **Zadání:** „statiku udělej tak, jak jsem navrhoval — ve dvou řádcích"
+  (Excel 2026: statika OCK + statika opláštění).
+- **Ceník:** nová položka „Statické posouzení opláštění – hodin"
+  (`C.statikaOplHod`, sekce REŽIE, výchozí 0). Sazba je společná se
+  statikou OCK (`C.statikaKc`). **Hodiny nastaví J. V. v Ceníku OCK
+  a zveřejní** — ceník se ve větvi nemění.
+- **Jádro (`src/engine.js`):** řádek „STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ" hned za
+  statikou OCK, jen u šachty s opláštěním (plocha PRÁCE OPLÁŠTĚNÍ > 0;
+  po stěnách se samými „bez" a světlíky od stavby ne) a jen při hodinách
+  > 0. Ceník bez položky nebo s nulou = seznam položek i cena beze změny
+  (Model 1 1:1). Ruční přepis hodin funguje jako u každé položky.
+- **Kontrola `statikaDvakrat`** (upozornění, ne zábrana): ručně přepsané
+  hodiny STATICKÉ POSOUZENÍ a zároveň řádek statiky opláštění — převod
+  z Excelu dorovnával statiku ručně (10–20 h), takže by se opláštění
+  zaplatilo dvakrát.
+- **Dopad na ostrou databázi:** do zveřejnění ceníku s hodinami žádný.
+  Pak dostanou řádek rozpracované (nezamčené) varianty, které převezmou
+  nový ceník; odeslané (zamčené) drží zmrazený výsledek. Testovací
+  zakázky kola 19 jsou všechny zamčené — beze změny. Ručně dorovnanou
+  statiku nese 13 z nich (K19-C032, C034, C045, C069, C086, C093, C094,
+  C099, C103, C104, C105, C109, C112 = 9532 … 9612); v klonu by kontrola
+  upozornila na dvojí statiku.
+- **Testy:** nová sada `src/test_statika_oplasteni.js` (exteriér
+  i interiér × Model 1 i 2; ceník bez položky / s nulou beze změny;
+  6 h → řádek, sazba, pořadí, cena; přepis hodin; šachta bez opláštění;
+  kontrola upozorní / mlčí). Před zavedením 16 OK / 22 FAIL, po něm 38 OK /
+  0 FAIL. `test_kontroly.js`: pravidel 32. Tři nové mutace jádra chyceny
+  (3 z 3).
+
+### P2 (K19-N104) — zkratka „Prosklít i prohlubeň" (rozhodnutí J. V. 2. 10. 2026: výchozí návrh)
+
+- **Zadání šachty:** pod polem Prohlubeň zaškrtávátko „Prosklít i
+  prohlubeň". Zaškrtnutí nastaví všem čtyřem stěnám „Opláštění začíná" =
+  −prohlubeň a jednotné opláštění přepne na opláštění po stěnách
+  s výchozími typy stěn (ty skládá jádro, `oplasteniStenyVychozi`).
+  Odškrtnutí vrátí meze, které začínají v −prohlubeň, na 0 (rozdělení
+  stěn a režim po stěnách zůstávají). Změna hloubky prohlubně meze posune,
+  dokud zkratka platí; ruční mez u jedné stěny ji zruší. Stav se odvozuje
+  z mezí (`oplasteniProhlubenVse`), žádný příznak v datech. Pole Prohlubeň
+  i zaškrtávátko nesou nápovědu; u nulové prohlubně je zakázané. Zámek
+  varianty obě obsluhy hlídá (`zamek_ui.js`).
+- **Výpočet beze změny:** jádro počítá dnešní cestou po stěnách (plocha pod
+  nulou skutečnou šířkou stěny); nezaškrtnuté = dnešní stav, Model 1 1:1.
+- **Detail výpočtu** (krok 8): řádek „Prosklená prohlubeň — všechny stěny
+  od −X m". Technická specifikace beze změny (ROZSAH OPLÁŠTĚNÍ už píše „od
+  výšky −X m, tedy do prohlubně").
+- **Testy:** nová sada `src/test_prohluben_sklo.js` 33 OK / 0 FAIL (před
+  zavedením padá — funkce v jádře chyběly); `overit_oplasteni.mjs` +7
+  kontrol v prohlížeči, 78 OK / 0 FAIL (před 71). Dvě nové mutace jádra
+  chyceny (2 z 2).
+
+### P4 (K19-N107) — nápověda „jiné sklo = opláštění po stěnách" (rozhodnutí J. V. 2. 10. 2026: výchozí návrh B)
+
+- Druh skla ve standardním režimu dál určuje typ šachty a způsob zasklení
+  (`skloVolba`); jiné sklo jde přes opláštění po stěnách (typ skla
+  z ceníku nebo „jiné" s vlastním názvem a sazbou). Věta to teď říká
+  v bublině u názvu řádku skla boků/zad i čelního skla (jen ve standardním
+  režimu), u volby Opláštění v zadání šachty a v Detailu výpočtu u řádku
+  „Které sklo se počítá". Výpočet ani dokumenty beze změny.
+- **Testy:** `overit_oplasteni.mjs` +2 kontroly (řádky skla nápovědu nesou,
+  PRÁCE OPLÁŠTĚNÍ ne, volba opláštění ano), 80 OK / 0 FAIL.
+
+### P6 (K19-N114) — přepnutí na zahraniční ceník nabídne „jen realizace" (rozhodnutí J. V. 2. 10. 2026: výchozí návrh A)
+
+- Po přepnutí varianty na zahraniční řadu ceníku se aplikace zeptá
+  „Zakázka jen realizace — projekci nepočítat?" (výchozí Ano). Ano nastaví
+  `ZAK.jenOck` (strana PROJ zešedne, krycí list PROJ, SoD PROJ a plán
+  plateb PROJ se nepoužijí, kontroly projekce mlčí) a zapíše to do
+  protokolu. Dialog říká, že volba platí pro celou zakázku (všechny
+  varianty) a jak ji vrátit („Počítat i tuhle stranu"). Po návratu VŠECH
+  variant na tuzemský ceník nabídne opak (výchozí Ne). Nenabízí se, když
+  zakázka nese číslo projekce (OVP ve společném čísle nebo vlastní číslo
+  ve starší hlavičce PROJ), když je už jen realizace / jen projekce, nebo
+  když obchodník vědomě zvolil počítat obě strany. Rozhoduje
+  `zahrJenRealizaceNabidnout` (`src/zakazka.js`), zápis jde přes `set()`
+  (zámek i náhled ho hlídají). Kontrola `projZahranici` beze změny.
+- **Testy:** nová sada `src/test_zahr_jen_realizace.js` 12 OK / 0 FAIL (před
+  zavedením padá — funkce chyběla); `overit_zahranicni.mjs` +5 kontrol
+  (dotaz, Ano, návrat, Ne, OVP) a test dialogu s dopadem hledá svůj text
+  mezi dialogy, 45 OK / 0 FAIL (před 40).
+
+### P2, P4, P5, P6 — rozbor (1. 10. 2026; rozhodnuto 2. 10., viz oddíly výš)
+
+Body „prověřit + návrh" — rozbor s variantami a výchozími návrhy
+v `podklady/K19_ROZBOR_2026-10-01.md`, čeká na rozhodnutí J. V.:
+P2 prosklená prohlubeň (výchozí: zkratka „prosklít i prohlubeň" pro
+všechny stěny + nápověda), P4 volba druhu skla (výchozí: nápověda „jiné
+sklo = po stěnách", volba skla až po rozhodnutí o položkách ceníku),
+P5 statika opláštění (výchozí: jen hodiny `statikaHod` v ceníku), P6
+projekce u zahraniční zakázky (výchozí: přepnutí na zahraniční řadu
+nabídne „jen realizace").
+
+---
+
 ## v1.10.2 — dávka 1. 10. 2026 odpoledne: výchozí plán plateb PROJ, zarovnání polí opláštění, zbytek mezery vedle dveří (1. 10. 2026)
 
 Zadání J. V. 1. 10. 2026 odpoledne (navazující sezení po v1.10.1): „Nastav
@@ -94,6 +271,8 @@ Větev `claude/svetlik-zbytek-vedle-dveri`.
   mezi sloupky (shodně s Excelem a Modelem 1) — **ponechat**.
 - Nápověda s výpočtem mezery („šířka skla … − otvor dveří … − 40 mm“) se
   **nezobrazuje** — nic se nepřidává.
+
+---
 
 ## v1.10.1 — dávka 1. 10. 2026: SoD podle šablon, zábrany blokují dokumenty, šířka bočního světlíku, dodatkové texty (1. 10. 2026)
 

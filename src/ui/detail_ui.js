@@ -351,6 +351,11 @@ function renderDetail() {
         'sklo = sklo stěny s dveřmi a její zasklení (po stěnách typ skla té stěny, a není-li ze skla, sklo stěny ze standardu); '
         + 'materiál opláštění = materiál stěn B, C, D, převažující podle plochy („bez — dodá stavba" = zajistí stavba) — rozhodnutí J. V. 30. 9. 2026'],
     ] : []),
+    /* P2 (K19-N104): prohlubeň prosklená zkratkou — všechny stěny od −prohlubeň. */
+    ...((typeof oplasteniProhlubenVse === 'function' && oplasteniProhlubenVse(Z)) ? [
+      ['Prosklená prohlubeň', `všechny stěny od −${M(Z.prohluben, 2)} m`,
+        'zkratka „Prosklít i prohlubeň" v zadání šachty: opláštění po stěnách, každá stěna začíná v −prohlubeň; '
+        + 'plocha pod nulou se počítá skutečnou šířkou stěny (krok opláštění po stěnách)']] : []),
     ['Boční + zadní m²', `${M(z.bokyZadniM2, 2)} m²`, 'materiál boční/zadní stěna; ve standardu sem patří i světlíky u dveří z materiálu opláštění (#375 — materiál stěn B, C, D)'],
     ['Čelní m²', `${M(z.celniM2, 2)} m²`, Z.pruchoziSachta ? 'materiál čelní stěna: světlíky + patra bez dveří A' : 'materiál čelní stěna (světlíky)'],
     ['Zasklení celkem', `${M(z.celkemM2, 2)} m²`,
@@ -373,7 +378,9 @@ function renderDetail() {
       'řídí se TYPEM ŠACHTY a u interiéru i ZPŮSOBEM ZASKLENÍ — k našim terčům patří jiné '
       + 'sklo než k zasklení do lišt mezi příčníky. Není to jiná kvalita, je to jiný typ. '
       + 'Venku drží boky a záda ditherm dvojsklo kvůli tepelné izolaci, uvnitř budovy se '
-      + 'neizoluje a jsou všude VSG. Sazby jsou v Ceníku OCK.'],
+      + 'neizoluje a jsou všude VSG. Sazby jsou v Ceníku OCK. '
+      /* P4 (K19-N107, 2. 10. 2026): kudy k jinému sklu. */
+      + 'Jiné sklo: Opláštění „po stěnách A–D" a u stěn typ skla z ceníku, nebo „jiné" s vlastním názvem a sazbou.'],
   ]), 'dv-8');
 
   /* 9) spojovací materiál */
@@ -420,7 +427,8 @@ function renderDetail() {
   /* 11–13) cenové sekce, rezerva, souhrn */
   const sekceBlok = (nazev, rows, sum) => {
     const rr = rows.map(x =>
-      `<tr><td>${esc(x.nazev)}</td><td class="val">${M(x.mnozstvi, 3)} × ${K(x.cena)}${x.fix ? ' + fix ' + K0(x.fix) : ''}</td>
+      /* P3 (K19-N105): množství PRÁCE / TMELENÍ z ručně přepsané plochy skla. */
+      `<tr><td>${esc(x.nazev)}${x.zPrepisuSkla ? ' <span class="note">(z ručně přepsané plochy skla)</span>' : ''}</td><td class="val">${M(x.mnozstvi, 3)} × ${K(x.cena)}${x.fix ? ' + fix ' + K0(x.fix) : ''}</td>
        <td class="val">${K(x.naklad)}</td><td class="val">+ ${K(x.marze)}</td><td class="val">${K(x.sMarzi)}</td></tr>`).join('');
     return `<div style="font-weight:700;margin:10px 0 4px">${esc(nazev)}</div>
       <table class="dv"><tr class="f"><td>Položka</td><td class="val">Množství × jedn. cena</td><td class="val">Náklad</td><td class="val">Přirážka</td><td class="val">vč. přirážky</td></tr>
