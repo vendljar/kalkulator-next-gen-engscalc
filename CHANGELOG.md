@@ -130,8 +130,10 @@ P1–P6 z promptu, v závorce číslo nálezu kola.
   stěn a režim po stěnách zůstávají). Změna hloubky prohlubně meze posune,
   dokud zkratka platí; ruční mez u jedné stěny ji zruší. Stav se odvozuje
   z mezí (`oplasteniProhlubenVse`), žádný příznak v datech. Pole Prohlubeň
-  i zaškrtávátko nesou nápovědu; u nulové prohlubně je zakázané. Zámek
-  varianty obě obsluhy hlídá (`zamek_ui.js`).
+  i zaškrtávátko nesou nápovědu. U nulové prohlubně se zaškrtávátko
+  nezakazuje (vstupy kalkulace mají zůstat živé — `overit_lista.mjs`),
+  zaškrtnutí jen vysvětlí, že není co prosklít. Zámek varianty obě
+  obsluhy hlídá (`zamek_ui.js`).
 - **Výpočet beze změny:** jádro počítá dnešní cestou po stěnách (plocha pod
   nulou skutečnou šířkou stěny); nezaškrtnuté = dnešní stav, Model 1 1:1.
 - **Detail výpočtu** (krok 8): řádek „Prosklená prohlubeň — všechny stěny
@@ -139,7 +141,7 @@ P1–P6 z promptu, v závorce číslo nálezu kola.
   výšky −X m, tedy do prohlubně").
 - **Testy:** nová sada `src/test_prohluben_sklo.js` 33 OK / 0 FAIL (před
   zavedením padá — funkce v jádře chyběly); `overit_oplasteni.mjs` +7
-  kontrol v prohlížeči, 78 OK / 0 FAIL (před 71). Dvě nové mutace jádra
+  kontrol v prohlížeči (po sloučení s v1.10.2 91 OK / 0 FAIL). Dvě nové mutace jádra
   chyceny (2 z 2).
 
 ### P4 (K19-N107) — nápověda „jiné sklo = opláštění po stěnách" (rozhodnutí J. V. 2. 10. 2026: výchozí návrh B)
