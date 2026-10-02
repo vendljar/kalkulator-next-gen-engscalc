@@ -611,6 +611,17 @@ await p.waitForTimeout(600);
   zkus('P2: pole Prohlubeň nese nápovědu k prosklení prohlubně',
     /Prosklít i prohlubeň/.test(await p.locator('input[onchange^="prohlubenSet"]').getAttribute('title') || ''));
   zkus('P2: u nové zakázky (prohlubeň 0) je zaškrtávátko zakázané', await cb.isDisabled());
+  /* P4 (K19-N107): nápověda „jiné sklo = po stěnách" u řádku skla ve standardu a u volby opláštění. */
+  const p4 = await p.evaluate(() => {
+    const sv = skloVolba(Z, aktivniVarianta(ZAK).data.cenik);
+    const tit = (n) => { const i = [...document.querySelectorAll('input.nazev-ed')].find(x => x.value === n); return i ? i.title : null; };
+    return { boky: tit(sv.boky.nazev), celni: tit(sv.celni.nazev), prace: tit('PRÁCE OPLÁŠTĚNÍ'),
+      volba: (document.querySelector('select[onchange^="oplRezimSet"]') || {}).title || '' };
+  });
+  zkus('P4: řádek skla boků i čelního skla nese nápovědu „jiné sklo = opláštění po stěnách"',
+    /po stěnách A–D/.test(p4.boky || '') && /po stěnách A–D/.test(p4.celni || ''), JSON.stringify(p4));
+  zkus('P4: jiný řádek (PRÁCE OPLÁŠTĚNÍ) ji nenese a volba opláštění ano',
+    p4.prace != null && !/po stěnách A–D/.test(p4.prace) && /po stěnách A–D/.test(p4.volba), JSON.stringify(p4));
   await p.evaluate(() => {
     set('OCK.zadani.sirka', 1.6); set('OCK.zadani.hloubka', 1.4);
     set('OCK.zadani.zdvih', 9); set('OCK.zadani.prejezd', 3.5); set('OCK.zadani.prohluben', 1.1);

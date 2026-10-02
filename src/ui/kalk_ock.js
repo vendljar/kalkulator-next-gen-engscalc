@@ -190,7 +190,7 @@ function renderInputs() {
          * Vlastní stěny jsou ve zvláštní kartě, která se kreslí až po
          * přepnutí — ve standardním režimu o nich obchodník nemá vědět. */
         + `<div class="row"><label>Opláštění</label>
-            <select style="width:150px" onchange="oplRezimSet(this.value)">
+            <select style="width:150px" onchange="oplRezimSet(this.value)" title="${esc(SKLO_JINE_NAPOVEDA)}">
               <option value="standard" ${oplPoStenach() ? '' : 'selected'}>jednotné (standard)</option>
               <option value="poStenach" ${oplPoStenach() ? 'selected' : ''}>po stěnách A–D</option>
             </select><span class="u"></span></div>`
@@ -1434,7 +1434,23 @@ function bunkaNazev(r, sekceKey) {
     r.cenaSkupina && !r.cenaPath
       ? 'řádek je součet celé skupiny ceníku — jednu cenu nemá'
       : undefined);
-  return `<input type="text" class="nazev-ed" value="${esc(r.nazev)}" onchange="${onch}" title="název položky lze přepsat">${reset}${pin}${del}${klic}${pozn}`;
+  const tit = 'název položky lze přepsat' + (jeRadekSkla(r) ? '. ' + SKLO_JINE_NAPOVEDA : '');
+  return `<input type="text" class="nazev-ed" value="${esc(r.nazev)}" onchange="${onch}" title="${esc(tit)}">${reset}${pin}${del}${klic}${pozn}`;
+}
+/* JINÉ SKLO = OPLÁŠTĚNÍ PO STĚNÁCH (P4 / K19-N107, rozhodnutí J. V.
+ * 2. 10. 2026 — výchozí návrh B). Druh skla ve standardním režimu určuje
+ * typ šachty a způsob zasklení (skloVolba); jiné sklo jde přes opláštění po
+ * stěnách, kde stěna může mít jinou položku skla z ceníku nebo typ „jiné"
+ * s vlastním názvem a sazbou. Tahle věta to říká u řádku skla, u volby
+ * opláštění a v Detailu výpočtu. */
+const SKLO_JINE_NAPOVEDA = 'Jiné sklo, než dává typ šachty a způsob zasklení: v zadání šachty zvolte '
+  + 'Opláštění „po stěnách A–D" a u stěn typ skla z ceníku, nebo „jiné" s vlastním názvem a sazbou '
+  + '(stejné sklo pro všechny stěny = stejný typ u všech čtyř).';
+function jeRadekSkla(r) {
+  if (!r || r.vlastni || oplPoStenach() || typeof skloVolba !== 'function') return false;
+  const v = aktivniVarianta(ZAK);
+  const sv = skloVolba(Z, v && v.data && v.data.cenik);
+  return r.origNazev === sv.boky.nazev || r.origNazev === sv.celni.nazev;
 }
 function bunkaMnozstvi(r) {
   if (r.vlastni)

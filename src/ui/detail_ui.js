@@ -378,7 +378,9 @@ function renderDetail() {
       'řídí se TYPEM ŠACHTY a u interiéru i ZPŮSOBEM ZASKLENÍ — k našim terčům patří jiné '
       + 'sklo než k zasklení do lišt mezi příčníky. Není to jiná kvalita, je to jiný typ. '
       + 'Venku drží boky a záda ditherm dvojsklo kvůli tepelné izolaci, uvnitř budovy se '
-      + 'neizoluje a jsou všude VSG. Sazby jsou v Ceníku OCK.'],
+      + 'neizoluje a jsou všude VSG. Sazby jsou v Ceníku OCK. '
+      /* P4 (K19-N107, 2. 10. 2026): kudy k jinému sklu. */
+      + 'Jiné sklo: Opláštění „po stěnách A–D" a u stěn typ skla z ceníku, nebo „jiné" s vlastním názvem a sazbou.'],
   ]), 'dv-8');
 
   /* 9) spojovací materiál */
