@@ -6102,6 +6102,96 @@
      "proc" : "ruční šířka bočního světlíku"
     }
    ]
+  },
+  {
+   "id" : "386",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "S",
+   "hotovoV" : "v2.10.1 (větev claude/k19-nalezy, integrace claude/davka-2-10, v test-draft a test)",
+   "nazev" : "P1 (K19-N102): pojistka #372 i pro nově zamčenou variantu",
+   "proc" : "Server přijal profil mimo katalog jeklů u varianty, kterou zamkl teprve klient (ostrá v30.9.1: 10 zakázek po tisku se zámkem; test v1.10.1: zkouška K19T-C070).",
+   "detail" : "Kontrola #372 přeskakuje jen variantu zamčenou UŽ V ULOŽENÉ VERZI; nově zamčená se kontroluje jako nezamčená. Obnova beze změny (zámek ze zálohy je doklad). Ostatní kontroly zakazka_kontrola.mjs prověřeny — řídí se uloženou verzí.",
+   "hotovoKdyz" : "Opraveno, testy před/po v CHANGELOG v2.10.1, celé kolo zelené.",
+   "kde" : "`netlify/lib/zakazka_kontrola.mjs`, `netlify/test_obnova.mjs`"
+  },
+  {
+   "id" : "387",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "M",
+   "hotovoV" : "v2.10.1 (větev claude/k19-nalezy, integrace claude/davka-2-10, v test-draft a test)",
+   "nazev" : "P2 (K19-N104): zkratka „Prosklít i prohlubeň“",
+   "proc" : "Prosklená prohlubeň se musela nastavit u každé ze čtyř stěn zvlášť (rozhodnutí J. V. 2. 10. 2026: výchozí návrh).",
+   "detail" : "Zaškrtávátko pod polem Prohlubeň nastaví všem stěnám „Opláštění začíná“ = −prohlubeň (ze standardu přepne na po stěnách s výchozími typy), změna hloubky meze posune; stav se odvozuje z mezí. Výpočet beze změny (cesta po stěnách), řádek v Detailu výpočtu.",
+   "hotovoKdyz" : "Opraveno, testy před/po v CHANGELOG v2.10.1, celé kolo zelené.",
+   "kde" : "`src/engine.js` (oplasteniProhlubenVse/Nastav/Sleduj), `src/ui/kalk_ock.js`"
+  },
+  {
+   "id" : "388",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "S",
+   "hotovoV" : "v2.10.1 (větev claude/k19-nalezy, integrace claude/davka-2-10, v test-draft a test)",
+   "nazev" : "P3 (K19-N105): ruční přepis skla posune PRÁCI a TMELENÍ",
+   "proc" : "V Excelu je PRÁCE OPLÁŠTĚNÍ součtem ploch skel; aplikace brala geometrii (K19T-C071: 213,8 místo 120,6 m²).",
+   "detail" : "Ve standardním režimu se pro PRÁCI a TMELENÍ berou efektivní plochy skel (přepis řádku skla, jinak vypočtená); přepis přímo na PRÁCI má přednost; Detail výpočtu „z ručně přepsané plochy skla“. VSG/SKN zatím z geometrie (doporučení: sjednotit).",
+   "hotovoKdyz" : "Opraveno, testy před/po v CHANGELOG v2.10.1, celé kolo zelené.",
+   "kde" : "`src/engine.js`, `src/ui/detail_ui.js`"
+  },
+  {
+   "id" : "389",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "S",
+   "hotovoV" : "v2.10.1 (větev claude/k19-nalezy, integrace claude/davka-2-10, v test-draft a test)",
+   "nazev" : "P4 (K19-N107): nápověda „jiné sklo = opláštění po stěnách“",
+   "proc" : "Druh skla nešel ve standardním režimu zvolit; Excely volí sklo podle zakázky (rozhodnutí J. V. 2. 10. 2026: výchozí návrh B).",
+   "detail" : "Věta u řádků skla (bublina), u volby Opláštění a v Detailu výpočtu. Volba skla v zadání až po rozhodnutí o položkách skla v ceníku.",
+   "hotovoKdyz" : "Opraveno, testy před/po v CHANGELOG v2.10.1, celé kolo zelené.",
+   "kde" : "`src/ui/kalk_ock.js`, `src/ui/detail_ui.js`"
+  },
+  {
+   "id" : "390",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "S",
+   "hotovoV" : "v2.10.1 (větev claude/k19-nalezy, integrace claude/davka-2-10, v test-draft a test)",
+   "nazev" : "P5 (K19-N109): statické posouzení ve dvou řádcích",
+   "proc" : "Excel 2026 má statiku OCK + statiku opláštění; aplikace jeden řádek, převod dorovnával ručně (rozhodnutí J. V. 2. 10. 2026: dva řádky).",
+   "detail" : "Nová položka ceníku C.statikaOplHod (výchozí 0 = beze změny), řádek STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ jen u šachty s opláštěním, kontrola statikaDvakrat (ručně přepsaná statika + řádek opláštění). Hodiny nastaví J. V. v ceníku.",
+   "hotovoKdyz" : "Opraveno, testy před/po v CHANGELOG v2.10.1, celé kolo zelené.",
+   "kde" : "`src/engine.js`, `src/cenik.js`, `src/kontroly.js`"
+  },
+  {
+   "id" : "391",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "S",
+   "hotovoV" : "v2.10.1 (větev claude/k19-nalezy, integrace claude/davka-2-10, v test-draft a test)",
+   "nazev" : "P6 (K19-N114): zahraniční ceník nabídne „jen realizace“",
+   "proc" : "Zahraniční zakázka si nechala výchozí oceněnou projekci; kontrola jen upozornila (rozhodnutí J. V. 2. 10. 2026: výchozí návrh A).",
+   "detail" : "Po přepnutí na zahraniční řadu dotaz „Zakázka jen realizace“ (výchozí Ano → ZAK.jenOck), po návratu všech variant do tuzemska opak; nenabízí se u čísla OVP ani vědomých obou stran.",
+   "hotovoKdyz" : "Opraveno, testy před/po v CHANGELOG v2.10.1, celé kolo zelené.",
+   "kde" : "`src/zakazka.js` (zahrJenRealizaceNabidnout), `src/ui/common.js`"
+  },
+  {
+   "id" : "392",
+   "vlna" : "C",
+   "stav" : "ceka",
+   "dulezitost" : "stredni",
+   "slozitost" : "S",
+   "nazev" : "Příplatky VSG a SKN z přepsané plochy skla",
+   "proc" : "Doporučení z P3 (K19-N105, 1. 10. 2026): fólie VSG i SKN jsou úpravou téhož skla, po ručním přepisu plochy skla by měly sledovat efektivní plochu stejně jako PRÁCE.",
+   "detail" : "Ve standardním režimu brát vsgFolieM2 = přepsané sklo boků + čelní, sknM2 = přepsané sklo boků; bez přepisu beze změny (Model 1).",
+   "hotovoKdyz" : "Test před/po, předlohy beze změny.",
+   "kde" : "`src/engine.js` (vsgFolieM2, sknM2)"
   }
  ],
  "meta" : {
@@ -6640,6 +6730,11 @@
    "text" : "1. 10. 2026 odpoledne (engscalc, test-draft + test), v1.10.2 — výchozí plán plateb PROJ Záloha 70 % + zbytek po předání (#383), zarovnání polí opláštění po stěnách (#384), věta o zbytku mezery vedle dveří u jedněch dveří + ověření rámu dveří (#385); rozhodnutí J. V. k #381 (mezera mezi příčníky ponechat, nápověda s výpočtem mezery ne). Integrace claude/davka-1-10-2, převod do test-draft a test na pokyn J. V.",
    "hotovo" : true,
    "pozn" : "Celé kolo nad 7d544b7 VŠE ZELENÉ (84 min 29 s): sady 214/0/1, jádro 131/131, server 210/210, statické 3/3."
+  },
+  {
+   "text" : "2. 10. 2026 (engscalc, test-draft + test), v2.10.1 — nálezy 19. kola P1–P6 (#386–#391): pojistka #372 i pro nově zamčenou variantu, zkratka prosklené prohlubně, přepis skla → PRÁCE a TMELENÍ, nápověda jiného skla, statika ve dvou řádcích, zahraniční ceník → jen realizace. Paralelní větev claude/k19-nalezy, integrace claude/davka-2-10 nad v1.10.2.",
+   "hotovo" : true,
+   "pozn" : "Celé kolo nad v2.10.1 — výsledek v CHANGELOG v2.10.1."
   }
   ],
   "pravidla" : [
@@ -6726,8 +6821,8 @@
     "id" : "F"
    }
   ],
-  "build" : "v1.10.2 (engscalc)",
-  "stavKDatu" : "1. 10. 2026"
+  "build" : "v2.10.1 (engscalc)",
+  "stavKDatu" : "2. 10. 2026"
  },
  "_comment" : [
   "JEDINÝ ZDROJ PRAVDY pro roadmapu Kalkulátoru Next Gen.",
