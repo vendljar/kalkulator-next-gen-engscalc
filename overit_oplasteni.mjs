@@ -664,7 +664,13 @@ await p.waitForTimeout(600);
     await cb.count() === 1 && !(await cb.isChecked()), await cb.count());
   zkus('P2: pole Prohlubeň nese nápovědu k prosklení prohlubně',
     /Prosklít i prohlubeň/.test(await p.locator('input[onchange^="prohlubenSet"]').getAttribute('title') || ''));
-  zkus('P2: u nové zakázky (prohlubeň 0) je zaškrtávátko zakázané', await cb.isDisabled());
+  /* Nulová prohlubeň: zaškrtnutí nic nezmění (zaškrtávátko se nezakazuje —
+   * vstupy kalkulace zůstávají živé, overit_lista.mjs). */
+  await p.evaluate(() => { window.hlaska = () => Promise.resolve(); });
+  await cb.click();
+  await p.waitForTimeout(200);
+  zkus('P2: u nové zakázky (prohlubeň 0) zaškrtnutí nic nezmění',
+    await p.evaluate(() => (Z.oplasteni || {}).rezim !== 'poStenach') && !(await p.locator('input[onchange^="prohlubenSkloSet"]').isChecked()));
   /* P4 (K19-N107): nápověda „jiné sklo = po stěnách" u řádku skla ve standardu a u volby opláštění. */
   const p4 = await p.evaluate(() => {
     const sv = skloVolba(Z, aktivniVarianta(ZAK).data.cenik);

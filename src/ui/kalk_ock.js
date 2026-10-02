@@ -841,10 +841,18 @@ function prohlubenSkloRadek() {
       + 'Změna hloubky prohlubně meze posune, dokud je zaškrtnuto; ruční změna u jedné stěny zkratku zruší.'
     : 'Prohlubeň je nulová — není co prosklít.';
   return `<div class="row"><label style="font-weight:400">Prosklít i prohlubeň</label>
-    <input type="checkbox" ${ano ? 'checked' : ''} ${hl > 0 ? '' : 'disabled'} title="${esc(tit)}"
+    <input type="checkbox" ${ano ? 'checked' : ''} title="${esc(tit)}"
       onchange="prohlubenSkloSet(this.checked)"><span class="u"></span></div>`;
 }
 function prohlubenSkloSet(ano) {
+  /* Nulová prohlubeň: není co prosklít. Zaškrtávátko se schválně
+   * nezakazuje (`disabled`) — vstupy kalkulace mají zůstat živé, hlídá to
+   * overit_lista.mjs — jen se vysvětlí a vrátí. */
+  if (ano && !((+Z.prohluben || 0) > 0)) {
+    hlaska('Prohlubeň je nulová — není co prosklít. Nejdřív vyplňte hloubku prohlubně.');
+    render();
+    return;
+  }
   const v = aktivniVarianta(ZAK);
   oplasteniProhlubenNastav(Z, v && v.data && v.data.cenik, !!ano);
   oplZmeneno();
