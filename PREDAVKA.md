@@ -24,7 +24,7 @@ Rozbor s variantami: `podklady/K19_ROZBOR_2026-10-01.md`.
 
 ## Celé kolo nad v2.10.1
 
-(doplní se po doběhnutí)
+Celé kolo nad ca02d5f (kód = bd43ad5, další commity jen dokumentace) VŠE ZELENÉ (77 min 32 s): sady 218 prošlo, 0 selhalo, 1 přeskočeno (test.js — skutečný ceník v repozitáři není), mutace jádra 138 z 138, mutace serveru 211 z 211, statické kontroly 3 z 3; s firemními podklady (KNG_PODKLADY: šablony CN v14, CN v11, PROJ v3, SoD, plná moc, příručka přejmenovaná na v2.10.1). Předchozí dva běhy: první visel na overit_dialogy.mjs (harness neobsloužil nový dotaz P6, přerušeno před mutacemi), druhý selhal jen v overit_lista.mjs (32 pravidel; zakázané zaškrtávátko P2) — obojí opraveno.
 
 ## Čeká na J. V.
 
@@ -34,7 +34,7 @@ Rozbor s variantami: `podklady/K19_ROZBOR_2026-10-01.md`.
   dorovnanou statikou hlídá kontrola `statikaDvakrat`).
 - **P3:** příplatky VSG/SKN navázat na přepsanou plochu skla (výchozí:
   ano, další dávka).
-- Release v2.10.1 (odkaz poslán; tag z cloudu nejde — HTTP 403).
+- Release v2.10.1 (odkaz poslán; tag z cloudu nejde — HTTP 403). Releasy vydané do v1.10.2 včetně (ověřeno přes GitHub 2. 10.).
 - Převod do `main` (výchozí: až po vyzkoušení v testu).
 - Smazat sloučené větve `claude/k19-nalezy` a `claude/davka-2-10` (celé
   v `test-draft`) — mazání z cloudu nejde.

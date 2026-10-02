@@ -6734,7 +6734,7 @@
   {
    "text" : "2. 10. 2026 (engscalc, test-draft + test), v2.10.1 — nálezy 19. kola P1–P6 (#386–#391): pojistka #372 i pro nově zamčenou variantu, zkratka prosklené prohlubně, přepis skla → PRÁCE a TMELENÍ, nápověda jiného skla, statika ve dvou řádcích, zahraniční ceník → jen realizace. Paralelní větev claude/k19-nalezy, integrace claude/davka-2-10 nad v1.10.2.",
    "hotovo" : true,
-   "pozn" : "Celé kolo nad v2.10.1 — výsledek v CHANGELOG v2.10.1."
+   "pozn" : "Celé kolo VŠE ZELENÉ (77 min 32 s): sady 218/0/1, mutace jádra 138 z 138, serveru 211 z 211, statické 3 z 3."
   }
   ],
   "pravidla" : [

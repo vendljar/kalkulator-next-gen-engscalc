@@ -12,6 +12,8 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 Sloučeno do `test-draft` nad v1.10.2 a převedeno do `test` na pokyn J. V. 2. 10. 2026 („souhlasím s výchozími návrhy, zapracuj P2, P4, P6; P5 — statiku udělej tak, jak jsem navrhoval, ve dvou řádcích … P3 ok; P1 OK. připrav, otestuj a pošli do testu"). Integrační větev `claude/davka-2-10`, konflikty jen v CHANGELOG a PREDAVKA.
 
+**Ověřeno celým kolem:** celé kolo nad ca02d5f (kód = bd43ad5, další commity jen dokumentace) VŠE ZELENÉ (77 min 32 s): sady 218 prošlo, 0 selhalo, 1 přeskočeno (test.js — skutečný ceník v repozitáři není), mutace jádra 138 z 138, mutace serveru 211 z 211, statické kontroly 3 z 3; s firemními podklady (KNG_PODKLADY: šablony CN v14, CN v11, PROJ v3, SoD, plná moc, příručka přejmenovaná na v2.10.1). Předchozí dva běhy: první visel na overit_dialogy.mjs (harness neobsloužil nový dotaz P6, přerušeno před mutacemi), druhý selhal jen v overit_lista.mjs (32 pravidel; zakázané zaškrtávátko P2) — obojí opraveno.
+
 Nálezy 19. kola (1. 10. 2026, ostrá v30.9.1 + test v1.10.1) podle promptu
 J. V. Větev z `b5253c9` (v1.10.1); o sloučení rozhoduje J. V. Označení
 P1–P6 z promptu, v závorce číslo nálezu kola.
