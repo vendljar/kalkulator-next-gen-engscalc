@@ -395,6 +395,26 @@ const KONTROLY = [
     },
   },
   {
+    /* STATIKA DVAKRÁT (P5 / K19-N109, 2. 10. 2026). Než měla aplikace druhý
+     * řádek statiky (opláštění), dorovnávaly se převedené zakázky ručním
+     * přepisem hodin řádku STATICKÉ POSOUZENÍ (10–20 h = OCK + opláštění).
+     * Jakmile ceník nese hodiny statiky opláštění, taková varianta by je
+     * započítala dvakrát. Upozornění, ne zábrana — přepis může být i jiný
+     * důvod; rozhodne obchodník. */
+    kod: 'statikaDvakrat', kde: 'Kalkulace OCK', nazev: 'Statika opláštění a ručně přepsaná statika',
+    zjisti(ctx) {
+      const r = ctx.vysledek, z = ctx.zadani;
+      if (!r || !r.sekce || !Array.isArray(r.sekce.rezie) || !z) return null;
+      const najdi = (n) => r.sekce.rezie.find(x => x && x.origNazev === n);
+      const ock = najdi('STATICKÉ POSOUZENÍ'), opl = najdi('STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ');
+      if (!ock || !opl || !ock.prepsano) return null;
+      return { text: 'Statické posouzení má ručně přepsané hodiny (' + ock.mnozstvi + ' h) a ceník k nim '
+        + 'přidává řádek STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ (' + opl.mnozstvi + ' h). Pokud přepis už statiku '
+        + 'opláštění zahrnuje (převod z Excelu), vraťte hodiny statiky na ceníkové, nebo řádek '
+        + 'statiky opláštění vyřaďte — jinak se zaplatí dvakrát.' };
+    },
+  },
+  {
     kod: 'oplasteniBezKonstrukce', kde: 'Kalkulace OCK', nazev: 'Opláštění bez konstrukce',
     zjisti(ctx) {
       const s = ctx.vysledek && ctx.vysledek.souctySekci;

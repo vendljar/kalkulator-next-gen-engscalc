@@ -118,6 +118,8 @@ const CENIK_DEF = [
      * lišty. Hodiny se přičtou k zadání „Projekce – základ", nepřepisují ho. */
     ['C.zaskleniListyProjHod', 'Projekce navíc – zasklení mezi příčníky', 'hod', 'přičte se k projekci, jen u zasklení mezi příčníky (lišty)'],
     ['C.statikaHod', 'Statické posouzení – hodin', 'hod', ''],
+    /* P5 (K19-N109, 2. 10. 2026): druhý řádek statiky jen u šachty s opláštěním; 0 = řádek nevzniká. */
+    ['C.statikaOplHod', 'Statické posouzení opláštění – hodin', 'hod', 'druhý řádek statiky, jen u šachty s opláštěním; sazba jako statika OCK; 0 = bez řádku'],
     ['C.statikaKc', 'Statické posouzení – sazba', 'Kč/hod', ''],
     ['C.rezieKancelareKc', 'Režie kanceláře', 'Kč', ''],
     ['C.stavbyvedouciHod', 'Stavbyvedoucí – hodin', 'hod', ''],

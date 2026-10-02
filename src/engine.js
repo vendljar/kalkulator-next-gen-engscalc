@@ -99,7 +99,7 @@ const DEFAULT_CENIK = {  // HODNOTY VYNULOVÁNY pro GitHub (pripravit_github.py)
   prechodoveKgKc: 0, leseniVnitrniKc: 0, leseniFix: 0,
   leseniVnejsiKc: 0, hakyKc: 0, zabradliKc: 0, soklBmKc: 0,
   sken3dKc: 0, vystupZamereniKc: 0, engineeringKc: 0,
-  projekceHodKc: 0, statikaKc: 0, statikaHod: 0, rezieKancelareKc: 0,
+  projekceHodKc: 0, statikaKc: 0, statikaHod: 0, statikaOplHod: 0, rezieKancelareKc: 0,
   /* Projekce navíc při zasklení mezi příčníky (9. 9. 2026). V repozitáři je
    * jako každá jiná ceníková hodnota NULA — skutečný ceník sem dosadí své
    * číslo. Prázdná hodnota znamená „výchozí 4 hodiny" (viz vypocet), takže
@@ -1799,6 +1799,17 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
       { cenaPath: 'C.projekceHodKc',
         pozn: zaskleniProjHod ? `+ ${zaskleniProjHod} hod za zasklení mezi příčníky (lišty)` : '' }),
     mkItem('STATICKÉ POSOUZENÍ', c.statikaHod, c.statikaKc, { cenaPath: 'C.statikaKc' }),
+    /* STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ (P5 / K19-N109, rozhodnutí J. V.
+     * 2. 10. 2026). Excel 2026 má dva řádky — statika OCK a statika
+     * opláštění; aplikace měla jen první a převod 13 zakázek se dorovnával
+     * ručním přepisem hodin. Druhý řádek má vlastní hodiny v ceníku
+     * (`C.statikaOplHod`) a sdílí sazbu `C.statikaKc`. Vzniká JEN u šachty
+     * s opláštěním (plocha PRÁCE OPLÁŠTĚNÍ > 0) a jen při hodinách > 0 —
+     * s ceníkem bez položky (nebo s nulou) se seznam položek nemění, Model 1
+     * zůstává 1:1. `+… || 0`: starší zveřejněný ceník klíč nemá. */
+    (+c.statikaOplHod || 0) > 0 && oplPlochaCelkem > 0
+      ? mkItem('STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ', +c.statikaOplHod || 0, c.statikaKc, { cenaPath: 'C.statikaKc' })
+      : null,
     mkItem('REŽIE KANCELÁŘE', 1, c.rezieKancelareKc, { cenaPath: 'C.rezieKancelareKc' }),
     mkItem('PRÁCE STAVBYVEDOUCÍHO', c.stavbyvedouciHod, c.stavbyvedouciKc, { cenaPath: 'C.stavbyvedouciKc' }),
     /* `|| 0`: starší ceníky (a zkušební sady) položku nemají a bez toho by

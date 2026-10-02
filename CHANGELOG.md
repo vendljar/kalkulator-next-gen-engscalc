@@ -87,6 +87,37 @@ P1–P6 z promptu, v závorce číslo nálezu kola.
   množství, takže dnes je obchodník dorovná ručně. Dopad jen na zakázky
   s ručním přepisem skla a zaškrtnutým příplatkem.
 
+### P5 (K19-N109) — statické posouzení ve dvou řádcích (rozhodnutí J. V. 2. 10. 2026)
+
+- **Zadání:** „statiku udělej tak, jak jsem navrhoval — ve dvou řádcích"
+  (Excel 2026: statika OCK + statika opláštění).
+- **Ceník:** nová položka „Statické posouzení opláštění – hodin"
+  (`C.statikaOplHod`, sekce REŽIE, výchozí 0). Sazba je společná se
+  statikou OCK (`C.statikaKc`). **Hodiny nastaví J. V. v Ceníku OCK
+  a zveřejní** — ceník se ve větvi nemění.
+- **Jádro (`src/engine.js`):** řádek „STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ" hned za
+  statikou OCK, jen u šachty s opláštěním (plocha PRÁCE OPLÁŠTĚNÍ > 0;
+  po stěnách se samými „bez" a světlíky od stavby ne) a jen při hodinách
+  > 0. Ceník bez položky nebo s nulou = seznam položek i cena beze změny
+  (Model 1 1:1). Ruční přepis hodin funguje jako u každé položky.
+- **Kontrola `statikaDvakrat`** (upozornění, ne zábrana): ručně přepsané
+  hodiny STATICKÉ POSOUZENÍ a zároveň řádek statiky opláštění — převod
+  z Excelu dorovnával statiku ručně (10–20 h), takže by se opláštění
+  zaplatilo dvakrát.
+- **Dopad na ostrou databázi:** do zveřejnění ceníku s hodinami žádný.
+  Pak dostanou řádek rozpracované (nezamčené) varianty, které převezmou
+  nový ceník; odeslané (zamčené) drží zmrazený výsledek. Testovací
+  zakázky kola 19 jsou všechny zamčené — beze změny. Ručně dorovnanou
+  statiku nese 13 z nich (K19-C032, C034, C045, C069, C086, C093, C094,
+  C099, C103, C104, C105, C109, C112 = 9532 … 9612); v klonu by kontrola
+  upozornila na dvojí statiku.
+- **Testy:** nová sada `src/test_statika_oplasteni.js` (exteriér
+  i interiér × Model 1 i 2; ceník bez položky / s nulou beze změny;
+  6 h → řádek, sazba, pořadí, cena; přepis hodin; šachta bez opláštění;
+  kontrola upozorní / mlčí). Před zavedením 16 OK / 22 FAIL, po něm 38 OK /
+  0 FAIL. `test_kontroly.js`: pravidel 32. Tři nové mutace jádra chyceny
+  (3 z 3).
+
 ### P2, P4, P5, P6 (K19-N104, N107, N109, N114) — rozbor, kód beze změny
 
 Body „prověřit + návrh" — rozbor s variantami a výchozími návrhy
