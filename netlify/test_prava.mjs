@@ -950,8 +950,8 @@ const nactiB59 = async (soubor) => (await (await get(zakazky,
  * `origNazev` a jinou cenou se nespároval, nikdo ho neporovnal a razítko
  * bylo „shoda" — dotisk odeslané nabídky pak bral podvrženou cenu. Když
  * výsledek spočítala tatáž verze jako server, nespárovaný řádek je rozdíl
- * a jádro nese i součty příplatků a volitelných. Před opravou 2 OK / 4 FAIL,
- * po opravě 6 / 0. */
+ * a jádro nese i součty příplatků a volitelných. Před opravou 2 OK / 5 FAIL,
+ * po opravě 7 / 0. */
 {
   const odesliVerzi = (z, build, uprav) => {
     const v = z.varianty[0];
@@ -982,6 +982,13 @@ const nactiB59 = async (soubor) => (await (await get(zakazky,
   test('B119: podvržený příplatek s unikátním názvem → nesouhlasí', o2.ok === true && ov2 && ov2.stav === 'nesouhlasi',
     JSON.stringify(ov2));
   test('B119: odpověď varuje', /nesouhlasí/.test(String(o2.varovani || '')), o2.varovani);
+  /* řádek navíc (levný příplatek pod vymyšleným názvem), součty beze změny:
+   * chytí ho jen to, že nespárovaný řádek zámku je rozdíl */
+  const z5 = odesliVerzi(zakazkaSCeny('2026 - OPR - CN - 1195'), tataz, (r) => {
+    r.ock.priplatky.push(Object.assign({}, r.ock.priplatky[0], { origNazev: 'Navíc', nazev: 'Navíc', key: 'navic', sMarzi: 1, naklad: 1 })); });
+  await post(zakazky, 'http://x/api/zakazky', { zakazka: z5 }, cObch);
+  const ov5 = (await nactiB59('2026-OPR-CN-1195.json')).varianty[0].zamek.overeni;
+  test('B119: řádek navíc ve zmrazeném výsledku → nesouhlasí', ov5 && ov5.stav === 'nesouhlasi', JSON.stringify(ov5));
   /* vynechaný součet příplatků (jádro přísného porovnání) */
   const z3 = odesliVerzi(zakazkaSCeny('2026 - OPR - CN - 1193'), tataz, (r) => { delete r.ock.souhrn.priplatkyCena; });
   await post(zakazky, 'http://x/api/zakazky', { zakazka: z3 }, cObch);

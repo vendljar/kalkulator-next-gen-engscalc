@@ -57,8 +57,8 @@ Dávka B (6. 10. 2026) z `test-draft` (v2.10.1): nálezy bezpečnostního auditu
   nasazením) se porovná volně jako dosud a razítko nese `volne: true`;
   starší zámky a obnova beze změny (`src/zamek.js`,
   `netlify/lib/zakazka_kontrola.mjs`). Test `netlify/test_prava.mjs`
-  (blok B119) před opravou 2 OK / 4 FAIL, po opravě 6 / 0; celá sada
-  651 / 0. Mutace serveru +4.
+  (blok B119) před opravou 2 OK / 5 FAIL, po opravě 7 / 0; celá sada
+  683 / 0 po sloučení s dávkou A. Mutace serveru +4 (všechny chycené).
 - **B120 (střední) — obnova přenese jazykové varianty dodatků.** Obnova
   části „popisy" skládala záznam jen z `texty`, `kdo`, `kdy`; `jazyky`
   (EN/DE/FR, #379) se ztratily. Teď projdou `popisyJazykyOciste` a drží se
