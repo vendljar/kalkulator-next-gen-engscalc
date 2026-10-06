@@ -130,6 +130,15 @@ const MUTACE = [
     hledej: "  ock: ['nabidka', 'nabidkaTisk', 'sod', 'kryci'],",
     nahrad: "  ock: ['nabidka', 'nabidkaTisk', 'sod'],",
     proc: 'nesmyslný rozměr by odešel do backoffice a výroby krycím listem' },
+  /* ---------- B113 (#374, 6. 10. 2026): projekce za 0 Kč v kombinované nabídce ---------- */
+  { nazev: 'B113: projekce za 0 Kč v kombinované nabídce dokument nezastaví', soubor: 'kontroly.js',
+    hledej: "          || ((ctx.jenProj || kontrolyProjProdava(ctx.projVysledek)) && !(Number(pj) > 0))))",
+    nahrad: "          || ((ctx.jenProj) && !(Number(pj) > 0))))",
+    proc: 'ceník PROJ samé nuly (ceník sestavení bez značky) by dal nabídku projekce za nula korun — B113' },
+  { nazev: 'B113: vyřazená položka se počítá za prodávanou', soubor: 'kontroly.js',
+    hledej: "    && s.polozky.some(p => p && !p.vyrazeno && !vypnuta(p)));",
+    nahrad: "    && s.polozky.some(p => p && !vypnuta(p)));",
+    proc: 'zakázka, která projekci neprodává (vše vyřazené), by nedostala ani dokument OCK… PROJ — zábrana by svítila zbytečně' },
   /* ---------- K18-N92: cena činnosti ve Wordu PROJ (30. 9. 2026) ---------- */
   { nazev: 'K18-N92: šablona bez symbolu ceny nabízené činnosti se nepozná', soubor: 'kontroly.js',
     hledej: '    return !ma.some(x => symboly.indexOf(x) >= 0);',

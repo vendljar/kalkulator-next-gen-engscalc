@@ -5891,14 +5891,16 @@
   {
    "id": "374",
    "vlna": "B",
-   "stav": "ceka",
-   "dulezitost": "stredni",
+   "stav": "hotovo",
+   "dulezitost": "vysoka",
    "slozitost": "M",
    "nazev": "Třída „koncová cena bez schválení“ — zbývající cesty po B111, B96 a B112",
    "proc": "Závěr opravy šesti nálezů 21. kola (29. 9. 2026): B111, B96 a B112 zavřely tři doložené cesty, jak snížit cenu nabídky bez schválení. Server ale dál nehlídá, KDO mění další pole zadání, která UI ukazuje jen s právem sloupce.naklad.",
    "detail": "Otevřené: (1) hodiny a rezerva STANDARDNÍCH položek PROJ (obchodník je v UI nevidí jako pole, ručním požadavkem je sníží); (2) cena trvalé položky s kid v zadání OCK/PROJ (v UI jen administrátor); (3) obchodní zaokrouhlení z výčtu — až 9 999 Kč u OCK, u PROJ × počet činností (#38 „nic se neblokuje“); (4) bod 4 B96 — marže z koncové ceny i bez slevy (obrana do hloubky; nepokryje B111 ani změnu jednotkové ceny). Návrh: pole zadání vázaná v UI na sloupce.naklad hlídat stejně jako přepisy B112 (role bez práva je proti uložené verzi nezmění).",
-   "otazka": "Chce J. V. dotáhnout (1) a (2) stejným pravidlem jako přepisy B112, a realizovat bod 4?",
+   "otazka": "Bod 4 B96 (marže z koncové ceny i bez slevy) zavést jako zábranu uložení? Výchozí: ne hned — návrh podklady/NAVRH_B96_MARZE_2026-10-06.md.",
    "kde": "src/uloziste.js (uloCenikProblemy — vzor), netlify/lib/zakazka_kontrola.mjs, src/ui/kalk_proj.js (hodiny/rezerva pod col.admin)",
+   "hotovoV": "větev claude/koncova-cena-374 (dávka A 6. 10. 2026, neuvolněno)",
+   "pozn": "Dávka A 6. 10. 2026 (doporučení auditů 30. 9. a 2. 10.; priorita zvýšena na vysokou): (1)+(2) = B114 — server hlídá identitu standardních položek PROJ (typ, sazba, sazbaKc, fixKey, cena, hodiny, rezerva) a cenu trvalé položky s kid v zadání OCK i PROJ pod právem sloupce.naklad (uloCenikProblemy); B113 — výjimka „celý ceník sestavení“ jen pro novou zakázku nebo variantu, jejíž uložená verze ho nese, a zábrana cenaNula zastaví dokumenty PROJ za 0 Kč i v kombinované nabídce (počet pravidel beze změny, 32). UI OCK: cena trvalé položky jen administrátor (obchodník množství a smazání). (3) B117 zapsáno jako vědomá mez do BEZPECNOST_MEZE.md. (4) jen návrh podklady/NAVRH_B96_MARZE_2026-10-06.md.",
    "zavisi": [{"typ": "doporuceno", "id": "373", "proc": "navazuje na B111, B96 a B112"}]
   },
   {

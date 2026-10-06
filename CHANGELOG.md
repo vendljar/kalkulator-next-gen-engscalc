@@ -8,6 +8,70 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## větev claude/koncova-cena-374 (neuvolněno) — dávka A: #374 „koncová cena bez schválení" (B113, B114), 6. 10. 2026
+
+Dávka A koordinačního sezení 6. 10. 2026 (výchozí odpovědi schválené
+konvencí; doporučení auditů 30. 9. a 2. 10. 2026). Větev z `test-draft`
+(v2.10.1 + PREDAVKA); o sloučení do `claude/davka-6-10` rozhoduje
+koordinační sezení. Roadmapa #374 → priorita vysoká, stav hotovo.
+
+### B114 — identita položek PROJ a cena trvalých položek hlídá server
+
+- **Příčina:** B112 hlídal jen přepisová pole. Jádro PROJ bere hodnotu
+  z dat zakázky, když ceník klíč nemá (`sazba` → `sazbaKc`, `fixKey` →
+  `cena`), takže obchodník ručním požadavkem přepsal klíč sazby na
+  neexistující + `sazbaKc=1`, odebral `fixKey` + `cena=1` nebo vynuloval
+  hodiny a rezervu — projekce −35 až −65 %, vše 200. Totéž cena trvalé
+  položky s `kid` (OCK i PROJ).
+- **Oprava (`src/uloziste.js`, `uloCenikProblemy`):** role bez práva
+  `sloupce.naklad` nezmění proti uložené verzi (nová varianta: výchozí
+  zadání, jiná uložená varianta) u standardní položky PROJ `typ`, `sazba`,
+  `sazbaKc`, `fixKey`, `cena`, `hodiny`, `rezerva`; standardní položku
+  nesmaže ani nepřeznačí na vlastní. Trvalá položka s `kid`: přítomná musí
+  nést hodnoty z uložené verze, jiné varianty nebo katalogu (PROJ: ceník
+  varianty a zveřejněné ceníky; OCK: zveřejněný katalog a katalog
+  sestavení — u OCK jen jednotková cena), smazat ji smí. Vlastní položka
+  (`vlastni:true` bez `kid`) dál smí vše. Administrátor smí vždy.
+  Vyřazení položky (rozsah, ne cena) se nehlídá — `BEZPECNOST_MEZE.md`.
+- **UI (`src/ui/kalk_ock.js`, `radekKalk`):** cenu trvalé položky OCK
+  v hlavních sekcích mohl obchodník přepsat (u volitelných a v PROJ ne) —
+  sjednoceno: cena jen administrátor, obchodník množství a smazání jen
+  v této zakázce.
+
+### B113 — celý ceník sestavení a projekce za 0 Kč
+
+- **Příčina:** výjimka „celý ceník sestavení" (`uloCenikProblemy`) platila
+  pro každou zakázku; server značky ukázkového ceníku před uložením strhne,
+  takže obchodník nahradil ceník uložené varianty nulami (200) a protože
+  PROJ = 0 Kč v kombinované nabídce zábranu `cenaNula` nespustilo, dokument
+  PROJ vznikl.
+- **Oprava:** výjimka jen pro novou zakázku a pro variantu, jejíž uložená
+  verze ceník sestavení sama nese; jinak 403. Zábrana `cenaNula`
+  (`src/kontroly.js`) zastaví dokumenty PROJ (nabídka, náhled, SoD, krycí
+  list PROJ) i v kombinované nabídce, když projekce má co prodávat
+  (položka ani vyřazená, ani vypnutá nulou) a vyjde 0 Kč. Dokumenty OCK
+  nezastaví. **Počet pravidel kontroly beze změny: 32.**
+
+### B117 a bod 4 B96
+
+- B117 (zaokrouhlení z výčtu dolů podteče minimální marži nejvýš o krok − 1)
+  zapsáno jako vědomá mez do `BEZPECNOST_MEZE.md`.
+- Bod 4 B96 (marže z koncové ceny i bez slevy) — jen návrh
+  `podklady/NAVRH_B96_MARZE_2026-10-06.md`, kód beze změny.
+
+### Testy
+
+- `netlify/test_prava.mjs`, oddíl „#374 (B113, B114)": 31 nových testů —
+  před opravou 660 prošlo / 16 selhalo (všech 16 útoků 200), po opravě
+  676 / 0. Dvě starší fixtury obchodníka (B45 název sekce, B51 tvar kid
+  příplatku) narážely na nové pravidlo (zadání bez standardních položek,
+  příplatek mimo katalog) — převedeny pod správce, ověřují tvar, ne práva.
+- `src/test_kontroly.js`: 5 nových testů zábrany PROJ za 0 Kč — před
+  opravou 134 / 1, po opravě 135 / 0.
+- Mutace serveru +8 (B113, B114), mutace jádra +2 (B113 v `kontroly.js`).
+
+---
+
 ## v2.10.1 — nálezy 19. kola P1–P6 (větev claude/k19-nalezy), 2. 10. 2026
 
 Sloučeno do `test-draft` nad v1.10.2 a převedeno do `test` na pokyn J. V. 2. 10. 2026 („souhlasím s výchozími návrhy, zapracuj P2, P4, P6; P5 — statiku udělej tak, jak jsem navrhoval, ve dvou řádcích … P3 ok; P1 OK. připrav, otestuj a pošli do testu"). Integrační větev `claude/davka-2-10`, konflikty jen v CHANGELOG a PREDAVKA.
