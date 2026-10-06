@@ -53,9 +53,10 @@ a `test` až na pokyn J. V. Sezení session_01FbEVKCocjc6ZDk2hyoDe3k.
 
 ## Celé kolo
 
-Celé kolo nad 5b3213d (před opravami z revize) selhalo jen na zadání
-mutace B59 (hledaný úsek změnil B119) — opraveno. **Celé kolo nad
-konečnou verzí: viz CHANGELOG v6.10.1** (výsledek se dopisuje).
+**Celé kolo nad b292d32 VŠE ZELENÉ (73 min 13 s):** sady 221 prošlo,
+0 selhalo, 1 přeskočeno (test.js), mutace jádra 162 z 162, mutace serveru
+236 z 236, statické 3 z 3; se všemi firemními šablonami. Předchozí kolo
+nad 5b3213d selhalo jen na zadání mutace B59 (úsek změnil B119) — opraveno.
 
 ## Čeká na J. V.
 
@@ -91,8 +92,8 @@ v4 + EN/DE/FR, SoD v2) — mimo repozitář.
 
 ## Další krok
 
-Dopsat výsledek celého kola nad konečnou verzí do CHANGELOG a PREDAVKA,
-push `claude/davka-6-10`, hlášení J. V.
+Čekat na pokyn J. V. („pošli do testu") — pak rychlý posun `test-draft`
+a `test` na `claude/davka-6-10` a odkaz na release v6.10.1.
 
 ---
 

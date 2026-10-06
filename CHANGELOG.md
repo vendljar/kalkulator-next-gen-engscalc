@@ -8,6 +8,23 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v6.10.1 — dávky 6. 10. 2026 (integrační větev claude/davka-6-10, neuvolněno do test-draft)
+
+Sloučeny větve `claude/vsg-skn-prepis-skla` (G, D), `claude/audit-b119-b122` (B),
+`claude/koncova-cena-374` (A), `claude/sablony-obsah-b115` (C),
+`claude/testy-ci-b124` (E) nad `test-draft` (v2.10.1); konflikty jen
+v CHANGELOG a seznamu jader `mutace_jadro.mjs`. K tomu drobnosti D. Sikory,
+opravy z nezávislé revize a rozbor F. Oddíly níž podle dávek.
+
+**Ověřeno celým kolem:** celé kolo nad b292d32 VŠE ZELENÉ (73 min 13 s):
+sady 221 prošlo, 0 selhalo, 1 přeskočeno (test.js — skutečný ceník
+v repozitáři není), mutace jádra 162 z 162, mutace serveru 236 z 236,
+statické kontroly 3 z 3; s firemními podklady (KNG_PODKLADY: CN v14
++ EN/DE/FR, CN v11, PROJ v3 i v4 + EN/DE/FR, SoD v1 i v2, plná moc,
+příručka přejmenovaná na v6.10.1). Předchozí kolo nad 5b3213d (před
+opravami z revize) selhalo jen na zadání mutace B59 (úsek změnil B119) —
+opraveno. Po kole `git status` čistý, `if (false)` jen v legitimních místech.
+
 ## Nezávislá revize oprav A–C (6. 10. 2026) — v integrační větvi claude/davka-6-10
 
 Dva revizoři (jen čtení nad čistou kopií), vysoké nálezy dvakrát nezávisle
