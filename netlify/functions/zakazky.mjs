@@ -185,7 +185,7 @@ export default async (req) => {
   const bezAdresy = ULO.uloRejstrikBezAdresy(stavajici).filter(x => x !== jmeno);
   if (bezAdresy.length) {
     const nalezene = await Promise.all(bezAdresy.map(async (soubor) => {
-      try { const z = await s.cti('z/' + soubor); return [soubor, String((z && z.adresa) || '')]; }
+      try { const z = await s.cti('z/' + soubor); return [soubor, ULO.uloRejstrikAdresa(z && z.adresa)]; }
       catch (e) { return null; }
     }));
     const adresy = new Map(nalezene.filter(Boolean));

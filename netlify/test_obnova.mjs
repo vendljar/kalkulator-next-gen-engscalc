@@ -683,6 +683,38 @@ console.log('\n===== B47–B49, B52: dotažení obnovy po dávkách (19. kolo, 1
     ul && { klice: Object.keys(ul), kdo: ul.kdo.length, kdy: ul.kdy.length });
 }
 
+/* ---- B120 (audit 2. 10. 2026): obnova přenese i jazykové varianty dodatků ----
+ *
+ * Od #379 nese záznam společných textů vedle `texty` i `jazyky` (EN/DE/FR).
+ * Obnova je do 6. 10. zahazovala — cyklus záloha → obnova je ztratil
+ * a cizojazyčná nabídka pak tiskla českou větu. Před opravou 2 OK / 3 FAIL,
+ * po opravě 5 OK / 0 FAIL. */
+{
+  const VETA = 'Fólie VSG se dodává v mléčném provedení.';
+  const puvodni = { texty: { 'Sklo VSG': VETA, 'Sklo SKN': 'Izolační sklo.' },
+    jazyky: { 'Sklo VSG': { en: 'Milky VSG foil.', de: 'Milchige VSG-Folie.' }, 'Sklo SKN': { fr: 'Verre isolant.' } },
+    kdo: ADMIN_EMAIL, kdy: '2026-10-06T08:00:00.000Z' };
+  await ulz('program').zapis('popisy', puvodni);
+  const zal = (await (await get(zaloha, 'http://x/api/zaloha', cookie)).json()).zaloha;
+  test('B120: záloha nese jazykové varianty', !!(zal && zal.popisy && zal.popisy.jazyky && zal.popisy.jazyky['Sklo VSG']),
+    zal && zal.popisy);
+  await ulz('program').zapis('popisy', { texty: {}, jazyky: {}, kdo: ADMIN_EMAIL, kdy: '2026-10-06T09:00:00.000Z' });
+  const ob = await obnovJson({ zdroj: { soubor: zal }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['popisy'] }, cookie);
+  const ul = await ulz('program').cti('popisy');
+  test('B120: obnova textů proběhla', ob.ok === true && !!ul && ul.texty['Sklo VSG'] === VETA, ob);
+  test('B120: cyklus záloha → obnova: jazykové varianty shodné',
+    !!ul && JSON.stringify(ul.jazyky) === JSON.stringify(puvodni.jazyky), ul && ul.jazyky);
+  /* varianty projdou očistou: bez českého textu a neznámý jazyk se nezapíšou */
+  const spinava = { porizena: new Date().toISOString(), popisy: { texty: { 'Sklo VSG': VETA },
+    jazyky: { 'Sklo VSG': { en: 'Milky VSG foil.', xx: 'cizí jazyk' }, 'Bez textu': { en: 'Orphan.' } } } };
+  const ob2 = await obnovJson({ zdroj: { soubor: spinava }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['popisy'] }, cookie);
+  const ul2 = await ulz('program').cti('popisy');
+  test('B120: varianta bez českého textu se neobnoví', ob2.ok === true && !!ul2 && !!ul2.jazyky && !('Bez textu' in ul2.jazyky),
+    ul2 && ul2.jazyky);
+  test('B120: neznámý jazyk se neobnoví, platný ano',
+    !!ul2 && !!ul2.jazyky && ul2.jazyky['Sklo VSG'].en === 'Milky VSG foil.' && !('xx' in ul2.jazyky['Sklo VSG']), ul2 && ul2.jazyky);
+}
+
 /* ===== P4 / B72 (25. 9. 2026): obnova prochází TÝMIŽ pojistkami jako uložení =====
  * Do té doby měla obnova vlastní menší sadu kontrol (id, typy, zámky): pokusem
  * prošla sleva 60 % „schválená" vymyšleným jménem. Teď obě cesty volají

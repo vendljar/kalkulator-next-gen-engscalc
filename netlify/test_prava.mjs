@@ -943,6 +943,57 @@ const nactiB59 = async (soubor) => (await (await get(zakazky,
   test('B59: vynechané razítko rozpor nesmaže', poSmazani && poSmazani.stav === 'nesouhlasi',
     JSON.stringify(poSmazani));
 }
+
+/* ---------- B119: NOVÝ ZÁMEK SE OVĚŘUJE PŘÍSNĚ (audit 2. 10. 2026) ----------
+ * Uvolnění P6 přeskakovalo řádek bez protějšku: příplatek s vymyšleným
+ * `origNazev` a jinou cenou se nespároval, nikdo ho neporovnal a razítko
+ * bylo „shoda" — dotisk odeslané nabídky pak bral podvrženou cenu. Když
+ * výsledek spočítala tatáž verze jako server, nespárovaný řádek je rozdíl
+ * a jádro nese i součty příplatků a volitelných. Před opravou 2 OK / 4 FAIL,
+ * po opravě 6 / 0. */
+{
+  const odesliVerzi = (z, build, uprav) => {
+    const v = z.varianty[0];
+    const vysledek = zam.zamekVysledekSpocti(v, JEKLY_T, build);
+    if (uprav) uprav(vysledek);
+    zam.zamkniVariantu(v, { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Matice práv',
+      cislo: zam.variantaCislo(z, v), vysledek });
+    return z;
+  };
+  const tataz = 'v' + VERZE_SERVERU;
+  /* poctivý výsledek téže verze: přísné porovnání nesmí hlásit falešný rozpor */
+  const poctiva = odesliVerzi(zakazkaSCeny('2026 - OPR - CN - 1191'), tataz);
+  const o1 = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: poctiva }, cObch)).json();
+  const ov1 = (await nactiB59('2026-OPR-CN-1191.json')).varianty[0].zamek.overeni;
+  test('B119: poctivý zámek téže verze = shoda (přísné porovnání bez falešného rozporu)',
+    o1.ok === true && !o1.varovani && ov1 && ov1.stav === 'shoda' && !ov1.volne, JSON.stringify(ov1));
+  /* podvržená cena příplatku pod unikátním názvem */
+  const podvrh = (r) => {
+    const p = r.ock.priplatky[0];
+    p.origNazev = p.nazev = p.key = 'Příplatek, který server nezná';
+    p.sMarzi = 1; p.naklad = 1;
+  };
+  const z2 = odesliVerzi(zakazkaSCeny('2026 - OPR - CN - 1192'), tataz, podvrh);
+  test('B119: pojistka — volné porovnání (P6) podvrh nepozná',
+    zam.zamekVysledekRozdily(z2.varianty[0].zamek.vysledek, zam.zamekVysledekSpocti(z2.varianty[0], JEKLY_T, '')).pocet === 0);
+  const o2 = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: z2 }, cObch)).json();
+  const ov2 = (await nactiB59('2026-OPR-CN-1192.json')).varianty[0].zamek.overeni;
+  test('B119: podvržený příplatek s unikátním názvem → nesouhlasí', o2.ok === true && ov2 && ov2.stav === 'nesouhlasi',
+    JSON.stringify(ov2));
+  test('B119: odpověď varuje', /nesouhlasí/.test(String(o2.varovani || '')), o2.varovani);
+  /* vynechaný součet příplatků (jádro přísného porovnání) */
+  const z3 = odesliVerzi(zakazkaSCeny('2026 - OPR - CN - 1193'), tataz, (r) => { delete r.ock.souhrn.priplatkyCena; });
+  await post(zakazky, 'http://x/api/zakazky', { zakazka: z3 }, cObch);
+  const ov3 = (await nactiB59('2026-OPR-CN-1193.json')).varianty[0].zamek.overeni;
+  test('B119: chybějící součet příplatků → nesouhlasí', ov3 && ov3.stav === 'nesouhlasi'
+    && ov3.cesty.indexOf('ock.souhrn.priplatkyCena') >= 0, JSON.stringify(ov3));
+  /* stránka jiné verze (načtená před nasazením): volně jako dosud, razítko to přizná */
+  const z4 = odesliVerzi(zakazkaSCeny('2026 - OPR - CN - 1194'), 'v-starsi-stranka');
+  await post(zakazky, 'http://x/api/zakazky', { zakazka: z4 }, cObch);
+  const ov4 = (await nactiB59('2026-OPR-CN-1194.json')).varianty[0].zamek.overeni;
+  test('B119: výsledek jiné verze se porovná volně a razítko nese volne', ov4 && ov4.stav === 'shoda' && ov4.volne === true,
+    JSON.stringify(ov4));
+}
 {
   /* Podvržené razítko u NOVÉHO zámku: server ho spočítá sám. */
   const z = odesliB59(zakazkaSCeny('2026 - OPR - CN - 0852'), (r) => { r.ock.souhrn.zakladCena += 1000; });

@@ -83,6 +83,34 @@ const sablona = (...symboly) => ({ symboly: new Set(symboly) });
   }
 }
 
+/* 2b) B122 (audit 2. 10. 2026): uživatelský text v seznamu plateb se
+ * nerozvine jako symbol. Řádky (vlastní milník, katalog milníků, volné
+ * znění splátky) se vkládají PŘED hlavním průchodem náhrady — `{{SYMBOL}}`
+ * v nich se do 6. 10. rozvinul. Před opravou 3 prošlo / 2 selhala, po
+ * opravě 5 / 0. */
+{
+  const odstavec = (t) => '<w:p><w:r><w:t>' + t + '</w:t></w:r></w:p>';
+  const radekTab = (t) => '<w:tbl><w:tr><w:tc>' + odstavec(t) + '</w:tc></w:tr></w:tbl>';
+  const xml = '<w:body>' + odstavec('{{SODP_PLATEBNI_KALENDAR}}') + radekTab('{{PODM_PLATEBNI_KALENDAR}}')
+    + odstavec('{{SOD_PLATEBNI_KALENDAR}}') + odstavec('Cena {{PROJ_CELKEM_BEZ_DPH}}') + '</w:body>';
+  const ph = { PROJ_CELKEM_BEZ_DPH: '999 999,00 Kč', SOD_CISLO: 'TAJNE',
+    SODP_PLATEBNI_KALENDAR: 'Platba po milníku {{PROJ_CELKEM_BEZ_DPH}}.\nPlatba B.',
+    PODM_PLATEBNI_KALENDAR: 'Doklad {{SOD_CISLO}} a).\nDoklad b).',
+    SOD_PLATEBNI_KALENDAR: 'Splátka {{PROJ_CELKEM_BEZ_DPH}}' };
+  let vysl = dg.rozvinRadkyZaRadek(xml, ph);
+  vysl = dg.rozvinOdstavceZaRadek(vysl, ph);
+  vysl = dg.nahradPlaceholdery(vysl, ph);
+  const text = dg.xmlUnesc(vysl.replace(/<[^>]+>/g, ''));
+  test('B122: symbol z vlastního milníku (odstavec za řádek) zůstane doslova',
+    text.indexOf('Platba po milníku {{PROJ_CELKEM_BEZ_DPH}}.') >= 0, text);
+  test('B122: symbol z věty dílčího dokladu (řádek tabulky za řádek) zůstane doslova',
+    text.indexOf('Doklad {{SOD_CISLO}} a).') >= 0 && text.indexOf('TAJNE') < 0, text);
+  test('B122: jednořádková hodnota se symbolem zůstane doslova',
+    text.indexOf('Splátka {{PROJ_CELKEM_BEZ_DPH}}') >= 0, text);
+  test('B122: symbol šablony se rozvine dál', text.indexOf('Cena 999 999,00 Kč') >= 0, text);
+  test('B122: platné XML', !dg.xmlStrukturaVada(vysl), dg.xmlStrukturaVada(vysl));
+}
+
 /* 3) stará šablona s osmi pevnými platbami */
 {
   const z = novaZ(), v = z.varianty[0];

@@ -327,6 +327,16 @@ const ZAMEK_OVERENI_CASTI = ['ock', 'proj', 'kurzEurKc'];
  * prostě vynechá, a server by mu dal razítko „shoda". */
 const ZAMEK_OVERENI_JADRO = ['ock.souhrn.zakladCena', 'ock.souhrn.zakladDph', 'ock.souhrn.zakladSDph',
   'proj.souhrn.cena', 'proj.souhrn.celkem', 'kurzEurKc'];
+/* PŘÍSNÉ POROVNÁNÍ NOVÉHO ZÁMKU (B119, audit 2. 10. 2026). Uvolnění P6
+ * přeskakovalo řádek bez protějšku — podvržený příplatek s vymyšleným
+ * `origNazev` se tak nespároval, nikdo ho neporovnal a razítko bylo
+ * „shoda"; dotisk odeslané nabídky pak bral jeho cenu. Když výsledek
+ * spočítala TÁŽ verze jako server (nový zámek při uložení), jiný tvar
+ * vzniknout nemá: nespárovaný řádek je rozdíl a k jádru přibudou součty
+ * příplatků a zaškrtnutých volitelných položek. Starší zámky a obnova se
+ * porovnávají volně jako dosud. */
+const ZAMEK_OVERENI_JADRO_PRISNE = ['ock.souhrn.priplatkyCena', 'ock.souctySekci.volitelne.sMarzi'];
+const zamekVerzeCista = (x) => String(x == null ? '' : x).trim().replace(/^v/i, '');
 
 /* Porovná výsledek ze zámku s přepočtem. Obě strany mají projít JSONem
  * (klientská jím prošla cestou po síti — NaN je v ní null). Čísla se srovnávají
@@ -349,8 +359,9 @@ const ZAMEK_OVERENI_JADRO = ['ock.souhrn.zakladCena', 'ock.souhrn.zakladDph', 'o
  *     v obou polích jednoznačné: položka navíc v jedné verzi pak ostatní
  *     řádky neposune; jinak po pořadí. Řádek jen na jedné straně rozdílem
  *     není — jeho částka se promítne do součtů, a ty se porovnávají. */
-function zamekVysledekRozdily(klient, server, max) {
+function zamekVysledekRozdily(klient, server, max, opts) {
   const lim = max || 5;
+  const prisne = !!(opts && opts.prisne);
   const out = { pocet: 0, cesty: [] };
   const pridej = (c) => { out.pocet++; if (out.cesty.length < lim) out.cesty.push(c); };
   const stejneCislo = (a, b) => Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
@@ -372,10 +383,17 @@ function zamekVysledekRozdily(klient, server, max) {
     if (Array.isArray(a) !== Array.isArray(b)) return;       // jiný tvar = jiná verze, ne jiná čísla
     if (Array.isArray(a)) {
       const mb = podleId(b);
-      if (mb && podleId(a)) {
-        a.forEach((x, i) => { const y = mb.get(idRadku(x)); if (y !== undefined) projdi(x, y, c + '[' + i + ']'); });
+      const ma = mb && podleId(a);
+      if (ma) {
+        a.forEach((x, i) => {
+          const y = mb.get(idRadku(x));
+          if (y !== undefined) projdi(x, y, c + '[' + i + ']');
+          else if (prisne) pridej(c + '[' + i + ']');               // řádek jen v zámku (B119)
+        });
+        if (prisne) b.forEach(y => { if (!ma.has(idRadku(y))) pridej(c + '[chybí]'); });
         return;
       }
+      if (prisne && a.length !== b.length) pridej(c + '.length');
       for (let i = 0; i < Math.min(a.length, b.length); i++) projdi(a[i], b[i], c + '[' + i + ']');
       return;
     }
@@ -385,7 +403,7 @@ function zamekVysledekRozdily(klient, server, max) {
   };
   ZAMEK_OVERENI_CASTI.forEach(k => projdi(klient ? klient[k] : undefined, server ? server[k] : undefined, k));
   const hodnota = (o, cesta) => cesta.split('.').reduce((x, k) => (x && typeof x === 'object') ? x[k] : undefined, o);
-  ZAMEK_OVERENI_JADRO.forEach(cesta => {
+  (prisne ? ZAMEK_OVERENI_JADRO.concat(ZAMEK_OVERENI_JADRO_PRISNE) : ZAMEK_OVERENI_JADRO).forEach(cesta => {
     if (hodnota(klient, cesta) === undefined || hodnota(server, cesta) === undefined) pridej(cesta);
   });
   return out;
@@ -400,17 +418,25 @@ function zamekVysledekRozdily(klient, server, max) {
  *   'chyba'       server výsledek nepřepočítal, takže ho neověřil.
  * Zámek bez zmrazeného výsledku razítko nedostane (null): dokumenty ho
  * počítají z dat, která server hlídá sám. */
-function zamekOvereni(v, jekly, verzeServeru, kdy) {
+/* `opts.prisne` (B119): nový zámek při uložení. Přísně se porovnává jen
+ * tehdy, když výsledek nese tutéž verzi aplikace jako server — stránka
+ * načtená před nasazením (jiná verze) se porovná volně jako dosud, aby
+ * poctivý tisk nedostal falešné „nesouhlasí"; razítko pak nese
+ * `volne: true`, ať je vidět, že se porovnávalo volněji. */
+function zamekOvereni(v, jekly, verzeServeru, kdy, opts) {
   const z = zamekInfo(v);
   if (!z || !z.vysledek) return null;
   const zaklad = { kdy: kdy || new Date().toISOString(), server: String(verzeServeru || ''),
                    klient: String(z.vysledek.build || '').slice(0, 40) };
+  const chtePrisne = !!(opts && opts.prisne);
+  const prisne = chtePrisne && zamekVerzeCista(zaklad.klient) === zamekVerzeCista(zaklad.server);
+  if (chtePrisne && !prisne) zaklad.volne = true;
   const server = zamekVysledekSpocti(v, jekly, '');
   if (!server) return Object.assign({ stav: 'chyba', rozdilu: 0, cesty: [] }, zaklad);
   /* Výsledek od klienta může být cokoli, co projde JSONem — ani patologický
    * tvar nesmí shodit uložení; skončí jako „neověřeno". */
   let r;
-  try { r = zamekVysledekRozdily(JSON.parse(JSON.stringify(z.vysledek)), JSON.parse(JSON.stringify(server))); }
+  try { r = zamekVysledekRozdily(JSON.parse(JSON.stringify(z.vysledek)), JSON.parse(JSON.stringify(server)), 5, { prisne }); }
   catch (e) { return Object.assign({ stav: 'chyba', rozdilu: 0, cesty: [] }, zaklad); }
   return Object.assign({ stav: r.pocet ? 'nesouhlasi' : 'shoda', rozdilu: r.pocet, cesty: r.cesty }, zaklad);
 }
@@ -634,7 +660,7 @@ function zamekCteniDuvod(zak, ja) {
 
 if (typeof module !== 'undefined')
   module.exports = { zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
-                     zamekVysledekSpocti, ZAMEK_OVERENI_CASTI, ZAMEK_OVERENI_JADRO, zamekVysledekRozdily, zamekOvereni, zamekOvereniText,
+                     zamekVysledekSpocti, ZAMEK_OVERENI_CASTI, ZAMEK_OVERENI_JADRO, ZAMEK_OVERENI_JADRO_PRISNE, zamekVysledekRozdily, zamekOvereni, zamekOvereniText,
                      zamekCteniSmiOdemknout, zamekCteniDuvod, priponaPrvniNalez, priponaPrvniOprav,
                      variantaPripona, dalsiPriponaVarianty, variantaCislo,
                      PRIPONY_SCHEMA, variantaPriponaVZakazce, zamekCisloZakladSedi,

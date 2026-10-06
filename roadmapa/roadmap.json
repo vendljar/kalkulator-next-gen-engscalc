@@ -6193,6 +6193,19 @@
    "detail" : "HOTOVO (6. 10. 2026, schváleno J. V. 2. 10.): ve standardním režimu vsgFolieM2 = efektivní sklo celkem (přepis řádku skla boků/zad a čelního skla, jinak vypočtená plocha), sknM2 = efektivní sklo boků a zad. Bez přepisu beze změny (Model 1 1:1, porovnani_modelu.js shodný), po stěnách beze změny, ruční přepis množství příplatku má přednost. Detail výpočtu (krok 8) ukáže řádek „z ručně přepsané plochy skla“. Test src/test_vsg_skn_prepis.js 32/24 → 56/0, mutace jádra +5.",
    "hotovoKdyz" : "Test před/po, předlohy beze změny.",
    "kde" : "`src/engine.js` (vsgFolieM2, sknM2)"
+  },
+  {
+   "id" : "393",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "stredni",
+   "slozitost" : "M",
+   "hotovoV" : "větev claude/audit-b119-b122 (6. 10. 2026)",
+   "nazev" : "Audit 2. 10.: B119 přísné ověření nového zámku, B120 obnova překladů dodatků, B121 adresa v rejstříku, B122 symboly v textu plateb",
+   "proc" : "Nálezy bezpečnostního auditu 20. kola (2. 10. 2026) — dva střední (B119, B120) a dva nízké (B121, B122); doporučení auditu, výchozí ANO v rozhodovacím listu 6. 10.",
+   "detail" : "B119: nový zámek se při uložení ověřuje přísně, když výsledek spočítala tatáž verze jako server — nespárovaný řádek zmrazeného výsledku je rozdíl, jádro nese i součet příplatků a zaškrtnutých volitelných; jiná verze stránky volně jako dosud (razítko volne: true), starší zámky a obnova beze změny. B120: obnova části popisy přenese i jazykové varianty (popisyJazykyOciste). B121: adresa v rejstříku se stropem 300 znaků a kontrolou typu (i při dávkovém doplnění). B122: hodnota symbolu jde do Wordu se složenou závorkou jako &#123; — uživatelský text v seznamu plateb se nerozvine jako symbol.",
+   "hotovoKdyz" : "Testy před/po v CHANGELOG, nové mutace serveru a jádra chycené.",
+   "kde" : "`src/zamek.js`, `netlify/lib/zakazka_kontrola.mjs`, `netlify/functions/obnova.mjs`, `src/uloziste.js`, `netlify/functions/zakazky.mjs`, `src/docxgen.js`"
   }
  ],
  "meta" : {
