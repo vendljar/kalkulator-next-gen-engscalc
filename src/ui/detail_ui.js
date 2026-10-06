@@ -360,6 +360,11 @@ function renderDetail() {
     ['Čelní m²', `${M(z.celniM2, 2)} m²`, Z.pruchoziSachta ? 'materiál čelní stěna: světlíky + patra bez dveří A' : 'materiál čelní stěna (světlíky)'],
     ['Zasklení celkem', `${M(z.celkemM2, 2)} m²`,
       'boční + zadní + čelní; každá skupina jde do ceny vlastním materiálem podle typu šachty'],
+    /* #392 (6. 10. 2026): příplatky VSG / SKN z ručně přepsané plochy skla —
+     * řádek jen tehdy, když přepis platí (jinak se výstup nemění). */
+    ...(r.priplatky || []).filter(x => x.zPrepisuSkla && (x.key === 'vsgFolie' || x.key === 'skn')).map(x =>
+      [`Příplatek ${x.nazev}`, `${M(x.mnozstvi, 2)} m²`,
+        'z ručně přepsané plochy skla' + (x.key === 'skn' ? ' (sklo boků a zad)' : ' (sklo boků a zad + čelní)')]),
     /* KTERÉ SKLO SE POUŽIJE (nálezy V33 a V42, potvrzeno J. V. 15. 9. 2026).
      *
      * Obchodník se ptal, proč dvě interiérové nabídky se stejnými rozměry

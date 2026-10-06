@@ -8,6 +8,40 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## větev claude/vsg-skn-prepis-skla (neuvolněno)
+
+Dávka D (6. 10. 2026) z `test-draft` (v2.10.1). Rozhodovací list otevřených
+otázek s výchozími odpověďmi: `podklady/ROZHODNUTI_2026-10-06.md`.
+
+### #392 — příplatky VSG a SKN z ručně přepsané plochy skla
+
+- Navazuje na P3 (K19-N105): ve standardním režimu se příplatek **Sklo VSG
+  s mléčnou fólií** počítá z efektivního skla celkem (přepis řádku skla
+  boků/zad a čelního skla, jinak vypočtená plocha) a **Sklo SKN 176 (EXT)**
+  z efektivního skla boků a zad. Bez přepisu beze změny (Model 1 1:1,
+  `nastroje/porovnani_modelu.js` před i po shodný), režim po stěnách beze
+  změny, ruční přepis množství příplatku má dál přednost.
+- Detail výpočtu, krok 8 Zasklení: při přepisu skla řádek „Příplatek … —
+  z ručně přepsané plochy skla"; příplatky nesou značku `zPrepisuSkla`
+  (SKN jen při přepisu skla boků).
+- Testy: nová sada `src/test_vsg_skn_prepis.js` — před opravou 32 OK /
+  24 FAIL, po opravě 56 OK / 0 FAIL; `src/test_prepis_skla_prace.js`
+  53/0 (kontrola „VSG beze změny" obrácena na „VSG z přepsané plochy").
+  Mutace jádra +5 (#392), dvě mutace N50 přizpůsobené novému tvaru kódu.
+
+### K20-N1 — dodatek k #383 (vědomé chování)
+
+- Rozpracovaná varianta PROJ s uloženou předvolbou „Záloha" **bez
+  uloženého procenta** se řídí aktuálním firemním procentem — po #383 tedy
+  70/30 místo dřívějších 50/50, včetně dopočtu plateb SoD PROJ. Platí
+  rozhodnutí J. V. k #383 („výchozí plán platí i pro rozpracované
+  zakázky … jako každá změna firemního plánu"). Ručně zvolené procento
+  (i 50 %) platí dál, zamčené varianty nesou snímek plánu a nemění se,
+  vlastní plán firmy (Nastavení → Firma) má přednost. Kód beze změny;
+  zachovat 50 % by šlo jen na výslovný pokyn J. V.
+- Test `src/test_plan_plateb_k20n1.js` 15/0; s novou mutací jádra
+  „K20-N1: záloha bez procenta zůstane na 50 %" 11/4.
+
 ## v2.10.1 — nálezy 19. kola P1–P6 (větev claude/k19-nalezy), 2. 10. 2026
 
 Sloučeno do `test-draft` nad v1.10.2 a převedeno do `test` na pokyn J. V. 2. 10. 2026 („souhlasím s výchozími návrhy, zapracuj P2, P4, P6; P5 — statiku udělej tak, jak jsem navrhoval, ve dvou řádcích … P3 ok; P1 OK. připrav, otestuj a pošli do testu"). Integrační větev `claude/davka-2-10`, konflikty jen v CHANGELOG a PREDAVKA.

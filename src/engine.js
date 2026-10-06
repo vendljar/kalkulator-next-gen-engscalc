@@ -1501,8 +1501,8 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
    * jako v mkItem), jinak vypočtená hodnota. Bez přepisu beze změny
    * (Model 1 zůstává 1:1). Ruční přepis přímo na řádku PRÁCE / TMELENÍ má
    * dál přednost (mkItem). Režim po stěnách beze změny — jiná výška
-   * prosklení patří tam, ne do přepisu. Příplatky VSG / SKN zůstávají na
-   * geometrii (doporučení v CHANGELOG). */
+   * prosklení patří tam, ne do přepisu. Příplatky VSG / SKN od #392 taky
+   * z efektivních ploch — viz níž. */
   const skloPrepisM2 = (nazev) => {
     const p = z.mnozstviPrepis ? z.mnozstviPrepis[nazev] : null;
     const plati = (typeof prepisPlati === 'function') ? prepisPlati(p) : p != null;
@@ -1525,11 +1525,22 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
    * SKN (náhrada izolačního dvojskla) jen z pásů „Dvojsklo". Ve standardním
    * režimu beze změny — Model 1 zůstává 1:1. Od #375 se berou pásy i světlíky
    * u dveří (skleněný světlík je sklo, deska ne). */
+  /* PŘÍPLATKY VSG A SKN Z RUČNĚ PŘEPSANÉ PLOCHY SKLA (#392, schváleno
+   * J. V. 2. 10. 2026; navazuje na P3). Ve standardním režimu se berou
+   * EFEKTIVNÍ plochy jako u PRÁCE a TMELENÍ: fólie VSG = sklo celkem
+   * (přepis řádku skla boků/zad a čelního skla, jinak vypočtená plocha),
+   * SKN = sklo boků a zad (přepis, jinak vypočtená plocha). Bez přepisu
+   * beze změny (Model 1 1:1), po stěnách beze změny, ruční přepis množství
+   * příplatku má dál přednost (mkPrip). */
   const oplSkloPlochy = oplPasy.concat(oplSvetliky);
+  const skloBokyEfM2 = skloBokyPrepis != null ? skloBokyPrepis : skloBokyZadniM2;
+  const skloCelniEfM2 = skloCelniPrepis != null ? skloCelniPrepis : skloCelniM2;
   const vsgFolieM2 = oplRezim === 'poStenach'
-    ? oplSkloPlochy.reduce((a, p) => a + (OPL_SKLA.indexOf(p.typ) >= 0 ? p.m2 : 0), 0) : skloCelkemM2;
+    ? oplSkloPlochy.reduce((a, p) => a + (OPL_SKLA.indexOf(p.typ) >= 0 ? p.m2 : 0), 0)
+    : (oplZPrepisuSkla ? skloBokyEfM2 + skloCelniEfM2 : skloCelkemM2);
   const sknM2 = oplRezim === 'poStenach'
-    ? oplSkloPlochy.reduce((a, p) => a + (p.typ === 'C.skloBokyKc' ? p.m2 : 0), 0) : skloBokyZadniM2;
+    ? oplSkloPlochy.reduce((a, p) => a + (p.typ === 'C.skloBokyKc' ? p.m2 : 0), 0)
+    : skloBokyEfM2;
 
   /* ---------- montáž + projekce ---------- */
   const montazHod1 = z.montazZakladHod + hodinyNavic + z.montazAtypHod;
@@ -2024,9 +2035,12 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
               * cenikPopisNastav() — tvar {cesta: text} se drží tam. */
              popisNabidka: popisZCeniku(nazev) }, nazev);
   };
+  const sknZPrepisu = (it) => (skloBokyPrepis != null ? sPlochouSkla(it) : it);
   let priplatky = [
-    mkPrip('vsgFolie', 'Sklo VSG s mléčnou fólií', vsgFolieM2, pp.vsgFolieM2, { cenaPath: 'C.priplatky.vsgFolieM2' }),
-    ext ? mkPrip('skn', 'Sklo SKN 176 (Ug=1,1) (EXT)', sknM2, pp.sknM2, { cenaPath: 'C.priplatky.sknM2' }) : null,
+    /* #392: značka pro Detail výpočtu jako u PRÁCE / TMELENÍ (P3); SKN jen
+     * při přepisu skla boků, čelní sklo do něj nevstupuje. */
+    sPlochouSkla(mkPrip('vsgFolie', 'Sklo VSG s mléčnou fólií', vsgFolieM2, pp.vsgFolieM2, { cenaPath: 'C.priplatky.vsgFolieM2' })),
+    ext ? sknZPrepisu(mkPrip('skn', 'Sklo SKN 176 (Ug=1,1) (EXT)', sknM2, pp.sknM2, { cenaPath: 'C.priplatky.sknM2' })) : null,
     prechodoveAno ? null : mkPrip('prechMat', 'PŘECHODOVÉ PLECHY - NEREZ (MATERIÁL)', prechKg1 * nastupist, c.prechodoveKgKc, { cenaPath: 'C.prechodoveKgKc' }),
     /* Příplatková varianta jen tehdy, když montáž není už ve volitelných —
      * jinak by se táž práce naúčtovala dvakrát. */
