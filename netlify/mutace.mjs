@@ -743,7 +743,7 @@ const MUTACE = [
   /* Ověření zmrazeného výsledku NOVÉHO zámku (B59, revize v22.9.9). */
   { nazev: 'B59: server výsledek nového zámku neověří',
     soubor: 'lib/zakazka_kontrola.mjs',
-    hledej: "    const ov = globalThis.zamekOvereni(v, JEKLY, verzeServeru);\n    if (ov) v.zamek.overeni = ov; else delete v.zamek.overeni;",
+    hledej: "    const ov = globalThis.zamekOvereni(v, JEKLY, verzeServeru, undefined, { prisne: true });\n    if (ov) v.zamek.overeni = ov; else delete v.zamek.overeni;",
     nahrad: "    const ov = null;\n    if (ov) v.zamek.overeni = ov; else delete v.zamek.overeni;",
     proc: 'upravený klient by zamkl nabídku s jinými čísly, než dávají data, a B53 by je chránil jako pravdu' },
 
