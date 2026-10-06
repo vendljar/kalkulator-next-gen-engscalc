@@ -28,6 +28,74 @@ je tímto plánem nahrazené.
 
 ---
 
+# Předávka — stav k 6. 10. 2026 (v6.10.1 v integrační větvi claude/davka-6-10)
+
+Na `main`: **v30.9.1**. Na `test-draft` = `test`: **v2.10.1**. Integrační
+větev **`claude/davka-6-10`** = **v6.10.1** (pokyn J. V. 6. 10. 2026:
+„nerozděluj … sezení" + „ano, sluč do claude/davka-6-10"; podřízená sezení
+A a C zastavena a archivována J. V., jejich větve sloučeny). Do `test-draft`
+a `test` až na pokyn J. V. Sezení session_01FbEVKCocjc6ZDk2hyoDe3k.
+
+## Obsah v6.10.1 (podrobně CHANGELOG)
+
+| Dávka | Co | Roadmapa | Stav |
+|---|---|---|---|
+| G | rozhodovací list `podklady/ROZHODNUTI_2026-10-06.md` (25 otázek s výchozími odpověďmi) | — | ✅ |
+| D | #392 VSG/SKN z ručně přepsané plochy skla; K20-N1 jako vědomé chování (test) | #392 | ✅ |
+| A | #374 B113, B114 (identita položek PROJ, cena trvalých položek, ceník sestavení, zábrana PROJ za 0 Kč); B117 mez; návrh B96 | #374 | ✅ |
+| B | B119 přísné ověření nového zámku, B120 obnova překladů dodatků, B121 rejstřík, B122 symboly v textu plateb | #393 | ✅ |
+| C | B115 kontrola obsahu šablon, B116 vrácení verze, B100 obnova šablon | — | ✅ |
+| E | B124 overit_xss (215 → 299), B125 CI; šablony SoD v2 předány J. V. (SendUserFile) | — | ✅ |
+| Sikora | poznámka *) jen s IČ, velká písmena v Out of scope, Follow project milestones, název souboru v jazyce | #394 | ✅ |
+| Revize | dva nezávislí revizoři: B119 vždy přísně, šablony bez 5 dalších obchvatů, strop rejstříku, doprava PROJ, záporná sazbaKc, duplicitní sekce, čísla jako jádro | #395 (zbytky) | ✅ |
+| F | rozbor polí Pipedrive `podklady/PIPEDRIVE_POLE_DEALU_ROZBOR_2026-10-06.md` + xlsx s návrhem vyjádření (SendUserFile) | — | ✅ |
+| H | 21. kolo (protokol + audit na Disk) | — | ⬜ nestihlo se |
+
+## Celé kolo
+
+Celé kolo nad 5b3213d (před opravami z revize) selhalo jen na zadání
+mutace B59 (hledaný úsek změnil B119) — opraveno. **Celé kolo nad
+konečnou verzí: viz CHANGELOG v6.10.1** (výsledek se dopisuje).
+
+## Čeká na J. V.
+
+- Rozhodovací list 6. 10. (`podklady/ROZHODNUTI_2026-10-06.md`) — odpovídá
+  se jen tam, kde se chce odchýlit.
+- **#395 V3 (vysoká):** nová zakázka obchodníka s ceníkem sestavení +
+  vlastní položka nastaví cenu libovolně. Výchozí návrh: server u nové
+  zakázky obchodníka při zveřejněném ceníku nahradí ceník sestavení
+  zveřejněným + serverová zábrana nového zámku s cenou ≤ 0 (samostatná
+  dávka; prostý zákaz by shodil legitimní toky).
+- **F — Pipedrive:** otázky P1–P12 v rozboru (výchozí odpovědi tam);
+  poslat vyplněnou kopii tabulky integrátorovi po kontrole J. V.
+  Pozor: navržené názvy polí by rozbily párování `pd_mapa.mjs` (#114).
+- Nahrát šablony SoD realizace v2 a SoD PROJ v2 a nabídky PROJ v4
+  (Nastavení → Šablony) v testu i v ostré.
+- Sikora S2: česká nabídka zůstala malými písmeny (výchozí: ponechat).
+  Word PROJ má poznámku *) pevně v šabloně — zmizí jen z online nabídky
+  (výchozí: v šabloně PROJ v5 nahradit symbolem).
+- Převod v6.10.1 do `test-draft` a `test` („pošli do testu"), release
+  v6.10.1 (odkaz pošle sezení po převodu), převod do `main`.
+- Smazat sloučené větve: `claude/vsg-skn-prepis-skla`,
+  `claude/audit-b119-b122`, `claude/koncova-cena-374`,
+  `claude/sablony-obsah-b115`, `claude/testy-ci-b124` (až budou celé
+  v `test-draft`), dál `claude/k19-nalezy`, `claude/davka-2-10` a seznam
+  níž.
+
+## Podklady v cloudu
+
+`/home/user/kng_podklady` (CN v14, CN v11, PROJ v3 jako
+Sablona_NABIDKA_PROJ.docx, SoD v1, plná moc, příručka přejmenovaná na
+v6.10.1) a `/home/user/kng_podklady_jazyky` (navíc CN v14 EN/DE/FR, PROJ
+v4 + EN/DE/FR, SoD v2) — mimo repozitář.
+
+## Další krok
+
+Dopsat výsledek celého kola nad konečnou verzí do CHANGELOG a PREDAVKA,
+push `claude/davka-6-10`, hlášení J. V.
+
+---
+
 # Předávka — stav k 2. 10. 2026 (v2.10.1 na test-draft i test, v30.9.1 na main)
 
 Na `main`: **v30.9.1**. Na `test-draft` = `test`: **v2.10.1** (pokyn J. V.
