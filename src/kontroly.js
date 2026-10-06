@@ -149,6 +149,19 @@ function kontrolyVyctem(pole) {
   return k.slice(0, -1).join(', ') + ' a ' + k[k.length - 1];
 }
 
+/* Prodává projekce něco? Položka, která není vyřazená ani vypnutá nulou
+ * (polozkaProjVypnuta, prepisy.js — hodinová s nula hodinami, fixní
+ * s přepsanou nulou). Záložka pro samostatný Node běh bez prepisy.js. */
+function kontrolyProjProdava(pv) {
+  const vypnuta = (typeof polozkaProjVypnuta === 'function') ? polozkaProjVypnuta : (p) => {
+    if (!p || p.vyrazeno) return false;
+    if (p.typ === 'hod') return Number(p.hodinyCelkem != null ? p.hodinyCelkem : p.hodiny) === 0;
+    return !!p.cenaPrepsana && Number(p.cenaEfekt) === 0;
+  };
+  return ((pv && Array.isArray(pv.sekce)) ? pv.sekce : []).some(s => s && Array.isArray(s.polozky)
+    && s.polozky.some(p => p && !p.vyrazeno && !vypnuta(p)));
+}
+
 /* Přehled marže se počítá nanejvýš jednou za běh – používají ho dvě pravidla
  * (K7 marže, K8 cena pod nákladem) a je to jediný kus, který sahá na peníze. */
 function kontrolyMarze(ctx) {
@@ -255,7 +268,8 @@ const KONTROLY = [
     /* CENA NABÍDKY MUSÍ BÝT KLADNÉ ČÍSLO (P2 / K16-N75 + K14-N61, 25. 9. 2026).
      * Nula nebo NaN v ceně je vždy omyl (chybějící cena v ceníku, nesmyslné
      * zadání) — nabídka za nula korun nesmí odejít. Projekce smí být nulová,
-     * když se neprodává; jen u zakázky „jen projekce" musí být kladná. */
+     * když se neprodává; u zakázky „jen projekce" musí být kladná vždy,
+     * u kombinované, když má co prodávat (B113, 6. 10. 2026). */
     kod: 'cenaNula', kde: 'Nabídka', nazev: 'Cena nabídky je nulová nebo není číslo',
     zabranaMozna: true,
     zjisti(ctx) {
@@ -270,7 +284,13 @@ const KONTROLY = [
       const pj = ctx.projVysledek && ctx.projVysledek.souhrn ? ctx.projVysledek.souhrn.celkem : undefined;
       const spatne = [];
       if (o !== undefined && !(Number(o) > 0)) spatne.push('výtahová šachta (OCK)');
-      if (pj !== undefined && (!isFinite(Number(pj)) || Number(pj) < 0 || (ctx.jenProj && !(Number(pj) > 0))))
+      /* Projekce za 0 Kč i v KOMBINOVANÉ nabídce (B113, #374, 6. 10. 2026):
+       * má-li projekce co prodávat (položka ani vyřazená, ani vypnutá nulou)
+       * a vyjde nula, je to ceník bez cen (ceník sestavení bez značky
+       * ukázkových dat) — dokument PROJ by odešel za nula korun. Projekce,
+       * která se neprodává (vše vyřazené nebo vypnuté), smí být nulová. */
+      if (pj !== undefined && (!isFinite(Number(pj)) || Number(pj) < 0
+          || ((ctx.jenProj || kontrolyProjProdava(ctx.projVysledek)) && !(Number(pj) > 0))))
         spatne.push('projekční práce (PROJ)');
       if (!spatne.length) return null;
       return { uroven: KONTROLY_UROVEN_ZABRANA,

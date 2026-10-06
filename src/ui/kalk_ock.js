@@ -1645,7 +1645,13 @@ function radekKalk(r, sekceKey) {
    * právo kalk.pridatPolozku) — jinak by obchodník přidal řádek, který sám
    * nedokáže pojmenovat ani ocenit. Jednotková cena vlastní položky se mu
    * ukazuje přímo u názvu (nákladové sloupce nevidí). */
-  const vlastniEd = !admin && r.vlastni && smiZobrazit('kalk.pridatPolozku');
+  /* Trvalý řádek z ceníku (kid) — jednotkovou cenu mění jen admin (#374 /
+   * B114, 6. 10. 2026; server ji roli bez práva sloupce.naklad proti uložené
+   * verzi a katalogu nepustí). Obchodník u něj smí množství a smazání jen
+   * v této zakázce — stejně jako u trvalých řádků PROJ. Do 6. 10. tu cena
+   * trvalé položky šla obchodníkovi přepsat (u volitelných ne). */
+  const vlastniEd = !admin && r.vlastni && !r.kid && smiZobrazit('kalk.pridatPolozku');
+  const trvalaEd = !admin && r.vlastni && !!r.kid && smiZobrazit('kalk.pridatPolozku');
   let c = `<td style="white-space:normal">${admin
     ? `<div class="vol-name">${gripHtml(r, sekceKey)}${bunkaNazev(r, sekceKey)}${bezCenyHtml(r)}${vypnutoHtml(r)}</div>`
     : vlastniEd
@@ -1653,8 +1659,9 @@ function radekKalk(r, sekceKey) {
          à <input type="number" step="any" min="0" style="width:96px" value="${+(+r.cena).toFixed(2)}" title="jednotková cena této položky (jen pro tuto zakázku)"
            onchange="vlastniSet('${escJs(r.sekce)}', ${r.idx}, 'cena', this.value)"> Kč
          <button class="mini noprint" title="odebrat vlastní položku" onclick="vlastniDel('${escJs(r.sekce)}', ${r.idx})">✕</button>`
-      : esc(r.nazev) + poznHtml(r) + bezCenyHtml(r) + vypnutoHtml(r)}</td>`;
-  c += `<td style="white-space:nowrap">${(admin || vlastniEd) ? bunkaMnozstvi(r) : num(r.mnozstvi, 3)}</td>`;
+      : esc(r.nazev) + poznHtml(r) + bezCenyHtml(r) + vypnutoHtml(r)
+        + (trvalaEd ? ` <button class="mini noprint" title="smazat trvalou položku jen v této zakázce" onclick="vlastniDel('${escJs(r.sekce)}', ${r.idx})">✕</button>` : '')}</td>`;
+  c += `<td style="white-space:nowrap">${(admin || vlastniEd || trvalaEd) ? bunkaMnozstvi(r) : num(r.mnozstvi, 3)}</td>`;
   if (admin) c += `<td style="white-space:nowrap">${bunkaCena(r)}</td>`;
   if (showCost) c += `<td>${fmt(r.naklad)}</td><td>${fmt(r.marze)}</td>`;
   c += `<td>${fmt(r.sMarzi)}</td>`;

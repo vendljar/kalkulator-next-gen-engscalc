@@ -557,6 +557,28 @@ test('nekompletní kontext nic neshodí a nálezy dorazí',
     const nula = kontrolyProved(Object.assign(ctxZdravy(), { vysledek: { souhrn: { zakladCena: 0, zakladNaklad: 0 } } }));
     test('#377: nulová cena OCK zastaví OCK, ne PROJ', zd(nula, 'sod') !== '' && zd(nula, 'sodProj') === '');
 
+    /* B113 (#374, 6. 10. 2026): projekce za 0 Kč v KOMBINOVANÉ nabídce
+     * (ne „jen projekce") nespustila nic — 0 není < 0 a nejde o jenProj.
+     * Ceník PROJ samé nuly (ceník sestavení bez značky) dal dokument PROJ
+     * za nula korun. Teď: projekce, která má co prodávat (položka ne
+     * vyřazená ani vypnutá nulou), a vyjde 0 → zastaví dokumenty PROJ.
+     * Před opravou první dva testy selžou. */
+    const cpNula = JSON.parse(JSON.stringify(CENIK_PROJ));
+    Object.keys(cpNula.sazby || {}).forEach(k => { cpNula.sazby[k] = 0; });
+    Object.keys(cpNula.fixy || {}).forEach(k => { cpNula.fixy[k] = 0; });
+    const projNula = kontrolyProved(ctxZdravy(c => { c.cenikProj = cpNula; }));
+    test('B113: projekce za 0 Kč v kombinované nabídce zastaví nabídku a SoD PROJ',
+      projNula.kodyBrani.includes('cenaNula') && /PROJ/.test(zd(projNula, 'nabidkaProj')) && zd(projNula, 'sodProj') !== '' && zd(projNula, 'kryciproj_bo') !== '',
+      JSON.stringify(projNula.kodyBrani));
+    test('B113: … a nezastaví dokumenty OCK', ['nabidka', 'nabidkaTisk', 'sod', 'kryci_bo', 'plnaMoc'].every(t => zd(projNula, t) === ''));
+    const projVyr = kontrolyProved(ctxZdravy(c => { c.cenikProj = cpNula;
+      c.projZadani.sekce.forEach(s => s.polozky.forEach(p => { p.vyrazeno = true; })); }));
+    test('B113: projekce, která se neprodává (vše vyřazené), dokument nezastaví', !projVyr.kodyBrani.includes('cenaNula'), JSON.stringify(projVyr.kodyBrani));
+    const projVyp = kontrolyProved(ctxZdravy(c => { c.cenikProj = cpNula;
+      c.projZadani.sekce.forEach(s => s.polozky.forEach(p => { if (p.typ === 'hod') { p.hodiny = 0; p.rezerva = 0; } else p.cenaPrepis = 0; })); }));
+    test('B113: projekce vypnutá nulou (hodiny 0, fix přepsaný na 0) dokument nezastaví', !projVyp.kodyBrani.includes('cenaNula'), JSON.stringify(projVyp.kodyBrani));
+    test('B113: zdravá projekce v kombinované nabídce nic nezastaví', zd(kontrolyProved(ctxZdravy()), 'nabidkaProj') === '');
+
     test('#377: hláška nese název pravidla i text nálezu',
       (() => { const n = zdvih.nalezy.find(x => x.kod === 'rozmery'); return hl.indexOf(n.nazev + ': ' + n.text) >= 0; })(), hl);
     /* Zábrany hlídané jinde (prázdný ceník, plán plateb) se tu nezdvojují. */

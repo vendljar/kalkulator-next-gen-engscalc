@@ -77,6 +77,7 @@ const ZC = require('../src/zkusebni_cenik.js');
 const fmod = require('../src/firma.js');
 const CEN = require('../src/cenik.js');
 const zam = require('../src/zamek.js');
+const katalogAplikujNode = require('../src/katalog.js').katalogAplikuj;
 /* Zámek jako v aplikaci (zamek_ui.js): nese číslo z papíru. Od 23. 9. 2026
  * (nález B61) server nový zámek bez něj odmítne. Výslovně zadané `cislo`
  * v testu přebije výchozí. */
@@ -1424,6 +1425,144 @@ console.log('\n===== B112: CENÍK VARIANTY A SKRYTÉ PŘEPISY PODLE ROLE HLÍDÁ
     { cenik: cenikJinak(), cenikProj: ZC.zkusebniCenikProj(), slevy: { ...NAST_B112, minMarze: 0 } }, cAdmin);
 }
 
+console.log('\n===== #374 (B113, B114): KONCOVÁ CENA BEZ SCHVÁLENÍ — IDENTITA POLOŽEK A CENÍK SESTAVENÍ =====\n');
+{
+  /* Audit 30. 9. 2026 (22. kolo): B112 hlídá jen přepisová pole. Obchodník
+   * ručním požadavkem snížil cenu projekce bez schvalování slevy:
+   *   B114 — identita standardní položky PROJ (klíč sazby na neexistující
+   *          + sazbaKc=1, odebraný fixKey + cena=1, vynulované hodiny
+   *          a rezerva) a cena trvalé položky s kid (OCK i PROJ);
+   *   B113 — celý ceník varianty nahrazený ceníkem sestavení (samé nuly).
+   * Před opravou vše 200. Pravidlo: role bez práva sloupce.naklad nezmění
+   * proti uložené verzi (u nové varianty proti výchozímu zadání, katalogu
+   * a jiné uložené variantě) nic z toho; vlastní položka (vlastni:true bez
+   * kid) dál smí; trvalou položku smí smazat (jen v této zakázce).
+   * Výjimka „celý ceník sestavení" platí jen pro novou zakázku a pro
+   * variantu, jejíž uložená verze ceník sestavení sama nese. */
+  const NAST_374 = { minMarze: 0, stropy: { 'Obchodník': 0.03, 'Vedoucí': 0.10, 'Administrátor': 1 } };
+  const KAT_374 = { verze: 1, seq: 2, polozky: { hrubaOck: [{ kid: 'k1', nazev: 'Trvalá položka 374', mnozstvi: 1, cena: 10000 }],
+    atyp: [], oplasteni: [], volitelne: [], rezie: [], spojovaci: [], lakovani: [],
+    priplatky: [{ kid: 'k2', nazev: 'Trvalý příplatek 374', mnozstvi: 1, cena: 5000 }] } };
+  const zv = await (await post(program, 'http://x/api/program',
+    { cenik: ZC.zkusebniCenik(), cenikProj: ZC.zkusebniCenikProj(), katalog: KAT_374, slevy: NAST_374 }, cAdmin)).json();
+  test('#374: příprava — zveřejněn zkušební ceník s katalogem', zv.ok === true, zv);
+  await post(zobrazeni, 'http://x/api/zobrazeni', { matice: {} }, cAdmin);
+  let cislo374 = 9701;   // vlastní rozsah 9701–9799
+  const nova374 = () => zakazkaSCeny('2026 - OPR - CN - ' + (cislo374++));
+  const uloz374 = async (z, c, extra) => { const r = await post(zakazky, 'http://x/api/zakazky', Object.assign({ zakazka: z }, extra || {}), c);
+    return { status: r.status, ...(await r.json()) }; };
+  const uprav374 = async (zmena, cookie, priprava) => {
+    const z = nova374(); if (priprava) priprava(z);
+    const r = await uloz374(z, cAdmin);
+    if (r.status !== 200) return { status: 'příprava ' + r.status, chyba: r.chyba };
+    const g = await nactiB59(r.soubor);
+    const a = zk.importZakazka(JSON.parse(JSON.stringify(g)));
+    zmena(a);
+    return uloz374(a, cookie, { ocekavaneRazitko: g.uloRazitko });
+  };
+  const d0 = (a) => a.varianty[0].data;
+  const pol = (a, sek) => d0(a).proj.zadani.sekce.find(s => s.key === sek).polozky;
+  const hod = (a) => pol(a, 'studie')[0];                       // Studie, sazba projektant
+  const fix = (a) => pol(a, 'projednani')[0];                   // Památkáři, fixKey pamatkari
+  const cVed = UCTY['Vedoucí'].cookie;
+  const je403 = (r, re) => r.status === 403 && (!re || re.test(r.chyba || ''));
+
+  /* B114 — identita standardních položek PROJ */
+  const a1 = await uprav374(a => { hod(a).sazba = 'neexistuje'; hod(a).sazbaKc = 1; }, cObch);
+  test('B114: obchodník — klíč sazby na neexistující + sazbaKc=1 → 403', je403(a1, /proj\.zadani\.sekce/), a1);
+  const a2 = await uprav374(a => { delete fix(a).fixKey; fix(a).cena = 1; }, cObch);
+  test('B114: obchodník — odebraný fixKey + cena=1 → 403', je403(a2), a2);
+  const a3 = await uprav374(a => { d0(a).proj.zadani.sekce.forEach(s => s.polozky.forEach(p => { if (p.typ === 'hod') { p.hodiny = 0; p.rezerva = 0; } })); }, cObch);
+  test('B114: obchodník — vynulované hodiny a rezerva → 403', je403(a3, /hodiny/), a3);
+  const a3b = await uprav374(a => { hod(a).rezerva = 0; hod(a).hodiny = 1; }, cObch);
+  test('B114: obchodník — snížené hodiny jedné položky → 403', je403(a3b), a3b);
+  const a4 = await uprav374(a => { fix(a).fixKey = 'geodet'; }, cObch);
+  test('B114: obchodník — fixKey na jinou (levnější) částku → 403', je403(a4), a4);
+  const a5 = await uprav374(a => { hod(a).vlastni = true; hod(a).hodiny = 0; }, cObch);
+  test('B114: obchodník — standardní položka přeznačená na vlastní → 403', je403(a5), a5);
+  const a6 = await uprav374(a => { pol(a, 'studie').splice(0, 1); }, cObch);
+  test('B114: obchodník — smazaná standardní položka → 403', je403(a6), a6);
+  const a7 = await uprav374(a => { hod(a).sazba = 'neexistuje'; hod(a).sazbaKc = 1; }, cVed);
+  test('B114: vedoucí (bez práva v matici) — klíč sazby → 403', je403(a7), a7);
+  const a8 = await uprav374(a => { hod(a).sazba = 'statik'; hod(a).hodiny = 30; delete fix(a).fixKey; fix(a).cena = 1; }, cAdmin);
+  test('B114: administrátor smí identitu položek změnit (200)', a8.status === 200, a8);
+  const n1 = nova374(); hod(n1).sazba = 'neexistuje'; hod(n1).sazbaKc = 1;
+  const a9 = await uloz374(n1, cObch);
+  test('B114: nová zakázka obchodníka s pozměněnou položkou → 403 (proti výchozímu zadání)', je403(a9), a9);
+
+  /* legitimní toky */
+  const b1 = await uprav374(a => {
+    pol(a, 'studie').push({ nazev: 'Vlastní fix', typ: 'fix', cena: 4000, vlastni: true });
+    pol(a, 'dps').push({ nazev: 'Vlastní hod', typ: 'hod', sazba: 'projektant', hodiny: 3, rezerva: 0, vlastni: true });
+    a.nazevAkce += ' (vlastní)'; }, cObch);
+  test('B114: obchodník přidá vlastní položky (200)', b1.status === 200, b1);
+  const b2 = await uprav374(a => { const p = pol(a, 'studie').find(x => x.vlastni); p.cena = 1; p.nazev = 'Přejmenováno'; }, cObch,
+    z => { pol(z, 'studie').push({ nazev: 'Vlastní fix', typ: 'fix', cena: 4000, vlastni: true }); });
+  test('B114: obchodník změní cenu a název vlastní položky (200)', b2.status === 200, b2);
+  const b3 = await uprav374(a => { pol(a, 'studie').splice(pol(a, 'studie').findIndex(x => x.vlastni), 1); }, cObch,
+    z => { pol(z, 'studie').push({ nazev: 'Vlastní fix', typ: 'fix', cena: 4000, vlastni: true }); });
+  test('B114: obchodník smaže vlastní položku (200)', b3.status === 200, b3);
+  const b4 = await uprav374(a => { a.varianty[0].nazev = 'A'; zam.klonujVariantu(a, a.varianty[0].id); }, cObch,
+    z => { hod(z).hodiny = 40; delete fix(z).fixKey; fix(z).cena = 7000; });
+  test('B114: klon varianty s položkami upravenými administrátorem (200)', b4.status === 200, b4);
+  const b5 = await uprav374(a => { pol(a, 'zamereni').forEach(p => { delete p.vyrazeno; }); a.nazevAkce += ' (zaměření)'; }, cObch);
+  test('B114: zahrnutí/vyřazení položky (rozsah, ne cena) se nehlídá (200)', b5.status === 200, b5);
+  await post(zobrazeni, 'http://x/api/zobrazeni', { matice: { 'sloupce.naklad': { 'Obchodník': true, 'Vedoucí': false } } }, cAdmin);
+  const b6 = await uprav374(a => { hod(a).hodiny = 2; }, cObch);
+  test('B114: obchodník s právem sloupce.naklad smí hodiny změnit (200)', b6.status === 200, b6);
+  await post(zobrazeni, 'http://x/api/zobrazeni', { matice: {} }, cAdmin);
+
+  /* B114 — cena trvalé položky s kid (PROJ i OCK) */
+  const sKid = (z) => {   // trvalá položka PROJ: v ceníku varianty i v zadání (projKatalogAplikuj)
+    d0(z).proj.cenik.vlastniPolozky = { studie: [{ kid: 'pk1', nazev: 'Trvalá PROJ', typ: 'fix', cena: 20000 }] };
+    pol(z, 'studie').push({ kid: 'pk1', nazev: 'Trvalá PROJ', typ: 'fix', cena: 20000, vlastni: true });
+    d0(z).ock.zadani.vlastniPolozky = Object.assign({}, d0(z).ock.zadani.vlastniPolozky,
+      { hrubaOck: [{ kid: 'k1', nazev: 'Trvalá položka 374', mnozstvi: 1, cena: 10000 }] });
+    d0(z).ock.zadani.priplatkyVlastni = [{ kid: 'k2', nazev: 'Trvalý příplatek 374', mnozstvi: 1, cena: 5000 }];
+  };
+  const kP = (a) => pol(a, 'studie').find(p => p.kid === 'pk1');
+  const c1 = await uprav374(a => { kP(a).cena = 1; }, cObch, sKid);
+  test('B114: obchodník — cena trvalé položky PROJ (kid) 20 000 → 1 → 403', je403(c1), c1);
+  const c2 = await uprav374(a => { d0(a).ock.zadani.vlastniPolozky.hrubaOck[0].cena = 1; }, cObch, sKid);
+  test('B114: obchodník — cena trvalé položky OCK (kid) 10 000 → 1 → 403', je403(c2, /vlastniPolozky/), c2);
+  const c3 = await uprav374(a => { d0(a).ock.zadani.priplatkyVlastni[0].cena = 1; }, cObch, sKid);
+  test('B114: obchodník — cena trvalého příplatku OCK (kid) → 403', je403(c3), c3);
+  const c4 = await uprav374(a => { const i = pol(a, 'studie').findIndex(p => p.kid === 'pk1');
+    pol(a, 'studie').splice(i, 1); d0(a).proj.zadani.katalogOdebrane = ['pk1'];
+    d0(a).ock.zadani.vlastniPolozky.hrubaOck = []; d0(a).ock.zadani.katalogOdebrane = ['k1']; }, cObch, sKid);
+  test('B114: obchodník smaže trvalou položku jen v této zakázce (200)', c4.status === 200, c4);
+  const c5 = await uprav374(a => { d0(a).ock.zadani.vlastniPolozky.hrubaOck[0].mnozstvi = 3; }, cObch, sKid);
+  test('B114: obchodník změní množství trvalé položky OCK (200)', c5.status === 200, c5);
+  const c6 = await uprav374(a => { kP(a).cena = 1; d0(a).ock.zadani.vlastniPolozky.hrubaOck[0].cena = 1; }, cAdmin, sKid);
+  test('B114: administrátor smí cenu trvalé položky změnit (200)', c6.status === 200, c6);
+  const n2 = nova374(); katalogAplikujNode(KAT_374, d0(n2).ock.zadani);
+  const c7 = await uloz374(n2, cObch);
+  test('B114: nová zakázka obchodníka s trvalými položkami z katalogu (200)', c7.status === 200, c7);
+  const n3 = nova374(); katalogAplikujNode(KAT_374, d0(n3).ock.zadani); d0(n3).ock.zadani.vlastniPolozky.hrubaOck[0].cena = 1;
+  const c8 = await uloz374(n3, cObch);
+  test('B114: nová zakázka obchodníka s levnější trvalou položkou OCK → 403', je403(c8), c8);
+
+  /* B113 — celý ceník sestavení */
+  const sestaveni = (a) => { d0(a).cenik = JSON.parse(JSON.stringify(globalThis.DEFAULT_CENIK));
+    d0(a).proj.cenik = JSON.parse(JSON.stringify(globalThis.DEFAULT_CENIK_PROJ)); };
+  const e1 = await uprav374(a => { sestaveni(a); }, cObch);
+  test('B113: obchodník nahradí ceník uložené zakázky ceníkem sestavení → 403', je403(e1), e1);
+  const e2 = await uprav374(a => { d0(a).proj.cenik = JSON.parse(JSON.stringify(globalThis.DEFAULT_CENIK_PROJ)); }, cObch);
+  test('B113: … jen ceník PROJ (projekce za 0 Kč) → 403', je403(e2, /proj\.cenik/), e2);
+  const e3 = await uprav374(a => { a.varianty[0].nazev = 'A'; zam.klonujVariantu(a, a.varianty[0].id); sestaveni({ varianty: [a.varianty[1]] }); }, cObch);
+  test('B113: nová varianta uložené zakázky s ceníkem sestavení → 403', je403(e3), e3);
+  const n4 = nova374(); sestaveni(n4);
+  const e4 = await uloz374(n4, cObch);
+  test('B113: nová zakázka s ceníkem sestavení projde (200 — dokument zastaví zábrana)', e4.status === 200, e4);
+  const e5 = await uprav374(a => { a.nazevAkce += ' (poznámka)'; d0(a).ock.zadani.zdvih = 12; }, cObch, z => sestaveni(z));
+  test('B113: uložená zakázka, která ceník sestavení sama nese, se obchodníkovi uloží (200)', e5.status === 200, e5);
+  const e6 = await uprav374(a => { sestaveni(a); }, cAdmin);
+  test('B113: administrátor ceník sestavení uloží (200)', e6.status === 200, e6);
+
+  await post(program, 'http://x/api/program',
+    { cenik: cenikJinak(), cenikProj: ZC.zkusebniCenikProj(), slevy: { ...NAST_374, minMarze: 0 } }, cAdmin);
+}
+
 /* ============================================================
  * BEZPEČNOSTNÍ AUDIT 22. 8. 2026 — 2. dávka: B4, B6, B7, B8, B9, B13
  * ============================================================ */
@@ -2529,7 +2668,11 @@ console.log('\n===== AUDIT B26 / B29: KID TRVALÝCH POLOŽEK A DUPLICITNÍ ID ==
   const zPripOk = zakazkaCislo('2026 - OPR - CN - 0962');
   const dpo = zPripOk.varianty[0].data; dpo.ock = dpo.ock || {}; dpo.ock.zadani = dpo.ock.zadani || {};
   dpo.ock.zadani.priplatkyVlastni = [{ kid: 'k9', nazev: 'x', mnozstvi: 1, cena: 1 }, { nazev: 'ruční', mnozstvi: 1, cena: 1 }];
-  test('B51: běžný kid i ruční příplatek bez kid projdou', (await uloz(zPripOk)).status === 200);
+  /* Pod správcem (#374 / B114, 6. 10. 2026): obchodníkovi server od té doby
+   * odmítne trvalý příplatek s cenou mimo katalog (k9 v katalogu není) —
+   * tady se ověřuje jen tvar kid. */
+  test('B51: běžný kid i ruční příplatek bez kid projdou',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: zPripOk }, cAdmin)).status === 200);
 
   /* B45 (19. kolo): délka názvu sekce PROJ. Druhá vrstva pod escapováním
    * v dvKrok() — název jde z dat rovnou do nadpisu Detailu výpočtu. */
@@ -2543,7 +2686,10 @@ console.log('\n===== AUDIT B26 / B29: KID TRVALÝCH POLOŽEK A DUPLICITNÍ ID ==
   const zSekceOk = zakazkaCislo('2026 - OPR - CN - 0962');
   const dso = zSekceOk.varianty[0].data; dso.proj = dso.proj || {}; dso.proj.zadani = dso.proj.zadani || {};
   dso.proj.zadani.sekce = [{ key: 's', nazev: 'DPZ – dokumentace pro povolení záměru (včetně PBŘ)', polozky: [] }];
-  test('B45: český název s interpunkcí projde', (await uloz(zSekceOk)).status === 200);
+  /* Pod správcem (#374 / B114): obchodníkovi server od 6. 10. 2026 odmítne
+   * zadání PROJ bez standardních položek — tady se ověřuje jen text názvu. */
+  test('B45: český název s interpunkcí projde',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: zSekceOk }, cAdmin)).status === 200);
 
   /* Zveřejnění ceníku: tudy by se podvržený kid propsal do každé nové nabídky. */
   test('B26: zveřejnění ceníku PROJ s podvrženým kid server odmítne (400)',

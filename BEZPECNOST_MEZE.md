@@ -66,7 +66,7 @@ kapitol na 20 000. Stejnou kontrolou jde klient i server (`/api/firma`).
 
 ---
 
-## Třída „koncová cena bez schválení" (B96, B111, B112 — 29. 9. 2026)
+## Třída „koncová cena bez schválení" (B96, B111, B112 — 29. 9. 2026; B113, B114, B117 — 6. 10. 2026)
 
 Komplexní test 29. 9. 2026 našel tři cesty, jak obchodník snížil cenu
 nabídky bez schválení slevy. Každá má vlastní serverovou kontrolu hned za
@@ -83,11 +83,31 @@ typy polí (`zakazkaServerKontrola`, uložení i obnova):
   z uložené verze téže varianty, ze zveřejněného ceníku (platná i dřívější
   verze) nebo z jiné uložené varianty; přepisy nezmění. Administrátor smí
   vždy.
+- **B114** (6. 10. 2026, #374) — identita standardních položek PROJ
+  (`typ`, `sazba`, `sazbaKc`, `fixKey`, `cena`, `hodiny`, `rezerva`) a cena
+  trvalé položky s `kid` v zadání OCK i PROJ, tamtéž (`uloCenikProblemy`,
+  pod právem `sloupce.naklad`): role bez práva je proti uložené verzi
+  (u nové varianty proti výchozímu zadání, katalogu a jiné uložené
+  variantě) nezmění; standardní položku nesmaže ani nepřeznačí na vlastní.
+  Trvalou položku smí smazat (jen v této zakázce), u OCK změnit množství.
+  Vlastní položka (`vlastni:true` bez `kid`) se nehlídá.
+- **B113** (6. 10. 2026, #374) — celý ceník sestavení (samé nuly) projde
+  jen u nové zakázky a u varianty, jejíž uložená verze ho sama nese;
+  projekce za 0 Kč s co prodávat zastaví dokumenty PROJ i v kombinované
+  nabídce (zábrana `cenaNula`).
 
 **Co zůstává vědomě (roadmapa #38 „nic se neblokuje"):**
-- Zaokrouhlení *z výčtu* směrem dolů smí cenu snížit o méně než jeden krok
-  — nejvýš 9 999 Kč u OCK; u PROJ se zaokrouhluje každá činnost zvlášť,
-  takže až 9 999 Kč × počet činností. Lišta marže to jen ohlásí.
+- **B117 — zaokrouhlení *z výčtu* směrem dolů podteče minimální marži**
+  (zbytek #38, #374 bod 3; vědomě ponecháno 6. 10. 2026). Smí cenu snížit
+  o méně než jeden krok — nejvýš 9 999,99 Kč u OCK (krok 10 000 Kč); u PROJ
+  se zaokrouhluje každá činnost zvlášť, takže až 9 999,99 Kč × počet
+  činností. Minimální marže (B71, `schvalovani.js`, `sleva.js`) se počítá
+  z ceny PŘED zaokrouhlením, zaokrouhlí se až koncová cena
+  (`zaokrouhleni.js`), takže sleva těsně na hranici marže + krok dolů
+  skončí pod ní. Lišta marže to jen ohlásí. Proč zůstává: krok i směr jsou
+  z výčtu (B96), mez je shora omezená a viditelná v nabídce; obranu do
+  hloubky by dal bod 4 B96 (marže z koncové ceny, návrh
+  `podklady/NAVRH_B96_MARZE_2026-10-06.md`).
 - Server nepočítá marži z **koncové** ceny (po zaokrouhlení) — kontrola
   marže B71 (`schvalovaniServerMarze`) běží jen u platné slevy a počítá
   z ceny před zaokrouhlením. Návrh (bod 4 zadání B96, nerealizováno, čeká
@@ -105,18 +125,24 @@ typy polí (`zakazkaServerKontrola`, uložení i obnova):
   u jednotlivé položky vybrat nižší z hodnot, které kdy schválil
   administrátor — nikdy hodnotu, kterou nikdo nezveřejnil.
 - **Ceník sestavení se bere jen celý** (zakázka založená bez načteného
-  ceníku; v repozitáři samé nuly, nabídku zastaví zábrana `ukazkovyCenik`),
-  a u klíče, který zveřejněný ceník nemá, hodnota ze sestavení. Dokud se
-  žádný ceník nezveřejnil, ceník se nehlídá (není s čím porovnat).
+  ceníku; v repozitáři samé nuly, nabídku zastaví zábrana `ukazkovyCenik`,
+  a protože server značky ukázkových dat strhne, i `cenaNula`) a od B113
+  jen u nové zakázky nebo varianty, jejíž uložená verze ho nese; u klíče,
+  který zveřejněný ceník nemá, hodnota ze sestavení. Dokud se žádný ceník
+  nezveřejnil, ceník se nehlídá (není s čím porovnat).
+- **B114 — co se u položek PROJ nehlídá:** vyřazení položky (`vyrazeno`)
+  mění rozsah, ne cenu (vyřazená činnost se v nabídce neuvádí) — v UI je
+  to sloupec administrátora, server ho nehlídá. Standardní položka se páruje
+  podle sekce a `fixKey`, jinak typu a názvu; pořadí položek se nehlídá.
+  Obchodník smí trvalou položku smazat a přidat vlastní položku s libovolnou
+  cenou — to je vědomé (`kalk.pridatPolozku`) a ve výpočtu je vidět.
 - **Sazba DPH** se nehlídá — vybírá ji v hlavičce každý a cenu bez DPH,
   kterou hlídá schvalování, nemění.
 - **Hlídá se jen zápis. Čtecí strana B88 zůstává**: ceník a náklady jsou
   v DOM každé role (výpočet běží v prohlížeči), matice zobrazení je pro
   čtení věc pohodlí, ne bezpečnosti.
-- **Zbývající cesty třídy (neřešeno, #374):** hodiny a rezerva
-  standardních položek PROJ a cena trvalé položky (s `kid`) v zadání — UI je
-  ukazuje jen s právem `sloupce.naklad`, server nehlídá, kdo je změnil;
-  obchodní zaokrouhlení z výčtu; marže z koncové ceny (bod 4 B96).
+- **Zbývající v třídě (#374):** zaokrouhlení z výčtu (B117, výše — vědomá
+  mez) a marže z koncové ceny (bod 4 B96 — jen návrh, čeká na J. V.).
 
 ---
 

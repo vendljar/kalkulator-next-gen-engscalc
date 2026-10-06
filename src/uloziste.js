@@ -1192,6 +1192,93 @@ function uloB112PrepisyProj(zp) {
   });
   return out;
 }
+/* IDENTITA POLOŽEK PROJ A CENA TRVALÝCH POLOŽEK (#374 / B114, 6. 10. 2026).
+ *
+ * Audit 30. 9. 2026: B112 hlídal jen přepisová pole. Jádro PROJ ale bere
+ * hodnotu z DAT zakázky, když ceník klíč nemá (engine_proj.js: sazba
+ * `c.sazby[p.sazba] ?? p.sazbaKc`, fix `c.fixy[p.fixKey] ?? p.cena`), takže
+ * obchodník ručním požadavkem přepsal klíč sazby na neexistující +
+ * sazbaKc=1, odebral fixKey + cena=1 nebo vynuloval hodiny a rezervu —
+ * PROJ −35 až −65 %, vše 200. Totéž cena trvalé položky s `kid` (OCK
+ * i PROJ). V UI to všechno smí jen role s právem sloupce.naklad (hodiny,
+ * rezerva, sazba, fix), trvalé řádky jen administrátor.
+ *
+ * Podpis položky = pole, ze kterých jádro bere cenu (ULO_PROJ_IDENTITA).
+ * Standardní položka (ne vlastní, bez kid) se páruje podle sekce a fixKey,
+ * jinak podle typu a názvu (+ pořadí výskytu) — odebraný nebo změněný
+ * fixKey, přejmenování i přeznačení na vlastní se tak projeví jako
+ * odebraná položka. Trvalá položka (kid) smí chybět (smazání jen v této
+ * zakázce je legitimní), přítomná musí nést podpis z uložené verze, jiné
+ * uložené varianty nebo z katalogu (PROJ: ceník varianty a zveřejněné
+ * ceníky; OCK: zveřejněný katalog a katalog sestavení). U OCK se hlídá jen
+ * jednotková cena — množství trvalé položky upravit smí i obchodník.
+ * Vlastní položka (vlastni:true bez kid) se nehlídá: přidává ji a oceňuje
+ * obchodník (kalk.pridatPolozku). Vyřazení položky (vyrazeno) mění rozsah,
+ * ne cenu, a v nabídce je vidět — nehlídá se. */
+const ULO_PROJ_IDENTITA = ['typ', 'sazba', 'sazbaKc', 'fixKey', 'cena', 'hodiny', 'rezerva'];
+function uloB114Podpis(p) { return ULO_PROJ_IDENTITA.map(k => uloB112Hodnota(p && p[k])); }
+function uloB114PolozkyProj(zp) {
+  const std = {}, kid = {};
+  const sekce = zp && Array.isArray(zp.sekce) ? zp.sekce : [];
+  sekce.forEach((s, i) => {
+    if (!s || typeof s !== 'object') return;
+    const sk = String(s.key || i);
+    const vyskyt = {};
+    (Array.isArray(s.polozky) ? s.polozky : []).forEach((p, j) => {
+      if (!p || typeof p !== 'object') return;
+      const kde = 'proj.zadani.sekce[' + i + '].polozky[' + j + ']';
+      if (p.kid != null && p.kid !== '') {
+        const k = sk + '\u0000' + String(p.kid);
+        if (!(k in kid)) kid[k] = { h: uloB114Podpis(p), kde };
+        return;
+      }
+      if (p.vlastni) return;
+      const id = p.fixKey != null && p.fixKey !== '' ? 'f=' + String(p.fixKey) : 'n=' + (p.typ || '') + ':' + (p.nazev || '');
+      vyskyt[id] = (vyskyt[id] || 0) + 1;
+      std[sk + '\u0000' + id + '#' + vyskyt[id]] = { h: uloB114Podpis(p), kde };
+    });
+  });
+  return { std, kid };
+}
+/* Trvalé položky ceníku PROJ tak, jak je do zadání vloží projKatalogAplikuj. */
+function uloB114KatalogProj(cp) {
+  const out = {};
+  const m = cp && cp.vlastniPolozky && typeof cp.vlastniPolozky === 'object' ? cp.vlastniPolozky : {};
+  Object.keys(m).forEach(sk => (Array.isArray(m[sk]) ? m[sk] : []).forEach(k => {
+    if (!k || k.kid == null || k.kid === '') return;
+    const p = { typ: k.typ === 'hod' ? 'hod' : 'fix' };
+    if (p.typ === 'hod') { p.sazba = k.sazba || 'projektant'; p.hodiny = +k.hodiny || 0; p.rezerva = +k.rezerva || 0; }
+    else p.cena = +k.cena || 0;
+    const kl = sk + '\u0000' + String(k.kid);
+    if (!(kl in out)) out[kl] = { h: uloB114Podpis(p) };
+  }));
+  return out;
+}
+/* Trvalé položky OCK v zadání: kid → jednotková cena. */
+function uloB114KidOck(z) {
+  const out = {};
+  const pridej = (arr, kde) => (Array.isArray(arr) ? arr : []).forEach((p, j) => {
+    if (!p || typeof p !== 'object' || p.kid == null || p.kid === '') return;
+    const k = String(p.kid);
+    if (!(k in out)) out[k] = { h: uloB112Hodnota(p.cena), kde: kde + '[' + j + '].cena' };
+  });
+  const vl = z && z.vlastniPolozky && typeof z.vlastniPolozky === 'object' ? z.vlastniPolozky : {};
+  Object.keys(vl).forEach(sek => pridej(vl[sek], 'ock.zadani.vlastniPolozky.' + (ULO_TOKEN.test(sek) ? sek : '?')));
+  pridej(z && z.priplatkyVlastni, 'ock.zadani.priplatkyVlastni');
+  return out;
+}
+/* Katalog OCK (zveřejněný nebo ze sestavení): kid → cena, jak ji do zadání
+ * vloží katalogAplikuj. */
+function uloB114KatalogOck(kat) {
+  const out = {};
+  const pol = kat && kat.polozky && typeof kat.polozky === 'object' ? kat.polozky : {};
+  Object.keys(pol).forEach(sek => (Array.isArray(pol[sek]) ? pol[sek] : []).forEach(k => {
+    if (k && k.kid != null && k.kid !== '' && !(String(k.kid) in out)) out[String(k.kid)] = { h: uloB112Hodnota(+k.cena || 0) };
+  }));
+  return out;
+}
+const uloB114Shoda = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
 function uloCenikProblemy(zak, stara, opts) {
   opts = opts || {};
   const role = String(opts.role || '');
@@ -1238,6 +1325,17 @@ function uloCenikProblemy(zak, stara, opts) {
       else if (v[k] && typeof v[k] === 'object' && !Array.isArray(v[k])) doplnHodnotou(c[k], v[k]);
     });
   };
+  /* Výchozí zadání PROJ a katalog OCK ze sestavení (B114). */
+  const vzorZadaniProj = (() => {
+    if (typeof globalThis !== 'undefined' && globalThis.DEFAULT_ZADANI_PROJ) return globalThis.DEFAULT_ZADANI_PROJ;
+    if (typeof require === 'function') { try { return require('./engine_proj.js').DEFAULT_ZADANI_PROJ || null; } catch (e) { return null; } }
+    return null;
+  })();
+  const katalogSestaveni = (() => {
+    if (typeof globalThis !== 'undefined' && globalThis.KATALOG) return globalThis.KATALOG;
+    if (typeof require === 'function') { try { return require('./katalog.js').KATALOG || null; } catch (e) { return null; } }
+    return null;
+  })();
   const zverejnene = {};
   /* Každá zveřejněná verze dává DVA kandidáty: klíč, který verze nemá,
    * jednou s nulou (tak ho doplní importZakazka zakázce založené z verze)
@@ -1298,9 +1396,15 @@ function uloCenikProblemy(zak, stara, opts) {
       /* Smazaná položka: proti uložené verzi, u nové varianty proti platnému ceníku. */
       const rozdily = uloB112Rozdily(listy, kand, c.pred, kSvm || kZv[0] || null);
       if (!rozdily.length) return;
+      /* Celý ceník sestavení (B113, 6. 10. 2026) jen u NOVÉ zakázky, nebo
+       * u varianty, jejíž uložená verze ho sama nese. Jinak by obchodník
+       * nahradil ceník uložené varianty nulami (server značky ukázkového
+       * ceníku před uložením strhne, takže je nenese ani uložená verze)
+       * a projekce by šla ven za 0 Kč. */
       const sd = sestaveniProRadu(rada);
       const kS = sd ? uloB112Listy(c.vezmi(sd), okPrirazka) : null;
-      if (kS && !uloB112Rozdily(listy, [kS], c.pred, kS).length) return;   // celý ceník sestavení
+      const jeSestaveni = (lst) => !uloB112Rozdily(lst, [kS], c.pred, kS).length;
+      if (kS && jeSestaveni(listy) && (ulozene.length === 0 || (kSvm && jeSestaveni(kSvm)))) return;
       rozdily.forEach(kde => out.push({ kde, duvod: 'cenik' }));
     });
     if (okPrepisy) return;
@@ -1326,12 +1430,46 @@ function uloCenikProblemy(zak, stara, opts) {
       const shoda = kandP.length ? kandP.some(x => (k in x ? x[k].h : '') === h) : h === '';
       if (!shoda) out.push({ kde: k in pp ? pp[k].kde : 'proj.zadani (' + k.split('\u0000').pop() + ' odebrán)', duvod: 'cenik' });
     });
+
+    /* Identita standardních položek PROJ (B114). Kandidáti: uložená verze,
+     * jiné uložené varianty (klon), u nové varianty výchozí zadání. Cesty se
+     * hlídají i u položky, která v příchozí zakázce chybí. */
+    const ip = uloB114PolozkyProj(d.proj && d.proj.zadani);
+    const kandI = (svm ? [svm] : []).concat(jine).map(x => uloB114PolozkyProj(x.data.proj && x.data.proj.zadani));
+    const vzorI = !svm && vzorZadaniProj ? uloB114PolozkyProj(vzorZadaniProj) : null;
+    if (vzorI) kandI.push(vzorI);
+    const klicI = new Set(Object.keys(ip.std));
+    const povinneI = svm ? kandI[0] : vzorI;
+    if (povinneI) Object.keys(povinneI.std).forEach(k => klicI.add(k));
+    klicI.forEach(k => {
+      const h = k in ip.std ? ip.std[k].h : '';
+      if (kandI.some(x => uloB114Shoda(k in x.std ? x.std[k].h : '', h))) return;
+      if (!(k in ip.std)) { out.push({ kde: 'proj.zadani.sekce.' + (ULO_TOKEN.test(k.split('\u0000')[0]) ? k.split('\u0000')[0] : '?') + ' (odebraná položka)', duvod: 'cenik' }); return; }
+      /* V hlášce pole, ve kterém se položka liší od uložené (výchozí) verze. */
+      const vz = kandI.find(x => k in x.std);
+      const pole = vz ? ULO_PROJ_IDENTITA.filter((_, n) => !uloB114Shoda(vz.std[k].h[n], h[n])) : [];
+      out.push({ kde: ip.std[k].kde + (pole.length ? '.' + pole.join('/') : ''), duvod: 'cenik' });
+    });
+    /* Trvalé položky PROJ (kid): jen přítomné. */
+    const kandK = kandI.map(x => x.kid).concat([uloB114KatalogProj(d.proj && d.proj.cenik)],
+      verze.map(z => uloB114KatalogProj(z.cenikProj)));
+    Object.keys(ip.kid).forEach(k => {
+      if (!kandK.some(x => k in x && uloB114Shoda(x[k].h, ip.kid[k].h))) out.push({ kde: ip.kid[k].kde + ' (trvalá položka)', duvod: 'cenik' });
+    });
+    /* Trvalé položky OCK (kid): jednotková cena. */
+    const io = uloB114KidOck(d.ock && d.ock.zadani);
+    const kandOk = (svm ? [svm] : []).concat(jine).map(x => uloB114KidOck(x.data.ock && x.data.ock.zadani))
+      .concat(verze.map(z => uloB114KatalogOck(z.katalog)), katalogSestaveni ? [uloB114KatalogOck(katalogSestaveni)] : []);
+    Object.keys(io).forEach(k => {
+      if (!kandOk.some(x => k in x && x[k].h === io[k].h)) out.push({ kde: io[k].kde + ' (trvalá položka)', duvod: 'cenik' });
+    });
   });
 }
 function uloCenikProblemyText(problemy) {
   const p = problemy || [];
   return 'Ceník varianty smí měnit jen administrátor nebo role, které to povoluje matice zobrazení — '
-    + 'týká se i přirážky a ručních přepisů množství, cen a sazeb ('
+    + 'týká se i přirážky, ručních přepisů množství, cen a sazeb, hodin, sazeb a fixních částek položek projekce '
+    + 'a cen trvalých položek ('
     + p.slice(0, 5).map(x => x.kde).join(', ') + (p.length > 5 ? ' a další ' + (p.length - 5) : '')
     + '). Ponechte ceník a přepisy z uložené zakázky nebo ze zveřejněného ceníku; '
     + 'snížení ceny zadejte jako slevu, ta jde přes schvalování';
