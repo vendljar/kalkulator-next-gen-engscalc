@@ -145,7 +145,13 @@ function nahradPlaceholdery(xml, ph) {
     let hodnota = String(ph[klic]);
     if (/%\s*$/.test(hodnota) && docxZaSymbolemProcento(xml, pos + cely.length))
       hodnota = hodnota.replace(/[\s\u00a0]*%\s*$/, '');
-    return xmlEscRadky(hodnota, /\n/.test(hodnota) ? docxUvnitrTextu(xml, pos) : true);
+    /* HODNOTA SE NEROZVINE PODRUHÉ (B122, audit 2. 10. 2026). Řádky
+     * seznamu plateb (vlastní milník, katalog milníků, volné znění
+     * splátky) se vkládají PŘED hlavním průchodem — `{{SYMBOL}}` napsaný
+     * uživatelem by se v něm rozvinul jako symbol šablony. Složená závorka
+     * z hodnoty proto jde do XML jako znaková entita `&#123;`: Word ji
+     * vykreslí doslova, další průchod ji za symbol nepovažuje. */
+    return xmlEscRadky(hodnota, /\n/.test(hodnota) ? docxUvnitrTextu(xml, pos) : true).replace(/\{/g, '&#123;');
   });
 }
 

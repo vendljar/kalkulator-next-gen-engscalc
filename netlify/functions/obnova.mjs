@@ -439,8 +439,17 @@ export default async (req) => {
         preskoc(b, 'popisy', 'očista dodatkových textů není k dispozici — neobnovuje se');
       else {
         const txt = (x, max) => (typeof x === 'string' ? x.slice(0, max) : '');
-        const cisty = { texty: globalThis.popisyOciste(hodnota.texty),
-                        kdo: txt(hodnota.kdo, 200), kdy: txt(hodnota.kdy, 40) };
+        const texty = globalThis.popisyOciste(hodnota.texty);
+        const cisty = { texty, kdo: txt(hodnota.kdo, 200), kdy: txt(hodnota.kdy, 40) };
+        /* JAZYKOVÉ VARIANTY SE OBNOVÍ S TEXTY (B120, audit 2. 10. 2026).
+         * Od #379 nese záznam vedle `texty` i `jazyky` (EN/DE/FR) a obnova je
+         * zahazovala — po obnově ze zálohy tiskla cizojazyčná nabídka českou
+         * větu. Varianty projdou touž očistou jako /api/popisy a drží se jen
+         * u položek s českým textem. Záloha bez variant (starší) nic nepřidá. */
+        if (typeof globalThis.popisyJazykyOciste === 'function' && hodnota && hodnota.jazyky !== undefined) {
+          const jazyky = globalThis.popisyJazykyOciste(hodnota.jazyky, texty);
+          if (Object.keys(jazyky).length) cisty.jazyky = jazyky;
+        }
         await zaznam(b, sProg, jednoduche[cast], cisty, rezim, zapisovat);
       }
     }

@@ -119,5 +119,27 @@ test('P15: dávkou doplněná adresa sedí na svou zakázku',
     u.ok === true && (await zaznam('zmizela.json', cA)).adresa === '', { u, z: await zaznam('zmizela.json', cA) });
 }
 
+/* 5) B121 (audit 2. 10. 2026): adresa v rejstříku se stropem délky a kontrolou typu.
+ * Před opravou 1 prošlo / 3 selhalo (String(cokoli) bez stropu), po opravě 4 / 0. */
+{
+  const DLOUHA = 'Ulice '.repeat(2000);
+  const u = await uloz(nova('2026 - OPR - CN - 0901', DLOUHA));
+  const z1 = await zaznam('2026-OPR-CN-0901.json', cA);
+  test('B121: dlouhá adresa se uloží, v rejstříku jen se stropem',
+    u.ok === true && !!z1 && z1.adresa.length === 300 && z1.adresa === DLOUHA.slice(0, 300), z1 && z1.adresa.length);
+  await uloz(nova('2026 - OPR - CN - 0902', { ulice: 'objekt místo textu' }));
+  const z2 = await zaznam('2026-OPR-CN-0902.json', cA);
+  test('B121: adresa jiného typu než text dá prázdnou adresu', !!z2 && z2.adresa === '', z2 && z2.adresa);
+  /* doplnění staršího záznamu z uložené zakázky prochází týmž stropem */
+  const zak = JSON.parse(pamet.get('zakazky/z/2026-OPR-CN-0901.json'));
+  test('příprava B121: zakázka sama nese celou adresu', zak.adresa === DLOUHA);
+  const r = JSON.parse(pamet.get('zakazky/_rejstrik'));
+  r.zakazky.forEach(x => { if (x.soubor === '2026-OPR-CN-0901.json') delete x.adresa; });
+  pamet.set('zakazky/_rejstrik', JSON.stringify(r));
+  await uloz(nova('2026 - OPR - CN - 0903', 'Nová 9, Kolín'));
+  const z3 = await zaznam('2026-OPR-CN-0901.json', cA);
+  test('B121: doplněná adresa staršího záznamu má strop', !!z3 && z3.adresa.length === 300, z3 && z3.adresa.length);
+}
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

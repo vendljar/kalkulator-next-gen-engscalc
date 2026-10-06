@@ -313,6 +313,19 @@ function uloKolize(naDisku, ocekavaneRazitko) {
 
 /* ---------- rejstřík -------------------------------------------------- */
 
+/* ADRESA V REJSTŘÍKU SE STROPEM DÉLKY A KONTROLOU TYPU (B121, audit
+ * 2. 10. 2026). Rejstřík se čte při každém výpisu zakázek a přepisuje při
+ * každém uložení; adresa stavby (P15) do něj šla jako String(cokoli) bez
+ * stropu — dlouhý řetězec nebo objekt v hlavičce zakázky by nafoukl soubor,
+ * který čtou všichni (třída zbytku B32). Text se ořízne na
+ * ULO_REJSTRIK_ADRESA_MAX znaků, jiný typ než text (a konečné číslo) dá
+ * prázdnou adresu — hledání ji pak nenajde, zakázka sama zůstane celá. */
+const ULO_REJSTRIK_ADRESA_MAX = 300;
+function uloRejstrikAdresa(x) {
+  const s = (typeof x === 'string') ? x : ((typeof x === 'number' && isFinite(x)) ? String(x) : '');
+  return s.slice(0, ULO_REJSTRIK_ADRESA_MAX);
+}
+
 function uloRejstrikZaznam(zak, opts) {
   opts = opts || {};
   const varianty = (zak && zak.varianty) || [];
@@ -340,7 +353,7 @@ function uloRejstrikZaznam(zak, opts) {
      * podle místa, ne podle čísla. Prázdný řetězec je platná hodnota
      * („zakázka adresu nemá") — záznam bez klíče je starší, viz
      * uloRejstrikBezAdresy. */
-    adresa: String((zak && zak.adresa) || ''),
+    adresa: uloRejstrikAdresa(zak && zak.adresa),
     objednatel: String((zak && zak.objednatel) || ''),
     datum: String((zak && zak.datum) || ''),
     /* Druh zakázky pro filtr OCK × PROJ v přehledu nabídek. */
@@ -377,7 +390,7 @@ function uloRejstrikNormalizuj(x) {
       nazevAkce: String(z.nazevAkce || ''),
       /* Adresa jen tam, kde záznam klíč nese: chybějící klíč znamená starší
        * záznam, kterému ji server teprve doplní (P15). */
-      ...(typeof z.adresa === 'string' ? { adresa: z.adresa } : {}),
+      ...(typeof z.adresa === 'string' ? { adresa: uloRejstrikAdresa(z.adresa) } : {}),
       objednatel: String(z.objednatel || ''),
       datum: String(z.datum || ''),
       jenProj: !!z.jenProj,
@@ -1394,7 +1407,7 @@ function uloZalohaHlidka(otisky, ted) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
+  module.exports = { ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
                      uloNorm, uloSlova, uloCisloVyplneno, uloKlicSouboru,
                      uloJmenoSouboru, uloJeZakazkovySoubor,
                      ULO_HLAVICKA_POLE, uloHlavickaChybi, uloHlavickaVyplnena, uloMaCislo, uloUlozeniStav,

@@ -8,6 +8,44 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## větev claude/audit-b119-b122 (neuvolněno)
+
+Dávka B (6. 10. 2026) z `test-draft` (v2.10.1): nálezy bezpečnostního auditu
+20. kola (2. 10. 2026), výchozí ANO z rozhodovacího listu. Roadmapa #393.
+
+- **B119 (střední) — přísné ověření nového zámku.** Uvolnění P6 přeskakovalo
+  řádek zmrazeného výsledku bez protějšku: příplatek s vymyšleným
+  `origNazev` a jinou cenou dostal razítko „shoda" a dotisk odeslané nabídky
+  bral podvrženou cenu. Nový zámek při uložení se teď porovnává přísně,
+  pokud výsledek spočítala tatáž verze jako server: nespárovaný řádek je
+  rozdíl (i řádek, který chybí), pole po pořadí s jinou délkou je rozdíl
+  a k jádru přibyly `ock.souhrn.priplatkyCena` a
+  `ock.souctySekci.volitelne.sMarzi`. Stránka jiné verze (načtená před
+  nasazením) se porovná volně jako dosud a razítko nese `volne: true`;
+  starší zámky a obnova beze změny (`src/zamek.js`,
+  `netlify/lib/zakazka_kontrola.mjs`). Test `netlify/test_prava.mjs`
+  (blok B119) před opravou 2 OK / 4 FAIL, po opravě 6 / 0; celá sada
+  651 / 0. Mutace serveru +4.
+- **B120 (střední) — obnova přenese jazykové varianty dodatků.** Obnova
+  části „popisy" skládala záznam jen z `texty`, `kdo`, `kdy`; `jazyky`
+  (EN/DE/FR, #379) se ztratily. Teď projdou `popisyJazykyOciste` a drží se
+  jen u položek s českým textem (`netlify/functions/obnova.mjs`). Test
+  cyklu záloha → obnova → shoda v `netlify/test_obnova.mjs`: před opravou
+  2 OK / 3 FAIL, po opravě 5 / 0 (sada 185 / 0). Mutace serveru +2.
+- **B121 (nízká) — adresa v rejstříku se stropem a kontrolou typu.**
+  `uloRejstrikAdresa` (strop 300 znaků, jiný typ než text nebo číslo dá
+  prázdnou adresu) v záznamu, normalizaci i dávkovém doplnění starších
+  záznamů (`src/uloziste.js`, `netlify/functions/zakazky.mjs`). Test
+  `netlify/test_rejstrik.mjs`: před opravou 15 / 3, po opravě 18 / 0.
+  Mutace serveru +2.
+- **B122 (nízká) — symbol v uživatelském textu plateb se nerozvine.**
+  Řádky seznamu plateb (vlastní milník, katalog milníků, volné znění
+  splátky) se vkládají před hlavním průchodem náhrady; `nahradPlaceholdery`
+  teď zapisuje složenou závorku z hodnoty jako znakovou entitu `&#123;`
+  (Word ji vykreslí doslova, další průchod ji za symbol nepovažuje).
+  Test v `src/test_plan_plateb_sod.js`: před opravou 3 / 2, po opravě 5 / 0.
+  `docxgen.js` patří od teď k jádru mutací (`mutace_jadro.mjs`), mutace +1.
+
 ## v2.10.1 — nálezy 19. kola P1–P6 (větev claude/k19-nalezy), 2. 10. 2026
 
 Sloučeno do `test-draft` nad v1.10.2 a převedeno do `test` na pokyn J. V. 2. 10. 2026 („souhlasím s výchozími návrhy, zapracuj P2, P4, P6; P5 — statiku udělej tak, jak jsem navrhoval, ve dvou řádcích … P3 ok; P1 OK. připrav, otestuj a pošli do testu"). Integrační větev `claude/davka-2-10`, konflikty jen v CHANGELOG a PREDAVKA.

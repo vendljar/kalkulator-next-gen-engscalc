@@ -61,7 +61,9 @@ const SRC = resolve(KOREN, 'src');
  * brání vytisknout cenu s nulovým profilem — patří k jádru jako výpočet sám. */
 /* plan_plateb.js od 30. 9. 2026 (etapa B platebních podmínek): dopočítává
  * částky plateb smlouvy o dílo PROJ — čísla, která jdou zákazníkovi. */
-const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sablony_online.js', 'kontroly.js', 'plan_plateb.js'];
+/* docxgen.js od 6. 10. 2026 (B122): náhrada symbolů skládá text smlouvy
+ * a nabídky — druhotné rozvinutí symbolu z uživatelského textu se hlídá. */
+const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sablony_online.js', 'kontroly.js', 'plan_plateb.js', 'docxgen.js'];
 /* Filtr = první argument, který není přepínač (stejně jako netlify/mutace.mjs). */
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 /* --kontrola (23. 9. 2026, nález N19): jen ověří, že každý hledaný úsek je
@@ -165,6 +167,11 @@ const MUTACE = [
     hledej: '    if (j) it.popisNabidkaJazyky = j;',
     nahrad: '',
     proc: 'německá nabídka by i s vyplněným překladem tiskla českou větu' },
+  /* B122 (audit 2. 10. 2026): uživatelský text v seznamu plateb se nerozvine jako symbol. */
+  { nazev: 'B122: {{SYMBOL}} z textu splátky se ve Wordu rozvine', soubor: 'docxgen.js',
+    hledej: "    return xmlEscRadky(hodnota, /\\n/.test(hodnota) ? docxUvnitrTextu(xml, pos) : true).replace(/\\{/g, '&#123;');",
+    nahrad: "    return xmlEscRadky(hodnota, /\\n/.test(hodnota) ? docxUvnitrTextu(xml, pos) : true);",
+    proc: 'vlastní milník nebo znění splátky se symbolem by ve smlouvě vytisklo hodnotu jiného symbolu' },
   /* ---------- plán plateb projekce (etapa B, 30. 9. 2026) ---------- */
   { nazev: 'plán plateb: poslední splátka nenese zaokrouhlení', soubor: 'plan_plateb.js',
     hledej: '      const kc = i < radky.length - 1 ? Math.round(c * (r.p || 0) / 100) : planHal(zbyva);',
