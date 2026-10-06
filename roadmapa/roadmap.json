@@ -6184,12 +6184,13 @@
   {
    "id" : "392",
    "vlna" : "C",
-   "stav" : "ceka",
+   "stav" : "hotovo",
+   "hotovoV" : "větev claude/vsg-skn-prepis-skla (6. 10. 2026)",
    "dulezitost" : "stredni",
    "slozitost" : "S",
    "nazev" : "Příplatky VSG a SKN z přepsané plochy skla",
    "proc" : "Doporučení z P3 (K19-N105, 1. 10. 2026): fólie VSG i SKN jsou úpravou téhož skla, po ručním přepisu plochy skla by měly sledovat efektivní plochu stejně jako PRÁCE.",
-   "detail" : "Ve standardním režimu brát vsgFolieM2 = přepsané sklo boků + čelní, sknM2 = přepsané sklo boků; bez přepisu beze změny (Model 1).",
+   "detail" : "HOTOVO (6. 10. 2026, schváleno J. V. 2. 10.): ve standardním režimu vsgFolieM2 = efektivní sklo celkem (přepis řádku skla boků/zad a čelního skla, jinak vypočtená plocha), sknM2 = efektivní sklo boků a zad. Bez přepisu beze změny (Model 1 1:1, porovnani_modelu.js shodný), po stěnách beze změny, ruční přepis množství příplatku má přednost. Detail výpočtu (krok 8) ukáže řádek „z ručně přepsané plochy skla“. Test src/test_vsg_skn_prepis.js 32/24 → 56/0, mutace jádra +5.",
    "hotovoKdyz" : "Test před/po, předlohy beze změny.",
    "kde" : "`src/engine.js` (vsgFolieM2, sknM2)"
   }

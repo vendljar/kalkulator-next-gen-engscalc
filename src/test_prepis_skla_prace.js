@@ -10,7 +10,7 @@
  * Hlídá se: bez přepisu beze změny (Model 1 i 2), přepis skla boků → PRÁCE
  * i TMELENÍ = přepsané sklo boků + čelní sklo, přepis čelního skla totéž,
  * přepis přímo na PRÁCI vyhrává, interiér (bez tmelení) jen PRÁCE, režim po
- * stěnách beze změny, příplatky VSG/SKN beze změny, značka pro Detail
+ * stěnách beze změny, značka pro Detail
  * výpočtu jen tam, kde přepis skla platí. Před opravou 31 OK / 22 FAIL
  * (PRÁCE/TMELENÍ z geometrie, chybějící značka), po opravě 53 OK / 0 FAIL.
  *
@@ -65,10 +65,11 @@ for (const [typ, fixes] of [['exteriérová', true], ['exteriérová', false], [
   } else {
     test(pop + ': interiér: TMELENÍ nevzniká ani s přepisem', !radek(r1, TMEL));
   }
-  /* příplatky VSG / SKN zůstávají na geometrii (jen doporučení) */
+  /* příplatky VSG / SKN jdou od #392 taky z přepsané plochy skla —
+   * podrobně hlídá src/test_vsg_skn_prepis.js */
   const pr = (r, k) => (r.priplatky || []).find(x => x.key === k);
-  test(pop + ': příplatek VSG s mléčnou fólií beze změny',
-    !pr(r0, 'vsgFolie') || blizko(pr(r1, 'vsgFolie').mnozstvi, pr(r0, 'vsgFolie').mnozstvi));
+  test(pop + ': příplatek VSG s mléčnou fólií z přepsané plochy (#392)',
+    !pr(r0, 'vsgFolie') || blizko(pr(r1, 'vsgFolie').mnozstvi, radek(r1, PRACE).mnozstvi));
 
   /* 3) přepis čelního skla */
   const z2 = zadani({ typSachty: typ, mnozstviPrepis: { [sv.celni.nazev]: 4.5 } });
