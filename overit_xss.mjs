@@ -220,8 +220,11 @@ const KOD_STRANKY = `
      * v zakázce (vlastní milník = volné znění splátky) a materiál „jiné"
      * v opláštění po stěnách (ruční název). */
     'B124: plán plateb v zakázce (vlastní milník, volné znění)': (z, d) => {
+      /* plán se kreslí jen u činností s cenou — v sestavení bez ceníku dostanou sazby a paušály PROJ nenulovou hodnotu */
+      ['sazby', 'fixy'].forEach(k => { const o = d.proj.cenik[k]; if (o) Object.keys(o).forEach(q => { if (typeof o[q] === 'number') o[q] = 1000; }); });
       d.kryciProj.planPlateb = { v: 1, predvolba: 'vlastni', prepis: {},
-        cinnosti: { dps: [{ p: 50, m: 'vlastni', t: 'x' }, { p: 50, m: 'podpis' }], ic: [{ p: 100, m: 'vlastni', t: 'y' }] } };
+        cinnosti: { zamereni: [{ p: 50, m: 'vlastni', t: 'x' }, { p: 50, m: 'podpis' }], studie: [{ p: 100, m: 'vlastni', t: 'y' }],
+          dps: [{ p: 50, m: 'vlastni', t: 'x' }, { p: 50, m: 'podpis' }], ic: [{ p: 100, m: 'vlastni', t: 'y' }] } };
       otrav(d.kryciProj.planPlateb, 'kryciProj.planPlateb', c => /\.t$/.test(c)); },
     'B124: materiál „jiné" v opláštění (ruční název)': (z, d) => {
       d.ock.zadani.oplasteni = { rezim: 'poStenach', steny: { A: { odM: 0, pasy: [{ typ: 'jine', nazev: 'x', naklad: 100, doM: 3 }, { typ: 'sklo', doM: null }] },
@@ -251,6 +254,8 @@ const KOD_STRANKY = `
     /* B124: firemní plán plateb (texty milníků katalogu) a číselník
      * dodatkových textů s jazykovými variantami (#379) — klíč i texty. */
     'B124: firemní plán plateb (katalog milníků)': () => {
+      const pc = ZAK.varianty[0].data.proj.cenik;
+      ['sazby', 'fixy'].forEach(k => { const o = pc[k]; if (o) Object.keys(o).forEach(q => { if (typeof o[q] === 'number') o[q] = 1000; }); });
       NAST.firma.planPlatebProj = JSON.parse(JSON.stringify(PLAN_PROJ_VYCHOZI));
       otrav(NAST.firma.planPlatebProj.milniky, 'firma.planPlatebProj.milniky', c => /\.cz$/.test(c), true); },
     'B124: číselník dodatků a jejich překlady': () => {
@@ -299,18 +304,23 @@ const KOD_STRANKY = `
     const ramy = [];
     const puvOpen = window.open, puv = { potvrd: window.potvrd, volba: window.volba, dotaz: window.dotaz, hlaska: window.hlaska };
     window.open = () => { const f = document.createElement('iframe'); f.style.display = 'none'; document.body.appendChild(f);
-      f.contentWindow.__XSS = window.__XSS; ramy.push(f); return f.contentWindow; };
+      f.contentWindow.__XSS = window.__XSS; f.__fn = window.__nahledFn; ramy.push(f); return f.contentWindow; };
     window.potvrd = async () => true; window.volba = async (t, m) => (m && m[0] && m[0].kod) || null;
     window.dotaz = async () => ''; window.hlaska = async () => undefined;
-    const NAHLEDY = ['nabidkaNahled', 'nabidkaProjNahled', 'kryciTiskPohled', 'kryciProjTiskPohled', 'detailTisk', 'porovnaniTisk', 'porovnaniPolozkyTisk'];
-    for (const fn of NAHLEDY) {
+    /* Zábrany dokumentů (#377) se tu vypínají: zkouší se escapování, ne
+     * kontrola zakázky — zakázka s payloadem by jinak náhled zastavila. */
+    const puvZabrana = window.dokumentZabrana; window.dokumentZabrana = () => '';
+    const NAHLEDY = [['nabidkaNahled'], ['nabidkaProjNahled'], ['kryciTiskPohled', 'bo'], ['kryciTiskPohled', 'techdata'],
+      ['kryciProjTiskPohled', 'bo'], ['kryciProjTiskPohled', 'techdata'], ['detailTisk'], ['porovnaniTisk'], ['porovnaniPolozkyTisk']];
+    for (const [fn, arg] of NAHLEDY) {
       if (typeof window[fn] !== 'function') { chyby.push('náhled ' + fn + ' neexistuje'); continue; }
+      window.__nahledFn = fn + (arg ? '(' + arg + ')' : '');
       try {
-        await Promise.race([Promise.resolve().then(() => window[fn]()),
+        await Promise.race([Promise.resolve().then(() => window[fn](arg)),
           new Promise((_, ne) => setTimeout(() => ne(new Error('náhled se do 4 s nedokončil')), 4000))]);
       } catch (e) { chyby.push('náhled ' + fn + ': ' + e.message); }
     }
-    window.open = puvOpen; Object.assign(window, puv);
+    window.open = puvOpen; Object.assign(window, puv); window.dokumentZabrana = puvZabrana;
     await new Promise(r => setTimeout(r, 300));
     let imgNahled = 0, hrefJsNahled = 0, vyskytuNahled = 0;
     for (const f of ramy) { const dd = f.contentDocument; if (!dd || !dd.documentElement) continue;
@@ -327,7 +337,7 @@ const KOD_STRANKY = `
     /* Kolikrát se payload (escapovaný) ve stránce vůbec objevil. Nula by
      * znamenala, že se oblast nikde nekreslí — a kontrola by byla prázdná. */
     const vyskytu = (document.documentElement.innerHTML.match(/__XSS\.push/g) || []).length;
-    return { xss: [...new Set(window.__XSS)], img, handlers: handlers.slice(0, 5), hrefJs, chyby, vyskytu, vyskytuNahled, nahledu: ramy.length };
+    return { xss: [...new Set(window.__XSS)], img, handlers: handlers.slice(0, 5), hrefJs, chyby, vyskytu, vyskytuNahled, nahledu: ramy.length, nahledy: ramy.map(f => f.__fn) };
   }
   return { OBLASTI: Object.keys(OBLASTI), DALSI: Object.keys(DALSI), pokus };
 `;
@@ -364,7 +374,7 @@ async function a2Pokus(oblast, admin) {
        * výš neověřily nic. */
       zkus(`${role}: ${oblast} — payload se do stránky dostal (escapovaný; ${r.vyskytu}×, v náhledech ${r.vyskytuNahled}×)`, r.vyskytu > 0, r.vyskytu);
       /* B124: tiskové náhledy se opravdu otevřely (jinak by kontrola náhledů byla prázdná). */
-      zkus(`${role}: ${oblast} — tiskové náhledy se otevřely (${r.nahledu})`, r.nahledu >= 5, r.nahledu);
+      zkus(`${role}: ${oblast} — tiskové náhledy se otevřely (${r.nahledu})`, r.nahledu === 9, r.nahledy.join(', '));
     }
   }
 }

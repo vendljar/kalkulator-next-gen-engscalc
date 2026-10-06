@@ -30,6 +30,26 @@ Pokyn J. V. 6. 10. 2026 („přidej do oprav tyto drobnosti"). Roadmapa #394.
   po úpravě 20 / 0. `src/test_docx_preklad.js` upraven na velké písmeno
   (51 / 0).
 
+## Dávka E — testy a CI (B124, B125), 6. 10. 2026 — v integrační větvi claude/davka-6-10
+
+- **B125 (informativní) — CI:** `.github/workflows/testy.yml` má
+  `permissions: contents: read`, akce připnuté na celý SHA commitu (značka
+  v komentáři: checkout v5.1.0, setup-node v5.0.0, setup-python v6.3.0,
+  upload-artifact v5.0.0) a Playwright pevně 1.56.1. Hlídá
+  `src/test_build_info.js`: před úpravou 42 / 3, po ní 45 / 0.
+- **B124 (informativní) — `overit_xss.mjs` otravuje data období:** plán
+  plateb v zakázce (vlastní milník = volné znění splátky), firemní plán
+  plateb (katalog milníků), číselník dodatkových textů i s jazykovými
+  variantami (klíč i texty), materiál „jiné" v opláštění po stěnách a nově
+  i **tiskové náhledy** (nabídka OCK a PROJ, krycí listy OCK a PROJ ve dvou
+  verzích, detail výpočtu, porovnání variant — do rámu v téže stránce,
+  dialogy se odpovídají samy, strop 4 s na náhled, zábrany dokumentů se pro
+  účel testu vypínají). Vada v kódu nenalezena; sada 215 → 299 kontrol,
+  0 selhalo. Pojistka proti prázdnému testu: u každé oblasti se ověřuje, že
+  se payload do stránky (i do náhledů) opravdu dostal, a že se otevřelo
+  všech 9 náhledů — první běh bez cen PROJ a bez parametru verze krycího
+  listu tyto kontroly shodil (47 selhání), než se přípravná data opravila.
+
 ## větev claude/vsg-skn-prepis-skla (neuvolněno)
 
 Dávka D (6. 10. 2026) z `test-draft` (v2.10.1). Rozhodovací list otevřených
