@@ -1128,7 +1128,7 @@ const PREKLAD = {
    * volby způsobu fakturace (P10.5; řádek „Způsob fakturace" v cizojazyčném
    * náhledu dosud zůstával česky). NÁVRH PŘEKLADU — ke kontrole J. V. */
   "Fakturace probíhá měsíčně podle skutečně provedených prací.": ["Invoicing takes place monthly according to the work actually performed.", "Die Abrechnung erfolgt monatlich nach den tatsächlich erbrachten Leistungen.", "La facturation est effectuée mensuellement selon les travaux réellement exécutés."],
-  "Po milnících": ["By milestones", "Nach Meilensteinen", "Par étapes"],
+  "Po milnících": ["Follow project milestones", "Nach Meilensteinen", "Par étapes"],
   "Měsíční": ["Monthly", "Monatlich", "Mensuel"],
 };
 

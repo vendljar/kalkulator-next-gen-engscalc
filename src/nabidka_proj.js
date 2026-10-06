@@ -349,8 +349,12 @@ const NABIDKA_PROJ_DEF = [
    * byly { cz } (souvislá próza zůstává česky) z doby, kdy je slovník neznal.
    * Od překladu šablony PROJ (25. 9. 2026) je zná a jazykové mutace Wordu je
    * tisknou přeložené; online nabídka v EN/DE/FR je nechávala česky. */
+  /* Hvězdičku nesou jen řádky inženýrské činnosti (IČ) — poznámka k ní má
+   * smysl, jen když se IČ nabízí (D. Sikora 2. 10. 2026: nabídka zaměření
+   * a studie ji tiskla a musel ji mazat). `{ t, sekce }` = překládaný text
+   * vázaný na činnost. */
   { typ: 'pozn', radky: [
-    '*) Termíny pro vyjádření dotčených orgánů a stavebního úřadu nejsou závazné. Jedná se o termíny, které nemůže zhotovitel z velké části ovlivnit.',
+    { t: '*) Termíny pro vyjádření dotčených orgánů a stavebního úřadu nejsou závazné. Jedná se o termíny, které nemůže zhotovitel z velké části ovlivnit.', sekce: 'ic' },
     'Termíny zpracování mohou být upraveny dle volných kapacit zhotovitele v okamžiku objednání.',
   ] },
 ];
@@ -559,7 +563,8 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
   };
 
   /* --- rozbalení definice do bloků připravených k vykreslení --- */
-  const proza = o => (o && typeof o === 'object' && o.cz !== undefined) ? o.cz : P(o);
+  const proza = o => (o && typeof o === 'object' && o.cz !== undefined) ? o.cz
+    : (o && typeof o === 'object' && o.t !== undefined) ? P(o.t) : P(o);
 
   /* SEKCE MIMO KALKULAČNÍ ROZSAH SE V NABÍDCE NEUVÁDĚJÍ VŮBEC (rozhodnutí
    * J. V. 17. 8. 2026) — ani popis, ani cena, ani platební podmínky či
@@ -890,7 +895,10 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
   if (typeof uvodniFotoSymboly === 'function')
     Object.assign(placeholders, uvodniFotoSymboly(zak, 'proj'));
 
-  const nazevSouboru = ('NABÍDKA_PROJ_' + (placeholders.CISLO_NABIDKY || 'OVP-CN')
+  /* Slovo „nabídka" v jazyce dokumentu (D. Sikora 3. 10. 2026), viz nabidka.js. */
+  const slovo = (typeof nabidkaSlovoSouboru === 'function') ? nabidkaSlovoSouboru(L)
+    : ({ en: 'PRICE_QUOTATION', de: 'ANGEBOT', fr: 'DEVIS' }[L] || 'NABÍDKA');
+  const nazevSouboru = (slovo + '_PROJ_' + (placeholders.CISLO_NABIDKY || 'OVP-CN')
     + (varianta && varianta.zakaznik ? '_' + varianta.zakaznik : '')
     + (L !== 'cz' ? '_' + L.toUpperCase() : '')).replace(/[\\/:*?"<>|]+/g, '-');
 

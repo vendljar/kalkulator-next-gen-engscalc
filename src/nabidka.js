@@ -261,6 +261,17 @@ function nabidkaData(zak, varianta, jekly, lang) {
     PRIP_LESENI_VNEJSI: prip('leseniVnejsi'),
     PRIP_SKN: prip('skn'),
   };
+  /* „CO NENÍ SOUČÁSTÍ DODÁVKY" V CIZÍM JAZYCE S VELKÝM PÍSMENEM (D. Sikora
+   * 3. 10. 2026: „některé položky začínají velkým písmenem a jiné malým …
+   * sjednoť to prosím na VELKÉ písmeno"). Hodnoty jsou překlady vět, které
+   * česky začínají malým („zajistí objednatel", „není součástí nabídky"),
+   * a slovník je převzal různě. V EN/DE/FR se první písmeno hodnot sekce
+   * zvětší; česká nabídka zůstává, jak je (tam jsou všechny malým). */
+  if (L !== 'cz') Object.keys(placeholders).forEach(k => {
+    if (!/^TS_NENI_/.test(k)) return;
+    const v = String(placeholders[k] == null ? '' : placeholders[k]);
+    placeholders[k] = v.replace(/^(\s*)(\p{Ll})/u, (m, mez, pis) => mez + pis.toUpperCase());
+  });
 
   // Firemní údaje zhotovitele (SET-3) – symboly {{FIRMA_…}} do šablony i náhledu.
   // Vlastní jména, adresy a čísla se nikdy nepřekládají, jen země (viz firma.js).
@@ -428,7 +439,10 @@ function nabidkaData(zak, varianta, jekly, lang) {
     });
   });
 
-  const nazevSouboru = 'NABÍDKA_' + (placeholders.CISLO_NABIDKY || 'CN')
+  /* NÁZEV SOUBORU V JAZYCE NABÍDKY (D. Sikora 3. 10. 2026: „jeste by mohl
+   * kalkulak generovat nazvy souboru v jazyce cenova nabidky — EN price
+   * quotation, DE angebot"). Přípona jazyka zůstává. */
+  const nazevSouboru = nabidkaSlovoSouboru(L) + '_' + (placeholders.CISLO_NABIDKY || 'CN')
     + (varianta.zakaznik ? '_' + varianta.zakaznik : '')
     + (varianta.ridici ? '' : '_' + varianta.nazev)
     + (L !== 'cz' ? '_' + L.toUpperCase() : '');
@@ -488,6 +502,9 @@ function nabidkaJeVetaOZaruce(text, lang) {
 
 /* `platby` = platební kalendář OCK z nabidkaData (platbyOck). Bez něj (starší
  * volající) řádky kapitoly III. jako dřív. */
+/* Slovo „nabídka" na začátku názvu souboru podle jazyka dokumentu. */
+const NABIDKA_SOUBOR_SLOVO = { cz: 'NABÍDKA', en: 'PRICE_QUOTATION', de: 'ANGEBOT', fr: 'DEVIS' };
+function nabidkaSlovoSouboru(L) { return NABIDKA_SOUBOR_SLOVO[L] || NABIDKA_SOUBOR_SLOVO.cz; }
 function nabidkaNahledSekce(ph, lang, platby) {
   const L = lang || 'cz';
   const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
@@ -658,4 +675,4 @@ if (typeof dokumentRegistruj === 'function')
     builder: (zak, varianta, jekly, lang) => nabidkaData(zak, varianta, jekly, lang),
   });
 
-if (typeof module !== 'undefined') module.exports = { nabidkaData, nabidkaNahledSekce, nabidkaPopisZameru };
+if (typeof module !== 'undefined') module.exports = { nabidkaData, nabidkaNahledSekce, nabidkaSlovoSouboru, NABIDKA_SOUBOR_SLOVO, nabidkaPopisZameru };

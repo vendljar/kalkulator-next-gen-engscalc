@@ -119,7 +119,10 @@ P.prekladSmaz('test & pokus');
    * Zkouší se proto totéž co o pár řádků výš u TS_HAKY — že hodnota projde
    * slovníkem —, ne jaká slova v ní stojí. */
   test('EN: sokl přeložen',
-    en.placeholders.TS_NENI_SOKL === P.tr(cz.placeholders.TS_NENI_SOKL, 'en')
+    /* hodnoty „co není součástí dodávky" v cizím jazyce začínají velkým
+     * písmenem (D. Sikora 3. 10. 2026) — porovnává se tedy bez prvního písmene */
+    en.placeholders.TS_NENI_SOKL.toLowerCase() === P.tr(cz.placeholders.TS_NENI_SOKL, 'en').toLowerCase()
+    && /^\p{Lu}/u.test(en.placeholders.TS_NENI_SOKL)
     && ['slovník', 'vzor'].includes(P.trStav(cz.placeholders.TS_NENI_SOKL, 'en').zdroj),
     cz.placeholders.TS_NENI_SOKL + ' → ' + en.placeholders.TS_NENI_SOKL);
   test('ceny zůstávají shodné bez ohledu na jazyk',

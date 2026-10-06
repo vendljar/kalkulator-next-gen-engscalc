@@ -6208,6 +6208,19 @@
    "detail" : "B119: nový zámek se při uložení ověřuje přísně, když výsledek spočítala tatáž verze jako server — nespárovaný řádek zmrazeného výsledku je rozdíl, jádro nese i součet příplatků a zaškrtnutých volitelných; jiná verze stránky volně jako dosud (razítko volne: true), starší zámky a obnova beze změny. B120: obnova části popisy přenese i jazykové varianty (popisyJazykyOciste). B121: adresa v rejstříku se stropem 300 znaků a kontrolou typu (i při dávkovém doplnění). B122: hodnota symbolu jde do Wordu se složenou závorkou jako &#123; — uživatelský text v seznamu plateb se nerozvine jako symbol.",
    "hotovoKdyz" : "Testy před/po v CHANGELOG, nové mutace serveru a jádra chycené.",
    "kde" : "`src/zamek.js`, `netlify/lib/zakazka_kontrola.mjs`, `netlify/functions/obnova.mjs`, `src/uloziste.js`, `netlify/functions/zakazky.mjs`, `src/docxgen.js`"
+  },
+  {
+   "id" : "394",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "stredni",
+   "slozitost" : "S",
+   "hotovoV" : "integrační větev claude/davka-6-10 (6. 10. 2026)",
+   "nazev" : "Drobnosti z mailů D. Sikory: poznámka *) jen s IČ, velká písmena v Out of scope, Follow project milestones, název souboru v jazyce nabídky",
+   "proc" : "Připomínky obchodníka k online nabídce (maily 2. a 3. 10. 2026), pokyn J. V. 6. 10. 2026.",
+   "detail" : "S1 poznámka o nezávazných termínech dotčených orgánů jen při nabízené IČ; S2 hodnoty TS_NENI_* v EN/DE/FR s velkým prvním písmenem; S3 Po milnících = Follow project milestones; S4 soubor PRICE_QUOTATION / ANGEBOT / DEVIS podle jazyka (OCK i PROJ).",
+   "hotovoKdyz" : "Test src/test_sikora_drobnosti.js 7/13 → 20/0.",
+   "kde" : "`src/nabidka_proj.js`, `src/nabidka.js`, `src/preklad.js`"
   }
  ],
  "meta" : {

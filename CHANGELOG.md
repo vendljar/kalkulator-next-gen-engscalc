@@ -8,6 +8,28 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## Drobnosti z mailů D. Sikory (2. a 3. 10. 2026) — v integrační větvi claude/davka-6-10
+
+Pokyn J. V. 6. 10. 2026 („přidej do oprav tyto drobnosti"). Roadmapa #394.
+
+- **S1 — poznámka „*) Termíny pro vyjádření dotčených orgánů …" jen
+  s inženýrskou činností.** Hvězdičku nesou jen řádky IČ; nabídka PROJ bez IČ
+  (např. jen zaměření a studie) poznámku už netiskne (online nabídka
+  a náhled, `src/nabidka_proj.js`). Wordová šablona PROJ má poznámku pevně
+  v textu — tam zůstává.
+- **S2 — „Co není součástí dodávky" v EN/DE/FR začíná velkým písmenem.**
+  Hodnoty `TS_NENI_*` v cizím jazyce dostanou velké první písmeno (online
+  i Word); česká nabídka beze změny (`src/nabidka.js`).
+- **S3 — „Po milnících" anglicky „Follow project milestones"**
+  (`src/preklad.js`). Záruka „60 měsíců" se v testu překládá už od
+  K18-N93 (v2.10.1) — D. Sikora zkoušel ostrou v30.9.1.
+- **S4 — název souboru v jazyce nabídky:** EN `PRICE_QUOTATION_…`,
+  DE `ANGEBOT_…`, FR `DEVIS_…` (OCK i PROJ, přípona jazyka zůstává);
+  česky dál `NABÍDKA_…`.
+- Test `src/test_sikora_drobnosti.js`: před úpravou 7 prošlo / 13 selhalo,
+  po úpravě 20 / 0. `src/test_docx_preklad.js` upraven na velké písmeno
+  (51 / 0).
+
 ## větev claude/vsg-skn-prepis-skla (neuvolněno)
 
 Dávka D (6. 10. 2026) z `test-draft` (v2.10.1). Rozhodovací list otevřených
