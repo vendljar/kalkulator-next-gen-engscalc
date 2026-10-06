@@ -104,5 +104,31 @@ test('po vrácení platí otisk v1 → EN k němu projde', enK3.ok && enK3.verze
   test('B99: soubor, který jen začíná jako ZIP, ale nejde rozbalit → 400', nic.st === 400, nic);
 }
 
+/* B115 + B116 (6. 10. 2026): obchvat kontroly obsahu na serveru a vrácení
+ * verze, která kontrolou neprošla (zveřejněná před B99 — tady podstrčená
+ * přímo do úložiště). Před opravou: obchvat 200, vrácení 200. */
+{
+  const enc = new TextEncoder();
+  const zak = await DG.zipPrecti(new Uint8Array(await DG.docxDokumentBlob('Šablona B115 {{FIRMA_NAZEV}}', []).arrayBuffer()));
+  zak.push({ nazev: 'word/_rels/settings.xml.rels', data: enc.encode('<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    + '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/attachedTempl&#97;te" Target="https://example.invalid/x.dotm" TargetMode="Ex&#116;ernal"/></Relationships>') });
+  const obchvat = Buffer.from(await DG.zipZapis(zak).arrayBuffer()).toString('base64');
+  const r = await api({ akce: 'zverejnit', typ: 'nabidka_fr', nazev: 'fr_obchvat.docx', data: obchvat }, cA);
+  test('B115: obchvat s číselnými entitami se nezveřejní (400)', r.st === 400 && /attachedTemplate/.test(r.chyba || ''), r);
+
+  const fr1 = await api({ akce: 'zverejnit', typ: 'nabidka_fr', nazev: 'fr1.docx', data: await docx('fr1') }, cA);
+  test('B116: příprava — FR v1 zveřejněna', fr1.ok && fr1.verze === 1, fr1);
+  /* Stav jako po zveřejnění před B99: v úložišti leží vadný soubor v1. */
+  pamet.set('sablony/data/nabidka_fr/1', JSON.stringify({ nazev: 'fr1.docx', data: obchvat }));
+  const fr2 = await api({ akce: 'zverejnit', typ: 'nabidka_fr', nazev: 'fr2.docx', data: await docx('fr2') }, cA);
+  test('B116: příprava — FR v2 zveřejněna', fr2.ok && fr2.verze === 2, fr2);
+  const vr = await api({ akce: 'vratit', typ: 'nabidka_fr', verze: 1 }, cA);
+  test('B116: vrácení verze s vadným obsahem → 400 s popisem', vr.st === 400 && /attachedTemplate/.test(vr.chyba || ''), vr);
+  const rejFr = (await rejstrik(cA)).typy.nabidka_fr;
+  test('B116: platná zůstala v2, nová verze nevznikla', rejFr.platna.verze === 2 && !pamet.has('sablony/data/nabidka_fr/3'), rejFr.platna);
+  const vrOk = await api({ akce: 'vratit', typ: 'nabidka', verze: 2 }, cA);
+  test('B116: vrácení čisté verze dál projde', vrOk.ok === true, vrOk);
+}
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

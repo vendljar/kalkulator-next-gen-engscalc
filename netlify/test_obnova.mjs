@@ -952,5 +952,39 @@ console.log('\n===== B98: obnova ze souboru a razítka zámku / odemčení =====
     !!uD && !uD.varianty[0].zamek && (uD.varianty[0].odemceni || []).some(o => o.kdo === SPRAVCE), oC.casti && oC.casti.zakazky);
 }
 
+/* ---- B100 (6. 10. 2026): šablony ze zálohy projdou kontrolou obsahu ----
+ * Před opravou obnova zapsala část „sablony" bez kontroly — šablona
+ * s vnějším attachedTemplate (i v podobě obchvatu B115 s číselnými
+ * entitami) se ze zálohy dostala do úložiště a ke stažení. */
+console.log('\n===== B100: šablony ze zálohy =====');
+{
+  const DG = require('../src/docxgen.js');
+  const enc = new TextEncoder();
+  const R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/';
+  const docx = async (rels) => {
+    const p = await DG.zipPrecti(new Uint8Array(await DG.docxDokumentBlob('Šablona B100 {{FIRMA_NAZEV}}', []).arrayBuffer()));
+    if (rels) p.push({ nazev: 'word/_rels/settings.xml.rels', data: enc.encode('<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' + rels + '</Relationships>') });
+    return Buffer.from(await DG.zipZapis(p).arrayBuffer()).toString('base64');
+  };
+  const cista = await docx('');
+  const zla = await docx('<Relationship Id="rId1" Type="' + R + 'attachedTemplate" Target="https://example.invalid/x.dotm" TargetMode="External"/>');
+  const obchvat = await docx('<Relationship Id="rId1" Type="' + R + 'attachedTempl&#97;te" Target="https://example.invalid/x.dotm" TargetMode="Ex&#116;ernal"/>');
+  const podvrhS = kopie(zalSoubor);
+  podvrhS.sablony = { 'data/nabidka_b100/1': { nazev: 'cista.docx', data: cista }, 'data/nabidka_b100/2': { nazev: 'zla.docx', data: zla },
+    'data/nabidka_b100/3': { nazev: 'obchvat.docx', data: obchvat }, 'data/nabidka_b100/4': { nazev: 'nesmysl.docx', data: 'nesmysl' } };
+  const o100 = await obnovJson({ zdroj: { soubor: podvrhS }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['sablony'] }, cookie);
+  const sb = o100.casti && o100.casti.sablony;
+  test('B100: čistá šablona ze souboru se obnoví', o100.ok === true && !!(await ulz('sablony').cti('data/nabidka_b100/1')), o100);
+  test('B100: šablona s attachedTemplate ze souboru se nezapíše (přeskočena s důvodem)',
+    (await ulz('sablony').cti('data/nabidka_b100/2')) === null && !!sb && sb.duvody.some(d => d.klic === 'data/nabidka_b100/2' && /attachedTemplate/.test(d.duvod)), sb);
+  test('B100: ani obchvat B115 s číselnými entitami',
+    (await ulz('sablony').cti('data/nabidka_b100/3')) === null && !!sb && sb.duvody.some(d => d.klic === 'data/nabidka_b100/3'), sb);
+  test('B100: soubor, který není .docx, se nezapíše', (await ulz('sablony').cti('data/nabidka_b100/4')) === null, sb);
+  await ulz('zalohy').zapis('2026-01-16', { porizena: '2026-01-16T02:00:00.000Z', sablony: { 'data/nabidka_b100/5': { nazev: 'zla.docx', data: zla } } });
+  const o100b = await obnovJson({ zdroj: { otisk: '2026-01-16' }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['sablony'] }, cookie);
+  test('B100: i z otisku (verze zveřejněná před kontrolou) se vadná šablona nezapíše',
+    o100b.ok === true && (await ulz('sablony').cti('data/nabidka_b100/5')) === null, o100b);
+}
+
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);
