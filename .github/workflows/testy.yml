@@ -34,6 +34,13 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# B125 (audit 2. 10. 2026): workflow jen čte repozitář — token GITHUB_TOKEN
+# nesmí víc. Akce jsou připnuté na celý SHA commitu (značka v komentáři):
+# značka se dá přesunout, SHA ne. Playwright má pevnou verzi, aby CI
+# nestahovalo pokaždé jinou (stejná verze jako v cloudovém sezení).
+permissions:
+  contents: read
+
 jobs:
   testy:
     runs-on: ubuntu-latest
@@ -44,13 +51,13 @@ jobs:
     env:
       ADMIN_EMAIL: spravce@priklad.cz
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: '22'   # stejná verze jako NODE_VERSION v netlify.toml
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: '3.12'
 
@@ -59,7 +66,7 @@ jobs:
       # 14. 9. 2026). Místní node_modules/playwright vidí obě cesty.
       - name: Playwright (Chromium)
         run: |
-          npm i playwright
+          npm i --no-save playwright@1.56.1
           npx playwright install --with-deps chromium
 
       - name: Testovací kolo bez mutací (sestavení, sady, harnessy, statické kontroly)
@@ -67,7 +74,7 @@ jobs:
 
       - name: Sestavený dist/ jako artefakt
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: dist-${{ github.sha }}
           path: dist/
@@ -85,8 +92,8 @@ jobs:
     env:
       ADMIN_EMAIL: spravce@priklad.cz
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: '22'
       - name: Mutace serveru (netlify/mutace.mjs)
@@ -98,8 +105,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: '22'
       - name: Mutace jádra (mutace_jadro.mjs)

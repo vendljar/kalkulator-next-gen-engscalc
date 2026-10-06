@@ -216,6 +216,17 @@ const KOD_STRANKY = `
     'slevy, zaokrouhlení, ruční hodnoty': (z, d) => { otrav(d.sleva, 'sleva'); otrav(d.slevaProj, 'slevaProj'); otrav(d.zaokr, 'zaokr');
       otrav(d.zaokrProj, 'zaokrProj'); otrav(d.cenikRucni, 'cenikRucni'); otrav(d.zadaniRucni, 'zadaniRucni'); },
     'poznámky, přílohy, protokol': (z) => { otrav(z.poznamky, 'poznamky'); otrav(z.prilohy, 'prilohy'); otrav(z.protokol, 'protokol'); },
+    /* B124 (audit 2. 10. 2026): data období od 29. 9. — plán plateb PROJ
+     * v zakázce (vlastní milník = volné znění splátky) a materiál „jiné"
+     * v opláštění po stěnách (ruční název). */
+    'B124: plán plateb v zakázce (vlastní milník, volné znění)': (z, d) => {
+      d.kryciProj.planPlateb = { v: 1, predvolba: 'vlastni', prepis: {},
+        cinnosti: { dps: [{ p: 50, m: 'vlastni', t: 'x' }, { p: 50, m: 'podpis' }], ic: [{ p: 100, m: 'vlastni', t: 'y' }] } };
+      otrav(d.kryciProj.planPlateb, 'kryciProj.planPlateb', c => /\.t$/.test(c)); },
+    'B124: materiál „jiné" v opláštění (ruční název)': (z, d) => {
+      d.ock.zadani.oplasteni = { rezim: 'poStenach', steny: { A: { odM: 0, pasy: [{ typ: 'jine', nazev: 'x', naklad: 100, doM: 3 }, { typ: 'sklo', doM: null }] },
+        B: { odM: 0, pasy: [{ typ: 'jine', nazev: 'y', naklad: 120, doM: null }] } } };
+      otrav(d.ock.zadani.oplasteni, 'ock.zadani.oplasteni', c => /nazev$/.test(c)); },
   };
   const DALSI = {
     'firemní údaje (NAST.firma)': () => otrav(NAST.firma, 'NAST.firma'),
@@ -237,6 +248,18 @@ const KOD_STRANKY = `
         schvalil: 's', schvalilKdy: 'k', schvalenoProc: 0, zamitl: 'z', zamitlKdy: 'k', zamitnutoProc: 0, zamitnutoDuvod: 'd' } }];
       otrav(SCHV_CIZI.zadosti, 'schvalovani', null, true); },
     'standard OCK a schémata slev': () => { otrav(NAST.standard, 'standard', null, true); otrav(NAST.slevy.schemata, 'slevy.schemata'); },
+    /* B124: firemní plán plateb (texty milníků katalogu) a číselník
+     * dodatkových textů s jazykovými variantami (#379) — klíč i texty. */
+    'B124: firemní plán plateb (katalog milníků)': () => {
+      NAST.firma.planPlatebProj = JSON.parse(JSON.stringify(PLAN_PROJ_VYCHOZI));
+      otrav(NAST.firma.planPlatebProj.milniky, 'firma.planPlatebProj.milniky', c => /\.cz$/.test(c), true); },
+    'B124: číselník dodatků a jejich překlady': () => {
+      const k1 = 'Sklo VSG s mléčnou fólií', k2 = PAY('popisy.klic');
+      ONLINE_STAV.popisy = { texty: { [k1]: 'x', [k2]: 'y' }, jazyky: { [k1]: { en: 'e', de: 'd', fr: 'f' }, [k2]: { en: 'e' } },
+        kdo: 'x', kdy: '2026-10-06T00:00:00.000Z' };
+      otrav(ONLINE_STAV.popisy, 'popisy', c => !/^popisy\.(kdy)$/.test(c), true);
+      if (typeof DEFAULT_CENIK !== 'undefined') { DEFAULT_CENIK.popisy = Object.assign({}, ONLINE_STAV.popisy.texty);
+        DEFAULT_CENIK.popisyJazyky = JSON.parse(JSON.stringify(ONLINE_STAV.popisy.jazyky)); } },
   };
   async function pokus(oblast, admin) {
     window.__XSS = [];
@@ -267,18 +290,44 @@ const KOD_STRANKY = `
       pruh('panel ' + p.id);
       await new Promise(r => setTimeout(r, 40));
     }
+    /* B124: TISKOVÉ NÁHLEDY (nabídka OCK a PROJ, krycí listy, detail
+     * výpočtu, porovnání variant). Otevírají se do nového okna — tady do
+     * rámu v téže stránce, který sdílí window.__XSS, takže payload spuštěný
+     * v náhledu se počítá stejně. Dialogy se odpovídají samy (potvrd → ano,
+     * volba → první možnost), každý náhled má strop 4 s: zaseknutý náhled
+     * je chyba vykreslení, ne nekonečné čekání (past overit_dialogy). */
+    const ramy = [];
+    const puvOpen = window.open, puv = { potvrd: window.potvrd, volba: window.volba, dotaz: window.dotaz, hlaska: window.hlaska };
+    window.open = () => { const f = document.createElement('iframe'); f.style.display = 'none'; document.body.appendChild(f);
+      f.contentWindow.__XSS = window.__XSS; ramy.push(f); return f.contentWindow; };
+    window.potvrd = async () => true; window.volba = async (t, m) => (m && m[0] && m[0].kod) || null;
+    window.dotaz = async () => ''; window.hlaska = async () => undefined;
+    const NAHLEDY = ['nabidkaNahled', 'nabidkaProjNahled', 'kryciTiskPohled', 'kryciProjTiskPohled', 'detailTisk', 'porovnaniTisk', 'porovnaniPolozkyTisk'];
+    for (const fn of NAHLEDY) {
+      if (typeof window[fn] !== 'function') { chyby.push('náhled ' + fn + ' neexistuje'); continue; }
+      try {
+        await Promise.race([Promise.resolve().then(() => window[fn]()),
+          new Promise((_, ne) => setTimeout(() => ne(new Error('náhled se do 4 s nedokončil')), 4000))]);
+      } catch (e) { chyby.push('náhled ' + fn + ': ' + e.message); }
+    }
+    window.open = puvOpen; Object.assign(window, puv);
     await new Promise(r => setTimeout(r, 300));
-    const img = document.querySelectorAll('img[src="x"]').length;
+    let imgNahled = 0, hrefJsNahled = 0, vyskytuNahled = 0;
+    for (const f of ramy) { const dd = f.contentDocument; if (!dd || !dd.documentElement) continue;
+      imgNahled += dd.querySelectorAll('img[src="x"]').length;
+      hrefJsNahled += dd.querySelectorAll('a[href^="javascript:"], [src^="javascript:"]').length;
+      vyskytuNahled += (dd.documentElement.innerHTML.match(/__XSS\.push/g) || []).length; }
+    const img = document.querySelectorAll('img[src="x"]').length + imgNahled;
     const handlers = [];
-    for (const el of document.querySelectorAll('*'))
+    for (const el of [document, ...ramy.map(f => f.contentDocument).filter(Boolean)].flatMap(dd => [...dd.querySelectorAll('*')]))
       for (const a of el.attributes)
         if (/^on/i.test(a.name) && /(^|[^\\\\])'\\);window\\.__XSS\\.push\\(/.test(a.value))
           handlers.push(el.tagName.toLowerCase() + ' ' + a.name + '="' + a.value.slice(0, 100) + '…"');
-    const hrefJs = document.querySelectorAll('a[href^="javascript:"], [src^="javascript:"]').length;
+    const hrefJs = document.querySelectorAll('a[href^="javascript:"], [src^="javascript:"]').length + hrefJsNahled;
     /* Kolikrát se payload (escapovaný) ve stránce vůbec objevil. Nula by
      * znamenala, že se oblast nikde nekreslí — a kontrola by byla prázdná. */
     const vyskytu = (document.documentElement.innerHTML.match(/__XSS\.push/g) || []).length;
-    return { xss: [...new Set(window.__XSS)], img, handlers: handlers.slice(0, 5), hrefJs, chyby, vyskytu };
+    return { xss: [...new Set(window.__XSS)], img, handlers: handlers.slice(0, 5), hrefJs, chyby, vyskytu, vyskytuNahled, nahledu: ramy.length };
   }
   return { OBLASTI: Object.keys(OBLASTI), DALSI: Object.keys(DALSI), pokus };
 `;
@@ -313,7 +362,9 @@ async function a2Pokus(oblast, admin) {
       /* Pojistka proti prázdnému testu: payload z oblasti se ve stránce musí
        * objevit (escapovaný), jinak se ta oblast nikde nekreslí a kontroly
        * výš neověřily nic. */
-      zkus(`${role}: ${oblast} — payload se do stránky dostal (escapovaný; ${r.vyskytu}×)`, r.vyskytu > 0, r.vyskytu);
+      zkus(`${role}: ${oblast} — payload se do stránky dostal (escapovaný; ${r.vyskytu}×, v náhledech ${r.vyskytuNahled}×)`, r.vyskytu > 0, r.vyskytu);
+      /* B124: tiskové náhledy se opravdu otevřely (jinak by kontrola náhledů byla prázdná). */
+      zkus(`${role}: ${oblast} — tiskové náhledy se otevřely (${r.nahledu})`, r.nahledu >= 5, r.nahledu);
     }
   }
 }

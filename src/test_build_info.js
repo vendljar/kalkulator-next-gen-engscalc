@@ -129,5 +129,13 @@ test('CI volá testovací kolo a nemá vlastní seznam kroků',
   /run: bash nastroje\/testovaci_kolo\.sh/.test(wf) && wf.indexOf('bash ./spust_testy.sh') < 0
   && wf.indexOf('build.py --kontrola-verze') < 0);
 
+/* B125 (audit 2. 10. 2026): CI jen čte, akce připnuté na SHA, Playwright
+ * s pevnou verzí. Před úpravou testy.yml 0 / 3, po ní 3 / 0. */
+test('B125: workflow má permissions contents: read', /^permissions:\s*\n\s+contents:\s*read\s*$/m.test(wf));
+const pouziti = wf.match(/^\s*-?\s*uses:\s*\S+/gm) || [];
+test('B125: každá akce je připnutá na celý SHA commitu',
+  pouziti.length > 0 && pouziti.every(u => /@[0-9a-f]{40}$/.test(u.trim())), pouziti);
+test('B125: Playwright v CI má pevnou verzi', /npm i [^\n]*playwright@\d+\.\d+\.\d+/.test(wf));
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);
