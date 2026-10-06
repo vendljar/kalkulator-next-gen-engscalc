@@ -875,9 +875,16 @@ function uloTypyProj(zadani, cesta, out) {
   const sekce = zadani && zadani.sekce;
   if (sekce === null || sekce === undefined) return;
   if (!Array.isArray(sekce)) { out.push({ kde: cesta + '.sekce', duvod: 'typ' }); return; }
+  const klice = new Set();
   sekce.forEach((s, i) => {
     const cs = cesta + '.sekce[' + i + ']';
     if (!s || typeof s !== 'object') { out.push({ kde: cs, duvod: 'typ' }); return; }
+    /* Duplicitní klíč sekce (revize 6. 10. 2026, S1): kontroly B112/B114
+     * by viděly jen poslední sekce téhož klíče, jádro počítá všechny. */
+    if (s.key != null && s.key !== '') {
+      if (klice.has(String(s.key))) out.push({ kde: cs + '.key', duvod: 'typ' });
+      klice.add(String(s.key));
+    }
     if (!ULO_TOKEN.test(String(s.key || ''))) out.push({ kde: cs + '.key', duvod: 'typ' });
     if (!uloCisloSedi(s.prirazkaPct)) out.push({ kde: cs + '.prirazkaPct', duvod: 'typ' });
     if (s.doprava && typeof s.doprava === 'object')
@@ -985,7 +992,9 @@ function uloZaporne(h) {
   return false;
 }
 const ULO_HODINY_N56 = ['montazZakladHod', 'montazAtypHod', 'projekceZakladHod', 'projekceAtypHod'];
-const ULO_PROJ_BEZ_ZAPORU = ['cena', 'hodiny', 'rezerva', 'cenaPrepis', 'sazbaPrepis'];
+/* sazbaKc a naklad od revize 6. 10. 2026 (V2): vlastní hodinová položka
+ * se sazbou mimo ceník a zápornou sazbaKc snižovala náklad sekce. */
+const ULO_PROJ_BEZ_ZAPORU = ['cena', 'hodiny', 'rezerva', 'cenaPrepis', 'sazbaPrepis', 'sazbaKc', 'naklad'];
 function uloZaporneVZadani(z, zp) {
   const out = [];
   const hlidej = (h, kde) => {
@@ -1019,6 +1028,9 @@ function uloZaporneVZadani(z, zp) {
   }
   const sekce = zp && typeof zp === 'object' ? zp.sekce : null;
   if (Array.isArray(sekce)) sekce.forEach((s, i) => {
+    /* Doprava sekce (revize 6. 10. 2026, V1): km a ruční příplatek nikdy záporné. */
+    if (s && typeof s === 'object' && s.doprava && typeof s.doprava === 'object')
+      ['km', 'pausal'].forEach(k => { if (uloZaporne(s.doprava[k])) out.push({ kde: 'proj.zadani.sekce[' + i + '].doprava.' + k, duvod: 'zaporne' }); });
     if (!s || typeof s !== 'object' || !Array.isArray(s.polozky)) return;
     s.polozky.forEach((p, j) => {
       if (!p || typeof p !== 'object') return;
@@ -1220,7 +1232,23 @@ function uloB112PrepisyProj(zp) {
  * obchodník (kalk.pridatPolozku). Vyřazení položky (vyrazeno) mění rozsah,
  * ne cenu, a v nabídce je vidět — nehlídá se. */
 const ULO_PROJ_IDENTITA = ['typ', 'sazba', 'sazbaKc', 'fixKey', 'cena', 'hodiny', 'rezerva'];
-function uloB114Podpis(p) { return ULO_PROJ_IDENTITA.map(k => uloB112Hodnota(p && p[k])); }
+/* Čísla v podpisu tak, jak je čte jádro (`+x`): text „24,0" je pro jádro
+ * NaN → 0, takže nesmí projít jako 24 (revize 6. 10. 2026, N1). */
+const ULO_PROJ_IDENTITA_TEXT = ['typ', 'sazba', 'fixKey'];
+function uloB114Cislo(x) {
+  if (x === null || x === undefined || x === '') return '';
+  const n = +x;
+  return isFinite(n) ? n : 'NaN';
+}
+function uloB114Podpis(p) {
+  return ULO_PROJ_IDENTITA.map(k => ULO_PROJ_IDENTITA_TEXT.indexOf(k) >= 0 ? uloB112Hodnota(p && p[k]) : uloB114Cislo(p && p[k]));
+}
+/* Doprava sekce jako podpis (revize 6. 10. 2026, V1): km, ruční příplatek
+ * a příznak mimo Prahu — v UI je zadává jen správce. */
+function uloB114Doprava(s) {
+  const d = s && s.doprava && typeof s.doprava === 'object' ? s.doprava : null;
+  return d ? [uloB114Cislo(d.km), uloB114Cislo(d.pausal), d.mimoPrahu ? 1 : '', 'D'] : ['', '', '', ''];
+}
 function uloB114PolozkyProj(zp) {
   const std = {}, kid = {};
   const sekce = zp && Array.isArray(zp.sekce) ? zp.sekce : [];
@@ -1228,6 +1256,7 @@ function uloB114PolozkyProj(zp) {
     if (!s || typeof s !== 'object') return;
     const sk = String(s.key || i);
     const vyskyt = {};
+    std[sk + '\u0000doprava'] = { h: uloB114Doprava(s), kde: 'proj.zadani.sekce[' + i + '].doprava' };
     (Array.isArray(s.polozky) ? s.polozky : []).forEach((p, j) => {
       if (!p || typeof p !== 'object') return;
       const kde = 'proj.zadani.sekce[' + i + '].polozky[' + j + ']';
@@ -1451,7 +1480,7 @@ function uloCenikProblemy(zak, stara, opts) {
       if (!(k in ip.std)) { out.push({ kde: 'proj.zadani.sekce.' + (ULO_TOKEN.test(k.split('\u0000')[0]) ? k.split('\u0000')[0] : '?') + ' (odebraná položka)', duvod: 'cenik' }); return; }
       /* V hlášce pole, ve kterém se položka liší od uložené (výchozí) verze. */
       const vz = kandI.find(x => k in x.std);
-      const pole = vz ? ULO_PROJ_IDENTITA.filter((_, n) => !uloB114Shoda(vz.std[k].h[n], h[n])) : [];
+      const pole = vz && !/\u0000doprava$/.test(k) ? ULO_PROJ_IDENTITA.filter((_, n) => !uloB114Shoda(vz.std[k].h[n], h[n])) : [];
       out.push({ kde: ip.std[k].kde + (pole.length ? '.' + pole.join('/') : ''), duvod: 'cenik' });
     });
     /* Trvalé položky PROJ (kid): jen přítomné. */

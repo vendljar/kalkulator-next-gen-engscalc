@@ -8,6 +8,48 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## Nezávislá revize oprav A–C (6. 10. 2026) — v integrační větvi claude/davka-6-10
+
+Dva revizoři (jen čtení nad čistou kopií), vysoké nálezy dvakrát nezávisle
+přečtené. Opraveno v téže větvi:
+
+- **B119 — vždy přísně.** První verze porovnávala volně, když výsledek
+  uváděl jinou verzi aplikace; verzi ale posílá klient → obchvat. Teď nový
+  zámek vždy přísně (`src/zamek.js`), viz oddíl dávky B a `BEZPECNOST_MEZE.md`.
+- **Kontrola obsahu šablon (B115) — další obchvaty:** CDATA a komentáře
+  se před rozborem normalizují (zakázané pole v CDATA, falešný konec pole
+  v komentáři), sirotci kódu pole se kontrolují i jednotlivě, atributy
+  vztahu `Type`/`Target`/`TargetMode` se čtou přesně a návnadový atribut
+  jiné velikosti písmen nebo s prefixem vztah odmítne, pole, jehož typ dodá
+  symbol `{{…}}`, se odmítne (`src/sablona_obsah.js`). Test
+  `src/test_sablona_obsah.js` 52/6 → 58/0; všech 15 firemních šablon
+  (CN v14 + EN/DE/FR, CN v11, PROJ v3, PROJ v4 + EN/DE/FR, SoD realizace
+  a projekce v1 i v2, plná moc) projde. Mutace jádra +4.
+- **Rejstřík — strop pro všechna textová pole** (N4; dávka B ho dala jen
+  adrese): číslo, název akce, objednatel, autor, jméno autora, datum,
+  razítko (`src/uloziste.js`). `netlify/test_rejstrik.mjs` 19/2 → 21/0.
+- **#374 — doprava sekcí PROJ (V1):** km, ruční příplatek a „mimo Prahu"
+  jsou součástí identity B114 (role bez `sloupce.naklad` je proti uložené
+  verzi nezmění) a km i příplatek nesmějí být záporné (ani u správce).
+- **#374 — záporná `sazbaKc` / `naklad` (V2)** položky PROJ se odmítne
+  (vlastní hodinová položka se sazbou mimo ceník snižovala náklad).
+- **#374 — duplicitní klíč sekce PROJ (S1)** se odmítne (kontroly viděly
+  jen poslední sekci téhož klíče).
+- **#374 — čísla v identitě jako v jádře (N1):** „24,0" je pro jádro 0,
+  kontrola ho už nebere jako 24.
+- Testy `netlify/test_prava.mjs` (blok „Revize 6. 10. 2026"): před opravou
+  1 / 6, po opravě 7 / 0; celá sada 691 / 0. Mutace serveru +6, všechny
+  chycené.
+- **Neopraveno, k rozhodnutí J. V. (roadmapa #395):** V3 — nová zakázka
+  s ceníkem sestavení + vlastní položka nastaví cenu libovolně (zákaz
+  ceníku sestavení u nové zakázky při zveřejněném ceníku by dnes shodil
+  legitimní toky; výchozí návrh: server u nové zakázky obchodníka nahradí
+  ceník sestavení zveřejněným, samostatná dávka); S2 — vyřazení položky
+  + vlastní položka téhož názvu (vědomá mez); N2/N3 revize A (duplicitní
+  kid, `volitelneVlastni`, katalog z příchozího ceníku); nízké nálezy
+  revize C (kódování XML bez BOM, strop dekomprese ZIPu, komentář EOCD,
+  ověření souborů platných verzí šablon po obnově).
+
 ## Drobnosti z mailů D. Sikory (2. a 3. 10. 2026) — v integrační větvi claude/davka-6-10
 
 Pokyn J. V. 6. 10. 2026 („přidej do oprav tyto drobnosti"). Roadmapa #394.

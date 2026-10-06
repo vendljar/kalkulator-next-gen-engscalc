@@ -1502,6 +1502,29 @@ console.log('\n===== #374 (B113, B114): KONCOVÁ CENA BEZ SCHVÁLENÍ — IDENTI
   const a9 = await uloz374(n1, cObch);
   test('B114: nová zakázka obchodníka s pozměněnou položkou → 403 (proti výchozímu zadání)', je403(a9), a9);
 
+  /* Revize 6. 10. 2026 (nezávislá revize #374): doprava sekce PROJ (V1),
+   * záporná sazbaKc vlastní položky (V2), duplicitní klíč sekce (S1) a text
+   * s čárkou, který jádro čte jako 0 (N1). Před opravou 1 OK / 6 FAIL,
+   * po opravě 7 / 0. */
+  const sek = (a, k) => d0(a).proj.zadani.sekce.find(s => s.key === k);
+  const r1 = await uprav374(a => { sek(a, 'dpz').doprava = { km: 0, mimoPrahu: false }; }, cObch,
+    z => { sek(z, 'dpz').doprava = { km: 120, mimoPrahu: true }; });
+  test('revize V1: obchodník — doprava sekce vynulovaná → 403', je403(r1, /doprava/), r1);
+  const r2 = await uprav374(a => { sek(a, 'dpz').doprava = { km: -500, mimoPrahu: false }; }, cObch);
+  test('revize V1: obchodník — doprava přidaná se zápornými km → 403/400', r2.status === 403 || r2.status === 400, r2);
+  const r2b = await uprav374(a => { sek(a, 'dpz').doprava = { km: 50, mimoPrahu: false, pausal: -9000 }; }, cAdmin);
+  test('revize V1: ani administrátor nesmí zápornou dopravu (400)', r2b.status === 400, r2b);
+  const r3 = await uprav374(a => { pol(a, 'studie').push({ nazev: 'Vlastní hod', typ: 'hod', sazba: 'zz', sazbaKc: -50000, hodiny: 1, rezerva: 0, vlastni: true }); }, cObch);
+  test('revize V2: vlastní položka se zápornou sazbaKc → 400', r3.status === 400, r3);
+  const r4 = await uprav374(a => { const s = sek(a, 'studie'); const kopie = JSON.parse(JSON.stringify(s));
+    s.polozky.forEach(p => { if (p.typ === 'hod') p.hodiny = 1; }); kopie.polozky.forEach(p => { p.vyrazeno = true; });
+    d0(a).proj.zadani.sekce.push(kopie); }, cObch);
+  test('revize S1: duplicitní klíč sekce PROJ → 400', r4.status === 400, r4);
+  const r5 = await uprav374(a => { const h = hod(a); h.hodiny = String(h.hodiny) + ',0'; }, cObch);
+  test('revize N1: hodiny jako text s čárkou (jádro je čte jako 0) → 403/400', r5.status === 403 || r5.status === 400, r5);
+  const r6 = await uprav374(a => { sek(a, 'dpz').doprava = { km: 300, mimoPrahu: true }; }, cAdmin);
+  test('revize V1: administrátor dopravu změnit smí (200)', r6.status === 200, r6);
+
   /* legitimní toky */
   const b1 = await uprav374(a => {
     pol(a, 'studie').push({ nazev: 'Vlastní fix', typ: 'fix', cena: 4000, vlastni: true });
