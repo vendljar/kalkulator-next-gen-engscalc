@@ -1,3 +1,33 @@
+# Paralelní práce 6. 10. 2026 — koordinační sezení dávek na pozadí
+
+Na pokyn J. V. 6. 10. 2026 („tag je releasnutý, vytvoř nové sezení a navrhni
+další dávky k běhu na pozadí během tohoto dne") běží koordinační sezení
+**session_01FbEVKCocjc6ZDk2hyoDe3k** („KNG — dávky na pozadí 6. 10. 2026",
+založené ze session_01WRbkr4tfxtUB1k8PR37dUR). Každá dávka vlastní větev
+z `test-draft` (v2.10.1), integrace do `claude/davka-6-10` (v6.10.1) s celým
+kolem; do `test-draft` a `test` až na pokyn J. V. Release v2.10.1 vydán
+6. 10. — release mají všechny verze.
+
+| # | Dávka | Větev |
+|---|---|---|
+| G | rozhodovací list otevřených otázek | (v `podklady/` větve D) |
+| D | #392 VSG/SKN z přepsané plochy skla + K20-N1 zapsat jako vědomé | `claude/vsg-skn-prepis-skla` |
+| A | #374 koncová cena bez schválení (B113, B114) | `claude/koncova-cena-374` |
+| C | B115, B116, B100 kontrola obsahu šablon | `claude/sablony-obsah-b115` |
+| B | B120, B119, B121, B122 | `claude/audit-b119-b122` |
+| E | B124, B125 + šablony SoD v2 na Disk | `claude/testy-ci-b124` |
+| F | Pipedrive: návrh polí dealu × kalkulátor (rozbor) | `claude/pipedrive-pole-rozbor` |
+| H | 21. kolo nad integrační větví (pokud zbude čas) | — |
+
+Podklady 20. kola (2. 10., nad v1.10.2, Disk/Testovani): `STAV_KOLO20_2026-10-02.md`,
+`VYHODNOCENI_TESTU_KOLO20_TEST_2026-10-02.xlsx`,
+`2026-10-02_kalkulator_BEZPECNOSTNI_AUDIT_v1.10.2.md` — B118 (= K19-N102) je
+opravené ve v2.10.1 (P1); otevřené vysoké B113, B114 řeší dávka A.
+Nečinné sezení session_0152gTk16B8GKboeQJxTy49m (30. 9., opravy B113–B118)
+je tímto plánem nahrazené.
+
+---
+
 # Předávka — stav k 2. 10. 2026 (v2.10.1 na test-draft i test, v30.9.1 na main)
 
 Na `main`: **v30.9.1**. Na `test-draft` = `test`: **v2.10.1** (pokyn J. V.
