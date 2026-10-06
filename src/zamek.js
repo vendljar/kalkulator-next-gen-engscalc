@@ -330,13 +330,11 @@ const ZAMEK_OVERENI_JADRO = ['ock.souhrn.zakladCena', 'ock.souhrn.zakladDph', 'o
 /* PŘÍSNÉ POROVNÁNÍ NOVÉHO ZÁMKU (B119, audit 2. 10. 2026). Uvolnění P6
  * přeskakovalo řádek bez protějšku — podvržený příplatek s vymyšleným
  * `origNazev` se tak nespároval, nikdo ho neporovnal a razítko bylo
- * „shoda"; dotisk odeslané nabídky pak bral jeho cenu. Když výsledek
- * spočítala TÁŽ verze jako server (nový zámek při uložení), jiný tvar
- * vzniknout nemá: nespárovaný řádek je rozdíl a k jádru přibudou součty
+ * „shoda"; dotisk odeslané nabídky pak bral jeho cenu. Nový zámek při
+ * uložení se proto porovnává přísně: nespárovaný řádek je rozdíl a k jádru přibudou součty
  * příplatků a zaškrtnutých volitelných položek. Starší zámky a obnova se
  * porovnávají volně jako dosud. */
 const ZAMEK_OVERENI_JADRO_PRISNE = ['ock.souhrn.priplatkyCena', 'ock.souctySekci.volitelne.sMarzi'];
-const zamekVerzeCista = (x) => String(x == null ? '' : x).trim().replace(/^v/i, '');
 
 /* Porovná výsledek ze zámku s přepočtem. Obě strany mají projít JSONem
  * (klientská jím prošla cestou po síti — NaN je v ní null). Čísla se srovnávají
@@ -418,19 +416,18 @@ function zamekVysledekRozdily(klient, server, max, opts) {
  *   'chyba'       server výsledek nepřepočítal, takže ho neověřil.
  * Zámek bez zmrazeného výsledku razítko nedostane (null): dokumenty ho
  * počítají z dat, která server hlídá sám. */
-/* `opts.prisne` (B119): nový zámek při uložení. Přísně se porovnává jen
- * tehdy, když výsledek nese tutéž verzi aplikace jako server — stránka
- * načtená před nasazením (jiná verze) se porovná volně jako dosud, aby
- * poctivý tisk nedostal falešné „nesouhlasí"; razítko pak nese
- * `volne: true`, ať je vidět, že se porovnávalo volněji. */
+/* `opts.prisne` (B119): nový zámek při uložení se porovnává VŽDY přísně.
+ * Verzi ve výsledku (`build`) posílá klient, takže se podle ní o režimu
+ * rozhodovat nesmí (revize 6. 10. 2026: jiný `build` = volné porovnání
+ * = obchvat). Stránka načtená před nasazením, která má jiný tvar výsledku,
+ * dostane „nesouhlasí" — hláška po uložení radí obnovit stránku (Ctrl+F5)
+ * a vytisknout znovu; to je poctivější než mlčky přijatý podvrh. */
 function zamekOvereni(v, jekly, verzeServeru, kdy, opts) {
   const z = zamekInfo(v);
   if (!z || !z.vysledek) return null;
   const zaklad = { kdy: kdy || new Date().toISOString(), server: String(verzeServeru || ''),
                    klient: String(z.vysledek.build || '').slice(0, 40) };
-  const chtePrisne = !!(opts && opts.prisne);
-  const prisne = chtePrisne && zamekVerzeCista(zaklad.klient) === zamekVerzeCista(zaklad.server);
-  if (chtePrisne && !prisne) zaklad.volne = true;
+  const prisne = !!(opts && opts.prisne);
   const server = zamekVysledekSpocti(v, jekly, '');
   if (!server) return Object.assign({ stav: 'chyba', rozdilu: 0, cesty: [] }, zaklad);
   /* Výsledek od klienta může být cokoli, co projde JSONem — ani patologický

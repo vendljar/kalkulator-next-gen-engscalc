@@ -290,7 +290,7 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
     v.zamek.kdo = relace.jmeno ? relace.jmeno + ' <' + relace.email + '>' : relace.email;
     /* Nový zámek se ověřuje přísně (B119): nespárovaný řádek zmrazeného
      * výsledku je rozdíl a jádro nese i součty příplatků a volitelných —
-     * pokud výsledek spočítala tatáž verze jako server (jinak volně, P6). */
+     * vždy, bez ohledu na verzi, kterou výsledek uvádí (tu posílá klient). */
     const ov = globalThis.zamekOvereni(v, JEKLY, verzeServeru, undefined, { prisne: true });
     if (ov) v.zamek.overeni = ov; else delete v.zamek.overeni;
     if (ov && ov.stav !== 'shoda') sporne.push({ cislo: v.zamek.cislo || cisloMaBy, ov });

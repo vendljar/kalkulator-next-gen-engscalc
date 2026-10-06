@@ -93,6 +93,25 @@ function sablonaAtribut(tag, jmeno) {
   const h = sablonaAtributy(tag)[jmeno.toLowerCase()];
   return h ? h[0] : '';
 }
+/* NORMALIZACE PŘED ROZBOREM (revize 6. 10. 2026, S1/S2). Komentáře
+ * a instrukce zpracování Word ignoruje — falešná značka v nich nesmí
+ * rozhodit rozbor polí; sekce CDATA parser vrací jako text — převede se na
+ * text s entitami, aby ji rozbor viděl stejně jako Word. */
+function sablonaNormalizuj(text) {
+  return String(text || '')
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, (m, obsah) => obsah.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'))
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<\?(?!xml\s)[\s\S]*?\?>/g, '');
+}
+/* Atributy značky PŘESNĚ podle jména (s prefixem, rozlišuje velikost
+ * písmen) → { jméno: [hodnoty] } (revize 6. 10. 2026, S3). */
+function sablonaAtributyPresne(tag) {
+  const out = {};
+  const re = /([\w.:-]+)\s*=\s*("([^"]*)"|'([^']*)')/g;
+  let m;
+  while ((m = re.exec(tag))) (out[m[1]] = out[m[1]] || []).push(sablonaXmlUnesc(m[3] !== undefined ? m[3] : m[4]));
+  return out;
+}
 function sablonaJeXml(text) {
   return /^[\s\uFEFF]*</.test(text);
 }
@@ -103,6 +122,9 @@ function sablonaPoleVada(kod) {
   const t = sablonaXmlUnesc(String(kod || '')).replace(/^[\s\u00A0]+/, '');
   if (!t) return '';
   if (t[0] === '\u0001') return 'pole, jehož typ dodá vnořené pole';
+  /* Typ dodaný symbolem {{…}} by doplnila až data zakázky (revize 6. 10.,
+   * S4) — předem nikdo neví, jaké pole vznikne. */
+  if (/^"?\{/.test(t)) return 'pole, jehož typ dodá symbol {{…}}';
   const m = /^"?([A-Za-z]+)/.exec(t);
   const typ = m ? m[1].toUpperCase() : '';
   return SABLONA_POLE_ZAKAZANA.indexOf(typ) >= 0 ? 'pole ' + typ : '';
@@ -135,7 +157,7 @@ function sablonaPoleVady(xml) {
     if (k) re.lastIndex = konec.lastIndex;
     const top = zasobnik.length ? zasobnik[zasobnik.length - 1] : null;
     if (top) { if (!top.sep) top.kod += text; }
-    else sirotci += text;
+    else { sirotci += text; vady.push(sablonaPoleVada(text)); }   // každý sirotek i dohromady (S2)
   }
   zasobnik.forEach(z => vady.push(sablonaPoleVada(z.kod)));
   vady.push(sablonaPoleVada(sirotci));
@@ -163,8 +185,9 @@ function sablonaObsahVadyZipu(polozky) {
     if (!jeRels && !/\.xml$/.test(male) && !sablonaJeXml(text)) return;
 
     if (/<!(DOCTYPE|ENTITY)\b/i.test(text)) pridej('deklarace DOCTYPE / ENTITY (' + nazev + ')');
+    const xml = sablonaNormalizuj(text);
     if (male === '[content_types].xml') {
-      const ct = sablonaXmlUnesc(text);
+      const ct = sablonaXmlUnesc(xml);
       if (/macroEnabled/i.test(ct)) pridej('dokument s makry (typ obsahu macroEnabled)');
       if (/vbaProject/i.test(ct)) pridej('makra VBA (typ obsahu vbaProject)');
       if (/oleObject/i.test(ct)) pridej('vložený objekt (typ obsahu oleObject)');
@@ -173,8 +196,18 @@ function sablonaObsahVadyZipu(polozky) {
     /* Vztahy: v .rels, ale hledají se v každé XML části (nic to nestojí). */
     const reRel = new RegExp('<(?:[\\w.-]+:)?Relationship\\b(' + SABLONA_ATRIBUTY + ')>', 'g');
     let m;
-    while ((m = reRel.exec(text))) {
-      const a = sablonaAtributy(m[1]);
+    while ((m = reRel.exec(xml))) {
+      /* Type / Target / TargetMode se čtou přesně (bez prefixu, s velikostí
+       * písmen); atribut, který se od nich liší jen velikostí písmen nebo
+       * prefixem, je návnada (revize 6. 10., S3) — vztah se odmítne. */
+      const presne = sablonaAtributyPresne(m[1]);
+      const nejasne = Object.keys(presne).filter(k => /^(type|target|targetmode)$/i.test(k.split(':').pop())
+        && ['Type', 'Target', 'TargetMode'].indexOf(k) < 0);
+      if (nejasne.length || ['Type', 'Target', 'TargetMode'].some(k => (presne[k] || []).length > 1)) {
+        pridej('vztah s nejednoznačným atributem ' + (nejasne[0] || 'Type/Target') + ' (' + nazev + ')');
+        continue;
+      }
+      const a = { type: presne.Type, target: presne.Target, targetmode: presne.TargetMode };
       const typy = (a.type || ['']).map(t => t.trim().replace(/\/+$/, '').split('/').pop());
       const cile = (a.target || ['']).map(t => t.trim());
       const mody = (a.targetmode || []).map(t => t.trim());
@@ -189,8 +222,8 @@ function sablonaObsahVadyZipu(polozky) {
       }
     }
     const reObj = /<(?:[\w.-]+:)?(OLEObject|altChunk|subDoc)\b/g;
-    while ((m = reObj.exec(text))) pridej('prvek ' + m[1] + ' (' + nazev + ')');
-    sablonaPoleVady(text).forEach(v => pridej(v + ' (' + nazev + ')'));
+    while ((m = reObj.exec(xml))) pridej('prvek ' + m[1] + ' (' + nazev + ')');
+    sablonaPoleVady(xml).forEach(v => pridej(v + ' (' + nazev + ')'));
   });
   return vady;
 }

@@ -444,6 +444,23 @@ const MUTACE = [
     proc: 'překlep „-2" by nabídku zlevnil o dva můstky' },
 
   /* ---------- B115 (6. 10. 2026): obchvaty kontroly obsahu šablony ---------- */
+  /* Revize 6. 10. 2026 (S1–S4): obchvaty kontroly obsahu šablony. */
+  { nazev: 'revize S1/S2: šablona se rozebírá bez normalizace CDATA a komentářů', soubor: 'sablona_obsah.js',
+    hledej: "    const xml = sablonaNormalizuj(text);",
+    nahrad: "    const xml = text;",
+    proc: 'zakázané pole v CDATA nebo falešný konec pole v komentáři by kontrolou prošly' },
+  { nazev: 'revize S2: sirotci kódu pole se kontrolují jen dohromady', soubor: 'sablona_obsah.js',
+    hledej: "    else { sirotci += text; vady.push(sablonaPoleVada(text)); }   // každý sirotek i dohromady (S2)",
+    nahrad: "    else sirotci += text;",
+    proc: 'neškodný první sirotek by schoval zakázaný typ v dalším' },
+  { nazev: 'revize S3: návnadový atribut vztahu se nehlídá', soubor: 'sablona_obsah.js',
+    hledej: "      if (nejasne.length || ['Type', 'Target', 'TargetMode'].some(k => (presne[k] || []).length > 1)) {",
+    nahrad: "      if (false) {",
+    proc: 'atribut type=hyperlink před skutečným Type by z vnějšího obrázku udělal povolený odkaz' },
+  { nazev: 'revize S4: typ pole ze symbolu projde', soubor: 'sablona_obsah.js',
+    hledej: "  if (/^\"?\\{/.test(t)) return 'pole, jehož typ dodá symbol {{…}}';",
+    nahrad: "  ;",
+    proc: 'typ pole by doplnila až data zakázky — např. INCLUDETEXT ve výsledné nabídce' },
   { nazev: 'B115: číselné entity se nedekódují', soubor: 'sablona_obsah.js',
     hledej: "/&(#[xX][0-9a-fA-F]+|#[0-9]+|lt|gt|quot|apos|amp);/g",
     nahrad: "/&(lt|gt|quot|apos|amp);/g",

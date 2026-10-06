@@ -141,6 +141,35 @@ const enc = new TextEncoder(), dec = new TextDecoder();
     const v = await SO.sablonaObsahVady(o[k]);
     test('B115: obchvat ' + k + ' → odmítnut s popisem', v.length > 0 && v.some(x => ocek.test(x)), v);
   }
+  /* Revize 6. 10. 2026 (nezávislá revize dávky C): další čtyři obchvaty.
+   * Před opravou prošly (0 vad), po opravě odmítnuty. */
+  const r6 = {
+    /* S1: zakázaný typ pole v sekci CDATA (parser ji vrací jako text) */
+    cdata: await sestav(p => doDoc(p, pole('<![CDATA[ INCLUDETEXT "https://example.invalid/a.docx" ]]>'))),
+    /* S2: falešný konec pole v komentáři rozhodí zásobník a skutečný kód
+     * skončí jako „sirotek" za neškodným sirotkem */
+    komentar: await sestav(p => doDoc(p, '<w:p><w:r><w:instrText> PAGE </w:instrText></w:r><w:r><w:fldChar w:fldCharType="begin"/></w:r><!-- <w:fldChar w:fldCharType="end"/> -->'
+      + '<w:r><w:instrText> INCLUDETEXT "https://example.invalid/a.docx" </w:instrText></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>')),
+    /* S3: návnadový atribut jiné velikosti písmen s typem hyperlink */
+    navnada: await sestav(p => docRels(p, '<Relationship Id="rIdI" type="' + R + 'hyperlink" Type="' + R + 'image" Target="https://example.invalid/a.png" TargetMode="External"/>')),
+    /* S4: typ pole dodá symbol {{…}} až při generování */
+    symbolTyp: await sestav(p => doDoc(p, pole(' {{X}} "https://example.invalid/a.docx" '))),
+    /* S2: dva sirotci kódu pole — neškodný první by schoval zakázaný typ v druhém */
+    sirotci: await sestav(p => doDoc(p, '<w:p><w:r><w:instrText> PAGE </w:instrText></w:r><w:r><w:t>x</w:t></w:r><w:r><w:instrText> INCLUDETEXT "https://example.invalid/a.docx" </w:instrText></w:r></w:p>')),
+  };
+  for (const [k, ocek] of [['cdata', /INCLUDETEXT/], ['komentar', /INCLUDETEXT/], ['navnada', /nejednoznačn/], ['symbolTyp', /symbol/], ['sirotci', /INCLUDETEXT/]]) {
+    const v = await SO.sablonaObsahVady(r6[k]);
+    test('revize 6. 10.: obchvat ' + k + ' → odmítnut s popisem', v.length > 0 && v.some(x => ocek.test(x)), v);
+  }
+  /* S4 i na výstupu: generátor zkontroluje i hotový dokument — symbol
+   * s hodnotou nesmí vytvořit zakázané pole. */
+  {
+    let chyba = '';
+    try { await DG.docxVyplnSablonu(await sestav(p => doDoc(p, pole(' {{TYP}} "https://example.invalid/a.docx" '))), { TYP: 'INCLUDETEXT', X: 'x' }, [], {}); }
+    catch (e) { chyba = e.message; }
+    test('revize 6. 10.: generátor odmítne šablonu, z níž by vzniklo zakázané pole', /symbol|INCLUDETEXT/.test(chyba), chyba);
+  }
+
   /* Co projít musí: odkazy a běžná pole, i když slovo „link" nesou jinde. */
   const cisteDalsi = {
     hyperlinkPole: await sestav(p => doDoc(p, pole(' HYPERLINK "https://www.example.cz/link/include" ') + pole(' HYPERLINK \\l "_Toc1" '))),

@@ -950,8 +950,8 @@ const nactiB59 = async (soubor) => (await (await get(zakazky,
  * `origNazev` a jinou cenou se nespároval, nikdo ho neporovnal a razítko
  * bylo „shoda" — dotisk odeslané nabídky pak bral podvrženou cenu. Když
  * výsledek spočítala tatáž verze jako server, nespárovaný řádek je rozdíl
- * a jádro nese i součty příplatků a volitelných. Před opravou 2 OK / 5 FAIL,
- * po opravě 7 / 0. */
+ * a jádro nese i součty příplatků a volitelných. Před opravou 3 OK / 5 FAIL,
+ * po opravě 8 / 0. */
 {
   const odesliVerzi = (z, build, uprav) => {
     const v = z.varianty[0];
@@ -995,12 +995,17 @@ const nactiB59 = async (soubor) => (await (await get(zakazky,
   const ov3 = (await nactiB59('2026-OPR-CN-1193.json')).varianty[0].zamek.overeni;
   test('B119: chybějící součet příplatků → nesouhlasí', ov3 && ov3.stav === 'nesouhlasi'
     && ov3.cesty.indexOf('ock.souhrn.priplatkyCena') >= 0, JSON.stringify(ov3));
-  /* stránka jiné verze (načtená před nasazením): volně jako dosud, razítko to přizná */
-  const z4 = odesliVerzi(zakazkaSCeny('2026 - OPR - CN - 1194'), 'v-starsi-stranka');
+  /* Verzi ve výsledku posílá klient — jiný `build` nesmí přepnout na volné
+   * porovnání (revize 6. 10. 2026: obchvat B119). */
+  const z4 = odesliVerzi(zakazkaSCeny('2026 - OPR - CN - 1194'), 'v-starsi-stranka', podvrh);
   await post(zakazky, 'http://x/api/zakazky', { zakazka: z4 }, cObch);
   const ov4 = (await nactiB59('2026-OPR-CN-1194.json')).varianty[0].zamek.overeni;
-  test('B119: výsledek jiné verze se porovná volně a razítko nese volne', ov4 && ov4.stav === 'shoda' && ov4.volne === true,
-    JSON.stringify(ov4));
+  test('B119: podvrh s jinou verzí ve výsledku → nesouhlasí (verze z klienta režim neurčuje)',
+    ov4 && ov4.stav === 'nesouhlasi' && !ov4.volne, JSON.stringify(ov4));
+  const z6 = odesliVerzi(zakazkaSCeny('2026 - OPR - CN - 1196'), 'v-starsi-stranka');
+  await post(zakazky, 'http://x/api/zakazky', { zakazka: z6 }, cObch);
+  const ov6 = (await nactiB59('2026-OPR-CN-1196.json')).varianty[0].zamek.overeni;
+  test('B119: poctivý výsledek s jinou verzí = shoda (stejný tvar výsledku)', ov6 && ov6.stav === 'shoda', JSON.stringify(ov6));
 }
 {
   /* Podvržené razítko u NOVÉHO zámku: server ho spočítá sám. */

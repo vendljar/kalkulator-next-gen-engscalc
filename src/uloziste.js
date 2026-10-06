@@ -325,6 +325,10 @@ function uloRejstrikAdresa(x) {
   const s = (typeof x === 'string') ? x : ((typeof x === 'number' && isFinite(x)) ? String(x) : '');
   return s.slice(0, ULO_REJSTRIK_ADRESA_MAX);
 }
+/* Totéž pro ostatní textová pole rejstříku (nezávislá revize 6. 10. 2026,
+ * N4: strop dostala jen adresa) — číslo, název akce, objednatel, autor,
+ * jméno autora, datum, razítko úpravy. */
+const uloRejstrikText = uloRejstrikAdresa;
 
 function uloRejstrikZaznam(zak, opts) {
   opts = opts || {};
@@ -341,21 +345,21 @@ function uloRejstrikZaznam(zak, opts) {
     /* Autor (11. 8. 2026) — v rejstříku proto, aby šlo vypsat „zakázky po
      * kolegovi" bez čtení všech souborů zvlášť. Prázdno u starších zakázek
      * je v pořádku: znamená to jen „vzniklo dřív, než se autor zapisoval". */
-    autor: String((zak && zak.autor) || ''),
+    autor: uloRejstrikText(zak && zak.autor),
     /* Jméno obchodníka (21. 8. 2026, zadání J. V.: „přidej do seznamu zakázek
      * i jméno obchodníka"). V rejstříku, ne dohledávané z účtů: seznam se
      * musí vypsat jedním čtením a jméno je jediné, co z účtu potřebuje.
      * Prázdno u starších zakázek je v pořádku — seznam pak ukáže e-mail. */
-    autorJmeno: String((zak && zak.autorJmeno) || ''),
-    cislo: uloCisloVyplneno(zak && zak.cislo) ? String(zak.cislo).trim() : '',
-    nazevAkce: String((zak && zak.nazevAkce) || ''),
+    autorJmeno: uloRejstrikText(zak && zak.autorJmeno),
+    cislo: uloCisloVyplneno(zak && zak.cislo) ? uloRejstrikText(String(zak.cislo).trim()) : '',
+    nazevAkce: uloRejstrikText(zak && zak.nazevAkce),
     /* Adresa stavby (P15 / K16-N85, 25. 9. 2026): obchodník hledá zakázku
      * podle místa, ne podle čísla. Prázdný řetězec je platná hodnota
      * („zakázka adresu nemá") — záznam bez klíče je starší, viz
      * uloRejstrikBezAdresy. */
     adresa: uloRejstrikAdresa(zak && zak.adresa),
-    objednatel: String((zak && zak.objednatel) || ''),
-    datum: String((zak && zak.datum) || ''),
+    objednatel: uloRejstrikText(zak && zak.objednatel),
+    datum: uloRejstrikText(zak && zak.datum),
     /* Druh zakázky pro filtr OCK × PROJ v přehledu nabídek. */
     jenProj: !!(zak && zak.jenProj),
     /* Řada ceníku řídící varianty (#181, 31. 8. 2026): v přehledu se ukáže
@@ -384,20 +388,20 @@ function uloRejstrikNormalizuj(x) {
     .filter(z => z && typeof z === 'object' && typeof z.soubor === 'string' && z.soubor)
     .map(z => ({
       soubor: z.soubor,
-      autor: String(z.autor || ''),
-      autorJmeno: String(z.autorJmeno || ''),
-      cislo: String(z.cislo || ''),
-      nazevAkce: String(z.nazevAkce || ''),
+      autor: uloRejstrikText(z.autor),
+      autorJmeno: uloRejstrikText(z.autorJmeno),
+      cislo: uloRejstrikText(z.cislo),
+      nazevAkce: uloRejstrikText(z.nazevAkce),
       /* Adresa jen tam, kde záznam klíč nese: chybějící klíč znamená starší
        * záznam, kterému ji server teprve doplní (P15). */
       ...(typeof z.adresa === 'string' ? { adresa: uloRejstrikAdresa(z.adresa) } : {}),
-      objednatel: String(z.objednatel || ''),
-      datum: String(z.datum || ''),
+      objednatel: uloRejstrikText(z.objednatel),
+      datum: uloRejstrikText(z.datum),
       jenProj: !!z.jenProj,
       rada: z.rada === 'zahr' ? 'zahr' : '',      // #181: řada ceníku, prázdno = tuzemsko
       variant: cislo(z.variant),
       odeslane: cislo(z.odeslane),
-      upraveno: String(z.upraveno || ''),
+      upraveno: uloRejstrikText(z.upraveno),
     }));
 }
 

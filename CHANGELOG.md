@@ -95,12 +95,14 @@ Dávka B (6. 10. 2026) z `test-draft` (v2.10.1): nálezy bezpečnostního auditu
   pokud výsledek spočítala tatáž verze jako server: nespárovaný řádek je
   rozdíl (i řádek, který chybí), pole po pořadí s jinou délkou je rozdíl
   a k jádru přibyly `ock.souhrn.priplatkyCena` a
-  `ock.souctySekci.volitelne.sMarzi`. Stránka jiné verze (načtená před
-  nasazením) se porovná volně jako dosud a razítko nese `volne: true`;
-  starší zámky a obnova beze změny (`src/zamek.js`,
-  `netlify/lib/zakazka_kontrola.mjs`). Test `netlify/test_prava.mjs`
-  (blok B119) před opravou 2 OK / 5 FAIL, po opravě 7 / 0; celá sada
-  683 / 0 po sloučení s dávkou A. Mutace serveru +4 (všechny chycené).
+  `ock.souctySekci.volitelne.sMarzi`. Porovnává se přísně **vždy** —
+  nezávislá revize 6. 10. ukázala, že první verze opravy (volně, když
+  výsledek uvádí jinou verzi aplikace) šla obejít, protože verzi posílá
+  klient. Stránka načtená před nasazením verze, která mění tvar výsledku,
+  může dostat „nesouhlasí" (mez v `BEZPECNOST_MEZE.md`). Starší zámky
+  a obnova beze změny (`src/zamek.js`, `netlify/lib/zakazka_kontrola.mjs`).
+  Test `netlify/test_prava.mjs` (blok B119) před opravou 3 OK / 5 FAIL, po
+  opravě 8 / 0; celá sada 684 / 0. Mutace serveru 4 (všechny chycené).
 - **B120 (střední) — obnova přenese jazykové varianty dodatků.** Obnova
   části „popisy" skládala záznam jen z `texty`, `kdo`, `kdy`; `jazyky`
   (EN/DE/FR, #379) se ztratily. Teď projdou `popisyJazykyOciste` a drží se

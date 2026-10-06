@@ -180,13 +180,12 @@ z uložené verze. U `tisky[]` a `odemceni[]` platí uložený začátek, přid�
 se smí. Nové záznamy do `tisky[]` ale dodává klient. Server hlídá, že se nic
 nepřepíše ani neubere, ne kdo dotisk provedl.
 
-### B119 — přísné ověření nového zámku platí jen pro tutéž verzi
+### B119 — přísné ověření nového zámku
 
-Od 6. 10. 2026 se zmrazený výsledek NOVÉHO zámku porovnává přísně
-(nespárovaný řádek je rozdíl, jádro nese i součty příplatků a volitelných),
-ale jen když výsledek nese tutéž verzi aplikace jako server. Stránka
-načtená před nasazením nové verze se porovná volně jako dřív (P6), aby
-poctivá nabídka nedostala falešné „nesouhlasí". Verzi ve výsledku posílá
-klient — upravený klient může uvést jinou a dostat volné porovnání. Razítko
-pak nese `volne: true` a verzi, kterou klient uvedl, takže je to dohledatelné
-(a volné porovnání dál hlídá všechny spárované řádky a jádro šesti částek).
+Od 6. 10. 2026 se zmrazený výsledek NOVÉHO zámku porovnává vždy přísně
+(nespárovaný řádek je rozdíl, jádro nese i součty příplatků a volitelných).
+Původní návrh porovnával volně, když výsledek uváděl jinou verzi aplikace —
+nezávislá revize 6. 10. ukázala, že verzi posílá klient, takže to byl
+obchvat; zrušeno. Zbývající mez: stránka načtená před nasazením verze, která
+mění tvar výsledku (přidaný nebo ubraný řádek), dostane u poctivé nabídky
+„nesouhlasí" — hláška po uložení radí obnovit stránku a vytisknout znovu.

@@ -141,5 +141,17 @@ test('P15: dávkou doplněná adresa sedí na svou zakázku',
   test('B121: doplněná adresa staršího záznamu má strop', !!z3 && z3.adresa.length === 300, z3 && z3.adresa.length);
 }
 
+/* 6) revize 6. 10. 2026 (N4): strop i pro ostatní textová pole rejstříku.
+ * Před úpravou 1 / 2, po ní 3 / 0. */
+{
+  const z = nova('2026 - OPR - CN - 0904', 'Nová 10, Kolín');
+  z.nazevAkce = 'Akce '.repeat(3000); z.objednatel = { jmeno: 'objekt' };
+  const u = await uloz(z);
+  const r = await zaznam('2026-OPR-CN-0904.json', cA);
+  test('příprava N4: zakázka s dlouhým názvem akce se uloží', u.ok === true, u);
+  test('N4: název akce v rejstříku se stropem', !!r && r.nazevAkce.length === 300, r && r.nazevAkce.length);
+  test('N4: objednatel jiného typu než text = prázdný', !!r && r.objednatel === '', r && r.objednatel);
+}
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);
