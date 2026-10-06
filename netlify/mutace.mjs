@@ -380,6 +380,20 @@ const MUTACE = [
     nahrad: "    if (false)\n      return json({ ok: false, chyba: g.sablonaObsahVadyText(vadyObsahu) }, 400);",
     proc: 'EN šablona s vnější šablonou Wordu (makra z cizího serveru) by se zveřejnila a šla ke každému zákazníkovi' },
 
+  /* ---------- B116, B100 (6. 10. 2026): kontrola obsahu i u vrácení a obnovy ---------- */
+  { nazev: 'B116: vrácení verze šablony obsah nekontroluje', soubor: 'functions/sablony.mjs',
+    hledej: "    if (vadyVracene.length)\n      return json(",
+    nahrad: "    if (false)\n      return json(",
+    proc: 'správce by znovu zveřejnil verzi z doby před B99 i s vnější šablonou s makry' },
+  { nazev: 'B100: obnova šablon obsah nekontroluje', soubor: 'functions/obnova.mjs',
+    hledej: "    if (cast === 'sablony') {\n      overeni = async (k, v) => {",
+    nahrad: "    if (false) {\n      overeni = async (k, v) => {",
+    proc: 'škodlivá šablona ze zálohy by se zapsala do úložiště a šla ke stažení' },
+  { nazev: 'B100: asynchronní ověření se nečeká', soubor: 'functions/obnova.mjs',
+    hledej: "      const d = await overeni(k, v);",
+    nahrad: "      const d = overeni(k, v);",
+    proc: 'Promise je pravdivá — obnova by přeskočila každou šablonu (nebo s jiným ověřením propustila vadnou)' },
+
   /* ---------- B98 (29. 9. 2026): obnova ze souboru a razítka ---------- */
   { nazev: 'B98: obnova nechá ověření zámku ze souboru', soubor: 'lib/zakazka_kontrola.mjs',
     hledej: "      if (zeSouboru || !v.zamek.overeni) {",

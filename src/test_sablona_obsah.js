@@ -114,7 +114,8 @@ const enc = new TextEncoder(), dec = new TextDecoder();
     /* (3) dokument mimo word/<jeden segment>.xml */
     word2: await sestav(p => { pridej(p, 'word2/document.xml', dokument(pole(' INCLUDETEXT "https://example.invalid/a.docx" '))); }),
     glosar: await sestav(p => pridej(p, 'word/glossary/document.xml', dokument(pole(' INCLUDEPICTURE "https://example.invalid/a.png" \\d ')))),
-    embeddings2: await sestav(p => pridej(p, 'word2/embeddings/oleObject1.bin', 'x')),
+    embeddings2: await sestav(p => pridej(p, 'word2/embeddings/objekt1.dat', 'x')),
+    oleNazev: await sestav(p => pridej(p, 'word/media/oleObject1.bin', 'x')),
     /* (4) interní oleObject / package se zamlženým Type mimo embeddings/ */
     oleZamlzeny: await sestav(p => docRels(p, '<Relationship Id="rIdO" Type="' + R + 'ole&#79;bject" Target="media/obr9.bin"/>')),
     packageZamlzeny: await sestav(p => docRels(p, '<Relationship Id="rIdP" Type="' + R + 'p&#x61;ckage" Target="media/tabulka.xlsx"/>')),
@@ -134,7 +135,7 @@ const enc = new TextEncoder(), dec = new TextDecoder();
     vnejsiBezModu: await sestav(p => docRels(p, rel('rIdI', 'image', '\\\\server\\share\\a.png', false))),
   };
   for (const [k, ocek] of [['entity', /attachedTemplate/], ['entityHex', /attachedTemplate/], ['prefix', /INCLUDETEXT/], ['prefixSimple', /INCLUDEPICTURE/],
-    ['word2', /INCLUDETEXT/], ['glosar', /INCLUDEPICTURE/], ['embeddings2', /vložený objekt/], ['oleZamlzeny', /oleObject/], ['packageZamlzeny', /package/],
+    ['word2', /INCLUDETEXT/], ['glosar', /INCLUDEPICTURE/], ['embeddings2', /vložený objekt/], ['oleNazev', /vložený objekt/], ['oleZamlzeny', /oleObject/], ['packageZamlzeny', /package/],
     ['link', /pole LINK/], ['gtVAtributu', /attachedTemplate/], ['staryInclude', /pole INCLUDE\b/], ['importPole', /pole IMPORT/], ['entitaVPoli', /INCLUDETEXT/],
     ['utf16', /INCLUDETEXT/], ['jinyNazev', /INCLUDETEXT/], ['doctype', /DOCTYPE/], ['obrazekVnejsi', /vnější vztah image/], ['vnejsiBezModu', /vnější vztah image/]]) {
     const v = await SO.sablonaObsahVady(o[k]);

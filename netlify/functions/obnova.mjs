@@ -140,7 +140,7 @@ async function obnovMapu(b, s, mapa, rezim, zapisovat, predpona, kontrola, overe
     if (!k || k.length > KLIC_MAX) { preskoc(b, k, 'nepřijatelný klíč'); continue; }
     if (v == null || typeof v !== 'object') { preskoc(b, k, 'poškozený záznam (není objekt)'); continue; }
     if (overeni) {
-      const d = overeni(k, v);
+      const d = await overeni(k, v);
       if (d) { preskoc(b, k, d); continue; }
     }
     await zaznam(b, s, (predpona || '') + k, v, rezim, zapisovat, kontrola);
@@ -582,6 +582,17 @@ export default async (req) => {
     if (!casti.includes(cast) || !maVlastni(zaloha, cast)) continue;
     const b = bilance();
     let overeni = null;
+    /* B100 (6. 10. 2026): soubor šablony ze zálohy projde touž kontrolou
+     * obsahu jako zveřejnění (B99/B115) — ze souboru i z otisku (otisk může
+     * nést verzi zveřejněnou před kontrolou). Vadný se přeskočí s důvodem. */
+    if (cast === 'sablony') {
+      overeni = async (k, v) => {
+        if (!/^data\//.test(k)) return '';
+        if (typeof v.data !== 'string' || !globalThis.sablonaJeDocxB64(v.data)) return 'soubor šablony není .docx';
+        const vady = await globalThis.sablonaObsahVady(v.data);
+        return vady.length ? globalThis.sablonaObsahVadyText(vady) : '';
+      };
+    }
     if (cast === 'podpisy') {
       const podpisyZeSouboru = zdrojPopis.typ === 'soubor';
       if (podpisyZeSouboru) {

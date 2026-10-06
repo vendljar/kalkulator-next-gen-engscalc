@@ -128,6 +128,12 @@ export default async (req) => {
     const soubor = await s.cti(g.sablonaKlicSouboru(t.typ, meta.verze));
     if (!soubor || !soubor.data)
       return json({ ok: false, chyba: 'Soubor verze ' + meta.verze + ' v úložišti chybí.' }, 404);
+    /* B116 (6. 10. 2026): vracená verze mohla být zveřejněná před kontrolou
+     * obsahu (B99) nebo její slabší podobou (B115) — projde touž kontrolou
+     * jako nové zveřejnění. */
+    const vadyVracene = await g.sablonaObsahVady(String(soubor.data));
+    if (vadyVracene.length)
+      return json({ ok: false, chyba: 'Verzi ' + meta.verze + ' nejde vrátit. ' + g.sablonaObsahVadyText(vadyVracene) }, 400);
     const novy = g.sablonyZverejni(rej, {
       typ: t.typ, nazev: meta.nazev, otisk: meta.otisk, zdrojOtisk: meta.zdrojOtisk,
       velikost: meta.velikost, kdo: relace.email, kdy: new Date().toISOString(),

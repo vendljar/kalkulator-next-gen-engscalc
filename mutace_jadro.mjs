@@ -61,7 +61,9 @@ const SRC = resolve(KOREN, 'src');
  * brání vytisknout cenu s nulovým profilem — patří k jádru jako výpočet sám. */
 /* plan_plateb.js od 30. 9. 2026 (etapa B platebních podmínek): dopočítává
  * částky plateb smlouvy o dílo PROJ — čísla, která jdou zákazníkovi. */
-const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sablony_online.js', 'kontroly.js', 'plan_plateb.js'];
+/* sablona_obsah.js (B115, 6. 10. 2026): kontrola obsahu šablony Wordu —
+ * jediná pojistka proti šabloně, která si u zákazníka stáhne makra. */
+const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sablony_online.js', 'kontroly.js', 'plan_plateb.js', 'sablona_obsah.js'];
 /* Filtr = první argument, který není přepínač (stejně jako netlify/mutace.mjs). */
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 /* --kontrola (23. 9. 2026, nález N19): jen ověří, že každý hledaný úsek je
@@ -419,6 +421,52 @@ const MUTACE = [
     hledej: "return Math.max(0, Math.floor(+n));",
     nahrad: "return Math.floor(+n);",
     proc: 'překlep „-2" by nabídku zlevnil o dva můstky' },
+
+  /* ---------- B115 (6. 10. 2026): obchvaty kontroly obsahu šablony ---------- */
+  { nazev: 'B115: číselné entity se nedekódují', soubor: 'sablona_obsah.js',
+    hledej: "/&(#[xX][0-9a-fA-F]+|#[0-9]+|lt|gt|quot|apos|amp);/g",
+    nahrad: "/&(lt|gt|quot|apos|amp);/g",
+    proc: 'attachedTempl&#97;te + Ex&#116;ernal by prošlo — vzdálená šablona s makry u zákazníka (audit 30. 9., obchvat 1)' },
+  { nazev: 'B115: pole jen s prefixem w:', soubor: 'sablona_obsah.js',
+    hledej: "'<(?:[\\\\w.-]+:)?(fldChar|instrText|fldSimple)\\\\b('",
+    nahrad: "'<w:(fldChar|instrText|fldSimple)\\\\b('",
+    proc: '<x:instrText> INCLUDETEXT by prošlo (obchvat 2)' },
+  { nazev: 'B115: kontroluje se jen word/<jeden segment>.xml', soubor: 'sablona_obsah.js',
+    hledej: "    if (!jeRels && !/\\.xml$/.test(male) && !sablonaJeXml(text)) return;",
+    nahrad: "    if (!jeRels && !/^word\\/[^/]+\\.xml$/.test(male)) return;",
+    proc: 'dokument ve word2/ nebo word/glossary/ by unikl (obchvat 3)' },
+  { nazev: 'B115: vložené objekty jen ve word/embeddings/', soubor: 'sablona_obsah.js',
+    hledej: "/(^|\\/)embeddings\\//.test(male)",
+    nahrad: "/^word\\/embeddings\\//.test(male)",
+    proc: 'vložený objekt ve word2/embeddings/ by prošel (obchvat 3)' },
+  { nazev: 'B115: pole LINK se nehlídá', soubor: 'sablona_obsah.js',
+    hledej: "'IMPORT', 'LINK', 'DDEAUTO'",
+    nahrad: "'IMPORT', 'DDEAUTO'",
+    proc: 'LINK na \\\\server\\share by při aktualizaci polí prozradil otisk hesla NTLM (obchvat 5)' },
+  { nazev: 'B115: „>" v uvozovkách ukončí značku', soubor: 'sablona_obsah.js',
+    hledej: "const SABLONA_ATRIBUTY = '(?:[^>\"\\']|\"[^\"]*\"|\\'[^\\']*\\')*';",
+    nahrad: "const SABLONA_ATRIBUTY = '[^>]*';",
+    proc: 'Target=\"a>b\" před Type by attachedTemplate skryl' },
+  { nazev: 'B115: typ pole z vnořeného pole projde', soubor: 'sablona_obsah.js',
+    hledej: "  if (t[0] === '\\u0001') return 'pole, jehož typ dodá vnořené pole';",
+    nahrad: "  ;",
+    proc: '{ { QUOTE \"INCLUDETEXT\" } url } by prošlo' },
+  { nazev: 'B115: vnější cíl bez TargetMode se nepozná', soubor: 'sablona_obsah.js',
+    hledej: " || cile.some(c => SABLONA_CIL_VNEJSI.test(c));",
+    nahrad: " || false;",
+    proc: 'obrázek na \\\\server\\share bez TargetMode by se načetl ze sítě' },
+  { nazev: 'B115: UTF-16 se čte jako UTF-8', soubor: 'sablona_obsah.js',
+    hledej: "  if (u8[0] === 0xFF && u8[1] === 0xFE) { le = true; od = 2; }",
+    nahrad: "  if (false) { le = true; od = 2; }",
+    proc: 'část v UTF-16 by kontrola nepřečetla, Word ano' },
+  { nazev: 'B115: DOCTYPE / ENTITY projde', soubor: 'sablona_obsah.js',
+    hledej: "    if (/<!(DOCTYPE|ENTITY)\\b/i.test(text)) pridej(",
+    nahrad: "    if (false) pridej(",
+    proc: 'vlastní entita by zakázaný typ vztahu skryla' },
+  { nazev: 'B115: kód pole rozdělený do běhů bez fldChar se nespojí', soubor: 'sablona_obsah.js',
+    hledej: "  vady.push(sablonaPoleVada(sirotci));",
+    nahrad: "  ;",
+    proc: 'INCLU + DEPICTURE v samostatných instrText by prošlo (B99)' },
 
   /* #348 (24. 9. 2026): zdroj jazykové verze a jazyk souboru. */
   { nazev: 'šablony: mutace k jiné češtině se tváří jako aktuální', soubor: 'sablony_online.js',

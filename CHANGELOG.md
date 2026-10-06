@@ -8,6 +8,29 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## větev claude/sablony-obsah-b115 (neuvolněno) — B115, B116, B100 kontrola obsahu šablon, 6. 10. 2026
+
+Dávka C koordinačního sezení 6. 10. 2026 (doporučení auditu 30. 9. 2026, výchozí ANO). Větev z `test-draft` (v2.10.1); o sloučení do `claude/davka-6-10` rozhoduje koordinační sezení.
+
+### B115 (střední) — kontrola obsahu šablony (B99) byla obejitelná
+
+- **Příčina:** `src/sablona_obsah.js` dekódoval jen pět pojmenovaných entit (ne `&#NN;` / `&#xNN;`), `TargetMode` porovnával syrově, pole hledal jen s prefixem `w:` a jen ve `word/<jeden segment>.xml`, vložené objekty jen ve `word/embeddings/` a pole `LINK` neznal. Audit 30. 9. doložil pět obchvatů, kterými se útok B99 (vzdálená šablona s makry, únik otisku hesla NTLM) plně obnoví.
+- **Oprava:** entity jako v XML (pojmenované i číselné, jedním průchodem); atributy i s „>" v uvozovkách; prvky a atributy bez ohledu na prefix; prochází se každá část ZIPu, která je XML podle obsahu (i mimo `word/`, i pod jiným názvem, i v UTF-16); vztah je vnější i bez `TargetMode`, když cíl nese schéma nebo síťovou cestu; zakázané typy vztahů rozšířené o ActiveX/VBA data; `embeddings/`, `oleObject*`, `vbaProject*`, `activeX` v kterékoli složce; typ obsahu oleObject/activeX; prvky OLEObject, altChunk, subDoc; pole se skládají po celých kódech (fldChar begin/separate/end, vnořená pole) — zakázané INCLUDETEXT, INCLUDEPICTURE, INCLUDE, IMPORT, LINK, DDE, DDEAUTO a pole, jehož typ dodá vnořené pole; DOCTYPE/ENTITY se odmítá.
+- **Testy:** `src/test_sablona_obsah.js` 33/19 → 52/0 (20 obchvatů včetně pěti z auditu, 4 legitimní tvary, které projít musí); s `KNG_PODKLADY` navíc 13 firemních šablon (CN v14 + EN/DE/FR, CN v11, PROJ v3, PROJ v4 + EN/DE/FR, SoD realizace, SoD projekce, plná moc) — všechny projdou (s podklady 46/19 → 65/0). Bez podkladů se část přeskočí. `netlify/test_sablony.mjs`: obchvat s číselnými entitami → 400.
+- **Mutace jádra:** `sablona_obsah.js` přidán mezi jádra `mutace_jadro.mjs`, +11 mutací (entity, prefix, rozsah částí, embeddings, LINK, „>" v atributu, vnořené pole, cíl bez TargetMode, UTF-16, DOCTYPE, rozdělený kód pole).
+
+### B116 (nízká) — vrácení starší verze šablony bez kontroly obsahu
+
+- **Oprava:** `netlify/functions/sablony.mjs`, akce `vratit` — soubor vracené verze projde touž kontrolou jako nové zveřejnění; vadná verze → 400, nová verze nevznikne.
+- **Testy:** `netlify/test_sablony.mjs` 26/2 → 28/0 (vadná v1 podstrčená do úložiště jako po zveřejnění před B99). Mutace serveru +1.
+
+### B100 (střední) — obnova šablon ze zálohy bez kontroly obsahu
+
+- **Oprava:** `netlify/functions/obnova.mjs` — soubory šablon (`data/…`) ze souboru i z otisku projdou kontrolou obsahu; vadný nebo ne-.docx se přeskočí s důvodem v bilanci. Ověření v `obnovMapu` se nově čeká (`await`).
+- **Testy:** `netlify/test_obnova.mjs` 181/4 → 185/0. Mutace serveru +2.
+
+---
+
 ## v2.10.1 — nálezy 19. kola P1–P6 (větev claude/k19-nalezy), 2. 10. 2026
 
 Sloučeno do `test-draft` nad v1.10.2 a převedeno do `test` na pokyn J. V. 2. 10. 2026 („souhlasím s výchozími návrhy, zapracuj P2, P4, P6; P5 — statiku udělej tak, jak jsem navrhoval, ve dvou řádcích … P3 ok; P1 OK. připrav, otestuj a pošli do testu"). Integrační větev `claude/davka-2-10`, konflikty jen v CHANGELOG a PREDAVKA.
