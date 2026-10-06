@@ -96,6 +96,89 @@ const enc = new TextEncoder(), dec = new TextDecoder();
   try { vysledek = await DG.docxVyplnSablonu(s.https.buffer, { X: 'hodnota' }, [], {}); } catch (e) { vysledek = e.message; }
   test('B99: z čisté šablony s odkazem https generátor vyrobí dokument', vysledek && typeof vysledek === 'object', vysledek);
 
+  /* B115 (audit 30. 9. 2026) — pět obchvatů kontroly B99, každý doložený
+   * pokusem auditu (kontrola vrátila prázdný seznam), a další tvary téže
+   * třídy. Před opravou: obchvaty prošly (0 vad), po opravě odmítnuty. */
+  const W = 'xmlns:x="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
+  const pole = (kod) => '<w:p><w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve">' + kod
+    + '</w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>x</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>';
+  const dokument = (telo) => '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'
+    + telo + '</w:body></w:document>';
+  const o = {
+    /* (1) číselné entity v Type i TargetMode */
+    entity: await sestav(p => pridej(p, 'word/_rels/settings.xml.rels', RELS('<Relationship Id="rId1" Type="' + R + 'attachedTempl&#97;te" Target="https://example.invalid/x.dotm" TargetMode="Ex&#116;ernal"/>'))),
+    entityHex: await sestav(p => pridej(p, 'word/_rels/settings.xml.rels', RELS('<Relationship Id="rId1" Type="' + R + '&#x61;ttachedTemplate" Target="\\\\server\\share\\x.dotm" TargetMode="&#x45;xternal"/>'))),
+    /* (2) pole přes jiný prefix jmenného prostoru */
+    prefix: await sestav(p => doDoc(p, '<x:p ' + W + '><x:r><x:fldChar x:fldCharType="begin"/></x:r><x:r><x:instrText> INCLUDETEXT "https://example.invalid/a.docx" </x:instrText></x:r><x:r><x:fldChar x:fldCharType="end"/></x:r></x:p>')),
+    prefixSimple: await sestav(p => doDoc(p, '<x:fldSimple ' + W + ' x:instr=" INCLUDEPICTURE &quot;\\\\server\\share\\a.png&quot; "><x:r><x:t>x</x:t></x:r></x:fldSimple>')),
+    /* (3) dokument mimo word/<jeden segment>.xml */
+    word2: await sestav(p => { pridej(p, 'word2/document.xml', dokument(pole(' INCLUDETEXT "https://example.invalid/a.docx" '))); }),
+    glosar: await sestav(p => pridej(p, 'word/glossary/document.xml', dokument(pole(' INCLUDEPICTURE "https://example.invalid/a.png" \\d ')))),
+    embeddings2: await sestav(p => pridej(p, 'word2/embeddings/oleObject1.bin', 'x')),
+    /* (4) interní oleObject / package se zamlženým Type mimo embeddings/ */
+    oleZamlzeny: await sestav(p => docRels(p, '<Relationship Id="rIdO" Type="' + R + 'ole&#79;bject" Target="media/obr9.bin"/>')),
+    packageZamlzeny: await sestav(p => docRels(p, '<Relationship Id="rIdP" Type="' + R + 'p&#x61;ckage" Target="media/tabulka.xlsx"/>')),
+    /* (5) pole LINK */
+    link: await sestav(p => doDoc(p, pole(' LINK Excel.Sheet.12 "\\\\\\\\server\\\\share\\\\a.xlsx" "List1!R1C1" \\a \\f 4 '))),
+    /* další tvary téže třídy */
+    gtVAtributu: await sestav(p => pridej(p, 'word/_rels/settings.xml.rels', RELS('<Relationship Id="rId1" Target="https://example.invalid/a>b.dotm" Type="' + R + 'attachedTemplate" TargetMode="External"/>'))),
+    staryInclude: await sestav(p => doDoc(p, pole(' INCLUDE "https://example.invalid/a.docx" '))),
+    importPole: await sestav(p => doDoc(p, pole(' IMPORT "https://example.invalid/a.png" '))),
+    entitaVPoli: await sestav(p => doDoc(p, pole(' &#73;NCLUDETEXT "https://example.invalid/a.docx" '))),
+    utf16: await sestav(p => { const t = dokument(pole(' INCLUDETEXT "https://example.invalid/a.docx" ')).replace('encoding="UTF-8"', 'encoding="UTF-16"');
+      const u = new Uint8Array(2 + t.length * 2); u[0] = 0xFF; u[1] = 0xFE; for (let i = 0; i < t.length; i++) { u[2 + i * 2] = t.charCodeAt(i) & 255; u[3 + i * 2] = t.charCodeAt(i) >> 8; }
+      p.push({ nazev: 'word/footer9.xml', data: u }); }),
+    jinyNazev: await sestav(p => pridej(p, 'word/obsah.dat', dokument(pole(' INCLUDETEXT "https://example.invalid/a.docx" ')))),
+    doctype: await sestav(p => pridej(p, 'word/_rels/settings.xml.rels', '<?xml version="1.0"?><!DOCTYPE r [<!ENTITY t "attachedTemplate">]>' + RELS(rel('rId1', '&t;', 'https://example.invalid/x.dotm', true)).replace(/^<\?xml[^>]*>/, ''))),
+    obrazekVnejsi: await sestav(p => docRels(p, rel('rIdI', 'image', 'file://server/share/a.png', true))),
+    vnejsiBezModu: await sestav(p => docRels(p, rel('rIdI', 'image', '\\\\server\\share\\a.png', false))),
+  };
+  for (const [k, ocek] of [['entity', /attachedTemplate/], ['entityHex', /attachedTemplate/], ['prefix', /INCLUDETEXT/], ['prefixSimple', /INCLUDEPICTURE/],
+    ['word2', /INCLUDETEXT/], ['glosar', /INCLUDEPICTURE/], ['embeddings2', /vložený objekt/], ['oleZamlzeny', /oleObject/], ['packageZamlzeny', /package/],
+    ['link', /pole LINK/], ['gtVAtributu', /attachedTemplate/], ['staryInclude', /pole INCLUDE\b/], ['importPole', /pole IMPORT/], ['entitaVPoli', /INCLUDETEXT/],
+    ['utf16', /INCLUDETEXT/], ['jinyNazev', /INCLUDETEXT/], ['doctype', /DOCTYPE/], ['obrazekVnejsi', /vnější vztah image/], ['vnejsiBezModu', /vnější vztah image/]]) {
+    const v = await SO.sablonaObsahVady(o[k]);
+    test('B115: obchvat ' + k + ' → odmítnut s popisem', v.length > 0 && v.some(x => ocek.test(x)), v);
+  }
+  /* Co projít musí: odkazy a běžná pole, i když slovo „link" nesou jinde. */
+  const cisteDalsi = {
+    hyperlinkPole: await sestav(p => doDoc(p, pole(' HYPERLINK "https://www.example.cz/link/include" ') + pole(' HYPERLINK \\l "_Toc1" '))),
+    bezneSimple: await sestav(p => doDoc(p, '<w:fldSimple w:instr=" PAGE \\* MERGEFORMAT "><w:r><w:t>1</w:t></w:r></w:fldSimple>' + pole(' DATE \\@ "d. M. yyyy" ') + pole(' REF _Ref123 \\h '))),
+    odkazEntita: await sestav(p => docRels(p, '<Relationship Id="rIdH" Type="' + R + 'hyperlink" Target="https://www.example.cz/?a=1&amp;b=&#50;" TargetMode="External"/>')),
+    vnorenePole: await sestav(p => doDoc(p, '<w:p><w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText> IF </w:instrText></w:r><w:r><w:fldChar w:fldCharType="begin"/></w:r>'
+      + '<w:r><w:instrText> PAGE </w:instrText></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r><w:r><w:instrText> = 1 "link" "jinak" </w:instrText></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>')),
+  };
+  for (const k of Object.keys(cisteDalsi)) {
+    const v = await SO.sablonaObsahVady(cisteDalsi[k]);
+    test('B115: legitimní ' + k + ' projde', v.length === 0, v);
+  }
+  {
+    /* Typ pole z vnořeného pole (Word výsledek vnořeného pole do kódu dosadí). */
+    const v = await SO.sablonaObsahVady(await sestav(p => doDoc(p, '<w:p><w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:fldChar w:fldCharType="begin"/></w:r>'
+      + '<w:r><w:instrText> QUOTE "INCLUDETEXT" </w:instrText></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r><w:r><w:instrText> "https://example.invalid/a.docx" </w:instrText></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>')));
+    test('B115: pole, jehož typ dodá vnořené pole → odmítnuto', v.length > 0, v);
+  }
+
+  /* Firemní šablony (jen s KNG_PODKLADY, mimo repozitář) — kontrola je nesmí
+   * odmítnout: CN v14 + EN/DE/FR, CN v11, PROJ v3, PROJ v4 + EN/DE/FR, SoD
+   * realizace a projekce, plná moc. */
+  {
+    const fs = require('fs'), path = require('path');
+    const slozka = String(process.env.KNG_PODKLADY || '').trim();
+    const sablony = slozka && fs.existsSync(slozka) ? fs.readdirSync(slozka).filter(f => /^Sablona_.*\.docx$/i.test(f)).sort() : [];
+    if (!sablony.length) console.log('–    firemní šablony (KNG_PODKLADY) nejsou po ruce — přeskočeno');
+    else {
+      const pozadovane = [/CN_v14\.docx$/i, /CN_v14.*_EN/i, /CN_v14.*_DE/i, /CN_v14.*_FR/i, /CN_v11\.docx$/i, /^Sablona_NABIDKA_PROJ\.docx$/i,
+        /PROJ_v4\.docx$/i, /PROJ_v4.*_EN/i, /PROJ_v4.*_DE/i, /PROJ_v4.*_FR/i, /SOD_REALIZACE/i, /SOD_PROJEKCE/i, /PLNA_MOC/i];
+      for (const vz of pozadovane) {
+        const f = sablony.find(x => vz.test(x));
+        if (!f) { console.log('–    firemní šablona ' + vz + ' v KNG_PODKLADY chybí'); continue; }
+        const v = await SO.sablonaObsahVady(new Uint8Array(fs.readFileSync(path.join(slozka, f))));
+        test('B115: firemní šablona ' + f + ' projde', v.length === 0, v);
+      }
+    }
+  }
+
   console.log(`\n${ok} prošlo, ${fail} selhalo`);
   process.exit(fail ? 1 : 0);
 })();
