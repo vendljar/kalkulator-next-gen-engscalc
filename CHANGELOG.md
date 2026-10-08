@@ -10,6 +10,10 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ## v8.10.1 — #395: zbytky nezávislé revize 6. 10. 2026 (větev claude/cenik-395, neuvolněno)
 
+**Ověřeno celým kolem:** nad 518532b VŠE ZELENÉ (84 min 57 s): sady 221
+prošlo, 0 selhalo, 1 přeskočeno (test.js), mutace jádra 167 z 167, mutace
+serveru 245 z 245, statické 3 z 3; se všemi 15 firemními šablonami.
+
 Větev `claude/cenik-395` z `test-draft` (v6.10.1). Pokyn J. V. 8. 10. 2026
 „souhlasím s výchozími návrhy, začni #395". Roadmapa #395 → hotovo.
 

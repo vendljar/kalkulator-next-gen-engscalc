@@ -21,7 +21,17 @@ a v29.9.1 #364 (činnosti PROJ v nabídce za cenu před slevou) — obojí v `ma
 Fixtury test_funkce, test_obnova_nanecisto a overit_online (P2) dostaly
 zveřejněný ceník + rozměry (zamykaly obchodníkem ceník bez cen). Mutace
 serveru #395 9/9, B114 7/7; jádra #395 5/5. Rychlé kolo zelené po opravě
-dvou harnessů; **celé kolo běží** (výsledek doplnit sem a do CHANGELOG).
+dvou harnessů. **Celé kolo nad 518532b VŠE ZELENÉ (84 min 57 s):** sady
+221/0/1, mutace jádra 167 z 167, serveru 245 z 245, statické 3 z 3.
+
+**Pozor — 21. kolo už proběhlo 6. 10. mimo tuto řadu sezení:** audit
+`2026-10-06_kalkulator_BEZPECNOSTNI_AUDIT_v2.10.1_a_v30.9.1.md` (Disk/Testovani,
+id 1ncRIsD3trEUaTiibGAXBNvPMI2geqnfC) a `VYHODNOCENI_TESTU_KOLO21_MAIN_TEST_2026-10-06.xlsx`.
+Nové nálezy B126–B132: **B126 vysoká** (profil, který není objekt — `null`,
+chybějící klíč, `profily = {}` — projde #372, jádro dá nulovou hmotnost;
+`src/engine.js:668`, v claude/cenik-395 pořád živý), B127 a B128 střední,
+B129–B131 nízké, B132 informativní. V repozitáři ani roadmapě zatím nejsou.
+Příští kolo je tedy 22., B-čísla od B133.
 
 ## Čeká na J. V.
 
@@ -37,9 +47,9 @@ dvou harnessů; **celé kolo běží** (výsledek doplnit sem a do CHANGELOG).
 
 ## Další krok
 
-21. kolo (protokol + `2026-10-08_kalkulator_BEZPECNOSTNI_AUDIT_v8.10.1.md`,
-B-čísla od B126) nad `claude/cenik-395` do Disk/Testovani — výchozí návrh
-schválen J. V. 8. 10. Podklady v kontejneru: `/home/user/kng_podklady`
+Výchozí návrh J. V. (8. 10.): nejdřív B126 (+ B131, B127, B128) v nové
+větvi z `claude/cenik-395`, pak 22. kolo (protokol +
+`<datum>_kalkulator_BEZPECNOSTNI_AUDIT_v<verze>.md`, B-čísla od B133). Podklady v kontejneru: `/home/user/kng_podklady`
 (všech 15 šablon + SoD v2 + příručka přejmenovaná na v8.10.1).
 
 ---
