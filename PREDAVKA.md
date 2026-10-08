@@ -1,3 +1,49 @@
+# Předávka — stav k 8. 10. 2026 (#395 ve větvi claude/cenik-395, v8.10.1)
+
+Sezení session_01DrQLceJMdr6XWCvRcFSjbY (založené ze session_01FbEVKCocjc6ZDk2hyoDe3k).
+`main` = v30.9.1, `test` = `test-draft` = v6.10.1 (4bbceef). Release v6.10.1
+zatím nevydán (odkaz J. V. poslán 8. 10.; releasy do v2.10.1 včetně).
+
+Pokyn J. V. 8. 10.: „souhlasím s výchozími návrhy, začni #395". Mail
+D. Sikory z 18. 9. (role zadavatele / sleva do CN) ověřen jako vyřešený:
+v25.9.6 (volba role z karty slevy zmizela, server roli bere z relace)
+a v29.9.1 #364 (činnosti PROJ v nabídce za cenu před slevou) — obojí v `main`.
+
+## Hotovo ve větvi `claude/cenik-395` (z test-draft v6.10.1) — v8.10.1
+
+| Bod | Co | Testy |
+|---|---|---|
+| V3 | server odmítne NOVÝ zámek role bez práva obou ceníků z ceníku bez cen / s cenou nabídky 0 (`zakazka_kontrola.mjs`, `zamekNovyCenaProblem`); odchylka od návrhu: výměnu ceníku server udělat nejde (zakázku nevrací) | test_prava 694/4 → 698/0 |
+| N2/N3 | kid v každém výskytu + `volitelneVlastni`; katalog PROJ z uložených variant (`uloziste.js`) | test_prava 699/4 → 703/0 |
+| S2 | vědomá mez (`BEZPECNOST_MEZE.md`) | — |
+| šablony | kódování (UTF-16 bez BOM, UTF-32, deklarace ≠ UTF-8/16), strop ZIPu 64 MB, jednoznačný EOCD (bajty za koncem nevadí), ověření platných šablon po obnově | test_sablona_obsah 62/5 → 68/0, test_obnova 191/1 → 192/0 |
+
+Fixtury test_funkce, test_obnova_nanecisto a overit_online (P2) dostaly
+zveřejněný ceník + rozměry (zamykaly obchodníkem ceník bez cen). Mutace
+serveru #395 9/9, B114 7/7; jádra #395 5/5. Rychlé kolo zelené po opravě
+dvou harnessů; **celé kolo běží** (výsledek doplnit sem a do CHANGELOG).
+
+## Čeká na J. V.
+
+- Sloučení `claude/cenik-395` do `test-draft` (po zeleném celém kole).
+- Release v6.10.1; ostatní body z předávky 6. 10. níž (rozhodovací list,
+  Pipedrive P1–P12, šablony SoD v2 a PROJ v4 v testu i ostré, převod do main).
+- Smazání sloučených větví (seznam a odkazy v hlášení 8. 10.); NEmazat
+  `claude/oprava-sesti-nalezu-v29.9.1`, `claude/stoic-cerf-j915ax`,
+  `k16-nalezy`, `claude/etapa-b-plan-plateb-proj`,
+  `claude/komplexni-test-v29.9.1`, `claude/opravy-v29.9.1`,
+  `claude/pensive-curie-s6yzs3`, `claude/testovani-po-opravach` (nejsou
+  celé v test-draft).
+
+## Další krok
+
+21. kolo (protokol + `2026-10-08_kalkulator_BEZPECNOSTNI_AUDIT_v8.10.1.md`,
+B-čísla od B126) nad `claude/cenik-395` do Disk/Testovani — výchozí návrh
+schválen J. V. 8. 10. Podklady v kontejneru: `/home/user/kng_podklady`
+(všech 15 šablon + SoD v2 + příručka přejmenovaná na v8.10.1).
+
+---
+
 # Paralelní práce 6. 10. 2026 — koordinační sezení dávek na pozadí
 
 Na pokyn J. V. 6. 10. 2026 („tag je releasnutý, vytvoř nové sezení a navrhni
