@@ -1249,8 +1249,17 @@ function uloB114Doprava(s) {
   const d = s && s.doprava && typeof s.doprava === 'object' ? s.doprava : null;
   return d ? [uloB114Cislo(d.km), uloB114Cislo(d.pausal), d.mimoPrahu ? 1 : '', 'D'] : ['', '', '', ''];
 }
+/* Trvalá položka (kid) se hlídá v KAŽDÉM výskytu (#395 N2, 8. 10. 2026):
+ * dřív se brala jen první a druhá položka s týmž kid nesla libovolnou cenu.
+ * Kandidát proto nese všechny podpisy svého kid (`hs`), příchozí zakázka
+ * seznam všech výskytů (`kidVse`). */
+const uloB114Pridej = (mapa, k, h, kde) => {
+  if (!(k in mapa)) mapa[k] = { h, kde, hs: [] };
+  mapa[k].hs.push(h);
+};
+const uloB114Ma = (c, k, h) => !!c && k in c && (c[k].hs || [c[k].h]).some(x => uloB114Shoda(x, h));
 function uloB114PolozkyProj(zp) {
-  const std = {}, kid = {};
+  const std = {}, kid = {}, kidVse = [];
   const sekce = zp && Array.isArray(zp.sekce) ? zp.sekce : [];
   sekce.forEach((s, i) => {
     if (!s || typeof s !== 'object') return;
@@ -1262,7 +1271,8 @@ function uloB114PolozkyProj(zp) {
       const kde = 'proj.zadani.sekce[' + i + '].polozky[' + j + ']';
       if (p.kid != null && p.kid !== '') {
         const k = sk + '\u0000' + String(p.kid);
-        if (!(k in kid)) kid[k] = { h: uloB114Podpis(p), kde };
+        uloB114Pridej(kid, k, uloB114Podpis(p), kde);
+        kidVse.push({ k, h: uloB114Podpis(p), kde });
         return;
       }
       if (p.vlastni) return;
@@ -1271,7 +1281,7 @@ function uloB114PolozkyProj(zp) {
       std[sk + '\u0000' + id + '#' + vyskyt[id]] = { h: uloB114Podpis(p), kde };
     });
   });
-  return { std, kid };
+  return { std, kid, kidVse };
 }
 /* Trvalé položky ceníku PROJ tak, jak je do zadání vloží projKatalogAplikuj. */
 function uloB114KatalogProj(cp) {
@@ -1282,22 +1292,25 @@ function uloB114KatalogProj(cp) {
     const p = { typ: k.typ === 'hod' ? 'hod' : 'fix' };
     if (p.typ === 'hod') { p.sazba = k.sazba || 'projektant'; p.hodiny = +k.hodiny || 0; p.rezerva = +k.rezerva || 0; }
     else p.cena = +k.cena || 0;
-    const kl = sk + '\u0000' + String(k.kid);
-    if (!(kl in out)) out[kl] = { h: uloB114Podpis(p) };
+    uloB114Pridej(out, sk + '\u0000' + String(k.kid), uloB114Podpis(p));
   }));
   return out;
 }
-/* Trvalé položky OCK v zadání: kid → jednotková cena. */
-function uloB114KidOck(z) {
+/* Trvalé položky OCK v zadání: kid → jednotková cena. `vse` (pole) dostane
+ * každý výskyt. Hlídá se i starší pole volitelneVlastni (#395 N2) — jádro ho
+ * čte, když sekce Volitelné vlastní položky nemá. */
+function uloB114KidOck(z, vse) {
   const out = {};
   const pridej = (arr, kde) => (Array.isArray(arr) ? arr : []).forEach((p, j) => {
     if (!p || typeof p !== 'object' || p.kid == null || p.kid === '') return;
-    const k = String(p.kid);
-    if (!(k in out)) out[k] = { h: uloB112Hodnota(p.cena), kde: kde + '[' + j + '].cena' };
+    const k = String(p.kid), h = uloB112Hodnota(p.cena), kd = kde + '[' + j + '].cena';
+    uloB114Pridej(out, k, h, kd);
+    if (Array.isArray(vse)) vse.push({ k, h, kde: kd });
   });
   const vl = z && z.vlastniPolozky && typeof z.vlastniPolozky === 'object' ? z.vlastniPolozky : {};
   Object.keys(vl).forEach(sek => pridej(vl[sek], 'ock.zadani.vlastniPolozky.' + (ULO_TOKEN.test(sek) ? sek : '?')));
   pridej(z && z.priplatkyVlastni, 'ock.zadani.priplatkyVlastni');
+  pridej(z && z.volitelneVlastni, 'ock.zadani.volitelneVlastni');
   return out;
 }
 /* Katalog OCK (zveřejněný nebo ze sestavení): kid → cena, jak ji do zadání
@@ -1306,7 +1319,7 @@ function uloB114KatalogOck(kat) {
   const out = {};
   const pol = kat && kat.polozky && typeof kat.polozky === 'object' ? kat.polozky : {};
   Object.keys(pol).forEach(sek => (Array.isArray(pol[sek]) ? pol[sek] : []).forEach(k => {
-    if (k && k.kid != null && k.kid !== '' && !(String(k.kid) in out)) out[String(k.kid)] = { h: uloB112Hodnota(+k.cena || 0) };
+    if (k && k.kid != null && k.kid !== '') uloB114Pridej(out, String(k.kid), uloB112Hodnota(+k.cena || 0));
   }));
   return out;
 }
@@ -1484,17 +1497,22 @@ function uloCenikProblemy(zak, stara, opts) {
       out.push({ kde: ip.std[k].kde + (pole.length ? '.' + pole.join('/') : ''), duvod: 'cenik' });
     });
     /* Trvalé položky PROJ (kid): jen přítomné. */
-    const kandK = kandI.map(x => x.kid).concat([uloB114KatalogProj(d.proj && d.proj.cenik)],
-      verze.map(z => uloB114KatalogProj(z.cenikProj)));
-    Object.keys(ip.kid).forEach(k => {
-      if (!kandK.some(x => k in x && uloB114Shoda(x[k].h, ip.kid[k].h))) out.push({ kde: ip.kid[k].kde + ' (trvalá položka)', duvod: 'cenik' });
+    /* Katalog z ceníku varianty (projKatalogAplikuj): z ULOŽENÝCH variant —
+     * příchozí ceník B112 hlídá po listech, takže by šel složit z cen jiné
+     * varianty (#395 N3). Příchozí jen pro roli, která ceník PROJ měnit smí. */
+    const kandK = kandI.map(x => x.kid)
+      .concat((okCenikProj ? [d] : ulozene.map(x => x.data)).map(x => uloB114KatalogProj(x && x.proj && x.proj.cenik)),
+        verze.map(z => uloB114KatalogProj(z.cenikProj)));
+    ip.kidVse.forEach(x => {
+      if (!kandK.some(c => uloB114Ma(c, x.k, x.h))) out.push({ kde: x.kde + ' (trvalá položka)', duvod: 'cenik' });
     });
     /* Trvalé položky OCK (kid): jednotková cena. */
-    const io = uloB114KidOck(d.ock && d.ock.zadani);
+    const io = [];
+    uloB114KidOck(d.ock && d.ock.zadani, io);
     const kandOk = (svm ? [svm] : []).concat(jine).map(x => uloB114KidOck(x.data.ock && x.data.ock.zadani))
       .concat(verze.map(z => uloB114KatalogOck(z.katalog)), katalogSestaveni ? [uloB114KatalogOck(katalogSestaveni)] : []);
-    Object.keys(io).forEach(k => {
-      if (!kandOk.some(x => k in x && x[k].h === io[k].h)) out.push({ kde: io[k].kde + ' (trvalá položka)', duvod: 'cenik' });
+    io.forEach(x => {
+      if (!kandOk.some(c => uloB114Ma(c, x.k, x.h))) out.push({ kde: x.kde + ' (trvalá položka)', duvod: 'cenik' });
     });
   });
 }

@@ -619,6 +619,22 @@ export default async (req) => {
     }
     await obnovMapu(b, await uloziste(mapy[cast]), zaloha[cast], rezim, zapisovat, '', null, overeni);
     vysledek[cast] = b;
+    /* #395 (8. 10. 2026): přeskočený soubor (B100) nebo soubor, který
+     * v úložišti chybí, nechá PLATNOU verzi rejstříku bez použitelné šablony.
+     * Po zápisu se proto platné verze ověří a správce dostane upozornění. */
+    if (cast === 'sablony' && zapisovat) {
+      const s = await uloziste('sablony');
+      const rej = await s.cti('rejstrik');
+      for (const typ of Object.keys((rej && rej.typy) || {})) {
+        const platna = globalThis.sablonaPlatna(rej, typ);
+        if (!platna) continue;
+        const soubor = await s.cti(globalThis.sablonaKlicSouboru(typ, platna.verze));
+        const vady = soubor && typeof soubor.data === 'string' && globalThis.sablonaJeDocxB64(soubor.data)
+          ? await globalThis.sablonaObsahVady(soubor.data) : ['soubor v úložišti chybí'];
+        if (vady.length) upozorneni.push('Platná šablona „' + typ + '" (verze ' + platna.verze + ') není po obnově '
+          + 'použitelná (' + vady.join('; ') + ') — zveřejněte ji znovu v Nastavení → Šablony.');
+      }
+    }
   }
 
   /* Dávka: přičíst k součtu zahájené obnovy.

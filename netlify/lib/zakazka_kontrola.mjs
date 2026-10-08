@@ -69,6 +69,62 @@ export function zakazkaPrijmi(telo, ULO) {
   return { ok: true, zak, jmeno };
 }
 
+/* NOVÝ ZÁMEK Z CENÍKU BEZ CEN NEBO ZA NULU (#395 V3, 8. 10. 2026).
+ *
+ * Nová zakázka smí přijít s ceníkem sestavení (samé nuly — zakázka založená
+ * před načtením ceníku, výjimka B113). Server jí ale značky prázdného ceníku
+ * strhne (ocistiZnacky) a klient je podle obsahu nikdy nepřidává, takže po
+ * znovuotevření zábrana ukazkovyCenik mlčí. Vlastní položka pak určí cenu
+ * celé nabídky (standardní stojí 0) a tisk ji uzamkne — odeslaná nabídka
+ * za libovolnou cenu bez schválení (revize 6. 10. 2026).
+ *
+ * Výměnu ceníku sestavení za zveřejněný na serveru (původní návrh) server
+ * udělat nemůže: zakázku klientovi nevrací, ten by dál držel nuly a další
+ * uložení by B113 odmítl. Hlídá se proto NOVÝ ZÁMEK — zrcadlo dokumentových
+ * zábran ukazkovyCenik (ceník bez cen zastaví všechny dokumenty) a cenaNula
+ * (nulová cena zastaví dokumenty své strany). Legitimní tisk tím neprojde
+ * stejně (zábrany v prohlížeči), takže se nic poctivého nerozbije.
+ * Administrátor a role s právem obou ceníků ceník měnit smí — nehlídá se;
+ * část (OCK, PROJ), jejíž platný zveřejněný ceník nemá ceny, také ne
+ * (stejně jako B113: dokud není s čím porovnat, počítá z nul každý).
+ * Vrací větu důvodu, nebo ''. */
+export function zamekNovyCenaProblem(zak, v, relace, matice, jekly, program) {
+  /* Administrátor smí vždy (zobrazeniSmi), jiná role s právem obou ceníků taky. */
+  const role = String((relace && relace.role) || '');
+  const smi = (k) => typeof globalThis.zobrazeniSmi === 'function' && !!globalThis.zobrazeniSmi(role, k, matice || null);
+  if (smi('tab.cenik') && smi('tab.cenikproj')) return '';
+  /* Hlídá se jen část (OCK, PROJ), jejíž PLATNÝ zveřejněný ceník má ceny
+   * (jako cenikHlidat v uloCenikProblemy): dokud takový není, počítá z nul
+   * každý a nemá se čím nahradit. */
+  const maCisla = typeof globalThis.ukazkoveMaCisla === 'function' ? globalThis.ukazkoveMaCisla : () => true;
+  const platny = program && program.platny && program.platny.cenik ? program.platny : null;
+  if (!platny) return '';
+  const d = (v && v.data) || {};
+  const hlidatOck = maCisla(platny.cenik), hlidatProj = maCisla(platny.cenikProj);
+  if ((hlidatOck && !maCisla(d.cenik)) || (hlidatProj && !maCisla(d.proj && d.proj.cenik)))
+    return 'odeslaná nabídka by vznikla z ceníku bez cen (ceník ze sestavení aplikace). '
+      + 'Přepočítejte variantu podle platného ceníku a nabídku vytiskněte znovu';
+  const z = v.zamek || {};
+  const strany = new Set([z.typ].concat((Array.isArray(z.tisky) ? z.tisky : []).map(t => t && t.typ))
+    .map(t => typeof globalThis.kontrolyDokumentStrana === 'function' ? globalThis.kontrolyDokumentStrana(t) : '').filter(Boolean));
+  if (!strany.size) { strany.add('ock'); strany.add('proj'); }   // neznámý typ dokumentu: obě strany
+  const jenProj = !!(zak && zak.jenProj);
+  const spatne = [];
+  if (hlidatOck && strany.has('ock') && !jenProj) {
+    let o;
+    try { o = globalThis.vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes).souhrn.zakladCena; } catch (e) { o = NaN; }
+    if (!(Number(o) > 0)) spatne.push('výtahová šachta (OCK)');
+  }
+  if (hlidatProj && strany.has('proj')) {
+    let pv = null;
+    try { pv = globalThis.vypocetProj(d.proj.zadani, d.proj.cenik); } catch (e) { pv = null; }
+    const pj = pv && pv.souhrn ? Number(pv.souhrn.celkem) : NaN;
+    const prodava = jenProj || (typeof globalThis.kontrolyProjProdava === 'function' && globalThis.kontrolyProjProdava(pv));
+    if (!isFinite(pj) || pj < 0 || (prodava && !(pj > 0))) spatne.push('projekční práce (PROJ)');
+  }
+  return spatne.length ? 'cena odeslané nabídky vyšla nulová nebo to není číslo (' + spatne.join(', ') + ')' : '';
+}
+
 export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   const { ULO, SCHV, JEKLY } = ctx;
   const obnova = ctx.rezim === 'obnova';
@@ -287,6 +343,8 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
       return odmitni(409, 'Neuloženo: nová odeslaná (uzamčená) nabídka nese jiné číslo ('
         + (v.zamek.cislo || 'prázdné') + '), než dávají údaje zakázky (' + (cisloMaBy || 'prázdné')
         + '). Obnovte stránku (Ctrl+F5) a nabídku vytiskněte znovu.');
+    const cenaProblem = zamekNovyCenaProblem(zak, v, relace, ctx.matice, JEKLY, ctx.program);
+    if (cenaProblem) return odmitni(403, 'Neuloženo: ' + cenaProblem + '.');
     v.zamek.kdo = relace.jmeno ? relace.jmeno + ' <' + relace.email + '>' : relace.email;
     /* Nový zámek se ověřuje přísně (B119): nespárovaný řádek zmrazeného
      * výsledku je rozdíl a jádro nese i součty příplatků a volitelných —
