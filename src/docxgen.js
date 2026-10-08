@@ -54,14 +54,16 @@ async function zipRozbal(komprimovana, zbyva) {
 /* KONEC ADRESÁŘE (EOCD) MUSÍ BÝT JEDNOZNAČNÝ (#395, 8. 10. 2026). Hledal se
  * první podpis PK\x05\x06 od konce — i uvnitř komentáře archivu. Podvržený
  * konec v komentáři ukázal kontrole jiný adresář (a jiné soubory) než
- * programu, který bere skutečný. Platí jen podpis, za kterým komentář sahá
- * přesně do konce souboru; víc takových = nejednoznačný archiv. */
+ * programu, který bere skutečný. Věrohodný konec = podpis, jehož komentář se
+ * do souboru vejde a adresář leží před ním; víc takových = nejednoznačný
+ * archiv. Bajty za koncem (některé nástroje je přidávají) nevadí. */
 async function zipPrecti(u8) {
   const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
   // najdi End of Central Directory (PK\x05\x06) od konce
   const kandidati = [];
   for (let i = u8.length - 22; i >= Math.max(0, u8.length - 22 - 65535); i--) {
-    if (dv.getUint32(i, true) === 0x06054b50 && i + 22 + dv.getUint16(i + 20, true) === u8.length) kandidati.push(i);
+    if (dv.getUint32(i, true) === 0x06054b50 && i + 22 + dv.getUint16(i + 20, true) <= u8.length
+        && dv.getUint32(i + 16, true) + dv.getUint32(i + 12, true) <= i) kandidati.push(i);
   }
   if (!kandidati.length) throw new Error('Soubor není platný .docx (ZIP).');
   if (kandidati.length > 1) throw new Error('Nejednoznačný konec ZIP adresáře (podvržený v komentáři archivu).');

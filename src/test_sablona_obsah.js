@@ -262,6 +262,9 @@ const enc = new TextEncoder(), dec = new TextDecoder();
     new DataView(sKom.buffer).setUint16(eC + 20, 5, true);
     const v8 = await SO.sablonaObsahVady(sKom);
     test('#395: čistá šablona s obyčejným komentářem archivu projde', v8.length === 0, v8);
+    const sZbytek = new Uint8Array(cista.length + 2); sZbytek.set(cista); sZbytek.set([0, 9], cista.length);
+    const v9 = await SO.sablonaObsahVady(sZbytek);
+    test('#395: bajty za koncem ZIPu (některé nástroje je přidávají) nevadí', v9.length === 0, v9);
   }
 
   /* Firemní šablony (jen s KNG_PODKLADY, mimo repozitář) — kontrola je nesmí

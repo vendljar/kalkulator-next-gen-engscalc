@@ -1502,15 +1502,30 @@ test('lišta uzamčené varianty nabízí za Klonovat i Založit novou zakázku 
  * dokumentem, který zamyká, aplikace zeptá: Zrušit = dokument nevznikne
  * a nic se nezamkne; Odemknout = dokument vznikne a zámek se uloží. */
 {
-  const otevriCteni = async (cislo) => page.evaluate(async (cislo) => {
+  /* Zakázka jako z aplikace se zveřejněným ceníkem a vyplněnou šachtou:
+   * nový zámek obchodníka z ceníku bez cen nebo za 0 Kč server odmítne
+   * (#395 V3, zrcadlo zábran ukazkovyCenik a cenaNula, které tu harness
+   * vypíná). */
+  const platny = () => { const db = JSON.parse(pamet.get('program/db') || '{}');
+    return db.platny ? { cenik: db.platny.cenik || null, cenikProj: db.platny.cenikProj || null } : {}; };
+  const otevriCteni = async (cislo) => page.evaluate(async ([cislo, pl]) => {
     ZAK = novaZakazka(); ZAK.cislo = cislo; ZAK.nazevAkce = 'P2 tisk jen ke čtení';
+    const d = ZAK.varianty[0].data;
+    if (pl.cenik) Object.assign(d.cenik, JSON.parse(JSON.stringify(pl.cenik)));
+    if (pl.cenikProj) Object.assign(d.proj.cenik, JSON.parse(JSON.stringify(pl.cenikProj)));
+    Object.assign(d.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2, nastupiste: 4 });
     syncVarianta(); render();
     await onlineUloz();
     const soubor = ONLINE_STAV.soubor;
     window.volba = () => Promise.resolve('zahodit');
     try { await onlineOtevri(soubor); } finally { delete window.volba; }
+    /* Prohlížeč harnessu zveřejněný ceník nenačetl a otevřená varianta se
+     * přepočítala jeho (nulovým) — vrátit ceník, se kterým se uložila. */
+    const d2 = ZAK.varianty[0].data;
+    if (pl.cenik) Object.assign(d2.cenik, JSON.parse(JSON.stringify(pl.cenik)));
+    if (pl.cenikProj) Object.assign(d2.proj.cenik, JSON.parse(JSON.stringify(pl.cenikProj)));
     return { soubor, cteni: zamekCteniJe() };
-  }, cislo);
+  }, [cislo, platny()]);
   const zamekNaServeru = (soubor) => {
     const z = JSON.parse(pamet.get('zakazky/z/' + soubor) || '{}');
     return !!(z.varianty && z.varianty[0] && z.varianty[0].zamek && z.varianty[0].zamek.zamceno);

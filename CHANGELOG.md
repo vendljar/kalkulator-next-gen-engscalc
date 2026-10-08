@@ -53,9 +53,10 @@ Větev `claude/cenik-395` z `test-draft` (v6.10.1). Pokyn J. V. 8. 10. 2026
 Testy (každý před opravou selže, po opravě projde):
 `netlify/test_prava.mjs` 694 / 4 → 698 / 0 (V3) a 699 / 4 → 703 / 0 (N2, N3);
 `netlify/test_obnova.mjs` 191 / 1 → 192 / 0; `src/test_sablona_obsah.js`
-62 / 5 → 67 / 0. Fixtury `test_funkce.mjs` a `test_obnova_nanecisto.mjs`
-zamykaly obchodníkem zakázku s ceníkem bez cen (stav, který prohlížeč
-nevytvoří) — dostaly zveřejněný ceník a rozměry šachty. Nové mutace:
+62 / 5 → 68 / 0 (+1 kontrola, že bajty za koncem ZIPu nevadí). Fixtury
+`test_funkce.mjs`, `test_obnova_nanecisto.mjs` a `overit_online.mjs` (P2)
+zamykaly obchodníkem zakázku s ceníkem bez cen (stav, který přihlášený
+prohlížeč nevytvoří) — dostaly zveřejněný ceník a rozměry šachty. Nové mutace:
 serveru +9 (V3 4, N2/N3 4, obnova 1), jádra +5; dvě mutace B114 převedeny
 na nové znění.
 
