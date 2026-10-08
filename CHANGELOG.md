@@ -44,7 +44,7 @@ Větev `claude/cenik-395` z `test-draft` (v6.10.1). Pokyn J. V. 8. 10. 2026
   „+ADw-") se odmítne (`src/sablona_obsah.js`). Čtení ZIPu
   (`src/docxgen.js`, `zipPrecti`): strop rozbalení 64 MB (ZIP bomba)
   a konec adresáře (EOCD) musí být jednoznačný — podvržený konec
-  v komentáři archivu se odmítne. Obnova šablon po zápisu ověří soubory
+  v komentáři archivu se odmítne (bajty za koncem archivu dál nevadí). Obnova šablon po zápisu ověří soubory
   platných verzí a správce dostane upozornění, když platná verze nemá
   použitelný soubor (`netlify/functions/obnova.mjs`). Všech 15 firemních
   šablon (CN v14 + EN/DE/FR, CN v11, PROJ v3, PROJ v4 + EN/DE/FR, SoD
