@@ -84,6 +84,10 @@ await post(firma, 'http://x/api/firma', { udaje: F }, adm.cookie);
 const ulozene = [];
 for (const [cislo, nazev] of [['0901', 'Havárie A'], ['0902', 'Havárie B'], ['0903', 'Havárie C — odeslaná']]) {
   const z = zk.novaZakazka(); z.cislo = '2026 - OPR - CN - ' + cislo; z.nazevAkce = nazev;
+  /* Odeslaná nabídka jako z aplikace: zveřejněný ceník a vyplněná šachta
+   * (nový zámek z ceníku bez cen nebo za 0 Kč server odmítne, #395 V3). */
+  if (cislo === '0903') { z.varianty[0].data.cenik = C2; z.varianty[0].data.proj.cenik = ZC.zkusebniCenikProj();
+    Object.assign(z.varianty[0].data.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2, nastupiste: 4 }); }
   if (cislo === '0903') zm.zamkniVariantu(z.varianty[0], { typ: 'nabidka', kdo: 'Test', cislo: zm.variantaCislo(z, z.varianty[0]) });
   ulozene.push((await (await post(zakazky, 'http://x/api/zakazky', { zakazka: z }, obch.cookie)).json()).soubor);
 }

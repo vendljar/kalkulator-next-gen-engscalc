@@ -130,12 +130,24 @@ typy polí (`zakazkaServerKontrola`, uložení i obnova):
   jen u nové zakázky nebo varianty, jejíž uložená verze ho nese; u klíče,
   který zveřejněný ceník nemá, hodnota ze sestavení. Dokud se žádný ceník
   nezveřejnil, ceník se nehlídá (není s čím porovnat).
+  **#395 V3 (8. 10. 2026):** zábrana `ukazkovyCenik` po znovuotevření
+  zakázky mlčí (server značky strhne, klient je podle obsahu nepřidává)
+  a vlastní položka obejde `cenaNula` — proto server odmítne NOVÝ zámek
+  role bez práva obou ceníků, když ceník varianty nemá ceny nebo cena
+  nabídky vyjde ≤ 0 (část, jejíž platný zveřejněný ceník ceny má). Uložit
+  takovou zakázku obchodník dál smí; vytištěná nabídka mu v prohlížeči
+  vznikne, ale zámek (doklad odeslání) se neuloží.
 - **B114 — co se u položek PROJ nehlídá:** vyřazení položky (`vyrazeno`)
   mění rozsah, ne cenu (vyřazená činnost se v nabídce neuvádí) — v UI je
   to sloupec administrátora, server ho nehlídá. Standardní položka se páruje
   podle sekce a `fixKey`, jinak typu a názvu; pořadí položek se nehlídá.
   Obchodník smí trvalou položku smazat a přidat vlastní položku s libovolnou
   cenou — to je vědomé (`kalk.pridatPolozku`) a ve výpočtu je vidět.
+  Totéž platí pro vyřazení standardní položky a vlastní položku téhož
+  názvu (#395 S2) — výsledek je stejný jako vyřazení + vlastní položka
+  s jiným názvem, tedy vědomá mez, ne nová díra. Trvalá položka (kid) se
+  od #395 hlídá v každém výskytu, i ve starším poli `volitelneVlastni`,
+  a katalog PROJ se bere z uložených variant, ne z příchozího ceníku.
 - **Sazba DPH** se nehlídá — vybírá ji v hlavičce každý a cenu bez DPH,
   kterou hlídá schvalování, nemění.
 - **Hlídá se jen zápis. Čtecí strana B88 zůstává**: ceník a náklady jsou

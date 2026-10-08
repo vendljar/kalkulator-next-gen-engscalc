@@ -8,6 +8,59 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v8.10.1 — #395: zbytky nezávislé revize 6. 10. 2026 (větev claude/cenik-395, neuvolněno)
+
+Větev `claude/cenik-395` z `test-draft` (v6.10.1). Pokyn J. V. 8. 10. 2026
+„souhlasím s výchozími návrhy, začni #395". Roadmapa #395 → hotovo.
+
+- **V3 (vysoká) — nový zámek z ceníku bez cen nebo za 0 Kč.** Nová zakázka
+  obchodníka smí nést ceník sestavení (samé nuly; zakázka založená před
+  načtením ceníku — výjimka B113). Server jí ale značky prázdného ceníku
+  strhne a klient je podle obsahu nepřidává, takže po znovuotevření
+  zábrana `ukazkovyCenik` mlčela; vlastní položka pak určila cenu celé
+  nabídky a tisk ji uzamkl — odeslaná nabídka za libovolnou cenu bez
+  schválení. **Oprava (`netlify/lib/zakazka_kontrola.mjs`,
+  `zamekNovyCenaProblem`):** server odmítne (403) NOVÝ zámek role bez práva
+  obou ceníků, když ceník varianty nemá ceny, nebo když cena nabídky
+  (strana dokumentu: OCK / PROJ) vyjde nulová — zrcadlo zábran
+  `ukazkovyCenik` a `cenaNula`. Hlídá se jen část, jejíž platný zveřejněný
+  ceník ceny má. Administrátor a zámky, které už v uložené verzi jsou, beze
+  změny. **Odchylka od výchozího návrhu:** výměnu ceníku sestavení za
+  zveřejněný server udělat nemůže — zakázku klientovi po uložení nevrací,
+  prohlížeč by dál držel nuly a další uložení by B113 odmítl.
+- **N2 — trvalá položka (kid) v každém výskytu.** Kontrola B114 brala jen
+  první položku s daným kid; druhá se stejným kid nesla libovolnou cenu.
+  Hlídá se i starší pole `ock.zadani.volitelneVlastni` (jádro ho čte, když
+  sekce Volitelné vlastní položky nemá).
+- **N3 — katalog PROJ z uložených variant.** Za katalog trvalých položek
+  PROJ se bral ceník příchozí zakázky; ten B112 hlídá po listech, takže šel
+  složit z cen jiné uložené varianty (trvalá položka 20 000 → 100 Kč).
+  Příchozí ceník se bere jen u role, která ceník PROJ měnit smí.
+- **S2** (vyřazení standardní položky + vlastní položka téhož názvu) zůstává
+  vědomou mezí — zapsáno do `BEZPECNOST_MEZE.md`.
+- **Kontrola šablon (nízké nálezy revize C):** UTF-16 bez BOM se pozná
+  i se mezerou nebo koncem řádku na začátku; část v UTF-32 nebo
+  s deklarací jiného kódování než UTF-8/UTF-16 (UTF-7 zapíše „<" jako
+  „+ADw-") se odmítne (`src/sablona_obsah.js`). Čtení ZIPu
+  (`src/docxgen.js`, `zipPrecti`): strop rozbalení 64 MB (ZIP bomba)
+  a konec adresáře (EOCD) musí být jednoznačný — podvržený konec
+  v komentáři archivu se odmítne. Obnova šablon po zápisu ověří soubory
+  platných verzí a správce dostane upozornění, když platná verze nemá
+  použitelný soubor (`netlify/functions/obnova.mjs`). Všech 15 firemních
+  šablon (CN v14 + EN/DE/FR, CN v11, PROJ v3, PROJ v4 + EN/DE/FR, SoD
+  realizace a projekce v1 i v2, plná moc) dál projde.
+
+Testy (každý před opravou selže, po opravě projde):
+`netlify/test_prava.mjs` 694 / 4 → 698 / 0 (V3) a 699 / 4 → 703 / 0 (N2, N3);
+`netlify/test_obnova.mjs` 191 / 1 → 192 / 0; `src/test_sablona_obsah.js`
+62 / 5 → 67 / 0. Fixtury `test_funkce.mjs` a `test_obnova_nanecisto.mjs`
+zamykaly obchodníkem zakázku s ceníkem bez cen (stav, který prohlížeč
+nevytvoří) — dostaly zveřejněný ceník a rozměry šachty. Nové mutace:
+serveru +9 (V3 4, N2/N3 4, obnova 1), jádra +5; dvě mutace B114 převedeny
+na nové znění.
+
+---
+
 ## v6.10.1 — dávky 6. 10. 2026 (integrační větev claude/davka-6-10, neuvolněno do test-draft)
 
 Sloučeny větve `claude/vsg-skn-prepis-skla` (G, D), `claude/audit-b119-b122` (B),

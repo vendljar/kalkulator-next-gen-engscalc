@@ -228,6 +228,10 @@ const zamkniJakoAplikace = (z, v, info) => zm.zamkniVariantu(v,
   Object.assign({ cislo: zm.variantaCislo(z, v) }, info || {}));
 
 const zak = zk.novaZakazka(); zak.cislo = '2026 - OPR - CN - 0777'; zak.nazevAkce = 'Online test';
+/* Zakázka jako z aplikace se zveřejněným ceníkem a vyplněnou šachtou — nový
+ * zámek z ceníku bez cen nebo za 0 Kč server obchodníkovi odmítne (#395 V3). */
+zak.varianty[0].data.cenik = ZC.zkusebniCenik(); zak.varianty[0].data.proj.cenik = ZC.zkusebniCenikProj();
+Object.assign(zak.varianty[0].data.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2, nastupiste: 4 });
 const ul1 = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zak }, cookieObch)).json();
 test('zakázka se uloží online', ul1.ok === true && !!ul1.soubor, JSON.stringify(ul1));
 const rej = await (await get(zakazky, 'http://x/api/zakazky', cookieObch)).json();

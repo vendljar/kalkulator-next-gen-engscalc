@@ -1177,4 +1177,5 @@ if (typeof module !== 'undefined')
                      KONTROLY_VYSKA_DVERI, KONTROLY_ZDVIH_MAX_M, kontrolyVyctem, kontrolyBokySirka,
                      kontrolyPravidla, kontrolyProved, kontrolyText, kontrolyProjNavic, kontrolyPlatbyDuvody, kontrolyProjCenyBezSymbolu,
                      kontrolyPotvrzeni, kontrolyPotvrzeniPlati,
-                     KONTROLY_DOKUMENTY_STRANY, KONTROLY_BRANA_JINDE, kontrolyDokumentStrana, kontrolyZabranaDokumentu };
+                     KONTROLY_DOKUMENTY_STRANY, KONTROLY_BRANA_JINDE, kontrolyDokumentStrana, kontrolyZabranaDokumentu,
+                     kontrolyProjProdava };

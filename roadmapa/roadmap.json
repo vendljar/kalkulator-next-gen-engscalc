@@ -6225,13 +6225,13 @@
   {
    "id" : "395",
    "vlna" : "B",
-   "stav" : "ceka",
+   "stav" : "hotovo",
    "dulezitost" : "vysoka",
    "slozitost" : "M",
    "nazev" : "Zbytky nezávislé revize 6. 10. 2026: nová zakázka s ceníkem sestavení (V3), vyřazení + vlastní položka, duplicitní kid, nízké nálezy kontroly šablon",
    "proc" : "Revize oprav #374 a B115 našla vektory téže třídy, které se v dávce 6. 10. nedaly zavřít bez rozhodnutí J. V. (V3 by změnou dnešního pravidla shodilo legitimní toky).",
    "detail" : "V3 (vysoká): nová zakázka obchodníka s ceníkem sestavení (nuly) + vlastní položka = libovolná cena; návrh: server u nové zakázky obchodníka při zveřejněném ceníku nahradí ceník sestavení zveřejněným (nebo odmítne) + serverová zábrana nového zámku s cenou ≤ 0. S2 (střední): vyřazení standardní položky + vlastní položka téhož názvu (dnes vědomá mez). N2/N3: duplicitní kid, volitelneVlastni, katalog z příchozího ceníku. Kontrola šablon: XML bez BOM v UTF-16 / jiné encoding, strop dekomprese ZIPu, komentář EOCD, po obnově ověřit soubory platných verzí.",
-   "hotovoKdyz" : "Rozhodnutí J. V. k V3 a S2; opravy s testy před/po a mutacemi.",
+   "hotovoKdyz" : "Rozhodnutí J. V. k V3 a S2; opravy s testy před/po a mutacemi. Hotovo ve v8.10.1 (větev claude/cenik-395): V3 serverová zábrana nového zámku z ceníku bez cen / za 0 Kč (výměna ceníku na serveru nejde — server zakázku nevrací), N2 kid v každém výskytu + volitelneVlastni, N3 katalog PROJ z uložených variant, S2 vědomá mez, kontrola šablon: kódování, strop ZIPu 64 MB, jednoznačný EOCD, ověření platných šablon po obnově.",
    "kde" : "`src/uloziste.js` (uloCenikProblemy, B114), `src/sablona_obsah.js`, `src/docxgen.js` (zipPrecti), `netlify/functions/obnova.mjs`"
   }
  ],

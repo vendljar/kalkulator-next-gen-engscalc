@@ -189,6 +189,81 @@ const enc = new TextEncoder(), dec = new TextDecoder();
     test('B115: pole, jehož typ dodá vnořené pole → odmítnuto', v.length > 0, v);
   }
 
+  /* #395 (8. 10. 2026, nízké nálezy revize C): kódování, které kontrola
+   * nečte, ZIP bomba a podvržený konec ZIPu v komentáři. Před opravou
+   * prošly (0 vad, rozbalení bez stropu, kontrola četla podvržený adresář). */
+  {
+    const zlib = require('zlib');
+    const t16 = (t, bom) => { const u = new Uint8Array((bom ? 2 : 0) + t.length * 2); let o = 0; if (bom) { u[0] = 0xFF; u[1] = 0xFE; o = 2; }
+      for (let i = 0; i < t.length; i++) { u[o + i * 2] = t.charCodeAt(i) & 255; u[o + 1 + i * 2] = t.charCodeAt(i) >> 8; } return u; };
+    const zakazane = dokument(pole(' INCLUDETEXT "https://example.invalid/a.docx" '));
+    const v1 = await SO.sablonaObsahVady(await sestav(p => p.push({ nazev: 'word/footer9.xml',
+      data: t16('\r\n' + zakazane.replace('encoding="UTF-8"', 'encoding="UTF-16"'), false) })));
+    test('#395: UTF-16 bez BOM s koncem řádku na začátku → zakázané pole odhaleno', v1.some(x => /INCLUDETEXT/.test(x)), v1);
+    const v2 = await SO.sablonaObsahVady(await sestav(p => pridej(p, 'word/footer9.xml',
+      zakazane.replace('encoding="UTF-8"', 'encoding="UTF-7"').replace(/<w:instrText/g, '+ADw-w:instrText'))));
+    test('#395: deklarace kódování UTF-7 → odmítnuto', v2.some(x => /kódování UTF-7/.test(x)), v2);
+    const v3 = await SO.sablonaObsahVady(await sestav(p => { const u = new Uint8Array(4 + zakazane.length * 4);
+      u.set([0xFF, 0xFE, 0, 0]); for (let i = 0; i < zakazane.length; i++) u[4 + i * 4] = zakazane.charCodeAt(i) & 255;
+      p.push({ nazev: 'word/footer9.xml', data: u }); }));
+    test('#395: část v UTF-32 → odmítnuto', v3.some(x => /UTF-32/.test(x)), v3);
+    const v4 = await SO.sablonaObsahVady(s.cista);
+    test('#395: čistá šablona v UTF-8 dál projde', v4.length === 0, v4);
+
+    /* ZIP s jednou položkou komprimovanou deflate (zdejší zápis umí jen STORE). */
+    const zipDeflate = (polozky) => {
+      const casti = [], cd = []; let off = 0;
+      const u16 = v => Buffer.from([v & 255, (v >> 8) & 255]), u32 = v => { const b = Buffer.alloc(4); b.writeUInt32LE(v >>> 0); return b; };
+      for (const p of polozky) {
+        const jm = Buffer.from(p.nazev), komp = p.deflate ? zlib.deflateRawSync(p.data) : Buffer.from(p.data);
+        const crc = zlib.crc32(p.data), met = p.deflate ? 8 : 0;
+        const hl = Buffer.concat([u32(0x04034b50), u16(20), u16(0), u16(met), u16(0), u16(0), u32(crc), u32(komp.length), u32(p.data.length), u16(jm.length), u16(0), jm]);
+        cd.push(Buffer.concat([u32(0x02014b50), u16(20), u16(20), u16(0), u16(met), u16(0), u16(0), u32(crc), u32(komp.length), u32(p.data.length),
+          u16(jm.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(off), jm]));
+        casti.push(hl, komp); off += hl.length + komp.length;
+      }
+      const cdB = Buffer.concat(cd);
+      const eocd = Buffer.concat([u32(0x06054b50), u16(0), u16(0), u16(cd.length), u16(cd.length), u32(cdB.length), u32(off), u16(0)]);
+      return new Uint8Array(Buffer.concat([...casti, cdB, eocd]));
+    };
+    const zaklPolozky = zaklad.map(x => ({ nazev: x.nazev, data: Buffer.from(x.data), deflate: true }));
+    const bomba = zipDeflate(zaklPolozky.concat([{ nazev: 'word/media/nuly.bin', data: Buffer.alloc(80 * 1024 * 1024), deflate: true }]));
+    test('#395: příprava — ZIP bomba je malá (< 1 MB zabaleno)', bomba.length < 1024 * 1024, bomba.length);
+    const v5 = await SO.sablonaObsahVady(bomba);
+    test('#395: ZIP, který se rozbalí na víc než 64 MB → odmítnuto', v5.some(x => /víc než 64 MB/.test(x)), v5);
+    const v6 = await SO.sablonaObsahVady(zipDeflate(zaklPolozky));
+    test('#395: šablona komprimovaná deflate pod stropem projde', v6.length === 0, v6);
+
+    /* Podvržený konec adresáře v komentáři: skutečný adresář nese zakázané
+     * pole, falešný konec (s komentářem do konce souboru) ukazuje na čistý. */
+    const cista = s.cista;
+    const zla = await sestav(p => doDoc(p, pole(' INCLUDETEXT "https://example.invalid/a.docx" ')));
+    const dvZ = new DataView(zla.buffer, zla.byteOffset, zla.byteLength);
+    const dvC = new DataView(cista.buffer, cista.byteOffset, cista.byteLength);
+    const eZ = zla.length - 22, eC = cista.length - 22;
+    /* Komentář = čistý archiv celý + jeho konec adresáře s posunutým offsetem. */
+    const posun = zla.length;                                   // komentář začíná hned za skutečným koncem
+    const kom = new Uint8Array(cista.length);
+    kom.set(cista);
+    new DataView(kom.buffer).setUint32(eC + 16, dvC.getUint32(eC + 16, true) + posun, true);
+    const podvrh = new Uint8Array(zla.length + kom.length);
+    podvrh.set(zla); podvrh.set(kom, zla.length);
+    new DataView(podvrh.buffer).setUint16(eZ + 20, kom.length, true);
+    /* Lokální hlavičky čistého archivu: offsety v jeho adresáři posunout taky. */
+    const dvP = new DataView(podvrh.buffer);
+    let cdOff = dvC.getUint32(eC + 16, true) + posun;
+    for (let n = 0; n < dvC.getUint16(eC + 10, true); n++) {
+      dvP.setUint32(cdOff + 42, dvP.getUint32(cdOff + 42, true) + posun, true);
+      cdOff += 46 + dvP.getUint16(cdOff + 28, true) + dvP.getUint16(cdOff + 30, true) + dvP.getUint16(cdOff + 32, true);
+    }
+    const v7 = await SO.sablonaObsahVady(podvrh);
+    test('#395: podvržený konec ZIP adresáře v komentáři → odmítnuto', v7.length > 0 && !v7.every(x => x === ''), v7);
+    const sKom = new Uint8Array(cista.length + 5); sKom.set(cista); sKom.set([65, 104, 111, 106, 33], cista.length);
+    new DataView(sKom.buffer).setUint16(eC + 20, 5, true);
+    const v8 = await SO.sablonaObsahVady(sKom);
+    test('#395: čistá šablona s obyčejným komentářem archivu projde', v8.length === 0, v8);
+  }
+
   /* Firemní šablony (jen s KNG_PODKLADY, mimo repozitář) — kontrola je nesmí
    * odmítnout: CN v14 + EN/DE/FR, CN v11, PROJ v3, PROJ v4 + EN/DE/FR, SoD
    * realizace a projekce, plná moc. */

@@ -1577,6 +1577,28 @@ console.log('\n===== #374 (B113, B114): KONCOVÁ CENA BEZ SCHVÁLENÍ — IDENTI
   const c8 = await uloz374(n3, cObch);
   test('B114: nová zakázka obchodníka s levnější trvalou položkou OCK → 403', je403(c8), c8);
 
+  /* #395 N2/N3 (revize 6. 10. 2026, oprava 8. 10. 2026): kontrola trvalých
+   * položek brala jen PRVNÍ výskyt kid (druhý se stejným kid nesl libovolnou
+   * cenu), starší pole volitelneVlastni vůbec a za katalog PROJ uznala ceník
+   * z příchozí zakázky — ten B112 hlídá po listech, takže šel složit
+   * z cen jiné uložené varianty. Před opravou 200. */
+  const d1 = await uprav374(a => { pol(a, 'studie').push({ kid: 'pk1', nazev: 'Trvalá PROJ', typ: 'fix', cena: 1, vlastni: true }); }, cObch, sKid);
+  test('#395 N2: obchodník — druhá položka PROJ se stejným kid a jinou cenou → 403', je403(d1), d1);
+  const d2 = await uprav374(a => { d0(a).ock.zadani.vlastniPolozky.hrubaOck.push({ kid: 'k1', nazev: 'Trvalá položka 374', mnozstvi: 1, cena: 1 }); }, cObch, sKid);
+  test('#395 N2: obchodník — druhá položka OCK se stejným kid a jinou cenou → 403', je403(d2), d2);
+  const d3 = await uprav374(a => { d0(a).ock.zadani.volitelneVlastni = [{ kid: 'k1', nazev: 'Trvalá položka 374', mnozstvi: 1, cena: 1 }]; }, cObch, sKid);
+  test('#395 N2: obchodník — trvalá položka v poli volitelneVlastni s jinou cenou → 403', je403(d3, /volitelneVlastni/), d3);
+  const d4 = await uprav374(a => {
+    d0(a).proj.cenik.vlastniPolozky.studie[0].cena = 100; kP(a).cena = 100; }, cObch, z => {
+    sKid(z); z.varianty[0].nazev = 'A'; zam.klonujVariantu(z, z.varianty[0].id);
+    const v2 = z.varianty[1].data;
+    v2.proj.cenik.vlastniPolozky = { studie: [{ kid: 'pk2', nazev: 'Levná PROJ', typ: 'fix', cena: 100 }] };
+    v2.proj.zadani.sekce.find(s => s.key === 'studie').polozky = v2.proj.zadani.sekce.find(s => s.key === 'studie').polozky
+      .filter(p => p.kid !== 'pk1').concat([{ kid: 'pk2', nazev: 'Levná PROJ', typ: 'fix', cena: 100, vlastni: true }]); });
+  test('#395 N3: obchodník — katalog PROJ složený z cen jiné varianty (cena trvalé položky 20 000 → 100) → 403', je403(d4), d4);
+  const d5 = await uprav374(a => { d0(a).ock.zadani.vlastniPolozky.hrubaOck.push({ kid: 'k1', nazev: 'Trvalá položka 374', mnozstvi: 2, cena: 10000 }); }, cObch, sKid);
+  test('#395 N2: druhý výskyt trvalé položky se stejnou cenou projde (200)', d5.status === 200, d5);
+
   /* B113 — celý ceník sestavení */
   const sestaveni = (a) => { d0(a).cenik = JSON.parse(JSON.stringify(globalThis.DEFAULT_CENIK));
     d0(a).proj.cenik = JSON.parse(JSON.stringify(globalThis.DEFAULT_CENIK_PROJ)); };
@@ -1593,6 +1615,43 @@ console.log('\n===== #374 (B113, B114): KONCOVÁ CENA BEZ SCHVÁLENÍ — IDENTI
   test('B113: uložená zakázka, která ceník sestavení sama nese, se obchodníkovi uloží (200)', e5.status === 200, e5);
   const e6 = await uprav374(a => { sestaveni(a); }, cAdmin);
   test('B113: administrátor ceník sestavení uloží (200)', e6.status === 200, e6);
+
+  /* #395 V3 (revize 6. 10. 2026, oprava 8. 10. 2026): nová zakázka obchodníka
+   * s ceníkem sestavení (samé nuly) projde (B113 výš) — a protože server
+   * značky prázdného ceníku před uložením strhne, klient po znovuotevření
+   * zábranu ukazkovyCenik nevidí. Vlastní položka pak určí cenu celé
+   * nabídky a zámek se uloží. Pravidlo: NOVÝ zámek role bez práva ceníku
+   * nevznikne z ceníku bez cen ani s cenou nabídky ≤ 0 (zrcadlo zábran
+   * ukazkovyCenik a cenaNula). Před opravou útoky 200. */
+  const zamkni395 = (z, typ) => { const v = z.varianty[0];
+    zam.zamkniVariantu(v, { typ, kdy: new Date().toISOString(), kdo: 'Test 395',
+      cislo: zam.variantaCislo(z, v), vysledek: zam.zamekVysledekSpocti(v, JEKLY_T, 'v-395') });
+    return z; };
+  const vlastni395 = (z) => {
+    d0(z).ock.zadani.vlastniPolozky = Object.assign({}, d0(z).ock.zadani.vlastniPolozky,
+      { hrubaOck: [{ nazev: 'Vlastní 395', mnozstvi: 1, cena: 123456 }] });
+    pol(z, 'studie').push({ nazev: 'Vlastní fix 395', typ: 'fix', cena: 54321, vlastni: true });
+  };
+  const n5 = nova374(); sestaveni(n5); vlastni395(n5); zamkni395(n5, 'nabidka');
+  const v1 = await uloz374(n5, cObch);
+  test('#395 V3: nová zakázka obchodníka — ceník sestavení + vlastní položka + nový zámek OCK → 403', je403(v1, /ceník/), v1);
+  const n6 = nova374(); sestaveni(n6); vlastni395(n6); zamkni395(n6, 'nabidkaProj');
+  const v2 = await uloz374(n6, cObch);
+  test('#395 V3: … totéž s nabídkou PROJ → 403', je403(v2, /ceník/), v2);
+  const v3 = await uprav374(a => { vlastni395(a); zamkni395(a, 'nabidka'); }, cObch, z => sestaveni(z));
+  test('#395 V3: uložená zakázka s ceníkem sestavení — nový zámek obchodníka → 403', je403(v3, /ceník/), v3);
+  const n7 = nova374(); n7.jenProj = true; pol(n7, 'studie'); d0(n7).proj.zadani.sekce.forEach(s => s.polozky.forEach(p => { p.vyrazeno = true; }));
+  zamkni395(n7, 'nabidkaProj');
+  const v4 = await uloz374(n7, cObch);
+  test('#395 V3: nový zámek obchodníka s cenou nabídky 0 Kč (jen projekce, vše vyřazeno) → 403', je403(v4, /nulov/), v4);
+  const n8 = nova374(); vlastni395(n8); zamkni395(n8, 'nabidka');
+  const v5 = await uloz374(n8, cObch);
+  test('#395 V3: nový zámek obchodníka z platného ceníku s vlastní položkou (200)', v5.status === 200, v5);
+  const n9 = nova374(); sestaveni(n9); vlastni395(n9); zamkni395(n9, 'nabidka');
+  const v6 = await uloz374(n9, cAdmin);
+  test('#395 V3: administrátor zámek z ceníku sestavení uloží (200 — smí ceník měnit)', v6.status === 200, v6);
+  const v7 = await uprav374(a => { a.nazevAkce += ' (po odeslání)'; }, cObch, z => { sestaveni(z); zamkni395(z, 'nabidka'); });
+  test('#395 V3: zámek, který už v uložené verzi je, se obchodníkovi neposuzuje (200)', v7.status === 200, v7);
 
   await post(program, 'http://x/api/program',
     { cenik: cenikJinak(), cenikProj: ZC.zkusebniCenikProj(), slevy: { ...NAST_374, minMarze: 0 } }, cAdmin);

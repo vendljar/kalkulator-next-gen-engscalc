@@ -25,18 +25,52 @@ function crc32(u8) {
 }
 
 /* ---------- čtení ZIP ---------- */
+/* STROP ROZBALENÍ (#395, 8. 10. 2026). Šablona má zabalená nejvýš ~3,7 MB
+ * (SABLONA_MAX_B64), deflate ale umí ze 100 kB udělat stovky megabajtů
+ * („ZIP bomba") — server by je při zveřejnění nebo obnově rozbaloval do
+ * paměti. Rozbaluje se proto po kouscích a nad strop se čtení zastaví.
+ * Firemní šablony i ceníky v Excelu jsou rozbalené v jednotkách MB. */
+const ZIP_ROZBALENO_MAX = 64 * 1024 * 1024;
+async function zipRozbal(komprimovana, zbyva) {
+  const ds = new DecompressionStream('deflate-raw');
+  const ctecka = new Blob([komprimovana]).stream().pipeThrough(ds).getReader();
+  const kusy = [];
+  let n = 0;
+  for (;;) {
+    const { done, value } = await ctecka.read();
+    if (done) break;
+    n += value.length;
+    if (n > zbyva) {
+      try { await ctecka.cancel(); } catch (e) { /* nic */ }
+      throw new Error('ZIP se rozbalí na víc než ' + Math.round(ZIP_ROZBALENO_MAX / 1024 / 1024) + ' MB.');
+    }
+    kusy.push(value);
+  }
+  const out = new Uint8Array(n);
+  let o = 0;
+  for (const k of kusy) { out.set(k, o); o += k.length; }
+  return out;
+}
+/* KONEC ADRESÁŘE (EOCD) MUSÍ BÝT JEDNOZNAČNÝ (#395, 8. 10. 2026). Hledal se
+ * první podpis PK\x05\x06 od konce — i uvnitř komentáře archivu. Podvržený
+ * konec v komentáři ukázal kontrole jiný adresář (a jiné soubory) než
+ * programu, který bere skutečný. Platí jen podpis, za kterým komentář sahá
+ * přesně do konce souboru; víc takových = nejednoznačný archiv. */
 async function zipPrecti(u8) {
   const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
   // najdi End of Central Directory (PK\x05\x06) od konce
-  let eocd = -1;
-  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 22 - 65536); i--) {
-    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  const kandidati = [];
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 22 - 65535); i--) {
+    if (dv.getUint32(i, true) === 0x06054b50 && i + 22 + dv.getUint16(i + 20, true) === u8.length) kandidati.push(i);
   }
-  if (eocd < 0) throw new Error('Soubor není platný .docx (ZIP).');
+  if (!kandidati.length) throw new Error('Soubor není platný .docx (ZIP).');
+  if (kandidati.length > 1) throw new Error('Nejednoznačný konec ZIP adresáře (podvržený v komentáři archivu).');
+  const eocd = kandidati[0];
   const pocet = dv.getUint16(eocd + 10, true);
   let off = dv.getUint32(eocd + 16, true);
   const dekoder = new TextDecoder();
   const polozky = [];
+  let zbyva = ZIP_ROZBALENO_MAX;
   for (let n = 0; n < pocet; n++) {
     if (dv.getUint32(off, true) !== 0x02014b50) throw new Error('Poškozený ZIP adresář.');
     const metoda = dv.getUint16(off + 10, true);
@@ -51,11 +85,13 @@ async function zipPrecti(u8) {
     const dataZac = lokalOff + 30 + lN + lE;
     const komprimovana = u8.subarray(dataZac, dataZac + velKomp);
     let data;
-    if (metoda === 0) data = new Uint8Array(komprimovana);
-    else if (metoda === 8) {
-      const ds = new DecompressionStream('deflate-raw');
-      data = new Uint8Array(await new Response(new Blob([komprimovana]).stream().pipeThrough(ds)).arrayBuffer());
-    } else throw new Error('Nepodporovaná komprese v ZIP: ' + metoda);
+    if (metoda === 0) {
+      if (komprimovana.length > zbyva) throw new Error('ZIP se rozbalí na víc než ' + Math.round(ZIP_ROZBALENO_MAX / 1024 / 1024) + ' MB.');
+      data = new Uint8Array(komprimovana);
+    }
+    else if (metoda === 8) data = await zipRozbal(komprimovana, zbyva);
+    else throw new Error('Nepodporovaná komprese v ZIP: ' + metoda);
+    zbyva -= data.length;
     polozky.push({ nazev, data });
     off += 46 + delkaNazvu + delkaExtra + delkaKom;
   }

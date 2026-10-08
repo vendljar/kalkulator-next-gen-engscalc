@@ -984,6 +984,19 @@ console.log('\n===== B100: šablony ze zálohy =====');
   const o100b = await obnovJson({ zdroj: { otisk: '2026-01-16' }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['sablony'] }, cookie);
   test('B100: i z otisku (verze zveřejněná před kontrolou) se vadná šablona nezapíše',
     o100b.ok === true && (await ulz('sablony').cti('data/nabidka_b100/5')) === null, o100b);
+
+  /* #395 (8. 10. 2026): rejstřík ze zálohy ukazuje platnou verzi, jejíž
+   * soubor kontrola přeskočila — po obnově o tom správce musí vědět. Před
+   * opravou obnova nic nehlásila. */
+  const SO = require('../src/sablony_online.js');
+  const rej395 = SO.sablonyZverejni(SO.sablonyNovyRejstrik(), { typ: 'nabidka', nazev: 'zla.docx', otisk: '0123456789abcdef', kdo: 'x', kdy: 'x' });
+  const podvrh395 = kopie(zalSoubor);
+  podvrh395.sablony = { rejstrik: rej395, 'data/nabidka/1': { nazev: 'zla.docx', data: zla } };
+  const o395 = await obnovJson({ zdroj: { soubor: podvrh395 }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['sablony'] }, cookie);
+  test('#395: platná šablona bez použitelného souboru se po obnově ohlásí',
+    o395.ok === true && (o395.upozorneni || []).some(u => /„nabidka" \(verze 1\)/.test(u)), o395);
+  test('#395: … a čistá platná šablona upozornění nedostane',
+    !(o395.upozorneni || []).some(u => /nabidka_b100/.test(u)), o395.upozorneni);
 }
 
 console.log(`\n${ok} OK, ${fail} FAIL`);

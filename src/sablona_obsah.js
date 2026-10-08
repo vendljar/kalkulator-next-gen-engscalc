@@ -52,7 +52,11 @@ const SABLONA_CIL_VNEJSI = /^([a-z][a-z0-9+.-]*:|[\\/]{2})/i;
 /* Atribut "…" nebo '…' — uvnitř uvozovek smí být i „>". */
 const SABLONA_ATRIBUTY = '(?:[^>"\']|"[^"]*"|\'[^\']*\')*';
 
-/* Bajty části → text. XML části smějí být v UTF-8 i UTF-16 (s BOM i bez). */
+/* Bajty části → text. XML části smějí být v UTF-8 i UTF-16 (s BOM i bez).
+ * UTF-16 bez BOM se pozná podle nulového bajtu u každého druhého znaku —
+ * i když část začíná mezerou nebo koncem řádku (#395, 8. 10. 2026; dřív
+ * jen „<" na začátku, jinak se část četla jako UTF-8 s nulami a rozbor
+ * v ní nenašel nic). */
 function sablonaObsahText(data) {
   if (typeof data === 'string') return data;
   if (!data) return '';
@@ -60,6 +64,8 @@ function sablonaObsahText(data) {
   let le = null, od = 0;
   if (u8[0] === 0xFF && u8[1] === 0xFE) { le = true; od = 2; }
   else if (u8[0] === 0xFE && u8[1] === 0xFF) { le = false; od = 2; }
+  else if (u8.length > 3 && u8[0] !== 0 && u8[1] === 0 && u8[3] === 0) le = true;
+  else if (u8.length > 3 && u8[0] === 0 && u8[2] === 0 && u8[1] !== 0) le = false;
   else if (u8.length > 1 && u8[0] === 0x3C && u8[1] === 0) le = true;
   else if (u8.length > 1 && u8[0] === 0 && u8[1] === 0x3C) le = false;
   if (le !== null) {
@@ -68,6 +74,20 @@ function sablonaObsahText(data) {
     return s;
   }
   try { return new TextDecoder().decode(u8); } catch (e) { return ''; }
+}
+/* KÓDOVÁNÍ, KTERÉ KONTROLA NEČTE (#395, 8. 10. 2026). Rozbor umí UTF-8
+ * a UTF-16. Část v UTF-32 nebo s deklarací jiného kódování (UTF-7 zapíše
+ * „<" jako „+ADw-", EBCDIC úplně jinak) by kontrola četla jinak než Word —
+ * zakázané pole by v ní neviděla. Word sám ukládá jen UTF-8. Vrací popis
+ * vady, nebo ''. */
+function sablonaKodovaniVada(data, text) {
+  const u8 = data instanceof Uint8Array ? data : (data && typeof data.byteLength === 'number' ? new Uint8Array(data) : null);
+  if (u8 && u8.length > 3 && ((u8[0] === 0 && u8[1] === 0 && (u8[2] === 0xFE || u8[2] === 0) && (u8[3] === 0xFF || u8[3] === 0x3C))
+      || ((u8[0] === 0xFF || u8[0] === 0x3C) && (u8[1] === 0xFE || u8[1] === 0) && u8[2] === 0 && u8[3] === 0)))
+    return 'XML v kódování UTF-32';
+  const m = /^[\s\uFEFF]*<\?xml\b[^>]*?\bencoding\s*=\s*["']([^"']*)["']/i.exec(String(text || ''));
+  if (m && !/^\s*utf-?(8|16(le|be)?)\s*$/i.test(m[1])) return 'XML v kódování ' + (m[1].trim().slice(0, 20) || 'prázdném');
+  return '';
 }
 /* XML entity jedním průchodem — jako parser (&amp;#97; zůstane „&#97;"). */
 function sablonaXmlUnesc(s) {
@@ -181,6 +201,8 @@ function sablonaObsahVadyZipu(polozky) {
     if (male.indexOf('activex') >= 0) pridej('prvek ActiveX (' + nazev + ')');
 
     const text = sablonaObsahText(p.data);
+    const kodovani = sablonaKodovaniVada(p.data, text);
+    if (kodovani) { pridej(kodovani + ' (' + nazev + ')'); return; }
     const jeRels = /\.rels$/.test(male);
     if (!jeRels && !/\.xml$/.test(male) && !sablonaJeXml(text)) return;
 
