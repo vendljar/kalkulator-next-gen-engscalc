@@ -104,14 +104,41 @@ function ukazkoveSrovnejZnacku(cil, zdroj) {
 const UKAZKOVE_NE_CENY = /^(dph.*|marze|kurzEurKc|.*Pct)$/;
 function ukazkoveNeniCena(k) { return UKAZKOVE_NE_CENY.test(String(k)); }
 
-function ukazkoveMaCisla(o) {
+/* CENA SE POČÍTÁ JEN V KLÍČÍCH VZORU (B136, audit 12. 10. 2026).
+ *
+ * Do 12. 10. stačilo k „ceník má ceny" číslo v LIBOVOLNÉM klíči. Ceník
+ * sestavení (samé nuly) s volným klíčem `jenZahr: 5`, `popisyJazyky` nebo
+ * `rada` tak prošel pojistkou #395 V3 (zamekNovyCenaProblem) — a B112/B113
+ * tytéž klíče přeskakují (ULO_CENIK_VOLNE). Vlastní položka za 1 Kč pak
+ * určila cenu nabídky (OCK −99,9 %, PROJ −100 %). Teď se číslo počítá jen
+ * v klíči, který má vzor — ceník sestavení DEFAULT_CENIK / DEFAULT_CENIK_PROJ
+ * (`vzor`; bez něj sjednocení obou, jsou-li k dispozici). Jádro jiné klíče
+ * jako cenu nečte. */
+function ukazkoveVzor() {
+  const g = (n) => (typeof globalThis !== 'undefined' && globalThis[n]) || null;
+  let oc = (typeof DEFAULT_CENIK !== 'undefined') ? DEFAULT_CENIK : g('DEFAULT_CENIK');
+  let pc = (typeof DEFAULT_CENIK_PROJ !== 'undefined') ? DEFAULT_CENIK_PROJ : g('DEFAULT_CENIK_PROJ');
+  if ((!oc || !pc) && typeof require === 'function') {
+    try { oc = oc || require('./engine.js').DEFAULT_CENIK; } catch (e) { /* nic */ }
+    try { pc = pc || require('./engine_proj.js').DEFAULT_CENIK_PROJ; } catch (e) { /* nic */ }
+  }
+  if (!oc && !pc) return null;
+  return Object.assign({}, pc || {}, oc || {});
+}
+function ukazkoveMaCisla(o, vzor) {
   if (!o || typeof o !== 'object') return false;
+  const vz = vzor === undefined ? ukazkoveVzor() : vzor;
   return Object.keys(o).some(k => {
     if (k === UKAZKOVE_KLIC || k === PRAZDNY_KLIC || k === 'popisy') return false;
     if (ukazkoveNeniCena(k)) return false;
+    if (vz && !Object.prototype.hasOwnProperty.call(vz, k)) return false;   // volný klíč (B136)
     const h = o[k];
     if (typeof h === 'number') return isFinite(h) && h !== 0;
-    if (h && typeof h === 'object') return ukazkoveMaCisla(h);
+    if (h && typeof h === 'object') {
+      if (!vz) return ukazkoveMaCisla(h, null);
+      const vk = vz[k];
+      return !!vk && typeof vk === 'object' && ukazkoveMaCisla(h, vk);
+    }
     return false;
   });
 }
@@ -259,7 +286,7 @@ function ukazkoveVyctem(stav) {
 if (typeof module !== 'undefined')
   module.exports = { UKAZKOVE_KLIC, PRAZDNY_KLIC, ukazkoveJe, ukazkovePrazdny,
                      ukazkoveOcisti, ukazkoveSrovnejZnacku,
-                     ukazkoveMaCisla, ukazkoveSrovnejSObsahem, ukazkoveNeniCena,
+                     ukazkoveMaCisla, ukazkoveVzor, ukazkoveSrovnejSObsahem, ukazkoveNeniCena,
                      ukazkoveBez, ukazkoveStav, ukazkoveText,
                      ukazkoveKratce, ukazkoveVyctem, ukazkoveBraniDokumentu,
                      ukazkoveKudy, ukazkovePripojeni };

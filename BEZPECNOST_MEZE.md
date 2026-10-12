@@ -66,7 +66,7 @@ kapitol na 20 000. Stejnou kontrolou jde klient i server (`/api/firma`).
 
 ---
 
-## Třída „koncová cena bez schválení" (B96, B111, B112 — 29. 9. 2026; B113, B114, B117 — 6. 10. 2026)
+## Třída „koncová cena bez schválení" (B96, B111, B112 — 29. 9. 2026; B113, B114, B117 — 6. 10. 2026; B133–B137, B145 — 12. 10. 2026)
 
 Komplexní test 29. 9. 2026 našel tři cesty, jak obchodník snížil cenu
 nabídky bez schválení slevy. Každá má vlastní serverovou kontrolu hned za
@@ -95,6 +95,33 @@ typy polí (`zakazkaServerKontrola`, uložení i obnova):
   jen u nové zakázky a u varianty, jejíž uložená verze ho sama nese;
   projekce za 0 Kč s co prodávat zastaví dokumenty PROJ i v kombinované
   nabídce (zábrana `cenaNula`).
+- **#398** (12. 10. 2026, audit 22. kola — server přepočítal tatáž
+  zmanipulovaná data a dal zámku razítko „shoda"):
+  - **B134** — procenta a počty zadání OCK, které jádro násobí (rezervy
+    `rezerva*Pct`, oplechování ostatní, engineering, stříšky, atypická
+    zámečnická práce, počty světlíků a nástupišť, výšky pásů opláštění):
+    nikdy záporné, **nikdo, ani administrátor** (`uloZaporneVZadani`,
+    seznam `ULO_ZADANI_BEZ_ZAPORU`; úplnost proti `DEFAULT_ZADANI` drží
+    `src/test_uloziste.js`). Pole % v UI mají `min="0"`.
+  - **B135 / B145** — čísla ve vstupech jádra (ceník varianty OCK i PROJ,
+    přepisy, vlastní položky, rezervy, hodiny N56, vlastní % sekce PROJ)
+    jen ve tvaru, který `+x` čte jako člověk: číslo, prázdno, text
+    s desetinnou **tečkou**. Text s čárkou („100,0") je pro jádro NaN → 0;
+    nově 400 pro všechny. B112 porovnává hodnoty sémantikou jádra.
+    Zadání mimo vstupy jádra (rozměry můstku) čárku dál snese.
+  - **B133** — varianta, jejíž část je celý ceník sestavení (uložená verze
+    i jiná varianta), nevstupuje do skupin B128 po položkách: smí zůstat
+    celá sestavením (B113), nebo přejít na celou zveřejněnou verzi. Klon
+    takové varianty smí ceník sestavení nést celý.
+  - **B136** — „ceník má ceny" (#395 V3) počítá jen klíče vzoru
+    (`DEFAULT_CENIK` / `DEFAULT_CENIK_PROJ`) dané části; volné klíče
+    (`jenZahr`, `popisyJazyky`, `rada`) se nepočítají.
+  - **B137** — rozměry šachty (pravidla `kontrolyRozmery` v `kontroly.js`,
+    tatáž funkce jako zábrana „rozmery"): záporné číslo, číslo nečitelné
+    pro jádro a zdvih nad 99 m server neuloží nikdy, **nikomu**; nulu
+    a prázdno (nová zakázka začíná s nulovými rozměry, `ZADANI_NOVA`) uloží,
+    ale **nový zámek** strany OCK (ne u zakázky jen projekce) z nich
+    nevznikne — ani administrátorovi (zábranu v prohlížeči nepřekročí ani on).
 
 **Co zůstává vědomě (roadmapa #38 „nic se neblokuje"):**
 - **B117 — zaokrouhlení *z výčtu* směrem dolů podteče minimální marži**
@@ -149,7 +176,20 @@ typy polí (`zakazkaServerKontrola`, uložení i obnova):
   od #395 hlídá v každém výskytu, i ve starším poli `volitelneVlastni`,
   a katalog PROJ se bere z uložených variant, ne z příchozího ceníku.
 - **Sazba DPH** se nehlídá — vybírá ji v hlavičce každý a cenu bez DPH,
-  kterou hlídá schvalování, nemění.
+  kterou hlídá schvalování, nemění. (Od B135 jen musí být číslo, které jádro
+  přečte — „0,21" neprojde.)
+- **#398 — výjimky administrátora, které zůstávají:** globální přirážka
+  ceníku (`marze`) a vlastní % sekce PROJ (`prirazkaPct`) smějí být
+  i záporné — nastavuje je administrátor a role s právem (`pole.prirazka`,
+  `sloupce.naklad`), ostatním je drží B112 proti uložené verzi. Ceník
+  varianty smí administrátor měnit libovolně (jen ve tvaru čísla podle
+  jádra). Rezervy, množství a rozměry šachty záporné nesmí nikdo.
+- **#398 — výjimka B113 zůstává:** nová zakázka s celým ceníkem sestavení
+  se uloží (test B113 e4), i když už je ceník zveřejněný. Zadání #398 ji
+  navrhovalo zrušit; po opravě B133 (směs) a B136 (#395 V3) z ní ale
+  nevznikne ani směs, ani zámek, a aplikace ji v legitimním toku stejně
+  přepočítá (`progPouzij` → `cenikPrepoctiRozpracovane`). Otázka pro J. V.
+  je v předávce.
 - **Hlídá se jen zápis. Čtecí strana B88 zůstává**: ceník a náklady jsou
   v DOM každé role (výpočet běží v prohlížeči), matice zobrazení je pro
   čtení věc pohodlí, ne bezpečnosti.

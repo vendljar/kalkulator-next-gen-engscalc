@@ -737,8 +737,14 @@ function inp(path, opts = {}) {
     return `<div class="row"><label>${opts.l}</label><select onchange="set('${path}', +this.value)">
       <option value="1" ${val ? 'selected' : ''}>Ano</option>
       <option value="0" ${!val ? 'selected' : ''}>Ne</option></select><span class="u"></span></div>`;
-  if (opts.type === 'pct')   // uloženo jako desetinné číslo (0,30), zobrazeno a zadáváno v % (30)
-    return `<div class="row"><label>${opts.l}</label><input type="number" step="${opts.step ?? 1}" value="${Math.round(val * 10000) / 100}" onchange="set('${path}', (+this.value) / 100)"><span class="u">%</span></div>`;
+  /* `min` u procent (B134, 12. 10. 2026): rezervy zadání OCK nesmějí být
+   * záporné — server zápornou rezervu neuloží a zábrana zapornaPolozka
+   * zastaví dokument; `min="0"` jen nepustí šipky pod nulu. Globální
+   * přirážku v ceníku min nemá (smí ji měnit jen administrátor). */
+  if (opts.type === 'pct') {  // uloženo jako desetinné číslo (0,30), zobrazeno a zadáváno v % (30)
+    const minPct = opts.min != null ? ` min="${esc(opts.min)}"` : '';
+    return `<div class="row"><label>${opts.l}</label><input type="number" step="${opts.step ?? 1}"${minPct} value="${Math.round(val * 10000) / 100}" onchange="set('${path}', (+this.value) / 100)"><span class="u">%</span></div>`;
+  }
   /* `t` = tooltip nad polem. Přibylo 10. 9. 2026, když se popisné texty
    * odstěhovaly ze Zadání šachty do Detailu výpočtu (zadání J. V.) — vysvětlení
    * se tím neztratilo, jen přestalo zabírat řádek pod každým polem. */

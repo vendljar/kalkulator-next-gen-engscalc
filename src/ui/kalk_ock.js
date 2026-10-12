@@ -263,18 +263,18 @@ function renderInputs() {
       /* Rezervy se zadávají v PROCENTECH (17. 8. večer): 30 = +30 % k množství
        * profilů/plechů. V datech zůstává desetinný podíl (0,30) — staré
        * zakázky se počítají beze změny, jen zadávání je lidské. */
-      inp('Z.rezervaProfilyPct', { type: 'pct', l: 'Rezerva profily (atyp)' }) +
+      inp('Z.rezervaProfilyPct', { type: 'pct', min: 0, l: 'Rezerva profily (atyp)' }) +
       /* Karta je od 19. 8. 2026 ve výchozím stavu SBALENÁ (zadání J. V.):
        * dimenze se mění zřídka a obchodníka při běžné práci jen ruší.
        * Kliknutím na nadpis se karta kdykoli rozbalí. */
-      inp('Z.rezervaPlechyPct', { type: 'pct', l: 'Rezerva plechy (atyp)' }), 'ock-profily', true) +
+      inp('Z.rezervaPlechyPct', { type: 'pct', min: 0, l: 'Rezerva plechy (atyp)' }), 'ock-profily', true) +
     kartaRezim('ock', 'prace', 'Práce a režie',
       inp('Z.montazZakladHod', { min: 0, l: 'Montáž – základ (1 os.)', step: 1, u: 'hod', klic: 'Z.montazZakladHod ← C.vychMontazZakladHod' }) +
       inp('Z.montazAtypHod', { min: 0, l: 'Montáž – atyp navíc', step: 1, u: 'hod', klic: 'Z.montazAtypHod ← C.atypMontazPct' }) +
       inp('Z.projekceZakladHod', { min: 0, l: 'Projekce – základ', step: 1, u: 'hod', klic: 'Z.projekceZakladHod ← C.vychProjekceZakladHod' }) +
       inp('Z.projekceAtypHod', { min: 0, l: 'Projekce – atyp navíc', step: 1, u: 'hod', klic: 'Z.projekceAtypHod ← C.atypProjekcePct' }) +
-      inp('Z.oplechOstatniKg', { l: 'Oplechování ostatní – materiál', step: 1, u: 'kg', klic: 'Z.oplechOstatniKg ← C.vychOplechOstatniKg' }) +
-      inp('Z.oplechOstatniHod', { l: 'Oplechování ostatní – práce', step: 1, u: 'hod', klic: 'Z.oplechOstatniHod ← C.vychOplechOstatniHod' }) +
+      inp('Z.oplechOstatniKg', { min: 0, l: 'Oplechování ostatní – materiál', step: 1, u: 'kg', klic: 'Z.oplechOstatniKg ← C.vychOplechOstatniKg' }) +
+      inp('Z.oplechOstatniHod', { min: 0, l: 'Oplechování ostatní – práce', step: 1, u: 'hod', klic: 'Z.oplechOstatniHod ← C.vychOplechOstatniHod' }) +
       /* Zámečník atyp je od 17. 8. večer JEDNA částka: pole „množství" zmizelo,
        * v kalkulaci je řádek s množstvím vždy 1 a hodnotou z tohoto pole.
        * Prázdné pole = řádek není (příp. ceníková sazba u starých zakázek
@@ -285,8 +285,8 @@ function renderInputs() {
       /* REZERVY v procentech (17. 8. večer): 30 = +30 %. Základ se počítá
        * z celého základu kalkulace, příplatky z příplatků — jako dosud,
        * mění se jen zadávání (v datech zůstává desetinný podíl). */
-      inp('Z.rezervaZakladPct', { type: 'pct', l: 'REZERVA základ', klic: 'Z.rezervaZakladPct ← C.atypRezervaZakladPct' }) +
-      inp('Z.rezervaPriplatkyPct', { type: 'pct', l: 'REZERVA příplatky', klic: 'Z.rezervaPriplatkyPct ← C.atypRezervaPriplatkyPct' }), 'ock-prace');
+      inp('Z.rezervaZakladPct', { type: 'pct', min: 0, l: 'REZERVA základ', klic: 'Z.rezervaZakladPct ← C.atypRezervaZakladPct' }) +
+      inp('Z.rezervaPriplatkyPct', { type: 'pct', min: 0, l: 'REZERVA příplatky', klic: 'Z.rezervaPriplatkyPct ← C.atypRezervaPriplatkyPct' }), 'ock-prace');
 }
 
 /* ---- ceník → zadání pro jednu variantu (1. 9. 2026) ----

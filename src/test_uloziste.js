@@ -520,7 +520,12 @@ console.log('\n--- #340 (P1): typy polí zadání a ceníku ---');
   test('#340: PROJ — skript v sazbě položky neprojde', s1(d => { d.proj.zadani.sekce[0].polozky[0].sazba = XSS; }).length === 1);
   test('#340: PROJ ceník — objekt místo čísla neprojde', s1(d => { const k = Object.keys(d.proj.cenik).find(x => typeof d.proj.cenik[x] === 'number'); d.proj.cenik[k] = { a: 1 }; }).length === 1);
   test('#340: prázdno není nula — "" v čísle projde', s1(d => { d.cenik.dph = ''; d.ock.zadani.mustekSirkaMm = ''; }).length === 0);
-  test('#340: číslo jako text („12", „3,5") projde', s1(d => { d.ock.zadani.mustekSirkaMm = '1200'; d.cenik.dph = '0,21'; }).length === 0);
+  /* Od B135 (12. 10. 2026) smí ceník varianty nést číslo jako text jen
+   * s desetinnou TEČKOU — jádro čte ceník přes `+x` a „0,21" je pro ně NaN.
+   * Zadání mimo vstupy jádra (můstek) dál snese „3,5". */
+  test('#340: číslo jako text („12", „3,5", ceník „0.21") projde', s1(d => { d.ock.zadani.mustekSirkaMm = '1200,5'; d.cenik.dph = '0.21'; }).length === 0);
+  test('B135: ceník varianty — číslo jako text s čárkou („0,21") neprojde', s1(d => { d.cenik.dph = '0,21'; }).some(p => /cenik\.dph/.test(p.kde)));
+  test('B135: ceník PROJ — číslo jako text s čárkou neprojde', s1(d => { const k = Object.keys(d.proj.cenik).find(x => typeof d.proj.cenik[x] === 'number'); d.proj.cenik[k] = '100,0'; }).length === 1);
   test('#340: volba Ano/Ne uložená jako 0/1 projde', s1(d => { const k = Object.keys(d.ock.zadani).find(x => typeof eng.DEFAULT_ZADANI[x] === 'boolean'); d.ock.zadani[k] = 1; }).length === 0);
   test('#340: klíče mimo vzor se nekontrolují', s1(d => { d.ock.zadani.nejakyNovyKlic = XSS; }).length === 0);
   const zam = nova(); zam.varianty[0].data.cenik.dph = 'starý tvar'; zam.varianty[0].zamek = { zamceno: true };
@@ -558,6 +563,34 @@ console.log('\n--- #340 (P1): typy polí zadání a ceníku ---');
     test('B96: varianta zamčená už v uložené verzi se přeskočí (doklad)', Z(nova, stara).length === 0);
     test('B96: bez uložené verze se táž zamčená varianta posoudí', Z(nova, null).length === 1);
   }
+}
+
+/* #398 / B134 (12. 10. 2026): každé číselné pole výchozího zadání OCK je
+ * buď hlídaný vstup jádra (zápor, tvar čísla), rozměr šachty (B137), nebo
+ * vědomě mimo jádro. Nové pole bez zařazení test zastaví — jinak by se
+ * vrátila třída B134 (záporné číslo, které jádro násobí, nikdo nehlídá). */
+{
+  const kt = require('./kontroly.js');
+  const rozmery = kt.KONTROLY_ROZMERY_KLADNE.concat(kt.KONTROLY_ROZMERY_NEZAPORNE).map(x => x[0]);
+  const zarazene = new Set([].concat(U.ULO_ZADANI_BEZ_ZAPORU, U.ULO_HODINY_N56, U.ULO_ZADANI_MIMO_JADRO, rozmery));
+  const ciselna = Object.keys(eng.DEFAULT_ZADANI).filter(k => typeof eng.DEFAULT_ZADANI[k] === 'number'
+    || ['svetlikyBokyKs', 'svetlikyBokySirkaMm', 'zamecnikAtypKc', 'mustekHloubkaMm', 'mustekSirkaMm'].indexOf(k) >= 0);
+  const chybi = ciselna.filter(k => !zarazene.has(k));
+  test('B134: každé číselné pole DEFAULT_ZADANI je zařazené (vstup jádra / rozměr / mimo jádro)', chybi.length === 0, chybi.join(', '));
+  const f = U.uloZaporneVZadani;
+  test('B134: záporná rezerva → zaporne', f({ rezervaZakladPct: -0.999 }, null).some(p => p.duvod === 'zaporne' && /rezervaZakladPct/.test(p.kde)));
+  test('B134: kladná rezerva projde', f({ rezervaZakladPct: 0.3, rezervaPriplatkyPct: '0.3' }, null).length === 0);
+  test('B135: rezerva „0,3" (jádro čte NaN) → typ', f({ rezervaZakladPct: '0,3' }, null).some(p => p.duvod === 'typ'));
+  test('B145: přepis „12,5" → typ, „12.5" projde', f({ mnozstviPrepis: { a: '12,5' } }, null).some(p => p.duvod === 'typ')
+    && f({ mnozstviPrepis: { a: '12.5' } }, null).length === 0);
+  test('B111: „-5000,5" je dál hlášené jako záporné (ne jen typ)', f({ vlastniPolozky: { hrubaOck: [{ cena: '-5000,5', mnozstvi: 1 }] } }, null)
+    .some(p => p.duvod === 'zaporne'));
+  test('B137: uloRozmeryVZadani — při uložení jen nesmyslné číslo, u zámku i nula a prázdno',
+    U.uloRozmeryVZadani({ zdvih: 0, sirka: '', hloubka: 1, roztec: 1, cistyVstupMm: 800, sirkaRamuMm: 100, rohoveSloupky: 4, prejezd: 0, prohluben: 0 }, false).length === 0
+    && U.uloRozmeryVZadani({ zdvih: 0, sirka: '', hloubka: 1, roztec: 1, cistyVstupMm: 800, sirkaRamuMm: 100, rohoveSloupky: 4, prejezd: 0, prohluben: 0 }, true).length === 2
+    && U.uloRozmeryVZadani({ zdvih: -1, sirka: 1, hloubka: 1, roztec: 1, cistyVstupMm: 800, sirkaRamuMm: 100, rohoveSloupky: 4, prejezd: 0, prohluben: 0 }, false).length === 1);
+  test('B135: uloCisloJadro — číslo, prázdno, „12.5" ano; „12,5", „1e3" ne',
+    U.uloCisloJadro(3) && U.uloCisloJadro('') && U.uloCisloJadro(null) && U.uloCisloJadro('12.5') && !U.uloCisloJadro('12,5') && !U.uloCisloJadro('1e3'));
 }
 
 console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');

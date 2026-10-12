@@ -170,8 +170,13 @@ function cenikPlatnyTed() {
   const db = pamet.has('program/db') ? JSON.parse(pamet.get('program/db')) : null;
   return db && db.platny && db.platny.cenik ? db.platny : null;
 }
+/* Rozměry šachty (B137, 12. 10. 2026): nová zakázka začíná s nulovými
+ * rozměry a nový zámek z nich server neuloží (zrcadlo zábrany „rozmery").
+ * Fixtura proto nese rozměry vyplněné, jako by je zadal obchodník. */
+const ROZMERY_TEST = { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2 };
 function zakazkaCislo(cislo) {
   const z = zk.novaZakazka();
+  Object.assign(z.varianty[0].data.ock.zadani, ROZMERY_TEST);
   z.cislo = cislo;
   z.nazevAkce = 'Matice práv';
   const p = cenikPlatnyTed();

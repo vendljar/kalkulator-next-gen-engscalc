@@ -30,7 +30,9 @@ const ULO = require('../src/uloziste.js');
 
 /* Kontroly, které skript umí. Každá dostane variantu a vrátí [{ kde, duvod }]. */
 const KONTROLY = [
-  { kod: 'B111', nazev: 'záporná částka, množství nebo hodiny',
+  /* Od #398 (12. 10. 2026) sem patří i B134 — záporné rezervy a další
+   * procenta a počty zadání OCK, které jádro násobí. */
+  { kod: 'B111', nazev: 'záporná částka, množství, hodiny nebo rezerva',
     najdi: (v) => ULO.uloZaporneVZadani(v.data.ock && v.data.ock.zadani, v.data.proj && v.data.proj.zadani)
       .filter(p => p.duvod === 'zaporne') },
   /* B96: krok nebo směr obchodního zaokrouhlení mimo výčet (ZAOKR_KROKY,
@@ -40,6 +42,10 @@ const KONTROLY = [
     najdi: (v) => [['zaokr', v.data.zaokr], ['zaokrProj', v.data.zaokrProj]]
       .filter(([, z]) => ULO.uloZaokrVadne(z))
       .map(([k, z]) => ({ kde: k + ': krok ' + JSON.stringify(z && z.krok) + ', směr ' + JSON.stringify(z && z.smer) })) },
+  /* B137 (#398): rozměr šachty záporný, nečitelný pro jádro nebo zdvih nad
+   * 99 m; u zamčené varianty i nula a prázdno (zámek z nich nemá vzniknout). */
+  { kod: 'B137', nazev: 'rozměr šachty, který nedává smysl',
+    najdi: (v) => ULO.uloRozmeryVZadani(v.data.ock && v.data.ock.zadani, !!(v.zamek && v.zamek.zamceno)) },
 ];
 
 export function detekuj(zaloha) {
