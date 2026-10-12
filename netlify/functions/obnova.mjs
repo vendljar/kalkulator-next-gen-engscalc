@@ -101,6 +101,7 @@ const tokenKlic = (id) => TOKEN_PREDPONA + id;
 const maVlastni = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 
 const stejne = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const obnovaTxt = (x, max) => (typeof x === 'string' ? x.slice(0, max) : '');
 const bilance = () => ({ nove: 0, prepsane: 0, bezeZmeny: 0, preskocene: 0, duvody: [] });
 const preskoc = (b, klic, duvod) => { b.preskocene++; b.duvody.push({ klic: String(klic), duvod }); };
 
@@ -131,7 +132,8 @@ async function zaznam(b, s, klic, novy, rezim, zapisovat, kontrola) {
 
 /* Mapa klíč → záznam (sablony, zakaznici, podpisy; zakázky s předponou).
  * `overeni(klic, hodnota)` (B32) posoudí každý záznam ještě PŘED čtením
- * ze serveru — vrací důvod přeskočení, nebo prázdno. */
+ * ze serveru — vrací důvod přeskočení, prázdno, nebo { hodnota } s očištěným
+ * záznamem, který se zapíše místo původního (zákazníci, B100). */
 async function obnovMapu(b, s, mapa, rezim, zapisovat, predpona, kontrola, overeni) {
   if (!mapa || typeof mapa !== 'object' || Array.isArray(mapa)) {
     preskoc(b, '*', 'záloha tuto část nenese'); return;
@@ -139,12 +141,32 @@ async function obnovMapu(b, s, mapa, rezim, zapisovat, predpona, kontrola, overe
   for (const [k, v] of Object.entries(mapa)) {
     if (!k || k.length > KLIC_MAX) { preskoc(b, k, 'nepřijatelný klíč'); continue; }
     if (v == null || typeof v !== 'object') { preskoc(b, k, 'poškozený záznam (není objekt)'); continue; }
+    let hodnota = v;
     if (overeni) {
+      /* Důvod přeskočení (text), nebo { hodnota } = očištěný záznam k zápisu. */
       const d = await overeni(k, v);
-      if (d) { preskoc(b, k, d); continue; }
+      if (typeof d === 'string' && d) { preskoc(b, k, d); continue; }
+      if (d && typeof d === 'object') hodnota = d.hodnota;
     }
-    await zaznam(b, s, (predpona || '') + k, v, rezim, zapisovat, kontrola);
+    await zaznam(b, s, (predpona || '') + k, hodnota, rezim, zapisovat, kontrola);
   }
+}
+
+/* REJSTŘÍK ŠABLON ZE ZÁLOHY JEN V OČEKÁVANÉM TVARU (B147, 12. 10. 2026):
+ * objekt s typy, každý typ známý, platná verze s kladným celým číslem,
+ * historie jako pole. Vrací důvod přeskočení, nebo ''. */
+function obnovaRejstrikSablonVada(r) {
+  const obj = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
+  const verzeOk = (m) => obj(m) && Number.isInteger(m.verze) && m.verze > 0;
+  if (!obj(r) || !obj(r.typy)) return 'rejstřík šablon v nepovoleném tvaru';
+  if (r.rezim !== undefined && r.rezim !== 'prisny' && r.rezim !== 'mekky') return 'rejstřík šablon s neznámým režimem';
+  for (const [typ, t] of Object.entries(r.typy)) {
+    if (!globalThis.sablonaTypPlatny(typ) || !obj(t)) return 'rejstřík šablon s neznámým typem nebo záznamem';
+    if (t.platna != null && !verzeOk(t.platna)) return 'rejstřík šablon: platná verze „' + typ + '" v nepovoleném tvaru';
+    if (t.historie !== undefined && !(Array.isArray(t.historie) && t.historie.every(verzeOk)))
+      return 'rejstřík šablon: historie „' + typ + '" v nepovoleném tvaru';
+  }
+  return '';
 }
 
 /* Rejstřík ze skutečného obsahu úložiště — ne ze zálohy. */
@@ -270,13 +292,12 @@ export default async (req) => {
    * a „podpis hlavního administrátora mění jen on sám"). Bez té adresy
    * ochrany neplatí, takže se obnova neobsluhuje (B54, 22. 9. 2026). */
   { const stop = bezHlavnihoUctu(); if (stop) return stop; }
-  let ULO, SCHV, JEKLY;
-  try { ({ ULO, SCHV, JEKLY } = await jadro()); } catch (e) { return jadroChyba(e); }
+  let ULO, SCHV, JEKLY, fm, ZOB;
+  try { ({ ULO, SCHV, JEKLY, fm, ZOB } = await jadro()); } catch (e) { return jadroChyba(e); }
 
   let t; try { t = await req.json(); } catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
   /* Tělo JSON `null`, číslo nebo pole (B131): dřív výjimka a 500. */
   if (!t || typeof t !== 'object' || Array.isArray(t)) return json({ ok: false, chyba: 'Vstup musí být objekt JSON.' }, 400);
-  if (!t || typeof t !== 'object') return json({ ok: false, chyba: 'Chybí tělo požadavku.' }, 400);
 
   const faze = String(t.faze || '');
   const nahled = t.nahled === true;
@@ -455,6 +476,21 @@ export default async (req) => {
         await zaznam(b, sProg, jednoduche[cast], cisty, rezim, zapisovat);
       }
     }
+    else if (cast === 'firma') {
+      /* FIRMA PROJDE TOUŽ KONTROLOU A OČISTOU JAKO /api/firma (B100-zbytek,
+       * audit 12. 10. 2026). Obnova zapisovala záznam ze souboru doslova —
+       * i ukázkovou firmu nebo údaje, které běžné zveřejnění odmítne. Pořadí
+       * jako ve firma.mjs: nejdřív posoudit, co přišlo, pak čistá kopie. */
+      const lze = fm.firmaLzeZverejnit(hodnota.udaje || null);
+      if (!lze.ok) preskoc(b, 'firma', lze.duvod);
+      else await zaznam(b, sProg, 'firma', { udaje: fm.firmaKZverejneni(hodnota.udaje), kdo: obnovaTxt(hodnota.kdo, 200),
+                                             kdy: obnovaTxt(hodnota.kdy, 40) }, rezim, zapisovat);
+    }
+    else if (cast === 'zobrazeni') {
+      /* Matice zobrazení touž očistou jako /api/zobrazeni (B100-zbytek). */
+      await zaznam(b, sProg, 'zobrazeni', { matice: ZOB.zobrazeniOciste(hodnota.matice), kdo: obnovaTxt(hodnota.kdo, 200),
+                                            kdy: obnovaTxt(hodnota.kdy, 40) }, rezim, zapisovat);
+    }
     else await zaznam(b, sProg, jednoduche[cast], hodnota, rezim, zapisovat);
     /* Přeskočený ceník v režimu „doplnit" je nejčastější důvod dojmu, že
      * „obnova nenahrála všechno" (7. 9. 2026): důvod proto říká obě verze. */
@@ -598,10 +634,27 @@ export default async (req) => {
      * nést verzi zveřejněnou před kontrolou). Vadný se přeskočí s důvodem. */
     if (cast === 'sablony') {
       overeni = async (k, v) => {
-        if (!/^data\//.test(k)) return '';
+        /* B147 (12. 10. 2026): v úložišti šablon jsou jen `rejstrik`
+         * a `data/<typ>/<verze>`. Jiný klíč nebo rejstřík v jiném tvaru se
+         * neobnoví — rozbil by Nastavení → Šablony i tisk. */
+        if (k === 'rejstrik') return obnovaRejstrikSablonVada(v);
+        const mk = /^data\/([^/]+)\/([1-9]\d{0,8})$/.exec(k);
+        if (!mk || !globalThis.sablonaTypPlatny(mk[1])) return 'neznámý klíč v úložišti šablon';
         if (typeof v.data !== 'string' || !globalThis.sablonaJeDocxB64(v.data)) return 'soubor šablony není .docx';
         const vady = await globalThis.sablonaObsahVady(v.data);
         return vady.length ? globalThis.sablonaObsahVadyText(vady) : '';
+      };
+    }
+    if (cast === 'zakaznici') {
+      /* ZÁKAZNÍCI TOUŽ OČISTOU JAKO /api/zakaznici (B100-zbytek, audit
+       * 12. 10. 2026): pole se stropem délky, IČO bez mezer, nic navíc.
+       * Razítka (kdo kartu založil a upravil) se drží ze zálohy. Klíč musí
+       * mít tvar z/<klíč> jako při běžném zápisu. */
+      overeni = (k, v) => {
+        const z = globalThis.zakaznikOciste(v, obnovaTxt(v.upravil, 200), obnovaTxt(v.upraven, 40));
+        z.autor = obnovaTxt(v.autor, 200); z.zalozen = obnovaTxt(v.zalozen, 40);
+        if (!/^z\/[^/]+$/.test(k) || !globalThis.zakaznikKlic(z)) return 'nepřijatelný klíč nebo zákazník bez IČO i názvu';
+        return { hodnota: z };
       };
     }
     if (cast === 'podpisy') {
@@ -624,16 +677,26 @@ export default async (req) => {
     /* #395 (8. 10. 2026): přeskočený soubor (B100) nebo soubor, který
      * v úložišti chybí, nechá PLATNOU verzi rejstříku bez použitelné šablony.
      * Po zápisu se proto platné verze ověří a správce dostane upozornění. */
-    if (cast === 'sablony' && zapisovat) {
+    /* B147 (12. 10. 2026): upozornění dává už NÁHLED — správce se o
+     * nepoužitelné platné šabloně dozví dřív, než obnovu pustí. Náhled nic
+     * nezapsal, takže rejstřík i soubor bere ze zálohy tam, kde by je obnova
+     * zapsala (klíč nepřeskočený), jinak ze serveru. */
+    if (cast === 'sablony') {
       const s = await uloziste('sablony');
-      const rej = await s.cti('rejstrik');
+      const zal = zaloha.sablony && typeof zaloha.sablony === 'object' ? zaloha.sablony : {};
+      const preskoceno = new Set(b.duvody.map(d => d.klic));
+      const zeZalohy = async (k) => {
+        if (zapisovat || !maVlastni(zal, k) || preskoceno.has(k)) return s.cti(k);
+        return zal[k];
+      };
+      const rej = await zeZalohy('rejstrik');
       for (const typ of Object.keys((rej && rej.typy) || {})) {
         const platna = globalThis.sablonaPlatna(rej, typ);
         if (!platna) continue;
-        const soubor = await s.cti(globalThis.sablonaKlicSouboru(typ, platna.verze));
+        const soubor = await zeZalohy(globalThis.sablonaKlicSouboru(typ, platna.verze));
         const vady = soubor && typeof soubor.data === 'string' && globalThis.sablonaJeDocxB64(soubor.data)
           ? await globalThis.sablonaObsahVady(soubor.data) : ['soubor v úložišti chybí'];
-        if (vady.length) upozorneni.push('Platná šablona „' + typ + '" (verze ' + platna.verze + ') není po obnově '
+        if (vady.length) upozorneni.push('Platná šablona „' + typ + '" (verze ' + platna.verze + ') ' + (zapisovat ? 'není' : 'nebude') + ' po obnově '
           + 'použitelná (' + vady.join('; ') + ') — zveřejněte ji znovu v Nastavení → Šablony.');
       }
     }

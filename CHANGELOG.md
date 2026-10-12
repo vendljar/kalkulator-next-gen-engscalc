@@ -8,6 +8,46 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v12.10.3 — #399 + část #400: šablony, obnova, integrita (audit 12. 10. 2026; větev claude/sablony-399)
+
+Noční dávka N2 (pokyn J. V. 12. 10. 2026 přes koordinační sezení 22. kola).
+Větev z `test-draft` (v12.10.2).
+
+- **B139 (střední) — prefix s ne-ASCII písmenem.** Kontrola obsahu šablony
+  znala jen prefix `[\w.-]+:`; `<é:instrText> INCLUDETEXT`, `<é:fldSimple>`,
+  `<é:Relationship … attachedTemplate>`, `<é:altChunk>` prošly a generátor
+  pole přenesl do nabídky. Prefix je teď cokoli až po dvojtečku (prvky
+  i atributy).
+- **B140 (střední) — návnada atributu.** `q:instr=" PAGE "` před
+  `w:instr=" INCLUDETEXT …"` (q přes mc:Ignorable) ukázal kontrole PAGE. Platí
+  jen atribut s prefixem prvku; jiný se stejným místním jménem je vada.
+- **B141 (střední)** — zakázaná pole DATABASE a RD; hromadná korespondence
+  s `connectString`/`query`/`udl` a vztahy `mailMergeSource` se odmítnou.
+- **B142 (nízká) — rozdílné čtení konce ZIPu.** Čistý archiv + škodlivý za
+  ním (komentář EOCD o 1 B delší než zbytek): kontrola četla čistý, Python
+  `zipfile` i `unzip` škodlivý. Nevěrohodný podpis konce za věrohodným
+  koncem archiv odmítne. Revize (R1): podpis náhodou uvnitř dat položky
+  (obrázek) čistou šablonu neodmítne. Mutace na věrohodnost EOCD a souhrnný
+  strop rozbalení včetně STORE.
+- **B143 (nízká, DoS)** — neuzavřený `<w:instrText>`, `<Relationship` bez
+  `>`, komentář, CDATA, instrukce i dlouhé jméno atributu: kvadratický čas
+  (1 MB → 149 s). Rozbor jde jedním průchodem, neuzavřené je vada (1 MB pod 3 s).
+- **B100-zbytek (nízká)** — obnova zapisuje firmu přes `firmaLzeZverejnit`
+  a `firmaKZverejneni`, zákazníky přes `zakaznikOciste` (klíč `z/<klíč>`)
+  a matici zobrazení přes `zobrazeniOciste` — stejně jako běžné cesty.
+- **B144 (nízká)** — vlastní položky OCK a PROJ se stropem 1e9 jako přepisy
+  (1e300 × 1e300 → Infinity/NaN).
+- **B146 (nízká)** — přísné porovnání nového zámku počítá pole řádků mimo
+  jádro nahrazené objektem, `null`, vynechané nebo navíc jako rozdíl.
+- **B147 (info)** — náhled obnovy upozorní na platnou šablonu, která po
+  obnově nebude použitelná; v úložišti šablon se obnoví jen `rejstrik`
+  v očekávaném tvaru a `data/<typ>/<verze>`.
+- **B148 (info)** — úprava kontaktu (i cizího) zapíše `zmenil` {kdo z relace, kdy}.
+- **B149 (info)** — obnova ověřuje zámek volně: vědomá mez v `BEZPECNOST_MEZE.md`.
+- **B150** — mutace B131 pro všech 10 funkcí (test i s tělem `[]` a číslem);
+  `overit_xss.mjs` vykreslí dialog Kontakt… a otráví usazení OCK; smazán
+  mrtvý řádek v `obnova.mjs`; `test_profil.mjs` v sadách serverových mutací.
+
 ## v12.10.2 — B126, B127, B128, B131 z auditu 6. 10. 2026; šablony CN v15 (větev claude/b126-cn-v15)
 
 Pokyn J. V. 12. 10. 2026: „připrav mi šablony v15, souhlasím s ostatními

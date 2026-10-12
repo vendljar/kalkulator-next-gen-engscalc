@@ -1006,6 +1006,25 @@ const nactiB59 = async (soubor) => (await (await get(zakazky,
   await post(zakazky, 'http://x/api/zakazky', { zakazka: z6 }, cObch);
   const ov6 = (await nactiB59('2026-OPR-CN-1196.json')).varianty[0].zamek.overeni;
   test('B119: poctivý výsledek s jinou verzí = shoda (stejný tvar výsledku)', ov6 && ov6.stav === 'shoda', JSON.stringify(ov6));
+  /* B146 (audit 12. 10. 2026): pole řádků mimo jádro (ock.priplatky)
+   * nahrazené objektem, null nebo vynechané se v přísném porovnání nepočítalo
+   * jako rozdíl — podvržené řádky šly schovat změnou tvaru. Před opravou
+   * „shoda" u všech tří, po opravě „nesouhlasí". */
+  let cisloB146 = 1197;
+  for (const [popis, uprav, cesta] of [['objektem', r => { r.ock.priplatky = {}; }], ['null', r => { r.ock.priplatky = null; }],
+    ['vynechané', r => { delete r.ock.priplatky; }], ['navíc (jen v zámku)', r => { r.ock.radkyNavic = [{ nazev: 'x', sMarzi: 1 }]; }, 'ock.radkyNavic']]) {
+    const c = String(cisloB146++);
+    const z = odesliVerzi(zakazkaSCeny('2026 - OPR - CN - ' + c), tataz, uprav);
+    await post(zakazky, 'http://x/api/zakazky', { zakazka: z }, cObch);
+    const ov = (await nactiB59('2026-OPR-CN-' + c + '.json')).varianty[0].zamek.overeni;
+    test('B146: pole řádků ' + popis + ' → nesouhlasí', ov && ov.stav === 'nesouhlasi'
+      && ov.cesty.indexOf(cesta || 'ock.priplatky') >= 0, JSON.stringify(ov));
+  }
+  /* Volné porovnání (starý zámek, P6) tvar dál nehlídá — jiná verze aplikace. */
+  { const z = odesliVerzi(zakazkaSCeny('2026 - OPR - CN - 1201'), tataz);
+    const v = z.varianty[0], kl = JSON.parse(JSON.stringify(v.zamek.vysledek)); kl.ock.priplatky = {};
+    test('B146: volné porovnání jiný tvar pole dál nepočítá (jiná verze aplikace)',
+      zam.zamekVysledekRozdily(kl, zam.zamekVysledekSpocti(v, JEKLY_T, '')).pocet === 0); }
 }
 {
   /* Podvržené razítko u NOVÉHO zámku: server ho spočítá sám. */
@@ -1674,9 +1693,13 @@ console.log('\n===== #374 (B113, B114): KONCOVÁ CENA BEZ SCHVÁLENÍ — IDENTI
     ['uzivatele', uzivatele, '/api/uzivatele', cAdmin], ['program', program, '/api/program', cAdmin], ['firma', firma, '/api/firma', cAdmin],
     ['zobrazeni', zobrazeni, '/api/zobrazeni', cAdmin], ['popisy', popisy, '/api/popisy', cAdmin], ['sablony', sablonyFn, '/api/sablony', cAdmin],
     ['obnova', obnova, '/api/obnova', cAdmin], ['analytika', analytikaFn, '/api/analytika', cObch]]) {
-    let st;
-    try { st = (await post(fn, 'http://x' + url, null, c)).status; } catch (e) { st = 'výjimka ' + e.message; }
-    test('B131: ' + jm + ' s tělem JSON null → 400', st === 400, st);
+    /* B150 (12. 10. 2026): i pole a číslo — kontrola má odmítnout každé
+     * tělo, které není objekt (pole by např. matici zobrazení vynulovalo). */
+    for (const telo of [null, [], 5]) {
+      let st;
+      try { st = (await post(fn, 'http://x' + url, telo, c)).status; } catch (e) { st = 'výjimka ' + e.message; }
+      test('B131: ' + jm + ' s tělem JSON ' + JSON.stringify(telo) + ' → 400', st === 400, st);
+    }
   }
 
   /* B128 (audit 6. 10. 2026): kontrola ceníku (B112) brala u KAŽDÉ položky

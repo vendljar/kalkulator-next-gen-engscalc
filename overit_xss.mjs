@@ -230,12 +230,35 @@ const KOD_STRANKY = `
       d.ock.zadani.oplasteni = { rezim: 'poStenach', steny: { A: { odM: 0, pasy: [{ typ: 'jine', nazev: 'x', naklad: 100, doM: 3 }, { typ: 'sklo', doM: null }] },
         B: { odM: 0, pasy: [{ typ: 'jine', nazev: 'y', naklad: 120, doM: null }] } } };
       otrav(d.ock.zadani.oplasteni, 'ock.zadani.oplasteni', c => /nazev$/.test(c)); },
+    /* B150 (audit 12. 10. 2026): usazení OCK na levé a pravé boční stěně
+     * (#396) jde z technické specifikace do nabídky — dosud neotrávené. */
+    'B150: usazení OCK v nabídce (levá a pravá boční stěna)': (z, d) => {
+      d.techspec.hodnoty = Object.assign(d.techspec.hodnoty || {}, { usazeniLeva: 'x', usazeniPrava: 'y' });
+      otrav(d.techspec.hodnoty, 'techspec.hodnoty', c => /usazeni(Leva|Prava)$/.test(c)); },
+  };
+  /* Oblast, která se kreslí jen v jednom místě, musí doložit, že se
+   * opravdu vykreslila (jinak by obecná pojistka „payload ve stránce"
+   * prošla díky jiným polím). Volá se po každé záložce, panelu a na konci. */
+  const OVERENI = {
+    'B150: usazení OCK v nabídce (levá a pravá boční stěna)': (ramy) => ramy.some(f => f.contentDocument && f.contentDocument.documentElement
+      && /techspec\.hodnoty\.usazeniLeva/.test(f.contentDocument.documentElement.innerHTML)
+      && /techspec\.hodnoty\.usazeniPrava/.test(f.contentDocument.documentElement.innerHTML)),
+    'B150: dialog Kontakt… (úprava kontaktu cizího účtu)': () => ['onlineUzKTitul', 'onlineUzKFunkce', 'onlineUzKTelefon']
+      .every(id => { const el = document.getElementById(id); return !!el && /__XSS\.push/.test(el.value); }),
   };
   const DALSI = {
     'firemní údaje (NAST.firma)': () => otrav(NAST.firma, 'NAST.firma'),
     'profil, seznam účtů': () => { otrav(ONLINE_STAV.ja, 'ja', c => !/email/.test(c));
       ONLINE_STAV.uzivatele = [ucet('u1'), ucet('u2')]; ONLINE_STAV.uzivateleNacteno = true; otrav(ONLINE_STAV.uzivatele, 'uzivatele', null, true);
       NAST.uzivatele = [ucet('u3')]; otrav(NAST.uzivatele, 'NAST.uzivatele', null, true); },
+    'B150: dialog Kontakt… (úprava kontaktu cizího účtu)': () => {
+      /* Správa účtů se kreslí jen online (stránka ze souboru = nouzový
+       * režim). Online se tu jen předstírá; dotazy na server zůstanou
+       * viset, aby nic nepřepsalo připravená data. */
+      window.onlineMozne = () => true; window.fetch = () => new Promise(() => {});
+      otrav(ONLINE_STAV.ja, 'ja', c => !/email|role/.test(c));
+      ONLINE_STAV.uzivatele = [ucet('u1'), ucet('u2')]; ONLINE_STAV.uzivateleNacteno = true; otrav(ONLINE_STAV.uzivatele, 'uzivatele', null, true);
+      ONLINE_STAV.kontaktPro = ONLINE_STAV.uzivatele[0].email; },
     'rejstřík zakázek': () => { ONLINE_STAV.rejstrik = [1, 2].map(i => Object.assign(uloRejstrikZaznam(ZAK, { soubor: 'zak' + i }), { autor: 'a@priklad.cz' }));
       otrav(ONLINE_STAV.rejstrik, 'rejstrik', null, true); },
     'kartotéka zákazníků': () => { const k = zakaznikNovy(); for (const q of Object.keys(k)) if (typeof k[q] === 'string') k[q] = 'x';
@@ -284,15 +307,17 @@ const KOD_STRANKY = `
      * pruh a zvenku (Playwright) se sbírají i chyby stránky. */
     const pruh = (kde) => { const el = document.getElementById('render-chyba');
       if (el && el.style.display !== 'none' && el.textContent.trim()) { chyby.push(kde + ': ' + el.textContent.trim().slice(0, 160)); el.style.display = 'none'; el.textContent = ''; } };
+    let overeno = OVERENI[oblast] ? false : null;
+    const over = (ramy) => { if (overeno === false) { try { overeno = !!OVERENI[oblast](ramy || []); } catch (e) { overeno = false; } } };
     for (const t of TABY) {
       try { prepniTab(t); render(); } catch (e) { chyby.push('záložka ' + t + ': ' + e.message); }
-      pruh('záložka ' + t);
+      pruh('záložka ' + t); over();
       await new Promise(r => setTimeout(r, 60));
     }
     try { otevriNastaveni(); } catch (e) { chyby.push('nastavení: ' + e.message); }
     for (const p of nastPanelyViditelne()) {
       try { nastPanel(p.id); } catch (e) { chyby.push('panel ' + p.id + ': ' + e.message); }
-      pruh('panel ' + p.id);
+      pruh('panel ' + p.id); over();
       await new Promise(r => setTimeout(r, 40));
     }
     /* B124: TISKOVÉ NÁHLEDY (nabídka OCK a PROJ, krycí listy, detail
@@ -322,6 +347,7 @@ const KOD_STRANKY = `
     }
     window.open = puvOpen; Object.assign(window, puv); window.dokumentZabrana = puvZabrana;
     await new Promise(r => setTimeout(r, 300));
+    over(ramy);
     let imgNahled = 0, hrefJsNahled = 0, vyskytuNahled = 0;
     for (const f of ramy) { const dd = f.contentDocument; if (!dd || !dd.documentElement) continue;
       imgNahled += dd.querySelectorAll('img[src="x"]').length;
@@ -337,7 +363,7 @@ const KOD_STRANKY = `
     /* Kolikrát se payload (escapovaný) ve stránce vůbec objevil. Nula by
      * znamenala, že se oblast nikde nekreslí — a kontrola by byla prázdná. */
     const vyskytu = (document.documentElement.innerHTML.match(/__XSS\.push/g) || []).length;
-    return { xss: [...new Set(window.__XSS)], img, handlers: handlers.slice(0, 5), hrefJs, chyby, vyskytu, vyskytuNahled, nahledu: ramy.length, nahledy: ramy.map(f => f.__fn) };
+    return { xss: [...new Set(window.__XSS)], img, handlers: handlers.slice(0, 5), hrefJs, chyby, vyskytu, vyskytuNahled, nahledu: ramy.length, nahledy: ramy.map(f => f.__fn), overeno };
   }
   return { OBLASTI: Object.keys(OBLASTI), DALSI: Object.keys(DALSI), pokus };
 `;
@@ -375,6 +401,10 @@ async function a2Pokus(oblast, admin) {
       zkus(`${role}: ${oblast} — payload se do stránky dostal (escapovaný; ${r.vyskytu}×, v náhledech ${r.vyskytuNahled}×)`, r.vyskytu > 0, r.vyskytu);
       /* B124: tiskové náhledy se opravdu otevřely (jinak by kontrola náhledů byla prázdná). */
       zkus(`${role}: ${oblast} — tiskové náhledy se otevřely (${r.nahledu})`, r.nahledu === 9, r.nahledy.join(', '));
+      /* B150: oblast kreslená na jediném místě doloží, že se tam opravdu
+       * vykreslila (dialog Kontakt… jen administrátorovi). */
+      if (r.overeno !== null && (admin || !/Kontakt/.test(oblast)))
+        zkus(`${role}: ${oblast} — otrávená pole se opravdu vykreslila`, r.overeno === true, r.overeno);
     }
   }
 }
