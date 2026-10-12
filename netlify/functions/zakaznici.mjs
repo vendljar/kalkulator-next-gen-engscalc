@@ -60,6 +60,8 @@ export default async (req) => {
 
   let t; try { t = await req.json(); }
   catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
+  /* Tělo JSON `null`, číslo nebo pole (B131): dřív výjimka a 500. */
+  if (!t || typeof t !== 'object' || Array.isArray(t)) return json({ ok: false, chyba: 'Vstup musí být objekt JSON.' }, 400);
 
   const z = g.zakaznikOciste(t.zakaznik || {}, relace.email, new Date().toISOString());
   const klic = g.zakaznikKlic(z);

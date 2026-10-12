@@ -991,6 +991,9 @@ function uloZaporne(h) {
   if (typeof h === 'string' && ULO_CISLO_TEXT.test(h)) return parseFloat(h.replace(',', '.')) < 0;
   return false;
 }
+/* Strop ručního přepisu množství a ceny (B127): miliarda je víc, než kdy
+ * bude položka šachty stát nebo vážit. */
+const ULO_PREPIS_MAX = 1e9;
 const ULO_HODINY_N56 = ['montazZakladHod', 'montazAtypHod', 'projekceZakladHod', 'projekceAtypHod'];
 /* sazbaKc a naklad od revize 6. 10. 2026 (V2): vlastní hodinová položka
  * se sazbou mimo ceník a zápornou sazbaKc snižovala náklad sekce. */
@@ -1019,10 +1022,21 @@ function uloZaporneVZadani(z, zp) {
     }
     radky(z.volitelneVlastni, 'ock.zadani.volitelneVlastni');
     radky(z.priplatkyVlastni, 'ock.zadani.priplatkyVlastni');
+    /* Přepisy: stejná kontrola čísla jako vlastní položky (B127, audit
+     * 6. 10. 2026 — dřív jen záporné číslo; text s exponentem „-1e3", pole
+     * nebo nečíselný text prošly roli s právem na nákladové sloupce
+     * i administrátorovi a jádro z nich udělalo NaN nebo zápornou cenu)
+     * a strop ULO_PREPIS_MAX (obří hodnota → nekonečno v ceně). */
     ['mnozstviPrepis', 'cenyPrepis'].forEach(k => {
       const m = z[k];
-      if (!m || typeof m !== 'object' || Array.isArray(m)) return;
-      Object.keys(m).forEach((nazev, i) => { if (uloZaporne(m[nazev])) out.push({ kde: 'ock.zadani.' + k + '[' + i + ']', duvod: 'zaporne' }); });
+      if (m === null || m === undefined) return;
+      if (typeof m !== 'object' || Array.isArray(m)) { out.push({ kde: 'ock.zadani.' + k, duvod: 'typ' }); return; }
+      Object.keys(m).forEach((nazev, i) => {
+        const c = 'ock.zadani.' + k + '[' + i + ']';
+        hlidej(m[nazev], c);
+        const n = typeof m[nazev] === 'number' ? m[nazev] : parseFloat(String(m[nazev]).replace(',', '.'));
+        if (uloCisloSedi(m[nazev]) && isFinite(n) && Math.abs(n) > ULO_PREPIS_MAX) out.push({ kde: c, duvod: 'typ' });
+      });
     });
     ULO_HODINY_N56.forEach(k => { if (uloZaporne(z[k])) out.push({ kde: 'ock.zadani.' + k, duvod: 'zaporne' }); });
   }
@@ -1439,8 +1453,25 @@ function uloCenikProblemy(zak, stara, opts) {
       const kZv = zverejneneProRadu(rada).map(z => uloB112Listy(c.vezmi(z), okPrirazka));
       const kJine = jine.map(x => uloB112Listy(c.vezmi(x.data), okPrirazka));
       const kand = [kSvm].concat(kZv, kJine).filter(Boolean);
-      /* Smazaná položka: proti uložené verzi, u nové varianty proti platnému ceníku. */
-      const rozdily = uloB112Rozdily(listy, kand, c.pred, kSvm || kZv[0] || null);
+      /* CENÍK JAKO CELEK JEDNÉ VERZE (B128, audit 6. 10. 2026). Dřív stačilo,
+       * aby KAŽDÁ položka zvlášť seděla s kterýmkoli kandidátem — šlo tak
+       * složit platný ceník s hodinami statiky opláštění ze starší verze,
+       * která klíč neměla (doplněno nulou), a cena klesla bez slevy. Teď
+       * musí ceník části sedět s jednou SKUPINOU: uložená verze varianty
+       * (nebo jiná uložená varianta — klon) po položkách s PLATNÝM ceníkem
+       * (přepočet vybraných položek na dnešní ceník, cenik_stari.js), anebo
+       * kterákoli zveřejněná verze CELÁ. Chybějící klíč se hlídá proti
+       * prvnímu členu skupiny. V hlášce rozdíly proti nejbližší skupině. */
+      const kPlatny = verze.length && prog && prog.platny && prog.platny.cenik ? kZv.slice(0, 2) : [];
+      const skupiny = (kSvm ? [[kSvm].concat(kPlatny)] : [])
+        .concat(kJine.map(k => [k].concat(kPlatny)), kZv.map(k => [k]));
+      let rozdily = null;
+      for (const g of skupiny) {
+        const r = uloB112Rozdily(listy, g, c.pred, g[0]);
+        if (!rozdily || r.length < rozdily.length) rozdily = r;
+        if (!r.length) break;
+      }
+      if (!rozdily) rozdily = uloB112Rozdily(listy, kand, c.pred, kSvm || kZv[0] || null);
       if (!rozdily.length) return;
       /* Celý ceník sestavení (B113, 6. 10. 2026) jen u NOVÉ zakázky, nebo
        * u varianty, jejíž uložená verze ho sama nese. Jinak by obchodník

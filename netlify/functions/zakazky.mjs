@@ -86,6 +86,8 @@ export default async (req) => {
     return json({ ok: false, chyba: 'Zakázka je příliš velká (' + Math.round(delka / 1024) + ' kB, strop '
       + Math.round(ZAKAZKA_MAX_B / 1024) + ' kB). Zmenšete přílohy.' }, 413);
   let t; try { t = await req.json(); } catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
+  /* Tělo JSON `null`, číslo nebo pole (B131): dřív výjimka a 500. */
+  if (!t || typeof t !== 'object' || Array.isArray(t)) return json({ ok: false, chyba: 'Vstup musí být objekt JSON.' }, 400);
   if (JSON.stringify(t).length > ZAKAZKA_MAX_B)
     return json({ ok: false, chyba: 'Zakázka je příliš velká. Zmenšete přílohy.' }, 413);
 

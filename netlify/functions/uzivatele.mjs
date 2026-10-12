@@ -79,6 +79,8 @@ export default async (req) => {
   /* --- vlastní heslo: jediná akce dostupná bez role Administrátor --- */
   if (req.method === 'POST') {
     let t; try { t = await req.json(); } catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
+    /* Tělo JSON `null`, číslo nebo pole (B131): dřív výjimka a 500. */
+    if (!t || typeof t !== 'object' || Array.isArray(t)) return json({ ok: false, chyba: 'Vstup musí být objekt JSON.' }, 400);
 
     if (t.akce === 'mojeheslo') {
       const ucet = await u.cti(relace.email);

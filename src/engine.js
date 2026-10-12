@@ -664,10 +664,18 @@ function profilyNezname(zadani, jekly) {
   const z = (zadani && typeof zadani === 'object') ? zadani : {};
   const pr = (z.profily && typeof z.profily === 'object') ? z.profily : {};
   const ext = z.typSachty === 'exteriérová';
+  /* PROFIL, KTERÝ NENÍ OBJEKT (B126, audit 6. 10. 2026): `null`, chybějící
+   * klíč nebo text dřív filtr přeskočil — jádro dosadilo nulovou hmotnost
+   * i plochu, seznam zůstal prázdný a zábrana „profilNeznamy" (prohlížeč)
+   * i pojistka #372 (server) mlčely; cena klesla bez schvalování. Povinný
+   * profil bez rozměru je proto neznámý. Lemování jen u exteriérové šachty
+   * (interiérové se nepočítá a výchozí interiérové profily ho nemají). */
+  const maRozmer = p => !!p && typeof p === 'object' && !Array.isArray(p);
   return Object.keys(PROFILY_NAZVY)
-    .filter(k => pr[k] && typeof pr[k] === 'object' && (k !== 'lemovani' || ext))
-    .filter(k => { const j = (jekly || {})[pr[k].dim]; return !j || !j.kg || j.kg[String(pr[k].tl)] == null; })
-    .map(k => PROFILY_NAZVY[k] + ': ' + pr[k].dim + ' / ' + pr[k].tl + ' mm');
+    .filter(k => k !== 'lemovani' || ext)
+    .filter(k => { if (!maRozmer(pr[k])) return true;
+      const j = (jekly || {})[pr[k].dim]; return !j || !j.kg || j.kg[String(pr[k].tl)] == null; })
+    .map(k => PROFILY_NAZVY[k] + ': ' + (maRozmer(pr[k]) ? pr[k].dim + ' / ' + pr[k].tl + ' mm' : 'rozměr chybí'));
 }
 
 function vypocet(zadani, cenik, jekly, fixes = true) {
@@ -788,9 +796,11 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const pocetCilek = (ramy * 6 + portPricniky * 2 + kratkePricniky) * D16;
 
   /* ---------- profily (délky, hmotnosti, plochy) ---------- */
-  const jSl = jekl(z.profily.sloupek), jPb = jekl(z.profily.precnikBok),
-        jSp = jekl(z.profily.sloupekPortal), jPp = jekl(z.profily.precnikPortal),
-        jSpj = jekl(z.profily.spojka), jLem = jekl(z.profily.lemovani);
+  /* `profily` bez objektu (B126) výpočet neshodí — hlásí ho profilyNezname. */
+  const PR = (z.profily && typeof z.profily === 'object') ? z.profily : {};
+  const jSl = jekl(PR.sloupek), jPb = jekl(PR.precnikBok),
+        jSp = jekl(PR.sloupekPortal), jPp = jekl(PR.precnikPortal),
+        jSpj = jekl(PR.spojka), jLem = jekl(PR.lemovani);
 
   const dSloupky = H * z.rohoveSloupky - 0.2 * z.rohoveSloupky;
   const dPricniky = (2 * z.hloubka + z.sirka) * ramy + z.sirka;

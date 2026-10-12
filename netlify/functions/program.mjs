@@ -28,6 +28,8 @@ export default async (req) => {
   const { chyba, relace } = await vyzadujRoli(req, 'Administrátor');
   if (chyba) return chyba;
   let t; try { t = await req.json(); } catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
+  /* Tělo JSON `null`, číslo nebo pole (B131): dřív výjimka a 500. */
+  if (!t || typeof t !== 'object' || Array.isArray(t)) return json({ ok: false, chyba: 'Vstup musí být objekt JSON.' }, 400);
 
   /* Zahraniční odchylky (#181, 31. 8. 2026) jdou se stejnou verzí jako
    * tuzemský ceník. Očistu (jen známé cesty, jen čísla) dělá jádro
