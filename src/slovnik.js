@@ -285,7 +285,9 @@ function slovnikHeslaKontrola(hesla) {
     const kt = String(k).trim();
     if (!kt) return { ok: false, chyba: 'Slovník obsahuje prázdné heslo.' };
     if (k.length > M.klic) return { ok: false, chyba: 'Heslo „' + kt.slice(0, 40) + '…" je delší než ' + M.klic + ' znaků.' };
-    if (SLOVNIK_ZAKAZANE_KLICE.indexOf(kt) >= 0) return { ok: false, chyba: 'Heslo „' + kt + '" není povolené.' };
+    /* Zakázané klíče se kontrolují PO normalizaci — ta pokryje i syrový tvar
+     * (prekladNorm('__proto__') je zase '__proto__'), samostatná kontrola
+     * syrového klíče by byla mrtvý kód (mutace ji nedokázala odlišit). */
     if (SLOVNIK_ZAKAZANE_KLICE.indexOf(slovnikNorm(kt)) >= 0)
       return { ok: false, chyba: 'Heslo „' + kt.slice(0, 40) + '" není povolené (po úpravě tvaru je to „' + slovnikNorm(kt) + '").' };
     if (SLOVNIK_RIDICI.test(k)) return { ok: false, chyba: 'Heslo „' + kt.slice(0, 40) + '" obsahuje řídicí znak.' };

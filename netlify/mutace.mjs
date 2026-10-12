@@ -724,10 +724,8 @@ const MUTACE = [
     hledej: "  if (db && globalThis.slovnikBezeZmeny(db, k.hesla))",
     nahrad: "  if (false)",
     proc: 'opakované kliknutí by vytlačilo z historie skutečné verze' },
-  { nazev: '#401: prototypové klíče ve slovníku projdou', soubor: '../src/slovnik.js',
-    hledej: "    if (SLOVNIK_ZAKAZANE_KLICE.indexOf(kt) >= 0) return",
-    nahrad: "    if (false) return",
-    proc: 'heslo __proto__ by v PREKLAD prohlížeče sáhlo na prototyp objektu' },
+  /* „#401: prototypové klíče ve slovníku projdou" vyřazena (revize #401): syrovou
+   * kontrolu nahradila kontrola po normalizaci, kterou hlídá mutace „rev #401 N2". */
   { nazev: '#401: délka hesla slovníku bez stropu', soubor: '../src/slovnik.js',
     hledej: "    if (k.length > M.klic) return",
     nahrad: "    if (false) return",
