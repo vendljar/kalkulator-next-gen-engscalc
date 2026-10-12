@@ -267,6 +267,131 @@ const enc = new TextEncoder(), dec = new TextDecoder();
     test('#395: bajty za koncem ZIPu (některé nástroje je přidávají) nevadí', v9.length === 0, v9);
   }
 
+  /* B139–B143 (audit 12. 10. 2026, ověřené pokusem). Před opravou: obchvaty
+   * prošly (0 vad), podvržený archiv za čistým se četl jako čistý a kontrola
+   * neuzavřené značky trvala kvadraticky dlouho. Po opravě odmítnuty. */
+  {
+    const zlib = require('zlib');
+    const ME = 'xmlns:é="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
+    const MR = 'xmlns:é="http://schemas.openxmlformats.org/package/2006/relationships"';
+    const b = {
+      /* B139: prefix s ne-ASCII písmenem u prvků i atributů */
+      prefixInstr: await sestav(p => doDoc(p, '<é:p ' + ME + '><é:r><é:fldChar é:fldCharType="begin"/></é:r><é:r><é:instrText> INCLUDETEXT "https://example.invalid/a.docx" </é:instrText></é:r><é:r><é:fldChar é:fldCharType="end"/></é:r></é:p>')),
+      prefixSimple: await sestav(p => doDoc(p, '<é:fldSimple ' + ME + ' é:instr=" INCLUDETEXT &quot;https://example.invalid/a.docx&quot; "><é:r><é:t>x</é:t></é:r></é:fldSimple>')),
+      prefixRel: await sestav(p => pridej(p, 'word/_rels/settings.xml.rels', '<?xml version="1.0" encoding="UTF-8"?><é:Relationships ' + MR + '><é:Relationship Id="rId1" Type="' + R + 'attachedTemplate" Target="https://example.invalid/x.dotm" TargetMode="External"/></é:Relationships>')),
+      prefixAltChunk: await sestav(p => doDoc(p, '<é:altChunk ' + ME + ' r:id="rIdA"/>')),
+      prefixOle: await sestav(p => doDoc(p, '<ó:OLEObject xmlns:ó="urn:schemas-microsoft-com:office:office" ProgID="Word.Document.12"/>')),
+      prefixSubDoc: await sestav(p => doDoc(p, '<é:subDoc ' + ME + ' r:id="rIdS"/>')),
+      prefixKonec: await sestav(p => doDoc(p, '<w:p><w:r><w:instrText> INCLUDE</w:instrText><é:instrText ' + ME + '>TEXT "https://example.invalid/a.docx" </é:instrText></w:r></w:p>')),
+      /* B140: návnada atributu v cizím jmenném prostoru (q přes mc:Ignorable) */
+      navnadaSimple: await sestav(p => doDoc(p, '<w:fldSimple xmlns:q="urn:navnada" q:instr=" PAGE " w:instr=" INCLUDETEXT &quot;https://example.invalid/a.docx&quot; "><w:r><w:t>x</w:t></w:r></w:fldSimple>')),
+      navnadaFldChar: await sestav(p => doDoc(p, '<w:p xmlns:q="urn:navnada"><w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText> QUOTE </w:instrText></w:r>'
+        + '<w:r><w:fldChar q:fldCharType="separate" w:fldCharType="begin"/></w:r><w:r><w:instrText> INCLUDETEXT "https://example.invalid/a.docx" </w:instrText></w:r>'
+        + '<w:r><w:fldChar w:fldCharType="end"/></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>')),
+      navnadaVelikost: await sestav(p => doDoc(p, '<w:fldSimple w:Instr=" PAGE " w:instr=" INCLUDETEXT &quot;https://example.invalid/a.docx&quot; "><w:r><w:t>x</w:t></w:r></w:fldSimple>')),
+      /* B141: pole DATABASE a RD, hromadná korespondence s připojením k datům */
+      database: await sestav(p => doDoc(p, pole(' DATABASE \\d "\\\\\\\\server\\\\share\\\\db.accdb" \\s "SELECT * FROM t" '))),
+      rd: await sestav(p => doDoc(p, pole(' RD "\\\\\\\\server\\\\share\\\\a.docx" '))),
+      mailMerge: await sestav(p => { const i = p.findIndex(x => x.nazev === 'word/settings.xml');
+        const sett = i >= 0 ? dec.decode(p[i].data) : '<?xml version="1.0" encoding="UTF-8"?><w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"></w:settings>';
+        pridej(p, 'word/settings.xml', sett.replace(/<\/w:settings>/, '<w:mailMerge><w:mainDocumentType w:val="formLetters"/><w:linkToQuery/><w:dataType w:val="native"/>'
+          + '<w:connectString w:val="Provider=Microsoft.ACE.OLEDB.12.0;Data Source=\\\\server\\share\\db.accdb"/><w:query w:val="SELECT * FROM `t`"/></w:mailMerge></w:settings>')); }),
+      mailMergeZdroj: await sestav(p => pridej(p, 'word/_rels/settings.xml.rels', RELS(rel('rIdD', 'mailMergeSource', 'zdroj.xlsx')))),
+    };
+    for (const [k, ocek] of [['prefixInstr', /INCLUDETEXT/], ['prefixSimple', /INCLUDETEXT/], ['prefixRel', /attachedTemplate/], ['prefixAltChunk', /altChunk/],
+      ['prefixOle', /OLEObject/], ['prefixSubDoc', /subDoc/], ['prefixKonec', /INCLUDETEXT/],
+      ['navnadaSimple', /nejednoznačn/], ['navnadaFldChar', /nejednoznačn/], ['navnadaVelikost', /nejednoznačn/],
+      ['database', /pole DATABASE/], ['rd', /pole RD/], ['mailMerge', /korespondence/], ['mailMergeZdroj', /mailMergeSource/]]) {
+      const v = await SO.sablonaObsahVady(b[k]);
+      test('B139–B141: obchvat ' + k + ' → odmítnut s popisem', v.length > 0 && v.some(x => ocek.test(x)), v);
+    }
+    {
+      let chyba = '';
+      try { await DG.docxVyplnSablonu(b.prefixInstr, { X: 'x' }, [], {}); } catch (e) { chyba = e.message; }
+      test('B139: generátor šablonu s <é:instrText> INCLUDETEXT odmítne', /INCLUDETEXT/.test(chyba), chyba);
+    }
+    /* Co projít musí: běžná pole s více atributy, hromadná korespondence bez připojení. */
+    const bCiste = {
+      fldCharAtributy: await sestav(p => doDoc(p, '<w:p><w:r><w:fldChar w:fldCharType="begin" w:dirty="true"/></w:r><w:r><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r>'
+        + '<w:r><w:fldChar w:fldCharType="separate" w:fldLock="0"/></w:r><w:r><w:t>1</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>')),
+      simpleAtributy: await sestav(p => doDoc(p, '<w:fldSimple w:instr=" NUMPAGES " w:dirty="true"><w:r><w:t>1</w:t></w:r></w:fldSimple>')),
+      slovaPodobna: await sestav(p => doDoc(p, pole(' REF RDX \\h ') + pole(' DOCPROPERTY "DatabaseVerze" '))),
+    };
+    for (const k of Object.keys(bCiste)) {
+      const v = await SO.sablonaObsahVady(bCiste[k]);
+      test('B139–B141: legitimní ' + k + ' projde', v.length === 0, v);
+    }
+
+    /* B142: čistý archiv + za ním škodlivý, jehož konec adresáře má komentář
+     * o 1 B delší než zbytek souboru. Python zipfile i unzip čtou škodlivý. */
+    const zla = await sestav(p => doDoc(p, pole(' INCLUDETEXT "https://example.invalid/a.docx" ')));
+    const spoj = new Uint8Array(s.cista.length + zla.length);
+    spoj.set(s.cista); spoj.set(zla, s.cista.length);
+    new DataView(spoj.buffer).setUint16(spoj.length - 2, 1, true);
+    if (process.env.KNG_ULOZ_B142) require('fs').writeFileSync(process.env.KNG_ULOZ_B142, spoj);
+    const v1 = await SO.sablonaObsahVady(spoj);
+    test('B142: škodlivý archiv za čistým (konec s přetékajícím komentářem) → odmítnuto', v1.length > 0, v1);
+    /* Věrohodnost konce adresáře zvlášť: komentář přes konec souboru;
+     * velikost adresáře přes začátek konce. */
+    const kom = new Uint8Array(s.cista); new DataView(kom.buffer).setUint16(kom.length - 2, 3, true);
+    const v2 = await SO.sablonaObsahVady(kom);
+    test('B142: jediný konec adresáře s komentářem delším než soubor → odmítnuto', v2.length > 0, v2);
+    const vel = new Uint8Array(s.cista); const dvV = new DataView(vel.buffer);
+    dvV.setUint32(vel.length - 22 + 12, dvV.getUint32(vel.length - 22 + 12, true) + 1000, true);
+    const v3 = await SO.sablonaObsahVady(vel);
+    test('B142: velikost adresáře přesahuje konec adresáře → odmítnuto', v3.length > 0, v3);
+    /* Revize 12. 10. 2026 (R1): 4 bajty podpisu konce náhodou v datech
+     * obrázku těsně před adresářem nesmí čistou šablonu odmítnout. */
+    const obr = new Uint8Array(200); obr.set([0x50, 0x4b, 0x05, 0x06], 100);
+    const v6 = await SO.sablonaObsahVady(await sestav(p => p.push({ nazev: 'word/media/image9.bin', data: obr })));
+    test('R1: podpis konce ZIPu uvnitř dat obrázku čistou šablonu neodmítne', v6.length === 0, v6);
+    const obr2 = new Uint8Array(200).fill(0xFF); obr2.set([0x50, 0x4b, 0x05, 0x06], 100);   // nevěrohodný (offsety 0xFFFFFFFF)
+    const v7 = await SO.sablonaObsahVady(await sestav(p => p.push({ nazev: 'word/media/image9.bin', data: obr2 })));
+    test('R1: ani nevěrohodný podpis konce uvnitř dat obrázku čistou šablonu neodmítne', v7.length === 0, v7);
+    /* Strop rozbalení je souhrnný a platí i pro STORE: deflate 40 MB + STORE 30 MB. */
+    const u16 = v => Buffer.from([v & 255, (v >> 8) & 255]), u32 = v => { const x = Buffer.alloc(4); x.writeUInt32LE(v >>> 0); return x; };
+    const zipSmes = (polozky) => {
+      const casti = [], cd = []; let off = 0;
+      for (const p of polozky) {
+        const jm = Buffer.from(p.nazev), komp = p.deflate ? zlib.deflateRawSync(p.data) : Buffer.from(p.data), met = p.deflate ? 8 : 0, crc = zlib.crc32(p.data);
+        const hl = Buffer.concat([u32(0x04034b50), u16(20), u16(0), u16(met), u16(0), u16(0), u32(crc), u32(komp.length), u32(p.data.length), u16(jm.length), u16(0), jm]);
+        cd.push(Buffer.concat([u32(0x02014b50), u16(20), u16(20), u16(0), u16(met), u16(0), u16(0), u32(crc), u32(komp.length), u32(p.data.length),
+          u16(jm.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(off), jm]));
+        casti.push(hl, komp); off += hl.length + komp.length;
+      }
+      const cdB = Buffer.concat(cd);
+      return new Uint8Array(Buffer.concat([...casti, cdB, u32(0x06054b50), u16(0), u16(0), u16(cd.length), u16(cd.length), u32(cdB.length), u32(off), u16(0)]));
+    };
+    const zakl = zaklad.map(x => ({ nazev: x.nazev, data: Buffer.from(x.data), deflate: true }));
+    const smes = zipSmes(zakl.concat([{ nazev: 'word/media/a.bin', data: Buffer.alloc(40 * 1024 * 1024), deflate: true },
+      { nazev: 'word/media/b.bin', data: Buffer.alloc(30 * 1024 * 1024), deflate: false }]));
+    const v4 = await SO.sablonaObsahVady(smes);
+    test('B142: deflate 40 MB + STORE 30 MB (souhrnně přes strop) → odmítnuto', v4.some(x => /víc než 64 MB/.test(x)), v4);
+    const v5 = await SO.sablonaObsahVady(zipSmes(zakl.concat([{ nazev: 'word/media/b.bin', data: Buffer.alloc(1024), deflate: false }])));
+    test('B142: malá položka STORE pod stropem projde', v5.length === 0, v5);
+
+    /* B143: neuzavřené značky — kontrola musí doběhnout v lineárním čase
+     * a značku odmítnout (1 MB → 149 s před opravou). */
+    const N = +process.env.KNG_B143_N || 1024 * 1024;   // menší N jen pro rychlé doložení před opravou
+    const casovy = async (nazev, xml, ocek) => {
+      const z = await sestav(p => pridej(p, 'word/footer9.xml', xml));
+      const t0 = Date.now();
+      const v = await SO.sablonaObsahVady(z);
+      const t = Date.now() - t0;
+      test('B143: ' + nazev + ' → odmítnuto do 3 s (' + t + ' ms)', t < 3000 && v.some(x => ocek.test(x)), v.slice(0, 3));
+    };
+    const obal = (t) => '<?xml version="1.0" encoding="UTF-8"?><w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' + t;
+    await casovy('neuzavřený <w:instrText> ×N', obal('<w:instrText>'.repeat(N / 13)), /neuzavřen/);
+    await casovy('<Relationship bez „>" ×N', obal('<Relationship '.repeat(N / 14)), /neuzavřen/);
+    await casovy('neuzavřený komentář ×N', obal('<!--'.repeat(N / 4)), /neuzavřen/);
+    await casovy('<w:fldChar bez „>" ×N', obal('<w:fldChar '.repeat(N / 11)), /neuzavřen/);
+    await casovy('neuzavřená sekce CDATA ×N', obal('<![CDATA['.repeat(N / 9)), /neuzavřen/);
+    await casovy('neuzavřená instrukce zpracování ×N', obal('<?a '.repeat(N / 4)), /neuzavřen/);
+    await casovy('„<" uvnitř kódu pole ×N', obal('<w:instrText>' + '<'.repeat(N) + '</w:instrText><w:instrText> INCLUDETEXT x </w:instrText>'), /INCLUDETEXT/);
+    await casovy('dlouhé jméno atributu bez „="', obal('<w:fldSimple ' + 'a'.repeat(N) + ' w:instr=" INCLUDETEXT x "/>'), /INCLUDETEXT/);
+    await casovy('dlouhý prefix bez „:"', obal(('<' + 'a'.repeat(1000)).repeat(N / 1001) + '<w:fldSimple w:instr=" INCLUDETEXT x "/>'), /INCLUDETEXT/);
+  }
+
   /* Firemní šablony (jen s KNG_PODKLADY, mimo repozitář) — kontrola je nesmí
    * odmítnout: CN v14 + EN/DE/FR, CN v11, PROJ v3, PROJ v4 + EN/DE/FR, SoD
    * realizace a projekce, plná moc. */

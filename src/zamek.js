@@ -375,6 +375,11 @@ function zamekVysledekRozdily(klient, server, max, opts) {
     return m;
   };
   const projdi = (a, b, c) => {
+    /* B146 (audit 12. 10. 2026): v přísném porovnání je pole řádků proti
+     * čemukoli jinému (objekt, null, chybějící klíč) rozdíl — tatáž verze
+     * dává týž tvar; podvržené řádky (ock.priplatky) se změnou tvaru
+     * schovaly a součty zůstaly. */
+    if (prisne && Array.isArray(a) !== Array.isArray(b)) { pridej(c); return; }
     if (a === undefined || b === undefined) return;          // klíč jen v jednom výsledku
     if (cislo(a) || cislo(b)) { if (!(cislo(a) && cislo(b) && stejneCislo(a, b))) pridej(c); return; }
     if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return;   // texty, příznaky, null
@@ -397,6 +402,10 @@ function zamekVysledekRozdily(klient, server, max, opts) {
     }
     Object.keys(a).forEach(k => {
       if (Object.prototype.hasOwnProperty.call(b, k)) projdi(a[k], b[k], c + '.' + k);
+      else if (prisne && Array.isArray(a[k])) pridej(c + '.' + k);              // pole jen v zámku (B146)
+    });
+    if (prisne) Object.keys(b).forEach(k => {
+      if (!Object.prototype.hasOwnProperty.call(a, k) && Array.isArray(b[k])) pridej(c + '.' + k);   // vynechané pole (B146)
     });
   };
   ZAMEK_OVERENI_CASTI.forEach(k => projdi(klient ? klient[k] : undefined, server ? server[k] : undefined, k));

@@ -38,6 +38,35 @@ Koordinační sezení: sloučit `claude/koncova-cena-398` do `test-draft`
 
 ---
 
+# Předávka — 12. 10. 2026 večer: noční dávka N2 ve větvi `claude/sablony-399` (v12.10.3)
+
+Sezení N2 (založené koordinačním sezením 22. kola session_01CKiH2sXWq6U8xoJwqivhiN).
+Větev z `test-draft` v12.10.2 (d562da1). Do `test-draft`/`test`/`main`
+nic — integraci dělá koordinační sezení (souběžně N1 v `claude/koncova-cena-398`
+mění `src/uloziste.js` a `lib/zakazka_kontrola.mjs`; N2 v `uloziste.js` jen
+malý strop B144 v `uloZaporneVZadani`, `zakazka_kontrola.mjs` netknuta;
+konflikt čekej ve `verze.txt`/CHANGELOG/PREDAVKA).
+
+Hotovo (detail v CHANGELOG v12.10.3): B139, B140, B141, B142 (+ R1 z revize),
+B143, B100-zbytek, B144, B146, B147, B148, B149 (mez), B150. Testy
+před/po: test_sablona_obsah 77/23 → 114/0 (s podklady), test_obnova 192/8 →
+200/0, test_profil 37/1 → 38/0, test_zaporne 30/3 → 33/0, test_prava 742/4 →
+746/0, overit_xss 323/3 → 326/0. Revizní subagent (jen čtení): žádný obchvat
+B139–B143; našel falešné odmítnutí (R1: bajty PK\x05\x06 v obrázku) —
+opraveno tak, že B142 i #395 drží.
+
+Celé kolo VŠE ZELENÉ: mutace jádra 188/188, serveru 275/275, statické 3/3,
+sady 222/0/1 (opakované po přejmenování kopie příručky na v12.10.3).
+
+Podklady v `/home/user/kng_podklady` (20 souborů vč. CN v15, SoD v2,
+příručky přejmenované na v12.10.3) — firemní šablony kontrolou projdou všechny.
+
+Otevřené (výchozí odpověď v závorce): B149 přísné ověření zámku i v obnově
+(ne, ponechat jako mez); roadmapa #399/#400 — zápis nechávám koordinačnímu
+sezení (ano).
+
+---
+
 # Předávka — 12. 10. 2026 odpoledne: main = v12.10.1, test = v12.10.2
 
 `main` = **v12.10.1** (86be538, pokyn J. V. „pošli stávající test do main";

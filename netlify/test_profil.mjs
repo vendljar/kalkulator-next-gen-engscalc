@@ -149,6 +149,16 @@ const poAdminovi = await (await get(ja, 'http://x/api/ja', cBez)).json();
 test('administrátor smí doplnit údaje kolegovi',
   adminCizi.ok === true && poAdminovi.titul === 'Mgr.' && poAdminovi.telefon === '+420 555 444 333',
   [adminCizi, poAdminovi]);
+/* B148 (audit 12. 10. 2026): úprava cizího kontaktu nese razítko, kdo
+ * a kdy ho změnil (jako podpis) — kdo z relace, podvržený v těle se nebere.
+ * Před opravou účet žádné razítko nenesl. */
+{
+  await tel(uzivatele, 'http://x/api/uzivatele',
+    { akce: 'profil', email: 'bez.udaju@example.com', telefon: '+420 555 444 333', zmenil: { kdo: 'podvrh@example.com' } }, cAdmin);
+  const ucet = JSON.parse(pamet.get('uzivatele/bez.udaju@example.com'));
+  test('B148: úprava cizího kontaktu zapíše zmenil { kdo z relace, kdy }',
+    !!ucet.zmenil && ucet.zmenil.kdo === ADMIN_EMAIL && /^\d{4}-\d{2}-\d{2}T/.test(ucet.zmenil.kdy || ''), ucet.zmenil);
+}
 
 /* ============================================================
  * 3) PODPIS S RAZÍTKEM

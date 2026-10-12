@@ -211,6 +211,21 @@ for (const [popis, k, h] of [['záporné číslo jako text s exponentem', 'mnozs
   const r = await uloz(z, cA);
   test('B145: administrátor — přepis ceny „150,0" → 400', r.status === 400 && /cenyPrepis/.test(r.chyba || ''), r); }
 
+/* 12c) B144 (audit 12. 10. 2026): vlastní položky OCK a PROJ bez stropu
+ * hodnoty — 1e300 × 1e300 dalo v ceně Infinity / NaN. Strop jako u přepisů
+ * (ULO_PREPIS_MAX). Před opravou 200 u všech tří. */
+for (const [popis, uprav] of [
+  ['OCK cena 1e300 × množství 1e300', v => vlastni(v, 'hrubaOck', { nazev: 'Obří', mnozstvi: 1e300, cena: 1e300 })],
+  ['OCK cena jako text s 13 číslicemi', v => vlastni(v, 'hrubaOck', { nazev: 'Obří', mnozstvi: 1, cena: '1000000000000' })],
+  ['PROJ fix cena 1e300', v => v.data.proj.zadani.sekce[0].polozky.push({ nazev: 'Obří', typ: 'fix', cena: 1e300, vlastni: true })]]) {
+  const z = nova('B144 ' + popis); uprav(z.varianty[0]);
+  const r = await uloz(z, cA);
+  test('B144: administrátor — ' + popis + ' → 400', r.status === 400, r);
+}
+{ const z = nova('B144 platné'); vlastni(z.varianty[0], 'hrubaOck', { nazev: 'Velká, ale skutečná', mnozstvi: 2, cena: 999999999 });
+  const r = await uloz(z, cA);
+  test('B144: vlastní položka pod stropem (999 999 999 Kč) se uloží (200)', r.status === 200, r); }
+
 /* 13) detekční skript (nastroje/detekce_zneuziti.mjs) najde i zamčenou
  * variantu z doby před opravou a kladnou položku nehlásí */
 { const { detekuj } = await import(R + 'nastroje/detekce_zneuziti.mjs');

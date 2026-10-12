@@ -1054,14 +1054,20 @@ function uloZaporneVZadani(z, zp) {
     else if (uloZaporne(h)) out.push({ kde, duvod: 'zaporne' });
     else if (!uloCisloJadro(h)) out.push({ kde, duvod: 'typ' });
   };
+  /* B144 (audit 12. 10. 2026): vlastní položky OCK a PROJ se stropem jako
+   * přepisy — 1e300 × 1e300 dalo v ceně Infinity / NaN. */
+  const strop = (h, kde) => {
+    const n = typeof h === 'number' ? h : (typeof h === 'string' && ULO_CISLO_TEXT.test(h) ? parseFloat(h.replace(',', '.')) : NaN);
+    if (isFinite(n) && Math.abs(n) > ULO_PREPIS_MAX) out.push({ kde, duvod: 'typ' });
+  };
   const radky = (pole, kde) => {
     if (pole === null || pole === undefined) return;
     if (!Array.isArray(pole)) { out.push({ kde, duvod: 'typ' }); return; }
     pole.forEach((p, i) => {
       const c = kde + '[' + i + ']';
       if (!p || typeof p !== 'object' || Array.isArray(p)) { out.push({ kde: c, duvod: 'typ' }); return; }
-      hlidej(p.cena, c + '.cena');
-      hlidej(p.mnozstvi, c + '.mnozstvi');
+      hlidej(p.cena, c + '.cena'); strop(p.cena, c + '.cena');
+      hlidej(p.mnozstvi, c + '.mnozstvi'); strop(p.mnozstvi, c + '.mnozstvi');
     });
   };
   if (z && typeof z === 'object') {
@@ -1122,7 +1128,10 @@ function uloZaporneVZadani(z, zp) {
     if (!Array.isArray(s.polozky)) return;
     s.polozky.forEach((p, j) => {
       if (!p || typeof p !== 'object') return;
-      ULO_PROJ_BEZ_ZAPORU.forEach(k => hlidej(p[k], 'proj.zadani.sekce[' + i + '].polozky[' + j + '].' + k));
+      ULO_PROJ_BEZ_ZAPORU.forEach(k => {
+        hlidej(p[k], 'proj.zadani.sekce[' + i + '].polozky[' + j + '].' + k);
+        strop(p[k], 'proj.zadani.sekce[' + i + '].polozky[' + j + '].' + k);   // B144
+      });
     });
   });
   return out;

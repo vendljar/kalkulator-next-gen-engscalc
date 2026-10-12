@@ -974,20 +974,20 @@ console.log('\n===== B100: šablony ze zálohy =====');
   const zla = await docx('<Relationship Id="rId1" Type="' + R + 'attachedTemplate" Target="https://example.invalid/x.dotm" TargetMode="External"/>');
   const obchvat = await docx('<Relationship Id="rId1" Type="' + R + 'attachedTempl&#97;te" Target="https://example.invalid/x.dotm" TargetMode="Ex&#116;ernal"/>');
   const podvrhS = kopie(zalSoubor);
-  podvrhS.sablony = { 'data/nabidka_b100/1': { nazev: 'cista.docx', data: cista }, 'data/nabidka_b100/2': { nazev: 'zla.docx', data: zla },
-    'data/nabidka_b100/3': { nazev: 'obchvat.docx', data: obchvat }, 'data/nabidka_b100/4': { nazev: 'nesmysl.docx', data: 'nesmysl' } };
+  podvrhS.sablony = { 'data/plnaMoc/1': { nazev: 'cista.docx', data: cista }, 'data/plnaMoc/2': { nazev: 'zla.docx', data: zla },
+    'data/plnaMoc/3': { nazev: 'obchvat.docx', data: obchvat }, 'data/plnaMoc/4': { nazev: 'nesmysl.docx', data: 'nesmysl' } };
   const o100 = await obnovJson({ zdroj: { soubor: podvrhS }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['sablony'] }, cookie);
   const sb = o100.casti && o100.casti.sablony;
-  test('B100: čistá šablona ze souboru se obnoví', o100.ok === true && !!(await ulz('sablony').cti('data/nabidka_b100/1')), o100);
+  test('B100: čistá šablona ze souboru se obnoví', o100.ok === true && !!(await ulz('sablony').cti('data/plnaMoc/1')), o100);
   test('B100: šablona s attachedTemplate ze souboru se nezapíše (přeskočena s důvodem)',
-    (await ulz('sablony').cti('data/nabidka_b100/2')) === null && !!sb && sb.duvody.some(d => d.klic === 'data/nabidka_b100/2' && /attachedTemplate/.test(d.duvod)), sb);
+    (await ulz('sablony').cti('data/plnaMoc/2')) === null && !!sb && sb.duvody.some(d => d.klic === 'data/plnaMoc/2' && /attachedTemplate/.test(d.duvod)), sb);
   test('B100: ani obchvat B115 s číselnými entitami',
-    (await ulz('sablony').cti('data/nabidka_b100/3')) === null && !!sb && sb.duvody.some(d => d.klic === 'data/nabidka_b100/3'), sb);
-  test('B100: soubor, který není .docx, se nezapíše', (await ulz('sablony').cti('data/nabidka_b100/4')) === null, sb);
-  await ulz('zalohy').zapis('2026-01-16', { porizena: '2026-01-16T02:00:00.000Z', sablony: { 'data/nabidka_b100/5': { nazev: 'zla.docx', data: zla } } });
+    (await ulz('sablony').cti('data/plnaMoc/3')) === null && !!sb && sb.duvody.some(d => d.klic === 'data/plnaMoc/3'), sb);
+  test('B100: soubor, který není .docx, se nezapíše', (await ulz('sablony').cti('data/plnaMoc/4')) === null, sb);
+  await ulz('zalohy').zapis('2026-01-16', { porizena: '2026-01-16T02:00:00.000Z', sablony: { 'data/plnaMoc/5': { nazev: 'zla.docx', data: zla } } });
   const o100b = await obnovJson({ zdroj: { otisk: '2026-01-16' }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['sablony'] }, cookie);
   test('B100: i z otisku (verze zveřejněná před kontrolou) se vadná šablona nezapíše',
-    o100b.ok === true && (await ulz('sablony').cti('data/nabidka_b100/5')) === null, o100b);
+    o100b.ok === true && (await ulz('sablony').cti('data/plnaMoc/5')) === null, o100b);
 
   /* #395 (8. 10. 2026): rejstřík ze zálohy ukazuje platnou verzi, jejíž
    * soubor kontrola přeskočila — po obnově o tom správce musí vědět. Před
@@ -1000,7 +1000,61 @@ console.log('\n===== B100: šablony ze zálohy =====');
   test('#395: platná šablona bez použitelného souboru se po obnově ohlásí',
     o395.ok === true && (o395.upozorneni || []).some(u => /„nabidka" \(verze 1\)/.test(u)), o395);
   test('#395: … a čistá platná šablona upozornění nedostane',
-    !(o395.upozorneni || []).some(u => /nabidka_b100/.test(u)), o395.upozorneni);
+    !(o395.upozorneni || []).some(u => /plnaMoc/.test(u)), o395.upozorneni);
+
+  /* B147 (audit 12. 10. 2026): upozornění na nepoužitelnou platnou šablonu
+   * dává už náhled; klíče mimo data/<typ>/<verze> a rejstřík v jiném tvaru
+   * se neobnoví. Před opravou náhled mlčel a obojí se zapsalo. */
+  await ulz('sablony').smaz('rejstrik');
+  const n147 = await obnovJson({ zdroj: { soubor: podvrh395 }, rezim: 'prepsat', nahled: true, casti: ['sablony'] }, cookie);
+  test('B147: náhled ohlásí platnou šablonu, která po obnově nebude použitelná',
+    n147.ok === true && (n147.upozorneni || []).some(u => /„nabidka" \(verze 1\) nebude/.test(u)), n147.upozorneni);
+  const podvrh147 = kopie(zalSoubor);
+  podvrh147.sablony = { rejstrik: { typy: { 'nabidka': { platna: { verze: '1/../x' }, historie: [] } } },
+    'nesmysl': { nazev: 'x', data: cista }, 'data/neznamy/1': { nazev: 'x', data: cista }, 'data/nabidka/../1': { nazev: 'x', data: cista } };
+  const o147 = await obnovJson({ zdroj: { soubor: podvrh147 }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['sablony'] }, cookie);
+  const d147 = (k) => o147.casti && o147.casti.sablony.duvody.some(d => d.klic === k);
+  test('B147: rejstřík šablon v nepovoleném tvaru se neobnoví', o147.ok === true && d147('rejstrik') && (await ulz('sablony').cti('rejstrik')) === null, o147.casti);
+  test('B147: klíče mimo data/<typ>/<verze> se neobnoví',
+    d147('nesmysl') && d147('data/neznamy/1') && d147('data/nabidka/../1') && (await ulz('sablony').cti('nesmysl')) === null, o147.casti);
+}
+
+/* ---- B100-zbytek (audit 12. 10. 2026): firma, zákazníci a matice
+ * zobrazení ze zálohy touž kontrolou a očistou jako běžné cesty ----
+ * Před opravou obnova zapsala ukázkovou firmu, zákazníka s polem navíc
+ * a bez stropu délky i matici s cizími klíči doslova. */
+console.log('\n===== B100-zbytek: firma, zákazníci, zobrazení =====');
+{
+  const ZOBm = require('../src/zobrazeni.js');
+  const podvrh = kopie(zalSoubor);
+  const ukazkova = fmod.firmaDefault();                       // nese značku ukazkove
+  podvrh.firma = { udaje: ukazkova, kdo: 'x', kdy: 'y' };
+  const oF = await obnovJson({ zdroj: { soubor: podvrh }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['firma'] }, cookie);
+  test('B100: ukázková firma ze zálohy se nezapíše (přeskočena s důvodem)',
+    oF.ok === true && oF.casti.firma.preskocene === 1 && (await ulz('program').cti('firma')).udaje.nazev !== ukazkova.nazev, oF.casti && oF.casti.firma);
+  const sNavic = Object.assign(kopie(SKUT), { nazev: 'Firma z obnovy s.r.o.', skript: '<script>x</script>', logo: 'javascript:alert(1)' });
+  podvrh.firma = { udaje: sNavic, kdo: 'spravce', kdy: '2026-10-12', navic: 1 };
+  const oF2 = await obnovJson({ zdroj: { soubor: podvrh }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['firma'] }, cookie);
+  const fz = await ulz('program').cti('firma');
+  test('B100: firma ze zálohy se zapíše jen se známými poli (jako /api/firma)',
+    oF2.ok === true && fz.udaje.nazev === 'Firma z obnovy s.r.o.' && !('skript' in fz.udaje) && !('logo' in fz.udaje) && !('navic' in fz), fz);
+
+  podvrh.zakaznici = {
+    'z/87654321': { nazev: 'N'.repeat(5000), ico: '876 543 21', skript: '<img src=x onerror=alert(1)>', autor: 'obchodnik@priklad.cz', zalozen: '2026-01-01' },
+    'nesmysl': { nazev: 'Bez předpony', ico: '11223344' },
+  };
+  const oZ = await obnovJson({ zdroj: { soubor: podvrh }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['zakaznici'] }, cookie);
+  const zz = await ulz('zakaznici').cti('z/87654321');
+  test('B100: zákazník ze zálohy projde očistou (strop délky, IČO bez mezer, nic navíc, autor zůstane)',
+    oZ.ok === true && !!zz && zz.nazev.length === 300 && zz.ico === '87654321' && !('skript' in zz) && zz.autor === 'obchodnik@priklad.cz', zz);
+  test('B100: zákazník s klíčem mimo tvar z/<klíč> se nezapíše',
+    oZ.casti.zakaznici.duvody.some(d => d.klic === 'nesmysl') && (await ulz('zakaznici').cti('nesmysl')) === null, oZ.casti.zakaznici);
+
+  podvrh.zobrazeni = { matice: { cizi: { 'Obchodník': true }, sekce: 'x' }, kdo: 'spravce', kdy: '2026-10-12' };
+  const oM = await obnovJson({ zdroj: { soubor: podvrh }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['zobrazeni'] }, cookie);
+  const mz = await ulz('program').cti('zobrazeni');
+  test('B100: matice zobrazení ze zálohy projde očistou (jako /api/zobrazeni)',
+    oM.ok === true && !!mz && JSON.stringify(mz.matice) === JSON.stringify(ZOBm.zobrazeniOciste(podvrh.zobrazeni.matice)) && !('cizi' in mz.matice), mz);
 }
 
 console.log(`\n${ok} OK, ${fail} FAIL`);

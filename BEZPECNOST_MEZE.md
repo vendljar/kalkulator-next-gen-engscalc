@@ -254,3 +254,17 @@ nezávislá revize 6. 10. ukázala, že verzi posílá klient, takže to byl
 obchvat; zrušeno. Zbývající mez: stránka načtená před nasazením verze, která
 mění tvar výsledku (přidaný nebo ubraný řádek), dostane u poctivé nabídky
 „nesouhlasí" — hláška po uložení radí obnovit stránku a vytisknout znovu.
+
+### B149 — obnova ověřuje zámek ze zálohy volně (vědomá mez, 12. 10. 2026)
+
+Při ukládání se nový zámek porovnává přísně (B119, B146). Obnova ze zálohy
+zámek nezakládá — nese zámek, který vznikl dřív a možná jinou verzí
+aplikace —, proto jeho zmrazený výsledek ověřuje volně (P6): jiný tvar
+výsledku ani nespárovaný řádek rozdílem nejsou. Přísné ověření by
+u poctivé starší nabídky hlásilo falešné „nesouhlasí". Zbývá mez: kdo si
+upraví soubor zálohy, může do zámku vložit řádek navíc nebo pole jiného
+tvaru a obnova ho zapíše s razítkem „shoda". Obnovu smí jen administrátor,
+čísla (součty, ceny řádků, které se spárují) se porovnávají i volně, zámek
+ze souboru, který neprošel, je ve výsledku obnovy vypsaný jako sporný
+a otisk na serveru (B98) se nedá upravit vůbec. Výchozí návrh: ponechat;
+přísné ověření i u obnovy jen na pokyn J. V.

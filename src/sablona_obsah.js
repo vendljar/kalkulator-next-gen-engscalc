@@ -22,10 +22,19 @@
  *   – typ obsahu macroEnabled, vbaProject, oleObject nebo activeX
  *     v [Content_Types].xml;
  *   – prvky OLEObject, altChunk a subDoc (s jakýmkoli prefixem);
- *   – pole INCLUDETEXT, INCLUDEPICTURE, INCLUDE, IMPORT, LINK, DDE, DDEAUTO
- *     (složené pole fldChar/instrText i s kódem rozděleným do více běhů,
- *     fldSimple) a pole, jehož typ dodá teprve vnořené pole;
- *   – deklarace DOCTYPE / ENTITY (vlastní entity by zakázaný text skryly).
+ *   – pole INCLUDETEXT, INCLUDEPICTURE, INCLUDE, IMPORT, LINK, DDE, DDEAUTO,
+ *     DATABASE, RD (složené pole fldChar/instrText i s kódem rozděleným do
+ *     více běhů, fldSimple) a pole, jehož typ dodá teprve vnořené pole;
+ *   – hromadná korespondence s připojením k datům (connectString, query);
+ *   – deklarace DOCTYPE / ENTITY (vlastní entity by zakázaný text skryly);
+ *   – neuzavřená značka, komentář, CDATA nebo instrukce zpracování.
+ *
+ * B139–B143 (audit 12. 10. 2026): prefix s ne-ASCII písmenem (<é:instrText>)
+ * kontrola neznala; atribut pole se bral první se shodným místním jménem
+ * (návnada q:instr před w:instr); chyběla pole DATABASE a RD a hromadná
+ * korespondence; neuzavřená značka dávala kvadratický čas. Prefix je teď
+ * cokoli až po dvojtečku, atribut pole platí jen s prefixem prvku, rozbor
+ * jde jedním průchodem a neuzavřené je vada.
  *
  * B115 (audit 30. 9. 2026): první verze šla obejít pěti cestami — číselné
  * entity v Type / TargetMode (attachedTempl&#97;te, Ex&#116;ernal), pole
@@ -43,14 +52,24 @@
  * ============================================================ */
 
 const SABLONA_VZTAHY_ZAKAZANE = ['attachedTemplate', 'oleObject', 'package', 'aFChunk', 'vbaProject', 'frame', 'subDocument',
-  'control', 'activeXControlBinary', 'wordVbaData', 'vbaProjectSignature', 'keyMapCustomizations'];
+  'control', 'activeXControlBinary', 'wordVbaData', 'vbaProjectSignature', 'keyMapCustomizations',
+  /* B141 (12. 10. 2026): zdroj dat hromadné korespondence */
+  'mailMergeSource', 'mailMergeHeaderSource'];
 const SABLONA_ODKAZ_POVOLENY = /^(https?:|mailto:)/i;
-const SABLONA_POLE_ZAKAZANA = ['INCLUDETEXT', 'INCLUDEPICTURE', 'INCLUDE', 'IMPORT', 'LINK', 'DDEAUTO', 'DDE'];
+const SABLONA_POLE_ZAKAZANA = ['INCLUDETEXT', 'INCLUDEPICTURE', 'INCLUDE', 'IMPORT', 'LINK', 'DDEAUTO', 'DDE', 'DATABASE', 'RD'];
 /* Cíl vztahu, který Word nebere jako část balíčku: schéma (http:, file:, C:)
  * nebo síťová cesta (\\server, //server). */
 const SABLONA_CIL_VNEJSI = /^([a-z][a-z0-9+.-]*:|[\\/]{2})/i;
 /* Atribut "…" nebo '…' — uvnitř uvozovek smí být i „>". */
 const SABLONA_ATRIBUTY = '(?:[^>"\']|"[^"]*"|\'[^\']*\')*';
+/* Prefix jmenného prostoru (B139, 12. 10. 2026): XML dovoluje v prefixu
+ * i písmena mimo ASCII (<é:instrText>) — „[\w.-]" je nezná. Prefix je proto
+ * cokoli až po dvojtečku kromě mezer a znaků, které značku ukončují. */
+const SABLONA_PREFIX = '(?:[^\\s<>/="\':!?]+:)?';
+/* Jméno atributu (B139) — i s ne-ASCII prefixem. Začíná jen na začátku
+ * nebo za mezerou či uvozovkou (B143: jinak by dlouhé jméno bez „=" četl
+ * regulární výraz od každého znaku znovu). */
+const SABLONA_ATRIBUT_RE = /(?<![^\s"'])([^\s<>/="']+)\s*=\s*("([^"]*)"|'([^']*)')/g;
 
 /* Bajty části → text. XML části smějí být v UTF-8 i UTF-16 (s BOM i bez).
  * UTF-16 bez BOM se pozná podle nulového bajtu u každého druhého znaku —
@@ -98,39 +117,73 @@ function sablonaXmlUnesc(s) {
     try { return String.fromCodePoint(kod); } catch (x) { return ''; }
   });
 }
-/* Atributy značky (bez ohledu na prefix) → { místníJméno: [hodnoty] }. */
-function sablonaAtributy(tag) {
-  const out = {};
-  const re = /([\w.:-]+)\s*=\s*("([^"]*)"|'([^']*)')/g;
-  let m;
-  while ((m = re.exec(tag))) {
-    const jm = m[1].split(':').pop().toLowerCase();
-    (out[jm] = out[jm] || []).push(sablonaXmlUnesc(m[3] !== undefined ? m[3] : m[4]));
-  }
-  return out;
-}
-function sablonaAtribut(tag, jmeno) {
-  const h = sablonaAtributy(tag)[jmeno.toLowerCase()];
-  return h ? h[0] : '';
-}
 /* NORMALIZACE PŘED ROZBOREM (revize 6. 10. 2026, S1/S2). Komentáře
  * a instrukce zpracování Word ignoruje — falešná značka v nich nesmí
  * rozhodit rozbor polí; sekce CDATA parser vrací jako text — převede se na
- * text s entitami, aby ji rozbor viděl stejně jako Word. */
-function sablonaNormalizuj(text) {
-  return String(text || '')
-    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, (m, obsah) => obsah.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'))
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/<\?(?!xml\s)[\s\S]*?\?>/g, '');
+ * text s entitami, aby ji rozbor viděl stejně jako Word.
+ * B143 (12. 10. 2026): jedním průchodem zleva jako parser — regulární
+ * výraz hledal ke každému neuzavřenému „<!--" konec znovu až do konce
+ * souboru (kvadratický čas). Neuzavřený komentář, CDATA nebo instrukce je
+ * vada (Word takové XML neotevře) a zbytek části se nečte. */
+function sablonaNormalizuj(text, vady) {
+  const s = String(text || '');
+  const re = /<(!\[CDATA\[|!--|\?(?!xml\s))/g;
+  let out = '', od = 0, m;
+  while ((m = re.exec(s))) {
+    const druh = m[1][1] === '[' ? 'cdata' : m[1][0] === '!' ? 'komentar' : 'pi';
+    const zaver = druh === 'cdata' ? ']]>' : druh === 'komentar' ? '-->' : '?>';
+    const k = s.indexOf(zaver, re.lastIndex);
+    out += s.slice(od, m.index);
+    if (k < 0) {
+      if (vady) vady.push({ cdata: 'neuzavřená sekce CDATA', komentar: 'neuzavřený komentář', pi: 'neuzavřená instrukce zpracování' }[druh]);
+      return out;
+    }
+    if (druh === 'cdata') out += s.slice(re.lastIndex, k).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    od = re.lastIndex = k + zaver.length;
+  }
+  return out + s.slice(od);
+}
+/* ZNAČKY S DANÝM MÍSTNÍM JMÉNEM (B139, B143; 12. 10. 2026) → [{ prefix,
+ * druh, attr, zac, kon }] v pořadí dokumentu; od = kde začít. Prefix
+ * jakýkoli (i ne-ASCII), jméno musí končit mezerou, „/" nebo „>".
+ * Značka bez „>" je vada (do vady) a hledání tím končí — každá další by se
+ * jinak četla znovu až do konce souboru (kvadratický čas). */
+function sablonaZnacky(xml, jmena, vady, od) {
+  const out = [];
+  const re = new RegExp('<(' + SABLONA_PREFIX + ')(' + jmena + ')(?=[\\s/>]|$)', 'g');
+  const telo = new RegExp(SABLONA_ATRIBUTY + '>', 'y');
+  re.lastIndex = od || 0;
+  let m;
+  while ((m = re.exec(xml))) {
+    telo.lastIndex = re.lastIndex;
+    const t = telo.exec(xml);
+    if (!t) { if (vady) vady.push('neuzavřená značka <' + m[1] + m[2] + '>'); break; }
+    out.push({ prefix: m[1], druh: m[2], attr: t[0].slice(0, -1), zac: m.index, kon: telo.lastIndex });
+    re.lastIndex = telo.lastIndex;
+  }
+  return out;
 }
 /* Atributy značky PŘESNĚ podle jména (s prefixem, rozlišuje velikost
  * písmen) → { jméno: [hodnoty] } (revize 6. 10. 2026, S3). */
 function sablonaAtributyPresne(tag) {
   const out = {};
-  const re = /([\w.:-]+)\s*=\s*("([^"]*)"|'([^']*)')/g;
+  const re = new RegExp(SABLONA_ATRIBUT_RE.source, 'g');
   let m;
   while ((m = re.exec(tag))) (out[m[1]] = out[m[1]] || []).push(sablonaXmlUnesc(m[3] !== undefined ? m[3] : m[4]));
   return out;
+}
+/* NÁVNADA ATRIBUTU (B140, 12. 10. 2026). Bral se první atribut se shodným
+ * místním jménem: <w:fldSimple q:instr=" PAGE " w:instr=" INCLUDETEXT …">
+ * (q ignorovaný přes mc:Ignorable) ukázal kontrole PAGE, Wordu INCLUDETEXT.
+ * Stejně jako u vztahů (S3): platí jen atribut s prefixem prvku a přesným
+ * jménem; jiný se stejným místním jménem (jiný prefix, velikost písmen)
+ * nebo opakovaný je vada. → { hodnota, nejasny } */
+function sablonaAtributPole(tag, prefix, jmeno) {
+  const presne = sablonaAtributyPresne(tag);
+  const ocek = prefix + jmeno;
+  const cizi = Object.keys(presne).filter(k => k !== ocek && k.split(':').pop().toLowerCase() === jmeno.toLowerCase());
+  const h = presne[ocek] || [];
+  return { hodnota: h.length ? h[0] : '', nejasny: cizi.length ? cizi[0] : (h.length > 1 ? ocek : '') };
 }
 function sablonaJeXml(text) {
   return /^[\s\uFEFF]*</.test(text);
@@ -154,14 +207,22 @@ function sablonaPoleVada(kod) {
  * spojí dohromady — kód bývá rozdělený do více běhů. */
 function sablonaPoleVady(xml) {
   const vady = [];
-  const re = new RegExp('<(?:[\\w.-]+:)?(fldChar|instrText|fldSimple)\\b(' + SABLONA_ATRIBUTY + ')>', 'g');
+  const re = new RegExp('<(' + SABLONA_PREFIX + ')(fldChar|instrText|fldSimple)(?=[\\s/>]|$)', 'g');
+  const telo = new RegExp(SABLONA_ATRIBUTY + '>', 'y');
   const zasobnik = [];
   let sirotci = '', m;
   while ((m = re.exec(xml))) {
-    const druh = m[1], attr = m[2];
-    if (druh === 'fldSimple') { vady.push(sablonaPoleVada(sablonaAtribut(attr, 'instr'))); continue; }
-    if (druh === 'fldChar') {
-      const typ = sablonaAtribut(attr, 'fldCharType').trim().toLowerCase();
+    const prefix = m[1], druh = m[2];
+    telo.lastIndex = re.lastIndex;
+    const t = telo.exec(xml);
+    if (!t) { vady.push('neuzavřená značka <' + prefix + druh + '>'); break; }   // B143
+    re.lastIndex = telo.lastIndex;
+    const attr = t[0].slice(0, -1);
+    if (druh === 'fldSimple' || druh === 'fldChar') {
+      const a = sablonaAtributPole(attr, prefix, druh === 'fldSimple' ? 'instr' : 'fldCharType');
+      if (a.nejasny) vady.push('pole s nejednoznačným atributem ' + a.nejasny);   // B140
+      if (druh === 'fldSimple') { vady.push(sablonaPoleVada(a.hodnota)); continue; }
+      const typ = a.hodnota.trim().toLowerCase();
       if (typ === 'begin') {
         if (zasobnik.length && !zasobnik[zasobnik.length - 1].sep) zasobnik[zasobnik.length - 1].kod += '\u0001';
         zasobnik.push({ kod: '', sep: false });
@@ -170,11 +231,14 @@ function sablonaPoleVady(xml) {
       continue;
     }
     if (/\/\s*$/.test(attr)) continue;                         // <w:instrText/>
-    const konec = new RegExp('</(?:[\\w.-]+:)?instrText\\s*>', 'g');
+    const konec = new RegExp('</' + SABLONA_PREFIX + 'instrText\\s*>', 'g');
     konec.lastIndex = re.lastIndex;
     const k = konec.exec(xml);
-    const text = xml.slice(re.lastIndex, k ? k.index : xml.length).replace(/<[^>]*>/g, '');
-    if (k) re.lastIndex = konec.lastIndex;
+    /* B143: neuzavřený instrText = vada a konec; bez toho se ke každému
+     * dalšímu hledal konec znovu až do konce souboru. */
+    if (!k) { vady.push('neuzavřená značka <' + prefix + 'instrText>'); break; }
+    const text = xml.slice(re.lastIndex, k.index).replace(/<[^<>]*>/g, '');
+    re.lastIndex = konec.lastIndex;
     const top = zasobnik.length ? zasobnik[zasobnik.length - 1] : null;
     if (top) { if (!top.sep) top.kod += text; }
     else { sirotci += text; vady.push(sablonaPoleVada(text)); }   // každý sirotek i dohromady (S2)
@@ -207,7 +271,8 @@ function sablonaObsahVadyZipu(polozky) {
     if (!jeRels && !/\.xml$/.test(male) && !sablonaJeXml(text)) return;
 
     if (/<!(DOCTYPE|ENTITY)\b/i.test(text)) pridej('deklarace DOCTYPE / ENTITY (' + nazev + ')');
-    const xml = sablonaNormalizuj(text);
+    const neuzavrene = [];
+    const xml = sablonaNormalizuj(text, neuzavrene);
     if (male === '[content_types].xml') {
       const ct = sablonaXmlUnesc(xml);
       if (/macroEnabled/i.test(ct)) pridej('dokument s makry (typ obsahu macroEnabled)');
@@ -216,13 +281,11 @@ function sablonaObsahVadyZipu(polozky) {
       if (/activeX/i.test(ct)) pridej('prvek ActiveX (typ obsahu activeX)');
     }
     /* Vztahy: v .rels, ale hledají se v každé XML části (nic to nestojí). */
-    const reRel = new RegExp('<(?:[\\w.-]+:)?Relationship\\b(' + SABLONA_ATRIBUTY + ')>', 'g');
-    let m;
-    while ((m = reRel.exec(xml))) {
+    for (const znacka of sablonaZnacky(xml, 'Relationship', neuzavrene)) {
       /* Type / Target / TargetMode se čtou přesně (bez prefixu, s velikostí
        * písmen); atribut, který se od nich liší jen velikostí písmen nebo
        * prefixem, je návnada (revize 6. 10., S3) — vztah se odmítne. */
-      const presne = sablonaAtributyPresne(m[1]);
+      const presne = sablonaAtributyPresne(znacka.attr);
       const nejasne = Object.keys(presne).filter(k => /^(type|target|targetmode)$/i.test(k.split(':').pop())
         && ['Type', 'Target', 'TargetMode'].indexOf(k) < 0);
       if (nejasne.length || ['Type', 'Target', 'TargetMode'].some(k => (presne[k] || []).length > 1)) {
@@ -243,8 +306,15 @@ function sablonaObsahVadyZipu(polozky) {
           pridej('vnější vztah ' + (druh || '?') + (odkaz ? ' s nepovolenou adresou' : '') + ' (' + nazev + ')');
       }
     }
-    const reObj = /<(?:[\w.-]+:)?(OLEObject|altChunk|subDoc)\b/g;
+    neuzavrene.forEach(v => pridej(v + ' (' + nazev + ')'));
+    const reObj = new RegExp('<' + SABLONA_PREFIX + '(OLEObject|altChunk|subDoc)\\b', 'g');
+    let m;
     while ((m = reObj.exec(xml))) pridej('prvek ' + m[1] + ' (' + nazev + ')');
+    /* B141: hromadná korespondence s připojením k datům — Word při otevření
+     * spustí dotaz (connectString / query, ODSO udl) na cizí databázi. */
+    if (new RegExp('<' + SABLONA_PREFIX + 'mailMerge(?=[\\s/>])').test(xml)
+        && new RegExp('<' + SABLONA_PREFIX + '(connectString|query|udl)(?=[\\s/>])').test(xml))
+      pridej('hromadná korespondence s připojením k datům (' + nazev + ')');
     sablonaPoleVady(xml).forEach(v => pridej(v + ' (' + nazev + ')'));
   });
   return vady;

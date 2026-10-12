@@ -56,23 +56,33 @@ async function zipRozbal(komprimovana, zbyva) {
  * konec v komentáři ukázal kontrole jiný adresář (a jiné soubory) než
  * programu, který bere skutečný. Věrohodný konec = podpis, jehož komentář se
  * do souboru vejde a adresář leží před ním; víc takových = nejednoznačný
- * archiv. Bajty za koncem (některé nástroje je přidávají) nevadí. */
+ * archiv. Bajty za koncem (některé nástroje je přidávají) nevadí.
+ * B142 (audit 12. 10. 2026): nevěrohodný podpis se tiše přeskočil. Čistý
+ * archiv + za ním škodlivý, jehož konec má komentář o 1 B delší než zbytek
+ * souboru: kontrola četla čistý, Python zipfile i unzip škodlivý. Podpis
+ * konce, který věrohodnosti nevyhoví a leží ZA věrohodným koncem (tam ho
+ * jiné programy hledají), proto archiv odmítne. Podpis uvnitř dat před ním
+ * (4 bajty náhodou v obrázku) nevadí — revize 12. 10. 2026, R1. */
 async function zipPrecti(u8) {
   const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
   // najdi End of Central Directory (PK\x05\x06) od konce
-  const kandidati = [];
-  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 22 - 65535); i--) {
-    if (dv.getUint32(i, true) === 0x06054b50 && i + 22 + dv.getUint16(i + 20, true) <= u8.length
+  const kandidati = [], neverohodne = [];
+  for (let i = u8.length - 4; i >= Math.max(0, u8.length - 22 - 65535); i--) {
+    if (dv.getUint32(i, true) !== 0x06054b50) continue;
+    if (i + 22 <= u8.length && i + 22 + dv.getUint16(i + 20, true) <= u8.length
         && dv.getUint32(i + 16, true) + dv.getUint32(i + 12, true) <= i) kandidati.push(i);
+    else neverohodne.push(i);
   }
   if (!kandidati.length) throw new Error('Soubor není platný .docx (ZIP).');
-  if (kandidati.length > 1) throw new Error('Nejednoznačný konec ZIP adresáře (podvržený v komentáři archivu).');
+  if (neverohodne.some(i => i > kandidati[0]))
+    throw new Error('Nevěrohodný konec ZIP adresáře (za archivem je připojený jiný).');
   const eocd = kandidati[0];
   const pocet = dv.getUint16(eocd + 10, true);
   let off = dv.getUint32(eocd + 16, true);
   const dekoder = new TextDecoder();
   const polozky = [];
   let zbyva = ZIP_ROZBALENO_MAX;
+  const rozsahy = [];                                   // data položek (R1)
   for (let n = 0; n < pocet; n++) {
     if (dv.getUint32(off, true) !== 0x02014b50) throw new Error('Poškozený ZIP adresář.');
     const metoda = dv.getUint16(off + 10, true);
@@ -86,6 +96,7 @@ async function zipPrecti(u8) {
     const lN = dv.getUint16(lokalOff + 26, true), lE = dv.getUint16(lokalOff + 28, true);
     const dataZac = lokalOff + 30 + lN + lE;
     const komprimovana = u8.subarray(dataZac, dataZac + velKomp);
+    rozsahy.push([dataZac, dataZac + velKomp]);
     let data;
     if (metoda === 0) {
       if (komprimovana.length > zbyva) throw new Error('ZIP se rozbalí na víc než ' + Math.round(ZIP_ROZBALENO_MAX / 1024 / 1024) + ' MB.');
@@ -97,6 +108,10 @@ async function zipPrecti(u8) {
     polozky.push({ nazev, data });
     off += 46 + delkaNazvu + delkaExtra + delkaKom;
   }
+  /* Další věrohodný konec = nejednoznačný archiv (#395) — kromě podpisu
+   * uvnitř dat položky (obrázek), který žádný program za konec nebere (R1). */
+  if (kandidati.slice(1).some(i => !rozsahy.some(([a, b]) => i >= a && i + 4 <= b)))
+    throw new Error('Nejednoznačný konec ZIP adresáře (podvržený v komentáři archivu).');
   return polozky;
 }
 
