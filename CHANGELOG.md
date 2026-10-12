@@ -46,6 +46,23 @@ Mutace serveru +18 (ověřeno samostatně 18 / 18 chycených).
 0 selhalo, 1 přeskočeno (test.js — není v exportu); mutace jádra 169 z 169,
 serveru 267 z 267; statické 3 z 3.
 
+**Nezávislá revize #401 (12. 10. 2026) — opraveno ve stejné větvi:**
+N1 (střední) zámek odeslané nabídky nese razítko slovníku { verze, otisk };
+dotisk v cizím jazyce po změně slovníku upozorní (znění dnešní, částky
+zmrazené), staré zámky bez razítka se neptají, razítko drží server (B62).
+N2 klíče `__proto__:` / `__proto__.` (po prekladNorm `__proto__`) se
+odmítají, `PREKLAD_IDX` je bez prototypu, prekladNastav/Import zakázané
+klíče nepustí. N3 U+FFFE/U+FFFF odmítá slovník a odstraňuje `xmlEsc`.
+N4 vymazaný překlad zabudovaného hesla → 400 (i v obnově). N5 strop
+záznamu 2 MB v bajtech UTF-8. N6 strop těla v bajtech. N7 verze v obnově
+jen celé číslo 1 … 1 000 000. Testy před → po: test_prava 764/11 → 775/0,
+test_obnova 203/8 → 211/0, test_slovnik 63 + pád → 83/0,
+test_docx_preklad 51/1 → 52/0, overit_slovnik 14 + pád → 21/0. Mutace
+serveru +12, jádra +1; mutace syrového `__proto__` vyřazena (ekvivalentní
+po N2 — první kolo 278 z 279). **Kolo nad d493a2b (82 min 27 s) VŠE
+ZELENÉ:** sady 223 / 0 / 1 přeskočeno, mutace jádra 170 z 170, serveru
+278 z 278, statické 3 z 3.
+
 ---
 
 ## v12.10.2 — B126, B127, B128, B131 z auditu 6. 10. 2026; šablony CN v15 (větev claude/b126-cn-v15)

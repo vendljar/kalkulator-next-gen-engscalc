@@ -8,8 +8,10 @@ Hotovo: tabulka převzata do `src/preklad.js` (44 rozdílných, 0 doplnit,
 0 nových); tlačítko „Převzít všech N z tabulky"; `/api/slovnik` (zveřejnění
 jen Administrátor, verze + historie, kontrola tvaru, strop 1 MB), klient
 položí platný slovník po přihlášení, Nastavení → Slovník „Zveřejnit slovník";
-slovník v záloze, otisku i obnově; roadmapa #401. Testy a výsledek kola
-v CHANGELOG v12.10.3.
+slovník v záloze, otisku i obnově; roadmapa #401. Nálezy nezávislé revize
+#401 (N1 razítko slovníku v zámku + upozornění při dotisku, N2–N7) opraveny
+ve stejné větvi. Testy a výsledek kola (VŠE ZELENÉ nad d493a2b) v CHANGELOG
+v12.10.3.
 
 Čeká na J. V.: sloučení do `test-draft`; po nasazení slovník jednou
 zveřejnit (tabulka je už v kódu, takže první verze ponese jen případné
