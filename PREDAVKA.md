@@ -1,3 +1,21 @@
+# Předávka — 12. 10. 2026: v12.10.1 v test-draft i test
+
+`test-draft` = `test` = **v12.10.1** (pokyn J. V. 12. 10.: „po dokončení pošli
+do testu a odkaz na release"). Obsahuje #395 (v8.10.1, větev
+`claude/cenik-395`) a #396 (větev `claude/nabidka-usazeni-telefon`):
+usazení OCK v nabídce podle specifikace (levá/pravá boční stěna, řádky bez
+volby pryč; Word CN v14 je dostane do řádku „boční stěny"), tlačítko
+Kontakt… u účtů. Telefon D. Sikory opravil J. V. v profilu (chyba v účtu).
+`main` = v30.9.1. Release v6.10.1 a v12.10.1 čekají na J. V.
+
+Čeká na J. V.: B126 (vysoká) + B127, B128, B131 z auditu 6. 10. (výchozí:
+oprava v nové větvi), pak 22. kolo; šablona CN v15 s vlastními řádky levé
+a pravé boční stěny (výchozí: není nutná, v14 funguje sloučeně); smazání
+sloučených větví (`claude/cenik-395`, `claude/nabidka-usazeni-telefon`
+a seznam z 8. 10.); převod do `main`.
+
+---
+
 # Předávka — stav k 8. 10. 2026 (#395 ve větvi claude/cenik-395, v8.10.1)
 
 Sezení session_01DrQLceJMdr6XWCvRcFSjbY (založené ze session_01FbEVKCocjc6ZDk2hyoDe3k).

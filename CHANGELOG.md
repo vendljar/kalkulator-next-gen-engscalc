@@ -10,6 +10,13 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ## v12.10.1 — usazení OCK v nabídce podle specifikace, kontakt účtu upraví správce (větev claude/nabidka-usazeni-telefon)
 
+**Ověřeno:** kolo nad ba8fbb1 — sady 221/1 (jen `test_nabidka.js`: čekala 13
+řádků základních parametrů, usazení bez volby teď záměrně mizí → 11),
+mutace serveru 245 z 245; po úpravě testu kolo nad 3db9bb7 (bez mutací
+serveru — server se nezměnil) VŠE ZELENÉ: sady 222 prošlo, 0 selhalo,
+1 přeskočeno, mutace jádra 167 z 167, statické 3 z 3. Telefon D. Sikory
+opravil J. V. v profilu 12. 10. (chyba byla v účtu).
+
 Pokyn J. V. 12. 10. 2026 (mail D. Sikory a sken specifikace × nabídky).
 Větev z `claude/cenik-395` (v8.10.1). Roadmapa #396.
 
