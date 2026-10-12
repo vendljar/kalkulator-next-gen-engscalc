@@ -48,6 +48,11 @@ Větev z `test-draft` (v12.10.2).
   `overit_xss.mjs` vykreslí dialog Kontakt… a otráví usazení OCK; smazán
   mrtvý řádek v `obnova.mjs`; `test_profil.mjs` v sadách serverových mutací.
 
+Celé kolo nad 5680476 (96 min): mutace jádra 188 z 188, serveru 275 z 275,
+statické 3 z 3; sady 221/1/1 — jediné selhání `overit_manual` (kopie příručky
+v podkladech nesla v12.10.2). Po přejmenování kopie sady + statické znovu:
+**222/0/1, VŠE ZELENÉ**.
+
 ## v12.10.2 — B126, B127, B128, B131 z auditu 6. 10. 2026; šablony CN v15 (větev claude/b126-cn-v15)
 
 Pokyn J. V. 12. 10. 2026: „připrav mi šablony v15, souhlasím s ostatními

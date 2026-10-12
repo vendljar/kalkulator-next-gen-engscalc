@@ -15,8 +15,15 @@ před/po: test_sablona_obsah 77/23 → 114/0 (s podklady), test_obnova 192/8 →
 B139–B143; našel falešné odmítnutí (R1: bajty PK\x05\x06 v obrázku) —
 opraveno tak, že B142 i #395 drží.
 
+Celé kolo VŠE ZELENÉ: mutace jádra 188/188, serveru 275/275, statické 3/3,
+sady 222/0/1 (opakované po přejmenování kopie příručky na v12.10.3).
+
 Podklady v `/home/user/kng_podklady` (20 souborů vč. CN v15, SoD v2,
-příručky v12.10.2) — firemní šablony kontrolou projdou všechny.
+příručky přejmenované na v12.10.3) — firemní šablony kontrolou projdou všechny.
+
+Otevřené (výchozí odpověď v závorce): B149 přísné ověření zámku i v obnově
+(ne, ponechat jako mez); roadmapa #399/#400 — zápis nechávám koordinačnímu
+sezení (ano).
 
 ---
 
