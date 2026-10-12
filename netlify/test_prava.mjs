@@ -1897,6 +1897,48 @@ console.log('\n===== ZVEŘEJNĚNÝ SLOVNÍK (#401, 12. 10. 2026) =====\n');
   for (let i = 0; i < 25; i++) await zverejni({ hesla: { ['Heslo historie ' + i]: ['v' + i, '', ''] } });
   const dbH = await (await uloziste('program')).cti('slovnik');
   test('#401: historie drží nejvýš 20 starších verzí', dbH.historie.length === 20, dbH.historie.length);
+
+  /* ---- nálezy nezávislé revize #401 (12. 10. 2026) ---- */
+  const predRev = JSON.stringify(await (await uloziste('program')).cti('slovnik'));
+  for (const [jm, telo] of [
+    ['N2: klíč „__proto__:" (po normalizaci __proto__)', '{"hesla":{"__proto__:":["a","b","c"]}}'],
+    ['N2: klíč „__proto__."', '{"hesla":{"__proto__.":["a","b","c"]}}'],
+    ['N3: U+FFFE v překladu', JSON.stringify({ hesla: { Heslo: ['a\uFFFEb', '', ''] } })],
+    ['N3: U+FFFF v hesle', JSON.stringify({ hesla: { ['Heslo\uFFFF']: ['a', '', ''] } })],
+    ['N4: prázdný přepis zabudovaného hesla', JSON.stringify({ hesla: { 'POVRCHOVÁ ÚPRAVA KONSTRUKCE': ['', '', ''] } })],
+    ['N4: vymazaný jeden jazyk zabudovaného hesla', JSON.stringify({ hesla: { 'POVRCHOVÁ ÚPRAVA KONSTRUKCE': ['STEEL', '', 'FINITION'] } })],
+  ]) {
+    const r = await postSurove(telo, cAdmin);
+    const o = await r.json();
+    test('rev #401 ' + jm + ' → 400', r.status === 400 && o.ok === false, r.status + ' ' + JSON.stringify(o));
+  }
+  const r4 = await postSurove(JSON.stringify({ hesla: { 'POVRCHOVÁ ÚPRAVA KONSTRUKCE': ['STEEL', '', 'FINITION'] } }), cAdmin);
+  test('rev #401 N4: odmítnutí vysvětluje, že vymazat zabudovaný překlad nejde', /vymazat/.test((await r4.json()).chyba || ''));
+  test('rev #401: odmítnuté pokusy revize nic nezapsaly', JSON.stringify(await (await uloziste('program')).cti('slovnik')) === predRev);
+  const r4ok = await zverejni({ hesla: { 'POVRCHOVÁ ÚPRAVA KONSTRUKCE': ['STEEL', 'STAHL', 'ACIER'], 'Heslo mimo kód #401': ['', '', ''] } });
+  test('rev #401 N4: změna znění zabudovaného hesla i prázdné heslo mimo kód projdou (200)', r4ok.status === 200, r4ok);
+  /* N6: bez content-length se strop měří v bajtech — 600 000 × „č" = 1,2 MB, ale jen 0,6 M znaků */
+  const rB = await postSurove(JSON.stringify({ hesla: { Heslo: ['a', '', ''] }, poznamka: 'č'.repeat(600000) }), cAdmin);
+  test('rev #401 N6: tělo pod stropem ve znacích, nad ním v bajtech → 413', rB.status === 413, rB.status);
+}
+
+/* Revize #401 N1: razítko slovníku v zámku odeslané nabídky drží server
+ * jako kdo/popis/šablonu (B62) — podvržené razítko se nahradí uloženým. */
+{
+  const rz = zakazkaCislo('2026 - OPR - CN - 0987');
+  zamkniJakoAplikace(rz, rz.varianty[0], { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Matice práv',
+    popis: 'Cenová nabídka OCK (Word)', slovnik: { verze: 3, otisk: '0123abcd' } });
+  const u0 = await post(zakazky, 'http://x/api/zakazky', { zakazka: rz }, cObch);
+  const ul0 = JSON.parse(pamet.get('zakazky/z/2026-OPR-CN-0987.json') || 'null');
+  test('rev #401 N1: zámek s razítkem slovníku se uloží (200) a razítko nese',
+    u0.status === 200 && !!ul0 && ul0.varianty[0].zamek.slovnik && ul0.varianty[0].zamek.slovnik.otisk === '0123abcd', u0.status);
+  const podvrh = JSON.parse(JSON.stringify(ul0));
+  podvrh.varianty[0].zamek.slovnik = { verze: 9, otisk: 'ffffffff' };
+  podvrh.varianty[0].zamek.tisky[0].slovnik = { verze: 9, otisk: 'ffffffff' };
+  await post(zakazky, 'http://x/api/zakazky', { zakazka: podvrh }, cObch);
+  const zu = JSON.parse(pamet.get('zakazky/z/2026-OPR-CN-0987.json')).varianty[0].zamek;
+  test('rev #401 N1: podvržené razítko slovníku zámku server nahradí uloženým',
+    zu.slovnik.otisk === '0123abcd' && zu.tisky[0].slovnik.otisk === '0123abcd', JSON.stringify([zu.slovnik, zu.tisky[0].slovnik]));
 }
 
 console.log('\n===== AUDIT B9: ÚPLNOST ZÁLOHY =====\n');

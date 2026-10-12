@@ -51,7 +51,9 @@ export default async (req) => {
     return json({ ok: false, chyba: 'Slovník je příliš velký (' + Math.round(delka / 1024) + ' kB, strop '
       + Math.round(M.telo / 1024) + ' kB).' }, 413);
   let text; try { text = await req.text(); } catch (e) { return json({ ok: false, chyba: 'Vstup se nepodařilo přečíst.' }, 400); }
-  if (text.length > M.telo)
+  /* Strop v BAJTECH UTF-8, ne ve znacích (revize #401): bez hlavičky
+   * content-length by jinak diakritika prošla až dvojnásobná. */
+  if (globalThis.slovnikBajty(text) > M.telo)
     return json({ ok: false, chyba: 'Slovník je příliš velký (strop ' + Math.round(M.telo / 1024) + ' kB).' }, 413);
   let t; try { t = JSON.parse(text); } catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
   /* Tělo JSON `null`, číslo nebo pole (B131). */
@@ -59,12 +61,19 @@ export default async (req) => {
 
   const k = globalThis.slovnikHeslaKontrola(t.hesla);
   if (!k.ok) return json({ ok: false, chyba: k.chyba }, 400);
+  /* Prázdný přepis zabudovaného hesla se odmítá (revize #401, rozhodnutí
+   * 12. 10. 2026): změnit znění jde, vymazat překlad ne. */
+  const prazdne = globalThis.slovnikPrazdnePrepisy(k.hesla, globalThis.PREKLAD_ZABUDOVANY);
+  if (prazdne.length) return json({ ok: false, chyba: globalThis.slovnikPrazdnePrepisyText(prazdne) }, 400);
 
   const db = await s.cti('slovnik');
   if (db && globalThis.slovnikBezeZmeny(db, k.hesla))
     return json({ ok: false, chyba: 'Slovník se od platné verze neliší – není co zveřejňovat.' }, 400);
   const nova = globalThis.slovnikDbNovaVerze(db, { hesla: k.hesla, kdo: relace.email,
     poznamka: typeof t.poznamka === 'string' ? t.poznamka : '' });
+  if (globalThis.slovnikBajty(nova) > M.db)
+    return json({ ok: false, chyba: 'Slovník by byl větší než povolený strop uloženého záznamu ('
+      + Math.round(M.db / 1024) + ' kB).' }, 413);
   await s.zapis('slovnik', nova);
   return json({ ok: true, verze: nova.platny.verze, kdy: nova.platny.kdy, pocet: nova.platny.pocet });
 };

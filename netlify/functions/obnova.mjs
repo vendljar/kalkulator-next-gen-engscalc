@@ -462,7 +462,8 @@ export default async (req) => {
        * s řídicími znaky do databáze nesmí ani oklikou přes obnovu. Vadná
        * platná verze = část se přeskočí celá; vadné starší verze vypadnou. */
       const c = (typeof globalThis.slovnikDbOciste === 'function')
-        ? globalThis.slovnikDbOciste(hodnota) : { ok: false, chyba: 'kontrola slovníku není k dispozici' };
+        ? globalThis.slovnikDbOciste(hodnota, globalThis.PREKLAD_ZABUDOVANY)
+        : { ok: false, chyba: 'kontrola slovníku není k dispozici' };
       if (!c.ok) preskoc(b, 'slovnik', c.chyba + ' — neobnovuje se');
       else await zaznam(b, sProg, jednoduche[cast], c.db, rezim, zapisovat);
     }

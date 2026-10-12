@@ -133,7 +133,8 @@ function zipZapis(polozky, mime) {
 /* Řídicí znaky (kromě tabulátoru a konců řádků) XML 1.0 nepovoluje — Word
  * takový dokument odmítne otevřít. Přijdou z poznámky nebo z CRM; odstraní
  * se tady, na jediném místě, kudy text do XML vstupuje (audit 22. 8., B20). */
-const XML_RIDICI = /[\x00-\x08\x0B\x0C\x0E-\x1F]/g;
+/* U+FFFE a U+FFFF nejsou v XML 1.0 povolené taky (revize #401, 12. 10. 2026). */
+const XML_RIDICI = /[\x00-\x08\x0B\x0C\x0E-\x1F\uFFFE\uFFFF]/g;
 function xmlEsc(s) {
   return String(s).replace(XML_RIDICI, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&apos;');

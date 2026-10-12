@@ -1148,8 +1148,11 @@ function prekladNorm(s) {
     .toLowerCase();
 }
 
-/* rejstřík normalizovaný klíč → [EN, DE, FR] (staví se jednou při načtení) */
-const PREKLAD_IDX = {};
+/* rejstřík normalizovaný klíč → [EN, DE, FR] (staví se jednou při načtení).
+ * Bez prototypu (revize #401, 12. 10. 2026): klíč „__proto__:" se po
+ * prekladNorm stane „__proto__" a v obyčejném objektu by přepsal prototyp
+ * rejstříku. Čte se jen indexem PREKLAD_IDX[n], takže nic dalšího to nemění. */
+const PREKLAD_IDX = Object.create(null);
 Object.keys(PREKLAD).forEach(k => { PREKLAD_IDX[prekladNorm(k)] = PREKLAD[k]; });
 
 /* Slovník ZABUDOVANÝ v sestavení (12. 10. 2026, #401) — kopie pořízená při
@@ -1357,16 +1360,25 @@ function trStav(cz, lang) {
 }
 
 /* ---- údržba slovníku (admin) ---- */
+/* Klíče, které by v obyčejném objektu sáhly na prototyp — ani syrově, ani po
+ * normalizaci (revize #401: „__proto__:" → prekladNorm → „__proto__").
+ * Hesla přicházejí z tabulky, konfigurace, složky i ze serveru. */
+const PREKLAD_ZAKAZANE = ['__proto__', 'constructor', 'prototype'];
+function prekladKlicPovolen(cz) {
+  const t = String(cz == null ? '' : cz).trim();
+  return !!t && PREKLAD_ZAKAZANE.indexOf(t) < 0 && PREKLAD_ZAKAZANE.indexOf(prekladNorm(t)) < 0;
+}
+const prekladMa = (k) => Object.prototype.hasOwnProperty.call(PREKLAD, k);
 function prekladNastav(cz, lang, text) {
   const i = JAZYK_IDX[lang];
-  if (i === undefined) return false;
-  if (!PREKLAD[cz]) PREKLAD[cz] = ['', '', ''];
+  if (i === undefined || !prekladKlicPovolen(cz)) return false;
+  if (!prekladMa(cz)) PREKLAD[cz] = ['', '', ''];
   PREKLAD[cz][i] = String(text == null ? '' : text);
   PREKLAD_IDX[prekladNorm(cz)] = PREKLAD[cz];
   return true;
 }
 function prekladSmaz(cz) {
-  if (!PREKLAD[cz]) return false;
+  if (!prekladMa(cz)) return false;
   delete PREKLAD[cz];
   delete PREKLAD_IDX[prekladNorm(cz)];
   return true;
@@ -1407,7 +1419,7 @@ function prekladImport(data) {
   let n = 0;
   Object.keys(data.hesla).forEach(k => {
     const v = data.hesla[k];
-    if (!Array.isArray(v)) return;
+    if (!Array.isArray(v) || !prekladKlicPovolen(k)) return;
     PREKLAD[k] = [v[0] || '', v[1] || '', v[2] || ''];
     PREKLAD_IDX[prekladNorm(k)] = PREKLAD[k];
     n++;
@@ -1417,5 +1429,5 @@ function prekladImport(data) {
 
 if (typeof module !== 'undefined')
   module.exports = { JAZYKY, JAZYK_IDX, PREKLAD, PREKLAD_IDX, PREKLAD_ZABUDOVANY, PREKLAD_VZORY, PREKLAD_CHYBI,
-    tr, trStav, prekladNorm, prekladNeutral, prekladNastav, prekladSmaz, prekladPocet,
+    tr, trStav, prekladNorm, prekladNeutral, prekladKlicPovolen, PREKLAD_ZAKAZANE, prekladNastav, prekladSmaz, prekladPocet,
     prekladPokryti, prekladExport, prekladImport };

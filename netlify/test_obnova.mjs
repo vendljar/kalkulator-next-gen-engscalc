@@ -1046,6 +1046,41 @@ console.log('\n===== #401: zveřejněný slovník v záloze a obnově =====');
     ul3 && ul3.historie);
   test('#401: obnovený slovník jde přečíst (GET 200)',
     (await get(slovnikFn, 'http://x/api/slovnik', cookie)).status === 200);
+
+  /* ---- nálezy nezávislé revize #401 (12. 10. 2026) ---- */
+  const pred = JSON.stringify(await ulz('program').cti('slovnik'));
+  const sVerzi = (v) => { const x = JSON.parse(JSON.stringify(zal)); x.slovnik.platny.verze = v; return x; };
+  /* JSON neunese Infinity — v souboru zálohy může být 1e999 (parsuje se jako Infinity) */
+  const s999 = JSON.parse(JSON.stringify(sVerzi(424242)).replace('"verze":424242', '"verze":1e999'));
+  test('rev #401 N7: (podvrh opravdu nese verzi Infinity)', s999.slovnik.platny.verze === Infinity);
+  for (const [jm, soubor] of [['1e300', sVerzi(1e300)], ['Infinity (1e999)', s999], ['1,5', sVerzi(1.5)], ['1000001', sVerzi(1000001)]]) {
+    const o = await obnovJson({ zdroj: { soubor }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['slovnik'] }, cookie);
+    test('rev #401 N7: platná verze ' + jm + ' se neobnoví', o.ok === true && o.casti.slovnik.preskocene === 1
+      && JSON.stringify(await ulz('program').cti('slovnik')) === pred, o.casti && o.casti.slovnik);
+  }
+  const histVelka = JSON.parse(JSON.stringify(zal));
+  histVelka.slovnik.historie = [{ verze: 1e300, hesla: {} }].concat(histVelka.slovnik.historie);
+  const oH = await obnovJson({ zdroj: { soubor: histVelka }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['slovnik'] }, cookie);
+  const ulH = await ulz('program').cti('slovnik');
+  test('rev #401 N7: starší verze 1e300 z historie vypadne', oH.ok === true && ulH.historie.every(h => h.verze >= 1 && h.verze <= 1e6), ulH.historie.map(h => h.verze));
+  const prazdna = JSON.parse(JSON.stringify(zal));
+  prazdna.slovnik.platny.hesla = { 'POVRCHOVÁ ÚPRAVA KONSTRUKCE': ['', '', ''] };
+  const oP = await obnovJson({ zdroj: { soubor: prazdna }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['slovnik'] }, cookie);
+  test('rev #401 N4: platná verze s vymazaným zabudovaným překladem se neobnoví', oP.ok === true && oP.casti.slovnik.preskocene === 1, oP.casti);
+  const proto = JSON.parse(JSON.stringify(zal));
+  proto.slovnik.platny.hesla = { '__proto__:': ['x', 'y', 'z'] };
+  const oN = await obnovJson({ zdroj: { soubor: proto }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['slovnik'] }, cookie);
+  test('rev #401 N2: heslo „__proto__:" se neobnoví', oN.ok === true && oN.casti.slovnik.preskocene === 1, oN.casti);
+  /* N5: historie v bajtech — platná + předchozí verze s diakritikou: znaků pod 2 M, bajtů nad */
+  const tezka = {}; for (let i = 0; i < 300; i++) tezka['Heslo ' + i] = ['č'.repeat(1990), '', ''];
+  const velka = JSON.parse(JSON.stringify(zal));
+  velka.slovnik.platny = { verze: 5, kdy: 'x', kdo: 'x', hesla: tezka };
+  velka.slovnik.historie = [{ verze: 4, kdy: 'x', kdo: 'x', hesla: tezka }];
+  const oV = await obnovJson({ zdroj: { soubor: velka }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['slovnik'] }, cookie);
+  const ulV = await ulz('program').cti('slovnik');
+  test('rev #401 N5: obnova drží strop záznamu v bajtech (historie se zkrátí)',
+    oV.ok === true && !!ulV && ulV.platny.verze === 5 && ulV.historie.length === 0
+    && new TextEncoder().encode(JSON.stringify(ulV)).length <= 2 * 1024 * 1024, oV.casti);
 }
 
 console.log(`\n${ok} OK, ${fail} FAIL`);

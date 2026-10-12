@@ -61,7 +61,9 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* Dávka B kola 16 (25. 9. 2026): adresa stavby v rejstříku (P15). */
      'test_rejstrik.mjs',
      /* B111 (29. 9. 2026): záporná částka, množství a hodiny. */
-     'test_zaporne.mjs'];
+     'test_zaporne.mjs',
+     /* Revize #401 (12. 10. 2026): jádro zveřejněného slovníku a razítko v zámku. */
+     '../src/test_slovnik.js'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -707,7 +709,7 @@ const MUTACE = [
     nahrad: "  if (false) return null;",
     proc: 'tělo JSON null by skončilo výjimkou a 500 (B131)' },
   { nazev: '#401: strop velikosti těla slovníku se neuplatní', soubor: 'functions/slovnik.mjs',
-    hledej: "  if (text.length > M.telo)",
+    hledej: "  if (globalThis.slovnikBajty(text) > M.telo)",
     nahrad: "  if (false)",
     proc: 'administrátorský účet (nebo ukradená relace) by zaplnil úložiště a zálohy megabajty' },
   { nazev: '#401: hlášená délka těla slovníku se nekontroluje', soubor: 'functions/slovnik.mjs',
@@ -762,6 +764,56 @@ const MUTACE = [
     hledej: "      else await zaznam(b, sProg, jednoduche[cast], c.db, rezim, zapisovat);",
     nahrad: "      else await zaznam(b, sProg, jednoduche[cast], hodnota, rezim, zapisovat);\n      if (!c.ok) await zaznam(b, sProg, jednoduche[cast], hodnota, rezim, zapisovat);",
     proc: 'upravený soubor zálohy by do databáze zapsal heslo __proto__ nebo překlad bez stropu' },
+
+  /* Nálezy nezávislé revize #401 (12. 10. 2026). */
+  { nazev: 'rev #401 N1: razítko slovníku v uloženém zámku přepíše klient', soubor: '../src/uloziste.js',
+    hledej: "    ['kdo', 'popis', 'sablona', 'slovnik'].forEach(k => {",
+    nahrad: "    ['kdo', 'popis', 'sablona'].forEach(k => {",
+    proc: 'kdokoli by v odeslané nabídce podvrhl, kterým slovníkem odešla' },
+  { nazev: 'rev #401 N1: zámek nezapíše razítko slovníku', soubor: '../src/zamek.js',
+    hledej: "    slovnik: zaznam.slovnik,",
+    nahrad: "    slovnik: null,",
+    proc: 'dotisk po nové verzi slovníku by tiše nesl jiné znění, než jaké zákazník dostal' },
+  { nazev: 'rev #401 N2: zakázané klíče se po normalizaci nekontrolují', soubor: '../src/slovnik.js',
+    hledej: "    if (SLOVNIK_ZAKAZANE_KLICE.indexOf(slovnikNorm(kt)) >= 0)",
+    nahrad: "    if (false)",
+    proc: 'heslo „__proto__:" by v prohlížeči přepsalo prototyp rejstříku PREKLAD_IDX' },
+  { nazev: 'rev #401 N2: prekladNastav / prekladImport bez kontroly klíče', soubor: '../src/preklad.js',
+    hledej: "  return !!t && PREKLAD_ZAKAZANE.indexOf(t) < 0 && PREKLAD_ZAKAZANE.indexOf(prekladNorm(t)) < 0;",
+    nahrad: "  return !!t;",
+    proc: 'řádek tabulky nebo konfigurace s heslem „constructor" by zapsal do Object' },
+  { nazev: 'rev #401 N2: rejstřík překladů s prototypem', soubor: '../src/preklad.js',
+    hledej: "const PREKLAD_IDX = Object.create(null);",
+    nahrad: "const PREKLAD_IDX = {};",
+    proc: 'normalizované heslo „__proto__" by změnilo prototyp rejstříku' },
+  { nazev: 'rev #401 N3: U+FFFE / U+FFFF ve slovníku projdou', soubor: '../src/slovnik.js',
+    hledej: "const SLOVNIK_RIDICI = /[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\uFFFE\\uFFFF]/;",
+    nahrad: "const SLOVNIK_RIDICI = /[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F]/;",
+    proc: 'nepovolený znak XML by rozbil cizojazyčnou nabídku ve Wordu' },
+  { nazev: 'rev #401 N4: server přijme vymazaný překlad zabudovaného hesla', soubor: 'functions/slovnik.mjs',
+    hledej: "  if (prazdne.length) return json(",
+    nahrad: "  if (false) return json(",
+    proc: 'cizojazyčná nabídka by místo překladu vytiskla češtinu' },
+  { nazev: 'rev #401 N4: obnova nekontroluje prázdné přepisy zabudovaných hesel', soubor: 'functions/obnova.mjs',
+    hledej: "        ? globalThis.slovnikDbOciste(hodnota, globalThis.PREKLAD_ZABUDOVANY)",
+    nahrad: "        ? globalThis.slovnikDbOciste(hodnota)",
+    proc: 'upravená záloha by do databáze vrátila vymazané překlady' },
+  { nazev: 'rev #401 N5: strop záznamu slovníku ve znacích', soubor: '../src/slovnik.js',
+    hledej: "  while (nove.historie.length && slovnikBajty(nove) > SLOVNIK_MEZE.db) nove.historie.pop();",
+    nahrad: "  while (nove.historie.length && JSON.stringify(nove).length > SLOVNIK_MEZE.db) nove.historie.pop();",
+    proc: 'záznam s diakritikou by byl až dvojnásobný a nevešel by se do dávky obnovy' },
+  { nazev: 'rev #401 N5: obnova měří strop slovníku ve znacích', soubor: '../src/slovnik.js',
+    hledej: "  while (out.historie.length && slovnikBajty(out) > SLOVNIK_MEZE.db) out.historie.pop();",
+    nahrad: "  while (out.historie.length && JSON.stringify(out).length > SLOVNIK_MEZE.db) out.historie.pop();",
+    proc: 'obnova by zapsala záznam nad strop, který pak nejde zálohovat a vrátit jednou dávkou' },
+  { nazev: 'rev #401 N6: strop těla slovníku ve znacích', soubor: 'functions/slovnik.mjs',
+    hledej: "  if (globalThis.slovnikBajty(text) > M.telo)",
+    nahrad: "  if (text.length > M.telo)",
+    proc: 'bez hlavičky content-length by prošlo tělo s diakritikou až dvojnásobné' },
+  { nazev: 'rev #401 N7: verze slovníku ze zálohy bez stropu', soubor: '../src/slovnik.js',
+    hledej: "    if (!Number.isInteger(v) || v < 1 || v > SLOVNIK_MEZE.verze) return",
+    nahrad: "    if (!(v >= 1)) return",
+    proc: 'verze 1e300 nebo Infinity by rozbila číslování všech dalších verzí' },
 
   /* Pojistky serverové vrstvy z auditu 22. 9. 2026 (B54–B56). */
 

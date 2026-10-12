@@ -202,7 +202,33 @@ function zamekKdo() {
  * Ptá se jen u varianty, která ještě zamčená NENÍ: dotisk už odeslané
  * nabídky nic nového nezamyká (zámek je v uložených datech) a čtení je pro
  * něj přesně ten správný režim. Vrací Promise<boolean> — true = tisknout. */
+/* RAZÍTKO SLOVNÍKU (revize #401, 12. 10. 2026): kterým slovníkem překladů
+ * dokument vzniká — zveřejněná verze (je-li) a otisk celého živého slovníku. */
+function zamekSlovnikTed() {
+  if (typeof slovnikRazitko !== 'function' || typeof PREKLAD === 'undefined') return null;
+  const p = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.slovnik && ONLINE_STAV.slovnik.platny) || null;
+  return slovnikRazitko(PREKLAD, p ? p.verze : null);
+}
+/* Dotisk odeslané nabídky v cizím jazyce poté, co se slovník změnil: částky
+ * jsou zmrazené, ale překlady se berou z dnešního slovníku — obsluha to musí
+ * vědět dřív, než pošle zákazníkovi „tutéž" nabídku s jiným zněním. Zámky
+ * bez razítka (pořízené před v12.10.3) se neptají. Vrací Promise<boolean>. */
+async function tiskSlovnikUpozorni(typ, varianta) {
+  const z = (varianta && typeof zamekInfo === 'function') ? zamekInfo(varianta) : null;
+  const puv = z && (typeof slovnikRazitkoOciste === 'function') ? slovnikRazitkoOciste(z.slovnik) : null;
+  if (!puv) return true;
+  const L = (typeof tiskJazyk === 'function') ? tiskJazyk() : ((typeof jazyk === 'function') ? jazyk() : 'cz');
+  if (!L || L === 'cz') return true;
+  const ted = zamekSlovnikTed();
+  if (!ted || ted.otisk === puv.otisk) return true;
+  const v = (r) => r.verze ? 'zveřejněná verze ' + r.verze : 'slovník zabudovaný v aplikaci';
+  return await potvrd('Slovník překladů se od odeslání této nabídky změnil (při odeslání: ' + v(puv)
+    + ', teď: ' + v(ted) + ').\n\nDotisk v jazyce ' + L.toUpperCase() + ' ponese DNEŠNÍ znění překladů, '
+    + 'takže se textem může lišit od dokumentu, který zákazník dostal. Částky jsou zmrazené a nemění se.',
+    { nadpis: 'Dotisk se změněným slovníkem', ano: 'Tisknout', ne: 'Zrušit' });
+}
 async function tiskZamekCteniPovol(typ, varianta) {
+  if (!(await tiskSlovnikUpozorni(typ, varianta))) return false;
   if (typeof zamekCteniJe !== 'function' || !zamekCteniJe()) return true;
   if (typeof dokumentZamyka !== 'function' || !dokumentZamyka(typ)) return true;
   if (varianta && typeof variantaUzamcena === 'function' && variantaUzamcena(varianta)) return true;
@@ -252,7 +278,7 @@ function zamekPoTisku(typ, varId, sablona) {
     try { if (typeof kryciProjZmrazPodminky === 'function') kryciProjZmrazPodminky(ZAK, v); } catch (e) {}
   }
   zamkniVariantu(v, { typ, kdo: zamekKdo(), cislo: variantaCislo(ZAK, v), otisk, vysledek,
-                      sablona: sablona || null });
+                      sablona: sablona || null, slovnik: zamekSlovnikTed() });
   render();
   return v.zamek;
 }

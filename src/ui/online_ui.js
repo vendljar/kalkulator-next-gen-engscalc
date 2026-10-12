@@ -839,6 +839,8 @@ async function onlineZverejniSlovnik(preddanaPozn) {
   const hesla = slovnikOdchylky(PREKLAD, PREKLAD_ZABUDOVANY);
   const k = slovnikHeslaKontrola(hesla);
   if (!k.ok) { onlineZprava('Slovník nejde zveřejnit: ' + k.chyba, 'chyba'); render(); return false; }
+  const prazdne = slovnikPrazdnePrepisy(hesla, PREKLAD_ZABUDOVANY);
+  if (prazdne.length) { onlineZprava('Slovník nejde zveřejnit: ' + slovnikPrazdnePrepisyText(prazdne), 'chyba'); render(); return false; }
   if (ONLINE_STAV.slovnik && slovnikBezeZmeny(ONLINE_STAV.slovnik, hesla)) {
     onlineZprava('Slovník se od platné online verze neliší – není co zveřejňovat.'); render(); return false;
   }

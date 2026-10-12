@@ -110,6 +110,41 @@ zkus('po převzetí porovnání hlásí 0 odlišných', po.rozdilne === 0, Strin
 zkus('tlačítko po převzetí zmizí', po.tlacitko === false);
 zkus('stav hlásí počet převzatých', /Převzato z tabulky 3/.test(po.stav), po.stav);
 
+/* Revize #401 N1 (12. 10. 2026): zámek odeslané nabídky nese razítko
+ * slovníku a dotisk v cizím jazyce po změně slovníku na to upozorní
+ * (částky zmrazené, znění dnešní). Starý zámek bez razítka se neptá. */
+console.log('\nSlovník – razítko v zámku a dotisk po změně slovníku');
+const dt = await stranka.evaluate(async (k) => {
+  zavriNastaveni();
+  ZAK = novaZakazka(); syncVarianta();
+  const v = aktivniVarianta(ZAK);
+  zamekPoTisku('nabidka', v.id, null);
+  const raz = v.zamek && v.zamek.slovnik;
+  const dotazu = () => window.__dlgTexty.length;
+  const out = { raz: raz ? JSON.stringify(raz) : null, tiskRaz: !!(v.zamek && v.zamek.tisky[0].slovnik) };
+  tiskJazykNastav('en');
+  let n = dotazu(); out.bezZmeny = await tiskSlovnikUpozorni('nabidka', v); out.bezZmenyDotazu = dotazu() - n;
+  prekladNastav(k, 'en', 'Changed after sending 401');
+  n = dotazu(); window.__odpoved = false; out.poZmeneZrus = await tiskSlovnikUpozorni('nabidka', v);
+  out.poZmeneDotazu = dotazu() - n; out.text = window.__dlgTexty[window.__dlgTexty.length - 1] || '';
+  window.__odpoved = true; out.poZmeneAno = await tiskSlovnikUpozorni('nabidka', v);
+  out.povolCelkem = await tiskZamekCteniPovol('nabidka', v);
+  tiskJazykNastav('cz');
+  n = dotazu(); out.cesky = await tiskSlovnikUpozorni('nabidka', v); out.ceskyDotazu = dotazu() - n;
+  tiskJazykNastav('en');
+  const stary = { id: 'stara', zamek: Object.assign({}, v.zamek) }; delete stary.zamek.slovnik;
+  n = dotazu(); out.stary = await tiskSlovnikUpozorni('nabidka', stary); out.staryDotazu = dotazu() - n;
+  tiskJazykNastav('');
+  return out;
+}, HESLA[2].cz);
+zkus('první tisk zapíše do zámku razítko slovníku (verze + otisk)', !!dt.raz && /"otisk":"[0-9a-f]{8}"/.test(dt.raz) && dt.tiskRaz, dt.raz);
+zkus('dotisk se stejným slovníkem se neptá', dt.bezZmeny === true && dt.bezZmenyDotazu === 0);
+zkus('dotisk v EN po změně slovníku upozorní a jde zrušit', dt.poZmeneZrus === false && dt.poZmeneDotazu === 1, dt.text);
+zkus('upozornění říká, že znění je dnešní a částky zmrazené', /změnil/.test(dt.text) && /zmrazené/.test(dt.text), dt.text);
+zkus('po potvrzení se tiskne (i přes tiskZamekCteniPovol)', dt.poZmeneAno === true && dt.povolCelkem === true);
+zkus('český dotisk se na slovník neptá', dt.cesky === true && dt.ceskyDotazu === 0);
+zkus('starý zámek bez razítka se neptá a nerozbije se', dt.stary === true && dt.staryDotazu === 0);
+
 zkus('konzole je čistá', chyby.length === 0, chyby.slice(0, 3).join(' | '));
 await prohlizec.close();
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
