@@ -1,3 +1,15 @@
+# Předávka — 12. 10. 2026 noc: integrace N1–N3 ve větvi `claude/integrace-13-10` (v12.10.4)
+
+Integrační subagent koordinačního sezení session_01CKiH2sXWq6U8xoJwqivhiN.
+Větev z `test-draft` (v12.10.2) + merge N1 (`claude/koncova-cena-398`), N2
+(`claude/sablony-399`), N3 (`claude/slovnik-hromadne`) a `claude/kolo22-v12.10.2`.
+Konflikty a jejich řešení: CHANGELOG v12.10.4. Roadmapa: #398, #399 hotovo,
+#400 čeká (B138, B77-zbytek, B107, B129, B130), #401 hotovo.
+Do `test-draft`/`test`/`main` nic — převod dělá koordinátor po zeleném kole.
+Stav celého kola: CHANGELOG v12.10.4.
+
+---
+
 # Předávka — 12. 10. 2026 večer: 22. kolo hotové, noční dávky N1–N3 běží
 
 Koordinační sezení **session_01CKiH2sXWq6U8xoJwqivhiN** (22. kolo nad v12.10.2), větev

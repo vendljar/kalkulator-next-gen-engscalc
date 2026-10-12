@@ -6261,25 +6261,25 @@
   {
    "id" : "398",
    "vlna" : "B",
-   "stav" : "ceka",
+   "stav" : "hotovo",
    "dulezitost" : "vysoka",
    "slozitost" : "M",
    "nazev" : "Koncová cena 2: serverová kontrola všech cenotvorných vstupů jádra (B133–B137 z auditu 12. 10. 2026)",
    "proc" : "22. kolo (12. 10. 2026): pět nových VYSOKÝCH nálezů, každý potvrzený dvěma nezávislými pokusy — přihlášený obchodník uloží nový zámek odeslané nabídky se sníženou cenou bez slevy a mimo schvalování, server ho orazítkuje „shoda“. B134 (záporná rezerva) jde i v běžném UI.",
    "detail" : "B134: záporné rezervy rezervaZakladPct/ProfilyPct/PlechyPct/PriplatkyPct (−99,9 % v UI bez zábrany) → doplnit do uloZaporneVZadani + min=0 u polí pct. B133: ceník sestavení uložený výjimkou B113 jako člen skupiny B128 po položkách (dvoukrok) → varianta s celým ceníkem sestavení do skupin nevstupuje; zvážit zrušit výjimku B113 při zveřejněném ceníku. B135: číslo v ceníku varianty jako text s čárkou (B112 porovná jako číslo, jádro NaN → 0) → v ceníku jen typeof number nebo porovnávat sémantikou jádra. B136: obejití #395 V3 volným klíčem ceníku (jenZahr, popisyJazyky, rada) → maCisla jen nad klíči vzoru. B137: rozměry ≤ 0 jen klientská zábrana → pravidlo rozmery i na serveru. Společně: oprava neplatné mutace B128 (B150a) a významové mutace pro každý bod.",
-   "hotovoKdyz" : "Každý útok z auditu 12. 10. (dvoukrok OCK i PROJ přes klon, rezervy −0,999, text s čárkou, volné klíče, zdvih/rozteč/hloubka ≤ 0) končí 4xx; testy před/po v commitu; významové mutace chycené; legitimní toky B113 (e4, e5) a B128 (x2, x3) dál 200.",
+   "hotovoKdyz" : "Hotovo ve v12.10.4 (integrace claude/integrace-13-10; dávka N1 ve větvi claude/koncova-cena-398, v12.10.3): B133–B137, B145, B150a; nová sada netlify/test_koncova_cena.mjs, testy před/po a mutace v CHANGELOG v12.10.3.",
    "kde" : "`src/uloziste.js` (uloZaporneVZadani, uloB112Hodnota, skupiny B128, výjimka B113), `src/ukazkove.js` (ukazkoveMaCisla), `netlify/lib/zakazka_kontrola.mjs` (zamekNovyCenaProblem, rozměry), `src/ui/common.js` (pole pct), `netlify/test_prava.mjs`, `netlify/mutace.mjs`"
   },
   {
    "id" : "399",
    "vlna" : "B",
-   "stav" : "ceka",
+   "stav" : "hotovo",
    "dulezitost" : "stredni",
    "slozitost" : "M",
    "nazev" : "Audit 12. 10. 2026 — střední: B128 se starší verzí ceníku (B138), kontrola obsahu šablon (B139–B141), zbytek B100",
    "proc" : "22. kolo (12. 10. 2026): kontrola obsahu šablon (B115) je obejitelná ne-ASCII prefixem, návnadou atributu a chybějícími poli DATABASE/RD; obnova firmy, zákazníků a matice zobrazení jde dál bez kontrol běžné cesty (CHANGELOG v6.10.1 opravu B100 přeceňuje).",
-   "detail" : "B138: nová zakázka se starší zveřejněnou verzí celou, pak platný ceník + klíč, který starší verze neměla, = 0 (−0,7 až −1,7 % se zámkem) — potřeba rozhodnutí J. V., zda je to legitimní „přepočet vybraných položek“. B139: prefix jmenného prostoru [^\\s<>/=\"':]+ (nebo \\p{L} s u) u prvků i atributů. B140: atribut lišící se jen prefixem = návnada → pole odmítnout (jako S3 u vztahů). B141: doplnit DATABASE, RD, w:mailMerge (connectString, query). B100-zbytek: v obnově volat firmaLzeZverejnit/firmaKZverejneni, zakaznikOciste, zobrazeniOciste + test s vadnou firmou a zákazníkem.",
-   "hotovoKdyz" : "Rozhodnutí J. V. k B138; pokusy z auditu 12. 10. odmítnuty; testy před/po; mutace jádra a serveru.",
+   "detail" : "B138: nová zakázka se starší zveřejněnou verzí celou, pak platný ceník + klíč, který starší verze neměla, = 0 (−0,7 až −1,7 % se zámkem) — potřeba rozhodnutí J. V., zda je to legitimní „přepočet vybraných položek“. B139: prefix jmenného prostoru [^\\s<>/=\"':]+ (nebo \\p{L} s u) u prvků i atributů. B140: atribut lišící se jen prefixem = návnada → pole odmítnout (jako S3 u vztahů). B141: doplnit DATABASE, RD, w:mailMerge (connectString, query). B100-zbytek: v obnově volat firmaLzeZverejnit/firmaKZverejneni, zakaznikOciste, zobrazeniOciste + test s vadnou firmou a zákazníkem. Stav 12. 10. 2026: B139–B141 a B100-zbytek hotové (N2); B138 v N1 ani N2 neopraven — převeden do #400 (zbývá).",
+   "hotovoKdyz" : "Hotovo ve v12.10.4 (integrace claude/integrace-13-10; dávka N2 ve větvi claude/sablony-399, v12.10.3): B139–B141, B100-zbytek; testy před/po v CHANGELOG v12.10.3.",
    "kde" : "`src/uloziste.js`, `src/sablona_obsah.js`, `netlify/functions/obnova.mjs`, `src/test_sablona_obsah.js`, `netlify/test_obnova.mjs`"
   },
   {
@@ -6290,7 +6290,7 @@
    "slozitost" : "M",
    "nazev" : "Audit 12. 10. 2026 — nízké a informativní: B142–B150 a dlouhodobě otevřené (B77-zbytek, B107, B129, B130)",
    "proc" : "22. kolo (12. 10. 2026): hygiena kontroly šablon a integrity dat, slepá místa testů; dlouhodobě otevřené nízké nálezy.",
-   "detail" : "B142 rozdílné čtení konce ZIPu (odmítnout archiv s nevěrohodným podpisem EOCD); B143 kvadratická složitost kontroly obsahu (posun lastIndex, neuzavřená značka = vada); B144 strop vlastních položek OCK/PROJ; B145 přepis „12,5“ → NaN (opravit i test_zaporne.mjs:200-203); B146 přísné porovnání zámku — pole řádků jiného typu = rozdíl; B147 ověření platných šablon i v náhledu obnovy, tvar rejstříku ze souboru; B148 kdo/kdy změnil cizí kontakt; B149 zapsat do BEZPECNOST_MEZE.md; B150 neplatná mutace B128, mutace B131 pro všech 10 funkcí, overit_xss dialog Kontakt… a pole usazení, mutace stropu STORE a věrohodnosti EOCD, mrtvý řádek obnova.mjs:279. Dále B77-zbytek, B107, B129, B130.",
+   "detail" : "B142 rozdílné čtení konce ZIPu (odmítnout archiv s nevěrohodným podpisem EOCD); B143 kvadratická složitost kontroly obsahu (posun lastIndex, neuzavřená značka = vada); B144 strop vlastních položek OCK/PROJ; B145 přepis „12,5“ → NaN (opravit i test_zaporne.mjs:200-203); B146 přísné porovnání zámku — pole řádků jiného typu = rozdíl; B147 ověření platných šablon i v náhledu obnovy, tvar rejstříku ze souboru; B148 kdo/kdy změnil cizí kontakt; B149 zapsat do BEZPECNOST_MEZE.md; B150 neplatná mutace B128, mutace B131 pro všech 10 funkcí, overit_xss dialog Kontakt… a pole usazení, mutace stropu STORE a věrohodnosti EOCD, mrtvý řádek obnova.mjs:279. Dále B77-zbytek, B107, B129, B130. Hotovo ve v12.10.4 (N2, větev claude/sablony-399): B142, B143, B144, B146, B147, B148, B149 (mez v BEZPECNOST_MEZE.md), B150; v N1 (claude/koncova-cena-398): B145, B150a. Zbývá: B138 (z #399, výchozí odpověď J. V. „opravit jako nález“), B77-zbytek, B107, B129, B130.",
    "hotovoKdyz" : "Body opraveny nebo zapsány jako vědomá mez s rozhodnutím J. V.",
    "kde" : "`src/sablona_obsah.js`, `src/docxgen.js`, `src/uloziste.js`, `src/zamek.js`, `netlify/functions/obnova.mjs`, `netlify/functions/uzivatele.mjs`, `netlify/mutace.mjs`, `overit_xss.mjs`, `BEZPECNOST_MEZE.md`"
   },
@@ -6934,8 +6934,8 @@
     "id" : "F"
    }
   ],
-  "build" : "v2.10.1 (engscalc)",
-  "stavKDatu" : "2. 10. 2026"
+  "build" : "v12.10.4 (engscalc)",
+  "stavKDatu" : "12. 10. 2026"
  },
  "_comment" : [
   "JEDINÝ ZDROJ PRAVDY pro roadmapu Kalkulátoru Next Gen.",

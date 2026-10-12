@@ -8,6 +8,31 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v12.10.4 — integrace nočních dávek N1–N3 (větev claude/integrace-13-10)
+
+Integrační větev z `test-draft` (v12.10.2, d562da1), merge commity (bez
+rebase) v pořadí: `claude/koncova-cena-398` (N1, #398 — B133–B137, B145,
+B150a), `claude/sablony-399` (N2, #399 + část #400), `claude/slovnik-hromadne`
+(N3, #401 slovník na serveru), `claude/kolo22-v12.10.2` (roadmapa #398–#400,
+PREDAVKA 22. kola). Každá větev nesla v12.10.3 → integrace v12.10.4.
+
+Konflikty a jak se vyřešily:
+- `src/uloziste.js` (N1 × N2, `uloZaporneVZadani`, položky PROJ): N1 hlídá
+  pole přes `hlidej` (typ, zápor, tvar čísla podle jádra — B135/B145), N2
+  přidala strop B144 — ponecháno obojí (`hlidej` + `strop`).
+- `netlify/mutace.mjs` (seznam sad serverových mutací): sjednoceno
+  `test_koncova_cena.mjs` (N1) + `test_profil.mjs` (N2) + `../src/test_slovnik.js` (N3).
+- `netlify/functions/obnova.mjs` (N2 × N3): větve obnovy `firma`
+  a `zobrazeni` s očistou (B100-zbytek) i `slovnik` s kontrolou #401 —
+  ponechány všechny tři.
+- `roadmapa/roadmap.json`: #398–#400 z 22. kola + #401 z N3; #398 a #399
+  hotovo (v12.10.4), #400 čeká na zbytek (B138, B77-zbytek, B107, B129, B130).
+- `CHANGELOG.md`, `PREDAVKA.md`: zachovány záznamy všech větví.
+
+Kontrola po sloučení: všechny `src/test_*.js` a `netlify/test_*.mjs`
+prošly; `mutace.mjs --kontrola` 333 úseků, `mutace_jadro.mjs --kontrola`
+189 úseků. Celé kolo: viz níže (doplní se po doběhu).
+
 ## v12.10.3 — #398 „koncová cena 2": B133–B137, B145, B150a (větev claude/koncova-cena-398)
 
 Noční dávka N1 (pokyn J. V. 12. 10. 2026 přes koordinační sezení 22. kola).
