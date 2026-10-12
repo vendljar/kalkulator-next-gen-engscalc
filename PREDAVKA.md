@@ -1,3 +1,25 @@
+# Předávka — 12. 10. 2026 odpoledne: main = v12.10.1, test = v12.10.2
+
+`main` = **v12.10.1** (86be538, pokyn J. V. „pošli stávající test do main";
+release vydán). `test-draft` = `test` = **v12.10.2** (B126 vysoká, B127,
+B128, B131 z auditu 6. 10.; šablony CN v15; větev `claude/b126-cn-v15`).
+Celé kolo zelené (sady 222/0/1, mutace jádra 169/169, serveru 249/249).
+
+Šablony pro ostrou i test poslány J. V. (CN v15 + EN/DE/FR, PROJ v4 +
+EN/DE/FR, SoD realizace v2, SoD projekce v2) — `nastroje/vyrob_sablony.js`
+`--cn-v15`. V ostré byla platná CN v13: varování průvodce „chybí
+PODM_ZALOHA1_PROC, PODM_FAKTURA2_PROC" je správně (od v14 platební kalendář).
+
+Čeká na J. V.: release v12.10.2; 22. kolo (protokol + audit, B-čísla od
+B133) — výchozí: další krok; zbytek auditu 6. 10.: B129, B130 (nízké),
+B132 (info); smazání sloučených větví; převod v12.10.2 do main.
+
+Prostředí: podklady v `/home/user/kng_podklady` (15 šablon + v15 + SoD v2 +
+příručka přejmenovaná na v12.10.2). Klon kontejneru byl mělký — před
+porovnáním s `main` `git fetch --unshallow origin`.
+
+---
+
 # Předávka — 12. 10. 2026: v12.10.1 v test-draft i test
 
 `test-draft` = `test` = **v12.10.1** (pokyn J. V. 12. 10.: „po dokončení pošli

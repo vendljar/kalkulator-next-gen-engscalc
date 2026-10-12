@@ -50,6 +50,9 @@ mutace B112 „zveřejněný ceník se nebere za kandidáta" převedena na skupi
 B128 a mutace #395 N3 vyřazena — útok, který hlídala, od B128 odmítne už
 kontrola ceníku jako celku (N3 zůstává jako druhá vrstva). Kolo nad c19ea55:
 sady 222/0/1, mutace jádra 169 z 169, serveru 248 z 250 (právě tyto dvě).
+**Ověřeno:** kolo nad 179b00c (sady + mutace serveru; jádro se od c19ea55
+nezměnilo) VŠE ZELENÉ: sady 222 prošlo, 0 selhalo, 1 přeskočeno, mutace
+serveru 249 z 249, statické 3 z 3; mutace jádra 169 z 169 z kola nad c19ea55.
 
 ---
 
