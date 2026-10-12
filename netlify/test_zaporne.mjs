@@ -187,6 +187,21 @@ for (const [role, c] of [['Vedoucí', cV], ['Administrátor', cA]]) {
   test('B111: obnova ze zálohy se zápornou položkou → zakázka přeskočena s důvodem „záporn"',
     o.ok === true && zk2 && zk2.preskocene === 1 && /záporn/i.test(JSON.stringify(zk2.duvody || [])) && !pamet.has('zakazky/z/' + jm), zk2 || o); }
 
+/* 12b) B127 (audit 6. 10. 2026): ruční přepisy množství a ceny bez
+ * kontroly typu — text s exponentem, pole, nečíselný text a obří hodnota
+ * prošly administrátorovi (a roli s právem na nákladové sloupce). Před
+ * opravou 200 u všech čtyř útoků. */
+for (const [popis, k, h] of [['záporné číslo jako text s exponentem', 'mnozstviPrepis', '-1e3'], ['pole', 'cenyPrepis', [5]],
+  ['nečíselný text', 'cenyPrepis', 'abc'], ['obří hodnota', 'mnozstviPrepis', 1e15]]) {
+  const z = nova('B127 ' + popis); z.varianty[0].data.ock.zadani[k] = { 'Sloupky': h };
+  const r = await uloz(z, cA);
+  test('B127: administrátor — přepis ' + k + ' (' + popis + ') → 400', r.status === 400, r);
+}
+{ const z = nova('B127 platné'); z.varianty[0].data.ock.zadani.mnozstviPrepis = { 'Sloupky': '12,5', 'Příčníky': 0 };
+  z.varianty[0].data.ock.zadani.cenyPrepis = { 'Kotvy': 150 };
+  const r = await uloz(z, cA);
+  test('B127: platné přepisy (12,5 · 0 · 150) se uloží (200)', r.status === 200, r); }
+
 /* 13) detekční skript (nastroje/detekce_zneuziti.mjs) najde i zamčenou
  * variantu z doby před opravou a kladnou položku nehlásí */
 { const { detekuj } = await import(R + 'nastroje/detekce_zneuziti.mjs');

@@ -8,6 +8,47 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v12.10.2 — B126, B127, B128, B131 z auditu 6. 10. 2026; šablony CN v15 (větev claude/b126-cn-v15)
+
+Pokyn J. V. 12. 10. 2026: „připrav mi šablony v15, souhlasím s ostatními
+výchozími návrhy, začni B126". Větev z `test-draft` (v12.10.1). Roadmapa #397.
+
+- **B126 (vysoká) — profil, který není objekt.** `profily.<x> = null`,
+  chybějící klíč, text nebo `profily = {}` prošly kontrolou typů i pojistkou
+  #372 (filtr bral jen objekty); jádro dosadilo nulovou hmotnost i plochu,
+  zábrana „profilNeznamy" mlčela a cena klesla bez schvalování;
+  `profily = null` výpočet shodil. Oprava v `profilyNezname` (jádro = zábrana
+  v prohlížeči i server #372): povinný profil bez rozměru je neznámý
+  („rozměr chybí"), lemování jen u exteriérové šachty; výpočet s `profily`
+  bez objektu nepadá. Platná data bajt po bajtu beze změny (otisky).
+- **B127 (střední) — typ ručních přepisů.** `mnozstviPrepis` a `cenyPrepis`
+  procházejí stejnou kontrolou čísla jako vlastní položky (text s exponentem
+  „-1e3", pole, nečíselný text → 400) a strop 1e9 (obří hodnota →
+  nekonečno v ceně). Platí pro všechny role.
+- **B128 (střední) — ceník varianty jako celek.** Kontrola B112 brala každou
+  položku zvlášť z kterékoli zveřejněné verze (chybějící klíč starší verze
+  = 0): po zveřejnění hodin statiky opláštění šlo uložit platný ceník
+  s nulovými hodinami. Nově musí ceník části sedět s jednou skupinou:
+  uložená verze varianty (nebo jiná uložená varianta) po položkách s platným
+  ceníkem (přepočet vybraných položek zůstává), anebo kterákoli zveřejněná
+  verze celá.
+- **B131 (nízká) — tělo JSON `null`.** Deset serverových funkcí (zakázky,
+  zákazníci, uživatelé, program, firma, zobrazení, popisy, šablony, obnova,
+  analytika) dřív spadlo na výjimku (500), `zobrazeni` a `popisy` vracely 200;
+  nově 400 „Vstup musí být objekt JSON".
+- **Šablony CN v15 (+EN/DE/FR)** — `node nastroje/vyrob_sablony.js --cn-v15`:
+  v14 + řádky „USAZENÍ OCK – LEVÁ / PRAVÁ BOČNÍ STĚNA" (`{{TS_USAZENI_LEVA}}`,
+  `{{TS_USAZENI_PRAVA}}`, #396). Kontrola obsahu bez vad. Nahrát až
+  s aplikací ≥ v12.10.1 (v30.9.1 symboly nezná).
+
+Testy (před opravou → po opravě): `src/test_profil_neznamy.js` 23/7 → 30/0;
+`netlify/test_prava.mjs` 703/4 → 707/0 (B126), 708/9 → 717/0 (B131),
+720/1 → 721/0 (B128); `netlify/test_zaporne.mjs` 25/4 → 29/0 (B127);
+`src/test_usazeni_nabidka.js` +3 nad CN v15 (s KNG_PODKLADY). Mutace
+jádra +2 (B126; kotva #372 převedena), serveru +5 (B127 2, B128 1, B131 2).
+
+---
+
 ## v12.10.1 — usazení OCK v nabídce podle specifikace, kontakt účtu upraví správce (větev claude/nabidka-usazeni-telefon)
 
 **Ověřeno:** kolo nad ba8fbb1 — sady 221/1 (jen `test_nabidka.js`: čekala 13

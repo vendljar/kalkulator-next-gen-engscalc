@@ -80,6 +80,31 @@ test('pravidlo je v katalogu označené, že umí zastavit dokument', !!pravidlo
 const platny = spocti(zadani());
 test('s platným zadáním kontrola mlčí', !!platny.r && !nalez(platny.r));
 
+/* --- 2b) B126 (audit 6. 10. 2026): profil, který není objekt ---
+ * `profily.<x> = null`, chybějící klíč nebo `profily = {}` dřív prošel
+ * (filtr bral jen objekty) — jádro dosadilo nulovou hmotnost i plochu,
+ * seznam neznámých zůstal prázdný a zábrana mlčela; `profily = null`
+ * výpočet shodil. Povinný profil bez rozměru je teď neznámý („rozměr
+ * chybí"); lemování jen u exteriérové šachty. Před opravou 0 / 8. */
+const b126 = [
+  ['sloupek = null', z => { z.profily.sloupek = null; }, /sloupek/],
+  ['chybějící klíč spojka', z => { delete z.profily.spojka; }, /spojka/],
+  ['profily = {}', z => { z.profily = {}; }, /příčníky bok/],
+  ['profily = null', z => { z.profily = null; }, /sloupek portálu/],
+  ['sloupek = "80x80"', z => { z.profily.sloupek = '80x80'; }, /sloupek/],
+];
+b126.forEach(([popis, uprava, re]) => {
+  const z = zadani(uprava);
+  const nz = eng.profilyNezname(z, JEKLY);
+  const { r, chyba } = spocti(z);
+  const n = r && nalez(r);
+  test('B126: ' + popis + ' → neznámý profil a zábrana dokumentu',
+    nz.some(t => re.test(t)) && !!n && n.uroven === K.KONTROLY_UROVEN_ZABRANA, { nz, chyba, n: n && n.text });
+});
+test('B126: chybějící lemování interiérové šachty se nehlásí', eng.profilyNezname(zadani(z => { z.typSachty = 'interiérová'; delete z.profily.lemovani; }), JEKLY).length === 0);
+test('B126: chybějící lemování exteriérové šachty se hlásí', eng.profilyNezname(zadani(z => { z.typSachty = 'exteriérová'; delete z.profily.lemovani; }), JEKLY).some(t => /lemování/.test(t)));
+test('B126: hláška u chybějícího profilu říká „rozměr chybí"', eng.profilyNezname(zadani(z => { z.profily.sloupek = null; }), JEKLY).some(t => /rozměr chybí/.test(t)));
+
 /* --- 3) platná data: výsledek bajt po bajtu jako před opravou --- */
 /* SVĚTLÍKY U DVEŘÍ (#375, 30. 9. 2026): výsledek dostal nová pole (počet
  * bočních světlíků, rozložení po dveřích, materiál; pásy bez světlíků)

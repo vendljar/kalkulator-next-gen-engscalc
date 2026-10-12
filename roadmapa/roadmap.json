@@ -6245,6 +6245,18 @@
    "detail" : "Nabídka (Word i online) nese levou a pravou boční stěnu ze specifikace; řádky usazení bez volby (výchozí „ -“) se nezobrazují. Šablona bez symbolů TS_USAZENI_LEVA/PRAVA (CN v14) dostane levou a pravou stěnu do řádku „boční stěny“. Telefon v bloku Vypracoval se bere z účtu zpracovatele — správce ho nově opraví v Nastavení → Uživatelé → Kontakt…",
    "hotovoKdyz" : "Test src/test_usazeni_nabidka.js 2/12 → 14/0; overit_online +3. Hotovo ve v12.10.1.",
    "kde" : "`src/nabidka.js`, `src/preklad.js`, `src/ui/online_ui.js`"
+  },
+  {
+   "id" : "397",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "vysoka",
+   "slozitost" : "M",
+   "nazev" : "Nálezy auditu 6. 10. 2026: B126 profil bez objektu, B127 typ přepisů, B128 ceník jako celek, B131 tělo null; šablony CN v15",
+   "proc" : "Audit 21. kola (6. 10. 2026, mimo řadu sezení) — B126 vysoká; pokyn J. V. 12. 10. 2026.",
+   "detail" : "B126 profilyNezname hlásí povinný profil bez rozměru; B127 přepisy množství a ceny s kontrolou čísla a stropem 1e9; B128 ceník varianty = skupina (uložená verze/klon + platný ceník po položkách) nebo zveřejněná verze celá; B131 400 místo 500 u těla null v deseti funkcích. Šablony CN v15 (+EN/DE/FR) s řádky levé a pravé boční stěny. Zbývá z auditu: B129, B130 (nízké), B132 (info).",
+   "hotovoKdyz" : "Testy před/po v CHANGELOG v12.10.2; mutace jádra +2, serveru +5.",
+   "kde" : "`src/engine.js`, `src/uloziste.js`, `netlify/functions/*.mjs`, `nastroje/vyrob_sablony.js`"
   }
  ],
  "meta" : {

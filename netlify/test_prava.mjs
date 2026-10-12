@@ -1653,6 +1653,52 @@ console.log('\n===== #374 (B113, B114): KONCOVÁ CENA BEZ SCHVÁLENÍ — IDENTI
   const v7 = await uprav374(a => { a.nazevAkce += ' (po odeslání)'; }, cObch, z => { sestaveni(z); zamkni395(z, 'nabidka'); });
   test('#395 V3: zámek, který už v uložené verzi je, se obchodníkovi neposuzuje (200)', v7.status === 200, v7);
 
+  /* B126 (audit 6. 10. 2026): profil, který není objekt (null, chybějící
+   * klíč, profily = {}), prošel kontrolou typů i pojistkou #372 — jádro
+   * dosadilo nulovou hmotnost a cena klesla bez schvalování. Před opravou
+   * útoky 200. */
+  const p1 = nova374(); d0(p1).ock.zadani.profily.sloupek = null;
+  const w1 = await uloz374(p1, cObch);
+  test('B126: nová zakázka obchodníka s profilem null → 400', w1.status === 400 && /profilu|katalogu jeklů/.test(w1.chyba || ''), w1);
+  const p2 = nova374(); d0(p2).ock.zadani.profily = {};
+  const w2 = await uloz374(p2, cObch);
+  test('B126: … s profily = {} → 400', w2.status === 400, w2);
+  const w3 = await uprav374(a => { delete d0(a).ock.zadani.profily.spojka; zamkni395(a, 'nabidka'); }, cObch);
+  test('B126: uložená zakázka — chybějící profil + nový zámek → 400', w3.status === 400, w3);
+  const w4 = await uprav374(a => { d0(a).ock.zadani.profily.precnikBok = null; }, cAdmin);
+  test('B126: ani administrátor profil null neuloží (400)', w4.status === 400, w4);
+
+  /* B131 (audit 6. 10. 2026): tělo JSON `null` od přihlášeného → neošetřená
+   * výjimka (500). Před opravou 500 u všech níže kromě přihlášení. */
+  for (const [jm, fn, url, c] of [['zakazky', zakazky, '/api/zakazky', cObch], ['zakaznici', zakazniciFn, '/api/zakaznici', cObch],
+    ['uzivatele', uzivatele, '/api/uzivatele', cAdmin], ['program', program, '/api/program', cAdmin], ['firma', firma, '/api/firma', cAdmin],
+    ['zobrazeni', zobrazeni, '/api/zobrazeni', cAdmin], ['popisy', popisy, '/api/popisy', cAdmin], ['sablony', sablonyFn, '/api/sablony', cAdmin],
+    ['obnova', obnova, '/api/obnova', cAdmin], ['analytika', analytikaFn, '/api/analytika', cObch]]) {
+    let st;
+    try { st = (await post(fn, 'http://x' + url, null, c)).status; } catch (e) { st = 'výjimka ' + e.message; }
+    test('B131: ' + jm + ' s tělem JSON null → 400', st === 400, st);
+  }
+
+  /* B128 (audit 6. 10. 2026): kontrola ceníku (B112) brala u KAŽDÉ položky
+   * kteroukoli zveřejněnou verzi a klíč, který starší verze nemá, doplnila
+   * nulou. Po zveřejnění hodin statiky opláštění (P5) tak obchodník uložil
+   * novou variantu s nulovými hodinami a platným zbytkem ceníku — směs verzí.
+   * Pravidlo: ceník varianty jako CELEK odpovídá jedné verzi (uložené,
+   * zveřejněné, jiné uložené variantě). Před opravou útok 200. */
+  const C128 = ZC.zkusebniCenik(); C128.statikaOplHod = 6; C128.montazHodKc = (+C128.montazHodKc || 0) + 100;
+  const z128 = await (await post(program, 'http://x/api/program',
+    { cenik: C128, cenikProj: ZC.zkusebniCenikProj(), katalog: KAT_374, slevy: NAST_374 }, cAdmin)).json();
+  test('B128: příprava — zveřejněna verze s hodinami statiky opláštění', z128.ok === true, z128);
+  const n128 = nova374(); d0(n128).cenik.statikaOplHod = 0;
+  const x1 = await uloz374(n128, cObch);
+  test('B128: nová zakázka obchodníka — platný ceník, ale hodiny statiky 0 ze starší verze → 403', je403(x1, /statikaOplHod/), x1);
+  const n128b = nova374();
+  const x2 = await uloz374(n128b, cObch);
+  test('B128: nová zakázka s platným ceníkem celým (200)', x2.status === 200, x2);
+  const n128c = nova374(); d0(n128c).cenik = ZC.zkusebniCenik();
+  const x3 = await uloz374(n128c, cObch);
+  test('B128: nová zakázka se starší zveřejněnou verzí celou (200)', x3.status === 200, x3);
+
   await post(program, 'http://x/api/program',
     { cenik: cenikJinak(), cenikProj: ZC.zkusebniCenikProj(), slevy: { ...NAST_374, minMarze: 0 } }, cAdmin);
 }
