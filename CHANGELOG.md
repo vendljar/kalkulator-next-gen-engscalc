@@ -8,6 +8,43 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v12.10.3 — slovník se ukládá na server jako ceník; hromadné převzetí; tabulka Vocabulary J. V. (větev claude/slovnik-hromadne)
+
+Zadání J. V. 12. 10. 2026: v Nastavení → Slovník musel u „Odlišné znění (44)"
+přebírat řádek po řádku a po novém nahrání chtěla aplikace totéž znovu —
+převzetí žilo jen v paměti relace. „Potřebuji, aby se slovník ukládal
+stejným způsobem jako ceník." Větev z `test-draft` (v12.10.2). Roadmapa #401.
+
+- **Tabulka J. V. v zabudovaném slovníku.** `SLOVNIK_ENG_2026-10-12.xlsx`
+  (mimo repozitář) porovnána s `PREKLAD`: rozdílných 44 (23 hesel), doplnit 0,
+  nových 0 — vše převzato přímo do `src/preklad.js`. Po změně 0 / 0 / 0,
+  shodných 2715. Např. „POVRCHOVÁ ÚPRAVA KONSTRUKCE" EN → STEEL STRUCTURE
+  FINISHING, „není součástí nabídky" EN → Out of scope.
+- **Hromadné „Převzít všech N z tabulky"** v bloku Odlišné znění (jen
+  administrátor, jedno potvrzení s počtem).
+- **Zveřejněný slovník (`/api/slovnik`).** GET každý přihlášený, POST
+  zveřejnit jen Administrátor (role z relace). Zveřejňují se odchylky od
+  slovníku zabudovaného v sestavení — verze, kdy, kdo, poznámka, historie
+  20 verzí. Server kontroluje tvar: objekt, klíč neprázdný ≤ 1000 znaků
+  (zabudovaná hesla mají až 419 — zadání říkalo „např. 300"), žádné
+  `__proto__` / `constructor` / `prototype`, trojice textů ≤ 2000 bez
+  řídicích znaků, nejvýš 5000 hesel, tělo ≤ 1 MB (413), tělo `null` 400.
+  Klient po přihlášení položí platný slovník přes zabudovaný, po odhlášení
+  vrátí zabudované znění. Nastavení → Slovník ukazuje platnou verzi,
+  nezveřejněné změny a tlačítko **Zveřejnit slovník** (s poznámkou).
+  Režim bez online (složka, konfigurace) beze změny.
+- **Záloha a obnova.** Slovník je v ruční záloze i nočním otisku; obnova má
+  část „Slovník překladů" s touž kontrolou (vadná platná verze se přeskočí,
+  vadné starší vypadnou).
+
+Testy (před → po): `netlify/test_prava.mjs` 721 → 763 / 0; `netlify/test_obnova.mjs`
+192 → 202 / 0; `src/test_slovnik.js` 41 → 63 / 0; `overit_slovnik.mjs` nový
+14 / 0 (před změnou 2 ✕ a pád); `overit_online.mjs` 200 → 213 / 0;
+`overit_xss.mjs` 299 → 311 / 0 (otrávený zveřejněný slovník, 9 náhledů EN).
+Mutace serveru +18 (ověřeno samostatně 18 / 18 chycených).
+
+---
+
 ## v12.10.2 — B126, B127, B128, B131 z auditu 6. 10. 2026; šablony CN v15 (větev claude/b126-cn-v15)
 
 Pokyn J. V. 12. 10. 2026: „připrav mi šablony v15, souhlasím s ostatními

@@ -1,3 +1,23 @@
+# Předávka — 12. 10. 2026 večer: větev claude/slovnik-hromadne = v12.10.3 (#401)
+
+Paralelní větev z `test-draft` v12.10.2 (d562da1); do `test-draft` jen na
+pokyn J. V. Zadání J. V. 12. 10.: slovník ukládat jako ceník, hromadně převzít
+odlišné znění, převzít jeho tabulku `SLOVNIK_ENG_2026-10-12.xlsx`.
+
+Hotovo: tabulka převzata do `src/preklad.js` (44 rozdílných, 0 doplnit,
+0 nových); tlačítko „Převzít všech N z tabulky"; `/api/slovnik` (zveřejnění
+jen Administrátor, verze + historie, kontrola tvaru, strop 1 MB), klient
+položí platný slovník po přihlášení, Nastavení → Slovník „Zveřejnit slovník";
+slovník v záloze, otisku i obnově; roadmapa #401. Testy a výsledek kola
+v CHANGELOG v12.10.3.
+
+Čeká na J. V.: sloučení do `test-draft`; po nasazení slovník jednou
+zveřejnit (tabulka je už v kódu, takže první verze ponese jen případné
+další odchylky); odchylka od zadání — strop délky hesla 1000 místo 300
+(zabudovaná hesla mají až 419 znaků).
+
+---
+
 # Předávka — 12. 10. 2026 odpoledne: main = v12.10.1, test = v12.10.2
 
 `main` = **v12.10.1** (86be538, pokyn J. V. „pošli stávající test do main";
