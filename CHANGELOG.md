@@ -42,6 +42,9 @@ Testy (před → po): `netlify/test_prava.mjs` 721 → 763 / 0; `netlify/test_ob
 14 / 0 (před změnou 2 ✕ a pád); `overit_online.mjs` 200 → 213 / 0;
 `overit_xss.mjs` 299 → 311 / 0 (otrávený zveřejněný slovník, 9 náhledů EN).
 Mutace serveru +18 (ověřeno samostatně 18 / 18 chycených).
+**Ověřeno:** celé kolo nad 2baf471 (79 min 50 s) VŠE ZELENÉ: sady 223 prošlo,
+0 selhalo, 1 přeskočeno (test.js — není v exportu); mutace jádra 169 z 169,
+serveru 267 z 267; statické 3 z 3.
 
 ---
 
