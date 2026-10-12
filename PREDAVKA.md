@@ -57,7 +57,10 @@ sezení. Roadmapa #398 je v koordinační větvi `claude/kolo22-v12.10.2`
   strany — opraveno (028edad); mutace jádra K17-N91 přesměrovány (c8aecb4).
 - Kolo nad 0af419c: červené jen kvůli věcem opraveným v 028edad/c8aecb4
   a staré verzi příručky v podkladech (kopie přejmenována na v12.10.3).
-  Výsledek kola nad koncem větve: viz CHANGELOG / finální hlášení.
+- **Celé kolo nad 7291879 VŠE ZELENÉ** (sady 223/0/1, mutace jádra
+  169/169, serveru 278/278, statické 3/3; 102 min 44 s).
+- Nízký nález mimo zadání: `overit_online.mjs` po selhání testu B59 neskončí,
+  ale visí (page.evaluate) — kolo pak stojí; výchozí: opravit v příští dávce.
 
 ## Otázky pro J. V. (s výchozí odpovědí)
 1. **Výjimka B113** (nová zakázka s celým ceníkem sestavení se uloží, i když

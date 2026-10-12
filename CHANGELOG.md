@@ -105,6 +105,11 @@ hlídal jen prohlížeč nebo je server četl jinak než jádro.
   `test_obnova` a `test_stary_tvar` dostaly vyplněné rozměry šachty
   (zamykaly z nulových — zábrana by je v prohlížeči nepustila).
   `BEZPECNOST_MEZE.md` doplněna (výjimky administrátora).
+- **Celé kolo nad 7291879 VŠE ZELENÉ (102 min 44 s):** sady 223/0/1,
+  mutace jádra 169/169, serveru 278/278, statické 3/3. (Kolo nad 359b282
+  mělo 277/278 — mutace #340 se chytala přes ceník, který od B135 hlídá
+  přísnější kontrola; doplněn test, 7291879.) Fixtura `overit_online.mjs`
+  (B59) dostala rozměry šachty — zamykala z nulových.
 
 ## v12.10.3 — #399 + část #400: šablony, obnova, integrita (audit 12. 10. 2026; větev claude/sablony-399)
 
