@@ -563,7 +563,8 @@ function uloZamekRazitkaDrz(naDisku, kUlozeni) {
     }
     const sz = sv.zamek, nz = nv.zamek;
     if (!(sz && sz.zamceno && nz && nz.zamceno)) return;
-    ['kdo', 'popis', 'sablona'].forEach(k => {
+    /* `slovnik` (revize #401): razítko slovníku, kterým nabídka odešla — drží ho server jako kdo/popis/šablonu. */
+    ['kdo', 'popis', 'sablona', 'slovnik'].forEach(k => {
       if (!stejne(sz[k], nz[k])) {
         if (sz[k] === undefined) delete nz[k]; else nz[k] = JSON.parse(JSON.stringify(sz[k]));
         oprav++;

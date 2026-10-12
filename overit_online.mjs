@@ -48,6 +48,7 @@ import { porizOtisk } from './netlify/lib/zalohovani.mjs';
 import sablonyFn from './netlify/functions/sablony.mjs';
 import analytikaFn from './netlify/functions/analytika.mjs';
 import obnovaFn from './netlify/functions/obnova.mjs';
+import slovnikFn from './netlify/functions/slovnik.mjs';
 
 /* Dialogy jsou od 2. 9. 2026 v aplikaci (src/ui/dialog.js), ne nativní —
  * `page.on('dialog')` už tedy nic nechytí. Harness si proto potvrzování
@@ -96,6 +97,8 @@ const FUNKCE = {
    * funkci: panel, náhled bez zápisu, obnova smazané zakázky, odmítnutí
    * obchodníka. */
   '/api/obnova': obnovaFn,
+  /* Zveřejněný slovník překladů (#401) — načítá se hned po přihlášení. */
+  '/api/slovnik': slovnikFn,
 };
 
 let ok = 0, fail = 0;
@@ -1103,11 +1106,62 @@ test('po obnovení stránky je administrátor dál přihlášený a stránka se 
 test('platný ceník se po obnovení načetl a nasadil sám',
   await page.evaluate(() => ONLINE_STAV.db.platny.verze === 1 && ONLINE_STAV.cenikPouzit === true));
 
+/* ---- 8b) ZVEŘEJNĚNÝ SLOVNÍK (#401, 12. 10. 2026) ----
+ * Zadání J. V.: „slovník se má ukládat stejným způsobem jako ceník". Skutečný
+ * klient proti skutečné funkci: převzaté znění → Zveřejnit slovník (s
+ * poznámkou) → verze na serveru → po obnovení stránky se položí sám; níž
+ * (oddíl 9) ho po přihlášení dostane i obchodník. */
+const HESLO401 = 'POVRCHOVÁ ÚPRAVA KONSTRUKCE';
+const ZNENI401 = 'STEEL STRUCTURE FINISHING (published 401)';
+const zabudovane401 = await page.evaluate((k) => PREKLAD_ZABUDOVANY[k][0], HESLO401);
+const slov0 = await page.evaluate(() => { otevriNastaveni(); nastPanel('slovnik');
+  return { info: (document.getElementById('slovOnlineInfo') || {}).textContent || '',
+           tlacitko: !!document.getElementById('slovZverejnit'),
+           zhasnute: !!(document.getElementById('slovZverejnit') || {}).disabled }; });
+test('#401: Nastavení → Slovník říká, že zatím není zveřejněná žádná verze', /Zatím není zveřejněná žádná verze/.test(slov0.info), slov0.info);
+test('#401: tlačítko Zveřejnit slovník je, bez změn zhasnuté', slov0.tlacitko && slov0.zhasnute, slov0);
+const slov1 = await page.evaluate(async ([k, t]) => {
+  prekladNastav(k, 'en', t); nastPanel('slovnik');
+  const b = document.getElementById('slovZverejnit');
+  const nezv = (document.getElementById('slovNezverejneno') || {}).textContent || '';
+  window.dotaz = (txt) => { window.__dlgTexty.push(String(txt)); return Promise.resolve('tabulka J. V. 12. 10.'); };
+  const v = await onlineZverejniSlovnik();
+  nastPanel('slovnik');
+  return { zhasnute: b ? b.disabled : null, nezv, v, dotaz: window.__dlgTexty[window.__dlgTexty.length - 1] || '',
+           info: (document.getElementById('slovOnlineInfo') || {}).textContent || '',
+           nezvPo: (document.getElementById('slovNezverejneno') || {}).textContent || '' };
+}, [HESLO401, ZNENI401]);
+await dlgStub(page);
+test('#401: po změně se tlačítko rozsvítí a panel hlásí 1 nezveřejněnou změnu', slov1.zhasnute === false && /\b1\b/.test(slov1.nezv), slov1);
+test('#401: zveřejnění se ptá na poznámku a říká počet hesel', /Zveřejnit slovník překladů/.test(slov1.dotaz) && /1 hesel/.test(slov1.dotaz), slov1.dotaz);
+const ulozeny401 = JSON.parse(pamet.get('program/slovnik') || 'null');
+test('#401: na serveru vznikla verze 1 s autorem z relace a poznámkou', slov1.v === true && !!ulozeny401
+  && ulozeny401.platny.verze === 1 && ulozeny401.platny.kdo === 'spravce@priklad.cz'
+  && ulozeny401.platny.poznamka === 'tabulka J. V. 12. 10.', ulozeny401 && ulozeny401.platny);
+test('#401: zveřejňují se jen odchylky od zabudovaného slovníku',
+  !!ulozeny401 && Object.keys(ulozeny401.platny.hesla).length === 1 && ulozeny401.platny.hesla[HESLO401][0] === ZNENI401,
+  ulozeny401 && Object.keys(ulozeny401.platny.hesla));
+test('#401: panel ukazuje platnou verzi 1, kdo a že relace odpovídá', /verze 1/.test(slov1.info) && /spravce@priklad\.cz/.test(slov1.info)
+  && /odpovídá platné verzi/.test(slov1.nezvPo), slov1);
+const slov2 = await page.evaluate(async () => { const v = await onlineZverejniSlovnik('znovu'); return { v, hl: ONLINE_STAV.hlaska }; });
+test('#401: totéž podruhé se nezveřejní (neliší se)', slov2.v === false && /neliší/.test(slov2.hl), slov2);
+await page.evaluate(() => zavriNastaveni());
+await page.reload();
+await page.waitForFunction(() => typeof window.render === 'function');
+await page.waitForFunction(() => { try { return !!ONLINE_STAV.ja && !!ONLINE_STAV.slovnik; } catch (e) { return false; } },
+  null, { timeout: 8000 });
+await dlgStub(page);
+const slov3 = await page.evaluate((k) => ({ tr: tr(k, 'en'), zab: PREKLAD_ZABUDOVANY[k][0] }), HESLO401);
+test('#401: po obnovení stránky se zveřejněný slovník položí sám (tr překládá zveřejněným zněním)',
+  slov3.tr === ZNENI401 && slov3.zab === zabudovane401, slov3);
+
 /* ---- 9) odhlášení → přihlašovací stránka; obchodník a jeho pohled ---- */
 await page.evaluate(() => onlineOdhlas());
 await page.waitForFunction(() => { try { return ONLINE_STAV.ja === null; } catch (e) { return false; } });
 await page.waitForTimeout(300);
 test('po odhlášení se vrátí přihlašovací stránka', await gateViditelna());
+test('#401: odhlášení vrátí hesla zveřejněného slovníku na zabudované znění (bez obnovení stránky)',
+  await page.evaluate(([k, z]) => tr(k, 'en') === z && ONLINE_STAV.slovnik === null, [HESLO401, zabudovane401]));
 
 /* Obnovení stránky = čerstvý obchodník: v paměti aplikace zůstal po
  * administrátorovi jak nasazený ceník, tak ručně přepsaná firma, takže bez
@@ -1121,10 +1175,17 @@ await dlgStub(page);
 test('po odhlášení a obnovení stránky se aplikace zase zamkne', await gateViditelna());
 test('čerstvá aplikace startuje s ukázkovou firmou',
   await page.evaluate(() => NAST.firma.ukazkove === true));
+test('#401: po odhlášení a obnovení stránky platí zabudovaný slovník',
+  await page.evaluate(([k, t]) => tr(k, 'en') !== t, [HESLO401, ZNENI401]));
 
 await prihlas('obchodnik@priklad.cz', 'ObchodniHeslo1');
 await page.waitForFunction(() => { try { return !!ONLINE_STAV.ja; } catch (e) { return false; } });
 await page.waitForTimeout(400);
+await page.waitForFunction(() => { try { return !!ONLINE_STAV.slovnik; } catch (e) { return false; } }, null, { timeout: 8000 });
+test('#401: obchodník po přihlášení překládá zveřejněným slovníkem',
+  await page.evaluate(([k, t]) => tr(k, 'en') === t, [HESLO401, ZNENI401]));
+test('#401: obchodník Zveřejnit slovník nedostane (zápis 403 a tlačítko není)', await page.evaluate(async () => {
+  const v = await onlineZverejniSlovnik('pokus'); return v === false && /jen administrátor/.test(ONLINE_STAV.hlaska); }));
 test('obchodník je přihlášený a roh to říká',
   (await roh()).includes('Zkušební Obchodník') && (await roh()).includes('Obchodník'));
 test('obchodník NENÍ administrátor aplikace',

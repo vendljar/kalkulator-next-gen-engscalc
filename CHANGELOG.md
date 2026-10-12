@@ -126,6 +126,63 @@ statické 3 z 3; sady 221/1/1 — jediné selhání `overit_manual` (kopie pří
 v podkladech nesla v12.10.2). Po přejmenování kopie sady + statické znovu:
 **222/0/1, VŠE ZELENÉ**.
 
+## v12.10.3 — slovník se ukládá na server jako ceník; hromadné převzetí; tabulka Vocabulary J. V. (větev claude/slovnik-hromadne)
+
+Zadání J. V. 12. 10. 2026: v Nastavení → Slovník musel u „Odlišné znění (44)"
+přebírat řádek po řádku a po novém nahrání chtěla aplikace totéž znovu —
+převzetí žilo jen v paměti relace. „Potřebuji, aby se slovník ukládal
+stejným způsobem jako ceník." Větev z `test-draft` (v12.10.2). Roadmapa #401.
+
+- **Tabulka J. V. v zabudovaném slovníku.** `SLOVNIK_ENG_2026-10-12.xlsx`
+  (mimo repozitář) porovnána s `PREKLAD`: rozdílných 44 (23 hesel), doplnit 0,
+  nových 0 — vše převzato přímo do `src/preklad.js`. Po změně 0 / 0 / 0,
+  shodných 2715. Např. „POVRCHOVÁ ÚPRAVA KONSTRUKCE" EN → STEEL STRUCTURE
+  FINISHING, „není součástí nabídky" EN → Out of scope.
+- **Hromadné „Převzít všech N z tabulky"** v bloku Odlišné znění (jen
+  administrátor, jedno potvrzení s počtem).
+- **Zveřejněný slovník (`/api/slovnik`).** GET každý přihlášený, POST
+  zveřejnit jen Administrátor (role z relace). Zveřejňují se odchylky od
+  slovníku zabudovaného v sestavení — verze, kdy, kdo, poznámka, historie
+  20 verzí. Server kontroluje tvar: objekt, klíč neprázdný ≤ 1000 znaků
+  (zabudovaná hesla mají až 419 — zadání říkalo „např. 300"), žádné
+  `__proto__` / `constructor` / `prototype`, trojice textů ≤ 2000 bez
+  řídicích znaků, nejvýš 5000 hesel, tělo ≤ 1 MB (413), tělo `null` 400.
+  Klient po přihlášení položí platný slovník přes zabudovaný, po odhlášení
+  vrátí zabudované znění. Nastavení → Slovník ukazuje platnou verzi,
+  nezveřejněné změny a tlačítko **Zveřejnit slovník** (s poznámkou).
+  Režim bez online (složka, konfigurace) beze změny.
+- **Záloha a obnova.** Slovník je v ruční záloze i nočním otisku; obnova má
+  část „Slovník překladů" s touž kontrolou (vadná platná verze se přeskočí,
+  vadné starší vypadnou).
+
+Testy (před → po): `netlify/test_prava.mjs` 721 → 763 / 0; `netlify/test_obnova.mjs`
+192 → 202 / 0; `src/test_slovnik.js` 41 → 63 / 0; `overit_slovnik.mjs` nový
+14 / 0 (před změnou 2 ✕ a pád); `overit_online.mjs` 200 → 213 / 0;
+`overit_xss.mjs` 299 → 311 / 0 (otrávený zveřejněný slovník, 9 náhledů EN).
+Mutace serveru +18 (ověřeno samostatně 18 / 18 chycených).
+**Ověřeno:** celé kolo nad 2baf471 (79 min 50 s) VŠE ZELENÉ: sady 223 prošlo,
+0 selhalo, 1 přeskočeno (test.js — není v exportu); mutace jádra 169 z 169,
+serveru 267 z 267; statické 3 z 3.
+
+**Nezávislá revize #401 (12. 10. 2026) — opraveno ve stejné větvi:**
+N1 (střední) zámek odeslané nabídky nese razítko slovníku { verze, otisk };
+dotisk v cizím jazyce po změně slovníku upozorní (znění dnešní, částky
+zmrazené), staré zámky bez razítka se neptají, razítko drží server (B62).
+N2 klíče `__proto__:` / `__proto__.` (po prekladNorm `__proto__`) se
+odmítají, `PREKLAD_IDX` je bez prototypu, prekladNastav/Import zakázané
+klíče nepustí. N3 U+FFFE/U+FFFF odmítá slovník a odstraňuje `xmlEsc`.
+N4 vymazaný překlad zabudovaného hesla → 400 (i v obnově). N5 strop
+záznamu 2 MB v bajtech UTF-8. N6 strop těla v bajtech. N7 verze v obnově
+jen celé číslo 1 … 1 000 000. Testy před → po: test_prava 764/11 → 775/0,
+test_obnova 203/8 → 211/0, test_slovnik 63 + pád → 83/0,
+test_docx_preklad 51/1 → 52/0, overit_slovnik 14 + pád → 21/0. Mutace
+serveru +12, jádra +1; mutace syrového `__proto__` vyřazena (ekvivalentní
+po N2 — první kolo 278 z 279). **Kolo nad d493a2b (82 min 27 s) VŠE
+ZELENÉ:** sady 223 / 0 / 1 přeskočeno, mutace jádra 170 z 170, serveru
+278 z 278, statické 3 z 3.
+
+---
+
 ## v12.10.2 — B126, B127, B128, B131 z auditu 6. 10. 2026; šablony CN v15 (větev claude/b126-cn-v15)
 
 Pokyn J. V. 12. 10. 2026: „připrav mi šablony v15, souhlasím s ostatními

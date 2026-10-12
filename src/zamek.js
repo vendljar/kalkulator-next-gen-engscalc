@@ -246,6 +246,10 @@ function zamkniVariantu(v, info) {
      * odešla z centrálně řízené verze; „mistni" je razítko tisku mimo ni
      * (měkký režim nebo práce bez serveru) a nejde dodatečně zapřít. */
     sablona: info.sablona || null,
+    /* Kterým slovníkem překladů dokument vznikl (revize #401): { verze,
+     * otisk } — viz slovnikRazitko v slovnik.js. Zámky pořízené dřív
+     * razítko nemají (null) a dotisk se u nich na slovník neptá. */
+    slovnik: (typeof slovnikRazitkoOciste === 'function') ? slovnikRazitkoOciste(info.slovnik) : null,
   };
   if (variantaUzamcena(v)) {
     if (!Array.isArray(v.zamek.tisky)) v.zamek.tisky = [];
@@ -255,6 +259,7 @@ function zamkniVariantu(v, info) {
   v.zamek = {
     zamceno: true,
     kdy: zaznam.kdy, typ: zaznam.typ, popis: zaznam.popis, kdo: zaznam.kdo,
+    slovnik: zaznam.slovnik,
     cislo: info.cislo || '',
     /* `cislo` je číslo Z PAPÍRU (#320) — tatáž přípona, jakou tisknou
      * dokumenty. Zámky pořízené dřív značku nemají a jejich `cislo` může

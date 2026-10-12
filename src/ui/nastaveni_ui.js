@@ -1128,6 +1128,19 @@ async function slovDoplnitVse() {
   const n = slovnikAplikuj(zm, prekladNastav);
   slovPrepocti('Doplněno ' + n + ' překladů.');
 }
+/* Hromadné převzetí odlišného znění (12. 10. 2026, zadání J. V.). Do té doby
+ * tu tlačítko schválně nebylo (převzetí řádek po řádku, aby se rozhodovalo
+ * u každého hesla). J. V. si ale tabulku kontroluje mimo aplikaci a pak chce
+ * převzít celou — u 44 řádků bylo klikání po jednom zbytečná dřina. Jedno
+ * potvrzení s počtem stačí: kdo tabulce nevěří, převezme po řádcích. */
+async function slovPrevzitVse() {
+  if (!jeAdmin() || !SLOV_STAV) return;
+  const zm = SLOV_STAV.rozdil.rozdilne;
+  if (!zm.length) return;
+  if (!await potvrd('Převzít všech ' + zm.length + ' odlišných znění z tabulky?\n\nU každého řádku bloku „Odlišné znění“ se překlad v aplikaci nahradí zněním z tabulky.')) return;
+  const n = slovnikAplikuj(zm.slice(), prekladNastav);
+  slovPrepocti('Převzato z tabulky ' + n + ' odlišných znění. Pro všechny a natrvalo je uložíte tlačítkem „Zveřejnit slovník“.');
+}
 function slovVezmi(kategorie, i) {
   if (!jeAdmin() || !SLOV_STAV) return;
   const z = (SLOV_STAV.rozdil[kategorie] || [])[i];
@@ -1199,13 +1212,48 @@ function slovTabulka(rows, kategorie, tlacitko) {
     ${telo}</table>${zbytek}`;
 }
 
+/* Platný slovník online (#401, 12. 10. 2026): kdo, kdy a kterou verzi
+ * zveřejnil, kolik změn v relaci ještě zveřejněných není, tlačítko
+ * „Zveřejnit slovník" a krátká historie verzí. Bez přihlášení jen pravda
+ * o tom, kam se změny dají uložit. */
+function nastSlovnikOnline() {
+  const ON = (typeof ONLINE_STAV !== 'undefined') ? ONLINE_STAV : null;
+  const ram = (obsah) => `<div style="margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px">
+      <div class="sec-title">Platný slovník (online)</div>${obsah}</div>`;
+  if (!ON || !ON.ja) return ram(`<div class="note" id="slovOnlineInfo">Nejste přihlášen k online databázi.
+      Převzaté změny teď platí v této relaci; trvale je uložíte <b>zveřejněním slovníku</b> po přihlášení
+      (jako ceník: verze, datum, autor a poznámka). Bez online databáze je přenese export konfigurace
+      (záložka <b>Konfigurace</b>) nebo připojená složka.</div>`);
+  const p = ON.slovnik && ON.slovnik.platny;
+  const datum = (x) => { const d = new Date(x); return isNaN(d) ? esc(x || '') : esc(d.toLocaleString('cs-CZ')); };
+  const nezv = (typeof onlineSlovnikNezverejneno === 'function') ? onlineSlovnikNezverejneno() : 0;
+  const info = p
+    ? `Platný slovník: <b>verze ${esc(p.verze)}</b>, zveřejněno ${datum(p.kdy)}, ${esc(p.kdo || '')}
+       — ${esc(p.pocet != null ? p.pocet : Object.keys(p.hesla || {}).length)} hesel odlišných od slovníku zabudovaného v aplikaci.
+       ${p.poznamka ? `<br>Poznámka: ${esc(p.poznamka)}` : ''}`
+    : `Zatím není zveřejněná žádná verze — všichni překládají slovníkem zabudovaným v aplikaci.`;
+  const hist = (ON.slovnik && Array.isArray(ON.slovnik.historie) ? ON.slovnik.historie : []).slice(0, 5);
+  const histHtml = hist.length ? `<div class="note" style="margin-top:6px">Starší verze: ${hist.map(h =>
+      `v${esc(h.verze)} (${datum(h.kdy)}, ${esc(h.kdo || '')}${h.poznamka ? ' — ' + esc(h.poznamka) : ''})`).join(' · ')}</div>` : '';
+  const admin = (typeof jeAdminOnline === 'function') && jeAdminOnline();
+  return ram(`<div class="note" id="slovOnlineInfo">${info}</div>${histHtml}
+    <div class="note" id="slovNezverejneno" style="margin-top:6px">${nezv
+      ? `V této relaci je <b>${nezv}</b> ${nezv === 1 ? 'heslo změněné' : 'hesel změněných'} proti platné verzi — ostatním
+         se projeví až po zveřejnění.`
+      : 'Slovník v této relaci odpovídá platné verzi.'}</div>
+    ${admin ? `<div class="btns" style="margin-top:8px"><button class="primary" id="slovZverejnit"
+      onclick="onlineZverejniSlovnik()" ${nezv ? '' : 'disabled'}>⤒ Zveřejnit slovník</button></div>` : ''}`);
+}
+
 function nastSlovnik() {
   if (!jeAdmin()) return `<div class="note">Porovnání slovníku s tabulkou Vocabulary je dostupné <b>jen administrátorovi</b>.</div>`;
   const uvod = `<div class="note">Slovník aplikace (<code>PREKLAD</code>) a tabulka
       <code>EngineersCZ_Vocabulary_*.xlsx</code> se časem rozejdou. Vyberte soubor a aplikace ukáže, kde se liší.
       <b>Nic se nezapíše samo</b> – doplnění i převzetí odlišného znění je vždy vaše kliknutí. Soubor zůstává
-      ve vašem počítači, nikam se neodesílá. Trvale se změny uloží až exportem konfigurace
-      (záložka <b>Konfigurace</b>), jinak platí jen pro tuto relaci.</div>
+      ve vašem počítači, nikam se neodesílá. Převzaté změny platí hned v této relaci; <b>pro všechny
+      a natrvalo</b> je uložíte tlačítkem <b>Zveřejnit slovník</b> níž — stejně jako ceník vznikne verze
+      s datem, autorem a poznámkou a každý přihlášený ji dostane po přihlášení.</div>
+    ${nastSlovnikOnline()}
     <div class="btns"><button class="primary" onclick="slovNacti()">⤒ Vybrat tabulku Vocabulary (.xlsx)</button>
       <button onclick="slovXlsxExport()">⤓ Stáhnout celý slovník (.xlsx)</button>
       ${SLOV_STAV ? `<button onclick="slovCsvJenVApp()">⤓ Hesla jen v aplikaci (CSV pro překladatele)</button>` : ''}</div>
@@ -1231,8 +1279,10 @@ function nastSlovnik() {
         + `<div class="btns" style="margin-top:8px"><button class="primary" onclick="slovDoplnitVse()">Doplnit všech ${s.doplnit}</button></div>`) : '')
     + (s.rozdilne ? blok(`Odlišné znění (${s.rozdilne})`,
         `Obě strany překlad mají a neshodují se. <b>Tady rozhodujete vy</b> – aplikace nemusí být pozadu,
-         někdo mohl znění vědomě upravit. Hromadné tlačítko tu schválně není.`,
-        slovTabulka(d.rozdilne, 'rozdilne', true)) : '')
+         někdo mohl znění vědomě upravit. Převzít jde po řádcích, nebo – máte-li tabulku zkontrolovanou –
+         všechno najednou tlačítkem pod tabulkou.`,
+        slovTabulka(d.rozdilne, 'rozdilne', true)
+        + `<div class="btns" style="margin-top:8px"><button class="primary" id="slovPrevzitVse" onclick="slovPrevzitVse()">Převzít všech ${esc(s.rozdilne)} z tabulky</button></div>`) : '')
     + (s.nove ? blok(`Hesla jen v tabulce (${s.nove})`,
         `Aplikace je zatím nezná. Přidat je můžete, ale slovník tím poroste i o výrazy, které se nikde nepoužijí.`,
         `<div class="note">${d.nove.slice(0, 40).map(x => esc(x.cz)).join(' · ')}${d.nove.length > 40 ? ' …' : ''}</div>

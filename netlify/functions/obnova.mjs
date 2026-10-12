@@ -12,7 +12,7 @@
  *               | { otisk: 'YYYY-MM-DD' | '…-pred-obnovou' },
  *   rezim:      'doplnit' (zapíše jen to, co na serveru chybí)
  *               | 'prepsat' (zapíše všechno ze zálohy přes stávající),
- *   casti:      ['program','firma','zobrazeni','popisy','zakazky','uzivatele',
+ *   casti:      ['program','firma','zobrazeni','popisy','slovnik','zakazky','uzivatele',
  *                'sablony','zakaznici','podpisy']   — nepovinné = všechny,
  *   nahled:     true  → NIC nezapíše, jen vrátí, co by se stalo,
  *   potvrzeni:  'OBNOVIT' → bez něj se ostrá obnova odmítne (428)
@@ -89,7 +89,7 @@ import { jadro, jadroChyba } from '../lib/jadro.mjs';
 import { zakazkaPrijmi, zakazkaServerKontrola } from '../lib/zakazka_kontrola.mjs';
 import { porizOtisk, klicPredObnovou, OTISK_KLIC } from '../lib/zalohovani.mjs';
 
-export const OBNOVA_CASTI = ['program', 'firma', 'zobrazeni', 'popisy', 'zakazky', 'uzivatele',
+export const OBNOVA_CASTI = ['program', 'firma', 'zobrazeni', 'popisy', 'slovnik', 'zakazky', 'uzivatele',
                              'sablony', 'zakaznici', 'podpisy'];
 export const OBNOVA_REZIMY = ['doplnit', 'prepsat'];
 export const OBNOVA_POTVRZENI = 'OBNOVIT';
@@ -438,7 +438,7 @@ export default async (req) => {
   const sProg = await uloziste('program');
 
   /* Jednozáznamové části v úložišti `program`. */
-  const jednoduche = { program: 'db', firma: 'firma', zobrazeni: 'zobrazeni', popisy: 'popisy' };
+  const jednoduche = { program: 'db', firma: 'firma', zobrazeni: 'zobrazeni', popisy: 'popisy', slovnik: 'slovnik' };
   for (const cast of Object.keys(jednoduche)) {
     if (!casti.includes(cast) || !maVlastni(zaloha, cast)) continue;
     const b = bilance();
@@ -490,6 +490,18 @@ export default async (req) => {
       /* Matice zobrazení touž očistou jako /api/zobrazeni (B100-zbytek). */
       await zaznam(b, sProg, 'zobrazeni', { matice: ZOB.zobrazeniOciste(hodnota.matice), kdo: obnovaTxt(hodnota.kdo, 200),
                                             kdy: obnovaTxt(hodnota.kdy, 40) }, rezim, zapisovat);
+    }
+    else if (cast === 'slovnik') {
+      /* ZVEŘEJNĚNÝ SLOVNÍK (#401, 12. 10. 2026) projde touž kontrolou jako
+       * /api/slovnik: záloha je soubor, který mohl projít čímkoli, a hesla
+       * se v prohlížeči kladou do PREKLAD — `__proto__` nebo trojice
+       * s řídicími znaky do databáze nesmí ani oklikou přes obnovu. Vadná
+       * platná verze = část se přeskočí celá; vadné starší verze vypadnou. */
+      const c = (typeof globalThis.slovnikDbOciste === 'function')
+        ? globalThis.slovnikDbOciste(hodnota, globalThis.PREKLAD_ZABUDOVANY)
+        : { ok: false, chyba: 'kontrola slovníku není k dispozici' };
+      if (!c.ok) preskoc(b, 'slovnik', c.chyba + ' — neobnovuje se');
+      else await zaznam(b, sProg, jednoduche[cast], c.db, rezim, zapisovat);
     }
     else await zaznam(b, sProg, jednoduche[cast], hodnota, rezim, zapisovat);
     /* Přeskočený ceník v režimu „doplnit" je nejčastější důvod dojmu, že

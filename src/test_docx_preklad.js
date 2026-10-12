@@ -71,6 +71,12 @@ P.prekladNastav('test & pokus', 'en', 'test & attempt <ok>');
 out = docxPrelozXml(par('test &amp; pokus'), 'en', stat);
 test('výstup je XML-escapovaný', texty(out)[0] === 'test &amp; attempt &lt;ok&gt;', texty(out));
 P.prekladSmaz('test & pokus');
+/* Revize #401 (12. 10. 2026): U+FFFE a U+FFFF XML 1.0 nepovoluje — Word by
+ * dokument neotevřel. Překlad (třeba ze starší konfigurace) je nesmí pronést. */
+P.prekladNastav('test nepovolený znak', 'en', 'bad￾char￿');
+out = docxPrelozXml(par('test nepovolený znak'), 'en', { celkem: 0, prelozeno: 0, neutralni: 0, chybi: [] });
+test('U+FFFE a U+FFFF se do XML nedostanou', texty(out)[0] === 'badchar' && !/[￾￿]/.test(out), texty(out));
+P.prekladSmaz('test nepovolený znak');
 
 // ---- 7. celý .docx roundtrip ----------------------------------------------
 (async () => {

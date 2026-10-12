@@ -344,6 +344,8 @@ function onlinePoPrihlaseni(ja) {
   const byloOdUzivatele = !!ONLINE_STAV.zmenaUzivatele;
   return Promise.all([onlineNactiProgram(), onlineNactiFirmu(), onlineNactiZobrazeni(), onlineNactiRejstrik(),
                       onlineNactiSablony(),
+                      /* zveřejněný slovník překladů (#401) — na ceníku nezávisí */
+                      onlineNactiSlovnik(),
                       /* analytika (#27): zjistit, jestli je sběr zapnutý, a nastartovat ho */
                       typeof analytikaPoPrihlaseni === 'function' ? analytikaPoPrihlaseni() : Promise.resolve()])
     /* SPOLEČNÉ DODATKOVÉ TEXTY AŽ PO CENÍKU, NE VEDLE NĚJ (22. 9. 2026).
@@ -380,6 +382,11 @@ function onlineOdhlas() {
     if (typeof nahledVypni === 'function' && NAST.nahledUzivatel) { NAST.nahledUzivatel = null; NAST.nahledRole = ''; NAST.nahledMenu = false; }
     ONLINE_STAV.otisky = []; ONLINE_STAV.otiskyNacteno = false;
     ONLINE_STAV.sablonyRejstrik = null;   // šablony patří přihlášeným (#139)
+    /* Zveřejněný slovník (#401) patří přihlášeným stejně jako ceník: po
+     * odhlášení se jeho hesla vrátí na znění zabudované v aplikaci. */
+    if (ONLINE_STAV.slovnikPolozeno && ONLINE_STAV.slovnikPolozeno.length && typeof slovnikPoloz === 'function')
+      onlineSlovnikPoloz({});
+    ONLINE_STAV.slovnik = null;
     /* analytika (#26): případná zapnutá heat mapa po odhlášení zhasne
      * a sběr se zastaví (analytikaBezi bez přihlášení nic nepustí) */
     if (typeof ANL !== 'undefined' && ANL.heat) {
@@ -772,6 +779,87 @@ function onlineNactiPopisy() {
     onlinePopisyVlijZnovu();
     return true;
   }).catch(() => { ONLINE_STAV.popisy = null; return false; });
+}
+
+/* ---------- zveřejněný slovník překladů (#401, 12. 10. 2026) ----------
+ *
+ * Zadání J. V.: „potřebuji, aby se slovník ukládal stejným způsobem jako
+ * ceník". Po přihlášení se platný slovník ze serveru položí přes zabudovaný
+ * (`slovnikPoloz` → `prekladImport`), stejně jako `progPouzij` nasadí platný
+ * ceník. Server nese jen odchylky od zabudovaného; hesla, která neprojdou
+ * kontrolou tvaru (`slovnikHeslaKontrola`), se nepoloží vůbec — PREKLAD je
+ * obyčejný objekt a klíč `__proto__` by v něm sáhl na prototyp.
+ *
+ * ONLINE_STAV.slovnik = { platny, historie } ze serveru (null = nezveřejněn),
+ * ONLINE_STAV.slovnikPolozeno = klíče, které položila poslední verze —
+ * aby šly při další verzi nebo odhlášení vrátit na zabudované znění. */
+function onlineNactiSlovnik() {
+  if (typeof slovnikPoloz !== 'function' || typeof PREKLAD_ZABUDOVANY === 'undefined')
+    return Promise.resolve(false);
+  return onlineApi('/api/slovnik').then(o => {
+    ONLINE_STAV.slovnik = (o && o.db && o.db.platny) ? o.db : null;
+    onlineSlovnikPoloz(ONLINE_STAV.slovnik ? ONLINE_STAV.slovnik.platny.hesla : {});
+    return true;
+  }).catch(e => {
+    /* Bez slovníku se dá pracovat (platí zabudovaný), ale říct se to musí:
+     * cizojazyčná nabídka by jinak tiše vyšla se starším zněním. */
+    ONLINE_STAV.slovnik = null;
+    onlineZprava('Platný slovník překladů se ze serveru nepodařilo načíst (' + e.message
+      + ') — překládá se slovníkem zabudovaným v aplikaci.', 'varovani');
+    return false;
+  });
+}
+function onlineSlovnikPoloz(hesla) {
+  const r = slovnikPoloz(hesla || {}, ONLINE_STAV.slovnikPolozeno || [], PREKLAD_ZABUDOVANY,
+    { importuj: prekladImport, smaz: prekladSmaz });
+  if (!r.ok) {
+    onlineZprava('Zveřejněný slovník má neplatný tvar (' + r.chyba + ') — nepoužije se.', 'varovani');
+    return false;
+  }
+  ONLINE_STAV.slovnikPolozeno = r.polozeno;
+  return true;
+}
+/* Kolik hesel živého slovníku se liší od platné zveřejněné verze (nebo od
+ * zabudovaného, když zveřejněná není) — „nezveřejněné změny" v Nastavení. */
+function onlineSlovnikNezverejneno() {
+  if (typeof slovnikOdchylky !== 'function') return 0;
+  const ted = slovnikOdchylky(PREKLAD, PREKLAD_ZABUDOVANY);
+  const platna = (ONLINE_STAV.slovnik && ONLINE_STAV.slovnik.platny && ONLINE_STAV.slovnik.platny.hesla) || {};
+  const ks = {};
+  Object.keys(ted).concat(Object.keys(platna)).forEach(k => { ks[k] = 1; });
+  const ma = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+  return Object.keys(ks).filter(k => JSON.stringify(ma(ted, k) ? ted[k] : null)
+    !== JSON.stringify(ma(platna, k) ? platna[k] : null)).length;
+}
+/* Zveřejnění — stejná úvaha jako onlineZverejni u ceníku: dotaz s poznámkou,
+ * zápis na server (ten si roli, tvar i „beze změny" zkontroluje sám), pak
+ * čerstvé načtení platné verze. */
+async function onlineZverejniSlovnik(preddanaPozn) {
+  if (!jeAdminOnline()) { onlineZprava('Zveřejnit slovník smí jen administrátor.', 'varovani'); render(); return false; }
+  const hesla = slovnikOdchylky(PREKLAD, PREKLAD_ZABUDOVANY);
+  const k = slovnikHeslaKontrola(hesla);
+  if (!k.ok) { onlineZprava('Slovník nejde zveřejnit: ' + k.chyba, 'chyba'); render(); return false; }
+  const prazdne = slovnikPrazdnePrepisy(hesla, PREKLAD_ZABUDOVANY);
+  if (prazdne.length) { onlineZprava('Slovník nejde zveřejnit: ' + slovnikPrazdnePrepisyText(prazdne), 'chyba'); render(); return false; }
+  if (ONLINE_STAV.slovnik && slovnikBezeZmeny(ONLINE_STAV.slovnik, hesla)) {
+    onlineZprava('Slovník se od platné online verze neliší – není co zveřejňovat.'); render(); return false;
+  }
+  const p = ONLINE_STAV.slovnik && ONLINE_STAV.slovnik.platny;
+  const pozn = (typeof preddanaPozn === 'string') ? preddanaPozn
+    : await dotaz('Zveřejnit slovník překladů jako platný ONLINE pro celý program?\n\n'
+      + (p ? 'Dosud platí verze ' + p.verze + '. ' : 'Zatím žádná verze zveřejněná není. ')
+      + 'Nová verze ponese ' + k.pocet + ' hesel odlišných od slovníku zabudovaného v aplikaci'
+      + ' (změněno proti platné verzi: ' + onlineSlovnikNezverejneno() + ').\n\n'
+      + 'Od této chvíle se jím budou překládat dokumenty všech přihlášených. Už vytištěné '
+      + 'dokumenty se nemění; nově vygenerované (i ze starší zakázky) ponesou nové znění.'
+      + '\n\nČím se změna zdůvodňuje (nepovinné):', '');
+  if (pozn === null) return false;
+  ONLINE_STAV.pracuje = true; render();
+  return onlineApi('/api/slovnik', { hesla, poznamka: String(pozn || '') }).then(o => {
+    onlineZprava('Slovník zveřejněn online – platí verze ' + o.verze + ' (' + o.pocet + ' hesel odlišných od zabudovaného).');
+    return onlineNactiSlovnik().then(() => true);
+  }).catch(e => { onlineZprava('Zveřejnit slovník se nepodařilo: ' + e.message, 'chyba'); return false; })
+    .then(v => { ONLINE_STAV.pracuje = false; render(); if (typeof nastRefresh === 'function') nastRefresh(); return v; });
 }
 
 /* VLITÍ TEXTŮ DO VÝCHOZÍHO CENÍKU — i po každé jeho výměně (nález N35
@@ -2222,6 +2310,7 @@ const OBNOVA_CASTI = [
   ['firma', 'Firemní údaje'],
   ['zobrazeni', 'Matice zobrazení'],
   ['popisy', 'Dodatkové texty položek'],
+  ['slovnik', 'Slovník překladů (zveřejněné verze)'],
   ['zakazky', 'Zakázky (rejstřík se přestaví sám)'],
   ['uzivatele', 'Účty uživatelů (jen ze serverového otisku)'],
   ['sablony', 'Šablony dokumentů'],
@@ -2331,7 +2420,7 @@ function onlineObnovaDavky(zaloha, casti) {
   let d = { ...hlava }, velikost = onlineObnovaVelikost(d);
   const neprazdna = () => Object.keys(d).length > Object.keys(hlava).length;
   const uzavri = () => { if (neprazdna()) davky.push(d); d = { ...hlava }; velikost = onlineObnovaVelikost(d); };
-  for (const k of ['program', 'firma', 'zobrazeni', 'popisy', 'uzivatele'].filter(k => casti.includes(k))) {
+  for (const k of ['program', 'firma', 'zobrazeni', 'popisy', 'slovnik', 'uzivatele'].filter(k => casti.includes(k))) {
     const v = zaloha[k] === undefined ? null : zaloha[k];
     const s = onlineObnovaVelikost(v);
     if (s > OBNOVA_DAVKA_MAX_B) { prilisVelke.push({ cast: k, klic: k, velikost: s }); continue; }

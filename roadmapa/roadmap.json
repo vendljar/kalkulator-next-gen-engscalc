@@ -6257,6 +6257,18 @@
    "detail" : "B126 profilyNezname hlásí povinný profil bez rozměru; B127 přepisy množství a ceny s kontrolou čísla a stropem 1e9; B128 ceník varianty = skupina (uložená verze/klon + platný ceník po položkách) nebo zveřejněná verze celá; B131 400 místo 500 u těla null v deseti funkcích. Šablony CN v15 (+EN/DE/FR) s řádky levé a pravé boční stěny. Zbývá z auditu: B129, B130 (nízké), B132 (info).",
    "hotovoKdyz" : "Testy před/po v CHANGELOG v12.10.2; mutace jádra +2, serveru +5.",
    "kde" : "`src/engine.js`, `src/uloziste.js`, `netlify/functions/*.mjs`, `nastroje/vyrob_sablony.js`"
+  },
+  {
+   "id" : "401",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "vysoka",
+   "slozitost" : "M",
+   "nazev" : "Slovník se ukládá na server jako ceník (zveřejnění, verze, historie); hromadné převzetí odlišného znění; tabulka Vocabulary J. V. v zabudovaném slovníku",
+   "proc" : "Zadání J. V. 12. 10. 2026: u „Odlišné znění (44)“ přebíral řádek po řádku a po novém nahrání chtěla aplikace totéž znovu — převzetí žilo jen v paměti relace. „Potřebuji, aby se slovník ukládal stejným způsobem jako ceník.“",
+   "detail" : "Tabulka SLOVNIK_ENG_2026-10-12 převzata do PREKLAD (44 odlišných znění, 0 doplnit, 0 nových). Tlačítko „Převzít všech N z tabulky“ (jen administrátor, jedno potvrzení). /api/slovnik: GET každý přihlášený, POST zveřejnit jen Administrátor (role z relace, tělo objekt, strop 1 MB → 413, hesla = objekt, klíč neprázdný ≤ 1000 znaků — zabudovaná hesla mají až 419 —, bez __proto__/constructor/prototype, trojice textů ≤ 2000 bez řídicích znaků, nejvýš 5000 hesel). Zveřejňují se odchylky od zabudovaného slovníku; verze, kdy, kdo z relace, poznámka, historie 20 verzí. Klient po přihlášení položí platný slovník přes zabudovaný, po odhlášení vrátí. Nastavení → Slovník: platná verze, nezveřejněné změny, tlačítko Zveřejnit slovník. Slovník v záloze, nočním otisku i obnově (s touž kontrolou).",
+   "hotovoKdyz" : "test_prava 721 → 763, test_obnova 192 → 202, test_slovnik 41 → 63, overit_slovnik 14/0 (nový), overit_online 200 → 213, overit_xss 299 → 311; mutace serveru +18 (18/18 chycených). Hotovo ve v12.10.3.",
+   "kde" : "`netlify/functions/slovnik.mjs`, `src/slovnik.js`, `src/preklad.js`, `src/ui/nastaveni_ui.js`, `src/ui/online_ui.js`, `netlify/lib/zalohovani.mjs`, `netlify/functions/obnova.mjs`"
   }
  ],
  "meta" : {

@@ -52,6 +52,7 @@ import obnova from './functions/obnova.mjs';
 import zdravi from './functions/zdravi.mjs';
 import zobrazeni from './functions/zobrazeni.mjs';
 import popisy from './functions/popisy.mjs';
+import slovnikFn from './functions/slovnik.mjs';
 import zakazniciFn from './functions/zakaznici.mjs';
 import schvalovaniFn from './functions/schvalovani.mjs';
 import sablonyFn from './functions/sablony.mjs';
@@ -364,6 +365,19 @@ const MATICE = [
     telo: () => ({ texty: { 'Sklo VSG s mléčnou fólií': 'Provedení vnějších skel.' } }),
     proc: 'text se předvyplní do nabídek všech obchodníků — zadat ho smí jen administrátor '
       + '(zadání J. V. 22. 9. 2026: ostatní ho smí ve své zakázce upravit, trvale přepsat ne)',
+    prava: JEN_ADMIN },
+
+  /* Zveřejněný slovník překladů (#401, 12. 10. 2026) — stejná dvojice práv
+   * jako ceník: číst každý přihlášený, zveřejnit jen administrátor. */
+  { fn: slovnikFn, soubor: 'slovnik.mjs', nazev: 'slovník — čtení platné verze (GET /api/slovnik)', metoda: 'GET',
+    url: 'http://x/api/slovnik',
+    proc: 'platným slovníkem překládá každý, kdo tiskne cizojazyčnou nabídku',
+    prava: PRIHLASENY_OK },
+
+  { fn: slovnikFn, nazev: 'slovník — zveřejnění (POST /api/slovnik)', metoda: 'POST',
+    url: 'http://x/api/slovnik',
+    telo: (r) => ({ hesla: { 'Zkušební heslo matice': ['Matrix test ' + r, '', ''] }, poznamka: 'matice' }),
+    proc: 'zveřejněný slovník překládá nabídky všech — mění ho jen administrátor (zadání J. V. 12. 10. 2026: „jako ceník")',
     prava: JEN_ADMIN },
 
   { fn: zakazky, soubor: 'zakazky.mjs', nazev: 'zakázky — rejstřík (GET /api/zakazky)', metoda: 'GET',
@@ -1697,6 +1711,7 @@ console.log('\n===== #374 (B113, B114): KONCOVÁ CENA BEZ SCHVÁLENÍ — IDENTI
   for (const [jm, fn, url, c] of [['zakazky', zakazky, '/api/zakazky', cObch], ['zakaznici', zakazniciFn, '/api/zakaznici', cObch],
     ['uzivatele', uzivatele, '/api/uzivatele', cAdmin], ['program', program, '/api/program', cAdmin], ['firma', firma, '/api/firma', cAdmin],
     ['zobrazeni', zobrazeni, '/api/zobrazeni', cAdmin], ['popisy', popisy, '/api/popisy', cAdmin], ['sablony', sablonyFn, '/api/sablony', cAdmin],
+    ['slovnik', slovnikFn, '/api/slovnik', cAdmin],
     ['obnova', obnova, '/api/obnova', cAdmin], ['analytika', analytikaFn, '/api/analytika', cObch]]) {
     /* B150 (12. 10. 2026): i pole a číslo — kontrola má odmítnout každé
      * tělo, které není objekt (pole by např. matici zobrazení vynulovalo). */
@@ -1833,6 +1848,127 @@ console.log('\n===== AUDIT B8: OČISTA DÁVKY ANALYTIKY =====\n');
     !casKlice.some(k => k.includes('fetch')), casKlice.join(','));
 }
 
+console.log('\n===== ZVEŘEJNĚNÝ SLOVNÍK (#401, 12. 10. 2026) =====\n');
+{
+  /* Zadání J. V. 12. 10.: „slovník se má ukládat stejným způsobem jako
+   * ceník". Server klientovi nevěří: roli bere z relace, tvar hesel
+   * kontroluje sám (prototypové klíče, délky, řídicí znaky, počet), tělo
+   * má strop. Surové tělo (postSurove) je tu proto, aby šel poslat klíč
+   * `__proto__` doslova — JSON.stringify by ho z literálu nevyrobil. */
+  const postSurove = (text, cookie) => slovnikFn(new Request('http://x/api/slovnik', {
+    method: 'POST', headers: cookie ? { cookie } : {}, body: text }));
+  const zverejni = async (telo, c) => { const r = await post(slovnikFn, 'http://x/api/slovnik', telo, c || cAdmin);
+    return { status: r.status, ...(await r.json()) }; };
+  const cVed = UCTY['Vedoucí'].cookie;
+
+  const g0 = await get(slovnikFn, 'http://x/api/slovnik');
+  test('#401: nepřihlášený GET → 401', g0.status === 401, g0.status);
+  const H1 = { 'Odlišné heslo #401': ['Different entry', 'Anderer Eintrag', 'Entrée différente'] };
+  const o1 = await zverejni({ hesla: H1, poznamka: 'pokus obchodníka' }, cObch);
+  test('#401: obchodník POST → 403', o1.status === 403, o1);
+  const o2 = await zverejni({ hesla: H1, role: 'Administrátor' }, cVed);
+  test('#401: vedoucí POST (i s rolí v těle) → 403', o2.status === 403, o2);
+
+  const a1 = await zverejni({ hesla: H1, poznamka: 'tabulka J. V.', kdo: 'podvrh@example.com' });
+  test('#401: administrátor zveřejní (200, verze)', a1.status === 200 && a1.ok === true && a1.verze >= 1, a1);
+  const db1 = (await (await get(slovnikFn, 'http://x/api/slovnik', cObch)).json()).db;
+  test('#401: obchodník čte platnou verzi s hesly', !!db1 && db1.platny.verze === a1.verze
+    && JSON.stringify(db1.platny.hesla) === JSON.stringify(H1), db1);
+  test('#401: autor je z relace, ne z těla', db1 && db1.platny.kdo === ADMIN_EMAIL, db1 && db1.platny.kdo);
+  test('#401: poznamka se uloží', db1 && db1.platny.poznamka === 'tabulka J. V.');
+
+  const a2 = await zverejni({ hesla: H1 });
+  test('#401: totéž podruhé → 400 „neliší se"', a2.status === 400 && /neliší/.test(a2.chyba || ''), a2);
+  const H2 = Object.assign({}, H1, { 'Druhé heslo #401': ['Second', 'Zweites', 'Deuxième'] });
+  const a3 = await zverejni({ hesla: H2, poznamka: 'druhá' });
+  test('#401: nová verze má o jedno vyšší číslo', a3.status === 200 && a3.verze === a1.verze + 1, a3);
+  const db2 = (await (await get(slovnikFn, 'http://x/api/slovnik', cObch)).json()).db;
+  test('#401: předchozí verze je v historii s datem konce platnosti',
+    db2.historie.length >= 1 && db2.historie[0].verze === a1.verze && !!db2.historie[0].platnoDo, db2.historie);
+  test('#401: GET vydá historii bez hesel', db2.historie.every(h => !('hesla' in h)), db2.historie);
+  const ulozeno = await (await uloziste('program')).cti('slovnik');
+  test('#401: úložiště drží v historii i hesla (pro zálohu)', !!ulozeno.historie[0].hesla);
+
+  /* Validace — každá varianta 400 a nic se nezapíše. */
+  const pred = JSON.stringify(await (await uloziste('program')).cti('slovnik'));
+  const spatne = [
+    ['klíč __proto__', '{"hesla":{"__proto__":["a","b","c"]}}'],
+    ['klíč constructor', '{"hesla":{"constructor":["a","b","c"]}}'],
+    ['klíč prototype', '{"hesla":{"prototype":["a","b","c"]}}'],
+    ['prázdný klíč', '{"hesla":{"   ":["a","b","c"]}}'],
+    ['klíč nad 1000 znaků', JSON.stringify({ hesla: { ['k'.repeat(1001)]: ['a', 'b', 'c'] } })],
+    ['hodnota není pole', '{"hesla":{"Heslo":"text"}}'],
+    ['pole o dvou prvcích', '{"hesla":{"Heslo":["a","b"]}}'],
+    ['prvek není text', '{"hesla":{"Heslo":["a",2,"c"]}}'],
+    ['překlad nad 2000 znaků', JSON.stringify({ hesla: { Heslo: ['x'.repeat(2001), '', ''] } })],
+    ['řídicí znak v překladu', JSON.stringify({ hesla: { Heslo: ['a\u0001b', '', ''] } })],
+    ['hesla jako pole', '{"hesla":[["Heslo",["a","b","c"]]]}'],
+    ['hesla chybí', '{"poznamka":"bez hesel"}'],
+  ];
+  for (const [jm, telo] of spatne) {
+    const r = await postSurove(telo, cAdmin);
+    test('#401: ' + jm + ' → 400', r.status === 400, r.status + ' ' + JSON.stringify(await r.json()));
+  }
+  const mnoho = {}; for (let i = 0; i <= 5000; i++) mnoho['heslo ' + i] = ['e', '', ''];
+  const r5001 = await zverejni({ hesla: mnoho });
+  test('#401: 5001 hesel → 400', r5001.status === 400 && /5000/.test(r5001.chyba || ''), r5001);
+  const velke = await postSurove(JSON.stringify({ hesla: H1, poznamka: 'x'.repeat(1100 * 1024) }), cAdmin);
+  test('#401: tělo nad strop 1 MB → 413', velke.status === 413, velke.status);
+  const velkeHl = await slovnikFn(new Request('http://x/api/slovnik', { method: 'POST',
+    headers: { cookie: cAdmin, 'content-length': String(2 * 1024 * 1024) }, body: '{}' }));
+  test('#401: hlášená délka nad strop → 413 bez čtení těla', velkeHl.status === 413, velkeHl.status);
+  test('#401: odmítnuté pokusy nic nezapsaly',
+    JSON.stringify(await (await uloziste('program')).cti('slovnik')) === pred);
+  test('#401: prototyp objektu zůstal nedotčený', ({}).hasOwnProperty('a') === false && Object.prototype.a === undefined);
+
+  /* Historie má strop počtu (a velikosti) — záznam musí projít jednou dávkou obnovy. */
+  for (let i = 0; i < 25; i++) await zverejni({ hesla: { ['Heslo historie ' + i]: ['v' + i, '', ''] } });
+  const dbH = await (await uloziste('program')).cti('slovnik');
+  test('#401: historie drží nejvýš 20 starších verzí', dbH.historie.length === 20, dbH.historie.length);
+
+  /* ---- nálezy nezávislé revize #401 (12. 10. 2026) ---- */
+  const predRev = JSON.stringify(await (await uloziste('program')).cti('slovnik'));
+  for (const [jm, telo] of [
+    ['N2: klíč „__proto__:" (po normalizaci __proto__)', '{"hesla":{"__proto__:":["a","b","c"]}}'],
+    ['N2: klíč „__proto__."', '{"hesla":{"__proto__.":["a","b","c"]}}'],
+    ['N3: U+FFFE v překladu', JSON.stringify({ hesla: { Heslo: ['a\uFFFEb', '', ''] } })],
+    ['N3: U+FFFF v hesle', JSON.stringify({ hesla: { ['Heslo\uFFFF']: ['a', '', ''] } })],
+    ['N4: prázdný přepis zabudovaného hesla', JSON.stringify({ hesla: { 'POVRCHOVÁ ÚPRAVA KONSTRUKCE': ['', '', ''] } })],
+    ['N4: vymazaný jeden jazyk zabudovaného hesla', JSON.stringify({ hesla: { 'POVRCHOVÁ ÚPRAVA KONSTRUKCE': ['STEEL', '', 'FINITION'] } })],
+  ]) {
+    const r = await postSurove(telo, cAdmin);
+    const o = await r.json();
+    test('rev #401 ' + jm + ' → 400', r.status === 400 && o.ok === false, r.status + ' ' + JSON.stringify(o));
+  }
+  const r4 = await postSurove(JSON.stringify({ hesla: { 'POVRCHOVÁ ÚPRAVA KONSTRUKCE': ['STEEL', '', 'FINITION'] } }), cAdmin);
+  test('rev #401 N4: odmítnutí vysvětluje, že vymazat zabudovaný překlad nejde', /vymazat/.test((await r4.json()).chyba || ''));
+  test('rev #401: odmítnuté pokusy revize nic nezapsaly', JSON.stringify(await (await uloziste('program')).cti('slovnik')) === predRev);
+  const r4ok = await zverejni({ hesla: { 'POVRCHOVÁ ÚPRAVA KONSTRUKCE': ['STEEL', 'STAHL', 'ACIER'], 'Heslo mimo kód #401': ['', '', ''] } });
+  test('rev #401 N4: změna znění zabudovaného hesla i prázdné heslo mimo kód projdou (200)', r4ok.status === 200, r4ok);
+  /* N6: bez content-length se strop měří v bajtech — 600 000 × „č" = 1,2 MB, ale jen 0,6 M znaků */
+  const rB = await postSurove(JSON.stringify({ hesla: { Heslo: ['a', '', ''] }, poznamka: 'č'.repeat(600000) }), cAdmin);
+  test('rev #401 N6: tělo pod stropem ve znacích, nad ním v bajtech → 413', rB.status === 413, rB.status);
+}
+
+/* Revize #401 N1: razítko slovníku v zámku odeslané nabídky drží server
+ * jako kdo/popis/šablonu (B62) — podvržené razítko se nahradí uloženým. */
+{
+  const rz = zakazkaCislo('2026 - OPR - CN - 0987');
+  zamkniJakoAplikace(rz, rz.varianty[0], { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Matice práv',
+    popis: 'Cenová nabídka OCK (Word)', slovnik: { verze: 3, otisk: '0123abcd' } });
+  const u0 = await post(zakazky, 'http://x/api/zakazky', { zakazka: rz }, cObch);
+  const ul0 = JSON.parse(pamet.get('zakazky/z/2026-OPR-CN-0987.json') || 'null');
+  test('rev #401 N1: zámek s razítkem slovníku se uloží (200) a razítko nese',
+    u0.status === 200 && !!ul0 && ul0.varianty[0].zamek.slovnik && ul0.varianty[0].zamek.slovnik.otisk === '0123abcd', u0.status);
+  const podvrh = JSON.parse(JSON.stringify(ul0));
+  podvrh.varianty[0].zamek.slovnik = { verze: 9, otisk: 'ffffffff' };
+  podvrh.varianty[0].zamek.tisky[0].slovnik = { verze: 9, otisk: 'ffffffff' };
+  await post(zakazky, 'http://x/api/zakazky', { zakazka: podvrh }, cObch);
+  const zu = JSON.parse(pamet.get('zakazky/z/2026-OPR-CN-0987.json')).varianty[0].zamek;
+  test('rev #401 N1: podvržené razítko slovníku zámku server nahradí uloženým',
+    zu.slovnik.otisk === '0123abcd' && zu.tisky[0].slovnik.otisk === '0123abcd', JSON.stringify([zu.slovnik, zu.tisky[0].slovnik]));
+}
+
 console.log('\n===== AUDIT B9: ÚPLNOST ZÁLOHY =====\n');
 {
   await post(zobrazeni, 'http://x/api/zobrazeni', { matice: {} }, cAdmin);
@@ -1847,6 +1983,11 @@ console.log('\n===== AUDIT B9: ÚPLNOST ZÁLOHY =====\n');
   test('B9: záloha nese dodatkové texty položek',
     !!z.popisy && z.popisy.texty && z.popisy.texty['Sklo VSG'] === 'Věta do zálohy.',
     JSON.stringify(z.popisy));
+  /* #401 (12. 10. 2026): zveřejněný slovník leží v `program/slovnik` —
+   * poučení z B9 a B104: co záloha nenese, obnova tiše smaže. */
+  test('#401: záloha nese zveřejněný slovník i s historií',
+    !!z.slovnik && !!z.slovnik.platny && z.slovnik.platny.verze >= 1 && Array.isArray(z.slovnik.historie)
+    && !!z.slovnik.platny.hesla, JSON.stringify(z.slovnik && z.slovnik.platny && z.slovnik.platny.verze));
   test('B9: záloha nese kartotéku zákazníků', !!z.zakaznici && Object.keys(z.zakaznici).length >= 1, JSON.stringify(Object.keys(z.zakaznici || {})));
   test('B9: záloha nese podpisy', !!z.podpisy && Object.keys(z.podpisy).length >= 1);
   test('B9: záloha pořád nenese otisky hesel', !JSON.stringify(z.uzivatele).includes('heslo'));
@@ -1856,6 +1997,7 @@ console.log('\n===== AUDIT B9: ÚPLNOST ZÁLOHY =====\n');
   test('B9: noční otisk nese zákazníky, podpisy i zobrazení',
     !!otisk.zakaznici && !!otisk.podpisy && 'zobrazeni' in otisk);
   test('B9: a taky dodatkové texty', 'popisy' in otisk && !!otisk.popisy);
+  test('#401: noční otisk nese zveřejněný slovník', !!otisk.slovnik && !!otisk.slovnik.platny);
 }
 
 console.log('\n===== DODATKOVÉ TEXTY SE NEZTRÁCEJÍ (25. 9. 2026) =====\n');

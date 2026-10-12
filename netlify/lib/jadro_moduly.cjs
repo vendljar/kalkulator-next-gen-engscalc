@@ -67,6 +67,9 @@ Object.assign(globalThis, require('../../src/cenik_stari.js'));
  * prohlížeč — bez tohohle řádku by `cenikZahrOciste` neznal seznam cest
  * a propustil by i cizí klíč. */
 Object.assign(globalThis, require('../../src/cenik_rady.js'));
+/* Zveřejněný slovník (#401, 12. 10. 2026): /api/slovnik i obnova kontrolují
+ * hesla týmž kódem jako prohlížeč (slovnikHeslaKontrola, slovnikDbOciste). */
+Object.assign(globalThis, require('../../src/slovnik.js'));
 Object.assign(globalThis, require('../../src/konfigurace.js'));
 Object.assign(globalThis, require('../../src/sablony_online.js'));
 /* Kontrola obsahu šablony Wordu (B99): čte ZIP přes docxgen.js (vyžádá si ho
