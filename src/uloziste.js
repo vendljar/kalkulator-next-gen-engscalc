@@ -951,6 +951,13 @@ function uloTypyProblemy(zak, stara) {
     /* Ceník varianty je celý vstup jádra — čísla jen ve tvaru, který jádro
      * čte jako člověk (B135). */
     if (vzCen) uloTypyStrom(vzCen, d.cenik, 'cenik', vlastni, true);
+    /* Značky jen zahraniční řady (revize #398, N1): objekt cesta → true. */
+    const jz = d.cenik && typeof d.cenik === 'object' ? d.cenik.jenZahr : null;
+    if (jz !== null && jz !== undefined
+        && (typeof jz !== 'object' || Array.isArray(jz) || Object.keys(jz).some(k => jz[k] !== true || !ULO_TOKEN.test(k))))
+      vlastni.push({ kde: 'cenik.jenZahr', duvod: 'typ' });
+    /* Model výpočtu (revize #398): pravda/nepravda. */
+    if (d.ock && typeof d.ock === 'object' && !uloPravdaSedi(d.ock.fixes)) vlastni.push({ kde: 'ock.fixes', duvod: 'typ' });
     if (d.proj && typeof d.proj === 'object') {
       uloTypyProj(d.proj.zadani, 'proj.zadani', vlastni);
       if (vzCenP) uloTypyStrom(vzCenP, d.proj.cenik, 'proj.cenik', vlastni, true);
@@ -1090,7 +1097,13 @@ function uloZaporneVZadani(z, zp) {
       const st = steny[k], c = 'ock.zadani.oplasteni.steny.' + (ULO_TOKEN.test(k) ? k : '?');
       if (!st || typeof st !== 'object') return;
       hlidej(st.odM, c + '.odM');
-      if (Array.isArray(st.pasy)) st.pasy.forEach((p, i) => { if (p && typeof p === 'object') hlidej(p.doM, c + '.pasy[' + i + '].doM'); });
+      /* Ruční sazba pásu „jiné" (revize #398, N3): záporná −3 000 Kč/m² na
+       * čtyřech stěnách srazila cenu OCK o 43 % (zámek „shoda"). */
+      if (Array.isArray(st.pasy)) st.pasy.forEach((p, i) => {
+        if (!p || typeof p !== 'object') return;
+        hlidej(p.doM, c + '.pasy[' + i + '].doM');
+        hlidej(p.naklad, c + '.pasy[' + i + '].naklad');
+      });
     });
   }
   const sekce = zp && typeof zp === 'object' ? zp.sekce : null;
@@ -1148,6 +1161,55 @@ function uloRozmeryVZadani(z, naZamek) {
 function uloRozmeryProblemy(zak, stara) {
   return uloProVarianty(zak, stara, (v, sv, out) => {
     uloRozmeryVZadani(v.data.ock && v.data.ock.zadani, false).forEach(p => out.push(p));
+  });
+}
+
+/* MODEL VÝPOČTU A VYŘAZENÉ ŘÁDKY OCK MĚNÍ JEN ADMINISTRÁTOR (revize #398,
+ * 12. 10. 2026 — nálezy N2 a „Model 1" nezávislé revize).
+ *
+ *  – `ock.zadani.nepocitat` (řádky kalkulace OCK, které se v zakázce
+ *    nepočítají) plní jen sloupec Výchozí z matice správce u NOVÉ zakázky
+ *    (zobrazeniVychoziAplikuj); obchodník ho v UI nemění. Server ho nehlídal
+ *    a `['MONTÁŽ NA STAVBĚ', …]` srazilo cenu OCK o 5–19 % se zámkem
+ *    „shoda". Pravidlo: role mimo administrátora smí mít jen PODMNOŽINU
+ *    seznamu z uložené verze téže varianty, z jiné uložené varianty (klon),
+ *    nebo z matice `vychozi` uložené na serveru (nová zakázka). Méně
+ *    vyřazených řádků cenu jen zvýší, proto podmnožina.
+ *  – `ock.fixes` falešné = Model 1, zmrazený pro všechny kromě
+ *    administrátora (#332, J. V. 24. 9. 2026) — pojistka byla jen v set()
+ *    v UI. Role mimo administrátora smí Model 1 jen tam, kde ho nese
+ *    uložená verze téže varianty (nebo u nové varianty jiná uložená
+ *    varianta — klon). Převod Model 1 → 2 smí každý.
+ * `opts`: { role, matice, importuj, pocitatKlic }. */
+function uloModelProblemy(zak, stara, opts) {
+  opts = opts || {};
+  if (String(opts.role || '') === 'Administrátor') return [];
+  let sp = stara;
+  if (stara && typeof opts.importuj === 'function') {
+    try { sp = opts.importuj(JSON.parse(JSON.stringify(stara))); } catch (e) { sp = stara; }
+  }
+  const ulozene = (sp && Array.isArray(sp.varianty)) ? sp.varianty.filter(v => v && v.data && typeof v.data === 'object') : [];
+  const nep = (d) => { const z = d && d.ock && d.ock.zadani; return Array.isArray(z && z.nepocitat) ? z.nepocitat.map(String) : []; };
+  const model1 = (d) => !!(d && d.ock && typeof d.ock === 'object') && !d.ock.fixes;
+  const pref = String(opts.pocitatKlic || 'ock.pocitat:');
+  const mv = opts.matice && opts.matice.vychozi && typeof opts.matice.vychozi === 'object' ? opts.matice.vychozi : {};
+  const zMatice = Object.keys(mv).filter(k => k.indexOf(pref) === 0 && mv[k] === false).map(k => k.slice(pref.length));
+  return uloProVarianty(zak, stara, (v, sv, out) => {
+    const d = v.data;
+    const svm = ulozene.find(x => x.id === v.id) || null;
+    const jine = ulozene.filter(x => x !== svm);
+    const z = d.ock && d.ock.zadani;
+    if (z && z.nepocitat !== undefined && z.nepocitat !== null && !Array.isArray(z.nepocitat))
+      out.push({ kde: 'ock.zadani.nepocitat', duvod: 'typ' });
+    const ted = nep(d);
+    if (ted.length) {
+      const reference = (svm ? [nep(svm.data)] : []).concat(jine.map(x => nep(x.data)), [zMatice]);
+      if (!reference.some(r => ted.every(n => r.indexOf(n) >= 0))) out.push({ kde: 'ock.zadani.nepocitat', duvod: 'model' });
+    }
+    if (model1(d)) {
+      const smi = svm ? model1(svm.data) : jine.some(x => model1(x.data));
+      if (!smi) out.push({ kde: 'ock.fixes', duvod: 'model' });
+    }
   });
 }
 
@@ -1239,7 +1301,30 @@ function uloB112Zdroj(n, soubor) {
   }
   return null;
 }
+/* `jenZahr` se po listech neporovnává — hlídá ho zvlášť uloJenZahrNavic
+ * (revize #398, N1) jako podmnožinu povolených značek. */
 const ULO_CENIK_VOLNE = ['popisy', 'popisyJazyky', 'dph', 'rada', 'jenZahr', 'ukazkove', 'prazdny'];
+/* ZNAČKY „JEN ZAHRANIČNÍ ŘADA" (revize #398, N1, 12. 10. 2026). Jádro
+ * v tuzemské kalkulaci vyřadí každý řádek, jehož cenaPath značka nese
+ * (engine.js `jenTetoRady`), takže `jenZahr: { 'C.montazHodKc': true }`
+ * skryl drahé řádky a nový zámek prošel s cenou −26 až −88 %. Víc značek =
+ * nižší tuzemská cena, proto smí ceník varianty nést jen značky, které nese
+ * některý kandidát (uložená verze, jiná uložená varianta, zveřejněná verze
+ * — její ceník i zahraniční odchylky), nebo které jádro vyřazuje vždy
+ * (CENIK_JEN_ZAHR). Vrací seznam značek navíc. */
+function uloJenZahrNavic(cenik, kandidati) {
+  const jz = cenik && typeof cenik === 'object' && cenik.jenZahr && typeof cenik.jenZahr === 'object' ? cenik.jenZahr : {};
+  const vzdy = uloGlobal('CENIK_JEN_ZAHR') || (() => {
+    if (typeof require === 'function') { try { return require('./cenik.js').CENIK_JEN_ZAHR || []; } catch (e) { return []; } }
+    return [];
+  })();
+  const povolene = new Set(vzdy);
+  kandidati.forEach(c => {
+    const k = c && typeof c === 'object' && c.jenZahr && typeof c.jenZahr === 'object' ? c.jenZahr : {};
+    Object.keys(k).forEach(x => { if (k[x]) povolene.add(x); });
+  });
+  return Object.keys(jz).filter(x => jz[x] && !povolene.has(x));
+}
 /* Prázdno („", null, chybí) je jedna hodnota; číslo i číslo jako text se
  * porovnávají číselně — TAK, JAK HO ČTE JÁDRO (`+x`, B135, 12. 10. 2026):
  * text „100,0" je pro jádro NaN (→ 0), ne 100. Dřív se převáděl čárkou na
@@ -1539,6 +1624,11 @@ function uloCenikProblemy(zak, stara, opts) {
     ];
     casti.forEach(c => {
       if (c.ok || !cenikHlidat) return;
+      /* Značky jen zahraniční řady (N1): jen podmnožina kandidátů. */
+      const kandJz = [svm && c.vezmi(svm.data)].concat(jine.map(x => c.vezmi(x.data)),
+        verze.map(z => c.pred === 'cenik.' ? z.cenik : z.cenikProj), verze.map(z => z.zahranicni),
+        zverejneneProRadu(rada).map(z => c.vezmi(z)));
+      uloJenZahrNavic(c.vezmi(d), kandJz).forEach(x => out.push({ kde: c.pred + 'jenZahr.' + (ULO_TOKEN.test(x) ? x : '?'), duvod: 'cenik' }));
       const listy = uloB112Listy(c.vezmi(d), okPrirazka);
       const kSvm = svm ? uloB112Listy(c.vezmi(svm.data), okPrirazka) : null;
       const kZv = zverejneneProRadu(rada).map(z => uloB112Listy(c.vezmi(z), okPrirazka));
@@ -1678,8 +1768,9 @@ function uloIdProblemyText(problemy) {
   const zaporne = problemy.filter(p => p.duvod === 'zaporne');
   const zaokr = problemy.filter(p => p.duvod === 'zaokr');
   const rozmer = problemy.filter(p => p.duvod === 'rozmer');
+  const model = problemy.filter(p => p.duvod === 'model');
   const tvar = problemy.filter(p => p.duvod !== 'duplicita' && p.duvod !== 'delka' && p.duvod !== 'priloha'
-    && p.duvod !== 'typ' && p.duvod !== 'zaporne' && p.duvod !== 'zaokr' && p.duvod !== 'rozmer');
+    && p.duvod !== 'typ' && p.duvod !== 'zaporne' && p.duvod !== 'zaokr' && p.duvod !== 'rozmer' && p.duvod !== 'model');
   const casti = [];
   if (tvar.length) casti.push('identifikátor v nepovoleném tvaru (' + tvar.map(x => x.kde).join(', ')
     + ') — povolená jsou písmena, číslice, tečka, podtržítko a pomlčka');
@@ -1705,6 +1796,9 @@ function uloIdProblemyText(problemy) {
   if (rozmer.length) casti.push('rozměr šachty, který nedává smysl (' + rozmer.slice(0, 5).map(x => x.kde).join(', ')
     + (rozmer.length > 5 ? ' a další ' + (rozmer.length - 5) : '')
     + ') — zdvih, šířka, hloubka, rozteč, čistý vstup, šířka rámu a počet sloupků musí být kladné, přejezd a prohlubeň nezáporné, zdvih nejvýš 99 m');
+  /* Revize #398: model výpočtu a vyřazené řádky OCK. */
+  if (model.length) casti.push('změnu, kterou smí jen administrátor (' + model.slice(0, 5).map(x => x.kde).join(', ')
+    + ') — model výpočtu (Model 1 je zmrazený) a řádky kalkulace OCK, které se nepočítají, nastavuje správce');
   return casti.join('; ');
 }
 
@@ -1743,7 +1837,7 @@ function uloZalohaHlidka(otisky, ted) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, ULO_ZADANI_BEZ_ZAPORU, ULO_ZADANI_MIMO_JADRO, ULO_HODINY_N56, uloCisloJadro, uloRozmeryVZadani, uloRozmeryProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
+  module.exports = { ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, ULO_ZADANI_BEZ_ZAPORU, ULO_ZADANI_MIMO_JADRO, ULO_HODINY_N56, uloCisloJadro, uloRozmeryVZadani, uloRozmeryProblemy, uloModelProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
                      uloNorm, uloSlova, uloCisloVyplneno, uloKlicSouboru,
                      uloJmenoSouboru, uloJeZakazkovySoubor,
                      ULO_HLAVICKA_POLE, uloHlavickaChybi, uloHlavickaVyplnena, uloMaCislo, uloUlozeniStav,

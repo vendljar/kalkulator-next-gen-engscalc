@@ -181,6 +181,11 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   /* Ceník varianty a skryté přepisy podle role a matice (B112, 29. 9. 2026). */
   const cenik = ULO.uloCenikProblemy(zak, stara, { role: relace.role, matice: ctx.matice, program: ctx.program, importuj: globalThis.importZakazka });
   if (cenik.length) return odmitni(403, veta(ULO.uloCenikProblemyText(cenik)));
+  /* Model výpočtu (Model 1 zmrazený) a vyřazené řádky OCK (`nepocitat`)
+   * mění jen administrátor (revize #398). Obnova je administrátorská. */
+  const model = ULO.uloModelProblemy(zak, stara, { role: relace.role, matice: ctx.matice,
+    importuj: globalThis.importZakazka, pocitatKlic: globalThis.ZOBRAZENI_POCITAT });
+  if (model.length) return odmitni(403, veta('Zakázka nese ' + ULO.uloIdProblemyText(model)));
 
   /* NEZNÁMÝ ROZMĚR PROFILU (#372, nález A2-1 z 26. 9. 2026). Zakázka
    * s rozměrem mimo katalog jeklů (nebo s tloušťkou, kterou rozměr nemá) se
@@ -346,6 +351,28 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
     if (sv && sv.zamek && sv.zamek.zamceno) {                   // zámek už byl — nesahat
       if (sv.zamek.overeni) v.zamek.overeni = sv.zamek.overeni;
       else delete v.zamek.overeni;
+      /* DOTISK DOKUMENTU JINÉ STRANY (revize #398, N4). K uloženému zámku
+       * smí klient připsat tisk (uloZamekRazitkaDrz drží začátek `tisky`
+       * a nové připojí). Zámek nabídky PROJ z nulových rozměrů OCK nebo
+       * z ceníku bez cen OCK projde (posuzuje se jen strana PROJ) — a dotisk
+       * nabídky OCK by pak zábrany strany OCK obešel. Nová strana z dotisku
+       * se proto posoudí jako nový zámek. */
+      if (!obnova) {
+        const strana = (t) => (typeof globalThis.kontrolyDokumentStrana === 'function' ? globalThis.kontrolyDokumentStrana(t) : '') || '?';
+        const stareTisky = [sv.zamek.typ].concat((Array.isArray(sv.zamek.tisky) ? sv.zamek.tisky : []).map(t => t && t.typ));
+        const stareStrany = new Set(stareTisky.map(strana));
+        const nove = (Array.isArray(v.zamek.tisky) ? v.zamek.tisky : []).slice(Array.isArray(sv.zamek.tisky) ? sv.zamek.tisky.length : 0)
+          .map(t => t && t.typ).filter(t => !stareStrany.has(strana(t)));
+        if (nove.length) {
+          const pseudo = Object.assign({}, v, { zamek: { typ: nove[0], tisky: nove.map(typ => ({ typ })) } });
+          const cenaDotisk = zamekNovyCenaProblem(zak, pseudo, relace, ctx.matice, JEKLY, ctx.program);
+          if (cenaDotisk) return odmitni(403, 'Neuloženo: dotisk dokumentu odeslané nabídky — ' + cenaDotisk + '.');
+          const rozmerDotisk = zamekNovyRozmeryProblem(zak, pseudo, ULO);
+          if (rozmerDotisk.length)
+            return odmitni(400, 'Neuloženo: dotisk dokumentu odeslané nabídky nese ' + ULO.uloIdProblemyText(rozmerDotisk)
+              + '. Pokračujte klonem varianty.');
+        }
+      }
       continue;
     }
     if (obnova) {

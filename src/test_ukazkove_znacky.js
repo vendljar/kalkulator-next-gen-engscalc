@@ -140,7 +140,9 @@ const test = (n, cond, info) => {
     zamek: zamcena ? { zamceno: true, kdo: 'a@b.cz', kdy: '2026-09-01T10:00:00Z' } : null,
     data: {
       cenik: { ukazkove: true, prazdny: true, montazHodKc: 850, dph: 21 },
-      proj: { cenik: { ukazkove: true, projHodKc: 700 }, zadani: {} },
+      /* Klíč ze vzoru DEFAULT_CENIK_PROJ (B136, 12. 10. 2026: cena se počítá jen
+       * v klíčích vzoru — dřívější smyšlený `projHodKc` už cenou není). */
+      proj: { cenik: { ukazkove: true, sazby: { projektant: 700 } }, zadani: {} },
       zadani: {},
     },
   });
@@ -161,7 +163,7 @@ const test = (n, cond, info) => {
   test('ale CENY uzamčené varianty se nehnuly',
     zak.varianty[0].data.cenik.montazHodKc === pred.montazHodKc
     && zak.varianty[0].data.cenik.dph === pred.dph
-    && zak.varianty[0].data.proj.cenik.projHodKc === 700);
+    && zak.varianty[0].data.proj.cenik.sazby.projektant === 700);
   test('a srovnání se započítalo, takže se varianta uloží', r.znacky >= 2, r.znacky);
 }
 

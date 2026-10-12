@@ -1104,7 +1104,7 @@ function oplJineHtml(k, i) {
   return `<div class="row opl-jine"><label></label><span class="par opl-sloupce">
       <input class="opl-s1" type="text" style="width:190px" placeholder="název opláštění"
         value="${esc(p.nazev || '')}" onchange="oplPasSet('${escJs(k)}', ${+i}, 'nazev', this.value)">
-      <input class="opl-s2" type="number" step="any" style="width:90px" placeholder="sazba"
+      <input class="opl-s2" type="number" step="any" min="0" style="width:90px" placeholder="sazba"
         title="náklad za m²; ruční sazba znamená atyp"
         value="${esc(p.naklad == null ? '' : p.naklad)}" onchange="oplPasSet('${escJs(k)}', ${+i}, 'naklad', this.value)">
       <span class="opl-s3 opl-jednotka">Kč/m²</span>

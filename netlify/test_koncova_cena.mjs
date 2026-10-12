@@ -222,7 +222,8 @@ for (const [popis, uprava] of [['jenZahr: 5', c => { c.jenZahr = 5; }], ['popisy
   const z = nova('B136 ' + popis); sestaveni(z); uprava(d0(z).cenik); uprava(d0(z).proj.cenik);
   vlastniOck(z, 1); vlastniProj(z, 1); zamkni(z);
   const r = await uloz(z, cO);
-  test('B136: obchodník — ceník sestavení + ' + popis + ' + vlastní položka 1 Kč + nový zámek → 403', r.status === 403 && /ceník/.test(r.chyba || ''), r);
+  /* jenZahr: 5 od revize N1 zastaví už typová kontrola (400) — jinak 403 z #395 V3. */
+  test('B136: obchodník — ceník sestavení + ' + popis + ' + vlastní položka 1 Kč + nový zámek → 4xx', je4xx(r) && /ceník|jenZahr/.test(r.chyba || ''), r);
 }
 { const z = nova('B136 OCK+PROJ'); sestaveni(z, 'proj'); d0(z).proj.cenik.jenZahr = 5; vlastniProj(z, 1); zamkni(z, 'nabidkaProj');
   const r = await uloz(z, cO);
@@ -292,6 +293,71 @@ for (const [k, h] of [['zdvih', -1], ['roztec', -1], ['hloubka', -1], ['sirka', 
     rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['zakazky'] }, cA)).json();
   const zk2 = o.casti && o.casti.zakazky;
   test('B137: obnova ze zálohy se zdvihem −1 → zakázka přeskočena s důvodem', o.ok === true && zk2 && zk2.preskocene === 1 && /rozměr/.test(JSON.stringify(zk2.duvody || [])), zk2 || o); }
+
+console.log('===== Nezávislá revize #398 (12. 10. 2026): N1 jenZahr, N2 nepocitat, N3 pás „jiné", Model 1, N4 dotisk =====');
+/* Nálezy dvou nezávislých revizí po opravě B133–B137, každý potvrzený dvěma
+ * pokusy (revize + vlastní ověření). Před opravou útoky 200 se zámkem „shoda". */
+{ const z = nova('N1 jenZahr'); const pred = cenaOck(z.varianty[0]);
+  d0(z).cenik.jenZahr = { 'C.montazHodKc': true, 'C.profilasKgKc': true, 'C.powertechExt': true }; const po = cenaOck(z.varianty[0]); zamkni(z);
+  const r = await uloz(z, cO);
+  test('N1: obchodník — cenik.jenZahr skryje tuzemské řádky + nový zámek → 403 (cena OCK ' + pred + ' → ' + po + ')', r.status === 403 && /jenZahr/.test(r.chyba || ''), r); }
+{ const r = await dvakrat(nova('N1 dvoukrok'), a => { d0(a).cenik.jenZahr = { 'C.montazHodKc': true }; }, cO);
+  test('N1: obchodník — značka jenZahr přidaná do uložené varianty → 403', r.status === 403, r); }
+{ const z = nova('N1 typ'); d0(z).cenik.jenZahr = { 'C.montazHodKc': 1 };
+  const r = await uloz(z, cA);
+  test('N1: jenZahr s hodnotou jinou než true → 400 (i administrátor)', r.status === 400 && /jenZahr/.test(r.chyba || ''), r); }
+{ const z = nova('N2 nepocitat'); const pred = cenaOck(z.varianty[0]);
+  d0(z).ock.zadani.nepocitat = ['MONTÁŽ NA STAVBĚ', 'DOPRAVA']; const po = cenaOck(z.varianty[0]); zamkni(z);
+  const r = await uloz(z, cO);
+  test('N2: obchodník — nepocitat (vyřazené řádky OCK) + nový zámek → 403 (cena OCK ' + pred + ' → ' + po + ')', r.status === 403 && /nepocitat/.test(r.chyba || ''), r); }
+{ const r = await dvakrat(nova('N2 dvoukrok'), a => { d0(a).ock.zadani.nepocitat = ['PROFILY - HLAVNÍ NOSNÉ PRVKY']; }, cO);
+  test('N2: obchodník — nepocitat přidané do uložené varianty → 403', r.status === 403, r); }
+{ const z = nova('N2 admin'); d0(z).ock.zadani.nepocitat = ['MONTÁŽ NA STAVBĚ'];
+  const r = await dvakrat(z, a => { a.nazevAkce += ' (poznámka)'; d0(a).ock.zadani.nepocitat = []; }, cO, cA);
+  test('N2: obchodník zakázku, které správce řádek vyřadil, uloží a smí ho vrátit (200)', r.status === 200, r); }
+{ const { default: zobrazeni } = await import(R + 'netlify/functions/zobrazeni.mjs');
+  await post(zobrazeni, 'http://x/api/zobrazeni', { matice: { vychozi: { 'ock.pocitat:MONTÁŽ NA STAVBĚ': false } } }, cA);
+  const z = nova('N2 matice'); d0(z).ock.zadani.nepocitat = ['MONTÁŽ NA STAVBĚ'];
+  const r = await uloz(z, cO);
+  test('N2: nová zakázka s nepocitat podle matice Výchozí (200)', r.status === 200, r);
+  await post(zobrazeni, 'http://x/api/zobrazeni', { matice: {} }, cA); }
+{ const z = nova('N3 pás'); const pred = cenaOck(z.varianty[0]); const st = {};
+  ['A', 'B', 'C', 'D'].forEach(k => { st[k] = { odM: 0, pasy: [{ typ: 'jine', nazev: 'x', naklad: -3000, doM: null }] }; });
+  d0(z).ock.zadani.oplasteni = { rezim: 'poStenach', steny: st }; const po = cenaOck(z.varianty[0]); zamkni(z);
+  const r = await uloz(z, cO);
+  test('N3: obchodník — pás „jiné" se sazbou −3 000 Kč/m² + nový zámek → 400 (cena OCK ' + pred + ' → ' + po + ')', r.status === 400 && /naklad/.test(r.chyba || ''), r); }
+{ const z = nova('N3 text'); d0(z).ock.zadani.oplasteni = { rezim: 'poStenach', steny: { A: { odM: 0, pasy: [{ typ: 'jine', nazev: 'x', naklad: '1500,5', doM: null }] } } };
+  const r = await uloz(z, cA);
+  test('N3: sazba pásu „1500,5" (jádro čte NaN) → 400', r.status === 400, r); }
+{ const z = nova('N3 legit'); d0(z).ock.zadani.oplasteni = { rezim: 'poStenach', steny: { A: { odM: 0, pasy: [{ typ: 'jine', nazev: 'x', naklad: 2500, doM: null }] } } };
+  const r = await uloz(z, cO);
+  test('N3: kladná ruční sazba pásu se uloží (200)', r.status === 200, r); }
+{ const z = nova('Model 1'); d0(z).ock.fixes = false; zamkni(z);
+  const r = await uloz(z, cO);
+  test('Model 1: obchodník — nová zakázka v Modelu 1 (zmrazený) → 403', r.status === 403 && /fixes/.test(r.chyba || ''), r); }
+{ const r = await dvakrat(nova('Model 1 přepnutí'), a => { d0(a).ock.fixes = false; }, cO);
+  test('Model 1: obchodník přepne uloženou variantu na Model 1 → 403', r.status === 403, r); }
+{ const z = nova('Model 1 správce'); d0(z).ock.fixes = false;
+  const r = await dvakrat(z, a => { a.nazevAkce += ' (poznámka)'; a.varianty[0].nazev = 'A'; zam.klonujVariantu(a, a.varianty[0].id); }, cO, cA);
+  test('Model 1: variantu v Modelu 1 (od správce) obchodník uloží i naklonuje (200)', r.status === 200, r);
+  const r2 = await dvakrat(nova('Model 1 → 2'), a => { d0(a).ock.fixes = true; }, cO, cA);
+  test('Model 1: převod Modelu 1 na Model 2 smí obchodník (200)', r2.status === 200, r2); }
+{ const z = nova('Model typ'); d0(z).ock.fixes = 'ano';
+  const r = await uloz(z, cA);
+  test('Model: ock.fixes, které není pravda/nepravda → 400', r.status === 400, r); }
+{ /* N4: zámek nabídky PROJ z nulových rozměrů OCK, pak dotisk nabídky OCK */
+  const z = zk.novaZakazka(); z.cislo = '2026 - OPR - CN - ' + (n++); z.nazevAkce = 'TEST N4 dotisk';
+  d0(z).cenik = kopie(platny().cenik); d0(z).proj.cenik = kopie(platny().cenikProj); zamkni(z, 'nabidkaProj');
+  const r0 = await uloz(z, cO);
+  test('N4: příprava — zámek nabídky PROJ s nevyplněnou šachtou (200)', r0.status === 200, r0);
+  const g = await nacti(r0.soubor, cO);
+  const a = zk.importZakazka(kopie(g)); zamkni(a, 'nabidka');
+  const r1 = await uloz(a, cO, g.uloRazitko);
+  test('N4: dotisk nabídky OCK k zámku PROJ z nulových rozměrů → 400', r1.status === 400 && /dotisk/.test(r1.chyba || ''), r1);
+  const g2 = await nacti(r0.soubor, cO);   // čerstvě — před opravou dotisk OCK výš prošel a změnil razítko
+  const b = zk.importZakazka(kopie(g2)); zamkni(b, 'nabidkaProj');
+  const r2 = await uloz(b, cO, g2.uloRazitko);
+  test('N4: dotisk dokumentu téže strany (PROJ) projde (200)', r2.status === 200, r2); }
 
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);

@@ -116,6 +116,11 @@ typy polí (`zakazkaServerKontrola`, uložení i obnova):
   - **B136** — „ceník má ceny" (#395 V3) počítá jen klíče vzoru
     (`DEFAULT_CENIK` / `DEFAULT_CENIK_PROJ`) dané části; volné klíče
     (`jenZahr`, `popisyJazyky`, `rada`) se nepočítají.
+  - **Revize #398** — `cenik.jenZahr` jen podmnožina značek kandidátů
+    (N1); `nepocitat` a Model 1 (`ock.fixes`) mění jen administrátor
+    (`uloModelProblemy`, N2); sazba pásu opláštění „jiné" nikdy záporná
+    (N3); dotisk dokumentu jiné strany k uloženému zámku se posoudí jako
+    nový zámek (N4).
   - **B137** — rozměry šachty (pravidla `kontrolyRozmery` v `kontroly.js`,
     tatáž funkce jako zábrana „rozmery"): záporné číslo, číslo nečitelné
     pro jádro a zdvih nad 99 m server neuloží nikdy, **nikomu**; nulu
@@ -184,6 +189,14 @@ typy polí (`zakazkaServerKontrola`, uložení i obnova):
   `sloupce.naklad`), ostatním je drží B112 proti uložené verzi. Ceník
   varianty smí administrátor měnit libovolně (jen ve tvaru čísla podle
   jádra). Rezervy, množství a rozměry šachty záporné nesmí nikdo.
+- **#398 — věcné meze rozměrů a počtů nejsou** (revize, střední): server
+  hlídá jen zápor, tvar čísla a zdvih nad 99 m. Zdvih 0,001 m, hloubka
+  0,01 m, nástupiště 0 nebo 0,5, sloupky 2,5, čistý vstup širší než
+  šachta — to vše jde zadat i v UI a cenu sníží (−4 až −40 %). Meze musí
+  určit J. V. (otázka v předávce); do té doby je chrání jen to, že
+  nabídku tiskne člověk, který rozměry vidí.
+- **#398 — kladná ruční sazba pásu „jiné"** (1 Kč/m²) je vědomá funkce UI
+  („ruční sazba znamená atyp") — obchodní otázka pro J. V.
 - **#398 — výjimka B113 zůstává:** nová zakázka s celým ceníkem sestavení
   se uloží (test B113 e4), i když už je ceník zveřejněný. Zadání #398 ji
   navrhovalo zrušit; po opravě B133 (směs) a B136 (#395 V3) z ní ale

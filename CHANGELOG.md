@@ -50,8 +50,32 @@ hlídal jen prohlížeč nebo je server četl jinak než jádro.
   (zabila se ReferenceError). Nově významová: jedna skupina ze všech
   kandidátů. Dalších 20 významových mutací pro #398, opraveno 5 mutací,
   jejichž hledaný úsek se změnil.
+- **Nezávislá revize (dva čtecí subagenti, každý jinou čočkou)** našla další
+  cesty téže třídy; každý vysoký nález potvrzen druhým pokusem a opraven:
+  - **N1 (vysoká)** `cenik.jenZahr` — značka „jen zahraniční řada" skryje
+    tuzemské řádky (jádro `jenTetoRady`), B112 ji přeskakoval: OCK −26 až
+    −88 %, zámek „shoda". Nově smí ceník varianty nést jen značky, které má
+    některý kandidát (uložená verze, jiná varianta, zveřejněná verze a její
+    zahraniční odchylky, `CENIK_JEN_ZAHR`) — `uloJenZahrNavic`; tvar
+    `{ cesta: true }` hlídá typová kontrola.
+  - **N2 (vysoká)** `ock.zadani.nepocitat` — vyřazené řádky OCK (plní je jen
+    matice Výchozí správce) server nehlídal: −5 až −19 %. Nově
+    `uloModelProblemy`: role mimo administrátora jen podmnožinu seznamu
+    z uložené verze, jiné varianty nebo z matice `vychozi`.
+  - **N3 (vysoká)** ruční sazba pásu opláštění „jiné" (`pasy[].naklad`)
+    záporná: −43 %. Nově v `uloZaporneVZadani` (nikomu); pole má `min="0"`.
+  - **Model 1** (`ock.fixes` nepravda, zmrazený #332 jen v UI) — server ho
+    roli mimo administrátora pustí jen tam, kde ho nese uložená verze (klon:
+    jiná uložená varianta); převod na Model 2 smí každý; typ pravda/nepravda.
+  - **N4 (střední)** dotisk nabídky OCK k zámku PROJ z nulové šachty obešel
+    zrcadla V3 a B137 — nová strana z dotisku se posoudí jako nový zámek.
+  - Mutace: 10 nových, `#395: zábrana posuzuje i uložený zámek` přesměrována,
+    „revize N1 (6. 10.): podpis položky čte text s čárkou" vyřazena —
+    od B135 ekvivalentní. Test `test_ukazkove_znacky.js` dostal skutečný
+    klíč vzoru PROJ místo smyšleného `projHodKc`.
 - Testy: nová sada `netlify/test_koncova_cena.mjs` (55: před opravou 13 OK /
-  42 FAIL — všechny útoky 200, po opravě 55/0); jednotkové v
+  42 FAIL — všechny útoky 200, po opravě 55/0; revizní část 18 testů: před
+  revizní opravou 7 OK / 11 FAIL, po ní celá sada 73/0); jednotkové v
   `test_uloziste.js` a `test_kontroly.js`. Fixtury zámků v `test_prava`,
   `test_obnova` a `test_stary_tvar` dostaly vyplněné rozměry šachty
   (zamykaly z nulových — zábrana by je v prohlížeči nepustila).
