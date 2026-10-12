@@ -1152,6 +1152,13 @@ function prekladNorm(s) {
 const PREKLAD_IDX = {};
 Object.keys(PREKLAD).forEach(k => { PREKLAD_IDX[prekladNorm(k)] = PREKLAD[k]; });
 
+/* Slovník ZABUDOVANÝ v sestavení (12. 10. 2026, #401) — kopie pořízená při
+ * načtení, dřív než ho cokoli přepíše (konfigurace, složka, zveřejněný
+ * slovník ze serveru). Zveřejňují se jen ODCHYLKY od něj, takže oprava
+ * překladu v kódu se projeví všude, kde ji správce vědomě nepřepsal. */
+const PREKLAD_ZABUDOVANY = {};
+Object.keys(PREKLAD).forEach(k => { PREKLAD_ZABUDOVANY[k] = PREKLAD[k].slice(); });
+
 /* Pořadí dílčího dokladu v cizím jazyce (1st / 2nd, 1re / 2e — faktura je
  * ve francouzštině ženského rodu); německy stačí „1.". */
 function prekladPoradiEn(n) {
@@ -1409,6 +1416,6 @@ function prekladImport(data) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { JAZYKY, JAZYK_IDX, PREKLAD, PREKLAD_IDX, PREKLAD_VZORY, PREKLAD_CHYBI,
+  module.exports = { JAZYKY, JAZYK_IDX, PREKLAD, PREKLAD_IDX, PREKLAD_ZABUDOVANY, PREKLAD_VZORY, PREKLAD_CHYBI,
     tr, trStav, prekladNorm, prekladNeutral, prekladNastav, prekladSmaz, prekladPocet,
     prekladPokryti, prekladExport, prekladImport };

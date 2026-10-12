@@ -39,6 +39,9 @@ export async function zalohaDoplnky() {
    * vlastním klíčem. Bez tohohle řádku by je obnova ze zálohy tiše smazala —
    * přesně ta chyba, kvůli které vznikl nález B9. */
   const popisy = await sProg.cti('popisy');
+  /* Zveřejněný slovník (#401, 12. 10. 2026) — totéž poučení jako B9 a B104:
+   * co se ukládá, musí být v záloze, jinak ho obnova tiše smaže. */
+  const slovnik = await sProg.cti('slovnik');
   const zk = await uloziste('zakaznici');
   const zakaznici = {};
   for (const k of await zk.seznam()) zakaznici[k] = await zk.cti(k);
@@ -54,6 +57,7 @@ export async function zalohaDoplnky() {
   return { zobrazeni: zobrazeni || null,
            smazani: Object.keys(smazani).length ? smazani : null,
            popisy: popisy || null,
+           slovnik: slovnik || null,
            zakaznici: Object.keys(zakaznici).length ? zakaznici : null,
            podpisy: Object.keys(podpisy).length ? podpisy : null };
 }
@@ -116,7 +120,7 @@ export async function porizOtisk(zdroj, kdo, klic) {
     program: program || null, firma: firma || null,
     rejstrik: rejstrik || null, zakazky, uzivatele,
     sablony: Object.keys(sablony).length ? sablony : null,
-    ...(await zalohaDoplnky()),              // zobrazeni, popisy, zakaznici, podpisy (B9), smazani (B58)
+    ...(await zalohaDoplnky()),              // zobrazeni, popisy, slovnik, zakaznici, podpisy (B9), smazani (B58)
   };
   await (await uloziste('zalohy')).zapis(den, otisk);
   return { den, pocetZakazek: Object.keys(zakazky).length, pocetUctu: uzivatele.length };

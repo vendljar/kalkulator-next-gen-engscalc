@@ -216,7 +216,159 @@ function slovnikPrehled(preklad, jazyky) {
   };
 }
 
+/* ============ ZVEŘEJNĚNÝ SLOVNÍK (12. 10. 2026, #401) ============
+ *
+ * Zadání J. V. 12. 10.: „potřebuji, aby se slovník ukládal stejným způsobem
+ * jako ceník". Do té doby žilo převzetí z tabulky Vocabulary jen v paměti
+ * relace a po novém nahrání chtěla aplikace totéž znovu.
+ *
+ * Model je ceníkový: administrátor slovník ZVEŘEJNÍ (/api/slovnik), vznikne
+ * verze s datem, autorem a poznámkou, dosud platná verze jde do historie
+ * a každý přihlášený si platný slovník po přihlášení položí přes zabudovaný.
+ *
+ * ZVEŘEJŇUJÍ SE JEN ODCHYLKY od slovníku zabudovaného v sestavení
+ * (PREKLAD_ZABUDOVANY v preklad.js), ne celý slovník. Celý by po každém
+ * zveřejnění zmrazil i hesla, na která správce nesáhl — a oprava překladu
+ * v kódu (běžná práce vývoje) by se pak online tiše neprojevila.
+ *
+ * Tytéž funkce volá server (netlify/functions/slovnik.mjs, obnova.mjs)
+ * i prohlížeč — jedna pravda o tom, co je platný slovník. */
+const SLOVNIK_MEZE = {
+  hesel: 5000,              // počet hesel ve zveřejněném slovníku
+  /* Délka českého hesla: zadání říkalo „např. 300", jenže zabudovaný
+   * slovník má hesla (smluvní odstavce) až o 419 znacích — se stropem 300
+   * by převzetí jejich překladu shodilo celé zveřejnění. Proto 1000. */
+  klic: 1000,
+  text: 2000,               // délka jednoho překladu (znaky)
+  poznamka: 500,            // poznámka ke zveřejnění
+  telo: 1024 * 1024,        // strop těla požadavku (bajty) — 413
+  db: 3 * 1024 * 1024,      // strop uloženého záznamu i s historií (dávka obnovy má 3,5 MB)
+  historie: 20,             // kolik starších verzí se drží
+};
+/* Klíče, které by v obyčejném objektu sáhly na prototyp (PREKLAD[k] = …). */
+const SLOVNIK_ZAKAZANE_KLICE = ['__proto__', 'constructor', 'prototype'];
+/* Řídicí znaky rozbijí XML Wordu (nabídka v cizím jazyce) — do slovníku nepatří. */
+const SLOVNIK_RIDICI = /[\u0000-\u0008\u000B\u000C\u000E-\u001F]/;
+
+/* Přísná kontrola hesel: { cz: [EN, DE, FR] }. Vrací { ok, chyba } nebo
+ * { ok, hesla (čistá kopie), pocet }. Nic se nezkracuje ani nedomýšlí —
+ * co neprojde, odmítne se celé (server 400), aby správce věděl proč. */
+function slovnikHeslaKontrola(hesla) {
+  const M = SLOVNIK_MEZE;
+  if (!hesla || typeof hesla !== 'object' || Array.isArray(hesla))
+    return { ok: false, chyba: 'Slovník musí být objekt hesel { české heslo: [EN, DE, FR] }.' };
+  const klice = Object.keys(hesla);
+  if (klice.length > M.hesel)
+    return { ok: false, chyba: 'Slovník má ' + klice.length + ' hesel, víc než povolených ' + M.hesel + '.' };
+  const out = {};
+  for (const k of klice) {
+    const kt = String(k).trim();
+    if (!kt) return { ok: false, chyba: 'Slovník obsahuje prázdné heslo.' };
+    if (k.length > M.klic) return { ok: false, chyba: 'Heslo „' + kt.slice(0, 40) + '…" je delší než ' + M.klic + ' znaků.' };
+    if (SLOVNIK_ZAKAZANE_KLICE.indexOf(kt) >= 0) return { ok: false, chyba: 'Heslo „' + kt + '" není povolené.' };
+    if (SLOVNIK_RIDICI.test(k)) return { ok: false, chyba: 'Heslo „' + kt.slice(0, 40) + '" obsahuje řídicí znak.' };
+    const v = hesla[k];
+    if (!Array.isArray(v) || v.length !== 3 || v.some(x => typeof x !== 'string'))
+      return { ok: false, chyba: 'Překlad hesla „' + kt.slice(0, 40) + '" musí být trojice textů [EN, DE, FR].' };
+    if (v.some(x => x.length > M.text))
+      return { ok: false, chyba: 'Překlad hesla „' + kt.slice(0, 40) + '" je delší než ' + M.text + ' znaků.' };
+    if (v.some(x => SLOVNIK_RIDICI.test(x)))
+      return { ok: false, chyba: 'Překlad hesla „' + kt.slice(0, 40) + '" obsahuje řídicí znak.' };
+    out[k] = v.slice();
+  }
+  return { ok: true, hesla: out, pocet: klice.length };
+}
+
+/* Hesla živého slovníku, která se od zabudovaného liší (nebo v něm nejsou). */
+function slovnikOdchylky(preklad, zabudovany) {
+  const P = preklad || {}, Z = zabudovany || {};
+  const out = {};
+  Object.keys(P).forEach(k => {
+    const v = P[k] || [], z = Object.prototype.hasOwnProperty.call(Z, k) ? Z[k] : null;
+    const t = [v[0] || '', v[1] || '', v[2] || ''];
+    if (!z || t[0] !== (z[0] || '') || t[1] !== (z[1] || '') || t[2] !== (z[2] || '')) out[k] = t;
+  });
+  return out;
+}
+
+/* Kanonický zápis hesel (seřazené klíče) — pro „beze změny". */
+function slovnikOtisk(hesla) {
+  const H = hesla || {};
+  return JSON.stringify(Object.keys(H).sort().map(k => [k, H[k]]));
+}
+function slovnikBezeZmeny(db, hesla) {
+  const p = db && db.platny;
+  return !!p && slovnikOtisk(p.hesla) === slovnikOtisk(hesla);
+}
+
+/* Nová verze: dosud platná jde do historie s datem, do kdy platila. Vrací
+ * NOVÝ objekt. Historie má strop počtu i velikosti — záznam musí projít
+ * jednou dávkou obnovy ze zálohy (3,5 MB), jinak by se z ní nedal vrátit. */
+function slovnikDbNovaVerze(db, ctx) {
+  const c = ctx || {};
+  const kdy = c.kdy || new Date().toISOString();
+  const k = slovnikHeslaKontrola(c.hesla || {});
+  if (!k.ok) throw new Error(k.chyba);
+  const stary = db && db.platny ? db.platny : null;
+  const platny = { verze: stary ? (+stary.verze || 0) + 1 : 1, kdy,
+    kdo: String(c.kdo || '').slice(0, 200), poznamka: String(c.poznamka || '').slice(0, SLOVNIK_MEZE.poznamka),
+    pocet: k.pocet, hesla: k.hesla };
+  const historie = (stary ? [Object.assign({}, stary, { platnoDo: kdy })] : [])
+    .concat(Array.isArray(db && db.historie) ? db.historie : []).slice(0, SLOVNIK_MEZE.historie);
+  const nove = { schema: 1, platny, historie };
+  while (nove.historie.length && JSON.stringify(nove).length > SLOVNIK_MEZE.db) nove.historie.pop();
+  return nove;
+}
+
+/* Očista uloženého záznamu (obnova ze zálohy, čtení v prohlížeči): platná
+ * verze musí projít touž kontrolou jako zveřejnění, jinak se odmítne celý
+ * záznam; vadné starší verze se z historie jen vypustí. */
+function slovnikDbOciste(db) {
+  if (!db || typeof db !== 'object' || Array.isArray(db) || !db.platny || typeof db.platny !== 'object')
+    return { ok: false, chyba: 'záznam slovníku nemá platnou verzi' };
+  const txt = (x, max) => (typeof x === 'string' ? x.slice(0, max) : '');
+  const zaznam = (z) => {
+    if (!z || typeof z !== 'object' || Array.isArray(z)) return null;
+    const k = slovnikHeslaKontrola(z.hesla);
+    if (!k.ok) return { chyba: k.chyba };
+    const v = Math.floor(+z.verze);
+    if (!(v >= 1)) return { chyba: 'verze slovníku není kladné číslo' };
+    const out = { verze: v, kdy: txt(z.kdy, 40), kdo: txt(z.kdo, 200),
+      poznamka: txt(z.poznamka, SLOVNIK_MEZE.poznamka), pocet: k.pocet, hesla: k.hesla };
+    if (typeof z.platnoDo === 'string') out.platnoDo = txt(z.platnoDo, 40);
+    return out;
+  };
+  const p = zaznam(db.platny);
+  if (!p || p.chyba) return { ok: false, chyba: 'platná verze slovníku neprošla kontrolou' + (p && p.chyba ? ' (' + p.chyba + ')' : '') };
+  const historie = (Array.isArray(db.historie) ? db.historie : []).map(zaznam)
+    .filter(z => z && !z.chyba).slice(0, SLOVNIK_MEZE.historie);
+  const out = { schema: 1, platny: p, historie };
+  while (out.historie.length && JSON.stringify(out).length > SLOVNIK_MEZE.db) out.historie.pop();
+  if (JSON.stringify(out).length > SLOVNIK_MEZE.db) return { ok: false, chyba: 'záznam slovníku je větší než povolený strop' };
+  return { ok: true, db: out };
+}
+
+/* Položí zveřejněná hesla přes zabudovaný slovník (prohlížeč po přihlášení).
+ * `predchozi` = klíče, které položila dřívější verze: ty, které nová verze
+ * nenese, se vrátí na zabudované znění (nebo zmizí, když v sestavení nejsou).
+ * `fn` = { importuj: prekladImport, smaz: prekladSmaz } — modul na globální
+ * PREKLAD sám nesahá. Hesla, která neprojdou kontrolou, se nepoloží vůbec. */
+function slovnikPoloz(hesla, predchozi, zabudovany, fn) {
+  const k = slovnikHeslaKontrola(hesla || {});
+  if (!k.ok) return { ok: false, chyba: k.chyba, pocet: 0, polozeno: (predchozi || []).slice() };
+  const ma = (o, x) => !!o && Object.prototype.hasOwnProperty.call(o, x);
+  (predchozi || []).forEach(cz => {
+    if (ma(k.hesla, cz)) return;
+    if (ma(zabudovany, cz)) fn.importuj({ hesla: { [cz]: zabudovany[cz].slice() } });
+    else fn.smaz(cz);
+  });
+  const n = fn.importuj({ hesla: k.hesla });
+  return { ok: true, pocet: n, polozeno: Object.keys(k.hesla) };
+}
+
 if (typeof module !== 'undefined' && module.exports)
   module.exports = { SLOVNIK_JAZYKY, slovnikNajdiHlavicku, slovnikZListu, slovnikVyberList,
     slovnikPorovnej, slovnikAplikuj, slovnikNoveJakoZmeny, slovnikCsvJenVApp,
-    slovnikToSheets, slovnikPrehled };
+    slovnikToSheets, slovnikPrehled,
+    SLOVNIK_MEZE, SLOVNIK_ZAKAZANE_KLICE, slovnikHeslaKontrola, slovnikOdchylky, slovnikOtisk,
+    slovnikBezeZmeny, slovnikDbNovaVerze, slovnikDbOciste, slovnikPoloz };

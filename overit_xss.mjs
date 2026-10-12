@@ -258,6 +258,22 @@ const KOD_STRANKY = `
       ['sazby', 'fixy'].forEach(k => { const o = pc[k]; if (o) Object.keys(o).forEach(q => { if (typeof o[q] === 'number') o[q] = 1000; }); });
       NAST.firma.planPlatebProj = JSON.parse(JSON.stringify(PLAN_PROJ_VYCHOZI));
       otrav(NAST.firma.planPlatebProj.milniky, 'firma.planPlatebProj.milniky', c => /\.cz$/.test(c), true); },
+    /* #401 (12. 10. 2026): zveřejněný slovník ze serveru. Překlady jdou do
+     * HTML náhledů i do Wordu, razítko verze (kdo, poznámka, historie) do
+     * Nastavení → Slovník. Otráví se VŠECHNY překlady i jedno heslo samo
+     * a položí se TOUŽ cestou jako po přihlášení (onlineSlovnikPoloz → kontrola
+     * tvaru → prekladImport); jazyk aplikace EN, aby se překládalo. */
+    '#401: zveřejněný slovník (překlady a razítko verze)': () => {
+      const hesla = {};
+      Object.keys(PREKLAD).forEach((k, i) => { hesla[k] = [PAY('slovnik.en.' + i), PAY('slovnik.de.' + i), PAY('slovnik.fr.' + i)]; });
+      hesla[PAY('slovnik.klic')] = [PAY('slovnik.klic.en'), '', ''];
+      ONLINE_STAV.slovnik = { schema: 1, platny: { verze: 2, kdy: PAY('slovnik.kdy'), kdo: PAY('slovnik.kdo'),
+        poznamka: PAY('slovnik.poznamka'), pocet: Object.keys(hesla).length, hesla },
+        historie: [{ verze: 1, kdy: PAY('slovnik.h.kdy'), kdo: PAY('slovnik.h.kdo'), poznamka: PAY('slovnik.h.poznamka') }] };
+      if (!onlineSlovnikPoloz(hesla)) throw new Error('otrávený slovník neprošel kontrolou tvaru — test by nic neověřil');
+      /* cizojazyčná nabídka se tiskne v eurech — bez kurzu by se náhled nevytvořil */
+      ZAK.varianty.forEach(v => { v.data.cenik.kurzEurKc = 25; if (v.data.proj && v.data.proj.cenik) v.data.proj.cenik.kurzEurKc = 25; });
+      NAST.jazyk = 'en'; },
     'B124: číselník dodatků a jejich překlady': () => {
       const k1 = 'Sklo VSG s mléčnou fólií', k2 = PAY('popisy.klic');
       ONLINE_STAV.popisy = { texty: { [k1]: 'x', [k2]: 'y' }, jazyky: { [k1]: { en: 'e', de: 'd', fr: 'f' }, [k2]: { en: 'e' } },

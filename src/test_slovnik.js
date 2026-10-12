@@ -158,5 +158,52 @@ test('CSV má hlavičku', csv.indexOf('"CZ";"EN";"DE";"FR"') === 1);
 test('CSV zdvojuje uvozovky', csv.indexOf('"Heslo s ""uvozovkami"""') > 0, csv);
 test('prázdné CSV má jen hlavičku', S.slovnikCsvJenVApp([]).split('\r\n').length === 1);
 
+/* ---- e) zveřejněný slovník (#401, 12. 10. 2026) ----
+ * Tytéž funkce volá server (/api/slovnik, obnova) i prohlížeč. */
+const K = S.slovnikHeslaKontrola;
+test('#401: platná hesla projdou', K({ 'Heslo': ['a', 'b', 'c'] }).ok === true);
+test('#401: kontrola vrací kopii, ne originál', (() => { const h = { 'Heslo': ['a', 'b', 'c'] }; const r = K(h); return r.hesla.Heslo !== h.Heslo; })());
+test('#401: __proto__ neprojde', K(JSON.parse('{"__proto__":["a","b","c"]}')).ok === false);
+test('#401: constructor / prototype neprojdou', !K({ constructor: ['a', 'b', 'c'] }).ok && !K({ prototype: ['a', 'b', 'c'] }).ok);
+test('#401: prázdný klíč, dlouhý klíč neprojdou', !K({ ' ': ['a', 'b', 'c'] }).ok && !K({ ['k'.repeat(1001)]: ['a', 'b', 'c'] }).ok);
+test('#401: klíč na hraně 1000 znaků projde', K({ ['k'.repeat(1000)]: ['a', 'b', 'c'] }).ok);
+test('#401: celý zabudovaný slovník projde kontrolou zveřejnění (nejdelší heslo ' + Math.max(...Object.keys(require('./preklad.js').PREKLAD).map(k => k.length)) + ' znaků)',
+  K(require('./preklad.js').PREKLAD).ok, K(require('./preklad.js').PREKLAD).chyba);
+test('#401: hodnota musí být trojice textů', !K({ H: 'x' }).ok && !K({ H: ['a', 'b'] }).ok && !K({ H: ['a', 1, 'c'] }).ok);
+test('#401: překlad nad 2000 znaků neprojde, 2000 ano', !K({ H: ['x'.repeat(2001), '', ''] }).ok && K({ H: ['x'.repeat(2000), '', ''] }).ok);
+test('#401: řídicí znak neprojde, tabulátor a nový řádek ano', !K({ H: ['a\u0000', '', ''] }).ok && K({ H: ['a\tb\nc', '', ''] }).ok);
+test('#401: pole / null místo objektu neprojde', !K([]).ok && !K(null).ok);
+
+const ZAB = { 'A': ['a', 'aa', 'aaa'], 'B': ['b', '', ''] };
+const ZIV = { 'A': ['a', 'aa', 'aaa'], 'B': ['B2', '', ''], 'C': ['c', '', ''] };
+const odch = S.slovnikOdchylky(ZIV, ZAB);
+test('#401: odchylky = změněná a nová hesla, shodná ne', JSON.stringify(Object.keys(odch).sort()) === '["B","C"]', odch);
+
+const db1 = S.slovnikDbNovaVerze(null, { hesla: odch, kdo: 'spravce@priklad.cz', poznamka: 'první', kdy: '2026-10-12T10:00:00.000Z' });
+test('#401: první verze má číslo 1 a prázdnou historii', db1.platny.verze === 1 && db1.historie.length === 0 && db1.platny.pocet === 2);
+test('#401: beze změny se pozná i při jiném pořadí klíčů', S.slovnikBezeZmeny(db1, { C: ['c', '', ''], B: ['B2', '', ''] }));
+const db2 = S.slovnikDbNovaVerze(db1, { hesla: { B: ['B3', '', ''] }, kdo: 'spravce@priklad.cz', kdy: '2026-10-12T11:00:00.000Z' });
+test('#401: druhá verze odloží první do historie s platnoDo',
+  db2.platny.verze === 2 && db2.historie[0].verze === 1 && db2.historie[0].platnoDo === '2026-10-12T11:00:00.000Z');
+let vyhozeno = false; try { S.slovnikDbNovaVerze(db1, { hesla: { constructor: ['x', '', ''] } }); } catch (e) { vyhozeno = true; }
+test('#401: nová verze s neplatnými hesly se nevyrobí', vyhozeno);
+
+const oc = S.slovnikDbOciste({ platny: db2.platny, historie: [db1.platny, { verze: 'x', hesla: {} }, null] });
+test('#401: očista nechá platnou verzi a vypustí vadné starší', oc.ok && oc.db.historie.length === 1 && oc.db.historie[0].verze === 1, oc);
+test('#401: očista odmítne platnou verzi s vadnými hesly',
+  S.slovnikDbOciste({ platny: { verze: 3, hesla: JSON.parse('{"__proto__":["a","b","c"]}') } }).ok === false);
+test('#401: očista odmítne záznam bez platné verze', !S.slovnikDbOciste({ historie: [] }).ok && !S.slovnikDbOciste(null).ok);
+
+/* slovnikPoloz nad samostatnou kopií slovníku (ne nad PREKLAD sdíleným s ostatními testy) */
+const P = { 'A': ['a', 'aa', 'aaa'], 'B': ['b', '', ''] };
+const fn = { importuj: (d) => { let n = 0; Object.keys(d.hesla).forEach(k => { P[k] = d.hesla[k].slice(); n++; }); return n; },
+             smaz: (k) => { delete P[k]; return true; } };
+const r1 = S.slovnikPoloz({ B: ['B2', '', ''], C: ['c', '', ''] }, [], ZAB, fn);
+test('#401: položení zveřejněných hesel přes zabudovaná', r1.ok && P.B[0] === 'B2' && P.C[0] === 'c' && P.A[0] === 'a');
+const r2 = S.slovnikPoloz({ A: ['A2', '', ''] }, r1.polozeno, ZAB, fn);
+test('#401: další verze vrátí hesla, která už nenese, na zabudované znění', r2.ok && P.B[0] === 'b' && !('C' in P) && P.A[0] === 'A2', P);
+const r3 = S.slovnikPoloz(JSON.parse('{"__proto__":["x","y","z"]}'), r2.polozeno, ZAB, fn);
+test('#401: vadná hesla se nepoloží vůbec', !r3.ok && P.A[0] === 'A2' && ({}).x === undefined);
+
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);

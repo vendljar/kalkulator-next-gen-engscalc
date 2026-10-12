@@ -33,6 +33,7 @@ import zakazky from './functions/zakazky.mjs';
 import zaloha from './functions/zaloha.mjs';
 import zalohaVynuceno from './functions/zaloha_vynuceno.mjs';
 import obnova from './functions/obnova.mjs';
+import slovnikFn from './functions/slovnik.mjs';
 import { ADMIN_EMAIL, SMAZANI_ULOZISTE } from './lib/sdilene.mjs';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
@@ -997,6 +998,54 @@ console.log('\n===== B100: šablony ze zálohy =====');
     o395.ok === true && (o395.upozorneni || []).some(u => /„nabidka" \(verze 1\)/.test(u)), o395);
   test('#395: … a čistá platná šablona upozornění nedostane',
     !(o395.upozorneni || []).some(u => /nabidka_b100/.test(u)), o395.upozorneni);
+}
+
+/* ===== #401 (12. 10. 2026): zveřejněný slovník v záloze a obnově =====
+ * Poučení z B9 a B104: co se ukládá, musí být v záloze i obnově. A obnova
+ * pouští do databáze jen to, co by prošlo zveřejněním (/api/slovnik) —
+ * záloha je soubor, který mohl projít čímkoli. */
+console.log('\n===== #401: zveřejněný slovník v záloze a obnově =====');
+{
+  const H = { 'Heslo zálohy #401': ['Backup entry', 'Sicherungseintrag', 'Entrée de sauvegarde'] };
+  const zv = await (await post(slovnikFn, 'http://x/api/slovnik', { hesla: H, poznamka: 'před zálohou' }, cookie)).json();
+  await post(slovnikFn, 'http://x/api/slovnik', { hesla: Object.assign({ 'Další #401': ['More', '', ''] }, H) }, cookie);
+  test('#401: příprava — dvě zveřejněné verze', zv.ok === true, zv);
+  const zal = (await (await get(zaloha, 'http://x/api/zaloha', cookie)).json()).zaloha;
+  test('#401: záloha nese slovník s historií', !!zal.slovnik && zal.slovnik.platny.verze === zv.verze + 1
+    && zal.slovnik.historie.length >= 1, zal.slovnik && zal.slovnik.platny);
+  const puvodni = await ulz('program').cti('slovnik');
+  await ulz('program').zapis('slovnik', null);
+  const ob = await obnovJson({ zdroj: { soubor: zal }, rezim: 'doplnit', potvrzeni: 'OBNOVIT', casti: ['slovnik'] }, cookie);
+  const ul = await ulz('program').cti('slovnik');
+  test('#401: cyklus záloha → obnova: slovník shodný', ob.ok === true && JSON.stringify(ul) === JSON.stringify(puvodni),
+    { ob: ob.casti && ob.casti.slovnik });
+  const nahled = await obnovJson({ zdroj: { soubor: zal }, rezim: 'doplnit', nahled: true }, cookie);
+  test('#401: náhled obnovy uvádí část slovnik', !!(nahled.casti && nahled.casti.slovnik), nahled.casti && Object.keys(nahled.casti));
+
+  /* otrávená záloha: platná verze s prototypovým klíčem → přeskočí se celá */
+  const otrava = JSON.parse(JSON.stringify(zal));
+  otrava.slovnik.platny.hesla = JSON.parse('{"__proto__":["x","y","z"],"Heslo":["a","b","c"]}');
+  const textOtravy = JSON.stringify(otrava);
+  test('#401: (podvrh opravdu nese klíč __proto__)', textOtravy.indexOf('"__proto__"') >= 0);
+  const r1 = await obnov({ zdroj: { soubor: JSON.parse(textOtravy) }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['slovnik'] }, cookie);
+  const o1 = await r1.json();
+  test('#401: platná verze s klíčem __proto__ se neobnoví',
+    o1.ok === true && o1.casti.slovnik.preskocene === 1 && JSON.stringify(await ulz('program').cti('slovnik')) === JSON.stringify(puvodni), o1.casti);
+  const delky = JSON.parse(JSON.stringify(zal));
+  delky.slovnik.platny.hesla = { 'Heslo': ['x'.repeat(2001), '', ''] };
+  const o2 = await obnovJson({ zdroj: { soubor: delky }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['slovnik'] }, cookie);
+  test('#401: překlad nad strop délky se neobnoví', o2.ok === true && o2.casti.slovnik.preskocene === 1, o2.casti);
+  /* vadná starší verze z historie vypadne, platná projde */
+  const hist = JSON.parse(JSON.stringify(zal));
+  hist.slovnik.platny.hesla = { 'Nové heslo #401': ['New', 'Neu', 'Nouveau'] };
+  hist.slovnik.historie.push({ verze: 0, hesla: { 'X': 'neplatné' } });
+  const o3 = await obnovJson({ zdroj: { soubor: hist }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['slovnik'] }, cookie);
+  const ul3 = await ulz('program').cti('slovnik');
+  test('#401: obnova s očistou zapíše platnou verzi', o3.ok === true && !!ul3 && ul3.platny.hesla['Nové heslo #401'][0] === 'New', o3.casti);
+  test('#401: vadná starší verze z historie vypadla', !!ul3 && ul3.historie.every(h => h.verze >= 1 && Array.isArray(h.hesla && Object.values(h.hesla)[0])),
+    ul3 && ul3.historie);
+  test('#401: obnovený slovník jde přečíst (GET 200)',
+    (await get(slovnikFn, 'http://x/api/slovnik', cookie)).status === 200);
 }
 
 console.log(`\n${ok} OK, ${fail} FAIL`);
