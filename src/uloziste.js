@@ -1452,7 +1452,6 @@ function uloCenikProblemy(zak, stara, opts) {
       const kSvm = svm ? uloB112Listy(c.vezmi(svm.data), okPrirazka) : null;
       const kZv = zverejneneProRadu(rada).map(z => uloB112Listy(c.vezmi(z), okPrirazka));
       const kJine = jine.map(x => uloB112Listy(c.vezmi(x.data), okPrirazka));
-      const kand = [kSvm].concat(kZv, kJine).filter(Boolean);
       /* CENÍK JAKO CELEK JEDNÉ VERZE (B128, audit 6. 10. 2026). Dřív stačilo,
        * aby KAŽDÁ položka zvlášť seděla s kterýmkoli kandidátem — šlo tak
        * složit platný ceník s hodinami statiky opláštění ze starší verze,
@@ -1471,7 +1470,7 @@ function uloCenikProblemy(zak, stara, opts) {
         if (!rozdily || r.length < rozdily.length) rozdily = r;
         if (!r.length) break;
       }
-      if (!rozdily) rozdily = uloB112Rozdily(listy, kand, c.pred, kSvm || kZv[0] || null);
+      if (!rozdily) rozdily = [];   // bez skupin (nic zveřejněného) se ceník nehlídá — viz cenikHlidat
       if (!rozdily.length) return;
       /* Celý ceník sestavení (B113, 6. 10. 2026) jen u NOVÉ zakázky, nebo
        * u varianty, jejíž uložená verze ho sama nese. Jinak by obchodník

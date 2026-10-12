@@ -45,7 +45,11 @@ Testy (před opravou → po opravě): `src/test_profil_neznamy.js` 23/7 → 30/0
 `netlify/test_prava.mjs` 703/4 → 707/0 (B126), 708/9 → 717/0 (B131),
 720/1 → 721/0 (B128); `netlify/test_zaporne.mjs` 25/4 → 29/0 (B127);
 `src/test_usazeni_nabidka.js` +3 nad CN v15 (s KNG_PODKLADY). Mutace
-jádra +2 (B126; kotva #372 převedena), serveru +5 (B127 2, B128 1, B131 2).
+jádra +2 (B126; kotva #372 převedena), serveru +5 (B127 2, B128 1, B131 2);
+mutace B112 „zveřejněný ceník se nebere za kandidáta" převedena na skupiny
+B128 a mutace #395 N3 vyřazena — útok, který hlídala, od B128 odmítne už
+kontrola ceníku jako celku (N3 zůstává jako druhá vrstva). Kolo nad c19ea55:
+sady 222/0/1, mutace jádra 169 z 169, serveru 248 z 250 (právě tyto dvě).
 
 ---
 

@@ -1060,8 +1060,8 @@ const MUTACE = [
     proc: 'ceník a přepisy by hlídalo zase jen UI — zápisová strana B88' },
 
   { nazev: 'B112: zveřejněný ceník se nebere za kandidáta (jen uložená verze)', soubor: '../src/uloziste.js',
-    hledej: "      const kand = [kSvm].concat(kZv, kJine).filter(Boolean);",
-    nahrad: "      const kand = [kSvm].concat(kJine).filter(Boolean);",
+    hledej: "        .concat(kJine.map(k => [k].concat(kPlatny)), kZv.map(k => [k]));",
+    nahrad: "        .concat(kJine.map(k => [k]));",
     proc: 'nová zakázka ani přepočet na platný ceník by obchodníkovi neprošly — oprava by blokovala běžnou práci' },
 
   /* ---------- #374 / B113, B114 (6. 10. 2026): koncová cena bez schválení ---------- */
@@ -1133,10 +1133,10 @@ const MUTACE = [
     hledej: "  pridej(z && z.volitelneVlastni, 'ock.zadani.volitelneVlastni');",
     nahrad: "",
     proc: 'trvalá položka ve starším poli volitelneVlastni by nesla libovolnou cenu' },
-  { nazev: '#395 N3: katalog PROJ z příchozího ceníku', soubor: '../src/uloziste.js',
-    hledej: "(okCenikProj ? [d] : ulozene.map(x => x.data))",
-    nahrad: "[d]",
-    proc: 'katalog složený po listech z cen jiné varianty by srazil cenu trvalé položky PROJ' },
+  /* #395 N3 (katalog PROJ z uložených variant, ne z příchozího ceníku) nemá
+   * mutaci: útok, který hlídá (katalog složený po listech z cen jiné varianty),
+   * od B128 (12. 10. 2026) odmítne už kontrola ceníku jako celku — N3 je
+   * druhá vrstva, kterou test samostatně nevyvolá. */
   { nazev: '#395: platné šablony se po obnově neověřují', soubor: 'functions/obnova.mjs',
     hledej: "    if (cast === 'sablony' && zapisovat) {",
     nahrad: "    if (false) {",
