@@ -1,3 +1,34 @@
+# Předávka — 12. 10. 2026 večer: 22. kolo hotové, noční dávky N1–N3 běží
+
+Koordinační sezení **session_01CKiH2sXWq6U8xoJwqivhiN** (22. kolo nad v12.10.2), větev
+`claude/kolo22-v12.10.2`. `main` = v12.10.1 (86be538), `test-draft` = `test` = v12.10.2 (d562da1).
+
+**Kolo VŠE ZELENÉ** (82 min): sady 222/0/1, mutace jádra 169/169, serveru 249/249, statické 3/3.
+**Audit: 5 nových VYSOKÝCH** (B133–B137, obchodník zamkne nabídku se sníženou cenou bez schválení;
+B134 záporná rezerva i v běžném UI) — platí i v ostré v12.10.1 (ověřeno pokusem). Celkem B133–B150;
+roadmapa #398 (vysoké), #399 (střední), #400 (nízké/info). Na Disku (Testovani): audit
+`2026-10-12_kalkulator_BEZPECNOSTNI_AUDIT_v12.10.2.md` (1d5W08MWoOWdVOj9pdm20z5bOd92f5rXX),
+`TESTOVACI_PROTOKOL_2026-10-12_v12.10.2.xlsx`, `STAV_KOLO22_2026-10-12.md`.
+
+**Pokyn J. V. 12. 10. (večer):** „souhlasím s výchozími, dokonči N3, spusť N1 a N2 po kole, následně
+commit do test. stále platí do ostré main nic neposílej.“ Výchozí odpovědi: B138 opravit jako nález;
+B137 server odmítne každé uložení s rozměry ≤ 0 (prázdné ≠ nula).
+
+| # | Dávka | Sezení / větev | Stav |
+|---|---|---|---|
+| N1 | #398 B133–B137 (+ B145, mutace B128) | session_01D1a2z6V9wHr72cRN43yLjt / `claude/koncova-cena-398` | běží |
+| N2 | #399 + část #400 (šablony B139–B143, B100-zbytek, B144, B146–B150) | session_01Jg4PxyyuYpMpQprT1UPipw / `claude/sablony-399` | běží |
+| N3 | slovník: tabulka J. V. (44 znění), hromadné převzetí, slovník na serveru jako ceník (#401) | subagent tohoto sezení / `claude/slovnik-hromadne` | běží |
+| N5 | integrace N1–N3 do `claude/integrace-13-10`, celé kolo, pak `test-draft` a `test` (NE `main`), release odkazy | toto sezení (nebo nástupce) | čeká |
+
+Konflikty k čekání při integraci: `roadmapa/roadmap.json` (#398–#400 zde, #401 v N3), `CHANGELOG.md`,
+`PREDAVKA.md`, `src/uloziste.js` (N1 i N2 B144), verze (každá větev v12.10.3 → při integraci nová verze dne).
+
+Podklady v kontejneru: `/home/user/kng_podklady` (CN v14/v15, PROJ v3/v4, SoD v2, plná moc, příručka v12.10.2).
+Worktree: `/home/user/kng_audit` (test-draft, jen čtení), `/home/user/kng_main` (main), `/home/user/kng_slovnik` (N3).
+
+---
+
 # Předávka — 12. 10. 2026 odpoledne: main = v12.10.1, test = v12.10.2
 
 `main` = **v12.10.1** (86be538, pokyn J. V. „pošli stávající test do main";
