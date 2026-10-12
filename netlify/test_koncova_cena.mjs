@@ -207,6 +207,11 @@ const ciselne = (c) => Object.keys(c).filter(k => Number.isInteger(c[k]) && c[k]
 { const z = nova('B135 % sekce'); d0(z).proj.zadani.sekce[0].prirazkaPct = '10,5';
   const r = await uloz(z, cA);
   test('B135: administrátor — vlastní % sekce PROJ „10,5" (jádro čte NaN) → 400', r.status === 400 && /prirazkaPct/.test(r.chyba || ''), r); }
+{ /* #340 po B135: ceník hlídá přísnější uloCisloJadro; pole zadání mimo
+   * vstupy jádra (rozměry můstku) dál obecná kontrola tvaru čísla. */
+  const z = nova('#340 text'); d0(z).ock.zadani.mustekSirkaMm = '<img src=x onerror=alert(1)>';
+  const r = await uloz(z, cA);
+  test('#340: skript v číselném poli zadání mimo vstupy jádra → 400', r.status === 400 && /mustekSirkaMm/.test(r.chyba || ''), r); }
 { const z = nova('B135 tečka'); const c = d0(z).cenik; const k = ciselne(c)[0]; c[k] = String(c[k]);
   const r = await uloz(z, cO);
   test('B135: číslo jako text s desetinnou tečkou (jádro čte stejně) projde (200)', r.status === 200, r); }
