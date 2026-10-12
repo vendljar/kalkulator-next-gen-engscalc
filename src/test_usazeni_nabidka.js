@@ -83,6 +83,30 @@ const radkyUsazeni = (ph, lang) => {
   const p2 = radkyUsazeni(N.nabidkaData(z2, z2.varianty[0], JEKLY).placeholders).map(x => x[0]);
   test('bez volby: online jen čelní stěna', p2.length === 1 && p2[0] === 'USAZENÍ OCK – ČELNÍ STĚNA', p2);
 
+  /* 5) šablona CN v15 (nastroje/vyrob_sablony.js --cn-v15; jen s KNG_PODKLADY,
+   * firemní šablony v repozitáři nejsou): levá stěna ve vlastním řádku,
+   * pravá a boční bez volby zmizí. */
+  {
+    const fs = require('fs'), path = require('path');
+    const slozka = String(process.env.KNG_PODKLADY || '').trim();
+    const f = slozka ? path.join(slozka, 'Sablona_NABIDKA_CN_v15.docx') : '';
+    if (!f || !fs.existsSync(f)) console.log('–    šablona CN v15 (KNG_PODKLADY) není po ruce — přeskočeno');
+    else {
+      const buf = fs.readFileSync(f);
+      const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.length);
+      const sym = new Set();
+      (await DG.zipPrecti(new Uint8Array(ab))).filter(x => x.nazev === 'word/document.xml')
+        .forEach(x => DG.klicePlaceholderu(new TextDecoder().decode(x.data)).forEach(k => sym.add(k)));
+      test('CN v15 nese symboly TS_USAZENI_LEVA a TS_USAZENI_PRAVA', sym.has('TS_USAZENI_LEVA') && sym.has('TS_USAZENI_PRAVA'));
+      const z3 = zakazka(); z3.varianty[0].data.techspec.hodnoty.usazeniLeva = LEVA;
+      const ph3 = N.nabidkaData(z3, z3.varianty[0], JEKLY, 'cz', { symboly: sym }).placeholders;
+      const vys = await DG.zipPrecti(new Uint8Array(await (await DG.docxVyplnSablonu(ab, ph3, [], {}, {})).arrayBuffer()));
+      const t = new TextDecoder().decode(vys.find(x => x.nazev === 'word/document.xml').data).replace(/<[^>]+>/g, ' ');
+      test('CN v15: řádek LEVÁ BOČNÍ STĚNA s hodnotou', /LEVÁ BOČNÍ STĚNA\s+přisazena k fasádě/.test(t));
+      test('CN v15: řádky PRAVÁ a BOČNÍ STĚNY bez volby zmizely', !/PRAVÁ BOČNÍ STĚNA/.test(t) && !/BOČNÍ STĚNY/.test(t));
+    }
+  }
+
   console.log(`\n${ok} prošlo, ${fail} selhalo`);
   process.exit(fail ? 1 : 0);
 })();
