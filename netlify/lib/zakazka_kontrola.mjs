@@ -96,12 +96,16 @@ export function zamekNovyCenaProblem(zak, v, relace, matice, jekly, program) {
   /* Hlídá se jen část (OCK, PROJ), jejíž PLATNÝ zveřejněný ceník má ceny
    * (jako cenikHlidat v uloCenikProblemy): dokud takový není, počítá z nul
    * každý a nemá se čím nahradit. */
-  const maCisla = typeof globalThis.ukazkoveMaCisla === 'function' ? globalThis.ukazkoveMaCisla : () => true;
+  /* Ceny se počítají jen v klíčích vzoru dané části (B136, 12. 10. 2026):
+   * volný klíč `jenZahr: 5` v ceníku sestavení už „ceník s cenami" nedělá. */
+  const maCislaF = typeof globalThis.ukazkoveMaCisla === 'function' ? globalThis.ukazkoveMaCisla : () => true;
+  const vzorOck = globalThis.DEFAULT_CENIK || null, vzorProj = globalThis.DEFAULT_CENIK_PROJ || null;
+  const maOck = (c) => maCislaF(c, vzorOck), maProj = (c) => maCislaF(c, vzorProj);
   const platny = program && program.platny && program.platny.cenik ? program.platny : null;
   if (!platny) return '';
   const d = (v && v.data) || {};
-  const hlidatOck = maCisla(platny.cenik), hlidatProj = maCisla(platny.cenikProj);
-  if ((hlidatOck && !maCisla(d.cenik)) || (hlidatProj && !maCisla(d.proj && d.proj.cenik)))
+  const hlidatOck = maOck(platny.cenik), hlidatProj = maProj(platny.cenikProj);
+  if ((hlidatOck && !maOck(d.cenik)) || (hlidatProj && !maProj(d.proj && d.proj.cenik)))
     return 'odeslaná nabídka by vznikla z ceníku bez cen (ceník ze sestavení aplikace). '
       + 'Přepočítejte variantu podle platného ceníku a nabídku vytiskněte znovu';
   const z = v.zamek || {};
@@ -123,6 +127,19 @@ export function zamekNovyCenaProblem(zak, v, relace, matice, jekly, program) {
     if (!isFinite(pj) || pj < 0 || (prodava && !(pj > 0))) spatne.push('projekční práce (PROJ)');
   }
   return spatne.length ? 'cena odeslané nabídky vyšla nulová nebo to není číslo (' + spatne.join(', ') + ')' : '';
+}
+
+/* NOVÝ ZÁMEK A ROZMĚRY ŠACHTY (B137, 12. 10. 2026). Zámek, jehož dokument
+ * patří ke straně OCK (nebo neznámý typ), u zakázky, která není jen projekce,
+ * nesmí vzniknout z nulového ani prázdného rozměru — zábrana „rozmery" by
+ * takový dokument v prohlížeči nepustila. Vrací seznam problémů (tvar #340). */
+export function zamekNovyRozmeryProblem(zak, v, ULO) {
+  if (zak && zak.jenProj) return [];
+  const z = v.zamek || {};
+  const strany = new Set([z.typ].concat((Array.isArray(z.tisky) ? z.tisky : []).map(t => t && t.typ))
+    .map(t => typeof globalThis.kontrolyDokumentStrana === 'function' ? globalThis.kontrolyDokumentStrana(t) : '').filter(Boolean));
+  if (strany.size && !strany.has('ock')) return [];
+  return ULO.uloRozmeryVZadani(v.data && v.data.ock && v.data.ock.zadani, true);
 }
 
 export function zakazkaServerKontrola(stara, zak, relace, ctx) {
@@ -153,12 +170,22 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   /* Záporná částka, množství nebo hodiny (B111, 29. 9. 2026) — nikomu. */
   const zaporne = ULO.uloZaporneProblemy(zak, stara);
   if (zaporne.length) return odmitni(400, 'Zakázka nese ' + ULO.uloIdProblemyText(zaporne) + '.');
+  /* Rozměr šachty, který nedává smysl (B137, 12. 10. 2026) — záporný,
+   * nečitelný pro jádro nebo zdvih nad 99 m — nikomu. Nulu a prázdno
+   * (rozpracovaná zakázka) odmítne až nový zámek níž. */
+  const rozmery = ULO.uloRozmeryProblemy(zak, stara);
+  if (rozmery.length) return odmitni(400, 'Zakázka nese ' + ULO.uloIdProblemyText(rozmery) + '.');
   /* Krok a směr obchodního zaokrouhlení z výčtu (B96, 29. 9. 2026). */
   const zaokr = ULO.uloZaokrProblemy(zak, stara);
   if (zaokr.length) return odmitni(400, 'Zakázka nese ' + ULO.uloIdProblemyText(zaokr) + '.');
   /* Ceník varianty a skryté přepisy podle role a matice (B112, 29. 9. 2026). */
   const cenik = ULO.uloCenikProblemy(zak, stara, { role: relace.role, matice: ctx.matice, program: ctx.program, importuj: globalThis.importZakazka });
   if (cenik.length) return odmitni(403, veta(ULO.uloCenikProblemyText(cenik)));
+  /* Model výpočtu (Model 1 zmrazený) a vyřazené řádky OCK (`nepocitat`)
+   * mění jen administrátor (revize #398). Obnova je administrátorská. */
+  const model = ULO.uloModelProblemy(zak, stara, { role: relace.role, matice: ctx.matice,
+    importuj: globalThis.importZakazka, pocitatKlic: globalThis.ZOBRAZENI_POCITAT });
+  if (model.length) return odmitni(403, veta('Zakázka nese ' + ULO.uloIdProblemyText(model)));
 
   /* NEZNÁMÝ ROZMĚR PROFILU (#372, nález A2-1 z 26. 9. 2026). Zakázka
    * s rozměrem mimo katalog jeklů (nebo s tloušťkou, kterou rozměr nemá) se
@@ -324,6 +351,28 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
     if (sv && sv.zamek && sv.zamek.zamceno) {                   // zámek už byl — nesahat
       if (sv.zamek.overeni) v.zamek.overeni = sv.zamek.overeni;
       else delete v.zamek.overeni;
+      /* DOTISK DOKUMENTU JINÉ STRANY (revize #398, N4). K uloženému zámku
+       * smí klient připsat tisk (uloZamekRazitkaDrz drží začátek `tisky`
+       * a nové připojí). Zámek nabídky PROJ z nulových rozměrů OCK nebo
+       * z ceníku bez cen OCK projde (posuzuje se jen strana PROJ) — a dotisk
+       * nabídky OCK by pak zábrany strany OCK obešel. Nová strana z dotisku
+       * se proto posoudí jako nový zámek. */
+      if (!obnova) {
+        const strana = (t) => (typeof globalThis.kontrolyDokumentStrana === 'function' ? globalThis.kontrolyDokumentStrana(t) : '') || '?';
+        const stareTisky = [sv.zamek.typ].concat((Array.isArray(sv.zamek.tisky) ? sv.zamek.tisky : []).map(t => t && t.typ));
+        const stareStrany = new Set(stareTisky.map(strana));
+        const nove = (Array.isArray(v.zamek.tisky) ? v.zamek.tisky : []).slice(Array.isArray(sv.zamek.tisky) ? sv.zamek.tisky.length : 0)
+          .map(t => t && t.typ).filter(t => !stareStrany.has(strana(t)));
+        if (nove.length) {
+          const pseudo = Object.assign({}, v, { zamek: { typ: nove[0], tisky: nove.map(typ => ({ typ })) } });
+          const cenaDotisk = zamekNovyCenaProblem(zak, pseudo, relace, ctx.matice, JEKLY, ctx.program);
+          if (cenaDotisk) return odmitni(403, 'Neuloženo: dotisk dokumentu odeslané nabídky — ' + cenaDotisk + '.');
+          const rozmerDotisk = zamekNovyRozmeryProblem(zak, pseudo, ULO);
+          if (rozmerDotisk.length)
+            return odmitni(400, 'Neuloženo: dotisk dokumentu odeslané nabídky nese ' + ULO.uloIdProblemyText(rozmerDotisk)
+              + '. Pokračujte klonem varianty.');
+        }
+      }
       continue;
     }
     if (obnova) {
@@ -345,6 +394,13 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
         + '). Obnovte stránku (Ctrl+F5) a nabídku vytiskněte znovu.');
     const cenaProblem = zamekNovyCenaProblem(zak, v, relace, ctx.matice, JEKLY, ctx.program);
     if (cenaProblem) return odmitni(403, 'Neuloženo: ' + cenaProblem + '.');
+    /* Nový zámek strany OCK z nulového nebo nevyplněného rozměru (B137) —
+     * zrcadlo zábrany „rozmery"; platí pro každého, i administrátora
+     * (zábranu v prohlížeči nepřekročí ani on). */
+    const rozmerProblem = zamekNovyRozmeryProblem(zak, v, ULO);
+    if (rozmerProblem.length)
+      return odmitni(400, 'Neuloženo: odeslaná nabídka nese ' + ULO.uloIdProblemyText(rozmerProblem)
+        + '. Doplňte rozměry šachty a nabídku vytiskněte znovu.');
     v.zamek.kdo = relace.jmeno ? relace.jmeno + ' <' + relace.email + '>' : relace.email;
     /* Nový zámek se ověřuje přísně (B119): nespárovaný řádek zmrazeného
      * výsledku je rozdíl a jádro nese i součty příplatků a volitelných —

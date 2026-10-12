@@ -50,6 +50,10 @@ await post(program, 'http://x/api/program', { cenik: ZC.zkusebniCenik(), cenikPr
 
 /* Zakázka se zamčenou variantou (i se zmrazeným výsledkem) a odemčeným klonem. */
 const z = zk.novaZakazka(); z.cislo = '2026 - OPR - CN - 0901'; z.nazevAkce = 'Starší tvar';
+/* Rozměry šachty (B137, 12. 10. 2026): nová zakázka začíná s nulovými
+ * rozměry a nový zámek z nich server neuloží (zrcadlo zábrany „rozmery").
+ * Fixtura proto nese rozměry vyplněné, jako by je zadal obchodník. */
+Object.assign(z.varianty[0].data.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2 });
 const v = z.varianty[0];
 v.data.cenik = Object.assign(v.data.cenik, ZC.zkusebniCenik());
 v.data.proj.cenik = Object.assign(v.data.proj.cenik, ZC.zkusebniCenikProj());

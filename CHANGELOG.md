@@ -8,6 +8,79 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v12.10.3 — #398 „koncová cena 2": B133–B137, B145, B150a (větev claude/koncova-cena-398)
+
+Noční dávka N1 (pokyn J. V. 12. 10. 2026 přes koordinační sezení 22. kola).
+Větev z `test-draft` (v12.10.2, d562da1). Roadmapa **#398** (položku přidává
+koordinační větev `claude/kolo22-v12.10.2`). Audit 12. 10. 2026 našel pět
+vysokých nálezů, ve všech server uložil NOVÝ ZÁMEK odeslané nabídky se
+sníženou cenou, bez slevy, s razítkem „shoda" (přepočítal tatáž
+zmanipulovaná data). Společný kořen: vstupy jádra, které ovlivňují cenu,
+hlídal jen prohlížeč nebo je server četl jinak než jádro.
+
+- **B134 (vysoká) — záporné procentní rezervy.** `rezervaZakladPct = −0,999`
+  + zámek = 200 „shoda", −99,9 %; prošlo i v běžném UI. Nově
+  `uloZaporneVZadani` hlídá všechna procenta a počty zadání OCK, které jádro
+  násobí (`ULO_ZADANI_BEZ_ZAPORU`: rezervy, oplechování ostatní kg/hod,
+  engineering, stříšky, atypická zámečnická práce a sazba, světlíky,
+  nástupiště, můstky) a výšky pásů opláštění — server (400, nikomu) i zábrana
+  `zapornaPolozka`. Úplnost seznamu proti `DEFAULT_ZADANI` drží test. Pole %
+  rezerv a oplechování mají `min="0"`.
+- **B133 (vysoká) — dvoukrok přes ceník sestavení.** Varianta, jejíž část je
+  celý ceník sestavení (uložená verze i jiná varianta), už nevstupuje do
+  skupin B128 po položkách — smí zůstat celá sestavením, nebo přejít na celou
+  zveřejněnou verzi. Klon varianty s celým ceníkem sestavení projde.
+  Výjimka B113 pro novou zakázku zůstává (test e4) — otázka v předávce.
+- **B135 (vysoká) — číslo v ceníku jako text s čárkou.** Ve vstupech jádra
+  (ceník varianty OCK i PROJ, přepisy, vlastní položky, rezervy, hodiny N56,
+  % sekce PROJ, doprava) jen číslo, prázdno nebo text s desetinnou tečkou
+  (`uloCisloJadro`) — „100,0" je pro `+x` NaN → 0. B112 porovnává sémantikou
+  jádra. **B145** (nízká): přepis „12,5" stejným pravidlem; test B127, který
+  ho výslovně pouštěl, opraven.
+- **B136 (vysoká) — volný klíč ceníku obešel #395 V3.** `ukazkoveMaCisla`
+  počítá cenu jen v klíčích vzoru (`DEFAULT_CENIK` / `DEFAULT_CENIK_PROJ`),
+  pojistka nového zámku po částech se vzorem dané části.
+- **B137 (vysoká) — rozměry šachty ≤ 0.** Pravidla z klientské zábrany
+  „rozmery" přesunuta do `kontrolyRozmery` (kontroly.js) a čte je i server:
+  záporné / nečitelné číslo a zdvih nad 99 m → 400 vždy, nikomu; nula
+  a prázdno (rozpracovaná zakázka, `ZADANI_NOVA`) se uloží, nový zámek strany
+  OCK z nich nevznikne (ani administrátorovi; zakázka jen projekce a dokumenty
+  PROJ výjimkou). Detekční skript hlásí B137 a B134.
+- **B150a — mutace B128** nahrazovala kód neexistující proměnnou `kand`
+  (zabila se ReferenceError). Nově významová: jedna skupina ze všech
+  kandidátů. Dalších 20 významových mutací pro #398, opraveno 5 mutací,
+  jejichž hledaný úsek se změnil.
+- **Nezávislá revize (dva čtecí subagenti, každý jinou čočkou)** našla další
+  cesty téže třídy; každý vysoký nález potvrzen druhým pokusem a opraven:
+  - **N1 (vysoká)** `cenik.jenZahr` — značka „jen zahraniční řada" skryje
+    tuzemské řádky (jádro `jenTetoRady`), B112 ji přeskakoval: OCK −26 až
+    −88 %, zámek „shoda". Nově smí ceník varianty nést jen značky, které má
+    některý kandidát (uložená verze, jiná varianta, zveřejněná verze a její
+    zahraniční odchylky, `CENIK_JEN_ZAHR`) — `uloJenZahrNavic`; tvar
+    `{ cesta: true }` hlídá typová kontrola.
+  - **N2 (vysoká)** `ock.zadani.nepocitat` — vyřazené řádky OCK (plní je jen
+    matice Výchozí správce) server nehlídal: −5 až −19 %. Nově
+    `uloModelProblemy`: role mimo administrátora jen podmnožinu seznamu
+    z uložené verze, jiné varianty nebo z matice `vychozi`.
+  - **N3 (vysoká)** ruční sazba pásu opláštění „jiné" (`pasy[].naklad`)
+    záporná: −43 %. Nově v `uloZaporneVZadani` (nikomu); pole má `min="0"`.
+  - **Model 1** (`ock.fixes` nepravda, zmrazený #332 jen v UI) — server ho
+    roli mimo administrátora pustí jen tam, kde ho nese uložená verze (klon:
+    jiná uložená varianta); převod na Model 2 smí každý; typ pravda/nepravda.
+  - **N4 (střední)** dotisk nabídky OCK k zámku PROJ z nulové šachty obešel
+    zrcadla V3 a B137 — nová strana z dotisku se posoudí jako nový zámek.
+  - Mutace: 10 nových, `#395: zábrana posuzuje i uložený zámek` přesměrována,
+    „revize N1 (6. 10.): podpis položky čte text s čárkou" vyřazena —
+    od B135 ekvivalentní. Test `test_ukazkove_znacky.js` dostal skutečný
+    klíč vzoru PROJ místo smyšleného `projHodKc`.
+- Testy: nová sada `netlify/test_koncova_cena.mjs` (55: před opravou 13 OK /
+  42 FAIL — všechny útoky 200, po opravě 55/0; revizní část 18 testů: před
+  revizní opravou 7 OK / 11 FAIL, po ní celá sada 73/0); jednotkové v
+  `test_uloziste.js` a `test_kontroly.js`. Fixtury zámků v `test_prava`,
+  `test_obnova` a `test_stary_tvar` dostaly vyplněné rozměry šachty
+  (zamykaly z nulových — zábrana by je v prohlížeči nepustila).
+  `BEZPECNOST_MEZE.md` doplněna (výjimky administrátora).
+
 ## v12.10.2 — B126, B127, B128, B131 z auditu 6. 10. 2026; šablony CN v15 (větev claude/b126-cn-v15)
 
 Pokyn J. V. 12. 10. 2026: „připrav mi šablony v15, souhlasím s ostatními

@@ -1,3 +1,43 @@
+# Předávka — 12. 10. 2026 večer: větev `claude/koncova-cena-398` (v12.10.3, #398)
+
+Noční dávka N1 (založilo koordinační sezení 22. kola session_01CKiH2sXWq6U8xoJwqivhiN,
+pokyn J. V. 12. 10.). Větev z `test-draft` v12.10.2 (d562da1). Do `test-draft`,
+`test` ani `main` se z této větve nic nepouštělo — integraci dělá koordinační
+sezení. Roadmapa #398 je v koordinační větvi `claude/kolo22-v12.10.2`
+(tady jen odkaz v CHANGELOG).
+
+## Hotovo
+- B134, B133, B135 (+B145), B136, B137, B150a — viz CHANGELOG v12.10.3;
+  nová sada `netlify/test_koncova_cena.mjs`, mutace serveru doplněny.
+- Nezávislá revize (2 subagenti): N1 `cenik.jenZahr`, N2 `nepocitat`,
+  Model 1 (`ock.fixes`), N3 záporná sazba pásu „jiné", N4 dotisk jiné
+  strany — opraveno (028edad); mutace jádra K17-N91 přesměrovány (c8aecb4).
+- Kolo nad 0af419c: červené jen kvůli věcem opraveným v 028edad/c8aecb4
+  a staré verzi příručky v podkladech (kopie přejmenována na v12.10.3).
+  Výsledek kola nad koncem větve: viz CHANGELOG / finální hlášení.
+
+## Otázky pro J. V. (s výchozí odpovědí)
+1. **Výjimka B113** (nová zakázka s celým ceníkem sestavení se uloží, i když
+   je ceník zveřejněný) — zadání ji navrhovalo zrušit, test e4 ji chce.
+   Po B133 + B136 z ní nevznikne směs ani zámek. *Výchozí: ponechat.*
+2. **Věcné meze rozměrů a počtů** (revize, střední): zdvih 0,001 m, hloubka
+   0,01 m, nástupiště 0/0,5, sloupky 2,5, čistý vstup širší než šachta
+   projdou (i v UI) a sníží cenu o 4–40 %. *Výchozí návrh: na novém zámku
+   OCK zdvih ≥ 2 m, šířka i hloubka ≥ 0,8 m, rozteč ≥ 0,5 m, sloupky
+   a nástupiště celé číslo ≥ 1 (sloupky ≥ 4), čistý vstup + 2× rám ≤ šířka —
+   čísla potvrdí J. V.; do té doby beze změny.*
+3. **Kladná ruční sazba pásu „jiné"** (1 Kč/m²) — funkce UI pro atyp,
+   cenu sníží (−17 %). *Výchozí: ponechat jako obchodní rozhodnutí,
+   případně do schvalování.*
+4. **Záporná přirážka sekce PROJ / globální přirážka** administrátora —
+   ponecháno jako vědomá výjimka (BEZPECNOST_MEZE.md). *Výchozí: ponechat.*
+
+## Další krok
+Koordinační sezení: sloučit `claude/koncova-cena-398` do `test-draft`
+(po zeleném kole), release v12.10.3 dle pokynu J. V.
+
+---
+
 # Předávka — 12. 10. 2026 odpoledne: main = v12.10.1, test = v12.10.2
 
 `main` = **v12.10.1** (86be538, pokyn J. V. „pošli stávající test do main";

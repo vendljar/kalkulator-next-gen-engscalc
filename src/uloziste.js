@@ -820,24 +820,43 @@ function uloCisloSedi(h) {
     || (typeof h === 'number' && isFinite(h))
     || (typeof h === 'string' && ULO_CISLO_TEXT.test(h));
 }
+/* ČÍSLO TAK, JAK HO ČTE JÁDRO (B135 / B145, audit 12. 10. 2026).
+ *
+ * `uloCisloSedi` pouští i text s desetinnou čárkou („3,5"). Jádro ale ceník
+ * a přepisy čte přes `+x` (engine.js `+c.klic || 0`) a pro ně je „100,0"
+ * NaN → 0. B112 přitom text převáděl na číslo (100,0 = 100), takže ceník
+ * varianty s 25 klíči „…,0" prošel kontrolou jako beze změny a cena OCK
+ * klesla o 87 % — nový zámek s razítkem „shoda". Ve VSTUPECH JÁDRA
+ * (ceník varianty, přepisy, vlastní položky, procenta a počty zadání, která
+ * jádro násobí) proto smí přijít jen to, co `+x` přečte stejně jako člověk:
+ * číslo, prázdno, nebo text s desetinnou TEČKOU. Prohlížeč tam text nikdy
+ * nepíše (pole type=number ukládá `+this.value`), text s čárkou mohl přijít
+ * jen ručním požadavkem nebo importem — a i tak jádro počítalo s nulou. */
+const ULO_CISLO_TEXT_JADRO = /^\s*-?\d+(?:\.\d+)?\s*$/;
+function uloCisloJadro(h) {
+  return h === null || h === undefined || h === ''
+    || (typeof h === 'number' && isFinite(h))
+    || (typeof h === 'string' && ULO_CISLO_TEXT_JADRO.test(h));
+}
 function uloPravdaSedi(h) {
   return h === null || h === undefined || h === '' || typeof h === 'boolean' || h === 0 || h === 1;
 }
-function uloTypyStrom(vzor, h, cesta, out) {
+function uloTypyStrom(vzor, h, cesta, out, jadro) {
   if (h === null || h === undefined) return;
+  const sedi = jadro ? uloCisloJadro : uloCisloSedi;
   if (typeof h !== 'object' || Array.isArray(h)) { out.push({ kde: cesta, duvod: 'typ' }); return; }
   Object.keys(vzor).forEach(k => {
     const v = vzor[k], x = h[k], c = cesta + '.' + k;
     if (ULO_VYCTY[c]) {
       if (x !== undefined && x !== null && x !== '' && ULO_VYCTY[c].indexOf(x) < 0) out.push({ kde: c, duvod: 'typ' });
     } else if (ULO_CISLA_NAVIC.indexOf(c) >= 0 || typeof v === 'number') {
-      if (!uloCisloSedi(x)) out.push({ kde: c, duvod: 'typ' });
+      if (!sedi(x)) out.push({ kde: c, duvod: 'typ' });
     } else if (typeof v === 'boolean') {
       if (!uloPravdaSedi(x)) out.push({ kde: c, duvod: 'typ' });
     } else if (Array.isArray(v)) {
       if (x !== undefined && x !== null && !Array.isArray(x)) out.push({ kde: c, duvod: 'typ' });
     } else if (v && typeof v === 'object') {
-      uloTypyStrom(v, x, c, out);
+      uloTypyStrom(v, x, c, out, jadro);
     }
   });
 }
@@ -929,10 +948,19 @@ function uloTypyProblemy(zak, stara) {
         uloTypyProfily(z.profily, 'ock.zadani.profily', vlastni);
       }
     }
-    if (vzCen) uloTypyStrom(vzCen, d.cenik, 'cenik', vlastni);
+    /* Ceník varianty je celý vstup jádra — čísla jen ve tvaru, který jádro
+     * čte jako člověk (B135). */
+    if (vzCen) uloTypyStrom(vzCen, d.cenik, 'cenik', vlastni, true);
+    /* Značky jen zahraniční řady (revize #398, N1): objekt cesta → true. */
+    const jz = d.cenik && typeof d.cenik === 'object' ? d.cenik.jenZahr : null;
+    if (jz !== null && jz !== undefined
+        && (typeof jz !== 'object' || Array.isArray(jz) || Object.keys(jz).some(k => jz[k] !== true || !ULO_TOKEN.test(k))))
+      vlastni.push({ kde: 'cenik.jenZahr', duvod: 'typ' });
+    /* Model výpočtu (revize #398): pravda/nepravda. */
+    if (d.ock && typeof d.ock === 'object' && !uloPravdaSedi(d.ock.fixes)) vlastni.push({ kde: 'ock.fixes', duvod: 'typ' });
     if (d.proj && typeof d.proj === 'object') {
       uloTypyProj(d.proj.zadani, 'proj.zadani', vlastni);
-      if (vzCenP) uloTypyStrom(vzCenP, d.proj.cenik, 'proj.cenik', vlastni);
+      if (vzCenP) uloTypyStrom(vzCenP, d.proj.cenik, 'proj.cenik', vlastni, true);
     }
     vlastni.forEach(p => out.push({ kde: pred + p.kde, duvod: 'typ' }));
   });
@@ -998,11 +1026,33 @@ const ULO_HODINY_N56 = ['montazZakladHod', 'montazAtypHod', 'projekceZakladHod',
 /* sazbaKc a naklad od revize 6. 10. 2026 (V2): vlastní hodinová položka
  * se sazbou mimo ceník a zápornou sazbaKc snižovala náklad sekce. */
 const ULO_PROJ_BEZ_ZAPORU = ['cena', 'hodiny', 'rezerva', 'cenaPrepis', 'sazbaPrepis', 'sazbaKc', 'naklad'];
+/* PROCENTA A POČTY ZADÁNÍ OCK, KTERÉ JÁDRO NÁSOBÍ (B134, audit 12. 10. 2026).
+ *
+ * Záporné procentní rezervy nehlídal nikdo: `rezervaZakladPct = -0.999`
+ * a nový zámek dal 200 s razítkem „shoda" a cenou OCK −99,9 % — a prošlo to
+ * i v běžném UI (pole % nemělo min). Jádro rezervy násobí (engine.js
+ * rezervaProfilyPct, rezervaPlechyPct, rezervaZakladPct,
+ * rezervaPriplatkyPct) a stejně tak množství ostatních položek zadání
+ * (oplechování ostatní kg/hod, engineering, stříšky, atypická zámečnická
+ * práce a její sazba, počty světlíků a nástupišť). Nic z toho nemá smysl
+ * záporné; snížení ceny patří do slevy. Seznam drží test
+ * (src/test_uloziste.js): každé číselné pole DEFAULT_ZADANI musí být tady,
+ * v ULO_HODINY_N56, mezi rozměry šachty (kontrolyRozmery, B137), nebo
+ * v ULO_ZADANI_MIMO_JADRO. Hlídá se i tvar čísla podle jádra (B135). */
+const ULO_ZADANI_BEZ_ZAPORU = ['rezervaProfilyPct', 'rezervaPlechyPct', 'rezervaZakladPct', 'rezervaPriplatkyPct',
+  'oplechOstatniKg', 'oplechOstatniHod', 'engineeringKs', 'zamecnikAtypKs', 'zamecnikAtypKc', 'striskaKs',
+  'nastupiste', 'nastupisteA', 'nastupisteC', 'patra', 'svetlikyBoky', 'svetlikyBokyKs', 'svetlikyBokySirkaMm', 'mustkyKs'];
+/* Číselná pole vzoru, která do ceny nevstupují (evidence pro standard OCK). */
+const ULO_ZADANI_MIMO_JADRO = ['mustekHloubkaMm', 'mustekSirkaMm'];
 function uloZaporneVZadani(z, zp) {
   const out = [];
+  /* Pořadí: nejdřív typ (není to číslo vůbec), pak zápor (i „-5000,5" je
+   * záporné), nakonec tvar čísla podle jádra (B135/B145: „12,5" jádro
+   * čte jako NaN). */
   const hlidej = (h, kde) => {
     if (!uloCisloSedi(h)) out.push({ kde, duvod: 'typ' });
     else if (uloZaporne(h)) out.push({ kde, duvod: 'zaporne' });
+    else if (!uloCisloJadro(h)) out.push({ kde, duvod: 'typ' });
   };
   const radky = (pole, kde) => {
     if (pole === null || pole === undefined) return;
@@ -1038,19 +1088,41 @@ function uloZaporneVZadani(z, zp) {
         if (uloCisloSedi(m[nazev]) && isFinite(n) && Math.abs(n) > ULO_PREPIS_MAX) out.push({ kde: c, duvod: 'typ' });
       });
     });
-    ULO_HODINY_N56.forEach(k => { if (uloZaporne(z[k])) out.push({ kde: 'ock.zadani.' + k, duvod: 'zaporne' }); });
+    ULO_HODINY_N56.forEach(k => hlidej(z[k], 'ock.zadani.' + k));
+    ULO_ZADANI_BEZ_ZAPORU.forEach(k => hlidej(z[k], 'ock.zadani.' + k));
+    /* Opláštění po stěnách: výšky pásů (odM, doM) — záporná výška zmenší
+     * plochu (B134, revize vstupů jádra). */
+    const steny = z.oplasteni && typeof z.oplasteni === 'object' ? z.oplasteni.steny : null;
+    if (steny && typeof steny === 'object' && !Array.isArray(steny)) Object.keys(steny).forEach(k => {
+      const st = steny[k], c = 'ock.zadani.oplasteni.steny.' + (ULO_TOKEN.test(k) ? k : '?');
+      if (!st || typeof st !== 'object') return;
+      hlidej(st.odM, c + '.odM');
+      /* Ruční sazba pásu „jiné" (revize #398, N3): záporná −3 000 Kč/m² na
+       * čtyřech stěnách srazila cenu OCK o 43 % (zámek „shoda"). */
+      if (Array.isArray(st.pasy)) st.pasy.forEach((p, i) => {
+        if (!p || typeof p !== 'object') return;
+        hlidej(p.doM, c + '.pasy[' + i + '].doM');
+        hlidej(p.naklad, c + '.pasy[' + i + '].naklad');
+      });
+    });
   }
   const sekce = zp && typeof zp === 'object' ? zp.sekce : null;
   if (Array.isArray(sekce)) sekce.forEach((s, i) => {
     /* Doprava sekce (revize 6. 10. 2026, V1): km a ruční příplatek nikdy záporné. */
     if (s && typeof s === 'object' && s.doprava && typeof s.doprava === 'object')
-      ['km', 'pausal'].forEach(k => { if (uloZaporne(s.doprava[k])) out.push({ kde: 'proj.zadani.sekce[' + i + '].doprava.' + k, duvod: 'zaporne' }); });
-    if (!s || typeof s !== 'object' || !Array.isArray(s.polozky)) return;
+      ['km', 'pausal'].forEach(k => hlidej(s.doprava[k], 'proj.zadani.sekce[' + i + '].doprava.' + k));
+    if (!s || typeof s !== 'object') return;
+    /* Vlastní % sekce: jádro z něj dělá přirážku sekce (engine_proj.js
+     * `prirazkaPct / 100`). Zápor se tu NEHLÍDÁ — přirážku (i zápornou)
+     * smí nastavit administrátor a role s právem sloupce.naklad, ostatním
+     * ji drží B112 proti uložené verzi (vědomá mez, BEZPECNOST_MEZE.md).
+     * Hlídá se jen tvar čísla podle jádra (B135): „-50,0" by jádro četlo
+     * jako NaN. */
+    if (!uloCisloJadro(s.prirazkaPct)) out.push({ kde: 'proj.zadani.sekce[' + i + '].prirazkaPct', duvod: 'typ' });
+    if (!Array.isArray(s.polozky)) return;
     s.polozky.forEach((p, j) => {
       if (!p || typeof p !== 'object') return;
-      ULO_PROJ_BEZ_ZAPORU.forEach(k => {
-        if (uloZaporne(p[k])) out.push({ kde: 'proj.zadani.sekce[' + i + '].polozky[' + j + '].' + k, duvod: 'zaporne' });
-      });
+      ULO_PROJ_BEZ_ZAPORU.forEach(k => hlidej(p[k], 'proj.zadani.sekce[' + i + '].polozky[' + j + '].' + k));
     });
   });
   return out;
@@ -1059,6 +1131,85 @@ function uloZaporneProblemy(zak, stara) {
   return uloProVarianty(zak, stara, (v, sv, out) => {
     const d = v.data;
     uloZaporneVZadani(d.ock && d.ock.zadani, d.proj && d.proj.zadani).forEach(p => out.push(p));
+  });
+}
+
+/* ROZMĚRY ŠACHTY NA SERVERU (B137, audit 12. 10. 2026).
+ *
+ * Zdvih, rozteč nebo hloubka −1 prošly uložením i novým zámkem (cena −31 až
+ * −46 %, razítko „shoda"); hlídala je jen zábrana v prohlížeči. Pravidla
+ * dává kontrolyRozmery z kontroly.js — tatáž funkce jako zábrana „rozmery",
+ * ať se nerozejdou. Při uložení se odmítá jen NESMYSLNÉ ČÍSLO (záporné,
+ * nečitelné pro jádro, zdvih nad 99 m) — nula a prázdno jsou u rozpracované
+ * zakázky běžné (nová zakázka začíná s nulovými rozměry). Nulu a prázdno
+ * odmítne až nový zámek (`naZamek`, volá zakazka_kontrola.mjs). */
+function uloRozmeryFn() {
+  const f = uloGlobal('kontrolyRozmery');
+  if (typeof f === 'function') return f;
+  if (typeof require === 'function') { try { return require('./kontroly.js').kontrolyRozmery; } catch (e) { /* nic */ } }
+  return null;
+}
+function uloRozmeryVZadani(z, naZamek) {
+  const f = uloRozmeryFn();
+  if (!f || !z || typeof z !== 'object') return [];
+  const r = f(z);
+  const out = r.spatne.map(x => ({ kde: 'ock.zadani.' + x[0], duvod: 'rozmer' }));
+  if (r.vysoky) out.push({ kde: 'ock.zadani.zdvih', duvod: 'rozmer' });
+  if (naZamek) r.nula.concat(r.chybi).forEach(x => out.push({ kde: 'ock.zadani.' + x[0], duvod: 'rozmer' }));
+  return out;
+}
+function uloRozmeryProblemy(zak, stara) {
+  return uloProVarianty(zak, stara, (v, sv, out) => {
+    uloRozmeryVZadani(v.data.ock && v.data.ock.zadani, false).forEach(p => out.push(p));
+  });
+}
+
+/* MODEL VÝPOČTU A VYŘAZENÉ ŘÁDKY OCK MĚNÍ JEN ADMINISTRÁTOR (revize #398,
+ * 12. 10. 2026 — nálezy N2 a „Model 1" nezávislé revize).
+ *
+ *  – `ock.zadani.nepocitat` (řádky kalkulace OCK, které se v zakázce
+ *    nepočítají) plní jen sloupec Výchozí z matice správce u NOVÉ zakázky
+ *    (zobrazeniVychoziAplikuj); obchodník ho v UI nemění. Server ho nehlídal
+ *    a `['MONTÁŽ NA STAVBĚ', …]` srazilo cenu OCK o 5–19 % se zámkem
+ *    „shoda". Pravidlo: role mimo administrátora smí mít jen PODMNOŽINU
+ *    seznamu z uložené verze téže varianty, z jiné uložené varianty (klon),
+ *    nebo z matice `vychozi` uložené na serveru (nová zakázka). Méně
+ *    vyřazených řádků cenu jen zvýší, proto podmnožina.
+ *  – `ock.fixes` falešné = Model 1, zmrazený pro všechny kromě
+ *    administrátora (#332, J. V. 24. 9. 2026) — pojistka byla jen v set()
+ *    v UI. Role mimo administrátora smí Model 1 jen tam, kde ho nese
+ *    uložená verze téže varianty (nebo u nové varianty jiná uložená
+ *    varianta — klon). Převod Model 1 → 2 smí každý.
+ * `opts`: { role, matice, importuj, pocitatKlic }. */
+function uloModelProblemy(zak, stara, opts) {
+  opts = opts || {};
+  if (String(opts.role || '') === 'Administrátor') return [];
+  let sp = stara;
+  if (stara && typeof opts.importuj === 'function') {
+    try { sp = opts.importuj(JSON.parse(JSON.stringify(stara))); } catch (e) { sp = stara; }
+  }
+  const ulozene = (sp && Array.isArray(sp.varianty)) ? sp.varianty.filter(v => v && v.data && typeof v.data === 'object') : [];
+  const nep = (d) => { const z = d && d.ock && d.ock.zadani; return Array.isArray(z && z.nepocitat) ? z.nepocitat.map(String) : []; };
+  const model1 = (d) => !!(d && d.ock && typeof d.ock === 'object') && !d.ock.fixes;
+  const pref = String(opts.pocitatKlic || 'ock.pocitat:');
+  const mv = opts.matice && opts.matice.vychozi && typeof opts.matice.vychozi === 'object' ? opts.matice.vychozi : {};
+  const zMatice = Object.keys(mv).filter(k => k.indexOf(pref) === 0 && mv[k] === false).map(k => k.slice(pref.length));
+  return uloProVarianty(zak, stara, (v, sv, out) => {
+    const d = v.data;
+    const svm = ulozene.find(x => x.id === v.id) || null;
+    const jine = ulozene.filter(x => x !== svm);
+    const z = d.ock && d.ock.zadani;
+    if (z && z.nepocitat !== undefined && z.nepocitat !== null && !Array.isArray(z.nepocitat))
+      out.push({ kde: 'ock.zadani.nepocitat', duvod: 'typ' });
+    const ted = nep(d);
+    if (ted.length) {
+      const reference = (svm ? [nep(svm.data)] : []).concat(jine.map(x => nep(x.data)), [zMatice]);
+      if (!reference.some(r => ted.every(n => r.indexOf(n) >= 0))) out.push({ kde: 'ock.zadani.nepocitat', duvod: 'model' });
+    }
+    if (model1(d)) {
+      const smi = svm ? model1(svm.data) : jine.some(x => model1(x.data));
+      if (!smi) out.push({ kde: 'ock.fixes', duvod: 'model' });
+    }
   });
 }
 
@@ -1150,13 +1301,38 @@ function uloB112Zdroj(n, soubor) {
   }
   return null;
 }
+/* `jenZahr` se po listech neporovnává — hlídá ho zvlášť uloJenZahrNavic
+ * (revize #398, N1) jako podmnožinu povolených značek. */
 const ULO_CENIK_VOLNE = ['popisy', 'popisyJazyky', 'dph', 'rada', 'jenZahr', 'ukazkove', 'prazdny'];
+/* ZNAČKY „JEN ZAHRANIČNÍ ŘADA" (revize #398, N1, 12. 10. 2026). Jádro
+ * v tuzemské kalkulaci vyřadí každý řádek, jehož cenaPath značka nese
+ * (engine.js `jenTetoRady`), takže `jenZahr: { 'C.montazHodKc': true }`
+ * skryl drahé řádky a nový zámek prošel s cenou −26 až −88 %. Víc značek =
+ * nižší tuzemská cena, proto smí ceník varianty nést jen značky, které nese
+ * některý kandidát (uložená verze, jiná uložená varianta, zveřejněná verze
+ * — její ceník i zahraniční odchylky), nebo které jádro vyřazuje vždy
+ * (CENIK_JEN_ZAHR). Vrací seznam značek navíc. */
+function uloJenZahrNavic(cenik, kandidati) {
+  const jz = cenik && typeof cenik === 'object' && cenik.jenZahr && typeof cenik.jenZahr === 'object' ? cenik.jenZahr : {};
+  const vzdy = uloGlobal('CENIK_JEN_ZAHR') || (() => {
+    if (typeof require === 'function') { try { return require('./cenik.js').CENIK_JEN_ZAHR || []; } catch (e) { return []; } }
+    return [];
+  })();
+  const povolene = new Set(vzdy);
+  kandidati.forEach(c => {
+    const k = c && typeof c === 'object' && c.jenZahr && typeof c.jenZahr === 'object' ? c.jenZahr : {};
+    Object.keys(k).forEach(x => { if (k[x]) povolene.add(x); });
+  });
+  return Object.keys(jz).filter(x => jz[x] && !povolene.has(x));
+}
 /* Prázdno („", null, chybí) je jedna hodnota; číslo i číslo jako text se
- * porovnávají číselně. */
+ * porovnávají číselně — TAK, JAK HO ČTE JÁDRO (`+x`, B135, 12. 10. 2026):
+ * text „100,0" je pro jádro NaN (→ 0), ne 100. Dřív se převáděl čárkou na
+ * tečku a ceník s „100,0" vypadal jako beze změny. */
 function uloB112Hodnota(x) {
   if (x === null || x === undefined || x === '') return '';
   if (typeof x === 'number') return isFinite(x) ? x : String(x);
-  if (typeof x === 'string' && ULO_CISLO_TEXT.test(x)) return parseFloat(x.replace(',', '.'));
+  if (typeof x === 'string' && ULO_CISLO_TEXT.test(x)) { const n = +x; return isFinite(n) ? n : 'NaN'; }
   return typeof x === 'object' ? JSON.stringify(x) : x;
 }
 function uloB112Listy(cenik, bezMarze) {
@@ -1448,6 +1624,11 @@ function uloCenikProblemy(zak, stara, opts) {
     ];
     casti.forEach(c => {
       if (c.ok || !cenikHlidat) return;
+      /* Značky jen zahraniční řady (N1): jen podmnožina kandidátů. */
+      const kandJz = [svm && c.vezmi(svm.data)].concat(jine.map(x => c.vezmi(x.data)),
+        verze.map(z => c.pred === 'cenik.' ? z.cenik : z.cenikProj), verze.map(z => z.zahranicni),
+        zverejneneProRadu(rada).map(z => c.vezmi(z)));
+      uloJenZahrNavic(c.vezmi(d), kandJz).forEach(x => out.push({ kde: c.pred + 'jenZahr.' + (ULO_TOKEN.test(x) ? x : '?'), duvod: 'cenik' }));
       const listy = uloB112Listy(c.vezmi(d), okPrirazka);
       const kSvm = svm ? uloB112Listy(c.vezmi(svm.data), okPrirazka) : null;
       const kZv = zverejneneProRadu(rada).map(z => uloB112Listy(c.vezmi(z), okPrirazka));
@@ -1462,8 +1643,24 @@ function uloCenikProblemy(zak, stara, opts) {
        * kterákoli zveřejněná verze CELÁ. Chybějící klíč se hlídá proti
        * prvnímu členu skupiny. V hlášce rozdíly proti nejbližší skupině. */
       const kPlatny = verze.length && prog && prog.platny && prog.platny.cenik ? kZv.slice(0, 2) : [];
-      const skupiny = (kSvm ? [[kSvm].concat(kPlatny)] : [])
-        .concat(kJine.map(k => [k].concat(kPlatny)), kZv.map(k => [k]));
+      /* CENÍK SESTAVENÍ NENÍ ZÁKLAD PRO SMĚS (B133, audit 12. 10. 2026).
+       * Dvoukrok: (1) nová zakázka s celým ceníkem sestavení projde výjimkou
+       * B113 níž; (2) druhé uložení nese platný ceník s vybranými drahými
+       * položkami = 0 — a skupina „uložená verze + platný ceník" ji pustila,
+       * protože nula seděla s uloženou verzí (samé nuly). Pak nový zámek:
+       * OCK −55,7 %, PROJ přes klon −64,6 %. Varianta, jejíž část je celý
+       * ceník sestavení (uložená verze i jiná varianta), proto do skupin po
+       * položkách nevstupuje: smí zůstat CELÁ sestavením (výjimka níž), nebo
+       * přejít na CELOU zveřejněnou verzi (skupiny kZv). */
+      const kSRada = (r) => {
+        const sdr = sestaveniProRadu(r);
+        return sdr ? uloB112Listy(c.vezmi(sdr), okPrirazka) : null;
+      };
+      const jeSestaveniRady = (lst, r) => { const k = kSRada(r); return !!k && !!lst && !uloB112Rozdily(lst, [k], c.pred, k).length; };
+      const skupiny = (kSvm && !jeSestaveniRady(kSvm, rada) ? [[kSvm].concat(kPlatny)] : [])
+        .concat(jine.map((x, i) => ({ x, k: kJine[i] }))
+          .filter(o => !jeSestaveniRady(o.k, radaVar ? radaVar(o.x.data) : 'cr'))
+          .map(o => [o.k].concat(kPlatny)), kZv.map(k => [k]));
       let rozdily = null;
       for (const g of skupiny) {
         const r = uloB112Rozdily(listy, g, c.pred, g[0]);
@@ -1476,11 +1673,16 @@ function uloCenikProblemy(zak, stara, opts) {
        * u varianty, jejíž uložená verze ho sama nese. Jinak by obchodník
        * nahradil ceník uložené varianty nulami (server značky ukázkového
        * ceníku před uložením strhne, takže je nenese ani uložená verze)
-       * a projekce by šla ven za 0 Kč. */
+       * a projekce by šla ven za 0 Kč. Klon (NOVÁ varianta) smí ceník
+       * sestavení nést, jen když ho celý nese i jiná uložená varianta (B133:
+       * ze skupin po položkách taková varianta vypadla, klon by jinak neprošel).
+       * Ceník sestavení je bezpečný jen CELÝ — nový zámek z něj nevznikne
+       * (#395 V3) a dokument zastaví zábrana ukazkovyCenik. */
       const sd = sestaveniProRadu(rada);
       const kS = sd ? uloB112Listy(c.vezmi(sd), okPrirazka) : null;
       const jeSestaveni = (lst) => !uloB112Rozdily(lst, [kS], c.pred, kS).length;
-      if (kS && jeSestaveni(listy) && (ulozene.length === 0 || (kSvm && jeSestaveni(kSvm)))) return;
+      const klonSestaveni = !svm && kJine.some(k => jeSestaveni(k));
+      if (kS && jeSestaveni(listy) && (ulozene.length === 0 || (kSvm && jeSestaveni(kSvm)) || klonSestaveni)) return;
       rozdily.forEach(kde => out.push({ kde, duvod: 'cenik' }));
     });
     if (okPrepisy) return;
@@ -1565,8 +1767,10 @@ function uloIdProblemyText(problemy) {
   const typ = problemy.filter(p => p.duvod === 'typ');
   const zaporne = problemy.filter(p => p.duvod === 'zaporne');
   const zaokr = problemy.filter(p => p.duvod === 'zaokr');
+  const rozmer = problemy.filter(p => p.duvod === 'rozmer');
+  const model = problemy.filter(p => p.duvod === 'model');
   const tvar = problemy.filter(p => p.duvod !== 'duplicita' && p.duvod !== 'delka' && p.duvod !== 'priloha'
-    && p.duvod !== 'typ' && p.duvod !== 'zaporne' && p.duvod !== 'zaokr');
+    && p.duvod !== 'typ' && p.duvod !== 'zaporne' && p.duvod !== 'zaokr' && p.duvod !== 'rozmer' && p.duvod !== 'model');
   const casti = [];
   if (tvar.length) casti.push('identifikátor v nepovoleném tvaru (' + tvar.map(x => x.kde).join(', ')
     + ') — povolená jsou písmena, číslice, tečka, podtržítko a pomlčka');
@@ -1588,6 +1792,13 @@ function uloIdProblemyText(problemy) {
   /* B96: krok nebo směr obchodního zaokrouhlení mimo nabídku. */
   if (zaokr.length) casti.push('obchodní zaokrouhlení mimo nabídku (' + zaokr.map(x => x.kde).join(', ')
     + ') — krok i směr zaokrouhlení musí být z nabídky v kartě „Obchodní zaokrouhlení"; větší snížení ceny je sleva, ta jde přes schvalování');
+  /* B137: rozměr šachty, který nedává smysl. */
+  if (rozmer.length) casti.push('rozměr šachty, který nedává smysl (' + rozmer.slice(0, 5).map(x => x.kde).join(', ')
+    + (rozmer.length > 5 ? ' a další ' + (rozmer.length - 5) : '')
+    + ') — zdvih, šířka, hloubka, rozteč, čistý vstup, šířka rámu a počet sloupků musí být kladné, přejezd a prohlubeň nezáporné, zdvih nejvýš 99 m');
+  /* Revize #398: model výpočtu a vyřazené řádky OCK. */
+  if (model.length) casti.push('změnu, kterou smí jen administrátor (' + model.slice(0, 5).map(x => x.kde).join(', ')
+    + ') — model výpočtu (Model 1 je zmrazený) a řádky kalkulace OCK, které se nepočítají, nastavuje správce');
   return casti.join('; ');
 }
 
@@ -1626,7 +1837,7 @@ function uloZalohaHlidka(otisky, ted) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
+  module.exports = { ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, ULO_ZADANI_BEZ_ZAPORU, ULO_ZADANI_MIMO_JADRO, ULO_HODINY_N56, uloCisloJadro, uloRozmeryVZadani, uloRozmeryProblemy, uloModelProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
                      uloNorm, uloSlova, uloCisloVyplneno, uloKlicSouboru,
                      uloJmenoSouboru, uloJeZakazkovySoubor,
                      ULO_HLAVICKA_POLE, uloHlavickaChybi, uloHlavickaVyplnena, uloMaCislo, uloUlozeniStav,

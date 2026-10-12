@@ -597,5 +597,17 @@ test('nekompletní kontext nic neshodí a nálezy dorazí',
   });
 }
 
+/* B137 (12. 10. 2026): pravidla rozměrů sdílí zábrana a server
+ * (kontrolyRozmery). Zábrana dál bere nulu i prázdno jako vadné. */
+{
+  const zad = { zdvih: 9, sirka: 1.6, hloubka: 1.8, roztec: 1.25, cistyVstupMm: 800, sirkaRamuMm: 100, rohoveSloupky: 4, prejezd: 3, prohluben: 1 };
+  const r0 = kt.kontrolyRozmery(zad);
+  test('B137: platné rozměry — nic', !r0.spatne.length && !r0.nula.length && !r0.chybi.length && !r0.vysoky, JSON.stringify(r0));
+  const r1 = kt.kontrolyRozmery(Object.assign({}, zad, { zdvih: -1, roztec: '1,5', sirka: 0, hloubka: '', prejezd: 0 }));
+  test('B137: −1 a „1,5" → spatne, 0 → nula, "" → chybi, přejezd 0 smí',
+    r1.spatne.map(x => x[0]).join() === 'zdvih,roztec' && r1.nula.map(x => x[0]).join() === 'sirka' && r1.chybi.map(x => x[0]).join() === 'hloubka', JSON.stringify(r1));
+  test('B137: zdvih 150 → vysoky', kt.kontrolyRozmery(Object.assign({}, zad, { zdvih: 150 })).vysoky === true);
+}
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

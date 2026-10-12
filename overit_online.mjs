@@ -1420,6 +1420,10 @@ test('lišta uzamčené varianty nabízí za Klonovat i Založit novou zakázku 
   const poctiva = await page.evaluate(async (ceniky) => {
     ZAK = novaZakazka(); ZAK.cislo = '2026 - OPR - CN - 0761'; ZAK.nazevAkce = 'B59 poctivá';
     aktivniVarianta(ZAK).data.cenik = ceniky.ock; aktivniVarianta(ZAK).data.proj.cenik = ceniky.proj;
+    /* Rozměry šachty (B137, 12. 10. 2026): zámek se tu pořizuje přímo, mimo
+     * tiskový dialog se zábranou „rozmery" — server nový zámek z nulových
+     * rozměrů nové zakázky neuloží. Vyplní se, jako by je zadal obchodník. */
+    Object.assign(aktivniVarianta(ZAK).data.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2 });
     syncVarianta(); render();
     await onlineUloz();
     zamekPoTisku('nabidkaTisk', aktivniVarianta(ZAK).id);
@@ -1449,6 +1453,7 @@ test('lišta uzamčené varianty nabízí za Klonovat i Založit novou zakázku 
   const upraveny = await page.evaluate(async (ceniky) => {
     ZAK = novaZakazka(); ZAK.cislo = '2026 - OPR - CN - 0762'; ZAK.nazevAkce = 'B59 upravený klient';
     aktivniVarianta(ZAK).data.cenik = ceniky.ock; aktivniVarianta(ZAK).data.proj.cenik = ceniky.proj;
+    Object.assign(aktivniVarianta(ZAK).data.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2 });   // B137
     syncVarianta(); render();
     await onlineUloz();
     zamekPoTisku('nabidkaTisk', aktivniVarianta(ZAK).id);

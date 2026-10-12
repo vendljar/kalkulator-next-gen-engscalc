@@ -197,10 +197,19 @@ for (const [popis, k, h] of [['záporné číslo jako text s exponentem', 'mnozs
   const r = await uloz(z, cA);
   test('B127: administrátor — přepis ' + k + ' (' + popis + ') → 400', r.status === 400, r);
 }
-{ const z = nova('B127 platné'); z.varianty[0].data.ock.zadani.mnozstviPrepis = { 'Sloupky': '12,5', 'Příčníky': 0 };
+{ const z = nova('B127 platné'); z.varianty[0].data.ock.zadani.mnozstviPrepis = { 'Sloupky': '12.5', 'Příčníky': 0 };
   z.varianty[0].data.ock.zadani.cenyPrepis = { 'Kotvy': 150 };
   const r = await uloz(z, cA);
-  test('B127: platné přepisy (12,5 · 0 · 150) se uloží (200)', r.status === 200, r); }
+  test('B127: platné přepisy („12.5" · 0 · 150) se uloží (200)', r.status === 200, r); }
+/* B145 (audit 12. 10. 2026): přepis „12,5" jádro čte přes `+x` jako NaN
+ * (→ množství 0), kontrola ho do 12. 10. schvalovala jako číslo. Před
+ * opravou 200 (test výš ho výslovně pouštěl), po opravě 400. */
+{ const z = nova('B145 čárka'); z.varianty[0].data.ock.zadani.mnozstviPrepis = { 'Sloupky': '12,5' };
+  const r = await uloz(z, cA);
+  test('B145: administrátor — přepis množství „12,5" (jádro čte NaN) → 400', r.status === 400 && /mnozstviPrepis/.test(r.chyba || ''), r); }
+{ const z = nova('B145 čárka cena'); z.varianty[0].data.ock.zadani.cenyPrepis = { 'Kotvy': '150,0' };
+  const r = await uloz(z, cA);
+  test('B145: administrátor — přepis ceny „150,0" → 400', r.status === 400 && /cenyPrepis/.test(r.chyba || ''), r); }
 
 /* 13) detekční skript (nastroje/detekce_zneuziti.mjs) najde i zamčenou
  * variantu z doby před opravou a kladnou položku nehlásí */

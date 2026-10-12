@@ -77,7 +77,11 @@ const SKUT = fmod.firmaDefault(); delete SKUT.ukazkove;
 SKUT.nazev = 'Zkušební firma pro obnovu s.r.o.'; SKUT.ico = '12345678';
 test('firma zveřejněna', (await (await post(firma, 'http://x/api/firma', { udaje: SKUT }, cookie)).json()).ok === true);
 
-const novaZak = (cislo, nazev) => { const z = zk.novaZakazka(); z.cislo = cislo; z.nazevAkce = nazev; return z; };
+/* Rozměry šachty (B137, 12. 10. 2026): nová zakázka začíná s nulovými
+ * rozměry a nový zámek z nich server neuloží (zrcadlo zábrany „rozmery").
+ * Fixtura proto nese rozměry vyplněné, jako by je zadal obchodník. */
+const novaZak = (cislo, nazev) => { const z = zk.novaZakazka(); z.cislo = cislo; z.nazevAkce = nazev;
+  Object.assign(z.varianty[0].data.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2 }); return z; };
 const zakA = novaZak('2026 - OPR - CN - 0777', 'Zakázka A');
 const zakB = novaZak('2026 - OPR - CN - 0778', 'Zakázka B');
 const ulA = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zakA }, cookieObch)).json();

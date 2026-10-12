@@ -66,6 +66,50 @@ const KONTROLY_VYSKA_DVERI = 2.3;
  * pole a kontrola nerozejdou. */
 const KONTROLY_ZDVIH_MAX_M = 99;
 
+/* ROZMĚRY ŠACHTY — JEDNA PRAVIDLA PRO ZÁBRANU I SERVER (B137, 12. 10. 2026).
+ *
+ * Audit 12. 10. 2026: rozměr ≤ 0 hlídala jen zábrana „rozmery" v prohlížeči.
+ * Ručním požadavkem prošel nový zámek se zdvihem −1 (cena −46 %), roztečí −1
+ * (−31 %) nebo hloubkou −1 (−39 %) — a razítko „shoda", protože server
+ * přepočítal tatáž zmanipulovaná data. Pravidla proto stojí tady jednou
+ * a čte je pravidlo „rozmery" i server (uloRozmeryProblemy v uloziste.js).
+ *
+ * Vrací { spatne, nula, chybi, vysoky }; první tři jsou seznamy [klíč, název].
+ *   spatne – záporné číslo nebo něco, co jádro jako číslo nepřečte (text
+ *            „1,5" je pro `+x` NaN) → server neuloží NIKDY;
+ *   nula   – nula tam, kde musí být kladné číslo;
+ *   chybi  – prázdné pole (''/null/chybí);
+ *   vysoky – zdvih nad 99 m (K17-N91) → server neuloží nikdy.
+ * NULA A PRÁZDNO JSOU U ROZPRACOVANÉ ZAKÁZKY BĚŽNÉ: nová zakázka začíná se
+ * zdvihem, šířkou, hloubkou, přejezdem i prohlubní 0 (ZADANI_NOVA v
+ * zakazka.js — „rozměry vyplní obchodník"). Zábrana v prohlížeči mezi
+ * skupinami nerozlišuje (dokument z nich nevznikne), server ano: zakázku
+ * s nulou nebo prázdnem uloží, NOVÝ ZÁMEK z ní ne. */
+const KONTROLY_ROZMERY_KLADNE = [['zdvih', 'zdvih'], ['sirka', 'šířka šachty'], ['hloubka', 'hloubka šachty'],
+  ['roztec', 'rozteč'], ['cistyVstupMm', 'čistý vstup'], ['sirkaRamuMm', 'šířka rámu'],
+  ['rohoveSloupky', 'počet rohových sloupků']];
+/* Přejezd i prohlubeň smějí být nula (šachta bez jámy existuje). */
+const KONTROLY_ROZMERY_NEZAPORNE = [['prejezd', 'přejezd'], ['prohluben', 'prohlubeň']];
+function kontrolyRozmery(z) {
+  const out = { spatne: [], nula: [], chybi: [], vysoky: false };
+  if (!z || typeof z !== 'object') return out;
+  const prazdne = (h) => h === null || h === undefined || (typeof h === 'string' && h.trim() === '');
+  const zkus = (seznam, kladne) => seznam.forEach(([k, n]) => {
+    if (prazdne(z[k])) { out.chybi.push([k, n]); return; }
+    /* Číslo tak, jak ho čte jádro (`+x`): text „1,5" je NaN, tedy vadný. */
+    const v = typeof z[k] === 'number' || typeof z[k] === 'string' ? +z[k] : NaN;
+    if (!isFinite(v) || v < 0) out.spatne.push([k, n]);
+    else if (kladne && v === 0) out.nula.push([k, n]);
+  });
+  zkus(KONTROLY_ROZMERY_KLADNE, true);
+  zkus(KONTROLY_ROZMERY_NEZAPORNE, false);
+  /* Zdvih nad hranicí 99 m (K17-N91) — posuzuje se jen zdvih, který prošel
+   * kladností; jinak by o něm věta mluvila dvakrát. */
+  const vadnyZdvih = out.spatne.concat(out.nula, out.chybi).some(x => x[0] === 'zdvih');
+  out.vysoky = !vadnyZdvih && +z.zdvih > KONTROLY_ZDVIH_MAX_M;
+  return out;
+}
+
 /* ŠÍŘKA BOČNÍHO SVĚTLÍKU PROTI MEZEŘE VEDLE DVEŘÍ (#381, rozhodnutí J. V.
  * 1. 10. 2026 — výchozí odpovědi otázek 3 a 5 návrhu, jen Model 2).
  *
@@ -199,19 +243,15 @@ const KONTROLY = [
       const z = ctx.zadani;
       if (!z) return null;
       /* Nula projde výpočtem bez chyby a udělá z kalkulace nesmysl, který
-       * vypadá jako sleva – proto se hlídá kladnost, ne jen „je to číslo". */
-      const kladne = [['zdvih', 'zdvih'], ['sirka', 'šířka šachty'], ['hloubka', 'hloubka šachty'],
-        ['roztec', 'rozteč'], ['cistyVstupMm', 'čistý vstup'], ['sirkaRamuMm', 'šířka rámu'],
-        ['rohoveSloupky', 'počet rohových sloupků']];
-      /* Přejezd i prohlubeň smějí být nula (šachta bez jámy existuje). */
-      const nezaporne = [['prejezd', 'přejezd'], ['prohluben', 'prohlubeň']];
-      const spatne = [];
-      kladne.forEach(([k, n]) => { const v = +z[k]; if (!isFinite(v) || v <= 0) spatne.push(n); });
-      nezaporne.forEach(([k, n]) => { const v = +z[k]; if (!isFinite(v) || v < 0) spatne.push(n); });
-      /* Zdvih nad hranicí 99 m (K17-N91, 30. 9. 2026) — posuzuje se jen
-       * zdvih, který prošel kladností; jinak by o něm věta mluvila dvakrát. */
+       * vypadá jako sleva – proto se hlídá kladnost, ne jen „je to číslo".
+       * Pravidla sdílí server (kontrolyRozmery výš, B137); tady se prázdné
+       * pole počítá mezi vadné — z nevyplněného rozměru dokument nevznikne. */
+      const r = kontrolyRozmery(z);
+      const vadneKlice = new Set(r.spatne.concat(r.nula, r.chybi).map(x => x[0]));
+      const spatne = KONTROLY_ROZMERY_KLADNE.concat(KONTROLY_ROZMERY_NEZAPORNE)
+        .filter(x => vadneKlice.has(x[0])).map(x => x[1]);
       const zdvih = +z.zdvih;
-      const vysoky = spatne.indexOf('zdvih') < 0 && zdvih > KONTROLY_ZDVIH_MAX_M;
+      const vysoky = r.vysoky;
       if (!spatne.length && !vysoky) return null;
       /* ZÁBRANA od 25. 9. 2026 (P2 / K16-N75): rozteč 0 dala nabídku za
        * 0 Kč, zdvih −5 nabídku za 433 000 Kč — a obojí šlo vytisknout. Není
@@ -1174,7 +1214,7 @@ function kontrolyPotvrzeniPlati(potvrzeni, vysl) {
 
 if (typeof module !== 'undefined')
   module.exports = { KONTROLY_UROVEN, KONTROLY_UROVEN_ZABRANA,
-                     KONTROLY_VYSKA_DVERI, KONTROLY_ZDVIH_MAX_M, kontrolyVyctem, kontrolyBokySirka,
+                     KONTROLY_VYSKA_DVERI, KONTROLY_ZDVIH_MAX_M, KONTROLY_ROZMERY_KLADNE, KONTROLY_ROZMERY_NEZAPORNE, kontrolyRozmery, kontrolyVyctem, kontrolyBokySirka,
                      kontrolyPravidla, kontrolyProved, kontrolyText, kontrolyProjNavic, kontrolyPlatbyDuvody, kontrolyProjCenyBezSymbolu,
                      kontrolyPotvrzeni, kontrolyPotvrzeniPlati,
                      KONTROLY_DOKUMENTY_STRANY, KONTROLY_BRANA_JINDE, kontrolyDokumentStrana, kontrolyZabranaDokumentu,
