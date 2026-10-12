@@ -6,7 +6,9 @@ Větev z `test-draft` (v12.10.2) + merge N1 (`claude/koncova-cena-398`), N2
 Konflikty a jejich řešení: CHANGELOG v12.10.4. Roadmapa: #398, #399 hotovo,
 #400 čeká (B138, B77-zbytek, B107, B129, B130), #401 hotovo.
 Do `test-draft`/`test`/`main` nic — převod dělá koordinátor po zeleném kole.
-Stav celého kola: CHANGELOG v12.10.4.
+**Celé kolo VŠE ZELENÉ** (105 min 57 s): sady 224/0/1, mutace jádra 189/189,
+serveru 333/333, statické 3/3. Další krok (koordinátor): převod do `test-draft`
+a `test`, release odkaz v12.10.4 pro J. V.
 
 ---
 

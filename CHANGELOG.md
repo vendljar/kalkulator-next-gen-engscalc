@@ -31,7 +31,14 @@ Konflikty a jak se vyřešily:
 
 Kontrola po sloučení: všechny `src/test_*.js` a `netlify/test_*.mjs`
 prošly; `mutace.mjs --kontrola` 333 úseků, `mutace_jadro.mjs --kontrola`
-189 úseků. Celé kolo: viz níže (doplní se po doběhu).
+189 úseků.
+
+**Celé kolo nad 85374e3 VŠE ZELENÉ (105 min 57 s):** sady 224/0/1
+(přeskočen jen `test.js` — shoda s Excelem není v exportu), mutace jádra
+189 z 189, mutace serveru 333 z 333, statické kontroly 3 z 3. Podklady:
+kopie `/home/user/kng_podklady` s příručkou přejmenovanou na v12.10.4.
+Po kole přisloučen jen zápis výsledku kola N1 (4c6a42e, CHANGELOG + PREDAVKA,
+bez změny kódu).
 
 ## v12.10.3 — #398 „koncová cena 2": B133–B137, B145, B150a (větev claude/koncova-cena-398)
 
