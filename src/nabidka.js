@@ -11,7 +11,7 @@
  * Pevný text šablony překládá docxPrelozSablonu (docxgen.js); tady se překládají
  * jen dosazované hodnoty, aby výsledný dokument byl jazykově konzistentní.
  * Neznámý výraz zůstává česky (viz preklad.js) – nikdy se nic nevymýšlí. */
-function nabidkaData(zak, varianta, jekly, lang) {
+function nabidkaData(zak, varianta, jekly, lang, sablona) {
   const d = varianta.data;
   const Zv = d.ock.zadani, Cv = d.cenik, TSv = d.techspec;
   /* Odeslaná nabídka vydá svůj otisk, ne dnešní výpočet (nález A1). */
@@ -176,8 +176,15 @@ function nabidkaData(zak, varianta, jekly, lang) {
     TS_ZDVIH: cislo(Zv.zdvih), TS_DOLNI_PREJEZD: String(Math.round(Zv.prohluben * 1000)),
     TS_HORNI_PREJEZD: String(Math.round(Zv.prejezd * 1000)),
     TS_STANICE: ts('stanice'), TS_KABINA: ts('kabina'), TS_PUDORYS: ts('pudorys'),
-    TS_USAZENI_CELNI: ts('usazeniCelni'), TS_USAZENI_BOCNI: ts('usazeniBocni'),
-    TS_USAZENI_ZADNI: ts('usazeniZadni'),
+    /* USAZENÍ OCK PODLE TECHNICKÉ SPECIFIKACE (12. 10. 2026, pokyn J. V.).
+     * Specifikace má vedle „boční stěny" i levou a pravou boční stěnu zvlášť —
+     * do nabídky se nepropisovaly. Pole bez volby (výchozí „ -") vrací
+     * prázdno a řádek z nabídky zmizí (Word i online). Šablona bez symbolů
+     * {{TS_USAZENI_LEVA}} / {{TS_USAZENI_PRAVA}} (CN v14 a starší) dostane
+     * levou a pravou stěnu do řádku „boční stěny" — viz usazeniBocniSloucene. */
+    TS_USAZENI_CELNI: tsNeboPrazdno('usazeniCelni'), TS_USAZENI_BOCNI: tsNeboPrazdno('usazeniBocni'),
+    TS_USAZENI_LEVA: tsNeboPrazdno('usazeniLeva'), TS_USAZENI_PRAVA: tsNeboPrazdno('usazeniPrava'),
+    TS_USAZENI_ZADNI: tsNeboPrazdno('usazeniZadni'),
     TS_TYP_KONSTRUKCE: ts('typKonstrukce'), TS_SVISLE_NOSNE: ts('svisleNosne'),
     TS_PROFIL_SLOUPKU: ts('profilSloupku'), TS_VODOROVNE_NOSNE: ts('vodorovneNosne'),
     TS_ROZTEC: ts('roztecPricniku'), TS_PROFIL_PRICNIKU: ts('profilPricniku'),
@@ -283,6 +290,12 @@ function nabidkaData(zak, varianta, jekly, lang) {
    * Nabídku podepisuje ten obchodní technik, který je právě přihlášený;
    * do 5. 8. 2026 byl v šabloně natvrdo jeden kolega. Bez přihlášení
    * (offline build na ploše) se použijí firemní údaje – viz zpracovatel.js. */
+  /* Šablona, která levou a pravou boční stěnu neumí (víme to jen u Wordu —
+   * builder dostane symboly šablony), je dostane do řádku „boční stěny":
+   * „levá – …; pravá – …". Online nabídka (bez šablony) má řádky zvlášť. */
+  if (sablona && sablona.symboly && !sablona.symboly.has('TS_USAZENI_LEVA'))
+    placeholders.TS_USAZENI_BOCNI = usazeniBocniSloucene(placeholders, P);
+
   if (typeof zpracovatelPlaceholders === 'function')
     Object.assign(placeholders, zpracovatelPlaceholders(
       typeof firmaAktualni === 'function' ? firmaAktualni() : null));
@@ -502,6 +515,15 @@ function nabidkaJeVetaOZaruce(text, lang) {
 
 /* `platby` = platební kalendář OCK z nabidkaData (platbyOck). Bez něj (starší
  * volající) řádky kapitoly III. jako dřív. */
+/* Levá a pravá boční stěna do jednoho řádku „boční stěny" (šablona bez
+ * vlastních řádků). Vlastní text „boční stěny" zůstává první. */
+function usazeniBocniSloucene(ph, P) {
+  const casti = [];
+  if (ph.TS_USAZENI_BOCNI) casti.push(ph.TS_USAZENI_BOCNI);
+  if (ph.TS_USAZENI_LEVA) casti.push(P('levá') + ' – ' + ph.TS_USAZENI_LEVA);
+  if (ph.TS_USAZENI_PRAVA) casti.push(P('pravá') + ' – ' + ph.TS_USAZENI_PRAVA);
+  return casti.join('; ');
+}
 /* Slovo „nabídka" na začátku názvu souboru podle jazyka dokumentu. */
 const NABIDKA_SOUBOR_SLOVO = { cz: 'NABÍDKA', en: 'PRICE_QUOTATION', de: 'ANGEBOT', fr: 'DEVIS' };
 function nabidkaSlovoSouboru(L) { return NABIDKA_SOUBOR_SLOVO[L] || NABIDKA_SOUBOR_SLOVO.cz; }
@@ -524,8 +546,12 @@ function nabidkaNahledSekce(ph, lang, platby) {
       ['ZDVIH VÝTAHU [m] *', ph.TS_ZDVIH], ['DOLNÍ PŘEJEZD [mm]', ph.TS_DOLNI_PREJEZD],
       ['HORNÍ PŘEJEZD [mm]', ph.TS_HORNI_PREJEZD],
       ['POČET STANIC / NÁSTUPIŠŤ', ph.TS_STANICE + ' · ' + ph.TS_KABINA],
-      ['PŮDORYSNÉ ŘEŠENÍ ŠACHTY', ph.TS_PUDORYS], ['USAZENÍ OCK – ČELNÍ STĚNA', ph.TS_USAZENI_CELNI],
-      ['USAZENÍ OCK – BOČNÍ STĚNY', ph.TS_USAZENI_BOCNI], ['USAZENÍ OCK – ZADNÍ STĚNA', ph.TS_USAZENI_ZADNI]] },
+      ['PŮDORYSNÉ ŘEŠENÍ ŠACHTY', ph.TS_PUDORYS],
+      /* Usazení OCK jako v technické specifikaci; řádek bez volby zmizí
+       * (12. 10. 2026, pokyn J. V.). */
+      ...[['USAZENÍ OCK – ČELNÍ STĚNA', ph.TS_USAZENI_CELNI], ['USAZENÍ OCK – BOČNÍ STĚNY', ph.TS_USAZENI_BOCNI],
+        ['USAZENÍ OCK – LEVÁ BOČNÍ STĚNA', ph.TS_USAZENI_LEVA], ['USAZENÍ OCK – PRAVÁ BOČNÍ STĚNA', ph.TS_USAZENI_PRAVA],
+        ['USAZENÍ OCK – ZADNÍ STĚNA', ph.TS_USAZENI_ZADNI]].filter(x => !nabidkaHodnotaChybi(x[1]))] },
     { sekce: 'KONSTRUKČNÍ ŘEŠENÍ ŠACHTY', radky: [
       ['TYP KONSTRUKCE (ENG-M)', ph.TS_TYP_KONSTRUKCE], ['SVISLÉ NOSNÉ PRVKY', ph.TS_SVISLE_NOSNE],
       ['PROFIL SLOUPKŮ **', ph.TS_PROFIL_SLOUPKU], ['VODOROVNÉ NOSNÉ PRVKY', ph.TS_VODOROVNE_NOSNE],
@@ -672,7 +698,9 @@ function nabidkaNahledSekce(ph, lang, platby) {
 if (typeof dokumentRegistruj === 'function')
   dokumentRegistruj('nabidka', {
     nazev: 'Cenová nabídka (CN)', sablona: 'Sablona_NABIDKA_CN.docx',
-    builder: (zak, varianta, jekly, lang) => nabidkaData(zak, varianta, jekly, lang),
+    /* Symboly šablony: umí řádky levé a pravé boční stěny? (12. 10. 2026) */
+    sablonaSymboly: true,
+    builder: (zak, varianta, jekly, lang, sablona) => nabidkaData(zak, varianta, jekly, lang, sablona),
   });
 
-if (typeof module !== 'undefined') module.exports = { nabidkaData, nabidkaNahledSekce, nabidkaSlovoSouboru, NABIDKA_SOUBOR_SLOVO, nabidkaPopisZameru };
+if (typeof module !== 'undefined') module.exports = { nabidkaData, usazeniBocniSloucene, nabidkaNahledSekce, nabidkaSlovoSouboru, NABIDKA_SOUBOR_SLOVO, nabidkaPopisZameru };

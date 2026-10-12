@@ -1069,6 +1069,18 @@ test('opakované založení téhož účtu řekne důvod (účet už existuje)',
   await page.waitForTimeout(400);
   return (await nastav()).includes('Účet už existuje');
 })());
+/* Kontakt účtu opraví správce (12. 10. 2026, pokyn J. V.): telefon v bloku
+ * „Vypracoval" se bere z účtu a dřív ho mohl změnit jen sám uživatel. */
+test('u účtu obchodníka je tlačítko Kontakt…', await page.evaluate(() =>
+  [...document.querySelectorAll('#nastaveni-panel button')].filter(b => b.textContent === 'Kontakt…').length >= 2));
+await page.evaluate(() => onlineUzKontaktPanel('obchodnik@priklad.cz'));
+await page.fill('#onlineUzKTelefon', '+420 700 000 395');
+await page.click('#nastaveni-panel >> text=Uložit kontakt');
+await page.waitForFunction(() => { try { return ONLINE_STAV.uzivatele.some(u => u.email === 'obchodnik@priklad.cz' && u.telefon === '+420 700 000 395'); } catch (e) { return false; } });
+test('správce opraví telefon obchodníka a uloží se na server',
+  JSON.parse(pamet.get('uzivatele/obchodnik@priklad.cz') || '{}').telefon === '+420 700 000 395',
+  pamet.get('uzivatele/obchodnik@priklad.cz'));
+test('hláška potvrdí uložení kontaktu', (await nastav()).includes('Kontakt účtu obchodnik@priklad.cz je uložený'));
 await page.evaluate(() => { ONLINE_STAV.uzForm = { email: '', jmeno: '', role: 'Obchodník', heslo: '' }; zavriNastaveni(); });
 
 /* ---- 7) záloha ke stažení ---- */

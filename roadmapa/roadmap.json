@@ -6233,6 +6233,18 @@
    "detail" : "V3 (vysoká): nová zakázka obchodníka s ceníkem sestavení (nuly) + vlastní položka = libovolná cena; návrh: server u nové zakázky obchodníka při zveřejněném ceníku nahradí ceník sestavení zveřejněným (nebo odmítne) + serverová zábrana nového zámku s cenou ≤ 0. S2 (střední): vyřazení standardní položky + vlastní položka téhož názvu (dnes vědomá mez). N2/N3: duplicitní kid, volitelneVlastni, katalog z příchozího ceníku. Kontrola šablon: XML bez BOM v UTF-16 / jiné encoding, strop dekomprese ZIPu, komentář EOCD, po obnově ověřit soubory platných verzí.",
    "hotovoKdyz" : "Rozhodnutí J. V. k V3 a S2; opravy s testy před/po a mutacemi. Hotovo ve v8.10.1 (větev claude/cenik-395): V3 serverová zábrana nového zámku z ceníku bez cen / za 0 Kč (výměna ceníku na serveru nejde — server zakázku nevrací), N2 kid v každém výskytu + volitelneVlastni, N3 katalog PROJ z uložených variant, S2 vědomá mez, kontrola šablon: kódování, strop ZIPu 64 MB, jednoznačný EOCD, ověření platných šablon po obnově.",
    "kde" : "`src/uloziste.js` (uloCenikProblemy, B114), `src/sablona_obsah.js`, `src/docxgen.js` (zipPrecti), `netlify/functions/obnova.mjs`"
+  },
+  {
+   "id" : "396",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "vysoka",
+   "slozitost" : "S",
+   "nazev" : "Nabídka OCK: usazení OCK podle technické specifikace (levá a pravá boční stěna, řádky bez volby pryč); kontakt účtu upraví správce",
+   "proc" : "Pokyn J. V. 12. 10. 2026 (mail D. Sikory: špatný telefon v bloku Vypracoval; sken specifikace × nabídky).",
+   "detail" : "Nabídka (Word i online) nese levou a pravou boční stěnu ze specifikace; řádky usazení bez volby (výchozí „ -“) se nezobrazují. Šablona bez symbolů TS_USAZENI_LEVA/PRAVA (CN v14) dostane levou a pravou stěnu do řádku „boční stěny“. Telefon v bloku Vypracoval se bere z účtu zpracovatele — správce ho nově opraví v Nastavení → Uživatelé → Kontakt…",
+   "hotovoKdyz" : "Test src/test_usazeni_nabidka.js 2/12 → 14/0; overit_online +3. Hotovo ve v12.10.1.",
+   "kde" : "`src/nabidka.js`, `src/preklad.js`, `src/ui/online_ui.js`"
   }
  ],
  "meta" : {

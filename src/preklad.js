@@ -554,6 +554,8 @@ const PREKLAD = {
   "TYP KONSTRUKCE (ENG-M)": ["STRUCTURE TYPE (ENG-M)","KONSTRUKTIONSTYP (ENG-M)","TYPE DE STRUCTURE (ENG-M)"],
   "USAZENÍ OCK – LEVÁ BOČNÍ STĚNA": ["SHAFT STRUCTURE POSITION – LEFT SIDE WALL","POSITIONIERUNG DER SCHACHTKONSTRUKTION – LINKE SEITENWAND","FIXATION DE LA STRUCTURE DE GAINE – PAROI LATÉRALE GAUCHE"],
   "USAZENÍ OCK – PRAVÁ BOČNÍ STĚNA": ["SHAFT STRUCTURE POSITION – RIGHT SIDE WALL","POSITIONIERUNG DER SCHACHTKONSTRUKTION – RECHTE SEITENWAND","FIXATION DE LA STRUCTURE DE GAINE – PAROI LATÉRALE DROITE"],
+  "levá": ["left","links","gauche"],
+  "pravá": ["right","rechts","droite"],
   "USAZENÍ OCK – ZADNÍ STĚNA": ["SHAFT STRUCTURE POSITION – REAR WALL","POSITIONIERUNG DER SCHACHTKONSTRUKTION – RÜCKWAND","FIXATION DE LA STRUCTURE DE GAINE – PAROI ARRIÈRE"],
   "v exteriéru, přisazena k fasádě přes nástupní můstky + podchozí nosná OCK": ["Outdoor, attached to the facade via access bridges + supporting structure with a walk-through space beneath","Im Außenbereich, über Zugangsbrücken an die Fassade angebaut + Stützkonstruktion mit Durchgang darunter","À l'extérieur, accolée à la façade par des passerelles d'accès + structure porteuse avec passage en dessous"],
   "v exteriéru, přisazena k fasádě přes nástupní můstky": ["Outdoor, attached to the facade via access bridges","Im Außenbereich, über Zugangsbrücken an die Fassade angebaut","À l'extérieur, accolée à la façade par des passerelles d'accès"],

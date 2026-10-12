@@ -8,6 +8,36 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v12.10.1 — usazení OCK v nabídce podle specifikace, kontakt účtu upraví správce (větev claude/nabidka-usazeni-telefon)
+
+Pokyn J. V. 12. 10. 2026 (mail D. Sikory a sken specifikace × nabídky).
+Větev z `claude/cenik-395` (v8.10.1). Roadmapa #396.
+
+- **Usazení OCK v nabídce OCK jako v technické specifikaci.** Specifikace má
+  vedle „USAZENÍ OCK – BOČNÍ STĚNY" i levou a pravou boční stěnu zvlášť —
+  do nabídky (Word i online) se nepropisovaly a řádky bez volby se v online
+  nabídce vypisovaly s pomlčkou. Nově: online nabídka má řádky LEVÁ
+  a PRAVÁ BOČNÍ STĚNA; řádek usazení bez volby (výchozí „ -") se v nabídce
+  nezobrazuje (Word to dělal už dřív pro pomlčku). Word se šablonou bez
+  symbolů `{{TS_USAZENI_LEVA}}` / `{{TS_USAZENI_PRAVA}}` (CN v14 a starší,
+  i EN/DE/FR) dostane levou a pravou stěnu do řádku „boční stěny" jako
+  „levá – …; pravá – …" (EN left/right, DE links/rechts, FR gauche/droite).
+  Šablona, která symboly mít bude, je dostane do vlastních řádků.
+  Čelní stěna zůstává (předvyplněná věta z kalkulace).
+- **Telefon v bloku „Vypracoval".** Bere se z účtu zpracovatele (přihlášený
+  uživatel) — v kódu žádné jiné číslo není a server účet čte při každém
+  požadavku čerstvě; chybné číslo je tedy uložené v účtu. V tabulce
+  Nastavení → Uživatelé byl telefon jen vidět, opravit ho mohl jen sám
+  uživatel v Můj profil. Nově u každého účtu tlačítko **Kontakt…** —
+  správce opraví titul, funkci a telefon (server to uměl od #145; profil
+  hlavního účtu jen on sám, B28).
+
+Testy: `src/test_usazeni_nabidka.js` (nová sada) před opravou 2 prošlo /
+12 selhalo, po opravě 14 / 0; `overit_online.mjs` +3 kontroly (před
+opravou harness spadne na chybějícím tlačítku), 200 / 0.
+
+---
+
 ## v8.10.1 — #395: zbytky nezávislé revize 6. 10. 2026 (větev claude/cenik-395, neuvolněno)
 
 **Ověřeno celým kolem:** nad 518532b VŠE ZELENÉ (84 min 57 s): sady 221

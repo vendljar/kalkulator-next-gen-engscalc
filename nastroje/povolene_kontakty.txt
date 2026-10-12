@@ -42,6 +42,8 @@ vendl.jaroslav@engineers-cz.cz
 +420 603 555 666
 +420 777 111 222
 +420 999 888 777
+# 12. 10. 2026: smyšlený telefon v overit_online.mjs (oprava kontaktu účtu správcem, #396).
++420 700 000 395
 
 # NÁLEZ 25. 9. 2026 — ČEKÁ NA ROZHODNUTÍ J. V.: telefon kolegy, z jehož nabídky
 # vznikl vzor šablony PROJ, stojí v harnessu overit_nabidka_proj_word.mjs jako

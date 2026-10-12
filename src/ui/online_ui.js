@@ -96,6 +96,7 @@ const ONLINE_STAV = {
   profilHlaska: '',
   profilTyp: '',
   hesloPro: '',      // e-mail účtu, u kterého je rozbalený reset hesla
+  kontaktPro: '',    // e-mail účtu, u kterého je rozbalená úprava kontaktu (titul, funkce, telefon)
   formEmail: '',     // přihlašovací formulář přežívá překreslení
   formHeslo: '',
   hlaska: '',
@@ -1499,6 +1500,29 @@ function onlineUzHesloUloz(email) {
   ONLINE_STAV.hesloPro = '';
   onlineUzAkce({ akce: 'heslo', email, heslo },
     'Heslo účtu ' + email + ' je nastavené. Předejte ho osobně.');
+}
+
+/* ÚPRAVA KONTAKTU ÚČTU SPRÁVCEM (12. 10. 2026, pokyn J. V.). Telefon
+ * v bloku „Vypracoval" nabídky se bere z účtu zpracovatele; v tabulce účtů
+ * byl jen vidět a opravit ho mohl jen sám uživatel v Můj profil — obchodník
+ * s chybným číslem tak posílal nabídky se špatným telefonem a správce to
+ * neměl jak spravit. Server úpravu cizího profilu správcem umí od #145
+ * (akce 'profil' s e-mailem; hlavní účet jen on sám). */
+function onlineUzKontaktPanel(email) {
+  ONLINE_STAV.kontaktPro = (ONLINE_STAV.kontaktPro === email) ? '' : email;
+  onlineUzivateleObnov();
+}
+function onlineUzKontaktUloz(email) {
+  const hod = id => { const el = document.getElementById(id); return el ? String(el.value || '').trim() : ''; };
+  const profil = { titul: hod('onlineUzKTitul'), funkce: hod('onlineUzKFunkce'), telefon: hod('onlineUzKTelefon') };
+  ONLINE_STAV.kontaktPro = '';
+  return onlineUzAkce(Object.assign({ akce: 'profil', email }, profil),
+    'Kontakt účtu ' + email + ' je uložený. Do dalších nabídek půjde nový údaj.',
+    { poUspechu: (o) => {
+      /* Vlastní účet: blok „Vypracoval" musí platit hned, ne až po obnovení stránky. */
+      if (ONLINE_STAV.ja && ONLINE_STAV.ja.email === email && o)
+        Object.assign(ONLINE_STAV.ja, { titul: o.titul || '', funkce: o.funkce || '', telefon: o.telefon || '' });
+    } });
 }
 
 function onlineUzRoleZmen(email, role) {
@@ -2987,6 +3011,16 @@ function onlineRadekUzivatele(u) {
           onkeydown="if(event.key==='Enter')onlineUzHesloUloz('${escJs(u.email)}')">
         <button class="mini" onclick="onlineUzHesloUloz('${escJs(u.email)}')">Uložit heslo</button>
         <button class="mini" onclick="onlineUzHesloPanel('')">Zrušit</button></td></tr>` : '';
+  const kontaktRadek = ONLINE_STAV.kontaktPro === u.email
+    ? `<tr><td colspan="7" style="text-align:left;padding:6px 10px">
+        Kontakt do bloku „Vypracoval" pro ${esc(u.email)}:
+        <input type="text" id="onlineUzKTitul" style="width:70px" maxlength="40" placeholder="titul" value="${esc(u.titul || '')}">
+        <input type="text" id="onlineUzKFunkce" style="width:180px" maxlength="80" placeholder="funkce" value="${esc(u.funkce || '')}">
+        <input type="text" id="onlineUzKTelefon" style="width:150px" maxlength="40" placeholder="+420 602 000 000"
+          value="${esc(u.telefon || '')}" onkeydown="if(event.key==='Enter')onlineUzKontaktUloz('${escJs(u.email)}')">
+        <button class="mini" onclick="onlineUzKontaktUloz('${escJs(u.email)}')">Uložit kontakt</button>
+        <button class="mini" onclick="onlineUzKontaktPanel('')">Zrušit</button></td></tr>` : '';
+  const ja = ONLINE_STAV.ja && ONLINE_STAV.ja.email === u.email;
   /* Titul, funkce a telefon jsou v tabulce vidět proto, že přesně tyhle údaje
    * odcházejí zákazníkovi v bloku „Vypracoval" pod cenovou nabídkou (#145).
    * Administrátor tak na jednom místě pozná, komu chybí telefon, a nabídka
@@ -3002,6 +3036,8 @@ function onlineRadekUzivatele(u) {
     <td><input type="checkbox" ${u.aktivni ? 'checked' : ''} ${hlavni ? 'disabled' : ''}
         onchange="onlineUzAktivni('${escJs(u.email)}', this.checked)"></td>
     <td><button class="mini" onclick="onlineUzHesloPanel('${escJs(u.email)}')">Nové heslo…</button>
+      ${/* Profil hlavního účtu mění jen on sám (B28) — jiným správcům tlačítko nepatří. */ ''}
+      ${(hlavni && !ja) ? '' : `<button class="mini" onclick="onlineUzKontaktPanel('${escJs(u.email)}')">Kontakt…</button>`}
       ${hlavni ? '' : (u.archiv
         ? `<button class="mini" onclick="onlineUzArchiv('${escJs(u.email)}', false)">Vrátit z archivu</button>`
         : `<button class="mini" onclick="onlineUzArchiv('${escJs(u.email)}', true)">Archivovat…</button>`)}
@@ -3009,7 +3045,7 @@ function onlineRadekUzivatele(u) {
             které vždycky skončí odmítnutím, do tabulky nepatří. */ ''}
       ${(hlavni || (ONLINE_STAV.ja && ONLINE_STAV.ja.email === u.email)) ? ''
         : `<button class="mini" onclick="onlineUzSmaz('${escJs(u.email)}')">Smazat…</button>`}</td>
-  </tr>${resetRadek}`;
+  </tr>${resetRadek}${kontaktRadek}`;
 }
 
 /* HTML správy účtů. Vykresluje se v panelu Nastavení (vnitřní záložka
