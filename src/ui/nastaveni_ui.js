@@ -1128,6 +1128,19 @@ async function slovDoplnitVse() {
   const n = slovnikAplikuj(zm, prekladNastav);
   slovPrepocti('Doplněno ' + n + ' překladů.');
 }
+/* Hromadné převzetí odlišného znění (12. 10. 2026, zadání J. V.). Do té doby
+ * tu tlačítko schválně nebylo (převzetí řádek po řádku, aby se rozhodovalo
+ * u každého hesla). J. V. si ale tabulku kontroluje mimo aplikaci a pak chce
+ * převzít celou — u 44 řádků bylo klikání po jednom zbytečná dřina. Jedno
+ * potvrzení s počtem stačí: kdo tabulce nevěří, převezme po řádcích. */
+async function slovPrevzitVse() {
+  if (!jeAdmin() || !SLOV_STAV) return;
+  const zm = SLOV_STAV.rozdil.rozdilne;
+  if (!zm.length) return;
+  if (!await potvrd('Převzít všech ' + zm.length + ' odlišných znění z tabulky?\n\nU každého řádku bloku „Odlišné znění“ se překlad v aplikaci nahradí zněním z tabulky.')) return;
+  const n = slovnikAplikuj(zm.slice(), prekladNastav);
+  slovPrepocti('Převzato z tabulky ' + n + ' odlišných znění.');
+}
 function slovVezmi(kategorie, i) {
   if (!jeAdmin() || !SLOV_STAV) return;
   const z = (SLOV_STAV.rozdil[kategorie] || [])[i];
@@ -1231,8 +1244,10 @@ function nastSlovnik() {
         + `<div class="btns" style="margin-top:8px"><button class="primary" onclick="slovDoplnitVse()">Doplnit všech ${s.doplnit}</button></div>`) : '')
     + (s.rozdilne ? blok(`Odlišné znění (${s.rozdilne})`,
         `Obě strany překlad mají a neshodují se. <b>Tady rozhodujete vy</b> – aplikace nemusí být pozadu,
-         někdo mohl znění vědomě upravit. Hromadné tlačítko tu schválně není.`,
-        slovTabulka(d.rozdilne, 'rozdilne', true)) : '')
+         někdo mohl znění vědomě upravit. Převzít jde po řádcích, nebo – máte-li tabulku zkontrolovanou –
+         všechno najednou tlačítkem pod tabulkou.`,
+        slovTabulka(d.rozdilne, 'rozdilne', true)
+        + `<div class="btns" style="margin-top:8px"><button class="primary" id="slovPrevzitVse" onclick="slovPrevzitVse()">Převzít všech ${s.rozdilne} z tabulky</button></div>`) : '')
     + (s.nove ? blok(`Hesla jen v tabulce (${s.nove})`,
         `Aplikace je zatím nezná. Přidat je můžete, ale slovník tím poroste i o výrazy, které se nikde nepoužijí.`,
         `<div class="note">${d.nove.slice(0, 40).map(x => esc(x.cz)).join(' · ')}${d.nove.length > 40 ? ' …' : ''}</div>
