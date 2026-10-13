@@ -88,6 +88,16 @@ z `test-draft` (v12.10.4, 1df7283). Roadmapa #400 (zbytek) a #402–.
   „__proto__" zmizel. `popisyOciste` a `popisyJazykyOciste` je nepřijmou.
   `test_cenik_popisy.js` +2 (před 2 FAIL). Mutace B81, B103 (sady přidány
   do mutací serveru) a přesměrovaná B8 — 3/3.
+- **B105 (nízká) — čas rozhodnutí o slevě z prohlížeče.** Server bral
+  `schvalilKdy`/`zamitlKdy`, pokud je klient poslal — rozhodnutí šlo
+  antedatovat. Čas teď razí server vždy; porovnání „totéž rozhodnutí" čas
+  nepočítá a uložený serverový čas se drží.
+- **B101 (nízká) — rozhodnutí zpět na „čeká" bez práva.** Obchodník uložením
+  vrátil zamítnutí (nebo schválení) do fronty jako nerozhodnuté. Bez změny
+  procent a bez práva rozhodnout se vrací uložené rozhodnutí; vedoucí
+  („Vzít rozhodnutí zpět") smí, nová procenta = nová žádost. Testy:
+  `test_schvalovani.js` +6 (před 69/4, po 73/0); mutace B101, B105 chycené
+  (sada přidána do mutací serveru); `overit_schvalovani` 57/0.
 
 ## v12.10.4 — integrace nočních dávek N1–N3 (větev claude/integrace-13-10)
 

@@ -69,7 +69,9 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* Revize #401 (12. 10. 2026): jádro zveřejněného slovníku a razítko v zámku. */
      '../src/test_slovnik.js',
      /* B81, B103 (13. 10. 2026): prototypové klíče analytiky a dodatkových textů. */
-     '../src/test_analytika.js', '../src/test_cenik_popisy.js'];
+     '../src/test_analytika.js', '../src/test_cenik_popisy.js',
+     /* B101, B105 (13. 10. 2026): serverová kontrola rozhodnutí o slevě. */
+     '../src/test_schvalovani.js'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -1277,6 +1279,14 @@ const MUTACE = [
     nahrad: "  if (typeof x === 'string' && ULO_CISLO_TEXT.test(x)) return parseFloat(x.replace(',', '.'));",
     proc: 'ceník s „…,0" by B112 vypadal jako beze změny, jádro by z něj počítalo nuly (B135)' },
   /* ---------- dávka 13. 10. 2026: B138 ---------- */
+  { nazev: 'B105: čas schválení slevy z prohlížeče', soubor: '../src/schvalovani.js',
+    hledej: "          sl.schvalil = jmeno; sl.schvalilEmail = relace.email || ''; sl.schvalilKdy = ted;",
+    nahrad: "          sl.schvalil = jmeno; sl.schvalilEmail = relace.email || ''; if (!sl.schvalilKdy) sl.schvalilKdy = ted;",
+    proc: 'schválení slevy by šlo antedatovat (B105)' },
+  { nazev: 'B101: obchodník vrátí rozhodnutí o slevě na „čeká"', soubor: '../src/schvalovani.js',
+    hledej: "      if (klicUlozeny && !zmenaProc && sl.stav === SCHV_CEKA && !schvalovaniSmiRozhodnout(role, p, nast)) {",
+    nahrad: "      if (false) {",
+    proc: 'zamítnutí slevy by uložením zmizelo a žádost by se vrátila do fronty (B101)' },
   { nazev: 'B81: prototypový klíč v mapě analytiky projde', soubor: '../src/analytika.js',
     hledej: "function analytikaKlicPovolen(k) { return ANALYTIKA_PROTO.indexOf(String(k)) < 0; }",
     nahrad: "function analytikaKlicPovolen(k) { return true; }",

@@ -344,5 +344,41 @@ test('#341: nespočitatelná varianta uložení neshodí', m.ok === true);
 test('#341: prázdné vstupy nepadají',
   schvalovaniServerMarze(null, null, JEKLY, NAST).ok && schvalovaniServerMarze(null, { varianty: [null, {}] }, JEKLY, NAST).ok);
 
+/* B105 (13. 10. 2026): čas rozhodnutí razí server, ne prohlížeč. */
+{
+  const z = zakSe(podvrh(NAD_STROP));                 // schvalilKdy z prohlížeče: 2026-08-22
+  const pred = Date.now();
+  const r1 = schvalovaniServerKontrola(null, z, VED, NAST);
+  const kdy = z.varianty[0].data.sleva.schvalilKdy;
+  test('B105: čas schválení je čas serveru, ne podvržený z prohlížeče',
+    r1.ok === true && kdy !== '2026-08-22T00:00:00Z' && Date.parse(kdy) >= pred - 1000, kdy);
+  const ulozenaB = JSON.parse(JSON.stringify(z));
+  const znovu = JSON.parse(JSON.stringify(z)); znovu.varianty[0].data.sleva.schvalilKdy = '2026-01-01T00:00:00Z';
+  const r2 = schvalovaniServerKontrola(ulozenaB, znovu, OBCH, NAST);
+  test('B105: obchodník uloží zakázku se schválením i s jiným časem v prohlížeči (200) a čas zůstane serverový',
+    r2.ok === true && znovu.varianty[0].data.sleva.schvalilKdy === kdy, JSON.stringify([r2, znovu.varianty[0].data.sleva.schvalilKdy]));
+  const zamZ = zakSe({ ...slevaDefault(), procenta: NAD_STROP, stav: SCHV_ZAMITNUTO, zamitnutoProc: NAD_STROP,
+    zamitl: 'x', zamitlKdy: '2020-01-01T00:00:00Z' });
+  schvalovaniServerKontrola(null, zamZ, VED, NAST);
+  test('B105: čas zamítnutí taky ze serveru', zamZ.varianty[0].data.sleva.zamitlKdy !== '2020-01-01T00:00:00Z');
+}
+/* B101 (13. 10. 2026): rozhodnutí zpět na „čeká" jen s právem rozhodnout. */
+{
+  const ul = zakSe({ ...slevaDefault(), procenta: NAD_STROP, stav: SCHV_ZAMITNUTO, zamitnutoProc: NAD_STROP,
+    zamitl: 'Vedoucí Věra (Vedoucí)', zamitlKdy: '2026-10-01T00:00:00Z', role: 'Obchodník' });
+  const vrat = JSON.parse(JSON.stringify(ul)); schvalovaniVrat(vrat.varianty[0].data.sleva);
+  const r1 = schvalovaniServerKontrola(ul, vrat, OBCH, NAST);
+  test('B101: obchodník zamítnutí uložením na „čeká" nevrátí (uložené rozhodnutí zůstane)',
+    r1.ok === true && vrat.varianty[0].data.sleva.stav === SCHV_ZAMITNUTO && vrat.varianty[0].data.sleva.zamitl === 'Vedoucí Věra (Vedoucí)',
+    JSON.stringify(vrat.varianty[0].data.sleva));
+  const vrat2 = JSON.parse(JSON.stringify(ul)); schvalovaniVrat(vrat2.varianty[0].data.sleva);
+  const r2 = schvalovaniServerKontrola(ul, vrat2, VED, NAST);
+  test('B101: vedoucí rozhodnutí vzít zpět smí', r2.ok === true && vrat2.varianty[0].data.sleva.stav === SCHV_CEKA, JSON.stringify(vrat2.varianty[0].data.sleva));
+  const zvys = JSON.parse(JSON.stringify(ul)); zvys.varianty[0].data.sleva.procenta = NAD_STROP + 1;
+  schvalovaniVrat(zvys.varianty[0].data.sleva);
+  test('B101: nová žádost (jiná procenta) se obchodníkovi do fronty vrátit smí',
+    schvalovaniServerKontrola(ul, zvys, OBCH, NAST).ok === true && zvys.varianty[0].data.sleva.stav === SCHV_CEKA);
+}
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

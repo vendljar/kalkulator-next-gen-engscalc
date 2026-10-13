@@ -382,13 +382,16 @@ function schvalovaniSouhrn(seznam) {
  *
  * Vrací { ok:true } nebo { ok:false, chyba } a v `nova` doplní razítka.
  * `relace` = { email, jmeno, role }, `nast` = program.db.slevy (stropy). */
-function schvalovaniRozhodnutiKlic(sl) {
+/* `bezCasu` (B105, 13. 10. 2026): čas rozhodnutí razí server, takže se do
+ * porovnání „je to pořád totéž rozhodnutí" nepočítá — prohlížeč drží svůj
+ * čas z okamžiku kliknutí až do příštího načtení. */
+function schvalovaniRozhodnutiKlic(sl, bezCasu) {
   if (!sl) return '';
   const lidske = sl.stav === SCHV_SCHVALENO || (sl.stav === SCHV_ZAMITNUTO && !!sl.zamitl);
   if (!lidske) return '';
   return JSON.stringify({ stav: sl.stav, p: +sl.procenta || 0,
-    sp: sl.schvalenoProc, s: sl.schvalil || '', sk: sl.schvalilKdy || '',
-    zp: sl.zamitnutoProc, z: sl.zamitl || '', zk: sl.zamitlKdy || '' });
+    sp: sl.schvalenoProc, s: sl.schvalil || '', sk: bezCasu ? '' : (sl.schvalilKdy || ''),
+    zp: sl.zamitnutoProc, z: sl.zamitl || '', zk: bezCasu ? '' : (sl.zamitlKdy || '') });
 }
 /* Pole rozhodnutí, která se u vrácené žádosti obnoví z uložené verze. */
 const SCHV_ROZHODNUTI_POLE = ['stav', 'schvalenoProc', 'schvalil', 'schvalilKdy', 'schvalilEmail',
@@ -416,19 +419,38 @@ function schvalovaniServerKontrola(stara, nova, relace, nast) {
       const zmenaProc = !ulozene || (+ulozene.procenta || 0) !== p;
       if (zmenaProc) { if (role) sl.role = role; }
       else if (ulozene && ulozene.role != null) sl.role = ulozene.role;
-      const klicNovy = schvalovaniRozhodnutiKlic(sl);
-      if (klicNovy && klicNovy === schvalovaniRozhodnutiKlic(ulozene)) continue;   // beze změny
+      const klicNovy = schvalovaniRozhodnutiKlic(sl, true);
+      const klicUlozeny = schvalovaniRozhodnutiKlic(ulozene, true);
+      if (klicNovy && klicNovy === klicUlozeny) {                               // beze změny
+        /* Čas rozhodnutí zůstává ten, který razil server (B105). */
+        ['schvalilKdy', 'zamitlKdy'].forEach(k => {
+          if (ulozene[k] !== undefined) sl[k] = ulozene[k]; else delete sl[k];
+        });
+        continue;
+      }
       if (klicNovy) {
         if (!schvalovaniSmiRozhodnout(role, p, nast))
           return { ok: false, chyba: 'Slevu ' + p + ' % smí schválit nebo zamítnout jen '
             + 'nadřízený s dostatečným stropem; role ' + (role || '?') + ' na to právo nemá.' };
+        /* ČAS ROZHODNUTÍ RAZÍ SERVER (B105, audit 9. 9. 2026). Dřív se bral
+         * čas z prohlížeče, pokud nějaký poslal — rozhodnutí šlo antedatovat
+         * (třeba před odeslání nabídky). */
         if (sl.stav === SCHV_SCHVALENO) {
-          sl.schvalil = jmeno; sl.schvalilEmail = relace.email || '';
-          if (!sl.schvalilKdy) sl.schvalilKdy = ted;
+          sl.schvalil = jmeno; sl.schvalilEmail = relace.email || ''; sl.schvalilKdy = ted;
         } else {
-          sl.zamitl = jmeno; sl.zamitlEmail = relace.email || '';
-          if (!sl.zamitlKdy) sl.zamitlKdy = ted;
+          sl.zamitl = jmeno; sl.zamitlEmail = relace.email || ''; sl.zamitlKdy = ted;
         }
+        continue;
+      }
+      /* ROZHODNUTÍ ZPĚT NA „ČEKÁ" JEN S PRÁVEM ROZHODNOUT (B101, audit 9. 9.
+       * 2026). „Vzít rozhodnutí zpět" (schvalovaniVrat) je krok nadřízeného;
+       * bez změny procent ho obchodník uložením neprovede — zamítnutí by tak
+       * zmizelo a žádost by se vrátila do fronty, jako by o ní nikdo nerozhodl.
+       * Vrací se uložené rozhodnutí (stejně jako u cizího auto-schválení). */
+      if (klicUlozeny && !zmenaProc && sl.stav === SCHV_CEKA && !schvalovaniSmiRozhodnout(role, p, nast)) {
+        SCHV_ROZHODNUTI_POLE.forEach(k => {
+          if (ulozene[k] !== undefined) sl[k] = ulozene[k]; else delete sl[k];
+        });
         continue;
       }
       const autoBezeZmeny = !!ulozene && ulozene.stav === SCHV_AUTO && (+ulozene.procenta || 0) === p;
