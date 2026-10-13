@@ -1846,6 +1846,13 @@ console.log('\n===== AUDIT B8: OČISTA DÁVKY ANALYTIKY =====\n');
   const sAn = await uloziste('analytika');
   const pred = (await sAn.cti(dnesKlic)) || {};
   const predCizi = ((pred.poUzivateli || {})['kolega@example.com'] || {}).chyby || 0;
+  /* B35 (13. 10. 2026): klíč cas/ vzniká jen pro zakázku z rejstříku. Aby
+   * kontrola TVARU (B8) byla dál vidět sama za sebe, rejstřík dostane
+   * zakázku, na jejíž jméno souboru se cizí tvar převede („x-fetch.json") —
+   * bez tvarové kontroly by pak klíč s `fetch(` vznikl. */
+  const sZak = await uloziste('zakazky');
+  const rejPred = await sZak.cti('_rejstrik');
+  await sZak.zapis('_rejstrik', { schema: 1, zakazky: ((rejPred && rejPred.zakazky) || []).concat([{ soubor: 'x-fetch.json', cislo: '' }]) });
   const r = await post(analytikaFn, 'http://x/api/analytika', { akce: 'udalosti',
     den: { pocty: { chyby: -500, zakazky: 'AAAA' }, zalozky: { ['x'.repeat(5000)]: 3 },
            kliky: { 'btn': 1e12 },
@@ -1867,6 +1874,7 @@ console.log('\n===== AUDIT B8: OČISTA DÁVKY ANALYTIKY =====\n');
   const casKlice = await sAn.seznam('cas/');
   test('B8: klíč času zakázky s cizím tvarem se nezaloží',
     !casKlice.some(k => k.includes('fetch')), casKlice.join(','));
+  if (rejPred) await sZak.zapis('_rejstrik', rejPred); else await sZak.smaz('_rejstrik');
 }
 
 console.log('\n===== ZVEŘEJNĚNÝ SLOVNÍK (#401, 12. 10. 2026) =====\n');

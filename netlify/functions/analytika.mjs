@@ -19,8 +19,29 @@
 import { uloziste, vyzadujRoli, json } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 
+/* Jména souborů zakázek, ke kterým smí vzniknout klíč `cas/` (B35,
+ * rozhodnutí J. V. 13. 10. 2026 „Ano"). Čte se JEDEN záznam — rejstřík
+ * zakázek (`_rejstrik` v úložišti `zakazky`) — a jen tehdy, když v dávce
+ * přijde číslo, které ještě klíč nemá; zakázky jednotlivě se nečtou.
+ * Číslo z hlavičky (klient ho posílá tak, jak je v ZAK.cislo, i s mezerami)
+ * se převede na jméno souboru stejnou funkcí, jakou zakázka dostala jméno
+ * při uložení (uloKlicSouboru) — žádná druhá pravda o tvaru čísla.
+ * Rejstřík se přestavuje při každém uložení i obnově; chybí-li zakázka
+ * v něm, čas se nezapíše — ztratí se nanejvýš statistika, ne data. */
+async function zakazkyZRejstriku() {
+  const rej = await (await uloziste('zakazky')).cti('_rejstrik');
+  const soubory = new Set();
+  for (const z of (rej && Array.isArray(rej.zakazky)) ? rej.zakazky : [])
+    if (z && typeof z.soubor === 'string' && z.soubor) soubory.add(z.soubor);
+  return soubory;
+}
+function zakazkaVRejstriku(ULO, soubory, cislo) {
+  return soubory.has(ULO.uloKlicSouboru(cislo) + ULO.ULO_PRIPONA);
+}
+
 export default async (req) => {
-  try { await jadro(); } catch (e) { return jadroChyba(e); }
+  let ULO;
+  try { ({ ULO } = await jadro()); } catch (e) { return jadroChyba(e); }
   const g = globalThis;
   const s = await uloziste('analytika');
   const dnes = new Date().toISOString().slice(0, 10);
@@ -108,7 +129,7 @@ export default async (req) => {
        * nových klíčích na požadavek do nekonečna (a souhrn je pak čte
        * všechny). Nad stropem se nové zakázky nezakládají, existující se
        * přičítají dál. Seznam se čte jen jednou a jen když přijde nový klíč. */
-      let existujici = null;
+      let existujici = null, vRejstriku = null;
       for (const [zak, c] of Object.entries(t.casy).slice(0, 50)) {
         /* Klíč musí vypadat jako číslo nabídky (B8): písmena, číslice,
          * pomlčky, mezery, tečky — a nanejvýš 60 znaků. Cizí tvar se zahodí,
@@ -121,6 +142,12 @@ export default async (req) => {
         if (!ock && !proj) continue;
         let stary = await s.cti(klic);
         if (!stary) {
+          /* B35 (13. 10. 2026, J. V. „Ano"): strop sám nestačil — jeden účet
+           * ho zaplnil smyšlenými čísly a měření pak skončilo pro všechny.
+           * Nový klíč jen pro zakázku, která v databázi existuje; strop
+           * zůstává jako druhá pojistka. */
+          if (!vRejstriku) vRejstriku = await zakazkyZRejstriku();
+          if (!zakazkaVRejstriku(ULO, vRejstriku, cislo)) continue;
           if (!existujici) existujici = new Set(await s.seznam('cas/'));
           if (!existujici.has(klic) && existujici.size >= g.ANALYTIKA_MAX_CASU) continue;   // B35
           existujici.add(klic);
