@@ -1393,12 +1393,14 @@ function zakazkaHlavicka(ock) {
    * hlavně kterým ceníkem se počítalo. */
   const puvodVeta = (typeof puvodPopis === 'function') ? puvodPopis(akt) : '';
   const puvodRadek = puvodVeta ? `<div class="zak-puvod noprint">⤺ ${esc(puvodVeta)}</div>` : '';
-  /* Načíst, Nová zakázka, Historická kalkulace, Přehled i přepínač varianty
-   * nesou třídu cteni-ok: v režimu čtení (zámek okna) zůstávají živé, protože
-   * nic nezapisují — bez ní by je CSS .cteni-zamceno vypnulo spolu s poli
-   * (hlášení J. V. 7. 9. 2026: „nemůžu načíst starou ani otevřít novou"). */
-  const archivBtn = `<button class="mini cteni-ok" onclick="otevriArchiv()"
-    title="nahlédnout do uložených zakázek a převzít historickou kalkulaci jako alternativu">↩ Historická kalkulace…</button>`;
+  /* Načíst, Nová zakázka, Přehled i přepínač varianty nesou třídu cteni-ok:
+   * v režimu čtení (zámek okna) zůstávají živé, protože nic nezapisují — bez
+   * ní by je CSS .cteni-zamceno vypnulo spolu s poli (hlášení J. V. 7. 9. 2026:
+   * „nemůžu načíst starou ani otevřít novou").
+   *
+   * Tlačítko „↩ Historická kalkulace…" (okno archivu, #17) bylo 13. 10. 2026
+   * na pokyn J. V. odstraněno („Myslím, že už k ničemu není."). Varianty, které
+   * jím dřív vznikly, si původ nesou dál (v.puvod → puvodPopis, značka ⤺). */
 
   /* Tlačítko „Převzít údaje z hlavičky OCK/PROJ" v liště obou kalkulací bylo
    * 5. 8. 2026 na pokyn zrušeno. Lišta kalkulace má nést jen to, co se dělá
@@ -1424,7 +1426,6 @@ function zakazkaHlavicka(ock) {
         ${zakTrojice()}
         <span class="zak-cena-del"></span>
         <button class="mini" onclick="varNova()">+ Nová varianta (kopie otevřené)</button>
-        ${archivBtn}
         <button class="mini cteni-ok" onclick="prepniTab('zakazka')">Přehled cenových nabídek →</button>
       </div>${zakUlozeniRadek()}`;
     return `<div class="card zak-bar${radaTed === 'zahr' ? ' rada-zahr' : ''}${
@@ -1450,7 +1451,6 @@ function zakazkaHlavicka(ock) {
       ${zakTrojice()}
       <span class="zak-cena-del"></span>
       <button class="mini" onclick="varNova()">+ Nová varianta (kopie otevřené)</button>
-      ${archivBtn}
       <button class="mini cteni-ok" onclick="prepniTab('zakazka')">Přehled cenových nabídek →</button>
     </div>${zakUlozeniRadek()}`;
   return `<div class="card zak-bar${radaTed === 'zahr' ? ' rada-zahr' : ''}${

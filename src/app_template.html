@@ -25,7 +25,10 @@
 <meta name="theme-color" content="#3A3F45">
 <style>
   :root { --ink:#1a2332; --mut:#6b7686; --line:#dde3ea; --bg:#f4f6f9; --card:#fff;
-          --acc:#1f5eff; --ok:#0a7d4f; --warn:#b45309; --sec:#eef2f8; }
+          --acc:#1f5eff; --ok:#0a7d4f; --warn:#b45309; --sec:#eef2f8;
+          /* probarvení buněk ceníku (13. 10. 2026): nula/prázdno, nad 40 000 Kč */
+          --cenik-nula-bg:#fde2e2; --cenik-nula-okraj:#f2a7a7;
+          --cenik-vysoka-bg:#ffe6c7; --cenik-vysoka-okraj:#f5b56b; }
   /* TESTOVACÍ WEB VYPADÁ JINAK (16. 9. 2026, zadání J. V.: „testovací
      rozhraní musí mít vlastní dummy data a jiný barevný vizuál").
 
@@ -457,6 +460,12 @@
   .ceniktbl td.zahr-bunka { white-space:nowrap; }
   .ceniktbl input.zahr-cena { width:96px; }
   .ceniktbl input.zahr-cena.ma { border-color:#fdba74; background:#fffaf3; }
+  /* Probarvení buněk ceníku (13. 10. 2026, zadání J. V.): světle červená =
+   * nula nebo nevyplněno, světle oranžová = víc než 40 000 Kč. Třídy dává
+   * cenikObarvi() v ui/cenik_ui.js; zdvojená třída přebije .zahr-cena.ma.
+   * Aplikace tmavý režim nemá — barvy jsou proměnné v :root, kdyby přibyl. */
+  .ceniktbl input.cenik-nula.cenik-nula { background:var(--cenik-nula-bg); border-color:var(--cenik-nula-okraj); }
+  .ceniktbl input.cenik-vysoka.cenik-vysoka { background:var(--cenik-vysoka-bg); border-color:var(--cenik-vysoka-okraj); }
   .rada-stitek { font-size:11.5px; font-weight:600; padding:1px 9px; border-radius:999px; margin-left:8px;
                  background:#fff; color:#b45309; border:1px solid #fdba74; text-transform:none; letter-spacing:0; }
   /* Zamčená (nepočítaná) strana zakázky — 23. 8. 2026. Buňky zešednou
@@ -755,12 +764,7 @@
     border-radius:8px; padding:9px 12px; margin-bottom:8px; font-size:12.5px;
     line-height:1.55; font-weight:600; }
   .seznam-chyba .rada { display:block; font-weight:400; margin-top:4px; }
-  /* #17 – panel historických kalkulací. Je širší než ostatní modály (osm
-     sloupců plus dvě tlačítka) a tabulka se roluje uvnitř, aby ovládací
-     lišta i vysvětlivky zůstaly vidět. */
-  #archiv-panel { max-width:1180px; }
-  #archivTelo { overflow:auto; max-height:52vh; }
-  /* Databáze ve složce – stejně široký panel jako archiv, tabulka se roluje
+  /* Databáze ve složce – široký panel (1180 px), tabulka se roluje
      uvnitř, aby hledání i hláška o stavu složky zůstaly nad ní vidět. */
   #uloziste-panel { max-width:1180px; }
   #ulozisteTelo { overflow:auto; max-height:52vh; }
@@ -795,8 +799,6 @@
   .archtbl tr:hover td { background:#f7f9fe; }
   .archiv-soubory { display:flex; align-items:center; gap:6px; flex-wrap:wrap;
     margin:6px 0 10px; font-size:12px; color:var(--mut); }
-  .archiv-chip { display:inline-flex; align-items:center; gap:6px; background:#f3f6fa;
-    border:1px solid var(--line); border-radius:999px; padding:2px 4px 2px 10px; }
   /* #35 – upozornění na ceník starší, než jaký nese dnešní sestavení.
      Barevně stejné jako .seznam-varovani: je to upozornění, ne chyba – ceník
      bývá u konkrétní zakázky upravený schválně a nic se neblokuje. */
@@ -1063,11 +1065,6 @@
 
 <div id="nastaveni-overlay" class="modal-overlay" style="display:none" onclick="if(event.target===this)zavriNastaveni()">
   <div class="modal wide" id="nastaveni-panel"></div>
-</div>
-
-<!-- #17 – nahlédnutí do uložených zakázek a převzetí historické kalkulace -->
-<div id="archiv-overlay" class="modal-overlay" style="display:none" onclick="if(event.target===this)zavriArchiv()">
-  <div class="modal" id="archiv-panel"></div>
 </div>
 
 <!-- Databáze zakázek ve vybrané složce (mezikrok před online úložištěm) -->

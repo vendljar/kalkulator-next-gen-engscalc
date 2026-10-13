@@ -306,8 +306,6 @@ function seznamKarta() {
       <button class="primary" onclick="varNova()">+ Nová varianta (kopie otevřené)</button>
       <button onclick="zakazkaDuplikujUI()"
         title="založit SAMOSTATNOU zakázku s vlastním číslem CN z kopie téhle – pro novou poptávku, která se té staré podobá">⧉⧉ Duplikovat jako novou zakázku…</button>
-      <button onclick="otevriArchiv()"
-        title="nahlédnout do uložených zakázek a převzít historickou kalkulaci jako alternativu">↩ Historická kalkulace…</button>
     </div>
     <div class="note">Přepínačem vlevo otevřete variantu k úpravám (záložky Kalkulace OCK, Technická
     specifikace i Kalkulace PROJ pak pracují s jejími daty). Zaškrtnutím ve sloupci <b>Řídící</b> určíte
@@ -316,9 +314,6 @@ function seznamKarta() {
     další dostane příponu .1, .2, .3 … Vytištěním cenové nabídky se varianta uzamkne (🔒 odeslána) –
     co odešlo zákazníkovi, musí zůstat doslova. Pokračuje se tlačítkem <b>⧉</b> na jejím řádku, které
     založí kopii s dalším číslem.</div>
-    <div class="note">Tlačítko <b>↩ Historická kalkulace…</b> otevře uložené zakázky (.json) a převezme
-    z nich kalkulaci jako další variantu téhle zakázky – v čísle je pak poznat značkou <b>⤺</b>,
-    po najetí myší se ukáže, z jaké nabídky pochází a kterým ceníkem se počítala.</div>
     <div class="note">Hledání i filtr mění jen to, co je vidět – žádná varianta se jimi nemaže a
     nastavení se neukládá do souboru zakázky. Kliknutím na záhlaví sloupce seznam seřadíte,
     druhým kliknutím obrátíte směr, třetím se vrátíte k pořadí, v jakém varianty vznikaly.</div>`);

@@ -34,7 +34,6 @@ Object.assign(globalThis, require('../src/format.js'), require('../src/engine.js
   require('../src/zakazka.js'));
 const zk = require('../src/zakazka.js');
 const zm = require('../src/zamek.js');
-const AR = require('../src/archiv.js');
 const ZC = require('../src/zkusebni_cenik.js');
 
 let ok = 0, fail = 0;
@@ -91,13 +90,9 @@ const s2 = gB.varianty.find(v => v.id === kl2.id).data.sleva;
 test('B: vedoucí zakázku s klonem uloží', rB.ok === true, rB);
 test('B: klon uložený vedoucím nemá schvalovatele (dřív ho získal uložením)', s2.stav !== 'schváleno' && !s2.schvalil, s2);
 
-/* C) Alternativa z archivního záznamu se schválenou slevou. */
-const c = zk.importZakazka(kopie(gB));
-const alt = AR.vytvorAlternativu(c, { data: kopie(g.varianty[0].data), cislo: 'X', varianta: 'V1' }, { cenik: 'historicky' });
-test('C: alternativa nenese stav ani schvalovatele', alt && alt.data.sleva.stav === '' && !('schvalil' in alt.data.sleva),
-  alt && alt.data.sleva);
-const rC = await uloz(c, gB.uloRazitko, cO);
-test('C: obchodník zakázku s alternativou uloží', rC.ok === true, rC);
+/* C) Alternativa z archivu (vytvorAlternativu) — vypuštěno 13. 10. 2026:
+ * okno Historické kalkulace bylo na pokyn J. V. odstraněno i s funkcí, která
+ * alternativu zakládala. Zbylé cesty (klon, duplikát) hlídají A, B a D. */
 
 /* D) Duplikát zakázky se chová stejně (sdílená funkce). */
 const d = zk.zakazkaDuplikuj(kopie(g), '2026 - OPR - CN - 0903');

@@ -571,6 +571,39 @@ function cenikSet(obj, cesta, val) {
   const cil = ks.reduce((o, k) => (o[k] = o[k] || {}), obj);
   cil[last] = val;
 }
+/* ---- Probarvení buněk ceníku (13. 10. 2026, zadání J. V.) ----
+ *
+ * „Nastav v cenících pravidlo probarvení buněk. Světle červeně všechny, kde
+ * je hodnota nula nebo není vyplněno, a světle oranžově všechny, kde je
+ * hodnota vyšší než 40 000,- Kč."
+ *
+ * Je to jen pomůcka pro oči při kontrole ceníku — do dat ani do výpočtu nic
+ * nezapisuje. Pravidlo je tady (bez DOM), aby ho šlo otestovat v Node;
+ * ui/cenik_ui.js ho jen volá nad hodnotou políčka.
+ *
+ * KTERÉ POLOŽKY JSOU „V KČ": jednotka ceníku začíná „Kč" (Kč, Kč/ks, Kč/kg,
+ * Kč/hod, Kč/m² …). Procenta (%), hodiny (hod), kilogramy (kg) a množství
+ * (ks) oranžově nesvítí nikdy — 40 000 tam není cena. Nula či prázdno
+ * svítí červeně u všech číselných položek bez rozdílu jednotky.
+ *
+ * `opts.prazdnaOk`: prázdné pole je platný stav a červeně nesvítí. Platí
+ * pro sloupec Cena Zahraničí, kde prázdno znamená „jako ČR" (nula tam
+ * svítí, protože je to zapsaná hodnota). */
+const CENIK_BARVA_MEZ_KC = 40000;
+function cenikJednotkaKc(jednotka) {
+  return /^\s*Kč/.test(String(jednotka == null ? '' : jednotka));
+}
+function cenikBunkaTrida(hodnota, jednotka, opts) {
+  const o = opts || {};
+  const s = (hodnota == null) ? '' : String(hodnota).trim().replace(/\s/g, '').replace(',', '.');
+  if (s === '') return o.prazdnaOk ? '' : 'cenik-nula';
+  const n = Number(s);
+  if (!Number.isFinite(n)) return '';
+  if (n === 0) return 'cenik-nula';
+  if (cenikJednotkaKc(jednotka) && n > CENIK_BARVA_MEZ_KC) return 'cenik-vysoka';
+  return '';
+}
+
 function cenikTyp(def, cesta) {
   for (const [, items] of def) for (const it of items) if (it[0] === cesta) return it[4] || 'num';
   return 'num';
@@ -669,6 +702,7 @@ function cenikAplikuj(zmeny, C, PC) {
 
 if (typeof module !== 'undefined')
   module.exports = { CENIK_DEF, CENIK_DEF_PROJ, CENIK_JEN_ZAHR, cenikGet, cenikSet, cenikTyp, cenikVychozi,
+    CENIK_BARVA_MEZ_KC, cenikJednotkaKc, cenikBunkaTrida,
     cenikPopis, cenikPopisNastav,
     POPISY_MAX_KLIC, POPISY_MAX_TEXT, POPISY_MAX_POLOZEK, popisyOciste, popisyVlij, popisyDoplnChybejici, popisyCiselnik,
     POPISY_JAZYKY, popisyJazykyOciste, cenikPopisJazyk, popisyJazykyDoplnChybejici, popisJazykySrovnej,
