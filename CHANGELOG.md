@@ -8,6 +8,31 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v13.10.1 — dávka po 22. kole: #400 zbytek, visící harness, popis releasů (větev claude/davka-13-10)
+
+Pokyn J. V. 13. 10. 2026 přes koordinační sezení 22. kola. Větev
+z `test-draft` (v12.10.4, 1df7283). Roadmapa #400 (zbytek) a #402–.
+
+- **Pravidlo J. V. 13. 10.: odkaz na release nese popis změn.** `CLAUDE.md`
+  (oddíl Tagy, releasy) + nový nástroj `nastroje/release_odkaz.py <verze>
+  <SHA>` — z oddílů `## v<verze>` v CHANGELOG sestaví krátký popis (nálezy,
+  čísla roadmapy, výsledek kola; řádek s částkou vynechá) a odkaz
+  `releases/new?…&body=…`; `--upravit` dá odkaz na úpravu vydaného releasu
+  a text k vložení. Test `src/test_release_odkaz.js` (21; bez nástroje
+  7/14, mutace bez kódování a bez filtru částek po 1 FAIL).
+- **Visící harness (nízká, z N1) — #402.** `overit_online.mjs` po selhání B59
+  (server nabídku neuložil) visel: `onlineOtevri` neuložené zakázky otevřel
+  skutečný modál a `page.evaluate` nemá limit — kolo stálo bez výpisu.
+  Nový `nastroje/harness_hlidac.js`: strop každého `page.evaluate` (120 s,
+  chyba nese, který krok visel), celkový strop (20 min), nezachycená chyba
+  → úklid (sám se stropem 5 s) → kód 1. Zapojeno v `overit_online.mjs`;
+  `spust_testy.sh` navíc pouští každý harness přes `timeout`
+  (`KNG_HARNESS_LIMIT`, výchozí 900 s) — visení = selhání. Pojistka: s
+  rozbitým B59 (šířka 0) harness před opravou visel do vnějšího `timeout`
+  (kód 124 po 500 s), po opravě skončí za 120 s kódem 1 s popisem kroku.
+  Test `src/test_harness_hlidac.js` (11; mutace bez obalení → kód 1 bez
+  souhrnu, mutace `konec(0)` → 2 FAIL).
+
 ## v12.10.4 — integrace nočních dávek N1–N3 (větev claude/integrace-13-10)
 
 Integrační větev z `test-draft` (v12.10.2, d562da1), merge commity (bez

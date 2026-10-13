@@ -119,6 +119,11 @@ const ADRESA = 'http://127.0.0.1:' + server.address().port;
 const prohlizec = await chromium.launch({ args: ['--no-sandbox'] });
 const ctx = await prohlizec.newContext({ acceptDownloads: true });
 const page = await ctx.newPage();
+/* Hlídač (13. 10. 2026): page.evaluate nad skutečným modálem (po selhání B59
+ * neuložená zakázka → dotaz „neuložené změny") by visel donekonečna a celé
+ * kolo s ním. Každý krok má strop, nezachycená chyba harness ukončí kódem 1. */
+const { hlidejHarness } = require('./nastroje/harness_hlidac.js');
+hlidejHarness({ page, uklid: async () => { await prohlizec.close(); server.close(); } });
 
 const chyby = [];
 page.on('console', m => {
