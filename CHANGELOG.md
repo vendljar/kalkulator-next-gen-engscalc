@@ -84,6 +84,9 @@ z `test-draft` (v12.10.4, 1df7283). Roadmapa #400 (zbytek) a #402–.
     přepočet nezablokuje. Klient vynucuje přepočet nuly jen roli bez práva
     ceníku (`vynutNuly`) — kdo ceník měnit smí, tomu odškrtnutá položka
     zůstane.
+    Skupinu se základem v ceníku sestavení `doplnenaNula` nehlídá — tu
+    hlídá B133 (kolo nad ea34e65 ukázalo, že by se pojistky překrývaly
+    a mutace B133 zůstaly nechycené).
   - *Obchvat B103 (nízká):* „toString", „hasOwnProperty" aj. shodily sběr
     textů stejně — odmítá se vše z `Object.prototype`, mapa sběru je bez
     prototypu.

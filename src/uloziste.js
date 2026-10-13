@@ -1693,6 +1693,10 @@ function uloCenikProblemy(zak, stara, opts) {
       })() : null;
       const doplnenaNula = (g) => {
         if (g.length < 2) return [];
+        /* Skupinu se základem v ceníku sestavení hlídá B133 (do skupin ji
+         * vůbec nepustí) — tady se nekontroluje, ať má každá pojistka své
+         * pole a mutace B133 zůstanou chycené. */
+        if (jeSestaveniRady(g[0], rada)) return [];
         const ref = g[0], hod = (k, p) => (p in k ? k[p] : '');
         const cesty = new Set(Object.keys(listy).concat(Object.keys(ref)));
         if (![...cesty].some(p => hod(listy, p) !== hod(ref, p))) return [];   // žádná směs
