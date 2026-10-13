@@ -367,7 +367,10 @@ function renderZamekLista() {
  * na každé záložce (dřív ji musely nést jednotlivé stránky). */
 function listaZakazkyStav() {
   const ja = (typeof ONLINE_STAV !== 'undefined') ? ONLINE_STAV.ja : null;
-  const zaloha = (typeof HIST !== 'undefined') ? HIST.nabidka : null;
+  /* HIST žije v historie.js (poslední soubor sestavení) — při render() před
+   * jeho vyhodnocením by i `typeof` na const v mrtvé zóně spadl. */
+  let zaloha = null;
+  try { zaloha = HIST.nabidka || null; } catch (e) { zaloha = null; }
   let otevrena = '';
   if (zaloha) { try { otevrena = JSON.stringify(ZAK); } catch (e) { /* cyklus – nevadí */ } }
   const prava = { odemknout: typeof smiZobrazit === 'function' && smiZobrazit('zamek.odemknout') };
