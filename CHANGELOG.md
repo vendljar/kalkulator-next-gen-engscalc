@@ -151,6 +151,25 @@ Testy (počty před → po):
   stejný výstup jako na 1df7283;
 - mutace: serveru +13 (P6, chycené 13/13), jádra +4 (chycené 4/4).
 
+### Celé testovací kolo (13. 10. 2026)
+
+`nastroje/testovaci_kolo.sh` s `KNG_PODKLADY=/home/user/kng_podklady`
+(firemní šablony k dispozici — harnessy šablon a smluv běžely, žádný se
+nehlásil jako přeskočený). Kolo se pustilo ve dvou částech, protože
+nástroj sezení ukončí proces na pozadí po 2 h a první celé kolo (nad
+7f6baa9) se tak zastavilo uprostřed mutací serveru — do té doby ukázalo
+jedinou nechycenou mutaci „revize N4" (opraveno v 690d409, test N4 přes
+přepnutí na jenOck).
+- část 1 nad 690d409 (`--jen build,sady,mutace-jadro`, 44 min): sestavení
+  ✓, sady **226 prošlo / 0 selhalo / 1 přeskočeno** (jen `test.js` — shoda
+  s Excelem není v exportu), mutace jádra **193 z 193**;
+- část 2 nad 690d409 (`--jen mutace-server,staticke`, 86 min): mutace
+  serveru **345 z 346** — jediná nechycená „B137: rozměry OCK se hlídají
+  i u dokumentu strany PROJ" je od P6 nedosažitelná (dokument PROJ smí
+  vzniknout jen u zakázky s vyřazenou OCK, kterou zamekNovyRozmeryProblem
+  pustí řádkem výš) → z mutací vědomě vyřazena s komentářem (345 úseků,
+  `--kontrola` zelená); statické kontroly **3 z 3**.
+
 ---
 
 ## v12.10.4 — integrace nočních dávek N1–N3 (větev claude/integrace-13-10)

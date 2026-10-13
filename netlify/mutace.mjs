@@ -1324,10 +1324,14 @@ const MUTACE = [
     hledej: "  if (zakazkaVyrazena(zak) === 'ock') return [];",
     nahrad: "  ;",
     proc: 'nabídka jen projekce by nešla odeslat kvůli nevyplněné šachtě, kterou nikdo neprodává' },
-  { nazev: 'B137: rozměry OCK se hlídají i u dokumentu strany PROJ', soubor: 'lib/zakazka_kontrola.mjs',
-    hledej: "  if (strany.size && !strany.has('ock')) return [];",
-    nahrad: "  ;",
-    proc: 'nabídka PROJ by nešla odeslat, dokud není vyplněná šachta — zábrana rozměrů je jen strany OCK' },
+  /* „B137: rozměry OCK se hlídají i u dokumentu strany PROJ" (podmínka
+   * `strany.size && !strany.has('ock')`) se od P6 (zámek strany, 13. 10.
+   * 2026) NEMUTUJE VĚDOMĚ: dokument strany PROJ smí nově vzniknout jen
+   * u zakázky, jejíž OCK je vyřazená (číslo OVP, jen projekce) — a tu
+   * zamekNovyRozmeryProblem pustí už řádkem výš; u vyřazené PROJ zámek
+   * odmítne zamekVyrazenaStranaProblem dřív. Podmínka zůstává jako
+   * pojistka, ale testem se k ní nedá dojít (celé kolo 13. 10.: jediná
+   * nechycená, 345 z 346). */
   /* ---------- P6 / K19-N114 (13. 10. 2026): zámek strany — uzamknout a vynulovat ---------- */
   { nazev: 'P6: server vyřazenou stranu nepozná (jen jenProj)', soubor: 'lib/zakazka_kontrola.mjs',
     hledej: "  if (typeof globalThis.zakazkaVyrazenaStrana === 'function') return globalThis.zakazkaVyrazenaStrana(zak) || '';",

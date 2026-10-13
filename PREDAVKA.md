@@ -10,9 +10,12 @@ deploy pro `claude/…` v `netlify.toml` ani v `NASAZENI_NETLIFY.md` není.
 |---|---|
 | P2 — „Opláštit i prohlubeň" | hotovo (commit P2), test `src/test_oplastit_prohluben.js` (1/5 → 7/0) |
 | P6 — zámek strany: vyřazená strana zamčená a vynulovaná | hotovo (commit P6), `src/test_zamek_strany.js` (17/31 → 52/0), server blok P6 v `netlify/test_koncova_cena.mjs` (74/5 → 82/0), UI v `overit_zahranicni.mjs` |
-| celé testovací kolo | běží / viz níže |
+| celé testovací kolo | hotovo (2 části kvůli 2h limitu procesu): sady 226/0/1, mutace jádra 193/193, serveru 345/346 → nedosažitelná B137 mutace vyřazena s komentářem, statické 3/3 — CHANGELOG |
 
 Rozhodnutí D6a–D6g a výklady: CHANGELOG, oddíl „větev claude/k22-p2-p6".
+Další krok (J. V.): rozhodnout o sloučení do `test-draft` (verze se
+sjednotí s v13.10.1 z `claude/davka-13-10`); po sloučení ověření podle
+promptu (TEST zakázka OPR/OVP, K22-C001).
 
 Otevřené otázky pro J. V. (s výchozí odpovědí, jak je ve větvi):
 1. Serverové kontroly „nikomu" (záporné částky B111, rozměry B137 při
