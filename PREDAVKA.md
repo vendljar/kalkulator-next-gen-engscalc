@@ -1,3 +1,16 @@
+# Větev `claude/prirucka-13-10` (v13.10.3) — příručka obchodníka
+
+Z `claude/integrace-13-10b` (v13.10.2). Příručka (`manual/obsah.json`,
+snímky, renderer) aktuální k v13.10.2: P6 zámek strany, P2, barvy ceníků,
+B77-zbytek, B6, B101; detaily CHANGELOG v13.10.3. Hotové HTML jen
+v `/home/user/kng_podklady_prirucka-13-10` (sestavit znovu:
+`node manual/snimky_auto.mjs <mimo repo>/snimky.json` a
+`bash manual/sestav.sh <snimky.json> <složka>`).
+- **Navazující po integraci #404 (`claude/listy-404`):** kapitolu o lištách
+  rozpracované/odeslané zakázky (kap. 6, 8, 29) přepsat podle nových lišt
+  a přefotit snímky — tady se vědomě neměnila.
+- Kolo: viz CHANGELOG v13.10.3.
+
 # Předávka — 13. 10. 2026: dávka po 22. kole ve větvi `claude/davka-13-10` (v13.10.1)
 
 Sezení session_01WrUq3gXEhsWk8cxRWfPvsg (založilo koordinační sezení 22. kola).
