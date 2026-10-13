@@ -654,6 +654,13 @@ async function nabidkaWordGeneruj(srv) {
  * překládá nabidkaData, popisky a nadpisy nabidkaNahledSekce + P() níže.
  * Neznámý výraz zůstává česky (slovník, preklad.js) – nic se nevymýšlí. */
 async function nabidkaNahled() {
+  /* Zámek strany (P6 / K19-N114): u zakázky s vyřazenou OCK (číslo OVP,
+   * jen projekce) by podklady ukázaly ceny vynulované strany. Zábrany
+   * z kontrol se tu záměrně neptají (kontrolní pohled, #377) — tahle ano. */
+  if (typeof kontrolyStranaZabrana === 'function') {
+    const duvod = kontrolyStranaZabrana(ZAK, 'nabidka');
+    if (duvod) { if (typeof hlaska === 'function') hlaska(duvod, { nadpis: 'Dokument nelze vytvořit' }); return; }
+  }
   const L = (typeof jazyk === 'function') ? jazyk() : 'cz';
   const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
   const data = nabidkaData(ZAK, await nabidkaVarianta(), JEKLY, L);

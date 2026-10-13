@@ -177,7 +177,9 @@ const pravidla = kontrolyPravidla();
  * dveří při bocích „bez" a počet bočních světlíků. */
 /* 32. „statikaDvakrat" 2. 10. 2026 (P5 / K19-N109, test_statika_oplasteni.js):
  * ručně přepsaná statika OCK a zároveň řádek statiky opláštění z ceníku. */
-test('pravidel je třicet dva', pravidla.length === 32, pravidla.length);
+/* 33. „stranyDriv" 13. 10. 2026 (P6 / K19-N114, test_zamek_strany.js):
+ * zakázka dřív počítala projekci i OCK — od P6 je druhá strana vynulovaná. */
+test('pravidel je třicet tři', pravidla.length === 33, pravidla.length);
 test('kódy pravidel jsou jedinečné',
   new Set(pravidla.map(p => p.kod)).size === pravidla.length,
   pravidla.map(p => p.kod).join(','));

@@ -45,7 +45,10 @@ function kontrolyCtxAkt() {
   return {
     zadani: Z,
     vysledek: ock,
-    jenProj: (typeof ZAK !== 'undefined') && !!ZAK.jenProj,
+    /* Zámek strany (P6): jenProj / jenOck z vyřazené strany (kontrolyProved
+     * to odvodí i sám — kontrolyCtxStrany). */
+    jenProj: (typeof ZAK !== 'undefined') && ((typeof zakazkaVyrazenaStrana === 'function') ? zakazkaVyrazenaStrana(ZAK) === 'ock' : !!ZAK.jenProj),
+    jenOck: (typeof ZAK !== 'undefined') && ((typeof zakazkaVyrazenaStrana === 'function') ? zakazkaVyrazenaStrana(ZAK) === 'proj' : !!ZAK.jenOck),
     /* Řada ceníku varianty (P11): projekci u zahraniční zakázky hlídá
      * pravidlo projZahranici. */
     cenikRada: (() => {
@@ -189,7 +192,8 @@ function kontrolyCtxVarianta(v) {
   return {
     zadani: d.ock ? d.ock.zadani : null,
     vysledek: ock,
-    jenProj: (typeof ZAK !== 'undefined') && !!ZAK.jenProj,
+    jenProj: (typeof ZAK !== 'undefined') && ((typeof zakazkaVyrazenaStrana === 'function') ? zakazkaVyrazenaStrana(ZAK) === 'ock' : !!ZAK.jenProj),
+    jenOck: (typeof ZAK !== 'undefined') && ((typeof zakazkaVyrazenaStrana === 'function') ? zakazkaVyrazenaStrana(ZAK) === 'proj' : !!ZAK.jenOck),
     projZadani: d.proj ? d.proj.zadani : null,
     projVysledek: proj,
     cenik: d.cenik || null,

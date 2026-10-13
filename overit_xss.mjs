@@ -220,6 +220,8 @@ const KOD_STRANKY = `
      * v zakázce (vlastní milník = volné znění splátky) a materiál „jiné"
      * v opláštění po stěnách (ruční název). */
     'B124: plán plateb v zakázce (vlastní milník, volné znění)': (z, d) => {
+      /* P6 (zámek strany, 13. 10. 2026): plán plateb PROJ jen u zakázky projekce (číslo OVP). */
+      z.cislo = '2026 - OVP - CN - 0999';
       /* plán se kreslí jen u činností s cenou — v sestavení bez ceníku dostanou sazby a paušály PROJ nenulovou hodnotu */
       ['sazby', 'fixy'].forEach(k => { const o = d.proj.cenik[k]; if (o) Object.keys(o).forEach(q => { if (typeof o[q] === 'number') o[q] = 1000; }); });
       d.kryciProj.planPlateb = { v: 1, predvolba: 'vlastni', prepis: {},
@@ -277,6 +279,7 @@ const KOD_STRANKY = `
     /* B124: firemní plán plateb (texty milníků katalogu) a číselník
      * dodatkových textů s jazykovými variantami (#379) — klíč i texty. */
     'B124: firemní plán plateb (katalog milníků)': () => {
+      ZAK.cislo = '2026 - OVP - CN - 0999';   // P6: plán plateb PROJ jen u zakázky projekce
       const pc = ZAK.varianty[0].data.proj.cenik;
       ['sazby', 'fixy'].forEach(k => { const o = pc[k]; if (o) Object.keys(o).forEach(q => { if (typeof o[q] === 'number') o[q] = 1000; }); });
       NAST.firma.planPlatebProj = JSON.parse(JSON.stringify(PLAN_PROJ_VYCHOZI));
@@ -416,7 +419,9 @@ async function a2Pokus(oblast, admin) {
        * výš neověřily nic. */
       zkus(`${role}: ${oblast} — payload se do stránky dostal (escapovaný; ${r.vyskytu}×, v náhledech ${r.vyskytuNahled}×)`, r.vyskytu > 0, r.vyskytu);
       /* B124: tiskové náhledy se opravdu otevřely (jinak by kontrola náhledů byla prázdná). */
-      zkus(`${role}: ${oblast} — tiskové náhledy se otevřely (${r.nahledu})`, r.nahledu === 9, r.nahledy.join(', '));
+      zkus(`${role}: ${oblast} — tiskové náhledy se otevřely (${r.nahledu})`, r.nahledu === (/^B124: .*plán plateb/.test(oblast) ? 8 : 9), r.nahledy.join(', '));
+      /* P6 (13. 10. 2026): u plánu plateb je zakázka projekce (číslo OVP) — podklady nabídky OCK
+       * (nabidkaNahled) zablokuje zámek strany, otevře se 8 náhledů. */
       /* B150: oblast kreslená na jediném místě doloží, že se tam opravdu
        * vykreslila (dialog Kontakt… jen administrátorovi). */
       if (r.overeno !== null && (admin || !/Kontakt/.test(oblast)))

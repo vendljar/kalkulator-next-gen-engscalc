@@ -473,6 +473,9 @@ function nabidkaProjCeny(varianta, lang) {
  * pevné bloky a ruční splátky jako dřív. */
 function nabidkaProjPlatby(zak, varianta, lang, spoctene) {
   if (typeof planPlatebVarianty !== 'function') return null;
+  /* Zámek strany (P6): u zakázky s vyřazenou PROJ plán plateb projekce
+   * neexistuje — nic se nedopočítává ani nekontroluje. */
+  if (typeof stranaZamcena === 'function' && stranaZamcena(zak, 'proj')) return null;
   const firma = (typeof firmaAktualni === 'function') ? firmaAktualni() : null;
   const ef = planPlatebVarianty(varianta, firma);
   const c = spoctene || nabidkaProjCeny(varianta, lang);

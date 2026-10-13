@@ -104,7 +104,12 @@ export function zamekNovyCenaProblem(zak, v, relace, matice, jekly, program) {
   const platny = program && program.platny && program.platny.cenik ? program.platny : null;
   if (!platny) return '';
   const d = (v && v.data) || {};
-  const hlidatOck = maOck(platny.cenik), hlidatProj = maProj(platny.cenikProj);
+  /* Zámek strany (P6 / K19-N114, D6g): vyřazená strana zakázky (číslo
+   * nabídky, jenProj, jenOck — zakazkaVyrazenaStrana, totéž pravidlo jako
+   * klient) se nikde nesčítá ani netiskne, takže její data (ceník bez cen,
+   * nulová cena) nový zámek vedoucí strany neodmítnou. */
+  const vyrazena = zakazkaVyrazena(zak);
+  const hlidatOck = maOck(platny.cenik) && vyrazena !== 'ock', hlidatProj = maProj(platny.cenikProj) && vyrazena !== 'proj';
   if ((hlidatOck && !maOck(d.cenik)) || (hlidatProj && !maProj(d.proj && d.proj.cenik)))
     return 'odeslaná nabídka by vznikla z ceníku bez cen (ceník ze sestavení aplikace). '
       + 'Přepočítejte variantu podle platného ceníku a nabídku vytiskněte znovu';
@@ -112,7 +117,7 @@ export function zamekNovyCenaProblem(zak, v, relace, matice, jekly, program) {
   const strany = new Set([z.typ].concat((Array.isArray(z.tisky) ? z.tisky : []).map(t => t && t.typ))
     .map(t => typeof globalThis.kontrolyDokumentStrana === 'function' ? globalThis.kontrolyDokumentStrana(t) : '').filter(Boolean));
   if (!strany.size) { strany.add('ock'); strany.add('proj'); }   // neznámý typ dokumentu: obě strany
-  const jenProj = !!(zak && zak.jenProj);
+  const jenProj = vyrazena === 'ock';
   const spatne = [];
   if (hlidatOck && strany.has('ock') && !jenProj) {
     let o;
@@ -134,12 +139,36 @@ export function zamekNovyCenaProblem(zak, v, relace, matice, jekly, program) {
  * nesmí vzniknout z nulového ani prázdného rozměru — zábrana „rozmery" by
  * takový dokument v prohlížeči nepustila. Vrací seznam problémů (tvar #340). */
 export function zamekNovyRozmeryProblem(zak, v, ULO) {
-  if (zak && zak.jenProj) return [];
+  /* OCK vyřazená (P6, zámek strany): jen projekce i číslo OVP — šachtu
+   * nikdo neprodává, její rozměry nový zámek neposuzuje. */
+  if (zakazkaVyrazena(zak) === 'ock') return [];
   const z = v.zamek || {};
   const strany = new Set([z.typ].concat((Array.isArray(z.tisky) ? z.tisky : []).map(t => t && t.typ))
     .map(t => typeof globalThis.kontrolyDokumentStrana === 'function' ? globalThis.kontrolyDokumentStrana(t) : '').filter(Boolean));
   if (strany.size && !strany.has('ock')) return [];
   return ULO.uloRozmeryVZadani(v.data && v.data.ock && v.data.ock.zadani, true);
+}
+
+/* Vyřazená strana zakázky ('ock' | 'proj' | '') — sdílené pravidlo
+ * src/zakazka.js (zakazkaVyrazenaStrana); bez něj jen příznak jenProj. */
+export function zakazkaVyrazena(zak) {
+  if (typeof globalThis.zakazkaVyrazenaStrana === 'function') return globalThis.zakazkaVyrazenaStrana(zak) || '';
+  return (zak && zak.jenProj) ? 'ock' : '';
+}
+
+/* NOVÝ ZÁMEK VYŘAZENÉ STRANY (P6 / K19-N114, D6d + D6g). Dokument strany,
+ * která je u zakázky uzamčená a vynulovaná, v prohlížeči nevznikne
+ * (kontrolyStranaZabrana) — server proto nepustí nový zámek ani nový
+ * dotisk takového dokumentu. `typy` = typy dokumentů nového zámku nebo
+ * nově připsaných tisků. Vrací větu důvodu, nebo ''. */
+export function zamekVyrazenaStranaProblem(zak, typy) {
+  const vyr = zakazkaVyrazena(zak);
+  if (!vyr || typeof globalThis.kontrolyDokumentStrana !== 'function') return '';
+  const zle = (typy || []).filter(t => globalThis.kontrolyDokumentStrana(t) === vyr);
+  if (!zle.length) return '';
+  return 'dokument strany ' + (vyr === 'proj' ? 'PROJ' : 'OCK') + ' (' + zle.join(', ') + ') — kalkulace '
+    + (vyr === 'proj' ? 'PROJ' : 'OCK') + ' je u téhle zakázky uzamčená a vynulovaná (cenovka vzniká v Kalkulaci '
+    + (vyr === 'proj' ? 'OCK' : 'PROJ') + ')';
 }
 
 export function zakazkaServerKontrola(stara, zak, relace, ctx) {
@@ -361,8 +390,13 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
         const strana = (t) => (typeof globalThis.kontrolyDokumentStrana === 'function' ? globalThis.kontrolyDokumentStrana(t) : '') || '?';
         const stareTisky = [sv.zamek.typ].concat((Array.isArray(sv.zamek.tisky) ? sv.zamek.tisky : []).map(t => t && t.typ));
         const stareStrany = new Set(stareTisky.map(strana));
-        const nove = (Array.isArray(v.zamek.tisky) ? v.zamek.tisky : []).slice(Array.isArray(sv.zamek.tisky) ? sv.zamek.tisky.length : 0)
-          .map(t => t && t.typ).filter(t => !stareStrany.has(strana(t)));
+        const pripsane = (Array.isArray(v.zamek.tisky) ? v.zamek.tisky : []).slice(Array.isArray(sv.zamek.tisky) ? sv.zamek.tisky.length : 0)
+          .map(t => t && t.typ);
+        /* P6 (D6d): nový dotisk dokumentu vyřazené strany se nepustí — ani
+         * do zámku, který tu stranu nese z doby před změnou. */
+        const vyrDotisk = zamekVyrazenaStranaProblem(zak, pripsane);
+        if (vyrDotisk) return odmitni(403, 'Neuloženo: dotisk dokumentu odeslané nabídky — ' + vyrDotisk + '.');
+        const nove = pripsane.filter(t => !stareStrany.has(strana(t)));
         if (nove.length) {
           const pseudo = Object.assign({}, v, { zamek: { typ: nove[0], tisky: nove.map(typ => ({ typ })) } });
           const cenaDotisk = zamekNovyCenaProblem(zak, pseudo, relace, ctx.matice, JEKLY, ctx.program);
@@ -392,6 +426,9 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
       return odmitni(409, 'Neuloženo: nová odeslaná (uzamčená) nabídka nese jiné číslo ('
         + (v.zamek.cislo || 'prázdné') + '), než dávají údaje zakázky (' + (cisloMaBy || 'prázdné')
         + '). Obnovte stránku (Ctrl+F5) a nabídku vytiskněte znovu.');
+    /* P6 (D6g): nový zámek dokumentu vyřazené strany se nepustí. */
+    const vyrProblem = zamekVyrazenaStranaProblem(zak, [v.zamek.typ].concat((Array.isArray(v.zamek.tisky) ? v.zamek.tisky : []).map(t => t && t.typ)));
+    if (vyrProblem) return odmitni(403, 'Neuloženo: ' + vyrProblem + '.');
     const cenaProblem = zamekNovyCenaProblem(zak, v, relace, ctx.matice, JEKLY, ctx.program);
     if (cenaProblem) return odmitni(403, 'Neuloženo: ' + cenaProblem + '.');
     /* Nový zámek strany OCK z nulového nebo nevyplněného rozměru (B137) —

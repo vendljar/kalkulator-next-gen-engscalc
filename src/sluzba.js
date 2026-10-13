@@ -27,13 +27,20 @@
 function sluzbaVarianta(zak, v, nast, jekly) {
   const d = (v && v.data) || {};
   let ock = null, proj = null;
-  /* Odeslaná nabídka vydá svůj otisk, ne dnešní výpočet (A1). */
-  try { ock = (typeof vypocetZ === 'function') ? vypocetZ(v, jekly)
+  /* Odeslaná nabídka vydá svůj otisk, ne dnešní výpočet (A1). Vyřazená
+   * strana (P6, zámek strany: číslo nabídky / jenProj / jenOck) se nepočítá
+   * vůbec — vysledekStrany vrátí null, takže nemá cenu, nejde do marže
+   * ani do kontrol. */
+  const vyrazena = (typeof zakazkaVyrazenaStrana === 'function') ? zakazkaVyrazenaStrana(zak)
+    : ((zak && zak.jenProj) ? 'ock' : ((zak && zak.jenOck) ? 'proj' : ''));
+  try { ock = vyrazena === 'ock' ? null : (typeof vysledekStrany === 'function') ? vysledekStrany(zak, v, 'ock', jekly)
+    : (typeof vypocetZ === 'function') ? vypocetZ(v, jekly)
     : vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes); } catch (e) { ock = null; }
-  try { proj = (typeof vypocetProjZ === 'function') ? vypocetProjZ(v)
+  try { proj = vyrazena === 'proj' ? null : (typeof vysledekStrany === 'function') ? vysledekStrany(zak, v, 'proj', jekly)
+    : (typeof vypocetProjZ === 'function') ? vypocetProjZ(v)
     : vypocetProj(d.proj.zadani, d.proj.cenik); } catch (e) { proj = null; }
 
-  const jenProj = !!(zak && zak.jenProj);
+  const jenProj = vyrazena === 'ock', jenOck = vyrazena === 'proj';
   let cenaOck = null, cenaProj = null, marze = null, kontroly = null;
   try { cenaOck = (ock && typeof cenaNabidkyOck === 'function')
     ? cenaNabidkyOck(ock, d.sleva, d.zaokr) : null; } catch (e) {}
@@ -48,7 +55,7 @@ function sluzbaVarianta(zak, v, nast, jekly) {
     ? kontrolyProved({ zadani: d.ock ? d.ock.zadani : null, vysledek: ock,
         projZadani: d.proj ? d.proj.zadani : null, projVysledek: proj,
         cenik: d.cenik, cenikProj: d.proj ? d.proj.cenik : null,
-        sleva: d.sleva, slevaProj: d.slevaProj, nast, zak, zaokr: d.zaokr, zaokrProj: zaokrP, jenProj }) : null; } catch (e) {}
+        sleva: d.sleva, slevaProj: d.slevaProj, nast, zak, zaokr: d.zaokr, zaokrProj: zaokrP, jenProj, jenOck }) : null; } catch (e) {}
 
   return { id: v.id, nazev: v.nazev, ridici: !!v.ridici,
            ock, proj, cenaOck, cenaProj, marze, kontroly };

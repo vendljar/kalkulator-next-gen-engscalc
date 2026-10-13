@@ -47,11 +47,14 @@ function schvVypocty() {
   const out = {};
   ((ZAK && ZAK.varianty) || []).forEach(v => {
     let r = null;
-    try { r = (typeof vypocetZ === 'function' ? vypocetZ(v, JEKLY) : vypocet(v.data.ock.zadani, v.data.cenik, JEKLY, v.data.ock.fixes)); } catch (e) {}
+    /* Vyřazená strana (P6, zámek strany) nemá cenu, ze které by šla sleva
+     * schvalovat — výsledek null, jako u části, která nejde spočítat. */
+    const vyr = (typeof zakazkaVyrazenaStrana === 'function') ? zakazkaVyrazenaStrana(ZAK) : '';
+    try { r = vyr === 'ock' ? null : (typeof vypocetZ === 'function' ? vypocetZ(v, JEKLY) : vypocet(v.data.ock.zadani, v.data.cenik, JEKLY, v.data.ock.fixes)); } catch (e) {}
     /* Dvě části, dva základy (#134). Sleva projekce se počítá z ceny projekce
      * včetně dopravy — cena ji obsahuje, tak ji musí obsahovat i náklad. */
     let rp = null;
-    try { rp = (typeof vypocetProjZ === 'function' ? vypocetProjZ(v) : vypocetProj(v.data.proj.zadani, v.data.proj.cenik)); } catch (e) {}
+    try { rp = vyr === 'proj' ? null : (typeof vypocetProjZ === 'function' ? vypocetProjZ(v) : vypocetProj(v.data.proj.zadani, v.data.proj.cenik)); } catch (e) {}
     out[v.id] = {
       ock: (r && r.souhrn) ? { zakladCena: r.souhrn.zakladCena, zakladNaklad: r.souhrn.zakladNaklad } : null,
       proj: (rp && rp.souhrn) ? { zakladCena: rp.souhrn.celkem,

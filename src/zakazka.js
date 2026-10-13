@@ -362,7 +362,6 @@ function novaZakazka() {
      * jen se nikam nepočítají. */
     jenProj: false,
     jenOck: false,
-    obeStrany: false,
     // IČO objednatele (zadání z 30. 7. 2026). V hlavičce stojí hned za kontaktní
     // osobou. Je to jediný údaj, kterým se objednatel dá jednoznačně určit –
     // název firmy se píše pokaždé jinak („Stavby s.r.o." / „STAVBY s. r. o.").
@@ -566,9 +565,22 @@ function projCisloNabidky(zak) {
  * číslo je vědomý krok obchodníka — od něj se odvíjí i jméno souboru
  * a záznam v rejstříku. Řada OVP patří projekci, ostatní čísla realizaci.
  *
- * Zámek je MĚKKÝ a vratný: `obeStrany` ho zruší (tlačítko „Počítat i …“
- * v šedé liště), `jenProj` / `jenOck` ho naopak přikážou natvrdo. Když mají
- * číslo obě strany, nezamyká se nic — zakázka na obojí je legitimní. */
+ * ZÁMEK STRANY = UZAMČENÍ A VYNULOVÁNÍ (P6 / K19-N114, zadání J. V.
+ * 1. 10. 2026, potvrzeno 13. 10. 2026): „V případě, že je kalkulace naceněna
+ * v OCK, měla by se kalkulace projekce uzamknout a vynulovat. Toto platí
+ * vice versa." a „Druhou stranu kalkulace už nebudeme umožňovat počítat —
+ * v Pipedrive můžeme beztak evidovat pouze projekci anebo ocelovou
+ * konstrukci vždy zvlášť v samostatných nabídkách pod unikátním číslem."
+ *   – D6a: výjimka „Počítat i tuhle stranu" (`obeStrany`) se RUŠÍ — příznak
+ *     ve starších datech zůstává, ale ignoruje se;
+ *   – D6c (výchozí): spouštěč je číslo nabídky + `jenProj` / `jenOck`,
+ *     ne cena;
+ *   – D6e (výklad): čísla na obou stranách → vede OCK, protože číslo
+ *     zakázky (`zak.cislo`) je to, pod kterým se zakázka eviduje;
+ *   – bez čísla na obou stranách se počítají obě (obchodník se rozhoduje).
+ * Pojem: ZÁMEK STRANY (OCK × PROJ jedné zakázky) nesouvisí se zámkem
+ * VARIANTY po tisku (zamekPoTisku, zamek.js) ani se „stranami" dokumentů
+ * v jeho otisku (dotisk OCK k zámku PROJ). */
 function stranaCislo(zak, strana) {
   if (strana === 'proj') {
     const p = projHlavicka(zak) || {};
@@ -585,20 +597,53 @@ function stranaMaCislo(zak, strana) {
   return hlavickaVyplneno(stranaCislo(zak, strana));
 }
 
-/* '' = nezamyká se nic (obě strany, nebo ani jedna). */
+/* Vedoucí (počítaná) strana: 'ock' | 'proj' | '' (bez čísla — počítají se
+ * obě). Příznaky `jenProj` / `jenOck` mají přednost před číslem. */
 function zakazkaVedouciStrana(zak) {
   if (zak && zak.jenProj) return 'proj';
   if (zak && zak.jenOck) return 'ock';
-  if (zak && zak.obeStrany) return '';
-  const o = stranaMaCislo(zak, 'ock'), p = stranaMaCislo(zak, 'proj');
-  if (o && !p) return 'ock';
-  if (p && !o) return 'proj';
+  if (stranaMaCislo(zak, 'ock')) return 'ock';      // D6e: i když číslo má i PROJ
+  if (stranaMaCislo(zak, 'proj')) return 'proj';
   return '';
 }
 
-function stranaZamcena(zak, strana) {
+/* Vyřazená (uzamčená a vynulovaná) strana: 'proj' | 'ock' | ''. JEDNO
+ * pravidlo pro klienta i server (D6g) — nikde se nesčítá, netiskne ani
+ * nekontroluje. Vynulování je pravidlo ČTENÍ (D6b): zadání vyřazené strany
+ * zůstává v datech beze změny a po smazání čísla se cena vrátí na korunu. */
+function zakazkaVyrazenaStrana(zak) {
   const v = zakazkaVedouciStrana(zak);
-  return !!v && v !== strana;
+  return v === 'ock' ? 'proj' : (v === 'proj' ? 'ock' : '');
+}
+
+function stranaZamcena(zak, strana) {
+  return !!strana && zakazkaVyrazenaStrana(zak) === strana;
+}
+
+/* VÝSLEDEK STRANY PRO VÝSTUPY (P6): vyřazená strana → null (vzor dřívějšího
+ * `jenProj ? null : …`), jinak vypocetZ / vypocetProjZ (otisk odeslané
+ * nabídky, nebo výpočet z dat). vypocetZ / vypocetProjZ samy zůstávají
+ * čisté — otisk se nemění (D6d). */
+function vysledekStrany(zak, v, strana, jekly) {
+  if (stranaZamcena(zak, strana)) return null;
+  if (strana === 'proj') {
+    if (typeof vypocetProjZ === 'function') return vypocetProjZ(v);
+    const d = (v && v.data) || {};
+    return d.proj ? vypocetProj(d.proj.zadani, d.proj.cenik) : null;
+  }
+  if (typeof vypocetZ === 'function') return vypocetZ(v, jekly);
+  const d = (v && v.data) || {};
+  return (d.ock && d.cenik) ? vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes) : null;
+}
+
+/* Zakázka, která DŘÍV počítala obě strany (P6, bod 9): vědomé „Počítat
+ * i tuhle stranu" (`obeStrany: true`), nebo čísla na obou stranách, u nichž
+ * se do 13. 10. 2026 nezamykalo nic. Příznaky jenProj / jenOck stranu
+ * přikazovaly vždy, takže takové zakázky obě strany nepočítaly. */
+function zakazkaDrivObeStrany(zak) {
+  if (!zak || zak.jenProj || zak.jenOck) return false;
+  if (zak.obeStrany === true) return true;
+  return stranaMaCislo(zak, 'ock') && stranaMaCislo(zak, 'proj');
 }
 
 /* Číslo, kterým se zakázka prokazuje navenek: z počítané strany. */
@@ -610,19 +655,33 @@ function zakazkaCisloVedouci(zak) {
 
 const STRANA_NAZEV = { ock: 'Kalkulaci OCK', proj: 'Kalkulaci PROJ' };
 
-/* ZAHRANIČNÍ ŘADA CENÍKU A „JEN REALIZACE" (P6 / K19-N114, rozhodnutí J. V.
- * 2. 10. 2026 — výchozí návrh). Projekci u zahraničních zakázek
- * nerealizujeme (P11, 29. 9. 2026); nová zakázka ale dostane výchozí
- * oceněné sekce PROJ a přepnutí varianty na zahraniční ceník je nechalo
- * být — kontrola `projZahranici` pak upozornila u každé zahraniční zakázky.
- * Po přepnutí se proto aplikace zeptá, zda zakázku rovnou nastavit jen jako
- * realizaci (`jenOck` — strana PROJ zešedne, kontroly PROJ mlčí); při
- * návratu všech variant na tuzemský ceník nabídne opak.
+/* Věta pro zábranu dokumentu a lištu vyřazené strany (P6, bod 6). */
+function zakazkaVyrazenaText(zak) {
+  const vyr = zakazkaVyrazenaStrana(zak);
+  if (!vyr) return '';
+  const ved = vyr === 'ock' ? 'proj' : 'ock';
+  const cislo = zakazkaCisloVedouci(zak);
+  const kod = vyr === 'proj' ? 'PROJ' : 'OCK';
+  const jina = vyr === 'proj'
+    ? 'Projekce se nabízí samostatnou zakázkou s vlastním číslem řady OVP'
+    : 'Ocelová konstrukce se nabízí samostatnou zakázkou s vlastním číslem řady OPR';
+  return 'Kalkulace ' + kod + ' je uzamčená a vynulovaná — cenovka zakázky vzniká v ' + STRANA_NAZEV[ved]
+    + (hlavickaVyplneno(cislo) ? ' (číslo ' + cislo + ')' : '') + '. ' + jina
+    + ' (Seznam zakázek → Duplikovat jako novou zakázku), protože Pipedrive eviduje každou nabídku zvlášť.';
+}
+
+/* ZAHRANIČNÍ ŘADA CENÍKU A „JEN REALIZACE" (P6 / K19-N114; dialog z 2. 10.
+ * 2026, upraveno podle rozhodnutí J. V. 13. 10. 2026 — D6f, výchozí).
+ * Projekci u zahraničních zakázek nerealizujeme (P11, 29. 9. 2026). Zakázka
+ * s číslem OPR má PROJ vyřazenou už podle čísla, takže se jí dialog
+ * NENABÍZÍ. Zbývá zahraniční zakázka BEZ čísla: po přepnutí na zahraniční
+ * řadu se aplikace zeptá, zda ji rovnou nastavit jen jako realizaci
+ * (`jenOck`); při návratu všech variant na tuzemský ceník nabídne zrušení
+ * `jenOck` ('zrusitJenOck').
  *
  * `jenOck` je vlastnost ZAKÁZKY, řada ceníku vlastnost VARIANTY — dialog
- * to musí říct. Nenabízí se, když zakázka nese číslo projekce (OVP,
- * vědomá projekce) nebo když obchodník vědomě zvolil „počítat obě strany"
- * (`obeStrany`). `varianty` = pole řad ceníku všech variant ('cr' / 'zahr'). */
+ * to musí říct. Nenabízí se ani u čísla projekce (OVP, vědomá projekce).
+ * `varianty` = pole řad ceníku všech variant ('cr' / 'zahr'). */
 function zahrJenRealizaceNabidnout(zak, rada, varianty) {
   if (!zak) return null;
   /* ODESLANÁ VARIANTA (B129, audit 6. 10. 2026): `jenOck` je vlastnost
@@ -634,7 +693,8 @@ function zahrJenRealizaceNabidnout(zak, rada, varianty) {
   if (Array.isArray(zak.varianty) && zak.varianty.some(v => v && v.zamek && v.zamek.zamceno)) return null;
   const rady = Array.isArray(varianty) ? varianty : [];
   if (rada === 'zahr') {
-    if (zak.jenOck || zak.jenProj || zak.obeStrany) return null;
+    if (zak.jenOck || zak.jenProj) return null;
+    if (zakazkaVyrazenaStrana(zak) === 'proj') return null;   // D6f: číslo OPR — PROJ už je vyřazená
     /* Číslo projekce: řada OVP ve společném čísle, nebo vlastní číslo
      * v (starší) hlavičce PROJ. Ne stranaMaCislo — ta u zakázky bez
      * projHlavicka bere společné číslo za číslo obou stran. */
@@ -643,7 +703,7 @@ function zahrJenRealizaceNabidnout(zak, rada, varianty) {
     return 'jenOck';
   }
   /* zpět na tuzemskou: jen když už žádná varianta nepočítá zahraničním ceníkem */
-  if (zak.jenOck && !rady.some(r => r === 'zahr')) return 'obeStrany';
+  if (zak.jenOck && !rady.some(r => r === 'zahr')) return 'zrusitJenOck';
   return null;
 }
 
@@ -885,7 +945,10 @@ function importZakazka(obj) {
       if (v && v.data && !v.data.cenikRucni && typeof cenikRucniVsechny === 'function')
         v.data.cenikRucni = cenikRucniVsechny();
     });
-    if (obj.obeStrany == null) obj.obeStrany = false;   // vědomé počítání obou stran naráz
+    /* `obeStrany` (tlačítko „Počítat i tuhle stranu", 23. 8. 2026) se od P6
+     * (J. V. 13. 10. 2026) nenastavuje ani nedoplňuje: starší zakázka ho
+     * v datech nese dál (nic se nemaže), pravidlo zámku strany ho ignoruje
+     * a pozná podle něj jen „dřív počítala obě strany" (zakazkaDrivObeStrany). */
     // migrace: IČO objednatele přibylo 30. 7. 2026. Zůstává PRÁZDNÉ – v žádném
     // dosavadním poli není nic, z čeho by se dalo odvodit, a odhadnuté IČO je
     // horší než žádné (skončilo by ve smlouvě).
@@ -991,7 +1054,11 @@ function porovnaniVariant(zak, vypocty, opts) {
   (vypocty || []).forEach(x => { mapa[x.id] = x; });
 
   const rid = ridiciVarianta(zak);
-  const bezOck = !!zak.jenProj;   // jen projekce: část OCK se neporovnává
+  /* Vyřazená strana (P6, zámek strany) se neporovnává: OCK u zakázky jen
+   * projekce / s číslem OVP, PROJ u zakázky s číslem OPR / jen realizace. */
+  const vyrazena = (typeof zakazkaVyrazenaStrana === 'function') ? zakazkaVyrazenaStrana(zak) : (zak.jenProj ? 'ock' : '');
+  const bezOck = vyrazena === 'ock';
+  const bezProj = vyrazena === 'proj';
   const varianty = zak.varianty.map(v => {
     const c = mapa[v.id] || {};
     const d = v.data || {};
@@ -1035,7 +1102,7 @@ function porovnaniVariant(zak, vypocty, opts) {
       chyba = 'kalkulaci OCK se nepodařilo spočítat';
     }
 
-    if (c.proj && c.proj.souhrn) {
+    if (!bezProj && c.proj && c.proj.souhrn) {
       /* Sleva projekce se odečítá od ceny PROJEKCE (#134). Používá se tentýž
        * `podil`, tedy tatáž pravidla schválení — jen nad druhým objektem
        * a druhou cenou. */
@@ -1061,7 +1128,7 @@ function porovnaniVariant(zak, vypocty, opts) {
       h.projCelkem = null;
     }
     h.zaokrKc = zaokrCelkem == null ? null : Math.round(zaokrCelkem * 100) / 100;
-    if (!c.proj || !c.proj.souhrn)
+    if (!bezProj && (!c.proj || !c.proj.souhrn))
       chyba = chyba ? chyba + '; kalkulaci PROJ také ne' : 'kalkulaci PROJ se nepodařilo spočítat';
 
     // celkem = cena OCK po schválené slevě + PROJ (stejně jako v nabídce);
@@ -1495,7 +1562,8 @@ if (typeof module !== 'undefined')
                      ZAK_HLAVICKA_POLE, zajistiProjHlavicku, projHlavicka,
                      projHlavickaEfektivni, projHlavickaZOck, projCisloNabidky,
                      cisloSVariantou, zakazkaDuplicita,
-                     stranaCislo, stranaMaCislo, zakazkaVedouciStrana, stranaZamcena, zahrJenRealizaceNabidnout,
+                     stranaCislo, stranaMaCislo, zakazkaVedouciStrana, zakazkaVyrazenaStrana, stranaZamcena, vysledekStrany,
+                     zakazkaDrivObeStrany, zakazkaVyrazenaText, zahrJenRealizaceNabidnout,
                      zakazkaCisloVedouci, STRANA_NAZEV,
                      ZAK_CISLO_PREDLOHA, hlavickaVyplneno,
                      icoNormalizuj, icoVyplneno, icoPlatne,

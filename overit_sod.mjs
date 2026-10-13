@@ -109,6 +109,10 @@ await p.waitForTimeout(300);
       && [...document.querySelectorAll('select')].some(s =>
         [...s.options].some(o => o.value === 'de'))));
 }
+/* Zámek strany (P6 / K19-N114, 13. 10. 2026): číslo OPR vyřadí PROJ — karta
+ * smlouvy PROJ patří zakázce projekce (číslo OVP). Číslo se přepíná podle
+ * strany, kterou harness právě zkouší. */
+await p.evaluate(() => { ZAK.cislo = '2026 - OVP - CN - 0177'; render(); });
 await p.click('#tab-proj');
 await p.waitForTimeout(300);
 {
@@ -122,6 +126,8 @@ await p.waitForTimeout(300);
     await p.evaluate(() => [...document.querySelectorAll('select')].some(s =>
       [...s.options].some(o => o.textContent.indexOf('dle Nastavení') === 0))));
 }
+await p.evaluate(() => { ZAK.cislo = '2026 - OPR - CN - 0177'; render(); });   // P6: zpět na zakázku OCK
+await p.waitForTimeout(200);
 test('stavové řádky smluv jsou na třídách (karta OCK je v aplikaci dvakrát)',
   await p.evaluate(() => {
     sodStavText('sod', 'zkouška stavu');
@@ -163,12 +169,16 @@ const vysledek = await p.evaluate(async (sablonyB64) => {
   };
   const varianta = aktivniVarianta(ZAK);
   const out = {};
+  /* P6: dokument strany vzniká jen u zakázky té strany (OPR = OCK, OVP = PROJ). */
+  const strana = (typ) => { ZAK.cislo = /Proj/.test(typ) ? '2026 - OVP - CN - 0177' : '2026 - OPR - CN - 0177'; };
   const docx = async (typ, sablona) => {
+    strana(typ);
     const res = await dokumentVygeneruj(typ, buf(sablona), ZAK, varianta, JEKLY, 'cz');
     const bajty = new Uint8Array(await res.blob.arrayBuffer());
     let s = ''; for (let i = 0; i < bajty.length; i++) s += String.fromCharCode(bajty[i]);
     return { docx: btoa(s), nazevSouboru: res.nazevSouboru };
   };
+  strana('sodProj');
   try { await dokumentVygeneruj('sodProj', buf(sablonyB64.sodProj), ZAK, varianta, JEKLY, 'cz'); out.sodProjStara = ''; }
   catch (e) { out.sodProjStara = e.message; }
   for (const typ of ['sod', 'sodProj', 'plnaMoc'])
@@ -178,8 +188,11 @@ const vysledek = await p.evaluate(async (sablonyB64) => {
   varianta.data.kryci.hodnoty.pokutaDodavka = '0,1 % / den';
   out.sodV2Pokuta = await docx('sod', sablonyB64.sodRealV2);
   delete varianta.data.kryci.hodnoty.pokutaDodavka;
+  strana('sod');
   const nab = nabidkaData(ZAK, varianta, JEKLY, 'cz');
+  strana('sodProj');
   const nabP = nabidkaProjData(ZAK, varianta, 'cz');
+  strana('sod');
   return Object.assign(out, { cenaOck: nab.placeholders.CENA_BEZ_DPH,
     cenaProj: nabP.placeholders.PROJ_CELKEM_BEZ_DPH });
 }, b64);

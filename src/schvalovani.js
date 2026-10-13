@@ -543,7 +543,11 @@ function schvalovaniServerMarze(stara, nova, jekly, nast) {
   for (const v of ((nova && Array.isArray(nova.varianty)) ? nova.varianty : [])) {
     if (!v || !v.data) continue;
     if (zamcena(stare.find(x => x && x.id === v.id))) continue;  // doklad — nepřepočítává se
+    /* Vyřazená strana zakázky (P6, zámek strany) se do ceny nepropíše —
+     * její slevu server neposuzuje (D6g: totéž pravidlo jako klient). */
+    const vyrazena = (typeof zakazkaVyrazenaStrana === 'function') ? zakazkaVyrazenaStrana(nova) : '';
     for (const [pole, cast] of [['sleva', 'ock'], ['slevaProj', 'proj']]) {
+      if (cast === vyrazena) continue;
       const sl = v.data[pole];
       if (!slevaPlati(sl)) continue;
       const z = schvalovaniZakladCasti(v, jekly, cast);

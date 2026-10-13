@@ -431,7 +431,8 @@ const PLAN_DOKUMENTY = ['nabidkaProj', 'nabidkaProjTisk', 'sodProj'];
 function planPlatebZabranaDokumentu(typ, varianta) {
   const t = String(typ || '').replace(/_(en|de|fr)$/, '');
   if (PLAN_DOKUMENTY.indexOf(t) < 0 || typeof nabidkaProjPlatby !== 'function' || typeof ZAK === 'undefined') return '';
-  if (ZAK.jenOck) return '';
+  /* Vyřazená PROJ (P6, zámek strany) — dokument zastaví kontrolyStranaZabrana. */
+  if ((typeof stranaZamcena === 'function') ? stranaZamcena(ZAK, 'proj') : ZAK.jenOck) return '';
   /* Varianta, ZE KTERÉ dokument vzniká — po odpovědi „Ne" v nabidkaVarianta
    * je to řídící, ne otevřená (revize etapy B, 30. 9. 2026). Plán, který
    * nejde spočítat, dokument nepustí (dřív se výjimka tiše spolkla). */

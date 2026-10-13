@@ -31,6 +31,13 @@ async function dokumentVygeneruj(typ, templateArrayBuffer, zak, varianta, jekly,
     const duvod = dokumentZabrana(typ, varianta);
     if (duvod) throw new Error(duvod);
   }
+  /* Zámek strany (P6 / K19-N114, vzor #377): dokument vyřazené strany
+   * nevznikne ani mimo UI (Node, cizí volající) — rozhoduje zakázka,
+   * ze které dokument vzniká. */
+  if (typeof kontrolyStranaZabrana === 'function') {
+    const duvod = kontrolyStranaZabrana(zak, typ);
+    if (duvod) throw new Error(duvod);
+  }
   const def = DOKUMENTY[typ];
   if (!def) throw new Error('Neznámý typ dokumentu: ' + typ);
   // Režim A – dokument generovaný od nuly (bez šablony): def.generate → {blob, nazevSouboru}

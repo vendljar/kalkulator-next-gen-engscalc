@@ -200,7 +200,9 @@ await p.evaluate((m) => { slevaProjSet('procenta', 0); PC.marze = m; render(); }
   const ZC = createRequire(import.meta.url)('./src/zkusebni_cenik.js');
   await p.evaluate((c) => { Object.assign(C, c); delete C.prazdny; delete C.ukazkove; }, ZC.zkusebniCenik());
 }
-await p.evaluate(() => { prepniTab('spec'); render(); });
+/* Zámek strany (P6 / K19-N114, 13. 10. 2026): číslo OVP vyřadí OCK a jeho
+ * nabídku zablokuje — nabídka OCK patří zakázce s číslem řady OPR. */
+await p.evaluate(() => { ZAK.cislo = '2026 - OPR - CN - 0365'; prepniTab('spec'); render(); });
 const ock = await nabidka('nabidkaOckDokument');
 s = await stavDph(ock);
 zkus('OCK: nabídka se generuje bez DPH', s.bezDph && s.videt === 0, JSON.stringify(s));

@@ -254,7 +254,9 @@ const ctx = kr.kryciCtx(zak, v, JEKLY);
 test('krycí list OCK ukazuje stejnou cenu jako nabídka',
   Math.abs(parse(ctx.hodnota) - ocekavana) < 1, [ctx.hodnota, ocekavana]);
 
-const por = zk.porovnaniVariant(zak, [{ id: v.id, ock: r, proj: rp }]);
+/* Zámek strany (P6, 13. 10. 2026): číslo OPR vyřadí PROJ — porovnání OCK
+ * + PROJ dohromady se ověřuje na téže zakázce bez čísla (předloha). */
+const por = zk.porovnaniVariant(Object.assign({}, zak, { cislo: zk.ZAK_CISLO_PREDLOHA }), [{ id: v.id, ock: r, proj: rp }]);
 const m = k => por.metriky.find(x => x.klic === k);
 test('porovnání variant ukazuje stejnou cenu OCK',
   Math.abs(m('ockPoSleve').hodnoty[0] - ocekavana) < 0.01, m('ockPoSleve').hodnoty[0]);

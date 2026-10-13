@@ -162,7 +162,7 @@ function renderInputs() {
          * stěn, dokud zkratka platí (oplasteniProhlubenSleduj). */
         + `<div class="row"><label>Prohlubeň</label>
             <input type="number" step="any" value="${esc(Z.prohluben)}"
-              title="Prosklení i v prohlubni: zaškrtněte „Prosklít i prohlubeň" — všechny stěny pak začínají v −prohlubeň (opláštění po stěnách)."
+              title="Opláštění i v prohlubni: zaškrtněte „Opláštit i prohlubeň" — všechny stěny pak začínají v −prohlubeň (opláštění po stěnách)."
               onchange="prohlubenSet(this.value)"><span class="u">m</span></div>`
         + prohlubenSkloRadek()
         + `<div class="row"><label>Průchozí šachta</label>
@@ -826,6 +826,8 @@ function nadDvermiSet(v) {
 }
 
 /* PROSKLÍT I PROHLUBEŇ (P2 / K19-N104, rozhodnutí J. V. 2. 10. 2026).
+ * Popisek „Opláštit i prohlubeň" (dřív „Prosklít…") — J. V. 13. 10. 2026:
+ * opláštění stěny nemusí být sklo, název má říkat, co zkratka dělá.
  * Zaškrtávátko pod polem Prohlubeň. Stav se odvozuje z dolních mezí stěn
  * (oplasteniProhlubenVse v jádře), žádný příznak v datech. Zapnutí přepne
  * jednotné opláštění na po stěnách s výchozími typy stěn — to není cenově
@@ -836,20 +838,20 @@ function prohlubenSkloRadek() {
   const cis = v => (typeof formatCislo === 'function') ? formatCislo(v) : String(Math.round(v * 100) / 100);
   const ano = (typeof oplasteniProhlubenVse === 'function') && oplasteniProhlubenVse(Z);
   const tit = hl > 0
-    ? 'Všem čtyřem stěnám nastaví „Opláštění začíná" = −' + cis(hl) + ' m (prosklení i v prohlubni). '
+    ? 'Všem čtyřem stěnám nastaví „Opláštění začíná" = −' + cis(hl) + ' m (opláštění i v prohlubni). '
       + 'Jednotné opláštění se tím přepne na opláštění po stěnách A–D s výchozími typy stěn. '
       + 'Změna hloubky prohlubně meze posune, dokud je zaškrtnuto; ruční změna u jedné stěny zkratku zruší.'
-    : 'Prohlubeň je nulová — není co prosklít.';
-  return `<div class="row"><label style="font-weight:400">Prosklít i prohlubeň</label>
+    : 'Prohlubeň je nulová — není co opláštit.';
+  return `<div class="row"><label style="font-weight:400">Opláštit i prohlubeň</label>
     <input type="checkbox" ${ano ? 'checked' : ''} title="${esc(tit)}"
       onchange="prohlubenSkloSet(this.checked)"><span class="u"></span></div>`;
 }
 function prohlubenSkloSet(ano) {
-  /* Nulová prohlubeň: není co prosklít. Zaškrtávátko se schválně
+  /* Nulová prohlubeň: není co opláštit. Zaškrtávátko se schválně
    * nezakazuje (`disabled`) — vstupy kalkulace mají zůstat živé, hlídá to
    * overit_lista.mjs — jen se vysvětlí a vrátí. */
   if (ano && !((+Z.prohluben || 0) > 0)) {
-    hlaska('Prohlubeň je nulová — není co prosklít. Nejdřív vyplňte hloubku prohlubně.');
+    hlaska('Prohlubeň je nulová — není co opláštit. Nejdřív vyplňte hloubku prohlubně.');
     render();
     return;
   }
@@ -2044,6 +2046,7 @@ function renderOutputs() {
       + `<div class="kpi-line"><span class="kl">Cena nabídky bez DPH</span><span class="kv">${fmt0(cenaPoSleve)}</span></div>`
     : '';
   const hlava = `<div class="kalk-title">${ZAK.cislo ? `<span class="kt-cislo">${esc(ZAK.cislo)}</span>` : ''}${esc(ZAK.nazevAkce || 'Bez názvu akce')}</div>
+  ${typeof stranaNulovanaStitek === 'function' ? stranaNulovanaStitek('ock') : ''}
   <div class="grand">
     <div class="kpi main"><div class="l">Základní cena bez DPH</div><div class="v">${fmt0(zaklad)}</div></div>
     <div class="kpi kpi-multi">

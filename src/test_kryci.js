@@ -68,6 +68,12 @@ const v = zak.varianty[0];
 global.NAST = { firma: global.firmaDefault() };
 
 const c = kr.kryciCtx(zak, v, JEKLY);
+/* Zámek strany (P6 / K19-N114, 13. 10. 2026): číslo OPR vyřadí PROJ, takže
+ * krycí list OCK nese jen šachtu. Kombinace OCK + projekce zbývá jen
+ * u zakázky BEZ čísla (obchodník se teprve rozhoduje) — na ní se ověřuje
+ * popis „šachta + projekce" a ceny činností PROJ. */
+const zakObe = Object.assign({}, zak, { cislo: zk.ZAK_CISLO_PREDLOHA });
+const cObe = kr.kryciCtx(zakObe, v, JEKLY);
 
 /* ============================================================
  * 1) Definice polí – jedno místo pro dvě verze listu
@@ -163,8 +169,13 @@ test('schválená sleva se do hodnoty zakázky propíše',
 
 /* KL-3: čistě projekční zakázka není šachta. Škatulka se odvozuje z toho,
  * co je oceněné, ne z toho, co je vyplněné v technické specifikaci. */
-test('zakázka s OCK i projekcí se popíše jako šachta + projekce',
-  /šachta \+ projekce$/.test(c.typProduktu), c.typProduktu);
+test('zakázka s OCK i projekcí (bez čísla) se popíše jako šachta + projekce',
+  /šachta \+ projekce$/.test(cObe.typProduktu), cObe.typProduktu);
+test('P6: číslo OPR vyřadí PROJ — typ produktu bez „+ projekce"',
+  !/projekce/.test(c.typProduktu) && /šachta$/.test(c.typProduktu), c.typProduktu);
+test('P6: číslo OPR — činnosti PROJ v krycím listu OCK „Ne"',
+  c.projAno('dps') === 'Ne' && cObe.projAno('dps') === (rProj.sekce.find(s => s.key === 'dps').celkem > 0 ? 'Ano' : 'Ne'),
+  [c.projAno('dps'), cObe.projAno('dps')]);
 test('typ šachty (interiérová / exteriérová) přijde z kalkulace OCK',
   c.ext === (v.data.ock.zadani.typSachty === 'exteriérová')
   && new RegExp(c.ext ? 'Exteriérová' : 'Interiérová').test(c.typProduktu), c.typProduktu);
@@ -215,9 +226,9 @@ test('3D zaměření se přebírá z technické specifikace jako Ano/Ne',
   test('kontext krycího listu nese stav zámku varianty',
     cBez.zamceno === false, cBez.zamceno);
 }
-test('oceněná sekce kalkulace PROJ znamená ANO',
-  c.projAno('dps') === (rProj.sekce.find(s => s.key === 'dps').celkem > 0 ? 'Ano' : 'Ne'),
-  c.projAno('dps'));
+test('oceněná sekce kalkulace PROJ znamená ANO (zakázka bez čísla)',
+  cObe.projAno('dps') === (rProj.sekce.find(s => s.key === 'dps').celkem > 0 ? 'Ano' : 'Ne'),
+  cObe.projAno('dps'));
 /* Neznámý klíč nesmí skončit prázdnem, které se v dokumentu čte jako
  * nevyplněný řádek – žádná činnost = NE. */
 test('neznámá sekce kalkulace PROJ končí u NE, ne u prázdna',
@@ -227,7 +238,7 @@ test('neznámá sekce kalkulace PROJ končí u NE, ne u prázdna',
  * shodit celý krycí list — obchodník potřebuje aspoň smluvní podmínky,
  * i když cena chybí. */
 let cBezJeklu = null, spadlo = false;
-try { cBezJeklu = kr.kryciCtx(zak, v, null); } catch (e) { spadlo = true; }
+try { cBezJeklu = kr.kryciCtx(zakObe, v, null); } catch (e) { spadlo = true; }
 test('nespočítaná kalkulace OCK krycí list neshodí', !spadlo && !!cBezJeklu);
 /* „Prázdno není nula": nespočítaná cena se vypíše pomlčkou. Nula by se
  * v podkladu pro smlouvu četla jako „zdarma". */

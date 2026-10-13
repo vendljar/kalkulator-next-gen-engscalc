@@ -570,13 +570,18 @@ test('úložiště se hlásí jako souborové', zk.StorageAdapter.typ === 'file'
   ob.cislo = '2026 - OPR - CN - 0502';
   zk.zajistiProjHlavicku(ob);
   ob.projHlavicka.cislo = '2026-OVP-CN-0502';
-  test('zakázka s oběma čísly nezamyká nic (obojí je legitimní)',
-    zk.zakazkaVedouciStrana(ob) === '' && !zk.stranaZamcena(ob, 'ock') && !zk.stranaZamcena(ob, 'proj'));
+  /* P6 (K19-N114, J. V. 13. 10. 2026, D6e — výklad): čísla na obou
+   * stranách → vede OCK (číslo zakázky), PROJ je vyřazená. Do 13. 10. se
+   * nezamykalo nic. */
+  test('zakázka s oběma čísly: vede OCK, PROJ vyřazená (D6e)',
+    zk.zakazkaVedouciStrana(ob) === 'ock' && zk.stranaZamcena(ob, 'proj') && !zk.stranaZamcena(ob, 'ock'));
 
   const od = zk.novaZakazka();
   od.cislo = '2026 - OPR - CN - 0503';
   od.obeStrany = true;
-  test('„počítat i druhou stranu" zámek zruší', !zk.stranaZamcena(od, 'proj'));
+  /* D6a: výjimka „Počítat i tuhle stranu" se ruší — příznak se ignoruje. */
+  test('příznak obeStrany zámek NEzruší (D6a)', zk.stranaZamcena(od, 'proj') && od.obeStrany === true);
+  test('nová zakázka příznak obeStrany nenese', !('obeStrany' in zk.novaZakazka()));
 
   const jp = zk.novaZakazka();
   jp.jenProj = true;

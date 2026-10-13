@@ -71,7 +71,9 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* B81, B103 (13. 10. 2026): prototypové klíče analytiky a dodatkových textů. */
      '../src/test_analytika.js', '../src/test_cenik_popisy.js',
      /* B101, B105 (13. 10. 2026): serverová kontrola rozhodnutí o slevě. */
-     '../src/test_schvalovani.js'];
+     '../src/test_schvalovani.js',
+     /* P6 / K19-N114 (13. 10. 2026): zámek strany — sdílené pravidlo klienta a serveru. */
+     '../src/test_zamek_strany.js'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -1376,13 +1378,70 @@ const MUTACE = [
     nahrad: "    uloRozmeryVZadani(v.data.ock && v.data.ock.zadani, true).forEach(p => out.push(p));",
     proc: 'nová zakázka (ZADANI_NOVA má nulové rozměry) by nešla uložit — oprava by blokovala běžnou práci' },
   { nazev: 'B137: rozměry OCK se hlídají i u zakázky jen projekce', soubor: 'lib/zakazka_kontrola.mjs',
-    hledej: "  if (zak && zak.jenProj) return [];",
+    hledej: "  if (zakazkaVyrazena(zak) === 'ock') return [];",
     nahrad: "  ;",
     proc: 'nabídka jen projekce by nešla odeslat kvůli nevyplněné šachtě, kterou nikdo neprodává' },
-  { nazev: 'B137: rozměry OCK se hlídají i u dokumentu strany PROJ', soubor: 'lib/zakazka_kontrola.mjs',
-    hledej: "  if (strany.size && !strany.has('ock')) return [];",
+  /* „B137: rozměry OCK se hlídají i u dokumentu strany PROJ" (podmínka
+   * `strany.size && !strany.has('ock')`) se od P6 (zámek strany, 13. 10.
+   * 2026) NEMUTUJE VĚDOMĚ: dokument strany PROJ smí nově vzniknout jen
+   * u zakázky, jejíž OCK je vyřazená (číslo OVP, jen projekce) — a tu
+   * zamekNovyRozmeryProblem pustí už řádkem výš; u vyřazené PROJ zámek
+   * odmítne zamekVyrazenaStranaProblem dřív. Podmínka zůstává jako
+   * pojistka, ale testem se k ní nedá dojít (celé kolo 13. 10.: jediná
+   * nechycená, 345 z 346). */
+  /* ---------- P6 / K19-N114 (13. 10. 2026): zámek strany — uzamknout a vynulovat ---------- */
+  { nazev: 'P6: server vyřazenou stranu nepozná (jen jenProj)', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "  if (typeof globalThis.zakazkaVyrazenaStrana === 'function') return globalThis.zakazkaVyrazenaStrana(zak) || '';",
     nahrad: "  ;",
-    proc: 'nabídka PROJ by nešla odeslat, dokud není vyplněná šachta — zábrana rozměrů je jen strany OCK' },
+    proc: 'zámek nabídky OCK u čísla OPR by server odmítl kvůli ceníku vyřazené PROJ (D6g — jiné pravidlo než klient)' },
+  { nazev: 'P6: nový zámek dokumentu vyřazené strany projde', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "    if (vyrProblem) return odmitni(403, 'Neuloženo: ' + vyrProblem + '.');",
+    nahrad: "    ;",
+    proc: 'upravený klient by odeslal (a zamkl) nabídku OCK u zakázky projekce — vynulovaná strana by šla zákazníkovi' },
+  { nazev: 'P6: dotisk dokumentu vyřazené strany projde', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "        if (vyrDotisk) return odmitni(403, 'Neuloženo: dotisk dokumentu odeslané nabídky — ' + vyrDotisk + '.');",
+    nahrad: "        ;",
+    proc: 'do odeslané nabídky OCK by šlo dotisknout nabídku PROJ, kterou zakázka nenabízí (D6d)' },
+  { nazev: 'P6: ceník vyřazené strany blokuje nový zámek vedoucí', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "  const hlidatOck = maOck(platny.cenik) && vyrazena !== 'ock', hlidatProj = maProj(platny.cenikProj) && vyrazena !== 'proj';",
+    nahrad: "  const hlidatOck = maOck(platny.cenik), hlidatProj = maProj(platny.cenikProj);",
+    proc: 'nabídka OCK by nešla odeslat kvůli ceníku projekce, která se u zakázky nenabízí' },
+  { nazev: 'P6: čísla obou stran nezamykají nic (D6e)', soubor: '../src/zakazka.js',
+    hledej: "  if (stranaMaCislo(zak, 'ock')) return 'ock';      // D6e: i když číslo má i PROJ",
+    nahrad: "  if (stranaMaCislo(zak, 'ock') && !stranaMaCislo(zak, 'proj')) return 'ock';",
+    proc: 'zakázka s číslem OPR i vlastním číslem PROJ by dál počítala a sčítala obě strany (K19-N114)' },
+  { nazev: 'P6: příznak obeStrany zase ruší zámek (D6a)', soubor: '../src/zakazka.js',
+    hledej: "  if (zak && zak.jenOck) return 'ock';",
+    nahrad: "  if (zak && zak.jenOck) return 'ock';\n  if (zak && zak.obeStrany) return '';",
+    proc: 'starší zakázka s „Počítat i tuhle stranu" by dál nesla cenu obou stran' },
+  { nazev: 'P6: vysledekStrany vrací i vyřazenou stranu', soubor: '../src/zakazka.js',
+    hledej: "  if (stranaZamcena(zak, strana)) return null;",
+    nahrad: "  ;",
+    proc: 'krycí list OCK u čísla OPR by zase psal „+ projekce" a ceny činností PROJ' },
+  { nazev: 'P6: porovnání variant sčítá i vyřazenou PROJ', soubor: '../src/zakazka.js',
+    hledej: "    if (!bezProj && c.proj && c.proj.souhrn) {",
+    nahrad: "    if (c.proj && c.proj.souhrn) {",
+    proc: 'přehled a otisk nového zámku OPR zakázky by nesl cenu projekce, která se nenabízí' },
+  { nazev: 'P6: dialog „jen realizace" i u zakázky s číslem OPR (D6f)', soubor: '../src/zakazka.js',
+    hledej: "    if (zakazkaVyrazenaStrana(zak) === 'proj') return null;   // D6f: číslo OPR — PROJ už je vyřazená",
+    nahrad: "    ;",
+    proc: 'zahraniční zakázka K22-Z02 by dostala zbytečný dialog, PROJ už je vyřazená číslem' },
+  { nazev: 'P6: kontroly hlídají i vyřazenou stranu', soubor: '../src/kontroly.js',
+    hledej: "  ctx = kontrolyCtxStrany(ctx);",
+    nahrad: "  ;",
+    proc: 'OCK zakázka s číslem OPR by dál hlásila projZahranici / planPlatebWordProj (K21-N1)' },
+  { nazev: 'P6: dokument vyřazené strany nezablokovaný', soubor: '../src/kontroly.js',
+    hledej: "  if (zakazkaVyrazenaStrana(zak) !== strana) return '';",
+    nahrad: "  return '';",
+    proc: 'nabídka PROJ by šla vytisknout u zakázky OCK — vynulovaná strana by odešla zákazníkovi' },
+  { nazev: 'P6: server posuzuje slevu vyřazené strany', soubor: '../src/schvalovani.js',
+    hledej: "      if (cast === vyrazena) continue;",
+    nahrad: "      ;",
+    proc: 'uložení OCK zakázky by server odmítl kvůli slevě projekce, která se nenabízí' },
+  { nazev: 'P6: plán plateb PROJ i u vyřazené PROJ', soubor: '../src/nabidka_proj.js',
+    hledej: "  if (typeof stranaZamcena === 'function' && stranaZamcena(zak, 'proj')) return null;",
+    nahrad: "  ;",
+    proc: 'plán plateb projekce by se dopočítával a kontroloval u zakázky OCK' },
   /* ---------- #398 — nálezy nezávislé revize (12. 10. 2026) ---------- */
   { nazev: 'revize N1: značky jenZahr navíc se nehlídají', soubor: '../src/uloziste.js',
     hledej: "      uloJenZahrNavic(c.vezmi(d), kandJz).forEach(",

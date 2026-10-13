@@ -314,17 +314,29 @@ test('a návrat vrátí tuzemskou přirážku projekce',
   await page.evaluate(() => aktivniVarianta(ZAK).data.proj.cenik.marze));
 await page.evaluate(() => { cenikZahrSet('PC.marze', ''); });
 
-/* ---------- P6 (K19-N114, 2. 10. 2026): přepnutí na zahraničí nabídne „jen realizace" ----------
- * Stub potvrd odpovídá Ano. Nejdřív čistý stav: tuzemská řada, zakázka
- * počítá obě strany bez vědomé volby. */
+/* ---------- P6 (K19-N114, 2. 10. 2026; D6f 13. 10. 2026): „jen realizace" ----------
+ * Zakázka s číslem OPR (tvar K22-Z02) má PROJ vyřazenou už podle čísla —
+ * dialog se jí nenabídne. Zahraniční zakázka BEZ čísla ano. Stub potvrd
+ * odpovídá Ano. */
 await page.evaluate(() => { cenikRadaPrepniUI('cr'); });
 await page.waitForTimeout(200);
-await page.evaluate(() => { ZAK.jenOck = false; ZAK.jenProj = false; ZAK.obeStrany = false; ZAK.cislo = '2026 - OPR - CN - 9901'; render(); window.__dlgTexty = []; });
+await page.evaluate(() => { ZAK.jenOck = false; ZAK.jenProj = false; ZAK.cislo = '2026 - OPR - CN - 9901'; render(); window.__dlgTexty = []; });
+await page.evaluate(() => cenikRadaPrepniUI('zahr'));
+await page.waitForTimeout(300);
+const p6z = await page.evaluate(() => ({ jenOck: ZAK.jenOck, texty: window.__dlgTexty.slice(),
+  projZahr: (kontrolyStavAkt().kody || []).includes('projZahranici') }));
+test('P6 (i): zakázka s číslem OPR se na „jen realizace" neptá a projZahranici mlčí (PROJ vyřazená číslem)',
+  !p6z.texty.some(t => /Zakázka jen realizace/.test(t)) && p6z.jenOck === false && !p6z.projZahr, JSON.stringify(p6z));
+await page.evaluate(() => { cenikRadaPrepniUI('cr'); });
+await page.waitForTimeout(200);
+await page.evaluate(() => { ZAK.cislo = ZAK_CISLO_PREDLOHA; render(); window.__dlgTexty = []; });
 await page.evaluate(() => cenikRadaPrepniUI('zahr'));
 await page.waitForTimeout(300);
 const p6a = await page.evaluate(() => ({ jenOck: ZAK.jenOck, texty: window.__dlgTexty.slice() }));
-test('P6: po přepnutí na zahraniční ceník se zeptá na „jen realizace"',
+test('P6: zakázka bez čísla se po přepnutí na zahraniční ceník zeptá na „jen realizace"',
   p6a.texty.some(t => /Zakázka jen realizace/.test(t) && /celou zakázku/.test(t)), p6a.texty.map(t => t.slice(0, 40)).join(' | '));
+test('P6: v textu dialogu už není tlačítko „Počítat i tuhle stranu"',
+  p6a.texty.some(t => /Zakázka jen realizace/.test(t)) && !p6a.texty.some(t => /Počítat i tuhle stranu/.test(t)));
 test('P6: odpověď Ano nastaví zakázku jen jako realizaci (strana PROJ zešedne)',
   p6a.jenOck === true && await page.evaluate(() => stranaZamcena(ZAK, 'proj')));
 await page.evaluate(() => { window.__dlgTexty = []; });
@@ -350,6 +362,57 @@ test('P6: zakázka s číslem projekce (OVP) se na „jen realizace" neptá',
 await page.evaluate(() => { cenikRadaPrepniUI('cr'); });
 await page.waitForTimeout(200);
 await page.evaluate(() => { ZAK.cislo = ''; ZAK.jenOck = false; render(); });
+
+/* ---------- P6 (K19-N114, 13. 10. 2026): zámek strany v UI ----------
+ * Číslo OPR → Kalkulace PROJ uzamčená a vynulovaná: lišta bez tlačítka
+ * „Počítat i tuhle stranu", štítek „vynulováno", žádná nenulová částka,
+ * krycí list PROJ jen panel, dokumenty PROJ zhasnuté. Smazání čísla vrátí
+ * cenu. Číslo OVP obráceně (OCK). */
+{
+  const castky = (sel) => page.evaluate((s) => {
+    const el = document.querySelector(s); if (!el) return null;
+    const t = el.innerText.replace(/\u00a0/g, ' ');
+    return (t.match(/\d[\d ]*(,\d+)? Kč(?!\/)/g) || []).filter(x => /[1-9]/.test(x.replace(/,\d+/, '')));
+  }, sel);
+  await page.evaluate(() => { ZAK.jenOck = false; ZAK.jenProj = false; ZAK.cislo = '2026 - OPR - CN - 9903'; prepniTab('proj'); render(); });
+  await page.waitForTimeout(250);
+  const ui = await page.evaluate(() => ({
+    lista: !!document.querySelector('#page-proj .zamek-lista[data-strana-vyrazena="proj"]'),
+    tlacitko: /Počítat i tuhle stranu/.test(document.body.innerText),
+    stitek: !!document.querySelector('#page-proj .strana-nulovana'),
+    zamceno: document.getElementById('proj-telo').classList.contains('strana-zamcena'),
+    kryci: !!document.querySelector('#page-kryciproj .strana-vyrazena-panel'),
+    zabNab: ukazkoveZabranaAttr('nabidkaProj'), zabSod: ukazkoveZabranaAttr('sodProj'), zabOck: ukazkoveZabranaAttr('nabidka') }));
+  test('P6 UI: číslo OPR — Kalkulace PROJ má lištu vyřazené strany, štítek „vynulováno" a je jen pro čtení',
+    ui.lista && ui.stitek && ui.zamceno, JSON.stringify(ui));
+  test('P6 UI: tlačítko „Počítat i tuhle stranu" nikde není', !ui.tlacitko);
+  test('P6 UI: krycí list PROJ ukazuje jen panel vyřazené strany', ui.kryci);
+  test('P6 UI: dokumenty PROJ (nabídka, SoD) zhasnuté s hláškou, OCK ne',
+    /disabled/.test(ui.zabNab) && /vynulovan/.test(ui.zabNab) && /disabled/.test(ui.zabSod) && !/vynulovan/.test(ui.zabOck), JSON.stringify(ui));
+  const nenulove = await castky('#page-proj');
+  test('P6 UI: v Kalkulaci PROJ se neukáže žádná nenulová částka', nenulove && nenulove.length === 0, JSON.stringify(nenulove));
+  const prehled = await page.evaluate(() => { const r = spocitejVariantu(aktivniVarianta(ZAK)); return { ock: !!r.ock, proj: r.proj }; });
+  test('P6 UI: přehledy (spocitejVariantu) PROJ nepočítají', prehled.ock && prehled.proj === null, JSON.stringify(prehled));
+  await page.evaluate(() => { ZAK.cislo = ZAK_CISLO_PREDLOHA; render(); });
+  await page.waitForTimeout(250);
+  /* Harness běží nad ceníkem sestavení (samé nuly) — „počítá" se proto
+   * pozná podle výsledku a zmizelého štítku, ne podle částky. */
+  const zpet = await page.evaluate(() => ({ stitek: !!document.querySelector('#page-proj .strana-nulovana'),
+    lista: !!document.querySelector('#page-proj .zamek-lista'), proj: !!spocitejVariantu(aktivniVarianta(ZAK)).proj,
+    zamceno: document.getElementById('proj-telo').classList.contains('strana-zamcena') }));
+  test('P6 UI: smazání čísla — PROJ zase počítá (výsledek, bez štítku a lišty, pole živá)',
+    zpet.proj && !zpet.stitek && !zpet.lista && !zpet.zamceno, JSON.stringify(zpet));
+  await page.evaluate(() => { ZAK.cislo = '2026 - OVP - CN - 9904'; prepniTab('kalk'); render(); });
+  await page.waitForTimeout(250);
+  const ock = await page.evaluate(() => ({
+    lista: !!document.querySelector('.zamek-lista[data-strana-vyrazena="ock"]'),
+    stitek: !!document.querySelector('#kalk-souhrn .strana-nulovana'),
+    kryci: !!document.querySelector('#page-kryci .strana-vyrazena-panel') }));
+  test('P6 UI: číslo OVP — Kalkulace OCK vyřazená (lišta, štítek, krycí list OCK jen panel)', ock.lista && ock.stitek && ock.kryci, JSON.stringify(ock));
+  const nenuloveOck = await castky('#kalk-souhrn');
+  test('P6 UI: souhrn Kalkulace OCK u čísla OVP bez nenulové částky', nenuloveOck && nenuloveOck.length === 0, JSON.stringify(nenuloveOck));
+  await page.evaluate(() => { ZAK.cislo = ''; render(); });
+}
 
 /* ---------- 7) uzamčená varianta se nepřepíná ---------- */
 test('uzamčená (odeslaná) varianta se nepřepne',

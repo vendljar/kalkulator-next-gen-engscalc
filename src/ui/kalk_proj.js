@@ -235,6 +235,7 @@ function renderProj() {
    *   počítá se z ceny projekce – patří k ceně, která jde ven, ne k tomu,
    *   z čeho se počítá. Popisky sedí vpravo u svých hodnot (.prm). */
   const hlava = `<div class="kalk-title">${ZAK.cislo ? `<span class="kt-cislo">${esc(ZAK.cislo)}</span>` : ''}${esc(ZAK.nazevAkce || 'Bez názvu akce')}</div>
+  ${typeof stranaNulovanaStitek === 'function' ? stranaNulovanaStitek('proj') : ''}
   <div class="grand">
     <div class="kpi main"><div class="l">Základní cena bez DPH</div><div class="v">${fmt0(r.souhrn.cena)}</div></div>
     <div class="kpi kpi-multi">
@@ -471,7 +472,7 @@ function renderProj() {
   /* Souhrn: od #141 je procento sekce JEDNO (výchozí globální, přepsatelné),
    * takže sloupec „Sleva/přir." zmizel — býval to druhý zápis téhož a právě
    * z té dvojice vzniklo dvojí započtení přirážky. */
-  const souhrnTbl = `<table>
+  const souhrnTbl = `${typeof stranaNulovanaStitek === 'function' ? stranaNulovanaStitek('proj') : ''}<table>
     <tr><th>Sekce</th><th>Náklad</th><th>Přirážka</th><th>Doprava</th><th>Celkem</th></tr>
     ${r.sekce.filter(s => s.celkem !== 0 || s.naklad !== 0).map(s =>
       `<tr><td>${esc(s.nazev)}</td><td>${fmt(s.naklad)}</td><td>${num(s.pouzitePct)} % ⇒ ${fmt(s.marze)}</td>

@@ -30,7 +30,10 @@ const metrika = (p, klic) => p.metriky.find(m => m.klic === klic);
 
 /* ---------- 1) základní tvar: 3 varianty, řídící uprostřed ---------- */
 const zak = zk.novaZakazka();
-zak.cislo = '2026 - OPR - CN - 0201';
+/* Bez čísla nabídky (předloha): od P6 (zámek strany, 13. 10. 2026) číslo OPR
+ * vyřadí PROJ. Porovnání OCK + PROJ dohromady platí pro zakázku, která
+ * číslo ještě nemá; vyřazenou stranu hlídá blok „zámek strany" na konci. */
+zak.cislo = zk.ZAK_CISLO_PREDLOHA;
 const v1 = zak.varianty[0];
 v1.nazev = 'A – základ';
 const v2 = zk.novaVarianta('B – dražší'); zak.varianty.push(v2);
@@ -321,6 +324,26 @@ test('popisky detailu položek mají překlad v EN/DE/FR', chibiPrazdne(chybiP),
   test('jen PROJ: celkem bez DPH = jen projekce', blizko(vv.hodnoty.celkemBezDph, 200000));
   test('jen PROJ: celkem s DPH sazbou PROJ', blizko(vv.hodnoty.celkemSDph, 200000 * 1.12));
   test('jen PROJ: chybějící OCK není chyba', !vv.chyba, vv.chyba);
+}
+
+/* ---------- zámek strany (P6 / K19-N114, 13. 10. 2026) ----------
+ * Číslo OPR vyřadí PROJ: v porovnání chybí, celkem = jen OCK, chybějící
+ * PROJ není chyba. Číslo OVP obráceně (vyřadí OCK). */
+{
+  const zO = zk.novaZakazka();
+  zO.cislo = '2026 - OPR - CN - 0302';
+  const vO = zO.varianty[0];
+  vO.data.cenik.dph = 0.21; vO.data.proj.cenik.dph = 0.12; vO.data.sleva = sl.slevaDefault();
+  const pO = porovnaniVariant(zO, [{ id: vO.id, ock: mkOck(1000000, 800000), proj: mkProj(200000) }]).varianty[0];
+  test('P6 číslo OPR: PROJ se neporovnává a celkem = jen OCK',
+    pO.hodnoty.projCelkem == null && blizko(pO.hodnoty.celkemBezDph, 1000000) && !pO.chyba, JSON.stringify(pO.hodnoty));
+  const zP = zk.novaZakazka();
+  zP.cislo = '2026 - OVP - CN - 0302';
+  const vP = zP.varianty[0];
+  vP.data.cenik.dph = 0.21; vP.data.proj.cenik.dph = 0.12; vP.data.sleva = sl.slevaDefault();
+  const pP = porovnaniVariant(zP, [{ id: vP.id, ock: mkOck(1000000, 800000), proj: mkProj(200000) }]).varianty[0];
+  test('P6 číslo OVP: OCK se neporovnává a celkem = jen PROJ',
+    pP.hodnoty.ockZaklad == null && blizko(pP.hodnoty.celkemBezDph, 200000) && !pP.chyba, JSON.stringify(pP.hodnoty));
 }
 
 console.log(`\n${ok} OK, ${fail} FAIL`);

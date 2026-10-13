@@ -201,7 +201,9 @@ function zakazkaSVariantami(pocet) {
   const v2 = zakObe.varianty[0];
   v2.data.proj = { cenik: ZC.zkusebniCenikProj(),
                    zadani: JSON.parse(JSON.stringify(ep.DEFAULT_ZADANI_PROJ)) };
-  zakObe.obeStrany = true;
+  /* Obě strany počítá zakázka BEZ čísla (předloha). Příznak obeStrany
+   * („Počítat i tuhle stranu") se od P6 (13. 10. 2026) ignoruje. */
+  test('příprava: zakázka bez čísla počítá obě strany', zk.zakazkaVyrazenaStrana(zakObe) === '');
   const predObe = cs.cenikCenaRozpracovanych(zakObe, JEKLY);
   v2.data.proj.cenik.sazby[klic] = (+v2.data.proj.cenik.sazby[klic] || 0) * 2 + 1;
   const poObe = cs.cenikCenaRozpracovanych(zakObe, JEKLY);

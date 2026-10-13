@@ -106,6 +106,10 @@ function kryciProjPodminkyBlok() {
 
 function renderKryciProj() {
   const el = document.getElementById('page-kryciproj'); if (!el) return;
+  /* Zámek strany (P6): krycí list PROJ (a plán plateb PROJ v něm) u zakázky
+   * s vyřazenou PROJ nevzniká. */
+  const vyr = (typeof stranaVyrazenaPanel === 'function') ? stranaVyrazenaPanel('proj', 'Krycí list zakázky PROJ') : '';
+  if (vyr) { el.innerHTML = vyr; return; }
   const c = kryciProjCtx(ZAK, aktivniVarianta(ZAK));   // kontext prefillů (jeden zdroj pravdy: KRYCI_PROJ_SEKCE)
   /* Prázdný ceník zhasíná výstupy – krycí list nese ceny stejně jako nabídka. */
   /* #377: i zábrany z kontroly před nabídkou (strana PROJ). */

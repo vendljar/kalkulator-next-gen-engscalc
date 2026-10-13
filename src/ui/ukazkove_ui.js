@@ -94,6 +94,15 @@ function ukazkoveTiskLista() {
  * je to prázdný formulář s razítkem – a ten se zákazníkovi poslat nesmí.
  * Vrací důvod (text), nebo prázdný řetězec, když je cesta volná. */
 function dokumentZabrana(typ, varianta) {
+  /* ZÁMEK STRANY (P6 / K19-N114, 13. 10. 2026): dokument strany, která je
+   * u zakázky uzamčená a vynulovaná (podle čísla nabídky nebo jenProj /
+   * jenOck), nevznikne — ani dotisk do odeslané varianty (D6d). Stojí
+   * první: je to nejpřesnější důvod (žádná oprava ceníku ani zadání
+   * dokument vyřazené strany nepustí). */
+  if (typ && typeof kontrolyStranaZabrana === 'function' && typeof ZAK !== 'undefined') {
+    const duvod = kontrolyStranaZabrana(ZAK, typ);
+    if (duvod) return duvod;
+  }
   if (typeof ukazkoveBraniDokumentu === 'function') {
     const s = ukazkoveStavAkt();
     if (ukazkoveBraniDokumentu(s)) return ukazkoveKratce(s, !ukazkoveSlozkaSmi());

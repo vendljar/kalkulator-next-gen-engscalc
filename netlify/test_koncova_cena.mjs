@@ -281,10 +281,16 @@ for (const [k, h] of [['zdvih', -1], ['roztec', -1], ['hloubka', -1], ['sirka', 
   d0(z).cenik = kopie(platny().cenik); d0(z).proj.cenik = kopie(platny().cenikProj); zamkni(z, 'neznamy');
   const r = await uloz(z, cO);
   test('B137: jen projekce — zámek neznámého typu s nulovými rozměry OCK (200 — šachtu nikdo neprodává)', r.status === 200, r); }
-{ const z = zk.novaZakazka(); z.cislo = '2026 - OPR - CN - ' + (n++); z.nazevAkce = 'TEST B137 nabídka PROJ';
+/* Od P6 (zámek strany, 13. 10. 2026) nese nabídku PROJ zakázka s číslem OVP
+ * (OCK vyřazená); u čísla OPR je vyřazená PROJ a její zámek server odmítne. */
+{ const z = zk.novaZakazka(); z.cislo = '2026 - OVP - CN - ' + (n++); z.nazevAkce = 'TEST B137 nabídka PROJ';
   d0(z).cenik = kopie(platny().cenik); d0(z).proj.cenik = kopie(platny().cenikProj); zamkni(z, 'nabidkaProj');
   const r = await uloz(z, cO);
-  test('B137: zámek nabídky PROJ (zakázka OCK + PROJ) s nevyplněnými rozměry OCK (200 — zábrana rozměrů je jen strany OCK)', r.status === 200, r); }
+  test('B137: zámek nabídky PROJ (číslo OVP) s nevyplněnými rozměry OCK (200 — zábrana rozměrů je jen strany OCK)', r.status === 200, r); }
+{ const z = zk.novaZakazka(); z.cislo = '2026 - OPR - CN - ' + (n++); z.nazevAkce = 'TEST P6 nabídka PROJ u OPR';
+  d0(z).cenik = kopie(platny().cenik); d0(z).proj.cenik = kopie(platny().cenikProj); zamkni(z, 'nabidkaProj');
+  const r = await uloz(z, cO);
+  test('P6: zámek nabídky PROJ u zakázky s číslem OPR (PROJ vyřazená) → 403', r.status === 403 && /vynulovan/.test(r.chyba || ''), r); }
 { /* doklad: varianta zamčená už v uložené verzi s nesmyslným rozměrem */
   const z = nova('B137 doklad'); const r = await uloz(z, cO);
   const klic = 'zakazky/z/' + r.soubor; const ul = JSON.parse(pamet.get(klic)); const v = ul.varianty[0];
@@ -351,14 +357,24 @@ console.log('===== Nezávislá revize #398 (12. 10. 2026): N1 jenZahr, N2 nepoci
   const r = await uloz(z, cA);
   test('Model: ock.fixes, které není pravda/nepravda → 400', r.status === 400, r); }
 { /* N4: zámek nabídky PROJ z nulových rozměrů OCK, pak dotisk nabídky OCK */
-  const z = zk.novaZakazka(); z.cislo = '2026 - OPR - CN - ' + (n++); z.nazevAkce = 'TEST N4 dotisk';
+  /* Číslo OVP (P6: nabídku PROJ nese zakázka projekce, OCK je vyřazená). */
+  const z = zk.novaZakazka(); z.cislo = '2026 - OVP - CN - ' + (n++); z.nazevAkce = 'TEST N4 dotisk';
   d0(z).cenik = kopie(platny().cenik); d0(z).proj.cenik = kopie(platny().cenikProj); zamkni(z, 'nabidkaProj');
   const r0 = await uloz(z, cO);
   test('N4: příprava — zámek nabídky PROJ s nevyplněnou šachtou (200)', r0.status === 200, r0);
   const g = await nacti(r0.soubor, cO);
   const a = zk.importZakazka(kopie(g)); zamkni(a, 'nabidka');
   const r1 = await uloz(a, cO, g.uloRazitko);
-  test('N4: dotisk nabídky OCK k zámku PROJ z nulových rozměrů → 400', r1.status === 400 && /dotisk/.test(r1.chyba || ''), r1);
+  /* Od P6 dotisk OCK u čísla OVP odmítne už zámek strany (OCK vyřazená, 403). */
+  test('P6: dotisk nabídky OCK k zámku PROJ u čísla OVP (OCK vyřazená) → 403', r1.status === 403 && /dotisk/.test(r1.chyba || ''), r1);
+  /* N4 samotná: zakázka se po odeslání PROJ přepne na „jen realizace" (jenOck
+   * má přednost před číslem — OCK vede), takže dotisk OCK zámek strany
+   * pustí; nová strana OCK se pak musí posoudit jako nový zámek — nulové
+   * rozměry → 400. */
+  const gN = await nacti(r0.soubor, cO);
+  const aN = zk.importZakazka(kopie(gN)); aN.jenOck = true; zamkni(aN, 'nabidka');
+  const rN = await uloz(aN, cO, gN.uloRazitko);
+  test('N4: dotisk nabídky OCK k zámku PROJ z nulových rozměrů → 400', rN.status === 400 && /dotisk/.test(rN.chyba || ''), rN);
   const g2 = await nacti(r0.soubor, cO);   // čerstvě — před opravou dotisk OCK výš prošel a změnil razítko
   const b = zk.importZakazka(kopie(g2)); zamkni(b, 'nabidkaProj');
   const r2 = await uloz(b, cO, g2.uloRazitko);
@@ -439,6 +455,42 @@ console.log('===== B138: dvoukrok se starší zveřejněnou verzí ceníku =====
   { const r = await dvakrat(staraZ('B138 mrtvý klíč'), a => { d0(a).proj.cenik = kopie(platny().cenikProj); d0(a).proj.cenik.dopravaPausalKc = 0; }, cO);
     test('revize B138: mrtvý klíč PROJ (klient ho nepřepočítá) přepočet nezablokuje (200)', r.status === 200, r); }
 }
+
+/* ===== P6 / K19-N114 — ZÁMEK STRANY (rozhodnutí J. V. 13. 10. 2026, D6g) =====
+ * Server bere vyřazenou stranu ze stejného pravidla jako klient
+ * (zakazkaVyrazenaStrana): nový zámek VEDOUCÍ strany neodmítne kvůli datům
+ * vyřazené strany (ceník bez cen, nulové rozměry), nový zámek ani dotisk
+ * dokumentu VYŘAZENÉ strany nepustí; uložení zamčené varianty a otisk
+ * zůstávají. Před opravou (1df7283): (k) zámek OCK s ceníkem PROJ bez cen
+ * → 403, zámek PROJ u OVP s ceníkem OCK bez cen → 403, zámek OCK u OVP
+ * → 200, dotisk PROJ do zámku OCK u OPR → 200. */
+console.log('===== P6 zámek strany (13. 10. 2026) =====');
+{ const z = nova('P6 OPR, PROJ bez cen'); sestaveni(z, 'proj'); zamkni(z, 'nabidka');
+  const r = await uloz(z, cO);
+  test('P6 (k): nový zámek nabídky OCK projde i s ceníkem PROJ bez cen (PROJ vyřazená číslem OPR) — 200', r.status === 200, r);
+  if (r.status === 200) {
+    const g = await nacti(r.soubor, cO);
+    const otisk = JSON.stringify(g.varianty[0].zamek.vysledek);
+    const a = zk.importZakazka(kopie(g)); a.nazevAkce += ' (poznámka)';
+    const r2 = await uloz(a, cO, g.uloRazitko);
+    test('P6 (h): uložení zakázky se zamčenou variantou dál projde (200)', r2.status === 200, r2);
+    const g2 = await nacti(r.soubor, cO);
+    test('P6 (h): otisk odeslané nabídky (zamek.vysledek) beze změny, PROJ v něm zůstal',
+      JSON.stringify(g2.varianty[0].zamek.vysledek) === otisk && !!(g2.varianty[0].zamek.vysledek || {}).proj);
+    const b = zk.importZakazka(kopie(g2)); zamkni(b, 'nabidkaProj');
+    const r3 = await uloz(b, cO, g2.uloRazitko);
+    test('P6 (h): dotisk nabídky PROJ do zámku OCK (PROJ vyřazená) → 403', r3.status === 403 && /dotisk/.test(r3.chyba || '') && /vynulovan/.test(r3.chyba || ''), r3);
+  } }
+{ const z = nova('P6 OVP, OCK bez cen a rozměrů'); z.cislo = z.cislo.replace('OPR', 'OVP'); sestaveni(z, 'ock');
+  Object.assign(d0(z).ock.zadani, { sirka: 0, hloubka: 0 }); zamkni(z, 'nabidkaProj');
+  const r = await uloz(z, cO);
+  test('P6 (k): číslo OVP — nový zámek nabídky PROJ projde i s ceníkem OCK bez cen a nulovými rozměry OCK (200)', r.status === 200, r); }
+{ const z = nova('P6 OVP, zámek OCK'); z.cislo = z.cislo.replace('OPR', 'OVP'); zamkni(z, 'nabidka');
+  const r = await uloz(z, cO);
+  test('P6 (k): číslo OVP — nový zámek nabídky OCK (OCK vyřazená) → 403', r.status === 403 && /vynulovan/.test(r.chyba || ''), r); }
+{ const z = nova('P6 jen realizace, zámek SoD PROJ'); z.jenOck = true; zamkni(z, 'sodProj');
+  const r = await uloz(z, cA);
+  test('P6 (k): jenOck — nový zámek SoD PROJ odmítne i administrátorovi (403)', r.status === 403 && /vynulovan/.test(r.chyba || ''), r); }
 
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);

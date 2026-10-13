@@ -81,6 +81,43 @@ o sloučení rozhoduje J. V. (u sloučení: verze se srovná, CHANGELOG/PREDAVKA
 Otevřené: prázdná Cena Zahraničí („jako ČR") červeně nesvítí; pole přirážky a DPH
 nad tabulkou se neprobarvují — výchozí výklad, změní se na pokyn.
 
+# Předávka — 13. 10. 2026: paralelní větev `claude/k22-p2-p6` (P2 + P6, v13.10.1)
+
+Subagent sezení session_01WrUq3gXEhsWk8cxRWfPvsg podle promptu J. V.
+`PROMPT_PARALELNI_VETEV_K22_P2_P6.md`. Větev z `test-draft` = `1df7283`
+(v12.10.4). Do `test-draft`/`test`/`main` nic; o sloučení rozhoduje J. V.
+Netlify: produkční větve jsou `main` (ostrá) a `test` (testovací), branch
+deploy pro `claude/…` v `netlify.toml` ani v `NASAZENI_NETLIFY.md` není.
+
+| Bod | Stav |
+|---|---|
+| P2 — „Opláštit i prohlubeň" | hotovo (commit P2), test `src/test_oplastit_prohluben.js` (1/5 → 7/0) |
+| P6 — zámek strany: vyřazená strana zamčená a vynulovaná | hotovo (commit P6), `src/test_zamek_strany.js` (17/31 → 52/0), server blok P6 v `netlify/test_koncova_cena.mjs` (74/5 → 82/0), UI v `overit_zahranicni.mjs` |
+| celé testovací kolo | hotovo (2 části kvůli 2h limitu procesu): sady 226/0/1, mutace jádra 193/193, serveru 345/346 → nedosažitelná B137 mutace vyřazena s komentářem, statické 3/3 — CHANGELOG |
+
+Rozhodnutí D6a–D6g a výklady: CHANGELOG, oddíl „větev claude/k22-p2-p6".
+Další krok (J. V.): rozhodnout o sloučení do `test-draft` (verze se
+sjednotí s v13.10.1 z `claude/davka-13-10`); po sloučení ověření podle
+promptu (TEST zakázka OPR/OVP, K22-C001).
+
+Otevřené otázky pro J. V. (s výchozí odpovědí, jak je ve větvi):
+1. Serverové kontroly „nikomu" (záporné částky B111, rozměry B137 při
+   uložení, typy #340) platí dál i pro data vyřazené strany — uvolněné jsou
+   jen kontroly nového zámku. *Výchozí: ponechat.*
+2. Otisk souhrnu nového zámku (`zamek.otisk`, z porovnání variant) nese
+   u čísla OPR jen OCK (archiv „odesláno za"); zmrazený výsledek
+   `zamek.vysledek` dál obě strany. *Výchozí: takto.*
+3. Snímky obrazovky v příručce (lišta zámku strany) se nepřegenerovaly.
+   *Výchozí: přegenerovat při příští dávce příručky.*
+4. Zakázky v ostré, které dnes počítají obě strany (čísla obou stran,
+   dřívější tlačítko), po nasazení ukážou druhou stranu vynulovanou
+   a kontrola „stranyDriv" na to upozorní. *Výchozí: bez migrace dat.*
+
+Souběžně: větev `claude/davka-13-10` mění `zahrJenRealizaceNabidnout`
+(`src/zakazka.js`, B129: nic nenabídne u zakázky se zamčenou variantou) —
+při slučování s P6 čekat konflikt v téže funkci (P6 přidává podmínku D6f
+a mění návratovou hodnotu na `'zrusitJenOck'`); obě podmínky ponechat.
+
 ---
 
 # Předávka — 12. 10. 2026 noc: integrace N1–N3 ve větvi `claude/integrace-13-10` (v12.10.4)
