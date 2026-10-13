@@ -14,6 +14,13 @@
  *   'prevod'    { email, na }                  — převést zakázky po kolegovi (jen Administrátor)
  *   'smaz'      { email [, i_se_zakazkami] }   — nevratné smazání účtu (jen Administrátor)
  *
+ * Pole `hesloSpravce` (B77, 13. 10. 2026, rozhodnutí J. V.): vlastní heslo
+ * přihlášeného správce. Povinné u 'zaloz' s rolí Administrátor, u 'role'
+ * povyšující na Administrátora a u 'heslo' (reset cizího hesla) — bez něj
+ * by kdo má cookie správce založil či povýšil vlastní správcovský účet nebo
+ * převzal účet kolegy resetem. Ověřuje lib/sdilene.mjs potvrdHesloSpravce
+ * (stejná brzda jako 'mojeheslo').
+ *
  * Proč 'mojeheslo' vyžaduje staré heslo: relace je cookie. Kdyby stačila
  * cookie sama, kdokoli u odemčeného počítače by tiše změnil heslo a účet
  * ukradl. Se starým heslem změnu provede jen ten, kdo ho zná. Administrátorský
@@ -28,7 +35,7 @@ import { uloziste, otiskHesla, hesloSedi, vyzadujRoli, json, ROLE, ADMIN_EMAIL,
          PODPIS_ULOZISTE, podpisZkontroluj, hesloVerzeUctu, relaceCookie,
          emailPlatny, hesloPlatne, HESLO_PRAVIDLO, SMAZANI_ULOZISTE,
          bezHlavnihoUctu, POKUSY_MAX, zpozdeniMs, pockej, pokusyZacatek, pokusyUspech,
-         pokusyAdresaNadLimit, adresaKlienta } from '../lib/sdilene.mjs';
+         pokusyAdresaNadLimit, adresaKlienta, potvrdHesloSpravce } from '../lib/sdilene.mjs';
 
 /* VERZE HESLA NOVÉHO ÚČTU (B76, hloubkový test 24. 9. 2026). Relace nese
  * verzi hesla účtu a účet bez pole má verzi 0 (B6). Smazaný a znovu založený
@@ -188,6 +195,11 @@ export default async (req) => {
       if (!ROLE.includes(t.role)) return json({ ok: false, chyba: 'Neznámá role.' }, 400);
       if (!hesloPlatne(t.heslo))
         return json({ ok: false, chyba: HESLO_PRAVIDLO }, 400);
+      /* Nový SPRÁVCE jen s heslem toho, kdo ho zakládá (B77, 13. 10. 2026). */
+      if (t.role === 'Administrátor') {
+        const stop = await potvrdHesloSpravce(req, relace, t.hesloSpravce);
+        if (stop) return stop;
+      }
       ucet = { email, jmeno: text(t.jmeno), titul: text(t.titul, 40),
                funkce: text(t.funkce, 80), telefon: text(t.telefon, 40), role: t.role,
                heslo: otiskHesla(t.heslo), zalozen: new Date().toISOString(),
@@ -223,6 +235,9 @@ export default async (req) => {
         return json({ ok: false, chyba: 'Vlastní heslo si změňte přes „Změnit heslo" (se starým heslem).' }, 403);
       if (!hesloPlatne(t.heslo))
         return json({ ok: false, chyba: HESLO_PRAVIDLO }, 400);
+      /* Reset cizího hesla jen s vlastním heslem správce (B77, 13. 10. 2026)
+       * — jinak by cookie správce stačila k převzetí kteréhokoli účtu. */
+      { const stop = await potvrdHesloSpravce(req, relace, t.hesloSpravce); if (stop) return stop; }
       ucet.heslo = otiskHesla(t.heslo);
       ucet.hesloVerze = hesloVerzeUctu(ucet) + 1;                       // B6: odhlásí dosavadní relace
       ucet.hesloZmeneno = new Date().toISOString(); ucet.hesloZmenil = relace.email;
@@ -234,6 +249,12 @@ export default async (req) => {
        * (vyzadujRoli čte účet) a nemohl by to vrátit. Stejný guard jako u smazání. */
       if (email === relace.email && t.role !== 'Administrátor')
         return json({ ok: false, chyba: 'Vlastní roli si nesnižujte — o přístup byste přišli okamžitě. Požádejte jiného administrátora.' }, 400);
+      /* Povýšení na Administrátora jen s vlastním heslem správce (B77,
+       * 13. 10. 2026). Snížení role ani ponechání správce heslo nechce. */
+      if (t.role === 'Administrátor' && ucet.role !== 'Administrátor') {
+        const stop = await potvrdHesloSpravce(req, relace, t.hesloSpravce);
+        if (stop) return stop;
+      }
       ucet.role = t.role;
     } else if (t.akce === 'aktivni') {
       /* Jen skutečné true/false (nález B74 hloubkového testu 24. 9. 2026).

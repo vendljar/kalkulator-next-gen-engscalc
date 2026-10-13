@@ -159,7 +159,7 @@ test('staré heslo už neplatí', (await post(prihlaseni, 'http://x/api/prihlase
 test('novým heslem se přihlásí', (await (await post(prihlaseni, 'http://x/api/prihlaseni', { email: 'obchodnik@priklad.cz', heslo: 'NoveHeslo123' })).json()).ok === true);
 /* administrátorský reset zpátky (bez znalosti starého — to je jeho role) */
 test('administrátor resetuje heslo bez znalosti starého',
-  (await (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'heslo', email: 'obchodnik@priklad.cz', heslo: 'ObchodHeslo1' }, cookie)).json()).ok === true);
+  (await (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'heslo', email: 'obchodnik@priklad.cz', heslo: 'ObchodHeslo1', hesloSpravce: 'Docasne.Heslo.123' }, cookie)).json()).ok === true);
 const poResetu = await post(prihlaseni, 'http://x/api/prihlaseni', { email: 'obchodnik@priklad.cz', heslo: 'ObchodHeslo1' });
 test('po resetu platí heslo od administrátora', (await poResetu.clone().json()).ok === true);
 cookieObch = (poResetu.headers.get('set-cookie') || '').split(';')[0] || cookieObch;   // reset odhlásil starou relaci (B6)

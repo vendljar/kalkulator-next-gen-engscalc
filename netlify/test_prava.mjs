@@ -111,6 +111,9 @@ async function prihlas(email, heslo) {
  * ============================================================ */
 
 const cAdmin = await prihlas(ADMIN_EMAIL, 'Docasne.Heslo.123');
+/* B77 (13. 10. 2026): založení správce, povýšení na správce a reset cizího
+ * hesla chtějí vlastní heslo přihlášeného správce v poli `hesloSpravce`. */
+const HESLO_ADMIN = 'Docasne.Heslo.123';
 
 const UCTY = {
   'Obchodník': { email: 'matice.obchodnik@example.com', heslo: 'MaticeHeslo1' },
@@ -120,7 +123,7 @@ const UCTY = {
 for (const role of ROLE) {
   const u = UCTY[role];
   const r = await (await post(uzivatele, 'http://x/api/uzivatele',
-    { akce: 'zaloz', email: u.email, jmeno: 'Matice ' + role, role, heslo: u.heslo }, cAdmin)).json();
+    { akce: 'zaloz', email: u.email, jmeno: 'Matice ' + role, role, heslo: u.heslo, hesloSpravce: HESLO_ADMIN }, cAdmin)).json();
   if (!r.ok) throw new Error('Účet ' + role + ' se nezaložil: ' + JSON.stringify(r));
   u.cookie = await prihlas(u.email, u.heslo);
 }
@@ -129,6 +132,11 @@ for (const role of ROLE) {
  * role, vypnutí) — nikdy na účtech, kterými se matice sama přihlašuje. */
 await post(uzivatele, 'http://x/api/uzivatele',
   { akce: 'zaloz', email: 'terc@example.com', jmeno: 'Terč', role: 'Obchodník', heslo: 'TercHeslo1' }, cAdmin);
+
+/* Třetí obětní účet — pro řádek matice „povýšení na Administrátora" (B77).
+ * Povýšený terč by změnil, co ostatní řádky na tercovi měří. */
+await post(uzivatele, 'http://x/api/uzivatele',
+  { akce: 'zaloz', email: 'povys.terc@example.com', jmeno: 'Terč povýšení', role: 'Obchodník', heslo: 'PovysHeslo1' }, cAdmin);
 
 /* Druhý obětní účet — jen pro řádek matice „smazání účtu". Mazání je nevratné,
  * takže se nesmí dělat na tercovi, se kterým pracují ostatní řádky. Účet je
@@ -202,6 +210,10 @@ if (!ulozena.ok) throw new Error('Přípravná zakázka se neuložila: ' + JSON.
 
 const R = ['nepřihlášený', 'Obchodník', 'Vedoucí', 'Administrátor'];
 const cookieRole = (r) => (r === 'nepřihlášený' ? null : UCTY[r].cookie);
+/* Vlastní heslo role do pole `hesloSpravce` (B77, 13. 10. 2026) — matice se
+ * ptá na ROLI, takže správce musí poslat správné heslo, aby řádek měřil
+ * právo, a ne potvrzení heslem (to hlídá blok AUDIT B77 níž). */
+const hesloRole = (r) => (UCTY[r] ? UCTY[r].heslo : '');
 
 const PRIHLASENY_OK = { 'nepřihlášený': 401, 'Obchodník': 'ok', 'Vedoucí': 'ok', 'Administrátor': 'ok' };
 const JEN_ADMIN = { 'nepřihlášený': 401, 'Obchodník': 403, 'Vedoucí': 403, 'Administrátor': 'ok' };
@@ -245,8 +257,21 @@ const MATICE = [
 
   { fn: uzivatele, nazev: 'uživatelé — reset cizího hesla (POST akce=heslo)', metoda: 'POST',
     url: 'http://x/api/uzivatele',
-    telo: () => ({ akce: 'heslo', email: 'terc@example.com', heslo: 'ResetHeslo123' }),
+    telo: (r) => ({ akce: 'heslo', email: 'terc@example.com', heslo: 'ResetHeslo123', hesloSpravce: hesloRole(r) }),
     proc: 'rozhodnutí 3. 8. 2026: reset hesla dělá vždy administrátor',
+    prava: JEN_ADMIN },
+
+  { fn: uzivatele, nazev: 'uživatelé — založení správce (POST akce=zaloz, role Administrátor)', metoda: 'POST',
+    url: 'http://x/api/uzivatele',
+    telo: (r) => ({ akce: 'zaloz', email: 'novy.spravce.' + r.replace(/\W/g, '') + '@example.com',
+                    jmeno: 'Nový správce', role: 'Administrátor', heslo: 'NovyHeslo123', hesloSpravce: hesloRole(r) }),
+    proc: 'nový správcovský účet je klíč od celé aplikace (B77: i s vlastním heslem zakládajícího)',
+    prava: JEN_ADMIN },
+
+  { fn: uzivatele, nazev: 'uživatelé — povýšení na Administrátora (POST akce=role)', metoda: 'POST',
+    url: 'http://x/api/uzivatele',
+    telo: (r) => ({ akce: 'role', email: 'povys.terc@example.com', role: 'Administrátor', hesloSpravce: hesloRole(r) }),
+    proc: 'povýšení na správce je převzetí aplikace (B77: i s vlastním heslem povyšujícího)',
     prava: JEN_ADMIN },
 
   { fn: uzivatele, nazev: 'uživatelé — změna role (POST akce=role)', metoda: 'POST',
@@ -621,7 +646,7 @@ console.log('\n===== ZMĚNA ÚČTU BĚHEM PLATNÉ RELACE =====\n');
 
 await post(uzivatele, 'http://x/api/uzivatele',
   { akce: 'zaloz', email: 'degradovany@example.com', jmeno: 'Bývalý správce',
-    role: 'Administrátor', heslo: 'DegradHeslo1' }, cAdmin);
+    role: 'Administrátor', heslo: 'DegradHeslo1', hesloSpravce: HESLO_ADMIN }, cAdmin);
 const cDegrad = await prihlas('degradovany@example.com', 'DegradHeslo1');
 test('správce zálohu stáhne, dokud správcem je',
   (await get(zaloha, 'http://x/api/zaloha', cDegrad)).status === 200);
@@ -680,7 +705,7 @@ await post(uzivatele, 'http://x/api/uzivatele',
 const cPovyseny = await prihlas('povyseny@example.com', 'PovysenyHeslo1');
 test('obchodník na zálohu nesmí', (await get(zaloha, 'http://x/api/zaloha', cPovyseny)).status === 403);
 await post(uzivatele, 'http://x/api/uzivatele',
-  { akce: 'role', email: 'povyseny@example.com', role: 'Administrátor' }, cAdmin);
+  { akce: 'role', email: 'povyseny@example.com', role: 'Administrátor', hesloSpravce: HESLO_ADMIN }, cAdmin);
 test('po povýšení platí nová role hned, bez odhlášení',
   (await get(zaloha, 'http://x/api/zaloha', cPovyseny)).status === 200);
 
@@ -1779,7 +1804,7 @@ console.log('\n===== AUDIT B6: ZMĚNA HESLA ODHLÁSÍ STARÉ RELACE =====\n');
   test('B6: nová cookie z odpovědi platí',
     (await get(ja, 'http://x/api/ja', c1b)).status === 200);
   const c3 = await prihlas('verze@example.com', 'VerzeHeslo2');
-  await post(uzivatele, 'http://x/api/uzivatele', { akce: 'heslo', email: 'verze@example.com', heslo: 'VerzeHeslo3' }, cAdmin);
+  await post(uzivatele, 'http://x/api/uzivatele', { akce: 'heslo', email: 'verze@example.com', heslo: 'VerzeHeslo3', hesloSpravce: HESLO_ADMIN }, cAdmin);
   test('B6: reset hesla správcem odhlásí dosavadní relaci dotyčného',
     (await get(ja, 'http://x/api/ja', c3)).status === 401);
   test('B6: po resetu jde přihlásit novým heslem', !!(await prihlas('verze@example.com', 'VerzeHeslo3')));
@@ -1795,7 +1820,8 @@ console.log('\n===== AUDIT B7: HESLO HLAVNÍHO ÚČTU =====\n');
   test('B7: hlavní účet se dál přihlásí svým heslem', !!(await prihlas(ADMIN_EMAIL, 'Docasne.Heslo.123')));
   test('B7: vedlejší administrátor dál resetuje hesla ostatním',
     (await post(uzivatele, 'http://x/api/uzivatele',
-      { akce: 'heslo', email: 'terc@example.com', heslo: 'TercHeslo2' }, UCTY['Administrátor'].cookie)).status === 200);
+      { akce: 'heslo', email: 'terc@example.com', heslo: 'TercHeslo2', hesloSpravce: UCTY['Administrátor'].heslo },
+      UCTY['Administrátor'].cookie)).status === 200);
   /* B77-zbytek (13. 10. 2026): reset na VLASTNÍ účet obešel 'mojeheslo' —
    * bez starého hesla a bez brzdy. Před opravou 200 (vedlejší i hlavní). */
   { const em2 = UCTY['Administrátor'].email;
@@ -1808,6 +1834,12 @@ console.log('\n===== AUDIT B7: HESLO HLAVNÍHO ÚČTU =====\n');
     test('B77-zbytek: ani hlavní účet si heslo nezmění bez starého (403)', r2.status === 403, 'vrátil ' + r2.status);
     test('B77-zbytek: hlavní účet se dál přihlásí původním heslem', !!(await prihlas(ADMIN_EMAIL, 'Docasne.Heslo.123')));
   }
+  /* B77 (13. 10. 2026): reset hlavního účtu vedlejším správcem je 403 i se
+   * správným vlastním heslem — B7 platí dál, heslo správce ho neobchází. */
+  test('B77/B7: ani s vlastním heslem vedlejší správce hlavní účet neresetuje (403)',
+    (await post(uzivatele, 'http://x/api/uzivatele',
+      { akce: 'heslo', email: ADMIN_EMAIL, heslo: 'PrevzateHeslo1', hesloSpravce: UCTY['Administrátor'].heslo },
+      UCTY['Administrátor'].cookie)).status === 403);
   /* L28 (23. 8. 2026): profil a podpis hlavního účtu smí měnit jen on sám. */
   test('L28: vedlejší administrátor nezmění profil hlavního účtu (403)',
     (await post(uzivatele, 'http://x/api/uzivatele',
@@ -2205,6 +2237,97 @@ console.log('\n===== AUDIT L29: AUTOR KARTY ZÁKAZNÍKA =====\n');
   const k = (list.zakaznici || []).find(z => z.ico === '27074358');
   test('L29: autor nové karty je z relace, ne z těla požadavku',
     !!k && k.autor === UCTY['Obchodník'].email, k && k.autor);
+}
+
+console.log('\n===== AUDIT B77: CITLIVÉ AKCE SPRÁVCE S VLASTNÍM HESLEM =====\n');
+/* Rozhodnutí J. V. 13. 10. 2026 („Ano"). Kdo má cookie správce, nesmí bez
+ * jeho hesla založit správce, povýšit účet na správce ani resetovat cizí
+ * heslo. Brzda je táž jako u 'mojeheslo' (#92: správné heslo projde vždy).
+ * Před opravou: všechny „bez hesla" a „špatné heslo" řádky vracely 200. */
+{
+  const EM = 'b77.spravce@example.com', HS = 'B77Spravce.Heslo1';
+  const zal = await post(uzivatele, 'http://x/api/uzivatele',
+    { akce: 'zaloz', email: EM, jmeno: 'B77 správce', role: 'Administrátor', heslo: HS, hesloSpravce: HESLO_ADMIN }, cAdmin);
+  test('B77: správce se založí s heslem zakládajícího (200)', zal.status === 200, zal.status);
+  const cS = await prihlas(EM, HS);
+  const akce = (telo) => post(uzivatele, 'http://x/api/uzivatele', telo, cS);
+  const ucty = globalThis.__TEST_ULOZISTE('uzivatele');
+
+  /* (a) založení účtu s rolí Administrátor */
+  const aBez = await akce({ akce: 'zaloz', email: 'b77.novy@example.com', jmeno: 'x', role: 'Administrátor', heslo: 'NovyHeslo123' });
+  const aBezT = await aBez.json();
+  test('B77 (a): založení správce bez hesla správce → 401 s kódem hesloSpravce',
+    aBez.status === 401 && aBezT.kod === 'hesloSpravce', aBez.status + ' ' + JSON.stringify(aBezT));
+  const aSpatne = await akce({ akce: 'zaloz', email: 'b77.novy@example.com', jmeno: 'x', role: 'Administrátor', heslo: 'NovyHeslo123', hesloSpravce: 'Urcite.Spatne1' });
+  test('B77 (a): se špatným heslem → 401', aSpatne.status === 401, aSpatne.status);
+  test('B77 (a): účet po odmítnutí nevznikl', !(await ucty.cti('b77.novy@example.com')));
+  test('B77 (a): odmítnutí heslem správce neodhlásí (relace platí)', (await get(ja, 'http://x/api/ja', cS)).status === 200);
+  const aOk = await akce({ akce: 'zaloz', email: 'b77.novy@example.com', jmeno: 'x', role: 'Administrátor', heslo: 'NovyHeslo123', hesloSpravce: HS });
+  test('B77 (a): se správným heslem → 200 a účet je správce', aOk.status === 200
+    && ((await ucty.cti('b77.novy@example.com')) || {}).role === 'Administrátor', aOk.status);
+  const aObch = await akce({ akce: 'zaloz', email: 'b77.obch@example.com', jmeno: 'x', role: 'Obchodník', heslo: 'NovyHeslo123' });
+  test('B77 (a): obchodníka správce založí i bez hesla (200)', aObch.status === 200, aObch.status);
+
+  /* (b) změna role na Administrátora */
+  const bBez = await akce({ akce: 'role', email: 'b77.obch@example.com', role: 'Administrátor' });
+  test('B77 (b): povýšení na správce bez hesla → 401', bBez.status === 401, bBez.status);
+  const bSpatne = await akce({ akce: 'role', email: 'b77.obch@example.com', role: 'Administrátor', hesloSpravce: 'Urcite.Spatne1' });
+  test('B77 (b): se špatným heslem → 401 a role zůstala', bSpatne.status === 401
+    && ((await ucty.cti('b77.obch@example.com')) || {}).role === 'Obchodník', bSpatne.status);
+  const bVed = await akce({ akce: 'role', email: 'b77.obch@example.com', role: 'Vedoucí' });
+  test('B77 (b): role pod správcem jde bez hesla (200)', bVed.status === 200, bVed.status);
+  const bOk = await akce({ akce: 'role', email: 'b77.obch@example.com', role: 'Administrátor', hesloSpravce: HS });
+  test('B77 (b): se správným heslem → 200 a účet je správce', bOk.status === 200
+    && ((await ucty.cti('b77.obch@example.com')) || {}).role === 'Administrátor', bOk.status);
+  const bZnovu = await akce({ akce: 'role', email: 'b77.obch@example.com', role: 'Administrátor' });
+  test('B77 (b): správce zůstává správcem i bez hesla (nic se nezvyšuje, 200)', bZnovu.status === 200, bZnovu.status);
+  const bDolu = await akce({ akce: 'role', email: 'b77.obch@example.com', role: 'Obchodník' });
+  test('B77 (b): snížení role heslo nechce (200)', bDolu.status === 200, bDolu.status);
+
+  /* (c) reset cizího hesla */
+  const cBez = await akce({ akce: 'heslo', email: 'b77.obch@example.com', heslo: 'PrevzateHeslo7' });
+  test('B77 (c): reset cizího hesla bez hesla správce → 401', cBez.status === 401, cBez.status);
+  const cSpatne = await akce({ akce: 'heslo', email: 'b77.obch@example.com', heslo: 'PrevzateHeslo7', hesloSpravce: 'Urcite.Spatne1' });
+  test('B77 (c): se špatným heslem → 401', cSpatne.status === 401, cSpatne.status);
+  test('B77 (c): heslo kolegy se nezměnilo', (await post(prihlaseni, 'http://x/api/prihlaseni',
+    { email: 'b77.obch@example.com', heslo: 'NovyHeslo123' })).status === 200);
+  const cOk = await akce({ akce: 'heslo', email: 'b77.obch@example.com', heslo: 'PrevzateHeslo7', hesloSpravce: HS });
+  test('B77 (c): se správným heslem → 200 a nové heslo platí', cOk.status === 200
+    && (await post(prihlaseni, 'http://x/api/prihlaseni', { email: 'b77.obch@example.com', heslo: 'PrevzateHeslo7' })).status === 200, cOk.status);
+  /* reset JINÉHO správce — přesně ten případ ze zadání */
+  const cSpr = await akce({ akce: 'heslo', email: 'b77.novy@example.com', heslo: 'PrevzateHeslo8' });
+  test('B77 (c): reset jiného správce bez hesla → 401', cSpr.status === 401, cSpr.status);
+
+  /* Brzda (#92): POKUSY_MAX špatných → 401, další → 429; správné projde
+   * i nad limitem a počítadlo vynuluje. */
+  await pokusyReset(EM);
+  const stavyB = [];
+  for (let i = 0; i < POKUSY_MAX; i++)
+    stavyB.push((await akce({ akce: 'heslo', email: 'b77.obch@example.com', heslo: 'PrevzateHeslo9', hesloSpravce: 'Spatne.' + i })).status);
+  test('B77 brzda: prvních ' + POKUSY_MAX + ' špatných hesel → 401', stavyB.every(x => x === 401), stavyB.join(','));
+  const nad = await akce({ akce: 'heslo', email: 'b77.obch@example.com', heslo: 'PrevzateHeslo9', hesloSpravce: 'Spatne.nad' });
+  test('B77 brzda: nad limitem → 429', nad.status === 429, nad.status);
+  const nadOk = await akce({ akce: 'heslo', email: 'b77.obch@example.com', heslo: 'PrevzateHeslo9', hesloSpravce: HS });
+  test('B77 brzda: správné heslo projde i nad limitem (#92)', nadOk.status === 200, nadOk.status);
+  const poUspechu = await akce({ akce: 'heslo', email: 'b77.obch@example.com', heslo: 'PrevzateHeslo9', hesloSpravce: 'Spatne.po' });
+  test('B77 brzda: úspěch počítadlo vynuluje (další špatné je zase 401)', poUspechu.status === 401, poUspechu.status);
+  /* Chybějící pole se nepočítá jako pokus — nic se nehádá. */
+  await pokusyReset(EM);
+  for (let i = 0; i <= POKUSY_MAX + 1; i++) await akce({ akce: 'heslo', email: 'b77.obch@example.com', heslo: 'PrevzateHeslo9' });
+  const poBez = await akce({ akce: 'heslo', email: 'b77.obch@example.com', heslo: 'PrevzateHeslo9', hesloSpravce: 'Spatne.x' });
+  test('B77 brzda: požadavky bez pole hesla limit nevyčerpají', poBez.status === 401, poBez.status);
+  await pokusyReset(EM);
+  /* Limit ADRESY (B75) jako u 'mojeheslo': z adresy, odkud přišlo přes
+   * POKUSY_IP_MAX špatných hesel, se 429 vrací hned — i správnému heslu
+   * (není to zámek účtu, majitel to zkusí odjinud). */
+  const zIp = (heslo) => uzivatele(new Request('http://x/api/uzivatele', { method: 'POST',
+    headers: { cookie: cS, 'x-nf-client-connection-ip': '198.51.100.77' },
+    body: JSON.stringify({ akce: 'heslo', email: 'b77.obch@example.com', heslo: 'PrevzateHeslo9', hesloSpravce: heslo }) }));
+  for (let i = 0; i < POKUSY_IP_MAX; i++) { await zIp('Spatne.ip' + i); await pokusyReset(EM); }
+  const ipNad = await zIp(HS);
+  test('B77 brzda: nad limitem adresy → 429 i se správným heslem', ipNad.status === 429, ipNad.status);
+  await pokusyReset(EM);
+  await (await uloziste('pokusy')).zapis('ip:198.51.100.77', { n: 0, posledni: 0 });
 }
 
 console.log('\n===== AUDIT B15: SEBEUZAMČENÍ A ARCHIV =====\n');

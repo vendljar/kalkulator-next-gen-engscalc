@@ -89,6 +89,10 @@ test('text dialogu se escapuje (B26) a zachovává řádkování',
 test('dialogy se řadí za sebe, nepřekrývají se', /DLG\.fronta/.test(dlg) && /DLG\.bezi/.test(dlg));
 test('Esc ruší a Enter potvrzuje', /'Escape'/.test(dlg) && /'Enter'/.test(dlg));
 test('modál se netiskne', /noprint/.test(dlg));
+/* B77 (13. 10. 2026): potvrzení citlivé akce heslem správce — pole typu
+ * password bez výchozí hodnoty (heslo se nesmí zobrazit ani předvyplnit). */
+test('dialog umí dotaz na heslo (dotazHeslo, pole type="password")',
+  /function dotazHeslo\(/.test(dlg) && /type="password" id="dlg-text" data-dlg="text"[^>]*value=""/.test(dlg));
 
 /* Modul musí být v seznamu souborů buildu — jinak by funkce v aplikaci
  * nebyly a všechna převedená volání by spadla na „potvrd is not defined". */

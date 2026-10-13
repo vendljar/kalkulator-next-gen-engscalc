@@ -12,6 +12,7 @@
  *   potvrd(text, opts) → Promise<boolean>        (náhrada confirm)
  *   hlaska(text, opts) → Promise<void>           (náhrada alert)
  *   dotaz(text, vychozi) → Promise<string|null>  (náhrada prompt)
+ *   dotazHeslo(text, opts) → Promise<string|null> (heslo — pole typu password)
  *
  * PRAVIDLA, KTERÁ SE DODRŽUJÍ:
  *   – tlačítka nesou `data-dlg="ano" | "ne" | "text"` a modál `id="dlg"`,
@@ -55,8 +56,13 @@ function dlgUkaz(typ, text, opts) {
     const ano = dlgEsc(opts.ano || (typ === 'hlaska' ? 'OK' : 'Ano'));
     const ne = dlgEsc(opts.ne || 'Ne');
     const nadpis = opts.nadpis ? `<div class="dlg-nadpis">${dlgEsc(opts.nadpis)}</div>` : '';
+    /* Pole typu password (B77, 13. 10. 2026): citlivé akce správce se
+     * potvrzují vlastním heslem. Heslo nemá výchozí hodnotu a prohlížeč ho
+     * nemá nabízet k uložení jako nové — `autocomplete="current-password"`. */
     const poleHtml = typ === 'dotaz'
-      ? `<input type="text" id="dlg-text" data-dlg="text" value="${dlgEsc(opts.vychozi || '')}">`
+      ? (opts.heslo
+        ? `<input type="password" id="dlg-text" data-dlg="text" autocomplete="current-password" value="">`
+        : `<input type="text" id="dlg-text" data-dlg="text" value="${dlgEsc(opts.vychozi || '')}">`)
       : '';
     /* Typ „volba" (14. 9. 2026, nález V35): víc než dvě cesty ven. Přepnutí
      * na jinou zakázku s neuloženými změnami se musí ptát „Uložit / Zahodit /
@@ -152,6 +158,11 @@ function oknoNahledu() {
   return null;
 }
 function dotaz(text, vychozi) { return dlgZarad('dotaz', text, { vychozi: vychozi }); }
+/* dotazHeslo('text', { nadpis, ano, ne }) → zadané heslo, nebo null při
+ * zrušení (Esc, Zrušit, klik mimo). Prázdné potvrzení vrací ''. */
+function dotazHeslo(text, opts) {
+  return dlgZarad('dotaz', text, Object.assign({ ano: 'Potvrdit', ne: 'Zrušit' }, opts || {}, { heslo: true }));
+}
 /* volba('text', [{kod,popis,primary}], {nadpis}) → kód zvoleného tlačítka,
  * nebo null při Escape a kliknutí mimo. Escape znamená „nic nedělej" —
  * u přepínání zakázek tedy „Zůstat", což je bezpečná cesta. */
