@@ -77,6 +77,11 @@ Rozhodnutí J. V. 13. 10. 2026 (noční dávka). Větev z `claude/integrace-13-1
     (40 — otisk, směs, pás, potřeba, kategorie, zábrana, klon), harness
     `overit_schvalovani.mjs` oddíl 9 (zábrana, žádost, schválení, změna
     po schválení, pás). Obě sady zařazené do mutací; mutace +21 (chycené 21/21).
+- Kolo nad a168f6c: 2 nechycené mutace (#395 V3, B136 — zámek z ceníku
+  sestavení odmítne nově i výjimka, testy hlídaly jen 403) a overit_lista
+  (33 → 34 pravidel); testy čtou větu V3 (15f6a53).
+- **Celé kolo nad 15f6a53 VŠE ZELENÉ** (155 min): sady 234/0/1 (přeskočen
+  jen `test.js`), mutace jádra 193/193, serveru 383/383, statické 3/3.
 
 ---
 

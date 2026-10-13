@@ -1,3 +1,26 @@
+# Předávka — 13. 10. 2026 noc: větev `claude/vyjimky-schvalovani` (v13.10.3)
+
+Subagent sezení session_01WrUq3gXEhsWk8cxRWfPvsg. Větev z `claude/integrace-13-10b`
+(v13.10.2, 0512c51). Do `test-draft`/`test`/`main` nic. Detaily: CHANGELOG v13.10.3.
+
+## Hotovo (pushnuto)
+- 801f2ff — mez 0,6 m pro zdvih, šířku a hloubku (nový zámek OCK 400, zábrana „rozmery").
+- a168f6c — cenové výjimky (`src/vyjimky.js`): směs ceníku a pás „jiné" pod
+  ceníkovou sazbou → schválení nadřízeným (karta „Cenové výjimky" v záložce
+  Schvalování, server 403 u nového zámku bez schválení).
+- 15f6a53 — testy #395 V3 / B136 čtou větu V3, overit_lista 34 pravidel.
+- **Celé kolo nad 15f6a53 VŠE ZELENÉ** (sady 234/0/1, jádro 193/193, server 383/383, statické 3/3).
+
+## Otázky pro J. V. (výchozí odpověď)
+1. Celá starší verze ceníku (kvitance „ceny jsou dohodnuté") se taky liší od
+   platného → u obchodníka do schvalování. *Výchozí: ano.*
+2. Schvaluje tentýž nadřízený jako slevy (`sleva.schvalovani`, výchozí matice
+   ho Vedoucímu nedává — jen administrátor). *Výchozí: ano, přidělit v matici.*
+3. Mez pásu „jiné" = nejnižší kladná ceníková sazba opláštění šachty. *Výchozí: ano.*
+4. Kód odmítnutí rozměru pod 0,6 m je 400 (jako B137), ne 403. *Výchozí: ponechat.*
+
+---
+
 # Předávka — 13. 10. 2026: dávka po 22. kole ve větvi `claude/davka-13-10` (v13.10.1)
 
 Sezení session_01WrUq3gXEhsWk8cxRWfPvsg (založilo koordinační sezení 22. kola).
