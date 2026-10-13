@@ -63,6 +63,51 @@ z `test-draft` (v12.10.4, 1df7283). Roadmapa #400 (zbytek) a #402–.
   pravidlo délky (B25; krátké bootstrap nespustí). Testy:
   `test_prihlaseni.mjs` +10 (před 53/7, po 60/0); mutace serveru 2 nové
   + přesměrovaná „zaváděcí heslo se nekontroluje" (3/3).
+- **Revize dávky (audit 13. 10. 2026, dvě čočky, subagenti jen četli; vysoký
+  nález žádný).** Opraveno v téže dávce:
+  - *Regrese B105 (střední):* server razil čas schválení vlastním časem,
+    prohlížeč držel čas kliknutí → nabídka vytištěná hned po schválení
+    skončila při dalším uložení 409. Čas z prohlížeče se přijme do 10 min
+    od času serveru, jinak razí server; server navíc vrací v odpovědi slevy,
+    jak je uložil (`slevy`), a prohlížeč si je převezme
+    (`onlineSlevyZeServeru`, jen u neměněné slevy). U nezměněného
+    rozhodnutí se z uložené verze obnoví všechna pole (e-mail, důvod).
+  - *Obchvat B101 (nízká):* rozhodnutí šlo smazat stavem `''`, automatickým
+    nebo neznámým — teď se bez práva a beze změny procent vrací uložené
+    rozhodnutí při jakémkoli stavu (výjimka: prohlížečem přepnuté zamítnutí
+    pod marží); neznámý stav slevy se odmítne. Mez: dvojí změna procent
+    (10 → 10,001 → 10) je nová žádost.
+  - *Obchvat B138 (střední):* aplikace od V38 zveřejňuje chybějící klíč
+    výslovnou nulou, takže výjimka „nulu nesla některá verze" pustila tentýž
+    útok (−0,7 % se zámkem). Výjimka zrušena; hlídají se jen položky, které
+    klient umí přepočítat (`cenikSledovane`, bez přirážky a DPH) — mrtvý klíč
+    přepočet nezablokuje. Klient vynucuje přepočet nuly jen roli bez práva
+    ceníku (`vynutNuly`) — kdo ceník měnit smí, tomu odškrtnutá položka
+    zůstane.
+  - *Obchvat B103 (nízká):* „toString", „hasOwnProperty" aj. shodily sběr
+    textů stejně — odmítá se vše z `Object.prototype`, mapa sběru je bez
+    prototypu.
+  - *B6 (nízká):* odhlášení zapisovalo celou kopii účtu z ověření relace —
+    souběžná změna správce se mohla přepsat zpět. Účet se čte znovu těsně
+    před zápisem a mění se jen verze hesla (okno zúžené, plně atomický zápis
+    úložiště neumí — mez). Hláška neplatné relace už netvrdí „heslo bylo
+    změněno".
+  - Drobnosti: strop harnessu 25 min (nad hlídačem 20 min), bez GNU
+    `timeout` běh bez stropu; `release_odkaz.py` filtruje částky i v titulku
+    a ve tvaru „1 200,- Kč" a před zkrácením; `csvBunka` neprefixuje „- položka"
+    s mezerou (komentář opraven: apostrof v CSV zůstane vidět); lišta B130
+    jen pro počítané strany a bez tvrzení o důvodu.
+  - Neopraveno (k rozhodnutí J. V.): B35 strop jde zaplnit smetím jedním
+    účtem (návrh: zakládat `cas/` jen pro existující zakázku); B77-zbytek —
+    s cookie správce lze dál založit nový účet Administrátor (návrh:
+    citlivé akce správce znovu s heslem); B128/B138 záměr „dohodnutá cena
+    zůstává" (směs se skutečnými staršími cenami) dál projde.
+  Testy: `test_schvalovani.js` +6 (před 75/4), `test_koncova_cena.mjs` +6
+  (regrese 409 před 85/2, výslovná nula před 88/1), nový
+  `src/test_slevy_ze_serveru.js` (před 0/1, po 4/0), `test_cenik_stari.js`
+  +1, `test_cenik_popisy.js`, `test_csv_vzorce.js`, `test_release_odkaz.js`
+  (před 20/1); mutace: neznámý stav, chybějící `slevy` v odpovědi,
+  přesměrované B101/B105/B6/B103.
 - **B129 (nízká) — „jen realizace" u zakázky s odeslanou variantou.** `jenOck`
   je vlastnost zakázky — dotaz po přepnutí řady ceníku by změnil i odeslanou
   nabídku. `zahrJenRealizaceNabidnout` u zakázky se zamčenou variantou nic

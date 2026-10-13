@@ -201,6 +201,12 @@ export default async (req) => {
    * musí dozvědět, že čísla odeslané nabídky server z dat nedostal. */
   const varovani = sporne.map(x => 'Pozor, nabídka ' + x.cislo + ': '
     + globalThis.zamekOvereniText(x.ov) + ' Obnovte stránku (Ctrl+F5) a nabídku zkontrolujte.').join(' ');
-  return json(varovani ? { ok: true, soubor: jmeno, razitko, varovani } : { ok: true, soubor: jmeno, razitko });
+  /* Slevy tak, jak je server uložil (revize 13. 10. 2026): schvalovaniServerKontrola
+   * může čas rozhodnutí orazítkovat nebo vrátit uložené rozhodnutí (B101,
+   * B105). Prohlížeč si je převezme — jinak by ukazoval jiný stav slevy, než
+   * jaký leží v databázi, a zámek nabídky by při dalším uložení nesouhlasil. */
+  const slevy = (zak.varianty || []).filter(v => v && v.data)
+    .map(v => ({ id: v.id, sleva: v.data.sleva || null, slevaProj: v.data.slevaProj || null }));
+  return json(varovani ? { ok: true, soubor: jmeno, razitko, varovani, slevy } : { ok: true, soubor: jmeno, razitko, slevy });
 };
 export const config = { path: '/api/zakazky' };

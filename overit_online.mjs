@@ -1547,7 +1547,7 @@ test('lišta uzamčené varianty nabízí za Klonovat i Založit novou zakázku 
   test('B59: po otevření ze serveru ukazuje rozpor lišta zámku',
     /nesouhlasí s výpočtem serveru/.test(upraveny.lista), upraveny.lista);
   test('B130: zámek se zmrazeným výsledkem „přepočteno dnes" netvrdí',
-    !/nejsou zmrazené/.test(upraveny.lista), upraveny.lista);
+    !/nejsou u zámku zmrazené/.test(upraveny.lista), upraveny.lista);
   await page.evaluate(() => { if (typeof zamekCteniVypni === 'function') zamekCteniVypni();
     ZAK = novaZakazka(); syncVarianta(); render(); });
 }
@@ -1591,7 +1591,7 @@ test('lišta uzamčené varianty nabízí za Klonovat i Založit novou zakázku 
   /* B130 (audit 6. 10. 2026): zámek bez zmrazeného výsledku (odešel před
    * 15. 9. 2026) — částky počítá dnešní jádro a lišta to říká nahlas. */
   test('B130: lišta zámku bez zmrazeného výsledku řekne, že částky jsou přepočtené dnes',
-    /nejsou zmrazené/.test(po.lista) && /přepočtené dnes/.test(po.lista), po.lista);
+    /nejsou u zámku zmrazené/.test(po.lista) && /přepočtené dnes/.test(po.lista), po.lista);
   await page.evaluate(() => { if (typeof zamekCteniVypni === 'function') zamekCteniVypni();
     ZAK = novaZakazka(); syncVarianta(); render(); });
 }

@@ -143,10 +143,15 @@ fi
 # VNĚJŠÍ STROP HARNESSU (13. 10. 2026): overit_online.mjs po selhání B59
 # visel na page.evaluate nad skutečným modálem a celé kolo stálo bez výpisu.
 # Harness má vlastní hlídač (nastroje/harness_hlidac.js); tenhle strop je
-# pojistka pro všechny ostatní — kód 124/137 = visel, počítá se jako SELHÁNÍ.
+# pojistka pro všechny ostatní — kód 124/137 = visel, počítá se jako SELHÁNÍ
+# (výchozí strop 1500 s = 25 min, KNG_HARNESS_LIMIT).
 spust_prohlizec() {
-  local f="$1" HARNESS_LIMIT="${KNG_HARNESS_LIMIT:-900}"
-  ( cd .. && NODE_PATH="$(npm root -g 2>/dev/null)" timeout --kill-after=15 "$HARNESS_LIMIT" node "$f" ) > /tmp/kng_prohlizec_out.txt 2>&1
+  # Strop 25 min je nad celkovým stropem hlídače (20 min), takže harness
+  # s hlídačem skončí vlastní, srozumitelnější hláškou. Bez GNU timeout
+  # (macOS) běží harness bez vnějšího stropu (revize 13. 10.).
+  local f="$1" HARNESS_LIMIT="${KNG_HARNESS_LIMIT:-1500}" strop=()
+  command -v timeout >/dev/null 2>&1 && strop=(timeout --kill-after=15 "$HARNESS_LIMIT")
+  ( cd .. && NODE_PATH="$(npm root -g 2>/dev/null)" "${strop[@]}" node "$f" ) > /tmp/kng_prohlizec_out.txt 2>&1
   local kod=$?
   if [ "$kod" -eq 124 ] || [ "$kod" -eq 137 ]; then
     echo "HARNESS VISEL: ukončen po ${HARNESS_LIMIT} s (KNG_HARNESS_LIMIT) — kód $kod" >> /tmp/kng_prohlizec_out.txt

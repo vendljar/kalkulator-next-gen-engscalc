@@ -190,7 +190,7 @@ const test = (n, cond, info) => {
 
 /* B103 (13. 10. 2026): název položky „constructor"/„__proto__" jako klíč. */
 {
-  const o = ck.popisyOciste(JSON.parse('{"constructor": "x", "__proto__": "y", "prototype": "z", "Nástupiště": "ok"}'));
+  const o = ck.popisyOciste(JSON.parse('{"constructor": "x", "__proto__": "y", "prototype": "z", "toString": "t", "hasOwnProperty": "h", "valueOf": "v", "Nástupiště": "ok"}'));
   test('B103: popisyOciste prototypové klíče nepřijme', Object.keys(o).join(',') === 'Nástupiště', o);
   const j = ck.popisyJazykyOciste(JSON.parse('{"constructor": {"en": "x"}, "Nástupiště": {"en": "ok"}}'));
   test('B103: popisyJazykyOciste taky ne', Object.keys(j).join(',') === 'Nástupiště', j);

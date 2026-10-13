@@ -56,7 +56,7 @@ export default async (req) => {
       const p = await s.cti('popisy');
       const spolecne = (p && p.texty) || {};
       const zak = await uloziste('zakazky');
-      const nalez = {};
+      const nalez = Object.create(null);   // B103: klíč je název položky z dat obchodníka
       /* Čte se po dvaceti souběžně — stovky zakázek po jedné by přetáhly
        * časový limit funkce. */
       const klice = await zak.seznam('z/');

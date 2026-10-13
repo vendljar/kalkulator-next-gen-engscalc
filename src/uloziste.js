@@ -1678,9 +1678,19 @@ function uloCenikProblemy(zak, stara, opts) {
        * celá, (2) platný ceník + ten klíč = 0, i se zámkem (−0,7 až −1,7 %).
        * Rozhodnutí J. V. 12. 10.: ve SMĚSI (ceník už se od uložené verze
        * liší) nesmí taková nula zůstat — ani při přepočtu vybraných položek.
-       * Nula, kterou některá zveřejněná verze skutečně nesla, je dál
-       * přípustná; uložení beze změny ceníku (žádná směs) taky. */
-      const surove = verze.map(z => uloB112Listy(c.pred === 'cenik.' ? z.cenik : z.cenikProj, okPrirazka));
+       * Uložení beze změny ceníku (žádná směs) projde dál.
+       * Revize 13. 10.: (a) výjimka „nulu nesla některá zveřejněná verze"
+       * zrušena — aplikace od V38 zveřejňuje chybějící klíč výslovnou nulou
+       * (progKontext), takže výjimka pouštěla tentýž útok; (b) hlídají se jen
+       * položky, které klient umí přepočítat (cenikSledovane, bez zakázkových
+       * hodnot) — mrtvý klíč (např. dopravaPausalKc) by jinak zakázku po
+       * přepočtu zablokoval natrvalo. */
+      const sledovane = (typeof cenikSledovane === 'function') ? (() => {
+        const pref = c.pred === 'cenik.' ? 'C.' : 'PC.';
+        return new Set(cenikSledovane().map(x => x.cesta)
+          .filter(x => x.indexOf(pref) === 0 && !/^(C|PC)\.(marze|dph)$/.test(x))
+          .map(x => x.slice(pref.length)));
+      })() : null;
       const doplnenaNula = (g) => {
         if (g.length < 2) return [];
         const ref = g[0], hod = (k, p) => (p in k ? k[p] : '');
@@ -1692,7 +1702,7 @@ function uloCenikProblemy(zak, stara, opts) {
           if (h !== 0 && h !== '') return;
           if (hod(ref, p) !== h) return;                                       // nula není z uložené verze
           if (g.slice(1).some(k => hod(k, p) === h)) return;                   // nulu nese i platný ceník
-          if (surove.some(k => p in k && k[p] === h)) return;                  // skutečná nula některé verze
+          if (sledovane && !sledovane.has(p)) return;                          // klient ji přepočítat neumí
           out.push(c.pred + p);
         });
         return out;

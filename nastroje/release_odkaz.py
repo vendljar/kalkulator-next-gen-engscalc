@@ -26,7 +26,7 @@ import urllib.parse
 REPO = 'https://github.com/vendljar/kalkulator-next-gen-engscalc'
 MAX_POPIS = 1800          # znaků popisu; delší se zkrátí s odkazem na CHANGELOG
 MAX_BODU = 12             # odrážek na jeden oddíl
-CASTKA = re.compile(r'\d[\d\s .,]*\s?(Kč|CZK|EUR|€)')
+CASTKA = re.compile(r'\d[\d\s\u00a0.,]*(,-|,–|\.-)?\s?(Kč|CZK|EUR|€)')
 
 
 def oddily(text, verze):
@@ -80,6 +80,8 @@ def body_oddilu(radky):
                 bod = prvni_veta(bod.replace('**', ''))
             if bod.startswith('Celé kolo'):
                 continue          # výsledek kola jde zvlášť jako „Testy:"
+            if CASTKA.search(bod):
+                continue          # částka do popisu nepatří (filtr PŘED zkrácením)
             if len(bod) > 160:
                 bod = bod[:157].rstrip() + '…'
             body.append(bod)
@@ -98,7 +100,7 @@ def popis(text, verze):
     radky = []
     for titulek, telo in casti:
         body, kolo = body_oddilu(telo)
-        radky.append('### ' + bez_vetve(titulek))
+        radky.append('### ' + CASTKA.sub('…', bez_vetve(titulek)))
         for b in body[:MAX_BODU]:
             if not CASTKA.search(b):
                 radky.append('- ' + b)
@@ -113,7 +115,7 @@ def popis(text, verze):
     if len(vysl) > MAX_POPIS:
         konec = '\n…\nPodrobně: CHANGELOG.md, oddíl v' + verze + '.\n'
         vysl = vysl[:MAX_POPIS - len(konec)].rsplit('\n', 1)[0] + konec
-    return vysl, bez_vetve(casti[0][0])
+    return vysl, CASTKA.sub('…', bez_vetve(casti[0][0]))
 
 
 def odkaz_novy(verze, sha, text):

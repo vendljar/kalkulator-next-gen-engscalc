@@ -363,6 +363,33 @@ function onlinePoPrihlaseni(ja) {
     .then(() => { if (jeAdminOnline()) onlineZalohaAuto(); });
 }
 
+/* SLEVY ZE SERVERU (revize 13. 10. 2026, B101/B105). Server rozhodnutí
+ * o slevě razí (čas) nebo vrací uložené (rozhodnutí bez práva). Převezme se
+ * jen u varianty, jejíž slevu uživatel mezi odesláním a odpovědí neměnil. */
+function onlineSlevyOtisk(zak) {
+  const out = {};
+  ((zak && zak.varianty) || []).forEach(v => {
+    if (v && v.data) out[v.id] = JSON.stringify([v.data.sleva || null, v.data.slevaProj || null]);
+  });
+  return out;
+}
+function onlineSlevyZeServeru(slevy, odeslane) {
+  if (!Array.isArray(slevy) || !ZAK || !Array.isArray(ZAK.varianty)) return 0;
+  const ted = onlineSlevyOtisk(ZAK);
+  let zmen = 0;
+  slevy.forEach(s => {
+    const v = s && ZAK.varianty.find(x => x && x.id === s.id);
+    if (!v || !v.data || !odeslane || ted[v.id] !== odeslane[v.id]) return;
+    const novy = JSON.stringify([s.sleva || null, s.slevaProj || null]);
+    if (novy === ted[v.id]) return;
+    if (s.sleva) v.data.sleva = JSON.parse(JSON.stringify(s.sleva));
+    if (s.slevaProj) v.data.slevaProj = JSON.parse(JSON.stringify(s.slevaProj));
+    zmen++;
+  });
+  if (zmen && typeof syncVarianta === 'function') { try { syncVarianta(); render(); } catch (e) { /* nevadí */ } }
+  return zmen;
+}
+
 function onlineOdhlas() {
   return onlineApi('/api/odhlaseni', {}).catch(() => null).then(() => {
     const vladlOnline = ONLINE_STAV.cenikPouzit;
@@ -1106,8 +1133,10 @@ function onlineUloz(opts) {
    * `prepsat: true` zůstává jako výslovná cesta pro volajícího. */
   const telo = { zakazka: ZAK, ocekavaneRazitko: ONLINE_STAV.razitko || '' };
   if (opts.prepsat) telo.prepsat = true;
+  const slevyOdeslane = onlineSlevyOtisk(ZAK);
   const beh = onlineApi('/api/zakazky', telo).then(o => {
     ONLINE_STAV.soubor = o.soubor; ONLINE_STAV.razitko = o.razitko || '';
+    onlineSlevyZeServeru(o.slevy, slevyOdeslane);
     /* Razítko i do zakázky samé, ať kopie v okně odpovídá tomu, co leží na
      * serveru — a ať se počítá do „naposledy zapsaného" o řádek níž. */
     if (o.razitko) ZAK.uloRazitko = o.razitko;

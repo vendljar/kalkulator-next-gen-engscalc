@@ -428,7 +428,11 @@ function cenikPrepocti(v, dnesni, opts) {
    * klíč, který starší verze neměla (import ho doplnil nulou), se přepočítá
    * i při výběru položek — server směs s takovou nulou odmítne. Zakázkové
    * hodnoty (přirážka, DPH) zůstávají rozhodnutím obchodníka. */
-  const nulaMistoCeny = (r) => (r.stara === 0 || r.stara === undefined || r.stara === '')
+  /* Jen tam, kde to server vynucuje: role bez práva měnit ceník části
+   * (`opts.vynutNuly` = { OCK, PROJ }; bez něj obojí). Kdo ceník měnit smí,
+   * tomu odškrtnutá položka zůstane, jak slibuje okno přepočtu (revize 13. 10.). */
+  const vynut = opts.vynutNuly || { OCK: true, PROJ: true };
+  const nulaMistoCeny = (r) => !!vynut[r.sekce] && (r.stara === 0 || r.stara === undefined || r.stara === '')
     && typeof r.nova === 'number' && r.nova !== 0 && !chranena(v.data, r.cesta);
   const rozdily = cenikRozdily(v.data, dnesni)
     .filter(r => (vyber ? (vyber.has(r.cesta) || nulaMistoCeny(r)) : !chranena(v.data, r.cesta)));

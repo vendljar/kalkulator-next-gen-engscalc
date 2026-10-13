@@ -23,9 +23,10 @@ fs.writeFileSync(CL, [
   '- **B151 (střední) — první oprava.** Delší popis,',
   '  který pokračuje.',
   '- **B152 (nízká) — sleva 12 500 Kč.** Tohle do popisu nepatří.',
+  '- **B153 — cena skla 1 200,- Kč.** Ani tohle.',
   '- Odrážka bez tučného začátku. Druhá věta se nebere.',
   '', '**Celé kolo nad abc1234 VŠE ZELENÉ (100 min):** sady 1/0/0, mutace jádra 2/2. Další věta.', '',
-  '## v14.10.2 — paralelní větev (větev claude/paralelni)', '',
+  '## v14.10.2 — paralelní větev, oprava 4 500 Kč (větev claude/paralelni)', '',
   '- **#402 — nástroj na odkazy.** Text.', '',
   '## v14.10.1 — starší verze', '',
   '- **B099 — cizí verze.** Nesmí se objevit.', '',
@@ -52,7 +53,7 @@ test('popis nese oba oddíly verze (paralelní větev #402)', body.includes('#40
 test('cizí verze se nepřimíchá', !body.includes('B099'), body);
 test('výsledek kola je v popisu', /Testy: Celé kolo nad abc1234 VŠE ZELENÉ \(100 min\): sady 1\/0\/0, mutace jádra 2\/2/.test(body), body);
 test('další věta za výsledkem kola se nebere', !body.includes('Další věta'), body);
-test('řádek s částkou v Kč se vynechá', !/Kč/.test(body) && !body.includes('B152'), body);
+test('řádek s částkou v Kč se vynechá (i „1 200,- Kč" a částka v titulku oddílu)', !/Kč/.test(body) && !body.includes('B152') && !body.includes('B153') && !/4 500/.test(body), body);
 test('odrážka bez tučného začátku jen první větou', body.includes('- Odrážka bez tučného začátku') && !body.includes('Druhá věta'), body);
 test('odkaz na CHANGELOG na konci', /Podrobně: CHANGELOG\.md, oddíl v14\.10\.2\.\n$/.test(body), JSON.stringify(body.slice(-60)));
 

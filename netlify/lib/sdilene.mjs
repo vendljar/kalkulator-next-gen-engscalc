@@ -496,7 +496,7 @@ export async function vyzadujRoli(req, ...role) {
     return { chyba: json({ ok: false, chyba: 'Účet je vypnutý. Obraťte se na správce.' }, 401) };
   /* Verze hesla (B6): relace vydaná před změnou hesla už neplatí. */
   if (((+r.hv) || 0) !== hesloVerzeUctu(ucet))
-    return { chyba: json({ ok: false, chyba: 'Heslo účtu bylo změněno. Přihlaste se znovu.' }, 401) };
+    return { chyba: json({ ok: false, chyba: 'Přihlášení skončilo (odhlášení, změna hesla nebo zásah správce). Přihlaste se znovu.' }, 401) };
 
   /* Profil (titul, funkce, telefon) jde s relací, protože se čte účet stejně
    * tak jako tak. Podpis ne — ten je stranou a dotahuje se jen tam, kde je

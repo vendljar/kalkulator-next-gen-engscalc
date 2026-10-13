@@ -21,10 +21,19 @@ export default async (req) => {
    * jako změna hesla). Neplatná nebo chybějící relace nic nezvedá; selhání
    * úložiště odhlášení v prohlížeči nezastaví. */
   try {
-    const { relace, ucet } = await vyzadujRoli(req);
-    if (relace && ucet) {
-      ucet.hesloVerze = hesloVerzeUctu(ucet) + 1;
-      await (await uloziste('uzivatele')).zapis(relace.email, ucet);
+    const { relace } = await vyzadujRoli(req);
+    if (relace) {
+      /* Revize 13. 10.: účet se čte znovu těsně před zápisem a mění se jen
+       * verze hesla — dřív se zapisovala kopie přečtená v ověření relace
+       * a souběžná změna správce (vypnutí, reset hesla, role) se mohla
+       * přepsat zpět. Zvýšení verze nikdy nesníží verzi, kterou mezitím
+       * nastavil reset hesla. */
+      const u = await uloziste('uzivatele');
+      const cerstvy = await u.cti(relace.email);
+      if (cerstvy) {
+        cerstvy.hesloVerze = hesloVerzeUctu(cerstvy) + 1;
+        await u.zapis(relace.email, cerstvy);
+      }
     }
   } catch (e) { /* cookie se smaže i tak */ }
   return json({ ok: true }, 200,

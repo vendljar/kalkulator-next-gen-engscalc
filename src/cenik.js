@@ -343,6 +343,9 @@ const POPISY_MAX_POLOZEK = 500;
  * funkci Object a `.find` neexistuje → 500), „__proto__" se zapsal do
  * prototypu a tiše zmizel. Takové názvy se jako klíče nepřijímají. */
 const POPISY_PROTO = ['__proto__', 'constructor', 'prototype'];
+/* Revize 13. 10.: nejen tři jména — „toString", „hasOwnProperty" a další
+ * vestavěná jména shodila sběr textů stejně. Odmítá se vše z Object.prototype. */
+const popisyKlicZakazany = (k) => POPISY_PROTO.indexOf(k) >= 0 || (k in Object.prototype);
 function popisyOciste(vstup) {
   const v = (vstup && typeof vstup === 'object' && !Array.isArray(vstup)) ? vstup : {};
   const out = {};
@@ -350,7 +353,7 @@ function popisyOciste(vstup) {
   Object.keys(v).forEach(k => {
     if (kolik >= POPISY_MAX_POLOZEK) return;
     const klic = String(k == null ? '' : k).trim();
-    if (!klic || klic.length > POPISY_MAX_KLIC || POPISY_PROTO.indexOf(klic) >= 0) return;   // B103
+    if (!klic || klic.length > POPISY_MAX_KLIC || popisyKlicZakazany(klic)) return;   // B103
     const t = (typeof v[k] === 'string') ? v[k].trim() : '';
     if (!t) return;                       // prázdný text se neukládá, viz cenikPopisNastav
     out[klic] = t.slice(0, POPISY_MAX_TEXT);
@@ -393,7 +396,7 @@ function popisyJazykyOciste(vstup, texty) {
   Object.keys(v).forEach(k => {
     if (kolik >= POPISY_MAX_POLOZEK) return;
     const klic = String(k == null ? '' : k).trim();
-    if (!klic || klic.length > POPISY_MAX_KLIC || POPISY_PROTO.indexOf(klic) >= 0) return;   // B103
+    if (!klic || klic.length > POPISY_MAX_KLIC || popisyKlicZakazany(klic)) return;   // B103
     if (t && !(typeof t[klic] === 'string' && t[klic].trim())) return;
     const j = v[k];
     if (!j || typeof j !== 'object' || Array.isArray(j)) return;

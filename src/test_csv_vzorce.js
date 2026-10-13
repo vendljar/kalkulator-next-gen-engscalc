@@ -18,6 +18,7 @@ if (typeof csvBunka === 'function') {
   test('běžný text beze změny, uvozovky zdvojené', csvBunka('Cena "od"') === '"Cena ""od"""');
   test('prázdno a null', csvBunka(null) === '""' && csvBunka('') === '""');
   test('znak uprostřed textu nevadí', csvBunka('a=b') === '"a=b"');
+  test('odrážka „- položka" s mezerou apostrof nedostane', csvBunka('- položka') === '"- položka"' && csvBunka('+ 1 patro') === '"+ 1 patro"');
 }
 const csv = sl.slovnikCsvJenVApp([{ klic: '=1+1', hodnoty: { en: '@SUM(A1)', de: '-2', fr: 'ok' } }]);
 test('slovník jen v aplikaci: všechny buňky chráněné', csv.includes('"\'=1+1";"\'@SUM(A1)";"\'-2";"ok"'), csv);

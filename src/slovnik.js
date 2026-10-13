@@ -148,7 +148,7 @@ function slovnikCsvJenVApp(jenVApp) {
   /* B83: tatáž buňka jako csvBunka (format.js) — ochrana vzorců; záložka
    * pro samostatný běh v Node. */
   const q = (typeof csvBunka === 'function') ? csvBunka : (s => {
-    let t = String(s == null ? '' : s); if (/^[=+\-@\t\r]/.test(t)) t = "'" + t;
+    let t = String(s == null ? '' : s); if (/^([=@\t\r]|[+\-][^\s])/.test(t)) t = "'" + t;
     return '"' + t.replace(/"/g, '""') + '"'; });
   const hlav = ['CZ', 'EN', 'DE', 'FR'].map(q).join(';');
   const radky = (jenVApp || []).map(r => [r.klic, r.hodnoty.en, r.hodnoty.de, r.hodnoty.fr].map(q).join(';'));

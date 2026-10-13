@@ -295,9 +295,11 @@ function zamekLista() {
    * rozpor nebo neověření; shoda je běžný stav a lištu nezatěžuje. */
   const overeni = (typeof zamekOvereniText === 'function') ? zamekOvereniText(z.overeni) : '';
   /* Částky bez zmrazeného výsledku počítá dnešní jádro (B130) — řekne se to. */
-  const dnes = (typeof zamekPrepoctenoDnes === 'function') ? zamekPrepoctenoDnes(v) : [];
+  /* Jen strany, které zakázka počítá (jen OCK / jen PROJ — revize 13. 10.). */
+  const dnes = ((typeof zamekPrepoctenoDnes === 'function') ? zamekPrepoctenoDnes(v) : [])
+    .filter(s => !(s === 'proj' && ZAK.jenOck) && !(s === 'ock' && ZAK.jenProj));
   const dnesText = dnes.length ? 'Částky ' + (dnes.length === 2 ? 'OCK i PROJ' : dnes[0].toUpperCase())
-    + ' nejsou zmrazené (nabídka odešla před zavedením zmrazení) — zobrazují se přepočtené dnes '
+    + ' nejsou u zámku zmrazené — zobrazují se přepočtené dnes '
     + 'a od odeslaného dokumentu se mohou lišit.' : '';
   return `<div class="zamek-lista">
     <span class="ikona">🔒</span>

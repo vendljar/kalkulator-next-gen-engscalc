@@ -424,6 +424,14 @@ test('B138: přepočet vybraných položek doplní i nulu místo ceny dnešního
     && vv.data.cenik.marze === marzePred;
 })());
 
+test('B138 revize: kdo smí měnit ceník, tomu odškrtnutá nula zůstane (vynutNuly)', (() => {
+  const { v: vv } = staraVarianta();
+  const dnes = DNES(); dnes.cenik.statikaOplHod = 6;
+  vv.data.cenik.statikaOplHod = 0;
+  cenikPrepocti(vv, dnes, { cesty: ['C.powertechExt'], dnes: '2026-07-29', vynutNuly: { OCK: false, PROJ: false } });
+  return vv.data.cenik.statikaOplHod === 0;
+})());
+
 test('zamčená varianta se přepočítat nedá', (() => {
   const { v: vv } = staraVarianta();
   zamkniVariantu(vv, { typ: 'nabidkaOck', kdo: 'JV', cislo: '2026 - OPR - CN - 0500',
