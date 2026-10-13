@@ -423,7 +423,7 @@ const ZOBRAZENI_PRVKY = [
   /* ---------- zakázky, zámek, slevy ---------- */
   {
     klic: 'zamek.odemknout', skupina: 'zakazky', nazev: 'Odemknutí odeslané nabídky',
-    kde: 'Přehled cenových nabídek – řádek varianty, tlačítko „Odemknout…"',
+    kde: 'Lišta odeslané nabídky – modrý pruh „Odemknout k úpravám" (#404)',
     popis: 'Vytištěná (odeslaná) nabídka se zamkne, aby zůstal doklad o tom, co zákazník '
          + 'dostal. Odemknutí ji zase zpřístupní k úpravě — s důvodem do protokolu.',
     vychozi: { 'Obchodník': false, 'Vedoucí': false },

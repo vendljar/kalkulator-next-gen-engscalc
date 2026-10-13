@@ -104,6 +104,12 @@ const text = await stranka.evaluate(() => document.body.innerText + [...document
 test('kapitola o červené liště je uvnitř', /Vidím červenou lištu/.test(text));
 test('příručka popisuje obnovu rozpracované kalkulace',
   /Rozpracovanou kalkulaci neztratíte|Obnovit rozpracovanou kalkulaci/.test(text));
+/* #404 (13. 10. 2026): jediná žlutá lišta rozpracované zakázky a jednořádková
+ * informace u odeslané nabídky (modrý pruh odemknutí jen administrátorovi). */
+test('příručka popisuje lišty rozpracované a odeslané zakázky (#404)',
+  /Pokračovat v rozpracované kalkulaci/.test(text) && /Založit novou kalkulaci/.test(text)
+  && /Odeslaná nabídka/.test(text) && /Odemknout k úpravám/.test(text)
+  && !/Nabídka je otevřená jen ke čtení/.test(text));
 test('příručka popisuje skryté a srolované sekce', /srolovat|srolovan/i.test(text));
 test('příručka popisuje databázi zákazníků', /Zákazníci/.test(text));
 test('příručka popisuje slevu a její schválení', /Sleva a její schválení/.test(text));

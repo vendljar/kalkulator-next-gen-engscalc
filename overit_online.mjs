@@ -472,8 +472,10 @@ const ziveVZamku = await page.evaluate(() => {
       return b ? b.textContent.trim() : 'chybí';
     })(),
     /* Odemčení musí být v tu chvíli dosažitelné — jinak by se oprava N25
-     * změnila v past: neuložíš a nemáš čím odemknout. */
-    odemknout: pe(b => /Odemknout k úpravám/.test(b.textContent)),
+     * změnila v past: neuložíš a nemáš čím odemknout. Od #404 (13. 10. 2026)
+     * odemyká rozpracovanou zakázku „Pokračovat v rozpracované kalkulaci"
+     * v jediné žluté liště nad záložkami. */
+    odemknout: pe(b => /Pokračovat v rozpracované kalkulaci/.test(b.textContent)),
   };
 });
 test('otevřená zakázka z databáze je jen ke čtení', ziveVZamku.zamceno === true, ziveVZamku);
@@ -500,7 +502,7 @@ test('tlačítko Historická kalkulace v liště už není', ziveVZamku.historie
  * ne nedostupnost prvku. */
 test('Uložit zakázku se v režimu čtení vůbec nenabízí',
   ziveVZamku.ulozit === 'chybí', ziveVZamku);
-test('a odemknout jde lištou zámku',
+test('a odemknout jde žlutou lištou (Pokračovat v rozpracované kalkulaci, #404)',
   ziveVZamku.odemknout === 'auto', ziveVZamku);
 
 /* NOVÁ VARIANTA SE V ZAMČENÉ ZAKÁZCE NEVYROBÍ DO ZTRACENA (P3, nález N4).
@@ -587,13 +589,20 @@ test('v režimu čtení jde nabídku PROJ vytisknout, vytvořit Word, přepnout 
   Object.values(tiskProjVZamku).every(v => v === 'auto'), tiskProjVZamku);
 
 /* Zámek čtení na záložce Ceník (8. 9. 2026, hlášení J. V.: „přirážka se vždy
- * vrátí na 20 %"): lišta s Odemknout je i tady a dialog při zablokovaném
- * zápisu odemknutí rovnou nabídne (stub potvrd odpoví ano). */
+ * vrátí na 20 %"): odemknout jde i odsud a dialog při zablokovaném zápisu
+ * odemknutí rovnou nabídne (stub potvrd odpoví ano). Od #404 (13. 10. 2026)
+ * je lišta jediná žlutá nad záložkami — na záložce Ceník musí být vidět
+ * a stránka sama starou modrou lištu nenese. */
 await page.evaluate(() => prepniTab('cenik'));
 await page.waitForTimeout(300);
-test('záložka Ceník ukazuje lištu jen ke čtení s tlačítkem Odemknout',
-  /Nabídka je otevřená jen ke čtení/.test(await page.locator('#page-cenik').innerHTML())
-  && /zamekCteniOdemkniUI\(\)/.test(await page.locator('#page-cenik').innerHTML()));
+const listaCenik = await page.evaluate(() => {
+  const ob = document.getElementById('obnovaLista');
+  return { vidno: !!ob && ob.classList.contains('zobraz') && ob.offsetParent !== null,
+           pokracovat: /listaPokracujUI\(\)/.test(ob ? ob.innerHTML : ''),
+           stara: /Nabídka je otevřená jen ke čtení/.test(document.getElementById('page-cenik').innerHTML) };
+});
+test('záložka Ceník: žlutá lišta s Pokračovat je vidět, stará modrá lišta ne',
+  listaCenik.vidno && listaCenik.pokracovat && !listaCenik.stara, listaCenik);
 const odemceniZCeniku = await page.evaluate(async () => {
   const pred = C.marze;
   set('C.marze', 0.31);                       // zamčeno → dialog (stub: ano) → odemkne se
@@ -604,7 +613,7 @@ const odemceniZCeniku = await page.evaluate(async () => {
   return { pred, poZablokovani, odemceno, po: C.marze, dialog: window.__dlgTexty[window.__dlgTexty.length - 1] };
 });
 test('zamčený zápis do ceníku se neprovede a dialog nabídne odemknutí',
-  odemceniZCeniku.poZablokovani === odemceniZCeniku.pred && /Odemknout k úpravám/.test(odemceniZCeniku.dialog), odemceniZCeniku);
+  odemceniZCeniku.poZablokovani === odemceniZCeniku.pred && /Pokračovat v rozpracované kalkulaci/.test(odemceniZCeniku.dialog), odemceniZCeniku);
 test('po odemknutí z dialogu se přirážka zapíše', odemceniZCeniku.odemceno && odemceniZCeniku.po === 0.31, odemceniZCeniku);
 await page.evaluate((v) => { set('C.marze', v); zamekCteniZapni(); prepniTab('kalk'); render(); }, odemceniZCeniku.pred);
 await page.waitForTimeout(200);
@@ -1580,7 +1589,10 @@ test('lišta uzamčené varianty nabízí za Klonovat i Založit novou zakázku 
     window.volba = () => Promise.resolve('zahodit');
     try { await onlineOtevri('2026-OPR-CN-0763.json'); } finally { delete window.volba; }
     const v = ZAK.varianty.find(x => x.id === 'v320-2');
+    const ob = document.getElementById('obnovaLista');
     return { lista: (document.getElementById('zamekLista') || {}).textContent || '',
+             zluta: !!ob && ob.classList.contains('zobraz'), cteni: zamekCteniJe(),
+             role: (ONLINE_STAV.ja || {}).role, pravo: smiZobrazit('zamek.odemknout'),
              dokument: cisloSVariantou(ZAK, v), cislo: variantaCislo(ZAK, v),
              zamekCislo: v.zamek && v.zamek.cislo, pripony: ZAK.varianty.map(x => x.pripona) };
   });
@@ -1595,6 +1607,14 @@ test('lišta uzamčené varianty nabízí za Klonovat i Založit novou zakázku 
    * 15. 9. 2026) — částky počítá dnešní jádro a lišta to říká nahlas. */
   test('B130: lišta zámku bez zmrazeného výsledku řekne, že částky jsou přepočtené dnes',
     /nejsou u zámku zmrazené/.test(po.lista) && /přepočtené dnes/.test(po.lista), po.lista);
+  /* #404 (J. V. 13. 10. 2026): odeslaná nabídka otevřená z databáze — žádná
+   * žlutá lišta, jen jednořádková informace; modrý pruh „Odemknout
+   * k úpravám" právě tehdy, když má role právo zamek.odemknout. */
+  test('#404: otevřená odeslaná nabídka je jen ke čtení a žlutou lištu nemá', po.cteni && !po.zluta, JSON.stringify(po));
+  test('#404: lišta odeslané nabídky je jednořádková („Odeslaná nabídka … — needituje se")',
+    /Odeslaná nabídka/.test(po.lista) && /needituje se/.test(po.lista) && !/Pokračujte klonem/.test(po.lista), po.lista);
+  test('#404: modrý pruh Odemknout k úpravám jen s právem zamek.odemknout (role ' + po.role + ')',
+    /Odemknout k úpravám/.test(po.lista) === po.pravo, JSON.stringify({ role: po.role, pravo: po.pravo }));
   await page.evaluate(() => { if (typeof zamekCteniVypni === 'function') zamekCteniVypni();
     ZAK = novaZakazka(); syncVarianta(); render(); });
 }
@@ -1702,6 +1722,67 @@ test('lišta uzamčené varianty nabízí za Klonovat i Založit novou zakázku 
     if (typeof zamekCteniVypni === 'function') zamekCteniVypni();
     ZAK = novaZakazka(); syncVarianta(); render();
   });
+  await dlgStub(page);
+}
+
+/* ---- 10f) #404: ODEMKNOUT ODESLANOU NABÍDKU — MODRÝ PRUH JEN SPRÁVCI ----
+ * Rozhodnutí J. V. 13. 10. 2026. Obchodník u odeslané nabídky modrý pruh
+ * nevidí a ani obejitím tlačítka ji neodemkne (server, B3); administrátor
+ * ji modrým pruhem odemkne a odemčení se uloží na server. Jede se nad
+ * odeslanou nabídkou z bloku P2 (…0764). */
+{
+  const klic = [...pamet.keys()].find(k => /^zakazky\/z\/.*0764/.test(k));
+  const soubor = klic ? klic.replace(/^zakazky\/z\//, '') : '';
+  const zamcenoNaServeru = () => {
+    const z = JSON.parse(pamet.get(klic) || '{}');
+    const v = (z.varianty || []).find(x => x.id === z.aktivni) || (z.varianty || [])[0];
+    return !!(v && v.zamek && v.zamek.zamceno);
+  };
+  test('#404: odeslaná nabídka z P2 je na serveru zamčená', !!klic && zamcenoNaServeru(), soubor);
+  const obch = await page.evaluate(async (soubor) => {
+    window.volba = () => Promise.resolve('zahodit');
+    try { await onlineOtevri(soubor); } finally { delete window.volba; }
+    const ob = document.getElementById('obnovaLista');
+    const r = { role: ONLINE_STAV.ja.role, cteni: zamekCteniJe(),
+      zluta: ob.classList.contains('zobraz'),
+      modra: /Odemknout k úpravám/.test(document.getElementById('zamekLista').textContent) };
+    /* Obejití tlačítka: odemknout v prohlížeči a uložit — server musí odmítnout. */
+    const v = aktivniVarianta(ZAK);
+    odemkniVariantu(v, { jeAdmin: true, duvod: 'pokus obchodníka', kdo: 'harness' });
+    zamekCteniVypni();
+    r.ulozeno = await onlineUloz();
+    return r;
+  }, soubor);
+  test('#404: obchodník u odeslané nabídky nemá žlutou lištu ani modrý pruh',
+    obch.role === 'Obchodník' && obch.cteni && !obch.zluta && !obch.modra, JSON.stringify(obch));
+  test('#404: obejitím tlačítka obchodník odeslanou nabídku na serveru neodemkne (B3)',
+    obch.ulozeno !== true && zamcenoNaServeru(), JSON.stringify(obch));
+
+  await page.evaluate(() => { zamekCteniVypni(); ZAK = novaZakazka(); syncVarianta(); render(); onlineOdhlas(); });
+  await page.waitForFunction(() => { try { return ONLINE_STAV.ja === null; } catch (e) { return false; } });
+  await prihlas('spravce@priklad.cz', 'Zkusebni.Heslo.123');
+  await page.waitForFunction(() => { try { return !!ONLINE_STAV.ja; } catch (e) { return false; } });
+  await page.waitForTimeout(400);
+  await dlgStub(page);
+  const adm = await page.evaluate(async (soubor) => {
+    window.volba = () => Promise.resolve('zahodit');
+    window.dotaz = () => Promise.resolve('oprava překlepu (harness #404)');
+    try { await onlineOtevri(soubor); } finally { delete window.volba; }
+    const r = { role: ONLINE_STAV.ja.role, cteni: zamekCteniJe(),
+      zluta: document.getElementById('obnovaLista').classList.contains('zobraz') };
+    const b = [...document.querySelectorAll('#zamekLista button')].find(x => /Odemknout k úpravám/.test(x.textContent));
+    r.modra = !!b;
+    if (b) { b.click(); await new Promise(res => setTimeout(res, 100)); }
+    r.poKliku = { cteni: zamekCteniJe(), zamcena: variantaUzamcena(aktivniVarianta(ZAK)) };
+    r.ulozeno = await onlineUloz();
+    return r;
+  }, soubor);
+  test('#404: administrátor vidí u odeslané nabídky modrý pruh (žlutou lištu ne)',
+    adm.role === 'Administrátor' && adm.modra && !adm.zluta, JSON.stringify(adm));
+  test('#404: modrý pruh odemkne nabídku i okno', !adm.poKliku.cteni && !adm.poKliku.zamcena, JSON.stringify(adm));
+  test('#404: odemčení správcem server přijme a uloží', adm.ulozeno === true && !zamcenoNaServeru(), JSON.stringify(adm));
+  await page.evaluate(() => { if (typeof zamekCteniVypni === 'function') zamekCteniVypni();
+    ZAK = novaZakazka(); syncVarianta(); render(); });
   await dlgStub(page);
 }
 

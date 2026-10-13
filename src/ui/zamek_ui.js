@@ -149,6 +149,21 @@ function variantaCisloDalsi() {
 function zamekKlonUI(id) {
   const zdroj = ZAK.varianty.find(x => x.id === id) || aktivniVarianta(ZAK);
   if (!zdroj) return;
+  /* KLONOVAT A POKRAČOVAT = I ODEMKNOUT OKNO (#404, 13. 10. 2026). U odeslané
+   * nabídky se od #404 modrá lišta „jen ke čtení" obchodníkovi neukazuje —
+   * pokračuje se klonem. Klon v zakázce jen ke čtení by se ale neuložil
+   * (autosave v režimu čtení mlčí) a po F5 by byl pryč. Kdo zakázku smí
+   * odemknout (zamekCteniSmiOdemknout), tomu ji klon odemkne; kdo nesmí
+   * (cizí zakázka), dostane důvod a klon nevznikne. */
+  if (typeof zamekCteniJe === 'function' && zamekCteniJe()) {
+    const ja = (typeof ONLINE_STAV !== 'undefined') ? ONLINE_STAV.ja : null;
+    if (typeof zamekCteniSmiOdemknout === 'function' && !zamekCteniSmiOdemknout(ZAK, ja)) {
+      hlaska(zamekCteniDuvod(ZAK, ja) + '\n\nNovou nabídku založíte tlačítkem „Založit novou zakázku".');
+      return;
+    }
+    zamekCteniOdemkniUI();
+    if (zamekCteniJe()) return;   // odemknutí zastavil náhled (nahledStop)
+  }
   const klon = klonujVariantu(ZAK, zdroj.id);
   if (!klon) return;
   syncVarianta();
@@ -173,11 +188,16 @@ async function zamekOdemkniUI(id) {
       + 'původní nabídka tak zůstane přesně v podobě, v jaké odešla zákazníkovi.');
     return;
   }
+  if (typeof nahledStop === 'function' && nahledStop('odemčení odeslané nabídky')) return;
   const duvod = await dotaz('Odemknutí odeslané nabídky ' + variantaCislo(ZAK, v)
     + '.\n\nUveďte důvod (uloží se do zakázky):', '');
   if (duvod === null) return;
   const r = odemkniVariantu(v, { jeAdmin: true, duvod, kdo: zamekKdo() });
   if (!r.ok) { hlaska('Odemknutí neproběhlo: ' + r.duvod); return; }
+  /* Modrý pruh „Odemknout k úpravám" (#404) odemyká odeslanou nabídku
+   * i okno: záznam o odemčení se musí uložit (server ho ověří — B3)
+   * a v režimu čtení by autosave mlčel. */
+  if (typeof zamekCteniJe === 'function' && zamekCteniJe()) zamekCteniVypni();
   render();
 }
 
@@ -301,27 +321,145 @@ function zamekLista() {
   const dnesText = dnes.length ? 'Částky ' + (dnes.length === 2 ? 'OCK i PROJ' : dnes[0].toUpperCase())
     + ' nejsou u zámku zmrazené — zobrazují se přepočtené dnes '
     + 'a od odeslaného dokumentu se mohou lišit.' : '';
+  /* JEDNOŘÁDKOVÁ INFORMACE (#404, J. V. 13. 10. 2026): „Odeslaná nabídka …
+   * (vytištěno …) — needituje se" a dvě tlačítka, bez dlouhého textu.
+   * Řádky B59 (rozpor ověření) a B130 (částky nejsou zmrazené) zůstávají —
+   * nesou varování, ne návod. Odemknutí správcem má vlastní modrý pruh. */
+  const st = listaZakazkyStav();
+  const modra = st.lista === 'odeslana' && st.modra;
   return `<div class="zamek-lista">
     <span class="ikona">🔒</span>
-    <span><b>${esc(v.nazev)} (${esc(variantaCislo(ZAK, v))}) je odeslaná nabídka – needituje se.</b>
-      Vytištěno ${esc(kdy)} jako ${esc(z.popis || 'cenová nabídka')}${pocet > 1 ? ` (výtisků: ${pocet})` : ''}.
-      Pokračujte klonem, nebo založte novou zakázku; původní nabídka zůstane v podobě, v jaké odešla.${overeni
+    <span><b>Odeslaná nabídka ${esc(v.nazev)} (${esc(variantaCislo(ZAK, v))})</b>
+      (vytištěno ${esc(kdy)} jako ${esc(z.popis || 'cenová nabídka')}${pocet > 1 ? `, výtisků: ${pocet}` : ''}) — needituje se.${overeni
         ? `<span class="zamek-overeni">⚠ ${esc(overeni)}</span>` : ''}${dnesText
         ? `<span class="zamek-overeni zamek-dnes">⚠ ${esc(dnesText)}</span>` : ''}</span>
     <span class="sp"></span>
-    <button class="primary cteni-ok" onclick="zamekKlonUI('${escJs(v.id)}')">Klonovat a pokračovat</button>
+    <button class="primary cteni-ok" onclick="zamekKlonUI('${escJs(v.id)}')"
+      title="založit novou variantu jako kopii odeslané a pokračovat v ní — odeslaná zůstane, jak odešla">Klonovat a pokračovat</button>
     <!-- Založit novou zakázku (8. 9. 2026, zadání J. V.: „když chci začít novou
          zakázku, musím nejprve klonovat tu starou, což je hloupost"). Táž cesta
          jako tlačítko ✚ Nová zakázka v liště — potvrzení, prázdná zakázka. -->
     <button class="cteni-ok" onclick="novaZakazkaUI()"
       title="začít novou prázdnou zakázku — tahle zůstane uložená tak, jak odešla">Založit novou zakázku</button>
-    ${smiZobrazit('zamek.odemknout') ? `<button class="mini cteni-ok" onclick="zamekOdemkniUI('${escJs(v.id)}')">Odemknout…</button>` : ''}
-  </div>`;
+  </div>${modra ? `
+  <div class="zamek-lista zamek-cteni zamek-odemknout">
+    <span class="ikona">🔓</span>
+    <span class="sp"><b>Odeslanou nabídku můžete odemknout k úpravám.</b>
+      Odemčení se zapíše do zakázky i s důvodem; obchodník tuhle možnost nemá.</span>
+    <button class="primary cteni-ok" onclick="zamekOdemkniUI('${escJs(v.id)}')">Odemknout k úpravám</button>
+  </div>` : ''}`;
 }
 
 function renderZamekLista() {
   const el = document.getElementById('zamekLista');
   if (el) el.innerHTML = zamekLista();
+  renderListaZakazky();
+}
+
+/* ---------- JEDINÁ ŽLUTÁ LIŠTA ROZPRACOVANÉ ZAKÁZKY (#404, 13. 10. 2026) ----------
+ *
+ * Nahrazuje dvě lišty: žlutou „V prohlížeči je rozpracovaná kalkulace…
+ * Obnovit / Zahodit zálohu" (dřív v historie.js) a modrou „Nabídka je
+ * otevřená jen ke čtení… Odemknout k úpravám" (dřív zamekCteniLista
+ * v common.js nad kalkulacemi a ceníky). Kterou lištu ukázat, rozhoduje
+ * model listaZakazkyRozhodni (zamek.js, test_lista_zakazky.js); tady se jen
+ * kreslí a obsluhují tlačítka. Lišta je jedna nad záložkami, takže je vidět
+ * na každé záložce (dřív ji musely nést jednotlivé stránky). */
+function listaZakazkyStav() {
+  const ja = (typeof ONLINE_STAV !== 'undefined') ? ONLINE_STAV.ja : null;
+  /* HIST žije v historie.js (poslední soubor sestavení) — při render() před
+   * jeho vyhodnocením by i `typeof` na const v mrtvé zóně spadl. */
+  let zaloha = null;
+  try { zaloha = HIST.nabidka || null; } catch (e) { zaloha = null; }
+  let otevrena = '';
+  if (zaloha) { try { otevrena = JSON.stringify(ZAK); } catch (e) { /* cyklus – nevadí */ } }
+  const prava = { odemknout: typeof smiZobrazit === 'function' && smiZobrazit('zamek.odemknout') };
+  const cteni = (typeof zamekCteniJe === 'function') && zamekCteniJe();
+  return listaZakazkyRozhodni(ZAK, zaloha, ja, prava, { cteni, otevrena });
+}
+
+function listaKdyText(kdy) {
+  const t = Date.parse(kdy || '');
+  return Number.isNaN(t) ? '' : new Date(t).toLocaleString('cs-CZ');
+}
+
+function listaZakazkyHtml(r) {
+  if (r.lista !== 'rozpracovana') return '';
+  const kdy = listaKdyText(r.kdy);
+  const zdroj = r.obnovit && !(typeof zamekCteniJe === 'function' && zamekCteniJe())
+    ? ' (záloha v prohlížeči)' : '';
+  const jina = r.jinaZaloha
+    ? `<button class="odkaz" onclick="listaObnovJinouUI()" title="otevřít místo téhle zakázky rozpracovanou práci uloženou v prohlížeči">obnovit zálohu jiné kalkulace (${esc(r.jinaZaloha.co)}${
+        listaKdyText(r.jinaZaloha.kdy) ? ', ' + esc(listaKdyText(r.jinaZaloha.kdy)) : ''})</button>` : '';
+  return `<span>✎ <b>Rozpracovaná kalkulace</b> ${esc(r.co)}${zdroj}${kdy ? ', naposledy ' + esc(kdy) : ''}.${
+      r.cizi ? ' ' + esc(r.cizi) : ''}</span>
+    <span class="sp"></span>
+    ${r.pokracovat ? `<button class="primary cteni-ok" onclick="listaPokracujUI()"
+      title="${r.obnovit ? 'obnovit rozpracovanou práci z prohlížeče a pokračovat v ní' : 'odemknout zakázku k úpravám — změny se pak zase ukládají samy'}">Pokračovat v rozpracované kalkulaci</button>` : ''}
+    <button class="cteni-ok" onclick="listaZalozNovouUI()" title="začít novou prázdnou kalkulaci">Založit novou kalkulaci</button>
+    ${jina}
+    ${r.zahodit ? '<button class="odkaz" onclick="historieZahodZalohu()" title="smazat zálohu rozpracované kalkulace uloženou v prohlížeči">Zahodit zálohu</button>' : ''}`;
+}
+
+function renderListaZakazky() {
+  const el = document.getElementById('obnovaLista');
+  if (!el || typeof ZAK === 'undefined') return;
+  let r = listaZakazkyStav();
+  /* Záloha odeslané nebo přežité zakázky se tiše zahodí (#404, bod 2) —
+   * a model se zeptá znovu, už bez ní. */
+  if (r.zahoditTise && typeof historieZalohaZahodTise === 'function') {
+    historieZalohaZahodTise(HIST.nabidka);
+    r = listaZakazkyStav();
+  }
+  const html = listaZakazkyHtml(r);
+  el.innerHTML = html;
+  el.classList.toggle('zobraz', !!html);
+}
+
+/* Pokračovat v rozpracované kalkulaci = odemknout režim jen ke čtení
+ * (smí-li to uživatel — B-pravidlo zamekCteniSmiOdemknout, náhled zastaví)
+ * a je-li v prohlížeči novější záloha, obnovit ji. */
+function listaPokracujUI() {
+  const r = listaZakazkyStav();
+  if (r.lista !== 'rozpracovana' || !r.pokracovat) return;
+  if (typeof zamekCteniJe === 'function' && zamekCteniJe()) {
+    zamekCteniOdemkniUI();
+    if (zamekCteniJe()) return;   // zastavil náhled nebo právo
+  }
+  if (r.obnovit) {
+    /* Záloha JINÉ zakázky než té, která je otevřená pod jménem souboru
+     * (typicky po startu, když se mezitím otevřela poslední zakázka):
+     * obnova nesmí zdědit jméno souboru, jinak by se cizí práce uložila
+     * přes otevřenou zakázku. */
+    const zal = HIST.nabidka;
+    const pojmenovana = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.soubor)
+      || (typeof ULO_STAV !== 'undefined' && ULO_STAV.soubor);
+    if (pojmenovana && !listaZalohaStejna(ZAK, zal) && typeof zakOdpojUlozeni === 'function') zakOdpojUlozeni();
+    historieObnovZalohu();
+  } else historieSkryjListu();
+  render();
+}
+
+/* Obnova zálohy jiné kalkulace z liště otevřené zakázky (odkaz, #404). */
+async function listaObnovJinouUI() {
+  const r = listaZakazkyStav();
+  if (!r.jinaZaloha) return;
+  if (!await potvrd('Obnovit rozpracovanou kalkulaci ' + r.jinaZaloha.co + ' ze zálohy v prohlížeči?\n\n'
+    + 'Otevřená zakázka se zavře (v databázi zůstane, jak je); obnovená kalkulace zatím není uložená.',
+    { nadpis: 'Obnovit zálohu jiné kalkulace', ano: 'Obnovit zálohu', ne: 'Zrušit' })) return;
+  if (typeof zakOdpojUlozeni === 'function') zakOdpojUlozeni();
+  historieObnovZalohu();
+  render();
+}
+
+/* Založit novou kalkulaci — táž cesta jako ✚ Nová zakázka (potvrzení,
+ * prázdná zakázka). Nabídka zálohy se tím vyřídí jen tehdy, když nová
+ * zakázka opravdu vznikla; záloha v prohlížeči zůstává, dokud ji nepřepíše
+ * nová práce. */
+async function listaZalozNovouUI() {
+  const pred = ZAK;
+  await novaZakazkaUI();
+  if (ZAK !== pred && typeof historieSkryjListu === 'function') historieSkryjListu();
 }
 
 /* Stav varianty do přehledové tabulky (sloupec „Stav"). */

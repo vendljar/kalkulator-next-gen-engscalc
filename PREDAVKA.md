@@ -22,6 +22,28 @@ Noční větve (z `claude/integrace-13-10b`, každá s celým kolem):
 | `claude/vyjimky-schvalovani` | běží |
 Ráno: integrace nočních větví do nové verze, celé kolo, převod na pokyn J. V.
 
+# Předávka — větev `claude/listy-404` (v13.10.3, noc 13./14. 10. 2026)
+
+Z `claude/integrace-13-10b` (v13.10.2). Roadmapa #404 — lišty rozpracované
+a odeslané zakázky podle návrhu odsouhlaseného J. V. 13. 10. 2026. Do
+`test-draft` nic (rozhodne J. V.). Detaily a testy před/po: CHANGELOG v13.10.3.
+
+- **Hotovo:** model `listaZakazkyRozhodni` (zamek.js) + Node test; jediná
+  žlutá lišta „Rozpracovaná kalkulace" (Pokračovat / Založit novou, odkaz
+  Zahodit zálohu), odeslaná jedním řádkem, modrý pruh Odemknout k úpravám
+  jen s právem `zamek.odemknout`, cizí zakázka jen Založit novou; záloha
+  odeslané nabídky se nenabízí; zakázka jen ke čtení nepřepisuje zálohu;
+  příručka (kap. 8, 29, slovníček); harnessy overit_zaloha_lista, overit_online,
+  overit_v23, overit_manual.
+- **Kolo nad 7e19e40 VŠE ZELENÉ:** sady 233/0/1 (test.js), jádro 193/193, server 358/358, statické 3/3.
+- **Výklady k potvrzení (výchozí v závorce):** odeslaná = aktivní varianta
+  zamčená (ano — klon odeslané má žlutou lištu); v oranžové liště zůstalo
+  „Založit novou zakázku" (ano); zápis do odeslané nabídky jen ke čtení
+  nabídne klon místo odemknutí okna (ano).
+- **Při slučování:** příručku obchodníka přegenerovat z `manual/obsah.json`
+  (kopie podkladů pro kolo: `/home/user/kng_podklady_listy-404`, obsah
+  příručky vložen z této větve).
+
 ---
 
 # Předávka — 13. 10. 2026: dávka po 22. kole ve větvi `claude/davka-13-10` (v13.10.1)

@@ -490,7 +490,6 @@ function renderProj() {
    * hlavička a šedá lišta nad ním zůstávají živé (viz zamekStranyLista). */
   document.getElementById('page-proj').innerHTML =
     zakazkaHlavicka(false) +
-    (typeof zamekCteniLista === 'function' ? zamekCteniLista() : '') +
     (typeof zamekStranyLista === 'function' ? zamekStranyLista('proj') : '') +
     `<div id="proj-telo">` +
     `<div class="card"><div class="body">${hlava}
