@@ -8,6 +8,32 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v13.10.4 — integrace nočních dávek 13./14. 10. 2026 (větev claude/integrace-14-10)
+
+Rozhodnutí J. V. z dialogu 13. 10. 2026 („rozběhni přes noc“). Z
+`claude/integrace-13-10b` (v13.10.2, 440eebf — kolo zelené), merge commity bez
+rebase: `claude/listy-404`, `claude/bezpecnost-noc`,
+`claude/vyjimky-schvalovani`, `claude/prirucka-13-10`. Každá nesla v13.10.3 →
+integrace v13.10.4.
+
+- **Lišty rozpracované a odeslané zakázky (#404):** jedna žlutá lišta
+  Pokračovat v rozpracované kalkulaci / Založit novou kalkulaci jen
+  u neodeslané kalkulace; u odeslané bez připomínání; modrý pruh Odemknout
+  k úpravám jen pro roli s právem odemknout (administrátor).
+- **B35:** záznam času zakázky jen pro zakázku v rejstříku. **B77:** založení
+  účtu Administrátor, povýšení na Administrátora, reset hesla a obnova účtů
+  z otisku s potvrzením heslem správce.
+- **Meze rozměrů:** zdvih, šířka nebo hloubka pod 0,6 m nepustí nový zámek
+  ani dokument OCK. **Cenové výjimky do schvalování:** směs ceníku a ruční
+  sazba pásu „jiné“ pod mezí u role bez práva ceníku potřebují schválení
+  nadřízeného (karta Cenové výjimky v Schvalování).
+- **Příručka obchodníka** aktuální (P6, P2, probarvení ceníků, změny hesel
+  a schvalování, kurzíva v rendereru), přefocené snímky.
+
+Konflikty: jen `CHANGELOG.md` a `PREDAVKA.md` (zachovány záznamy všech větví);
+kód se sloučil automaticky. Kontrola po sloučení: mutace serveru 393 úseků,
+jádra 193, sady bez prohlížeče zelené.
+
 ## v13.10.3 — lišty rozpracované a odeslané zakázky (#404) (větev claude/listy-404)
 
 Rozhodnutí J. V. 13. 10. 2026 („Ano, jak je navrženo"; jeho slova: „Aktuálně
