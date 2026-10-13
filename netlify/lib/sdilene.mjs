@@ -506,3 +506,41 @@ export async function vyzadujRoli(req, ...role) {
     return { chyba: json({ ok: false, chyba: 'K této akci je potřeba role: ' + role.join(' / ') + '.' }, 403) };
   return { relace, ucet };
 }
+
+/* ---------- potvrzení citlivé akce vlastním heslem správce (B77, 13. 10. 2026) ----------
+ *
+ * Rozhodnutí J. V. 13. 10. 2026 („Ano"). Kdo získal cookie správce (odemčený
+ * počítač, ukradená relace), už mu po B77-zbytku nezmění heslo — ale mohl si
+ * založit vlastní účet s rolí Administrátor, povýšit kterýkoli účet, resetovat
+ * heslo kolegovi (i jinému správci) nebo obnovou účtů z otisku vrátit starší
+ * otisk hesla. Tyhle akce proto chtějí v těle pole `hesloSpravce` s heslem
+ * PŘIHLÁŠENÉHO správce, ověřené stejně jako staré heslo u 'mojeheslo':
+ * pokus se započítá dřív, než se heslo ověří (B4), nad limitem adresy 429
+ * hned (B75), nad limitem e-mailu 429 jen u špatného hesla — správné heslo
+ * projde vždy a počítadlo vynuluje (#92).
+ *
+ * Chybějící pole se nepočítá jako pokus: nic se nehádá, a starší klient
+ * (nebo správce, který dialog zavřel) by si jinak zbytečně ukrajoval
+ * z limitu. `kod: 'hesloSpravce'` u všech odmítnutí říká klientovi, že 401
+ * tu NEZNAMENÁ vypršelé přihlášení (onlineApi jinak stav přihlášení shodí).
+ * Vrací null, když heslo sedí, jinak hotovou odpověď. */
+export async function potvrdHesloSpravce(req, relace, heslo) {
+  const odmitni = (chyba, stav) => json({ ok: false, kod: 'hesloSpravce', chyba }, stav);
+  if (typeof heslo !== 'string' || !heslo)
+    return odmitni('Tuto akci potvrďte svým heslem (heslo, kterým se přihlašujete).', 401);
+  const ucet = await (await uloziste('uzivatele')).cti(relace && relace.email);
+  const ip = adresaKlienta(req);
+  const pokusy = await pokusyZacatek(relace && relace.email, ip);
+  if (pokusyAdresaNadLimit(pokusy))
+    return odmitni('Příliš mnoho neúspěšných pokusů z této adresy. Zkuste to za '
+      + 'několik minut znovu, nebo se ozvěte správci.', 429);
+  await pockej(zpozdeniMs(pokusy.email.n));
+  if (!ucet || !hesloSedi(heslo, ucet.heslo)) {
+    if (pokusy.email.n > POKUSY_MAX)
+      return odmitni('Příliš mnoho neúspěšných pokusů. Zkuste to za '
+        + 'několik minut znovu, nebo se ozvěte správci.', 429);
+    return odmitni('Vaše heslo nesouhlasí — akce se neprovedla.', 401);
+  }
+  await pokusyUspech(relace.email, ip);
+  return null;
+}

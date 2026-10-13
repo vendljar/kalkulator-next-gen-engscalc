@@ -223,7 +223,29 @@ test('rejstřík po přeskočení nemá sirotka a B v něm zůstává',
 const n10 = await obnovJson({ zdroj: { otisk: otiskDen }, rezim: 'doplnit', nahled: true, casti: ['uzivatele'] }, cookie);
 test('náhled z otisku: obchodník by se založil, administrátor beze změny',
   n10.casti.uzivatele.nove === 1 && n10.casti.uzivatele.bezeZmeny === 1 && n10.zdroj.typ === 'otisk', n10.casti.uzivatele);
-const o10 = await obnovJson({ zdroj: { otisk: otiskDen }, rezim: 'doplnit', potvrzeni: 'OBNOVIT', casti: ['uzivatele'] }, cookie);
+/* B77 (13. 10. 2026, rozhodnutí J. V.): obnova účtů z otisku přepisuje
+ * otisky hesel — kdo má jen cookie správce, vrátil by kolegovi starší heslo.
+ * Ostrá obnova části „uzivatele" z otisku proto chce vlastní heslo správce.
+ * Odmítnutí nesmí nic zapsat ani pořídit otisk před obnovou. Náhled a soubor
+ * (účty se z něj nezapisují) heslo nechtějí. Před opravou: 200 bez hesla. */
+{
+  const otiskuPred = (await otiskyPredObnovou()).length;
+  const bez = await obnov({ zdroj: { otisk: otiskDen }, rezim: 'doplnit', potvrzeni: 'OBNOVIT', casti: ['uzivatele'] }, cookie);
+  const bezT = await bez.json();
+  test('B77 (d): obnova účtů z otisku bez hesla správce → 401 s kódem hesloSpravce',
+    bez.status === 401 && bezT.kod === 'hesloSpravce', bez.status + ' ' + JSON.stringify(bezT));
+  const spatne = await obnov({ zdroj: { otisk: otiskDen }, rezim: 'doplnit', potvrzeni: 'OBNOVIT', casti: ['uzivatele'], hesloSpravce: 'Urcite.Spatne1' }, cookie);
+  test('B77 (d): se špatným heslem → 401', spatne.status === 401, spatne.status);
+  test('B77 (d): po odmítnutí se účet neobnovil', !(await ulz('uzivatele').cti('obchodnik@priklad.cz')));
+  test('B77 (d): a nevznikl otisk před obnovou', (await otiskyPredObnovou()).length === otiskuPred);
+  const vsechny = await obnov({ zdroj: { otisk: otiskDen }, rezim: 'doplnit', potvrzeni: 'OBNOVIT' }, cookie);
+  test('B77 (d): i obnova všech částí z otisku (účty v nich) bez hesla → 401', vsechny.status === 401, vsechny.status);
+  const nahl = await obnov({ zdroj: { otisk: otiskDen }, rezim: 'doplnit', nahled: true, casti: ['uzivatele'] }, cookie);
+  test('B77 (d): náhled účtů heslo nechce (200)', nahl.status === 200, nahl.status);
+  const jine = await obnov({ zdroj: { otisk: otiskDen }, rezim: 'doplnit', potvrzeni: 'OBNOVIT', casti: ['firma'] }, cookie);
+  test('B77 (d): obnova jiné části z otisku heslo nechce (200)', jine.status === 200, jine.status);
+}
+const o10 = await obnovJson({ zdroj: { otisk: otiskDen }, rezim: 'doplnit', potvrzeni: 'OBNOVIT', casti: ['uzivatele'], hesloSpravce: 'Docasne.Heslo.123' }, cookie);
 const obchZpet = await ulz('uzivatele').cti('obchodnik@priklad.cz');
 test('z otisku se obchodník obnovil i s otiskem hesla', o10.ok && !!obchZpet && typeof obchZpet.heslo === 'string' && obchZpet.heslo.includes(':'));
 const r3 = await post(prihlaseni, 'http://x/api/prihlaseni', { email: 'obchodnik@priklad.cz', heslo: 'ObchodHeslo1' });
@@ -244,7 +266,7 @@ test('a databáze zůstala, jak byla', (await ulz('program').cti('firma')).udaje
 const otiskVypnuty = kopie(await ulz('zalohy').cti(otiskDen));
 otiskVypnuty.uzivatele = otiskVypnuty.uzivatele.map(u => (u.email === ADMIN_EMAIL ? { ...u, aktivni: false } : u));
 await ulz('zalohy').zapis('2026-01-01', otiskVypnuty);
-await obnovJson({ zdroj: { otisk: '2026-01-01' }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['uzivatele'] }, cookie);
+await obnovJson({ zdroj: { otisk: '2026-01-01' }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['uzivatele'], hesloSpravce: 'Docasne.Heslo.123' }, cookie);
 test('hlavní administrátor zůstává aktivní i po obnově z otisku, kde byl vypnutý',
   (await ulz('uzivatele').cti(ADMIN_EMAIL)).aktivni === true);
 
@@ -335,7 +357,7 @@ test('B28: odmítnuté obnovy nepořídily žádný další otisk před obnovou 
   (await otiskyPredObnovou()).length === pocetPredA && (await ulz('zalohy').cti(zacA.otiskPred)) !== null);
 
 const z2 = await (await post(uzivatele, 'http://x/api/uzivatele',
-  { akce: 'zaloz', email: 'spravce2@priklad.cz', jmeno: 'Druhý správce', role: 'Administrátor', heslo: 'SpravceHeslo2' }, cookie)).json();
+  { akce: 'zaloz', email: 'spravce2@priklad.cz', jmeno: 'Druhý správce', role: 'Administrátor', heslo: 'SpravceHeslo2', hesloSpravce: 'Docasne.Heslo.123' }, cookie)).json();
 test('vedlejší správce založen', z2.ok === true, z2);
 const r4 = await post(prihlaseni, 'http://x/api/prihlaseni', { email: 'spravce2@priklad.cz', heslo: 'SpravceHeslo2' });
 const cookieAdmin2 = (r4.headers.get('set-cookie') || '').split(';')[0];
@@ -386,7 +408,7 @@ otiskPodvrh.podpisy = { [ADMIN_EMAIL]: { obrazek: PNG },
                         'obchodnik@priklad.cz': { obrazek: 'data:image/svg+xml;base64,PHN2Zz4=' },
                         'spravce2@priklad.cz': { obrazek: PNG } };
 await ulz('zalohy').zapis('2026-01-02', otiskPodvrh);
-const o27b = await obnovJson({ zdroj: { otisk: '2026-01-02' }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['uzivatele', 'podpisy'] }, cookieAdmin2);
+const o27b = await obnovJson({ zdroj: { otisk: '2026-01-02' }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['uzivatele', 'podpisy'], hesloSpravce: 'SpravceHeslo2' }, cookieAdmin2);
 const u27 = o27b.casti.uzivatele;
 test('B27: z otisku vedlejší správce hlavní účet nepřepíše (přeskočeno „jen on sám")',
   u27.duvody.some(d => d.klic === ADMIN_EMAIL && /jen on sám/.test(d.duvod))
@@ -433,7 +455,7 @@ console.log('\n===== B30/B31: smazané, archivované účty a verze hesla ====='
 const sm = await (await post(uzivatele, 'http://x/api/uzivatele',
   { akce: 'smaz', email: 'obchodnik@priklad.cz', i_se_zakazkami: true }, cookie)).json();
 test('obchodník řádně smazán (zapsán do knihy smazaných)', sm.ok === true && sm.smazano === true, sm);
-const o30 = await obnovJson({ zdroj: { otisk: otiskDen }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['uzivatele'] }, cookie);
+const o30 = await obnovJson({ zdroj: { otisk: otiskDen }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['uzivatele'], hesloSpravce: 'Docasne.Heslo.123' }, cookie);
 test('B30: smazaný účet se z otisku neoživí a důvod říká, kdy a kdo ho smazal',
   o30.casti.uzivatele.duvody.some(d => d.klic === 'obchodnik@priklad.cz' && /smazán/.test(d.duvod) && d.duvod.includes(ADMIN_EMAIL))
   && (await ulz('uzivatele').cti('obchodnik@priklad.cz')) === null, o30.casti.uzivatele);
@@ -450,9 +472,9 @@ test('archiv@ archivován', (await (await post(uzivatele, 'http://x/api/uzivatel
  * v milisekundách), reset ji zvedne o jedničku. */
 const verzePredResetem = (await ulz('uzivatele').cti('verze@priklad.cz')).hesloVerze;
 test('verze@ dostal reset hesla (hesloVerze o jednu výš než při založení)',
-  (await (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'heslo', email: 'verze@priklad.cz', heslo: 'VerzeHeslo2' }, cookie)).json()).ok === true
+  (await (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'heslo', email: 'verze@priklad.cz', heslo: 'VerzeHeslo2', hesloSpravce: 'Docasne.Heslo.123' }, cookie)).json()).ok === true
   && verzePredResetem > 0 && (await ulz('uzivatele').cti('verze@priklad.cz')).hesloVerze === verzePredResetem + 1);
-const o31 = await obnovJson({ zdroj: { otisk: otiskB30.den }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['uzivatele'] }, cookie);
+const o31 = await obnovJson({ zdroj: { otisk: otiskB30.den }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['uzivatele'], hesloSpravce: 'Docasne.Heslo.123' }, cookie);
 const arch = await ulz('uzivatele').cti('archiv@priklad.cz');
 test('B30: archivovaný zůstane archivovaný a vypnutý i po „přepsat" z otisku, kde byl činný',
   arch.archiv === true && arch.aktivni === false && !!arch.archivKdy
@@ -478,7 +500,7 @@ console.log('\n===== B50: vědomě znovu založený účet obnova nepřeskakuje 
   test('B50: a z knihy smazaných tím zmizí',
     (await kniha.cti('obchodnik@priklad.cz')) === null);
   /* Teď už ho obnova z otisku, kde byl činný, nepřeskočí. */
-  const o = await obnovJson({ zdroj: { otisk: otiskDen }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['uzivatele'] }, cookie);
+  const o = await obnovJson({ zdroj: { otisk: otiskDen }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['uzivatele'], hesloSpravce: 'Docasne.Heslo.123' }, cookie);
   test('B50: obnova účet nepřeskakuje kvůli starému smazání',
     !o.casti.uzivatele.duvody.some(d => d.klic === 'obchodnik@priklad.cz' && /smazán/.test(d.duvod)),
     o.casti.uzivatele.duvody);
@@ -496,13 +518,13 @@ console.log('\n===== B58: kniha smazaných účtů jde se zálohou (23. 9. 2026)
   test('B58: serverový otisk nese knihu smazaných', !!(ot && ot.smazani && ot.smazani['byvaly@priklad.cz']));
   /* Havárie: kniha zmizela. Obnova ze serverového otisku ji doplní. */
   await kniha.smaz('byvaly@priklad.cz');
-  const o = await obnovJson({ zdroj: { otisk: v2.den }, rezim: 'doplnit', potvrzeni: 'OBNOVIT', casti: ['uzivatele'] }, cookie);
+  const o = await obnovJson({ zdroj: { otisk: v2.den }, rezim: 'doplnit', potvrzeni: 'OBNOVIT', casti: ['uzivatele'], hesloSpravce: 'Docasne.Heslo.123' }, cookie);
   test('B58: obnova ze serverového otisku knihu doplní', !!(await kniha.cti('byvaly@priklad.cz')) && o.casti.smazani && o.casti.smazani.nove >= 1,
     JSON.stringify(o.casti && o.casti.smazani));
   /* Pod e-mailem, kde dnes žije účet, se do knihy nezapisuje. */
   const ot2 = kopie(ot); ot2.smazani = { 'obchodnik@priklad.cz': { smazano: true, kdy: '2026-01-01', kdo: 'x' } };
   await ulz('zalohy').zapis(v2.den + 'T000001-pred-obnovou', ot2);
-  await obnovJson({ zdroj: { otisk: v2.den + 'T000001-pred-obnovou' }, rezim: 'doplnit', potvrzeni: 'OBNOVIT', casti: ['uzivatele'] }, cookie);
+  await obnovJson({ zdroj: { otisk: v2.den + 'T000001-pred-obnovou' }, rezim: 'doplnit', potvrzeni: 'OBNOVIT', casti: ['uzivatele'], hesloSpravce: 'Docasne.Heslo.123' }, cookie);
   test('B58: živý účet se do knihy smazaných nezapíše', (await kniha.cti('obchodnik@priklad.cz')) === null);
 }
 

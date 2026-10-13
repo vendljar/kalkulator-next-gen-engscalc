@@ -82,7 +82,7 @@
  *    na to upozorní: firemní údaje a účty toho druhého webu nemusí být to,
  *    co tu člověk chce. */
 import { randomBytes } from 'node:crypto';
-import { uloziste, vyzadujRoli, json, ADMIN_EMAIL, ROLE, hostitel, emailPlatny,
+import { potvrdHesloSpravce, uloziste, vyzadujRoli, json, ADMIN_EMAIL, ROLE, hostitel, emailPlatny,
          podpisZkontroluj, hesloVerzeUctu, SMAZANI_ULOZISTE,
          bezHlavnihoUctu, serverVerze } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
@@ -406,6 +406,18 @@ export default async (req) => {
   if (zdrojPopis.web && tenhleWeb && /\./.test(zdrojPopis.web) && zdrojPopis.web !== tenhleWeb)
     upozorneni.push('Záloha pochází z jiného webu (' + zdrojPopis.web + ') než ten, do kterého obnovujete ('
       + tenhleWeb + '). Firemní údaje a účty toho webu nemusí být to, co tu chcete — zvažte odškrtnutí částí.');
+
+  /* ÚČTY Z OTISKU JEN S HESLEM SPRÁVCE (B77, 13. 10. 2026, rozhodnutí J. V.).
+   * Obnova části „uzivatele" přepisuje otisky hesel — kdo má cookie správce,
+   * vrátil by tudy kolegovi (i jinému správci) starší heslo, které zná.
+   * Účty se zapisují jen ze serverového otisku (B27), ze souboru se
+   * přeskočí, takže se heslo chce jen tam, kde by se opravdu zapsaly;
+   * náhled nic nezapisuje a heslo nechce. Ověří se dřív než zámek a otisk
+   * před obnovou — odmítnutí nesmí nic zapsat. */
+  if (!nahled && zdrojPopis.typ === 'otisk' && casti.includes('uzivatele') && maVlastni(zaloha, 'uzivatele')) {
+    const stop = await potvrdHesloSpravce(req, relace, t.hesloSpravce);
+    if (stop) return stop;
+  }
 
   /* --- dávka rozpracované obnovy, nebo jednorázová obnova --- */
   let otiskPred = null;

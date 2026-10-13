@@ -63,6 +63,48 @@ serveru); `overit_v23` 26/5 → 31/0; `overit_manual` nad původní příručkou
 
 Výsledek kola (nad 7e19e40, 160 min): **VŠE ZELENÉ** — sady 233 prošlo / 0 selhalo / 1 přeskočeno (test.js), mutace jádra 193/193, mutace serveru 358/358, statické kontroly 3/3.
 
+## v13.10.3 — B35 a B77: měření času jen u existujících zakázek, citlivé akce správce s heslem (větev claude/bezpecnost-noc)
+
+Rozhodnutí J. V. 13. 10. 2026 (obojí „Ano"). Z `claude/integrace-13-10b`
+(v13.10.2). Do `test-draft` nic — na pokyn J. V.
+
+- **Co je opravené:**
+  - **B35** — strop `ANALYTIKA_MAX_CASU` (5 000 klíčů `cas/`) šel jedním
+    účtem zaplnit smyšlenými čísly zakázek a měření času pak skončilo pro
+    všechny. Klíč `cas/<číslo>` nově vznikne jen pro zakázku, která je
+    v rejstříku zakázek (`_rejstrik`); číslo se převede na jméno souboru
+    stejnou funkcí jako při uložení (`uloKlicSouboru`), takže projde
+    i „2026 - OPR - CN - 0155" s mezerami. Rejstřík se čte jednou za
+    požadavek a jen když přijde nový klíč; existující klíče se přičítají
+    dál, strop zůstává druhou pojistkou. Důsledek: čas nově založené
+    zakázky se začne zapisovat až od jejího prvního uložení online.
+  - **B77** — citlivé akce správce chtějí pole `hesloSpravce` (vlastní heslo
+    přihlášeného správce): (a) založení účtu s rolí Administrátor,
+    (b) změna role NA Administrátora (snížení ani správce→správce ne),
+    (c) reset cizího hesla, (d) obnova části „uzivatele" ze serverového
+    otisku (náhled a soubor ne — ze souboru se účty nezapisují, B27).
+    Ověření `potvrdHesloSpravce` (lib/sdilene.mjs) má brzdu jako
+    `mojeheslo`: pokus se započítá před ověřením, nad limitem adresy 429
+    hned, nad limitem e-mailu 429 jen u špatného hesla, správné heslo
+    projde vždy a počítadlo vynuluje (#92). Chybějící pole → 401 bez
+    započtení pokusu. Odmítnutí nese `kod: 'hesloSpravce'` — aplikace
+    (onlineApi) pak NEshazuje přihlášení. B7 (hlavní účet) beze změny:
+    reset hlavního účtu vedlejším správcem je 403 i se správným heslem.
+  - **UI:** `dotazHeslo` v `src/ui/dialog.js` (pole type=password, prázdné);
+    správa účtů se ptá před založením správce, povýšením a resetem hesla,
+    obnova před zápisem účtů z otisku. Zrušení dialogu nic nepošle
+    a řekne proč, špatné heslo hlásí „Vaše heslo nesouhlasí".
+- **Testy před/po:** test_funkce 233/1 → 234/0 (B35, + zkouška stropu
+  s existující zakázkou); test_prava 823/14 → 838/0 (blok AUDIT B77,
+  matice práv posílá heslo + řádky „založení správce" a „povýšení na
+  Administrátora", brzda e-mailu i adresy); test_obnova 222/4 → 226/0;
+  test_dialogy 9/1 → 10/0; overit_online 225/0 (založení správce klikem:
+  zrušení / špatné / správné heslo, reset hesla klikem, obnova z otisku
+  se ptá); overit_dialogy 28/0 (skutečný modál s polem password).
+  Mutace: B35 2 nové, B77 8 nových — všechny chycené; --kontrola zelené.
+- **Celé kolo VŠE ZELENÉ** (188 min): sady 232 prošlo / 0 selhalo / 1 přeskočena
+  (test.js), mutace jádra 193/193, mutace serveru 368/368, statické 3/3.
+
 ## v13.10.2 — integrace dávek 13. 10. 2026 do test-draft (větev claude/integrace-13-10b)
 
 Pokyn J. V. 13. 10. 2026: „souhlasím s výchozími, slouč všechny tři větve do

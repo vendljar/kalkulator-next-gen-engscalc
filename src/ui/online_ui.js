@@ -147,7 +147,9 @@ function onlineApi(cesta, telo, metoda) {
   }
   if (metoda) o.method = metoda;
   return fetch(cesta, o).then(r => r.json().catch(() => ({})).then(d => {
-    if (r.status === 401 && ONLINE_STAV.ja) {
+    /* 401 s kódem `hesloSpravce` (B77, 13. 10. 2026) je špatné heslo
+     * k potvrzení citlivé akce, ne vypršelé přihlášení — relace platí dál. */
+    if (r.status === 401 && ONLINE_STAV.ja && d.kod !== 'hesloSpravce') {
       ONLINE_STAV.ja = null; ONLINE_STAV.db = null; ONLINE_STAV.cenikPouzit = false;
       onlineZprava('Přihlášení vypršelo – přihlaste se prosím znovu.', 'varovani');
     }
@@ -1574,7 +1576,23 @@ function onlineUzAkce(telo, hotovo, opts) {
     .then(v => { ONLINE_STAV.pracuje = false; onlineUzivateleObnov(); return v; });
 }
 
-function onlineUzZaloz() {
+/* POTVRZENÍ CITLIVÉ AKCE VLASTNÍM HESLEM (B77, 13. 10. 2026, rozhodnutí J. V.).
+ * Založení správce, povýšení na správce, reset cizího hesla a obnova účtů
+ * z otisku chtějí na serveru heslo přihlášeného správce (`hesloSpravce`) —
+ * kdo má jen jeho cookie, je neprovede. Vrací heslo, nebo null, když správce
+ * dialog zrušil (pak se nic neposílá). Špatné heslo hlásí server (401). */
+async function onlineHesloSpravce(co) {
+  const h = await dotazHeslo('Akce „' + co + '" je citlivá. Potvrďte ji svým heslem '
+    + '(tím, kterým se přihlašujete do aplikace).', { nadpis: 'Potvrzení heslem správce' });
+  if (h === null || h === '') {
+    onlineZprava('Akce „' + co + '" se neprovedla — bez vašeho hesla ji nelze potvrdit.', 'varovani');
+    onlineUzivateleObnov();
+    return null;
+  }
+  return h;
+}
+
+async function onlineUzZaloz() {
   const f = ONLINE_STAV.uzForm;
   const email = String(f.email || '').trim().toLowerCase();
   /* Stejná pravidla jako na serveru, ale s hláškou hned a bez smazání
@@ -1592,8 +1610,14 @@ function onlineUzZaloz() {
    * odejde patička bez telefonu. Povinné nejsou – kdo je nezná, doplní je později. */
   const profil = { titul: String(f.titul || '').trim(), funkce: String(f.funkce || '').trim(),
                    telefon: String(f.telefon || '').trim() };
+  /* Nový správce jen s heslem zakládajícího (B77). */
+  let hesloSpravce;
+  if (f.role === 'Administrátor') {
+    hesloSpravce = await onlineHesloSpravce('založení účtu správce');
+    if (hesloSpravce === null) return false;
+  }
   return onlineUzAkce({ akce: 'zaloz', email, jmeno: String(f.jmeno || '').trim(),
-      role: f.role, heslo: f.heslo, ...profil },
+      role: f.role, heslo: f.heslo, ...profil, ...(hesloSpravce ? { hesloSpravce } : {}) },
     'Účet ' + email + ' (' + f.role + ') je založený. Heslo předejte osobně – e-mailem se neposílá.',
     { poUspechu: () => {
       /* nový účet do tabulky hned z odpovědi; formulář se maže až teď */
@@ -1610,12 +1634,16 @@ function onlineUzHesloPanel(email) {
   onlineUzivateleObnov();
 }
 
-function onlineUzHesloUloz(email) {
+async function onlineUzHesloUloz(email) {
   const el = document.getElementById('onlineUzNoveHeslo');
   const heslo = el ? el.value : '';
-  if (!heslo || heslo.length < 8) { onlineZprava('Nové heslo musí mít aspoň 8 znaků.', 'varovani'); onlineUzivateleObnov(); return; }
+  if (!heslo || heslo.length < 8) { onlineZprava('Nové heslo musí mít aspoň 8 znaků.', 'varovani'); onlineUzivateleObnov(); return false; }
+  /* Reset cizího hesla jen s vlastním heslem správce (B77). Při zrušení
+   * zůstane panel otevřený i s napsaným novým heslem. */
+  const hesloSpravce = await onlineHesloSpravce('reset hesla účtu ' + email);
+  if (hesloSpravce === null) return false;
   ONLINE_STAV.hesloPro = '';
-  onlineUzAkce({ akce: 'heslo', email, heslo },
+  return onlineUzAkce({ akce: 'heslo', email, heslo, hesloSpravce },
     'Heslo účtu ' + email + ' je nastavené. Předejte ho osobně.');
 }
 
@@ -1642,8 +1670,17 @@ function onlineUzKontaktUloz(email) {
     } });
 }
 
-function onlineUzRoleZmen(email, role) {
-  onlineUzAkce({ akce: 'role', email, role }, 'Účet ' + email + ' má roli ' + role + '.');
+async function onlineUzRoleZmen(email, role) {
+  /* Povýšení na správce jen s vlastním heslem (B77). Účet, který správcem
+   * už je, ani snížení role heslo nechtějí — server to posuzuje stejně. */
+  const ucet = (ONLINE_STAV.uzivatele || []).find(u => u.email === email);
+  let hesloSpravce;
+  if (role === 'Administrátor' && !(ucet && ucet.role === 'Administrátor')) {
+    hesloSpravce = await onlineHesloSpravce('povýšení účtu ' + email + ' na správce');
+    if (hesloSpravce === null) return false;
+  }
+  return onlineUzAkce({ akce: 'role', email, role, ...(hesloSpravce ? { hesloSpravce } : {}) },
+    'Účet ' + email + ' má roli ' + role + '.');
 }
 
 /* ---------- archivace účtu a převod zakázek (11. 8. 2026) ----------
@@ -2543,11 +2580,23 @@ function onlineObnovaProved() {
     + 'Uzamčené (odeslané) nabídky se nepřepíšou a nic se nemaže.';
   return potvrd(text).then(async ano => {
     if (!ano) return false;
+    /* Účty z otisku jen s heslem správce (B77, 13. 10. 2026): obnova jim
+     * přepíše otisky hesel. Ze souboru se účty nezapisují (B27) — heslo
+     * se proto chce jen u otisku se zaškrtnutou částí účtů. */
+    let hesloSpravce;
+    if (o.zdrojTyp !== 'soubor' && onlineObnovaCasti().includes('uzivatele')) {
+      hesloSpravce = await dotazHeslo('Obnova vrátí účtům uživatelů stav z otisku včetně hesel. '
+        + 'Potvrďte ji svým heslem (tím, kterým se přihlašujete do aplikace).', { nadpis: 'Potvrzení heslem správce' });
+      if (!hesloSpravce) {
+        o.hlaska = 'Obnova se neprovedla — účty se bez vašeho hesla neobnovují.'; o.hlaskaTyp = 'varovani'; render();
+        return false;
+      }
+    }
     o.pracuje = true; render();
     try {
       let r, upoz, otiskPred;
       if (o.zdrojTyp !== 'soubor') {
-        const d = await onlineApi('/api/obnova', onlineObnovaTelo(false));
+        const d = await onlineApi('/api/obnova', { ...onlineObnovaTelo(false), ...(hesloSpravce ? { hesloSpravce } : {}) });
         r = onlineObnovaSouhrn(d); upoz = d.upozorneni || []; otiskPred = d.otiskPred || '';
       } else {
         /* Po dávkách: začátek (otisk + token) → dávky → konec (rejstřík).

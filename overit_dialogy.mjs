@@ -169,6 +169,26 @@ zkus('druhá otázka přijde na řadu až po první', /Druhá/.test(fronta.text2
 zkus('každá otázka dostane svou odpověď',
   JSON.stringify(fronta.vysledek) === '[true,false]', JSON.stringify(fronta.vysledek));
 
+/* ---------- 8a) dotaz na heslo správce (B77, 13. 10. 2026) ----------
+ * Skutečný modál: pole typu password, prázdné, Enter potvrdí a vrátí, co
+ * se napsalo; Esc vrátí null (akce se pak nepošle). */
+const hesloDlg = await (async () => {
+  const pending = p.evaluate(() => dotazHeslo('Potvrďte svým heslem.', { nadpis: 'Potvrzení heslem správce' }));
+  await p.waitForSelector('#dlg input[data-dlg="text"]');
+  const typ = await p.evaluate(() => document.querySelector('#dlg input[data-dlg="text"]').type);
+  const prazdne = await p.evaluate(() => document.querySelector('#dlg input[data-dlg="text"]').value === '');
+  await p.keyboard.type('Tajne.Heslo1');
+  await p.keyboard.press('Enter');
+  const vysledek = await pending;
+  const pending2 = p.evaluate(() => dotazHeslo('Znovu?'));
+  await p.waitForSelector('#dlg input[data-dlg="text"]');
+  await p.keyboard.press('Escape');
+  return { typ, prazdne, vysledek, zruseno: await pending2 };
+})();
+zkus('B77: dotaz na heslo má pole typu password a je prázdné', hesloDlg.typ === 'password' && hesloDlg.prazdne, JSON.stringify(hesloDlg));
+zkus('B77: Enter vrátí napsané heslo, Esc null',
+  hesloDlg.vysledek === 'Tajne.Heslo1' && hesloDlg.zruseno === null, JSON.stringify(hesloDlg));
+
 /* ---------- 8b) zablokované okno náhledu (23. 9. 2026, nález K6) ----------
  * window.open vrátí null, když prohlížeč okno zablokuje. Dřív náhled spadl
  * na w.document a nestalo se nic viditelného; teď se objeví hláška a do

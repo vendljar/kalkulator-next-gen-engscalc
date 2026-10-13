@@ -159,7 +159,7 @@ test('staré heslo už neplatí', (await post(prihlaseni, 'http://x/api/prihlase
 test('novým heslem se přihlásí', (await (await post(prihlaseni, 'http://x/api/prihlaseni', { email: 'obchodnik@priklad.cz', heslo: 'NoveHeslo123' })).json()).ok === true);
 /* administrátorský reset zpátky (bez znalosti starého — to je jeho role) */
 test('administrátor resetuje heslo bez znalosti starého',
-  (await (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'heslo', email: 'obchodnik@priklad.cz', heslo: 'ObchodHeslo1' }, cookie)).json()).ok === true);
+  (await (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'heslo', email: 'obchodnik@priklad.cz', heslo: 'ObchodHeslo1', hesloSpravce: 'Docasne.Heslo.123' }, cookie)).json()).ok === true);
 const poResetu = await post(prihlaseni, 'http://x/api/prihlaseni', { email: 'obchodnik@priklad.cz', heslo: 'ObchodHeslo1' });
 test('po resetu platí heslo od administrátora', (await poResetu.clone().json()).ok === true);
 cookieObch = (poResetu.headers.get('set-cookie') || '').split(';')[0] || cookieObch;   // reset odhlásil starou relaci (B6)
@@ -456,7 +456,7 @@ const DOCX2 = await docxB64('verze 2');   // jiná data = jiný otisk
   const den1 = { kliky: { 'kalk|BUTTON|nabidkaWord(…)': 2 }, zdrz: { 'kalk|INPUT|sirka': 30 },
                  zalozky: { kalk: 5 }, pocty: { zakazky: 1, kalkulace: 0, tiskyWord: 2, tiskyNahled: 0, prihlaseni: 1, chyby: 0 } };
   await post(analytika, 'http://x/api/analytika', { akce: 'udalosti', den: den1,
-    casy: { '2026-OPR-CN-0001': { ock: 120, proj: 30 } } }, cookieObch);
+    casy: { '2026-OPR-CN-0777': { ock: 120, proj: 30 } } }, cookieObch);
   await post(analytika, 'http://x/api/analytika', { akce: 'udalosti', den: den1 }, cookieObch);
   const ulozeny = await uloz.cti('den/' + dnes);
   test('analytika: dávky se PŘIČÍTAJÍ do denního agregátu (žádné záznamy po lidech)',
@@ -476,16 +476,29 @@ const DOCX2 = await docxB64('verze 2');   // jiná data = jiný otisk
 
   /* čas zakázky se akumuluje pod číslem zakázky */
   await post(analytika, 'http://x/api/analytika', { akce: 'udalosti',
-    casy: { '2026-OPR-CN-0001': { ock: 60, proj: 0 } } }, cookieObch);
-  const cas = await uloz.cti('cas/2026-OPR-CN-0001');
+    casy: { '2026-OPR-CN-0777': { ock: 60, proj: 0 } } }, cookieObch);
+  const cas = await uloz.cti('cas/2026-OPR-CN-0777');
   test('analytika: čas zakázky se akumuluje odděleně OCK / PROJ',
     cas && cas.ock === 180 && cas.proj === 30);
+
+  /* B35 (13. 10. 2026, J. V. „Ano"): klíč cas/ jen pro zakázku, která
+   * v databázi existuje (rejstřík). Číslo jde poslat tak, jak ho nese
+   * hlavička (s mezerami), i ve tvaru jména souboru. Smyšlené číslo klíč
+   * nezaloží. */
+  await post(analytika, 'http://x/api/analytika', { akce: 'udalosti',
+    casy: { '2026 - OPR - CN - 0777': { ock: 7 }, '2026-OPR-CN-9991': { ock: 9 }, 'B35-SMYSLENA': { proj: 4 } } }, cookieObch);
+  test('B35: čas k existující zakázce (číslo s mezerami jako v hlavičce) se zapíše',
+    ((await uloz.cti('cas/2026 - OPR - CN - 0777')) || {}).ock === 7, await uloz.cti('cas/2026 - OPR - CN - 0777'));
+  test('B35: smyšlené číslo zakázky klíč cas/ nezaloží',
+    !(await uloz.cti('cas/2026-OPR-CN-9991')) && !(await uloz.cti('cas/B35-SMYSLENA')),
+    (await uloz.seznam('cas/')).join(','));
+  await uloz.smaz('cas/2026 - OPR - CN - 0777');
 
   /* souhrn pro administrátora */
   const preh = await (await get(analytika, 'http://x/api/analytika?od=2020-01-01&do=2099-12-31', cookie)).json();
   test('analytika: souhrn nese celkové počty i řadu po měsících',
     preh.celkem.pocty.zakazky === 2 && preh.poMesicich[dnes.slice(0, 7)].pocty.zakazky === 2);
-  test('analytika: souhrn nese časy zakázek', preh.casy['2026-OPR-CN-0001'].ock === 180);
+  test('analytika: souhrn nese časy zakázek', preh.casy['2026-OPR-CN-0777'].ock === 180);
 
   /* retence: den starší 24 měsíců zmizí při dalším zápisu */
   await uloz.zapis('den/2023-01-15', den1);
@@ -517,13 +530,26 @@ const DOCX2 = await docxB64('verze 2');   // jiná data = jiný otisk
     const N = typeof strop === 'number' ? strop : 5000;
     const mame = (await uloz.seznam('cas/')).length;
     for (let i = mame; i < N; i++) await uloz.zapis('cas/B35-' + i, { ock: 1, proj: 0 });
+    /* Nová zakázka musí existovat — jinak by test hlídal B35-rejstřík,
+     * ne strop. Uloží se jako z aplikace (administrátor, bez zámku). */
+    const zS = zk.novaZakazka(); zS.cislo = '2026 - OPR - CN - 0935'; zS.nazevAkce = 'Strop B35';
+    const ulS = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zS }, cookie)).json();
+    test('B35: zakázka pro zkoušku stropu se uložila', ulS.ok === true, JSON.stringify(ulS).slice(0, 160));
     const ex = (await uloz.seznam('cas/B35-'))[0].slice(4);
     const exPred = +((await uloz.cti('cas/' + ex)) || {}).ock || 0;
     await post(analytika, 'http://x/api/analytika', { akce: 'udalosti',
-      casy: { 'B35-NOVA-1': { ock: 5 }, [ex]: { ock: 2 } } }, cookieObch);
-    test('B35: nad stropem nová zakázka klíč cas/ nezaloží', !(await uloz.cti('cas/B35-NOVA-1')), (await uloz.seznam('cas/')).length);
+      casy: { '2026 - OPR - CN - 0935': { ock: 5 }, [ex]: { ock: 2 } } }, cookieObch);
+    test('B35: nad stropem ani existující nová zakázka klíč cas/ nezaloží', !(await uloz.cti('cas/2026 - OPR - CN - 0935')), (await uloz.seznam('cas/')).length);
     test('B35: existující zakázka se přičítá dál', ((await uloz.cti('cas/' + ex)) || {}).ock === exPred + 2, await uloz.cti('cas/' + ex));
     for (const k of await uloz.seznam('cas/B35-')) await uloz.smaz(k);
+    /* pod stropem už klíč vznikne — strop je opravdu jen druhá pojistka */
+    await post(analytika, 'http://x/api/analytika', { akce: 'udalosti',
+      casy: { '2026 - OPR - CN - 0935': { ock: 5 } } }, cookieObch);
+    test('B35: pod stropem existující zakázka klíč cas/ dostane',
+      ((await uloz.cti('cas/2026 - OPR - CN - 0935')) || {}).ock === 5);
+    await uloz.smaz('cas/2026 - OPR - CN - 0935');
+    await zakazky(new Request('http://x/api/zakazky?soubor=' + encodeURIComponent(ulS.soubor || ''),
+      { method: 'DELETE', headers: { cookie } }));
   }
 }
 

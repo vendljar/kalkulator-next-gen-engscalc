@@ -60,6 +60,10 @@ const dlgStub = async (page) => page.evaluate(() => {
   window.potvrd = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(true); };
   window.hlaska = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(); };
   window.dotaz = (t, v) => { window.__dlgTexty.push(String(t)); return Promise.resolve(v == null ? '' : v); };
+  /* Heslo správce k citlivé akci (B77, 13. 10. 2026): odpověď si harness
+   * nastaví ve `window.__dlgHeslo` (null = správce dialog zrušil). */
+  window.dotazHeslo = (t) => { window.__dlgTexty.push(String(t));
+    return Promise.resolve(window.__dlgHeslo === undefined ? null : window.__dlgHeslo); };
 });
 const dlgPosledni = async (page) => page.evaluate(() =>
   (window.__dlgTexty && window.__dlgTexty.length) ? window.__dlgTexty[window.__dlgTexty.length - 1] : '');
@@ -858,6 +862,8 @@ const tlObnovit = () => page.evaluate(() => {
 test('panel obnovy je vidět a bez náhledu je tlačítko Obnovit databázi zhasnuté',
   (await dbPanel()).includes('id="online-obnova"') && (await tlObnovit()) === true);
 const rejPred = await page.evaluate(() => ONLINE_STAV.rejstrik.length);
+/* B77: obnova z otisku se všemi částmi (i účty) chce heslo správce. */
+await page.evaluate(() => { window.__dlgHeslo = 'Zkusebni.Heslo.123'; });
 await page.evaluate(() => onlineObnovaZmena('rezim', 'prepsat'));
 await page.evaluate(() => onlineObnovaNahled());
 await page.waitForFunction(() => { try { return !ONLINE_STAV.obnova.pracuje && !!ONLINE_STAV.obnova.nahled; } catch (e) { return false; } },
@@ -907,9 +913,14 @@ test('ostrá obnova proběhla (panel má výsledek, ne chybu)',
  * řádek „Poslední obnova" v panelu — ten se hlídá. */
 test('panel ukazuje poslední obnovu',
   /Poslední obnova/.test(await dbPanel()));
+test('B77: obnova účtů z otisku si vyžádala heslo správce',
+  await page.evaluate(() => window.__dlgTexty.some(t => /Potvrďte ji svým heslem/.test(t))));
+/* Od B77 (13. 10. 2026) po potvrzení přijde ještě dotaz na heslo správce —
+ * potvrzovací text je proto předposlední, ne poslední. */
+const dlgObnova = await page.evaluate(() => (window.__dlgTexty || []).find(t => /Zapíše se/.test(t)) || '');
 test('potvrzovací dialog říká, kolik se zapíše, že vznikne otisk a že se zamčené nepřepíšou',
-  /Zapíše se \d+ záznam/.test(await dlgPosledni(page)) && /otisk/.test(await dlgPosledni(page))
-  && /Uzamčené/.test(await dlgPosledni(page)), await dlgPosledni(page));
+  /Zapíše se \d+ záznam/.test(dlgObnova) && /otisk/.test(dlgObnova)
+  && /Uzamčené/.test(dlgObnova), dlgObnova);
 test('obnova zakázku vrátila (rejstřík má zase původní počet a tu zakázku)',
   await page.evaluate(() => ONLINE_STAV.rejstrik.length) === rejPred
   && await page.evaluate((s) => ONLINE_STAV.rejstrik.some(z => z.soubor === s), smazana),
@@ -1112,6 +1123,50 @@ test('správce opraví telefon obchodníka a uloží se na server',
   JSON.parse(pamet.get('uzivatele/obchodnik@priklad.cz') || '{}').telefon === '+420 700 000 395',
   pamet.get('uzivatele/obchodnik@priklad.cz'));
 test('hláška potvrdí uložení kontaktu', (await nastav()).includes('Kontakt účtu obchodnik@priklad.cz je uložený'));
+/* B77 (13. 10. 2026, rozhodnutí J. V.): založení správce a reset cizího
+ * hesla klikem — aplikace si vyžádá heslo přihlášeného správce. Zrušení
+ * nic nepošle, špatné heslo nahlásí a neodhlásí, správné akci provede. */
+{
+  const zalozSpravce = async (heslo, email) => {
+    await page.evaluate((h) => { window.__dlgHeslo = h; window.__dlgTexty = []; }, heslo);
+    await page.fill('#onlineUzEmail', email);
+    await page.fill('#onlineUzJmeno', 'Druhý Správce');
+    await page.selectOption('#onlineUzRole', 'Administrátor');
+    await page.fill('#onlineUzHeslo', 'SpravceHeslo12');
+    await page.click('#nastaveni-panel >> text=Založit účet');
+    await page.waitForFunction(() => { try { return !ONLINE_STAV.pracuje; } catch (e) { return false; } });
+    await page.waitForTimeout(300);
+  };
+  await zalozSpravce(null, 'spravce2@priklad.cz');
+  test('B77: založení správce se ptá na heslo správce',
+    await page.evaluate(() => window.__dlgTexty.some(t => /Potvrďte ji svým heslem/.test(t))));
+  test('B77: zrušený dialog účet nezaloží a řekne proč',
+    !pamet.has('uzivatele/spravce2@priklad.cz') && (await nastav()).includes('neprovedla'));
+  await zalozSpravce('Urcite.Spatne.1', 'spravce2@priklad.cz');
+  test('B77: se špatným heslem správce účet nevznikne a hláška to řekne',
+    !pamet.has('uzivatele/spravce2@priklad.cz') && (await nastav()).includes('heslo nesouhlasí'),
+    await page.evaluate(() => ONLINE_STAV.hlaska));
+  test('B77: špatné heslo správce neodhlásí (401 s kódem hesloSpravce)',
+    await page.evaluate(() => !!ONLINE_STAV.ja));
+  await zalozSpravce('Zkusebni.Heslo.123', 'spravce2@priklad.cz');
+  test('B77: se správným heslem správce se účet správce založí',
+    JSON.parse(pamet.get('uzivatele/spravce2@priklad.cz') || '{}').role === 'Administrátor',
+    await page.evaluate(() => ONLINE_STAV.hlaska));
+
+  /* reset hesla obchodníka klikem: Nové heslo… → pole → Uložit heslo */
+  const otiskPred = JSON.parse(pamet.get('uzivatele/obchodnik@priklad.cz') || '{}').heslo;
+  await page.evaluate(() => { window.__dlgHeslo = 'Zkusebni.Heslo.123'; window.__dlgTexty = []; onlineUzHesloPanel('obchodnik@priklad.cz'); });
+  await page.waitForTimeout(200);
+  await page.fill('#onlineUzNoveHeslo', 'ObchodniHeslo1');   // totéž heslo — dál se jím obchodník přihlašuje; otisk se změní solí
+  await page.click('#nastaveni-panel >> text=Uložit heslo');
+  await page.waitForFunction(() => { try { return !ONLINE_STAV.pracuje && /je nastavené/.test(ONLINE_STAV.hlaska); } catch (e) { return false; } },
+    null, { timeout: 8000 }).catch(() => {});
+  test('B77: reset hesla klikem se ptá na heslo správce a projde',
+    await page.evaluate(() => window.__dlgTexty.some(t => /reset hesla/.test(t)))
+    && JSON.parse(pamet.get('uzivatele/obchodnik@priklad.cz') || '{}').heslo !== otiskPred,
+    await page.evaluate(() => ONLINE_STAV.hlaska));
+  await page.evaluate(() => { window.__dlgHeslo = undefined; });
+}
 await page.evaluate(() => { ONLINE_STAV.uzForm = { email: '', jmeno: '', role: 'Obchodník', heslo: '' }; zavriNastaveni(); });
 
 /* ---- 7) záloha ke stažení ---- */

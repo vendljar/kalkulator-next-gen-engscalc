@@ -112,7 +112,10 @@ const admA = await prihlas(ADMIN_EMAIL, 'Docasne.Heslo.123');
 test('A: administrátor se přihlásí náhradním heslem (ADMIN_INIT_HESLO)', admA.json.ok === true, admA.json);
 const nA = await (await post(obnova, 'http://x/api/obnova', { zdroj: { otisk: noc.den }, rezim: 'doplnit', nahled: true }, admA.cookie)).json();
 test('A: náhled z nočního otisku slibuje 3 nové zakázky', nA.ok && nA.casti.zakazky.nove === 3, nA.casti && nA.casti.zakazky);
-const oA = await (await post(obnova, 'http://x/api/obnova', { zdroj: { otisk: noc.den }, rezim: 'doplnit', potvrzeni: 'OBNOVIT' }, admA.cookie)).json();
+const oA = await (await post(obnova, 'http://x/api/obnova', { zdroj: { otisk: noc.den }, rezim: 'doplnit', potvrzeni: 'OBNOVIT',
+  /* B77: účty z otisku jen s heslem správce — po havárii tím, kterým se
+   * právě přihlásil (ADMIN_INIT_HESLO). */
+  hesloSpravce: 'Docasne.Heslo.123' }, admA.cookie)).json();
 test('A: obnova proběhla', oA.ok === true, oA);
 const poA = await stav(admA.cookie);
 test('A: zpátky jsou 3 zakázky, ceník v2 i firma', poA.zakazek === 3 && poA.cenikVerze === 2 && /před havárií/.test(poA.firma), poA);
