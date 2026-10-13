@@ -34,6 +34,15 @@ Komunikace česky. Know-how projektu je ve skillech `kalkulator-next-gen`,
   `https://github.com/vendljar/kalkulator-next-gen-engscalc/releases/new?tag=vD.M.N&target=<plný SHA>&title=…`
   a na konci dávky vypsat verze, které release ještě nemají (tagy a releasy
   ověřit přes GitHub, ne odhadem).
+- **Každý odkaz na nový release nese i popis změn (pravidlo J. V.
+  13. 10. 2026)** — parametr `&body=` (URL-kódovaný) s krátkým souhrnem
+  z CHANGELOG: co je nové, co opravené (čísla roadmapy a nálezů), výsledek
+  kola; bez cen a osobních údajů. Odkaz vyrobí
+  `python3 nastroje/release_odkaz.py <verze> <plný SHA>` (oddíly
+  `## v<verze>` z CHANGELOG, test `src/test_release_odkaz.js`). U už
+  vydaného releasu bez popisu poslat odkaz na úpravu
+  `…/releases/edit/v<verze>` a text k vložení
+  (`python3 nastroje/release_odkaz.py <verze> --upravit`).
 - Tagy jsou jednoduché (lightweight) ve tvaru `vDEN.MĚSÍC.pořadí`.
 - Sloučené pomocné větve maže J. V. — poslat odkaz
   `https://github.com/vendljar/kalkulator-next-gen-engscalc/branches/all?query=<větev>`.
