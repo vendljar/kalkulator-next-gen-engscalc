@@ -660,10 +660,15 @@ await p.goto(KDE);
 await p.waitForTimeout(600);
 {
   const cb = p.locator('input[onchange^="prohlubenSkloSet"]');
-  zkus('P2: pod polem Prohlubeň je zaškrtávátko „Prosklít i prohlubeň" (nezaškrtnuté)',
+  zkus('P2: pod polem Prohlubeň je zaškrtávátko „Opláštit i prohlubeň" (nezaškrtnuté)',
     await cb.count() === 1 && !(await cb.isChecked()), await cb.count());
-  zkus('P2: pole Prohlubeň nese nápovědu k prosklení prohlubně',
-    /Prosklít i prohlubeň/.test(await p.locator('input[onchange^="prohlubenSet"]').getAttribute('title') || ''));
+  /* Přejmenování 13. 10. 2026 (J. V.): popisek řádku je „Opláštit i prohlubeň", „Prosklít" už nikde. */
+  zkus('P2: popisek řádku je „Opláštit i prohlubeň" a „Prosklít" v aplikaci není',
+    await p.evaluate(() => { const i = document.querySelector('input[onchange^="prohlubenSkloSet"]');
+      const l = i && i.closest('.row') && i.closest('.row').querySelector('label');
+      return !!l && l.textContent.trim() === 'Opláštit i prohlubeň' && !/Prosklít/i.test(document.body.innerText); }));
+  zkus('P2: pole Prohlubeň nese nápovědu k opláštění prohlubně',
+    /Opláštit i prohlubeň/.test(await p.locator('input[onchange^="prohlubenSet"]').getAttribute('title') || ''));
   /* Nulová prohlubeň: zaškrtnutí nic nezmění (zaškrtávátko se nezakazuje —
    * vstupy kalkulace zůstávají živé, overit_lista.mjs). */
   await p.evaluate(() => { window.hlaska = () => Promise.resolve(); });

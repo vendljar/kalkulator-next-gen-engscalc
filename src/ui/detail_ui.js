@@ -353,8 +353,8 @@ function renderDetail() {
     ] : []),
     /* P2 (K19-N104): prohlubeň prosklená zkratkou — všechny stěny od −prohlubeň. */
     ...((typeof oplasteniProhlubenVse === 'function' && oplasteniProhlubenVse(Z)) ? [
-      ['Prosklená prohlubeň', `všechny stěny od −${M(Z.prohluben, 2)} m`,
-        'zkratka „Prosklít i prohlubeň" v zadání šachty: opláštění po stěnách, každá stěna začíná v −prohlubeň; '
+      ['Opláštěná prohlubeň', `všechny stěny od −${M(Z.prohluben, 2)} m`,
+        'zkratka „Opláštit i prohlubeň" v zadání šachty: opláštění po stěnách, každá stěna začíná v −prohlubeň; '
         + 'plocha pod nulou se počítá skutečnou šířkou stěny (krok opláštění po stěnách)']] : []),
     ['Boční + zadní m²', `${M(z.bokyZadniM2, 2)} m²`, 'materiál boční/zadní stěna; ve standardu sem patří i světlíky u dveří z materiálu opláštění (#375 — materiál stěn B, C, D)'],
     ['Čelní m²', `${M(z.celniM2, 2)} m²`, Z.pruchoziSachta ? 'materiál čelní stěna: světlíky + patra bez dveří A' : 'materiál čelní stěna (světlíky)'],

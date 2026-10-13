@@ -8,6 +8,39 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## větev claude/k22-p2-p6 (neuvolněno)
+
+Paralelní větev z `test-draft` = `1df7283` (v12.10.4) podle promptu J. V.
+`PROMPT_PARALELNI_VETEV_K22_P2_P6.md` (rozhodnutí J. V. 13. 10. 2026 k bodům
+P2–P6 z 19. kola). Verze ve větvi v13.10.1 (sjednotí J. V. při integraci).
+Nahrazuje podobu **P2 a P6 z v2.10.1** (větev `claude/k19-nalezy`, výchozí
+návrhy). P4 a P5 zůstávají, jak jsou (rozhodnutí J. V. 13. 10.); hodiny
+statického posouzení opláštění (P5) nastaví J. V. v Ceníku OCK sám — ceník
+se ve větvi nemění.
+
+### P2 · K19-N104 — „Opláštit i prohlubeň" (místo „Prosklít i prohlubeň")
+
+Rozhodnutí J. V. 13. 10. 2026: řešení P2 z main je v pořádku, jen se
+zaškrtávátko v zadání šachty přejmenuje. Zkratka nastaví všem stěnám A–D
+„Opláštění začíná" = −prohlubeň a opláštění stěny nemusí být sklo (typ
+stěny může být plech) — název má říkat, co zkratka dělá.
+- Zadání šachty: popisek „Opláštit i prohlubeň", nápověda pole Prohlubeň
+  („Opláštění i v prohlubni: zaškrtněte „Opláštit i prohlubeň"…"),
+  nápověda zaškrtávátka („opláštění i v prohlubni", „není co opláštit")
+  a hláška u nulové prohlubně („není co opláštit").
+- Detail výpočtu: řádek „Opláštěná prohlubeň" a odkaz na zkratku novým
+  názvem. Příručka text zkratky nenesla (beze změny).
+- Jen texty: názvy funkcí (`prohlubenSkloSet`, `prohlubenSkloRadek`,
+  `oplasteniProhlubenNastav/Vse/Sleduj`), uložená data ani výpočet se
+  nemění. Komentáře a starší záznamy CHANGELOG zůstávají (historie).
+- Test `src/test_oplastit_prohluben.js`: texty UI, detailu a příručky
+  (a dist po sestavení) + otisk zadání po zaškrtnutí/odškrtnutí shodný
+  s 1df7283 (sha256). Před opravou 1 OK / 5 FAIL, po ní 7 OK / 0 FAIL.
+  `overit_oplasteni.mjs` přepsán na nový název (+1 kontrola popisku
+  řádku, 92 OK), `overit_lista.mjs` 271/271.
+
+---
+
 ## v12.10.4 — integrace nočních dávek N1–N3 (větev claude/integrace-13-10)
 
 Integrační větev z `test-draft` (v12.10.2, d562da1), merge commity (bez

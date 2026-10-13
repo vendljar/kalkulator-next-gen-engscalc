@@ -1,3 +1,22 @@
+# Předávka — 13. 10. 2026: paralelní větev `claude/k22-p2-p6` (P2 + P6, v13.10.1)
+
+Subagent sezení session_01WrUq3gXEhsWk8cxRWfPvsg podle promptu J. V.
+`PROMPT_PARALELNI_VETEV_K22_P2_P6.md`. Větev z `test-draft` = `1df7283`
+(v12.10.4). Do `test-draft`/`test`/`main` nic; o sloučení rozhoduje J. V.
+Netlify: produkční větve jsou `main` (ostrá) a `test` (testovací), branch
+deploy pro `claude/…` v `netlify.toml` ani v `NASAZENI_NETLIFY.md` není.
+
+| Bod | Stav |
+|---|---|
+| P2 — „Opláštit i prohlubeň" | hotovo (commit P2), test `src/test_oplastit_prohluben.js` |
+| P6 — zámek strany: vyřazená strana zamčená a vynulovaná | rozpracováno |
+| celé testovací kolo | čeká |
+
+Souběžně: větev `claude/davka-13-10` mění `zahrJenRealizaceNabidnout`
+(`src/zakazka.js`, B129) — při slučování s P6 čekat konflikt.
+
+---
+
 # Předávka — 12. 10. 2026 noc: integrace N1–N3 ve větvi `claude/integrace-13-10` (v12.10.4)
 
 Integrační subagent koordinačního sezení session_01CKiH2sXWq6U8xoJwqivhiN.
