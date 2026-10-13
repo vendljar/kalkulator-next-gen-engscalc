@@ -424,8 +424,18 @@ function cenikPrepocti(v, dnesni, opts) {
    * `opts.chranena` dovoluje volajícímu pravidlo zpřísnit — u ROZDĚLANÉ
    * zakázky jsou zakázkové hodnoty rozhodnutím vždycky (nález V23). */
   const chranena = (typeof opts.chranena === 'function') ? opts.chranena : cenikChranena;
+  /* Nula místo ceny dnešního ceníku (B138, rozhodnutí J. V. 12. 10. 2026):
+   * klíč, který starší verze neměla (import ho doplnil nulou), se přepočítá
+   * i při výběru položek — server směs s takovou nulou odmítne. Zakázkové
+   * hodnoty (přirážka, DPH) zůstávají rozhodnutím obchodníka. */
+  /* Jen tam, kde to server vynucuje: role bez práva měnit ceník části
+   * (`opts.vynutNuly` = { OCK, PROJ }; bez něj obojí). Kdo ceník měnit smí,
+   * tomu odškrtnutá položka zůstane, jak slibuje okno přepočtu (revize 13. 10.). */
+  const vynut = opts.vynutNuly || { OCK: true, PROJ: true };
+  const nulaMistoCeny = (r) => !!vynut[r.sekce] && (r.stara === 0 || r.stara === undefined || r.stara === '')
+    && typeof r.nova === 'number' && r.nova !== 0 && !chranena(v.data, r.cesta);
   const rozdily = cenikRozdily(v.data, dnesni)
-    .filter(r => (vyber ? vyber.has(r.cesta) : !chranena(v.data, r.cesta)));
+    .filter(r => (vyber ? (vyber.has(r.cesta) || nulaMistoCeny(r)) : !chranena(v.data, r.cesta)));
   rozdily.forEach(r => cenikNastavHodnotu(v.data, r.cesta, r.nova));
   /* Přepočet po vybraných položkách (dohodnutá cena skla zůstává) nechává
    * ceník jako směs: část z nové verze, část z původní dohody. Takový ceník

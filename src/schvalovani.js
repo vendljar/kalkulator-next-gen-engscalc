@@ -382,13 +382,25 @@ function schvalovaniSouhrn(seznam) {
  *
  * Vrací { ok:true } nebo { ok:false, chyba } a v `nova` doplní razítka.
  * `relace` = { email, jmeno, role }, `nast` = program.db.slevy (stropy). */
-function schvalovaniRozhodnutiKlic(sl) {
+/* `bezCasu` (B105, 13. 10. 2026): čas rozhodnutí razí server, takže se do
+ * porovnání „je to pořád totéž rozhodnutí" nepočítá — prohlížeč drží svůj
+ * čas z okamžiku kliknutí až do příštího načtení. */
+function schvalovaniRozhodnutiKlic(sl, bezCasu) {
   if (!sl) return '';
   const lidske = sl.stav === SCHV_SCHVALENO || (sl.stav === SCHV_ZAMITNUTO && !!sl.zamitl);
   if (!lidske) return '';
   return JSON.stringify({ stav: sl.stav, p: +sl.procenta || 0,
-    sp: sl.schvalenoProc, s: sl.schvalil || '', sk: sl.schvalilKdy || '',
-    zp: sl.zamitnutoProc, z: sl.zamitl || '', zk: sl.zamitlKdy || '' });
+    sp: sl.schvalenoProc, s: sl.schvalil || '', sk: bezCasu ? '' : (sl.schvalilKdy || ''),
+    zp: sl.zamitnutoProc, z: sl.zamitl || '', zk: bezCasu ? '' : (sl.zamitlKdy || '') });
+}
+const SCHV_STAVY = [SCHV_BEZ, SCHV_AUTO, SCHV_CEKA, SCHV_SCHVALENO, SCHV_ZAMITNUTO];
+/* Čas rozhodnutí z prohlížeče je věrohodný, když je nejvýš 10 minut od
+ * času serveru (B105 — autosave běží hned po kliknutí). */
+const SCHV_KDY_TOLERANCE_MS = 10 * 60 * 1000;
+function schvalovaniKdyBlizko(kdy, ted) {
+  const a = Date.parse(String(kdy || '')), b = Date.parse(ted);
+  return typeof kdy === 'string' && /^\d{4}-\d\d-\d\dT/.test(kdy) && isFinite(a) && isFinite(b)
+    && Math.abs(a - b) <= SCHV_KDY_TOLERANCE_MS;
 }
 /* Pole rozhodnutí, která se u vrácené žádosti obnoví z uložené verze. */
 const SCHV_ROZHODNUTI_POLE = ['stav', 'schvalenoProc', 'schvalil', 'schvalilKdy', 'schvalilEmail',
@@ -400,6 +412,12 @@ function schvalovaniServerKontrola(stara, nova, relace, nast) {
   const stare = (stara && Array.isArray(stara.varianty)) ? stara.varianty : [];
   const ted = new Date().toISOString();
   for (const v of ((nova && Array.isArray(nova.varianty)) ? nova.varianty : [])) {
+    for (const cast of ['sleva', 'slevaProj']) {
+      const sl0 = v && v.data && v.data[cast];
+      /* Stav jen z výčtu (revize 13. 10.): „xyz" by obešel větve níž. */
+      if (sl0 && sl0.stav != null && SCHV_STAVY.indexOf(sl0.stav) < 0)
+        return { ok: false, chyba: 'Neznámý stav slevy „' + String(sl0.stav).slice(0, 40) + '".' };
+    }
     if (!v || !v.data) continue;
     const sv = stare.find(x => x && x.id === v.id);
     for (const cast of ['sleva', 'slevaProj']) {
@@ -416,19 +434,51 @@ function schvalovaniServerKontrola(stara, nova, relace, nast) {
       const zmenaProc = !ulozene || (+ulozene.procenta || 0) !== p;
       if (zmenaProc) { if (role) sl.role = role; }
       else if (ulozene && ulozene.role != null) sl.role = ulozene.role;
-      const klicNovy = schvalovaniRozhodnutiKlic(sl);
-      if (klicNovy && klicNovy === schvalovaniRozhodnutiKlic(ulozene)) continue;   // beze změny
+      const klicNovy = schvalovaniRozhodnutiKlic(sl, true);
+      const klicUlozeny = schvalovaniRozhodnutiKlic(ulozene, true);
+      if (klicNovy && klicNovy === klicUlozeny) {                               // beze změny
+        /* Rozhodnutí zůstává celé tak, jak ho uložil server — čas (B105),
+         * e-mail i důvod zamítnutí (revize 13. 10.: e-mail a důvod šly
+         * podvrhnout i u „beze změny"). */
+        SCHV_ROZHODNUTI_POLE.forEach(k => {
+          if (ulozene[k] !== undefined) sl[k] = ulozene[k]; else delete sl[k];
+        });
+        continue;
+      }
       if (klicNovy) {
         if (!schvalovaniSmiRozhodnout(role, p, nast))
           return { ok: false, chyba: 'Slevu ' + p + ' % smí schválit nebo zamítnout jen '
             + 'nadřízený s dostatečným stropem; role ' + (role || '?') + ' na to právo nemá.' };
+        /* ČAS ROZHODNUTÍ HLÍDÁ SERVER (B105, audit 9. 9. 2026). Dřív se bral
+         * čas z prohlížeče, ať byl jakýkoli — rozhodnutí šlo antedatovat
+         * (třeba před odeslání nabídky). Čas z prohlížeče se přijme jen
+         * blízko času serveru (okamžik kliknutí před autosave); jinak razí
+         * server. Bez té tolerance by prohlížeč držel jiný čas než server
+         * a zámek nabídky vytištěné hned po schválení by při dalším uložení
+         * nesouhlasil (409; revize 13. 10.). */
+        const kdy = (k) => schvalovaniKdyBlizko(sl[k], ted) ? sl[k] : ted;
         if (sl.stav === SCHV_SCHVALENO) {
-          sl.schvalil = jmeno; sl.schvalilEmail = relace.email || '';
-          if (!sl.schvalilKdy) sl.schvalilKdy = ted;
+          sl.schvalil = jmeno; sl.schvalilEmail = relace.email || ''; sl.schvalilKdy = kdy('schvalilKdy');
         } else {
-          sl.zamitl = jmeno; sl.zamitlEmail = relace.email || '';
-          if (!sl.zamitlKdy) sl.zamitlKdy = ted;
+          sl.zamitl = jmeno; sl.zamitlEmail = relace.email || ''; sl.zamitlKdy = kdy('zamitlKdy');
         }
+        continue;
+      }
+      /* ROZHODNUTÍ ZPĚT NA „ČEKÁ" JEN S PRÁVEM ROZHODNOUT (B101, audit 9. 9.
+       * 2026). „Vzít rozhodnutí zpět" (schvalovaniVrat) je krok nadřízeného;
+       * bez změny procent ho obchodník uložením neprovede — zamítnutí by tak
+       * zmizelo a žádost by se vrátila do fronty, jako by o ní nikdo nerozhodl.
+       * Vrací se uložené rozhodnutí (stejně jako u cizího auto-schválení). */
+      /* Revize 13. 10.: nejen „čeká" — i prázdný či automatický stav nebo
+       * zamítnutí bez jména by rozhodnutí smazaly. */
+      /* Výjimka: schválená sleva, kterou prohlížeč sám přepnul na zamítnutí
+       * pod minimální marží (bez jména) — sleva tím do ceny nejde, takže je
+       * to bezpečný směr a uložení se nesmí zastavit o kontrolu marže. */
+      const podMarzi = sl.stav === SCHV_ZAMITNUTO && !sl.zamitl && ulozene && ulozene.stav === SCHV_SCHVALENO;
+      if (klicUlozeny && !zmenaProc && !podMarzi && !schvalovaniSmiRozhodnout(role, p, nast)) {
+        SCHV_ROZHODNUTI_POLE.forEach(k => {
+          if (ulozene[k] !== undefined) sl[k] = ulozene[k]; else delete sl[k];
+        });
         continue;
       }
       const autoBezeZmeny = !!ulozene && ulozene.stav === SCHV_AUTO && (+ulozene.procenta || 0) === p;
@@ -510,7 +560,7 @@ function schvalovaniServerMarze(stara, nova, jekly, nast) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { SCHV_BEZ, SCHV_AUTO, SCHV_CEKA, SCHV_SCHVALENO, SCHV_ZAMITNUTO,
+  module.exports = { SCHV_BEZ, SCHV_AUTO, SCHV_CEKA, SCHV_SCHVALENO, SCHV_ZAMITNUTO, SCHV_STAVY, schvalovaniKdyBlizko,
                      schvalovaniRozhodnutiKlic, schvalovaniServerKontrola,
                      schvalovaniZakladCasti, schvalovaniServerMarze,
                      SCHV_PORADI, SCHV_POPIS, SCHV_ROLE_VYCHOZI,

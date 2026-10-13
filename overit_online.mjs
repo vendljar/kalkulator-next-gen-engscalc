@@ -119,6 +119,11 @@ const ADRESA = 'http://127.0.0.1:' + server.address().port;
 const prohlizec = await chromium.launch({ args: ['--no-sandbox'] });
 const ctx = await prohlizec.newContext({ acceptDownloads: true });
 const page = await ctx.newPage();
+/* Hlídač (13. 10. 2026): page.evaluate nad skutečným modálem (po selhání B59
+ * neuložená zakázka → dotaz „neuložené změny") by visel donekonečna a celé
+ * kolo s ním. Každý krok má strop, nezachycená chyba harness ukončí kódem 1. */
+const { hlidejHarness } = require('./nastroje/harness_hlidac.js');
+hlidejHarness({ page, uklid: async () => { await prohlizec.close(); server.close(); } });
 
 const chyby = [];
 page.on('console', m => {
@@ -1062,6 +1067,17 @@ test('nový účet obchodníka se založil klikem z Nastavení',
   await page.evaluate(() => ONLINE_STAV.uzivatele.some(u => u.email === 'obchodnik@priklad.cz' && u.role === 'Obchodník')));
 test('založení potvrzuje hláška přímo v panelu a nový řádek v tabulce',
   (await nastav()).includes('je založený') && (await nastav()).includes('obchodnik@priklad.cz'));
+/* B77-zbytek (13. 10. 2026): vlastní řádek nabízí změnu hesla se starým
+ * (otevře dialog „Změnit heslo"), cizí řádek reset „Nové heslo…". */
+{
+  const radky = await page.evaluate(() => [...document.querySelectorAll('#nastaveni-panel tr')]
+    .map(tr => tr.textContent).filter(t => /@priklad\.cz/.test(t)));
+  const muj = radky.find(t => t.includes('spravce@priklad.cz')) || '';
+  const cizi = radky.find(t => t.includes('obchodnik@priklad.cz')) || '';
+  test('B77-zbytek: vlastní účet v seznamu nabízí „Změnit heslo…", ne reset',
+    muj.includes('Změnit heslo…') && !muj.includes('Nové heslo…'), muj.slice(0, 300));
+  test('B77-zbytek: cizí účet dál nabízí reset „Nové heslo…"', cizi.includes('Nové heslo…'), cizi.slice(0, 300));
+}
 test('po úspěchu se formulář vyprázdnil',
   await page.evaluate(() => document.getElementById('onlineUzEmail').value === ''
     && document.getElementById('onlineUzHeslo').value === ''));
@@ -1530,6 +1546,8 @@ test('lišta uzamčené varianty nabízí za Klonovat i Založit novou zakázku 
     JSON.stringify(upraveny));
   test('B59: po otevření ze serveru ukazuje rozpor lišta zámku',
     /nesouhlasí s výpočtem serveru/.test(upraveny.lista), upraveny.lista);
+  test('B130: zámek se zmrazeným výsledkem „přepočteno dnes" netvrdí',
+    !/nejsou u zámku zmrazené/.test(upraveny.lista), upraveny.lista);
   await page.evaluate(() => { if (typeof zamekCteniVypni === 'function') zamekCteniVypni();
     ZAK = novaZakazka(); syncVarianta(); render(); });
 }
@@ -1570,6 +1588,10 @@ test('lišta uzamčené varianty nabízí za Klonovat i Založit novou zakázku 
   test('#320: lišta zámku ukazuje číslo z papíru, ne starou příponu ze zámku',
     /0763\.2/.test(po.lista) && !/0763\.1/.test(po.lista), po.lista);
   test('#320: zámek sám zůstal, jak byl pořízen', po.zamekCislo === '2026 - OPR - CN - 0763.1', po.zamekCislo);
+  /* B130 (audit 6. 10. 2026): zámek bez zmrazeného výsledku (odešel před
+   * 15. 9. 2026) — částky počítá dnešní jádro a lišta to říká nahlas. */
+  test('B130: lišta zámku bez zmrazeného výsledku řekne, že částky jsou přepočtené dnes',
+    /nejsou u zámku zmrazené/.test(po.lista) && /přepočtené dnes/.test(po.lista), po.lista);
   await page.evaluate(() => { if (typeof zamekCteniVypni === 'function') zamekCteniVypni();
     ZAK = novaZakazka(); syncVarianta(); render(); });
 }

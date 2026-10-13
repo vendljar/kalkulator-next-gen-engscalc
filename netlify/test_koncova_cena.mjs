@@ -364,5 +364,81 @@ console.log('===== Nezávislá revize #398 (12. 10. 2026): N1 jenZahr, N2 nepoci
   const r2 = await uloz(b, cO, g2.uloRazitko);
   test('N4: dotisk dokumentu téže strany (PROJ) projde (200)', r2.status === 200, r2); }
 
+console.log('===== revize 13. 10.: schválení a hned tisk (B105 × zámek) =====');
+/* Regrese B105 (revize 13. 10.): server orazítkoval čas schválení vlastním
+ * časem, prohlížeč držel čas kliknutí — nabídka vytištěná hned po schválení
+ * pak při dalším uložení z téhož okna skončila 409 („změnila by se data
+ * uzamčené nabídky"). */
+{
+  const z = zk.importZakazka(nova('B105 tisk po schválení'));   // jako v prohlížeči (doplněné klíče)
+  const S = require(R + 'src/schvalovani.js');
+  d0(z).sleva = Object.assign({}, d0(z).sleva || {}, { procenta: 0.04, role: 'Administrátor' });
+  S.schvalovaniSchval(d0(z).sleva, 'Admin', new Date().toISOString());
+  const r1 = await uloz(z, cA);
+  test('B105: schválení uloženo (200)', r1.status === 200, r1);
+  /* Prohlížeč si slevy z odpovědi převezme (onlineSlevyZeServeru). */
+  (r1.slevy || []).forEach(s => { const v = z.varianty.find(x => x.id === s.id); if (v && s.sleva) v.data.sleva = kopie(s.sleva); if (v && s.slevaProj) v.data.slevaProj = kopie(s.slevaProj); });
+  zamkni(z);
+  const r2 = await uloz(z, cA, r1.razitko);
+  test('B105: tisk hned po schválení — zámek uložen (200)', r2.status === 200, r2);
+  z.nazevAkce += ' (poznámka)';
+  const r3 = await uloz(z, cA, r2.razitko);
+  test('B105: další uložení z téhož okna projde (200, ne 409)', r3.status === 200, r3);
+  test('B105: odpověď nese slevy tak, jak je server uložil', Array.isArray(r1.slevy) && r1.slevy.some(s => s.sleva && s.sleva.stav === 'schváleno'), r1.slevy);
+}
+
+console.log('===== B138: dvoukrok se starší zveřejněnou verzí ceníku =====');
+/* Audit 12. 10. 2026 (střední): (1) nová zakázka se STARŠÍ zveřejněnou verzí
+ * celou projde (skupina kZv); (2) další uložení nese platný ceník + klíč,
+ * který starší verze neměla (import ho doplnil nulou — tady hodiny statiky
+ * opláštění) = 0. Skupina „uložená verze + platný ceník" nulu pustila, protože
+ * seděla s uloženou verzí; −0,7 až −1,7 %, i se zámkem. Rozhodnutí J. V.
+ * 12. 10.: opravit — klíč chybějící ve starší verzi nesmí ve směsi zůstat
+ * nula (bez výjimky „přepočet vybraných položek"). Musí jít dál: uložit
+ * zakázku se starší verzí beze změny i přejít na platný ceník celý.
+ * Zveřejňuje se nová verze, proto na konci sady. */
+{
+  const starsi = kopie(platny().cenik);           // zkušební ceník bez statikaOplHod
+  test('B138: příprava — starší verze klíč statikaOplHod nemá', !('statikaOplHod' in starsi), Object.keys(starsi).length);
+  const V2 = ZC.zkusebniCenik(); V2.statikaOplHod = 6; V2.montazHodKc = (+V2.montazHodKc || 0) + 100;   // nová verze se liší i jinde
+  const r0 = await (await post(program, 'http://x/api/program', { cenik: V2, cenikProj: ZC.zkusebniCenikProj(), slevy: NASTSL, poznamka: 'B138' }, cA)).json();
+  test('B138: příprava — zveřejněna verze s hodinami statiky opláštění', r0.ok === true, r0);
+  const staraZak = (nazev) => { const z = nova(nazev); d0(z).cenik = kopie(starsi); return z; };
+  const smes = (a, v) => { v = v || a.varianty[0]; v.data.cenik = kopie(platny().cenik); v.data.cenik.statikaOplHod = 0; };
+  { const r = await uloz(staraZak('B138 krok 1'), cO);
+    test('B138 krok 1: nová zakázka se starší zveřejněnou verzí celou (200)', r.status === 200, r); }
+  { const r = await dvakrat(staraZak('B138 krok 2'), a => smes(a), cO);
+    test('B138 krok 2: platný ceník + klíč, který starší verze neměla, = 0 → 403', r.status === 403 && /statikaOplHod/.test(r.chyba || ''), r); }
+  { const r = await dvakrat(staraZak('B138 2+3'), a => { smes(a); zamkni(a); }, cO);
+    test('B138: krok 2 + 3 (směs + nový zámek) → 403', r.status === 403, r); }
+  { const r = await dvakrat(staraZak('B138 klon'), a => { const id = zam.klonujVariantu(a, a.varianty[0].id);
+      smes(a, a.varianty.find(v => v.id === id) || a.varianty[a.varianty.length - 1]); }, cO);
+    test('B138: nová varianta (klon) ve starší zakázce se směsí → 403', r.status === 403 && /statikaOplHod/.test(r.chyba || ''), r); }
+  { const r = await dvakrat(staraZak('B138 beze změny'), a => { a.nazevAkce += ' (poznámka)'; }, cO);
+    test('B138: zakázka se starší verzí — uložení beze změny ceníku dál projde (200)', r.status === 200, r); }
+  { const r = await dvakrat(staraZak('B138 přechod'), a => { d0(a).cenik = kopie(platny().cenik); }, cO);
+    test('B138: přechod na platný ceník celý (200)', r.status === 200, r); }
+  { const r = await dvakrat(staraZak('B138 výběr'), a => { smes(a); d0(a).cenik.statikaOplHod = 6; }, cO);
+    test('B138: směs, kde chybějící klíč nese hodnotu platného ceníku (200)', r.status === 200, r); }
+  /* Revize 13. 10. (audit dávky): (a) starší verze nese nulu VÝSLOVNĚ —
+   * aplikace chybějící klíč při zveřejnění doplní nulou (progKontext, V38);
+   * výjimka „nula některé verze" pustila útok znovu (−0,7 %, i se zámkem).
+   * (b) mrtvý klíč ceníku PROJ (dopravaPausalKc), který klient přepočítat
+   * neumí, nesmí zakázku po přepočtu zablokovat. */
+  const Vz = ZC.zkusebniCenik(); Vz.statikaOplHod = 0; Vz.montazHodKc = (+Vz.montazHodKc || 0) + 50;
+  const VzP = ZC.zkusebniCenikProj(); delete VzP.dopravaPausalKc;
+  await post(program, 'http://x/api/program', { cenik: Vz, cenikProj: VzP, slevy: NASTSL, poznamka: 'B138 nula výslovně' }, cA);
+  const starsiZ = kopie(platny().cenik), starsiZP = kopie(platny().cenikProj);
+  const Vp = ZC.zkusebniCenik(); Vp.statikaOplHod = 7; Vp.montazHodKc = (+Vp.montazHodKc || 0) + 150;
+  const VpP = ZC.zkusebniCenikProj(); VpP.dopravaPausalKc = 100;
+  await post(program, 'http://x/api/program', { cenik: Vp, cenikProj: VpP, slevy: NASTSL, poznamka: 'B138 platný' }, cA);
+  const staraZ = (nazev) => { const z = nova(nazev); d0(z).cenik = kopie(starsiZ); d0(z).proj.cenik = kopie(starsiZP); return z; };
+  { const r = await dvakrat(staraZ('B138 nula výslovně'), a => { d0(a).cenik = kopie(platny().cenik); d0(a).cenik.statikaOplHod = 0; zamkni(a); }, cO);
+    test('revize B138: nula, kterou starší verze nesla výslovně, ve směsi s platným ceníkem + zámek → 403',
+      r.status === 403 && /statikaOplHod/.test(r.chyba || ''), r); }
+  { const r = await dvakrat(staraZ('B138 mrtvý klíč'), a => { d0(a).proj.cenik = kopie(platny().cenikProj); d0(a).proj.cenik.dopravaPausalKc = 0; }, cO);
+    test('revize B138: mrtvý klíč PROJ (klient ho nepřepočítá) přepočet nezablokuje (200)', r.status === 200, r); }
+}
+
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);

@@ -188,5 +188,25 @@ test('B8: serverová atribuce také nepřičítá záporné', pu.poUzivateli['a@
     analytikaPoctyUzivatele(den, 'anna@example.cz').zdrz === undefined);
 }
 
+/* B81 (13. 10. 2026): prototypové klíče z klienta. */
+{
+  const d = analytikaSlij(null, { kliky: { constructor: 5, __proto__x: 1, 'tlačítko': 2 },
+    zalozky: JSON.parse('{"__proto__": 3, "prototype": 1, "ock": 1}'),
+    pocty: { constructor: 7, zakazky: 1 },
+    poUzivateli: JSON.parse('{"__proto__": {"zakazky": 9}, "a@b.cz": {"constructor": 4, "zakazky": 1}}') });
+  test('B81: klik „constructor" se nezapočte a nerozbije mapu', !Object.prototype.hasOwnProperty.call(d.kliky, 'constructor') && d.kliky['tlačítko'] === 2, d.kliky);
+  test('B81: záložka „__proto__"/„prototype" se zahodí, ostatní zůstanou', Object.keys(d.zalozky).join(',') === 'ock' && Object.getPrototypeOf(d.zalozky) === Object.prototype, d.zalozky);
+  test('B81: počítadlo „constructor" není známé počítadlo', !Object.prototype.hasOwnProperty.call(d.pocty, 'constructor') && typeof d.pocty.constructor === 'function', d.pocty);
+  test('B81: uživatel „__proto__" se zahodí, počty uživatele bez „constructor"',
+    Object.keys(d.poUzivateli).join(',') === 'a@b.cz' && !Object.prototype.hasOwnProperty.call(d.poUzivateli['a@b.cz'], 'constructor'), d.poUzivateli);
+  const den = analytikaNovyDen();
+  analytikaPridej(den, { typ: 'zalozka', tab: 'constructor' }); analytikaPridej(den, { typ: 'pocet', co: 'constructor' });
+  analytikaPridej(den, { typ: 'klik', klic: '__proto__' });
+  test('B81: analytikaPridej prototypové klíče ignoruje', JSON.stringify(den.zalozky) === '{}' && JSON.stringify(den.kliky) === '{}'
+    && typeof den.pocty.constructor === 'function', den);
+  test('B81: analytikaKlicPovolen', typeof analytikaKlicPovolen === 'function' && !analytikaKlicPovolen('__proto__') && analytikaKlicPovolen('2026-OPR-CN-1'));
+}
+
 console.log('\nPASS=' + passes + ' FAIL=' + fails);
+console.log(passes + ' OK, ' + fails + ' FAIL');   // souhrn pro mutace.mjs
 process.exit(fails ? 1 : 0);

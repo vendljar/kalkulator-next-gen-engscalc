@@ -214,6 +214,13 @@ export default async (req) => {
        * by si resetem vzal účet, který nikdo nemůže vypnout ani degradovat. */
       if (email === ADMIN_EMAIL && relace.email !== ADMIN_EMAIL)
         return json({ ok: false, chyba: 'Heslo hlavního administrátora si mění jen on sám.' }, 403);
+      /* VLASTNÍ HESLO JEN SE STARÝM (B77-zbytek, audit 9. 9./12. 10. 2026).
+       * Reset je pro cizí, zapomenuté heslo. Na vlastní účet by obešel
+       * 'mojeheslo' — bez starého hesla a bez brzdy: kdo se dostal
+       * k odemčenému počítači nebo cookie správce, převzal by jeho účet
+       * natrvalo (i hlavní — výjimka výš ho na sebe pustí). */
+      if (email === relace.email)
+        return json({ ok: false, chyba: 'Vlastní heslo si změňte přes „Změnit heslo" (se starým heslem).' }, 403);
       if (!hesloPlatne(t.heslo))
         return json({ ok: false, chyba: HESLO_PRAVIDLO }, 400);
       ucet.heslo = otiskHesla(t.heslo);

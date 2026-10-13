@@ -1671,9 +1671,49 @@ function uloCenikProblemy(zak, stara, opts) {
         .concat(jine.map((x, i) => ({ x, k: kJine[i] }))
           .filter(o => !jeSestaveniRady(o.k, radaVar ? radaVar(o.x.data) : 'cr'))
           .map(o => [o.k].concat(kPlatny)), kZv.map(k => [k]));
+      /* KLÍČ, KTERÝ STARŠÍ VERZE NEMĚLA (B138, audit 12. 10. 2026). Zakázka
+       * založená ze starší zveřejněné verze nese klíč, který ta verze neměla,
+       * jako nulu (doplnil ho import). Ve skupině „uložená verze + platný
+       * ceník" ta nula seděla s uloženou verzí — dvoukrok: (1) starší verze
+       * celá, (2) platný ceník + ten klíč = 0, i se zámkem (−0,7 až −1,7 %).
+       * Rozhodnutí J. V. 12. 10.: ve SMĚSI (ceník už se od uložené verze
+       * liší) nesmí taková nula zůstat — ani při přepočtu vybraných položek.
+       * Uložení beze změny ceníku (žádná směs) projde dál.
+       * Revize 13. 10.: (a) výjimka „nulu nesla některá zveřejněná verze"
+       * zrušena — aplikace od V38 zveřejňuje chybějící klíč výslovnou nulou
+       * (progKontext), takže výjimka pouštěla tentýž útok; (b) hlídají se jen
+       * položky, které klient umí přepočítat (cenikSledovane, bez zakázkových
+       * hodnot) — mrtvý klíč (např. dopravaPausalKc) by jinak zakázku po
+       * přepočtu zablokoval natrvalo. */
+      const sledovane = (typeof cenikSledovane === 'function') ? (() => {
+        const pref = c.pred === 'cenik.' ? 'C.' : 'PC.';
+        return new Set(cenikSledovane().map(x => x.cesta)
+          .filter(x => x.indexOf(pref) === 0 && !/^(C|PC)\.(marze|dph)$/.test(x))
+          .map(x => x.slice(pref.length)));
+      })() : null;
+      const doplnenaNula = (g) => {
+        if (g.length < 2) return [];
+        /* Skupinu se základem v ceníku sestavení hlídá B133 (do skupin ji
+         * vůbec nepustí) — tady se nekontroluje, ať má každá pojistka své
+         * pole a mutace B133 zůstanou chycené. */
+        if (jeSestaveniRady(g[0], rada)) return [];
+        const ref = g[0], hod = (k, p) => (p in k ? k[p] : '');
+        const cesty = new Set(Object.keys(listy).concat(Object.keys(ref)));
+        if (![...cesty].some(p => hod(listy, p) !== hod(ref, p))) return [];   // žádná směs
+        const out = [];
+        cesty.forEach(p => {
+          const h = hod(listy, p);
+          if (h !== 0 && h !== '') return;
+          if (hod(ref, p) !== h) return;                                       // nula není z uložené verze
+          if (g.slice(1).some(k => hod(k, p) === h)) return;                   // nulu nese i platný ceník
+          if (sledovane && !sledovane.has(p)) return;                          // klient ji přepočítat neumí
+          out.push(c.pred + p);
+        });
+        return out;
+      };
       let rozdily = null;
       for (const g of skupiny) {
-        const r = uloB112Rozdily(listy, g, c.pred, g[0]);
+        const r = uloB112Rozdily(listy, g, c.pred, g[0]).concat(doplnenaNula(g));
         if (!rozdily || r.length < rozdily.length) rozdily = r;
         if (!r.length) break;
       }

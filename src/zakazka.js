@@ -625,6 +625,13 @@ const STRANA_NAZEV = { ock: 'Kalkulaci OCK', proj: 'Kalkulaci PROJ' };
  * (`obeStrany`). `varianty` = pole řad ceníku všech variant ('cr' / 'zahr'). */
 function zahrJenRealizaceNabidnout(zak, rada, varianty) {
   if (!zak) return null;
+  /* ODESLANÁ VARIANTA (B129, audit 6. 10. 2026): `jenOck` je vlastnost
+   * zakázky — přepnutí by změnilo i odeslanou nabídku (strana PROJ zešedne,
+   * smlouva a plán plateb PROJ se k ní už nepoužijí), kterou zámek jinak
+   * drží v podobě, v jaké odešla. U zakázky s odeslanou variantou se proto
+   * nenabízí ani jedním směrem; rozhodne obchodník vědomě (šedá lišta PROJ)
+   * nebo pokračuje novou zakázkou. */
+  if (Array.isArray(zak.varianty) && zak.varianty.some(v => v && v.zamek && v.zamek.zamceno)) return null;
   const rady = Array.isArray(varianty) ? varianty : [];
   if (rada === 'zahr') {
     if (zak.jenOck || zak.jenProj || zak.obeStrany) return null;

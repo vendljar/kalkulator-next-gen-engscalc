@@ -81,7 +81,9 @@ function preskocS(argumenty) {
  * o které se mlčí, je totéž co kontrola, která neexistuje (T3). */
 function podstrcHarnessy(dir, kody) {
   Object.entries(kody).forEach(([jmeno, kod]) => {
-    const telo = kod === 'playwright'
+    const telo = kod === 'visi'
+      ? 'setInterval(() => {}, 1000);'
+      : kod === 'playwright'
       ? "console.error(\"Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'playwright' imported from x\"); process.exit(1);"
       : 'console.log("harness ' + jmeno + '"); process.exit(' + kod + ');';
     fs.writeFileSync(path.join(dir, jmeno), telo);
@@ -117,17 +119,20 @@ function funkceZeSkriptu() {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kng-sh-'));
     fs.mkdirSync(path.join(dir, 'src'));
     podstrcHarnessy(dir, { 'overit_ok.mjs': 0, 'overit_podklad.mjs': 4, 'overit_pw.mjs': 2,
-                           'overit_esm.mjs': 'playwright', 'overit_chyba.mjs': 1 });
-    const skript = 'proslo=0; selhalo=0; preskoceno=0; seznam_selhani=(); seznam_preskocenych=()\n'
+                           'overit_esm.mjs': 'playwright', 'overit_chyba.mjs': 1, 'overit_visi.mjs': 'visi' });
+    const skript = 'KNG_HARNESS_LIMIT=2; proslo=0; selhalo=0; preskoceno=0; seznam_selhani=(); seznam_preskocenych=()\n'
       + fce + '\n'
-      + 'for f in overit_ok.mjs overit_podklad.mjs overit_pw.mjs overit_esm.mjs overit_chyba.mjs; do spust_prohlizec "$f"; done\n'
+      + 'for f in overit_ok.mjs overit_podklad.mjs overit_pw.mjs overit_esm.mjs overit_chyba.mjs overit_visi.mjs; do spust_prohlizec "$f"; done\n'
       + 'echo "SOUCET $proslo/$selhalo/$preskoceno"\n'
       + 'printf "PRESK:%s\\n" "${seznam_preskocenych[@]}"\n'
       + 'printf "SELH:%s\\n" "${seznam_selhani[@]}"\n';
     const r = spawnSync('bash', ['-c', skript], { cwd: path.join(dir, 'src'), encoding: 'utf8' });
     fs.rmSync(dir, { recursive: true, force: true });
     const v = String(r.stdout || '');
-    test('T3/T5: prošlo 1, selhalo 1, přeskočeno 3', /SOUCET 1\/1\/3/.test(v), v);
+    test('T3/T5: prošlo 1, selhalo 2 (chyba + visící), přeskočeno 3', /SOUCET 1\/2\/3/.test(v), v);
+    /* Visící harness (13. 10. 2026, N1: overit_online.mjs po selhání B59) —
+     * vnější strop KNG_HARNESS_LIMIT ho ukončí a počítá jako SELHÁNÍ. */
+    test('visící harness: ukončen stropem a počítá se jako selhání', /SELH:overit_visi\.mjs/.test(v) && /HARNESS VISEL/.test(v), v);
     test('T3: kód 4 = přeskočeno s důvodem „chybí firemní podklad"',
       /PRESK:overit_podklad\.mjs \(chybí firemní podklad/.test(v), v);
     test('T5: kód 2 se počítá do přeskočených', /PRESK:overit_pw\.mjs \(chybí playwright\)/.test(v), v);

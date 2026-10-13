@@ -339,5 +339,21 @@ SOUBORY.forEach(rel => {
   test('žádné obcházení zámku v ' + rel, navic.length === 0, navic);
 });
 
+/* B130 (audit 6. 10. 2026): co se u odeslané nabídky počítá dnešním jádrem. */
+{
+  const f = zm.zamekPrepoctenoDnes;
+  const data = { ock: { zadani: {} }, cenik: {}, proj: { zadani: {} } };
+  test('B130: zamekPrepoctenoDnes je v zamek.js', typeof f === 'function');
+  if (typeof f === 'function') {
+    test('B130: nezamčená varianta — nic', f({ data }).length === 0);
+    test('B130: zámek bez výsledku — OCK i PROJ přepočtené dnes',
+      f({ data, zamek: { zamceno: true } }).join(',') === 'ock,proj');
+    test('B130: zámek s výsledkem jen OCK — PROJ přepočtená dnes',
+      f({ data, zamek: { zamceno: true, vysledek: { ock: { souhrn: {} } } } }).join(',') === 'proj');
+    test('B130: zámek s celým výsledkem — nic',
+      f({ data, zamek: { zamceno: true, vysledek: { ock: {}, proj: {} } } }).length === 0);
+  }
+}
+
 console.log('\n' + (fail ? 'SELHALO ' + fail + ' z ' + (ok + fail) : 'OK ' + ok));
 if (fail) process.exit(1);

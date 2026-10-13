@@ -184,6 +184,22 @@ function vypocetZ(v, jekly) {
   return vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes);
 }
 
+/* CO SE U ODESLANÉ NABÍDKY POČÍTÁ DNEŠNÍM JÁDREM (B130, audit 6. 10. 2026).
+ * Zamčená varianta bez zmrazeného výsledku (odešla před 15. 9. 2026) nebo
+ * s výsledkem jen jedné strany se dál počítá dnešním výpočtem — a ten se od
+ * papíru, který zákazník dostal, může lišit. Lišta zámku to proto říká
+ * nahlas. Vrací strany ('ock', 'proj'), které NEJSOU zmrazené; u nezamčené
+ * varianty prázdné pole. */
+function zamekPrepoctenoDnes(v) {
+  if (!zamekInfo(v)) return [];
+  const zmr = zamekVysledek(v) || {};
+  const d = (v && v.data) || {};
+  const out = [];
+  if (!zmr.ock && d.ock && d.cenik) out.push('ock');
+  if (!zmr.proj && d.proj) out.push('proj');
+  return out;
+}
+
 function vypocetProjZ(v) {
   const zmr = zamekVysledek(v);
   if (zmr && zmr.proj) return JSON.parse(JSON.stringify(zmr.proj));
@@ -670,7 +686,7 @@ function zamekCteniDuvod(zak, ja) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
+  module.exports = { zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
                      zamekVysledekSpocti, ZAMEK_OVERENI_CASTI, ZAMEK_OVERENI_JADRO, ZAMEK_OVERENI_JADRO_PRISNE, zamekVysledekRozdily, zamekOvereni, zamekOvereniText,
                      zamekCteniSmiOdemknout, zamekCteniDuvod, priponaPrvniNalez, priponaPrvniOprav,
                      variantaPripona, dalsiPriponaVarianty, variantaCislo,

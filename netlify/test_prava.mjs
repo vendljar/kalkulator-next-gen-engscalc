@@ -528,6 +528,9 @@ for (const radek of MATICE) {
      * vrací novou cookie — prohlížeč ji převezme, matice taky. */
     const novaCookie = (odpoved.headers.get('set-cookie') || '').split(';')[0];
     if (/^relace=.+/.test(novaCookie) && UCTY[role]) UCTY[role].cookie = novaCookie;   // odhlášení maže → nebrat
+    /* Odhlášení zneplatní relace účtu i na serveru (B6, 13. 10. 2026) —
+     * matice se jím přihlásí znovu, jako by to udělal uživatel. */
+    if (radek.fn === odhlaseni && UCTY[role]) UCTY[role].cookie = await prihlas(UCTY[role].email, UCTY[role].heslo);
     let sedi, popis;
     if (cekano === 'ok' || cekano === 'verejne') { sedi = stav < 400; popis = 'projde (2xx)'; }
     else { sedi = stav === cekano; popis = 'odmítnuto ' + cekano; }
@@ -568,9 +571,13 @@ test('relace podepsaná jiným tajemstvím neprojde',
 
 const podpisSpravnym = (t) => createHmac('sha256', process.env.TAJEMSTVI_RELACE).update(t).digest('base64url');
 /* Hlavní účet: jeho heslo se v sadě nemění, takže verze hesla (B6) sedí
- * a jediný důvod k odmítnutí zůstává prošlé `exp`. */
+ * a jediný důvod k odmítnutí zůstává prošlé `exp`. Od B107 (13. 10. 2026)
+ * má bootstrapovaný účet verzi = čas založení, ne 0 — bere se z úložiště,
+ * jinak by cookie neprošla kvůli verzi a mutace „platnost relace se
+ * neověřuje" zůstala nechycená (kolo 13. 10.). */
+const hvHlavni = (JSON.parse(pamet.get('uzivatele/' + ADMIN_EMAIL) || '{}').hesloVerze) || 0;
 const teloProsle = Buffer.from(JSON.stringify({
-  email: ADMIN_EMAIL, role: 'Administrátor', hv: 0, exp: Date.now() - 1000 })).toString('base64url');
+  email: ADMIN_EMAIL, role: 'Administrátor', hv: hvHlavni, exp: Date.now() - 1000 })).toString('base64url');
 test('prošlá relace neprojde, i když je podepsaná správně',
   (await get(ja, 'http://x/api/ja', 'relace=' + teloProsle + '.' + podpisSpravnym(teloProsle))).status === 401);
 
@@ -1787,6 +1794,18 @@ console.log('\n===== AUDIT B7: HESLO HLAVNÍHO ÚČTU =====\n');
   test('B7: vedlejší administrátor dál resetuje hesla ostatním',
     (await post(uzivatele, 'http://x/api/uzivatele',
       { akce: 'heslo', email: 'terc@example.com', heslo: 'TercHeslo2' }, UCTY['Administrátor'].cookie)).status === 200);
+  /* B77-zbytek (13. 10. 2026): reset na VLASTNÍ účet obešel 'mojeheslo' —
+   * bez starého hesla a bez brzdy. Před opravou 200 (vedlejší i hlavní). */
+  { const em2 = UCTY['Administrátor'].email;
+    const r1 = await post(uzivatele, 'http://x/api/uzivatele',
+      { akce: 'heslo', email: em2, heslo: 'PrevzateHeslo9' }, UCTY['Administrátor'].cookie);
+    test('B77-zbytek: správce si reset na vlastní účet neudělá (403)', r1.status === 403, 'vrátil ' + r1.status);
+    const cH = await prihlas(ADMIN_EMAIL, 'Docasne.Heslo.123');
+    const r2 = await post(uzivatele, 'http://x/api/uzivatele',
+      { akce: 'heslo', email: ADMIN_EMAIL, heslo: 'PrevzateHeslo9' }, cH);
+    test('B77-zbytek: ani hlavní účet si heslo nezmění bez starého (403)', r2.status === 403, 'vrátil ' + r2.status);
+    test('B77-zbytek: hlavní účet se dál přihlásí původním heslem', !!(await prihlas(ADMIN_EMAIL, 'Docasne.Heslo.123')));
+  }
   /* L28 (23. 8. 2026): profil a podpis hlavního účtu smí měnit jen on sám. */
   test('L28: vedlejší administrátor nezmění profil hlavního účtu (403)',
     (await post(uzivatele, 'http://x/api/uzivatele',

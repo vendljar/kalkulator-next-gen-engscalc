@@ -145,7 +145,11 @@ function slovnikNoveJakoZmeny(nove) {
 
 /* Podklad pro překladatele: hesla, která zná jen aplikace, jako CSV pro Excel. */
 function slovnikCsvJenVApp(jenVApp) {
-  const q = s => '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"';
+  /* B83: tatáž buňka jako csvBunka (format.js) — ochrana vzorců; záložka
+   * pro samostatný běh v Node. */
+  const q = (typeof csvBunka === 'function') ? csvBunka : (s => {
+    let t = String(s == null ? '' : s); if (/^([=@\t\r]|[+\-][^\s])/.test(t)) t = "'" + t;
+    return '"' + t.replace(/"/g, '""') + '"'; });
   const hlav = ['CZ', 'EN', 'DE', 'FR'].map(q).join(';');
   const radky = (jenVApp || []).map(r => [r.klic, r.hodnoty.en, r.hodnoty.de, r.hodnoty.fr].map(q).join(';'));
   return '﻿' + [hlav].concat(radky).join('\r\n');

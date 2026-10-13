@@ -8,6 +8,169 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v13.10.1 — dávka po 22. kole: #400 zbytek, visící harness, popis releasů (větev claude/davka-13-10)
+
+Pokyn J. V. 13. 10. 2026 přes koordinační sezení 22. kola. Větev
+z `test-draft` (v12.10.4, 1df7283). Roadmapa #400 (zbytek) a #402–.
+
+- **Pravidlo J. V. 13. 10.: odkaz na release nese popis změn.** `CLAUDE.md`
+  (oddíl Tagy, releasy) + nový nástroj `nastroje/release_odkaz.py <verze>
+  <SHA>` — z oddílů `## v<verze>` v CHANGELOG sestaví krátký popis (nálezy,
+  čísla roadmapy, výsledek kola; řádek s částkou vynechá) a odkaz
+  `releases/new?…&body=…`; `--upravit` dá odkaz na úpravu vydaného releasu
+  a text k vložení. Test `src/test_release_odkaz.js` (21; bez nástroje
+  7/14, mutace bez kódování a bez filtru částek po 1 FAIL).
+- **Visící harness (nízká, z N1) — #402.** `overit_online.mjs` po selhání B59
+  (server nabídku neuložil) visel: `onlineOtevri` neuložené zakázky otevřel
+  skutečný modál a `page.evaluate` nemá limit — kolo stálo bez výpisu.
+  Nový `nastroje/harness_hlidac.js`: strop každého `page.evaluate` (120 s,
+  chyba nese, který krok visel), celkový strop (20 min), nezachycená chyba
+  → úklid (sám se stropem 5 s) → kód 1. Zapojeno v `overit_online.mjs`;
+  `spust_testy.sh` navíc pouští každý harness přes `timeout`
+  (`KNG_HARNESS_LIMIT`, výchozí 900 s) — visení = selhání. Pojistka: s
+  rozbitým B59 (šířka 0) harness před opravou visel do vnějšího `timeout`
+  (kód 124 po 500 s), po opravě skončí za 120 s kódem 1 s popisem kroku.
+  Test `src/test_harness_hlidac.js` (11; mutace bez obalení → kód 1 bez
+  souhrnu, mutace `konec(0)` → 2 FAIL).
+  Strop je proměnná uvnitř `spust_prohlizec` (sada `test_harness_podklady.js`
+  si funkci vyjímá samotnou — s proměnnou mimo funkci padala 5/25); sada
+  nově podstrčí i visící harness (`KNG_HARNESS_LIMIT=2`) → selhání s „HARNESS
+  VISEL", 25/0.
+- **B138 (střední) — dvoukrok se starší zveřejněnou verzí ceníku.** (1) nová
+  zakázka se starší verzí celou (200), (2) platný ceník + klíč, který starší
+  verze neměla (import ho doplnil nulou, např. hodiny statiky opláštění) = 0
+  → 200 i se zámkem. Rozhodnutí J. V. 12. 10.: opravit. Kontrola ceníku
+  (`src/uloziste.js`, skupiny B128) ve skupině „uložená verze + platný ceník"
+  odmítne nulu, kterou nese jen uložená verze, ve SMĚSI (ceník se od uložené
+  verze liší) — leda ji některá zveřejněná verze skutečně nesla nebo ji má
+  i platný ceník. Uložení beze změny ceníku a přechod na platný ceník celý
+  projdou dál. Klient: přepočet vybraných položek (`cenikPrepocti`) přepočte
+  i takovou nulu (zakázkové hodnoty ne). Testy: `test_koncova_cena.mjs` +9
+  (před 3 FAIL — krok 2, 2+3 se zámkem, klon; po 83/0), `test_cenik_stari.js`
+  +1 (před FAIL, po OK); mutace serveru B138 ×2 (chycené 2/2).
+- **B77-zbytek (střední) — reset hesla na vlastní účet.** Akce „heslo"
+  (reset správcem) na VLASTNÍ účet obešla `mojeheslo` — bez starého hesla
+  a bez brzdy; kdo se dostal k cookie správce (i hlavního), převzal účet
+  natrvalo. Server ji teď odmítne (403, odkaz na „Změnit heslo"); v seznamu
+  uživatelů vlastní řádek nabízí „Změnit heslo…" (dialog se starým heslem),
+  cizí dál „Nové heslo…". Testy: `test_prava.mjs` +3 (před 2× 200, po 805/0),
+  `overit_online.mjs` +2 (před 214/1, po 215/0); mutace serveru chycená.
+- **B107 (střední) — bootstrap hlavního účtu.** Zakládal účet bez
+  `hesloVerze` (= 0): po smazání účtu a novém bootstrapu platila cookie
+  z doby před smazáním. Nově verze = čas založení (jako B76), heslo
+  z prostředí se porovnává v konstantním čase (`tajneShodne` v
+  `lib/sdilene.mjs`, B42 — hash obou stran, délka nevyteče) a musí splnit
+  pravidlo délky (B25; krátké bootstrap nespustí). Testy:
+  `test_prihlaseni.mjs` +10 (před 53/7, po 60/0); mutace serveru 2 nové
+  + přesměrovaná „zaváděcí heslo se nekontroluje" (3/3).
+- **Revize dávky (audit 13. 10. 2026, dvě čočky, subagenti jen četli; vysoký
+  nález žádný).** Opraveno v téže dávce:
+  - *Regrese B105 (střední):* server razil čas schválení vlastním časem,
+    prohlížeč držel čas kliknutí → nabídka vytištěná hned po schválení
+    skončila při dalším uložení 409. Čas z prohlížeče se přijme do 10 min
+    od času serveru, jinak razí server; server navíc vrací v odpovědi slevy,
+    jak je uložil (`slevy`), a prohlížeč si je převezme
+    (`onlineSlevyZeServeru`, jen u neměněné slevy). U nezměněného
+    rozhodnutí se z uložené verze obnoví všechna pole (e-mail, důvod).
+  - *Obchvat B101 (nízká):* rozhodnutí šlo smazat stavem `''`, automatickým
+    nebo neznámým — teď se bez práva a beze změny procent vrací uložené
+    rozhodnutí při jakémkoli stavu (výjimka: prohlížečem přepnuté zamítnutí
+    pod marží); neznámý stav slevy se odmítne. Mez: dvojí změna procent
+    (10 → 10,001 → 10) je nová žádost.
+  - *Obchvat B138 (střední):* aplikace od V38 zveřejňuje chybějící klíč
+    výslovnou nulou, takže výjimka „nulu nesla některá verze" pustila tentýž
+    útok (−0,7 % se zámkem). Výjimka zrušena; hlídají se jen položky, které
+    klient umí přepočítat (`cenikSledovane`, bez přirážky a DPH) — mrtvý klíč
+    přepočet nezablokuje. Klient vynucuje přepočet nuly jen roli bez práva
+    ceníku (`vynutNuly`) — kdo ceník měnit smí, tomu odškrtnutá položka
+    zůstane.
+    Skupinu se základem v ceníku sestavení `doplnenaNula` nehlídá — tu
+    hlídá B133 (kolo nad ea34e65 ukázalo, že by se pojistky překrývaly
+    a mutace B133 zůstaly nechycené).
+  - Kolo nad ea34e65 (129 min): sady 227/0/1, jádro 189/189, server 341/344,
+    statické 2/3 — nechycené B133 ×2 (viz výš) a „platnost relace se
+    neověřuje": test v `test_prava.mjs` podvrhoval cookie hlavního účtu
+    s verzí hesla 0, kterou bootstrap od B107 nemá — teď bere verzi
+    z úložiště. Statická kontrola: krátké heslo v testu B107 jako literál →
+    proměnná.
+
+**Celé kolo nad dd9c24b VŠE ZELENÉ (129 min 55 s):** sady 228/0/1 (přeskočen
+jen `test.js`), mutace jádra 189 z 189, mutace serveru 346 z 346, statické
+kontroly 3 z 3. Podklady: `/home/user/kng_podklady` (šablony z Disku, příručka
+přejmenovaná na v13.10.1).
+  - *Obchvat B103 (nízká):* „toString", „hasOwnProperty" aj. shodily sběr
+    textů stejně — odmítá se vše z `Object.prototype`, mapa sběru je bez
+    prototypu.
+  - *B6 (nízká):* odhlášení zapisovalo celou kopii účtu z ověření relace —
+    souběžná změna správce se mohla přepsat zpět. Účet se čte znovu těsně
+    před zápisem a mění se jen verze hesla (okno zúžené, plně atomický zápis
+    úložiště neumí — mez). Hláška neplatné relace už netvrdí „heslo bylo
+    změněno".
+  - Drobnosti: strop harnessu 25 min (nad hlídačem 20 min), bez GNU
+    `timeout` běh bez stropu; `release_odkaz.py` filtruje částky i v titulku
+    a ve tvaru „1 200,- Kč" a před zkrácením; `csvBunka` neprefixuje „- položka"
+    s mezerou (komentář opraven: apostrof v CSV zůstane vidět); lišta B130
+    jen pro počítané strany a bez tvrzení o důvodu.
+  - Neopraveno (k rozhodnutí J. V.): B35 strop jde zaplnit smetím jedním
+    účtem (návrh: zakládat `cas/` jen pro existující zakázku); B77-zbytek —
+    s cookie správce lze dál založit nový účet Administrátor (návrh:
+    citlivé akce správce znovu s heslem); B128/B138 záměr „dohodnutá cena
+    zůstává" (směs se skutečnými staršími cenami) dál projde.
+  Testy: `test_schvalovani.js` +6 (před 75/4), `test_koncova_cena.mjs` +6
+  (regrese 409 před 85/2, výslovná nula před 88/1), nový
+  `src/test_slevy_ze_serveru.js` (před 0/1, po 4/0), `test_cenik_stari.js`
+  +1, `test_cenik_popisy.js`, `test_csv_vzorce.js`, `test_release_odkaz.js`
+  (před 20/1); mutace: neznámý stav, chybějící `slevy` v odpovědi,
+  přesměrované B101/B105/B6/B103.
+- **B129 (nízká) — „jen realizace" u zakázky s odeslanou variantou.** `jenOck`
+  je vlastnost zakázky — dotaz po přepnutí řady ceníku by změnil i odeslanou
+  nabídku. `zahrJenRealizaceNabidnout` u zakázky se zamčenou variantou nic
+  nenabídne (oběma směry). `test_zahr_jen_realizace.js` +3 (před 13/2, po 15/0).
+- **B130 (nízká) — odeslaná nabídka bez zmrazeného výsledku.** Nový
+  `zamekPrepoctenoDnes(v)` (strany bez zmrazených čísel); lišta zámku pak
+  říká „Částky … nejsou zmrazené … přepočtené dnes". `test_zamek_otisk.js`
+  +5, `overit_online.mjs` +2 (lišta starého zámku vs. zámku s výsledkem).
+- **B83 (nízká) — CSV exporty bez ochrany vzorců.** Čtyři exporty pro
+  překladatele (nepřeložené fráze šablon ×2, techspec, slovník jen v aplikaci)
+  dávaly text do buňky, jak byl — „=HYPERLINK(…)" by Excel spustil. Nová
+  `csvBunka` (format.js): uvozovky + apostrof před `= + - @ TAB CR`. Test
+  `src/test_csv_vzorce.js` (15; před 1/5) hlídá i každý budoucí export
+  `text/csv` v `src/ui`.
+- **B81 (nízká) — prototypové klíče v analytice.** Klíč „constructor"
+  v dávce klienta našel v mapě funkci Object (počítadlo se slilo do textu,
+  `pocty.constructor` prošlo jako známé), „__proto__" psal do prototypu;
+  totéž e-mail v `poUzivateli` a číslo zakázky v `cas/`. Nový
+  `analytikaKlicPovolen` + dotaz jen na vlastní vlastnosti. `test_analytika.js`
+  +6 (před 5 FAIL).
+- **B103 (nízká) — prototypové klíče v dodatkových textech.** Položka
+  „constructor" shodila sběr textů ze zakázek (`/api/popisy?sber=1` → 500),
+  „__proto__" zmizel. `popisyOciste` a `popisyJazykyOciste` je nepřijmou.
+  `test_cenik_popisy.js` +2 (před 2 FAIL). Mutace B81, B103 (sady přidány
+  do mutací serveru) a přesměrovaná B8 — 3/3.
+- **B105 (nízká) — čas rozhodnutí o slevě z prohlížeče.** Server bral
+  `schvalilKdy`/`zamitlKdy`, pokud je klient poslal — rozhodnutí šlo
+  antedatovat. Čas teď razí server vždy; porovnání „totéž rozhodnutí" čas
+  nepočítá a uložený serverový čas se drží.
+- **B101 (nízká) — rozhodnutí zpět na „čeká" bez práva.** Obchodník uložením
+  vrátil zamítnutí (nebo schválení) do fronty jako nerozhodnuté. Bez změny
+  procent a bez práva rozhodnout se vrací uložené rozhodnutí; vedoucí
+  („Vzít rozhodnutí zpět") smí, nová procenta = nová žádost. Testy:
+  `test_schvalovani.js` +6 (před 69/4, po 73/0); mutace B101, B105 chycené
+  (sada přidána do mutací serveru); `overit_schvalovani` 57/0.
+- **B6 (nízká) — odhlášení jen v prohlížeči.** Odhlášení mazalo cookie, ale
+  zkopírovaná relace platila dál až 12 hodin. Teď odhlášení zvedne verzi
+  hesla účtu — **neplatí pak žádná dosud vydaná relace toho účtu, vědomě
+  i na ostatních zařízeních** (jako změna hesla; výchozí výklad, J. V. může
+  chtít jen tuto relaci — to by vyžadovalo seznam relací na serveru).
+  Odhlášení bez relace dál projde. `test_prihlaseni.mjs` +7 (před 65/2, po
+  67/0); matice v `test_prava.mjs` se po odhlášení přihlásí znovu (805/0);
+  mutace chycená.
+- **B35 (nízká) — strop počtu klíčů `cas/` v analytice.** Tvar čísla hlídal
+  B8, počet ne. Nově `ANALYTIKA_MAX_CASU` = 5 000 (výchozí, rezerva na roky):
+  nad stropem se nová zakázka nezaloží, existující se přičítá dál. Seznam
+  klíčů se čte jen při novém klíči. `test_funkce.mjs` +3 (před 228/2, po
+  230/0); mutace chycená.
+
 ## v12.10.4 — integrace nočních dávek N1–N3 (větev claude/integrace-13-10)
 
 Integrační větev z `test-draft` (v12.10.2, d562da1), merge commity (bez
