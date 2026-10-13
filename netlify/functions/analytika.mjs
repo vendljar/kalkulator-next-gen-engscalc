@@ -54,7 +54,7 @@ export default async (req) => {
     const casy = {};
     for (const k of await s.seznam('cas/')) {
       const c = await s.cti(k);
-      if (c) casy[k.slice(4)] = { ock: +c.ock || 0, proj: +c.proj || 0 };
+      if (c && g.analytikaKlicPovolen(k.slice(4))) casy[k.slice(4)] = { ock: +c.ock || 0, proj: +c.proj || 0 };   // B81
     }
     return json({ ok: true, od, do: doD, dnu: dvojice.length,
                   celkem: souhrn.celkem, poMesicich: souhrn.poMesicich,
@@ -108,7 +108,7 @@ export default async (req) => {
          * pomlčky, mezery, tečky — a nanejvýš 60 znaků. Cizí tvar se zahodí,
          * ne „opraví" — jinak kdokoli přihlášený zakládá klíče do nekonečna. */
         const cislo = String(zak).trim();
-        if (!/^[\w\-. ]{1,60}$/.test(cislo)) continue;
+        if (!/^[\w\-. ]{1,60}$/.test(cislo) || !g.analytikaKlicPovolen(cislo)) continue;   // B81: ani __proto__
         const klic = 'cas/' + cislo;
         const ock = g.analytikaCislo(c && c.ock);
         const proj = g.analytikaCislo(c && c.proj);

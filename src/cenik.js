@@ -338,6 +338,11 @@ const POPISY_MAX_KLIC = 200;
 const POPISY_MAX_TEXT = 300;
 const POPISY_MAX_POLOZEK = 500;
 
+/* B103 (audit 9. 9. 2026; 13. 10. 2026): název položky je klíč mapy. Text
+ * pod klíčem „constructor" shodil sběr textů ze zakázek (`nalez[klic]` našel
+ * funkci Object a `.find` neexistuje → 500), „__proto__" se zapsal do
+ * prototypu a tiše zmizel. Takové názvy se jako klíče nepřijímají. */
+const POPISY_PROTO = ['__proto__', 'constructor', 'prototype'];
 function popisyOciste(vstup) {
   const v = (vstup && typeof vstup === 'object' && !Array.isArray(vstup)) ? vstup : {};
   const out = {};
@@ -345,7 +350,7 @@ function popisyOciste(vstup) {
   Object.keys(v).forEach(k => {
     if (kolik >= POPISY_MAX_POLOZEK) return;
     const klic = String(k == null ? '' : k).trim();
-    if (!klic || klic.length > POPISY_MAX_KLIC) return;
+    if (!klic || klic.length > POPISY_MAX_KLIC || POPISY_PROTO.indexOf(klic) >= 0) return;   // B103
     const t = (typeof v[k] === 'string') ? v[k].trim() : '';
     if (!t) return;                       // prázdný text se neukládá, viz cenikPopisNastav
     out[klic] = t.slice(0, POPISY_MAX_TEXT);
@@ -388,7 +393,7 @@ function popisyJazykyOciste(vstup, texty) {
   Object.keys(v).forEach(k => {
     if (kolik >= POPISY_MAX_POLOZEK) return;
     const klic = String(k == null ? '' : k).trim();
-    if (!klic || klic.length > POPISY_MAX_KLIC) return;
+    if (!klic || klic.length > POPISY_MAX_KLIC || POPISY_PROTO.indexOf(klic) >= 0) return;   // B103
     if (t && !(typeof t[klic] === 'string' && t[klic].trim())) return;
     const j = v[k];
     if (!j || typeof j !== 'object' || Array.isArray(j)) return;

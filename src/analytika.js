@@ -83,12 +83,22 @@ function analytikaNovePocty() {
 }
 
 /* Přičtení mapy klíč→počet (záložky, prvky) do cílové mapy uživatele. */
+/* PROTOTYPOVÉ KLÍČE (B81, audit 9. 9. 2026; opraveno 13. 10. 2026). Klíče
+ * map (prvek, záložka, e-mail, číslo zakázky) posílá klient. „constructor"
+ * našel v prázdné mapě funkci Object — počítadlo se slilo do textu
+ * „function Object()…1" a `pocty.constructor` prošlo jako známé počítadlo;
+ * „__proto__" zapisoval do prototypu místo do mapy. Takové klíče se
+ * zahazují a existence se ptá jen na vlastní vlastnosti. */
+const ANALYTIKA_PROTO = ['__proto__', 'constructor', 'prototype'];
+function analytikaKlicPovolen(k) { return ANALYTIKA_PROTO.indexOf(String(k)) < 0; }
+const analytikaMa = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+
 function analytikaPrictiMapu(cil, zdroj) {
   if (!cil || !zdroj || typeof zdroj !== 'object') return cil;
   Object.entries(zdroj).forEach(([k, n]) => {
     const klic = String(k).slice(0, ANALYTIKA_MAX_KLIC_ZNAKU);
-    if (!klic) return;
-    cil[klic] = (+cil[klic] || 0) + analytikaCislo(n);
+    if (!klic || !analytikaKlicPovolen(klic)) return;
+    cil[klic] = (analytikaMa(cil, klic) ? (+cil[klic] || 0) : 0) + analytikaCislo(n);
   });
   return cil;
 }
@@ -163,17 +173,18 @@ function analytikaDavkaOcisti(den) {
 /* přičtení do mapy se stropem — přeteklé klíče se slévají do „…ostatní",
  * aby rozbitý klient nemohl denní záznam nafouknout do nekonečna */
 function analytikaDoMapy(mapa, klic, kolik) {
-  const k = (mapa[klic] === undefined && Object.keys(mapa).length >= ANALYTIKA_MAX_KLICU)
+  if (!analytikaKlicPovolen(klic)) return;
+  const k = (!analytikaMa(mapa, klic) && Object.keys(mapa).length >= ANALYTIKA_MAX_KLICU)
     ? '…ostatni' : klic;
-  mapa[k] = (mapa[k] || 0) + kolik;
+  mapa[k] = (analytikaMa(mapa, k) ? (mapa[k] || 0) : 0) + kolik;
 }
 
 function analytikaPridej(den, u) {
   if (!u) return den;
   if (u.typ === 'klik' && u.klic) analytikaDoMapy(den.kliky, u.klic, u.n || 1);
   else if (u.typ === 'zdrz' && u.klic) analytikaDoMapy(den.zdrz, u.klic, +u.sek || 0);
-  else if (u.typ === 'zalozka' && u.tab) den.zalozky[u.tab] = (den.zalozky[u.tab] || 0) + 1;
-  else if (u.typ === 'pocet' && u.co && den.pocty[u.co] !== undefined) den.pocty[u.co]++;
+  else if (u.typ === 'zalozka' && u.tab) analytikaDoMapy(den.zalozky, u.tab, 1);
+  else if (u.typ === 'pocet' && u.co && analytikaMa(den.pocty, u.co)) den.pocty[u.co]++;
   return den;                                    // neznámý typ se tiše ignoruje
 }
 
@@ -186,16 +197,17 @@ function analytikaSlij(a, b) {
     Object.entries(d.zdrz || {}).forEach(([k, n]) => analytikaDoMapy(v.zdrz, analytikaKlicOrez(k), analytikaCislo(n)));
     Object.entries(d.zalozky || {}).forEach(([k, n]) => analytikaDoMapy(v.zalozky, analytikaKlicOrez(k), analytikaCislo(n)));
     Object.entries(d.pocty || {}).forEach(([k, n]) => {
-      if (v.pocty[k] !== undefined) v.pocty[k] += analytikaCislo(n);
+      if (analytikaMa(v.pocty, k)) v.pocty[k] += analytikaCislo(n);
     });
     /* starší dny klíč `poUzivateli` nemají — slití to snese */
     Object.entries(d.poUzivateli || {}).forEach(([e, p]) => {
-      const cil = v.poUzivateli[e] || (v.poUzivateli[e] = analytikaNovePocty());
+      if (!analytikaKlicPovolen(e)) return;
+      const cil = (analytikaMa(v.poUzivateli, e) && v.poUzivateli[e]) || (v.poUzivateli[e] = analytikaNovePocty());
       analytikaPrictiMapu(cil.zalozky, p && p.zalozky);
       analytikaPrictiMapu(cil.kliky, p && p.kliky);
       Object.entries(p || {}).forEach(([k, n]) => {
         /* jen čísla — mapy záložek a prvků se slily o dva řádky výš */
-        if (typeof cil[k] === 'number') cil[k] += analytikaCislo(n);
+        if (analytikaMa(cil, k) && typeof cil[k] === 'number') cil[k] += analytikaCislo(n);
       });
     });
   });
@@ -284,7 +296,7 @@ function analytikaRezimNastav(rezim, sber, kdo, kdy) {
 if (typeof module !== 'undefined')
   module.exports = { ANALYTIKA_GDPR_TEXT, ANALYTIKA_NECINNOST_MS, ANALYTIKA_MAX_KLICU,
                      ANALYTIKA_MAX_KLIC_ZNAKU, ANALYTIKA_MAX_HODNOTA,
-                     analytikaCislo, analytikaKlicOrez, analytikaDavkaOcisti,
+                     analytikaCislo, analytikaKlicOrez, analytikaDavkaOcisti, analytikaKlicPovolen,
     ANALYTIKA_RETENCE_MESICU, analytikaKlic, analytikaNovyDen, analytikaPridej,
     analytikaSlij, analytikaPocetZKliku, casNovy, casKrok, analytikaCastZTabu,
     analytikaRetence, analytikaObdobi, analytikaRezimNovy, analytikaRezimNastav,

@@ -77,6 +77,17 @@ z `test-draft` (v12.10.4, 1df7283). Roadmapa #400 (zbytek) a #402–.
   `csvBunka` (format.js): uvozovky + apostrof před `= + - @ TAB CR`. Test
   `src/test_csv_vzorce.js` (15; před 1/5) hlídá i každý budoucí export
   `text/csv` v `src/ui`.
+- **B81 (nízká) — prototypové klíče v analytice.** Klíč „constructor"
+  v dávce klienta našel v mapě funkci Object (počítadlo se slilo do textu,
+  `pocty.constructor` prošlo jako známé), „__proto__" psal do prototypu;
+  totéž e-mail v `poUzivateli` a číslo zakázky v `cas/`. Nový
+  `analytikaKlicPovolen` + dotaz jen na vlastní vlastnosti. `test_analytika.js`
+  +6 (před 5 FAIL).
+- **B103 (nízká) — prototypové klíče v dodatkových textech.** Položka
+  „constructor" shodila sběr textů ze zakázek (`/api/popisy?sber=1` → 500),
+  „__proto__" zmizel. `popisyOciste` a `popisyJazykyOciste` je nepřijmou.
+  `test_cenik_popisy.js` +2 (před 2 FAIL). Mutace B81, B103 (sady přidány
+  do mutací serveru) a přesměrovaná B8 — 3/3.
 
 ## v12.10.4 — integrace nočních dávek N1–N3 (větev claude/integrace-13-10)
 

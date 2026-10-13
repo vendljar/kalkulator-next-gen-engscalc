@@ -67,7 +67,9 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* B148 (12. 10. 2026): razítko úpravy cizího kontaktu. */
      'test_profil.mjs',
      /* Revize #401 (12. 10. 2026): jádro zveřejněného slovníku a razítko v zámku. */
-     '../src/test_slovnik.js'];
+     '../src/test_slovnik.js',
+     /* B81, B103 (13. 10. 2026): prototypové klíče analytiky a dodatkových textů. */
+     '../src/test_analytika.js', '../src/test_cenik_popisy.js'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -530,7 +532,7 @@ const MUTACE = [
     proc: 'záporné číslo by ubíralo, řetězec by otrávil součet' },
 
   { nazev: 'B8: klíč času zakázky se bere, jak přijde', soubor: 'functions/analytika.mjs',
-    hledej: "        if (!/^[\\w\\-. ]{1,60}$/.test(cislo)) continue;",
+    hledej: "        if (!/^[\\w\\-. ]{1,60}$/.test(cislo) || !g.analytikaKlicPovolen(cislo)) continue;",
     nahrad: "        if (false) continue;",
     proc: 'kdokoli přihlášený by zakládal klíče cas/ do nekonečna' },
 
@@ -1275,6 +1277,14 @@ const MUTACE = [
     nahrad: "  if (typeof x === 'string' && ULO_CISLO_TEXT.test(x)) return parseFloat(x.replace(',', '.'));",
     proc: 'ceník s „…,0" by B112 vypadal jako beze změny, jádro by z něj počítalo nuly (B135)' },
   /* ---------- dávka 13. 10. 2026: B138 ---------- */
+  { nazev: 'B81: prototypový klíč v mapě analytiky projde', soubor: '../src/analytika.js',
+    hledej: "function analytikaKlicPovolen(k) { return ANALYTIKA_PROTO.indexOf(String(k)) < 0; }",
+    nahrad: "function analytikaKlicPovolen(k) { return true; }",
+    proc: 'klik „constructor" zapíše do denního záznamu text „function Object()…" (B81)' },
+  { nazev: 'B103: název položky „constructor" v dodatkových textech', soubor: '../src/cenik.js',
+    hledej: "    if (!klic || klic.length > POPISY_MAX_KLIC || POPISY_PROTO.indexOf(klic) >= 0) return;   // B103\n    const t",
+    nahrad: "    if (!klic || klic.length > POPISY_MAX_KLIC) return;\n    const t",
+    proc: 'sběr textů ze zakázek spadne na 500 u položky „constructor" (B103)' },
   { nazev: 'B107: bootstrap hlavního účtu bez verze hesla', soubor: 'functions/prihlaseni.mjs',
     hledej: "             hesloVerze: Date.now() };",
     nahrad: "             };",
