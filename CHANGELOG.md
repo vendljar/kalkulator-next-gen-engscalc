@@ -8,6 +8,37 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v13.10.2 — integrace dávek 13. 10. 2026 do test-draft (větev claude/integrace-13-10b)
+
+Pokyn J. V. 13. 10. 2026: „souhlasím s výchozími, slouč všechny tři větve do
+test-draft". Z `test-draft` (v12.10.4, 1df7283), merge commity (bez rebase)
+v pořadí: `claude/davka-13-10` (#400 zbytek, #402 hlídač harnessů a odkaz na
+release s popisem, #403 nízké nálezy, revize auditu), `claude/cenik-barvy`
+(probarvení ceníků, bez Historické kalkulace), `claude/k22-p2-p6` (P2
+„Opláštit i prohlubeň", P6 zámek strany). Každá větev nesla v13.10.1 →
+integrace v13.10.2. Výchozí odpovědi J. V. ke všem otevřeným otázkám
+odsouhlaseny.
+
+- **Co je nové:** probarvení buněk ceníků (0/prázdné světle červeně, Kč nad
+  40 000 světle oranžově); P6 — druhá strana zakázky se podle čísla nabídky
+  zamkne a vynuluje (OPR → PROJ, OVP → OCK), ruší se „Počítat i tuhle
+  stranu"; P2 přejmenování „Opláštit i prohlubeň"; odkaz na release s popisem
+  změn (`nastroje/release_odkaz.py`); hlídač prohlížečových harnessů.
+- **Co je opravené:** B138, B77-zbytek, B107 (+B42, B25), B129, B130 (#400
+  hotovo); B83, B81, B103, B101, B105, B6, B35 (#403); regrese a obchvaty
+  z auditu dávky (409 po tisku hned po schválení, B101/B138/B103 obchvaty,
+  souběh odhlášení).
+- **Odebráno:** tlačítko a okno „Historická kalkulace".
+
+Konflikty a jak se vyřešily:
+- `CHANGELOG.md`, `PREDAVKA.md`: zachovány záznamy všech větví.
+- `netlify/mutace.mjs` (seznam sad): `test_analytika`, `test_cenik_popisy`,
+  `test_schvalovani` (dávka) + `test_zamek_strany` (P6).
+- `netlify/test_koncova_cena.mjs`: blok B105/B138 (dávka) i blok P6/N4.
+- `src/zakazka.js` `zahrJenRealizaceNabidnout`: sloučeno automaticky —
+  drží B129 (nic u zakázky s odeslanou variantou) i D6f (nic u čísla OPR,
+  návrat `'zrusitJenOck'`).
+
 ## v13.10.1 — dávka po 22. kole: #400 zbytek, visící harness, popis releasů (větev claude/davka-13-10)
 
 Pokyn J. V. 13. 10. 2026 přes koordinační sezení 22. kola. Větev
