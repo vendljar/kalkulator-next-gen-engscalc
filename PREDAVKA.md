@@ -11,7 +11,7 @@ a odeslané zakázky podle návrhu odsouhlaseného J. V. 13. 10. 2026. Do
   odeslané nabídky se nenabízí; zakázka jen ke čtení nepřepisuje zálohu;
   příručka (kap. 8, 29, slovníček); harnessy overit_zaloha_lista, overit_online,
   overit_v23, overit_manual.
-- **Kolo:** (doplní se po kole).
+- **Kolo nad 7e19e40 VŠE ZELENÉ:** sady 233/0/1 (test.js), jádro 193/193, server 358/358, statické 3/3.
 - **Výklady k potvrzení (výchozí v závorce):** odeslaná = aktivní varianta
   zamčená (ano — klon odeslané má žlutou lištu); v oranžové liště zůstalo
   „Založit novou zakázku" (ano); zápis do odeslané nabídky jen ke čtení

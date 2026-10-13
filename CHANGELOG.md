@@ -61,7 +61,7 @@ Testy před → po (před = sestavení v13.10.2 / zdroje před opravou):
 serveru); `overit_v23` 26/5 → 31/0; `overit_manual` nad původní příručkou
 36/2 → nad příručkou s novým obsahem 38/0.
 
-Výsledek kola: (doplní se po kole)
+Výsledek kola (nad 7e19e40, 160 min): **VŠE ZELENÉ** — sady 233 prošlo / 0 selhalo / 1 přeskočeno (test.js), mutace jádra 193/193, mutace serveru 358/358, statické kontroly 3/3.
 
 ## v13.10.2 — integrace dávek 13. 10. 2026 do test-draft (větev claude/integrace-13-10b)
 
