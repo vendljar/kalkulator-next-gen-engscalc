@@ -8,6 +8,28 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v13.10.3 — mez rozměrů 0,6 m a cenové výjimky ve schvalování (větev claude/vyjimky-schvalovani)
+
+Rozhodnutí J. V. 13. 10. 2026 (noční dávka). Větev z `claude/integrace-13-10b`
+(v13.10.2, 0512c51).
+
+- **Mez 0,6 m pro zdvih, šířku a hloubku šachty** (J. V.: „Ano pro zdvih
+  a šířku i hloubku menší než 0,6 m. ostatní zatím neřeš."). Navazuje na
+  B137: `kontrolyRozmery` (`src/kontroly.js`) nově vrací skupinu `male`
+  (kladné číslo pod `KONTROLY_ROZMER_MIN_M` = 0,6 m u `zdvih`, `sirka`,
+  `hloubka`). Zábrana „rozmery" ji nepustí do dokumentu OCK (věta „Rozměr
+  šachty menší než 0,6 m: … — nejspíš překlep"), server ji odmítne jen
+  u NOVÉHO ZÁMKU (`uloRozmeryVZadani` s `naZamek`, volá
+  `zamekNovyRozmeryProblem`) — rozpracovaná zakázka se uloží dál. Přesně
+  0,6 m projde; rozteč, sloupky, nástupiště, čistý vstup beze změny; strana
+  vyřazená P6 se neposuzuje (stávající `zakazkaVyrazena`).
+  *Výklad (výchozí volba):* kód odmítnutí je 400 jako u ostatních rozměrů
+  nového zámku (B137), ne 403 — jde o vadné zadání, ne o právo.
+  Testy: `test_koncova_cena.mjs` +7 (před opravou 4 FAIL: tři zámky pod mezí
+  vracely 200, zábrana mlčela; po 107/0). Mutace +4 (chycené 4/4).
+
+---
+
 ## v13.10.2 — integrace dávek 13. 10. 2026 do test-draft (větev claude/integrace-13-10b)
 
 Pokyn J. V. 13. 10. 2026: „souhlasím s výchozími, slouč všechny tři větve do

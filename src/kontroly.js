@@ -79,6 +79,7 @@ const KONTROLY_ZDVIH_MAX_M = 99;
  *            „1,5" je pro `+x` NaN) → server neuloží NIKDY;
  *   nula   – nula tam, kde musí být kladné číslo;
  *   chybi  – prázdné pole (''/null/chybí);
+ *   male   – zdvih, šířka nebo hloubka kladná, ale pod 0,6 m (13. 10. 2026);
  *   vysoky – zdvih nad 99 m (K17-N91) → server neuloží nikdy.
  * NULA A PRÁZDNO JSOU U ROZPRACOVANÉ ZAKÁZKY BĚŽNÉ: nová zakázka začíná se
  * zdvihem, šířkou, hloubkou, přejezdem i prohlubní 0 (ZADANI_NOVA v
@@ -90,8 +91,18 @@ const KONTROLY_ROZMERY_KLADNE = [['zdvih', 'zdvih'], ['sirka', 'šířka šachty
   ['rohoveSloupky', 'počet rohových sloupků']];
 /* Přejezd i prohlubeň smějí být nula (šachta bez jámy existuje). */
 const KONTROLY_ROZMERY_NEZAPORNE = [['prejezd', 'přejezd'], ['prohluben', 'prohlubeň']];
+/* NEJMENŠÍ ROZMĚR ŠACHTY (rozhodnutí J. V. 13. 10. 2026: „Ano pro zdvih
+ * a šířku i hloubku menší než 0,6 m. ostatní zatím neřeš."). Navazuje na
+ * B137 a otázku 2 nočního #398 (zdvih 0,001 m nebo hloubka 0,01 m prošly
+ * novým zámkem a srazily cenu o 4–40 %). Mez je jen pro tyto tři rozměry
+ * v metrech; rozteč, sloupky, nástupiště a čistý vstup beze změny. Kladné
+ * číslo pod mezí patří do skupiny `male`: zábrana „rozmery" ho nepustí do
+ * dokumentu a server odmítne NOVÝ ZÁMEK (uloRozmeryVZadani `naZamek`);
+ * rozpracovaná zakázka se s ním dál uloží. Přesně 0,6 m projde. */
+const KONTROLY_ROZMER_MIN_M = 0.6;
+const KONTROLY_ROZMERY_MIN = ['zdvih', 'sirka', 'hloubka'];
 function kontrolyRozmery(z) {
-  const out = { spatne: [], nula: [], chybi: [], vysoky: false };
+  const out = { spatne: [], nula: [], chybi: [], male: [], vysoky: false };
   if (!z || typeof z !== 'object') return out;
   const prazdne = (h) => h === null || h === undefined || (typeof h === 'string' && h.trim() === '');
   const zkus = (seznam, kladne) => seznam.forEach(([k, n]) => {
@@ -100,12 +111,13 @@ function kontrolyRozmery(z) {
     const v = typeof z[k] === 'number' || typeof z[k] === 'string' ? +z[k] : NaN;
     if (!isFinite(v) || v < 0) out.spatne.push([k, n]);
     else if (kladne && v === 0) out.nula.push([k, n]);
+    else if (KONTROLY_ROZMERY_MIN.indexOf(k) >= 0 && v < KONTROLY_ROZMER_MIN_M) out.male.push([k, n]);
   });
   zkus(KONTROLY_ROZMERY_KLADNE, true);
   zkus(KONTROLY_ROZMERY_NEZAPORNE, false);
   /* Zdvih nad hranicí 99 m (K17-N91) — posuzuje se jen zdvih, který prošel
    * kladností; jinak by o něm věta mluvila dvakrát. */
-  const vadnyZdvih = out.spatne.concat(out.nula, out.chybi).some(x => x[0] === 'zdvih');
+  const vadnyZdvih = out.spatne.concat(out.nula, out.chybi, out.male).some(x => x[0] === 'zdvih');
   out.vysoky = !vadnyZdvih && +z.zdvih > KONTROLY_ZDVIH_MAX_M;
   return out;
 }
@@ -252,12 +264,16 @@ const KONTROLY = [
         .filter(x => vadneKlice.has(x[0])).map(x => x[1]);
       const zdvih = +z.zdvih;
       const vysoky = r.vysoky;
-      if (!spatne.length && !vysoky) return null;
+      /* Rozměr pod 0,6 m (13. 10. 2026) — kladný, ale nesmyslně malý. */
+      const male = r.male.map(x => x[1]);
+      if (!spatne.length && !vysoky && !male.length) return null;
       /* ZÁBRANA od 25. 9. 2026 (P2 / K16-N75): rozteč 0 dala nabídku za
        * 0 Kč, zdvih −5 nabídku za 433 000 Kč — a obojí šlo vytisknout. Není
        * co vážit, je to omyl v zadání. Totéž platí pro zdvih nad hranicí. */
       const vety = [];
       if (spatne.length) vety.push('V zadání je rozměr nebo počet, který nedává smysl: ' + kontrolyVyctem(spatne) + '.');
+      if (male.length) vety.push('Rozměr šachty menší než ' + String(KONTROLY_ROZMER_MIN_M).replace('.', ',') + ' m: '
+        + kontrolyVyctem(male) + ' — nejspíš překlep (rozměry se zadávají v metrech).');
       if (vysoky) vety.push('Zdvih ' + zdvih.toLocaleString('cs-CZ', { maximumFractionDigits: 3 })
         + ' m je nad nejvyšším povoleným zdvihem ' + KONTROLY_ZDVIH_MAX_M + ' m — '
         + 'nejspíš jde o překlep (zdvih se zadává v metrech).');
@@ -1270,7 +1286,7 @@ function kontrolyPotvrzeniPlati(potvrzeni, vysl) {
 
 if (typeof module !== 'undefined')
   module.exports = { KONTROLY_UROVEN, KONTROLY_UROVEN_ZABRANA,
-                     KONTROLY_VYSKA_DVERI, KONTROLY_ZDVIH_MAX_M, KONTROLY_ROZMERY_KLADNE, KONTROLY_ROZMERY_NEZAPORNE, kontrolyRozmery, kontrolyVyctem, kontrolyBokySirka,
+                     KONTROLY_VYSKA_DVERI, KONTROLY_ZDVIH_MAX_M, KONTROLY_ROZMERY_KLADNE, KONTROLY_ROZMERY_NEZAPORNE, KONTROLY_ROZMER_MIN_M, KONTROLY_ROZMERY_MIN, kontrolyRozmery, kontrolyVyctem, kontrolyBokySirka,
                      kontrolyPravidla, kontrolyProved, kontrolyText, kontrolyProjNavic, kontrolyPlatbyDuvody, kontrolyProjCenyBezSymbolu,
                      kontrolyPotvrzeni, kontrolyPotvrzeniPlati,
                      KONTROLY_DOKUMENTY_STRANY, KONTROLY_BRANA_JINDE, kontrolyDokumentStrana, kontrolyZabranaDokumentu,
