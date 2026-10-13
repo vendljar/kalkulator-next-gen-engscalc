@@ -100,6 +100,36 @@ function cenikDphZahrPole(cesta) {
   });
 }
 
+/* ---------- probarvení buněk ceníku (13. 10. 2026, zadání J. V.) ----------
+ *
+ * Světle červená = nula nebo nevyplněno, světle oranžová = víc než 40 000 Kč.
+ * Pravidlo (cenikBunkaTrida) je v cenik.js a testuje se v Node; tady se jen
+ * políčku přidá jednotka (data-cenik-j) a třída se počítá z toho, co v poli
+ * právě stojí — při vykreslení (tedy i po načtení či přepnutí verze nebo
+ * varianty, které ceník kreslí znovu) a při každém úhozu (posluchač níž).
+ * Jen vzhled: do dat ani výpočtu se nic nezapisuje. */
+function cenikBarvaAttr(jednotka, opts) {
+  return ` data-cenik-j="${esc(jednotka || '')}"${opts && opts.prazdnaOk ? ' data-cenik-prazdna="ok"' : ''}`;
+}
+function cenikObarvi(el) {
+  if (!el || !el.classList || typeof cenikBunkaTrida !== 'function') return;
+  const t = el.disabled ? '' : cenikBunkaTrida(el.value, el.getAttribute('data-cenik-j'),
+    { prazdnaOk: el.getAttribute('data-cenik-prazdna') === 'ok' });
+  el.classList.toggle('cenik-nula', t === 'cenik-nula');
+  el.classList.toggle('cenik-vysoka', t === 'cenik-vysoka');
+}
+function cenikObarviVse(koren) {
+  if (koren && koren.querySelectorAll) koren.querySelectorAll('input[data-cenik-j]').forEach(cenikObarvi);
+}
+if (typeof document !== 'undefined' && document.addEventListener) {
+  const cenikBarvaPriZmene = e => {
+    const t = e.target;
+    if (t && t.matches && t.matches('input[data-cenik-j]')) cenikObarvi(t);
+  };
+  document.addEventListener('input', cenikBarvaPriZmene, true);
+  document.addEventListener('change', cenikBarvaPriZmene, true);
+}
+
 function cenikRows(def, zahrSloupec) {
   return def.map(([grp, items]) => {
     const body = items.map(([path, l, u, note, typ]) => {
@@ -120,8 +150,8 @@ function cenikRows(def, zahrSloupec) {
        * se lidsky — 30. Stejně jako globální přirážka o pár řádků výš
        * (31. 8. 2026, položky ATYP a výchozí rozsahy práce). */
       else if (typ === 'pct') ed = `<input type="number" step="1" value="${val == null || val === '' ? '' : Math.round(val * 10000) / 100}"
-          placeholder="nenastaveno" onchange="set('${path}', this.value === '' ? 0 : (+this.value) / 100)">`;
-      else ed = `<input type="number" step="any" value="${esc(val)}" onchange="set('${path}', +this.value)">`;
+          placeholder="nenastaveno"${cenikBarvaAttr(u)} onchange="set('${path}', this.value === '' ? 0 : (+this.value) / 100)">`;
+      else ed = `<input type="number" step="any" value="${esc(val)}"${cenikBarvaAttr(u)} onchange="set('${path}', +this.value)">`;
       /* TUZEMSKÁ CENA U POLOŽKY „JEN ZAHRANIČNÍ" SE NEZADÁVÁ (P4, nález N6).
        *
        * Ceník verze 27 měl u překladů CZ→DE vyplněnou i ČR hodnotu — dalo se
@@ -139,7 +169,7 @@ function cenikRows(def, zahrSloupec) {
         const jen = jenZahrPolozka;
         zahr = typ ? '<td colspan="2" class="note">—</td>' : `<td class="zahr-bunka">
           <input type="number" step="any" class="zahr-cena${zv === '' ? '' : ' ma'}" value="${esc(zv)}"
-            placeholder="jako ČR" title="prázdné = platí tuzemská cena"
+            placeholder="jako ČR" title="prázdné = platí tuzemská cena"${cenikBarvaAttr(u, { prazdnaOk: true })}
             onchange="cenikZahrSet('${path}', this.value)">
           ${zv === '' ? '' : `<button class="mini noprint" title="převzít tuzemskou cenu"
             onclick="cenikZahrSet('${path}', '')">↺</button>`}</td>
@@ -184,9 +214,9 @@ function cenikCustomRows(sekceKey, sloupcu) {
   const sk = escJs(sekceKey);
   const rows = arr.map(p => `<tr>
       <td><input type="text" value="${esc(p.nazev)}" onchange="katSet('${sk}','${escJs(p.kid)}','nazev',this.value)"></td>
-      <td><input type="number" step="any" value="${+p.cena || 0}" onchange="katSet('${sk}','${escJs(p.kid)}','cena',this.value)"></td>
+      <td><input type="number" step="any" value="${+p.cena || 0}"${cenikBarvaAttr('Kč')} onchange="katSet('${sk}','${escJs(p.kid)}','cena',this.value)"></td>
       ${mezera}
-      <td><input type="number" step="any" style="width:70px" value="${+p.mnozstvi || 1}" onchange="katSet('${sk}','${escJs(p.kid)}','mnozstvi',this.value)" title="výchozí množství v nové nabídce"></td>
+      <td><input type="number" step="any" style="width:70px" value="${+p.mnozstvi || 1}"${cenikBarvaAttr('ks')} onchange="katSet('${sk}','${escJs(p.kid)}','mnozstvi',this.value)" title="výchozí množství v nové nabídce"></td>
       <td><span class="pill ok" title="je součástí každé nové cenové nabídky">trvalá</span>
           <button class="mini noprint" title="odebrat z ceníku i z této zakázky" onclick="katDel('${sk}','${escJs(p.kid)}')">✕</button></td></tr>`).join('');
   const lokal = katalogCil(Z, sekceKey).filter(p => !p.kid).length;
@@ -282,6 +312,7 @@ function renderCenik() {
        ${CENIK_POZN}
      </div></div>
      ${cenikPopisyKarta()}`;
+  cenikObarviVse(document.getElementById('page-cenik'));
 }
 
 /* ================= ČÍSELNÍK DODATKOVÝCH TEXTŮ (25. 9. 2026) =================
@@ -547,6 +578,7 @@ function renderCenikProj() {
          v kartě <b>Databáze programu</b> nahoře (karta je na obou záložkách ceníku a je to táž karta).
          Obě sady tak vždy patří k téže verzi.</div>
      </div></div>`;
+  cenikObarviVse(document.getElementById('page-cenikproj'));
 }
 
 /* ---------- trvalé položky projekce v ceníku PROJ (1. 9. 2026) ----------
@@ -604,8 +636,8 @@ function cenikProjTrvaleRadky(sekce) {
         ${chip}</td>
       <td class="c-hod">${p.typ === 'hod'
         ? `<input type="number" step="any" style="width:90px" value="${+p.hodiny || 0}"
-             title="hodin" onchange="cenikProjTrvaleSet('${sk}','${kidJs}','hodiny',this.value)">`
-        : `<input type="number" step="any" value="${+p.cena || 0}"
+             title="hodin"${cenikBarvaAttr('hod')} onchange="cenikProjTrvaleSet('${sk}','${kidJs}','hodiny',this.value)">`
+        : `<input type="number" step="any" value="${+p.cena || 0}"${cenikBarvaAttr('Kč')}
              onchange="cenikProjTrvaleSet('${sk}','${kidJs}','cena',this.value)">`}</td>
       <td class="c-jed">${p.typ === 'hod' ? 'hod (' + esc(p.sazba || 'projektant') + ')' : 'Kč'}</td>
       <td class="c-pozn">trvalá položka${viceSekci ? ' — ' + esc(sek.nazev) : ''}, je v každé nové nabídce

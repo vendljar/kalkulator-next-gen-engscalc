@@ -8,6 +8,51 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v13.10.1 — probarvení ceníků, bez Historické kalkulace (větev claude/cenik-barvy)
+
+Zadání J. V. 13. 10. 2026. Větev `claude/cenik-barvy` z `test-draft`
+(1df7283, v12.10.4); do `test-draft` jen na pokyn J. V.
+
+### Probarvení buněk ceníku
+
+„Nastav v cenících pravidlo probarvení buněk. Světle červeně všechny, kde je
+hodnota nula nebo není vyplněno a světle oranžově všechny, kde je hodnota
+vyšší než 40000,- Kč."
+
+Výklad:
+- „Ceníky" = editory **Ceník nákladů OCK** a **Ceník nákladů PROJ**
+  (`src/ui/cenik_ui.js`): všechna číselná pole tabulky — hodnoty z
+  `CENIK_DEF`/`CENIK_DEF_PROJ`, sloupec Cena Zahraničí, trvalé (katalogové)
+  položky OCK (cena i výchozí množství) a trvalé položky PROJ (cena / hodiny).
+  Globální přirážka a sazby DPH nad tabulkou probarvené nejsou (nejsou to
+  buňky ceníku, ale pole hlavičky).
+- **Světle červená** = 0 nebo prázdné pole, u všech číselných položek bez
+  ohledu na jednotku. Výjimka: prázdná **Cena Zahraničí** znamená „jako ČR",
+  tedy platný stav — červeně svítí jen zapsaná nula.
+- **Světle oranžová** = hodnota **> 40 000** (přesně 40 000 ne) u položek
+  v Kč: jednotka začíná „Kč" (Kč, Kč/ks, Kč/kg, Kč/hod, Kč/h, Kč/m², Kč/bm,
+  Kč/m, Kč/km, Kč/nýt, Kč/cesta, Kč/j., Kč/m výšky, Kč/nástupiště, Kč/EUR).
+  Ne u %, hod, kg (CENIK_DEF) ani u množství (ks) a hodin trvalých položek.
+  Jednotky jsou v ceníku u každé položky, odhad nebyl potřeba.
+- Barva se počítá z hodnoty v políčku: při vykreslení (otevření záložky,
+  načtení zakázky, přepnutí varianty či verze ceníku — vše ceník kreslí znovu)
+  a živě při psaní (`input`/`change`). Jen vzhled — nic se nezapisuje do dat
+  ani výpočtu.
+
+Kód: pravidlo `cenikBunkaTrida(hodnota, jednotka, {prazdnaOk})` +
+`cenikJednotkaKc`, `CENIK_BARVA_MEZ_KC` v `src/cenik.js` (export pro Node);
+`cenikBarvaAttr`/`cenikObarvi`/`cenikObarviVse` a posluchač v
+`src/ui/cenik_ui.js`; CSS třídy `cenik-nula`, `cenik-vysoka` s barvami jako
+proměnné v `:root` (`--cenik-nula-bg` …). Tmavý režim aplikace nemá.
+
+Testy (pojistka proti prázdnému testu):
+- `src/test_cenik_barvy.js` — před opravou 0 OK / 1 FAIL (pravidlo
+  neexistuje, test končí), po opravě 35 OK / 0 FAIL.
+- `overit_cenik_barvy.mjs` (prohlížeč) — nad sestavením v12.10.4 4 OK /
+  9 FAIL a pád (`cenikObarviVse is not defined`), po opravě 22 OK / 0 FAIL.
+
+---
+
 ## v12.10.4 — integrace nočních dávek N1–N3 (větev claude/integrace-13-10)
 
 Integrační větev z `test-draft` (v12.10.2, d562da1), merge commity (bez

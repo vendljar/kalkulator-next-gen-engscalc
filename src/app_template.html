@@ -25,7 +25,10 @@
 <meta name="theme-color" content="#3A3F45">
 <style>
   :root { --ink:#1a2332; --mut:#6b7686; --line:#dde3ea; --bg:#f4f6f9; --card:#fff;
-          --acc:#1f5eff; --ok:#0a7d4f; --warn:#b45309; --sec:#eef2f8; }
+          --acc:#1f5eff; --ok:#0a7d4f; --warn:#b45309; --sec:#eef2f8;
+          /* probarvení buněk ceníku (13. 10. 2026): nula/prázdno, nad 40 000 Kč */
+          --cenik-nula-bg:#fde2e2; --cenik-nula-okraj:#f2a7a7;
+          --cenik-vysoka-bg:#ffe6c7; --cenik-vysoka-okraj:#f5b56b; }
   /* TESTOVACÍ WEB VYPADÁ JINAK (16. 9. 2026, zadání J. V.: „testovací
      rozhraní musí mít vlastní dummy data a jiný barevný vizuál").
 
@@ -457,6 +460,12 @@
   .ceniktbl td.zahr-bunka { white-space:nowrap; }
   .ceniktbl input.zahr-cena { width:96px; }
   .ceniktbl input.zahr-cena.ma { border-color:#fdba74; background:#fffaf3; }
+  /* Probarvení buněk ceníku (13. 10. 2026, zadání J. V.): světle červená =
+   * nula nebo nevyplněno, světle oranžová = víc než 40 000 Kč. Třídy dává
+   * cenikObarvi() v ui/cenik_ui.js; zdvojená třída přebije .zahr-cena.ma.
+   * Aplikace tmavý režim nemá — barvy jsou proměnné v :root, kdyby přibyl. */
+  .ceniktbl input.cenik-nula.cenik-nula { background:var(--cenik-nula-bg); border-color:var(--cenik-nula-okraj); }
+  .ceniktbl input.cenik-vysoka.cenik-vysoka { background:var(--cenik-vysoka-bg); border-color:var(--cenik-vysoka-okraj); }
   .rada-stitek { font-size:11.5px; font-weight:600; padding:1px 9px; border-radius:999px; margin-left:8px;
                  background:#fff; color:#b45309; border:1px solid #fdba74; text-transform:none; letter-spacing:0; }
   /* Zamčená (nepočítaná) strana zakázky — 23. 8. 2026. Buňky zešednou
