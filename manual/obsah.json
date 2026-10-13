@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v25.9.3 · sestaveno 25. 9. 2026 · nahrazuje příručku ze 17. 9. 2026 (v17.9.3)",
+  "verze": "Platí pro aplikaci v13.10.3 · sestaveno 13. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -11,6 +11,15 @@
         "Snímky obrazovky v téhle příručce jsou pořízené z běžící aplikace, ale nad **zkušebním ceníkem** s vymyšlenými sazbami. **Částky na obrázcích jsou ze zkušebního ceníku a nejsou naše ceny.** Neberte je jako vodítko pro nabídku a nesrovnávejte s nimi svou kalkulaci — sledujte, kde co je a jak se to chová, ne kolik to stojí.",
         "Jména zákazníků na snímcích jsou taky **vymyšlená**. Celá ukázková zakázka **2026 - OPR - CN - 9100** je smyšlená a vznikla jen kvůli téhle příručce.",
         "Příručka je určená obchodníkům ENGINEERS CZ. Popisuje, jak firma počítá nabídky, takže ji zákazníkům ani nikomu mimo firmu neposílejte."
+      ]
+    },
+    {
+      "nadpis": "Co je nového ve verzi v13.10 (říjen 2026)",
+      "odstavce": [
+        "**Jedna zakázka = jedna strana.** Podle čísla nabídky se druhá strana zakázky **uzamkne a vynuluje**: u čísla OPR (a jiných mimo řadu OVP) projekce, u čísla OVP ocelová konstrukce. Projekci k ocelové konstrukci nabízíte samostatnou zakázkou (kapitola 25).",
+        "**„Opláštit i prohlubeň“** — zaškrtávátko pod polem Prohlubeň nastaví všem stěnám opláštění až na dno prohlubně (kapitoly 11 a 13).",
+        "**Rozhodnutí o slevě vrací zpět jen nadřízený** (kapitola 19). **Odhlášení odhlásí všechna vaše zařízení** (kapitola 1).",
+        "Administrátor má v cenících **probarvené buňky** (nula a prázdné světle červeně, vysoké částky světle oranžově, kapitola 28)."
       ]
     },
     {
@@ -35,7 +44,7 @@
         { "typ": "text", "text": "Účet si nezakládáte sami a heslo si sami neobnovujete. Žádná samoobslužná registrace ani obnova hesla e-mailem neexistuje — účet vám založí administrátor a počáteční heslo předá osobně. Když ho zapomenete, resetuje vám ho zase on. Je to o jeden telefonát navíc, ale zase se nikdo nedostane dovnitř tím, že se zmocní vaší schránky." },
         { "typ": "text", "text": "Když se přihlášení nepovede, důvod stojí přímo pod poli. Aplikace schválně **nerozlišuje, jestli je špatně e-mail, nebo heslo** — kdyby to říkala, prozradila by komukoli zvenčí, které e-maily u nás účet mají. Nejčastější příčinou bývá přepnutá klávesnice nebo velké písmeno na začátku hesla z automatické opravy na mobilu." },
         { "typ": "text", "text": "Přihlášení platí **dvanáct hodin**. Ranní přihlášení vám vydrží celý pracovní den a večer vyprší samo. Pokud se aplikace během dne začne chovat, jako byste přihlášený nebyl (zmizí vaše jméno v pravém horním rohu), stačí obnovit stránku a přihlásit se znovu; zakázka, která už jednou byla uložena, je v databázi." },
-        { "typ": "text", "text": "Po změně hesla se **odhlásí všechna ostatní přihlášení** — když se přihlásíte na cizím počítači a zapomenete se odhlásit, stačí si změnit heslo. A po několika chybných pokusech se přihlašování na chvíli zpomalí; správné heslo projde vždycky, brzda míří na hádání hesel, ne na překlepy." }
+        { "typ": "text", "text": "Po změně hesla se **odhlásí všechna ostatní přihlášení** — když se přihlásíte na cizím počítači a zapomenete se odhlásit, stačí si změnit heslo. Od 13. 10. 2026 platí totéž i pro tlačítko **Odhlásit**: **odhlásí vás na všech zařízeních najednou** (počítač v kanceláři, notebook, mobil). Na ostatních zařízeních se pak přihlásíte znovu — zakázky uložené online se tím neztratí. A po několika chybných pokusech se přihlašování na chvíli zpomalí; správné heslo projde vždycky, brzda míří na hádání hesel, ne na překlepy." }
       ]
     },
     {
@@ -44,14 +53,15 @@
       "bloky": [
         { "typ": "text", "text": "Každý účet má jednu ze tří rolí: **Obchodník**, **Vedoucí** a **Administrátor**. Obchodník a Vedoucí mají dnes v aplikaci prakticky stejná práva — obojí smí zakládat, počítat a ukládat zakázky a číst platný ceník, ale ani jeden nesmí ceník zveřejnit, spravovat účty ani vyvážet data. Rozdíl mezi nimi je zatím hlavně organizační. Administrátor je jediná role, která smí sáhnout na ceník, na firemní údaje a na účty." },
         { "typ": "text", "text": "U účtu se kromě e-mailu, jména a role vyplňuje ještě **titul před jménem, funkce a telefon**. Není to evidence pro evidenci: tyhle tři údaje se tisknou do cenové nabídky do bloku „Vypracoval“ místo jména kolegy, které tam kdysi stálo natvrdo v šabloně. Zákazník tedy vidí kontakt na toho, kdo nabídku opravdu psal, a nevolá pokaždé jednomu člověku. Když je administrátor nechá prázdné, doplníte si je sám v okně **Můj profil** (kapitola 3)." },
-        { "typ": "text", "text": "Hlavnímu administrátorskému účtu nejde snížit role ani ho vypnout, a hlídá to server, ne prohlížeč. Je to pojistka proti situaci, kdy by si správce dvěma kliknutími zamkl dveře a nikdo by už firemní ceník nezveřejnil." }
+        { "typ": "text", "text": "Hlavnímu administrátorskému účtu nejde snížit role ani ho vypnout, a hlídá to server, ne prohlížeč. Je to pojistka proti situaci, kdy by si správce dvěma kliknutími zamkl dveře a nikdo by už firemní ceník nezveřejnil." },
+        { "typ": "text", "text": "**Heslo mění administrátor jen cizím účtům.** V seznamu uživatelů má u kolegů tlačítko *Nové heslo…* (reset), ale u svého vlastního řádku **Změnit heslo…** — stejné okno jako každý jiný uživatel, se starým heslem. Resetovat vlastní heslo bez znalosti starého server od 13. 10. 2026 odmítne: kdo by se zmocnil přihlášení správce, nesmí si tímhle obejitím převzít účet natrvalo." }
       ]
     },
     {
       "id": "kap-profil",
       "nadpis": "3. Váš roh hlavičky a Můj profil",
       "bloky": [
-        { "typ": "text", "text": "Vpravo nahoře je všechno, co se týká vás osobně: jméno, role v závorce a nabídka s položkami **Můj profil**, **Změnit heslo** a **Odhlásit**." },
+        { "typ": "text", "text": "Vpravo nahoře je všechno, co se týká vás osobně: jméno, role v závorce a nabídka s položkami **Můj profil**, **Změnit heslo** a **Odhlásit**. Odhlášení platí pro všechna vaše zařízení najednou (kapitola 1)." },
         { "typ": "text", "text": "Heslo si můžete změnit sám, administrátora k tomu nepotřebujete — jen musíte znát to staré. Nové musí mít alespoň osm znaků; kratší server odmítne. Je to jediná cesta, jak se zbavit počátečního hesla, které vám někdo nadiktoval na chodbě, takže ji doporučuji použít hned první den." },
         { "typ": "podnadpis", "text": "Co se o vás vytiskne v nabídce" },
         { "typ": "text", "text": "Blok „Vypracoval“ v cenové nabídce se plní z vašeho účtu, takže na nabídce je ten, kdo ji skutečně počítal. Své údaje si spravujete sám v okně **Můj profil**. E-mail a roli měnit nemůžete (to je věc administrátora), ale titul, jméno, funkci a telefon ano." },
@@ -248,7 +258,8 @@
             { "popisek": "Počet nástupišť", "cely": ".row", "text": "Nová nabídka začíná s **5 nástupišti**, s **odškrtnutými přechodovými plechy** a s **plechem nad dveřmi** — to jsou hodnoty, se kterými se nejčastěji počítá. Rozměry šachty naopak začínají na nule, aby se do nabídky nedostal rozměr, který nikdo nezadal." },
             { "popisek": "Můstky mezi budovou a OCK", "cely": ".row", "text": "**Počet kusů, ne zaškrtávátko.** 0 = šachta žádný můstek nemá, jiné číslo = kolik jich je. Po zadání se ukáže hloubka a šířka můstku (pro kontrolu standardu a specifikaci)." },
             { "popisek": "Způsob zasklení", "cely": ".row", "text": "Volba mezi **na terče** a **mezi příčníky (lišty)**. Co která znamená pro cenu, je v kapitole 13." },
-            { "popisek": "ATYP (nestandardní zakázka)", "cely": ".row", "text": "Zaškrtávátko zůstalo, ale políčko na procenta přirážky vedle něj **zmizelo** — viz kapitola 14." }
+            { "popisek": "ATYP (nestandardní zakázka)", "cely": ".row", "text": "Zaškrtávátko zůstalo, ale políčko na procenta přirážky vedle něj **zmizelo** — viz kapitola 14." },
+            { "popisek": "Opláštit i prohlubeň", "cely": ".row", "text": "**Opláštit i prohlubeň** — zkratka, která pošle opláštění všech čtyř stěn až na dno prohlubně. Co přesně udělá, je v kapitole 13." }
           ]
         },
         { "typ": "text", "text": "Mezi způsobem zasklení a typem portálů přibyl přepínač **Opláštění**: **jednotné (standard)**, nebo **po stěnách A–D**. Většina zakázek zůstává u jednotného; co umí režim po stěnách, je v kapitole 13." },
@@ -317,6 +328,8 @@
             { "pojem": "jiné", "vyklad": "Materiál, který ceník nezná. Název a náklad za m² napíšete rovnou do zadání. Bez sazby by se počítal za nulu, proto na to obrazovka upozorní." }
           ]
         },
+        { "typ": "podnadpis", "text": "Opláštit i prohlubeň" },
+        { "typ": "text", "text": "Pod polem **Prohlubeň** v Zadání šachty je zaškrtávátko **Opláštit i prohlubeň** (dřívější název mluvil o skle — opláštění stěny ale sklo být nemusí, může to být třeba plech). Zaškrtnutím nastavíte **všem čtyřem stěnám** „Opláštění začíná“ = minus hloubka prohlubně, tedy plášť až na dno prohlubně. Je-li zakázka v jednotném opláštění, přepne se tím na **po stěnách A–D** s výchozími typy stěn — proto to není úplně cenově neutrální a dělá se jen vědomým zaškrtnutím. Dokud je zaškrtnuto, změna hloubky prohlubně meze stěn posune s sebou; ruční změna „Opláštění začíná“ u jedné stěny zkratku zruší. U nulové prohlubně není co opláštit — aplikace to řekne a zaškrtnutí vrátí. V Detailu výpočtu je k tomu řádek **Opláštěná prohlubeň**." },
         { "typ": "text", "text": "Vedle každé stěny je **nákres**: pruh rozdělený na pásy v poměru skutečných výšek, barva podle materiálu, kóty u rozhraní, čárkovaná čára úrovně nástupiště a šrafa u úseků „bez“. Pod nákresem je plocha stěny a pod kartou legenda s plochami podle typu. Jsou to tatáž čísla, ze kterých vychází cena." },
         { "typ": "text", "text": "**Varování si přečtěte.** Obrazovka upozorní na chybějící dělicí výšku nebo na dělicí výšky, které zdola nahoru nerostou, na dolní mez nad horní hranou stěny nebo pod dnem prohlubně, na dělicí výšku nad horní hranou a na typ „jiné“ bez sazby. Výpočet by takový pás jinak mlčky přeskočil a přišlo by se na to až u zákazníka." },
         {
@@ -400,7 +413,7 @@
         },
         {
           "typ": "obrazek", "snimek": "volitelne-po",
-          "titulek": "PO zaškrtnutí *Přechodové plechy* v Zadání šachty — přepnuly se oba řádky naráz.",
+          "titulek": "PO zaškrtnutí „Přechodové plechy“ v Zadání šachty — přepnuly se oba řádky naráz.",
           "odkazy": [
             { "pole": "PŘECHODOVÉ PLECHY - NEREZ", "cely": "tr", "text": "Materiál: aplikace dosadila množství **7,752** i cenu. Množství spočítala z rozměrů šachty, nepíšete ho." },
             { "pole": "PŘECHODOVÉ PLECHY - NEREZ (MONTÁŽ)", "cely": "tr", "text": "Montáž se zaškrtla **spolu s materiálem**, aniž byste na ni sáhl. Tohle je ta změna: dřív šlo omylem naúčtovat materiál bez montáže." }
@@ -471,6 +484,7 @@
           ]
         },
         { "typ": "text", "text": "Tři věci, které vám ušetří telefonáty. **Rozhodnutí je podepsané** jménem a časem, takže se zpětně pozná, kdo slevu pustil. **Rozhodnutí platí na to procento, o kterém se rozhodovalo** — když po schválení slevu zvednete třeba z 6 na 9 %, žádost se vrátí do stavu *čeká* a staré razítko se smaže; snížit slevu po schválení můžete bez nového kolečka. A **uzamčená nabídka se už nepřepočítává**: co odešlo zákazníkovi, je doklad." },
+        { "typ": "text", "text": "**Rozhodnutí vrátit zpět smí jen nadřízený** (od 13. 10. 2026). Tlačítko **Vrátit rozhodnutí** v záložce *Schvalování slev* má jen ten, kdo smí o té slevě rozhodnout. Uložením zakázky se schválení ani zamítnutí do stavu *čeká* nevrátí — server ponechá uložené rozhodnutí i s podpisem. Chcete-li o zamítnuté slevě jednat znovu, změňte procento: nové procento je nová žádost." },
         { "typ": "text", "text": "Rozhoduje se v záložce *Schvalování slev*, kterou podle nastavení nemusíte vidět vůbec. Schválení ověřuje **server**, ne prohlížeč — jméno schvalovatele si píše sám podle toho, kdo je přihlášený, a pokus uložit schválení nad vlastní strop neprojde." }
       ]
     },
@@ -635,8 +649,32 @@
         { "typ": "text", "text": "Sazba DPH, sleva i obchodní zaokrouhlení zůstávají u OCK a u projekce **samostatné**. Sleva OCK a sleva PROJ se nikdy nesjednocují: jsou to dvě samostatná obchodní rozhodnutí a aplikace to hlídá zvláštním testem, aby to nikdo omylem nespojil." },
         { "typ": "text", "text": "Zaškrtávátko **„Zakázka je jen projekce (bez OCK)“** pod cenou vypne hlídání a porovnávání části OCK. Použijte ho u zakázek, kde ocelovou konstrukci vůbec nenabízíme — jinak vás bude aplikace oprávněně upozorňovat na prázdnou část OCK." },
         { "typ": "podnadpis", "text": "Uzamčená a vynulovaná kalkulace: kde vzniká cenovka" },
-        { "typ": "text", "text": "Jedna zakázka = jedna strana = jedno číslo nabídky, stejně jako v Pipedrive, kde se projekce a ocelová konstrukce evidují vždy zvlášť. Podle čísla nabídky se pozná, kde cenovka vzniká: **řada OVP = projekce (PROJ), ostatní čísla = realizace (OCK)**. Druhá strana se **uzamkne a vynuluje** — zadání v ní zůstává vidět jen pro čtení, ale všude ukazuje 0 Kč, nesčítá se do marže ani přehledů, nekontroluje se a její dokumenty (nabídka, krycí list, smlouva o dílo, plán plateb) nevzniknou. Nahoře svítí oranžová lišta s tím, kde cenovka vzniká a pod jakým číslem, a tlačítko *Přejít do počítané kalkulace*." },
-        { "typ": "text", "text": "Když jsou vyplněná **obě čísla** (číslo zakázky a k tomu vlastní číslo projekce), **vede OCK** — číslo zakázky je to, pod kterým se eviduje — a projekce se vynuluje. Dokud číslo nemá ani jedna strana, počítají se obě: obchodník se teprve rozhoduje. **Projekci k ocelové konstrukci nabídněte samostatnou zakázkou s vlastním číslem řady OVP** (Seznam zakázek → *Duplikovat jako novou zakázku*). Vynulování nic nemaže: smažete-li nebo změníte číslo, cena se vrátí na korunu. Starší zakázku, která dřív počítala obě strany, na to upozorní kontrola před nabídkou." },
+        { "typ": "text", "text": "Jedna zakázka = jedna strana = jedno číslo nabídky, stejně jako v Pipedrive, kde se projekce a ocelová konstrukce evidují vždy zvlášť. Podle čísla nabídky se pozná, kde cenovka vzniká: **řada OVP = projekce (PROJ), ostatní čísla = realizace (OCK)**. Druhá strana se **uzamkne a vynuluje** — zadání v ní zůstává vidět jen pro čtení, ale všude ukazuje 0 Kč, nesčítá se do marže ani přehledů, nekontroluje se a její dokumenty (nabídka, krycí list, smlouva o dílo, plán plateb) nevzniknou." },
+        {
+          "typ": "seznam",
+          "polozky": [
+            { "pojem": "Číslo OPR (nebo jiné mimo řadu OVP)", "vyklad": "Cenovka vzniká v **Kalkulaci OCK**. Kalkulace PROJ je uzamčená a **vynulovaná** (0 Kč)." },
+            { "pojem": "Číslo řady OVP", "vyklad": "Cenovka vzniká v **Kalkulaci PROJ**. Kalkulace OCK je uzamčená a **vynulovaná** (0 Kč)." },
+            { "pojem": "Obě čísla", "vyklad": "Číslo zakázky a k tomu vlastní číslo projekce: **vede OCK** — číslo zakázky je to, pod kterým se zakázka eviduje — a projekce se vynuluje." },
+            { "pojem": "Bez čísla", "vyklad": "Dokud číslo nemá ani jedna strana, **počítají se obě** — obchodník se teprve rozhoduje. Jakmile číslo vyplníte, druhá strana se zamkne." }
+          ]
+        },
+        {
+          "typ": "obrazek", "snimek": "zamek-strany",
+          "titulek": "Lišta nad uzamčenou a vynulovanou Kalkulací PROJ u zakázky s číslem OPR.",
+          "odkazy": [
+            { "obsahuje": "Cenovka téhle zakázky vzniká", "text": "Kde cenovka vzniká a pod jakým číslem. Tahle strana se nikam nepočítá a její dokumenty nevzniknou." },
+            { "sel": "button", "text": "**Přejít do počítané kalkulace** je jediné tlačítko lišty. Dřívější tlačítko, kterým šlo vyřazenou stranu přesto počítat, je od 13. 10. 2026 zrušené — druhou stranu už počítat nejde." }
+          ]
+        },
+        { "typ": "text", "text": "**Projekci k ocelové konstrukci nabídněte samostatnou zakázkou s vlastním číslem řady OVP** (Seznam zakázek → *Duplikovat jako novou zakázku*); totéž obráceně pro ocelovou konstrukci k projekci. Vynulování nic nemaže: zadání vyřazené strany zůstává v datech, a smažete-li nebo změníte číslo, cena se vrátí na korunu. Odeslané nabídky se nemění — co odešlo, je doklad; nový krycí list a přehledy ale už počítají jen vedoucí stranu." },
+        {
+          "typ": "ram", "nadpis": "Starší zakázka, která počítala obě strany",
+          "odstavce": [
+            "Zakázka uložená před 13. 10. 2026, která počítala projekci i OCK (měla obě čísla, nebo byla výslovně přepnutá na počítání obou stran), se po otevření řídí novým pravidlem: **vede OCK a projekce se vynuluje**. Kontrola před nabídkou na to upozorní nálezem **„Zakázka dřív počítala projekci i OCK“**: od této verze se nabízejí zvlášť, Kalkulace PROJ je vynulovaná a projekci je třeba nacenit v samostatné zakázce. Je to upozornění, ne zábrana — nabídku OCK vytisknete.",
+            "Zahraniční zakázka bez čísla může mít příznak **Zakázka je jen realizace (bez PROJ)** — zaškrtávátko je pak v liště nad projekcí a jeho odškrtnutím se projekce zase počítá (pokud ji nevyřazuje číslo nabídky)."
+          ]
+        },
         { "typ": "text", "text": "Praktická drobnost z ceníku projekce: u dopravy je zaškrtávátko **„mimo Prahu“**, které přičte paušál z ceníku a při změně ceníku se přepočítá. Ruční pole v Kč vedle něj je **příplatek navíc, ne tatáž věc**." }
       ]
     },
@@ -699,6 +737,7 @@
       "nadpis": "28. Co v aplikaci nevidíte a proč",
       "bloky": [
         { "typ": "text", "text": "Jako obchodník neuvidíte několik záložek, které existují: **Ceník nákladů OCK**, **Ceník nákladů PROJ**, **Detail výpočtu** (OCK), **Technická specifikace OCK Data**, **Schvalování slev** a **Nastavení**. Nejsou skryté před vámi osobně — jsou skryté před rolí. Ceníky obsahují nákladové sazby, tedy to nejcitlivější, co firma má." },
+        { "typ": "text", "text": "Pro představu, co tam administrátor vidí: od 13. 10. 2026 jsou v obou cenících **probarvené buňky**. **Světle červeně** svítí položka s nulou nebo nevyplněná — tedy cena, která by se v kalkulaci počítala za nic. **Světle oranžově** svítí částka v korunách **nad 40 000 Kč**, aby se nepřehlédl překlep o řád. Prázdná **Cena Zahraničí** nesvítí: znamená „jako v ČR“, a to je platný stav (červeně tam svítí jen zapsaná nula). Barva je jen vodítko na obrazovce — do ceny ani do nabídky nic nepíše." },
         { "typ": "text", "text": "**Cenu ale máte pod kontrolou celou**: sleva, obchodní zaokrouhlení a výsledná cena nabídky jsou vaše pole a jsou vidět v kalkulaci. To, co je schované, jsou vstupy do nákladu — ne výstup, se kterým jednáte se zákazníkem. Jediná mez je strop slevy podle role." },
         { "typ": "podnadpis", "text": "Sloupce Viditelné a Výchozí" },
         { "typ": "text", "text": "V kalkulaci existují ještě dva koncové sloupce, **Viditelné** a **Výchozí**. Vidí je jen administrátor a není to opomenutí: nenastavují tuhle zakázku, ale **celou aplikaci** — tedy to, co uvidí v nové nabídce všichni. Kdybyste je viděl na cizím snímku obrazovky nebo je znal ze starší příručky, tohle je důvod, proč je nemáte. Sloupec *Počítat* v Kalkulaci PROJ zůstává: ten se týká jen otevřené nabídky." },

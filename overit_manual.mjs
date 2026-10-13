@@ -114,6 +114,37 @@ test('příručka říká, že Model 1 je zmrazený a počítá se Modelem 2',
 test('příručka popisuje termín dodání v nabídce vč. prodloužení za ATYP',
   /Termín dodání/.test(text) && /ATYP/.test(text) && /V\. TERMÍNY REALIZACE|kapitol\w* V\./.test(text));
 
+/* Od 13. 10. 2026 (v13.10.3, rozhodnutí J. V. „Příručka — Ano"): změny
+ * v13.10.2, které obchodník uvidí hned. Zámek strany (P6) včetně snímku
+ * lišty, nový název zkratky (P2), barvy ceníků, odebrané tlačítko,
+ * hesla a odhlášení (B77-zbytek, B6) a vracení rozhodnutí o slevě (B101). */
+test('P6: zámek strany — OPR → PROJ vynulovaná, OVP → OCK, obě čísla → vede OCK, bez čísla obě',
+  /uzamkne a vynuluje/.test(text) && /Číslo OPR/.test(text) && /Číslo řady OVP/.test(text)
+  && /vede OCK/.test(text) && /počítají se obě/.test(text));
+test('P6: upozornění „Zakázka dřív počítala projekci i OCK" u starších zakázek',
+  /Zakázka dřív počítala projekci i OCK/.test(text));
+test('P6: zrušené tlačítko pro počítání vyřazené strany se už nenabízí',
+  !/Počítat i tuhle stranu/.test(text) && /zrušené/.test(text));
+test('P6: snímek lišty uzamčené strany (zamek-strany)',
+  /Cenovka téhle zakázky vzniká/.test(text) && /Přejít do počítané kalkulace/.test(text));
+test('P2: „Opláštit i prohlubeň" (ne „Prosklít…")',
+  /Opláštit i prohlubeň/.test(text) && !/Prosklít i prohlub/i.test(text));
+test('probarvení ceníků: 0/prázdné červeně, nad 40 000 Kč oranžově, prázdná Cena Zahraničí nesvítí',
+  /Světle červeně/.test(text) && /40 000 Kč/.test(text) && /Cena Zahraničí/.test(text) && /jako v ČR/.test(text));
+test('tlačítko „Historická kalkulace" se v příručce ani na snímcích nevyskytuje',
+  !/Historick\S* kalkulac/i.test(text));
+test('B77/B6: vlastní heslo správce „Změnit heslo…", odhlášení na všech zařízeních',
+  /Změnit heslo…/.test(text) && /všech zařízeních/.test(text));
+test('B101: rozhodnutí o slevě vrací zpět jen nadřízený', /vrátit zpět smí jen nadřízený/.test(text));
+
+/* Značky zvýraznění se musí provést (13. 10. 2026): obsah.json psal
+ * *kurzívu* na 70 místech, renderer ji neznal a v příručce svítily holé
+ * hvězdičky. Hledá se jen v próze (bez snímků). */
+const proza = await stranka.evaluate(() => document.body.innerText);
+const hvezdicky = proza.match(/.{0,20}\*[^\s*].{0,20}/g) || [];
+test('v próze nejsou holé hvězdičky (kurzíva i tučné se vykreslily)', hvezdicky.length === 0,
+  hvezdicky.length + ': ' + hvezdicky.slice(0, 2).join(' | '));
+
 const vyska = await stranka.evaluate(() => document.body.scrollHeight);
 test('stránka není prázdná', vyska > 3000, vyska);
 
