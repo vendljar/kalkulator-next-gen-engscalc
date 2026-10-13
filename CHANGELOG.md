@@ -32,6 +32,22 @@ z `test-draft` (v12.10.4, 1df7283). Roadmapa #400 (zbytek) a #402–.
   (kód 124 po 500 s), po opravě skončí za 120 s kódem 1 s popisem kroku.
   Test `src/test_harness_hlidac.js` (11; mutace bez obalení → kód 1 bez
   souhrnu, mutace `konec(0)` → 2 FAIL).
+  Strop je proměnná uvnitř `spust_prohlizec` (sada `test_harness_podklady.js`
+  si funkci vyjímá samotnou — s proměnnou mimo funkci padala 5/25); sada
+  nově podstrčí i visící harness (`KNG_HARNESS_LIMIT=2`) → selhání s „HARNESS
+  VISEL", 25/0.
+- **B138 (střední) — dvoukrok se starší zveřejněnou verzí ceníku.** (1) nová
+  zakázka se starší verzí celou (200), (2) platný ceník + klíč, který starší
+  verze neměla (import ho doplnil nulou, např. hodiny statiky opláštění) = 0
+  → 200 i se zámkem. Rozhodnutí J. V. 12. 10.: opravit. Kontrola ceníku
+  (`src/uloziste.js`, skupiny B128) ve skupině „uložená verze + platný ceník"
+  odmítne nulu, kterou nese jen uložená verze, ve SMĚSI (ceník se od uložené
+  verze liší) — leda ji některá zveřejněná verze skutečně nesla nebo ji má
+  i platný ceník. Uložení beze změny ceníku a přechod na platný ceník celý
+  projdou dál. Klient: přepočet vybraných položek (`cenikPrepocti`) přepočte
+  i takovou nulu (zakázkové hodnoty ne). Testy: `test_koncova_cena.mjs` +9
+  (před 3 FAIL — krok 2, 2+3 se zámkem, klon; po 83/0), `test_cenik_stari.js`
+  +1 (před FAIL, po OK); mutace serveru B138 ×2 (chycené 2/2).
 
 ## v12.10.4 — integrace nočních dávek N1–N3 (větev claude/integrace-13-10)
 

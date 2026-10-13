@@ -411,6 +411,19 @@ test('přepočítat jde i jen vybrané položky – dohodnutá cena zůstane', (
     && vv.data.cenik.montazHodKc === STARA_MONTAZ;
 })());
 
+/* B138 (rozhodnutí J. V. 12. 10. 2026): klíč, který starší verze neměla
+ * (import ho doplnil nulou), se přepočítá i při výběru jiných položek —
+ * server směs s takovou nulou odmítne. Zakázková přirážka zůstává. */
+test('B138: přepočet vybraných položek doplní i nulu místo ceny dnešního ceníku', (() => {
+  const { v: vv } = staraVarianta();
+  const dnes = DNES(); dnes.cenik.statikaOplHod = 6;
+  vv.data.cenik.statikaOplHod = 0;
+  const marzePred = vv.data.cenik.marze; dnes.cenik.marze = (+marzePred || 0) + 0.05;
+  cenikPrepocti(vv, dnes, { cesty: ['C.powertechExt'], dnes: '2026-07-29' });
+  return vv.data.cenik.statikaOplHod === 6 && vv.data.cenik.montazHodKc === STARA_MONTAZ
+    && vv.data.cenik.marze === marzePred;
+})());
+
 test('zamčená varianta se přepočítat nedá', (() => {
   const { v: vv } = staraVarianta();
   zamkniVariantu(vv, { typ: 'nabidkaOck', kdo: 'JV', cislo: '2026 - OPR - CN - 0500',

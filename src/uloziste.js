@@ -1671,9 +1671,35 @@ function uloCenikProblemy(zak, stara, opts) {
         .concat(jine.map((x, i) => ({ x, k: kJine[i] }))
           .filter(o => !jeSestaveniRady(o.k, radaVar ? radaVar(o.x.data) : 'cr'))
           .map(o => [o.k].concat(kPlatny)), kZv.map(k => [k]));
+      /* KLÍČ, KTERÝ STARŠÍ VERZE NEMĚLA (B138, audit 12. 10. 2026). Zakázka
+       * založená ze starší zveřejněné verze nese klíč, který ta verze neměla,
+       * jako nulu (doplnil ho import). Ve skupině „uložená verze + platný
+       * ceník" ta nula seděla s uloženou verzí — dvoukrok: (1) starší verze
+       * celá, (2) platný ceník + ten klíč = 0, i se zámkem (−0,7 až −1,7 %).
+       * Rozhodnutí J. V. 12. 10.: ve SMĚSI (ceník už se od uložené verze
+       * liší) nesmí taková nula zůstat — ani při přepočtu vybraných položek.
+       * Nula, kterou některá zveřejněná verze skutečně nesla, je dál
+       * přípustná; uložení beze změny ceníku (žádná směs) taky. */
+      const surove = verze.map(z => uloB112Listy(c.pred === 'cenik.' ? z.cenik : z.cenikProj, okPrirazka));
+      const doplnenaNula = (g) => {
+        if (g.length < 2) return [];
+        const ref = g[0], hod = (k, p) => (p in k ? k[p] : '');
+        const cesty = new Set(Object.keys(listy).concat(Object.keys(ref)));
+        if (![...cesty].some(p => hod(listy, p) !== hod(ref, p))) return [];   // žádná směs
+        const out = [];
+        cesty.forEach(p => {
+          const h = hod(listy, p);
+          if (h !== 0 && h !== '') return;
+          if (hod(ref, p) !== h) return;                                       // nula není z uložené verze
+          if (g.slice(1).some(k => hod(k, p) === h)) return;                   // nulu nese i platný ceník
+          if (surove.some(k => p in k && k[p] === h)) return;                  // skutečná nula některé verze
+          out.push(c.pred + p);
+        });
+        return out;
+      };
       let rozdily = null;
       for (const g of skupiny) {
-        const r = uloB112Rozdily(listy, g, c.pred, g[0]);
+        const r = uloB112Rozdily(listy, g, c.pred, g[0]).concat(doplnenaNula(g));
         if (!rozdily || r.length < rozdily.length) rozdily = r;
         if (!r.length) break;
       }

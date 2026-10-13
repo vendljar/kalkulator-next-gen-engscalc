@@ -144,9 +144,8 @@ fi
 # visel na page.evaluate nad skutečným modálem a celé kolo stálo bez výpisu.
 # Harness má vlastní hlídač (nastroje/harness_hlidac.js); tenhle strop je
 # pojistka pro všechny ostatní — kód 124/137 = visel, počítá se jako SELHÁNÍ.
-HARNESS_LIMIT="${KNG_HARNESS_LIMIT:-900}"
 spust_prohlizec() {
-  local f="$1"
+  local f="$1" HARNESS_LIMIT="${KNG_HARNESS_LIMIT:-900}"
   ( cd .. && NODE_PATH="$(npm root -g 2>/dev/null)" timeout --kill-after=15 "$HARNESS_LIMIT" node "$f" ) > /tmp/kng_prohlizec_out.txt 2>&1
   local kod=$?
   if [ "$kod" -eq 124 ] || [ "$kod" -eq 137 ]; then
