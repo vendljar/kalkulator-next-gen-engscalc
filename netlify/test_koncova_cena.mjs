@@ -228,11 +228,12 @@ for (const [popis, uprava] of [['jenZahr: 5', c => { c.jenZahr = 5; }], ['popisy
   vlastniOck(z, 1); vlastniProj(z, 1); zamkni(z);
   const r = await uloz(z, cO);
   /* jenZahr: 5 od revize N1 zastaví už typová kontrola (400) — jinak 403 z #395 V3. */
-  test('B136: obchodník — ceník sestavení + ' + popis + ' + vlastní položka 1 Kč + nový zámek → 4xx', je4xx(r) && /ceník|jenZahr/.test(r.chyba || ''), r);
+  test('B136: obchodník — ceník sestavení + ' + popis + ' + vlastní položka 1 Kč + nový zámek → 4xx', je4xx(r) && /ceníku bez cen|jenZahr/.test(r.chyba || ''), r);
 }
 { const z = nova('B136 OCK+PROJ'); sestaveni(z, 'proj'); d0(z).proj.cenik.jenZahr = 5; vlastniProj(z, 1); zamkni(z, 'nabidkaProj');
   const r = await uloz(z, cO);
-  test('B136: obchodník — OCK platný + PROJ sestavení (+ jenZahr) + zámek nabídky PROJ → 403', r.status === 403, r); }
+  /* Věta V3 — od 13. 10. 2026 by zámek odmítla i cenová výjimka (směs). */
+  test('B136: obchodník — OCK platný + PROJ sestavení (+ jenZahr) + zámek nabídky PROJ → 403 (V3, u čísla OPR už P6)', r.status === 403 && /ceníku bez cen|jenZahr|vynulovan/.test(r.chyba || ''), r); }
 { const f = globalThis.ukazkoveMaCisla;
   const s = Object.assign(kopie(globalThis.DEFAULT_CENIK), { jenZahr: 5, rada: 7, popisyJazyky: { a: 3 } });
   test('B136: ukazkoveMaCisla — volné klíče nejsou cena (se vzorem i bez něj)', !f(s, globalThis.DEFAULT_CENIK) && !f(s), s);
