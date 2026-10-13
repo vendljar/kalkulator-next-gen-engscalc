@@ -113,6 +113,12 @@ const ZAKAZKY = {
   atyp: { cislo: '2026 - OPR - CN - 9103', objednatel: 'Zkušební nemovitosti s.r.o.',
     nazevAkce: 'atypická šachta v zrcadle schodiště', kontakt: 'Petr Vzorek',
     adresa: 'Zkušební 5, Ostrava' },
+  /* Projekce s číslem řady OVP (13. 10. 2026, P6 — zámek strany): od v13.10.2
+   * je u čísla OPR Kalkulace PROJ uzamčená a vynulovaná, takže Detail výpočtu
+   * PROJ se fotí tady, kde se projekce opravdu počítá. */
+  projekce: { cislo: '2026 - OVP - CN - 9104', objednatel: 'Vzorové bytové družstvo',
+    nazevAkce: 'projekce výtahu k fasádě bytového domu', kontakt: 'Eva Modelová',
+    adresa: 'Modelová 7, Brno' },
 };
 const ZAKAZNICI = [
   { nazev: 'Ukázková správa budov s.r.o.', sidlo: 'Vzorová 12, 140 00 Praha 4', kontaktOsoba: 'Jan Ukázka' },
@@ -358,6 +364,16 @@ await uloz();
 
 await zalozka('spec');
 await vezmi('spec-zdroj-hodnot', '#page-spec .spec-doc');
+/* Zámek strany (P6, rozhodnutí J. V. 13. 10. 2026): zakázka 9100 má číslo
+ * OPR, takže Kalkulace PROJ je uzamčená a vynulovaná — lišta nad ní je to,
+ * co obchodník uvidí, když se do projekce přepne (kapitola 25). */
+await zalozka('proj');
+await vezmi('zamek-strany', '#page-proj .zamek-lista[data-strana-vyrazena="proj"]');
+
+/* ---- 9104: projekce (číslo OVP) — Detail výpočtu PROJ ---- */
+krok('zakázka 9104 (projekce, číslo OVP)');
+await novaZakazka(ZAKAZKY.projekce, ZADANI_ZAKLAD);
+await uloz();
 await zalozka('detailproj');
 await vezmi('detail-proj-vysvetleni', '#page-detailproj');
 
