@@ -1,3 +1,18 @@
+# Předávka — větev `claude/bezpecnost-noc` (v13.10.3, noc 13./14. 10. 2026)
+
+Subagent sezení session_01WrUq3gXEhsWk8cxRWfPvsg, z `claude/integrace-13-10b`
+(v13.10.2). Zadání J. V. 13. 10. 2026 (obojí „Ano"): B35 a B77. Detaily
+a testy před/po: CHANGELOG v13.10.3. Do `test-draft` nic — na pokyn J. V.
+
+- **B35 hotovo** — klíč `cas/` v analytice jen pro zakázku z rejstříku.
+- **B77 hotovo** — založení správce, povýšení na správce, reset cizího hesla
+  a obnova účtů z otisku chtějí `hesloSpravce` (UI se ptá dialogem).
+- Kolo: viz CHANGELOG v13.10.3.
+- Při slučování: konflikty čekej v `netlify/mutace.mjs` (nové mutace B35/B77),
+  `netlify/test_prava.mjs` (matice + blok B77), `src/ui/online_ui.js`
+  (onlineApi, správa účtů, obnova). Roadmapa needitována (B35 je v položce
+  „Dlouhodobě otevřené nízké nálezy", B77 v F5) — doplní integrace.
+
 # Předávka — 13. 10. 2026: dávka po 22. kole ve větvi `claude/davka-13-10` (v13.10.1)
 
 Sezení session_01WrUq3gXEhsWk8cxRWfPvsg (založilo koordinační sezení 22. kola).
