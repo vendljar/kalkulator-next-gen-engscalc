@@ -48,6 +48,13 @@ z `test-draft` (v12.10.4, 1df7283). Roadmapa #400 (zbytek) a #402–.
   i takovou nulu (zakázkové hodnoty ne). Testy: `test_koncova_cena.mjs` +9
   (před 3 FAIL — krok 2, 2+3 se zámkem, klon; po 83/0), `test_cenik_stari.js`
   +1 (před FAIL, po OK); mutace serveru B138 ×2 (chycené 2/2).
+- **B77-zbytek (střední) — reset hesla na vlastní účet.** Akce „heslo"
+  (reset správcem) na VLASTNÍ účet obešla `mojeheslo` — bez starého hesla
+  a bez brzdy; kdo se dostal k cookie správce (i hlavního), převzal účet
+  natrvalo. Server ji teď odmítne (403, odkaz na „Změnit heslo"); v seznamu
+  uživatelů vlastní řádek nabízí „Změnit heslo…" (dialog se starým heslem),
+  cizí dál „Nové heslo…". Testy: `test_prava.mjs` +3 (před 2× 200, po 805/0),
+  `overit_online.mjs` +2 (před 214/1, po 215/0); mutace serveru chycená.
 
 ## v12.10.4 — integrace nočních dávek N1–N3 (větev claude/integrace-13-10)
 

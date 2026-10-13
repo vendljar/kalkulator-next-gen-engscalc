@@ -1787,6 +1787,18 @@ console.log('\n===== AUDIT B7: HESLO HLAVNÍHO ÚČTU =====\n');
   test('B7: vedlejší administrátor dál resetuje hesla ostatním',
     (await post(uzivatele, 'http://x/api/uzivatele',
       { akce: 'heslo', email: 'terc@example.com', heslo: 'TercHeslo2' }, UCTY['Administrátor'].cookie)).status === 200);
+  /* B77-zbytek (13. 10. 2026): reset na VLASTNÍ účet obešel 'mojeheslo' —
+   * bez starého hesla a bez brzdy. Před opravou 200 (vedlejší i hlavní). */
+  { const em2 = UCTY['Administrátor'].email;
+    const r1 = await post(uzivatele, 'http://x/api/uzivatele',
+      { akce: 'heslo', email: em2, heslo: 'PrevzateHeslo9' }, UCTY['Administrátor'].cookie);
+    test('B77-zbytek: správce si reset na vlastní účet neudělá (403)', r1.status === 403, 'vrátil ' + r1.status);
+    const cH = await prihlas(ADMIN_EMAIL, 'Docasne.Heslo.123');
+    const r2 = await post(uzivatele, 'http://x/api/uzivatele',
+      { akce: 'heslo', email: ADMIN_EMAIL, heslo: 'PrevzateHeslo9' }, cH);
+    test('B77-zbytek: ani hlavní účet si heslo nezmění bez starého (403)', r2.status === 403, 'vrátil ' + r2.status);
+    test('B77-zbytek: hlavní účet se dál přihlásí původním heslem', !!(await prihlas(ADMIN_EMAIL, 'Docasne.Heslo.123')));
+  }
   /* L28 (23. 8. 2026): profil a podpis hlavního účtu smí měnit jen on sám. */
   test('L28: vedlejší administrátor nezmění profil hlavního účtu (403)',
     (await post(uzivatele, 'http://x/api/uzivatele',

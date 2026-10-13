@@ -1067,6 +1067,17 @@ test('nový účet obchodníka se založil klikem z Nastavení',
   await page.evaluate(() => ONLINE_STAV.uzivatele.some(u => u.email === 'obchodnik@priklad.cz' && u.role === 'Obchodník')));
 test('založení potvrzuje hláška přímo v panelu a nový řádek v tabulce',
   (await nastav()).includes('je založený') && (await nastav()).includes('obchodnik@priklad.cz'));
+/* B77-zbytek (13. 10. 2026): vlastní řádek nabízí změnu hesla se starým
+ * (otevře dialog „Změnit heslo"), cizí řádek reset „Nové heslo…". */
+{
+  const radky = await page.evaluate(() => [...document.querySelectorAll('#nastaveni-panel tr')]
+    .map(tr => tr.textContent).filter(t => /@priklad\.cz/.test(t)));
+  const muj = radky.find(t => t.includes('spravce@priklad.cz')) || '';
+  const cizi = radky.find(t => t.includes('obchodnik@priklad.cz')) || '';
+  test('B77-zbytek: vlastní účet v seznamu nabízí „Změnit heslo…", ne reset',
+    muj.includes('Změnit heslo…') && !muj.includes('Nové heslo…'), muj.slice(0, 300));
+  test('B77-zbytek: cizí účet dál nabízí reset „Nové heslo…"', cizi.includes('Nové heslo…'), cizi.slice(0, 300));
+}
 test('po úspěchu se formulář vyprázdnil',
   await page.evaluate(() => document.getElementById('onlineUzEmail').value === ''
     && document.getElementById('onlineUzHeslo').value === ''));

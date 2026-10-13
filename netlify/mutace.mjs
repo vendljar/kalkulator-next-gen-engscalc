@@ -1275,6 +1275,10 @@ const MUTACE = [
     nahrad: "  if (typeof x === 'string' && ULO_CISLO_TEXT.test(x)) return parseFloat(x.replace(',', '.'));",
     proc: 'ceník s „…,0" by B112 vypadal jako beze změny, jádro by z něj počítalo nuly (B135)' },
   /* ---------- dávka 13. 10. 2026: B138 ---------- */
+  { nazev: 'B77-zbytek: reset hesla na vlastní účet bez starého hesla', soubor: 'functions/uzivatele.mjs',
+    hledej: "      if (email === relace.email)\n        return json({ ok: false, chyba: 'Vlastní heslo si změňte",
+    nahrad: "      if (false)\n        return json({ ok: false, chyba: 'Vlastní heslo si změňte",
+    proc: 'kdo má cookie správce, nastaví mu nové heslo bez starého a bez brzdy (B77-zbytek)' },
   { nazev: 'B138: nula za klíč, který starší verze neměla, ve směsi projde', soubor: '../src/uloziste.js',
     hledej: "        const r = uloB112Rozdily(listy, g, c.pred, g[0]).concat(doplnenaNula(g));",
     nahrad: "        const r = uloB112Rozdily(listy, g, c.pred, g[0]);",

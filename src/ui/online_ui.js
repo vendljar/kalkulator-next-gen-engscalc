@@ -3124,7 +3124,9 @@ function onlineRadekUzivatele(u) {
     <td>${roleSel}</td>
     <td><input type="checkbox" ${u.aktivni ? 'checked' : ''} ${hlavni ? 'disabled' : ''}
         onchange="onlineUzAktivni('${escJs(u.email)}', this.checked)"></td>
-    <td><button class="mini" onclick="onlineUzHesloPanel('${escJs(u.email)}')">Nové heslo…</button>
+    <td>${/* Vlastní heslo jen se starým (B77-zbytek) — reset je pro cizí účty. */ ''}${ja
+        ? '<button class="mini" onclick="otevriZmenaHesla()">Změnit heslo…</button>'
+        : `<button class="mini" onclick="onlineUzHesloPanel('${escJs(u.email)}')">Nové heslo…</button>`}
       ${/* Profil hlavního účtu mění jen on sám (B28) — jiným správcům tlačítko nepatří. */ ''}
       ${(hlavni && !ja) ? '' : `<button class="mini" onclick="onlineUzKontaktPanel('${escJs(u.email)}')">Kontakt…</button>`}
       ${hlavni ? '' : (u.archiv
