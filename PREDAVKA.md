@@ -1,3 +1,64 @@
+# Předávka — 13. 10. 2026: dávka po 22. kole ve větvi `claude/davka-13-10` (v13.10.1)
+
+Sezení session_01WrUq3gXEhsWk8cxRWfPvsg (založilo koordinační sezení 22. kola).
+Větev z `test-draft` v12.10.4 (1df7283). Do `test-draft`/`test`/`main` nic —
+na pokyn J. V. Detaily a testy před/po: CHANGELOG v13.10.1.
+
+## Hotovo (pushnuto)
+- Pravidlo J. V. 13. 10.: odkaz na release s popisem změn — `CLAUDE.md`,
+  `nastroje/release_odkaz.py` (+ test). Skilly needitovány — pravidlo doplnit
+  do skillu `kalkulator-next-gen` (oddíl releasy) ručně.
+- A (#402) hlídač harnessů + `timeout` v `spust_testy.sh`.
+- #400 zbytek: B138, B77-zbytek, B107 (+B42, B25), B129, B130 → #400 hotovo.
+- F (#403): B83, B81, B103, B101, B105, B6, B35 — všechny body F hotové.
+
+## Běží / čeká
+- Celé kolo nad hlavou větve (spouští se po stažení podkladů).
+- Paralelně (subagenti tohoto sezení, zadání J. V. 13. 10. odpoledne):
+  - `claude/k22-p2-p6` z 1df7283 — P2 „Opláštit i prohlubeň", P6 zámek strany
+    (vynulování druhé strany, ruší „Počítat i tuhle stranu"); prompt
+    `PROMPT_PARALELNI_VETEV_K22_P2_P6.md` (kopie mimo repo v kng_podklady/prompty).
+    Konflikt čekej v `zahrJenRealizaceNabidnout` (B129 tady × P6 tam).
+  - `claude/cenik-barvy` z 1df7283 — probarvení buněk ceníků (0/prázdné světle
+    červeně, Kč > 40 000 světle oranžově), odebrání „Historická kalkulace".
+- #404 lišty — návrh níže, čeká na J. V.
+
+## Návrh #404 — lišty rozpracované / odeslané zakázky (k odsouhlasení)
+Dnes jsou to tři nezávislé mechanismy: (1) žlutá „V prohlížeči je
+rozpracovaná kalkulace… Obnovit / Zahodit zálohu" (`historie.js`, záloha
+v prohlížeči), (2) oranžová lišta zámku „odeslaná nabídka – needituje se…
+Klonovat / Založit novou" (`zamek_ui.js`), (3) modrá „Nabídka je otevřená jen
+ke čtení… Odemknout k úpravám" (`common.js` zamekCteniLista) + štítek dole.
+Návrh (výchozí odpovědi J. V. v závorkách):
+1. Neodeslaná zakázka (žádná varianta vytištěná): jediná žlutá lišta
+   „Rozpracovaná kalkulace <číslo · název>, naposledy <kdy>" s tlačítky
+   **Pokračovat v rozpracované kalkulaci** (= obnoví zálohu z prohlížeče, je-li
+   novější, a odemkne režim jen ke čtení) a **Založit novou kalkulaci**.
+   Modrá lišta „jen ke čtení" u neodeslané vlastní zakázky odpadá — tu
+   roli převezme žlutá. Zahodit zálohu = malý odkaz v liště (ano).
+2. Odeslaná zakázka: žádná žlutá lišta ani nabídka zálohy (záloha odeslané
+   zakázky se tiše zahodí — ano). Zůstane jen jednořádková informace
+   „Odeslaná nabídka (… vytištěno …) — needituje se" s tlačítky Klonovat
+   a pokračovat / Založit novou (ano, bez dlouhého textu).
+3. Administrátor (a vedoucí? — výchozí: jen role s právem `zamek.odemknout`
+   v matici zobrazení, dnes administrátor) vidí u odeslané nabídky modrý pruh
+   **Odemknout k úpravám** (odemkne zámek varianty s potvrzením a záznamem).
+   Obchodník modrý pruh nevidí.
+4. Cizí neodeslaná zakázka (autor jiný obchodník): žlutá lišta jen s
+   „Založit novou kalkulaci" a větou, kdo ji založil (zachová B-pravidlo
+   zamekCteniSmiOdemknout).
+Rozsah: `historie.js`, `zamek_ui.js`, `common.js`, harnessy
+overit_zaloha_lista / overit_online / overit_dialogy / overit_neulozene;
+odhad 1 dávka (½ dne). Po odsouhlasení samostatná větev.
+
+## Otázky pro J. V. (výchozí odpověď)
+1. B6: odhlášení odhlásí účet na všech zařízeních (ano — jinak by server
+   musel vést seznam relací).
+2. B35: strop 5 000 zakázek s měřeným časem (ano).
+3. #404 návrh lišt výše (ano, jak je napsáno).
+
+---
+
 # Předávka — 12. 10. 2026 noc: integrace N1–N3 ve větvi `claude/integrace-13-10` (v12.10.4)
 
 Integrační subagent koordinačního sezení session_01CKiH2sXWq6U8xoJwqivhiN.

@@ -6285,13 +6285,13 @@
   {
    "id" : "400",
    "vlna" : "C",
-   "stav" : "ceka",
+   "stav" : "hotovo",
    "dulezitost" : "nizka",
    "slozitost" : "M",
    "nazev" : "Audit 12. 10. 2026 — nízké a informativní: B142–B150 a dlouhodobě otevřené (B77-zbytek, B107, B129, B130)",
    "proc" : "22. kolo (12. 10. 2026): hygiena kontroly šablon a integrity dat, slepá místa testů; dlouhodobě otevřené nízké nálezy.",
-   "detail" : "B142 rozdílné čtení konce ZIPu (odmítnout archiv s nevěrohodným podpisem EOCD); B143 kvadratická složitost kontroly obsahu (posun lastIndex, neuzavřená značka = vada); B144 strop vlastních položek OCK/PROJ; B145 přepis „12,5“ → NaN (opravit i test_zaporne.mjs:200-203); B146 přísné porovnání zámku — pole řádků jiného typu = rozdíl; B147 ověření platných šablon i v náhledu obnovy, tvar rejstříku ze souboru; B148 kdo/kdy změnil cizí kontakt; B149 zapsat do BEZPECNOST_MEZE.md; B150 neplatná mutace B128, mutace B131 pro všech 10 funkcí, overit_xss dialog Kontakt… a pole usazení, mutace stropu STORE a věrohodnosti EOCD, mrtvý řádek obnova.mjs:279. Dále B77-zbytek, B107, B129, B130. Hotovo ve v12.10.4 (N2, větev claude/sablony-399): B142, B143, B144, B146, B147, B148, B149 (mez v BEZPECNOST_MEZE.md), B150; v N1 (claude/koncova-cena-398): B145, B150a. Zbývá: B138 (z #399, výchozí odpověď J. V. „opravit jako nález“), B77-zbytek, B107, B129, B130.",
-   "hotovoKdyz" : "Body opraveny nebo zapsány jako vědomá mez s rozhodnutím J. V.",
+   "detail" : "B142 rozdílné čtení konce ZIPu (odmítnout archiv s nevěrohodným podpisem EOCD); B143 kvadratická složitost kontroly obsahu (posun lastIndex, neuzavřená značka = vada); B144 strop vlastních položek OCK/PROJ; B145 přepis „12,5“ → NaN (opravit i test_zaporne.mjs:200-203); B146 přísné porovnání zámku — pole řádků jiného typu = rozdíl; B147 ověření platných šablon i v náhledu obnovy, tvar rejstříku ze souboru; B148 kdo/kdy změnil cizí kontakt; B149 zapsat do BEZPECNOST_MEZE.md; B150 neplatná mutace B128, mutace B131 pro všech 10 funkcí, overit_xss dialog Kontakt… a pole usazení, mutace stropu STORE a věrohodnosti EOCD, mrtvý řádek obnova.mjs:279. Dále B77-zbytek, B107, B129, B130. Hotovo ve v12.10.4 (N2, větev claude/sablony-399): B142, B143, B144, B146, B147, B148, B149 (mez v BEZPECNOST_MEZE.md), B150; v N1 (claude/koncova-cena-398): B145, B150a. Zbývá: B138 (z #399, výchozí odpověď J. V. „opravit jako nález“), B77-zbytek, B107, B129, B130. Dávka 13. 10. 2026 (větev claude/davka-13-10, v13.10.1): B138 (rozhodnutí J. V. 12. 10. — opraveno jako nález, bez výjimky „přepočet vybraných položek“), B77-zbytek, B107 (+ B42, B25), B129, B130 hotové.",
+   "hotovoKdyz" : "Hotovo ve v13.10.1 (větev claude/davka-13-10): B138, B77-zbytek, B107, B129, B130; ve v12.10.4 B142–B150. Testy před/po v CHANGELOG v13.10.1.",
    "kde" : "`src/sablona_obsah.js`, `src/docxgen.js`, `src/uloziste.js`, `src/zamek.js`, `netlify/functions/obnova.mjs`, `netlify/functions/uzivatele.mjs`, `netlify/mutace.mjs`, `overit_xss.mjs`, `BEZPECNOST_MEZE.md`"
   },
   {
@@ -6305,6 +6305,44 @@
    "detail" : "Tabulka SLOVNIK_ENG_2026-10-12 převzata do PREKLAD (44 odlišných znění, 0 doplnit, 0 nových). Tlačítko „Převzít všech N z tabulky“ (jen administrátor, jedno potvrzení). /api/slovnik: GET každý přihlášený, POST zveřejnit jen Administrátor (role z relace, tělo objekt, strop 1 MB → 413, hesla = objekt, klíč neprázdný ≤ 1000 znaků — zabudovaná hesla mají až 419 —, bez __proto__/constructor/prototype, trojice textů ≤ 2000 bez řídicích znaků, nejvýš 5000 hesel). Zveřejňují se odchylky od zabudovaného slovníku; verze, kdy, kdo z relace, poznámka, historie 20 verzí. Klient po přihlášení položí platný slovník přes zabudovaný, po odhlášení vrátí. Nastavení → Slovník: platná verze, nezveřejněné změny, tlačítko Zveřejnit slovník. Slovník v záloze, nočním otisku i obnově (s touž kontrolou).",
    "hotovoKdyz" : "test_prava 721 → 763, test_obnova 192 → 202, test_slovnik 41 → 63, overit_slovnik 14/0 (nový), overit_online 200 → 213, overit_xss 299 → 311; mutace serveru +18 (18/18 chycených). Hotovo ve v12.10.3.",
    "kde" : "`netlify/functions/slovnik.mjs`, `src/slovnik.js`, `src/preklad.js`, `src/ui/nastaveni_ui.js`, `src/ui/online_ui.js`, `netlify/lib/zalohovani.mjs`, `netlify/functions/obnova.mjs`"
+  },
+  {
+   "id" : "402",
+   "vlna" : "C",
+   "stav" : "hotovo",
+   "dulezitost" : "nizka",
+   "slozitost" : "S",
+   "hotovoV" : "v13.10.1",
+   "nazev" : "Testovací infrastruktura: visící harness (hlídač) a odkaz na release s popisem změn",
+   "proc" : "N1 (12. 10. 2026): overit_online.mjs po selhání B59 visel a celé kolo stálo. Pravidlo J. V. 13. 10. 2026: každý odkaz na release nese popis změn.",
+   "detail" : "nastroje/harness_hlidac.js (strop page.evaluate 120 s, celkem 20 min, nezachycená chyba → kód 1), spust_testy.sh pouští harnessy přes timeout (KNG_HARNESS_LIMIT 900 s). nastroje/release_odkaz.py <verze> <SHA> (body z CHANGELOG, --upravit pro vydané releasy), pravidlo v CLAUDE.md.",
+   "hotovoKdyz" : "Hotovo ve v13.10.1: testy src/test_harness_hlidac.js, src/test_release_odkaz.js, src/test_harness_podklady.js (visící harness).",
+   "kde" : "`nastroje/harness_hlidac.js`, `nastroje/release_odkaz.py`, `spust_testy.sh`, `overit_online.mjs`, `CLAUDE.md`"
+  },
+  {
+   "id" : "403",
+   "vlna" : "C",
+   "stav" : "hotovo",
+   "dulezitost" : "nizka",
+   "slozitost" : "M",
+   "hotovoV" : "v13.10.1",
+   "nazev" : "Dlouhodobě otevřené nízké nálezy: B83, B81, B103, B101, B105, B6, B35",
+   "proc" : "Audity 22. 8. a 9. 9. 2026 — nízké nálezy vedené v auditu 12. 10. jako TRVÁ.",
+   "detail" : "B83 CSV exporty s ochranou vzorců (csvBunka); B81 prototypové klíče v analytice; B103 v dodatkových textech (sběr padal na 500); B105 čas rozhodnutí o slevě razí server; B101 rozhodnutí zpět na „čeká“ jen s právem rozhodnout; B6 odhlášení zneplatní relace účtu i na serveru (všechna zařízení — výchozí výklad); B35 strop počtu klíčů cas/ (5 000).",
+   "hotovoKdyz" : "Hotovo ve v13.10.1 (větev claude/davka-13-10); testy a mutace v CHANGELOG.",
+   "kde" : "`src/format.js`, `src/analytika.js`, `src/cenik.js`, `src/schvalovani.js`, `netlify/functions/odhlaseni.mjs`, `netlify/functions/analytika.mjs`"
+  },
+  {
+   "id" : "404",
+   "vlna" : "B",
+   "stav" : "ceka",
+   "dulezitost" : "stredni",
+   "slozitost" : "M",
+   "nazev" : "Zjednodušit lišty rozpracované / odeslané / jen ke čtení zakázky (návrh pro J. V.)",
+   "proc" : "J. V. 13. 10. 2026 (snímek ostré v12.10.1): nad sebou žlutá lišta zálohy v prohlížeči, oranžová lišta odeslané nabídky a modrá „jen ke čtení“. Návrh J. V.: jedna žlutá lišta Pokračovat v rozpracované / Založit novou jen u neodeslané kalkulace; u odeslané nic nepřipomínat; administrátorovi modrý pruh „Odemknout k úpravám“.",
+   "detail" : "Rozpracovaný návrh v PREDAVKA.md (13. 10. 2026), čeká na odsouhlasení J. V.",
+   "hotovoKdyz" : "Návrh odsouhlasen, lišty sloučené, harnessy overit_zaloha_lista, overit_online, overit_dialogy zelené.",
+   "kde" : "`src/ui/historie.js`, `src/ui/zamek_ui.js`, `src/ui/common.js` (zamekCteniLista)"
   }
  ],
  "meta" : {
