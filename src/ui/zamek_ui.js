@@ -294,12 +294,18 @@ function zamekLista() {
   /* Razítko serveru o ověření zmrazeného výsledku (B59) — ukazuje se jen
    * rozpor nebo neověření; shoda je běžný stav a lištu nezatěžuje. */
   const overeni = (typeof zamekOvereniText === 'function') ? zamekOvereniText(z.overeni) : '';
+  /* Částky bez zmrazeného výsledku počítá dnešní jádro (B130) — řekne se to. */
+  const dnes = (typeof zamekPrepoctenoDnes === 'function') ? zamekPrepoctenoDnes(v) : [];
+  const dnesText = dnes.length ? 'Částky ' + (dnes.length === 2 ? 'OCK i PROJ' : dnes[0].toUpperCase())
+    + ' nejsou zmrazené (nabídka odešla před zavedením zmrazení) — zobrazují se přepočtené dnes '
+    + 'a od odeslaného dokumentu se mohou lišit.' : '';
   return `<div class="zamek-lista">
     <span class="ikona">🔒</span>
     <span><b>${esc(v.nazev)} (${esc(variantaCislo(ZAK, v))}) je odeslaná nabídka – needituje se.</b>
       Vytištěno ${esc(kdy)} jako ${esc(z.popis || 'cenová nabídka')}${pocet > 1 ? ` (výtisků: ${pocet})` : ''}.
       Pokračujte klonem, nebo založte novou zakázku; původní nabídka zůstane v podobě, v jaké odešla.${overeni
-        ? `<span class="zamek-overeni">⚠ ${esc(overeni)}</span>` : ''}</span>
+        ? `<span class="zamek-overeni">⚠ ${esc(overeni)}</span>` : ''}${dnesText
+        ? `<span class="zamek-overeni zamek-dnes">⚠ ${esc(dnesText)}</span>` : ''}</span>
     <span class="sp"></span>
     <button class="primary cteni-ok" onclick="zamekKlonUI('${escJs(v.id)}')">Klonovat a pokračovat</button>
     <!-- Založit novou zakázku (8. 9. 2026, zadání J. V.: „když chci začít novou

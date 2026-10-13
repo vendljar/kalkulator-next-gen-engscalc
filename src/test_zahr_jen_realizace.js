@@ -41,6 +41,15 @@ test('návrat do tuzemska, žádná varianta zahraniční, zakázka jen realizac
 test('návrat do tuzemska, jiná varianta dál zahraniční → nic', f(zak({ jenOck: true }), 'cr', ['cr', 'zahr']) === null);
 test('návrat do tuzemska u zakázky, která jen realizace nebyla → nic', f(zak(), 'cr', ['cr']) === null);
 test('bez zakázky → nic', f(null, 'zahr', []) === null);
+/* B129 (audit 6. 10. 2026): `jenOck` je vlastnost zakázky — u zakázky
+ * s odeslanou (zamčenou) variantou by změnila i odeslanou nabídku. */
+const zamcena = { id: 'v1', zamek: { zamceno: true, typ: 'nabidka' } }, volna = { id: 'v2' };
+test('B129: zakázka s odeslanou variantou — přepnutí na zahraničí nic nenabídne',
+  f(zak({ varianty: [zamcena, volna] }), 'zahr', ['cr', 'zahr']) === null);
+test('B129: ani návrat do tuzemska u zakázky s odeslanou variantou',
+  f(zak({ jenOck: true, varianty: [zamcena, volna] }), 'cr', ['cr', 'cr']) === null);
+test('B129: odemčená (dříve zamčená) varianta nabídku nebrání',
+  f(zak({ varianty: [{ id: 'v1', zamek: { zamceno: false } }, volna] }), 'zahr', ['zahr', 'cr']) === 'jenOck');
 
 console.log(`\n${ok} OK, ${fail} FAIL`);
 if (fail) process.exit(1);

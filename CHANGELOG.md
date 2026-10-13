@@ -63,6 +63,14 @@ z `test-draft` (v12.10.4, 1df7283). Roadmapa #400 (zbytek) a #402–.
   pravidlo délky (B25; krátké bootstrap nespustí). Testy:
   `test_prihlaseni.mjs` +10 (před 53/7, po 60/0); mutace serveru 2 nové
   + přesměrovaná „zaváděcí heslo se nekontroluje" (3/3).
+- **B129 (nízká) — „jen realizace" u zakázky s odeslanou variantou.** `jenOck`
+  je vlastnost zakázky — dotaz po přepnutí řady ceníku by změnil i odeslanou
+  nabídku. `zahrJenRealizaceNabidnout` u zakázky se zamčenou variantou nic
+  nenabídne (oběma směry). `test_zahr_jen_realizace.js` +3 (před 13/2, po 15/0).
+- **B130 (nízká) — odeslaná nabídka bez zmrazeného výsledku.** Nový
+  `zamekPrepoctenoDnes(v)` (strany bez zmrazených čísel); lišta zámku pak
+  říká „Částky … nejsou zmrazené … přepočtené dnes". `test_zamek_otisk.js`
+  +5, `overit_online.mjs` +2 (lišta starého zámku vs. zámku s výsledkem).
 
 ## v12.10.4 — integrace nočních dávek N1–N3 (větev claude/integrace-13-10)
 
