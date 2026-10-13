@@ -365,9 +365,16 @@ console.log('===== Nezávislá revize #398 (12. 10. 2026): N1 jenZahr, N2 nepoci
   const g = await nacti(r0.soubor, cO);
   const a = zk.importZakazka(kopie(g)); zamkni(a, 'nabidka');
   const r1 = await uloz(a, cO, g.uloRazitko);
-  /* Od P6 dotisk OCK odmítne už zámek strany (OCK vyřazená, 403); dřív
-   * zábrana rozměrů (400). Obojí je odmítnutí dotisku. */
-  test('N4: dotisk nabídky OCK k zámku PROJ z nulových rozměrů → odmítnuto (400/403)', (r1.status === 400 || r1.status === 403) && /dotisk/.test(r1.chyba || ''), r1);
+  /* Od P6 dotisk OCK u čísla OVP odmítne už zámek strany (OCK vyřazená, 403). */
+  test('P6: dotisk nabídky OCK k zámku PROJ u čísla OVP (OCK vyřazená) → 403', r1.status === 403 && /dotisk/.test(r1.chyba || ''), r1);
+  /* N4 samotná: zakázka se po odeslání PROJ přepne na „jen realizace" (jenOck
+   * má přednost před číslem — OCK vede), takže dotisk OCK zámek strany
+   * pustí; nová strana OCK se pak musí posoudit jako nový zámek — nulové
+   * rozměry → 400. */
+  const gN = await nacti(r0.soubor, cO);
+  const aN = zk.importZakazka(kopie(gN)); aN.jenOck = true; zamkni(aN, 'nabidka');
+  const rN = await uloz(aN, cO, gN.uloRazitko);
+  test('N4: dotisk nabídky OCK k zámku PROJ z nulových rozměrů → 400', rN.status === 400 && /dotisk/.test(rN.chyba || ''), rN);
   const g2 = await nacti(r0.soubor, cO);   // čerstvě — před opravou dotisk OCK výš prošel a změnil razítko
   const b = zk.importZakazka(kopie(g2)); zamkni(b, 'nabidkaProj');
   const r2 = await uloz(b, cO, g2.uloRazitko);
