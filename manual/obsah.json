@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v13.10.3 · sestaveno 13. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
+  "verze": "Platí pro aplikaci v13.10.4 · sestaveno 13. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -19,7 +19,10 @@
         "**Jedna zakázka = jedna strana.** Podle čísla nabídky se druhá strana zakázky **uzamkne a vynuluje**: u čísla OPR (a jiných mimo řadu OVP) projekce, u čísla OVP ocelová konstrukce. Projekci k ocelové konstrukci nabízíte samostatnou zakázkou (kapitola 25).",
         "**„Opláštit i prohlubeň“** — zaškrtávátko pod polem Prohlubeň nastaví všem stěnám opláštění až na dno prohlubně (kapitoly 11 a 13).",
         "**Rozhodnutí o slevě vrací zpět jen nadřízený** (kapitola 19). **Odhlášení odhlásí všechna vaše zařízení** (kapitola 1).",
-        "Administrátor má v cenících **probarvené buňky** (nula a prázdné světle červeně, vysoké částky světle oranžově, kapitola 28)."
+        "Administrátor má v cenících **probarvené buňky** (nula a prázdné světle červeně, vysoké částky světle oranžově, kapitola 28).",
+"**Jedna žlutá lišta u rozpracované kalkulace** s tlačítky Pokračovat v rozpracované kalkulaci a Založit novou kalkulaci; u odeslané nabídky aplikace nic nepřipomíná a odemknout ji k úpravám může jen administrátor (kapitoly 8 a 29).",
+"**Rozměry šachty pod 0,6 m** (zdvih, šířka, hloubka) nabídku OCK nevytisknou. **Cenové výjimky** — ceník varianty jiný než platný nebo ruční sazba pásu „jiné“ pod ceníkem — potřebují před tiskem schválení nadřízeného (karta Cenové výjimky v Schvalování).",
+"Založení účtu administrátora, reset hesla a obnovu účtů ze zálohy správce potvrzuje svým heslem."
       ]
     },
     {
