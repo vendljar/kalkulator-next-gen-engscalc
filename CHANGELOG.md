@@ -106,6 +106,11 @@ z `test-draft` (v12.10.4, 1df7283). Roadmapa #400 (zbytek) a #402–.
   Odhlášení bez relace dál projde. `test_prihlaseni.mjs` +7 (před 65/2, po
   67/0); matice v `test_prava.mjs` se po odhlášení přihlásí znovu (805/0);
   mutace chycená.
+- **B35 (nízká) — strop počtu klíčů `cas/` v analytice.** Tvar čísla hlídal
+  B8, počet ne. Nově `ANALYTIKA_MAX_CASU` = 5 000 (výchozí, rezerva na roky):
+  nad stropem se nová zakázka nezaloží, existující se přičítá dál. Seznam
+  klíčů se čte jen při novém klíči. `test_funkce.mjs` +3 (před 228/2, po
+  230/0); mutace chycená.
 
 ## v12.10.4 — integrace nočních dávek N1–N3 (větev claude/integrace-13-10)
 

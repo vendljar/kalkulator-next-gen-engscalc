@@ -90,6 +90,10 @@ function analytikaNovePocty() {
  * „__proto__" zapisoval do prototypu místo do mapy. Takové klíče se
  * zahazují a existence se ptá jen na vlastní vlastnosti. */
 const ANALYTIKA_PROTO = ['__proto__', 'constructor', 'prototype'];
+/* Strop počtu zakázek s měřeným časem (`cas/<číslo>`, B35). Firma založí
+ * pár set zakázek ročně; 5 000 je rezerva na roky a ještě se vejde do
+ * jednoho souhrnu. */
+const ANALYTIKA_MAX_CASU = 5000;
 function analytikaKlicPovolen(k) { return ANALYTIKA_PROTO.indexOf(String(k)) < 0; }
 const analytikaMa = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 
@@ -296,7 +300,7 @@ function analytikaRezimNastav(rezim, sber, kdo, kdy) {
 if (typeof module !== 'undefined')
   module.exports = { ANALYTIKA_GDPR_TEXT, ANALYTIKA_NECINNOST_MS, ANALYTIKA_MAX_KLICU,
                      ANALYTIKA_MAX_KLIC_ZNAKU, ANALYTIKA_MAX_HODNOTA,
-                     analytikaCislo, analytikaKlicOrez, analytikaDavkaOcisti, analytikaKlicPovolen,
+                     analytikaCislo, analytikaKlicOrez, analytikaDavkaOcisti, analytikaKlicPovolen, ANALYTIKA_MAX_CASU,
     ANALYTIKA_RETENCE_MESICU, analytikaKlic, analytikaNovyDen, analytikaPridej,
     analytikaSlij, analytikaPocetZKliku, casNovy, casKrok, analytikaCastZTabu,
     analytikaRetence, analytikaObdobi, analytikaRezimNovy, analytikaRezimNastav,

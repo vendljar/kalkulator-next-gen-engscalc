@@ -509,6 +509,22 @@ const DOCX2 = await docxB64('verze 2');   // jiná data = jiný otisk
   test('analytika: záloha ke stažení analytiku NEVOZÍ', zalA.zaloha.analytika === undefined);
   const kodZaloh = kodSouboru.get('functions/zaloha.mjs') + kodSouboru.get('lib/zalohovani.mjs');
   test('analytika: zálohovací kód úložiště analytiky vůbec nezná', !kodZaloh.includes('analytika'));
+  /* B35 (13. 10. 2026): strop počtu klíčů cas/ — nad ním se nové zakázky
+   * nezakládají, existující se přičítají dál. Před opravou: neomezeně. */
+  {
+    const strop = globalThis.ANALYTIKA_MAX_CASU;
+    test('B35: strop počtu zakázek s časem je v jádru', typeof strop === 'number' && strop > 0, strop);
+    const N = typeof strop === 'number' ? strop : 5000;
+    const mame = (await uloz.seznam('cas/')).length;
+    for (let i = mame; i < N; i++) await uloz.zapis('cas/B35-' + i, { ock: 1, proj: 0 });
+    const ex = (await uloz.seznam('cas/B35-'))[0].slice(4);
+    const exPred = +((await uloz.cti('cas/' + ex)) || {}).ock || 0;
+    await post(analytika, 'http://x/api/analytika', { akce: 'udalosti',
+      casy: { 'B35-NOVA-1': { ock: 5 }, [ex]: { ock: 2 } } }, cookieObch);
+    test('B35: nad stropem nová zakázka klíč cas/ nezaloží', !(await uloz.cti('cas/B35-NOVA-1')), (await uloz.seznam('cas/')).length);
+    test('B35: existující zakázka se přičítá dál', ((await uloz.cti('cas/' + ex)) || {}).ock === exPred + 2, await uloz.cti('cas/' + ex));
+    for (const k of await uloz.seznam('cas/B35-')) await uloz.smaz(k);
+  }
 }
 
 /* 5b) ZNAČKY UKÁZKOVÉHO A PRÁZDNÉHO CENÍKU (P2, nálezy N2/N3, 21. 9. 2026)

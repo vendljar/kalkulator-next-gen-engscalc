@@ -1279,6 +1279,10 @@ const MUTACE = [
     nahrad: "  if (typeof x === 'string' && ULO_CISLO_TEXT.test(x)) return parseFloat(x.replace(',', '.'));",
     proc: 'ceník s „…,0" by B112 vypadal jako beze změny, jádro by z něj počítalo nuly (B135)' },
   /* ---------- dávka 13. 10. 2026: B138 ---------- */
+  { nazev: 'B35: počet klíčů cas/ v analytice bez stropu', soubor: 'functions/analytika.mjs',
+    hledej: "          if (!existujici.has(klic) && existujici.size >= g.ANALYTIKA_MAX_CASU) continue;   // B35",
+    nahrad: "          ;",
+    proc: 'kdokoli přihlášený zakládá klíče cas/ do nekonečna a souhrn je čte všechny (B35)' },
   { nazev: 'B6: odhlášení relaci na serveru nezneplatní', soubor: 'functions/odhlaseni.mjs',
     hledej: "      ucet.hesloVerze = hesloVerzeUctu(ucet) + 1;",
     nahrad: "      ;",

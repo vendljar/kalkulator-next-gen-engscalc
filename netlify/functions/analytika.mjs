@@ -103,6 +103,12 @@ export default async (req) => {
     }
     /* časy zakázek: { '2026-OPR-CN-0155': { ock: 120, proj: 30 }, … } */
     if (t.casy && typeof t.casy === 'object') {
+      /* STROP POČTU KLÍČŮ cas/ (B35, audit 9. 9. 2026; 13. 10. 2026). Tvar
+       * čísla hlídá B8, ale počet ne: kdokoli přihlášený zakládal po padesáti
+       * nových klíčích na požadavek do nekonečna (a souhrn je pak čte
+       * všechny). Nad stropem se nové zakázky nezakládají, existující se
+       * přičítají dál. Seznam se čte jen jednou a jen když přijde nový klíč. */
+      let existujici = null;
       for (const [zak, c] of Object.entries(t.casy).slice(0, 50)) {
         /* Klíč musí vypadat jako číslo nabídky (B8): písmena, číslice,
          * pomlčky, mezery, tečky — a nanejvýš 60 znaků. Cizí tvar se zahodí,
@@ -113,7 +119,13 @@ export default async (req) => {
         const ock = g.analytikaCislo(c && c.ock);
         const proj = g.analytikaCislo(c && c.proj);
         if (!ock && !proj) continue;
-        const stary = (await s.cti(klic)) || { ock: 0, proj: 0 };
+        let stary = await s.cti(klic);
+        if (!stary) {
+          if (!existujici) existujici = new Set(await s.seznam('cas/'));
+          if (!existujici.has(klic) && existujici.size >= g.ANALYTIKA_MAX_CASU) continue;   // B35
+          existujici.add(klic);
+          stary = { ock: 0, proj: 0 };
+        }
         await s.zapis(klic, { ock: (+stary.ock || 0) + ock, proj: (+stary.proj || 0) + proj });
       }
     }
