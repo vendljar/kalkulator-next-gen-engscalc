@@ -12,8 +12,14 @@ na pokyn J. V. Detaily a testy před/po: CHANGELOG v13.10.1.
 - #400 zbytek: B138, B77-zbytek, B107 (+B42, B25), B129, B130 → #400 hotovo.
 - F (#403): B83, B81, B103, B101, B105, B6, B35 — všechny body F hotové.
 
+- Revize dávky (audit dvěma čočkami, jen čtení): vysoký nález žádný; opraveno
+  regrese B105 (409 po tisku), obchvaty B101, B138 (výslovná nula), B103,
+  souběh B6, drobnosti — CHANGELOG „Revize dávky".
+- **Celé kolo nad dd9c24b VŠE ZELENÉ** (sady 228/0/1, jádro 189/189, server
+  346/346, statické 3/3). Kolo nad ea34e65 bylo červené (B133 ×2, platnost
+  relace, literál hesla) — opraveno.
+
 ## Běží / čeká
-- Celé kolo nad hlavou větve (spouští se po stažení podkladů).
 - Paralelně (subagenti tohoto sezení, zadání J. V. 13. 10. odpoledne):
   - `claude/k22-p2-p6` z 1df7283 — P2 „Opláštit i prohlubeň", P6 zámek strany
     (vynulování druhé strany, ruší „Počítat i tuhle stranu"); prompt

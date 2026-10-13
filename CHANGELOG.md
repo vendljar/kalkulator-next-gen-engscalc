@@ -93,6 +93,11 @@ z `test-draft` (v12.10.4, 1df7283). Roadmapa #400 (zbytek) a #402–.
     s verzí hesla 0, kterou bootstrap od B107 nemá — teď bere verzi
     z úložiště. Statická kontrola: krátké heslo v testu B107 jako literál →
     proměnná.
+
+**Celé kolo nad dd9c24b VŠE ZELENÉ (129 min 55 s):** sady 228/0/1 (přeskočen
+jen `test.js`), mutace jádra 189 z 189, mutace serveru 346 z 346, statické
+kontroly 3 z 3. Podklady: `/home/user/kng_podklady` (šablony z Disku, příručka
+přejmenovaná na v13.10.1).
   - *Obchvat B103 (nízká):* „toString", „hasOwnProperty" aj. shodily sběr
     textů stejně — odmítá se vše z `Object.prototype`, mapa sběru je bez
     prototypu.
