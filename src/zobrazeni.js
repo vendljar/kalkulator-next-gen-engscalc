@@ -443,7 +443,10 @@ const ZOBRAZENI_PRVKY = [
   {
     klic: 'sleva.schvalovani', skupina: 'zakazky', nazev: 'Schvalování slevy nad strop role',
     kde: 'karta Sleva; nová záložka Schvalování slev',
-    popis: 'Odklepnutí slevy, která přesahuje strop role zadavatele.',
+    /* Od 13. 10. 2026 totéž právo rozhoduje i o cenové výjimce varianty
+     * (směs ceníku, pás „jiné" pod ceníkovou sazbou — vyjimky.js). */
+    popis: 'Odklepnutí slevy, která přesahuje strop role zadavatele, a cenové výjimky varianty '
+      + '(ceník je směsí platného a starších cen, pás opláštění „jiné" pod ceníkovou sazbou).',
     vychozi: { 'Obchodník': false, 'Vedoucí': false },
     navrh: { 'Obchodník': false, 'Vedoucí': true },
     proc: 'Přesně tohle je smysl role Vedoucí a dnes to v rozhraní neumí nikdo jiný než '

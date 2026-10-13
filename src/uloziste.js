@@ -1187,7 +1187,9 @@ function uloRozmeryVZadani(z, naZamek) {
   const r = f(z);
   const out = r.spatne.map(x => ({ kde: 'ock.zadani.' + x[0], duvod: 'rozmer' }));
   if (r.vysoky) out.push({ kde: 'ock.zadani.zdvih', duvod: 'rozmer' });
-  if (naZamek) r.nula.concat(r.chybi).forEach(x => out.push({ kde: 'ock.zadani.' + x[0], duvod: 'rozmer' }));
+  /* Zdvih, šířka a hloubka pod 0,6 m (rozhodnutí J. V. 13. 10. 2026) —
+   * jen nový zámek, rozpracovaná zakázka se s nimi uloží. */
+  if (naZamek) r.nula.concat(r.chybi, r.male || []).forEach(x => out.push({ kde: 'ock.zadani.' + x[0], duvod: 'rozmer' }));
   return out;
 }
 function uloRozmeryProblemy(zak, stara) {
@@ -1867,7 +1869,7 @@ function uloIdProblemyText(problemy) {
   /* B137: rozměr šachty, který nedává smysl. */
   if (rozmer.length) casti.push('rozměr šachty, který nedává smysl (' + rozmer.slice(0, 5).map(x => x.kde).join(', ')
     + (rozmer.length > 5 ? ' a další ' + (rozmer.length - 5) : '')
-    + ') — zdvih, šířka, hloubka, rozteč, čistý vstup, šířka rámu a počet sloupků musí být kladné, přejezd a prohlubeň nezáporné, zdvih nejvýš 99 m');
+    + ') — zdvih, šířka, hloubka, rozteč, čistý vstup, šířka rámu a počet sloupků musí být kladné, přejezd a prohlubeň nezáporné, zdvih nejvýš 99 m, u odeslané nabídky zdvih, šířka i hloubka aspoň 0,6 m');
   /* Revize #398: model výpočtu a vyřazené řádky OCK. */
   if (model.length) casti.push('změnu, kterou smí jen administrátor (' + model.slice(0, 5).map(x => x.kde).join(', ')
     + ') — model výpočtu (Model 1 je zmrazený) a řádky kalkulace OCK, které se nepočítají, nastavuje správce');

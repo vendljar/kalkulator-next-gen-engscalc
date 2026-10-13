@@ -349,6 +349,14 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
    * přepočítá server týmž jádrem jako prohlížeč. */
   const marze = SCHV.schvalovaniServerMarze(staraPorovnani, zak, JEKLY, slevyNast);
   if (!marze.ok) return odmitni(403, veta(marze.chyba));
+  /* Cenová výjimka varianty (13. 10. 2026, src/vyjimky.js): rozhodnutí
+   * smí jen nadřízený, razítka a otisk píše server; bez práva se platné
+   * rozhodnutí nepřepíše. Obnova bere záznam ze zálohy jako doklad. */
+  if (!obnova) {
+    const vyj = globalThis.vyjimkyServerKontrola(staraPorovnani, zak, relace,
+      { matice: ctx.matice, program: ctx.program, zamcenaDriv });
+    if (!vyj.ok) return odmitni(vyj.status || 403, veta(vyj.chyba));
+  }
 
   if (!obnova) {
     /* Autor: nová zakázka dostane autora z relace (cizího smí ponechat jen
@@ -431,6 +439,10 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
     if (vyrProblem) return odmitni(403, 'Neuloženo: ' + vyrProblem + '.');
     const cenaProblem = zamekNovyCenaProblem(zak, v, relace, ctx.matice, JEKLY, ctx.program);
     if (cenaProblem) return odmitni(403, 'Neuloženo: ' + cenaProblem + '.');
+    /* Směs ceníku nebo pás „jiné" pod ceníkovou sazbou u role bez práva
+     * ceníku — nový zámek jen s platným schválením (13. 10. 2026). */
+    const vyjProblem = globalThis.vyjimkyZamekProblem(zak, v, relace, { matice: ctx.matice, program: ctx.program });
+    if (vyjProblem) return odmitni(403, 'Neuloženo: ' + vyjProblem + '.');
     /* Nový zámek strany OCK z nulového nebo nevyplněného rozměru (B137) —
      * zrcadlo zábrany „rozmery"; platí pro každého, i administrátora
      * (zábranu v prohlížeči nepřekročí ani on). */

@@ -228,11 +228,12 @@ for (const [popis, uprava] of [['jenZahr: 5', c => { c.jenZahr = 5; }], ['popisy
   vlastniOck(z, 1); vlastniProj(z, 1); zamkni(z);
   const r = await uloz(z, cO);
   /* jenZahr: 5 od revize N1 zastaví už typová kontrola (400) — jinak 403 z #395 V3. */
-  test('B136: obchodník — ceník sestavení + ' + popis + ' + vlastní položka 1 Kč + nový zámek → 4xx', je4xx(r) && /ceník|jenZahr/.test(r.chyba || ''), r);
+  test('B136: obchodník — ceník sestavení + ' + popis + ' + vlastní položka 1 Kč + nový zámek → 4xx', je4xx(r) && /ceníku bez cen|jenZahr/.test(r.chyba || ''), r);
 }
 { const z = nova('B136 OCK+PROJ'); sestaveni(z, 'proj'); d0(z).proj.cenik.jenZahr = 5; vlastniProj(z, 1); zamkni(z, 'nabidkaProj');
   const r = await uloz(z, cO);
-  test('B136: obchodník — OCK platný + PROJ sestavení (+ jenZahr) + zámek nabídky PROJ → 403', r.status === 403, r); }
+  /* Věta V3 — od 13. 10. 2026 by zámek odmítla i cenová výjimka (směs). */
+  test('B136: obchodník — OCK platný + PROJ sestavení (+ jenZahr) + zámek nabídky PROJ → 403 (V3, u čísla OPR už P6)', r.status === 403 && /ceníku bez cen|jenZahr|vynulovan/.test(r.chyba || ''), r); }
 { const f = globalThis.ukazkoveMaCisla;
   const s = Object.assign(kopie(globalThis.DEFAULT_CENIK), { jenZahr: 5, rada: 7, popisyJazyky: { a: 3 } });
   test('B136: ukazkoveMaCisla — volné klíče nejsou cena (se vzorem i bez něj)', !f(s, globalThis.DEFAULT_CENIK) && !f(s), s);
@@ -298,6 +299,38 @@ for (const [k, h] of [['zdvih', -1], ['roztec', -1], ['hloubka', -1], ['sirka', 
   const g = await nacti(r.soubor, cO); const a = zk.importZakazka(kopie(g)); a.nazevAkce += ' (poznámka)';
   const r2 = await uloz(a, cO, g.uloRazitko);
   test('B137: odeslaná varianta, která nesmyslný rozměr už nese, se beze změny uloží (200 — doklad)', r2.status === 200, r2); }
+console.log('===== Mez 0,6 m pro zdvih, šířku a hloubku (rozhodnutí J. V. 13. 10. 2026) =====');
+/* Nový zámek strany OCK se zdvihem, šířkou nebo hloubkou kladnou, ale pod
+ * 0,6 m se odmítne (400 jako B137 — tatáž kontrola rozměrů nového zámku);
+ * přesně 0,6 m projde, rozpracovaná zakázka se uloží, vyřazená strana OCK
+ * (P6) se neposuzuje, ostatní rozměry (rozteč) beze změny. Před opravou
+ * (v13.10.2, 0512c51) vracely útoky 200. */
+for (const [k, h, kdo] of [['zdvih', 0.59, 'obchodník'], ['sirka', 0.59, 'administrátor'], ['hloubka', 0.01, 'obchodník']]) {
+  const z = nova('mez 0,6 ' + k); d0(z).ock.zadani[k] = h; zamkni(z);
+  const r = await uloz(z, kdo === 'obchodník' ? cO : cA);
+  test('mez 0,6 m: ' + kdo + ' — ' + k + ' ' + String(h).replace('.', ',') + ' m + nový zámek nabídky OCK → 400',
+    r.status === 400 && new RegExp(k).test(r.chyba || '') && /0,6 m/.test(r.chyba || ''), r);
+}
+{ const z = nova('mez 0,6 přesně'); Object.assign(d0(z).ock.zadani, { zdvih: 0.6, sirka: 0.6, hloubka: 0.6 }); zamkni(z);
+  const r = await uloz(z, cO);
+  test('mez 0,6 m: zdvih, šířka i hloubka přesně 0,6 m + nový zámek → 200', r.status === 200, r); }
+{ const z = nova('mez 0,6 rozpracovaná'); Object.assign(d0(z).ock.zadani, { zdvih: 0.59, sirka: 0.3 });
+  const r = await uloz(z, cO);
+  test('mez 0,6 m: rozpracovaná zakázka se zdvihem 0,59 a šířkou 0,3 m (bez zámku) se uloží (200)', r.status === 200, r); }
+{ const z = nova('mez 0,6 rozteč'); d0(z).ock.zadani.roztec = 0.5; zamkni(z);
+  const r = await uloz(z, cO);
+  test('mez 0,6 m: rozteč 0,5 m (ostatní rozměry beze změny) + nový zámek → 200', r.status === 200, r); }
+{ const z = nova('mez 0,6 OVP'); z.cislo = z.cislo.replace('OPR', 'OVP'); Object.assign(d0(z).ock.zadani, { zdvih: 0.3, hloubka: 0.2 });
+  zamkni(z, 'nabidkaProj');
+  const r = await uloz(z, cO);
+  test('mez 0,6 m: OCK vyřazená (číslo OVP) — zámek nabídky PROJ s malými rozměry OCK (200)', r.status === 200, r); }
+{ const K = require(R + 'src/kontroly.js');
+  const vysl = K.kontrolyProved({ zadani: Object.assign({}, require(R + 'src/engine.js').DEFAULT_ZADANI, { zdvih: 9, sirka: 0.59, hloubka: 1.8 }) });
+  const n = vysl.nalezy.find(x => x.kod === 'rozmery');
+  test('mez 0,6 m: zábrana „rozmery" v prohlížeči — šířka 0,59 m zastaví nabídku OCK',
+    !!n && /šířka šachty/.test(n.text) && /0,6 m/.test(n.text) && !!K.kontrolyZabranaDokumentu(vysl, 'nabidka') && !K.kontrolyZabranaDokumentu(vysl, 'nabidkaProj'), n);
+  const ok6 = K.kontrolyProved({ zadani: Object.assign({}, require(R + 'src/engine.js').DEFAULT_ZADANI, { zdvih: 0.6, sirka: 0.6, hloubka: 0.6 }) });
+  test('mez 0,6 m: zábrana mlčí u 0,6 m', !ok6.kody.includes('rozmery'), ok6.nalezy); }
 { const z = nova('B137 obnova'); d0(z).ock.zadani.zdvih = -1;
   const jm = z.cislo.replace(/\s+/g, '') + '.json';
   const o = await (await post(obnova, 'http://x/api/obnova', { zdroj: { soubor: { porizena: new Date().toISOString(), zakazky: { [jm]: z } } },
