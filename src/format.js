@@ -106,6 +106,17 @@ function menaKc(lang, kurzEurKc) {
   return n => '€ ' + Math.ceil((+n || 0) / kurz).toLocaleString('cs-CZ');
 }
 
+/* BUŇKA CSV PRO EXCEL (B83, audit 9. 9. 2026; 13. 10. 2026). Text se dá
+ * do uvozovek (uvnitř zdvojené) a když začíná znakem, kterým Excel začíná
+ * vzorec (= + − @, tabulátor, CR), dostane před sebe apostrof — jinak by
+ * fráze ze šablony nebo heslo slovníku jako „=HYPERLINK(…)" u překladatele
+ * spustily vzorec. Apostrof Excel nezobrazí, jen hodnotu bere jako text. */
+function csvBunka(t) {
+  let s = String(t == null ? '' : t);
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+  return '"' + s.replace(/"/g, '""') + '"';
+}
+
 if (typeof module !== 'undefined')
   module.exports = { formatKc2, formatKc0, formatCislo, formatPctTypo, formatKcTypo,
-                     prepisPlati, menaKc, menaDokumentu };
+                     prepisPlati, menaKc, menaDokumentu, csvBunka };

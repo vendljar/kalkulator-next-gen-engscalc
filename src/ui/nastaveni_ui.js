@@ -729,7 +729,7 @@ function sablonaChybejiciCsv(typ, lang) {
   const stat = {};
   docxPrelozSablonu(s.data.slice(0), lang, stat).then(async () => {
     const csv = '﻿' + ['český text;překlad (' + lang.toUpperCase() + ')']
-      .concat(stat.chybi.map(t => '"' + t.replace(/"/g, '""') + '";')).join('\r\n');
+      .concat(stat.chybi.map(t => csvBunka(t) + ';')).join('\r\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     a.download = 'sablona_' + typ + '_nepreloz_' + lang + '.csv';

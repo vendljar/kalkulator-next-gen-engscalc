@@ -181,10 +181,10 @@ async function sablChybejici(typ, lang) {
     const stat = {};
     await docxPrelozSablonu(cz.data.slice(0), lang, stat);
     const csv = '\ufeff' + ['český text;překlad (' + lang.toUpperCase() + ')']
-      .concat(stat.chybi.map(t => '"' + t.replace(/"/g, '""') + '";'))
+      .concat(stat.chybi.map(t => csvBunka(t) + ';'))
       /* #350: odstavce se symbolem {{…}}, které slovník nezná — zůstanou česky
        * a do procent se nepočítají, proto se vypisují zvlášť. */
-      .concat((stat.symbolove || []).map(t => '"' + t.replace(/"/g, '""') + '";(odstavec se symbolem)')).join('\r\n');
+      .concat((stat.symbolove || []).map(t => csvBunka(t) + ';(odstavec se symbolem)')).join('\r\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     a.download = 'sablona_' + typ + '_nepreloz_' + lang + '.csv';

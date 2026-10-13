@@ -71,6 +71,12 @@ z `test-draft` (v12.10.4, 1df7283). Roadmapa #400 (zbytek) a #402–.
   `zamekPrepoctenoDnes(v)` (strany bez zmrazených čísel); lišta zámku pak
   říká „Částky … nejsou zmrazené … přepočtené dnes". `test_zamek_otisk.js`
   +5, `overit_online.mjs` +2 (lišta starého zámku vs. zámku s výsledkem).
+- **B83 (nízká) — CSV exporty bez ochrany vzorců.** Čtyři exporty pro
+  překladatele (nepřeložené fráze šablon ×2, techspec, slovník jen v aplikaci)
+  dávaly text do buňky, jak byl — „=HYPERLINK(…)" by Excel spustil. Nová
+  `csvBunka` (format.js): uvozovky + apostrof před `= + - @ TAB CR`. Test
+  `src/test_csv_vzorce.js` (15; před 1/5) hlídá i každý budoucí export
+  `text/csv` v `src/ui`.
 
 ## v12.10.4 — integrace nočních dávek N1–N3 (větev claude/integrace-13-10)
 

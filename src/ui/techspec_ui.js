@@ -67,7 +67,7 @@ function tsVsechnyFraze() {
 function tsChybejiciExport() {
   const lang = jazyk();
   const chybi = prekladPokryti(tsVsechnyFraze(), lang).chybi;
-  const q = t => '"' + String(t).replace(/"/g, '""') + '"';
+  const q = csvBunka;   // B83: ochrana vzorců
   const csv = '\ufeff' + ['čeština;' + lang.toUpperCase() + ' (doplňte)']
     .concat(chybi.map(t => q(t) + ';')).join('\r\n');
   const a = document.createElement('a');
