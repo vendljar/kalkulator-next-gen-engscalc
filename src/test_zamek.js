@@ -170,13 +170,22 @@ const mkOck = (zaklad, naklad, pripl = 0) => ({ souhrn: {
   zakladDph: zaklad * 0.21, zakladSDph: zaklad * 1.21,
   priplatkyCena: pripl, priplatkyDph: pripl * 0.21, priplatkySDph: pripl * 1.21 } });
 const mkProj = celkem => ({ souhrn: { naklad: 0, marze: 0, doprava: 0, cena: celkem, sleva: 0, celkem } });
-const por = porovnaniVariant(zak2, [
+/* Zámek strany (P6, 13. 10. 2026): číslo OPR vyřadí PROJ — otisk nového
+ * zámku nese jen OCK. Součet OCK + PROJ platí pro zakázku bez čísla. */
+const zak2Obe = Object.assign({}, zak2, { cislo: zk.ZAK_CISLO_PREDLOHA });
+const por = porovnaniVariant(zak2Obe, [
   { id: a.id, ock: mkOck(200000, 150000, 4000), proj: mkProj(30000) },
   { id: b.id, ock: mkOck(210000, 150000, 4000), proj: mkProj(30000) },
 ]);
 const oa = zamekOtiskZPorovnani(por, a.id);
 test('otisk z porovnání sedí na základní cenu', oa.ockZaklad === 200000, JSON.stringify(oa));
 test('otisk z porovnání spočítá celkem bez DPH', oa.celkemBezDph === 230000, JSON.stringify(oa));
+const oaOpr = zamekOtiskZPorovnani(porovnaniVariant(zak2, [
+  { id: a.id, ock: mkOck(200000, 150000, 4000), proj: mkProj(30000) },
+  { id: b.id, ock: mkOck(210000, 150000, 4000), proj: mkProj(30000) },
+]), a.id);
+test('P6: otisk zakázky s číslem OPR nese jen OCK (PROJ vyřazená)',
+  oaOpr.celkemBezDph === 200000 && oaOpr.projCelkem === null, JSON.stringify(oaOpr));
 test('otisk z porovnání zná příplatky', oa.priplatky === 4000);
 test('otisk neznámé varianty je prázdný, ne pád',
   zamekOtiskZPorovnani(por, 'neexistuje').celkemSDph === null);

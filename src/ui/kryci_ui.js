@@ -212,6 +212,9 @@ function kryciPodminkyBlok() {
 
 function renderKryci() {
   const el = document.getElementById('page-kryci'); if (!el) return;
+  /* Zámek strany (P6): krycí list OCK u zakázky s vyřazenou OCK nevzniká. */
+  const vyr = (typeof stranaVyrazenaPanel === 'function') ? stranaVyrazenaPanel('ock', 'Krycí list zakázky OCK') : '';
+  if (vyr) { el.innerHTML = vyr; return; }
   const c = kryciCtx(ZAK, aktivniVarianta(ZAK), JEKLY);   // kontext prefillů (jeden zdroj pravdy: KRYCI_SEKCE)
   /* Prázdný ceník zhasíná výstupy – krycí list nese ceny stejně jako nabídka. */
   /* #377: i zábrany z kontroly před nabídkou (strana OCK) — krycí list nese

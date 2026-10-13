@@ -476,7 +476,7 @@ function renderDetail() {
     <div class="dv-kotvy">${listaKotev}</div>
   </div>`;
 
-  el.innerHTML =
+  el.innerHTML = (typeof stranaNulovanaStitek === 'function' ? stranaNulovanaStitek('ock') : '') +
     `<div class="kalk-title">${Z ? '' : ''}${ZAK.cislo ? `<span class="kt-cislo">${esc(ZAK.cislo)}</span>` : ''}Detail výpočtu — ${esc(ZAK.nazevAkce || 'bez názvu akce')}
       <span class="pill ${OCK.fixes ? '' : 'warn'}" style="margin-left:8px">${rezim}</span></div>
     <div class="note" style="margin-bottom:12px">Kompletní rozpis kalkulace OCK krok za krokem – přesně jak se počítá základní cena.

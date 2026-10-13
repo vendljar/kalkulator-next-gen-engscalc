@@ -8,12 +8,29 @@ deploy pro `claude/…` v `netlify.toml` ani v `NASAZENI_NETLIFY.md` není.
 
 | Bod | Stav |
 |---|---|
-| P2 — „Opláštit i prohlubeň" | hotovo (commit P2), test `src/test_oplastit_prohluben.js` |
-| P6 — zámek strany: vyřazená strana zamčená a vynulovaná | rozpracováno |
-| celé testovací kolo | čeká |
+| P2 — „Opláštit i prohlubeň" | hotovo (commit P2), test `src/test_oplastit_prohluben.js` (1/5 → 7/0) |
+| P6 — zámek strany: vyřazená strana zamčená a vynulovaná | hotovo (commit P6), `src/test_zamek_strany.js` (17/31 → 52/0), server blok P6 v `netlify/test_koncova_cena.mjs` (74/5 → 82/0), UI v `overit_zahranicni.mjs` |
+| celé testovací kolo | běží / viz níže |
+
+Rozhodnutí D6a–D6g a výklady: CHANGELOG, oddíl „větev claude/k22-p2-p6".
+
+Otevřené otázky pro J. V. (s výchozí odpovědí, jak je ve větvi):
+1. Serverové kontroly „nikomu" (záporné částky B111, rozměry B137 při
+   uložení, typy #340) platí dál i pro data vyřazené strany — uvolněné jsou
+   jen kontroly nového zámku. *Výchozí: ponechat.*
+2. Otisk souhrnu nového zámku (`zamek.otisk`, z porovnání variant) nese
+   u čísla OPR jen OCK (archiv „odesláno za"); zmrazený výsledek
+   `zamek.vysledek` dál obě strany. *Výchozí: takto.*
+3. Snímky obrazovky v příručce (lišta zámku strany) se nepřegenerovaly.
+   *Výchozí: přegenerovat při příští dávce příručky.*
+4. Zakázky v ostré, které dnes počítají obě strany (čísla obou stran,
+   dřívější tlačítko), po nasazení ukážou druhou stranu vynulovanou
+   a kontrola „stranyDriv" na to upozorní. *Výchozí: bez migrace dat.*
 
 Souběžně: větev `claude/davka-13-10` mění `zahrJenRealizaceNabidnout`
-(`src/zakazka.js`, B129) — při slučování s P6 čekat konflikt.
+(`src/zakazka.js`, B129: nic nenabídne u zakázky se zamčenou variantou) —
+při slučování s P6 čekat konflikt v téže funkci (P6 přidává podmínku D6f
+a mění návratovou hodnotu na `'zrusitJenOck'`); obě podmínky ponechat.
 
 ---
 

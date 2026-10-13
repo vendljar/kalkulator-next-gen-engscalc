@@ -360,8 +360,10 @@ function uloRejstrikZaznam(zak, opts) {
     adresa: uloRejstrikAdresa(zak && zak.adresa),
     objednatel: uloRejstrikText(zak && zak.objednatel),
     datum: uloRejstrikText(zak && zak.datum),
-    /* Druh zakázky pro filtr OCK × PROJ v přehledu nabídek. */
-    jenProj: !!(zak && zak.jenProj),
+    /* Druh zakázky pro filtr OCK × PROJ v přehledu nabídek. Od P6 (zámek
+     * strany, 13. 10. 2026) podle vedoucí strany — číslo OVP i příznak
+     * „jen projekce" (bez cen, jen druh). */
+    jenProj: !!(zak && ((typeof zakazkaVedouciStrana === 'function') ? zakazkaVedouciStrana(zak) === 'proj' : zak.jenProj)),
     /* Řada ceníku řídící varianty (#181, 31. 8. 2026): v přehledu se ukáže
      * štítkem, aby šly zahraniční zakázky poznat i vypsat zvlášť. Tuzemská
      * se nezapisuje — je výchozí a starší rejstříky ji nemají. */

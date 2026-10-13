@@ -1673,9 +1673,11 @@ console.log('\n===== #374 (B113, B114): KONCOVÁ CENA BEZ SCHVÁLENÍ — IDENTI
   const n5 = nova374(); sestaveni(n5); vlastni395(n5); zamkni395(n5, 'nabidka');
   const v1 = await uloz374(n5, cObch);
   test('#395 V3: nová zakázka obchodníka — ceník sestavení + vlastní položka + nový zámek OCK → 403', je403(v1, /ceník/), v1);
-  const n6 = nova374(); sestaveni(n6); vlastni395(n6); zamkni395(n6, 'nabidkaProj');
+  /* Od P6 (zámek strany, 13. 10. 2026) nabídka PROJ patří zakázce s číslem
+   * OVP — u čísla OPR je PROJ vyřazená a zámek odmítne už P6. */
+  const n6 = nova374(); n6.cislo = n6.cislo.replace('OPR', 'OVP'); sestaveni(n6); vlastni395(n6); zamkni395(n6, 'nabidkaProj');
   const v2 = await uloz374(n6, cObch);
-  test('#395 V3: … totéž s nabídkou PROJ → 403', je403(v2, /ceník/), v2);
+  test('#395 V3: … totéž s nabídkou PROJ (číslo OVP) → 403', je403(v2, /ceník/), v2);
   const v3 = await uprav374(a => { vlastni395(a); zamkni395(a, 'nabidka'); }, cObch, z => sestaveni(z));
   test('#395 V3: uložená zakázka s ceníkem sestavení — nový zámek obchodníka → 403', je403(v3, /ceník/), v3);
   const n7 = nova374(); n7.jenProj = true; pol(n7, 'studie'); d0(n7).proj.zadani.sekce.forEach(s => s.polozky.forEach(p => { p.vyrazeno = true; }));

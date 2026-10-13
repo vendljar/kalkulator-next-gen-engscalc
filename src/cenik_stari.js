@@ -619,9 +619,11 @@ function cenikCenaRozpracovanych(zak, jekly) {
        * vrátil si zastaralý ceník kvůli změně, která se ho netýká.
        * (Regresi zavedla dnešní oprava dopoledne, našlo ji druhé kolo
        * nezávislé revize.) */
-      const strana = (typeof zakazkaVedouciStrana === 'function')
-        ? zakazkaVedouciStrana(zak) : '';
-      if (strana !== 'proj') {
+      /* Od P6 (13. 10. 2026) jedním pravidlem: vyřazená strana
+       * (zakazkaVyrazenaStrana — uzamčená a vynulovaná) se nepočítá. */
+      const vyrazena = (typeof zakazkaVyrazenaStrana === 'function')
+        ? zakazkaVyrazenaStrana(zak) : '';
+      if (vyrazena !== 'ock') {
         const r = vypocet(v.data.ock.zadani, v.data.cenik, jekly, v.data.ock.fixes);
         dil += (r && r.souhrn && +r.souhrn.zakladCena) || 0;
       }
@@ -636,7 +638,7 @@ function cenikCenaRozpracovanych(zak, jekly) {
        *
        * Falešné ujištění je horší než mlčení: obchodník podle něj klikne
        * „Počítat s dnešním ceníkem" a nepodívá se. */
-      if (strana !== 'ock' && typeof vypocetProj === 'function'
+      if (vyrazena !== 'proj' && typeof vypocetProj === 'function'
           && v.data.proj && v.data.proj.zadani && v.data.proj.cenik) {
         const rp = vypocetProj(v.data.proj.zadani, v.data.proj.cenik);
         dil += (rp && rp.souhrn && +rp.souhrn.celkem) || 0;

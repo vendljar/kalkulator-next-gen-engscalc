@@ -36,7 +36,10 @@ test('sluzba.js nečte globální stav obrazovek (ZAK, NAST, SL, ZO)',
 const program = { cenik: ZC.zkusebniCenik(), cenikProj: ZC.zkusebniCenikProj(),
                   slevy: { minMarze: 0.10, maxGlobalni: 0.30, stropy: { 'Obchodník': 0.05 } } };
 const zak = zk.novaZakazka();
-zak.cislo = '2026 - OPR - CN - 0900';
+/* Bez čísla (předloha): od P6 (zámek strany, 13. 10. 2026) číslo OPR vyřadí
+ * PROJ — obě strany naráz počítá jen zakázka, která číslo ještě nemá.
+ * Vyřazenou stranu ve službě hlídá test_zamek_strany.js (j). */
+zak.cislo = zk.ZAK_CISLO_PREDLOHA;
 const v1 = zak.varianty[0];
 v1.data.sleva = { procenta: 10, stav: 'schváleno', role: 'Vedoucí' };
 

@@ -468,8 +468,10 @@ function kryciCtx(zak, varianta, jekly) {
   let priplatky = '—', ockKc = null, projKc = null, rOck = null;
   const projSekce = {};
   try {
-    /* Odeslaná nabídka vydá svůj otisk (A1). */
-    rOck = (typeof vypocetZ === 'function') ? vypocetZ(varianta, jekly)
+    /* Odeslaná nabídka vydá svůj otisk (A1). Vyřazená strana (P6, zámek
+     * strany) se nepočítá — krycí list OCK nese jen vedoucí stranu. */
+    rOck = (typeof vysledekStrany === 'function') ? vysledekStrany(zak, varianta, 'ock', jekly)
+      : (typeof vypocetZ === 'function') ? vypocetZ(varianta, jekly)
       : vypocet(Zv, Cv, jekly, d.ock.fixes);
     /* Hodnota krycího listu musí být přesně to, co je v nabídce – tedy včetně
      * obchodního zaokrouhlení (#38). Skládá ji zaokrouhleni.js. */
@@ -481,7 +483,11 @@ function kryciCtx(zak, varianta, jekly) {
     priplatky = zahrn.length ? (zahrn.length + ' – ' + zahrn.map(pp => pp.nazev).join(', ')) : 'bez příplatků';
   } catch (e) {}
   try {
-    const rp = (typeof vypocetProjZ === 'function' ? vypocetProjZ(varianta) : vypocetProj(d.proj.zadani, d.proj.cenik));
+    /* P6 (zámek strany): u zakázky s vyřazenou PROJ (číslo OPR, jen
+     * realizace) projekce do krycího listu OCK nejde — typ produktu bez
+     * „+ projekce" a bez cen činností. */
+    const rp = (typeof vysledekStrany === 'function') ? vysledekStrany(zak, varianta, 'proj', jekly)
+      : (typeof vypocetProjZ === 'function' ? vypocetProjZ(varianta) : vypocetProj(d.proj.zadani, d.proj.cenik));
     rp.sekce.forEach(s => { projSekce[s.key] = s.celkem; });
     projKc = rp.souhrn.celkem;
   } catch (e) {}

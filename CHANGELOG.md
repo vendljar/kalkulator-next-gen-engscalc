@@ -39,6 +39,118 @@ stěny může být plech) — název má říkat, co zkratka dělá.
   `overit_oplasteni.mjs` přepsán na nový název (+1 kontrola popisku
   řádku, 92 OK), `overit_lista.mjs` 271/271.
 
+### P6 · K19-N114 — zámek strany: vyřazená strana se uzamkne a vynuluje
+
+Rozhodnutí J. V. 13. 10. 2026: vrací se zadání z 1. 10. 2026 („V případě,
+že je kalkulace naceněna v OCK, měla by se kalkulace projekce uzamknout
+a vynulovat. Toto platí vice versa." a „Druhou stranu kalkulace už nebudeme
+umožňovat počítat" — Pipedrive eviduje OCK a projekci vždy zvlášť pod
+vlastním číslem). Nahrazuje P6 z v2.10.1 (měkký zámek: zašedlá strana se
+dál počítala, výjimka „Počítat i tuhle stranu", dialog „jen realizace" pro
+každou zahraniční zakázku). Pojem: **zámek strany** (OCK × PROJ jedné
+zakázky) — nesouvisí se zámkem varianty po tisku (`zamekPoTisku`) ani se
+„stranami" dokumentů v jeho otisku.
+
+Jedno pravidlo v jádře (`src/zakazka.js`):
+- `zakazkaVedouciStrana` — `jenProj` → PROJ, `jenOck` → OCK, jinak číslo
+  nabídky: číslo zakázky mimo řadu OVP → OCK (i když vlastní číslo má
+  i hlavička PROJ), řada OVP / vlastní číslo PROJ → PROJ, bez čísla → ''.
+- `zakazkaVyrazenaStrana` ('proj' | 'ock' | ''), `stranaZamcena` z ní;
+  `vysledekStrany(zak, v, strana, jekly)` — vyřazená strana `null`, jinak
+  `vypocetZ` / `vypocetProjZ` (ty zůstávají čisté, otisk se nemění);
+  `zakazkaDrivObeStrany` (dřív `obeStrany: true` nebo čísla obou stran);
+  `zakazkaVyrazenaText` (hláška zábrany a lišty).
+- `obeStrany` nic nenastavuje (novaZakazka, migrace, dialog, tlačítko);
+  ve starších datech zůstává a ignoruje se.
+
+Výstupy (vyřazená strana se nikde nesčítá, netiskne ani nekontroluje):
+- `sluzba.js` (server i přehledy) — `cenaOck`/`cenaProj` null, marže jen
+  z vedoucí strany; `porovnaniVariant` vyřazenou stranu nesčítá (i otisk
+  souhrnu nového zámku `zamekOtiskZPorovnani`); `spocitejVariantu`
+  (souhrn řídící varianty, porovnání, seznam variant); marže v liště
+  (`marzePrehledAkt`); krycí list OCK (`kryciCtx` — typ produktu bez
+  „+ projekce" u čísla OPR, bez hodnoty OCK u OVP); `nabidkaProjPlatby`
+  (plán plateb PROJ) null; `cenik_stari.js` (dopad ceníku) a rejstřík
+  (`jenProj` = vedoucí PROJ, druh pro filtr, bez cen) jedním pravidlem;
+  schvalování slev (UI i serverová marže slevy) vyřazenou stranu nebere.
+- Kontroly: `kontrolyProved` odvodí `jenProj`/`jenOck` z vyřazené strany
+  a data vyřazené strany z kontextu vyjme (`kontrolyCtxStrany`) — mlčí
+  `projZahranici`, `planPlatebWordProj`, `cenaWordProj`, `slevaProj`,
+  `cenaNula` za PROJ… (tím odpadá i K21-N1). Nové pravidlo `stranyDriv`
+  (upozornění, ne zábrana): „Zakázka dřív počítala projekci i OCK. Od této
+  verze se nabízejí zvlášť — Kalkulace PROJ je vynulovaná. Projekci nacen
+  v samostatné zakázce."
+- Dokumenty: `kontrolyStranaZabrana(zak, typ)` — v `dokumentZabrana`
+  (jako první zábrana) i v `dokumentVygeneruj` (vzor #377): nabídka a tisk,
+  krycí list, SoD vyřazené strany (plán plateb PROJ jede s nabídkou a SoD
+  PROJ) nevzniknou, ani dotisk do odeslané varianty; kompletní náhled
+  podkladů nabídky OCK taky. Buildery dokumentů (`nabidka.js`,
+  `nabidka_proj.js`, `kryci_proj.js`) se neměnily — je to dokument jedné
+  strany a vyřazenou zastaví zábrana.
+- UI: lišta vyřazené strany („uzamčená a vynulovaná (0 Kč) … druhá strana
+  se nabízí samostatnou zakázkou, protože Pipedrive eviduje každou nabídku
+  zvlášť"), tlačítko „Počítat i tuhle stranu" a `zamekStranyPovol` zmizely,
+  „Přejít do počítané kalkulace" zůstává; obrazovky vyřazené strany
+  (kalkulace, nabídková karta, detail výpočtu, technická specifikace)
+  se kreslí s vynulovanými částkami (`stranaNulujKresli`, `fmt`/`fmt0` →
+  0 Kč) a štítkem „0 Kč — vynulováno, cenovka vzniká v …"; krycí list
+  vyřazené strany jen panel. U `jenOck` je v liště PROJ přepínač „Zakázka
+  je jen realizace (bez PROJ)" (tělo PROJ je zamčené, jinak by nešel zrušit).
+- Server (`netlify/lib/zakazka_kontrola.mjs`, D6g): `zakazkaVyrazena` ze
+  sdíleného pravidla; nový zámek vedoucí strany se neposuzuje podle ceníku
+  ani ceny / rozměrů vyřazené strany; nový zámek i nový dotisk dokumentu
+  vyřazené strany → 403. Data se nemění, uložení zamčené varianty projde.
+- Příručka (`manual/obsah.json`, kap. 25): podnadpis „Uzamčená a vynulovaná
+  kalkulace", věta o tlačítku a „při obou číslech se nezamyká nic" pryč.
+  Snímky obrazovky v příručce se nepřegenerovaly (lišta se změnila jen
+  textem a jedním tlačítkem).
+
+Rozhodnutí (výchozí volba a výklad označeny, ať jde přepnout):
+- **D6a** (J. V. 1. 10., potvrzeno 13. 10.) — výjimka „Počítat i tuhle
+  stranu" se ruší.
+- **D6b** (výchozí) — vynulování je pravidlo čtení: zadání vyřazené strany
+  zůstává, po smazání / změně čísla se cena vrátí na korunu.
+- **D6c** (výchozí) — spouštěč je číslo nabídky + `jenProj` / `jenOck`,
+  ne cena.
+- **D6d** (výchozí) — platí i pro varianty odeslané před změnou: přehledy
+  a nový krycí list jen vedoucí strana, odeslané dokumenty a otisk
+  (`zamek.vysledek`) beze změny, nový dotisk vyřazené strany zablokovaný
+  (klient i server).
+- **D6e** (výklad) — čísla na obou stranách → vede OCK (číslo zakázky).
+- **D6f** (výchozí) — dialog „jen realizace" jen pro zahraniční zakázku
+  bez čísla; zakázka s číslem OPR (tvar K22-Z02) ho nedostane. Návrat do
+  tuzemska nabídne zrušení `jenOck` (návratová hodnota `'zrusitJenOck'`,
+  dřív `'obeStrany'`). Vypnout: `zahrJenRealizaceNabidnout` → vždy `null`.
+- **D6g** (výklad bezpečnostní zrcadlovosti) — server bere vyřazenou stranu
+  ze stejného pravidla jako klient (V3, B137).
+- Výklad navíc: serverové kontroly „nikomu" (záporné částky B111, rozměry
+  B137 při uložení, typy #340) platí dál i pro data vyřazené strany —
+  uvolnily se jen kontroly nového zámku. Otisk souhrnu nového zámku
+  (`zamek.otisk`) nese u čísla OPR jen OCK.
+
+Testy (počty před → po):
+- nová `src/test_zamek_strany.js` (body a–m promptu): na 1df7283
+  17 OK / 31 FAIL, po opravě 52 OK / 0 FAIL;
+- `netlify/test_koncova_cena.mjs` + blok P6 (k, h): na 1df7283 74 OK /
+  5 FAIL, po opravě 82 OK / 0 FAIL;
+- `overit_zahranicni.mjs` + P6 UI (lišta, štítek, 0 Kč, krycí list panel,
+  dokumenty zhasnuté, vratnost, OVP) a dialog K22-Z02: 56 OK / 0 FAIL;
+- přepsané na nové pravidlo: `test_zakazka.js` (obě čísla → OCK, obeStrany
+  ignorován), `test_zahr_jen_realizace.js` (14/0), `test_kryci.js`,
+  `test_porovnani.js`, `test_sluzba.js`, `test_zamek.js`,
+  `test_zaokrouhleni.js`, `test_kontroly.js` (33 pravidel),
+  `test_cenik_dopad.js`, `netlify/test_prava.mjs` (#395 V3 PROJ s číslem
+  OVP) — kombinace OCK + PROJ se v nich ověřuje na zakázce bez čísla;
+- harnessy, které z jedné zakázky tiskly obě strany, přepínají číslo
+  podle strany (`overit_sod.mjs` OPR/OVP 49/0, `overit_nabidky_dph.mjs`
+  nabídka OCK s číslem OPR 24/0, `overit_xss.mjs` plán plateb PROJ u čísla
+  OVP — 8 náhledů místo 9, 338/0); `overit_lista.mjs` čeká 33 pravidel;
+- (m) souhrn a cena OCK testovacích zadání u zakázek s číslem OPR na korunu
+  jako na 1df7283 (otisk sha256, Model 1 i 2); `engine.js` ani
+  `engine_proj.js` se nezměnily — `nastroje/porovnani_modelu.js` dává
+  stejný výstup jako na 1df7283;
+- mutace: serveru +13 (P6, chycené 13/13), jádra +4 (chycené 4/4).
+
 ---
 
 ## v12.10.4 — integrace nočních dávek N1–N3 (větev claude/integrace-13-10)

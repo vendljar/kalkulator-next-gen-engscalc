@@ -543,9 +543,27 @@ function tabViditelny(t) {
   return true;
 }
 
-/* #14 krok 3: pravidla formátů bydlí ve format.js — tady jen krátká jména. */
-const fmt = n => formatKc2(n);
-const fmt0 = n => formatKc0(n);
+/* #14 krok 3: pravidla formátů bydlí ve format.js — tady jen krátká jména.
+ *
+ * VYNULOVANÁ STRANA (P6 / K19-N114, 13. 10. 2026): při kreslení obrazovek
+ * vyřazené strany zakázky (stranaNulujKresli) ukazují částky 0 Kč — zadání
+ * zůstává vidět (jen pro čtení), ale nikde se pro ni neukáže nenulová cena.
+ * Vynulování je pravidlo čtení: data ani výpočet se nemění. */
+const STRANA_NULOVANI = { aktivni: false };
+const fmt = n => formatKc2(STRANA_NULOVANI.aktivni ? 0 : n);
+const fmt0 = n => formatKc0(STRANA_NULOVANI.aktivni ? 0 : n);
+function stranaNulujKresli(strana, kresli) {
+  const pred = STRANA_NULOVANI.aktivni;
+  STRANA_NULOVANI.aktivni = (typeof stranaZamcena === 'function' && typeof ZAK !== 'undefined')
+    ? stranaZamcena(ZAK, strana) : false;
+  try { return kresli(); } finally { STRANA_NULOVANI.aktivni = pred; }
+}
+/* Štítek ke vynulovaným částkám vyřazené strany (souhrn, sekce, detail). */
+function stranaNulovanaStitek(strana) {
+  if (typeof stranaZamcena !== 'function' || typeof ZAK === 'undefined' || !stranaZamcena(ZAK, strana)) return '';
+  const ved = strana === 'ock' ? 'proj' : 'ock';
+  return `<div class="strana-nulovana" data-strana="${strana}"><b>0 Kč — vynulováno</b>, cenovka vzniká v ${esc(STRANA_NAZEV[ved] || '')}.</div>`;
+}
 const num = (n, d = 2) => formatCislo(n, d);
 /* ---------- escapování textu vkládaného do HTML (#6) ----------
  * Celé UI se skládá jako řetězec a přiřazuje přes innerHTML. Do těch řetězců
@@ -1684,7 +1702,8 @@ async function cenikRadaPrepniUI(rada) {
     + 'nastavil sám, zůstává.'
     /* P11 (rozhodnutí J. V. 29. 9. 2026): projekce se u zahraničí nedělá.
      * Od P6 (K19-N114, 2. 10. 2026) se na „jen realizace" hned zeptá. */
-    + (r === 'zahr' && !ZAK.jenOck ? '\n\nProjekci u zahraničních zakázek nerealizujeme. Zahraniční '
+    + (r === 'zahr' && typeof zahrJenRealizaceNabidnout === 'function' && zahrJenRealizaceNabidnout(ZAK, 'zahr', []) === 'jenOck'
+      ? '\n\nProjekci u zahraničních zakázek nerealizujeme. Zahraniční '
       + 'ceník u ní mění jen přirážku a DPH, sazby a fixy zůstávají tuzemské — po přepnutí se '
       + 'zeptám, zda zakázku nastavit jen jako realizaci.' : ''))) return;
 
@@ -1706,9 +1725,11 @@ async function cenikRadaPrepniUI(rada) {
       + '\n\nChcete-li i tady hodnotu z ceníku, přepište ji ručně.');
 }
 
-/* P6 (K19-N114, rozhodnutí J. V. 2. 10. 2026): po přepnutí na zahraniční
- * řadu nabídne „zakázka jen realizace" (výchozí Ano), po návratu všech
- * variant do tuzemska opak. Rozhoduje zahrJenRealizaceNabidnout (zakazka.js);
+/* P6 (K19-N114, rozhodnutí J. V. 2. 10. 2026, upraveno 13. 10. 2026 — D6f):
+ * po přepnutí na zahraniční řadu nabídne zahraniční zakázce BEZ čísla
+ * „zakázka jen realizace" (výchozí Ano); zakázka s číslem OPR má PROJ
+ * vyřazenou už podle čísla. Po návratu všech variant do tuzemska nabídne
+ * zrušení `jenOck`. Rozhoduje zahrJenRealizaceNabidnout (zakazka.js);
  * zápis jde přes set(), takže ho hlídá zámek i náhled jako každý jiný. */
 async function zahrJenRealizaceDotaz(rada) {
   if (typeof zahrJenRealizaceNabidnout !== 'function') return;
@@ -1721,15 +1742,14 @@ async function zahrJenRealizaceDotaz(rada) {
       kdo: (typeof zamekKdo === 'function') ? zamekKdo() : '', co: text }); };
   if (co === 'jenOck') {
     if (!await potvrd('Zakázka jen realizace — projekci nepočítat?\n\n'
-      + 'Projekci u zahraničních zakázek nerealizujeme. Strana PROJ zešedne (krycí list PROJ, '
-      + 'smlouva PROJ a plán plateb PROJ se nepoužijí) a kontroly projekce přestanou hlásit.\n\n'
-      + 'Platí pro celou zakázku, tedy pro všechny její varianty. Vrátit jde tlačítkem '
-      + '„Počítat i tuhle stranu" v šedé liště Kalkulace PROJ.',
+      + 'Projekci u zahraničních zakázek nerealizujeme. Kalkulace PROJ se uzamkne a vynuluje (krycí list PROJ, '
+      + 'nabídka, smlouva PROJ a plán plateb PROJ nevzniknou) a kontroly projekce přestanou hlásit.\n\n'
+      + 'Platí pro celou zakázku, tedy pro všechny její varianty. Vrátit jde v Kalkulaci PROJ '
+      + 'odškrtnutím „Zakázka je jen realizace (bez PROJ)" — nebo návratem všech variant na tuzemský ceník.',
       { ano: 'Ano, jen realizace', ne: 'Ne, projekci ponechat' })) return;
-    set('ZAK.obeStrany', false);
     set('ZAK.jenOck', true);
     if (ZAK.jenOck === true) zapis('Zakázka nastavena jen jako realizace (zahraniční ceník)');
-  } else if (co === 'obeStrany') {
+  } else if (co === 'zrusitJenOck') {
     if (!await potvrd('Všechny varianty teď počítají s tuzemským ceníkem.\n\n'
       + 'Zakázka je nastavená jen jako realizace. Počítat zase i projekci?',
       { ano: 'Ano, počítat i projekci', ne: 'Ne, ponechat jen realizaci', vychoziNe: true })) return;
@@ -1856,12 +1876,30 @@ function zamekStranyLista(strana) {
   const vedouci = zakazkaVedouciStrana(ZAK);
   const cislo = zakazkaCisloVedouci(ZAK);
   const kam = vedouci === 'proj' ? 'proj' : 'kalk';
-  return `<div class="zamek-lista noprint">
+  /* P6 (K19-N114, J. V. 1. a 13. 10. 2026): vyřazená strana je uzamčená
+   * A VYNULOVANÁ a druhou stranu počítat nejde (D6a — tlačítko „Počítat
+   * i tuhle stranu" zmizelo). Druhá strana = samostatná zakázka. */
+  const jina = strana === 'proj'
+    ? 'Projekce se nabízí samostatnou zakázkou s vlastním číslem řady OVP'
+    : 'Ocelová konstrukce se nabízí samostatnou zakázkou s vlastním číslem řady OPR';
+  return `<div class="zamek-lista noprint" data-strana-vyrazena="${strana}">
     <span><b>Cenovka téhle zakázky vzniká v ${esc(STRANA_NAZEV[vedouci] || '')}</b>${cislo ? ' (' + esc(cislo) + ')' : ''}.
-      Tahle kalkulace je proto jen ke čtení, ať je zřejmé, odkud cena pochází.</span>
+      Tahle kalkulace je uzamčená a vynulovaná (0 Kč) — zadání zůstává jen ke čtení a nikam se nepočítá.
+      ${esc(jina)} (Seznam zakázek → Duplikovat jako novou zakázku), protože Pipedrive eviduje každou nabídku zvlášť.</span>
     <button class="mini" onclick="prepniTab('${kam}')">Přejít do počítané kalkulace</button>
-    <button class="mini" onclick="zamekStranyPovol()">Počítat i tuhle stranu</button>
+    ${strana === 'proj' && ZAK.jenOck ? `<label class="mini" title="příznak zakázky „jen realizace“ (zahraniční zakázka bez čísla); odškrtnutím se Kalkulace PROJ zase počítá, pokud ji nevyřazuje číslo nabídky">
+      <input type="checkbox" checked onchange="set('ZAK.jenOck', this.checked)"> Zakázka je jen realizace (bez PROJ)</label>` : ''}
   </div>`;
+}
+
+/* Panel místo obrazovky, která patří jen vyřazené straně (krycí list) —
+ * nese jen ceny a údaje strany, která se nenabízí (P6). */
+function stranaVyrazenaPanel(strana, nazev) {
+  if (typeof stranaZamcena !== 'function' || !stranaZamcena(ZAK, strana)) return '';
+  return `<div class="card strana-vyrazena-panel" data-strana-vyrazena="${strana}"><div class="body">
+    <b>${esc(nazev)} — kalkulace ${strana === 'proj' ? 'PROJ' : 'OCK'} je uzamčená a vynulovaná (0 Kč).</b>
+    <div class="note" style="margin-top:6px">${esc(typeof zakazkaVyrazenaText === 'function' ? zakazkaVyrazenaText(ZAK) : '')}</div>
+  </div></div>`;
 }
 
 /* Přepnutí třídy na kontejnerech s výpočtem. Hlavička (#kalk-hlavicka)
@@ -1878,14 +1916,6 @@ function zamekStranyNasad(strana) {
   });
 }
 
-/* „Počítat i tuhle stranu" — vědomé rozhodnutí, že zakázka nese obojí. */
-function zamekStranyPovol() {
-  if (typeof zamekStop === 'function' && zamekStop()) return;
-  if (typeof nahledStop === 'function' && nahledStop('odemčení druhé kalkulace')) return;
-  set('ZAK.obeStrany', true);
-  set('ZAK.jenProj', false);
-  set('ZAK.jenOck', false);
-}
 function renderNabidkaOck() {
   const el = document.getElementById('kalk-nabidka');
   if (el) el.innerHTML = slevaKarta() + zaokrKarta()
@@ -2120,8 +2150,12 @@ function slevaKarta(kontext) {
 /* Výsledky výpočtů pro libovolnou variantu (pro přehledy) */
 function spocitejVariantu(v) {
   let ock = null, proj = null;
-  try { ock = (typeof vypocetZ === 'function' ? vypocetZ(v, JEKLY) : vypocet(v.data.ock.zadani, v.data.cenik, JEKLY, v.data.ock.fixes)); } catch (e) {}
-  try { proj = (typeof vypocetProjZ === 'function' ? vypocetProjZ(v) : vypocetProj(v.data.proj.zadani, v.data.proj.cenik)); } catch (e) {}
+  /* Zámek strany (P6 / K19-N114): vyřazená strana zakázky se v přehledech
+   * nepočítá — souhrn řídící varianty, porovnání i seznam ji ukážou jako
+   * „—" / 0 Kč. Jedno pravidlo: vysledekStrany (zakazka.js). */
+  const vyr = (typeof zakazkaVyrazenaStrana === 'function' && typeof ZAK !== 'undefined') ? zakazkaVyrazenaStrana(ZAK) : '';
+  try { ock = vyr === 'ock' ? null : (typeof vypocetZ === 'function' ? vypocetZ(v, JEKLY) : vypocet(v.data.ock.zadani, v.data.cenik, JEKLY, v.data.ock.fixes)); } catch (e) {}
+  try { proj = vyr === 'proj' ? null : (typeof vypocetProjZ === 'function' ? vypocetProjZ(v) : vypocetProj(v.data.proj.zadani, v.data.proj.cenik)); } catch (e) {}
   return { ock, proj };
 }
 
@@ -2673,15 +2707,21 @@ function renderTelo() {
   renderRezimPill();
   renderVerzePill();
   renderKalkHlavicka();
-  renderInputs(); renderOutputs();
-  renderNabidkaOck();
-  renderDetail();
-  if (typeof renderDetailProj === 'function') renderDetailProj();
-  renderTechspec();
-  renderSpecData();
-  renderKryci();
-  renderProj();
-  renderKryciProj();
+  /* Obrazovky vyřazené strany (P6, zámek strany) se kreslí s vynulovanými
+   * částkami — stranaNulujKresli; mimo vyřazenou stranu beze změny. */
+  stranaNulujKresli('ock', () => {
+    renderInputs(); renderOutputs();
+    renderNabidkaOck();
+    renderDetail();
+    renderTechspec();
+    renderSpecData();
+    renderKryci();
+  });
+  stranaNulujKresli('proj', () => {
+    if (typeof renderDetailProj === 'function') renderDetailProj();
+    renderProj();
+    renderKryciProj();
+  });
   renderCenik();
   renderCenikProj();
   renderZakazka();

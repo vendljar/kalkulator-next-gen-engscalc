@@ -979,6 +979,25 @@ const KONTROLY = [
     },
   },
   {
+    /* ZAKÁZKA DŘÍV POČÍTALA OBĚ STRANY (P6 / K19-N114, rozhodnutí J. V.
+     * 13. 10. 2026, bod 9). Výjimka „Počítat i tuhle stranu" (`obeStrany`)
+     * se zrušila a čísla na obou stranách už druhou stranu nenechají žít
+     * (vede OCK, D6e). Starší zakázka, která obě strany počítala, se po
+     * načtení řídí novým pravidlem — tohle jí to řekne. Upozornění, ne
+     * zábrana: vedoucí strana dokument vytvořit smí. */
+    kod: 'stranyDriv', kde: 'Hlavička zakázky', nazev: 'Zakázka dřív počítala projekci i OCK',
+    zjisti(ctx) {
+      const zak = ctx.zak;
+      if (!zak || typeof zakazkaDrivObeStrany !== 'function' || !zakazkaDrivObeStrany(zak)) return null;
+      const vyr = (typeof zakazkaVyrazenaStrana === 'function') ? zakazkaVyrazenaStrana(zak) : '';
+      if (!vyr) return null;
+      const kod = vyr === 'proj' ? 'PROJ' : 'OCK';
+      return { text: 'Zakázka dřív počítala projekci i OCK. Od této verze se nabízejí zvlášť — Kalkulace '
+        + kod + ' je vynulovaná. ' + (vyr === 'proj' ? 'Projekci' : 'Ocelovou konstrukci')
+        + ' nacen v samostatné zakázce.' };
+    },
+  },
+  {
     kod: 'hlavicka', kde: 'Hlavička zakázky', nazev: 'Prázdná hlavička',
     zjisti(ctx) {
       const zak = ctx.zak;
@@ -1081,7 +1100,31 @@ function kontrolyPravidla() {
  *         sleva, nast, zak, zaokr, marzePrehled? }
  * Co v kontextu není, to se nehlídá – kontrola nad rozdělanou zakázkou nesmí
  * hlásit chybu jen proto, že se ještě nezadalo všechno. */
+/* ZÁMEK STRANY V KONTROLÁCH (P6 / K19-N114, 13. 10. 2026). Vyřazená strana
+ * zakázky (zakazkaVyrazenaStrana: číslo nabídky, jenProj, jenOck) se
+ * nekontroluje: `jenProj` / `jenOck` kontextu se odvodí z ní (pravidla na
+ * nich už stojí — 19 míst) a data vyřazené strany se z kontextu vyjmou,
+ * aby ji nehlídala ani pravidla bez vlastní podmínky (cenaNula, slevaProj,
+ * zapornaPolozka, marže). Vrací kopii; vstup se nemění. */
+function kontrolyCtxStrany(ctx) {
+  if (!ctx || typeof ctx !== 'object') return ctx;
+  const vyr = (ctx.zak && typeof zakazkaVyrazenaStrana === 'function') ? zakazkaVyrazenaStrana(ctx.zak) : '';
+  if (!vyr) return ctx;
+  const c = Object.assign({}, ctx);
+  if (vyr === 'ock') {
+    c.jenProj = true;
+    c.zadani = null; c.vysledek = null; c.sleva = null;
+  } else {
+    c.jenOck = true;
+    c.projZadani = null; c.projVysledek = null; c.slevaProj = null; c.platbyProj = null;
+  }
+  delete c.__marze;
+  delete c.marzePrehled;
+  return c;
+}
+
 function kontrolyProved(ctx) {
+  ctx = kontrolyCtxStrany(ctx);
   const nalezy = [];
   if (ctx && typeof ctx === 'object') {
     KONTROLY.forEach(r => {
@@ -1163,6 +1206,19 @@ function kontrolyDokumentStrana(typ) {
   return '';
 }
 
+/* ZÁBRANA DOKUMENTU VYŘAZENÉ STRANY (P6 / K19-N114, bod 6). Dokument strany,
+ * která je u zakázky uzamčená a vynulovaná (nabídka a tisk, krycí list,
+ * SoD; plán plateb PROJ jede s nabídkou a SoD PROJ), nevznikne — ani dotisk
+ * do zámku varianty, který obě strany nese z doby před změnou (D6d).
+ * Vrací hlášku, nebo ''. Plná moc ani neznámý typ stranu nemají. */
+function kontrolyStranaZabrana(zak, typ) {
+  const strana = kontrolyDokumentStrana(typ);
+  if (!strana || !zak || typeof zakazkaVyrazenaStrana !== 'function') return '';
+  if (zakazkaVyrazenaStrana(zak) !== strana) return '';
+  return (typeof zakazkaVyrazenaText === 'function') ? zakazkaVyrazenaText(zak)
+    : 'Kalkulace ' + (strana === 'proj' ? 'PROJ' : 'OCK') + ' je uzamčená a vynulovaná.';
+}
+
 /* Zábrany z výsledku kontrolyProved, které zastaví dokument `typ`.
  * Vrací hlášku (název pravidla + text nálezu — co opravit), nebo ''.
  * Tatáž věta jde do bubliny zhasnutého tlačítka i do hlášky při pokusu
@@ -1218,4 +1274,5 @@ if (typeof module !== 'undefined')
                      kontrolyPravidla, kontrolyProved, kontrolyText, kontrolyProjNavic, kontrolyPlatbyDuvody, kontrolyProjCenyBezSymbolu,
                      kontrolyPotvrzeni, kontrolyPotvrzeniPlati,
                      KONTROLY_DOKUMENTY_STRANY, KONTROLY_BRANA_JINDE, kontrolyDokumentStrana, kontrolyZabranaDokumentu,
+                     kontrolyCtxStrany, kontrolyStranaZabrana,
                      kontrolyProjProdava };
