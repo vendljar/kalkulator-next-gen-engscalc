@@ -41,6 +41,10 @@ pokyn J. V.
   (#404, větev `claude/listy-404`) se tu neměnila — po integraci #404
   upravit text (kap. 6, 8, 29) a přefotit.
 
+**Celé kolo nad b2181e9 VŠE ZELENÉ (158 min 55 s):** sady 232/0/1 (přeskočen jen
+`test.js`), mutace jádra 193 z 193, mutace serveru 358 z 358, statické
+kontroly 3 z 3. Podklady: kopie s příručkou přejmenovanou na v13.10.3.
+
 ## v13.10.2 — integrace dávek 13. 10. 2026 do test-draft (větev claude/integrace-13-10b)
 
 Pokyn J. V. 13. 10. 2026: „souhlasím s výchozími, slouč všechny tři větve do

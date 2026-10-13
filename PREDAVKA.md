@@ -131,6 +131,8 @@ Souběžně: větev `claude/davka-13-10` mění `zahrJenRealizaceNabidnout`
 při slučování s P6 čekat konflikt v téže funkci (P6 přidává podmínku D6f
 a mění návratovou hodnotu na `'zrusitJenOck'`); obě podmínky ponechat.
 
+
+**Celé kolo nad b2181e9 VŠE ZELENÉ** (sady 232/0/1, jádro 193/193, server 358/358, statické 3/3).
 ---
 
 # Předávka — 12. 10. 2026 noc: integrace N1–N3 ve větvi `claude/integrace-13-10` (v12.10.4)
