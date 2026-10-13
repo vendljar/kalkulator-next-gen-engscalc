@@ -80,6 +80,14 @@ Testy (pojistka proti prázdnému testu, proti sestavení v12.10.4):
 - `overit_lista.mjs` — před 250 ✓ / 5 ✗, po 255 ✓ / 0 ✗.
 - `overit_online.mjs` — před 213 OK / 1 FAIL, po 214 OK / 0 FAIL.
 
+**Celé kolo nad edb6c71 VŠE ZELENÉ:** sady 221/0/6 (přeskočeny `test.js` — není
+v exportu — a pro chybějící firemní podklady `overit_manual`, `overit_nabidka_proj_word`,
+`overit_sablona`, `overit_sablony_online`, `overit_sod`), mutace jádra 189 z 189,
+mutace serveru 333 z 333, statické kontroly 3 z 3. (První běh celého kola narazil
+na časový limit sezení uprostřed mutací serveru — 332 chycených, žádná nepřežila,
+pracovní kopie čistá; mutace serveru + statické kontroly proto doběhly znovu
+samostatně, 78 min.)
+
 ---
 
 ## v12.10.4 — integrace nočních dávek N1–N3 (větev claude/integrace-13-10)

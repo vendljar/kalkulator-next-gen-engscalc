@@ -7,6 +7,7 @@ Paralelní větev z `test-draft` (1df7283, v12.10.4) podle zadání J. V. 13. 10
    kalkulací) i s oknem a modelem archivu; `puvodPopis` zůstává pro staré varianty.
 Výklad, testy před/po: CHANGELOG v13.10.1. Do `test-draft`/`test`/`main` nic —
 o sloučení rozhoduje J. V. (u sloučení: verze se srovná, CHANGELOG/PREDAVKA ručně).
+**Kolo VŠE ZELENÉ:** sady 221/0/6, mutace jádra 189/189, serveru 333/333, statické 3/3.
 Otevřené: prázdná Cena Zahraničí („jako ČR") červeně nesvítí; pole přirážky a DPH
 nad tabulkou se neprobarvují — výchozí výklad, změní se na pokyn.
 
