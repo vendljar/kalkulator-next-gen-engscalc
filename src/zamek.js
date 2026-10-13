@@ -685,8 +685,117 @@ function zamekCteniDuvod(zak, ja) {
     + '. Upravit ji může on, vedoucí nebo administrátor.';
 }
 
+/* ---------- KTERÁ LIŠTA NAD ZAKÁZKOU (#404, J. V. 13. 10. 2026) ----------
+ *
+ * Do 13. 10. 2026 nad sebou svítily tři nezávislé lišty: žlutá záloha
+ * z prohlížeče („Obnovit rozpracovanou kalkulaci / Zahodit zálohu"), oranžová
+ * odeslaná varianta (s dlouhým textem a „Odemknout…") a modrá „jen ke čtení"
+ * s „Odemknout k úpravám". J. V.: „Aktuálně je v tom chaos." Odsouhlasený
+ * návrh (#404):
+ *   1. neodeslaná zakázka → JEDINÁ žlutá lišta „Rozpracovaná kalkulace …"
+ *      s „Pokračovat v rozpracované kalkulaci" (obnoví novější zálohu
+ *      z prohlížeče a odemkne režim jen ke čtení) a „Založit novou kalkulaci";
+ *      „Zahodit zálohu" je malý odkaz;
+ *   2. odeslaná zakázka → žádná žlutá lišta ani nabídka zálohy (záloha téže
+ *      zakázky se tiše zahodí), jen jednořádková informace s Klonovat /
+ *      Založit novou;
+ *   3. s právem `zamek.odemknout` (dnes administrátor) navíc modrý pruh
+ *      „Odemknout k úpravám" u odeslané nabídky;
+ *   4. cizí neodeslaná zakázka → žlutá lišta jen se „Založit novou" a větou,
+ *      kdo ji založil.
+ * Rozhoduje se TADY (čistá funkce, Node test `test_lista_zakazky.js`);
+ * obrazovka jen kreslí. Bezpečnost se nemění: režim čtení dál brání tichému
+ * ukládání, mění se jen to, KTERÁ lišta ho ovládá.
+ *
+ * ODESLANÁ = OTEVŘENÁ (aktivní) VARIANTA JE ZAMČENÁ TISKEM. Klon odeslané
+ * varianty je nová rozpracovaná práce a připomínat ji má smysl; a hlavně by
+ * bez žluté lišty nešel odemknout režim čtení (výklad #404, výchozí volba).
+ *
+ * Vstup:  zak    otevřená zakázka,
+ *         zaloha záloha z prohlížeče, kterou model zálohy (uloZalohaRozhodni)
+ *                dovolil nabídnout — { kdy, cislo, nazevAkce, zakazka } — nebo null,
+ *         ja     přihlášený uživatel (null = bez přihlášení),
+ *         prava  { odemknout: smí odemknout odeslanou nabídku (matice zobrazení) },
+ *         ctx    { cteni: zakázka je otevřená jen ke čtení,
+ *                  otevrena: JSON otevřené zakázky }.
+ * Výstup: { lista: 'zadna' | 'rozpracovana' | 'odeslana', … } — viz níže. */
+function listaZakazkyAktivni(zak) {
+  const vs = (zak && Array.isArray(zak.varianty)) ? zak.varianty : [];
+  return vs.find(v => v && v.id === zak.aktivni) || vs[0] || null;
+}
+function listaZakazkyCo(x) {
+  return [x && x.cislo, x && x.nazevAkce].map(s => String(s || '').trim()).filter(Boolean).join(' · ');
+}
+/* Je záloha z téže zakázky? Zakázka nemá vlastní id — pozná se podle čísla
+ * nabídky, a když číslo chybí v obou, podle názvu akce. */
+function listaZalohaStejna(zak, zaloha) {
+  if (!zak || !zaloha) return false;
+  const n = s => String(s || '').trim().toLowerCase();
+  if (n(zak.cislo) || n(zaloha.cislo)) return n(zak.cislo) === n(zaloha.cislo);
+  return !!n(zak.nazevAkce) && n(zak.nazevAkce) === n(zaloha.nazevAkce);
+}
+/* Záloha je novější než uložená zakázka. Bez razítka uložení (zakázka nikdy
+ * neuložená) rozhoduje to, že se liší; nečitelný čas zálohy = radši nabídnout. */
+function listaZalohaNovejsi(zaloha, razitko) {
+  const tz = Date.parse((zaloha && zaloha.kdy) || '');
+  const tr = Date.parse(razitko || '');
+  if (Number.isNaN(tz) || Number.isNaN(tr)) return true;
+  return tz > tr;
+}
+
+function listaZakazkyRozhodni(zak, zaloha, ja, prava, ctx) {
+  const c = ctx || {};
+  const p = prava || {};
+  const v = listaZakazkyAktivni(zak);
+  const zal = (zaloha && zaloha.zakazka) ? zaloha : null;
+  const stejna = listaZalohaStejna(zak, zal);
+  const nic = { lista: 'zadna', co: '', kdy: '', pokracovat: false, obnovit: false,
+                zalozitNovou: false, zahodit: false, cizi: '', jinaZaloha: null,
+                modra: false, zahoditTise: false, duvod: '' };
+
+  /* 2 + 3: odeslaná nabídka. Záloha TÉŽE zakázky se tiše zahodí — obnovit
+   * do odeslané varianty nejde a připomínat ji nemá smysl. Záloha JINÉ
+   * zakázky zůstane v úložišti (nabídne se jindy), jen se teď neukazuje. */
+  const odeslana = !!v && ((typeof variantaUzamcena === 'function') ? variantaUzamcena(v) : !!(v.zamek && v.zamek.zamceno));
+  if (odeslana)
+    return Object.assign({}, nic, { lista: 'odeslana', co: listaZakazkyCo(zak),
+      modra: !!p.odemknout, zahoditTise: stejna, duvod: 'odeslaná nabídka' });
+
+  /* 1 + 4: zakázka otevřená z databáze jen ke čtení. */
+  if (c.cteni) {
+    const smi = (typeof zamekCteniSmiOdemknout !== 'function') || zamekCteniSmiOdemknout(zak, ja);
+    const obnovit = !!(stejna && smi && zal.zakazka !== c.otevrena
+      && listaZalohaNovejsi(zal, zak && zak.uloRazitko));
+    /* Záloha téže zakázky, která není novější než uložená verze, je
+     * přežitá — v databázi je táž nebo novější práce. */
+    const prezita = !!(stejna && !obnovit && smi);
+    return Object.assign({}, nic, {
+      lista: 'rozpracovana',
+      co: listaZakazkyCo(zak) || 'bez názvu',
+      kdy: obnovit ? String(zal.kdy || '') : String((zak && zak.uloRazitko) || ''),
+      pokracovat: smi, obnovit, zalozitNovou: true,
+      zahodit: !!(zal && smi && !prezita),
+      cizi: smi ? '' : ((typeof zamekCteniDuvod === 'function') ? zamekCteniDuvod(zak, ja) : 'Tuhle nabídku založil jiný obchodník.'),
+      /* Záloha jiné zakázky se nabídne malým odkazem — Pokračovat patří
+       * otevřené zakázce, ale o cizí práci z prohlížeče se přijít nesmí. */
+      jinaZaloha: (zal && !stejna && smi) ? { co: listaZakazkyCo(zal) || 'bez názvu', kdy: String(zal.kdy || '') } : null,
+      zahoditTise: prezita,
+      duvod: smi ? (obnovit ? 'novější záloha v prohlížeči' : 'zakázka jen ke čtení') : 'cizí zakázka',
+    });
+  }
+
+  /* Volná (odemčená) zakázka a v prohlížeči čeká záloha jiné práce —
+   * typicky po startu aplikace. Pokračovat = obnovit zálohu. */
+  if (zal && zal.zakazka !== c.otevrena)
+    return Object.assign({}, nic, { lista: 'rozpracovana', co: listaZakazkyCo(zal) || 'bez názvu',
+      kdy: String(zal.kdy || ''), pokracovat: true, obnovit: true, zalozitNovou: true,
+      zahodit: true, duvod: 'záloha v prohlížeči' });
+
+  return nic;
+}
+
 if (typeof module !== 'undefined')
-  module.exports = { zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
+  module.exports = { listaZakazkyRozhodni, listaZalohaStejna, listaZalohaNovejsi, zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
                      zamekVysledekSpocti, ZAMEK_OVERENI_CASTI, ZAMEK_OVERENI_JADRO, ZAMEK_OVERENI_JADRO_PRISNE, zamekVysledekRozdily, zamekOvereni, zamekOvereniText,
                      zamekCteniSmiOdemknout, zamekCteniDuvod, priponaPrvniNalez, priponaPrvniOprav,
                      variantaPripona, dalsiPriponaVarianty, variantaCislo,

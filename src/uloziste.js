@@ -242,6 +242,18 @@ function uloZalohaStariDni(kdy, ted) {
   return (ted2 - t) / 86400000;
 }
 
+/* Je záloha odeslaná nabídka? Čte se jen ze záznamu (JSON zakázky), bez
+ * zamek.js — model zálohy musí jít použít i samostatně. Nečitelný záznam
+ * se za odeslaný nepovažuje (radši se zeptat, než mazat). */
+function uloZalohaOdeslana(z) {
+  try {
+    const zak = (z && typeof z.zakazka === 'string') ? JSON.parse(z.zakazka) : (z && z.zakazka);
+    const vs = (zak && Array.isArray(zak.varianty)) ? zak.varianty : [];
+    const v = vs.find(x => x && x.id === zak.aktivni) || vs[0];
+    return !!(v && v.zamek && v.zamek.zamceno);
+  } catch (e) { return false; }
+}
+
 function uloZalohaRozhodni(zaznam, ctx) {
   const c = ctx || {};
   const z = zaznam || null;
@@ -253,6 +265,14 @@ function uloZalohaRozhodni(zaznam, ctx) {
    * zakládá vyplněnou hlavičkou. Takový záznam je zbytek starého provozu. */
   if (!uloCisloVyplneno(z.cislo) && !uloCisloVyplneno(z.nazevAkce))
     return { nabidnout: false, smazat: true, duvod: 'záloha bez čísla i názvu akce' };
+
+  /* ZÁLOHA ODESLANÉ NABÍDKY SE NENABÍZÍ (#404, rozhodnutí J. V. 13. 10. 2026:
+   * „jen za předpokladu, že kalkulace nebyla vytištěna = odeslána zákazníkovi,
+   * protože v takovém případě už není třeba jí obchodníkovi připomínat").
+   * Odeslaná = otevřená (aktivní) varianta zálohy je zamčená tiskem; do ní se
+   * stejně psát nedá, takže by obnova nevrátila žádnou práci. Tiše se uklidí. */
+  if (uloZalohaOdeslana(z))
+    return { nabidnout: false, smazat: true, duvod: 'záloha odeslané nabídky' };
 
   const stari = uloZalohaStariDni(z.kdy, c.ted);
   if (stari !== null && stari > ULO_ZALOHA_STARI_DNI)
@@ -1894,7 +1914,7 @@ if (typeof module !== 'undefined')
                      uloJmenoSouboru, uloJeZakazkovySoubor,
                      ULO_HLAVICKA_POLE, uloHlavickaChybi, uloHlavickaVyplnena, uloMaCislo, uloUlozeniStav,
                      uloCasHhMm,
-                     ULO_ZALOHA_STARI_DNI, uloZalohaStariDni, uloZalohaRozhodni,
+                     ULO_ZALOHA_STARI_DNI, uloZalohaStariDni, uloZalohaRozhodni, uloZalohaOdeslana,
                      uloZalohaSmiPrepsat,
                      uloRazitkoNove, uloRazitko, uloKolize,
                      uloRejstrikZaznam, uloRejstrikNormalizuj, uloRejstrikSloucit,
