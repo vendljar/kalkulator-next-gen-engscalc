@@ -25,8 +25,13 @@ na pokyn J. V. Detaily a testy před/po: CHANGELOG v13.10.1.
     (vynulování druhé strany, ruší „Počítat i tuhle stranu"); prompt
     `PROMPT_PARALELNI_VETEV_K22_P2_P6.md` (kopie mimo repo v kng_podklady/prompty).
     Konflikt čekej v `zahrJenRealizaceNabidnout` (B129 tady × P6 tam).
+    **Hotovo:** a42f9ea, kolo zelené (sady 226/0/1, jádro 193/193, server
+    345/345 po vyřazení nedosažitelné mutace B137 „dokument strany PROJ").
   - `claude/cenik-barvy` z 1df7283 — probarvení buněk ceníků (0/prázdné světle
     červeně, Kč > 40 000 světle oranžově), odebrání „Historická kalkulace".
+    **Hotovo:** 10fd294, kolo zelené (sady 221/0/6 — 5 harnessů bez podkladů,
+    jádro 189/189, server 333/333, statické 3/3).
+  - Všechny tři větve nesou v13.10.1 → při integraci nová verze.
 - #404 lišty — návrh níže, čeká na J. V.
 
 ## Návrh #404 — lišty rozpracované / odeslané zakázky (k odsouhlasení)
