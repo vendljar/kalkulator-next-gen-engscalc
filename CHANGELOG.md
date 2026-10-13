@@ -87,6 +87,12 @@ z `test-draft` (v12.10.4, 1df7283). Roadmapa #400 (zbytek) a #402–.
     Skupinu se základem v ceníku sestavení `doplnenaNula` nehlídá — tu
     hlídá B133 (kolo nad ea34e65 ukázalo, že by se pojistky překrývaly
     a mutace B133 zůstaly nechycené).
+  - Kolo nad ea34e65 (129 min): sady 227/0/1, jádro 189/189, server 341/344,
+    statické 2/3 — nechycené B133 ×2 (viz výš) a „platnost relace se
+    neověřuje": test v `test_prava.mjs` podvrhoval cookie hlavního účtu
+    s verzí hesla 0, kterou bootstrap od B107 nemá — teď bere verzi
+    z úložiště. Statická kontrola: krátké heslo v testu B107 jako literál →
+    proměnná.
   - *Obchvat B103 (nízká):* „toString", „hasOwnProperty" aj. shodily sběr
     textů stejně — odmítá se vše z `Object.prototype`, mapa sběru je bez
     prototypu.

@@ -571,9 +571,13 @@ test('relace podepsaná jiným tajemstvím neprojde',
 
 const podpisSpravnym = (t) => createHmac('sha256', process.env.TAJEMSTVI_RELACE).update(t).digest('base64url');
 /* Hlavní účet: jeho heslo se v sadě nemění, takže verze hesla (B6) sedí
- * a jediný důvod k odmítnutí zůstává prošlé `exp`. */
+ * a jediný důvod k odmítnutí zůstává prošlé `exp`. Od B107 (13. 10. 2026)
+ * má bootstrapovaný účet verzi = čas založení, ne 0 — bere se z úložiště,
+ * jinak by cookie neprošla kvůli verzi a mutace „platnost relace se
+ * neověřuje" zůstala nechycená (kolo 13. 10.). */
+const hvHlavni = (JSON.parse(pamet.get('uzivatele/' + ADMIN_EMAIL) || '{}').hesloVerze) || 0;
 const teloProsle = Buffer.from(JSON.stringify({
-  email: ADMIN_EMAIL, role: 'Administrátor', hv: 0, exp: Date.now() - 1000 })).toString('base64url');
+  email: ADMIN_EMAIL, role: 'Administrátor', hv: hvHlavni, exp: Date.now() - 1000 })).toString('base64url');
 test('prošlá relace neprojde, i když je podepsaná správně',
   (await get(ja, 'http://x/api/ja', 'relace=' + teloProsle + '.' + podpisSpravnym(teloProsle))).status === 401);
 

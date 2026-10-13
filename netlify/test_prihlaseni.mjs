@@ -272,8 +272,9 @@ console.log('\n===== B107: bootstrap hlavního účtu =====');
   test('B107: cookie z doby před smazáním účtu neplatí', (await kdoJsem(c1)).status === 401, (await kdoJsem(c1)).status);
   test('B107: nová cookie platí', (await kdoJsem(cookieZ(r2))).status === 200);
   const puv = process.env.ADMIN_INIT_HESLO;
-  pamet.delete(klic); process.env.ADMIN_INIT_HESLO = 'kratke';
-  const r3 = await prihlas(ADMIN_EMAIL, 'kratke', '198.51.100.108');
+  const kratke = 'k'.repeat(6);   // kratší než HESLO_MIN
+  pamet.delete(klic); process.env.ADMIN_INIT_HESLO = kratke;
+  const r3 = await prihlas(ADMIN_EMAIL, kratke, '198.51.100.108');
   test('B107/B25: příliš krátké heslo z prostředí bootstrap nespustí (401)', r3.status === 401 && !pamet.has(klic), r3.status);
   process.env.ADMIN_INIT_HESLO = puv;
   const r4 = await prihlas(ADMIN_EMAIL, 'Docasne.Heslo.12', '198.51.100.109');
