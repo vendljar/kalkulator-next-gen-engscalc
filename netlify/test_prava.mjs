@@ -528,6 +528,9 @@ for (const radek of MATICE) {
      * vrací novou cookie — prohlížeč ji převezme, matice taky. */
     const novaCookie = (odpoved.headers.get('set-cookie') || '').split(';')[0];
     if (/^relace=.+/.test(novaCookie) && UCTY[role]) UCTY[role].cookie = novaCookie;   // odhlášení maže → nebrat
+    /* Odhlášení zneplatní relace účtu i na serveru (B6, 13. 10. 2026) —
+     * matice se jím přihlásí znovu, jako by to udělal uživatel. */
+    if (radek.fn === odhlaseni && UCTY[role]) UCTY[role].cookie = await prihlas(UCTY[role].email, UCTY[role].heslo);
     let sedi, popis;
     if (cekano === 'ok' || cekano === 'verejne') { sedi = stav < 400; popis = 'projde (2xx)'; }
     else { sedi = stav === cekano; popis = 'odmítnuto ' + cekano; }

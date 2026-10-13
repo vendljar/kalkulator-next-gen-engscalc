@@ -1279,6 +1279,10 @@ const MUTACE = [
     nahrad: "  if (typeof x === 'string' && ULO_CISLO_TEXT.test(x)) return parseFloat(x.replace(',', '.'));",
     proc: 'ceník s „…,0" by B112 vypadal jako beze změny, jádro by z něj počítalo nuly (B135)' },
   /* ---------- dávka 13. 10. 2026: B138 ---------- */
+  { nazev: 'B6: odhlášení relaci na serveru nezneplatní', soubor: 'functions/odhlaseni.mjs',
+    hledej: "      ucet.hesloVerze = hesloVerzeUctu(ucet) + 1;",
+    nahrad: "      ;",
+    proc: 'zkopírovaná cookie by po odhlášení platila dál až 12 hodin (B6)' },
   { nazev: 'B105: čas schválení slevy z prohlížeče', soubor: '../src/schvalovani.js',
     hledej: "          sl.schvalil = jmeno; sl.schvalilEmail = relace.email || ''; sl.schvalilKdy = ted;",
     nahrad: "          sl.schvalil = jmeno; sl.schvalilEmail = relace.email || ''; if (!sl.schvalilKdy) sl.schvalilKdy = ted;",

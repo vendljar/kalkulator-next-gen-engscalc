@@ -98,6 +98,14 @@ z `test-draft` (v12.10.4, 1df7283). Roadmapa #400 (zbytek) a #402–.
   („Vzít rozhodnutí zpět") smí, nová procenta = nová žádost. Testy:
   `test_schvalovani.js` +6 (před 69/4, po 73/0); mutace B101, B105 chycené
   (sada přidána do mutací serveru); `overit_schvalovani` 57/0.
+- **B6 (nízká) — odhlášení jen v prohlížeči.** Odhlášení mazalo cookie, ale
+  zkopírovaná relace platila dál až 12 hodin. Teď odhlášení zvedne verzi
+  hesla účtu — **neplatí pak žádná dosud vydaná relace toho účtu, vědomě
+  i na ostatních zařízeních** (jako změna hesla; výchozí výklad, J. V. může
+  chtít jen tuto relaci — to by vyžadovalo seznam relací na serveru).
+  Odhlášení bez relace dál projde. `test_prihlaseni.mjs` +7 (před 65/2, po
+  67/0); matice v `test_prava.mjs` se po odhlášení přihlásí znovu (805/0);
+  mutace chycená.
 
 ## v12.10.4 — integrace nočních dávek N1–N3 (větev claude/integrace-13-10)
 
