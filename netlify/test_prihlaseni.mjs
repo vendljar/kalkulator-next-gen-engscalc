@@ -234,5 +234,41 @@ console.log('\n===== B97: e-mailový klíč nesmí zasáhnout počítadlo adresy
   test('B97: „Změnit moje heslo" z napadené adresy projde se správným heslem (200)', rm.status === 200, rm.status);
 }
 
+/* ---------- B107: bootstrap hlavního účtu (dávka 13. 10. 2026) ----------
+ * Bootstrap zakládal účet bez `hesloVerze` (= 0): po smazání účtu (ruční
+ * zásah v úložišti, obnova) a novém bootstrapu platila cookie vydaná před
+ * smazáním. Heslo z prostředí se porovnávalo `===` (B42) a nemělo pravidlo
+ * délky (B25). */
+console.log('\n===== B107: bootstrap hlavního účtu =====');
+{
+  const klic = 'uzivatele/' + ADMIN_EMAIL;
+  pamet.delete(klic);
+  const r1 = await prihlas(ADMIN_EMAIL, 'Docasne.Heslo.123', '198.51.100.107');
+  const c1 = cookieZ(r1);
+  const u1 = JSON.parse(pamet.get(klic) || '{}');
+  test('B107: bootstrap založí hlavní účet (200)', r1.status === 200, r1.status);
+  test('B107: bootstrap dá účtu verzi hesla (ne 0)', typeof u1.hesloVerze === 'number' && u1.hesloVerze > 0, u1.hesloVerze);
+  await new Promise(r => setTimeout(r, 5));
+  pamet.delete(klic);
+  const r2 = await prihlas(ADMIN_EMAIL, 'Docasne.Heslo.123', '198.51.100.107');
+  test('B107: po smazání a novém bootstrapu se přihlásí znovu (200)', r2.status === 200, r2.status);
+  test('B107: cookie z doby před smazáním účtu neplatí', (await kdoJsem(c1)).status === 401, (await kdoJsem(c1)).status);
+  test('B107: nová cookie platí', (await kdoJsem(cookieZ(r2))).status === 200);
+  const puv = process.env.ADMIN_INIT_HESLO;
+  pamet.delete(klic); process.env.ADMIN_INIT_HESLO = 'kratke';
+  const r3 = await prihlas(ADMIN_EMAIL, 'kratke', '198.51.100.108');
+  test('B107/B25: příliš krátké heslo z prostředí bootstrap nespustí (401)', r3.status === 401 && !pamet.has(klic), r3.status);
+  process.env.ADMIN_INIT_HESLO = puv;
+  const r4 = await prihlas(ADMIN_EMAIL, 'Docasne.Heslo.12', '198.51.100.109');
+  test('B107: jiné heslo bootstrap nespustí (401)', r4.status === 401 && !pamet.has(klic), r4.status);
+  const r5 = await prihlas(ADMIN_EMAIL, 'Docasne.Heslo.123', '198.51.100.110');
+  test('B107: správné heslo z prostředí dál bootstrap spustí', r5.status === 200, r5.status);
+  const ts = sdilene.tajneShodne;
+  test('B42: tajneShodne — shoda, rozdíl, prázdné', typeof ts === 'function'
+    && ts('Abc.12345', 'Abc.12345') && !ts('Abc.12345', 'Abc.12346') && !ts('', '') && !ts('x', undefined));
+  test('B42: bootstrap neporovnává heslo přes ===',
+    !/heslo === process\.env\.ADMIN_INIT_HESLO/.test(readFileSync(resolve(KOREN, 'functions/prihlaseni.mjs'), 'utf8')));
+}
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

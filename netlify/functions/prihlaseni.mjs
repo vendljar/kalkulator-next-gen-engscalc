@@ -10,7 +10,7 @@
 import { uloziste, otiskHesla, hesloSedi, relaceCookie, json, ADMIN_EMAIL,
          profilZUctu, podpisCti, FALESNY_OTISK, POKUSY_MAX,
          zpozdeniMs, pockej, pokusyZacatek, pokusyUspech, pokusyAdresaNadLimit, adresaKlienta,
-         EMAIL_MAX, HESLO_MAX, spravceNastaven, cizihoPuvodu } from '../lib/sdilene.mjs';
+         EMAIL_MAX, HESLO_MAX, spravceNastaven, cizihoPuvodu, tajneShodne, hesloPlatne } from '../lib/sdilene.mjs';
 
 export default async (req) => {
   if (req.method !== 'POST') return json({ ok: false, chyba: 'Použijte POST.' }, 405);
@@ -56,11 +56,17 @@ export default async (req) => {
   let ucet = await u.cti(email);
 
   /* bootstrap prvního administrátora — heslo si uživatel nastavil sám
-   * v prostředí Netlify, nikdy neputovalo přes konverzaci */
+   * v prostředí Netlify, nikdy neputovalo přes konverzaci.
+   * B107 (audit 9. 9./12. 10. 2026): účet dostane verzi hesla jako každý
+   * nový účet (B76 — čas založení), jinak by začínal na 0 a cookie z doby
+   * před případným smazáním a novým bootstrapem by v něm zase platila.
+   * Heslo z prostředí se porovná v konstantním čase (B42) a musí splnit
+   * pravidlo délky jako každé jiné (B25) — krátké bootstrap nespustí. */
   if (!ucet && email === ADMIN_EMAIL && process.env.ADMIN_INIT_HESLO
-      && heslo === process.env.ADMIN_INIT_HESLO) {
+      && hesloPlatne(process.env.ADMIN_INIT_HESLO) && tajneShodne(heslo, process.env.ADMIN_INIT_HESLO)) {
     ucet = { email, jmeno: 'Jaroslav Vendl', role: 'Administrátor',
-             heslo: otiskHesla(heslo), zalozen: new Date().toISOString(), aktivni: true };
+             heslo: otiskHesla(heslo), zalozen: new Date().toISOString(), aktivni: true,
+             hesloVerze: Date.now() };
     await u.zapis(email, ucet);
   }
 

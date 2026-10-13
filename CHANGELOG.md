@@ -55,6 +55,14 @@ z `test-draft` (v12.10.4, 1df7283). Roadmapa #400 (zbytek) a #402–.
   uživatelů vlastní řádek nabízí „Změnit heslo…" (dialog se starým heslem),
   cizí dál „Nové heslo…". Testy: `test_prava.mjs` +3 (před 2× 200, po 805/0),
   `overit_online.mjs` +2 (před 214/1, po 215/0); mutace serveru chycená.
+- **B107 (střední) — bootstrap hlavního účtu.** Zakládal účet bez
+  `hesloVerze` (= 0): po smazání účtu a novém bootstrapu platila cookie
+  z doby před smazáním. Nově verze = čas založení (jako B76), heslo
+  z prostředí se porovnává v konstantním čase (`tajneShodne` v
+  `lib/sdilene.mjs`, B42 — hash obou stran, délka nevyteče) a musí splnit
+  pravidlo délky (B25; krátké bootstrap nespustí). Testy:
+  `test_prihlaseni.mjs` +10 (před 53/7, po 60/0); mutace serveru 2 nové
+  + přesměrovaná „zaváděcí heslo se nekontroluje" (3/3).
 
 ## v12.10.4 — integrace nočních dávek N1–N3 (větev claude/integrace-13-10)
 

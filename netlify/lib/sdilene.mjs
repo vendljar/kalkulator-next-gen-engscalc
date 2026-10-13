@@ -15,7 +15,7 @@
  * kterou si uživatel nastaví v Netlify (heslo nikdy neputuje přes konverzaci
  * ani repozitář); po založení účtu lze proměnnou smazat.
  * ============================================================ */
-import { scryptSync, randomBytes, timingSafeEqual, createHmac } from 'node:crypto';
+import { scryptSync, randomBytes, timingSafeEqual, createHmac, createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 
 /* VERZE NASAZENÉHO SERVERU — z verze.txt přibalené ke všem funkcím
@@ -134,6 +134,16 @@ export function hesloSedi(heslo, ulozene) {
     const b = scryptSync(String(heslo), sul, 64);
     return timingSafeEqual(Buffer.from(hash, 'hex'), b);
   } catch (e) { return false; }
+}
+
+/* Porovnání dvou tajných textů v konstantním čase (B42, B107 — 13. 10. 2026).
+ * Obojí se nejdřív zahashuje, takže ani délka správné hodnoty z času odpovědi
+ * nevyteče; `===` končí na prvním rozdílném znaku. Prázdné nikdy nesedí. */
+export function tajneShodne(a, b) {
+  const x = String(a == null ? '' : a), y = String(b == null ? '' : b);
+  if (!x || !y) return false;
+  const h = (t) => createHash('sha256').update(t, 'utf8').digest();
+  return timingSafeEqual(h(x), h(y));
 }
 
 /* ---------- zástupný otisk pro neexistující účty (#93, 9. 8. 2026) ----------

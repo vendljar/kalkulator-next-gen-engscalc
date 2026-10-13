@@ -366,7 +366,7 @@ const MUTACE = [
     proc: 'prohlížeč by musel adresu znát sám — a měl by ji ve zdrojácích podruhé' },
 
   { nazev: 'zaváděcí heslo administrátora se nekontroluje', soubor: 'functions/prihlaseni.mjs',
-    hledej: '      && heslo === process.env.ADMIN_INIT_HESLO) {',
+    hledej: '      && hesloPlatne(process.env.ADMIN_INIT_HESLO) && tajneShodne(heslo, process.env.ADMIN_INIT_HESLO)) {',
     nahrad: '      ) {',
     proc: 'první administrátorský účet by si založil kdokoli s jakýmkoli heslem' },
 
@@ -1275,6 +1275,14 @@ const MUTACE = [
     nahrad: "  if (typeof x === 'string' && ULO_CISLO_TEXT.test(x)) return parseFloat(x.replace(',', '.'));",
     proc: 'ceník s „…,0" by B112 vypadal jako beze změny, jádro by z něj počítalo nuly (B135)' },
   /* ---------- dávka 13. 10. 2026: B138 ---------- */
+  { nazev: 'B107: bootstrap hlavního účtu bez verze hesla', soubor: 'functions/prihlaseni.mjs',
+    hledej: "             hesloVerze: Date.now() };",
+    nahrad: "             };",
+    proc: 'po smazání a novém bootstrapu by platila cookie vydaná před smazáním (B107)' },
+  { nazev: 'B107/B25: bootstrap s krátkým heslem z prostředí', soubor: 'functions/prihlaseni.mjs',
+    hledej: "      && hesloPlatne(process.env.ADMIN_INIT_HESLO) && tajneShodne(",
+    nahrad: "      && tajneShodne(",
+    proc: 'hlavní účet by vznikl s heslem kratším, než dovolí každá jiná cesta (B25)' },
   { nazev: 'B77-zbytek: reset hesla na vlastní účet bez starého hesla', soubor: 'functions/uzivatele.mjs',
     hledej: "      if (email === relace.email)\n        return json({ ok: false, chyba: 'Vlastní heslo si změňte",
     nahrad: "      if (false)\n        return json({ ok: false, chyba: 'Vlastní heslo si změňte",
