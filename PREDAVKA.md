@@ -1,3 +1,29 @@
+# Předávka — 13. 10. 2026 večer: v13.10.2 zelená, převod do test-draft a test; noční dávky
+
+Integrace tří větví (`claude/davka-13-10`, `claude/cenik-barvy`,
+`claude/k22-p2-p6`) = v13.10.2 ve větvi `claude/integrace-13-10b`, **celé kolo
+VŠE ZELENÉ** (sady 232/0/1, jádro 193/193, server 358/358, statické 3/3).
+Převod do `test-draft` a `test` (pokyn J. V.) — push zablokovalo oprávnění
+sezení, čeká na J. V. (fast-forward z 1df7283). Do `main` až po ověření na testu.
+
+Odpovědi J. V. z dialogu 13. 10. (artefakt „KNG rozhodnutí 13. 10.“):
+lišty #404 ano dle návrhu; B35 cas/ jen pro existující zakázku; B77 citlivé
+akce správce s heslem; směs ceníku do schvalování; pás „jiné“ do schvalování;
+meze rozměrů jen zdvih, šířka, hloubka < 0,6 m (ostatní neřešit); test ano;
+main po ověření na testu; větve NEmazat; popisy starších releasů NE;
+příručka ano. Další dávka: všech šest bodů.
+
+Noční větve (z `claude/integrace-13-10b`, každá s celým kolem):
+| Větev | Stav |
+|---|---|
+| `claude/prirucka-13-10` | hotovo 846c502, kolo zelené |
+| `claude/listy-404` | hotovo 181fdd1, kolo zelené |
+| `claude/bezpecnost-noc` | hotovo 2f98268, kolo zelené |
+| `claude/vyjimky-schvalovani` | běží |
+Ráno: integrace nočních větví do nové verze, celé kolo, převod na pokyn J. V.
+
+---
+
 # Předávka — 13. 10. 2026: dávka po 22. kole ve větvi `claude/davka-13-10` (v13.10.1)
 
 Sezení session_01WrUq3gXEhsWk8cxRWfPvsg (založilo koordinační sezení 22. kola).

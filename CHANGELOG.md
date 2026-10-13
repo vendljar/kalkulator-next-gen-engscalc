@@ -39,6 +39,11 @@ Konflikty a jak se vyřešily:
   drží B129 (nic u zakázky s odeslanou variantou) i D6f (nic u čísla OPR,
   návrat `'zrusitJenOck'`).
 
+**Celé kolo nad 0512c51 VŠE ZELENÉ (165 min 38 s):** sady 232/0/1 (přeskočen jen
+`test.js`), mutace jádra 193 z 193, mutace serveru 358 z 358, statické
+kontroly 3 z 3. (První pokus přerušil v 16:54 restart kontejneru; spuštěno
+znovu nad týmž commitem.)
+
 ## v13.10.1 — dávka po 22. kole: #400 zbytek, visící harness, popis releasů (větev claude/davka-13-10)
 
 Pokyn J. V. 13. 10. 2026 přes koordinační sezení 22. kola. Větev
