@@ -47,7 +47,8 @@ Rozhodnutí J. V. 13. 10. 2026 (obojí „Ano"). Z `claude/integrace-13-10b`
   zrušení / špatné / správné heslo, reset hesla klikem, obnova z otisku
   se ptá); overit_dialogy 28/0 (skutečný modál s polem password).
   Mutace: B35 2 nové, B77 8 nových — všechny chycené; --kontrola zelené.
-- **Celé kolo:** běží (výsledek doplní další commit).
+- **Celé kolo VŠE ZELENÉ** (188 min): sady 232 prošlo / 0 selhalo / 1 přeskočena
+  (test.js), mutace jádra 193/193, mutace serveru 368/368, statické 3/3.
 
 ## v13.10.2 — integrace dávek 13. 10. 2026 do test-draft (větev claude/integrace-13-10b)
 

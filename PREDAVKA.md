@@ -7,7 +7,8 @@ a testy před/po: CHANGELOG v13.10.3. Do `test-draft` nic — na pokyn J. V.
 - **B35 hotovo** — klíč `cas/` v analytice jen pro zakázku z rejstříku.
 - **B77 hotovo** — založení správce, povýšení na správce, reset cizího hesla
   a obnova účtů z otisku chtějí `hesloSpravce` (UI se ptá dialogem).
-- Kolo: viz CHANGELOG v13.10.3.
+- **Celé kolo VŠE ZELENÉ** nad 9756817: sady 232/0/1, jádro 193/193,
+  server 368/368, statické 3/3.
 - Při slučování: konflikty čekej v `netlify/mutace.mjs` (nové mutace B35/B77),
   `netlify/test_prava.mjs` (matice + blok B77), `src/ui/online_ui.js`
   (onlineApi, správa účtů, obnova). Roadmapa needitována (B35 je v položce
