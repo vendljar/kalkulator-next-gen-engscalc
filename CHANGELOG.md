@@ -8,6 +8,61 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v13.10.3 — lišty rozpracované a odeslané zakázky (#404) (větev claude/listy-404)
+
+Rozhodnutí J. V. 13. 10. 2026 („Ano, jak je navrženo"; jeho slova: „Aktuálně
+je v tom chaos. Myslím, že by mohla stačit žlutá lišta … Pokračovat
+v rozpracované kalkulaci / Založit novou kalkulaci … jen za předpokladu, že
+kalkulace nebyla vytištěna … pro administrátora ponechal možnost Odemknout
+k úpravám nabídku, která je už odeslaná (modrý pruh)"). Z integrace v13.10.2.
+
+- **Co je nové:** jediná žlutá lišta **„Rozpracovaná kalkulace <číslo · název>,
+  naposledy <kdy>"** nad záložkami s **Pokračovat v rozpracované kalkulaci**
+  (odemkne režim jen ke čtení; je-li v prohlížeči novější záloha téže
+  zakázky, obnoví ji) a **Založit novou kalkulaci**; **Zahodit zálohu** je
+  malý odkaz (a záloha jiné kalkulace se nabídne odkazem, nepřijde se o ni).
+  Nahrazuje žlutou lištu zálohy („Obnovit rozpracovanou kalkulaci") i modrou
+  „Nabídka je otevřená jen ke čtení… Odemknout k úpravám" nad kalkulacemi
+  a ceníky (zamekCteniLista zanikla).
+- **Odeslaná nabídka:** žádná žlutá lišta ani nabídka zálohy (záloha téže
+  zakázky i záloha odeslané nabídky po startu se tiše uklidí). Jednořádková
+  informace „Odeslaná nabídka … (vytištěno …) — needituje se" s **Klonovat
+  a pokračovat** / **Založit novou zakázku**; řádky B59 (rozpor ověření)
+  a B130 („nejsou u zámku zmrazené") zůstaly. Klon v zakázce jen ke čtení
+  okno odemkne, jinak by se neuložil.
+- **Modrý pruh „Odemknout k úpravám"** u odeslané nabídky vidí jen role
+  s právem `zamek.odemknout` (výchozí: administrátor; vedoucí ne). Je to
+  existující zamekOdemkniUI s důvodem a záznamem; odemkne i okno, aby se
+  záznam uložil. Obchodník pruh nevidí.
+- **Cizí neodeslaná zakázka:** žlutá lišta jen se Založit novou kalkulaci
+  a větou, kdo ji založil (B-pravidlo zamekCteniSmiOdemknout beze změny).
+- Model: `listaZakazkyRozhodni(zak, zaloha, ja, prava, ctx)` v `src/zamek.js`
+  (čistá funkce), `uloZalohaOdeslana` v `uloziste.js`. UI: `renderListaZakazky`,
+  `listaPokracujUI`, `listaZalozNovouUI`, `listaObnovJinouUI` v `zamek_ui.js`.
+- **Bezpečnost beze změny:** režim čtení dál blokuje zápis i autosave
+  (mění se jen, která lišta ho ovládá); server dál odmítá změnu zamčené
+  varianty (B3 — overit_online nově zkouší obejití tlačítka obchodníkem).
+  Nově: zakázka jen ke čtení se do zálohy v prohlížeči nepíše — po F5 se
+  poslední zakázka otevře sama a do teď tím přepsala zálohu s rozdělanou
+  prací dřív, než na ni šlo kliknout. P2 (tisk z režimu čtení) beze změny.
+- **Výklady (výchozí volby):** „odeslaná" = otevřená (aktivní) varianta
+  zamčená tiskem — otevřený klon odeslané varianty je rozpracovaný a žlutou
+  lištu má (jinak by nešel odemknout); „Založit novou" v oranžové liště
+  zůstalo „Založit novou zakázku" (tlačítko z 8. 9. 2026), ve žluté je
+  „Založit novou kalkulaci" podle znění J. V.; zápis do odeslané nabídky
+  jen ke čtení nabídne klon (dřív odemknutí okna).
+- **Příručka:** kapitola 8 („Otevřená zakázka: rozpracovaná, nebo
+  odeslaná"), kapitola 29 a slovníček.
+
+Testy před → po (před = sestavení v13.10.2 / zdroje před opravou):
+`src/test_lista_zakazky.js` (nový) 0/1 (model neexistuje) → 46/0;
+`overit_zaloha_lista` 6 ✕ + pád → 58/0 (případy 10–14 = body 1–4);
+`overit_online` 220/7 → 227/0 (blok 10f obchodník × administrátor proti
+serveru); `overit_v23` 26/5 → 31/0; `overit_manual` nad původní příručkou
+36/2 → nad příručkou s novým obsahem 38/0.
+
+Výsledek kola: (doplní se po kole)
+
 ## v13.10.2 — integrace dávek 13. 10. 2026 do test-draft (větev claude/integrace-13-10b)
 
 Pokyn J. V. 13. 10. 2026: „souhlasím s výchozími, slouč všechny tři větve do
