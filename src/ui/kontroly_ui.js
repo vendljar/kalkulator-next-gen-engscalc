@@ -109,6 +109,14 @@ function kontrolyCtxAkt() {
      * marže musí počítat s tím, které opravdu odejde v nabídce PROJ. */
     zaokrProj: (typeof ZOP !== 'undefined' && ZOP) ? ZOP
                  : (typeof ZO !== 'undefined' ? ZO : null),
+    /* Cenová výjimka otevřené varianty (13. 10. 2026, vyjimky.js) —
+     * zábrana cenovaVyjimka: směs ceníku nebo pás „jiné" bez schválení. */
+    vyjimka: (() => {
+      try {
+        return (typeof vyjimkyStavVarianty === 'function' && typeof ZAK !== 'undefined')
+          ? vyjimkyStavVarianty(aktivniVarianta(ZAK)) : null;
+      } catch (e) { return null; }
+    })(),
   };
 }
 
@@ -204,6 +212,8 @@ function kontrolyCtxVarianta(v) {
     zak: (typeof ZAK !== 'undefined') ? ZAK : null,
     zaokr: d.zaokr || null,
     zaokrProj: d.zaokrProj || d.zaokr || null,
+    /* Cenová výjimka (13. 10. 2026) — zábrana cenovaVyjimka. */
+    vyjimka: (() => { try { return (typeof vyjimkyStavVarianty === 'function') ? vyjimkyStavVarianty(v) : null; } catch (e) { return null; } })(),
   };
 }
 function kontrolyStavVarianta(v) {

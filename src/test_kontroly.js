@@ -179,7 +179,7 @@ const pravidla = kontrolyPravidla();
  * ručně přepsaná statika OCK a zároveň řádek statiky opláštění z ceníku. */
 /* 33. „stranyDriv" 13. 10. 2026 (P6 / K19-N114, test_zamek_strany.js):
  * zakázka dřív počítala projekci i OCK — od P6 je druhá strana vynulovaná. */
-test('pravidel je třicet tři', pravidla.length === 33, pravidla.length);
+test('pravidel je třicet čtyři (13. 10. 2026: + cenovaVyjimka)', pravidla.length === 34, pravidla.length);
 test('kódy pravidel jsou jedinečné',
   new Set(pravidla.map(p => p.kod)).size === pravidla.length,
   pravidla.map(p => p.kod).join(','));
@@ -403,7 +403,7 @@ test('zábrana má vlastní text, který se dá ukázat samostatně',
 /* bokyDveri od #381 (1. 10. 2026): ruční šířka bočního světlíku v Modelu 2
  * širší než mezera vedle dveří nebo „nevejdou se" zastaví dokumenty OCK. */
 test('v katalogu pravidel je poznat, které umí zastavit dokument',
-  pravidla.filter(p => p.zabranaMozna).map(p => p.kod).join(',') === 'rozmery,profilNeznamy,zapornaPolozka,cenaNula,bokyDveri,sleva,slevaProj,ukazkovyCenik,planPlateb100,planPlatebSoucet',
+  pravidla.filter(p => p.zabranaMozna).map(p => p.kod).join(',') === 'rozmery,profilNeznamy,zapornaPolozka,cenaNula,bokyDveri,sleva,slevaProj,ukazkovyCenik,planPlateb100,planPlatebSoucet,cenovaVyjimka',
   JSON.stringify(pravidla.filter(p => p.zabranaMozna).map(p => p.kod)));
 
 /* ---------- 6) dvě podoby textu ---------- */

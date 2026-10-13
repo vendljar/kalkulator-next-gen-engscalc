@@ -282,8 +282,41 @@ function schvalovaniSeznam(zak, vypocty, nast, role) {
  *
  * `spocteno: false` je tu podstatné: říká rozhraní, že čísla nechybí omylem,
  * ale že se v tomhle pohledu nepočítala. Kdo chce vidět peníze, otevře zakázku. */
+/* Cenová výjimka z rejstříku (13. 10. 2026): týž tvar záznamu, místo
+ * procenta počty položek a pásů; kategorie ze stavu. */
+const SCHV_VYJ_KATEGORIE = { 'čeká na schválení': 'ceka', 'schváleno': 'schvaleno', 'zamítnuto': 'zamitnuto' };
+function schvalovaniZaznamRejstrikVyjimka(p) {
+  const vy = p.vyjimka || {};
+  const kat = SCHV_VYJ_KATEGORIE[vy.stav] || 'bez';
+  return {
+    id: p.variantaId,
+    klic: String(p.klic || ''),
+    cast: 'vyjimka',
+    castNazev: 'Cenová výjimka (ceník / pás „jiné")',
+    nazev: String(p.variantaNazev || ''),
+    ridici: !!p.ridici,
+    zamceno: !!p.zamceno,
+    procenta: 0,
+    polozek: Math.max(0, +vy.polozek || 0),
+    pasu: Math.max(0, +vy.pasu || 0),
+    stav: String(vy.stav || ''),
+    kategorie: kat,
+    popis: SCHV_POPIS[kat] || '',
+    spocteno: false,
+    pozadal: String(vy.pozadal || ''),
+    schvalil: String(vy.schvalil || ''),
+    schvalilKdy: String(vy.schvalilKdy || ''),
+    zamitl: String(vy.zamitl || ''),
+    zamitlKdy: String(vy.zamitlKdy || ''),
+    zamitnutoDuvod: String(vy.zamitnutoDuvod || ''),
+    cizi: true,
+    cislo: String(p.cislo || ''),
+    nazevAkce: String(p.nazevAkce || ''),
+  };
+}
 function schvalovaniZaznamRejstrik(polozka) {
   const p = polozka || {};
+  if (p.cast === 'vyjimka') return schvalovaniZaznamRejstrikVyjimka(p);
   const sl = p.sleva || {};
   const kat = schvalovaniKategorie(sl);
   const proj = p.cast === 'proj';
@@ -336,7 +369,11 @@ function schvalovaniSeznamRejstrik(zadosti) {
  * částka. Kontroluje se tvar dat, ne jejich obsah — nová položka s cenou by
  * se sem musela doslova propašovat pod jménem, které neznáme. */
 const SCHV_REJSTRIK_POVOLENO = ['klic', 'cast', 'cislo', 'nazevAkce', 'variantaId', 'variantaNazev',
-  'ridici', 'zamceno', 'upraveno', 'sleva'];
+  'ridici', 'zamceno', 'upraveno', 'sleva', 'vyjimka'];
+/* Cenová výjimka v rejstříku (13. 10. 2026, vyjimky.js VYJ_REJSTRIK_POLE):
+ * stav a počty, žádná částka ani položka ceníku. */
+const SCHV_REJSTRIK_VYJIMKA_POVOLENO = ['stav', 'polozek', 'pasu', 'pozadal', 'pozadalKdy',
+  'schvalil', 'schvalilKdy', 'zamitl', 'zamitlKdy', 'zamitnutoDuvod'];
 const SCHV_REJSTRIK_SLEVA_POVOLENO = ['procenta', 'role', 'schema', 'poznamka', 'stav',
   'schvalil', 'schvalilKdy', 'schvalenoProc', 'zamitl', 'zamitlKdy', 'zamitnutoProc',
   'zamitnutoDuvod'];
@@ -347,6 +384,9 @@ function schvalovaniRejstrikNeznameKlice(zadosti) {
     Object.keys(z || {}).forEach(k => { if (!SCHV_REJSTRIK_POVOLENO.includes(k)) spatne.push(k); });
     Object.keys((z && z.sleva) || {}).forEach(k => {
       if (!SCHV_REJSTRIK_SLEVA_POVOLENO.includes(k)) spatne.push('sleva.' + k);
+    });
+    Object.keys((z && z.vyjimka) || {}).forEach(k => {
+      if (!SCHV_REJSTRIK_VYJIMKA_POVOLENO.includes(k)) spatne.push('vyjimka.' + k);
     });
   });
   return [...new Set(spatne)];
@@ -574,4 +614,4 @@ if (typeof module !== 'undefined')
                      schvalovaniZaznam, schvalovaniSeznam, schvalovaniSouhrn,
                      schvalovaniZaznamRejstrik, schvalovaniSeznamRejstrik,
                      schvalovaniRejstrikNeznameKlice,
-                     SCHV_REJSTRIK_POVOLENO, SCHV_REJSTRIK_SLEVA_POVOLENO };
+                     SCHV_REJSTRIK_POVOLENO, SCHV_REJSTRIK_SLEVA_POVOLENO, SCHV_REJSTRIK_VYJIMKA_POVOLENO };

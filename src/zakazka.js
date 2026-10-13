@@ -1414,6 +1414,9 @@ function slevaRozhodnutiZahod(data) {
     ['schvalil', 'schvalilEmail', 'schvalilKdy', 'schvalenoProc',
      'zamitl', 'zamitlEmail', 'zamitlKdy', 'zamitnutoProc'].forEach(k => { delete s[k]; });
   });
+  /* Cenová výjimka (13. 10. 2026, vyjimky.js) se do kopie nepřenáší ze
+   * stejného důvodu — o kopii se žádá a rozhoduje znovu. */
+  if (data && typeof data === 'object' && 'cenovaVyjimka' in data) delete data.cenovaVyjimka;
   return data;
 }
 

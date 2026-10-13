@@ -67,6 +67,9 @@ Object.assign(globalThis, require('../../src/cenik_stari.js'));
  * prohlížeč — bez tohohle řádku by `cenikZahrOciste` neznal seznam cest
  * a propustil by i cizí klíč. */
 Object.assign(globalThis, require('../../src/cenik_rady.js'));
+/* Cenové výjimky varianty (13. 10. 2026): směs ceníku a pás „jiné" pod
+ * ceníkovou sazbou — rozhodnutí a nový zámek hlídá server týmž kódem. */
+Object.assign(globalThis, require('../../src/vyjimky.js'));
 /* Zveřejněný slovník (#401, 12. 10. 2026): /api/slovnik i obnova kontrolují
  * hesla týmž kódem jako prohlížeč (slovnikHeslaKontrola, slovnikDbOciste). */
 Object.assign(globalThis, require('../../src/slovnik.js'));

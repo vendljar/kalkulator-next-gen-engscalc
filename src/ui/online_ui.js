@@ -369,7 +369,7 @@ function onlinePoPrihlaseni(ja) {
 function onlineSlevyOtisk(zak) {
   const out = {};
   ((zak && zak.varianty) || []).forEach(v => {
-    if (v && v.data) out[v.id] = JSON.stringify([v.data.sleva || null, v.data.slevaProj || null]);
+    if (v && v.data) out[v.id] = JSON.stringify([v.data.sleva || null, v.data.slevaProj || null, v.data.cenovaVyjimka || null]);
   });
   return out;
 }
@@ -380,10 +380,15 @@ function onlineSlevyZeServeru(slevy, odeslane) {
   slevy.forEach(s => {
     const v = s && ZAK.varianty.find(x => x && x.id === s.id);
     if (!v || !v.data || !odeslane || ted[v.id] !== odeslane[v.id]) return;
-    const novy = JSON.stringify([s.sleva || null, s.slevaProj || null]);
+    /* Cenová výjimka (13. 10. 2026) — razí ji server jako slevu; starší
+     * server pole neposílá, pak se nechá, jak je. */
+    const sVyj = ('cenovaVyjimka' in s) ? (s.cenovaVyjimka || null) : (v.data.cenovaVyjimka || null);
+    const novy = JSON.stringify([s.sleva || null, s.slevaProj || null, sVyj]);
     if (novy === ted[v.id]) return;
     if (s.sleva) v.data.sleva = JSON.parse(JSON.stringify(s.sleva));
     if (s.slevaProj) v.data.slevaProj = JSON.parse(JSON.stringify(s.slevaProj));
+    if (sVyj) v.data.cenovaVyjimka = JSON.parse(JSON.stringify(sVyj));
+    else delete v.data.cenovaVyjimka;
     zmen++;
   });
   if (zmen && typeof syncVarianta === 'function') { try { syncVarianta(); render(); } catch (e) { /* nevadí */ } }

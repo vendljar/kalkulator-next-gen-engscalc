@@ -206,7 +206,9 @@ export default async (req) => {
    * B105). Prohlížeč si je převezme — jinak by ukazoval jiný stav slevy, než
    * jaký leží v databázi, a zámek nabídky by při dalším uložení nesouhlasil. */
   const slevy = (zak.varianty || []).filter(v => v && v.data)
-    .map(v => ({ id: v.id, sleva: v.data.sleva || null, slevaProj: v.data.slevaProj || null }));
+    .map(v => ({ id: v.id, sleva: v.data.sleva || null, slevaProj: v.data.slevaProj || null,
+      /* Cenová výjimka (13. 10. 2026) — server ji razí stejně jako slevu. */
+      cenovaVyjimka: v.data.cenovaVyjimka || null }));
   return json(varovani ? { ok: true, soubor: jmeno, razitko, varovani, slevy } : { ok: true, soubor: jmeno, razitko, slevy });
 };
 export const config = { path: '/api/zakazky' };

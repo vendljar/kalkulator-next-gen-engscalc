@@ -1049,6 +1049,28 @@ const KONTROLY = [
         + 'prohozené cifry; opisuje se do smlouvy i na fakturu.' };
     },
   },
+  {
+    /* CENOVÁ VÝJIMKA BEZ SCHVÁLENÍ (rozhodnutí J. V. 13. 10. 2026,
+     * vyjimky.js). Směs platného ceníku a starších cen nebo ruční sazba
+     * pásu „jiné" pod ceníkovou u role bez práva ceníku: dokument (tisk =
+     * odeslání, nový zámek) nevznikne bez platného schválení nadřízeného —
+     * zrcadlo serveru (vyjimkyZamekProblem, 403). `ctx.vyjimka` dodá UI
+     * ({ potreba, plati, zamitnuto, text }); bez něj (server, zamčená
+     * varianta, neznámý platný ceník) pravidlo mlčí. Server zámek posoudí
+     * u obou stran najednou, proto zábrana drží dokumenty obou stran. */
+    kod: 'cenovaVyjimka', kde: 'Ceník varianty', nazev: 'Cenová výjimka bez schválení',
+    zabranaMozna: true, strany: ['ock', 'proj'],
+    zjisti(ctx) {
+      const x = ctx.vyjimka;
+      if (!x || !x.potreba || x.plati) return null;
+      const veta = String(x.text || 'ceník varianty se liší od platného ceníku');
+      return { uroven: KONTROLY_UROVEN_ZABRANA,
+        text: veta.charAt(0).toUpperCase() + veta.slice(1) + ' — '
+          + (x.zamitnuto ? 'nadřízený výjimku zamítl. Přepočítejte variantu podle platného ceníku, nebo požádejte znovu po úpravě. '
+            : 'požádejte o schválení nadřízeného v záložce Schvalování (nebo přepočítejte variantu podle platného ceníku). ')
+          + 'Rozpracovanou zakázku lze dál ukládat.' };
+    },
+  },
 ];
 
 /* Katalog pravidel bez funkcí – pro nápovědu, protokol o kalkulaci (#41)

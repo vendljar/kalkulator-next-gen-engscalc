@@ -27,6 +27,56 @@ Rozhodnutí J. V. 13. 10. 2026 (noční dávka). Větev z `claude/integrace-13-1
   nového zámku (B137), ne 403 — jde o vadné zadání, ne o právo.
   Testy: `test_koncova_cena.mjs` +7 (před opravou 4 FAIL: tři zámky pod mezí
   vracely 200, zábrana mlčela; po 107/0). Mutace +4 (chycené 4/4).
+- **Cenové výjimky ve schvalování** (J. V.: „Ano, směs do schvalování"
+  a u pásu „jiné" „Ponechat se schvalováním"). Nový modul `src/vyjimky.js`
+  (v sestavení i v jádru serveru) nad schvalováním slev:
+  - *Co je výjimka:* (a) ceník varianty se ve sledovaných položkách
+    (`cenikSledovane`, bez přirážky a DPH — `CENIK_ZAKAZKOVE`) liší od
+    platného ceníku řady varianty; (b) pás opláštění „jiné" (opláštění po
+    stěnách, `oplasteni.steny.*.pasy[].naklad`) má ruční sazbu nižší než
+    ceníková. Vyřazená strana (P6) se neposuzuje.
+  - *Kdo ji potřebuje:* jen role bez práva ceníku té části (`tab.cenik` pro
+    OCK a pás, `tab.cenikproj` pro PROJ); administrátor nikdy.
+  - *Mechanismus:* razítko `data.cenovaVyjimka` varianty { stav (čeká /
+    schváleno / zamítnuto), otisk, počty, žadatel, schvalil/zamitl + e-mail
+    + čas, důvod }. Otisk = FNV z cest a hodnot rozdílných položek a pásů pod
+    mezí — změna směsi nebo sazby po schválení schválení zruší (kryje obojí
+    jedním rozhodnutím). Požádat smí každý, schválit / zamítnout / vrátit
+    administrátor a role s právem „Schvalování slevy nad strop role"
+    (`sleva.schvalovani`). Jméno, e-mail, čas i otisk razí server
+    (`vyjimkyServerKontrola` v `zakazka_kontrola.mjs`, vzor B2/B101/B105);
+    bez práva se nové rozhodnutí odmítne (403) a platné uložené se nesmaže
+    ani nepřepíše (vrátí se uložené). Odpověď uložení nese výjimku jako
+    slevy (prohlížeč si ji převezme — zámek pak nesouhlasí, B105).
+  - *Zámek:* nový zámek (tisk = odeslání) varianty, která výjimku potřebuje
+    a nemá platné schválení, odmítne server (`vyjimkyZamekProblem`, 403
+    „… — odeslat ji smí jen se schválením nadřízeného …") i prohlížeč
+    (zábrana `cenovaVyjimka` v `kontroly.js`, dokumenty obou stran).
+    Rozpracované uložení beze zámku projde vždy. Klon variantu výjimku
+    nepřenáší (`slevaRozhodnutiZahod`).
+  - *UI:* záložka Schvalování — nová karta „Cenové výjimky" pod slevami
+    (varianta, co se liší — názvy položek a pásů bez částek, stav,
+    Požádat / Schválit / Zamítnout / Vrátit). Přehled „Všechny zakázky"
+    (`/api/schvalovani`) nese výjimku jen se stavem a POČTEM položek a pásů
+    (`vyjimkaRejstrik`, bez otisku a hodnot; klient hlídá pole).
+  - *Výklad (výchozí volby):* 1) „směs" = jakýkoli rozdíl sledované
+    položky proti platnému ceníku — i celá starší verze (kvitance „ceny jsou
+    dohodnuté"), protože i ta jde ven pod platným ceníkem; 2) klíč, který
+    platný ceník vůbec nenese, se neposuzuje (hodnotu doplnil import);
+    3) mez pásu „jiné" = nejnižší kladná ceníková sazba opláštění, které se
+    u šachty nabízí (interiér / exteriér) — co jde vybrat z číselníku bez
+    schválení, jde i jako „jiné"; 4) schvaluje tentýž nadřízený jako slevy
+    (právo `sleva.schvalovani`, popis v matici doplněn), bez stropu;
+    5) dotisk dokumentu do už uloženého zámku se znovu neposuzuje (data
+    zamčené varianty se nemění, výjimka se posoudila u nového zámku);
+    6) obnova ze zálohy bere záznam jako doklad.
+  - Model 1 ani výpočet ceny se nemění (modul jen posuzuje data).
+  - Testy: nová sada `netlify/test_vyjimky.mjs` (37; bez serverových
+    kontrol 13 FAIL — zámky směsi i pásu bez schválení 200, podvržené
+    schválení obchodníka prošlo, razítka z těla), `src/test_vyjimky.js`
+    (40 — otisk, směs, pás, potřeba, kategorie, zábrana, klon), harness
+    `overit_schvalovani.mjs` oddíl 9 (zábrana, žádost, schválení, změna
+    po schválení, pás). Obě sady zařazené do mutací; mutace +21 (chycené 21/21).
 
 ---
 
