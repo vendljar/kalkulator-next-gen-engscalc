@@ -434,114 +434,53 @@ ok(`kopie dostala další číslo nabídky (${kopie.cislo}, zdroj ${kopie.zdrojC
    /\.\d+$/.test(kopie.cislo) && kopie.cislo !== kopie.zdrojCislo);
 ok('kopie přibyla do seznamu (5)', (await nazvy()).length === 5);
 
-/* --- #17 historická kalkulace → alternativní nabídka -----------------------
- * Archiv se plní jen soubory, které uživatel sám otevře. Soubor se proto
- * nejdřív vyrobí z aplikace samotné (StorageAdapter.exportuj), aby test
- * pracoval s formátem, jaký aplikace opravdu ukládá, ne s ručním výmyslem. */
-const HIST = '/tmp/hist_0207.json';
-const histJson = await p.evaluate(() => {
-  const z = novaZakazka();
-  z.cislo = '2024 - OPR - CN - 0207';
-  z.nazevAkce = 'Úvoz Brno – nástavba';
-  z.objednatel = 'Reality Úvoz a.s.';
-  z.adresa = 'Úvoz 3, Brno';
-  z.datum = '2024-06-20';
-  const v = z.varianty[0];
-  v.nazev = 'Varianta 1';
-  v.data.cenik.marze = 0.19;            // tehdejší přirážka – podle ní se pozná ceník
-  /* A tehdejší CENA. Přirážka je rozhodnutí zakázky a na „starší ceník" od
-   * P4 / K13-N58 (24. 9. 2026) sama neupozorňuje — varování #35 níž proto
-   * potřebuje skutečně jinou cenu. */
-  v.data.cenik.montazHodKc = 777;
-  v.data.ock.zadani.pocetStanic = 7;        // tehdejší zadání – to se přebírá vždy
-  zamkniVariantu(v, { typ: 'nabidkaTisk', cislo: variantaCislo(z, v),
-    kdy: '2024-06-21T08:00:00.000Z', otisk: zamekOtisk({ celkemBezDph: 880000 }) });
-  return StorageAdapter.exportuj(z);
-});
-fs.writeFileSync(HIST, histJson);
-
-ok('seznam kalkulací i hlavička nabízejí načtení historické kalkulace',
-   await p.locator('#page-zakazka button', { hasText: 'Historická kalkulace' }).count() === 1
-   && await p.locator('#kalk-hlavicka .zak-cena button', { hasText: 'Historická kalkulace' }).count() === 1);
+/* --- #17 historická kalkulace: tlačítka odstraněna (13. 10. 2026) ----------
+ * Pokyn J. V.: „Odstraň z hlavičky tlačítka Historická kalkulace. Myslím, že
+ * už k ničemu není." Okno archivu odešlo i s modelem. Hlídá se, že tlačítko
+ * není v liště kalkulace ani v seznamu kalkulací a že okno v sestavení není.
+ *
+ * Varianty, které oknem dřív vznikly, jsou v uložených zakázkách dál a nesou
+ * `puvod` — jejich věta a značka ⤺ se ukazují dál. Taková varianta se tu
+ * proto vyrobí přímo (klon + tehdejší ceník a zadání + puvod, jak by přišla
+ * ze souboru) a na ní pak navazuje #35 níž: tehdejší přirážka 0,19 a cena
+ * montáže 777 jsou přesně ten „starší ceník", na který #35 upozorňuje. */
+ok('v seznamu kalkulací není tlačítko „Historická kalkulace"',
+   await p.locator('#page-zakazka button', { hasText: 'Historická kalkulace' }).count() === 0);
+ok('v liště kalkulace OCK není tlačítko „Historická kalkulace"',
+   await p.locator('#kalk-hlavicka button', { hasText: 'Historická kalkulace' }).count() === 0
+   && await p.locator('#page-kalk button', { hasText: 'Historická kalkulace' }).count() === 0);
+ok('ani v Kalkulaci PROJ',
+   await p.locator('#page-proj button', { hasText: 'Historická kalkulace' }).count() === 0);
+ok('okno archivu v sestavení není',
+   await p.locator('#archiv-overlay').count() === 0
+   && await p.evaluate(() => typeof otevriArchiv === 'undefined' && typeof vytvorAlternativu === 'undefined'));
+ok('stránka nikde nevolá okno archivu',
+   await p.locator('[onclick*="otevriArchiv"]').count() === 0);
 
 const marzeDnes = await p.evaluate(() => aktivniVarianta(ZAK).data.cenik.marze);
-await p.locator('#page-zakazka button', { hasText: 'Historická kalkulace' }).click();
-await p.waitForTimeout(300);
-ok('panel archivu se otevřel', await p.locator('#archiv-overlay').isVisible());
-ok('prázdný archiv řekne, co se má udělat',
-   (await p.locator('#archivTelo .seznam-prazdno').innerText()).includes('Nahlédnout do souborů'));
-
-await p.setInputFiles('#archivIn', HIST);
-await p.waitForTimeout(400);
-const radku = () => p.locator('#archivTelo table.archtbl tr').count();
-ok('nahlédnutí do souboru přidalo kalkulaci', (await radku()) === 2);   // hlavička + 1 řádek
-const archText = await p.locator('#archivTelo').innerText();
-ok('řádek nese číslo, akci i odeslanou částku',
-   archText.includes('2024 - OPR - CN - 0207') && archText.includes('Úvoz Brno – nástavba')
-   && archText.replace(/ /g, ' ').includes('880 000'));
-ok('panel vypíše, ze kterého souboru se nahlédlo',
-   (await p.locator('#archivSoubory').innerText()).includes('hist_0207.json'));
-
-await p.fill('#archivHledat', 'nesmysl xyz');
-await p.waitForTimeout(250);
-ok('hledání bez shody nabídne návrat', await p.locator('#archivTelo .seznam-prazdno').count() === 1);
-await p.fill('#archivHledat', 'uvoz');
-await p.waitForTimeout(250);
-ok('hledá se bez diakritiky', (await radku()) === 2);
-
-const pocetPred = await p.evaluate(() => ZAK.varianty.length);
-const hlavickaPred = await p.evaluate(() => ZAK.cislo + '|' + ZAK.nazevAkce + '|' + ZAK.objednatel);
-await p.locator('#archivTelo button', { hasText: 'Dnešní ceny' }).click();
-await p.waitForTimeout(500);
 const alt = await p.evaluate(() => {
-  const v = ZAK.varianty[ZAK.varianty.length - 1];
-  return { nazev: v.nazev, cislo: variantaCislo(ZAK, v), pocet: ZAK.varianty.length,
-           aktivni: ZAK.aktivni === v.id, ridici: !!v.ridici, zamceno: variantaUzamcena(v),
-           marze: v.data.cenik.marze, stanic: v.data.ock.zadani.pocetStanic,
-           puvod: v.puvod ? v.puvod.cislo : '', cenik: v.puvod ? v.puvod.cenik : '',
-           hlavicka: ZAK.cislo + '|' + ZAK.nazevAkce + '|' + ZAK.objednatel };
+  const k = klonujVariantu(ZAK, aktivniVarianta(ZAK).id);
+  ZAK.aktivni = k.id;
+  k.data.cenik.marze = 0.19;              // tehdejší přirážka
+  k.data.cenik.montazHodKc = 777;         // a tehdejší cena (P4 / K13-N58)
+  k.data.ock.zadani.pocetStanic = 7;      // tehdejší zadání
+  k.puvod = { cislo: '2024 - OPR - CN - 0207', nazevAkce: 'Úvoz Brno – nástavba',
+              varianta: 'Varianta 1', soubor: 'hist_0207.json', cenik: 'historicky',
+              kdy: '2026-07-29T11:00:00.000Z' };
+  syncVarianta(); render();
+  return { popis: puvodPopis(k) };
 });
-ok('panel se po převzetí zavřel', !(await p.locator('#archiv-overlay').isVisible()));
-ok(`alternativa přibyla jako varianta (${alt.pocet})`, alt.pocet === pocetPred + 1);
-ok(`alternativa se jmenuje podle zdroje („${alt.nazev}")`, alt.nazev === 'Alternativa – Varianta 1');
-ok(`alternativa má další číslo v řadě zakázky (${alt.cislo})`,
-   /\.\d+$/.test(alt.cislo) && alt.cislo.replace(/\.\d+$/, '') === alt.hlavicka.split('|')[0].trim());
-ok('alternativa je otevřená, není řídící ani zamčená',
-   alt.aktivni && !alt.ridici && !alt.zamceno);
-ok('hlavička zakázky se převzetím nezměnila', alt.hlavicka === hlavickaPred);
-ok(`historické zadání se přeneslo (stanic ${alt.stanic})`, alt.stanic === 7);
-ok(`výchozí převzetí počítá dnešním ceníkem (${alt.marze} ≠ 0.19)`, alt.marze === marzeDnes);
-ok('u varianty je zapsáno, odkud přišla', alt.puvod === '2024 - OPR - CN - 0207' && alt.cenik === 'aktualni');
+ok('varianta převzatá dřív z archivu má větu o původu',
+   alt.popis.includes('2024 - OPR - CN - 0207') && alt.popis.includes('historickým ceníkem'));
 ok('hlavička kalkulace ukazuje větu o původu',
    (await p.locator('#page-kalk .zak-puvod').innerText()).includes('2024 - OPR - CN - 0207'));
-
 await p.locator('#tab-zakazka').click();
 await p.waitForTimeout(300);
-ok('v seznamu je alternativa označena značkou ⤺',
+ok('v seznamu je taková varianta dál označena značkou ⤺',
    await p.locator('#seznamTelo .pill[title*="převzato z nabídky"]').count() === 1);
 
-// druhé převzetí – tentokrát 1:1 podle historie
-await p.locator('#page-zakazka button', { hasText: 'Historická kalkulace' }).click();
-await p.waitForTimeout(300);
-ok('archiv si pamatuje soubory z minula (panel není prázdný)', (await radku()) === 2);
-await p.locator('#archivTelo button', { hasText: '1:1 historie' }).click();
-await p.waitForTimeout(500);
-const alt2 = await p.evaluate(() => {
-  const v = ZAK.varianty[ZAK.varianty.length - 1];
-  return { nazev: v.nazev, cislo: variantaCislo(ZAK, v), marze: v.data.cenik.marze,
-           cenik: v.puvod.cenik, popis: puvodPopis(v) };
-});
-ok(`druhá alternativa se jmenuje jinak („${alt2.nazev}")`, alt2.nazev === 'Alternativa (2) – Varianta 1');
-ok(`1:1 podle historie ponechalo tehdejší ceník (${alt2.marze})`, alt2.marze === 0.19);
-ok('u varianty je zapsáno, že se počítalo historickým ceníkem',
-   alt2.cenik === 'historicky' && alt2.popis.includes('historickým ceníkem'));
-ok(`obě alternativy jsou v jedné číselné řadě (${alt.cislo} → ${alt2.cislo})`,
-   alt2.cislo !== alt.cislo && /\.\d+$/.test(alt2.cislo));
-
-fs.unlinkSync(HIST);
-
 /* --- #35 stáří ceníku u načtené zakázky ------------------------------------
- * Předchozí krok („1:1 historie") záměrně nechal ve variantě tehdejší ceník,
+ * Předchozí krok (varianta s původem z archivu) záměrně nese tehdejší ceník,
  * takže otevřená varianta má teď přesně ten stav, na který #35 upozorňuje.
  * Nic se nesmí blokovat – kontroluje se, že se rozsvítí varování a že přepočet
  * je nabídka, ne automat. */

@@ -51,6 +51,35 @@ Testy (pojistka proti prázdnému testu):
 - `overit_cenik_barvy.mjs` (prohlížeč) — nad sestavením v12.10.4 4 OK /
   9 FAIL a pád (`cenikObarviVse is not defined`), po opravě 22 OK / 0 FAIL.
 
+### Odstraněno tlačítko „↩ Historická kalkulace…"
+
+„Odstraň z hlavičky tlačítka Historická kalkulace. Myslím, že už k ničemu
+není."
+
+- Tlačítko zmizelo z lišty zakázky v Kalkulaci OCK i PROJ
+  (`src/ui/common.js`) a z karty Kalkulace v zakázce (`src/ui/seznam_ui.js`,
+  i s vysvětlující poznámkou). V příručce (`manual/obsah.json`) zmíněné nebylo.
+- Mrtvý kód pryč: okno archivu `src/ui/archiv_ui.js` (smazáno, i z
+  `build.py`), `#archiv-overlay` a jeho CSS v `src/app_template.html`, model
+  archivu v `src/archiv.js` (hledání, řazení, `vytvorAlternativu` …) — nic jiné
+  ho nevolalo (ověřeno grepem přes `src/`, `netlify/`, harnessy).
+- **Zůstává** `puvodPopis` (v `src/archiv.js`): varianty, které oknem dřív
+  vznikly, jsou v uložených zakázkách dál a nesou `puvod` — věta o původu
+  v hlavičce kalkulace a značka ⤺ v seznamu kalkulací se jim ukazují dál.
+- Testy, které okno zkoušely: `src/test_archiv.js` zúžen na `puvodPopis` +
+  pojistku, že se tlačítko/okno do zdrojů nevrátí; `netlify/test_klon_sleva.mjs`
+  — vypuštěn oddíl C (alternativa z archivu, N44; klon a duplikát hlídají A, B,
+  D); `overit_lista.mjs` — oddíl #17 nahrazen kontrolou, že tlačítko v liště
+  ani v seznamu není a okno v sestavení chybí, varianta s `puvod` se pro #35
+  vyrábí přímo; `overit_online.mjs` — tlačítko se už nepočítá mezi živá
+  v režimu čtení, nově se hlídá, že chybí; `src/test_escape.js` — vypuštěn
+  výjimkový záznam pro `archiv_ui.js`.
+
+Testy (pojistka proti prázdnému testu, proti sestavení v12.10.4):
+- `src/test_archiv.js` — před 7 OK / 8 FAIL, po 15 OK / 0 FAIL.
+- `overit_lista.mjs` — před 250 ✓ / 5 ✗, po 255 ✓ / 0 ✗.
+- `overit_online.mjs` — před 213 OK / 1 FAIL, po 214 OK / 0 FAIL.
+
 ---
 
 ## v12.10.4 — integrace nočních dávek N1–N3 (větev claude/integrace-13-10)

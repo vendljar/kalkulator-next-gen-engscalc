@@ -1,3 +1,17 @@
+# Předávka — 13. 10. 2026: větev `claude/cenik-barvy` (v13.10.1)
+
+Paralelní větev z `test-draft` (1df7283, v12.10.4) podle zadání J. V. 13. 10. 2026:
+1. **Probarvení buněk ceníků OCK a PROJ** — 0/prázdné světle červeně, > 40 000 Kč
+   (jen položky s jednotkou „Kč…") světle oranžově; živě při psaní, jen vzhled.
+2. **Odstraněno tlačítko „↩ Historická kalkulace…"** (lišta OCK/PROJ, seznam
+   kalkulací) i s oknem a modelem archivu; `puvodPopis` zůstává pro staré varianty.
+Výklad, testy před/po: CHANGELOG v13.10.1. Do `test-draft`/`test`/`main` nic —
+o sloučení rozhoduje J. V. (u sloučení: verze se srovná, CHANGELOG/PREDAVKA ručně).
+Otevřené: prázdná Cena Zahraničí („jako ČR") červeně nesvítí; pole přirážky a DPH
+nad tabulkou se neprobarvují — výchozí výklad, změní se na pokyn.
+
+---
+
 # Předávka — 12. 10. 2026 noc: integrace N1–N3 ve větvi `claude/integrace-13-10` (v12.10.4)
 
 Integrační subagent koordinačního sezení session_01CKiH2sXWq6U8xoJwqivhiN.

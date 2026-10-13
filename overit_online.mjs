@@ -472,8 +472,11 @@ const ziveVZamku = await page.evaluate(() => {
   };
 });
 test('otevřená zakázka z databáze je jen ke čtení', ziveVZamku.zamceno === true, ziveVZamku);
-test('v režimu čtení zůstává živé Načíst, Nová zakázka, Historická kalkulace, Přehled i přepínač varianty',
-  ['nacist', 'nova', 'historie', 'prehled', 'varianta'].every(k => ziveVZamku[k] === 'auto'), ziveVZamku);
+test('v režimu čtení zůstává živé Načíst, Nová zakázka, Přehled i přepínač varianty',
+  ['nacist', 'nova', 'prehled', 'varianta'].every(k => ziveVZamku[k] === 'auto'), ziveVZamku);
+/* Tlačítko „↩ Historická kalkulace…" bylo 13. 10. 2026 na pokyn J. V.
+ * odstraněno („už k ničemu není") — do 12. 10. se tu hlídalo, že je živé. */
+test('tlačítko Historická kalkulace v liště už není', ziveVZamku.historie === 'chybí', ziveVZamku);
 /* OČEKÁVÁNÍ SE TU ZMĚNILO DVAKRÁT — celý vývoj, ať se nevracíme zpátky.
  *
  * Do 21. 9. 2026 se hlídalo, že je tlačítko uložení v režimu čtení MRTVÉ

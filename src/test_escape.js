@@ -494,7 +494,6 @@ const PROVERENO_CLENY = {
     'c.prihlaseni': 'součet za období — číslo',
     'c.chyby': 'součet za období — číslo',
   },
-  'archiv_ui.js': { 's.pocet': 'počet kalkulací v souboru archivu (archivSouboryHtml) — číslo' },
   'cenik_stari_ui.js': {
     's.zdrazeni': 'počet zdražených položek z porovnání ceníků — číslo',
     's.zlevneni': 'počet zlevněných položek — číslo',
