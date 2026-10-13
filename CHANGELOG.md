@@ -182,6 +182,43 @@ Rozhodnutí J. V. 13. 10. 2026 (noční dávka). Větev z `claude/integrace-13-1
 
 ---
 
+## v13.10.3 — příručka obchodníka aktuální k v13.10.2 (větev claude/prirucka-13-10)
+
+Rozhodnutí J. V. 13. 10. 2026: „Příručka — Ano, v příští dávce". Větev
+z `claude/integrace-13-10b` (v13.10.2, 0512c51). Do `test-draft` jen na
+pokyn J. V.
+
+- **Obsah (`manual/obsah.json`):** kap. 25 zámek strany (P6) — seznam
+  OPR → PROJ vynulovaná, OVP → OCK vynulovaná, obě čísla → vede OCK, bez
+  čísla obě strany; snímek lišty; rámeček o starších zakázkách
+  s upozorněním „Zakázka dřív počítala projekci i OCK" (`stranyDriv`);
+  zrušené tlačítko pro počítání vyřazené strany (bez doslovného názvu,
+  hlídá `test_zamek_strany` (l)). Kap. 11 a 13 „Opláštit i prohlubeň" (P2).
+  Kap. 28 probarvení ceníků (prázdná Cena Zahraničí nesvítí = jako v ČR).
+  Kap. 1–3 odhlášení na všech zařízeních (B6), správce mění vlastní heslo
+  jen „Změnit heslo…" (B77-zbytek). Kap. 19 rozhodnutí o slevě vrací jen
+  nadřízený (B101). Úvod „Co je nového ve verzi v13.10". „Historická
+  kalkulace" příručka nezmiňovala (ani na nových snímcích).
+- **Snímky (`manual/snimky_auto.mjs`, Playwright nad zkušebním ceníkem):**
+  přefoceno všech 22; nový `zamek-strany`; Detail výpočtu PROJ se fotí ze
+  smyšlené zakázky `2026 - OVP - CN - 9104` (u 9100 s číslem OPR je teď
+  PROJ vynulovaná).
+- **Renderer (`manual/sablona.html`):** zná `*kurzívu*` — obsah.json ji
+  psal na ~80 místech a v příručce svítily holé hvězdičky.
+- **`overit_manual.mjs`** +10 kontrol (9 témat v13.10.2 + holé hvězdičky).
+  Pojistka: nad příručkou v13.10.2 z podkladů 36 OK / 10 FAIL; nad novou
+  před opravou rendereru 46/1; po 47 OK / 0 FAIL.
+- Hotová příručka `2026-10-13_kalkulator_v13.10.3_MANUAL_OBCHODNIK.html`
+  je jen v kopii podkladů `/home/user/kng_podklady_prirucka-13-10`
+  (na Disk ani do repa se nenahrává).
+- Navazující práce: kapitola o lištách rozpracované/odeslané zakázky
+  (#404, větev `claude/listy-404`) se tu neměnila — po integraci #404
+  upravit text (kap. 6, 8, 29) a přefotit.
+
+**Celé kolo nad b2181e9 VŠE ZELENÉ (158 min 55 s):** sady 232/0/1 (přeskočen jen
+`test.js`), mutace jádra 193 z 193, mutace serveru 358 z 358, statické
+kontroly 3 z 3. Podklady: kopie s příručkou přejmenovanou na v13.10.3.
+
 ## v13.10.2 — integrace dávek 13. 10. 2026 do test-draft (větev claude/integrace-13-10b)
 
 Pokyn J. V. 13. 10. 2026: „souhlasím s výchozími, slouč všechny tři větve do
