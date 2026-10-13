@@ -337,6 +337,11 @@
     padding:10px 22px; font-size:13px; align-items:center; gap:10px; flex-wrap:wrap; }
   #obnovaLista.zobraz { display:flex; }
   #obnovaLista button { padding:5px 12px; font-size:12.5px; }
+  /* #404 (13. 10. 2026): „Zahodit zálohu" a obnova zálohy jiné kalkulace
+     jsou v žluté liště jen malé odkazy — rozhoduje se Pokračovat / Založit novou. */
+  #obnovaLista button.odkaz { background:none; border:none; padding:2px 4px; color:#78350f;
+    text-decoration:underline; font-size:12px; cursor:pointer; box-shadow:none; }
+  #obnovaLista .sp { flex:1 1 auto; }
   /* #40 – lišta se stářím sestavení. Vypadá jako lišta obnovy, protože dělá
      totéž: řekne jednu větu a nechá uživatele pracovat dál. */
   .build-lista { display:flex; align-items:center; gap:10px; flex-wrap:wrap;

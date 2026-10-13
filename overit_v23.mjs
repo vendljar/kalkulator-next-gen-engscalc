@@ -175,16 +175,16 @@ const zamek = await p.evaluate(() => {
   syncVarianta();
   zamekCteniZapni();          // to, co udělá otevření z databáze
   prepniTab('kalk'); render();
-  const html = document.getElementById('kalk-hlavicka').innerHTML;
+  const html = document.getElementById('obnovaLista').innerHTML;
   return {
-    lista: /Nabídka je otevřená jen ke čtení/.test(html),
-    tlacitko: /zamekCteniOdemkniUI\(\)/.test(html),
+    lista: /Rozpracovaná kalkulace/.test(html) && document.getElementById('obnovaLista').classList.contains('zobraz'),
+    tlacitko: /listaPokracujUI\(\)/.test(html),
     trida: !!document.querySelector('#inputs.cteni-zamceno'),
     hlavickaTrida: !!document.querySelector('.zak-bar.cteni-zamceno'),
   };
 });
-zkus('po otevření svítí lišta „jen ke čtení"', zamek.lista);
-zkus('a je v ní tlačítko Odemknout k úpravám', zamek.tlacitko);
+zkus('po otevření svítí žlutá lišta „Rozpracovaná kalkulace" (#404)', zamek.lista);
+zkus('a je v ní tlačítko Pokračovat v rozpracované kalkulaci', zamek.tlacitko);
 zkus('data kalkulace jsou ztlumená a needitovatelná', zamek.trida);
 zkus('hlavička zakázky taky (jinak by se do ní psalo nadarmo)', zamek.hlavickaTrida);
 
@@ -203,7 +203,7 @@ const zapisZamceno = await p.evaluate(() => {
 });
 zkus('v zamčené nabídce se do zadání nezapíše', zapisZamceno.zmenaZadani === false);
 zkus('ani do hlavičky', zapisZamceno.zmenaHlavicky === false);
-zkus('a aplikace řekne, jak dál', /Odemknout k úpravám/.test(zapisZamceno.hlaska),
+zkus('a aplikace řekne, jak dál', /Pokračovat v rozpracované kalkulaci/.test(zapisZamceno.hlaska),
   zapisZamceno.hlaska.slice(0, 60));
 
 const branaZamek = await p.evaluate(() => {
@@ -222,7 +222,7 @@ const poOdemceni = await p.evaluate(() => {
   zamekCteniOdemkniUI();
   const pred = Z.nastupiste;
   set('Z.nastupiste', 9);
-  const html = document.getElementById('kalk-hlavicka').innerHTML;
+  const html = document.getElementById('obnovaLista').classList.contains('zobraz') ? 'jen ke čtení' : '';
   ONLINE_STAV.posledni = ''; ONLINE_STAV.zmenaUzivatele = true;
   if (ONLINE_STAV.timer) { clearTimeout(ONLINE_STAV.timer); ONLINE_STAV.timer = null; }
   onlineTik();
@@ -239,8 +239,8 @@ const cizi = await p.evaluate(() => {
   ZAK = importZakazka(JSON.parse(window.__ulozena));
   ZAK.autor = 'kolega@eng.cz'; ZAK.autorJmeno = 'Kolega Novák';
   syncVarianta(); zamekCteniZapni(); render();
-  const html = document.getElementById('kalk-hlavicka').innerHTML;
-  return { tlacitko: /zamekCteniOdemkniUI\(\)/.test(html), duvod: /Kolega Novák/.test(html) };
+  const html = document.getElementById('obnovaLista').innerHTML;
+  return { tlacitko: /listaPokracujUI\(\)/.test(html), duvod: /Kolega Novák/.test(html) };
 });
 zkus('cizí nabídku obchodník odemknout nemůže', cizi.tlacitko === false);
 zkus('a v liště stojí, koho o to požádat', cizi.duvod);
@@ -248,7 +248,7 @@ zkus('a v liště stojí, koho o to požádat', cizi.duvod);
 const jakoVedouci = await p.evaluate(() => {
   ONLINE_STAV.ja = { email: 'v@eng.cz', jmeno: 'Vedoucí', role: 'Vedoucí' };
   render();
-  return /zamekCteniOdemkniUI\(\)/.test(document.getElementById('kalk-hlavicka').innerHTML);
+  return /listaPokracujUI\(\)/.test(document.getElementById('obnovaLista').innerHTML);
 });
 zkus('vedoucí odemknout může', jakoVedouci === true);
 

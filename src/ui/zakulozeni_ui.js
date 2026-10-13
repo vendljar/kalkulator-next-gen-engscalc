@@ -103,8 +103,8 @@ function zakTrojice() {
    * o režimu čtení a otevřel se panel Zakázky online (N25).
    *
    * Řešením tedy není vrátit mrtvé tlačítko, ale nezobrazit ho. Odemčení má
-   * jedno místo — lištu zámku (`zamekCteniLista`), která se kreslí nad
-   * Kalkulací OCK, Kalkulací PROJ i nad oběma ceníky. Kdo odemykat nesmí,
+   * jedno místo — žlutou lištu rozpracované kalkulace (od #404 renderListaZakazky, dřív
+   * `zamekCteniLista` nad kalkulacemi a ceníky). Kdo odemykat nesmí,
    * vidí v ní důvod.
    *
    * `zakUlozUI()` si kontrolu `zamekCteniStop()` PONECHÁVÁ. Zábrana zápisu

@@ -43,6 +43,11 @@ const HIST = {
   ulozenoJako: null,  // JSON stavu při posledním exportu/importu (pro varování)
   autoTimer: null,
   autoStav: '',       // text pod tlačítky (kdy se naposledy zazálohovalo)
+  /* Záloha, kterou model dovolil nabídnout (#404, 13. 10. 2026). Kterou
+   * lištu z ní ukázat, rozhoduje listaZakazkyRozhodni v zamek.js — žlutá
+   * „Rozpracovaná kalkulace" je od #404 jediná a kreslí ji
+   * renderListaZakazky() v zamek_ui.js. null = nic nenabízet. */
+  nabidka: null,
 };
 
 /* ---------- úložiště prohlížeče s detekcí dostupnosti ---------- */
@@ -156,6 +161,13 @@ function historieZalohaNaplanuj() {
 function historieZalohaZapis() {
   if (!Uloziste.kDispozici()) return;
   HIST.autoTimer = null;
+  /* ZAKÁZKA JEN KE ČTENÍ SE DO ZÁLOHY NEPÍŠE (#404, 13. 10. 2026). Do ní
+   * nikdo nic nenapsal (zápis je zablokovaný) — je to táž zakázka, jaká
+   * leží v databázi. Zápis by jen přepsal zálohu s opravdu rozpracovanou
+   * prací, kterou má žlutá lišta nabídnout k pokračování: po F5 se
+   * poslední zakázka otevře sama jen ke čtení a do 13. 10. tím zálohu
+   * přepsala dřív, než na ni uživatel stihl kliknout. */
+  if (typeof zamekCteniJe === 'function' && zamekCteniJe()) return;
   const zaznam = {
     verze: 1,
     kdy: new Date().toISOString(),
@@ -175,6 +187,9 @@ function historieZalohaZapis() {
     return;
   }
   const ok = Uloziste.zapis(HIST_KLIC, JSON.stringify(zaznam));
+  /* Nabízená záloha je tímhle zápisem pryč (přepsala ji nová práce) —
+   * lišta by nabízela k pokračování něco, co už v prohlížeči není. */
+  if (ok && HIST.nabidka) { HIST.nabidka = null; historieListaPrekresli(); }
   HIST.autoStav = ok
     ? '⛁ zálohováno ' + new Date().toLocaleTimeString('cs-CZ')
     : '⚠ zálohu se nepodařilo uložit (plné úložiště)';
@@ -188,6 +203,12 @@ function historieZalohaCti() {
     const z = JSON.parse(txt);
     return z && z.zakazka ? z : null;
   } catch (e) { return null; }
+}
+
+/* Překreslí jedinou žlutou lištu (#404). Volá se i při startu, kdy ještě
+ * neproběhl první render — proto opatrně. */
+function historieListaPrekresli() {
+  try { if (typeof renderListaZakazky === 'function') renderListaZakazky(); } catch (e) { /* start */ }
 }
 
 /* Lišta „našel jsem rozpracovanou kalkulaci". Záměrně NIC neobnovuje sama:
@@ -215,15 +236,12 @@ function historieNabidniObnovu() {
     Uloziste.smaz(HIST_KLIC);
     Uloziste.smaz(HIST_ODLOZENO_KLIC);
   }
-  if (!rozhodnuti.nabidnout || !z || !el) return;
-
-  const kdy = z.kdy ? new Date(z.kdy).toLocaleString('cs-CZ') : 'neznámo kdy';
-  const co = [z.cislo, z.nazevAkce].filter(Boolean).join(' · ') || 'bez názvu';
-  el.innerHTML = `<span>⛁ V prohlížeči je <b>rozpracovaná kalkulace</b> (${esc(co)}), naposledy uložená ${esc(kdy)}.
-      Chcete ji obnovit?</span>
-    <button class="primary" onclick="historieObnovZalohu()">Obnovit rozpracovanou kalkulaci</button>
-    <button class="mini" onclick="historieZahodZalohu()">Zahodit zálohu</button>`;
-  el.classList.add('zobraz');
+  /* Lištu od #404 kreslí renderListaZakazky (zamek_ui.js) — tady se jen
+   * rozhodne, JESTLI je co nabídnout. Text a tlačítka („Pokračovat
+   * v rozpracované kalkulaci / Založit novou kalkulaci", malé „Zahodit
+   * zálohu") jsou společné se zakázkou otevřenou jen ke čtení. */
+  HIST.nabidka = (rozhodnuti.nabidnout && z && el) ? z : null;
+  historieListaPrekresli();
 }
 
 /* „Teď ne" = zálohu si nechám, ale už se na ni neptej. Zapamatuje se razítko
@@ -237,9 +255,23 @@ function historieOdlozZalohu() {
   if (z) Uloziste.zapis(HIST_ODLOZENO_KLIC, String(z.kdy || ''));
   historieSkryjListu();
 }
+/* Nabídka zálohy je vyřízená (obnovena, zahozena, odložena, uložena).
+ * Žlutá lišta může dál svítit kvůli zakázce jen ke čtení — o tom rozhodne
+ * model při překreslení (#404). */
 function historieSkryjListu() {
-  const el = document.getElementById('obnovaLista');
-  if (el) el.classList.remove('zobraz');
+  HIST.nabidka = null;
+  historieListaPrekresli();
+}
+/* Tichý úklid zálohy, o které model řekl, že je přežitá nebo patří odeslané
+ * nabídce (#404). Maže jen tu zálohu, která se nabízela — kdyby ji mezitím
+ * přepsala nová práce, nesahá se na ni. */
+function historieZalohaZahodTise(z) {
+  const ted = historieZalohaCti();
+  if (ted && z && String(ted.kdy || '') === String(z.kdy || '')) {
+    Uloziste.smaz(HIST_KLIC);
+    Uloziste.smaz(HIST_ODLOZENO_KLIC);
+  }
+  HIST.nabidka = null;
 }
 function historieObnovZalohu() {
   const z = historieZalohaCti();

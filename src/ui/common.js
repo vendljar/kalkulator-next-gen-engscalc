@@ -925,7 +925,7 @@ function variantaStavPill() {
      * se v režimu čtení nenabízí a odemyká se na jednom místě, v liště
      * zámku nahoře. */
     return `<span class="stav-pill cteni" title="Zakázka je otevřená z databáze jen ke čtení — `
-      + `dokud ji vědomě neodemknete, žádná změna se neuloží. Odemyká se tlačítkem v liště `
+      + `dokud ji vědomě neodemknete, žádná změna se neuloží. Jak pokračovat, nabízí lišta `
       + `nahoře."
       >🔒 Jen ke čtení — neukládá se</span>`;
   const z = (typeof zamekInfo === 'function') ? zamekInfo(v) : null;
@@ -1650,7 +1650,9 @@ function verzeObnovUI() {
 
 function renderKalkHlavicka() {
   const el = document.getElementById('kalk-hlavicka');
-  if (el) el.innerHTML = zamekCteniLista() + zakazkaHlavicka(true) + zamekStranyLista('ock');
+  /* Lišta „jen ke čtení" tu stála do 13. 10. 2026 — od #404 ji nahrazuje
+   * jediná žlutá lišta nad záložkami (renderListaZakazky v zamek_ui.js). */
+  if (el) el.innerHTML = zakazkaHlavicka(true) + zamekStranyLista('ock');
   zamekStranyNasad('ock');
   zamekCteniNasad('ock');
 }
@@ -1792,18 +1794,30 @@ function zamekCteniStop() {
   const hotovo = () => { ZAMEK_CTENI.dialog = false; };
   const ja = (typeof ONLINE_STAV !== 'undefined') ? ONLINE_STAV.ja : null;
   const smi = (typeof zamekCteniSmiOdemknout !== 'function') || zamekCteniSmiOdemknout(ZAK, ja);
+  /* ODESLANÁ NABÍDKA SE NEODEMYKÁ, POKRAČUJE SE KLONEM (#404, J. V. 13. 10.
+   * 2026). Obchodník u odeslané nabídky lištu „jen ke čtení" s Odemknout
+   * nemá — dialog proto nabídne totéž co oranžová lišta: klon varianty
+   * (zamekKlonUI okno odemkne, smí-li). Odemknout odeslanou nabídku smí jen
+   * role s právem zamek.odemknout, a to modrým pruhem. */
+  const v = (typeof aktivniVarianta === 'function') ? aktivniVarianta(ZAK) : null;
+  if (v && typeof variantaUzamcena === 'function' && variantaUzamcena(v) && typeof zamekUpozorni === 'function') {
+    Promise.resolve(zamekUpozorni(v)).then(hotovo, hotovo);
+    return true;
+  }
   if (smi && typeof potvrd === 'function') {
     /* Do 8. 9. 2026 dialog jen posílal „nahoru na Odemknout k úpravám" — jenže
      * na záložkách Ceník žádné takové tlačítko nebylo a přirážka se po každém
      * zadání vracela zpět (hlášení J. V.). Odemknutí se proto nabízí rovnou
      * tady; hodnotu pak člověk zadá znovu — ten jeden zablokovaný zápis se
      * dodatečně neprovádí, aby se do odemčené nabídky nezapsalo nic, co by
-     * dialog jen odklepl. */
-    potvrd('Nabídka je otevřená jen ke čtení — změna se neuložila.\n\n'
-      + 'Odemknout k úpravám teď? Hodnotu pak zadejte znovu; od té chvíle se změny zase '
-      + 'ukládají samy. Dokud je zamčená, nic se do databáze nezapisuje — otevřít si ji '
+     * dialog jen odklepl. Od #404 (13. 10. 2026) mluví dialog jazykem žluté
+     * lišty: „Pokračovat v rozpracované kalkulaci" dělá totéž co její tlačítko
+     * (odemkne a obnoví novější zálohu z prohlížeče, je-li). */
+    potvrd('Rozpracovaná kalkulace je otevřená jen ke čtení — změna se neuložila.\n\n'
+      + 'Pokračovat v rozpracované kalkulaci teď? Hodnotu pak zadejte znovu; od té chvíle se změny zase '
+      + 'ukládají samy. Dokud ji jen prohlížíte, nic se do databáze nezapisuje — otevřít si ji '
       + 'a jen se podívat je bezpečné.',
-      { nadpis: 'Nabídka jen ke čtení', ano: 'Odemknout a pokračovat', ne: 'Zůstat jen ke čtení' })
+      { nadpis: 'Kalkulace jen ke čtení', ano: 'Pokračovat v rozpracované kalkulaci', ne: 'Zůstat jen ke čtení' })
       /* ZŮSTAT ZNAMENÁ, ŽE SE ZMĚNA NEPROVEDE — A MUSÍ TO BÝT VIDĚT
        * (P3, nález N4, 21. 9. 2026). Zablokovaný zápis se dodatečně
        * neprovádí, jenže napsaná hodnota zůstávala v políčku a tvářila se
@@ -1811,30 +1825,24 @@ function zamekCteniStop() {
        * polí to, co je v datech, takže obrazovka zase říká pravdu. */
       .then(ano => {
         hotovo();
-        if (ano) zamekCteniOdemkniUI();
+        if (ano) { if (typeof listaPokracujUI === 'function') listaPokracujUI(); else zamekCteniOdemkniUI(); }
         else if (typeof render === 'function') render();
       }, hotovo);
   } else if (typeof hlaska === 'function') {
     const duvod = (typeof zamekCteniDuvod === 'function') ? zamekCteniDuvod(ZAK, ja) : '';
-    hlaska('Nabídka je otevřená jen ke čtení.' + (duvod ? '\n\n' + duvod : '')
-      + '\n\nDokud je zamčená, nic se do databáze neukládá — otevřít si ji a jen se podívat je bezpečné.')
+    hlaska('Kalkulace je otevřená jen ke čtení.' + (duvod ? '\n\n' + duvod : '')
+      + '\n\nNovou kalkulaci založíte tlačítkem „Založit novou kalkulaci" v liště nahoře. '
+      + 'Dokud ji jen prohlížíte, nic se do databáze neukládá.')
       .then(hotovo, hotovo);
   } else hotovo();
   return true;
 }
 
-function zamekCteniLista() {
-  if (!zamekCteniJe()) return '';
-  const ja = (typeof ONLINE_STAV !== 'undefined') ? ONLINE_STAV.ja : null;
-  const smi = (typeof zamekCteniSmiOdemknout !== 'function') || zamekCteniSmiOdemknout(ZAK, ja);
-  const duvod = (!smi && typeof zamekCteniDuvod === 'function') ? zamekCteniDuvod(ZAK, ja) : '';
-  return `<div class="zamek-lista zamek-cteni noprint">
-    <span class="ikona">🔒</span>
-    <span class="sp"><b>Nabídka je otevřená jen ke čtení.</b>
-      Nic se neukládá, dokud ji vědomě neodemknete.${duvod ? ' ' + esc(duvod) : ''}</span>
-    ${smi ? '<button class="mini" onclick="zamekCteniOdemkniUI()">Odemknout k úpravám</button>' : ''}
-  </div>`;
-}
+/* `zamekCteniLista()` — modrá lišta „Nabídka je otevřená jen ke čtení…
+ * Odemknout k úpravám" nad Kalkulací OCK, PROJ a ceníky — zanikla 13. 10.
+ * 2026 (#404). Režim čtení ovládá jediná žlutá lišta rozpracované kalkulace
+ * (renderListaZakazky v zamek_ui.js) a u odeslané nabídky modrý pruh
+ * „Odemknout k úpravám" jen pro roli s právem zamek.odemknout. */
 
 /* Třída na kontejnery s daty. Lišta ani hlavička okna v nich nejsou, takže
  * tlačítko Odemknout zůstane klikatelné. */
@@ -1858,7 +1866,7 @@ function zamekCteniOdemkniUI() {
   if (typeof nahledStop === 'function' && nahledStop('odemčení nabídky k úpravám')) return;
   zamekCteniVypni();
   if (typeof onlineZprava === 'function')
-    onlineZprava('Nabídka je odemčená k úpravám — od téhle chvíle se změny zase ukládají samy.');
+    onlineZprava('Pokračujete v rozpracované kalkulaci — od téhle chvíle se změny zase ukládají samy.');
   render();
 }
 
