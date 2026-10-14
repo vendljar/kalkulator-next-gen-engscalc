@@ -5446,7 +5446,7 @@
    "detail": "Návrh P11; nad limitem 429 bez ověření, IPv6 po /64, hesloVerze při založení.",
    "hotovoKdyz": "Testy a mutace serveru.",
    "kde": "`netlify/functions/prihlaseni.mjs`, `netlify/lib/sdilene.mjs`, `uzivatele.mjs`, `pd_*.mjs`, `src/analytika.js`, `src/ui/techspec_ui.js`",
-   "pozn": "26. 9. 2026 (#364): B75, B76, B77 a B78 HOTOVO v v26.9.1 — limit adresy 429 před scryptem, IPv6 po /64, úspěch cizího účtu nenuluje počítadlo adresy, hesloVerze při založení/vypnutí/archivaci, brzda u mojeheslo, původ a Content-Type u odhlášení; nová sada netlify/test_prihlaseni.mjs (43; proti starému kódu 21 selhalo), 9 mutací. ZBÝVÁ: B80 (/api/pd/*), B81 (analytika, Object.prototype), B83 (CSV vzorce), B88 (matice jen v UI). 29. 9. 2026 (v29.9.4): ZÁPISOVÁ strana B88 opravena jako B112 — server hlídá ceník varianty a přepisy podle role a matice uložené na serveru. Čtecí strana B88 (ceník v DOM každé role) zůstává informativní. 29. 9. 2026 (v29.9.5): B97 — kolize klíčů e-mailu a adresy v brzdě přihlášení opravena (předpona „e:\")."
+   "pozn": "26. 9. 2026 (#364): B75, B76, B77 a B78 HOTOVO v v26.9.1 — limit adresy 429 před scryptem, IPv6 po /64, úspěch cizího účtu nenuluje počítadlo adresy, hesloVerze při založení/vypnutí/archivaci, brzda u mojeheslo, původ a Content-Type u odhlášení; nová sada netlify/test_prihlaseni.mjs (43; proti starému kódu 21 selhalo), 9 mutací. ZBÝVÁ: B80 (/api/pd/*), B81 (analytika, Object.prototype), B83 (CSV vzorce), B88 (matice jen v UI). 29. 9. 2026 (v29.9.4): ZÁPISOVÁ strana B88 opravena jako B112 — server hlídá ceník varianty a přepisy podle role a matice uložené na serveru. Čtecí strana B88 (ceník v DOM každé role) zůstává informativní. 29. 9. 2026 (v29.9.5): B97 — kolize klíčů e-mailu a adresy v brzdě přihlášení opravena (předpona „e:\"). 13. 10. 2026: B81 a B83 HOTOVO ve v13.10.1 (#403), B77-zbytek (reset hesla na vlastní účet) ve v13.10.1 (#400), B77 citlivé akce správce s heslem správce (založení a povýšení na Administrátora, reset cizího hesla, obnova účtů z otisku) ve v13.10.3 (větev claude/bezpecnost-noc, integrace v13.10.4) — CHANGELOG v13.10.1 a v13.10.3. ZBÝVÁ: B80 (/api/pd/*) — v CHANGELOG ani BEZPECNOST_MEZE.md o něm zápis není; čtecí strana B88 informativní."
   },
   {
    "id": "346",
@@ -6129,7 +6129,8 @@
    "proc" : "Prosklená prohlubeň se musela nastavit u každé ze čtyř stěn zvlášť (rozhodnutí J. V. 2. 10. 2026: výchozí návrh).",
    "detail" : "Zaškrtávátko pod polem Prohlubeň nastaví všem stěnám „Opláštění začíná“ = −prohlubeň (ze standardu přepne na po stěnách s výchozími typy), změna hloubky meze posune; stav se odvozuje z mezí. Výpočet beze změny (cesta po stěnách), řádek v Detailu výpočtu.",
    "hotovoKdyz" : "Opraveno, testy před/po v CHANGELOG v2.10.1, celé kolo zelené.",
-   "kde" : "`src/engine.js` (oplasteniProhlubenVse/Nastav/Sleduj), `src/ui/kalk_ock.js`"
+   "kde" : "`src/engine.js` (oplasteniProhlubenVse/Nastav/Sleduj), `src/ui/kalk_ock.js`",
+   "pozn" : "**13. 10. 2026 (v13.10.1, větev claude/k22-p2-p6, integrace v13.10.2):** zaškrtávátko přejmenováno na „Opláštit i prohlubeň“ (rozhodnutí J. V. 13. 10.), data i výpočet beze změny — viz #408. Ukládání opláštěné prohlubně opraveno v #415 (K23T-N1)."
   },
   {
    "id" : "388",
@@ -6182,7 +6183,8 @@
    "proc" : "Zahraniční zakázka si nechala výchozí oceněnou projekci; kontrola jen upozornila (rozhodnutí J. V. 2. 10. 2026: výchozí návrh A).",
    "detail" : "Po přepnutí na zahraniční řadu dotaz „Zakázka jen realizace“ (výchozí Ano → ZAK.jenOck), po návratu všech variant do tuzemska opak; nenabízí se u čísla OVP ani vědomých obou stran.",
    "hotovoKdyz" : "Opraveno, testy před/po v CHANGELOG v2.10.1, celé kolo zelené.",
-   "kde" : "`src/zakazka.js` (zahrJenRealizaceNabidnout), `src/ui/common.js`"
+   "kde" : "`src/zakazka.js` (zahrJenRealizaceNabidnout), `src/ui/common.js`",
+   "pozn" : "**Nahrazeno 13. 10. 2026** (v13.10.1, větev claude/k22-p2-p6, integrace v13.10.2): měkký zámek a výjimka „Počítat i tuhle stranu“ zrušeny, vyřazená strana se podle čísla nabídky uzamkne a vynuluje (zámek strany) — viz #408. Dialog „jen realizace“ jen pro zahraniční zakázku bez čísla (D6f)."
   },
   {
    "id" : "392",
@@ -6331,7 +6333,8 @@
    "proc" : "Audity 22. 8. a 9. 9. 2026 — nízké nálezy vedené v auditu 12. 10. jako TRVÁ.",
    "detail" : "B83 CSV exporty s ochranou vzorců (csvBunka); B81 prototypové klíče v analytice; B103 v dodatkových textech (sběr padal na 500); B105 čas rozhodnutí o slevě razí server; B101 rozhodnutí zpět na „čeká“ jen s právem rozhodnout; B6 odhlášení zneplatní relace účtu i na serveru (všechna zařízení — výchozí výklad); B35 strop počtu klíčů cas/ (5 000).",
    "hotovoKdyz" : "Hotovo ve v13.10.1 (větev claude/davka-13-10); testy a mutace v CHANGELOG.",
-   "kde" : "`src/format.js`, `src/analytika.js`, `src/cenik.js`, `src/schvalovani.js`, `netlify/functions/odhlaseni.mjs`, `netlify/functions/analytika.mjs`"
+   "kde" : "`src/format.js`, `src/analytika.js`, `src/cenik.js`, `src/schvalovani.js`, `netlify/functions/odhlaseni.mjs`, `netlify/functions/analytika.mjs`",
+   "pozn" : "13. 10. 2026 (v13.10.3, větev claude/bezpecnost-noc): B35 doplněno — klíč `cas/<číslo>` vznikne jen pro zakázku v rejstříku zakázek, strop zůstává druhou pojistkou (rozhodnutí J. V. 13. 10.)."
   },
   {
    "id" : "404",
@@ -6373,6 +6376,190 @@
    "hotovoKdyz" : "Rozhodnutí zapsané v roadmapě a v protokolu 24. kola.",
    "kde" : "`src/kontroly.js` (bokyDveri)",
    "zavisi" : [ { "id" : "375", "typ" : "doporuceno", "proc" : "volby světlíků nad dveřmi a na bocích" } ]
+  },
+  {
+   "id" : "407",
+   "vlna" : "C",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "M",
+   "hotovoV" : "v13.10.1 (větev claude/cenik-barvy, integrace v13.10.2)",
+   "nazev" : "Probarvení buněk ceníků; pryč tlačítko Historická kalkulace",
+   "proc" : "Zadání J. V. 13. 10. 2026: „Nastav v cenících pravidlo probarvení buněk. Světle červeně všechny, kde je hodnota nula nebo není vyplněno a světle oranžově všechny, kde je hodnota vyšší než 40000,- Kč.“ a „Odstraň z hlavičky tlačítka Historická kalkulace. Myslím, že už k ničemu není.“",
+   "detail" : "Editory Ceník nákladů OCK a PROJ: 0 nebo prázdné pole světle červeně (prázdná Cena Zahraničí = jako ČR, nesvítí), položky v Kč nad mezí světle oranžově; barva jen vzhled, živě při psaní. Tlačítko „↩ Historická kalkulace…“ zmizelo z lišty i z karty Kalkulace, okno archivu a jeho model smazány; `puvodPopis` zůstává kvůli starším variantám s `puvod`.",
+   "hotovoKdyz" : "Hotovo ve v13.10.1: test_cenik_barvy 0/1 → 35/0, overit_cenik_barvy 4/9 + pád → 22/0, test_archiv 7/8 → 15/0; celé kolo nad edb6c71 VŠE ZELENÉ.",
+   "kde" : "`src/cenik.js` (cenikBunkaTrida), `src/ui/cenik_ui.js`, `src/ui/common.js`, `src/archiv.js`"
+  },
+  {
+   "id" : "408",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "L",
+   "hotovoV" : "v13.10.1 (větev claude/k22-p2-p6, integrace v13.10.2)",
+   "nazev" : "K22 P2 a P6: „Opláštit i prohlubeň“, zámek strany OCK × PROJ",
+   "proc" : "Rozhodnutí J. V. 13. 10. 2026 k bodům P2–P6 z 19. kola: P2 — název zkratky má říkat, co dělá (opláštění nemusí být sklo). P6 — vrací se zadání z 1. 10. 2026: „V případě, že je kalkulace naceněna v OCK, měla by se kalkulace projekce uzamknout a vynulovat. Toto platí vice versa.“ Pipedrive eviduje OCK a projekci zvlášť pod vlastním číslem.",
+   "detail" : "P2: popisek, nápovědy a Detail výpočtu „Opláštit i prohlubeň“, data a výpočet beze změny (otisk shodný). P6: jedno pravidlo `zakazkaVedouciStrana` — číslo OPR → PROJ vyřazena, OVP → OCK vyřazena, obě čísla → vede OCK, bez čísla obě strany; vyřazená strana se nikde nesčítá, netiskne ani nekontroluje, obrazovky ukazují 0 Kč, dokumenty vyřazené strany zastaví zábrana (klient i server 403). Výjimka „Počítat i tuhle stranu“ zrušena (D6a), upozornění `stranyDriv` u starších zakázek. Výchozí volby D6b–D6g odsouhlaseny 13. 10. při integraci.",
+   "hotovoKdyz" : "Hotovo ve v13.10.1: test_zamek_strany 17/31 → 52/0, test_koncova_cena blok P6 74/5 → 82/0, test_oplastit_prohluben 1/5 → 7/0; celé kolo (dvě části) zelené, integrace v13.10.2 VŠE ZELENÉ.",
+   "kde" : "`src/zakazka.js` (zakazkaVedouciStrana, vysledekStrany), `src/kontroly.js` (stranyDriv), `netlify/lib/zakazka_kontrola.mjs`",
+   "zavisi" : [ { "id" : "387", "typ" : "doporuceno", "proc" : "P2 z v2.10.1" }, { "id" : "391", "typ" : "doporuceno", "proc" : "nahrazuje P6 z v2.10.1" } ]
+  },
+  {
+   "id" : "409",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "L",
+   "hotovoV" : "v13.10.3 (větev claude/vyjimky-schvalovani, integrace v13.10.4)",
+   "nazev" : "Mez rozměrů 0,6 m a cenové výjimky ve schvalování",
+   "proc" : "Rozhodnutí J. V. 13. 10. 2026: „Ano pro zdvih a šířku i hloubku menší než 0,6 m. ostatní zatím neřeš.“ a „Ano, směs do schvalování“, u pásu „jiné“ „Ponechat se schvalováním“.",
+   "detail" : "Zdvih, šířka nebo hloubka pod 0,6 m nepustí nový zámek (server 400) ani dokument OCK (zábrana `rozmery`), rozpracovaná zakázka se uloží. Nový modul `src/vyjimky.js`: směs ceníku proti platnému ceníku a ruční sazba pásu „jiné“ pod mezí u role bez práva ceníku potřebují schválení nadřízeného (razítko `cenovaVyjimka` razí server, otisk zruší schválení po změně); karta Cenové výjimky v Schvalování; nový zámek bez schválení odmítne server i zábrana. Výchozí výklady 1–6 v CHANGELOG.",
+   "hotovoKdyz" : "Hotovo ve v13.10.3: test_koncova_cena +7 (před 4 FAIL), netlify/test_vyjimky 37 (bez kontrol 13 FAIL), src/test_vyjimky 40, mutace +25; celé kolo nad 15f6a53 VŠE ZELENÉ.",
+   "kde" : "`src/kontroly.js` (kontrolyRozmery), `src/vyjimky.js`, `netlify/lib/zakazka_kontrola.mjs` (vyjimkyServerKontrola)",
+   "zavisi" : [ { "id" : "398", "typ" : "doporuceno", "proc" : "navazuje na B137 (rozměry nového zámku)" } ]
+  },
+  {
+   "id" : "410",
+   "vlna" : "C",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "M",
+   "hotovoV" : "v13.10.3 (větev claude/prirucka-13-10, integrace v13.10.4)",
+   "nazev" : "Příručka obchodníka aktuální k v13.10.2, přefocené snímky",
+   "proc" : "Rozhodnutí J. V. 13. 10. 2026: „Příručka — Ano, v příští dávce“.",
+   "detail" : "Kap. 25 zámek strany (P6), kap. 11 a 13 „Opláštit i prohlubeň“, kap. 28 probarvení ceníků, kap. 1–3 odhlášení na všech zařízeních a „Změnit heslo…“, kap. 19 rozhodnutí o slevě vrací jen nadřízený; přefoceno 22 snímků + nový `zamek-strany`; renderer zná `*kurzívu*`.",
+   "hotovoKdyz" : "Hotovo ve v13.10.3: overit_manual 36/10 → 47/0; celé kolo nad b2181e9 VŠE ZELENÉ.",
+   "kde" : "`manual/obsah.json`, `manual/snimky_auto.mjs`, `manual/sablona.html`",
+   "zavisi" : [ { "id" : "408", "typ" : "doporuceno", "proc" : "popisuje P6 a P2" }, { "id" : "407", "typ" : "doporuceno", "proc" : "popisuje probarvení ceníků" } ],
+   "pozn" : "Kapitoly o lištách (#404) upravila větev claude/listy-404 (kap. 8, 29 a slovníček); úprava kap. 6 a přefocení po integraci #404, které dávka navrhla, v CHANGELOG zapsané nejsou — ověřit."
+  },
+  {
+   "id" : "411",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "M",
+   "hotovoV" : "v14.10.2 (větev claude/pripominky-14-10, v test od v14.10.3)",
+   "nazev" : "Autorský dozor v nabídce PROJ jen když se nabízí",
+   "proc" : "Připomínky D. Sikory a J. Laudy, rozhodnutí J. V. 14. 10. 2026: autorský dozor se tiskl v každé nabídce PROJ, i když se nenabízel.",
+   "detail" : "Volba „Nabízet autorský dozor“ v kartě Cenová nabídka PROJ (výchozí NE u nové varianty). Bez AD vypadnou bloky ROZŠÍŘENÁ NABÍDKA, AUTORSKÝ DOZOR (AD), MĚSÍČNÍ SAZBA a PLATEBNÍ PODMÍNKY AD a řádek AD v krycím listu PROJ. Stará data bez volby tisknou AD jako dřív. Word: šablona PROJ v5 se značkami bloku AD (`--proj-v5`), starší šablona tiskne AD s varováním `autorskyDozorWordProj`.",
+   "hotovoKdyz" : "Hotovo ve v14.10.2: test_autorsky_dozor 0/1 → 36/0 (s podklady 41/0), test_kontroly 137/1 → 138/0, mutace jádra +2; celé kolo nad 1410141 VŠE ZELENÉ po opravě 8ffce8f.",
+   "kde" : "`src/nabidka_proj.js`, `src/kontroly.js` (autorskyDozorWordProj), `nastroje/vyrob_sablony.js --proj-v5`",
+   "pozn" : "Výchozí volba „stará data bez volby = AD se tiskne“ odsouhlasena J. V. 14. 10. 2026 (v14.10.4 bod 3). Šablonu PROJ v5 (+EN/DE/FR) nahraje do aplikace J. V."
+  },
+  {
+   "id" : "412",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "S",
+   "hotovoV" : "v14.10.2 (větev claude/pripominky-14-10, v test od v14.10.3)",
+   "nazev" : "Název akce technické specifikace z hlavičky zakázky",
+   "proc" : "Připomínky obchodu, rozhodnutí J. V. 14. 10. 2026: název akce se ve specifikaci psal znovu ručně a mohl se rozejít s hlavičkou.",
+   "detail" : "Výchozí název akce specifikace = název akce zakázky (`tsNazevAkce`), mění se s hlavičkou; ruční přepis zůstává (štítek „ručně“, ↺ vrátí převzatý), číselník čtyř textů je nabídka v poli; cizojazyčný náhled převzatý název nepřekládá. Starší data s vyplněným textem = ruční přepis.",
+   "hotovoKdyz" : "Hotovo ve v14.10.2: test_techspec_nazev_akce 0/1 → 18/0, mutace jádra +2.",
+   "kde" : "`src/techspec.js` (tsNazevAkce)",
+   "pozn" : "Výchozí volba pro starší specifikace odsouhlasena J. V. 14. 10. 2026 (v14.10.4 bod 3)."
+  },
+  {
+   "id" : "413",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "S",
+   "hotovoV" : "v14.10.2 (větev claude/pripominky-14-10, v test od v14.10.3)",
+   "nazev" : "Oplechování soklu prohlubně v technické specifikaci",
+   "proc" : "Připomínky obchodu, rozhodnutí J. V. 14. 10. 2026: specifikace a nabídka OCK se u soklu prohlubně rozcházely.",
+   "detail" : "Jedna funkce `tsSoklRadek(r, Z)` pro nabídku OCK i specifikaci: sokl v základní ceně → OPLECHOVÁNÍ SOKLU PROHLUBNĚ v doplňkových konstrukcích, jinak v SOUČÁSTÍ DODÁVKY NENÍ („nabízeno jako příplatek“ / „není součástí nabídky“), i u vnitřní šachty. Ve specifikaci odvozená pole `sokl` a `neniSokl` (řídí se cenou).",
+   "hotovoKdyz" : "Hotovo ve v14.10.2: test_sokl_specifikace 0/1 → 21/0 (čtyři stavy × EN/DE/FR), mutace jádra +3.",
+   "kde" : "`src/techspec.js` (tsSoklRadek)"
+  },
+  {
+   "id" : "414",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "M",
+   "hotovoV" : "v14.10.2 (větev claude/pripominky-14-10, v test od v14.10.3)",
+   "nazev" : "Hodiny z kalkulace v krycích listech (verze Backoffice)",
+   "proc" : "Zadání J. V. 14. 10. 2026 během dávky; návrh `podklady/NAVRH_HODINY_KRYCI_LIST_2026-10-14.md` odsouhlasen s výhradou „desetinná čísla neuváděj, zaokrouhluj“.",
+   "detail" : "Na konci krycího listu OCK i PROJ (jen Backoffice — PDF, Word i obrazovka) tabulka se sloupci OCK a PROJ: montáž (osoby × hodiny), dílna, projekce / konstrukce, statika, stavbyvedoucí; PROJ po nabízených činnostech, paušální činnosti „paušál (bez hodin)“, AD jen když se nabízí („max. 30 h / měsíc“, do celku se nepočítá); jen nabízené položky, celé hodiny; vyřazená strana (P6) „—“.",
+   "hotovoKdyz" : "Hotovo ve v14.10.2: test_kryci_hodiny 0/1 → 23/0, harness overit_pripominky_14_10 16/0, mutace jádra +1.",
+   "kde" : "`src/kryci.js` (kryciHodiny), `docxTeloZeSekci`",
+   "zavisi" : [ { "id" : "411", "typ" : "doporuceno", "proc" : "řádek AD jen když se nabízí" }, { "id" : "408", "typ" : "doporuceno", "proc" : "sloupec vyřazené strany" } ],
+   "pozn" : "Výchozí volby (tabulka hodin jen sloupec vedoucí strany, AD „max. 30 h / měsíc“ mimo celek) odsouhlaseny J. V. 14. 10. 2026 (v14.10.4 bod 3)."
+  },
+  {
+   "id" : "415",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "S",
+   "hotovoV" : "v14.10.2 (větev claude/k23-odm-prohluben, v test od v14.10.3)",
+   "nazev" : "K23T-N1: opláštěná prohlubeň (P2) nešla uložit",
+   "proc" : "Nález 23. kola (test v14.10.1, 14. 10. 2026): zkratka „Opláštit i prohlubeň“ dává stěnám `odM = −prohlubeň`, B134 ho hlídal jako „nesmí být záporné“ — server 400 a zábrana `zapornaPolozka` (C001, C018, C029, C035, C046, C063). V main / ostré chyba není (B134 tam není); do main se B134 nesmí dostat bez téhle opravy.",
+   "detail" : "`odM` smí být záporné až do hloubky prohlubně (tolerance `ULO_ODM_TOL`), níž chyba s vlastní větou „Opláštění stěny X začíná níž, než je dno prohlubně“ (server i zábrana). Bez prohlubně beze změny.",
+   "hotovoKdyz" : "Hotovo ve v14.10.2: test_prohluben_sklo 5 selhání + pád → 42/0, test_koncova_cena 107/2 → 110/0, mutace serveru +2, jádra +1; celé kolo nad 4717864 VŠE ZELENÉ.",
+   "kde" : "`src/uloziste.js` (uloZaporneVZadani), `netlify/lib/zakazka_kontrola.mjs`",
+   "zavisi" : [ { "id" : "408", "typ" : "tvrda", "proc" : "zkratka P2 „Opláštit i prohlubeň“" }, { "id" : "398", "typ" : "tvrda", "proc" : "kontrola záporných vstupů B134" } ]
+  },
+  {
+   "id" : "416",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "M",
+   "hotovoV" : "v14.10.5 (větev claude/kryci-odemceny-14-10, v test)",
+   "nazev" : "Krycí list odeslané nabídky se dá doplňovat",
+   "proc" : "Pokyn J. V. 14. 10. 2026: „krycí list by nemusel být zamčený vůbec … Věci, které nejsou v cenové nabídce, by mělo být možné v krycím listu upravovat i po vytištění nabídky. Uprav a pošli do testu.“",
+   "detail" : "Po tisku nabídky jdou doplnit všechna pole krycího listu OCK i PROJ kromě těch, která jdou do cenové nabídky (OCK typ smlouvy a produktu, platební podmínky, termín dodání; PROJ typ smlouvy, platební podmínky, plán plateb, splátky SoD projekce) — ta zůstávají zamčená; neznámé pole = zamčené. Po tisku SoD je krycí list zamčený celý. Zakázku jen ke čtení zápis do volného pole uvolní jen autorovi, vedoucímu a administrátorovi. Server porovnává data zamčené varianty bez volných polí, zámek bere z uložené verze.",
+   "hotovoKdyz" : "Hotovo ve v14.10.5: test_kryci_po_tisku 0/4 → 89/0, netlify/test_kryci_po_tisku 8/2 → 10/0, overit_kryci_po_tisku 9/4 → 15/0, mutace serveru +5; smoke po sloučení v14.10.6 245/0/1.",
+   "kde" : "`src/zamek.js` (zamekKryciPoleVolne, zamekKryciPoleVNabidce), `src/ui/zamek_ui.js`, `netlify/lib/zakazka_kontrola.mjs`",
+   "zavisi" : [ { "id" : "404", "typ" : "doporuceno", "proc" : "režim jen ke čtení a lišty odeslané zakázky" } ]
+  },
+  {
+   "id" : "417",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "S",
+   "hotovoV" : "v14.10.4 (větev claude/slovnik-14-10, v test od v14.10.6)",
+   "nazev" : "Zápis v obchodním rejstříku se nepřekládá; platební podmínky AD v EN/DE/FR",
+   "proc" : "Rozhodnutí J. V. 14. 10. 2026 k dávce v14.10.2: „zápisy v obchodním rejstříku nepřekládej“. Ve stejném rozboru zůstávaly česky řádky bloku autorského dozoru v nabídce PROJ EN/DE/FR.",
+   "detail" : "Bod 1: vrácen bod 6 dávky v14.10.2 (vzory `PREKLAD_SOUDY` a překlad zápisu v `firmaRadky` / `{{FIRMA_ZAPIS}}`) — zápis jde do CZ i EN/DE/FR nabídky přesně, jak je v Nastavení → Firma, popisek řádku se překládá. Bod 2: řádek „100 % z celkové ceny za tuto činnost, fakturováno měsíčně“ doplněn do slovníku podle šablon PROJ v4/v5 a odstavec AUTORSKÝ DOZOR (AD) se nově překládá. Bod 3: výchozí volby v14.10.2 odsouhlaseny.",
+   "hotovoKdyz" : "Hotovo ve v14.10.4: test_firma_zapis nad v14.10.3 19/72 → 91/0, test_proj_ad_preklad 7/5 → 12/0; sloučeno do test ve v14.10.6 (smoke 245/0/1).",
+   "kde" : "`src/preklad.js`, `src/firma.js` (firmaRadky)",
+   "zavisi" : [ { "id" : "411", "typ" : "doporuceno", "proc" : "blok AD v nabídce PROJ" } ]
+  },
+  {
+   "id" : "418",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "S",
+   "hotovoV" : "v14.10.7 (větev claude/kryci-jine-zneni, slučuje se do test)",
+   "nazev" : "O1: „jiné znění“ v krycím listu obcházelo zámek",
+   "proc" : "Nález O1 z dávky v14.10.5: volba „jiné znění…“ v rozbalovacím poli krycího listu (`klVyber` OCK, `klpVyber` PROJ) mazala ruční hodnotu mimo obal zámku — u pole cenové nabídky zamčené varianty hodnota tiše zmizela a server uložení odmítl, obchodník nevěděl proč.",
+   "detail" : "`klVyber` a `klpVyber` jsou v `ZAMEK_CHRANENE` i `ZAMEK_KRYCI_FUNKCE`: pole nabídky zamčené varianty „jiné znění“ zastaví dialogem „Uzamčená varianta“ (hodnota zůstane), pole mimo nabídku jde jako dřív, po tisku SoD se nemění nic. Server beze změny.",
+   "hotovoKdyz" : "Hotovo ve větvi (v14.10.7): overit_kryci_po_tisku nad v14.10.5 8 selhání → 27/27, overit_lista 255/255, ruční mutace obalu zabité; celé kolo pustí koordinační sezení při sloučení do test.",
+   "kde" : "`src/ui/zamek_ui.js` (ZAMEK_CHRANENE, ZAMEK_KRYCI_FUNKCE)",
+   "zavisi" : [ { "id" : "416", "typ" : "tvrda", "proc" : "nález z dávky krycího listu" } ],
+   "pozn" : "Hotovo ve větvi `claude/kryci-jine-zneni` (8b16ba8), do test ji slučuje koordinační sezení J. V. 14. 10. 2026."
+  },
+  {
+   "id" : "419",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "S",
+   "hotovoV" : "v14.10.8 (větev claude/proj-preklad-zbytky, slučuje se do test)",
+   "nazev" : "P1: zbytky češtiny v nabídce PROJ EN/DE/FR",
+   "proc" : "Navazuje na soupis z v14.10.4: v online nabídce PROJ EN/DE/FR zůstávaly česky řádky, které slovník zná v jiném znění nebo jsou krátké (zadání `podklady/PROMPT_proj_preklad_zbytky.md`).",
+   "detail" : "Popis ceny DPZ se hledá celou větou (dřív se skládal z dílů a celou větu nenašel), jinak z přeložených dílů; spojka „a“ v `NABIDKA_PROJ_SPOJKA`. Slovník doplněn hesly podle textu nabídky s překladem ze šablon PROJ v4/v5 (CENA NEZAHRNUJE, IČ, řízení, POVOLENÍ ZÁMĚRU, hvězdička DPZ). Souvislá próza `{ cz }` a zápis v OR beze změny.",
+   "hotovoKdyz" : "Hotovo ve větvi (v14.10.8): test_proj_zbytky_preklad 17/52 → 69/0, smoke zelené; celé kolo pustí koordinační sezení při sloučení do test.",
+   "kde" : "`src/preklad.js`, `src/nabidka_proj.js` (nabidkaProjData)",
+   "zavisi" : [ { "id" : "417", "typ" : "tvrda", "proc" : "soupis zbytků z v14.10.4" } ],
+   "pozn" : "Hotovo ve větvi `claude/proj-preklad-zbytky` (67a3d63), do test ji slučuje koordinační sezení J. V. 14. 10. 2026. **NÁVRH PŘEKLADU čeká na kontrolu J. V.**: popis ceny DPS, díly popisů (PBŘ, STATIKY, STATICKÉ ČÁSTI, ELEKTRO PROJEKTU, STUDIE OSVITU …) a štítek „Požárně bezpečnostní řešení“ — šablony tu větu nemají."
   }
  ],
  "meta" : {
@@ -6918,9 +7105,34 @@
    "pozn" : "Celé kolo VŠE ZELENÉ (77 min 32 s): sady 218/0/1, mutace jádra 138 z 138, serveru 211 z 211, statické 3 z 3."
   },
   {
+   "text" : "13. 10. 2026 (engscalc, test-draft), v13.10.1 → integrace v13.10.2 (claude/integrace-13-10b) — dávka po 22. kole: #400 zbytek (B138, B77-zbytek, B107, B129, B130), #402 hlídač harnessů a odkaz na release s popisem změn, #403 nízké nálezy (B83, B81, B103, B101, B105, B6, B35); probarvení ceníků a bez Historické kalkulace (#407); K22 P2 „Opláštit i prohlubeň“ a P6 zámek strany (#408). Výchozí odpovědi J. V. odsouhlaseny.",
+   "hotovo" : true,
+   "pozn" : "Integrace nad 0512c51 VŠE ZELENÉ (165 min 38 s): sady 232/0/1, mutace jádra 193 z 193, serveru 358 z 358, statické 3 z 3."
+  },
+  {
+   "text" : "Noc 13./14. 10. 2026 (engscalc), v13.10.3 → integrace v13.10.4 (claude/integrace-14-10) → v14.10.1 — lišty rozpracované a odeslané zakázky (#404), B35 a B77 citlivé akce správce s heslem (#403, #345), mez rozměrů 0,6 m a cenové výjimky ve schvalování (#409), příručka obchodníka (#410).",
+   "hotovo" : true,
+   "pozn" : "Celé kolo nad b51af9b VŠE ZELENÉ (181 min 43 s): sady 235/0/1, mutace jádra 193 z 193, serveru 393 z 393, statické 3 z 3."
+  },
+  {
+   "text" : "14. 10. 2026 (engscalc, test), v14.10.2 → integrace v14.10.3 (claude/integrace-14-10b) — připomínky obchodu: autorský dozor jen když se nabízí (#411), název akce specifikace z hlavičky (#412), sokl ve specifikaci (#413), hodiny z kalkulace v krycím listu BO (#414); K23T-N1 opláštěná prohlubeň jde uložit (#415). Převod do test na pokyn J. V.",
+   "hotovo" : true,
+   "pozn" : "Připomínky: celé kolo nad 1410141 (jádro 201/201, server 393/393), sady po opravě 8ffce8f 241/0/1; K23: celé kolo nad 4717864 VŠE ZELENÉ; po sloučení kolo bez mutací nad 4bfcb40 VŠE ZELENÉ (sady 241/0/1, statické 3 z 3)."
+  },
+  {
+   "text" : "14. 10. 2026 večer (engscalc, test), v14.10.4 + v14.10.5 → integrace v14.10.6 (claude/integrace-14-10c) — zápis v OR se nepřekládá a platební podmínky AD v EN/DE/FR, výchozí volby v14.10.2 odsouhlaseny (#417); krycí list odeslané nabídky se dá doplňovat (#416).",
+   "hotovo" : true,
+   "pozn" : "Po sloučení smoke 245/0/1, --kontrola mutací jádra 202 a serveru 400 úseků, kontrola údajů čistá; celé kolo s mutacemi poběží po sloučení nočních dávek."
+  },
+  {
    "text" : "14. 10. 2026 — rozhodnutí J. V. po 23. kole (test) a 24. kole (ostrá v14.10.3): P5 statika opláštění 6 h a upozornění „statika dvakrát“ u 13 převedených zakázek ponechat (#405, K23T-N2 uzavřen). K19-N113: boky dveří „bez“ ponechat, prostor kolem dveří řeší generální dodavatel (#406).",
    "hotovo" : true,
    "pozn" : "24. kolo v ostré: 148/148 na korunu shodných s testem, 138 uloženo, 137 vytištěno se zámkem „shoda“."
+  },
+  {
+   "text" : "Noc 14./15. 10. 2026 (engscalc, paralelní větve, slučují se do test) — O1 „jiné znění“ v krycím listu respektuje zámek (v14.10.7, claude/kryci-jine-zneni, #418); P1 zbytky češtiny v nabídce PROJ EN/DE/FR (v14.10.8, claude/proj-preklad-zbytky, #419). Dorovnání roadmapy za 13.–14. 10. (claude/roadmapa-13-14-10).",
+   "hotovo" : true,
+   "pozn" : "O1: overit_kryci_po_tisku 27/27, overit_lista 255/255; P1: test_proj_zbytky_preklad 69/0, smoke zelené. Celé kolo pustí koordinační sezení po sloučení."
   }
   ],
   "pravidla" : [
@@ -7007,8 +7219,8 @@
     "id" : "F"
    }
   ],
-  "build" : "v12.10.4 (engscalc)",
-  "stavKDatu" : "12. 10. 2026"
+  "build" : "v14.10.6 (engscalc, test)",
+  "stavKDatu" : "14. 10. 2026"
  },
  "_comment" : [
   "JEDINÝ ZDROJ PRAVDY pro roadmapu Kalkulátoru Next Gen.",
