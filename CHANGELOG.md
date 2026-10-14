@@ -10,6 +10,15 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ## v14.10.8 — zbytky češtiny v nabídce PROJ (větev claude/proj-preklad-zbytky)
 
+**Integrace do `test` (koordinační sezení, 14. 10. večer):** do `test` (v14.10.6
+= slovník + krycí list) sloučeny R1 (roadmapa #405, #406), O1
+(`claude/kryci-jine-zneni`, v14.10.7) a P1 (tahle větev) merge commity bez
+rebase; konflikty jen v CHANGELOG, PREDAVKA, úvodu příručky a `verze.txt`.
+Po sloučení `spust_testy.sh --smoke` s firemními podklady a příručkou
+v14.10.8 ze snímků: 246 prošlo / 0 selhalo / 1 přeskočeno (test.js);
+`--kontrola` mutací jádra 202 a serveru 400 úseků, kontrola údajů čistá.
+Celé kolo s mutacemi nad výsledným `test` — výsledek níž, až doběhne.
+
 Zadání `podklady/PROMPT_proj_preklad_zbytky.md` (P1), navazuje na soupis
 z v14.10.4. Z `origin/claude/slovnik-14-10` (774f269; `test` sloučený slovník
 v době založení ještě neobsahoval). Do `test-draft` / `test` / `main` nic —
