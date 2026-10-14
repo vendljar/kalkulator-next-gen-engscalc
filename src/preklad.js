@@ -963,6 +963,10 @@ const PREKLAD = {
   "Provedení detailního zaměření a stavebně technického průzkumu": ["Detailed survey and building-technical inspection", "Detailliertes Aufmaß und bautechnische Untersuchung", "Relevé détaillé et diagnostic technique du bâtiment"],
   "*fakturováno měsíčně": ["*invoiced monthly", "*monatlich abgerechnet", "*facturé mensuellement"],
   "100 % z celkové ceny za tuto činnost*": ["100 % of the total price for this service*", "100 % des Gesamtpreises für diese Leistung*", "100 % du prix total de cette prestation*"],
+  /* Celá věta online nabídky PROJ (NABIDKA_PROJ_DEF, platební podmínky AD) —
+   * šablona PROJ v4/v5 ji má v buňce rozdělenou na dvě půlky výš; znění podle
+   * nich (rozhodnutí J. V. 14. 10. 2026). */
+  "100 % z celkové ceny za tuto činnost, fakturováno měsíčně": ["100 % of the total price for this service, invoiced monthly", "100 % des Gesamtpreises für diese Leistung, monatlich abgerechnet", "100 % du prix total de cette prestation, facturé mensuellement"],
   "Platba po zajištění autorského dozoru a součtu hodin": ["Payment after the designer's site supervision has been provided and the hours totalled", "Zahlung nach erbrachter planerischer Objektüberwachung und Summierung der Stunden", "Paiement après réalisation du suivi architectural et décompte des heures"],
   "50 % z celkové ceny za tuto činnost": ["50 % of the total price for this service", "50 % des Gesamtpreises für diese Leistung", "50 % du prix total de cette prestation"],
   "Platba po vydání kolaudačního rozhodnutí": ["Payment after the final building approval decision has been issued", "Zahlung nach Erteilung des Bauabnahmebescheids", "Paiement après délivrance de la décision de réception des travaux"],

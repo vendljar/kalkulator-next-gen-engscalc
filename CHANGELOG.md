@@ -24,6 +24,21 @@ Rozhodnutí J. V. 14. 10. 2026 k závěrečné zprávě dávky v14.10.2. Z `test
   × CZ/EN/DE/FR × DODAVATEL, OCK, PROJ + slovník) — nad kódem v14.10.3
   19/72, po vrácení 91/0. Mutace: nová kontrola v kódu nevzniká (jen se
   odebírá), novou mutaci proto nepřidávám.
+- **Bod 2 — platební podmínky autorského dozoru v EN/DE/FR.** Řádek
+  „100 % z celkové ceny za tuto činnost, fakturováno měsíčně" (blok
+  PLATEBNÍ PODMÍNKY AUTORSKÉHO DOZORU, `NABIDKA_PROJ_DEF`) doplněn do slovníku
+  (`src/preklad.js`) — znění podle buňky přeložených šablon PROJ v4/v5:
+  EN „100 % of the total price for this service, invoiced monthly", DE
+  „100 % des Gesamtpreises für diese Leistung, monatlich abgerechnet", FR
+  „100 % du prix total de cette prestation, facturé mensuellement". Ve stejném
+  bloku AD zůstával česky i odstavec AUTORSKÝ DOZOR (AD) — stál jako `{ cz }`,
+  i když ho slovník od překladu šablony PROJ zná; nově se překládá (jako
+  poznámky pod TERMÍNY u K18-N95). CZ beze změny. Test
+  `src/test_proj_ad_preklad.js` nový (všechny řetězce čtyř bloků AD v EN/DE/FR
+  přeložené a bez české diakritiky) — před opravou 7/5, po 12/0. Ostatní
+  bloky PROJ, které v EN/DE/FR zůstávají česky, jsou vypsané v PREDAVKA
+  (bez opravy, mimo zadání). Mutace: nová kontrola v kódu nevzniká (slovník
+  a text), novou mutaci nepřidávám.
 
 ## v14.10.3 — integrace do `test`: připomínky obchodu + K23T-N1 (větev claude/integrace-14-10b)
 
