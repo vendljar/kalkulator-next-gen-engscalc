@@ -1136,6 +1136,38 @@ const PREKLAD = {
   "Fakturace probíhá měsíčně podle skutečně provedených prací.": ["Invoicing takes place monthly according to the work actually performed.", "Die Abrechnung erfolgt monatlich nach den tatsächlich erbrachten Leistungen.", "La facturation est effectuée mensuellement selon les travaux réellement exécutés."],
   "Po milnících": ["Follow project milestones", "Nach Meilensteinen", "Par étapes"],
   "Měsíční": ["Monthly", "Monatlich", "Mensuel"],
+  /* ---- Zbytky češtiny v online nabídce PROJ (P1, v14.10.8, 14. 10. 2026) ----
+   * Online nabídka skládá tyto řádky jinak než šablona PROJ v2/v4/v5, ze
+   * které slovník převzal překlad (šablona je má rozdělené na dva odstavce,
+   * s hvězdičkou nebo s drobnou odchylkou textu). Hesla podle textu NABÍDKY,
+   * překlad beze změny ze šablon PROJ v4/v5 EN/DE/FR (hesla šablony zůstávají
+   * výš, Word je potřebuje). */
+  "Součástí ceny není řešení samostatných řízení vyplývajících z podmínek stanovisek DOSS, zejména pak Odboru památkové péče, a řešení námitek nebo odvolání účastníků řízení": ["The price does not include separate procedures arising from the conditions in the opinions of the authorities concerned, in particular the heritage preservation department, nor dealing with objections or appeals of the parties to the procedure.", "Der Preis umfasst keine gesonderten Verfahren, die sich aus den Auflagen der Stellungnahmen der betroffenen Behörden ergeben, insbesondere des Denkmalschutzamts, und keine Bearbeitung von Einwendungen oder Berufungen der Verfahrensbeteiligten.", "Le prix ne comprend pas les procédures distinctes découlant des conditions des avis des autorités concernées, en particulier du service du patrimoine, ni le traitement des objections ou recours des parties à la procédure."],
+  "Podání a projednání na dotčených orgánech a zajištění stanovisek dotčených orgánů požadovaných STAVEBNÍM ÚŘADEM (Hasičský záchranný sbor, Hygienická stanice, Odbor životního prostředí, Národní památkový ústav, Odbor památkové péče a případné další)": ["Submission to and negotiation with the authorities concerned and obtaining the opinions required by the BUILDING AUTHORITY (Fire and Rescue Service, Public Health Authority, Environmental Department, National Heritage Institute, Heritage Preservation Department and others as applicable)", "Einreichung und Abstimmung bei den betroffenen Behörden und Einholung der vom BAUAMT geforderten Stellungnahmen (Feuerwehr, Gesundheitsamt, Umweltamt, Nationales Denkmalinstitut, Denkmalschutzamt und ggf. weitere)", "Dépôt et instruction auprès des autorités concernées et obtention des avis exigés par le SERVICE DE L'URBANISME (Service d'incendie et de secours, autorité sanitaire, service de l'environnement, Institut national du patrimoine, service du patrimoine et autres le cas échéant)"],
+  "V průběhu celého řízení komunikujeme s dotčenými orgány i stavebním úřadem a obratem řešíme případné dotazy, aby se nezdržel průběh řízení": ["Throughout the procedure we communicate with the authorities concerned and the building authority and deal with any queries promptly so that the procedure is not delayed", "Während des gesamten Verfahrens kommunizieren wir mit den betroffenen Behörden und dem Bauamt und beantworten Rückfragen umgehend, damit sich das Verfahren nicht verzögert", "Pendant toute la procédure, nous communiquons avec les autorités concernées et le service de l'urbanisme et traitons rapidement les éventuelles questions afin de ne pas retarder la procédure"],
+  "Vyřízení POVOLENÍ ZÁMĚRU (dle platného stavebního zákona a požadavků stavebního úřadu)": ["Obtaining the PROJECT PERMIT (in accordance with the applicable Building Act and the requirements of the building authority)", "Erwirkung der VORHABENGENEHMIGUNG (gemäß dem geltenden Baugesetz und den Anforderungen des Bauamts)", "Obtention de l'AUTORISATION DU PROJET (conformément à la loi sur la construction en vigueur et aux exigences du service de l'urbanisme)"],
+  /* hvězdičku „*)" přidává tisk nabídky sám — heslo i překlad bez ní */
+  "Cena je platná v případě návaznosti na STUDII PROVEDITELNOSTI": ["The price applies if it follows on from the FEASIBILITY STUDY", "Der Preis gilt bei Anschluss an die MACHBARKEITSSTUDIE", "Le prix s'applique dans la continuité de l'ÉTUDE DE FAISABILITÉ"],
+  /* Popis ceny DPS a díly popisů cen DPZ/DPS pro kombinace částí, které
+   * slovník celé nezná (kód skládá „<popis>, včetně <A>, <B> a <C>"; spojka
+   * „a" NENÍ heslo — prekladNorm by jím přeložil i samostatné „A", viz
+   * NABIDKA_PROJ_SPOJKA v nabidka_proj.js).
+   * Šablony PROJ tuto větu nemají (DPS: „Zpracování podle částí 1–3").
+   * NÁVRH PŘEKLADU — čeká na kontrolu J. V. (terminologie podle věty DPZ
+   * ze šablony: fire safety / structural / electrical design). */
+  "Zpracování prováděcí dokumentace, včetně STATICKÉ ČÁSTI a ELEKTRO PROJEKTU": ["Preparation of the detailed design documentation, including structural and electrical design", "Erstellung der Ausführungsplanung einschließlich Statik- und Elektroplanung", "Établissement du dossier d'exécution, y compris structure et électricité"],
+  "Zpracování prováděcí dokumentace": ["Preparation of the detailed design documentation", "Erstellung der Ausführungsplanung", "Établissement du dossier d'exécution"],
+  "Zpracování projektu pro DPZ": ["Preparation of the DPZ design", "Erstellung der DPZ-Planung", "Établissement du dossier DPZ"],
+  "včetně": ["including", "einschließlich", "y compris"],
+  "PBŘ": ["fire safety design", "Brandschutzplanung", "sécurité incendie"],
+  "STATIKY": ["structural design", "Statikplanung", "structure"],
+  "STATICKÉ ČÁSTI": ["structural design", "Statikplanung", "structure"],
+  "ELEKTRO PROJEKTU": ["electrical design", "Elektroplanung", "électricité"],
+  "STUDIE OSVITU": ["sunlight and daylight study", "Besonnungs- und Tageslichtstudie", "étude d'ensoleillement et d'éclairage naturel"],
+  /* Štítek části 2 DPZ (v závorce za „… – část 2"). Šablona má jen delší
+   * „Požárně bezpečnostní řešení nového výtahu a výtahové šachty:" — krátký
+   * štítek podle ní. NÁVRH PŘEKLADU — čeká na kontrolu J. V. */
+  "Požárně bezpečnostní řešení": ["Fire safety design", "Brandschutzkonzept", "Conception de la sécurité incendie"],
 };
 
 /* ---- normalizace klíče (tolerance k mezerám, diakritickým uvozovkám,

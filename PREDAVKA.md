@@ -19,6 +19,50 @@ prostředí test. Do main nic, dokud to nepotvrdím." Plán dávek:
 - `test-draft` beze změny (v14.10.1).
 - Podklady pro kolo: `/home/user/kng_podklady_slovnik-14-10` (šablony
   z Disku) — příručku sestavit znovu pro výslednou verzi.
+# Předávka — 14. 10. 2026 večer: větev `claude/proj-preklad-zbytky` (v14.10.8), zbytky češtiny v nabídce PROJ
+
+Z `origin/claude/slovnik-14-10` (774f269 — `test` sloučený slovník v14.10.6
+v době založení ještě neobsahoval), zadání
+`podklady/PROMPT_proj_preklad_zbytky.md` (P1). Do `test-draft` / `test` /
+`main` nic — o sloučení rozhodne J. V. Podrobnosti: CHANGELOG v14.10.8.
+
+- **Hotovo (pushnuto):** bod 2 pojistka `src/test_proj_zbytky_preklad.js`
+  (17/52 → 69/0); bod 3 popis ceny DPZ/DPS hledá celou větu ve slovníku
+  (příčina, proč DPZ zůstávala česky: kód skládal větu z dílů), hesla
+  podle textu nabídky s překladem ze šablon PROJ v4/v5 (CENA NEZAHRNUJE,
+  IČ ×3, hvězdička DPZ); bod 4 verze, CHANGELOG, příručka.
+- **Čeká na kontrolu J. V. (NÁVRH PŘEKLADU, šablony větu nemají):**
+  popis ceny DPS (EN „Preparation of the detailed design documentation,
+  including structural and electrical design", DE „Erstellung der
+  Ausführungsplanung einschließlich Statik- und Elektroplanung", FR
+  „Établissement du dossier d'exécution, y compris structure et
+  électricité"); díly pro jiné kombinace částí (včetně / PBŘ / STATIKY /
+  STATICKÉ ČÁSTI / ELEKTRO PROJEKTU / STUDIE OSVITU / Zpracování projektu
+  pro DPZ / Zpracování prováděcí dokumentace); štítek části 2 DPZ
+  „Požárně bezpečnostní řešení" (EN „Fire safety design", DE
+  „Brandschutzkonzept", FR „Conception de la sécurité incendie").
+- **Dál zůstává česky (záměrně, překlad jen na pokyn J. V.):** souvislá
+  próza `{ cz }` — úvody bloků STUDIE PROVEDITELNOSTI, DPZ, DPS; poznámky
+  pod studií (2 paré, 5 pracovních dní, rozšíření studie do DPZ); řádky
+  rozsahu studie a DPZ (vizuální prohlídka, PŮVODNÍ STAV, ROZSAH BOURÁNÍ,
+  NAVRHOVANÝ STAV, situace stavby, dokumentace stávajícího/nového stavu,
+  bourací dokumentace); zápis v OR (nepřekládá se).
+- **Podklady:** šablony PROJ v4/v5 CZ/EN/DE/FR z Disku v
+  `/home/user/kng_podklady_proj` (jen v kontejneru, mimo repo).
+- **Testy:** `test_proj_zbytky_preklad.js` 17/52 → 69/0; `spust_testy.sh
+  --smoke` po sestavení 212/0 (32 sad v prohlížeči přeskočeno — chyběl
+  playwright). S `playwright@1.56.1` (sedí na Chromium 1194 v /opt/pw-browsers;
+  novější verze padá na revizi prohlížeče) prošlo všech 230 sad smoke až po
+  `overit_vypnuty_radek` (běh pak ukončil strop nástroje) a zbylé sady
+  zvlášť: xss 338/0, zabrany_dokumenty 24/0, zadani_detail 53/0,
+  zahranicni 56/0, zaloha_lista 58/0, zaokrouhleni 16/0, zaporne 15/0,
+  zobrazeni 140/0 (zaporne a zobrazeni napoprvé spadly bez `ADMIN_EMAIL`
+  / při souběhu; nad základem i větví se stejným prostředím zelené).
+  `kontrola_udaju.py` čistá. Celé kolo s mutacemi pustí koordinační sezení
+  při sloučení do `test`.
+- **Další krok:** J. V. odsouhlasí návrhy překladu a rozhodne o sloučení;
+  při sloučení s v14.10.5–7 ručně spojit `verze.txt`, CHANGELOG, příručku
+  (`manual/obsah.json`) a PREDAVKA.
 
 ---
 

@@ -514,6 +514,10 @@ function nabidkaProjPlatby(zak, varianta, lang, spoctene) {
  *
  * moznosti.slevaZvlast (výchozí true) — viz „ČINNOSTI ZA CENU PŘED SLEVOU" níž:
  * false = ceny činností po slevě (šablona bez řádku slevy, smlouva o dílo). */
+/* Spojka ve výčtu „včetně A, B a C" u popisu ceny DPZ/DPS. Není ve slovníku:
+ * heslo „a" by prekladNorm (malá písmena) použil i na samostatné „A". */
+const NABIDKA_PROJ_SPOJKA = { cz: 'a', en: 'and', de: 'und', fr: 'et' };
+
 function nabidkaProjData(zak, varianta, lang, moznosti) {
   const L = lang || 'cz';
   const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
@@ -744,14 +748,30 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
     /* Výčet „včetně …" se skládá z POČÍTANÝCH položek (5. 9. 2026). Když se
      * nepočítá žádná, věta se ukončí za základním popisem — půlka výčtu nebo
      * „včetně" bez pokračování by vypadaly jako chyba. */
-    let popis = P(b.popis);
-    if (b.popisZ) {
-      const casti = b.popisZ.filter(([klic]) => vRozsahu(klic)).map(([, jmeno]) => P(jmeno));
-      if (casti.length) {
-        const vycet = casti.length === 1 ? casti[0]
-          : casti.slice(0, -1).join(', ') + ' ' + P('a') + ' ' + casti[casti.length - 1];
-        popis += ', ' + P(b.popisPredpona || 'včetně') + ' ' + vycet;
+    /* Celá česká věta má ve slovníku přednost před skládáním z dílů
+     * (14. 10. 2026): „Zpracování projektu pro DPZ, včetně PBŘ, STATIKY
+     * a ELEKTRO PROJEKTU" slovník znal i s překladem ze šablony PROJ, ale
+     * hledaly se jen díly, takže v EN/DE/FR zůstala věta česky. Kombinace,
+     * kterou slovník celou nezná, se složí z přeložených dílů. */
+    const skladej = (T, jazyk) => {
+      let s = T(b.popis);
+      if (b.popisZ) {
+        const casti = b.popisZ.filter(([klic]) => vRozsahu(klic)).map(([, jmeno]) => T(jmeno));
+        if (casti.length) {
+          const vycet = casti.length === 1 ? casti[0]
+            : casti.slice(0, -1).join(', ') + ' ' + (NABIDKA_PROJ_SPOJKA[jazyk] || 'a') + ' ' + casti[casti.length - 1];
+          s += ', ' + T(b.popisPredpona || 'včetně') + ' ' + vycet;
+        }
       }
+      return s;
+    };
+    let popis = skladej(P, L);
+    /* Hledá se přímo v rejstříku, ne přes trStav: kombinace, kterou slovník
+     * celou nezná, se nemá hlásit jako chybějící heslo — přeloží se z dílů. */
+    if (b.popisZ && L !== 'cz' && typeof PREKLAD_IDX !== 'undefined' && typeof prekladNorm === 'function') {
+      const cela = PREKLAD_IDX[prekladNorm(skladej(t => t, 'cz'))];
+      const i = (typeof JAZYK_IDX !== 'undefined') ? JAZYK_IDX[L] : undefined;
+      if (cela && i !== undefined && cela[i]) popis = cela[i];
     }
     /* Blok s `odkaz` ukazuje rozsah, ale částku už ne — ta stojí u bloku, na
      * který odkazuje (viz B). Nesmí spadnout do `neuvedena`: ten filtr níž
