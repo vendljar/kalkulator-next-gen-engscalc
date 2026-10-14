@@ -30,6 +30,10 @@ není (B134 z 0af419c tam není); do `main` se B134 nesmí dostat bez téhle opr
   větev bez prohlubně (test „odM −0,1 bez prohlubně" ji chytá); jádro 1 nová
   (zábrana s obecnou větou). `--kontrola`: jádro 194, server 395 úseků.
 
+**Celé kolo nad 4717864 VŠE ZELENÉ (223 min 57 s):** sady 235/0/1 (přeskočen jen
+`test.js`), mutace jádra 194 z 194, mutace serveru 395 z 395, statické kontroly
+3 z 3. Podklady: kopie s příručkou sestavenou ze snímků v14.10.2.
+
 ## v14.10.1 — výsledek celého kola nad v13.10.4 (větev claude/integrace-14-10)
 
 Jen zápis výsledku kola a verze — kód je beze změny proti v13.10.4 (b51af9b),
