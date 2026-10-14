@@ -26,7 +26,7 @@ integrace I1.
   (a zakázku jen ke čtení uvolní stejně jako `klSet`); po tisku SoD se
   nemění nic. Výběr z číselníku (`klpVyber` → `klpSet`) ukáže dialog jen
   jednou — zastaví ho už vnější obal.
-- **Testy:** `overit_kryci_po_tisku.mjs` 27 kontrol (+11) — nad v14.10.5
+- **Testy:** smoke 243/0/2 (přeskočeno `test.js`, `overit_manual.mjs`); `overit_kryci_po_tisku.mjs` 27 kontrol (+11) — nad v14.10.5
   8 selhalo, po opravě 27/27; `overit_lista.mjs` (kontrola obalení) 255/255.
   Ruční mutace obalu: vyřazení z `ZAMEK_CHRANENE` → 8 selhání, vyřazení
   jen z `ZAMEK_KRYCI_FUNKCE` → 2 selhání (obě zabité). Server se nemění.
