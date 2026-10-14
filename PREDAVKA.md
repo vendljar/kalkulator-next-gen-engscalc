@@ -1,3 +1,30 @@
+# Předávka — 14. 10. 2026: test-draft = test = v14.10.1; připomínky Sikora/Lauda
+
+`test-draft` a `test` = v14.10.1 (823c61e), převedeno na pokyn J. V. 14. 10.
+Do `main` zatím nic — J. V. potvrdí („main“; dopad P6 a cenových výjimek
+v ostré vysvětlen). Release v14.10.1 (a volitelně v13.10.2) vydává J. V.
+z odkazů s popisem.
+
+Připomínky D. Sikory a J. Laudy (Outlook, 18. 9.–13. 10. 2026), rozhodnutí
+J. V. 14. 10.:
+- **Spustit v novém sezení (výchozí návrhy):** (1) autorský dozor v nabídce
+  PROJ jen když se nabízí — volba u varianty PROJ, výchozí nenabízet,
+  podmínit bloky v `src/nabidka_proj.js` (~ř. 276–281, 332–334), řádek
+  v `src/kryci_proj.js` (~265) a blok v šabloně PROJ (`nastroje/vyrob_sablony.js`
+  ~31) — odeslané nabídky beze změny; (2) název akce v technické specifikaci
+  převzít z hlavičky zakázky (`src/techspec.js` ~859, `src/ui/techspec_ui.js`),
+  ruční přepis se štítkem „ručně“; (3) řádek „OPLECHOVÁNÍ SOKLU PROHLUBNĚ“
+  v technické specifikaci (doplňkové konstrukce / součástí dodávky není),
+  jedna společná funkce s nabídkou OCK (`src/nabidka.js` ~38–56, 243–244);
+  (6) zápis v obchodním rejstříku v EN/DE/FR nabídce přes slovník
+  (`src/firma.js` ~429).
+- **Neřešit:** platby studie 50/50 (4), popisek dvojskla (5), rezerva ATYP (9).
+- **J. V. prověří:** Ctrl+V fotky u Laudy (7).
+- **Návrh k ukázání:** blok „Podklady pro zadání zakázky (Helios)“ v krycích
+  listech (8) — jen návrh, nic neimplementovat.
+
+---
+
 # Předávka — 14. 10. 2026 ráno: noční integrace v14.10.1 zelená (`claude/integrace-14-10`)
 
 Noční větve `claude/listy-404`, `claude/bezpecnost-noc`,
