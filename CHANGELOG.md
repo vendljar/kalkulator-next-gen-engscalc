@@ -8,6 +8,23 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v14.10.4 — slovník a zápis v OR (větev claude/slovnik-14-10)
+
+Rozhodnutí J. V. 14. 10. 2026 k závěrečné zprávě dávky v14.10.2. Z `test`
+(v14.10.3, eff7724). Do `test-draft` / `test` / `main` nic — rozhodne J. V.
+
+- **Bod 1 — zápis v obchodním rejstříku se nepřekládá** („zápisy v obchodním
+  rejstříku nepřekládej"). Vrácen bod 6 dávky v14.10.2 (d9bedae): vzory
+  `PREKLAD_SOUDY` a tři vzory zápisu v `src/preklad.js`, překlad hodnoty
+  ve `firmaRadky(f, prekl, lang)` a u symbolu `{{FIRMA_ZAPIS}}`
+  v `src/firma.js`, `lang` ve volání z `src/nabidka.js`. Zápis jde do CZ
+  i EN/DE/FR nabídky (výpis DODAVATEL, `{{FIRMA_ZAPIS}}` OCK i PROJ) přesně
+  tak, jak je zadaný v Nastavení → Firma; popisek řádku se překládá dál.
+  Test `src/test_firma_zapis.js` přepsán na nové pravidlo (šest tvarů zápisu
+  × CZ/EN/DE/FR × DODAVATEL, OCK, PROJ + slovník) — nad kódem v14.10.3
+  19/72, po vrácení 91/0. Mutace: nová kontrola v kódu nevzniká (jen se
+  odebírá), novou mutaci proto nepřidávám.
+
 ## v14.10.3 — integrace do `test`: připomínky obchodu + K23T-N1 (větev claude/integrace-14-10b)
 
 Pokyn J. V. 14. 10. 2026 („sluč k23-odm-prohluben do test"). `test` nesl
