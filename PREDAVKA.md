@@ -1,3 +1,29 @@
+# Předávka — 14. 10. 2026: větev `claude/pripominky-14-10` (v14.10.2), připomínky obchodu
+
+Z `test-draft` (v14.10.1, 823c61e). Připomínky D. Sikory a J. Laudy,
+rozhodnutí J. V. 14. 10. Do `test-draft` / `test` / `main` nic — rozhodne J. V.
+Podrobnosti a testy před/po: CHANGELOG v14.10.2.
+
+- **Hotovo (pushnuto):** bod 1 autorský dozor jen když se nabízí (volba
+  v kartě Cenová nabídka PROJ, výchozí NE, stará data jako dřív; šablona
+  PROJ v5 `vyrob_sablony.js --proj-v5` — vyrobená v5 + EN/DE/FR je jen
+  v `/home/user/kng_podklady_pripominky-14-10`, do aplikace ji nahraje J. V.);
+  bod 2 název akce specifikace z hlavičky (ručně + ↺); bod 3 sokl ve
+  specifikaci (společná `tsSoklRadek`); bod 6 zápis v OR v EN/DE/FR (vzor
+  slovníku — návrh překladu ke kontrole); **hodiny z kalkulace** v krycích
+  listech BO (zadání J. V. během dávky, návrh
+  `podklady/NAVRH_HODINY_KRYCI_LIST_2026-10-14.md` odsouhlasen, celé hodiny);
+  harness `overit_pripominky_14_10.mjs`; příručka (úvod v14.10.2).
+- **Celé kolo:** běží / výsledek doplní další zápis (podklady
+  `/home/user/kng_podklady_pripominky-14-10`, příručka v14.10.2 ze snímků).
+- **Výchozí volby k potvrzení:** stará data bez volby AD = AD se tiskne;
+  starší specifikace s vyplněným názvem = ruční přepis (nemění se); v kombinaci
+  s P6 má tabulka hodin vyplněný jen sloupec vedoucí strany (číslo OPR/OVP);
+  AD v tabulce hodin „max. 30 h / měsíc", do celku se nepočítá.
+- **Neřešeno dle zadání:** body 4, 5, 9; 7 prověřuje J. V.; 8 (Helios) jen návrh.
+
+---
+
 # Předávka — 14. 10. 2026 ráno: noční integrace v14.10.1 zelená (`claude/integrace-14-10`)
 
 Noční větve `claude/listy-404`, `claude/bezpecnost-noc`,
