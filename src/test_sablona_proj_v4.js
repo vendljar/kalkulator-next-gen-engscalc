@@ -135,6 +135,7 @@ const novaZ = () => { const z = zk.novaZakazka(); z.cislo = '2026 - OVP - CN - 4
 const vypln = (ph) => dg.nahradPlaceholdery(dg.odstranPrazdneBloky(v4, ph), ph);
 {
   const z = novaZ(), v = z.varianty[0];
+  v.data.proj.zadani.nabizetAD = true;   // AD nová varianta nenabízí (14. 10. 2026); blok AD se tu hlídá
   const d = NP.nabidkaProjData(z, v, 'cz');
   const ceny = NP.nabidkaProjPlatby(z, v, 'cz').ceny;
   const ph = d.placeholders;

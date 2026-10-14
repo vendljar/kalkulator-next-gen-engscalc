@@ -179,7 +179,7 @@ const pravidla = kontrolyPravidla();
  * ručně přepsaná statika OCK a zároveň řádek statiky opláštění z ceníku. */
 /* 33. „stranyDriv" 13. 10. 2026 (P6 / K19-N114, test_zamek_strany.js):
  * zakázka dřív počítala projekci i OCK — od P6 je druhá strana vynulovaná. */
-test('pravidel je třicet čtyři (13. 10. 2026: + cenovaVyjimka)', pravidla.length === 34, pravidla.length);
+test('pravidel je třicet pět (14. 10. 2026: + autorskyDozorWordProj)', pravidla.length === 35, pravidla.length);
 test('kódy pravidel jsou jedinečné',
   new Set(pravidla.map(p => p.kod)).size === pravidla.length,
   pravidla.map(p => p.kod).join(','));

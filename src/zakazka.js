@@ -276,7 +276,10 @@ function novaVariantaData() {
      * zakázka nemá nastaveno nic — přirážka i sazba DPH se proto berou
      * z platného ceníku, dokud se jich někdo nedotkne (viz cenik_stari.js). */
     cenikRucni: {},
-    proj: { zadani: JSON.parse(JSON.stringify(DEFAULT_ZADANI_PROJ)),
+    /* Autorský dozor nová varianta NENABÍZÍ (rozhodnutí J. V. 14. 10. 2026);
+     * volba se dosazuje rovnou, aby šlo poznat starší data bez ní — ta
+     * tisknou AD jako dřív (nabidkaProjNabiziAD v nabidka_proj.js). */
+    proj: { zadani: Object.assign(JSON.parse(JSON.stringify(DEFAULT_ZADANI_PROJ)), { nabizetAD: false }),
             cenik: JSON.parse(JSON.stringify(DEFAULT_CENIK_PROJ)) },
     techspec: JSON.parse(JSON.stringify(DEFAULT_TECHSPEC)),
     kryci: { hodnoty: {} },   // krycí list objednávky/SoD – ruční pole (prefill z kalkulace/techspec)

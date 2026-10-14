@@ -62,6 +62,13 @@ function nabidkaProjKarta() {
     <div class="note" style="font-weight:600;margin-top:8px">Rekapitulace cen:</div>
     ${rekap}
     ${typeof kryciProjPodminkyBlok === 'function' ? kryciProjPodminkyBlok() : ''}
+    ${/* Autorský dozor jen když se nabízí (14. 10. 2026). Volba je v zadání PROJ
+         varianty — zámek odeslané nabídky ji hlídá jako každé jiné pole (set). */ ''}
+    <label style="display:block;margin-top:10px;font-weight:600">
+      <input type="checkbox" id="projNabizetAD" ${nabidkaProjNabiziAD(akt) ? 'checked' : ''}
+        onchange="set('PJ.nabizetAD', this.checked)"> Nabízet autorský dozor</label>
+    <div class="note">Zaškrtnuté: nabídka PROJ (i Word se šablonou PROJ v5) a technická verze krycího listu PROJ
+      uvedou blok AUTORSKÝ DOZOR (AD) s měsíční sazbou a platebními podmínkami. Nová varianta autorský dozor nenabízí.</div>
     <div class="note" style="font-weight:600;margin-top:10px">Popis záměru (úvodní odstavec nabídky):</div>
     <textarea rows="4" style="width:100%" placeholder="Např.: Bytový dům, přístavba výtahu do zrcadla schodiště…"
       oninput="nabidkaProjPopis(this.value)">${esc(ZAK.popisZameru || '')}</textarea>

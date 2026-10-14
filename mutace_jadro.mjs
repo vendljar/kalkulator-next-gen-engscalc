@@ -156,6 +156,15 @@ const MUTACE = [
     hledej: "    if (s.key === 'zamereni' && !nabizena('studie') && !nabizena('projednani')) ma.push('PROJ_CENA_SP1');",
     nahrad: "    if (s.key === 'zamereni') ma.push('PROJ_CENA_SP1');",
     proc: 'u zaměření se studií nese „část 1" jen odkaz na cenu výše — šablona bez ceny zaměření by prošla' },
+  /* ---------- autorský dozor jen když se nabízí (14. 10. 2026) ---------- */
+  { nazev: 'AD 14. 10.: varování o AD ve Wordu i u varianty, která AD nabízí', soubor: 'kontroly.js',
+    hledej: "      if (!ctx.projZadani || ctx.projZadani.nabizetAD !== false) return null;",
+    nahrad: "      if (!ctx.projZadani) return null;",
+    proc: 'varování „Word vytiskne AD, i když se nenabízí" by svítilo u každé nabídky PROJ včetně starých — obchodník by si ho přestal všímat' },
+  { nazev: 'AD 14. 10.: šablona PROJ v5 se značkami AD se nepozná', soubor: 'kontroly.js',
+    hledej: "      if (s.symboly.indexOf('PROJ_CENA_AD_BLOK') >= 0 || s.symboly.indexOf('PROJ_CENA_AD') < 0) return null;",
+    nahrad: "      if (s.symboly.indexOf('PROJ_CENA_AD') < 0) return null;",
+    proc: 'po nahrání šablony PROJ v5 by varování dál tvrdilo, že Word AD vytiskne — rada „nahrajte v5" by nešla splnit' },
   /* ---------- K18-N96: dodatkový text v cizojazyčné nabídce (30. 9. 2026) ---------- */
   { nazev: 'K18-N96: český dodatkový text v cizí nabídce se nepozná', soubor: 'kontroly.js',
     hledej: "          return !trStav(t, jaz).prelozeno;",

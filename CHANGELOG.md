@@ -8,6 +8,32 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v14.10.2 — připomínky obchodu (větev claude/pripominky-14-10)
+
+Připomínky D. Sikory a J. Laudy, rozhodnutí J. V. 14. 10. 2026. Z `test-draft`
+(v14.10.1, 823c61e). Do `test-draft` nic — rozhodne J. V.
+
+- **Bod 1 — autorský dozor (AD) v nabídce PROJ jen když se nabízí.** Volba
+  „Nabízet autorský dozor" v kartě Cenová nabídka (PROJ) (`proj.zadani.nabizetAD`);
+  nová varianta ji má vypnutou (výchozí NE). Bez AD vypadnou z online nabídky
+  bloky ROZŠÍŘENÁ NABÍDKA, AUTORSKÝ DOZOR (AD), MĚSÍČNÍ SAZBA a PLATEBNÍ
+  PODMÍNKY AUTORSKÉHO DOZORU a z technického krycího listu PROJ řádek
+  „Autorský dozor (AD)". Stará data volbu nemají a tisknou AD jako dřív —
+  uložené ani odeslané nabídky se nemění (test otisku). Word: nová šablona
+  **PROJ v5** (`node nastroje/vyrob_sablony.js --proj-v5 <podklady>`, vstup
+  PROJ v4) obalí blok AD značkami `{{BLOK_AD_ZAC/KON}}` (symbol
+  `{{PROJ_CENA_AD_BLOK}}`) a platební podmínky `{{PLATBY_AD_ZAC/KON}}` (nadpis
+  `{{PROJ_PLATBY_AD_NADPIS}}`); nadpis ROZŠÍŘENÁ NABÍDKA ve Wordu zůstává (stojí
+  pod ním i geodetické zaměření). Starší šablona bez značek tiskne AD dál —
+  ohlásí to nové varování `autorskyDozorWordProj`. Šablonu v5 (+ EN/DE/FR)
+  nahraje J. V. do aplikace.
+  Testy: `src/test_autorsky_dozor.js` nový — před opravou 0/1 (model chybí),
+  po opravě 36/0, s KNG_PODKLADY 41/0 (skutečná v4 → v5, text s AD shodný
+  s v4); `test_kontroly.js` 138/0 (35 pravidel; před opravou 137/1);
+  `test_nabidka_proj.js` a `test_sablona_proj_v4.js` zapínají AD výslovně
+  (hlídají jeho bloky). Mutace jádra: 2 nové („AD 14. 10.") chycené 2 z 2,
+  `--kontrola` 195 úseků.
+
 ## v14.10.1 — výsledek celého kola nad v13.10.4 (větev claude/integrace-14-10)
 
 Jen zápis výsledku kola a verze — kód je beze změny proti v13.10.4 (b51af9b),

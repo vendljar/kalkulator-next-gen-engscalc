@@ -918,6 +918,26 @@ const KONTROLY = [
     },
   },
   {
+    /* AUTORSKÝ DOZOR VE WORDU (připomínka D. Sikory a J. Laudy, rozhodnutí
+     * J. V. 14. 10. 2026). Varianta AD nenabízí (proj.zadani.nabizetAD ===
+     * false), online nabídka i krycí list ho vynechají — šablona PROJ v4
+     * a starší ale nesou blok AD natvrdo bez značek a Word by ho vytiskl.
+     * Varování, ne zábrana (viz cenaWordProj): šablonu nahrává administrátor,
+     * oprava je PROJ v5 (nastroje/vyrob_sablony.js --proj-v5). */
+    kod: 'autorskyDozorWordProj', kde: 'Nabídka PROJ', nazev: 'Autorský dozor se ve Wordu vytiskne, i když se nenabízí',
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      if (!ctx.projZadani || ctx.projZadani.nabizetAD !== false) return null;
+      const s = ctx.sablonaNabidkaProj;
+      if (!s || !Array.isArray(s.symboly) || !s.symboly.length) return null;
+      if (s.symboly.indexOf('PROJ_CENA_AD_BLOK') >= 0 || s.symboly.indexOf('PROJ_CENA_AD') < 0) return null;
+      return { text: 'Autorský dozor se v této variantě nenabízí, wordová nabídka PROJ ho ale vytiskne: šablona nabídky PROJ'
+        + (s.nazev ? ' „' + s.nazev + '"' : '') + (s.verze ? ' (verze ' + s.verze + ')' : '')
+        + ' má blok autorského dozoru natvrdo ({{PROJ_CENA_AD}} bez značek {{BLOK_AD_ZAC}}/{{BLOK_AD_KON}}). '
+        + 'Online náhled nabídky PROJ ho správně vynechá. Nahrajte šablonu nabídky PROJ v5, nebo blok ve Wordu smažte ručně.' };
+    },
+  },
+  {
     /* PLÁN PLATEB PROJEKCE — 100 % U ČINNOSTI (etapa B, #367, rozhodnutí J. V.
      * 29. 9. 2026: „součet u každé činnosti 100 %, dokument nevznikne,
      * odklepnout nejde"). Splátky nabízené činnosti musí dát 100 %, mít
@@ -1222,7 +1242,7 @@ function kontrolyProved(ctx) {
  * není dokument pro zákazníka, ale kontrolní pohled na vstupy — zůstává
  * otevřený, je to místo, kde se chyba hledá.
  * Pravidla nad symboly šablon (slevaWord, platbyWordOck, slevaWordProj,
- * polozkyNavicWordProj, cenaWordProj, planPlatebWordProj) a dodatekCesky
+ * polozkyNavicWordProj, cenaWordProj, planPlatebWordProj, autorskyDozorWordProj) a dodatekCesky
  * jsou ZÁMĚRNĚ varování (šablona se stahuje na pozadí, náhled dokument
  * ukáže správně) — úroveň 1 nemají, takže sem nikdy nedojdou. */
 const KONTROLY_DOKUMENTY_STRANY = {

@@ -153,7 +153,10 @@ function kontrolySablonaNabidkaProj(slevaProj, projVysledek, jazyk) {
     const pl = (typeof nabidkaProjPlatby === 'function') ? nabidkaProjPlatby(ZAK, aktivniVarianta(ZAK), 'cz') : null;
     plan = !!(pl && !pl.stary && !planShodaSeStarouSablonou(pl.plan, pl.firemni, pl.ceny));
   } catch (e) { plan = false; }
-  if (!sleva && !navic && !plan && !geodet) return null;
+  /* Varianta bez autorského dozoru — šablona bez značek AD by ho vytiskla
+   * (pravidlo autorskyDozorWordProj, 14. 10. 2026). */
+  const bezAD = typeof PJ !== 'undefined' && !!PJ && PJ.nabizetAD === false;
+  if (!sleva && !navic && !plan && !geodet && !bezAD) return null;
   return kontrolySablonaSymboly('nabidkaProj', jazyk);
 }
 function kontrolySablonaSymboly(zaklad, jazyk) {

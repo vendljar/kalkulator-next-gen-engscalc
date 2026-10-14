@@ -37,6 +37,19 @@
  *           {{CENA_GEODET_ZAC}}/{{CENA_GEODET_KON}}: nenabízené geodetické
  *           zaměření cenu nemá a blok zmizí (seznam zůstává jako dosud).
  *
+ * PROJ v5 (autorský dozor jen když se nabízí, rozhodnutí J. V. 14. 10. 2026):
+ *   node nastroje/vyrob_sablony.js --proj-v5 <složka podkladů> [výstupní složka]
+ * Vstup:  Sablona_NABIDKA_PROJ_v4.docx
+ * Výstup: Sablona_NABIDKA_PROJ_v5.docx + _EN/_DE/_FR
+ * PROJ v5 = v4, v níž blok autorského dozoru (mezera, tabulka „AUTORSKÝ
+ *           DOZOR (AD):", mezera, tabulka měsíční sazby a věta o sazbě) stojí
+ *           mezi {{BLOK_AD_ZAC}}/{{BLOK_AD_KON}} se symbolem
+ *           {{PROJ_CENA_AD_BLOK}} místo {{PROJ_CENA_AD}} a tabulka „PLATEBNÍ
+ *           PODMÍNKY AUTORSKÉHO DOZORU:" mezi {{PLATBY_AD_ZAC}}/{{PLATBY_AD_KON}}
+ *           s nadpisem {{PROJ_PLATBY_AD_NADPIS}}. Varianta, která AD nenabízí,
+ *           dá oba symboly prázdné a bloky zmizí. Nadpis ROZŠÍŘENÁ NABÍDKA
+ *           zůstává — ve Wordu pod ním stojí i geodetické zaměření.
+ *
  * CN v14 (etapa A platebních podmínek OCK, 30. 9. 2026) — samostatný režim:
  *   node nastroje/vyrob_sablony.js --cn-v14 <složka podkladů> [výstupní složka]
  * Vstup:  Sablona_NABIDKA_CN_v13.docx
@@ -99,6 +112,7 @@ const REZIM = /^--/.test(process.argv[2] || '') ? process.argv[2] : '';
 const REZIM_V4 = REZIM === '--proj-v4', REZIM_SOD = REZIM === '--sod-proj', REZIM_CN14 = REZIM === '--cn-v14';
 const REZIM_SOD_REAL = REZIM === '--sod-real';
 const REZIM_CN15 = REZIM === '--cn-v15';
+const REZIM_V5 = REZIM === '--proj-v5';
 const ARGY = REZIM ? process.argv.slice(3) : process.argv.slice(2);
 const PODKLADY = ARGY[0] || process.env.KNG_PODKLADY;
 const VYSTUP = ARGY[1] || PODKLADY;
@@ -263,6 +277,50 @@ function projV4(xml) {
   }).join('');
   body = body.slice(0, top[iZac].zac) + bloky + body.slice(top[iAd].zac);
   body = projV4CenaGeodetu(body);
+  return t.pred + body + t.po;
+}
+
+/* ---------- PROJ v5: autorský dozor jen když se nabízí ----------
+ * Blok AD ve v4: [prázdný odstavec] [tabulka „AUTORSKÝ DOZOR (AD):"]
+ * [prázdný odstavec] [tabulka sazby s {{PROJ_CENA_AD}}] [věta „Sazbu je
+ * možné určit…"]. Platební podmínky AD jsou tabulka, jejíž první odstavec
+ * nese nadpis „PLATEBNÍ PODMÍNKY AUTORSKÉHO DOZORU:" (rozdělený do běhů).
+ * Stavba jiná než čekaná = chyba, nic se nehádá. */
+function projV5(xml) {
+  const t = tělo(xml);
+  let body = t.body;
+  const sym = dg.klicePlaceholderu(body);
+  if (sym.indexOf('PROJ_CENA_AD_BLOK') >= 0) chyba('PROJ: šablona už blok autorského dozoru se značkami má — není co doplnit');
+  if (!sym.some(k => /^PROJ_PLATBY_/.test(k))) chyba('PROJ: vstup není PROJ v4 (chybí platební podmínky z plánu plateb) — nejdřív vyrobte v4');
+  if (sym.indexOf('PROJ_CENA_AD') < 0) chyba('PROJ: šablona nemá symbol {{PROJ_CENA_AD}}');
+  /* platební podmínky AD (stojí níž — upravují se první, pozice výš platí dál) */
+  let top = prvkyTela(body);
+  const txt = el => textPrvku(body.slice(el.zac, el.kon));
+  const iPl = top.findIndex(el => el.tag === 'tbl' && /^PLATEBNÍ PODMÍNKY AUTORSKÉHO DOZORU\s*:/.test(txt(el)));
+  if (iPl < 0) chyba('PROJ: nenašel jsem tabulku „PLATEBNÍ PODMÍNKY AUTORSKÉHO DOZORU:"');
+  const tab = body.slice(top[iPl].zac, top[iPl].kon);
+  const pNadpis = (tab.match(/<w:p[\s>](?:(?!<\/w:p>)[\s\S])*?<\/w:p>/g) || []).find(p => /PLATEBNÍ PODMÍNKY/.test(p));
+  if (!pNadpis || textPrvku(pNadpis) !== 'PLATEBNÍ PODMÍNKY AUTORSKÉHO DOZORU:')
+    chyba('PROJ: nadpis platebních podmínek AD není samostatný odstavec „PLATEBNÍ PODMÍNKY AUTORSKÉHO DOZORU:"');
+  let prvni = true;
+  const pNovy = pNadpis.replace(/(<w:t(?:\s[^>]*)?>)[^<]*(<\/w:t>)/g, (x, a, b) => {
+    if (prvni) { prvni = false; return '<w:t xml:space="preserve">{{PROJ_PLATBY_AD_NADPIS}}' + b; }
+    return a + b;
+  });
+  body = body.slice(0, top[iPl].zac) + znacka('PLATBY_AD_ZAC') + tab.replace(pNadpis, () => pNovy)
+    + znacka('PLATBY_AD_KON') + body.slice(top[iPl].kon);
+  /* popis a sazba AD */
+  top = prvkyTela(body);
+  const iAd = top.findIndex(el => el.tag === 'tbl' && /^AUTORSKÝ DOZOR \(AD\)\s*:/.test(txt(el)));
+  if (iAd < 1) chyba('PROJ: nenašel jsem tabulku „AUTORSKÝ DOZOR (AD):"');
+  const iSaz = iAd + 2, iVeta = iAd + 3;
+  if (!(top[iAd - 1].tag === 'p' && !txt(top[iAd - 1]) && top[iAd + 1] && top[iAd + 1].tag === 'p' && !txt(top[iAd + 1])
+      && top[iSaz] && top[iSaz].tag === 'tbl' && dg.klicePlaceholderu(body.slice(top[iSaz].zac, top[iSaz].kon)).indexOf('PROJ_CENA_AD') >= 0
+      && top[iVeta] && /^Sazbu je možné určit/.test(txt(top[iVeta]))))
+    chyba('PROJ: blok autorského dozoru nemá čekanou stavbu (mezera, popis AD, mezera, tabulka sazby, věta o sazbě)');
+  const blok = body.slice(top[iAd - 1].zac, top[iVeta].kon).replace('{{PROJ_CENA_AD}}', '{{PROJ_CENA_AD_BLOK}}');
+  if (blok.indexOf('{{PROJ_CENA_AD_BLOK}}') < 0) chyba('PROJ: symbol {{PROJ_CENA_AD}} není v jednom běhu — nic nehádám');
+  body = body.slice(0, top[iAd - 1].zac) + znacka('BLOK_AD_ZAC') + blok + znacka('BLOK_AD_KON') + body.slice(top[iVeta].kon);
   return t.pred + body + t.po;
 }
 
@@ -604,7 +662,7 @@ async function ulozSMutacemi(bajty, zaklad) {
 
 async function hlavni() {
   if (!PODKLADY) {
-    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --sod-proj | --sod-real | --cn-v14 | --cn-v15] <složka podkladů> [výstupní složka]');
+    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --proj-v5 | --sod-proj | --sod-real | --cn-v14 | --cn-v15] <složka podkladů> [výstupní složka]');
     process.exit(2);
   }
   const cnVstup = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v12.docx');
@@ -613,7 +671,8 @@ async function hlavni() {
   const sodVstup = path.join(PODKLADY, 'Sablona_SOD_PROJEKCE.docx');
   const sodRealVstup = path.join(PODKLADY, 'Sablona_SOD_REALIZACE.docx');
   const cn14Vstup = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v14.docx');
-  (REZIM_V4 ? [projVstup] : REZIM_SOD ? [sodVstup] : REZIM_SOD_REAL ? [sodRealVstup] : REZIM_CN14 ? [cn13Vstup]
+  const proj4Vstup = path.join(PODKLADY, 'Sablona_NABIDKA_PROJ_v4.docx');
+  (REZIM_V5 ? [proj4Vstup] : REZIM_V4 ? [projVstup] : REZIM_SOD ? [sodVstup] : REZIM_SOD_REAL ? [sodRealVstup] : REZIM_CN14 ? [cn13Vstup]
     : REZIM_CN15 ? [cn14Vstup] : [cnVstup, projVstup])
     .forEach(f => { if (!fs.existsSync(f)) chyba('Chybí vstupní šablona ' + f); });
   if (!fs.existsSync(VYSTUP)) fs.mkdirSync(VYSTUP, { recursive: true });
@@ -648,7 +707,9 @@ async function hlavni() {
     console.log('\nVýstup: ' + VYSTUP);
     process.exit(prob ? 1 : 0);
   }
-  const vse = REZIM_V4
+  const vse = REZIM_V5
+    ? await ulozSMutacemi(await vyrob(proj4Vstup, projV5), 'Sablona_NABIDKA_PROJ_v5')
+    : REZIM_V4
     ? await ulozSMutacemi(await vyrob(projVstup, projV4), 'Sablona_NABIDKA_PROJ_v4')
     : REZIM_CN14 ? await ulozSMutacemi(await vyrob(cn13Vstup, cnV14), 'Sablona_NABIDKA_CN_v14')
     : REZIM_CN15 ? await ulozSMutacemi(await vyrob(cn14Vstup, cnV15), 'Sablona_NABIDKA_CN_v15')
@@ -672,4 +733,4 @@ async function hlavni() {
 
 /* Úpravy document.xml jdou testovat bez souborů (src/test_sablona_proj_v4.js). */
 if (require.main === module) hlavni().catch(e => { console.error('CHYBA: ' + e.message); process.exit(1); });
-module.exports = { cnV13, cnV14, projV3, projV4, sodProjV2, sodRealV2, prepisUsekOdstavce };
+module.exports = { cnV13, cnV14, projV3, projV4, projV5, sodProjV2, sodRealV2, prepisUsekOdstavce };

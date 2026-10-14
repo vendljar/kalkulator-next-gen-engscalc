@@ -262,7 +262,8 @@ const KRYCI_PROJ_SEKCE = [
   { sekce: 'Stupně dokumentace (technická verze)', pole: KRYCI_PROJ_STUPNE },
   { sekce: 'Projekční specifika', pole: [
     { id: 'pocetVytahu', label: 'Počet výtahů / šachet', verze: ['techdata'], prefill: () => '1', src: 'výchozí' },
-    { id: 'autorskyDozor', label: 'Autorský dozor (AD)', verze: ['techdata'], prefill: c => c.sazby.autorskyDozorKcMesic.toLocaleString('cs-CZ') + ' Kč / měsíc, max. ' + c.sazby.autorskyDozorMaxHodin + ' h', src: 'paušál z nabídky PROJ' },
+    /* `ad` = jen když varianta autorský dozor nabízí (nabidkaProjNabiziAD, 14. 10. 2026). */
+    { id: 'autorskyDozor', ad: true, label: 'Autorský dozor (AD)', verze: ['techdata'], prefill: c => c.sazby.autorskyDozorKcMesic.toLocaleString('cs-CZ') + ' Kč / měsíc, max. ' + c.sazby.autorskyDozorMaxHodin + ' h', src: 'paušál z nabídky PROJ' },
     { id: 'variantaPamatkari', label: 'Každá další varianta pro památkáře', verze: ['techdata'], prefill: c => c.sazby.variantaSpKc.toLocaleString('cs-CZ') + ' Kč', src: 'paušál z nabídky PROJ' },
     { id: 'podkladyInvestor', label: 'Podklady od investora (původní PD, revize)', verze: ['techdata'], typ: 'textarea' },
     { id: 'dossSeznam', label: 'Dotčené orgány státní správy (DOSS)', verze: ['techdata'], typ: 'textarea' },
@@ -404,13 +405,16 @@ function kryciProjCtx(zak, varianta) {
   let planEf = null;
   try { planEf = (typeof nabidkaProjPlatby === 'function') ? nabidkaProjPlatby(zak, varianta, 'cz') : null; } catch (e) { planEf = null; }
   const planStary = !planEf || !!planEf.stary;
-  return { zak, hl, hlSrc, sekce, hodnota, ocenene, neocenene, dph, firma, sazby, zmrazeno, planEf, planStary };
+  const nabiziAD = (typeof nabidkaProjNabiziAD === 'function') ? nabidkaProjNabiziAD(varianta) : true;
+  return { zak, hl, hlSrc, sekce, hodnota, ocenene, neocenene, dph, firma, sazby, zmrazeno, planEf, planStary, nabiziAD };
 }
 
 /* Které pole krycího listu se u téhle varianty ukazuje a tiskne: pole
  * dřívějšího znění (`stary`) jen u odeslané nabídky z doby před plánem
  * plateb, řádky plánu (`plan`) naopak jen s plánem. */
 function kryciProjPoleViditelne(p, c) {
+  /* Autorský dozor jen když se nabízí (14. 10. 2026); bez kontextu jako dřív. */
+  if (p.ad && c && c.nabiziAD === false) return false;
   if (p.stary && !(c && c.planStary)) return false;
   if (p.plan && (!c || c.planStary)) return false;
   return true;

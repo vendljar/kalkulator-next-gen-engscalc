@@ -41,6 +41,20 @@ const NABIDKA_PROJ_SAZBY = {
   platnostMesicu: 2,
 };
 
+/* AUTORSKÝ DOZOR JEN KDYŽ SE NABÍZÍ (připomínka D. Sikory a J. Laudy,
+ * rozhodnutí J. V. 14. 10. 2026). Do té doby nabídka PROJ, krycí list PROJ
+ * i šablona Word tiskly blok AD (popis, měsíční sazba, platební podmínky)
+ * vždy — i zákazníkovi, kterému se dozor nenabízel, a obchodník ho mazal
+ * ve Wordu ručně. Volba „Nabízet autorský dozor" žije v zadání PROJ varianty
+ * (`proj.zadani.nabizetAD`); NOVÁ varianta ji dostane rovnou s hodnotou
+ * false (novaVariantaData v zakazka.js), takže výchozí je nenabízet.
+ * Stará data volbu nemají — u nich platí chování jako dřív (AD se tiskne),
+ * aby se už uložená ani odeslaná nabídka nezměnila. */
+function nabidkaProjNabiziAD(varianta) {
+  const z = varianta && varianta.data && varianta.data.proj && varianta.data.proj.zadani;
+  return !(z && z.nabizetAD === false);
+}
+
 /* ÚVOD NABÍDKY PROJ PODLE ROZSAHU (P11 / K12-N45, schváleno J. V. 25. 9. 2026).
  *
  * Do 25. 9. byl odstavec „Naše NABÍDKA a doporučení" pevný: sliboval
@@ -272,12 +286,15 @@ const NABIDKA_PROJ_DEF = [
   ] },
   { typ: 'cena', nadpis: 'CENA ZA GEODETICKÉ ZAMĚŘENÍ', sekce: 'geodet', popis: 'Geodetické zaměření a geometrický plán' },
 
-  /* ---------------- ROZŠÍŘENÁ NABÍDKA ---------------- */
-  { typ: 'nadpis', text: 'ROZŠÍŘENÁ NABÍDKA' },
-  { typ: 'proza', nadpis: 'AUTORSKÝ DOZOR (AD)', odstavce: [
+  /* ---------------- ROZŠÍŘENÁ NABÍDKA ----------------
+   * `ad: true` = blok autorského dozoru: tiskne se, jen když ho varianta
+   * nabízí (nabidkaProjNabiziAD, 14. 10. 2026). Nadpis ROZŠÍŘENÁ NABÍDKA nese
+   * v online nabídce jen AD, proto patří k němu. */
+  { typ: 'nadpis', ad: true, text: 'ROZŠÍŘENÁ NABÍDKA' },
+  { typ: 'proza', ad: true, nadpis: 'AUTORSKÝ DOZOR (AD)', odstavce: [
     { cz: 'V případě požadavku účasti projektanta na kontrolních dnech nebo v případě požadavku klienta v průběhu realizace. Autorský dozor doporučujeme v rámci stavby objednat.' },
   ] },
-  { typ: 'cena', nadpis: 'MĚSÍČNÍ SAZBA ZA AUTORSKÝ DOZOR (AD)', pausal: 'autorskyDozorKcMesic', jednotka: 'měsíc',
+  { typ: 'cena', ad: true, nadpis: 'MĚSÍČNÍ SAZBA ZA AUTORSKÝ DOZOR (AD)', pausal: 'autorskyDozorKcMesic', jednotka: 'měsíc',
     popis: 'Sazbu je možné určit i celkovou částkou za určité období, hradí se měsíčně. Obsahuje maximálně 30 hodin výkonu AD za měsíc.' },
 
   /* ---------------- podmínky ---------------- */
@@ -298,7 +315,7 @@ const NABIDKA_PROJ_DEF = [
    * „Platba <milník>" / „N % z nabídkové ceny za …". Pevné bloky níž
    * (`stary`) zůstávají pro odeslané nabídky z doby před plánem (tisknou se,
    * jak odešly). Autorský dozor je měsíčně a v plánu není — jeho blok platí
-   * vždy. */
+   * vždy, když se AD nabízí (nabidkaProjNabiziAD). */
   { typ: 'platby' },
   { typ: 'pary', stary: true, nadpis: 'PLATEBNÍ PODMÍNKY ZAMĚŘENÍ', sekce: 'zamereni', radky: [
     ['Platba po podpisu objednávky zaměření', '50 % z celkové ceny za zaměření'],
@@ -329,7 +346,7 @@ const NABIDKA_PROJ_DEF = [
     ['Platba před zahájením kolaudačního řízení', '50 % z celkové ceny za tuto činnost'],
     ['Platba po vydání kolaudačního rozhodnutí', '50 % z celkové ceny za tuto činnost'],
   ] },
-  { typ: 'pary', nadpis: 'PLATEBNÍ PODMÍNKY AUTORSKÉHO DOZORU', radky: [
+  { typ: 'pary', ad: true, nadpis: 'PLATEBNÍ PODMÍNKY AUTORSKÉHO DOZORU', radky: [
     ['Platba po zajištění autorského dozoru a součtu hodin', '100 % z celkové ceny za tuto činnost, fakturováno měsíčně'],
   ] },
 
@@ -648,7 +665,9 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
       .map(x => [P('Platba ' + (x.t || '(milník chybí)')), P(planPct(x.p) + ' z nabídkové ceny ' + NABIDKA_PROJ_PLATBY[k].za)]);
   });
   const platbyBloky = Object.keys(platbyRadky).map(k => ({ typ: 'pary', nadpis: P(NABIDKA_PROJ_PLATBY[k].nadpis), sekce: k, radky: platbyRadky[k] }));
+  const nabiziAD = nabidkaProjNabiziAD(varianta);
   const bloky = NABIDKA_PROJ_DEF.filter(b => b.klic !== 'uvodNabidky' || uvodOdst.length)
+    .filter(b => !b.ad || nabiziAD)
     .filter(b => planStary ? b.typ !== 'platby' : !b.stary)
     .filter(blokVRozsahu).map(b => {
     if (b.typ === 'platby') return platbyBloky;
@@ -834,6 +853,16 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
     /* Paušály z ceníku nabídky — ve vzoru byly napsané natvrdo v textu. */
     PROJ_CENA_VARIANTA: kc(mena.na(NABIDKA_PROJ_SAZBY.variantaSpKc)),
     PROJ_CENA_AD: kc(mena.na(NABIDKA_PROJ_SAZBY.autorskyDozorKcMesic)),
+    /* Autorský dozor pro šablonu se značkami (PROJ v5, 14. 10. 2026): blok
+     * {{BLOK_AD_ZAC}}…{{BLOK_AD_KON}} (popis a sazba) a {{PLATBY_AD_ZAC}}…
+     * {{PLATBY_AD_KON}} (platební podmínky) zmizí, když AD varianta nenabízí.
+     * Starší šablona bez značek tiskne AD dál — řekne to kontrola
+     * „autorskyDozorWordProj". */
+    PROJ_CENA_AD_BLOK: nabiziAD ? kc(mena.na(NABIDKA_PROJ_SAZBY.autorskyDozorKcMesic)) : '',
+    /* Nadpis platebních podmínek AD je v šabloně v5 symbolem — blok
+     * {{PLATBY_AD_ZAC}}…{{PLATBY_AD_KON}} jinak žádný symbol nenese a zmizet
+     * by neuměl. Cizí jazyk bez dvojtečky, jak ho nesly přeložené šablony. */
+    PROJ_PLATBY_AD_NADPIS: nabiziAD ? P('PLATEBNÍ PODMÍNKY AUTORSKÉHO DOZORU') + (L === 'cz' ? ':' : '') : '',
     PROJ_CELKEM_BEZ_DPH: kc(celkemBezDph),
     /* Vlastní a trvalé položky pro Word (P4): souhrnně (název sekce, pod ním
      * řádky „– položka") a po sekcích PROJ_NAVIC_<SEKCE>. Bez položek prázdné.
@@ -939,4 +968,4 @@ if (typeof dokumentRegistruj === 'function')
   });
 
 if (typeof module !== 'undefined')
-  module.exports = { nabidkaProjData, nabidkaProjCeny, nabidkaProjPlatby, NABIDKA_PROJ_PLATBY, nabidkaProjSlevaZvlast, nabidkaProjUvod, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_UVOD_ZAVER, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE, NABIDKA_PROJ_CENA_SYMBOL };
+  module.exports = { nabidkaProjData, nabidkaProjNabiziAD, nabidkaProjCeny, nabidkaProjPlatby, NABIDKA_PROJ_PLATBY, nabidkaProjSlevaZvlast, nabidkaProjUvod, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_UVOD_ZAVER, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE, NABIDKA_PROJ_CENA_SYMBOL };
