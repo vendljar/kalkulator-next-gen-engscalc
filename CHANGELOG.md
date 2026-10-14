@@ -8,6 +8,41 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v14.10.8 — zbytky češtiny v nabídce PROJ (větev claude/proj-preklad-zbytky)
+
+Zadání `podklady/PROMPT_proj_preklad_zbytky.md` (P1), navazuje na soupis
+z v14.10.4. Z `origin/claude/slovnik-14-10` (774f269; `test` sloučený slovník
+v době založení ještě neobsahoval). Do `test-draft` / `test` / `main` nic —
+rozhodne J. V. Jen řádky, které slovník zná v jiném znění nebo jsou krátké;
+souvislá próza `{ cz }` a zápis v OR beze změny.
+
+- **Bod 2 — pojistka.** Nová sada `src/test_proj_zbytky_preklad.js`: online
+  nabídka PROJ (výchozí i všechny položky zapnuté, AD nabízený) v EN/DE/FR —
+  vyjmenované řádky bez české věty, slovník je zná (`trStav … prelozeno`),
+  popis DPZ přeložený pro všech 16 kombinací částí; próza `{ cz }` (úvody
+  STUDIE / DPZ / DPS, poznámky pod studií, řádky rozsahu) zůstává česky.
+  Před opravou 17/52, po opravě 69/0.
+- **Bod 3 — oprava.** Popis ceny DPZ „Zpracování projektu pro DPZ, včetně
+  PBŘ, STATIKY a ELEKTRO PROJEKTU" ve slovníku byl, ale `nabidkaProjData`
+  skládala větu z dílů (`P('Zpracování projektu pro DPZ')` + `P('včetně')`
+  + …) a celou ji nehledala. Nově má celá věta přednost (hledá se přímo
+  v `PREKLAD_IDX`, nekompletní kombinace se nehlásí jako chybějící heslo),
+  jinak se složí z přeložených dílů; spojka „a" je v `NABIDKA_PROJ_SPOJKA`
+  (heslo „a" by `prekladNorm` použil i na samostatné „A"). Slovník: hesla
+  podle textu nabídky s překladem beze změny ze šablon PROJ v4/v5 EN/DE/FR —
+  CENA NEZAHRNUJE („vyplývajících … péče, a"), IČ „Podání a projednání …
+  (Hasičský záchranný sbor, …)" (šablona má větu a závorku zvlášť),
+  „V průběhu celého řízení komunikujeme …", „Vyřízení POVOLENÍ ZÁMĚRU (dle
+  …)", hvězdička DPZ (bez „*", tisk ji přidává). **NÁVRH PŘEKLADU — čeká
+  na kontrolu J. V.** (šablony větu nemají): popis ceny DPS „Zpracování
+  prováděcí dokumentace, včetně STATICKÉ ČÁSTI a ELEKTRO PROJEKTU", díly
+  popisů (Zpracování projektu pro DPZ, Zpracování prováděcí dokumentace,
+  včetně, PBŘ, STATIKY, STATICKÉ ČÁSTI, ELEKTRO PROJEKTU, STUDIE OSVITU)
+  a štítek části 2 DPZ „Požárně bezpečnostní řešení".
+- **Testy:** `spust_testy.sh --smoke` zelené, `kontrola_udaju.py` čistá
+  (počty v PREDAVKA). Celé kolo s mutacemi pustí koordinační sezení při
+  sloučení.
+
 ## v14.10.4 — slovník a zápis v OR (větev claude/slovnik-14-10)
 
 Rozhodnutí J. V. 14. 10. 2026 k závěrečné zprávě dávky v14.10.2. Z `test`

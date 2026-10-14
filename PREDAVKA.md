@@ -1,3 +1,41 @@
+# Předávka — 14. 10. 2026 večer: větev `claude/proj-preklad-zbytky` (v14.10.8), zbytky češtiny v nabídce PROJ
+
+Z `origin/claude/slovnik-14-10` (774f269 — `test` sloučený slovník v14.10.6
+v době založení ještě neobsahoval), zadání
+`podklady/PROMPT_proj_preklad_zbytky.md` (P1). Do `test-draft` / `test` /
+`main` nic — o sloučení rozhodne J. V. Podrobnosti: CHANGELOG v14.10.8.
+
+- **Hotovo (pushnuto):** bod 2 pojistka `src/test_proj_zbytky_preklad.js`
+  (17/52 → 69/0); bod 3 popis ceny DPZ/DPS hledá celou větu ve slovníku
+  (příčina, proč DPZ zůstávala česky: kód skládal větu z dílů), hesla
+  podle textu nabídky s překladem ze šablon PROJ v4/v5 (CENA NEZAHRNUJE,
+  IČ ×3, hvězdička DPZ); bod 4 verze, CHANGELOG, příručka.
+- **Čeká na kontrolu J. V. (NÁVRH PŘEKLADU, šablony větu nemají):**
+  popis ceny DPS (EN „Preparation of the detailed design documentation,
+  including structural and electrical design", DE „Erstellung der
+  Ausführungsplanung einschließlich Statik- und Elektroplanung", FR
+  „Établissement du dossier d'exécution, y compris structure et
+  électricité"); díly pro jiné kombinace částí (včetně / PBŘ / STATIKY /
+  STATICKÉ ČÁSTI / ELEKTRO PROJEKTU / STUDIE OSVITU / Zpracování projektu
+  pro DPZ / Zpracování prováděcí dokumentace); štítek části 2 DPZ
+  „Požárně bezpečnostní řešení" (EN „Fire safety design", DE
+  „Brandschutzkonzept", FR „Conception de la sécurité incendie").
+- **Dál zůstává česky (záměrně, překlad jen na pokyn J. V.):** souvislá
+  próza `{ cz }` — úvody bloků STUDIE PROVEDITELNOSTI, DPZ, DPS; poznámky
+  pod studií (2 paré, 5 pracovních dní, rozšíření studie do DPZ); řádky
+  rozsahu studie a DPZ (vizuální prohlídka, PŮVODNÍ STAV, ROZSAH BOURÁNÍ,
+  NAVRHOVANÝ STAV, situace stavby, dokumentace stávajícího/nového stavu,
+  bourací dokumentace); zápis v OR (nepřekládá se).
+- **Podklady:** šablony PROJ v4/v5 CZ/EN/DE/FR z Disku v
+  `/home/user/kng_podklady_proj` (jen v kontejneru, mimo repo).
+- **Testy:** viz zpráva posledního commitu (smoke + kontrola_udaju).
+  Celé kolo s mutacemi pustí koordinační sezení při sloučení do `test`.
+- **Další krok:** J. V. odsouhlasí návrhy překladu a rozhodne o sloučení;
+  při sloučení s v14.10.5–7 ručně spojit `verze.txt`, CHANGELOG, příručku
+  (`manual/obsah.json`) a PREDAVKA.
+
+---
+
 # Předávka — 14. 10. 2026 večer: větev `claude/slovnik-14-10` (v14.10.4), slovník a zápis v OR
 
 Z `test` (v14.10.3, eff7724), zadání `podklady/PROMPT_slovnik_14_10.md`.
