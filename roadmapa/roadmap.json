@@ -6537,7 +6537,7 @@
    "stav" : "hotovo",
    "dulezitost" : "",
    "slozitost" : "S",
-   "hotovoV" : "v14.10.7 (větev claude/kryci-jine-zneni, slučuje se do test)",
+   "hotovoV" : "v14.10.7 (v `test` od v14.10.8)",
    "nazev" : "O1: „jiné znění“ v krycím listu obcházelo zámek",
    "proc" : "Nález O1 z dávky v14.10.5: volba „jiné znění…“ v rozbalovacím poli krycího listu (`klVyber` OCK, `klpVyber` PROJ) mazala ruční hodnotu mimo obal zámku — u pole cenové nabídky zamčené varianty hodnota tiše zmizela a server uložení odmítl, obchodník nevěděl proč.",
    "detail" : "`klVyber` a `klpVyber` jsou v `ZAMEK_CHRANENE` i `ZAMEK_KRYCI_FUNKCE`: pole nabídky zamčené varianty „jiné znění“ zastaví dialogem „Uzamčená varianta“ (hodnota zůstane), pole mimo nabídku jde jako dřív, po tisku SoD se nemění nic. Server beze změny.",
@@ -6552,7 +6552,7 @@
    "stav" : "hotovo",
    "dulezitost" : "",
    "slozitost" : "S",
-   "hotovoV" : "v14.10.8 (větev claude/proj-preklad-zbytky, slučuje se do test)",
+   "hotovoV" : "v14.10.8 (v `test`)",
    "nazev" : "P1: zbytky češtiny v nabídce PROJ EN/DE/FR",
    "proc" : "Navazuje na soupis z v14.10.4: v online nabídce PROJ EN/DE/FR zůstávaly česky řádky, které slovník zná v jiném znění nebo jsou krátké (zadání `podklady/PROMPT_proj_preklad_zbytky.md`).",
    "detail" : "Popis ceny DPZ se hledá celou větou (dřív se skládal z dílů a celou větu nenašel), jinak z přeložených dílů; spojka „a“ v `NABIDKA_PROJ_SPOJKA`. Slovník doplněn hesly podle textu nabídky s překladem ze šablon PROJ v4/v5 (CENA NEZAHRNUJE, IČ, řízení, POVOLENÍ ZÁMĚRU, hvězdička DPZ). Souvislá próza `{ cz }` a zápis v OR beze změny.",
@@ -7219,7 +7219,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v14.10.6 (engscalc, test)",
+  "build" : "v14.10.8 (engscalc, test)",
   "stavKDatu" : "14. 10. 2026"
  },
  "_comment" : [
