@@ -45,6 +45,11 @@ Rozhodnutí J. V. 14. 10. 2026 k závěrečné zprávě dávky v14.10.2. Z `test
   jen sloupec vedoucí strany (P6); AD v tabulce hodin „max. 30 h / měsíc",
   do celku se nepočítá. Zapsáno do PREDAVKA jako rozhodnuté, kód beze změny.
 
+**Celé kolo nad 774f269 VŠE ZELENÉ (223 min 59 s):** sady 242 prošlo /
+0 selhalo / 1 přeskočeno (test.js), mutace jádra 202 z 202, mutace serveru
+395 z 395, statické kontroly 3 z 3; firemní podklady z Disku (30 šablon)
+a příručka v14.10.4 ze snímků. Ověřuje zároveň sloučený stav v14.10.3.
+
 ## v14.10.3 — integrace do `test`: připomínky obchodu + K23T-N1 (větev claude/integrace-14-10b)
 
 Pokyn J. V. 14. 10. 2026 („sluč k23-odm-prohluben do test"). `test` nesl
