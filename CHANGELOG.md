@@ -21,6 +21,11 @@ mutace obou větví — ponechány všechny, `--kontrola` 202 úseků jádra,
 sloučil automaticky. Ověření po sloučení a výsledek viz zápis níž
 (celé kolo spustí navazující sezení).
 
+**Kolo bez mutací nad 4bfcb40 VŠE ZELENÉ (15 min 52 s):** sady 241/0/1
+(přeskočen jen `test.js`), statické 3 z 3; podklady s příručkou v14.10.3
+ze snímků. Celé kolo s mutacemi nad sloučeným stavem pustí sezení
+`claude/slovnik-14-10` (zadání `podklady/PROMPT_slovnik_14_10.md`).
+
 ## v14.10.2 — připomínky obchodu (větev claude/pripominky-14-10)
 
 Připomínky D. Sikory a J. Laudy, rozhodnutí J. V. 14. 10. 2026. Z `test-draft`

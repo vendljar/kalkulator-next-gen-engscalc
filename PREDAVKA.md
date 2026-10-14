@@ -1,3 +1,21 @@
+# Předávka — 14. 10. 2026 odpoledne: `test` = v14.10.3 (připomínky obchodu + K23T-N1)
+
+`test` = v14.10.3: sloučení `claude/pripominky-14-10` (v14.10.2, kolo zelené)
+a `claude/k23-odm-prohluben` (v14.10.2, kolo zelené) na pokyn J. V. 14. 10.;
+po sloučení kolo bez mutací VŠE ZELENÉ (sady 241/0/1, statické 3/3).
+`test-draft` a `main` beze změny. Release v14.10.2 a v14.10.3 vydává J. V.
+
+**Rozhodnutí J. V. 14. 10. k závěrečné zprávě v14.10.2:** výchozí volby
+odsouhlaseny (AD u starých dat tisknout; starší název akce specifikace =
+ruční; hodiny jen sloupec vedoucí strany; AD v hodinách „max. 30 h / měsíc"
+mimo celek); **zápis v OR nepřekládat** (vrátit bod 6); řádek „100 % z celkové
+ceny za tuto činnost, fakturováno měsíčně" doplnit do slovníku EN/DE/FR.
+Řeší nové sezení ve větvi `claude/slovnik-14-10` nad `test` — zadání
+`podklady/PROMPT_slovnik_14_10.md`; to sezení pustí i celé kolo s mutacemi
+nad sloučeným stavem.
+
+---
+
 # Předávka — 14. 10. 2026: větev `claude/pripominky-14-10` (v14.10.2), připomínky obchodu
 
 Z `test-draft` (v14.10.1, 823c61e). Připomínky D. Sikory a J. Laudy,
