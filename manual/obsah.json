@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v14.10.1 · sestaveno 14. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
+  "verze": "Platí pro aplikaci v14.10.2 · sestaveno 14. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -11,6 +11,16 @@
         "Snímky obrazovky v téhle příručce jsou pořízené z běžící aplikace, ale nad **zkušebním ceníkem** s vymyšlenými sazbami. **Částky na obrázcích jsou ze zkušebního ceníku a nejsou naše ceny.** Neberte je jako vodítko pro nabídku a nesrovnávejte s nimi svou kalkulaci — sledujte, kde co je a jak se to chová, ne kolik to stojí.",
         "Jména zákazníků na snímcích jsou taky **vymyšlená**. Celá ukázková zakázka **2026 - OPR - CN - 9100** je smyšlená a vznikla jen kvůli téhle příručce.",
         "Příručka je určená obchodníkům ENGINEERS CZ. Popisuje, jak firma počítá nabídky, takže ji zákazníkům ani nikomu mimo firmu neposílejte."
+      ]
+    },
+    {
+      "nadpis": "Co je nového ve verzi v14.10.2 (14. 10. 2026)",
+      "odstavce": [
+        "**Autorský dozor v nabídce PROJ jen když ho nabízíte.** V kartě Cenová nabídka (PROJ) je zaškrtávátko **Nabízet autorský dozor**; nová zakázka ho má vypnuté. Bez něj nabídka ani krycí list PROJ autorský dozor neuvádějí (kapitola 25). Už uložené a odeslané nabídky se nemění.",
+        "**Název akce v technické specifikaci se bere z hlavičky zakázky.** Přepsat ho jde dál — pak u pole svítí štítek **ručně** a tlačítkem ↺ se vrátíte k názvu z hlavičky (kapitola 23).",
+        "**Oplechování soklu prohlubně** má řádek i v technické specifikaci: mezi doplňkovými konstrukcemi, když je v ceně, jinak mezi tím, co součástí dodávky není — stejně jako v nabídce.",
+        "**Zápis v obchodním rejstříku** se v anglické, německé a francouzské nabídce překládá.",
+        "Na konci krycího listu OCK i PROJ (verze Backoffice) je tabulka **Hodiny z kalkulace** — celé hodiny z položek, které nabízíte (kapitola 24)."
       ]
     },
     {
