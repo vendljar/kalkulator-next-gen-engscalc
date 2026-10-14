@@ -14,7 +14,10 @@ Pokyn J. V. 14. 10. 2026 večer („Ano, slovník sluč … veškeré změny po�
 rovnou do prostředí test"). `test` nesl v14.10.5 (3538875); do něj sloučena
 `claude/slovnik-14-10` (v14.10.4) merge commitem bez rebase. Konflikty jen
 v CHANGELOG, PREDAVKA, úvodu příručky a `verze.txt`; kód se sloučil
-automaticky. Výsledky ověření viz níž.
+automaticky. Po sloučení: `spust_testy.sh --smoke` s firemními podklady
+(příručka v14.10.6 ze snímků) 245 prošlo / 0 selhalo / 1 přeskočeno (test.js),
+`--kontrola` mutací jádra 202 a serveru 400 úseků, kontrola údajů čistá. Celé
+kolo s mutacemi poběží nad výsledným `test` po sloučení nočních dávek.
 
 ## v14.10.5 — krycí list odeslané nabídky se dá doplňovat (větev claude/kryci-odemceny-14-10)
 
