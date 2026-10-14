@@ -194,6 +194,11 @@ const MUTACE = [
     hledej: "    if (Array.isArray(s.sloupce) && s.sloupce.length > 2) {",
     nahrad: "    if (Array.isArray(s.sloupce) && s.sloupce.length > 3) {",
     proc: 'backoffice by ve Wordu dostal jen sloupec OCK — hodiny projekce by z krycího listu zmizely' },
+  /* ---------- K23T-N1: opláštění pod dnem prohlubně (14. 10. 2026) ---------- */
+  { nazev: 'K23T-N1: opláštění pod dnem prohlubně hlásí obecnou zápornou částku', soubor: 'kontroly.js',
+    hledej: "      if (nal.every(p => p.podProhlubni)) {",
+    nahrad: "      if (false) {",
+    proc: 'obchodník by místo začátku opláštění hledal slevu — zábrana by neřekla, co opravit' },
   /* ---------- K18-N96: dodatkový text v cizojazyčné nabídce (30. 9. 2026) ---------- */
   { nazev: 'K18-N96: český dodatkový text v cizí nabídce se nepozná', soubor: 'kontroly.js',
     hledej: "          return !trStav(t, jaz).prelozeno;",

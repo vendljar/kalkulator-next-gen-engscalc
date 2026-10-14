@@ -310,6 +310,13 @@ const KONTROLY = [
       if (!f) return null;
       const nal = f(ctx.jenProj ? null : ctx.zadani, ctx.projZadani).filter(p => p.duvod === 'zaporne');
       if (!nal.length) return null;
+      /* Jen opláštění pod dnem prohlubně (K23T-N1): vlastní věta, ne „sleva". */
+      if (nal.every(p => p.podProhlubni)) {
+        const t = (typeof uloPodProhlubniText === 'function') ? uloPodProhlubniText
+          : require('./uloziste.js').uloPodProhlubniText;
+        return { uroven: KONTROLY_UROVEN_ZABRANA, strany: ['ock'],
+          text: t(nal) + '. Opravte začátek opláštění v zadání OCK. Dokument nevznikne, dokud se to neopraví.' };
+      }
       const ock = nal.some(p => p.kde.indexOf('ock.') === 0), proj = nal.some(p => p.kde.indexOf('proj.') === 0);
       const kde = [ock ? 'kalkulace OCK' : '', proj ? 'kalkulace PROJ' : ''].filter(Boolean);
       return { uroven: KONTROLY_UROVEN_ZABRANA,

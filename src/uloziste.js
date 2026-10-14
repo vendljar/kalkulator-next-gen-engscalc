@@ -1067,6 +1067,9 @@ const ULO_ZADANI_BEZ_ZAPORU = ['rezervaProfilyPct', 'rezervaPlechyPct', 'rezerva
   'nastupiste', 'nastupisteA', 'nastupisteC', 'patra', 'svetlikyBoky', 'svetlikyBokyKs', 'svetlikyBokySirkaMm', 'mustkyKs'];
 /* Číselná pole vzoru, která do ceny nevstupují (evidence pro standard OCK). */
 const ULO_ZADANI_MIMO_JADRO = ['mustekHloubkaMm', 'mustekSirkaMm'];
+/* Tolerance porovnání začátku opláštění s dnem prohlubně — táž jako
+ * OPL_PROHLUBEN_TOL v engine.js (uloziste.js se načítá i bez jádra). */
+const ULO_ODM_TOL = 1e-9;
 function uloZaporneVZadani(z, zp) {
   const out = [];
   /* Pořadí: nejdřív typ (není to číslo vůbec), pak zápor (i „-5000,5" je
@@ -1121,11 +1124,27 @@ function uloZaporneVZadani(z, zp) {
     ULO_ZADANI_BEZ_ZAPORU.forEach(k => hlidej(z[k], 'ock.zadani.' + k));
     /* Opláštění po stěnách: výšky pásů (odM, doM) — záporná výška zmenší
      * plochu (B134, revize vstupů jádra). */
+    /* ZAČÁTEK OPLÁŠTĚNÍ SMÍ JÍT DO PROHLUBNĚ (K23T-N1, 14. 10. 2026).
+     * Zkratka P2 „Opláštit i prohlubeň" (oplasteniProhlubenNastav v engine.js)
+     * dává stěnám odM = −prohlubeň — opláštění začíná pod spodní stanicí.
+     * B134 hlídal odM jako „nesmí být záporné", takže taková zakázka nešla
+     * uložit ani vytisknout (kolo 23: 6 ze 118 zakázek s prosklenou
+     * prohlubní). Záporné odM je chyba až pod dnem prohlubně (s tolerancí
+     * jako OPL_PROHLUBEN_TOL); bez prohlubně jako dosud. Nález nese
+     * `podProhlubni` a stěnu, aby hláška řekla, o co jde. */
+    const hlProhlub = (typeof z.prohluben === 'number' || (typeof z.prohluben === 'string' && ULO_CISLO_TEXT.test(z.prohluben)))
+      ? Math.max(0, parseFloat(String(z.prohluben).replace(',', '.')) || 0) : 0;
     const steny = z.oplasteni && typeof z.oplasteni === 'object' ? z.oplasteni.steny : null;
     if (steny && typeof steny === 'object' && !Array.isArray(steny)) Object.keys(steny).forEach(k => {
       const st = steny[k], c = 'ock.zadani.oplasteni.steny.' + (ULO_TOKEN.test(k) ? k : '?');
       if (!st || typeof st !== 'object') return;
-      hlidej(st.odM, c + '.odM');
+      const odM = st.odM;
+      if (uloCisloSedi(odM) && uloZaporne(odM) && hlProhlub > 0) {
+        const n = typeof odM === 'number' ? odM : parseFloat(String(odM).replace(',', '.'));
+        if (n < -hlProhlub - ULO_ODM_TOL)
+          out.push({ kde: c + '.odM', duvod: 'zaporne', podProhlubni: true, stena: ULO_TOKEN.test(k) ? k : '?' });
+        else if (!uloCisloJadro(odM)) out.push({ kde: c + '.odM', duvod: 'typ' });
+      } else hlidej(odM, c + '.odM');
       /* Ruční sazba pásu „jiné" (revize #398, N3): záporná −3 000 Kč/m² na
        * čtyřech stěnách srazila cenu OCK o 43 % (zámek „shoda"). */
       if (Array.isArray(st.pasy)) st.pasy.forEach((p, i) => {
@@ -1158,6 +1177,12 @@ function uloZaporneVZadani(z, zp) {
     });
   });
   return out;
+}
+/* Věta o opláštění pod dnem prohlubně (K23T-N1) pro server i kontroly. */
+function uloPodProhlubniText(nal) {
+  const steny = [...new Set((nal || []).map(p => p.stena))];
+  return 'Opláštění ' + (steny.length > 1 ? 'stěn ' + steny.join(', ') + ' začíná' : 'stěny ' + steny[0] + ' začíná')
+    + ' níž, než je dno prohlubně — začátek opláštění („od") smí jít nejvýš do hloubky prohlubně';
 }
 function uloZaporneProblemy(zak, stara) {
   return uloProVarianty(zak, stara, (v, sv, out) => {
@@ -1839,7 +1864,10 @@ function uloIdProblemyText(problemy) {
   const delka = problemy.filter(p => p.duvod === 'delka');
   const priloha = problemy.filter(p => p.duvod === 'priloha');
   const typ = problemy.filter(p => p.duvod === 'typ');
-  const zaporne = problemy.filter(p => p.duvod === 'zaporne');
+  /* Opláštění pod dnem prohlubně má vlastní větu (K23T-N1) — „záporná
+   * částka" by obchodníka poslala hledat slevu. */
+  const podProhlubni = problemy.filter(p => p.duvod === 'zaporne' && p.podProhlubni);
+  const zaporne = problemy.filter(p => p.duvod === 'zaporne' && !p.podProhlubni);
   const zaokr = problemy.filter(p => p.duvod === 'zaokr');
   const rozmer = problemy.filter(p => p.duvod === 'rozmer');
   const model = problemy.filter(p => p.duvod === 'model');
@@ -1863,6 +1891,8 @@ function uloIdProblemyText(problemy) {
   if (zaporne.length) casti.push('zápornou částku nebo množství (' + zaporne.slice(0, 5).map(x => x.kde).join(', ')
     + (zaporne.length > 5 ? ' a další ' + (zaporne.length - 5) : '')
     + ') — cena, množství ani hodiny nesmějí být záporné; snížení ceny zadejte jako slevu, ta jde přes schvalování');
+  if (podProhlubni.length) casti.push('opláštění pod dnem prohlubně (' + podProhlubni.map(x => x.kde).join(', ') + '): '
+    + uloPodProhlubniText(podProhlubni));
   /* B96: krok nebo směr obchodního zaokrouhlení mimo nabídku. */
   if (zaokr.length) casti.push('obchodní zaokrouhlení mimo nabídku (' + zaokr.map(x => x.kde).join(', ')
     + ') — krok i směr zaokrouhlení musí být z nabídky v kartě „Obchodní zaokrouhlení"; větší snížení ceny je sleva, ta jde přes schvalování');
@@ -1911,7 +1941,7 @@ function uloZalohaHlidka(otisky, ted) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, ULO_ZADANI_BEZ_ZAPORU, ULO_ZADANI_MIMO_JADRO, ULO_HODINY_N56, uloCisloJadro, uloRozmeryVZadani, uloRozmeryProblemy, uloModelProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
+  module.exports = { uloPodProhlubniText, ULO_ODM_TOL, ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, ULO_ZADANI_BEZ_ZAPORU, ULO_ZADANI_MIMO_JADRO, ULO_HODINY_N56, uloCisloJadro, uloRozmeryVZadani, uloRozmeryProblemy, uloModelProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
                      uloNorm, uloSlova, uloCisloVyplneno, uloKlicSouboru,
                      uloJmenoSouboru, uloJeZakazkovySoubor,
                      ULO_HLAVICKA_POLE, uloHlavickaChybi, uloHlavickaVyplnena, uloMaCislo, uloUlozeniStav,

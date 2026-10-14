@@ -27,6 +27,17 @@ Podrobnosti a testy před/po: CHANGELOG v14.10.2.
   s P6 má tabulka hodin vyplněný jen sloupec vedoucí strany (číslo OPR/OVP);
   AD v tabulce hodin „max. 30 h / měsíc", do celku se nepočítá.
 - **Neřešeno dle zadání:** body 4, 5, 9; 7 prověřuje J. V.; 8 (Helios) jen návrh.
+# Předávka — větev `claude/k23-odm-prohluben` (v14.10.2, 14. 10. 2026)
+
+Z `test` (823c61e, v14.10.1). Oprava nálezu K23T-N1 (opláštěná prohlubeň P2
+nejde uložit) — detaily v CHANGELOG v14.10.2 této větve. Do `test-draft`,
+`test` ani `main` nic; **B134 (0af419c) se nesmí dostat do `main` bez téhle
+opravy.** Ověření pro J. V. po nasazení na test: zakázka TEST s prohlubní
+a „Opláštit i prohlubeň" se uloží, vytiskne a zamkne („shoda"); v kole 24
+projdou C001, C018, C029, C035, C046, C063. **Celé kolo nad 4717864 VŠE
+ZELENÉ** (sady 235/0/1, jádro 194/194, server 395/395, statické 3/3).
+Při slučování s `claude/pripominky-14-10` (taky v14.10.2): konflikty čekej
+v CHANGELOG, PREDAVKA, `mutace_jadro.mjs` (nové mutace obou větví) a verzi.
 
 ---
 

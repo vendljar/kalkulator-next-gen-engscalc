@@ -8,6 +8,19 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v14.10.3 — integrace do `test`: připomínky obchodu + K23T-N1 (větev claude/integrace-14-10b)
+
+Pokyn J. V. 14. 10. 2026 („sluč k23-odm-prohluben do test"). `test` nesl
+v14.10.2 z `claude/pripominky-14-10` (37cd805); do něj sloučena
+`claude/k23-odm-prohluben` (6fe33b2, v14.10.2) merge commitem bez rebase.
+Obě větve měly vlastní zelené celé kolo (připomínky: jádro 201/201, server
+393/393, sady 241/0/1 po opravě; K23: jádro 194/194, server 395/395, sady
+235/0/1). Konflikty jen v CHANGELOG, PREDAVKA, `mutace_jadro.mjs` (nové
+mutace obou větví — ponechány všechny, `--kontrola` 202 úseků jádra,
+395 serveru) a v úvodu příručky (novinky obou větví pod v14.10.3); kód se
+sloučil automaticky. Ověření po sloučení a výsledek viz zápis níž
+(celé kolo spustí navazující sezení).
+
 ## v14.10.2 — připomínky obchodu (větev claude/pripominky-14-10)
 
 Připomínky D. Sikory a J. Laudy, rozhodnutí J. V. 14. 10. 2026. Z `test-draft`
@@ -97,6 +110,31 @@ kontrol. Opraveno v 8ffce8f (jen UI a harnessy, soubory jader ani serveru
 beze změny); kolo nad 8ffce8f bez mutací: sady 241/0/1 (přeskočen jen
 `test.js`), statické 3 z 3. Podklady: kopie s příručkou sestavenou ze snímků
 v14.10.2. Převod do `test` na pokyn J. V. 14. 10. 2026.
+## v14.10.2 — K23T-N1: opláštěná prohlubeň (P2) nejde uložit (větev claude/k23-odm-prohluben)
+
+Nález 23. kola (test v14.10.1, 14. 10. 2026). Z `test` (823c61e). Do
+`test-draft` / `test` / `main` nic — rozhodne J. V. V `main` / ostré chyba
+není (B134 z 0af419c tam není); do `main` se B134 nesmí dostat bez téhle opravy.
+
+- **Oprava:** zkratka P2 „Opláštit i prohlubeň" dává stěnám `odM = −prohlubeň`,
+  B134 (`uloZaporneVZadani`) ho ale hlídal jako „nesmí být záporné" — zakázka
+  nešla uložit (server 400), kontroly hlásily zábranu `zapornaPolozka`
+  (kolo 23: C001, C018, C029, C035, C046, C063). Nově smí být `odM` záporné
+  až do hloubky prohlubně (`z.prohluben`, tolerance `ULO_ODM_TOL` = 1e-9 jako
+  `OPL_PROHLUBEN_TOL`); níž je chyba s vlastní větou „Opláštění stěny X začíná
+  níž, než je dno prohlubně" (server i zábrana; ne obecná „záporná částka").
+  Bez prohlubně jako dosud; `doM` a `naklad` pásů beze změny.
+- **Testy:** `src/test_prohluben_sklo.js` +10 (K23T-N1) — před opravou 5 selhání
+  a pád (chybějící `uloPodProhlubniText`), po opravě 42/0;
+  `netlify/test_koncova_cena.mjs` +3 — před opravou 107/2, po opravě 110/0.
+- **Mutace:** server 2 nové („odM pod dnem prohlubně se nehlídá", „odM se hlídá
+  bez ohledu na prohlubeň"), kotva B134 „výška pásu se nehlídá" posunuta na
+  větev bez prohlubně (test „odM −0,1 bez prohlubně" ji chytá); jádro 1 nová
+  (zábrana s obecnou větou). `--kontrola`: jádro 194, server 395 úseků.
+
+**Celé kolo nad 4717864 VŠE ZELENÉ (223 min 57 s):** sady 235/0/1 (přeskočen jen
+`test.js`), mutace jádra 194 z 194, mutace serveru 395 z 395, statické kontroly
+3 z 3. Podklady: kopie s příručkou sestavenou ze snímků v14.10.2.
 
 ## v14.10.1 — výsledek celého kola nad v13.10.4 (větev claude/integrace-14-10)
 
