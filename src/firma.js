@@ -381,6 +381,9 @@ function firmaPlaceholders(f, prekl) {
     if (!p.symbol) return;
     let v = firmaHodnota(f, p.id);
     if (p.id === 'sidloZeme' || p.id === 'korZeme') v = v ? P(v) : v;
+    /* Zápis v obchodním rejstříku se v cizím jazyce překládá vzorem
+     * slovníku (14. 10. 2026, PREKLAD_SOUDY v preklad.js). */
+    if (p.id === 'zapis') v = v ? P(v) : v;
     out[p.symbol] = v;
   });
   /* KAPITOLY SE NEVYDÁVAJÍ SYROVÉ (oprava 21. 9. 2026, nezávislá revize).
@@ -417,16 +420,20 @@ function firmaSymboly() {
 }
 
 /* Řádky [popisek, hodnota] pro náhledy a krycí list; prázdné se vynechají.
- * prekl = funkce překladu POPISKŮ (hodnoty zůstávají tak, jak jsou zadané). */
-function firmaRadky(f, prekl) {
+ * prekl = funkce překladu POPISKŮ (hodnoty zůstávají tak, jak jsou zadané).
+ * lang (nepovinný) = jazyk dokumentu: přeloží se jediná hodnota, která je
+ * větou, ne vlastním jménem — zápis v obchodním rejstříku („C 123456 vedená
+ * u Městského soudu v Praze", připomínka obchodu 14. 10. 2026). */
+function firmaRadky(f, prekl, lang) {
   f = f || firmaAktualni();
   const P = typeof prekl === 'function' ? prekl : (x => x);
   const radky = [];
   const pridej = (label, val) => { if (val) radky.push([P(label), val]); };
+  const zapis = firmaHodnota(f, 'zapis');
   pridej('Název firmy', firmaHodnota(f, 'nazev'));
   pridej('IČO', firmaHodnota(f, 'ico'));
   pridej('DIČ', firmaHodnota(f, 'dic'));
-  pridej('Zápis v obchodním rejstříku', firmaHodnota(f, 'zapis'));
+  pridej('Zápis v obchodním rejstříku', (zapis && lang && lang !== 'cz' && typeof tr === 'function') ? tr(zapis, lang) : zapis);
   pridej('Sídlo', firmaSidlo(f));
   const kor = firmaKorespondencni(f);
   if (kor && kor !== firmaSidlo(f)) pridej('Korespondenční adresa', kor);

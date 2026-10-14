@@ -57,6 +57,18 @@ Připomínky D. Sikory a J. Laudy, rozhodnutí J. V. 14. 10. 2026. Z `test-draft
   (rozhodnutí čte výsledek přes společnou funkci) a `test_specifikace_cena.js`
   (seznam odvozených polí) upraveny. Mutace jádra: 3 nové („SOKL 14. 10.")
   chycené 3 z 3, `--kontrola` 200 úseků.
+- **Bod 6 — zápis v obchodním rejstříku v cizojazyčné nabídce.** Firemní
+  údaj („C 123456 vedená u Městského soudu v Praze") se v EN/DE/FR překládá
+  vzorem slovníku (`PREKLAD_SOUDY` + tři vzory v `PREKLAD_VZORY`, `preklad.js`):
+  „(spisová značka) C … vedená u …", „(zapsaná) v obchodním rejstříku
+  vedeném …, oddíl …, vložka …" a „spisová značka C …, Městský soud v Praze";
+  rejstříkové soudy Praha + šest krajských. Překládá se ve výpisu DODAVATEL
+  nabídky OCK (`firmaRadky(f, prekl, lang)`) i v symbolu `{{FIRMA_ZAPIS}}`
+  (nabídka OCK i PROJ); česky beze změny, krycí list beze změny. Jiný tvar
+  zůstane česky a slovník ho hlásí jako nepřeložený (nic se nevymýšlí).
+  **Návrh překladu čeká na kontrolu J. V.** Testy: `src/test_firma_zapis.js`
+  nový — před opravou 5/27, po opravě 32/0. (`preklad.js` ani `firma.js`
+  nejsou mezi jádry mutací; nová kontrola nevznikla.)
 
 ## v14.10.1 — výsledek celého kola nad v13.10.4 (větev claude/integrace-14-10)
 
