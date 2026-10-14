@@ -189,6 +189,11 @@ const MUTACE = [
     hledej: "      odvozene: (r, Z) => { const s = tsSoklRadek(r, Z); return s.vDodavce ? '' : s.text; },",
     nahrad: "      odvozene: (r, Z) => { const s = tsSoklRadek(r, Z); return s.text; },",
     proc: 'specifikace by zákazníkovi tvrdila obojí naráz: v dodávce je i není' },
+  /* ---------- hodiny z kalkulace v krycím listu BO (14. 10. 2026) ---------- */
+  { nazev: 'HOD 14. 10.: Word krycího listu zahodí sloupce tabulky hodin', soubor: 'docxgen.js',
+    hledej: "    if (Array.isArray(s.sloupce) && s.sloupce.length > 2) {",
+    nahrad: "    if (Array.isArray(s.sloupce) && s.sloupce.length > 3) {",
+    proc: 'backoffice by ve Wordu dostal jen sloupec OCK — hodiny projekce by z krycího listu zmizely' },
   /* ---------- K18-N96: dodatkový text v cizojazyčné nabídce (30. 9. 2026) ---------- */
   { nazev: 'K18-N96: český dodatkový text v cizí nabídce se nepozná', soubor: 'kontroly.js',
     hledej: "          return !trStav(t, jaz).prelozeno;",

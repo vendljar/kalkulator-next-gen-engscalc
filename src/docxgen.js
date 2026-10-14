@@ -793,6 +793,22 @@ function docxTeloZeSekci(nadpis, sekce) {
   const W1 = 3400, W2 = 5600, WFULL = W1 + W2;
   let body = docxPar(nadpis, { b: true, sz: 32, after: 160 });
   (sekce || []).forEach(s => {
+    /* Sekce se sloupci (hodiny z kalkulace v krycím listu BO, 14. 10. 2026):
+     * záhlaví sloupců a řádky [popis, …hodnoty]; šířka hodnot se dělí rovným dílem. */
+    if (Array.isArray(s.sloupce) && s.sloupce.length > 2) {
+      const n = s.sloupce.length - 1, WV = Math.floor(W2 / n), WT = W1 + WV * n;
+      const bunky = (r, opt) => `<w:tr>${docxCell(docxPar(r[0], { b: true, sz: 18, after: 0 }), W1, { fill: 'EEF2F8' })}`
+        + r.slice(1, n + 1).map(v => docxCell(docxPar(v == null ? '' : v, Object.assign({ sz: 18, after: 0 }, opt || {})), WV)).join('') + '</w:tr>';
+      body += `<w:tbl><w:tblPr><w:tblW w:w="${WT}" w:type="dxa"/>`
+        + '<w:tblBorders><w:top w:val="single" w:sz="4" w:color="C7D0DB"/><w:left w:val="single" w:sz="4" w:color="C7D0DB"/>'
+        + '<w:bottom w:val="single" w:sz="4" w:color="C7D0DB"/><w:right w:val="single" w:sz="4" w:color="C7D0DB"/>'
+        + '<w:insideH w:val="single" w:sz="4" w:color="C7D0DB"/><w:insideV w:val="single" w:sz="4" w:color="C7D0DB"/></w:tblBorders>'
+        + `</w:tblPr><w:tblGrid><w:gridCol w:w="${W1}"/>` + Array(n).fill(`<w:gridCol w:w="${WV}"/>`).join('') + '</w:tblGrid>'
+        + `<w:tr>${docxCell(docxPar(s.sekce, { b: true, sz: 20, color: 'FFFFFF', after: 0 }), WT, { span: n + 1, fill: '2B3850' })}</w:tr>`
+        + bunky(s.sloupce, { b: true })
+        + (s.radky || []).map(r => bunky(r)).join('') + '</w:tbl>' + docxPar('', { after: 80 });
+      return;
+    }
     const hlava = `<w:tr>${docxCell(docxPar(s.sekce, { b: true, sz: 20, color: 'FFFFFF', after: 0 }), WFULL, { span: 2, fill: '2B3850' })}</w:tr>`;
     const radky = (s.radky || []).map(([l, v]) =>
       `<w:tr>${docxCell(docxPar(l, { b: true, sz: 18, after: 0 }), W1, { fill: 'EEF2F8' })}`

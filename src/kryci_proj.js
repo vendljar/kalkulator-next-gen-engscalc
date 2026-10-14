@@ -546,6 +546,10 @@ function kryciProjData(zak, varianta, jekly, verze) {
     const radky = s.pole.filter(p => p.verze.includes(verze) && kryciProjPoleViditelne(p, c)).map(p => [p.label, kryciProjHodnota(p, kl, c)]);
     return radky.length ? { sekce: s.sekce, radky } : null;
   }).filter(Boolean);
+  /* Hodiny z kalkulace na konci verze Backoffice — tatáž tabulka jako
+   * v krycím listu OCK (kryciHodinySekce v kryci.js, 14. 10. 2026). */
+  const hodiny = (typeof kryciHodinySekce === 'function') ? kryciHodinySekce(zak, varianta, jekly, verze) : null;
+  if (hodiny) sekce.push(hodiny);
   const verzeNazev = verze === 'techdata' ? 'Techdata' : 'Backoffice';
   const cislo = ((c.hl && c.hl.cislo) || 'CN').replace(/\s+/g, '');
   const nazevSouboru = ('KRYCI_LIST_PROJ_' + verzeNazev + '_' + cislo).replace(/[\\/:*?"<>|]+/g, '-');

@@ -248,6 +248,7 @@ function renderKryci() {
     ukazují, do které verze výstupu pole patří.</div>
     ${typeof ukazkoveZabranaPanel === 'function' ? ukazkoveZabranaPanel() : ''}
     ${sekceHtml}
+    ${kryciHodinyBlok()}
     ${kryciTiskBlok(zab)}
   </div>
   ${typeof sodKarta === 'function'
@@ -276,6 +277,29 @@ function kryciTiskBlok(zab) {
 /* Tiskový pohled krycího listu → PDF přes tisk prohlížeče. Vždy JEDNA verze
  * (samostatný soubor), aby šla distribuovat odděleně – Backoffice (finance) vs
  * Technické oddělení (bez finančních detailů). */
+/* Tabulka sekce tiskového pohledu krycího listu (OCK i PROJ). Sekce se
+ * sloupci (hodiny z kalkulace, 14. 10. 2026) má záhlaví a víc hodnot. */
+function kryciTiskTabulka(s) {
+  const e2 = esc;
+  if (Array.isArray(s.sloupce) && s.sloupce.length > 2) {
+    const n = s.sloupce.length - 1;
+    const tr = (r, th) => `<tr><td class="l">${e2(r[0] || '')}</td>${r.slice(1, n + 1).map(v =>
+      th ? `<td style="font-weight:600;background:#eef2f8">${e2(v || '')}</td>` : `<td>${e2(v == null ? '' : v)}</td>`).join('')}</tr>`;
+    return `<table>${tr(s.sloupce, true)}${s.radky.map(r => tr(r)).join('')}</table>`;
+  }
+  return `<table>${s.radky.map(r => `<tr><td class="l">${e2(r[0])}</td><td>${e2(r[1] || '')}</td></tr>`).join('')}</table>`;
+}
+/* HODINY Z KALKULACE na konci krycího listu (OCK i PROJ, 14. 10. 2026) —
+ * jen ke čtení; počítá kryciHodiny (kryci.js), do výstupu jde ve verzi BO. */
+function kryciHodinyBlok() {
+  let h = null;
+  try { h = (typeof kryciHodiny === 'function') ? kryciHodiny(ZAK, aktivniVarianta(ZAK), JEKLY) : null; } catch (e) { h = null; }
+  if (!h) return '';
+  return `<h3>Hodiny z kalkulace <span class="pill kl-verze" title="jen Backoffice">BO</span></h3>
+    <div class="note">Počítá se z položek, které se nabízejí (Kalkulace OCK a Kalkulace PROJ); celé hodiny, zaokrouhleno.</div>
+    <div id="kryciHodiny">${kryciTiskTabulka({ sloupce: h.sloupce, radky: h.radky })}</div>`;
+}
+
 function kryciTiskPohled(verze) {
   /* Pojistka pro případ, že by se sem někdo dostal jinudy než tlačítkem
    * (zhasnutým) – tiskový náhled je dokument pro zákazníka jako každý jiný. */
@@ -287,7 +311,7 @@ function kryciTiskPohled(verze) {
   const e2 = esc;   // #6: sjednoceno se sdíleným escapováním (ošetří i uvozovky a apostrof)
   const d = kryciData(ZAK, v, JEKLY, verze);
   const sekHtml = d.sekce.map(s =>
-    `<h2>${e2(s.sekce)}</h2><table>${s.radky.map(r => `<tr><td class="l">${e2(r[0])}</td><td>${e2(r[1] || '')}</td></tr>`).join('')}</table>`).join('');
+    `<h2>${e2(s.sekce)}</h2>${kryciTiskTabulka(s)}`).join('');
   const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
   if (!w) return;
   w.document.write(`<!DOCTYPE html><html lang="cs"><head><meta charset="utf-8"><title>${e2(d.nazevSouboru)}</title>

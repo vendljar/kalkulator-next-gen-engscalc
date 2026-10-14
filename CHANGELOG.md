@@ -69,6 +69,25 @@ Připomínky D. Sikory a J. Laudy, rozhodnutí J. V. 14. 10. 2026. Z `test-draft
   **Návrh překladu čeká na kontrolu J. V.** Testy: `src/test_firma_zapis.js`
   nový — před opravou 5/27, po opravě 32/0. (`preklad.js` ani `firma.js`
   nejsou mezi jádry mutací; nová kontrola nevznikla.)
+- **Hodiny z kalkulace v krycích listech (zadání J. V. 14. 10. 2026 během
+  dávky; návrh `podklady/NAVRH_HODINY_KRYCI_LIST_2026-10-14.md` odsouhlasen
+  s výhradou „desetinná čísla neuváděj, zaokrouhluj").** Na konci krycího
+  listu OCK i PROJ, jen verze Backoffice (tisk PDF, Word i obrazovka), jedna
+  tabulka se sloupci OCK a PROJ (`kryciHodiny` v `kryci.js`): montáž na
+  stavbě (osoby × hodiny), dílna — oplechování (práce), projekce /
+  konstrukce, statické posouzení, stavbyvedoucí; PROJ po nabízených
+  činnostech s rozpadem na položky, paušální činnosti „paušál (bez hodin)",
+  autorský dozor jen když se nabízí („max. 30 h / měsíc", do celku se
+  nepočítá); řádek celkem. Jen nabízené položky (vyřazené, nepočítané
+  a nulové ne), celé hodiny, řádek i celek ze zaokrouhlených částí.
+  Vyřazená strana zakázky (P6 — číslo OPR / OVP) má sloupec „—", obě strany
+  jen u zakázky bez čísla. Word krycího listu umí sekci se sloupci
+  (`docxTeloZeSekci`). Testy: `src/test_kryci_hodiny.js` nový — před
+  opravou 0/1, po opravě 23/0 (čísla varianty A a B návrhu);
+  `test_kryci.js` a `test_kryci_proj_model.js` počítají jen pole formuláře.
+  Harness `overit_pripominky_14_10.mjs` (body 1–3 a hodiny v prohlížeči)
+  16/0. Mutace jádra: 1 nová („HOD 14. 10.", docxgen) chycená 1 z 1,
+  `--kontrola` 201 úseků.
 
 ## v14.10.1 — výsledek celého kola nad v13.10.4 (větev claude/integrace-14-10)
 

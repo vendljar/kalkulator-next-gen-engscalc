@@ -583,6 +583,91 @@ function kryciHodnota(pole, kl, c) {
   return '';
 }
 /* data pro Word danou verzi: {nadpis, sekce:[{sekce,radky:[[label,val]]}], nazevSouboru} */
+/* ============================================================
+ * HODINY Z KALKULACE — konec krycího listu OCK i PROJ, verze Backoffice
+ * (zadání J. V. 14. 10. 2026, návrh podklady/NAVRH_HODINY_KRYCI_LIST_
+ * 2026-10-14.md odsouhlasen s výhradou „desetinná čísla neuváděj,
+ * zaokrouhluj").
+ *
+ * Jedna tabulka pro oba listy, sloupce OCK a PROJ. Vypisují se hodiny ze
+ * všech položek, které se NABÍZEJÍ: OCK z počítaných řádků výsledku
+ * (`r.sekce.*` je už po filtru vyřazených a nepočítaných položek), hledané
+ * podle ceníkové cesty (přejmenování položky je neschová); PROJ po
+ * oceněných činnostech z hodinových položek (hodiny + rezerva), vyřazené
+ * a nulové se přeskočí. Paušální činnosti bez hodin (IČ, EZC, kolaudace,
+ * geodet) mají řádek „paušál (bez hodin)". Autorský dozor jen když se
+ * nabízí — „max. 30 h / měsíc", do celku se nepočítá. Vyřazená strana
+ * zakázky (P6) má sloupec „—".
+ *
+ * ZAOKROUHLUJE SE KAŽDÉ ČÍSLO NA CELÉ HODINY a řádek i celek se sčítají ze
+ * zaokrouhlených částí — tabulka tak dává součet sama v sobě (stejný princip
+ * jako #135 u cen). Odeslaná nabídka čte zmrazený otisk (vysledekStrany).
+ *
+ * Vrací { sloupce: ['', 'OCK', 'PROJ'], radky: [[popis, ock, proj]] } nebo
+ * null, když nemá ani jedna strana co ukázat. */
+const KRYCI_HODINY_OCK = [
+  { popis: 'montáž na stavbě', cesty: ['C.montazHodKc'], montaz: true },
+  { popis: 'dílna — oplechování (práce)', cesty: ['C.oplechPracKc'] },
+  { popis: 'projekce / konstrukce', cesty: ['C.projekceHodKc'] },
+  { popis: 'statické posouzení', cesty: ['C.statikaKc'] },
+  { popis: 'stavbyvedoucí', cesty: ['C.stavbyvedouciKc'] },
+];
+const KRYCI_HODINY_PROJ = { zamereni: 'zaměření', studie: 'studie', projednani: 'projednání studie', dpz: 'DPZ', ic: 'IČ',
+  dps: 'DPS', ezc: 'EZC', kolaudace: 'kolaudace', geodet: 'geodetické zaměření' };
+function kryciHodinyText(n) { return Math.round(+n || 0).toLocaleString('cs-CZ') + ' h'; }
+function kryciHodiny(zak, varianta, jekly) {
+  const strana = s => { try { return (typeof vysledekStrany === 'function') ? vysledekStrany(zak, varianta, s, jekly) : null; } catch (e) { return null; } };
+  const rOck = strana('ock'), rProj = strana('proj');
+  const radky = [];
+  let ockCelkem = null, projCelkem = null;
+  if (rOck && rOck.sekce) {
+    const pocitane = [].concat(rOck.sekce.hrubaOck || [], rOck.sekce.oplasteni || [], rOck.sekce.rezie || []);
+    KRYCI_HODINY_OCK.forEach(def => {
+      const casti = pocitane.filter(x => x && def.cesty.indexOf(x.cenaPath) >= 0)
+        .map(x => Math.round(+x.mnozstvi || 0)).filter(h => h > 0);
+      if (!casti.length) return;
+      const h = casti.reduce((a, b) => a + b, 0);
+      let detail = casti.length > 1 ? ' (' + casti.join(' + ') + ')' : '';
+      if (def.montaz && rOck.montaz && rOck.montaz.hodCelkem > 0 && rOck.montaz.hod1osoba > 0) {
+        const osob = Math.round(rOck.montaz.hodCelkem / rOck.montaz.hod1osoba);
+        const jeden = Math.round(rOck.montaz.hod1osoba);
+        if (osob > 1 && Math.round(rOck.montaz.hodCelkem) === h)
+          detail = ' (' + osob + ' os.' + (osob * jeden === h ? ' × ' + jeden + ' h' : '') + ')';
+      }
+      radky.push([def.popis, kryciHodinyText(h) + detail, '—']);
+      ockCelkem = (ockCelkem || 0) + h;
+    });
+  }
+  if (rProj && Array.isArray(rProj.sekce)) {
+    const pausal = [];
+    Object.keys(KRYCI_HODINY_PROJ).forEach(k => {
+      const s = rProj.sekce.find(x => x && x.key === k);
+      if (!s || !(+s.celkem > 0)) return;                 // činnost se nenabízí
+      const casti = (s.polozky || []).filter(p => p && p.typ === 'hod' && !p.vyrazeno)
+        .map(p => ({ n: String(p.nazev || '').trim(), h: Math.round((+p.hodiny || 0) + (+p.rezerva || 0)) }))
+        .filter(x => x.h > 0);
+      if (!casti.length) { pausal.push(KRYCI_HODINY_PROJ[k]); return; }
+      const h = casti.reduce((a, x) => a + x.h, 0);
+      const detail = casti.length > 1 ? ' (' + casti.map(x => x.n + ' ' + x.h).join(' + ') + ')' : '';
+      radky.push([KRYCI_HODINY_PROJ[k], '—', kryciHodinyText(h) + detail]);
+      projCelkem = (projCelkem || 0) + h;
+    });
+    if (pausal.length) radky.push([pausal.join(' / '), '—', 'paušál (bez hodin)']);
+    const sazby = (typeof NABIDKA_PROJ_SAZBY !== 'undefined') ? NABIDKA_PROJ_SAZBY : null;
+    if (typeof nabidkaProjNabiziAD === 'function' && nabidkaProjNabiziAD(varianta))
+      radky.push(['autorský dozor', '—', 'max. ' + ((sazby && sazby.autorskyDozorMaxHodin) || 30) + ' h / měsíc (do celku se nepočítá)']);
+  }
+  if (!radky.length) return null;
+  radky.push(['celkem', ockCelkem == null ? '—' : kryciHodinyText(ockCelkem), projCelkem == null ? '—' : kryciHodinyText(projCelkem)]);
+  return { sloupce: ['', 'OCK', 'PROJ'], radky };
+}
+/* Sekce krycího listu s hodinami — jen verze Backoffice. */
+function kryciHodinySekce(zak, varianta, jekly, verze) {
+  if (verze !== 'bo') return null;
+  const h = kryciHodiny(zak, varianta, jekly);
+  return h ? { sekce: 'Hodiny z kalkulace', sloupce: h.sloupce, radky: h.radky } : null;
+}
+
 function kryciData(zak, varianta, jekly, verze) {
   const c = kryciCtx(zak, varianta, jekly);
   const kl = varianta.data.kryci || { hodnoty: {} };
@@ -590,6 +675,8 @@ function kryciData(zak, varianta, jekly, verze) {
     const radky = s.pole.filter(p => p.verze.includes(verze)).map(p => [p.label, kryciHodnota(p, kl, c)]);
     return radky.length ? { sekce: s.sekce, radky } : null;
   }).filter(Boolean);
+  const hodiny = kryciHodinySekce(zak, varianta, jekly, verze);   // konec listu BO (14. 10. 2026)
+  if (hodiny) sekce.push(hodiny);
   const verzeNazev = verze === 'techdata' ? 'Techdata' : 'Backoffice';
   const cislo = (zak.cislo || 'CN').replace(/\s+/g, '');
   const nazevSouboru = ('KRYCI_LIST_' + verzeNazev + '_' + cislo).replace(/[\\/:*?"<>|]+/g, '-');
@@ -993,7 +1080,7 @@ function kryciPodminkoveSymboly(zak, varianta, jekly, P) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { kryciKc, KRYCI_SEKCE, KRYCI_NABIDKA_SEKCE, KRYCI_DPH_SAZBY, KRYCI_POKUTY, KRYCI_FAKTURACE, kryciCtx, kryciHodnota,
+  module.exports = { kryciHodiny, kryciHodinySekce, KRYCI_HODINY_OCK, kryciKc, KRYCI_SEKCE, KRYCI_NABIDKA_SEKCE, KRYCI_DPH_SAZBY, KRYCI_POKUTY, KRYCI_FAKTURACE, kryciCtx, kryciHodnota,
     kryciData, kryciMigraceZadrzne, kryciMigraceSazbaDph,
     PODM_PREFIX, kryciSymbolId, kryciCisloZTextu, kryciProcentoZTextu,
     kryciTerminDodani, kryciTerminDodaniText, kryciTerminSJednotkou, kryciTydnu,

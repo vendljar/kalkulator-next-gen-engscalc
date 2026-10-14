@@ -403,7 +403,8 @@ test('texty symbolů projdou překladem', symP.PODM_PLATCE_DPH === 'Yes', symP.P
 
 const dBo = kp.kryciProjData(zak, v, JEKLY, 'bo');
 const dTd = kp.kryciProjData(zak, v, JEKLY, 'techdata');
-const radky = (dd) => [].concat(...dd.sekce.map(s => s.radky));
+/* Tabulka „Hodiny z kalkulace" (konec BO, 14. 10. 2026) nejsou pole formuláře — hlídá ji test_kryci_hodiny.js. */
+const radky = (dd) => [].concat(...dd.sekce.filter(s => s.sekce !== 'Hodiny z kalkulace').map(s => s.radky));
 const labely = (dd) => radky(dd).map(r => r[0]);
 const najdiRadek = (dd, label) => (radky(dd).find(r => r[0] === label) || [])[1];
 

@@ -157,6 +157,7 @@ function renderKryciProj() {
     ukazují, do které verze výstupu pole patří.</div>
     ${typeof ukazkoveZabranaPanel === 'function' ? ukazkoveZabranaPanel() : ''}
     ${sekceHtml}
+    ${typeof kryciHodinyBlok === 'function' ? kryciHodinyBlok() : ''}
     ${kryciProjTiskBlok(zab)}
   </div>
   ${typeof sodProjKarta === 'function'
@@ -188,7 +189,7 @@ function kryciProjTiskPohled(verze) {
   const e2 = esc;   // #6: sjednoceno se sdíleným escapováním (ošetří i uvozovky a apostrof)
   const d = kryciProjData(ZAK, v, JEKLY, verze);
   const sekHtml = d.sekce.map(s =>
-    `<h2>${e2(s.sekce)}</h2><table>${s.radky.map(r => `<tr><td class="l">${e2(r[0])}</td><td>${e2(r[1] || '')}</td></tr>`).join('')}</table>`).join('');
+    `<h2>${e2(s.sekce)}</h2>${kryciTiskTabulka(s)}`).join('');
   const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
   if (!w) return;
   w.document.write(`<!DOCTYPE html><html lang="cs"><head><meta charset="utf-8"><title>${e2(d.nazevSouboru)}</title>
