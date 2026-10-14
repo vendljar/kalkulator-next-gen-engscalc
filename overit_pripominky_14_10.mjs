@@ -99,7 +99,7 @@ zkus('sokl v základní ceně: do tisku jen „je součástí dodávky"',
 console.log('\nHodiny z kalkulace v krycích listech');
 const hodiny = (tab) => p.evaluate((t) => {
   prepniTab(t); render();
-  const el = document.getElementById('kryciHodiny');
+  const el = document.getElementById(t === 'kryci' ? 'kryciHodiny_ock' : 'kryciHodiny_proj');
   return el ? [...el.querySelectorAll('tr')].map(r => [...r.children].map(c => c.textContent.trim())) : null;
 }, tab);
 for (const t of ['kryci', 'kryciproj']) {
@@ -110,6 +110,9 @@ for (const t of ['kryci', 'kryciproj']) {
   zkus(t + ': AD nabízený → řádek autorského dozoru', !!h && h.some(r => r[0] === 'autorský dozor'), h);
 }
 
+const dvoji = await p.evaluate(() => { const ids = [...document.querySelectorAll('[id]')].map(e => e.id);
+  return ids.filter((x, i) => ids.indexOf(x) !== i); });
+zkus('žádné dvojí id v dokumentu', dvoji.length === 0, dvoji);
 zkus('bez chyb v konzoli', konzole.length === 0, konzole);
 await b.close();
 console.log(`\n${ok} OK, ${fail} FAIL`);

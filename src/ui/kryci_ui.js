@@ -248,7 +248,7 @@ function renderKryci() {
     ukazují, do které verze výstupu pole patří.</div>
     ${typeof ukazkoveZabranaPanel === 'function' ? ukazkoveZabranaPanel() : ''}
     ${sekceHtml}
-    ${kryciHodinyBlok()}
+    ${kryciHodinyBlok('ock')}
     ${kryciTiskBlok(zab)}
   </div>
   ${typeof sodKarta === 'function'
@@ -290,14 +290,16 @@ function kryciTiskTabulka(s) {
   return `<table>${s.radky.map(r => `<tr><td class="l">${e2(r[0])}</td><td>${e2(r[1] || '')}</td></tr>`).join('')}</table>`;
 }
 /* HODINY Z KALKULACE na konci krycího listu (OCK i PROJ, 14. 10. 2026) —
- * jen ke čtení; počítá kryciHodiny (kryci.js), do výstupu jde ve verzi BO. */
-function kryciHodinyBlok() {
+ * jen ke čtení; počítá kryciHodiny (kryci.js), do výstupu jde ve verzi BO.
+ * `kde` = 'ock' | 'proj': obě stránky krycích listů jsou v dokumentu naráz,
+ * id proto nese příponu (jinak dvojí id — overit_program, overit_podminky). */
+function kryciHodinyBlok(kde) {
   let h = null;
   try { h = (typeof kryciHodiny === 'function') ? kryciHodiny(ZAK, aktivniVarianta(ZAK), JEKLY) : null; } catch (e) { h = null; }
   if (!h) return '';
   return `<h3>Hodiny z kalkulace <span class="pill kl-verze" title="jen Backoffice">BO</span></h3>
     <div class="note">Počítá se z položek, které se nabízejí (Kalkulace OCK a Kalkulace PROJ); celé hodiny, zaokrouhleno.</div>
-    <div id="kryciHodiny">${kryciTiskTabulka({ sloupce: h.sloupce, radky: h.radky })}</div>`;
+    <div id="kryciHodiny_${kde === 'proj' ? 'proj' : 'ock'}">${kryciTiskTabulka({ sloupce: h.sloupce, radky: h.radky })}</div>`;
 }
 
 function kryciTiskPohled(verze) {

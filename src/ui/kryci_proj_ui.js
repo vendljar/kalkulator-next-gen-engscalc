@@ -157,7 +157,7 @@ function renderKryciProj() {
     ukazují, do které verze výstupu pole patří.</div>
     ${typeof ukazkoveZabranaPanel === 'function' ? ukazkoveZabranaPanel() : ''}
     ${sekceHtml}
-    ${typeof kryciHodinyBlok === 'function' ? kryciHodinyBlok() : ''}
+    ${typeof kryciHodinyBlok === 'function' ? kryciHodinyBlok('proj') : ''}
     ${kryciProjTiskBlok(zab)}
   </div>
   ${typeof sodProjKarta === 'function'
