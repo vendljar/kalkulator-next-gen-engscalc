@@ -39,6 +39,11 @@ Rozhodnutí J. V. 14. 10. 2026 k závěrečné zprávě dávky v14.10.2. Z `test
   bloky PROJ, které v EN/DE/FR zůstávají česky, jsou vypsané v PREDAVKA
   (bez opravy, mimo zadání). Mutace: nová kontrola v kódu nevzniká (slovník
   a text), novou mutaci nepřidávám.
+- **Bod 3 — výchozí volby dávky v14.10.2 odsouhlaseny** (J. V. 14. 10.: „s tvými
+  návrhy souhlasím"): stará data bez volby AD = AD se tiskne; starší
+  specifikace s vyplněným názvem akce = ruční přepis; tabulka hodin vyplňuje
+  jen sloupec vedoucí strany (P6); AD v tabulce hodin „max. 30 h / měsíc",
+  do celku se nepočítá. Zapsáno do PREDAVKA jako rozhodnuté, kód beze změny.
 
 ## v14.10.3 — integrace do `test`: připomínky obchodu + K23T-N1 (větev claude/integrace-14-10b)
 
