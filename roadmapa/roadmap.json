@@ -6168,7 +6168,8 @@
    "proc" : "Excel 2026 má statiku OCK + statiku opláštění; aplikace jeden řádek, převod dorovnával ručně (rozhodnutí J. V. 2. 10. 2026: dva řádky).",
    "detail" : "Nová položka ceníku C.statikaOplHod (výchozí 0 = beze změny), řádek STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ jen u šachty s opláštěním, kontrola statikaDvakrat (ručně přepsaná statika + řádek opláštění). Hodiny nastaví J. V. v ceníku.",
    "hotovoKdyz" : "Opraveno, testy před/po v CHANGELOG v2.10.1, celé kolo zelené.",
-   "kde" : "`src/engine.js`, `src/cenik.js`, `src/kontroly.js`"
+   "kde" : "`src/engine.js`, `src/cenik.js`, `src/kontroly.js`",
+   "pozn" : "**Uzavřeno J. V. 14. 10. 2026** (po 23. a 24. kole): hodiny statiky opláštění 6 h v ceníku testu i ostré, řádek v režii u všech OCK, upozornění `statikaDvakrat` u 13 převedených zakázek ponechat — viz #405."
   },
   {
    "id" : "391",
@@ -6344,6 +6345,34 @@
    "detail" : "Odsouhlaseno J. V. 13. 10. 2026 („Ano, jak je navrženo“). Neodeslaná zakázka: jediná žlutá lišta „Rozpracovaná kalkulace“ s Pokračovat v rozpracované kalkulaci (odemkne režim čtení, obnoví novější zálohu téže zakázky) a Založit novou kalkulaci, Zahodit zálohu malým odkazem; modrá „jen ke čtení“ zanikla. Odeslaná: bez žluté lišty a bez zálohy (tiše uklizená), jednořádková informace s Klonovat a pokračovat / Založit novou zakázku (B59, B130 zůstaly). Modrý pruh Odemknout k úpravám jen s právem zamek.odemknout. Cizí zakázka: jen Založit novou a kdo ji založil. Model listaZakazkyRozhodni (zamek.js); zakázka jen ke čtení nepřepisuje zálohu v prohlížeči. Větev claude/listy-404.",
    "hotovoKdyz" : "Hotovo ve v13.10.3: test_lista_zakazky 0/1 → 46/0, overit_zaloha_lista 6 ✕ + pád → 58/0, overit_online 220/7 → 227/0, overit_v23 26/5 → 31/0, overit_manual 36/2 → 38/0. Kolo v CHANGELOG v13.10.3.",
    "kde" : "`src/zamek.js` (listaZakazkyRozhodni), `src/uloziste.js`, `src/ui/zamek_ui.js`, `src/ui/historie.js`, `src/ui/common.js`, `manual/obsah.json`"
+  },
+  {
+   "id" : "405",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "S",
+   "hotovoV" : "v14.10.3 (ostrá i test, ověřeno ve 23. a 24. kole)",
+   "nazev" : "K23T-N2: statika opláštění a „statika dvakrát“ — ponechat",
+   "proc" : "23. kolo (test v14.10.1) a 24. kolo (ostrá v14.10.3): ceník má 6 h statiky opláštění, takže řádek STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ vzniká u všech OCK. U 13 převedených zakázek (C032, C034, C045, C069, C086, C093, C094, C099, C103, C104, C105, C109, C112) převod ručně přepsal hodiny statiky OCK z Excelu, který v nich má i opláštění, a aplikace upozorní „statikaDvakrat“. Rozhodnutí J. V. 14. 10. 2026: „Je OK.“",
+   "detail" : "Bez změny kódu ani převodu. Hodiny statiky opláštění zůstávají v ceníku (P5 / #390); kontrola statikaDvakrat zůstává jako informativní upozornění pro obchodníka, převod řádek statiky opláštění nevyřazuje.",
+   "hotovoKdyz" : "Rozhodnutí zapsané v roadmapě a v protokolu 24. kola.",
+   "kde" : "`src/kontroly.js` (statikaDvakrat), ceník OCK (statikaOplHod)",
+   "zavisi" : [ { "id" : "390", "typ" : "tvrda", "proc" : "navazuje na dvouřádkovou statiku P5" } ]
+  },
+  {
+   "id" : "406",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "S",
+   "hotovoV" : "v14.10.3 (ostrá i test, ověřeno ve 22.–24. kole)",
+   "nazev" : "K19-N113: boky dveří „bez“ — mezeru řeší generální dodavatel",
+   "proc" : "Kontrola bokyDveri (19. kolo) hlásí u 60 převedených OCK zakázek, že vedle šachetních dveří zůstane neoceněná mezera 0,5–0,6 m na každém nástupišti. Rozhodnutí J. V. 14. 10. 2026: „Pokud je to bez, tak je to bez a počítá se s tím, že prostor kolem dveří stavebně vyřeší generální dodavatel. Nech to takto a uzavři.“",
+   "detail" : "Bez změny kódu ani převodu. Volba „bez“ na bocích dveří znamená, že prostor kolem dveří stavebně řeší generální dodavatel; převod z Excelu ji ponechává. Kontrola bokyDveri zůstává jako informativní upozornění (nebrání dokumentům).",
+   "hotovoKdyz" : "Rozhodnutí zapsané v roadmapě a v protokolu 24. kola.",
+   "kde" : "`src/kontroly.js` (bokyDveri)",
+   "zavisi" : [ { "id" : "375", "typ" : "doporuceno", "proc" : "volby světlíků nad dveřmi a na bocích" } ]
   }
  ],
  "meta" : {
@@ -6887,6 +6916,11 @@
    "text" : "2. 10. 2026 (engscalc, test-draft + test), v2.10.1 — nálezy 19. kola P1–P6 (#386–#391): pojistka #372 i pro nově zamčenou variantu, zkratka prosklené prohlubně, přepis skla → PRÁCE a TMELENÍ, nápověda jiného skla, statika ve dvou řádcích, zahraniční ceník → jen realizace. Paralelní větev claude/k19-nalezy, integrace claude/davka-2-10 nad v1.10.2.",
    "hotovo" : true,
    "pozn" : "Celé kolo VŠE ZELENÉ (77 min 32 s): sady 218/0/1, mutace jádra 138 z 138, serveru 211 z 211, statické 3 z 3."
+  },
+  {
+   "text" : "14. 10. 2026 — rozhodnutí J. V. po 23. kole (test) a 24. kole (ostrá v14.10.3): P5 statika opláštění 6 h a upozornění „statika dvakrát“ u 13 převedených zakázek ponechat (#405, K23T-N2 uzavřen). K19-N113: boky dveří „bez“ ponechat, prostor kolem dveří řeší generální dodavatel (#406).",
+   "hotovo" : true,
+   "pozn" : "24. kolo v ostré: 148/148 na korunu shodných s testem, 138 uloženo, 137 vytištěno se zámkem „shoda“."
   }
   ],
   "pravidla" : [
