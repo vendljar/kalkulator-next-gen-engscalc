@@ -68,6 +68,47 @@ Podrobnosti a testy před/po: CHANGELOG v14.10.4.
 - **Další krok:** celé kolo s mutacemi nad touto větví (ověří i sloučený
   stav v14.10.3), výsledek do CHANGELOG a sem; release odkazy v14.10.3
   a v14.10.4.
+# Předávka — 14. 10. 2026 večer: větev `claude/kryci-jine-zneni` (v14.10.7, O1)
+
+- **`claude/kryci-jine-zneni`** nad `test` (v14.10.5, 3538875): „jiné znění"
+  v krycím listu (`klVyber` / `klpVyber`) je nově v obalu zámku
+  (`ZAMEK_CHRANENE` + `ZAMEK_KRYCI_FUNKCE`) — u pole nabídky zamčené
+  varianty dialog „Uzamčená varianta", hodnota zůstane. Zadání
+  `podklady/PROMPT_kryci_jine_zneni.md` (větev `claude/davky-14-10`).
+- Testy: `overit_kryci_po_tisku.mjs` 19/27 → 27/27, `overit_lista.mjs`
+  255/255, smoke 243/0/2 (přeskočeno `test.js` a `overit_manual.mjs` —
+  příručka se v této dávce nesestavovala). Ruční mutace obalu 2/2 zabité.
+  Server beze změny, mutace serveru netřeba.
+- **Čeká na integraci:** celé kolo s mutacemi nad výsledným stavem pustí
+  koordinační sezení J. V. při sloučení do `test`. Konflikty čekej
+  v CHANGELOG, PREDAVKA a `verze.txt` (v14.10.6 drží I1).
+- Podklady (šablony z Drive) `/home/user/kng_podklady_kryci-jine-zneni`.
+  Na Disku je nová `Sablona_NABIDKA_PROJ_v5` (+EN/DE/FR, 14. 10.), ta se
+  nestahovala. SoD v1 na Disku pod tím názvem není, místo ní jsou varianty
+  bez čísla z 14. 8.
+
+---
+
+# Předávka — 14. 10. 2026 večer: `test` = v14.10.5 (krycí list odeslané nabídky), `main` = v14.10.3
+
+- **`main`** = eff7724 (v14.10.3) — převod z `test` na pokyn J. V. 14. 10.
+  („pošli aktuální test do main"), fast-forward.
+- **`test`** = v14.10.5 z větve `claude/kryci-odemceny-14-10` (pokyn J. V.
+  14. 10.: „krycí list by nemusel být zamčený … uprav a pošli do testu"):
+  po tisku nabídky jsou v krycím listu zamčená jen pole nabídky, po SoD celý;
+  sady 244/0/1, nové testy a mutace serveru 5/5 (CHANGELOG v14.10.5).
+  Celé kolo s mutacemi nad v14.10.5 zatím neproběhlo — pustit při dalším
+  sloučení. Podklady `/home/user/kng_podklady_kryci-14-10`.
+- **`claude/slovnik-14-10`** (v14.10.4, nad v14.10.3): zápis v OR se
+  nepřekládá, řádek AD ve slovníku, výchozí volby v14.10.2 rozhodnuté —
+  nesloučeno, o převodu rozhodne J. V. Při sloučení do `test`: verze na
+  další číslo, konflikty čekej v CHANGELOG, PREDAVKA, `manual/obsah.json`
+  (úvod novinek) a `verze.txt`.
+- `test-draft` beze změny.
+- Pozn. mimo zadání: `klVyber` / `klpVyber` s volbou „jiné znění" mažou
+  hodnotu pole bez dotazu na zámek (i u pole nabídky zamčené varianty →
+  server pak uložení odmítne „Neuloženo"). Starší chování — opraveno ve
+  větvi `claude/kryci-jine-zneni` (v14.10.7, nesloučeno).
 
 ---
 
