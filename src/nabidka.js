@@ -687,7 +687,7 @@ function nabidkaNahledSekce(ph, lang, platby) {
 
   // Dodavatel (naše firma) – SET-3; sekce se vypustí, nejsou-li údaje vyplněné
   if (typeof firmaRadky === 'function') {
-    const dodavatel = firmaRadky(typeof firmaAktualni === 'function' ? firmaAktualni() : null, null, L);
+    const dodavatel = firmaRadky(typeof firmaAktualni === 'function' ? firmaAktualni() : null, null);
     if (dodavatel.length) sekce.push({ sekce: 'DODAVATEL', radky: dodavatel });
   }
 

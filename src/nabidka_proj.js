@@ -291,8 +291,11 @@ const NABIDKA_PROJ_DEF = [
    * nabízí (nabidkaProjNabiziAD, 14. 10. 2026). Nadpis ROZŠÍŘENÁ NABÍDKA nese
    * v online nabídce jen AD, proto patří k němu. */
   { typ: 'nadpis', ad: true, text: 'ROZŠÍŘENÁ NABÍDKA' },
+  /* Odstavec AD se od 14. 10. 2026 PŘEKLÁDÁ — byl { cz } z doby, kdy ho
+   * slovník neznal; od překladu šablony PROJ ho zná (stejně jako poznámky
+   * pod TERMÍNY, K18-N95). Online nabídka v EN/DE/FR ho nechávala česky. */
   { typ: 'proza', ad: true, nadpis: 'AUTORSKÝ DOZOR (AD)', odstavce: [
-    { cz: 'V případě požadavku účasti projektanta na kontrolních dnech nebo v případě požadavku klienta v průběhu realizace. Autorský dozor doporučujeme v rámci stavby objednat.' },
+    'V případě požadavku účasti projektanta na kontrolních dnech nebo v případě požadavku klienta v průběhu realizace. Autorský dozor doporučujeme v rámci stavby objednat.',
   ] },
   { typ: 'cena', ad: true, nadpis: 'MĚSÍČNÍ SAZBA ZA AUTORSKÝ DOZOR (AD)', pausal: 'autorskyDozorKcMesic', jednotka: 'měsíc',
     popis: 'Sazbu je možné určit i celkovou částkou za určité období, hradí se měsíčně. Obsahuje maximálně 30 hodin výkonu AD za měsíc.' },

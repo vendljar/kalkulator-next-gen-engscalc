@@ -1,22 +1,73 @@
-# Předávka — 14. 10. 2026 večer: `test` = v14.10.5 (krycí list odeslané nabídky), `main` = v14.10.3
+# Předávka — 14. 10. 2026 večer: noční dávky, `test` = v14.10.6 (slovník + krycí list)
 
-- **`main`** = eff7724 (v14.10.3) — převod z `test` na pokyn J. V. 14. 10.
-  („pošli aktuální test do main"), fast-forward.
-- **`test`** = v14.10.5 z větve `claude/kryci-odemceny-14-10` (pokyn J. V.
-  14. 10.: „krycí list by nemusel být zamčený … uprav a pošli do testu"):
-  po tisku nabídky jsou v krycím listu zamčená jen pole nabídky, po SoD celý;
-  sady 244/0/1, nové testy a mutace serveru 5/5 (CHANGELOG v14.10.5).
-  Celé kolo s mutacemi nad v14.10.5 zatím neproběhlo — pustit při dalším
-  sloučení. Podklady `/home/user/kng_podklady_kryci-14-10`.
-- **`claude/slovnik-14-10`** (v14.10.4, nad v14.10.3): zápis v OR se
-  nepřekládá, řádek AD ve slovníku, výchozí volby v14.10.2 rozhodnuté —
-  nesloučeno, o převodu rozhodne J. V. Při sloučení do `test`: verze na
-  další číslo, konflikty čekej v CHANGELOG, PREDAVKA, `manual/obsah.json`
-  (úvod novinek) a `verze.txt`.
-- `test-draft` beze změny.
-- Pozn. mimo zadání: `klVyber` / `klpVyber` s volbou „jiné znění" mažou
-  hodnotu pole bez dotazu na zámek (i u pole nabídky zamčené varianty →
-  server pak uložení odmítne „Neuloženo"). Starší chování, neopraveno.
+Pokyn J. V. 14. 10. večer: „slovník sluč a rozběhni vše, co jsi naplánoval na
+dnešní noc i zítřek. Vše řádně otestuj a veškeré změny pošli rovnou do
+prostředí test. Do main nic, dokud to nepotvrdím." Plán dávek:
+`podklady/DAVKY_2026-10-14_noc.md` (větev `claude/davky-14-10`).
+
+- **`main`** = eff7724 (v14.10.3), dál nic bez potvrzení J. V.
+- **`test`** = v14.10.6: v14.10.5 (krycí list odeslané nabídky se dá
+  doplňovat) + sloučená `claude/slovnik-14-10` (v14.10.4: zápis v OR se
+  nepřekládá, řádek AD ve slovníku) — větev `claude/integrace-14-10c`.
+- **Koordinační sezení** session_0191A71yUFarU952Vy7h2hc5 slučuje výsledky
+  nočních dávek do `test` a nakonec pouští celé kolo s mutacemi nad výsledným
+  stavem (K1 tím odpadá). Dávky v samostatných sezeních:
+  R1 `claude/k24-roadmapa-p5` (session_01HvZWAVHqyk6PE8w5bNZxfo),
+  O1 `claude/kryci-jine-zneni` (session_01HL2oQfXzE1yqypbQZ3TQaS),
+  P1 `claude/proj-preklad-zbytky` (session_01JAUuerdfMdVrsDZxSRjRAj),
+  R2 `claude/roadmapa-13-14-10` (spustí se po R1).
+- `test-draft` beze změny (v14.10.1).
+- Podklady pro kolo: `/home/user/kng_podklady_slovnik-14-10` (šablony
+  z Disku) — příručku sestavit znovu pro výslednou verzi.
+
+---
+
+# Předávka — 14. 10. 2026 večer: větev `claude/slovnik-14-10` (v14.10.4), slovník a zápis v OR
+
+Z `test` (v14.10.3, eff7724), zadání `podklady/PROMPT_slovnik_14_10.md`.
+Do `test-draft` / `test` / `main` nic — o převodu rozhodne J. V.
+Podrobnosti a testy před/po: CHANGELOG v14.10.4.
+
+- **Hotovo (pushnuto):** bod 1 zápis v OR se nepřekládá (vrácen d9bedae,
+  `test_firma_zapis.js` 19/72 → 91/0, příručka opravena); bod 2 řádek
+  „100 % z celkové ceny za tuto činnost, fakturováno měsíčně" ve slovníku
+  EN/DE/FR + odstavec AUTORSKÝ DOZOR (AD) se překládá
+  (`test_proj_ad_preklad.js` 7/5 → 12/0).
+- **Rozhodnuto J. V. 14. 10. 2026 („s tvými návrhy souhlasím") — výchozí
+  volby dávky v14.10.2 platí, kód beze změny:**
+  1. stará data bez volby AD (`proj.zadani.nabizetAD` chybí) = AD se tiskne;
+  2. starší specifikace s vyplněným názvem akce = ruční přepis (nemění se);
+  3. v kombinaci s P6 vyplňuje tabulka hodin krycího listu jen sloupec
+     vedoucí strany (číslo OPR/OVP);
+  4. AD v tabulce hodin „max. 30 h / měsíc", do celku se nepočítá.
+- **Zápis v OR se nepřekládá** (J. V. 14. 10.) — platí trvale; nevracet
+  vzory `PREKLAD_SOUDY`.
+- **Co v online nabídce PROJ v EN/DE/FR dál zůstává česky (bez opravy,
+  mimo zadání — k rozhodnutí J. V.):**
+  - souvislá próza `{ cz }` záměrně česky: úvod bloků STUDIE PROVEDITELNOSTI,
+    DPZ, DPS; poznámky pod studií (2 paré, 5 pracovních dní na připomínky,
+    rozšíření studie do DPZ); řádky rozsahu studie a DPZ (vizuální
+    prohlídka, PŮVODNÍ STAV, ROZSAH BOURÁNÍ, NAVRHOVANÝ STAV, situace
+    stavby, dokumentace stávajícího/nového stavu, bourací dokumentace)
+    a štítek části 2 DPZ („Požárně bezpečnostní řešení…" v závorce);
+  - slovník je zná, ale znění se liší (pravděpodobně drobná neshoda textu):
+    CENA NEZAHRNUJE „Součástí ceny není řešení samostatných řízení
+    vyplývajících… péče, a řešení…" (slovník má „vyplývající… péče a"),
+    INŽENÝRSKÁ ČINNOST „Podání a projednání… (Hasičský záchranný sbor, …)"
+    (slovník bez závorky), popis ceny DPZ „Zpracování projektu pro DPZ,
+    včetně PBŘ, STATIKY a ELEKTRO PROJEKTU" (ve slovníku je — prověřit,
+    proč se nepoužije);
+  - bez překladu: popis ceny DPS „Zpracování prováděcí dokumentace, včetně
+    STATICKÉ ČÁSTI a ELEKTRO PROJEKTU", hvězdička DPZ „Cena je platná
+    v případě návaznosti na STUDII PROVEDITELNOSTI.", IČ „V průběhu celého
+    řízení komunikujeme…", „Vyřízení POVOLENÍ ZÁMĚRU (dle platného
+    stavebního zákona…)".
+- **Podklady:** `/home/user/kng_podklady_slovnik-14-10` (30 šablon z Disku
+  — CN v7/v11/v13/v14/v15 + jazyky, PROJ v3/v4 + EN/DE/FR, SoD v1/v2, plná
+  moc; příručka v14.10.4 ze snímků).
+- **Další krok:** celé kolo s mutacemi nad touto větví (ověří i sloučený
+  stav v14.10.3), výsledek do CHANGELOG a sem; release odkazy v14.10.3
+  a v14.10.4.
 
 ---
 

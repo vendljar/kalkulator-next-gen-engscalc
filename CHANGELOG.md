@@ -8,6 +8,14 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v14.10.6 — integrace do `test`: slovník a zápis v OR (v14.10.4) + krycí list (v14.10.5) (větev claude/integrace-14-10c)
+
+Pokyn J. V. 14. 10. 2026 večer („Ano, slovník sluč … veškeré změny pošli
+rovnou do prostředí test"). `test` nesl v14.10.5 (3538875); do něj sloučena
+`claude/slovnik-14-10` (v14.10.4) merge commitem bez rebase. Konflikty jen
+v CHANGELOG, PREDAVKA, úvodu příručky a `verze.txt`; kód se sloučil
+automaticky. Výsledky ověření viz níž.
+
 ## v14.10.5 — krycí list odeslané nabídky se dá doplňovat (větev claude/kryci-odemceny-14-10)
 
 Pokyn J. V. 14. 10. 2026 (se snímkem dialogu „Uzamčená varianta" nad krycím
@@ -41,6 +49,43 @@ obsazená větví `claude/slovnik-14-10` (nesloučená).
   po 15/0. Mutace serveru: 5 nových („KL 14. 10.") chycené 5 z 5, mutace
   „data uzamčené varianty lze změnit" přesměrovaná na nové porovnání
   (chycená), `--kontrola` 400 úseků; obě nové sady přidány do sad mutací.
+
+## v14.10.4 — slovník a zápis v OR (větev claude/slovnik-14-10)
+
+Rozhodnutí J. V. 14. 10. 2026 k závěrečné zprávě dávky v14.10.2. Z `test`
+(v14.10.3, eff7724). Do `test-draft` / `test` / `main` nic — rozhodne J. V.
+
+- **Bod 1 — zápis v obchodním rejstříku se nepřekládá** („zápisy v obchodním
+  rejstříku nepřekládej"). Vrácen bod 6 dávky v14.10.2 (d9bedae): vzory
+  `PREKLAD_SOUDY` a tři vzory zápisu v `src/preklad.js`, překlad hodnoty
+  ve `firmaRadky(f, prekl, lang)` a u symbolu `{{FIRMA_ZAPIS}}`
+  v `src/firma.js`, `lang` ve volání z `src/nabidka.js`. Zápis jde do CZ
+  i EN/DE/FR nabídky (výpis DODAVATEL, `{{FIRMA_ZAPIS}}` OCK i PROJ) přesně
+  tak, jak je zadaný v Nastavení → Firma; popisek řádku se překládá dál.
+  Test `src/test_firma_zapis.js` přepsán na nové pravidlo (šest tvarů zápisu
+  × CZ/EN/DE/FR × DODAVATEL, OCK, PROJ + slovník) — nad kódem v14.10.3
+  19/72, po vrácení 91/0. Mutace: nová kontrola v kódu nevzniká (jen se
+  odebírá), novou mutaci proto nepřidávám.
+- **Bod 2 — platební podmínky autorského dozoru v EN/DE/FR.** Řádek
+  „100 % z celkové ceny za tuto činnost, fakturováno měsíčně" (blok
+  PLATEBNÍ PODMÍNKY AUTORSKÉHO DOZORU, `NABIDKA_PROJ_DEF`) doplněn do slovníku
+  (`src/preklad.js`) — znění podle buňky přeložených šablon PROJ v4/v5:
+  EN „100 % of the total price for this service, invoiced monthly", DE
+  „100 % des Gesamtpreises für diese Leistung, monatlich abgerechnet", FR
+  „100 % du prix total de cette prestation, facturé mensuellement". Ve stejném
+  bloku AD zůstával česky i odstavec AUTORSKÝ DOZOR (AD) — stál jako `{ cz }`,
+  i když ho slovník od překladu šablony PROJ zná; nově se překládá (jako
+  poznámky pod TERMÍNY u K18-N95). CZ beze změny. Test
+  `src/test_proj_ad_preklad.js` nový (všechny řetězce čtyř bloků AD v EN/DE/FR
+  přeložené a bez české diakritiky) — před opravou 7/5, po 12/0. Ostatní
+  bloky PROJ, které v EN/DE/FR zůstávají česky, jsou vypsané v PREDAVKA
+  (bez opravy, mimo zadání). Mutace: nová kontrola v kódu nevzniká (slovník
+  a text), novou mutaci nepřidávám.
+- **Bod 3 — výchozí volby dávky v14.10.2 odsouhlaseny** (J. V. 14. 10.: „s tvými
+  návrhy souhlasím"): stará data bez volby AD = AD se tiskne; starší
+  specifikace s vyplněným názvem akce = ruční přepis; tabulka hodin vyplňuje
+  jen sloupec vedoucí strany (P6); AD v tabulce hodin „max. 30 h / měsíc",
+  do celku se nepočítá. Zapsáno do PREDAVKA jako rozhodnuté, kód beze změny.
 
 ## v14.10.3 — integrace do `test`: připomínky obchodu + K23T-N1 (větev claude/integrace-14-10b)
 

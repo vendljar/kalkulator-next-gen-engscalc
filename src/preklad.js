@@ -963,6 +963,10 @@ const PREKLAD = {
   "Provedení detailního zaměření a stavebně technického průzkumu": ["Detailed survey and building-technical inspection", "Detailliertes Aufmaß und bautechnische Untersuchung", "Relevé détaillé et diagnostic technique du bâtiment"],
   "*fakturováno měsíčně": ["*invoiced monthly", "*monatlich abgerechnet", "*facturé mensuellement"],
   "100 % z celkové ceny za tuto činnost*": ["100 % of the total price for this service*", "100 % des Gesamtpreises für diese Leistung*", "100 % du prix total de cette prestation*"],
+  /* Celá věta online nabídky PROJ (NABIDKA_PROJ_DEF, platební podmínky AD) —
+   * šablona PROJ v4/v5 ji má v buňce rozdělenou na dvě půlky výš; znění podle
+   * nich (rozhodnutí J. V. 14. 10. 2026). */
+  "100 % z celkové ceny za tuto činnost, fakturováno měsíčně": ["100 % of the total price for this service, invoiced monthly", "100 % des Gesamtpreises für diese Leistung, monatlich abgerechnet", "100 % du prix total de cette prestation, facturé mensuellement"],
   "Platba po zajištění autorského dozoru a součtu hodin": ["Payment after the designer's site supervision has been provided and the hours totalled", "Zahlung nach erbrachter planerischer Objektüberwachung und Summierung der Stunden", "Paiement après réalisation du suivi architectural et décompte des heures"],
   "50 % z celkové ceny za tuto činnost": ["50 % of the total price for this service", "50 % des Gesamtpreises für diese Leistung", "50 % du prix total de cette prestation"],
   "Platba po vydání kolaudačního rozhodnutí": ["Payment after the final building approval decision has been issued", "Zahlung nach Erteilung des Bauabnahmebescheids", "Paiement après délivrance de la décision de réception des travaux"],
@@ -1208,49 +1212,9 @@ function prekladSvetlikyDveri(text, lang) {
   }).join('; ');
 }
 
-/* ZÁPIS V OBCHODNÍM REJSTŘÍKU (připomínka obchodu, rozhodnutí J. V.
- * 14. 10. 2026). Údaj firmy z Nastavení → Firma („C 123456 vedená
- * u Městského soudu v Praze") šel do cizojazyčné nabídky česky — je to
- * text s číslem vložky, slovník ho celý trefit nemůže. Vzory níž znají
- * tři obvyklé české tvary; rejstříkový soud se překládá podle mapy
- * (pád podle tvaru věty), oddíl a vložka zůstávají. NÁVRH PŘEKLADU —
- * čeká na kontrolu J. V. */
-const PREKLAD_SOUDY = [
-  /* [genitiv, instrumentál, 1. pád, en, de, fr] */
-  ['Městského soudu v Praze', 'Městským soudem v Praze', 'Městský soud v Praze',
-    'the Municipal Court in Prague', 'dem Stadtgericht Prag', 'le tribunal municipal de Prague'],
-  ...[['Brně', 'Brno', 'Brünn'], ['Ostravě', 'Ostrava', 'Ostrava'], ['Plzni', 'Plzeň', 'Pilsen'],
-    ['Ústí nad Labem', 'Ústí nad Labem', 'Ústí nad Labem'], ['Českých Budějovicích', 'České Budějovice', 'Budweis'],
-    ['Hradci Králové', 'Hradec Králové', 'Hradec Králové']].map(([v, m, de]) =>
-    ['Krajského soudu v ' + v, 'Krajským soudem v ' + v, 'Krajský soud v ' + v,
-      'the Regional Court in ' + m, 'dem Landgericht ' + de, 'le tribunal régional ' + (/^[AEIOUÚ]/.test(m) ? 'd\u2019' : 'de ') + m]),
-];
-const PREKLAD_SOUD_RE = '(' + PREKLAD_SOUDY.map(x => x.slice(0, 3).join('|')).join('|') + ')';
-function prekladSoud(cz, lang) {
-  const s = PREKLAD_SOUDY.find(x => x.slice(0, 3).indexOf(cz) >= 0);
-  return s ? s[3 + JAZYK_IDX[lang]] : cz;
-}
-const prekladBezClenu = (t, lang) => lang === 'en' ? t.replace(/^the /, '') : lang === 'de' ? t.replace(/^dem /, '') : t.replace(/^le /, '');
-
 /* ---- vzory pro řetězce s čísly, které se generují za běhu ----
  * (rozměry, rozteče, počty – slovník je pokrýt nemůže) */
 const PREKLAD_VZORY = [
-  /* Zápis v obchodním rejstříku (14. 10. 2026, viz PREKLAD_SOUDY výš):
-   * „(spisová značka) C 123456(,) vedená u Městského soudu v Praze" */
-  { re: new RegExp('^(?:(?:spisová značka|sp\\.\\s*zn\\.)\\s*:?\\s*)?([A-H]{1,2})\\s*(\\d+)\\s*,?\\s*vedená u ' + PREKLAD_SOUD_RE + '\\.?$', 'i'),
-    en: (m, o, n, s) => 'File No. ' + o + ' ' + n + ', registered with ' + prekladSoud(s, 'en'),
-    de: (m, o, n, s) => 'Aktenzeichen ' + o + ' ' + n + ', eingetragen beim ' + prekladBezClenu(prekladSoud(s, 'de'), 'de'),
-    fr: (m, o, n, s) => 'numéro de dossier ' + o + ' ' + n + ', enregistré auprès du ' + prekladBezClenu(prekladSoud(s, 'fr'), 'fr') },
-  /* „(zapsaná) v obchodním rejstříku vedeném Městským soudem v Praze, oddíl C, vložka 123456" */
-  { re: new RegExp('^(?:zapsan[áýé]\\s+)?v obchodním rejstříku vedeném ' + PREKLAD_SOUD_RE + '\\s*,?\\s*oddíl\\s+([A-H]{1,2})\\s*,?\\s*vložka\\s+(\\d+)\\.?$', 'i'),
-    en: (m, s, o, n) => 'registered in the Commercial Register maintained by ' + prekladSoud(s, 'en') + ', Section ' + o + ', Insert ' + n,
-    de: (m, s, o, n) => 'eingetragen im Handelsregister beim ' + prekladBezClenu(prekladSoud(s, 'de'), 'de') + ', Abteilung ' + o + ', Einlage ' + n,
-    fr: (m, s, o, n) => 'immatriculée au registre du commerce tenu par ' + prekladSoud(s, 'fr') + ', section ' + o + ', insert ' + n },
-  /* „spisová značka C 123456, Městský soud v Praze" */
-  { re: new RegExp('^(?:spisová značka|sp\\.\\s*zn\\.)\\s*:?\\s*([A-H]{1,2})\\s*(\\d+)\\s*,\\s*' + PREKLAD_SOUD_RE + '\\.?$', 'i'),
-    en: (m, o, n, s) => 'File No. ' + o + ' ' + n + ', ' + prekladBezClenu(prekladSoud(s, 'en'), 'en'),
-    de: (m, o, n, s) => 'Aktenzeichen ' + o + ' ' + n + ', ' + prekladBezClenu(prekladSoud(s, 'de'), 'de'),
-    fr: (m, o, n, s) => 'numéro de dossier ' + o + ' ' + n + ', ' + prekladBezClenu(prekladSoud(s, 'fr'), 'fr') },
   /* #375: věta o světlících u šachetních dveří (viz prekladSvetlikyDveri výš).
    * NÁVRH PŘEKLADU — čeká na odbornou kontrolu J. V. */
   { re: PREKLAD_SVETLIKY_RE, en: m => prekladSvetlikyDveri(m, 'en'), de: m => prekladSvetlikyDveri(m, 'de'),
