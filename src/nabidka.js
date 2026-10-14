@@ -35,7 +35,10 @@ function nabidkaData(zak, varianta, jekly, lang, sablona) {
    * samotné `volitelne.sokl` by na interiérové šachtě slíbilo dodávku něčeho,
    * co se vůbec nepočítá. A protože `r` je u odeslané nabídky zmrazený otisk
    * (vypocetZ, nález A1), nezmění vytištěná nabídka svoje znění zpětně. */
-  const soklJe = (r.volitelneKatalog || []).some(x => x.key === 'sokl' && x.zahrnuto);
+  /* Od 14. 10. 2026 rozhoduje jediná funkce tsSoklRadek (techspec.js) —
+   * tutéž otázku klade technická specifikace a obě místa se nesmí rozejít. */
+  const sokl = ((typeof tsSoklRadek === 'function') ? tsSoklRadek
+    : require('./techspec.js').tsSoklRadek)(r, Zv);   // Node bez globálu (testy): týž modul
 
   /* SOKL NABÍZENÝ JAKO PŘÍPLATEK (nález N17, kolo 6, 21. 9. 2026).
    *
@@ -52,8 +55,8 @@ function nabidkaData(zak, varianta, jekly, lang, sablona) {
    * odkazuje na příplatek. Rozhoduje TÝŽ seznam, ze kterého se sází
    * kapitola II. (`r.priplatky` bez vyřazených), aby se obě místa nemohla
    * rozejít. */
-  const soklPriplatek = (r.priplatky || []).some(x => x.key === 'sokl')
-    && !(Zv.priplatkyVynechat || []).includes('sokl');
+  /* (Rozhodnutí N17 je v tsSoklRadek: příplatek nabízený = v r.priplatky
+   * a ne v priplatkyVynechat.) */
 
   /* Vnější lešení v ZÁKLADNÍ CENĚ — jedna definice pro kapitolu IV.
    * i pro řádek specifikace „LEŠENÍ KOLEM OCK…" (P8/7). Dvě různé podmínky
@@ -240,8 +243,8 @@ function nabidkaData(zak, varianta, jekly, lang, sablona) {
      * zavedený způsob, jak řádek zmizí: docxgen.js vyhodí z Wordu řádek,
      * jehož všechny TS_* zástupce jsou prázdné, i s popiskem, a pak i sekční
      * pruh, kterému nezbyl jediný datový řádek. Náhled se řídí týmž. */
-    TS_SOKL: soklJe ? P('je součástí dodávky') : '',
-    TS_NENI_SOKL: soklJe ? '' : (soklPriplatek ? P('nabízeno jako příplatek') : P('není součástí nabídky')),
+    TS_SOKL: sokl.vDodavce ? P(sokl.text) : '',
+    TS_NENI_SOKL: sokl.vDodavce ? '' : P(sokl.text),
     TS_NENI_NAPAJENI: ts('neni9'), TS_NENI_PROHLUBEN: ts('neni10'),
     TS_NENI_PRISTUP: ts('neni11'),
 

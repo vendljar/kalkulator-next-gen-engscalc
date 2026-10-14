@@ -44,6 +44,19 @@ Připomínky D. Sikory a J. Laudy, rozhodnutí J. V. 14. 10. 2026. Z `test-draft
   nese název akce) a `test_techspec_sklo.js` (výchozí název z hlavičky)
   upraveny. Mutace jádra: `techspec.js` přidán mezi jádra, 2 nové („NA 14.
   10.") chycené 2 z 2, `--kontrola` 197 úseků.
+- **Bod 3 — oplechování soklu prohlubně v technické specifikaci.** Jedna
+  společná funkce `tsSoklRadek(r, Z)` (`techspec.js`) pro nabídku OCK
+  i technickou specifikaci: sokl v základní ceně → řádek OPLECHOVÁNÍ SOKLU
+  PROHLUBNĚ v DOPLŇKOVÝCH KONSTRUKCÍCH („je součástí dodávky"), jinak
+  v SOUČÁSTÍ DODÁVKY NENÍ („nabízeno jako příplatek" / „není součástí
+  nabídky") — i u vnitřní šachty. Ve specifikaci jsou to odvozená pole
+  `sokl` a `neniSokl` (řídí se cenou, ruční přepis se nepoužije); nabídka OCK
+  (`TS_SOKL` / `TS_NENI_SOKL`) čte tutéž funkci. Testy:
+  `src/test_sokl_specifikace.js` nový — před opravou 0/1, po opravě 21/0
+  (čtyři stavy × specifikace = nabídka, EN/DE/FR); `test_nabidka_sokl.js`
+  (rozhodnutí čte výsledek přes společnou funkci) a `test_specifikace_cena.js`
+  (seznam odvozených polí) upraveny. Mutace jádra: 3 nové („SOKL 14. 10.")
+  chycené 3 z 3, `--kontrola` 200 úseků.
 
 ## v14.10.1 — výsledek celého kola nad v13.10.4 (větev claude/integrace-14-10)
 

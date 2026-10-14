@@ -204,8 +204,9 @@ REZIMY.forEach(([rezim, jm]) => {
  * a ostatní pole specifikace se chovají jako dřív (ruční hodnota platí). */
 {
   const odvozena = Object.keys(pole).filter(id => typeof pole[id].odvozene === 'function');
-  test('odvozená pole jsou právě statika, 3D sken a lešení kolem OCK',
-    odvozena.sort().join(',') === 'neni3,sken3d,statika', odvozena);
+  /* + oplechování soklu prohlubně v obou sekcích (14. 10. 2026, test_sokl_specifikace.js) */
+  test('odvozená pole jsou právě statika, 3D sken, lešení kolem OCK a oplechování soklu',
+    odvozena.sort().join(',') === 'neni3,neniSokl,sken3d,sokl,statika', odvozena);
   const jine = hodnota('dilenskaDok', zadani(), { dilenskaDok: 'ne' }, true);
   test('běžné pole dál bere ruční hodnotu', jine.text === 'ne' && jine.zdroj === 'ručně', jine);
 }

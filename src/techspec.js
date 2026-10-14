@@ -574,6 +574,15 @@ const TECHSPEC_DEF = [
         const ano = kat ? !!kat.zahrnuto : !!Z.prechodovePlechy;
         return ano ? 'nerezový plech dle zaměření ve všech nástupištích' : 'nejsou součástí dodávky, viz příplatkové ceny';
       } },
+    /* OPLECHOVÁNÍ SOKLU PROHLUBNĚ (14. 10. 2026, připomínka obchodu): řádek
+     * nabídky OCK chyběl v technické specifikaci. Stojí tady, když je sokl
+     * součástí dodávky, jinak v SOUČÁSTÍ DODÁVKY NENÍ (`neniSokl`) — rozhoduje
+     * tsSoklRadek, tatáž funkce jako v nabídce OCK. Prázdná hodnota = řádek
+     * do dokumentu nepatří. */
+    { id: 'sokl', label: 'OPLECHOVÁNÍ SOKLU PROHLUBNĚ', def: ' -',
+      odvozene: (r, Z) => { const s = tsSoklRadek(r, Z); return s.vDodavce ? s.text : ''; },
+      odvozenePopis: 'Řídí se cenou: řádek je tady, když je OPLECHOVÁNÍ SOKLU PROHLUBNĚ v základní ceně '
+        + '(Kalkulace OCK, volitelné položky), jinak stojí v sekci SOUČÁSTÍ DODÁVKY NENÍ.' },
   ] },
 
   { sekce: 'STAVEBNÍ A PŘÍPRAVNÉ PRÁCE', pole: [
@@ -684,6 +693,12 @@ const TECHSPEC_DEF = [
       def: 'zajistí objednatel', prefillTs: (ts) => /zrcadle schodiště/.test(
         String((ts && ts.hodnoty && ts.hodnoty.umisteni) || '')) ? ' -' : 'zajistí objednatel' },
     { id: 'neni8', label: 'STAVEBNÍ PŘÍPRAVA', ciselnik: TS_C.dodavkaPozn, def: 'zajistí objednatel v rámci SP' },
+    /* Protějšek řádku `sokl` v DOPLŇKOVÝCH KONSTRUKCÍCH (14. 10. 2026) — platí
+     * i pro vnitřní šachtu, kde se sokl nenabízí vůbec. */
+    { id: 'neniSokl', label: 'OPLECHOVÁNÍ SOKLU PROHLUBNĚ', def: 'není součástí nabídky',
+      odvozene: (r, Z) => { const s = tsSoklRadek(r, Z); return s.vDodavce ? '' : s.text; },
+      odvozenePopis: 'Řídí se cenou: „nabízeno jako příplatek", když je sokl mezi příplatky v nabídce; '
+        + 'když je v základní ceně, stojí řádek v DOPLŇKOVÝCH KONSTRUKCÍCH.' },
     { id: 'neni9', label: 'NAPÁJENÍ VÝTAHU VČETNĚ REVIZNÍ ZPRÁVY', ciselnik: TS_C.dodavkaPozn, def: 'není součástí nabídky' },
     { id: 'neni10', label: 'PROHLUBEŇ PRO ZALOŽENÍ OCK VE SPRÁVNÉ POZICI A ROZMĚRU', ciselnik: TS_C.dodavkaPozn, def: 'zajistí objednatel v rámci SP' },
     { id: 'neni11', label: 'DOSTATEČNÉ PŘÍSTUPOVÉ A MANIPULAČNÍ PROSTORY', ciselnik: TS_C.dodavkaPozn, def: 'zajistí objednatel v rámci SP' },
@@ -755,6 +770,22 @@ function tsPriplatekNabizen(r, Z, key) {
     && !((Z && Z.priplatkyVynechat) || []).includes(key));
 }
 const TS_LZE_DOPLNIT = 'lze doplnit – viz příplatkové ceny';   // znění schválené J. V. (N49)
+
+/* OPLECHOVÁNÍ SOKLU PROHLUBNĚ — JEDNO ROZHODNUTÍ PRO NABÍDKU OCK I SPECIFIKACI
+ * (14. 10. 2026, připomínka obchodu). Do té doby ho měla jen nabídka OCK
+ * (nabidka.js, 16. 9. a N17 21. 9. 2026) a technická specifikace řádek
+ * neznala. Vrací { vDodavce, text }:
+ *   vDodavce = sokl je v ZÁKLADNÍ CENĚ (volitelná položka zahrnutá ve
+ *     výsledku — u odeslané nabídky zmrazený otisk) → řádek patří do
+ *     DOPLŇKOVÝCH KONSTRUKCÍ s „je součástí dodávky";
+ *   jinak SOUČÁSTÍ DODÁVKY NENÍ: „nabízeno jako příplatek", když je sokl
+ *     mezi příplatky v nabídce (tsPriplatekNabizen), jinak „není součástí
+ *     nabídky" — i u vnitřní šachty, kde se sokl nenabízí vůbec. */
+function tsSoklRadek(r, Z) {
+  const vDodavce = !!(r && (r.volitelneKatalog || []).some(x => x.key === 'sokl' && x.zahrnuto));
+  if (vDodavce) return { vDodavce, text: 'je součástí dodávky' };
+  return { vDodavce, text: tsPriplatekNabizen(r, Z, 'sokl') ? 'nabízeno jako příplatek' : 'není součástí nabídky' };
+}
 
 function tsStatikaVCene(r) {
   const radky = (r && r.sekce && r.sekce.rezie) || [];
@@ -933,6 +964,6 @@ function tsKontrola(ts, r, Z, C, zak) {
 if (typeof module !== 'undefined')
   module.exports = { tsRadekVCene, tsPriplatekNabizen, TS_LZE_DOPLNIT, TECHSPEC_DEF, TS_C, DEFAULT_TECHSPEC, tsHodnota, tsOplasteniRozsah, tsOplasteniMaterial, tsOplPoStenach,
     tsVyplnDveri, tsVyplnDveriCasti, tsSvetlikyDveri,
-    tsOdvozeno, tsLeseniVnejsiVCene, tsStatikaVCene, tsSken3dVCene,
+    tsOdvozeno, tsLeseniVnejsiVCene, tsStatikaVCene, tsSken3dVCene, tsSoklRadek,
     TS_C_KEY_OF, tsCiselnikKlic, tsCiselnikPouziti, tsPole, TS_C_ORIG, TS_DEF_ORIG,
     TS_HLAVICKA, TS_POVINNE, tsPrazdna, tsKontrola, tsNazevAkce };
