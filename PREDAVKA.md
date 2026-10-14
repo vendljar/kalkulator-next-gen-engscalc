@@ -28,8 +28,17 @@ v době založení ještě neobsahoval), zadání
   bourací dokumentace); zápis v OR (nepřekládá se).
 - **Podklady:** šablony PROJ v4/v5 CZ/EN/DE/FR z Disku v
   `/home/user/kng_podklady_proj` (jen v kontejneru, mimo repo).
-- **Testy:** viz zpráva posledního commitu (smoke + kontrola_udaju).
-  Celé kolo s mutacemi pustí koordinační sezení při sloučení do `test`.
+- **Testy:** `test_proj_zbytky_preklad.js` 17/52 → 69/0; `spust_testy.sh
+  --smoke` po sestavení 212/0 (32 sad v prohlížeči přeskočeno — chyběl
+  playwright). S `playwright@1.56.1` (sedí na Chromium 1194 v /opt/pw-browsers;
+  novější verze padá na revizi prohlížeče) prošlo všech 230 sad smoke až po
+  `overit_vypnuty_radek` (běh pak ukončil strop nástroje) a zbylé sady
+  zvlášť: xss 338/0, zabrany_dokumenty 24/0, zadani_detail 53/0,
+  zahranicni 56/0, zaloha_lista 58/0, zaokrouhleni 16/0, zaporne 15/0,
+  zobrazeni 140/0 (zaporne a zobrazeni napoprvé spadly bez `ADMIN_EMAIL`
+  / při souběhu; nad základem i větví se stejným prostředím zelené).
+  `kontrola_udaju.py` čistá. Celé kolo s mutacemi pustí koordinační sezení
+  při sloučení do `test`.
 - **Další krok:** J. V. odsouhlasí návrhy překladu a rozhodne o sloučení;
   při sloučení s v14.10.5–7 ručně spojit `verze.txt`, CHANGELOG, příručku
   (`manual/obsah.json`) a PREDAVKA.
