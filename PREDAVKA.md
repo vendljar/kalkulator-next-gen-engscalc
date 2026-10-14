@@ -14,8 +14,14 @@ Podrobnosti a testy před/po: CHANGELOG v14.10.2.
   listech BO (zadání J. V. během dávky, návrh
   `podklady/NAVRH_HODINY_KRYCI_LIST_2026-10-14.md` odsouhlasen, celé hodiny);
   harness `overit_pripominky_14_10.mjs`; příručka (úvod v14.10.2).
-- **Celé kolo:** běží / výsledek doplní další zápis (podklady
-  `/home/user/kng_podklady_pripominky-14-10`, příručka v14.10.2 ze snímků).
+- **Celé kolo VŠE ZELENÉ:** nad 1410141 mutace jádra 201/201, serveru 393/393,
+  statické 3/3, sady 238/3/1 (dvojí id tabulky hodin, počet pravidel
+  v overit_lista) → opraveno 8ffce8f, kolo bez mutací 241/0/1, statické 3/3.
+  Podklady `/home/user/kng_podklady_pripominky-14-10`.
+- **Převod do `test`** na pokyn J. V. 14. 10. (fast-forward z 823c61e);
+  `test-draft` beze změny (rozhodne J. V.). Release odkaz v14.10.2 poslán.
+- **Paralelně `claude/k23-odm-prohluben`** (K23T-N1, opláštěná prohlubeň P2):
+  hotovo, kolo VŠE ZELENÉ, nesloučeno — čeká na J. V.
 - **Výchozí volby k potvrzení:** stará data bez volby AD = AD se tiskne;
   starší specifikace s vyplněným názvem = ruční přepis (nemění se); v kombinaci
   s P6 má tabulka hodin vyplněný jen sloupec vedoucí strany (číslo OPR/OVP);

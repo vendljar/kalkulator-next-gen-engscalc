@@ -89,6 +89,15 @@ Připomínky D. Sikory a J. Laudy, rozhodnutí J. V. 14. 10. 2026. Z `test-draft
   16/0. Mutace jádra: 1 nová („HOD 14. 10.", docxgen) chycená 1 z 1,
   `--kontrola` 201 úseků.
 
+**Celé kolo VŠE ZELENÉ.** Kolo nad 1410141 (225 min): mutace jádra 201 z 201,
+mutace serveru 393 z 393, statické 3 z 3, sady 238/3/1 — tři selhání
+v harnessech: dvojí `id="kryciHodiny"` na stránkách krycích listů
+(`overit_program`, `overit_podminky`) a `overit_lista` čekal 34 pravidel
+kontrol. Opraveno v 8ffce8f (jen UI a harnessy, soubory jader ani serveru
+beze změny); kolo nad 8ffce8f bez mutací: sady 241/0/1 (přeskočen jen
+`test.js`), statické 3 z 3. Podklady: kopie s příručkou sestavenou ze snímků
+v14.10.2. Převod do `test` na pokyn J. V. 14. 10. 2026.
+
 ## v14.10.1 — výsledek celého kola nad v13.10.4 (větev claude/integrace-14-10)
 
 Jen zápis výsledku kola a verze — kód je beze změny proti v13.10.4 (b51af9b),
