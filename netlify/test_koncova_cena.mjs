@@ -128,6 +128,24 @@ for (const k of ['oplechOstatniKg', 'oplechOstatniHod', 'engineeringKs']) {
 { const z = nova('B134 opláštění'); d0(z).ock.zadani.oplasteni = { rezim: 'poStenach', steny: { A: { odM: -5, pasy: [{ typ: 'bez', doM: null }] } } };
   const r = await uloz(z, cA);
   test('B134: opláštění po stěnách — záporná výška pásu (odM −5) → 400', r.status === 400 && /odM/.test(r.chyba || ''), r); }
+/* K23T-N1 (14. 10. 2026): zkratka P2 „Opláštit i prohlubeň" dává stěnám
+ * odM = −prohlubeň (1,2 m) — uložení i nový zámek musí projít; začátek
+ * opláštění pod dnem prohlubně se odmítne s vlastní větou. */
+{ const z = nova('K23T-N1 P2'); require(R + 'src/engine.js').oplasteniProhlubenNastav(d0(z).ock.zadani, d0(z).cenik, true);
+  const odM = Object.values(d0(z).ock.zadani.oplasteni.steny).map(st => st.odM);
+  zamkni(z);
+  const r = await uloz(z, cO);
+  test('K23T-N1: obchodník — zakázka se zkratkou P2 (odM = −1,2 = prohlubeň) + nový zámek → 200 (odM ' + odM.join(', ') + ')',
+    r.status === 200 && odM.length === 4 && odM.every(x => Math.abs(x + 1.2) < 1e-9), r); }
+{ const z = nova('K23T-N1 pod dnem'); require(R + 'src/engine.js').oplasteniProhlubenNastav(d0(z).ock.zadani, d0(z).cenik, true);
+  d0(z).ock.zadani.oplasteni.steny.B.odM = -1.5;
+  const r = await uloz(z, cO);
+  test('K23T-N1: odM −1,5 pod dnem prohlubně 1,2 m → 400 s větou o prohlubni',
+    r.status === 400 && /Opláštění stěny B začíná níž, než je dno prohlubně/.test(r.chyba || ''), r); }
+{ const z = nova('K23T-N1 bez prohlubně'); d0(z).ock.zadani.prohluben = 0;
+  d0(z).ock.zadani.oplasteni = { rezim: 'poStenach', steny: { A: { odM: -0.1, pasy: [{ typ: 'bez', doM: null }] } } };
+  const r = await uloz(z, cO);
+  test('K23T-N1: odM −0,1 bez prohlubně → 400 (záporné jako dosud)', r.status === 400 && /steny\.A\.odM/.test(r.chyba || ''), r); }
 { const z = nova('B134 ATYP'); Object.assign(d0(z).ock.zadani, { rezervaZakladPct: 0.3, rezervaPriplatkyPct: 0.3, atyp: true });
   zamkni(z);
   const r = await uloz(z, cO);

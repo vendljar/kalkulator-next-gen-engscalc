@@ -94,5 +94,44 @@ for (const typ of ['exteriérová', 'interiérová']) {
     !eng.oplasteniProhlubenVse(z) && eng.oplasteniProhlubenVse(eng.oplasteniProhlubenNastav(z, C, true)));
 }
 
+/* ---- K23T-N1 (14. 10. 2026): zkratka P2 nad prohlubní projde uložením
+ * i kontrolami; začátek opláštění pod dnem prohlubně je chyba s vlastní větou. */
+{
+  const ULO = require('./uloziste.js');
+  const K = require('./kontroly.js');
+  global.uloZaporneVZadani = ULO.uloZaporneVZadani;
+  const zad = (hl) => {
+    const z = JSON.parse(JSON.stringify(eng.DEFAULT_ZADANI));
+    z.prohluben = hl;
+    return z;
+  };
+  const C = ZC.zkusebniCenik();
+  const p2 = eng.oplasteniProhlubenNastav(zad(1.2), C, true);
+  const nalP2 = ULO.uloZaporneVZadani(p2, null);
+  test('K23T-N1: zkratka P2 nad prohlubní 1,2 m nastaví odM = −1,2 všem stěnám',
+    ['A', 'B', 'C', 'D'].every(k => p2.oplasteni.steny[k] && Math.abs(p2.oplasteni.steny[k].odM + 1.2) < 1e-9), p2.oplasteni.steny);
+  test('K23T-N1: zkratka P2 nad prohlubní 1,2 m — uloZaporneVZadani prázdné', nalP2.length === 0, nalP2);
+  const kody = K.kontrolyProved({ zadani: p2 }).kody;
+  test('K23T-N1: kontroly — zakázka se zkratkou P2 nemá zapornaPolozka', kody.indexOf('zapornaPolozka') < 0, kody);
+  const pod = JSON.parse(JSON.stringify(p2)); pod.oplasteni.steny.B.odM = -1.5;
+  const nalPod = ULO.uloZaporneVZadani(pod, null);
+  test('K23T-N1: odM −1,5 při prohlubni 1,2 m → chyba u stěny B (pod dnem prohlubně)',
+    nalPod.length === 1 && nalPod[0].kde === 'ock.zadani.oplasteni.steny.B.odM' && nalPod[0].podProhlubni === true, nalPod);
+  const kp = K.kontrolyProved({ zadani: pod }).nalezy.find(n => n.kod === 'zapornaPolozka');
+  test('K23T-N1: kontrola — srozumitelná věta „Opláštění stěny B začíná níž, než je dno prohlubně"',
+    !!kp && /Opláštění stěny B začíná níž, než je dno prohlubně/.test(kp.text) && !/sleva/.test(kp.text), kp && kp.text);
+  const bez = JSON.parse(JSON.stringify(eng.DEFAULT_ZADANI)); bez.prohluben = 0;
+  bez.oplasteni = { rezim: 'poStenach', steny: { A: { odM: -0.1, pasy: [] } } };
+  const nalBez = ULO.uloZaporneVZadani(bez, null);
+  test('K23T-N1: odM −0,1 bez prohlubně → chyba (záporné jako dosud)',
+    nalBez.length === 1 && nalBez[0].kde === 'ock.zadani.oplasteni.steny.A.odM' && nalBez[0].duvod === 'zaporne', nalBez);
+  const text = JSON.parse(JSON.stringify(p2)); text.oplasteni.steny.A.odM = '-1,2';
+  test('K23T-N1: odM jako text s čárkou („-1,2", jádro čte NaN) → typ', ULO.uloZaporneVZadani(text, null).some(p => p.duvod === 'typ'));
+  const doM = JSON.parse(JSON.stringify(p2)); doM.oplasteni.steny.C.pasy = [{ typ: 'bez', doM: -0.5 }];
+  test('K23T-N1: záporné doM pásu je dál chyba', ULO.uloZaporneVZadani(doM, null).some(p => /pasy\[0\]\.doM/.test(p.kde)));
+  test('K23T-N1: server hlásí opláštění pod prohlubní vlastní větou',
+    /Opláštění stěny B začíná níž, než je dno prohlubně/.test(ULO.uloPodProhlubniText(nalPod)));
+}
+
 console.log(`\n${ok} OK, ${fail} FAIL`);
 if (fail) process.exit(1);

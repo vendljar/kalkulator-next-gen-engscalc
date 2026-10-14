@@ -1,3 +1,16 @@
+# Předávka — větev `claude/k23-odm-prohluben` (v14.10.2, 14. 10. 2026)
+
+Z `test` (823c61e, v14.10.1). Oprava nálezu K23T-N1 (opláštěná prohlubeň P2
+nejde uložit) — detaily v CHANGELOG v14.10.2 této větve. Do `test-draft`,
+`test` ani `main` nic; **B134 (0af419c) se nesmí dostat do `main` bez téhle
+opravy.** Ověření pro J. V. po nasazení na test: zakázka TEST s prohlubní
+a „Opláštit i prohlubeň" se uloží, vytiskne a zamkne („shoda"); v kole 24
+projdou C001, C018, C029, C035, C046, C063. Celé kolo: viz CHANGELOG.
+Při slučování s `claude/pripominky-14-10` (taky v14.10.2): konflikty čekej
+v CHANGELOG, PREDAVKA, `mutace_jadro.mjs` (nové mutace obou větví) a verzi.
+
+---
+
 # Předávka — 14. 10. 2026 ráno: noční integrace v14.10.1 zelená (`claude/integrace-14-10`)
 
 Noční větve `claude/listy-404`, `claude/bezpecnost-noc`,

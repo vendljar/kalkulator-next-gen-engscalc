@@ -156,6 +156,11 @@ const MUTACE = [
     hledej: "    if (s.key === 'zamereni' && !nabizena('studie') && !nabizena('projednani')) ma.push('PROJ_CENA_SP1');",
     nahrad: "    if (s.key === 'zamereni') ma.push('PROJ_CENA_SP1');",
     proc: 'u zaměření se studií nese „část 1" jen odkaz na cenu výše — šablona bez ceny zaměření by prošla' },
+  /* ---------- K23T-N1: opláštění pod dnem prohlubně (14. 10. 2026) ---------- */
+  { nazev: 'K23T-N1: opláštění pod dnem prohlubně hlásí obecnou zápornou částku', soubor: 'kontroly.js',
+    hledej: "      if (nal.every(p => p.podProhlubni)) {",
+    nahrad: "      if (false) {",
+    proc: 'obchodník by místo začátku opláštění hledal slevu — zábrana by neřekla, co opravit' },
   /* ---------- K18-N96: dodatkový text v cizojazyčné nabídce (30. 9. 2026) ---------- */
   { nazev: 'K18-N96: český dodatkový text v cizí nabídce se nepozná', soubor: 'kontroly.js',
     hledej: "          return !trStav(t, jaz).prelozeno;",

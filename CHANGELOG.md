@@ -8,6 +8,28 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v14.10.2 — K23T-N1: opláštěná prohlubeň (P2) nejde uložit (větev claude/k23-odm-prohluben)
+
+Nález 23. kola (test v14.10.1, 14. 10. 2026). Z `test` (823c61e). Do
+`test-draft` / `test` / `main` nic — rozhodne J. V. V `main` / ostré chyba
+není (B134 z 0af419c tam není); do `main` se B134 nesmí dostat bez téhle opravy.
+
+- **Oprava:** zkratka P2 „Opláštit i prohlubeň" dává stěnám `odM = −prohlubeň`,
+  B134 (`uloZaporneVZadani`) ho ale hlídal jako „nesmí být záporné" — zakázka
+  nešla uložit (server 400), kontroly hlásily zábranu `zapornaPolozka`
+  (kolo 23: C001, C018, C029, C035, C046, C063). Nově smí být `odM` záporné
+  až do hloubky prohlubně (`z.prohluben`, tolerance `ULO_ODM_TOL` = 1e-9 jako
+  `OPL_PROHLUBEN_TOL`); níž je chyba s vlastní větou „Opláštění stěny X začíná
+  níž, než je dno prohlubně" (server i zábrana; ne obecná „záporná částka").
+  Bez prohlubně jako dosud; `doM` a `naklad` pásů beze změny.
+- **Testy:** `src/test_prohluben_sklo.js` +10 (K23T-N1) — před opravou 5 selhání
+  a pád (chybějící `uloPodProhlubniText`), po opravě 42/0;
+  `netlify/test_koncova_cena.mjs` +3 — před opravou 107/2, po opravě 110/0.
+- **Mutace:** server 2 nové („odM pod dnem prohlubně se nehlídá", „odM se hlídá
+  bez ohledu na prohlubeň"), kotva B134 „výška pásu se nehlídá" posunuta na
+  větev bez prohlubně (test „odM −0,1 bez prohlubně" ji chytá); jádro 1 nová
+  (zábrana s obecnou větou). `--kontrola`: jádro 194, server 395 úseků.
+
 ## v14.10.1 — výsledek celého kola nad v13.10.4 (větev claude/integrace-14-10)
 
 Jen zápis výsledku kola a verze — kód je beze změny proti v13.10.4 (b51af9b),
