@@ -8,6 +8,17 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v14.10.1 — výsledek celého kola nad v13.10.4 (větev claude/integrace-14-10)
+
+Jen zápis výsledku kola a verze — kód je beze změny proti v13.10.4 (b51af9b),
+nad kterým kolo běželo. Verze se zvedá, protože zápis vzniká 14. 10. (statická
+kontrola: verze = den posledního commitu). Obsah viz oddíl v13.10.4.
+
+**Celé kolo nad b51af9b VŠE ZELENÉ (181 min 43 s):** sady 235/0/1 (přeskočen jen
+`test.js`), mutace jádra 193 z 193, mutace serveru 393 z 393, statické
+kontroly 3 z 3. Podklady: kopie s příručkou sestavenou ze snímků integrace
+(v13.10.4).
+
 ## v13.10.4 — integrace nočních dávek 13./14. 10. 2026 (větev claude/integrace-14-10)
 
 Rozhodnutí J. V. z dialogu 13. 10. 2026 („rozběhni přes noc“). Z

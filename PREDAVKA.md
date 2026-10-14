@@ -1,3 +1,26 @@
+# Předávka — 14. 10. 2026 ráno: noční integrace v14.10.1 zelená (`claude/integrace-14-10`)
+
+Noční větve `claude/listy-404`, `claude/bezpecnost-noc`,
+`claude/vyjimky-schvalovani`, `claude/prirucka-13-10` (každá s vlastním
+zeleným kolem) sloučeny do `claude/integrace-14-10` nad v13.10.2 = v13.10.4;
+**celé kolo nad b51af9b VŠE ZELENÉ** (sady 235/0/1, jádro 193/193, server
+393/393, statické 3/3); zápis výsledku = v14.10.1 (jen verze a dokumentace).
+
+Čeká na J. V.: převod do `test-draft` a `test` (push do sdílených větví
+zablokovalo oprávnění sezení — fast-forward z 1df7283, stačí převést
+`claude/integrace-14-10`); `main` až po ověření na testu; release odkaz
+v14.10.1 (zahrnuje v13.10.2–v13.10.4).
+
+Otázky (výchozí): (1) celá starší verze ceníku u obchodníka = cenová výjimka
+do schvalování (ano); (2) přidělit Vedoucímu právo sleva.schvalovani v matici
+(ano); (3) mez pásu „jiné“ = nejnižší ceníková sazba opláštění pro typ šachty
+(ano); (4) rozměr pod 0,6 m = 400 (ano); (5) chybné staré heslo u „Změnit
+heslo“ odhlásí — opravit (ano, další dávka); (6) příručka: kurzíva (ano),
+novou příručku na Disk nahraje J. V. Příručka v14.10.1 k nahrání se sestaví
+`manual/sestav.sh` ze snímků (`node manual/snimky_auto.mjs`).
+
+---
+
 # Předávka — 13. 10. 2026 večer: v13.10.2 zelená, převod do test-draft a test; noční dávky
 
 Integrace tří větví (`claude/davka-13-10`, `claude/cenik-barvy`,
