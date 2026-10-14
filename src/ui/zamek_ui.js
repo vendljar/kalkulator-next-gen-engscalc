@@ -58,6 +58,10 @@ const ZAMEK_CHRANENE = [
   'sdItemSet', 'sdItemAdd', 'sdItemDel', 'sdItemMove', 'sdDefSet', 'sdDefVlastni', 'sdResetVse',
   // Krycí listy
   'klSet', 'klReset', 'klpSet', 'klpReset',
+  /* Výběr z číselníku (O1, 14. 10. 2026). Volba „jiné znění" ruční hodnotu
+   * maže mimo klSet / klpSet — u pole nabídky zamčené varianty tak zmizela
+   * tiše a server pak uložení odmítl, aniž by obchodník věděl proč. */
+  'klVyber', 'klpVyber',
   /* Plán plateb projekce v krycím listu PROJ (etapa B, 30. 9. 2026) —
    * zapisuje do data.kryciProj.planPlateb mimo klpSet (předvolba, splátky,
    * ruční částky plateb smlouvy). */
@@ -84,7 +88,8 @@ const ZAMEK_CHRANENE = [
 
 /* Zapisující funkce krycích listů → který list (data.kryci / data.kryciProj).
  * Plán plateb PROJ (planKlp…) sem nepatří: jde do nabídky celý. */
-const ZAMEK_KRYCI_FUNKCE = { klSet: 'kryci', klReset: 'kryci', klpSet: 'kryciProj', klpReset: 'kryciProj' };
+const ZAMEK_KRYCI_FUNKCE = { klSet: 'kryci', klReset: 'kryci', klVyber: 'kryci',
+  klpSet: 'kryciProj', klpReset: 'kryciProj', klpVyber: 'kryciProj' };
 
 /* Pole krycího listu ZAMČENÉ varianty, které se smí doplnit. U nezamčené
  * varianty vrací false — ta jde běžnou cestou (zámek čtení, …). */

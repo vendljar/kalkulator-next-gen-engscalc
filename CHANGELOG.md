@@ -8,6 +8,31 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v14.10.7 — „jiné znění" v krycím listu respektuje zámek (větev claude/kryci-jine-zneni)
+
+Nález O1 z dávky v14.10.5. Z `test` (v14.10.5, 3538875); v14.10.6 drží
+integrace I1.
+
+- **Chyba:** volba „jiné znění…" v rozbalovacím poli krycího listu
+  (`klVyber` OCK, `klpVyber` PROJ) mazala ruční hodnotu pole přímo, mimo
+  obal zámku. U pole cenové nabídky zamčené varianty (typ smlouvy, záloha,
+  splatnost…) tak hodnota tiše zmizela a server pak uložení odmítl
+  „Neuloženo: změnila by se data uzamčené (odeslané) nabídky" — obchodník
+  nevěděl proč.
+- **Oprava:** `klVyber` a `klpVyber` jsou v `ZAMEK_CHRANENE`
+  i v `ZAMEK_KRYCI_FUNKCE` (`src/ui/zamek_ui.js`). Pole nabídky zamčené
+  varianty teď „jiné znění" zastaví dialogem „Uzamčená varianta" (hodnota
+  zůstane, textové pole se nerozbalí); pole mimo nabídku jde jako dřív
+  (a zakázku jen ke čtení uvolní stejně jako `klSet`); po tisku SoD se
+  nemění nic. Výběr z číselníku (`klpVyber` → `klpSet`) ukáže dialog jen
+  jednou — zastaví ho už vnější obal.
+- **Testy:** `overit_kryci_po_tisku.mjs` 27 kontrol (+11) — nad v14.10.5
+  8 selhalo, po opravě 27/27; `overit_lista.mjs` (kontrola obalení) 255/255.
+  Ruční mutace obalu: vyřazení z `ZAMEK_CHRANENE` → 8 selhání, vyřazení
+  jen z `ZAMEK_KRYCI_FUNKCE` → 2 selhání (obě zabité). Server se nemění.
+- Příručka beze změny (popsané chování „pole nabídky zůstávají zamčená"
+  teď platí i pro „jiné znění").
+
 ## v14.10.5 — krycí list odeslané nabídky se dá doplňovat (větev claude/kryci-odemceny-14-10)
 
 Pokyn J. V. 14. 10. 2026 (se snímkem dialogu „Uzamčená varianta" nad krycím

@@ -87,6 +87,35 @@ s = await stav();
 ok('↺ u pole nabídky nic nesmaže', s.klp.splatnostDni === '14', s.klp);
 await zavri();
 
+/* „Jiné znění" (O1, 14. 10. 2026): klVyber / klpVyber hodnotu mazaly mimo
+ * obal zámku — u pole nabídky tiše a server pak uložení odmítl. */
+await p.evaluate(() => klVyber('zaloha1', KL_JINE_ZNENI));
+await p.waitForTimeout(400);
+s = await stav();
+ok('„jiné znění" u pole nabídky (OCK záloha) hodnotu nesmaže', s.kl.zaloha1 === '30 % – po podpisu smlouvy', s.kl);
+ok('…a ukáže dialog „Uzamčená varianta"', await modal() && /uzamčená/.test(await modalText()), await modalText());
+ok('…a textové pole „jiné znění" se nerozbalí', await p.evaluate(() => !KL_JINA.zaloha1));
+await zavri();
+await p.evaluate(() => klpVyber('splatnostDni', KL_JINE_ZNENI));
+await p.waitForTimeout(400);
+s = await stav();
+ok('„jiné znění" u pole nabídky (PROJ splatnost) hodnotu nesmaže', s.klp.splatnostDni === '14', s.klp);
+ok('…a ukáže dialog', await modal());
+await zavri();
+await p.evaluate(() => klpVyber('splatnostDni', '30'));
+await p.waitForTimeout(400);
+s = await stav();
+ok('výběr z číselníku u pole nabídky (klpVyber → klpSet) hodnotu nezmění', s.klp.splatnostDni === '14', s.klp);
+ok('…a dialog je jen jeden', await p.evaluate(() => document.querySelectorAll('#dlg').length <= 1) && await modal());
+await zavri();
+ok('…po zavření žádný druhý dialog', !(await modal()), await modalText());
+await p.evaluate(() => { klpSet('odpovednyJmeno', 'Ruční Osoba'); klpVyber('odpovednyJmeno', KL_JINE_ZNENI); });
+await p.waitForTimeout(300);
+s = await stav();
+ok('„jiné znění" u pole mimo nabídku projde (hodnota smazána, pole rozbalené)',
+  s.klp.odpovednyJmeno === undefined && await p.evaluate(() => !!KLP_JINA.odpovednyJmeno), s.klp);
+ok('…bez dialogu', !(await modal()), await modalText());
+
 ok('krycí list PROJ nese poznámku, co se po odeslání doplňuje',
   await p.evaluate(() => /zamčená jsou jen pole, která jsou v cenové nabídce/.test((document.querySelector('#page-kryciProj .kl-zamek-pozn, .kl-zamek-pozn') || {}).textContent || '')));
 
@@ -104,6 +133,12 @@ await p.evaluate(() => klpSet('odpovednyJmeno', 'Po SoD'));
 await p.waitForTimeout(400);
 s = await stav();
 ok('po SoD se ani pole mimo nabídku nezapíše', s.klp.odpovednyJmeno === undefined, s.klp);
+ok('…a ukáže dialog', await modal());
+await zavri();
+await p.evaluate(() => { KLP.hodnoty.odpovednyJmeno = 'Před SoD'; klpVyber('odpovednyJmeno', KL_JINE_ZNENI); });
+await p.waitForTimeout(400);
+s = await stav();
+ok('po SoD „jiné znění" ani u pole mimo nabídku nic nesmaže', s.klp.odpovednyJmeno === 'Před SoD', s.klp);
 ok('…a ukáže dialog', await modal());
 await zavri();
 ok('po SoD poznámka říká, že se krycí list nemění',
