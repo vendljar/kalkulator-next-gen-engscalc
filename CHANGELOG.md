@@ -17,7 +17,12 @@ rebase; konflikty jen v CHANGELOG, PREDAVKA, úvodu příručky a `verze.txt`.
 Po sloučení `spust_testy.sh --smoke` s firemními podklady a příručkou
 v14.10.8 ze snímků: 246 prošlo / 0 selhalo / 1 přeskočeno (test.js);
 `--kontrola` mutací jádra 202 a serveru 400 úseků, kontrola údajů čistá.
-Celé kolo s mutacemi nad výsledným `test` — výsledek níž, až doběhne.
+**Celé kolo nad ee0f6ff (v14.10.8) VŠE ZELENÉ (216 min 32 s):** sady 246
+prošlo / 0 selhalo / 1 přeskočeno (test.js), mutace jádra 202 z 202, mutace
+serveru 400 z 400, statické kontroly 3 z 3; firemní podklady z Disku
+(30 šablon) a příručka v14.10.8 ze snímků. Ověřuje celý noční stav:
+v14.10.4 (slovník), v14.10.5 (krycí list), v14.10.6 (integrace), R1,
+v14.10.7 (O1) a v14.10.8 (P1).
 
 Zadání `podklady/PROMPT_proj_preklad_zbytky.md` (P1), navazuje na soupis
 z v14.10.4. Z `origin/claude/slovnik-14-10` (774f269; `test` sloučený slovník

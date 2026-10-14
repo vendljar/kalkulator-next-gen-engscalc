@@ -1,3 +1,27 @@
+# Předávka — 14. 10. 2026 noc: `test` = v14.10.8, celé kolo VŠE ZELENÉ
+
+Noční dávky (pokyn J. V. 14. 10. večer) hotové a v `test`:
+- v14.10.4 slovník a zápis v OR (kolo nad větví VŠE ZELENÉ, 224 min),
+- v14.10.5 krycí list odeslané nabídky se dá doplňovat,
+- v14.10.6 integrace slovník + krycí list,
+- R1 roadmapa #405, #406; R2 dorovnání roadmapy za 13.–14. 10. (#407–#419),
+- v14.10.7 O1 „jiné znění" v krycím listu respektuje zámek,
+- v14.10.8 P1 zbytky češtiny v nabídce PROJ EN/DE/FR.
+**Celé kolo nad ee0f6ff (v14.10.8) VŠE ZELENÉ (216 min 32 s):** sady
+246/0/1, jádro 202/202, server 400/400, statické 3/3.
+
+- `main` = eff7724 (v14.10.3) — dál nic bez potvrzení J. V.
+- `test-draft` beze změny (v14.10.1).
+- **Čeká na J. V.:** převod do `main`; releasy v14.10.3–v14.10.8 (odkazy
+  v závěrečné zprávě); kontrola návrhů překladu P1 (popis ceny DPS, štítek
+  „Požárně bezpečnostní řešení", díly popisů); roadmapa #366, #367, #369,
+  #380 (bez dokladu uzavření) a #345 / B80 (opravit, nebo vědomá mez);
+  souvislá próza `{ cz }` v nabídce PROJ EN/DE/FR (překládat?); body 4, 5,
+  8, 9 připomínek obchodu; mazání sloučených větví.
+- Podklady: `/home/user/kng_podklady_integrace` (šablony + příručka v14.10.8).
+
+---
+
 # Předávka — 14. 10. 2026 večer: noční dávky, `test` = v14.10.6 (slovník + krycí list)
 
 Pokyn J. V. 14. 10. večer: „slovník sluč a rozběhni vše, co jsi naplánoval na
