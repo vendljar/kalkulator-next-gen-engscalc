@@ -305,7 +305,12 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
     for (const sv of (staraPorovnani.varianty || [])) {
       if (!zamcena(sv)) continue;
       const nv = (zak.varianty || []).find(v => v && v.id === sv.id);
-      if (nv && JSON.stringify(nv.data) !== JSON.stringify(sv.data))
+      /* Pole krycího listu mimo cenovou nabídku se smějí doplňovat (J. V.
+       * 14. 10. 2026, zamekDataPorovnani v zamek.js) — zámek se bere
+       * z ULOŽENÉ verze (sv), takže si ho klient nemůže povolit sám. */
+      const porovnej = typeof globalThis.zamekDataPorovnani === 'function'
+        ? d => globalThis.zamekDataPorovnani(d, sv) : d => JSON.stringify(d);
+      if (nv && porovnej(nv.data) !== porovnej(sv.data))
         return odmitni(409, obnova
           ? 'změnila by se data uzamčené (odeslané) nabídky' + (cisloVarianty(stara, sv) ? ' (' + cisloVarianty(stara, sv) + ')' : '')
           : 'Neuloženo: změnila by se data uzamčené (odeslané) nabídky. Pokračujte klonem varianty.');

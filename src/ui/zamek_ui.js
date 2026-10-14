@@ -82,6 +82,46 @@ const ZAMEK_CHRANENE = [
   'zaokrSetKrok', 'zaokrSetSmer', 'zaokrProjSetKrok', 'zaokrProjSetSmer',
 ];
 
+/* Zapisující funkce krycích listů → který list (data.kryci / data.kryciProj).
+ * Plán plateb PROJ (planKlp…) sem nepatří: jde do nabídky celý. */
+const ZAMEK_KRYCI_FUNKCE = { klSet: 'kryci', klReset: 'kryci', klpSet: 'kryciProj', klpReset: 'kryciProj' };
+
+/* Pole krycího listu ZAMČENÉ varianty, které se smí doplnit. U nezamčené
+ * varianty vrací false — ta jde běžnou cestou (zámek čtení, …). */
+function zamekKryciVolnePole(list, id) {
+  const v = (typeof aktivniVarianta === 'function') ? aktivniVarianta(ZAK) : null;
+  return !!(v && typeof zamekKryciPoleVolne === 'function' && variantaUzamcena(v) && zamekKryciPoleVolne(v, list, id));
+}
+
+/* Zakázka otevřená jen ke čtení: doplnění krycího listu odeslané nabídky ji
+ * uvolní (odeslanou variantu nejde odemknout jinak než klonem, krycí list
+ * by tak zůstal nedoplnitelný). Jen tomu, kdo ji smí upravovat
+ * (zamekCteniSmiOdemknout — autor, vedoucí, administrátor). */
+function zamekKryciCteniUvolni() {
+  if (typeof zamekCteniJe !== 'function' || !zamekCteniJe()) return true;
+  const ja = (typeof ONLINE_STAV !== 'undefined') ? ONLINE_STAV.ja : null;
+  if (typeof zamekCteniSmiOdemknout === 'function' && !zamekCteniSmiOdemknout(ZAK, ja)) {
+    if (typeof hlaska === 'function' && typeof zamekCteniDuvod === 'function') hlaska(zamekCteniDuvod(ZAK, ja));
+    if (typeof render === 'function') render();
+    return false;
+  }
+  zamekCteniVypni();
+  if (typeof onlineZprava === 'function')
+    onlineZprava('Krycí list odeslané nabídky se doplňuje — změny polí mimo cenovou nabídku se zase ukládají samy.');
+  return true;
+}
+
+/* Poznámka nad krycím listem zamčené varianty: co se po odeslání nabídky
+ * ještě doplňuje a co ne. `sekce` = názvy sekcí, které jdou do nabídky. */
+function zamekKryciPoznamka(sekce) {
+  const v = (typeof aktivniVarianta === 'function') ? aktivniVarianta(ZAK) : null;
+  if (!v || !variantaUzamcena(v)) return '';
+  const otevreny = typeof zamekKryciOtevreny === 'function' && zamekKryciOtevreny(v);
+  return `<div class="note noprint kl-zamek-pozn" style="margin-bottom:6px">🔒 ${otevreny
+    ? `Nabídka už odešla. Krycí list dál doplňujte — zamčená jsou jen pole, která jsou v cenové nabídce (${esc(sekce.join(', '))}).`
+    : 'Ze zakázky odešla smlouva o dílo — krycí list se už nemění. Pokračujte klonem varianty.'}</div>`;
+}
+
 let _zamekNainstalovan = false;
 
 function zamekChranFunkce() {
@@ -100,6 +140,14 @@ function zamekChranFunkce() {
        * Ptá se dřív než zámek varianty: v náhledu neplatí ani to, co by
        * u vlastní odemčené varianty prošlo. */
       if (typeof nahledStop === 'function' && nahledStop(nazev)) return;
+      /* Krycí list odeslané nabídky (J. V. 14. 10. 2026): pole, která nejdou
+       * do cenové nabídky, se doplňují i po tisku — dokud neodešla smlouva
+       * o dílo (model zamekKryciPoleVolne v zamek.js, server hlídá totéž). */
+      const kryciList = ZAMEK_KRYCI_FUNKCE[nazev];
+      if (kryciList && zamekKryciVolnePole(kryciList, args[0])) {
+        if (!zamekKryciCteniUvolni()) return;
+        return puvodni.apply(this, args);
+      }
       /* Zámek otevřené zakázky (jen ke čtení, 4. 9. 2026) — ptá se dřív než
        * zámek varianty: v zamčeném okně neprojde ani to, co by u odemčené
        * rozpracované varianty prošlo. */

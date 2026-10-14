@@ -246,6 +246,7 @@ function renderKryci() {
     <div class="note" style="margin-bottom:6px">Podklad pro objednávku / smlouvu o dílo. Pole se předvyplňují z kalkulace OCK,
     zakázky a technické specifikace; ruční přepis má přednost (↺ vrátí automatiku). Štítky <b>BO</b> / <b>Tech</b> / <b>BO+Tech</b>
     ukazují, do které verze výstupu pole patří.</div>
+    ${typeof zamekKryciPoznamka === 'function' ? zamekKryciPoznamka((typeof KRYCI_NABIDKA_SEKCE !== 'undefined' ? KRYCI_NABIDKA_SEKCE : [])) : ''}
     ${typeof ukazkoveZabranaPanel === 'function' ? ukazkoveZabranaPanel() : ''}
     ${sekceHtml}
     ${kryciHodinyBlok('ock')}

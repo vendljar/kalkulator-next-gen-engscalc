@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v14.10.3 · sestaveno 14. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
+  "verze": "Platí pro aplikaci v14.10.5 · sestaveno 14. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -14,8 +14,9 @@
       ]
     },
     {
-      "nadpis": "Co je nového ve verzi v14.10.3 (14. 10. 2026)",
+      "nadpis": "Co je nového ve verzi v14.10.5 (14. 10. 2026)",
       "odstavce": [
+        "**Krycí list doplníte i po odeslání nabídky.** Po vytištění cenové nabídky zůstávají zamčená jen pole, která jsou v nabídce (typ smlouvy, platební podmínky, termín dodání, u projekce i plán plateb); kontakty, termíny, atypy a další údaje pro backoffice doplňujete dál. Po vytištění smlouvy o dílo je krycí list zamčený celý.",
         "**Autorský dozor v nabídce PROJ jen když ho nabízíte.** V kartě Cenová nabídka (PROJ) je zaškrtávátko **Nabízet autorský dozor**; nová zakázka ho má vypnuté. Bez něj nabídka ani krycí list PROJ autorský dozor neuvádějí (kapitola 25). Už uložené a odeslané nabídky se nemění.",
         "**Název akce v technické specifikaci se bere z hlavičky zakázky.** Přepsat ho jde dál — pak u pole svítí štítek **ručně** a tlačítkem ↺ se vrátíte k názvu z hlavičky (kapitola 23).",
         "**Oplechování soklu prohlubně** má řádek i v technické specifikaci: mezi doplňkovými konstrukcemi, když je v ceně, jinak mezi tím, co součástí dodávky není — stejně jako v nabídce.",
@@ -197,7 +198,7 @@
         { "typ": "podnadpis", "text": "Otevřená zakázka: rozpracovaná, nebo odeslaná" },
         { "typ": "text", "text": "Když otevřete uloženou zakázku, je **jen ke čtení**: pole nejdou přepisovat. Prohlédnout si starší nabídku tak nemůže nic pokazit — a samotné otevření se ani neukládá, do databáze se zapisuje teprve tehdy, když opravdu něco změníte. Co nad zakázkou uvidíte, záleží na tom, jestli už odešla zákazníkovi (od 13. 10. 2026 je to vždy jediná lišta, dřív se jich vrstvilo několik)." },
         { "typ": "text", "text": "**Rozpracovaná zakázka** (ještě nevytištěná): nahoře svítí žlutá lišta **„Rozpracovaná kalkulace“** s číslem, názvem a časem poslední práce. Tlačítkem **Pokračovat v rozpracované kalkulaci** zakázku odemknete k úpravám — a leží-li v prohlížeči novější rozpracovaná práce téže zakázky (kapitola 29), rovnou se vrátí. Tlačítkem **Založit novou kalkulaci** začnete novou. Zámek platí na jedno otevření; příště bude zakázka zase jen ke čtení. Svoji zakázku odemkne každý obchodník, cizí vedoucí nebo administrátor; u cizí zakázky lišta nabídne jen Založit novou kalkulaci a napíše, kdo ji založil, ať víte, koho požádat. Nová zakázka je odemčená rovnou." },
-        { "typ": "text", "text": "**Odeslaná nabídka** (vytištěná, tedy odeslaná zákazníkovi): žlutá lišta se neukazuje — připomínat ji už není třeba. Místo ní je jednořádková informace **„Odeslaná nabídka … (vytištěno …) — needituje se“** s tlačítky **Klonovat a pokračovat** (nová varianta jako kopie, rovnou odemčená) a **Založit novou zakázku**. Odemknout odeslanou nabídku k úpravám smí jen administrátor: vidí pod ní modrý pruh **Odemknout k úpravám**; odemčení se zapíše do zakázky i s důvodem." },
+        { "typ": "text", "text": "**Odeslaná nabídka** (vytištěná, tedy odeslaná zákazníkovi): žlutá lišta se neukazuje — připomínat ji už není třeba. Místo ní je jednořádková informace **„Odeslaná nabídka … (vytištěno …) — needituje se“** s tlačítky **Klonovat a pokračovat** (nová varianta jako kopie, rovnou odemčená) a **Založit novou zakázku**. Odemknout odeslanou nabídku k úpravám smí jen administrátor: vidí pod ní modrý pruh **Odemknout k úpravám**; odemčení se zapíše do zakázky i s důvodem. **Krycí list odeslané nabídky doplňujete dál** — zamčená jsou jen pole, která jsou v cenové nabídce (typ smlouvy, platební podmínky, termín dodání, u projekce i plán plateb); po vytištění smlouvy o dílo je zamčený celý." },
         { "typ": "text", "text": "Stav jen ke čtení poznáte i v liště zakázky podle **jantarového štítku**; červená barva zůstává vyhrazená odeslané nabídce. Když se v rozpracované zakázce jen ke čtení pokusíte něco přepsat, aplikace se zeptá, jestli chcete pokračovat v rozpracované kalkulaci; u odeslané nabídky nabídne klon. Odpovíte-li ne, vrátí se do pole původní hodnota — na obrazovce tedy nezůstane nic, co by v datech nebylo. **+ Nová varianta** a kopie varianty v zamčené zakázce se taky nejdřív zeptají; dřív vyrobily variantu, kterou nikdo neuložil." },
         {
           "typ": "ram", "nadpis": "Vytištěná nabídka se nikdy nepřepíše",
@@ -805,7 +806,7 @@
             { "pojem": "Uloženo v databázi jako … v HH:MM", "vyklad": "Vše je na serveru. Čas je časem posledního uložení." },
             { "pojem": "Soubor se mezitím změnil", "vyklad": "Tutéž zakázku otevřel a uložil ještě někdo jiný. Než uložíte přes něj, domluvte se — přepsali byste jeho práci." },
             { "pojem": "Rozpracovaná kalkulace …", "vyklad": "Žlutá lišta nad uloženou rozpracovanou zakázkou. Klikněte na **Pokračovat v rozpracované kalkulaci**, nebo **Založit novou kalkulaci**. Kapitola 8." },
-            { "pojem": "Odeslaná nabídka … — needituje se", "vyklad": "Varianta už odešla zákazníkovi (byla vytištěna). Pokračujte tlačítkem **Klonovat a pokračovat**, nebo **Založit novou zakázku**. Odemknout ji smí jen administrátor (modrý pruh **Odemknout k úpravám**). Kapitola 8." },
+            { "pojem": "Odeslaná nabídka … — needituje se", "vyklad": "Varianta už odešla zákazníkovi (byla vytištěna). Pokračujte tlačítkem **Klonovat a pokračovat**, nebo **Založit novou zakázku**. Odemknout ji smí jen administrátor (modrý pruh **Odemknout k úpravám**). Krycí list mimo pole nabídky jde doplňovat dál (do tisku smlouvy o dílo). Kapitola 8." },
             { "pojem": "Model 1 (1:1 jako Excel) je zmrazený…", "vyklad": "Pokusil jste se přepnout zakázku na Model 1. To smí jen administrátor; nabídky se počítají Modelem 2. Kapitola 10." },
             { "pojem": "Ceník se od posledního uložení změnil", "vyklad": "Rozpracovaná zakázka se přepočítala na platný ceník. Dialog ukáže, o kolik se hnula cena, a nabídne vrácení původních cen. Kapitola 22." },
             { "pojem": "Než nabídku odešlete – …", "vyklad": "Kontroly před nabídkou něco našly. Varování opravte, nebo potvrďte, že o něm víte. Nález označený ⛔ je zábrana — dokument nevznikne, dokud ji neopravíte. Kapitola 23." },

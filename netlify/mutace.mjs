@@ -75,7 +75,9 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* P6 / K19-N114 (13. 10. 2026): zámek strany — sdílené pravidlo klienta a serveru. */
      '../src/test_zamek_strany.js',
      /* Cenové výjimky (13. 10. 2026): směs ceníku a pás „jiné" do schvalování. */
-     'test_vyjimky.mjs', '../src/test_vyjimky.js'];
+     'test_vyjimky.mjs', '../src/test_vyjimky.js',
+     /* Krycí list odeslané nabídky (14. 10. 2026): volná pole a serverová pojistka. */
+     'test_kryci_po_tisku.mjs', '../src/test_kryci_po_tisku.js'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -1067,7 +1069,7 @@ const MUTACE = [
     proc: 'odeslaná nabídka by se dala tiše změnit — a zákazník má jinou verzi' },
 
   { nazev: 'data uzamčené varianty lze změnit', soubor: 'lib/zakazka_kontrola.mjs',
-    hledej: '      if (nv && JSON.stringify(nv.data) !== JSON.stringify(sv.data))',
+    hledej: '      if (nv && porovnej(nv.data) !== porovnej(sv.data))',
     nahrad: '      if (false)',
     proc: 'zámek by zůstal, ale ceny pod ním by se změnily' },
 
@@ -1271,6 +1273,27 @@ const MUTACE = [
     hledej: "      if (uloCisloSedi(odM) && uloZaporne(odM) && hlProhlub > 0) {",
     nahrad: "      if (false) {",
     proc: 'zakázka se zkratkou „Opláštit i prohlubeň" by nešla uložit ani vytisknout (kolo 23: 6 ze 118 zakázek)' },
+  /* Krycí list odeslané nabídky se dá doplňovat (J. V. 14. 10. 2026). */
+  { nazev: 'KL 14. 10.: krycí list se otevře i po smlouvě o dílo', soubor: '../src/zamek.js',
+    hledej: "  return variantaUzamcena(v) && !zamekTiskyTypy(v).some(t => ZAMEK_KRYCI_SMLOUVY.indexOf(t) >= 0);",
+    nahrad: "  return variantaUzamcena(v);",
+    proc: 'po podpisu SoD by šly přepsat zástupci, termíny a pokuty, které smlouva vytiskla' },
+  { nazev: 'KL 14. 10.: pole cenové nabídky se berou jako volná', soubor: '../src/zamek.js',
+    hledej: "  return !s || nab.indexOf(s.sekce) >= 0;",
+    nahrad: "  return !s;",
+    proc: 'zálohy, splatnost a termín dodání odeslané nabídky by šly přepsat — dotisk by nesl jiné podmínky, než zákazník dostal' },
+  { nazev: 'KL 14. 10.: splátky SoD PROJ starších dat se berou jako volné', soubor: '../src/zamek.js',
+    hledej: "  if (proj && /^sodpPlatba\\d+$/.test(id)) return true;",
+    nahrad: "",
+    proc: 'u nabídky PROJ z doby před plánem plateb by změna splátky změnila platby odeslané nabídky' },
+  { nazev: 'KL 14. 10.: server porovná data zamčené varianty celá', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "        ? d => globalThis.zamekDataPorovnani(d, sv) : d => JSON.stringify(d);",
+    nahrad: "        ? d => JSON.stringify(d) : d => JSON.stringify(d);",
+    proc: 'doplnění kontaktu v krycím listu odeslané nabídky by skončilo „Neuloženo" — zadání J. V. by neplatilo' },
+  { nazev: 'KL 14. 10.: server bere zámek z příchozí verze', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "        ? d => globalThis.zamekDataPorovnani(d, sv) : d => JSON.stringify(d);",
+    nahrad: "        ? d => globalThis.zamekDataPorovnani(d, nv) : d => JSON.stringify(d);",
+    proc: 'klient by smazáním záznamu o tisku SoD odemkl krycí list podepsané smlouvy' },
   { nazev: 'B135: tvar čísla podle jádra se ve vstupech nehlídá', soubor: '../src/uloziste.js',
     hledej: "    else if (!uloCisloJadro(h)) out.push({ kde, duvod: 'typ' });",
     nahrad: "    else if (false) out.push({ kde, duvod: 'typ' });",

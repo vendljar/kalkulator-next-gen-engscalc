@@ -244,6 +244,71 @@ function variantaEditovatelna(v) {
   return !variantaUzamcena(v);
 }
 
+/* KRYCÍ LIST ODESLANÉ NABÍDKY SE DÁ DOPLŇOVAT (J. V. 14. 10. 2026: „krycí
+ * list by nemusel být zamčený vůbec … věci, které nejsou v cenové nabídce,
+ * by mělo být možné v krycím listu upravovat i po vytištění nabídky").
+ *
+ * Zámek drží to, co zákazník dostal na papíře. Z krycího listu jdou do
+ * cenové nabídky jen sekce KRYCI_NABIDKA_SEKCE (OCK) a
+ * KRYCI_PROJ_NABIDKA_SEKCE (PROJ) — podmínky pod „Celkem s DPH" a symboly
+ * {{PODM_…}} — a u starších dat PROJ bez plánu plateb i splátky SoD
+ * projekce (sodpPlatba1…, planPlatebZeStarych). Ty zůstávají zamčené, stejně
+ * jako plán plateb PROJ (planKlp…, vlastní obal v zamek_ui.js). Ostatní pole
+ * krycího listu (zákazník, kontakty, termíny, atypy, smlouva…) jsou podklad
+ * pro backoffice a obchodník je doplňuje i po odeslání nabídky.
+ *
+ * Platí, jen dokud z varianty neodešla SMLOUVA O DÍLO: ta pole krycího
+ * listu tiskne (zástupci, termíny, pokuty) a podepisuje se — po ní je
+ * krycí list zamčený celý jako dřív. Neznámé pole (není v sekcích) se
+ * bere jako tištěné do nabídky: radši zamčené navíc než změněná nabídka.
+ * Server hlídá totéž (zamekDataPorovnani v netlify/lib/zakazka_kontrola.mjs). */
+const ZAMEK_KRYCI_SMLOUVY = ['sod', 'sodProj'];
+
+function zamekTiskyTypy(v) {
+  const z = zamekInfo(v);
+  if (!z) return [];
+  return [z.typ].concat((Array.isArray(z.tisky) ? z.tisky : []).map(t => t && t.typ)).filter(Boolean);
+}
+
+/* Krycí list zamčené varianty jde (mimo pole nabídky) doplňovat? */
+function zamekKryciOtevreny(v) {
+  return variantaUzamcena(v) && !zamekTiskyTypy(v).some(t => ZAMEK_KRYCI_SMLOUVY.indexOf(t) >= 0);
+}
+
+/* Patří pole krycího listu (`list` = 'kryci' | 'kryciProj') do cenové nabídky? */
+function zamekKryciPoleVNabidce(list, id) {
+  id = String(id == null ? '' : id);
+  const proj = list === 'kryciProj';
+  if (proj && /^sodpPlatba\d+$/.test(id)) return true;
+  const sekce = proj ? (typeof KRYCI_PROJ_SEKCE !== 'undefined' ? KRYCI_PROJ_SEKCE : null)
+    : (typeof KRYCI_SEKCE !== 'undefined' ? KRYCI_SEKCE : null);
+  const nab = proj ? (typeof KRYCI_PROJ_NABIDKA_SEKCE !== 'undefined' ? KRYCI_PROJ_NABIDKA_SEKCE : null)
+    : (typeof KRYCI_NABIDKA_SEKCE !== 'undefined' ? KRYCI_NABIDKA_SEKCE : null);
+  if (!Array.isArray(sekce) || !Array.isArray(nab) || (list !== 'kryci' && !proj)) return true;
+  const s = sekce.find(x => x && Array.isArray(x.pole) && x.pole.some(p => p && p.id === id));
+  return !s || nab.indexOf(s.sekce) >= 0;
+}
+
+/* Smí se pole krycího listu změnit? Nezamčená varianta = ano. */
+function zamekKryciPoleVolne(v, list, id) {
+  if (!variantaUzamcena(v)) return true;
+  return zamekKryciOtevreny(v) && !zamekKryciPoleVNabidce(list, id);
+}
+
+/* Data zamčené varianty k porovnání „změnilo se něco odeslaného?" — bez
+ * ručních hodnot polí krycího listu, která se smí doplňovat. Zámek se bere
+ * z `v` (na serveru vždy z ULOŽENÉ verze, klient si ho nevybírá). */
+function zamekDataPorovnani(data, v) {
+  if (!data || typeof data !== 'object' || !zamekKryciOtevreny(v)) return JSON.stringify(data);
+  const kopie = JSON.parse(JSON.stringify(data));
+  ['kryci', 'kryciProj'].forEach(list => {
+    const h = kopie[list] && kopie[list].hodnoty;
+    if (!h || typeof h !== 'object') return;
+    Object.keys(h).forEach(id => { if (!zamekKryciPoleVNabidce(list, id)) delete h[id]; });
+  });
+  return JSON.stringify(kopie);
+}
+
 /* Uzamčení. První tisk je ten definitivní okamžik „odesláno" – uloží se
  * datum, typ dokumentu, číslo nabídky a otisk částek, které odešly.
  * Každý další tisk téže (už zamčené) varianty se jen připíše do seznamu
@@ -803,4 +868,5 @@ if (typeof module !== 'undefined')
                      klonujVariantu, zamekInfo, variantaUzamcena,
                      variantaEditovatelna, zamkniVariantu, odemkniVariantu,
                      ZAMEK_OTISK_POLE, zamekOtisk, zamekOtiskZPorovnani,
-                     zajistiZamek };
+                     zajistiZamek, ZAMEK_KRYCI_SMLOUVY, zamekTiskyTypy, zamekKryciOtevreny,
+                     zamekKryciPoleVNabidce, zamekKryciPoleVolne, zamekDataPorovnani };

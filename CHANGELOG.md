@@ -8,6 +8,40 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v14.10.5 — krycí list odeslané nabídky se dá doplňovat (větev claude/kryci-odemceny-14-10)
+
+Pokyn J. V. 14. 10. 2026 (se snímkem dialogu „Uzamčená varianta" nad krycím
+listem PROJ): „krycí list by nemusel být zamčený vůbec … v době, kdy posílám
+CN, se mi nechce vyplňovat všechno do krycího listu. Věci, které nejsou
+v cenové nabídce, by mělo být možné v krycím listu upravovat i po vytištění
+nabídky. Uprav a pošli do testu." Z `test` (v14.10.3, eff7724); v14.10.4 je
+obsazená větví `claude/slovnik-14-10` (nesloučená).
+
+- **Co se po tisku nabídky doplňuje:** všechna pole krycího listu OCK i PROJ
+  kromě těch, která jdou do cenové nabídky — OCK sekce Typ smlouvy
+  a produktu, Platební podmínky, Termín dodání; PROJ Typ smlouvy, Platební
+  podmínky, plán plateb a u starších dat i splátky SoD projekce
+  (`sodpPlatba…`, plní platby nabídky bez plánu). Ta zůstávají zamčená
+  s dialogem „Uzamčená varianta" jako dřív. Neznámé pole = zamčené.
+- **Po tisku smlouvy o dílo** (SoD realizace nebo projekce) je krycí list
+  zamčený celý — smlouva jeho pole tiskne a podepisuje se.
+- **Zakázka otevřená jen ke čtení** se zápisem do volného pole uvolní
+  k ukládání — jen autorovi, vedoucímu a administrátorovi
+  (`zamekCteniSmiOdemknout`); cizí obchodník zápis nedostane.
+- Nad krycím listem zamčené varianty je poznámka, co se ještě doplňuje.
+- **Model** `zamekKryciPoleVolne` / `zamekKryciPoleVNabidce` /
+  `zamekKryciOtevreny` / `zamekDataPorovnani` v `src/zamek.js`; obal
+  `klSet` / `klReset` / `klpSet` / `klpReset` v `src/ui/zamek_ui.js`.
+  **Server** (`netlify/lib/zakazka_kontrola.mjs`) porovnává data zamčené
+  varianty bez ručních hodnot volných polí; zámek bere z uložené verze
+  (smazání záznamu o tisku SoD klientem nic neodemkne).
+- Testy: `src/test_kryci_po_tisku.js` nový — před opravou 0/4, po 89/0;
+  `netlify/test_kryci_po_tisku.mjs` nový — před 8/2, po 10/0;
+  `overit_kryci_po_tisku.mjs` (prohlížeč) nový — před 9/4 (bez poznámky),
+  po 15/0. Mutace serveru: 5 nových („KL 14. 10.") chycené 5 z 5, mutace
+  „data uzamčené varianty lze změnit" přesměrovaná na nové porovnání
+  (chycená), `--kontrola` 400 úseků; obě nové sady přidány do sad mutací.
+
 ## v14.10.3 — integrace do `test`: připomínky obchodu + K23T-N1 (větev claude/integrace-14-10b)
 
 Pokyn J. V. 14. 10. 2026 („sluč k23-odm-prohluben do test"). `test` nesl

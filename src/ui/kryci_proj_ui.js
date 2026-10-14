@@ -155,6 +155,7 @@ function renderKryciProj() {
     a z Nastavení → Firma; ruční přepis má přednost (↺ vrátí automatiku). Činnost, která v kalkulaci nemá cenu,
     se vypíše jako <b>„není součástí nabídky“</b> – nikdy nulou ani odhadem. Štítky <b>BO</b> / <b>Tech</b> / <b>BO+Tech</b>
     ukazují, do které verze výstupu pole patří.</div>
+    ${typeof zamekKryciPoznamka === 'function' ? zamekKryciPoznamka((typeof KRYCI_PROJ_NABIDKA_SEKCE !== 'undefined' ? KRYCI_PROJ_NABIDKA_SEKCE.concat(['plán plateb']) : [])) : ''}
     ${typeof ukazkoveZabranaPanel === 'function' ? ukazkoveZabranaPanel() : ''}
     ${sekceHtml}
     ${typeof kryciHodinyBlok === 'function' ? kryciHodinyBlok('proj') : ''}
