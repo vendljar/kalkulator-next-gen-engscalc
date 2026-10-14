@@ -212,8 +212,10 @@ const jeDvojsklo = (Z, C) => /dvojskl/i.test(eng.skloVolba(Z, C).boky.nazev);
   test('číselník názvu akce má čtyři varianty', seznam.length === 4, seznam);
   test('a žádná nenese obě možnosti naráz',
     seznam.every(x => !/\//.test(x)), seznam.filter(x => /\//.test(x)));
-  test('výchozí název je jedna z nich',
-    seznam.indexOf(ts.DEFAULT_TECHSPEC.nazevAkce) >= 0, ts.DEFAULT_TECHSPEC.nazevAkce);
+  /* Od 14. 10. 2026 je výchozí název z hlavičky zakázky — specifikace vlastní
+   * text nenese a číselník je jen nabídka pro ruční přepis. */
+  test('výchozí název nese hlavička zakázky (specifikace vlastní text nemá)',
+    ts.DEFAULT_TECHSPEC.nazevAkce === '' && ts.DEFAULT_TECHSPEC.nazevAkceRucne === false, ts.DEFAULT_TECHSPEC.nazevAkce);
   test('pole NÁZEV AKCE ten číselník opravdu nabízí',
     (ts.TS_HLAVICKA.find(x => x.id === 'nazevAkce') || {}).ciselnik === ts.TS_C.nazevAkce);
   /* Bez překladu by v EN/DE zůstala čeština — to byla druhá polovina nálezu. */

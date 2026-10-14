@@ -691,7 +691,10 @@ const TECHSPEC_DEF = [
 ];
 
 const DEFAULT_TECHSPEC = {
-  nazevAkce: 'vestavba nové prosklené OCK výtahové šachty',
+  /* Název akce se od 14. 10. 2026 bere z hlavičky zakázky (tsNazevAkce);
+   * `nazevAkce` nese jen ruční přepis, `nazevAkceRucne` říká, jestli platí. */
+  nazevAkce: '',
+  nazevAkceRucne: false,
   hodnoty: {},     // { idPole: 'ruční hodnota' } – jen přepsaná pole; ostatní auto/výchozí
   extra: [],       // [{label, hodnota}] – vlastní doplněné řádky (sekce SOUČÁSTÍ DODÁVKY NENÍ apod.)
 };
@@ -856,9 +859,29 @@ const TS_HLAVICKA = [
    * specifikace) — jen se nepřeloží, protože ve slovníku není; na to
    * upozorňuje nápověda u pole. Přesně to se dnes děje na 0290, kde si
    * obchodník název zkrátil ručně. */
+  /* Od 14. 10. 2026 (připomínka obchodu, rozhodnutí J. V.) je VÝCHOZÍ název
+   * akce ten z hlavičky zakázky — obchodník ho psal dvakrát a specifikace,
+   * která jde jako příloha smlouvy, nesla jiný název než nabídka. Ruční
+   * přepis zůstává (štítek „ručně", ↺ vrátí převzatý); číselník slouží jako
+   * nabídka textů. Viz tsNazevAkce. */
   { id: 'nazevAkce', label: 'NÁZEV AKCE', zdroj: 'techspec', ciselnik: TS_C.nazevAkce },
   { id: 'adresa', label: 'ADRESA STAVBY', zdroj: 'zakazka' },
 ];
+
+/* NÁZEV AKCE SPECIFIKACE (14. 10. 2026). Vrací { text, rucne }:
+ *   nazevAkceRucne === true  → ruční text specifikace,
+ *   nazevAkceRucne === false → název akce z hlavičky zakázky (zak.nazevAkce),
+ *   volba chybí (data před 14. 10.) → uložený text, pokud nějaký je (bere se
+ *     jako ruční — uložená ani odeslaná specifikace se nezmění), jinak hlavička.
+ * Ruční přepis na prázdno = ruční prázdno (povinné pole to ohlásí). */
+function tsNazevAkce(ts, zak) {
+  const t = ts || {};
+  const hlavicka = String((zak && zak.nazevAkce) || '');
+  const rucne = t.nazevAkceRucne === true
+    || (t.nazevAkceRucne === undefined && !tsPrazdna(t.nazevAkce));
+  return rucne ? { text: String(t.nazevAkce == null ? '' : t.nazevAkce), rucne: true }
+    : { text: hlavicka, rucne: false };
+}
 
 /* Povinné položky dokumentu. Pomlčka „ -“ je legitimní odpověď u polí,
  * která se běžně neuplatní (usazení bočních stěn, doplňkové konstrukce),
@@ -886,7 +909,7 @@ function tsKontrola(ts, r, Z, C, zak) {
   const chybi = [];
 
   if (zak) TS_HLAVICKA.forEach(p => {
-    const val = p.zdroj === 'techspec' ? t[p.id] : zak[p.id];
+    const val = p.id === 'nazevAkce' ? tsNazevAkce(t, zak).text : p.zdroj === 'techspec' ? t[p.id] : zak[p.id];
     if (tsPrazdna(val)) chybi.push({ id: p.id, label: p.label, sekce: 'HLAVIČKA DOKUMENTU', druh: 'hlavicka' });
   });
 
@@ -912,4 +935,4 @@ if (typeof module !== 'undefined')
     tsVyplnDveri, tsVyplnDveriCasti, tsSvetlikyDveri,
     tsOdvozeno, tsLeseniVnejsiVCene, tsStatikaVCene, tsSken3dVCene,
     TS_C_KEY_OF, tsCiselnikKlic, tsCiselnikPouziti, tsPole, TS_C_ORIG, TS_DEF_ORIG,
-    TS_HLAVICKA, TS_POVINNE, tsPrazdna, tsKontrola };
+    TS_HLAVICKA, TS_POVINNE, tsPrazdna, tsKontrola, tsNazevAkce };

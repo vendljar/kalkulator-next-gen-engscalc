@@ -33,6 +33,17 @@ Připomínky D. Sikory a J. Laudy, rozhodnutí J. V. 14. 10. 2026. Z `test-draft
   `test_nabidka_proj.js` a `test_sablona_proj_v4.js` zapínají AD výslovně
   (hlídají jeho bloky). Mutace jádra: 2 nové („AD 14. 10.") chycené 2 z 2,
   `--kontrola` 195 úseků.
+- **Bod 2 — název akce v technické specifikaci z hlavičky zakázky.** Výchozí
+  název akce specifikace je název akce zakázky (`tsNazevAkce` v `techspec.js`)
+  a mění se s hlavičkou; ruční přepis zůstává (štítek „ručně", ↺ vrátí
+  převzatý; číselník čtyř textů je nabídka v poli). Cizojazyčný náhled
+  převzatý název nepřekládá (vlastní jméno). Data před 14. 10. s vyplněným
+  textem specifikace se berou jako ruční přepis — uložené ani odeslané
+  specifikace se nemění. Testy: `src/test_techspec_nazev_akce.js` nový —
+  před opravou 0/1, po opravě 18/0; `test_techspec.js` (zakázka v hlavičce
+  nese název akce) a `test_techspec_sklo.js` (výchozí název z hlavičky)
+  upraveny. Mutace jádra: `techspec.js` přidán mezi jádra, 2 nové („NA 14.
+  10.") chycené 2 z 2, `--kontrola` 197 úseků.
 
 ## v14.10.1 — výsledek celého kola nad v13.10.4 (větev claude/integrace-14-10)
 

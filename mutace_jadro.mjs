@@ -65,7 +65,9 @@ const SRC = resolve(KOREN, 'src');
  * a nabídky — druhotné rozvinutí symbolu z uživatelského textu se hlídá.
  * sablona_obsah.js (B115, 6. 10. 2026): kontrola obsahu šablony Wordu —
  * jediná pojistka proti šabloně, která si u zákazníka stáhne makra. */
-const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sablony_online.js', 'kontroly.js', 'plan_plateb.js', 'docxgen.js', 'sablona_obsah.js'];
+/* techspec.js (14. 10. 2026): název akce specifikace z hlavičky zakázky
+ * a oplechování soklu prohlubně — text přílohy smlouvy. */
+const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sablony_online.js', 'kontroly.js', 'plan_plateb.js', 'docxgen.js', 'sablona_obsah.js', 'techspec.js'];
 /* Filtr = první argument, který není přepínač (stejně jako netlify/mutace.mjs). */
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 /* --kontrola (23. 9. 2026, nález N19): jen ověří, že každý hledaný úsek je
@@ -165,6 +167,15 @@ const MUTACE = [
     hledej: "      if (s.symboly.indexOf('PROJ_CENA_AD_BLOK') >= 0 || s.symboly.indexOf('PROJ_CENA_AD') < 0) return null;",
     nahrad: "      if (s.symboly.indexOf('PROJ_CENA_AD') < 0) return null;",
     proc: 'po nahrání šablony PROJ v5 by varování dál tvrdilo, že Word AD vytiskne — rada „nahrajte v5" by nešla splnit' },
+  /* ---------- název akce specifikace z hlavičky zakázky (14. 10. 2026) ---------- */
+  { nazev: 'NA 14. 10.: uložený název akce starší specifikace se zahodí', soubor: 'techspec.js',
+    hledej: "  const rucne = t.nazevAkceRucne === true\n    || (t.nazevAkceRucne === undefined && !tsPrazdna(t.nazevAkce));",
+    nahrad: "  const rucne = t.nazevAkceRucne === true;",
+    proc: 'odeslaná specifikace z doby před 14. 10. by při dotisku nesla jiný název akce, než odešel' },
+  { nazev: 'NA 14. 10.: kontrola hlavičky nevidí převzatý název akce', soubor: 'techspec.js',
+    hledej: "    const val = p.id === 'nazevAkce' ? tsNazevAkce(t, zak).text : p.zdroj === 'techspec' ? t[p.id] : zak[p.id];",
+    nahrad: "    const val = p.zdroj === 'techspec' ? t[p.id] : zak[p.id];",
+    proc: 'každá nová specifikace by hlásila „název akce nevyplněn", i když ho hlavička má — varování by přestalo nést informaci' },
   /* ---------- K18-N96: dodatkový text v cizojazyčné nabídce (30. 9. 2026) ---------- */
   { nazev: 'K18-N96: český dodatkový text v cizí nabídce se nepozná', soubor: 'kontroly.js',
     hledej: "          return !trStav(t, jaz).prelozeno;",

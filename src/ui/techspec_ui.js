@@ -154,7 +154,9 @@ function renderTechspecPreklad() {
       ${row('ČÍSLO NABÍDKY', ZAK.cislo)}
       ${row('OBJEDNATEL', ZAK.objednatel)}
       ${row('DATUM', ZAK.datum)}
-      ${row('NÁZEV AKCE', TS.nazevAkce)}
+      ${(() => { const na = tsNazevAkce(TS, ZAK);
+        /* převzatý název akce je vlastní jméno zakázky — slovníkem se nepřekládá */
+        return row('NÁZEV AKCE', na.text, !na.rucne); })()}
       ${row('ADRESA STAVBY', ZAK.adresa)}
       ${sekce}
       ${extra ? `<h3>${tsPrelozText('DALŠÍ UJEDNÁNÍ')}</h3>` + extra : ''}
@@ -165,6 +167,30 @@ function renderTechspecPreklad() {
       (přepněte na CZ). Tečkovaně zvýrazněné fráze zatím nemají překlad ve slovníku a zůstávají česky.</div>
     </div>`;
 }
+
+/* NÁZEV AKCE (14. 10. 2026): výchozí z hlavičky zakázky, ruční přepis se
+ * štítkem „ručně" a ↺ zpět na převzatý. Zápis jde přes set() — zámek
+ * odeslané nabídky ho hlídá jako každé pole specifikace. */
+function tsNazevAkceRadek() {
+  const na = tsNazevAkce(TS, ZAK);
+  const badge = na.rucne
+    ? '<span class="pill warn src" title="ruční přepis — hlavička zakázky se nepřebírá">ručně</span>'
+      + ` <button class="mini noprint" title="vrátit název akce z hlavičky zakázky" onclick="tsNazevAkceVrat()">↺</button>`
+    : '<span class="pill src" title="převzato z hlavičky zakázky">z hlavičky zakázky</span>';
+  const chybi = tsPrazdna(na.text);
+  const varovani = chybi ? ` <span class="pill warn" title="povinná položka dokumentu – zatím nevyplněno">${esc(T('nevyplněno'))}</span>` : '';
+  return `<div class="spec-row${chybi ? ' chybi' : ''}"><div class="lbl">NÁZEV AKCE</div>
+      <div><input type="text" id="tsNazevAkce" list="tsNazevAkceNavrhy" value="${esc(na.text)}" onchange="tsNazevAkceNastav(this.value)">
+        <datalist id="tsNazevAkceNavrhy">${TS_C.nazevAkce.map(o => `<option value="${esc(o)}">`).join('')}</datalist></div>
+      <div>${badge}${varovani}</div></div>`;
+}
+function tsNazevAkceNastav(v) {
+  /* Zapsaný stejný text jako v hlavičce = žádný přepis, převzatý zůstává. */
+  if (!tsNazevAkce(TS, ZAK).rucne && String(v) === String(ZAK.nazevAkce || '')) return;
+  set('TS.nazevAkce', v);
+  if (TS.nazevAkce === v) set('TS.nazevAkceRucne', true);
+}
+function tsNazevAkceVrat() { set('TS.nazevAkceRucne', false); }
 
 function renderTechspec() {
   if (jazyk() !== 'cz') return renderTechspecPreklad();
@@ -247,7 +273,7 @@ function renderTechspec() {
       <div class="spec-row"><div class="lbl">ČÍSLO NABÍDKY</div><div><input type="text" value="${esc(ZAK.cislo)}" onchange="set('ZAK.cislo', this.value)"></div><div></div></div>
       <div class="spec-row"><div class="lbl">OBJEDNATEL</div><div><input type="text" value="${esc(ZAK.objednatel)}" onchange="set('ZAK.objednatel', this.value)"></div><div></div></div>
       <div class="spec-row"><div class="lbl">DATUM</div><div><input type="date" style="text-align:left" value="${esc(ZAK.datum)}" onchange="set('ZAK.datum', this.value)"></div><div></div></div>
-      <div class="spec-row"><div class="lbl">NÁZEV AKCE</div><div><input type="text" value="${esc(TS.nazevAkce)}" onchange="set('TS.nazevAkce', this.value)"></div><div></div></div>
+      ${tsNazevAkceRadek()}
       <div class="spec-row"><div class="lbl">ADRESA STAVBY</div><div><input type="text" value="${esc(ZAK.adresa)}" onchange="set('ZAK.adresa', this.value)"></div><div></div></div>
       ${sekce}
       ${extra ? '<h3>DALŠÍ UJEDNÁNÍ</h3>' + extra : ''}
