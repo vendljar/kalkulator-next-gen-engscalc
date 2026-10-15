@@ -648,6 +648,7 @@ const SODP_PODTITUL = 'na zhotovení projektové dokumentace';
 function sodProjCislo(xml, zaznam) {
   const t = tělo(xml);
   const body = t.body;
+  if (dg.klicePlaceholderu(body).indexOf('SOD_CISLO_SMLOUVY') >= 0) chyba('SoD PROJ: šablona už číslo smlouvy {{SOD_CISLO_SMLOUVY}} má');
   const norm = s => s.replace(/\s+/g, ' ').trim().toLowerCase();
   const sp = odstavceSTextem(body, tx => norm(tx) === SODP_PODTITUL);
   if (sp.length !== 1) chyba('SoD PROJ: čekám právě jeden podtitul „' + SODP_PODTITUL + '" pod nadpisem smlouvy, je jich ' + sp.length + ' — nic nehádám');
