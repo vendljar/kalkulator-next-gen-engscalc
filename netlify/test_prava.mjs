@@ -461,21 +461,21 @@ const MATICE = [
 
 
   /* Napojení na Pipedrive (#16). Od B80 (15. 10. 2026) jen s právem z matice
-   * zobrazení `crm.pipedrive`; výchozí matice ho nedává nikomu kromě
-   * administrátora (rozhraní /api/pd/* zatím nevolá). Detail práva, původu
-   * a stropu načtení hlídá netlify/test_pd_pristup.mjs.
+   * zobrazení `crm.pipedrive`; výchozí matice ho dává všem (rozhodnutí J. V.
+   * 15. 10. 2026, v15.10.7). Odebrané právo, původ a strop načtení hlídá
+   * netlify/test_pd_pristup.mjs.
    * V téhle sadě není nastavené napojení, takže funkce odpovídají „napojení
    * není nastavené" — a právě to je i jejich zkouška: bez tokenu se nesmí
    * rozbít ani prozradit, jestli token vůbec existuje. */
   { fn: pdDealy, soubor: 'pd_dealy.mjs', nazev: 'Pipedrive — seznam případů (GET /api/pd/dealy)',
     metoda: 'GET', url: 'http://x/api/pd/dealy',
-    proc: 'seznam případů z CRM jen s přiděleným právem (B80) — výchozí matice ho nedává',
-    prava: JEN_ADMIN },
+    proc: 'seznam případů z CRM s právem crm.pipedrive (B80) — výchozí matice ho dává všem',
+    prava: PRIHLASENY_OK },
 
   { fn: pdDeal, soubor: 'pd_deal.mjs', nazev: 'Pipedrive — detail případu (GET /api/pd/deal)',
     metoda: 'GET', url: 'http://x/api/pd/deal?id=1',
-    proc: 'detail nese kontakty objednatele (B80) — jen s přiděleným právem',
-    prava: JEN_ADMIN },
+    proc: 'detail nese kontakty objednatele (B80) — s právem crm.pipedrive, výchozí všem',
+    prava: PRIHLASENY_OK },
 
   /* Sdílený rejstřík žádostí o slevu (#102). Čte ho každý přihlášený —
    * rozhodnutí z 10. 8. 2026 zní, že všichni vidí všechny zakázky (#103),
@@ -489,8 +489,8 @@ const MATICE = [
 
   { fn: pdPole, soubor: 'pd_pole.mjs', nazev: 'Pipedrive — mapa vlastních polí (GET /api/pd/pole)',
     metoda: 'GET', url: 'http://x/api/pd/pole',
-    proc: 'tvar CRM jen s právem crm.pipedrive (B80); vynucené obnovení jen pro správce',
-    prava: JEN_ADMIN },
+    proc: 'tvar CRM s právem crm.pipedrive (B80, výchozí všem); vynucené obnovení jen pro správce',
+    prava: PRIHLASENY_OK },
 
   /* Centrální šablony dokumentů (#139). Číst smí každý přihlášený — obchodník
    * z platné šablony tiskne. Zveřejnit a přepínat režim smí JEN administrátor:
@@ -2225,8 +2225,8 @@ console.log('\n===== AUDIT B14: VELIKOST ZAKÁZKY =====\n');
 
 console.log('\n===== AUDIT L27: NEPLATNÝ STAV PIPEDRIVE =====\n');
 {
-  /* Od B80 čte seznam jen role s právem crm.pipedrive — zkouší se proto
-   * administrátorem (výchozí matice obchodníkovi právo nedává). */
+  /* Od B80 čte seznam jen role s právem crm.pipedrive; administrátor ho má
+   * vždy, ať výsledek nezávisí na matici, kterou sada jinde mění. */
   const spatny = await get(pdDealy, 'http://x/api/pd/dealy?stav=cokoli', cAdmin);
   test('L27: neplatný stav vrátí 400 (i bez napojení na Pipedrive)', spatny.status === 400, spatny.status);
   const platny = await get(pdDealy, 'http://x/api/pd/dealy?stav=won', cAdmin);

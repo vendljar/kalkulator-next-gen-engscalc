@@ -132,7 +132,9 @@ const dnesViditelne = Z.ZOBRAZENI_PRVKY.filter(p => ROLE.some(r => p.vychozi[r])
  * berou, vedoucímu zůstávají (zadání: chování vedoucího neměnit). */
 const VYCHOZI_ZAPNUTE = ['nastaveni.slevy', 'nastaveni.sablony', 'kalk.pridatPolozku',
   'tab.spec', 'tab.kryci', 'tab.proj', 'tab.kryciproj', 'tab.zakazka', 'tab.zakaznici',
-  'tab.schvalovani', 'nastaveni.standard', 'naklady.ceniky'];
+  'tab.schvalovani', 'nastaveni.standard', 'naklady.ceniky',
+  /* B80: čtení z Pipedrive zatím všem (rozhodnutí J. V. 15. 10. 2026, v15.10.7). */
+  'crm.pipedrive'];
 test('dnes je pro běžné role viditelné jen to, co je zdokumentované jako výjimka',
   dnesViditelne.every(k => VYCHOZI_ZAPNUTE.includes(k)), dnesViditelne);
 /* Každá záložka z lišty musí mít v matici svůj klíč — jinak se nedá řídit

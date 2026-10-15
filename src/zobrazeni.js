@@ -429,18 +429,19 @@ const ZOBRAZENI_PRVKY = [
   },
   /* B80 (15. 10. 2026): čtení z Pipedrive drží server (netlify/lib/pipedrive.mjs,
    * pdPristup) — na rozdíl od ostatních prvků tu matice NENÍ jen pohodlí,
-   * server se na ni ptá. Výchozí stav „nikdo kromě administrátora" odpovídá
-   * dnešku: rozhraní /api/pd/* zatím nevolá. */
+   * server se na ni ptá. Výchozí stav „všichni" je rozhodnutí J. V.
+   * 15. 10. 2026 (v15.10.7): „zatím přidej všem uživatelům, časem to možná
+   * v nastavení změním". Před velkým stahováním chrání strop a cache. */
   {
     klic: 'crm.pipedrive', skupina: 'data', nazev: 'Čtení obchodních případů z Pipedrive',
     kde: 'serverové rozhraní /api/pd/* (výběr zakázky z CRM; v rozhraní zatím není)',
     popis: 'Seznam a detail obchodních případů z CRM včetně objednatele, IČO a kontaktů '
          + '(jméno, e-mail, telefon) a mapa vlastních polí CRM.',
-    vychozi: { 'Obchodník': false, 'Vedoucí': false },
+    vychozi: { 'Obchodník': true, 'Vedoucí': true },
     navrh: { 'Obchodník': true, 'Vedoucí': true },
-    proc: 'Server pouští čtení jen roli s tímto právem (audit B80): bez něj by si kterýkoli '
-        + 'přihlášený účet mohl projít celé CRM i s kontakty a vyčerpat denní limit Pipedrive. '
-        + 'Až bude výběr zakázky z CRM v rozhraní, je namístě právo obchodníkům i vedoucím přidělit.',
+    proc: 'Server pouští čtení jen roli s tímto právem (audit B80). Podle rozhodnutí J. V. '
+        + '15. 10. 2026 ho zatím mají všichni uživatelé; před vytěžením celého CRM a vyčerpáním '
+        + 'denního limitu Pipedrive chrání strop načtení na uživatele. Odebrat ho jde tady.',
   },
   {
     klic: 'zaloha.vynucena', skupina: 'data', nazev: 'Vynucená záloha databáze',

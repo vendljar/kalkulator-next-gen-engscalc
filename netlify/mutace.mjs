@@ -2095,18 +2095,20 @@ const MUTACE = [
     hledej: "export const PD_PRAVO = 'crm.pipedrive';",
     nahrad: "export const PD_PRAVO = 'crm.pipedrive.preklep';",
     proc: 'neznámý klíč matice zobrazeniSmi pouští (true) — překlep by otevřel CRM všem' },
-  { nazev: 'B80: výchozí matice dává čtení z Pipedrive obchodníkovi', soubor: '../src/zobrazeni.js',
+  /* v15.10.7: výchozí stav je „všem" (rozhodnutí J. V.), mutace ho proto
+   * obrací — obchodník by bez zásahu administrátora o čtení přišel. */
+  { nazev: 'B80: výchozí matice bere obchodníkovi čtení z Pipedrive', soubor: '../src/zobrazeni.js',
     hledej: "    klic: 'crm.pipedrive', skupina: 'data', nazev: 'Čtení obchodních případů z Pipedrive',\n"
       + "    kde: 'serverové rozhraní /api/pd/* (výběr zakázky z CRM; v rozhraní zatím není)',\n"
       + "    popis: 'Seznam a detail obchodních případů z CRM včetně objednatele, IČO a kontaktů '\n"
       + "         + '(jméno, e-mail, telefon) a mapa vlastních polí CRM.',\n"
-      + "    vychozi: { 'Obchodník': false, 'Vedoucí': false },",
+      + "    vychozi: { 'Obchodník': true, 'Vedoucí': true },",
     nahrad: "    klic: 'crm.pipedrive', skupina: 'data', nazev: 'Čtení obchodních případů z Pipedrive',\n"
       + "    kde: 'serverové rozhraní /api/pd/* (výběr zakázky z CRM; v rozhraní zatím není)',\n"
       + "    popis: 'Seznam a detail obchodních případů z CRM včetně objednatele, IČO a kontaktů '\n"
       + "         + '(jméno, e-mail, telefon) a mapa vlastních polí CRM.',\n"
-      + "    vychozi: { 'Obchodník': true, 'Vedoucí': false },",
-    proc: 'bez rozhodnutí administrátora by CRM četl každý obchodník (stav před B80)' },
+      + "    vychozi: { 'Obchodník': false, 'Vedoucí': true },",
+    proc: 'obchodníci by přišli o čtení z CRM, které jim J. V. 15. 10. 2026 přidělil' },
   { nazev: 'B80: GET na /api/pd/* z cizího původu projde', soubor: 'lib/pipedrive.mjs',
     hledej: "  if (cizihoPuvodu(req))\n    return { chyba: json({ ok: false, chyba: 'Požadavek z cizí stránky se odmítá.' }, 403) };",
     nahrad: "  if (false)\n    return { chyba: json({ ok: false, chyba: 'Požadavek z cizí stránky se odmítá.' }, 403) };",

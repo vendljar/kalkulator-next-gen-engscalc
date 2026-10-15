@@ -9,10 +9,10 @@
  * Detail se navíc necachoval: každé načtení stálo 6 tokenů denního rozpočtu
  * Pipedrive, takže tatáž smyčka odstavila integraci celé firmě.
  *
- * Oprava (výchozí volba dávky, zapsaná v CHANGELOG):
+ * Oprava (zapsaná v CHANGELOG v15.10.1 a v15.10.7):
  *   1. čtení jen s právem z matice zobrazení `crm.pipedrive` — výchozí
- *      Obchodník ne, Vedoucí ne (dnes to nikdo z nich nepoužívá; administrátor
- *      právo přidělí, až bude výběr zakázky z CRM v rozhraní);
+ *      Obchodník ano, Vedoucí ano (rozhodnutí J. V. 15. 10. 2026: „zatím
+ *      všem uživatelům"); administrátor ho může v Nastavení odebrat;
  *   2. požadavek z cizího původu se odmítne (403) i u GET;
  *   3. detail dealu se drží 90 s v cache a čerstvá načtení mají strop na
  *      uživatele a hodinu (429);
@@ -91,29 +91,35 @@ const CESTY = [
   ['mapa polí', pdPole, 'http://x/api/pd/pole'],
 ];
 
-console.log('\n===== 1) VÝCHOZÍ MATICE: JEN ADMINISTRÁTOR =====\n');
+console.log('\n===== 1) VÝCHOZÍ MATICE: ČTOU VŠICHNI PŘIHLÁŠENÍ =====\n');
+/* Rozhodnutí J. V. 15. 10. 2026: právo crm.pipedrive zatím mají všichni
+ * uživatelé (výchozí Obchodník ano, Vedoucí ano); administrátor ho může
+ * v Nastavení → Zobrazení odebrat — to hlídá oddíl 2. */
 for (const [n, fn, url] of CESTY) {
-  volani = [];
-  const r = await get(fn, url, cObch);
-  test('B80: obchodník bez práva crm.pipedrive — ' + n + ' → 403', r.status === 403, r.status);
-  test('B80: … a do Pipedrive se nešlo (' + n + ')', volani.length === 0, volani);
-  const v = await get(fn, url, cVed);
-  test('B80: vedoucí bez práva — ' + n + ' → 403', v.status === 403, v.status);
-  const a = await get(fn, url, cAdmin);
-  test('B80: administrátor — ' + n + ' → 200', a.status === 200, a.status);
+  for (const [kdo, c] of [['obchodník', cObch], ['vedoucí', cVed], ['administrátor', cAdmin]]) {
+    const r = await get(fn, url, c);
+    test('B80: výchozí matice — ' + kdo + ' čte ' + n + ' → 200', r.status === 200, r.status);
+  }
 }
 for (const [n, fn, url] of CESTY)
   test('B80: nepřihlášený — ' + n + ' → 401', (await get(fn, url)).status === 401);
 
-console.log('\n===== 2) PRÁVO Z MATICE =====\n');
-/* Matice uložená administrátorem (/api/zobrazeni ukládá do program/zobrazeni). */
-pamet.set('program/zobrazeni', JSON.stringify({ matice: { 'crm.pipedrive': { 'Obchodník': true, 'Vedoucí': false } } }));
+console.log('\n===== 2) ODEBRANÉ PRÁVO Z MATICE =====\n');
+/* Matice uložená administrátorem (/api/zobrazeni ukládá do program/zobrazeni):
+ * obchodníkovi právo odebráno, vedoucímu ponecháno. */
+pamet.set('program/zobrazeni', JSON.stringify({ matice: { 'crm.pipedrive': { 'Obchodník': false, 'Vedoucí': true } } }));
 for (const [n, fn, url] of CESTY) {
+  volani = [];
   const r = await get(fn, url, cObch);
-  test('B80: obchodník s přiděleným právem — ' + n + ' → 200', r.status === 200, r.status);
+  test('B80: obchodník s odebraným právem — ' + n + ' → 403', r.status === 403, r.status);
+  test('B80: … a do Pipedrive se nešlo (' + n + ')', volani.length === 0, volani);
   const v = await get(fn, url, cVed);
-  test('B80: vedoucí, kterému právo přiděleno nebylo — ' + n + ' → 403', v.status === 403, v.status);
+  test('B80: vedoucí, kterému právo zůstalo — ' + n + ' → 200', v.status === 200, v.status);
+  const a = await get(fn, url, cAdmin);
+  test('B80: administrátor má právo vždy — ' + n + ' → 200', a.status === 200, a.status);
 }
+/* Zbytek sady zkouší obchodníkem — právo se mu vrací. */
+pamet.delete('program/zobrazeni');
 
 console.log('\n===== 3) CIZÍ PŮVOD =====\n');
 for (const [n, fn, url] of CESTY) {
