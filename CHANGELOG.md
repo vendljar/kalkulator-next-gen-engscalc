@@ -45,6 +45,45 @@ zobrazuj vždy jen tu část, která patří do konkrétního krycího listu."
   se v tom případě hlídají jen v datech tisku; řádek „celkem" zůstává
   i u listu s jediným řádkem.
 
+## v15.10.9 — Krycí list zakázky OCK a pole „Číslo SoD" (větev claude/kryci-cislo-sod)
+
+Dávka S7 (zadání `podklady/PROMPT_kryci_cislo_sod.md` + `podklady/_SPOLECNE_15_10.md`
+ve větvi `claude/davky-15-10`), nad `origin/claude/integrace-15-10` (v15.10.6).
+Zadání J. V. 15. 10. 2026: „Krycí list objednávky / SoD přejmenuj na Krycí
+list zakázky OCK. Pod číslo nabídky přidej i položku a okno Číslo SOD. To
+platí jak pro OCK, tak pro PROJ."
+
+- **Přejmenování:** nadpis stránky (`src/ui/kryci_ui.js`), dokumentu
+  (`kryciData` → „Krycí list zakázky OCK — Backoffice / Techdata"), registr
+  zámku (`ZAMEK_DOKUMENTY.kryci.popis`) a komentáře. Jméno souboru Wordu
+  (`KRYCI_LIST_…`) starý název nenese, beze změny.
+- **Pole „Číslo SoD"** (`cisloSod`, BO + Tech, ruční, bez předvyplnění)
+  v Základních údajích hned pod Číslem nabídky (CN) — `KRYCI_SEKCE`
+  i `KRYCI_PROJ_SEKCE`, každý list má své číslo (OCK = SoD realizace,
+  PROJ = SoD projekce). Sekce není v nabídce → doplnit jde i po odeslání
+  nabídky, zamkne ho tisk SoD. Objeví se ve výstupech krycího listu
+  (tisk, Word, BO i Tech).
+- **Smlouvy o dílo:** šablony SoD realizace v1 i v2 mají
+  `{{SOD_CISLO_SMLOUVY}}` („SMLOUVA O DÍLO … číslo {{SOD_CISLO_SMLOUVY}}")
+  — plní se z krycího listu OCK. **Šablony SoD projekce v1 i v2 symbol čísla
+  smlouvy nemají** — aplikace pro ně plní tentýž `{{SOD_CISLO_SMLOUVY}}`
+  z krycího listu PROJ; **do šablony SoD projekce ho doplní J. V.** (např.
+  do nadpisu „SMLOUVA O DÍLO … číslo {{SOD_CISLO_SMLOUVY}}" jako u
+  realizace). `vyrob_sablony.js` se neměnil — vložení odstavce do hlavičky
+  smlouvy je rozhodnutí o vzhledu. Prázdné pole = symbol zůstane `{{…}}`.
+- **Výchozí volby:** symbol PROJ pojmenovaný stejně jako u realizace
+  (`SOD_CISLO_SMLOUVY`, ne nový `SOD_CISLO`) — jeden název pro číslo smlouvy
+  v obou šablonách; návrh dalšího čísla řady (#366) mimo rozsah.
+- **Testy (pojistka před → po):** `src/test_kryci_cislo_sod.js` (nový)
+  6/22 → 28/0; `src/test_kryci_po_tisku.js` 89/2 → 91/0;
+  `src/test_kryci_proj_docx.js` (společná pole OCK/PROJ) 2 FAIL → 0;
+  harness `overit_kryci_cislo_sod.mjs` (nový) 4 ✗ + pád → 21/21.
+  Mutace S7 v `netlify/mutace.mjs` (5), sada `../src/test_kryci_cislo_sod.js`
+  v `SADY`.
+- Příručka (Co je nového v15.10.9, kap. 24), roadmapa #366.
+
+---
+
 ## v15.10.7 — B80: čtení z Pipedrive zatím všem uživatelům (větev claude/b80-pipedrive)
 
 Rozhodnutí J. V. 15. 10. 2026 k výchozím volbám v15.10.1: „právo čtení

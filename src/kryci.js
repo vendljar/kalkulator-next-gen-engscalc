@@ -71,6 +71,12 @@ const KRYCI_SEKCE = [
       /* varianta ≥ 2 nese příponu .N (19. 8. 2026) */
       prefill: c => (typeof cisloSVariantou === 'function' ? cisloSVariantou(c.zak, c.varianta) : c.zak.cislo),
       src: 'hlavička kalkulace' },
+    /* Číslo smlouvy o dílo realizace (zadání J. V. 15. 10. 2026, v15.10.9):
+     * ruční pole bez předvyplnění — návrh dalšího čísla řady (#366) čeká na
+     * čísla papírových smluv. Sekce není v KRYCI_NABIDKA_SEKCE, takže se dá
+     * doplnit i po odeslání nabídky; zamkne ho až tisk SoD. Ve smlouvě plní
+     * {{SOD_CISLO_SMLOUVY}}, prázdné pole nechá symbol vidět k doplnění. */
+    { id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'ručně', sod: 'SOD_CISLO_SMLOUVY' },
     { id: 'adresaStavby', label: 'Adresa stavby', verze: ['bo', 'techdata'], bind: 'ZAK.adresa', prefill: c => c.zak.adresa, src: 'hlavička kalkulace' },
     /* KL-2: jen část OCK po slevě. Projekce má vlastní krycí list PROJ. */
     { id: 'hodnotaBezDph', label: 'Hodnota zakázky bez DPH', verze: ['bo', 'techdata'], prefill: c => c.hodnota, src: 'z nabídky OCK (po slevě)' },
@@ -688,7 +694,7 @@ function kryciData(zak, varianta, jekly, verze) {
   const verzeNazev = verze === 'techdata' ? 'Techdata' : 'Backoffice';
   const cislo = (zak.cislo || 'CN').replace(/\s+/g, '');
   const nazevSouboru = ('KRYCI_LIST_' + verzeNazev + '_' + cislo).replace(/[\\/:*?"<>|]+/g, '-');
-  return { nadpis: 'Krycí list objednávky / SoD — ' + verzeNazev, sekce, nazevSouboru, verze, verzeNazev };
+  return { nadpis: 'Krycí list zakázky OCK — ' + verzeNazev, sekce, nazevSouboru, verze, verzeNazev };
 }
 
 /* registrace obou verzí do jednotného registru dokumentů (generují se od nuly) */

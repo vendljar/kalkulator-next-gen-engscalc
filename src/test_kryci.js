@@ -1,5 +1,5 @@
 /* ============================================================
- * Test kryci.js – datový model krycího listu objednávky / SoD (OCK)
+ * Test kryci.js – datový model krycího listu zakázky OCK
  *
  * PROČ TAHLE SADA
  *

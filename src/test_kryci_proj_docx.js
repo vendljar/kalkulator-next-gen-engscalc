@@ -238,7 +238,7 @@ test('bez čísla v OCK se použije vlastní číslo PROJ',
  * tiše rozejdou při první úpravě jednoho z nich. */
 const zakl = def => (def.find(s => s.sekce === 'Základní údaje') || { pole: [] }).pole;
 const zaklOck = zakl(kr.KRYCI_SEKCE), zaklProj = zakl(kp.KRYCI_PROJ_SEKCE);
-const SPOLECNA = ['obchodnik', 'nazevAkce', 'cisloCN', 'adresaStavby', 'hodnotaBezDph'];
+const SPOLECNA = ['obchodnik', 'nazevAkce', 'cisloCN', 'cisloSod', 'adresaStavby', 'hodnotaBezDph'];
 test('Základní údaje: OCK začíná společnými poli',
   zaklOck.slice(0, SPOLECNA.length).map(p => p.id).join(',') === SPOLECNA.join(','),
   zaklOck.map(p => p.id).join(','));

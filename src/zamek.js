@@ -37,7 +37,7 @@ const ZAMEK_DOKUMENTY = {
   sodProj:         { zamyka: true,  popis: 'Smlouva o dílo — projekční práce (Word)' },
   plnaMoc:         { zamyka: false, popis: 'Plná moc (Word)' },
   podklady:        { zamyka: false, popis: 'Náhled podkladů' },
-  kryci:           { zamyka: false, popis: 'Krycí list objednávky / SoD' },
+  kryci:           { zamyka: false, popis: 'Krycí list zakázky OCK' },
   kryciProj:       { zamyka: false, popis: 'Krycí list zakázky PROJ' },
   techspec:        { zamyka: false, popis: 'Technická specifikace' },
   porovnani:       { zamyka: false, popis: 'Porovnání variant' },
