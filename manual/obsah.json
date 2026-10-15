@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v15.10.13 · sestaveno 15. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
+  "verze": "Platí pro aplikaci v15.10.14 · sestaveno 15. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -14,7 +14,7 @@
       ]
     },
     {
-      "nadpis": "Co je nového ve verzi v15.10.13 (15. 10. 2026)",
+      "nadpis": "Co je nového ve verzi v15.10.14 (15. 10. 2026)",
       "odstavce": [
         "**Schválení cenové výjimky platí jen pro přesně to, co nadřízený schválil** — každá změna směsi ceníku nebo pásu „jiné“ (i jediný znak v názvu pásu) ho zruší. **Výjimky schválené před v15.10.8 se musí schválit znovu** (karta Cenové výjimky v Schvalování, kapitola 19).",
         "**Dokument druhé strany do odeslané nabídky** (třeba nabídka OCK po vypnutí „jen projekce“) potřebuje stejné schválení výjimky a slevu nad minimální marží jako nová nabídka. Když chybí, aplikace dokument nevytvoří a poradí pokračovat klonem varianty.",
