@@ -6,7 +6,8 @@
  *           přepis se štítkem „ručně" a ↺,
  *   bod 3 — OPLECHOVÁNÍ SOKLU PROHLUBNĚ ve specifikaci (odvozený řádek),
  *   hodiny — tabulka „Hodiny z kalkulace" na konci krycího listu OCK i PROJ
- *           (verze BO), celé hodiny.
+ *           (verze BO), celé hodiny; od 15. 10. každý list jen svou stranu
+ *           (podrobně overit_hodiny_po_listech.mjs).
  * Bez chyb v konzoli. Ceník = zkušební (src/zkusebni_cenik.js).
  *
  * Spuštění: NODE_PATH=$(npm root -g) node overit_pripominky_14_10.mjs */
@@ -103,11 +104,12 @@ const hodiny = (tab) => p.evaluate((t) => {
   return el ? [...el.querySelectorAll('tr')].map(r => [...r.children].map(c => c.textContent.trim())) : null;
 }, tab);
 for (const t of ['kryci', 'kryciproj']) {
-  const h = await hodiny(t);
-  zkus(t + ': tabulka hodin se sloupci OCK / PROJ a řádkem celkem', !!h && h[0][1] === 'OCK' && h[0][2] === 'PROJ'
+  const h = await hodiny(t), sl = t === 'kryci' ? 'OCK' : 'PROJ';
+  zkus(t + ': tabulka hodin jen se sloupcem ' + sl + ' a řádkem celkem (15. 10.)', !!h && h[0][1] === sl && h[0].length === 2
     && h.some(r => r[0] === 'celkem'), h);
   zkus(t + ': celé hodiny (žádné desetinné číslo)', !!h && !h.some(r => r.some(c => /\d,\d/.test(c))), h);
-  zkus(t + ': AD nabízený → řádek autorského dozoru', !!h && h.some(r => r[0] === 'autorský dozor'), h);
+  zkus(t + (t === 'kryci' ? ': AD (činnost PROJ) v listu OCK není' : ': AD nabízený → řádek autorského dozoru'),
+    !!h && h.some(r => r[0] === 'autorský dozor') === (t === 'kryciproj'), h);
 }
 
 const dvoji = await p.evaluate(() => { const ids = [...document.querySelectorAll('[id]')].map(e => e.id);

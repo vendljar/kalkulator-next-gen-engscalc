@@ -6492,7 +6492,7 @@
    "hotovoKdyz" : "Hotovo ve v14.10.2: test_kryci_hodiny 0/1 → 23/0, harness overit_pripominky_14_10 16/0, mutace jádra +1.",
    "kde" : "`src/kryci.js` (kryciHodiny), `docxTeloZeSekci`",
    "zavisi" : [ { "id" : "411", "typ" : "doporuceno", "proc" : "řádek AD jen když se nabízí" }, { "id" : "408", "typ" : "doporuceno", "proc" : "sloupec vyřazené strany" } ],
-   "pozn" : "Výchozí volby (tabulka hodin jen sloupec vedoucí strany, AD „max. 30 h / měsíc“ mimo celek) odsouhlaseny J. V. 14. 10. 2026 (v14.10.4 bod 3)."
+   "pozn" : "Výchozí volby (tabulka hodin jen sloupec vedoucí strany, AD „max. 30 h / měsíc“ mimo celek) odsouhlaseny J. V. 14. 10. 2026 (v14.10.4 bod 3). ZMĚNA 15. 10. 2026 (zadání J. V., v15.10.10, větev claude/hodiny-po-listech): každý krycí list jen svou stranu — list OCK jen hodiny z Kalkulace OCK, list PROJ jen z Kalkulace PROJ (jeden sloupec hodnot); vyřazená / uzamčená strana tabulku ve svém listu nemá vůbec. Nahrazuje pravidlo „sloupec jen vedoucí strany“. test_kryci_hodiny 12/22 → 34/0, harness overit_hodiny_po_listech 6/10 → 16/0, mutace jádra HOD 4 z 4."
   },
   {
    "id" : "415",
