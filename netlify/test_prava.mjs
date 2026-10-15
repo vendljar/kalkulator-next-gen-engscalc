@@ -1881,12 +1881,14 @@ console.log('\n===== AUDIT B8: OČISTA DÁVKY ANALYTIKY =====\n');
   const pred = (await sAn.cti(dnesKlic)) || {};
   const predCizi = ((pred.poUzivateli || {})['kolega@example.com'] || {}).chyby || 0;
   /* B35 (13. 10. 2026): klíč cas/ vzniká jen pro zakázku z rejstříku. Aby
-   * kontrola TVARU (B8) byla dál vidět sama za sebe, rejstřík dostane
-   * zakázku, na jejíž jméno souboru se cizí tvar převede („x-fetch.json") —
-   * bez tvarové kontroly by pak klíč s `fetch(` vznikl. */
+   * kontrola TVARU (B8) byla dál vidět sama za sebe, rejstřík nese zakázku
+   * PŘESNĚ s cizím číslem — číslo nabídky je volný text do 60 znaků
+   * (CISLO_MAX), takže taková zakázka uložit jde. Od B151 (15. 10. 2026) se
+   * poslané číslo s rejstříkem porovnává přesně; dřívější kotva přes jméno
+   * souboru („x-fetch.json") tvarovou kontrolu přestala pokrývat (S10). */
   const sZak = await uloziste('zakazky');
   const rejPred = await sZak.cti('_rejstrik');
-  await sZak.zapis('_rejstrik', { schema: 1, zakazky: ((rejPred && rejPred.zakazky) || []).concat([{ soubor: 'x-fetch.json', cislo: '' }]) });
+  await sZak.zapis('_rejstrik', { schema: 1, zakazky: ((rejPred && rejPred.zakazky) || []).concat([{ soubor: 'x-fetch.json', cislo: "x');fetch('/')" }]) });
   const r = await post(analytikaFn, 'http://x/api/analytika', { akce: 'udalosti',
     den: { pocty: { chyby: -500, zakazky: 'AAAA' }, zalozky: { ['x'.repeat(5000)]: 3 },
            kliky: { 'btn': 1e12 },

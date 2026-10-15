@@ -1,3 +1,21 @@
+# Předávka — 15. 10. 2026: dávka S10 (v15.10.14), větev `claude/mutace-b8-b31` — nechycené mutace B8 a B31
+
+Nad `origin/test` (f8fe243, v15.10.13). Do `test-draft` / `test` / `main`
+nic — sloučení a celé kolo dělá koordinace (session_01NQjWzfqv1obHAg7DWPHAKH).
+Podrobnosti: CHANGELOG v15.10.14.
+
+- **Hotovo (pushnuto):** obě nechycené mutace jsou díry v testu (ne v kódu,
+  ne ekvivalentní mutace); kód aplikace i kotvy `MUTACE` beze změny.
+  B8: test v `test_prava.mjs` dává do rejstříku zakázku přesně s cizím číslem
+  (od B151 už nestačil převod na jméno souboru). B31: nový oddíl
+  v `test_obnova.mjs` — obnova stejného hesla po odhlášení (B6) verzi nesníží
+  (226 → 232 OK). Cílené mutace B8 15/15, B31 1/1, B151 1/1, B93 1/1;
+  `--kontrola` 449; kontrola údajů čistá.
+  Smoke 252 / 0 / 6 (viz CHANGELOG — dočasné selhání release_odkaz).
+- **Při slučování:** mění se jen dva testy, CHANGELOG, PREDAVKA, `verze.txt`;
+  konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt`.
+- **Další krok (koordinace):** celé kolo s mutacemi — čekané 449 z 449.
+
 # Předávka — 15. 10. 2026: dávka S9 (v15.10.11), větev `claude/sod-proj-cislo` — číslo SoD ve smlouvě PROJ
 
 Nad `origin/claude/integrace-15-10` (e0704b6: S7 v15.10.9 + S8 v15.10.10).
