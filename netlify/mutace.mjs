@@ -88,7 +88,9 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* S5 (15. 10. 2026): čekání červené lišty při startu (ukazkoveListaRozhodni). */
      '../src/test_ukazkove.js',
      /* S7 (15. 10. 2026): Krycí list zakázky OCK a pole „Číslo SoD". */
-     '../src/test_kryci_cislo_sod.js'];
+     '../src/test_kryci_cislo_sod.js',
+     /* S9 (15. 10. 2026): číslo SoD v šablonách SoD projekce (vyrob_sablony --sod-proj-cislo). */
+     '../src/test_sod_proj_cislo.js'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -2207,6 +2209,23 @@ const MUTACE = [
     hledej: "popis: 'Krycí list zakázky OCK' }",
     nahrad: "popis: 'Krycí list objednávky / SoD' }",
     proc: 'protokol zámku a hlášky by krycí list OCK pojmenovaly postaru' },
+  /* S9 (15. 10. 2026): číslo SoD v šablonách SoD projekce. */
+  { nazev: 'S9: SoD PROJ — symbol čísla rozdělený do dvou běhů', soubor: '../nastroje/vyrob_sablony.js',
+    hledej: "'<w:t xml:space=\"preserve\">číslo {{SOD_CISLO_SMLOUVY}}</w:t></w:r></w:p>';",
+    nahrad: "'<w:t xml:space=\"preserve\">číslo {{SOD_CISLO_</w:t></w:r><w:r>' + rPr + '<w:t>SMLOUVY}}</w:t></w:r></w:p>';",
+    proc: 'rozdělený symbol by Word nemusel dosadit a v nové šabloně by číslo SoD zůstalo nevyplněné' },
+  { nazev: 'S9: SoD PROJ — řádek čísla bez písma podtitulu', soubor: '../nastroje/vyrob_sablony.js',
+    hledej: "const novy = '<w:p>' + pPr + '<w:r>' + rPr + '<w:t xml:space=\"preserve\">číslo {{SOD_CISLO_SMLOUVY}}",
+    nahrad: "const novy = '<w:p>' + '<w:r>' + '<w:t xml:space=\"preserve\">číslo {{SOD_CISLO_SMLOUVY}}",
+    proc: 'číslo smlouvy by vypadlo z formátu nadpisu (zarovnání, tučné písmo)' },
+  { nazev: 'S9: SoD PROJ — číslo se vloží před podtitul', soubor: '../nastroje/vyrob_sablony.js',
+    hledej: "return t.pred + body.slice(0, sp[0].kon) + novy + body.slice(sp[0].kon) + t.po;",
+    nahrad: "return t.pred + body.slice(0, sp[0].zac) + novy + body.slice(sp[0].zac) + t.po;",
+    proc: 'řádek čísla by roztrhl nadpis „SMLOUVA O DÍLO / na zhotovení projektové dokumentace"' },
+  { nazev: 'S9: SoD PROJ — symbol se vloží podruhé', soubor: '../nastroje/vyrob_sablony.js',
+    hledej: "  if (dg.klicePlaceholderu(body).indexOf('SOD_CISLO_SMLOUVY') >= 0) chyba('SoD PROJ: šablona už číslo smlouvy {{SOD_CISLO_SMLOUVY}} má');\n",
+    nahrad: "",
+    proc: 'opakované spuštění nástroje by dalo do smlouvy číslo dvakrát' },
 ];
 
 /* ---------- přerušený běh vrátí zmutovaný soubor ----------
