@@ -127,9 +127,10 @@ Podrobnosti: CHANGELOG v15.10.3.
 - **Smoke se šablonami z Disku** nad v15.10.3: 248 / 0 / 2 přeskočeno
   (test.js, overit_manual.mjs). Šablony jen v kontejneru
   (`/home/user/kng_podklady_p12`). Nic rozdělaného.
-- **Otevřené pro J. V.:** zda skrýt náklady obchodníkům (jen odškrtnutí
-  v matici); varianta C (výpočet na serveru) — vysvětleno v odpovědi
-  15. 10., čeká na rozhodnutí.
+- **Rozhodnuto J. V. 15. 10.:** ceny se na serveru zatím počítat nebudou
+  (varianta C se nedělá). Otevřené zůstává jen, kdy obchodníkům náklady
+  skrýt (odškrtnutí v matici). Release v15.10.3 (db60d8d) nese první podobu
+  P12; úprava (prodejní sazba, výchozí zobrazeno) je v `test` až od v15.10.7.
 - **Meze:** platný ceník v prohlížeči a ceníky v online zakázkách zůstávají
   (varianta C z rozboru se nedělá).
 # Předávka — 15. 10. 2026: větev `claude/b80-pipedrive` (v15.10.1), B80 `/api/pd/*` — dávka S1
