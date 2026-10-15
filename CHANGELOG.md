@@ -88,7 +88,9 @@ nad sestavením).
   nepřihlášený": 1 z 1. `--kontrola`: server 413 úseků, jádro 202 (jádra
   se dávka nedotkla), kontrola údajů čistá.
 - `spust_testy.sh --smoke` bez šablon: 244 prošlo / 0 selhalo / 6 přeskočeno;
-  se šablonami z Disku (KNG_PODKLADY): viz PREDAVKA.
+  se šablonami z Disku (KNG_PODKLADY, 29 šablon) nad v15.10.3: 248 prošlo /
+  0 selhalo / 2 přeskočeno (test.js, overit_manual.mjs — příručka ze snímků
+  se v dávce nestavěla).
 
 **Příručka:** kapitola 28 (Co v aplikaci nevidíte a proč) — odstavec o Kalkulaci
 PROJ; kapitola 8 — co nese soubor JSON; verze v15.10.3. **Roadmapa:** #369 → hotovo (v15.10.3).
