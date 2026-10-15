@@ -28,15 +28,24 @@ import { jadro, jadroChyba } from '../lib/jadro.mjs';
  * při uložení (uloKlicSouboru) — žádná druhá pravda o tvaru čísla.
  * Rejstřík se přestavuje při každém uložení i obnově; chybí-li zakázka
  * v něm, čas se nezapíše — ztratí se nanejvýš statistika, ne data. */
-async function zakazkyZRejstriku() {
+/* Povolené klíče cas/ z rejstříku: číslo zakázky PŘESNĚ, jak ho nese
+ * hlavička (a rejstřík), a jméno souboru bez přípony. Dřív se poslané číslo
+ * převádělo na jméno souboru — jenže převod slévá mezery a pomlčky, takže
+ * jedna skutečná zakázka dala desítky tisíc různých klíčů a jeden účet
+ * zaplnil strop B35 (B151, audit 15. 10. 2026). */
+async function zakazkyZRejstriku(ULO) {
   const rej = await (await uloziste('zakazky')).cti('_rejstrik');
-  const soubory = new Set();
-  for (const z of (rej && Array.isArray(rej.zakazky)) ? rej.zakazky : [])
-    if (z && typeof z.soubor === 'string' && z.soubor) soubory.add(z.soubor);
-  return soubory;
+  const cisla = new Set();
+  for (const z of (rej && Array.isArray(rej.zakazky)) ? rej.zakazky : []) {
+    if (!z) continue;
+    if (typeof z.cislo === 'string' && z.cislo.trim()) cisla.add(z.cislo.trim());
+    if (typeof z.soubor === 'string' && z.soubor.endsWith(ULO.ULO_PRIPONA))
+      cisla.add(z.soubor.slice(0, -ULO.ULO_PRIPONA.length));
+  }
+  return cisla;
 }
-function zakazkaVRejstriku(ULO, soubory, cislo) {
-  return soubory.has(ULO.uloKlicSouboru(cislo) + ULO.ULO_PRIPONA);
+function zakazkaVRejstriku(cisla, cislo) {
+  return cisla.has(cislo);
 }
 
 export default async (req) => {
@@ -146,8 +155,8 @@ export default async (req) => {
            * ho zaplnil smyšlenými čísly a měření pak skončilo pro všechny.
            * Nový klíč jen pro zakázku, která v databázi existuje; strop
            * zůstává jako druhá pojistka. */
-          if (!vRejstriku) vRejstriku = await zakazkyZRejstriku();
-          if (!zakazkaVRejstriku(ULO, vRejstriku, cislo)) continue;
+          if (!vRejstriku) vRejstriku = await zakazkyZRejstriku(ULO);
+          if (!zakazkaVRejstriku(vRejstriku, cislo)) continue;
           if (!existujici) existujici = new Set(await s.seznam('cas/'));
           if (!existujici.has(klic) && existujici.size >= g.ANALYTIKA_MAX_CASU) continue;   // B35
           existujici.add(klic);
