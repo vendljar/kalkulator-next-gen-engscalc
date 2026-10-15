@@ -77,7 +77,9 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* Cenové výjimky (13. 10. 2026): směs ceníku a pás „jiné" do schvalování. */
      'test_vyjimky.mjs', '../src/test_vyjimky.js',
      /* Krycí list odeslané nabídky (14. 10. 2026): volná pole a serverová pojistka. */
-     'test_kryci_po_tisku.mjs', '../src/test_kryci_po_tisku.js'];
+     'test_kryci_po_tisku.mjs', '../src/test_kryci_po_tisku.js',
+     /* #347 (15. 10. 2026): informativní nálezy účtů B92, B93, B95. */
+     'test_ucty_informativni.mjs'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -555,7 +557,8 @@ const MUTACE = [
     proc: 'obchodník by založil zakázku „za" vedoucího' },
 
   { nazev: 'B13: razítko zámku se bere od klienta', soubor: 'lib/zakazka_kontrola.mjs',
-    hledej: "    v.zamek.kdo = relace.jmeno ? relace.jmeno + ' <' + relace.email + '>' : relace.email;",
+    /* Kotva upravená s B95 (#347, 15. 10. 2026): razítko skládá razitkoKdo. */
+    hledej: "    v.zamek.kdo = razitkoKdo(relace);   // B95",
     nahrad: "    v.zamek.kdo = v.zamek.kdo || relace.email;",
     proc: 'pod odeslanou nabídkou by stálo cizí jméno' },
 
@@ -1095,7 +1098,7 @@ const MUTACE = [
     proc: 'obchodník by dvěma zápisy přepsal odeslanou nabídku' },
 
   { nazev: 'B3: razítko „kdo odemkl" se bere od klienta', soubor: 'lib/zakazka_kontrola.mjs',
-    hledej: "          posledni.kdo = relace.jmeno ? relace.jmeno + ' <' + relace.email + '>' : relace.email;",
+    hledej: "          posledni.kdo = razitkoKdo(relace);   // B95",   // kotva upravená s B95 (#347)
     nahrad: "          posledni.kdo = posledni.kdo || relace.email;",
     proc: 'záznam o odemčení by tvrdil, že to udělal někdo jiný' },
 
@@ -2019,6 +2022,31 @@ const MUTACE = [
     hledej: "    const out = s.map(x => JSON.parse(JSON.stringify(x))).concat(n.slice(s.length));",
     nahrad: "    const out = n;",
     proc: 'dřívější tisk odeslané nabídky by šel smazat nebo přepsat beze stopy' },
+  /* #347 (15. 10. 2026): informativní nálezy B89, B92, B93, B95. */
+  { nazev: 'B89: klíč analytiky propustí zbytek argumentu', soubor: '../src/analytika.js',
+    hledej: "    .replace(/\\([\\s\\S]*$/, '(…)')               // zahodit argumenty volání (vč. zbytku)",
+    nahrad: "    .replace(/\\(([^)]|\\n)*\\)?/g, '(…)')",
+    proc: 'název akce nebo jméno zákazníka za závorkou v argumentu by skončilo v analytice (B89)' },
+  { nazev: 'B89: heat mapa tvrdí, že stopa jednotlivce neexistuje', soubor: '../src/ui/analytika_ui.js',
+    hledej: "        Souhrn za všechny uživatele (kliknutí se od 31. 8. 2026 ukládají i po uživatelích — viz",
+    nahrad: "        Souhrn za všechny uživatele — stopa jednotlivce neexistuje. (viz",
+    proc: 'správce by o rozpadu po uživatelích četl opak toho, co aplikace ukládá (B89, GDPR)' },
+  { nazev: 'B92: převod zakázek zapíše starou kopii účtu', soubor: 'functions/uzivatele.mjs',
+    hledej: "      return json({ ok: true, email, na, prevedeno, preskoceno });",
+    nahrad: "      await u.zapis(email, ucet);\n      return json({ ok: true, email, na, prevedeno, preskoceno });",
+    proc: 'souběžná změna hesla nebo role odcházejícího by se převodem tiše vrátila (B92)' },
+  { nazev: 'B93: obnova starého hesla nezvedne verzi hesla', soubor: 'functions/obnova.mjs',
+    hledej: "          if (rezim === 'prepsat' && String(u.heslo) !== String(stary.heslo || '')) {",
+    nahrad: "          if (false) {",
+    proc: 'relace přihlášené heslem, které obnova zrušila, by platily dál (B93)' },
+  { nazev: 'B95: jméno v profilu se závorkami razítka', soubor: 'functions/uzivatele.mjs',
+    hledej: "const jmenoText = (v) => text(String(v == null ? '' : v).replace(/[<>]/g, ''));",
+    nahrad: "const jmenoText = (v) => text(v);",
+    proc: 'jméno „Jan <reditel@…>" by pod zámkem napodobilo cizí razítko (B95)' },
+  { nazev: 'B95: razítko ze jména se závorkami', soubor: 'lib/sdilene.mjs',
+    hledej: "  const jmeno = String(r.jmeno == null ? '' : r.jmeno).replace(/[<>]/g, '').replace(/\\s+/g, ' ').trim();",
+    nahrad: "  const jmeno = String(r.jmeno == null ? '' : r.jmeno).trim();",
+    proc: 'účet se jménem z doby před opravou by pod zámkem napodobil cizí razítko (B95)' },
 ];
 
 /* ---------- přerušený běh vrátí zmutovaný soubor ----------

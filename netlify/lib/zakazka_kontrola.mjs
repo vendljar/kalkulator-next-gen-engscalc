@@ -37,6 +37,8 @@
  * ============================================================ */
 
 export const ZAKAZKA_MAX_B = 4 * 1024 * 1024;
+import { razitkoKdo } from './sdilene.mjs';
+
 export const CISLO_MAX = 60;
 
 /* Značky ukázkového a prázdného ceníku se do databáze neukládají (P2, nálezy
@@ -286,7 +288,7 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
       if (!obnova) for (const v of odemcene) {
         const posledni = v.odemceni[v.odemceni.length - 1];
         if (posledni && typeof posledni === 'object') {
-          posledni.kdo = relace.jmeno ? relace.jmeno + ' <' + relace.email + '>' : relace.email;
+          posledni.kdo = razitkoKdo(relace);   // B95
           posledni.kdy = new Date().toISOString();
         }
       }
@@ -455,7 +457,7 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
     if (rozmerProblem.length)
       return odmitni(400, 'Neuloženo: odeslaná nabídka nese ' + ULO.uloIdProblemyText(rozmerProblem)
         + '. Doplňte rozměry šachty a nabídku vytiskněte znovu.');
-    v.zamek.kdo = relace.jmeno ? relace.jmeno + ' <' + relace.email + '>' : relace.email;
+    v.zamek.kdo = razitkoKdo(relace);   // B95
     /* Nový zámek se ověřuje přísně (B119): nespárovaný řádek zmrazeného
      * výsledku je rozdíl a jádro nese i součty příplatků a volitelných —
      * vždy, bez ohledu na verzi, kterou výsledek uvádí (tu posílá klient). */

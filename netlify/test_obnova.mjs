@@ -479,8 +479,10 @@ const arch = await ulz('uzivatele').cti('archiv@priklad.cz');
 test('B30: archivovaný zůstane archivovaný a vypnutý i po „přepsat" z otisku, kde byl činný',
   arch.archiv === true && arch.aktivni === false && !!arch.archivKdy
   && o31.casti.uzivatele.duvody.some(d => d.klic === 'archiv@priklad.cz' && /drží server/.test(d.duvod)), [arch, o31.casti.uzivatele]);
-test('B31: hesloVerze po obnově z otisku neklesne (zůstává o jednu výš než v otisku)',
-  (await ulz('uzivatele').cti('verze@priklad.cz')).hesloVerze === verzePredResetem + 1 && o31.casti.uzivatele.prepsane >= 1, o31.casti.uzivatele);
+/* Od B93 (#347, 15. 10. 2026) obnova, která účtu vrací jiné heslo, verzi
+ * hesla ještě zvedne (+1 za reset, +1 za obnovu starého hesla). */
+test('B31: hesloVerze po obnově z otisku neklesne (B93: obnova starého hesla ji zvedne o další jedničku)',
+  (await ulz('uzivatele').cti('verze@priklad.cz')).hesloVerze === verzePredResetem + 2 && o31.casti.uzivatele.prepsane >= 1, o31.casti.uzivatele);
 
 console.log('\n===== B50: vědomě znovu založený účet obnova nepřeskakuje =====');
 
