@@ -20,6 +20,7 @@
  * ============================================================ */
 process.env.TAJEMSTVI_RELACE = 'testovaci-tajemstvi-jen-pro-lokalni-beh';
 process.env.ADMIN_INIT_HESLO = 'Docasne.Heslo.123';
+process.env.ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'spravce@priklad.cz';
 
 const pamet = new Map();
 /* Háček pro B92: zavolá se před každým zápisem zakázky — simuluje souběžný
@@ -40,12 +41,14 @@ globalThis.__TEST_ULOZISTE = (nazev) => ({
   async smaz(k) { pamet.delete(nazev + '/' + k); },
 });
 
-import prihlaseni from './functions/prihlaseni.mjs';
-import uzivatele from './functions/uzivatele.mjs';
-import ja from './functions/ja.mjs';
-import zalohaVynuceno from './functions/zaloha_vynuceno.mjs';
-import obnova from './functions/obnova.mjs';
-import * as SD from './lib/sdilene.mjs';
+/* Dynamicky: statický import by se vyhodnotil dřív než ADMIN_EMAIL výš
+ * (samostatné spuštění pak padalo na „Nepřihlášen", audit 15. 10. 2026). */
+const { default: prihlaseni } = await import('./functions/prihlaseni.mjs');
+const { default: uzivatele } = await import('./functions/uzivatele.mjs');
+const { default: ja } = await import('./functions/ja.mjs');
+const { default: zalohaVynuceno } = await import('./functions/zaloha_vynuceno.mjs');
+const { default: obnova } = await import('./functions/obnova.mjs');
+const SD = await import('./lib/sdilene.mjs');
 const { ADMIN_EMAIL, otiskHesla } = SD;
 /* Před opravou B95 funkce neexistovala — test pak selže, nespadne. */
 const razitkoKdo = SD.razitkoKdo || (() => null);

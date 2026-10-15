@@ -8,6 +8,43 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v15.10.6 — testovací kolo 25 + bezpečnostní audit (větev claude/kolo25-audit)
+
+Dávka S4 (zadání `podklady/PROMPT_kolo25_audit.md` + `podklady/_SPOLECNE_15_10.md`
+ve větvi `claude/davky-15-10`). Audit změn v12.10.2 → v15.10.4 (S1–S5):
+`podklady/AUDIT_2026-10-15_v15.10.6.md`, nálezy **B151–B167** (17 nových:
+2 vysoké, 2 střední, 4 nízké, 9 informativních), regrese 0. v15.10.5 je
+přidělená úpravě P12 (koordinační sezení), proto v15.10.6.
+
+- **Opraveno:**
+  - **B151** (nízká) — klíč `cas/` v analytice jen pro číslo zakázky přesně
+    podle rejstříku nebo jméno souboru; převod na jméno souboru slil jiné
+    zápisy téhož čísla a jeden účet tak zaplnil strop B35
+    (`netlify/functions/analytika.mjs`). `test_funkce` 239/1 → 240/0, mutace
+    B35 3/3 (kotva upravena), B151 1/1.
+  - **B152** (nízká) — ruční hodnoty krycího listu (`kryci.hodnoty`,
+    `kryciProj.hodnoty`) jen text, číslo nebo pravda, i u zamčené varianty;
+    objekt shodil vykreslení krycího listu i data pro Word
+    (`src/uloziste.js` `uloTypyKryci`). `test_kryci_po_tisku` 11/3 → 14/0,
+    mutace B152 2/2.
+  - **B167** (informativní) — `netlify/test_ucty_informativni.mjs` jde
+    spustit i bez `ADMIN_EMAIL` (dynamické importy).
+- **Čeká na rozhodnutí J. V. (jen popsáno, návrh v auditu):**
+  - **B153 (vysoká)** — dotisk dokumentu nové strany (po vypnutí „jen
+    projekce") obejde schválení cenové výjimky a minimální marži; dostupné
+    v běžném UI. Pokus `podklady/AUDIT25_pokus_B153_dotisk.mjs`.
+  - **B154 (vysoká)** — otisk výjimky (32bitový FNV-1a) jde dvěma znaky
+    v názvu pásu dopočítat; schválení přežije snížení sazby. Pokus
+    `podklady/AUDIT25_pokus_B154_kolize.mjs`.
+  - B155 (střední) otisk bez rozsahu pásu; B156 (střední) souběh čtení
+    a zápisu účtu v profilu a odhlášení; B157–B158 nízké; B159–B166
+    informativní.
+- **Výchozí volby:** B152 nezměněnou starší hodnotu propustí (ať starší
+  zakázky jdou uložit); B151 bere obě podoby, které klient posílá (číslo
+  z hlavičky, jméno souboru) — ostatní zápisy už klíč nezaloží.
+- **Audit se týkal i S5 (v15.10.4):** bez nálezu, zábrana dokumentů na
+  čekání lišty nehledí.
+
 ## v15.10.4 — červená lišta „Ceník není nahraný" až po ověření (větev claude/lista-cenik-zpozdeni)
 
 **Integrace do `test` (koordinační sezení, 15. 10.):** do `test` (v15.10.3 = S1

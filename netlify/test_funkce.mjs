@@ -492,6 +492,16 @@ const DOCX2 = await docxB64('verze 2');   // jiná data = jiný otisk
   test('B35: smyšlené číslo zakázky klíč cas/ nezaloží',
     !(await uloz.cti('cas/2026-OPR-CN-9991')) && !(await uloz.cti('cas/B35-SMYSLENA')),
     (await uloz.seznam('cas/')).join(','));
+  /* B151 (audit 15. 10. 2026): jiný zápis TÉHOŽ čísla (jiné mezery,
+   * zdvojené pomlčky, mezera místo pomlčky) dřív prošel převodem na jméno
+   * souboru — jedna skutečná zakázka tak dala desítky tisíc klíčů cas/
+   * a jeden účet zaplnil strop. Platí jen číslo z rejstříku a jméno souboru. */
+  await post(analytika, 'http://x/api/analytika', { akce: 'udalosti',
+    casy: { '2026 -OPR- CN - 0777': { ock: 1 }, '2026--OPR--CN--0777': { ock: 1 }, '2026 OPR CN 0777': { ock: 1 },
+      '2026-OPR-CN-0777.': { ock: 1 } } }, cookieObch);
+  test('B151: jiný zápis čísla existující zakázky klíč cas/ nezaloží',
+    (await uloz.seznam('cas/')).filter(k => /0777/.test(k)).sort().join() === 'cas/2026 - OPR - CN - 0777,cas/2026-OPR-CN-0777',
+    (await uloz.seznam('cas/')).join(','));
   await uloz.smaz('cas/2026 - OPR - CN - 0777');
 
   /* souhrn pro administrátora */

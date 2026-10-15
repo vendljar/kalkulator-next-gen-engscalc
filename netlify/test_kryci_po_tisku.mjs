@@ -143,5 +143,28 @@ console.log('===== po smlouvě o dílo =====');
   test('SoD vytištěná: smazaný záznam tisku SoD zápis nepovolí (409)', r.status === 409 && /uzamčené/.test(r.chyba || ''), r);
 }
 
+console.log('===== typ hodnot krycího listu (B152) =====');
+/* B152 (audit 15. 10. 2026): volné pole odeslané nabídky přijalo objekt
+ * ({toString:0}) — esc() při vykreslení krycího listu i kryciData pro Word
+ * pak vyhodí výjimku. Hodnota je text (číslo a pravda u starších dat). */
+{
+  const r = await poTisku(zamkni(nova('typ objekt'), 'nabidkaTisk'), d => { h(d, 'kryci').jmenoPrijmeni = { toString: 0 }; }, cO);
+  test('B152: objekt ve volném poli krycího listu odeslané nabídky → 400', r.status === 400 && /kryci/.test(r.chyba || ''), r);
+}
+{
+  const r = await poTisku(zamkni(novaProj('typ pole'), 'nabidkaProjTisk'), d => { h(d, 'kryciProj').odpovednyJmeno = ['a']; }, cO);
+  test('B152: pole (array) ve volném poli krycího listu PROJ → 400', r.status === 400 && /kryciProj/.test(r.chyba || ''), r);
+}
+{
+  const z = nova('typ rozpracovaná'); h(d0(z), 'kryci').jmenoPrijmeni = { a: 1 };
+  const r = await uloz(z, cO);
+  test('B152: objekt v krycím listu rozpracované varianty → 400', r.status === 400, r);
+}
+{
+  const z = nova('typ text'); Object.assign(h(d0(z), 'kryci'), { jmenoPrijmeni: 'Zkušební', zaloha1: 10, souhlas: true });
+  const r = await uloz(z, cO);
+  test('B152: text, číslo a pravda v krycím listu projdou (200)', r.status === 200, r);
+}
+
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);

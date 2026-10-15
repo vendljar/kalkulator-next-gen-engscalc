@@ -1,3 +1,25 @@
+# Předávka — 15. 10. 2026: větev `claude/kolo25-audit` (v15.10.6), kolo 25 + bezpečnostní audit (S4)
+
+Nad `origin/test` (db60d8d, v15.10.3; během dávky sloučen 8f7be40, v15.10.4
+se S5). Zadání `podklady/PROMPT_kolo25_audit.md` + `podklady/_SPOLECNE_15_10.md`.
+Do `test-draft` / `test` / `main` nic — sloučení a celé kolo dělá koordinační
+sezení (session_0191A71yUFarU952Vy7h2hc5). Podrobnosti: CHANGELOG v15.10.6,
+`podklady/AUDIT_2026-10-15_v15.10.6.md`.
+
+- **Hotovo (pushnuto):** audit B151–B167 (2 vysoké, 2 střední, 4 nízké,
+  9 informativních; regrese 0); opraveny B151, B152 (nízké) a B167 (test)
+  s testy a mutacemi; audit i na Disku (Testovani).
+- **Čeká na J. V.:** B153 a B154 (vysoké, schvalování cenové výjimky —
+  malé opravy popsané v auditu, pokusy `podklady/AUDIT25_pokus_*.mjs`),
+  B155 a B156 (střední), B157 (sporné: cizí obchodník a volná pole krycího
+  listu), B161–B165 (meze / UX).
+- **Na vědomí:** úprava P12 (93b6a02, v15.10.5) posouzena z commitu —
+  ochrana nákladů je teď volitelná (zapíná administrátor), viz B162.
+- **Při slučování:** konflikty čekej v CHANGELOG, PREDAVKA, `verze.txt`
+  a na konci `MUTACE` v `netlify/mutace.mjs` (B152 za S5).
+
+---
+
 # Předávka — 15. 10. 2026: dávka S5 (v15.10.4) — lišta „Ceník není nahraný" až po ověření
 
 Větev `claude/lista-cenik-zpozdeni` nad `origin/test` (5a42369, v14.10.8);
