@@ -14,7 +14,8 @@ Noční dávky (pokyn J. V. 14. 10. večer) hotové a v `test`:
 - `test-draft` beze změny (v14.10.1).
 - **Čeká na J. V.:** převod do `main`; releasy v14.10.3–v14.10.8 (odkazy
   v závěrečné zprávě); kontrola návrhů překladu P1 (popis ceny DPS, štítek
-  „Požárně bezpečnostní řešení", díly popisů); roadmapa #366, #367, #369,
+  „Požárně bezpečnostní řešení", díly popisů) — **SCHVÁLENO J. V.
+  15. 10. 2026**, poznámky v kódu a CHANGELOG opraveny; roadmapa #366, #367, #369,
   #380 (bez dokladu uzavření) a #345 / B80 (opravit, nebo vědomá mez);
   souvislá próza `{ cz }` v nabídce PROJ EN/DE/FR (překládat?); body 4, 5,
   8, 9 připomínek obchodu; mazání sloučených větví.
@@ -55,7 +56,7 @@ v době založení ještě neobsahoval), zadání
   (příčina, proč DPZ zůstávala česky: kód skládal větu z dílů), hesla
   podle textu nabídky s překladem ze šablon PROJ v4/v5 (CENA NEZAHRNUJE,
   IČ ×3, hvězdička DPZ); bod 4 verze, CHANGELOG, příručka.
-- **Čeká na kontrolu J. V. (NÁVRH PŘEKLADU, šablony větu nemají):**
+- **Schváleno J. V. 15. 10. 2026 (dříve NÁVRH PŘEKLADU, šablony větu nemají):**
   popis ceny DPS (EN „Preparation of the detailed design documentation,
   including structural and electrical design", DE „Erstellung der
   Ausführungsplanung einschließlich Statik- und Elektroplanung", FR

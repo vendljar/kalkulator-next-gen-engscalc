@@ -47,8 +47,9 @@ souvislá próza `{ cz }` a zápis v OR beze změny.
   CENA NEZAHRNUJE („vyplývajících … péče, a"), IČ „Podání a projednání …
   (Hasičský záchranný sbor, …)" (šablona má větu a závorku zvlášť),
   „V průběhu celého řízení komunikujeme …", „Vyřízení POVOLENÍ ZÁMĚRU (dle
-  …)", hvězdička DPZ (bez „*", tisk ji přidává). **NÁVRH PŘEKLADU — čeká
-  na kontrolu J. V.** (šablony větu nemají): popis ceny DPS „Zpracování
+  …)", hvězdička DPZ (bez „*", tisk ji přidává). **Vlastní překlad
+  (šablony větu nemají), schválil J. V. 15. 10. 2026** („Návrhy překladu
+  schvaluji"): popis ceny DPS „Zpracování
   prováděcí dokumentace, včetně STATICKÉ ČÁSTI a ELEKTRO PROJEKTU", díly
   popisů (Zpracování projektu pro DPZ, Zpracování prováděcí dokumentace,
   včetně, PBŘ, STATIKY, STATICKÉ ČÁSTI, ELEKTRO PROJEKTU, STUDIE OSVITU)

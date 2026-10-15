@@ -1153,8 +1153,8 @@ const PREKLAD = {
    * „a" NENÍ heslo — prekladNorm by jím přeložil i samostatné „A", viz
    * NABIDKA_PROJ_SPOJKA v nabidka_proj.js).
    * Šablony PROJ tuto větu nemají (DPS: „Zpracování podle částí 1–3").
-   * NÁVRH PŘEKLADU — čeká na kontrolu J. V. (terminologie podle věty DPZ
-   * ze šablony: fire safety / structural / electrical design). */
+   * Terminologie podle věty DPZ ze šablony (fire safety / structural /
+   * electrical design). Překlad schválil J. V. 15. 10. 2026. */
   "Zpracování prováděcí dokumentace, včetně STATICKÉ ČÁSTI a ELEKTRO PROJEKTU": ["Preparation of the detailed design documentation, including structural and electrical design", "Erstellung der Ausführungsplanung einschließlich Statik- und Elektroplanung", "Établissement du dossier d'exécution, y compris structure et électricité"],
   "Zpracování prováděcí dokumentace": ["Preparation of the detailed design documentation", "Erstellung der Ausführungsplanung", "Établissement du dossier d'exécution"],
   "Zpracování projektu pro DPZ": ["Preparation of the DPZ design", "Erstellung der DPZ-Planung", "Établissement du dossier DPZ"],
@@ -1166,7 +1166,7 @@ const PREKLAD = {
   "STUDIE OSVITU": ["sunlight and daylight study", "Besonnungs- und Tageslichtstudie", "étude d'ensoleillement et d'éclairage naturel"],
   /* Štítek části 2 DPZ (v závorce za „… – část 2"). Šablona má jen delší
    * „Požárně bezpečnostní řešení nového výtahu a výtahové šachty:" — krátký
-   * štítek podle ní. NÁVRH PŘEKLADU — čeká na kontrolu J. V. */
+   * štítek podle ní. Překlad schválil J. V. 15. 10. 2026. */
   "Požárně bezpečnostní řešení": ["Fire safety design", "Brandschutzkonzept", "Conception de la sécurité incendie"],
 };
 
