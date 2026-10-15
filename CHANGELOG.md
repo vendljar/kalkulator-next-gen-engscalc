@@ -35,6 +35,13 @@ Mutace B80 **8 z 8**; mutace výchozí matice je obrácená (bere obchodníkovi
 `spust_testy.sh --smoke` s 30 šablonami z Disku: **251 prošlo / 0 selhalo /
 2 přeskočeno** (test.js, overit_manual.mjs).
 
+**Integrace (koordinační sezení, 15. 10. 2026):** `claude/integrace-15-10`
+= v15.10.4 + úprava P12 (v15.10.5) + audit kola 25 s B151/B152/B167
+(v15.10.6) + B80 (v15.10.7) + zápisy výsledků. Příručka ze snímků pro v15.10.7
+(22 snímků). Sady `spust_testy.sh --smoke` nad sloučeným stavem s 30 šablonami
+z Disku: **252 prošlo / 0 selhalo / 1 přeskočeno** (test.js); `--kontrola`
+mutací serveru 434 úseků, jádra 202. Připraveno k fast-forwardu do `test`.
+
 ## v15.10.6 — testovací kolo 25 + bezpečnostní audit (větev claude/kolo25-audit)
 
 Dávka S4 (zadání `podklady/PROMPT_kolo25_audit.md` + `podklady/_SPOLECNE_15_10.md`
