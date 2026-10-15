@@ -15,6 +15,14 @@ nové číslo. Kód aplikace S9 nemění (Číslo SoD plní `{{SOD_CISLO_SMLOUVY
 od v15.10.9); přidává `nastroje/vyrob_sablony.js --sod-proj-cislo`, testy,
 harness a postup `podklady/POSTUP_SABLONY_SOD_15_10.md`.
 
+**Integrace do test (koordinační sezení, 15. 10. 2026):** konflikty jen
+v CHANGELOG a `verze.txt`; `test_sod_proj_cislo` 24/0, `--kontrola` mutací
+serveru 449 úseků, jádra 205. Šablony v3 a v1_cislo nástrojem vyrobeny nad
+šablonami z Disku a ověřeny (testzip, symbol přítomen); na Disk a do aplikace
+je nahrává J. V. (postup v podkladech). Sady `spust_testy.sh --smoke`
+s 30 šablonami z Disku nad 6c11e14: **257 prošlo / 0 selhalo / 1 přeskočeno**
+(test.js). Fast-forward do `test`.
+
 ## v15.10.12 — integrace S6 (B153 + B154, v15.10.8) do test (větev claude/integrace-15-10)
 
 `test` už nese vydanou v15.10.10, proto sloučení S6 (oddíl v15.10.8 níž)
