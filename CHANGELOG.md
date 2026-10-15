@@ -42,6 +42,10 @@ přidělená úpravě P12 (koordinační sezení), proto v15.10.6.
 - **Výchozí volby:** B152 nezměněnou starší hodnotu propustí (ať starší
   zakázky jdou uložit); B151 bere obě podoby, které klient posílá (číslo
   z hlavičky, jméno souboru) — ostatní zápisy už klíč nezaloží.
+- **Testy:** `./spust_testy.sh --smoke` nad v15.10.6: 247 prošlo / 0 selhalo /
+  6 přeskočeno (test.js; 5 harnessů bez šablon z Disku — dávka nemění
+  generování dokumentů). Před dávkou nad v15.10.3: 246/0/6. Cílené mutace
+  B35 3/3, B151 1/1, B152 2/2; `mutace.mjs --kontrola` 434 úseků.
 - **Audit se týkal i S5 (v15.10.4):** bez nálezu, zábrana dokumentů na
   čekání lišty nehledí.
 
