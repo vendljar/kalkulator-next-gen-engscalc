@@ -11,6 +11,7 @@ Podrobnosti: CHANGELOG v15.10.14.
   v `test_obnova.mjs` — obnova stejného hesla po odhlášení (B6) verzi nesníží
   (226 → 232 OK). Cílené mutace B8 15/15, B31 1/1, B151 1/1, B93 1/1;
   `--kontrola` 449; kontrola údajů čistá.
+  Smoke 252 / 0 / 6 (viz CHANGELOG — dočasné selhání release_odkaz).
 - **Při slučování:** mění se jen dva testy, CHANGELOG, PREDAVKA, `verze.txt`;
   konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt`.
 - **Další krok (koordinace):** celé kolo s mutacemi — čekané 449 z 449.

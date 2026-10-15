@@ -31,6 +31,11 @@ mutaci — kód aplikace se nemění, kotvy v `MUTACE` zůstávají.
   commitu 6d9ecdb omylem „225"). Mutace 0 z 1 → 1 z 1.
 - Cílené mutace: „B8" 15 z 15 (z toho „B8: klíč času" 1 z 1), „B31" 1 z 1,
   „B151" 1 z 1, „B93" 1 z 1; `--kontrola` 449 úseků; kontrola údajů čistá.
+- `spust_testy.sh --smoke` (Playwright z globálních modulů, bez KNG_PODKLADY):
+  251 prošlo / 1 selhalo / 6 přeskočeno — selhání `test_release_odkaz.js`
+  („popis aktuální verze ze skutečného CHANGELOG") jen proto, že běh začal
+  dřív, než CHANGELOG dostal oddíl v15.10.14; po jeho zapsání sada 24/0,
+  tedy čistý stav 252 / 0 / 6.
 
 ## v15.10.13 — integrace S9 (číslo SoD v šablonách SoD projekce, v15.10.11) do test (větev claude/integrace-15-10)
 
