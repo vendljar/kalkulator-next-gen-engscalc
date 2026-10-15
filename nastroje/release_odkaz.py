@@ -12,8 +12,16 @@ Použití:
   python3 nastroje/release_odkaz.py 12.10.4 <plný SHA>        odkaz na nový release
   python3 nastroje/release_odkaz.py 12.10.4 --upravit         odkaz na úpravu vydaného
                                                               releasu + text k vložení
+  python3 nastroje/release_odkaz.py --chybejici               verze z CHANGELOG bez tagu
   --changelog <soubor>   jiný CHANGELOG (testy)
   --jen-text             vypíše jen popis (bez odkazu)
+
+Hlídání dvojího vydání (J. V. 15. 10. 2026 — „tag už zase existuje"): před
+odkazem na NOVÝ release se nástroj podívá na tagy v origin (`git ls-remote
+--tags`). Když tag už existuje, odkaz na nový release NEVYROBÍ (kód 3)
+a vypíše odkaz na vydaný release a na jeho úpravu. Tagy jde pro testy
+podstrčit proměnnou KNG_TAGY="v1.2.3,v1.2.4"; když git origin nedosáhne,
+nástroj jen varuje a odkaz vyrobí.
 
 Ceny a osobní údaje do popisu nepatří: řádek s částkou v Kč/EUR se vynechá
 (CHANGELOG je navíc hlídaný nastroje/kontrola_udaju.py).
@@ -131,6 +139,31 @@ def odkaz_uprava(verze):
     return f'{REPO}/releases/edit/v{verze}'
 
 
+def tagy_origin():
+    """Množina tagů v origin; None, když se nedá zjistit."""
+    podstrc = os.environ.get('KNG_TAGY')
+    if podstrc is not None:
+        return {x.strip() for x in podstrc.split(',') if x.strip()}
+    import subprocess
+    try:
+        r = subprocess.run(['git', 'ls-remote', '--tags', 'origin'], capture_output=True,
+                           text=True, timeout=60, cwd=os.path.dirname(os.path.abspath(__file__)))
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if r.returncode != 0:
+        return None
+    return {l.split('refs/tags/')[1].removesuffix('^{}') for l in r.stdout.splitlines() if 'refs/tags/' in l}
+
+
+def verze_changelogu(text):
+    """Verze z nadpisů `## vD.M.N` v pořadí CHANGELOG (bez opakování)."""
+    vysl = []
+    for m in re.finditer(r'^## v(\d{1,2}\.\d{1,2}\.\d{1,2})\b', text, re.M):
+        if m.group(1) not in vysl:
+            vysl.append(m.group(1))
+    return vysl
+
+
 def main(argv):
     args = list(argv)
     changelog = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'CHANGELOG.md')
@@ -138,7 +171,17 @@ def main(argv):
         i = args.index('--changelog'); changelog = args[i + 1]; del args[i:i + 2]
     jen_text = '--jen-text' in args
     upravit = '--upravit' in args
-    args = [a for a in args if a not in ('--jen-text', '--upravit')]
+    chybejici = '--chybejici' in args
+    args = [a for a in args if a not in ('--jen-text', '--upravit', '--chybejici')]
+    if chybejici:
+        with open(changelog, encoding='utf-8') as f:
+            text = f.read()
+        tagy = tagy_origin()
+        if tagy is None:
+            print('tagy z origin nejde zjistit'); return 2
+        chybi = [v for v in verze_changelogu(text)[:15] if 'v' + v not in tagy]
+        print('Bez tagu (nejnovějších 15 verzí z CHANGELOG): ' + (', '.join('v' + v for v in chybi) or 'žádná'))
+        return 0
     if not args:
         print(__doc__); return 2
     verze = args[0].lstrip('v')
@@ -154,6 +197,14 @@ def main(argv):
         print(popis(text, verze)[0], end=''); return 0
     if len(args) < 2 or not re.fullmatch(r'[0-9a-f]{40}', args[1]):
         print('chybí plný SHA cíle (40 znaků hex)'); return 2
+    tagy = tagy_origin()
+    if tagy is None:
+        print('Pozor: tagy z origin nejde ověřit — zkontrolujte, že v' + verze + ' ještě neexistuje.', file=sys.stderr)
+    elif 'v' + verze in tagy:
+        print(f'Tag v{verze} UŽ EXISTUJE — release je vydaný, nový nevytvářejte.')
+        print(f'Vydaný release: {REPO}/releases/tag/v{verze}')
+        print(f'Úprava popisu:  {odkaz_uprava(verze)}')
+        return 3
     print(odkaz_novy(verze, args[1], text)[0])
     return 0
 

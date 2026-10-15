@@ -43,6 +43,16 @@ Komunikace česky. Know-how projektu je ve skillech `kalkulator-next-gen`,
   vydaného releasu bez popisu poslat odkaz na úpravu
   `…/releases/edit/v<verze>` a text k vložení
   (`python3 nastroje/release_odkaz.py <verze> --upravit`).
+- **Před každým odkazem na nový release ověřit, že tag ještě neexistuje**
+  (J. V. 15. 10. 2026 — „tag už zase existuje"). `release_odkaz.py` to dělá
+  sám (`git ls-remote --tags`): u existujícího tagu odkaz nevyrobí (kód 3)
+  a vypíše odkaz na vydaný release. Verze bez tagu:
+  `python3 nastroje/release_odkaz.py --chybejici`.
+- **Před každým odkazem na nový release ověřit, že tag ještě neexistuje**
+  (J. V. 15. 10. 2026 — „tag už zase existuje"). `release_odkaz.py` to dělá
+  sám (`git ls-remote --tags`): u existujícího tagu odkaz nevyrobí (kód 3)
+  a vypíše odkaz na vydaný release. Verze bez tagu:
+  `python3 nastroje/release_odkaz.py --chybejici`.
 - Tagy jsou jednoduché (lightweight) ve tvaru `vDEN.MĚSÍC.pořadí`.
 - Sloučené pomocné větve maže J. V. — poslat odkaz
   `https://github.com/vendljar/kalkulator-next-gen-engscalc/branches/all?query=<větev>`.

@@ -32,7 +32,7 @@ fs.writeFileSync(CL, [
   '- **B099 — cizí verze.** Nesmí se objevit.', '',
 ].join('\n'));
 
-const py = (args) => spawnSync('python3', ['-I', NASTROJ, '--changelog', CL, ...args], { encoding: 'utf-8' });
+const py = (args, tagy) => spawnSync('python3', ['-I', NASTROJ, '--changelog', CL, ...args], { encoding: 'utf-8', env: Object.assign({}, process.env, { KNG_TAGY: tagy === undefined ? 'v14.10.0' : tagy }) });
 const SHA = 'a'.repeat(40);
 
 const r = py(['14.10.2', SHA]);
@@ -63,6 +63,13 @@ test('nesmyslná verze se odmítne', py(['latest', SHA]).status !== 0);
 const up = py(['14.10.2', '--upravit']);
 test('--upravit: odkaz na úpravu vydaného releasu', up.status === 0 && up.stdout.startsWith('https://github.com/vendljar/kalkulator-next-gen-engscalc/releases/edit/v14.10.2\n'), up.stdout);
 test('--upravit: text k vložení obsahuje popis', up.stdout.includes('B151 (střední) — první oprava'));
+
+// Hlídání dvojího vydání (J. V. 15. 10. 2026): existující tag → žádný odkaz na nový release.
+const dvoji = py(['14.10.2', SHA], 'v14.10.1,v14.10.2');
+test('existující tag: odkaz na nový release nevznikne (kód 3)', dvoji.status === 3 && !dvoji.stdout.includes('/releases/new'), dvoji.stdout);
+test('existující tag: odkaz na vydaný release a jeho úpravu', dvoji.stdout.includes('/releases/tag/v14.10.2') && dvoji.stdout.includes('/releases/edit/v14.10.2'), dvoji.stdout);
+const chyb = py(['--chybejici'], 'v14.10.1');
+test('--chybejici: vypíše verzi bez tagu, ne otagovanou', chyb.status === 0 && chyb.stdout.includes('v14.10.2') && !chyb.stdout.includes('v14.10.1'), chyb.stdout);
 
 // Skutečný CHANGELOG: poslední verze se dá vyrobit a popis se vejde.
 const realny = spawnSync('python3', ['-I', NASTROJ, fs.readFileSync(path.join(__dirname, '..', 'verze.txt'), 'utf-8').trim(), '--jen-text'], { encoding: 'utf-8' });
