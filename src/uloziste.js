@@ -944,6 +944,32 @@ function uloTypyProj(zadani, cesta, out) {
     });
   });
 }
+/* HODNOTY KRYCÍHO LISTU (B152, audit 15. 10. 2026): ruční hodnota pole
+ * (`kryci.hodnoty`, `kryciProj.hodnoty`) je text z formuláře — u starších
+ * dat i číslo nebo pravda. Objekt nebo pole se nedá převést na text:
+ * `esc()` při vykreslení krycího listu i data pro Word pak vyhodí výjimku.
+ * Hodnota beze změny proti uložené verzi se neposuzuje (starší data). */
+function uloKryciHodnotaSedi(x) {
+  return typeof x === 'string' || typeof x === 'boolean' || (typeof x === 'number' && isFinite(x));
+}
+function uloTypyKryci(d, sd) {
+  const out = [];
+  ['kryci', 'kryciProj'].forEach(list => {
+    const l = d && d[list];
+    if (l === undefined || l === null) return;
+    const h = (typeof l === 'object' && !Array.isArray(l)) ? l.hodnoty : undefined;
+    if (h === undefined || h === null) return;
+    if (typeof h !== 'object' || Array.isArray(h)) { out.push(list + '.hodnoty'); return; }
+    const sh = (sd && sd[list] && typeof sd[list].hodnoty === 'object' && sd[list].hodnoty) || {};
+    Object.keys(h).forEach(k => {
+      if (uloKryciHodnotaSedi(h[k])) return;
+      if (Object.prototype.hasOwnProperty.call(sh, k) && JSON.stringify(sh[k]) === JSON.stringify(h[k])) return;
+      out.push(list + '.hodnoty.' + k);
+    });
+  });
+  return out;
+}
+
 function uloTypyProblemy(zak, stara) {
   const out = [];
   if (!zak || !Array.isArray(zak.varianty)) return out;
@@ -955,8 +981,11 @@ function uloTypyProblemy(zak, stara) {
   zak.varianty.forEach(v => {
     if (!v || !v.data || typeof v.data !== 'object') return;
     const sv = stare.find(x => x && x.id === v.id);
-    if (sv && sv.zamek && sv.zamek.zamceno) return;                // doklad — nesahat
     const d = v.data, pred = 'varianta ' + String(v.nazev || v.id || '?') + ': ';
+    /* Ruční hodnoty krycího listu (B152) — i u zamčené varianty, protože
+     * volná pole odeslané nabídky se doplňují dál (v14.10.5). */
+    uloTypyKryci(d, sv && sv.data).forEach(k => out.push({ kde: pred + k, duvod: 'typ' }));
+    if (sv && sv.zamek && sv.zamek.zamceno) return;                // doklad — nesahat
     const vlastni = [];
     if (d.ock && typeof d.ock === 'object') {
       if (vzZad) uloTypyStrom(vzZad, d.ock.zadani, 'ock.zadani', vlastni);

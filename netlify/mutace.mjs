@@ -2154,6 +2154,15 @@ const MUTACE = [
     hledej: "  const jmeno = String(r.jmeno == null ? '' : r.jmeno).replace(/[<>]/g, '').replace(/\\s+/g, ' ').trim();",
     nahrad: "  const jmeno = String(r.jmeno == null ? '' : r.jmeno).trim();",
     proc: 'účet se jménem z doby před opravou by pod zámkem napodobil cizí razítko (B95)' },
+  /* Audit kola 25 (15. 10. 2026). */
+  { nazev: 'B152: hodnoty krycího listu bez kontroly typu', soubor: '../src/uloziste.js',
+    hledej: "    uloTypyKryci(d, sv && sv.data).forEach(k => out.push({ kde: pred + k, duvod: 'typ' }));",
+    nahrad: "    ;",
+    proc: 'objekt ve volném poli krycího listu odeslané nabídky shodí vykreslení krycího listu i data pro Word (B152)' },
+  { nazev: 'B152: hodnota krycího listu smí být cokoli', soubor: '../src/uloziste.js',
+    hledej: "  return typeof x === 'string' || typeof x === 'boolean' || (typeof x === 'number' && isFinite(x));",
+    nahrad: "  return true;",
+    proc: 'objekt nebo pole v hodnotě krycího listu projde (B152)' },
 ];
 
 /* ---------- přerušený běh vrátí zmutovaný soubor ----------
