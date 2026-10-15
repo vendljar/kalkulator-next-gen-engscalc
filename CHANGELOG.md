@@ -34,7 +34,8 @@ kolo s mutacemi dělá koordinační sezení. Každý nález B89–B95 (hloubkov
   v upozornění. Že heslo z doby otisku pak platí, je smysl obnovy (kryje ho
   heslo správce, B77).
 - **B94 vědomá mez** — scrypt 2^14 bez parametrů v otisku; postup přechodu
-  (formát s parametry, přepočet při přihlášení) v `BEZPECNOST_MEZE.md`.
+  (formát s parametry, přepočet při přihlášení) v `BEZPECNOST_MEZE.md`;
+  J. V. 15. 10. 2026: varianta A — neměnit.
 - **B95 opraveno** — jméno bez ostrých závorek při založení účtu, v profilu
   i v razítku zámku a odemčení (`razitkoKdo`, i pro starší účty).
 

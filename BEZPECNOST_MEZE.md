@@ -126,7 +126,11 @@ otisku (#93) a přechod potřebuje nový formát otisku a přepočet při
 přihlášení — změna v cestě přihlášení s vlastními testy a mutacemi, větší
 než to, co chrání, dokud úložiště neunikne.
 
-**Postup, až se do toho půjde (na pokyn J. V.):** formát
+**Rozhodnutí J. V. 15. 10. 2026: varianta A — neměnit** („zbytečný extrém,
+měnit to nebudeme, rozhodně ne teď"). Postup níž je jen pro případ, že by
+se k tomu J. V. někdy vrátil.
+
+**Postup (jen na nový pokyn J. V.):** formát
 `scrypt$N$r$p$sůl$hash`; `hesloSedi` čte oba tvary (starý = 2^14/8/1);
 po úspěšném přihlášení se otisk ve starém tvaru přepočítá na nový;
 kontrola tvaru otisku v obnově (`u.heslo.includes(':')`) a v zálohách se
