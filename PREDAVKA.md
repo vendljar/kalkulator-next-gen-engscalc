@@ -1,3 +1,27 @@
+# Předávka — 15. 10. 2026: větev `claude/b89-b95` (v15.10.2), #347 informativní nálezy B89–B95
+
+Dávka S2 (zadání `podklady/PROMPT_b89_b95.md` + `podklady/_SPOLECNE_15_10.md`
+ve větvi `claude/davky-15-10`). Z `origin/test` 5a42369 (v14.10.8). Do
+`test-draft` / `test` / `main` nic — sloučení a celé kolo s mutacemi dělá
+koordinační sezení J. V. Podrobnosti: CHANGELOG v15.10.2, `BEZPECNOST_MEZE.md`
+(oddíl „Informativní nálezy B89–B95").
+
+- **Hotovo (pushnuto):** B89, B92, B93, B95 opraveny s testy a mutacemi;
+  B91 uzavřen dokladem (revize #401); B90 a B94 vědomé meze; roadmapa #347
+  hotovo (v15.10.2); verze, CHANGELOG, příručka (verze + novinka).
+- **Testy:** `spust_testy.sh --smoke` 242 prošlo / 0 selhalo / 6 přeskočeno
+  (bez podkladů); harnessy se šablonami z Disku (`KNG_PODKLADY`) zvlášť:
+  `overit_nabidka_proj_word` 63, `overit_sablona` 99, `overit_sablony_online`
+  53, `overit_sod` 49 — vše OK. `overit_manual` neběžel (příručka v15.10.2 se
+  sestaví v integraci), `test.js` mimo export.
+- **Výchozí volby (otevřené pro J. V.):** B90 nechat (zpřísnit = dotaz při
+  odhlášení?); B94 nechat (přechod na scrypt s parametry v otisku — postup
+  v `BEZPECNOST_MEZE.md`); B93 — po obnově účtů z otisku se dotčení uživatelé
+  musí přihlásit znovu heslem z doby otisku.
+- Podklady: `/home/user/kng_podklady_b89` (34 šablon, jen v tomto kontejneru).
+
+---
+
 # Předávka — 14. 10. 2026 noc: `test` = v14.10.8, celé kolo VŠE ZELENÉ
 
 Noční dávky (pokyn J. V. 14. 10. večer) hotové a v `test`:
