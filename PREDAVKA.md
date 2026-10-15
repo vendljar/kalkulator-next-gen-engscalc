@@ -1,3 +1,26 @@
+# Předávka — 15. 10. 2026: dávka S7 (v15.10.8), větev `claude/kryci-cislo-sod` — Krycí list zakázky OCK + „Číslo SoD"
+
+Nad `origin/claude/integrace-15-10` (9ead7b5, v15.10.6). Zadání
+`podklady/PROMPT_kryci_cislo_sod.md` + `podklady/_SPOLECNE_15_10.md` (větev
+`claude/davky-15-10`). Do `test-draft` / `test` / `main` nic — sloučení
+a celé kolo dělá koordinační sezení (session_0191A71yUFarU952Vy7h2hc5).
+Podrobnosti: CHANGELOG v15.10.8.
+
+- **Hotovo (pushnuto):** nadpis „Krycí list zakázky OCK" (stránka, dokument,
+  registr zámku); pole „Číslo SoD" (`cisloSod`) pod Číslem nabídky v obou
+  krycích listech, ruční, doplnitelné po odeslání nabídky, zamčené tiskem
+  SoD; plní `{{SOD_CISLO_SMLOUVY}}` ve SoD realizace i projekce. Testy,
+  harness `overit_kryci_cislo_sod.mjs`, 5 mutací S7, příručka, roadmapa #366.
+- **Čeká na J. V.:** šablony SoD projekce (v1 i v2) symbol čísla smlouvy
+  nemají — doplnit `{{SOD_CISLO_SMLOUVY}}` (realizace ho má v nadpisu
+  „SMLOUVA O DÍLO … číslo …"). Návrh další čísla řady (#366) dál čeká.
+- **Při slučování:** konflikty čekej v CHANGELOG, PREDAVKA, `verze.txt`,
+  `manual/obsah.json` (verze + Co je nového) a na konci `MUTACE` / `SADY`
+  v `netlify/mutace.mjs`. v15.10.7 má jiná dávka.
+- Podklady: `/home/user/kng_podklady_s7` (30 šablon, jen v tomto kontejneru).
+
+---
+
 # Předávka — 15. 10. 2026: větev `claude/kolo25-audit` (v15.10.6), kolo 25 + bezpečnostní audit (S4)
 
 Nad `origin/test` (db60d8d, v15.10.3; během dávky sloučen 8f7be40, v15.10.4

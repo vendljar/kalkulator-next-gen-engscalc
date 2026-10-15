@@ -86,7 +86,9 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* #347 (15. 10. 2026): informativní nálezy účtů B92, B93, B95. */
      'test_ucty_informativni.mjs',
      /* S5 (15. 10. 2026): čekání červené lišty při startu (ukazkoveListaRozhodni). */
-     '../src/test_ukazkove.js'];
+     '../src/test_ukazkove.js',
+     /* S7 (15. 10. 2026): Krycí list zakázky OCK a pole „Číslo SoD". */
+     '../src/test_kryci_cislo_sod.js'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -2184,6 +2186,27 @@ const MUTACE = [
     hledej: "  return typeof x === 'string' || typeof x === 'boolean' || (typeof x === 'number' && isFinite(x));",
     nahrad: "  return true;",
     proc: 'objekt nebo pole v hodnotě krycího listu projde (B152)' },
+  /* S7 (15. 10. 2026): Krycí list zakázky OCK a pole „Číslo SoD". */
+  { nazev: 'S7: číslo SoD OCK nejde do smlouvy realizace', soubor: '../src/kryci.js',
+    hledej: "{ id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'ručně', sod: 'SOD_CISLO_SMLOUVY' },",
+    nahrad: "{ id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'ručně' },",
+    proc: 'vyplněné číslo SoD by se do smlouvy o dílo realizace nedostalo, {{SOD_CISLO_SMLOUVY}} by zůstal prázdný' },
+  { nazev: 'S7: číslo SoD PROJ nejde do smlouvy projekce', soubor: '../src/kryci_proj.js',
+    hledej: "{ id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'ručně', sod: 'SOD_CISLO_SMLOUVY' },",
+    nahrad: "{ id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'ručně' },",
+    proc: 'číslo SoD projekce by se do smlouvy nedostalo' },
+  { nazev: 'S7: číslo SoD jen v Backoffice', soubor: '../src/kryci.js',
+    hledej: "{ id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'],",
+    nahrad: "{ id: 'cisloSod', label: 'Číslo SoD', verze: ['bo'],",
+    proc: 'verze Techdata krycího listu OCK by číslo SoD neukázala' },
+  { nazev: 'S7: krycí list OCK se jmenuje postaru', soubor: '../src/kryci.js',
+    hledej: "return { nadpis: 'Krycí list zakázky OCK — ' + verzeNazev",
+    nahrad: "return { nadpis: 'Krycí list objednávky / SoD — ' + verzeNazev",
+    proc: 'dokument krycího listu by nesl starý název (zadání J. V. 15. 10. 2026)' },
+  { nazev: 'S7: registr zámku nese starý název krycího listu', soubor: '../src/zamek.js',
+    hledej: "popis: 'Krycí list zakázky OCK' }",
+    nahrad: "popis: 'Krycí list objednávky / SoD' }",
+    proc: 'protokol zámku a hlášky by krycí list OCK pojmenovaly postaru' },
 ];
 
 /* ---------- přerušený běh vrátí zmutovaný soubor ----------

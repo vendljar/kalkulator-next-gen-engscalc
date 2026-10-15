@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v15.10.6 · sestaveno 15. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
+  "verze": "Platí pro aplikaci v15.10.8 · sestaveno 15. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -11,6 +11,13 @@
         "Snímky obrazovky v téhle příručce jsou pořízené z běžící aplikace, ale nad **zkušebním ceníkem** s vymyšlenými sazbami. **Částky na obrázcích jsou ze zkušebního ceníku a nejsou naše ceny.** Neberte je jako vodítko pro nabídku a nesrovnávejte s nimi svou kalkulaci — sledujte, kde co je a jak se to chová, ne kolik to stojí.",
         "Jména zákazníků na snímcích jsou taky **vymyšlená**. Celá ukázková zakázka **2026 - OPR - CN - 9100** je smyšlená a vznikla jen kvůli téhle příručce.",
         "Příručka je určená obchodníkům ENGINEERS CZ. Popisuje, jak firma počítá nabídky, takže ji zákazníkům ani nikomu mimo firmu neposílejte."
+      ]
+    },
+    {
+      "nadpis": "Co je nového ve verzi v15.10.8 (15. 10. 2026)",
+      "odstavce": [
+        "**Krycí list zakázky OCK** — tak se teď jmenuje i nadpis listu a dokumentu (dřív „Krycí list objednávky / SoD“); záložka se tak jmenovala už dřív.",
+        "**Číslo SoD** v obou krycích listech (OCK i PROJ), v Základních údajích hned pod číslem nabídky. Zapisujete ho ručně, nic se nepředvyplňuje; doplnit ho jde i po odeslání nabídky, zamkne ho až tisk smlouvy o dílo. Ve smlouvě o dílo se objeví jako číslo smlouvy — krycí list OCK pro smlouvu realizace, krycí list PROJ pro smlouvu projekce (kapitola 24)."
       ]
     },
     {
@@ -644,6 +651,7 @@
       "bloky": [
         { "typ": "text", "text": "Smlouva o dílo nese cenu z nabídky a k tomu zástupce a kontakty zákazníka, bankovní spojení a zápis v rejstříku. Ty se vyplňují v krycím listu v sekci **Zástupci a kontakty zákazníka** — a stačí jednou: krycí list OCK a PROJ sdílejí tatáž pole. Osoba ve věcech smluvních je zároveň ta, která smlouvu podepisuje, proto má i kolonku pozice." },
         { "typ": "text", "text": "Co nevyplníte, **zůstane ve Wordu vidět jako `{{…}}`** a doplníte to ručně. Je to schválně: prázdné pole by symbol beze stopy smazalo a chybějící údaj by si nikdo nevšiml." },
+        { "typ": "text", "text": "**Číslo SoD** zapíšete v Základních údajích každého krycího listu hned pod číslem nabídky — v **Krycím listu zakázky OCK** číslo smlouvy realizace, v **Krycím listu zakázky PROJ** číslo smlouvy projekce. Pole je ruční, nic se do něj nepředvyplňuje (návrh dalšího čísla řady zatím aplikace nedělá). Doplnit ho jde i po odeslání nabídky; zamkne ho až tisk smlouvy o dílo. Ve smlouvě se vypíše jako číslo smlouvy; dokud je prázdné, zůstane ve Wordu `{{…}}`." },
         { "typ": "podnadpis", "text": "Co si smlouva o dílo realizace (OCK) bere z krycího listu" },
         { "typ": "text", "text": "**Termíny, místo plnění, denní pokuta a datum podpisu** se do smlouvy o dílo realizace berou z **Krycího listu zakázky OCK** — ve Wordu je dopisovat nemusíte. Termíny vyplníte v sekci **Termíny** (podklady od dodavatele výtahu, stavební připravenost zákazníka, montáž a opláštění od–do, předání montáži výtahu, osazení šachetních dveří, konečné předání), místo plnění (bytový dům, rodinný dům, administrativní budova nebo vlastní znění), denní pokutu za prodlení zákazníka a datum podpisu v sekci **Smlouva o dílo (SoD realizace)**. Datum podpisu je předvyplněné dnešním dnem, tedy dnem tisku smlouvy — i když nabídka odešla dřív; jiné datum zapíšete ručně. Pokuta za prodlení zhotovitele se ve smlouvě řídí pokutou za prodlení dodávky z platebních podmínek: při „0“ věta ve smlouvě nebude." },
         { "typ": "podnadpis", "text": "Co navíc potřebuje projekce" },
