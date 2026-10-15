@@ -1,3 +1,24 @@
+# Předávka — 15. 10. 2026: dávka S5 (v15.10.4) — lišta „Ceník není nahraný" až po ověření
+
+Větev `claude/lista-cenik-zpozdeni` nad `origin/test` (5a42369, v14.10.8);
+zadání `podklady/PROMPT_lista_cenik_zpozdeni.md` + `_SPOLECNE_15_10.md`
+(větev `claude/davky-15-10`). Do `test-draft` / `test` / `main` nic —
+sloučení a celé kolo s mutacemi dělá koordinační sezení
+(session_0191A71yUFarU952Vy7h2hc5).
+
+- **Hotovo:** lišta ukázkových dat při startu nad http(s) čeká na první
+  pokus o načtení z online databáze, nejdéle 5 s (`ukazkoveListaRozhodni`,
+  `UKAZKOVE_CEKANI`, `ukazkoveCekaniKonec` z `onlineStart`); zábrany
+  dokumentů beze změny. Test `src/test_ukazkove.js` (+9), harness
+  `overit_lista_cekani.mjs` (nový), 4 mutace S5 v `netlify/mutace.mjs`
+  (+ `../src/test_ukazkove.js` v `SADY`), příručka kap. 4, CHANGELOG.
+- **Výchozí volby:** `file://` nečeká (online se nic nenačítá); čeká se jen
+  při prvním startu stránky, ne po „Zkusit znovu" / pozdějším přihlášení.
+<!--VYSLEDKY-PREDAVKA-->
+- **Další krok:** koordinační sezení — sloučit do `test`, celé kolo.
+
+---
+
 # Předávka — 14. 10. 2026 noc: `test` = v14.10.8, celé kolo VŠE ZELENÉ
 
 Noční dávky (pokyn J. V. 14. 10. večer) hotové a v `test`:
