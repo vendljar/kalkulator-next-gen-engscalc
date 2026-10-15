@@ -60,7 +60,10 @@ ho nesděluj a nikam nezapisuj. Náhodnou hodnotu vyrobíš třeba v PowerShellu
 Pipedrive: token dává přístup ke VŠEM datům uživatele, proto žije jen
 v proměnné prostředí a nikdy nejde do prohlížeče (`netlify/lib/pipedrive.mjs`).
 Bez obou proměnných napojení na CRM neběží (funkce `/api/pd_*` to ohlásí);
-zbytek aplikace tím není dotčený.
+zbytek aplikace tím není dotčený. Číst z CRM smí administrátor a role,
+které přidělí právo „Čtení obchodních případů z Pipedrive“ v Nastavení →
+Zobrazení (výchozí: nikdo jiný, B80); detail případu má strop 30 čerstvých
+načtení za hodinu na uživatele.
 
 ## Přihlášení a založení administrátora
 

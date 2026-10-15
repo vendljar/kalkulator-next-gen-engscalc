@@ -1,3 +1,24 @@
+# Předávka — 15. 10. 2026: větev `claude/b80-pipedrive` (v15.10.1), B80 `/api/pd/*` — dávka S1
+
+Nad `origin/test` (5a42369, v14.10.8), zadání `podklady/PROMPT_b80_pipedrive.md`
+a `podklady/_SPOLECNE_15_10.md` (větev `claude/davky-15-10`). Do
+`test-draft` / `test` / `main` nic. Sloučení do `test` a celé kolo
+s mutacemi dělá koordinační sezení J. V. (session_0191A71yUFarU952Vy7h2hc5).
+Podrobnosti: CHANGELOG v15.10.1.
+
+- **Hotovo (pushnuto):** B80 ověřen, že trval. Oprava: právo z matice
+  `crm.pipedrive`, původ u GET, cache detailu 90 s, strop 30 načtení za
+  hodinu na uživatele, číslo případu. Nová sada `netlify/test_pd_pristup.mjs`
+  (19/29 → 48/0) je v `SADY`, mutace B80 chytily 8 z 8. Roadmapa #345 →
+  hotovo (v15.10.1), ostatní body #345 ověřeny.
+- **Výchozí volby (k potvrzení J. V.):** `crm.pipedrive` výchozí Obchodník
+  ne / Vedoucí ne (návrh ano, až bude výběr z CRM v rozhraní); strop 30
+  čerstvých načtení detailu za hodinu; cache detailu 90 s.
+- **Při slučování:** konflikty čekej jen v CHANGELOG, PREDAVKA, `verze.txt`
+  a v seznamu `SADY` / konci `MUTACE` v `netlify/mutace.mjs`.
+
+---
+
 # Předávka — 14. 10. 2026 noc: `test` = v14.10.8, celé kolo VŠE ZELENÉ
 
 Noční dávky (pokyn J. V. 14. 10. večer) hotové a v `test`:

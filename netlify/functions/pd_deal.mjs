@@ -18,10 +18,16 @@
  * dealu bývá investor nebo majitel, kdežto skutečný objednatel — výtahová
  * firma — visí ve vlastním poli. Když je vyplněné, má přednost; jinak se
  * bere organizace dealu. */
-import { vyzadujRoli, json } from '../lib/sdilene.mjs';
-import { pdNastaveno, pdZavolej, pdOdkazNaDeal, PdChyba } from '../lib/pipedrive.mjs';
+import { uloziste, json } from '../lib/sdilene.mjs';
+import { pdNastaveno, pdZavolej, pdOdkazNaDeal, PdChyba, pdPristup, pdStropCerstvych,
+         PD_CACHE_ULOZISTE } from '../lib/pipedrive.mjs';
 import { pdDealNaNase, pdZbytekDoSta, pdHodnota } from '../lib/pd_mapa.mjs';
 import { pdPoleMapa } from './pd_pole.mjs';
+
+/* Krátká cache detailu (B80): opakované otevření téhož případu nejde do
+ * Pipedrive ani se nepočítá do stropu. 90 s jako u seznamu (B19). */
+const PD_DEAL_CACHE_MS = 90 * 1000;
+const ID_MAX = 2147483647;
 
 async function bezpecne(cesta) {
   /* Chybějící organizace nebo osoba nesmí shodit celé načtení — deal je
@@ -30,18 +36,31 @@ async function bezpecne(cesta) {
 }
 
 export default async (req) => {
-  const { chyba } = await vyzadujRoli(req);
+  /* Přihlášení, původ a právo z matice (B80) — lib/pipedrive.mjs. */
+  const { chyba, relace } = await pdPristup(req);
   if (chyba) return chyba;
 
   if (!pdNastaveno())
     return json({ ok: true, nastaveno: false, deal: null,
       chyba: 'Napojení na Pipedrive zatím není nastavené.' });
 
-  const id = Number(new URL(req.url).searchParams.get('id'));
-  if (!id || !isFinite(id))
+  /* Jen kladné celé číslo (B80): „-1", „1.5", „1e3" ani mezery do cesty
+   * k Pipedrive nepatří a jen by zakládaly nové klíče cache. */
+  const idTxt = String(new URL(req.url).searchParams.get('id') || '');
+  const id = Number(idTxt);
+  if (!/^[0-9]{1,10}$/.test(idTxt) || id < 1 || id > ID_MAX)
     return json({ ok: false, chyba: 'Chybí číslo obchodního případu.' }, 400);
 
   try {
+    const cache = await uloziste(PD_CACHE_ULOZISTE);
+    const klic = 'deal:' + id;
+    const ulozene = await cache.cti(klic);
+    if (ulozene && ulozene.odpoved && (Date.now() - (ulozene.poridano || 0)) < PD_DEAL_CACHE_MS)
+      return json(ulozene.odpoved);
+    if (!(await pdStropCerstvych(relace.email)))
+      return json({ ok: false, nastaveno: true, chyba: 'Z Pipedrive jste za poslední hodinu načetli '
+        + 'příliš mnoho obchodních případů. Zkuste to později, nebo se ozvěte správci.' }, 429);
+
     const pole = await pdPoleMapa();
     const deal = await pdZavolej('/api/v2/deals/' + id, { dotaz: { include_option_labels: true } });
     if (!deal) return json({ ok: false, chyba: 'Pipedrive takový případ nezná.' }, 404);
@@ -73,8 +92,10 @@ export default async (req) => {
       varovani.push('Nepodařilo se v CRM najít pole: '
         + pole.chybi.map((x) => x.popis).join(', ') + '.');
 
-    return json({ ok: true, nastaveno: true, deal: nase,
-      chybiPole: pole.chybi || [], varovani });
+    const odpoved = { ok: true, nastaveno: true, deal: nase,
+      chybiPole: pole.chybi || [], varovani };
+    await cache.zapis(klic, { poridano: Date.now(), odpoved });
+    return json(odpoved);
   } catch (e) {
     if (e instanceof PdChyba)
       return json({ ok: false, nastaveno: true, chyba: e.message }, e.stav >= 500 ? 502 : e.stav);

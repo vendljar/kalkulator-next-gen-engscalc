@@ -8,6 +8,53 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v15.10.1 — B80: rozhraní Pipedrive `/api/pd/*` (větev claude/b80-pipedrive)
+
+Dávka S1 (zadání `podklady/PROMPT_b80_pipedrive.md`, společná pravidla
+`podklady/_SPOLECNE_15_10.md`), roadmapa #345 → **hotovo**. Větev nad
+`origin/test` (5a42369, v14.10.8). Do `test-draft` / `test` / `main` nic.
+
+**Ověření, že B80 trvá (audit 24. 9., stav „TRVÁ“ v auditu 12. 10. 2026):**
+kterýkoli přihlášený účet, tedy i obchodník, mohl ručním požadavkem
+(DevTools s vlastní cookie) poslat `GET /api/pd/deal?id=1…N` a s nastaveným
+tokenem si odnést celé CRM: objednatele, IČO, jména, e-maily a telefony
+kontaktů. Detail se necachoval (deal + organizace + osoba = 6 tokenů za
+načtení), takže tatáž smyčka vyčerpala denní limit Pipedrive celé firmě.
+Seznam (`pd_dealy`) a mapa polí (`pd_pole`) šly číst také komukoli. Rozhraní
+aplikace `/api/pd/*` nevolá.
+
+**Oprava** (`netlify/lib/pipedrive.mjs` `pdPristup` + `pdStropCerstvych`,
+`pd_deal.mjs`, `pd_dealy.mjs`, `pd_pole.mjs`, `src/zobrazeni.js`):
+- čtení jen s právem z matice zobrazení — nový prvek **`crm.pipedrive`**
+  („Čtení obchodních případů z Pipedrive“, skupina Data). Administrátor
+  ho má vždy, ostatním ho přidělí v Nastavení → Zobrazení;
+- `GET` z cizího původu → 403 (dosud se původ hlídal jen u zápisů);
+- detail dealu je 90 s v cache (`pd_cache/deal:<id>`). Čerstvá načtení
+  mají strop **30 za hodinu na uživatele** (429), načtení z cache se
+  nepočítá;
+- číslo případu smí být jen kladné celé číslo do 2^31−1 (dřív prošlo
+  `-1`, `1.5`, `1e3` a podobně);
+- `NASAZENI_NETLIFY.md`: kdo smí z CRM číst.
+
+**Výchozí volby (bez dotazu, podle zadání):** v matici má `crm.pipedrive`
+výchozí hodnotu *Obchodník ne, Vedoucí ne* a návrh *ano*. Odpovídá to dnešku,
+protože rozhraní funkce nevolá. Až bude výběr zakázky z CRM v aplikaci,
+přidělí právo administrátor. Strop 30 načtení za hodinu a cache 90 s (jako
+u seznamu, B19) jsou výchozí návrh.
+
+**Testy:** nová sada `netlify/test_pd_pristup.mjs` (paměťové úložiště,
+náhradní `fetch`, žádné volání ven). Před opravou 19 prošlo / 29 selhalo, po
+opravě 48 / 0. `test_prava.mjs` 839 / 0: Pipedrive je v matici práv
+`JEN_ADMIN`, L27 se zkouší administrátorem a zdrojová kontrola zná
+`pdPristup`. `test_pipedrive.mjs` 71 / 0 (obchodníkovi je právo přidělené).
+`src/test_zobrazeni.js` 64 / 0. Mutace serveru B80: **8 z 8 chycených**
+(právo z matice, překlep klíče matice, výchozí matice, původ, strop
+a jeho počítadlo, cache detailu, číslo případu). Sada je přidaná do `SADY`.
+
+**Ostatní body #345** ověřeny v CHANGELOG: B75–B78 v26.9.1, B81 a B83
+v13.10.1, B77 v13.10.1 a v13.10.3, zápisová strana B88 v29.9.4 (B112).
+Čtecí strana B88 zůstává informativní (`BEZPECNOST_MEZE.md`).
+
 ## v14.10.8 — zbytky češtiny v nabídce PROJ (větev claude/proj-preklad-zbytky)
 
 **Integrace do `test` (koordinační sezení, 14. 10. večer):** do `test` (v14.10.6

@@ -77,7 +77,9 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* Cenové výjimky (13. 10. 2026): směs ceníku a pás „jiné" do schvalování. */
      'test_vyjimky.mjs', '../src/test_vyjimky.js',
      /* Krycí list odeslané nabídky (14. 10. 2026): volná pole a serverová pojistka. */
-     'test_kryci_po_tisku.mjs', '../src/test_kryci_po_tisku.js'];
+     'test_kryci_po_tisku.mjs', '../src/test_kryci_po_tisku.js',
+     /* B80 (15. 10. 2026, dávka S1): přístup k /api/pd/*. */
+     'test_pd_pristup.mjs'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -2019,6 +2021,49 @@ const MUTACE = [
     hledej: "    const out = s.map(x => JSON.parse(JSON.stringify(x))).concat(n.slice(s.length));",
     nahrad: "    const out = n;",
     proc: 'dřívější tisk odeslané nabídky by šel smazat nebo přepsat beze stopy' },
+
+  /* ---------- B80 (15. 10. 2026, dávka S1): přístup k /api/pd/* ----------
+   * Hlídá netlify/test_pd_pristup.mjs. */
+  { nazev: 'B80: čtení z Pipedrive bez práva z matice', soubor: 'lib/pipedrive.mjs',
+    hledej: "  if (relace.role !== 'Administrátor') {\n    let ZOB;",
+    nahrad: "  if (false) {\n    let ZOB;",
+    proc: 'kterýkoli přihlášený účet by si prošel celé CRM i s kontakty objednatelů' },
+  { nazev: 'B80: právo Pipedrive se ptá matice na prvek, který v ní není', soubor: 'lib/pipedrive.mjs',
+    hledej: "export const PD_PRAVO = 'crm.pipedrive';",
+    nahrad: "export const PD_PRAVO = 'crm.pipedrive.preklep';",
+    proc: 'neznámý klíč matice zobrazeniSmi pouští (true) — překlep by otevřel CRM všem' },
+  { nazev: 'B80: výchozí matice dává čtení z Pipedrive obchodníkovi', soubor: '../src/zobrazeni.js',
+    hledej: "    klic: 'crm.pipedrive', skupina: 'data', nazev: 'Čtení obchodních případů z Pipedrive',\n"
+      + "    kde: 'serverové rozhraní /api/pd/* (výběr zakázky z CRM; v rozhraní zatím není)',\n"
+      + "    popis: 'Seznam a detail obchodních případů z CRM včetně objednatele, IČO a kontaktů '\n"
+      + "         + '(jméno, e-mail, telefon) a mapa vlastních polí CRM.',\n"
+      + "    vychozi: { 'Obchodník': false, 'Vedoucí': false },",
+    nahrad: "    klic: 'crm.pipedrive', skupina: 'data', nazev: 'Čtení obchodních případů z Pipedrive',\n"
+      + "    kde: 'serverové rozhraní /api/pd/* (výběr zakázky z CRM; v rozhraní zatím není)',\n"
+      + "    popis: 'Seznam a detail obchodních případů z CRM včetně objednatele, IČO a kontaktů '\n"
+      + "         + '(jméno, e-mail, telefon) a mapa vlastních polí CRM.',\n"
+      + "    vychozi: { 'Obchodník': true, 'Vedoucí': false },",
+    proc: 'bez rozhodnutí administrátora by CRM četl každý obchodník (stav před B80)' },
+  { nazev: 'B80: GET na /api/pd/* z cizího původu projde', soubor: 'lib/pipedrive.mjs',
+    hledej: "  if (cizihoPuvodu(req))\n    return { chyba: json({ ok: false, chyba: 'Požadavek z cizí stránky se odmítá.' }, 403) };",
+    nahrad: "  if (false)\n    return { chyba: json({ ok: false, chyba: 'Požadavek z cizí stránky se odmítá.' }, 403) };",
+    proc: 'cizí stránka by pod relací oběti spotřebovávala rozpočet Pipedrive' },
+  { nazev: 'B80: strop čerstvých načtení dealu se nekontroluje', soubor: 'lib/pipedrive.mjs',
+    hledej: "  if ((+z.pocet || 0) >= PD_DEAL_MAX) return false;",
+    nahrad: "  if (false) return false;",
+    proc: 'smyčka přes čísla případů by odnesla celé CRM a vyčerpala denní limit Pipedrive' },
+  { nazev: 'B80: čerstvé načtení dealu se do stropu nezapočítá', soubor: 'lib/pipedrive.mjs',
+    hledej: "  z.pocet = (+z.pocet || 0) + 1;",
+    nahrad: "  z.pocet = (+z.pocet || 0);",
+    proc: 'strop by existoval jen na papíře — počítadlo by stálo na nule' },
+  { nazev: 'B80: detail dealu se necachuje', soubor: 'functions/pd_deal.mjs',
+    hledej: "    if (ulozene && ulozene.odpoved && (Date.now() - (ulozene.poridano || 0)) < PD_DEAL_CACHE_MS)",
+    nahrad: "    if (false)",
+    proc: 'každé opakované otevření téhož případu by stálo 6 tokenů a ukrajovalo ze stropu' },
+  { nazev: 'B80: číslo případu se kontroluje postaru (jen „je to číslo")', soubor: 'functions/pd_deal.mjs',
+    hledej: "  if (!/^[0-9]{1,10}$/.test(idTxt) || id < 1 || id > ID_MAX)",
+    nahrad: "  if (!id || !isFinite(id))",
+    proc: '„-1", „1.5" nebo „1e3" by šly do cesty k Pipedrive a zakládaly nové klíče cache' },
 ];
 
 /* ---------- přerušený běh vrátí zmutovaný soubor ----------
