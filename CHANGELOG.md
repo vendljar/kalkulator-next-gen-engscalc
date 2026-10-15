@@ -236,6 +236,7 @@ po ní 21 / 0; v `SADY` mutací), `src/test_analytika.js` +5 (59 / 5 → 64 / 0)
 `test_obnova` B31 upraven na novou verzi hesla (226 / 0). Mutace serveru +6
 (B89 ×2, B92, B93, B95 ×2), kotvy B3 a B13 přesunuté na `razitkoKdo` — vše
 chycené; `--kontrola` serveru 406, jádra 202. Roadmapa #347 hotovo.
+**Smoke (`spust_testy.sh --smoke`, šablony z Disku v `KNG_PODKLADY`):** 246 prošlo / 0 selhalo / 2 přeskočeno (`test.js` — není v exportu; `overit_manual.mjs` — příručka ze snímků v podkladech nebyla). Před dávkou (v14.10.8) 246/0/1 i s `overit_manual`; přibyl `overit_lista_cekani.mjs`. Mutace `--kontrola`: server 404 úseků, jádro 202; cíleně `node netlify/mutace.mjs "S5"` 4 z 4. Kontrola údajů čistá. Celé kolo se nespouštělo (dělá koordinační sezení).
 
 ## v14.10.8 — zbytky češtiny v nabídce PROJ (větev claude/proj-preklad-zbytky)
 

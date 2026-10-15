@@ -14,7 +14,7 @@ sloučení a celé kolo s mutacemi dělá koordinační sezení
   (+ `../src/test_ukazkove.js` v `SADY`), příručka kap. 4, CHANGELOG.
 - **Výchozí volby:** `file://` nečeká (online se nic nenačítá); čeká se jen
   při prvním startu stránky, ne po „Zkusit znovu" / pozdějším přihlášení.
-<!--VYSLEDKY-PREDAVKA-->
+- **Smoke (`spust_testy.sh --smoke`, šablony z Disku v `KNG_PODKLADY`):** 246 prošlo / 0 selhalo / 2 přeskočeno (`test.js` — není v exportu; `overit_manual.mjs` — příručka ze snímků v podkladech nebyla). Před dávkou (v14.10.8) 246/0/1 i s `overit_manual`; přibyl `overit_lista_cekani.mjs`. Mutace `--kontrola`: server 404 úseků, jádro 202; cíleně `node netlify/mutace.mjs "S5"` 4 z 4. Kontrola údajů čistá. Celé kolo se nespouštělo (dělá koordinační sezení).
 - **Další krok:** koordinační sezení — sloučit do `test`, celé kolo.
 # Předávka — 15. 10. 2026: větev `claude/p12-naklady` (v15.10.3), P12 obchodník nevidí náklady
 
