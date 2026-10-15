@@ -809,6 +809,13 @@ function aktivniVarianta(zak) {
 function importZakazka(obj) {
   if (obj && obj.schema >= 2 && Array.isArray(obj.varianty) && obj.varianty.length) {
     if (!obj.varianty.some(v => v.ridici)) obj.varianty[0].ridici = true;
+    /* Soubor bez ceníků (P12 / #369): ceník se doplní z platného dřív, než
+     * na něj sáhnou migrace níž — ty s ním počítají jako s objektem. */
+    delete obj.cenikyVynechany;
+    obj.varianty.forEach(v => {
+      if (v && v.data && v.data.cenikVynechan)
+        zakazkaCenikDopln(v, typeof cenikDnesniProVariantu === 'function' ? cenikDnesniProVariantu : null);
+    });
     obj.varianty.forEach(v => {
       const d = v.data || {};
       if (!d.proj) d.proj = { zadani: JSON.parse(JSON.stringify(DEFAULT_ZADANI_PROJ)),
@@ -1368,9 +1375,133 @@ function porovnaniPolozek(zak, vypocty, opts) {
  *   sheets: google.script.run → zápis do Google Sheets (číselná řada, historie)
  *   server: fetch() na malý backend + SQLite
  *   pipedrive: propis nabídky do CRM (deal + produkty)                       */
+/* ---------- soubor zakázky BEZ CENÍKŮ (P12 / roadmapa #369, v15.10.3) ----------
+ *
+ * „Náklady zatím obchodník vidí, do budoucna je v jeho zobrazení vypnout"
+ * (rozhodnutí J. V. 29. 9. 2026). Uložení zakázky do souboru (.json) neslo
+ * v každé variantě CELÝ nákladový ceník OCK i PROJ — kdo soubor otevřel
+ * v textovém editoru, měl nákupní ceník firmy. Roli bez práva
+ * `naklady.ceniky` proto aplikace stáhne zakázku bez nich:
+ *
+ *   – U ROZPRACOVANÉ varianty se ceník OCK (`data.cenik`) i PROJ
+ *     (`data.proj.cenik`) nahradí ODCHYLKAMI od ceníku, který právě platí
+ *     (`data.cenikVynechan.rozdil`). Rozpracovaná varianta se s platným
+ *     ceníkem srovnává sama (cenik_stari.js), takže v odchylkách zůstává jen
+ *     to, co patří zakázce: zakázková přirážka a DPH, dohodnuté ceny
+ *     („ceny jsou dohodnuté"), vybrané položky přepočtu. Bez nich by se
+ *     zakázka po načtení tiše přecenila — a cena se kvůli souboru měnit
+ *     nesmí (zadání: test otisku nabídky před/po).
+ *   – ZAMČENÁ (odeslaná) varianta zůstává celá. Je to doklad o tom, co
+ *     zákazník dostal; server data zámku hlídá (S10 v test_obchodnik.mjs)
+ *     a zmrazený výsledek se k ceníku stejně vztahuje. Vědomá mez.
+ *
+ * Načtení (`importZakazka`) odchylky vrátí na ceník, který platí v době
+ * načtení (`zakazkaCenikDopln`). Při stejném platném ceníku vznikne přesně
+ * původní varianta; po zveřejnění nové verze se varianta chová, jako by se
+ * mezitím přepočítala — totéž, co dělá otevření rozpracované zakázky.
+ *
+ * Odchylka je seznam listů: { c: ['cenik', 'plech', 'kc'], h: hodnota } nebo
+ * { c: [...], smaz: true } (klíč, který varianta nemá a platný ceník ano).
+ * Pole se berou jako celek. */
+const ZAK_CENIK_VYNECHAN_SCHEMA = 1;
+
+function zakCenikObj(x) { return !!x && typeof x === 'object' && !Array.isArray(x); }
+function zakCenikKopie(x) { return x === undefined ? undefined : JSON.parse(JSON.stringify(x)); }
+
+/* Listy, ve kterých se `a` (varianta) liší od `b` (platný ceník). */
+function zakazkaCenikRozdil(a, b, cesta, out) {
+  out = out || []; cesta = cesta || [];
+  if (zakCenikObj(a) && zakCenikObj(b)) {
+    Object.keys(b).forEach(k => {
+      if (!Object.prototype.hasOwnProperty.call(a, k)) out.push({ c: cesta.concat(k), smaz: true });
+    });
+    Object.keys(a).forEach(k => {
+      if (Object.prototype.hasOwnProperty.call(b, k)) zakazkaCenikRozdil(a[k], b[k], cesta.concat(k), out);
+      else out.push({ c: cesta.concat(k), h: zakCenikKopie(a[k]) });
+    });
+    return out;
+  }
+  if (JSON.stringify(a) !== JSON.stringify(b)) out.push({ c: cesta, h: zakCenikKopie(a) });
+  return out;
+}
+
+/* Platný ceník + odchylky = ceník varianty. Cesty z cizího souboru se berou
+ * opatrně: jen řetězcové klíče, žádné prototypové. */
+function zakazkaCenikPouzij(zaklad, rozdil) {
+  const out = zakCenikKopie(zaklad) || {};
+  const zakazane = ['__proto__', 'prototype', 'constructor'];
+  (Array.isArray(rozdil) ? rozdil : []).forEach(x => {
+    if (!x || !Array.isArray(x.c) || !x.c.length) return;
+    if (x.c.some(k => typeof k !== 'string' || zakazane.indexOf(k) >= 0)) return;
+    let o = out;
+    for (let i = 0; i < x.c.length - 1; i++) {
+      if (!zakCenikObj(o[x.c[i]])) { if (x.smaz) return; o[x.c[i]] = {}; }
+      o = o[x.c[i]];
+    }
+    const k = x.c[x.c.length - 1];
+    if (x.smaz) delete o[k]; else o[k] = zakCenikKopie(x.h);
+  });
+  return out;
+}
+
+/* Kopie zakázky pro soubor bez ceníků. `dnesniProVariantu(v)` vrací
+ * { cenik, proj: { cenik } } ceníku, který pro variantu právě platí
+ * (v prohlížeči cenikDnesniProVariantu). Originál se nemění. */
+function zakazkaBezCeniku(zak, dnesniProVariantu) {
+  const out = zakCenikKopie(zak);
+  if (!out || !Array.isArray(out.varianty) || typeof dnesniProVariantu !== 'function') return out;
+  out.varianty.forEach(v => {
+    const d = v && v.data;
+    if (!d || d.cenikVynechan) return;
+    if (typeof variantaUzamcena === 'function' ? variantaUzamcena(v) : !!(v.zamek && v.zamek.zamceno)) return;
+    const dnes = dnesniProVariantu(v) || {};
+    const stav = { cenik: d.cenik, proj: d.proj ? d.proj.cenik : undefined };
+    const zaklad = { cenik: dnes.cenik || {}, proj: (dnes.proj && dnes.proj.cenik) || {} };
+    const rozdil = [];
+    if (stav.cenik !== undefined) zakazkaCenikRozdil({ cenik: stav.cenik }, { cenik: zaklad.cenik }, [], rozdil);
+    if (stav.proj !== undefined) zakazkaCenikRozdil({ proj: stav.proj }, { proj: zaklad.proj }, [], rozdil);
+    d.cenikVynechan = {
+      schema: ZAK_CENIK_VYNECHAN_SCHEMA,
+      rada: (typeof cenikRadaVarianty === 'function') ? cenikRadaVarianty(d) : (d.cenikRada || 'cr'),
+      ock: stav.cenik !== undefined, proj: stav.proj !== undefined,
+      rozdil,
+    };
+    delete d.cenik;
+    if (d.proj) delete d.proj.cenik;
+  });
+  out.cenikyVynechany = true;
+  return out;
+}
+
+/* Opak při načtení: doplní ceník z platného a vrátí odchylky. Volá ho
+ * importZakazka; bez platného ceníku (Node bez prohlížeče) se bere ceník ze
+ * sestavení (DEFAULT_CENIK, DEFAULT_CENIK_PROJ). */
+function zakazkaCenikDopln(v, dnesniProVariantu) {
+  const d = v && v.data;
+  const z = d && d.cenikVynechan;
+  if (!zakCenikObj(z)) return false;
+  let dnes = null;
+  const vzor = { data: { cenikRada: z.rada || d.cenikRada || 'cr' } };
+  if (typeof dnesniProVariantu === 'function') { try { dnes = dnesniProVariantu(vzor); } catch (e) { dnes = null; } }
+  if (!dnes) dnes = {
+    cenik: (typeof DEFAULT_CENIK !== 'undefined') ? DEFAULT_CENIK : {},
+    proj: { cenik: (typeof DEFAULT_CENIK_PROJ !== 'undefined') ? DEFAULT_CENIK_PROJ : {} },
+  };
+  const slozeno = zakazkaCenikPouzij({ cenik: dnes.cenik || {}, proj: (dnes.proj && dnes.proj.cenik) || {} }, z.rozdil);
+  if (z.ock !== false && d.cenik === undefined) d.cenik = slozeno.cenik;
+  if (z.proj !== false) {
+    if (!d.proj) d.proj = {};
+    if (d.proj.cenik === undefined) d.proj.cenik = slozeno.proj;
+  }
+  delete d.cenikVynechan;
+  return true;
+}
+
 const StorageAdapter = {
   typ: 'file',
   exportuj(zak) { return JSON.stringify(zak, null, 2); },
+  /* P12 (#369): soubor pro roli bez práva na náklady — viz zakazkaBezCeniku. */
+  exportujBezCeniku(zak, dnesniProVariantu) { return JSON.stringify(zakazkaBezCeniku(zak, dnesniProVariantu), null, 2); },
   importuj(text) { return importZakazka(JSON.parse(text)); },
   nazevSouboru(zak) {
     return `zakazka_${(zak.cislo || 'nova').replace(/[^\w-]+/g, '_')}.json`;
@@ -1561,7 +1692,7 @@ function zakazkaDuplikuj(zak, noveCislo) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { slevaRozhodnutiZahod, zakazkaDuplikuj, zakazkaCisloDalsi, ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, variantaDatum, dnesIso, ZADANI_NOVA, vychoziZakladVolitelne, zadaniRucniMapa, zadaniRucniJe,
+  module.exports = { zakazkaBezCeniku, zakazkaCenikDopln, zakazkaCenikRozdil, zakazkaCenikPouzij, slevaRozhodnutiZahod, zakazkaDuplikuj, zakazkaCisloDalsi, ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, variantaDatum, dnesIso, ZADANI_NOVA, vychoziZakladVolitelne, zadaniRucniMapa, zadaniRucniJe,
                      zadaniRucniZnac, zadaniRucniZrus, zadaniZCeniku, uvodniFotoObrazky, uvodniFotoSymboly, uvodniFotoPole, ZAKAZKA_SCHEMA, novaZakazka, novaVarianta, novaVariantaData,
                      nastavRidici, ridiciVarianta, aktivniVarianta, importZakazka, StorageAdapter,
                      zakazkaUnikatniId,

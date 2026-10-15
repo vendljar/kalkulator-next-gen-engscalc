@@ -167,10 +167,19 @@ function renderProj() {
   catch (e) { document.getElementById('page-proj').innerHTML = `<div class="card"><div class="body neg">Chyba výpočtu: ${esc(e.message)}</div></div>`; return; }
 
   /* Sloupce podle role řeší stejná funkce jako v OCK (kalkSloupce), ať se obě
-   * kalkulace nemůžou rozejít: běžný uživatel zatím vidí hodiny i sazbu, ale
-   * nikdy náklad a přirážku. */
+   * kalkulace nemůžou rozejít: náklad a přirážku vidí jen právo
+   * `sloupce.naklad`. */
   const col = kalkSloupce();
-  const POPIS_SL = 5;                       // Položka · Hodiny · Rezerva · Celkem h · Sazba
+  /* NÁKLADOVÉ SAZBY JEN S PRÁVEM NA NÁKLADY (P12 / roadmapa #369, v15.10.3).
+   * Sloupec „Sazba Kč/h · fix" vypisoval každému hodinovou sazbu a fixní
+   * částku z Ceníku nákladů PROJ; vedle ceny z nich šla dopočítat přirážka.
+   * Bez práva `naklady.ceniky` (výchozí: obchodník) sloupec chybí, z dopravy
+   * zmizí částka příplatku mimo Prahu a souhrn ukáže jen ceny sekcí. Hodiny
+   * a ceny zůstávají; výpočtu ani dokumentů se to netýká. Kdo má
+   * `sloupce.naklad`, vidí sazby vždy (edituje je). Vedoucí právo ve výchozí
+   * matici má — jemu se nic nemění. */
+  const vidSazby = col.admin || smiZobrazit(ZOBRAZENI_KLIC_NAKLADY);
+  const POPIS_SL = vidSazby ? 5 : 4;        // Položka · Hodiny · Rezerva · Celkem h (· Sazba)
   const NC = POPIS_SL + (col.showCost ? 2 : 0) + 1 + col.adminExtra;
   /* Prázdné buňky pod administrátorskými sloupci — kolik jich je, říká
    * `col.adminExtra` (sloupec „Výchozí" vidí jen administrátor, 3. 9. 2026). */
@@ -251,7 +260,7 @@ function renderProj() {
       onchange="set('PC.marze', (+this.value) / 100)"><span class="prm-u">%</span></div>` : ''}`;
 
   /* ---------------- tabulka kalkulace ---------------- */
-  const hlavicka = `<tr><th>Položka</th><th>Hodiny</th><th>Rezerva h</th><th>Celkem h</th><th>Sazba Kč/h · fix</th>`
+  const hlavicka = `<tr><th>Položka</th><th>Hodiny</th><th>Rezerva h</th><th>Celkem h</th>${vidSazby ? '<th>Sazba Kč/h · fix</th>' : ''}`
     + `${col.showCost ? `<th>Náklad</th><th>Přirážka ${num(PC.marze * 100)} %</th>` : ''}<th>Cena</th>`
     + `${col.admin ? '<th class="admincol" title="odškrtnutím se položka přestane počítat v TÉTO zakázce">Počítat</th>' : ''}`
     + `${col.admin && col.spravce ? '<th class="admincol" title="zaškrtnutí platí pro každou NOVOU zakázku (nastavení aplikace, ne této zakázky)">Výchozí</th>' : ''}</tr>`;
@@ -340,7 +349,7 @@ function renderProj() {
           <td>${(col.admin || vlEd) ? `<input type="number" step="1" min="0" style="width:66px" value="${esc(+p.hodiny || 0)}" onchange="pjSet(${i}, 'polozky.${j}.hodiny', +this.value)">` : num(p.hodiny)}</td>
           <td>${col.admin ? `<input type="number" step="1" min="0" style="width:66px" value="${esc(+p.rezerva || 0)}" onchange="pjSet(${i}, 'polozky.${j}.rezerva', +this.value)">` : num(p.rezerva)}</td>
           <td>${num(p.hodinyCelkem)}</td>
-          <td style="white-space:nowrap">${sazbaEd}</td>
+          ${vidSazby ? `<td style="white-space:nowrap">${sazbaEd}</td>` : ''}
           ${penize(p.naklad, marzeSekce(s, p.naklad), cena)}${pocitat}</tr>`;
       }
 
@@ -357,6 +366,17 @@ function renderProj() {
         : (vlEd && !p.fixKey
           ? `<input type="number" step="500" min="0" style="width:86px" value="${esc(p.cena)}" title="částka této položky (jen pro tuto zakázku)" onchange="pjSet(${i}, 'polozky.${j}.cena', +this.value)">`
           : num(p.cenaEfekt));
+      /* Bez práva na náklady (P12) se fixní částka z ceníku neukazuje vůbec;
+       * vlastní fixní řádek (částku zadal sám uživatel) se dál píše tady,
+       * v buňce popisu, s jasným popiskem, že jde o částku před přirážkou. */
+      if (!vidSazby) {
+        const vlastniFix = vlEd && !p.fixKey;
+        return `${tr}<td>${nazev}${stitekVyp}</td>
+        <td colspan="3" class="note" style="text-align:right;white-space:nowrap">${vlastniFix
+          ? `vlastní částka před přirážkou <input type="number" step="500" min="0" style="width:86px" value="${esc(p.cena)}" title="částka této položky před přirážkou sekce (jen pro tuto zakázku); cena vpravo už přirážku obsahuje" onchange="pjSet(${i}, 'polozky.${j}.cena', +this.value)">`
+          : (p.fixKey ? 'fixní částka (ceník PROJ)' : 'fixní částka')}</td>
+        ${penize(p.naklad, marzeSekce(s, p.naklad), cena)}${pocitat}</tr>`;
+      }
       return `${tr}<td>${nazev}${stitekVyp}</td>
         <td colspan="3" class="note" style="text-align:right">${p.fixKey
           ? (p.cenaPrepsana ? 'fixní částka – přepsáno pro tuto zakázku' : 'fixní částka (ceník PROJ)')
@@ -392,7 +412,7 @@ function renderProj() {
            ${dopravaPenize}${prazdneAdmin}</tr>`
         : (s.dopravaKc
           ? `<tr><td>Doprava${zdroj.doprava.mimoPrahu ? ' (mimo Prahu)' : ''}</td><td>${num(zdroj.doprava.km)}</td><td class="note">km</td><td></td>
-             <td class="note">${zdroj.doprava.mimoPrahu ? fmt(mimoKc) : '—'}${rucniPill}</td>${dopravaPenize}</tr>` : '');
+             ${vidSazby ? `<td class="note">${zdroj.doprava.mimoPrahu ? fmt(mimoKc) : '—'}${rucniPill}</td>` : ''}${dopravaPenize}</tr>` : '');
 
     /* Sjednocený řádek přidávání (19. 8. 2026 večer, stejné pravidlo jako
      * OCK): „+ přidat …" = vlastní řádek jen této zakázky (obchodník,
@@ -472,7 +492,18 @@ function renderProj() {
   /* Souhrn: od #141 je procento sekce JEDNO (výchozí globální, přepsatelné),
    * takže sloupec „Sleva/přir." zmizel — býval to druhý zápis téhož a právě
    * z té dvojice vzniklo dvojí započtení přirážky. */
-  const souhrnTbl = `${typeof stranaNulovanaStitek === 'function' ? stranaNulovanaStitek('proj') : ''}<table>
+  /* Bez práva na náklady (P12) jen Sekce a Celkem — náklad, přirážka
+   * a doprava sekce jsou nákladové údaje. Řádky zaokrouhlení zůstávají. */
+  const souhrnTbl = !vidSazby ? `${typeof stranaNulovanaStitek === 'function' ? stranaNulovanaStitek('proj') : ''}<table>
+    <tr><th>Sekce</th><th>Celkem</th></tr>
+    ${r.sekce.filter(s => s.celkem !== 0 || s.naklad !== 0).map(s =>
+      `<tr><td>${esc(s.nazev)}</td><td>${fmt(s.celkem)}</td></tr>`).join('')}
+    <tr class="tot"><td>CELKEM</td><td><b>${fmt0(r.souhrn.celkem)}</b></td></tr>
+    ${projZaokr && typeof zaokrKc === 'function' ? `
+    <tr><td>Obchodní zaokrouhlení${typeof zaokrStav === 'function' && zaokrStav(r.souhrn.celkem, ZOP).popis ? ' (' + esc(zaokrStav(r.souhrn.celkem, ZOP).popis) + ')' : ''}</td>
+      <td>${esc(zaokrKc(projZaokr))}</td></tr>
+    <tr class="tot"><td>CENA NABÍDKY PROJ</td><td><b>${fmt0(projCena)}</b></td></tr>` : ''}
+  </table>` : `${typeof stranaNulovanaStitek === 'function' ? stranaNulovanaStitek('proj') : ''}<table>
     <tr><th>Sekce</th><th>Náklad</th><th>Přirážka</th><th>Doprava</th><th>Celkem</th></tr>
     ${r.sekce.filter(s => s.celkem !== 0 || s.naklad !== 0).map(s =>
       `<tr><td>${esc(s.nazev)}</td><td>${fmt(s.naklad)}</td><td>${num(s.pouzitePct)} % ⇒ ${fmt(s.marze)}</td>

@@ -226,10 +226,20 @@ function kontrolyStavVarianta(v) {
   return kontrolyProved(kontrolyCtxVarianta(v));
 }
 
-/* Právo na částky – jedno pravidlo pro celou aplikaci, půjčené od marže. */
+/* Právo na částky v kontrolách = klíč `kontroly.cisla` (P12 / #369, v15.10.3).
+ * Do v15.10.3 se funkce nejdřív zeptala marže (`marzeSmiCisla`, klíč
+ * `marze.lista`) a vrátila její odpověď — `kontroly.cisla` tak neměl žádný
+ * účinek: obchodník s přidělenou lištou marže viděl v kontrolách i náklady
+ * a odebrat mu je šlo jen spolu s lištou. Vedoucímu se chování nemění
+ * (zadání): ten čísla vidí i s právem na lištu marže, jako dosud.
+ * Ruční zviditelnění KPI „Marže" (NAST.kpiViditelne, smí jen administrátor)
+ * platí dál pro všechny, stejně jako v hlavičce kalkulace. */
 function kontrolySmiCisla() {
-  if (typeof marzeSmiCisla === 'function') return marzeSmiCisla();
-  if (typeof smiZobrazit === 'function' && smiZobrazit('kontroly.cisla')) return true;
+  if (typeof smiZobrazit === 'function') {
+    if (smiZobrazit('kontroly.cisla')) return true;
+    const role = (typeof zobrazeniRole === 'function') ? zobrazeniRole() : '';
+    if (role === 'Vedoucí' && typeof marzeSmiCisla === 'function' && marzeSmiCisla()) return true;
+  } else if (typeof marzeSmiCisla === 'function') return marzeSmiCisla();
   return !!(typeof NAST !== 'undefined' && NAST.kpiViditelne && NAST.kpiViditelne.marze);
 }
 
