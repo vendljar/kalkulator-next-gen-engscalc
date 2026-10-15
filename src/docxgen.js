@@ -794,8 +794,10 @@ function docxTeloZeSekci(nadpis, sekce) {
   let body = docxPar(nadpis, { b: true, sz: 32, after: 160 });
   (sekce || []).forEach(s => {
     /* Sekce se sloupci (hodiny z kalkulace v krycím listu BO, 14. 10. 2026):
-     * záhlaví sloupců a řádky [popis, …hodnoty]; šířka hodnot se dělí rovným dílem. */
-    if (Array.isArray(s.sloupce) && s.sloupce.length > 2) {
+     * záhlaví sloupců a řádky [popis, …hodnoty]; šířka hodnot se dělí rovným dílem.
+     * Od 15. 10. má tabulka hodin jen jeden sloupec hodnot (OCK nebo PROJ) —
+     * záhlaví se vypíše i tak, proto stačí dva sloupce. */
+    if (Array.isArray(s.sloupce) && s.sloupce.length >= 2) {
       const n = s.sloupce.length - 1, WV = Math.floor(W2 / n), WT = W1 + WV * n;
       const bunky = (r, opt) => `<w:tr>${docxCell(docxPar(r[0], { b: true, sz: 18, after: 0 }), W1, { fill: 'EEF2F8' })}`
         + r.slice(1, n + 1).map(v => docxCell(docxPar(v == null ? '' : v, Object.assign({ sz: 18, after: 0 }, opt || {})), WV)).join('') + '</w:tr>';

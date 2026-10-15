@@ -282,7 +282,7 @@ function kryciTiskBlok(zab) {
  * sloupci (hodiny z kalkulace, 14. 10. 2026) má záhlaví a víc hodnot. */
 function kryciTiskTabulka(s) {
   const e2 = esc;
-  if (Array.isArray(s.sloupce) && s.sloupce.length > 2) {
+  if (Array.isArray(s.sloupce) && s.sloupce.length >= 2) {   // i jeden sloupec hodnot má záhlaví (15. 10.)
     const n = s.sloupce.length - 1;
     const tr = (r, th) => `<tr><td class="l">${e2(r[0] || '')}</td>${r.slice(1, n + 1).map(v =>
       th ? `<td style="font-weight:600;background:#eef2f8">${e2(v || '')}</td>` : `<td>${e2(v == null ? '' : v)}</td>`).join('')}</tr>`;
@@ -292,14 +292,16 @@ function kryciTiskTabulka(s) {
 }
 /* HODINY Z KALKULACE na konci krycího listu (OCK i PROJ, 14. 10. 2026) —
  * jen ke čtení; počítá kryciHodiny (kryci.js), do výstupu jde ve verzi BO.
+ * Každý list jen svou stranu (15. 10. 2026); vyřazená strana bez tabulky.
  * `kde` = 'ock' | 'proj': obě stránky krycích listů jsou v dokumentu naráz,
  * id proto nese příponu (jinak dvojí id — overit_program, overit_podminky). */
 function kryciHodinyBlok(kde) {
   let h = null;
-  try { h = (typeof kryciHodiny === 'function') ? kryciHodiny(ZAK, aktivniVarianta(ZAK), JEKLY) : null; } catch (e) { h = null; }
+  const strana = kde === 'proj' ? 'proj' : 'ock';
+  try { h = (typeof kryciHodiny === 'function') ? kryciHodiny(ZAK, aktivniVarianta(ZAK), JEKLY, strana) : null; } catch (e) { h = null; }
   if (!h) return '';
   return `<h3>Hodiny z kalkulace <span class="pill kl-verze" title="jen Backoffice">BO</span></h3>
-    <div class="note">Počítá se z položek, které se nabízejí (Kalkulace OCK a Kalkulace PROJ); celé hodiny, zaokrouhleno.</div>
+    <div class="note">Počítá se z položek, které se nabízejí (Kalkulace ${strana === 'proj' ? 'PROJ' : 'OCK'}); celé hodiny, zaokrouhleno.</div>
     <div id="kryciHodiny_${kde === 'proj' ? 'proj' : 'ock'}">${kryciTiskTabulka({ sloupce: h.sloupce, radky: h.radky })}</div>`;
 }
 

@@ -589,7 +589,13 @@ function kryciHodnota(pole, kl, c) {
  * 2026-10-14.md odsouhlasen s výhradou „desetinná čísla neuváděj,
  * zaokrouhluj").
  *
- * Jedna tabulka pro oba listy, sloupce OCK a PROJ. Vypisují se hodiny ze
+ * KAŽDÝ LIST JEN SVOU STRANU (zadání J. V. 15. 10. 2026, v15.10.10 —
+ * nahrazuje rozhodnutí v14.10.2 o jedné tabulce se sloupci OCK i PROJ):
+ * krycí list OCK ukazuje jen hodiny z Kalkulace OCK, krycí list PROJ jen
+ * z Kalkulace PROJ; tabulka má jeden sloupec hodnot. Vyřazená / uzamčená
+ * strana (P6, vysledekStrany → null) tabulku ve svém listu nemá vůbec.
+ *
+ * Původně (14. 10.) jedna tabulka pro oba listy. Vypisují se hodiny ze
  * všech položek, které se NABÍZEJÍ: OCK z počítaných řádků výsledku
  * (`r.sekce.*` je už po filtru vyřazených a nepočítaných položek), hledané
  * podle ceníkové cesty (přejmenování položky je neschová); PROJ po
@@ -603,8 +609,8 @@ function kryciHodnota(pole, kl, c) {
  * zaokrouhlených částí — tabulka tak dává součet sama v sobě (stejný princip
  * jako #135 u cen). Odeslaná nabídka čte zmrazený otisk (vysledekStrany).
  *
- * Vrací { sloupce: ['', 'OCK', 'PROJ'], radky: [[popis, ock, proj]] } nebo
- * null, když nemá ani jedna strana co ukázat. */
+ * Vrací { sloupce: ['', 'OCK'] | ['', 'PROJ'], radky: [[popis, hodnota]] }
+ * nebo null, když strana listu nemá co ukázat (vyřazená, nic s hodinami). */
 const KRYCI_HODINY_OCK = [
   { popis: 'montáž na stavbě', cesty: ['C.montazHodKc'], montaz: true },
   { popis: 'dílna — oplechování (práce)', cesty: ['C.oplechPracKc'] },
@@ -615,11 +621,13 @@ const KRYCI_HODINY_OCK = [
 const KRYCI_HODINY_PROJ = { zamereni: 'zaměření', studie: 'studie', projednani: 'projednání studie', dpz: 'DPZ', ic: 'IČ',
   dps: 'DPS', ezc: 'EZC', kolaudace: 'kolaudace', geodet: 'geodetické zaměření' };
 function kryciHodinyText(n) { return Math.round(+n || 0).toLocaleString('cs-CZ') + ' h'; }
-function kryciHodiny(zak, varianta, jekly) {
-  const strana = s => { try { return (typeof vysledekStrany === 'function') ? vysledekStrany(zak, varianta, s, jekly) : null; } catch (e) { return null; } };
-  const rOck = strana('ock'), rProj = strana('proj');
+function kryciHodiny(zak, varianta, jekly, strana) {
+  if (strana !== 'ock' && strana !== 'proj') return null;
+  let r = null;
+  try { r = (typeof vysledekStrany === 'function') ? vysledekStrany(zak, varianta, strana, jekly) : null; } catch (e) { r = null; }
+  const rOck = strana === 'ock' ? r : null, rProj = strana === 'proj' ? r : null;
   const radky = [];
-  let ockCelkem = null, projCelkem = null;
+  let celkem = null;
   if (rOck && rOck.sekce) {
     const pocitane = [].concat(rOck.sekce.hrubaOck || [], rOck.sekce.oplasteni || [], rOck.sekce.rezie || []);
     KRYCI_HODINY_OCK.forEach(def => {
@@ -634,8 +642,8 @@ function kryciHodiny(zak, varianta, jekly) {
         if (osob > 1 && Math.round(rOck.montaz.hodCelkem) === h)
           detail = ' (' + osob + ' os.' + (osob * jeden === h ? ' × ' + jeden + ' h' : '') + ')';
       }
-      radky.push([def.popis, kryciHodinyText(h) + detail, '—']);
-      ockCelkem = (ockCelkem || 0) + h;
+      radky.push([def.popis, kryciHodinyText(h) + detail]);
+      celkem = (celkem || 0) + h;
     });
   }
   if (rProj && Array.isArray(rProj.sekce)) {
@@ -649,22 +657,22 @@ function kryciHodiny(zak, varianta, jekly) {
       if (!casti.length) { pausal.push(KRYCI_HODINY_PROJ[k]); return; }
       const h = casti.reduce((a, x) => a + x.h, 0);
       const detail = casti.length > 1 ? ' (' + casti.map(x => x.n + ' ' + x.h).join(' + ') + ')' : '';
-      radky.push([KRYCI_HODINY_PROJ[k], '—', kryciHodinyText(h) + detail]);
-      projCelkem = (projCelkem || 0) + h;
+      radky.push([KRYCI_HODINY_PROJ[k], kryciHodinyText(h) + detail]);
+      celkem = (celkem || 0) + h;
     });
-    if (pausal.length) radky.push([pausal.join(' / '), '—', 'paušál (bez hodin)']);
+    if (pausal.length) radky.push([pausal.join(' / '), 'paušál (bez hodin)']);
     const sazby = (typeof NABIDKA_PROJ_SAZBY !== 'undefined') ? NABIDKA_PROJ_SAZBY : null;
     if (typeof nabidkaProjNabiziAD === 'function' && nabidkaProjNabiziAD(varianta))
-      radky.push(['autorský dozor', '—', 'max. ' + ((sazby && sazby.autorskyDozorMaxHodin) || 30) + ' h / měsíc (do celku se nepočítá)']);
+      radky.push(['autorský dozor', 'max. ' + ((sazby && sazby.autorskyDozorMaxHodin) || 30) + ' h / měsíc (do celku se nepočítá)']);
   }
   if (!radky.length) return null;
-  radky.push(['celkem', ockCelkem == null ? '—' : kryciHodinyText(ockCelkem), projCelkem == null ? '—' : kryciHodinyText(projCelkem)]);
-  return { sloupce: ['', 'OCK', 'PROJ'], radky };
+  radky.push(['celkem', celkem == null ? '—' : kryciHodinyText(celkem)]);
+  return { sloupce: ['', strana === 'ock' ? 'OCK' : 'PROJ'], radky };
 }
-/* Sekce krycího listu s hodinami — jen verze Backoffice. */
-function kryciHodinySekce(zak, varianta, jekly, verze) {
+/* Sekce krycího listu s hodinami — jen verze Backoffice, jen strana listu. */
+function kryciHodinySekce(zak, varianta, jekly, verze, strana) {
   if (verze !== 'bo') return null;
-  const h = kryciHodiny(zak, varianta, jekly);
+  const h = kryciHodiny(zak, varianta, jekly, strana);
   return h ? { sekce: 'Hodiny z kalkulace', sloupce: h.sloupce, radky: h.radky } : null;
 }
 
@@ -675,7 +683,7 @@ function kryciData(zak, varianta, jekly, verze) {
     const radky = s.pole.filter(p => p.verze.includes(verze)).map(p => [p.label, kryciHodnota(p, kl, c)]);
     return radky.length ? { sekce: s.sekce, radky } : null;
   }).filter(Boolean);
-  const hodiny = kryciHodinySekce(zak, varianta, jekly, verze);   // konec listu BO (14. 10. 2026)
+  const hodiny = kryciHodinySekce(zak, varianta, jekly, verze, 'ock');   // konec listu BO, jen OCK (15. 10. 2026)
   if (hodiny) sekce.push(hodiny);
   const verzeNazev = verze === 'techdata' ? 'Techdata' : 'Backoffice';
   const cislo = (zak.cislo || 'CN').replace(/\s+/g, '');

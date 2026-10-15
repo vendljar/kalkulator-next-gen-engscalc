@@ -67,7 +67,10 @@ const SRC = resolve(KOREN, 'src');
  * jediná pojistka proti šabloně, která si u zákazníka stáhne makra. */
 /* techspec.js (14. 10. 2026): název akce specifikace z hlavičky zakázky
  * a oplechování soklu prohlubně — text přílohy smlouvy. */
-const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sablony_online.js', 'kontroly.js', 'plan_plateb.js', 'docxgen.js', 'sablona_obsah.js', 'techspec.js'];
+/* kryci.js a kryci_proj.js (15. 10. 2026, v15.10.10): hodiny z kalkulace
+ * v krycím listu — každý list jen svou stranu (podklad pro backoffice). */
+const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sablony_online.js', 'kontroly.js', 'plan_plateb.js', 'docxgen.js', 'sablona_obsah.js', 'techspec.js',
+  'kryci.js', 'kryci_proj.js'];
 /* Filtr = první argument, který není přepínač (stejně jako netlify/mutace.mjs). */
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 /* --kontrola (23. 9. 2026, nález N19): jen ověří, že každý hledaný úsek je
@@ -190,10 +193,24 @@ const MUTACE = [
     nahrad: "      odvozene: (r, Z) => { const s = tsSoklRadek(r, Z); return s.text; },",
     proc: 'specifikace by zákazníkovi tvrdila obojí naráz: v dodávce je i není' },
   /* ---------- hodiny z kalkulace v krycím listu BO (14. 10. 2026) ---------- */
-  { nazev: 'HOD 14. 10.: Word krycího listu zahodí sloupce tabulky hodin', soubor: 'docxgen.js',
-    hledej: "    if (Array.isArray(s.sloupce) && s.sloupce.length > 2) {",
-    nahrad: "    if (Array.isArray(s.sloupce) && s.sloupce.length > 3) {",
-    proc: 'backoffice by ve Wordu dostal jen sloupec OCK — hodiny projekce by z krycího listu zmizely' },
+  /* Od 15. 10. (v15.10.10) má tabulka hodin jediný sloupec hodnot — mutace
+   * míří na novou hranici (dva sloupce), dřívější `> 3` by už nic neměnila. */
+  { nazev: 'HOD 14. 10.: Word krycího listu zahodí záhlaví tabulky hodin', soubor: 'docxgen.js',
+    hledej: "    if (Array.isArray(s.sloupce) && s.sloupce.length >= 2) {",
+    nahrad: "    if (Array.isArray(s.sloupce) && s.sloupce.length > 2) {",
+    proc: 'backoffice by ve Wordu dostal tabulku hodin bez záhlaví — nepoznal by, ke které straně hodiny patří' },
+  { nazev: 'HOD 15. 10.: krycí list PROJ vypíše hodiny z Kalkulace OCK', soubor: 'kryci_proj.js',
+    hledej: "kryciHodinySekce(zak, varianta, jekly, verze, 'proj')",
+    nahrad: "kryciHodinySekce(zak, varianta, jekly, verze, 'ock')",
+    proc: 'list PROJ by nesl montáž a dílnu z OCK — přesně to, co J. V. 15. 10. vytkl' },
+  { nazev: 'HOD 15. 10.: krycí list OCK sečte i hodiny PROJ', soubor: 'kryci.js',
+    hledej: "  const rOck = strana === 'ock' ? r : null, rProj = strana === 'proj' ? r : null;",
+    nahrad: "  const rOck = strana === 'ock' ? r : null, rProj = strana === 'proj' ? r : vysledekStrany(zak, varianta, 'proj', jekly);",
+    proc: 'list OCK by znovu míchal hodiny projekce, i když PROJ není počítaná' },
+  { nazev: 'HOD 15. 10.: vyřazená strana dostane tabulku hodin', soubor: 'kryci.js',
+    hledej: "  try { r = (typeof vysledekStrany === 'function') ? vysledekStrany(zak, varianta, strana, jekly) : null; } catch (e) { r = null; }",
+    nahrad: "  try { r = strana === 'ock' ? vypocetZ(varianta, jekly) : vypocetProjZ(varianta); } catch (e) { r = null; }",
+    proc: 'uzamčená (vynulovaná) strana by v krycím listu ukazovala hodiny, které se nenabízejí' },
   /* ---------- K23T-N1: opláštění pod dnem prohlubně (14. 10. 2026) ---------- */
   { nazev: 'K23T-N1: opláštění pod dnem prohlubně hlásí obecnou zápornou částku', soubor: 'kontroly.js',
     hledej: "      if (nal.every(p => p.podProhlubni)) {",
