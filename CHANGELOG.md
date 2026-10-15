@@ -10,6 +10,13 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ## v15.10.4 — červená lišta „Ceník není nahraný" až po ověření (větev claude/lista-cenik-zpozdeni)
 
+**Integrace do `test` (koordinační sezení, 15. 10.):** do `test` (v15.10.3 = S1
+až S3) sloučena tahle větev merge commitem; konflikty jen v CHANGELOG,
+PREDAVKA, `verze.txt` a seznamu sad `netlify/mutace.mjs`. Po sloučení
+`spust_testy.sh --smoke` s firemními podklady a příručkou v15.10.4 ze snímků:
+252 prošlo / 0 selhalo / 1 přeskočeno (test.js); `--kontrola` mutací jádra
+202 a serveru 431 úseků. Celé kolo po sloučení oprav z auditu S4.
+
 Zadání J. V. 15. 10. 2026 (dávka S5, `podklady/PROMPT_lista_cenik_zpozdeni.md`
 na `claude/davky-15-10`): „pozdrž zobrazení červené lišty při načtení
 aplikace o pár vteřin … zobrazit ji až tehdy, když ceník skutečně není
