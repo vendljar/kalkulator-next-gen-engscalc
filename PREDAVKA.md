@@ -1,3 +1,28 @@
+# Předávka — 15. 10. 2026: dávka S9 (v15.10.11), větev `claude/sod-proj-cislo` — číslo SoD ve smlouvě PROJ
+
+Nad `origin/claude/integrace-15-10` (e0704b6: S7 v15.10.9 + S8 v15.10.10).
+Zadání J. V.: „Aktualizuj šablony, aby se nám do nich číslo SoD propisovalo
+z krycího listu zakázky ve chvíli, kdy tam bude vyplněné." Do `test-draft` /
+`test` / `main` nic — sloučení dělá koordinace (session_01NQjWzfqv1obHAg7DWPHAKH).
+Podrobnosti: CHANGELOG v15.10.11, postup `podklady/POSTUP_SABLONY_SOD_15_10.md`.
+
+- **Hotovo (pushnuto):** `nastroje/vyrob_sablony.js --sod-proj-cislo`
+  (`sodProjCislo`): pod nadpis SoD PROJ řádek „číslo {{SOD_CISLO_SMLOUVY}}"
+  (v2 → `_v3.docx`, v1 → `_v1_cislo.docx`); test `src/test_sod_proj_cislo.js`
+  0/1 → 24/0, harness `overit_sod_proj_cislo.mjs` 6/0, kontroly S9
+  v `overit_sod.mjs`, mutace S9 4 z 4, smoke 252/0/6, `--kontrola` 443 / 205,
+  kontrola údajů čistá. Aplikace beze změny (číslo plní od v15.10.9).
+- **NEHOTOVO — šablony na Disku:** firemní .docx nešly v kontejneru přečíst
+  (uložený výsledek konektoru Drive — čtení zamítl strážce oprávnění),
+  takže v3 / v1_cislo nevznikly ani se nenahrály. J. V.: vyrobit lokálně
+  (`node nastroje/vyrob_sablony.js --sod-proj-cislo <složka se šablonami>`),
+  nahrát vedle původních na Disk a v3 zveřejnit v Nastavení → Šablony
+  (typ „Šablona smlouvy o dílo — PROJEKČNÍ PRÁCE"), test i ostrá.
+- **Pozor:** commit 8b6b284 zachytil dočasnou mutaci, opraveno 4d17ccc —
+  při slučování brát hlavu větve.
+- **Při slučování:** konflikty čekej v CHANGELOG, PREDAVKA, `verze.txt`
+  a na konci `MUTACE` / `SADY` v `netlify/mutace.mjs`.
+
 # Předávka — 15. 10. 2026: větev `claude/hodiny-po-listech` (v15.10.10), hodiny v krycím listu po listech (S8)
 
 Nad `origin/claude/integrace-15-10` (9ead7b5). Zadání
