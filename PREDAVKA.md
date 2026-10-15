@@ -23,6 +23,8 @@ sezení (session_0191A71yUFarU952Vy7h2hc5). Podrobnosti: CHANGELOG v15.10.6,
 - **Hotovo (pushnuto):** audit B151–B167 (2 vysoké, 2 střední, 4 nízké,
   9 informativních; regrese 0); opraveny B151, B152 (nízké) a B167 (test)
   s testy a mutacemi; audit i na Disku (Testovani).
+- **Testy:** smoke 247/0/6 (bez šablon z Disku), mutace B35/B151/B152
+  6 z 6, `--kontrola` 434. Celé kolo neběželo (dělá koordinace).
 - **Čeká na J. V.:** B153 a B154 (vysoké, schvalování cenové výjimky —
   malé opravy popsané v auditu, pokusy `podklady/AUDIT25_pokus_*.mjs`),
   B155 a B156 (střední), B157 (sporné: cizí obchodník a volná pole krycího
