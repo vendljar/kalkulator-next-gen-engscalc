@@ -10,6 +10,16 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ## v15.10.3 — P12: obchodník nevidí náklady (větev claude/p12-naklady)
 
+**Integrace do `test` (koordinační sezení, 15. 10.):** do `test` (v14.10.8
++ P1 schválené překlady) sloučeny S1 `claude/b80-pipedrive` (v15.10.1),
+S3 `claude/p12-naklady` (v15.10.3) a S2 `claude/b89-b95` (v15.10.2) merge
+commity bez rebase; konflikty jen v CHANGELOG, PREDAVKA, úvodu příručky,
+`verze.txt` a seznamu sad `netlify/mutace.mjs` (sady všech tří ponechány).
+Po sloučení `spust_testy.sh --smoke` s firemními podklady a příručkou
+v15.10.3 ze snímků: 251 prošlo / 0 selhalo / 1 přeskočeno (test.js);
+`--kontrola` mutací jádra 202 a serveru 427 úseků. Celé kolo s mutacemi
+poběží po sloučení S5 a auditu S4.
+
 Zadání `podklady/PROMPT_p12_naklady.md` (dávka S3, roadmapa #369), společná
 pravidla `podklady/_SPOLECNE_15_10.md`. Z `origin/test` (5a42369, v14.10.8).
 Do `test-draft` / `test` / `main` nic — sloučení a celé kolo s mutacemi dělá
