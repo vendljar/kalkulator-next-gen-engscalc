@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v15.10.8 — Krycí list zakázky OCK a pole „Číslo SoD" (větev claude/kryci-cislo-sod)
+## v15.10.9 — Krycí list zakázky OCK a pole „Číslo SoD" (větev claude/kryci-cislo-sod)
 
 Dávka S7 (zadání `podklady/PROMPT_kryci_cislo_sod.md` + `podklady/_SPOLECNE_15_10.md`
 ve větvi `claude/davky-15-10`), nad `origin/claude/integrace-15-10` (v15.10.6).
@@ -43,7 +43,7 @@ platí jak pro OCK, tak pro PROJ."
   harness `overit_kryci_cislo_sod.mjs` (nový) 4 ✗ + pád → 21/21.
   Mutace S7 v `netlify/mutace.mjs` (5), sada `../src/test_kryci_cislo_sod.js`
   v `SADY`.
-- Příručka (Co je nového v15.10.8, kap. 24), roadmapa #366.
+- Příručka (Co je nového v15.10.9, kap. 24), roadmapa #366.
 
 ---
 

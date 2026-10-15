@@ -1,10 +1,10 @@
-# Předávka — 15. 10. 2026: dávka S7 (v15.10.8), větev `claude/kryci-cislo-sod` — Krycí list zakázky OCK + „Číslo SoD"
+# Předávka — 15. 10. 2026: dávka S7 (v15.10.9), větev `claude/kryci-cislo-sod` — Krycí list zakázky OCK + „Číslo SoD"
 
 Nad `origin/claude/integrace-15-10` (9ead7b5, v15.10.6). Zadání
 `podklady/PROMPT_kryci_cislo_sod.md` + `podklady/_SPOLECNE_15_10.md` (větev
 `claude/davky-15-10`). Do `test-draft` / `test` / `main` nic — sloučení
 a celé kolo dělá koordinační sezení (session_0191A71yUFarU952Vy7h2hc5).
-Podrobnosti: CHANGELOG v15.10.8.
+Podrobnosti: CHANGELOG v15.10.9.
 
 - **Hotovo (pushnuto):** nadpis „Krycí list zakázky OCK" (stránka, dokument,
   registr zámku); pole „Číslo SoD" (`cisloSod`) pod Číslem nabídky v obou

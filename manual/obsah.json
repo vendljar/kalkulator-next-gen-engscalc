@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v15.10.8 · sestaveno 15. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
+  "verze": "Platí pro aplikaci v15.10.9 · sestaveno 15. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -14,7 +14,7 @@
       ]
     },
     {
-      "nadpis": "Co je nového ve verzi v15.10.8 (15. 10. 2026)",
+      "nadpis": "Co je nového ve verzi v15.10.9 (15. 10. 2026)",
       "odstavce": [
         "**Krycí list zakázky OCK** — tak se teď jmenuje i nadpis listu a dokumentu (dřív „Krycí list objednávky / SoD“); záložka se tak jmenovala už dřív.",
         "**Číslo SoD** v obou krycích listech (OCK i PROJ), v Základních údajích hned pod číslem nabídky. Zapisujete ho ručně, nic se nepředvyplňuje; doplnit ho jde i po odeslání nabídky, zamkne ho až tisk smlouvy o dílo. Ve smlouvě o dílo se objeví jako číslo smlouvy — krycí list OCK pro smlouvu realizace, krycí list PROJ pro smlouvu projekce (kapitola 24)."
