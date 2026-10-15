@@ -8,6 +8,93 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v15.10.3 — P12: obchodník nevidí náklady (větev claude/p12-naklady)
+
+Zadání `podklady/PROMPT_p12_naklady.md` (dávka S3, roadmapa #369), společná
+pravidla `podklady/_SPOLECNE_15_10.md`. Z `origin/test` (5a42369, v14.10.8).
+Do `test-draft` / `test` / `main` nic — sloučení a celé kolo s mutacemi dělá
+koordinační sezení J. V.
+
+**Bod 1 — kde obchodník náklady viděl (stav v14.10.8, výchozí matice):**
+
+| Místo | Co viděl | Teď |
+|---|---|---|
+| Kalkulace PROJ, sloupec *Sazba Kč/h · fix* | hodinovou sazbu z Ceníku nákladů PROJ a fixní částku z ceníku; vedle ceny šla dopočítat přirážka | bez práva sloupec chybí |
+| Kalkulace PROJ, karta *Souhrn projekčních prací* | náklad, přirážku (% i Kč) a dopravu každé sekce | bez práva jen Sekce a Celkem (+ zaokrouhlení) |
+| Kalkulace PROJ, řádek dopravy mimo Prahu | částku příplatku (km / 60 × sazba hodiny cesty) | bez práva bez částky |
+| Kontroly před odesláním | částky za varováním, pokud měl lištu marže — `kontroly.cisla` nemělo účinek (`kontrolySmiCisla` vrátil odpověď marže) | rozhoduje `kontroly.cisla` |
+| *Uložit do souboru (JSON)* | celé ceníky OCK i PROJ v každé variantě | bez práva jen odchylky rozpracované varianty od platného ceníku |
+| `GET /api/program` | platný ceník + až 60 starších verzí | bez práva bez historie verzí |
+| Kalkulace OCK, KPI, porovnání variant, protokol, lišta marže, záložky ceníků / detailu | už dřív skryté (`sloupce.naklad`, `kpi.marze`, `porovnani.naklad`, `protokol.cisla`, `marze.lista`, `tab.*`) | beze změny |
+| Okno přepočtu ceníku (V kalkulaci / Dnes) | otevírá se jen ze záložky Ceník (obchodník ji nemá) | beze změny |
+
+**Bod 2 — výchozí rozsah:**
+- **Klíč matice `naklady.ceniky`** („Nákladové sazby PROJ, ceníky v souboru
+  zakázky a historie ceníku", skupina Náklady, přirážka a marže). Výchozí
+  **Vedoucí ano, Obchodník ne** — vedoucí dnes sazby, celý soubor i historii
+  vidí a zadání chování vedoucího měnit zakazuje. Kdo má `sloupce.naklad`,
+  vidí sazby vždy (edituje je). Server se ptá týmž klíčem (`ZOBRAZENI_KLIC_NAKLADY`).
+- **(a) Kalkulace PROJ** (`src/ui/kalk_proj.js`): bez práva bez sloupce
+  Sazba, souhrn jen Sekce / Celkem, doprava bez částky příplatku. Vlastní
+  fixní položku obchodník zadává dál — pole se přesunulo do buňky popisu
+  s popiskem „vlastní částka před přirážkou".
+- **(b) `kontroly.cisla`** (`src/ui/kontroly_ui.js`): obchodník vidí částky
+  v kontrolách jen s tímto právem (dřív stačila lišta marže). Vedoucímu
+  zůstává i cesta přes lištu marže (beze změny), ruční zviditelnění KPI
+  „Marže" administrátorem platí dál pro všechny.
+- **(c) Soubor zakázky** (`src/zakazka.js` `zakazkaBezCeniku` /
+  `zakazkaCenikDopln`, `StorageAdapter.exportujBezCeniku`, `ulozZakazku`):
+  bez práva se u rozpracovaných variant místo ceníku OCK a PROJ uloží
+  `cenikVynechan` s odchylkami od platného ceníku (zakázková přirážka a DPH,
+  dohodnuté ceny, chybějící klíče); `importZakazka` ceník doplní z platného
+  (`cenikDnesniProVariantu`, bez něj ze sestavení) dřív, než proběhnou
+  migrace. Se stejným platným ceníkem vznikne přesně původní varianta (otisk
+  výpočtu i dat nabídky před/po stejný). Cesty z cizího souboru: jen řetězcové
+  klíče, žádné `__proto__` / `constructor` / `prototype`.
+- **(d) `GET /api/program`** (`netlify/functions/program.mjs`): bez práva
+  `historie: []` a `historieVynechana: <počet>`; platný ceník beze změny,
+  úložiště se nemění.
+- Výpočet ani dokumenty se nemění: harness porovnává výpočet a data nabídky
+  OCK i PROJ téže zakázky u administrátora a obchodníka (bez zpracovatele)
+  a po uložení a načtení souboru.
+
+**Výchozí volby (bez dalšího schvalování):** vlastní klíč místo
+`sloupce.naklad` (vedoucí se nemění); ve sloupci Sazba obchodník nevidí nic
+(ne prodejní sazbu — z hodin a ceny si ji spočítá sám); soubor nese odchylky,
+ne nic (jinak by se dohodnuté ceny a zakázková přirážka po načtení ztratily
+a cena změnila); zamčené (odeslané) varianty jdou do souboru celé.
+
+**Vědomé meze (varianta C z rozboru se nedělá):** platný ceník dál dostává
+každý přihlášený (výpočet běží v prohlížeči) a online zakázky
+(`/api/zakazky`) dál nesou ceník v každé variantě i zmrazený výsledek zámku;
+soubor nese ceník zamčených variant a protokol změn (s částkami, pokud je
+zapsal někdo s právem). Odchylky rozpracované varianty od platného ceníku
+(dohodnutá cena) jsou v souboru vidět. Mutace UI (`kalk_proj.js`,
+`kontroly_ui.js`, `common.js`) mutační nástroje nepokrývají (hlídá je harness
+nad sestavením).
+
+**Testy (pojistky — před opravou / po opravě):**
+- `src/test_p12_naklady.js` (nový): nad v14.10.8 3 OK / 2 FAIL a pád na
+  chybějící funkci → 31 OK / 0 FAIL.
+- `netlify/test_p12_naklady.mjs` (nový): 8 / 3 (S2, S6, S9) → 11 / 0.
+- `overit_p12_naklady.mjs` (nový harness, obchodník × administrátor × vedoucí):
+  nad sestavením v14.10.8 17 OK / 7 FAIL → 24 OK / 0 FAIL; chování
+  administrátora a vedoucího i otisk nabídky prošly už před opravou (záměr).
+- `src/test_zobrazeni.js`: zdokumentovaná výjimka výchozí matice 62 / 2 → 64 / 0.
+- Mutace serveru: 3 nové na `program.mjs` (P12) + upravená kotva „ceník
+  přečte i nepřihlášený" + 10 nových na `src/zakazka.js` a `src/zobrazeni.js`;
+  sady `test_p12_naklady.mjs` a `../src/test_p12_naklady.js` v `SADY`.
+  `node netlify/mutace.mjs P12`: chycených 13 z 13; „ceník přečte i
+  nepřihlášený": 1 z 1. `--kontrola`: server 413 úseků, jádro 202 (jádra
+  se dávka nedotkla), kontrola údajů čistá.
+- `spust_testy.sh --smoke` bez šablon: 244 prošlo / 0 selhalo / 6 přeskočeno;
+  se šablonami z Disku (KNG_PODKLADY): viz PREDAVKA.
+
+**Příručka:** kapitola 28 (Co v aplikaci nevidíte a proč) — odstavec o Kalkulaci
+PROJ; kapitola 8 — co nese soubor JSON; verze v15.10.3. **Roadmapa:** #369 → hotovo (v15.10.3).
+
+---
+
 ## v14.10.8 — zbytky češtiny v nabídce PROJ (větev claude/proj-preklad-zbytky)
 
 **Integrace do `test` (koordinační sezení, 14. 10. večer):** do `test` (v14.10.6
