@@ -136,6 +136,13 @@ function dokumentZabrana(typ, varianta) {
     const duvod = kontrolyStranaZabrana(ZAK, typ);
     if (duvod) return duvod;
   }
+  /* Dotisk dokumentu nové strany do odeslané varianty (B153): cenová
+   * výjimka a marže té strany — zrcadlo serveru (403). */
+  if (typ && typeof vyjimkyDotiskZabrana === 'function' && typeof ZAK !== 'undefined') {
+    let duvod = '';
+    try { duvod = vyjimkyDotiskZabrana(typ, varianta || aktivniVarianta(ZAK)); } catch (e) { duvod = ''; }
+    if (duvod) return duvod;
+  }
   if (typeof ukazkoveBraniDokumentu === 'function') {
     const s = ukazkoveStavAkt();
     if (ukazkoveBraniDokumentu(s)) return ukazkoveKratce(s, !ukazkoveSlozkaSmi());

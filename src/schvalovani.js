@@ -586,27 +586,37 @@ function schvalovaniServerMarze(stara, nova, jekly, nast) {
     /* Vyřazená strana zakázky (P6, zámek strany) se do ceny nepropíše —
      * její slevu server neposuzuje (D6g: totéž pravidlo jako klient). */
     const vyrazena = (typeof zakazkaVyrazenaStrana === 'function') ? zakazkaVyrazenaStrana(nova) : '';
-    for (const [pole, cast] of [['sleva', 'ock'], ['slevaProj', 'proj']]) {
+    for (const cast of ['ock', 'proj']) {
       if (cast === vyrazena) continue;
-      const sl = v.data[pole];
-      if (!slevaPlati(sl)) continue;
-      const z = schvalovaniZakladCasti(v, jekly, cast);
-      if (!z || !isFinite(z.zakladCena) || !isFinite(z.zakladNaklad)) continue;
-      if (!slevaVyhodnot(z.zakladCena, z.zakladNaklad, sl, nast).podMarzi) continue;
-      return { ok: false, chyba: 'Sleva ' + (+sl.procenta || 0) + ' % ('
-        + (cast === 'proj' ? 'projekční práce' : 'výtahová šachta') + ', varianta „'
-        + String(v.nazev || v.id) + '") by stlačila nabídku pod firemní minimální marži, '
-        + 'takže ji nejde schválit ani propsat do ceny. Obnovte stránku (F5), aby se načetlo '
+      const chyba = schvalovaniMarzeCasti(v, jekly, cast, nast);
+      if (chyba) return { ok: false, chyba: chyba + ' Obnovte stránku (F5), aby se načetlo '
         + 'platné nastavení slev, a slevu upravte.' };
     }
   }
   return { ok: true };
 }
+/* Marže platné slevy JEDNÉ STRANY varianty ('ock' | 'proj'). Vrací větu
+ * (bez čísel marže), nebo ''. Volá ji i dotisk dokumentu nové strany do
+ * odeslané varianty (B153): strana vyřazená při zámku (jenProj / jenOck)
+ * se tehdy neposuzovala a po vypnutí příznaku by vyšla dotiskem. */
+function schvalovaniMarzeCasti(v, jekly, cast, nast) {
+  nast = nast || {};
+  if (!(+nast.minMarze > 0) || !v || !v.data) return '';
+  const sl = v.data[cast === 'proj' ? 'slevaProj' : 'sleva'];
+  if (!slevaPlati(sl)) return '';
+  const z = schvalovaniZakladCasti(v, jekly, cast);
+  if (!z || !isFinite(z.zakladCena) || !isFinite(z.zakladNaklad)) return '';
+  if (!slevaVyhodnot(z.zakladCena, z.zakladNaklad, sl, nast).podMarzi) return '';
+  return 'Sleva ' + (+sl.procenta || 0) + ' % ('
+    + (cast === 'proj' ? 'projekční práce' : 'výtahová šachta') + ', varianta „'
+    + String(v.nazev || v.id) + '") by stlačila nabídku pod firemní minimální marži, '
+    + 'takže ji nejde schválit ani propsat do ceny.';
+}
 
 if (typeof module !== 'undefined')
   module.exports = { SCHV_BEZ, SCHV_AUTO, SCHV_CEKA, SCHV_SCHVALENO, SCHV_ZAMITNUTO, SCHV_STAVY, schvalovaniKdyBlizko,
                      schvalovaniRozhodnutiKlic, schvalovaniServerKontrola,
-                     schvalovaniZakladCasti, schvalovaniServerMarze,
+                     schvalovaniZakladCasti, schvalovaniServerMarze, schvalovaniMarzeCasti,
                      SCHV_PORADI, SCHV_POPIS, SCHV_ROLE_VYCHOZI,
                      schvalovaniKategorie, schvalovaniStrop, schvalovaniSmiRozhodnout,
                      schvalovaniKdoMuze, schvalovaniPrepocti,
