@@ -59,6 +59,12 @@ Z `origin/test` (5a42369, v14.10.8), zadání `podklady/PROMPT_p12_naklady.md`
 `main` nic — sloučení a celé kolo dělá koordinační sezení J. V.
 Podrobnosti: CHANGELOG v15.10.3.
 
+- **Úprava J. V. 15. 10. odpoledne (93b6a02):** `naklady.ceniky` výchozí
+  všem zapnuto — obchodník náklady zatím vidí, administrátor je skryje
+  v Nastavení → Zobrazení (přepínač existuje, ukládá se na server). Bez
+  práva vidí obchodník **prodejní sazbu** (s přirážkou sekce). Testy:
+  harness 21/8 → 29/0, server 8/3 → 11/0, unit 31/0, mutace P12 13 z 13,
+  smoke se šablonami 248/0/2.
 - **Hotovo (pushnuto):** klíč matice `naklady.ceniky` (Vedoucí ano,
   Obchodník ne); (a) Kalkulace PROJ bez sloupce Sazba / nákladů v souhrnu /
   částky dopravy; (b) `kontroly.cisla` rozhoduje (vedoucí beze změny);
@@ -71,9 +77,9 @@ Podrobnosti: CHANGELOG v15.10.3.
 - **Smoke se šablonami z Disku** nad v15.10.3: 248 / 0 / 2 přeskočeno
   (test.js, overit_manual.mjs). Šablony jen v kontejneru
   (`/home/user/kng_podklady_p12`). Nic rozdělaného.
-- **Výchozí volby k odsouhlasení J. V.:** vlastní klíč místo `sloupce.naklad`;
-  obchodník ve sloupci Sazba nevidí nic (ne prodejní sazbu); soubor nese
-  odchylky od platného ceníku; zamčené varianty v souboru celé.
+- **Otevřené pro J. V.:** zda skrýt náklady obchodníkům (jen odškrtnutí
+  v matici); varianta C (výpočet na serveru) — vysvětleno v odpovědi
+  15. 10., čeká na rozhodnutí.
 - **Meze:** platný ceník v prohlížeči a ceníky v online zakázkách zůstávají
   (varianta C z rozboru se nedělá).
 # Předávka — 15. 10. 2026: větev `claude/b80-pipedrive` (v15.10.1), B80 `/api/pd/*` — dávka S1

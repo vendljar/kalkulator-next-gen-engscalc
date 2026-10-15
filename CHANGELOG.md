@@ -147,7 +147,8 @@ obchodníky nechat zobrazené s tím, že je administrátor v budoucnu skryje."
   zaškrtnout i „Částky v kontrolách před odesláním".
 - Testy nad výsledkem: `src/test_p12_naklady.js` 31 / 0,
   `netlify/test_p12_naklady.mjs` 8 / 3 → 11 / 0, harness 21 / 8 → 29 / 0
-  (pojistky nad v14.10.8). Mutace a smoke viz PREDAVKA.
+  (pojistky nad v14.10.8). Mutace P12 13 z 13; smoke se šablonami z Disku
+  248 prošlo / 0 selhalo / 2 přeskočeno (test.js, overit_manual.mjs).
 
 Zadání `podklady/PROMPT_p12_naklady.md` (dávka S3, roadmapa #369), společná
 pravidla `podklady/_SPOLECNE_15_10.md`. Z `origin/test` (5a42369, v14.10.8).
