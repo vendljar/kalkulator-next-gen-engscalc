@@ -8,6 +8,46 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v15.10.11 — číslo SoD ve smlouvě o dílo projekce: šablony SoD PROJ se symbolem čísla (větev claude/sod-proj-cislo)
+
+Dávka S9 (zadání koordinace + `podklady/_SPOLECNE_15_10.md` ve větvi
+`claude/davky-15-10`), nad `origin/claude/integrace-15-10` (S7 v15.10.9
++ S8 v15.10.10). Zadání J. V. 15. 10. 2026: „Aktualizuj šablony, aby se nám
+do nich číslo SoD propisovalo z krycího listu zakázky ve chvíli, kdy tam
+bude vyplněné."
+
+- **Odkud aplikace šablony bere:** jen z centrálních šablon na serveru
+  (#139, Nastavení → Šablony, typ `sodProj`); repozitář šablony nemá, Disk
+  je archiv a podklad pro testy. Postup a ID souborů na Disku:
+  `podklady/POSTUP_SABLONY_SOD_15_10.md`.
+- **Výroba šablon:** `node nastroje/vyrob_sablony.js --sod-proj-cislo
+  <podklady>` (nová funkce `sodProjCislo`) vloží pod nadpis „SMLOUVA O DÍLO /
+  na zhotovení projektové dokumentace" řádek „číslo {{SOD_CISLO_SMLOUVY}}"
+  stejně jako u realizace — zarovnání a písmo podtitulu, symbol v jednom
+  běhu, nic jiného se nemění; kotva musí být právě jedna, jinak chyba.
+  `Sablona_SOD_PROJEKCE_v2.docx` → `Sablona_SOD_PROJEKCE_v3.docx`,
+  `Sablona_SOD_PROJEKCE.docx` → `Sablona_SOD_PROJEKCE_v1_cislo.docx`.
+- **Chování aplikace beze změny:** vyplněné Číslo SoD z krycího listu OCK
+  → smlouva OCK, z krycího listu PROJ → smlouva PROJ (od v15.10.9); prázdné
+  → `{{SOD_CISLO_SMLOUVY}}` zůstane vidět k doplnění. Příručka beze změny
+  (popisuje už cílový stav).
+- **NEHOTOVO — soubory na Disku:** stažení přes konektor Google Drive
+  skončilo na oprávnění kontejneru (čtení uloženého výsledku konektoru
+  zamítnuto; ruční přepis base64 nespolehlivý), takže v3 a v1_cislo
+  z firemních šablon nevznikly a na Disk se nenahrály. Udělá J. V. podle
+  postupu (nebo další sezení s povoleným čtením) — nic se nehádalo.
+- **Výchozí volby:** jméno `_v3` pro v2 s číslem (nejvyšší další verze),
+  `_v1_cislo` pro starou řadu s pevnými platbami (aby „v4" neznamenalo
+  starší obsah); řádek čísla jako samostatný odstavec pod podtitulem (jako
+  realizace), ne v textu nadpisu; `--sod-proj` (v1 → v2) beze změny, aby
+  znovu vyrobená v2 seděla se zveřejněnou.
+- **Testy (pojistka před → po):** `src/test_sod_proj_cislo.js` (nový)
+  0/1 → 24/0 (část se skutečnými šablonami přeskočena — nejsou v
+  KNG_PODKLADY); `overit_sod_proj_cislo.mjs` (nový harness: zápis Čísla SoD
+  do obou krycích listů, tisk SoD OCK i PROJ) bez `sodProjCislo` spadne,
+  po 6/0; `overit_sod.mjs` doplněn o kontroly S9 nad v3 (běží jen se
+  šablonami z Disku). Mutace S9 4 v `netlify/mutace.mjs`, sada v `SADY`.
+
 ## v15.10.10 — hodiny v krycím listu jen za vlastní stranu (větev claude/hodiny-po-listech)
 
 Dávka S8 (zadání `podklady/PROMPT_hodiny_po_listech.md` + `podklady/_SPOLECNE_15_10.md`
