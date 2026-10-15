@@ -33,6 +33,8 @@ import zakazky from './functions/zakazky.mjs';
 import zaloha from './functions/zaloha.mjs';
 import zalohaVynuceno from './functions/zaloha_vynuceno.mjs';
 import obnova from './functions/obnova.mjs';
+import odhlaseni from './functions/odhlaseni.mjs';
+import ja from './functions/ja.mjs';
 import slovnikFn from './functions/slovnik.mjs';
 import { ADMIN_EMAIL, SMAZANI_ULOZISTE } from './lib/sdilene.mjs';
 import { createRequire } from 'node:module';
@@ -483,6 +485,28 @@ test('B30: archivovaný zůstane archivovaný a vypnutý i po „přepsat" z oti
  * hesla ještě zvedne (+1 za reset, +1 za obnovu starého hesla). */
 test('B31: hesloVerze po obnově z otisku neklesne (B93: obnova starého hesla ji zvedne o další jedničku)',
   (await ulz('uzivatele').cti('verze@priklad.cz')).hesloVerze === verzePredResetem + 2 && o31.casti.uzivatele.prepsane >= 1, o31.casti.uzivatele);
+/* B31 bez změny hesla (S10, 15. 10. 2026): verzi hesla zvedá i odhlášení
+ * (B6) — heslo zůstane stejné, takže větev B93 (+1 za vrácené heslo) se
+ * nespustí a „nikdy neklesne" drží jen max(server, otisk). Bez něj by
+ * obnova z otisku pořízeného před odhlášením vrátila starší verzi a cookie,
+ * kterou odhlášení odvolalo, by zase platila. */
+{
+  const otiskB31 = await (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', {}, cookie)).json();
+  test('B31: otisk před odhlášením pořízen', otiskB31.ok === true, otiskB31);
+  const pV = await post(prihlaseni, 'http://x/api/prihlaseni', { email: 'verze@priklad.cz', heslo: 'VerzeHeslo1' });
+  const cV = (pV.headers.get('set-cookie') || '').split(';')[0];
+  test('B31: verze@ se přihlásí heslem z otisku', pV.status === 200 && (await get(ja, 'http://x/api/ja', cV)).status === 200);
+  const vPredOdhl = (await ulz('uzivatele').cti('verze@priklad.cz')).hesloVerze;
+  await post(odhlaseni, 'http://x/api/odhlaseni', {}, cV);
+  const vPoOdhl = (await ulz('uzivatele').cti('verze@priklad.cz')).hesloVerze;
+  test('B31: odhlášení zvedne verzi a cookie odvolá', vPoOdhl === vPredOdhl + 1 && (await get(ja, 'http://x/api/ja', cV)).status === 401,
+    { vPredOdhl, vPoOdhl });
+  const oB31 = await obnovJson({ zdroj: { otisk: otiskB31.den }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['uzivatele'], hesloSpravce: 'Docasne.Heslo.123' }, cookie);
+  test('B31: obnova z otisku před odhlášením proběhla', oB31.ok === true, oB31);
+  test('B31: verze hesla se obnovou stejného hesla nesníží (drží verzi z odhlášení)',
+    (await ulz('uzivatele').cti('verze@priklad.cz')).hesloVerze === vPoOdhl, (await ulz('uzivatele').cti('verze@priklad.cz')).hesloVerze);
+  test('B31: cookie odvolaná odhlášením po obnově neožije', (await get(ja, 'http://x/api/ja', cV)).status === 401);
+}
 
 console.log('\n===== B50: vědomě znovu založený účet obnova nepřeskakuje =====');
 
