@@ -6,7 +6,7 @@ cache 90 s jsou OK. Podrobnosti: CHANGELOG v15.10.7. Do `test-draft` /
 `test` / `main` nic, sloučení dělá koordinační sezení.
 
 - **Hotovo (pushnuto):** výchozí matice Obchodník ano / Vedoucí ano, testy
-  51/0, 839/0, 71/0, 64/0, mutace B80 8/8, smoke viz CHANGELOG.
+  51/0, 839/0, 71/0, 64/0, mutace B80 8/8, smoke 251/0/2.
 - **Releasy bez vydání (ověřeno přes GitHub 15. 10.):** v14.10.4–v14.10.7,
   v15.10.1, v15.10.2 (vydány v14.10.8, v15.10.3, v15.10.4).
 - **Při slučování:** konflikty čekej v CHANGELOG, PREDAVKA, `verze.txt`

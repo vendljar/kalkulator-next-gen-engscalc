@@ -32,6 +32,8 @@ zpět `PRIHLASENY_OK`). `test_pipedrive.mjs` 71 / 0 (bez ručního přidělení)
 `src/test_zobrazeni.js` 64 / 0 (`crm.pipedrive` mezi výchozími výjimkami).
 Mutace B80 **8 z 8**; mutace výchozí matice je obrácená (bere obchodníkovi
 čtení) a chytá ji `test_prava.mjs`. `--kontrola` serveru: 431 úseků.
+`spust_testy.sh --smoke` s 30 šablonami z Disku: **251 prošlo / 0 selhalo /
+2 přeskočeno** (test.js, overit_manual.mjs).
 
 ## v15.10.4 — červená lišta „Ceník není nahraný" až po ověření (větev claude/lista-cenik-zpozdeni)
 
