@@ -62,7 +62,7 @@ v proměnné prostředí a nikdy nejde do prohlížeče (`netlify/lib/pipedrive.
 Bez obou proměnných napojení na CRM neběží (funkce `/api/pd_*` to ohlásí);
 zbytek aplikace tím není dotčený. Číst z CRM smí administrátor a role,
 které přidělí právo „Čtení obchodních případů z Pipedrive“ v Nastavení →
-Zobrazení (výchozí: nikdo jiný, B80); detail případu má strop 30 čerstvých
+Zobrazení (výchozí: všichni uživatelé, rozhodnutí J. V. 15. 10. 2026; B80); detail případu má strop 30 čerstvých
 načtení za hodinu na uživatele.
 
 ## Přihlášení a založení administrátora
