@@ -5,7 +5,8 @@
  * v Nastavení → Analytika a heat vrstva s přepínačem v liště.
  *
  * Zásady (rozhodnutí J. V. 17. 8. 2026): vše vidí a ovládá JEN
- * administrátor; sběr je agregovaný (žádná stopa jednotlivce);
+ * administrátor; sběr je agregovaný — od 20. 8. / 31. 8. 2026 ale počítadla,
+ * záložky a kliknuté prvky i po uživatelích (B89: texty to nezamlčují);
  * nečinnost nad 2 minuty se do času nepočítá; čas se dělí OCK/PROJ;
  * analytika nejde do záloh. GDPR text čeká na právníka — dokud je
  * ANALYTIKA_GDPR_TEXT prázdný, uživatelům se nic neukazuje.
@@ -221,8 +222,9 @@ function nastAnalytika() {
     ${typeof ANALYTIKA_GDPR_TEXT === 'string' && ANALYTIKA_GDPR_TEXT
       ? `<div class="note" style="white-space:pre-wrap">${esc(ANALYTIKA_GDPR_TEXT)}</div>`
       : `<div class="note">Informační text o zpracování údajů pro uživatele se doplní po konzultaci
-         s právníkem — do té doby se uživatelům nic nezobrazuje (a měřit se smí, jen dokud jde o čistě
-         anonymní souhrny, což tahle verze dodržuje).</div>`}
+         s právníkem — do té doby se uživatelům nic nezobrazuje. <b>Pozor:</b> rozpad po uživatelích
+         (počítadla, záložky, kliknuté prvky) už anonymní souhrn není — před zapnutím sběru pro celou
+         firmu patří do informačního textu pro zaměstnance (B89).</div>`}
 
     <div class="sec-title">Přehled užívání (#27)</div>
     <div class="row" style="margin-bottom:6px">
@@ -400,7 +402,8 @@ function heatPanel() {
       <div style="height:11px;border-radius:6px;background:linear-gradient(90deg,#fff1e0,#fdba74,#f97316,#c2410c,#7c2d12)"></div>
       <div style="display:flex;justify-content:space-between;color:#6b7686;font-size:11px"><span>málo</span><span>hodně</span></div>
       <div style="border-top:1px solid #dde3ea;margin-top:8px;padding-top:7px;color:#6b7686;font-size:11px">
-        Souhrn za všechny uživatele — stopa jednotlivce neexistuje. Sytost barev se měří po kartách.
+        Souhrn za všechny uživatele (kliknutí se od 31. 8. 2026 ukládají i po uživatelích — viz
+        Nastavení → Analytika). Sytost barev se měří po kartách.
         Šedý čárkovaný rámeček = bez jediného použití.</div>
     </div>`;
   document.body.appendChild(p);
