@@ -136,6 +136,10 @@ opravě 48 / 0. `test_prava.mjs` 839 / 0: Pipedrive je v matici práv
 `src/test_zobrazeni.js` 64 / 0. Mutace serveru B80: **8 z 8 chycených**
 (právo z matice, překlep klíče matice, výchozí matice, původ, strop
 a jeho počítadlo, cache detailu, číslo případu). Sada je přidaná do `SADY`.
+`spust_testy.sh --smoke` s 30 šablonami z Disku: **246 prošlo / 0 selhalo /
+2 přeskočeno** (test.js, overit_manual.mjs — příručka mezi podklady nebyla).
+`--kontrola` mutací: jádro 202, server 408 úseků. Kontrola údajů je čistá.
+Celé kolo se nespouštělo (dělá ho koordinační sezení).
 
 **Ostatní body #345** ověřeny v CHANGELOG: B75–B78 v26.9.1, B81 a B83
 v13.10.1, B77 v13.10.1 a v13.10.3, zápisová strana B88 v29.9.4 (B112).

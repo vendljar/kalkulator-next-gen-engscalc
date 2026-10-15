@@ -33,7 +33,9 @@ Podrobnosti: CHANGELOG v15.10.1.
   `crm.pipedrive`, původ u GET, cache detailu 90 s, strop 30 načtení za
   hodinu na uživatele, číslo případu. Nová sada `netlify/test_pd_pristup.mjs`
   (19/29 → 48/0) je v `SADY`, mutace B80 chytily 8 z 8. Roadmapa #345 →
-  hotovo (v15.10.1), ostatní body #345 ověřeny.
+  hotovo (v15.10.1), ostatní body #345 ověřeny. Smoke 246/0/2 (test.js,
+  overit_manual), `--kontrola` mutací 202 + 408. Podklady:
+  `/home/user/kng_podklady_b80` (30 šablon, bez příručky).
 - **Výchozí volby (k potvrzení J. V.):** `crm.pipedrive` výchozí Obchodník
   ne / Vedoucí ne (návrh ano, až bude výběr z CRM v rozhraní); strop 30
   čerstvých načtení detailu za hodinu; cache detailu 90 s.
