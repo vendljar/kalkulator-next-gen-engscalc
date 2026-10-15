@@ -8,6 +8,56 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v15.10.7 — B153 + B154: vysoké nálezy auditu kola 25, B155 a B156 uzavřeny (větev claude/b153-b154)
+
+Dávka S6 (zadání `podklady/PROMPT_b153_b154.md` + `podklady/_SPOLECNE_15_10.md`
+ve větvi `claude/davky-15-10`), nad `origin/claude/integrace-15-10` (9ead7b5,
+v15.10.6). Rozhodnutí J. V. 15. 10. 2026: „153 a 154 proveď dle tvého
+doporučení; 155 a 156 řešit nebudeme a uzavři."
+
+- **B153** (vysoká) — dotisk dokumentu nové strany do odeslané nabídky
+  obešel cenovou výjimku a minimální marži: u zakázky „jen projekce" se
+  zamkla nabídka PROJ (OCK se neposuzovala), příznak se vypnul a dotisk
+  nabídky OCK se směsí ceníku prošel bez schválení. Server
+  (`netlify/lib/zakazka_kontrola.mjs`, dotisk za `rozmerDotisk`) teď volá
+  `vyjimkyZamekProblem` s `strany` dotištěných dokumentů (potřeba jen z části
+  obsahu té strany — `vyjimkyObsahStran`; schválení musí sedět na celý obsah)
+  a `schvalovaniMarzeCasti` (nová, vyčleněná ze `schvalovaniServerMarze`) pro
+  slevu té strany → 403 „Pokračujte klonem varianty". Prohlížeč: zábrana
+  dotisku `vyjimkyDotiskZabrana` (`src/ui/schvalovani_ui.js`, volaná
+  z `dokumentZabrana`) se srozumitelnou hláškou. Dokument bez strany
+  (technická specifikace) prohlížeč nezastaví.
+- **B154** (vysoká) — rozhodnutí o výjimce nese místo 32bitového otisku FNV-1a
+  (dal se dvěma znaky v názvu pásu dopočítat) **celý kanonický obsah**
+  (`cenovaVyjimka.obsah`: směs s hodnotami + pásy) a porovnává se přesně
+  (`vyjimkaPlati`, `vyjimkaKategorie`, `vyjimkaPrepocti`, klíč rozhodnutí,
+  server i UI). `vyjimkyFnv` a pole `otisk` zrušeny. **Výchozí volba:
+  rozhodnutí bez uloženého obsahu (staré, s otiskem) se berou jako neplatná —
+  výjimka se musí schválit znovu** (karta je ukáže jako „čeká"). Rozsah pásu
+  (`odM`/`doM`) do obsahu nepřidán (B155). Rejstřík obsah nenese.
+- **B155, B156** (střední) — uzavřeny jako vědomé meze, zapsáno
+  v `BEZPECNOST_MEZE.md` (cesta zneužití, dopad, rozhodnutí J. V.); stav
+  v `podklady/AUDIT_2026-10-15_v15.10.6.md`.
+- **Testy** (pojistka: před opravou / po ní): `src/test_vyjimky.js` 4 FAIL a pád
+  (TypeError, chybí obsah) → 62/0 (+22: B154 kolize „Deska㌷홧", staré
+  rozhodnutí s otiskem, jeden znak navíc; B153 části obsahu, `vyjimkyZamekProblem`
+  se `strany`, zábrana dotisku v prohlížeči ve vm nad `ui/schvalovani_ui.js`);
+  `netlify/test_vyjimky.mjs` 41/5 → 46/0 (B153 podle pokusu: bez schválení
+  403 a dotisk se nezapíše, administrátor 200, se schválením 200, sleva OCK
+  pod minimální marží 403; dřívější test obsahu u žádosti procházel s
+  `undefined === undefined`, teď kontroluje neprázdný obsah).
+- **Mutace** (`netlify/mutace.mjs`, obě sady už v `SADY`): nové B154 ×2
+  (porovnání 32bitovým otiskem FNV, staré rozhodnutí s otiskem platí), B153 ×4
+  (dotisk bez výjimky, dotisk bez marže, část obsahu PROJ bere směs OCK,
+  zábrana v prohlížeči mlčí); pět „výjimky:" mutací a #341 přepsáno na nové
+  řádky. Kotvy 440 + 202. Cílené běhy: „B15" 11/11, „výjimky" 21/21,
+  „#341" 2/2, „P6: server posuzuje" 1/1 (35 z 35 chycených).
+- `overit_schvalovani.mjs`: žádost výjimky kontroluje `obsah` místo `otisk`
+  (68/0).
+- Smoke 247 prošlo / 0 selhalo / 6 přeskočeno (šablony z Disku, KNG_PODKLADY
+  nedodány). Celé kolo nespuštěno (dělá koordinační sezení).
+- Roadmapa #420 (audit kola 25), příručka (kap. 19 a Co je nového).
+
 ## v15.10.6 — testovací kolo 25 + bezpečnostní audit (větev claude/kolo25-audit)
 
 Dávka S4 (zadání `podklady/PROMPT_kolo25_audit.md` + `podklady/_SPOLECNE_15_10.md`
