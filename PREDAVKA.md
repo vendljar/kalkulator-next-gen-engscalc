@@ -18,6 +18,12 @@ Podrobnosti: CHANGELOG v15.10.9.
   `manual/obsah.json` (verze + Co je nového) a na konci `MUTACE` / `SADY`
   v `netlify/mutace.mjs`. v15.10.7 má jiná dávka.
 - Podklady: `/home/user/kng_podklady_s7` (30 šablon, jen v tomto kontejneru).
+- **Ověřeno:** smoke se šablonami z Disku 253 prošlo / 0 selhalo / 2 přeskočeno
+  (`test.js`, `overit_manual.mjs` — příručka v podkladech nebyla); mutace S7
+  5 z 5 chycených; `--kontrola` server 439, jádro 202; kontrola údajů čistá;
+  `build.py --kontrola-verze` v15.10.9. Celé kolo nespouštěno (koordinace).
+- **Pozor:** commit 47cf6c8 zachytil dočasnou mutaci (`verze: ['bo']`),
+  opraveno v 36cbfec — při slučování brát stav hlavy větve.
 
 ---
 
