@@ -98,10 +98,8 @@ prohlížeč drží i stažené nabídky a sešity ve složce Stažené soubory,
 sdílený profil prohlížeče není hranice, kterou by šlo zálohou zabezpečit.
 Předpoklad: každý obchodník pracuje pod vlastním účtem počítače.
 
-**Možné zpřísnění (na pokyn J. V.):** při odhlášení se zeptat „Smazat
-rozpracovanou zálohu z tohoto prohlížeče?" (výchozí ano, když zakázka nemá
-neuložené změny), nebo zálohu šifrovat klíčem z relace — pak by ji ale po
-vypršení relace nešlo obnovit ani majiteli.
+**Rozhodnutí J. V. 15. 10. 2026: nezpřísňovat** (žádný dotaz při odhlášení,
+žádné mazání ani šifrování zálohy). Mez zůstává, jak je popsaná výš.
 
 ### B93 — zbytek: obnova z otisku vrací staré heslo
 

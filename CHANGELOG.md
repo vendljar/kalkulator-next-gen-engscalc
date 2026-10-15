@@ -24,7 +24,7 @@ kolo s mutacemi dělá koordinační sezení. Každý nález B89–B95 (hloubkov
   počítadla, záložky a prvky ukládají i po uživatelích.
 - **B90 vědomá mez** — záloha rozpracované zakázky v prohlížeči přežije
   odhlášení: je to pojistka proti ztrátě neuložené práce a odhlášení se na
-  ni neptá. Zpřísnění (dotaz při odhlášení) na pokyn J. V.
+  ni neptá. J. V. 15. 10. 2026: nezpřísňovat.
 - **B91 opraveno dřív** — revize #401 (v12.10.3, a95e1a3): zakázané klíče
   i po normalizaci, rejstřík bez prototypu; `test_slovnik.js`, mutace.
 - **B92 opraveno** — převod zakázek po kolegovi už na konci nezapisuje

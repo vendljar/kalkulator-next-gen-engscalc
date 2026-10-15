@@ -14,8 +14,8 @@ koordinační sezení J. V. Podrobnosti: CHANGELOG v15.10.2, `BEZPECNOST_MEZE.md
   `overit_nabidka_proj_word` 63, `overit_sablona` 99, `overit_sablony_online`
   53, `overit_sod` 49 — vše OK. `overit_manual` neběžel (příručka v15.10.2 se
   sestaví v integraci), `test.js` mimo export.
-- **Výchozí volby (otevřené pro J. V.):** B90 nechat (zpřísnit = dotaz při
-  odhlášení?); B94 nechat (přechod na scrypt s parametry v otisku — postup
+- **Rozhodnuto J. V. 15. 10.:** B90 nezpřísňovat (mez trvá).
+- **Výchozí volby (otevřené pro J. V.):** B94 nechat (přechod na scrypt s parametry v otisku — postup
   v `BEZPECNOST_MEZE.md`); B93 — po obnově účtů z otisku se dotčení uživatelé
   musí přihlásit znovu heslem z doby otisku.
 - Podklady: `/home/user/kng_podklady_b89` (34 šablon, jen v tomto kontejneru).
