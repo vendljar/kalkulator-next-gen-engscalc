@@ -222,10 +222,9 @@ await post(uzivatele, 'http://x/api/uzivatele',
 const cObch = (await post(prihlaseni, 'http://x/api/prihlaseni',
   { email: 'obchod@example.com', heslo: 'ObchodHeslo1' })).headers.get('set-cookie').split(';')[0];
 /* B80 (15. 10. 2026): čtení z Pipedrive jen s právem `crm.pipedrive` z matice
- * zobrazení. Tahle sada zkouší čtení očima obchodníka, takže mu ho administrátor
- * přidělil (stejný záznam, jaký ukládá /api/zobrazeni). Co se stane bez
- * práva, hlídá netlify/test_pd_pristup.mjs. */
-pamet.set('program/zobrazeni', JSON.stringify({ matice: { 'crm.pipedrive': { 'Obchodník': true } } }));
+ * zobrazení — výchozí matice ho dává všem (rozhodnutí J. V. 15. 10. 2026),
+ * takže obchodník čte bez zásahu. Co se stane bez práva, hlídá
+ * netlify/test_pd_pristup.mjs. */
 
 test('seznam dealů bez přihlášení neprojde',
   (await get(pdDealy, 'http://x/api/pd/dealy')).status === 401);
