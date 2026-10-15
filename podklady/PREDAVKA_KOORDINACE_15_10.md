@@ -10,6 +10,17 @@ Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kv�
 - **Ještě nesloučené zápisové commity** (jen CHANGELOG/PREDAVKA/verze/roadmapa, bez kódu): `claude/b80-pipedrive` 38996f2 (v15.10.7, roadmapa #345, NASAZENI), `claude/p12-naklady` 1f2a365 (výsledky po úpravě, mutace 13/13, smoke 248/0/2), `claude/kolo25-audit` dcc3d5f (smoke 247/0/6).
 - **Další krok:** do `claude/integrace-15-10` sloučit 38996f2, 1f2a365, dcc3d5f (konflikty jen v dokumentaci — novější oddíl nahoru, `verze.txt` = 15.10.7, příručka `manual/obsah.json` verze + nadpis „Co je nového ve verzi v15.10.7"), `--kontrola` mutací, sestavit, příručka ze snímků, `spust_testy.sh --smoke` s podklady → zelené → zápis do CHANGELOG → push `claude/integrace-15-10` a fast-forward `test` (`git merge-base --is-ancestor origin/test HEAD`).
 
+## Kokpit koordinace (pokyn J. V. 15. 10. 2026 — platí pro KAŽDÉ koordinační sezení)
+
+- Živý kokpit: **https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2** (artefakt „Kokpit dávek KNG"). Zdroj stránky je `podklady/KOKPIT_koordinace.html` (data v bloku `<script id="data">` JSON).
+- Nové koordinační sezení: přečíst artefakt (`Artifact action=read url=…`), uložit si ho do scratchpadu a dál **publikovat do stejné URL** (`url` = odkaz výše), ne nový.
+- Aktualizovat po každé události (nový commit dávky, souhrn, sloučení, výsledek sad, posun test, kolo) a nejméně při každé kontrole (~20 min): „Čeká na vás", dlaždice větví, tabule dávek (fáze kód→testy→mutace→souhrn→integrace→sady→test, **odhad zbývajícího času**, **čerpání kontextu** z `get_session` → `external_metadata.context_usage`), deník.
+- Při předávce zkopírovat aktuální stránku do `podklady/KOKPIT_koordinace.html`.
+
+## Push do test (pokyn J. V. 15. 10. 2026 ~15:00)
+
+„Pushni do test a slučuj dávky do test jako dřív." — fast-forward `test` po zelených sadách je schválený; auto-mode klasifikátor ho bez výslovné věty v sezení odmítá, proto ji v promptu nového koordinačního sezení zopakovat.
+
 ## Běžící dávky (sezení)
 
 | Dávka | Sezení | Větev (nad integrace-15-10) | Verze | Zadání |

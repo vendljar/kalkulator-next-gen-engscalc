@@ -1,0 +1,169 @@
+<title>Kokpit dávek KNG</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Barlow+Condensed:wght@600;700&display=swap">
+<style>
+/* Rozvržení: velín — 1) co čeká na J. V., 2) tři stavové dlaždice větví, 3) tabule dávek s fázemi, odhadem a kontextem, 4) deník */
+:root{
+  --bg:#f2f4f3; --panel:#ffffff; --fg:#1b2320; --muted:#5f6b65; --line:#d8ddda; --soft:#eef1ef;
+  --steel:#2f6475; --ok:#2e7d4f; --warn:#a86200; --bad:#b3261e; --idle:#86918b;
+  --okbg:#e2f1e7; --warnbg:#fcefd8; --badbg:#f9e1df; --steelbg:#e0edf1;
+  --display:"Barlow Condensed","Arial Narrow",sans-serif;
+  --body:"IBM Plex Sans",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121715; --panel:#1b221f; --fg:#e3e9e6; --muted:#9ba8a1; --line:#2e3833; --soft:#222a26;
+  --steel:#82b8c8; --ok:#6cc68f; --warn:#e6a64a; --bad:#f08a80; --idle:#7d8983;
+  --okbg:#1b3325; --warnbg:#3a2c14; --badbg:#3d1f1c; --steelbg:#1c3139; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121715; --panel:#1b221f; --fg:#e3e9e6; --muted:#9ba8a1; --line:#2e3833; --soft:#222a26;
+  --steel:#82b8c8; --ok:#6cc68f; --warn:#e6a64a; --bad:#f08a80; --idle:#7d8983;
+  --okbg:#1b3325; --warnbg:#3a2c14; --badbg:#3d1f1c; --steelbg:#1c3139; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.wrap{max-width:1180px;margin:0 auto;display:grid;gap:20px}
+h1{font-family:var(--display);font-size:32px;letter-spacing:.02em;margin:0;line-height:1}
+h2{font-family:var(--display);font-size:18px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px;color:var(--muted)}
+.top{display:flex;flex-wrap:wrap;gap:6px 20px;align-items:baseline;justify-content:space-between}
+.stamp{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.mono{font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums}
+.alert{border-radius:6px;padding:12px 16px;display:grid;gap:6px;border:1px solid var(--warn);background:var(--warnbg)}
+.alert.empty{border-color:var(--ok);background:var(--okbg)}
+.alert .h{font-weight:600;color:var(--warn)} .alert.empty .h{color:var(--ok)}
+.alert ul{margin:0;padding-left:20px;display:grid;gap:4px}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px;display:grid;gap:2px;min-width:0;border-top:4px solid var(--idle)}
+.tile.ok{border-top-color:var(--ok)} .tile.warn{border-top-color:var(--warn)} .tile.run{border-top-color:var(--steel)} .tile.bad{border-top-color:var(--bad)}
+.tile .k{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tile .v{font-family:var(--display);font-size:28px;line-height:1.05}
+.tile .d{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.board{background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow-x:auto}
+.board table{border-collapse:collapse;width:100%;min-width:900px}
+.board th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500;text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--soft)}
+.board td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top}
+.board tr:last-child td{border-bottom:0}
+.id{font-family:var(--display);font-size:26px;line-height:1}
+.ver{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.what{font-weight:600}
+.sub{font-size:13px;color:var(--muted);margin-top:2px}
+.steps{display:flex;gap:3px;margin-bottom:6px}
+.step{flex:1;height:8px;border-radius:2px;background:var(--line)}
+.step.done{background:var(--ok)} .step.now{background:var(--steel)} .step.blk{background:var(--warn)}
+.stepl{font-size:12px;color:var(--muted)}
+.stepl b{color:var(--fg);font-weight:600}
+.eta{font-family:var(--display);font-size:22px;line-height:1}
+.ctx{display:grid;gap:4px;min-width:120px}
+.bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok)}
+.bar i.w{background:var(--warn)} .bar i.b{background:var(--bad)}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap}
+.p-run{background:var(--steelbg);color:var(--steel)} .p-ok{background:var(--okbg);color:var(--ok)}
+.p-warn{background:var(--warnbg);color:var(--warn)} .p-bad{background:var(--badbg);color:var(--bad)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted);align-items:center}
+.legend span{display:inline-flex;gap:5px;align-items:center}
+.legend i{display:inline-block;width:14px;height:8px;border-radius:2px}
+.cols{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px}
+.log,.done-list{background:var(--panel);border:1px solid var(--line);border-radius:6px}
+.log table{border-collapse:collapse;width:100%;font-size:13px}
+.log td{padding:6px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.log tr:last-child td{border-bottom:0}
+.log td.cas{font-family:var(--mono);color:var(--muted);white-space:nowrap;width:1%}
+.done-list ul{list-style:none;margin:0;padding:4px 0}
+.done-list li{padding:6px 12px;border-bottom:1px solid var(--line);font-size:13px;display:flex;gap:10px}
+.done-list li:last-child{border-bottom:0}
+.done-list b{font-family:var(--display);font-size:18px;font-weight:600;min-width:26px}
+.note{font-size:12px;color:var(--muted)}
+@media (max-width:820px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.cols{grid-template-columns:1fr}}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <h1>Kokpit dávek · Kalkulator Next Gen</h1>
+    <div class="stamp" id="stamp"></div>
+  </div>
+
+  <section id="cekani" class="alert"></section>
+
+  <section class="tiles" id="tiles"></section>
+
+  <section>
+    <div class="top"><h2>Dávky</h2>
+      <div class="legend"><span><i style="background:var(--ok)"></i>hotovo</span><span><i style="background:var(--steel)"></i>probíhá</span><span><i style="background:var(--warn)"></i>čeká</span><span><i style="background:var(--line)"></i>před námi</span></div></div>
+    <div class="board"><table>
+      <thead><tr><th>Dávka</th><th>Co řeší</th><th>Fáze</th><th>Zbývá (odhad)</th><th>Kontext sezení</th><th>Další krok</th></tr></thead>
+      <tbody id="board"></tbody></table></div>
+    <div class="note">Fáze: kód → testy → mutace → souhrn → integrace → sady → test. Odhad dělá koordinace podle fáze a dosavadního tempa; kontext hlásí sezení samo (limit 1 M tokenů, nad 60 % hrozí konec sezení).</div>
+  </section>
+
+  <section class="cols">
+    <div><h2>Deník koordinace</h2><div class="log"><table id="log"></table></div></div>
+    <div><h2>Hotová sezení</h2><div class="done-list"><ul id="hotova"></ul></div></div>
+  </section>
+</div>
+
+<script id="data" type="application/json">
+{
+  "aktualizace": "15. 10. 2026 15:03 UTC",
+  "koordinace": {"id":"session_01NQjWzfqv1obHAg7DWPHAKH","kontext":19},
+  "cekaNaJV": [
+    "Release v15.10.7 (test = c9289f3): odkaz je v koordinačním sezení — stačí potvrdit na GitHubu.",
+    "Potvrdit výchozí volby S8: řádek „celkem“ i u jednořádkové tabulky hodin; neznámá strana → bez tabulky."
+  ],
+  "dlazdice": [
+    {"k":"main","v":"v14.10.3","d":"eff7724 · jen po vašem potvrzení","s":"idle"},
+    {"k":"test","v":"v15.10.7","d":"c9289f3 · sady 252 / 0 / 1","s":"ok"},
+    {"k":"integrace","v":"v15.10.10","d":"52d8f72 · + S8 · sady běží","s":"run"},
+    {"k":"celé kolo s mutacemi","v":"čeká","d":"po S6 + S7 v test · ~4 h","s":"idle"}
+  ],
+  "faze": ["kód","testy","mutace","souhrn","integrace","sady","test"],
+  "davky": [
+    {"id":"S6","verze":"v15.10.8","co":"B153 + B154 — schvalování cenové výjimky; B155/B156 uzavřít jako vědomé meze","sub":"claude/b153-b154 · 768c02f","faze":2,"stav":"run","eta":"~40 min","kontext":null,"dalsi":"Doběhnout mutace a smoke, poslat souhrn"},
+    {"id":"S7","verze":"v15.10.9","co":"Krycí list zakázky OCK + pole Číslo SoD (OCK i PROJ)","sub":"claude/kryci-cislo-sod · 0325311","faze":2,"stav":"run","eta":"~30 min","kontext":23,"dalsi":"Doběhnout mutace, souhrn; při sloučení čekat konflikt s S8 v krycím listu"},
+    {"id":"S8","verze":"v15.10.10","co":"Hodiny v krycím listu jen za vlastní stranu (OCK / PROJ)","sub":"claude/hodiny-po-listech · 261ba64","faze":5,"stav":"run","eta":"~25 min","kontext":19,"dalsi":"Sady nad integrací 52d8f72 → posun test"}
+  ],
+  "hotova": [
+    ["S1","B80 Pipedrive — čtení všem · v15.10.7 · v test"],
+    ["S2","B89–B95 · v test"],
+    ["S3","P12 náklady · v15.10.5 · v test"],
+    ["S4","Kolo 25 + bezpečnostní audit · v15.10.6 · v test"],
+    ["S5","Červená lišta ceníku · v15.10.4 · v test"]
+  ],
+  "log": [
+    ["15:03","test posunut na v15.10.7 (c9289f3) — S1, S3, S4 jsou v test."],
+    ["15:00","S8 sloučena do integrace (52d8f72, v15.10.10); spuštěny sady."],
+    ["14:50","Sady nad integrací v15.10.7: 252 prošlo / 0 selhalo / 1 přeskočeno."],
+    ["14:50","S8 hotová: jednotkové 34/0, prohlížeč 16/0, mutace 4/4."],
+    ["14:45","S7 přečíslována na v15.10.9 (kolize s S6 na v15.10.8)."],
+    ["14:43","S1 předala zápis smoke a archivuje se."],
+    ["14:33","Šablony z Disku staženy (30 souborů v pořádku)."],
+    ["14:28","Koordinaci převzalo nové sezení; S8 spuštěna."]
+  ]
+}
+</script>
+<script>
+(function(){
+  var D=JSON.parse(document.getElementById('data').textContent);
+  var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+  var ctxBar=function(p){
+    if(p==null) return '<div class="ctx"><span class="mono">nehlášeno</span><div class="bar"><i style="width:0"></i></div></div>';
+    var c=p>=75?'b':(p>=60?'w':'');
+    return '<div class="ctx"><span class="mono">'+p+' %</span><div class="bar"><i class="'+c+'" style="width:'+Math.min(p,100)+'%"></i></div></div>'};
+  document.getElementById('stamp').textContent='Stav k '+D.aktualizace+' · koordinace '+D.koordinace.id+' · kontext '+D.koordinace.kontext+' %';
+  var c=document.getElementById('cekani');
+  c.innerHTML=D.cekaNaJV.length?'<div class="h">Čeká na vás</div><ul>'+D.cekaNaJV.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ul>'
+    :'<div class="h">Nic nečeká na vás — koordinace běží sama.</div>';
+  if(!D.cekaNaJV.length) c.className='alert empty';
+  document.getElementById('tiles').innerHTML=D.dlazdice.map(function(t){
+    return '<div class="tile '+t.s+'"><div class="k">'+esc(t.k)+'</div><div class="v">'+esc(t.v)+'</div><div class="d">'+esc(t.d)+'</div></div>'}).join('');
+  document.getElementById('board').innerHTML=D.davky.map(function(d){
+    var st=D.faze.map(function(f,i){var k=i<d.faze?'done':(i===d.faze?(d.stav==='warn'?'blk':'now'):'');return '<div class="step '+k+'" title="'+esc(f)+'"></div>'}).join('');
+    return '<tr><td><div class="id">'+esc(d.id)+'</div><div class="ver">'+esc(d.verze)+'</div></td>'+
+      '<td><div class="what">'+esc(d.co)+'</div><div class="sub mono">'+esc(d.sub)+'</div></td>'+
+      '<td style="min-width:170px"><div class="steps">'+st+'</div><div class="stepl">teď: <b>'+esc(D.faze[d.faze]||'hotovo')+'</b> ('+(d.faze+1)+' / '+D.faze.length+')</div></td>'+
+      '<td><div class="eta">'+esc(d.eta)+'</div></td>'+
+      '<td>'+ctxBar(d.kontext)+'</td>'+
+      '<td style="font-size:13px">'+esc(d.dalsi)+'</td></tr>'}).join('');
+  document.getElementById('hotova').innerHTML=D.hotova.map(function(h){return '<li><b>'+esc(h[0])+'</b><span>'+esc(h[1])+'</span></li>'}).join('');
+  document.getElementById('log').innerHTML=D.log.map(function(r){return '<tr><td class="cas">'+esc(r[0])+'</td><td>'+esc(r[1])+'</td></tr>'}).join('');
+})();
+</script>
