@@ -16,6 +16,13 @@ projekce). Navíc z koordinace: `nastroje/release_odkaz.py` hlídá dvojí vydá
 (existující tag → bez odkazu na nový release, `--chybejici`), projektový skill
 `.claude/skills/kokpit-koordinace` (živý kokpit dávek, pokyn J. V.).
 
+**Integrace do test (koordinační sezení, 15. 10. 2026):** sloučení S6 bez
+konfliktu v kódu; po sloučení `test_vyjimky` 62/0, `netlify/test_vyjimky.mjs`
+46/0, `test_kryci_po_tisku` 91/0, `test_release_odkaz` 24/0; `--kontrola`
+mutací serveru 445 úseků, jádra 205. Příručka ze snímků pro v15.10.12. Sady
+`spust_testy.sh --smoke` s 30 šablonami z Disku nad cb8eb3b: **255 prošlo /
+0 selhalo / 1 přeskočeno** (test.js). Fast-forward do `test`.
+
 ## v15.10.10 — hodiny v krycím listu jen za vlastní stranu (větev claude/hodiny-po-listech)
 
 Dávka S8 (zadání `podklady/PROMPT_hodiny_po_listech.md` + `podklady/_SPOLECNE_15_10.md`
