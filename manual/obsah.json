@@ -23,7 +23,7 @@
         "**Název akce v technické specifikaci se bere z hlavičky zakázky.** Přepsat ho jde dál — pak u pole svítí štítek **ručně** a tlačítkem ↺ se vrátíte k názvu z hlavičky (kapitola 23).",
         "**Oplechování soklu prohlubně** má řádek i v technické specifikaci: mezi doplňkovými konstrukcemi, když je v ceně, jinak mezi tím, co součástí dodávky není — stejně jako v nabídce.",
         "**Zápis v obchodním rejstříku** jde do anglické, německé i francouzské nabídky přesně tak, jak je zadaný v Nastavení → Firma — nepřekládá se.",
-        "Na konci krycího listu OCK i PROJ (verze Backoffice) je tabulka **Hodiny z kalkulace** — celé hodiny z položek, které nabízíte (kapitola 24).",
+        "Na konci krycího listu OCK i PROJ (verze Backoffice) je tabulka **Hodiny z kalkulace** — celé hodiny z položek, které nabízíte. Od v15.10.10 **každý krycí list jen svou stranu**: OCK hodiny z Kalkulace OCK, PROJ z Kalkulace PROJ; uzamčená strana tabulku nemá (kapitola 24).",
         "**„Opláštit i prohlubeň“ jde zase uložit a vytisknout.** Opláštění smí začínat až na dně prohlubně (kapitoly 11 a 13). Když by začínalo ještě níž, aplikace řekne „Opláštění stěny X začíná níž, než je dno prohlubně“."
       ]
     },
@@ -656,7 +656,10 @@
             { "pojem": "Podpisy a kopie", "vyklad": "Firma v podpisové doložce, druhý podepisující (u SVJ podepisují zpravidla dva členové výboru) a dvě adresy, kam mají chodit faktury v kopii." },
             { "pojem": "Plná moc", "vyklad": "Zmocnitel (jméno, datum narození, trvale bytem) a osoba, která jedná za nás." }
           ]
-        }
+        },
+        { "typ": "podnadpis", "text": "Hodiny z kalkulace na konci krycího listu" },
+        { "typ": "text", "text": "Na konci krycího listu (jen verze **Backoffice** — obrazovka, tisk do PDF i Word) je tabulka **Hodiny z kalkulace**: celé hodiny z položek, které nabízíte. **Každý krycí list ukazuje jen svou stranu** (od v15.10.10): krycí list OCK jen hodiny z Kalkulace OCK (montáž, dílna, projekce / konstrukce, statika, stavbyvedoucí), krycí list PROJ jen hodiny z Kalkulace PROJ po činnostech; autorský dozor (jen když ho nabízíte) se uvádí jako „max. 30 h / měsíc“ a do celku se nepočítá." },
+        { "typ": "text", "text": "Když je strana zakázky **uzamčená a vynulovaná** (číslo OPR → projekce, číslo OVP → ocelová konstrukce, nebo zaškrtnuté „jen projekce“), v jejím krycím listu tabulka hodin **není vůbec** — žádné nuly ani pomlčky." }
       ]
     },
     {

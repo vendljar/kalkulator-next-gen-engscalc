@@ -1,3 +1,22 @@
+# Předávka — 15. 10. 2026: větev `claude/hodiny-po-listech` (v15.10.10), hodiny v krycím listu po listech (S8)
+
+Nad `origin/claude/integrace-15-10` (9ead7b5). Zadání
+`podklady/PROMPT_hodiny_po_listech.md` + `podklady/_SPOLECNE_15_10.md`.
+Do `test-draft` / `test` / `main` nic — sloučení a celé kolo dělá koordinační
+sezení (session_01NQjWzfqv1obHAg7DWPHAKH). Podrobnosti: CHANGELOG v15.10.10.
+
+- **Hotovo (pushnuto):** krycí list OCK jen hodiny OCK, PROJ jen hodiny
+  PROJ (jeden sloupec), vyřazená strana bez tabulky; obrazovka, tisk, Word;
+  testy (jednotkové 34/0, harness 16/0), mutace jádra HOD 4/4; příručka
+  kap. 24, roadmapa #414.
+- **Při slučování se S7 (`claude/kryci-cislo-sod`):** změny v `src/kryci.js`
+  jsou jen ve funkcích `kryciHodiny` / `kryciHodinySekce` a v jednom řádku
+  `kryciData`; v `src/ui/kryci_ui.js` jen `kryciTiskTabulka`
+  a `kryciHodinyBlok`; v `src/docxgen.js` jedna podmínka. Konflikty čekej
+  v CHANGELOG, PREDAVKA, `verze.txt`, `manual/obsah.json` a v `JADRA`
+  v `mutace_jadro.mjs` (přibyly kryci.js, kryci_proj.js).
+- **Otevřené:** potvrdit výchozí volby (CHANGELOG v15.10.10).
+
 # Předávka — 15. 10. 2026: větev `claude/kolo25-audit` (v15.10.6), kolo 25 + bezpečnostní audit (S4)
 
 Nad `origin/test` (db60d8d, v15.10.3; během dávky sloučen 8f7be40, v15.10.4

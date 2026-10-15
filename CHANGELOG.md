@@ -8,6 +8,43 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v15.10.10 — hodiny v krycím listu jen za vlastní stranu (větev claude/hodiny-po-listech)
+
+Dávka S8 (zadání `podklady/PROMPT_hodiny_po_listech.md` + `podklady/_SPOLECNE_15_10.md`
+ve větvi `claude/davky-15-10`), nad `origin/claude/integrace-15-10` (9ead7b5).
+Zadání J. V. 15. 10. 2026: „V krycím listu zakázky hodinách PROJ a OCK
+zobrazuj vždy jen tu část, která patří do konkrétního krycího listu."
+
+- **Změněno (#414):** tabulka **Hodiny z kalkulace** (konec krycího listu,
+  verze Backoffice) má jen stranu svého listu: krycí list OCK jen hodiny
+  z Kalkulace OCK, krycí list PROJ jen z Kalkulace PROJ; jeden sloupec
+  hodnot se záhlavím OCK resp. PROJ. AD („max. 30 h / měsíc", mimo celek)
+  jen v listu PROJ. Nahrazuje rozhodnutí v14.10.2 („sloupec jen vedoucí
+  strany", druhá strana „—").
+- **Vyřazená / uzamčená strana** (P6: číslo OPR → PROJ, číslo OVP → OCK,
+  `jenProj` / `jenOck`) — tabulka hodin v jejím listu není vůbec (žádné
+  nuly ani pomlčky); počítá se přes `vysledekStrany` → null.
+- **Všechny výstupy stejně:** obrazovka (`kryciHodinyBlok`), tiskový náhled
+  (`kryciTiskTabulka`), Word (`docxTeloZeSekci` — hranice tabulky se
+  záhlavím `>= 2` sloupce, ať záhlaví nezmizí), data `kryciData` /
+  `kryciProjData` (BO; Techdata beze změny bez hodin).
+- **API:** `kryciHodiny(zak, varianta, jekly, strana)` a
+  `kryciHodinySekce(…, verze, strana)` — strana `'ock'` | `'proj'`, jiná
+  hodnota → null.
+- **Testy:** `src/test_kryci_hodiny.js` přepsán na nové pravidlo (oba listy,
+  vyřazená strana OPR / OVP / jenProj / jenOck, Word OCK i PROJ) — před
+  opravou 12/22, po 34/0. Nový harness `overit_hodiny_po_listech.mjs`
+  (obrazovka + tisk BO obou listů, číslo OPR i OVP, Techdata) — před 6/10,
+  po 16/0. `overit_pripominky_14_10.mjs` upraven (17/0).
+- **Mutace jádra:** do `JADRA` přibyly `kryci.js` a `kryci_proj.js`;
+  HOD 14. 10. přesměrována na novou hranici (`>= 2` → `> 2`), nové HOD
+  15. 10. ×3 (list PROJ s hodinami OCK, list OCK s hodinami PROJ, vyřazená
+  strana s tabulkou) — 4 z 4 chycené, `--kontrola` 205 úseků.
+- **Výchozí volby (k potvrzení J. V.):** u vyřazené strany se tiskový
+  náhled jejího listu beztak neotevře (zábrana dokumentu #377) — hodiny
+  se v tom případě hlídají jen v datech tisku; řádek „celkem" zůstává
+  i u listu s jediným řádkem.
+
 ## v15.10.6 — testovací kolo 25 + bezpečnostní audit (větev claude/kolo25-audit)
 
 Dávka S4 (zadání `podklady/PROMPT_kolo25_audit.md` + `podklady/_SPOLECNE_15_10.md`
