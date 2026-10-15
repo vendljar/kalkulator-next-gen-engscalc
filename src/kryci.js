@@ -71,7 +71,7 @@ const KRYCI_SEKCE = [
       /* varianta ≥ 2 nese příponu .N (19. 8. 2026) */
       prefill: c => (typeof cisloSVariantou === 'function' ? cisloSVariantou(c.zak, c.varianta) : c.zak.cislo),
       src: 'hlavička kalkulace' },
-    /* Číslo smlouvy o dílo realizace (zadání J. V. 15. 10. 2026, v15.10.8):
+    /* Číslo smlouvy o dílo realizace (zadání J. V. 15. 10. 2026, v15.10.9):
      * ruční pole bez předvyplnění — návrh dalšího čísla řady (#366) čeká na
      * čísla papírových smluv. Sekce není v KRYCI_NABIDKA_SEKCE, takže se dá
      * doplnit i po odeslání nabídky; zamkne ho až tisk SoD. Ve smlouvě plní

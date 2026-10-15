@@ -1,5 +1,5 @@
 /* KRYCÍ LIST ZAKÁZKY OCK A POLE „ČÍSLO SoD" (zadání J. V. 15. 10. 2026,
- * dávka S7, v15.10.8): „Krycí list objednávky / SoD přejmenuj na Krycí list
+ * dávka S7, v15.10.9): „Krycí list objednávky / SoD přejmenuj na Krycí list
  * zakázky OCK. Pod číslo nabídky přidej i položku a okno Číslo SOD. To platí
  * jak pro OCK, tak pro PROJ."
  *

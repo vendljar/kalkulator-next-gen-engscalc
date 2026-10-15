@@ -106,7 +106,7 @@ const KRYCI_PROJ_SEKCE = [
      * ne zvláštní číslo projekční části. Kdyby PROJ někdy měl vlastní řadu,
      * vrátí se sem bind na ZAK.projHlavicka.cislo. */
     { id: 'cisloCN', label: 'Číslo nabídky (CN)', verze: ['bo', 'techdata'], bind: 'ZAK.cislo', prefill: c => c.hl.cislo, src: 'hlavička kalkulace OCK' },
-    /* Číslo smlouvy o dílo projekce (zadání J. V. 15. 10. 2026, v15.10.8) —
+    /* Číslo smlouvy o dílo projekce (zadání J. V. 15. 10. 2026, v15.10.9) —
      * vlastní pole listu PROJ, s číslem SoD realizace v listu OCK se nesdílí.
      * Ruční, bez předvyplnění (návrh řady #366 čeká); doplnit jde i po
      * odeslání nabídky, zamkne ho tisk SoD. Plní symbol čísla smlouvy. */

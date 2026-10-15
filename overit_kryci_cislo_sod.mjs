@@ -1,5 +1,5 @@
 /* Ověření v prohlížeči: „Krycí list zakázky OCK" a pole „Číslo SoD"
- * (zadání J. V. 15. 10. 2026, dávka S7, v15.10.8).
+ * (zadání J. V. 15. 10. 2026, dávka S7, v15.10.9).
  *
  * Dělá to, co obchodník: otevře oba krycí listy, najde pole „Číslo SoD"
  * hned pod „Číslo nabídky (CN)", zapíše do něj číslo (jako by psal do okna)
