@@ -62,8 +62,10 @@ Thumbs.db
 *.tmp
 /tmp/
 
-# Místní nastavení Claude Code (oprávnění této session) – nepatří do repozitáře
-.claude/
+# Místní nastavení Claude Code (oprávnění této session) – nepatří do repozitáře;
+# projektové skilly (.claude/skills/) se verzují (kokpit koordinace, J. V. 15. 10. 2026)
+.claude/*
+!.claude/skills/
 
 # Příručka obchodníka: generátor se verzuje, VÝSTUP ne (rozhodnuto 17. 9. 2026).
 # Hotová příručka nese snímky cenové kalkulace se skutečnými sazbami a jednou
