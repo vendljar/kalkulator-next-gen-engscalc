@@ -10,6 +10,15 @@ Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kv�
 - **Ještě nesloučené zápisové commity** (jen CHANGELOG/PREDAVKA/verze/roadmapa, bez kódu): `claude/b80-pipedrive` 38996f2 (v15.10.7, roadmapa #345, NASAZENI), `claude/p12-naklady` 1f2a365 (výsledky po úpravě, mutace 13/13, smoke 248/0/2), `claude/kolo25-audit` dcc3d5f (smoke 247/0/6).
 - **Další krok:** do `claude/integrace-15-10` sloučit 38996f2, 1f2a365, dcc3d5f (konflikty jen v dokumentaci — novější oddíl nahoru, `verze.txt` = 15.10.7, příručka `manual/obsah.json` verze + nadpis „Co je nového ve verzi v15.10.7"), `--kontrola` mutací, sestavit, příručka ze snímků, `spust_testy.sh --smoke` s podklady → zelené → zápis do CHANGELOG → push `claude/integrace-15-10` a fast-forward `test` (`git merge-base --is-ancestor origin/test HEAD`).
 
+## Stav 15. 10. ~16:00 UTC (koordinace session_01NQjWzfqv1obHAg7DWPHAKH)
+
+- `test` = 06937a3 **v15.10.10** (S1, S3, S4, S7, S8; release v15.10.10 i v15.10.7 vydány).
+- `claude/integrace-15-10` = **v15.10.12** (S6 B153/B154 jako v15.10.8 + release_odkaz.py hlídá tag + skill `.claude/skills/kokpit-koordinace`); sady běží → fast-forward test → release v15.10.12.
+- Běží jen **S9** (session_01CPcwsQaNofMcXf5Z8t2kzz, `claude/sod-proj-cislo`, v15.10.11 — číslo SoD do šablon SoD projekce). Po jejím souhrnu sloučit (verze integrace pak **v15.10.13**, protože test už nese vydanou v15.10.12), sady, test, pak **celé kolo s mutacemi** nad test (~4 h), release, závěrečná zpráva.
+- Pokyn J. V. 15. 10. ~15:55: „dokonči běžící úkoly a testování a vše odešli do test; při vyčerpání limitu pokračuj automaticky v dalším okně; počítač J. V. bude v noci odpojen“. Hodinová kontrola: naplánovaná úloha trig_01GwrzYRDzbmqK5GXCYEaLLY (vypnout po dokončení).
+- Otevřené otázky na J. V.: žádné (výchozí volby S8 bere J. V. na vědomí).
+- Šablony z Disku v kontejneru: /home/user/kng_podklady_koord (30 souborů); nový kontejner je musí stáhnout znovu.
+
 ## Kokpit koordinace (pokyn J. V. 15. 10. 2026 — platí pro KAŽDÉ koordinační sezení)
 
 - Živý kokpit: **https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2** (artefakt „Kokpit dávek KNG"). Zdroj stránky je `podklady/KOKPIT_koordinace.html` (data v bloku `<script id="data">` JSON).
