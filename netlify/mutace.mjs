@@ -1679,7 +1679,7 @@ const MUTACE = [
   { nazev: 'B154: staré rozhodnutí jen s otiskem platí', soubor: '../src/vyjimky.js',
     hledej: "    && typeof rec.obsah === 'string' && rec.obsah === obsah.obsah);",
     nahrad: "    && (rec.otisk ? true : typeof rec.obsah === 'string' && rec.obsah === obsah.obsah));",
-    proc: 'rozhodnutí z doby před v15.10.7 (otisk šel trefit) by dál kryla cokoli' },
+    proc: 'rozhodnutí z doby před v15.10.8 (otisk šel trefit) by dál kryla cokoli' },
   /* ---------- B153 (audit 15. 10. 2026): dotisk strany vyřazené při zámku ---------- */
   { nazev: 'B153: dotisk nové strany se na cenovou výjimku neptá', soubor: 'lib/zakazka_kontrola.mjs',
     hledej: "          if (vyjDotisk) return odmitni(403, 'Neuloženo: dotisk dokumentu odeslané nabídky — ' + vyjDotisk + '. Pokračujte klonem varianty.');",

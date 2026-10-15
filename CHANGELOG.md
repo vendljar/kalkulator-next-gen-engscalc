@@ -8,12 +8,13 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v15.10.7 — B153 + B154: vysoké nálezy auditu kola 25, B155 a B156 uzavřeny (větev claude/b153-b154)
+## v15.10.8 — B153 + B154: vysoké nálezy auditu kola 25, B155–B157 uzavřeny (větev claude/b153-b154)
 
 Dávka S6 (zadání `podklady/PROMPT_b153_b154.md` + `podklady/_SPOLECNE_15_10.md`
 ve větvi `claude/davky-15-10`), nad `origin/claude/integrace-15-10` (9ead7b5,
 v15.10.6). Rozhodnutí J. V. 15. 10. 2026: „153 a 154 proveď dle tvého
-doporučení; 155 a 156 řešit nebudeme a uzavři."
+doporučení; 155 a 156 řešit nebudeme a uzavři." Verze v15.10.8 (v15.10.7
+dostala úprava B80 — přečíslováno na pokyn koordinace).
 
 - **B153** (vysoká) — dotisk dokumentu nové strany do odeslané nabídky
   obešel cenovou výjimku a minimální marži: u zakázky „jen projekce" se
@@ -38,6 +39,13 @@ doporučení; 155 a 156 řešit nebudeme a uzavři."
 - **B155, B156** (střední) — uzavřeny jako vědomé meze, zapsáno
   v `BEZPECNOST_MEZE.md` (cesta zneužití, dopad, rozhodnutí J. V.); stav
   v `podklady/AUDIT_2026-10-15_v15.10.6.md`.
+- **B157** (nízká) — uzavřen jako **záměrné chování** (rozhodnutí J. V.
+  15. 10. 2026: cizí obchodník smí měnit volná pole krycího listu odeslané
+  nabídky; „pokud je to tak dnes nastavené, tak to neměň"). Kód beze změny;
+  chování dokládá `netlify/test_kryci_po_tisku.mjs` 14/0 → 16/0 (+2: volné
+  pole cizí odeslané nabídky 200 a autor zůstává, pole nabídky 409 — test
+  dokládá stávající stav, proto nemá pojistku „před opravou selže").
+  Zapsáno v `BEZPECNOST_MEZE.md`, auditu a roadmapě #420.
 - **Testy** (pojistka: před opravou / po ní): `src/test_vyjimky.js` 4 FAIL a pád
   (TypeError, chybí obsah) → 62/0 (+22: B154 kolize „Deska㌷홧", staré
   rozhodnutí s otiskem, jeden znak navíc; B153 části obsahu, `vyjimkyZamekProblem`

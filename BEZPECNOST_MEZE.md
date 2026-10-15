@@ -298,16 +298,17 @@ jsou. Vědomě zůstává:
 
 ---
 
-## Audit kola 25 — B155 a B156 (vědomé meze, rozhodnutí J. V. 15. 10. 2026)
+## Audit kola 25 — B155, B156 a B157 (vědomé meze a záměrné chování, rozhodnutí J. V. 15. 10. 2026)
 
 Audit 15. 10. 2026 (`podklady/AUDIT_2026-10-15_v15.10.6.md`) vedl dva
 střední nálezy. J. V. 15. 10. 2026: „155 a 156 řešit nebudeme a uzavři."
-Oba jsou tedy uzavřené jako vědomé meze; vysoké nálezy téže oblasti (B153,
-B154) jsou opravené ve v15.10.7.
+Oba jsou tedy uzavřené jako vědomé meze. Nízký nález B157 J. V. téhož dne
+uzavřel jako záměrné chování („ano, smí … neměň"); vysoké nálezy téže oblasti (B153,
+B154) jsou opravené ve v15.10.8.
 
 ### B155 — rozsah pásu „jiné" není v obsahu schválené výjimky
 
-**Co dělá:** schválení cenové výjimky (`src/vyjimky.js`) platí od v15.10.7
+**Co dělá:** schválení cenové výjimky (`src/vyjimky.js`) platí od v15.10.8
 jen pro přesně týž kanonický obsah: cesty a hodnoty směsi ceníku a u pásů
 „jiné" pod ceníkovou sazbou stěnu, pořadí, název a sazbu (B154).
 
@@ -322,6 +323,24 @@ cena opláštění té stěny, nikoli celé nabídky; pokus
 rozsah ani částky v kartě nevidí (B165), takže schvaluje sazbu a materiál,
 ne plochu. Rozsah do obsahu přidat jde jedním prvkem pole, kdyby se to
 změnilo (pak se staré schválení musí schválit znovu, jako u B154).
+
+### B157 — volná pole krycího listu cizí odeslané nabídky (záměrné chování)
+
+**Co dělá:** po odeslání nabídky zůstávají v krycím listu volná pole (mimo
+pole, která jsou v nabídce). Server je při uložení přijme od kteréhokoli
+přihlášeného uživatele — autora zakázky nehlídá (zakázky na serveru
+vlastníka nemají; `netlify/lib/zakazka_kontrola.mjs`). Pole nabídky zůstávají
+zamčená pro všechny (409).
+
+**Co nedělá:** neomezuje volná pole na autora, vedoucího nebo administrátora.
+Cizí obchodník tak změní i pole, která půjdou do budoucí SoD (pokuta za den,
+termíny, podpisy). Prohlížeč cizímu obchodníkovi úpravu odeslané varianty
+nenabízí (`zamekCteniSmiOdemknout`), dovoluje ji jen server.
+
+**Proč to tak zůstává:** rozhodnutí J. V. 15. 10. 2026: „ano, smí (cizí
+obchodník smí měnit volná pole krycího listu u odeslané nabídky), možná to
+bude i třeba; pokud je to tak dnes nastavené, tak to neměň." Chování dokládá
+`netlify/test_kryci_po_tisku.mjs` (B157: 200, pole nabídky 409).
 
 ### B156 — odhlášení a uložení profilu zapisují celý účet
 

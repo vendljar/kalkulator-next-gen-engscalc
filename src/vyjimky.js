@@ -28,7 +28,7 @@
  * Rozhodnutí ho nese CELÝ a platí jen pro přesně tentýž text (B154, audit
  * 15. 10. 2026: 32bitový otisk FNV-1a šel dvěma znaky v názvu pásu dopočítat
  * na schválenou hodnotu). Změna směsi nebo sazby po schválení obsah změní —
- * schválení přestane platit. Rozhodnutí z doby před v15.10.7 nesou jen
+ * schválení přestane platit. Rozhodnutí z doby před v15.10.8 nesou jen
  * otisk, obsah ne — neplatí a výjimka se musí schválit znovu.
  *
  * KDO CO SMÍ (vzor B2 / B101 / B105 u slev)

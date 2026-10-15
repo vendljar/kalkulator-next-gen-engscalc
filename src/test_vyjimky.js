@@ -130,7 +130,7 @@ console.log('— B154: schválení platí jen pro přesně týž obsah —');
   pas(d, 'Deska', 10);
   test('týž obsah — schválení platí', vyjimkaPlati(d.cenovaVyjimka, obsah(d)));
   const stare = { stav: VYJ_SCHVALENO, otisk: fnv(o1.obsah), polozek: 0, pasu: 1, schvalil: 'Ved' };
-  test('staré rozhodnutí jen s otiskem (před v15.10.7) neplatí — schválit znovu',
+  test('staré rozhodnutí jen s otiskem (před v15.10.8) neplatí — schválit znovu',
     !vyjimkaPlati(stare, o1) && vyjimkaKategorie(stare, o1) === 'ceka');
   test('prázdný obsah se schválením nekryje', !vyjimkaPlati({ stav: VYJ_SCHVALENO, obsah: '' }, { obsah: '' })); }
 

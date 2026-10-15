@@ -1,16 +1,19 @@
-# Předávka — 15. 10. 2026: větev `claude/b153-b154` (v15.10.7), B153 + B154, uzavření B155 a B156 (S6)
+# Předávka — 15. 10. 2026: větev `claude/b153-b154` (v15.10.8), B153 + B154, uzavření B155 a B156 (S6)
 
 Nad `origin/claude/integrace-15-10` (9ead7b5, v15.10.6). Zadání
 `podklady/PROMPT_b153_b154.md` + `podklady/_SPOLECNE_15_10.md`. Do `test-draft`
 / `test` / `main` nic — sloučení a celé kolo dělá koordinační sezení
-(session_0191A71yUFarU952Vy7h2hc5). Podrobnosti: CHANGELOG v15.10.7.
+(session_0191A71yUFarU952Vy7h2hc5). Podrobnosti: CHANGELOG v15.10.8.
 
 - **Hotovo (pushnuto):** B153 (dotisk nové strany hlídá cenovou výjimku
   a marži — server 403, prohlížeč zábrana), B154 (schválení výjimky = celý
   kanonický obsah, přesná shoda; FNV otisk zrušen); B155 a B156 uzavřeny
-  jako vědomé meze (`BEZPECNOST_MEZE.md`, audit); roadmapa #420; příručka.
+  jako vědomé meze a B157 jako záměrné chování (`BEZPECNOST_MEZE.md`,
+  audit, test v `test_kryci_po_tisku`); roadmapa #420; příručka. Verze
+  přečíslována na v15.10.8 (v15.10.7 má B80). Výsledek hlásit koordinaci
+  session_01NQjWzfqv1obHAg7DWPHAKH.
 - **Výchozí volba (zapsáno v CHANGELOG a příručce):** rozhodnutí o výjimce
-  z doby před v15.10.7 (jen otisk) neplatí — výjimka se schválí znovu.
+  z doby před v15.10.8 (jen otisk) neplatí — výjimka se schválí znovu.
   Dotisk posuzuje potřebu jen z části obsahu dotištěné strany; schválení
   musí sedět na celý obsah. Klient nezastaví dokument bez strany.
 - **Při slučování:** konflikty čekej v CHANGELOG, PREDAVKA, `verze.txt`,
