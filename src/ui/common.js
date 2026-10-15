@@ -2470,7 +2470,13 @@ function ulozZakazku() {
   // #41: co je rozepsané, se do protokolu dopíše ještě před exportem –
   // uložený soubor má nést protokol k okamžiku uložení, ne o dvě vteřiny starší.
   if (typeof protokolZapisTed === 'function') protokolZapisTed();
-  const blob = new Blob([StorageAdapter.exportuj(ZAK)], { type: 'application/json' });
+  /* Bez práva na náklady (P12 / #369, v15.10.3) jde soubor bez ceníků
+   * rozpracovaných variant — jen jejich odchylky od platného ceníku; při
+   * načtení se ceník doplní z platného (zakazkaCenikDopln v zakazka.js). */
+  const bezCeniku = typeof StorageAdapter.exportujBezCeniku === 'function'
+    && typeof cenikDnesniProVariantu === 'function' && !smiZobrazit(ZOBRAZENI_KLIC_NAKLADY);
+  const blob = new Blob([bezCeniku ? StorageAdapter.exportujBezCeniku(ZAK, cenikDnesniProVariantu)
+    : StorageAdapter.exportuj(ZAK)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = StorageAdapter.nazevSouboru(ZAK);

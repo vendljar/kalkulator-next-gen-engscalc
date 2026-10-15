@@ -5810,14 +5810,16 @@
   {
    "id" : "369",
    "vlna" : "B",
-   "stav" : "ceka",
+   "stav" : "hotovo",
+   "hotovoV" : "v15.10.3",
    "dulezitost" : "nizka",
    "slozitost" : "S–M",
    "nazev" : "P12: vypnout náklady v zobrazení obchodníka (sazby PROJ, ceník)",
    "proc" : "K16-N76: kalkulace PROJ ukazuje obchodníkovi nákladové sazby a server posílá ceník s náklady každému přihlášenému. J. V. 29. 9. 2026: „náklady zatím obchodník vidí, ale do budoucna bychom je v jeho zobrazení měli vypnout\".",
    "detail" : "Až přijde čas: sloupec sazby v Kalkulaci PROJ jen s právem na náklady (klíč matice zobrazení), opravit kontroly.cisla, stažení JSON zakázky bez ceníků; případně GET /api/program bez historie verzí (varianty v podklady/K16_ROZBOR_2026-09-25.md, P12).",
    "hotovoKdyz" : "Obchodník v zobrazení nevidí nákladové sazby ani náklady.",
-   "kde" : "`src/ui/kalk_proj.js`, `src/zobrazeni.js`, `src/ui/kontroly_ui.js`",
+   "kde" : "`src/ui/kalk_proj.js`, `src/zobrazeni.js`, `src/ui/kontroly_ui.js`, `src/zakazka.js` (zakazkaBezCeniku), `src/ui/common.js` (ulozZakazku), `netlify/functions/program.mjs`",
+   "pozn" : "Hotovo ve větvi `claude/p12-naklady` (v15.10.3), do `test` ji slučuje koordinační sezení J. V. Nový klíč matice `naklady.ceniky` (výchozí Vedoucí ano, Obchodník ne — vedoucímu se nic nemění): bez něj chybí v Kalkulaci PROJ sloupec Sazba a náklady v souhrnu, soubor zakázky nese jen odchylky rozpracovaných variant od platného ceníku a GET /api/program neposílá historii verzí. `kontroly.cisla` konečně rozhoduje (obchodník; vedoucí beze změny). Vědomé meze: ceník v paměti prohlížeče a v online zakázkách (`/api/zakazky`), zamčené varianty v souboru celé, varianta C z rozboru (výpočet na serveru) ne.",
    "zavisi" : [
     {
      "id" : "363",

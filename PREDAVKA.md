@@ -1,3 +1,26 @@
+# Předávka — 15. 10. 2026: větev `claude/p12-naklady` (v15.10.3), P12 obchodník nevidí náklady
+
+Z `origin/test` (5a42369, v14.10.8), zadání `podklady/PROMPT_p12_naklady.md`
+(dávka S3, #369) + `podklady/_SPOLECNE_15_10.md`. Do `test-draft` / `test` /
+`main` nic — sloučení a celé kolo dělá koordinační sezení J. V.
+Podrobnosti: CHANGELOG v15.10.3.
+
+- **Hotovo (pushnuto):** klíč matice `naklady.ceniky` (Vedoucí ano,
+  Obchodník ne); (a) Kalkulace PROJ bez sloupce Sazba / nákladů v souhrnu /
+  částky dopravy; (b) `kontroly.cisla` rozhoduje (vedoucí beze změny);
+  (c) soubor zakázky bez ceníků rozpracovaných variant (jen odchylky),
+  import doplní z platného; (d) `GET /api/program` bez historie verzí.
+  Příručka (kap. 8 a 28), roadmapa #369 → hotovo (v15.10.3).
+- **Testy:** `src/test_p12_naklady.js` 3/2+pád → 31/0;
+  `netlify/test_p12_naklady.mjs` 8/3 → 11/0; `overit_p12_naklady.mjs`
+  17/7 → 24/0; smoke bez šablon 244/0/6; mutace P12 13 z 13.
+- **Rozdělané:** smoke se šablonami (`KNG_PODKLADY=/home/user/kng_podklady_p12`,
+  jen v kontejneru) — výsledek doplnit sem a do CHANGELOG.
+- **Výchozí volby k odsouhlasení J. V.:** vlastní klíč místo `sloupce.naklad`;
+  obchodník ve sloupci Sazba nevidí nic (ne prodejní sazbu); soubor nese
+  odchylky od platného ceníku; zamčené varianty v souboru celé.
+- **Meze:** platný ceník v prohlížeči a ceníky v online zakázkách zůstávají
+  (varianta C z rozboru se nedělá).
 # Předávka — 15. 10. 2026: větev `claude/b80-pipedrive` (v15.10.1), B80 `/api/pd/*` — dávka S1
 
 Nad `origin/test` (5a42369, v14.10.8), zadání `podklady/PROMPT_b80_pipedrive.md`

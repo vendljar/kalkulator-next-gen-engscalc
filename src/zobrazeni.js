@@ -268,6 +268,24 @@ const ZOBRAZENI_PRVKY = [
     proc: 'Totéž jako u kontrol: samotné varování je bezpečnostní pojistka pro všechny, '
         + 'čísla za ním jsou nákladová informace.',
   },
+  /* P12 / roadmapa #369 (v15.10.3): „náklady zatím obchodník vidí, do budoucna
+   * je v jeho zobrazení vypnout" (rozhodnutí J. V. 29. 9. 2026). Vlastní klíč,
+   * ne `sloupce.naklad`: vedoucí ho dnes nemá, a přesto sazby PROJ, celý
+   * stažený soubor zakázky i historii ceníku vidí — jemu se nic měnit nemá.
+   * Výchozí je proto „Vedoucí ano, Obchodník ne". Server se na tentýž klíč
+   * ptá u GET /api/program (historie verzí ceníku). */
+  {
+    klic: 'naklady.ceniky', skupina: 'cisla', nazev: 'Nákladové sazby PROJ, ceníky v souboru zakázky a historie ceníku',
+    kde: 'Kalkulace PROJ (sloupec Sazba, souhrn), Uložit zakázku do souboru, ceník ze serveru',
+    popis: 'S tímto právem je v Kalkulaci PROJ vidět sloupec Sazba Kč/h · fix a souhrn s náklady, '
+         + 'stažený soubor zakázky nese celé ceníky variant a server pošle i starší verze ceníku. '
+         + 'Bez něj zůstanou hodiny a ceny, soubor nese jen odchylky varianty od platného ceníku.',
+    vychozi: { 'Obchodník': false, 'Vedoucí': true },
+    navrh: { 'Obchodník': false, 'Vedoucí': true },
+    proc: 'Nákladová sazba vedle ceny prozradí přirážku a stažený soubor celý nákupní ceník. '
+        + 'Obchodník k nabídce potřebuje hodiny a cenu; vedoucí je dnes vidí a při schvalování '
+        + 'slev s nimi pracuje, proto mu výchozí stav nic nebere.',
+  },
 
   /* ---------- nastavení ---------- */
   {
@@ -481,6 +499,9 @@ function zobrazeniVychozi() {
   });
   return m;
 }
+
+/* Klíč „práva na náklady" pro P12 (#369) — jedno jméno pro prohlížeč i server. */
+const ZOBRAZENI_KLIC_NAKLADY = 'naklady.ceniky';
 
 function zobrazeniPrvek(klic) {
   return ZOBRAZENI_PRVKY.find(p => p.klic === klic) || null;
@@ -748,6 +769,7 @@ if (typeof module !== 'undefined')
   module.exports = {
     ZOBRAZENI_PRVKY, ZOBRAZENI_SKUPINY, ZOBRAZENI_ROLE_VZDY, ZOBRAZENI_ROLE_PRIDELITELNE,
     zobrazeniVychozi, zobrazeniPrvek, zobrazeniSmi, zobrazeniOciste, zobrazeniZmeny,
+    ZOBRAZENI_KLIC_NAKLADY,
     ZOBRAZENI_SEKCE_VOLBY, zobrazeniSekceVolba, zobrazeniSekceNastav,
     ZOBRAZENI_POCITAT, ZOBRAZENI_PRIPLATEK,
     zobrazeniPolozkaVychozi, zobrazeniPolozkaVychoziNastav,
