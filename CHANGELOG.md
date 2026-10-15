@@ -44,7 +44,7 @@ po ní 96/0); nový `overit_lista_cekani.mjs` (skutečné serverové funkce,
 zdržená / selhávající / visící `GET /api/program`, bez přihlášení,
 `file://`): nad v14.10.8 18/5 (lišta v ~0,65 s), po opravě 23/0. Mutace
 serveru S5 4 z 4 (`../src/test_ukazkove.js` doplněn do `SADY`).
-<!--VYSLEDKY-->
+**Smoke (`spust_testy.sh --smoke`, šablony z Disku v `KNG_PODKLADY`):** 246 prošlo / 0 selhalo / 2 přeskočeno (`test.js` — není v exportu; `overit_manual.mjs` — příručka ze snímků v podkladech nebyla). Před dávkou (v14.10.8) 246/0/1 i s `overit_manual`; přibyl `overit_lista_cekani.mjs`. Mutace `--kontrola`: server 404 úseků, jádro 202; cíleně `node netlify/mutace.mjs "S5"` 4 z 4. Kontrola údajů čistá. Celé kolo se nespouštělo (dělá koordinační sezení).
 
 ## v14.10.8 — zbytky češtiny v nabídce PROJ (větev claude/proj-preklad-zbytky)
 
