@@ -1,5 +1,6 @@
 /* Databáze programu online — TÝŽ model jako _program.json ve složce.
- * GET  /api/program            → { db } (platný ceník + historie) — přihlášení
+ * GET  /api/program            → { db } (platný ceník + historie) — přihlášení;
+ *      historie verzí jen s právem `naklady.ceniky` (P12, #369)
  * POST /api/program { cenik, cenikProj, katalog, slevy, poznamka }
  *      → zveřejnit jako platný — JEN Administrátor (pravidlo: „Platný ceník
  *        může zveřejňovat jen administrátor"). Verzování, otisky i odkládání
@@ -13,14 +14,27 @@ export default async (req) => {
    * programNovaVerze a spol. se pak volají přes globalThis stejně jako
    * v prohlížeči. Kdyby se načíst nepovedlo, uživatel dostane české
    * vysvětlení místo holé chyby 502. */
-  try { await jadro(); } catch (e) { return jadroChyba(e); }
+  let ZOB;
+  try { ({ ZOB } = await jadro()); } catch (e) { return jadroChyba(e); }
 
   const s = await uloziste('program');
 
   if (req.method === 'GET') {
-    const { chyba } = await vyzadujRoli(req);          // stačí být přihlášen
+    const { chyba, relace } = await vyzadujRoli(req);  // stačí být přihlášen
     if (chyba) return chyba;
     const db = await s.cti('db');
+    /* HISTORIE VERZÍ JEN S PRÁVEM NA NÁKLADY (P12 / roadmapa #369, v15.10.3).
+     * Platný ceník jde dál každému — výpočet běží v prohlížeči (S12). Starší
+     * verze ale obchodník k výpočtu nepotřebuje (přepočet i varování srovnávají
+     * s platnou, „Verze ceníku…" je na záložce Ceník) a bylo to až 60 celých
+     * nákladových ceníků navíc. O právu rozhoduje táž matice zobrazení jako
+     * v prohlížeči (klíč `naklady.ceniky`), uložená na serveru; administrátor
+     * ho má vždy. `historieVynechana` říká, kolik verzí se neposlalo. */
+    if (db && Array.isArray(db.historie) && db.historie.length) {
+      const zob = await s.cti('zobrazeni');
+      if (!ZOB.zobrazeniSmi(relace.role, ZOB.ZOBRAZENI_KLIC_NAKLADY, zob && zob.matice))
+        return json({ ok: true, db: Object.assign({}, db, { historie: [], historieVynechana: db.historie.length }) });
+    }
     return json({ ok: true, db: db || null });
   }
   if (req.method !== 'POST') return json({ ok: false, chyba: 'Použijte GET nebo POST.' }, 405);

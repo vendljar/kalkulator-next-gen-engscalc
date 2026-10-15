@@ -77,7 +77,9 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* Cenové výjimky (13. 10. 2026): směs ceníku a pás „jiné" do schvalování. */
      'test_vyjimky.mjs', '../src/test_vyjimky.js',
      /* Krycí list odeslané nabídky (14. 10. 2026): volná pole a serverová pojistka. */
-     'test_kryci_po_tisku.mjs', '../src/test_kryci_po_tisku.js'];
+     'test_kryci_po_tisku.mjs', '../src/test_kryci_po_tisku.js',
+     /* P12 / #369 (15. 10. 2026): historie ceníku jen s právem na náklady. */
+     'test_p12_naklady.mjs'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -1024,8 +1026,9 @@ const MUTACE = [
     proc: 'obchodník by si zvedl ceny nebo je omylem přepsal všem' },
 
   { nazev: 'ceník přečte i nepřihlášený', soubor: 'functions/program.mjs',
-    hledej: '    const { chyba } = await vyzadujRoli(req);          // stačí být přihlášen\n    if (chyba) return chyba;',
-    nahrad: '',
+    /* Kotva upravená s P12 (#369, 15. 10. 2026): GET teď čte i roli relace. */
+    hledej: '    const { chyba, relace } = await vyzadujRoli(req);  // stačí být přihlášen\n    if (chyba) return chyba;',
+    nahrad: '    const relace = { role: \'Administrátor\' };',
     proc: 'naše nákladové ceny by si stáhl kdokoli z internetu' },
 
   { nazev: 'firemní údaje zveřejní kdokoli', soubor: 'functions/firma.mjs',
@@ -2015,6 +2018,20 @@ const MUTACE = [
     hledej: "      if (zeSouboru || !v.zamek.overeni) {\n        const ov = globalThis.zamekOvereni(v, JEKLY, verzeServeru);\n        if (ov) v.zamek.overeni = ov; else if (zeSouboru) delete v.zamek.overeni;\n        if (zeSouboru && ov && ov.stav !== 'shoda') sporne.push({ cislo: v.zamek.cislo || cisloVarianty(zak, v), ov });\n      }",
     nahrad: "      ;",
     proc: 'obnovená odeslaná nabídka by nesla neověřený zmrazený výsledek bez razítka' },
+  /* P12 / roadmapa #369 (15. 10. 2026): historie verzí ceníku jen s právem
+   * na náklady. Hlídá netlify/test_p12_naklady.mjs. */
+  { nazev: 'P12: historie ceníku jde i roli bez práva na náklady', soubor: 'functions/program.mjs',
+    hledej: "      if (!ZOB.zobrazeniSmi(relace.role, ZOB.ZOBRAZENI_KLIC_NAKLADY, zob && zob.matice))",
+    nahrad: "      if (false)",
+    proc: 'obchodník by si stáhl až 60 starších nákladových ceníků, které k výpočtu nepotřebuje' },
+  { nazev: 'P12: o historii ceníku rozhoduje role z klienta místo matice', soubor: 'functions/program.mjs',
+    hledej: "      const zob = await s.cti('zobrazeni');",
+    nahrad: "      const zob = null;",
+    proc: 'administrátorem přidělené nebo odebrané právo by server ignoroval a držel se výchozí matice' },
+  { nazev: 'P12: ořez historie zapíše ořezanou databázi zpět', soubor: 'functions/program.mjs',
+    hledej: "        return json({ ok: true, db: Object.assign({}, db, { historie: [], historieVynechana: db.historie.length }) });",
+    nahrad: "        { db.historie = []; await s.zapis('db', db); return json({ ok: true, db }); }",
+    proc: 'pouhé otevření aplikace obchodníkem by smazalo historii verzí — jediný doklad, za jaké ceny nabídky odešly' },
   { nazev: 'B62: z historie tisků jde ubrat', soubor: '../src/uloziste.js',
     hledej: "    const out = s.map(x => JSON.parse(JSON.stringify(x))).concat(n.slice(s.length));",
     nahrad: "    const out = n;",
