@@ -75,9 +75,42 @@ function ukazkoveLista() {
   </div>`;
 }
 
+/* Čekání lišty při startu (S5, v15.10.4) — rozhoduje ukazkoveListaRozhodni
+ * v ukazkove.js. Jediný stav: kdy začalo a jestli první pokus o načtení
+ * z online databáze doběhl. `od: null` = nečeká se (file://, kde se online
+ * nic nenačítá). Nad http(s) se čas zapíše hned při načtení skriptu — dřív,
+ * než cokoli poprvé překreslí obrazovku. */
+const UKAZKOVE_CEKANI = { od: null, dobehlo: false };
+
+function ukazkoveCekaniStart(ted) {
+  if (UKAZKOVE_CEKANI.od !== null) return;
+  UKAZKOVE_CEKANI.od = (typeof ted === 'number') ? ted : Date.now();
+  /* Pojistka pro server, který neodpoví: po uplynutí doby se lišta
+   * vyhodnotí sama, i když by do té doby nic jiného nepřekreslilo. */
+  if (typeof setTimeout === 'function')
+    setTimeout(renderUkazkoveLista, UKAZKOVE_CEKANI_MS + 50);
+}
+
+/* Volá onlineStart(), když první pokus (zdraví → ja → ceník a firma) doběhl.
+ * Až v dalším tiku: onlineTik nasazuje stažený ceník a firmu v setTimeout(0)
+ * a ty jsou ve frontě dřív — lišta se tak vyhodnotí až nad skutečnými daty
+ * a nic neblikne. */
+function ukazkoveCekaniKonec() {
+  const hotovo = () => { UKAZKOVE_CEKANI.dobehlo = true; renderUkazkoveLista(); };
+  if (typeof setTimeout === 'function') setTimeout(hotovo, 0); else hotovo();
+}
+
+if (typeof location !== 'undefined' && /^https?:$/.test(location.protocol)
+    && typeof fetch === 'function')
+  ukazkoveCekaniStart();
+
 function renderUkazkoveLista() {
   const el = document.getElementById('ukazkoveLista');
-  if (el) el.innerHTML = ukazkoveLista();
+  if (!el) return;
+  /* Během čekání se lišta NEKRESLÍ — obsah (ukazkoveLista) ani zábrany
+   * dokumentů se ale nemění. */
+  el.innerHTML = ukazkoveListaRozhodni(ukazkoveStavAkt(), UKAZKOVE_CEKANI, Date.now()) === 'ukazat'
+    ? ukazkoveLista() : '';
 }
 
 /* Varování do náhledu dokumentu – poslední místo před odesláním.

@@ -84,7 +84,9 @@ const SADY = process.env.KNG_MUTACE_SADY
       * soubor zakázky bez ceníků a klíč matice (jádro src/zakazka.js). */
      'test_p12_naklady.mjs', '../src/test_p12_naklady.js',
      /* #347 (15. 10. 2026): informativní nálezy účtů B92, B93, B95. */
-     'test_ucty_informativni.mjs'];
+     'test_ucty_informativni.mjs',
+     /* S5 (15. 10. 2026): čekání červené lišty při startu (ukazkoveListaRozhodni). */
+     '../src/test_ukazkove.js'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -2154,6 +2156,23 @@ const MUTACE = [
     hledej: "  const jmeno = String(r.jmeno == null ? '' : r.jmeno).replace(/[<>]/g, '').replace(/\\s+/g, ' ').trim();",
     nahrad: "  const jmeno = String(r.jmeno == null ? '' : r.jmeno).trim();",
     proc: 'účet se jménem z doby před opravou by pod zámkem napodobil cizí razítko (B95)' },
+  /* ---------- S5 (15. 10. 2026): červená lišta až po ověření ceníku ---------- */
+  { nazev: 'S5: lišta čeká i po doběhnutí načtení', soubor: '../src/ukazkove.js',
+    hledej: "  if (!cekani || cekani.od === null || cekani.od === undefined || cekani.dobehlo) return false;",
+    nahrad: "  if (!cekani || cekani.od === null || cekani.od === undefined) return false;",
+    proc: 'po selhání /api/program by prázdný ceník zůstal 5 s bez varování, i když už je jasné, že chybí' },
+  { nazev: 'S5: čekání nemá strop 5 s', soubor: '../src/ukazkove.js',
+    hledej: "  return (ted - cekani.od) < UKAZKOVE_CEKANI_MS;",
+    nahrad: "  return true;",
+    proc: 'při visícím serveru by lišta „ceník není nahraný" nenaskočila nikdy' },
+  { nazev: 'S5: rozhodnutí lišty nehledí na stav dat', soubor: '../src/ukazkove.js',
+    hledej: "  if (!stav || !stav.jsou) return 'neukazat';",
+    nahrad: "  if (!stav) return 'neukazat';",
+    proc: 'po čekání by lišta svítila i nad načteným skutečným ceníkem' },
+  { nazev: 'S5: hned po startu se nečeká', soubor: '../src/ukazkove.js',
+    hledej: "const UKAZKOVE_CEKANI_MS = 5000;",
+    nahrad: "const UKAZKOVE_CEKANI_MS = 0;",
+    proc: 'lišta by zase blikla každému přihlášenému, než se ceník stáhne (zadání J. V. 15. 10. 2026)' },
   /* Audit kola 25 (15. 10. 2026). */
   { nazev: 'B152: hodnoty krycího listu bez kontroly typu', soubor: '../src/uloziste.js',
     hledej: "    uloTypyKryci(d, sv && sv.data).forEach(k => out.push({ kde: pred + k, duvod: 'typ' }));",
