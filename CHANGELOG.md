@@ -45,6 +45,16 @@ zobrazuj vždy jen tu část, která patří do konkrétního krycího listu."
   se v tom případě hlídají jen v datech tisku; řádek „celkem" zůstává
   i u listu s jediným řádkem.
 
+**Integrace do test (koordinační sezení, 15. 10. 2026):** `claude/integrace-15-10`
+= v15.10.7 + S7 (v15.10.9, Krycí list zakázky OCK, Číslo SoD) + S8 (v15.10.10,
+hodiny v krycím listu jen za vlastní stranu); konflikty jen v dokumentaci
+a příručce (novinky v15.10.9 a v15.10.10 v jednom oddílu). Testy krycího listu
+po sloučení: `test_kryci` 129/0, `test_kryci_cislo_sod` 28/0, `test_kryci_hodiny`
+34/0, `test_kryci_po_tisku` 91/0, `test_kryci_proj_model` 91/0, Word OCK i PROJ OK.
+`--kontrola` mutací serveru 439 úseků, jádra 205. Příručka ze snímků pro
+v15.10.10. Sady `spust_testy.sh --smoke` s 30 šablonami z Disku: **255 prošlo /
+0 selhalo / 1 přeskočeno** (test.js). Fast-forward do `test`.
+
 ## v15.10.9 — Krycí list zakázky OCK a pole „Číslo SoD" (větev claude/kryci-cislo-sod)
 
 Dávka S7 (zadání `podklady/PROMPT_kryci_cislo_sod.md` + `podklady/_SPOLECNE_15_10.md`
