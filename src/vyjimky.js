@@ -303,7 +303,7 @@ function vyjimkyServerKontrola(stara, nova, relace, ctx) {
     const srec = sv && sv.data && sv.data.cenovaVyjimka && typeof sv.data.cenovaVyjimka === 'object' ? sv.data.cenovaVyjimka : null;
     let rec = v.data.cenovaVyjimka;
     if (rec !== undefined && rec !== null
-        && false)
+        && (typeof rec !== 'object' || Array.isArray(rec) || VYJ_STAVY.indexOf(rec.stav) < 0))
       return { ok: false, status: 400, chyba: 'Neznámý stav cenové výjimky varianty „' + String(v.nazev || v.id).slice(0, 60) + '".' };
     const obsah = vyjimkyObsah(v.data, vyjimkyDnesniZProgramu(platny, v.data), vyrazena);
     const kN = vyjimkaRozhodnutiKlic(rec), kS = vyjimkaRozhodnutiKlic(srec);
