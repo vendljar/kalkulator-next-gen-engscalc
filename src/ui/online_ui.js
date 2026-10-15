@@ -229,7 +229,13 @@ function onlineStart() {
       .then(ja => (ja && ja.ok ? onlinePoPrihlaseni(ja) : null))
       .catch(() => null);
   }).catch(() => null)
-    .then(() => { ONLINE_STAV.sondaHotova = true; if (typeof render === 'function') render(); });
+    .then(() => {
+      ONLINE_STAV.sondaHotova = true;
+      if (typeof render === 'function') render();
+      /* První pokus o načtení doběhl — červená lišta ukázkových dat smí
+       * přestat čekat (S5, v15.10.4; viz ukazkoveCekaniKonec). */
+      if (typeof ukazkoveCekaniKonec === 'function') ukazkoveCekaniKonec();
+    });
 }
 
 /* Hlídka nasazené verze (19. 8. 2026): stránka zůstává otevřená celé dny,

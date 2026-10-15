@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v15.10.3 · sestaveno 15. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
+  "verze": "Platí pro aplikaci v15.10.4 · sestaveno 15. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -102,6 +102,7 @@
             "Aplikace vám nebrání počítat a zkoušet — brání jen jedinému: vzniku dokumentu z prázdného ceníku. Je to **jediná tvrdá zábrana v celé aplikaci** a je udělená výslovně. Nulová cena není nabídka, je to omyl, který se nedá poslat ani omylem. Všechno ostatní zůstává varováním, o kterém rozhodujete vy."
           ]
         },
+        { "typ": "text", "text": "**Při spuštění aplikace lišta pár vteřin počká.** Ceník a firemní údaje se po otevření stránky teprve stahují z online databáze, a aby lišta zbytečně neblikla, rozhodne se až ve chvíli, kdy načítání doběhne — nejpozději do pěti vteřin. Když se ceník načte, lišta se vůbec neukáže; když se načíst nepodaří (nebo nejste přihlášeni), objeví se hned po zjištění. Zábrana dokumentů přitom platí od první vteřiny: z prázdného ceníku dokument nevznikne ani během toho čekání." },
         { "typ": "text", "text": "Jedna poznámka pro klidný spánek: **po odhlášení se lišta vrátí**, i když ceník mezitím zveřejněný byl. Odhlášený uživatel nemá čím doložit, že v hlavičce je skutečná firma, takže aplikace raději viditelně přizná, že počítá z náhrady. Není to porucha — přihlaste se a lišta zase zmizí." }
       ]
     },

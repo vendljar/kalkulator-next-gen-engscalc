@@ -8,6 +8,43 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v15.10.4 — červená lišta „Ceník není nahraný" až po ověření (větev claude/lista-cenik-zpozdeni)
+
+Zadání J. V. 15. 10. 2026 (dávka S5, `podklady/PROMPT_lista_cenik_zpozdeni.md`
+na `claude/davky-15-10`): „pozdrž zobrazení červené lišty při načtení
+aplikace o pár vteřin … zobrazit ji až tehdy, když ceník skutečně není
+nahraný." Větev nad `origin/test` (5a42369, v14.10.8). Do `test-draft` /
+`test` / `main` nic — sloučení a celé kolo dělá koordinační sezení.
+
+- **Lišta při startu čeká**, dokud doběhne první pokus o načtení z online
+  databáze (`/api/zdravi` → `/api/ja` → ceník, firma …; úspěch i chyba),
+  nejdéle **5 s**. Načetl se ceník → lišta se neukáže vůbec; nenačetl →
+  ukáže se hned po zjištění (bez přihlášení / chyba serveru), visí-li
+  server, po 5 s. Potom reaguje okamžitě jako dosud (změna ceníku,
+  odhlášení).
+- **Zábrany dokumentů beze změny** — `dokumentZabrana`, `ukazkoveTiskLista`
+  a panel „Ceník není nahraný – dokument nevznikne" platí od první vteřiny,
+  i během čekání (ověřeno harnessem vzorkováním à 50 ms).
+- Logika `ukazkoveListaRozhodni` / `ukazkoveCekaniTrva` (`src/ukazkove.js`,
+  čas a „doběhlo" se předávají zvenčí); stav v jediné proměnné
+  `UKAZKOVE_CEKANI { od, dobehlo }` (`src/ui/ukazkove_ui.js`); hradlo jen
+  v `renderUkazkoveLista` — obsah lišty (`ukazkoveLista()`) se nemění, takže
+  harnessy, které ho čtou přímo, nečekají. Konec čekání hlásí `onlineStart`
+  v dalším tiku (po nasazení ceníku a firmy z `onlineTik`), takže nic neblikne.
+- Příručka, kapitola 4 „Vidím červenou lištu": odstavec o čekání při startu.
+
+**Výchozí volby (bez dotazu):** nad `file://` se online nic nenačítá, proto
+se nečeká vůbec (lišta hned jako dosud; harnessy nad souborem beze změny).
+Čeká se jen na první start stránky — „Zkusit znovu" ani přihlášení později
+čekání znovu nezapínají. Pojistný časovač 5 s + 50 ms lištu vyhodnotí, i když
+nic jiného nepřekreslí.
+
+**Testy:** `src/test_ukazkove.js` +9 (před opravou pád — funkce neexistuje,
+po ní 96/0); nový `overit_lista_cekani.mjs` (skutečné serverové funkce,
+zdržená / selhávající / visící `GET /api/program`, bez přihlášení,
+`file://`): nad v14.10.8 18/5 (lišta v ~0,65 s), po opravě 23/0. Mutace
+serveru S5 4 z 4 (`../src/test_ukazkove.js` doplněn do `SADY`).
+<!--VYSLEDKY-->
 ## v15.10.3 — P12: obchodník nevidí náklady (větev claude/p12-naklady)
 
 **Integrace do `test` (koordinační sezení, 15. 10.):** do `test` (v14.10.8
