@@ -298,6 +298,51 @@ jsou. Vědomě zůstává:
 
 ---
 
+## Audit kola 25 — B155 a B156 (vědomé meze, rozhodnutí J. V. 15. 10. 2026)
+
+Audit 15. 10. 2026 (`podklady/AUDIT_2026-10-15_v15.10.6.md`) vedl dva
+střední nálezy. J. V. 15. 10. 2026: „155 a 156 řešit nebudeme a uzavři."
+Oba jsou tedy uzavřené jako vědomé meze; vysoké nálezy téže oblasti (B153,
+B154) jsou opravené ve v15.10.7.
+
+### B155 — rozsah pásu „jiné" není v obsahu schválené výjimky
+
+**Co dělá:** schválení cenové výjimky (`src/vyjimky.js`) platí od v15.10.7
+jen pro přesně týž kanonický obsah: cesty a hodnoty směsi ceníku a u pásů
+„jiné" pod ceníkovou sazbou stěnu, pořadí, název a sazbu (B154).
+
+**Co nedělá:** rozsah pásu (`odM`/`doM`) v obsahu není. Cesta zneužití:
+obchodník si nechá schválit úzký levný pás (třeba 1 m), po schválení ho
+roztáhne na celou výšku stěny (`doM = null`) a schválení dál platí — nabídka
+odejde s levnou sazbou na větší ploše, než jakou nadřízený viděl. Dopad:
+cena opláštění té stěny, nikoli celé nabídky; pokus
+`podklady/AUDIT25_pokus_B155_rozsah.mjs` (`doM = 1` i `null` → stejný obsah).
+
+**Proč to tak zůstává:** rozhodnutí J. V. 15. 10. 2026. Schvalovatel dnes
+rozsah ani částky v kartě nevidí (B165), takže schvaluje sazbu a materiál,
+ne plochu. Rozsah do obsahu přidat jde jedním prvkem pole, kdyby se to
+změnilo (pak se staré schválení musí schválit znovu, jako u B154).
+
+### B156 — odhlášení a uložení profilu zapisují celý účet
+
+**Co dělá:** odhlášení (`netlify/functions/odhlaseni.mjs`) a uložení profilu
+nebo podpisu (`netlify/functions/uzivatele.mjs`, akce `profil`/`podpis`)
+přečtou celý záznam účtu, změní své pole a zapíšou ho celý zpět.
+
+**Co nedělá:** zásah správce mezi čtením a zápisem (vypnutí účtu, reset
+hesla — `hesloVerze`, snížení role) se tím přepíše starým stavem. Cesta
+zneužití: obchodník, kterému správce účet vypíná nebo snižuje roli, ukládá
+profil nebo se ve smyčce přihlašuje a odhlašuje; trefí-li zápis do okna
+mezi čtením a zápisem správce, zásah se ztratí (pokus s pozdrženým zápisem:
+vypnutý účet zůstal zapnutý, reset hesla se ztratil, Vedoucí zůstal
+Vedoucím; přes odhlášení 7 ze 7). Pravděpodobnost na ostrých Netlify Blobs
+neměřena. Stejná třída jako B92 (opraveno jen u převodu zakázek).
+
+**Proč to tak zůstává:** rozhodnutí J. V. 15. 10. 2026. Postup pro
+správce: po vypnutí účtu, resetu hesla nebo změně role si v seznamu
+uživatelů ověřit, že změna drží (obnovit stránku); u sporného účtu zásah
+zopakovat.
+
 ## Zbytkové meze uzavřených nálezů
 
 ### B61 — zámek pod jiným jménem souboru
