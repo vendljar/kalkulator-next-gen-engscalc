@@ -39,13 +39,22 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
 .tile .v{font-family:var(--display);font-size:19px;line-height:1.05}
 .tile .d{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
 .rows{display:grid;gap:6px}
-.row{background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:7px 9px;display:grid;
-  grid-template-columns:44px minmax(0,1fr) 86px;gap:2px 10px;align-items:start}
+.row{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--idle);border-radius:5px;padding:7px 9px;display:grid;
+  grid-template-columns:minmax(0,1fr) 86px;gap:2px 10px;align-items:start}
+.r-run{border-left-color:var(--steel)} .r-ok{border-left-color:var(--ok)} .r-warn{border-left-color:var(--warn)} .r-bad{border-left-color:var(--bad)}
+.r-idle{opacity:.8}
+.main{min-width:0;display:grid;gap:3px}
+.name{font-weight:600;font-size:13px;overflow-wrap:anywhere}
+.meta{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+.role{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.sid{color:var(--muted);font-size:10.5px}
+.co{font-size:12px}
+.p-idle{background:var(--soft);color:var(--idle)}
 .row .id{font-family:var(--display);font-size:22px;line-height:1;grid-row:span 2}
 .row .id small{display:block;font-family:var(--mono);font-size:10px;color:var(--muted);font-weight:400;margin-top:3px}
 .what{font-weight:600;min-width:0}
 .sub{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
-.right{text-align:right;grid-row:span 2;display:grid;gap:4px;justify-items:end}
+.right{text-align:right;display:grid;gap:4px;justify-items:end}
 .eta{font-family:var(--display);font-size:18px;line-height:1}
 .etal{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .ctx{width:100%;display:grid;gap:2px}
@@ -58,7 +67,7 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
 .step.done{background:var(--ok)} .step.now{background:var(--steel)} .step.blk{background:var(--warn)}
 .stepl{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stepl b{color:var(--fg);font-weight:600}
-.next{grid-column:2 / 4;font-size:11.5px;border-top:1px dashed var(--line);padding-top:4px;margin-top:2px}
+.next{grid-column:1 / 3;font-size:11.5px;border-top:1px dashed var(--line);padding-top:4px;margin-top:2px}
 .next b{color:var(--muted);font-weight:500}
 .legend{display:flex;flex-wrap:wrap;gap:8px;font-size:10.5px;color:var(--muted);align-items:center}
 .legend span{display:inline-flex;gap:4px;align-items:center}
@@ -73,7 +82,7 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
 .done li:last-child{border-bottom:0}
 .done b{font-family:var(--display);font-size:15px;min-width:22px}
 .note{font-size:10.5px;color:var(--muted)}
-@media (max-width:480px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.row{grid-template-columns:38px minmax(0,1fr) 70px}.steps{flex-basis:84px}}
+@media (max-width:480px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.row{grid-template-columns:minmax(0,1fr) 72px}.steps{flex-basis:84px}}
 </style>
 
 <div class="wrap">
@@ -82,54 +91,45 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
   <section class="tiles" id="tiles"></section>
   <div class="note" id="releasy"></div>
   <section>
-    <div class="top"><h2>Dávky</h2>
+    <div class="top"><h2>Sezení (nearchivovaná)</h2>
       <div class="legend"><span><i style="background:var(--ok)"></i>hotovo</span><span><i style="background:var(--steel)"></i>teď</span><span><i style="background:var(--warn)"></i>čeká</span></div></div>
     <div class="rows" id="board"></div>
-    <div class="note">Fáze: kód → testy → mutace → souhrn → integrace → sady → test. Zbývá = odhad koordinace. Kontext = čerpání limitu sezení (nad 60 % žlutě, nad 75 % červeně).</div>
+    <div class="note">Jen sezení, která nejsou archivovaná; hotové a archivované se skrývají. Fáze (u dávek): kód → testy → mutace → souhrn → integrace → sady → test. Zbývá = odhad koordinace. Kontext = čerpání limitu sezení (nad 60 % žlutě, nad 75 % červeně).</div>
   </section>
   <section><h2>Deník</h2><div class="box log"><table id="log"></table></div></section>
-  <section><h2>Hotová sezení</h2><div class="box done"><ul id="hotova"></ul></div></section>
 </div>
 
 <script id="data" type="application/json">
 {
-  "aktualizace": "15. 10. 2026 15:35 UTC",
-  "releasy": "vydáno v15.10.10 (06937a3, 15:19), v15.10.7, v15.10.4, v15.10.3 · bez tagu: v15.10.9 a v15.10.6 (jen mezistupně, samostatně v test nebyly) · další release až s S6 + S9",
-  "koordinace": {"id":"session_01NQjWzfqv1obHAg7DWPHAKH","kontext":21},
-  "cekaNaJV": [],
+  "aktualizace": "15. 10. 2026 15:48 UTC",
+  "koordinace": {"id":"session_01NQjWzfqv1obHAg7DWPHAKH","kontext":22},
+  "releasy": "vydáno v15.10.10 (06937a3), v15.10.7, v15.10.4, v15.10.3 · bez tagu: v15.10.9, v15.10.6 (mezistupně) · další release: v15.10.12 po sadách",
+  "cekaNaJV": [
+    "Archivovat dokončená nečinná sezení „R1: roadmapa #405, #406“, „R2: dorovnání roadmapy za 13.–14. 10.“ a staré „Opravy nálezů 22. kola (B113–B118) / 23. kolo — Kalkulator Next Gen“ (30. 9., práce dávno převzatá)? Stačí napsat „archivuj“."
+  ],
   "dlazdice": [
     {"k":"main","v":"v14.10.3","d":"eff7724 · po vašem potvrzení","s":"idle"},
-    {"k":"test","v":"v15.10.10","d":"06937a3 · sady 255 / 0 / 1","s":"ok"},
-    {"k":"integrace","v":"= test","d":"čeká na S6 a S9","s":"ok"},
-    {"k":"celé kolo","v":"čeká","d":"po S6 a S9 · ~4 h","s":"idle"}
+    {"k":"test","v":"v15.10.10","d":"06937a3 · release vydán","s":"ok"},
+    {"k":"integrace","v":"v15.10.12","d":"cb8eb3b · + S6 · sady běží (~20 min)","s":"run"},
+    {"k":"celé kolo","v":"čeká","d":"po S9 v test · ~4 h","s":"idle"}
   ],
   "faze": ["kód","testy","mutace","souhrn","integrace","sady","test"],
-  "davky": [
-    {"id":"S6","verze":"15.10.8","co":"B153 + B154 — schvalování cenové výjimky; B155/B156 jako vědomé meze","sub":"claude/b153-b154 · 768c02f","faze":2,"stav":"run","eta":"~40 min","kontext":null,"dalsi":"5ba705f stále pod v15.10.7 — čekám na přečíslování na v15.10.8 a zápis B157"},
-    {"id":"S7","verze":"15.10.9","co":"Krycí list zakázky OCK + pole Číslo SoD","sub":"claude/kryci-cislo-sod · d831286 · archiv","faze":7,"stav":"ok","eta":"hotovo","kontext":23,"dalsi":"V test (06937a3)"},
-    {"id":"S8","verze":"15.10.10","co":"Hodiny v krycím listu jen za vlastní stranu","sub":"claude/hodiny-po-listech · 261ba64","faze":7,"stav":"ok","eta":"hotovo","kontext":19,"dalsi":"V test (06937a3)"},
-    {"id":"S9","verze":"15.10.11","co":"Číslo SoD do šablon SoD projekce (v1, v2) z krycího listu","sub":"claude/sod-proj-cislo · právě spuštěna","faze":0,"stav":"run","eta":"~1,5 h","kontext":null,"dalsi":"Šablony z Disku, symbol do nadpisu, nové soubory vedle původních"}
-  ],
-  "hotova": [
-    ["S1","B80 Pipedrive — čtení všem · v15.10.7 · v test"],
-    ["S2","B89–B95 · v test"],
-    ["S3","P12 náklady · v15.10.5 · v test"],
-    ["S4","Kolo 25 + bezpečnostní audit · v15.10.6 · v test"],
-    ["S5","Červená lišta ceníku · v15.10.4 · v test"]
+  "sezeni": [
+    {"nazev":"ŘÍDÍCÍ 15.10.2 - Koordinace dávek 15. 10. (pokračování)","id":"session_01NQjWzfqv1obHAg7DWPHAKH","role":"koordinace","stav":"run","stavText":"pracuje","faze":null,"eta":"do konce kola","kontext":22,"co":"Slučuje dávky do test, hlídá sezení, vede tento kokpit","dalsi":"Sady nad v15.10.12 → test → release; po S9 celé kolo"},
+    {"nazev":"S9 číslo SoD do šablon SoD projekce (v15.10.11)","id":"session_01CPcwsQaNofMcXf5Z8t2kzz","role":"dávka","stav":"run","stavText":"pracuje","faze":0,"eta":"~1,5 h","kontext":14,"co":"Symbol čísla SoD do šablon SoD projekce v1/v2, nové soubory na Disk","dalsi":"Stahuje šablony SoD z Disku"},
+    {"nazev":"S6: B153 + B154, uzavřít B155 a B156","id":"session_011ZCoyaDoTgLnAoNZHPKkWg","role":"dávka","stav":"ok","stavText":"hotová · nečinná","faze":5,"eta":"~20 min","kontext":31,"co":"Vysoké nálezy auditu B153/B154 opraveny, B155–B157 uzavřeny (v15.10.8)","dalsi":"Sady nad integrací → test; pak sezení archivovat"},
+    {"nazev":"R2: dorovnání roadmapy za 13.–14. 10.","id":"session_01B5Nk7BGWAsWWKrXfMuU7Df","role":"jiné","stav":"idle","stavText":"nečinná od 14. 10.","faze":null,"eta":"—","kontext":20,"co":"Roadmapa #407–#419 dorovnána (hotovo)","dalsi":"Navrženo k archivaci"},
+    {"nazev":"R1: roadmapa #405, #406","id":"session_01HvZWAVHqyk6PE8w5bNZxfo","role":"jiné","stav":"idle","stavText":"nečinná od 14. 10.","faze":null,"eta":"—","kontext":10,"co":"Roadmapa #405, #406 zapsány (hotovo)","dalsi":"Navrženo k archivaci"},
+    {"nazev":"Opravy nálezů 22. kola (B113–B118) / 23. kolo — Kalkulator Next Gen","id":"session_0152gTk16B8GKboeQJxTy49m","role":"jiné","stav":"warn","stavText":"čeká na vstup od 30. 9.","faze":null,"eta":"—","kontext":8,"co":"Staré sezení; nálezy B113–B118 mezitím vyřešily pozdější dávky","dalsi":"Navrženo k archivaci"}
   ],
   "log": [
-    ["15:35","Release v15.10.10 ověřen: vydán 15:19 na 06937a3 (chyba v okně byla druhé odeslání). release_odkaz.py nově hlídá existující tag; skill kokpitu zapsán."],
-    ["15:25","Sady nad S7+S8: 255 / 0 / 1 → test posunut na v15.10.10 (06937a3). Přibrán zápis S3 (varianta C se nedělá)."],
-    ["15:13","J. V.: B157 — cizí obchodník volná pole smí měnit, kód neměnit. Předáno S6 k zápisu (BEZPECNOST_MEZE, audit, #420)."],
-    ["15:10","S4 poslala závěr auditu: k rozhodnutí zbývá B157. S6 vedla opravu jako v15.10.7 — pokyn přečíslovat na v15.10.8."],
-    ["15:08","Spuštěna S9 (číslo SoD do šablon SoD projekce, v15.10.11) podle pokynu J. V."],
-    ["15:07","Release v15.10.7 vydán (J. V.). Výchozí volby S8 vysvětleny."],
-    ["15:05","S7 poslala souhrn a archivuje se."],
-    ["15:04","S7 sloučena do integrace (e0704b6); sady nad S7+S8 běží."],
-    ["15:03","test posunut na v15.10.7 (c9289f3)."],
-    ["15:00","S8 sloučena do integrace (v15.10.10)."],
-    ["14:50","Sady nad v15.10.7: 252 / 0 / 1."],
-    ["14:28","Koordinaci převzalo nové sezení; S8 spuštěna."]
+    ["15:48","Kokpit ukazuje všechna nearchivovaná sezení s přesnými názvy; hotové a archivované skryty."],
+    ["15:40","S6 sloučena, integrace v15.10.12 (cb8eb3b), sady běží."],
+    ["15:35","Release v15.10.10 ověřen; release_odkaz.py hlídá existující tag; skill kokpitu zapsán."],
+    ["15:25","test = v15.10.10 (S7 + S8), sady 255 / 0 / 1."],
+    ["15:08","Spuštěna S9 (číslo SoD do šablon SoD projekce)."],
+    ["15:03","test = v15.10.7 (S1, S3, S4)."],
+    ["14:28","Koordinaci převzalo sezení ŘÍDÍCÍ 15.10.2."]
   ]
 }
 </script>
@@ -137,25 +137,29 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
 (function(){
   var D=JSON.parse(document.getElementById('data').textContent);
   var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+  var pill={run:'p-run',ok:'p-ok',warn:'p-warn',bad:'p-bad',idle:'p-idle'};
   var ctx=function(p){
     if(p==null) return '<div class="ctx"><span class="mono">kontext ?</span><div class="bar"><i style="width:0"></i></div></div>';
     var c=p>=75?'b':(p>=60?'w':'');
     return '<div class="ctx"><span class="mono">kontext '+p+' %</span><div class="bar"><i class="'+c+'" style="width:'+Math.min(p,100)+'%"></i></div></div>'};
-  document.getElementById('stamp').textContent=D.aktualizace+' · koordinace kontext '+D.koordinace.kontext+' %';
+  document.getElementById('stamp').textContent=D.aktualizace;
   var c=document.getElementById('cekani');
   if(D.cekaNaJV.length){c.innerHTML='<div class="h">Čeká na vás</div><ol>'+D.cekaNaJV.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ol>'}
   else{c.className='alert empty';c.innerHTML='<div class="h">Nic na vás nečeká — koordinace běží sama.</div>'}
   document.getElementById('tiles').innerHTML=D.dlazdice.map(function(t){
     return '<div class="tile '+t.s+'"><div class="k">'+esc(t.k)+'</div><div class="v">'+esc(t.v)+'</div><div class="d">'+esc(t.d)+'</div></div>'}).join('');
   document.getElementById('releasy').innerHTML='<b>Releasy:</b> '+esc(D.releasy||'');
-  document.getElementById('board').innerHTML=D.davky.map(function(d){
-    var st=D.faze.map(function(f,i){var k=i<d.faze?'done':(i===d.faze?(d.stav==='warn'?'blk':'now'):'');return '<div class="step '+k+'" title="'+esc(f)+'"></div>'}).join('');
-    return '<div class="row"><div class="id">'+esc(d.id)+'<small>'+esc(d.verze)+'</small></div>'+
-      '<div><div class="what">'+esc(d.co)+'</div><div class="sub mono">'+esc(d.sub)+'</div></div>'+
-      '<div class="right"><div><div class="eta">'+esc(d.eta)+'</div><div class="etal">zbývá</div></div>'+ctx(d.kontext)+'</div>'+
-      '<div class="ph"><div class="steps">'+st+'</div><div class="stepl">teď: <b>'+esc(D.faze[d.faze]||'hotovo')+'</b> '+Math.min(d.faze+1,D.faze.length)+'/'+D.faze.length+'</div></div>'+
-      '<div class="next"><b>Další:</b> '+esc(d.dalsi)+'</div></div>'}).join('');
-  document.getElementById('hotova').innerHTML=D.hotova.map(function(h){return '<li><b>'+esc(h[0])+'</b><span>'+esc(h[1])+'</span></li>'}).join('');
+  document.getElementById('board').innerHTML=D.sezeni.map(function(s){
+    var ph='';
+    if(s.faze!=null){
+      var st=D.faze.map(function(f,i){var k=i<s.faze?'done':(i===s.faze?(s.stav==='warn'?'blk':'now'):'');return '<div class="step '+k+'" title="'+esc(f)+'"></div>'}).join('');
+      ph='<div class="ph"><div class="steps">'+st+'</div><div class="stepl">fáze: <b>'+esc(D.faze[s.faze]||'v test')+'</b> '+Math.min(s.faze+1,D.faze.length)+'/'+D.faze.length+'</div></div>';
+    }
+    return '<div class="row r-'+s.stav+'"><div class="main"><div class="name">'+esc(s.nazev)+'</div>'+
+      '<div class="meta"><span class="pill '+pill[s.stav]+'">'+esc(s.stavText)+'</span><span class="role">'+esc(s.role)+'</span><span class="mono sid">'+esc(s.id)+'</span></div>'+
+      '<div class="co">'+esc(s.co)+'</div>'+ph+'</div>'+
+      '<div class="right"><div><div class="eta">'+esc(s.eta)+'</div><div class="etal">zbývá</div></div>'+ctx(s.kontext)+'</div>'+
+      '<div class="next"><b>Další:</b> '+esc(s.dalsi)+'</div></div>'}).join('');
   document.getElementById('log').innerHTML=D.log.map(function(r){return '<tr><td class="cas">'+esc(r[0])+'</td><td>'+esc(r[1])+'</td></tr>'}).join('');
 })();
 </script>

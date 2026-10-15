@@ -39,8 +39,7 @@ otázka na J. V. Malé změny posílej jako `edits` na publish téhož souboru
 | `dlazdice` | 4 dlaždice: main, test, integrace, celé kolo; `s` = ok / run / warn / bad / idle |
 | `releasy` | jeden řádek: vydané / bez tagu (z `release_odkaz.py --chybejici` + GitHub `list_releases`) |
 | `faze` | `["kód","testy","mutace","souhrn","integrace","sady","test"]` |
-| `davky` | řádek na sezení: `id, verze, co, sub (větev · commit), faze (index 0–7; 7 = v test), stav, eta, kontext, dalsi` |
-| `hotova` | `[id, popis]` dokončených sezení |
+| `sezeni` | **všechna NEarchivovaná sezení** (`list_sessions mine:true`, status ≠ ARCHIVED) s **přesným názvem** (`title`): `nazev, id, role (koordinace / dávka / jiné), stav (run/ok/warn/bad/idle), stavText, faze (index 0–7 u dávek, jinak null), eta, kontext, co, dalsi` |
 | `log` | `[čas, událost]`, nejnovější nahoře; stačí ~10 posledních |
 
 - **Kontext** sezení: `get_session(session_id)` → `external_metadata.context_usage`
@@ -52,6 +51,15 @@ otázka na J. V. Malé změny posílej jako `edits` na publish téhož souboru
 - **Fáze** podle důkazů: commit s kódem → testy; zmínka o mutacích → mutace;
   zpráva do koordinace → souhrn; merge do `claude/integrace-…` → integrace;
   běžící `spust_testy.sh --smoke` → sady; fast-forward `test` → 7.
+
+## Co zobrazovat (J. V. 15. 10. 2026)
+
+- **Hotová a archivovaná sezení nezobrazovat** — zmizí, jakmile je sezení
+  archivované. Dávka hotová, ale ještě nearchivovaná, zůstává (s fází, dokud
+  není v `test`).
+- **Zobrazit všechna aktuálně nearchivovaná sezení s přesným názvem** — i ta,
+  která koordinace nespustila (R1, R2, starší). Nečinná hotová sezení navrhnout
+  J. V. k archivaci (v „Čeká na vás“); archivovat jen na jeho pokyn.
 
 ## Vzhled (neměnit bez pokynu)
 
