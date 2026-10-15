@@ -1,3 +1,19 @@
+# Předávka — 15. 10. 2026 odpoledne: větev `claude/b80-pipedrive` (v15.10.7), Pipedrive všem
+
+Znovu založená nad `origin/test` (8f7be40, v15.10.4). Rozhodnutí J. V.:
+právo `crm.pipedrive` zatím všem uživatelům, strop 30 načtení za hodinu a
+cache 90 s jsou OK. Podrobnosti: CHANGELOG v15.10.7. Do `test-draft` /
+`test` / `main` nic, sloučení dělá koordinační sezení.
+
+- **Hotovo (pushnuto):** výchozí matice Obchodník ano / Vedoucí ano, testy
+  51/0, 839/0, 71/0, 64/0, mutace B80 8/8, smoke viz CHANGELOG.
+- **Releasy bez vydání (ověřeno přes GitHub 15. 10.):** v14.10.4–v14.10.7,
+  v15.10.1, v15.10.2 (vydány v14.10.8, v15.10.3, v15.10.4).
+- **Při slučování:** konflikty čekej v CHANGELOG, PREDAVKA, `verze.txt`
+  (v15.10.5 P12 a v15.10.6 kolo 25 se slučují zvlášť).
+
+---
+
 # Předávka — 15. 10. 2026: dávka S5 (v15.10.4) — lišta „Ceník není nahraný" až po ověření
 
 Větev `claude/lista-cenik-zpozdeni` nad `origin/test` (5a42369, v14.10.8);

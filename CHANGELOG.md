@@ -8,6 +8,31 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v15.10.7 — B80: čtení z Pipedrive zatím všem uživatelům (větev claude/b80-pipedrive)
+
+Rozhodnutí J. V. 15. 10. 2026 k výchozím volbám v15.10.1: „právo čtení
+z Pipedrive zatím přidej všem uživatelům, časem to možná v nastavení změním;
+strop načítání je OK; cache je ok“. Větev `claude/b80-pipedrive` je znovu
+založená nad `origin/test` (8f7be40, v15.10.4), protože v15.10.1 už je celá
+v `test`. Číslo v15.10.7 je první volné: v15.10.5 má P12 a v15.10.6 audit
+kola 25. Do `test-draft` / `test` / `main` nic.
+
+- `src/zobrazeni.js`: `crm.pipedrive` má výchozí hodnotu *Obchodník ano,
+  Vedoucí ano* (dosud ne/ne). Administrátor právo může odebrat v Nastavení
+  → Zobrazení. Server se na matici ptá dál (`pdPristup`).
+- Potvrzeno beze změny: strop 30 čerstvých načtení detailu za hodinu na
+  uživatele (429) a cache detailu 90 s.
+- `NASAZENI_NETLIFY.md`, roadmapa #345 (poznámka, `hotovoV`).
+
+**Testy:** `netlify/test_pd_pristup.mjs` přepsaný na nový výchozí stav.
+Výchozí matice dává 200 obchodníkovi, vedoucímu i administrátorovi.
+Odebrané právo dává 403 a nic se nevolá ven, administrátor má právo vždy.
+Před změnou 35 / 16, po změně 51 / 0. `test_prava.mjs` 839 / 0 (Pipedrive
+zpět `PRIHLASENY_OK`). `test_pipedrive.mjs` 71 / 0 (bez ručního přidělení).
+`src/test_zobrazeni.js` 64 / 0 (`crm.pipedrive` mezi výchozími výjimkami).
+Mutace B80 **8 z 8**; mutace výchozí matice je obrácená (bere obchodníkovi
+čtení) a chytá ji `test_prava.mjs`. `--kontrola` serveru: 431 úseků.
+
 ## v15.10.4 — červená lišta „Ceník není nahraný" až po ověření (větev claude/lista-cenik-zpozdeni)
 
 **Integrace do `test` (koordinační sezení, 15. 10.):** do `test` (v15.10.3 = S1
