@@ -13,9 +13,10 @@ Podrobnosti: CHANGELOG v15.10.3.
   Příručka (kap. 8 a 28), roadmapa #369 → hotovo (v15.10.3).
 - **Testy:** `src/test_p12_naklady.js` 3/2+pád → 31/0;
   `netlify/test_p12_naklady.mjs` 8/3 → 11/0; `overit_p12_naklady.mjs`
-  17/7 → 24/0; smoke bez šablon 244/0/6; mutace P12 13 z 13.
-- **Rozdělané:** smoke se šablonami (`KNG_PODKLADY=/home/user/kng_podklady_p12`,
-  jen v kontejneru) — výsledek doplnit sem a do CHANGELOG.
+  17/7 → 24/0; smoke bez šablon 244/0/6, se šablonami 248/0/2; mutace P12 13 z 13.
+- **Smoke se šablonami z Disku** nad v15.10.3: 248 / 0 / 2 přeskočeno
+  (test.js, overit_manual.mjs). Šablony jen v kontejneru
+  (`/home/user/kng_podklady_p12`). Nic rozdělaného.
 - **Výchozí volby k odsouhlasení J. V.:** vlastní klíč místo `sloupce.naklad`;
   obchodník ve sloupci Sazba nevidí nic (ne prodejní sazbu); soubor nese
   odchylky od platného ceníku; zamčené varianty v souboru celé.
