@@ -8,8 +8,8 @@
  *    než nejnižší ceníková sazba opláštění — totéž schválení.
  * Rozpracované uložení beze zámku projde vždy. Schválit smí administrátor
  * a role s právem „Schvalování slevy nad strop role" (sleva.schvalovani);
- * razítka a otisk píše server, změna směsi nebo sazby po schválení
- * schválení zruší (otisk). Administrátor a role s právem ceníku výjimku
+ * razítka a obsah píše server, změna směsi nebo sazby po schválení
+ * schválení zruší (obsah). Administrátor a role s právem ceníku výjimku
  * nepotřebují.
  *
  * Pojistka proti prázdnému testu: proti v13.10.2 (0512c51) vracely zámky
@@ -43,6 +43,7 @@ const zam = require(R + 'src/zamek.js');
 const VY = require(R + 'src/vyjimky.js');
 const SCHV = require(R + 'src/schvalovani.js');
 const ZC = require(R + 'src/zkusebni_cenik.js');
+const slevaPlatiT = (sl) => !!sl && +sl.procenta > 0 && /^schváleno/.test(sl.stav || '');
 
 let ok = 0, fail = 0;
 const test = (n, cond, info) => { if (cond) { ok++; console.log('OK   ' + n); }
@@ -144,14 +145,14 @@ console.log('===== směs ceníku: žádost, schválení, zámek =====');
   VY.vyjimkaPozadej(d0(s.a), o, 'podvrh jména', '2000-01-01T00:00:00.000Z');
   const r1 = await uloz(s.a, cO, s.razitko);
   const vy1 = (r1.slevy || []).map(x => x.cenovaVyjimka).find(Boolean) || {};
-  test('žádost obchodníka uložena (200), server orazítkoval žadatele a otisk',
-    r1.status === 200 && vy1.stav === VY.VYJ_CEKA && /Obch Výjimka/.test(vy1.pozadal || '') && vy1.otisk === o.otisk
+  test('žádost obchodníka uložena (200), server orazítkoval žadatele a obsah',
+    r1.status === 200 && vy1.stav === VY.VYJ_CEKA && /Obch Výjimka/.test(vy1.pozadal || '') && !!o.obsah && vy1.obsah === o.obsah
     && vy1.pozadalKdy !== '2000-01-01T00:00:00.000Z', vy1);
-  /* Rejstřík napříč zakázkami: výjimka bez cen a bez otisku. */
+  /* Rejstřík napříč zakázkami: výjimka bez cen a bez obsahu. */
   const rj = await (await get(schvalovani, 'http://x/api/schvalovani', cV)).json();
   const zad = (rj.zadosti || []).find(x => x.cast === 'vyjimka' && x.cislo === s.a.cislo);
-  test('rejstřík: čekající výjimka je v přehledu (počet položek, bez otisku a hodnot)',
-    !!zad && zad.vyjimka.polozek === 2 && !('otisk' in zad.vyjimka) && !JSON.stringify(zad).includes(String(V1.profilasKgKc)), zad);
+  test('rejstřík: čekající výjimka je v přehledu (počet položek, bez obsahu a hodnot)',
+    !!zad && zad.vyjimka.polozek === 2 && !('obsah' in zad.vyjimka) && !('otisk' in zad.vyjimka) && !JSON.stringify(zad).includes(String(V1.profilasKgKc)), zad);
   test('rejstřík: klient pole výjimky zná (žádné neznámé klíče)', SCHV.schvalovaniRejstrikNeznameKlice(rj.zadosti).length === 0,
     SCHV.schvalovaniRejstrikNeznameKlice(rj.zadosti));
   const zr = SCHV.schvalovaniSeznamRejstrik(rj.zadosti).find(x => x.cast === 'vyjimka');
@@ -166,13 +167,13 @@ console.log('===== směs ceníku: žádost, schválení, zámek =====');
   const gV = await nacti(r1.soubor, cV);
   const b = zk.importZakazka(kopie(gV));
   VY.vyjimkaSchval(d0(b), obsah(b), 'cokoli', '1999-01-01T00:00:00.000Z');
-  d0(b).cenovaVyjimka.otisk = 'podvrh';            // otisk z prohlížeče se nebere — razí ho server
+  d0(b).cenovaVyjimka.obsah = 'podvrh';            // obsah z prohlížeče se nebere — razí ho server
   const r3 = await uloz(b, cV, gV.uloRazitko);
   const vy3 = (r3.slevy || []).map(x => x.cenovaVyjimka).find(Boolean) || {};
   test('vedoucí schválí (200) — jméno, e-mail a čas razí server, žadatel zůstává',
     r3.status === 200 && vy3.stav === VY.VYJ_SCHVALENO && /Ved Výjimka \(Vedoucí\)/.test(vy3.schvalil || '')
     && vy3.schvalilEmail === 'ved.vyjimky@priklad.cz' && vy3.schvalilKdy !== '1999-01-01T00:00:00.000Z'
-    && /Obch Výjimka/.test(vy3.pozadal || '') && vy3.otisk === o.otisk, vy3);
+    && /Obch Výjimka/.test(vy3.pozadal || '') && vy3.obsah === o.obsah, vy3);
   /* Obchodník vytiskne — zámek projde. */
   const g4 = await nacti(r1.soubor, cO);
   const c4 = zk.importZakazka(kopie(g4)); zamkni(c4);
@@ -192,7 +193,7 @@ console.log('===== směs ceníku: žádost, schválení, zámek =====');
   d0(a).cenik.nytKc = V2.nytKc;              // další přepočtená položka — jiná směs
   zamkni(a);
   const r3 = await uloz(a, cO, g.uloRazitko);
-  test('změna směsi po schválení + zámek → 403 (otisk nesedí)', r3.status === 403 && /směs/.test(r3.chyba || ''), r3);
+  test('změna směsi po schválení + zámek → 403 (obsah nesedí)', r3.status === 403 && /směs/.test(r3.chyba || ''), r3);
   const g2 = await nacti(r1.soubor, cO); const a2 = zk.importZakazka(kopie(g2));
   delete d0(a2).cenovaVyjimka;
   const r4 = await uloz(a2, cO, g2.uloRazitko);
@@ -272,8 +273,66 @@ test('příprava: nejnižší ceníková sazba opláštění exteriéru je kladn
   test('pás: beze změny se schválením — zámek obchodníka (200)', r4.status === 200, r4); }
 { const z = nova('pás + směs'); pasJine(z, 1); d0(z).cenik.profilasKgKc = V1.profilasKgKc;
   const o = obsah(z);
-  test('jedno schválení kryje směs i pás (otisk zahrnuje obojí)', o.polozek === 1 && o.pasu === 1
-    && o.otisk !== VY.vyjimkyObsah(d0(nova('x')), VY.vyjimkyDnesniZProgramu(platny(), d0(nova('x'))), '').otisk, o); }
+  test('jedno schválení kryje směs i pás (obsah zahrnuje obojí)', o.polozek === 1 && o.pasu === 1
+    && o.obsah !== VY.vyjimkyObsah(d0(nova('x')), VY.vyjimkyDnesniZProgramu(platny(), d0(nova('x'))), '').obsah, o); }
+
+console.log('===== B153: dotisk strany vyřazené při zámku (jenProj → vypnutí → dotisk OCK) =====');
+/* Pokus auditu 15. 10. 2026 (podklady/AUDIT25_pokus_B153_dotisk.mjs). Zakázka
+ * „jen projekce": zámek nabídky PROJ posoudí jen PROJ; vypnutí jenProj
+ * zámek nemění; dotisk nabídky OCK pak nesmí obejít výjimku ani marži. */
+const pripis = (z, typ) => { const v = z.varianty[0];
+  v.zamek.tisky = (v.zamek.tisky || []).concat([{ typ, kdy: new Date().toISOString(), kdo: 'x' }]); return z; };
+async function jenProjZamekVypnuti(nazev, priprav) {
+  const s = await smesUlozena(nazev);
+  d0(s.a).proj.cenik = kopie(platny().cenikProj);        // PROJ podle platného — zámek PROJ výjimku nepotřebuje
+  let razitko = s.razitko;
+  if (priprav) razitko = await priprav(s, razitko);
+  const g0 = zk.importZakazka(kopie(await nacti(s.soubor, cO)));
+  g0.jenProj = true; d0(g0).proj.cenik = kopie(platny().cenikProj);
+  if (!priprav) d0(g0).cenik.montazHodKc = V2.montazHodKc;
+  zamkni(g0, 'nabidkaProj');
+  const r1 = await uloz(g0, cO, razitko);
+  const g1 = zk.importZakazka(kopie(await nacti(s.soubor, cO))); g1.jenProj = false;
+  const r2 = await uloz(g1, cO, r1.razitko);
+  const g2raw = await nacti(s.soubor, cO);
+  return { r1, r2, h: pripis(zk.importZakazka(kopie(g2raw)), 'nabidka'), razitko: g2raw.uloRazitko, soubor: s.soubor };
+}
+{ const x = await jenProjZamekVypnuti('B153 bez schválení');
+  test('B153 příprava: zámek PROJ s jenProj (200) a vypnutí jenProj (200)', x.r1.status === 200 && x.r2.status === 200, [x.r1, x.r2]);
+  const r3 = await uloz(x.h, cO, x.razitko);
+  test('B153: dotisk nabídky OCK se směsí bez schválení → 403 (výjimka)', r3.status === 403 && /směs/.test(r3.chyba || '') && /dotisk/.test(r3.chyba || ''), r3);
+  const g = await nacti(x.soubor, cO);
+  test('B153: dotisk se nezapsal (tisky beze změny)', (g.varianty[0].zamek.tisky || []).every(t => t.typ !== 'nabidka'), g.varianty[0].zamek.tisky);
+  const xA = zk.importZakazka(kopie(g)); pripis(xA, 'nabidka');
+  const r5 = await uloz(xA, cA, g.uloRazitko);
+  test('B153: administrátor dotiskne OCK i bez schválení (200)', r5.status === 200, r5); }
+{ /* Schválení celé směsi před zámkem (jenProj vypnuté) → dotisk projde. */
+  const x = await jenProjZamekVypnuti('B153 se schválením', async (s, razitko) => {
+    const r = await uloz(s.a, cO, razitko);
+    const gV = await nacti(s.soubor, cV); const b = zk.importZakazka(kopie(gV));
+    VY.vyjimkaSchval(d0(b), obsah(b), 'Ved'); const r2 = await uloz(b, cV, gV.uloRazitko);
+    test('B153 příprava: vedoucí schválil směs OCK (200)', r.status === 200 && r2.status === 200, [r, r2]);
+    return r2.razitko; });
+  test('B153 příprava: zámek PROJ a vypnutí jenProj (200)', x.r1.status === 200 && x.r2.status === 200, [x.r1, x.r2]);
+  const r3 = await uloz(x.h, cO, x.razitko);
+  test('B153: dotisk nabídky OCK se schválenou směsí (200)', r3.status === 200, r3); }
+{ /* Marže: sleva OCK zadaná pod jenProj se neposuzovala. */
+  const NAST95 = Object.assign({}, NASTSL, { minMarze: 0.95 });
+  const V3 = kopie(V2); V3.nytKc += 1;                   // zveřejnit jde jen změněný ceník
+  const r0 = await (await post(program, 'http://x/api/program', { cenik: V3, cenikProj: V2P, slevy: NAST95, poznamka: 'minimum marže' }, cA)).json();
+  test('B153 příprava: zveřejněno minimum marže', !!r0.ok, r0);
+  const z = nova('B153 marže'); z.jenProj = true;
+  d0(z).sleva = { procenta: 4, stav: 'schváleno automaticky', role: 'Obchodník' };
+  zamkni(z, 'nabidkaProj');
+  const r1 = await uloz(z, cO);
+  const g1 = zk.importZakazka(kopie(await nacti(r1.soubor, cO))); g1.jenProj = false;
+  const r2 = await uloz(g1, cO, r1.razitko);
+  test('B153 příprava: zámek PROJ se slevou OCK pod jenProj (200), vypnutí (200)', r1.status === 200 && r2.status === 200
+    && slevaPlatiT(d0(g1).sleva), [r1, r2, d0(g1).sleva]);
+  const g2 = await nacti(r1.soubor, cO);
+  const r3 = await uloz(pripis(zk.importZakazka(kopie(g2)), 'nabidka'), cO, g2.uloRazitko);
+  test('B153: dotisk nabídky OCK se slevou pod minimální marží → 403', r3.status === 403 && /marž/.test(r3.chyba || ''), r3);
+  await zverejni(V2, V2P, 'výjimky V2 bez minima'); }
 
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);

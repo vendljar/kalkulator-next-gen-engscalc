@@ -166,5 +166,27 @@ console.log('===== typ hodnot krycího listu (B152) =====');
   test('B152: text, číslo a pravda v krycím listu projdou (200)', r.status === 200, r);
 }
 
+console.log('===== B157: cizí obchodník a volná pole odeslané nabídky (záměrné chování) =====');
+/* Rozhodnutí J. V. 15. 10. 2026: „ano, smí (cizí obchodník smí měnit volná
+ * pole krycího listu u odeslané nabídky), možná to bude i třeba; pokud je to
+ * tak dnes nastavené, tak to neměň." Test chování dokládá (nic neopravuje):
+ * volné pole cizí odeslané nabídky 200, pole nabídky dál 409. */
+{
+  const xB = await (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'zaloz', email: 'obch2.kryci@priklad.cz', jmeno: 'Obch Druhý', role: 'Obchodník', heslo: 'Heslo12345x' }, cA)).json();
+  if (!xB.ok) throw new Error('uzivatel ' + JSON.stringify(xB));
+  const cB = await prihlas('obch2.kryci@priklad.cz', 'Heslo12345x');
+  const r0 = await uloz(zamkni(nova('B157 cizí'), 'nabidka'), cO);
+  const g = await nacti(r0.soubor, cB);
+  const a = zk.importZakazka(kopie(g));
+  Object.assign(h(d0(a), 'kryci'), { sodPokutaDenni: '0,1 %', terminPredani: '12/2026', jmenoPrijmeni: 'Zkušební Kontakt' });
+  const r1 = await uloz(a, cB, g.uloRazitko);
+  const g1 = await nacti(r0.soubor, cA);
+  test('B157: cizí obchodník uloží volná pole krycího listu odeslané nabídky (200, autor zůstává)',
+    r0.status === 200 && r1.status === 200 && h(d0(g1), 'kryci').sodPokutaDenni === '0,1 %' && g1.autor === 'obch.kryci@priklad.cz', [r0.status, r1, g1.autor]);
+  const b = zk.importZakazka(kopie(g1)); h(d0(b), 'kryci').terminDodani = '99 týdnů';
+  const r2 = await uloz(b, cB, g1.uloRazitko);
+  test('B157: pole nabídky cizí odeslané nabídky dál zamčené (409)', r2.status === 409, r2);
+}
+
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);

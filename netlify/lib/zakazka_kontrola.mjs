@@ -420,6 +420,20 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
           if (rozmerDotisk.length)
             return odmitni(400, 'Neuloženo: dotisk dokumentu odeslané nabídky nese ' + ULO.uloIdProblemyText(rozmerDotisk)
               + '. Pokračujte klonem varianty.');
+          /* B153 (audit 15. 10. 2026): strana vyřazená při zámku (jenProj /
+           * jenOck) se na cenovou výjimku ani marži slevy neposuzovala — po
+           * vypnutí příznaku by dotiskem odešla bez schválení. Nová strana
+           * se proto posoudí i tady (data zamčené varianty se už nezmění,
+           * takže schválení muselo vzniknout před zámkem). */
+          const noveStrany = [...new Set(nove.map(strana))];
+          const vyjDotisk = globalThis.vyjimkyZamekProblem(zak, pseudo, relace,
+            { matice: ctx.matice, program: ctx.program, strany: noveStrany });
+          if (vyjDotisk) return odmitni(403, 'Neuloženo: dotisk dokumentu odeslané nabídky — ' + vyjDotisk + '. Pokračujte klonem varianty.');
+          for (const cast of ['ock', 'proj']) {
+            if (!noveStrany.includes(cast) && !noveStrany.includes('?')) continue;
+            const marzeDotisk = SCHV.schvalovaniMarzeCasti(v, JEKLY, cast, slevyNast);
+            if (marzeDotisk) return odmitni(403, 'Neuloženo: dotisk dokumentu odeslané nabídky — ' + marzeDotisk + ' Pokračujte klonem varianty.');
+          }
         }
       }
       continue;

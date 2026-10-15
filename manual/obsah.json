@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v15.10.10 · sestaveno 15. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
+  "verze": "Platí pro aplikaci v15.10.12 · sestaveno 15. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -14,8 +14,10 @@
       ]
     },
     {
-      "nadpis": "Co je nového ve verzi v15.10.10 (15. 10. 2026)",
+      "nadpis": "Co je nového ve verzi v15.10.12 (15. 10. 2026)",
       "odstavce": [
+        "**Schválení cenové výjimky platí jen pro přesně to, co nadřízený schválil** — každá změna směsi ceníku nebo pásu „jiné“ (i jediný znak v názvu pásu) ho zruší. **Výjimky schválené před v15.10.8 se musí schválit znovu** (karta Cenové výjimky v Schvalování, kapitola 19).",
+        "**Dokument druhé strany do odeslané nabídky** (třeba nabídka OCK po vypnutí „jen projekce“) potřebuje stejné schválení výjimky a slevu nad minimální marží jako nová nabídka. Když chybí, aplikace dokument nevytvoří a poradí pokračovat klonem varianty.",
         "**Krycí list zakázky OCK** — tak se teď jmenuje i nadpis listu a dokumentu (dřív „Krycí list objednávky / SoD“); záložka se tak jmenovala už dřív.",
         "**Číslo SoD** v obou krycích listech (OCK i PROJ), v Základních údajích hned pod číslem nabídky. Zapisujete ho ručně, nic se nepředvyplňuje; doplnit ho jde i po odeslání nabídky, zamkne ho až tisk smlouvy o dílo. Ve smlouvě o dílo se objeví jako číslo smlouvy — krycí list OCK pro smlouvu realizace, krycí list PROJ pro smlouvu projekce (kapitola 24).",
         "**Čtení z Pipedrive mají nově všichni uživatelé** (obchodník i vedoucí). Správce může právo odebrat v Nastavení → Zobrazení.",
@@ -507,6 +509,7 @@
         },
         { "typ": "text", "text": "Tři věci, které vám ušetří telefonáty. **Rozhodnutí je podepsané** jménem a časem, takže se zpětně pozná, kdo slevu pustil. **Rozhodnutí platí na to procento, o kterém se rozhodovalo** — když po schválení slevu zvednete třeba z 6 na 9 %, žádost se vrátí do stavu *čeká* a staré razítko se smaže; snížit slevu po schválení můžete bez nového kolečka. A **uzamčená nabídka se už nepřepočítává**: co odešlo zákazníkovi, je doklad." },
         { "typ": "text", "text": "**Rozhodnutí vrátit zpět smí jen nadřízený** (od 13. 10. 2026). Tlačítko **Vrátit rozhodnutí** v záložce *Schvalování slev* má jen ten, kdo smí o té slevě rozhodnout. Uložením zakázky se schválení ani zamítnutí do stavu *čeká* nevrátí — server ponechá uložené rozhodnutí i s podpisem. Chcete-li o zamítnuté slevě jednat znovu, změňte procento: nové procento je nová žádost." },
+        { "typ": "text", "text": "**Cenové výjimky** (karta *Cenové výjimky* v záložce Schvalování) — ceník varianty, který je směsí platného ceníku a starších cen, nebo ruční sazba pásu opláštění „jiné“ pod ceníkem. Bez práva ceníku je odešlete jen se schválením nadřízeného. **Schválení platí jen pro přesně ten obsah, který nadřízený schválil** (od v15.10.8): změna kterékoli položky směsi, sazby nebo názvu pásu ho zruší a žádost čeká znovu; výjimky schválené před v15.10.8 se musí schválit znovu. Totéž schválení (a sleva nad minimální marží) platí i pro **dokument druhé strany, který do odeslané nabídky tisknete dodatečně** — třeba nabídku OCK po vypnutí „jen projekce“. Odeslanou nabídku už změnit nejde, takže bez schválení pokračujte klonem varianty." },
         { "typ": "text", "text": "Rozhoduje se v záložce *Schvalování slev*, kterou podle nastavení nemusíte vidět vůbec. Schválení ověřuje **server**, ne prohlížeč — jméno schvalovatele si píše sám podle toho, kdo je přihlášený, a pokus uložit schválení nad vlastní strop neprojde." }
       ]
     },

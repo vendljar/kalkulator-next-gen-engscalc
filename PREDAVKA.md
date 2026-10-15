@@ -58,6 +58,32 @@ Podrobnosti: CHANGELOG v15.10.9.
 - **Pozor:** commit 47cf6c8 zachytil dočasnou mutaci (`verze: ['bo']`),
   opraveno v 36cbfec — při slučování brát stav hlavy větve.
 
+# Předávka — 15. 10. 2026: větev `claude/b153-b154` (v15.10.8), B153 + B154, uzavření B155 a B156 (S6)
+
+Nad `origin/claude/integrace-15-10` (9ead7b5, v15.10.6). Zadání
+`podklady/PROMPT_b153_b154.md` + `podklady/_SPOLECNE_15_10.md`. Do `test-draft`
+/ `test` / `main` nic — sloučení a celé kolo dělá koordinační sezení
+(session_0191A71yUFarU952Vy7h2hc5). Podrobnosti: CHANGELOG v15.10.8.
+
+- **Hotovo (pushnuto):** B153 (dotisk nové strany hlídá cenovou výjimku
+  a marži — server 403, prohlížeč zábrana), B154 (schválení výjimky = celý
+  kanonický obsah, přesná shoda; FNV otisk zrušen); B155 a B156 uzavřeny
+  jako vědomé meze a B157 jako záměrné chování (`BEZPECNOST_MEZE.md`,
+  audit, test v `test_kryci_po_tisku`); roadmapa #420; příručka. Verze
+  přečíslována na v15.10.8 (v15.10.7 má B80). Výsledek hlásit koordinaci
+  session_01NQjWzfqv1obHAg7DWPHAKH.
+- **Výchozí volba (zapsáno v CHANGELOG a příručce):** rozhodnutí o výjimce
+  z doby před v15.10.8 (jen otisk) neplatí — výjimka se schválí znovu.
+  Dotisk posuzuje potřebu jen z části obsahu dotištěné strany; schválení
+  musí sedět na celý obsah. Klient nezastaví dokument bez strany.
+- **Při slučování:** konflikty čekej v CHANGELOG, PREDAVKA, `verze.txt`,
+  `roadmapa/roadmap.json` (#420 — přečíslovat, pokud ho mezitím vzal jiný)
+  a v `netlify/mutace.mjs` (blok B153/B154 před „revize N4"). Celé kolo
+  s mutacemi nad výsledkem nespuštěno (pokyn) — smoke 247/0/6 (šablony
+  z Disku přeskočeny), cílené mutace 35/35.
+- **Pozor:** ad9e2ee omylem zachytil mutaci (commit během běhu mutací);
+  opraveno v 768c02f — při slučování brát celou větev, ne jednotlivý commit.
+
 ---
 
 # Předávka — 15. 10. 2026: větev `claude/kolo25-audit` (v15.10.6), kolo 25 + bezpečnostní audit (S4)

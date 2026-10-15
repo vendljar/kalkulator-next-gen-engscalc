@@ -362,7 +362,7 @@ test('výjimky: schválení z konzole bez práva neprojde', !(await vyjStav()).r
 await tlacitko('Požádat o schválení').click();
 await page.waitForTimeout(250);
 vs = await vyjStav();
-test('výjimky: žádost zapsána (čeká), zábrana trvá', vs.rec && vs.rec.stav === 'čeká na schválení' && !!vs.rec.otisk && vs.brani, vs);
+test('výjimky: žádost zapsána (čeká), zábrana trvá', vs.rec && vs.rec.stav === 'čeká na schválení' && !!vs.rec.obsah && vs.brani, vs);
 await page.evaluate(() => zobrNahled('Vedoucí'));
 await page.waitForTimeout(250);
 t = await textZalozky();

@@ -1,14 +1,15 @@
 /* Cenové výjimky varianty (rozhodnutí J. V. 13. 10. 2026) — model v Node.
  *
  * Co se hlídá:
- *   – otisk: mění se s hodnotou i cestou směsi a se sazbou pásu „jiné",
- *     nemění se zakázkovou přirážkou ani DPH;
+ *   – obsah (kanonický zápis, B154): mění se s hodnotou i cestou směsi a se
+ *     sazbou pásu „jiné", nemění se zakázkovou přirážkou ani DPH; schválení
+ *     platí jen pro přesně týž obsah (kolize starého otisku FNV neprojde);
  *   – směs: jen sledované položky, které platný ceník nese; vyřazená strana
  *     (P6) se neposuzuje; zahraniční řada se srovnává se zahraniční;
  *   – pás „jiné": mez = nejnižší kladná ceníková sazba opláštění, které se
  *     u šachty nabízí (interiér / exteriér); standardní režim se nehlídá;
  *   – potřeba podle práva ceníku části, kdo smí rozhodnout, kategorie,
- *     přepočet záznamu po změně, rejstřík bez otisku;
+ *     přepočet záznamu po změně, rejstřík bez obsahu;
  *   – zábrana „cenovaVyjimka" v kontroly.js zastaví dokumenty obou stran.
  * Čísla jsou smyšlená (zkusebni_cenik.js).
  *
@@ -37,15 +38,15 @@ function varianta() {
 }
 const obsah = (d, vyr) => vyjimkyObsah(d, vyjimkyDnesniZProgramu(PLATNY, d), vyr || '');
 
-console.log('— směs a otisk —');
+console.log('— směs a obsah —');
 { const d = varianta(); const o = obsah(d);
-  test('platný ceník celý: obsah prázdný, otisk prázdný', o.prazdny && o.otisk === '' && o.polozek === 0, o); }
+  test('platný ceník celý: obsah prázdný', o.prazdny && o.obsah === '' && o.polozek === 0, o); }
 { const d = varianta(); d.cenik.profilasKgKc += 7; const o1 = obsah(d);
   test('jedna položka OCK jinak: 1 položka, sekce OCK, popis z ceníku', o1.polozek === 1 && o1.smes[0].sekce === 'OCK' && !!o1.smes[0].popis, o1);
   d.cenik.profilasKgKc += 1; const o2 = obsah(d);
-  test('otisk se mění s hodnotou položky (táž cesta)', o2.otisk && o2.otisk !== o1.otisk, [o1.otisk, o2.otisk]);
+  test('obsah se mění s hodnotou položky (táž cesta)', o2.obsah && o2.obsah !== o1.obsah, [o1.obsah, o2.obsah]);
   d.cenik.marze = 0.4; d.cenik.dph = 0; const o3 = obsah(d);
-  test('zakázková přirážka a DPH otisk nemění', o3.otisk === o2.otisk && o3.polozek === 1, o3); }
+  test('zakázková přirážka a DPH obsah nemění', o3.obsah === o2.obsah && o3.polozek === 1, o3); }
 { const d = varianta(); d.proj.cenik.sazby.projektant += 50;
   const o = obsah(d);
   test('položka PROJ: sekce PROJ', o.polozek === 1 && o.smes[0].sekce === 'PROJ', o);
@@ -76,7 +77,7 @@ const steny = (sazba, typSachty) => ({ oplasteni: { rezim: 'poStenach', steny: {
   Object.assign(d.ock.zadani, steny(min - 1)); const o1 = obsah(d);
   test('pás „jiné" pod mezí: 1 pás (stěna B, pořadí 1)', o1.pasu === 1 && o1.pasy[0].stena === 'B' && o1.pasy[0].i === 1, o1);
   d.ock.zadani.oplasteni.steny.B.pasy[1].naklad = min - 2; const o2 = obsah(d);
-  test('otisk se mění se sazbou pásu', o2.otisk !== o1.otisk);
+  test('obsah se mění se sazbou pásu', o2.obsah !== o1.obsah);
   d.ock.zadani.oplasteni.steny.B.pasy[1].naklad = min; const o3 = obsah(d);
   test('sazba rovná mezi není výjimka', o3.prazdny, o3);
   d.ock.zadani.oplasteni.steny.B.pasy[1].naklad = 1; d.ock.zadani.oplasteni.rezim = 'standard';
@@ -94,19 +95,87 @@ console.log('— potřeba, rozhodnutí, kategorie —');
   test('vedoucí jen s právem sleva.schvalovani', vyjimkaSmiRozhodnout('Vedoucí', smi(['sleva.schvalovani'])) && !vyjimkaSmiRozhodnout('Vedoucí', smi([])));
   test('kategorie bez žádosti', vyjimkaKategorie(undefined, o) === 'nepozadano');
   vyjimkaPozadej(d, o, 'Obch'); test('žádost → čeká', vyjimkaKategorie(d.cenovaVyjimka, o) === 'ceka' && !vyjimkaPlati(d.cenovaVyjimka, o));
-  vyjimkaSchval(d, o, 'Ved'); test('schváleno platí pro svůj otisk', vyjimkaPlati(d.cenovaVyjimka, o) && d.cenovaVyjimka.pozadal === 'Obch');
+  vyjimkaSchval(d, o, 'Ved'); test('schváleno platí pro svůj obsah', vyjimkaPlati(d.cenovaVyjimka, o) && d.cenovaVyjimka.pozadal === 'Obch');
   d.cenik.profilasKgKc += 1; const o2 = obsah(d);
   test('po změně směsi schválení neplatí a kategorie je „čeká"', !vyjimkaPlati(d.cenovaVyjimka, o2) && vyjimkaKategorie(d.cenovaVyjimka, o2) === 'ceka');
-  test('přepočet záznamu: stav čeká s novým otiskem', vyjimkaPrepocti(d, o2) && d.cenovaVyjimka.stav === VYJ_CEKA && d.cenovaVyjimka.otisk === o2.otisk && !d.cenovaVyjimka.schvalil);
+  test('přepočet záznamu: stav čeká s novým obsahem', vyjimkaPrepocti(d, o2) && d.cenovaVyjimka.stav === VYJ_CEKA && d.cenovaVyjimka.obsah === o2.obsah && !d.cenovaVyjimka.schvalil);
   vyjimkaZamitni(d, o2, 'Ved', null, 'ne'); test('zamítnutí drží důvod', vyjimkaKategorie(d.cenovaVyjimka, o2) === 'zamitnuto' && d.cenovaVyjimka.zamitnutoDuvod === 'ne');
   vyjimkaVrat(d, o2); test('vrácení rozhodnutí → čeká', d.cenovaVyjimka.stav === VYJ_CEKA);
   d.cenik = kopie(PLATNY.cenik); d.proj.cenik = kopie(PLATNY.cenikProj);
   test('přepočet: nic se neliší → záznam pryč', vyjimkaPrepocti(d, obsah(d)) && !('cenovaVyjimka' in d)); }
-{ const r = vyjimkaRejstrik({ stav: VYJ_CEKA, otisk: 'abc', polozek: 3, pasu: 1, pozadal: 'X', schvalilEmail: 'a@b' });
-  test('rejstřík: bez otisku a e-mailu, počty jako čísla', !('otisk' in r) && !('schvalilEmail' in r) && r.polozek === 3 && r.pasu === 1, r);
+{ const r = vyjimkaRejstrik({ stav: VYJ_CEKA, obsah: 'abc', polozek: 3, pasu: 1, pozadal: 'X', schvalilEmail: 'a@b' });
+  test('rejstřík: bez obsahu a e-mailu, počty jako čísla', !('obsah' in r) && !('schvalilEmail' in r) && r.polozek === 3 && r.pasu === 1, r);
   test('rejstřík: povolená pole klienta = pole serveru', JSON.stringify(SCHV_REJSTRIK_VYJIMKA_POVOLENO) === JSON.stringify(VYJ_REJSTRIK_POLE)); }
 test('text: směs i pás v jedné větě, bez čísel cen', /směs/.test(vyjimkyText({ polozek: 2, pasu: 1, smes: [{ sekce: 'OCK' }, { sekce: 'PROJ' }] }))
   && /„jiné"/.test(vyjimkyText({ polozek: 2, pasu: 1, smes: [] })));
+
+console.log('— B154: schválení platí jen pro přesně týž obsah —');
+{ /* Pokus auditu 15. 10. 2026 (podklady/AUDIT25_pokus_B154_kolize.mjs):
+   * schválený pás „Deska" 10 Kč/m²; sazba 1 a název „Deska㌷홧" dávaly
+   * týž 32bitový otisk FNV-1a. */
+  const fnv = (t) => { let h = 0x811c9dc5; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i);
+    h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); };
+  const pas = (d, nazev, sazba) => { d.ock.zadani.oplasteni = { rezim: 'poStenach',
+    steny: { A: { odM: 0, pasy: [{ typ: 'jine', nazev, naklad: sazba, doM: null }] } } }; };
+  const d = varianta();
+  test('příprava: mez pásu je nad 10 Kč/m²', vyjimkyMinSazbaOpl(d.ock.zadani, d.cenik) > 10, vyjimkyMinSazbaOpl(d.ock.zadani, d.cenik));
+  pas(d, 'Deska', 10); const o1 = obsah(d);
+  vyjimkaSchval(d, o1, 'Ved');
+  test('schválení nese celý kanonický obsah (směs + pásy)', d.cenovaVyjimka.obsah === o1.obsah && /"Deska",10\]/.test(o1.obsah), d.cenovaVyjimka);
+  pas(d, 'Deska㌷홧', 1); const o2 = obsah(d);
+  test('příprava: starý 32bitový otisk by kolidoval (pokus auditu)', fnv(o1.obsah) === fnv(o2.obsah), [fnv(o1.obsah), fnv(o2.obsah)]);
+  test('kolize „Deska㌷홧" se sazbou 1 — schválení neplatí', !vyjimkaPlati(d.cenovaVyjimka, o2) && vyjimkaKategorie(d.cenovaVyjimka, o2) === 'ceka');
+  pas(d, 'Deska ', 10);
+  test('jeden znak navíc v názvu — schválení neplatí', !vyjimkaPlati(d.cenovaVyjimka, obsah(d)));
+  pas(d, 'Deska', 10);
+  test('týž obsah — schválení platí', vyjimkaPlati(d.cenovaVyjimka, obsah(d)));
+  const stare = { stav: VYJ_SCHVALENO, otisk: fnv(o1.obsah), polozek: 0, pasu: 1, schvalil: 'Ved' };
+  test('staré rozhodnutí jen s otiskem (před v15.10.8) neplatí — schválit znovu',
+    !vyjimkaPlati(stare, o1) && vyjimkaKategorie(stare, o1) === 'ceka');
+  test('prázdný obsah se schválením nekryje', !vyjimkaPlati({ stav: VYJ_SCHVALENO, obsah: '' }, { obsah: '' })); }
+
+console.log('— B153: dotisk nové strany posuzuje jen její část —');
+{ const z = novaZakazka(); z.cislo = '2026 - CN - 0001';
+  z.varianty[0].data = varianta(); const v = z.varianty[0];
+  v.data.cenik.profilasKgKc += 3;                         // směs jen OCK
+  const ctx = (strany) => ({ program: { platny: PLATNY }, smi: () => false, strany });
+  const ob = { role: 'Obchodník' };
+  const o = obsah(v.data);
+  test('část obsahu OCK nese směs OCK, PROJ nic', vyjimkyObsahStran(o, ['ock']).polozek === 1 && vyjimkyObsahStran(o, ['proj']).prazdny);
+  test('neznámý typ dokumentu (?) = obě strany', vyjimkyObsahStran(o, ['?']).polozek === 1);
+  test('dotisk OCK se směsí OCK bez schválení → důvod', /směs/.test(vyjimkyZamekProblem(z, v, ob, ctx(['ock']))));
+  test('dotisk PROJ — směs OCK ho nezastaví', vyjimkyZamekProblem(z, v, ob, ctx(['proj'])) === '');
+  vyjimkaSchval(v.data, o, 'Ved');
+  test('dotisk OCK se schválením celého obsahu projde', vyjimkyZamekProblem(z, v, ob, ctx(['ock'])) === '');
+  test('administrátor výjimku nepotřebuje', vyjimkyZamekProblem(z, v, { role: 'Administrátor' }, ctx(['ock'])) === ''); }
+
+console.log('— B153: zábrana dotisku v prohlížeči (ui/schvalovani_ui.js) —');
+{ global.JEKLY = JSON.parse(require('fs').readFileSync(__dirname + '/jekly.json', 'utf8'));
+  global.progJede = () => true; global.PROG_STAV = { db: { platny: PLATNY } };
+  global.zobrazeniRole = () => 'Obchodník'; global.smiZobrazit = () => false;
+  global.NAST = { slevy: { minMarze: 0, stropy: { 'Obchodník': 0.05 } } };
+  require('vm').runInThisContext(require('fs').readFileSync(__dirname + '/ui/schvalovani_ui.js', 'utf8'));
+  const z = novaZakazka(); z.cislo = '2026 - CN - 0002';
+  z.varianty[0].data = varianta(); const v = z.varianty[0]; global.ZAK = z;
+  Object.assign(v.data.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2, nastupiste: 4 });
+  v.data.cenik.profilasKgKc += 3;                         // směs OCK
+  test('nezamčená varianta — dotisková zábrana mlčí (řeší ji zábrana cenovaVyjimka)', vyjimkyDotiskZabrana('nabidka', v) === '');
+  zamkniVariantu(v, { typ: 'nabidkaProj', kdy: new Date().toISOString(), kdo: 'T', cislo: 'x' });
+  const d = vyjimkyDotiskZabrana('nabidka', v);
+  test('zámek PROJ → dotisk nabídky OCK se směsí bez schválení: zábrana s hláškou o klonu', /směs/.test(d) && /klonem/.test(d), d);
+  test('dotisk PROJ (strana už odešla) — mlčí', vyjimkyDotiskZabrana('nabidkaProj', v) === '');
+  test('dokument bez strany — mlčí', vyjimkyDotiskZabrana('techspec', v) === '');
+  global.smiZobrazit = (k) => k === 'tab.cenik';
+  test('role s právem ceníku OCK — mlčí', vyjimkyDotiskZabrana('nabidka', v) === '');
+  global.smiZobrazit = () => false;
+  v.data.cenik.profilasKgKc -= 3;                         // bez směsi
+  v.data.sleva = { procenta: 4, stav: 'schváleno automaticky', role: 'Obchodník' };
+  test('bez směsi, sleva OCK nad minimem — mlčí', vyjimkyDotiskZabrana('nabidka', v) === '');
+  global.NAST.slevy.minMarze = 0.95;
+  const m = vyjimkyDotiskZabrana('nabidka', v);
+  test('sleva OCK pod minimální marží → zábrana dotisku OCK', /marž/.test(m) && /klonem/.test(m), m);
+  test('marže OCK nezastaví dotisk PROJ', vyjimkyDotiskZabrana('nabidkaProj', v) === '');
+  delete global.ZAK; }
 
 console.log('— zábrana v kontrolách —');
 { const vysl = kontrolyProved({ vyjimka: { potreba: true, plati: false, text: 'ceník varianty je směs' } });
@@ -118,7 +187,7 @@ console.log('— zábrana v kontrolách —');
   test('zamítnutá — věta to říká', /zamítl/.test((kontrolyProved({ vyjimka: { potreba: true, plati: false, zamitnuto: true, text: 'x' } }).nalezy[0] || {}).text || '')); }
 
 console.log('— klon —');
-{ const z = novaZakazka(); z.varianty[0].data.cenovaVyjimka = { stav: VYJ_SCHVALENO, otisk: 'x' };
+{ const z = novaZakazka(); z.varianty[0].data.cenovaVyjimka = { stav: VYJ_SCHVALENO, obsah: 'x' };
   const k = klonujVariantu(z, z.varianty[0].id);
   test('klon varianty schválení výjimky nepřenese', !!k && !('cenovaVyjimka' in k.data) && !!z.varianty[0].data.cenovaVyjimka); }
 

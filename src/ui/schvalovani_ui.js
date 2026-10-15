@@ -428,9 +428,38 @@ function vyjimkyStavVarianty(v) {
   return {
     potreba: vyjimkyPotreba(o, k => smiZobrazit(k)).potreba,
     plati: vyjimkaPlati(rec, o),
-    zamitnuto: !!(rec && rec.stav === VYJ_ZAMITNUTO && rec.otisk === o.otisk),
+    zamitnuto: !!(rec && rec.stav === VYJ_ZAMITNUTO && rec.obsah === o.obsah),
     text: vyjimkyText(o),
   };
+}
+/* DOTISK DOKUMENTU NOVÉ STRANY do odeslané varianty (B153, zrcadlo serveru
+ * v zakazka_kontrola.mjs): strana, jejíž dokument v zámku ještě není (typicky
+ * OCK po vypnutí „jen projekce"), se posoudí jako nový zámek — cenová výjimka
+ * její části (schválení musí sedět na celý obsah) a minimální marže její
+ * platné slevy. Data zamčené varianty se už nezmění, takže jediná cesta je
+ * klon. Vrací větu důvodu, nebo ''. */
+function vyjimkyDotiskZabrana(typ, v) {
+  if (!typ || !v || !v.data || !v.zamek || typeof variantaUzamcena !== 'function' || !variantaUzamcena(v)) return '';
+  if (typeof kontrolyDokumentStrana !== 'function') return '';
+  /* Dokument bez strany (technická specifikace…) do zámku nejde — nic. */
+  const strana = kontrolyDokumentStrana(typ);
+  if (!strana) return '';
+  const tisky = [v.zamek.typ].concat((Array.isArray(v.zamek.tisky) ? v.zamek.tisky : []).map(t => t && t.typ));
+  if (tisky.some(t => (kontrolyDokumentStrana(t) || '?') === strana)) return '';
+  const konec = ' Odeslanou nabídku už nejde změnit — pokračujte klonem varianty.';
+  const role = (typeof zobrazeniRole === 'function') ? zobrazeniRole() : 'Obchodník';
+  const platny = vyjPlatnyZaznam();
+  const vyj = vyjimkyZamekProblem(typeof ZAK !== 'undefined' ? ZAK : null, v, { role },
+    { program: platny ? { platny } : null, smi: k => smiZobrazit(k), strany: [strana] });
+  if (vyj) return 'Dokument strany, která z této odeslané nabídky ještě neodešla: ' + vyj + '.' + konec;
+  if (typeof schvalovaniMarzeCasti === 'function' && typeof JEKLY !== 'undefined') {
+    for (const cast of ['ock', 'proj']) {
+      if (strana !== cast) continue;
+      const m = schvalovaniMarzeCasti(v, JEKLY, cast, (typeof NAST !== 'undefined' && NAST) ? NAST.slevy : null);
+      if (m) return 'Dokument strany, která z této odeslané nabídky ještě neodešla: ' + m + konec;
+    }
+  }
+  return '';
 }
 function vyjSmiRozhodovat() {
   const role = (typeof zobrazeniRole === 'function') ? zobrazeniRole() : 'Obchodník';
