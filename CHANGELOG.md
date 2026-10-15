@@ -100,6 +100,29 @@ Po sloučení `spust_testy.sh --smoke` s firemními podklady a příručkou
 v15.10.3 ze snímků: 251 prošlo / 0 selhalo / 1 přeskočeno (test.js);
 `--kontrola` mutací jádra 202 a serveru 427 úseků. Celé kolo s mutacemi
 poběží po sloučení S5 a auditu S4.
+**Úprava podle J. V. 15. 10. 2026 odpoledne (platí přednostně před textem níž):**
+„prodejní sazbu by obchodník vidět měl; skrývání nákladů by mělo probíhat na
+základě nastavení administrátora zobrazit / skrýt … a náklady zatím pro
+obchodníky nechat zobrazené s tím, že je administrátor v budoucnu skryje."
+- Klíč `naklady.ceniky` má výchozí **všem zapnuto** (Obchodník i Vedoucí) —
+  obchodník vidí totéž co ve v14.10.8: nákladovou sazbu, souhrn s náklady,
+  celý soubor zakázky, historii ceníku.
+- Přepínač zobrazit / skrýt **už existuje**: Nastavení → Zobrazení, skupina
+  „Náklady, přirážka a marže", řádek „Nákladové sazby PROJ, ceníky v souboru
+  zakázky a historie ceníku", zaškrtávátko zvlášť pro Obchodníka a Vedoucího;
+  ukládá se na server (`/api/zobrazeni`) a platí pro všechny účty té role.
+  Harness to zkouší přesně touto cestou (`zobrSet` → uloženo → obchodník).
+- Po odškrtnutí vidí obchodník místo sloupce „Sazba Kč/h · fix" sloupec
+  **„Prodejní sazba Kč/h · cena"**: hodinová sazba × (1 + % sekce), u fixní
+  položky cena s přirážkou, u dopravy mimo Prahu příplatek s přirážkou.
+  Souhrn jen Sekce / Celkem, soubor bez ceníků, server bez historie (beze změny).
+- `kontroly.cisla` zůstává opravené: o částkách v kontrolách rozhoduje to
+  zaškrtnutí (výchozí obchodník ne, jako dosud v matici). Pokud má obchodník
+  v matici zapnutou lištu marže a má čísla vidět i v kontrolách, je potřeba
+  zaškrtnout i „Částky v kontrolách před odesláním".
+- Testy nad výsledkem: `src/test_p12_naklady.js` 31 / 0,
+  `netlify/test_p12_naklady.mjs` 8 / 3 → 11 / 0, harness 21 / 8 → 29 / 0
+  (pojistky nad v14.10.8). Mutace a smoke viz PREDAVKA.
 
 Zadání `podklady/PROMPT_p12_naklady.md` (dávka S3, roadmapa #369), společná
 pravidla `podklady/_SPOLECNE_15_10.md`. Z `origin/test` (5a42369, v14.10.8).

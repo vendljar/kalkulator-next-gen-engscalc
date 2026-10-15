@@ -4,11 +4,12 @@
  * Do v15.10.3 posílal server každému přihlášenému platný ceník i až 60
  * starších verzí — celé nákladové ceníky. Platný ceník obchodník potřebuje
  * (výpočet běží v prohlížeči, test S12 v test_obchodnik.mjs), historii ne.
- * O právu rozhoduje klíč matice zobrazení `naklady.ceniky` (výchozí: vedoucí
- * ano, obchodník ne), administrátor ho má vždy.
+ * O právu rozhoduje klíč matice zobrazení `naklady.ceniky` (výchozí: všem
+ * zapnuto — pokyn J. V. 15. 10. 2026, skrývá administrátor), administrátor
+ * ho má vždy.
  *
- * Pojistka: před opravou program.mjs selže P12-S2 a P12-S6 (obchodník dostal
- * historii), po opravě vše projde.
+ * Pojistka: nad v14.10.8 (před opravou) 8 prošlo / 3 selhalo (S6, S8, S9 —
+ * historie šla i roli se skrytými náklady), po opravě 11 / 0.
  *
  * Spuštění: node netlify/test_p12_naklady.mjs */
 process.env.TAJEMSTVI_RELACE = 'testovaci-tajemstvi-jen-pro-lokalni-beh';
@@ -67,28 +68,31 @@ const c2 = ZC.zkusebniCenik(); c2.marze = (+c2.marze || 0) + 0.01;
 const r2 = await (await post(program, 'http://x/api/program', { cenik: c2, cenikProj: p1, poznamka: 'p12 v2' }, cA)).json();
 if (!r2.ok) throw new Error('program v2 ' + JSON.stringify(r2));
 
-const a = await db(cA), o = await db(cO), v = await db(cV);
-test('P12-S2', 'obchodník (výchozí matice) nedostane historii verzí ceníku',
-  o && Array.isArray(o.historie) && o.historie.length === 0 && o.historieVynechana === 1, o && { h: o.historie.length, vyn: o.historieVynechana });
-test('P12-S3', 'obchodník dál dostane celý platný ceník (výpočet v prohlížeči se nemění)',
-  o && JSON.stringify(o.platny) === JSON.stringify(a.platny), o && o.platny && o.platny.verze);
+const a = await db(cA), o0b = await db(cO), v = await db(cV);
+test('P12-S2', 'obchodník (výchozí matice) historii dostane — náklady zatím vidí (pokyn J. V. 15. 10.)',
+  o0b && o0b.historie.length === 1 && o0b.historieVynechana === undefined, o0b && o0b.historie.length);
 test('P12-S4', 'administrátor historii dostane', a && a.historie.length === 1 && a.historieVynechana === undefined, a && a.historie.length);
 test('P12-S5', 'vedoucí (výchozí matice) historii dostane — beze změny proti dnešku',
   v && v.historie.length === 1 && v.historieVynechana === undefined, v && v.historie.length);
 
-/* Odpověď bez historie projde normalizací v prohlížeči (programNormalizuj). */
+/* Administrátor obchodníkům náklady skryje (Nastavení → Zobrazení). */
+const mz = await (await post(zobrazeni, 'http://x/api/zobrazeni',
+  { matice: { 'naklady.ceniky': { 'Obchodník': false, 'Vedoucí': true } } }, cA)).json();
+test('P12-S7', 'administrátor uloží matici s klíčem naklady.ceniky', mz.ok, mz);
+const o = await db(cO);
+test('P12-S8', 'obchodník se skrytými náklady nedostane historii verzí ceníku',
+  o && Array.isArray(o.historie) && o.historie.length === 0 && o.historieVynechana === 1, o && { h: o.historie.length, vyn: o.historieVynechana });
+test('P12-S3', 'obchodník dál dostane celý platný ceník (výpočet v prohlížeči se nemění)',
+  o && JSON.stringify(o.platny) === JSON.stringify(a.platny), o && o.platny && o.platny.verze);
 let norm = null; try { norm = globalThis.programNormalizuj(o); } catch (e) { norm = String(e); }
 test('P12-S6', 'ořezaná databáze projde programNormalizuj (prohlížeč ji přijme)',
   norm && typeof norm === 'object' && norm.platny.verze === 2 && norm.historie.length === 0, norm);
 
-/* Matice na serveru rozhoduje: administrátor obchodníkovi právo přidělí,
- * vedoucímu odebere. */
-const mz = await (await post(zobrazeni, 'http://x/api/zobrazeni',
-  { matice: { 'naklady.ceniky': { 'Obchodník': true, 'Vedoucí': false } } }, cA)).json();
-test('P12-S7', 'administrátor uloží matici s klíčem naklady.ceniky', mz.ok, mz);
+/* A naopak: vedoucímu odebrat, obchodníkovi vrátit. */
+await post(zobrazeni, 'http://x/api/zobrazeni', { matice: { 'naklady.ceniky': { 'Obchodník': true, 'Vedoucí': false } } }, cA);
 const o2 = await db(cO), v2 = await db(cV);
-test('P12-S8', 'obchodník s přiděleným právem historii dostane', o2 && o2.historie.length === 1, o2 && o2.historie.length);
-test('P12-S9', 'vedoucí s odebraným právem historii nedostane', v2 && v2.historie.length === 0 && v2.historieVynechana === 1, v2 && v2.historie.length);
+test('P12-S9', 'vedoucí s odebraným právem historii nedostane, obchodník s vráceným ano',
+  v2 && v2.historie.length === 0 && v2.historieVynechana === 1 && o2 && o2.historie.length === 1, { v: v2 && v2.historie.length, o: o2 && o2.historie.length });
 
 /* Uložená data na serveru se nemění — ořezává se jen odpověď. */
 const a2 = await db(cA);

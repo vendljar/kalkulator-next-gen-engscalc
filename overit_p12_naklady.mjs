@@ -3,9 +3,10 @@
  *
  * Co se zkouší na sestavené aplikaci se skutečnými serverovými funkcemi
  * (most `page.route`, jako overit_role_nahled.mjs):
- *   – Kalkulace PROJ: sloupec „Sazba Kč/h · fix" a souhrn s náklady vidí
- *     administrátor i vedoucí (náhled), obchodník ne; tabulka zůstává
- *     obdélníková; vlastní fixní položku obchodník dál zadá;
+ *   – Kalkulace PROJ: ve výchozí matici vidí nákladovou sazbu všichni;
+ *     když ji administrátor obchodníkům skryje (Nastavení → Zobrazení),
+ *     vidí obchodník prodejní sazbu (s přirážkou sekce) a souhrn bez
+ *     nákladů; tabulka zůstává obdélníková; vlastní fixní položku zadá dál;
  *   – kontroly.cisla: právo konečně rozhoduje (obchodník s lištou marže
  *     čísla v kontrolách nevidí, s kontroly.cisla ano; vedoucí beze změny);
  *   – Uložit do souboru: obchodník dostane soubor bez ceníků, administrátor
@@ -14,10 +15,11 @@
  *   – OTISK NABÍDKY: tatáž zakázka dává u obchodníka i administrátora
  *     stejný výpočet i stejná data nabídky PROJ a OCK.
  *
- * Pojistka: nad v14.10.8 (origin/test 5a42369, před opravou) 17 OK / 7 FAIL
- * (historie, sloupec Sazba, souhrn, popisek vlastní položky, kontroly.cisla,
- * soubor ×2), po opravě 24 OK / 0 FAIL. Chování administrátora a vedoucího
- * i otisk nabídky prošly už před opravou — to je záměr (nemají se změnit).
+ * Pojistka: nad v14.10.8 (origin/test 5a42369, před opravou) 21 OK / 8 FAIL
+ * (historie, prodejní sazba ×2, souhrn, popisek vlastní položky,
+ * kontroly.cisla, soubor ×2), po opravě 29 OK / 0 FAIL. Výchozí stav
+ * (obchodník náklady vidí — pokyn J. V. 15. 10. 2026), chování administrátora
+ * a vedoucího i otisk nabídky prošly už před opravou — to je záměr.
  *
  * Spouští se s ADMIN_EMAIL v prostředí (spust_testy.sh ji nastavuje).
  *
@@ -171,6 +173,8 @@ await prihlas('spravce@priklad.cz', 'Zkusebni.Heslo.123');
 /* Dvě verze ceníku, ať má server historii. */
 const zverejneno = await page.evaluate(async () => {
   const c = JSON.parse(JSON.stringify(DEFAULT_CENIK)), p = JSON.parse(JSON.stringify(DEFAULT_CENIK_PROJ));
+  /* Ceník ze sestavení má sazby PROJ nulové — prodejní sazba by nešla ověřit. */
+  p.sazby = Object.assign({}, p.sazby, { projektant: 1000, statik: 1000, zamereni: 1000 }); p.marze = 0.2;
   const a = await onlineApi('/api/program', { cenik: c, cenikProj: p, poznamka: 'p12 v1' });
   c.marze = (+c.marze || 0) + 0.01;
   const b = await onlineApi('/api/program', { cenik: c, cenikProj: p, poznamka: 'p12 v2' });
@@ -193,6 +197,8 @@ await page.evaluate(() => {
   const i = PJ.sekce.findIndex(s => s.doprava);
   if (i >= 0) { PJ.sekce[i].doprava.km = 120; PJ.sekce[i].doprava.mimoPrahu = true; }
   PJ.sekce[0].polozky.push({ nazev: 'Vlastní zkušební položka', typ: 'fix', cena: 4000, vlastni: true });
+  PC.sazby = Object.assign({}, PC.sazby, { projektant: 1000, statik: 1000, zamereni: 1000 }); PC.marze = 0.2;
+  PJ.sekce.forEach(s => s.polozky.forEach(p => { if (p.typ === 'hod') { p.vyrazeno = false; if (!(+p.hodiny > 0)) p.hodiny = 4; } }));
   Object.assign(aktivniVarianta(ZAK).data.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2, nastupiste: 4 });
   syncVarianta(); render();
 });
@@ -223,7 +229,33 @@ await page.evaluate(() => { NAST.nahledRole = null; nastSetAdmin(true); render()
 
 await odhlas();
 
-/* ---------- 2) obchodník ---------- */
+/* ---------- 2a) obchodník ve výchozí matici: náklady zatím vidí ----------
+ * Pokyn J. V. 15. 10. 2026: „náklady zatím pro obchodníky nechat zobrazené
+ * s tím, že je administrátor v budoucnu skryje". */
+await prihlas('obchodnik@priklad.cz', 'ObchodniHeslo1');
+const vych = await page.evaluate(() => ({ h: (ONLINE_STAV.db && ONLINE_STAV.db.historie || []).length }));
+await page.evaluate((t) => { ZAK = StorageAdapter.importuj(t); syncVarianta(); render(); }, souborAdmin);
+const obV = await stavProj();
+test('výchozí matice: obchodník sloupec Sazba (nákladový) vidí jako dosud', obV.thK.includes('Sazba Kč/h · fix'), obV.thK);
+test('výchozí matice: obchodník vidí souhrn s náklady a historii ceníku', obV.thS.includes('Náklad') && vych.h === 1, { th: obV.thS, vych });
+const souborObchV = await ulozenySoubor();
+test('výchozí matice: obchodník uloží soubor s celými ceníky',
+  JSON.parse(souborObchV).varianty.every(v => v.data.cenik && !v.data.cenikVynechan));
+await odhlas();
+
+/* ---------- 2b) administrátor obchodníkům náklady skryje ---------- */
+await prihlas('spravce@priklad.cz', 'Zkusebni.Heslo.123');
+const skryto = await page.evaluate(async () => {
+  ZOBR_ULOZ.stav = '';
+  zobrSet('naklady.ceniky', 'Obchodník', false);
+  for (let i = 0; i < 100 && ZOBR_ULOZ.stav !== 'ulozeno'; i++) await new Promise(r => setTimeout(r, 100));
+  const radek = [...document.querySelectorAll('#nastaveni-panel tr, tr')].some(r => /Nákladové sazby PROJ, ceníky v souboru/.test(r.textContent));
+  return { stav: ZOBR_ULOZ.stav, radek };
+});
+test('administrátor skryje náklady obchodníkům v matici zobrazení (uloženo na server)', skryto.stav === 'ulozeno', skryto);
+await odhlas();
+
+/* ---------- 2c) obchodník se skrytými náklady ---------- */
 await prihlas('obchodnik@priklad.cz', 'ObchodniHeslo1');
 const hist = await page.evaluate(() => ({ role: zobrazeniRole(), h: (ONLINE_STAV.db && ONLINE_STAV.db.historie || []).length,
   verze: ONLINE_STAV.db && ONLINE_STAV.db.platny && ONLINE_STAV.db.platny.verze }));
@@ -232,11 +264,29 @@ test('obchodník dostane ze serveru platný ceník bez historie verzí', hist.ro
 /* Táž zakázka jako u administrátora (načtená z jeho plného souboru). */
 await page.evaluate((t) => { ZAK = StorageAdapter.importuj(t); syncVarianta(); render(); }, souborAdmin);
 const ob = await stavProj();
-test('obchodník NEvidí sloupec Sazba v Kalkulaci PROJ', !ob.thK.some(t => /Sazba/.test(t)), ob.thK);
+test('obchodník NEvidí nákladovou sazbu, místo ní sloupec Prodejní sazba',
+  !ob.thK.includes('Sazba Kč/h · fix') && ob.thK.includes('Prodejní sazba Kč/h · cena'), ob.thK);
+/* Prodejní sazba = nákladová × (1 + % sekce); nákladová se v buňce neobjeví. */
+const sazbaP = await page.evaluate(() => {
+  const r = vypocetProjAkt();
+  const tab = [...document.querySelectorAll('#page-proj table')].find(t => [...t.querySelectorAll('th')].some(h => h.textContent.trim() === 'Položka'));
+  const iSaz = [...tab.rows[0].children].findIndex(x => /Prodejní sazba/.test(x.textContent));
+  if (iSaz < 0) return null;
+  for (const s of r.sekce) for (const p of s.polozky) {
+    if (p.typ !== 'hod' || !(+p.sazbaKc > 0) || p.vyrazeno || !(s.pouzitePct > 0)) continue;
+    const radek = [...tab.rows].find(x => x.cells[0] && x.cells[0].textContent.trim().startsWith(p.nazev));
+    if (!radek) continue;
+    const ocek = num(Math.round(p.sazbaKc * (1 + s.pouzitePct / 100)));
+    return { bunka: radek.cells[iSaz].textContent.trim(), ocek, naklad: num(p.sazbaKc) };
+  }
+  return { dbg: r.sekce.map(s => [s.pouzitePct, s.polozky.filter(p => p.typ === 'hod').map(p => [p.nazev, p.sazbaKc, p.vyrazeno]).slice(0, 2)]).slice(0, 3) };
+});
+test('ve sloupci je prodejní sazba (s přirážkou sekce), ne nákladová',
+  !!sazbaP && sazbaP.bunka === sazbaP.ocek && sazbaP.bunka !== sazbaP.naklad, sazbaP);
 test('tabulka kalkulace PROJ zůstává obdélníková', ob.obdelnik);
 test('souhrn PROJ ukazuje obchodníkovi jen Sekce a Celkem', ob.thS.join('|') === 'Sekce|Celkem', ob.thS);
 test('souhrn PROJ zůstává obdélníkový', ob.obdelnikS);
-test('řádek dopravy má stejnou šířku jako hlavička (bez částky příplatku)',
+test('řádek dopravy má stejnou šířku jako hlavička',
   ob.dopravaBunek === ob.sirkaHlavicky, { d: ob.dopravaBunek, h: ob.sirkaHlavicky });
 test('obchodník nevidí náklad ani přirážku (jako dosud)', !ob.thK.includes('Náklad') && !ob.thK.some(t => /Přirážka/.test(t)), ob.thK);
 
