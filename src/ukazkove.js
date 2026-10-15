@@ -283,10 +283,45 @@ function ukazkoveVyctem(stav) {
   return k.slice(0, -1).join(', ') + ' a ' + k[k.length - 1];
 }
 
+/* ---------- čekání lišty při startu (S5, v15.10.4) ----------
+ * Zadání J. V. 15. 10. 2026: „pozdrž zobrazení červené lišty při načtení
+ * aplikace o pár vteřin. Dnes se zobrazuje hned a teprve po ověření zmizí."
+ *
+ * Při startu nad serverem se ceník a firemní údaje teprve stahují z online
+ * databáze (/api/ja → /api/program, /api/firma). Do té doby nese aplikace
+ * prázdný vzorek ze sestavení, takže lišta „ceník není nahraný" blikla
+ * každému přihlášenému — i tomu, komu se ceník za vteřinu nasadil.
+ *
+ * Proto lišta čeká, dokud DOBĚHNE PRVNÍ POKUS o načtení (úspěch i chyba),
+ * nejdéle UKAZKOVE_CEKANI_MS od startu. Potom se stav vyhodnotí běžně
+ * a lišta reaguje okamžitě jako dosud (změna ceníku, odhlášení).
+ *
+ * Čekání je JEN VZHLED LIŠTY. Zábrany dokumentů (ukazkoveBraniDokumentu,
+ * dokumentZabrana, ukazkoveTiskLista) se na ně neptají — nad prázdným
+ * ceníkem dokument nevznikne ani během čekání.
+ *
+ * `cekani` = { od: čas startu v ms | null, dobehlo: bool }. `od: null`
+ * znamená, že se na nic nečeká (ze souboru file:// se online nic nenačítá).
+ * Čas i „doběhlo" se předávají zvenčí, aby šlo rozhodnutí testovat bez
+ * skutečných pěti vteřin. */
+const UKAZKOVE_CEKANI_MS = 5000;
+
+function ukazkoveCekaniTrva(cekani, ted) {
+  if (!cekani || cekani.od === null || cekani.od === undefined || cekani.dobehlo) return false;
+  return (ted - cekani.od) < UKAZKOVE_CEKANI_MS;
+}
+
+/* 'neukazat' (data jsou skutečná) | 'ceka' (ještě se ověřuje) | 'ukazat'. */
+function ukazkoveListaRozhodni(stav, cekani, ted) {
+  if (!stav || !stav.jsou) return 'neukazat';
+  return ukazkoveCekaniTrva(cekani, ted) ? 'ceka' : 'ukazat';
+}
+
 if (typeof module !== 'undefined')
   module.exports = { UKAZKOVE_KLIC, PRAZDNY_KLIC, ukazkoveJe, ukazkovePrazdny,
                      ukazkoveOcisti, ukazkoveSrovnejZnacku,
                      ukazkoveMaCisla, ukazkoveVzor, ukazkoveSrovnejSObsahem, ukazkoveNeniCena,
                      ukazkoveBez, ukazkoveStav, ukazkoveText,
                      ukazkoveKratce, ukazkoveVyctem, ukazkoveBraniDokumentu,
-                     ukazkoveKudy, ukazkovePripojeni };
+                     ukazkoveKudy, ukazkovePripojeni,
+                     UKAZKOVE_CEKANI_MS, ukazkoveCekaniTrva, ukazkoveListaRozhodni };

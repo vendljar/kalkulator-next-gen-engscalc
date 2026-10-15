@@ -77,7 +77,9 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* Cenové výjimky (13. 10. 2026): směs ceníku a pás „jiné" do schvalování. */
      'test_vyjimky.mjs', '../src/test_vyjimky.js',
      /* Krycí list odeslané nabídky (14. 10. 2026): volná pole a serverová pojistka. */
-     'test_kryci_po_tisku.mjs', '../src/test_kryci_po_tisku.js'];
+     'test_kryci_po_tisku.mjs', '../src/test_kryci_po_tisku.js',
+     /* S5 (15. 10. 2026): čekání červené lišty při startu (ukazkoveListaRozhodni). */
+     '../src/test_ukazkove.js'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -2019,6 +2021,23 @@ const MUTACE = [
     hledej: "    const out = s.map(x => JSON.parse(JSON.stringify(x))).concat(n.slice(s.length));",
     nahrad: "    const out = n;",
     proc: 'dřívější tisk odeslané nabídky by šel smazat nebo přepsat beze stopy' },
+  /* ---------- S5 (15. 10. 2026): červená lišta až po ověření ceníku ---------- */
+  { nazev: 'S5: lišta čeká i po doběhnutí načtení', soubor: '../src/ukazkove.js',
+    hledej: "  if (!cekani || cekani.od === null || cekani.od === undefined || cekani.dobehlo) return false;",
+    nahrad: "  if (!cekani || cekani.od === null || cekani.od === undefined) return false;",
+    proc: 'po selhání /api/program by prázdný ceník zůstal 5 s bez varování, i když už je jasné, že chybí' },
+  { nazev: 'S5: čekání nemá strop 5 s', soubor: '../src/ukazkove.js',
+    hledej: "  return (ted - cekani.od) < UKAZKOVE_CEKANI_MS;",
+    nahrad: "  return true;",
+    proc: 'při visícím serveru by lišta „ceník není nahraný" nenaskočila nikdy' },
+  { nazev: 'S5: rozhodnutí lišty nehledí na stav dat', soubor: '../src/ukazkove.js',
+    hledej: "  if (!stav || !stav.jsou) return 'neukazat';",
+    nahrad: "  if (!stav) return 'neukazat';",
+    proc: 'po čekání by lišta svítila i nad načteným skutečným ceníkem' },
+  { nazev: 'S5: hned po startu se nečeká', soubor: '../src/ukazkove.js',
+    hledej: "const UKAZKOVE_CEKANI_MS = 5000;",
+    nahrad: "const UKAZKOVE_CEKANI_MS = 0;",
+    proc: 'lišta by zase blikla každému přihlášenému, než se ceník stáhne (zadání J. V. 15. 10. 2026)' },
 ];
 
 /* ---------- přerušený běh vrátí zmutovaný soubor ----------
