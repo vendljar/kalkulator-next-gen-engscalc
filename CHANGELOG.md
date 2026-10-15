@@ -8,6 +8,30 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v15.10.14 — rozbor nechycených mutací B8 a B31, doplněné testy (větev claude/mutace-b8-b31)
+
+Dávka S10. Celé kolo nad f8fe243 (v15.10.13): mutace serveru 447 z 449,
+nechycené „B8: klíč času zakázky se bere, jak přijde" a „B31: hesloVerze se
+obnovou sníží". U obou jde o **díru v testu**, ne v kódu a ne o ekvivalentní
+mutaci — kód aplikace se nemění, kotvy v `MUTACE` zůstávají.
+
+- **B8 (nechycená od 923ed48, B151):** test v `netlify/test_prava.mjs` dával
+  do rejstříku zakázku se jménem souboru „x-fetch.json", na které se cizí
+  tvar převedl. Od B151 se číslo porovnává s rejstříkem přesně, takže cizí
+  tvar odmítl už rejstřík a tvarovou kontrolu nikdo nezkoušel. Číslo nabídky
+  je ale volný text do 60 znaků (`CISLO_MAX`): zakázka s číslem
+  „x');fetch('/')" uložit jde, rejstřík ji nese, a pak tvar hlídá jen B8.
+  Test teď do rejstříku dává zakázku přesně s cizím číslem. Mutace 0 z 1 → 1 z 1.
+- **B31 (nechycená od 91d6093, B93):** jediný test B31 měnil po otisku heslo;
+  B93 pak verzi nastaví na `vz + 1` a mutovaný řádek přepíše. Verzi hesla ale
+  zvedá i odhlášení (B6) bez změny hesla — obnova z otisku pořízeného před
+  odhlášením by verzi snížila a odvolaná cookie by ožila. Nový oddíl
+  v `netlify/test_obnova.mjs` (otisk → přihlášení → odhlášení → obnova
+  „přepsat" → verze drží, cookie 401): sada 226 → 232 OK / 0 FAIL (ve zprávě
+  commitu 6d9ecdb omylem „225"). Mutace 0 z 1 → 1 z 1.
+- Cílené mutace: „B8" 15 z 15 (z toho „B8: klíč času" 1 z 1), „B31" 1 z 1,
+  „B151" 1 z 1, „B93" 1 z 1; `--kontrola` 449 úseků; kontrola údajů čistá.
+
 ## v15.10.13 — integrace S9 (číslo SoD v šablonách SoD projekce, v15.10.11) do test (větev claude/integrace-15-10)
 
 `test` už nese v15.10.12, proto sloučení S9 (oddíl v15.10.11 níž) dostává
