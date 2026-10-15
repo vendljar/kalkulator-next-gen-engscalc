@@ -170,16 +170,17 @@ function renderProj() {
    * kalkulace nemůžou rozejít: náklad a přirážku vidí jen právo
    * `sloupce.naklad`. */
   const col = kalkSloupce();
-  /* NÁKLADOVÉ SAZBY JEN S PRÁVEM NA NÁKLADY (P12 / roadmapa #369, v15.10.3).
-   * Sloupec „Sazba Kč/h · fix" vypisoval každému hodinovou sazbu a fixní
-   * částku z Ceníku nákladů PROJ; vedle ceny z nich šla dopočítat přirážka.
-   * Bez práva `naklady.ceniky` (výchozí: obchodník) sloupec chybí, z dopravy
-   * zmizí částka příplatku mimo Prahu a souhrn ukáže jen ceny sekcí. Hodiny
-   * a ceny zůstávají; výpočtu ani dokumentů se to netýká. Kdo má
-   * `sloupce.naklad`, vidí sazby vždy (edituje je). Vedoucí právo ve výchozí
-   * matici má — jemu se nic nemění. */
+  /* NÁKLADOVÉ SAZBY SKRÝVÁ ADMINISTRÁTOR (P12 / roadmapa #369, v15.10.3).
+   * Sloupec „Sazba Kč/h · fix" ukazuje hodinovou sazbu a fixní částku
+   * z Ceníku nákladů PROJ. Rozhodnutí J. V. 15. 10. 2026: obchodník náklady
+   * zatím vidí (výchozí matice: `naklady.ceniky` zapnuté všem) a skryje mu
+   * je administrátor v Nastavení → Zobrazení. Bez práva je místo nákladové
+   * sazby PRODEJNÍ (sazba × (1 + % sekce)), u fixní položky cena a u dopravy
+   * příplatek s přirážkou; souhrn ukáže jen ceny sekcí. Výpočtu ani dokumentů
+   * se to netýká. Kdo má `sloupce.naklad`, vidí nákladové sazby vždy. */
   const vidSazby = col.admin || smiZobrazit(ZOBRAZENI_KLIC_NAKLADY);
-  const POPIS_SL = vidSazby ? 5 : 4;        // Položka · Hodiny · Rezerva · Celkem h (· Sazba)
+  const prodejni = (s, x) => Math.round((+x || 0) * (1 + (s.pouzitePct || 0) / 100));
+  const POPIS_SL = 5;                       // Položka · Hodiny · Rezerva · Celkem h · Sazba
   const NC = POPIS_SL + (col.showCost ? 2 : 0) + 1 + col.adminExtra;
   /* Prázdné buňky pod administrátorskými sloupci — kolik jich je, říká
    * `col.adminExtra` (sloupec „Výchozí" vidí jen administrátor, 3. 9. 2026). */
@@ -260,7 +261,7 @@ function renderProj() {
       onchange="set('PC.marze', (+this.value) / 100)"><span class="prm-u">%</span></div>` : ''}`;
 
   /* ---------------- tabulka kalkulace ---------------- */
-  const hlavicka = `<tr><th>Položka</th><th>Hodiny</th><th>Rezerva h</th><th>Celkem h</th>${vidSazby ? '<th>Sazba Kč/h · fix</th>' : ''}`
+  const hlavicka = `<tr><th>Položka</th><th>Hodiny</th><th>Rezerva h</th><th>Celkem h</th>${vidSazby ? '<th>Sazba Kč/h · fix</th>' : '<th title="sazba a částka včetně přirážky sekce">Prodejní sazba Kč/h · cena</th>'}`
     + `${col.showCost ? `<th>Náklad</th><th>Přirážka ${num(PC.marze * 100)} %</th>` : ''}<th>Cena</th>`
     + `${col.admin ? '<th class="admincol" title="odškrtnutím se položka přestane počítat v TÉTO zakázce">Počítat</th>' : ''}`
     + `${col.admin && col.spravce ? '<th class="admincol" title="zaškrtnutí platí pro každou NOVOU zakázku (nastavení aplikace, ne této zakázky)">Výchozí</th>' : ''}</tr>`;
@@ -344,12 +345,12 @@ function renderProj() {
                placeholder="${num(p.sazbaZCeniku)}" onchange="pjPrepis(${i},${j},'sazbaPrepis',this.value)"
                title="sjednaná sazba jen pro tuto zakázku (prázdné = ${num(p.sazbaZCeniku)} Kč z ceníku)">
              ${p.sazbaPrepsana ? `<button class="mini noprint" onclick="pjPrepis(${i},${j},'sazbaPrepis','')" title="vrátit sazbu z ceníku (${num(p.sazbaZCeniku)} Kč)">↺</button>` : ''}`
-          : num(p.sazbaKc);
+          : (vidSazby ? num(p.sazbaKc) : num(prodejni(s, p.sazbaKc)));
         return `${tr}<td>${nazev}${stitekVyp}</td>
           <td>${(col.admin || vlEd) ? `<input type="number" step="1" min="0" style="width:66px" value="${esc(+p.hodiny || 0)}" onchange="pjSet(${i}, 'polozky.${j}.hodiny', +this.value)">` : num(p.hodiny)}</td>
           <td>${col.admin ? `<input type="number" step="1" min="0" style="width:66px" value="${esc(+p.rezerva || 0)}" onchange="pjSet(${i}, 'polozky.${j}.rezerva', +this.value)">` : num(p.rezerva)}</td>
           <td>${num(p.hodinyCelkem)}</td>
-          ${vidSazby ? `<td style="white-space:nowrap">${sazbaEd}</td>` : ''}
+          <td style="white-space:nowrap">${sazbaEd}</td>
           ${penize(p.naklad, marzeSekce(s, p.naklad), cena)}${pocitat}</tr>`;
       }
 
@@ -364,19 +365,10 @@ function renderProj() {
              ${p.cenaPrepsana ? `<button class="mini noprint" onclick="pjPrepis(${i},${j},'cenaPrepis','')" title="vrátit cenu z ceníku (${num(p.cenaZCeniku)} Kč)">↺</button>` : ''}`
           : `<input type="number" step="500" min="0" style="width:86px" value="${esc(p.cena)}" onchange="pjSet(${i}, 'polozky.${j}.cena', +this.value)">`)
         : (vlEd && !p.fixKey
-          ? `<input type="number" step="500" min="0" style="width:86px" value="${esc(p.cena)}" title="částka této položky (jen pro tuto zakázku)" onchange="pjSet(${i}, 'polozky.${j}.cena', +this.value)">`
-          : num(p.cenaEfekt));
-      /* Bez práva na náklady (P12) se fixní částka z ceníku neukazuje vůbec;
-       * vlastní fixní řádek (částku zadal sám uživatel) se dál píše tady,
-       * v buňce popisu, s jasným popiskem, že jde o částku před přirážkou. */
-      if (!vidSazby) {
-        const vlastniFix = vlEd && !p.fixKey;
-        return `${tr}<td>${nazev}${stitekVyp}</td>
-        <td colspan="3" class="note" style="text-align:right;white-space:nowrap">${vlastniFix
-          ? `vlastní částka před přirážkou <input type="number" step="500" min="0" style="width:86px" value="${esc(p.cena)}" title="částka této položky před přirážkou sekce (jen pro tuto zakázku); cena vpravo už přirážku obsahuje" onchange="pjSet(${i}, 'polozky.${j}.cena', +this.value)">`
-          : (p.fixKey ? 'fixní částka (ceník PROJ)' : 'fixní částka')}</td>
-        ${penize(p.naklad, marzeSekce(s, p.naklad), cena)}${pocitat}</tr>`;
-      }
+          ? `<input type="number" step="500" min="0" style="width:86px" value="${esc(p.cena)}" title="částka této položky před přirážkou sekce (jen pro tuto zakázku); cena vpravo už přirážku obsahuje" onchange="pjSet(${i}, 'polozky.${j}.cena', +this.value)">`
+            + (vidSazby ? '' : ' <span class="note">před přirážkou</span>')
+          /* Bez práva na náklady (P12) prodejní cena položky místo nákladové. */
+          : (vidSazby ? num(p.cenaEfekt) : num(prodejni(s, p.cenaEfekt))));
       return `${tr}<td>${nazev}${stitekVyp}</td>
         <td colspan="3" class="note" style="text-align:right">${p.fixKey
           ? (p.cenaPrepsana ? 'fixní částka – přepsáno pro tuto zakázku' : 'fixní částka (ceník PROJ)')
@@ -412,7 +404,7 @@ function renderProj() {
            ${dopravaPenize}${prazdneAdmin}</tr>`
         : (s.dopravaKc
           ? `<tr><td>Doprava${zdroj.doprava.mimoPrahu ? ' (mimo Prahu)' : ''}</td><td>${num(zdroj.doprava.km)}</td><td class="note">km</td><td></td>
-             ${vidSazby ? `<td class="note">${zdroj.doprava.mimoPrahu ? fmt(mimoKc) : '—'}${rucniPill}</td>` : ''}${dopravaPenize}</tr>` : '');
+             <td class="note">${zdroj.doprava.mimoPrahu ? fmt(vidSazby ? mimoKc : prodejni(s, mimoKc)) : '—'}${rucniPill}</td>${dopravaPenize}</tr>` : '');
 
     /* Sjednocený řádek přidávání (19. 8. 2026 večer, stejné pravidlo jako
      * OCK): „+ přidat …" = vlastní řádek jen této zakázky (obchodník,

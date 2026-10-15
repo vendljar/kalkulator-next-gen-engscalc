@@ -268,23 +268,24 @@ const ZOBRAZENI_PRVKY = [
     proc: 'Totéž jako u kontrol: samotné varování je bezpečnostní pojistka pro všechny, '
         + 'čísla za ním jsou nákladová informace.',
   },
-  /* P12 / roadmapa #369 (v15.10.3): „náklady zatím obchodník vidí, do budoucna
-   * je v jeho zobrazení vypnout" (rozhodnutí J. V. 29. 9. 2026). Vlastní klíč,
-   * ne `sloupce.naklad`: vedoucí ho dnes nemá, a přesto sazby PROJ, celý
-   * stažený soubor zakázky i historii ceníku vidí — jemu se nic měnit nemá.
-   * Výchozí je proto „Vedoucí ano, Obchodník ne". Server se na tentýž klíč
-   * ptá u GET /api/program (historie verzí ceníku). */
+  /* P12 / roadmapa #369 (v15.10.3). Rozhodnutí J. V. 15. 10. 2026: „náklady
+   * zatím pro obchodníky nechat zobrazené s tím, že je administrátor
+   * v budoucnu skryje" — výchozí je proto VŠEM ZAPNUTO (dnešní stav) a skrývá
+   * se odškrtnutím v Nastavení → Zobrazení. Vlastní klíč, ne `sloupce.naklad`
+   * (to by s sebou vzalo i náklad a přirážku položek). Server se na tentýž
+   * klíč ptá u GET /api/program (historie verzí ceníku). */
   {
     klic: 'naklady.ceniky', skupina: 'cisla', nazev: 'Nákladové sazby PROJ, ceníky v souboru zakázky a historie ceníku',
     kde: 'Kalkulace PROJ (sloupec Sazba, souhrn), Uložit zakázku do souboru, ceník ze serveru',
-    popis: 'S tímto právem je v Kalkulaci PROJ vidět sloupec Sazba Kč/h · fix a souhrn s náklady, '
+    popis: 'S tímto právem je v Kalkulaci PROJ vidět nákladová sazba (Kč/h · fix) a souhrn s náklady, '
          + 'stažený soubor zakázky nese celé ceníky variant a server pošle i starší verze ceníku. '
-         + 'Bez něj zůstanou hodiny a ceny, soubor nese jen odchylky varianty od platného ceníku.',
-    vychozi: { 'Obchodník': false, 'Vedoucí': true },
+         + 'Bez něj je místo nákladové sazby prodejní (s přirážkou) a soubor nese jen to, čím se '
+         + 'varianta liší od platného ceníku.',
+    vychozi: { 'Obchodník': true, 'Vedoucí': true },
     navrh: { 'Obchodník': false, 'Vedoucí': true },
     proc: 'Nákladová sazba vedle ceny prozradí přirážku a stažený soubor celý nákupní ceník. '
-        + 'Obchodník k nabídce potřebuje hodiny a cenu; vedoucí je dnes vidí a při schvalování '
-        + 'slev s nimi pracuje, proto mu výchozí stav nic nebere.',
+        + 'Obchodníkovi k nabídce stačí prodejní sazba a cena; vedoucí s náklady pracuje při '
+        + 'schvalování slev. Do rozhodnutí administrátora zůstává zapnuto všem (stav před v15.10.3).',
   },
 
   /* ---------- nastavení ---------- */

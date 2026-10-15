@@ -53,13 +53,13 @@ const otisk = (v) => JSON.stringify({
 test('matice zná klíč naklady.ceniky (skupina čísel)',
   Z.ZOBRAZENI_KLIC_NAKLADY === 'naklady.ceniky' && !!Z.zobrazeniPrvek('naklady.ceniky')
   && Z.zobrazeniPrvek('naklady.ceniky').skupina === 'cisla');
-test('výchozí: obchodník právo nemá', Z.zobrazeniSmi('Obchodník', 'naklady.ceniky', null) === false);
+test('výchozí: obchodník právo má — náklady zatím vidí (pokyn J. V. 15. 10.)', Z.zobrazeniSmi('Obchodník', 'naklady.ceniky', null) === true);
 test('výchozí: vedoucí právo má (chování vedoucího se nemění)', Z.zobrazeniSmi('Vedoucí', 'naklady.ceniky', null) === true);
 test('administrátor ho má vždy', Z.zobrazeniSmi('Administrátor', 'naklady.ceniky', { 'naklady.ceniky': { 'Obchodník': false, 'Vedoucí': false } }) === true);
-test('administrátor ho obchodníkovi přidělí maticí',
-  Z.zobrazeniSmi('Obchodník', 'naklady.ceniky', Z.zobrazeniOciste({ 'naklady.ceniky': { 'Obchodník': true } })) === true);
+test('administrátor ho obchodníkovi maticí odebere (skryje náklady)',
+  Z.zobrazeniSmi('Obchodník', 'naklady.ceniky', Z.zobrazeniOciste({ 'naklady.ceniky': { 'Obchodník': false } })) === false);
 test('stará uložená matice bez klíče dostane výchozí hodnotu',
-  Z.zobrazeniOciste({ 'sloupce.naklad': { 'Vedoucí': true } })['naklady.ceniky']['Obchodník'] === false
+  Z.zobrazeniOciste({ 'sloupce.naklad': { 'Vedoucí': true } })['naklady.ceniky']['Obchodník'] === true
   && Z.zobrazeniOciste({})['naklady.ceniky']['Vedoucí'] === true);
 
 /* ---------- 2) soubor bez ceníků: rozpracovaná varianta ---------- */
