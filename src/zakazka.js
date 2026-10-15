@@ -282,7 +282,7 @@ function novaVariantaData() {
     proj: { zadani: Object.assign(JSON.parse(JSON.stringify(DEFAULT_ZADANI_PROJ)), { nabizetAD: false }),
             cenik: JSON.parse(JSON.stringify(DEFAULT_CENIK_PROJ)) },
     techspec: JSON.parse(JSON.stringify(DEFAULT_TECHSPEC)),
-    kryci: { hodnoty: {} },   // krycí list objednávky/SoD – ruční pole (prefill z kalkulace/techspec)
+    kryci: { hodnoty: {} },   // krycí list zakázky OCK – ruční pole (prefill z kalkulace/techspec)
     kryciProj: { hodnoty: {} },   // krycí list zakázky PROJ – ruční pole (prefill z Kalkulace PROJ)
     /* Dvě slevy, každá nad svou cenou (#134, 12. 8. 2026). `sleva` patří
      * k výtahové šachtě, `slevaProj` k projekčním pracím. Mají stejný tvar

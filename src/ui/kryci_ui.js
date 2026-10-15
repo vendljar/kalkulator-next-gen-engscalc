@@ -1,5 +1,5 @@
 /* ================= ZÁLOŽKA KRYCÍ LIST ZAKÁZKY OCK =================
- * Krycí list objednávky / SoD (dle přiloženého xlsx). Pole se předvyplňují
+ * Krycí list zakázky OCK (dříve „Krycí list objednávky / SoD“, dle přiloženého xlsx). Pole se předvyplňují
  * z kalkulace OCK, zakázky a technické specifikace; ruční hodnoty se ukládají
  * ve variantě (data.kryci.hodnoty), ruční přepis má přednost (↺ vrátí prefill).
  * Tisk do PDF vlastním tlačítkem u náhledu krycího listu (od 4. 8. 2026;
@@ -242,7 +242,7 @@ function renderKryci() {
   }).join('');
 
   el.innerHTML = `<div class="kl-doc">
-    <h1>Krycí list objednávky / SoD</h1>
+    <h1>Krycí list zakázky OCK</h1>
     <div class="note" style="margin-bottom:6px">Podklad pro objednávku / smlouvu o dílo. Pole se předvyplňují z kalkulace OCK,
     zakázky a technické specifikace; ruční přepis má přednost (↺ vrátí automatiku). Štítky <b>BO</b> / <b>Tech</b> / <b>BO+Tech</b>
     ukazují, do které verze výstupu pole patří.</div>

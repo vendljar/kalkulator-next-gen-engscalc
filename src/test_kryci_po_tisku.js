@@ -54,9 +54,9 @@ KP.KRYCI_PROJ_SEKCE.forEach(s => s.pole.forEach(p => {
 }));
 test('PROJ: splátky SoD starších dat (sodpPlatba1, sodpPlatba3) jsou v nabídce',
   ZM.zamekKryciPoleVNabidce('kryciProj', 'sodpPlatba1') && ZM.zamekKryciPoleVNabidce('kryciProj', 'sodpPlatba3'));
-['jmenoPrijmeni', 'kontaktZakaznikEmail', 'scoring', 'dodavatelStavby', 'atypMustky'].forEach(id =>
+['jmenoPrijmeni', 'kontaktZakaznikEmail', 'scoring', 'dodavatelStavby', 'atypMustky', 'cisloSod'].forEach(id =>
   test('OCK: „' + id + '" není v nabídce', !ZM.zamekKryciPoleVNabidce('kryci', id)));
-['odpovednyJmeno', 'odpovednyEmail'].forEach(id =>
+['odpovednyJmeno', 'odpovednyEmail', 'cisloSod'].forEach(id =>
   test('PROJ: „' + id + '" není v nabídce', !ZM.zamekKryciPoleVNabidce('kryciProj', id)));
 test('neznámé pole se bere jako pole nabídky (zamčené)',
   ZM.zamekKryciPoleVNabidce('kryci', 'neniTakovePole') && ZM.zamekKryciPoleVNabidce('kryciProj', 'neniTakovePole'));
