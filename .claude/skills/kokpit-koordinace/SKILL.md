@@ -29,6 +29,11 @@ sad, posun `test`, start/konec celého kola, release, rozhodnutí J. V., nová
 otázka na J. V. Malé změny posílej jako `edits` na publish téhož souboru
 (řetězce kopírovat přesně z JSON v souboru).
 
+**Před každým publishem ověř data:** `python3 .claude/skills/kokpit-koordinace/kontrola.py <kokpit.html>`
+— 15. 10. kokpit „havaroval“ (prázdná stránka) kvůli čárce navíc v JSON po smazání
+řádků. Stránka teď poškozená data ohlásí v rámečku nahoře, ale kontrola má
+chybu chytit dřív. Mazat celé objekty i s čárkou před nimi.
+
 ## Data (JSON) — co kam
 
 | Pole | Obsah |

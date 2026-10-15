@@ -101,12 +101,10 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
 
 <script id="data" type="application/json">
 {
-  "aktualizace": "15. 10. 2026 15:48 UTC",
-  "koordinace": {"id":"session_01NQjWzfqv1obHAg7DWPHAKH","kontext":22},
+  "aktualizace": "15. 10. 2026 15:58 UTC",
+  "koordinace": {"id":"session_01NQjWzfqv1obHAg7DWPHAKH","kontext":32},
   "releasy": "vydáno v15.10.10 (06937a3), v15.10.7, v15.10.4, v15.10.3 · bez tagu: v15.10.9, v15.10.6 (mezistupně) · další release: v15.10.12 po sadách",
-  "cekaNaJV": [
-    "Archivovat dokončená nečinná sezení „R1: roadmapa #405, #406“, „R2: dorovnání roadmapy za 13.–14. 10.“ a staré „Opravy nálezů 22. kola (B113–B118) / 23. kolo — Kalkulator Next Gen“ (30. 9., práce dávno převzatá)? Stačí napsat „archivuj“."
-  ],
+  "cekaNaJV": [],
   "dlazdice": [
     {"k":"main","v":"v14.10.3","d":"eff7724 · po vašem potvrzení","s":"idle"},
     {"k":"test","v":"v15.10.10","d":"06937a3 · release vydán","s":"ok"},
@@ -115,14 +113,13 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
   ],
   "faze": ["kód","testy","mutace","souhrn","integrace","sady","test"],
   "sezeni": [
-    {"nazev":"ŘÍDÍCÍ 15.10.2 - Koordinace dávek 15. 10. (pokračování)","id":"session_01NQjWzfqv1obHAg7DWPHAKH","role":"koordinace","stav":"run","stavText":"pracuje","faze":null,"eta":"do konce kola","kontext":22,"co":"Slučuje dávky do test, hlídá sezení, vede tento kokpit","dalsi":"Sady nad v15.10.12 → test → release; po S9 celé kolo"},
-    {"nazev":"S9 číslo SoD do šablon SoD projekce (v15.10.11)","id":"session_01CPcwsQaNofMcXf5Z8t2kzz","role":"dávka","stav":"run","stavText":"pracuje","faze":0,"eta":"~1,5 h","kontext":14,"co":"Symbol čísla SoD do šablon SoD projekce v1/v2, nové soubory na Disk","dalsi":"Stahuje šablony SoD z Disku"},
-    {"nazev":"S6: B153 + B154, uzavřít B155 a B156","id":"session_011ZCoyaDoTgLnAoNZHPKkWg","role":"dávka","stav":"ok","stavText":"hotová · nečinná","faze":5,"eta":"~20 min","kontext":31,"co":"Vysoké nálezy auditu B153/B154 opraveny, B155–B157 uzavřeny (v15.10.8)","dalsi":"Sady nad integrací → test; pak sezení archivovat"},
-    {"nazev":"R2: dorovnání roadmapy za 13.–14. 10.","id":"session_01B5Nk7BGWAsWWKrXfMuU7Df","role":"jiné","stav":"idle","stavText":"nečinná od 14. 10.","faze":null,"eta":"—","kontext":20,"co":"Roadmapa #407–#419 dorovnána (hotovo)","dalsi":"Navrženo k archivaci"},
-    {"nazev":"R1: roadmapa #405, #406","id":"session_01HvZWAVHqyk6PE8w5bNZxfo","role":"jiné","stav":"idle","stavText":"nečinná od 14. 10.","faze":null,"eta":"—","kontext":10,"co":"Roadmapa #405, #406 zapsány (hotovo)","dalsi":"Navrženo k archivaci"},
-    {"nazev":"Opravy nálezů 22. kola (B113–B118) / 23. kolo — Kalkulator Next Gen","id":"session_0152gTk16B8GKboeQJxTy49m","role":"jiné","stav":"warn","stavText":"čeká na vstup od 30. 9.","faze":null,"eta":"—","kontext":8,"co":"Staré sezení; nálezy B113–B118 mezitím vyřešily pozdější dávky","dalsi":"Navrženo k archivaci"}
+    {"nazev":"ŘÍDÍCÍ 15.10.2 - Koordinace dávek 15. 10. (pokračování)","id":"session_01NQjWzfqv1obHAg7DWPHAKH","role":"koordinace","stav":"run","stavText":"pracuje","faze":null,"eta":"~6 h (do konce kola)","kontext":32,"co":"Slučuje dávky do test, hlídá sezení, vede tento kokpit","dalsi":"Sady nad v15.10.12 → test → release; po S9 celé kolo"},
+    {"nazev":"S9 číslo SoD do šablon SoD projekce (v15.10.11)","id":"session_01CPcwsQaNofMcXf5Z8t2kzz","role":"dávka","stav":"run","stavText":"pracuje","faze":2,"eta":"~30 min","kontext":14,"co":"Symbol čísla SoD do šablon SoD projekce v1/v2, nové soubory na Disk","dalsi":"Mutace 69d4bee (4 nové + sada v SADY), CHANGELOG a postup šablon hotové; zbývá smoke a souhrn"}
   ],
   "log": [
+    ["16:02","S9: CHANGELOG v15.10.11, postup šablon a 4 mutace pushnuty (69d4bee)."],
+    ["15:58","J. V. vyčistil a archivoval sezení; zůstává jen koordinace a S9. S6 archivovaná, její kód je v integraci (v15.10.12)."],
+    ["15:52","S9 pushnula první commit (8b6b284, šablony SoD projekce s číslem SoD)."],
     ["15:48","Kokpit ukazuje všechna nearchivovaná sezení s přesnými názvy; hotové a archivované skryty."],
     ["15:40","S6 sloučena, integrace v15.10.12 (cb8eb3b), sady běží."],
     ["15:35","Release v15.10.10 ověřen; release_odkaz.py hlídá existující tag; skill kokpitu zapsán."],
@@ -135,7 +132,9 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
 </script>
 <script>
 (function(){
-  var D=JSON.parse(document.getElementById('data').textContent);
+  var D;
+  try{D=JSON.parse(document.getElementById('data').textContent);}
+  catch(e){var c0=document.getElementById('cekani');c0.className='alert';c0.innerHTML='<div class="h">Data kokpitu jsou poškozená — koordinace je opraví při příští aktualizaci.</div><div class="mono">'+String(e.message).replace(/[<&]/g,'')+'</div>';return;}
   var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
   var pill={run:'p-run',ok:'p-ok',warn:'p-warn',bad:'p-bad',idle:'p-idle'};
   var ctx=function(p){
