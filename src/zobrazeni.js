@@ -409,6 +409,21 @@ const ZOBRAZENI_PRVKY = [
     proc: 'Nevratné zásahy do dat. Drží se pravidla „nic se nemaže bez dotazu" — a mazat '
         + 'smí jeden člověk.',
   },
+  /* B80 (15. 10. 2026): čtení z Pipedrive drží server (netlify/lib/pipedrive.mjs,
+   * pdPristup) — na rozdíl od ostatních prvků tu matice NENÍ jen pohodlí,
+   * server se na ni ptá. Výchozí stav „nikdo kromě administrátora" odpovídá
+   * dnešku: rozhraní /api/pd/* zatím nevolá. */
+  {
+    klic: 'crm.pipedrive', skupina: 'data', nazev: 'Čtení obchodních případů z Pipedrive',
+    kde: 'serverové rozhraní /api/pd/* (výběr zakázky z CRM; v rozhraní zatím není)',
+    popis: 'Seznam a detail obchodních případů z CRM včetně objednatele, IČO a kontaktů '
+         + '(jméno, e-mail, telefon) a mapa vlastních polí CRM.',
+    vychozi: { 'Obchodník': false, 'Vedoucí': false },
+    navrh: { 'Obchodník': true, 'Vedoucí': true },
+    proc: 'Server pouští čtení jen roli s tímto právem (audit B80): bez něj by si kterýkoli '
+        + 'přihlášený účet mohl projít celé CRM i s kontakty a vyčerpat denní limit Pipedrive. '
+        + 'Až bude výběr zakázky z CRM v rozhraní, je namístě právo obchodníkům i vedoucím přidělit.',
+  },
   {
     klic: 'zaloha.vynucena', skupina: 'data', nazev: 'Vynucená záloha databáze',
     kde: 'karta online databáze',

@@ -13,10 +13,9 @@
  * stojí 40 tokenů denního rozpočtu (dvojnásobek seznamu) a má vlastní přísný
  * krátkodobý limit 10 požadavků za 2 vteřiny. Při 308 dealech je levnější
  * a rychlejší přinést otevřené případy jednou a filtrovat je tady. */
-import { uloziste, vyzadujRoli, json } from '../lib/sdilene.mjs';
-const PD_CACHE_ULOZISTE = 'pd_cache';
+import { uloziste, json } from '../lib/sdilene.mjs';
 const PD_CACHE_MS = 90 * 1000;
-import { pdNastaveno, pdVsechny, PdChyba } from '../lib/pipedrive.mjs';
+import { pdNastaveno, pdVsechny, PdChyba, pdPristup, PD_CACHE_ULOZISTE } from '../lib/pipedrive.mjs';
 import { pdCisloZNazvu, pdNazevAkce } from '../lib/pd_mapa.mjs';
 
 /* Fáze „Zkontaktováno" až „Před podpisem" jsou ty, kde se ještě počítá.
@@ -24,7 +23,8 @@ import { pdCisloZNazvu, pdNazevAkce } from '../lib/pd_mapa.mjs';
 const PORADI_STAVU = { open: 0, won: 1, lost: 2 };
 
 export default async (req) => {
-  const { chyba } = await vyzadujRoli(req);      // stačí být přihlášen
+  /* Přihlášení, původ a právo z matice (B80) — lib/pipedrive.mjs. */
+  const { chyba } = await pdPristup(req);
   if (chyba) return chyba;
 
   /* Whitelist stavu (audit 23. 8. 2026, B27) — kontroluje se PŘED napojením
