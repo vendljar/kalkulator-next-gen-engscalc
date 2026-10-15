@@ -1,0 +1,32 @@
+# Předávka koordinace dávek 15. 10. 2026 (pro nové koordinační sezení)
+
+Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kvůli kontextu). Komunikace česky, nikdy AskUserQuestion. Platí `CLAUDE.md`. **Pokyny J. V. platné pro koordinaci:** dávky spouštět v samostatných sezeních (`create_session`), hlídat je průběžně a nenechat stát, hotové se zelenými sadami slučovat do `test` (po sadách nad sloučeným stavem), nakonec celé kolo s mutacemi nad `test`. **Do `main` nic, dokud to J. V. nepotvrdí.** `test-draft` beze změny.
+
+## Stav při předání (15. 10. ~14:25 UTC)
+
+- `main` = eff7724 (v14.10.3). `test` = **8f7be40 (v15.10.4)**: S1 B80, S2 B89–B95, S3 P12, S5 červená lišta (sady 252/0/1).
+- **Integrační větev `claude/integrace-15-10` = 9ead7b5** (nad test): + úprava P12 podle J. V. (S3 93b6a02 — náklady výchozí všem, admin skryje; prodejní sazba, v15.10.5), + audit S4 (B151, B152, B167, `podklady/AUDIT_2026-10-15_v15.10.6.md`, v15.10.6), + úprava B80 podle J. V. (S1 51d4cbf — čtení z Pipedrive výchozí všem). `verze.txt` = 15.10.6. **Do test zatím nešla.**
+- Sady nad 9ead7b5: 1 selhání `overit_verzi.mjs` — jen proto, že komentář v `src/zobrazeni.js` nese „v15.10.7" a verze je 15.10.6. Vyřeší se sloučením S1 commitu 38996f2 (verze → 15.10.7).
+- **Ještě nesloučené zápisové commity** (jen CHANGELOG/PREDAVKA/verze/roadmapa, bez kódu): `claude/b80-pipedrive` 38996f2 (v15.10.7, roadmapa #345, NASAZENI), `claude/p12-naklady` 1f2a365 (výsledky po úpravě, mutace 13/13, smoke 248/0/2), `claude/kolo25-audit` dcc3d5f (smoke 247/0/6).
+- **Další krok:** do `claude/integrace-15-10` sloučit 38996f2, 1f2a365, dcc3d5f (konflikty jen v dokumentaci — novější oddíl nahoru, `verze.txt` = 15.10.7, příručka `manual/obsah.json` verze + nadpis „Co je nového ve verzi v15.10.7"), `--kontrola` mutací, sestavit, příručka ze snímků, `spust_testy.sh --smoke` s podklady → zelené → zápis do CHANGELOG → push `claude/integrace-15-10` a fast-forward `test` (`git merge-base --is-ancestor origin/test HEAD`).
+
+## Běžící dávky (sezení)
+
+| Dávka | Sezení | Větev (nad integrace-15-10) | Verze | Zadání |
+|---|---|---|---|---|
+| S6 B153 + B154 (varianta a: celý obsah výjimky), uzavřít B155/B156 jako vědomé meze (rozhodnutí J. V.) | session_011ZCoyaDoTgLnAoNZHPKkWg | `claude/b153-b154` | **v15.10.8** | `podklady/PROMPT_b153_b154.md` |
+| S7 „Krycí list zakázky OCK" + pole Číslo SoD (OCK i PROJ) | session_01AQ3FR8TVBZv7DiLGztwWTn | `claude/kryci-cislo-sod` | **v15.10.9** | `podklady/PROMPT_kryci_cislo_sod.md` |
+| **S8 hodiny v krycím listu jen za vlastní stranu** — SPUSTIT (nové zadání J. V.) | — | `claude/hodiny-po-listech` | **v15.10.10** | `podklady/PROMPT_hodiny_po_listech.md` |
+
+Hotová sezení: S1 session_01XDeCFTDhtGnF4nonTV68Mw, S2 session_01FFrnq17zRKzZosaaEF1yKF, S3 session_01N6KWKuYEUeqkVB9yymEWrq, S4 session_016bb3zpWfiWTkuoJdEdU1xt, S5 session_015W9XRCKoKeM5rys1nMFB3y. J. V. s nimi občas mluví napřímo (rozhodnutí B90, B94, P12, B80) — po každém novém commitu v jejich větvi zkontrolovat, zda nejde o změnu kódu, a sloučit.
+
+Hned po startu pošli S6, S7 (a nově S8) `send_message`, že koordinaci převzalo nové sezení (tvé session id) a že sloučení do test dělá ono.
+
+## Postup koordinace
+
+1. Hlídat větve: smyčka na pozadí (`run_in_background`, timeout 2 h) — `git ls-remote origin` pro `test` a všechny `claude/…` výše každých 60 s, skončí při změně → notifikace; po každé notifikaci znovu spustit. Navíc `ScheduleWakeup` cca 15–20 min jako záloha. **Pozor:** `pkill -f <vzor>` zabije i vlastní příkaz, pokud vzor obsahuje jeho text.
+2. Hotovou dávku (sezení idle, poslední commit = zápis výsledku sad, nebo zpráva do koordinace) sloučit do `claude/integrace-15-10` merge commitem; konflikty: `verze.txt` = nejvyšší, CHANGELOG/PREDAVKA oddíly obou stran (novější nahoře), `netlify/mutace.mjs` — seznam `SADY` sloučit (všechny sady), `MUTACE` obě strany; `manual/obsah.json` verze + nadpis novinek na výslednou verzi. Ověřit `node netlify/mutace.mjs --kontrola`, `node mutace_jadro.mjs --kontrola`, `python3 build.py --kontrola-verze`, `roadmapa.py --kontrola`.
+3. Sady: `KNG_NEZVYSOVAT_VERZI=1 python3 build.py`, příručka ze snímků (`node manual/snimky_auto.mjs <podklady>/snimky.json`, `bash manual/sestav.sh …`), `KNG_PODKLADY=<podklady> NODE_PATH=$(npm root -g) bash spust_testy.sh --smoke` na pozadí. Zelené → zápis do CHANGELOG (oddíl verze, odstavec „Integrace do test") → push do `test`.
+4. Podklady: nové sezení nemá `/home/user/kng_podklady_*` — stáhnout šablony z Google Drive subagentem (seznam a ID v `podklady/_SPOLECNE_15_10.md`; ID souborů viz předchozí předávky / hledání `title contains 'Sablona_'`), ověřit zipfile.testzip. Playwright: `mkdir node_modules && ln -s $(npm root -g)/playwright node_modules/playwright`.
+5. Po sloučení S6, S7, S8: **celé kolo s mutacemi** nad `test` (`nastroje/testovaci_kolo.sh`, setsid nohup, until-smyčka nad logem, ~4 h, mutace nepřerušovat, v pracovní kopii kola nic necommitovat — dělat v odděleném worktree). VŠE ZELENÉ → výsledek do CHANGELOG + PREDAVKA, release odkaz (`python3 nastroje/release_odkaz.py`, popis dočistit; releasy v14.10.4–v14.10.8 už J. V. vydal? ověřit přes GitHub) a závěrečná zpráva J. V. (verze, testy, otevřené body: B157–B166 nízké/informativní z auditu, #366 návrh řady čísel SoD, #355/#356 můstky, #380 Q7, `{ cz }` próza PROJ).
+6. Kontext: `get_session` → context_usage; nad 60 % upozornit, nad 75 % přepsat tuto předávku a založit další koordinační sezení.
