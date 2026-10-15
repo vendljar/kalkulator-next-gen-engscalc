@@ -23,6 +23,13 @@ je nahrává J. V. (postup v podkladech). Sady `spust_testy.sh --smoke`
 s 30 šablonami z Disku nad 6c11e14: **257 prošlo / 0 selhalo / 1 přeskočeno**
 (test.js). Fast-forward do `test`.
 
+**Celé kolo s mutacemi nad `test` f8fe243 (15. 10. 16:20–20:02, 222 min):**
+sady 257/0/1, mutace jádra **205 z 205**, mutace serveru **447 z 449**,
+statické kontroly 3/3 → **SELHALO**. Nechycené: **B8** (klíč času v analytice;
+nechycená od 923ed48 — B151, v15.10.6) a **B31** (hesloVerze při obnově;
+nechycená od 91d6093 — B93, v15.10.2). Ověřeno cíleně na 5a42369 / 8f7be40 /
+c9289f3. Oprava: dávka S10 (`claude/mutace-b8-b31`, v15.10.14), pak nové kolo.
+
 ## v15.10.12 — integrace S6 (B153 + B154, v15.10.8) do test (větev claude/integrace-15-10)
 
 `test` už nese vydanou v15.10.10, proto sloučení S6 (oddíl v15.10.8 níž)
