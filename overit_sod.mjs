@@ -17,6 +17,7 @@
  */
 import { readFileSync, existsSync } from 'fs';
 import { createRequire } from 'module';
+import { join } from 'path';
 import { chromium } from 'playwright';
 
 /* Cesta k sestavení i ke zdrojákům se odvozuje od UMÍSTĚNÍ HARNESSU, ne od
@@ -159,6 +160,20 @@ for (const [typ, cesta] of Object.entries(SABLONY_SOUBORY))
     d.data = new TextEncoder().encode(uprava(new TextDecoder().decode(d.data)));
     b64[klic] = Buffer.from(new Uint8Array(await zipZapis(casti).arrayBuffer())).toString('base64');
   }
+  /* S9 (15. 10. 2026): SoD PROJ v3 = v2 + řádek „číslo {{SOD_CISLO_SMLOUVY}}"
+   * pod nadpisem (vyrob_sablony --sod-proj-cislo). Leží-li v podkladech
+   * hotová Sablona_SOD_PROJEKCE_v3.docx z Disku, zkouší se ta. */
+  const { sodProjCislo } = require(KOREN + 'nastroje/vyrob_sablony.js');
+  const v3Disk = process.env.KNG_PODKLADY ? join(process.env.KNG_PODKLADY, 'Sablona_SOD_PROJEKCE_v3.docx') : '';
+  if (v3Disk && existsSync(v3Disk)) {
+    b64.sodProjV3 = readFileSync(v3Disk).toString('base64');
+    console.log('  (SoD PROJ v3 z podkladů: ' + v3Disk + ')');
+  } else {
+    const casti = await zipPrecti(new Uint8Array(Buffer.from(b64.sodProjV2, 'base64')));
+    const d = casti.find(x => x.nazev === 'word/document.xml');
+    d.data = new TextEncoder().encode(sodProjCislo(new TextDecoder().decode(d.data)));
+    b64.sodProjV3 = Buffer.from(new Uint8Array(await zipZapis(casti).arrayBuffer())).toString('base64');
+  }
 }
 
 const vysledek = await p.evaluate(async (sablonyB64) => {
@@ -188,6 +203,12 @@ const vysledek = await p.evaluate(async (sablonyB64) => {
   varianta.data.kryci.hodnoty.pokutaDodavka = '0,1 % / den';
   out.sodV2Pokuta = await docx('sod', sablonyB64.sodRealV2);
   delete varianta.data.kryci.hodnoty.pokutaDodavka;
+  /* S9: číslo SoD z krycího listu PROJ ve smlouvě PROJ (v3); prázdné → {{…}}. */
+  out.sodProjV3Prazdne = await docx('sodProj', sablonyB64.sodProjV3);
+  varianta.data.kryciProj = varianta.data.kryciProj || { hodnoty: {} };
+  varianta.data.kryciProj.hodnoty = Object.assign(varianta.data.kryciProj.hodnoty || {}, { cisloSod: '2026 OVP SOD 0177' });
+  out.sodProjV3 = await docx('sodProj', sablonyB64.sodProjV3);
+  delete varianta.data.kryciProj.hodnoty.cisloSod;
   strana('sod');
   const nab = nabidkaData(ZAK, varianta, JEKLY, 'cz');
   strana('sodProj');
@@ -277,6 +298,15 @@ const docText = async typ => {
   test('SoD projekce (šablona se seznamem plateb): platby z plánu, každá vlastní odrážkou',
     platby >= 2 && !/SODP_PLATEBNI_KALENDAR/.test(holy)
     && (doc.match(/<w:p[\s>](?:(?!<\/w:p>)[\s\S])*?Platba ve výši/g) || []).length === platby, platby);
+  {
+    const v3 = (await docText('sodProjV3')).replace(/<[^>]+>/g, '');
+    const v3p = (await docText('sodProjV3Prazdne')).replace(/<[^>]+>/g, '');
+    test('S9: SoD projekce (v3) nese Číslo SoD z krycího listu PROJ pod nadpisem',
+      /na zhotovení[\s\u00a0]projektové dokumentace\s*číslo 2026 OVP SOD 0177/.test(v3) && !/SOD_CISLO_SMLOUVY/.test(v3),
+      (v3.match(/SMLOUVA O DÍLO.{0,120}/) || [''])[0]);
+    test('S9: SoD projekce (v3) s prázdným Číslem SoD nechá {{SOD_CISLO_SMLOUVY}} k doplnění',
+      /číslo \{\{SOD_CISLO_SMLOUVY\}\}/.test(v3p), (v3p.match(/SMLOUVA O DÍLO.{0,120}/) || [''])[0]);
+  }
   test('SoD projekce se starou šablonou (8 pevných plateb) a plánem, který v ní nejde vyjádřit: smlouva nevznikne a řekne proč',
     /SODP_PLATEBNI_KALENDAR/.test(vysledek.sodProjStara || ''), vysledek.sodProjStara);
   /* Q6 (1. 10. 2026): v2 bere pokutu zhotovitele z pokuty za nedodržení
