@@ -66,6 +66,78 @@ kapitol na 20 000. Stejnou kontrolou jde klient i server (`/api/firma`).
 
 ---
 
+## Informativní nálezy B89–B95 (#347, 15. 10. 2026)
+
+Hloubkový test 24. 9. 2026 (v24.9.2) vedl sedm informativních nálezů, audit
+12. 10. 2026 je měl jako „trvá" (B89 „částečně"). Rozhodnutí po nálezech:
+
+| Nález | Rozhodnutí | Doklad |
+|---|---|---|
+| B89 analytika: regex argumentů, texty o anonymitě | opraveno v15.10.2 | `src/test_analytika.js` (B89), mutace ×2 |
+| B90 záloha rozpracované zakázky přežije odhlášení | **vědomá mez** (níže) | — |
+| B91 `__proto__` v importu slovníku | opraveno v revizi #401 (v12.10.3, a95e1a3) | `src/test_slovnik.js` („#401", „rev #401 N2"), mutace „rev #401 N2" |
+| B92 převod zakázek vrací souběžnou změnu účtu | opraveno v15.10.2 | `netlify/test_ucty_informativni.mjs`, mutace |
+| B93 obnova hesla z otisku nechá verzi hesla | opraveno v15.10.2 (zbytek níže) | `netlify/test_ucty_informativni.mjs`, `test_obnova` B31, mutace |
+| B94 scrypt s výchozími parametry, bez parametrů v otisku | **vědomá mez** (níže) | — |
+| B95 jméno napodobí razítko „jméno <e-mail>" | opraveno v15.10.2 | `netlify/test_ucty_informativni.mjs`, mutace ×2 |
+
+### B90 — záloha rozpracované zakázky v prohlížeči přežije odhlášení
+
+**Cesta zneužití:** kdo se po odhlášení posadí k témuž prohlížeči (sdílený
+počítač pod jedním účtem operačního systému), otevře aplikaci a ve žluté
+liště „Pokračovat v rozpracované kalkulaci" dostane poslední rozpracovanou
+zakázku — i s ceníkem zakázky, tedy s nákladovými sazbami (B88). Záloha
+leží v `localStorage` (`kng_rozpracovano_v1`) nejdéle týden, pak se uklidí.
+
+**Proč se neopravuje:** záloha je pojistka proti ztrátě NEULOŽENÉ práce (F5,
+pád prohlížeče, výpadek sítě). Odhlášení se na neuloženou práci neptá
+(`onlineOdhlas`), takže smazání zálohy při odhlášení by ji tiše zahodilo —
+právě v situaci, kvůli které záloha existuje. Aplikace navíc běží i bez
+přihlášení (místní režim) a záloha patří prohlížeči, ne účtu. Tentýž
+prohlížeč drží i stažené nabídky a sešity ve složce Stažené soubory, takže
+sdílený profil prohlížeče není hranice, kterou by šlo zálohou zabezpečit.
+Předpoklad: každý obchodník pracuje pod vlastním účtem počítače.
+
+**Rozhodnutí J. V. 15. 10. 2026: nezpřísňovat** (žádný dotaz při odhlášení,
+žádné mazání ani šifrování zálohy). Mez zůstává, jak je popsaná výš.
+
+### B93 — zbytek: obnova z otisku vrací staré heslo
+
+Od 15. 10. 2026 obnova, která účtu mění otisk hesla, zvedne verzi hesla
+(dosavadní relace skončí) a v upozornění vyjmenuje dotčené účty. **Zůstává
+vědomě:** heslo z doby otisku po obnově zase platí — to je smysl obnovy
+účtů. Kdo by tudy chtěl kolegovi vrátit staré heslo, které zná, potřebuje
+vlastní heslo správce (B77, 13. 10. 2026) a otisk na serveru, který nejde
+podvrhnout (B98).
+
+### B94 — scrypt s výchozími parametry Node, parametry nejsou v otisku
+
+**Cesta zneužití:** kdo získá úložiště účtů (Netlify Blobs — správce webu,
+nebo serverový otisk zálohy), může hesla lámat offline. Otisk je
+`sůl:hash`, scrypt N = 2^14, r = 8, p = 1 (16 MiB), délka 64 B — pod
+doporučením OWASP (N = 2^17). Parametry v otisku nejsou, takže je nejde
+zvednout bez rozbití dosavadních hesel.
+
+**Proč se neopravuje teď:** k úložišti se bez správce Netlify nedostane nikdo
+(stažená záloha otisky hesel nenese — B27); otisk je solený (16 B náhodné
+soli), heslo má nejméně 8 znaků a přihlášení brzdu (B75). Zvýšení N stojí
+čas a paměť KAŽDÉHO přihlášení, ověření hesla správce (B77) i zástupného
+otisku (#93) a přechod potřebuje nový formát otisku a přepočet při
+přihlášení — změna v cestě přihlášení s vlastními testy a mutacemi, větší
+než to, co chrání, dokud úložiště neunikne.
+
+**Rozhodnutí J. V. 15. 10. 2026: varianta A — neměnit** („zbytečný extrém,
+měnit to nebudeme, rozhodně ne teď"). Postup níž je jen pro případ, že by
+se k tomu J. V. někdy vrátil.
+
+**Postup (jen na nový pokyn J. V.):** formát
+`scrypt$N$r$p$sůl$hash`; `hesloSedi` čte oba tvary (starý = 2^14/8/1);
+po úspěšném přihlášení se otisk ve starém tvaru přepočítá na nový;
+kontrola tvaru otisku v obnově (`u.heslo.includes(':')`) a v zálohách se
+rozšíří; `maxmem` pro scrypt nastavit podle N (N = 2^17 potřebuje 128 MiB).
+
+---
+
 ## Třída „koncová cena bez schválení" (B96, B111, B112 — 29. 9. 2026; B113, B114, B117 — 6. 10. 2026; B133–B137, B145 — 12. 10. 2026)
 
 Komplexní test 29. 9. 2026 našel tři cesty, jak obchodník snížil cenu

@@ -32,11 +32,14 @@ const ANALYTIKA_RETENCE_MESICU = 24;            // denní agregáty se drží 24
 
 /* ---------- klíč prvku ----------
  * „zalozka|TAG|popis". Popis je onclick/oninput prvku NEBO text tlačítka;
- * všechno v závorkách se nahrazuje „(…)“ — argumenty volání nesou
- * identifikátory variant a jména, a ta do analytiky NESMÍ. */
+ * všechno od první „(“ do konce se nahrazuje „(…)“ — argumenty volání nesou
+ * identifikátory variant a jména, a ta do analytiky NESMÍ.
+ * B89 (hloubkový test 24. 9. 2026, #347): do 15. 10. 2026 se nahrazoval jen
+ * úsek do PRVNÍ „)“ — závorka uvnitř řetězce („Bytový dům (Praha) Novák“)
+ * nebo vnořené volání nechaly zbytek argumentu v klíči. */
 function analytikaKlic(zalozka, tag, popis) {
   let p = String(popis == null ? '' : popis)
-    .replace(/\(([^)]|\n)*\)?/g, '(…)')       // zahodit argumenty volání
+    .replace(/\([\s\S]*$/, '(…)')               // zahodit argumenty volání (vč. zbytku)
     .replace(/\s+/g, ' ').trim();
   if (!p) p = '?';
   if (p.length > 80) p = p.slice(0, 80);

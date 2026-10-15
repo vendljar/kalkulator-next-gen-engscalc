@@ -413,6 +413,16 @@ export async function prihlaseny(req) {
  * Kdyby si každá funkce skládala odpověď po svém, dřív nebo později by
  * jedna z nich poslala do prohlížeče i `heslo` (scrypt otisk). Takhle
  * se vypisují políčka jmenovitě a nic navíc neprojde. */
+/* Razítko „jméno <e-mail>" pod zámkem a odemčením (B95, #347, 15. 10. 2026).
+ * Ostré závorky se ze jména odstraní — jméno „Jan <reditel@…>" by jinak
+ * napodobilo cizí razítko. Ukládání jména je čistí taky (uzivatele.mjs);
+ * tady jde o účty z doby před opravou. Pravý e-mail je vždy na konci. */
+export function razitkoKdo(relace) {
+  const r = relace || {};
+  const jmeno = String(r.jmeno == null ? '' : r.jmeno).replace(/[<>]/g, '').replace(/\s+/g, ' ').trim();
+  return jmeno ? jmeno + ' <' + r.email + '>' : r.email;
+}
+
 export function profilZUctu(ucet) {
   const u = ucet || {};
   return {

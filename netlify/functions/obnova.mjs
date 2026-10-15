@@ -594,6 +594,7 @@ export default async (req) => {
       if (seznam.length) upozorneni.push('Účty a podpisy se ze souboru neobnovují — obnovte je ze serverového otisku (zdroj „otisk na serveru").');
     } else {
       const kniha = await uloziste(SMAZANI_ULOZISTE);
+      const hesloVracene = [];                       // B93: účty, kterým obnova mění heslo
       for (const u of seznam) {
         const email = String((u && u.email) || '').trim().toLowerCase();
         if (!email) { preskoc(b, '?', 'účet bez e-mailu'); continue; }
@@ -616,6 +617,15 @@ export default async (req) => {
           stavUctuDrziServer(novy, stary);            // B30
           const vz = Math.max(hesloVerzeUctu(stary), hesloVerzeUctu(u));
           if (vz > 0) novy.hesloVerze = vz;           // B31: verze hesla nikdy neklesne
+          /* Obnova, která účtu MĚNÍ heslo, zvedne verzi hesla (B93, #347,
+           * 15. 10. 2026) — jako každá jiná změna hesla (B6). Jinak by
+           * relace přihlášené heslem, které obnova právě zrušila, platily
+           * dál. V režimu „doplnit" se existující účet nepřepisuje, tam se
+           * heslo nemění. */
+          if (rezim === 'prepsat' && String(u.heslo) !== String(stary.heslo || '')) {
+            novy.hesloVerze = vz + 1;
+            hesloVracene.push(email);
+          }
           if (rezim === 'prepsat' && ((u.aktivni !== false) !== (stary.aktivni !== false) || !!u.archiv !== !!stary.archiv))
             b.duvody.push({ klic: email, duvod: 'stav účtu (aktivní / archiv) drží server — v tom beze změny' });
         }
@@ -625,6 +635,9 @@ export default async (req) => {
             + ') — po obnově se přihlaste znovu heslem, které platilo tehdy.');
         await zaznam(b, s, email, novy, rezim, zapisovat);
       }
+      if (hesloVracene.length)
+        upozorneni.push('Obnova vrátí heslo z doby otisku (' + zdrojPopis.porizena.slice(0, 10) + ') účtům: '
+          + hesloVracene.join(', ') + ' — jejich dosavadní přihlášení skončí, přihlásí se heslem, které platilo tehdy (B93).');
       /* Kniha smazaných účtů (B58, 23. 9. 2026) jde se zálohou a obnovuje se
        * spolu s účty, tedy jen ze serverového otisku. Záznam se jen DOPLNÍ:
        * existující se nepřepisuje, a u e-mailu, pod kterým dnes žije

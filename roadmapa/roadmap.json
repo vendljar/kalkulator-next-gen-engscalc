@@ -5466,14 +5466,16 @@
   {
    "id": "347",
    "vlna": "B",
-   "stav": "ceka",
+   "stav": "hotovo",
+   "hotovoV": "v15.10.2",
    "dulezitost": "nizka",
    "slozitost": "S",
    "nazev": "Informativní nálezy B89–B95 (analytika, localStorage, import slovníku, souběh převodu, obnova hesel, scrypt, razítka)",
    "proc": "Hloubkový test 24. 9. 2026 (20. kolo, v24.9.2; ověřeno na v24.9.3): informativní, pokusem neověřeno.",
    "detail": "Projít po F5; B91 (__proto__ v importu slovníku) lze vzít hned s #340.",
    "hotovoKdyz": "Každý nález rozhodnut (oprava nebo vědomá mez v BEZPECNOST_MEZE.md).",
-   "kde": "`src/analytika.js`, `src/ui/historie.js`, `src/preklad.js`, `uzivatele.mjs`, `obnova.mjs`, `sdilene.mjs`"
+   "kde": "`src/analytika.js`, `src/ui/historie.js`, `src/preklad.js`, `uzivatele.mjs`, `obnova.mjs`, `sdilene.mjs`",
+   "pozn": "HOTOVO v15.10.2 (dávka S2, větev claude/b89-b95): každý nález rozhodnut. B89 OPRAVENO — klíč analytiky zahodí vše od první „(“ (závorka v řetězci ani vnořené volání nepropustí název), karta Analytika a heat mapa už netvrdí „stopa jednotlivce neexistuje“ (test_analytika +5, mutace ×2). B90 VĚDOMÁ MEZ — záloha rozpracované zakázky je pojistka proti ztrátě neuložené práce, odhlášení se na ni neptá; J. V. 15. 10. 2026: nezpřísňovat (BEZPECNOST_MEZE.md). B91 OPRAVENO DŘÍV — revize #401 (v12.10.3, a95e1a3): prekladKlicPovolen i po normalizaci, PREKLAD_IDX bez prototypu; test_slovnik, mutace „rev #401 N2“. B92 OPRAVENO — převod zakázek už nezapisuje starou kopii účtu odcházejícího. B93 OPRAVENO — obnova, která účtu vrací jiné heslo, zvedne verzi hesla (relace skončí) a vyjmenuje účty v upozornění; že staré heslo pak platí, je smysl obnovy (B77 heslo správce). B94 VĚDOMÁ MEZ — scrypt 2^14 bez parametrů v otisku; J. V. 15. 10. 2026: varianta A — neměnit (postup přechodu jen pro záznam v BEZPECNOST_MEZE.md). B95 OPRAVENO — jméno bez ostrých závorek při založení, v profilu i v razítku (razitkoKdo). Nová sada netlify/test_ucty_informativni.mjs (11/10 → 21/0, v SADY), mutace 6 nových, vše chycené."
   },
   {
    "id": "348",

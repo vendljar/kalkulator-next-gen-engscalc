@@ -49,6 +49,10 @@ const hesloVerzeNova = () => Date.now();
  * jinak NEUPRAVUJE — každý si ho píše po svém („+420 602 590 945",
  * „602590945", klidně i s linkou — a do nabídky patří tak, jak ho zadal. */
 const text = (v, max = 120) => String(v == null ? '' : v).trim().slice(0, max);
+/* Jméno bez ostrých závorek (B95, #347, 15. 10. 2026): razítko zámku
+ * a odemčení je „jméno <e-mail>" — jméno „Jan <reditel@…>" by napodobilo
+ * cizí razítko. */
+const jmenoText = (v) => text(String(v == null ? '' : v).replace(/[<>]/g, ''));
 
 /* Kniha smazaných účtů (akce 'smaz', 11. 8. 2026). Samostatné úložiště, ne
  * klíč v „uzivatele": seznam účtů i obě zálohy procházejí VŠECHNY klíče
@@ -148,7 +152,7 @@ export default async (req) => {
          * do účtu slil přijatý objekt, stačilo by k povýšení poslat vlastní
          * profil s polem `role` — a e-mail (klíč záznamu) by šlo přepsat
          * na cizí. Proto se přebírá jen to, co sem opravdu patří. */
-        if ('jmeno' in t) ucet.jmeno = text(t.jmeno);
+        if ('jmeno' in t) ucet.jmeno = jmenoText(t.jmeno);   // B95
         if ('titul' in t) ucet.titul = text(t.titul, 40);
         if ('funkce' in t) ucet.funkce = text(t.funkce, 80);
         if ('telefon' in t) ucet.telefon = text(t.telefon, 40);
@@ -200,7 +204,7 @@ export default async (req) => {
         const stop = await potvrdHesloSpravce(req, relace, t.hesloSpravce);
         if (stop) return stop;
       }
-      ucet = { email, jmeno: text(t.jmeno), titul: text(t.titul, 40),
+      ucet = { email, jmeno: jmenoText(t.jmeno), titul: text(t.titul, 40),   // B95
                funkce: text(t.funkce, 80), telefon: text(t.telefon, 40), role: t.role,
                heslo: otiskHesla(t.heslo), zalozen: new Date().toISOString(),
                zalozil: relace.email, aktivni: true,
@@ -343,7 +347,9 @@ export default async (req) => {
         });
         await sz.zapis('_rejstrik', rej);
       }
-      await u.zapis(email, ucet);
+      /* Účet odcházejícího se NEZAPISUJE (B92, #347, 15. 10. 2026). Převod
+       * na něm nic nemění, a kopie přečtená před průchodem všemi zakázkami
+       * by na konci vrátila souběžnou změnu hesla, role nebo vypnutí. */
       return json({ ok: true, email, na, prevedeno, preskoceno });
     } else if (t.akce === 'smaz') {
       /* Smazání účtu (11. 8. 2026) — třetí akce v rodině vedle 'archiv'

@@ -140,6 +140,42 @@ a jeho počítadlo, cache detailu, číslo případu). Sada je přidaná do `SAD
 **Ostatní body #345** ověřeny v CHANGELOG: B75–B78 v26.9.1, B81 a B83
 v13.10.1, B77 v13.10.1 a v13.10.3, zápisová strana B88 v29.9.4 (B112).
 Čtecí strana B88 zůstává informativní (`BEZPECNOST_MEZE.md`).
+## v15.10.2 — #347 informativní nálezy B89–B95 (větev claude/b89-b95)
+
+Dávka S2 (zadání `podklady/PROMPT_b89_b95.md`, společná pravidla
+`podklady/_SPOLECNE_15_10.md`, větev `claude/davky-15-10`). Z `origin/test`
+(5a42369, v14.10.8). Do `test-draft` / `test` / `main` nic — sloučení a celé
+kolo s mutacemi dělá koordinační sezení. Každý nález B89–B95 (hloubkový test
+24. 9. 2026, stav podle auditu 12. 10. 2026) ověřen v kódu a rozhodnut:
+
+- **B89 opraveno** — klíč prvku v analytice zahodí vše od první „(“ do konce;
+  do teď končil na první „)“, takže závorka v řetězci nebo vnořené volání
+  nechaly zbytek argumentu (název akce, jméno zákazníka) v klíči. Karta
+  Nastavení → Analytika a heat mapa už netvrdí „stopa jednotlivce
+  neexistuje“ / „čistě anonymní souhrny“ — od 20. 8. / 31. 8. 2026 se
+  počítadla, záložky a prvky ukládají i po uživatelích.
+- **B90 vědomá mez** — záloha rozpracované zakázky v prohlížeči přežije
+  odhlášení: je to pojistka proti ztrátě neuložené práce a odhlášení se na
+  ni neptá. J. V. 15. 10. 2026: nezpřísňovat.
+- **B91 opraveno dřív** — revize #401 (v12.10.3, a95e1a3): zakázané klíče
+  i po normalizaci, rejstřík bez prototypu; `test_slovnik.js`, mutace.
+- **B92 opraveno** — převod zakázek po kolegovi už na konci nezapisuje
+  starou kopii jeho účtu (souběžná změna hesla nebo role se nevracela).
+- **B93 opraveno** — obnova účtů z otisku, která účtu vrací jiné heslo,
+  zvedne verzi hesla (dosavadní relace skončí) a dotčené účty vyjmenuje
+  v upozornění. Že heslo z doby otisku pak platí, je smysl obnovy (kryje ho
+  heslo správce, B77).
+- **B94 vědomá mez** — scrypt 2^14 bez parametrů v otisku; postup přechodu
+  (formát s parametry, přepočet při přihlášení) v `BEZPECNOST_MEZE.md`;
+  J. V. 15. 10. 2026: varianta A — neměnit.
+- **B95 opraveno** — jméno bez ostrých závorek při založení účtu, v profilu
+  i v razítku zámku a odemčení (`razitkoKdo`, i pro starší účty).
+
+Testy: nová sada `netlify/test_ucty_informativni.mjs` (před opravou 11 / 10,
+po ní 21 / 0; v `SADY` mutací), `src/test_analytika.js` +5 (59 / 5 → 64 / 0),
+`test_obnova` B31 upraven na novou verzi hesla (226 / 0). Mutace serveru +6
+(B89 ×2, B92, B93, B95 ×2), kotvy B3 a B13 přesunuté na `razitkoKdo` — vše
+chycené; `--kontrola` serveru 406, jádra 202. Roadmapa #347 hotovo.
 
 ## v14.10.8 — zbytky češtiny v nabídce PROJ (větev claude/proj-preklad-zbytky)
 
