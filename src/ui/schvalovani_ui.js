@@ -535,7 +535,7 @@ function vyjimkyKarta() {
     const co = [];
     if (o.polozek) co.push('Položky ceníku: ' + o.smes.slice(0, 8).map(x => esc(x.popis)).join(', ')
       + (o.polozek > 8 ? ' a další ' + (o.polozek - 8) : ''));
-    if (o.pasu) co.push('Pásy „jiné": ' + o.pasy.map(p => 'stěna ' + esc(p.stena) + ' (' + esc(p.nazev || 'bez názvu') + ')').join(', '));
+    if (o.pasu) co.push('Pásy „jiné": ' + o.pasy.map(p => 'stěna ' + esc(p.stena) + ' (' + esc(p.nazev || 'bez názvu') + ', ' + esc(vyjimkyPasRozsah(p)) + ')').join(', '));
     const podr = [];
     if (rec && rec.pozadal) podr.push('Požádal: <b>' + esc(rec.pozadal) + '</b>'
       + (rec.pozadalKdy ? ' · ' + new Date(rec.pozadalKdy).toLocaleString('cs-CZ') : ''));
@@ -560,7 +560,7 @@ function vyjimkyKarta() {
   const uvod = `<div class="note">Varianty, jejichž ceník je směsí platného ceníku a starších cen, nebo
       které mají ruční sazbu pásu opláštění „jiné" nižší než ceníkovou. Role bez práva ceníku je smí
       odeslat (vytisknout nabídku) jen se schválením nadřízeného; rozpracovanou zakázku lze ukládat
-      i bez něj. Změna směsi nebo sazby po schválení schválení zruší.</div>`;
+      i bez něj. Změna směsi, sazby nebo rozsahu pásu po schválení schválení zruší.</div>`;
   if (!radky.length)
     return card('Cenové výjimky', uvod + '<div class="note" style="margin-top:8px">Žádná varianta této zakázky '
       + 'se od platného ceníku neliší a nemá pás „jiné" pod ceníkovou sazbou.</div>', false, 'vyj-seznam');

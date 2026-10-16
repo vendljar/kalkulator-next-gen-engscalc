@@ -8,6 +8,44 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v16.10.1 — B155: rozsah pásu „jiné" v obsahu schválené výjimky a v kartě (větev claude/b155-rozsah-pasu)
+
+Dávka S11 nad `test` (1cbab3a, v15.10.14). Rozhodnutí J. V. 16. 10. 2026:
+B155 se znovu otevírá a opraví se úzce — do obsahu cenové výjimky přibyl jen
+rozsah pásu, schvalovatel ho vidí v kartě. Částky a princip čtyř očí (B165)
+do dávky nepatří.
+
+- **Obsah výjimky (`src/vyjimky.js`):** `vyjimkyPasyJine` vrací u pásu
+  „jiné" pod ceníkovou sazbou i `odM` (začátek stěny u prvního pásu, jinak
+  horní mez předchozího pásu) a `doM` (`null` = až nahoru; u posledního pásu
+  vždy `null`, jádro jeho mez nečte). Čísla jako jádro (`+x || 0`): „1" a 1
+  dají týž obsah, nečitelný zápis je 0. Obsah `p` = `[stěna, i, název,
+  sazba, odM, doM]`. Server i prohlížeč volají tutéž funkci
+  (`vyjimkyZamekProblem`, `vyjimkyObsahStran`, karta). Schválený pás 0–1 m
+  roztažený na celou stěnu, posunutý na 0–3 m, nebo posun začátku stěny →
+  zámek 403, kategorie „čeká znovu"; totéž u dotisku nové strany (B153).
+- **Karta výjimek (`src/ui/schvalovani_ui.js`):** „stěna B (Deska, 0–1 m)",
+  „stěna B (Deska, od 2,2 m až nahoru)"; desetinná čárka, záporný začátek se
+  znaménkem, vše přes `esc()` (`vyjimkyPasRozsah`). `vyjimkyText` pásy
+  nevypisuje (jen počet), beze změny.
+- **⚠ Zneplatněná schválení:** rozhodnutí o výjimkách **s pásem „jiné"**
+  vydaná před v16.10.1 mají jiný obsah → kategorie **„čeká znovu"**, je
+  potřeba je **schválit znovu** (jako u B154). Výjimky jen se směsí ceníku
+  (bez pásů) se nemění — ověřeno testem (obsah totožný s v15.10.14).
+- **Testy:** `src/test_vyjimky.js` 62 → 76 OK (rozsah v obsahu, roztažení,
+  posun začátku, posun meze ceníkového pásu pod „jiné", „1" × 1, nečitelná
+  mez, výjimka jen se směsí, karta), `netlify/test_vyjimky.mjs` 46 → 59 OK
+  (403 po roztažení / posunu / posunu začátku, 200 beze změny se zápisem
+  „1", dotisk B153 s roztaženým pásem 403 a beze změny 200). Pojistka:
+  proti v15.10.14 padá 10 testů modelu a 4 serverové.
+- **Mutace:** nové „B155: obsah výjimky nenese rozsah pásu", „B155: začátek
+  pásu vždy ze stěny, ne z předchozího pásu", „B155: karta výjimek rozsah
+  pásu neukáže" — chycené 3 z 3; kotvy dvou mutací „výjimky:" posunuté na
+  nový kód. Pokus `podklady/AUDIT25_pokus_B155_rozsah.mjs` po opravě: obsah
+  pro `doM = 1` a `doM = null` se liší (shoda false).
+- Dokumentace: `BEZPECNOST_MEZE.md` (B155 OPRAVENO v16.10.1), audit
+  `podklady/AUDIT_2026-10-15_v15.10.6.md`, roadmapa #421.
+
 ## v15.10.14 — rozbor nechycených mutací B8 a B31, doplněné testy (větev claude/mutace-b8-b31)
 
 Dávka S10. Celé kolo nad f8fe243 (v15.10.13): mutace serveru 447 z 449,

@@ -276,12 +276,64 @@ test('příprava: nejnižší ceníková sazba opláštění exteriéru je kladn
   test('jedno schválení kryje směs i pás (obsah zahrnuje obojí)', o.polozek === 1 && o.pasu === 1
     && o.obsah !== VY.vyjimkyObsah(d0(nova('x')), VY.vyjimkyDnesniZProgramu(platny(), d0(nova('x'))), '').obsah, o); }
 
+console.log('===== B155: rozsah pásu „jiné" ve schválené výjimce =====');
+const pripis = (z, typ) => { const v = z.varianty[0];
+  v.zamek.tisky = (v.zamek.tisky || []).concat([{ typ, kdy: new Date().toISOString(), kdo: 'x' }]); return z; };
+/* Pokus kola 25 na v15.10.13 (podklady/AUDIT25_pokus_B155_rozsah.mjs):
+ * schválený úzký pás 0–1 m po schválení roztažený na celou stěnu dostal
+ * zámek 200. Pojistka: proti v15.10.14 (1cbab3a) vracely zámky po roztažení
+ * a po posunu začátku 200. */
+const pasUzky = (z) => { d0(z).ock.zadani.oplasteni = { rezim: 'poStenach', steny: {
+  A: { odM: 0, pasy: [{ typ: 'jine', nazev: 'Deska', naklad: 1, doM: 1 }, { typ: 'C.cetrisKc', doM: null }] } } }; };
+async function pasSchvaleny(nazev) {
+  const z = nova(nazev); pasUzky(z);
+  const r1 = await uloz(z, cO);
+  const gV = await nacti(r1.soubor, cV); const b = zk.importZakazka(kopie(gV));
+  VY.vyjimkaSchval(d0(b), obsah(b), 'Ved'); const r2 = await uloz(b, cV, gV.uloRazitko);
+  test('B155 příprava: obchodník uložil pás 0–1 m, vedoucí schválil (200)', r1.status === 200 && r2.status === 200, [r1, r2]);
+  return r1.soubor;
+}
+{ const soubor = await pasSchvaleny('B155 rozsah');
+  const vezmi = async () => { const g = await nacti(soubor, cO); return { a: zk.importZakazka(kopie(g)), razitko: g.uloRazitko }; };
+  { const { a, razitko } = await vezmi(); const st = d0(a).ock.zadani.oplasteni.steny.A;
+    st.pasy = [st.pasy[0]]; st.pasy[0].doM = null;
+    test('B155: kategorie po roztažení na celou stěnu = „čeká znovu"', VY.vyjimkaKategorie(d0(a).cenovaVyjimka, obsah(a)) === 'ceka');
+    const r = await uloz(zamkni(a), cO, razitko);
+    test('B155: schválený pás 0–1 m roztažený na celou stěnu (doM null) + zámek → 403', r.status === 403 && /jiné/.test(r.chyba || ''), r); }
+  { const { a, razitko } = await vezmi(); d0(a).ock.zadani.oplasteni.steny.A.pasy[0].doM = 3;
+    const r = await uloz(zamkni(a), cO, razitko);
+    test('B155: pás 0–1 m posunutý na 0–3 m + zámek → 403', r.status === 403, r); }
+  { const { a, razitko } = await vezmi(); d0(a).ock.zadani.oplasteni.steny.A.odM = -1.2;
+    const r = await uloz(zamkni(a), cO, razitko);
+    test('B155: posun začátku stěny (odM 0 → −1,2 m) + zámek → 403', r.status === 403, r); }
+  { const { a, razitko } = await vezmi(); d0(a).ock.zadani.oplasteni.steny.A.pasy[1].doM = 5;
+    test('B155: horní mez ceníkového pásu nad ním obsah nemění', obsah(a).obsah === (await vezmi()).a.varianty[0].data.cenovaVyjimka.obsah);
+    const st = d0(a).ock.zadani.oplasteni.steny.A; st.pasy[0].doM = '1'; st.odM = '0';
+    const r = await uloz(zamkni(a), cO, razitko);
+    test('B155: beze změny rozsahu, zápis „1" místo 1 — zámek se schválením (200)', r.status === 200, r); } }
+{ /* B153 + B155: pás roztažený po schválení, zámek PROJ pod jenProj
+   * (OCK se neposuzuje), vypnutí, dotisk nabídky OCK → 403. */
+  const dotisk = async (nazev, roztahni) => {
+    const soubor = await pasSchvaleny(nazev);
+    const g0 = zk.importZakazka(kopie(await nacti(soubor, cO)));
+    if (roztahni) { const st = d0(g0).ock.zadani.oplasteni.steny.A; st.pasy = [st.pasy[0]]; st.pasy[0].doM = null; }
+    g0.jenProj = true; zamkni(g0, 'nabidkaProj');
+    const r1 = await uloz(g0, cO, (await nacti(soubor, cO)).uloRazitko);
+    const g1 = zk.importZakazka(kopie(await nacti(soubor, cO))); g1.jenProj = false;
+    const r2 = await uloz(g1, cO, r1.razitko);
+    const g2 = await nacti(soubor, cO);
+    const r3 = await uloz(pripis(zk.importZakazka(kopie(g2)), 'nabidka'), cO, g2.uloRazitko);
+    test('B155 příprava (' + nazev + '): zámek PROJ s jenProj a vypnutí (200)', r1.status === 200 && r2.status === 200, [r1, r2]);
+    return r3; };
+  const r = await dotisk('B155 dotisk roztažený', true);
+  test('B155: dotisk nabídky OCK s pásem roztaženým po schválení → 403', r.status === 403 && /dotisk/.test(r.chyba || ''), r);
+  const r0 = await dotisk('B155 dotisk beze změny', false);
+  test('B155: dotisk nabídky OCK se schváleným rozsahem (200)', r0.status === 200, r0); }
+
 console.log('===== B153: dotisk strany vyřazené při zámku (jenProj → vypnutí → dotisk OCK) =====');
 /* Pokus auditu 15. 10. 2026 (podklady/AUDIT25_pokus_B153_dotisk.mjs). Zakázka
  * „jen projekce": zámek nabídky PROJ posoudí jen PROJ; vypnutí jenProj
  * zámek nemění; dotisk nabídky OCK pak nesmí obejít výjimku ani marži. */
-const pripis = (z, typ) => { const v = z.varianty[0];
-  v.zamek.tisky = (v.zamek.tisky || []).concat([{ typ, kdy: new Date().toISOString(), kdo: 'x' }]); return z; };
 async function jenProjZamekVypnuti(nazev, priprav) {
   const s = await smesUlozena(nazev);
   d0(s.a).proj.cenik = kopie(platny().cenikProj);        // PROJ podle platného — zámek PROJ výjimku nepotřebuje
