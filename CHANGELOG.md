@@ -48,6 +48,7 @@ požádejte o schválení nadřízeného…" a zábrana zablokovala tisk nabídk
   → 14 / 0. Upraveny `test_cenik_uplnost.js` (mapa není cena)
   a `test_ukazkove_znacky.js` (třetí nedoplňovaný klíč).
 - **Mutace:** cílené „S13" — serveru **12 z 12** (vyjimky, uloziste B128, cenik_stari, cenik, cenik_rady, program), jádra **2 z 2** (engine.js); `--kontrola` 461 / 207 úseků. Sady `src/test_cena_dle_nabidky.js` a `netlify/test_cena_dle_nabidky.mjs` jsou v `SADY`. `test_escape.js`: záznam PROVERENO pro štítky (35/2 → 37/0).
+- `spust_testy.sh --smoke` (v16.10.3, bez KNG_PODKLADY): **255 prošlo / 0 selhalo / 6 přeskočeno**; kontrola údajů čistá.
 - Příručka kap. 17 (podkapitola „Cena dle nabídky"), roadmapa #423
   (předběžné číslo — 421 má S11, 422 nechávám S12; přidělí koordinace).
 

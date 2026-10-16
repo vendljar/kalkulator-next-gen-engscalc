@@ -11,7 +11,7 @@ Do `test-draft` / `test` / `main` nic — sloučení a celé kolo dělá koordin
   berou příznak jen z platného ceníku; sloupec v Nastavení → Ceník (správce),
   štítky v příplatcích; hláška „<název>: cena pod ceníkem". Testy: jednotkový
   0/1 → 32/0, serverový 6/7 → 13/0, harness 5/9 → 14/0; mutace S13 serveru
-  12/12, jádra 2/2; `--kontrola` 461 / 207. Příručka kap. 17, roadmapa #423
+  12/12, jádra 2/2; `--kontrola` 461 / 207; smoke 255 / 0 / 6. Příručka kap. 17, roadmapa #423
   (předběžné id), `BEZPECNOST_MEZE.md` (S13).
 - **Po nasazení (J. V.):** platný ceník příznaky nemá → v Nastavení → Ceník
   zaškrtnout položky a ceník zveřejnit (test i ostrá).
