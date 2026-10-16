@@ -10,6 +10,14 @@ Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kv�
 - **Ještě nesloučené zápisové commity** (jen CHANGELOG/PREDAVKA/verze/roadmapa, bez kódu): `claude/b80-pipedrive` 38996f2 (v15.10.7, roadmapa #345, NASAZENI), `claude/p12-naklady` 1f2a365 (výsledky po úpravě, mutace 13/13, smoke 248/0/2), `claude/kolo25-audit` dcc3d5f (smoke 247/0/6).
 - **Další krok:** do `claude/integrace-15-10` sloučit 38996f2, 1f2a365, dcc3d5f (konflikty jen v dokumentaci — novější oddíl nahoru, `verze.txt` = 15.10.7, příručka `manual/obsah.json` verze + nadpis „Co je nového ve verzi v15.10.7"), `--kontrola` mutací, sestavit, příručka ze snímků, `spust_testy.sh --smoke` s podklady → zelené → zápis do CHANGELOG → push `claude/integrace-15-10` a fast-forward `test` (`git merge-base --is-ancestor origin/test HEAD`).
 
+## Stav 16. 10. ~12:20 UTC (koordinace session_01NQjWzfqv1obHAg7DWPHAKH, kontext 63 %)
+
+- `main` = `test` = 1cbab3a (v15.10.14, release vydán). Šablona SoD projekce v3 nahraná J. V. do aplikace.
+- Běží: **S11** session_015fBoTjo5sPVrotmk1h5Nvz (`claude/b155-rozsah-pasu`, v16.10.1, B155 rozsah pásu — první commit 2b03b31), **S12** session_01ARSMBgZ2uFKva4VC1kj1qJ (`claude/leseni-spec-radek`, v16.10.2, e-mail D. S. body 2 a 3), **S13** session_01Stc6SXBihwz8ewqcX84f6k (`claude/cena-dle-nabidky`, v16.10.3, „cena dle nabídky“, návrh https://claude.ai/artifact/3eaLDMphHDZCqWTK66TEfc schválen).
+- **Pokyn J. V. 16. 10.: „až vše dokončíš, proveď rovnou sloučení do test“** — po souhrnech S11–S13 sloučit do integrace (S11 a S13 obě sahají do `src/vyjimky.js` / schvalování — pozor na konflikty), sady, celé kolo s mutacemi, fast-forward `test`, release odkaz (`release_odkaz.py` hlídá tag). Do `main` jen na pokyn.
+- Soupis změn pro obchodníky (main v14.10.3 → v15.10.14): https://claude.ai/artifact/DMWk88SYC2TphF3FJ7zSQS
+- Kokpit: https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2 (skill `.claude/skills/kokpit-koordinace`, nově pole `celkem` = odhad do konce úkolu; týdenní limit se nezobrazuje).
+
 ## ZÁVĚR noci 15./16. 10. (05:45 UTC) — vše hotovo
 
 - `test` = **55f0690 v15.10.14**, celé kolo s mutacemi **VŠE ZELENÉ** (257/0/1, jádro 205/205, server 449/449, statické 3/3). Obsahuje S1–S10.
