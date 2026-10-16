@@ -10,6 +10,15 @@ Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kv�
 - **Ještě nesloučené zápisové commity** (jen CHANGELOG/PREDAVKA/verze/roadmapa, bez kódu): `claude/b80-pipedrive` 38996f2 (v15.10.7, roadmapa #345, NASAZENI), `claude/p12-naklady` 1f2a365 (výsledky po úpravě, mutace 13/13, smoke 248/0/2), `claude/kolo25-audit` dcc3d5f (smoke 247/0/6).
 - **Další krok:** do `claude/integrace-15-10` sloučit 38996f2, 1f2a365, dcc3d5f (konflikty jen v dokumentaci — novější oddíl nahoru, `verze.txt` = 15.10.7, příručka `manual/obsah.json` verze + nadpis „Co je nového ve verzi v15.10.7"), `--kontrola` mutací, sestavit, příručka ze snímků, `spust_testy.sh --smoke` s podklady → zelené → zápis do CHANGELOG → push `claude/integrace-15-10` a fast-forward `test` (`git merge-base --is-ancestor origin/test HEAD`).
 
+## PŘEDÁNÍ 16. 10. ~13:10 UTC → nové koordinační sezení (staré session_01NQjWzfqv1obHAg7DWPHAKH končí kvůli kontextu 66 %)
+
+- **Řiď se `podklady/PLAN_VIKEND_16_10.md`** (plán + rozhodnutí J. V. + okna). Kokpit převezmi (skill `kokpit-koordinace` ve větvi `claude/integrace-15-10`, šablona `podklady/KOKPIT_koordinace.html`; publikovat do URL https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2 přes `url`).
+- `main` = `test` = 1cbab3a (v15.10.14). Integrační větev pro nové dávky: založ `claude/integrace-16-10` nad `origin/test` a nejdřív do ní slouč `origin/claude/integrace-15-10` (nese skill kokpitu, release_odkaz.py je už v test — jen doc commity).
+- Běžící dávky (pošli jim zprávu, že koordinaci převzalo nové sezení): **S11** session_015fBoTjo5sPVrotmk1h5Nvz `claude/b155-rozsah-pasu` (v16.10.1; zatím 2b03b31, souhrn nepřišel) · **S12** session_01ARSMBgZ2uFKva4VC1kj1qJ `claude/leseni-spec-radek` (v16.10.2; bod 2 hotový d64e149, bod 3 rozpracovaný) · **S13** session_01Stc6SXBihwz8ewqcX84f6k `claude/cena-dle-nabidky` (v16.10.3; 4b7a2ec — CHANGELOG/PREDAVKA, souhrn čekej).
+- Šablony z Disku: v novém kontejneru stáhnout znovu subagentem (seznam v `_SPOLECNE_15_10.md`; ID souborů SoD v `podklady/POSTUP_SABLONY_SOD_15_10.md`).
+- Hodinová kontrola: vytvoř si vlastní naplánovanou úlohu (cron hodinově) do svého sezení; vypni ji po O9.
+- Push do `test` je schválený (J. V.: „vše co proběhne standardně otestuj a rovnou pošli do test“) — auto-mode ho chce mít výslovně v zadání sezení.
+
 ## Stav 16. 10. ~12:20 UTC (koordinace session_01NQjWzfqv1obHAg7DWPHAKH, kontext 63 %)
 
 - `main` = `test` = 1cbab3a (v15.10.14, release vydán). Šablona SoD projekce v3 nahraná J. V. do aplikace.
