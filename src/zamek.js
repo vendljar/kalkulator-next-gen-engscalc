@@ -289,22 +289,32 @@ function zamekKryciPoleVNabidce(list, id) {
   return !s || nab.indexOf(s.sekce) >= 0;
 }
 
+/* ÚDAJE ZMOCNITELE PLNÉ MOCI (B163, audit 25, 16. 10. 2026). Plná moc
+ * nic nezamyká a často se dělá až po smlouvě o dílo; SoD údaje zmocnitele
+ * netiskne. Pole `pm…` krycího listu PROJ proto zůstávají volná i po tisku
+ * SoD. Ostatní zámek SoD platí beze změny. Server hlídá totéž
+ * (zamekDataPorovnani). */
+function zamekKryciPolePlnaMoc(list, id) {
+  return list === 'kryciProj' && /^pm[A-Z]/.test(String(id == null ? '' : id));
+}
+
 /* Smí se pole krycího listu změnit? Nezamčená varianta = ano. */
 function zamekKryciPoleVolne(v, list, id) {
   if (!variantaUzamcena(v)) return true;
-  return zamekKryciOtevreny(v) && !zamekKryciPoleVNabidce(list, id);
+  if (zamekKryciPoleVNabidce(list, id)) return false;
+  return zamekKryciOtevreny(v) || zamekKryciPolePlnaMoc(list, id);
 }
 
 /* Data zamčené varianty k porovnání „změnilo se něco odeslaného?" — bez
  * ručních hodnot polí krycího listu, která se smí doplňovat. Zámek se bere
  * z `v` (na serveru vždy z ULOŽENÉ verze, klient si ho nevybírá). */
 function zamekDataPorovnani(data, v) {
-  if (!data || typeof data !== 'object' || !zamekKryciOtevreny(v)) return JSON.stringify(data);
+  if (!data || typeof data !== 'object' || !variantaUzamcena(v)) return JSON.stringify(data);
   const kopie = JSON.parse(JSON.stringify(data));
   ['kryci', 'kryciProj'].forEach(list => {
     const h = kopie[list] && kopie[list].hodnoty;
     if (!h || typeof h !== 'object') return;
-    Object.keys(h).forEach(id => { if (!zamekKryciPoleVNabidce(list, id)) delete h[id]; });
+    Object.keys(h).forEach(id => { if (zamekKryciPoleVolne(v, list, id)) delete h[id]; });
   });
   return JSON.stringify(kopie);
 }
@@ -869,4 +879,4 @@ if (typeof module !== 'undefined')
                      variantaEditovatelna, zamkniVariantu, odemkniVariantu,
                      ZAMEK_OTISK_POLE, zamekOtisk, zamekOtiskZPorovnani,
                      zajistiZamek, ZAMEK_KRYCI_SMLOUVY, zamekTiskyTypy, zamekKryciOtevreny,
-                     zamekKryciPoleVNabidce, zamekKryciPoleVolne, zamekDataPorovnani };
+                     zamekKryciPoleVNabidce, zamekKryciPoleVolne, zamekKryciPolePlnaMoc, zamekDataPorovnani };

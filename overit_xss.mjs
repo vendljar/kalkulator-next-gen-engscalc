@@ -16,6 +16,10 @@
  * B82 — příloha zakázky s `javascript:` adresou se kliknutím na Stáhnout
  *       spustila (hloubkový test 24. 9. 2026).
  *
+ * B166 — audit 25 (15. 10. 2026): sada nehlídala cenovou výjimku varianty
+ *        (data.cenovaVyjimka), lištu zámku u AKTIVNÍ zamčené varianty
+ *        a žlutou lištu #404 se zálohou z localStorage (doplněno 16. 10.).
+ *
  * Spuštění: NODE_PATH=$(npm root -g) node overit_xss.mjs
  */
 import { createRequire } from 'module';
@@ -237,6 +241,22 @@ const KOD_STRANKY = `
     'B150: usazení OCK v nabídce (levá a pravá boční stěna)': (z, d) => {
       d.techspec.hodnoty = Object.assign(d.techspec.hodnoty || {}, { usazeniLeva: 'x', usazeniPrava: 'y' });
       otrav(d.techspec.hodnoty, 'techspec.hodnoty', c => /usazeni(Leva|Prava)$/.test(c)); },
+    /* B166 (audit 25, 16. 10. 2026): cenová výjimka varianty — kdo požádal,
+     * kdo rozhodl a důvod zamítnutí jdou do záložky Schvalování a do lišt. */
+    'B166: cenová výjimka (data.cenovaVyjimka)': (z, d) => {
+      /* karta výjimky se kreslí, jen když se varianta od ceníku liší — pás „jiné" pod sazbou */
+      /* sestavení bez ceníku má sazby opláštění nulové — nejnižší sazba by nebyla */
+      Object.assign(d.cenik, { skloBokyKc: 1000, skloCelniKc: 1000, cetrisKc: 1000 });
+      d.ock.zadani.oplasteni = { rezim: 'poStenach', steny: { A: { odM: 0, pasy: [{ typ: 'jine', nazev: 'Pás pod sazbou', naklad: 1, doM: null }] } } };
+      d.cenovaVyjimka = { stav: (typeof VYJ_ZAMITNUTO !== 'undefined' ? VYJ_ZAMITNUTO : 'zamítnuto'), obsah: 'x', polozek: 1, pasu: 1,
+        pozadal: 'x', pozadalKdy: 'x', schvalil: 'x', schvalilKdy: 'x', zamitl: 'x', zamitlKdy: 'x', zamitnutoDuvod: 'x' };
+      otrav(d.cenovaVyjimka, 'cenovaVyjimka', c => !/\.(obsah|polozek|pasu)$/.test(c)); },
+    /* B166: lišta zámku se kreslí jen u AKTIVNÍ zamčené varianty — oblast
+     * „varianty" výš otravuje zámek varianty, která aktivní není. */
+    'B166: lišta zámku u aktivní zamčené varianty': (z) => {
+      const v2 = z.varianty[1];
+      otrav(v2, 'varianty.1', c => /^varianty\.1\.(nazev|zakaznik|pozn|zamek\.(kdo|popis|cislo|kdy)|zamek\.tisky\.\d+\.(kdo|popis|kdy))$/.test(c));
+      z.__aktivni = v2.id; },
   };
   /* Oblast, která se kreslí jen v jednom místě, musí doložit, že se
    * opravdu vykreslila (jinak by obecná pojistka „payload ve stránce"
@@ -245,6 +265,9 @@ const KOD_STRANKY = `
     'B150: usazení OCK v nabídce (levá a pravá boční stěna)': (ramy) => ramy.some(f => f.contentDocument && f.contentDocument.documentElement
       && /techspec\.hodnoty\.usazeniLeva/.test(f.contentDocument.documentElement.innerHTML)
       && /techspec\.hodnoty\.usazeniPrava/.test(f.contentDocument.documentElement.innerHTML)),
+    'B166: lišta zámku u aktivní zamčené varianty': () => {
+      const el = document.getElementById('zamekLista');
+      return !!el && /varianty\.1\.nazev/.test(el.innerHTML) && /varianty\.1\.zamek\.popis/.test(el.innerHTML); },
     'B150: dialog Kontakt… (úprava kontaktu cizího účtu)': () => ['onlineUzKTitul', 'onlineUzKFunkce', 'onlineUzKTelefon']
       .every(id => { const el = document.getElementById(id); return !!el && /__XSS\.push/.test(el.value); }),
   };
@@ -317,7 +340,7 @@ const KOD_STRANKY = `
     ONLINE_STAV.ja = { email: 'tester@priklad.cz', jmeno: 'Tester', titul: '', funkce: 'f', telefon: '', podpis: '',
                        role: admin ? 'Administrátor' : 'Obchodník' };
     if (OBLASTI[oblast]) OBLASTI[oblast](z, d);
-    z.aktivni = z.varianty[0].id;
+    z.aktivni = z.__aktivni || z.varianty[0].id; delete z.__aktivni;
     try { ZAK = importZakazka(JSON.parse(JSON.stringify(z))); } catch (e) { chyby.push('importZakazka: ' + e.message); ZAK = z; }
     try { syncVarianta(); } catch (e) { chyby.push('syncVarianta: ' + e.message); }
     if (DALSI[oblast]) { try { DALSI[oblast](); } catch (e) { chyby.push('příprava dat: ' + e.message); } }
@@ -428,6 +451,50 @@ async function a2Pokus(oblast, admin) {
         zkus(`${role}: ${oblast} — otrávená pole se opravdu vykreslila`, r.overeno === true, r.overeno);
     }
   }
+}
+
+/* B166 (audit 25, 16. 10. 2026): ŽLUTÁ LIŠTA #404 SE ZÁLOHOU Z LOCALSTORAGE.
+ * Záloha rozpracované kalkulace leží v prohlížeči (kng_rozpracovano_v1)
+ * a lišta z ní kreslí číslo a název akce dřív, než se cokoli načte ze
+ * serveru. Záloha se nasype před načtením stránky (addInitScript, vzor
+ * overit_zaloha_lista.mjs); pak se v liště klikne „Pokračovat", takže se
+ * otrávená zakázka ze zálohy i obnoví a vykreslí. */
+console.log('\nB166 — žlutá lišta #404 se zálohou z localStorage');
+{
+  const PAYL = (c) => `');window.__XSS.push('${c}');//"><img src=x onerror="window.__XSS.push('${c}')">`;
+  /* Zakázka zálohy se vyrobí v aplikaci (novaZakazka), ať jde obnovit. */
+  const p0 = await b.newPage(); await p0.goto(KDE); await p0.waitForTimeout(300);
+  const zak = await p0.evaluate(() => { const z = novaZakazka(); if (typeof zkusebniCenik === 'function') z.varianty[0].data.cenik = zkusebniCenik(); return z; });
+  await p0.close();
+  Object.assign(zak, { cislo: PAYL('zaloha.zakazka.cislo'), nazevAkce: PAYL('zaloha.zakazka.nazevAkce'), objednatel: PAYL('zaloha.zakazka.objednatel') });
+  zak.varianty[0].nazev = PAYL('zaloha.zakazka.varianta');
+  const zaloha = { verze: 1, kdy: new Date(Date.now() - 3600 * 1000).toISOString(), cislo: PAYL('zaloha.cislo'),
+    nazevAkce: PAYL('zaloha.nazevAkce'), zakazka: JSON.stringify(zak) };
+  const p = await b.newPage({ viewport: { width: 1500, height: 1000 } });
+  const chybyStranky = [];
+  p.on('pageerror', e => chybyStranky.push(String(e && e.message || e).slice(0, 160)));
+  await p.addInitScript((zal) => { window.__XSS = []; try { localStorage.setItem('kng_rozpracovano_v1', zal); } catch (e) {} }, JSON.stringify(zaloha));
+  await p.goto(KDE);
+  await p.waitForTimeout(600);
+  const lista = await p.evaluate(() => {
+    const el = document.getElementById('obnovaLista');
+    return { vidno: !!el && el.classList.contains('zobraz'), html: el ? el.innerHTML : '',
+      xss: [...new Set(window.__XSS || [])], img: document.querySelectorAll('img[src="x"]').length };
+  });
+  zkus('lišta #404 se zálohou se ukázala (jinak by kontrola nic neověřila)', lista.vidno && /__XSS\.push/.test(lista.html), lista.html.slice(0, 160));
+  zkus('lišta #404: nic se nespustilo', lista.xss.length === 0, lista.xss.join(', '));
+  zkus('lišta #404: v DOM není nezpracovaný <img> z payloadu', lista.img === 0, lista.img);
+  const po = await p.evaluate(async () => {
+    try { listaPokracujUI(); } catch (e) { return { chyba: e.message }; }
+    await new Promise(r => setTimeout(r, 400));
+    for (const t of ['kalk', 'detail', 'spec']) { try { prepniTab(t); render(); } catch (e) {} await new Promise(r => setTimeout(r, 60)); }
+    return { xss: [...new Set(window.__XSS || [])], img: document.querySelectorAll('img[src="x"]').length,
+      obnoveno: /zaloha\.zakazka\.nazevAkce/.test(String(ZAK && ZAK.nazevAkce)) };
+  });
+  zkus('lišta #404: „Pokračovat" obnovil otrávenou zálohu', po.obnoveno === true, JSON.stringify(po).slice(0, 160));
+  zkus('lišta #404: po obnově zálohy se nic nespustilo', (po.xss || []).length === 0 && po.img === 0, JSON.stringify(po).slice(0, 160));
+  zkus('lišta #404: stránka nespadla', chybyStranky.length === 0, chybyStranky.join(' | '));
+  await p.close();
 }
 
 /* Sonda na sobě: kdyby payload neuměl spustit nic, všechny kontroly výš by

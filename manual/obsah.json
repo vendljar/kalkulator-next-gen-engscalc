@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v16.10.3 · sestaveno 16. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
+  "verze": "Platí pro aplikaci v16.10.4 · sestaveno 16. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -14,7 +14,7 @@
       ]
     },
     {
-      "nadpis": "Co je nového ve verzi v16.10.3 (16. 10. 2026)",
+      "nadpis": "Co je nového ve verzi v16.10.4 (16. 10. 2026)",
       "odstavce": [
         "**Cena dle nabídky.** U nabídkových příplatků za akci (např. prosklená stěna vedle šachty) zadává obchodník vlastní cenu bez cenové výjimky a bez schválení; v řádku příplatku je štítek **cena dle nabídky** nebo **vlastní cena**. Které položky to jsou, určuje správce v Nastavení → Ceník (sloupec „Cena dle nabídky“, osm položek je předzaškrtnutých) a platí to po zveřejnění ceníku (kapitola 17).",
         "**Lešení v technické specifikaci se řídí kalkulací.** V tabulce SOUČÁSTÍ DODÁVKY NENÍ jsou dva řádky: **LEŠENÍ VNITŘNÍ PRO STAVBU OCK** (nový) a **LEŠENÍ KOLEM OCK PRO PROVEDENÍ OPLÁŠTĚNÍ**. Když je lešení mezi příplatky v nabídce, stojí u něj „nabízeno jako příplatek“ se štítkem **z kalkulace**; když je v základní ceně, řádek se do dokumentu nedává. Text můžete přepsat (štítek **ručně**) a tlačítkem ↺ vrátit návrh z kalkulace (kapitola 17).",

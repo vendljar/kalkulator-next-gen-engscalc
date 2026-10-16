@@ -218,6 +218,20 @@ test('rev #401 N2: prekladNastav „constructor" odmítne (Object se nezmění)'
   PR.prekladNastav('constructor', 'en', 'x') === false && Object[0] === undefined && ({}).constructor === Object);
 test('rev #401 N2: prekladImport zakázané klíče přeskočí',
   PR.prekladImport({ hesla: JSON.parse('{"__proto__":["x","y","z"],"__proto__:":["x","y","z"]}') }) === 0 && ({})[0] === undefined);
+/* B160 (audit 25, 15. 10. 2026): klíč, který je názvem vlastnosti
+ * Object.prototype, by v objektu PREKLAD zastínil metodu (PREKLAD.hasOwnProperty
+ * by už nebyla funkce). Odmítá se kontrola zveřejnění (server i klient)
+ * i údržba slovníku v prohlížeči. */
+test('B160: hasOwnProperty / toString / valueOf neprojdou kontrolou',
+  !K({ hasOwnProperty: ['a', 'b', 'c'] }).ok && !K({ toString: ['a', 'b', 'c'] }).ok && !K({ valueOf: ['a', 'b', 'c'] }).ok);
+test('B160: … ani s mezerou okolo („ isPrototypeOf ")', !K({ ' isPrototypeOf ': ['a', 'b', 'c'] }).ok);
+test('B160: všechny vlastnosti Object.prototype neprojdou',
+  Object.getOwnPropertyNames(Object.prototype).every(n => !K(JSON.parse(JSON.stringify({ [n]: ['a', 'b', 'c'] }))).ok));
+test('B160: běžné heslo s podobným textem projde („Tostring") ', K({ 'Tostring': ['a', 'b', 'c'] }).ok);
+test('B160: prekladNastav „hasOwnProperty" odmítne a PREKLAD si metodu nechá',
+  PR.prekladNastav('hasOwnProperty', 'en', 'x') === false && typeof PR.PREKLAD.hasOwnProperty === 'function');
+test('B160: prekladImport klíč „toString" přeskočí',
+  PR.prekladImport({ hesla: { toString: ['x', 'y', 'z'] } }) === 0 && typeof PR.PREKLAD.toString === 'function');
 /* N3: U+FFFE / U+FFFF */
 test('rev #401 N3: U+FFFE v překladu ani U+FFFF v hesle neprojdou',
   !K({ H: ['a￾b', '', ''] }).ok && !K({ ['H￿']: ['a', '', ''] }).ok);

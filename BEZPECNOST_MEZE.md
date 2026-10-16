@@ -387,6 +387,72 @@ správce: po vypnutí účtu, resetu hesla nebo změně role si v seznamu
 uživatelů ověřit, že změna drží (obnovit stránku); u sporného účtu zásah
 zopakovat.
 
+## Audit kola 25 — B158, B159, B161, B162a, B164 (dávka A1, 16. 10. 2026, v16.10.4)
+
+Zadání koordinace (#420): B158 a B159 opravit, B161, B162a a B164 zapsat
+jako vědomé meze. Opravy mají zbytkové meze, které jsou tu taky.
+
+### B158 — zbytek: strop Pipedrive mezi instancemi funkce
+
+**Co dělá:** od v16.10.4 se čtení a zápis počítadla stropu čerstvých
+načtení dealu (30 za hodinu) řadí ve výhradním úseku (`vyhradne` v
+`netlify/lib/sdilene.mjs`). 200 souběžných požadavků v jedné instanci
+funkce pustí do Pipedrive nejvýš 30 (`netlify/test_pd_pristup.mjs`).
+
+**Co nedělá:** dvě různé instance funkce (Netlify je při náporu spustí
+souběžně) se navzájem nevidí — každá řadí jen své požadavky. Netlify Blobs
+nemá atomický inkrement; podmíněný zápis (etag) v cloudu ověřit nejde
+(stejná mez jako B4). Dopad: strop může přetéct o násobek počtu instancí,
+u každého účtu s právem `crm.pipedrive` (od v15.10.7 výchozí všem
+obchodníkům a vedoucím), jen rozpočet volání, ne data, a jen do vyčerpání
+denního rozpočtu Pipedrive (ten hlídá Pipedrive sám).
+
+### B159 — zbytek: požadavek bez hlavičky Origin
+
+**Co dělá:** od v16.10.4 `prihlaseny()` u zápisu (ne GET/HEAD) s hlavičkou
+Origin odmítne `Origin: null` a tělo jiného typu než `application/json`
+(401). Aplikace posílá vždy JSON (`onlineApi`), DELETE bez těla.
+
+**Co nedělá:** bez hlavičky Origin se nic neodmítá (curl, testy, starší
+klienti) — stejná zásada jako u B17. Prohlížeč Origin u POST/DELETE posílá
+vždy, takže CSRF z prohlížeče tudy nevede.
+
+### B161 — hlavička odeslané nabídky v dotisku (vědomá mez)
+
+**Co dělá:** pole krycího listu s `bind` (název akce, adresa, objednatel)
+zapisují do hlavičky zakázky, která je ze zámku varianty vyjmutá záměrně
+(6. 10. 2026) — hlavička patří celé zakázce, ne jedné odeslané variantě.
+
+**Co nedělá:** dotisk odeslané nabídky bere `NAZEV_AKCE`, `ADRESA`
+a `OBJEDNATEL` z dnešní hlavičky, takže může nést jiný text, než jaký
+zákazník dostal. **Cena se nemění** (částky drží zmrazený výsledek zámku).
+Doklad o tom, co odešlo, je soubor nabídky odeslaný zákazníkovi a záznam
+`tisky[]` (datum, číslo). Řešit by šlo otiskem hlavičky do zámku; dnes
+se nedělá (sporné, viz audit 25).
+
+### B162a — starší verze ceníku v online zakázkách (doplnění vědomé meze)
+
+**Co dělá:** P12(d) ořezává historii ceníku v `/api/program` pro role bez
+práva na náklady.
+
+**Co nedělá:** online zakázka nese ceník varianty z doby uložení (zmrazená
+kopie — bez ní by se stará nabídka přepočítala jinak). Obchodník tak přes
+`GET /api/zakazky?soubor=` dostane i **starší verze** ceníku (nákladové
+sazby a marži té doby). Patří to pod vědomou mez „ceníky v online
+zakázkách zůstávají" — jen ji doplňuje o starší verze. `test_p12_naklady`
+hlídá jen `/api/program`.
+
+### B164 — zámek SoD stojí na záznamu tisku od klienta (vědomá mez)
+
+**Co dělá:** zámek krycího listu po smlouvě o dílo vzniká záznamem typu
+`sod`/`sodProj` v `tisky[]`, který posílá klient při tisku. Zapsaný tisk
+už smazat nejde (409) a od té chvíle server pole SoD hlídá.
+
+**Co nedělá:** upravený klient může SoD vytisknout bez záznamu a pole
+dál měnit. Stejná třída jako tisk nabídky (důvěra v klienta při tisku,
+viz B62): server nemá jak poznat, že se v prohlížeči tisklo. Od v16.10.4
+po SoD zůstávají volné jen údaje zmocnitele plné moci (`pm*`, B163).
+
 ## Zbytkové meze uzavřených nálezů
 
 ### B61 — zámek pod jiným jménem souboru
