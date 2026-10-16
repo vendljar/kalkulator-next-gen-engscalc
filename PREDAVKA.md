@@ -53,6 +53,32 @@ koordinace (session_01NQjWzfqv1obHAg7DWPHAKH). Podrobnosti: CHANGELOG v16.10.2.
   totéž číslo, přečíslovat při slučování) a v `MUTACE` v `mutace_jadro.mjs`.
 - **Další krok (koordinace):** celé kolo s mutacemi.
 
+# Předávka — 16. 10. 2026: dávka S11 (v16.10.1), větev `claude/b155-rozsah-pasu` — B155 rozsah pásu „jiné" ve výjimce
+
+Nad `origin/test` (1cbab3a, v15.10.14). Rozhodnutí J. V. 16. 10. 2026: B155
+se opraví úzce (jen rozsah pásu v obsahu výjimky a v kartě, ne B165). Do
+`test-draft` / `test` / `main` nic — sloučení rozhoduje J. V., koordinace
+session_01NQjWzfqv1obHAg7DWPHAKH. Podrobnosti: CHANGELOG v16.10.1.
+
+- **Hotovo (pushnuto):** `vyjimkyPasyJine` nese `odM`/`doM` pásu, obsah
+  `p` = `[stěna, i, název, sazba, odM, doM]`; karta „stěna B (Deska, 0–1 m)".
+  `src/test_vyjimky.js` 62 → 76 OK, `netlify/test_vyjimky.mjs` 46 → 59 OK,
+  mutace B155 3 z 3, skupina „výjimky" 22 z 22, `--kontrola` 452 úseků.
+  Pokus `podklady/AUDIT25_pokus_B155_rozsah.mjs` upraven (reálný tvar 0–1 m
+  + ceníkový pás nad ním): před opravou shoda obsahů, po opravě různé.
+- **Ověření:** `spust_testy.sh` 198/0/1; celé mutace serveru přerušil limit
+  úlohy po 288 z 452 (288 chycených, nic nechycené); cílené „B31: hesloVerze
+  se obnovou sníží" 1 z 1 (chycená od v15.10.14), „B155" 3 z 3. Celé kolo
+  pustí koordinace (session_011B3ruyPigNEMSUdesbk4Hd).
+- **⚠ Pro J. V.:** rozhodnutí o výjimkách **s pásem „jiné"** vydaná před
+  v16.10.1 přejdou do „čeká znovu" — je potřeba je **schválit znovu**.
+  Výjimky jen se směsí ceníku se nemění.
+- **Výchozí volby:** poslední pás má v obsahu vždy `doM: null` (jádro jeho
+  mez nečte); nečitelná mez = 0 jako v jádru; rozsah se neořezává na výšku
+  šachty (obsah = zadání); záporný začátek se v kartě píše „-1,2".
+- **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt`,
+  `roadmapa/roadmap.json` (#421, `meta.poradi`) a v `MUTACE` v `netlify/mutace.mjs`.
+
 # Předávka — 15. 10. 2026: dávka S10 (v15.10.14), větev `claude/mutace-b8-b31` — nechycené mutace B8 a B31
 
 Nad `origin/test` (f8fe243, v15.10.13). Do `test-draft` / `test` / `main`

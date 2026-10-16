@@ -1,7 +1,8 @@
 /* POKUS AUDITU KOLA 25 (15. 10. 2026) k nálezu B155 — viz podklady/AUDIT_2026-10-15_v15.10.6.md.
  * Jen čte: paměťové úložiště, zkušební ceník, smyšlené údaje. Začátek je převzatý
  * z netlify/test_vyjimky.mjs (jeho úvodní kontroly se vypíšou jako OK). Pokus na konci.
- * Spuštění: node podklady/AUDIT25_pokus_B155_rozsah.mjs */
+ * Spuštění: node podklady/AUDIT25_pokus_B155_rozsah.mjs
+ * Výsledek po opravě v16.10.1: viz konec souboru (shoda false). */
 /* CENOVÉ VÝJIMKY VARIANTY VE SCHVALOVÁNÍ (rozhodnutí J. V. 13. 10. 2026).
  *
  *  – „Ano, směs do schvalování": ceník varianty, který se ve sledovaných
@@ -116,12 +117,20 @@ async function smesUlozena(nazev, kdo) {
 /* Obsah výjimky tak, jak ho spočítá i prohlížeč (týž záznam programu). */
 const obsah = (z) => VY.vyjimkyObsah(d0(z), VY.vyjimkyDnesniZProgramu(platny(), d0(z)), zk.zakazkaVyrazenaStrana(z) || '');
 const pasJine = (z, sazba) => { d0(z).ock.zadani.oplasteni = { rezim: 'poStenach', steny: { A: { odM: 0, pasy: [{ typ: 'jine', nazev: 'Deska', naklad: sazba, doM: null }] } } }; };
-{ const z = nova('V3 rozsah'); pasJine(z, 1); d0(z).ock.zadani.oplasteni.steny.A.pasy[0].doM = 1;
-  const a = obsah(z); d0(z).ock.zadani.oplasteni.steny.A.pasy[0].doM = null; const b = obsah(z);
-  console.log('pasu', a.pasu, 'otisk doM=1', a.otisk, 'otisk doM=celá výška', b.otisk, 'shoda', a.otisk === b.otisk);
+/* Úprava S11 (16. 10. 2026): jediný pás je vždy poslední a jádro jeho doM
+ * nečte (sahá až nahoru tak jako tak) — reálný úzký pás je 0–1 m s ceníkovým
+ * pásem nad ním; roztažení = ceníkový pás pryč, „jiné" až nahoru. */
+const uzky = (z) => { d0(z).ock.zadani.oplasteni.steny.A.pasy = [{ typ: 'jine', nazev: 'Deska', naklad: 1, doM: 1 }, { typ: 'C.cetrisKc', doM: null }]; };
+{ const z = nova('V3 rozsah'); pasJine(z, 1); uzky(z);
+  const a = obsah(z); pasJine(z, 1); const b = obsah(z);
+  /* Od v16.10.1 (B155 opraveno, J. V. 16. 10. 2026) nese obsah rozsah pásu —
+   * otisk zmizel už ve v15.10.8 (B154), porovnává se celý obsah. Čekaný
+   * výsledek po opravě: „shoda false". */
+  console.log('pasu', a.pasu, 'obsah doM=1', a.obsah, 'obsah doM=celá výška', b.obsah, 'shoda', a.obsah === b.obsah);
+  test('B155 po opravě: rozsah pásu mění obsah výjimky', a.obsah !== '' && a.obsah !== b.obsah, [a.obsah, b.obsah]);
   /* cena OCK pro oba rozsahy */
   const E = (await import(R + 'netlify/lib/jadro.mjs'));
-  const zz = zk.importZakazka(kopie(z)); d0(zz).ock.zadani.oplasteni.steny.A.pasy[0].doM = 1;
+  const zz = zk.importZakazka(kopie(z)); uzky(zz);
   const c1 = zam.zamekVysledekSpocti(zz.varianty[0], JEKLY, 'x'); const c2 = zam.zamekVysledekSpocti(z.varianty[0], JEKLY, 'x');
   const cena = r => JSON.stringify(r).match(/"(cenaCelkem|celkem|cena)":(-?[0-9.]+)/);
   console.log('cena doM=1', cena(c1) && cena(c1)[0], ' doM=null', cena(c2) && cena(c2)[0]);

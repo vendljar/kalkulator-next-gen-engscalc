@@ -121,7 +121,7 @@ console.log('— B154: schválení platí jen pro přesně týž obsah —');
   test('příprava: mez pásu je nad 10 Kč/m²', vyjimkyMinSazbaOpl(d.ock.zadani, d.cenik) > 10, vyjimkyMinSazbaOpl(d.ock.zadani, d.cenik));
   pas(d, 'Deska', 10); const o1 = obsah(d);
   vyjimkaSchval(d, o1, 'Ved');
-  test('schválení nese celý kanonický obsah (směs + pásy)', d.cenovaVyjimka.obsah === o1.obsah && /"Deska",10\]/.test(o1.obsah), d.cenovaVyjimka);
+  test('schválení nese celý kanonický obsah (směs + pásy)', d.cenovaVyjimka.obsah === o1.obsah && /"Deska",10,0,null\]/.test(o1.obsah), d.cenovaVyjimka);
   pas(d, 'Deska㌷홧', 1); const o2 = obsah(d);
   test('příprava: starý 32bitový otisk by kolidoval (pokus auditu)', fnv(o1.obsah) === fnv(o2.obsah), [fnv(o1.obsah), fnv(o2.obsah)]);
   test('kolize „Deska㌷홧" se sazbou 1 — schválení neplatí', !vyjimkaPlati(d.cenovaVyjimka, o2) && vyjimkaKategorie(d.cenovaVyjimka, o2) === 'ceka');
@@ -133,6 +133,50 @@ console.log('— B154: schválení platí jen pro přesně týž obsah —');
   test('staré rozhodnutí jen s otiskem (před v15.10.8) neplatí — schválit znovu',
     !vyjimkaPlati(stare, o1) && vyjimkaKategorie(stare, o1) === 'ceka');
   test('prázdný obsah se schválením nekryje', !vyjimkaPlati({ stav: VYJ_SCHVALENO, obsah: '' }, { obsah: '' })); }
+
+console.log('— B155: rozsah pásu „jiné" v obsahu výjimky —');
+{ /* Pokus kola 25 (podklady/AUDIT25_pokus_B155_rozsah.mjs): schválený úzký
+   * pás 0–1 m šel po schválení roztáhnout na celou stěnu a schválení platilo.
+   * Pojistka: proti v15.10.14 (1cbab3a) padá rozsah v obsahu i v kartě. */
+  const d = varianta();
+  d.ock.zadani.oplasteni = { rezim: 'poStenach', steny: {
+    A: { odM: 0, pasy: [{ typ: 'jine', nazev: 'Deska', naklad: 1, doM: 1 }, { typ: 'C.cetrisKc', doM: null }] },
+    B: { odM: 0, pasy: [{ typ: 'C.cetrisKc', doM: 2.2 }, { typ: 'jine', nazev: 'Deska', naklad: 1, doM: null }] } } };
+  const A = d.ock.zadani.oplasteni.steny.A, B = d.ock.zadani.oplasteni.steny.B;
+  const o1 = obsah(d);
+  test('pásy nesou rozsah: A 0–1 m, B od 2,2 m až nahoru (odM z předchozího pásu)',
+    o1.pasu === 2 && o1.pasy[0].odM === 0 && o1.pasy[0].doM === 1 && o1.pasy[1].odM === 2.2 && o1.pasy[1].doM === null, o1.pasy);
+  test('obsah p = [stěna, i, název, sazba, odM, doM]', JSON.parse(o1.obsah).p.every(x => x.length === 6)
+    && /\["A",0,"Deska",1,0,1\]/.test(o1.obsah) && /\["B",1,"Deska",1,2\.2,null\]/.test(o1.obsah), o1.obsah);
+  vyjimkaSchval(d, o1, 'Ved');
+  A.pasy[0].doM = 3;
+  test('roztažení pásu (doM 1 → 3 m) — schválení neplatí, kategorie „čeká"', !vyjimkaPlati(d.cenovaVyjimka, obsah(d)) && vyjimkaKategorie(d.cenovaVyjimka, obsah(d)) === 'ceka');
+  A.pasy = [A.pasy[0]]; A.pasy[0].doM = null;
+  test('roztažení pásu na celou stěnu (doM null) — schválení neplatí', !vyjimkaPlati(d.cenovaVyjimka, obsah(d)) && vyjimkaKategorie(d.cenovaVyjimka, obsah(d)) === 'ceka');
+  A.pasy = [{ typ: 'jine', nazev: 'Deska', naklad: 1, doM: 1 }, { typ: 'C.cetrisKc', doM: null }];
+  test('beze změny rozsahu — schválení platí', vyjimkaPlati(d.cenovaVyjimka, obsah(d)));
+  A.odM = -1.2;
+  test('posun začátku stěny (odM 0 → −1,2) — schválení neplatí', !vyjimkaPlati(d.cenovaVyjimka, obsah(d)) && vyjimkaKategorie(d.cenovaVyjimka, obsah(d)) === 'ceka');
+  A.odM = 0;
+  B.pasy[0].doM = 1.5;
+  test('posun horní meze předchozího (ceníkového) pásu posune začátek pásu „jiné" — neplatí', !vyjimkaPlati(d.cenovaVyjimka, obsah(d)));
+  B.pasy[0].doM = 2.2; A.pasy[1].doM = 7;
+  test('horní mez posledního ceníkového pásu (jádro ji nečte) obsah nemění', vyjimkaPlati(d.cenovaVyjimka, obsah(d)));
+  A.pasy[0].doM = '1'; A.odM = '0'; B.pasy[0].doM = '2.2';
+  test('zápis „1" místo 1 — obsah shodný', obsah(d).obsah === o1.obsah, [obsah(d).obsah, o1.obsah]);
+  A.pasy[0].doM = 'x';
+  test('nečitelná mez = 0 jako v jádru', obsah(d).pasy[0].doM === 0, obsah(d).pasy[0]);
+  A.pasy[0].doM = 1;
+  test('rozsah v kartě: desetinná čárka, „až nahoru", záporný začátek se znaménkem',
+    vyjimkyPasRozsah({ odM: 0, doM: 1 }) === '0–1 m' && vyjimkyPasRozsah({ odM: 2.2, doM: null }) === 'od 2,2 m až nahoru'
+    && vyjimkyPasRozsah({ odM: -1.2, doM: 0.5 }) === '-1,2–0,5 m', [vyjimkyPasRozsah({ odM: -1.2, doM: 0.5 })]);
+  /* Výjimka jen se směsí ceníku: obsah týž jako před opravou. */
+  const s = varianta(); s.cenik.profilasKgKc += 7;
+  s.ock.zadani.oplasteni = { rezim: 'poStenach', steny: { A: { odM: -1, pasy: [{ typ: 'C.cetrisKc', doM: 2 }, { typ: 'C.cetrisKc', doM: null }] } } };
+  const os = obsah(s);
+  test('výjimka jen se směsí: obsah beze změny proti v15.10.14 (p prázdné)', os.obsah === JSON.stringify({ s: [['C.profilasKgKc', PLATNY.cenik.profilasKgKc + 7]], p: [] }), os.obsah);
+  s.ock.zadani.oplasteni.steny.A.pasy[0].doM = 3;
+  test('změna rozsahu ceníkového pásu obsah směsi nemění', obsah(s).obsah === os.obsah); }
 
 console.log('— B153: dotisk nové strany posuzuje jen její část —');
 { const z = novaZakazka(); z.cislo = '2026 - CN - 0001';
@@ -175,6 +219,22 @@ console.log('— B153: zábrana dotisku v prohlížeči (ui/schvalovani_ui.js) �
   const m = vyjimkyDotiskZabrana('nabidka', v);
   test('sleva OCK pod minimální marží → zábrana dotisku OCK', /marž/.test(m) && /klonem/.test(m), m);
   test('marže OCK nezastaví dotisk PROJ', vyjimkyDotiskZabrana('nabidkaProj', v) === '');
+  delete global.ZAK; }
+{ /* B155: karta výjimek ukáže schvalovateli rozsah pásu. */
+  if (typeof global.card !== 'function') global.card = (t, h) => h;
+  /* esc a escJs ze skutečného ui/common.js (deklarace jako v test_escape.js). */
+  const common = require('fs').readFileSync(__dirname + '/ui/common.js', 'utf8').replace(/\r\n/g, '\n');
+  const dekl = jm => { const z = common.slice(common.indexOf('const ' + jm + ' =')); return z.slice(0, z.match(/;\n/).index + 1); };
+  require('vm').runInThisContext(dekl('esc') + dekl('escJs') + 'globalThis.esc = esc; globalThis.escJs = escJs;');
+  const z = novaZakazka(); z.cislo = '2026 - CN - 0003';
+  z.varianty[0].data = varianta(); global.ZAK = z;
+  Object.assign(z.varianty[0].data.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2, nastupiste: 4 });
+  z.varianty[0].data.ock.zadani.oplasteni = { rezim: 'poStenach', steny: {
+    A: { odM: -1.2, pasy: [{ typ: 'jine', nazev: 'Deska <b>', naklad: 1, doM: 1 }, { typ: 'C.cetrisKc', doM: null }] },
+    B: { odM: 0, pasy: [{ typ: 'C.cetrisKc', doM: 2.2 }, { typ: 'jine', nazev: 'Deska', naklad: 1, doM: null }] } } };
+  const h = vyjimkyKarta();
+  test('B155 karta: stěna A (Deska, -1,2–1 m) a stěna B (Deska, od 2,2 m až nahoru), název přes esc()',
+    h.includes('stěna A (Deska &lt;b&gt;, -1,2–1 m)') && h.includes('stěna B (Deska, od 2,2 m až nahoru)'), h.slice(0, 1200));
   delete global.ZAK; }
 
 console.log('— zábrana v kontrolách —');

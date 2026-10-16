@@ -6574,7 +6574,7 @@
    "slozitost" : "M",
    "nazev" : "Audit kola 25 (B151–B167): vysoké opraveny, zbytek nízké a informativní",
    "proc" : "Bezpečnostní audit 15. 10. 2026 nad v15.10.6 (`podklady/AUDIT_2026-10-15_v15.10.6.md`) vedl 17 nových nálezů, z toho 2 vysoké ve schvalování cenové výjimky. Rozhodnutí J. V. 15. 10. 2026: „153 a 154 proveď dle tvého doporučení; 155 a 156 řešit nebudeme a uzavři.“",
-   "detail" : "HOTOVO: B151, B152, B167 (v15.10.6). **B153** (vysoká) — dotisk dokumentu nové strany do odeslané nabídky (po vypnutí jenProj/jenOck) se posuzuje i na cenovou výjimku té strany a minimální marži její slevy; server 403, prohlížeč zábrana s hláškou o klonu (v15.10.8). **B154** (vysoká) — rozhodnutí o výjimce nese celý kanonický obsah a porovnává se přesně, ne 32bitový otisk FNV; rozhodnutí z doby před v15.10.8 se musí schválit znovu (v15.10.8). **B155, B156** (střední) — UZAVŘENO jako vědomé meze (`BEZPECNOST_MEZE.md`). **B157** (nízká) — UZAVŘENO jako záměrné chování (J. V. 15. 10.: cizí obchodník smí měnit volná pole krycího listu odeslané nabídky). ZBÝVÁ podle kapacity: opravit nebo rozhodnout B158 (souběh stropu Pipedrive, s B4), B159 (Origin null), B160 (klíč hasOwnProperty ve slovníku), B163 (plná moc po SoD), B165 (schvalovatel nevidí částky výjimky), B166 (doplnit harness XSS); zapsat do `BEZPECNOST_MEZE.md` B161, B162a, B164.",
+   "detail" : "HOTOVO: B151, B152, B167 (v15.10.6). **B153** (vysoká) — dotisk dokumentu nové strany do odeslané nabídky (po vypnutí jenProj/jenOck) se posuzuje i na cenovou výjimku té strany a minimální marži její slevy; server 403, prohlížeč zábrana s hláškou o klonu (v15.10.8). **B154** (vysoká) — rozhodnutí o výjimce nese celý kanonický obsah a porovnává se přesně, ne 32bitový otisk FNV; rozhodnutí z doby před v15.10.8 se musí schválit znovu (v15.10.8). **B155** (střední) — OPRAVENO v16.10.1 (J. V. 16. 10., #421): rozsah pásu v obsahu výjimky. **B156** (střední) — UZAVŘENO jako vědomá mez (`BEZPECNOST_MEZE.md`). **B157** (nízká) — UZAVŘENO jako záměrné chování (J. V. 15. 10.: cizí obchodník smí měnit volná pole krycího listu odeslané nabídky). ZBÝVÁ podle kapacity: opravit nebo rozhodnout B158 (souběh stropu Pipedrive, s B4), B159 (Origin null), B160 (klíč hasOwnProperty ve slovníku), B163 (plná moc po SoD), B165 (schvalovatel nevidí částky výjimky), B166 (doplnit harness XSS); zapsat do `BEZPECNOST_MEZE.md` B161, B162a, B164.",
    "hotovoKdyz" : "Každý zbývající nález B158–B166 je opravený s testem a mutací, nebo zapsaný jako vědomá mez s rozhodnutím J. V.",
    "kde" : "`podklady/AUDIT_2026-10-15_v15.10.6.md`, `src/vyjimky.js`, `netlify/lib/zakazka_kontrola.mjs`, `src/ui/schvalovani_ui.js`, `BEZPECNOST_MEZE.md`",
    "pozn" : "B153 + B154 ve větvi `claude/b153-b154` (v15.10.8), do test ji slučuje koordinační sezení J. V.: `src/test_vyjimky.js` 40 → 62 OK, `netlify/test_vyjimky.mjs` 36 → 46 OK, mutace B153 ×4 a B154 ×2."
@@ -6613,6 +6613,21 @@
     }
    ],
    "pozn" : "Čísla přidělila koordinace: #421 S11, #422 S12, #423 S13. **Po nasazení správce v Nastavení → Ceník zkontroluje osm předzaškrtnutých položek (návrh u ceníku bez příznaků, J. V. 16. 10.) a ceník zveřejní** — do zveřejnění platí dosavadní ceník (nezaškrtnuto)."
+  },
+  {
+   "id" : "421",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "S",
+   "nazev" : "B155: rozsah pásu „jiné“ v obsahu schválené výjimky a v kartě",
+   "proc" : "Rozhodnutí J. V. 16. 10. 2026: B155 se znovu otevírá a opraví se úzce — do obsahu cenové výjimky jen rozsah pásu, schvalovatel ho uvidí v kartě. Bez opravy si obchodník nechal schválit úzký levný pás (0–1 m) a po schválení ho roztáhl na celou stěnu; pokus kola 25 na v15.10.13: zámek 200.",
+   "detail" : "Každý pás „jiné“ pod ceníkovou sazbou nese `odM` (začátek stěny u prvního pásu, jinak horní mez předchozího) a `doM` (`null` = až nahoru, poslední pás); čísla jako jádro (`+x || 0`, „1“ = 1). Obsah `p` = `[stěna, i, název, sazba, odM, doM]` — server i prohlížeč volají tutéž funkci. Karta výjimek ukazuje „stěna B (Deska, 0–1 m)“ / „od 2,2 m až nahoru“ (`vyjimkyPasRozsah`, přes `esc()`). Rozhodnutí o výjimkách s pásem „jiné“ vydaná před v16.10.1 přejdou do „čeká znovu“ a musí se schválit znovu; výjimky jen se směsí ceníku se nemění. Částky a princip čtyř očí (B165) do dávky nepatří.",
+   "hotovoKdyz" : "Roztažení pásu nebo posun jeho začátku po schválení dá zámek 403 (i dotisk B153); beze změny rozsahu 200; obsah směsi beze změny; mutace B155 chycené.",
+   "kde" : "`src/vyjimky.js` (`vyjimkyPasyJine`, `vyjimkyObsah`, `vyjimkyPasRozsah`), `src/ui/schvalovani_ui.js` (`vyjimkyKarta`), `src/test_vyjimky.js`, `netlify/test_vyjimky.mjs`, `netlify/mutace.mjs`",
+   "hotovoV" : "v16.10.1",
+   "zavisi" : [ { "id" : "420", "typ" : "doporuceno", "proc" : "nález B155 auditu kola 25" } ],
+   "pozn" : "Větev `claude/b155-rozsah-pasu` nad `test` (1cbab3a), sloučení rozhoduje J. V."
   }
  ],
  "meta" : {
@@ -7200,6 +7215,11 @@
   {
    "hotovo" : true,
    "text" : "16. 10. 2026 — dávka S13 (claude/cena-dle-nabidky, v16.10.3): příznak ceníku „cena dle nabídky“ — vlastní cena prosklené stěny a dalších nabídkových položek bez cenové výjimky; konkrétní hláška „<název>: cena pod ceníkem“. #423."
+  },
+  {
+   "text" : "16. 10. 2026 — dávka S11 (claude/b155-rozsah-pasu, v16.10.1): B155 opraveno — rozsah pásu „jiné“ v obsahu schválené výjimky a v kartě; dřívější schválení s pásy „jiné“ čekají znovu. #421.",
+   "hotovo" : true,
+   "pozn" : "src/test_vyjimky 62 → 76 OK, netlify/test_vyjimky 46 → 59 OK; mutace B155 3 z 3."
   }
   ],
   "pravidla" : [

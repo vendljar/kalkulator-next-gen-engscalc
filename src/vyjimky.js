@@ -81,7 +81,13 @@ function vyjimkyMinSazbaOpl(zadani, cenik) {
 }
 
 /* Pásy „jiné" (opláštění po stěnách) s ruční sazbou pod nejnižší ceníkovou.
- * Standardní režim pásy nečte — tam se nehlídá nic. */
+ * Standardní režim pásy nečte — tam se nehlídá nic.
+ * Každý pás nese ROZSAH tak, jak je zadaný (B155, J. V. 16. 10. 2026):
+ * `odM` = začátek stěny u prvního pásu, jinak `doM` předchozího pásu;
+ * `doM` = horní mez, null = až nahoru (poslední pás — jádro jeho `doM`
+ * nečte). Čísla stejně jako jádro (oplPasyStenyMeze): `+x || 0`, takže
+ * „1" i 1 dají týž obsah a nečitelný zápis je nula. Ořez na výšku šachty
+ * se nedělá — obsah nese zadání, ne výsledek výpočtu. */
 function vyjimkyPasyJine(zadani, cenik) {
   const o = zadani && zadani.oplasteni;
   if (!o || o.rezim !== 'poStenach' || !o.steny || typeof o.steny !== 'object') return [];
@@ -91,10 +97,14 @@ function vyjimkyPasyJine(zadani, cenik) {
   ['A', 'B', 'C', 'D'].forEach(k => {
     const st = o.steny[k];
     if (!st || typeof st !== 'object' || !Array.isArray(st.pasy)) return;
+    let odM = +st.odM || 0;
     st.pasy.forEach((p, i) => {
+      const doM = (i === st.pasy.length - 1) ? null : (+(p && p.doM) || 0);
+      const zacatek = odM;
+      odM = doM;
       if (!p || p.typ !== 'jine') return;
       const sazba = +p.naklad || 0;
-      if (sazba < min) out.push({ stena: k, i, nazev: String(p.nazev || ''), naklad: sazba });
+      if (sazba < min) out.push({ stena: k, i, nazev: String(p.nazev || ''), naklad: sazba, odM: zacatek, doM });
     });
   });
   return out;
@@ -126,8 +136,8 @@ function vyjimkyDnesniZProgramu(platny, data) {
  * P6 ('ock' | 'proj' | ''): její data se neposuzují.
  * Vrací { smes:[{cesta, sekce, popis}], pasy:[…], polozek, pasu, obsah,
  * prazdny }. `obsah` (kanonický JSON) nese hodnoty VARIANTY (ne platného
- * ceníku) — mění se, když obchodník po schválení sáhne na směs nebo sazbu.
- * Rozsah pásu (odM/doM) v něm není — vědomá mez B155 (J. V. 15. 10. 2026). */
+ * ceníku) — mění se, když obchodník po schválení sáhne na směs, sazbu
+ * nebo rozsah pásu (odM/doM, B155 — J. V. 16. 10. 2026). */
 function vyjimkyObsah(data, dnesni, vyrazena) {
   const d = data || {};
   const smes = [];
@@ -159,7 +169,7 @@ function vyjimkyObsah(data, dnesni, vyrazena) {
   const pasy = vyrazena === 'ock' ? [] : vyjimkyPasyJine(d.ock && d.ock.zadani, d.cenik);
   const obsah = (smes.length || pasy.length)
     ? JSON.stringify({ s: smes.map(x => [x.cesta, x.hodnota === undefined ? null : x.hodnota]),
-        p: pasy.map(x => [x.stena, x.i, x.nazev, x.naklad]) })
+        p: pasy.map(x => [x.stena, x.i, x.nazev, x.naklad, x.odM, x.doM]) })
     : '';
   return { smes: smes.map(x => ({ cesta: x.cesta, sekce: x.sekce, popis: x.popis, pod: x.pod })), pasy,
     polozek: smes.length, pasu: pasy.length, obsah, prazdny: !smes.length && !pasy.length };
@@ -261,6 +271,17 @@ function vyjimkaPrepocti(data, obsah) {
 }
 
 /* Popis bez částek — do záložky, do zábrany i do odmítnutí serveru. */
+/* Rozsah pásu pro kartu výjimek (B155): „0–1 m", „od 2,2 m až nahoru",
+ * záporný začátek (prohlubeň) se znaménkem. Desetinná čárka. Bez escapování —
+ * volající ho pouští přes esc(). */
+function vyjimkyPasRozsah(p) {
+  const m = x => String(+x || 0).replace('.', ',');
+  if (!p || typeof p !== 'object') return '';
+  return p.doM === null || p.doM === undefined
+    ? 'od ' + m(p.odM) + ' m až nahoru'
+    : m(p.odM) + '–' + m(p.doM) + ' m';
+}
+
 function vyjimkyText(obsah) {
   const o = obsah || {};
   const casti = [];
@@ -412,5 +433,5 @@ if (typeof module !== 'undefined')
   module.exports = { VYJ_CEKA, VYJ_SCHVALENO, VYJ_ZAMITNUTO, VYJ_STAVY, VYJ_POLE, VYJ_REJSTRIK_POLE,
                      vyjimkyMinSazbaOpl, vyjimkyPasyJine, vyjimkyDnesniZProgramu, vyjimkyObsah, vyjimkyObsahStran,
                      vyjimkyPotreba, vyjimkaPlati, vyjimkaKategorie, vyjimkaSmiRozhodnout,
-                     vyjimkaPozadej, vyjimkaSchval, vyjimkaZamitni, vyjimkaVrat, vyjimkaPrepocti, vyjimkyText,
+                     vyjimkaPozadej, vyjimkaSchval, vyjimkaZamitni, vyjimkaVrat, vyjimkaPrepocti, vyjimkyText, vyjimkyPasRozsah,
                      vyjimkaRozhodnutiKlic, vyjimkyServerKontrola, vyjimkyZamekProblem, vyjimkaRejstrik };

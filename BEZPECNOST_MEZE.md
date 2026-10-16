@@ -326,27 +326,28 @@ hlídají beze změny.
 
 Audit 15. 10. 2026 (`podklady/AUDIT_2026-10-15_v15.10.6.md`) vedl dva
 střední nálezy. J. V. 15. 10. 2026: „155 a 156 řešit nebudeme a uzavři."
-Oba jsou tedy uzavřené jako vědomé meze. Nízký nález B157 J. V. téhož dne
+Oba byly uzavřené jako vědomé meze; B155 J. V. 16. 10. 2026 znovu otevřel
+a je opravený ve v16.10.1. Nízký nález B157 J. V. téhož dne
 uzavřel jako záměrné chování („ano, smí … neměň"); vysoké nálezy téže oblasti (B153,
 B154) jsou opravené ve v15.10.8.
 
-### B155 — rozsah pásu „jiné" není v obsahu schválené výjimky
+### B155 — rozsah pásu „jiné" v obsahu schválené výjimky — OPRAVENO v16.10.1
 
-**Co dělá:** schválení cenové výjimky (`src/vyjimky.js`) platí od v15.10.8
-jen pro přesně týž kanonický obsah: cesty a hodnoty směsi ceníku a u pásů
-„jiné" pod ceníkovou sazbou stěnu, pořadí, název a sazbu (B154).
+**Rozhodnutí J. V. 16. 10. 2026:** rozsah se do výjimky přidává (B155 se
+znovu otevřel; 15. 10. byl uzavřen jako vědomá mez).
 
-**Co nedělá:** rozsah pásu (`odM`/`doM`) v obsahu není. Cesta zneužití:
-obchodník si nechá schválit úzký levný pás (třeba 1 m), po schválení ho
-roztáhne na celou výšku stěny (`doM = null`) a schválení dál platí — nabídka
-odejde s levnou sazbou na větší ploše, než jakou nadřízený viděl. Dopad:
-cena opláštění té stěny, nikoli celé nabídky; pokus
-`podklady/AUDIT25_pokus_B155_rozsah.mjs` (`doM = 1` i `null` → stejný obsah).
+**Původní mez (do v15.10.14):** obsah výjimky nesl u pásu „jiné" stěnu,
+pořadí, název a sazbu, ne rozsah (`odM`/`doM`). Schválený úzký levný pás
+(0–1 m) šel po schválení roztáhnout na celou stěnu a schválení platilo
+(pokus kola 25 na v15.10.13: zámek 200, cena OCK −11 % proti schválenému
+stavu; `podklady/AUDIT25_pokus_B155_rozsah.mjs`).
 
-**Proč to tak zůstává:** rozhodnutí J. V. 15. 10. 2026. Schvalovatel dnes
-rozsah ani částky v kartě nevidí (B165), takže schvaluje sazbu a materiál,
-ne plochu. Rozsah do obsahu přidat jde jedním prvkem pole, kdyby se to
-změnilo (pak se staré schválení musí schválit znovu, jako u B154).
+**Oprava:** `vyjimkyPasyJine` vrací u pásu i rozsah tak, jak je zadaný
+(`odM` = začátek stěny u prvního pásu, jinak horní mez předchozího; `doM`,
+`null` = až nahoru), obsah `p` = `[stěna, i, název, sazba, odM, doM]`;
+karta výjimek rozsah ukazuje. Rozhodnutí s pásem „jiné" vydaná před
+v16.10.1 přešla do „čeká znovu" (jako u B154). Částky v kartě a princip
+čtyř očí zůstávají u B165.
 
 ### B157 — volná pole krycího listu cizí odeslané nabídky (záměrné chování)
 
