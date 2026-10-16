@@ -8,6 +8,40 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v16.10.4 — dočištění auditu 25 (větev claude/a1-audit25)
+
+Dávka A1 (koordinace 16. 10. 2026, roadmapa #420), nálezy z
+`podklady/AUDIT_2026-10-15_v15.10.6.md`. Postaveno nad test v15.10.14
+(`claude/integrace-16-10`).
+
+- **B158 (nízká) — souběh stropu Pipedrive:** čtení a zápis počítadla 30
+  čerstvých načtení dealu za hodinu ve výhradním úseku (`vyhradne` v
+  `netlify/lib/sdilene.mjs`). 200 souběžných požadavků → nejvýš 30 do
+  Pipedrive. Zbytek mezi instancemi funkce v `BEZPECNOST_MEZE.md`.
+  `netlify/test_pd_pristup.mjs` 51/3 → 54/0, mutace 2 z 2.
+- **B159 (informativní) — Origin „null" a text/plain u zápisů:**
+  `prihlaseny()` u zápisu s hlavičkou Origin odmítne `null` a tělo jiného
+  typu než JSON (401). Bez Origin (curl, testy) beze změny. Aplikace posílá
+  vždy JSON (`onlineApi`), DELETE bez těla dál projde.
+  `netlify/test_prava.mjs` 843/6 → 849/0, mutace B159 3 z 3, B17 1 z 1.
+- **B160 (informativní) — slovník:** klíče s názvy vlastností
+  `Object.prototype` (`hasOwnProperty`, `toString` …) se odmítají na serveru
+  i v klientu (`src/slovnik.js`, `src/preklad.js`). `src/test_slovnik.js`
+  84/5 → 89/0, `test_prava` +2, mutace 3 z 3.
+- **B163 (informativní) — plná moc po SoD:** údaje zmocnitele (`pm*`,
+  krycí list PROJ) zůstávají po tisku SoD volné; ostatní zámek SoD beze
+  změny. `src/test_kryci_po_tisku.js` 98/5 → 103/0,
+  `netlify/test_kryci_po_tisku.mjs` 17/1 → 18/0, mutace 3 z 3 (čtvrtá
+  ekvivalentní, vyřazena).
+- **B166 (informativní) — harness XSS a CI:** `overit_xss.mjs` hlídá
+  `data.cenovaVyjimka`, lištu zámku u aktivní zamčené varianty a žlutou
+  lištu #404 se zálohou z localStorage (včetně obnovy). CI má Node
+  22.23.2 jako `netlify.toml`.
+- **Vědomé meze** v `BEZPECNOST_MEZE.md`: B161 (hlavička odeslané nabídky
+  v dotisku), B162a (starší ceníky v online zakázkách), B164 (zámek SoD
+  stojí na záznamu tisku od klienta); stav nálezů opraven v auditu
+  a roadmapě (#420). B165 čeká na rozhodnutí J. V.
+
 ## v15.10.14 — rozbor nechycených mutací B8 a B31, doplněné testy (větev claude/mutace-b8-b31)
 
 Dávka S10. Celé kolo nad f8fe243 (v15.10.13): mutace serveru 447 z 449,

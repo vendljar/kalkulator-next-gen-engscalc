@@ -6574,10 +6574,10 @@
    "slozitost" : "M",
    "nazev" : "Audit kola 25 (B151–B167): vysoké opraveny, zbytek nízké a informativní",
    "proc" : "Bezpečnostní audit 15. 10. 2026 nad v15.10.6 (`podklady/AUDIT_2026-10-15_v15.10.6.md`) vedl 17 nových nálezů, z toho 2 vysoké ve schvalování cenové výjimky. Rozhodnutí J. V. 15. 10. 2026: „153 a 154 proveď dle tvého doporučení; 155 a 156 řešit nebudeme a uzavři.“",
-   "detail" : "HOTOVO: B151, B152, B167 (v15.10.6). **B153** (vysoká) — dotisk dokumentu nové strany do odeslané nabídky (po vypnutí jenProj/jenOck) se posuzuje i na cenovou výjimku té strany a minimální marži její slevy; server 403, prohlížeč zábrana s hláškou o klonu (v15.10.8). **B154** (vysoká) — rozhodnutí o výjimce nese celý kanonický obsah a porovnává se přesně, ne 32bitový otisk FNV; rozhodnutí z doby před v15.10.8 se musí schválit znovu (v15.10.8). **B155, B156** (střední) — UZAVŘENO jako vědomé meze (`BEZPECNOST_MEZE.md`). **B157** (nízká) — UZAVŘENO jako záměrné chování (J. V. 15. 10.: cizí obchodník smí měnit volná pole krycího listu odeslané nabídky). ZBÝVÁ podle kapacity: opravit nebo rozhodnout B158 (souběh stropu Pipedrive, s B4), B159 (Origin null), B160 (klíč hasOwnProperty ve slovníku), B163 (plná moc po SoD), B165 (schvalovatel nevidí částky výjimky), B166 (doplnit harness XSS); zapsat do `BEZPECNOST_MEZE.md` B161, B162a, B164.",
+   "detail" : "HOTOVO: B151, B152, B167 (v15.10.6). **B153** (vysoká) — dotisk dokumentu nové strany do odeslané nabídky (po vypnutí jenProj/jenOck) se posuzuje i na cenovou výjimku té strany a minimální marži její slevy; server 403, prohlížeč zábrana s hláškou o klonu (v15.10.8). **B154** (vysoká) — rozhodnutí o výjimce nese celý kanonický obsah a porovnává se přesně, ne 32bitový otisk FNV; rozhodnutí z doby před v15.10.8 se musí schválit znovu (v15.10.8). **B155, B156** (střední) — UZAVŘENO jako vědomé meze (`BEZPECNOST_MEZE.md`). **B157** (nízká) — UZAVŘENO jako záměrné chování (J. V. 15. 10.: cizí obchodník smí měnit volná pole krycího listu odeslané nabídky). **Dávka A1 (v16.10.4, `claude/a1-audit25`):** B158 souběh stropu Pipedrive (výhradní úsek), B159 Origin „null“ a text/plain u zápisů, B160 klíče `Object.prototype` ve slovníku, B163 plná moc po SoD volná, B166 harness XSS a Node v CI — OPRAVENO s testy a mutacemi; B161, B162a, B164 zapsány jako vědomé meze (`BEZPECNOST_MEZE.md`). ZBÝVÁ: B165 (schvalovatel nevidí částky výjimky) — rozhodnutí J. V.",
    "hotovoKdyz" : "Každý zbývající nález B158–B166 je opravený s testem a mutací, nebo zapsaný jako vědomá mez s rozhodnutím J. V.",
    "kde" : "`podklady/AUDIT_2026-10-15_v15.10.6.md`, `src/vyjimky.js`, `netlify/lib/zakazka_kontrola.mjs`, `src/ui/schvalovani_ui.js`, `BEZPECNOST_MEZE.md`",
-   "pozn" : "B153 + B154 ve větvi `claude/b153-b154` (v15.10.8), do test ji slučuje koordinační sezení J. V.: `src/test_vyjimky.js` 40 → 62 OK, `netlify/test_vyjimky.mjs` 36 → 46 OK, mutace B153 ×4 a B154 ×2."
+   "pozn" : "B153 + B154 ve větvi `claude/b153-b154` (v15.10.8), do test ji slučuje koordinační sezení J. V.: `src/test_vyjimky.js` 40 → 62 OK, `netlify/test_vyjimky.mjs` 36 → 46 OK, mutace B153 ×4 a B154 ×2. Dávka A1 (v16.10.4) ve větvi `claude/a1-audit25`, slučuje koordinace."
   }
  ],
  "meta" : {
@@ -7156,6 +7156,11 @@
    "text" : "15. 10. 2026 — dávka S6 (claude/b153-b154, v15.10.8): vysoké nálezy auditu kola 25 — B153 dotisk nové strany hlídá cenovou výjimku a minimální marži, B154 schválení výjimky platí jen pro celý obsah; B155 a B156 uzavřeny jako vědomé meze (J. V. 15. 10.). #420.",
    "hotovo" : true,
    "pozn" : "src/test_vyjimky 40 → 62 OK, netlify/test_vyjimky 36 → 46 OK; cílené mutace B153, B154 a výjimky; smoke zelené."
+  },
+  {
+   "text" : "16. 10. 2026 — dávka A1 (claude/a1-audit25, v16.10.4): dočištění auditu kola 25 — B158 souběh stropu Pipedrive, B159 Origin „null“ a text/plain u zápisů, B160 klíče Object.prototype ve slovníku, B163 plná moc po SoD, B166 harness XSS a Node v CI; B161, B162a, B164 vědomé meze. #420.",
+   "hotovo" : true,
+   "pozn" : "Testy s pojistkou (před/po v CHANGELOG), cílené mutace serveru B158 2/2, B159 3/3, B160 3/3, B163 3/3; celé kolo pustí koordinace při sloučení."
   }
   ],
   "pravidla" : [

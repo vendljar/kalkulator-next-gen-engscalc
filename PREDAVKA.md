@@ -1,3 +1,33 @@
+# Předávka — 16. 10. 2026: dávka A1 (v16.10.4), větev `claude/a1-audit25` — dočištění auditu 25 (#420)
+
+Nad `origin/claude/integrace-16-10` (58db0b6, test v15.10.14). Do `test-draft` /
+`test` / `main` nic — slučuje koordinace (session_011B3ruyPigNEMSUdesbk4Hd).
+Podrobnosti: CHANGELOG v16.10.4, `BEZPECNOST_MEZE.md` (oddíl „Audit kola 25 —
+B158, B159, B161, B162a, B164").
+
+- **Hotovo (pushnuto, commit po bodech):** B158 výhradní úsek stropu Pipedrive
+  (`vyhradne` v `sdilene.mjs`); B159 `zapisMimoAplikaci` v `prihlaseny()`
+  (Origin „null" a ne-JSON tělo u zápisu → 401, bez Origin beze změny);
+  B160 klíče `Object.prototype` ve slovníku (server i klient); B163 údaje
+  plné moci `pm*` volné i po SoD; B166 harness XSS (výjimka, aktivní zamčená
+  varianta, lišta #404) + CI Node 22.23.2; vědomé meze B161, B162a, B164;
+  audit a roadmapa (#420) aktualizovány. Zbývá jen B165 (rozhodnutí J. V.).
+- **Testy před → po:** test_pd_pristup 51/3 → 54/0; test_prava 843/6 → 849/0
+  (B159), 848/3 → 851/0 (B160); src/test_slovnik 84/5 → 89/0;
+  src/test_kryci_po_tisku 98/5 → 103/0; netlify/test_kryci_po_tisku 17/1 → 18/0;
+  overit_xss 338/0 → 370/0 (se sabotáží 359/11). Smoke 222 prošlo / 0 selhalo / 36 přeskočeno (32 prohlížečových bez místního playwright — dopouští se zvlášť, výsledek níž).
+- **Mutace (cílené):** B158 2/2, B159 3/3, B17 (upravená kotva) 1/1, B160 3/3,
+  rev #401 N2 (upravená kotva) 1/1, B163 3/3 (čtvrtá ekvivalentní vyřazena),
+  KL 14. 10. 5/5; `--kontrola` serveru 460, jádra 205.
+- **Pozor pro koordinaci:** mutační běhy nepouštět souběžně nad týmž
+  souborem — dva běhy najednou si přepsaly `sdilene.mjs` (opraveno před
+  commitem, ověřeno diffem). `build.py` bez přepínače zvedá verzi
+  (i s `--help`) — v kolech `KNG_NEZVYSOVAT_VERZI=1`.
+- **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` /
+  `roadmap.json` / `netlify/mutace.mjs` (nové mutace B158–B163).
+- **Další krok (koordinace):** celé kolo s mutacemi — čekané 460 z 460
+  (server) a 205 (jádro).
+
 # Předávka — 15. 10. 2026: dávka S10 (v15.10.14), větev `claude/mutace-b8-b31` — nechycené mutace B8 a B31
 
 Nad `origin/test` (f8fe243, v15.10.13). Do `test-draft` / `test` / `main`
