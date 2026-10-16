@@ -67,7 +67,7 @@ v Nastavení → Ceník výchozích osm položek zaškrtnutých jako **návrh** 
 zůstává). Výslovně prázdná mapa `{}` se zachovává (zveřejní se i uloží) a návrh
 se jí už nevnucuje. Model `cenikDleNabidkyMaMapu / Navrh / DoplnNavrh`.
 Pojistka: `src/test_cena_dle_nabidky.js` proti 7a43370 31 / 2 → 41 / 0,
-harness 18 / 3 → 21 / 0; mutace __MUT2__.
+harness 18 / 3 → 21 / 0; mutace „S13" serveru **15 z 15** (3 nové: návrh pro ceník bez mapy, zápis návrhu, prázdná mapa), jádra 2 z 2; `--kontrola` 464 / 207; smoke po doplňku **255 / 0 / 6**.
 
 **Po nasazení (J. V. / správce):** v Nastavení → Ceník zkontrolovat
 předzaškrtnutý návrh a **zveřejnit ceník** (test i ostrá) — teprve tím
