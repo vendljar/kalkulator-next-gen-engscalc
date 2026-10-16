@@ -1323,6 +1323,21 @@ const MUTACE = [
     hledej: "        ? d => globalThis.zamekDataPorovnani(d, sv) : d => JSON.stringify(d);",
     nahrad: "        ? d => globalThis.zamekDataPorovnani(d, nv) : d => JSON.stringify(d);",
     proc: 'klient by smazáním záznamu o tisku SoD odemkl krycí list podepsané smlouvy' },
+  /* B163 (16. 10. 2026, dávka A1): plná moc po SoD. Hlídají test_kryci_po_tisku (src i netlify). */
+  { nazev: 'B163: údaje plné moci se po SoD zase zamknou', soubor: '../src/zamek.js',
+    hledej: "  return zamekKryciOtevreny(v) || zamekKryciPolePlnaMoc(list, id);",
+    nahrad: "  return zamekKryciOtevreny(v);",
+    proc: 'plná moc dělaná až po smlouvě o dílo by v krycím listu nešla doplnit (409)' },
+  /* (Mutace „plná moc i pro krycí list OCK" je ekvivalentní: OCK pole pm…
+   * nemá a neznámé pole se bere jako pole nabídky — zamkne se dřív.) */
+  { nazev: 'B163: pole nabídky se nekontrolují dřív než volná pole', soubor: '../src/zamek.js',
+    hledej: "  if (zamekKryciPoleVNabidce(list, id)) return false;\n  return zamekKryciOtevreny",
+    nahrad: "  return zamekKryciOtevreny",
+    proc: 'zálohy a splatnost odeslané nabídky by po tisku šly přepsat' },
+  { nazev: 'B163: serverové porovnání přehlíží jen volná pole postaru (bez plné moci)', soubor: '../src/zamek.js',
+    hledej: "    Object.keys(h).forEach(id => { if (zamekKryciPoleVolne(v, list, id)) delete h[id]; });",
+    nahrad: "    Object.keys(h).forEach(id => { if (zamekKryciOtevreny(v) && !zamekKryciPoleVNabidce(list, id)) delete h[id]; });",
+    proc: 'klient by plnou moc po SoD dovolil, server by uložení odmítl (Neuloženo)' },
   { nazev: 'B135: tvar čísla podle jádra se ve vstupech nehlídá', soubor: '../src/uloziste.js',
     hledej: "    else if (!uloCisloJadro(h)) out.push({ kde, duvod: 'typ' });",
     nahrad: "    else if (false) out.push({ kde, duvod: 'typ' });",

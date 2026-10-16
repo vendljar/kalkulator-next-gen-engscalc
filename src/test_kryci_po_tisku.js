@@ -83,6 +83,34 @@ test('neznámý list se bere jako zamčený', ZM.zamekKryciPoleVNabidce('jine', 
     && !ZM.zamekKryciPoleVolne(v, 'kryci', 'jmenoPrijmeni') && !ZM.zamekKryciPoleVolne(v, 'kryciProj', 'odpovednyJmeno'));
 });
 
+/* B163 (audit 25, 16. 10. 2026): plná moc nic nezamyká a často se dělá až
+ * po smlouvě o dílo — údaje zmocnitele (pm*, krycí list PROJ) zůstávají po
+ * tisku SoD volné. Ostatní zámek SoD beze změny. */
+const PM = ['pmZmocnitel', 'pmZmocnitelNarozen', 'pmZmocnitelBytem', 'pmJednajici'];
+test('B163: pole plné moci v krycím listu PROJ existují',
+  PM.every(id => KP.KRYCI_PROJ_SEKCE.some(s => s.pole.some(p => p.id === id))));
+[['sod'], ['sodProj'], ['nabidkaProjTisk', ['sodProj']], ['nabidka', ['nabidkaTisk', 'sod']]].forEach(([typ, dalsi]) => {
+  const v = zamcena(typ, dalsi);
+  const t = [typ].concat(dalsi || []).join(' + ');
+  test('B163: ' + t + ': údaje zmocnitele plné moci (pm*) se smí změnit',
+    PM.every(id => ZM.zamekKryciPoleVolne(v, 'kryciProj', id)));
+  test('B163: ' + t + ': ostatní pole krycího listu zůstávají zamčená',
+    !ZM.zamekKryciPoleVolne(v, 'kryciProj', 'odpovednyJmeno') && !ZM.zamekKryciPoleVolne(v, 'kryciProj', 'objPodpisFirma')
+    && !ZM.zamekKryciPoleVolne(v, 'kryci', 'jmenoPrijmeni') && !ZM.zamekKryciPoleVolne(v, 'kryciProj', 'splatnostDni'));
+});
+test('B163: pole „pm…" v krycím listu OCK (žádné takové není) volné není',
+  !ZM.zamekKryciPoleVolne(zamcena('sod'), 'kryci', 'pmZmocnitel'));
+{
+  const s = zamcena('nabidkaProjTisk', ['sodProj']);
+  s.data.kryciProj = { hodnoty: { pmZmocnitel: '', odpovednyJmeno: 'Ukázková osoba' } };
+  const pred = ZM.zamekDataPorovnani(s.data, s);
+  const d1 = JSON.parse(JSON.stringify(s.data));
+  Object.assign(d1.kryciProj.hodnoty, { pmZmocnitel: 'Zkušební Zmocnitel', pmZmocnitelBytem: 'Ukázková 1', pmJednajici: 'Zkušební Zmocněnec' });
+  test('B163: po SoD změněné údaje plné moci porovnání nemění', ZM.zamekDataPorovnani(d1, s) === pred);
+  const d2 = JSON.parse(JSON.stringify(d1)); d2.kryciProj.hodnoty.odpovednyJmeno = 'Jiná osoba';
+  test('B163: po SoD změna jiného pole vedle plné moci porovnání mění', ZM.zamekDataPorovnani(d2, s) !== pred);
+}
+
 /* ---- 3) porovnání dat zamčené varianty (serverová pojistka) ---- */
 {
   const v = zamcena('nabidkaProjTisk');

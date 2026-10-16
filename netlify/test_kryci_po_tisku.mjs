@@ -143,6 +143,22 @@ console.log('===== po smlouvě o dílo =====');
   test('SoD vytištěná: smazaný záznam tisku SoD zápis nepovolí (409)', r.status === 409 && /uzamčené/.test(r.chyba || ''), r);
 }
 
+console.log('===== plná moc po smlouvě o dílo (B163) =====');
+/* B163 (audit 25, 16. 10. 2026): údaje zmocnitele plné moci (pm*) se po SoD
+ * smějí doplnit — do 16. 10. vracel server 409. Jiné pole vedle nich dál 409. */
+{
+  const z = zamkni(novaProj('SoD PROJ plná moc'), 'nabidkaProjTisk'); zamkni(z, 'sodProj');
+  const r = await poTisku(z, d => { Object.assign(h(d, 'kryciProj'), { pmZmocnitel: 'Zkušební Zmocnitel',
+    pmZmocnitelNarozen: '1. 1. 1970', pmZmocnitelBytem: 'Ukázková 1', pmJednajici: 'Zkušební Zmocněnec' }); }, cO);
+  test('B163: po SoD PROJ se údaje plné moci uloží (200)', r.status === 200, r);
+}
+{
+  const z = zamkni(novaProj('SoD PROJ plná moc a jiné'), 'nabidkaProjTisk'); zamkni(z, 'sodProj');
+  const r = await poTisku(z, d => { h(d, 'kryciProj').pmZmocnitel = 'Zkušební Zmocnitel';
+    h(d, 'kryciProj').odpovednyJmeno = 'Ukázková osoba'; }, cO);
+  test('B163: plná moc spolu s jiným polem krycího listu po SoD → 409', r.status === 409 && /uzamčené/.test(r.chyba || ''), r);
+}
+
 console.log('===== typ hodnot krycího listu (B152) =====');
 /* B152 (audit 15. 10. 2026): volné pole odeslané nabídky přijalo objekt
  * ({toString:0}) — esc() při vykreslení krycího listu i kryciData pro Word

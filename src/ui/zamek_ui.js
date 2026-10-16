@@ -124,7 +124,7 @@ function zamekKryciPoznamka(sekce) {
   const otevreny = typeof zamekKryciOtevreny === 'function' && zamekKryciOtevreny(v);
   return `<div class="note noprint kl-zamek-pozn" style="margin-bottom:6px">🔒 ${otevreny
     ? `Nabídka už odešla. Krycí list dál doplňujte — zamčená jsou jen pole, která jsou v cenové nabídce (${esc(sekce.join(', '))}).`
-    : 'Ze zakázky odešla smlouva o dílo — krycí list se už nemění. Pokračujte klonem varianty.'}</div>`;
+    : 'Ze zakázky odešla smlouva o dílo — krycí list se už nemění (doplnit jde jen plná moc v krycím listu PROJ). Pokračujte klonem varianty.'}</div>`;
 }
 
 let _zamekNainstalovan = false;
