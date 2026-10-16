@@ -83,10 +83,14 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
 .done b{font-family:var(--display);font-size:15px;min-width:22px}
 .note{font-size:10.5px;color:var(--muted)}
 @media (max-width:480px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.row{grid-template-columns:minmax(0,1fr) 72px}.steps{flex-basis:84px}}
+.celkem{margin-left:auto;text-align:right;display:grid;gap:1px}
+.celkem .ck{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.celkem .cv{font-family:var(--display);font-size:22px;line-height:1}
+.celkem .cd{font-size:11px;color:var(--muted)}
 </style>
 
 <div class="wrap">
-  <div class="top"><h1>Kokpit dávek KNG</h1><div class="stamp" id="stamp"></div></div>
+  <div class="top"><div><h1>Kokpit dávek KNG</h1><div class="stamp" id="stamp"></div></div><div class="celkem" id="celkem"></div></div>
   <section id="cekani" class="alert"></section>
   <section class="tiles" id="tiles"></section>
   <div class="note" id="releasy"></div>
@@ -101,14 +105,14 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
 
 <script id="data" type="application/json">
 {
- "aktualizace": "16. 10. 2026 11:50 UTC",
+ "aktualizace": "16. 10. 2026 12:10 UTC",
  "koordinace": {
   "id": "session_01NQjWzfqv1obHAg7DWPHAKH",
   "kontext": 47
  },
  "releasy": "vydáno v15.10.14 (55f0690), v15.10.10, v15.10.7, v15.10.4, v15.10.3 · mezistupně bez tagu: v15.10.13, v15.10.12, v15.10.11, v15.10.9, v15.10.8, v15.10.6",
  "cekaNaJV": [
-  "Šablonu Sablona_SOD_PROJEKCE_v3.docx (poslaná v sezení) nahrát v aplikaci: Nastavení → Šablony → „Šablona smlouvy o dílo — PROJEKČNÍ PRÁCE“ → Nahrát novou českou verzi → Zveřejnit (test i ostrá)."
+  "Bod 1 z e-mailu D. S. (ruční cena příplatku blokuje tisk): projít návrh „cena dle nabídky“ (seznam 8 příplatků + náhled) a potvrdit tři otázky na konci návrhu."
  ],
  "dlazdice": [
   {
@@ -150,16 +154,52 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
    "nazev": "ŘÍDÍCÍ 15.10.2 - Koordinace dávek 15. 10. (pokračování)",
    "id": "session_01NQjWzfqv1obHAg7DWPHAKH",
    "role": "koordinace",
-   "stav": "ok",
-   "stavText": "hotovo · čeká na pokyn",
+   "stav": "run",
+   "stavText": "pracuje",
    "faze": null,
-   "eta": "hotovo",
-   "kontext": 47,
+   "eta": "~2 h",
+   "kontext": 58,
    "co": "Slučuje dávky do test, hlídá sezení, vede tento kokpit",
-   "dalsi": "Vše odesláno do test; hodinová kontrola vypnuta. Další práce na pokyn J. V."
+   "dalsi": "Hlídá S11 a S12; čeká na rozhodnutí k bodu 1 (cena dle nabídky)"
+  },
+  {
+   "nazev": "S11 B155: rozsah pásu „jiné“ ve schválené výjimce",
+   "id": "session_015fBoTjo5sPVrotmk1h5Nvz",
+   "role": "dávka",
+   "stav": "run",
+   "stavText": "pracuje",
+   "faze": 2,
+   "eta": "~40 min",
+   "kontext": null,
+   "co": "Rozsah pásu „jiné“ (od–do m) do obsahu cenové výjimky a do karty schvalovatele",
+   "dalsi": "Testy 76/0, běží mutace, dokumentace"
+  },
+  {
+   "nazev": "S12 lešení vnitřní/vnější ve specifikaci + vlastní řádek do CN",
+   "id": "session_01ARSMBgZ2uFKva4VC1kj1qJ",
+   "role": "dávka",
+   "stav": "run",
+   "stavText": "pracuje",
+   "faze": 0,
+   "eta": "~1,5 h",
+   "kontext": null,
+   "co": "E-mail D. S.: lešení vnitřní i vnější v „Součástí dodávky není“ podle příplatků; vlastní řádek specifikace do CN",
+   "dalsi": "Rozbor a oprava; větev claude/leseni-spec-radek (v16.10.2)"
   }
  ],
  "log": [
+  [
+   "12:05",
+   "E-mail D. S. zpracován: S12 spuštěna (body 2 a 3), návrh k bodu 1 publikován. Archivovány S9 a S10."
+  ],
+  [
+   "11:48",
+   "Spuštěna S11 (B155, rozsah pásu „jiné“, zadání J. V.)."
+  ],
+  [
+   "11:55",
+   "J. V. nahrál šablonu SoD projekce v3 do aplikace. Nic dalšího nečeká."
+  ],
   [
    "06:20",
    "Release v15.10.14 vydán (J. V.). test → main fast-forward (eff7724 → 1cbab3a)."
@@ -187,16 +227,12 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
   [
    "01:47",
    "2. běh kola padl na test_sod_proj_cislo: přerušený 1. běh nechal v pracovní kopii nevrácenou mutaci (vyrob_sablony.js). Kopie vrácena (git checkout), kolo potřetí."
-  ],
-  [
-   "01:08",
-   "Restart kontejneru přerušil kolo v mutacích serveru; kolo spuštěno znovu celé (mutace se nepřerušují)."
-  ],
-  [
-   "00:43",
-   "Hodinová kontrola: mutace serveru u konce, zatím žádná nepřežila."
   ]
- ]
+ ],
+ "celkem": {
+  "eta": "~1,5 h",
+  "detail": "S11 + S12 hotové kolem 13:40 UTC · bez bodu 1"
+ }
 }
 </script>
 <script>
@@ -211,6 +247,8 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
     var c=p>=75?'b':(p>=60?'w':'');
     return '<div class="ctx"><span class="mono">kontext '+p+' %</span><div class="bar"><i class="'+c+'" style="width:'+Math.min(p,100)+'%"></i></div></div>'};
   document.getElementById('stamp').textContent=D.aktualizace;
+  (function(){var C=D.celkem,el=document.getElementById('celkem');if(!el||!C)return;
+    el.innerHTML='<div class="ck">do konce úkolu</div><div class="cv">'+esc(C.eta)+'</div><div class="cd">'+esc(C.detail||'')+'</div>';})();
   var c=document.getElementById('cekani');
   if(D.cekaNaJV.length){c.innerHTML='<div class="h">Čeká na vás</div><ol>'+D.cekaNaJV.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ol>'}
   else{c.className='alert empty';c.innerHTML='<div class="h">Nic na vás nečeká — koordinace běží sama.</div>'}
