@@ -12,8 +12,8 @@ Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kv�
 
 ## PŘEVZETÍ 16. 10. ~13:20 UTC — koordinace session_011B3ruyPigNEMSUdesbk4Hd („ŘÍDÍCÍ 16.10“)
 
-- Soubor  je v  (), proto se 72ce7b6 do repa nedostal — jeho obsah je níže (obnoven z přepisu předchozího sezení).
-- Integrační větev:  (nad  1cbab3a + fast-forward  6aa21d1). Předávka koordinace se dál vede v této větvi.
+- Soubor `podklady/PLAN_VIKEND_16_10.md` je v `.gitignore` (`PLAN_*.md`), proto se 72ce7b6 do repa nedostal — jeho obsah je níže (obnoven z přepisu předchozího sezení).
+- Integrační větev: `claude/integrace-16-10` (nad `test` 1cbab3a + fast-forward `claude/integrace-15-10` 6aa21d1). Předávka koordinace se dál vede v této větvi.
 
 ## PLÁN VÍKENDU — Plán dávek pá 16. 10. večer – ne 18. 10. (schváleno J. V. 16. 10. ~15:00 Praha)
 
