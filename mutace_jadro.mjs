@@ -1135,6 +1135,15 @@ const MUTACE = [
     hledej: '  dph: 0.21,                         // zákonná sazba DPH projekční části (nezávislá na ceníku OCK)',
     nahrad: '  dph: 0.12,                         // zákonná sazba DPH projekční části (nezávislá na ceníku OCK)',
     proc: 'na projekční práce by se použila sazba ocelové konstrukce — obě sazby prohozené, doklad špatně' },
+  /* ---------- S13 (16. 10. 2026): příznak ceníku „cena dle nabídky" (engine.js) ---------- */
+  { nazev: 'S13: doplnění klíčů přidá starému ceníku příznaky', soubor: 'engine.js',
+    hledej: "const CENIK_NEDOPLNOVAT = ['ukazkove', 'prazdny', 'dleNabidky'];",
+    nahrad: "const CENIK_NEDOPLNOVAT = ['ukazkove', 'prazdny'];",
+    proc: 'starý zveřejněný ceník by po importu tvrdil zaškrtnutí, které správce nikdy nezveřejnil' },
+  { nazev: 'S13: prosklená stěna není ve výchozím ceníku zaškrtnutá', soubor: 'engine.js',
+    hledej: "    'C.priplatky.naterOkopovychKc': true, 'C.priplatky.prosklenaStenaKc': true,",
+    nahrad: "    'C.priplatky.naterOkopovychKc': true,",
+    proc: 'položka z e-mailu D. S. by v novém ceníku zůstala hlídaná jako běžná cena' },
 ];
 
 /* ============================================================

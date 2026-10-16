@@ -298,6 +298,30 @@ jsou. Vědomě zůstává:
 
 ---
 
+## S13 — položky „cena dle nabídky" jsou mimo schvalování (rozhodnutí J. V. 16. 10. 2026)
+
+**Co dělá:** u položky, kterou PLATNÝ ceník označil příznakem „cena dle
+nabídky" (`cenik.dleNabidky`; výchozí návrh: osm nabídkových položek za akci
+— zábrany proti pádu, demontáž ohrazení, malba schodnic, dva nátěry,
+prosklená stěna, demontáž výtahu, dešťový svod), smí obchodník zadat
+**libovolnou nezápornou cenu** a nabídku odeslat bez schválení: neposuzuje se
+jako směs ceníku (`src/vyjimky.js`), kontrola ceníku na serveru ji pustí
+(`uloCenikProblemy` v `src/uloziste.js`) a schvalovatel ji nevidí ani
+informativně. Příznak se bere **jen z platného záznamu programu** — mapa
+v ceníku zakázky se neporovnává ani nečte, takže si ji klient nemůže přidat
+(test „podstrčený příznak", mutace S13).
+
+**Co nedělá:** nehlídá výši ceny u těchto položek. Obchodník tak může
+položku s příznakem nacenit hluboko pod orientační cenu (i na nulu) a snížit
+tím cenu nabídky o její orientační hodnotu bez schválení. Záporná nebo
+nečíselná cena projít nemůže (403).
+
+**Proč to tak zůstává:** rozhodnutí J. V. 16. 10. 2026 (varianta A, e-mail
+obchodníka D. S. 15. 10.): u těchto položek ceník reálnou cenu nemá, cenu
+určuje nabídka dodavatele. Které položky do skupiny patří, určuje správce
+zaškrtnutím v Nastavení → Ceník a zveřejněním ceníku; ostatní příplatky se
+hlídají beze změny.
+
 ## Audit kola 25 — B155, B156 a B157 (vědomé meze a záměrné chování, rozhodnutí J. V. 15. 10. 2026)
 
 Audit 15. 10. 2026 (`podklady/AUDIT_2026-10-15_v15.10.6.md`) vedl dva

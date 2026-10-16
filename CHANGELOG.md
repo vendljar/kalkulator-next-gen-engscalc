@@ -8,6 +8,71 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v16.10.3 — příznak ceníku „cena dle nabídky" (větev claude/cena-dle-nabidky)
+
+Dávka S13 nad `origin/test` (1cbab3a, v15.10.14). E-mail obchodníka D. S.
+15. 10. 2026: příplatek „Prosklená stěna vedle šachty" má v ceníku jen
+orientační (přehnanou) cenu; po přepsání na reálnou nižší aplikace hlásila
+„Ceník varianty je směs platného ceníku a starších cen (1 položka OCK) —
+požádejte o schválení nadřízeného…" a zábrana zablokovala tisk nabídky
+(server navíc takovou zakázku odmítl uložit — kontrola ceníku B128).
+Řešení J. V. 16. 10. 2026, varianta A.
+
+- **Nový příznak položky ceníku `dleNabidky`** (`src/cenik.js`:
+  `cenikDleNabidkyJe/Nastav/Ociste`). Mapa `{ 'C.priplatky.x': true }` stojí
+  v ceníku vedle cen jako `popisy`: verzuje se a zveřejňuje s ceníkem, otisk
+  verze ji nese (jen neprázdnou — ceník bez příznaků má otisk beze změny,
+  `PROG_OTISK_VERZE` zůstává 3), zveřejnění ji očistí na známé číselné cesty
+  OCK. Ve výchozím ceníku zaškrtnuto osm nabídkových položek za akci; **starý
+  ceník bez mapy = nezaškrtnuto** (`CENIK_NEDOPLNOVAT` + `dleNabidky`).
+- **Nastavení → Ceník** (jen správce): sloupec „Cena dle nabídky" se
+  zaškrtávátkem u číselných položek OCK, poznámka pod tabulkou.
+- **Kalkulace OCK → Příplatky:** štítek „cena dle nabídky", po přepsání
+  ceny navíc „vlastní cena" (do tisku nejdou). Orientační cena se dál
+  předvyplňuje (výchozí návrh J. V.).
+- **Bez výjimky, schválení a zábrany:** položka s příznakem PLATNÉHO ceníku
+  do směsi nepatří (`vyjimkyObsah`), server ji v kontrole ceníku pustí
+  s libovolnou **nezápornou** cenou (`uloCenikProblemy`), automatický
+  přepočet rozdělané zakázky ji nepřepíše (`cenikPrepoctiRozpracovane`),
+  schvalovatel ji nevidí. Příznak se bere jen z platného ceníku — mapa
+  v ceníku zakázky se neporovnává ani nečte (`ULO_CENIK_VOLNE`), podstrčený
+  příznak nic nepovolí. Hranice zapsaná v `BEZPECNOST_MEZE.md` (S13).
+- **Konkrétní hláška:** varianta, která počítala z platné verze (razítko),
+  s běžnou položkou pod ceníkem dostane „Ventilátor (ext): cena pod ceníkem
+  — …požádejte o schválení nadřízeného…"; skutečná směs (starší verze,
+  přepočet vybraných položek, vyšší hodnoty) má dál znění o směsi. Obsah
+  výjimky ani platnost schválení se nemění.
+- **Testy s pojistkou:** `src/test_cena_dle_nabidky.js` proti 1cbab3a
+  0 OK / 1 FAIL → 32 / 0; `netlify/test_cena_dle_nabidky.mjs` 6 / 7 → 13 / 0;
+  harness `overit_cena_dle_nabidky.mjs` 5 / 9 (reprodukuje hlášku z e-mailu)
+  → 14 / 0. Upraveny `test_cenik_uplnost.js` (mapa není cena)
+  a `test_ukazkove_znacky.js` (třetí nedoplňovaný klíč).
+- **Mutace:** cílené „S13" — serveru **12 z 12** (vyjimky, uloziste B128, cenik_stari, cenik, cenik_rady, program), jádra **2 z 2** (engine.js); `--kontrola` 461 / 207 úseků. Sady `src/test_cena_dle_nabidky.js` a `netlify/test_cena_dle_nabidky.mjs` jsou v `SADY`. `test_escape.js`: záznam PROVERENO pro štítky (35/2 → 37/0).
+- `spust_testy.sh --smoke` (v16.10.3, bez KNG_PODKLADY): **255 prošlo / 0 selhalo / 6 přeskočeno**; kontrola údajů čistá.
+- Příručka kap. 17 (podkapitola „Cena dle nabídky"), roadmapa #423
+  (předběžné číslo — 421 má S11, 422 nechávám S12; přidělí koordinace).
+
+**Výchozí volby (zadání J. V., nic nebylo nejasné natolik, abych se odchýlil):**
+příznak jen pro ceník OCK (příplatky jsou v OCK); sloupec vidí jen správce;
+štítky vidí každý, kdo vidí řádek; záporná cena se nepouští; prázdná nová
+zakázka orientační cenu dostane, rozdělaná si vlastní cenu nechá; id roadmapy
+předběžné.
+
+**Doplněk po rozhodnutí J. V. 16. 10. (varianta A + „předzaškrtnuté v UI"):**
+ceník, který mapu příznaků vůbec nemá (zveřejněný před v16.10.3), ukáže
+v Nastavení → Ceník výchozích osm položek zaškrtnutých jako **návrh** (štítek
+„návrh" pod tabulkou); do zveřejnění se aplikace chová podle zadání
+(nezaškrtnuto = hlídá), **zveřejnění návrh zapíše** do verze ceníku
+(`progKontext` → `cenikDleNabidkyDoplnNavrh`, do kopie — ceník varianty
+zůstává). Výslovně prázdná mapa `{}` se zachovává (zveřejní se i uloží) a návrh
+se jí už nevnucuje. Model `cenikDleNabidkyMaMapu / Navrh / DoplnNavrh`.
+Pojistka: `src/test_cena_dle_nabidky.js` proti 7a43370 31 / 2 → 41 / 0,
+harness 18 / 3 → 21 / 0; mutace __MUT2__.
+
+**Po nasazení (J. V. / správce):** v Nastavení → Ceník zkontrolovat
+předzaškrtnutý návrh a **zveřejnit ceník** (test i ostrá) — teprve tím
+příznaky platí. Zveřejnění samotného příznaku projde (otisk ho nese).
+
 ## v16.10.2 — lešení a vlastní řádky technické specifikace v nabídce (větev claude/leseni-spec-radek)
 
 Dávka S12, připomínky obchodníka D. S. z 15. 10. 2026 (e-mail „online

@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v16.10.2 · sestaveno 16. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
+  "verze": "Platí pro aplikaci v16.10.3 · sestaveno 16. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -14,8 +14,9 @@
       ]
     },
     {
-      "nadpis": "Co je nového ve verzi v16.10.2 (16. 10. 2026)",
+      "nadpis": "Co je nového ve verzi v16.10.3 (16. 10. 2026)",
       "odstavce": [
+        "**Cena dle nabídky.** U nabídkových příplatků za akci (např. prosklená stěna vedle šachty) zadává obchodník vlastní cenu bez cenové výjimky a bez schválení; v řádku příplatku je štítek **cena dle nabídky** nebo **vlastní cena**. Které položky to jsou, určuje správce v Nastavení → Ceník (sloupec „Cena dle nabídky“, osm položek je předzaškrtnutých) a platí to po zveřejnění ceníku (kapitola 17).",
         "**Lešení v technické specifikaci se řídí kalkulací.** V tabulce SOUČÁSTÍ DODÁVKY NENÍ jsou dva řádky: **LEŠENÍ VNITŘNÍ PRO STAVBU OCK** (nový) a **LEŠENÍ KOLEM OCK PRO PROVEDENÍ OPLÁŠTĚNÍ**. Když je lešení mezi příplatky v nabídce, stojí u něj „nabízeno jako příplatek“ se štítkem **z kalkulace**; když je v základní ceně, řádek se do dokumentu nedává. Text můžete přepsat (štítek **ručně**) a tlačítkem ↺ vrátit návrh z kalkulace (kapitola 17).",
         "**Vlastní řádky technické specifikace jdou do cenové nabídky.** Co přidáte tlačítkem *+ přidat vlastní řádek* (sekce DALŠÍ UJEDNÁNÍ), objeví se v náhledu, tisku i ve Wordu nabídky OCK jako sekce DALŠÍ UJEDNÁNÍ za tím, co součástí dodávky není (kapitola 23)."
       ]
@@ -461,6 +462,11 @@
         { "typ": "text", "text": "Příplatkové položky jsou **ceník variant pro zákazníka** — do základní ceny se nezapočítávají. Sloupec **Nabídka** rozhoduje, které z nich se propíší do generované cenové nabídky. Název, množství i jednotkovou cenu lze přepsat (tlačítko ↺ vrátí vypočtené množství) a vlastní příplatek jde přidat." },
         { "typ": "text", "text": "Mezi nabídkovými položkami najdete i osm převzatých z naší excelové předlohy: zábrany proti pádu do šachty, demontáž stávajícího ohrazení, malba schodnic, nátěr celého ohrazení, nátěr pouze okopových plechů, prosklená stěna vedle šachty, demontáž stávajícího výtahu a dešťový svod. Většina se počítá jako **množství 1 × cena z ceníku** — jsou to položky „za akci“. Výjimkou jsou zábrany proti pádu, které se počítají na každé nástupiště." },
         { "typ": "text", "text": "Dokud jim administrátor nezadá v ceníku cenu, mají nulu a kontrola je označí jako **položku bez ceny**. Neoceněná práce, která se tiše sečte jako nula, je ta nejdražší chyba — přijde se na ni až při fakturaci." },
+        { "typ": "podnadpis", "text": "Cena dle nabídky" },
+        { "typ": "text", "text": "U těchto osmi nabídkových položek ceník reálnou cenu nemá — v ceníku je jen **orientační cena** a skutečnou cenu zadáváte vy podle nabídky dodavatele. Administrátor je proto v **Nastavení → Ceník** označuje ve sloupci **Cena dle nabídky** (platí to až po zveřejnění ceníku). V řádku příplatku pak svítí štítek *cena dle nabídky* a po přepsání ceny navíc *vlastní cena*." },
+        { "typ": "text", "text": "**Krok pro administrátora po nasazení verze 16.10.3:** dosavadní ceník příznaky nemá, takže se položky zatím hlídají jako dřív. V **Nastavení → Ceník** je ve sloupci *Cena dle nabídky* osm nabídkových položek předzaškrtnutých se štítkem *návrh*. Zkontrolujte je (případně odškrtněte, co do skupiny nepatří) a klikněte **Zveřejnit ceník** — teprve zveřejněním se příznaky zapíšou do verze ceníku a začnou platit. Ceník, ve kterém příznaky vědomě zrušíte, návrh už znovu nedostane." },
+        { "typ": "text", "text": "Ruční cena u takové položky **není odchylka od ceníku**: nepotřebuje schválení nadřízeného a tisk nabídky nezablokuje — ať je nižší, nebo vyšší než orientační. Orientační cena se do nové zakázky dál předvyplní a otevření zakázky po zveřejnění nového ceníku vaši cenu nepřepíše. Záporná cena projít nemůže." },
+        { "typ": "text", "text": "U **ostatních příplatků** (lešení, skla, madla, ventilátor…) se cena pod ceníkem hlídá jako dřív: tisk nabídky zastaví hláška **„<název položky>: cena pod ceníkem — požádejte o schválení nadřízeného“** v záložce Schvalování. Zakázka spočítaná ze starší verze ceníku má dál hlášku o **směsi platného ceníku a starších cen** — tam stačí variantu přepočítat podle platného ceníku." },
         { "typ": "text", "text": "**Montáž šachetních dveří** se mezi příplatky nepředpočítává, protože v předloze pod čarou není. Když ji potřebujete, přidáte si ji tlačítkem *+ přidat položku* a cenu za kus najdete v ceníku." },
         { "typ": "podnadpis", "text": "Vnější lešení a oplechování soklu" },
         { "typ": "text", "text": "**U interiérové šachty je vnější lešení vždycky jen příplatek.** Do základní ceny se tam dostat nemůže, zákazník si ho ale může doobjednat; příplatek se počítá stejně jako u exteriérové šachty. Dokud si ho neobjedná, žádá kapitola IV. nabídky lešení po objednateli a technická specifikace uvádí „lze doplnit viz příplatkové ceny“." },

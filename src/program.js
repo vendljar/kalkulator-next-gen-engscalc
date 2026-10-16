@@ -158,8 +158,15 @@ function programOtisk(zaznam) {
    * Od 18. 9. 2026 (#267) totéž pro DODATKOVÉ TEXTY k položkám. Do porovnání
    * CEN nepatří — oprava překlepu není zdražení — ale do otisku ano, jinak
    * by ji nešlo zveřejnit vůbec. Je to táž past, jen o tři měsíce později. */
+  /* Od 16. 10. 2026 (S13) i PŘÍZNAKY „cena dle nabídky" — zaškrtnutí
+   * příznaku je změna ceníku a musí jít zveřejnit. Přidávají se jen
+   * NEPRÁZDNÉ, takže ceník bez příznaků má otisk beze změny a vzorec
+   * (PROG_OTISK_VERZE 3) se u dosavadních záznamů nemění. */
+  const dleN = ((zaznam || {}).cenik || {}).dleNabidky;
   const zahr = JSON.stringify((zaznam || {}).zahranicni || {})
-    + '|' + JSON.stringify(((zaznam || {}).cenik || {}).popisy || {});
+    + '|' + JSON.stringify(((zaznam || {}).cenik || {}).popisy || {})
+    + ((dleN && typeof dleN === 'object' && Object.keys(dleN).length)
+      ? '|dn' + JSON.stringify(Object.keys(dleN).sort().filter(k => dleN[k] === true)) : '');
   if (typeof cenikOtisk === 'function' && typeof cenikSledovane === 'function')
     return progOtiskText(cenikOtisk(programData(zaznam)) + '|' + zahr);
   return progOtiskText(JSON.stringify([(zaznam || {}).cenik, (zaznam || {}).cenikProj,

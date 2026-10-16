@@ -496,8 +496,14 @@ function cenikPrepoctiRozpracovane(zak, dnesni, opts) {
     return s !== '' && s !== p;
   };
   const rozdelana = vyplneno(zak.cislo) || vyplneno(zak.nazevAkce);
+  /* CENA DLE NABÍDKY (S13, 16. 10. 2026): v rozdělané zakázce je cena
+   * položky, kterou platný ceník označil příznakem, rozhodnutím obchodníka
+   * (zadal ji podle nabídky) — automatika ji nepřepíše. Prázdné nové zakázce
+   * se orientační cena z ceníku předvyplní jako dřív. */
+  const dleNab = (cesta) => typeof cenikDleNabidkyJe === 'function'
+    && String(cesta).indexOf('C.') === 0 && !!dnesni && cenikDleNabidkyJe(dnesni.cenik, cesta);
   const chranena = rozdelana
-    ? ((data, cesta) => cenikPatriZakazce(cesta))
+    ? ((data, cesta) => cenikPatriZakazce(cesta) || dleNab(cesta))
     : cenikChranena;
 
   zak.varianty.forEach(v => {

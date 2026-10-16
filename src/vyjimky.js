@@ -113,7 +113,11 @@ function vyjimkyDnesniZProgramu(platny, data) {
   if (typeof cenikDnesniProRadu !== 'function') return d;
   const zahr = (typeof cenikZahrOciste === 'function') ? cenikZahrOciste(platny.zahranicni) : platny.zahranicni;
   const rada = (typeof cenikRadaVarianty === 'function') ? cenikRadaVarianty(data) : 'cr';
-  try { return cenikDnesniProRadu(d, zahr, rada); } catch (e) { return d; }
+  let out;
+  try { out = cenikDnesniProRadu(d, zahr, rada); } catch (e) { out = d; }
+  /* Číslo platné verze — jen pro znění hlášky (vyjimkyObsah, `pod`). */
+  if (out && typeof out === 'object') out.verze = platny.verze;
+  return out;
 }
 
 /* CO SE NA VARIANTĚ SCHVALUJE. `dnesni` = platný ceník pro řadu varianty
@@ -127,6 +131,10 @@ function vyjimkyDnesniZProgramu(platny, data) {
 function vyjimkyObsah(data, dnesni, vyrazena) {
   const d = data || {};
   const smes = [];
+  /* Varianta počítala z PLATNÉ verze (razítko) → rozdíly jsou ruční úpravy
+   * cen, ne starší ceník. Jen pro znění hlášky; rozhoduje se jinde. */
+  const vR = d.cenikRazitko && typeof d.cenikRazitko === 'object' ? +d.cenikRazitko.verze : NaN;
+  const naPlatne = !!dnesni && isFinite(vR) && vR > 0 && vR === +dnesni.verze;
   if (dnesni && typeof cenikRozdily === 'function') {
     cenikRozdily(d, dnesni).forEach(r => {
       if (typeof cenikPatriZakazce === 'function' && cenikPatriZakazce(r.cesta)) return;   // přirážka, DPH
@@ -134,9 +142,17 @@ function vyjimkyObsah(data, dnesni, vyrazena) {
        * vznikl): hodnotu variantě doplnil import (cenikDoplnKlice — nula,
        * u voleb výchozí text), ne obchodník. Není s čím srovnat. */
       if (r.nova === undefined) return;
+      /* CENA DLE NABÍDKY (S13, J. V. 16. 10. 2026): položku, kterou PLATNÝ
+       * ceník označil příznakem, zadává obchodník sám podle nabídky — ruční
+       * cena není odchylka od ceníku. Příznak jen z platného ceníku
+       * (`dnesni`), nikdy z ceníku varianty: ten si zakázka umí podstrčit. */
+      if (typeof cenikDleNabidkyJe === 'function' && String(r.cesta).indexOf('C.') === 0
+          && cenikDleNabidkyJe(dnesni.cenik, r.cesta)) return;
       const sekce = r.sekce === 'PROJ' ? 'PROJ' : 'OCK';
       if ((sekce === 'PROJ' ? 'proj' : 'ock') === vyrazena) return;
-      smes.push({ cesta: r.cesta, sekce, popis: String(r.popis || r.cesta), hodnota: r.stara });
+      /* `pod` = číslo varianty pod platným ceníkem — jen pro znění hlášky. */
+      const pod = naPlatne && typeof r.stara === 'number' && typeof r.nova === 'number' && r.stara < r.nova;
+      smes.push({ cesta: r.cesta, sekce, popis: String(r.popis || r.cesta), hodnota: r.stara, pod });
     });
   }
   smes.sort((a, b) => (a.cesta < b.cesta ? -1 : a.cesta > b.cesta ? 1 : 0));
@@ -145,7 +161,7 @@ function vyjimkyObsah(data, dnesni, vyrazena) {
     ? JSON.stringify({ s: smes.map(x => [x.cesta, x.hodnota === undefined ? null : x.hodnota]),
         p: pasy.map(x => [x.stena, x.i, x.nazev, x.naklad]) })
     : '';
-  return { smes: smes.map(x => ({ cesta: x.cesta, sekce: x.sekce, popis: x.popis })), pasy,
+  return { smes: smes.map(x => ({ cesta: x.cesta, sekce: x.sekce, popis: x.popis, pod: x.pod })), pasy,
     polozek: smes.length, pasu: pasy.length, obsah, prazdny: !smes.length && !pasy.length };
 }
 
@@ -248,10 +264,24 @@ function vyjimkaPrepocti(data, obsah) {
 function vyjimkyText(obsah) {
   const o = obsah || {};
   const casti = [];
-  if (o.polozek) {
-    const ock = (o.smes || []).filter(x => x.sekce === 'OCK').length, proj = o.polozek - ock;
-    casti.push('ceník varianty je směs platného ceníku a starších cen (' + o.polozek
-      + (o.polozek === 1 ? ' položka' : (o.polozek < 5 ? ' položky' : ' položek'))
+  /* KONKRÉTNÍ ZNĚNÍ (S13, J. V. 16. 10. 2026): varianta, která počítala
+   * z PLATNÉ verze (razítko) a má položku POD ceníkem, dostane jmenovitou
+   * větu („Ventilátor (ext): cena pod ceníkem") — to je ruční úprava ceny.
+   * Skutečná směs (starší verze, přepočet jen vybraných položek, vyšší
+   * nebo textové hodnoty) si nechává znění směsi. Obsah výjimky (a tím
+   * platnost schválení) se nemění. */
+  const pod = (o.smes || []).filter(x => x.pod);
+  const smes = (o.smes || []).filter(x => !x.pod);
+  if (pod.length) {
+    const jm = pod.slice(0, 3).map(x => String(x.popis || x.cesta) + ': cena pod ceníkem');
+    if (pod.length > 3) jm.push('a ' + (pod.length - 3) + ' další ' + (pod.length - 3 === 1 ? 'položka' : 'položky') + ' pod ceníkem');
+    casti.push(jm.join('; '));
+  }
+  const n = (o.smes ? smes.length : (o.polozek || 0));
+  if (n) {
+    const ock = smes.filter(x => x.sekce === 'OCK').length, proj = o.smes ? n - ock : 0;
+    casti.push('ceník varianty je směs platného ceníku a starších cen (' + n
+      + (n === 1 ? ' položka' : (n < 5 ? ' položky' : ' položek'))
       + (ock && proj ? ': OCK ' + ock + ', PROJ ' + proj : (proj ? ' PROJ' : ' OCK')) + ')');
   }
   if (o.pasu) casti.push('ruční sazba pásu opláštění „jiné" je nižší než ceníková ('

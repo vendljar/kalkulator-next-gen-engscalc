@@ -6580,7 +6580,7 @@
    "pozn" : "B153 + B154 ve větvi `claude/b153-b154` (v15.10.8), do test ji slučuje koordinační sezení J. V.: `src/test_vyjimky.js` 40 → 62 OK, `netlify/test_vyjimky.mjs` 36 → 46 OK, mutace B153 ×4 a B154 ×2."
   },
   {
-   "id" : "421",
+   "id" : "422",
    "vlna" : "B",
    "stav" : "hotovo",
    "dulezitost" : "",
@@ -6592,6 +6592,27 @@
    "kde" : "`src/techspec.js` (tsLeseniNeniRadek), `src/nabidka.js` (tsRadkyNavic, tsExtra, nabidkaNahledSekce), `src/docxgen.js` (docxRadkyNavic), `overit_leseni_spec.mjs`",
    "hotovoV" : "v16.10.2 (větev claude/leseni-spec-radek)",
    "pozn" : "Do test slučuje koordinační sezení J. V. Výchozí volby ke schválení: znění popisku „LEŠENÍ VNITŘNÍ PRO STAVBU OCK“ a věta „nabízeno jako příplatek“ (jako u soklu). Šablona CN může později dostat symbol `{{TS_NENI_LESENI_VNITRNI}}` — pak se řádek neklonuje."
+  },
+  {
+   "id" : "423",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "M",
+   "hotovoV" : "v16.10.3 (větev `claude/cena-dle-nabidky`)",
+   "nazev" : "Příznak ceníku „cena dle nabídky“ (prosklená stěna a další)",
+   "proc" : "E-mail obchodníka D. S. 15. 10. 2026: příplatek „Prosklená stěna vedle šachty“ má v ceníku jen orientační (přehnanou) cenu; po přepsání na reálnou nižší aplikace hlásila „směs platného ceníku a starších cen (1 položka OCK)“ a zábrana zablokovala tisk nabídky. U nabídkových položek ceník reálnou cenu nemá — zadává ji obchodník. Schváleno J. V. 16. 10. 2026 (varianta A).",
+   "detail" : "Nový příznak položky ceníku `dleNabidky` (Nastavení → Ceník, sloupec „Cena dle nabídky“, jen správce); verzuje se a zveřejňuje s ceníkem (nese ho otisk), starý ceník bez příznaku = nezaškrtnuto; ve výchozím ceníku zaškrtnuto osm nabídkových položek za akci. U položky s příznakem PLATNÉHO ceníku ruční cena není odchylka: žádná cenová výjimka, žádné schválení, žádná zábrana, server (kontrola ceníku B128 i zámek) ji pustí — jen nezápornou; automatický přepočet ji nepřepíše; schvalovatel ji nevidí. Příznak se bere jen z platného ceníku — podstrčený v zakázce nic nepovolí. Štítky „cena dle nabídky“ a „vlastní cena“ v řádku příplatku. Hláška u běžného příplatku pod ceníkem: „<název>: cena pod ceníkem — požádejte o schválení nadřízeného“ (u varianty z platné verze); skutečná směs starších cen má původní znění.",
+   "hotovoKdyz" : "Ve větvi: `src/test_cena_dle_nabidky.js` 0/1 → 32/0, `netlify/test_cena_dle_nabidky.mjs` 6/7 → 13/0, harness `overit_cena_dle_nabidky.mjs` 5/9 → 14/0, mutace S13 (12 serveru + 2 jádra) chycené. Celé kolo pustí koordinace při sloučení do `test`.",
+   "kde" : "`src/cenik.js` (cenikDleNabidky*), `src/vyjimky.js` (vyjimkyObsah, vyjimkyText), `src/uloziste.js` (uloCenikProblemy), `src/cenik_stari.js`, `src/program.js` (programOtisk), `src/cenik_rady.js`, `src/ui/cenik_ui.js`, `src/ui/kalk_ock.js`",
+   "zavisi" : [
+    {
+     "id" : "420",
+     "typ" : "doporuceno",
+     "proc" : "cenové výjimky a jejich schvalování (B153/B154)"
+    }
+   ],
+   "pozn" : "Čísla přidělila koordinace: #421 S11, #422 S12, #423 S13. **Po nasazení správce v Nastavení → Ceník zkontroluje osm předzaškrtnutých položek (návrh u ceníku bez příznaků, J. V. 16. 10.) a ceník zveřejní** — do zveřejnění platí dosavadní ceník (nezaškrtnuto)."
   }
  ],
  "meta" : {
@@ -7172,9 +7193,13 @@
    "pozn" : "src/test_vyjimky 40 → 62 OK, netlify/test_vyjimky 36 → 46 OK; cílené mutace B153, B154 a výjimky; smoke zelené."
   },
   {
-   "text" : "16. 10. 2026 — dávka S12 (claude/leseni-spec-radek, v16.10.2): připomínky D. S. 15. 10. — lešení v technické specifikaci řízené kalkulací (nový řádek vnitřního lešení) a vlastní řádky specifikace v nabídce OCK (náhled, tisk, Word). #421.",
+   "text" : "16. 10. 2026 — dávka S12 (claude/leseni-spec-radek, v16.10.2): připomínky D. S. 15. 10. — lešení v technické specifikaci řízené kalkulací (nový řádek vnitřního lešení) a vlastní řádky specifikace v nabídce OCK (náhled, tisk, Word). #422.",
    "hotovo" : true,
    "pozn" : "test_leseni_specifikace 45/0, test_techspec_vlastni_radky 22/0; mutace jádra LEŠ 8/8, VLR 4/4; harness overit_leseni_spec se šablonami CN v11–v15."
+  },
+  {
+   "hotovo" : true,
+   "text" : "16. 10. 2026 — dávka S13 (claude/cena-dle-nabidky, v16.10.3): příznak ceníku „cena dle nabídky“ — vlastní cena prosklené stěny a dalších nabídkových položek bez cenové výjimky; konkrétní hláška „<název>: cena pod ceníkem“. #423."
   }
   ],
   "pravidla" : [
@@ -7261,7 +7286,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v16.10.2 (engscalc, claude/leseni-spec-radek)",
+  "build" : "v16.10.3 (engscalc, claude/integrace-16-10)",
   "stavKDatu" : "16. 10. 2026"
  },
  "_comment" : [

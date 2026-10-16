@@ -1391,7 +1391,9 @@ function uloB112Zdroj(n, soubor) {
 }
 /* `jenZahr` se po listech neporovnává — hlídá ho zvlášť uloJenZahrNavic
  * (revize #398, N1) jako podmnožinu povolených značek. */
-const ULO_CENIK_VOLNE = ['popisy', 'popisyJazyky', 'dph', 'rada', 'jenZahr', 'ukazkove', 'prazdny'];
+/* `dleNabidky` (S13) je metadata — příznak se bere jen z PLATNÉHO ceníku
+ * (uloCenikProblemy níž), mapa ve variantě se neporovnává ani nepočítá. */
+const ULO_CENIK_VOLNE = ['popisy', 'popisyJazyky', 'dph', 'rada', 'jenZahr', 'ukazkove', 'prazdny', 'dleNabidky'];
 /* ZNAČKY „JEN ZAHRANIČNÍ ŘADA" (revize #398, N1, 12. 10. 2026). Jádro
  * v tuzemské kalkulaci vyřadí každý řádek, jehož cenaPath značka nese
  * (engine.js `jenTetoRady`), takže `jenZahr: { 'C.montazHodKc': true }`
@@ -1789,9 +1791,24 @@ function uloCenikProblemy(zak, stara, opts) {
         });
         return out;
       };
+      /* CENA DLE NABÍDKY (S13, J. V. 16. 10. 2026): položku OCK, kterou PLATNÝ
+       * ceník označil příznakem, zadává obchodník podle nabídky — jakoukoli
+       * nezápornou cenu. Příznak jen z platného záznamu programu, nikdy
+       * z ceníku zakázky (podstrčená mapa nic nepovolí, viz ULO_CENIK_VOLNE).
+       * Záporná nebo nečíselná hodnota se hlídá dál. */
+      const dleNabJe = uloB112Zdroj('cenikDleNabidkyJe', './cenik.js');
+      const platnyC = prog && prog.platny && prog.platny.cenik;
+      const volnaDleNab = (kde) => {
+        if (c.pred !== 'cenik.' || !dleNabJe || !platnyC) return false;
+        const p = kde.slice(c.pred.length);
+        if (!dleNabJe(platnyC, 'C.' + p)) return false;
+        const h = listy[p];
+        return typeof h === 'number' && isFinite(h) && h >= 0;
+      };
       let rozdily = null;
       for (const g of skupiny) {
         const r = uloB112Rozdily(listy, g, c.pred, g[0]).concat(doplnenaNula(g));
+        for (let i = r.length - 1; i >= 0; i--) if (volnaDleNab(r[i])) r.splice(i, 1);
         if (!rozdily || r.length < rozdily.length) rozdily = r;
         if (!r.length) break;
       }

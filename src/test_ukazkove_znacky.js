@@ -47,10 +47,14 @@ const test = (n, cond, info) => {
     cenik.novaPolozka === 0, cenik.novaPolozka);
   test('a doplnila se právě jedna', doplneno === 1, doplneno);
   test('stávající ceny zůstaly', cenik.montazHodKc === 850 && cenik.priplatky.madlaBmKc === 120);
-  test('seznam nedoplňovaných klíčů je právě ten pár',
-    CENIK_NEDOPLNOVAT.length === 2
+  /* S13 (16. 10. 2026): třetí je mapa příznaků „cena dle nabídky" — starý
+   * ceník bez ní = nezaškrtnuto (zadání J. V.), doplnění z výchozího ceníku
+   * by ji tam vneslo. Značky ukázkových dat zůstávají. */
+  test('seznam nedoplňovaných klíčů: dvojice značek + mapa příznaků dleNabidky',
+    CENIK_NEDOPLNOVAT.length === 3
     && CENIK_NEDOPLNOVAT.indexOf('ukazkove') >= 0
-    && CENIK_NEDOPLNOVAT.indexOf('prazdny') >= 0, CENIK_NEDOPLNOVAT);
+    && CENIK_NEDOPLNOVAT.indexOf('prazdny') >= 0
+    && CENIK_NEDOPLNOVAT.indexOf('dleNabidky') >= 0, CENIK_NEDOPLNOVAT);
   /* Seznam v engine.js je napsaný doslova, protože odkaz na konstanty
    * z ukazkove.js by v sestaveném souboru padl do dočasné mrtvé zóny
    * (stalo se 21. 9. 2026 — aplikace se vůbec nespustila). Tím ale vznikla

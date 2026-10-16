@@ -1628,6 +1628,19 @@ function adminKoncBunky(r, sekceKey) {
  * Stejný typ štítku jako „skrytá ostatním" nebo „bez ceny" — jeden vzhled
  * pro jednu třídu sdělení. Netiskne se: je to poznámka pro nás, ne pro
  * zákazníka (obchodník ostatně vypnutou položku do nabídky nedává). */
+/* Štítky „cena dle nabídky" / „vlastní cena" u příplatku (S13, J. V.
+ * 16. 10. 2026). Příznak se bere z PLATNÉHO ceníku (DEFAULT_CENIK = platný
+ * po progPouzij) — týž zdroj, ze kterého ho bere server; ceník varianty ho
+ * nesmí přidat. „Vlastní cena" = cena v zakázce se liší od orientační
+ * z platného ceníku. Do tisku nejdou. */
+function dleNabidkyStitky(x) {
+  if (!x || x.vlastni || !x.cenaPath || typeof cenikDleNabidkyJe !== 'function') return '';
+  if (typeof DEFAULT_CENIK === 'undefined' || !cenikDleNabidkyJe(DEFAULT_CENIK, x.cenaPath)) return '';
+  const orient = +cenikGet(DEFAULT_CENIK, x.cenaPath) || 0;
+  const vlastni = Math.abs((+x.cena || 0) - orient) > 1e-9;
+  return ` <span class="pill ok noprint dle-nabidky" title="cenu zadáváte podle nabídky — ruční cena není odchylka od ceníku, schválení nepotřebuje; z ceníku se předvyplňuje orientační cena">cena dle nabídky</span>`
+    + (vlastni ? ` <span class="pill warn noprint vlastni-cena" title="cena se liší od orientační ceny z ceníku (${esc(fmt(orient))})">vlastní cena</span>` : '');
+}
 function vypnutoHtml(r) {
   return (typeof radekVypnutyNulou === 'function' && radekVypnutyNulou(r))
     ? ` <span class="pill vyp noprint" title="${esc(VYPNUTO_POPIS)}">vypnuto (množství 0)</span>` : '';
@@ -2094,7 +2107,7 @@ function renderOutputs() {
     /* Klíč ceníkové položky i u příplatku (2. 9. 2026): řádky kalkulace ho mají
      * od 1. 9., příplatky na něj tehdy zapomněly — a přitom je to jediné místo,
      * kde je vidět, ze které ceníkové položky se cena bere. */
-    return `<input type="text" class="nazev-ed" value="${esc(x.nazev)}" onchange="nazevSet('${origJs}', this.value)" title="název příplatku lze přepsat">${reset}${klicChip(x.cenaPath)}${vypnutoHtml(x)}`;
+    return `<input type="text" class="nazev-ed" value="${esc(x.nazev)}" onchange="nazevSet('${origJs}', this.value)" title="název příplatku lze přepsat">${reset}${klicChip(x.cenaPath)}${vypnutoHtml(x)}${dleNabidkyStitky(x)}`;
   };
   /* Množství u příplatku jde od 2. 9. 2026 PŘEPSAT (zadání J. V. po testu
    * Kornpfortstraße): předloha má u některých položek pod čarou nulu, aby se
@@ -2125,7 +2138,7 @@ function renderOutputs() {
     let c = '';
     if (col.admin) c += `<td style="text-align:center"><input type="checkbox" ${vynech.includes(x.key) ? '' : 'checked'}
         onchange="priplatekNabidka('${keyAttr(x.key)}', this.checked)" title="propsat do cenové nabídky"></td>`;
-    c += `<td style="white-space:normal">${col.admin ? pripNazev(x) : esc(x.nazev) + vypnutoHtml(x)}</td>`;
+    c += `<td style="white-space:normal">${col.admin ? pripNazev(x) : esc(x.nazev) + vypnutoHtml(x) + dleNabidkyStitky(x)}</td>`;
     c += `<td style="white-space:nowrap">${col.admin ? pripMnozstvi(x) : num(x.mnozstvi, 3)}</td>`;
     if (col.admin) c += `<td style="white-space:nowrap">${pripCena(x)}</td>`;
     if (col.showCost) c += `<td>${fmt(x.naklad)}</td>`;

@@ -1,3 +1,30 @@
+# Předávka — 16. 10. 2026: dávka S13 (v16.10.3), větev `claude/cena-dle-nabidky` — příznak ceníku „cena dle nabídky"
+
+Nad `origin/test` (1cbab3a, v15.10.14). Zadání J. V. 16. 10. (varianta A,
+e-mail D. S. 15. 10.: vlastní cena prosklené stěny blokovala tisk nabídky).
+Do `test-draft` / `test` / `main` nic — sloučení a celé kolo dělá koordinace
+(session_01NQjWzfqv1obHAg7DWPHAKH). Podrobnosti: CHANGELOG v16.10.3.
+
+- **Hotovo (pushnuto):** příznak `cenik.dleNabidky` (model `src/cenik.js`,
+  zveřejnění + otisk, výchozí zaškrtnutí osmi položek, starý ceník =
+  nezaškrtnuto); výjimky / kontrola ceníku na serveru / automatický přepočet
+  berou příznak jen z platného ceníku; sloupec v Nastavení → Ceník (správce),
+  štítky v příplatcích; hláška „<název>: cena pod ceníkem". Testy: jednotkový
+  0/1 → 32/0, serverový 6/7 → 13/0, harness 5/9 → 14/0; mutace S13 serveru
+  12/12, jádra 2/2; `--kontrola` 461 / 207; smoke 255 / 0 / 6. Příručka kap. 17, roadmapa #423
+  (předběžné id), `BEZPECNOST_MEZE.md` (S13).
+- **Doplněk (J. V. 16. 10., varianta A + „předzaškrtnuté v UI"):** ceník bez
+  mapy příznaků ukáže v Nastavení → Ceník výchozích osm jako návrh, do
+  zveřejnění se hlídá, zveřejnění návrh zapíše; prázdná mapa `{}` = výslovně
+  nic. Jednotkový 41/0, harness 21/0.
+- **Po nasazení (J. V.):** v Nastavení → Ceník zkontrolovat předzaškrtnutý
+  návrh a zveřejnit ceník (test i ostrá) — teprve tím příznaky platí.
+- **Při slučování:** zkušební `git merge-tree` proti S11
+  (`claude/b155-rozsah-pasu`, mění `src/vyjimky.js` i `BEZPECNOST_MEZE.md`)
+  a S12 (`claude/leseni-spec-radek`): `vyjimky.js`, `BEZPECNOST_MEZE.md`
+  a `netlify/mutace.mjs` se sloučí samy, konflikt je v `roadmapa/roadmap.json`
+  (meta + položky 421/423) a čekej ho v CHANGELOG, PREDAVKA a `verze.txt`.
+
 # Předávka — 16. 10. 2026: dávka S12 (v16.10.2), větev `claude/leseni-spec-radek` — lešení a vlastní řádky specifikace v CN
 
 Nad `origin/test` (1cbab3a, v15.10.14). Připomínky D. S. 15. 10. 2026, body 2
@@ -13,7 +40,7 @@ koordinace (session_01NQjWzfqv1obHAg7DWPHAKH). Podrobnosti: CHANGELOG v16.10.2.
   Testy `test_leseni_specifikace` 45/0, `test_techspec_vlastni_radky` 22/0,
   mutace jádra LEŠ 8/8 a VLR 4/4 (jedna díra v testu doplněna), harness
   `overit_leseni_spec.mjs` se šablonami CN v11–v15 CZ/EN/DE/FR, příručka,
-  roadmapa #421.
+  roadmapa #422 (přečíslováno koordinací).
 - **Výchozí volby ke schválení J. V.:** popisek „LEŠENÍ VNITŘNÍ PRO STAVBU
   OCK" (převzatý od obchodníka); věta „nabízeno jako příplatek" jako u soklu
   (ne „lze doplnit – viz příplatkové ceny" z N49); sekce DALŠÍ UJEDNÁNÍ za

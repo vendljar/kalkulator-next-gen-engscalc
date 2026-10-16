@@ -140,6 +140,13 @@ const DEFAULT_CENIK = {  // HODNOTY VYNULOVÁNY pro GitHub (pripravit_github.py)
                zabranyPadKc: 0, demontazOhrazeniKc: 0, malbaSchodnicKc: 0,
                naterOhrazeniKc: 0, naterOkopovychKc: 0, prosklenaStenaKc: 0,
                demontazVytahuKc: 0, destovySvodKc: 0 },
+  /* Příznak „cena dle nabídky" (S13, 16. 10. 2026, viz cenik.js): předvyplněn
+   * u osmi nabídkových položek za akci. Starý ceník bez mapy = nezaškrtnuto
+   * (proto 'dleNabidky' v CENIK_NEDOPLNOVAT). */
+  dleNabidky: { 'C.priplatky.zabranyPadKc': true, 'C.priplatky.demontazOhrazeniKc': true,
+    'C.priplatky.malbaSchodnicKc': true, 'C.priplatky.naterOhrazeniKc': true,
+    'C.priplatky.naterOkopovychKc': true, 'C.priplatky.prosklenaStenaKc': true,
+    'C.priplatky.demontazVytahuKc': true, 'C.priplatky.destovySvodKc': true },
 };
 
 /* VÝCHOZÍ DIMENZE PROFILŮ PODLE TYPU ŠACHTY (9. 9. 2026, zadání J. V.
@@ -2269,7 +2276,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
  * stalo a chytil to až kouřový test v prohlížeči.
  *
  * Že se obě místa nerozejdou, hlídá test_ukazkove_znacky.js. */
-const CENIK_NEDOPLNOVAT = ['ukazkove', 'prazdny'];
+const CENIK_NEDOPLNOVAT = ['ukazkove', 'prazdny', 'dleNabidky'];
 
 function cenikDoplnKlice(cenik, vzor) {
   const c = cenik, v = vzor;
