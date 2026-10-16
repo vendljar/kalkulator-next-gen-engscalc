@@ -257,8 +257,12 @@ function progKontext(poznamka) {
    * porovnává tenhle kontext s uloženou verzí, a ta klíče nemá — bez očisty
    * by se každý podklad tvářil jako změněný. */
   const bezRady = o => (typeof cenikZverejneniOcisti === 'function') ? cenikZverejneniOcisti(o) : o;
+  /* Příznaky „cena dle nabídky" (J. V. 16. 10. 2026): ceník bez mapy
+   * zveřejní NÁVRH, který mu Nastavení → Ceník ukazuje (výchozích osm) —
+   * do kopie, ceník varianty zůstává. Mapu, kterou ceník má, nechá být. */
+  const sNavrhem = o => { if (typeof cenikDleNabidkyDoplnNavrh === 'function') cenikDleNabidkyDoplnNavrh(o); return o; };
   return {
-    cenik: bezRady(bez(doplneno(d.cenik || {}, VZOR_OCK))),
+    cenik: bezRady(sNavrhem(bez(doplneno(d.cenik || {}, VZOR_OCK)))),
     cenikProj: bez(doplneno((d.proj && d.proj.cenik) || {}, VZOR_PROJ)),
     /* Řada VARIANTY, ze které podklad vznikl. Nezapisuje se do databáze
      * programu (programZaznam bere jen jmenovaná pole) — slouží kontrole

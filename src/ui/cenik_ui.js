@@ -45,6 +45,9 @@ function cenikDleNabidkySet(path, ano) {
   if (!jeAdmin() || typeof cenikDleNabidkyNastav !== 'function') return;
   if (typeof zamekCteniStop === 'function' && zamekCteniStop()) return;
   if (typeof zamekStop === 'function' && zamekStop()) return;
+  /* Ceník bez mapy ukazuje návrh (výchozích osm); první klik ho převezme,
+   * ať odškrtnutí jedné položky nezruší zbylých sedm. */
+  if (typeof cenikDleNabidkyDoplnNavrh === 'function') cenikDleNabidkyDoplnNavrh(C);
   cenikDleNabidkyNastav(C, path, !!ano);
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
   if (typeof progZprava === 'function')
@@ -201,7 +204,7 @@ function cenikRows(def, zahrSloupec) {
       /* Sloupec „Cena dle nabídky" (S13) — jen ceník OCK, jen číselné položky. */
       const dleSl = def === CENIK_DEF && cenikDleNabidkySloupec();
       const dle = !dleSl ? '' : (typ ? '<td class="note c-dle">—</td>'
-        : `<td class="c-dle" style="text-align:center"><input type="checkbox" ${cenikDleNabidkyJe(C, path) ? 'checked' : ''}
+        : `<td class="c-dle" style="text-align:center"><input type="checkbox" ${cenikDleNabidkyNavrh(C, path) ? 'checked' : ''}
             title="cenu zadává obchodník podle nabídky — ruční cena v zakázce není odchylka od ceníku (bez schválení); ceník předvyplní orientační cenu"
             onchange="cenikDleNabidkySet('${escJs(path)}', this.checked)"></td>`);
       return `<tr${zahrSloupec && cenikZahrHodnota(path) !== '' ? ' class="ma-zahr"' : ''}>
@@ -320,7 +323,11 @@ function renderCenik() {
        ${cenikDleNabidkySloupec() ? `<div class="note">Sloupec <b>Cena dle nabídky</b>: u zaškrtnuté položky
          nemá ceník reálnou cenu — obchodník ji v zakázce zadá podle nabídky dodavatele a ruční cena se
          <b>nepovažuje za odchylku od ceníku</b> (žádná žádost o schválení, tisk nabídky není zablokovaný).
-         Cena v ceníku se dál předvyplňuje jako orientační. Příznak platí až po <b>zveřejnění ceníku</b>.</div>` : ''}
+         Cena v ceníku se dál předvyplňuje jako orientační. Příznak platí až po <b>zveřejnění ceníku</b>.</div>
+       ${typeof cenikDleNabidkyMaMapu === 'function' && !cenikDleNabidkyMaMapu(C) ? `<div class="note dle-navrh"><span class="pill warn">návrh</span>
+         Tento ceník příznaky ještě nemá — zaškrtnutí ve sloupci <b>Cena dle nabídky</b> je výchozí návrh
+         (osm nabídkových položek za akci). Dokud ceník nezveřejníte, aplikace tyto položky hlídá jako ostatní;
+         zveřejněním se návrh zapíše do verze ceníku.</div>` : ''}` : ''}
        ${zahrSl ? `<div class="note">Prázdná buňka ve sloupci <b>Cena Zahraničí</b> znamená
          „stejná jako v ČR“ — udržují se jen odchylky. Zaškrtnutí <b>jen zahraničí</b> říká, že
          položka v tuzemské kalkulaci vůbec není (cestovní náklady, překlady); v tuzemské zakázce

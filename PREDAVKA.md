@@ -13,8 +13,12 @@ Do `test-draft` / `test` / `main` nic — sloučení a celé kolo dělá koordin
   0/1 → 32/0, serverový 6/7 → 13/0, harness 5/9 → 14/0; mutace S13 serveru
   12/12, jádra 2/2; `--kontrola` 461 / 207; smoke 255 / 0 / 6. Příručka kap. 17, roadmapa #423
   (předběžné id), `BEZPECNOST_MEZE.md` (S13).
-- **Po nasazení (J. V.):** platný ceník příznaky nemá → v Nastavení → Ceník
-  zaškrtnout položky a ceník zveřejnit (test i ostrá).
+- **Doplněk (J. V. 16. 10., varianta A + „předzaškrtnuté v UI"):** ceník bez
+  mapy příznaků ukáže v Nastavení → Ceník výchozích osm jako návrh, do
+  zveřejnění se hlídá, zveřejnění návrh zapíše; prázdná mapa `{}` = výslovně
+  nic. Jednotkový 41/0, harness 21/0.
+- **Po nasazení (J. V.):** v Nastavení → Ceník zkontrolovat předzaškrtnutý
+  návrh a zveřejnit ceník (test i ostrá) — teprve tím příznaky platí.
 - **Při slučování:** zkušební `git merge-tree` proti S11
   (`claude/b155-rozsah-pasu`, mění `src/vyjimky.js` i `BEZPECNOST_MEZE.md`)
   a S12 (`claude/leseni-spec-radek`): `vyjimky.js`, `BEZPECNOST_MEZE.md`

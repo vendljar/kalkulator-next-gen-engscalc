@@ -79,7 +79,28 @@ test('výchozí ceník: lešení, ventilátor, sklo, madla příznak nemají',
   cenikDleNabidkyNastav(c, STENA, true);
   test('nastavení příznaku zapíše true', c.dleNabidky && c.dleNabidky[STENA] === true, c);
   cenikDleNabidkyNastav(c, STENA, false);
-  test('odškrtnutí položku z mapy smaže (prázdná mapa zmizí)', c.dleNabidky === undefined, c); }
+  test('odškrtnutí položku z mapy smaže; prázdná mapa zůstane = výslovně nic', JSON.stringify(c.dleNabidky) === '{}', c); }
+
+console.log('— návrh v Nastavení → Ceník (J. V. 16. 10.: „předzaškrtnuté v UI“) —');
+test('funkce cenikDleNabidkyNavrh / cenikDleNabidkyDoplnNavrh existují', fn('cenikDleNabidkyNavrh') && fn('cenikDleNabidkyDoplnNavrh'));
+if (fn('cenikDleNabidkyNavrh') && fn('cenikDleNabidkyDoplnNavrh')) {
+  const stary = ZC.zkusebniCenik();
+  test('ceník bez mapy: návrh ukáže výchozích osm zaškrtnutých', OSM.every(x => cenikDleNabidkyNavrh(stary, x))
+    && !cenikDleNabidkyNavrh(stary, 'C.priplatky.ventilatorKc'));
+  test('… ale platí dál nezaškrtnuto (do zveřejnění se hlídá)', !OSM.some(x => cenikDleNabidkyJe(stary, x)));
+  const prazdna = ZC.zkusebniCenik(); prazdna.dleNabidky = {};
+  test('výslovně prázdná mapa: návrh nic nezaškrtne', !OSM.some(x => cenikDleNabidkyNavrh(prazdna, x)));
+  const vlastni = ZC.zkusebniCenik(); vlastni.dleNabidky = { 'C.priplatky.ventilatorKc': true };
+  test('vlastní mapa: návrh = mapa', cenikDleNabidkyNavrh(vlastni, 'C.priplatky.ventilatorKc') && !cenikDleNabidkyNavrh(vlastni, STENA));
+  const k = ZC.zkusebniCenik();
+  test('doplnění návrhu do podkladu ke zveřejnění: osm položek', cenikDleNabidkyDoplnNavrh(k) === true
+    && Object.keys(k.dleNabidky).length === 8 && OSM.every(x => k.dleNabidky[x] === true), k.dleNabidky);
+  test('ceník, který mapu má (i prázdnou), se nedoplňuje', cenikDleNabidkyDoplnNavrh(prazdna) === false && JSON.stringify(prazdna.dleNabidky) === '{}');
+  const z = programZaznam({ cenik: k, cenikProj: ZC.zkusebniCenikProj() }, 1);
+  test('zveřejnění návrhu zapíše osm příznaků do verze', Object.keys(z.cenik.dleNabidky || {}).length === 8, z.cenik.dleNabidky);
+  const zp = programZaznam({ cenik: prazdna, cenikProj: ZC.zkusebniCenikProj() }, 1);
+  test('zveřejnění výslovně prázdné mapy ji zachová (návrh se pak už nevnucuje)', JSON.stringify(zp.cenik.dleNabidky) === '{}', zp.cenik);
+}
 { const o = cenikDleNabidkyOciste({ [STENA]: true, 'C.priplatky.ventilatorKc': 1, 'C.neexistuje': true,
     'PC.sazby.projektant': true, '__proto__': true, 'C.priplatky.malbaSchodnicKc': false });
   test('očista: jen známé cesty OCK s hodnotou true', JSON.stringify(o) === JSON.stringify({ [STENA]: true }), o);

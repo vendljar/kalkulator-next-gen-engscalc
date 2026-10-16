@@ -58,10 +58,20 @@ příznak jen pro ceník OCK (příplatky jsou v OCK); sloupec vidí jen správc
 zakázka orientační cenu dostane, rozdělaná si vlastní cenu nechá; id roadmapy
 předběžné.
 
-**Po nasazení (J. V. / správce):** platný ceník v test i ostré příznaky
-nenese (starý ceník = nezaškrtnuto) — v Nastavení → Ceník zaškrtnout osm
-položek (nebo jen ty, které mají být „dle nabídky") a ceník zveřejnit.
-Zveřejnění samotného příznaku projde (otisk ho nese).
+**Doplněk po rozhodnutí J. V. 16. 10. (varianta A + „předzaškrtnuté v UI"):**
+ceník, který mapu příznaků vůbec nemá (zveřejněný před v16.10.3), ukáže
+v Nastavení → Ceník výchozích osm položek zaškrtnutých jako **návrh** (štítek
+„návrh" pod tabulkou); do zveřejnění se aplikace chová podle zadání
+(nezaškrtnuto = hlídá), **zveřejnění návrh zapíše** do verze ceníku
+(`progKontext` → `cenikDleNabidkyDoplnNavrh`, do kopie — ceník varianty
+zůstává). Výslovně prázdná mapa `{}` se zachovává (zveřejní se i uloží) a návrh
+se jí už nevnucuje. Model `cenikDleNabidkyMaMapu / Navrh / DoplnNavrh`.
+Pojistka: `src/test_cena_dle_nabidky.js` proti 7a43370 31 / 2 → 41 / 0,
+harness 18 / 3 → 21 / 0; mutace __MUT2__.
+
+**Po nasazení (J. V. / správce):** v Nastavení → Ceník zkontrolovat
+předzaškrtnutý návrh a **zveřejnit ceník** (test i ostrá) — teprve tím
+příznaky platí. Zveřejnění samotného příznaku projde (otisk ho nese).
 
 ## v15.10.14 — rozbor nechycených mutací B8 a B31, doplněné testy (větev claude/mutace-b8-b31)
 

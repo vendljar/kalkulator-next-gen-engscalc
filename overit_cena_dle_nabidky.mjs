@@ -125,6 +125,60 @@ await p.evaluate(() => { const d = aktivniVarianta(ZAK).data; d.cenik.priplatky.
 await p.waitForTimeout(200);
 s = await stav();
 zkus('podstrčený příznak ve variantě (platný ho nemá): zábrana zůstává', s.brani && /Prosklená stěna/.test(s.text), s);
+
+/* ---------- 4) starý platný ceník bez mapy: návrh v UI (J. V. 16. 10.) ----------
+ * „Předzaškrtnuté v UI": Nastavení → Ceník ukáže výchozích osm jako návrh,
+ * do zveřejnění se hlídá jako dřív, zveřejnění návrh zapíše. */
+await p.evaluate(([c, cp]) => {
+  zobrNahled('');
+  const stary = JSON.parse(JSON.stringify(c)); delete stary.dleNabidky;
+  PROG_STAV.db = { platny: { verze: 3, cenik: stary, cenikProj: JSON.parse(JSON.stringify(cp)), zahranicni: { ceny: {}, jenZahr: {} } } };
+  progPouzij(PROG_STAV.db.platny);
+  ZAK = novaZakazka(); ZAK.cislo = '2026 - OPR - CN - 0779'; ZAK.nazevAkce = 'TEST návrh'; syncVarianta();
+  const d = aktivniVarianta(ZAK).data;
+  Object.assign(d.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2, nastupiste: 4 });
+  d.cenik = JSON.parse(JSON.stringify(stary)); d.proj.cenik = JSON.parse(JSON.stringify(cp));
+  cenikOznacJakoDnesni(d, { verze: 3 }); syncVarianta();
+  prepniTab('cenik'); render();
+}, [c, cp]);
+await p.waitForTimeout(250);
+const nav = await p.evaluate(() => {
+  const chk = [...document.querySelectorAll('#page-cenik input[onchange^="cenikDleNabidkySet"]')];
+  return { zaskrt: chk.filter(x => x.checked).length, navrh: !!document.querySelector('#page-cenik .dle-navrh'),
+    maMapu: Object.prototype.hasOwnProperty.call(C, 'dleNabidky') };
+});
+zkus('starý ceník bez mapy: sloupec ukazuje výchozích osm zaškrtnutých jako návrh (štítek „návrh")', nav.zaskrt === 8 && nav.navrh, nav);
+zkus('… ceník varianty se zobrazením nezměnil (mapa nevznikla)', !nav.maMapu, nav);
+await p.evaluate(() => { zobrNahled('Obchodník'); aktivniVarianta(ZAK).data.cenik.priplatky.prosklenaStenaKc = 12000; prepniTab('kalk'); render(); });
+await p.waitForTimeout(200);
+s = await stav();
+zkus('do zveřejnění se hlídá: vlastní cena stěny tisk zablokuje', s.brani && /Prosklená stěna/.test(s.text), s);
+r = await radek('PROSKLENÁ STĚNA');
+zkus('… a štítek „cena dle nabídky" v kalkulaci ještě nesvítí', r && !r.dle, r);
+const zv = await p.evaluate(() => {
+  zobrNahled('');
+  aktivniVarianta(ZAK).data.cenik.priplatky.prosklenaStenaKc = 50000;
+  const ctx = progKontext('');
+  const m = ctx.cenik.dleNabidky || {};
+  const varianta = Object.prototype.hasOwnProperty.call(aktivniVarianta(ZAK).data.cenik, 'dleNabidky');
+  /* „Zveřejnit": záznam, jak ho zapíše server (programZaznam), a jeho nasazení. */
+  const z = programZaznam(ctx, 4);
+  PROG_STAV.db = { platny: Object.assign(z, { verze: 4 }) };
+  progPouzij(PROG_STAV.db.platny);
+  return { pocet: Object.keys(m).length, stena: m['C.priplatky.prosklenaStenaKc'] === true, varianta,
+    platny: Object.keys(PROG_STAV.db.platny.cenik.dleNabidky || {}).length };
+});
+zkus('zveřejnění zapíše návrh (8 příznaků) do verze ceníku, ceník varianty zůstane', zv.pocet === 8 && zv.stena && !zv.varianta && zv.platny === 8, zv);
+await p.evaluate(() => { zobrNahled('Obchodník'); aktivniVarianta(ZAK).data.cenik.priplatky.prosklenaStenaKc = 12000; prepniTab('kalk'); render(); });
+await p.waitForTimeout(200);
+s = await stav();
+zkus('po zveřejnění: vlastní cena stěny tisk nezablokuje', !s.brani && s.text === '', s);
+await p.evaluate(() => { zobrNahled(''); PROG_STAV.db.platny.cenik.dleNabidky = {}; progPouzij(PROG_STAV.db.platny);
+  aktivniVarianta(ZAK).data.cenik.dleNabidky = {}; prepniTab('cenik'); render(); });
+await p.waitForTimeout(200);
+const prazd = await p.evaluate(() => ({ zaskrt: [...document.querySelectorAll('#page-cenik input[onchange^="cenikDleNabidkySet"]')].filter(x => x.checked).length,
+  navrh: !!document.querySelector('#page-cenik .dle-navrh') }));
+zkus('výslovně prázdná mapa: nic zaškrtnuto, návrh se nevnucuje', prazd.zaskrt === 0 && !prazd.navrh, prazd);
 await p.evaluate(() => { PROG_STAV.db = null; zobrNahled(''); render(); });
 
 zkus('žádná chyba JavaScriptu', konzole.length === 0, konzole.slice(0, 3));

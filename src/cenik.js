@@ -350,9 +350,30 @@ function cenikDleNabidkyNastav(c, cesta, ano) {
     if (!c.dleNabidky || typeof c.dleNabidky !== 'object') c.dleNabidky = {};
     c.dleNabidky[k] = true;
   } else if (c.dleNabidky && typeof c.dleNabidky === 'object') {
+    /* Prázdná mapa zůstává: „výslovně nic" se liší od „mapa chybí"
+     * (návrh níž se pak už nevnucuje). */
     delete c.dleNabidky[k];
-    if (!Object.keys(c.dleNabidky).length) delete c.dleNabidky;
   }
+}
+/* NÁVRH V NASTAVENÍ → CENÍK (J. V. 16. 10. 2026: „předzaškrtnuté v UI").
+ * Ceník, který mapu příznaků vůbec nemá (zveřejněný před v16.10.3), ukáže
+ * ve sloupci výchozích osm položek zaškrtnutých jako NÁVRH; zapíše se až
+ * zveřejněním ceníku (progKontext → cenikDleNabidkyDoplnNavrh). Do té doby
+ * platí cenikDleNabidkyJe — tedy nezaškrtnuto a položky se hlídají. */
+function cenikDleNabidkyMaMapu(c) {
+  return !!(c && typeof c === 'object' && Object.prototype.hasOwnProperty.call(c, 'dleNabidky')
+    && c.dleNabidky && typeof c.dleNabidky === 'object' && !Array.isArray(c.dleNabidky));
+}
+function cenikDleNabidkyNavrh(c, cesta) {
+  return cenikDleNabidkyMaMapu(c) ? cenikDleNabidkyJe(c, cesta)
+    : CENIK_DLE_NABIDKY_VYCHOZI.indexOf(String(cesta)) >= 0;
+}
+/* Vrací true, když mapu doplnil (ceník ji neměl). */
+function cenikDleNabidkyDoplnNavrh(c) {
+  if (!c || typeof c !== 'object' || cenikDleNabidkyMaMapu(c)) return false;
+  c.dleNabidky = {};
+  CENIK_DLE_NABIDKY_VYCHOZI.forEach(k => { c.dleNabidky[k] = true; });
+  return true;
 }
 /* Do zveřejněného ceníku jen známé číselné cesty OCK s hodnotou true. */
 function cenikDleNabidkyOciste(m) {
@@ -754,6 +775,7 @@ if (typeof module !== 'undefined')
     CENIK_BARVA_MEZ_KC, cenikJednotkaKc, cenikBunkaTrida,
     cenikPopis, cenikPopisNastav,
     CENIK_DLE_NABIDKY_VYCHOZI, cenikDleNabidkyJe, cenikDleNabidkyNastav, cenikDleNabidkyOciste,
+    cenikDleNabidkyMaMapu, cenikDleNabidkyNavrh, cenikDleNabidkyDoplnNavrh,
     POPISY_MAX_KLIC, POPISY_MAX_TEXT, POPISY_MAX_POLOZEK, popisyOciste, popisyVlij, popisyDoplnChybejici, popisyCiselnik,
     POPISY_JAZYKY, popisyJazykyOciste, cenikPopisJazyk, popisyJazykyDoplnChybejici, popisJazykySrovnej,
     cenikSheetRows, cenikToSheets, cenikDiffZeSheets, cenikAplikuj, CENIK_HLAVICKA };
