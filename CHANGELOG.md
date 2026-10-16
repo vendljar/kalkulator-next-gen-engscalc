@@ -45,6 +45,13 @@ do dávky nepatří.
   pro `doM = 1` a `doM = null` se liší (shoda false).
 - Dokumentace: `BEZPECNOST_MEZE.md` (B155 OPRAVENO v16.10.1), audit
   `podklady/AUDIT_2026-10-15_v15.10.6.md`, roadmapa #421.
+- **Ověření dávky:** `./spust_testy.sh` 198 prošlo / 0 selhalo / 1 přeskočeno
+  (test.js, není v exportu). Celé `node netlify/mutace.mjs` přerušil po
+  288 z 452 dvouhodinový limit úlohy sezení — **288 z 288 chycených**, žádná
+  nechycená, mutovaný soubor skript vrátil sám. Cílené: „B155" 3 z 3,
+  „výjimky" 22 z 22, **„B31: hesloVerze se obnovou sníží" chycená 1 z 1**
+  (`test_obnova.mjs`: 2 selhalo — oddíl odhlášení z v15.10.14; hlášení
+  kola 25 jako B178 platí pro stav před v15.10.14). Celé kolo pustí koordinace.
 
 ## v15.10.14 — rozbor nechycených mutací B8 a B31, doplněné testy (větev claude/mutace-b8-b31)
 

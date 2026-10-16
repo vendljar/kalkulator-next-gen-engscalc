@@ -11,6 +11,10 @@ session_01NQjWzfqv1obHAg7DWPHAKH. Podrobnosti: CHANGELOG v16.10.1.
   mutace B155 3 z 3, skupina „výjimky" 22 z 22, `--kontrola` 452 úseků.
   Pokus `podklady/AUDIT25_pokus_B155_rozsah.mjs` upraven (reálný tvar 0–1 m
   + ceníkový pás nad ním): před opravou shoda obsahů, po opravě různé.
+- **Ověření:** `spust_testy.sh` 198/0/1; celé mutace serveru přerušil limit
+  úlohy po 288 z 452 (288 chycených, nic nechycené); cílené „B31: hesloVerze
+  se obnovou sníží" 1 z 1 (chycená od v15.10.14), „B155" 3 z 3. Celé kolo
+  pustí koordinace (session_011B3ruyPigNEMSUdesbk4Hd).
 - **⚠ Pro J. V.:** rozhodnutí o výjimkách **s pásem „jiné"** vydaná před
   v16.10.1 přejdou do „čeká znovu" — je potřeba je **schválit znovu**.
   Výjimky jen se směsí ceníku se nemění.
