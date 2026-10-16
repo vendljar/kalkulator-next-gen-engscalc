@@ -90,7 +90,9 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* S7 (15. 10. 2026): Krycí list zakázky OCK a pole „Číslo SoD". */
      '../src/test_kryci_cislo_sod.js',
      /* S9 (15. 10. 2026): číslo SoD v šablonách SoD projekce (vyrob_sablony --sod-proj-cislo). */
-     '../src/test_sod_proj_cislo.js'];
+     '../src/test_sod_proj_cislo.js',
+     /* S13 (16. 10. 2026): příznak ceníku „cena dle nabídky" — model a server. */
+     '../src/test_cena_dle_nabidky.js', 'test_cena_dle_nabidky.mjs'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -2252,6 +2254,55 @@ const MUTACE = [
     hledej: "  if (dg.klicePlaceholderu(body).indexOf('SOD_CISLO_SMLOUVY') >= 0) chyba('SoD PROJ: šablona už číslo smlouvy {{SOD_CISLO_SMLOUVY}} má');\n",
     nahrad: "",
     proc: 'opakované spuštění nástroje by dalo do smlouvy číslo dvakrát' },
+  /* S13 (16. 10. 2026): příznak ceníku „cena dle nabídky" (varianta A J. V.). */
+  { nazev: 'S13: příznak platného ceníku výjimku nezruší', soubor: '../src/vyjimky.js',
+    hledej: "          && cenikDleNabidkyJe(dnesni.cenik, r.cesta)) return;",
+    nahrad: "          && false) return;",
+    proc: 'vlastní cena prosklené stěny by dál blokovala tisk nabídky (e-mail D. S. 15. 10.)' },
+  { nazev: 'S13: výjimka bere příznak z ceníku varianty', soubor: '../src/vyjimky.js',
+    hledej: "          && cenikDleNabidkyJe(dnesni.cenik, r.cesta)) return;",
+    nahrad: "          && cenikDleNabidkyJe(d.cenik, r.cesta)) return;",
+    proc: 'zakázka by si příznak podstrčila a libovolná položka by odešla pod ceníkem bez schválení' },
+  { nazev: 'S13: hláška „cena pod ceníkem" se nerozliší', soubor: '../src/vyjimky.js',
+    hledej: "      const pod = naPlatne && typeof r.stara === 'number' && typeof r.nova === 'number' && r.stara < r.nova;",
+    nahrad: "      const pod = false;",
+    proc: 'obchodník by dál četl matoucí „směs platného ceníku a starších cen" u ruční slevy z položky' },
+  { nazev: 'S13: skutečná směs starších cen se hlásí jako „pod ceníkem"', soubor: '../src/vyjimky.js',
+    hledej: "  const naPlatne = !!dnesni && isFinite(vR) && vR > 0 && vR === +dnesni.verze;",
+    nahrad: "  const naPlatne = true;",
+    proc: 'zakázka se starší verzí ceníku by tvrdila, že obchodník ceny snížil sám' },
+  { nazev: 'S13 (B128): kontrola ceníku nebere příznak platného ceníku', soubor: '../src/uloziste.js',
+    hledej: "        if (!dleNabJe(platnyC, 'C.' + p)) return false;",
+    nahrad: "        return false;",
+    proc: 'server by vlastní cenu prosklené stěny odmítl uložit (403), přestože ji klient pustí' },
+  { nazev: 'S13 (B128): záporná cena položky s příznakem projde', soubor: '../src/uloziste.js',
+    hledej: "        return typeof h === 'number' && isFinite(h) && h >= 0;",
+    nahrad: "        return true;",
+    proc: 'záporná „cena dle nabídky" by bez schválení odečetla z nabídky libovolnou částku' },
+  { nazev: 'S13 (B128): příznak se bere z ceníku zakázky', soubor: '../src/uloziste.js',
+    hledej: "      const platnyC = prog && prog.platny && prog.platny.cenik;",
+    nahrad: "      const platnyC = d.cenik;",
+    proc: 'podstrčený příznak v datech zakázky by pustil libovolnou cenu kterékoli položky OCK' },
+  { nazev: 'S13: mapa příznaků ve variantě se porovnává jako cena', soubor: '../src/uloziste.js',
+    hledej: "'ukazkove', 'prazdny', 'dleNabidky'];",
+    nahrad: "'ukazkove', 'prazdny'];",
+    proc: 'varianta založená před změnou příznaků v ceníku by se už nedala uložit' },
+  { nazev: 'S13: automatický přepočet přepíše vlastní cenu', soubor: '../src/cenik_stari.js',
+    hledej: "    ? ((data, cesta) => cenikPatriZakazce(cesta) || dleNab(cesta))",
+    nahrad: "    ? ((data, cesta) => cenikPatriZakazce(cesta))",
+    proc: 'po zveřejnění ceníku by se cena zadaná podle nabídky tiše vrátila na orientační' },
+  { nazev: 'S13: očista příznaků pustí neznámé cesty a nepravdivé hodnoty', soubor: '../src/cenik.js',
+    hledej: "  Object.keys(m).forEach(k => { if (m[k] === true && zname.has(k)) out[k] = true; });",
+    nahrad: "  Object.keys(m).forEach(k => { if (m[k]) out[k] = true; });",
+    proc: 'do platného ceníku by šel příznak cesty, kterou ceník nezná (i textové hodnoty)' },
+  { nazev: 'S13: zveřejnění příznaky neočistí', soubor: '../src/cenik_rady.js',
+    hledej: "    const m = (typeof cenikDleNabidkyOciste === 'function') ? cenikDleNabidkyOciste(k.dleNabidky) : {};",
+    nahrad: "    const m = k.dleNabidky || {};",
+    proc: 'ceník zveřejněný ze zakázky by nesl cokoli, co v ní kdo do mapy zapsal' },
+  { nazev: 'S13: otisk ceníku nenese příznaky', soubor: '../src/program.js',
+    hledej: "      ? '|dn' + JSON.stringify(Object.keys(dleN).sort().filter(k => dleN[k] === true)) : '');",
+    nahrad: "      ? '' : '');",
+    proc: 'zaškrtnutí příznaku by nešlo zveřejnit („ceník se od platné verze neliší")' },
 ];
 
 /* ---------- přerušený běh vrátí zmutovaný soubor ----------

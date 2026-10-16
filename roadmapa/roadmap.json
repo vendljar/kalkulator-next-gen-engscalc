@@ -6578,6 +6578,27 @@
    "hotovoKdyz" : "Každý zbývající nález B158–B166 je opravený s testem a mutací, nebo zapsaný jako vědomá mez s rozhodnutím J. V.",
    "kde" : "`podklady/AUDIT_2026-10-15_v15.10.6.md`, `src/vyjimky.js`, `netlify/lib/zakazka_kontrola.mjs`, `src/ui/schvalovani_ui.js`, `BEZPECNOST_MEZE.md`",
    "pozn" : "B153 + B154 ve větvi `claude/b153-b154` (v15.10.8), do test ji slučuje koordinační sezení J. V.: `src/test_vyjimky.js` 40 → 62 OK, `netlify/test_vyjimky.mjs` 36 → 46 OK, mutace B153 ×4 a B154 ×2."
+  },
+  {
+   "id" : "423",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "M",
+   "hotovoV" : "v16.10.3 (větev `claude/cena-dle-nabidky`)",
+   "nazev" : "Příznak ceníku „cena dle nabídky“ (prosklená stěna a další)",
+   "proc" : "E-mail obchodníka D. S. 15. 10. 2026: příplatek „Prosklená stěna vedle šachty“ má v ceníku jen orientační (přehnanou) cenu; po přepsání na reálnou nižší aplikace hlásila „směs platného ceníku a starších cen (1 položka OCK)“ a zábrana zablokovala tisk nabídky. U nabídkových položek ceník reálnou cenu nemá — zadává ji obchodník. Schváleno J. V. 16. 10. 2026 (varianta A).",
+   "detail" : "Nový příznak položky ceníku `dleNabidky` (Nastavení → Ceník, sloupec „Cena dle nabídky“, jen správce); verzuje se a zveřejňuje s ceníkem (nese ho otisk), starý ceník bez příznaku = nezaškrtnuto; ve výchozím ceníku zaškrtnuto osm nabídkových položek za akci. U položky s příznakem PLATNÉHO ceníku ruční cena není odchylka: žádná cenová výjimka, žádné schválení, žádná zábrana, server (kontrola ceníku B128 i zámek) ji pustí — jen nezápornou; automatický přepočet ji nepřepíše; schvalovatel ji nevidí. Příznak se bere jen z platného ceníku — podstrčený v zakázce nic nepovolí. Štítky „cena dle nabídky“ a „vlastní cena“ v řádku příplatku. Hláška u běžného příplatku pod ceníkem: „<název>: cena pod ceníkem — požádejte o schválení nadřízeného“ (u varianty z platné verze); skutečná směs starších cen má původní znění.",
+   "hotovoKdyz" : "Ve větvi: `src/test_cena_dle_nabidky.js` 0/1 → 32/0, `netlify/test_cena_dle_nabidky.mjs` 6/7 → 13/0, harness `overit_cena_dle_nabidky.mjs` 5/9 → 14/0, mutace S13 (12 serveru + 2 jádra) chycené. Celé kolo pustí koordinace při sloučení do `test`.",
+   "kde" : "`src/cenik.js` (cenikDleNabidky*), `src/vyjimky.js` (vyjimkyObsah, vyjimkyText), `src/uloziste.js` (uloCenikProblemy), `src/cenik_stari.js`, `src/program.js` (programOtisk), `src/cenik_rady.js`, `src/ui/cenik_ui.js`, `src/ui/kalk_ock.js`",
+   "zavisi" : [
+    {
+     "id" : "420",
+     "typ" : "doporuceno",
+     "proc" : "cenové výjimky a jejich schvalování (B153/B154)"
+    }
+   ],
+   "pozn" : "Id 423 je předběžné (421 má S11, 422 je volné pro S12) — finální číslo přidělí koordinace při slučování. **Po nasazení musí správce v Nastavení → Ceník zaškrtnout položky a ceník zveřejnit** — dosavadní platný ceník příznaky nenese."
   }
  ],
  "meta" : {
@@ -7156,6 +7177,10 @@
    "text" : "15. 10. 2026 — dávka S6 (claude/b153-b154, v15.10.8): vysoké nálezy auditu kola 25 — B153 dotisk nové strany hlídá cenovou výjimku a minimální marži, B154 schválení výjimky platí jen pro celý obsah; B155 a B156 uzavřeny jako vědomé meze (J. V. 15. 10.). #420.",
    "hotovo" : true,
    "pozn" : "src/test_vyjimky 40 → 62 OK, netlify/test_vyjimky 36 → 46 OK; cílené mutace B153, B154 a výjimky; smoke zelené."
+  },
+  {
+   "hotovo" : true,
+   "text" : "16. 10. 2026 — dávka S13 (claude/cena-dle-nabidky, v16.10.3): příznak ceníku „cena dle nabídky“ — vlastní cena prosklené stěny a dalších nabídkových položek bez cenové výjimky; konkrétní hláška „<název>: cena pod ceníkem“. #423."
   }
   ],
   "pravidla" : [
@@ -7242,8 +7267,8 @@
     "id" : "F"
    }
   ],
-  "build" : "v15.10.8 (engscalc, claude/b153-b154)",
-  "stavKDatu" : "15. 10. 2026"
+  "build" : "v16.10.3 (engscalc, claude/cena-dle-nabidky)",
+  "stavKDatu" : "16. 10. 2026"
  },
  "_comment" : [
   "JEDINÝ ZDROJ PRAVDY pro roadmapu Kalkulátoru Next Gen.",
