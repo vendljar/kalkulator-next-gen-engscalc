@@ -15,7 +15,7 @@ B158, B159, B161, B162a, B164").
 - **Testy před → po:** test_pd_pristup 51/3 → 54/0; test_prava 843/6 → 849/0
   (B159), 848/3 → 851/0 (B160); src/test_slovnik 84/5 → 89/0;
   src/test_kryci_po_tisku 98/5 → 103/0; netlify/test_kryci_po_tisku 17/1 → 18/0;
-  overit_xss 338/0 → 370/0 (se sabotáží 359/11). Smoke 222 prošlo / 0 selhalo / 36 přeskočeno (32 prohlížečových bez místního playwright — dopouští se zvlášť, výsledek níž).
+  overit_xss 338/0 → 370/0 (se sabotáží 359/11). Smoke 222 / 0 / 36 přeskočeno; 32 prohlížečových sad přeskočených pro chybějící místní playwright puštěno zvlášť (symlink na globální): 30 prošlo, 2 přeskočeny (firemní šablony) → celkem 252 / 0 / 6 jako v15.10.14.
 - **Mutace (cílené):** B158 2/2, B159 3/3, B17 (upravená kotva) 1/1, B160 3/3,
   rev #401 N2 (upravená kotva) 1/1, B163 3/3 (čtvrtá ekvivalentní vyřazena),
   KL 14. 10. 5/5; `--kontrola` serveru 460, jádra 205.

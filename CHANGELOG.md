@@ -41,6 +41,9 @@ Dávka A1 (koordinace 16. 10. 2026, roadmapa #420), nálezy z
   v dotisku), B162a (starší ceníky v online zakázkách), B164 (zámek SoD
   stojí na záznamu tisku od klienta); stav nálezů opraven v auditu
   a roadmapě (#420). B165 čeká na rozhodnutí J. V.
+- **Testy:** smoke 252 prošlo / 0 selhalo / 6 přeskočeno (firemní podklady);
+  `--kontrola` mutací serveru 460, jádra 205; kontrola údajů čistá. Celé kolo
+  pustí koordinace při sloučení.
 
 ## v15.10.14 — rozbor nechycených mutací B8 a B31, doplněné testy (větev claude/mutace-b8-b31)
 
