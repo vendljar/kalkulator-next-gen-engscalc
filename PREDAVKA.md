@@ -1,3 +1,17 @@
+# Předávka — 16. 10. 2026: dávka V4 (v16.10.5), větev `claude/v4-kontrola-rozhodnuti` — kontrola rozhodnutí 15.–16. 10.
+
+Nad `origin/claude/integrace-16-10` (= test v15.10.14). Do `test-draft` / `test` / `main` nic —
+slučuje koordinace (session_011B3ruyPigNEMSUdesbk4Hd). Podrobnosti: CHANGELOG v16.10.5,
+`podklady/KONTROLA_ROZHODNUTI_16_10.md`.
+
+- **Hotovo (pushnuto):** V4-1 překlad rekapitulace PROJ (EZC, KOLAUDACE) + test 70/3 → 73/0;
+  V4-2 roadmapa — rozhodnutí 16. 10. (#355, #356, #366, #157, B165, #367); V4-3 příručka
+  „Co je nového“ (P12, čekání lišty). Smoke 252/0/6 (po zápisu CHANGELOG).
+- **Čeká na J. V.:** schválit návrh překladu V4-1 (znění v kontrolním dokumentu).
+- **Pro koordinaci / A1:** V4-4 — B158 má od B80 dopad na všechny účty. Při sloučení nastavit
+  verzi a nadpis novinek v `manual/obsah.json` a příručku přegenerovat ze snímků.
+- **Další krok:** žádný — dávka uzavřená.
+
 # Předávka — 16. 10. 2026: dávka A1 (v16.10.4), větev `claude/a1-audit25` — dočištění auditu 25 (#420)
 
 Nad `origin/claude/integrace-16-10` (58db0b6, test v15.10.14). Do `test-draft` /

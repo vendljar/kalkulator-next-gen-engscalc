@@ -8,6 +8,40 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v16.10.5 — kontrola rozhodnutí 15.–16. 10. (větev claude/v4-kontrola-rozhodnuti)
+
+Dávka V4 (zadání koordinace „ŘÍDÍCÍ 16.10“, plán víkendu), nad
+`origin/claude/integrace-16-10` (= test v15.10.14). Ověřeno, že rozhodnutí
+J. V. z 15.–16. 10. 2026 jsou v kódu, příručce a překladech EN/DE/FR;
+výsledek v `podklady/KONTROLA_ROZHODNUTI_16_10.md` (18 rozhodnutí 15. 10.,
+6 rozhodnutí 16. 10. v roadmapě, nálezy V4-1 až V4-5). Změny chování žádné.
+
+- **V4-1 opraveno — rekapitulace nabídky PROJ v EN/DE/FR:** názvy sekcí
+  „EZC – EKONOMICKÁ ZADÁVACÍ ČÁST (celý projekt)“ a „KOLAUDACE (pro 1 ks
+  výtahu)“ slovník neznal, takže zůstávaly česky. Doplněna dvě hesla do
+  `src/preklad.js` — **NÁVRH PŘEKLADU, čeká na kontrolu J. V.** Test
+  `src/test_proj_zbytky_preklad.js` +4: před opravou 70/3, po ní 73/0.
+- **V4-2 opraveno — roadmapa:** rozhodnutí 16. 10. tam chyběla. #355
+  (výpočet beze změny, jen upozornit; dřív `hotovoKdyz` s opačným
+  výpočtem), #356 (plochu připočítat), #366 (návrh čísla SoD z řady),
+  #157 (překlad české šablony místo právníka), B165 v #420, #367 odklad
+  na 19. 10.; u #355 a #356 odebráno `cekaNa`.
+- **V4-3 opraveno — příručka:** do „Co je nového“ doplněny P12 (správce
+  může skrýt nákladové sazby PROJ, pak prodejní sazba) a čekání červené
+  lišty při startu. Verze a nadpis novinek v příručce ponechány
+  (sjednotí integrace).
+- **Nálezy bez opravy:** V4-4 — popis B158 v auditu kola 25 tvrdí
+  „výchozí stav ne“, od B80 (v15.10.7) má právo `crm.pipedrive` každý,
+  dopad B158 je tedy na všechny účty (předáno dávce A1). V4-5 — registr
+  dokumentů nese u krycího listu OCK `nazev` „Krycí list – …“ (nikde se
+  nezobrazuje).
+- **Testy:** `./spust_testy.sh --smoke` (bez KNG_PODKLADY) 251 prošlo /
+  1 selhalo / 6 přeskočeno — selhání `test_release_odkaz.js` jen proto, že
+  CHANGELOG ještě neměl tento oddíl; po zápisu sada OK, tedy 252 / 0 / 6.
+  Cílené mutace nespuštěny (nová kontrola hlídá data slovníku, sady PROJ
+  překladů nejsou v `SADY`). `kontrola_udaju.py` čistá,
+  `roadmapa.py --kontrola` čistá.
+
 ## v16.10.4 — dočištění auditu 25 (větev claude/a1-audit25)
 
 Dávka A1 (koordinace 16. 10. 2026, roadmapa #420), nálezy z

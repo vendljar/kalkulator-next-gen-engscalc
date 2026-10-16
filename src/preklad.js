@@ -926,6 +926,12 @@ const PREKLAD = {
   "DPZ – DOKUMENTACE PRO POVOLENÍ ZÁMĚRU": ["DPZ – DOCUMENTATION FOR THE PROJECT PERMIT","DPZ – UNTERLAGEN FÜR DIE VORHABENGENEHMIGUNG","DPZ – DOSSIER DE DEMANDE D'AUTORISATION"],
   "IČ – INŽENÝRSKÁ ČINNOST": ["IČ – ENGINEERING SERVICES","IČ – INGENIEURLEISTUNGEN","IČ – ASSISTANCE ADMINISTRATIVE"],
   "DPS – DOKUMENTACE PRO PROVEDENÍ STAVBY": ["DPS – DETAILED DESIGN DOCUMENTATION","DPS – AUSFÜHRUNGSPLANUNG","DPS – DOSSIER D'EXÉCUTION"],
+  /* V4 (16. 10. 2026): další dvě sekce rekapitulace nabídky PROJ zůstávaly
+   * v EN/DE/FR česky (název sekce z Kalkulace PROJ). Základ podle hesel
+   * „EKONOMICKÁ ZADÁVACÍ ČÁST (EZC)" a „… KOLAUDACI" výše.
+   * NÁVRH PŘEKLADU — čeká na kontrolu J. V. */
+  "EZC – EKONOMICKÁ ZADÁVACÍ ČÁST (celý projekt)": ["EZC – TENDER COST DOCUMENTS (entire project)","EZC – WIRTSCHAFTLICHER AUSSCHREIBUNGSTEIL (gesamtes Projekt)","EZC – PIÈCES ÉCONOMIQUES DE CONSULTATION (projet complet)"],
+  "KOLAUDACE (pro 1 ks výtahu)": ["FINAL BUILDING APPROVAL (for 1 lift)","BAUABNAHME (für 1 Aufzug)","RÉCEPTION DES TRAVAUX (pour 1 ascenseur)"],
   /* popisy u cenových řádků (krátké obchodní věty – překládají se) */
   /* PŘIBYLO 15. 9. 2026 (nález B) – nový řetězec, žádný stávající překlad se
    * nemění. Stojí místo částky u „části 1" studie, aby se tatáž cena

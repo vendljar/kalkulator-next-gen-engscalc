@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v16.10.4 · sestaveno 16. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
+  "verze": "Platí pro aplikaci v16.10.5 · sestaveno 16. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -14,7 +14,7 @@
       ]
     },
     {
-      "nadpis": "Co je nového ve verzi v16.10.4 (16. 10. 2026)",
+      "nadpis": "Co je nového ve verzi v16.10.5 (16. 10. 2026)",
       "odstavce": [
         "**Cena dle nabídky.** U nabídkových příplatků za akci (např. prosklená stěna vedle šachty) zadává obchodník vlastní cenu bez cenové výjimky a bez schválení; v řádku příplatku je štítek **cena dle nabídky** nebo **vlastní cena**. Které položky to jsou, určuje správce v Nastavení → Ceník (sloupec „Cena dle nabídky“, osm položek je předzaškrtnutých) a platí to po zveřejnění ceníku (kapitola 17).",
         "**Lešení v technické specifikaci se řídí kalkulací.** V tabulce SOUČÁSTÍ DODÁVKY NENÍ jsou dva řádky: **LEŠENÍ VNITŘNÍ PRO STAVBU OCK** (nový) a **LEŠENÍ KOLEM OCK PRO PROVEDENÍ OPLÁŠTĚNÍ**. Když je lešení mezi příplatky v nabídce, stojí u něj „nabízeno jako příplatek“ se štítkem **z kalkulace**; když je v základní ceně, řádek se do dokumentu nedává. Text můžete přepsat (štítek **ručně**) a tlačítkem ↺ vrátit návrh z kalkulace (kapitola 17).",
@@ -29,6 +29,8 @@
         "**Krycí list zakázky OCK** — tak se teď jmenuje i nadpis listu a dokumentu (dřív „Krycí list objednávky / SoD“); záložka se tak jmenovala už dřív.",
         "**Číslo SoD** v obou krycích listech (OCK i PROJ), v Základních údajích hned pod číslem nabídky. Zapisujete ho ručně, nic se nepředvyplňuje; doplnit ho jde i po odeslání nabídky, zamkne ho až tisk smlouvy o dílo. Ve smlouvě o dílo se objeví jako číslo smlouvy — krycí list OCK pro smlouvu realizace, krycí list PROJ pro smlouvu projekce (kapitola 24).",
         "**Čtení z Pipedrive mají nově všichni uživatelé** (obchodník i vedoucí). Správce může právo odebrat v Nastavení → Zobrazení.",
+        "**Nákladové sazby v Kalkulaci PROJ může administrátor skrýt** (Nastavení → Zobrazení). Zatím je vidíte jako dřív; když je skryje, uvidíte místo nich **Prodejní sazbu Kč/h · cenu** — sazbu a fixní částku už včetně přirážky sekce (kapitola 28).",
+        "**Červená lišta „Ceník není nahraný“ při spuštění pár vteřin počká**, než se ceník z online databáze načte — zbytečně neblikne. Z prázdného ceníku přitom dokument nevznikne ani během čekání (kapitola 4).",
         "**Jméno v profilu** se ukládá bez ostrých závorek < > — pod odeslanou nabídkou stojí razítko „jméno <e-mail>“ a jméno ho nesmí napodobit. **Správce** v Nastavení → Analytika čte pravdivě, že se kliknutí a záložky ukládají i po uživatelích.",
         "**Nabídka PROJ v angličtině, němčině a francouzštině** má přeložené i popisy cen DPZ a DPS, hvězdičku u ceny DPZ, řádky inženýrské činnosti a CENA NEZAHRNUJE. Souvislé odstavce o rozsahu studie, DPZ a DPS zůstávají zatím česky.",
         "**Krycí list doplníte i po odeslání nabídky.** Po vytištění cenové nabídky zůstávají zamčená jen pole, která jsou v nabídce (typ smlouvy, platební podmínky, termín dodání, u projekce i plán plateb); kontakty, termíny, atypy a další údaje pro backoffice doplňujete dál. Po vytištění smlouvy o dílo je krycí list zamčený celý.",

@@ -133,5 +133,26 @@ test('definice má souvislou prózu { cz } (úvody STUDIE / DPZ / DPS, poznámky
   test('popis DPZ přeložený pro všech 16 kombinací částí × EN/DE/FR', spatne.length === 0, spatne);
 }
 
+/* V4 (16. 10. 2026): rekapitulace nabídky PROJ bere názvy sekcí z Kalkulace
+ * PROJ — „EZC – EKONOMICKÁ ZADÁVACÍ ČÁST (celý projekt)" a „KOLAUDACE (pro
+ * 1 ks výtahu)" zůstávaly v EN/DE/FR česky. Každý řádek rekapitulace (všechny
+ * činnosti oceněné) musí mít překlad ze slovníku a nesmí nést české písmeno
+ * (i á í ý ú, které EN/DE/FR nemají; zkratka „IČ" zůstává jako v šablonách). */
+{
+  const CESKA_SIR = /[ěščřžůťďňáíýúĚŠČŘŽŮŤĎŇÁÍÝÚ]/;
+  const z = zak(true);
+  const cz = NP.nabidkaProjData(z, z.varianty[0], 'cz');
+  test('CZ: rekapitulace nese i EZC a KOLAUDACI',
+    ['EZC', 'KOLAUDACE'].every(k => cz.rekapitulace.some(r => r[0].indexOf(k) === 0)), cz.rekapitulace.map(r => r[0]));
+  JAZYKY.forEach(L => {
+    const d = NP.nabidkaProjData(z, z.varianty[0], L);
+    const spatne = d.rekapitulace.map(r => r[0]).filter(s => CESKA_SIR.test(s.replace(/IČ/g, '')));
+    const nezname = cz.rekapitulace.map(r => r[0]).filter(s => !PR.trStav(s, L).prelozeno);
+    test(L.toUpperCase() + ': rekapitulace bez české věty a slovník zná každý název sekce',
+      d.rekapitulace.length === cz.rekapitulace.length && spatne.length === 0 && nezname.length === 0,
+      { spatne, nezname });
+  });
+}
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);
