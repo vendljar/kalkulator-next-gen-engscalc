@@ -260,8 +260,13 @@ function slovnikBajty(x) {
   if (typeof TextEncoder !== 'undefined') return new TextEncoder().encode(t).length;
   return unescape(encodeURIComponent(t)).length;
 }
-/* Klíče, které by v obyčejném objektu sáhly na prototyp (PREKLAD[k] = …). */
-const SLOVNIK_ZAKAZANE_KLICE = ['__proto__', 'constructor', 'prototype'];
+/* Klíče, které by v obyčejném objektu sáhly na prototyp (PREKLAD[k] = …).
+ * Od B160 (audit 25, 16. 10. 2026) i všechny ostatní vlastnosti
+ * Object.prototype (hasOwnProperty, toString, valueOf …): heslo s takovým
+ * názvem by v objektu PREKLAD zastínilo metodu. */
+const SLOVNIK_ZAKAZANE_KLICE = ['__proto__', 'constructor', 'prototype']
+  .concat(Object.getOwnPropertyNames(Object.prototype))
+  .filter((k, i, a) => a.indexOf(k) === i);
 /* Řídicí znaky rozbijí XML Wordu (nabídka v cizím jazyce) — do slovníku
  * nepatří; U+FFFE a U+FFFF XML 1.0 nepovoluje taky (revize #401). */
 const SLOVNIK_RIDICI = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/;
@@ -292,7 +297,9 @@ function slovnikHeslaKontrola(hesla) {
     /* Zakázané klíče se kontrolují PO normalizaci — ta pokryje i syrový tvar
      * (prekladNorm('__proto__') je zase '__proto__'), samostatná kontrola
      * syrového klíče by byla mrtvý kód (mutace ji nedokázala odlišit). */
-    if (SLOVNIK_ZAKAZANE_KLICE.indexOf(slovnikNorm(kt)) >= 0)
+    /* Syrový (oříznutý) klíč zvlášť kvůli B160: „hasOwnProperty" se
+     * normalizuje na „hasownproperty", které už v seznamu není. */
+    if (SLOVNIK_ZAKAZANE_KLICE.indexOf(kt) >= 0 || SLOVNIK_ZAKAZANE_KLICE.indexOf(slovnikNorm(kt)) >= 0)
       return { ok: false, chyba: 'Heslo „' + kt.slice(0, 40) + '" není povolené (po úpravě tvaru je to „' + slovnikNorm(kt) + '").' };
     if (SLOVNIK_RIDICI.test(k)) return { ok: false, chyba: 'Heslo „' + kt.slice(0, 40) + '" obsahuje řídicí znak.' };
     const v = hesla[k];

@@ -1399,7 +1399,11 @@ function trStav(cz, lang) {
 /* Klíče, které by v obyčejném objektu sáhly na prototyp — ani syrově, ani po
  * normalizaci (revize #401: „__proto__:" → prekladNorm → „__proto__").
  * Hesla přicházejí z tabulky, konfigurace, složky i ze serveru. */
-const PREKLAD_ZAKAZANE = ['__proto__', 'constructor', 'prototype'];
+const PREKLAD_ZAKAZANE = ['__proto__', 'constructor', 'prototype']
+  /* B160 (16. 10. 2026): i ostatní vlastnosti Object.prototype —
+   * „hasOwnProperty" by v PREKLAD zastínilo metodu. */
+  .concat(Object.getOwnPropertyNames(Object.prototype))
+  .filter((k, i, a) => a.indexOf(k) === i);
 function prekladKlicPovolen(cz) {
   const t = String(cz == null ? '' : cz).trim();
   return !!t && PREKLAD_ZAKAZANE.indexOf(t) < 0 && PREKLAD_ZAKAZANE.indexOf(prekladNorm(t)) < 0;

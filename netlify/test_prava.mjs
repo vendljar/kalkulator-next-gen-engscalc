@@ -1969,6 +1969,9 @@ console.log('\n===== ZVEŘEJNĚNÝ SLOVNÍK (#401, 12. 10. 2026) =====\n');
     ['řídicí znak v překladu', JSON.stringify({ hesla: { Heslo: ['a\u0001b', '', ''] } })],
     ['hesla jako pole', '{"hesla":[["Heslo",["a","b","c"]]]}'],
     ['hesla chybí', '{"poznamka":"bez hesel"}'],
+    /* B160 (audit 25): název vlastnosti Object.prototype by v PREKLAD zastínil metodu. */
+    ['B160: klíč hasOwnProperty', '{"hesla":{"hasOwnProperty":["a","b","c"]}}'],
+    ['B160: klíč toString', '{"hesla":{"toString":["a","b","c"]}}'],
   ];
   for (const [jm, telo] of spatne) {
     const r = await postSurove(telo, cAdmin);
