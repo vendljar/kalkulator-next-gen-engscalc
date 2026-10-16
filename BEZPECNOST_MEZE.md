@@ -378,8 +378,9 @@ funkce pustí do Pipedrive nejvýš 30 (`netlify/test_pd_pristup.mjs`).
 souběžně) se navzájem nevidí — každá řadí jen své požadavky. Netlify Blobs
 nemá atomický inkrement; podmíněný zápis (etag) v cloudu ověřit nejde
 (stejná mez jako B4). Dopad: strop může přetéct o násobek počtu instancí,
-jen u účtu s právem `crm.pipedrive` a jen do vyčerpání denního rozpočtu
-Pipedrive (ten hlídá Pipedrive sám).
+u každého účtu s právem `crm.pipedrive` (od v15.10.7 výchozí všem
+obchodníkům a vedoucím), jen rozpočet volání, ne data, a jen do vyčerpání
+denního rozpočtu Pipedrive (ten hlídá Pipedrive sám).
 
 ### B159 — zbytek: požadavek bez hlavičky Origin
 
