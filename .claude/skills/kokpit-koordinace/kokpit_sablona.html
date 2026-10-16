@@ -83,10 +83,15 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
 .done b{font-family:var(--display);font-size:15px;min-width:22px}
 .note{font-size:10.5px;color:var(--muted)}
 @media (max-width:480px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.row{grid-template-columns:minmax(0,1fr) 72px}.steps{flex-basis:84px}}
+.limit{margin-left:auto;text-align:right;display:grid;gap:2px;min-width:110px;padding:4px 8px;border:1px solid var(--line);border-radius:5px;background:var(--panel)}
+.limit .lk{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.limit .lv{font-family:var(--display);font-size:18px;line-height:1.05}
+.limit .lv.w{color:var(--warn)} .limit .lv.b{color:var(--bad)}
+.limit .ld{font-size:10.5px;color:var(--muted)}
 </style>
 
 <div class="wrap">
-  <div class="top"><h1>Kokpit dávek KNG</h1><div class="stamp" id="stamp"></div></div>
+  <div class="top"><div><h1>Kokpit dávek KNG</h1><div class="stamp" id="stamp"></div></div><div class="limit" id="limit"></div></div>
   <section id="cekani" class="alert"></section>
   <section class="tiles" id="tiles"></section>
   <div class="note" id="releasy"></div>
@@ -101,28 +106,26 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
 
 <script id="data" type="application/json">
 {
- "aktualizace": "16. 10. 2026 05:47 UTC",
+ "aktualizace": "16. 10. 2026 11:45 UTC",
  "koordinace": {
   "id": "session_01NQjWzfqv1obHAg7DWPHAKH",
   "kontext": 47
  },
- "releasy": "vydáno v15.10.10, v15.10.7, v15.10.4, v15.10.3 · k vydání: v15.10.14 (55f0690, obsahuje i v15.10.12) · bez tagu: v15.10.13, v15.10.12, v15.10.11, v15.10.9, v15.10.8, v15.10.6 (mezistupně)",
+ "releasy": "vydáno v15.10.14 (55f0690), v15.10.10, v15.10.7, v15.10.4, v15.10.3 · mezistupně bez tagu: v15.10.13, v15.10.12, v15.10.11, v15.10.9, v15.10.8, v15.10.6",
  "cekaNaJV": [
-  "Vydat release v15.10.14 (test = 55f0690, celé kolo VŠE ZELENÉ) — odkaz s popisem je v koordinačním sezení. Stačí jen tento; v15.10.12 je v něm obsažená.",
-  "Šablona SoD projekce s číslem SoD: na svém počítači `node nastroje/vyrob_sablony.js --sod-proj-cislo <složka se Sablona_SOD_PROJEKCE.docx a _v2.docx>`, v3 a v1_cislo na Disk vedle originálů, v aplikaci Nastavení → Šablony → „Šablona smlouvy o dílo — PROJEKČNÍ PRÁCE“ → Nahrát novou českou verzi → v3 → Zveřejnit (test i ostrá).",
-  "main: sloučit test (v15.10.14) do main? Jen na váš pokyn."
+  "Šablonu Sablona_SOD_PROJEKCE_v3.docx (poslaná v sezení) nahrát v aplikaci: Nastavení → Šablony → „Šablona smlouvy o dílo — PROJEKČNÍ PRÁCE“ → Nahrát novou českou verzi → Zveřejnit (test i ostrá)."
  ],
  "dlazdice": [
   {
    "k": "main",
-   "v": "v14.10.3",
-   "d": "eff7724 · čeká na váš pokyn",
-   "s": "idle"
+   "v": "v15.10.14",
+   "d": "1cbab3a · = test (pokyn J. V. 16. 10.)",
+   "s": "ok"
   },
   {
    "k": "test",
    "v": "v15.10.14",
-   "d": "55f0690 · S1–S10 · release k vydání",
+   "d": "1cbab3a · release vydán",
    "s": "ok"
   },
   {
@@ -163,6 +166,18 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
  ],
  "log": [
   [
+   "11:45",
+   "Do kokpitu přidán údaj o týdenním limitu (vpravo nahoře)."
+  ],
+  [
+   "06:20",
+   "Release v15.10.14 vydán (J. V.). test → main fast-forward (eff7724 → 1cbab3a)."
+  ],
+  [
+   "06:05",
+   "Šablony SoD projekce v3 a v1_cislo vyrobeny, ověřeny (test 28/0, tisk SoD v prohlížeči 6/6, overit_sod 51/51) a poslány J. V.; test = 1cbab3a."
+  ],
+  [
    "05:45",
    "Celé kolo nad v15.10.14 VŠE ZELENÉ → test = v15.10.14 (55f0690). Release odkaz připraven, předávka zapsána, hodinová kontrola vypnuta."
   ],
@@ -189,20 +204,14 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
   [
    "00:43",
    "Hodinová kontrola: mutace serveru u konce, zatím žádná nepřežila."
-  ],
-  [
-   "23:43",
-   "Hodinová kontrola: mutace serveru běží, zatím žádná nepřežila."
-  ],
-  [
-   "22:43",
-   "Hodinová kontrola: kolo nad v15.10.14 — sady a mutace jádra prošly, běží mutace serveru."
-  ],
-  [
-   "21:44",
-   "S10 hotová (testy B8 a B31 doplněny) → sloučena, v15.10.14 (d0e6cab); spuštěno nové celé kolo."
   ]
- ]
+ ],
+ "limit": {
+  "procento": null,
+  "stav": "warn",
+  "text": "blízko limitu",
+  "obnova": "so 17. 10. 6:00"
+ }
 }
 </script>
 <script>
@@ -217,6 +226,11 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
     var c=p>=75?'b':(p>=60?'w':'');
     return '<div class="ctx"><span class="mono">kontext '+p+' %</span><div class="bar"><i class="'+c+'" style="width:'+Math.min(p,100)+'%"></i></div></div>'};
   document.getElementById('stamp').textContent=D.aktualizace;
+  (function(){var L=D.limit||{},el=document.getElementById('limit');if(!el)return;
+    var pct=(typeof L.procento==='number')?L.procento:null, c=pct==null?(L.stav==='warn'?'w':''):(pct>=90?'b':(pct>=75?'w':''));
+    el.innerHTML='<div class="lk">týdenní limit</div><div class="lv '+c+'">'+(pct==null?esc(L.text||'?'):pct+' %')+'</div>'+
+      (pct!=null?'<div class="bar"><i class="'+c+'" style="width:'+Math.min(pct,100)+'%"></i></div>':'')+
+      '<div class="ld">'+esc(L.obnova?('obnova '+L.obnova):'')+'</div>';})();
   var c=document.getElementById('cekani');
   if(D.cekaNaJV.length){c.innerHTML='<div class="h">Čeká na vás</div><ol>'+D.cekaNaJV.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ol>'}
   else{c.className='alert empty';c.innerHTML='<div class="h">Nic na vás nečeká — koordinace běží sama.</div>'}
