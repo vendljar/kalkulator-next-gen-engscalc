@@ -359,6 +359,12 @@ function cenikZverejneniOcisti(cenik) {
   const k = JSON.parse(JSON.stringify(cenik));
   delete k.rada;
   delete k.jenZahr;
+  /* Příznaky „cena dle nabídky" (S13): jen známé cesty OCK s true; prázdná
+   * mapa se nezveřejňuje (ceník bez příznaků = jako před S13). */
+  if ('dleNabidky' in k) {
+    const m = (typeof cenikDleNabidkyOciste === 'function') ? cenikDleNabidkyOciste(k.dleNabidky) : {};
+    if (Object.keys(m).length) k.dleNabidky = m; else delete k.dleNabidky;
+  }
   return k;
 }
 

@@ -315,6 +315,55 @@ function cenikPopisNastav(c, cesta, text) {
   else c.popisy[String(cesta)] = t;
 }
 
+/* ---------- příznak „cena dle nabídky" (S13, 16. 10. 2026) ----------------
+ *
+ * E-mail obchodníka D. S. 15. 10. 2026: příplatek „Prosklená stěna vedle
+ * šachty" má v ceníku jen orientační (přehnanou) cenu; obchodník ji přepsal
+ * na reálnou nižší a aplikace to brala jako směs ceníku — zábrana tisku,
+ * žádost o schválení. U nabídkových položek „za akci" ceník reálnou cenu
+ * nemá, zadává ji obchodník podle nabídky dodavatele.
+ *
+ * Řešení J. V. 16. 10. (varianta A): příznak položky ceníku. Mapa
+ * `dleNabidky` ({ 'C.priplatky.x': true }) stojí v ceníku vedle cen jako
+ * `popisy` — verzuje se a zveřejňuje s ceníkem (nese ji otisk verze), do
+ * porovnání CEN nevstupuje. Starý ceník bez mapy = nezaškrtnuto; doplnění
+ * klíčů z výchozího ceníku ji nepřidá (CENIK_NEDOPLNOVAT v engine.js).
+ *
+ * U položky s příznakem PLATNÉHO ceníku se ruční cena v zakázce
+ * nepovažuje za odchylku od ceníku (vyjimky.js, uloCenikProblemy) a
+ * automatický přepočet rozdělané zakázky ji nepřepíše. Příznak se bere VŽDY
+ * z platného ceníku, nikdy z ceníku varianty — zakázka si ho nesmí přidat
+ * sama. Jen OCK (sekce příplatků je v OCK); orientační cena se dál
+ * předvyplňuje z ceníku. */
+const CENIK_DLE_NABIDKY_VYCHOZI = ['C.priplatky.zabranyPadKc', 'C.priplatky.demontazOhrazeniKc',
+  'C.priplatky.malbaSchodnicKc', 'C.priplatky.naterOhrazeniKc', 'C.priplatky.naterOkopovychKc',
+  'C.priplatky.prosklenaStenaKc', 'C.priplatky.demontazVytahuKc', 'C.priplatky.destovySvodKc'];
+function cenikDleNabidkyJe(c, cesta) {
+  const m = c && c.dleNabidky;
+  return !!(m && typeof m === 'object' && Object.prototype.hasOwnProperty.call(m, String(cesta))
+    && m[String(cesta)] === true);
+}
+function cenikDleNabidkyNastav(c, cesta, ano) {
+  if (!c || typeof c !== 'object') return;
+  const k = String(cesta);
+  if (ano) {
+    if (!c.dleNabidky || typeof c.dleNabidky !== 'object') c.dleNabidky = {};
+    c.dleNabidky[k] = true;
+  } else if (c.dleNabidky && typeof c.dleNabidky === 'object') {
+    delete c.dleNabidky[k];
+    if (!Object.keys(c.dleNabidky).length) delete c.dleNabidky;
+  }
+}
+/* Do zveřejněného ceníku jen známé číselné cesty OCK s hodnotou true. */
+function cenikDleNabidkyOciste(m) {
+  const out = {};
+  if (!m || typeof m !== 'object' || Array.isArray(m)) return out;
+  const zname = new Set();
+  CENIK_DEF.forEach(([, items]) => items.forEach(([cesta, , , , typ]) => { if (!typ) zname.add(cesta); }));
+  Object.keys(m).forEach(k => { if (m[k] === true && zname.has(k)) out[k] = true; });
+  return out;
+}
+
 /* ---------- dodatkové texty platné pro celou aplikaci (22. 9. 2026) ------
  *
  * Zadání J. V.: „dodatkové texty pod příplatky a volitelnými položkami,
@@ -704,6 +753,7 @@ if (typeof module !== 'undefined')
   module.exports = { CENIK_DEF, CENIK_DEF_PROJ, CENIK_JEN_ZAHR, cenikGet, cenikSet, cenikTyp, cenikVychozi,
     CENIK_BARVA_MEZ_KC, cenikJednotkaKc, cenikBunkaTrida,
     cenikPopis, cenikPopisNastav,
+    CENIK_DLE_NABIDKY_VYCHOZI, cenikDleNabidkyJe, cenikDleNabidkyNastav, cenikDleNabidkyOciste,
     POPISY_MAX_KLIC, POPISY_MAX_TEXT, POPISY_MAX_POLOZEK, popisyOciste, popisyVlij, popisyDoplnChybejici, popisyCiselnik,
     POPISY_JAZYKY, popisyJazykyOciste, cenikPopisJazyk, popisyJazykyDoplnChybejici, popisJazykySrovnej,
     cenikSheetRows, cenikToSheets, cenikDiffZeSheets, cenikAplikuj, CENIK_HLAVICKA };
