@@ -292,8 +292,9 @@ const PROVERENO = {
   'kalk_ock.js': {
     'popisJazykyStitek(klic, t)': 'hotové HTML štítku „Překlad do nabídky: EN, DE" '
       + '(#379, K18-N96) — kódy jazyků jdou uvnitř přes esc(), ostatní je literál.',
-    'col.admin ? pripNazev(x) : esc(x.nazev) + vypnutoHtml(x)':
-      'obě větve escapují – pripNazev skládá HTML přes esc() uvnitř; vypnutoHtml je hotové HTML štítku (text je literál, popis přes esc())',
+    'col.admin ? pripNazev(x) : esc(x.nazev) + vypnutoHtml(x) + dleNabidkyStitky(x)':
+      'obě větve escapují – pripNazev skládá HTML přes esc() uvnitř; vypnutoHtml je hotové HTML štítku (text je literál, popis přes esc()); '
+      + 'dleNabidkyStitky (S13) je hotové HTML štítků — texty jsou literál, orientační cena jde přes esc(fmt())',
     'label': 'popisek řádku / KPI psaný vývojářem (profRow, sumRadek, kpiLine)',
     'popis': 'text tlačítka „+ …" předaný literálem do radekPridat()',
     'klic': 'hotový úsek HTML z klicChip() – cestu i titulek escapuje esc() uvnitř',
