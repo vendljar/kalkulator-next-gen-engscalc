@@ -1,3 +1,26 @@
+# Předávka — 16. 10. 2026: dávka S13 (v16.10.3), větev `claude/cena-dle-nabidky` — příznak ceníku „cena dle nabídky"
+
+Nad `origin/test` (1cbab3a, v15.10.14). Zadání J. V. 16. 10. (varianta A,
+e-mail D. S. 15. 10.: vlastní cena prosklené stěny blokovala tisk nabídky).
+Do `test-draft` / `test` / `main` nic — sloučení a celé kolo dělá koordinace
+(session_01NQjWzfqv1obHAg7DWPHAKH). Podrobnosti: CHANGELOG v16.10.3.
+
+- **Hotovo (pushnuto):** příznak `cenik.dleNabidky` (model `src/cenik.js`,
+  zveřejnění + otisk, výchozí zaškrtnutí osmi položek, starý ceník =
+  nezaškrtnuto); výjimky / kontrola ceníku na serveru / automatický přepočet
+  berou příznak jen z platného ceníku; sloupec v Nastavení → Ceník (správce),
+  štítky v příplatcích; hláška „<název>: cena pod ceníkem". Testy: jednotkový
+  0/1 → 32/0, serverový 6/7 → 13/0, harness 5/9 → 14/0; mutace S13 serveru
+  12/12, jádra 2/2; `--kontrola` 461 / 207. Příručka kap. 17, roadmapa #423
+  (předběžné id), `BEZPECNOST_MEZE.md` (S13).
+- **Po nasazení (J. V.):** platný ceník příznaky nemá → v Nastavení → Ceník
+  zaškrtnout položky a ceník zveřejnit (test i ostrá).
+- **Při slučování:** zkušební `git merge-tree` proti S11
+  (`claude/b155-rozsah-pasu`, mění `src/vyjimky.js` i `BEZPECNOST_MEZE.md`)
+  a S12 (`claude/leseni-spec-radek`): `vyjimky.js`, `BEZPECNOST_MEZE.md`
+  a `netlify/mutace.mjs` se sloučí samy, konflikt je v `roadmapa/roadmap.json`
+  (meta + položky 421/423) a čekej ho v CHANGELOG, PREDAVKA a `verze.txt`.
+
 # Předávka — 15. 10. 2026: dávka S10 (v15.10.14), větev `claude/mutace-b8-b31` — nechycené mutace B8 a B31
 
 Nad `origin/test` (f8fe243, v15.10.13). Do `test-draft` / `test` / `main`
