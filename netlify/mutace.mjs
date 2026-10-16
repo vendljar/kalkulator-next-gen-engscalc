@@ -605,8 +605,8 @@ const MUTACE = [
     proc: 'obří e-mail by zakládal obří klíče v počítadle, obří heslo by mlel scrypt' },
 
   { nazev: 'B17: cizí Origin se nekontroluje', soubor: 'lib/sdilene.mjs',
-    hledej: "  if (req.method && req.method !== 'GET' && cizihoPuvodu(req)) return null;",
-    nahrad: "  if (false) return null;",
+    hledej: "      && (cizihoPuvodu(req) || zapisMimoAplikaci(req))) return null;",
+    nahrad: "      && (zapisMimoAplikaci(req))) return null;",
     proc: 'druhá vrstva proti CSRF by zmizela; stačilo by jednou povolit SameSite' },
 
   { nazev: 'B17: odhlášení i na GET', soubor: 'functions/odhlaseni.mjs',
@@ -2172,6 +2172,19 @@ const MUTACE = [
     hledej: "  return vyhradne(PD_CACHE_ULOZISTE + '/' + klic, async () => {",
     nahrad: "  return vyhradne(Math.random() + '', async () => {",
     proc: 'zámek by nic neřadil a souběžné požadavky by strop 30 načtení za hodinu obešly' },
+  /* B159 (16. 10. 2026, dávka A1): Origin „null" a tělo text/plain u zápisů. Hlídá test_prava.mjs. */
+  { nazev: 'B159: zápis z Origin „null" projde', soubor: 'lib/sdilene.mjs',
+    hledej: "    if (origin === 'null') return true;",
+    nahrad: "    if (false) return true;",
+    proc: 'sandboxovaný rámec cizí stránky by pod relací oběti zapisoval (slovník, profil, zakázky)' },
+  { nazev: 'B159: zápis s tělem text/plain projde', soubor: 'lib/sdilene.mjs',
+    hledej: "    if (ct && !/^application\\/json\\s*(;|$)/.test(ct)) return true;",
+    nahrad: "    if (false) return true;",
+    proc: 'cizí stránka by poslala zápis jako jednoduchý požadavek bez preflightu' },
+  { nazev: 'B159: kontrola zápisu mimo aplikaci se v prihlaseny nevolá', soubor: 'lib/sdilene.mjs',
+    hledej: "      && (cizihoPuvodu(req) || zapisMimoAplikaci(req))) return null;",
+    nahrad: "      && (cizihoPuvodu(req))) return null;",
+    proc: 'kontrola by existovala, ale žádný zápisový bod by ji nepoužil' },
   /* #347 (15. 10. 2026): informativní nálezy B89, B92, B93, B95. */
   { nazev: 'B89: klíč analytiky propustí zbytek argumentu', soubor: '../src/analytika.js',
     hledej: "    .replace(/\\([\\s\\S]*$/, '(…)')               // zahodit argumenty volání (vč. zbytku)",

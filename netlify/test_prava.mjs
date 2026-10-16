@@ -2392,11 +2392,13 @@ console.log('\n===== AUDIT B16: DÉLKY A TVAR =====\n');
 console.log('\n===== AUDIT B17: PŮVOD POŽADAVKU =====\n');
 {
   const cizi = await zakazky(new Request('http://x/api/zakazky', { method: 'POST',
-    headers: { cookie: cObch, origin: 'https://utocnik.example', host: 'kalkulator.example' },
+    headers: { cookie: cObch, origin: 'https://utocnik.example', host: 'kalkulator.example',
+      'content-type': 'application/json' },   // JSON: hlídá původ, ne typ těla (B159)
     body: JSON.stringify({ zakazka: zakazkaCislo('2026 - OPR - CN - 0982') }) }));
   test('B17: POST s cizím Origin se odmítne jako nepřihlášený (401)', cizi.status === 401, cizi.status);
   const vlastni = await zakazky(new Request('http://x/api/zakazky', { method: 'POST',
-    headers: { cookie: cObch, origin: 'https://kalkulator.example', host: 'kalkulator.example' },
+    headers: { cookie: cObch, origin: 'https://kalkulator.example', host: 'kalkulator.example',
+      'content-type': 'application/json' },
     body: JSON.stringify({ zakazka: zakazkaCislo('2026 - OPR - CN - 0982') }) }));
   test('B17: POST s vlastním Origin projde', vlastni.status === 200, vlastni.status);
   const ctení = await zakazky(new Request('http://x/api/zakazky', {
@@ -2404,6 +2406,45 @@ console.log('\n===== AUDIT B17: PŮVOD POŽADAVKU =====\n');
   test('B17: GET se na Origin neptá (čtení cizí stránce stejně nevydá — CORS)', ctení.status === 200);
   test('B17: odhlášení na GET vrátí 405',
     (await odhlaseni(new Request('http://x/api/odhlaseni', { headers: { cookie: cObch } }))).status === 405);
+
+  /* B159 (audit 25, 15. 10. 2026): `Origin: null` (sandboxovaný rámec, data:
+   * stránka) a tělo `text/plain` (jednoduchý požadavek bez preflightu) prošly
+   * u zápisových bodů — bránilo jen SameSite=Lax. Prohlížeč posílá Origin
+   * u každého POST/DELETE; aplikace posílá JSON (onlineApi). Bez Origin
+   * (curl, testy) se dál nic neodmítá. */
+  const H = { origin: 'https://kalkulator.example', host: 'kalkulator.example' };
+  const zapis = (fn, url, hlavicky, telo, cookie) => fn(new Request(url, { method: 'POST',
+    headers: { cookie, ...hlavicky }, body: JSON.stringify(telo) }));
+  const profil = { akce: 'profil', telefon: '+420 000 000 159' };
+  const slovnik = { hesla: {}, poznamka: 'B159' };
+  const nulZ = await zapis(zakazky, 'http://x/api/zakazky', { origin: 'null', host: 'kalkulator.example',
+    'content-type': 'application/json' }, { zakazka: zakazkaCislo('2026 - OPR - CN - 0982') }, cObch);
+  test('B159: zakázka z Origin „null" → 401', nulZ.status === 401, nulZ.status);
+  const nulP = await zapis(uzivatele, 'http://x/api/uzivatele', { origin: 'null', host: 'kalkulator.example',
+    'content-type': 'application/json' }, profil, cObch);
+  test('B159: profil z Origin „null" → 401', nulP.status === 401, nulP.status);
+  const nulS = await zapis(slovnikFn, 'http://x/api/slovnik', { origin: 'null', host: 'kalkulator.example',
+    'content-type': 'application/json' }, slovnik, cAdmin);
+  test('B159: slovník z Origin „null" → 401', nulS.status === 401, nulS.status);
+  const txtP = await zapis(uzivatele, 'http://x/api/uzivatele', { ...H, 'content-type': 'text/plain' }, profil, cObch);
+  test('B159: profil s tělem text/plain z vlastního původu → 401', txtP.status === 401, txtP.status);
+  const txtS = await zapis(slovnikFn, 'http://x/api/slovnik', { ...H, 'content-type': 'text/plain;charset=UTF-8' },
+    slovnik, cAdmin);
+  test('B159: slovník s tělem text/plain → 401', txtS.status === 401, txtS.status);
+  const formP = await zapis(uzivatele, 'http://x/api/uzivatele',
+    { ...H, 'content-type': 'application/x-www-form-urlencoded' }, profil, cObch);
+  test('B159: profil s formulářovým tělem → 401', formP.status === 401, formP.status);
+  const jsonP = await zapis(uzivatele, 'http://x/api/uzivatele',
+    { ...H, 'content-type': 'application/json; charset=utf-8' }, profil, cObch);
+  test('B159: profil s JSON z vlastního původu projde (jako onlineApi)', jsonP.status === 200, jsonP.status);
+  const bezOrigin = await zapis(uzivatele, 'http://x/api/uzivatele', { 'content-type': 'text/plain' }, profil, cObch);
+  test('B159: bez Origin (curl, testy) se na typ těla neptá', bezOrigin.status === 200, bezOrigin.status);
+  const smazBezTela = await zakazniciFn(new Request('http://x/api/zakaznici?klic=neexistuje-b159',
+    { method: 'DELETE', headers: { cookie: cObch, ...H } }));
+  test('B159: DELETE bez těla z vlastního původu se neodmítne jako nepřihlášený (mazání karty zákazníka)',
+    smazBezTela.status !== 401, smazBezTela.status);
+  const getNul = await zakazky(new Request('http://x/api/zakazky', { headers: { cookie: cObch, origin: 'null' } }));
+  test('B159: GET z Origin „null" dál projde (čtení CORS nevydá)', getNul.status === 200, getNul.status);
 }
 
 /* B78 (hloubkový test 24. 9. 2026): přihlášení relaci teprve zakládá, takže

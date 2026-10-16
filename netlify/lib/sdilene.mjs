@@ -417,9 +417,30 @@ export function cizihoPuvodu(req) {
     return new URL(origin).host.toLowerCase() !== host;
   } catch (e) { return true; }
 }
+/* ZÁPIS MIMO APLIKACI (B159, audit 25, 16. 10. 2026). `cizihoPuvodu`
+ * propouští `Origin: null` (sandboxovaný rámec, stránka data:) a nehlídá typ
+ * těla — `text/plain` je „jednoduchý" požadavek, který cizí stránka pošle
+ * bez preflightu. U zápisů tak bránila jen SameSite=Lax. Prohlížeč posílá
+ * Origin u každého POST/DELETE; aplikace (onlineApi) posílá tělo vždy jako
+ * JSON a DELETE bez těla. S hlavičkou Origin se proto odmítne „null" a tělo,
+ * které má jiný typ než application/json. Bez Origin (curl, testy) se nic
+ * neodmítá — stejná zásada jako u B17. Přihlášení a odhlášení mají vlastní
+ * kontrolu (B78). */
+export function zapisMimoAplikaci(req) {
+  try {
+    const origin = req.headers.get('origin');
+    if (!origin) return false;
+    if (origin === 'null') return true;
+    const ct = String(req.headers.get('content-type') || '').trim().toLowerCase();
+    if (ct && !/^application\/json\s*(;|$)/.test(ct)) return true;
+    return false;
+  } catch (e) { return true; }
+}
 export async function prihlaseny(req) {
-  /* Mutující požadavek z cizího původu se nepovažuje za přihlášený (B17). */
-  if (req.method && req.method !== 'GET' && cizihoPuvodu(req)) return null;
+  /* Mutující požadavek z cizího původu se nepovažuje za přihlášený (B17),
+   * ani zápis z `Origin: null` nebo s tělem, které není JSON (B159). */
+  if (req.method && req.method !== 'GET' && req.method !== 'HEAD'
+      && (cizihoPuvodu(req) || zapisMimoAplikaci(req))) return null;
   return relaceOver(req.headers.get('cookie'));
 }
 
