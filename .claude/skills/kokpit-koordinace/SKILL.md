@@ -45,7 +45,7 @@ chybu chytit dřív. Mazat celé objekty i s čárkou před nimi.
 | `releasy` | jeden řádek: vydané / bez tagu (z `release_odkaz.py --chybejici` + GitHub `list_releases`) |
 | `faze` | `["kód","testy","mutace","souhrn","integrace","sady","test"]` |
 | `celkem` | vpravo nahoře (J. V. 16. 10.): odhad do konce celého úkolu `{eta, detail}` — součet zbývajících dávek, sad a kola; v `detail` čas UTC a co odhad nezahrnuje (čekání na J. V.) |
-| `sezeni` | **všechna NEarchivovaná sezení** (`list_sessions mine:true`, status ≠ ARCHIVED) s **přesným názvem** (`title`): `nazev, id, role (koordinace / dávka / jiné), stav (run/ok/warn/bad/idle), stavText, faze (index 0–7 u dávek, jinak null), eta, kontext, co, dalsi` |
+| `sezeni` | **všechna NEarchivovaná sezení** (`list_sessions mine:true`, status ≠ ARCHIVED) s **přesným názvem** (`title`): `nazev, id, role (koordinace / dávka / jiné), stav (run/ok/warn/bad/idle), stavText, faze (index 0–7 u dávek, jinak null), eta, kontext, kontextTok (tisíce tokenů), konec (~HH:MM UTC), bezi („57 min“), hlaseni (poslední zpráva/commit: „právě teď“, „před 10 min“), co, dalsi` (detail podle J. V. 16. 10.) |
 | `log` | `[čas, událost]`, nejnovější nahoře; stačí ~10 posledních |
 
 - **Kontext** sezení: `get_session(session_id)` → `external_metadata.context_usage`

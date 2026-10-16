@@ -40,7 +40,7 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
 .tile .d{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
 .rows{display:grid;gap:6px}
 .row{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--idle);border-radius:5px;padding:7px 9px;display:grid;
-  grid-template-columns:minmax(0,1fr) 86px;gap:2px 10px;align-items:start}
+  grid-template-columns:minmax(0,1fr) 130px;gap:2px 10px;align-items:start}
 .r-run{border-left-color:var(--steel)} .r-ok{border-left-color:var(--ok)} .r-warn{border-left-color:var(--warn)} .r-bad{border-left-color:var(--bad)}
 .r-idle{opacity:.8}
 .main{min-width:0;display:grid;gap:3px}
@@ -56,6 +56,7 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
 .sub{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
 .right{text-align:right;display:grid;gap:4px;justify-items:end}
 .eta{font-family:var(--display);font-size:18px;line-height:1}
+.rt{font-family:var(--mono);font-size:10.5px;color:var(--muted);white-space:nowrap}
 .etal{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .ctx{width:100%;display:grid;gap:2px}
 .bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
@@ -105,15 +106,13 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
 
 <script id="data" type="application/json">
 {
- "aktualizace": "16. 10. 2026 12:10 UTC",
+ "aktualizace": "16. 10. 2026 12:45 UTC",
  "koordinace": {
   "id": "session_01NQjWzfqv1obHAg7DWPHAKH",
   "kontext": 47
  },
  "releasy": "vydáno v15.10.14 (55f0690), v15.10.10, v15.10.7, v15.10.4, v15.10.3 · mezistupně bez tagu: v15.10.13, v15.10.12, v15.10.11, v15.10.9, v15.10.8, v15.10.6",
- "cekaNaJV": [
-  "Bod 1 z e-mailu D. S. (ruční cena příplatku blokuje tisk): projít návrh „cena dle nabídky“ (seznam 8 příplatků + náhled) a potvrdit tři otázky na konci návrhu."
- ],
+ "cekaNaJV": [],
  "dlazdice": [
   {
    "k": "main",
@@ -158,9 +157,13 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
    "stavText": "pracuje",
    "faze": null,
    "eta": "~2 h",
-   "kontext": 58,
+   "kontext": 65,
    "co": "Slučuje dávky do test, hlídá sezení, vede tento kokpit",
-   "dalsi": "Hlídá S11 a S12; čeká na rozhodnutí k bodu 1 (cena dle nabídky)"
+   "dalsi": "Hlídá S11 a S12; čeká na rozhodnutí k bodu 1 (cena dle nabídky)",
+   "kontextTok": 650,
+   "bezi": "22 h",
+   "hlaseni": "právě teď",
+   "konec": "14:10"
   },
   {
    "nazev": "S11 B155: rozsah pásu „jiné“ ve schválené výjimce",
@@ -169,10 +172,13 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
    "stav": "run",
    "stavText": "pracuje",
    "faze": 2,
-   "eta": "~40 min",
+   "eta": "~35 min",
    "kontext": null,
    "co": "Rozsah pásu „jiné“ (od–do m) do obsahu cenové výjimky a do karty schvalovatele",
-   "dalsi": "Testy 76/0, běží mutace, dokumentace"
+   "dalsi": "Testy 76/0, běží mutace, dokumentace",
+   "bezi": "57 min",
+   "hlaseni": "před 10 min",
+   "konec": "13:20"
   },
   {
    "nazev": "S12 lešení vnitřní/vnější ve specifikaci + vlastní řádek do CN",
@@ -180,14 +186,36 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
    "role": "dávka",
    "stav": "run",
    "stavText": "pracuje",
-   "faze": 0,
-   "eta": "~1,5 h",
+   "faze": 1,
+   "eta": "~1 h",
    "kontext": null,
    "co": "E-mail D. S.: lešení vnitřní i vnější v „Součástí dodávky není“ podle příplatků; vlastní řádek specifikace do CN",
-   "dalsi": "Rozbor a oprava; větev claude/leseni-spec-radek (v16.10.2)"
+   "dalsi": "Bod 2 hotový (d64e149); bod 3 — vlastní řádek do CN",
+   "bezi": "45 min",
+   "hlaseni": "před 10 min",
+   "konec": "13:45"
+  },
+  {
+   "nazev": "S13 příplatky „cena dle nabídky“ (bod 1 e-mailu D. S.)",
+   "id": "session_01Stc6SXBihwz8ewqcX84f6k",
+   "role": "dávka",
+   "stav": "run",
+   "stavText": "pracuje",
+   "faze": 3,
+   "eta": "~25 min",
+   "kontext": null,
+   "co": "Příznak „cena dle nabídky“ v ceníku pro 8 příplatků „za akci“; ruční cena bez schválení; přesnější hláška",
+   "dalsi": "Kód, štítky, mutace, příručka hotové (2e18b20); smoke a souhrn",
+   "bezi": "36 min",
+   "hlaseni": "před 3 min",
+   "konec": "13:10"
   }
  ],
  "log": [
+  [
+   "12:09",
+   "J. V. schválil návrh „cena dle nabídky“ → spuštěna S13."
+  ],
   [
    "12:05",
    "E-mail D. S. zpracován: S12 spuštěna (body 2 a 3), návrh k bodu 1 publikován. Archivovány S9 a S10."
@@ -223,15 +251,11 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
   [
    "02:43",
    "Hodinová kontrola: 3. běh kola — sady 257/0/1 a jádro 205/205 prošly, běží mutace serveru."
-  ],
-  [
-   "01:47",
-   "2. běh kola padl na test_sod_proj_cislo: přerušený 1. běh nechal v pracovní kopii nevrácenou mutaci (vyrob_sablony.js). Kopie vrácena (git checkout), kolo potřetí."
   ]
  ],
  "celkem": {
-  "eta": "~1,5 h",
-  "detail": "S11 + S12 hotové kolem 13:40 UTC · bez bodu 1"
+  "eta": "~1 h",
+  "detail": "S11–S13 hotové kolem 13:45 UTC, pak sloučení + celé kolo (~4 h)"
  }
 }
 </script>
@@ -242,10 +266,11 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
   catch(e){var c0=document.getElementById('cekani');c0.className='alert';c0.innerHTML='<div class="h">Data kokpitu jsou poškozená — koordinace je opraví při příští aktualizaci.</div><div class="mono">'+String(e.message).replace(/[<&]/g,'')+'</div>';return;}
   var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
   var pill={run:'p-run',ok:'p-ok',warn:'p-warn',bad:'p-bad',idle:'p-idle'};
-  var ctx=function(p){
+  var ctx=function(p,tok){
+    var tt=(tok!=null)?' · '+tok+' tis.':'';
     if(p==null) return '<div class="ctx"><span class="mono">kontext ?</span><div class="bar"><i style="width:0"></i></div></div>';
     var c=p>=75?'b':(p>=60?'w':'');
-    return '<div class="ctx"><span class="mono">kontext '+p+' %</span><div class="bar"><i class="'+c+'" style="width:'+Math.min(p,100)+'%"></i></div></div>'};
+    return '<div class="ctx"><span class="mono">kontext '+p+' %'+tt+'</span><div class="bar"><i class="'+c+'" style="width:'+Math.min(p,100)+'%"></i></div></div>'};
   document.getElementById('stamp').textContent=D.aktualizace;
   (function(){var C=D.celkem,el=document.getElementById('celkem');if(!el||!C)return;
     el.innerHTML='<div class="ck">do konce úkolu</div><div class="cv">'+esc(C.eta)+'</div><div class="cd">'+esc(C.detail||'')+'</div>';})();
@@ -264,7 +289,7 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
     return '<div class="row r-'+s.stav+'"><div class="main"><div class="name">'+esc(s.nazev)+'</div>'+
       '<div class="meta"><span class="pill '+pill[s.stav]+'">'+esc(s.stavText)+'</span><span class="role">'+esc(s.role)+'</span><span class="mono sid">'+esc(s.id)+'</span></div>'+
       '<div class="co">'+esc(s.co)+'</div>'+ph+'</div>'+
-      '<div class="right"><div><div class="eta">'+esc(s.eta)+'</div><div class="etal">zbývá</div></div>'+ctx(s.kontext)+'</div>'+
+      '<div class="right"><div><div class="eta">'+esc(s.eta)+'</div><div class="etal">zbývá</div>'+(s.konec?'<div class="rt">konec ~'+esc(s.konec)+'</div>':'')+(s.bezi?'<div class="rt">běží '+esc(s.bezi)+'</div>':'')+'</div>'+ctx(s.kontext,s.kontextTok)+'</div>'+
       '<div class="next"><b>Další:</b> '+esc(s.dalsi)+'</div></div>'}).join('');
   document.getElementById('log').innerHTML=D.log.map(function(r){return '<tr><td class="cas">'+esc(r[0])+'</td><td>'+esc(r[1])+'</td></tr>'}).join('');
 })();
