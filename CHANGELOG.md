@@ -37,6 +37,14 @@ mutaci — kód aplikace se nemění, kotvy v `MUTACE` zůstávají.
   dřív, než CHANGELOG dostal oddíl v15.10.14; po jeho zapsání sada 24/0,
   tedy čistý stav 252 / 0 / 6.
 
+**Integrace do test a celé kolo (koordinační sezení, 16. 10. 2026):** S10
+sloučena bez konfliktu (d0e6cab); cílené mutace „B8“ 15/15, „B31“ 1/1.
+**Celé kolo s mutacemi nad d0e6cab (16. 10. 01:47–05:05, 198 min): VŠE ZELENÉ**
+— sady 257/0/1 (přeskočen test.js), mutace jádra **205 z 205**, mutace serveru
+**449 z 449**, statické kontroly 3/3. (První běh přerušil v 01:05 restart
+kontejneru; druhý padl na mutaci, kterou přerušený běh nechal v pracovní kopii
+— kopie vrácena `git checkout`, kód beze změny.) Fast-forward do `test`.
+
 ## v15.10.13 — integrace S9 (číslo SoD v šablonách SoD projekce, v15.10.11) do test (větev claude/integrace-15-10)
 
 `test` už nese v15.10.12, proto sloučení S9 (oddíl v15.10.11 níž) dostává
