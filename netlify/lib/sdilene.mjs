@@ -104,6 +104,27 @@ export async function uloziste(nazev) {
   };
 }
 
+/* VÝHRADNÍ ÚSEK NAD KLÍČEM (B158, audit 25, 16. 10. 2026). Počítadlo je
+ * čtení–změna–zápis a Blobs atomický inkrement nemá (viz B4 níž). Souběžné
+ * požadavky v téže instanci funkce se proto řadí za sebe: každý další čeká,
+ * až předchozí dočte a zapíše. Řetěz se po doběhnutí uklidí, chyba jednoho
+ * úseku neblokuje další. Mez: dvě různé instance funkce (studený start pod
+ * náporem) se navzájem nevidí — viz BEZPECNOST_MEZE.md (B158). */
+const VYHRADNE_FRONTY = new Map();
+export async function vyhradne(klic, fn) {
+  const pred = VYHRADNE_FRONTY.get(klic) || Promise.resolve();
+  let uvolni;
+  const muj = new Promise(r => { uvolni = r; });
+  const konec = pred.then(() => muj);
+  VYHRADNE_FRONTY.set(klic, konec);
+  await pred;
+  try { return await fn(); }
+  finally {
+    uvolni();
+    if (VYHRADNE_FRONTY.get(klic) === konec) VYHRADNE_FRONTY.delete(klic);
+  }
+}
+
 /* ---------- tvar e-mailu a hesla (audit 22. 8. 2026, B16) ----------
  * E-mail je klíč záznamu účtu i počítadla pokusů — bez omezení by kdokoli
  * zakládal kilobajtové klíče. Heslo: minimum 8 znaků zůstává (zadání 3. 8.),

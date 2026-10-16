@@ -165,6 +165,22 @@ const zCache = await get(pdDeal, 'http://x/api/pd/deal?id=7', cObch);
 test('B80: nad stropem se pořád smí načíst případ, který je v cache',
   zCache.status === 200 && volani.length === 0, { stav: zCache.status, volani: volani.length });
 
+console.log('\n===== 6) SOUBĚH STROPU (B158) =====\n');
+/* B158 (audit 25, 15. 10. 2026): počítadlo stropu se četlo a zapisovalo bez
+ * zámku — 200 souběžných požadavků přečetlo tutéž hodnotu a všech 200 prošlo
+ * do Pipedrive. Vedoucí má strop zatím skoro nevyčerpaný (jen pár načtení
+ * z oddílů 1–3), každé číslo případu je nové, takže z cache nic nejde. */
+volani = [];
+const soubezne = await Promise.all(Array.from({ length: 200 }, (_, i) =>
+  get(pdDeal, 'http://x/api/pd/deal?id=' + (20000 + i), cVed)));
+const prosloSoubezne = soubezne.filter(r => r.status === 200).length;
+const dealuVolano = volani.filter(u => /\/api\/v2\/deals\/\d+/.test(u)).length;
+test('B158: 200 souběžných čerstvých načtení — projde nejvýš strop', prosloSoubezne <= MAX,
+  { proslo: prosloSoubezne, MAX });
+test('B158: … ostatní dostanou 429', soubezne.filter(r => r.status === 429).length >= 200 - MAX,
+  soubezne.filter(r => r.status === 429).length);
+test('B158: … a do Pipedrive jde nejvýš strop načtení dealu', dealuVolano <= MAX, dealuVolano);
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 if (fail) console.log('\nSelhalo:\n - ' + selhalo.join('\n - '));
 process.exit(fail ? 1 : 0);

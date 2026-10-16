@@ -23,7 +23,7 @@
  *                       `mojefirma.pipedrive.com`
  * ============================================================ */
 
-import { uloziste, vyzadujRoli, cizihoPuvodu, json } from './sdilene.mjs';
+import { uloziste, vyzadujRoli, cizihoPuvodu, json, vyhradne } from './sdilene.mjs';
 import { jadro, jadroChyba } from './jadro.mjs';
 
 export const PD_TOKEN_PROMENNA = 'PIPEDRIVE_TOKEN';
@@ -197,11 +197,15 @@ export const PD_DEAL_OKNO_MS = 3600 * 1000;
 export async function pdStropCerstvych(email) {
   const s = await uloziste(PD_CACHE_ULOZISTE);
   const klic = 'strop:' + String(email || '').toLowerCase();
-  const ted = Date.now();
-  let z = await s.cti(klic);
-  if (!z || typeof z !== 'object' || !(ted - (+z.od || 0) < PD_DEAL_OKNO_MS)) z = { od: ted, pocet: 0 };
-  if ((+z.pocet || 0) >= PD_DEAL_MAX) return false;
-  z.pocet = (+z.pocet || 0) + 1;
-  await s.zapis(klic, z);
-  return true;
+  /* Čtení a zápis počítadla ve výhradním úseku (B158): bez něj 200 souběžných
+   * požadavků přečetlo tutéž hodnotu a prošlo všech 200. */
+  return vyhradne(PD_CACHE_ULOZISTE + '/' + klic, async () => {
+    const ted = Date.now();
+    let z = await s.cti(klic);
+    if (!z || typeof z !== 'object' || !(ted - (+z.od || 0) < PD_DEAL_OKNO_MS)) z = { od: ted, pocet: 0 };
+    if ((+z.pocet || 0) >= PD_DEAL_MAX) return false;
+    z.pocet = (+z.pocet || 0) + 1;
+    await s.zapis(klic, z);
+    return true;
+  });
 }

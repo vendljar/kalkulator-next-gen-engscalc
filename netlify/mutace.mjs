@@ -2163,6 +2163,15 @@ const MUTACE = [
     hledej: "  if (!/^[0-9]{1,10}$/.test(idTxt) || id < 1 || id > ID_MAX)",
     nahrad: "  if (!id || !isFinite(id))",
     proc: '„-1", „1.5" nebo „1e3" by šly do cesty k Pipedrive a zakládaly nové klíče cache' },
+  /* B158 (16. 10. 2026, dávka A1): souběh stropu Pipedrive. Hlídá test_pd_pristup.mjs. */
+  { nazev: 'B158: výhradní úsek nečeká na předchozí požadavek', soubor: 'lib/sdilene.mjs',
+    hledej: "  await pred;\n  try { return await fn(); }",
+    nahrad: "  try { return await fn(); }",
+    proc: '200 souběžných požadavků by přečetlo tutéž hodnotu počítadla a strop by obešlo' },
+  { nazev: 'B158: strop Pipedrive se řadí pod jiný klíč pro každý požadavek', soubor: 'lib/pipedrive.mjs',
+    hledej: "  return vyhradne(PD_CACHE_ULOZISTE + '/' + klic, async () => {",
+    nahrad: "  return vyhradne(Math.random() + '', async () => {",
+    proc: 'zámek by nic neřadil a souběžné požadavky by strop 30 načtení za hodinu obešly' },
   /* #347 (15. 10. 2026): informativní nálezy B89, B92, B93, B95. */
   { nazev: 'B89: klíč analytiky propustí zbytek argumentu', soubor: '../src/analytika.js',
     hledej: "    .replace(/\\([\\s\\S]*$/, '(…)')               // zahodit argumenty volání (vč. zbytku)",
