@@ -101,33 +101,108 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
 
 <script id="data" type="application/json">
 {
-  "aktualizace": "15. 10. 2026 15:58 UTC",
-  "koordinace": {"id":"session_01NQjWzfqv1obHAg7DWPHAKH","kontext":32},
-  "releasy": "vydáno v15.10.10 (06937a3), v15.10.7, v15.10.4, v15.10.3 · bez tagu: v15.10.9, v15.10.6 (mezistupně) · další release: v15.10.12 po sadách",
-  "cekaNaJV": [],
-  "dlazdice": [
-    {"k":"main","v":"v14.10.3","d":"eff7724 · po vašem potvrzení","s":"idle"},
-    {"k":"test","v":"v15.10.10","d":"06937a3 · release vydán","s":"ok"},
-    {"k":"integrace","v":"v15.10.12","d":"cb8eb3b · + S6 · sady běží (~20 min)","s":"run"},
-    {"k":"celé kolo","v":"čeká","d":"po S9 v test · ~4 h","s":"idle"}
+ "aktualizace": "16. 10. 2026 05:47 UTC",
+ "koordinace": {
+  "id": "session_01NQjWzfqv1obHAg7DWPHAKH",
+  "kontext": 47
+ },
+ "releasy": "vydáno v15.10.10, v15.10.7, v15.10.4, v15.10.3 · k vydání: v15.10.14 (55f0690, obsahuje i v15.10.12) · bez tagu: v15.10.13, v15.10.12, v15.10.11, v15.10.9, v15.10.8, v15.10.6 (mezistupně)",
+ "cekaNaJV": [
+  "Vydat release v15.10.14 (test = 55f0690, celé kolo VŠE ZELENÉ) — odkaz s popisem je v koordinačním sezení. Stačí jen tento; v15.10.12 je v něm obsažená.",
+  "Šablona SoD projekce s číslem SoD: na svém počítači `node nastroje/vyrob_sablony.js --sod-proj-cislo <složka se Sablona_SOD_PROJEKCE.docx a _v2.docx>`, v3 a v1_cislo na Disk vedle originálů, v aplikaci Nastavení → Šablony → „Šablona smlouvy o dílo — PROJEKČNÍ PRÁCE“ → Nahrát novou českou verzi → v3 → Zveřejnit (test i ostrá).",
+  "main: sloučit test (v15.10.14) do main? Jen na váš pokyn."
+ ],
+ "dlazdice": [
+  {
+   "k": "main",
+   "v": "v14.10.3",
+   "d": "eff7724 · čeká na váš pokyn",
+   "s": "idle"
+  },
+  {
+   "k": "test",
+   "v": "v15.10.14",
+   "d": "55f0690 · S1–S10 · release k vydání",
+   "s": "ok"
+  },
+  {
+   "k": "integrace",
+   "v": "= test",
+   "d": "nic nečeká",
+   "s": "ok"
+  },
+  {
+   "k": "celé kolo",
+   "v": "VŠE ZELENÉ",
+   "d": "257/0/1 · jádro 205/205 · server 449/449 · 198 min",
+   "s": "ok"
+  }
+ ],
+ "faze": [
+  "kód",
+  "testy",
+  "mutace",
+  "souhrn",
+  "integrace",
+  "sady",
+  "test"
+ ],
+ "sezeni": [
+  {
+   "nazev": "ŘÍDÍCÍ 15.10.2 - Koordinace dávek 15. 10. (pokračování)",
+   "id": "session_01NQjWzfqv1obHAg7DWPHAKH",
+   "role": "koordinace",
+   "stav": "ok",
+   "stavText": "hotovo · čeká na pokyn",
+   "faze": null,
+   "eta": "hotovo",
+   "kontext": 47,
+   "co": "Slučuje dávky do test, hlídá sezení, vede tento kokpit",
+   "dalsi": "Vše odesláno do test; hodinová kontrola vypnuta. Další práce na pokyn J. V."
+  }
+ ],
+ "log": [
+  [
+   "05:45",
+   "Celé kolo nad v15.10.14 VŠE ZELENÉ → test = v15.10.14 (55f0690). Release odkaz připraven, předávka zapsána, hodinová kontrola vypnuta."
   ],
-  "faze": ["kód","testy","mutace","souhrn","integrace","sady","test"],
-  "sezeni": [
-    {"nazev":"ŘÍDÍCÍ 15.10.2 - Koordinace dávek 15. 10. (pokračování)","id":"session_01NQjWzfqv1obHAg7DWPHAKH","role":"koordinace","stav":"run","stavText":"pracuje","faze":null,"eta":"~6 h (do konce kola)","kontext":32,"co":"Slučuje dávky do test, hlídá sezení, vede tento kokpit","dalsi":"Sady nad v15.10.12 → test → release; po S9 celé kolo"},
-    {"nazev":"S9 číslo SoD do šablon SoD projekce (v15.10.11)","id":"session_01CPcwsQaNofMcXf5Z8t2kzz","role":"dávka","stav":"run","stavText":"pracuje","faze":2,"eta":"~30 min","kontext":14,"co":"Symbol čísla SoD do šablon SoD projekce v1/v2, nové soubory na Disk","dalsi":"Mutace 69d4bee (4 nové + sada v SADY), CHANGELOG a postup šablon hotové; zbývá smoke a souhrn"}
+  [
+   "04:43",
+   "Hodinová kontrola: mutace serveru u konce (celkem 622 chycených), žádná nepřežila."
   ],
-  "log": [
-    ["16:02","S9: CHANGELOG v15.10.11, postup šablon a 4 mutace pushnuty (69d4bee)."],
-    ["15:58","J. V. vyčistil a archivoval sezení; zůstává jen koordinace a S9. S6 archivovaná, její kód je v integraci (v15.10.12)."],
-    ["15:52","S9 pushnula první commit (8b6b284, šablony SoD projekce s číslem SoD)."],
-    ["15:48","Kokpit ukazuje všechna nearchivovaná sezení s přesnými názvy; hotové a archivované skryty."],
-    ["15:40","S6 sloučena, integrace v15.10.12 (cb8eb3b), sady běží."],
-    ["15:35","Release v15.10.10 ověřen; release_odkaz.py hlídá existující tag; skill kokpitu zapsán."],
-    ["15:25","test = v15.10.10 (S7 + S8), sady 255 / 0 / 1."],
-    ["15:08","Spuštěna S9 (číslo SoD do šablon SoD projekce)."],
-    ["15:03","test = v15.10.7 (S1, S3, S4)."],
-    ["14:28","Koordinaci převzalo sezení ŘÍDÍCÍ 15.10.2."]
+  [
+   "03:43",
+   "Hodinová kontrola: mutace serveru běží, zatím žádná nepřežila."
+  ],
+  [
+   "02:43",
+   "Hodinová kontrola: 3. běh kola — sady 257/0/1 a jádro 205/205 prošly, běží mutace serveru."
+  ],
+  [
+   "01:47",
+   "2. běh kola padl na test_sod_proj_cislo: přerušený 1. běh nechal v pracovní kopii nevrácenou mutaci (vyrob_sablony.js). Kopie vrácena (git checkout), kolo potřetí."
+  ],
+  [
+   "01:08",
+   "Restart kontejneru přerušil kolo v mutacích serveru; kolo spuštěno znovu celé (mutace se nepřerušují)."
+  ],
+  [
+   "00:43",
+   "Hodinová kontrola: mutace serveru u konce, zatím žádná nepřežila."
+  ],
+  [
+   "23:43",
+   "Hodinová kontrola: mutace serveru běží, zatím žádná nepřežila."
+  ],
+  [
+   "22:43",
+   "Hodinová kontrola: kolo nad v15.10.14 — sady a mutace jádra prošly, běží mutace serveru."
+  ],
+  [
+   "21:44",
+   "S10 hotová (testy B8 a B31 doplněny) → sloučena, v15.10.14 (d0e6cab); spuštěno nové celé kolo."
   ]
+ ]
 }
 </script>
 <script>
