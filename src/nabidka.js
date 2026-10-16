@@ -477,11 +477,24 @@ function nabidkaData(zak, varianta, jekly, lang, sablona) {
    * docxgen je naklonuje z řádku `kotva` (formát zůstane) a vepíše popisek
    * v jazyce dokumentu; šablona, která symbol už nese, dostane hodnotu do
    * svého řádku a klon nevznikne. Prázdná hodnota = řádek se nevkládá. */
+  /* VLASTNÍ ŘÁDKY SPECIFIKACE (D. S. 15. 10. 2026, bod 3). Tlačítko „+ přidat
+   * vlastní řádek" plní `techspec.extra` a obrazovka je ukazuje pod nadpisem
+   * DALŠÍ UJEDNÁNÍ — nabídka je dosud nečetla vůbec, takže řádek zákazníkovi
+   * nikdy neodešel. Do nabídky jdou jako sekce DALŠÍ UJEDNÁNÍ za SOUČÁSTÍ
+   * DODÁVKY NENÍ: náhled a tisk přes 4. parametr nabidkaNahledSekce, Word
+   * naklonovaným pruhem a řádky za {{TS_NENI_PRISTUP}}. Popisek i hodnota jdou
+   * přes slovník jako v náhledu specifikace (neznámý text zůstane, jak ho
+   * obchodník napsal). Úplně prázdný řádek se vynechá. */
+  const tsExtra = ((TSv && TSv.extra) || [])
+    .filter(e => e && (String(e.label || '').trim() || String(e.hodnota || '').trim()))
+    .map(e => ({ nazev: P(String(e.label || '')), hodnota: P(String(e.hodnota || '')) }));
   const tsRadkyNavic = [
     { symbol: 'TS_NENI_LESENI_VNITRNI', kotva: 'TS_NENI_LESENI', pred: true,
       nazev: P('LEŠENÍ VNITŘNÍ PRO STAVBU OCK'), hodnota: placeholders.TS_NENI_LESENI_VNITRNI },
+    ...(tsExtra.length ? [{ kotva: 'TS_NENI_PRISTUP', pruh: true, nazev: P('DALŠÍ UJEDNÁNÍ') }] : []),
+    ...tsExtra.map(e => ({ kotva: 'TS_NENI_PRISTUP', vzdy: true, nazev: e.nazev, hodnota: e.hodnota })),
   ];
-  return { placeholders, priplatky: priplatkyList, jazyk: L, platbyOck, tsRadkyNavic,
+  return { placeholders, priplatky: priplatkyList, jazyk: L, platbyOck, tsRadkyNavic, tsExtra,
            /* sken podpisu s razítkem (#146) + úvodní fotka stavby */
            obrazky: Object.assign({},
              typeof zpracovatelObrazky === 'function' ? zpracovatelObrazky() : {},
@@ -543,7 +556,9 @@ function usazeniBocniSloucene(ph, P) {
 /* Slovo „nabídka" na začátku názvu souboru podle jazyka dokumentu. */
 const NABIDKA_SOUBOR_SLOVO = { cz: 'NABÍDKA', en: 'PRICE_QUOTATION', de: 'ANGEBOT', fr: 'DEVIS' };
 function nabidkaSlovoSouboru(L) { return NABIDKA_SOUBOR_SLOVO[L] || NABIDKA_SOUBOR_SLOVO.cz; }
-function nabidkaNahledSekce(ph, lang, platby) {
+/* `extra` (nepovinné, D. S. 15. 10. 2026) = data.tsExtra z nabidkaData —
+ * vlastní řádky specifikace, už přeložené; tvoří sekci DALŠÍ UJEDNÁNÍ. */
+function nabidkaNahledSekce(ph, lang, platby, extra) {
   const L = lang || 'cz';
   const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
   const sekce = [
@@ -613,6 +628,9 @@ function nabidkaNahledSekce(ph, lang, platby) {
       ['NAPÁJENÍ VÝTAHU VČET. REVIZNÍ ZPRÁVY', ph.TS_NENI_NAPAJENI],
       ['PROHLUBEŇ PRO ZALOŽENÍ OCK VE SPRÁVNÉ POZICI A ROZMĚRU', ph.TS_NENI_PROHLUBEN],
       ['DOSTATEČNÉ PŘÍSTUPOVÉ A MANIPULAČNÍ PROSTORY', ph.TS_NENI_PRISTUP]] },
+    /* vlastní řádky specifikace (bod 3); popisek už je přeložený → { hotovo } */
+    ...((extra || []).length ? [{ sekce: 'DALŠÍ UJEDNÁNÍ',
+      radky: extra.map(e => [{ hotovo: e.nazev }, e.hodnota]) }] : []),
     { sekce: 'B. OBCHODNÍ ČÁST – CENOVÁ NABÍDKA', radky: [
       ['Výtahová šachta (bez DPH)', ph.CENA_BEZ_DPH],
       /* skládaný popisek (číslo sazby uprostřed) se překládá po částech, proto je

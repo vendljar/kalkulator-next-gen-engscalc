@@ -1,3 +1,30 @@
+# Předávka — 16. 10. 2026: dávka S12 (v16.10.2), větev `claude/leseni-spec-radek` — lešení a vlastní řádky specifikace v CN
+
+Nad `origin/test` (1cbab3a, v15.10.14). Připomínky D. S. 15. 10. 2026, body 2
+a 3. Do `test-draft` / `test` / `main` nic — sloučení a celé kolo dělá
+koordinace (session_01NQjWzfqv1obHAg7DWPHAKH). Podrobnosti: CHANGELOG v16.10.2.
+
+- **Hotovo (pushnuto):** bod 2 — nový řádek LEŠENÍ VNITŘNÍ PRO STAVBU OCK
+  v SOUČÁSTÍ DODÁVKY NENÍ, oba řádky lešení řídí `tsLeseniNeniRadek`
+  (v ceně → vypadne, příplatek v nabídce → „nabízeno jako příplatek",
+  vyřazený → „zajistí objednatel v rámci SP"), ručně + ↺ funguje; nabídka
+  OCK náhled, tisk, Word (klon řádku, `docxRadkyNavic`). Bod 3 — vlastní
+  řádky specifikace jako sekce DALŠÍ UJEDNÁNÍ v náhledu, tisku i Wordu CN.
+  Testy `test_leseni_specifikace` 45/0, `test_techspec_vlastni_radky` 22/0,
+  mutace jádra LEŠ 8/8 a VLR 4/4 (jedna díra v testu doplněna), harness
+  `overit_leseni_spec.mjs` se šablonami CN v11–v15 CZ/EN/DE/FR, příručka,
+  roadmapa #421.
+- **Výchozí volby ke schválení J. V.:** popisek „LEŠENÍ VNITŘNÍ PRO STAVBU
+  OCK" (převzatý od obchodníka); věta „nabízeno jako příplatek" jako u soklu
+  (ne „lze doplnit – viz příplatkové ceny" z N49); sekce DALŠÍ UJEDNÁNÍ za
+  SOUČÁSTÍ DODÁVKY NENÍ.
+- **Pozor pro obchodníka:** kdo si vnitřní lešení dřív přidal vlastním
+  řádkem (jako D. S.), uvidí ho teď dvakrát — vlastní řádek smazat.
+- **Při slučování:** konflikty čekej v CHANGELOG, PREDAVKA, `verze.txt`,
+  `manual/obsah.json`, `roadmapa/roadmap.json` (#421 — S11 si mohla vzít
+  totéž číslo, přečíslovat při slučování) a v `MUTACE` v `mutace_jadro.mjs`.
+- **Další krok (koordinace):** celé kolo s mutacemi.
+
 # Předávka — 15. 10. 2026: dávka S10 (v15.10.14), větev `claude/mutace-b8-b31` — nechycené mutace B8 a B31
 
 Nad `origin/test` (f8fe243, v15.10.13). Do `test-draft` / `test` / `main`

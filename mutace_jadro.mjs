@@ -225,6 +225,23 @@ const MUTACE = [
     hledej: "      if (x.pred) predBlok += novy; else zaBlok += novy;",
     nahrad: "      zaBlok += novy;",
     proc: 'pořadí řádků ve Wordu by se rozešlo se specifikací a náhledem' },
+  /* ---------- vlastní řádky specifikace v nabídce (D. S. 15. 10. 2026, bod 3; v16.10.2) ---------- */
+  { nazev: 'VLR 16. 10.: pruh DALŠÍ UJEDNÁNÍ se klonuje z datového řádku', soubor: 'docxgen.js',
+    hledej: "        if (!klicePlaceholderu(r).length) return r;",
+    nahrad: "        return r;",
+    proc: 'nadpis DALŠÍ UJEDNÁNÍ by ve Wordu vypadal jako řádek tabulky, ne jako pruh sekce' },
+  { nazev: 'VLR 16. 10.: vlastní text se ve Wordu rozvine jako symbol', soubor: 'docxgen.js',
+    hledej: "    return '<w:t xml:space=\"preserve\">' + xmlEsc(text).replace(/\\{/g, '&#123;') + '</w:t>';",
+    nahrad: "    return '<w:t xml:space=\"preserve\">' + xmlEsc(text) + '</w:t>';",
+    proc: 'obchodníkův text „{{CENA_S_DPH}}" by Word nahradil cenou (vzor B122)' },
+  { nazev: 'VLR 16. 10.: prázdná sekce nad DALŠÍ UJEDNÁNÍ zůstane', soubor: 'docxgen.js',
+    hledej: "  'DALŠÍ UJEDNÁNÍ'];",
+    nahrad: "  ];",
+    proc: 'nabídka by nesla prázdný pruh SOUČÁSTÍ DODÁVKY NENÍ' },
+  { nazev: 'VLR 16. 10.: vlastní řádek bez hodnoty se do Wordu nevloží', soubor: 'docxgen.js',
+    hledej: "    && (x.pruh || x.vzdy || !jePrazdnaHodnota(x.hodnota))",
+    nahrad: "    && (x.pruh || !jePrazdnaHodnota(x.hodnota))",
+    proc: 'řádek, který obchodník napsal jen popiskem, by ve Wordu chyběl' },
   /* ---------- hodiny z kalkulace v krycím listu BO (14. 10. 2026) ---------- */
   /* Od 15. 10. (v15.10.10) má tabulka hodin jediný sloupec hodnot — mutace
    * míří na novou hranici (dva sloupce), dřívější `> 3` by už nic neměnila. */

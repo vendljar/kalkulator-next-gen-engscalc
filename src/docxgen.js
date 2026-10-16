@@ -219,7 +219,10 @@ function nahradPlaceholdery(xml, ph) {
  * nemají jediný datový řádek (následuje přímo další sekce nebo konec tabulky). */
 const TS_SEKCE_NAZVY = ['ZÁKLADNÍ PARAMETRY ŠACHTY', 'KONSTRUKČNÍ ŘEŠENÍ ŠACHTY',
   'OPLÁŠTĚNÍ ŠACHTY', 'DOPLŇKOVÉ KONSTRUKCE', 'STAVEBNÍ A PŘÍPRAVNÉ PRÁCE',
-  'PROJEKČNÍ A PŘÍPRAVNÉ PRÁCE', 'SOUČÁSTÍ DODÁVKY NENÍ'];
+  'PROJEKČNÍ A PŘÍPRAVNÉ PRÁCE', 'SOUČÁSTÍ DODÁVKY NENÍ',
+  /* pruh vlastních řádků (docxRadkyNavic, D. S. 15. 10. 2026): sekce nad ním,
+   * které nezbyl řádek, se pozná jako prázdná a zmizí */
+  'DALŠÍ UJEDNÁNÍ'];
 
 const DOCX_SLEVA_KLICE = ['CENA_PRED_SLEVOU', 'SLEVA_PROC', 'SLEVA_KC'];
 /* Totéž pro nabídku PROJ (P4 / K15-N66): řádky „Cena před slevou" a „Sleva"

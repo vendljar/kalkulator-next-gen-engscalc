@@ -40,6 +40,30 @@ kalkulak"). Nad `origin/test` (1cbab3a, v15.10.14).
   chování (výchozí text u nabízeného příplatku) upraveno na nové, 71 / 0.
   Mutace jádra „LEŠ 16. 10." 8 z 8. Harness `overit_leseni_spec.mjs` (bod 2
   obrazovka, náhled, tisk; Word CN v11, v13, v14, v15 CZ/EN/DE/FR).
+- **Bod 3 — vlastní řádek specifikace se nepropsal do CN.** Příčina:
+  `nabidkaData` četla jen pevná pole `TECHSPEC_DEF`; `techspec.extra`
+  (tlačítko „+ přidat vlastní řádek", na obrazovce pod nadpisem DALŠÍ
+  UJEDNÁNÍ) nečetl nikdo — ani online náhled a tisk (`nabidkaNahledSekce`),
+  ani Word (šablona pro ně symbol nemá). Nově `nabidkaData` vrací `tsExtra`
+  (prázdné řádky vynechané, popisek i hodnota přes slovník — známé fráze se
+  přeloží, vlastní text zůstane, jak ho obchodník napsal) a náhled i tisk CN
+  mají sekci **DALŠÍ UJEDNÁNÍ** hned za SOUČÁSTÍ DODÁVKY NENÍ (4. parametr
+  `nabidkaNahledSekce`). Ve Wordu se za řádek `{{TS_NENI_PRISTUP}}`
+  naklonuje sekční pruh (vzor = pruh SOUČÁSTÍ DODÁVKY NENÍ, převezme
+  stínování i sloučení buněk) a řádky; text jde přes `xmlEsc` a `{` jako
+  entita (B122), takže `{{…}}` z textu obchodníka se nerozvine. „DALŠÍ
+  UJEDNÁNÍ" je v `TS_SEKCE_NAZVY`, aby prázdná sekce nad ním zmizela.
+  Slovník: „DALŠÍ UJEDNÁNÍ" EN/DE/FR. **Výchozí volba:** sekce v nabídce se
+  jmenuje stejně jako na obrazovce specifikace a stojí za SOUČÁSTÍ DODÁVKY
+  NENÍ (před cenou); krycí list ani smlouva se nemění.
+  Testy: `src/test_techspec_vlastni_radky.js` před opravou 3 OK / 16 FAIL,
+  po ní 22 / 0; `test_platby_ock.js` — textová kontrola volání náhledu
+  připouští nový parametr. Mutace jádra „VLR 16. 10." 4 z 4 — první běh
+  3 z 4: escapování `{` v POPISKU klonovaného řádku žádný test nezkoušel
+  (jen v hodnotě), doplněn test, po něm 1 z 1. Harness
+  `overit_leseni_spec.mjs` před opravou bodu 3 24 / 12, po ní 36 / 0
+  (Word CN v11, v13, v14, v15 CZ/EN/DE/FR se šablonami z Disku).
+  Příručka: kapitola 17 (lešení), 23 (vlastní řádky), „Co je nového".
 
 ## v15.10.14 — rozbor nechycených mutací B8 a B31, doplněné testy (větev claude/mutace-b8-b31)
 
