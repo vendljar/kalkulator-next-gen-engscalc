@@ -83,11 +83,9 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
 .done b{font-family:var(--display);font-size:15px;min-width:22px}
 .note{font-size:10.5px;color:var(--muted)}
 @media (max-width:480px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.row{grid-template-columns:minmax(0,1fr) 72px}.steps{flex-basis:84px}}
-.limit{margin-left:auto;text-align:right;display:grid;gap:2px;min-width:110px;padding:4px 8px;border:1px solid var(--line);border-radius:5px;background:var(--panel)}
-.limit .lk{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
-.limit .lv{font-family:var(--display);font-size:18px;line-height:1.05}
+.limit{margin-left:auto;display:grid;gap:3px;width:64px;align-self:center}
+.limit .lv{font-family:var(--mono);font-size:12px;text-align:right;font-variant-numeric:tabular-nums}
 .limit .lv.w{color:var(--warn)} .limit .lv.b{color:var(--bad)}
-.limit .ld{font-size:10.5px;color:var(--muted)}
 </style>
 
 <div class="wrap">
@@ -227,10 +225,9 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
     return '<div class="ctx"><span class="mono">kontext '+p+' %</span><div class="bar"><i class="'+c+'" style="width:'+Math.min(p,100)+'%"></i></div></div>'};
   document.getElementById('stamp').textContent=D.aktualizace;
   (function(){var L=D.limit||{},el=document.getElementById('limit');if(!el)return;
-    var pct=(typeof L.procento==='number')?L.procento:null, c=pct==null?(L.stav==='warn'?'w':''):(pct>=90?'b':(pct>=75?'w':''));
-    el.innerHTML='<div class="lk">týdenní limit</div><div class="lv '+c+'">'+(pct==null?esc(L.text||'?'):pct+' %')+'</div>'+
-      (pct!=null?'<div class="bar"><i class="'+c+'" style="width:'+Math.min(pct,100)+'%"></i></div>':'')+
-      '<div class="ld">'+esc(L.obnova?('obnova '+L.obnova):'')+'</div>';})();
+    var pct=(typeof L.procento==='number')?L.procento:null, c=pct==null?'':(pct>=90?'b':(pct>=75?'w':''));
+    el.title='Týdenní limit';
+    el.innerHTML='<div class="lv '+c+'">'+(pct==null?'– %':pct+' %')+'</div><div class="bar"><i class="'+c+'" style="width:'+(pct==null?0:Math.min(pct,100))+'%"></i></div>';})();
   var c=document.getElementById('cekani');
   if(D.cekaNaJV.length){c.innerHTML='<div class="h">Čeká na vás</div><ol>'+D.cekaNaJV.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ol>'}
   else{c.className='alert empty';c.innerHTML='<div class="h">Nic na vás nečeká — koordinace běží sama.</div>'}
