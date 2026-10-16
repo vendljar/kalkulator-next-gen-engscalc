@@ -16,7 +16,8 @@ Do `test-draft` / `test` / `main` nic — sloučení a celé kolo dělá koordin
 - **Doplněk (J. V. 16. 10., varianta A + „předzaškrtnuté v UI"):** ceník bez
   mapy příznaků ukáže v Nastavení → Ceník výchozích osm jako návrh, do
   zveřejnění se hlídá, zveřejnění návrh zapíše; prázdná mapa `{}` = výslovně
-  nic. Jednotkový 41/0, harness 21/0.
+  nic. Jednotkový 41/0, harness 21/0, mutace S13 serveru 15/15, jádra 2/2,
+  `--kontrola` 464 / 207, smoke 255 / 0 / 6.
 - **Po nasazení (J. V.):** v Nastavení → Ceník zkontrolovat předzaškrtnutý
   návrh a zveřejnit ceník (test i ostrá) — teprve tím příznaky platí.
 - **Při slučování:** zkušební `git merge-tree` proti S11
