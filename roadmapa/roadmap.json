@@ -6578,6 +6578,20 @@
    "hotovoKdyz" : "Každý zbývající nález B158–B166 je opravený s testem a mutací, nebo zapsaný jako vědomá mez s rozhodnutím J. V.",
    "kde" : "`podklady/AUDIT_2026-10-15_v15.10.6.md`, `src/vyjimky.js`, `netlify/lib/zakazka_kontrola.mjs`, `src/ui/schvalovani_ui.js`, `BEZPECNOST_MEZE.md`",
    "pozn" : "B153 + B154 ve větvi `claude/b153-b154` (v15.10.8), do test ji slučuje koordinační sezení J. V.: `src/test_vyjimky.js` 40 → 62 OK, `netlify/test_vyjimky.mjs` 36 → 46 OK, mutace B153 ×4 a B154 ×2."
+  },
+  {
+   "id" : "421",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "",
+   "slozitost" : "M",
+   "nazev" : "Lešení a vlastní řádky technické specifikace v nabídce (D. S. 15. 10.)",
+   "proc" : "Připomínky obchodníka D. S. 15. 10. 2026 („online kalkulak“): bod 2 — oba příplatky lešení v nabídce, ale tabulka SOUČÁSTÍ DODÁVKY NENÍ ukazovala jen lešení kolem OCK s výchozím „zajistí objednatel v rámci SP“; bod 3 — vlastní řádek specifikace (DALŠÍ UJEDNÁNÍ) se do cenové nabídky nepropsal. Dokument si odporoval s kapitolou II. a ujednání zákazníkovi neodešlo.",
+   "detail" : "Bod 2: nový řádek LEŠENÍ VNITŘNÍ PRO STAVBU OCK, oba řádky lešení řídí `tsLeseniNeniRadek` (v ceně → řádek vypadne, příplatek v nabídce → „nabízeno jako příplatek“, vyřazený → „zajistí objednatel v rámci SP“), ruční přepis a ↺ fungují; nabídka OCK náhled, tisk i Word (řádek naklonovaný z `{{TS_NENI_LESENI}}`), EN/DE/FR. Bod 3: `techspec.extra` → sekce DALŠÍ UJEDNÁNÍ za SOUČÁSTÍ DODÁVKY NENÍ v náhledu, tisku i Wordu (pruh a řádky naklonované za `{{TS_NENI_PRISTUP}}`, `docxRadkyNavic`).",
+   "hotovoKdyz" : "Hotovo ve větvi (v16.10.2): test_leseni_specifikace 0/3 → 45/0, test_techspec_vlastni_radky 3/16 → 22/0, mutace jádra LEŠ 8/8 a VLR 4/4, harness overit_leseni_spec (Word CN v11–v15 CZ/EN/DE/FR).",
+   "kde" : "`src/techspec.js` (tsLeseniNeniRadek), `src/nabidka.js` (tsRadkyNavic, tsExtra, nabidkaNahledSekce), `src/docxgen.js` (docxRadkyNavic), `overit_leseni_spec.mjs`",
+   "hotovoV" : "v16.10.2 (větev claude/leseni-spec-radek)",
+   "pozn" : "Do test slučuje koordinační sezení J. V. Výchozí volby ke schválení: znění popisku „LEŠENÍ VNITŘNÍ PRO STAVBU OCK“ a věta „nabízeno jako příplatek“ (jako u soklu). Šablona CN může později dostat symbol `{{TS_NENI_LESENI_VNITRNI}}` — pak se řádek neklonuje."
   }
  ],
  "meta" : {
@@ -7156,6 +7170,11 @@
    "text" : "15. 10. 2026 — dávka S6 (claude/b153-b154, v15.10.8): vysoké nálezy auditu kola 25 — B153 dotisk nové strany hlídá cenovou výjimku a minimální marži, B154 schválení výjimky platí jen pro celý obsah; B155 a B156 uzavřeny jako vědomé meze (J. V. 15. 10.). #420.",
    "hotovo" : true,
    "pozn" : "src/test_vyjimky 40 → 62 OK, netlify/test_vyjimky 36 → 46 OK; cílené mutace B153, B154 a výjimky; smoke zelené."
+  },
+  {
+   "text" : "16. 10. 2026 — dávka S12 (claude/leseni-spec-radek, v16.10.2): připomínky D. S. 15. 10. — lešení v technické specifikaci řízené kalkulací (nový řádek vnitřního lešení) a vlastní řádky specifikace v nabídce OCK (náhled, tisk, Word). #421.",
+   "hotovo" : true,
+   "pozn" : "test_leseni_specifikace 45/0, test_techspec_vlastni_radky 22/0; mutace jádra LEŠ 8/8, VLR 4/4; harness overit_leseni_spec se šablonami CN v11–v15."
   }
   ],
   "pravidla" : [
@@ -7242,8 +7261,8 @@
     "id" : "F"
    }
   ],
-  "build" : "v15.10.8 (engscalc, claude/b153-b154)",
-  "stavKDatu" : "15. 10. 2026"
+  "build" : "v16.10.2 (engscalc, claude/leseni-spec-radek)",
+  "stavKDatu" : "16. 10. 2026"
  },
  "_comment" : [
   "JEDINÝ ZDROJ PRAVDY pro roadmapu Kalkulátoru Next Gen.",

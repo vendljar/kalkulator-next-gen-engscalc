@@ -133,9 +133,12 @@ REZIMY.forEach(([rezim, jm]) => {
   const vneBez = hodnota('leseniVne', ext(false), null, rezim);
   test('exteriérová bez lešení: „lze doplnit viz příplatkové ceny"' + sfx,
     /příplatkové ceny/.test(vneBez.text), vneBez);
+  /* Od v16.10.2 (D. S. 15. 10. 2026, bod 2) navrhuje text kalkulace: příplatek
+   * vnějšího lešení je v nabídce → „nabízeno jako příplatek" (štítek „z kalkulace"),
+   * dřív stál výchozí „zajistí objednatel v rámci SP" (test_leseni_specifikace.js). */
   const neniBez = hodnota('neni3', ext(false), null, rezim);
-  test('a řádek LEŠENÍ KOLEM OCK zůstává s výchozím textem' + sfx,
-    neniBez.text === 'zajistí objednatel v rámci SP' && !neniBez.odvozeno, neniBez);
+  test('a řádek LEŠENÍ KOLEM OCK zůstává a odkazuje na příplatek' + sfx,
+    neniBez.text === 'nabízeno jako příplatek' && neniBez.zdroj === 'z kalkulace' && !neniBez.odvozeno, neniBez);
   /* Mimo případ „v ceně" volí text dál obchodník. */
   const neniBezRucne = hodnota('neni3', ext(false), { neni3: 'jiný text' }, rezim);
   test('a obchodník ho může přepsat' + sfx, neniBezRucne.text === 'jiný text', neniBezRucne);
@@ -147,8 +150,8 @@ REZIMY.forEach(([rezim, jm]) => {
     test('interiérová (zaškrtnuto: ' + zaskrt + '): „lze doplnit viz příplatkové ceny"' + sfx,
       /příplatkové ceny/.test(iv.text), iv);
     const ineni = hodnota('neni3', int(zaskrt), null, rezim);
-    test('interiérová (zaškrtnuto: ' + zaskrt + '): řádek LEŠENÍ KOLEM OCK zůstává' + sfx,
-      ineni.text === 'zajistí objednatel v rámci SP', ineni);
+    test('interiérová (zaškrtnuto: ' + zaskrt + '): řádek LEŠENÍ KOLEM OCK zůstává (příplatek)' + sfx,
+      ineni.text === 'nabízeno jako příplatek', ineni);   // v16.10.2: příplatek v nabídce
   });
 });
 
@@ -205,8 +208,9 @@ REZIMY.forEach(([rezim, jm]) => {
 {
   const odvozena = Object.keys(pole).filter(id => typeof pole[id].odvozene === 'function');
   /* + oplechování soklu prohlubně v obou sekcích (14. 10. 2026, test_sokl_specifikace.js) */
-  test('odvozená pole jsou právě statika, 3D sken, lešení kolem OCK a oplechování soklu',
-    odvozena.sort().join(',') === 'neni3,neniSokl,sken3d,sokl,statika', odvozena);
+  /* + vnitřní lešení v SOUČÁSTÍ DODÁVKY NENÍ (v16.10.2, test_leseni_specifikace.js) */
+  test('odvozená pole jsou právě statika, 3D sken, obě lešení v „není" a oplechování soklu',
+    odvozena.sort().join(',') === 'neni3,neniLeseniVnitrni,neniSokl,sken3d,sokl,statika', odvozena);
   const jine = hodnota('dilenskaDok', zadani(), { dilenskaDok: 'ne' }, true);
   test('běžné pole dál bere ruční hodnotu', jine.text === 'ne' && jine.zdroj === 'ručně', jine);
 }

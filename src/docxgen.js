@@ -219,7 +219,10 @@ function nahradPlaceholdery(xml, ph) {
  * nemají jediný datový řádek (následuje přímo další sekce nebo konec tabulky). */
 const TS_SEKCE_NAZVY = ['ZÁKLADNÍ PARAMETRY ŠACHTY', 'KONSTRUKČNÍ ŘEŠENÍ ŠACHTY',
   'OPLÁŠTĚNÍ ŠACHTY', 'DOPLŇKOVÉ KONSTRUKCE', 'STAVEBNÍ A PŘÍPRAVNÉ PRÁCE',
-  'PROJEKČNÍ A PŘÍPRAVNÉ PRÁCE', 'SOUČÁSTÍ DODÁVKY NENÍ'];
+  'PROJEKČNÍ A PŘÍPRAVNÉ PRÁCE', 'SOUČÁSTÍ DODÁVKY NENÍ',
+  /* pruh vlastních řádků (docxRadkyNavic, D. S. 15. 10. 2026): sekce nad ním,
+   * které nezbyl řádek, se pozná jako prázdná a zmizí */
+  'DALŠÍ UJEDNÁNÍ'];
 
 const DOCX_SLEVA_KLICE = ['CENA_PRED_SLEVOU', 'SLEVA_PROC', 'SLEVA_KC'];
 /* Totéž pro nabídku PROJ (P4 / K15-N66): řádky „Cena před slevou" a „Sleva"
@@ -421,6 +424,70 @@ function odstranPrazdneTsRadky(xml, ph) {
   }
   sekOdstr.sort((a, b) => b.zac - a.zac);
   for (const sp of sekOdstr) xml = xml.slice(0, sp.zac) + xml.slice(sp.kon);
+  return xml;
+}
+
+/* ŘÁDKY TABULKY NAVÍC (D. S. 15. 10. 2026, v16.10.2). Technická specifikace
+ * umí řádky, pro které šablona CN symbol nemá (vnitřní lešení, vlastní řádky
+ * DALŠÍ UJEDNÁNÍ). Builder je pošle jako `volby.radkyNavic`:
+ *   { kotva, pred?, symbol?, nazev, hodnota, pruh? }
+ * Řádek se NAKLONUJE z nejvnitřnějšího řádku se symbolem `kotva` (formát,
+ * rámečky i šířky zůstanou), první buňka dostane `nazev`, symbol kotvy se
+ * nahradí `hodnota`. `pruh` = sekční pruh: klonuje se nejbližší řádek BEZ
+ * symbolu nad kotvou (nadpis sekce) a vepíše se do něj `nazev`. Vkládá se
+ * za kotvu (v pořadí seznamu), s `pred` před ni. Nevkládá se, když šablona
+ * `symbol` už nese (dostane hodnotu do svého řádku), když je hodnota prázdná
+ * (bez `vzdy` — vlastní řádek s popiskem a bez hodnoty se vloží) nebo kotva v šabloně chybí. Běží PŘED odstraněním prázdných TS řádků, takže
+ * kotva, která sama zmizí, klon nezruší. Text jde přes xmlEsc a `{` jako
+ * entita (B122) — vlastní text uživatele se nerozvine jako symbol. */
+function docxTextDoRadku(radek, text) {
+  let prvni = true;
+  return radek.replace(/<w:t(\s[^>]*)?>[\s\S]*?<\/w:t>/g, () => {
+    if (!prvni) return '<w:t></w:t>';
+    prvni = false;
+    return '<w:t xml:space="preserve">' + xmlEsc(text).replace(/\{/g, '&#123;') + '</w:t>';
+  });
+}
+function docxRadkyNavic(xml, radky) {
+  const seznam = (Array.isArray(radky) ? radky : []).filter(x => x && x.kotva
+    && (x.pruh || x.vzdy || !jePrazdnaHodnota(x.hodnota))
+    && !(x.symbol && klicePlaceholderu(xml).indexOf(x.symbol) >= 0));
+  if (!seznam.length) return xml;
+  const kotvy = [];
+  seznam.forEach(x => { if (kotvy.indexOf(x.kotva) < 0) kotvy.push(x.kotva); });
+  const vlozit = [];
+  kotvy.forEach(kotva => {
+    const spany = radkoveSpany(xml);
+    const kandidati = spany.filter(sp => klicePlaceholderu(vlastniObsahRadku(xml.slice(sp.zac, sp.kon))).indexOf(kotva) >= 0);
+    if (!kandidati.length) return;
+    const sp = kandidati.reduce((a, b) => (b.hloubka > a.hloubka ? b : a));
+    const radek = xml.slice(sp.zac, sp.kon);
+    const prvniBunka = (r, text) => {
+      const m = r.match(/<w:tc[\s>][\s\S]*?<\/w:tc>/);
+      return m ? r.replace(m[0], docxTextDoRadku(m[0], text)) : r;
+    };
+    /* sekční pruh: nejbližší řádek téže hloubky nad kotvou bez symbolu, ve stejné tabulce */
+    const pruhVzor = () => {
+      const pred = spany.filter(o => o.hloubka === sp.hloubka && o.kon <= sp.zac).sort((a, b) => b.zac - a.zac);
+      for (const o of pred) {
+        if (/<\/w:tbl>|<w:tbl[\s>]/.test(xml.slice(o.kon, sp.zac).replace(/<w:tr[\s>][\s\S]*?<\/w:tr>/g, ''))) return null;
+        const r = xml.slice(o.zac, o.kon);
+        if (!klicePlaceholderu(r).length) return r;
+      }
+      return null;
+    };
+    let predBlok = '', zaBlok = '';
+    seznam.filter(x => x.kotva === kotva).forEach(x => {
+      let novy;
+      if (x.pruh) { const v = pruhVzor(); if (!v) return; novy = docxTextDoRadku(v, x.nazev); }
+      else novy = nahradPlaceholdery(prvniBunka(radek, String(x.nazev == null ? '' : x.nazev)),
+        { [kotva]: String(x.hodnota == null ? '' : x.hodnota) });
+      if (x.pred) predBlok += novy; else zaBlok += novy;
+    });
+    vlozit.push({ sp, predBlok, zaBlok });
+  });
+  vlozit.sort((a, b) => b.sp.zac - a.sp.zac)
+    .forEach(v => { xml = xml.slice(0, v.sp.zac) + v.predBlok + xml.slice(v.sp.zac, v.sp.kon) + v.zaBlok + xml.slice(v.sp.kon); });
   return xml;
 }
 
@@ -743,6 +810,7 @@ async function docxVyplnSablonu(arrayBuffer, placeholders, priplatky, obrazky, v
       let po = pred;
       if (p.nazev === 'word/document.xml') {
         po = expandujPriplatky(po, priplatky);
+        po = docxRadkyNavic(po, volby && volby.radkyNavic);   // řádky bez symbolu v šabloně (D. S. 15. 10. 2026)
         po = odstranPrazdneTsRadky(po, placeholders);   // prázdné/„-“ řádky TS pryč
       }
       po = odstranOdstavceSeSymboly(po, volby && volby.odstavcePryc);   // věty, které do dokumentu nepatří (K18-N101)
@@ -1101,7 +1169,7 @@ async function docxXmlVady(arrayBuffer) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
+  module.exports = { docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
     odstranPrazdneTsRadky, jePrazdnaHodnota, klicePlaceholderu, odstranPrazdneBloky, odstranOdstavceSeSymboly, docxZnackyBloku,
     docxVlozObrazky, rozmeryObrazku, dataUrlNaBajty,
     docxDokumentBlob, docxTeloZeSekci, docxSestavBlob, docxPar, docxEsc,

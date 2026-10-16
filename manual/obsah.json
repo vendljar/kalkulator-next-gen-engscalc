@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v15.10.14 · sestaveno 15. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
+  "verze": "Platí pro aplikaci v16.10.2 · sestaveno 16. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -11,6 +11,13 @@
         "Snímky obrazovky v téhle příručce jsou pořízené z běžící aplikace, ale nad **zkušebním ceníkem** s vymyšlenými sazbami. **Částky na obrázcích jsou ze zkušebního ceníku a nejsou naše ceny.** Neberte je jako vodítko pro nabídku a nesrovnávejte s nimi svou kalkulaci — sledujte, kde co je a jak se to chová, ne kolik to stojí.",
         "Jména zákazníků na snímcích jsou taky **vymyšlená**. Celá ukázková zakázka **2026 - OPR - CN - 9100** je smyšlená a vznikla jen kvůli téhle příručce.",
         "Příručka je určená obchodníkům ENGINEERS CZ. Popisuje, jak firma počítá nabídky, takže ji zákazníkům ani nikomu mimo firmu neposílejte."
+      ]
+    },
+    {
+      "nadpis": "Co je nového ve verzi v16.10.2 (16. 10. 2026)",
+      "odstavce": [
+        "**Lešení v technické specifikaci se řídí kalkulací.** V tabulce SOUČÁSTÍ DODÁVKY NENÍ jsou dva řádky: **LEŠENÍ VNITŘNÍ PRO STAVBU OCK** (nový) a **LEŠENÍ KOLEM OCK PRO PROVEDENÍ OPLÁŠTĚNÍ**. Když je lešení mezi příplatky v nabídce, stojí u něj „nabízeno jako příplatek“ se štítkem **z kalkulace**; když je v základní ceně, řádek se do dokumentu nedává. Text můžete přepsat (štítek **ručně**) a tlačítkem ↺ vrátit návrh z kalkulace (kapitola 17).",
+        "**Vlastní řádky technické specifikace jdou do cenové nabídky.** Co přidáte tlačítkem *+ přidat vlastní řádek* (sekce DALŠÍ UJEDNÁNÍ), objeví se v náhledu, tisku i ve Wordu nabídky OCK jako sekce DALŠÍ UJEDNÁNÍ za tím, co součástí dodávky není (kapitola 23)."
       ]
     },
     {
@@ -458,6 +465,7 @@
         { "typ": "podnadpis", "text": "Vnější lešení a oplechování soklu" },
         { "typ": "text", "text": "**U interiérové šachty je vnější lešení vždycky jen příplatek.** Do základní ceny se tam dostat nemůže, zákazník si ho ale může doobjednat; příplatek se počítá stejně jako u exteriérové šachty. Dokud si ho neobjedná, žádá kapitola IV. nabídky lešení po objednateli a technická specifikace uvádí „lze doplnit viz příplatkové ceny“." },
         { "typ": "text", "text": "U **exteriérové šachty s lešením v základní ceně** nabídka lešení po objednateli nežádá a specifikace vynechá řádek „zajistí objednatel“. Dokument si tak neodporuje a zákazník si nemůže vybrat výklad, který je pro něj levnější." },
+        { "typ": "text", "text": "**V tabulce SOUČÁSTÍ DODÁVKY NENÍ** má specifikace pro lešení dva řádky — **LEŠENÍ VNITŘNÍ PRO STAVBU OCK** a **LEŠENÍ KOLEM OCK PRO PROVEDENÍ OPLÁŠTĚNÍ** (od v16.10.2). Text navrhuje kalkulace (štítek **z kalkulace**): je-li lešení mezi příplatky v nabídce, „nabízeno jako příplatek“; je-li příplatek ze sloupce **Nabídka** vyřazený, „zajistí objednatel v rámci SP“; je-li lešení v základní ceně, řádek se do dokumentu nedává. Text můžete vybrat nebo napsat jiný (štítek **ručně**) a tlačítkem ↺ se vrátíte k návrhu. Totéž stojí v nabídce — v náhledu, tisku i ve Wordu, česky i v překladech." },
         { "typ": "text", "text": "Podobně **oplechování soklu prohlubně**: je-li nabízené jako příplatek, specifikace u něj píše „nabízeno jako příplatek“, ne „není součástí nabídky“. Rozhoduje o tom týž sloupec **Nabídka**, ze kterého se skládá kapitola II." },
         { "typ": "podnadpis", "text": "Dodatkový text místo množství" },
         { "typ": "text", "text": "Pod každou ceníkovou položkou v příplatcích i ve volitelných je pole **dodatkový text do cenové nabídky (nepovinné)**. Co do něj napíšete, se v nabídce vytiskne pod názvem položky **místo množství** — zákazník tak místo „množství: 88,626“ čte, co si kupuje. Prázdné pole znamená, že se pod položkou nic netiskne." },
@@ -590,6 +598,7 @@
             { "obsahuje": "Příplatky do nabídky", "cely": "tr", "text": "Kolik příplatků se propíše do sekce II. dokumentu — řídí to sloupec *Nabídka* v kalkulaci." }
           ]
         },
+        { "typ": "text", "text": "**Vlastní řádky technické specifikace** (tlačítko *+ přidat vlastní řádek*, sekce DALŠÍ UJEDNÁNÍ) se od v16.10.2 propisují i do nabídky OCK — v náhledu, tisku i ve Wordu jako sekce **DALŠÍ UJEDNÁNÍ** hned za tím, co součástí dodávky není. V anglické, německé a francouzské nabídce se přeloží jen věty, které zná slovník aplikace (třeba „zajistí objednatel v rámci SP“); vlastní text zůstane, jak jste ho napsali." },
         { "typ": "podnadpis", "text": "Kde se který dokument vytváří" },
         {
           "typ": "seznam",

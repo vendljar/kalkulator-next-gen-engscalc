@@ -249,7 +249,8 @@ const kapIII = (sek) => (Array.isArray(sek) ? sek.find(x => /^III\./.test(x.sekc
   test('náhled EN měsíční: přeložený popisek i věta', !!iiiE && iiiE.radky[0][0] === 'Invoicing method' && iiiE.radky[0][1] === PR.tr(MES, 'en'), iiiE);
   const ui = fs.readFileSync(path.join(__dirname, 'ui', 'zakazka_ui.js'), 'utf8');
   test('obě online cesty (podklady i tiskový náhled) předávají kalendář náhledu',
-    (ui.match(/nabidkaNahledSekce\(p, L, data\.platbyOck\)/g) || []).length === 2);
+    /* od v16.10.2 i vlastní řádky specifikace jako 4. parametr (D. S. 15. 10., bod 3) */
+    (ui.match(/nabidkaNahledSekce\(p, L, data\.platbyOck(, data\.tsExtra)?\)/g) || []).length === 2);
 }
 
 /* ---------------- 8) smlouva o dílo realizace ---------------- */
