@@ -44,7 +44,6 @@ chybu chytit dřív. Mazat celé objekty i s čárkou před nimi.
 | `dlazdice` | 4 dlaždice: main, test, integrace, celé kolo; `s` = ok / run / warn / bad / idle |
 | `releasy` | jeden řádek: vydané / bez tagu (z `release_odkaz.py --chybejici` + GitHub `list_releases`) |
 | `faze` | `["kód","testy","mutace","souhrn","integrace","sady","test"]` |
-| `limit` | týdenní limit vpravo nahoře (J. V. 16. 10.): `{procento, stav, text, obnova}`. Z `get_session` je jen `rate_limit_info` (`status` allowed / allowed_warning, `resetsAt`) — procento tam není; když ho J. V. sdělí (claude.ai → Nastavení → Využití), zapiš `procento`, jinak `procento: null` a `text` podle stavu („v pořádku“ / „blízko limitu“), `obnova` z `resetsAt` v pražském čase |
 | `sezeni` | **všechna NEarchivovaná sezení** (`list_sessions mine:true`, status ≠ ARCHIVED) s **přesným názvem** (`title`): `nazev, id, role (koordinace / dávka / jiné), stav (run/ok/warn/bad/idle), stavText, faze (index 0–7 u dávek, jinak null), eta, kontext, co, dalsi` |
 | `log` | `[čas, událost]`, nejnovější nahoře; stačí ~10 posledních |
 
@@ -68,6 +67,9 @@ chybu chytit dřív. Mazat celé objekty i s čárkou před nimi.
   J. V. k archivaci (v „Čeká na vás“); archivovat jen na jeho pokyn.
 
 ## Vzhled (neměnit bez pokynu)
+
+Týdenní limit v kokpitu NE (J. V. 16. 10.): procento čerpání z prostředí nejde zjistit, odhad by byl zavádějící.
+
 
 Úzký velín pro postranní okno Claude (~600 px): drobné písmo (12,5 px), IBM Plex
 Sans / Mono, Barlow Condensed na čísla; světlé i tmavé téma přes tokeny; žádná
