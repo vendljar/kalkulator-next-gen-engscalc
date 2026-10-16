@@ -96,7 +96,7 @@ const TS_C = { /* číselníky z listů _data (bez úvodní pomlčky) */
     'není požadováno', 'není součástí nabídky', 'zajistí objednatel v rámci SP', 'zajistí objednatel',
     'lze doplnit - viz „Příplatky“', 'není součástí dodávky, zajistí objednatel',
     'není součást dodávky, lze doplnit viz příplatkové ceny', 'je součástí dodávky',
-    'lze doplnit – viz příplatkové ceny'],
+    'lze doplnit – viz příplatkové ceny', 'nabízeno jako příplatek'],
   stavebniPrace: ['není součástí dodávky, zajistí objednatel', 'je součástí dodávky',
     'není součást dodávky, zajistí objednatel před montáží šachty', 'viz příplatky',
     'není součást dodávky, lze doplnit viz příplatkové ceny', 'lze doplnit – viz příplatkové ceny',
@@ -670,8 +670,22 @@ const TECHSPEC_DEF = [
      * Oprava K1 z 22. 9. odpoledne srovnala jen kapitolu IV. a řádek výš;
      * tenhle zůstal a u exteriérové šachty s lešením v ceně tvrdil opak.
      * Mimo tenhle případ se pole chová jako dřív — text volí obchodník. */
+    /* LEŠENÍ ŘÍZENÉ KALKULACÍ (D. S. 15. 10. 2026, bod 2; v16.10.2). Obchodník
+     * měl oba příplatky lešení v nabídce a tabulka tvrdila „zajistí objednatel
+     * v rámci SP" se štítkem „výchozí". Mimo základní cenu teď text navrhuje
+     * kalkulace (`prefill`, štítek „z kalkulace") — „nabízeno jako příplatek",
+     * je-li příplatek v nabídce, jinak dosavadní výchozí věta — a obchodník
+     * ho smí přepsat (štítek „ručně", ↺ vrátí návrh). V základní ceně se řádek
+     * nedává vůbec (odvozené prázdno, P8/7). Rozhoduje tsLeseniNeniRadek,
+     * tatáž funkce jako v nabídce OCK. Vnitřní lešení řádek dosud nemělo. */
+    { id: 'neniLeseniVnitrni', label: 'LEŠENÍ VNITŘNÍ PRO STAVBU OCK', ciselnik: TS_C.dodavkaPozn, def: 'zajistí objednatel v rámci SP',
+      odvozene: (r, Z) => tsLeseniNeniRadek(r, Z, 'leseniVnitrni').vDodavce ? '' : null,
+      prefill: (r, Z) => tsLeseniNeniRadek(r, Z, 'leseniVnitrni').text,
+      odvozenePopis: 'Vnitřní lešení je v základní ceně (řádek LEŠENÍ – UVNITŘ ŠACHTY), '
+        + 'proto se tenhle řádek do dokumentu nedává.' },
     { id: 'neni3', label: 'LEŠENÍ KOLEM OCK PRO PROVEDENÍ OPLÁŠTĚNÍ', ciselnik: TS_C.dodavkaPozn, def: 'zajistí objednatel v rámci SP',
       odvozene: (r) => tsLeseniVnejsiVCene(r) ? '' : null,
+      prefill: (r, Z) => tsLeseniNeniRadek(r, Z, 'leseniVnejsi').text,
       odvozenePopis: 'Vnější lešení je v základní ceně (řádek LEŠENÍ – VNĚ ŠACHTY), '
         + 'proto se tenhle řádek do dokumentu nedává.' },
     { id: 'neni4', label: 'ODBĚRNÉ MÍSTO EL. ENERGIE PO DOBU REALIZACE', ciselnik: TS_C.dodavkaPozn, def: 'bezúplatně zajistí objednatel' },
@@ -785,6 +799,21 @@ function tsSoklRadek(r, Z) {
   const vDodavce = !!(r && (r.volitelneKatalog || []).some(x => x.key === 'sokl' && x.zahrnuto));
   if (vDodavce) return { vDodavce, text: 'je součástí dodávky' };
   return { vDodavce, text: tsPriplatekNabizen(r, Z, 'sokl') ? 'nabízeno jako příplatek' : 'není součástí nabídky' };
+}
+
+/* LEŠENÍ V SOUČÁSTÍ DODÁVKY NENÍ (D. S. 15. 10. 2026, bod 2) — obdoba
+ * tsSoklRadek pro `leseniVnitrni` a `leseniVnejsi`. Vrací { vDodavce, text }:
+ *   vDodavce = lešení je v ZÁKLADNÍ CENĚ (volitelná položka zahrnutá ve
+ *     výsledku; u odeslané nabídky zmrazený otisk) → řádek se nedává, dodávku
+ *     říká sekce STAVEBNÍ A PŘÍPRAVNÉ PRÁCE;
+ *   jinak „nabízeno jako příplatek", když je příplatek v nabídce
+ *     (tsPriplatekNabizen, týž seznam jako kapitola II.), jinak „zajistí
+ *     objednatel v rámci SP" (dosavadní výchozí text řádku). */
+const TS_LESENI_NENI_VYCHOZI = 'zajistí objednatel v rámci SP';
+function tsLeseniNeniRadek(r, Z, key) {
+  const vDodavce = !!(r && (r.volitelneKatalog || []).some(x => x.key === key && x.zahrnuto));
+  if (vDodavce) return { vDodavce, text: '' };
+  return { vDodavce, text: tsPriplatekNabizen(r, Z, key) ? 'nabízeno jako příplatek' : TS_LESENI_NENI_VYCHOZI };
 }
 
 function tsStatikaVCene(r) {
@@ -962,7 +991,7 @@ function tsKontrola(ts, r, Z, C, zak) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { tsRadekVCene, tsPriplatekNabizen, TS_LZE_DOPLNIT, TECHSPEC_DEF, TS_C, DEFAULT_TECHSPEC, tsHodnota, tsOplasteniRozsah, tsOplasteniMaterial, tsOplPoStenach,
+  module.exports = { tsLeseniNeniRadek, tsRadekVCene, tsPriplatekNabizen, TS_LZE_DOPLNIT, TECHSPEC_DEF, TS_C, DEFAULT_TECHSPEC, tsHodnota, tsOplasteniRozsah, tsOplasteniMaterial, tsOplPoStenach,
     tsVyplnDveri, tsVyplnDveriCasti, tsSvetlikyDveri,
     tsOdvozeno, tsLeseniVnejsiVCene, tsStatikaVCene, tsSken3dVCene, tsSoklRadek,
     TS_C_KEY_OF, tsCiselnikKlic, tsCiselnikPouziti, tsPole, TS_C_ORIG, TS_DEF_ORIG,

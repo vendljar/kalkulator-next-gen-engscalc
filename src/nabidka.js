@@ -235,6 +235,11 @@ function nabidkaData(zak, varianta, jekly, lang, sablona) {
     TS_SKEN3D: ts('sken3d'), TS_VYSTUP_ZAMERENI: ts('vystupZamereni'),
     TS_DILENSKA_DOK: ts('dilenskaDok'), TS_STATIKA: ts('statika'),
     TS_NENI_OSVETLENI: ts('neni1'), TS_NENI_VENTILATOR: ts('neni2'),
+    /* Lešení v SOUČÁSTÍ DODÁVKY NENÍ se řídí kalkulací (D. S. 15. 10. 2026,
+     * bod 2): prázdné, když je lešení v základní ceně (řádek zmizí), jinak
+     * návrh z tsLeseniNeniRadek nebo ruční text. Šablony CN do v15 symbol
+     * vnitřního lešení nemají — řádek se do Wordu naklonuje (tsRadkyNavic). */
+    TS_NENI_LESENI_VNITRNI: tsNeboPrazdno('neniLeseniVnitrni'),
     TS_NENI_LESENI: ts('neni3'), TS_NENI_ODBERNE: ts('neni4'),
     TS_NENI_ULOZNE: ts('neni5'), TS_NENI_DOZDENI: ts('neni7'),
     TS_NENI_STAVEBNI: ts('neni8'),
@@ -468,7 +473,15 @@ function nabidkaData(zak, varianta, jekly, lang, sablona) {
    * strana Wordu vozila fotografii cizí stavby ze šablony. */
   Object.assign(placeholders,
     typeof uvodniFotoSymboly === 'function' ? uvodniFotoSymboly(zak) : {});
-  return { placeholders, priplatky: priplatkyList, jazyk: L, platbyOck,
+  /* ŘÁDKY TABULKY, PRO KTERÉ ŠABLONA NEMÁ SYMBOL (D. S. 15. 10. 2026).
+   * docxgen je naklonuje z řádku `kotva` (formát zůstane) a vepíše popisek
+   * v jazyce dokumentu; šablona, která symbol už nese, dostane hodnotu do
+   * svého řádku a klon nevznikne. Prázdná hodnota = řádek se nevkládá. */
+  const tsRadkyNavic = [
+    { symbol: 'TS_NENI_LESENI_VNITRNI', kotva: 'TS_NENI_LESENI', pred: true,
+      nazev: P('LEŠENÍ VNITŘNÍ PRO STAVBU OCK'), hodnota: placeholders.TS_NENI_LESENI_VNITRNI },
+  ];
+  return { placeholders, priplatky: priplatkyList, jazyk: L, platbyOck, tsRadkyNavic,
            /* sken podpisu s razítkem (#146) + úvodní fotka stavby */
            obrazky: Object.assign({},
              typeof zpracovatelObrazky === 'function' ? zpracovatelObrazky() : {},
@@ -592,6 +605,7 @@ function nabidkaNahledSekce(ph, lang, platby) {
       /* Řádek zmizí, když je vnější lešení v základní ceně (P8/7) — dodávku
        * pak říká LEŠENÍ – VNĚ ŠACHTY výš. Word ho vyhodí sám (prázdný TS_*),
        * náhled se musí zeptat tady, stejně jako u soklu. */
+      ...(ph.TS_NENI_LESENI_VNITRNI ? [['LEŠENÍ VNITŘNÍ PRO STAVBU OCK', ph.TS_NENI_LESENI_VNITRNI]] : []),   // D. S. 15. 10.
       ...(ph.TS_NENI_LESENI ? [['LEŠENÍ KOLEM OCK PRO PROVEDENÍ OPLÁŠTĚNÍ', ph.TS_NENI_LESENI]] : []),
       ['ODBĚRNÉ MÍSTO EL. ENERGIE PO DOBU REALIZACE', ph.TS_NENI_ODBERNE], ['ÚLOŽNÉ PROSTORY', ph.TS_NENI_ULOZNE],
       ['DOZDĚNÍ KOLEM ŠACHETNÍCH DVEŘÍ', ph.TS_NENI_DOZDENI], ['STAVEBNÍ PŘÍPRAVA', ph.TS_NENI_STAVEBNI],

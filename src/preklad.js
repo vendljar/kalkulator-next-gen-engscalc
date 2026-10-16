@@ -438,6 +438,8 @@ const PREKLAD = {
   "kruhový tvar": ["Circular shape","Runde Form","Forme circulaire"],
   "lakované lišty po obvodu skla": ["Painted trims along the glass perimeter","Lackierte Leisten am Glasumfang","Baguettes laquées sur le pourtour du verre"],
   "lesklý ochranný lak, odstín RAL 7016": ["Glossy protective paint, RAL 7016","Glänzender Schutzlack, RAL 7016","Peinture de protection brillante, teinte RAL 7016"],
+  /* D. S. 15. 10. 2026, bod 2 (v16.10.2): vnitřní lešení v SOUČÁSTÍ DODÁVKY NENÍ */
+  "LEŠENÍ VNITŘNÍ PRO STAVBU OCK": ["INTERNAL SCAFFOLDING FOR THE STRUCTURE ERECTION","INNENGERÜST FÜR DIE MONTAGE DER STAHLKONSTRUKTION","ÉCHAFAUDAGE INTÉRIEUR POUR LE MONTAGE DE LA STRUCTURE"],
   "LEŠENÍ KOLEM OCK PRO PROVEDENÍ OPLÁŠTĚNÍ": ["SCAFFOLDING AROUND THE STRUCTURE FOR CLADDING WORKS","GERÜST UM DIE STAHLKONSTRUKTION FÜR DIE VERKLEIDUNGSARBEITEN","ÉCHAFAUDAGE AUTOUR DE LA STRUCTURE POUR LA POSE DU BARDAGE"],
   "lichoběžník": ["Trapezoid","Trapez","Trapèze"],
   "lze doplnit - viz „Příplatky“": ["Can be added - see \"Surcharges\"","Kann ergänzt werden - siehe „Aufpreise“","Peut être ajouté - voir « Suppléments »"],

@@ -8,6 +8,39 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v16.10.2 — lešení a vlastní řádky technické specifikace v nabídce (větev claude/leseni-spec-radek)
+
+Dávka S12, připomínky obchodníka D. S. z 15. 10. 2026 (e-mail „online
+kalkulak"). Nad `origin/test` (1cbab3a, v15.10.14).
+
+- **Bod 2 — lešení v technické specifikaci řízené kalkulací.** Obchodník měl
+  v Kalkulaci OCK oba příplatky „LEŠENÍ - vnitřní" i „LEŠENÍ - vnější"
+  v nabídce, tabulka SOUČÁSTÍ DODÁVKY NENÍ ale nesla jen „LEŠENÍ KOLEM OCK
+  PRO PROVEDENÍ OPLÁŠTĚNÍ" s výchozím „zajistí objednatel v rámci SP"
+  (štítek „výchozí") — opak toho, co nabídka nabízí v kapitole II.
+  Nový řádek **LEŠENÍ VNITŘNÍ PRO STAVBU OCK** (před lešením kolem OCK) a oba
+  řádky se řídí jedinou funkcí `tsLeseniNeniRadek` (techspec.js), obdobou
+  `tsSoklRadek`: lešení v základní ceně → řádek se do dokumentu nedává
+  (odvozené prázdno, P8/7 — dodávku říká sekce STAVEBNÍ A PŘÍPRAVNÉ PRÁCE);
+  příplatek v nabídce → „nabízeno jako příplatek"; příplatek vyřazený ze
+  sloupce Nabídka → „zajistí objednatel v rámci SP". Mimo základní cenu je
+  text `prefill` (štítek „z kalkulace"), takže ruční přepis (štítek „ručně")
+  i ↺ fungují jako u ostatních polí — na rozdíl od soklu, který je celý
+  odvozený. Nabídka OCK: zástupce `TS_NENI_LESENI_VNITRNI`, řádek v náhledu
+  i tisku; šablony CN v11–v15 symbol nemají, proto **docxgen naklonuje řádek**
+  z řádku `{{TS_NENI_LESENI}}` (`docxRadkyNavic`, `volby.radkyNavic`, data
+  `tsRadkyNavic` z nabidkaData) s popiskem v jazyce dokumentu; šablona, která
+  symbol ponese, dostane hodnotu do svého řádku. Slovník: popisek EN/DE/FR.
+  **Výchozí volby (návrh, zapsáno pro J. V.):** znění popisku převzaté od
+  obchodníka („LEŠENÍ VNITŘNÍ PRO STAVBU OCK"); u příplatku v nabídce věta
+  „nabízeno jako příplatek" jako u soklu (ne „lze doplnit – viz příplatkové
+  ceny" z N49); hodnota přidána do číselníku poznámek k dodávce.
+  Testy: `src/test_leseni_specifikace.js` před opravou 0 OK / 3 FAIL
+  (přerušeno), po ní 45 / 0; `test_specifikace_cena.js` — 7 kontrol starého
+  chování (výchozí text u nabízeného příplatku) upraveno na nové, 71 / 0.
+  Mutace jádra „LEŠ 16. 10." 8 z 8. Harness `overit_leseni_spec.mjs` (bod 2
+  obrazovka, náhled, tisk; Word CN v11, v13, v14, v15 CZ/EN/DE/FR).
+
 ## v15.10.14 — rozbor nechycených mutací B8 a B31, doplněné testy (větev claude/mutace-b8-b31)
 
 Dávka S10. Celé kolo nad f8fe243 (v15.10.13): mutace serveru 447 z 449,
