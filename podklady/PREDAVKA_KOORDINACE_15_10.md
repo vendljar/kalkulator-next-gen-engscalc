@@ -10,6 +10,14 @@ Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kv�
 - **Ještě nesloučené zápisové commity** (jen CHANGELOG/PREDAVKA/verze/roadmapa, bez kódu): `claude/b80-pipedrive` 38996f2 (v15.10.7, roadmapa #345, NASAZENI), `claude/p12-naklady` 1f2a365 (výsledky po úpravě, mutace 13/13, smoke 248/0/2), `claude/kolo25-audit` dcc3d5f (smoke 247/0/6).
 - **Další krok:** do `claude/integrace-15-10` sloučit 38996f2, 1f2a365, dcc3d5f (konflikty jen v dokumentaci — novější oddíl nahoru, `verze.txt` = 15.10.7, příručka `manual/obsah.json` verze + nadpis „Co je nového ve verzi v15.10.7"), `--kontrola` mutací, sestavit, příručka ze snímků, `spust_testy.sh --smoke` s podklady → zelené → zápis do CHANGELOG → push `claude/integrace-15-10` a fast-forward `test` (`git merge-base --is-ancestor origin/test HEAD`).
 
+## ZÁVĚR noci 15./16. 10. (05:45 UTC) — vše hotovo
+
+- `test` = **55f0690 v15.10.14**, celé kolo s mutacemi **VŠE ZELENÉ** (257/0/1, jádro 205/205, server 449/449, statické 3/3). Obsahuje S1–S10.
+- Release: vydat **v15.10.14** (odkaz v koordinačním sezení / kokpitu). v15.10.12 (vydání nabízeno) je obsažená v v15.10.14 — stačí vydat jen v15.10.14.
+- Čeká na J. V.: (1) release v15.10.14; (2) šablona SoD projekce s číslem: `node nastroje/vyrob_sablony.js --sod-proj-cislo <složka>` → v3 na Disk a do Nastavení → Šablony (`podklady/POSTUP_SABLONY_SOD_15_10.md`); (3) `main` jen po potvrzení J. V.
+- Poučení z noci: restart kontejneru přeruší kolo a může nechat v pracovní kopii kola nevrácenou mutaci → před dalším během `git checkout -- .` v pracovní kopii kola.
+- Hodinová kontrola trig_01GwrzYRDzbmqK5GXCYEaLLY vypnuta.
+
 ## Stav 15. 10. ~16:00 UTC (koordinace session_01NQjWzfqv1obHAg7DWPHAKH)
 
 - `test` = 06937a3 **v15.10.10** (S1, S3, S4, S7, S8; release v15.10.10 i v15.10.7 vydány).
