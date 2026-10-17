@@ -1,3 +1,19 @@
+# Předávka — 17. 10. 2026: dávka V1 (v17.10.2), větev `claude/v1-cislo-sod` — návrh čísla SoD a zámek po tisku SoD (#366)
+
+Nad `origin/claude/integrace-16-10` (e2c773a, v16.10.5). Do `test-draft` / `test` / `main`
+nic — slučuje koordinace (session_011B3ruyPigNEMSUdesbk4Hd). Podrobnosti: CHANGELOG v17.10.2.
+
+- **Hotovo (pushnuto, commit po bodech):** V1-1 návrh čísla SoD z čísla nabídky (CN → SOD,
+  `sodCisloNavrh`, prefill v obou krycích listech, ↺); V1-2 první tisk SoD opíše číslo SoD
+  a datum podpisu do zakázky (`zamekPrvniSmlouva`, `kryciZmrazSod`, `kryciProjZmrazSod`);
+  V1-3 příručka (kap. 24, Co je nového v17.10.2), roadmapa #366 hotovo, CHANGELOG.
+- **Výchozí volby (k potvrzení koordinací / J. V.):** (a) „řada" = číslo nabídky s SOD
+  místo CN, ne samostatná průběžná řada od papírových smluv (rozhodnutí 29. 9.);
+  (b) varianta ≥ 2 nese příponu `.2` i v čísle SoD (unikátnost).
+- **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `roadmap.json` /
+  `netlify/mutace.mjs` (mutace #366, upravené kotvy S7) / `manual/obsah.json` (verze a novinky).
+- **Další krok:** žádný — dávka uzavřená; celé kolo pustí koordinace.
+
 # Předávka — 16. 10. 2026: dávka V4 (v16.10.5), větev `claude/v4-kontrola-rozhodnuti` — kontrola rozhodnutí 15.–16. 10.
 
 Nad `origin/claude/integrace-16-10` (= test v15.10.14). Do `test-draft` / `test` / `main` nic —

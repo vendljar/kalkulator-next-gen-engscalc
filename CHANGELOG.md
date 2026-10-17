@@ -8,6 +8,46 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v17.10.2 — návrh čísla SoD a zámek po tisku SoD (větev claude/v1-cislo-sod)
+
+Dávka V1 (zadání koordinace „ŘÍDÍCÍ 16.10“, plán víkendu, okno O5), nad
+`origin/claude/integrace-16-10` (v16.10.5). Roadmapa #366, rozhodnutí
+J. V. 16. 10. 2026: „Aplikace navrhne další číslo SoD z řady (podle čísla
+nabídky), obchodník může přepsat; tisk SoD zamkne termín, podpisy
+a podmínky."
+
+- **Nové — návrh čísla SoD (V1-1):** pole „Číslo SoD“ v krycím listu OCK
+  i PROJ se předvyplní z čísla nabídky — kód CN se vymění za SOD
+  (`2026 - OPR - CN - 0412` → `2026 - OPR - SOD - 0412`), řada, oddělovače
+  i přípona varianty (.2) zůstávají; starší číslo bez CN dostane SOD před
+  pořadí, zakázka bez čísla návrh nedostane (`sodCisloNavrh`,
+  `src/zakazka.js`). Zdroj „návrh z čísla nabídky“, ruční přepis má
+  přednost, ↺ vrátí návrh. Návrh plní `{{SOD_CISLO_SMLOUVY}}`. Řada SoD se
+  na serveru nevede — unikátnost nese číslo nabídky (kontrola duplicit
+  a server).
+- **Opraveno — zámek po tisku SoD (V1-2):** termíny, podpisy a podmínky už
+  zámek SoD zamykal; datum podpisu smlouvy (předvyplněné dneškem, při
+  odeslání nabídky se záměrně nezmrazuje) se ale po tisku smlouvy dál
+  posouvalo a návrh čísla SoD by se měnil s číslem nabídky. První tisk
+  smlouvy teď obojí (a číslo SoD projekce) zapíše do zakázky
+  (`zamekPrvniSmlouva`, `kryciZmrazSod`, `kryciProjZmrazSod`); dotisk nic
+  nepřepíše, plná moc zůstává volná (B163).
+- **Příručka a texty:** kapitola 24 (Číslo SoD), „Co je nového“ v17.10.2,
+  roadmapa #366 hotovo. EN/DE/FR: aplikace UI nepřekládá a číslo SoD je
+  v dokumentech evidenční kód (`prekladNeutral`, test) — nic k překladu.
+- **Testy:** nový `src/test_cislo_sod_navrh.js` (před opravou 2/24, po
+  bodu 1 26/0, s bodem 2 53/0; před bodem 2 43/10), upravené
+  `test_kryci_cislo_sod` (25/3 → 28/0), `test_sod` (50/0),
+  `test_sod_proj_cislo` (24/0), `overit_kryci_cislo_sod` (28/0),
+  `overit_sod_proj_cislo` (6/0), `overit_sod` (návrh místo symbolu;
+  bez firemních šablon přeskočen). Mutace #366 10/10 (jedna ekvivalentní
+  vyřazena), S7 s novými kotvami 5/5.
+  Smoke (bez KNG_PODKLADY): 258 / 1 / 6 — jediné selhání `overit_verzi.mjs`,
+  protože běh měl v prostředí `KNG_NEZVYSOVAT_VERZI=1`; samostatně 7/0,
+  tedy 259 / 0 / 6 (265 sad). Kontrola údajů čistá, verze odpovídá dni.
+
+---
+
 ## v16.10.5 — kontrola rozhodnutí 15.–16. 10. (větev claude/v4-kontrola-rozhodnuti)
 
 Dávka V4 (zadání koordinace „ŘÍDÍCÍ 16.10“, plán víkendu), nad
