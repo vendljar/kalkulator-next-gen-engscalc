@@ -10,6 +10,16 @@ Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kv�
 - **Ještě nesloučené zápisové commity** (jen CHANGELOG/PREDAVKA/verze/roadmapa, bez kódu): `claude/b80-pipedrive` 38996f2 (v15.10.7, roadmapa #345, NASAZENI), `claude/p12-naklady` 1f2a365 (výsledky po úpravě, mutace 13/13, smoke 248/0/2), `claude/kolo25-audit` dcc3d5f (smoke 247/0/6).
 - **Další krok:** do `claude/integrace-15-10` sloučit 38996f2, 1f2a365, dcc3d5f (konflikty jen v dokumentaci — novější oddíl nahoru, `verze.txt` = 15.10.7, příručka `manual/obsah.json` verze + nadpis „Co je nového ve verzi v15.10.7"), `--kontrola` mutací, sestavit, příručka ze snímků, `spust_testy.sh --smoke` s podklady → zelené → zápis do CHANGELOG → push `claude/integrace-15-10` a fast-forward `test` (`git merge-base --is-ancestor origin/test HEAD`).
 
+## STAV so 17. 10. ~08:10 UTC — koordinace session_011B3ruyPigNEMSUdesbk4Hd (kontext 33 %)
+
+- `claude/integrace-16-10` = **e2c773a v16.10.5**: S11 B155 (v16.10.1, #421), S12 lešení + vlastní řádky (v16.10.2, #422), S13 cena dle nabídky + předzaškrtnutý návrh 8 položek (v16.10.3, #423), A1 audit 25 (v16.10.4, #420 — zbývá B165), V4 kontrola rozhodnutí (v16.10.5; překlad V4-1 schválil J. V. 17. 10.). Odpovědi J. V. k S12: 1A, 2A, 3A (jak je v kódu).
+- **Celé kolo nad e2c773a:** pá 15:10 UTC start; sady 262/1/1 (jediné ✗ `overit_verzi.mjs` jen kvůli globálnímu `KNG_NEZVYSOVAT_VERZI=1` v mém skriptu — samostatně 7/0), mutace jádra **219/219**. Kontejner restartován pá ~17:15 UTC uprostřed mutací serveru (241 chycených, žádná nepřežila) → noc stála. So 08:04 UTC dopuštěno `testovaci_kolo.sh --jen mutace-server,staticke` ve worktree `/home/user/wt-kolo` (log `/home/user/kolo_16_10_b.log`). **Poučení:** kolo nespouštět s globálním `KNG_NEZVYSOVAT_VERZI`; po restartu `git checkout -- .` ve wt-kolo a dopustit jen chybějící kroky (`--jen`).
+- Po zeleném dokončení: fast-forward `test` na e2c773a (+ zápis výsledku), release odkaz `python3 nastroje/release_odkaz.py 16.10.5 <SHA>`; J. V. po nasazení: Nastavení → Ceník → zkontrolovat 8 předzaškrtnutých „cena dle nabídky“ → Zveřejnit (test i ostrá). Obchodníkům: kdo měl vnitřní lešení jako vlastní řádek, smaže ho (teď by bylo 2×); výjimky s pásem „jiné“ schválené před v16.10.1 je nutné schválit znovu.
+- Běží (start so 08:05 UTC, nad e2c773a): **N2** session_013mMCUhNo3juyzksrmXgN3F `claude/kolo26-audit` (v17.10.1, kolo 26 + audit, nálezy od B178); **V1** session_01UNDFzDH1HL1eFhryeiXGfc `claude/v1-cislo-sod` (v17.10.2, #366); **A2** session_01BDzh45kuUGJRwFiQATyvgS `claude/a2-mustky` (v17.10.3, #355 + #356).
+- Hotová sezení S11, S12, S13, A1, V4 archivovat po posunu `test` (pokyn J. V. archivovat hotová; Pipedrive API integrace nechat).
+- Hodinová kontrola: opakovaná úloha (create_trigger) neprošla oprávněním → řetěz `send_later` po hodině.
+- Další okna: O6 opravy vysokých/středních nálezů kola 26 + sloučení V1, A2 + sady; O7 celé kolo → test + release; O8 V3 #380 + #157 a B165; O9 sloučení, kolo, test, release, závěrečná zpráva + soupis novinek pro obchodníky.
+
 ## PŘEVZETÍ 16. 10. ~13:20 UTC — koordinace session_011B3ruyPigNEMSUdesbk4Hd („ŘÍDÍCÍ 16.10“)
 
 - Soubor `podklady/PLAN_VIKEND_16_10.md` je v `.gitignore` (`PLAN_*.md`), proto se 72ce7b6 do repa nedostal — jeho obsah je níže (obnoven z přepisu předchozího sezení).
