@@ -111,7 +111,7 @@ async function smesUlozena(nazev, kdo) {
   return { a, soubor: r.soubor, razitko: g.uloRazitko };
 }
 /* Obsah výjimky tak, jak ho spočítá i prohlížeč (týž záznam programu). */
-const obsah = (z) => VY.vyjimkyObsah(d0(z), VY.vyjimkyDnesniZProgramu(platny(), d0(z)), zk.zakazkaVyrazenaStrana(z) || '');
+const obsah = (z) => VY.vyjimkyObsah(d0(z), VY.vyjimkyDnesniZProgramu(platny(), d0(z)), zk.zakazkaVyrazenaStrana(z) || '', JEKLY);
 const pasJine = (z, sazba) => { d0(z).ock.zadani.oplasteni = { rezim: 'poStenach', steny: {
   A: { odM: 0, pasy: [{ typ: 'jine', nazev: 'Deska', naklad: sazba, doM: null }] } } }; };
 
@@ -357,6 +357,44 @@ console.log('===== B178: zdvih a rozměry stěny u schváleného pásu „jiné"
   { const { a, razitko } = await vezmi();
     const r = await uloz(zamkni(a), cO, razitko);
     test('B178: beze změny rozměrů — zámek se schválením (200)', r.status === 200, r); } }
+
+console.log('===== B178 zbytek: plocha z jádra v obsahu (v17.10.5) =====');
+/* Pojistka: proti v17.10.4 (9bb7caf) vracely zámky po změně zasklení
+ * (vnější rozměr stěny) a po přidání nástupišť (světlíky „jiné" u dveří)
+ * 200. Drobná změna pod půl m² (celá m² v obsahu) schválení nechá. */
+{ const zaskl = x => (x === 'na terče' ? 'mezi příčníky' : 'na terče');
+  const priprav = async (nazev, uprav) => {
+    const z = nova(nazev); uprav(d0(z).ock.zadani, z);
+    const r1 = await uloz(z, cO);
+    const gV = await nacti(r1.soubor, cV); const b = zk.importZakazka(kopie(gV));
+    VY.vyjimkaSchval(d0(b), obsah(b), 'Ved'); const r2 = await uloz(b, cV, gV.uloRazitko);
+    const vezmi = async () => { const g = await nacti(r1.soubor, cO); return { a: zk.importZakazka(kopie(g)), razitko: g.uloRazitko }; };
+    return { ok: r1.status === 200 && r2.status === 200, vezmi, r: [r1, r2] }; };
+  const celaB = (zd, z) => { const st = globalThis.oplasteniStenyVychozi(zd, d0(z).cenik);
+    st.B = { odM: 0, pasy: [{ typ: 'jine', nazev: 'Deska', naklad: 1, doM: null }] };
+    zd.oplasteni = { rezim: 'poStenach', steny: st }; };
+  { const P = await priprav('B178 zasklení', celaB);
+    test('B178 zbytek příprava: pás „jiné" přes celou stěnu B schválen (200)', P.ok, P.r);
+    const { a, razitko } = await P.vezmi(); const zd = d0(a).ock.zadani; zd.zaskleni = zaskl(zd.zaskleni);
+    const r = await uloz(zamkni(a), cO, razitko);
+    test('B178 zbytek: změna zasklení (vnější rozměr stěny) po schválení + zámek → 403', r.status === 403 && /jiné/.test(r.chyba || ''), r);
+    const b = await P.vezmi(); const rb = await uloz(zamkni(b.a), cO, b.razitko);
+    test('B178 zbytek: beze změny — zámek se schválením (200)', rb.status === 200, rb); }
+  { const P = await priprav('B178 světlíky', (zd, z) => { zd.nadDvermi = 'material'; zd.nastupiste = 2;
+      const st = globalThis.oplasteniStenyVychozi(zd, d0(z).cenik);
+      ['B', 'C', 'D'].forEach(k => { st[k] = { odM: 0, pasy: [{ typ: 'jine', nazev: 'Deska', naklad: 1, doM: null }] }; });
+      zd.oplasteni = { rezim: 'poStenach', steny: st }; });
+    test('B178 zbytek příprava: světlíky z materiálu „jiné" — schváleno (200)', P.ok, P.r);
+    const { a, razitko } = await P.vezmi(); d0(a).ock.zadani.nastupiste = 3;
+    test('B178 zbytek: obsah nese světlíky „jiné" u dveří', Array.isArray(JSON.parse(obsah(a).obsah).l) && JSON.parse(obsah(a).obsah).l.length > 0, obsah(a).obsah);
+    const r = await uloz(zamkni(a), cO, razitko);
+    test('B178 zbytek: víc nástupišť (větší světlíky „jiné") po schválení + zámek → 403', r.status === 403, r); }
+  { const P = await priprav('B178 drobnost', (zd, z) => { const st = globalThis.oplasteniStenyVychozi(zd, d0(z).cenik);
+      st.B = { odM: 0, pasy: [{ typ: 'C.cetrisKc', doM: 11 }, { typ: 'jine', nazev: 'Deska', naklad: 1, doM: null }] };
+      zd.oplasteni = { rezim: 'poStenach', steny: st }; });
+    const { a, razitko } = await P.vezmi(); const zd = d0(a).ock.zadani; zd.zaskleni = zaskl(zd.zaskleni);
+    const r = await uloz(zamkni(a), cO, razitko);
+    test('B178 zbytek: změna zasklení u pásu 1,2 m (posun pod půl m²) — schválení platí (200)', P.ok && r.status === 200, r); } }
 
 console.log('===== B153: dotisk strany vyřazené při zámku (jenProj → vypnutí → dotisk OCK) =====');
 /* Pokus auditu 15. 10. 2026 (podklady/AUDIT25_pokus_B153_dotisk.mjs). Zakázka

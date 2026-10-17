@@ -148,8 +148,10 @@ function vyjimkyDnesniZProgramu(platny, data) {
  * Vrací { smes:[{cesta, sekce, popis}], pasy:[…], polozek, pasu, obsah,
  * prazdny }. `obsah` (kanonický JSON) nese hodnoty VARIANTY (ne platného
  * ceníku) — mění se, když obchodník po schválení sáhne na směs, sazbu
- * nebo rozsah pásu (odM/doM, B155 — J. V. 16. 10. 2026). */
-function vyjimkyObsah(data, dnesni, vyrazena) {
+ * nebo rozsah pásu (odM/doM, B155 — J. V. 16. 10. 2026).
+ * `jekly` = katalog profilů pro výpočet ploch (B178, v17.10.5); bez něj
+ * se vezme globální JEKLY, a není-li ani ten, plocha je neznámá (null). */
+function vyjimkyObsah(data, dnesni, vyrazena, jekly) {
   const d = data || {};
   const smes = [];
   /* Varianta počítala z PLATNÉ verze (razítko) → rozdíly jsou ruční úpravy
@@ -173,17 +175,54 @@ function vyjimkyObsah(data, dnesni, vyrazena) {
       if ((sekce === 'PROJ' ? 'proj' : 'ock') === vyrazena) return;
       /* `pod` = číslo varianty pod platným ceníkem — jen pro znění hlášky. */
       const pod = naPlatne && typeof r.stara === 'number' && typeof r.nova === 'number' && r.stara < r.nova;
-      smes.push({ cesta: r.cesta, sekce, popis: String(r.popis || r.cesta), hodnota: r.stara, pod });
+      smes.push({ cesta: r.cesta, sekce, popis: String(r.popis || r.cesta), hodnota: r.stara, pod,
+        cenikova: r.nova, jed: r.jed });
     });
   }
   smes.sort((a, b) => (a.cesta < b.cesta ? -1 : a.cesta > b.cesta ? 1 : 0));
-  const pasy = vyrazena === 'ock' ? [] : vyjimkyPasyJine(d.ock && d.ock.zadani, d.cenik);
-  const obsah = (smes.length || pasy.length)
-    ? JSON.stringify({ s: smes.map(x => [x.cesta, x.hodnota === undefined ? null : x.hodnota]),
-        p: pasy.map(x => [x.stena, x.i, x.nazev, x.naklad, x.odM, x.doM, x.delka]) })
-    : '';
-  return { smes: smes.map(x => ({ cesta: x.cesta, sekce: x.sekce, popis: x.popis, pod: x.pod })), pasy,
+  const pasy0 = vyrazena === 'ock' ? [] : vyjimkyPasyJine(d.ock && d.ock.zadani, d.cenik);
+  /* PLOCHA Z VÝSLEDKU JÁDRA (zbytek B178, J. V. 17. 10. 2026: spojit
+   * s B165). Jen když je pás „jiné" pod mezí — obsah samotné směsi má
+   * tvar jako dřív a jeho schválení platí dál. */
+  const pl = pasy0.length ? vyjimkyPlochyJadra(d, pasy0, jekly) : { pasy: [], svetliky: [] };
+  const pasy = pasy0.length ? pl.pasy : pasy0;
+  const svetliky = pl.svetliky;
+  const m2o = x => (typeof x === 'number' && isFinite(x) ? Math.round(x) : null);
+  const ob = { s: smes.map(x => [x.cesta, x.hodnota === undefined ? null : x.hodnota]),
+    p: pasy.map(x => [x.stena, x.i, x.nazev, x.naklad, x.odM, x.doM, x.delka, m2o(x.m2)]) };
+  if (pasy.length) ob.l = svetliky.map(x => [x.kde, x.stena, x.nazev, x.naklad, m2o(x.m2)]);
+  const obsah = (smes.length || pasy.length) ? JSON.stringify(ob) : '';
+  return { smes: smes.map(x => ({ cesta: x.cesta, sekce: x.sekce, popis: x.popis, pod: x.pod,
+      pouzita: x.hodnota, cenikova: x.cenikova, jed: x.jed })), pasy, svetliky,
     polozek: smes.length, pasu: pasy.length, obsah, prazdny: !smes.length && !pasy.length };
+}
+
+/* PLOCHY PÁSŮ A SVĚTLÍKŮ „JINÉ" Z VÝSLEDKU JÁDRA (zbytek B178, v17.10.5).
+ * Jádro počítá plochu z vnějších rozměrů stěny podle profilů a zasklení
+ * a k pásům přidá světlíky u dveří z převažujícího materiálu stěn B–D
+ * (#375) — jejich plocha závisí na nástupištích a šířce vstupu. Obojí
+ * proto patří do obsahu: schválení levného pásu nekryje bez nového
+ * schválení větší světlíky ani posun vnějšího rozměru.
+ * ZAOKROUHLENÍ (výchozí volba): obsah nese plochu na CELÉ m². Změna
+ * profilu nebo zasklení posune vnější rozměr o centimetry a plochu pásu
+ * o desetiny m²; po celých m² taková drobnost schválení neshodí, větší
+ * změna (o půl m² a víc) ano. Nekrytý rozdíl je nejvýš ±0,5 m² na pás či
+ * světlík × rozdíl sazeb. Karta ukazuje plochu na setiny (`m2`).
+ * Světlík „jiné" se bere se sazbou pod mezí (táž jako u pásů); chyba
+ * výpočtu = plocha null (obsah jiný než při schválení — fail-closed). */
+function vyjimkyPlochyJadra(d, pasy, jekly) {
+  const jk = jekly || (typeof JEKLY !== 'undefined' ? JEKLY : null);
+  let vys = null;
+  if (jk && typeof vypocet === 'function' && d.ock) {
+    try { vys = vypocet(d.ock.zadani, d.cenik, jk, d.ock.fixes); } catch (e) { vys = null; }
+  }
+  const min = vyjimkyMinSazbaOpl(d.ock && d.ock.zadani, d.cenik);
+  const r2 = x => (isFinite(+x) ? Math.round(+x * 100) / 100 : null);
+  const sv = (vys && vys.oplasteni && Array.isArray(vys.oplasteni.svetliky)) ? vys.oplasteni.svetliky : [];
+  const svetliky = sv.filter(x => x && x.typ === 'jine' && min !== null && (+x.naklad || 0) < min)
+    .map(x => ({ kde: String(x.kde || ''), stena: String(x.stena || ''), nazev: String(x.nazev || ''),
+      naklad: +x.naklad || 0, m2: r2(x.m2) }));
+  return { pasy: vyjimkyPasyPlochy(pasy, vys), svetliky };
 }
 
 /* Část obsahu, která patří ke stranám `strany` ('ock' | 'proj'; '?' =
@@ -314,6 +353,61 @@ function vyjimkyPasPlocha(p) {
   return String(p.m2).replace('.', ',') + ' m²';
 }
 
+/* DOPAD VÝJIMKY NA CENU (B165, J. V. 16. 10. 2026): schvalovatel vidí
+ * u každé položky použitou a ceníkovou sazbu a o kolik je cena strany
+ * varianty (OCK = cena bez DPH, PROJ = celkem) jiná, než kdyby položka
+ * měla ceníkovou hodnotu. Ceníková hodnota: u směsi platný ceník
+ * (`dnesni`), u pásu „jiné" nejnižší ceníková sazba opláštění — tatáž mez,
+ * pod kterou je pás výjimkou. Dopad = cena varianty − cena s ceníkovou
+ * hodnotou (záporný = levněji), `dopadPct` proti ceně s ceníkovou.
+ * `ock` / `proj` = všechny odchylky strany najednou. Jen pro kartu — na
+ * obsah ani na cenu vliv nemá; null = výpočet nevyšel. */
+function vyjimkyDopad(data, obsah, dnesni, jekly) {
+  const d = data || {}, o = obsah || {};
+  const jk = jekly || (typeof JEKLY !== 'undefined' ? JEKLY : null);
+  const kopie = x => JSON.parse(JSON.stringify(x));
+  const cena = (dd, sekce) => {
+    try {
+      return sekce === 'PROJ' ? +vypocetProj(dd.proj.zadani, dd.proj.cenik).souhrn.celkem
+        : +vypocet(dd.ock.zadani, dd.cenik, jk, dd.ock.fixes).souhrn.zakladCena;
+    } catch (e) { return NaN; }
+  };
+  const zaklad = { OCK: (o.pasu || (o.smes || []).some(x => x.sekce !== 'PROJ')) ? cena(d, 'OCK') : NaN,
+    PROJ: (o.smes || []).some(x => x.sekce === 'PROJ') ? cena(d, 'PROJ') : NaN };
+  const min = vyjimkyMinSazbaOpl(d.ock && d.ock.zadani, d.cenik);
+  const uprav = {
+    polozka: (k, x) => { if (typeof cenikNastavHodnotu === 'function') cenikNastavHodnotu(k, x.cesta, x.cenikova); },
+    pas: (k, p) => { const st = k.ock.zadani.oplasteni.steny[p.stena]; if (st && st.pasy && st.pasy[p.i]) st.pasy[p.i].naklad = min; },
+  };
+  const dopad = (sekce, fn) => {
+    const s = zaklad[sekce];
+    if (!isFinite(s)) return { dopadKc: null, dopadPct: null };
+    let bez = NaN;
+    try { const k = kopie(d); fn(k); bez = cena(k, sekce); } catch (e) { bez = NaN; }
+    if (!isFinite(bez) || bez <= 0) return { dopadKc: null, dopadPct: null };
+    return { cena: s, cenaCenik: bez, dopadKc: s - bez, dopadPct: (s - bez) / bez };
+  };
+  const polozky = (o.smes || []).map(x => Object.assign({}, x, dopad(x.sekce, k => uprav.polozka(k, x))));
+  const pasy = (o.pasy || []).map(p => Object.assign({}, p, { pouzita: p.naklad, cenikova: min },
+    min === null ? { dopadKc: null, dopadPct: null } : dopad('OCK', k => uprav.pas(k, p))));
+  const strana = (sekce) => {
+    const sm = (o.smes || []).filter(x => (sekce === 'PROJ') === (x.sekce === 'PROJ'));
+    const ps = sekce === 'PROJ' || min === null ? [] : (o.pasy || []);
+    if (!sm.length && !ps.length) return null;
+    return dopad(sekce, k => { sm.forEach(x => uprav.polozka(k, x)); ps.forEach(p => uprav.pas(k, p)); });
+  };
+  return { polozky, pasy, ock: strana('OCK'), proj: strana('PROJ') };
+}
+
+/* „−3,7 % (−12 345 Kč)" — dopad pro kartu; prázdné, když není znám. */
+function vyjimkyDopadText(x) {
+  if (!x || typeof x.dopadPct !== 'number' || !isFinite(x.dopadPct)) return '';
+  const pct = (typeof formatPctTypo === 'function') ? formatPctTypo(x.dopadPct)
+    : (Math.round(x.dopadPct * 1000) / 10).toString().replace('.', ',') + ' %';
+  const kc = (typeof formatKcTypo === 'function') ? formatKcTypo(x.dopadKc) : Math.round(x.dopadKc) + ' Kč';
+  return (x.dopadPct > 0 ? '+' : '') + pct + ' (' + (x.dopadKc > 0 ? '+' : '') + kc + ')';
+}
+
 function vyjimkyText(obsah) {
   const o = obsah || {};
   const casti = [];
@@ -388,7 +482,7 @@ function vyjimkyServerKontrola(stara, nova, relace, ctx) {
     if (rec !== undefined && rec !== null
         && (typeof rec !== 'object' || Array.isArray(rec) || VYJ_STAVY.indexOf(rec.stav) < 0))
       return { ok: false, status: 400, chyba: 'Neznámý stav cenové výjimky varianty „' + String(v.nazev || v.id).slice(0, 60) + '".' };
-    const obsah = vyjimkyObsah(v.data, vyjimkyDnesniZProgramu(platny, v.data), vyrazena);
+    const obsah = vyjimkyObsah(v.data, vyjimkyDnesniZProgramu(platny, v.data), vyrazena, ctx.jekly);
     const kN = vyjimkaRozhodnutiKlic(rec), kS = vyjimkaRozhodnutiKlic(srec);
     /* Totéž rozhodnutí, jaké už v databázi je: celé z uložené verze. */
     if (kN && kN === kS) { v.data.cenovaVyjimka = vyjimkaJenPole(srec); continue; }
@@ -439,7 +533,7 @@ function vyjimkyZamekProblem(zak, v, relace, ctx) {
   const platny = ctx.program && ctx.program.platny ? ctx.program.platny : null;
   const vyrazena = (typeof zakazkaVyrazenaStrana === 'function') ? (zakazkaVyrazenaStrana(zak) || '') : '';
   const d = (v && v.data) || {};
-  const obsah = vyjimkyObsah(d, vyjimkyDnesniZProgramu(platny, d), vyrazena);
+  const obsah = vyjimkyObsah(d, vyjimkyDnesniZProgramu(platny, d), vyrazena, ctx.jekly);
   const cast = Array.isArray(ctx.strany) ? vyjimkyObsahStran(obsah, ctx.strany) : obsah;
   const smi = typeof ctx.smi === 'function' ? ctx.smi : vyjimkySmiF(role, ctx.matice);
   if (!vyjimkyPotreba(cast, smi).potreba) return '';
@@ -465,5 +559,5 @@ if (typeof module !== 'undefined')
   module.exports = { VYJ_CEKA, VYJ_SCHVALENO, VYJ_ZAMITNUTO, VYJ_STAVY, VYJ_POLE, VYJ_REJSTRIK_POLE,
                      vyjimkyMinSazbaOpl, vyjimkyPasyJine, vyjimkyDnesniZProgramu, vyjimkyObsah, vyjimkyObsahStran,
                      vyjimkyPotreba, vyjimkaPlati, vyjimkaKategorie, vyjimkaSmiRozhodnout,
-                     vyjimkaPozadej, vyjimkaSchval, vyjimkaZamitni, vyjimkaVrat, vyjimkaPrepocti, vyjimkyText, vyjimkyPasRozsah, vyjimkyPasPlocha, vyjimkyPasyPlochy,
+                     vyjimkaPozadej, vyjimkaSchval, vyjimkaZamitni, vyjimkaVrat, vyjimkaPrepocti, vyjimkyText, vyjimkyPasRozsah, vyjimkyPasPlocha, vyjimkyPasyPlochy, vyjimkyPlochyJadra, vyjimkyDopad, vyjimkyDopadText,
                      vyjimkaRozhodnutiKlic, vyjimkyServerKontrola, vyjimkyZamekProblem, vyjimkaRejstrik };
