@@ -506,6 +506,38 @@ const KONTROLY = [
     },
   },
   {
+    /* MŮSTKY × PŘECHODOVÉ PLECHY (#355, rozhodnutí J. V. 16. 10. 2026).
+     * Výpočet se NEMĚNÍ — plechy se počítají za všechna nástupiště, i ta,
+     * kde mezeru k podestě překrývá můstek. Obchodník se to jen dozví, ať
+     * zváží ruční úpravu množství. Upozornění, ne zábrana (v žádném jazyce
+     * tisku). Kde přesně můstky jsou, zadání neví — říká se počet. */
+    kod: 'mustkyPrechodove', kde: 'Kalkulace OCK', nazev: 'Můstky a přechodové plechy',
+    zjisti(ctx) {
+      const z = ctx.zadani, r = ctx.vysledek;
+      if (!z || !r || !r.sekce) return null;
+      const n = (typeof mustkyPocet === 'function') ? mustkyPocet(z) : (+z.mustkyKs || (z.mustek ? 1 : 0));
+      if (!n) return null;
+      const PLECH = { prechodove: 'materiál', prechMont: 'montáž', prechMat: 'materiál' };
+      const vyn = Array.isArray(z.priplatkyVynechat) ? z.priplatkyVynechat : [];
+      const zaklad = (r.sekce.volitelne || []).filter(x => x && PLECH[x.key] && x.zahrnuto && +x.mnozstvi > 0);
+      const prip = (Array.isArray(r.priplatky) ? r.priplatky : [])
+        .filter(x => x && (x.key === 'prechMat' || x.key === 'prechMont') && +x.mnozstvi > 0 && !vyn.includes(x.key));
+      if (!zaklad.length && !prip.length) return null;
+      const co = rows => { const m = rows.map(x => PLECH[x.key]);
+        return m.includes('materiál') && m.includes('montáž') ? 'materiál i montáž' : m[0]; };
+      const kde = [];
+      if (zaklad.length) kde.push(co(zaklad) + ' v základní ceně');
+      if (prip.length) kde.push(co(prip) + ' v příplatcích nabídky');
+      const nast = (typeof nastupisteCelkem === 'function') ? nastupisteCelkem(z) : +z.nastupiste;
+      const vse = nast > 1 && n >= nast - 1;
+      const mustkyTxt = n === 1 ? '1 můstek' : (n < 5 ? n + ' můstky' : n + ' můstků');
+      return { text: 'Šachta má ' + mustkyTxt + (vse ? ' (ve všech nadzemních nástupištích)' : '')
+        + ' a přechodové plechy se počítají za všech ' + nast + ' nástupišť (' + kontrolyVyctem(kde) + '). '
+        + 'V nástupišti s můstkem plech mezi podestou a dveřmi obvykle odpadá nebo je kratší — zvažte ruční '
+        + 'úpravu množství přechodových plechů v Kalkulaci OCK. Tisk to nezastaví.' };
+    },
+  },
+  {
     /* STATIKA DVAKRÁT (P5 / K19-N109, 2. 10. 2026). Než měla aplikace druhý
      * řádek statiky (opláštění), dorovnávaly se převedené zakázky ručním
      * přepisem hodin řádku STATICKÉ POSOUZENÍ (10–20 h = OCK + opláštění).

@@ -113,5 +113,41 @@ for (const fixes of [true, false]) {
   test('standard: 0 můstků = rozměry se nehlídají', !(v0.nalezy || []).some(n => /můstku/.test(JSON.stringify(n))));
 }
 
+/* #355 (rozhodnutí J. V. 16. 10. 2026): přechodové plechy se v nástupišti
+ * s můstkem počítají dál, kontrola před nabídkou jen upozorní. */
+{
+  const kt = require('./kontroly.js');
+  const KOD = 'mustkyPrechodove';
+  const proved = (x, jazyk) => { const { r, z } = spocti(x, true);
+    return { r, z, k: kt.kontrolyProved({ zadani: z, vysledek: r, cenik: CENIK, jazyk }) }; };
+  const nalez = (x, j) => proved(x, j).k.nalezy.find(n => n.kod === KOD);
+  const zakl = proved({ mustkyKs: 0 }).r, sMust = proved({ mustkyKs: 2 }).r;
+  const plech = r => r.sekce.volitelne.filter(x => /PŘECHODOVÉ/.test(x.origNazev)).map(x => [x.mnozstvi, x.naklad]);
+  test('#355: výpočet plechů s můstky beze změny', JSON.stringify(plech(zakl)) === JSON.stringify(plech(sMust))
+    && sMust.dily.prechKs === zakl.dily.prechKs, [plech(zakl), plech(sMust)]);
+  const n = nalez({ mustkyKs: 2 });
+  test('#355: můstek + plechy v základní ceně → upozornění s počty', n && /2 můstky/.test(n.text)
+    && /6 nástupišť/.test(n.text) && /materiál i montáž/.test(n.text) && /v základní ceně/.test(n.text), n && n.text);
+  test('#355: upozornění nezastaví dokument', n && n.uroven !== kt.KONTROLY_UROVEN_ZABRANA);
+  for (const j of ['cz', 'en', 'de', 'fr']) {
+    const p = proved({ mustkyKs: 1 }, j);
+    test('#355: jazyk tisku ' + j.toUpperCase() + ' — upozornění je, tisk nezastaví',
+      p.k.nalezy.some(x => x.kod === KOD) && !p.k.nalezy.some(x => x.kod === KOD && x.uroven === kt.KONTROLY_UROVEN_ZABRANA));
+  }
+  const vse = nalez({ mustkyKs: 5 });
+  test('#355: můstky ve všech nadzemních nástupištích se řeknou', vse && /ve všech nadzemních nástupištích/.test(vse.text), vse && vse.text);
+  test('#355: bez můstků mlčí', !nalez({ mustkyKs: 0 }));
+  test('#355: bez plechů mlčí', !nalez({ mustkyKs: 2, prechodovePlechy: false,
+    volitelne: Object.assign(kop(E.DEFAULT_ZADANI.volitelne), { prechodove: false, prechMont: false }),
+    priplatkyVynechat: ['vsgFolie', 'skn', 'prechMat', 'prechMont'] }), nalez({ mustkyKs: 2, prechodovePlechy: false,
+    volitelne: Object.assign(kop(E.DEFAULT_ZADANI.volitelne), { prechodove: false, prechMont: false }),
+    priplatkyVynechat: ['vsgFolie', 'skn', 'prechMat', 'prechMont'] }));
+  const prip = nalez({ mustkyKs: 1, volitelne: Object.assign(kop(E.DEFAULT_ZADANI.volitelne), { prechodove: false, prechMont: false }) });
+  test('#355: plechy jen v příplatcích nabídky → upozornění na příplatek', prip && /příplat/.test(prip.text), prip && prip.text);
+  const vyn = nalez({ mustkyKs: 1, volitelne: Object.assign(kop(E.DEFAULT_ZADANI.volitelne), { prechodove: false, prechMont: false }),
+    priplatkyVynechat: ['vsgFolie', 'skn', 'prechMat', 'prechMont'] });
+  test('#355: příplatky plechů vynechané z nabídky → mlčí', !vyn, vyn && vyn.text);
+}
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);
