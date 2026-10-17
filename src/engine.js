@@ -257,6 +257,44 @@ function oplasteniVychoziTyp(z, c, stena) {
 
 const OPLASTENI_STENY = ['A', 'B', 'C', 'D'];
 
+/* PÁSY STĚNY S MEZEMI PO OŘEZU (B178, 17. 10. 2026) — jediné pravidlo pro
+ * výpočet (vypocet → oplPasyStenyMeze) i obsah cenové výjimky (vyjimky.js).
+ * `steny` = zadani.oplasteni.steny, `vyska` = horní hrana stěny (zdvih +
+ * přejezd), `vychoziTyp(k)` = typ prázdné stěny. Pásy zdola nahoru; poslední
+ * (`doM: null`) sahá až k horní hraně, ostatní se ořežou na [dolní, vyska].
+ * Pás nulové výšky vypadne. `i` = pořadí pásu v zadání. Dvě kopie téhož
+ * ořezu by se rozešly a schválený pás by šel roztáhnout (B178). */
+function oplasteniPasyMeze(steny, k, vyska, vychoziTyp) {
+  const st = (steny && typeof steny === 'object' ? steny : {})[k] || null;
+  const odM = st ? (+st.odM || 0) : 0;
+  /* Pásy zdola nahoru; poslední má `doM: null` = až nahoru. Rozhraní je
+   * vypisuje odshora, ale ukládají se takhle — v tomhle pořadí nejde
+   * zapsat překryv ani mezeru. */
+  const pasy = (st && Array.isArray(st.pasy) && st.pasy.length)
+    ? st.pasy : [{ typ: vychoziTyp(k), doM: null }];
+  const out = [];
+  let dolni = odM;                     // záporné = do prohlubně
+  pasy.forEach((p0, i) => {
+    const p = p0 || {};
+    const posledni = (i === pasy.length - 1);
+    /* Dělicí výška platí, jak ji obchodník napsal (rozhodnutí J. V.):
+     * nezaokrouhluje se na rozteč příčníků. Jen se nepustí pod předchozí
+     * pás a nad horní hranu — jinak by pás vyšel záporně. */
+    const horni = posledni ? vyska
+      : Math.min(Math.max(+p.doM || 0, dolni), vyska);
+    if (horni <= dolni) { dolni = horni; return; }
+    /* Typ pásu jen z číselníku (B70, hloubkový test 24. 9. 2026): typ je
+     * zároveň cesta k sazbě v ceníku (`cenaPath`) a ta jde do obsluhy
+     * v obrazovce. Neznámý typ z ručně upravené zakázky se nahradí
+     * výchozím typem stěny — nic jiného než číselník nemá smysl. */
+    const typOk = OPLASTENI_TYPY.some(t => t.id === p.typ);
+    out.push({ stena: k, i, typ: typOk ? p.typ : vychoziTyp(k),
+      nazev: p.nazev || '', naklad: p.naklad, odM: dolni, doM: horni });
+    dolni = horni;
+  });
+  return out;
+}
+
 /* Čtyři stěny v takovém stavu, v JAKÉM JE ŠACHTA DNES: každá celá, z toho
  * materiálu, který by na ní byl ve standardním režimu.
  *
@@ -886,33 +924,8 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   /* Pásy stěny s dolní a horní mezí, jak je jádro ořízne — bez plochy. Plochu
    * dopočítá `oplPasyStenyM2` níž; materiál světlíků potřebuje jen meze. */
   function oplPasyStenyMeze(k) {
-    const st = ((z.oplasteni || {}).steny || {})[k] || null;
-    const odM = st ? (+st.odM || 0) : 0;
-    /* Pásy zdola nahoru; poslední má `doM: null` = až nahoru. Rozhraní je
-     * vypisuje odshora, ale ukládají se takhle — v tomhle pořadí nejde
-     * zapsat překryv ani mezeru. */
-    const pasy = (st && Array.isArray(st.pasy) && st.pasy.length)
-      ? st.pasy : [{ typ: oplVychoziTyp(k), doM: null }];
-    const out = [];
-    let dolni = odM;                     // záporné = do prohlubně
-    pasy.forEach((p, i) => {
-      const posledni = (i === pasy.length - 1);
-      /* Dělicí výška platí, jak ji obchodník napsal (rozhodnutí J. V.):
-       * nezaokrouhluje se na rozteč příčníků. Jen se nepustí pod předchozí
-       * pás a nad horní hranu — jinak by pás vyšel záporně. */
-      const horni = posledni ? vyskaProsklene
-        : Math.min(Math.max(+p.doM || 0, dolni), vyskaProsklene);
-      if (horni <= dolni) { dolni = horni; return; }
-      /* Typ pásu jen z číselníku (B70, hloubkový test 24. 9. 2026): typ je
-       * zároveň cesta k sazbě v ceníku (`cenaPath`) a ta jde do obsluhy
-       * v obrazovce. Neznámý typ z ručně upravené zakázky se nahradí
-       * výchozím typem stěny — nic jiného než číselník nemá smysl. */
-      const typOk = OPLASTENI_TYPY.some(t => t.id === p.typ);
-      out.push({ stena: k, typ: typOk ? p.typ : oplVychoziTyp(k),
-        nazev: p.nazev || '', naklad: p.naklad, odM: dolni, doM: horni });
-      dolni = horni;
-    });
-    return out;
+    return oplasteniPasyMeze((z.oplasteni || {}).steny, k, vyskaProsklene, oplVychoziTyp)
+      .map(p => ({ stena: p.stena, typ: p.typ, nazev: p.nazev, naklad: p.naklad, odM: p.odM, doM: p.doM }));
   }
 
   /* ---------- ČÍM SE VYPLNÍ SVĚTLÍKY U DVEŘÍ (#375, 30. 9. 2026) ----------
@@ -2322,4 +2335,4 @@ function cenikMigraceLeseni(cenik) {
   }
 }
 
-if (typeof module !== 'undefined') module.exports = { vypocet, profilyNezname, mustkyPocet, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, BOKY_VYPLN_VOLBY, BOKY_DVERI_VOLBY, bokyPocet, bokyPocetAuto, bokyPocetRucni, bokyPocetRucne, bokySirkaRucniMm, svetlikyBokyMigrace, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, oplasteniProhlubenVse, oplasteniProhlubenNastav, oplasteniProhlubenSleduj, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };
+if (typeof module !== 'undefined') module.exports = { vypocet, profilyNezname, mustkyPocet, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, BOKY_VYPLN_VOLBY, BOKY_DVERI_VOLBY, bokyPocet, bokyPocetAuto, bokyPocetRucni, bokyPocetRucne, bokySirkaRucniMm, svetlikyBokyMigrace, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, oplasteniPasyMeze, oplasteniProhlubenVse, oplasteniProhlubenNastav, oplasteniProhlubenSleduj, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };

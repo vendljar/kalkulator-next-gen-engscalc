@@ -82,29 +82,40 @@ function vyjimkyMinSazbaOpl(zadani, cenik) {
 
 /* Pásy „jiné" (opláštění po stěnách) s ruční sazbou pod nejnižší ceníkovou.
  * Standardní režim pásy nečte — tam se nehlídá nic.
- * Každý pás nese ROZSAH tak, jak je zadaný (B155, J. V. 16. 10. 2026):
- * `odM` = začátek stěny u prvního pásu, jinak `doM` předchozího pásu;
- * `doM` = horní mez, null = až nahoru (poslední pás — jádro jeho `doM`
- * nečte). Čísla stejně jako jádro (oplPasyStenyMeze): `+x || 0`, takže
- * „1" i 1 dají týž obsah a nečitelný zápis je nula. Ořez na výšku šachty
- * se nedělá — obsah nese zadání, ne výsledek výpočtu. */
+ * ROZSAH PO OŘEZU (B178, J. V. 17. 10. 2026): do 16. 10. nesl pás meze tak,
+ * jak je obchodník zadal (B155) — poslední pás „až nahoru" pak šel po
+ * schválení roztáhnout zvýšením zdvihu nebo rozměru stěny. Meze teď počítá
+ * TÁŽ funkce jako jádro (oplasteniPasyMeze: horní hrana = zdvih + přejezd,
+ * mezilehlé pásy ořezané na ni, pás nulové výšky vypadne) a k nim jde délka
+ * stěny ze zadání (A, C = šířka šachty, B, D = hloubka). Změna zdvihu,
+ * přejezdu, šířky nebo hloubky, která pás mění, změní obsah → schválení
+ * neplatí (fail-closed). Plochu (m²) obsah nenese — jádro ji počítá
+ * z vnějších rozměrů stěny podle profilů a zasklení; karta ji dopočítá
+ * z výsledku jádra (vyjimkyPasyPlochy). Čísla jako
+ * jádro: `+x || 0`. */
 function vyjimkyPasyJine(zadani, cenik) {
   const o = zadani && zadani.oplasteni;
   if (!o || o.rezim !== 'poStenach' || !o.steny || typeof o.steny !== 'object') return [];
+  if (typeof oplasteniPasyMeze !== 'function') return [];
   const min = vyjimkyMinSazbaOpl(zadani, cenik);
   if (min === null) return [];
+  const vyska = (+zadani.zdvih || 0) + (+zadani.prejezd || 0);
+  const delky = { A: +zadani.sirka || 0, B: +zadani.hloubka || 0, C: +zadani.sirka || 0, D: +zadani.hloubka || 0 };
+  const r3 = x => Math.round(x * 1000) / 1000;
   const out = [];
   ['A', 'B', 'C', 'D'].forEach(k => {
     const st = o.steny[k];
-    if (!st || typeof st !== 'object' || !Array.isArray(st.pasy)) return;
-    let odM = +st.odM || 0;
-    st.pasy.forEach((p, i) => {
-      const doM = (i === st.pasy.length - 1) ? null : (+(p && p.doM) || 0);
-      const zacatek = odM;
-      odM = doM;
-      if (!p || p.typ !== 'jine') return;
+    if (!st || typeof st !== 'object' || !Array.isArray(st.pasy) || !st.pasy.length) return;
+    const posl = st.pasy.length - 1;
+    /* Výchozí typ se u stěny s pásy nepoužije (pásy jsou) — jen neznámý typ
+     * by ho dostal, a ten „jiné" není. */
+    oplasteniPasyMeze(o.steny, k, vyska, () => '').forEach(p => {
+      if (p.typ !== 'jine') return;
       const sazba = +p.naklad || 0;
-      if (sazba < min) out.push({ stena: k, i, nazev: String(p.nazev || ''), naklad: sazba, odM: zacatek, doM });
+      if (sazba >= min) return;
+      const delka = delky[k];
+      out.push({ stena: k, i: p.i, nazev: String(p.nazev || ''), naklad: sazba,
+        odM: r3(p.odM), doM: r3(p.doM), posledni: p.i === posl, delka: r3(delka) });
     });
   });
   return out;
@@ -169,7 +180,7 @@ function vyjimkyObsah(data, dnesni, vyrazena) {
   const pasy = vyrazena === 'ock' ? [] : vyjimkyPasyJine(d.ock && d.ock.zadani, d.cenik);
   const obsah = (smes.length || pasy.length)
     ? JSON.stringify({ s: smes.map(x => [x.cesta, x.hodnota === undefined ? null : x.hodnota]),
-        p: pasy.map(x => [x.stena, x.i, x.nazev, x.naklad, x.odM, x.doM]) })
+        p: pasy.map(x => [x.stena, x.i, x.nazev, x.naklad, x.odM, x.doM, x.delka]) })
     : '';
   return { smes: smes.map(x => ({ cesta: x.cesta, sekce: x.sekce, popis: x.popis, pod: x.pod })), pasy,
     polozek: smes.length, pasu: pasy.length, obsah, prazdny: !smes.length && !pasy.length };
@@ -277,9 +288,30 @@ function vyjimkaPrepocti(data, obsah) {
 function vyjimkyPasRozsah(p) {
   const m = x => String(+x || 0).replace('.', ',');
   if (!p || typeof p !== 'object') return '';
-  return p.doM === null || p.doM === undefined
-    ? 'od ' + m(p.odM) + ' m až nahoru'
+  return p.posledni || p.doM === null || p.doM === undefined
+    ? 'od ' + m(p.odM) + ' m až nahoru' + (p.doM === null || p.doM === undefined ? '' : ' (' + m(p.doM) + ' m)')
     : m(p.odM) + '–' + m(p.doM) + ' m';
+}
+
+/* PLOCHA PÁSŮ PRO KARTU VÝJIMKY (B178, J. V. 17. 10. 2026): schvalovatel
+ * vidí, kolik m² za ruční sazbu schvaluje. Bere se z výsledku jádra
+ * (`vysledek.oplasteni.pasy`, totéž `m2`, které jde do ceny) — pás se páruje
+ * stěnou a mezemi (obě strany z oplasteniPasyMeze). Vrací kopie pásů
+ * s `m2` (null = jádro pás nenašlo). Na obsah výjimky nemá vliv. Navazuje
+ * B165 (ceníková vs. použitá sazba a dopad). */
+function vyjimkyPasyPlochy(pasy, vysledek) {
+  const jp = (vysledek && vysledek.oplasteni && Array.isArray(vysledek.oplasteni.pasy)) ? vysledek.oplasteni.pasy : [];
+  const blizko = (a, b) => Math.abs((+a || 0) - (+b || 0)) < 0.0005;
+  return (pasy || []).map(p => {
+    const j = jp.find(x => x && x.stena === p.stena && x.typ === 'jine' && blizko(x.odM, p.odM) && blizko(x.doM, p.doM));
+    return Object.assign({}, p, { m2: j && isFinite(+j.m2) ? Math.round(+j.m2 * 100) / 100 : null });
+  });
+}
+
+/* „2,16 m²" pro kartu; prázdné, když plochu neznáme. */
+function vyjimkyPasPlocha(p) {
+  if (!p || typeof p !== 'object' || typeof p.m2 !== 'number' || !isFinite(p.m2)) return '';
+  return String(p.m2).replace('.', ',') + ' m²';
 }
 
 function vyjimkyText(obsah) {
@@ -433,5 +465,5 @@ if (typeof module !== 'undefined')
   module.exports = { VYJ_CEKA, VYJ_SCHVALENO, VYJ_ZAMITNUTO, VYJ_STAVY, VYJ_POLE, VYJ_REJSTRIK_POLE,
                      vyjimkyMinSazbaOpl, vyjimkyPasyJine, vyjimkyDnesniZProgramu, vyjimkyObsah, vyjimkyObsahStran,
                      vyjimkyPotreba, vyjimkaPlati, vyjimkaKategorie, vyjimkaSmiRozhodnout,
-                     vyjimkaPozadej, vyjimkaSchval, vyjimkaZamitni, vyjimkaVrat, vyjimkaPrepocti, vyjimkyText, vyjimkyPasRozsah,
+                     vyjimkaPozadej, vyjimkaSchval, vyjimkaZamitni, vyjimkaVrat, vyjimkaPrepocti, vyjimkyText, vyjimkyPasRozsah, vyjimkyPasPlocha, vyjimkyPasyPlochy,
                      vyjimkaRozhodnutiKlic, vyjimkyServerKontrola, vyjimkyZamekProblem, vyjimkaRejstrik };

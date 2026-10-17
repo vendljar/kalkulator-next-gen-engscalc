@@ -330,6 +330,34 @@ async function pasSchvaleny(nazev) {
   const r0 = await dotisk('B155 dotisk beze změny', false);
   test('B155: dotisk nabídky OCK se schváleným rozsahem (200)', r0.status === 200, r0); }
 
+console.log('===== B178: zdvih a rozměry stěny u schváleného pásu „jiné" =====');
+/* Pokus kola 26 na v17.10.1 (podklady/AUDIT26_pokus_B178_vyska.mjs): pás
+ * „jiné" až nahoru nad Cetrisem do 11 m (zdvih 9 m = 1,2 m), vedoucí schválí,
+ * obchodník zvedne zdvih na 40 m a zamkne → 200 (plocha 26×). Pojistka:
+ * proti v17.10.1 (54174ee) vracely zámky po změně zdvihu i hloubky 200. */
+{ const pasyVysoko = (z) => { const st = globalThis.oplasteniStenyVychozi(d0(z).ock.zadani, d0(z).cenik);
+    st.B = { odM: 0, pasy: [{ typ: 'C.cetrisKc', doM: 11 }, { typ: 'jine', nazev: 'Deska', naklad: 1, doM: null }] };
+    d0(z).ock.zadani.oplasteni = { rezim: 'poStenach', steny: st }; };
+  const z = nova('B178 výška'); pasyVysoko(z);
+  const r1 = await uloz(z, cO);
+  const gV = await nacti(r1.soubor, cV); const b = zk.importZakazka(kopie(gV));
+  VY.vyjimkaSchval(d0(b), obsah(b), 'Ved'); const r2 = await uloz(b, cV, gV.uloRazitko);
+  test('B178 příprava: obchodník uložil pás nahoře, vedoucí schválil (200)', r1.status === 200 && r2.status === 200, [r1, r2]);
+  const vezmi = async () => { const g = await nacti(r1.soubor, cO); return { a: zk.importZakazka(kopie(g)), razitko: g.uloRazitko }; };
+  { const { a, razitko } = await vezmi(); d0(a).ock.zadani.zdvih = 40;
+    test('B178: kategorie po zdvihu 9 → 40 m = „čeká znovu"', VY.vyjimkaKategorie(d0(a).cenovaVyjimka, obsah(a)) === 'ceka');
+    const r = await uloz(zamkni(a), cO, razitko);
+    test('B178: zdvih 9 → 40 m po schválení + zámek → 403', r.status === 403 && /jiné/.test(r.chyba || ''), r); }
+  { const { a, razitko } = await vezmi(); d0(a).ock.zadani.hloubka = 3;
+    const r = await uloz(zamkni(a), cO, razitko);
+    test('B178: hloubka 1,8 → 3 m (délka stěny B) po schválení + zámek → 403', r.status === 403, r); }
+  { const { a, razitko } = await vezmi(); d0(a).ock.zadani.prejezd = 4.5;
+    const r = await uloz(zamkni(a), cO, razitko);
+    test('B178: přejezd 3,2 → 4,5 m po schválení + zámek → 403', r.status === 403, r); }
+  { const { a, razitko } = await vezmi();
+    const r = await uloz(zamkni(a), cO, razitko);
+    test('B178: beze změny rozměrů — zámek se schválením (200)', r.status === 200, r); } }
+
 console.log('===== B153: dotisk strany vyřazené při zámku (jenProj → vypnutí → dotisk OCK) =====');
 /* Pokus auditu 15. 10. 2026 (podklady/AUDIT25_pokus_B153_dotisk.mjs). Zakázka
  * „jen projekce": zámek nabídky PROJ posoudí jen PROJ; vypnutí jenProj
