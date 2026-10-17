@@ -1039,6 +1039,10 @@ function kryciPlatebniSymboly(kal, P, lang) {
  * Splátka bez čitelného procenta zůstane ve v1 jako {{…}} k doplnění.
  * Vrací { symboly, odstavcePryc, chyba }. */
 const KRYCI_SOD_VETA_ZALOHY = 'při uzavření této smlouvy o dílo';
+const KRYCI_SOD_Z_CENY = 'z celkové ceny díla';
+/* cizojazyčná smlouva (#157): konečná splátka jako milník + „zbývajících" */
+const KRYCI_SOD_VETA_KONECNA_CIZI = 'po provedení celého díla zhotovitele a jeho předání a převzetí bez vad a nedodělků bránících provozu výtahu';
+const KRYCI_SOD_ZBYVAJICI = 'zbývajících';
 const KRYCI_SOD_VETA_KONECNA = 'po provedení celého díla zhotovitele a jeho předání a převzetí bez vad a nedodělků bránících provozu výtahu zbývajících';
 function kryciSodMilnik(text) {
   /* „40 % – po zahájení montáže" → „po zahájení montáže"; text bez pomlčky
@@ -1047,18 +1051,30 @@ function kryciSodMilnik(text) {
   const m = t.match(/^\s*-?\d+(?:[.,]\d+)?\s*%\s*[–—-]\s*(.+)$/);
   return m ? m[1].trim() : t;
 }
-function kryciSodPlatby(zak, varianta, jekly, sablona) {
+/* Smlouva v cizím jazyce (#157, 17. 10. 2026): řádky seznamu plateb se
+ * skládají z týchž dílů přeložených slovníkem (tr) — milník, procento,
+ * „z celkové ceny díla". Vlastní znění obchodníka zůstane, jak ho napsal,
+ * když ho slovník nezná. */
+function kryciSodPlatby(zak, varianta, jekly, sablona, lang) {
+  const L = lang || 'cz';
+  const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
   const kal = kryciPlatebniKalendar(zak, varianta, jekly);
   const sym = sablona && sablona.symboly;
   const ma = (k) => !!sym && (typeof sym.has === 'function' ? sym.has(k) : Array.from(sym).indexOf(k) >= 0);
   const symboly = {}, odstavcePryc = [];
   const cislo = (proc) => String(proc || '').replace(/\s*%\s*$/, '');
   /* seznam plateb (šablona v2, náhled) */
-  const radky = kal.mesicne ? [KRYCI_FAKTURACE_MESICNE_VETA] : kal.splatky.map(sp => {
-    if (sp.pct === null) return String(sp.text).trim();
-    if (sp.id === 'zaloha1') return KRYCI_SOD_VETA_ZALOHY + ' ' + sp.proc + ' z celkové ceny díla';
-    if (sp.id === 'fakturaKonc') return KRYCI_SOD_VETA_KONECNA + ' ' + sp.proc + ' z celkové ceny díla';
-    return kryciSodMilnik(sp.text) + ' ' + sp.proc + ' z celkové ceny díla';
+  const radky = kal.mesicne ? [P(KRYCI_FAKTURACE_MESICNE_VETA)] : kal.splatky.map(sp => {
+    if (sp.pct === null) return P(String(sp.text).trim());
+    if (L !== 'cz') {
+      /* „<milník> – [zbývajících] N % z celkové ceny díla" — pořadí, které
+       * drží ve všech jazycích; čeština zůstává beze změny (níž). */
+      const konecna = sp.id === 'fakturaKonc';
+      const milnik = sp.id === 'zaloha1' ? KRYCI_SOD_VETA_ZALOHY : konecna ? KRYCI_SOD_VETA_KONECNA_CIZI : kryciSodMilnik(sp.text);
+      return P(milnik) + ' – ' + (konecna ? P(KRYCI_SOD_ZBYVAJICI) + ' ' : '') + sp.proc + ' ' + P(KRYCI_SOD_Z_CENY);
+    }
+    const milnik = sp.id === 'zaloha1' ? KRYCI_SOD_VETA_ZALOHY : sp.id === 'fakturaKonc' ? KRYCI_SOD_VETA_KONECNA : kryciSodMilnik(sp.text);
+    return milnik + ' ' + sp.proc + ' ' + KRYCI_SOD_Z_CENY;
   }).filter(Boolean);
   if (radky.length) symboly.SOD_PLATEBNI_KALENDAR = radky.join('\n');
   const stara = !!sym && !ma('SOD_PLATEBNI_KALENDAR') && ['SOD_SPLATKA1_PROC', 'SOD_SPLATKA2_PROC', 'SOD_SPLATKA3_PROC', 'SOD_SPLATKA4_PROC'].some(ma);

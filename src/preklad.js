@@ -49,6 +49,23 @@ const PREKLAD = {
   "VI. PŘEDÁNÍ DÍLA": ["VI. HANDOVER OF COMPLETE INSTALLATION",
     "VI. ÜBERGABE DER KOMPLETTEN INSTALLATION", "VI. REMISE DE L’OUVRAGE"],
   "DOLOŽKY": ["CLAUSES", "KLAUSELN", "CLAUSES"],
+  /* Smlouva o dílo v cizím jazyce (#157, 17. 10. 2026) — hodnoty, které do
+   * přeložené šablony SoD skládá aplikace: řádky seznamu splátek SoD
+   * realizace („<milník> – N % z celkové ceny díla"), věty plateb SoD PROJ
+   * („Platba <milník>" výš u nabídky PROJ) a druh místa plnění z krycího
+   * listu (šablona: „The place of performance of the Work is … at the address"
+   * — proto se členem). */
+  "při uzavření této smlouvy o dílo": ["upon conclusion of this contract for work", "bei Abschluss dieses Werkvertrags", "à la conclusion du présent contrat d’entreprise"],
+  "po zahájení montáže": ["after commencement of installation", "nach Beginn der Montage", "après le début du montage"],
+  "po provedení celého díla zhotovitele a jeho předání a převzetí bez vad a nedodělků bránících provozu výtahu": [
+    "after completion of the entire Work by the Contractor and its handover and takeover without defects and unfinished items preventing the operation of the lift",
+    "nach Ausführung des gesamten Werks durch den Auftragnehmer und dessen Übergabe und Abnahme ohne Mängel und Restarbeiten, die den Betrieb des Aufzugs verhindern",
+    "après l’exécution de l’ouvrage complet par l’entrepreneur et sa remise et réception sans défauts ni travaux inachevés empêchant le fonctionnement de l’ascenseur"],
+  "zbývajících": ["the remaining", "die restlichen", "le solde de"],
+  "z celkové ceny díla": ["of the total price of the Work", "des Gesamtpreises des Werks", "du prix total de l’ouvrage"],
+  "bytový dům": ["an apartment building", "ein Wohngebäude", "un immeuble d’habitation"],
+  "rodinný dům": ["a family house", "ein Einfamilienhaus", "une maison individuelle"],
+  "administrativní budova": ["an office building", "ein Bürogebäude", "un immeuble de bureaux"],
   "1. dílčí faktura": ["1st partial invoice", "1. Teilrechnung", "1re facture partielle"],
   "2. dílčí faktura": ["2nd partial invoice", "2. Teilrechnung", "2e facture partielle"],
   "Konečná faktura": ["Final invoice", "Schlussrechnung", "Facture finale"],
