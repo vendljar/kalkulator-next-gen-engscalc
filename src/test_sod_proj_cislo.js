@@ -150,8 +150,9 @@ const vygeneruj = async (sablonaAb, cislo) => {
     const g1 = await vygeneruj(await docx(v3), ' 2026 OVP SOD 0012 ');
     test('SoD PROJ (v3): číslo ve smlouvě bez okrajových mezer', g1.text[2] === 'číslo 2026 OVP SOD 0012', g1.text.slice(0, 4));
     const prazdne = await vygeneruj(await docx(v3));
-    test('SoD PROJ (v3): prázdné Číslo SoD → {{' + SYM + '}} zůstane vidět k doplnění',
-      prazdne.text[2] === 'číslo {{' + SYM + '}}', prazdne.text.slice(0, 4));
+    /* Od v17.10.2 (#366) prázdné pole předvyplní návrh z čísla nabídky. */
+    test('SoD PROJ (v3): prázdné Číslo SoD → návrh z čísla nabídky (#366)',
+      prazdne.text[2] === 'číslo 2026 - OVP - SOD - 0411', prazdne.text.slice(0, 4));
     const mezery = await vygeneruj(await docx(v3), '   ');
     test('SoD PROJ (v3): jen mezery v Čísle SoD = prázdné ({{…}} zůstane)', mezery.text[2] === 'číslo {{' + SYM + '}}', mezery.text.slice(0, 4));
     const stara = await vygeneruj(await docx(VS.sodProjV2(V1)), '2026 OVP SOD 0013');

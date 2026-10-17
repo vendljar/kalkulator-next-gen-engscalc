@@ -7,8 +7,9 @@
  *  1) nadpis listu OCK (stránka, dokument, registr zámku) nese nový název
  *     a starý se nikde nevypisuje,
  *  2) pole `cisloSod` stojí v Základních údajích HNED za `cisloCN` v obou
- *     listech, je ruční (bez předvyplnění a bez vazby na hlavičku) a patří do
- *     verze Backoffice i Techdata,
+ *     listech, bez vazby na hlavičku (od v17.10.2 jen s NÁVRHEM z čísla
+ *     nabídky, #366 — podrobně test_cislo_sod_navrh.js) a patří do verze
+ *     Backoffice i Techdata,
  *  3) zapsané číslo se objeví ve výstupu krycího listu (obě verze),
  *  4) pole jde doplnit i u odeslané nabídky (sekce není v nabídce) a tisk
  *     smlouvy o dílo ho zamkne,
@@ -70,8 +71,8 @@ test('dokument krycího listu OCK: nadpis „' + NOVY + ' — Backoffice / Techd
   const p = zakl[i + 1] || {};
   test(jm + ': „Číslo SoD" stojí v Základních údajích hned pod „Číslo nabídky (CN)"',
     i >= 0 && p.id === 'cisloSod' && p.label === 'Číslo SoD', zakl.map(x => x.id).join(','));
-  test(jm + ': „Číslo SoD" je ruční pole (bez předvyplnění a bez vazby na hlavičku)',
-    !p.prefill && !p.bind && !p.dphBind && !p.vypocet && p.src === 'ručně', p);
+  test(jm + ': „Číslo SoD" je přepisovatelné pole s návrhem (bez vazby na hlavičku)',
+    typeof p.prefill === 'function' && !p.bind && !p.dphBind && !p.vypocet && p.src === 'návrh z čísla nabídky', p);
   test(jm + ': „Číslo SoD" patří do verze BO i Tech',
     Array.isArray(p.verze) && p.verze.indexOf('bo') >= 0 && p.verze.indexOf('techdata') >= 0, p.verze);
   test(jm + ': id „cisloSod" je v listu jen jednou',
@@ -82,7 +83,7 @@ test('dokument krycího listu OCK: nadpis „' + NOVY + ' — Backoffice / Techd
 const radek = (d, label) => { for (const s of d.sekce) for (const r of (s.radky || [])) if (r[0] === label) return r; return null; };
 {
   const prazdne = radek(dBo, 'Číslo SoD');
-  test('OCK: nevyplněné číslo SoD je ve výstupu prázdné (nic se nepředvyplní)', !!prazdne && prazdne[1] === '', prazdne);
+  test('OCK: nevyplněné číslo SoD nese ve výstupu návrh z čísla nabídky (#366)', !!prazdne && prazdne[1] === '2026 - OPR - SOD - 0366', prazdne);
   v.data.kryci = { hodnoty: { cisloSod: '2026 - OPR - SOD - 0007' } };
   v.data.kryciProj = { hodnoty: { cisloSod: '2026 OVP SOD 0007' } };
   ['bo', 'techdata'].forEach(ver => {
@@ -123,6 +124,8 @@ const zamcena = (typy) => {
 /* ---- 5) smlouvy o dílo ---- */
 {
   const z2 = JSON.parse(JSON.stringify(zak)), v2 = z2.varianty[0];
+  /* Bez čísla nabídky není z čeho navrhnout (#366) — symbol zůstane vidět. */
+  z2.cislo = zk.ZAK_CISLO_PREDLOHA || '2026 - OPR - CN - '; z2.projHlavicka.cislo = '';
   v2.data.kryci = { hodnoty: {} }; v2.data.kryciProj = { hodnoty: {} };
   const sod0 = sodData(z2, v2, JEKLY, 'cz'), sodP0 = sodProjData(z2, v2, 'cz');
   test('SoD realizace: prázdné číslo SoD nechá {{' + SYM_OCK + '}} k doplnění', sod0.placeholders[SYM_OCK] === undefined);
