@@ -298,6 +298,17 @@ function zamekKryciPolePlnaMoc(list, id) {
   return list === 'kryciProj' && /^pm[A-Z]/.test(String(id == null ? '' : id));
 }
 
+/* PRVNÍ SMLOUVA O DÍLO (#366, J. V. 16. 10. 2026: „tisk SoD zamkne termín,
+ * podpisy a podmínky"). Vrací true, když tisk `typ` je smlouva o dílo a
+ * z varianty ještě žádná neodešla — jen tehdy se do krycích listů opíšou
+ * údaje, které by se jinak dál počítaly (číslo SoD z návrhu, datum podpisu
+ * = dnešek; kryciZmrazSod). Po první smlouvě je krycí list zamčený celý
+ * a server by další zápis odmítl. */
+function zamekPrvniSmlouva(v, typ) {
+  if (ZAMEK_KRYCI_SMLOUVY.indexOf(typ) < 0) return false;
+  return !zamekTiskyTypy(v).some(t => ZAMEK_KRYCI_SMLOUVY.indexOf(t) >= 0);
+}
+
 /* Smí se pole krycího listu změnit? Nezamčená varianta = ano. */
 function zamekKryciPoleVolne(v, list, id) {
   if (!variantaUzamcena(v)) return true;
@@ -878,5 +889,5 @@ if (typeof module !== 'undefined')
                      klonujVariantu, zamekInfo, variantaUzamcena,
                      variantaEditovatelna, zamkniVariantu, odemkniVariantu,
                      ZAMEK_OTISK_POLE, zamekOtisk, zamekOtiskZPorovnani,
-                     zajistiZamek, ZAMEK_KRYCI_SMLOUVY, zamekTiskyTypy, zamekKryciOtevreny,
+                     zajistiZamek, ZAMEK_KRYCI_SMLOUVY, zamekTiskyTypy, zamekKryciOtevreny, zamekPrvniSmlouva,
                      zamekKryciPoleVNabidce, zamekKryciPoleVolne, zamekKryciPolePlnaMoc, zamekDataPorovnani };

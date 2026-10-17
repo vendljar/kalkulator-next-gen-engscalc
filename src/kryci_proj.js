@@ -479,6 +479,28 @@ function kryciProjZmrazPodminky(zak, varianta) {
   return Object.keys(out).length;
 }
 
+/* Totéž co kryciZmrazSod v kryci.js (#366): první tisk smlouvy opíše návrh
+ * čísla SoD projekce do ručních hodnot, aby ho pozdější změna čísla nabídky
+ * nebo dotisk nezměnily. Datum podpisu list PROJ nemá. */
+const KRYCI_PROJ_SOD_OPIS = ['cisloSod'];
+function kryciProjZmrazSod(zak, varianta) {
+  if (!varianta || !varianta.data) return 0;
+  const d = varianta.data;
+  if (!d.kryciProj || typeof d.kryciProj !== 'object') d.kryciProj = { hodnoty: {} };
+  if (!d.kryciProj.hodnoty || typeof d.kryciProj.hodnoty !== 'object') d.kryciProj.hodnoty = {};
+  const h = d.kryciProj.hodnoty;
+  const c = kryciProjCtx(zak, varianta);
+  let n = 0;
+  KRYCI_PROJ_SOD_OPIS.forEach(id => {
+    if (h[id] !== undefined && h[id] !== '') return;
+    const p = KRYCI_PROJ_SEKCE.reduce((a, s) => a || s.pole.find(x => x.id === id), null);
+    if (!p) return;
+    const v = kryciProjHodnota(p, d.kryciProj, c);
+    if (v != null && v !== '') { h[id] = String(v); n++; }
+  });
+  return n;
+}
+
 /* KL-7: totéž jako kryciMigraceSazbaDph() v kryci.js, jen nad úložištěm PROJ —
  * ruční sazba DPH uložená starší verzí se z dat uklidí, aby se nevozila dál. */
 function kryciProjMigraceSazbaDph(h) {
@@ -607,5 +629,5 @@ function kryciProjPodminkoveSymboly(zak, varianta, P) {
 if (typeof module !== 'undefined')
   module.exports = { KRYCI_PROJ_SEKCE, KRYCI_POKUTY_SAZBY, KRYCI_PROJ_NABIDKA_SEKCE, KRYCI_PROJ_CINNOSTI, kryciProjCtx,
     kryciProjHodnota, kryciProjData, kryciProjMigraceSazbaDph, kryciProjPodminkoveSymboly,
-    kryciProjSekceKc, kryciProjSodSymboly, kryciProjMesicu, kryciProjZmrazPodminky,
+    kryciProjSekceKc, kryciProjSodSymboly, kryciProjMesicu, kryciProjZmrazPodminky, KRYCI_PROJ_SOD_OPIS, kryciProjZmrazSod,
     KRYCI_PROJ_PLAN_CINNOSTI, kryciProjPoleViditelne, kryciProjPlatbyText, kryciProjZmrazPlan, kryciProjPoleHodnota };

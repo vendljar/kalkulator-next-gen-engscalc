@@ -39,7 +39,8 @@ const priprav = (typy, tab) => p.evaluate(([c, cp, typy, tab]) => {
   Object.assign(DEFAULT_CENIK, c); delete DEFAULT_CENIK.prazdny;
   Object.assign(DEFAULT_CENIK_PROJ, cp); delete DEFAULT_CENIK_PROJ.prazdny;
   ZAK = novaZakazka(); ZAK.autor = 'autor.cislosod@priklad.cz';
-  ZAK.cislo = '2026 - OPR - CN - 0412';   // #366: návrh čísla SoD vzniká z čísla nabídky
+  /* #366: návrh čísla SoD vzniká z čísla nabídky; řada podle strany (P6 — číslo OPR vyřadí PROJ). */
+  ZAK.cislo = tab === 'kryciproj' ? '2026 - OVP - CN - 0412' : '2026 - OPR - CN - 0412';
   syncVarianta();
   const v = aktivniVarianta(ZAK);
   typy.forEach(typ => zamkniVariantu(v, { typ }));
@@ -83,7 +84,8 @@ for (const [tab, jm, h1] of [['kryci', 'OCK', 'Krycí list zakázky OCK'], ['kry
              reset: !!(rr && rr.querySelector('.src button')) };
   }, sel);
   const r0 = await radekSod();
-  ok('okno „Číslo SoD" nese návrh z čísla nabídky (#366)', r0.hodnota === '2026 - OPR - SOD - 0412', r0);
+  const navrhSod = jm === 'OCK' ? '2026 - OPR - SOD - 0412' : '2026 - OVP - SOD - 0412';
+  ok('okno „Číslo SoD" nese návrh z čísla nabídky (#366)', r0.hodnota === navrhSod, r0);
   ok('…zřetelně označený jako návrh', /návrh z čísla nabídky/.test(r0.zdroj) && !r0.reset, r0);
   const cislo = jm === 'OCK' ? '2026 - OPR - SOD - 0012' : '2026 OVP SOD 0012';
   await napis(sel, cislo);
@@ -103,7 +105,7 @@ for (const [tab, jm, h1] of [['kryci', 'OCK', 'Krycí list zakázky OCK'], ['kry
   await p.locator(sel + ' .kl-row').filter({ has: p.locator('.lbl', { hasText: /^Číslo SoD/ }) }).first().locator('.src button').click();
   await p.waitForTimeout(300);
   const r2 = await radekSod(), u2 = await ulozeno();
-  ok('↺ vrátí návrh a ruční hodnotu smaže', r2.hodnota === '2026 - OPR - SOD - 0412' && (jm === 'OCK' ? u2.ock : u2.proj) === undefined, [r2, u2]);
+  ok('↺ vrátí návrh a ruční hodnotu smaže', r2.hodnota === navrhSod && (jm === 'OCK' ? u2.ock : u2.proj) === undefined, [r2, u2]);
 }
 
 for (const [tab, jm, typ] of [['kryci', 'OCK', 'nabidkaTisk'], ['kryciproj', 'PROJ', 'nabidkaProjTisk']]) {
@@ -116,6 +118,18 @@ for (const [tab, jm, typ] of [['kryci', 'OCK', 'nabidkaTisk'], ['kryciproj', 'PR
   ok('…bez dialogu „Uzamčená varianta"', !(await modal()), await modalText());
   await zavri();
 }
+
+console.log('— tisk smlouvy o dílo (zamekPoTisku, #366) —');
+await priprav(['nabidkaTisk'], 'kryci');
+const poTisku = await p.evaluate(() => {
+  const v = aktivniVarianta(ZAK);
+  zamekPoTisku('sod', v.id, null);
+  return { ock: v.data.kryci.hodnoty.cisloSod, datum: v.data.kryci.hodnoty.sodDatumPodpisu,
+           proj: v.data.kryciProj.hodnoty.cisloSod, dnes: kryciDnesIso(), typy: zamekTiskyTypy(v) };
+});
+ok('tisk SoD opíše číslo SoD (OCK i PROJ) a datum podpisu do zakázky',
+  poTisku.ock === '2026 - OPR - SOD - 0412' && poTisku.proj === '2026 - OPR - SOD - 0412'
+  && poTisku.datum === poTisku.dnes && poTisku.typy.indexOf('sod') >= 0, poTisku);
 
 console.log('— po smlouvě o dílo —');
 await priprav(['nabidkaTisk', 'sod'], 'kryci');

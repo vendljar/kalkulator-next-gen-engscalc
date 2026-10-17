@@ -330,6 +330,12 @@ function zamekPoTisku(typ, varId, sablona) {
   if (!v) return null;
   const prvni = !variantaUzamcena(v);
   let otisk = null, vysledek = null;
+  /* První smlouva o dílo zamkne číslo SoD a datum podpisu (#366): opíšou
+   * se do krycích listů dřív, než zámek pole uzavře. */
+  if (typeof zamekPrvniSmlouva === 'function' && zamekPrvniSmlouva(v, typ)) {
+    try { if (typeof kryciZmrazSod === 'function') kryciZmrazSod(ZAK, v, JEKLY); } catch (e) {}
+    try { if (typeof kryciProjZmrazSod === 'function') kryciProjZmrazSod(ZAK, v); } catch (e) {}
+  }
   if (prvni) {
     try { otisk = zamekOtiskZPorovnani(porovnaniData(), v.id); } catch (e) { otisk = null; }
     /* CELÝ VÝSLEDEK SE BERE PŘI PRVNÍM ZAMČENÍ (nálezy A1 a D1, rozhodnutí

@@ -865,6 +865,35 @@ function kryciZmrazPodminky(zak, varianta, jekly) {
   return Object.keys(out).length;
 }
 
+/* TISK SMLOUVY O DÍLO ZAMKNE ČÍSLO SoD A DATUM PODPISU (#366, V1,
+ * 17. 10. 2026). Zmrazení P9.5 proběhne při PRVNÍM zamčení (obvykle
+ * odeslání nabídky) a dvě pole smlouvy jím nezamrznou: datum podpisu
+ * (`nezmrazovat` — platí ke dni tisku smlouvy) a číslo SoD u nabídky
+ * odeslané před v17.10.2 (návrh tehdy neexistoval). Po tisku smlouvy by
+ * krycí list i dotisk smlouvy ukazovaly dnešní datum místo data podpisu.
+ * Proto se při PRVNÍM tisku smlouvy (zamekPrvniSmlouva) jejich hodnota
+ * opíše do ručních hodnot — tytéž, které právě šly do smlouvy. Zápis
+ * projde i serverem: pole nejsou v nabídce, takže jsou do tisku smlouvy
+ * volná (zamekKryciPoleVolne). Vrací počet opsaných polí. */
+const KRYCI_SOD_OPIS = ['cisloSod', 'sodDatumPodpisu'];
+function kryciZmrazSod(zak, varianta, jekly) {
+  if (!varianta || !varianta.data) return 0;
+  const d = varianta.data;
+  if (!d.kryci || typeof d.kryci !== 'object') d.kryci = { hodnoty: {} };
+  if (!d.kryci.hodnoty || typeof d.kryci.hodnoty !== 'object') d.kryci.hodnoty = {};
+  const h = d.kryci.hodnoty;
+  const c = kryciCtx(zak, varianta, jekly);
+  let n = 0;
+  KRYCI_SOD_OPIS.forEach(id => {
+    if (h[id] !== undefined && h[id] !== '') return;           // ruční hodnota už v datech je
+    const p = KRYCI_SEKCE.reduce((a, s) => a || s.pole.find(x => x.id === id), null);
+    if (!p) return;
+    const v = kryciHodnota(p, d.kryci, c);
+    if (v != null && v !== '') { h[id] = String(v); n++; }
+  });
+  return n;
+}
+
 /* ---------- PLATEBNÍ PODMÍNKY NABÍDKY OCK (etapa A, část 1 — 30. 9. 2026) ----------
  *
  * D1 (nález K18-N94): volba „Bez zálohy" dala ve Wordu větu „1. dílčí daňový
@@ -1101,7 +1130,7 @@ if (typeof module !== 'undefined')
     kryciData, kryciMigraceZadrzne, kryciMigraceSazbaDph,
     PODM_PREFIX, kryciSymbolId, kryciCisloZTextu, kryciProcentoZTextu,
     kryciTerminDodani, kryciTerminDodaniText, kryciTerminSJednotkou, kryciTydnu,
-    kryciSymbolyZeSekci, kryciPodminkoveSymboly, kryciSodSymboly, kryciZmrazPodminky, kryciDatumCz,
+    kryciSymbolyZeSekci, kryciPodminkoveSymboly, kryciSodSymboly, kryciZmrazPodminky, KRYCI_SOD_OPIS, kryciZmrazSod, kryciDatumCz,
     kryciZKrycihoListuProj,
     kryciFaktura2Dopocet, kryciFaktura2Sync,
     KRYCI_PRAVIDLA_PLATEB, KRYCI_FAKTURACE_MESICNE_VETA, KRYCI_VETY_V13, kryciPlatbaProcento, kryciPlatbyStary,
