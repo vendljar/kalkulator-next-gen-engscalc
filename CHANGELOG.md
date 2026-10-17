@@ -8,6 +8,42 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v17.10.4 — oprava B178 a B179 (schvalování výjimek, příznak „cena dle nabídky“; větev claude/o6-b178-b179)
+
+Dávka O6 (zadání koordinace „ŘÍDÍCÍ 16.10“, rozhodnutí J. V. 17. 10. 2026),
+nad `origin/claude/kolo26-audit` (`54174ee`, v17.10.1).
+
+- **B178 opraveno — schválený pás „jiné“ nejde zvětšit změnou šachty.**
+  Meze pásů počítá jediná funkce `oplasteniPasyMeze` (`src/engine.js`) pro
+  výpočet i obsah výjimky (horní hrana zdvih + přejezd, ořez, pás nulové
+  výšky vypadne). Obsah pásu = `[stěna, i, název, sazba, odM, doM po ořezu,
+  délka stěny]`; změna zdvihu, přejezdu, šířky nebo hloubky, která pás mění,
+  vrátí výjimku do „čeká znovu“ (zámek 403). Karta Cenové výjimky ukazuje
+  u pásu i **plochu v m² z výpočtu jádra** (`vyjimkyPasyPlochy`,
+  `vyjimkyPasPlocha`) — podklad pro B165. Karta je jen česky (není
+  přeložená). Výjimky s pásem „jiné“ schválené dřív se schvalují znovu.
+- **B179 opraveno — příznak „cena dle nabídky“ jen u příplatků a nikdy
+  z ceníku varianty.** `cenikDleNabidkySmi` pustí jen `C.priplatky.*`
+  (očista mapy na serveru i v prohlížeči, `cenikDleNabidkyJe` — příznak
+  u montáže ve starší platné verzi nic nepovolí). Mapa pro zveřejnění =
+  `cenikDleNabidkyProZverejneni(platný ceník, změny správce v relaci)`;
+  `progKontext` i sloupec Nastavení → Ceník (zaškrtávátko jen u příplatků)
+  ceník varianty nečtou. Návrh osmi položek (S13) a rozpis B180 drží.
+- **Testy (pojistka):** `src/test_vyjimky.js` proti v17.10.1 10 FAIL + pád,
+  po opravě 88/0; `netlify/test_vyjimky.mjs` 61/4 → 65/0;
+  `src/test_cena_dle_nabidky.js` B179 část proti v17.10.1 padá, po opravě
+  62/0; `netlify/test_cena_dle_nabidky.mjs` 19/0 (pokus N2: platná mapa bez
+  montáže, montáž 1 Kč/h + zámek 403; proti v17.10.1 16/3). Mutace
+  (`netlify/mutace.mjs`): B155 3/3 (upravené na nový kód), B178 5/5,
+  B179 5/5, upravené starší „výjimky:“ 2/2; `--kontrola` server 491 úseků,
+  jádro 219. Harnessy `overit_schvalovani` (smyšlené rozměry šachty — pás se
+  ořezává na zdvih + přejezd) 68/0 a `overit_cena_dle_nabidky` (nové chování
+  sloupce) 21/0. Smoke s buildem 258 prošlo / 0 selhalo / 6 přeskočeno
+  (firemní podklady, test.js).
+- Dokumentace: audit kola 26 (B178, B179 opraveno, B182 uzavřeno),
+  `BEZPECNOST_MEZE.md` (zbytek B178: světlíky a vnější rozměr stěny; B181),
+  roadmapa #424 hotovo, příručka kap. 17 a 19, Co je nového v17.10.4.
+
 ## v17.10.3 — můstky: upozornění na přechodové plechy (větev claude/a2-mustky)
 
 Dávka A2 (zadání koordinace „ŘÍDÍCÍ 16.10“, plán víkendu), nad

@@ -387,6 +387,9 @@ await page.evaluate(() => {
   const d = aktivniVarianta(ZAK).data;
   d.cenik.profilasKgKc = PROG_STAV.db.platny.cenik.profilasKgKc; delete d.cenovaVyjimka;
   d.ock.zadani.oplasteni = { rezim: 'poStenach', steny: { A: { odM: 0, pasy: [{ typ: 'jine', nazev: 'Deska', naklad: 1, doM: null }] } } };
+  /* Od B178 (v17.10.4) nese výjimka meze po ořezu na zdvih + přejezd —
+   * šachta bez rozměrů (nová zakázka) pás nemá. Smyšlené rozměry. */
+  Object.assign(d.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2 });
   zobrNahled('Obchodník'); render();
 });
 await page.waitForTimeout(250);

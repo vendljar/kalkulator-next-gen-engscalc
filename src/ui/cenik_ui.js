@@ -39,20 +39,33 @@ function cenikZahrSet(path, hodnota) {
   render();
 }
 /* Příznak „cena dle nabídky" (S13, J. V. 16. 10. 2026; model v cenik.js).
- * Zapisuje se do ceníku otevřené varianty jako každá cena a platí až po
- * zveřejnění ceníku (příznak se bere z PLATNÉHO ceníku). Jen správce. */
+ * ZMĚNY SPRÁVCE V TÉTO RELACI (B179, J. V. 17. 10. 2026): do 17. 10. se
+ * příznak zapisoval do ceníku otevřené varianty a zveřejnění bralo mapu
+ * odtamtud — i z varianty, kterou uložil obchodník. Teď se pamatují jen
+ * výslovné změny správce ({ cesta: true | false }); zveřejní se mapa
+ * PLATNÉHO ceníku (DEFAULT_CENIK po progPouzij) s těmito změnami. Ceník
+ * varianty se nemění ani nečte. Jen správce, jen příplatky. */
+let CENIK_DLE_ZMENY = {};
+function cenikDleNabidkyMapaRelace() {
+  return (typeof cenikDleNabidkyProZverejneni === 'function')
+    ? cenikDleNabidkyProZverejneni(typeof DEFAULT_CENIK !== 'undefined' ? DEFAULT_CENIK : null, CENIK_DLE_ZMENY) : {};
+}
 function cenikDleNabidkySet(path, ano) {
-  if (!jeAdmin() || typeof cenikDleNabidkyNastav !== 'function') return;
-  if (typeof zamekCteniStop === 'function' && zamekCteniStop()) return;
-  if (typeof zamekStop === 'function' && zamekStop()) return;
-  /* Ceník bez mapy ukazuje návrh (výchozích osm); první klik ho převezme,
-   * ať odškrtnutí jedné položky nezruší zbylých sedm. */
-  if (typeof cenikDleNabidkyDoplnNavrh === 'function') cenikDleNabidkyDoplnNavrh(C);
-  cenikDleNabidkyNastav(C, path, !!ano);
-  aktivniVarianta(ZAK).upraveno = new Date().toISOString();
+  if (!jeAdmin() || typeof cenikDleNabidkySmi !== 'function' || !cenikDleNabidkySmi(path)) return;
+  CENIK_DLE_ZMENY[String(path)] = !!ano;
   if (typeof progZprava === 'function')
     progZprava('Příznak „cena dle nabídky" se změnil — platí až po zveřejnění ceníku tlačítkem níž.', 'varovani');
   render();
+}
+/* Po načtení nebo zveřejnění platné verze: změny, které už platná mapa
+ * nese, se zapomenou (progPouzij). */
+function cenikDleNabidkyZmenyProcisti() {
+  if (typeof DEFAULT_CENIK === 'undefined' || typeof cenikDleNabidkyJe !== 'function') return;
+  const maMapu = typeof cenikDleNabidkyMaMapu === 'function' && cenikDleNabidkyMaMapu(DEFAULT_CENIK);
+  if (!maMapu) return;                    // návrh se teprve zveřejní — změny drž
+  Object.keys(CENIK_DLE_ZMENY).forEach(k => {
+    if (cenikDleNabidkyJe(DEFAULT_CENIK, k) === CENIK_DLE_ZMENY[k]) delete CENIK_DLE_ZMENY[k];
+  });
 }
 function cenikDleNabidkySloupec() { return jeAdmin() && typeof cenikDleNabidkyJe === 'function'; }
 function cenikZahrJenSet(path, ano) {
@@ -148,6 +161,7 @@ if (typeof document !== 'undefined' && document.addEventListener) {
 }
 
 function cenikRows(def, zahrSloupec) {
+  const dleMapa = (def === CENIK_DEF && cenikDleNabidkySloupec()) ? cenikDleNabidkyMapaRelace() : {};
   return def.map(([grp, items]) => {
     const body = items.map(([path, l, u, note, typ]) => {
       const val = get(path);
@@ -203,8 +217,10 @@ function cenikRows(def, zahrSloupec) {
        * stránku"). Třída ví, co je co, ať sloupců přibude kolik chce. */
       /* Sloupec „Cena dle nabídky" (S13) — jen ceník OCK, jen číselné položky. */
       const dleSl = def === CENIK_DEF && cenikDleNabidkySloupec();
-      const dle = !dleSl ? '' : (typ ? '<td class="note c-dle">—</td>'
-        : `<td class="c-dle" style="text-align:center"><input type="checkbox" ${cenikDleNabidkyNavrh(C, path) ? 'checked' : ''}
+      /* Zaškrtávátko jen u příplatků (B179); stav = mapa, která by se
+       * zveřejnila (platný ceník + změny správce), ne ceník varianty. */
+      const dle = !dleSl ? '' : ((typ || !cenikDleNabidkySmi(path)) ? '<td class="note c-dle">—</td>'
+        : `<td class="c-dle" style="text-align:center"><input type="checkbox" ${dleMapa[path] === true ? 'checked' : ''}
             title="cenu zadává obchodník podle nabídky — ruční cena v zakázce není odchylka od ceníku (bez schválení); ceník předvyplní orientační cenu"
             onchange="cenikDleNabidkySet('${escJs(path)}', this.checked)"></td>`);
       return `<tr${zahrSloupec && cenikZahrHodnota(path) !== '' ? ' class="ma-zahr"' : ''}>
@@ -323,9 +339,11 @@ function renderCenik() {
        ${cenikDleNabidkySloupec() ? `<div class="note">Sloupec <b>Cena dle nabídky</b>: u zaškrtnuté položky
          nemá ceník reálnou cenu — obchodník ji v zakázce zadá podle nabídky dodavatele a ruční cena se
          <b>nepovažuje za odchylku od ceníku</b> (žádná žádost o schválení, tisk nabídky není zablokovaný).
-         Cena v ceníku se dál předvyplňuje jako orientační. Příznak platí až po <b>zveřejnění ceníku</b>.</div>
-       ${typeof cenikDleNabidkyMaMapu === 'function' && !cenikDleNabidkyMaMapu(C) ? `<div class="note dle-navrh"><span class="pill warn">návrh</span>
-         Tento ceník příznaky ještě nemá — zaškrtnutí ve sloupci <b>Cena dle nabídky</b> je výchozí návrh
+         Cena v ceníku se dál předvyplňuje jako orientační. Příznak jde nastavit jen u <b>příplatků</b>
+         a platí až po <b>zveřejnění ceníku</b> — zveřejní se zaškrtnutí, jak je tu vidět (platný ceník
+         a vaše změny), ne příznaky uložené v otevřené zakázce.</div>
+       ${typeof cenikDleNabidkyMaMapu === 'function' && typeof DEFAULT_CENIK !== 'undefined' && !cenikDleNabidkyMaMapu(DEFAULT_CENIK) ? `<div class="note dle-navrh"><span class="pill warn">návrh</span>
+         Platný ceník příznaky ještě nemá — zaškrtnutí ve sloupci <b>Cena dle nabídky</b> je výchozí návrh
          (osm nabídkových položek za akci). Dokud ceník nezveřejníte, aplikace tyto položky hlídá jako ostatní;
          zveřejněním se návrh zapíše do verze ceníku.</div>` : ''}` : ''}
        ${zahrSl ? `<div class="note">Prázdná buňka ve sloupci <b>Cena Zahraničí</b> znamená

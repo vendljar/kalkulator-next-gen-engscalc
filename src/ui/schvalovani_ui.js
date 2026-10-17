@@ -535,7 +535,13 @@ function vyjimkyKarta() {
     const co = [];
     if (o.polozek) co.push('Položky ceníku: ' + o.smes.slice(0, 8).map(x => esc(x.popis)).join(', ')
       + (o.polozek > 8 ? ' a další ' + (o.polozek - 8) : ''));
-    if (o.pasu) co.push('Pásy „jiné": ' + o.pasy.map(p => 'stěna ' + esc(p.stena) + ' (' + esc(p.nazev || 'bez názvu') + ', ' + esc(vyjimkyPasRozsah(p)) + ')').join(', '));
+    /* Plocha pásu z výpočtu jádra (B178) — co se za ruční sazbu zaplatí. */
+    if (o.pasu) {
+      let vys = null;
+      try { vys = typeof vypocetZ === 'function' ? vypocetZ(v, JEKLY) : vypocet(v.data.ock.zadani, v.data.cenik, JEKLY, v.data.ock.fixes); } catch (e) { vys = null; }
+      co.push('Pásy „jiné": ' + vyjimkyPasyPlochy(o.pasy, vys).map(p => 'stěna ' + esc(p.stena) + ' (' + esc(p.nazev || 'bez názvu') + ', ' + esc(vyjimkyPasRozsah(p))
+        + (vyjimkyPasPlocha(p) ? ', ' + esc(vyjimkyPasPlocha(p)) : '') + ')').join(', '));
+    }
     const podr = [];
     if (rec && rec.pozadal) podr.push('Požádal: <b>' + esc(rec.pozadal) + '</b>'
       + (rec.pozadalKdy ? ' · ' + new Date(rec.pozadalKdy).toLocaleString('cs-CZ') : ''));

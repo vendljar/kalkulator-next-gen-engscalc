@@ -1,3 +1,25 @@
+# Předávka — 17. 10. 2026: dávka O6 (v17.10.4), větev `claude/o6-b178-b179` — oprava B178 a B179
+
+Nad `origin/claude/kolo26-audit` (`54174ee`, v17.10.1). Do `test-draft` / `test` / `main` nic —
+slučuje koordinace (session_011B3ruyPigNEMSUdesbk4Hd). Podrobnosti: CHANGELOG v17.10.4,
+`BEZPECNOST_MEZE.md` (audit kola 26), `podklady/AUDIT_2026-10-17_v16.10.5.md`.
+
+- **Hotovo (pushnuto):** B178 — sdílená `oplasteniPasyMeze` (jádro i výjimka), obsah pásu nese meze
+  po ořezu a délku stěny, karta výjimek plochu m² z jádra (`vyjimkyPasyPlochy`, základ pro B165);
+  B179 — příznak jen `C.priplatky.*` (`cenikDleNabidkySmi` v očistě i v `cenikDleNabidkyJe`), mapa pro
+  zveřejnění z platného ceníku + změn správce (`cenikDleNabidkyProZverejneni`, `CENIK_DLE_ZMENY`).
+  Pokusy N2 po opravě 403. Roadmapa #424 hotovo, příručka kap. 17/19 + Co je nového v17.10.4.
+- **Testy:** viz CHANGELOG v17.10.4 (pojistky před/po), mutace B155 3/3, B178 5/5, B179 5/5 a dvě
+  upravené starší „výjimky:“ 2/2; `--kontrola` server 491, jádro 219. Harnessy `overit_schvalovani`
+  (smyšlené rozměry šachty) a `overit_cena_dle_nabidky` (nové chování sloupce) upravené.
+  `overit_online` padá na timeoutu i na `54174ee` (prostředí, ne tato dávka).
+- **Zbývá jako mez (k rozhodnutí J. V. přes koordinaci):** světlíky u dveří podle převažujícího pásu
+  a vnější rozměr stěny (profily/zasklení) — obsah je nenese; návrh: plocha světlíků z výsledku jádra.
+- **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `roadmap.json` (#424) /
+  `netlify/mutace.mjs` (B155, B178, B179) / `src/cenik.js` / `src/vyjimky.js` / `manual/obsah.json`.
+  Po sloučení se schválené výjimky s pásem „jiné“ vrátí do „čeká znovu“ (změna tvaru obsahu).
+- **Další krok:** žádný v této větvi — dávka uzavřená.
+
 # Předávka — 17. 10. 2026: dávka A2 (v17.10.3), větev `claude/a2-mustky` — můstky (#355; #356 jen návrh)
 
 Nad `origin/claude/integrace-16-10` (e2c773a, v16.10.5). Do `test-draft` / `test` / `main` nic —
