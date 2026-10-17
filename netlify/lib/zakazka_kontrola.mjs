@@ -361,7 +361,7 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
    * rozhodnutí nepřepíše. Obnova bere záznam ze zálohy jako doklad. */
   if (!obnova) {
     const vyj = globalThis.vyjimkyServerKontrola(staraPorovnani, zak, relace,
-      { matice: ctx.matice, program: ctx.program, zamcenaDriv });
+      { matice: ctx.matice, program: ctx.program, zamcenaDriv, jekly: JEKLY });
     if (!vyj.ok) return odmitni(vyj.status || 403, veta(vyj.chyba));
   }
 
@@ -427,7 +427,7 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
            * takže schválení muselo vzniknout před zámkem). */
           const noveStrany = [...new Set(nove.map(strana))];
           const vyjDotisk = globalThis.vyjimkyZamekProblem(zak, pseudo, relace,
-            { matice: ctx.matice, program: ctx.program, strany: noveStrany });
+            { matice: ctx.matice, program: ctx.program, strany: noveStrany, jekly: JEKLY });
           if (vyjDotisk) return odmitni(403, 'Neuloženo: dotisk dokumentu odeslané nabídky — ' + vyjDotisk + '. Pokračujte klonem varianty.');
           for (const cast of ['ock', 'proj']) {
             if (!noveStrany.includes(cast) && !noveStrany.includes('?')) continue;
@@ -462,7 +462,7 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
     if (cenaProblem) return odmitni(403, 'Neuloženo: ' + cenaProblem + '.');
     /* Směs ceníku nebo pás „jiné" pod ceníkovou sazbou u role bez práva
      * ceníku — nový zámek jen s platným schválením (13. 10. 2026). */
-    const vyjProblem = globalThis.vyjimkyZamekProblem(zak, v, relace, { matice: ctx.matice, program: ctx.program });
+    const vyjProblem = globalThis.vyjimkyZamekProblem(zak, v, relace, { matice: ctx.matice, program: ctx.program, jekly: JEKLY });
     if (vyjProblem) return odmitni(403, 'Neuloženo: ' + vyjProblem + '.');
     /* Nový zámek strany OCK z nulového nebo nevyplněného rozměru (B137) —
      * zrcadlo zábrany „rozmery"; platí pro každého, i administrátora
