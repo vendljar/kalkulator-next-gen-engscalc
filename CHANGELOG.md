@@ -8,6 +8,47 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v17.10.6 — smlouva o dílo v angličtině (#157; #380 Q7 jen návrh; větev claude/v3-sod-en)
+
+Dávka V3 (zadání koordinace „ŘÍDÍCÍ 16.10“, rozhodnutí J. V. 16. 10. 2026:
+anglická SoD = překlad české šablony ke kontrole rodilými mluvčími),
+nad `origin/claude/integrace-16-10` (`9bb7caf`, v17.10.4).
+
+- **#157 hotovo — anglické šablony SoD.** Nový nástroj
+  `nastroje/preklad_sod.js`: `--kostra` vypíše odstavce české šablony do
+  slovníku (JSON mimo repozitář, značky stylů `<s1>…</s1>`, tabulátory,
+  symboly), druhý režim odstavce přeskládá z překladu (vlastnosti odstavce,
+  písmo tučných úseků a symbolů zůstávají) a zkontroluje výsledek: symboly
+  shodné s češtinou, tabulátory, platné XML, odhad jazyka en, žádná česká
+  diakritika. Vyrobeny `Sablona_SOD_REALIZACE_v2_EN.docx` (139 odstavců)
+  a `Sablona_SOD_PROJEKCE_v3_EN.docx` (95), kontrola bez problémů; soubory
+  a slovníky předány J. V. jako přílohy sezení (firemní texty, v repozitáři
+  nejsou). Kontrolní seznam termínů `podklady/SOD_EN_KONTROLA.md`.
+- **Aplikace — smlouva v jazyce tisku.** Karty SoD (krycí list OCK i PROJ)
+  mají **Jazyk tisku** jako nabídky. Hodnoty, které skládá aplikace, jsou
+  v jazyce smlouvy: seznam splátek SoD realizace (`kryciSodPlatby`, lang),
+  platby SoD PROJ (`planSodKalendar` s překladem — „Payment after … – € … +
+  VAT.“), druh místa plnění (`sodPrelozHodnoty`); slovník `src/preklad.js`
+  EN/DE/FR. Čeština beze změny. Částky v eurech podle #155.
+- **Bez jazykové šablony smlouva v cizím jazyce nevznikne**
+  (`sodJazykZabrana`, `src/ui/sod_ui.js`) — dřív vznikla z české šablony
+  s upozorněním „pevný text zůstal český“, tj. český právní text s anglickými
+  hodnotami. Hláška řekne, kde šablonu nahrát (Nastavení → Šablony → EN).
+- **#380 Q7 — jen návrh koordinaci** (varianty A věta přílohy / B i bloky
+  činností v čl. II a III SoD PROJ, doporučeno B); kód beze změny.
+- **Testy (pojistka):** `src/test_sod_en.js` (smyšlená anglická šablona,
+  žádný firemní text) proti kódu před opravou 8 prošlo / 10 selhalo, po
+  opravě 18/0; `src/test_preklad_sod.js` bez nástroje 0/1, s nástrojem 13/0;
+  harness `overit_sod_en.mjs` (karty, zábrana v sestavené aplikaci) nad
+  v17.10.4 2/4, po úpravě 6/0. `./spust_testy.sh --smoke` 261 prošlo /
+  0 selhalo / 6 přeskočeno (firemní podklady), před přidáním harnessu
+  a 13. testu nástroje — ty prošly samostatně.
+- **Mutace (cílené, v odděleném worktree):** 12/12 chyceno — zábrana vypnutá,
+  místo plnění nepřeloženo, platby PROJ česky, splátky OCK česky, bez „the
+  remaining“, DPH nepřeloženo; v nástroji kontrola symbolů, tabulátorů,
+  písmo symbolu, styl úseku, zahozené pPr, odhad jazyka (původně přežila →
+  doplněn test „česky bez diakritiky“).
+
 ## v17.10.4 — oprava B178 a B179 (schvalování výjimek, příznak „cena dle nabídky“; větev claude/o6-b178-b179)
 
 Dávka O6 (zadání koordinace „ŘÍDÍCÍ 16.10“, rozhodnutí J. V. 17. 10. 2026),

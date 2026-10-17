@@ -1,3 +1,29 @@
+# Předávka — 17. 10. 2026: dávka V3 (v17.10.6), větev `claude/v3-sod-en` — SoD v angličtině (#157), #380 Q7 návrh
+
+Nad `origin/claude/integrace-16-10` (`9bb7caf`, v17.10.4). Do `test-draft` / `test` / `main` nic —
+slučuje koordinace (session_011B3ruyPigNEMSUdesbk4Hd). Podrobnosti: CHANGELOG v17.10.6,
+`podklady/SOD_EN_KONTROLA.md`.
+
+- **Hotovo (pushnuto):** #157 — nástroj `nastroje/preklad_sod.js` (kostra slovníku → anglická
+  šablona + kontrola); anglické šablony SoD realizace v2 a projekce v3 vyrobené, kontrola bez
+  problémů, **předané J. V. jako přílohy sezení V3** (session_01GyotCYY7DhFnyXhceNA3de: dva .docx
+  a dva slovníky .preklad_en.json; do repozitáře nepatří). Aplikace: Jazyk tisku u karet SoD,
+  splátky / platby / místo plnění v jazyce smlouvy, EUR, bez jazykové šablony smlouva v cizím
+  jazyce nevznikne. Příručka kap. 24 + Co je nového v17.10.6, roadmapa #157 → hotovo.
+- **#380 Q7:** jen návrh koordinaci (A věta přílohy, B i bloky činností čl. II/III — doporučeno B,
+  samostatná dávka); roadmapa #380 `otazka` aktualizovaná. Kód beze změny.
+- **Testy:** test_sod_en 8/10 → 18/0, test_preklad_sod 0/1 → 13/0, harness overit_sod_en 2/4 → 6/0;
+  smoke 261/0/6 (přeskočené = firemní podklady, mezi nimi overit_sod.mjs); mutace 12/12.
+  Pozn. k prostředí: `npm i playwright` bez verze stáhne 1.64 → v kontejneru chybí prohlížeč
+  (chromium_headless_shell-1248); funguje `npm i --no-save playwright@1.56.1` (chromium 1194).
+- **Čeká na J. V.:** kontrola překladu rodilým mluvčím (opravy do slovníku → `node
+  nastroje/preklad_sod.js <složka>`), nahrání EN šablon v Nastavení → Šablony → SoD → EN (test
+  i ostrá); sporná místa české šablony (DPH v režimu přenesení × snížená sazba, skladné v Kč,
+  odkaz „odst. 5“ v SoD PROJ) — viz SOD_EN_KONTROLA.md.
+- **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `roadmap.json`
+  (#157, #380) / `manual/obsah.json` (verze, Co je nového) / `src/preklad.js`.
+- **Další krok:** žádný v této větvi — dávka uzavřená.
+
 # Předávka — 17. 10. 2026: dávka O6 (v17.10.4), větev `claude/o6-b178-b179` — oprava B178 a B179
 
 Nad `origin/claude/kolo26-audit` (`54174ee`, v17.10.1). Do `test-draft` / `test` / `main` nic —

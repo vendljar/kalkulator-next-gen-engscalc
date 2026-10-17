@@ -3287,13 +3287,14 @@
   {
    "nazev" : "Smlouva o dílo v anglické verzi — šablona a test",
    "hotovoKdyz" : "Smlouva o dílo OCK i PROJ se vygeneruje anglicky z přeložené české šablony (jazyk EN) s částkami v EUR podle pravidel #155, ze zkušební zakázky; přeložený soubor šablony je předaný ke kontrole rodilým mluvčím (rozhodnutí J. V. 16. 10. 2026).",
-   "pozn" : "Dřív čekalo na anglické právní znění od právníka — nahrazeno rozhodnutím J. V. 16. 10. 2026 (překlad české šablony, viz detail). ZBÝVÁ (ověřeno v kódu 16. 9. 2026): `src/sod.js` jazyk umí (`d.jazyk`), ale `sodData` vrací natvrdo `jazyk: cz`, takže se anglická větev nikdy nepoužije — kromě právního znění chybí i předání jazyka z tisku.",
+   "pozn" : "HOTOVO v17.10.6 (dávka V3, 17. 10. 2026): anglické šablony Sablona_SOD_REALIZACE_v2_EN.docx a Sablona_SOD_PROJEKCE_v3_EN.docx vyrobil nástroj nastroje/preklad_sod.js z českých šablon a slovníku mimo repozitář (symboly, číslování a formátování beze změny; kontrolní seznam termínů pro rodilého mluvčího podklady/SOD_EN_KONTROLA.md). Soubory a slovníky předány J. V. jako přílohy sezení V3 (firemní texty, do repozitáře nepatří). Aplikace: Jazyk tisku u karet SoD, hodnoty skládané aplikací anglicky (splátky SoD realizace, platby SoD PROJ, druh místa plnění), částky v EUR (#155), bez jazykové šablony smlouva v cizím jazyce nevznikne (sodJazykZabrana); testy src/test_sod_en.js (smyšlená šablona) a src/test_preklad_sod.js. ZBÝVÁ (J. V.): kontrola překladu rodilými mluvčími a nahrání EN šablon v Nastavení → Šablony → EN (test i ostrá). Dřív čekalo na anglické právní znění od právníka — nahrazeno rozhodnutím J. V. 16. 10. 2026.",
    "proc" : "Zadání 19. 8. 2026 (u kurzu EUR): „týká se to i smluv o dílo, které budeme muset připravit také v minimálně AJ verzi a otestovat.\" Přepočet částek na eura už smlouvy umí (jedou přes data nabídky); chybí anglické právní znění šablon.",
    "dulezitost" : "stredni",
    "detail" : "ROZHODNUTO J. V. 16. 10. 2026 (plán víkendu, dávka V3): SoD v angličtině = PŘEKLAD české šablony (soubor ke kontrole rodilými mluvčími), napojit jako jazyk EN — nečeká se na právní znění od právníka. Potřeba: anglické znění šablon smluv o dílo (OCK i PROJ) od právníka — aplikace si právní text nesmí vymýšlet. Po dodání: nahrát jako šablony do centrálního úložiště (Nastavení → Šablony), ověřit dosazení symbolů {{...}} včetně částek v EUR (kurz z ceníku, celá eura nahoru, kurz nikde v dokumentu) a projít zkušební tisk s uzamčením varianty. Plná moc zůstává jen česky (rozhodnutí 17. 8.).",
    "kde" : "šablony sod/sodProj v úložišti šablon, src/sod.js (beze změny logiky)",
-   "stav" : "ceka",
+   "stav" : "hotovo",
    "id" : "157",
+   "hotovoV" : "v17.10.6 (větev claude/v3-sod-en, dávka V3)",
    "slozitost" : "M",
    "vlna" : "E"
   },
@@ -6004,7 +6005,7 @@
      "proc" : "číslo smlouvy (etapa C)"
     }
    ],
-   "otazka" : "Zbývá z návrhu SoD (artefakt 1. 10. 2026): Q7 rozsah díla SoD PROJ (věta napsaná natvrdo „DPZ+DSP“) a Q9 číslo smlouvy (#366)."
+   "otazka" : "Zbývá z návrhu SoD: Q7 rozsah díla SoD PROJ (věta přílohy č. 1 „DPZ+DSP“ natvrdo; čl. II a III vyjmenovávají všech sedm činností bez ohledu na nabídku). Rozhodnutí J. V. 6. 10. 2026 (ROZHODNUTI_2026-10-06 bod 13): rozsah z nabízených činností symbolem. Dávka V3 (17. 10. 2026) poslala koordinaci návrh variant (A jen věta přílohy, B i bloky činností v čl. II a III) s doporučením B — čeká na volbu. Q9 číslo smlouvy hotovo (#366)."
   },
   {
    "id" : "381",

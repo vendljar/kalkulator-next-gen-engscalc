@@ -9,9 +9,10 @@
  *   – odstavec bez překladu se vrátí jako chybějící a zůstane česky,
  *   – překlad s jiným symbolem nebo bez tabulátoru se odmítne,
  *   – celá šablona: kontrola vrátí problém u nepřeloženého odstavce
- *     a projde u úplného překladu (jazyk en, symboly sedí, XML bez vad).
+ *     a projde u úplného překladu (jazyk en, symboly sedí, XML bez vad);
+ *     „překlad" bez diakritiky, ale česky, zachytí odhad jazyka.
  * Před vznikem nástroje sada selže (modul chybí): 0 prošlo / 1 selhalo;
- * s nástrojem 12 / 0.
+ * s nástrojem 13 / 0.
  *
  * Spuštění: cd src && node test_preklad_sod.js */
 const path = require('path');
@@ -59,6 +60,11 @@ if (ps) {
     zaznamy.push({ cz: 'Zhotovitel:', en: 'Contractor:', pozn: 'Zhotovitel = Contractor' });
     const uplny = await ps.prelozSablonu(bajty, zaznamy);
     test('úplný překlad: bez problémů, jazyk en, poznámka pro rodilého mluvčího', uplny.problemy.length === 0 && uplny.jazyk.jazyk === 'en' && uplny.pozn.length === 1, uplny.problemy);
+    /* „Překlad" bez diakritiky, ale česky (zkopírovaný originál) — pozná ho
+     * jen odhad jazyka. */
+    const cesky = await ps.prelozSablonu(bajty, [{ cz: kostra[0].cz, en: 'Cena dila je <s1>pevna</s1> a se plati {{CENA_BEZ_DPH}}\tbez DPH na ucet.' },
+      { cz: 'Zhotovitel:', en: 'Zhotovitel se:' }]);
+    test('česky bez diakritiky: kontrola hlásí odhad jazyka', cesky.problemy.some(t => /odhad jazyka/.test(t)), cesky.problemy);
     console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
     process.exit(fail ? 1 : 0);
   })();
