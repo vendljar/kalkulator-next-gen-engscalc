@@ -2379,6 +2379,19 @@ const MUTACE = [
     hledej: "      ? '|dn' + JSON.stringify(Object.keys(dleN).sort().filter(k => dleN[k] === true)) : '');",
     nahrad: "      ? '' : '');",
     proc: 'zaškrtnutí příznaku by nešlo zveřejnit („ceník se od platné verze neliší")' },
+  /* B180 (audit kola 26, 17. 10. 2026): rozpis zveřejnění ukáže změny příznaků. */
+  { nazev: 'B180: rozpis nevidí nově zaškrtnutý příznak', soubor: '../src/cenik.js',
+    hledej: "  const pridano = Object.keys(b).filter(k => ano(b, k) && !ano(a, k)).sort();",
+    nahrad: "  const pridano = [];",
+    proc: 'správce by zveřejnil příznak z ceníku varianty (i podstrčený obchodníkem), aniž by ho rozpis ukázal' },
+  { nazev: 'B180: rozpis nevidí zrušený příznak', soubor: '../src/cenik.js',
+    hledej: "  const zruseno = Object.keys(a).filter(k => ano(a, k) && !ano(b, k)).sort();",
+    nahrad: "  const zruseno = [];",
+    proc: 'zveřejnění ze staré varianty by příznak tiše zrušilo a obchodníci by narazili na zábranu tisku' },
+  { nazev: 'B180: dialog zveřejnění řádek příznaků nevypíše', soubor: '../src/ui/program_ui.js',
+    hledej: "    + (dn ? '\\n' + dn : '')",
+    nahrad: "    + ''",
+    proc: 'pomocná funkce by počítala správně, ale správce by v dialogu nic neviděl' },
 ];
 
 /* ---------- přerušený běh vrátí zmutovaný soubor ----------

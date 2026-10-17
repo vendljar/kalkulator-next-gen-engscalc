@@ -190,5 +190,34 @@ console.log('— serverová kontrola ceníku (B128) —');
   const ps = uloCenikProblemy(zs, st0, { role: 'Obchodník', matice: null, program: P0, importuj: importZakazka });
   test('podstrčený příznak ve variantě: kontrola ceníku odmítne jako dnes', ps.some(x => /prosklenaStenaKc/.test(x.kde)), ps); }
 
+
+/* B180 (audit kola 26, 17. 10. 2026): rozpis „Zveřejnit ceník" vypisoval jen
+ * rozdíly CEN. Změna příznaků v něm nebyla vidět — a mapa jde do platné
+ * verze z ceníku otevřené varianty (B179). Pojistka proti prázdnému testu:
+ * proti e2c773a (v16.10.5) padá (chybí cenikDleNabidkyRozpis, rozpis ho nevolá). */
+{ const P = fn('cenikDleNabidkyRozpis') ? cenikDleNabidkyRozpis : () => 'CHYBÍ';
+  const MONT = 'C.montazHodKc';
+  test('B180: beze změny příznaků je řádek prázdný', P({ dleNabidky: { [STENA]: true } }, { dleNabidky: { [STENA]: true } }) === '');
+  test('B180: oba bez mapy → prázdný', P({}, {}) === '');
+  const t = P({ dleNabidky: { [STENA]: true } }, { dleNabidky: { [MONT]: true } });
+  test('B180: nový příznak s názvem položky a znaménkem +', /nově 1/.test(t) && /\+ Montáž/i.test(t), t);
+  test('B180: zrušený příznak se znaménkem −', /zrušeno 1/.test(t) && /− .*[Pp]rosklen/.test(t), t);
+  const n = P({}, { dleNabidky: Object.fromEntries(CENIK_DLE_NABIDKY_VYCHOZI.map(k => [k, true])) });
+  test('B180: platný bez mapy, zveřejňuje se návrh → „nově 8"', /nově 8/.test(n), n);
+  test('B180: hodnota jiná než true se nepočítá', P({}, { dleNabidky: { [MONT]: 'true' } }) === '');
+  test('B180: neznámá cesta ze staré mapy nespadne (název = cesta)', /zrušeno 1/.test(P({ dleNabidky: { '__proto__x': true } }, {})));
+  const ui = require('fs').readFileSync(__dirname + '/ui/program_ui.js', 'utf8');
+  const roz = (ui.match(/function progZverejniRozpis[\s\S]*?\n}\n/) || [''])[0];
+  test('B180: progZverejniRozpis volá cenikDleNabidkyRozpis (platný × zveřejňovaný ceník)',
+    /cenikDleNabidkyRozpis\(db\.platny && db\.platny\.cenik, ctx && ctx\.cenik\)/.test(roz), roz.slice(0, 200));
+  test('B180: „Ceník beze změny" jen bez změny příznaků', /!cr\.length && !zahr\.length && !dn/.test(roz));
+  /* Funkce dialogu doopravdy spuštěná (UI soubor v Node nejde načíst celý):
+   * ceny beze změny, mění se jen příznak → rozpis ho vypíše. */
+  const rozpis = new Function('programRozdily', 'programRozdilyZahr', 'cenikDleNabidkyRozpis',
+    roz + '\nreturn progZverejniRozpis;')(() => [], () => [], P);
+  const txt = rozpis({ platny: { cenik: { dleNabidky: { [STENA]: true } } } }, { cenik: { dleNabidky: { [STENA]: true, [MONT]: true } } });
+  test('B180: dialog — jen nový příznak → řádek s montáží, ne „Ceník beze změny"',
+    /\+ Montáž/.test(txt) && !/Ceník beze změny/.test(txt), txt); }
+
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);
