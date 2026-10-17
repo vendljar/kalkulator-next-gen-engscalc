@@ -124,5 +124,35 @@ console.log('===== podstrčený příznak =====');
   const rz = await uloz(z2, cO);
   test('podstrčená mapa bez změny ceny: nic nepovolí, ale ani neblokuje (200)', rz.status === 200, rz); }
 
+console.log('===== B179: příznak jen u příplatků, ne z ceníku varianty =====');
+/* Pokus kola 26 na v17.10.1 (podklady/AUDIT26_pokus_B179_priznak.mjs):
+ * obchodník uloží zakázku s mapou {stěna, montáž}, správce z ní zveřejní
+ * (zdraží ventilátor) → platná mapa nese C.montazHodKc → montáž za 1 Kč/h
+ * + zámek bez schválení 200. Pojistka: proti v17.10.1 (54174ee) platná
+ * mapa montáž nesla a oba zámky vracely 200. */
+{ const MONTAZ = 'C.montazHodKc';
+  const z = nova('B179 podstrčená mapa'); d0(z).cenik.dleNabidky = { [STENA]: true, [MONTAZ]: true };
+  const r1 = await uloz(z, cO);
+  test('B179 příprava: obchodník uloží zakázku s mapou vč. montáže (200 — mapa ve variantě nic nepovolí)', r1.status === 200, r1);
+  const g = await nacti(r1.soubor, cA);
+  const cen = kopie(d0(g).cenik); cen.priplatky.ventilatorKc = (+cen.priplatky.ventilatorKc || 0) + 1000;
+  const r2 = await zverejni(cen, 'B179 zdražení ventilátoru (starý klient s mapou varianty)');
+  test('B179: správce zveřejní (200)', r2.status === 200, r2);
+  const m = platny().cenik.dleNabidky || {};
+  test('B179: server mapu očistí — montáž ne, příplatek stěny ano', m[MONTAZ] !== true && m[STENA] === true, m);
+  const a = nova('B179 levná montáž'); d0(a).cenik.montazHodKc = 1; zamkni(a);
+  const r3 = await uloz(a, cO);
+  test('B179: obchodník — montáž za 1 Kč/h + zámek bez schválení → 403', r3.status === 403, r3);
+  /* Platná verze zveřejněná PŘED opravou (mapa s montáží už v databázi). */
+  const db = JSON.parse(pamet.get('program/db'));
+  db.platny.cenik.dleNabidky = { [STENA]: true, [MONTAZ]: true };
+  pamet.set('program/db', JSON.stringify(db));
+  const b = nova('B179 stará mapa'); d0(b).cenik.dleNabidky = {}; d0(b).cenik.montazHodKc = 1; zamkni(b);
+  const r4 = await uloz(b, cO);
+  test('B179: platná mapa z doby před opravou s montáží — montáž za 1 Kč/h + zámek → 403', r4.status === 403, r4);
+  const c = nova('B179 stará mapa, stěna'); d0(c).cenik.priplatky.prosklenaStenaKc = 12000; zamkni(c);
+  const r5 = await uloz(c, cO);
+  test('B179: příplatek s příznakem platí dál — vlastní cena stěny + zámek (200)', r5.status === 200, r5); }
+
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);

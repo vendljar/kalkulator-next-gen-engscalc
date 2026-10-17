@@ -338,10 +338,17 @@ function cenikPopisNastav(c, cesta, text) {
 const CENIK_DLE_NABIDKY_VYCHOZI = ['C.priplatky.zabranyPadKc', 'C.priplatky.demontazOhrazeniKc',
   'C.priplatky.malbaSchodnicKc', 'C.priplatky.naterOhrazeniKc', 'C.priplatky.naterOkopovychKc',
   'C.priplatky.prosklenaStenaKc', 'C.priplatky.demontazVytahuKc', 'C.priplatky.destovySvodKc'];
+/* JEN PŘÍPLATKY (B179, J. V. 17. 10. 2026): příznak dává smysl jen
+ * u nabídkových položek „za akci" v sekci C.priplatky. Hodinová sazba
+ * montáže, profily, opláštění ho nenesou nikdy — ani když ho mapa ve
+ * zveřejněném ceníku má (starší verze, podvržená mapa z varianty). */
+function cenikDleNabidkySmi(cesta) {
+  return /^C\.priplatky\.[A-Za-z0-9_]+$/.test(String(cesta));
+}
 function cenikDleNabidkyJe(c, cesta) {
   const m = c && c.dleNabidky;
-  return !!(m && typeof m === 'object' && Object.prototype.hasOwnProperty.call(m, String(cesta))
-    && m[String(cesta)] === true);
+  return !!(cenikDleNabidkySmi(cesta) && m && typeof m === 'object'
+    && Object.prototype.hasOwnProperty.call(m, String(cesta)) && m[String(cesta)] === true);
 }
 function cenikDleNabidkyNastav(c, cesta, ano) {
   if (!c || typeof c !== 'object') return;
@@ -375,14 +382,36 @@ function cenikDleNabidkyDoplnNavrh(c) {
   CENIK_DLE_NABIDKY_VYCHOZI.forEach(k => { c.dleNabidky[k] = true; });
   return true;
 }
-/* Do zveřejněného ceníku jen známé číselné cesty OCK s hodnotou true. */
+/* Do zveřejněného ceníku jen známé číselné cesty PŘÍPLATKŮ OCK s hodnotou
+ * true (B179: do 17. 10. každá číselná cesta OCK, i montáž za hodinu). */
 function cenikDleNabidkyOciste(m) {
   const out = {};
   if (!m || typeof m !== 'object' || Array.isArray(m)) return out;
   const zname = new Set();
-  CENIK_DEF.forEach(([, items]) => items.forEach(([cesta, , , , typ]) => { if (!typ) zname.add(cesta); }));
+  CENIK_DEF.forEach(([, items]) => items.forEach(([cesta, , , , typ]) => {
+    if (!typ && cenikDleNabidkySmi(cesta)) zname.add(cesta);
+  }));
   Object.keys(m).forEach(k => { if (m[k] === true && zname.has(k)) out[k] = true; });
   return out;
+}
+/* MAPA PRO ZVEŘEJNĚNÍ (B179, J. V. 17. 10. 2026). Do 17. 10. šla do platné
+ * verze mapa z ceníku OTEVŘENÉ VARIANTY — a tu mohl uložit kdokoli
+ * (zakázka obchodníka) nebo nést starší stav (vrácení vědomé volby
+ * správce). Teď: základ = mapa PLATNÉHO ceníku (`platny`; ceník bez mapy =
+ * návrh výchozích osmi), na ni jen výslovné změny správce v Nastavení →
+ * Ceník v této relaci (`zmeny` = { cesta: true | false }). Ceník varianty se
+ * nečte vůbec. Výsledek je očištěný (jen příplatky). */
+function cenikDleNabidkyProZverejneni(platny, zmeny) {
+  const zaklad = cenikDleNabidkyMaMapu(platny) ? platny.dleNabidky
+    : CENIK_DLE_NABIDKY_VYCHOZI.reduce((o, k) => { o[k] = true; return o; }, {});
+  const m = Object.assign({}, cenikDleNabidkyOciste(zaklad));
+  const z = (zmeny && typeof zmeny === 'object') ? zmeny : {};
+  Object.keys(z).forEach(k => {
+    if (!cenikDleNabidkySmi(k)) return;
+    if (z[k] === true) m[k] = true;
+    else if (z[k] === false) delete m[k];
+  });
+  return cenikDleNabidkyOciste(m);
 }
 /* ROZPIS ZVEŘEJNĚNÍ (B180, audit kola 26, 17. 10. 2026). Dialog „Zveřejnit
  * ceník" vypisuje jen rozdíly CEN (programRozdily) — změna příznaků v něm
@@ -795,7 +824,7 @@ if (typeof module !== 'undefined')
   module.exports = { CENIK_DEF, CENIK_DEF_PROJ, CENIK_JEN_ZAHR, cenikGet, cenikSet, cenikTyp, cenikVychozi,
     CENIK_BARVA_MEZ_KC, cenikJednotkaKc, cenikBunkaTrida,
     cenikPopis, cenikPopisNastav,
-    CENIK_DLE_NABIDKY_VYCHOZI, cenikDleNabidkyJe, cenikDleNabidkyNastav, cenikDleNabidkyOciste,
+    CENIK_DLE_NABIDKY_VYCHOZI, cenikDleNabidkySmi, cenikDleNabidkyProZverejneni, cenikDleNabidkyJe, cenikDleNabidkyNastav, cenikDleNabidkyOciste,
     cenikDleNabidkyMaMapu, cenikDleNabidkyNavrh, cenikDleNabidkyDoplnNavrh, cenikDleNabidkyRozpis,
     POPISY_MAX_KLIC, POPISY_MAX_TEXT, POPISY_MAX_POLOZEK, popisyOciste, popisyVlij, popisyDoplnChybejici, popisyCiselnik,
     POPISY_JAZYKY, popisyJazykyOciste, cenikPopisJazyk, popisyJazykyDoplnChybejici, popisJazykySrovnej,

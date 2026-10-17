@@ -5,7 +5,9 @@
  * a netlify/test_cena_dle_nabidky.mjs; tady jde o to, co uvidí lidé):
  *   1) Nastavení → Ceník: správce má sloupec „Cena dle nabídky", osm
  *      nabídkových položek je zaškrtnutých, lešení a ventilátor ne;
- *      zaškrtnutí zapíše příznak do ceníku varianty; obchodník sloupec nemá;
+ *      zaškrtávátko jen u příplatků (B179); zaškrtnutí je změna správce
+ *      v relaci (CENIK_DLE_ZMENY), ceník varianty se nemění; obchodník
+ *      sloupec nemá;
  *   2) Kalkulace OCK → Příplatky: u prosklené stěny štítek „cena dle
  *      nabídky", po přepsání ceny navíc „vlastní cena"; u ventilátoru nic;
  *   3) tisk nabídky: obchodník s vlastní cenou stěny zábranu „cenovaVyjimka"
@@ -50,9 +52,11 @@ const sl = await p.evaluate(() => {
   const html = document.getElementById('page-cenik').innerHTML;
   const chk = [...document.querySelectorAll('#page-cenik input[onchange^="cenikDleNabidkySet"]')];
   const zaskrt = chk.filter(x => x.checked).map(x => /cenikDleNabidkySet\('([^']+)'/.exec(x.getAttribute('onchange'))[1]);
-  return { hlava: /<th[^>]*>Cena dle nabídky<\/th>/.test(html), pocet: chk.length, zaskrt };
+  const vse = chk.map(x => /cenikDleNabidkySet\('([^']+)'/.exec(x.getAttribute('onchange'))[1]);
+  return { hlava: /<th[^>]*>Cena dle nabídky<\/th>/.test(html), pocet: chk.length, zaskrt, vse };
 });
-zkus('správce: v ceníku OCK je sloupec „Cena dle nabídky"', sl.hlava && sl.pocet > 20, sl);
+/* B179 (v17.10.4): zaškrtávátko jen u příplatků (C.priplatky.*). */
+zkus('správce: v ceníku OCK je sloupec „Cena dle nabídky" (zaškrtávátka jen u příplatků)', sl.hlava && sl.pocet > 10 && sl.vse.every(x => /^C\.priplatky\./.test(x)), sl);
 zkus('výchozí ceník: zaškrtnuto osm nabídkových položek, mezi nimi prosklená stěna',
   sl.zaskrt.length === 8 && sl.zaskrt.includes(STENA), sl.zaskrt);
 zkus('lešení, ventilátor a sklo zaškrtnuté nejsou',
@@ -60,13 +64,14 @@ zkus('lešení, ventilátor a sklo zaškrtnuté nejsou',
 const klik = await p.evaluate(() => {
   const el = document.querySelector('#page-cenik input[onchange="cenikDleNabidkySet(\'C.priplatky.ventilatorKc\', this.checked)"]');
   if (!el) return { chybi: true };
+  const pred = JSON.stringify(C.dleNabidky || null);
   el.click();
-  const po = !!(C.dleNabidky && C.dleNabidky['C.priplatky.ventilatorKc'] === true);
+  const po = cenikDleNabidkyMapaRelace()['C.priplatky.ventilatorKc'] === true && progKontext('').cenik.dleNabidky['C.priplatky.ventilatorKc'] === true;
   const el2 = document.querySelector('#page-cenik input[onchange="cenikDleNabidkySet(\'C.priplatky.ventilatorKc\', this.checked)"]');
   el2.click();
-  return { po, zpet: !(C.dleNabidky && C.dleNabidky['C.priplatky.ventilatorKc']) };
+  return { po, zpet: !cenikDleNabidkyMapaRelace()['C.priplatky.ventilatorKc'], variantaBezZmeny: JSON.stringify(C.dleNabidky || null) === pred };
 });
-zkus('zaškrtnutí zapíše příznak do ceníku varianty, odškrtnutí ho smaže', klik.po && klik.zpet, klik);
+zkus('zaškrtnutí je změna správce pro zveřejnění, odškrtnutí ji vrátí; ceník varianty beze změny (B179)', klik.po && klik.zpet && klik.variantaBezZmeny, klik);
 await p.evaluate(() => { zobrNahled('Obchodník'); prepniTab('cenik'); render(); });
 await p.waitForTimeout(200);
 const slO = await p.evaluate(() => /Cena dle nabídky<\/th>/.test((document.getElementById('page-cenik') || {}).innerHTML || ''));

@@ -147,6 +147,8 @@ function progPouzij(zaznam) {
    * nese tři fixní částky lešení místo jedné. Převedeme je hned po načtení,
    * jinak by fixní část lešení v celé aplikaci byla nula (viz engine.js). */
   if (typeof cenikMigraceLeseni === 'function') cenikMigraceLeseni(DEFAULT_CENIK);
+  /* Změny příznaků, které nová platná verze už nese, se zapomenou (B179). */
+  if (typeof cenikDleNabidkyZmenyProcisti === 'function') cenikDleNabidkyZmenyProcisti();
   if (zaznam.katalog && typeof katalogImport === 'function') katalogImport(KATALOG, zaznam.katalog);
   if (zaznam.slevy && typeof NAST !== 'undefined' && NAST.slevy) {
     konfigNahradVMiste(NAST.slevy, zaznam.slevy);
@@ -257,10 +259,16 @@ function progKontext(poznamka) {
    * porovnává tenhle kontext s uloženou verzí, a ta klíče nemá — bez očisty
    * by se každý podklad tvářil jako změněný. */
   const bezRady = o => (typeof cenikZverejneniOcisti === 'function') ? cenikZverejneniOcisti(o) : o;
-  /* Příznaky „cena dle nabídky" (J. V. 16. 10. 2026): ceník bez mapy
-   * zveřejní NÁVRH, který mu Nastavení → Ceník ukazuje (výchozích osm) —
-   * do kopie, ceník varianty zůstává. Mapu, kterou ceník má, nechá být. */
-  const sNavrhem = o => { if (typeof cenikDleNabidkyDoplnNavrh === 'function') cenikDleNabidkyDoplnNavrh(o); return o; };
+  /* Příznaky „cena dle nabídky" (B179, J. V. 17. 10. 2026): mapa NIKDY
+   * z ceníku varianty (tu mohl uložit kdokoli). Zveřejní se mapa platného
+   * ceníku (bez mapy = návrh výchozích osmi) se změnami, které správce v této
+   * relaci výslovně přepnul v Nastavení → Ceník — tedy přesně to, co sloupec
+   * ukazuje. Do kopie, ceník varianty zůstává. */
+  const sNavrhem = o => {
+    if (typeof cenikDleNabidkyMapaRelace === 'function') o.dleNabidky = cenikDleNabidkyMapaRelace();
+    else delete o.dleNabidky;
+    return o;
+  };
   return {
     cenik: bezRady(sNavrhem(bez(doplneno(d.cenik || {}, VZOR_OCK)))),
     cenikProj: bez(doplneno((d.proj && d.proj.cenik) || {}, VZOR_PROJ)),
@@ -331,7 +339,7 @@ function progZverejniRozpis(db, ctx) {
       + (pole.length > 12 ? '\n   … a další ' + (pole.length - 12) : '')
     : 'beze změny');
   /* Příznaky „cena dle nabídky" (B180, audit kola 26): rozdíly CEN je
-   * nevypíšou, a mapa jde do platné verze z ceníku otevřené varianty. */
+   * nevypíšou. Mapa jde z platného ceníku a změn správce (B179). */
   const dn = (typeof cenikDleNabidkyRozpis === 'function')
     ? cenikDleNabidkyRozpis(db.platny && db.platny.cenik, ctx && ctx.cenik) : '';
   return 'Varianta, ze které se zveřejňuje: řada ' + rada + '\n\n'

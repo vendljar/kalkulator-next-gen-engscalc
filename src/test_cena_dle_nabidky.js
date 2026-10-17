@@ -219,5 +219,47 @@ console.log('— serverová kontrola ceníku (B128) —');
   test('B180: dialog — jen nový příznak → řádek s montáží, ne „Ceník beze změny"',
     /\+ Montáž/.test(txt) && !/Ceník beze změny/.test(txt), txt); }
 
+console.log('— B179: jen příplatky, mapa pro zveřejnění z platného ceníku —');
+/* Pokus kola 26 (podklady/AUDIT26_pokus_B179_priznak.mjs). Pojistka proti
+ * prázdnému testu: proti v17.10.1 (54174ee) padá (očista pustí montáž,
+ * cenikDleNabidkyJe ji uzná, progKontext zveřejní mapu varianty). */
+{ const MONT = 'C.montazHodKc', VENT = 'C.priplatky.ventilatorKc';
+  test('B179: očista pustí jen příplatky', JSON.stringify(cenikDleNabidkyOciste({ [STENA]: true, [MONT]: true, 'C.profilasKgKc': true }))
+    === JSON.stringify({ [STENA]: true }), cenikDleNabidkyOciste({ [STENA]: true, [MONT]: true }));
+  test('B179: příznak u montáže v (starší) platné mapě neplatí', !cenikDleNabidkyJe({ dleNabidky: { [MONT]: true } }, MONT)
+    && cenikDleNabidkyJe({ dleNabidky: { [STENA]: true } }, STENA));
+  const d = varianta().varianty[0].data; d.cenik.montazHodKc = 1;
+  const P = kopie(PLATNY); P.cenik.dleNabidky = { [STENA]: true, [MONT]: true };
+  const o = obsah(d, P);
+  test('B179: montáž pod ceníkem je výjimka i s příznakem v platné mapě', o.smes.some(x => x.cesta === MONT), o.smes);
+  const PZ = fn('cenikDleNabidkyProZverejneni') ? cenikDleNabidkyProZverejneni : () => ({ CHYBI: true });
+  const j = x => JSON.stringify(Object.keys(x).sort());
+  test('B179: zveřejní se mapa platného ceníku (bez změn)', j(PZ({ dleNabidky: { [STENA]: true } }, {})) === j({ [STENA]: true }));
+  test('B179: změny správce — + ventilátor, − stěna, montáž ignorována',
+    j(PZ({ dleNabidky: { [STENA]: true } }, { [VENT]: true, [STENA]: false, [MONT]: true })) === j({ [VENT]: true }));
+  test('B179: platný bez mapy → návrh osmi výchozích (S13 předzaškrtnutí)', j(PZ({}, {})) === j(Object.fromEntries(CENIK_DLE_NABIDKY_VYCHOZI.map(k => [k, true]))));
+  test('B179: výchozích osm je celé v příplatcích', CENIK_DLE_NABIDKY_VYCHOZI.length === 8 && CENIK_DLE_NABIDKY_VYCHOZI.every(k => cenikDleNabidkySmi(k)));
+  /* progKontext a sloupec Nastavení → Ceník doopravdy spuštěné (výřezy UI). */
+  const vm = require('vm'), fs = require('fs');
+  const cui = fs.readFileSync(__dirname + '/ui/cenik_ui.js', 'utf8'), pui = fs.readFileSync(__dirname + '/ui/program_ui.js', 'utf8');
+  const vyrez = (t, od, po) => { const a = t.indexOf(od); const b = t.indexOf(po, a); return a < 0 || b < 0 ? '' : t.slice(a, b); };
+  const kod = vyrez(cui, '/* Příznak „cena dle nabídky" (S13', 'function cenikDleNabidkySloupec()')
+    + (pui.match(/function progKontext[\s\S]*?\n}\n/) || [''])[0];
+  const ctxVm = { jeAdmin: () => true, progZprava: () => {}, render: () => {},
+    cenikDleNabidkyProZverejneni, cenikDleNabidkySmi, cenikDleNabidkyJe, cenikDleNabidkyMaMapu, cenikDoplnKlice, cenikZverejneniOcisti,
+    DEFAULT_CENIK: Object.assign(kopie(PLATNY.cenik), { dleNabidky: { [VENT]: true } }), DEFAULT_CENIK_PROJ: kopie(PLATNY.cenikProj) };
+  const zv = varianta(); const dv = zv.varianty[0].data; dv.cenik.dleNabidky = { [STENA]: true, [MONT]: true };
+  ctxVm.ZAK = zv; ctxVm.aktivniVarianta = z => z.varianty[0];
+  vm.createContext(ctxVm);
+  let ctx = null;
+  try { vm.runInContext(kod + '\n;globalThis.__k = progKontext;globalThis.__set = cenikDleNabidkySet;', ctxVm); ctx = ctxVm.__k(''); } catch (e) { ctx = { chyba: String(e) }; }
+  test('B179: progKontext zveřejní mapu platného ceníku, ne mapu varianty (bez montáže a stěny)',
+    ctx && ctx.cenik && j(ctx.cenik.dleNabidky || {}) === j({ [VENT]: true }), ctx && (ctx.chyba || (ctx.cenik && ctx.cenik.dleNabidky)));
+  try { ctxVm.__set(STENA, true); ctxVm.__set(MONT, true); ctxVm.__set(VENT, false); ctx = ctxVm.__k(''); } catch (e) { ctx = { chyba: String(e) }; }
+  test('B179: výslovné změny správce se zveřejní (+ stěna, − ventilátor), montáž ne',
+    ctx && ctx.cenik && j(ctx.cenik.dleNabidky || {}) === j({ [STENA]: true }), ctx && (ctx.chyba || (ctx.cenik && ctx.cenik.dleNabidky)));
+  test('B179: ceník varianty se nezměnil', j(dv.cenik.dleNabidky) === j({ [STENA]: true, [MONT]: true }));
+  test('B179: sloupec Nastavení → Ceník — zaškrtávátko jen u příplatků', /typ \|\| !cenikDleNabidkySmi\(path\)/.test(cui)); }
+
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);
