@@ -179,9 +179,10 @@ const pravidla = kontrolyPravidla();
  * ručně přepsaná statika OCK a zároveň řádek statiky opláštění z ceníku. */
 /* 33. „stranyDriv" 13. 10. 2026 (P6 / K19-N114, test_zamek_strany.js):
  * zakázka dřív počítala projekci i OCK — od P6 je druhá strana vynulovaná. */
-/* 34. „mustkyPrechodove" 17. 10. 2026 (#355, test_mustky.js): přechodové
- * plechy v nástupišti s můstkem — upozornění. */
-test('pravidel je třicet šest (17. 10. 2026: + mustkyPrechodove)', pravidla.length === 36, pravidla.length);
+/* 34.–35. „mustkyPrechodove" a „mustekStrecha" 17. 10. 2026 (#355, #356,
+ * test_mustky.js): plechy v nástupišti s můstkem a střecha přes nejvyšší
+ * můstek bez rozměrů — obojí upozornění. */
+test('pravidel je třicet sedm (17. 10. 2026: + mustkyPrechodove, mustekStrecha)', pravidla.length === 37, pravidla.length);
 test('kódy pravidel jsou jedinečné',
   new Set(pravidla.map(p => p.kod)).size === pravidla.length,
   pravidla.map(p => p.kod).join(','));
