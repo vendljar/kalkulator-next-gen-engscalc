@@ -8,6 +8,40 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v17.10.1 — testovací kolo 26 a bezpečnostní audit změn od v15.10.14 (větev claude/kolo26-audit)
+
+Dávka N2 (zadání koordinace „ŘÍDÍCÍ 16.10“, okno O4), nad
+`origin/claude/integrace-16-10` (`e2c773a`, v16.10.5). Audit:
+`podklady/AUDIT_2026-10-17_v16.10.5.md`, pokusy `podklady/AUDIT26_pokus_*.mjs`.
+Celé kolo s mutacemi nad `e2c773a` pouští koordinace.
+
+- **Výsledek auditu:** 0 kritických, 0 vysokých, **2 střední** (B178, B179),
+  1 nízký (B180, opraven), 2 informativní (B181, B182). Regrese B151–B167: 0.
+  Escapování vlastních řádků specifikace a lešení do Wordu drží (pokus 9/0),
+  příznak „cena dle nabídky“ si zakázka sama nepodstrčí, B158/B159/B160/B163
+  opravené správně.
+- **B178 (střední, OTEVŘENO):** schválený pás „jiné“ až nahoru se zvětší
+  zvýšením zdvihu — obsah výjimky nese zadané meze, ne horní hranu stěny
+  (pokus: zdvih 9 → 40 m, plocha 26×, zámek 200). Návrh v auditu, oprava O6.
+- **B179 (střední, OTEVŘENO):** příznak „cena dle nabídky“ jde do platného
+  ceníku z ceníku otevřené varianty a očista pustí každou číselnou cestu OCK
+  (pokus: mapa obchodníka → zveřejnění správce → montáž za 1 Kč/h bez
+  schválení 200). Návrh v auditu, oprava O6.
+- **B180 opraveno — rozpis zveřejnění ceníku ukazuje změny příznaků:**
+  `cenikDleNabidkyRozpis` (`src/cenik.js`), `progZverejniRozpis`
+  (`src/ui/program_ui.js`) ho připojí; „Ceník beze změny“ jen bez změny
+  příznaků. Test `src/test_cena_dle_nabidky.js` +10 (i spuštění funkce
+  dialogu vytažené ze zdroje): proti `e2c773a` 41/10, po opravě 51/0.
+  Mutace B180 3 z 3 (`netlify/mutace.mjs`, `--kontrola` 481 úseků).
+- **Cílené sady (před opravou):** test_vyjimky 59/0, test_cena_dle_nabidky
+  (server) 13/0, test_kryci_po_tisku 18/0, test_pd_pristup 54/0, test_prava
+  851/0; src: cena_dle_nabidky 41/0, vyjimky 76/0, leseni_specifikace 45/0,
+  techspec_vlastni_radky 22/0, slovnik 89/0, kryci_po_tisku 103/0, escape
+  37/0; harnessy overit_cena_dle_nabidky 21/0, overit_leseni_spec 15/0,
+  overit_xss 370/0. Statické kontroly beze změny (onclick 24, innerHTML 75,
+  tajemství 91, `kontrola_udaju.py` čistá).
+- Roadmapa #424 (předběžné id).
+
 ## v16.10.5 — kontrola rozhodnutí 15.–16. 10. (větev claude/v4-kontrola-rozhodnuti)
 
 Dávka V4 (zadání koordinace „ŘÍDÍCÍ 16.10“, plán víkendu), nad

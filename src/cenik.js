@@ -384,6 +384,27 @@ function cenikDleNabidkyOciste(m) {
   Object.keys(m).forEach(k => { if (m[k] === true && zname.has(k)) out[k] = true; });
   return out;
 }
+/* ROZPIS ZVEŘEJNĚNÍ (B180, audit kola 26, 17. 10. 2026). Dialog „Zveřejnit
+ * ceník" vypisuje jen rozdíly CEN (programRozdily) — změna příznaků v něm
+ * nebyla vidět a při změně samotných příznaků tvrdil „Ceník beze změny".
+ * Mapa přitom jde do platné verze z ceníku OTEVŘENÉ VARIANTY (B179).
+ * Vrací řádek rozpisu s přidanými a zrušenými příznaky (název položky),
+ * '' = beze změny. Prostý text — dialog nic nevykresluje jako HTML. */
+function cenikDleNabidkyRozpis(stary, novy) {
+  const mapa = c => (cenikDleNabidkyMaMapu(c) ? c.dleNabidky : {});
+  const a = mapa(stary), b = mapa(novy);
+  const ano = (m, k) => Object.prototype.hasOwnProperty.call(m, k) && m[k] === true;
+  const pridano = Object.keys(b).filter(k => ano(b, k) && !ano(a, k)).sort();
+  const zruseno = Object.keys(a).filter(k => ano(a, k) && !ano(b, k)).sort();
+  if (!pridano.length && !zruseno.length) return '';
+  const nazvy = new Map();
+  CENIK_DEF.forEach(([, items]) => items.forEach(([cesta, popis]) => nazvy.set(cesta, popis)));
+  const seznam = (pole, znak) => pole.slice(0, 12).map(k => '\n   ' + znak + ' ' + (nazvy.get(k) || k)).join('')
+    + (pole.length > 12 ? '\n   … a další ' + (pole.length - 12) : '');
+  return 'Příznak „cena dle nabídky" (ruční cena bez schválení): '
+    + [pridano.length ? 'nově ' + pridano.length : '', zruseno.length ? 'zrušeno ' + zruseno.length : ''].filter(Boolean).join(', ')
+    + seznam(pridano, '+') + seznam(zruseno, '−');
+}
 
 /* ---------- dodatkové texty platné pro celou aplikaci (22. 9. 2026) ------
  *
@@ -775,7 +796,7 @@ if (typeof module !== 'undefined')
     CENIK_BARVA_MEZ_KC, cenikJednotkaKc, cenikBunkaTrida,
     cenikPopis, cenikPopisNastav,
     CENIK_DLE_NABIDKY_VYCHOZI, cenikDleNabidkyJe, cenikDleNabidkyNastav, cenikDleNabidkyOciste,
-    cenikDleNabidkyMaMapu, cenikDleNabidkyNavrh, cenikDleNabidkyDoplnNavrh,
+    cenikDleNabidkyMaMapu, cenikDleNabidkyNavrh, cenikDleNabidkyDoplnNavrh, cenikDleNabidkyRozpis,
     POPISY_MAX_KLIC, POPISY_MAX_TEXT, POPISY_MAX_POLOZEK, popisyOciste, popisyVlij, popisyDoplnChybejici, popisyCiselnik,
     POPISY_JAZYKY, popisyJazykyOciste, cenikPopisJazyk, popisyJazykyDoplnChybejici, popisJazykySrovnej,
     cenikSheetRows, cenikToSheets, cenikDiffZeSheets, cenikAplikuj, CENIK_HLAVICKA };

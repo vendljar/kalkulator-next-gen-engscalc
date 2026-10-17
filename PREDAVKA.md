@@ -1,3 +1,24 @@
+# Předávka — 17. 10. 2026: dávka N2 (v17.10.1), větev `claude/kolo26-audit` — kolo 26 a bezpečnostní audit
+
+Nad `origin/claude/integrace-16-10` (`e2c773a`, v16.10.5). Do `test-draft` / `test` / `main` nic —
+slučuje koordinace (session_011B3ruyPigNEMSUdesbk4Hd). Podrobnosti: CHANGELOG v17.10.1,
+`podklady/AUDIT_2026-10-17_v16.10.5.md`, pokusy `podklady/AUDIT26_pokus_*.mjs`.
+
+- **Hotovo (pushnuto):** audit změn v15.10.14 → v16.10.5 — 0 kritických a vysokých, **2 střední**
+  (B178 výška šachty × schválený pás, B179 příznak „cena dle nabídky“ z ceníku varianty do
+  platného ceníku), B180 nízký **opraven** (rozpis zveřejnění ukazuje příznaky; test 41/10 → 51/0,
+  mutace 3/3), B181–B182 informativní; regrese 0. Roadmapa #424 (předběžné id). Protokol
+  `TESTOVACI_PROTOKOL_2026-10-17_v17.10.1.xlsx` poslán v chatu (na Disku je poslední protokol
+  12. 10., kola 23–25 tam protokol nemají — navazuje se na něj).
+- **Testy:** cílené sady a harnessy zelené (viz CHANGELOG); `netlify/mutace.mjs --kontrola` 481,
+  `mutace_jadro.mjs --kontrola` 219. Celé kolo s mutacemi pouští koordinace (server 481 úseků vč. 3 nových B180, jádro 219).
+- **Na co se čeká:** oprava B178 a B179 v okně O6 (samostatná dávka, návrh v auditu);
+  rozhodnutí J. V. přes koordinaci: B179 — příznak jen u příplatků? (doporučeno ano);
+  B178 — plocha pásu v kartě výjimky? (souvisí s B165).
+- **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `roadmap.json`
+  (#424 předběžné) / `netlify/mutace.mjs` (B180 na konci seznamu) / `src/cenik.js`.
+- **Další krok:** žádný v této větvi — dávka uzavřená.
+
 # Předávka — 16. 10. 2026: dávka V4 (v16.10.5), větev `claude/v4-kontrola-rozhodnuti` — kontrola rozhodnutí 15.–16. 10.
 
 Nad `origin/claude/integrace-16-10` (= test v15.10.14). Do `test-draft` / `test` / `main` nic —

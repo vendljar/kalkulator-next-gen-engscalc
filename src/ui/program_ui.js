@@ -330,10 +330,15 @@ function progZverejniRozpis(db, ctx) {
       + '\n' + pole.slice(0, 12).map(r => '   • ' + r.popis).join('\n')
       + (pole.length > 12 ? '\n   … a další ' + (pole.length - 12) : '')
     : 'beze změny');
+  /* Příznaky „cena dle nabídky" (B180, audit kola 26): rozdíly CEN je
+   * nevypíšou, a mapa jde do platné verze z ceníku otevřené varianty. */
+  const dn = (typeof cenikDleNabidkyRozpis === 'function')
+    ? cenikDleNabidkyRozpis(db.platny && db.platny.cenik, ctx && ctx.cenik) : '';
   return 'Varianta, ze které se zveřejňuje: řada ' + rada + '\n\n'
     + radek('Tuzemská řada (ČR)', cr) + '\n'
     + radek('Zahraniční odchylky (ZAHR)', zahr)
-    + ((!cr.length && !zahr.length) ? '\n\nCeník beze změny — mění se katalog nebo slevy.' : '');
+    + (dn ? '\n' + dn : '')
+    + ((!cr.length && !zahr.length && !dn) ? '\n\nCeník beze změny — mění se katalog nebo slevy.' : '');
 }
 
 async function progZverejni(preddanaPozn) {
