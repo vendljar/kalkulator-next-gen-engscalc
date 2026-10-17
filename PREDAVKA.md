@@ -1,3 +1,22 @@
+# Předávka — 17. 10. 2026: dávka B165 (v17.10.5), větev `claude/b165-karta-vyjimky` — sazby a dopad v kartě výjimky, zbytek B178
+
+Nad `origin/claude/integrace-16-10` (`9bb7caf`, v17.10.4). Do `test-draft` / `test` / `main` nic —
+slučuje koordinace (session_011B3ruyPigNEMSUdesbk4Hd). Podrobnosti: CHANGELOG v17.10.5,
+`BEZPECNOST_MEZE.md` (B165, B178 zbytek).
+
+- **Hotovo (pushnuto):** B165 část 1 — karta Cenové výjimky ukazuje schvalovateli použitou vs. ceníkovou
+  sazbu, dopad na cenu OCK/PROJ v % a Kč (položka i celkem), plochu pásu a světlíky (`vyjimkyDopad`);
+  obchodník čísla nevidí. Zbytek B178 — obsah s pásem „jiné“ nese plochu z jádra na celé m² a klíč `l`
+  se světlíky „jiné“ (`vyjimkyPlochyJadra`, server `ctx.jekly`). Roadmapa #420, příručka kap. 19 + Co je
+  nového v17.10.5, audity kol 25/26.
+- **Testy:** src/test_vyjimky 83/8+pád → 105/0, netlify/test_vyjimky 69/3 → 72/0; mutace 12/12.
+- **Čeká na J. V. (poslané koordinaci):** B165 část 2 — vlastní schválení role se `sleva.schvalovani`;
+  doporučeno zakázat kromě administrátora (žadatel/autor ≠ schvalovatel). Neměněno.
+- **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `roadmap.json` (#420) /
+  `netlify/mutace.mjs` / `src/vyjimky.js` / `manual/obsah.json`. Po sloučení schválené výjimky s pásem
+  „jiné“ čekají znovu (změna tvaru obsahu); výjimky jen se směsí platí dál.
+- **Další krok:** po rozhodnutí J. V. k části 2 případně navazující dávka; jinak uzavřeno.
+
 # Předávka — 17. 10. 2026: dávka O6 (v17.10.4), větev `claude/o6-b178-b179` — oprava B178 a B179
 
 Nad `origin/claude/kolo26-audit` (`54174ee`, v17.10.1). Do `test-draft` / `test` / `main` nic —

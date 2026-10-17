@@ -46,7 +46,11 @@ Dávka B165 (zadání koordinace „ŘÍDÍCÍ 16.10“, rozhodnutí J. V. 16. a
   zápis zdvihu „9“ kontroluje meze); `netlify/test_vyjimky.mjs` proti
   v17.10.4 69/3, po opravě 72/0 (zasklení a nástupiště po schválení → 403,
   drobný posun u pásu 1,2 m → 200; pomocník `obsah` s JEKLY jako server).
-  MUTACE_VYSLEDKY
+  Mutace (`netlify/mutace.mjs`): nové B178 zbytek 4/4 (plocha pásu,
+  světlíky, zaokrouhlení, server bez katalogu) a B165 4/4 (dosazení
+  ceníkové hodnoty, sazba pásu, čísla obchodníkovi, `esc()` názvu pásu);
+  upravené starší „výjimky:“ 2/2, B155 1/1, B178 1/1; `--kontrola` server
+  509 úseků, jádro 222.
 - `python3 nastroje/kontrola_udaju.py` čisté, `roadmapa.py --kontrola`
   424 položek bez nálezu; roadmapa #420 (B165 část 1 hotovo), příručka
   kap. 19 + Co je nového v17.10.5, `BEZPECNOST_MEZE.md` (B165, B178 zbytek),
