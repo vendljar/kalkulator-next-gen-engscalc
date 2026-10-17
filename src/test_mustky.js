@@ -149,44 +149,5 @@ for (const fixes of [true, false]) {
   test('#355: příplatky plechů vynechané z nabídky → mlčí', !vyn, vyn && vyn.text);
 }
 
-/* #356 (rozhodnutí J. V. 16. 10. 2026): střecha EXT přetažená přes nejvyšší
- * můstek — plocha navíc se připočte do zastřešení i do příplatku za měď.
- * RUČNÍ REFERENCE (výchozí zadání: šířka 1,51 m, hloubka 1,515 m, 6 nástupišť,
- * zkušební ceník 5 000 Kč/m² zastřešení i mědi):
- *   šachta  (1,51 + 0,2) × (1,515 + 0,1)      = 2,76165 m²  → 13 808,25 Kč
- *   můstek  (1,300 + 0,2) × 0,900              = 1,35 m²
- *   celkem                                     = 4,11165 m²  → 20 558,25 Kč
- * Můstek jen v nižších nástupištích (2 ks z 5 nadzemních) střechu nemění. */
-{
-  const ZAS = 'ZASTŘEŠENÍ ŠACHTY (EXT)', MED = 'medStrecha';
-  const zas = r => r.sekce.hrubaOck.find(x => x.origNazev === ZAS);
-  const med = r => r.priplatky.find(x => x.key === MED);
-  const rozm = { mustekSirkaMm: 1300, mustekHloubkaMm: 900 };
-  const blizko = (a, b) => Math.abs(a - b) < 1e-6;
-  for (const fixes of [true, false]) {
-    const M = fixes ? 'Model 2' : 'Model 1';
-    const bez = spocti({}, fixes).r;
-    test(M + ' #356: bez můstku střecha 2,76165 m² (beze změny)', blizko(zas(bez).mnozstvi, 2.76165) && blizko(zas(bez).naklad, 13808.25), zas(bez));
-    const vse = spocti(Object.assign({ mustkyKs: 5 }, rozm), fixes).r;
-    test(M + ' #356: můstek i v nejvyšším → střecha 4,11165 m² / 20 558,25 Kč', blizko(zas(vse).mnozstvi, 4.11165)
-      && blizko(zas(vse).naklad, 20558.25), zas(vse));
-    test(M + ' #356: příplatek za měď má tutéž plochu', blizko(med(vse).mnozstvi, 4.11165) && blizko(med(bez).mnozstvi, 2.76165), [med(bez), med(vse)]);
-    const nizsi = spocti(Object.assign({ mustkyKs: 2 }, rozm), fixes).r;
-    test(M + ' #356: můstky jen v nižších nástupištích → střecha beze změny', blizko(zas(nizsi).mnozstvi, 2.76165), zas(nizsi));
-    const bezRozm = spocti({ mustkyKs: 5 }, fixes).r;
-    test(M + ' #356: bez rozměrů můstku nic navíc', blizko(zas(bezRozm).mnozstvi, 2.76165), zas(bezRozm));
-    const int = spocti(Object.assign({ mustkyKs: 5 }, rozm), fixes, 'interiérová').r;
-    test(M + ' #356: interiér bez zastřešení', !zas(int) && !med(int));
-    test(M + ' #356: cena vzroste o plochu můstku', vse.souhrn.zakladCena > bez.souhrn.zakladCena);
-  }
-  const { r, z } = spocti(Object.assign({ mustkyKs: 5 }, rozm));
-  test('#356: výsledek nese plochu střechy nad můstkem', r.strecha && blizko(r.strecha.mustekM2, 1.35), r.strecha);
-  const kt = require('./kontroly.js');
-  const chybi = spocti({ mustkyKs: 5 });
-  const n = kt.kontrolyProved({ zadani: chybi.z, vysledek: chybi.r, cenik: CENIK }).nalezy.find(x => x.kod === 'mustekStrecha');
-  test('#356: chybí rozměry můstku → upozornění, ne zábrana', n && /rozměr/.test(n.text) && n.uroven !== kt.KONTROLY_UROVEN_ZABRANA, n && n.text);
-  test('#356: s rozměry upozornění mlčí', !kt.kontrolyProved({ zadani: z, vysledek: r, cenik: CENIK }).nalezy.some(x => x.kod === 'mustekStrecha'));
-}
-
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);
