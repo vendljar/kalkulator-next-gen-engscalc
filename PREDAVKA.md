@@ -1,22 +1,25 @@
-# Předávka — 17. 10. 2026: dávka A2 (v17.10.3), větev `claude/a2-mustky` — můstky (#355, #356)
+# Předávka — 17. 10. 2026: dávka A2 (v17.10.3), větev `claude/a2-mustky` — můstky (#355; #356 jen návrh)
 
 Nad `origin/claude/integrace-16-10` (e2c773a, v16.10.5). Do `test-draft` / `test` / `main` nic —
 slučuje koordinace (session_011B3ruyPigNEMSUdesbk4Hd). Podrobnosti: CHANGELOG v17.10.3.
 
-- **Hotovo (pushnuto, commit po bodech):** #355 pravidlo kontrol `mustkyPrechodove` (výpočet
-  beze změny, upozornění ne zábrana, CZ/EN/DE/FR); #356 jádro přičte střechu přes nejvyšší
-  můstek do ZASTŘEŠENÍ ŠACHTY (EXT) i příplatku za měď + upozornění `mustekStrecha` při chybějících
-  rozměrech; příručka (kap. 11, Co je nového v17.10.3), roadmapa #355/#356 → hotovo.
-- **Testy před → po:** test_mustky 34/8 → 42/0 (#355), 53/6 → 59/0 (#356); test_kontroly
-  137/1 → 138/0 (37 pravidel); test_profil_neznamy otisky beze změny (30/0); fuzz 19/0.
-  Mutace jádra +8, cílený běh 8/8, `--kontrola` 227.
-- **Čeká na J. V. (přes koordinaci):** potvrdit výchozí volby #356 (a) přesah 0,2 m do šířky,
-  do hloubky nic; (b) do stávající položky zastřešení i mědi; (c) oplechování beze změny;
-  (d) podmínka můstků ≥ nadzemní nástupiště, bez nového pole; (e) Model 1 i 2.
+- **Hotovo (pushnuto):** #355 pravidlo kontrol `mustkyPrechodove` (výpočet beze změny,
+  upozornění ne zábrana, tisk CZ/EN/DE/FR nezastaví); příručka (kap. 11, Co je nového v17.10.3),
+  roadmapa #355 → hotovo. Testy: test_mustky 34/8 → 42/0, test_kontroly 137/1 → 138/0
+  (36 pravidel); mutace jádra +3, chycené.
+- **#356 — pokyn J. V. 17. 10. (přes koordinaci): „toto přeskoč a připrav mi na pondělí detailní
+  vizuální návrh variant“.** Implementace (commit 75f9fd1) je v této větvi **revertovaná**;
+  hotový kód doporučené kombinace leží ve větvi `claude/a2-356-navrh` (nesloučí se; test_mustky
+  59/0, mutace 5/5, smoke 258/0/6). **Návrh pro J. V. na 19. 10.:**
+  https://claude.ai/artifact/9nMGAMnggiVEByuZoty9Qt — varianty (a) přesahy, (b) položka,
+  (c) oplechování, (d) podmínka, (e) Model 1/2, dopad na 3 ukázkové zakázky (zkušební ceník).
+  Doporučení A1 + B1 + C1 + D1 + E1. Roadmapa #356: „čeká“ s odkazem.
+- **Po schválení #356:** převzít kód z `claude/a2-356-navrh` (commit 75f9fd1 + jeho dokumentace),
+  při jiné volbě upravit vzorec `strechaMustekM2` v `src/engine.js` a referenci v `src/test_mustky.js`.
 - **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `manual/obsah.json`
-  (Co je nového) / počet pravidel v `src/test_kontroly.js` a `overit_lista.mjs` (37).
+  (Co je nového) / počet pravidel v `src/test_kontroly.js` a `overit_lista.mjs` (36).
   Záhlaví „verze“ v `manual/obsah.json` jsem neměnil (nastaví koordinace).
-- **Další krok:** žádný — dávka uzavřená.
+- **Další krok:** čeká se na rozhodnutí J. V. k #356 (19. 10.).
 
 # Předávka — 16. 10. 2026: dávka V4 (v16.10.5), větev `claude/v4-kontrola-rozhodnuti` — kontrola rozhodnutí 15.–16. 10.
 

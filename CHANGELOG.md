@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v17.10.3 — můstky: přechodové plechy a střecha (větev claude/a2-mustky)
+## v17.10.3 — můstky: upozornění na přechodové plechy (větev claude/a2-mustky)
 
 Dávka A2 (zadání koordinace „ŘÍDÍCÍ 16.10“, plán víkendu), nad
 `origin/claude/integrace-16-10` (e2c773a, v16.10.5). Rozhodnutí J. V.
@@ -21,23 +21,15 @@ Dávka A2 (zadání koordinace „ŘÍDÍCÍ 16.10“, plán víkendu), nad
   montáž) se za všechna nástupiště počítají — ať obchodník zváží ruční
   úpravu. Upozornění, ne zábrana (tisk CZ/EN/DE/FR nezastaví); příplatky
   vynechané z nabídky se nehlásí. `src/test_mustky.js` 34/8 → 42/0.
-- **#356 hotovo — střecha EXT přes nejvyšší můstek se připočte:** je-li
-  můstek i v nejvyšším nástupišti (můstků ≥ nadzemní nástupiště, táž
-  podmínka jako věta specifikace), přičte jádro k ZASTŘEŠENÍ ŠACHTY (EXT)
-  i k PŘÍPLATKU ZA STŘECHU V MĚDI plochu (šířka můstku + 0,2 m) × hloubka
-  můstku. Model 1 i 2; oplechování k fasádě beze změny; bez rozměrů můstku
-  nic navíc a upozornění `mustekStrecha`. Výsledek nese `strecha`
-  (`m2`, `mustekNahore`, `mustekM2`). **Výchozí volby (a)–(e) poslány
-  koordinaci k potvrzení J. V.** Ruční reference: výchozí šachta 1,51 ×
-  1,515 m, můstek 1 300 × 900 mm → 2,76165 + 1,35 = 4,11165 m²
-  (zkušební ceník 13 808,25 → 20 558,25 Kč nákladu). `src/test_mustky.js`
-  53/6 → 59/0. Zakázky bez můstku nebo s můstky jen níž beze změny:
-  otisky výsledku v `src/test_profil_neznamy.js` sedí (pole `strecha` do
-  otisku nevstupuje), fuzz `src/test_fuzz_invarianty.js` 19/0.
-- Kontroly mají 37 pravidel (`src/test_kontroly.js`, `overit_lista.mjs`).
-- Mutace jádra +8 (#356 4, #355 3, `mustekStrecha` 1).
+- **#356 do kódu NEJDE (J. V. 17. 10.: „toto přeskoč a připrav mi na pondělí
+  detailní vizuální návrh variant“).** Implementace doporučené kombinace byla
+  v commitu 75f9fd1 a je revertovaná; kód zůstává ve větvi
+  `claude/a2-356-navrh` (nesloučí se). Vizuální návrh variant (a)–(e) pro
+  J. V. na 19. 10.: https://claude.ai/artifact/9nMGAMnggiVEByuZoty9Qt
+- Kontroly mají 36 pravidel (`src/test_kontroly.js`, `overit_lista.mjs`).
+- Mutace jádra +3 (#355), cílený běh chycených 3/3 (v běhu 8/8 i s #356).
 - Příručka: kapitola 11 (můstky) a „Co je nového ve verzi v17.10.3“;
-  roadmapa #355 a #356 → hotovo.
+  roadmapa #355 → hotovo, #356 → čeká (návrh na 19. 10.).
 
 ## v16.10.5 — kontrola rozhodnutí 15.–16. 10. (větev claude/v4-kontrola-rozhodnuti)
 
