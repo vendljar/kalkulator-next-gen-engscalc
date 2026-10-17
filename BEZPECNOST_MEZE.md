@@ -366,7 +366,19 @@ ořez mezilehlých pásů, pás nulové výšky vypadne. Obsah `p` =
 pásu v m² z výpočtu jádra** (`vyjimkyPasyPlochy`, navazuje B165). Výjimky
 s pásem „jiné" schválené před v17.10.4 přešly do „čeká znovu".
 
-**Co zůstává (vědomá mez, k rozhodnutí):**
+**Zbytek opraven v17.10.5 (B165, rozhodnutí J. V. 17. 10. 2026):** obsah
+výjimky s pásem „jiné“ nese i **plochu každého pásu z výsledku jádra**
+a klíč `l` se **světlíky „jiné“ u dveří** (`[kde, stěna, název, sazba,
+m²]`) — `vyjimkyPlochyJadra`, server i prohlížeč počítají `vypocet` týmž
+katalogem JEKLY (`ctx.jekly`). Plocha je v obsahu **na celé m²**: posun
+vnějšího rozměru o centimetry (profily, zasklení) u nízkého pásu schválení
+neshodí, změna o půl m² a víc ano. Nekrytý zbytek je nejvýš ±0,5 m² na pás
+či světlík × rozdíl sazeb (vědomá mez). Chyba výpočtu nebo chybějící
+katalog = plocha `null` → obsah se liší od schváleného → zámek 403
+(fail-closed). Obsah jen se směsí ceníku má tvar jako dřív (schválení
+platí dál); výjimky s pásem „jiné“ schválené před v17.10.5 čekají znovu.
+
+**Původní poznámka (do v17.10.4, vyřešeno v17.10.5):**
 - Obsah nese **délku stěny ze zadání**, ne vnější rozměr, se kterým počítá
   jádro (profily a způsob zasklení ho mění o centimetry). Změna profilu nebo
   zasklení po schválení plochu pásu posune o jednotky procent, obsah ne.
@@ -378,6 +390,23 @@ s pásem „jiné" schválené před v17.10.4 přešly do „čeká znovu".
   z výsledku jádra (server ho umí spočítat, `zamekVysledekSpocti`).
 - **Rozhodnutí J. V. 17. 10. 2026:** obě výše uvedené části zůstávají vědomou
   mezí; dořeší se spolu s B165 (plocha z výsledku jádra do obsahu výjimky).
+
+### B165 — schvalovatel nevidí částky výjimky; vlastní schválení — ČÁST 1 OPRAVENA v17.10.5
+
+**Část 1 (J. V. 16. 10. 2026):** karta Cenové výjimky ukazuje tomu, kdo smí
+rozhodnout (administrátor, `sleva.schvalovani`), u každé položky směsi
+**použitou a ceníkovou hodnotu** (platný ceník), u pásu „jiné“ použitou
+a nejnižší ceníkovou sazbu, plochu a světlíky, a **dopad na cenu strany**
+(OCK cena bez DPH, PROJ celkem) v % a Kč — položka po položce i celkem
+(`vyjimkyDopad`: cena varianty − cena s ceníkovou hodnotou). Obchodník bez
+práva rozhodovat čísla nevidí (ceníkové sazby platného ceníku mu karta
+neprozradí). Vše přes `esc()`. Na obsah ani na cenu dopad vliv nemá.
+
+**Část 2 (otevřeno, rozhodne J. V.):** role s právem `sleva.schvalovani`
+(i administrátor) schválí výjimku, o kterou sama požádala nebo kterou má ve
+vlastní zakázce — server porovnává jen právo, ne osobu žadatele
+(`vyjimkyServerKontrola`). Návrh poslán koordinaci 17. 10. 2026; do
+rozhodnutí se chování nemění.
 
 ### B179 — příznak „cena dle nabídky" mimo příplatky a z ceníku varianty — OPRAVENO v17.10.4
 

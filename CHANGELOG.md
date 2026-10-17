@@ -8,6 +8,50 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v17.10.5 — B165: sazby a dopad v kartě cenové výjimky, zbytek B178 (větev claude/b165-karta-vyjimky)
+
+Dávka B165 (zadání koordinace „ŘÍDÍCÍ 16.10“, rozhodnutí J. V. 16. a 17. 10.
+2026), nad `origin/claude/integrace-16-10` (`9bb7caf`, v17.10.4).
+
+- **B165 část 1 — schvalovatel vidí, kolik výjimka stojí.** Karta
+  Schvalování → Cenové výjimky ukazuje tomu, kdo smí rozhodnout
+  (administrátor, právo „Schvalování slevy nad strop role“), u každé
+  položky směsi **použitou a ceníkovou hodnotu** (platný ceník), u pásu
+  „jiné“ použitou a nejnižší ceníkovou sazbu a plochu m², světlíky „jiné“
+  u dveří a **dopad na cenu strany** (OCK cena bez DPH, PROJ celkem) v %
+  a Kč — u položky i celkem (`vyjimkyDopad`, `vyjimkyDopadText`). Dopad =
+  cena varianty − cena, kdyby položka měla ceníkovou hodnotu. Obchodník
+  bez práva rozhodovat vidí dál jen názvy (sazby platného ceníku se mu
+  neukážou). Vše přes `esc()`; na obsah výjimky ani cenu vliv nemá.
+- **B165 část 2 — vlastní schválení:** zjištěno chování (role s právem
+  `sleva.schvalovani` schválí i výjimku, o kterou sama požádala; server
+  hlídá jen právo, ne osobu), návrh poslán koordinaci. **Beze změny**,
+  dokud J. V. nerozhodne.
+- **Zbytek B178 — plocha z výsledku jádra v obsahu výjimky.** U pásu
+  „jiné“ nese obsah i plochu z výpočtu jádra (vnější rozměr stěny podle
+  profilů a zasklení) a nový klíč `l` se **světlíky „jiné“ u dveří**
+  (plocha podle nástupišť a šířky vstupu) — `vyjimkyPlochyJadra`; server
+  (`zakazka_kontrola.mjs`, `ctx.jekly`) i prohlížeč počítají týmž JEKLY.
+  **Zaokrouhlení na celé m²** (výchozí volba): posun o centimetry u nízkého
+  pásu schválení neshodí, změna o půl m² a víc ano; nekrytý zbytek nejvýš
+  ±0,5 m² × rozdíl sazeb. Chyba výpočtu = plocha neznámá → schválení
+  neplatí (fail-closed).
+- **Pro obchodníky:** **výjimky s pásem opláštění „jiné“ schválené před
+  v17.10.5 se vrátí do stavu „čeká znovu“** a před tiskem je musí
+  nadřízený schválit znovu (změna tvaru obsahu). Výjimky jen se směsí
+  ceníku platí dál.
+- **Testy (pojistka):** `src/test_vyjimky.js` proti v17.10.4 83 OK,
+  8 FAIL + pád (`vyjimkyDopad` chybí, 10 testů B165 neproběhne), po opravě
+  105/0 (dřív 88/0; dvě starší kontroly tvaru obsahu upravené na 8 prvků,
+  zápis zdvihu „9“ kontroluje meze); `netlify/test_vyjimky.mjs` proti
+  v17.10.4 69/3, po opravě 72/0 (zasklení a nástupiště po schválení → 403,
+  drobný posun u pásu 1,2 m → 200; pomocník `obsah` s JEKLY jako server).
+  MUTACE_VYSLEDKY
+- `python3 nastroje/kontrola_udaju.py` čisté, `roadmapa.py --kontrola`
+  424 položek bez nálezu; roadmapa #420 (B165 část 1 hotovo), příručka
+  kap. 19 + Co je nového v17.10.5, `BEZPECNOST_MEZE.md` (B165, B178 zbytek),
+  audit kol 25 a 26.
+
 ## v17.10.4 — oprava B178 a B179 (schvalování výjimek, příznak „cena dle nabídky“; větev claude/o6-b178-b179)
 
 Dávka O6 (zadání koordinace „ŘÍDÍCÍ 16.10“, rozhodnutí J. V. 17. 10. 2026),

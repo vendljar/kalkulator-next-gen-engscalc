@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v17.10.4 · sestaveno 17. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
+  "verze": "Platí pro aplikaci v17.10.5 · sestaveno 17. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -11,6 +11,13 @@
         "Snímky obrazovky v téhle příručce jsou pořízené z běžící aplikace, ale nad **zkušebním ceníkem** s vymyšlenými sazbami. **Částky na obrázcích jsou ze zkušebního ceníku a nejsou naše ceny.** Neberte je jako vodítko pro nabídku a nesrovnávejte s nimi svou kalkulaci — sledujte, kde co je a jak se to chová, ne kolik to stojí.",
         "Jména zákazníků na snímcích jsou taky **vymyšlená**. Celá ukázková zakázka **2026 - OPR - CN - 9100** je smyšlená a vznikla jen kvůli téhle příručce.",
         "Příručka je určená obchodníkům ENGINEERS CZ. Popisuje, jak firma počítá nabídky, takže ji zákazníkům ani nikomu mimo firmu neposílejte."
+      ]
+    },
+    {
+      "nadpis": "Co je nového ve verzi v17.10.5 (17. 10. 2026)",
+      "odstavce": [
+        "**Schvalovatel vidí, kolik cenová výjimka stojí.** Kdo o výjimkách rozhoduje, vidí v kartě Cenové výjimky u každé položky **použitou a ceníkovou sazbu** a **dopad na cenu** strany varianty v % a v Kč, u pásu „jiné“ i plochu v m² a nakonec dopad celkem. Obchodník bez práva rozhodovat vidí dál jen názvy položek a pásů (kapitola 19).",
+        "**Schválení pásu „jiné“ hlídá i jeho plochu.** Schválení teď sedí i na ploše pásu z výpočtu (na celé m²) a na **světlících u dveří**, které berou materiál „jiné“ ze stěn. Když po schválení změníte zasklení nebo profily tak, že se plocha změní aspoň o půl m², nebo přidáte nástupiště (víc světlíků), výjimka se vrátí do stavu **čeká znovu**. **Výjimky s pásem „jiné“ schválené před v17.10.5 se musí schválit znovu**; výjimky jen se směsí ceníku platí dál."
       ]
     },
     {
@@ -535,7 +542,7 @@
         },
         { "typ": "text", "text": "Tři věci, které vám ušetří telefonáty. **Rozhodnutí je podepsané** jménem a časem, takže se zpětně pozná, kdo slevu pustil. **Rozhodnutí platí na to procento, o kterém se rozhodovalo** — když po schválení slevu zvednete třeba z 6 na 9 %, žádost se vrátí do stavu *čeká* a staré razítko se smaže; snížit slevu po schválení můžete bez nového kolečka. A **uzamčená nabídka se už nepřepočítává**: co odešlo zákazníkovi, je doklad." },
         { "typ": "text", "text": "**Rozhodnutí vrátit zpět smí jen nadřízený** (od 13. 10. 2026). Tlačítko **Vrátit rozhodnutí** v záložce *Schvalování slev* má jen ten, kdo smí o té slevě rozhodnout. Uložením zakázky se schválení ani zamítnutí do stavu *čeká* nevrátí — server ponechá uložené rozhodnutí i s podpisem. Chcete-li o zamítnuté slevě jednat znovu, změňte procento: nové procento je nová žádost." },
-        { "typ": "text", "text": "**Cenové výjimky** (karta *Cenové výjimky* v záložce Schvalování) — ceník varianty, který je směsí platného ceníku a starších cen, nebo ruční sazba pásu opláštění „jiné“ pod ceníkem. Bez práva ceníku je odešlete jen se schválením nadřízeného. **Schválení platí jen pro přesně ten obsah, který nadřízený schválil** (od v15.10.8): změna kterékoli položky směsi, sazby nebo názvu pásu ho zruší a žádost čeká znovu — od v17.10.4 i změna zdvihu, přejezdu, šířky nebo hloubky šachty, která pás zvětší či zmenší (karta u pásu ukazuje rozsah a plochu v m²); výjimky schválené před v15.10.8 se musí schválit znovu. Totéž schválení (a sleva nad minimální marží) platí i pro **dokument druhé strany, který do odeslané nabídky tisknete dodatečně** — třeba nabídku OCK po vypnutí „jen projekce“. Odeslanou nabídku už změnit nejde, takže bez schválení pokračujte klonem varianty." },
+        { "typ": "text", "text": "**Cenové výjimky** (karta *Cenové výjimky* v záložce Schvalování) — ceník varianty, který je směsí platného ceníku a starších cen, nebo ruční sazba pásu opláštění „jiné“ pod ceníkem. Bez práva ceníku je odešlete jen se schválením nadřízeného. **Schválení platí jen pro přesně ten obsah, který nadřízený schválil** (od v15.10.8): změna kterékoli položky směsi, sazby nebo názvu pásu ho zruší a žádost čeká znovu — od v17.10.4 i změna zdvihu, přejezdu, šířky nebo hloubky šachty, která pás zvětší či zmenší, a od v17.10.5 i změna plochy pásu nebo světlíků „jiné“ u dveří o půl m² a víc (zasklení, profily, počet nástupišť); karta u pásu ukazuje rozsah a plochu v m². Schvalovatel (administrátor a role s právem „Schvalování slevy nad strop role“) vidí v kartě u každé položky použitou a ceníkovou sazbu a dopad na cenu OCK či PROJ v % a v Kč, dole dopad celkem; výjimky schválené před v15.10.8 se musí schválit znovu. Totéž schválení (a sleva nad minimální marží) platí i pro **dokument druhé strany, který do odeslané nabídky tisknete dodatečně** — třeba nabídku OCK po vypnutí „jen projekce“. Odeslanou nabídku už změnit nejde, takže bez schválení pokračujte klonem varianty." },
         { "typ": "text", "text": "Rozhoduje se v záložce *Schvalování slev*, kterou podle nastavení nemusíte vidět vůbec. Schválení ověřuje **server**, ne prohlížeč — jméno schvalovatele si píše sám podle toho, kdo je přihlášený, a pokus uložit schválení nad vlastní strop neprojde." }
       ]
     },
