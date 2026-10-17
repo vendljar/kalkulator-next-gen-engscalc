@@ -8,6 +8,29 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v17.10.3 — můstky: upozornění na přechodové plechy (větev claude/a2-mustky)
+
+Dávka A2 (zadání koordinace „ŘÍDÍCÍ 16.10“, plán víkendu), nad
+`origin/claude/integrace-16-10` (e2c773a, v16.10.5). Rozhodnutí J. V.
+16. 10. 2026 k roadmapě #355 a #356.
+
+- **#355 hotovo — přechodové plechy u můstků jen upozorní:** výpočet beze
+  změny. Nové pravidlo kontrol před nabídkou `mustkyPrechodove`: má-li
+  šachta můstky a přechodové plechy jsou v základní ceně nebo v příplatcích
+  nabídky, řekne počet můstků, počet nástupišť a které řádky (materiál /
+  montáž) se za všechna nástupiště počítají — ať obchodník zváží ruční
+  úpravu. Upozornění, ne zábrana (tisk CZ/EN/DE/FR nezastaví); příplatky
+  vynechané z nabídky se nehlásí. `src/test_mustky.js` 34/8 → 42/0.
+- **#356 do kódu NEJDE (J. V. 17. 10.: „toto přeskoč a připrav mi na pondělí
+  detailní vizuální návrh variant“).** Implementace doporučené kombinace byla
+  v commitu 75f9fd1 a je revertovaná; kód zůstává ve větvi
+  `claude/a2-356-navrh` (nesloučí se). Vizuální návrh variant (a)–(e) pro
+  J. V. na 19. 10.: https://claude.ai/artifact/9nMGAMnggiVEByuZoty9Qt
+- Kontroly mají 36 pravidel (`src/test_kontroly.js`, `overit_lista.mjs`).
+- Mutace jádra +3 (#355), cílený běh chycených 3/3 (v běhu 8/8 i s #356).
+- Příručka: kapitola 11 (můstky) a „Co je nového ve verzi v17.10.3“;
+  roadmapa #355 → hotovo, #356 → čeká (návrh na 19. 10.).
+
 ## v17.10.2 — návrh čísla SoD a zámek po tisku SoD (větev claude/v1-cislo-sod)
 
 Dávka V1 (zadání koordinace „ŘÍDÍCÍ 16.10“, plán víkendu, okno O5), nad

@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v17.10.2 · sestaveno 17. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
+  "verze": "Platí pro aplikaci v17.10.3 · sestaveno 17. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -14,8 +14,9 @@
       ]
     },
     {
-      "nadpis": "Co je nového ve verzi v17.10.2 (17. 10. 2026)",
+      "nadpis": "Co je nového ve verzi v17.10.3 (17. 10. 2026)",
       "odstavce": [
+        "**Upozornění na přechodové plechy u můstků.** Má-li šachta můstky a přechodové plechy jsou v základní ceně nebo v příplatcích nabídky, kontrola před nabídkou upozorní, že se plechy počítají za všechna nástupiště i tam, kde je můstek — zvažte ruční úpravu množství. Výpočet se nemění a tisk to nezastaví (kapitola 11).",
         "**Návrh čísla SoD.** Pole **Číslo SoD** v krycím listu OCK i PROJ se předvyplní z čísla nabídky — z **2026 - OPR - CN - 0412** je **2026 - OPR - SOD - 0412**. Návrh můžete přepsat, ↺ ho vrátí (kapitola 24).",
         "**Tisk smlouvy o dílo zamkne číslo SoD i datum podpisu.** Při tisku se obojí zapíše do zakázky; krycí list ani další tisk smlouvy pak neukáže jiné číslo ani dnešní datum místo data podpisu."
       ]
@@ -297,7 +298,7 @@
           "odkazy": [
             { "popisek": "Stříška nad nástupiště", "cely": ".row", "text": "**Dřív zaškrtávátko, dnes počet kusů.** Zadává se číslo — kolik stříšek nad nástupiště zakázka obsahuje. Staré zaškrtávátko už v aplikaci není." },
             { "popisek": "Počet nástupišť", "cely": ".row", "text": "Nová nabídka začíná s **5 nástupišti**, s **odškrtnutými přechodovými plechy** a s **plechem nad dveřmi** — to jsou hodnoty, se kterými se nejčastěji počítá. Rozměry šachty naopak začínají na nule, aby se do nabídky nedostal rozměr, který nikdo nezadal." },
-            { "popisek": "Můstky mezi budovou a OCK", "cely": ".row", "text": "**Počet kusů, ne zaškrtávátko.** 0 = šachta žádný můstek nemá, jiné číslo = kolik jich je. Po zadání se ukáže hloubka a šířka můstku (pro kontrolu standardu a specifikaci)." },
+            { "popisek": "Můstky mezi budovou a OCK", "cely": ".row", "text": "**Počet kusů, ne zaškrtávátko.** 0 = šachta žádný můstek nemá, jiné číslo = kolik jich je. Po zadání se ukáže hloubka a šířka můstku (pro kontrolu standardu a specifikaci). **Přechodové plechy** se v nástupištích s můstkem počítají dál za všechna nástupiště — kontrola před nabídkou na to upozorní, ať případně množství upravíte ručně; tisk to nezastaví." },
             { "popisek": "Způsob zasklení", "cely": ".row", "text": "Volba mezi **na terče** a **mezi příčníky (lišty)**. Co která znamená pro cenu, je v kapitole 13." },
             { "popisek": "ATYP (nestandardní zakázka)", "cely": ".row", "text": "Zaškrtávátko zůstalo, ale políčko na procenta přirážky vedle něj **zmizelo** — viz kapitola 14." },
             { "popisek": "Opláštit i prohlubeň", "cely": ".row", "text": "**Opláštit i prohlubeň** — zkratka, která pošle opláštění všech čtyř stěn až na dno prohlubně. Co přesně udělá, je v kapitole 13." }

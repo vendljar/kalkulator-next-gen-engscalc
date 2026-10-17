@@ -554,6 +554,20 @@ const MUTACE = [
     nahrad: "return Math.floor(+n);",
     proc: 'překlep „-2" by nabídku zlevnil o dva můstky' },
 
+  /* #355 (rozhodnutí J. V. 16. 10. 2026, dávka A2 17. 10. 2026). */
+  { nazev: '#355: plechy u můstků se neohlásí', soubor: 'kontroly.js',
+    hledej: "      if (!zaklad.length && !prip.length) return null;\n      const co = rows",
+    nahrad: "      return null;\n      const co = rows",
+    proc: 'obchodník by se nedozvěděl, že plechy v nástupišti s můstkem platí zákazník' },
+  { nazev: '#355: příplatek vynechaný z nabídky se hlásí', soubor: 'kontroly.js',
+    hledej: "+x.mnozstvi > 0 && !vyn.includes(x.key));",
+    nahrad: "+x.mnozstvi > 0);",
+    proc: 'planý poplach u plechů, které v nabídce vůbec nejsou' },
+  { nazev: '#355: upozornění zastaví dokument', soubor: 'kontroly.js',
+    hledej: "      return { text: 'Šachta má ' + mustkyTxt",
+    nahrad: "      return { uroven: KONTROLY_UROVEN_ZABRANA, text: 'Šachta má ' + mustkyTxt",
+    proc: 'rozhodnutí J. V. 16. 10.: jen upozornit, tisk nesmí blokovat' },
+
   /* ---------- B115 (6. 10. 2026): obchvaty kontroly obsahu šablony ---------- */
   /* Revize 6. 10. 2026 (S1–S4): obchvaty kontroly obsahu šablony. */
   { nazev: 'revize S1/S2: šablona se rozebírá bez normalizace CDATA a komentářů', soubor: 'sablona_obsah.js',
