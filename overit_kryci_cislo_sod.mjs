@@ -39,6 +39,7 @@ const priprav = (typy, tab) => p.evaluate(([c, cp, typy, tab]) => {
   Object.assign(DEFAULT_CENIK, c); delete DEFAULT_CENIK.prazdny;
   Object.assign(DEFAULT_CENIK_PROJ, cp); delete DEFAULT_CENIK_PROJ.prazdny;
   ZAK = novaZakazka(); ZAK.autor = 'autor.cislosod@priklad.cz';
+  ZAK.cislo = '2026 - OPR - CN - 0412';   // #366: návrh čísla SoD vzniká z čísla nabídky
   syncVarianta();
   const v = aktivniVarianta(ZAK);
   typy.forEach(typ => zamkniVariantu(v, { typ }));
@@ -75,12 +76,15 @@ for (const [tab, jm, h1] of [['kryci', 'OCK', 'Krycí list zakázky OCK'], ['kry
   const r = await radky(sel);
   const i = r.findIndex(x => /^Číslo nabídky \(CN\)/.test(x));
   ok('„Číslo SoD" je vidět hned pod „Číslo nabídky (CN)"', i >= 0 && /^Číslo SoD/.test(r[i + 1] || ''), r.slice(0, 8));
-  const hodnota = await p.evaluate(sel => {
+  const radekSod = () => p.evaluate(sel => {
     const rr = Array.from(document.querySelectorAll(sel + ' .kl-row')).find(x => /^Číslo SoD/.test(((x.querySelector('.lbl') || {}).textContent || '').trim()));
     const f = rr && rr.querySelector('input, textarea');
-    return f ? f.value : null;
+    return { hodnota: f ? f.value : null, zdroj: rr ? ((rr.querySelector('.src') || {}).textContent || '').trim() : '',
+             reset: !!(rr && rr.querySelector('.src button')) };
   }, sel);
-  ok('okno „Číslo SoD" je prázdné (nic se nepředvyplňuje)', hodnota === '', hodnota);
+  const r0 = await radekSod();
+  ok('okno „Číslo SoD" nese návrh z čísla nabídky (#366)', r0.hodnota === '2026 - OPR - SOD - 0412', r0);
+  ok('…zřetelně označený jako návrh', /návrh z čísla nabídky/.test(r0.zdroj) && !r0.reset, r0);
   const cislo = jm === 'OCK' ? '2026 - OPR - SOD - 0012' : '2026 OVP SOD 0012';
   await napis(sel, cislo);
   const u = await ulozeno();
@@ -94,6 +98,12 @@ for (const [tab, jm, h1] of [['kryci', 'OCK', 'Krycí list zakázky OCK'], ['kry
   }, [tab]);
   ok('výstup krycího listu (BO i Tech) nese číslo SoD', vystup.bo === cislo && vystup.tech === cislo, vystup);
   ok('nadpis dokumentu „' + h1 + ' — Backoffice"', vystup.nadpis === h1 + ' — Backoffice', vystup.nadpis);
+  const r1 = await radekSod();
+  ok('ruční přepis je označený „ručně" a nabízí ↺', /ručně/.test(r1.zdroj) && r1.reset, r1);
+  await p.locator(sel + ' .kl-row').filter({ has: p.locator('.lbl', { hasText: /^Číslo SoD/ }) }).first().locator('.src button').click();
+  await p.waitForTimeout(300);
+  const r2 = await radekSod(), u2 = await ulozeno();
+  ok('↺ vrátí návrh a ruční hodnotu smaže', r2.hodnota === '2026 - OPR - SOD - 0412' && (jm === 'OCK' ? u2.ock : u2.proj) === undefined, [r2, u2]);
 }
 
 for (const [tab, jm, typ] of [['kryci', 'OCK', 'nabidkaTisk'], ['kryciproj', 'PROJ', 'nabidkaProjTisk']]) {

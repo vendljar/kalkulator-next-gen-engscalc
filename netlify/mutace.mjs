@@ -91,6 +91,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      '../src/test_kryci_cislo_sod.js',
      /* S9 (15. 10. 2026): číslo SoD v šablonách SoD projekce (vyrob_sablony --sod-proj-cislo). */
      '../src/test_sod_proj_cislo.js',
+     /* V1 / #366 (17. 10. 2026): návrh čísla SoD a zámek po tisku SoD. */
+     '../src/test_cislo_sod_navrh.js',
      /* S13 (16. 10. 2026): příznak ceníku „cena dle nabídky" — model a server. */
      '../src/test_cena_dle_nabidky.js', 'test_cena_dle_nabidky.mjs'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
@@ -2282,12 +2284,12 @@ const MUTACE = [
     proc: 'objekt nebo pole v hodnotě krycího listu projde (B152)' },
   /* S7 (15. 10. 2026): Krycí list zakázky OCK a pole „Číslo SoD". */
   { nazev: 'S7: číslo SoD OCK nejde do smlouvy realizace', soubor: '../src/kryci.js',
-    hledej: "{ id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'ručně', sod: 'SOD_CISLO_SMLOUVY' },",
-    nahrad: "{ id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'ručně' },",
+    hledej: "{ id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'návrh z čísla nabídky', sod: 'SOD_CISLO_SMLOUVY',",
+    nahrad: "{ id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'návrh z čísla nabídky',",
     proc: 'vyplněné číslo SoD by se do smlouvy o dílo realizace nedostalo, {{SOD_CISLO_SMLOUVY}} by zůstal prázdný' },
   { nazev: 'S7: číslo SoD PROJ nejde do smlouvy projekce', soubor: '../src/kryci_proj.js',
-    hledej: "{ id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'ručně', sod: 'SOD_CISLO_SMLOUVY' },",
-    nahrad: "{ id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'ručně' },",
+    hledej: "{ id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'návrh z čísla nabídky', sod: 'SOD_CISLO_SMLOUVY',",
+    nahrad: "{ id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'návrh z čísla nabídky',",
     proc: 'číslo SoD projekce by se do smlouvy nedostalo' },
   { nazev: 'S7: číslo SoD jen v Backoffice', soubor: '../src/kryci.js',
     hledej: "{ id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'],",
@@ -2318,6 +2320,31 @@ const MUTACE = [
     hledej: "  if (dg.klicePlaceholderu(body).indexOf('SOD_CISLO_SMLOUVY') >= 0) chyba('SoD PROJ: šablona už číslo smlouvy {{SOD_CISLO_SMLOUVY}} má');\n",
     nahrad: "",
     proc: 'opakované spuštění nástroje by dalo do smlouvy číslo dvakrát' },
+  /* V1 / #366 (17. 10. 2026): návrh čísla SoD z čísla nabídky. Hlídá test_cislo_sod_navrh (+ S7, S9, test_sod). */
+  { nazev: '#366: návrh čísla SoD nechá kód CN', soubor: '../src/zakazka.js',
+    hledej: "  if (cn.test(s)) return s.replace(cn, '$1SOD');",
+    nahrad: "  if (cn.test(s)) return s;",
+    proc: 'návrh čísla smlouvy by byl totožný s číslem nabídky (2026 - OPR - CN - 0412 místo … - SOD - …)' },
+  { nazev: '#366: návrh čísla SoD i z holé předlohy', soubor: '../src/zakazka.js',
+    hledej: "  const s = String(cislo == null ? '' : cislo).trim();\n  if (!hlavickaVyplneno(s)) return '';",
+    nahrad: "  const s = String(cislo == null ? '' : cislo).trim();\n  if (!s) return '';",
+    proc: 'zakázka bez čísla by dostala do smlouvy útržek „2026 - OPR - SOD -" místo viditelného {{SOD_CISLO_SMLOUVY}}' },
+  { nazev: '#366: CN uvnitř slova se přepíše', soubor: '../src/zakazka.js',
+    hledej: "  const cn = /(^|[^A-Za-z\\u00C0-\\u017F])CN(?![A-Za-z\\u00C0-\\u017F])/i;",
+    nahrad: "  const cn = /()CN/i;",
+    proc: 'kód řady obsahující CN (např. CNX) by se v návrhu zkomolil' },
+  { nazev: '#366: starší číslo bez CN ztratí příponu varianty', soubor: '../src/zakazka.js',
+    hledej: "  return m[1] + 'SOD' + (sep || '-') + m[2] + (m[3] || '');",
+    nahrad: "  return m[1] + 'SOD' + (sep || '-') + m[2];",
+    proc: 'varianta 2 starší zakázky by dostala stejné číslo SoD jako varianta 1' },
+  { nazev: '#366: krycí list OCK bere číslo bez přípony varianty', soubor: '../src/kryci.js',
+    hledej: "        ? sodCisloNavrh(typeof cisloSVariantou === 'function' ? cisloSVariantou(c.zak, c.varianta) : c.zak.cislo) : '') },",
+    nahrad: "        ? sodCisloNavrh(c.zak.cislo) : '') },",
+    proc: 'dvě varianty jedné zakázky by dostaly stejné číslo smlouvy' },
+  { nazev: '#366: krycí list PROJ bez návrhu', soubor: '../src/kryci_proj.js',
+    hledej: "      prefill: c => (typeof sodCisloNavrh === 'function' ? sodCisloNavrh(c.hl.cislo) : '') },",
+    nahrad: "      prefill: c => '' },",
+    proc: 'smlouva projekce by návrh čísla nedostala' },
   /* S13 (16. 10. 2026): příznak ceníku „cena dle nabídky" (varianta A J. V.). */
   { nazev: 'S13: příznak platného ceníku výjimku nezruší', soubor: '../src/vyjimky.js',
     hledej: "          && cenikDleNabidkyJe(dnesni.cenik, r.cesta)) return;",

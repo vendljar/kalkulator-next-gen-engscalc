@@ -111,20 +111,20 @@ const odstavce = async r => {
   return (xml.match(/<w:p[\s>][\s\S]*?<\/w:p>/g) || []).map(x => x.replace(/<[^>]+>/g, '').replace(/ /g, ' ').trim()).filter(Boolean);
 };
 
-console.log('— prázdné Číslo SoD —');
+console.log('— prázdné Číslo SoD = návrh z čísla nabídky (#366) —');
 {
   const proj = await odstavce(await smlouva('sodProj', projB64));
-  ok('SoD PROJ: pod nadpisem zůstal {{SOD_CISLO_SMLOUVY}} k doplnění', proj.includes('číslo {{SOD_CISLO_SMLOUVY}}'), proj.slice(0, 4));
+  ok('SoD PROJ: pod nadpisem návrh „číslo 2026 - OVP - SOD - 0411"', proj.includes('číslo 2026 - OVP - SOD - 0411'), proj.slice(0, 4));
   const ock = await odstavce(await smlouva('sod', ockB64));
-  ok('SoD OCK: pod nadpisem zůstal {{SOD_CISLO_SMLOUVY}} k doplnění', ock.includes('číslo {{SOD_CISLO_SMLOUVY}}'), ock.slice(0, 4));
+  ok('SoD OCK: pod nadpisem návrh „číslo 2026 - OPR - SOD - 0411"', ock.includes('číslo 2026 - OPR - SOD - 0411'), ock.slice(0, 4));
 }
 console.log('— Číslo SoD zapsané v krycích listech —');
 await s.evaluate(() => { ZAK.cislo = '2026 - OPR - CN - 0411'; });
-await napis('kryci', '#page-kryci', '2026 - OPR - SOD - 0411');
+await napis('kryci', '#page-kryci', '2026 - OPR - SOD - 0411R');
 await s.evaluate(() => { ZAK.cislo = '2026 - OVP - CN - 0411'; });
 await napis('kryciproj', '#page-kryciproj', '2026 OVP SOD 0411');
 const ulozeno = await s.evaluate(() => { const d = aktivniVarianta(ZAK).data; return [d.kryci.hodnoty.cisloSod, d.kryciProj.hodnoty.cisloSod]; });
-ok('čísla se uložila do obou krycích listů', ulozeno[0] === '2026 - OPR - SOD - 0411' && ulozeno[1] === '2026 OVP SOD 0411', ulozeno);
+ok('čísla se uložila do obou krycích listů', ulozeno[0] === '2026 - OPR - SOD - 0411R' && ulozeno[1] === '2026 OVP SOD 0411', ulozeno);
 {
   const proj = await odstavce(await smlouva('sodProj', projB64));
   const i = proj.findIndex(t => /na zhotovení projektové dokumentace/.test(t));
@@ -132,7 +132,7 @@ ok('čísla se uložila do obou krycích listů', ulozeno[0] === '2026 - OPR - S
   ok('SoD PROJ: žádný symbol čísla nezůstal a číslo OCK se nepřimíchalo',
     !proj.some(t => /SOD_CISLO_SMLOUVY|OPR - SOD/.test(t)));
   const ock = await odstavce(await smlouva('sod', ockB64));
-  ok('SoD OCK: pod nadpisem „číslo 2026 - OPR - SOD - 0411" (z krycího listu OCK)', ock.includes('číslo 2026 - OPR - SOD - 0411'), ock.slice(0, 4));
+  ok('SoD OCK: pod nadpisem ruční „číslo 2026 - OPR - SOD - 0411R" (z krycího listu OCK)', ock.includes('číslo 2026 - OPR - SOD - 0411R'), ock.slice(0, 4));
 }
 
 await b.close();

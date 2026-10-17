@@ -236,8 +236,9 @@ const docText = async typ => {
   test('SoD realizace nese objednatele', holy.includes('SVJ Zkušební 11'));
   test('známé symboly jsou vyplněné (OBJEDNATEL, CENA_BEZ_DPH, FIRMA_*)',
     !/\{\{(OBJEDNATEL|CENA_BEZ_DPH|FIRMA_NAZEV|FIRMA_ICO)\}\}/.test(holy));
-  test('symboly SOD_* bez dat (číslo smlouvy) zůstaly VIDITELNÉ k ručnímu doplnění',
-    /\{\{SOD_CISLO_SMLOUVY\}\}/.test(holy), (holy.match(/\{\{SOD_[A-Z0-9_]+\}\}/g) || []).join(', '));
+  /* Od v17.10.2 (#366) číslo smlouvy předvyplní návrh z čísla nabídky. */
+  test('#366: číslo smlouvy = návrh z čísla nabídky (2026 - OPR - SOD - 0177)',
+    holy.includes('2026 - OPR - SOD - 0177') && !/\{\{SOD_CISLO_SMLOUVY\}\}/.test(holy), (holy.match(/\{\{SOD_[A-Z0-9_]+\}\}/g) || []).join(', '));
   /* K18-N100 (1. 10. 2026): záruka a splátky z krycího listu OCK. */
   test('K18-N100: záruka a splátky z krycího listu jsou vyplněné (žádný {{SOD_ZARUKA…}} ani {{SOD_SPLATKA…}})',
     !/\{\{SOD_(ZARUKA_MESICU|SPLATKA\d_PROC)\}\}/.test(holy) && /po dobu 60 měsíců/.test(holy),
@@ -304,8 +305,8 @@ const docText = async typ => {
     test('S9: SoD projekce (v3) nese Číslo SoD z krycího listu PROJ pod nadpisem',
       /na zhotovení[\s\u00a0]projektové dokumentace\s*číslo 2026 OVP SOD 0177/.test(v3) && !/SOD_CISLO_SMLOUVY/.test(v3),
       (v3.match(/SMLOUVA O DÍLO.{0,120}/) || [''])[0]);
-    test('S9: SoD projekce (v3) s prázdným Číslem SoD nechá {{SOD_CISLO_SMLOUVY}} k doplnění',
-      /číslo \{\{SOD_CISLO_SMLOUVY\}\}/.test(v3p), (v3p.match(/SMLOUVA O DÍLO.{0,120}/) || [''])[0]);
+    test('S9 + #366: SoD projekce (v3) s prázdným Číslem SoD nese návrh z čísla nabídky',
+      /číslo 2026 - OVP - SOD - 0177/.test(v3p) && !/SOD_CISLO_SMLOUVY/.test(v3p), (v3p.match(/SMLOUVA O DÍLO.{0,120}/) || [''])[0]);
   }
   test('SoD projekce se starou šablonou (8 pevných plateb) a plánem, který v ní nejde vyjádřit: smlouva nevznikne a řekne proč',
     /SODP_PLATEBNI_KALENDAR/.test(vysledek.sodProjStara || ''), vysledek.sodProjStara);

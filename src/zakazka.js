@@ -1535,6 +1535,29 @@ function zakazkaCisloDalsi(cislo) {
   return s.slice(0, zacatek) + doplneno + s.slice(konec + 1);
 }
 
+/* NÁVRH ČÍSLA SMLOUVY O DÍLO (#366, rozhodnutí J. V. 16. 10. 2026): „Aplikace
+ * navrhne další číslo SoD z řady (podle čísla nabídky, např. 2026 - OPR -
+ * SOD - 0412), obchodník může přepsat." Řada SoD se nikde nevede (server
+ * čísla smluv neeviduje), takže návrh je číslo nabídky, ve kterém se kód
+ * dokumentu CN vymění za SOD — pořadí, rok, řada (OPR / OVP), oddělovače
+ * i přípona varianty (.2) zůstávají. Duplicitu tím hlídá číslo nabídky
+ * (zakazkaDuplicita + server); dvě varianty jedné zakázky dostanou různá
+ * čísla díky příponě.
+ *
+ * Starší číslo bez kódu CN („2025-OPR-0640") dostane SOD před poslední
+ * číselnou skupinu se stejným oddělovačem. Nevyplněné číslo (jen předloha)
+ * nebo číslo bez číslic návrh nedá — pole zůstane prázdné. */
+function sodCisloNavrh(cislo) {
+  const s = String(cislo == null ? '' : cislo).trim();
+  if (!hlavickaVyplneno(s)) return '';
+  const cn = /(^|[^A-Za-z\u00C0-\u017F])CN(?![A-Za-z\u00C0-\u017F])/i;
+  if (cn.test(s)) return s.replace(cn, '$1SOD');
+  const m = /^(.*?)(\d+)(\.\d+)?$/.exec(s);
+  if (!m || !/\d/.test(m[2])) return '';
+  const sep = (/[\s\-_/]+$/.exec(m[1]) || [''])[0];
+  return m[1] + 'SOD' + (sep || '-') + m[2] + (m[3] || '');
+}
+
 /* ROZHODNUTÍ O SLEVĚ SE DO KOPIE NEPŘENÁŠÍ (duplikát; od 24. 9. 2026 i klon
  * varianty a alternativa — nález N44 hloubkového testu). Procenta a
  * poznámka zůstávají, zahodí se jen stav a schvalovatel. Převzaté „schváleno"
@@ -1692,7 +1715,7 @@ function zakazkaDuplikuj(zak, noveCislo) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { zakazkaBezCeniku, zakazkaCenikDopln, zakazkaCenikRozdil, zakazkaCenikPouzij, slevaRozhodnutiZahod, zakazkaDuplikuj, zakazkaCisloDalsi, ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, variantaDatum, dnesIso, ZADANI_NOVA, vychoziZakladVolitelne, zadaniRucniMapa, zadaniRucniJe,
+  module.exports = { zakazkaBezCeniku, zakazkaCenikDopln, zakazkaCenikRozdil, zakazkaCenikPouzij, slevaRozhodnutiZahod, zakazkaDuplikuj, zakazkaCisloDalsi, sodCisloNavrh, ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, variantaDatum, dnesIso, ZADANI_NOVA, vychoziZakladVolitelne, zadaniRucniMapa, zadaniRucniJe,
                      zadaniRucniZnac, zadaniRucniZrus, zadaniZCeniku, uvodniFotoObrazky, uvodniFotoSymboly, uvodniFotoPole, ZAKAZKA_SCHEMA, novaZakazka, novaVarianta, novaVariantaData,
                      nastavRidici, ridiciVarianta, aktivniVarianta, importZakazka, StorageAdapter,
                      zakazkaUnikatniId,

@@ -53,7 +53,11 @@ test('jméno souboru SoD nenese zakázané znaky', !/[\\/:*?"<>|]/.test(sod.naze
 /* SOD_* symboly builder NEPLNÍ — mají v dokumentu zůstat vidět k doplnění.
  * Kdyby je plnil prázdnem, zmizely by a nikdo by nevěděl, že tam co chybí. */
 test('symboly SOD_* se neplní (zůstávají viditelné k doplnění)',
-  !('SOD_TERMIN_MONTAZ_OD' in sod.placeholders) && !('SOD_CISLO_SMLOUVY' in sod.placeholders));
+  !('SOD_TERMIN_MONTAZ_OD' in sod.placeholders));
+/* Výjimka od v17.10.2 (#366): číslo smlouvy předvyplní návrh z čísla nabídky. */
+test('SOD_CISLO_SMLOUVY nese návrh z čísla nabídky (#366)',
+  !!sod.placeholders.SOD_CISLO_SMLOUVY && sod.placeholders.SOD_CISLO_SMLOUVY === sodCisloNavrh(cisloSVariantou(zak, v)),
+  sod.placeholders.SOD_CISLO_SMLOUVY);
 
 // ---- SoD projekce = data nabídky PROJ ---------------------------------------
 const sodP = sodProjData(zak, v, 'cz');
@@ -237,7 +241,7 @@ test('a bez firemního údaje se symbol nevyrobí',
   test('P9.4: co už je vyplněné v krycím listu PROJ, se do SoD OCK předvyplní',
     ph9.OBJEDNATEL_KONTAKT_KOPIE1 === 'clen1@svj.cz', ph9.OBJEDNATEL_KONTAKT_KOPIE1);
   test('P9: nevyplněné pole zůstává ve Wordu {{…}} k doplnění',
-    ph9.OBJEDNATEL_KONTAKT_KOPIE2 === undefined && ph9.SOD_CISLO_SMLOUVY === undefined);
+    ph9.OBJEDNATEL_KONTAKT_KOPIE2 === undefined);
   const prazdne = sodData(z9, Object.assign({}, v9, { data: Object.assign({}, v9.data, { kryci: { hodnoty: {} } }) }), JEKLY, 'cz').placeholders;
   test('P9.2: bez termínu v krycím listu se SOD_TERMIN_* neplní', prazdne.SOD_TERMIN_MONTAZ_OD === undefined
     && prazdne.SOD_TERMIN_DOKONCENI === undefined);

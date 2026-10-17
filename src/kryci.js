@@ -71,12 +71,15 @@ const KRYCI_SEKCE = [
       /* varianta ≥ 2 nese příponu .N (19. 8. 2026) */
       prefill: c => (typeof cisloSVariantou === 'function' ? cisloSVariantou(c.zak, c.varianta) : c.zak.cislo),
       src: 'hlavička kalkulace' },
-    /* Číslo smlouvy o dílo realizace (zadání J. V. 15. 10. 2026, v15.10.9):
-     * ruční pole bez předvyplnění — návrh dalšího čísla řady (#366) čeká na
-     * čísla papírových smluv. Sekce není v KRYCI_NABIDKA_SEKCE, takže se dá
-     * doplnit i po odeslání nabídky; zamkne ho až tisk SoD. Ve smlouvě plní
-     * {{SOD_CISLO_SMLOUVY}}, prázdné pole nechá symbol vidět k doplnění. */
-    { id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'ručně', sod: 'SOD_CISLO_SMLOUVY' },
+    /* Číslo smlouvy o dílo realizace (zadání J. V. 15. 10. 2026, v15.10.9).
+     * Od v17.10.2 (#366) předvyplněné NÁVRHEM z čísla nabídky (CN → SOD,
+     * sodCisloNavrh); ruční přepis má přednost, ↺ vrátí návrh. Sekce není
+     * v KRYCI_NABIDKA_SEKCE, takže se dá doplnit i po odeslání nabídky;
+     * tisk SoD ho zamkne a návrh opíše do dat (kryciZmrazSod). Ve smlouvě
+     * plní {{SOD_CISLO_SMLOUVY}}, prázdné pole nechá symbol vidět. */
+    { id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'návrh z čísla nabídky', sod: 'SOD_CISLO_SMLOUVY',
+      prefill: c => (typeof sodCisloNavrh === 'function'
+        ? sodCisloNavrh(typeof cisloSVariantou === 'function' ? cisloSVariantou(c.zak, c.varianta) : c.zak.cislo) : '') },
     { id: 'adresaStavby', label: 'Adresa stavby', verze: ['bo', 'techdata'], bind: 'ZAK.adresa', prefill: c => c.zak.adresa, src: 'hlavička kalkulace' },
     /* KL-2: jen část OCK po slevě. Projekce má vlastní krycí list PROJ. */
     { id: 'hodnotaBezDph', label: 'Hodnota zakázky bez DPH', verze: ['bo', 'techdata'], prefill: c => c.hodnota, src: 'z nabídky OCK (po slevě)' },
