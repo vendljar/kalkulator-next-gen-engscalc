@@ -349,6 +349,61 @@ karta výjimek rozsah ukazuje. Rozhodnutí s pásem „jiné" vydaná před
 v16.10.1 přešla do „čeká znovu" (jako u B154). Částky v kartě a princip
 čtyř očí zůstávají u B165.
 
+## Audit kola 26 — B178 a B179 (opraveno v17.10.4, rozhodnutí J. V. 17. 10. 2026)
+
+### B178 — výška a rozměry stěny u schváleného pásu „jiné" — OPRAVENO v17.10.4
+
+**Původní mez (do v17.10.1):** obsah výjimky nesl rozsah pásu tak, jak je
+zadaný (poslední pás `doM: null`), ne horní hranu stěny. Schválený úzký pás
+nahoře šel po schválení roztáhnout zvýšením zdvihu (pokus kola 26: 9 → 40 m,
+plocha 2,37 → 62,79 m², zámek 200; `podklady/AUDIT26_pokus_B178_vyska.mjs`).
+
+**Oprava:** meze pásů počítá jediná funkce `oplasteniPasyMeze`
+(`src/engine.js`) pro výpočet i výjimku — horní hrana `zdvih + přejezd`,
+ořez mezilehlých pásů, pás nulové výšky vypadne. Obsah `p` =
+`[stěna, i, název, sazba, odM, doM po ořezu, délka stěny ze zadání]`
+(A, C = šířka, B, D = hloubka). Karta výjimek ukazuje rozsah a **plochu
+pásu v m² z výpočtu jádra** (`vyjimkyPasyPlochy`, navazuje B165). Výjimky
+s pásem „jiné" schválené před v17.10.4 přešly do „čeká znovu".
+
+**Co zůstává (vědomá mez, k rozhodnutí):**
+- Obsah nese **délku stěny ze zadání**, ne vnější rozměr, se kterým počítá
+  jádro (profily a způsob zasklení ho mění o centimetry). Změna profilu nebo
+  zasklení po schválení plochu pásu posune o jednotky procent, obsah ne.
+- **Světlíky u dveří** berou materiál podle převažujícího typu pásů stěn
+  B–D. Pás „jiné", který převažuje, se tak promítne i do světlíků; jejich
+  plocha závisí na dveřích (počet nástupišť, šířka vstupu), které obsah
+  výjimky nenese. Schválení pásu tak kryje i světlíky v počtu a velikosti,
+  jaké má šachta později. Řešení by bylo dát do obsahu plochu světlíků
+  z výsledku jádra (server ho umí spočítat, `zamekVysledekSpocti`).
+
+### B179 — příznak „cena dle nabídky" mimo příplatky a z ceníku varianty — OPRAVENO v17.10.4
+
+**Původní mez (do v17.10.1):** očista mapy `dleNabidky` pustila každou
+známou číselnou cestu OCK (i `C.montazHodKc`) a zveřejnění bralo mapu
+z ceníku otevřené varianty — i té, kterou uložil obchodník (pokus kola 26:
+montáž za 1 Kč/h bez schválení, zámek 200;
+`podklady/AUDIT26_pokus_B179_priznak.mjs`).
+
+**Oprava (J. V. 17. 10. 2026: příznak jen u příplatků):**
+`cenikDleNabidkySmi` pustí jen `C.priplatky.*` — v očistě (server
+i prohlížeč) i v `cenikDleNabidkyJe`, takže příznak u montáže v platné verzi
+zveřejněné před opravou nic nepovolí. Mapa pro zveřejnění =
+`cenikDleNabidkyProZverejneni(platný ceník, změny správce v relaci)`;
+ceník varianty se nečte (`progKontext`, sloupec Nastavení → Ceník).
+
+**Co zůstává:** server mapu od správce přijme tak, jak ji pošle (očištěnou
+na příplatky) — správce smí příznak u příplatku vědomě nastavit. Starý
+klient (před v17.10.4) by dál posílal mapu z varianty; server z ní pustí
+jen příplatky.
+
+### B181 — znění hlášky výjimky podle razítka ceníku z požadavku (mez znění)
+
+Znění „<položka>: cena pod ceníkem" vs. „směs platného ceníku a starších
+cen" se volí podle `cenikRazitko.verze` z těla požadavku — upravený klient
+si vybere znění. Obsah výjimky ani platnost schválení to nemění (karta dál
+vypisuje názvy položek). Zapsáno jako mez (audit kola 26).
+
 ### B157 — volná pole krycího listu cizí odeslané nabídky (záměrné chování)
 
 **Co dělá:** po odeslání nabídky zůstávají v krycím listu volná pole (mimo

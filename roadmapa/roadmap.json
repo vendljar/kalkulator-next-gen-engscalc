@@ -6630,16 +6630,16 @@
   {
    "id" : "424",
    "vlna" : "B",
-   "stav" : "ceka",
+   "stav" : "hotovo",
    "dulezitost" : "stredni",
    "slozitost" : "M",
    "nazev" : "Audit kola 26 (B178–B182): dva střední ve schvalování výjimek, B180 opraven",
    "proc" : "Bezpečnostní audit 17. 10. 2026 nad v16.10.5 (`podklady/AUDIT_2026-10-17_v16.10.5.md`, dávka N2, okno O4): 0 kritických a vysokých, 2 střední (B178, B179), 1 nízký (B180 opraven ve v17.10.1), 2 informativní (B181, B182). Regrese B151–B167: 0.",
    "detail" : "B178 (střední): schválený pás „jiné“ až nahoru se po schválení zvětší zvýšením zdvihu (obsah výjimky nese zadané meze, ne horní hranu stěny ani její délku) — pokus: zdvih 9 → 40 m, plocha 26×, zámek 200. Návrh: do obsahu skutečné meze po ořezu a délku stěny (sdílená funkce s jádrem), nebo plochu z výsledku. B179 (střední): příznak „cena dle nabídky“ přechází do platného ceníku z ceníku otevřené varianty a očista pustí každou číselnou cestu OCK (i montáž) — pokus: obchodníkova mapa → zveřejnění správce → montáž za 1 Kč/h bez schválení 200. Návrh: příznak jen v `C.priplatky.*` a mapa při zveřejnění z platného ceníku a výslovných změn správce. B180 (nízká, OPRAVENO v17.10.1): rozpis zveřejnění ukazuje změny příznaků. B181 a B182 informativní.",
    "hotovoKdyz" : "B178 a B179 opravené s testem (pokusy `podklady/AUDIT26_pokus_B178_vyska.mjs` a `podklady/AUDIT26_pokus_B179_priznak.mjs` převedené do sad, po opravě 403) a mutacemi; B181 zapsaný v `BEZPECNOST_MEZE.md`.",
-   "kde" : "`src/vyjimky.js`, `src/engine.js` (`oplPasyStenyMeze`), `src/cenik.js` (`cenikDleNabidkyOciste`), `src/ui/program_ui.js` (`progKontext`), `src/ui/cenik_ui.js`, `netlify/test_vyjimky.mjs`, `netlify/test_cena_dle_nabidky.mjs`",
-   "otazka" : "B179: smí příznak „cena dle nabídky“ nést i položka mimo příplatky (montáž, profily)? Doporučení: ne. B178: má schvalovatel v kartě vidět plochu pásu (m²)? Souvisí s B165.",
-   "pozn" : "Předběžné id (přidělí koordinace při sloučení). Oprava B178 a B179 v okně O6 (samostatná dávka)."
+   "kde" : "`src/vyjimky.js`, `src/engine.js` (`oplasteniPasyMeze`, `oplPasyStenyMeze`), `src/ui/schvalovani_ui.js`, `src/cenik.js` (`cenikDleNabidkyOciste`), `src/ui/program_ui.js` (`progKontext`), `src/ui/cenik_ui.js`, `netlify/test_vyjimky.mjs`, `netlify/test_cena_dle_nabidky.mjs`",
+   "hotovoV" : "v17.10.4",
+   "pozn" : "Předběžné id (přidělí koordinace při sloučení). Rozhodnutí J. V. 17. 10. 2026: příznak jen u příplatků; schvalovatel vidí plochu pásu (m²). Oprava v okně O6 (větev `claude/o6-b178-b179` nad `claude/kolo26-audit`, v17.10.4): B178 — sdílená `oplasteniPasyMeze` (jádro i výjimka), obsah nese meze po ořezu a délku stěny, karta plochu z jádra (`vyjimkyPasyPlochy`); B179 — `cenikDleNabidkySmi` (jen `C.priplatky.*`), mapa pro zveřejnění `cenikDleNabidkyProZverejneni` (platný ceník + změny správce). Zbytek B178 (světlíky, vnější rozměr stěny) a B181 v `BEZPECNOST_MEZE.md`."
   }
  ],
  "meta" : {
