@@ -1,3 +1,23 @@
+# Předávka — 17. 10. 2026: dávka A2 (v17.10.3), větev `claude/a2-mustky` — můstky (#355, #356)
+
+Nad `origin/claude/integrace-16-10` (e2c773a, v16.10.5). Do `test-draft` / `test` / `main` nic —
+slučuje koordinace (session_011B3ruyPigNEMSUdesbk4Hd). Podrobnosti: CHANGELOG v17.10.3.
+
+- **Hotovo (pushnuto, commit po bodech):** #355 pravidlo kontrol `mustkyPrechodove` (výpočet
+  beze změny, upozornění ne zábrana, CZ/EN/DE/FR); #356 jádro přičte střechu přes nejvyšší
+  můstek do ZASTŘEŠENÍ ŠACHTY (EXT) i příplatku za měď + upozornění `mustekStrecha` při chybějících
+  rozměrech; příručka (kap. 11, Co je nového v17.10.3), roadmapa #355/#356 → hotovo.
+- **Testy před → po:** test_mustky 34/8 → 42/0 (#355), 53/6 → 59/0 (#356); test_kontroly
+  137/1 → 138/0 (37 pravidel); test_profil_neznamy otisky beze změny (30/0); fuzz 19/0.
+  Mutace jádra +8, cílený běh 8/8, `--kontrola` 227.
+- **Čeká na J. V. (přes koordinaci):** potvrdit výchozí volby #356 (a) přesah 0,2 m do šířky,
+  do hloubky nic; (b) do stávající položky zastřešení i mědi; (c) oplechování beze změny;
+  (d) podmínka můstků ≥ nadzemní nástupiště, bez nového pole; (e) Model 1 i 2.
+- **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `manual/obsah.json`
+  (Co je nového) / počet pravidel v `src/test_kontroly.js` a `overit_lista.mjs` (37).
+  Záhlaví „verze“ v `manual/obsah.json` jsem neměnil (nastaví koordinace).
+- **Další krok:** žádný — dávka uzavřená.
+
 # Předávka — 16. 10. 2026: dávka V4 (v16.10.5), větev `claude/v4-kontrola-rozhodnuti` — kontrola rozhodnutí 15.–16. 10.
 
 Nad `origin/claude/integrace-16-10` (= test v15.10.14). Do `test-draft` / `test` / `main` nic —

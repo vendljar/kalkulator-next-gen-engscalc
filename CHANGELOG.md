@@ -8,6 +8,37 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v17.10.3 — můstky: přechodové plechy a střecha (větev claude/a2-mustky)
+
+Dávka A2 (zadání koordinace „ŘÍDÍCÍ 16.10“, plán víkendu), nad
+`origin/claude/integrace-16-10` (e2c773a, v16.10.5). Rozhodnutí J. V.
+16. 10. 2026 k roadmapě #355 a #356.
+
+- **#355 hotovo — přechodové plechy u můstků jen upozorní:** výpočet beze
+  změny. Nové pravidlo kontrol před nabídkou `mustkyPrechodove`: má-li
+  šachta můstky a přechodové plechy jsou v základní ceně nebo v příplatcích
+  nabídky, řekne počet můstků, počet nástupišť a které řádky (materiál /
+  montáž) se za všechna nástupiště počítají — ať obchodník zváží ruční
+  úpravu. Upozornění, ne zábrana (tisk CZ/EN/DE/FR nezastaví); příplatky
+  vynechané z nabídky se nehlásí. `src/test_mustky.js` 34/8 → 42/0.
+- **#356 hotovo — střecha EXT přes nejvyšší můstek se připočte:** je-li
+  můstek i v nejvyšším nástupišti (můstků ≥ nadzemní nástupiště, táž
+  podmínka jako věta specifikace), přičte jádro k ZASTŘEŠENÍ ŠACHTY (EXT)
+  i k PŘÍPLATKU ZA STŘECHU V MĚDI plochu (šířka můstku + 0,2 m) × hloubka
+  můstku. Model 1 i 2; oplechování k fasádě beze změny; bez rozměrů můstku
+  nic navíc a upozornění `mustekStrecha`. Výsledek nese `strecha`
+  (`m2`, `mustekNahore`, `mustekM2`). **Výchozí volby (a)–(e) poslány
+  koordinaci k potvrzení J. V.** Ruční reference: výchozí šachta 1,51 ×
+  1,515 m, můstek 1 300 × 900 mm → 2,76165 + 1,35 = 4,11165 m²
+  (zkušební ceník 13 808,25 → 20 558,25 Kč nákladu). `src/test_mustky.js`
+  53/6 → 59/0. Zakázky bez můstku nebo s můstky jen níž beze změny:
+  otisky výsledku v `src/test_profil_neznamy.js` sedí (pole `strecha` do
+  otisku nevstupuje), fuzz `src/test_fuzz_invarianty.js` 19/0.
+- Kontroly mají 37 pravidel (`src/test_kontroly.js`, `overit_lista.mjs`).
+- Mutace jádra +8 (#356 4, #355 3, `mustekStrecha` 1).
+- Příručka: kapitola 11 (můstky) a „Co je nového ve verzi v17.10.3“;
+  roadmapa #355 a #356 → hotovo.
+
 ## v16.10.5 — kontrola rozhodnutí 15.–16. 10. (větev claude/v4-kontrola-rozhodnuti)
 
 Dávka V4 (zadání koordinace „ŘÍDÍCÍ 16.10“, plán víkendu), nad
