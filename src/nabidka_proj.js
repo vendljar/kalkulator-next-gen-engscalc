@@ -958,6 +958,8 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
     + (L !== 'cz' ? '_' + L.toUpperCase() : '')).replace(/[\\/:*?"<>|]+/g, '-');
 
   return { placeholders, bloky, rekapitulace, jazyk: L, nazevSouboru, platbyProj,
+    /* Sekce kalkulace, které tato nabídka oceňuje — rozsah díla SoD PROJ (#380 Q7). */
+    nabizeneSekce: NABIDKA_PROJ_SEKCE.filter(k => !!cenaSekce(k)),
     /* Úvodní fotka nabídky PROJ. Je to VLASTNÍ fotka projekční nabídky
      * (zak.uvodniFotoProj), ne ta z nabídky OCK: obě nabídky odcházejí
      * samostatně a projekce se často prodává bez šachty. Když ji šablona

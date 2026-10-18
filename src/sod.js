@@ -148,6 +148,7 @@ function sodProjData(zak, varianta, lang, sablona) {
    * Co obchodník nevyplnil, zůstane ve Wordu vidět jako {{…}}. */
   if (typeof kryciProjSodSymboly === 'function') kryciProjSodSymboly(zak, varianta, d.placeholders);
   sodProjPlatby(d, sablona);
+  sodProjRozsah(d, L);
   /* Pokuta za prodlení zhotovitele = pokuta za nedodržení termínu (Q6). */
   if (typeof kryciProjPoleHodnota === 'function') {
     const pryc = sodPokutaZhotovitele(d.placeholders, sablona, 'PODM_POKUTA_TERMIN_PROC',
@@ -156,6 +157,45 @@ function sodProjData(zak, varianta, lang, sablona) {
   }
   return Object.assign({}, d,
     { nazevSouboru: nazev.replace(/[\\/:*?"<>|]+/g, '-') });
+}
+
+/* ROZSAH DÍLA SoD PROJ PODLE NABÍDKY (#380 Q7, rozhodnutí J. V. 17. 10. 2026,
+ * varianta B). Šablona v3 měla v příloze č. 1 natvrdo „… na vypracování
+ * dokumentace DPZ+DSP včetně zajištění inženýringu …" a v čl. II a III všech
+ * sedm činností bez ohledu na nabídku. Šablona v4 má větu přílohy se symbolem
+ * {{SODP_ROZSAH_DILA}} a každou činnost v čl. II i III ve značkách
+ * {{CIN_<X>_ZAC}}/{{CIN_<X>_KON}}. Činnost, kterou nabídka neoceňuje, jde do
+ * `blokyPryc` a zmizí z předmětu díla i z termínů (číslování odrážek dělá Word,
+ * zůstane souvislé). Sekce kalkulace podle vět osmi plateb staré šablony
+ * (PLAN_SODP_STARE_CINNOST): IČ DOSS i povolení záměru = inženýrská činnost,
+ * výběr dodavatele navazuje na ekonomickou zadávací část. Studie, projednání,
+ * kolaudaci ani geodetické zaměření šablona v předmětu díla nemá — do výčtu
+ * nepatří. Názvy jsou plné jako v čl. II. Bez nabízené činnosti symbol zůstane
+ * ve Wordu vidět k doplnění. Šablona v3 (bez značek a symbolu) se nemění. */
+const SODP_CINNOSTI = [
+  { blok: 'CIN_ZAMERENI', sekce: 'zamereni', nazev: 'Zaměření a zpracování výstupů' },
+  { blok: 'CIN_DPZ', sekce: 'dpz', nazev: 'Dokumentace pro povolení záměru' },
+  { blok: 'CIN_IC_DOSS', sekce: 'ic', nazev: 'Inženýrská činnost DOSS' },
+  { blok: 'CIN_POVOLENI', sekce: 'ic', nazev: 'Podání žádosti na příslušný stavební úřad a vyřízení povolení záměru' },
+  { blok: 'CIN_DPS', sekce: 'dps', nazev: 'Dokumentace pro provedení stavby' },
+  { blok: 'CIN_EZC', sekce: 'ezc', nazev: 'Ekonomická zadávací část' },
+  { blok: 'CIN_VYBER', sekce: 'ezc', nazev: 'Výběr dodavatele pro realizaci záměru' },
+];
+/* Výčet činností do věty přílohy: „zaměření a zpracování výstupů, …
+ * a výběr dodavatele pro realizaci záměru". Kdyby J. V. chtěl zkratky
+ * (DPZ, IČ, DPS, EZČ), mění se jen tahle funkce. */
+function sodProjRozsahText(nazvy, L) {
+  const P = t => (L && L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
+  const n = nazvy.map(P).map((t, i) => (L === 'de' ? t : t.charAt(0).toLowerCase() + t.slice(1)));
+  const a = { en: ' and ', de: ' und ', fr: ' et ' }[L] || ' a ';
+  return n.length < 2 ? (n[0] || '') : n.slice(0, -1).join(', ') + a + n[n.length - 1];
+}
+function sodProjRozsah(d, L) {
+  const nab = (d && d.nabizeneSekce) || [];
+  const ano = SODP_CINNOSTI.filter(c => nab.indexOf(c.sekce) >= 0);
+  const pryc = SODP_CINNOSTI.filter(c => ano.indexOf(c) < 0).map(c => c.blok);
+  if (ano.length) d.placeholders.SODP_ROZSAH_DILA = sodProjRozsahText(ano.map(c => c.nazev), L);
+  if (pryc.length) d.blokyPryc = (d.blokyPryc || []).concat(pryc);
 }
 
 /* PLATBY SMLOUVY Z PLÁNU PLATEB (etapa B, P9.3 — rozhodnutí J. V. 29. 9. 2026).
@@ -294,4 +334,4 @@ if (typeof dokumentRegistruj === 'function') {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { sodData, sodProjData, plnaMocData, sodObjednatelDoplna, sodVedouciMontaziDoplna, sodPokutaZhotovitele };
+  module.exports = { sodData, sodProjData, sodProjRozsahText, SODP_CINNOSTI, plnaMocData, sodObjednatelDoplna, sodVedouciMontaziDoplna, sodPokutaZhotovitele };

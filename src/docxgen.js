@@ -334,8 +334,15 @@ function docxVyvazene(fr) {
   return n(/<w:tbl[\s>]/g) === n(/<\/w:tbl>/g) && n(/<w:tr[\s>]/g) === n(/<\/w:tr>/g)
     && n(/<w:tc[\s>]/g) === n(/<\/w:tc>/g) && n(/<w:p(?:\s[^>]*)?(?<!\/)>/g) === n(/<\/w:p>/g);
 }
-function odstranPrazdneBloky(xml, ph) {
+/* BLOK, KTERÝ DO DOKUMENTU NEPATŘÍ (#380 Q7, rozhodnutí J. V. 17. 10. 2026).
+ * Činnost v předmětu díla a v termínech SoD PROJ v4 je pevný text bez
+ * symbolu — prázdnou hodnotou se zmizet nedá. Builder proto dodá výslovný
+ * seznam jmen bloků (`blokyPryc`, např. CIN_EZC), které zmizí celé i s obsahem
+ * (jako `odstavcePryc` u vět, K18-N101). Blok, o kterém builder nic neřekl,
+ * se řídí obsahem jako dřív. */
+function odstranPrazdneBloky(xml, ph, blokyPryc) {
   if (!/_(?:ZAC|KON)(?:<[^>]+>)*\}/.test(xml)) return xml;       // šablona bez značek
+  const pryc = Array.isArray(blokyPryc) ? blokyPryc : [];
   const bezZnacky = (x, z) => (docxVBunce(x, z.zac) ? '<w:p/>' : '');
   for (let kolo = 0; kolo < 500; kolo++) {
     const zn = docxZnackyBloku(xml);
@@ -346,8 +353,8 @@ function odstranPrazdneBloky(xml, ph) {
     const [a, b] = par;
     const uvnitr = xml.slice(a.kon, b.zac);
     const klice = klicePlaceholderu(uvnitr);
-    const prazdny = klice.length > 0 && docxVyvazene(uvnitr)
-      && klice.every(k => ph && ph[k] != null && jePrazdnaHodnota(ph[k]));
+    const prazdny = docxVyvazene(uvnitr) && (pryc.indexOf(a.jmeno) >= 0
+      || (klice.length > 0 && klice.every(k => ph && ph[k] != null && jePrazdnaHodnota(ph[k]))));
     xml = prazdny ? xml.slice(0, a.zac) + xml.slice(b.kon)
       : xml.slice(0, a.zac) + bezZnacky(xml, a) + uvnitr + bezZnacky(xml, b) + xml.slice(b.kon);
   }
@@ -814,7 +821,7 @@ async function docxVyplnSablonu(arrayBuffer, placeholders, priplatky, obrazky, v
         po = odstranPrazdneTsRadky(po, placeholders);   // prázdné/„-“ řádky TS pryč
       }
       po = odstranOdstavceSeSymboly(po, volby && volby.odstavcePryc);   // věty, které do dokumentu nepatří (K18-N101)
-      po = odstranPrazdneBloky(po, placeholders);       // prázdné kapitoly se značkami pryč (P8A)
+      po = odstranPrazdneBloky(po, placeholders, volby && volby.blokyPryc);   // prázdné kapitoly (P8A) a nenabízené činnosti SoD PROJ (#380)
       po = rozvinRadkyZaRadek(po, placeholders);        // věty o dílčích dokladech OCK: řádek tabulky za větu (etapa A)
       po = rozvinOdstavceZaRadek(po, placeholders);     // seznam plateb: odstavec za platbu (etapa B)
       po = nahradPlaceholdery(po, placeholders);
