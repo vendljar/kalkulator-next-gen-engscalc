@@ -6658,6 +6658,7 @@
    "kde" : "`netlify/lib/vyjimky_server.mjs` (vyjimkyServerKontrola), `src/vyjimky.js` (vyjimkaSmiRozhodnout), `src/ui/schvalovani_ui.js`",
    "hotovoKdyz" : "Vlastní výjimku schválí jen administrátor; test i mutace.",
    "pozn" : "ROZHODNUTÍ J. V. 18. 10. 2026: zatím ponechat (systém se testuje), do budoucna změnit — zapsáno jako budoucí bod.",
+   "cekaNa" : "Odloženo J. V. 18. 10. 2026: zatím ponechat, systém se testuje — do budoucna změnit (vlastní výjimku schválí jen administrátor).",
    "hotovoV" : "—"
   }
  ],
