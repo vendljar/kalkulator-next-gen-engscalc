@@ -188,8 +188,12 @@ const vygeneruj = async (sablonaAb, cislo) => {
     const g = await vygeneruj(sablonaAb, '2026 OVP SOD 0021');
     test(jm + ' (Disk): vygenerovaná SoD PROJ nese číslo z krycího listu PROJ',
       g.text.some(t => /číslo 2026 OVP SOD 0021/.test(t)) && g.xml.indexOf(SYM) < 0, g.text.slice(0, 5));
+    /* Od v17.10.2 (#366) prázdné pole předvyplní návrh z čísla nabídky; {{…}} zůstane jen u pole s mezerami. */
     const p = await vygeneruj(sablonaAb);
-    test(jm + ' (Disk): bez čísla zůstane {{' + SYM + '}} k doplnění', p.xml.indexOf('{{' + SYM + '}}') >= 0);
+    test(jm + ' (Disk): prázdné Číslo SoD → návrh z čísla nabídky (#366)',
+      p.text.some(t => /číslo 2026 - OVP - SOD - 0411/.test(t)) && p.xml.indexOf(SYM) < 0, p.text.slice(0, 5));
+    const m = await vygeneruj(sablonaAb, '   ');
+    test(jm + ' (Disk): jen mezery v Čísle SoD → {{' + SYM + '}} zůstane k doplnění', m.xml.indexOf('{{' + SYM + '}}') >= 0);
   }
   if (!skutecnych) console.log('–    skutečné šablony SoD PROJ (KNG_PODKLADY) nejsou po ruce — přeskočeno');
   konec();
