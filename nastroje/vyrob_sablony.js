@@ -101,6 +101,15 @@
  *         (z v2) — pod nadpisem „SMLOUVA O DÍLO / na zhotovení projektové
  *         dokumentace" řádek „číslo {{SOD_CISLO_SMLOUVY}}" jako u realizace.
  *
+ * SoD PROJ v4 — rozsah díla podle nabídky (#380 Q7, rozhodnutí J. V. 17. 10. 2026):
+ *   node nastroje/vyrob_sablony.js --sod-proj-v4 <složka podkladů> [výstupní složka]
+ * Vstup:  Sablona_SOD_PROJEKCE_v3.docx
+ * Výstup: Sablona_SOD_PROJEKCE_v4.docx — věta přílohy č. 1 se symbolem
+ *         {{SODP_ROZSAH_DILA}} místo pevného „DPZ+DSP …", činnosti čl. II a III
+ *         ve značkách {{CIN_<X>_ZAC}}/{{CIN_<X>_KON}} (nenabízená zmizí),
+ *         ověřený odkaz na odstavec v čl. VII. Jen česky — EN/DE/FR přegeneruje
+ *         nastroje/preklad_sod.js.
+ *
  * Jazykové mutace vyrábí tentýž překlad šablony, jaký používá aplikace
  * v Nastavení → Šablony (docxPrelozSablonu); skript vypíše, co zůstalo
  * česky, a každý soubor ověří (platné XML, symboly shodné s češtinou).
@@ -121,6 +130,7 @@ const REZIM_SOD_REAL = REZIM === '--sod-real';
 const REZIM_SOD_CISLO = REZIM === '--sod-proj-cislo';
 const REZIM_CN15 = REZIM === '--cn-v15';
 const REZIM_V5 = REZIM === '--proj-v5';
+const REZIM_SOD_V4 = REZIM === '--sod-proj-v4';
 const ARGY = REZIM ? process.argv.slice(3) : process.argv.slice(2);
 const PODKLADY = ARGY[0] || process.env.KNG_PODKLADY;
 const VYSTUP = ARGY[1] || PODKLADY;
@@ -662,6 +672,102 @@ function sodProjCislo(xml, zaznam) {
   z.push('pod nadpis „SMLOUVA O DÍLO / ' + SODP_PODTITUL + '" přibyl řádek „číslo {{SOD_CISLO_SMLOUVY}}"');
   return t.pred + body.slice(0, sp[0].kon) + novy + body.slice(sp[0].kon) + t.po;
 }
+/* ---------- SoD PROJ v4: rozsah díla podle nabídky (#380 Q7) ----------
+ * Rozhodnutí J. V. 17. 10. 2026 (varianta B). v3 měla v příloze č. 1 větu
+ * „… na vypracování dokumentace DPZ+DSP včetně zajištění inženýringu tj.
+ * zajištění vydání povolení záměru včetně nabytí právní moci …" a v čl. II
+ * a III všech sedm činností natvrdo. v4:
+ *  – věta přílohy „… na činnosti: {{SODP_ROZSAH_DILA}} – objekt …" (symbol
+ *    v jednom běhu s písmem původního textu),
+ *  – každá činnost v čl. II (Předmět díla) i čl. III (Termíny plnění) mezi
+ *    značkami {{CIN_<X>_ZAC}}/{{CIN_<X>_KON}} i s prázdným odstavcem PŘED ní
+ *    (mezera mezi odrážkami) — nenabízená zmizí celá, písmena odrážek
+ *    přečísluje Word. Věta o předání díla v čl. III ve značkách není.
+ *  – odkaz „dle odst. N." v čl. VII na odstavec o potvrzení oznámení poštou
+ *    se ověří podle číslování článku (a opraví, kdyby neseděl).
+ * Činnost se pozná podle začátku textu odrážky (kotvy níž); každá musí být
+ * v článku právě jednou — jinak chyba, nic se nehádá. */
+const SODP_V4_CINNOSTI = [
+  ['CIN_ZAMERENI', 'Zaměření a zpracování výstupů', 'Zaměření a zpracování výstupů'],
+  ['CIN_DPZ', 'Dokumentace pro povolení záměru', 'Dokumentace pro povolení záměru'],
+  ['CIN_IC_DOSS', 'Inženýrská činnost DOSS', 'Inženýrská činnost DOSS'],
+  ['CIN_POVOLENI', 'Podání žádosti na příslušný stavební úřad', 'Vyřízení povolení záměru'],
+  ['CIN_DPS', 'Dokumentace pro provedení stavby', 'Dokumentace pro provedení stavby'],
+  ['CIN_EZC', 'Ekonomická zadávací část', 'Ekonomická zadávací část'],
+  ['CIN_VYBER', 'Výběr dodavatele pro realizaci záměru', 'Výběr dodavatele pro realizaci záměru'],
+];
+const SODP_V4_PRILOHA = 'na vypracování dokumentace DPZ+DSP včetně zajištění inženýringu tj. zajištění vydání povolení záměru včetně nabytí právní moci';
+/* Značka bloku SoD bez stylu (šablona smlouvy styl „Bezmezer" nemusí mít). */
+const znackaSod = jmeno => '<w:p><w:pPr><w:rPr><w:color w:val="A6A6A6"/><w:sz w:val="14"/></w:rPr></w:pPr>'
+  + '<w:r><w:rPr><w:color w:val="A6A6A6"/><w:sz w:val="14"/></w:rPr><w:t>{{' + jmeno + '}}</w:t></w:r></w:p>';
+function sodProjV4(xml, zaznam) {
+  const t = tělo(xml);
+  let body = t.body;
+  const z = Array.isArray(zaznam) ? zaznam : [];
+  if (dg.klicePlaceholderu(body).some(k => k === 'SODP_ROZSAH_DILA' || /^CIN_.+_(ZAC|KON)$/.test(k)))
+    chyba('SoD PROJ: šablona už rozsah díla {{SODP_ROZSAH_DILA}} nebo značky činností {{CIN_…}} má');
+  const norm = s => s.replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
+  const top = () => prvkyTela(body).map(el => Object.assign(el, { text: norm(textPrvku(body.slice(el.zac, el.kon))) }));
+  const clanek = (prvky, nadpis) => {
+    const i = prvky.findIndex(el => el.tag === 'p' && el.text.toLowerCase() === nadpis.toLowerCase());
+    if (i < 0) chyba('SoD PROJ: chybí nadpis článku „' + nadpis + '" — nic nehádám');
+    const j = prvky.findIndex((el, k) => k > i && el.tag === 'p' && /^[IVX]+\. \S/.test(el.text));
+    return [i + 1, j < 0 ? prvky.length : j];
+  };
+  /* 1) bloky činností v čl. II a III (odzadu, ať sedí pozice) */
+  const vlozit = [];
+  [['II. Předmět Díla', 1], ['III. Termíny plnění', 2]].forEach(([nadpis, sl]) => {
+    const prvky = top();
+    const [od, po] = clanek(prvky, nadpis);
+    SODP_V4_CINNOSTI.forEach(c => {
+      const kotva = c[sl];
+      const nal = [];
+      for (let k = od; k < po; k++) if (prvky[k].tag === 'p' && prvky[k].text.indexOf(kotva) === 0) nal.push(k);
+      if (nal.length !== 1) chyba('SoD PROJ: v čl. „' + nadpis + '" čekám právě jednu odrážku „' + kotva + ' …", je jich ' + nal.length + ' — nic nehádám');
+      const k = nal[0];
+      const pred = prvky[k - 1];
+      const zac = (k - 1 >= od && pred.tag === 'p' && !pred.text && !/<w:numPr>/.test(body.slice(pred.zac, pred.kon))) ? pred.zac : prvky[k].zac;
+      vlozit.push({ zac, kon: prvky[k].kon, jmeno: c[0] });
+    });
+    z.push('čl. ' + nadpis + ': ' + SODP_V4_CINNOSTI.length + ' činností ve značkách {{CIN_…_ZAC}}/{{CIN_…_KON}}');
+  });
+  vlozit.sort((a, b) => b.zac - a.zac).forEach(v => {
+    body = body.slice(0, v.zac) + znackaSod(v.jmeno + '_ZAC') + body.slice(v.zac, v.kon) + znackaSod(v.jmeno + '_KON') + body.slice(v.kon);
+  });
+  /* 2) věta přílohy č. 1 */
+  const sp = odstavceSTextem(body, tx => tx.indexOf(SODP_V4_PRILOHA) >= 0);
+  if (sp.length !== 1) chyba('SoD PROJ: čekám právě jednu větu přílohy „… ' + SODP_V4_PRILOHA + ' …", je jich ' + sp.length + ' — nic nehádám');
+  {
+    const p = body.slice(sp[0].zac, sp[0].kon);
+    const i = dg.odstavecText(p).replace(/ /g, ' ').indexOf(SODP_V4_PRILOHA);
+    body = body.slice(0, sp[0].zac) + prepisUsekOdstavce(p, i, i + SODP_V4_PRILOHA.length, 'na činnosti: {{SODP_ROZSAH_DILA}}') + body.slice(sp[0].kon);
+    z.push('příloha č. 1: „' + SODP_V4_PRILOHA + '" → „na činnosti: {{SODP_ROZSAH_DILA}}"');
+  }
+  /* 3) odkaz v čl. VII na odstavec o potvrzení oznámení poštou */
+  {
+    const prvky = top();
+    const [od, po] = clanek(prvky, 'VII. Komunikace smluvních stran');
+    let n = 0, cil = 0, ref = -1;
+    for (let k = od; k < po; k++) {
+      const x = body.slice(prvky[k].zac, prvky[k].kon);
+      if (/<w:numPr>/.test(x) && !/<w:numId w:val="0"\/>/.test(x)) n++; else continue;
+      if (/potvrzení kteréhokoliv oznámení poštou/.test(prvky[k].text)) cil = n;
+      if (/potvrzení oznámení poštou dle odst\. \d+/.test(prvky[k].text)) ref = k;
+    }
+    if (!cil || ref < 0) chyba('SoD PROJ: v čl. VII chybí odstavec o potvrzení oznámení poštou nebo odkaz „dle odst. N" na něj — nic nehádám');
+    const p = body.slice(prvky[ref].zac, prvky[ref].kon);
+    const tx = dg.odstavecText(p).replace(/ /g, ' ');
+    const m = tx.match(/(potvrzení oznámení poštou dle odst\. )(\d+)/);
+    if (+m[2] === cil) z.push('čl. VII: odkaz „dle odst. ' + cil + '." míří na odstavec o potvrzení poštou — beze změny');
+    else {
+      const i = m.index + m[1].length;
+      body = body.slice(0, prvky[ref].zac) + prepisUsekOdstavce(p, i, i + m[2].length, String(cil)) + body.slice(prvky[ref].kon);
+      z.push('čl. VII: odkaz „dle odst. ' + m[2] + '." → „dle odst. ' + cil + '." (odstavec o potvrzení oznámení poštou)');
+    }
+  }
+  return t.pred + body + t.po;
+}
+
 /* ---------- společné: přepis document.xml, zápis, mutace, ověření ---------- */
 async function vyrob(vstup, uprava) {
   const polozky = await dg.zipPrecti(new Uint8Array(fs.readFileSync(vstup)));
@@ -697,7 +803,7 @@ async function ulozSMutacemi(bajty, zaklad) {
 
 async function hlavni() {
   if (!PODKLADY) {
-    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --proj-v5 | --sod-proj | --sod-real | --sod-proj-cislo | --cn-v14 | --cn-v15] <složka podkladů> [výstupní složka]');
+    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --proj-v5 | --sod-proj | --sod-real | --sod-proj-cislo | --sod-proj-v4 | --cn-v14 | --cn-v15] <složka podkladů> [výstupní složka]');
     process.exit(2);
   }
   const cnVstup = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v12.docx');
@@ -707,7 +813,7 @@ async function hlavni() {
   const sodRealVstup = path.join(PODKLADY, 'Sablona_SOD_REALIZACE.docx');
   const cn14Vstup = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v14.docx');
   const proj4Vstup = path.join(PODKLADY, 'Sablona_NABIDKA_PROJ_v4.docx');
-  (REZIM_SOD_CISLO ? [] : REZIM_V5 ? [proj4Vstup] : REZIM_V4 ? [projVstup] : REZIM_SOD ? [sodVstup] : REZIM_SOD_REAL ? [sodRealVstup] : REZIM_CN14 ? [cn13Vstup]
+  (REZIM_SOD_CISLO || REZIM_SOD_V4 ? [] : REZIM_V5 ? [proj4Vstup] : REZIM_V4 ? [projVstup] : REZIM_SOD ? [sodVstup] : REZIM_SOD_REAL ? [sodRealVstup] : REZIM_CN14 ? [cn13Vstup]
     : REZIM_CN15 ? [cn14Vstup] : [cnVstup, projVstup])
     .forEach(f => { if (!fs.existsSync(f)) chyba('Chybí vstupní šablona ' + f); });
   if (!fs.existsSync(VYSTUP)) fs.mkdirSync(VYSTUP, { recursive: true });
@@ -736,6 +842,30 @@ async function hlavni() {
         + (rozdil.ubylo.length ? '\n    ubyly symboly: ' + rozdil.ubylo.join(', ') : '')
         + (navic.length ? '\n    navíc symboly: ' + navic.join(', ') : ''));
     }
+    console.log('\nVýstup: ' + VYSTUP);
+    process.exit(prob ? 1 : 0);
+  }
+  if (REZIM_SOD_V4) {
+    /* v3 → v4 (jen česky; jazykové verze přegeneruje nastroje/preklad_sod.js) */
+    const vstup = path.join(PODKLADY, 'Sablona_SOD_PROJEKCE_v3.docx');
+    if (!fs.existsSync(vstup)) chyba('Chybí vstupní šablona ' + vstup);
+    const zaznam = [];
+    const bajty = await vyrob(vstup, x => sodProjV4(x, zaznam));
+    const soubor = path.join(VYSTUP, 'Sablona_SOD_PROJEKCE_v4.docx');
+    fs.writeFileSync(soubor, bajty);
+    const vady = await dg.docxXmlVady(bajty.slice().buffer);
+    const symVstup = await symbolyASablona(new Uint8Array(fs.readFileSync(vstup)));
+    const sym = await symbolyASablona(bajty);
+    const rozdil = so.sablonaSymbolyRozdil(symVstup, sym);
+    /* Přibýt smí jen rozsah díla a značky činností (7 × ZAC/KON), ubýt nic. */
+    const navic = rozdil.pribylo.filter(k => k !== 'SODP_ROZSAH_DILA' && !/^CIN_[A-Z_]+_(ZAC|KON)$/.test(k));
+    const znacek = rozdil.pribylo.filter(k => /^CIN_/.test(k)).length;
+    const prob = vady.length + rozdil.ubylo.length + navic.length + (sym.indexOf('SODP_ROZSAH_DILA') < 0 ? 1 : 0) + (znacek !== 14 ? 1 : 0);
+    console.log((prob ? '✗ ' : '✓ ') + path.basename(soubor) + ' — symbolů ' + sym.length + ' (vstup ' + symVstup.length + '), značek činností ' + znacek
+      + zaznam.map(r => '\n    nahrazeno: ' + r).join('')
+      + (vady.length ? '\n    vady XML: ' + vady.join('; ') : '\n    XML: bez vad')
+      + (rozdil.ubylo.length ? '\n    ubyly symboly: ' + rozdil.ubylo.join(', ') : '')
+      + (navic.length ? '\n    navíc symboly: ' + navic.join(', ') : ''));
     console.log('\nVýstup: ' + VYSTUP);
     process.exit(prob ? 1 : 0);
   }
@@ -796,4 +926,4 @@ async function hlavni() {
 
 /* Úpravy document.xml jdou testovat bez souborů (src/test_sablona_proj_v4.js). */
 if (require.main === module) hlavni().catch(e => { console.error('CHYBA: ' + e.message); process.exit(1); });
-module.exports = { cnV13, cnV14, projV3, projV4, projV5, sodProjV2, sodRealV2, sodProjCislo, prepisUsekOdstavce };
+module.exports = { cnV13, cnV14, projV3, projV4, projV5, sodProjV2, sodRealV2, sodProjCislo, sodProjV4, prepisUsekOdstavce };
