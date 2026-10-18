@@ -8,6 +8,7 @@ slučuje koordinace (session_011B3ruyPigNEMSUdesbk4Hd). Podrobnosti: CHANGELOG v
   klient `onlineZobrazeniPost` (dialog jako B77, heslo v paměti stránky 10 min, zrušení = hláška);
   B176 — `zobrazeniSmi` fail-closed pro neznámý klíč (admin vždy) + statická kontrola dotazovaných práv.
   Zápis B169–B177 a kolize B178 (15. 10. = B31, uzavřeno v15.10.14).
+- **Testy:** pred_pushem 260/0/6 přeskočeno; mutace B168 1/1, B176 1/1, „zobrazen“ 10/10, B80 Pipedrive 1/1.
 - **Výchozí volba (J. V. se neptal):** heslo k matici držet 10 min v paměti stránky (`ZOBRAZENI_HESLO_MS`).
 - **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `roadmapa/roadmap.json`
   (#426, #427 předběžná id) / `netlify/mutace.mjs` (seznam SADY + 2 mutace) / `BEZPECNOST_MEZE.md` /

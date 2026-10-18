@@ -39,6 +39,11 @@ bezpečnostních auditů 15. a 17. 10. 2026. B178 a B179 (O6) beze změny.
   sady a harnessy, které matici ukládají, posílají heslo. Mutace „B168:
   matice zobrazení se uloží bez potvrzení heslem“ a „B176: neznámý klíč
   matice znamená povoleno“.
+- **Výsledky:** `nastroje/pred_pushem.sh` 260 prošlo / 0 selhalo /
+  6 přeskočeno (firemní podklady mimo repo, `test.js`); cílené mutace
+  B168 1/1, B176 1/1, filtr „zobrazen“ 10/10, „B80: právo Pipedrive“ 1/1.
+- **Mimochodem:** #425 dostal `cekaNa` (overit_roadmapu chce u odložených
+  důvod); stub `dotazHeslo` v harnessech, které ukládají matici.
 
 ## v17.10.5 — B165: sazby a dopad v kartě cenové výjimky, zbytek B178 (větev claude/b165-karta-vyjimky)
 
