@@ -1,3 +1,22 @@
+# Předávka — 18. 10. 2026: dávka N4 (v18.10.12), větev `claude/kolo28-audit` — kolo 28 + audit v17.10.5 → v18.10.11
+
+Nad `origin/claude/integrace-16-10` (`8480133`, v18.10.11). Do `test-draft` / `test` / `main` ani do integrace nic —
+slučuje koordinace (session_0144Y7gXWeprriv4yf4wKL5T). Podrobnosti: `podklady/AUDIT_2026-10-18_v18.10.11.md`,
+CHANGELOG v18.10.12, `BEZPECNOST_MEZE.md` (oddíl „Audit kola 28“).
+
+- **Hotovo (pushnuto):** audit — 0 kritických/vysokých, **2 střední** (B188 obnova matice bez hesla správce,
+  B189 výchozí DPH podle DIČ), B190 nízký **opraven** (skladné „1.500“ → „2,- Kč“; `sodSkladneKc`, test
+  `test_sod_en` 2c, mutace B190 1/1), B191–B193 informativní; pokusy `podklady/AUDIT28_pokus_*.mjs`.
+- **Testy:** kolo nad 8480133 268/2/2 (obě selhání = podklad B193), po opravě 270/0/2, statické 3/3.
+- **Čeká (další dávka):** #429 B188 (heslo u obnovy části `zobrazeni`), #430 B189 (rozhodnutí J. V. / účetní —
+  návrh: CZ DIČ → přenesená, EU/mimo EU bez výchozí volby). Před zveřejněním SoD realizace v3 upozornit J. V. na B189.
+- **Výchozí volby (J. V. se neptal):** B188/B189 neopraveny (střední); B190 fail-closed (nejednoznačný zápis
+  → symbol zůstane); B193 jen popsán (harnessy beze změny).
+- **Podklady:** šablony z Disku mimo repo; PROJ v3 musí pod jménem `Sablona_NABIDKA_PROJ.docx` (B193);
+  SoD realizace v3 a projekce v4 vyrobit `nastroje/vyrob_sablony.js --sod-real-v3 / --sod-proj-v4`.
+- **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `roadmap.json` (#428–#430) /
+  `mutace_jadro.mjs` (mutace B190) / `BEZPECNOST_MEZE.md`.
+
 # Předávka — 18. 10. 2026: dávka V3b (v18.10.11), větev `claude/v3b-sod-preklad` — mutace V3, činnosti SoD PROJ EN/DE/FR, šablony v4
 
 Nad `origin/claude/integrace-16-10` (`0bf74e6`, v18.10.10) + sloučený doplněk V3 `817b378`. Do `test-draft` /

@@ -30,7 +30,10 @@ a `podklady/AUDIT28_pokus_sod.mjs`, meze v `BEZPECNOST_MEZE.md`.
 - **B193:** `test_sablona_proj_v4` a `overit_nabidka_proj_word` čekají PROJ v3 pod
   jménem `Sablona_NABIDKA_PROJ.docx` (podklad na Disku je starší); s v3 projdou 41/0 a 63/63.
 - **Kolo nad 8480133** (šablony z Disku, `--jen build,sady,staticke`): 268 prošlo,
-  2 selhalo (B193, podklad), 2 přeskočeno; statické 3/3.
+  2 selhalo (B193, podklad), 2 přeskočeno; statické 3/3. Po opravě (v18.10.12, PROJ v3
+  v podkladech): 270 prošlo, 0 selhalo, 2 přeskočeno (po doplnění `cekaNa` k #430).
+- Roadmapa #428 (hotovo), #429 B188, #430 B189 (čeká) — předběžná id.
+- `podklady/AUDIT27_pokus_vyjimky.mjs`: zápis matice s heslem správce (po B168 padal na 401).
 
 ---
 

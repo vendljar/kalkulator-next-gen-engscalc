@@ -6715,6 +6715,7 @@
    "detail" : "Návrh: v `netlify/functions/obnova.mjs` mimo náhled `potvrdHesloSpravce`, když `casti` obsahuje `zobrazeni` a záloha ji nese, před zámkem a otiskem (jako u `uzivatele`); test v `netlify/test_zobrazeni_heslo.mjs`, mutace.",
    "hotovoKdyz" : "Obnova matice bez hesla 401 a nic nezapíše, se správným heslem 200; test s pojistkou a mutace.",
    "kde" : "`netlify/functions/obnova.mjs`, `netlify/test_zobrazeni_heslo.mjs`, `netlify/mutace.mjs`",
+   "cekaNa" : "kapacita — další bezpečnostní dávka (střední nález, oprava malá).",
    "pozn" : "Předběžné id (přidělí koordinace při sloučení)."
   },
   {
@@ -6728,6 +6729,7 @@
    "detail" : "Návrh (ke schválení J. V. / účetní): DIČ CZ → přenesená (tuzemsko), bez DIČ → česká DPH, EU a mimo EU → bez výchozí volby (obchodník rozhodne podle místa stavby); znění vět podle `podklady/SOD_EN_KONTROLA.md`.",
    "hotovoKdyz" : "Rozhodnutí J. V. zapsané, `kryciDphRezimVychozi` podle něj, test a mutace.",
    "kde" : "`src/kryci.js`, `src/sod.js`, `src/test_sod_en.js`",
+   "cekaNa" : "rozhodnutí J. V. a posouzení účetní (výchozí režim DPH, znění vět — podklady/SOD_EN_KONTROLA.md).",
    "pozn" : "Předběžné id (přidělí koordinace při sloučení)."
   }
  ],
