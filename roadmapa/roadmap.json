@@ -6644,6 +6644,20 @@
    "kde" : "`src/vyjimky.js`, `src/engine.js` (`oplasteniPasyMeze`, `oplPasyStenyMeze`), `src/ui/schvalovani_ui.js`, `src/cenik.js` (`cenikDleNabidkyOciste`), `src/ui/program_ui.js` (`progKontext`), `src/ui/cenik_ui.js`, `netlify/test_vyjimky.mjs`, `netlify/test_cena_dle_nabidky.mjs`",
    "hotovoV" : "v17.10.4",
    "pozn" : "Předběžné id (přidělí koordinace při sloučení). Rozhodnutí J. V. 17. 10. 2026: příznak jen u příplatků; schvalovatel vidí plochu pásu (m²). Oprava v okně O6 (větev `claude/o6-b178-b179` nad `claude/kolo26-audit`, v17.10.4): B178 — sdílená `oplasteniPasyMeze` (jádro i výjimka), obsah nese meze po ořezu a délku stěny, karta plochu z jádra (`vyjimkyPasyPlochy`); B179 — `cenikDleNabidkySmi` (jen `C.priplatky.*`), mapa pro zveřejnění `cenikDleNabidkyProZverejneni` (platný ceník + změny správce). Zbytek B178 (světlíky, vnější rozměr stěny) a B181 v `BEZPECNOST_MEZE.md`."
+  },
+  {
+   "id" : "425",
+   "vlna" : "F",
+   "stav" : "ceka",
+   "dulezitost" : "stredni",
+   "slozitost" : "S",
+   "nazev" : "Vlastní schválení cenové výjimky (princip čtyř očí)",
+   "proc" : "B165 část 2 (audit kola 25): role s právem sleva.schvalovani bez práva ceníku si vlastní cenovou výjimku sama vyžádá i schválí; server ověřuje jen právo, ne žadatele ani autora zakázky.",
+   "detail" : "Návrh dávky B165 (17. 10. 2026): server odmítne (403) schválení, když schvalovatel = žadatel (razítko pozadalEmail) nebo autor zakázky; administrátor smí vždy; UI skryje „Schválit“ u vlastní žádosti; test s pojistkou a mutace (~1 h).",
+   "kde" : "`netlify/lib/vyjimky_server.mjs` (vyjimkyServerKontrola), `src/vyjimky.js` (vyjimkaSmiRozhodnout), `src/ui/schvalovani_ui.js`",
+   "hotovoKdyz" : "Vlastní výjimku schválí jen administrátor; test i mutace.",
+   "pozn" : "ROZHODNUTÍ J. V. 18. 10. 2026: zatím ponechat (systém se testuje), do budoucna změnit — zapsáno jako budoucí bod.",
+   "hotovoV" : "—"
   }
  ],
  "meta" : {
