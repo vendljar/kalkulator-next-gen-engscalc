@@ -106,37 +106,41 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
 
 <script id="data" type="application/json">
 {
- "aktualizace": "16. 10. 2026 12:45 UTC",
+ "aktualizace": "18. 10. 2026 08:07 UTC",
  "koordinace": {
-  "id": "session_01NQjWzfqv1obHAg7DWPHAKH",
-  "kontext": 47
+  "id": "session_011B3ruyPigNEMSUdesbk4Hd",
+  "kontext": 35
  },
  "releasy": "vydáno v15.10.14 (55f0690), v15.10.10, v15.10.7, v15.10.4, v15.10.3 · mezistupně bez tagu: v15.10.13, v15.10.12, v15.10.11, v15.10.9, v15.10.8, v15.10.6",
- "cekaNaJV": [],
+ "cekaNaJV": [
+  "Pondělí 19. 10.: zvolit varianty #356 — https://claude.ai/artifact/9nMGAMnggiVEByuZoty9Qt (doporučeno A1+B1+C1+D1+E1).",
+  "Pondělí 19. 10.: #367 platební podmínky — podklad s 12 otázkami a doporučeními https://claude.ai/artifact/1Szx195YEHNcmTwXGh1Doi (doporučeno: varianta B, firemní standard OCK v Nastavení → Firma).",
+  "Pondělí (nepovinné): B183 — zpřesnit obsah výjimky na 0,1 m² (dnes celé m², nekrytý nárůst < 1 m²; výchozí: nechat a jen opravit znění — hotovo)."
+ ],
  "dlazdice": [
   {
    "k": "main",
    "v": "v15.10.14",
-   "d": "1cbab3a · = test (pokyn J. V. 16. 10.)",
+   "d": "1cbab3a · = test",
    "s": "ok"
   },
   {
    "k": "test",
    "v": "v15.10.14",
-   "d": "1cbab3a · release vydán",
-   "s": "ok"
+   "d": "1cbab3a · čeká na dokončení kola nad v16.10.5",
+   "s": "warn"
   },
   {
    "k": "integrace",
-   "v": "= test",
-   "d": "nic nečeká",
+   "v": "v18.10.5",
+   "d": "70c5151 · + kolo 27, V6 kontrola rozhodnutí",
    "s": "ok"
   },
   {
-   "k": "celé kolo",
-   "v": "VŠE ZELENÉ",
-   "d": "257/0/1 · jádro 205/205 · server 449/449 · 198 min",
-   "s": "ok"
+   "k": "celé kolo v16.10.5",
+   "v": "mutace serveru",
+   "d": "24/~40 skupin, 0 přeživších · 4. restart kontejneru 08:05, pokračuje",
+   "s": "run"
   }
  ],
  "faze": [
@@ -150,112 +154,165 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
  ],
  "sezeni": [
   {
-   "nazev": "ŘÍDÍCÍ 15.10.2 - Koordinace dávek 15. 10. (pokračování)",
-   "id": "session_01NQjWzfqv1obHAg7DWPHAKH",
+   "nazev": "ŘÍDÍCÍ 16.10 - Koordinace víkendu 16.–18. 10.",
+   "id": "session_011B3ruyPigNEMSUdesbk4Hd",
    "role": "koordinace",
    "stav": "run",
-   "stavText": "pracuje",
+   "stavText": "řídí",
    "faze": null,
-   "eta": "~2 h",
-   "kontext": 65,
-   "co": "Slučuje dávky do test, hlídá sezení, vede tento kokpit",
-   "dalsi": "Hlídá S11 a S12; čeká na rozhodnutí k bodu 1 (cena dle nabídky)",
-   "kontextTok": 650,
-   "bezi": "22 h",
+   "eta": "ne ~16:00",
+   "kontext": 35,
+   "kontextTok": 350,
+   "bezi": "29 h",
    "hlaseni": "právě teď",
-   "konec": "14:10"
+   "konec": "ne 16:00",
+   "co": "Plán víkendu O1–O9; slučuje dávky do test, vede kokpit",
+   "dalsi": "Dokončit kolo v16.10.5 → test + release; pak O7 kolo nad v17.10.x"
   },
   {
-   "nazev": "S11 B155: rozsah pásu „jiné“ ve schválené výjimce",
-   "id": "session_015fBoTjo5sPVrotmk1h5Nvz",
+   "nazev": "A2 #355 můstky ↔ přechodové plechy + #356 střecha přes můstek",
+   "id": "session_01BDzh45kuUGJRwFiQATyvgS",
+   "role": "dávka",
+   "stav": "warn",
+   "stavText": "čeká na J. V.",
+   "faze": 4,
+   "eta": "po",
+   "kontext": 25,
+   "bezi": "5 min",
+   "hlaseni": "08:58",
+   "konec": "po 19. 10.",
+   "co": "#355 jen upozornění v kontrolách; #356 plocha přes nejvyšší můstek do zastřešení",
+   "dalsi": "#355 v integraci (8d76b1c); #356 jen návrh — volba variant v pondělí"
+  },
+  {
+   "nazev": "V3 #380 + #157 smlouva o dílo v angličtině",
+   "id": "session_01GyotCYY7DhFnyXhceNA3de",
    "role": "dávka",
    "stav": "run",
    "stavText": "pracuje",
-   "faze": 2,
-   "eta": "~35 min",
+   "faze": 0,
+   "eta": "~3 h",
    "kontext": null,
-   "co": "Rozsah pásu „jiné“ (od–do m) do obsahu cenové výjimky a do karty schvalovatele",
-   "dalsi": "Testy 76/0, běží mutace, dokumentace",
-   "bezi": "57 min",
-   "hlaseni": "před 10 min",
-   "konec": "13:20"
+   "bezi": "právě",
+   "hlaseni": "07:52",
+   "konec": "10:30",
+   "co": "SoD EN hotové (v17.10.6); nově DE + FR, režim DPH volbou, skladné přepočtem kurzem",
+   "dalsi": "DE/FR šablony hotové; teď volba režimu DPH v krycím listu + skladné přepočtem (v18.10.7)"
   },
   {
-   "nazev": "S12 lešení vnitřní/vnější ve specifikaci + vlastní řádek do CN",
-   "id": "session_01ARSMBgZ2uFKva4VC1kj1qJ",
+   "nazev": "V5 #380 SoD projekce v4: rozsah díla podle nabídky",
+   "id": "session_01LE9PMBSsSQLZyhgUhHFrEP",
    "role": "dávka",
    "stav": "run",
-   "stavText": "pracuje",
-   "faze": 1,
-   "eta": "~1 h",
+   "stavText": "startuje",
+   "faze": 0,
+   "eta": "~3 h",
    "kontext": null,
-   "co": "E-mail D. S.: lešení vnitřní i vnější v „Součástí dodávky není“ podle příplatků; vlastní řádek specifikace do CN",
-   "dalsi": "Bod 2 hotový (d64e149); bod 3 — vlastní řádek do CN",
-   "bezi": "45 min",
-   "hlaseni": "před 10 min",
-   "konec": "13:45"
+   "bezi": "právě",
+   "hlaseni": "právě teď",
+   "konec": "10:30",
+   "co": "Symbol rozsahu ve větě přílohy + bloky činností v čl. II/III, oprava odkazu čl. VII, šablona v4",
+   "dalsi": "Kód, šablona, testy (v18.10.3)"
   },
   {
-   "nazev": "S13 příplatky „cena dle nabídky“ (bod 1 e-mailu D. S.)",
-   "id": "session_01Stc6SXBihwz8ewqcX84f6k",
+   "nazev": "K1 celé kolo s mutacemi nad integrací 0dbec56 (v17.10.5)",
+   "id": "session_01TRNcR9WRobb2fkNgNVCdhk",
    "role": "dávka",
    "stav": "run",
-   "stavText": "pracuje",
-   "faze": 3,
-   "eta": "~25 min",
+   "stavText": "startuje",
+   "faze": 0,
+   "eta": "~5 h",
    "kontext": null,
-   "co": "Příznak „cena dle nabídky“ v ceníku pro 8 příplatků „za akci“; ruční cena bez schválení; přesnější hláška",
-   "dalsi": "Kód, štítky, mutace, příručka hotové (2e18b20); smoke a souhrn",
-   "bezi": "36 min",
-   "hlaseni": "před 3 min",
-   "konec": "13:10"
+   "bezi": "právě",
+   "hlaseni": "právě teď",
+   "konec": "12:30",
+   "co": "Celé kolo s mutacemi nad integrací v samostatném kontejneru (po skupinách, odolné proti restartu)",
+   "dalsi": "Prostředí, šablony, sady"
+  },
+  {
+   "nazev": "P1 soupis novinek pro obchodníky v15.10.14 → v17.10.x",
+   "id": "session_01AkJ7656iFTJU8urGe7Rbnk",
+   "role": "dávka",
+   "stav": "ok",
+   "stavText": "hotovo",
+   "faze": 0,
+   "eta": "doplněk",
+   "kontext": null,
+   "bezi": "právě",
+   "hlaseni": "právě teď",
+   "konec": "08:30",
+   "co": "Artefakt pro obchodníky: novinky + co musí udělat",
+   "dalsi": "https://claude.ai/artifact/A5HrdpZfUK6vBdJDYpYrgM — doplní V3/V5 po sloučení"
+  },
+  {
+   "nazev": "B168 matice práv s heslem správce + B176 fail-closed + zápis nálezů 15. 10.",
+   "id": "session_01T44gRiEMNEatcXCX1YmN7T",
+   "role": "dávka",
+   "stav": "run",
+   "stavText": "startuje",
+   "faze": 0,
+   "eta": "~2,5 h",
+   "kontext": null,
+   "bezi": "právě",
+   "hlaseni": "právě teď",
+   "konec": "10:00",
+   "co": "POST /api/zobrazeni s heslem správce; neznámé právo = zakázáno; zápis B169–B177 a kolize B178",
+   "dalsi": "Ověření stavu, kód, testy (v18.10.6)"
   }
  ],
  "log": [
   [
-   "12:09",
-   "J. V. schválil návrh „cena dle nabídky“ → spuštěna S13."
+   "08:05",
+   "V6 hotová (12 rozhodnutí v kódu, 9 drobných oprav textů/příručky) — sloučena, integrace v18.10.5. V3: DE/FR šablony hotové, dodělává DPH režim a skladné. 4. restart kontejneru — mutace v16.10.5 znovu spuštěny."
   ],
   [
-   "12:05",
-   "E-mail D. S. zpracován: S12 spuštěna (body 2 a 3), návrh k bodu 1 publikován. Archivovány S9 a S10."
+   "07:47",
+   "N3 hotová: kolo 27 — 0 kritických/vysokých/středních, B183 nízký (znění meze opraveno), B184–B186 zapsány jako meze, B187 info. Sloučeno, sezení archivováno."
   ],
   [
-   "11:48",
-   "Spuštěna S11 (B155, rozsah pásu „jiné“, zadání J. V.)."
+   "07:40",
+   "V2 hotová: podklad #367 na pondělí (artefakt + podklady/PODKLAD_367_PLATEBNI_PODMINKY.md); sezení archivováno."
   ],
   [
-   "11:55",
-   "J. V. nahrál šablonu SoD projekce v3 do aplikace. Nic dalšího nečeká."
+   "07:35",
+   "Zadání J. V.: dávka B168 (B168, B176, zápis nálezů 15. 10.) spuštěna nad integrací v17.10.5 (v18.10.6). P1 hotová — soupis novinek pro obchodníky."
   ],
   [
-   "06:20",
-   "Release v15.10.14 vydán (J. V.). test → main fast-forward (eff7724 → 1cbab3a)."
+   "07:30",
+   "Pokyn J. V.: víc sezení najednou (max. 10), vše koordinuje řídící sezení. Spuštěny K1 (kolo nad integrací), N3 (kolo 27 + audit), V6 (kontrola rozhodnutí), P1 (novinky pro obchodníky), V2 (podklad #367). Běží 8 sezení."
   ],
   [
-   "06:05",
-   "Šablony SoD projekce v3 a v1_cislo vyrobeny, ověřeny (test 28/0, tisk SoD v prohlížeči 6/6, overit_sod 51/51) a poslány J. V.; test = 1cbab3a."
+   "07:25",
+   "J. V. zodpověděl všechny otázky najednou: DPH v SoD režimem volbou, skladné přepočtem kurzem, SoD DE/FR ano, #380 varianta B (V5 spuštěna), #356 v pondělí, main jen na pokyn, B165 vlastní schválení = budoucí bod #425. B165 sloučena (v17.10.5)."
   ],
   [
-   "05:45",
-   "Celé kolo nad v15.10.14 VŠE ZELENÉ → test = v15.10.14 (55f0690). Release odkaz připraven, předávka zapsána, hodinová kontrola vypnuta."
+   "07:21",
+   "Třetí restart kontejneru (so ~19:40 UTC) — mutace serveru stály přes noc; pokračují od zakazka.js."
   ],
   [
-   "04:43",
-   "Hodinová kontrola: mutace serveru u konce (celkem 622 chycených), žádná nepřežila."
+   "19:10",
+   "O6 hotová a sloučena (integrace v17.10.4, 9bb7caf); J. V.: zbytek B178 = mez, dořeší B165. V1: výklad čísla SoD a přípona potvrzeny. Spuštěny B165 a V3 (okno O8 dopředu)."
   ],
   [
-   "03:43",
-   "Hodinová kontrola: mutace serveru běží, zatím žádná nepřežila."
+   "17:45",
+   "Archivovány hotové S11, S12, S13, A1, V4, N2, V1 (pokyn J. V.). Integrace v17.10.3 (8d76b1c): + N2 (kolo 26, B180), V1 #366, A2 #355."
   ],
   [
-   "02:43",
-   "Hodinová kontrola: 3. běh kola — sady 257/0/1 a jádro 205/205 prošly, běží mutace serveru."
+   "17:30",
+   "Kontejner znovu restartován (so ~10:10 UTC) — mutace serveru přerušeny na 332 chycených, žádná nepřežila; běží znovu po skupinách s pokračováním. Spuštěna O6 (B178 + B179, v17.10.4)."
+  ],
+  [
+   "08:35",
+   "J. V.: B179 příznak jen u příplatků; B178 karta ukáže plochu pásu (s B165); v16.10.5 do test hned po kole. #356 odloženo — vizuální návrh na pondělí."
+  ],
+  [
+   "08:04",
+   "Kolo nad v16.10.5 přerušil restart kontejneru (pá 17:15 UTC, mutace serveru 241 chycených); sady 262/1/1 (✗ jen nastavení prostředí), jádro 219/219. Dopouštím mutace serveru + statické."
   ]
  ],
  "celkem": {
-  "eta": "~1 h",
-  "detail": "S11–S13 hotové kolem 13:45 UTC, pak sloučení + celé kolo (~4 h)"
+  "eta": "ne ~18:00 UTC",
+  "detail": "test až po doběhnutí kola; main jen na pokyn (J. V. 18. 10.)"
  }
 }
 </script>
