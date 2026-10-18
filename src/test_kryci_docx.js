@@ -31,6 +31,12 @@ const v = zak.varianty[0];
 
 // 1) registrace obou verzí
 test('registrovány kryci_bo i kryci_techdata', dokumentTypyPrefix('kryci_').length === 2, dokumentTypyPrefix('kryci_').join(','));
+/* V4-5 / V6 (18. 10. 2026): registr nese název podle přejmenování
+ * v15.10.9 („Krycí list zakázky OCK"), jako PROJ „Krycí list PROJ – …". */
+test('registr: název kryci_bo = Krycí list zakázky OCK – Backoffice',
+  (dokumentDef('kryci_bo') || {}).nazev === 'Krycí list zakázky OCK – Backoffice', (dokumentDef('kryci_bo') || {}).nazev);
+test('registr: název kryci_techdata = Krycí list zakázky OCK – Techdata',
+  (dokumentDef('kryci_techdata') || {}).nazev === 'Krycí list zakázky OCK – Techdata', (dokumentDef('kryci_techdata') || {}).nazev);
 
 // 2) rozdělení polí
 const bo = kr.kryciData(zak, v, JEKLY, 'bo');

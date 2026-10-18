@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v17.10.5 · sestaveno 17. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
+  "verze": "Platí pro aplikaci v18.10.5 · sestaveno 18. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -21,21 +21,25 @@
       ]
     },
     {
-      "nadpis": "Co je nového ve verzi v17.10.4 (17. 10. 2026)",
+      "nadpis": "Co je nového ve verzích v17.10.1–v17.10.4 (17. 10. 2026)",
       "odstavce": [
         "**Schválený pás „jiné“ nejde po schválení zvětšit změnou šachty.** Schválení ruční sazby pásu opláštění „jiné“ teď hlídá i skutečnou výšku pásu po ořezu na šachtu a délku stěny: když po schválení změníte zdvih, přejezd, šířku nebo hloubku šachty tak, že se pás zvětší nebo zmenší, výjimka se vrátí do stavu **čeká znovu** a před tiskem ji nadřízený musí schválit znovu. Schvalovatel v kartě Cenové výjimky vidí u pásu i jeho **plochu v m²** (kapitola 19). **Výjimky s pásem „jiné“ schválené před v17.10.4 se musí schválit znovu.**",
         "**Cena dle nabídky jen u příplatků.** Příznak „cena dle nabídky“ jde nastavit jen u položek sekce příplatků; hodinová sazba montáže, profily ani opláštění ho nemají nikdy. Při zveřejnění ceníku se zveřejní zaškrtnutí, jak je vidět ve sloupci Nastavení → Ceník (platný ceník a změny správce), nikdy příznaky uložené v otevřené zakázce (kapitola 17).",
         "**Upozornění na přechodové plechy u můstků.** Má-li šachta můstky a přechodové plechy jsou v základní ceně nebo v příplatcích nabídky, kontrola před nabídkou upozorní, že se plechy počítají za všechna nástupiště i tam, kde je můstek — zvažte ruční úpravu množství. Výpočet se nemění a tisk to nezastaví (kapitola 11).",
         "**Návrh čísla SoD.** Pole **Číslo SoD** v krycím listu OCK i PROJ se předvyplní z čísla nabídky — z **2026 - OPR - CN - 0412** je **2026 - OPR - SOD - 0412**. Návrh můžete přepsat, ↺ ho vrátí (kapitola 24).",
-        "**Tisk smlouvy o dílo zamkne číslo SoD i datum podpisu.** Při tisku se obojí zapíše do zakázky; krycí list ani další tisk smlouvy pak neukáže jiné číslo ani dnešní datum místo data podpisu."
+        "**Tisk smlouvy o dílo zamkne číslo SoD i datum podpisu.** Při tisku se obojí zapíše do zakázky; krycí list ani další tisk smlouvy pak neukáže jiné číslo ani dnešní datum místo data podpisu.",
+        "**Správce:** potvrzení před zveřejněním ceníku vypíše i **změny příznaků „cena dle nabídky“** (které položky přibyly a které ubyly) — ceník se změnou jen v příznacích už nehlásí „beze změny“ (v17.10.1)."
       ]
     },
     {
-      "nadpis": "Co je nového ve verzi v16.10.5 (16. 10. 2026)",
+      "nadpis": "Co je nového ve verzích v16.10.1–v16.10.5 (16. 10. 2026)",
       "odstavce": [
         "**Cena dle nabídky.** U nabídkových příplatků za akci (např. prosklená stěna vedle šachty) zadává obchodník vlastní cenu bez cenové výjimky a bez schválení; v řádku příplatku je štítek **cena dle nabídky** nebo **vlastní cena**. Které položky to jsou, určuje správce v Nastavení → Ceník (sloupec „Cena dle nabídky“, osm položek je předzaškrtnutých) a platí to po zveřejnění ceníku (kapitola 17).",
         "**Lešení v technické specifikaci se řídí kalkulací.** V tabulce SOUČÁSTÍ DODÁVKY NENÍ jsou dva řádky: **LEŠENÍ VNITŘNÍ PRO STAVBU OCK** (nový) a **LEŠENÍ KOLEM OCK PRO PROVEDENÍ OPLÁŠTĚNÍ**. Když je lešení mezi příplatky v nabídce, stojí u něj „nabízeno jako příplatek“ se štítkem **z kalkulace**; když je v základní ceně, řádek se do dokumentu nedává. Text můžete přepsat (štítek **ručně**) a tlačítkem ↺ vrátit návrh z kalkulace (kapitola 17).",
-        "**Vlastní řádky technické specifikace jdou do cenové nabídky.** Co přidáte tlačítkem *+ přidat vlastní řádek* (sekce DALŠÍ UJEDNÁNÍ), objeví se v náhledu, tisku i ve Wordu nabídky OCK jako sekce DALŠÍ UJEDNÁNÍ za tím, co součástí dodávky není (kapitola 23)."
+        "**Vlastní řádky technické specifikace jdou do cenové nabídky.** Co přidáte tlačítkem *+ přidat vlastní řádek* (sekce DALŠÍ UJEDNÁNÍ), objeví se v náhledu, tisku i ve Wordu nabídky OCK jako sekce DALŠÍ UJEDNÁNÍ za tím, co součástí dodávky není (kapitola 23).",
+        "**Schválení pásu „jiné“ nese i jeho rozsah.** Karta Cenové výjimky ukazuje u pásu, odkud kam sahá (např. „stěna B (Deska, 0–1 m)“ nebo „od 2,2 m až nahoru“); když po schválení pás roztáhnete nebo posunete, výjimka se vrátí do stavu **čeká znovu**. **Výjimky s pásem „jiné“ schválené před v16.10.1 se musí schválit znovu**; výjimky jen se směsí ceníku platí dál (kapitola 19).",
+        "**Plnou moc doplníte i po smlouvě o dílo.** Tisk smlouvy o dílo zamkne krycí list PROJ, ale údaje zmocnitele plné moci (jméno, datum narození, trvale bytem, kdo jedná za nás) zůstávají volné — plná moc se často dělá až po smlouvě (v16.10.4, kapitola 24).",
+        "**Nabídka PROJ v angličtině, němčině a francouzštině** má v rekapitulaci přeložené i sekce **EZC – ekonomická zadávací část** a **Kolaudace** (dřív zůstávaly česky; v16.10.5)."
       ]
     },
     {
@@ -44,13 +48,13 @@
         "**Schválení cenové výjimky platí jen pro přesně to, co nadřízený schválil** — každá změna směsi ceníku nebo pásu „jiné“ (i jediný znak v názvu pásu) ho zruší. **Výjimky schválené před v15.10.8 se musí schválit znovu** (karta Cenové výjimky v Schvalování, kapitola 19).",
         "**Dokument druhé strany do odeslané nabídky** (třeba nabídka OCK po vypnutí „jen projekce“) potřebuje stejné schválení výjimky a slevu nad minimální marží jako nová nabídka. Když chybí, aplikace dokument nevytvoří a poradí pokračovat klonem varianty.",
         "**Krycí list zakázky OCK** — tak se teď jmenuje i nadpis listu a dokumentu (dřív „Krycí list objednávky / SoD“); záložka se tak jmenovala už dřív.",
-        "**Číslo SoD** v obou krycích listech (OCK i PROJ), v Základních údajích hned pod číslem nabídky. Zapisujete ho ručně, nic se nepředvyplňuje; doplnit ho jde i po odeslání nabídky, zamkne ho až tisk smlouvy o dílo. Ve smlouvě o dílo se objeví jako číslo smlouvy — krycí list OCK pro smlouvu realizace, krycí list PROJ pro smlouvu projekce (kapitola 24).",
+        "**Číslo SoD** v obou krycích listech (OCK i PROJ), v Základních údajích hned pod číslem nabídky. Zapisujete ho ručně, nic se nepředvyplňuje (od v17.10.2 se předvyplní návrh z čísla nabídky — viz výše); doplnit ho jde i po odeslání nabídky, zamkne ho až tisk smlouvy o dílo. Ve smlouvě o dílo se objeví jako číslo smlouvy — krycí list OCK pro smlouvu realizace, krycí list PROJ pro smlouvu projekce (kapitola 24).",
         "**Čtení z Pipedrive mají nově všichni uživatelé** (obchodník i vedoucí). Správce může právo odebrat v Nastavení → Zobrazení.",
         "**Nákladové sazby v Kalkulaci PROJ může administrátor skrýt** (Nastavení → Zobrazení). Zatím je vidíte jako dřív; když je skryje, uvidíte místo nich **Prodejní sazbu Kč/h · cenu** — sazbu a fixní částku už včetně přirážky sekce (kapitola 28).",
         "**Červená lišta „Ceník není nahraný“ při spuštění pár vteřin počká**, než se ceník z online databáze načte — zbytečně neblikne. Z prázdného ceníku přitom dokument nevznikne ani během čekání (kapitola 4).",
         "**Jméno v profilu** se ukládá bez ostrých závorek < > — pod odeslanou nabídkou stojí razítko „jméno <e-mail>“ a jméno ho nesmí napodobit. **Správce** v Nastavení → Analytika čte pravdivě, že se kliknutí a záložky ukládají i po uživatelích.",
         "**Nabídka PROJ v angličtině, němčině a francouzštině** má přeložené i popisy cen DPZ a DPS, hvězdičku u ceny DPZ, řádky inženýrské činnosti a CENA NEZAHRNUJE. Souvislé odstavce o rozsahu studie, DPZ a DPS zůstávají zatím česky.",
-        "**Krycí list doplníte i po odeslání nabídky.** Po vytištění cenové nabídky zůstávají zamčená jen pole, která jsou v nabídce (typ smlouvy, platební podmínky, termín dodání, u projekce i plán plateb); kontakty, termíny, atypy a další údaje pro backoffice doplňujete dál. Po vytištění smlouvy o dílo je krycí list zamčený celý.",
+        "**Krycí list doplníte i po odeslání nabídky.** Po vytištění cenové nabídky zůstávají zamčená jen pole, která jsou v nabídce (typ smlouvy, platební podmínky, termín dodání, u projekce i plán plateb); kontakty, termíny, atypy a další údaje pro backoffice doplňujete dál. Po vytištění smlouvy o dílo je krycí list zamčený celý (od v16.10.4 kromě údajů zmocnitele plné moci).",
         "**Autorský dozor v nabídce PROJ jen když ho nabízíte.** V kartě Cenová nabídka (PROJ) je zaškrtávátko **Nabízet autorský dozor**; nová zakázka ho má vypnuté. Bez něj nabídka ani krycí list PROJ autorský dozor neuvádějí (kapitola 25). Už uložené a odeslané nabídky se nemění.",
         "**Název akce v technické specifikaci se bere z hlavičky zakázky.** Přepsat ho jde dál — pak u pole svítí štítek **ručně** a tlačítkem ↺ se vrátíte k názvu z hlavičky (kapitola 23).",
         "**Oplechování soklu prohlubně** má řádek i v technické specifikaci: mezi doplňkovými konstrukcemi, když je v ceně, jinak mezi tím, co součástí dodávky není — stejně jako v nabídce.",
@@ -233,7 +237,7 @@
         { "typ": "podnadpis", "text": "Otevřená zakázka: rozpracovaná, nebo odeslaná" },
         { "typ": "text", "text": "Když otevřete uloženou zakázku, je **jen ke čtení**: pole nejdou přepisovat. Prohlédnout si starší nabídku tak nemůže nic pokazit — a samotné otevření se ani neukládá, do databáze se zapisuje teprve tehdy, když opravdu něco změníte. Co nad zakázkou uvidíte, záleží na tom, jestli už odešla zákazníkovi (od 13. 10. 2026 je to vždy jediná lišta, dřív se jich vrstvilo několik)." },
         { "typ": "text", "text": "**Rozpracovaná zakázka** (ještě nevytištěná): nahoře svítí žlutá lišta **„Rozpracovaná kalkulace“** s číslem, názvem a časem poslední práce. Tlačítkem **Pokračovat v rozpracované kalkulaci** zakázku odemknete k úpravám — a leží-li v prohlížeči novější rozpracovaná práce téže zakázky (kapitola 29), rovnou se vrátí. Tlačítkem **Založit novou kalkulaci** začnete novou. Zámek platí na jedno otevření; příště bude zakázka zase jen ke čtení. Svoji zakázku odemkne každý obchodník, cizí vedoucí nebo administrátor; u cizí zakázky lišta nabídne jen Založit novou kalkulaci a napíše, kdo ji založil, ať víte, koho požádat. Nová zakázka je odemčená rovnou." },
-        { "typ": "text", "text": "**Odeslaná nabídka** (vytištěná, tedy odeslaná zákazníkovi): žlutá lišta se neukazuje — připomínat ji už není třeba. Místo ní je jednořádková informace **„Odeslaná nabídka … (vytištěno …) — needituje se“** s tlačítky **Klonovat a pokračovat** (nová varianta jako kopie, rovnou odemčená) a **Založit novou zakázku**. Odemknout odeslanou nabídku k úpravám smí jen administrátor: vidí pod ní modrý pruh **Odemknout k úpravám**; odemčení se zapíše do zakázky i s důvodem. **Krycí list odeslané nabídky doplňujete dál** — zamčená jsou jen pole, která jsou v cenové nabídce (typ smlouvy, platební podmínky, termín dodání, u projekce i plán plateb); po vytištění smlouvy o dílo je zamčený celý." },
+        { "typ": "text", "text": "**Odeslaná nabídka** (vytištěná, tedy odeslaná zákazníkovi): žlutá lišta se neukazuje — připomínat ji už není třeba. Místo ní je jednořádková informace **„Odeslaná nabídka … (vytištěno …) — needituje se“** s tlačítky **Klonovat a pokračovat** (nová varianta jako kopie, rovnou odemčená) a **Založit novou zakázku**. Odemknout odeslanou nabídku k úpravám smí jen administrátor: vidí pod ní modrý pruh **Odemknout k úpravám**; odemčení se zapíše do zakázky i s důvodem. **Krycí list odeslané nabídky doplňujete dál** — zamčená jsou jen pole, která jsou v cenové nabídce (typ smlouvy, platební podmínky, termín dodání, u projekce i plán plateb); po vytištění smlouvy o dílo je zamčený celý — kromě údajů zmocnitele plné moci v krycím listu PROJ, ty doplníte i po smlouvě." },
         { "typ": "text", "text": "Stav jen ke čtení poznáte i v liště zakázky podle **jantarového štítku**; červená barva zůstává vyhrazená odeslané nabídce. Když se v rozpracované zakázce jen ke čtení pokusíte něco přepsat, aplikace se zeptá, jestli chcete pokračovat v rozpracované kalkulaci; u odeslané nabídky nabídne klon. Odpovíte-li ne, vrátí se do pole původní hodnota — na obrazovce tedy nezůstane nic, co by v datech nebylo. **+ Nová varianta** a kopie varianty v zamčené zakázce se taky nejdřív zeptají; dřív vyrobily variantu, kterou nikdo neuložil." },
         {
           "typ": "ram", "nadpis": "Vytištěná nabídka se nikdy nepřepíše",
@@ -695,7 +699,7 @@
             { "pojem": "Plán plateb", "vyklad": "V sekci Platební podmínky zvolíte **předvolbu** (Standard po činnostech, Záloha + zbytek po předání, 100 % po dokončení stupně, nebo Vlastní) — nová zakázka začíná na **Záloha 70 % + zbytek po předání** (70 % po podpisu smlouvy, 30 % po předání činnosti), pokud firma v Nastavení → Firma nemá vlastní výchozí předvolbu — a u každé **nabízené** činnosti vidíte splátky — procento a milník. Splátky jdou upravit (↺ vrátí předvolbu); u každé činnosti musí dát dohromady 100 %. Z plánu se skládají platební podmínky nabídky PROJ i platby smlouvy o dílo. U starší zakázky se dřívější volba zálohy z krycího listu převezme jako předvolba sama (třeba „Záloha 30 %“ → „Záloha 30 % + zbytek po předání“) a ruční splátky smlouvy jako ruční částky plateb." },
             { "pojem": "Platby smlouvy o dílo PROJ", "vyklad": "**Dopočítají se samy**: procento × cena činnosti po slevě, platby se stejným milníkem se sečtou do jedné (třeba „po podpisu smlouvy“ za všechny činnosti). Každou částku jde v tabulce plateb přepsat ručně (↺ vrátí dopočet); součet plateb ale musí dát cenu díla, jinak smlouva nevznikne. Pod tabulkou zůstávají správní poplatky a pokuta za prodlení se součinností." },
             { "pojem": "Podpisy a kopie", "vyklad": "Firma v podpisové doložce, druhý podepisující (u SVJ podepisují zpravidla dva členové výboru) a dvě adresy, kam mají chodit faktury v kopii." },
-            { "pojem": "Plná moc", "vyklad": "Zmocnitel (jméno, datum narození, trvale bytem) a osoba, která jedná za nás." }
+            { "pojem": "Plná moc", "vyklad": "Zmocnitel (jméno, datum narození, trvale bytem) a osoba, která jedná za nás. Tyto údaje zůstávají volné i po tisku smlouvy o dílo — plná moc nic nezamyká a často se dělá až po smlouvě." }
           ]
         },
         { "typ": "podnadpis", "text": "Hodiny z kalkulace na konci krycího listu" },

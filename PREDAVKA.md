@@ -1,3 +1,19 @@
+# Předávka — 18. 10. 2026: dávka V6 (v18.10.5), větev `claude/v6-kontrola-rozhodnuti` — kontrola rozhodnutí 16.–18. 10.
+
+Nad `origin/claude/integrace-16-10` (`0dbec56`, v17.10.5). Do `test-draft` / `test` / `main` nic —
+slučuje koordinace (session_011B3ruyPigNEMSUdesbk4Hd). Výstup: `podklady/KONTROLA_ROZHODNUTI_18_10.md`,
+CHANGELOG v18.10.5.
+
+- **Hotovo (pushnuto):** 12 rozhodnutí (S12, S13, B179, V4-1, V1 #366, A2 #355, O6/B178, B165, #425,
+  #356, #367, B163) × kód / příručka / EN / DE / FR — v kódu vše promítnuto. Opraveno: příručka (Co je
+  nového v16.10.1–v17.10.5, plná moc po SoD, číslo SoD), meze + audity + roadmapa (#420 hotovo, #422,
+  #423, B165 část 2 → #425), komentář překladu V4-1 (schváleno 17. 10.), V4-5 název krycího listu
+  v registru (test 55/2 → 57/0).
+- **Předáno:** V6-8 — roadmapa #157 nese v detailu i původní „čeká na právníka“ (dořeší V3).
+- **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `roadmap.json` (#420, #422,
+  #423) / `manual/obsah.json` (verze, nadpisy Co je nového — V3/V5 budou přidávat novinky nahoru).
+- **Další krok:** žádný; po sloučení přegenerovat příručku ze snímků.
+
 # Předávka — 18. 10. 2026: dávka N3, větev `claude/kolo27-audit` — kolo 27, bezpečnostní audit v16.10.5 → v17.10.5
 
 Nad `origin/claude/integrace-16-10` (`0dbec56`, v17.10.5). Kód aplikace beze změny (verze zůstává v17.10.5).
