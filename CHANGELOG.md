@@ -116,6 +116,8 @@ v `netlify/mutace.mjs`: B171 (2), B174 (4), B175 (4), B186 (4).
 
 ## v18.10.11 — SoD: mutace dávky V3 v sadách, činnosti SoD PROJ v jazyce smlouvy, šablony v4 EN/DE/FR (větev claude/v3b-sod-preklad)
 
+**Ověření pro `test` (koordinace 18. 10. 2026):** celé kolo s mutacemi K1 nad 0dbec56 (v17.10.5): sady s podklady 262/2/1, mutace jádra 222/222, mutace serveru 509/509 (51 skupin), statické 2/3 — všechna selhání (kontrola verze, `test_sod_proj_cislo` část 4, `overit_roadmapu` #425) známá a opravená v integraci (v18.10.5). Sady + cílené mutace S1 nad d138384 (v18.10.11): 271/0/1, statické 3/3, cílené mutace serveru a jádra bez přeživší; oprava harnessu příručky po B168 (`claude/s1-opravy` af15443). Kandidát na `test`: a7f1f60 (v18.10.11).
+
 Zadání koordinace 18. 10. 2026 (navazuje na V3 a V5 #380), nad
 `origin/claude/integrace-16-10` (`0bf74e6`, v18.10.10); sloučen i doplněk
 V3 `817b378` (symboly `{{SOD_DPH_REZIM}}` / `{{SOD_SKLADNE}}`, výchozí režim
