@@ -34,6 +34,14 @@ nálezy V6-1 až V6-9). Změny chování žádné.
 - **EN/DE/FR:** nové texty obrazovky (kontrola #355, karta B165, štítky
   cena dle nabídky, zdroj „návrh z čísla nabídky“) do cizojazyčných
   dokumentů nejdou; texty dokumentů z S12, S13 a V4-1 slovník zná.
+- **Roadmapa #425** (vlna F, zapsala koordinace v `0dbec56`) neměla
+  `cekaNa` → `overit_roadmapu.mjs` padal už nad `0dbec56` (12/1); doplněn
+  důvod odkladu, 13/0.
+- **Testy:** `./spust_testy.sh --smoke` (bez KNG_PODKLADY) **259 prošlo /
+  0 selhalo / 6 přeskočeno** (265 sad; firemní podklady, test.js).
+  `kontrola_udaju.py` čistá, `build.py --kontrola-verze` a
+  `roadmapa.py --kontrola` (425 položek) čisté. Mutace nespuštěny (změna
+  v `src/kryci.js` je jen text názvu, hlídá ho test přímo).
 
 ## v17.10.5 — B165: sazby a dopad v kartě cenové výjimky, zbytek B178 (větev claude/b165-karta-vyjimky)
 

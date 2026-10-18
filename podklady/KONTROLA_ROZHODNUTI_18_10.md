@@ -23,9 +23,9 @@ kontroly před nabídkou, krycí list jen CZ). „✓" = text, který do dokumen
 |---|---|
 | Rozhodnutí zkontrolováno | 12 |
 | Nové texty obrazovky v16.10.x–v17.10.x prověřené na únik do dokumentu | 6 |
-| Nálezy | 9 (V6-1 až V6-9) |
-| Opraveno v této dávce | 7 (V6-1 až V6-7) |
-| Předáno / jen informace | 2 (V6-8, V6-9) |
+| Nálezy | 10 (V6-1 až V6-10) |
+| Opraveno v této dávce | 9 (V6-1 až V6-7, V6-9, V6-10) |
+| Předáno | 1 (V6-8) |
 
 ## Rozhodnutí J. V. 16.–18. 10. 2026 × kód / příručka / EN / DE / FR
 
@@ -96,6 +96,9 @@ v18.10.5 (`manual/sestav.sh` hlídá shodu s `verze.txt`). Snímky příručky s
 - `src/test_kryci_docx.js` +2 kontroly (V6-9): před opravou **55 OK / 2 FAIL**, po ní **57 / 0**.
 - Ostatní opravy jsou text komentáře, dokumentace, roadmapa a příručka — bez testu (nemění chování).
 - `python3 build.py --kontrola-verze` čistá, `python3 roadmapa/roadmapa.py --kontrola` 425 položek bez
-  nálezu, `python3 nastroje/kontrola_udaju.py` a `./spust_testy.sh --smoke`: viz CHANGELOG v18.10.5.
+  nálezu, `python3 nastroje/kontrola_udaju.py` čistá.
+- `./spust_testy.sh --smoke` (bez KNG_PODKLADY): **259 prošlo / 0 selhalo / 6 přeskočeno** (265 sad).
+  První běh hlásil `overit_roadmapu.mjs` 12/1 — roadmapa #425 (vlna F) bez `cekaNa`, selhání už nad
+  `0dbec56`; doplněn důvod odkladu, 13/0 (nález **V6-10**, opraveno).
 - Mutace: nespuštěny — změna v `src/kryci.js` je jen text názvu v registru, test ho hlídá přímo
   (pojistka 55/2).
