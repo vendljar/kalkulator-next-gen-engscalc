@@ -101,6 +101,18 @@
  *         (z v2) — pod nadpisem „SMLOUVA O DÍLO / na zhotovení projektové
  *         dokumentace" řádek „číslo {{SOD_CISLO_SMLOUVY}}" jako u realizace.
  *
+ * SoD realizace v3 — režim DPH a skladné (rozhodnutí J. V. 18. 10. 2026):
+ *   node nastroje/vyrob_sablony.js --sod-real-v3 <složka podkladů> [výstupní složka]
+ * Vstup:  Sablona_SOD_REALIZACE_v2.docx
+ * Výstup: Sablona_SOD_REALIZACE_v3.docx — v čl. V věta o režimu DPH →
+ *         {{SOD_DPH_REZIM_VETA}}, tělo odstavce „3." (prohlášení o snížené
+ *         sazbě) → {{SOD_DPH_PROHLASENI}} (číslo „3." a tabulátor zůstávají,
+ *         ať sedí odkazy na „bod 4"), pevná částka skladného „… Kč" ve větě
+ *         o skladovacích poplatcích → {{SOD_SKLADNE_DENNE}} („/denně" zůstává).
+ *         Věty i částku dosazuje aplikace (krycí list OCK „Režim DPH ve
+ *         smlouvě", Nastavení → Firma „Skladné"); jazykové verze dělá
+ *         nastroje/preklad_sod.js.
+ *
  * Jazykové mutace vyrábí tentýž překlad šablony, jaký používá aplikace
  * v Nastavení → Šablony (docxPrelozSablonu); skript vypíše, co zůstalo
  * česky, a každý soubor ověří (platné XML, symboly shodné s češtinou).
@@ -119,6 +131,7 @@ const REZIM = /^--/.test(process.argv[2] || '') ? process.argv[2] : '';
 const REZIM_V4 = REZIM === '--proj-v4', REZIM_SOD = REZIM === '--sod-proj', REZIM_CN14 = REZIM === '--cn-v14';
 const REZIM_SOD_REAL = REZIM === '--sod-real';
 const REZIM_SOD_CISLO = REZIM === '--sod-proj-cislo';
+const REZIM_SOD_REAL3 = REZIM === '--sod-real-v3';
 const REZIM_CN15 = REZIM === '--cn-v15';
 const REZIM_V5 = REZIM === '--proj-v5';
 const ARGY = REZIM ? process.argv.slice(3) : process.argv.slice(2);
@@ -635,6 +648,47 @@ function sodRealV2(xml, zaznam) {
   return t.pred + body + t.po;
 }
 
+/* ---------- SoD realizace v3: režim DPH a skladné (18. 10. 2026) ----------
+ * Viz hlavička souboru. Každá kotva musí být PRÁVĚ JEDNA — jinak chyba, nic
+ * se nehádá. Text se přepisuje přes prepisUsekOdstavce: symbol stojí v běhu,
+ * kde úsek začínal (jeho písmo), vlastnosti odstavce zůstávají. */
+const SKLADNE_KC_RE = /\d[\d\s]*,-\s?Kč/g;
+function sodRealV3(xml, zaznam) {
+  const t = tělo(xml);
+  let body = t.body;
+  const sym = dg.klicePlaceholderu(body);
+  ['SOD_DPH_REZIM_VETA', 'SOD_DPH_PROHLASENI', 'SOD_SKLADNE_DENNE'].forEach(k => {
+    if (sym.indexOf(k) >= 0) chyba('SoD realizace: šablona už symbol {{' + k + '}} má');
+  });
+  const z = Array.isArray(zaznam) ? zaznam : [];
+  const jedna = (popis, podminka) => {
+    const sp = odstavceSTextem(body, podminka);
+    if (sp.length !== 1) chyba('SoD realizace: čekám právě jeden odstavec ' + popis + ', je jich ' + sp.length + ' — nic nehádám');
+    const p = body.slice(sp[0].zac, sp[0].kon);
+    return { sp: sp[0], p, t: dg.odstavecText(p).replace(/\u00a0/g, ' ') };
+  };
+  /* 1) věta o režimu DPH — celý odstavec */
+  let o = jedna('o režimu DPH („DPH bude účtováno … přenesené daňové povinnosti")',
+    tx => /^\s*DPH bude účtováno/.test(tx) && /přenesené daňové povinnosti/.test(tx));
+  body = body.slice(0, o.sp.zac) + prepisUsekOdstavce(o.p, 0, o.t.length, '{{SOD_DPH_REZIM_VETA}}') + body.slice(o.sp.kon);
+  z.push('čl. V: věta o režimu DPH → {{SOD_DPH_REZIM_VETA}}');
+  /* 2) prohlášení o snížené sazbě — tělo za „3." */
+  o = jedna('s prohlášením o snížené sazbě DPH („3. Objednatel prohlašuje, že objekt …")',
+    tx => /Objednatel prohlašuje, že objekt/.test(tx) && /snížené sazby DPH/.test(tx));
+  const zac = o.t.indexOf('Objednatel prohlašuje');
+  if (!/^\s*3\.\s*$/.test(o.t.slice(0, zac))) chyba('SoD realizace: před prohlášením o snížené sazbě čekám jen číslo „3." — nic nehádám');
+  body = body.slice(0, o.sp.zac) + prepisUsekOdstavce(o.p, zac, o.t.length, '{{SOD_DPH_PROHLASENI}}') + body.slice(o.sp.kon);
+  z.push('čl. V odst. 3: prohlášení o snížené sazbě DPH → {{SOD_DPH_PROHLASENI}} (číslo „3." zůstává)');
+  /* 3) skladné — pevná částka v Kč */
+  o = jedna('o skladovacích poplatcích', tx => /skladovacích poplatků/.test(tx));
+  const castky = Array.from(o.t.matchAll(SKLADNE_KC_RE));
+  if (castky.length !== 1) chyba('SoD realizace: ve větě o skladovacích poplatcích čekám právě jednu částku „N,- Kč", je jich ' + castky.length + ' — nic nehádám');
+  const m = castky[0];
+  body = body.slice(0, o.sp.zac) + prepisUsekOdstavce(o.p, m.index, m.index + m[0].length, '{{SOD_SKLADNE_DENNE}}') + body.slice(o.sp.kon);
+  z.push('čl. VI: pevná částka skladného → {{SOD_SKLADNE_DENNE}} (částku dosadí aplikace z Nastavení → Firma)');
+  return t.pred + body + t.po;
+}
+
 /* ---------- SoD PROJ: číslo smlouvy z krycího listu (S9, 15. 10. 2026) ----------
  * Zadání J. V.: „Aktualizuj šablony, aby se nám do nich číslo SoD propisovalo
  * z krycího listu zakázky." SoD realizace má pod nadpisem samostatný řádek
@@ -697,7 +751,7 @@ async function ulozSMutacemi(bajty, zaklad) {
 
 async function hlavni() {
   if (!PODKLADY) {
-    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --proj-v5 | --sod-proj | --sod-real | --sod-proj-cislo | --cn-v14 | --cn-v15] <složka podkladů> [výstupní složka]');
+    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --proj-v5 | --sod-proj | --sod-real | --sod-real-v3 | --sod-proj-cislo | --cn-v14 | --cn-v15] <složka podkladů> [výstupní složka]');
     process.exit(2);
   }
   const cnVstup = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v12.docx');
@@ -707,10 +761,29 @@ async function hlavni() {
   const sodRealVstup = path.join(PODKLADY, 'Sablona_SOD_REALIZACE.docx');
   const cn14Vstup = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v14.docx');
   const proj4Vstup = path.join(PODKLADY, 'Sablona_NABIDKA_PROJ_v4.docx');
-  (REZIM_SOD_CISLO ? [] : REZIM_V5 ? [proj4Vstup] : REZIM_V4 ? [projVstup] : REZIM_SOD ? [sodVstup] : REZIM_SOD_REAL ? [sodRealVstup] : REZIM_CN14 ? [cn13Vstup]
+  (REZIM_SOD_CISLO || REZIM_SOD_REAL3 ? [] : REZIM_V5 ? [proj4Vstup] : REZIM_V4 ? [projVstup] : REZIM_SOD ? [sodVstup] : REZIM_SOD_REAL ? [sodRealVstup] : REZIM_CN14 ? [cn13Vstup]
     : REZIM_CN15 ? [cn14Vstup] : [cnVstup, projVstup])
     .forEach(f => { if (!fs.existsSync(f)) chyba('Chybí vstupní šablona ' + f); });
   if (!fs.existsSync(VYSTUP)) fs.mkdirSync(VYSTUP, { recursive: true });
+  if (REZIM_SOD_REAL3) {
+    const vstup = path.join(PODKLADY, 'Sablona_SOD_REALIZACE_v2.docx');
+    if (!fs.existsSync(vstup)) chyba('Chybí vstupní šablona ' + vstup);
+    const zaznam = [];
+    const bajty = await vyrob(vstup, x => sodRealV3(x, zaznam));
+    const soubor = path.join(VYSTUP, 'Sablona_SOD_REALIZACE_v3.docx');
+    fs.writeFileSync(soubor, bajty);
+    const vady = await dg.docxXmlVady(bajty.slice().buffer);
+    const rozdil = so.sablonaSymbolyRozdil(await symbolyASablona(new Uint8Array(fs.readFileSync(vstup))), await symbolyASablona(bajty));
+    const cekane = ['SOD_DPH_PROHLASENI', 'SOD_DPH_REZIM_VETA', 'SOD_SKLADNE_DENNE'];
+    const prob = vady.length + rozdil.ubylo.length + (rozdil.pribylo.join() === cekane.join() ? 0 : 1);
+    console.log((prob ? '✗ ' : '✓ ') + path.basename(soubor) + ' — z Sablona_SOD_REALIZACE_v2.docx'
+      + zaznam.map(r => '\n    nahrazeno: ' + r).join('')
+      + '\n    přibyly symboly: ' + rozdil.pribylo.join(', ')
+      + (rozdil.ubylo.length ? '\n    ubyly symboly: ' + rozdil.ubylo.join(', ') : '')
+      + (vady.length ? '\n    vady XML: ' + vady.join('; ') : '\n    XML: bez vad'));
+    console.log('\nVýstup: ' + VYSTUP);
+    process.exit(prob ? 1 : 0);
+  }
   if (REZIM_SOD_CISLO) {
     /* v1 → _v1_cislo, v2 → v3 (nejvyšší další verze); původní soubory zůstávají. */
     const dvojice = [['Sablona_SOD_PROJEKCE.docx', 'Sablona_SOD_PROJEKCE_v1_cislo.docx'],
@@ -796,4 +869,4 @@ async function hlavni() {
 
 /* Úpravy document.xml jdou testovat bez souborů (src/test_sablona_proj_v4.js). */
 if (require.main === module) hlavni().catch(e => { console.error('CHYBA: ' + e.message); process.exit(1); });
-module.exports = { cnV13, cnV14, projV3, projV4, projV5, sodProjV2, sodRealV2, sodProjCislo, prepisUsekOdstavce };
+module.exports = { cnV13, cnV14, projV3, projV4, projV5, sodProjV2, sodRealV2, sodRealV3, sodProjCislo, prepisUsekOdstavce };
