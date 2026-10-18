@@ -10,6 +10,14 @@ Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kv�
 - **Ještě nesloučené zápisové commity** (jen CHANGELOG/PREDAVKA/verze/roadmapa, bez kódu): `claude/b80-pipedrive` 38996f2 (v15.10.7, roadmapa #345, NASAZENI), `claude/p12-naklady` 1f2a365 (výsledky po úpravě, mutace 13/13, smoke 248/0/2), `claude/kolo25-audit` dcc3d5f (smoke 247/0/6).
 - **Další krok:** do `claude/integrace-15-10` sloučit 38996f2, 1f2a365, dcc3d5f (konflikty jen v dokumentaci — novější oddíl nahoru, `verze.txt` = 15.10.7, příručka `manual/obsah.json` verze + nadpis „Co je nového ve verzi v15.10.7"), `--kontrola` mutací, sestavit, příručka ze snímků, `spust_testy.sh --smoke` s podklady → zelené → zápis do CHANGELOG → push `claude/integrace-15-10` a fast-forward `test` (`git merge-base --is-ancestor origin/test HEAD`).
 
+## STAV ne 18. 10. ~14:50 UTC — koordinace session_0144Y7gXWeprriv4yf4wKL5T („ŘÍDÍCÍ 18.10“, kontext 37 %)
+
+- **Integrace `claude/integrace-16-10` = d3fda27 v18.10.15**: vše z víkendu + S1 opravy (snimky_auto heslo, af15443), V7 kontrola rozhodnutí (v18.10.14, jen texty), N4 kolo 28 + audit (v18.10.12, B190 opraven; `podklady/AUDIT_2026-10-18_v18.10.11.md`), H1 hygiena (v18.10.13: B171, B174, B175, B186, B187), O1 B188 (v18.10.15: obnova matice chce heslo správce).
+- **Ověřeno:** K1 celé kolo nad 0dbec56 (sady 262/2/1, jádro 222/222, server 509/509 — 3 selhání známá a opravená); S1 nad d138384 (271/0/1, cílené mutace bez přeživší). **Kandidát test a7f1f60 (v18.10.11)** — fast-forward **zamítla kontrola oprávnění auto módu** → čeká na „pushni do test“ od J. V. v sezení.
+- **Běží K2** session_01V2JkS6AUATiLErhiew4Goi — celé kolo nad d3fda27: sady 274/0/1 VŠE ZELENÉ, mutace jádra a serveru běží (konec ~19:00 UTC). Po zeleném K2 posunout test rovnou na d3fda27 (+ zápis CHANGELOG), release odkaz `python3 nastroje/release_odkaz.py 18.10.15 <SHA>`.
+- **Nesloučeno / otevřené:** B189 (výchozí DPH ve SoD podle DIČ — rozhodnutí J. V. + účetní, roadmapa #430; do rozhodnutí nezveřejňovat SoD realizace v3), V7-N1 (karta výjimky: zaokrouhlená plocha), B191–B193 info. P1 soupis novinek doplněn (v18.10.11) — doplnit H1/O1 po posunu test. A2 #356 a V3 (přílohy) nearchivovat.
+- **Poučení:** sezení H1 stálo 1,5 h na schválení příkazu `rm` (nikdo ho neschválí) — v zadáních psát „nic nemaž přes rm“. Archivace sezení občas zamítnuta, napodruhé prošla. Pondělní souhrn: send_later 19. 10. 03:30 UTC.
+
 ## PŘEDÁNÍ ne 18. 10. ~10:00 UTC → nové koordinační sezení „ŘÍDÍCÍ 18.10“ (staré session_011B3ruyPigNEMSUdesbk4Hd, kontext ~66 %)
 
 - **Integrace `claude/integrace-16-10` = e3354d3 v18.10.11** (vše z víkendu: S11–S13, A1, V4, kolo 26 + B180, V1 #366, A2 #355, O6 B178/B179, B165, #425, kolo 27, V6, V3 SoD EN/DE/FR + DPH + skladné, V5 #380 projekce v4, B168/B176 + zápis B169–B177, V3b mutace + názvy činností EN/DE/FR). `test` = `main` = 1cbab3a (v15.10.14) — **o víkendu se neposunul.**
