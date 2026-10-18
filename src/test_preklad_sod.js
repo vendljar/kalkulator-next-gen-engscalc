@@ -12,7 +12,8 @@
  *     a projde u úplného překladu (jazyk en, symboly sedí, XML bez vad);
  *     „překlad" bez diakritiky, ale česky, zachytí odhad jazyka.
  * Před vznikem nástroje sada selže (modul chybí): 0 prošlo / 1 selhalo;
- * s nástrojem 13 / 0.
+ * s nástrojem 13 / 0. Část DE/FR a pojmenovaná místa (18. 10.): proti nástroji
+ * v86ef85e 14 prošlo / 5 selhalo, po rozšíření 19 / 0.
  *
  * Spuštění: cd src && node test_preklad_sod.js */
 const path = require('path');
@@ -65,6 +66,30 @@ if (ps) {
     const cesky = await ps.prelozSablonu(bajty, [{ cz: kostra[0].cz, en: 'Cena dila je <s1>pevna</s1> a se plati {{CENA_BEZ_DPH}}\tbez DPH na ucet.' },
       { cz: 'Zhotovitel:', en: 'Zhotovitel se:' }]);
     test('česky bez diakritiky: kontrola hlásí odhad jazyka', cesky.problemy.some(t => /odhad jazyka/.test(t)), cesky.problemy);
+
+    /* DE / FR a pojmenovaná místa (18. 10. 2026, rozhodnutí J. V.): překlad
+     * se bere z pole jazyka, [[MISTO]] z jednoho záznamu, kontrola jazyka
+     * podle zvoleného jazyka. */
+    const de = [{ misto: 'SKLADNE', de: '100 CZK pro Tag' },
+      { cz: kostra[0].cz, de: 'Der Preis des Werks ist <s1>fest</s1> und beträgt {{CENA_BEZ_DPH}}\tohne MwSt. für den Auftraggeber und [[SKLADNE]].' },
+      { cz: 'Zhotovitel:', de: 'Der Auftragnehmer:' }];
+    const vDe = await ps.prelozSablonu(bajty, de, 'de');
+    const textDe = (await dg.docxTextSablony(vDe.bajty.slice().buffer)).join('\n');
+    test('DE: šablona bez problémů, jazyk de, místo [[SKLADNE]] rozvinuté',
+      vDe.problemy.length === 0 && vDe.jazyk.jazyk === 'de' && /und 100 CZK pro Tag\./.test(textDe) && !/\[\[/.test(textDe), [vDe.problemy, textDe]);
+    const vDeEn = await ps.prelozSablonu(bajty, de, 'en');
+    test('DE slovník jako EN: odstavce chybí (překlad se bere z pole jazyka)', vDeEn.problemy.filter(t => /nepřeloženo/.test(t)).length === 2, vDeEn.problemy);
+    const smiseny = await ps.prelozSablonu(bajty, de.map(z => Object.assign({ en: 'Contractor: English text.' }, z)), 'de');
+    const textSm = (await dg.docxTextSablony(smiseny.bajty.slice().buffer)).join('\n');
+    test('záznam s en i de: pro DE se bere němčina', /Der Auftragnehmer:/.test(textSm) && !/English/.test(textSm), textSm);
+    const jenEn = await ps.prelozSablonu(bajty, [de[0], de[1], { cz: 'Zhotovitel:', en: 'Contractor:' }], 'de');
+    test('záznam jen s en: pro DE nepřeloženo (ne „undefined")', jenEn.problemy.some(t => /nepřeloženo.*Zhotovitel:/.test(t)), jenEn.problemy);
+    const bezMista = await ps.prelozSablonu(bajty, de.slice(1), 'de');
+    test('neznámé místo [[…]]: odstavec se odmítne', bezMista.problemy.some(t => /místo \[\[SKLADNE\]\]/.test(t)), bezMista.problemy);
+    const fr = [{ cz: kostra[0].cz, fr: 'The price of the Work is <s1>fixed</s1> and amounts to {{CENA_BEZ_DPH}}\texcluding VAT for the client.' },
+      { cz: 'Zhotovitel:', fr: 'Contractor:' }];
+    const vFr = await ps.prelozSablonu(bajty, fr, 'fr');
+    test('FR slovník s anglickým textem: kontrola hlásí odhad jazyka', vFr.problemy.some(t => /odhad jazyka: en/.test(t)), vFr.problemy);
     console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
     process.exit(fail ? 1 : 0);
   })();

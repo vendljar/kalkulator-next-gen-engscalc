@@ -11,7 +11,8 @@
  *   – generování Wordu ze SMYŠLENÉ anglické šablony (žádný firemní text):
  *     symboly vyplněné, splátky rozvinuté do odstavců, nic českého.
  * Před opravou: 8 prošlo / 10 selhalo (české řádky splátek a plateb, „bytový
- * dům", chybějící sodJazykZabrana); po opravě 18 / 0.
+ * dům", chybějící sodJazykZabrana); po opravě 18 / 0. Část 2b (DE/FR,
+ * 18. 10.) hlídá slovník z v17.10.6 — mutace hesel DE/FR ji shodí.
  *
  * Spuštění: cd src && node test_sod_en.js */
 const nacti = (f) => { const m = require(f); Object.keys(m).forEach(k => { if (global[k] === undefined) global[k] = m[k]; }); return m; };
@@ -88,6 +89,19 @@ const sablona = (...symboly) => ({ symboly: new Set(symboly) });
   test('EN PROJ: součet plateb = cena díla v eurech', soucet > 0 && soucet === cena, [soucet, d.placeholders.PROJ_CELKEM_BEZ_DPH]);
   const c = sod.sodProjData(z, v, 'cz', sablona('SODP_PLATEBNI_KALENDAR')).placeholders.SODP_PLATEBNI_KALENDAR;
   test('CZ PROJ: věta „Platba ve výši … Kč + DPH proběhne …" beze změny', /^Platba ve výši [\d\s ]+,\d\d Kč \+ DPH proběhne po podpisu smlouvy \/ objednávky\.$/.test(String(c).split('\n')[0]), c);
+}
+
+/* 2b) němčina a francouzština (rozhodnutí J. V. 18. 10. 2026 — šablony
+ * SoD i v DE a FR): hodnoty skládané aplikací jsou ve slovníku pro všechny
+ * tři jazyky už od v17.10.6, tady se to jen hlídá. */
+{
+  const z = novaZ(), v = z.varianty[0];
+  const de = sod.sodData(z, v, JEKLY, 'de', sablona('SOD_PLATEBNI_KALENDAR')).placeholders;
+  test('DE: splátky bez češtiny, místo plnění „ein Wohngebäude"', !CESKY.test(de.SOD_PLATEBNI_KALENDAR || 'ě') && de.SOD_MISTO_PLNENI_DRUH === 'ein Wohngebäude'
+    && /des Gesamtpreises des Werks$/.test(de.SOD_PLATEBNI_KALENDAR || ''), [de.SOD_PLATEBNI_KALENDAR, de.SOD_MISTO_PLNENI_DRUH]);
+  const zp = novaZ('2026 - OVP - CN - 404');
+  const fr = String(sod.sodProjData(zp, zp.varianty[0], 'fr', sablona('SODP_PLATEBNI_KALENDAR')).placeholders.SODP_PLATEBNI_KALENDAR || '');
+  test('FR PROJ: platby bez češtiny, „Paiement … + TVA."', fr && !CESKY.test(fr) && /^Paiement .* – € [\d\s ]+ \+ TVA\.$/.test(fr.split('\n')[0]), fr);
 }
 
 /* 3) bez jazykové šablony smlouva nevznikne */

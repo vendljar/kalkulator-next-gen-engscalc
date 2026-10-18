@@ -1,4 +1,5 @@
-/* PŘEKLAD ŠABLON SMLUV O DÍLO DO ANGLIČTINY (#157, dávka V3, 17. 10. 2026)
+/* PŘEKLAD ŠABLON SMLUV O DÍLO DO ANGLIČTINY, NĚMČINY A FRANCOUZŠTINY
+ * (#157, dávka V3, 17. 10. 2026; DE a FR rozhodnutím J. V. 18. 10. 2026)
  *
  * Rozhodnutí J. V. 16. 10. 2026: anglická smlouva o dílo = PŘEKLAD české
  * šablony (soubor ke kontrole rodilým mluvčím), napojený v aplikaci jako
@@ -6,15 +7,22 @@
  *
  * Šablony ani jejich překlad v repozitáři nejsou (firemní texty). Překlad
  * leží ve slovníku vedle šablony (JSON mimo repozitář), skript z něj
- * vyrobí anglickou šablonu a ověří ji:
+ * vyrobí jazykovou šablonu a ověří ji (jazyk --jazyk en | de | fr, výchozí en):
  *
- *   node nastroje/preklad_sod.js --kostra <složka> [soubor.docx …]
- *       vyrobí/doplní slovník <šablona>.preklad_en.json: pro každý odstavec
- *       s českým textem záznam { cz, en, pozn } (en prázdné k vyplnění;
- *       hotové záznamy se ponechají)
- *   node nastroje/preklad_sod.js <složka> [výstupní složka]
+ *   node nastroje/preklad_sod.js --kostra [--jazyk de] <složka> [soubor.docx …]
+ *       vyrobí/doplní slovník <šablona>.preklad_<jazyk>.json: pro každý
+ *       odstavec s českým textem záznam { cz, <jazyk>, pozn } (překlad
+ *       prázdný k vyplnění; hotové záznamy se ponechají)
+ *   node nastroje/preklad_sod.js [--jazyk de] <složka> [výstupní složka]
  *       ze šablon Sablona_SOD_REALIZACE_v2.docx a Sablona_SOD_PROJEKCE_v3.docx
- *       a jejich slovníků vyrobí …_EN.docx a vypíše kontrolu
+ *       a jejich slovníků vyrobí …_EN.docx (_DE, _FR) a vypíše kontrolu
+ *
+ * POJMENOVANÁ MÍSTA (18. 10. 2026, J. V.: sporná místa — DPH u zahraničního
+ * zákazníka, skladné — se budou měnit „jedním přepisem"). Záznam slovníku
+ * { misto: 'SKLADNE', en: '…', pozn } definuje úsek textu; překlad odstavce
+ * ho vloží značkou [[SKLADNE]]. Změna znění = přepis jednoho záznamu
+ * a nové vyrobení šablony. Neznámé místo nebo místo bez překladu do
+ * zvoleného jazyka skript odmítne.
  *
  * ZÁPIS ODSTAVCE (cz i en):
  *   – <s1>…</s1>, <s2>…</s2> … = úsek ve stylu běhu číslo N (tučně,
@@ -45,7 +53,12 @@ const xmlUnesc = s => String(s).replace(/&lt;/g, '<').replace(/&gt;/g, '>').repl
   .replace(/&apos;/g, "'").replace(/&#(\d+);/g, (_m, n) => String.fromCodePoint(+n))
   .replace(/&#x([0-9a-f]+);/gi, (_m, n) => String.fromCodePoint(parseInt(n, 16))).replace(/&amp;/g, '&');
 const SYMBOL_RE = /\{\{[A-Z0-9_]+\}\}/g;
-const CESKE_ZNAKY = /[áčďéěíňóřšťúůýžÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ]/;
+/* Znaky, které v cílovém jazyce nemají co dělat: v angličtině celá česká
+ * diakritika, v němčině a francouzštině bez é (francouzština, přejatá slova). */
+const CESKE_ZNAKY = { en: /[áčďéěíňóřšťúůýžÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ]/, de: /[áčďěíňóřšťúůýžÁČĎĚÍŇÓŘŠŤÚŮÝŽ]/,
+  fr: /[áčďěíňóřšťúůýžÁČĎĚÍŇÓŘŠŤÚŮÝŽ]/ };
+const JAZYKY_SOD = ['en', 'de', 'fr'];
+const MISTO_RE = /\[\[([A-Z0-9_]+)\]\]/g;
 /* České zkratky, které překlad záměrně nechává (identifikátory, normy). */
 const ZKRATKY_CZ = /(^|[^\p{L}])(IČO|IČ|DIČ|ČSN|ČKAIT)(?=[^\p{L}]|$)/gu;
 /* odstavec stojí za překlad, když má písmena mimo symboly */
@@ -175,7 +188,24 @@ function odstavceKPrekladu(xml) {
 /* Přeloží díl podle slovníku { normKlic(cz) → záznam }. Vrací
  * { xml, chybi: [cz], vady: [text], prelozeno }. Nepřeložený odstavec
  * zůstane česky a vrátí se v `chybi`. */
-function prelozXml(xml, slovnik) {
+/* Pojmenovaná místa ze záznamů { misto, <jazyk> }: [[JMENO]] → text. */
+function mistaZeZaznamu(zaznamy, L) {
+  const m = {};
+  (zaznamy || []).forEach(z => { if (z && typeof z.misto === 'string') m[z.misto] = z[L]; });
+  return m;
+}
+function rozvinMista(text, mista) {
+  const vady = [];
+  const out = String(text).replace(MISTO_RE, (_x, jm) => {
+    const t = mista && mista[jm];
+    if (typeof t !== 'string' || !t.trim()) { vady.push('místo [[' + jm + ']] není ve slovníku přeložené'); return ''; }
+    return t;
+  });
+  return { text: out, vady };
+}
+
+function prelozXml(xml, slovnik, L, mista) {
+  L = L || 'en';
   const chybi = [], vady = [];
   let prelozeno = 0;
   const spany = vnitrniSpany(xml);
@@ -187,8 +217,10 @@ function prelozXml(xml, slovnik) {
     const st = stylyOdstavce(r.behy);
     const cz = zapisOdstavce(r.behy, st);
     const z = slovnik.get(normKlic(cz));
-    if (!z || !String(z.en || '').trim()) { chybi.push(cz); continue; }
-    const en = String(z.en);
+    if (!z || !String(z[L] || '').trim()) { chybi.push(cz); continue; }
+    const rm = rozvinMista(z[L], mista);
+    if (rm.vady.length) { vady.push(rm.vady.join('; ') + ': „' + bezZnacek(cz).slice(0, 80) + '"'); continue; }
+    const en = rm.text;
     const vada = r.slozity ? 'odstavec s obrázkem, polem nebo odkazem se nepřeskládává'
       : symbolySerazene(en) !== symbolySerazene(cz) ? 'symboly nesouhlasí (' + symbolySerazene(cz) + ' × ' + symbolySerazene(en) + ')'
       : podpisOddelovacu(bezZnacek(en)) !== podpisOddelovacu(bezZnacek(cz)) ? 'tabulátory / zalomení nesouhlasí s češtinou'
@@ -211,28 +243,32 @@ function nactiSlovnik(soubor) {
   zaznamy.forEach(z => { if (z && typeof z.cz === 'string') mapa.set(normKlic(z.cz), z); });
   return { zaznamy, mapa };
 }
-const slovnikSoubor = sablona => sablona.replace(/\.docx$/i, '.preklad_en.json');
+const slovnikSoubor = (sablona, L) => sablona.replace(/\.docx$/i, '.preklad_' + (L || 'en') + '.json');
 
-async function kostra(soubor) {
+async function kostra(soubor, L) {
+  L = L || 'en';
   const polozky = await dg.zipPrecti(new Uint8Array(fs.readFileSync(soubor)));
-  const { zaznamy, mapa } = nactiSlovnik(slovnikSoubor(soubor));
+  const { zaznamy, mapa } = nactiSlovnik(slovnikSoubor(soubor, L));
   let novych = 0;
   for (const p of polozky) {
     if (!DILY.test(p.nazev)) continue;
     odstavceKPrekladu(dec.decode(p.data)).forEach(o => {
       if (mapa.has(normKlic(o.cz))) return;
-      const z = { cz: o.cz, en: '', pozn: '' };
+      const z = { cz: o.cz, [L]: '', pozn: '' };
       if (o.styly.length) z.styly = o.styly;
       if (o.slozity) z.slozity = true;
       zaznamy.push(z); mapa.set(normKlic(o.cz), z); novych++;
     });
   }
-  fs.writeFileSync(slovnikSoubor(soubor), JSON.stringify(zaznamy, null, 1) + '\n');
-  return { zaznamu: zaznamy.length, novych, soubor: slovnikSoubor(soubor) };
+  fs.writeFileSync(slovnikSoubor(soubor, L), JSON.stringify(zaznamy, null, 1) + '\n');
+  return { zaznamu: zaznamy.length, novych, soubor: slovnikSoubor(soubor, L) };
 }
 
-/* Vyrobí anglickou šablonu a zkontroluje ji. Vrací { bajty, problemy: [], pozn: [] }. */
-async function prelozSablonu(bajty, zaznamy) {
+/* Vyrobí jazykovou šablonu a zkontroluje ji. Vrací { bajty, problemy: [], pozn: [] }. */
+async function prelozSablonu(bajty, zaznamy, L) {
+  L = L || 'en';
+  if (JAZYKY_SOD.indexOf(L) < 0) throw new Error('Neznámý jazyk „' + L + '" (en, de, fr)');
+  const mista = mistaZeZaznamu(zaznamy, L);
   const mapa = new Map();
   (zaznamy || []).forEach(z => { if (z && typeof z.cz === 'string') mapa.set(normKlic(z.cz), z); });
   const polozky = await dg.zipPrecti(bajty);
@@ -240,7 +276,7 @@ async function prelozSablonu(bajty, zaznamy) {
   let prelozeno = 0;
   for (const p of polozky) {
     if (!DILY.test(p.nazev)) continue;
-    const v = prelozXml(dec.decode(p.data), mapa);
+    const v = prelozXml(dec.decode(p.data), mapa, L, mista);
     p.data = enc.encode(v.xml);
     prelozeno += v.prelozeno;
     v.chybi.forEach(t => problemy.push('nepřeloženo (' + p.nazev + '): „' + bezZnacek(t).slice(0, 90) + '"'));
@@ -254,37 +290,41 @@ async function prelozSablonu(bajty, zaznamy) {
   if (rozdil.ubylo.length) problemy.push('chybí symboly: ' + rozdil.ubylo.join(', '));
   if (rozdil.pribylo.length) problemy.push('navíc symboly: ' + rozdil.pribylo.join(', '));
   const jazyk = so.sablonaJazykOdhad(odstavce);
-  if (jazyk.jazyk !== 'en') problemy.push('odhad jazyka: ' + jazyk.jazyk + ' (' + Math.round(jazyk.podil * 100) + ' %), čekána angličtina');
-  odstavce.filter(t => CESKE_ZNAKY.test(String(t).replace(SYMBOL_RE, '').replace(ZKRATKY_CZ, '$1')))
+  if (jazyk.jazyk !== L) problemy.push('odhad jazyka: ' + jazyk.jazyk + ' (' + Math.round(jazyk.podil * 100) + ' %), čekán jazyk ' + L);
+  odstavce.filter(t => CESKE_ZNAKY[L].test(String(t).replace(SYMBOL_RE, '').replace(ZKRATKY_CZ, '$1')))
     .forEach(t => problemy.push('česká diakritika: „' + String(t).slice(0, 90) + '"'));
   const pozn = (zaznamy || []).filter(z => z && String(z.pozn || '').trim()).map(z => z.pozn);
   return { bajty: vystup, problemy, pozn, prelozeno, jazyk, symbolu: symCz.length };
 }
 
 async function hlavni() {
-  const argy = process.argv.slice(2);
+  let argy = process.argv.slice(2);
+  let L = 'en';
+  const ij = argy.indexOf('--jazyk');
+  if (ij >= 0) { L = String(argy[ij + 1] || ''); argy = argy.slice(0, ij).concat(argy.slice(ij + 2)); }
+  if (JAZYKY_SOD.indexOf(L) < 0) { console.error('Neznámý jazyk „' + L + '" (--jazyk en | de | fr)'); process.exit(2); }
   if (argy[0] === '--kostra') {
     const slozka = argy[1];
-    if (!slozka) { console.error('Použití: node nastroje/preklad_sod.js --kostra <složka> [soubor.docx …]'); process.exit(2); }
+    if (!slozka) { console.error('Použití: node nastroje/preklad_sod.js --kostra [--jazyk en|de|fr] <složka> [soubor.docx …]'); process.exit(2); }
     const soubory = (argy.length > 2 ? argy.slice(2) : SABLONY_SOD).map(f => path.join(slozka, f)).filter(f => fs.existsSync(f));
     if (!soubory.length) throw new Error('Ve složce ' + slozka + ' není žádná šablona SoD (' + SABLONY_SOD.join(', ') + ')');
     for (const f of soubory) {
-      const k = await kostra(f);
+      const k = await kostra(f, L);
       console.log('✓ ' + path.basename(k.soubor) + ' — záznamů ' + k.zaznamu + ', nových ' + k.novych);
     }
     return 0;
   }
   const slozka = argy[0], vystupni = argy[1] || argy[0];
-  if (!slozka) { console.error('Použití: node nastroje/preklad_sod.js [--kostra] <složka> [výstupní složka]'); process.exit(2); }
+  if (!slozka) { console.error('Použití: node nastroje/preklad_sod.js [--kostra] [--jazyk en|de|fr] <složka> [výstupní složka]'); process.exit(2); }
   const soubory = SABLONY_SOD.map(f => path.join(slozka, f)).filter(f => fs.existsSync(f));
   if (!soubory.length) throw new Error('Ve složce ' + slozka + ' není žádná šablona SoD (' + SABLONY_SOD.join(', ') + ')');
   if (!fs.existsSync(vystupni)) fs.mkdirSync(vystupni, { recursive: true });
   let celkem = 0;
   for (const f of soubory) {
-    const sl = slovnikSoubor(f);
-    if (!fs.existsSync(sl)) throw new Error('Chybí slovník ' + sl + ' — nejdřív --kostra a vyplnit „en"');
-    const v = await prelozSablonu(new Uint8Array(fs.readFileSync(f)), nactiSlovnik(sl).zaznamy);
-    const cil = path.join(vystupni, path.basename(f).replace(/\.docx$/i, '_EN.docx'));
+    const sl = slovnikSoubor(f, L);
+    if (!fs.existsSync(sl)) throw new Error('Chybí slovník ' + sl + ' — nejdřív --kostra a vyplnit „' + L + '"');
+    const v = await prelozSablonu(new Uint8Array(fs.readFileSync(f)), nactiSlovnik(sl).zaznamy, L);
+    const cil = path.join(vystupni, path.basename(f).replace(/\.docx$/i, '_' + L.toUpperCase() + '.docx'));
     fs.writeFileSync(cil, v.bajty);
     celkem += v.problemy.length;
     console.log((v.problemy.length ? '✗ ' : '✓ ') + path.basename(cil) + ' — přeloženo odstavců ' + v.prelozeno
@@ -297,4 +337,5 @@ async function hlavni() {
 }
 
 if (require.main === module) hlavni().then(k => process.exit(k)).catch(e => { console.error('CHYBA: ' + e.message); process.exit(1); });
-module.exports = { rozborOdstavce, stylyOdstavce, zapisOdstavce, slozOdstavec, odstavceKPrekladu, prelozXml, prelozSablonu, normKlic };
+module.exports = { rozborOdstavce, stylyOdstavce, zapisOdstavce, slozOdstavec, odstavceKPrekladu, prelozXml, prelozSablonu, normKlic,
+  rozvinMista, mistaZeZaznamu, JAZYKY_SOD };
