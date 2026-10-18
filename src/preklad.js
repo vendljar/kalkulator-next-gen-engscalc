@@ -929,7 +929,7 @@ const PREKLAD = {
   /* V4 (16. 10. 2026): další dvě sekce rekapitulace nabídky PROJ zůstávaly
    * v EN/DE/FR česky (název sekce z Kalkulace PROJ). Základ podle hesel
    * „EKONOMICKÁ ZADÁVACÍ ČÁST (EZC)" a „… KOLAUDACI" výše.
-   * NÁVRH PŘEKLADU — čeká na kontrolu J. V. */
+   * Překlad schválil J. V. 17. 10. 2026 (nález V4-1). */
   "EZC – EKONOMICKÁ ZADÁVACÍ ČÁST (celý projekt)": ["EZC – TENDER COST DOCUMENTS (entire project)","EZC – WIRTSCHAFTLICHER AUSSCHREIBUNGSTEIL (gesamtes Projekt)","EZC – PIÈCES ÉCONOMIQUES DE CONSULTATION (projet complet)"],
   "KOLAUDACE (pro 1 ks výtahu)": ["FINAL BUILDING APPROVAL (for 1 lift)","BAUABNAHME (für 1 Aufzug)","RÉCEPTION DES TRAVAUX (pour 1 ascenseur)"],
   /* popisy u cenových řádků (krátké obchodní věty – překládají se) */
