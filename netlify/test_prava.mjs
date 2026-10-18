@@ -376,7 +376,7 @@ const MATICE = [
 
   { fn: zobrazeni, nazev: 'zobrazení — zveřejnění matice (POST /api/zobrazeni)', metoda: 'POST',
     url: 'http://x/api/zobrazeni',
-    telo: () => ({ matice: { 'tab.detail': { 'Obchodník': false, 'Vedoucí': true } } }),
+    telo: (r) => ({ matice: { 'tab.detail': { 'Obchodník': false, 'Vedoucí': true } }, hesloSpravce: hesloRole(r) }),
     proc: 'kdo co v aplikaci vidí, rozhoduje administrátor za celou firmu',
     prava: JEN_ADMIN },
 
@@ -1395,7 +1395,7 @@ console.log('\n===== B112: CENÍK VARIANTY A SKRYTÉ PŘEPISY PODLE ROLE HLÍDÁ
     { cenik: c, cenikProj: cp, slevy: NAST_B112 }, cAdmin)).json());
   const zv = await zverejni(ZC.zkusebniCenik(), ZC.zkusebniCenikProj());
   test('B112: příprava — zveřejněn zkušební ceník', zv.ok === true, zv);
-  await post(zobrazeni, 'http://x/api/zobrazeni', { matice: {} }, cAdmin);
+  await post(zobrazeni, 'http://x/api/zobrazeni', { hesloSpravce: 'Docasne.Heslo.123', matice: {} }, cAdmin);
   let cisloB112 = 9641;   // vlastní rozsah 9641–9699
   const novaB112 = () => zakazkaSCeny('2026 - OPR - CN - ' + (cisloB112++));
   const ulozB112 = async (z, c, extra) => { const r = await post(zakazky, 'http://x/api/zakazky', Object.assign({ zakazka: z }, extra || {}), c);
@@ -1463,20 +1463,20 @@ console.log('\n===== B112: CENÍK VARIANTY A SKRYTÉ PŘEPISY PODLE ROLE HLÍDÁ
   test('B112: klon s vlastní přirážkou (nová varianta mimo zveřejněný ceník) → 403', r13b.status === 403, r13b);
 
   /* 15–17) právo v matici uložené na serveru */
-  await post(zobrazeni, 'http://x/api/zobrazeni', { matice: { 'pole.prirazka': { 'Obchodník': true, 'Vedoucí': false } } }, cAdmin);
+  await post(zobrazeni, 'http://x/api/zobrazeni', { hesloSpravce: 'Docasne.Heslo.123', matice: { 'pole.prirazka': { 'Obchodník': true, 'Vedoucí': false } } }, cAdmin);
   const r15 = await upravB112(a => { d0(a).cenik.marze = 0.05; d0(a).proj.cenik.marze = 0.1; }, cObchB);
   test('B112: obchodník s právem pole.prirazka v matici smí změnit přirážku (200)', r15.status === 200, r15);
   const r15b = await upravB112(a => { d0(a).cenik.profilasKgKc = 1; }, cObchB);
   test('B112: … ale ne jednotkovou cenu ceníku (403)', r15b.status === 403, r15b);
-  await post(zobrazeni, 'http://x/api/zobrazeni', { matice: { 'tab.cenik': { 'Obchodník': true, 'Vedoucí': false } } }, cAdmin);
+  await post(zobrazeni, 'http://x/api/zobrazeni', { hesloSpravce: 'Docasne.Heslo.123', matice: { 'tab.cenik': { 'Obchodník': true, 'Vedoucí': false } } }, cAdmin);
   const r16 = await upravB112(a => { d0(a).cenik.profilasKgKc = 1; }, cObchB);
   test('B112: obchodník s právem tab.cenik smí změnit ceník OCK (200)', r16.status === 200, r16);
   const r16b = await upravB112(a => { d0(a).proj.cenik.marze = -0.30; }, cObchB);
   test('B112: … ale ne ceník PROJ (403)', r16b.status === 403, r16b);
-  await post(zobrazeni, 'http://x/api/zobrazeni', { matice: { 'sloupce.naklad': { 'Obchodník': true, 'Vedoucí': false } } }, cAdmin);
+  await post(zobrazeni, 'http://x/api/zobrazeni', { hesloSpravce: 'Docasne.Heslo.123', matice: { 'sloupce.naklad': { 'Obchodník': true, 'Vedoucí': false } } }, cAdmin);
   const r17 = await upravB112(a => { d0(a).ock.zadani.mnozstviPrepis = { 'MONTÁŽ NA STAVBĚ': 10 }; d0(a).proj.zadani.sekce[0].prirazkaPct = 5; }, cObchB);
   test('B112: obchodník s právem sloupce.naklad (sloupce, kde se přepisy zadávají) smí přepsat (200)', r17.status === 200, r17);
-  await post(zobrazeni, 'http://x/api/zobrazeni', { matice: {} }, cAdmin);
+  await post(zobrazeni, 'http://x/api/zobrazeni', { hesloSpravce: 'Docasne.Heslo.123', matice: {} }, cAdmin);
 
   /* 18) přepočet po položkách na novou verzi ceníku: směs uložené a zveřejněné */
   const z18 = novaB112(); const r18a = await ulozB112(z18, cAdmin);
@@ -1529,7 +1529,7 @@ console.log('\n===== #374 (B113, B114): KONCOVÁ CENA BEZ SCHVÁLENÍ — IDENTI
   const zv = await (await post(program, 'http://x/api/program',
     { cenik: ZC.zkusebniCenik(), cenikProj: ZC.zkusebniCenikProj(), katalog: KAT_374, slevy: NAST_374 }, cAdmin)).json();
   test('#374: příprava — zveřejněn zkušební ceník s katalogem', zv.ok === true, zv);
-  await post(zobrazeni, 'http://x/api/zobrazeni', { matice: {} }, cAdmin);
+  await post(zobrazeni, 'http://x/api/zobrazeni', { hesloSpravce: 'Docasne.Heslo.123', matice: {} }, cAdmin);
   let cislo374 = 9701;   // vlastní rozsah 9701–9799
   const nova374 = () => zakazkaSCeny('2026 - OPR - CN - ' + (cislo374++));
   const uloz374 = async (z, c, extra) => { const r = await post(zakazky, 'http://x/api/zakazky', Object.assign({ zakazka: z }, extra || {}), c);
@@ -1613,10 +1613,10 @@ console.log('\n===== #374 (B113, B114): KONCOVÁ CENA BEZ SCHVÁLENÍ — IDENTI
   test('B114: klon varianty s položkami upravenými administrátorem (200)', b4.status === 200, b4);
   const b5 = await uprav374(a => { pol(a, 'zamereni').forEach(p => { delete p.vyrazeno; }); a.nazevAkce += ' (zaměření)'; }, cObch);
   test('B114: zahrnutí/vyřazení položky (rozsah, ne cena) se nehlídá (200)', b5.status === 200, b5);
-  await post(zobrazeni, 'http://x/api/zobrazeni', { matice: { 'sloupce.naklad': { 'Obchodník': true, 'Vedoucí': false } } }, cAdmin);
+  await post(zobrazeni, 'http://x/api/zobrazeni', { hesloSpravce: 'Docasne.Heslo.123', matice: { 'sloupce.naklad': { 'Obchodník': true, 'Vedoucí': false } } }, cAdmin);
   const b6 = await uprav374(a => { hod(a).hodiny = 2; }, cObch);
   test('B114: obchodník s právem sloupce.naklad smí hodiny změnit (200)', b6.status === 200, b6);
-  await post(zobrazeni, 'http://x/api/zobrazeni', { matice: {} }, cAdmin);
+  await post(zobrazeni, 'http://x/api/zobrazeni', { hesloSpravce: 'Docasne.Heslo.123', matice: {} }, cAdmin);
 
   /* B114 — cena trvalé položky s kid (PROJ i OCK) */
   const sKid = (z) => {   // trvalá položka PROJ: v ceníku varianty i v zadání (projKatalogAplikuj)
@@ -2039,7 +2039,7 @@ console.log('\n===== ZVEŘEJNĚNÝ SLOVNÍK (#401, 12. 10. 2026) =====\n');
 
 console.log('\n===== AUDIT B9: ÚPLNOST ZÁLOHY =====\n');
 {
-  await post(zobrazeni, 'http://x/api/zobrazeni', { matice: {} }, cAdmin);
+  await post(zobrazeni, 'http://x/api/zobrazeni', { hesloSpravce: 'Docasne.Heslo.123', matice: {} }, cAdmin);
   await post(popisy, 'http://x/api/popisy', { texty: { 'Sklo VSG': 'Věta do zálohy.' } }, cAdmin);
   await post(zakazniciFn, 'http://x/api/zakaznici', { zakaznik: { nazev: 'Záloha s.r.o.', ico: '12345678' } }, cObch);
   await post(uzivatele, 'http://x/api/uzivatele',

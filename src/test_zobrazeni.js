@@ -94,8 +94,57 @@ test('neznámá role nevidí nic z přidělitelného',
 test('prázdná role nevidí nic z přidělitelného',
   klice.every(k => Z.zobrazeniSmi(undefined, k, maticeVse) === false));
 
-/* Neznámý klíč vrací true schválně: překlep v UI nemá utnout kus rozhraní. */
-test('neznámý klíč se nikomu neskrývá', Z.zobrazeniSmi('Obchodník', 'neco.co.neexistuje', {}) === true);
+/* B176 (audit 15. 10., zadání 18. 10. 2026): neznámý klíč = NEPOVOLENO.
+ * Do v18.10.5 vracel true, takže překlep v konstantě práva (i na serveru —
+ * CRM, náklady, ceník v zakázce) by právo otevřel všem. Administrátor vidí
+ * dál všechno; že kód nikde nečeká neznámý klíč, hlídá kontrola níž. */
+test('B176: neznámý klíč obchodník nesmí', Z.zobrazeniSmi('Obchodník', 'neco.co.neexistuje', {}) === false);
+test('B176: neznámý klíč vedoucí nesmí ani se zaškrtnutím v matici',
+  Z.zobrazeniSmi('Vedoucí', 'neco.co.neexistuje', { 'neco.co.neexistuje': { 'Vedoucí': true } }) === false);
+test('B176: neznámý klíč administrátor smí (vidí vždy vše)',
+  Z.zobrazeniSmi(Z.ZOBRAZENI_ROLE_VZDY, 'neco.co.neexistuje', {}) === true);
+
+/* B176: každé právo, na které se kód ptá, je v seznamu prvků. Po přepnutí
+ * na „neznámý = nepovoleno" by klíč mimo seznam tiše vzal právo i tomu,
+ * komu ho matice dala. Sbírá se staticky ze zdrojů prohlížeče i serveru:
+ * přímá volání smiZobrazit/zobrazeniSmi/smi('…'), smiZobrazitVse([…]),
+ * záložky (TAB_ZOBRAZENI_KLIC), panely nastavení (NAST_PANELY klic) a
+ * konstanty práv (PD_PRAVO, ZOBRAZENI_KLIC_NAKLADY). */
+{
+  const fs = require('fs'), path = require('path');
+  const KOREN = path.join(__dirname, '..');
+  const projdi = (d, pripona) => fs.readdirSync(d, { withFileTypes: true }).flatMap(e => {
+    const p = path.join(d, e.name);
+    if (e.isDirectory()) return e.name === 'node_modules' ? [] : projdi(p, pripona);
+    return pripona.test(e.name) && !/^test_|^mutace/.test(e.name) ? [p] : [];
+  });
+  const soubory = projdi(path.join(KOREN, 'src'), /\.js$/).concat(projdi(path.join(KOREN, 'netlify'), /\.mjs$/));
+  const znamy = new Set(Z.ZOBRAZENI_PRVKY.map(p => p.klic));
+  const hledane = new Map();                       // klíč → soubory
+  const pridej = (k, f) => { if (!hledane.has(k)) hledane.set(k, new Set()); hledane.get(k).add(path.relative(KOREN, f)); };
+  const VZORY = [
+    /(?:smiZobrazit|\bsmi)\(\s*'([^']+)'/g,
+    /zobrazeniSmi\([^,()]+,\s*'([^']+)'/g,
+    /PD_PRAVO\s*=\s*'([^']+)'/g,
+    /ZOBRAZENI_KLIC_NAKLADY\s*=\s*'([^']+)'/g,
+  ];
+  soubory.forEach(f => {
+    /* Komentáře pryč — v nich se o klíčích jen mluví. */
+    const s = fs.readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"\\])\/\/.*$/gm, '$1');
+    VZORY.forEach(re => { for (const m of s.matchAll(re)) pridej(m[1], f); });
+    for (const m of s.matchAll(/smiZobrazitVse\(\s*\[([^\]]*)\]/g))
+      for (const k of m[1].matchAll(/'([^']+)'/g)) pridej(k[1], f);
+    const tab = s.match(/TAB_ZOBRAZENI_KLIC\s*=\s*\{([\s\S]*?)\}/);
+    if (tab) for (const k of tab[1].matchAll(/:\s*'([^']+)'/g)) pridej(k[1], f);
+    const pan = s.match(/NAST_PANELY\s*=\s*\[([\s\S]*?)\n\];/);
+    if (pan) for (const k of pan[1].matchAll(/klic:\s*'([^']+)'/g)) pridej(k[1], f);
+  });
+  const chybi = [...hledane.keys()].filter(k => !znamy.has(k));
+  test('B176: kontrola našla dotazovaná práva (aspoň 30 klíčů, mezi nimi crm.pipedrive a tab.cenik)',
+    hledane.size >= 30 && hledane.has('crm.pipedrive') && hledane.has('tab.cenik'), hledane.size);
+  test('B176: každé právo, na které se kód ptá, je v seznamu prvků', chybi.length === 0,
+    chybi.map(k => k + ' (' + [...hledane.get(k)].join(', ') + ')').join('; '));
+}
 
 /* ---------- 3) výchozí stav = dnešek ---------- */
 

@@ -412,6 +412,7 @@ function onlineOdhlas() {
     /* Matice zpět na výchozí: odhlášený nemá čím doložit, komu co přidělil
      * administrátor, a výchozí stav je ten opatrnější (navíc nevidí nikdo). */
     ONLINE_STAV.zobrazeni = null; onlineZobrazeniNasad(null);
+    onlineZobrazeniHesloZapomen();                 // B168: heslo k matici jen v rámci přihlášení
     if (typeof NAST !== 'undefined') NAST.nahledRole = '';
     ONLINE_STAV.rejstrik = []; ONLINE_STAV.soubor = ''; ONLINE_STAV.razitko = ''; ONLINE_STAV.posledni = '';
     onlinePoslednizapamatuj('');   // po odhlášení se nikam nevracíme
@@ -1014,9 +1015,54 @@ function onlineZobrazeniPopis() {
  * nepřidělil prvek, který server stejně nepustí. */
 function onlineUlozZobrazeniTise() {
   if (!jeAdminOnline()) return Promise.reject(new Error('nastavení zobrazení smí ukládat jen administrátor'));
-  return onlineApi('/api/zobrazeni', { matice: NAST.zobrazeni })
+  return onlineZobrazeniPost()
     .then(() => onlineNactiZobrazeni())
     .then(() => true);
+}
+
+/* MATICE JEN S HESLEM SPRÁVCE (B168, audit 15. 10. 2026, zadání 18. 10. 2026).
+ * Server zápis matice pustí jen s polem `hesloSpravce` — matice řídí i
+ * serverová práva (CRM, nákladový ceník, ceník v zakázce). Heslo se ptá
+ * týmž dialogem jako citlivé akce účtů (B77).
+ *
+ * Panel ukládá sám 800 ms po změně, takže dialog u každého zaškrtnutí by
+ * byl k nepřežití. Výchozí volba dávky (J. V. se v sezení neptal): ověřené
+ * heslo drží jen paměť této stránky ZOBRAZENI_HESLO_MS po posledním
+ * úspěšném uložení; nikam se nezapisuje, odhlášením a odmítnutím serverem
+ * se zahodí. Ochrana proti ukradené cookie tím platí dál — kdo má jen
+ * cookie, heslo nemá. Souběžná uložení sdílí jeden dialog.
+ *
+ * Zrušený dialog nebo špatné heslo tiše neselže: volající dostane chybu
+ * s hláškou (panel ji ukáže u „Uložit teď", ostatní místa přes onlineZprava)
+ * a matice zůstane v paměti k dalšímu pokusu. */
+const ZOBRAZENI_HESLO_MS = 10 * 60 * 1000;
+const ZOBRAZENI_HESLO = { h: '', plati: 0, dotaz: null };
+function onlineZobrazeniHesloZapomen() {
+  ZOBRAZENI_HESLO.h = ''; ZOBRAZENI_HESLO.plati = 0;
+}
+function onlineZobrazeniHeslo() {
+  if (ZOBRAZENI_HESLO.h && Date.now() < ZOBRAZENI_HESLO.plati) return Promise.resolve(ZOBRAZENI_HESLO.h);
+  if (!ZOBRAZENI_HESLO.dotaz) {
+    ZOBRAZENI_HESLO.dotaz = Promise.resolve(dotazHeslo('Změna nastavení zobrazení řídí i to, kam server '
+      + 'pustí obchodníka a vedoucího (CRM, náklady, ceník v zakázce). Potvrďte ji svým heslem '
+      + '(tím, kterým se přihlašujete do aplikace).', { nadpis: 'Potvrzení heslem správce' }))
+      .then(h => { ZOBRAZENI_HESLO.dotaz = null; return h || ''; },
+            e => { ZOBRAZENI_HESLO.dotaz = null; throw e; });
+  }
+  return ZOBRAZENI_HESLO.dotaz;
+}
+async function onlineZobrazeniPost() {
+  const h = await onlineZobrazeniHeslo();
+  if (!h) throw new Error('Nastavení zobrazení se neuložilo — bez vašeho hesla ho nelze potvrdit. '
+    + 'Uložte ho znovu („Uložit teď" v Nastavení → Zobrazení) a heslo zadejte.');
+  try {
+    const d = await onlineApi('/api/zobrazeni', { matice: NAST.zobrazeni, hesloSpravce: h });
+    ZOBRAZENI_HESLO.h = h; ZOBRAZENI_HESLO.plati = Date.now() + ZOBRAZENI_HESLO_MS;
+    return d;
+  } catch (e) {
+    if (e && e.data && e.data.kod === 'hesloSpravce') onlineZobrazeniHesloZapomen();
+    throw e;
+  }
 }
 
 /* Zveřejnění s dotazem – zůstává pro hromadné přepsání tabulky předlohou,
@@ -1035,7 +1081,7 @@ async function onlineZverejniZobrazeni() {
     + 'přihlášení nebo po načtení stránky.')) return Promise.resolve(false);
 
   ONLINE_STAV.pracuje = true; render();
-  return onlineApi('/api/zobrazeni', { matice: NAST.zobrazeni })
+  return onlineZobrazeniPost()
     .then(() => onlineNactiZobrazeni().then(() => {
       onlineZprava('Nastavení zobrazení je zveřejněné online.');
       return true;

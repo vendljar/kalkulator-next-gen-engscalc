@@ -1,3 +1,20 @@
+# Předávka — 18. 10. 2026: dávka B168 (v18.10.6), větev `claude/b168-matice-heslo` — B168, B176, zápis nálezů 15. 10.
+
+Nad `origin/claude/integrace-16-10` (`0dbec56`, v17.10.5). Do `test-draft` / `test` / `main` nic —
+slučuje koordinace (session_011B3ruyPigNEMSUdesbk4Hd). Podrobnosti: CHANGELOG v18.10.6,
+`BEZPECNOST_MEZE.md` (oddíl „Audit 15. 10. 2026“), roadmapa #426, #427.
+
+- **Hotovo (pushnuto):** B168 — `POST /api/zobrazeni` chce `hesloSpravce` (401/429 `kod: 'hesloSpravce'`),
+  klient `onlineZobrazeniPost` (dialog jako B77, heslo v paměti stránky 10 min, zrušení = hláška);
+  B176 — `zobrazeniSmi` fail-closed pro neznámý klíč (admin vždy) + statická kontrola dotazovaných práv.
+  Zápis B169–B177 a kolize B178 (15. 10. = B31, uzavřeno v15.10.14).
+- **Testy:** pred_pushem 260/0/6 přeskočeno; mutace B168 1/1, B176 1/1, „zobrazen“ 10/10, B80 Pipedrive 1/1.
+- **Výchozí volba (J. V. se neptal):** heslo k matici držet 10 min v paměti stránky (`ZOBRAZENI_HESLO_MS`).
+- **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `roadmapa/roadmap.json`
+  (#426, #427 předběžná id) / `netlify/mutace.mjs` (seznam SADY + 2 mutace) / `BEZPECNOST_MEZE.md` /
+  harnessy `overit_*.mjs` (stub `dotazHeslo`). Nové sady/harnessy, které ukládají matici, musí posílat heslo.
+- **Další krok:** #427 (B171, B174, B175) podle kapacity.
+
 # Předávka — 18. 10. 2026: dávka V5 (v18.10.3), větev `claude/v5-sod-proj-rozsah` — rozsah díla SoD projekce (#380 Q7)
 
 Nad `origin/claude/integrace-16-10` (`9bb7caf`, v17.10.4). Do `test-draft` / `test` / `main` nic —

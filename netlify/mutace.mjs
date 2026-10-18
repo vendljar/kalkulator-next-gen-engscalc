@@ -96,7 +96,9 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* V5 / #380 Q7 (18. 10. 2026): rozsah díla SoD PROJ podle nabídky (vyrob_sablony --sod-proj-v4). */
      '../src/test_sod_proj_rozsah.js',
      /* S13 (16. 10. 2026): příznak ceníku „cena dle nabídky" — model a server. */
-     '../src/test_cena_dle_nabidky.js', 'test_cena_dle_nabidky.mjs'];
+     '../src/test_cena_dle_nabidky.js', 'test_cena_dle_nabidky.mjs',
+     /* B168, B176 (18. 10. 2026): matice jen s heslem správce, neznámé právo nepovoleno. */
+     'test_zobrazeni_heslo.mjs', '../src/test_zobrazeni.js'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -1438,6 +1440,16 @@ const MUTACE = [
     hledej: "  if (!nahled && zdrojPopis.typ === 'otisk' && casti.includes('uzivatele') && maVlastni(zaloha, 'uzivatele')) {",
     nahrad: "  if (false) {",
     proc: 'kdo má cookie správce, vrátí obnovou kolegovi starší otisk hesla, které zná (B77)' },
+  /* B176 (audit 15. 10., zadání 18. 10. 2026): neznámé právo = nepovoleno. */
+  { nazev: 'B176: neznámý klíč matice znamená povoleno', soubor: '../src/zobrazeni.js',
+    hledej: "  if (!p) return false;                            // B176: fail-closed",
+    nahrad: "  if (!p) return true;",
+    proc: 'překlep v konstantě práva (i na serveru — CRM, náklady, ceník v zakázce) by právo otevřel všem (B176)' },
+  /* B168 (audit 15. 10., zadání 18. 10. 2026): matice řídí i serverová práva. */
+  { nazev: 'B168: matice zobrazení se uloží bez potvrzení heslem', soubor: 'functions/zobrazeni.mjs',
+    hledej: "  { const stop = await potvrdHesloSpravce(req, relace, t.hesloSpravce); if (stop) return stop; }",
+    nahrad: "  ;",
+    proc: 'kdo má cookie správce, otevře maticí obyčejnému účtu CRM, nákladový ceník i úpravy ceníku v zakázce (B168)' },
   { nazev: 'B77: heslo správce bez brzdy (limit e-mailu)', soubor: 'lib/sdilene.mjs',
     hledej: "    if (pokusy.email.n > POKUSY_MAX)\n      return odmitni(",
     nahrad: "    if (false)\n      return odmitni(",

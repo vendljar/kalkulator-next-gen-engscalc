@@ -6657,8 +6657,37 @@
    "detail" : "Návrh dávky B165 (17. 10. 2026): server odmítne (403) schválení, když schvalovatel = žadatel (razítko pozadalEmail) nebo autor zakázky; administrátor smí vždy; UI skryje „Schválit“ u vlastní žádosti; test s pojistkou a mutace (~1 h).",
    "kde" : "`netlify/lib/vyjimky_server.mjs` (vyjimkyServerKontrola), `src/vyjimky.js` (vyjimkaSmiRozhodnout), `src/ui/schvalovani_ui.js`",
    "hotovoKdyz" : "Vlastní výjimku schválí jen administrátor; test i mutace.",
+   "cekaNa" : "rozhodnutí J. V. 18. 10. 2026 — zatím ponechat (systém se testuje), do budoucna změnit.",
    "pozn" : "ROZHODNUTÍ J. V. 18. 10. 2026: zatím ponechat (systém se testuje), do budoucna změnit — zapsáno jako budoucí bod.",
    "cekaNa" : "Odloženo J. V. 18. 10. 2026: zatím ponechat, systém se testuje — do budoucna změnit (vlastní výjimku schválí jen administrátor).",
+   "hotovoV" : "—"
+  },
+  {
+   "id" : "426",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "stredni",
+   "slozitost" : "S",
+   "nazev" : "B168 a B176 (audit 15. 10.): matice zobrazení s heslem správce, neznámé právo nepovoleno",
+   "proc" : "Bezpečnostní audit 15. 10. 2026 nad v15.10.4 (Disk `Testovani/2026-10-15_kalkulator_BEZPECNOSTNI_AUDIT_v15.10.4.md`), potvrzený auditem 17. 10. nad v17.10.3: B168 (střední) — `POST /api/zobrazeni` chtěl jen roli správce, ač matice řídí i serverová práva (CRM, čtení nákladového ceníku, úpravy ceníku v zakázce); B176 (informativní) — `zobrazeniSmi` pro klíč mimo seznam prvků vracel true (překlep v konstantě práva by právo otevřel všem, i na serveru).",
+   "detail" : "B168: zápis matice chce pole `hesloSpravce` (`potvrdHesloSpravce`, týž limit pokusů jako B77), odmítnutí 401/429 s `kod: 'hesloSpravce'`, GET beze změny. Klient se ptá týmž dialogem jako citlivé akce účtů; ověřené heslo drží paměť stránky 10 minut po posledním uložení (autosave panelu by jinak chtěl heslo u každého zaškrtnutí), odhlášení a odmítnutí ho zahodí; zrušený dialog skončí hláškou s návodem „Uložit teď“. B176: administrátor smí vždy, neznámý klíč ostatním false; statická kontrola v `src/test_zobrazeni.js` ověří, že každé právo, na které se kód ptá (src/ i netlify/), je v seznamu prvků — všechny dotazované klíče v seznamu byly, žádný se doplňovat nemusel.",
+   "hotovoKdyz" : "Bez hesla a se špatným heslem 401 s kódem hesloSpravce, se správným 200 a matice uložená jen tehdy; neznámý klíč obchodník/vedoucí false; testy s pojistkou a mutace B168/B176 chycené.",
+   "kde" : "`netlify/functions/zobrazeni.mjs`, `src/ui/online_ui.js` (`onlineZobrazeniPost`), `src/ui/common.js` (`zobrazeniMaticiUloz`), `src/zobrazeni.js` (`zobrazeniSmi`), `netlify/test_zobrazeni_heslo.mjs`, `src/test_zobrazeni.js`, `overit_zobrazeni.mjs`",
+   "hotovoV" : "v18.10.6",
+   "pozn" : "Předběžné id (přidělí koordinace při sloučení). Dávka B168, větev `claude/b168-matice-heslo` nad `claude/integrace-16-10`. Výchozí volba dávky (J. V. se v sezení neptal): heslo v paměti 10 minut — změnit na „pokaždé“ je jedna konstanta (`ZOBRAZENI_HESLO_MS`)."
+  },
+  {
+   "id" : "427",
+   "vlna" : "F",
+   "stav" : "ceka",
+   "dulezitost" : "nizka",
+   "slozitost" : "S",
+   "nazev" : "Informativní nálezy auditu 15. 10. (B169–B175, B177) a kolize čísla B178",
+   "proc" : "Audit 15. 10. 2026 (v15.10.4) přidělil B168–B178; v repu po nich zůstala jen věta v `podklady/AUDIT_2026-10-17_v16.10.5.md`. Zapsáno dávkou B168 18. 10. 2026; meze v `BEZPECNOST_MEZE.md` (oddíl „Audit 15. 10. 2026“).",
+   "detail" : "Drobné úkoly (podle kapacity): B171 — odhlášení zvedne `hesloVerze` a odhlásí všechna zařízení, UI to neříká (doplnit větu u tlačítka Odhlásit, `netlify/functions/odhlaseni.mjs`); B174 — `pd_cache/deal:<id>` (jméno, e-mail, telefon kontaktů z CRM) a `strop:<email>` se zapisují bez mazání a nejsou v zálohách (doplnit úklid starých záznamů, `netlify/functions/pd_deal.mjs`); B175 — analytika: server klíče prvků jen ořízne na délku, neočišťuje je; záznamy se jmény v klíčích z doby před v15.10.2 zůstávají až 24 měsíců (`netlify/functions/analytika.mjs`, `src/analytika.js`). Vědomé meze (jen zápis): B169, B170, B172, B173, B177. Kolize čísla: „B178“ auditu 15. 10. (nechycená mutace B31 — obnova se stejným heslem a starší hesloVerze) je UZAVŘENÝ v15.10.14 (S10, `6d9ecdb`); B178 auditu 17. 10. je jiný nález (výška šachty / meze pásu „jiné“, opraveno O6 v17.10.4, #424).",
+   "hotovoKdyz" : "B171, B174 a B175 opravené nebo vědomě odložené J. V.; meze B169, B170, B172, B173, B177 zapsané (hotovo v18.10.6).",
+   "cekaNa" : "kapacita a pokyn J. V. — informativní nálezy auditu 15. 10., žádný není naléhavý (zapsáno 18. 10. 2026).",
+   "pozn" : "Předběžné id (přidělí koordinace). Kola 26 (N2) a 27 (N3, od B183) mají vlastní číslování.",
    "hotovoV" : "—"
   }
  ],
@@ -7348,7 +7377,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v18.10.8 (engscalc, claude/integrace-16-10)",
+  "build" : "v18.10.10 (engscalc, claude/integrace-16-10)",
   "stavKDatu" : "16. 10. 2026"
  },
  "_comment" : [
