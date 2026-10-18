@@ -11,9 +11,11 @@ znění; rodilý mluvčí kontroluje jazyk a termíny, obsah se nemění.
 |---|---|---|
 | Sablona_SOD_REALIZACE_v3.docx (z v2 nástrojem) | …_v3_EN.docx, …_v3_DE.docx, …_v3_FR.docx | Sablona_SOD_REALIZACE_v3.preklad_en/de/fr.json |
 | Sablona_SOD_PROJEKCE_v3.docx | …_v3_EN.docx, …_v3_DE.docx, …_v3_FR.docx | Sablona_SOD_PROJEKCE_v3.preklad_en/de/fr.json |
+| Sablona_SOD_PROJEKCE_v4.docx (z v3 nástrojem, #380 — sezení V5) | …_v4_EN.docx, …_v4_DE.docx, …_v4_FR.docx (v18.10.11) | Sablona_SOD_PROJEKCE_v4.preklad_en/de/fr.json |
 
 Předány J. V. jako přílohy sezení V3 (session_01GyotCYY7DhFnyXhceNA3de;
-EN 17. 10., DE/FR a EN slovník s pojmenovanými místy 18. 10.). Opravy
+EN 17. 10., DE/FR a EN slovník s pojmenovanými místy 18. 10., projekce v4
+EN/DE/FR 18. 10. — dávka V3b). Opravy
 rodilého mluvčího se zapisují **do slovníku** (pole `en` / `de` / `fr`,
 `pozn`) a šablona se vyrobí znovu:
 
