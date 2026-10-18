@@ -704,7 +704,7 @@ function kryciData(zak, varianta, jekly, verze) {
 if (typeof dokumentRegistruj === 'function') {
   [['bo', 'Backoffice'], ['techdata', 'Techdata']].forEach(([verze, label]) => {
     dokumentRegistruj('kryci_' + verze, {
-      nazev: 'Krycí list – ' + label,
+      nazev: 'Krycí list zakázky OCK – ' + label,
       generate: (zak, varianta, jekly) => {
         const d = kryciData(zak, varianta, jekly, verze);
         return { blob: docxDokumentBlob(d.nadpis, d.sekce), nazevSouboru: d.nazevSouboru, data: d };
