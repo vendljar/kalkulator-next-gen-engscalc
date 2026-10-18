@@ -276,6 +276,15 @@ for (const [k, h] of [['zdvih', -1], ['roztec', -1], ['hloubka', -1], ['sirka', 
 { const z = nova('B137 čárka'); d0(z).ock.zadani.zdvih = '9,5';
   const r = await uloz(z, cA);
   test('B137: zdvih „9,5" (jádro čte NaN) → 400', r.status === 400, r); }
+/* B186 (dávka H1, 18. 10. 2026): zdvih jako text s tečkou („9") server dosud
+ * propustil a uložil řetězec, ze kterého jádro sčítalo text (NaN). Import
+ * na serveru ho teď převede na číslo; uloží se číslo 9. Pojistka: bez
+ * převodu v importZakazka se uloží „9" a kontrola padá. */
+{ const z = nova('B186 text'); d0(z).ock.zadani.zdvih = '9';
+  const r = await uloz(z, cA);
+  const g = r.status === 200 ? await nacti(r.soubor, cA) : null;
+  const zd = g && g.varianty && g.varianty[0].data.ock.zadani.zdvih;
+  test('B186: zdvih „9" (text) se uloží jako číslo 9', r.status === 200 && zd === 9, [r.status, JSON.stringify(zd)]); }
 { const z = nova('B137 admin'); d0(z).ock.zadani.roztec = -1;
   const r = await uloz(z, cA);
   test('B137: ani administrátor zápornou rozteč neuloží (400)', r.status === 400, r); }

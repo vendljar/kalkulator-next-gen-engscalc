@@ -251,6 +251,16 @@ const KOD_STRANKY = `
       d.cenovaVyjimka = { stav: (typeof VYJ_ZAMITNUTO !== 'undefined' ? VYJ_ZAMITNUTO : 'zamítnuto'), obsah: 'x', polozek: 1, pasu: 1,
         pozadal: 'x', pozadalKdy: 'x', schvalil: 'x', schvalilKdy: 'x', zamitl: 'x', zamitlKdy: 'x', zamitnutoDuvod: 'x' };
       otrav(d.cenovaVyjimka, 'cenovaVyjimka', c => !/\.(obsah|polozek|pasu)$/.test(c)); },
+    /* B187 (audit 18. 10. 2026, dávka H1): karta výjimky v pohledu toho, kdo
+     * smí rozhodnout — sazby (použitá / ceníková), dopad na cenu a světlíky
+     * „jiné" u dveří se kreslí jen jemu. Payload v názvu pásu stěn B–D
+     * (z něj se jmenuje i světlík nad dveřmi z materiálu stěn). */
+    'B187: karta výjimky schvalovatele (sazby, dopad, světlíky)': (z, d) => {
+      Object.assign(d.cenik, { skloBokyKc: 1000, skloCelniKc: 1000, cetrisKc: 1000 });
+      const zd = d.ock.zadani; zd.nadDvermi = 'material'; zd.nastupiste = 2;
+      zd.prejezd = 2.7; zd.zdvih = 9; zd.prohluben = 1.05; zd.sirka = 2; zd.hloubka = 2.2;
+      const jine = (st) => ({ odM: 0, pasy: [{ typ: 'jine', nazev: PAY('vyj.pas.' + st), naklad: 1, doM: null }] });
+      zd.oplasteni = { rezim: 'poStenach', steny: { B: jine('B'), C: jine('C'), D: jine('D') } }; },
     /* B166: lišta zámku se kreslí jen u AKTIVNÍ zamčené varianty — oblast
      * „varianty" výš otravuje zámek varianty, která aktivní není. */
     'B166: lišta zámku u aktivní zamčené varianty': (z) => {
@@ -265,6 +275,10 @@ const KOD_STRANKY = `
     'B150: usazení OCK v nabídce (levá a pravá boční stěna)': (ramy) => ramy.some(f => f.contentDocument && f.contentDocument.documentElement
       && /techspec\.hodnoty\.usazeniLeva/.test(f.contentDocument.documentElement.innerHTML)
       && /techspec\.hodnoty\.usazeniPrava/.test(f.contentDocument.documentElement.innerHTML)),
+    'B187: karta výjimky schvalovatele (sazby, dopad, světlíky)': () => {
+      const el = document.getElementById('page-schvalovani'); const h = el ? el.innerHTML : '';
+      return /vyj\.pas\.B/.test(h) && /ceníková/.test(h) && /Dopad celkem proti ceníku/.test(h)
+        && /Světlíky „jiné" u dveří[^<]*vyj\.pas\./.test(h); },
     'B166: lišta zámku u aktivní zamčené varianty': () => {
       const el = document.getElementById('zamekLista');
       return !!el && /varianty\.1\.nazev/.test(el.innerHTML) && /varianty\.1\.zamek\.popis/.test(el.innerHTML); },
@@ -447,7 +461,8 @@ async function a2Pokus(oblast, admin) {
        * (nabidkaNahled) zablokuje zámek strany, otevře se 8 náhledů. */
       /* B150: oblast kreslená na jediném místě doloží, že se tam opravdu
        * vykreslila (dialog Kontakt… jen administrátorovi). */
-      if (r.overeno !== null && (admin || !/Kontakt/.test(oblast)))
+      /* B187: sazby, dopad a světlíky vidí jen ten, kdo smí rozhodnout (administrátor). */
+      if (r.overeno !== null && (admin || !/Kontakt|B187/.test(oblast)))
         zkus(`${role}: ${oblast} — otrávená pole se opravdu vykreslila`, r.overeno === true, r.overeno);
     }
   }

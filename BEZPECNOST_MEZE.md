@@ -391,12 +391,18 @@ i uvnitř podmínek a může tak přepsat číslo (lhůtu, procento) bez upozorn
 Zapisuje ho jen administrátor; mez je proti omylu, ne útoku. Případná
 pojistka: upozornit, když se po překladu liší čísla v textu.
 
-### B171 — odhlášení odhlásí všechna zařízení, UI to neříká (úkol #427)
+### B171 — odhlášení odhlásí všechna zařízení, UI to neříká (úkol #427) — OPRAVENO v18.10.13
 
 Oprava B6 zvedá při odhlášení `hesloVerze` (`netlify/functions/odhlaseni.mjs`),
 takže odhlášení ukončí relace na všech zařízeních. V kódu záměr, v UI věta
-chybí; cizí platná cookie tak může uživatele odhlašovat všude (obtěžování,
-ne převzetí). Navrženo: věta u tlačítka Odhlásit.
+chyběla; cizí platná cookie tak může uživatele odhlašovat všude (obtěžování,
+ne převzetí — to zůstává jako vědomá mez).
+**Oprava (dávka H1, 18. 10. 2026):** obě tlačítka Odhlásit nesou nápovědu
+`ODHLASIT_TITULEK` („Odhlásí vás na všech zařízeních…“) a panel online větu
+„Odhlášení platí pro všechna zařízení…“ (`src/ui/online_ui.js`). UI je jen
+česky — překlady EN/DE/FR jsou u dokumentů, ne u rozhraní. Příručka to
+uváděla už od 13. 10. (kap. 1). Test `src/test_odhlaseni_text.js`, mutace
+B171 (2).
 
 ### B172 — `w:delInstrText` v kontrole šablon (vědomá mez)
 
@@ -410,19 +416,33 @@ Překlad ze slovníku může vložit symbol `{{…}}` tam, kde dřív nebyl,
 a generátor ho rozvine (navazuje na B122). Jen administrátor; symboly
 nesou firemní a zakázkové údaje, ne tajemství.
 
-### B174 — `pd_cache` a `strop:` bez mazání, osobní údaje z CRM (úkol #427)
+### B174 — `pd_cache` a `strop:` bez mazání, osobní údaje z CRM (úkol #427) — OPRAVENO v18.10.13
 
 `pd_cache/deal:<id>` (jméno, e-mail, telefon kontaktů z Pipedrive,
 `netlify/functions/pd_deal.mjs`) a `strop:<email>` se zapisují bez mazání
 a zůstávají v Blobs napořád; v zálohách nejsou. Navrženo: úklid starých
 záznamů (stáří, nebo při smazání účtu).
+**OPRAVENO v18.10.13 (dávka H1):** noční otisk (`functions/zaloha_nocni.mjs`)
+po záloze volá `netlify/lib/uklid.mjs` → `pdCacheUklid`: smaže `deal:`,
+`dealy:` a `strop:` starší **30 dní** (výchozí volba dávky, `PD_CACHE_UKLID_DNU`)
+a záznam, u kterého stáří nejde zjistit. Chyba úklidu zálohu neohrozí.
+Zbývá (vědomě): záznamy mladší 30 dní, mazání `strop:` hned při smazání
+účtu se nedělá (úklid ho smaže do 30 dní). Test `netlify/test_uklid.mjs`,
+mutace B174 (4).
 
-### B175 — analytika: server klíče prvků jen ořízne (úkol #427)
+### B175 — analytika: server klíče prvků jen ořízne (úkol #427) — OPRAVENO v18.10.13
 
 Oprava B89 čistí klíče prvků jen v prohlížeči (`src/analytika.js`);
 server (`netlify/functions/analytika.mjs`) je jen ořízne na délku. Záznamy
 se jmény v klíčích z doby před v15.10.2 zůstávají až 24 měsíců.
 Navrženo: serverová očista týmž kódem a jednorázový úklid.
+**OPRAVENO v18.10.13 (dávka H1):** `analytikaKlicOrez` (`src/analytika.js`,
+běží i na serveru) nahradí vše od první „(“ za „(…)“ — týž výraz jako
+`analytikaKlic` v prohlížeči; čistí kliky, zdržení i prvky po uživatelích
+při každém slití (zápis dne i souhrn za období). Uložené dny jednou projde
+noční očista (`analytikaOcista` v `netlify/lib/uklid.mjs`), přepíše jen dny,
+které ji potřebují (`analytikaDenOcisti`), a zapíše značku `ocista-b175`.
+Testy `src/test_analytika.js` (B175), `netlify/test_uklid.mjs`, mutace B175 (4).
 
 ### B177 — podobné znaky ‹ › ＜ ＞ ve jménu u razítka (vědomá mez)
 
@@ -687,6 +707,20 @@ přísné ověření i u obnovy jen na pokyn J. V.
 - **B186:** číselné pole zadání uložené jako text (např. zdvih „9“) projde
   uložením, jádro z něj dá NaN a zámek server odmítne (fail-closed). Starší
   stav; kandidát na drobnou dávku hygieny (převod čísel při importu).
+  **OPRAVENO v18.10.13 (dávka H1):** `importZakazka` (`src/zakazka.js`,
+  běží v prohlížeči i na serveru) převede `zadaniCislaZTextu` číselná pole
+  zadání OCK a PROJ (klíče číselné ve výchozím zadání, i ve formátu v1)
+  z textu na číslo — jen text, který celý je číslo s desetinnou tečkou.
+  Desetinná čárka („9,5“) se nepřevádí a server ji dál odmítá 400 (B134,
+  B137); nečíselný text zůstává. Testy `src/test_cisla_textem.js`,
+  `netlify/test_koncova_cena.mjs` (B186), mutace B186 (4).
+- **B187:** `overit_xss.mjs` neprocházel kartu výjimky v pohledu
+  schvalovatele (sazby, dopad, světlíky „jiné“ s payloadem v názvu pásu).
+  **OPRAVENO v18.10.13 (dávka H1):** oblast „B187: karta výjimky
+  schvalovatele“ — pásy „jiné“ stěn B–D s payloadem v názvu, nad dveřmi
+  materiál stěn; administrátor musí doložit vykreslení sazeb, dopadu
+  i světlíků s payloadem (383/0). Pojistka: po odebrání `esc()` z názvu
+  světlíku v `vyjimkyKarta` harness hlásí spuštěný payload (379/4).
 
 ## Audit kola 28 — B188–B193 (dávka N4, 18. 10. 2026, v18.10.11 → v18.10.12)
 

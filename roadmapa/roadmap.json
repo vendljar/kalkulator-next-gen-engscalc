@@ -6679,17 +6679,16 @@
   },
   {
    "id" : "427",
-   "vlna" : "F",
-   "stav" : "ceka",
+   "vlna" : "B",
+   "stav" : "hotovo",
    "dulezitost" : "nizka",
    "slozitost" : "S",
-   "nazev" : "Informativní nálezy auditu 15. 10. (B169–B175, B177) a kolize čísla B178",
+   "nazev" : "Informativní nálezy auditu 15. 10. (B169–B175, B177), kolize čísla B178 a hygiena H1 (B171, B174, B175, B186, B187)",
    "proc" : "Audit 15. 10. 2026 (v15.10.4) přidělil B168–B178; v repu po nich zůstala jen věta v `podklady/AUDIT_2026-10-17_v16.10.5.md`. Zapsáno dávkou B168 18. 10. 2026; meze v `BEZPECNOST_MEZE.md` (oddíl „Audit 15. 10. 2026“).",
    "detail" : "Drobné úkoly (podle kapacity): B171 — odhlášení zvedne `hesloVerze` a odhlásí všechna zařízení, UI to neříká (doplnit větu u tlačítka Odhlásit, `netlify/functions/odhlaseni.mjs`); B174 — `pd_cache/deal:<id>` (jméno, e-mail, telefon kontaktů z CRM) a `strop:<email>` se zapisují bez mazání a nejsou v zálohách (doplnit úklid starých záznamů, `netlify/functions/pd_deal.mjs`); B175 — analytika: server klíče prvků jen ořízne na délku, neočišťuje je; záznamy se jmény v klíčích z doby před v15.10.2 zůstávají až 24 měsíců (`netlify/functions/analytika.mjs`, `src/analytika.js`). Vědomé meze (jen zápis): B169, B170, B172, B173, B177. Kolize čísla: „B178“ auditu 15. 10. (nechycená mutace B31 — obnova se stejným heslem a starší hesloVerze) je UZAVŘENÝ v15.10.14 (S10, `6d9ecdb`); B178 auditu 17. 10. je jiný nález (výška šachty / meze pásu „jiné“, opraveno O6 v17.10.4, #424).",
-   "hotovoKdyz" : "B171, B174 a B175 opravené nebo vědomě odložené J. V.; meze B169, B170, B172, B173, B177 zapsané (hotovo v18.10.6).",
-   "cekaNa" : "kapacita a pokyn J. V. — informativní nálezy auditu 15. 10., žádný není naléhavý (zapsáno 18. 10. 2026).",
-   "pozn" : "Předběžné id (přidělí koordinace). Kola 26 (N2) a 27 (N3, od B183) mají vlastní číslování.",
-   "hotovoV" : "—"
+   "hotovoKdyz" : "B171, B174 a B175 opravené nebo vědomě odložené J. V.; meze B169, B170, B172, B173, B177 zapsané (hotovo v18.10.6). Dávka H1 (v18.10.13): B171, B174, B175 opravené, k tomu B186 (čísla zadání textem) a B187 (overit_xss pohled schvalovatele) z auditu 18. 10.",
+      "pozn" : "Předběžné id (přidělí koordinace). Kola 26 (N2) a 27 (N3, od B183) mají vlastní číslování. Dávka H1 18. 10. 2026 (větev `claude/h1-hygiena` nad `claude/integrace-16-10` 8480133, v18.10.13; výchozí volby bez dotazu J. V.): B171 — nápověda u obou tlačítek Odhlásit a věta v panelu online (UI jen česky); B174 — noční úklid `pd_cache` po otisku (`netlify/lib/uklid.mjs`), lhůta 30 dní, záznam bez stáří se maže; B175 — server čistí klíče prvků týmž pravidlem jako klient (`analytikaKlicOrez`) a jednorázová noční očista uložených dnů se značkou `ocista-b175`; B186 — `importZakazka` převádí číselná pole zadání OCK/PROJ uložená jako text s tečkou na čísla (čárka dál 400 podle B134/B137); B187 — `overit_xss.mjs` oblast „karta výjimky schvalovatele“.",
+   "hotovoV" : "v18.10.13"
   },
   {
    "id" : "428",
