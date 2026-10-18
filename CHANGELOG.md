@@ -120,19 +120,22 @@ Pokračování dávky V3 podle rozhodnutí J. V. 18. 10. 2026 (přes koordinaci)
 SoD i v DE a FR stejně jako EN; #380 Q7 = varianta B, udělá ji dávka V5;
 sporná místa EN šablony (DPH u zahraničního zákazníka, skladné) J. V.
 upřesní — šablony zatím beze změny, jen oddělená ve slovníku. Verze
-předběžná (koordinace přidělí při sloučení).
+v18.10.7 přidělila koordinace (dřív předběžně v18.10.1).
 
 - **Režim DPH volbou a skladné kurzem (rozhodnutí J. V. 18. 10. 2026).**
   Šablona SoD realizace v2 nesla v čl. V natvrdo přenesenou daňovou
   povinnost a hned za ní prohlášení o snížené sazbě DPH — jedno vylučuje
   druhé. Nová česká šablona **SoD realizace v3**
   (`nastroje/vyrob_sablony.js --sod-real-v3`, kotvy právě jednou, jinak
-  chyba): věta režimu → `{{SOD_DPH_REZIM_VETA}}`, tělo odstavce „3.“ →
+  chyba): věta režimu → `{{SOD_DPH_REZIM}}`, tělo odstavce „3.“ →
   `{{SOD_DPH_PROHLASENI}}` (číslo zůstává kvůli odkazům na „bod 4“), pevná
-  částka skladného → `{{SOD_SKLADNE_DENNE}}`.
+  částka skladného → `{{SOD_SKLADNE}}`.
   - Krycí list OCK, sekce Smlouva o dílo: pole **Režim DPH ve smlouvě**
-    (přenesená daňová povinnost — výchozí, jako dosud / reverse charge EU /
-    česká DPH v zákonné sazbě). `sodDphSymboly` (sod.js): věta režimu;
+    (česká DPH v zákonné sazbě / přenesená daňová povinnost (tuzemsko) /
+    reverse charge EU — čl. 196 směrnice 2006/112/ES). Výchozí podle země
+    objednatele z předpony DIČ (`kryciDphRezimVychozi`: prázdné / CZ / mimo
+    EU → česká DPH, kód státu EU → reverse charge EU); obchodník přepíše,
+    zámek po tisku SoD jako u ostatních polí. `sodDphSymboly` (sod.js): věta režimu;
     prohlášení o snížené sazbě jen při české DPH a místě plnění bytový /
     rodinný dům, jinak věta o oznámení změny (druhá věta původního
     odstavce). Vlastní znění režimu symboly nevyplní ({{…}} ve Wordu). Věty
@@ -162,15 +165,27 @@ předběžná (koordinace přidělí při sloučení).
   seznam termínů DE/FR a pojmenovaná místa v `podklady/SOD_EN_KONTROLA.md`.
 - **Aplikace pro DE/FR:** hesla pro splátky, platby PROJ a místo plnění
   jsou ve slovníku od v17.10.6; zábrana bez jazykové šablony platí pro DE
-  i FR. Příručka kap. 24 a Co je nového v18.10.1.
+  i FR. Příručka kap. 24 a Co je nového v18.10.7.
 - **Režim DPH a skladné — testy:** `src/test_sod_en.js` +10 (režimy,
   prohlášení, vlastní znění, skladné Kč / € nahoru / prázdné; částka
   smyšlená) proti stavu před úpravou 25 prošlo / 5 selhalo, po ní 30/0;
   nový `src/test_sod_real_v3.js` (smyšlený úryvek čl. V a VI) bez
   `sodRealV3` 0/1, po něm 11/0. Mutace 12/12 (dvě částky ve větě
   o skladném napoprvé přežily → test). Celá cesta ověřená lokálně na
-  skutečných šablonách v3 CZ/EN/FR (nic se necommituje). Smoke 263 prošlo /
-  0 selhalo / 6 přeskočeno (firemní podklady).
+  skutečných šablonách v3 CZ/EN/FR (nic se necommituje).
+- **Zarovnání se zadáním koordinace (18. 10., 07:52):** symboly
+  `{{SOD_DPH_REZIM}}` a `{{SOD_SKLADNE}}` (dřív …_VETA / …_DENNE), výchozí
+  režim podle DIČ objednatele, věta reverse charge EU s čl. 196 směrnice.
+  Dvě vědomé odchylky: (1) odstavec „3.“ článku V se nemaže a nese
+  `{{SOD_DPH_PROHLASENI}}` — ruční číslo „3.“ a odkazy „bod 4“ / „odst. 4“
+  (čl. V, XIII) by se po smazání rozešly s číslováním; (2) částka skladného
+  není v kódu, ale v Nastavení → Firma — skutečná cena do repozitáře
+  nepatří; česky vyjde „N,- Kč“ jako dosud.
+  Mutace po zarovnání 14/14 (+ výchozí podle DIČ, DIČ s mezerou a malými
+  písmeny — napoprvé přežila → test). `overit_zobrazeni.mjs` zachytil
+  v krycím listu slovo „objednatel“ (krycí list mluví o zákazníkovi) →
+  volba „reverse charge EU (zákazník z jiného státu EU)“; pak 140/0.
+  Smoke 263 prošlo / 0 selhalo / 6 přeskočeno (firemní podklady).
 - **Testy (pojistka):** `src/test_preklad_sod.js` proti nástroji z v17.10.6
   14 prošlo / 5 selhalo, po rozšíření 19/0; `src/test_sod_en.js` +2 (DE
   splátky a místo plnění, FR platby PROJ) 20/0 — hlídají slovník z v17.10.6,
