@@ -165,11 +165,33 @@ Obsah se neměnil; tyto věci vypadají v češtině i v překladech sporně
    (jako v češtině).
 5. **SoD realizace, čl. XII:** věta o pokutě za stavební připravenost
    v češtině nemá slovo „smluvní pokutu“ — přeloženo, jak stojí.
-6. **SoD PROJ, čl. VII:** odkaz „dle odst. 5. tohoto článku“ — článek tolik
-   číslovaných odstavců nemá; převzato.
-7. **SoD PROJ, příloha č. 1:** „DPZ+DSP“ natvrdo — mění se s #380 Q7.
+6. ~~**SoD PROJ, čl. VII:** odkaz „dle odst. 5.“~~ — ověřeno dávkou V5
+   (v18.10.8): odstavec 5 existuje (potvrzení oznámení poštou), odkaz je
+   správně; poznámka ze slovníků v4 odstraněna.
+7. **SoD PROJ, příloha č. 1:** od šablony v4 (#380, v18.10.8) věta „… na
+   činnosti: {{SODP_ROZSAH_DILA}} …“ — výčet nabízených činností skládá
+   aplikace ve jazyce smlouvy (názvy viz níž).
 
 Hodnoty, které do cizojazyčné smlouvy dosazuje aplikace (seznam splátek SoD
 realizace, platby SoD PROJ, druh místa plnění), jsou ve slovníku aplikace
 (`src/preklad.js`, oddíl „Smlouva o dílo v cizím jazyce (#157)“) — opravy
 termínů tam pošle J. V. stejně jako u nabídek.
+
+## SoD projekce v4 (#380) — názvy činností ve výčtu přílohy č. 1
+
+Výčet `{{SODP_ROZSAH_DILA}}` skládá aplikace z názvů činností (`src/sod.js`
+SODP_CINNOSTI, překlady v `src/preklad.js`; zaměření má překlad přímo
+u činnosti — slovník by vzal nadpis nabídky „SURVEY and processing …“):
+
+| Česky | Anglicky | Německy | Francouzsky |
+|---|---|---|---|
+| Zaměření a zpracování výstupů | survey and processing of outputs | Aufmaß und Ausarbeitung der Ergebnisse | relevé et traitement des résultats |
+| Dokumentace pro povolení záměru | documentation for the project permit | Unterlagen für die Vorhabengenehmigung | dossier de demande d’autorisation du projet |
+| Inženýrská činnost DOSS | engineering activities – DOSS | Ingenieurleistungen DOSS | prestations d’ingénierie DOSS |
+| Podání žádosti … a vyřízení povolení záměru | filing of the application with the competent building authority and obtaining the project permit | Einreichung des Antrags beim zuständigen Bauamt und Erwirkung der Vorhabengenehmigung | dépôt de la demande auprès du service de l’urbanisme compétent et obtention de l’autorisation du projet |
+| Dokumentace pro provedení stavby | documentation for the construction | Ausführungsplanung | dossier d’exécution |
+| Ekonomická zadávací část | economic tender part | Wirtschaftlicher Ausschreibungsteil | pièces économiques de consultation |
+| Výběr dodavatele pro realizaci záměru | selection of the contractor for the implementation of the project | Auswahl des Ausführungsunternehmens für die Realisierung des Vorhabens | choix de l’entreprise de réalisation du projet |
+
+Věta přílohy: EN „Price offer No. … for the activities: …“, DE „Preisangebot
+Nr. … für die Leistungen: …“, FR „Offre de prix n° … pour les prestations : …“.

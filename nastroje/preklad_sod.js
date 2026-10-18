@@ -14,7 +14,7 @@
  *       odstavec s českým textem záznam { cz, <jazyk>, pozn } (překlad
  *       prázdný k vyplnění; hotové záznamy se ponechají)
  *   node nastroje/preklad_sod.js [--jazyk de] <složka> [výstupní složka]
- *       ze šablon Sablona_SOD_REALIZACE_v3.docx a Sablona_SOD_PROJEKCE_v3.docx
+ *       ze šablon Sablona_SOD_REALIZACE_v3.docx a Sablona_SOD_PROJEKCE_v4.docx
  *       a jejich slovníků vyrobí …_EN.docx (_DE, _FR) a vypíše kontrolu
  *
  * POJMENOVANÁ MÍSTA (18. 10. 2026, J. V.: sporná místa — DPH u zahraničního
@@ -47,8 +47,9 @@ const dg = require(path.join(SRC, 'docxgen.js'));
 const so = require(path.join(SRC, 'sablony_online.js'));
 
 /* Aktuální české šablony (SoD realizace v3 od 18. 10. 2026 — režim DPH
- * a skladné symboly, nastroje/vyrob_sablony.js --sod-real-v3). */
-const SABLONY_SOD = ['Sablona_SOD_REALIZACE_v3.docx', 'Sablona_SOD_PROJEKCE_v3.docx'];
+ * a skladné symboly, nastroje/vyrob_sablony.js --sod-real-v3; SoD projekce
+ * v4 — rozsah díla podle nabídky, #380, --sod-proj-v4). */
+const SABLONY_SOD = ['Sablona_SOD_REALIZACE_v3.docx', 'Sablona_SOD_PROJEKCE_v4.docx'];
 const enc = new TextEncoder(), dec = new TextDecoder();
 const xmlEsc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const xmlUnesc = s => String(s).replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')

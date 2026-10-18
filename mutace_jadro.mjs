@@ -69,8 +69,12 @@ const SRC = resolve(KOREN, 'src');
  * a oplechování soklu prohlubně — text přílohy smlouvy. */
 /* kryci.js a kryci_proj.js (15. 10. 2026, v15.10.10): hodiny z kalkulace
  * v krycím listu — každý list jen svou stranu (podklad pro backoffice). */
+/* sod.js a nástroje šablon SoD (18. 10. 2026, #157 / v18.10.7): smlouva
+ * o dílo v jazyce tisku, režim DPH a skladné — text smlouvy, která se
+ * podepisuje; nástroje vyrábějí šablony, ze kterých se tiskne. Cesty
+ * k nástrojům jsou relativní ke src/. */
 const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sablony_online.js', 'kontroly.js', 'plan_plateb.js', 'docxgen.js', 'sablona_obsah.js', 'techspec.js',
-  'kryci.js', 'kryci_proj.js'];
+  'kryci.js', 'kryci_proj.js', 'sod.js', '../nastroje/preklad_sod.js', '../nastroje/vyrob_sablony.js'];
 /* Filtr = první argument, který není přepínač (stejně jako netlify/mutace.mjs). */
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 /* --kontrola (23. 9. 2026, nález N19): jen ověří, že každý hledaný úsek je
@@ -85,6 +89,8 @@ const PRIORITA = [
   'test.js', 'test_proj.js', 'test_zaokrouhleni.js', 'test_atyp.js',
   'test_sleva.js', 'test_marze.js', 'test_kontroly.js', 'test_porovnani.js',
   'test_prepisy.js', 'test_atyp_katalog.js', 'test_ukazkove.js',
+  /* rychlé sady smlouvy o dílo (#157, 18. 10. 2026) — chytají mutace sod.js a nástrojů šablon */
+  'test_sod_en.js', 'test_sod_real_v3.js', 'test_preklad_sod.js',
 ];
 
 /* Které sady vůbec pouštět: všechny, které si berou některé z obou jader.
@@ -95,7 +101,7 @@ function najdiSady() {
   const vse = readdirSync(SRC).filter(f => /^test.*\.js$/.test(f));
   const dotykaSeJadra = f => {
     const t = readFileSync(resolve(SRC, f), 'utf8');
-    return JADRA.some(j => t.includes(j));
+    return JADRA.some(j => t.includes(basename(j)));
   };
   const sady = vse.filter(dotykaSeJadra);
   const poradi = f => { const i = PRIORITA.indexOf(f); return i === -1 ? PRIORITA.length : i; };
@@ -113,6 +119,109 @@ function najdiSady() {
  *   proc   … co by se v praxi pokazilo, kdyby tuhle chybu někdo udělal doopravdy
  * ============================================================ */
 const MUTACE = [
+  /* ---------- #157: smlouva o dílo v jazyce tisku (17. 10. 2026, v17.10.6) ---------- */
+  { nazev: '#157: smlouva v cizím jazyce vznikne i bez jazykové šablony', soubor: 'sod.js',
+    hledej: "  if ((typ !== 'sod' && typ !== 'sodProj') || !L || L === 'cz' || maMutaci) return '';",
+    nahrad: "  if ((typ !== 'sod' && typ !== 'sodProj') || !L || L === 'cz' || maMutaci || true) return '';",
+    proc: 'anglická smlouva by vyšla z české šablony — český právní text s anglickými hodnotami' },
+  { nazev: '#157: druh místa plnění se v cizí smlouvě nepřeloží', soubor: 'sod.js',
+    hledej: "  if (!placeholders || !L || L === 'cz' || typeof tr !== 'function') return placeholders;\n  SOD_PREKLAD_HODNOT",
+    nahrad: "  return placeholders;\n  SOD_PREKLAD_HODNOT",
+    proc: '„The place of performance of the Work is bytový dům …"' },
+  { nazev: '#157: platby SoD PROJ v cizí smlouvě česky', soubor: 'sod.js',
+    hledej: "  sodProjPlatby(d, sablona, L);",
+    nahrad: "  sodProjPlatby(d, sablona, 'cz');",
+    proc: 'anglická smlouva PROJ by nesla „Platba ve výši € … + DPH proběhne …"' },
+  { nazev: '#157: splátky SoD realizace v cizí smlouvě česky', soubor: 'kryci.js',
+    hledej: "    if (L !== 'cz') {\n      /* „<milník> – [zbývajících] N % z celkové ceny díla\"",
+    nahrad: "    if (false) {\n      /* „<milník> – [zbývajících] N % z celkové ceny díla\"",
+    proc: 'seznam splátek anglické smlouvy by byl česky' },
+  { nazev: '#157: platby SoD PROJ bez překladu DPH', soubor: 'plan_plateb.js',
+    hledej: "+ ' – ' + f(x.castka) + ' + ' + P('DPH') + '.'",
+    nahrad: "+ ' – ' + f(x.castka) + ' + DPH.'",
+    proc: '„Payment … – € … + DPH."' },
+  { nazev: '#380/#157: rozsah díla SoD PROJ bez vlastního překladu zaměření', soubor: 'sod.js',
+    hledej: "    return (c && c.preklad && L && c.preklad[L]) ? c.preklad[L] : P(t); })",
+    nahrad: "    return P(t); })",
+    proc: 'anglická smlouva PROJ by měla v příloze „sURVEY and processing of outputs" (nadpis nabídky ze slovníku)' },
+  /* ---------- režim DPH a skladné (18. 10. 2026, v18.10.7) ---------- */
+  { nazev: 'DPH: prohlášení o snížené sazbě i při přenesené daňové povinnosti', soubor: 'sod.js',
+    hledej: "placeholders.SOD_DPH_PROHLASENI = P(k === 'ceska' && bydleni ?",
+    nahrad: "placeholders.SOD_DPH_PROHLASENI = P(bydleni ?",
+    proc: 'vrátil by se rozpor šablony v2 (přenesená povinnost + snížená sazba v jedné smlouvě)' },
+  { nazev: 'DPH: prohlášení o snížené sazbě i mimo stavbu pro bydlení', soubor: 'sod.js',
+    hledej: "placeholders.SOD_DPH_PROHLASENI = P(k === 'ceska' && bydleni ?",
+    nahrad: "placeholders.SOD_DPH_PROHLASENI = P(k === 'ceska' ?",
+    proc: 'administrativní budova by dostala prohlášení o stavbě pro bydlení a snížené sazbě' },
+  { nazev: 'DPH: věta režimu se v cizí smlouvě nepřeloží', soubor: 'sod.js',
+    hledej: "  placeholders.SOD_DPH_REZIM = P(SOD_DPH_VETY[k]);",
+    nahrad: "  placeholders.SOD_DPH_REZIM = SOD_DPH_VETY[k];",
+    proc: 'anglická smlouva by měla článek o DPH česky' },
+  { nazev: 'DPH: vlastní znění režimu dostane větu', soubor: 'sod.js',
+    hledej: "  if (!k || !placeholders) return placeholders;",
+    nahrad: "  if (!placeholders) return placeholders;",
+    proc: 'nečitelný režim by dal „undefined" místo viditelného {{…}} k doplnění' },
+  { nazev: 'DPH: výchozí režim nepodle DIČ (vždy přenesená)', soubor: 'kryci.js',
+    hledej: "prefill: c => kryciDphRezimVychozi(c && c.zak),",
+    nahrad: "prefill: () => KRYCI_DPH_REZIMY[1],",
+    proc: 'česká zakázka by měla ve smlouvě přenesenou povinnost bez volby obchodníka' },
+  { nazev: 'DPH: zákazník z EU nedostane reverse charge EU', soubor: 'kryci.js',
+    hledej: "  return KRYCI_EU_DIC.indexOf(pre === 'GR' ? 'EL' : pre) >= 0 ?",
+    nahrad: "  return false ?",
+    proc: 'smlouva se zákazníkem z EU by účtovala českou DPH' },
+  { nazev: 'DPH: DIČ s mezerou nebo malými písmeny se nepozná', soubor: 'kryci.js',
+    hledej: "  const pre = String((zak && zak.dic) || '').replace(/\\s/g, '').toUpperCase().slice(0, 2);",
+    nahrad: "  const pre = String((zak && zak.dic) || '').slice(0, 2);",
+    proc: '„ at u…" nebo „de 123…" by dalo českou DPH' },
+  { nazev: 'SKLADNE: v cizí měně bez zaokrouhlení nahoru', soubor: 'sod.js',
+    hledej: "  else placeholders.SOD_SKLADNE = mena.fmt(mena.na(kc));",
+    nahrad: "  else placeholders.SOD_SKLADNE = mena.fmt(Math.round(kc / 25));",
+    proc: 'skladné by se zaokrouhlilo jinak než ceny (#155)' },
+  { nazev: 'SKLADNE: v cizí smlouvě v korunách', soubor: 'sod.js',
+    hledej: "  if (!L || L === 'cz' || !mena || !mena.eur) placeholders.SOD_SKLADNE",
+    nahrad: "  if (true) placeholders.SOD_SKLADNE",
+    proc: 'anglická smlouva v eurech by uvedla skladné v Kč' },
+  { nazev: 'SKLADNE: prázdná částka se vyplní', soubor: 'sod.js',
+    hledej: "  if (!(kc > 0) || !placeholders) return placeholders;",
+    nahrad: "  if (!placeholders) return placeholders;",
+    proc: 'bez částky v Nastavení by smlouva uvedla „0,- Kč" místo viditelného {{…}}' },
+  { nazev: 'SoD v3: číslo „3." odstavce DPH se smaže', soubor: '../nastroje/vyrob_sablony.js',
+    hledej: "body = body.slice(0, o.sp.zac) + prepisUsekOdstavce(o.p, zac, o.t.length, '{{SOD_DPH_PROHLASENI}}')",
+    nahrad: "body = body.slice(0, o.sp.zac) + prepisUsekOdstavce(o.p, 0, o.t.length, '{{SOD_DPH_PROHLASENI}}')",
+    proc: 'odkazy „bod 4" by mířily vedle (číslování 1, 2, 4)' },
+  { nazev: 'SoD v3: dvě částky ve větě o skladném projdou', soubor: '../nastroje/vyrob_sablony.js',
+    hledej: "  if (castky.length !== 1) chyba(",
+    nahrad: "  if (!castky.length) chyba(",
+    proc: 'nástroj by tiše nahradil jen první z částek' },
+  { nazev: 'SoD v3: kotva odstavce může být víckrát', soubor: '../nastroje/vyrob_sablony.js',
+    hledej: "    if (sp.length !== 1) chyba('SoD realizace: čekám právě jeden odstavec ' + popis",
+    nahrad: "    if (!sp.length) chyba('SoD realizace: čekám právě jeden odstavec ' + popis",
+    proc: 'změněná šablona by se přepsala na nečekaném místě' },
+  /* ---------- nástroj překladu šablon SoD (17.–18. 10. 2026) ---------- */
+  { nazev: 'preklad_sod: překlad s jiným symbolem projde', soubor: '../nastroje/preklad_sod.js',
+    hledej: "      : symbolySerazene(en) !== symbolySerazene(cz) ?",
+    nahrad: "      : false ?",
+    proc: 'přeložená šablona by tiše ztratila symbol (cena, termín) — ve smlouvě by chyběl' },
+  { nazev: 'preklad_sod: překlad bez tabulátoru projde', soubor: '../nastroje/preklad_sod.js',
+    hledej: "      : podpisOddelovacu(bezZnacek(en)) !== podpisOddelovacu(bezZnacek(cz)) ?",
+    nahrad: "      : false ?",
+    proc: 'rozsypané řádky hlavičky smlouvy' },
+  { nazev: 'preklad_sod: překlad z pole en i pro DE/FR', soubor: '../nastroje/preklad_sod.js',
+    hledej: "    if (!z || !String(z[L] || '').trim()) { chybi.push(cz); continue; }",
+    nahrad: "    if (!z || !String(z.en || z[L] || '').trim()) { chybi.push(cz); continue; }",
+    proc: 'německá šablona by obsahovala „undefined" místo nepřeloženého odstavce' },
+  { nazev: 'preklad_sod: pojmenované místo se nerozvine', soubor: '../nastroje/preklad_sod.js',
+    hledej: "    const en = rm.text;",
+    nahrad: "    const en = String(z[L]);",
+    proc: 'v šabloně by zůstalo „[[SKLADNE]]"' },
+  { nazev: 'preklad_sod: odhad jazyka nehlídá', soubor: '../nastroje/preklad_sod.js',
+    hledej: "  if (jazyk.jazyk !== L) problemy.push",
+    nahrad: "  if (false) problemy.push",
+    proc: 'zkopírovaná čeština bez diakritiky by prošla jako překlad' },
+  { nazev: 'preklad_sod: písmo symbolu se ztratí', soubor: '../nastroje/preklad_sod.js',
+    hledej: "(symRPr[kus] != null ? symRPr[kus] : rPr)",
+    nahrad: "rPr",
+    proc: 'žlutě podbarvené symboly k doplnění by v přeložené šabloně nebyly vidět' },
   { nazev: 'K18-N101: věta staré šablony SoD PROJ o zaměření patří ke všemu', soubor: 'plan_plateb.js',
     hledej: "const PLAN_SODP_STARE_CINNOST = { podpis: null, za_vystupy: 'zamereni', dpz_doss: 'dpz', dpz_su: 'dpz',",
     nahrad: "const PLAN_SODP_STARE_CINNOST = { podpis: null, za_vystupy: null, dpz_doss: 'dpz', dpz_su: 'dpz',",

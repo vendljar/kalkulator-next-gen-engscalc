@@ -3294,7 +3294,7 @@
    "kde" : "šablony sod/sodProj v úložišti šablon, src/sod.js (beze změny logiky)",
    "stav" : "hotovo",
    "id" : "157",
-   "hotovoV" : "v17.10.6, DE/FR a DPH/skladné v18.10.7 (větev claude/v3-sod-en, dávka V3)",
+   "hotovoV" : "v17.10.6, DE/FR a DPH/skladné v18.10.7, SoD PROJ v4 EN/DE/FR v18.10.11 (větve claude/v3-sod-en, claude/v3b-sod-preklad)",
    "slozitost" : "M",
    "vlna" : "E"
   },
@@ -7377,7 +7377,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v18.10.10 (engscalc, claude/integrace-16-10)",
+  "build" : "v18.10.11 (engscalc, claude/integrace-16-10)",
   "stavKDatu" : "16. 10. 2026"
  },
  "_comment" : [
