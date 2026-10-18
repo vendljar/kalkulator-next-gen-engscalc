@@ -372,8 +372,9 @@ a klíč `l` se **světlíky „jiné“ u dveří** (`[kde, stěna, název, saz
 m²]`) — `vyjimkyPlochyJadra`, server i prohlížeč počítají `vypocet` týmž
 katalogem JEKLY (`ctx.jekly`). Plocha je v obsahu **na celé m²**: posun
 vnějšího rozměru o centimetry (profily, zasklení) u nízkého pásu schválení
-neshodí, změna o půl m² a víc ano. Nekrytý zbytek je nejvýš ±0,5 m² na pás
-či světlík × rozdíl sazeb (vědomá mez). Chyba výpočtu nebo chybějící
+neshodí. Kvůli zaokrouhlení může nárůst bez nového schválení dosáhnout
+téměř 1 m² (např. 2,50 → 3,49 m²): nekrytý zbytek je **< 1 m² na pás
+či světlík** × rozdíl sazeb (vědomá mez; B183, kolo 27, výchozí volba 18. 10.). Chyba výpočtu nebo chybějící
 katalog = plocha `null` → obsah se liší od schváleného → zámek 403
 (fail-closed). Obsah jen se směsí ceníku má tvar jako dřív (schválení
 platí dál); výjimky s pásem „jiné“ schválené před v17.10.5 čekají znovu.
@@ -581,3 +582,15 @@ tvaru a obnova ho zapíše s razítkem „shoda". Obnovu smí jen administrátor
 ze souboru, který neprošel, je ve výsledku obnovy vypsaný jako sporný
 a otisk na serveru (B98) se nedá upravit vůbec. Výchozí návrh: ponechat;
 přísné ověření i u obnovy jen na pokyn J. V.
+
+### B184–B186 — vědomé meze (kolo 27, 18. 10. 2026)
+
+- **B184:** ruční množství a cena řádku pásu nejsou v obsahu cenové výjimky.
+  Obchodník je uložit nesmí (403); role s `sloupce.naklad` přepíše jakoukoli
+  cenu i bez výjimky — stejná důvěra jako dosud.
+- **B185:** opis čísla SoD a data podpisu do ručních hodnot při prvním tisku
+  SoD dělá jen prohlížeč; server ho nevyžaduje (třída B164 — zámek po tisku
+  závisí na klientu).
+- **B186:** číselné pole zadání uložené jako text (např. zdvih „9“) projde
+  uložením, jádro z něj dá NaN a zámek server odmítne (fail-closed). Starší
+  stav; kandidát na drobnou dávku hygieny (převod čísel při importu).
