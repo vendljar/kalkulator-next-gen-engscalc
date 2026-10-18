@@ -140,9 +140,19 @@ function sodDphSymboly(placeholders, rezimText, mistoText, L) {
   placeholders.SOD_DPH_PROHLASENI = P(k === 'ceska' && bydleni ? SOD_DPH_PROHLASENI_SNIZENA : SOD_DPH_PROHLASENI_OZNAMENI);
   return placeholders;
 }
+/* Částka skladného z volného pole firmy (B190, audit kola 28, 18. 10. 2026).
+ * Do v18.10.11 se brala první číslice regexem s tečkou jako desetinnou
+ * čárkou — „1.500" (tisíce s tečkou) dalo 1,5 → „2,- Kč" a nikdo si toho
+ * nevšiml. Přijme se jen celé číslo, nebo s 1–2 desetinnými místy za čárkou
+ * či tečkou (mezery, koncové „,-" a „Kč" se pominou); cokoli jiného vrátí 0
+ * a symbol zůstane ve Wordu vidět k doplnění. */
+function sodSkladneKc(v) {
+  const s = String(v == null ? '' : v).replace(/\s/g, '').replace(/(?:,-|\.-|,–|kč)+$/i, '');
+  const m = s.match(/^(\d+)(?:[.,](\d{1,2}))?$/);
+  return m ? +(m[1] + (m[2] ? '.' + m[2] : '')) : 0;
+}
 function sodSkladne(placeholders, firma, mena, L) {
-  const m = String((firma || {}).skladneDenneKc == null ? '' : firma.skladneDenneKc).replace(/\s/g, '').replace(',', '.').match(/^(\d+(?:\.\d+)?)/);
-  const kc = m ? +m[1] : 0;
+  const kc = sodSkladneKc((firma || {}).skladneDenneKc);
   if (!(kc > 0) || !placeholders) return placeholders;
   if (!L || L === 'cz' || !mena || !mena.eur) placeholders.SOD_SKLADNE = Math.round(kc).toLocaleString('cs-CZ') + ',- Kč';
   else placeholders.SOD_SKLADNE = mena.fmt(mena.na(kc));

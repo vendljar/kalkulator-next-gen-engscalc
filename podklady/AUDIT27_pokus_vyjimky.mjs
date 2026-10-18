@@ -75,7 +75,7 @@ const zaloz = async (email, jmeno, role) => {
 };
 const cO = await zaloz('obch.vyjimky@priklad.cz', 'Obch Výjimka', 'Obchodník');
 const cV = await zaloz('ved.vyjimky@priklad.cz', 'Ved Výjimka', 'Vedoucí');
-const matice = async (m) => { const r = await post(zobrazeni, 'http://x/api/zobrazeni', { matice: m }, cA); if (r.status !== 200) throw new Error('matice ' + r.status); };
+const matice = async (m) => { const r = await post(zobrazeni, 'http://x/api/zobrazeni', { matice: m, hesloSpravce: 'Docasne.Heslo.123' }, cA); if (r.status !== 200) throw new Error('matice ' + r.status); };
 /* Vedoucí smí schvalovat (navrh matice), ceník ne — výchozí stav sady. */
 await matice({ 'sleva.schvalovani': { 'Vedoucí': true } });
 

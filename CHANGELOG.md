@@ -47,6 +47,35 @@ V7-7, nálezy V7-N1, V7-N2). Změny chování žádné.
 
 ---
 
+## v18.10.12 — Testovací kolo 28 a bezpečnostní audit v18.10.11 (B188–B193), oprava B190 (větev claude/kolo28-audit)
+
+Zadání koordinace „ŘÍDÍCÍ 18.10“ (dávka N4), nad `origin/claude/integrace-16-10`
+(`8480133`, v18.10.11). Audit rozdílu v17.10.5 → v18.10.11:
+`podklady/AUDIT_2026-10-18_v18.10.11.md`, pokusy `podklady/AUDIT28_pokus_obnova_matice.mjs`
+a `podklady/AUDIT28_pokus_sod.mjs`, meze v `BEZPECNOST_MEZE.md`.
+
+- **Verdikt:** 0 kritických, 0 vysokých, **2 střední** (B188, B189), 1 nízký (B190,
+  opraven), 3 informativní (B191–B193); regrese B151–B187: 0.
+- **B188 (střední, otevřeno, #429):** matici zobrazení jde zapsat bez hesla správce
+  obnovou ze zálohy (`/api/obnova`, část `zobrazeni`) — B168 tak nezastaví ukradenou
+  cookie správce. Návrh opravy ve zprávě.
+- **B189 (střední, otevřeno, #430):** výchozí režim DPH podle DIČ — CZ → česká DPH
+  (v2 měla přenesenou daňovou povinnost), EU → reverse charge bez ohledu na místo stavby.
+- **B190 (nízká) — OPRAVENO:** skladné „1.500“ z Nastavení → Firma dalo ve smlouvě
+  „2,- Kč“. `sodSkladneKc` (src/sod.js) přijme jen celé číslo nebo 1–2 desetinná místa,
+  jinak `{{SOD_SKLADNE}}` zůstane k doplnění. Test `src/test_sod_en.js` 2c: před
+  opravou 2 FAIL, po opravě 37/0; mutace „B190: skladné s tečkou tisíců“ 1/1
+  (SKLADNE 3/3, `--kontrola` 248 úseků).
+- **B193:** `test_sablona_proj_v4` a `overit_nabidka_proj_word` čekají PROJ v3 pod
+  jménem `Sablona_NABIDKA_PROJ.docx` (podklad na Disku je starší); s v3 projdou 41/0 a 63/63.
+- **Kolo nad 8480133** (šablony z Disku, `--jen build,sady,staticke`): 268 prošlo,
+  2 selhalo (B193, podklad), 2 přeskočeno; statické 3/3. Po opravě (v18.10.12, PROJ v3
+  v podkladech): 270 prošlo, 0 selhalo, 2 přeskočeno (po doplnění `cekaNa` k #430).
+- Roadmapa #428 (hotovo), #429 B188, #430 B189 (čeká) — předběžná id.
+- `podklady/AUDIT27_pokus_vyjimky.mjs`: zápis matice s heslem správce (po B168 padal na 401).
+
+---
+
 ## v18.10.11 — SoD: mutace dávky V3 v sadách, činnosti SoD PROJ v jazyce smlouvy, šablony v4 EN/DE/FR (větev claude/v3b-sod-preklad)
 
 Zadání koordinace 18. 10. 2026 (navazuje na V3 a V5 #380), nad

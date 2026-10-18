@@ -150,6 +150,15 @@ const sablona = (...symboly) => ({ symboly: new Set(symboly) });
   test('skladné anglicky v eurech kurzem ceníku: 600 / 25 = € 24', en.SOD_SKLADNE === '€ 24', en.SOD_SKLADNE);
   NAST.firma.skladneDenneKc = '610';
   test('skladné v eurech zaokrouhleno nahoru: 610 / 25 → € 25', fn({}, 'de').SOD_SKLADNE === '€ 25', fn({}, 'de').SOD_SKLADNE);
+  /* B190 (audit kola 28, 18. 10. 2026): „1.500" (tečka jako oddělovač tisíců)
+   * se četlo jako 1,5 → „2,- Kč". Nejednoznačný zápis se nevyplní — symbol
+   * zůstane {{…}} k doplnění. Před opravou 2 FAIL, po opravě projde. */
+  const skl = v => { NAST.firma.skladneDenneKc = v; return fn().SOD_SKLADNE; };
+  test('B190: „1.500" ani „1.500,-" nedá „2,- Kč" — symbol zůstane', skl('1.500') === undefined && skl('1.500,-') === undefined, [skl('1.500'), skl('1.500,-')]);
+  test('B190: „1.000,50" se nevyplní (ne „1,- Kč")', skl('1.000,50') === undefined, skl('1.000,50'));
+  test('B190: běžné zápisy beze změny — „1 500", „600,-", „600 Kč", „500,50"',
+    skl('1 500') === (1500).toLocaleString('cs-CZ') + ',- Kč' && skl('600,-') === '600,- Kč' && skl('600 Kč') === '600,- Kč'
+      && skl('500,50') === '501,- Kč', [skl('1 500'), skl('600,-'), skl('600 Kč'), skl('500,50')]);
   NAST.firma.skladneDenneKc = '';
 }
 

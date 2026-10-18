@@ -6690,6 +6690,48 @@
    "cekaNa" : "kapacita a pokyn J. V. — informativní nálezy auditu 15. 10., žádný není naléhavý (zapsáno 18. 10. 2026).",
    "pozn" : "Předběžné id (přidělí koordinace). Kola 26 (N2) a 27 (N3, od B183) mají vlastní číslování.",
    "hotovoV" : "—"
+  },
+  {
+   "id" : "428",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "stredni",
+   "slozitost" : "S",
+   "nazev" : "Audit kola 28 (B188–B193): dva střední (obnova matice bez hesla, výchozí DPH), B190 opraven",
+   "proc" : "Bezpečnostní audit 18. 10. 2026 nad v18.10.11 (`podklady/AUDIT_2026-10-18_v18.10.11.md`, dávka N4): 0 kritických a vysokých, 2 střední (B188, B189), 1 nízký (B190 opraven ve v18.10.12), 3 informativní (B191–B193). Regrese B151–B187: 0.",
+   "detail" : "B190 (nízká, OPRAVENO v18.10.12): skladné „1.500“ z Nastavení → Firma dalo ve smlouvě „2,- Kč“ — `sodSkladneKc` přijme jen celé číslo nebo 1–2 desetinná místa, jinak symbol zůstane {{…}}. B188 a B189 viz #429, #430.",
+   "hotovoKdyz" : "Audit v repu, B190 opraven s testem (test_sod_en 2c) a mutací „B190: …“, meze zapsané v `BEZPECNOST_MEZE.md`.",
+   "kde" : "`src/sod.js`, `src/test_sod_en.js`, `mutace_jadro.mjs`, `podklady/AUDIT28_pokus_*.mjs`",
+   "hotovoV" : "v18.10.12",
+   "pozn" : "Předběžné id (přidělí koordinace při sloučení)."
+  },
+  {
+   "id" : "429",
+   "vlna" : "B",
+   "stav" : "ceka",
+   "dulezitost" : "stredni",
+   "slozitost" : "S",
+   "nazev" : "B188: heslo správce i u obnovy matice zobrazení ze zálohy",
+   "proc" : "Audit kola 28: `POST /api/obnova` s částí `zobrazeni` (soubor i otisk) zapíše matici bez hesla správce — B168 tak cookie správce nezastaví (pokus `podklady/AUDIT28_pokus_obnova_matice.mjs`, P3 200).",
+   "detail" : "Návrh: v `netlify/functions/obnova.mjs` mimo náhled `potvrdHesloSpravce`, když `casti` obsahuje `zobrazeni` a záloha ji nese, před zámkem a otiskem (jako u `uzivatele`); test v `netlify/test_zobrazeni_heslo.mjs`, mutace.",
+   "hotovoKdyz" : "Obnova matice bez hesla 401 a nic nezapíše, se správným heslem 200; test s pojistkou a mutace.",
+   "kde" : "`netlify/functions/obnova.mjs`, `netlify/test_zobrazeni_heslo.mjs`, `netlify/mutace.mjs`",
+   "cekaNa" : "kapacita — další bezpečnostní dávka (střední nález, oprava malá).",
+   "pozn" : "Předběžné id (přidělí koordinace při sloučení)."
+  },
+  {
+   "id" : "430",
+   "vlna" : "F",
+   "stav" : "ceka",
+   "dulezitost" : "stredni",
+   "slozitost" : "S",
+   "nazev" : "B189: výchozí režim DPH ve SoD realizace podle DIČ (CZ plátce, stavba v ČR)",
+   "proc" : "Audit kola 28: DIČ CZ → „česká DPH“ (šablona v2 měla přenesenou daňovou povinnost, § 92e u stavebních prací plátci), DIČ EU → reverse charge podle čl. 196 bez ohledu na místo stavby.",
+   "detail" : "Návrh (ke schválení J. V. / účetní): DIČ CZ → přenesená (tuzemsko), bez DIČ → česká DPH, EU a mimo EU → bez výchozí volby (obchodník rozhodne podle místa stavby); znění vět podle `podklady/SOD_EN_KONTROLA.md`.",
+   "hotovoKdyz" : "Rozhodnutí J. V. zapsané, `kryciDphRezimVychozi` podle něj, test a mutace.",
+   "kde" : "`src/kryci.js`, `src/sod.js`, `src/test_sod_en.js`",
+   "cekaNa" : "rozhodnutí J. V. a posouzení účetní (výchozí režim DPH, znění vět — podklady/SOD_EN_KONTROLA.md).",
+   "pozn" : "Předběžné id (přidělí koordinace při sloučení)."
   }
  ],
  "meta" : {

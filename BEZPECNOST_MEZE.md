@@ -687,3 +687,39 @@ přísné ověření i u obnovy jen na pokyn J. V.
 - **B186:** číselné pole zadání uložené jako text (např. zdvih „9“) projde
   uložením, jádro z něj dá NaN a zámek server odmítne (fail-closed). Starší
   stav; kandidát na drobnou dávku hygieny (převod čísel při importu).
+
+## Audit kola 28 — B188–B193 (dávka N4, 18. 10. 2026, v18.10.11 → v18.10.12)
+
+Zpráva `podklady/AUDIT_2026-10-18_v18.10.11.md`, pokusy `podklady/AUDIT28_pokus_*.mjs`.
+
+### B188 — matice zobrazení přes obnovu ze zálohy bez hesla (OTEVŘENO, střední)
+
+Doplňuje B168: `POST /api/obnova` s částí `zobrazeni` (soubor i otisk) zapíše
+matici jen po očistě, heslo správce chce jen u části `uzivatele`. Do opravy
+(roadmapa #429) B168 ukradenou cookie správce nezastaví — stačí obnova ze
+souboru s maticí. Návrh opravy ve zprávě auditu.
+
+### B189 — výchozí režim DPH ve SoD realizace podle DIČ (OTEVŘENO, střední)
+
+DIČ CZ → česká DPH (šablona v2 měla přenesenou daňovou povinnost), DIČ EU →
+reverse charge podle čl. 196 bez ohledu na místo stavby. Obchodník volbu
+přepíše; do rozhodnutí J. V. / účetní (roadmapa #430) se volba u každé SoD
+realizace v3 kontroluje ručně.
+
+### B190 — skladné s tečkou tisíců — OPRAVENO v18.10.12
+
+`sodSkladneKc` přijme jen celé číslo nebo 1–2 desetinná místa (mezery,
+„,-“ a „Kč“ pomine); „1.500“ nebo „1.000,50“ se nevyplní a `{{SOD_SKLADNE}}`
+zůstane k doplnění. Test `src/test_sod_en.js` (2c), mutace „B190: …“.
+
+### B191–B193 — vědomé meze (kolo 28)
+
+- **B191:** blok `CIN_*` z `blokyPryc` s nevyváženými značkami (ručně
+  upravená šablona) zůstane v dokumentu a značky zmizí — smlouva vyjmenuje
+  nenabízenou činnost. Generovaná v4 je vyvážená.
+- **B192:** k mezi B168 — heslo v paměti stránky je v čitelné podobě; XSS na
+  stránce (CSP `unsafe-inline`, B5) by ho přečetl, okno se každým uložením
+  matice prodlužuje.
+- **B193:** harnessy PROJ v3 (`test_sablona_proj_v4`, `overit_nabidka_proj_word`)
+  čekají šablonu PROJ v3 pod jménem `Sablona_NABIDKA_PROJ.docx`; na Disku je
+  pod tím jménem starší verze (podklad, ne kód).
