@@ -1,7 +1,7 @@
 # Smlouvy o dílo v angličtině, němčině a francouzštině — kontrolní seznam pro rodilé mluvčí
 
 Dávka V3 (#157): EN 17. 10. 2026 (v17.10.6), DE a FR 18. 10. 2026
-(v18.10.1, rozhodnutí J. V. 18. 10.). Rozhodnutí J. V. 16. 10. 2026:
+(v18.10.7, rozhodnutí J. V. 18. 10.). Rozhodnutí J. V. 16. 10. 2026:
 cizojazyčná smlouva o dílo = **věrný překlad české šablony**, ne nové právní
 znění; rodilý mluvčí kontroluje jazyk a termíny, obsah se nemění.
 
@@ -29,11 +29,11 @@ node nastroje/preklad_sod.js --jazyk de <složka>            # → …_DE.docx +
 a věty dosazuje aplikace podle pole krycího listu OCK **Režim DPH ve
 smlouvě**; jazykové verze přeloží slovník aplikace (`src/preklad.js`).
 
-| Režim (krycí list) | `{{SOD_DPH_REZIM_VETA}}` (čl. V odst. 2) |
+| Režim (krycí list) | `{{SOD_DPH_REZIM}}` (čl. V odst. 2) |
 |---|---|
-| přenesená daňová povinnost (tuzemsko) — výchozí | DPH bude účtováno dle platných předpisů v režimu přenesené daňové povinnosti. *(věta šablony v2)* |
-| reverse charge EU (místo plnění v jiném státě EU) | Plnění nepodléhá české DPH; daň přizná a odvede objednatel v režimu přenesení daňové povinnosti (reverse charge) podle právních předpisů státu místa plnění. |
-| česká DPH v zákonné sazbě | K ceně díla bude připočtena DPH v zákonné sazbě platné ke dni uskutečnění zdanitelného plnění. |
+| česká DPH v zákonné sazbě — výchozí při DIČ CZ / bez DIČ / mimo EU | K ceně díla bude připočtena DPH v zákonné sazbě platné ke dni uskutečnění zdanitelného plnění. |
+| přenesená daňová povinnost (tuzemsko) | DPH bude účtováno dle platných předpisů v režimu přenesené daňové povinnosti. *(věta šablony v2; tuzemský reverse charge u stavebních prací)* |
+| reverse charge EU (zákazník z jiného státu EU) — výchozí při DIČ státu EU | Plnění není předmětem české DPH; daň přizná a odvede objednatel v režimu přenesení daňové povinnosti (reverse charge) podle čl. 196 směrnice Rady 2006/112/ES. |
 
 `{{SOD_DPH_PROHLASENI}}` (čl. V odst. 3, číslo „3." zůstává): při české DPH
 a místě plnění *bytový dům* / *rodinný dům* prohlášení o snížené sazbě DPH
@@ -42,17 +42,20 @@ podle § 48 zákona o DPH (věta šablony v2); jinak „Objednatel se zavazuje,
 článku bude zhotovitele písemně informovat do tří dnů ode dne, kdy taková
 změna nastane." (druhá věta původního odstavce, zobecněná).
 
-**K posouzení účetní:** znění věty reverse charge EU (místo plnění u
-stavebních prací = místo nemovitosti), zda prohlášení o snížené sazbě patří
-jen k bytovému a rodinnému domu, a zda u přenesené daňové povinnosti nemá
-být prohlášení zákazníka o registraci k DPH.
+**K posouzení účetní:** (1) věta reverse charge EU — u stavebních prací je
+místem plnění místo nemovitosti, takže u stavby v ČR a zákazníka z EU
+může jít o českou DPH; (2) přenesená daňová povinnost — ustanovení ZDPH
+(§ 92a / § 92e u stavebních prací) a zda nemá být prohlášení zákazníka
+o registraci k DPH; (3) zda prohlášení o snížené sazbě patří jen k české
+DPH u bytového a rodinného domu; (4) výchozí volba podle předpony DIČ
+objednatele.
 
-**Skladné** `{{SOD_SKLADNE_DENNE}}` (čl. VI): částka z Nastavení → Firma
+**Skladné** `{{SOD_SKLADNE}}` (čl. VI): částka z Nastavení → Firma
 (Kč za den, bez výchozí hodnoty) — česky „N,- Kč" jako dosud, v EN/DE/FR
 smlouvě v eurech kurzem ceníku (celá eura nahoru).
 
 Ve slovnících v3 je skladné pojmenované místo `[[SKLADNE]]`
-(„{{SOD_SKLADNE_DENNE}} per day" / „pro Tag" / „par jour"); změna znění =
+(„{{SOD_SKLADNE}} per day" / „pro Tag" / „par jour"); změna znění =
 přepis jednoho záznamu a nové vyrobení šablony. Místa DPH ze slovníků v2
 zanikla — věty dodává aplikace.
 

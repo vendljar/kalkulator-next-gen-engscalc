@@ -108,38 +108,48 @@ const sablona = (...symboly) => ({ symboly: new Set(symboly) });
  * realizace v3): věta režimu z krycího listu, prohlášení o snížené sazbě
  * jen při české DPH a stavbě pro bydlení, skladné z Nastavení → Firma —
  * česky v Kč, v cizí smlouvě v eurech kurzem ceníku (celá eura nahoru).
- * Částka 600 Kč je SMYŠLENÁ. Proti v18.10.1 (bez symbolů): 25 prošlo / 5 selhalo (5 kontrol „symbol se
- * nevyplní" projde i tam). */
+ * Částka 600 Kč je SMYŠLENÁ. Výchozí režim podle DIČ objednatele (zadání
+ * koordinace 18. 10.). Proti d502fc9 (bez režimu DPH a skladného): 24 prošlo /
+ * 6 selhalo (kontroly „symbol se nevyplní" projdou i tam); po úpravě 30 / 0. */
 {
   const fn = (h, L) => {
     const z = novaZ(), v = z.varianty[0];
     Object.assign(v.data.kryci.hodnoty, h || {});
-    return sod.sodData(z, v, JEKLY, L || 'cz', sablona('SOD_DPH_REZIM_VETA', 'SOD_DPH_PROHLASENI', 'SOD_SKLADNE_DENNE')).placeholders;
+    return sod.sodData(z, v, JEKLY, L || 'cz', sablona('SOD_DPH_REZIM', 'SOD_DPH_PROHLASENI', 'SOD_SKLADNE')).placeholders;
   };
   const S = sod.SOD_DPH_VETY || {};
+  const fnZ = (dic, h, L) => {
+    const z = novaZ(), v = z.varianty[0];
+    z.dic = dic;
+    Object.assign(v.data.kryci.hodnoty, h || {});
+    return sod.sodData(z, v, JEKLY, L || 'cz', sablona('SOD_DPH_REZIM', 'SOD_DPH_PROHLASENI', 'SOD_SKLADNE')).placeholders;
+  };
   const vychozi = fn();
-  test('DPH výchozí: přenesená daňová povinnost (věta šablony v2), odst. 3 = oznámení změny',
-    vychozi.SOD_DPH_REZIM_VETA === 'DPH bude účtováno dle platných předpisů v režimu přenesené daňové povinnosti.'
-      && vychozi.SOD_DPH_PROHLASENI === sod.SOD_DPH_PROHLASENI_OZNAMENI, [vychozi.SOD_DPH_REZIM_VETA, vychozi.SOD_DPH_PROHLASENI]);
-  const ceskaByt = fn({ sodDphRezim: 'česká DPH v zákonné sazbě', sodMistoPlneni: 'bytový dům' });
-  test('česká DPH + bytový dům: věta zákonné sazby a prohlášení o snížené sazbě',
-    ceskaByt.SOD_DPH_REZIM_VETA === S.ceska && ceskaByt.SOD_DPH_PROHLASENI === sod.SOD_DPH_PROHLASENI_SNIZENA, ceskaByt.SOD_DPH_PROHLASENI);
-  const ceskaAdm = fn({ sodDphRezim: 'česká DPH v zákonné sazbě', sodMistoPlneni: 'administrativní budova' });
+  test('DPH výchozí (bez DIČ = CZ): česká DPH v zákonné sazbě; bytový dům → prohlášení o snížené sazbě',
+    vychozi.SOD_DPH_REZIM === 'K ceně díla bude připočtena DPH v zákonné sazbě platné ke dni uskutečnění zdanitelného plnění.'
+      && vychozi.SOD_DPH_PROHLASENI === sod.SOD_DPH_PROHLASENI_SNIZENA, [vychozi.SOD_DPH_REZIM, vychozi.SOD_DPH_PROHLASENI]);
+  const dCz = fnZ('CZ12345678'), dDe = fnZ('DE 123456789'), dCh = fnZ('CHE-123.456.789'), dEl = fnZ('EL123456789'), dLow = fnZ(' at u12345678');
+  test('výchozí podle DIČ objednatele: CZ → česká DPH, DE / EL (Řecko) / „ at u…“ → reverse charge EU, mimo EU → česká DPH',
+    dCz.SOD_DPH_REZIM === S.ceska && dDe.SOD_DPH_REZIM === S.eu && dEl.SOD_DPH_REZIM === S.eu && dLow.SOD_DPH_REZIM === S.eu && dCh.SOD_DPH_REZIM === S.ceska,
+    [dCz.SOD_DPH_REZIM, dDe.SOD_DPH_REZIM, dEl.SOD_DPH_REZIM, dCh.SOD_DPH_REZIM]);
+  const ceskaAdm = fn({ sodMistoPlneni: 'administrativní budova' });
   test('česká DPH + administrativní budova: bez prohlášení o snížené sazbě', ceskaAdm.SOD_DPH_PROHLASENI === sod.SOD_DPH_PROHLASENI_OZNAMENI, ceskaAdm.SOD_DPH_PROHLASENI);
-  const prenByt = fn({ sodMistoPlneni: 'bytový dům' });
-  test('přenesená DPH + bytový dům: prohlášení o snížené sazbě NE (nesoulad v2 zmizel)', prenByt.SOD_DPH_PROHLASENI === sod.SOD_DPH_PROHLASENI_OZNAMENI, prenByt.SOD_DPH_PROHLASENI);
-  const euEn = fn({ sodDphRezim: 'reverse charge EU (místo plnění v jiném státě EU)' }, 'en');
-  test('reverse charge EU anglicky: věta bez češtiny', /^The supply is not subject to Czech VAT; .*reverse-charge/.test(euEn.SOD_DPH_REZIM_VETA || '')
-    && !CESKY.test(euEn.SOD_DPH_PROHLASENI || 'ě'), [euEn.SOD_DPH_REZIM_VETA, euEn.SOD_DPH_PROHLASENI]);
+  const prenByt = fn({ sodDphRezim: 'přenesená daňová povinnost (tuzemsko)' });
+  test('přenesená DPH + bytový dům: věta šablony v2, prohlášení o snížené sazbě NE (nesoulad v2 zmizel)',
+    prenByt.SOD_DPH_REZIM === 'DPH bude účtováno dle platných předpisů v režimu přenesené daňové povinnosti.'
+      && prenByt.SOD_DPH_PROHLASENI === sod.SOD_DPH_PROHLASENI_OZNAMENI, prenByt.SOD_DPH_PROHLASENI);
+  const euEn = fnZ('', { sodDphRezim: 'reverse charge EU (zákazník z jiného státu EU)' }, 'en');
+  test('reverse charge EU anglicky (ruční volba): věta s čl. 196, bez češtiny', /^The supply is not subject to Czech VAT; .*Article 196 of Council Directive 2006\/112\/EC\.$/.test(euEn.SOD_DPH_REZIM || '')
+    && !CESKY.test(euEn.SOD_DPH_PROHLASENI || 'ě'), [euEn.SOD_DPH_REZIM, euEn.SOD_DPH_PROHLASENI]);
   const vlastni = fn({ sodDphRezim: 'dle dohody' });
-  test('vlastní znění režimu: symboly zůstanou {{…}} (nevyplní se)', !('SOD_DPH_REZIM_VETA' in vlastni) && !('SOD_DPH_PROHLASENI' in vlastni), vlastni.SOD_DPH_REZIM_VETA);
-  test('bez skladného v Nastavení → Firma: {{SOD_SKLADNE_DENNE}} zůstane', !('SOD_SKLADNE_DENNE' in vychozi), vychozi.SOD_SKLADNE_DENNE);
+  test('vlastní znění režimu: symboly zůstanou {{…}} (nevyplní se)', !('SOD_DPH_REZIM' in vlastni) && !('SOD_DPH_PROHLASENI' in vlastni), vlastni.SOD_DPH_REZIM);
+  test('bez skladného v Nastavení → Firma: {{SOD_SKLADNE}} zůstane', !('SOD_SKLADNE' in vychozi), vychozi.SOD_SKLADNE);
   NAST.firma.skladneDenneKc = '600';
   const cz = fn(), en = fn({}, 'en');
-  test('skladné česky „600,- Kč" (tvar dosavadní šablony)', cz.SOD_SKLADNE_DENNE === '600,- Kč', cz.SOD_SKLADNE_DENNE);
-  test('skladné anglicky v eurech kurzem ceníku: 600 / 25 = € 24', en.SOD_SKLADNE_DENNE === '€ 24', en.SOD_SKLADNE_DENNE);
+  test('skladné česky „600,- Kč" (tvar dosavadní šablony)', cz.SOD_SKLADNE === '600,- Kč', cz.SOD_SKLADNE);
+  test('skladné anglicky v eurech kurzem ceníku: 600 / 25 = € 24', en.SOD_SKLADNE === '€ 24', en.SOD_SKLADNE);
   NAST.firma.skladneDenneKc = '610';
-  test('skladné v eurech zaokrouhleno nahoru: 610 / 25 → € 25', fn({}, 'de').SOD_SKLADNE_DENNE === '€ 25', fn({}, 'de').SOD_SKLADNE_DENNE);
+  test('skladné v eurech zaokrouhleno nahoru: 610 / 25 → € 25', fn({}, 'de').SOD_SKLADNE === '€ 25', fn({}, 'de').SOD_SKLADNE);
   NAST.firma.skladneDenneKc = '';
 }
 

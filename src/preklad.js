@@ -72,10 +72,10 @@ const PREKLAD = {
     "VAT will be charged in accordance with the applicable regulations under the reverse-charge regime.",
     "Die MwSt. wird gemäß den geltenden Vorschriften im Verfahren der Steuerschuldumkehr (Reverse-Charge) berechnet.",
     "La TVA sera facturée conformément à la réglementation en vigueur selon le régime de l’autoliquidation."],
-  "Plnění nepodléhá české DPH; daň přizná a odvede objednatel v režimu přenesení daňové povinnosti (reverse charge) podle právních předpisů státu místa plnění.": [
-    "The supply is not subject to Czech VAT; the tax shall be declared and paid by the Client under the reverse-charge mechanism in accordance with the legislation of the state of the place of supply.",
-    "Die Leistung unterliegt nicht der tschechischen Mehrwertsteuer; die Steuer wird vom Auftraggeber im Reverse-Charge-Verfahren nach den Rechtsvorschriften des Staates des Leistungsorts erklärt und abgeführt.",
-    "La prestation n’est pas soumise à la TVA tchèque ; la taxe est déclarée et acquittée par le Client selon le mécanisme d’autoliquidation conformément à la législation de l’État du lieu de la prestation."],
+  "Plnění není předmětem české DPH; daň přizná a odvede objednatel v režimu přenesení daňové povinnosti (reverse charge) podle čl. 196 směrnice Rady 2006/112/ES.": [
+    "The supply is not subject to Czech VAT; the tax shall be declared and paid by the Client under the reverse-charge mechanism pursuant to Article 196 of Council Directive 2006/112/EC.",
+    "Die Leistung unterliegt nicht der tschechischen Mehrwertsteuer; die Steuer wird vom Auftraggeber im Reverse-Charge-Verfahren gemäß Artikel 196 der Richtlinie 2006/112/EG des Rates erklärt und abgeführt.",
+    "La prestation n’est pas soumise à la TVA tchèque ; la taxe est déclarée et acquittée par le Client selon le mécanisme d’autoliquidation conformément à l’article 196 de la directive 2006/112/CE du Conseil."],
   "K ceně díla bude připočtena DPH v zákonné sazbě platné ke dni uskutečnění zdanitelného plnění.": [
     "VAT at the statutory rate applicable on the date of the taxable supply will be added to the price of the Work.",
     "Zum Werkpreis wird die MwSt. in der am Tag der steuerbaren Leistung geltenden gesetzlichen Höhe hinzugerechnet.",
