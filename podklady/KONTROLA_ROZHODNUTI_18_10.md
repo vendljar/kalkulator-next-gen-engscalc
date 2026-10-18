@@ -90,6 +90,7 @@ v18.10.5 (`manual/sestav.sh` hlídá shodu s `verze.txt`). Snímky příručky s
 | **V6-7** | nízká (příručka) | `manual/obsah.json` kap. 8, kap. 24 (Plná moc), novinky v15.10.14 | „Po vytištění smlouvy o dílo je krycí list zamčený celý" — od v16.10.4 (B163) kromě údajů zmocnitele plné moci. | Doplněna výjimka na všech třech místech. | **OPRAVENO** |
 | **V6-8** | nízká (evidence) | roadmapa #157, `detail` | Začátek detailu nese rozhodnutí 16. 10. (překlad české šablony), ale pokračuje původní větou „Potřeba: anglické znění šablon … od právníka — aplikace si právní text nesmí vymýšlet. Po dodání …" — dvě protichůdná zadání v jedné položce. | Při uzavření #157 v dávce V3 přepsat detail na nový postup. V6 needitovala (souběh s V3). | předáno koordinaci / V3 |
 | **V6-9** | informativní | V4-5 (registr dokumentů) | Nález V4-5 („Krycí list – Backoffice / Techdata" místo „Krycí list zakázky OCK – …") byl dál otevřený. | Název v `src/kryci.js` sjednocen; test `src/test_kryci_docx.js` +2 (před opravou 55/2, po ní 57/0). Jen text, chování beze změny. | **OPRAVENO** (uzavírá V4-5) |
+| **V6-10** | nízká (evidence) | roadmapa #425 | Odložená položka (vlna F) bez `cekaNa` → stránka roadmapy „bez uvedeného důvodu", `overit_roadmapu.mjs` 12/1 (už nad `0dbec56`). | Doplněn důvod podle rozhodnutí 18. 10.; 13/0. | **OPRAVENO** |
 
 ## Testy
 
