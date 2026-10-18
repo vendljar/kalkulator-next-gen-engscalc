@@ -260,7 +260,12 @@ function sodProjData(zak, varianta, lang, sablona) {
  * nepatří. Názvy jsou plné jako v čl. II. Bez nabízené činnosti symbol zůstane
  * ve Wordu vidět k doplnění. Šablona v3 (bez značek a symbolu) se nemění. */
 const SODP_CINNOSTI = [
-  { blok: 'CIN_ZAMERENI', sekce: 'zamereni', nazev: 'Zaměření a zpracování výstupů' },
+  /* Název zaměření má vlastní překlad: slovník porovnává hesla bez ohledu
+   * na velikost písmen a „ZAMĚŘENÍ a zpracování výstupů" (nadpis nabídky
+   * PROJ, „SURVEY and processing of outputs") by ve smlouvě dal nadpisový
+   * tvar. Ostatní názvy jsou ve slovníku (preklad.js, #380, 18. 10. 2026). */
+  { blok: 'CIN_ZAMERENI', sekce: 'zamereni', nazev: 'Zaměření a zpracování výstupů',
+    preklad: { en: 'Survey and processing of outputs', de: 'Aufmaß und Ausarbeitung der Ergebnisse', fr: 'Relevé et traitement des résultats' } },
   { blok: 'CIN_DPZ', sekce: 'dpz', nazev: 'Dokumentace pro povolení záměru' },
   { blok: 'CIN_IC_DOSS', sekce: 'ic', nazev: 'Inženýrská činnost DOSS' },
   { blok: 'CIN_POVOLENI', sekce: 'ic', nazev: 'Podání žádosti na příslušný stavební úřad a vyřízení povolení záměru' },
@@ -273,7 +278,8 @@ const SODP_CINNOSTI = [
  * (DPZ, IČ, DPS, EZČ), mění se jen tahle funkce. */
 function sodProjRozsahText(nazvy, L) {
   const P = t => (L && L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
-  const n = nazvy.map(P).map((t, i) => (L === 'de' ? t : t.charAt(0).toLowerCase() + t.slice(1)));
+  const n = nazvy.map(t => { const c = SODP_CINNOSTI.find(x => x.nazev === t);
+    return (c && c.preklad && L && c.preklad[L]) ? c.preklad[L] : P(t); }).map((t, i) => (L === 'de' ? t : t.charAt(0).toLowerCase() + t.slice(1)));
   const a = { en: ' and ', de: ' und ', fr: ' et ' }[L] || ' a ';
   return n.length < 2 ? (n[0] || '') : n.slice(0, -1).join(', ') + a + n[n.length - 1];
 }

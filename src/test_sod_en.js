@@ -153,6 +153,22 @@ const sablona = (...symboly) => ({ symboly: new Set(symboly) });
   NAST.firma.skladneDenneKc = '';
 }
 
+/* 2d) rozsah díla SoD PROJ v4 (#380, V5) v jazyce smlouvy — názvy sedmi
+ * činností do věty přílohy č. 1 (zadání koordinace 18. 10. 2026). Zaměření
+ * má vlastní překlad (kolize s nadpisem nabídky „ZAMĚŘENÍ a zpracování
+ * výstupů"), nadpis nabídky se nemění. Před doplněním: 3 ze 4 selžou („sURVEY
+ * and processing of outputs", české názvy).  */
+{
+  const vse = (sod.SODP_CINNOSTI || []).map(c => c.nazev);
+  const t = L => (typeof sod.sodProjRozsahText === 'function' ? sod.sodProjRozsahText(vse, L) : 'ě');
+  test('rozsah díla EN/DE/FR: sedm činností bez češtiny', vse.length === 7 && ['en', 'de', 'fr'].every(L => !CESKY.test(t(L))), ['en', 'de', 'fr'].map(t));
+  test('rozsah díla EN: „survey and processing of outputs, …, economic tender part and selection of the contractor …"',
+    /^survey and processing of outputs, documentation for the project permit, .* and selection of the contractor for the implementation of the project$/.test(t('en')), t('en'));
+  test('rozsah díla DE: „Aufmaß und Ausarbeitung der Ergebnisse, … und Auswahl des Ausführungsunternehmens …"',
+    /^Aufmaß und Ausarbeitung der Ergebnisse, .* und Auswahl des Ausführungsunternehmens für die Realisierung des Vorhabens$/.test(t('de')), t('de'));
+  test('nadpis nabídky „ZAMĚŘENÍ a zpracování výstupů" překládá slovník dál beze změny', tr('ZAMĚŘENÍ a zpracování výstupů', 'en') === 'SURVEY and processing of outputs', tr('ZAMĚŘENÍ a zpracování výstupů', 'en'));
+}
+
 /* 3) bez jazykové šablony smlouva nevznikne */
 {
   const z = typeof sod.sodJazykZabrana === 'function' ? sod.sodJazykZabrana : () => '';

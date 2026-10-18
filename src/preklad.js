@@ -66,6 +66,19 @@ const PREKLAD = {
   "bytový dům": ["an apartment building", "ein Wohngebäude", "un immeuble d’habitation"],
   "rodinný dům": ["a family house", "ein Einfamilienhaus", "une maison individuelle"],
   "administrativní budova": ["an office building", "ein Bürogebäude", "un immeuble de bureaux"],
+  /* Činnosti SoD projekce (#380, šablona v4 — výčet ve větě přílohy č. 1,
+   * sod.js SODP_CINNOSTI; 18. 10. 2026). Znění jako v čl. II přeložených
+   * šablon SoD PROJ; ke kontrole rodilými mluvčími. „Zaměření a zpracování
+   * výstupů" má překlad u činnosti (kolize s nadpisem nabídky). */
+  "Dokumentace pro povolení záměru": ["Documentation for the project permit", "Unterlagen für die Vorhabengenehmigung", "Dossier de demande d’autorisation du projet"],
+  "Inženýrská činnost DOSS": ["Engineering activities – DOSS", "Ingenieurleistungen DOSS", "Prestations d’ingénierie DOSS"],
+  "Podání žádosti na příslušný stavební úřad a vyřízení povolení záměru": ["Filing of the application with the competent building authority and obtaining the project permit",
+    "Einreichung des Antrags beim zuständigen Bauamt und Erwirkung der Vorhabengenehmigung",
+    "Dépôt de la demande auprès du service de l’urbanisme compétent et obtention de l’autorisation du projet"],
+  "Dokumentace pro provedení stavby": ["Documentation for the construction", "Ausführungsplanung", "Dossier d’exécution"],
+  "Ekonomická zadávací část": ["Economic tender part", "Wirtschaftlicher Ausschreibungsteil", "Pièces économiques de consultation"],
+  "Výběr dodavatele pro realizaci záměru": ["Selection of the contractor for the implementation of the project",
+    "Auswahl des Ausführungsunternehmens für die Realisierung des Vorhabens", "Choix de l’entreprise de réalisation du projet"],
   /* Režim DPH ve smlouvě o dílo realizace (18. 10. 2026, sod.js SOD_DPH_VETY)
    * — znění ke kontrole účetní (podklady/SOD_EN_KONTROLA.md). */
   "DPH bude účtováno dle platných předpisů v režimu přenesené daňové povinnosti.": [

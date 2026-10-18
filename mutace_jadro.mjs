@@ -140,6 +140,10 @@ const MUTACE = [
     hledej: "+ ' – ' + f(x.castka) + ' + ' + P('DPH') + '.'",
     nahrad: "+ ' – ' + f(x.castka) + ' + DPH.'",
     proc: '„Payment … – € … + DPH."' },
+  { nazev: '#380/#157: rozsah díla SoD PROJ bez vlastního překladu zaměření', soubor: 'sod.js',
+    hledej: "    return (c && c.preklad && L && c.preklad[L]) ? c.preklad[L] : P(t); })",
+    nahrad: "    return P(t); })",
+    proc: 'anglická smlouva PROJ by měla v příloze „sURVEY and processing of outputs" (nadpis nabídky ze slovníku)' },
   /* ---------- režim DPH a skladné (18. 10. 2026, v18.10.7) ---------- */
   { nazev: 'DPH: prohlášení o snížené sazbě i při přenesené daňové povinnosti', soubor: 'sod.js',
     hledej: "placeholders.SOD_DPH_PROHLASENI = P(k === 'ceska' && bydleni ?",
