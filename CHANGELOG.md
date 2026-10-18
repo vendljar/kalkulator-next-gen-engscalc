@@ -8,6 +8,33 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v18.10.5 — kontrola rozhodnutí 16.–18. 10. (větev claude/v6-kontrola-rozhodnuti)
+
+Dávka V6 (zadání koordinace „ŘÍDÍCÍ 16.10“), nad
+`origin/claude/integrace-16-10` (`0dbec56`, v17.10.5). Ověřeno, že
+rozhodnutí J. V. z 16.–18. 10. 2026 jsou v kódu, příručce a překladech
+EN/DE/FR; výsledek v `podklady/KONTROLA_ROZHODNUTI_18_10.md` (12 rozhodnutí,
+nálezy V6-1 až V6-9). Změny chování žádné.
+
+- **Příručka — Co je nového pokrývá v16.10.1–v17.10.5:** doplněny B155
+  (rozsah pásu v kartě výjimky), B163 (plná moc po tisku SoD volná), V4-1
+  (rekapitulace PROJ EN/DE/FR) a B180 (rozpis zveřejnění se změnami
+  příznaků); nadpisy říkají rozsah verzí. Opraveno „po tisku SoD zamčený
+  celý“ (kap. 8, 24, novinky v15.10.14 — kromě údajů plné moci) a „číslo
+  SoD se nepředvyplňuje“ (od v17.10.2 návrh).
+- **Evidence rozhodnutí:** B165 část 2 → vědomá mez do #425 (J. V. 18. 10.
+  „zatím ponechat“) v `BEZPECNOST_MEZE.md`, auditu kola 25 a roadmapě (#420
+  hotovo); #422 výchozí volby S12 schválené (1A, 2A, 3A); #423 odkaz na
+  B179; audit kola 26 doplněn o rozhodnutí 17. 10.; komentář u překladu
+  V4-1 „schválil J. V. 17. 10.“ (slovník beze změny).
+- **V4-5 uzavřeno:** registr dokumentů nese „Krycí list zakázky OCK – …“.
+  `src/test_kryci_docx.js` +2: před opravou 55/2, po ní 57/0.
+- **Předáno:** V6-8 — roadmapa #157 má v detailu vedle rozhodnutí 16. 10.
+  i původní „čeká na právníka“ (přepíše V3 při uzavření #157).
+- **EN/DE/FR:** nové texty obrazovky (kontrola #355, karta B165, štítky
+  cena dle nabídky, zdroj „návrh z čísla nabídky“) do cizojazyčných
+  dokumentů nejdou; texty dokumentů z S12, S13 a V4-1 slovník zná.
+
 ## v17.10.5 — B165: sazby a dopad v kartě cenové výjimky, zbytek B178 (větev claude/b165-karta-vyjimky)
 
 Dávka B165 (zadání koordinace „ŘÍDÍCÍ 16.10“, rozhodnutí J. V. 16. a 17. 10.
