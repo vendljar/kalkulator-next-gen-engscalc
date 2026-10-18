@@ -805,6 +805,32 @@ function aktivniVarianta(zak) {
   return zak.varianty.find(v => v.id === zak.aktivni) || zak.varianty[0];
 }
 
+/* ČÍSLA ZADÁNÍ ULOŽENÁ JAKO TEXT (B186, audit 18. 10. 2026, dávka H1).
+ *
+ * Soubor ze starší verze nebo upravený ručně může nést číselné pole zadání
+ * jako řetězec (`zdvih: "9"`). Jádro takové pole SČÍTÁ (`z.prejezd + z.zdvih`
+ * dá „2.79" a výpočet NaN) a server zámek odeslané nabídky odmítne. Import
+ * proto převede řetězec na číslo — jen tam, kde výchozí zadání má u téhož
+ * klíče číslo, a jen řetězec, který celý JE číslo s desetinnou TEČKOU
+ * („9", „ 9.5 ", „-1") — tedy přesně to, co serverová kontrola rozměrů
+ * dosud propouštěla jako číslo. Desetinná čárka („9,5") se NEpřevádí:
+ * tu server od B134/B137 odmítá (400) a obchodník ji má opravit vědomě.
+ * Prázdný nebo nečíselný text zůstává, jak je (nic se neodhaduje; záporné
+ * číslo odmítne serverová kontrola jako dosud). Vnořené objekty se neřeší.
+ * Vrací počet převedených polí. */
+function zadaniCislaZTextu(zadani, vzor) {
+  if (!zadani || typeof zadani !== 'object' || !vzor || typeof vzor !== 'object') return 0;
+  let n = 0;
+  Object.keys(vzor).forEach(k => {
+    if (typeof vzor[k] !== 'number' || typeof zadani[k] !== 'string') return;
+    const t = zadani[k].trim();
+    if (!/^-?\d+(\.\d+)?$/.test(t)) return;
+    zadani[k] = Number(t);
+    n++;
+  });
+  return n;
+}
+
 /* Import: umí schema 2 (zakázka) i původní formát v1 {zadani, cenik, fixes} */
 function importZakazka(obj) {
   if (obj && obj.schema >= 2 && Array.isArray(obj.varianty) && obj.varianty.length) {
@@ -820,6 +846,8 @@ function importZakazka(obj) {
       const d = v.data || {};
       if (!d.proj) d.proj = { zadani: JSON.parse(JSON.stringify(DEFAULT_ZADANI_PROJ)),
                               cenik: JSON.parse(JSON.stringify(DEFAULT_CENIK_PROJ)) };
+      /* B186: totéž u zadání projekce (počty a rozměry PROJ). */
+      if (typeof DEFAULT_ZADANI_PROJ !== 'undefined') zadaniCislaZTextu(d.proj.zadani, DEFAULT_ZADANI_PROJ);
       if (!d.proj.cenik.fixy)   // migrace: fixní náklady sekcí přesunuty do ceníku PROJ
         d.proj.cenik.fixy = JSON.parse(JSON.stringify(DEFAULT_CENIK_PROJ.fixy));
       if (d.proj.cenik.dph == null)   // migrace: PROJ má vlastní sazbu DPH; převezme dosud platnou z ceníku OCK
@@ -857,6 +885,8 @@ function importZakazka(obj) {
        * tichou změnu ceny, a to migrace dělat nesmí. */
       const zo = d.ock && d.ock.zadani;
       if (zo && typeof zo === 'object') {
+        /* B186: čísla uložená jako text převést dřív, než s nimi počítají migrace níž. */
+        if (typeof DEFAULT_ZADANI !== 'undefined') zadaniCislaZTextu(zo, DEFAULT_ZADANI);
         if (zo.striskaKs == null)
           zo.striskaKs = (zo.pruchoziSachta && zo.typSachty !== 'interiérová') ? 1 : 0;
         if (zo.nastupisteA == null) zo.nastupisteA = +zo.nastupiste || 0;
@@ -1004,6 +1034,7 @@ function importZakazka(obj) {
   if (obj && obj.zadani && obj.cenik) {                 // starý formát v1
     const zak = novaZakazka();
     const v = zak.varianty[0];
+    if (typeof DEFAULT_ZADANI !== 'undefined') zadaniCislaZTextu(obj.zadani, DEFAULT_ZADANI);   // B186
     v.data.ock = { zadani: obj.zadani, fixes: obj.fixes !== false };
     v.data.cenik = obj.cenik;
     zak.cislo = obj.zadani.cisloNabidky || zak.cislo;
@@ -1715,7 +1746,7 @@ function zakazkaDuplikuj(zak, noveCislo) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { zakazkaBezCeniku, zakazkaCenikDopln, zakazkaCenikRozdil, zakazkaCenikPouzij, slevaRozhodnutiZahod, zakazkaDuplikuj, zakazkaCisloDalsi, sodCisloNavrh, ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, variantaDatum, dnesIso, ZADANI_NOVA, vychoziZakladVolitelne, zadaniRucniMapa, zadaniRucniJe,
+  module.exports = { zadaniCislaZTextu, zakazkaBezCeniku, zakazkaCenikDopln, zakazkaCenikRozdil, zakazkaCenikPouzij, slevaRozhodnutiZahod, zakazkaDuplikuj, zakazkaCisloDalsi, sodCisloNavrh, ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, variantaDatum, dnesIso, ZADANI_NOVA, vychoziZakladVolitelne, zadaniRucniMapa, zadaniRucniJe,
                      zadaniRucniZnac, zadaniRucniZrus, zadaniZCeniku, uvodniFotoObrazky, uvodniFotoSymboly, uvodniFotoPole, ZAKAZKA_SCHEMA, novaZakazka, novaVarianta, novaVariantaData,
                      nastavRidici, ridiciVarianta, aktivniVarianta, importZakazka, StorageAdapter,
                      zakazkaUnikatniId,

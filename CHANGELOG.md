@@ -8,6 +8,42 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v18.10.13 — hygiena drobných nálezů H1: odhlášení všude, úklid cache Pipedrive a analytiky, čísla zadání textem, XSS karty schvalovatele (větev claude/h1-hygiena)
+
+Zadání koordinace „ŘÍDÍCÍ 18.10“ (dávka H1), nad `origin/claude/integrace-16-10`
+(`8480133`). Nálezy B171, B174, B175 (audit 15. 10.) a B186, B187 (audit
+18. 10., `podklady/AUDIT_2026-10-18_v17.10.5.md`). Výchozí volby rozhodla
+dávka sama (J. V. se neptal), konzervativně a bez změny chování pro běžného
+uživatele.
+
+- **B171 — odhlášení odhlásí všechna zařízení.** Obě tlačítka Odhlásit
+  (lišta účtu a panel online) mají nápovědu a panel online větu „Odhlášení
+  platí pro všechna zařízení…“. *Výchozí volba:* jen česky — rozhraní
+  aplikace se nepřekládá (EN/DE/FR jsou jen u dokumentů); žádné potvrzovací
+  okno (odhlášení zůstává na jedno kliknutí). Příručka to uvádí od 13. 10.,
+  beze změny.
+- **B174 — úklid `pd_cache`.** Noční otisk po záloze smaže detail případu
+  (kontakty z CRM), seznam případů a počítadlo stropu starší **30 dní**
+  a záznam bez zjistitelného stáří (`netlify/lib/uklid.mjs`). *Výchozí
+  volba:* 30 dní (`PD_CACHE_UKLID_DNU`); chyba úklidu zálohu neohrozí.
+- **B175 — analytika.** Server čistí klíče prvků týmž pravidlem jako
+  prohlížeč (`analytikaKlicOrez`: vše od „(“ → „(…)“), i u prvků po
+  uživatelích; uložené dny jednou projde noční očista (značka `ocista-b175`,
+  přepisuje jen dny, které to potřebují).
+- **B186 — čísla zadání uložená jako text.** `importZakazka` převede
+  číselná pole zadání OCK a PROJ (i formát v1) z textu na číslo („9“ → 9),
+  takže jádro nesčítá řetězce; server zakázku importuje stejnou funkcí
+  a ukládá čísla. *Výchozí volba:* jen text s desetinnou tečkou — čárku
+  („9,5“) server dál odmítá 400 (B134, B137), nečíselný text zůstává.
+- **B187 — `overit_xss.mjs`** prochází kartu výjimky v pohledu
+  schvalovatele (sazby, dopad, světlíky „jiné“, payload v názvu pásu).
+
+Testy (každý s pojistkou před/po opravě, doloženo v commitu):
+`src/test_odhlaseni_text.js`, `netlify/test_uklid.mjs`,
+`src/test_analytika.js` (B175), `src/test_cisla_textem.js`,
+`netlify/test_koncova_cena.mjs` (B186), `overit_xss.mjs` (B187). Mutace
+v `netlify/mutace.mjs`: B171 (2), B174 (4), B175 (4), B186 (4).
+
 ## v18.10.11 — SoD: mutace dávky V3 v sadách, činnosti SoD PROJ v jazyce smlouvy, šablony v4 EN/DE/FR (větev claude/v3b-sod-preklad)
 
 Zadání koordinace 18. 10. 2026 (navazuje na V3 a V5 #380), nad

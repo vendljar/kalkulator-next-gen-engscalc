@@ -403,6 +403,13 @@ function onlineSlevyZeServeru(slevy, odeslane) {
   return zmen;
 }
 
+/* B171 (audit 15. 10. 2026, dávka H1): odhlášení zvedá verzi hesla
+ * (B6, functions/odhlaseni.mjs), takže ukončí relace tohoto účtu na VŠECH
+ * zařízeních. Tlačítko to říká v nápovědě a panel online i větou — jinak
+ * uživatel nechápe, proč je odhlášený i v telefonu. UI je jen česky
+ * (překlady EN/DE/FR se týkají dokumentů, ne rozhraní). */
+const ODHLASIT_TITULEK = 'Odhlásí vás na všech zařízeních, kde jste tímto účtem přihlášeni (počítač, telefon, tablet).';
+
 function onlineOdhlas() {
   return onlineApi('/api/odhlaseni', {}).catch(() => null).then(() => {
     const vladlOnline = ONLINE_STAV.cenikPouzit;
@@ -2064,7 +2071,7 @@ function renderOnlineLista() {
     <button class="mini" onclick="otevriMujProfil()">Můj profil</button>
     <button class="mini" onclick="otevriZmenaHesla()">Změnit heslo</button>
     ${typeof heatPrepinacHtml === 'function' ? heatPrepinacHtml() : ''}
-    <button class="mini" onclick="onlineOdhlas()">Odhlásit</button>`;
+    <button class="mini" onclick="onlineOdhlas()" title="${esc(ODHLASIT_TITULEK)}">Odhlásit</button>`;
 }
 
 /* Rozbalení nabídky náhledu. Seznam účtů si vyžádá, když ho ještě nemá —
@@ -2403,8 +2410,9 @@ function renderOnlineKarta() {
           >Uložit online</button>
         <button onclick="otevriOnline()">Zakázky online…</button>
         ${adminTlacitka}
-        <button onclick="onlineOdhlas()">Odhlásit</button>
+        <button onclick="onlineOdhlas()" title="${esc(ODHLASIT_TITULEK)}">Odhlásit</button>
       </div>
+      <div class="note" data-odhlaseni-vsude>Odhlášení platí pro všechna zařízení: odhlásí vás i na ostatních počítačích a v telefonu, kde jste tímto účtem přihlášeni.</div>
       <div class="row" style="margin-top:10px"><label>Ukládat online samo po chvíli klidu</label>
         <input type="checkbox" ${ONLINE_STAV.auto ? 'checked' : ''} onchange="onlineAutoPrepni(this.checked)"><span class="u"></span></div>
       <div class="note">Zakázky i platný ceník žijí na serveru – ke stejným datům se dostanete

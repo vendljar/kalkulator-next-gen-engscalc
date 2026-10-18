@@ -103,7 +103,7 @@ const analytikaMa = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 function analytikaPrictiMapu(cil, zdroj) {
   if (!cil || !zdroj || typeof zdroj !== 'object') return cil;
   Object.entries(zdroj).forEach(([k, n]) => {
-    const klic = String(k).slice(0, ANALYTIKA_MAX_KLIC_ZNAKU);
+    const klic = analytikaKlicOrez(k);             // B175: i prvky po uživatelích
     if (!klic || !analytikaKlicPovolen(klic)) return;
     cil[klic] = (analytikaMa(cil, klic) ? (+cil[klic] || 0) : 0) + analytikaCislo(n);
   });
@@ -166,8 +166,14 @@ function analytikaCislo(n) {
   if (!isFinite(x) || x <= 0) return 0;
   return Math.min(x, ANALYTIKA_MAX_HODNOTA);
 }
+/* Klíč prvku od klienta se očistí TÍMŽ pravidlem jako v analytikaKlic
+ * (B175, audit 15. 10. 2026, dávka H1): vše od první „(“ se nahradí „(…)“.
+ * Do v15.10.2 klient nechával v klíči zbytek argumentu (B89) a server ho
+ * jen ořízl na délku — jména zákazníků z té doby by se jinak slévala dál
+ * (souhrny za období, nový zápis dne). Klíč, který už očištěný je, se
+ * nezmění (idempotentní), záložky závorky nenesou. */
 function analytikaKlicOrez(k) {
-  return String(k == null ? '' : k).slice(0, ANALYTIKA_MAX_KLIC_ZNAKU);
+  return String(k == null ? '' : k).replace(/\([\s\S]*$/, '(…)').slice(0, ANALYTIKA_MAX_KLIC_ZNAKU);
 }
 /* Co smí z dávky klienta do slití: jmenovitě, bez `poUzivateli`. */
 function analytikaDavkaOcisti(den) {
@@ -262,6 +268,21 @@ function analytikaCastZTabu(tab) {
   return null;
 }
 
+/* ---------- jednorázová očista uložených dnů (B175) ----------
+ * Vrací očištěný den, když některý klíč prvku (souhrn i po uživatelích) nese
+ * zbytek argumentu z doby před v15.10.2; jinak null (den se nepřepisuje).
+ * Očistu dělá analytikaSlij — slévá klíče týmž pravidlem a součty sečte. */
+function analytikaDenPotrebujeOcistu(den) {
+  if (!den || typeof den !== 'object') return false;
+  const spatna = (m) => !!m && typeof m === 'object' && Object.keys(m).some(k => analytikaKlicOrez(k) !== k);
+  if (spatna(den.kliky) || spatna(den.zdrz)) return true;
+  return Object.values((den.poUzivateli && typeof den.poUzivateli === 'object') ? den.poUzivateli : {})
+    .some(u => u && spatna(u.kliky));
+}
+function analytikaDenOcisti(den) {
+  return analytikaDenPotrebujeOcistu(den) ? analytikaSlij(den, null) : null;
+}
+
 /* ---------- retence ----------
  * Vrací klíče „den/RRRR-MM-DD" starší než 24 měsíců od `dnes`. Cizí prefixy
  * a vadná data se nechávají být — mazat se smí jen to, čemu rozumíme. */
@@ -308,4 +329,4 @@ if (typeof module !== 'undefined')
     analytikaSlij, analytikaPocetZKliku, casNovy, casKrok, analytikaCastZTabu,
     analytikaRetence, analytikaObdobi, analytikaRezimNovy, analytikaRezimNastav,
     analytikaNovePocty, analytikaPrictiUzivateli, analytikaPoctyUzivatele, analytikaUzivatele,
-    analytikaPrictiMapu };
+    analytikaPrictiMapu, analytikaDenPotrebujeOcistu, analytikaDenOcisti };

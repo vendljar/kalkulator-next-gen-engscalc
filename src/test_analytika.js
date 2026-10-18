@@ -224,6 +224,24 @@ test('B8: serverová atribuce také nepřičítá záporné', pu.poUzivateli['a@
   test('B89: karta netvrdí, že verze měří „čistě anonymní souhrny"', !/což tahle verze dodržuje/.test(ui));
 }
 
+/* B175 (dávka H1, 18. 10. 2026): server čistí klíče prvků týmž pravidlem jako
+ * klient. Pojistka: před opravou (analytikaKlicOrez jen ořezávala délku) padají
+ * všechny čtyři kontroly; po opravě projdou. */
+{
+  const SPIN = "zakazky|BUTTON|otevri('Bytový dům (Praha) Novák')";
+  const CIST = 'zakazky|BUTTON|otevri(…)';
+  test('B175: analytikaKlicOrez zahodí argument volání', analytikaKlicOrez(SPIN) === CIST);
+  test('B175: očištěný klíč se nemění (idempotence)', analytikaKlicOrez(CIST) === CIST);
+  const den = analytikaSlij(null, analytikaDavkaOcisti({ kliky: { [SPIN]: 2, [CIST]: 1 }, zdrz: { [SPIN]: 5 } }));
+  test('B175: zápis dne ze špinavé dávky nese jen očištěné klíče (2 + 1)',
+    den.kliky[CIST] === 3 && den.zdrz[CIST] === 5 && !/Novák/.test(JSON.stringify(den)), JSON.stringify(den));
+  analytikaPrictiUzivateli(den, 'obchodnik@priklad.cz', {}, { kliky: { [SPIN]: 4 } });
+  test('B175: prvky po uživateli se čistí taky',
+    den.poUzivateli['obchodnik@priklad.cz'].kliky[CIST] === 4 && !/Novák/.test(JSON.stringify(den.poUzivateli)),
+    JSON.stringify(den.poUzivateli));
+  test('B175: analytikaDenOcisti vrátí null u čistého dne', analytikaDenOcisti(den) === null);
+}
+
 console.log('\nPASS=' + passes + ' FAIL=' + fails);
 console.log(passes + ' OK, ' + fails + ' FAIL');   // souhrn pro mutace.mjs
 process.exit(fails ? 1 : 0);

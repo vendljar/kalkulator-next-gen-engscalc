@@ -20,10 +20,15 @@
  * Klíčů neubývá (jeden za den ≈ 365 za rok, každý pár set kB) — mazání
  * starých by byla další příležitost k chybě za pár ušetřených megabajtů. */
 import { porizOtisk } from '../lib/zalohovani.mjs';
+import { nocniUklid } from '../lib/uklid.mjs';
 
 export default async () => {
   const v = await porizOtisk('nocni-otisk', '');
-  return new Response(JSON.stringify({ ok: true, ...v }), {
+  /* Úklid cache Pipedrive a očista analytiky (B174, B175, dávka H1) až PO
+   * otisku — jeho chyba zálohu neohrozí, jen se vrátí v odpovědi. */
+  let uklid;
+  try { uklid = await nocniUklid(); } catch (e) { uklid = { chyba: String(e && e.message || e) }; }
+  return new Response(JSON.stringify({ ok: true, ...v, uklid }), {
     headers: { 'Content-Type': 'application/json; charset=utf-8' } });
 };
 export const config = { schedule: '0 2 * * *' };
