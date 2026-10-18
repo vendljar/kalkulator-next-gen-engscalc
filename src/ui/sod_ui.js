@@ -25,7 +25,10 @@ function sodStavText(typ, txt) {
 }
 
 /* Plná moc je jednojazyčný úřední dokument pro ČESKÉ úřady – volba jazyka
- * tisku se na ni nevztahuje; smlouvy jazyk tisku respektují (mutace šablony). */
+ * tisku se na ni nevztahuje; smlouvy jazyk tisku respektují (mutace šablony).
+ * Od #157 (17. 10. 2026) má karta smlouvy vlastní výběr „Jazyk tisku" (týž
+ * jako u nabídek) a smlouva v cizím jazyce bez jazykové šablony nevznikne
+ * (sodJazykZabrana) — český právní text s anglickými hodnotami nejde podepsat. */
 function sodJazyk(typ) {
   if (typ === 'plnaMoc') return 'cz';
   return (typeof tiskJazyk === 'function') ? tiskJazyk()
@@ -35,7 +38,14 @@ function sodJazyk(typ) {
 function sodWord(typ) {
   const L = sodJazyk(typ);
   sablonaProTisk(typ, L).then(srv => {
+    const zabrana = (typeof sodJazykZabrana === 'function' && srv) ? sodJazykZabrana(typ, L, !srv.mutaceChybi) : '';
+    if (zabrana) { sodStavText(typ, 'Chyba: ' + zabrana); return; }
     if (srv) { sodWordGeneruj(typ, srv); return; }
+    /* místní cesta (měkký režim / bez serveru): jazyková šablona z Nastavení */
+    if (L !== 'cz' && typeof sodJazykZabrana === 'function') {
+      const z = sodJazykZabrana(typ, L, typeof SABLONY !== 'undefined' && !!SABLONY[typ + '_' + L]);
+      if (z) { sodStavText(typ, 'Chyba: ' + z); return; }
+    }
     // místní cesta – přednost má šablona nahraná v Nastavení → Šablony (SET-6)
     if (typeof SABLONY !== 'undefined' && SABLONY[typ]) SOD_DOCX[typ] = SABLONY[typ];
     if (SOD_DOCX[typ]) { sodWordGeneruj(typ, null); return; }
@@ -115,7 +125,10 @@ function sodKarta() {
       Vytištěná smlouva variantu <b>uzamkne</b> stejně jako odeslaná nabídka.</div>
     <div class="btns" style="margin-top:6px">
       <button class="primary"${zab} onclick="sodWord('sod')">Vytvořit smlouvu o dílo (Word)</button>
+      ${typeof tiskJazykVyber === 'function' ? tiskJazykVyber() : ''}
     </div>
+    <div class="note">Anglická smlouva (Jazyk tisku „anglicky") vzniká z anglické šablony smlouvy (překlad české,
+      Nastavení → Šablony → EN) s cenou v eurech; bez ní aplikace smlouvu v angličtině nevytvoří.</div>
     <div class="note sodStav_sod" style="margin-top:4px"></div>`;
 }
 
@@ -133,7 +146,10 @@ function sodProjKarta() {
     <div class="btns" style="margin-top:6px">
       <button class="primary"${zab} onclick="sodWord('sodProj')">Vytvořit smlouvu o dílo PROJ (Word)</button>
       <button class="primary"${zabPm} onclick="sodWord('plnaMoc')">Vytvořit plnou moc (Word)</button>
+      ${typeof tiskJazykVyber === 'function' ? tiskJazykVyber() : ''}
     </div>
+    <div class="note">Jazyk tisku platí pro smlouvu (anglicky jen s anglickou šablonou smlouvy PROJ, cena v eurech);
+      plná moc je vždy česky.</div>
     <div class="note sodStav_sodProj" style="margin-top:4px"></div>
     <div class="note sodStav_plnaMoc"></div>`;
 }

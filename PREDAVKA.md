@@ -1,3 +1,58 @@
+# Předávka — 18. 10. 2026: dávka V3 (v18.10.1), větev `claude/v3-sod-en` — režim DPH a skladné v SoD realizace v3
+
+Rozhodnutí J. V. 18. 10. (přes koordinaci): DPH volbou v krycím listu OCK, skladné kurzem do měny smlouvy.
+
+- **Hotovo (pushnuto):** `vyrob_sablony.js --sod-real-v3` (CZ v3 se symboly SOD_DPH_REZIM_VETA,
+  SOD_DPH_PROHLASENI, SOD_SKLADNE_DENNE); pole krycího listu „Režim DPH ve smlouvě“ (výchozí přenesená);
+  Nastavení → Firma „Skladné … Kč za den“ (bez výchozího čísla); `sodDphSymboly`, `sodSkladne`, věty
+  EN/DE/FR ve slovníku. Šablony realizace v3 CZ/EN/DE/FR + projekce v3 EN/DE/FR + slovníky v3 =
+  **přílohy sezení V3**. Testy test_sod_en 30/0, test_sod_real_v3 11/0, mutace 12/12.
+- **Pořadí nasazení (J. V.):** 1) Nastavení → Firma: skladné Kč/den; 2) Nastavení → Šablony → SoD
+  realizace: česká v3; 3) jazykové verze realizace v3 a projekce v3 (EN/DE/FR). Bez kroku 1 zůstane
+  ve smlouvě {{SOD_SKLADNE_DENNE}}.
+- **Čeká na J. V.:** kontrola vět DPH účetní (SOD_EN_KONTROLA.md), rodilí mluvčí, nahrání šablon.
+
+# Předávka — 18. 10. 2026: dávka V3 pokračování (v18.10.1), větev `claude/v3-sod-en` — SoD v DE a FR
+
+Na pokyn J. V. 18. 10. (přes koordinaci session_011B3ruyPigNEMSUdesbk4Hd). Do `test-draft` / `test` /
+`main` nic. Podrobnosti: CHANGELOG v18.10.1, `podklady/SOD_EN_KONTROLA.md`.
+
+- **Hotovo (pushnuto):** nástroj `preklad_sod.js --jazyk en|de|fr` + pojmenovaná místa `[[…]]`;
+  šablony SoD realizace v2 a projekce v3 v DE a FR (kontrola bez problémů) a slovníky EN/DE/FR
+  s místy `DPH_REZIM`, `DPH_SNIZENA_SAZBA`, `SKLADNE` — **přílohy sezení V3** (session_01GyotCYY7DhFnyXhceNA3de).
+  EN šablony beze změny (bajtově shodné). Příručka, roadmapa #157 (DE/FR), #380 (zvolena B → V5).
+- **Testy:** test_preklad_sod 14/5 (nástroj v17.10.6) → 19/0, test_sod_en 20/0, mutace 18/18,
+  smoke 262/0/6 (přeskočené = firemní podklady).
+- **Čeká na J. V.:** znění sporných míst (pak přepsat záznam místa ve slovníku a `node
+  nastroje/preklad_sod.js --jazyk <j> <složka>`), kontrola rodilými mluvčími, nahrání šablon EN/DE/FR.
+- **Verze v18.10.1 je předběžná** — koordinace přidělí při sloučení (CHANGELOG, příručka, verze.txt).
+
+# Předávka — 17. 10. 2026: dávka V3 (v17.10.6), větev `claude/v3-sod-en` — SoD v angličtině (#157), #380 Q7 návrh
+
+Nad `origin/claude/integrace-16-10` (`9bb7caf`, v17.10.4). Do `test-draft` / `test` / `main` nic —
+slučuje koordinace (session_011B3ruyPigNEMSUdesbk4Hd). Podrobnosti: CHANGELOG v17.10.6,
+`podklady/SOD_EN_KONTROLA.md`.
+
+- **Hotovo (pushnuto):** #157 — nástroj `nastroje/preklad_sod.js` (kostra slovníku → anglická
+  šablona + kontrola); anglické šablony SoD realizace v2 a projekce v3 vyrobené, kontrola bez
+  problémů, **předané J. V. jako přílohy sezení V3** (session_01GyotCYY7DhFnyXhceNA3de: dva .docx
+  a dva slovníky .preklad_en.json; do repozitáře nepatří). Aplikace: Jazyk tisku u karet SoD,
+  splátky / platby / místo plnění v jazyce smlouvy, EUR, bez jazykové šablony smlouva v cizím
+  jazyce nevznikne. Příručka kap. 24 + Co je nového v17.10.6, roadmapa #157 → hotovo.
+- **#380 Q7:** jen návrh koordinaci (A věta přílohy, B i bloky činností čl. II/III — doporučeno B,
+  samostatná dávka); roadmapa #380 `otazka` aktualizovaná. Kód beze změny.
+- **Testy:** test_sod_en 8/10 → 18/0, test_preklad_sod 0/1 → 13/0, harness overit_sod_en 2/4 → 6/0;
+  smoke 261/0/6 (přeskočené = firemní podklady, mezi nimi overit_sod.mjs); mutace 12/12.
+  Pozn. k prostředí: `npm i playwright` bez verze stáhne 1.64 → v kontejneru chybí prohlížeč
+  (chromium_headless_shell-1248); funguje `npm i --no-save playwright@1.56.1` (chromium 1194).
+- **Čeká na J. V.:** kontrola překladu rodilým mluvčím (opravy do slovníku → `node
+  nastroje/preklad_sod.js <složka>`), nahrání EN šablon v Nastavení → Šablony → SoD → EN (test
+  i ostrá); sporná místa české šablony (DPH v režimu přenesení × snížená sazba, skladné v Kč,
+  odkaz „odst. 5“ v SoD PROJ) — viz SOD_EN_KONTROLA.md.
+- **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `roadmap.json`
+  (#157, #380) / `manual/obsah.json` (verze, Co je nového) / `src/preklad.js`.
+- **Další krok:** žádný v této větvi — dávka uzavřená.
+
 # Předávka — 18. 10. 2026: dávka V6 (v18.10.5), větev `claude/v6-kontrola-rozhodnuti` — kontrola rozhodnutí 16.–18. 10.
 
 Nad `origin/claude/integrace-16-10` (`0dbec56`, v17.10.5). Do `test-draft` / `test` / `main` nic —

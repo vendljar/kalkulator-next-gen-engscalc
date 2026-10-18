@@ -50,6 +50,11 @@ const KRYCI_LIMIT_POKUT = ['Uplatněn limit 10 %', 'NEUPLATNĚN limit 10 %'];
  * {{SOD_MISTO_PLNENI_DRUH}} na adrese {{ADRESA}}". Bez předvyplnění — druh
  * stavby zná jen obchodník; rozbalovátko přidá „jiné znění…" samo. */
 const KRYCI_MISTO_PLNENI = ['bytový dům', 'rodinný dům', 'administrativní budova'];
+/* Režim DPH ve smlouvě o dílo realizace (rozhodnutí J. V. 18. 10. 2026).
+ * Pořadí = klíče SOD_DPH_REZIMY v sod.js. Výchozí je přenesená daňová
+ * povinnost — věta, kterou šablona v2 nesla natvrdo. */
+const KRYCI_DPH_REZIMY = ['přenesená daňová povinnost (tuzemsko)', 'reverse charge EU (místo plnění v jiném státě EU)',
+  'česká DPH v zákonné sazbě'];
 
 /* Datum tisku pro předvyplnění pole „Dne" (20. 8. 2026). Formát YYYY-MM-DD,
  * protože pole je typu date; ruční přepis má přednost jako u všech prefillů. */
@@ -322,6 +327,10 @@ const KRYCI_SEKCE = [
    * se ukládají podle id pole, přejmenování na data nesahá). Do cenové
    * nabídky nic z toho nejde (sekce není v KRYCI_NABIDKA_SEKCE). */
   { sekce: 'Smlouva o dílo (SoD realizace)', pole: [
+    /* Režim DPH (18. 10. 2026): věta čl. V odst. 2 a odst. 3 šablony v3
+     * ({{SOD_DPH_REZIM_VETA}}, {{SOD_DPH_PROHLASENI}}) — skládá sod.js. */
+    { id: 'sodDphRezim', label: 'Režim DPH ve smlouvě', verze: ['bo'], typ: 'vyber', o: KRYCI_DPH_REZIMY,
+      prefill: () => KRYCI_DPH_REZIMY[0], src: 'výchozí — věta čl. V smlouvy o dílo realizace' },
     { id: 'sodMistoPlneni', label: 'Místo plnění — druh stavby', verze: ['bo'], typ: 'vyber', o: KRYCI_MISTO_PLNENI,
       sod: 'SOD_MISTO_PLNENI_DRUH', ph: 'např. polyfunkční dům',
       src: 'věta smlouvy „Místem provádění díla je … na adrese …"' },
@@ -1039,6 +1048,10 @@ function kryciPlatebniSymboly(kal, P, lang) {
  * Splátka bez čitelného procenta zůstane ve v1 jako {{…}} k doplnění.
  * Vrací { symboly, odstavcePryc, chyba }. */
 const KRYCI_SOD_VETA_ZALOHY = 'při uzavření této smlouvy o dílo';
+const KRYCI_SOD_Z_CENY = 'z celkové ceny díla';
+/* cizojazyčná smlouva (#157): konečná splátka jako milník + „zbývajících" */
+const KRYCI_SOD_VETA_KONECNA_CIZI = 'po provedení celého díla zhotovitele a jeho předání a převzetí bez vad a nedodělků bránících provozu výtahu';
+const KRYCI_SOD_ZBYVAJICI = 'zbývajících';
 const KRYCI_SOD_VETA_KONECNA = 'po provedení celého díla zhotovitele a jeho předání a převzetí bez vad a nedodělků bránících provozu výtahu zbývajících';
 function kryciSodMilnik(text) {
   /* „40 % – po zahájení montáže" → „po zahájení montáže"; text bez pomlčky
@@ -1047,18 +1060,30 @@ function kryciSodMilnik(text) {
   const m = t.match(/^\s*-?\d+(?:[.,]\d+)?\s*%\s*[–—-]\s*(.+)$/);
   return m ? m[1].trim() : t;
 }
-function kryciSodPlatby(zak, varianta, jekly, sablona) {
+/* Smlouva v cizím jazyce (#157, 17. 10. 2026): řádky seznamu plateb se
+ * skládají z týchž dílů přeložených slovníkem (tr) — milník, procento,
+ * „z celkové ceny díla". Vlastní znění obchodníka zůstane, jak ho napsal,
+ * když ho slovník nezná. */
+function kryciSodPlatby(zak, varianta, jekly, sablona, lang) {
+  const L = lang || 'cz';
+  const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
   const kal = kryciPlatebniKalendar(zak, varianta, jekly);
   const sym = sablona && sablona.symboly;
   const ma = (k) => !!sym && (typeof sym.has === 'function' ? sym.has(k) : Array.from(sym).indexOf(k) >= 0);
   const symboly = {}, odstavcePryc = [];
   const cislo = (proc) => String(proc || '').replace(/\s*%\s*$/, '');
   /* seznam plateb (šablona v2, náhled) */
-  const radky = kal.mesicne ? [KRYCI_FAKTURACE_MESICNE_VETA] : kal.splatky.map(sp => {
-    if (sp.pct === null) return String(sp.text).trim();
-    if (sp.id === 'zaloha1') return KRYCI_SOD_VETA_ZALOHY + ' ' + sp.proc + ' z celkové ceny díla';
-    if (sp.id === 'fakturaKonc') return KRYCI_SOD_VETA_KONECNA + ' ' + sp.proc + ' z celkové ceny díla';
-    return kryciSodMilnik(sp.text) + ' ' + sp.proc + ' z celkové ceny díla';
+  const radky = kal.mesicne ? [P(KRYCI_FAKTURACE_MESICNE_VETA)] : kal.splatky.map(sp => {
+    if (sp.pct === null) return P(String(sp.text).trim());
+    if (L !== 'cz') {
+      /* „<milník> – [zbývajících] N % z celkové ceny díla" — pořadí, které
+       * drží ve všech jazycích; čeština zůstává beze změny (níž). */
+      const konecna = sp.id === 'fakturaKonc';
+      const milnik = sp.id === 'zaloha1' ? KRYCI_SOD_VETA_ZALOHY : konecna ? KRYCI_SOD_VETA_KONECNA_CIZI : kryciSodMilnik(sp.text);
+      return P(milnik) + ' – ' + (konecna ? P(KRYCI_SOD_ZBYVAJICI) + ' ' : '') + sp.proc + ' ' + P(KRYCI_SOD_Z_CENY);
+    }
+    const milnik = sp.id === 'zaloha1' ? KRYCI_SOD_VETA_ZALOHY : sp.id === 'fakturaKonc' ? KRYCI_SOD_VETA_KONECNA : kryciSodMilnik(sp.text);
+    return milnik + ' ' + sp.proc + ' ' + KRYCI_SOD_Z_CENY;
   }).filter(Boolean);
   if (radky.length) symboly.SOD_PLATEBNI_KALENDAR = radky.join('\n');
   const stara = !!sym && !ma('SOD_PLATEBNI_KALENDAR') && ['SOD_SPLATKA1_PROC', 'SOD_SPLATKA2_PROC', 'SOD_SPLATKA3_PROC', 'SOD_SPLATKA4_PROC'].some(ma);
@@ -1135,4 +1160,4 @@ if (typeof module !== 'undefined')
     kryciFaktura2Dopocet, kryciFaktura2Sync,
     KRYCI_PRAVIDLA_PLATEB, KRYCI_FAKTURACE_MESICNE_VETA, KRYCI_VETY_V13, kryciPlatbaProcento, kryciPlatbyStary,
     kryciPlatebniKalendar, kryciPlatebniSymboly, kryciSodPlatby, kryciSodMilnik,
-    KRYCI_MISTO_PLNENI, kryciDnesIso, kryciPokutaStav, kryciPoleHodnota };
+    KRYCI_MISTO_PLNENI, KRYCI_DPH_REZIMY, kryciDnesIso, kryciPokutaStav, kryciPoleHodnota };

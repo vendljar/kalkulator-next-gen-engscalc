@@ -494,7 +494,7 @@ function nabidkaData(zak, varianta, jekly, lang, sablona) {
     ...(tsExtra.length ? [{ kotva: 'TS_NENI_PRISTUP', pruh: true, nazev: P('DALŠÍ UJEDNÁNÍ') }] : []),
     ...tsExtra.map(e => ({ kotva: 'TS_NENI_PRISTUP', vzdy: true, nazev: e.nazev, hodnota: e.hodnota })),
   ];
-  return { placeholders, priplatky: priplatkyList, jazyk: L, platbyOck, tsRadkyNavic, tsExtra,
+  return { placeholders, priplatky: priplatkyList, jazyk: L, platbyOck, tsRadkyNavic, tsExtra, mena,
            /* sken podpisu s razítkem (#146) + úvodní fotka stavby */
            obrazky: Object.assign({},
              typeof zpracovatelObrazky === 'function' ? zpracovatelObrazky() : {},

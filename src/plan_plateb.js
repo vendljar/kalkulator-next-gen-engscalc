@@ -397,10 +397,15 @@ function planZpusobFakturace(plan, firemni, vetaFirmy) {
  * šablona u každé z osmi pevných plateb: „Platba ve výši 95 880,00 Kč + DPH
  * proběhne po podpisu smlouvy / objednávky." (formát řádku k potvrzení
  * J. V., Q11). `fmt` = formát částky dokumentu (mena.fmt). */
-function planSodKalendar(dopocet, fmt) {
+/* P = překlad do jazyka smlouvy (#157): věta „Platba <milník>" je klíč
+ * slovníku nabídky PROJ (tytéž milníky), za ní částka a „+ DPH". */
+function planSodKalendar(dopocet, fmt, P) {
   const f = typeof fmt === 'function' ? fmt : (n => String(n));
+  const milnik = x => String(x.text || '(milník chybí)').replace(/[.\s]+$/, '');
+  if (typeof P === 'function')
+    return ((dopocet && dopocet.platby) || []).map(x => P('Platba ' + milnik(x)) + ' – ' + f(x.castka) + ' + ' + P('DPH') + '.').join('\n');
   return ((dopocet && dopocet.platby) || []).map(x => 'Platba ve výši ' + f(x.castka) + ' + DPH proběhne '
-    + String(x.text || '(milník chybí)').replace(/[.\s]+$/, '') + '.').join('\n');
+    + milnik(x) + '.').join('\n');
 }
 /* Stará šablona SoD PROJ má osm pevných plateb s milníky napsanými v šabloně
  * (PLAN_SODP_STARE). Symboly SODP_PLATBAn_KC se plní z plateb plánu se

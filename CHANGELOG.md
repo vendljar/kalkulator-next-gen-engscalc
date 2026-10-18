@@ -8,6 +8,116 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v18.10.7 — smlouvy o dílo v němčině a francouzštině, režim DPH a skladné (#157; větev claude/v3-sod-en)
+
+Pokračování dávky V3 podle rozhodnutí J. V. 18. 10. 2026 (přes koordinaci):
+SoD i v DE a FR stejně jako EN; #380 Q7 = varianta B, udělá ji dávka V5;
+sporná místa EN šablony (DPH u zahraničního zákazníka, skladné) J. V.
+upřesní — šablony zatím beze změny, jen oddělená ve slovníku. Verze
+předběžná (koordinace přidělí při sloučení).
+
+- **Režim DPH volbou a skladné kurzem (rozhodnutí J. V. 18. 10. 2026).**
+  Šablona SoD realizace v2 nesla v čl. V natvrdo přenesenou daňovou
+  povinnost a hned za ní prohlášení o snížené sazbě DPH — jedno vylučuje
+  druhé. Nová česká šablona **SoD realizace v3**
+  (`nastroje/vyrob_sablony.js --sod-real-v3`, kotvy právě jednou, jinak
+  chyba): věta režimu → `{{SOD_DPH_REZIM_VETA}}`, tělo odstavce „3.“ →
+  `{{SOD_DPH_PROHLASENI}}` (číslo zůstává kvůli odkazům na „bod 4“), pevná
+  částka skladného → `{{SOD_SKLADNE_DENNE}}`.
+  - Krycí list OCK, sekce Smlouva o dílo: pole **Režim DPH ve smlouvě**
+    (přenesená daňová povinnost — výchozí, jako dosud / reverse charge EU /
+    česká DPH v zákonné sazbě). `sodDphSymboly` (sod.js): věta režimu;
+    prohlášení o snížené sazbě jen při české DPH a místě plnění bytový /
+    rodinný dům, jinak věta o oznámení změny (druhá věta původního
+    odstavce). Vlastní znění režimu symboly nevyplní ({{…}} ve Wordu). Věty
+    EN/DE/FR ve slovníku; znění ke kontrole účetní (SOD_EN_KONTROLA.md).
+  - Nastavení → Firma: **Skladné … Kč za den** (`skladneDenneKc`, bez
+    výchozího čísla). `sodSkladne`: česky „N,- Kč“ (tvar dosavadní
+    šablony), cizí jazyk v měně smlouvy `mena.na` (#155, celá eura nahoru);
+    `nabidkaData` nově vrací `mena`. Prázdné pole nechá `{{…}}`.
+  - Jazykové šablony **SoD realizace v3** EN/DE/FR vyrobené znovu
+    (137 odstavců, 56 symbolů, kontrola bez problémů); slovníky v3 převzaly
+    překlady v2, skladné je pojmenované místo `[[SKLADNE]]` = symbol
+    v měně smlouvy, místa DPH zanikla (věty dodává aplikace).
+    `preklad_sod.js` pracuje se šablonami realizace v3 a projekce v3.
+- **Nástroj `nastroje/preklad_sod.js` zobecněný na jazyky** `--jazyk en |
+  de | fr` (slovník `*.preklad_<jazyk>.json`, výstup `_DE` / `_FR`, překlad
+  z pole jazyka, odhad jazyka a zakázaná česká diakritika podle cílového
+  jazyka).
+- **Pojmenovaná místa** `[[JMENO]]` — záznam `{ misto, en|de|fr, pozn }`
+  ve slovníku; neznámé nebo nepřeložené místo se odmítne. V EN, DE i FR
+  slovníku SoD realizace: `DPH_REZIM`, `DPH_SNIZENA_SAZBA`, `SKLADNE` —
+  změna znění = přepis jednoho záznamu. Anglické šablony vyrobené znovu
+  jsou s v17.10.6 bajtově shodné (document.xml).
+- **Vyrobeny** `Sablona_SOD_REALIZACE_v2_DE/FR.docx` (139 odstavců)
+  a `Sablona_SOD_PROJEKCE_v3_DE/FR.docx` (95), kontrola bez problémů (jazyk
+  de 96–99 %, fr 100 %), testzip a převod do PDF v pořádku; předány J. V.
+  jako přílohy sezení spolu se slovníky (do repozitáře nepatří). Kontrolní
+  seznam termínů DE/FR a pojmenovaná místa v `podklady/SOD_EN_KONTROLA.md`.
+- **Aplikace pro DE/FR:** hesla pro splátky, platby PROJ a místo plnění
+  jsou ve slovníku od v17.10.6; zábrana bez jazykové šablony platí pro DE
+  i FR. Příručka kap. 24 a Co je nového v18.10.1.
+- **Režim DPH a skladné — testy:** `src/test_sod_en.js` +10 (režimy,
+  prohlášení, vlastní znění, skladné Kč / € nahoru / prázdné; částka
+  smyšlená) proti stavu před úpravou 25 prošlo / 5 selhalo, po ní 30/0;
+  nový `src/test_sod_real_v3.js` (smyšlený úryvek čl. V a VI) bez
+  `sodRealV3` 0/1, po něm 11/0. Mutace 12/12 (dvě částky ve větě
+  o skladném napoprvé přežily → test). Celá cesta ověřená lokálně na
+  skutečných šablonách v3 CZ/EN/FR (nic se necommituje). Smoke 263 prošlo /
+  0 selhalo / 6 přeskočeno (firemní podklady).
+- **Testy (pojistka):** `src/test_preklad_sod.js` proti nástroji z v17.10.6
+  14 prošlo / 5 selhalo, po rozšíření 19/0; `src/test_sod_en.js` +2 (DE
+  splátky a místo plnění, FR platby PROJ) 20/0 — hlídají slovník z v17.10.6,
+  mutace hesel DE je shodí.
+- **Mutace (cílené, oddělená kopie):** 18/18 chyceno (12 z v17.10.6
+  znovu + pole jazyka, rozvinutí míst, neznámé místo, odhad jazyka DE/FR,
+  dvě hesla DE; mutace „pole jazyka“ napoprvé přežila → test „záznam jen
+  s en“). `./spust_testy.sh --smoke` 262 prošlo / 0 selhalo / 6 přeskočeno
+  (firemní podklady).
+
+---
+
+## v17.10.6 — smlouva o dílo v angličtině (#157; #380 Q7 jen návrh; větev claude/v3-sod-en)
+
+Dávka V3 (zadání koordinace „ŘÍDÍCÍ 16.10“, rozhodnutí J. V. 16. 10. 2026:
+anglická SoD = překlad české šablony ke kontrole rodilými mluvčími),
+nad `origin/claude/integrace-16-10` (`9bb7caf`, v17.10.4).
+
+- **#157 hotovo — anglické šablony SoD.** Nový nástroj
+  `nastroje/preklad_sod.js`: `--kostra` vypíše odstavce české šablony do
+  slovníku (JSON mimo repozitář, značky stylů `<s1>…</s1>`, tabulátory,
+  symboly), druhý režim odstavce přeskládá z překladu (vlastnosti odstavce,
+  písmo tučných úseků a symbolů zůstávají) a zkontroluje výsledek: symboly
+  shodné s češtinou, tabulátory, platné XML, odhad jazyka en, žádná česká
+  diakritika. Vyrobeny `Sablona_SOD_REALIZACE_v2_EN.docx` (139 odstavců)
+  a `Sablona_SOD_PROJEKCE_v3_EN.docx` (95), kontrola bez problémů; soubory
+  a slovníky předány J. V. jako přílohy sezení (firemní texty, v repozitáři
+  nejsou). Kontrolní seznam termínů `podklady/SOD_EN_KONTROLA.md`.
+- **Aplikace — smlouva v jazyce tisku.** Karty SoD (krycí list OCK i PROJ)
+  mají **Jazyk tisku** jako nabídky. Hodnoty, které skládá aplikace, jsou
+  v jazyce smlouvy: seznam splátek SoD realizace (`kryciSodPlatby`, lang),
+  platby SoD PROJ (`planSodKalendar` s překladem — „Payment after … – € … +
+  VAT.“), druh místa plnění (`sodPrelozHodnoty`); slovník `src/preklad.js`
+  EN/DE/FR. Čeština beze změny. Částky v eurech podle #155.
+- **Bez jazykové šablony smlouva v cizím jazyce nevznikne**
+  (`sodJazykZabrana`, `src/ui/sod_ui.js`) — dřív vznikla z české šablony
+  s upozorněním „pevný text zůstal český“, tj. český právní text s anglickými
+  hodnotami. Hláška řekne, kde šablonu nahrát (Nastavení → Šablony → EN).
+- **#380 Q7 — jen návrh koordinaci** (varianty A věta přílohy / B i bloky
+  činností v čl. II a III SoD PROJ, doporučeno B); kód beze změny.
+- **Testy (pojistka):** `src/test_sod_en.js` (smyšlená anglická šablona,
+  žádný firemní text) proti kódu před opravou 8 prošlo / 10 selhalo, po
+  opravě 18/0; `src/test_preklad_sod.js` bez nástroje 0/1, s nástrojem 13/0;
+  harness `overit_sod_en.mjs` (karty, zábrana v sestavené aplikaci) nad
+  v17.10.4 2/4, po úpravě 6/0. `./spust_testy.sh --smoke` 261 prošlo /
+  0 selhalo / 6 přeskočeno (firemní podklady), před přidáním harnessu
+  a 13. testu nástroje — ty prošly samostatně.
+- **Mutace (cílené, v odděleném worktree):** 12/12 chyceno — zábrana vypnutá,
+  místo plnění nepřeloženo, platby PROJ česky, splátky OCK česky, bez „the
+  remaining“, DPH nepřeloženo; v nástroji kontrola symbolů, tabulátorů,
+  písmo symbolu, styl úseku, zahozené pPr, odhad jazyka (původně přežila →
+  doplněn test „česky bez diakritiky“).
+
 ## v18.10.5 — kontrola rozhodnutí 16.–18. 10. (větev claude/v6-kontrola-rozhodnuti)
 
 Dávka V6 (zadání koordinace „ŘÍDÍCÍ 16.10“), nad
