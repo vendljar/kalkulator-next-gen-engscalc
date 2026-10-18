@@ -11,7 +11,11 @@ Podrobnosti: CHANGELOG v18.10.13, `BEZPECNOST_MEZE.md` (B171, B174, B175, B186, 
   lhůta cache Pipedrive 30 dní (`PD_CACHE_UKLID_DNU`), záznam bez stáří se maže; převod jen čísel s desetinnou
   tečkou — čárka dál 400 (B134/B137), nečíselný text zůstává; příručka beze změny (kap. 1 to už uvádí).
 - **Testy:** mutace H1 14/14 (B171 2, B174 4, B175 4, B186 4), `--kontrola` 534/534; overit_xss 383/0
-  (pojistka 379/4); kolo `--jen build,sady,staticke` viz zpráva koordinaci.
+  (pojistka 379/4); kolo `--jen build,sady,staticke`: sady 270/4/1 přeskočeno (test.js), statické 3/3.
+  `overit_roadmapu` padal kvůli #427 ve vlně F (= odloženo) — opraveno na vlnu B, 13/0. Zbylá 3 selhání jsou
+  z podkladů mimo repo: `test_sablona_proj_v4.js` (37/4) a `overit_nabidka_proj_word.mjs` dostaly srpnovou
+  `Sablona_NABIDKA_PROJ.docx` (na Disku je v5 z 14. 10.), `overit_manual.mjs` příručku v25.9.3 (novější na Disku
+  není) — H1 se PROJ šablon ani příručky nedotýká.
 - **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `roadmapa/roadmap.json` (#427) /
   `netlify/mutace.mjs` (SADY + 14 mutací) / `BEZPECNOST_MEZE.md` / `overit_xss.mjs`.
 - **Další krok:** sloučení do integrace (koordinace).
