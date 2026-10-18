@@ -1,3 +1,18 @@
+# Předávka — 18. 10. 2026: dávka N3, větev `claude/kolo27-audit` — kolo 27, bezpečnostní audit v16.10.5 → v17.10.5
+
+Nad `origin/claude/integrace-16-10` (`0dbec56`, v17.10.5). Kód aplikace beze změny (verze zůstává v17.10.5).
+Do `test-draft` / `test` / `main` nic — slučuje koordinace (session_011B3ruyPigNEMSUdesbk4Hd).
+
+- **Hotovo (pushnuto):** `podklady/AUDIT_2026-10-18_v17.10.5.md` — 0 kritických / vysokých / středních,
+  nízký **B183** (zaokrouhlení plochy pásu na celé m²: nekrytý nárůst až < 1 m², dokumentace říká ±0,5),
+  informativní B184 (ruční přepisy řádku pásu mimo obsah), B185 (opis čísla SoD a data podpisu jen
+  v prohlížeči), B186 (číselná pole zadání jako text, zámek fail-closed), B187 (XSS harness bez pohledu
+  schvalovatele). Pokus `podklady/AUDIT27_pokus_vyjimky.mjs` 16/0; cílené sady a harnessy 0 FAIL.
+- **Rozhodnuto výchozí volbou:** B183 neopravováno v této dávce (volba mezi zněním a chováním) — návrh (a)
+  opravit znění meze v další dávce výjimek; (b) 0,1 m² jen na pokyn J. V.
+- **Celé kolo s mutacemi:** dávka K1 (souběžně).
+- **Při slučování:** konflikt jen v `PREDAVKA.md`.
+
 # Předávka — 17. 10. 2026: dávka B165 (v17.10.5), větev `claude/b165-karta-vyjimky` — sazby a dopad v kartě výjimky, zbytek B178
 
 Nad `origin/claude/integrace-16-10` (`9bb7caf`, v17.10.4). Do `test-draft` / `test` / `main` nic —
