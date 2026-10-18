@@ -8,6 +8,8 @@ nic — slučuje koordinace (session_0144Y7gXWeprriv4yf4wKL5T).
   a 10min paměť jako panel Zobrazení. Jiné cesty zápisu `program/zobrazeni` nejsou (jen `/api/zobrazeni`).
   Pokus AUDIT28 P3 → 401. Testy: `test_zobrazeni_heslo` 23/0 (před opravou 7 selhání), `test_obnova` 232/0,
   `overit_online` 238/0; mutace B188 (4), B77 obnovy přepsána na nový tvar podmínky.
+- **Kolo `--jen build,sady,staticke`:** 270 prošlo / 0 selhalo / 2 přeskočeno (test.js mimo export, overit_manual
+  bez firemního podkladu), statické 3/3. Mutace B188 4/4, B168 1/1, zobrazen 11/11, obnova 50/50 (66/66), `--kontrola` 524 úseků.
 - **Výchozí volby (J. V. se neptal):** záloha s `zobrazeni: null` heslo nechce (nic se nezapíše); u otisku
   UI chce heslo vždy, když je část zaškrtnutá (obsah otisku klient nezná); `program`/`firma` beze změny (mez B168).
 - **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `manual/obsah.json` (verze) /
