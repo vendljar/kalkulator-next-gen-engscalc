@@ -68,8 +68,12 @@ varianta B), nad `origin/claude/integrace-16-10` (`9bb7caf`, v17.10.4).
   Podrobně `podklady/POSTUP_SABLONY_SOD_PROJ_V4_18_10.md`.
 - **Testy (pojistka):** `src/test_sod_proj_rozsah.js` proti kódu před
   opravou 0/2 (sodProjV4 ani `blokyPryc` neexistují), po opravě 34/0;
-  s `KNG_PODKLADY` (skutečná v3 a vyrobená v4) 42/0. Mutace #380
-  (`netlify/mutace.mjs`, sada přidána do `SADY`): viz souhrn níž.
+  s `KNG_PODKLADY` (skutečná v3 a vyrobená v4) 42/0. Harness
+  `overit_sod_proj_rozsah.mjs` (sestavená aplikace, zakázka PROJ jen
+  DPZ + IČ + DPS / všechny činnosti / stará v3) 7/7 se syntetickou šablonou
+  i se skutečnou v3 a v4. Mutace #380 (`netlify/mutace.mjs`, sada přidána
+  do `SADY`) 9/9 chycených, `--kontrola` 510 úseků. Harness S9
+  `overit_sod_proj_cislo.mjs` se skutečnou v3 6/6.
   Příručka kap. 24 (nový odstavec „Smlouva o dílo projekce vyjmenuje jen to,
   co nabízíte“) a Co je nového v18.10.3; roadmapa #380 → hotovo.
 
