@@ -1,3 +1,21 @@
+# Předávka — 18. 10. 2026: dávka H1 (v18.10.13), větev `claude/h1-hygiena` — hygiena B171, B174, B175, B186, B187
+
+Nad `origin/claude/integrace-16-10` (`8480133`). Do `test-draft` / `test` / `main` ani do integrace nic —
+slučuje koordinace (session_0144Y7gXWeprriv4yf4wKL5T; integrace je mezitím na v18.10.14, bere se vyšší verze).
+Podrobnosti: CHANGELOG v18.10.13, `BEZPECNOST_MEZE.md` (B171, B174, B175, B186, B187), roadmapa #427 (hotovo).
+
+- **Hotovo (pushnuto):** B171 nápověda + věta u Odhlásit; B174 noční úklid `pd_cache` (`netlify/lib/uklid.mjs`,
+  volá `zaloha_nocni.mjs`); B175 serverová očista klíčů analytiky + jednorázová noční očista dnů (značka
+  `ocista-b175`); B186 převod čísel textem v `importZakazka` (`zadaniCislaZTextu`); B187 oblast v `overit_xss.mjs`.
+- **Výchozí volby (J. V. se neptal):** UI jen česky (rozhraní se nepřekládá), bez potvrzovacího okna u odhlášení;
+  lhůta cache Pipedrive 30 dní (`PD_CACHE_UKLID_DNU`), záznam bez stáří se maže; převod jen čísel s desetinnou
+  tečkou — čárka dál 400 (B134/B137), nečíselný text zůstává; příručka beze změny (kap. 1 to už uvádí).
+- **Testy:** mutace H1 14/14 (B171 2, B174 4, B175 4, B186 4), `--kontrola` 534/534; overit_xss 383/0
+  (pojistka 379/4); kolo `--jen build,sady,staticke` viz zpráva koordinaci.
+- **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `roadmapa/roadmap.json` (#427) /
+  `netlify/mutace.mjs` (SADY + 14 mutací) / `BEZPECNOST_MEZE.md` / `overit_xss.mjs`.
+- **Další krok:** sloučení do integrace (koordinace).
+
 # Předávka — 18. 10. 2026: dávka V3b (v18.10.11), větev `claude/v3b-sod-preklad` — mutace V3, činnosti SoD PROJ EN/DE/FR, šablony v4
 
 Nad `origin/claude/integrace-16-10` (`0bf74e6`, v18.10.10) + sloučený doplněk V3 `817b378`. Do `test-draft` /
