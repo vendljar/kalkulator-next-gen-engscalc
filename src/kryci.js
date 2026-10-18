@@ -50,6 +50,11 @@ const KRYCI_LIMIT_POKUT = ['Uplatněn limit 10 %', 'NEUPLATNĚN limit 10 %'];
  * {{SOD_MISTO_PLNENI_DRUH}} na adrese {{ADRESA}}". Bez předvyplnění — druh
  * stavby zná jen obchodník; rozbalovátko přidá „jiné znění…" samo. */
 const KRYCI_MISTO_PLNENI = ['bytový dům', 'rodinný dům', 'administrativní budova'];
+/* Režim DPH ve smlouvě o dílo realizace (rozhodnutí J. V. 18. 10. 2026).
+ * Pořadí = klíče SOD_DPH_REZIMY v sod.js. Výchozí je přenesená daňová
+ * povinnost — věta, kterou šablona v2 nesla natvrdo. */
+const KRYCI_DPH_REZIMY = ['přenesená daňová povinnost (tuzemsko)', 'reverse charge EU (místo plnění v jiném státě EU)',
+  'česká DPH v zákonné sazbě'];
 
 /* Datum tisku pro předvyplnění pole „Dne" (20. 8. 2026). Formát YYYY-MM-DD,
  * protože pole je typu date; ruční přepis má přednost jako u všech prefillů. */
@@ -322,6 +327,10 @@ const KRYCI_SEKCE = [
    * se ukládají podle id pole, přejmenování na data nesahá). Do cenové
    * nabídky nic z toho nejde (sekce není v KRYCI_NABIDKA_SEKCE). */
   { sekce: 'Smlouva o dílo (SoD realizace)', pole: [
+    /* Režim DPH (18. 10. 2026): věta čl. V odst. 2 a odst. 3 šablony v3
+     * ({{SOD_DPH_REZIM_VETA}}, {{SOD_DPH_PROHLASENI}}) — skládá sod.js. */
+    { id: 'sodDphRezim', label: 'Režim DPH ve smlouvě', verze: ['bo'], typ: 'vyber', o: KRYCI_DPH_REZIMY,
+      prefill: () => KRYCI_DPH_REZIMY[0], src: 'výchozí — věta čl. V smlouvy o dílo realizace' },
     { id: 'sodMistoPlneni', label: 'Místo plnění — druh stavby', verze: ['bo'], typ: 'vyber', o: KRYCI_MISTO_PLNENI,
       sod: 'SOD_MISTO_PLNENI_DRUH', ph: 'např. polyfunkční dům',
       src: 'věta smlouvy „Místem provádění díla je … na adrese …"' },
@@ -1151,4 +1160,4 @@ if (typeof module !== 'undefined')
     kryciFaktura2Dopocet, kryciFaktura2Sync,
     KRYCI_PRAVIDLA_PLATEB, KRYCI_FAKTURACE_MESICNE_VETA, KRYCI_VETY_V13, kryciPlatbaProcento, kryciPlatbyStary,
     kryciPlatebniKalendar, kryciPlatebniSymboly, kryciSodPlatby, kryciSodMilnik,
-    KRYCI_MISTO_PLNENI, kryciDnesIso, kryciPokutaStav, kryciPoleHodnota };
+    KRYCI_MISTO_PLNENI, KRYCI_DPH_REZIMY, kryciDnesIso, kryciPokutaStav, kryciPoleHodnota };

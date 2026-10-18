@@ -75,6 +75,13 @@ const FIRMA_POLE = [
    * zůstane pole v nabídce prázdné (stejné pravidlo jako u cen). */
   { id: 'terminDodaniOck', sekce: 'Smluvní standardy', label: 'Termín dodání OCK — standardní lhůta', symbol: 'FIRMA_TERMIN_DODANI_OCK' },
   { id: 'terminAtypTydny', sekce: 'Smluvní standardy', label: '— o kolik týdnů ho prodlužuje ATYP', symbol: 'FIRMA_TERMIN_ATYP_TYDNY' },
+  /* Skladné (rozhodnutí J. V. 18. 10. 2026): smlouva o dílo realizace
+   * (šablona v3) účtuje při prodlení zákazníka se stavební připraveností
+   * skladovací poplatek za den. Do v2 stál natvrdo v šabloně v Kč; od v3 ho
+   * dosazuje aplikace — česky v Kč, v cizojazyčné smlouvě v eurech kurzem
+   * ceníku (#155, celá eura nahoru). Částka je firemní údaj, ne údaj
+   * zakázky. ŽÁDNÉ VÝCHOZÍ ČÍSLO: prázdné pole nechá ve smlouvě {{…}}. */
+  { id: 'skladneDenneKc', sekce: 'Smluvní standardy', label: 'Skladné při prodlení zákazníka se stavební připraveností — Kč za den (smlouva o dílo)', symbol: 'FIRMA_SKLADNE_DENNE_KC' },
 
   /* --- zástupci zhotovitele (20. 8. 2026) ---
    *
@@ -278,6 +285,7 @@ const DEFAULT_FIRMA = {
    * a doplní se ručně. Prodloužení za ATYP je 4 týdny (zadání J. V.). */
   terminDodaniOck: '',
   terminAtypTydny: '4',
+  skladneDenneKc: '',
 
 
   /* Kapitoly III.–VI. nabídky (#282). Na rozdíl od ostatních firemních polí

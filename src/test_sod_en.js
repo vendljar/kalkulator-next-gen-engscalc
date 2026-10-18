@@ -104,6 +104,45 @@ const sablona = (...symboly) => ({ symboly: new Set(symboly) });
   test('FR PROJ: platby bez češtiny, „Paiement … + TVA."', fr && !CESKY.test(fr) && /^Paiement .* – € [\d\s ]+ \+ TVA\.$/.test(fr.split('\n')[0]), fr);
 }
 
+/* 2c) režim DPH a skladné (rozhodnutí J. V. 18. 10. 2026, šablona SoD
+ * realizace v3): věta režimu z krycího listu, prohlášení o snížené sazbě
+ * jen při české DPH a stavbě pro bydlení, skladné z Nastavení → Firma —
+ * česky v Kč, v cizí smlouvě v eurech kurzem ceníku (celá eura nahoru).
+ * Částka 600 Kč je SMYŠLENÁ. Proti v18.10.1 (bez symbolů): 25 prošlo / 5 selhalo (5 kontrol „symbol se
+ * nevyplní" projde i tam). */
+{
+  const fn = (h, L) => {
+    const z = novaZ(), v = z.varianty[0];
+    Object.assign(v.data.kryci.hodnoty, h || {});
+    return sod.sodData(z, v, JEKLY, L || 'cz', sablona('SOD_DPH_REZIM_VETA', 'SOD_DPH_PROHLASENI', 'SOD_SKLADNE_DENNE')).placeholders;
+  };
+  const S = sod.SOD_DPH_VETY || {};
+  const vychozi = fn();
+  test('DPH výchozí: přenesená daňová povinnost (věta šablony v2), odst. 3 = oznámení změny',
+    vychozi.SOD_DPH_REZIM_VETA === 'DPH bude účtováno dle platných předpisů v režimu přenesené daňové povinnosti.'
+      && vychozi.SOD_DPH_PROHLASENI === sod.SOD_DPH_PROHLASENI_OZNAMENI, [vychozi.SOD_DPH_REZIM_VETA, vychozi.SOD_DPH_PROHLASENI]);
+  const ceskaByt = fn({ sodDphRezim: 'česká DPH v zákonné sazbě', sodMistoPlneni: 'bytový dům' });
+  test('česká DPH + bytový dům: věta zákonné sazby a prohlášení o snížené sazbě',
+    ceskaByt.SOD_DPH_REZIM_VETA === S.ceska && ceskaByt.SOD_DPH_PROHLASENI === sod.SOD_DPH_PROHLASENI_SNIZENA, ceskaByt.SOD_DPH_PROHLASENI);
+  const ceskaAdm = fn({ sodDphRezim: 'česká DPH v zákonné sazbě', sodMistoPlneni: 'administrativní budova' });
+  test('česká DPH + administrativní budova: bez prohlášení o snížené sazbě', ceskaAdm.SOD_DPH_PROHLASENI === sod.SOD_DPH_PROHLASENI_OZNAMENI, ceskaAdm.SOD_DPH_PROHLASENI);
+  const prenByt = fn({ sodMistoPlneni: 'bytový dům' });
+  test('přenesená DPH + bytový dům: prohlášení o snížené sazbě NE (nesoulad v2 zmizel)', prenByt.SOD_DPH_PROHLASENI === sod.SOD_DPH_PROHLASENI_OZNAMENI, prenByt.SOD_DPH_PROHLASENI);
+  const euEn = fn({ sodDphRezim: 'reverse charge EU (místo plnění v jiném státě EU)' }, 'en');
+  test('reverse charge EU anglicky: věta bez češtiny', /^The supply is not subject to Czech VAT; .*reverse-charge/.test(euEn.SOD_DPH_REZIM_VETA || '')
+    && !CESKY.test(euEn.SOD_DPH_PROHLASENI || 'ě'), [euEn.SOD_DPH_REZIM_VETA, euEn.SOD_DPH_PROHLASENI]);
+  const vlastni = fn({ sodDphRezim: 'dle dohody' });
+  test('vlastní znění režimu: symboly zůstanou {{…}} (nevyplní se)', !('SOD_DPH_REZIM_VETA' in vlastni) && !('SOD_DPH_PROHLASENI' in vlastni), vlastni.SOD_DPH_REZIM_VETA);
+  test('bez skladného v Nastavení → Firma: {{SOD_SKLADNE_DENNE}} zůstane', !('SOD_SKLADNE_DENNE' in vychozi), vychozi.SOD_SKLADNE_DENNE);
+  NAST.firma.skladneDenneKc = '600';
+  const cz = fn(), en = fn({}, 'en');
+  test('skladné česky „600,- Kč" (tvar dosavadní šablony)', cz.SOD_SKLADNE_DENNE === '600,- Kč', cz.SOD_SKLADNE_DENNE);
+  test('skladné anglicky v eurech kurzem ceníku: 600 / 25 = € 24', en.SOD_SKLADNE_DENNE === '€ 24', en.SOD_SKLADNE_DENNE);
+  NAST.firma.skladneDenneKc = '610';
+  test('skladné v eurech zaokrouhleno nahoru: 610 / 25 → € 25', fn({}, 'de').SOD_SKLADNE_DENNE === '€ 25', fn({}, 'de').SOD_SKLADNE_DENNE);
+  NAST.firma.skladneDenneKc = '';
+}
+
 /* 3) bez jazykové šablony smlouva nevznikne */
 {
   const z = typeof sod.sodJazykZabrana === 'function' ? sod.sodJazykZabrana : () => '';

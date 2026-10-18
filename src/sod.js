@@ -95,6 +95,60 @@ function sodPrelozHodnoty(placeholders, L) {
   return placeholders;
 }
 
+/* REŽIM DPH A SKLADNÉ (rozhodnutí J. V. 18. 10. 2026). Šablona v2 nesla
+ * v čl. V natvrdo „DPH … v režimu přenesené daňové povinnosti" a hned za
+ * tím prohlášení o snížené sazbě DPH pro bydlení — jedno vylučuje druhé.
+ * Šablona v3 má místo nich symboly a věty skládá aplikace podle volby
+ * „Režim DPH ve smlouvě" v krycím listu OCK:
+ *   {{SOD_DPH_REZIM_VETA}}  odst. 2 — věta zvoleného režimu,
+ *   {{SOD_DPH_PROHLASENI}}  odst. 3 — prohlášení o snížené sazbě jen při
+ *                           české DPH a stavbě pro bydlení (bytový / rodinný
+ *                           dům), jinak věta o oznámení změny (druhá věta
+ *                           původního odstavce) — odstavec „3." musí zůstat,
+ *                           čl. V a XIII odkazují na „bod 4" / „odst. 4".
+ * Znění vět je ke kontrole účetní (podklady/SOD_EN_KONTROLA.md); cizí jazyk
+ * přeloží slovník. Vlastní znění režimu v krycím listu aplikace nečte —
+ * symboly pak zůstanou ve Wordu {{…}} k doplnění.
+ * {{SOD_SKLADNE_DENNE}} — skladné z Nastavení → Firma (Kč za den): česky
+ * „N,- Kč" jako dřív v šabloně, jinak v měně smlouvy (#155, celá eura
+ * nahoru). Bez částky symbol zůstane {{…}}. */
+const SOD_DPH_REZIMY = ['prenesena', 'eu', 'ceska'];
+const SOD_DPH_VETY = {
+  prenesena: 'DPH bude účtováno dle platných předpisů v režimu přenesené daňové povinnosti.',
+  eu: 'Plnění nepodléhá české DPH; daň přizná a odvede objednatel v režimu přenesení daňové povinnosti (reverse charge) podle právních předpisů státu místa plnění.',
+  ceska: 'K ceně díla bude připočtena DPH v zákonné sazbě platné ke dni uskutečnění zdanitelného plnění.',
+};
+const SOD_DPH_PROHLASENI_SNIZENA = 'Objednatel prohlašuje, že objekt, v němž je prováděno dílo, je ve smyslu § 48 zákona č. 235/2004 Sb., '
+  + 'o dani z přidané hodnoty, ve znění pozdějších předpisů, dokončenou stavbou pro bydlení nebo stavbu pro sociální bydlení, a splňuje tak '
+  + 'zákonné podmínky pro použití snížené sazby DPH. Objednatel se zavazuje, že o každé změně tohoto statutu bude zhotovitele písemně '
+  + 'informovat do tří dnů ode dne, kdy taková změna nastane.';
+const SOD_DPH_PROHLASENI_OZNAMENI = 'Objednatel se zavazuje, že o každé změně skutečností rozhodných pro režim DPH podle odst. 2 tohoto článku '
+  + 'bude zhotovitele písemně informovat do tří dnů ode dne, kdy taková změna nastane.';
+const SOD_BYDLENI = ['bytový dům', 'rodinný dům'];
+function sodDphRezimKlic(text) {
+  const t = String(text == null ? '' : text).trim().toLowerCase();
+  const o = (typeof KRYCI_DPH_REZIMY !== 'undefined') ? KRYCI_DPH_REZIMY : [];
+  const i = o.findIndex(x => x.toLowerCase() === t);
+  return i >= 0 ? SOD_DPH_REZIMY[i] : null;
+}
+function sodDphSymboly(placeholders, rezimText, mistoText, L) {
+  const P = (L && L !== 'cz' && typeof tr === 'function') ? (t => tr(t, L)) : (t => t);
+  const k = sodDphRezimKlic(rezimText);
+  if (!k || !placeholders) return placeholders;
+  placeholders.SOD_DPH_REZIM_VETA = P(SOD_DPH_VETY[k]);
+  const bydleni = SOD_BYDLENI.indexOf(String(mistoText == null ? '' : mistoText).trim().toLowerCase()) >= 0;
+  placeholders.SOD_DPH_PROHLASENI = P(k === 'ceska' && bydleni ? SOD_DPH_PROHLASENI_SNIZENA : SOD_DPH_PROHLASENI_OZNAMENI);
+  return placeholders;
+}
+function sodSkladne(placeholders, firma, mena, L) {
+  const m = String((firma || {}).skladneDenneKc == null ? '' : firma.skladneDenneKc).replace(/\s/g, '').replace(',', '.').match(/^(\d+(?:\.\d+)?)/);
+  const kc = m ? +m[1] : 0;
+  if (!(kc > 0) || !placeholders) return placeholders;
+  if (!L || L === 'cz' || !mena || !mena.eur) placeholders.SOD_SKLADNE_DENNE = Math.round(kc).toLocaleString('cs-CZ') + ',- Kč';
+  else placeholders.SOD_SKLADNE_DENNE = mena.fmt(mena.na(kc));
+  return placeholders;
+}
+
 /* Bez jazykové šablony smlouva v cizím jazyce NEVZNIKNE (#157). U nabídky
  * se dřív tisklo z české šablony s upozorněním „pevný text zůstal český";
  * smlouva by tak měla český právní text s anglickými hodnotami a cenou
@@ -123,6 +177,11 @@ function sodData(zak, varianta, jekly, lang, sablona) {
    * rozhodnutí J. V. 29. 9. 2026), od 1. 10. 2026 i místo plnění, denní
    * pokuta a datum podpisu (Q2–Q4, Q10). Co obchodník nevyplnil, zůstane {{…}}. */
   if (typeof kryciSodSymboly === 'function') kryciSodSymboly(zak, varianta, jekly, d.placeholders);
+  /* Režim DPH a skladné (18. 10. 2026) — místo plnění česky z krycího
+   * listu (před překladem hodnot). */
+  if (typeof kryciPoleHodnota === 'function')
+    sodDphSymboly(d.placeholders, kryciPoleHodnota(zak, varianta, 'sodDphRezim'), kryciPoleHodnota(zak, varianta, 'sodMistoPlneni'), L);
+  sodSkladne(d.placeholders, (typeof firmaAktualni === 'function') ? firmaAktualni() : null, d.mena, L);
   sodPrelozHodnoty(d.placeholders, L);
   /* Splátky z platebního kalendáře krycího listu (K18-N100). */
   const odstavcePryc = [];
@@ -325,4 +384,4 @@ if (typeof dokumentRegistruj === 'function') {
 
 if (typeof module !== 'undefined')
   module.exports = { sodData, sodProjData, plnaMocData, sodObjednatelDoplna, sodVedouciMontaziDoplna, sodPokutaZhotovitele,
-    sodJazykZabrana, sodPrelozHodnoty };
+    sodJazykZabrana, sodPrelozHodnoty, sodDphSymboly, sodSkladne, SOD_DPH_VETY, SOD_DPH_PROHLASENI_SNIZENA, SOD_DPH_PROHLASENI_OZNAMENI };

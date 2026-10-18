@@ -66,6 +66,28 @@ const PREKLAD = {
   "bytový dům": ["an apartment building", "ein Wohngebäude", "un immeuble d’habitation"],
   "rodinný dům": ["a family house", "ein Einfamilienhaus", "une maison individuelle"],
   "administrativní budova": ["an office building", "ein Bürogebäude", "un immeuble de bureaux"],
+  /* Režim DPH ve smlouvě o dílo realizace (18. 10. 2026, sod.js SOD_DPH_VETY)
+   * — znění ke kontrole účetní (podklady/SOD_EN_KONTROLA.md). */
+  "DPH bude účtováno dle platných předpisů v režimu přenesené daňové povinnosti.": [
+    "VAT will be charged in accordance with the applicable regulations under the reverse-charge regime.",
+    "Die MwSt. wird gemäß den geltenden Vorschriften im Verfahren der Steuerschuldumkehr (Reverse-Charge) berechnet.",
+    "La TVA sera facturée conformément à la réglementation en vigueur selon le régime de l’autoliquidation."],
+  "Plnění nepodléhá české DPH; daň přizná a odvede objednatel v režimu přenesení daňové povinnosti (reverse charge) podle právních předpisů státu místa plnění.": [
+    "The supply is not subject to Czech VAT; the tax shall be declared and paid by the Client under the reverse-charge mechanism in accordance with the legislation of the state of the place of supply.",
+    "Die Leistung unterliegt nicht der tschechischen Mehrwertsteuer; die Steuer wird vom Auftraggeber im Reverse-Charge-Verfahren nach den Rechtsvorschriften des Staates des Leistungsorts erklärt und abgeführt.",
+    "La prestation n’est pas soumise à la TVA tchèque ; la taxe est déclarée et acquittée par le Client selon le mécanisme d’autoliquidation conformément à la législation de l’État du lieu de la prestation."],
+  "K ceně díla bude připočtena DPH v zákonné sazbě platné ke dni uskutečnění zdanitelného plnění.": [
+    "VAT at the statutory rate applicable on the date of the taxable supply will be added to the price of the Work.",
+    "Zum Werkpreis wird die MwSt. in der am Tag der steuerbaren Leistung geltenden gesetzlichen Höhe hinzugerechnet.",
+    "La TVA au taux légal en vigueur à la date du fait générateur sera ajoutée au prix de l’Ouvrage."],
+  "Objednatel prohlašuje, že objekt, v němž je prováděno dílo, je ve smyslu § 48 zákona č. 235/2004 Sb., o dani z přidané hodnoty, ve znění pozdějších předpisů, dokončenou stavbou pro bydlení nebo stavbu pro sociální bydlení, a splňuje tak zákonné podmínky pro použití snížené sazby DPH. Objednatel se zavazuje, že o každé změně tohoto statutu bude zhotovitele písemně informovat do tří dnů ode dne, kdy taková změna nastane.": [
+    "The Client declares that the building in which the Work is performed is, within the meaning of Section 48 of Act No. 235/2004 Coll., on Value Added Tax, as amended, a completed building for housing or a building for social housing, and thus meets the statutory conditions for the application of the reduced VAT rate. The Client undertakes to inform the Contractor in writing of any change in this status within three days of the date on which such change occurs.",
+    "Der Auftraggeber erklärt, dass das Gebäude, in dem das Werk ausgeführt wird, im Sinne von § 48 des Gesetzes Nr. 235/2004 Slg. über die Mehrwertsteuer in der geltenden Fassung ein fertiggestelltes Wohngebäude oder ein Gebäude für den sozialen Wohnungsbau ist und somit die gesetzlichen Voraussetzungen für die Anwendung des ermäßigten MwSt.-Satzes erfüllt. Der Auftraggeber verpflichtet sich, den Auftragnehmer über jede Änderung dieses Status innerhalb von drei Tagen ab dem Tag, an dem eine solche Änderung eintritt, schriftlich zu informieren.",
+    "Le Client déclare que le bâtiment dans lequel l’Ouvrage est réalisé est, au sens de l’article 48 de la loi n° 235/2004 Rec., relative à la taxe sur la valeur ajoutée, dans sa version en vigueur, un bâtiment achevé destiné au logement ou un bâtiment destiné au logement social, et remplit ainsi les conditions légales d’application du taux réduit de TVA. Le Client s’engage à informer par écrit l’Entrepreneur de toute modification de ce statut dans un délai de trois jours à compter de la date de cette modification."],
+  "Objednatel se zavazuje, že o každé změně skutečností rozhodných pro režim DPH podle odst. 2 tohoto článku bude zhotovitele písemně informovat do tří dnů ode dne, kdy taková změna nastane.": [
+    "The Client undertakes to inform the Contractor in writing of any change in the facts relevant to the VAT regime under para. 2 of this Article within three days of the date on which such change occurs.",
+    "Der Auftraggeber verpflichtet sich, den Auftragnehmer über jede Änderung der für die MwSt.-Regelung nach Abs. 2 dieses Artikels maßgeblichen Tatsachen innerhalb von drei Tagen ab dem Tag, an dem eine solche Änderung eintritt, schriftlich zu informieren.",
+    "Le Client s’engage à informer par écrit l’Entrepreneur de toute modification des faits déterminant le régime de TVA selon l’alinéa 2 du présent article dans un délai de trois jours à compter de la date de cette modification."],
   "1. dílčí faktura": ["1st partial invoice", "1. Teilrechnung", "1re facture partielle"],
   "2. dílčí faktura": ["2nd partial invoice", "2. Teilrechnung", "2e facture partielle"],
   "Konečná faktura": ["Final invoice", "Schlussrechnung", "Facture finale"],
