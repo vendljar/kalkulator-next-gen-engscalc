@@ -37,6 +37,13 @@ V7-7, nálezy V7-N1, V7-N2). Změny chování žádné.
 - **Nálezy (návrh):** V7-N1 karta výjimky ukazuje plochu na setiny, schválení
   drží celé m² (B183 c); V7-N2 výchozí DPH podle DIČ nezohledňuje místo
   stavby (účetní, SOD_EN_KONTROLA bod 1).
+- **Výsledky:** `./spust_testy.sh --smoke` (bez KNG_PODKLADY, Playwright
+  1.56.1) **266 prošlo / 0 selhalo / 6 přeskočeno** (test.js, overit_manual,
+  overit_nabidka_proj_word, overit_sablona, overit_sablony_online,
+  overit_sod — firemní podklady). `build.py` (KNG_NEZVYSOVAT_VERZI=1),
+  `--kontrola-verze`, `roadmapa.py --kontrola` (427), `mutace.mjs --kontrola`
+  (520), `mutace_jadro.mjs --kontrola` (247), `kontrola_udaju.py` čisté.
+  Mutace nespuštěny (změny jen v komentářích a textech).
 
 ---
 

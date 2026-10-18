@@ -7,6 +7,7 @@ nic — slučuje koordinace (session_0144Y7gXWeprriv4yf4wKL5T). Výsledek: `podk
   (příručka kap. 19 a 24, komentář B183 v `src/vyjimky.js`, roadmapa #366, #380, #425, SOD_EN_KONTROLA).
 - **Nálezy pro další dávku:** V7-N1 karta výjimky ukazuje setiny m², schválení drží celé m² (B183 c);
   V7-N2 výchozí DPH podle DIČ × místo stavby (účetní).
+- **Testy:** smoke 266/0/6 přeskočeno (firemní podklady); kontroly verze, roadmapy, mutací čisté.
 - **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `manual/obsah.json` / roadmapě.
 
 # Předávka — 18. 10. 2026: dávka V3b (v18.10.11), větev `claude/v3b-sod-preklad` — mutace V3, činnosti SoD PROJ EN/DE/FR, šablony v4
