@@ -6707,15 +6707,15 @@
   {
    "id" : "429",
    "vlna" : "B",
-   "stav" : "ceka",
+   "stav" : "hotovo",
    "dulezitost" : "stredni",
    "slozitost" : "S",
    "nazev" : "B188: heslo správce i u obnovy matice zobrazení ze zálohy",
    "proc" : "Audit kola 28: `POST /api/obnova` s částí `zobrazeni` (soubor i otisk) zapíše matici bez hesla správce — B168 tak cookie správce nezastaví (pokus `podklady/AUDIT28_pokus_obnova_matice.mjs`, P3 200).",
-   "detail" : "Návrh: v `netlify/functions/obnova.mjs` mimo náhled `potvrdHesloSpravce`, když `casti` obsahuje `zobrazeni` a záloha ji nese, před zámkem a otiskem (jako u `uzivatele`); test v `netlify/test_zobrazeni_heslo.mjs`, mutace.",
+   "detail" : "HOTOVO v18.10.15 (dávka O1, větev claude/o1-b188): `obnova.mjs` chce mimo náhled `potvrdHesloSpravce`, kdykoli by obnova matici zapsala (část `zobrazeni` vybraná a záloha ji nese jako objekt — `obnovaNeseMatici`), u souboru, otisku i v dávce rozpracované obnovy; ověří se před zámkem a otiskem, fail-closed (401/429, nic nezapsáno). UI obnovy se ptá týmž dialogem a 10min pamětí jako panel Zobrazení (B168). Jiné serverové cesty zápisu `program/zobrazeni` nejsou (jen /api/zobrazeni s heslem a obnova); import konfigurace jde přes /api/zobrazeni. Pokus P3 z AUDIT28 končí 401.",
    "hotovoKdyz" : "Obnova matice bez hesla 401 a nic nezapíše, se správným heslem 200; test s pojistkou a mutace.",
-   "kde" : "`netlify/functions/obnova.mjs`, `netlify/test_zobrazeni_heslo.mjs`, `netlify/mutace.mjs`",
-   "cekaNa" : "kapacita — další bezpečnostní dávka (střední nález, oprava malá).",
+   "kde" : "`netlify/functions/obnova.mjs`, `src/ui/online_ui.js`, `netlify/test_zobrazeni_heslo.mjs`, `netlify/test_obnova.mjs`, `overit_online.mjs`, `netlify/mutace.mjs`, `podklady/AUDIT28_pokus_obnova_matice.mjs`",
+   "hotovoV" : "v18.10.15",
    "pozn" : "Předběžné id (přidělí koordinace při sloučení)."
   },
   {

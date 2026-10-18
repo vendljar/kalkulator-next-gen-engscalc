@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v18.10.14 · sestaveno 18. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
+  "verze": "Platí pro aplikaci v18.10.15 · sestaveno 18. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -98,7 +98,7 @@
         "Administrátor má v cenících **probarvené buňky** (nula a prázdné světle červeně, vysoké částky světle oranžově, kapitola 28).",
 "**Jedna žlutá lišta u rozpracované kalkulace** s tlačítky Pokračovat v rozpracované kalkulaci a Založit novou kalkulaci; u odeslané nabídky aplikace nic nepřipomíná a odemknout ji k úpravám může jen administrátor (kapitoly 8 a 29).",
 "**Rozměry šachty pod 0,6 m** (zdvih, šířka, hloubka) nabídku OCK nevytisknou. **Cenové výjimky** — ceník varianty jiný než platný nebo ruční sazba pásu „jiné“ pod ceníkem — potřebují před tiskem schválení nadřízeného (karta Cenové výjimky v Schvalování).",
-"Založení účtu administrátora, reset hesla a obnovu účtů ze zálohy správce potvrzuje svým heslem."
+"Založení účtu administrátora, reset hesla a obnovu účtů i nastavení zobrazení ze zálohy správce potvrzuje svým heslem."
       ]
     },
     {
@@ -879,7 +879,7 @@
       "nadpis": "30. Zálohy a výpadky",
       "bloky": [
         { "typ": "text", "text": "O zálohy se starat nemusíte a ani je nemáte čím spustit — jsou celé v rukou administrátora. Databáze se zálohuje sama, navíc denně automaticky, a administrátor si může kdykoli stáhnout otisk celého obsahu. Umí ji i **nalít zpátky**, přičemž se nejdřív zobrazí náhled s tím, kolik záznamů přibude, kolik se přepíše a co se přeskočí a proč." },
-        { "typ": "text", "text": "**Vaše vytištěné nabídky jsou i při obnově v bezpečí.** Zakázku, které by obnova změnila data uzamčené varianty nebo jí sundala zámek, aplikace přeskočí a vypíše — a to i v režimu „přepsat vším ze zálohy“. Obnova také nikdy nemaže: zakázka, která vznikla až po záloze, na serveru zůstane." },
+        { "typ": "text", "text": "**Vaše vytištěné nabídky jsou i při obnově v bezpečí.** Zakázku, které by obnova změnila data uzamčené varianty nebo jí sundala zámek, aplikace přeskočí a vypíše — a to i v režimu „přepsat vším ze zálohy“. Obnova také nikdy nemaže: zakázka, která vznikla až po záloze, na serveru zůstane. Obnovu účtů a **nastavení zobrazení** (to řídí i to, kam vás server pustí — CRM, náklady, ceník v zakázce) potvrzuje administrátor svým heslem, stejně jako změnu zobrazení v Nastavení." },
         { "typ": "text", "text": "Prakticky vás to zajímá ve dvou situacích. **Když vypadne internet**, přestane se ukládat a lišta zakázky to napíše; rozpracovanou zakázku si v takové chvíli uložte do souboru a po obnovení spojení ji načtěte zpět. **Když si nejste jistý, že se něco uložilo**, podívejte se na čas na liště — a když ani to nestačí, otevřete *Načíst zakázku* a zkontrolujte sloupec *Uloženo* u své zakázky." },
         { "typ": "text", "text": "Offline kopie aplikace (jeden soubor HTML) existuje dál jako záložní varianta pro případ, že by online provoz vypadl. Není to hlavní způsob práce a některé funkce v ní z povahy věci nefungují — hlavně vše, co potřebuje server." }
       ]

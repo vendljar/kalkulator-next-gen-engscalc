@@ -1100,7 +1100,7 @@ console.log('\n===== B100-zbytek: firma, zákazníci, zobrazení =====');
     oZ.casti.zakaznici.duvody.some(d => d.klic === 'nesmysl') && (await ulz('zakaznici').cti('nesmysl')) === null, oZ.casti.zakaznici);
 
   podvrh.zobrazeni = { matice: { cizi: { 'Obchodník': true }, sekce: 'x' }, kdo: 'spravce', kdy: '2026-10-12' };
-  const oM = await obnovJson({ zdroj: { soubor: podvrh }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['zobrazeni'] }, cookie);
+  const oM = await obnovJson({ zdroj: { soubor: podvrh }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['zobrazeni'], hesloSpravce: 'Docasne.Heslo.123' }, cookie);   // B188: matice jen s heslem
   const mz = await ulz('program').cti('zobrazeni');
   test('B100: matice zobrazení ze zálohy projde očistou (jako /api/zobrazeni)',
     oM.ok === true && !!mz && JSON.stringify(mz.matice) === JSON.stringify(ZOBm.zobrazeniOciste(podvrh.zobrazeni.matice)) && !('cizi' in mz.matice), mz);

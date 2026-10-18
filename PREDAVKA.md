@@ -1,3 +1,20 @@
+# Předávka — 18. 10. 2026: dávka O1 (v18.10.15), větev `claude/o1-b188` — B188 heslo u obnovy matice
+
+Nad `origin/claude/integrace-16-10` (`cdca5f3`, v18.10.14). Do `test-draft` / `test` / `main` / integrace
+nic — slučuje koordinace (session_0144Y7gXWeprriv4yf4wKL5T).
+
+- **Hotovo:** B188 (#429) — `obnova.mjs` chce `potvrdHesloSpravce`, kdykoli by obnova zapsala matici
+  (`obnovaNeseMatici`), u souboru, otisku i dávky; před zámkem a otiskem, fail-closed. UI obnovy: dialog
+  a 10min paměť jako panel Zobrazení. Jiné cesty zápisu `program/zobrazeni` nejsou (jen `/api/zobrazeni`).
+  Pokus AUDIT28 P3 → 401. Testy: `test_zobrazeni_heslo` 23/0 (před opravou 7 selhání), `test_obnova` 232/0,
+  `overit_online` 238/0; mutace B188 (4), B77 obnovy přepsána na nový tvar podmínky.
+- **Kolo `--jen build,sady,staticke`:** 270 prošlo / 0 selhalo / 2 přeskočeno (test.js mimo export, overit_manual
+  bez firemního podkladu), statické 3/3. Mutace B188 4/4, B168 1/1, zobrazen 11/11, obnova 50/50 (66/66), `--kontrola` 524 úseků.
+- **Výchozí volby (J. V. se neptal):** záloha s `zobrazeni: null` heslo nechce (nic se nezapíše); u otisku
+  UI chce heslo vždy, když je část zaškrtnutá (obsah otisku klient nezná); `program`/`firma` beze změny (mez B168).
+- **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `manual/obsah.json` (verze) /
+  roadmapě (#429) / `netlify/mutace.mjs` / `BEZPECNOST_MEZE.md`.
+
 # Předávka — 18. 10. 2026: dávka V7 (v18.10.14), větev `claude/v7-kontrola` — kontrola rozhodnutí 16.–18. 10.
 
 Nad `origin/claude/integrace-16-10` (`8480133`, v18.10.11). Do `test-draft` / `test` / `main` / integrace

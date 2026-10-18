@@ -915,6 +915,10 @@ test('panel ukazuje poslední obnovu',
   /Poslední obnova/.test(await dbPanel()));
 test('B77: obnova účtů z otisku si vyžádala heslo správce',
   await page.evaluate(() => window.__dlgTexty.some(t => /Potvrďte ji svým heslem/.test(t))));
+test('B188: dialog hesla u obnovy z otisku zmiňuje i nastavení zobrazení',
+  await page.evaluate(() => window.__dlgTexty.some(t => /Potvrďte ji svým heslem/.test(t) && /nastavení zobrazení/.test(t))));
+test('B188: ověřené heslo si stránka pamatuje jako u panelu Zobrazení (10 min)',
+  await page.evaluate(() => ZOBRAZENI_HESLO.h === 'Zkusebni.Heslo.123' && ZOBRAZENI_HESLO.plati > Date.now()));
 /* Od B77 (13. 10. 2026) po potvrzení přijde ještě dotaz na heslo správce —
  * potvrzovací text je proto předposlední, ne poslední. */
 const dlgObnova = await page.evaluate(() => (window.__dlgTexty || []).find(t => /Zapíše se/.test(t)) || '');
@@ -974,6 +978,26 @@ test('ostrá obnova ze souboru proběhla (zacatek → dávky → konec)',
   await page.evaluate(() => 'panel: ' + ONLINE_STAV.obnova.hlaska + ' | posledni: ' + JSON.stringify(ONLINE_STAV.obnova.posledni)));
 test('po obnově ze souboru má rejstřík stejný počet zakázek (nic nepřibylo, nic nezmizelo)',
   await page.evaluate(() => ONLINE_STAV.rejstrik.length) === rejPredSouborem);
+/* B188 (18. 10. 2026): soubor s maticí zobrazení bez hesla správce se
+ * neobnoví — zrušený dialog zastaví obnovu dřív, než jde cokoli na server. */
+await page.evaluate(() => {
+  onlineZobrazeniHesloZapomen(); window.__dlgHeslo = null;
+  ONLINE_STAV.obnova.soubor = { ...ONLINE_STAV.obnova.soubor, zobrazeni: { matice: {}, kdo: 'x', kdy: '2026-10-18' } };
+  ONLINE_STAV.obnova.posledni = null;
+});
+await page.evaluate(() => onlineObnovaNahled());
+await page.waitForFunction(() => { try { return !ONLINE_STAV.obnova.pracuje && (!!ONLINE_STAV.obnova.nahled || !!ONLINE_STAV.obnova.hlaska); } catch (e) { return false; } },
+  null, { timeout: 20000 });
+const dlgPredB188 = await page.evaluate(() => window.__dlgTexty.length);
+await page.evaluate(() => onlineObnovaProved());
+await page.waitForFunction(() => { try { return !ONLINE_STAV.obnova.pracuje && !!ONLINE_STAV.obnova.hlaska; } catch (e) { return false; } },
+  null, { timeout: 15000 });
+test('B188: soubor s maticí si vyžádal heslo správce dialogem matice',
+  await page.evaluate((n) => window.__dlgTexty.slice(n).some(t => /Obnova přepíše nastavení zobrazení/.test(t)), dlgPredB188));
+test('B188: bez hesla se obnova souboru s maticí neprovede a hláška to říká',
+  await page.evaluate(() => !ONLINE_STAV.obnova.posledni && /nastavení zobrazení se bez vašeho hesla neobnovuje/.test(ONLINE_STAV.obnova.hlaska)),
+  await page.evaluate(() => ONLINE_STAV.obnova.hlaska));
+await page.evaluate(() => { window.__dlgHeslo = 'Zkusebni.Heslo.123'; });
 await page.evaluate(() => { onlineObnovaOtevri(); zavriNastaveni(); });
 
 /* ---- 5e) kolize verzí při ukládání (nález V27, 8. 9. 2026) ----

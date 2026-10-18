@@ -9,7 +9,7 @@
  *
  * Očekávání podle stavu v18.10.11 (nález, ne regrese): P1 a P2 drží
  * (zobrazeni.mjs 401 bez hesla), P3 projde 200 a matici zapíše — to je B188.
- * Po opravě B188 se P3 změní na 401 a test „B188 trvá" je třeba otočit.
+ * Po opravě B188 (v18.10.15) P3 končí 401 — test je otočený.
  *
  * Jen paměťové úložiště a smyšlené údaje. Spuštění: node podklady/AUDIT28_pokus_obnova_matice.mjs */
 process.env.TAJEMSTVI_RELACE = 'testovaci-tajemstvi-jen-pro-lokalni-beh';
@@ -58,8 +58,9 @@ r = await post(obnova, 'http://x/api/obnova', { rezim: 'prepsat', casti: ['zobra
 const t3 = await r.json();
 const z = ulozeno();
 console.log('     P3 stav ' + r.status + (t3.kod ? ' kod ' + t3.kod : ''));
-test('P3 B188 trvá: obnova ze souboru zapsala matici BEZ hesla správce (200)',
-  r.status === 200 && !!(z && z.matice && z.matice['crm.pipedrive'] && z.matice['crm.pipedrive']['Obchodník'] === false), { status: r.status, z });
+/* Po opravě B188 (v18.10.15) se test otočil: bez hesla 401 a nic nezapsáno. */
+test('P3 B188 opraveno: obnova ze souboru bez hesla správce → 401, matice nezapsána',
+  r.status === 401 && t3.kod === 'hesloSpravce' && z === null, { status: r.status, z });
 
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);

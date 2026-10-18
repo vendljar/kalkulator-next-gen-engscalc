@@ -8,6 +8,33 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v18.10.15 — B188: obnova matice zobrazení ze zálohy jen s heslem správce (větev claude/o1-b188)
+
+Dávka O1 (zadání koordinace „ŘÍDÍCÍ 18.10“), nad `origin/claude/integrace-16-10`
+(`cdca5f3`, v18.10.14). Opravuje střední nález **B188** z auditu kola 28
+(roadmapa **#429**): B168 chtěl heslo správce jen u `POST /api/zobrazeni`,
+obnovou ze zálohy šla matice zapsat bez něj.
+
+- **Server (`netlify/functions/obnova.mjs`):** mimo náhled se volá
+  `potvrdHesloSpravce`, kdykoli by obnova matici zapsala (`obnovaNeseMatici`:
+  část `zobrazeni` vybraná a záloha ji nese jako objekt) — ze **souboru**,
+  z **otisku** i v **dávce** rozpracované obnovy. Ověří se před zámkem
+  a otiskem; bez hesla / se špatným heslem 401 (`kod: 'hesloSpravce'`), série
+  429 — nic se nezapíše. Náhled heslo nechce.
+- **Obrazovka obnovy:** heslo se vyžádá týmž dialogem a s toutéž 10min pamětí
+  jako panel Zobrazení (B168); u otisku s účty jeden společný dialog. Zrušený
+  dialog obnovu zastaví s hláškou (lze odškrtnout část „zobrazení“).
+- **Další cesty zápisu matice prověřeny:** serverově jen `/api/zobrazeni`
+  (heslo, B168) a obnova; import konfigurace i migrace v prohlížeči jdou na
+  server týmž `/api/zobrazeni`. Jiné endpointy `program/zobrazeni` nezapisují.
+- **Testy:** `test_zobrazeni_heslo` +10 kontrol (oddíl B188; proti cdca5f3
+  selhalo 7), `test_obnova` (B100 matice teď s heslem), `overit_online`
+  (+4: dialog u otisku, paměť hesla, soubor s maticí bez hesla se neobnoví),
+  pokus `AUDIT28_pokus_obnova_matice.mjs` P3 otočen (401). Mutace „B188: …“
+  (3) v `netlify/mutace.mjs`, mutace B77 obnovy přepsána na nový tvar podmínky.
+- **Příručka:** Co je nového a kap. 30 — obnovu nastavení zobrazení potvrzuje
+  správce heslem.
+
 ## v18.10.14 — kontrola rozhodnutí 16.–18. 10.: SoD DPH, skladné, DE/FR, #380, #425, B183 (větev claude/v7-kontrola)
 
 Dávka V7 (zadání koordinace „ŘÍDÍCÍ 18.10“), nad `origin/claude/integrace-16-10`
