@@ -99,6 +99,9 @@ const KLIC_MAX = 200;
 const TOKEN_PREDPONA = 'obnova-';
 const tokenKlic = (id) => TOKEN_PREDPONA + id;
 const maVlastni = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+/* Nese záloha matici zobrazení tak, že by ji obnova zapsala (B188)? Prázdná
+ * část (`null`, dávka bez matice) se přeskočí a heslo nepotřebuje. */
+export const obnovaNeseMatici = (z) => !!z && maVlastni(z, 'zobrazeni') && z.zobrazeni != null && typeof z.zobrazeni === 'object';
 
 const stejne = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const obnovaTxt = (x, max) => (typeof x === 'string' ? x.slice(0, max) : '');
@@ -414,7 +417,17 @@ export default async (req) => {
    * přeskočí, takže se heslo chce jen tam, kde by se opravdu zapsaly;
    * náhled nic nezapisuje a heslo nechce. Ověří se dřív než zámek a otisk
    * před obnovou — odmítnutí nesmí nic zapsat. */
-  if (!nahled && zdrojPopis.typ === 'otisk' && casti.includes('uzivatele') && maVlastni(zaloha, 'uzivatele')) {
+  /* MATICE ZOBRAZENÍ JEN S HESLEM SPRÁVCE (B188, audit 18. 10. 2026).
+   * B168 chce heslo u POST /api/zobrazeni, protože matice řídí i serverová
+   * práva (CRM, nákladový ceník, ceník v zakázce). Obnova té části byla
+   * druhá cesta zápisu `program/zobrazeni` bez hesla — ze souboru i z otisku
+   * (vrácení starší, volnější matice). Heslo se chce u obou zdrojů, kdykoli
+   * by se matice zapsala (část vybraná a záloha ji nese jako objekt), a to
+   * i v dávce rozpracované obnovy; ověří se se stejným místem jako u účtů,
+   * tedy dřív než zámek a otisk — odmítnutí nic nezapíše. */
+  const hesloUctu = zdrojPopis.typ === 'otisk' && casti.includes('uzivatele') && maVlastni(zaloha, 'uzivatele');
+  const hesloMatice = casti.includes('zobrazeni') && obnovaNeseMatici(zaloha);
+  if (!nahled && (hesloUctu || hesloMatice)) {
     const stop = await potvrdHesloSpravce(req, relace, t.hesloSpravce);
     if (stop) return stop;
   }

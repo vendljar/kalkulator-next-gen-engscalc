@@ -1040,12 +1040,12 @@ const ZOBRAZENI_HESLO = { h: '', plati: 0, dotaz: null };
 function onlineZobrazeniHesloZapomen() {
   ZOBRAZENI_HESLO.h = ''; ZOBRAZENI_HESLO.plati = 0;
 }
-function onlineZobrazeniHeslo() {
+function onlineZobrazeniHeslo(text) {
   if (ZOBRAZENI_HESLO.h && Date.now() < ZOBRAZENI_HESLO.plati) return Promise.resolve(ZOBRAZENI_HESLO.h);
   if (!ZOBRAZENI_HESLO.dotaz) {
-    ZOBRAZENI_HESLO.dotaz = Promise.resolve(dotazHeslo('Změna nastavení zobrazení řídí i to, kam server '
+    ZOBRAZENI_HESLO.dotaz = Promise.resolve(dotazHeslo(text || ('Změna nastavení zobrazení řídí i to, kam server '
       + 'pustí obchodníka a vedoucího (CRM, náklady, ceník v zakázce). Potvrďte ji svým heslem '
-      + '(tím, kterým se přihlašujete do aplikace).', { nadpis: 'Potvrzení heslem správce' }))
+      + '(tím, kterým se přihlašujete do aplikace).'), { nadpis: 'Potvrzení heslem správce' }))
       .then(h => { ZOBRAZENI_HESLO.dotaz = null; return h || ''; },
             e => { ZOBRAZENI_HESLO.dotaz = null; throw e; });
   }
@@ -2513,6 +2513,12 @@ function onlineObnovaCasti() {
   return OBNOVA_CASTI.map(([k]) => k).filter(k => o.casti[k]);
 }
 
+/* Nese soubor zálohy matici zobrazení, kterou by server zapsal (B188)?
+ * Stejná podmínka jako `obnovaNeseMatici` v netlify/functions/obnova.mjs. */
+function onlineObnovaNeseMatici(z) {
+  return !!z && Object.prototype.hasOwnProperty.call(z, 'zobrazeni') && z.zobrazeni != null && typeof z.zobrazeni === 'object';
+}
+
 function onlineObnovaTelo(nahled, zdroj) {
   const o = onlineObnovaStav();
   const t = { zdroj: zdroj || (o.zdrojTyp === 'soubor' ? { soubor: o.soubor } : { otisk: o.otiskDen }),
@@ -2640,20 +2646,38 @@ function onlineObnovaProved() {
     /* Účty z otisku jen s heslem správce (B77, 13. 10. 2026): obnova jim
      * přepíše otisky hesel. Ze souboru se účty nezapisují (B27) — heslo
      * se proto chce jen u otisku se zaškrtnutou částí účtů. */
+    /* Matice zobrazení ze zálohy jen s heslem správce (B188, 18. 10. 2026):
+     * server ho chce u souboru i u otisku, kdykoli by matici zapsal. Ptá se
+     * týmž dialogem a s toutéž 10min pamětí jako panel Zobrazení (B168);
+     * u otisku obsah klient nezná, heslo se proto chce vždy. */
+    const casti = onlineObnovaCasti();
+    const hesloUcty = o.zdrojTyp !== 'soubor' && casti.includes('uzivatele');
+    const hesloMatice = casti.includes('zobrazeni') && (o.zdrojTyp !== 'soubor' || onlineObnovaNeseMatici(o.soubor));
     let hesloSpravce;
-    if (o.zdrojTyp !== 'soubor' && onlineObnovaCasti().includes('uzivatele')) {
-      hesloSpravce = await dotazHeslo('Obnova vrátí účtům uživatelů stav z otisku včetně hesel. '
+    if (hesloUcty) {
+      hesloSpravce = await dotazHeslo('Obnova vrátí účtům uživatelů stav z otisku včetně hesel'
+        + (hesloMatice ? ' a nastavení zobrazení (práva obchodníka a vedoucího)' : '') + '. '
         + 'Potvrďte ji svým heslem (tím, kterým se přihlašujete do aplikace).', { nadpis: 'Potvrzení heslem správce' });
       if (!hesloSpravce) {
         o.hlaska = 'Obnova se neprovedla — účty se bez vašeho hesla neobnovují.'; o.hlaskaTyp = 'varovani'; render();
         return false;
       }
+    } else if (hesloMatice) {
+      hesloSpravce = await onlineZobrazeniHeslo('Obnova přepíše nastavení zobrazení, které řídí i to, kam server '
+        + 'pustí obchodníka a vedoucího (CRM, náklady, ceník v zakázce). Potvrďte ji svým heslem '
+        + '(tím, kterým se přihlašujete do aplikace).');
+      if (!hesloSpravce) {
+        o.hlaska = 'Obnova se neprovedla — nastavení zobrazení se bez vašeho hesla neobnovuje '
+          + '(nebo odškrtněte část „zobrazení").'; o.hlaskaTyp = 'varovani'; render();
+        return false;
+      }
     }
+    const sHeslem = hesloSpravce ? { hesloSpravce } : {};
     o.pracuje = true; render();
     try {
       let r, upoz, otiskPred;
       if (o.zdrojTyp !== 'soubor') {
-        const d = await onlineApi('/api/obnova', { ...onlineObnovaTelo(false), ...(hesloSpravce ? { hesloSpravce } : {}) });
+        const d = await onlineApi('/api/obnova', { ...onlineObnovaTelo(false), ...sHeslem });
         r = onlineObnovaSouhrn(d); upoz = d.upozorneni || []; otiskPred = d.otiskPred || '';
       } else {
         /* Po dávkách: začátek (otisk + token) → dávky → konec (rejstřík).
@@ -2666,7 +2690,7 @@ function onlineObnovaProved() {
         try {
           for (const davka of davky) {
             o.hlaska = 'Obnova: zapisuji dávku ' + (hotovo + 1) + ' z ' + davky.length + '…'; o.hlaskaTyp = ''; render();
-            await onlineApi('/api/obnova', { ...onlineObnovaTelo(false, { soubor: davka }), obnovaId: zac.obnovaId });
+            await onlineApi('/api/obnova', { ...onlineObnovaTelo(false, { soubor: davka }), obnovaId: zac.obnovaId, ...sHeslem });
             hotovo++;
           }
         } catch (e) { chybaDavky = e; }
@@ -2677,9 +2701,11 @@ function onlineObnovaProved() {
         upoz = [...(kon.upozorneni || [])];
         if (prilisVelke.length) upoz.push(prilisVelke.length + ' záznamů se nevešlo do jednoho požadavku a přeskočilo se: '
           + prilisVelke.map(p => p.cast + '/' + p.klic).join(', ') + '.');
+        if (chybaDavky && chybaDavky.data && chybaDavky.data.kod === 'hesloSpravce') onlineZobrazeniHesloZapomen();
         if (chybaDavky) throw new Error('dávka ' + (hotovo + 1) + ' z ' + davky.length + ' selhala (' + chybaDavky.message
           + '); zapsáno bylo ' + hotovo + ' dávek, rejstřík je přestavený a stav před obnovou leží v otisku ' + otiskPred + '.');
       }
+      if (hesloMatice) { ZOBRAZENI_HESLO.h = hesloSpravce; ZOBRAZENI_HESLO.plati = Date.now() + ZOBRAZENI_HESLO_MS; }
       o.nahled = null;
       const zprava = 'Databáze obnovena: zapsáno ' + (r.nove + r.prepsane) + ' záznamů (' + r.nove + ' nových, '
         + r.prepsane + ' přepsaných), ' + r.preskocene + ' přeskočeno. ' + upoz.join(' ');
@@ -2700,6 +2726,7 @@ function onlineObnovaProved() {
       /* 409 „obnova už běží" (B28, 9. 9. 2026) není obecná chyba: server
        * říká, kdo a kdy obnovu zahájil, a panel nabídne dokončit ji, nebo
        * ji zahodit — bez toho by správce jen četl chybu a zkoušel to znovu. */
+      if (e && e.data && e.data.kod === 'hesloSpravce') onlineZobrazeniHesloZapomen();
       if (e.stav === 409 && e.data && e.data.obnovaBezi) {
         o.bezici = e.data.obnovaBezi;
         o.hlaska = 'Obnova už běží: ' + e.message; o.hlaskaTyp = 'varovani';

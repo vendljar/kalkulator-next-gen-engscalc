@@ -692,12 +692,20 @@ přísné ověření i u obnovy jen na pokyn J. V.
 
 Zpráva `podklady/AUDIT_2026-10-18_v18.10.11.md`, pokusy `podklady/AUDIT28_pokus_*.mjs`.
 
-### B188 — matice zobrazení přes obnovu ze zálohy bez hesla (OTEVŘENO, střední)
+### B188 — matice zobrazení přes obnovu ze zálohy bez hesla — OPRAVENO v18.10.15
 
-Doplňuje B168: `POST /api/obnova` s částí `zobrazeni` (soubor i otisk) zapíše
-matici jen po očistě, heslo správce chce jen u části `uzivatele`. Do opravy
-(roadmapa #429) B168 ukradenou cookie správce nezastaví — stačí obnova ze
-souboru s maticí. Návrh opravy ve zprávě auditu.
+Doplňuje B168: `POST /api/obnova` s částí `zobrazeni` zapisovala matici jen
+po očistě, heslo správce chtěla jen u části `uzivatele`. Od v18.10.15
+(roadmapa #429) chce obnova mimo náhled `potvrdHesloSpravce`, kdykoli by
+matici zapsala (`obnovaNeseMatici`: část vybraná a záloha ji nese jako
+objekt) — **ze souboru, z otisku i v dávce rozpracované obnovy**. Ověří se
+před zámkem a otiskem; chybějící či špatné heslo → 401, série → 429, nic se
+nezapíše. Náhled heslo nechce. Jiné serverové cesty zápisu
+`program/zobrazeni` nejsou (jen `/api/zobrazeni`, B168); import konfigurace
+v prohlížeči jde na server týmž `/api/zobrazeni`. Hlídá `test_zobrazeni_heslo`
+(oddíl B188), pokus `AUDIT28_pokus_obnova_matice.mjs` P3 (401) a mutace „B188: …“.
+Mez: části `program` (ceník) a `firma` heslo nechtějí ani na své přímé cestě —
+to je otázka rozsahu B168, ne obejití.
 
 ### B189 — výchozí režim DPH ve SoD realizace podle DIČ (OTEVŘENO, střední)
 
