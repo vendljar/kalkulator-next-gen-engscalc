@@ -8,6 +8,75 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v18.10.8 — rozsah díla SoD projekce podle nabídky (#380 Q7; větev claude/v5-sod-proj-rozsah)
+
+Dávka V5 (zadání koordinace „ŘÍDÍCÍ 16.10“, rozhodnutí J. V. 17. 10. 2026 —
+varianta B), nad `origin/claude/integrace-16-10` (`9bb7caf`, v17.10.4).
+
+- **Nové — šablona SoD projekce v4** (`node nastroje/vyrob_sablony.js
+  --sod-proj-v4 <složka s Sablona_SOD_PROJEKCE_v3.docx> [výstup]`, funkce
+  `sodProjV4`). Z v3: věta přílohy č. 1 „… na vypracování dokumentace
+  DPZ+DSP včetně zajištění inženýringu tj. … včetně nabytí právní moci …“ →
+  „… na činnosti: `{{SODP_ROZSAH_DILA}}` – objekt …“ (symbol v jednom běhu
+  s písmem původního textu); sedm činností v čl. II (Předmět díla) a čl. III
+  (Termíny plnění) ve značkách `{{CIN_<X>_ZAC}}`/`{{CIN_<X>_KON}}`
+  (ZAMERENI, DPZ, IC_DOSS, POVOLENI, DPS, EZC, VYBER) i s prázdným odstavcem
+  před odrážkou; věta o předání díla v čl. III ve značkách není. Kotvy
+  (nadpisy článků, začátky odrážek, věta přílohy) musí být právě jednou,
+  jinak nástroj skončí chybou. Výroba nad skutečnou v3 z Disku: „✓ … symbolů
+  56 (vstup 41), značek činností 14, XML bez vad“. Hotový soubor se do repa
+  necommituje (firemní text).
+- **Nové — aplikace plní rozsah díla.** `sodProjData` → `sodProjRozsah`
+  (`src/sod.js`): výčet nabízených činností plnými názvy jako v čl. II
+  (`sodProjRozsahText`, „…, … a …“; kdyby J. V. chtěl zkratky, mění se jen
+  ona), nenabízené činnosti do `blokyPryc`. Sekce Kalkulace PROJ podle vět
+  plateb staré šablony (`PLAN_SODP_STARE_CINNOST`): zaměření → zaměření,
+  DPZ → DPZ, IČ → IČ DOSS i podání a vyřízení povolení, DPS → DPS,
+  EZČ → EZČ i výběr dodavatele. Nabídka vrací `nabizeneSekce`
+  (`src/nabidka_proj.js`). Generátor: `odstranPrazdneBloky(xml, ph,
+  blokyPryc)` odstraní blok ze seznamu celý i bez symbolu (`src/docxgen.js`,
+  předává `src/dokumenty.js`). Odrážky čísluje Word — po vypuštění jdou
+  a), b), c) … souvisle. Šablona v3 (bez značek a symbolu) dává smlouvu jako
+  dřív.
+- **Odkaz „odst. 5“ v čl. VII — ověřeno, bez opravy.** Podle číslování
+  článku (odstavce 1–7, ověřeno i vykreslením v LibreOffice) je odst. 5
+  „Kterákoliv ze smluvních stran je oprávněna požadovat … potvrzení
+  kteréhokoliv oznámení poštou“ — přesně to, na co věta odst. 6 („…
+  požadovat potvrzení oznámení poštou dle odst. 5.“) odkazuje. Odkaz je
+  správný; `sodProjV4` ho podle číslování hlídá a chybný by opravil (test
+  s „odst. 4“ → 5). Odkazy „článku II odst. 4“ (čl. IX) a „bodu III.“
+  (čl. V) se vypouštěním činností nemění (činnosti jsou písmena, ne odstavce).
+- **Meze:** studii, projednání studie, kolaudaci a geodetické zaměření
+  šablona v předmětu díla nemá — výčet je nebere. Nabídka bez kterékoli ze
+  sedmi činností nechá `{{SODP_ROZSAH_DILA}}` ve Wordu vidět. Výčet
+  v cizím jazyce překládá `tr()` — názvy činností slovník zatím nemá
+  (zůstanou česky), SoD je dnes jen česky.
+- **EN/DE/FR šablony SoD (dávka V3) se v této dávce nemění.** Po zveřejnění
+  v4 je potřeba jazykové verze přegenerovat z v4 nástrojem
+  `nastroje/preklad_sod.js` (V3), jinak nebudou mít symbol rozsahu ani
+  značky činností (budou se chovat jako v3).
+- **Postup nasazení (udělá J. V.):** šablonu `Sablona_SOD_PROJEKCE_v4.docx`
+  nahrát na Disk vedle v3 (složka Kalkulator NextGen / Sablony, v3
+  nepřepisovat); v aplikaci (test i ostrá zvlášť) jako administrátor
+  **Nastavení → Šablony → Šablona smlouvy o dílo — PROJEKČNÍ PRÁCE →
+  „Nahrát novou českou verzi…“** → vybrat v4. Krok Kontrola musí ukázat
+  „Proti platné verzi: přibylo SODP_ROZSAH_DILA, CIN_ZAMERENI_ZAC, …“
+  (rozsah + 14 značek) a nic nechybí → **Zveřejnit**. Zkouška: zakázka PROJ
+  jen s DPZ + IČ + DPS → „Vytvořit smlouvu o dílo PROJ (Word)“ → čl. II
+  a) DPZ, b) IČ DOSS, c) podání žádosti, d) DPS; čl. III bez zaměření, EZČ
+  a výběru; příloha „… na činnosti: dokumentace pro povolení záměru, …“.
+  Podrobně `podklady/POSTUP_SABLONY_SOD_PROJ_V4_18_10.md`.
+- **Testy (pojistka):** `src/test_sod_proj_rozsah.js` proti kódu před
+  opravou 0/2 (sodProjV4 ani `blokyPryc` neexistují), po opravě 34/0;
+  s `KNG_PODKLADY` (skutečná v3 a vyrobená v4) 42/0. Harness
+  `overit_sod_proj_rozsah.mjs` (sestavená aplikace, zakázka PROJ jen
+  DPZ + IČ + DPS / všechny činnosti / stará v3) 7/7 se syntetickou šablonou
+  i se skutečnou v3 a v4. Mutace #380 (`netlify/mutace.mjs`, sada přidána
+  do `SADY`) 9/9 chycených, `--kontrola` 510 úseků. Harness S9
+  `overit_sod_proj_cislo.mjs` se skutečnou v3 6/6.
+  Příručka kap. 24 (nový odstavec „Smlouva o dílo projekce vyjmenuje jen to,
+  co nabízíte“) a Co je nového v18.10.3; roadmapa #380 → hotovo.
+
 ## v18.10.7 — smlouvy o dílo v němčině a francouzštině, režim DPH a skladné (#157; větev claude/v3-sod-en)
 
 Pokračování dávky V3 podle rozhodnutí J. V. 18. 10. 2026 (přes koordinaci):

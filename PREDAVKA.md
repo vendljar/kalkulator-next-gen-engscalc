@@ -1,3 +1,26 @@
+# Předávka — 18. 10. 2026: dávka V5 (v18.10.3), větev `claude/v5-sod-proj-rozsah` — rozsah díla SoD projekce (#380 Q7)
+
+Nad `origin/claude/integrace-16-10` (`9bb7caf`, v17.10.4). Do `test-draft` / `test` / `main` nic —
+slučuje koordinace (session_011B3ruyPigNEMSUdesbk4Hd). Podrobnosti: CHANGELOG v18.10.3,
+`podklady/POSTUP_SABLONY_SOD_PROJ_V4_18_10.md`.
+
+- **Hotovo (pushnuto):** `nastroje/vyrob_sablony.js --sod-proj-v4` (v3 → v4: `{{SODP_ROZSAH_DILA}}`
+  ve větě přílohy, 7 činností čl. II a III ve značkách `{{CIN_<X>_ZAC/_KON}}`); builder
+  `sodProjRozsah` (výčet plnými názvy, `blokyPryc`), generátor `odstranPrazdneBloky(…, blokyPryc)`;
+  v3 funguje beze změny. Odkaz „odst. 5“ v čl. VII je správný (odst. 5 = potvrzení poštou) — beze
+  změny, nástroj ho hlídá. Příručka kap. 24 + Co je nového v18.10.3, roadmapa #380 → hotovo.
+- **Šablona v4:** vyrobená z v3 z Disku (ID 113i9u…), přiložená k sezení V5
+  (`Sablona_SOD_PROJEKCE_v4.docx`, 124 302 B, sha256 b4ef4a91…); na Disk ani do aplikace nenahrána —
+  udělá J. V. (postup v CHANGELOG / podklady).
+- **Výchozí volby:** plné názvy činností (zkratky = jen `sodProjRozsahText`); IČ → IČ DOSS
+  i povolení, EZČ → EZČ i výběr dodavatele (jako věty plateb staré šablony); studie / projednání /
+  kolaudace / geodet do výčtu nepatří (šablona je v předmětu díla nemá); věta přílohy „na činnosti: …“.
+- **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `roadmap.json` (#380) /
+  `netlify/mutace.mjs` (SADY + mutace #380) / `manual/obsah.json` (Co je nového, kap. 24) /
+  `src/docxgen.js` (odstranPrazdneBloky). Záhlaví „verze“ příručky jsem neměnil.
+- **Navazuje V3:** po zveřejnění v4 přegenerovat EN/DE/FR z v4 (`nastroje/preklad_sod.js`).
+- **Další krok:** žádný v této větvi — dávka uzavřená.
+
 # Předávka — 18. 10. 2026: dávka V3 (v18.10.1), větev `claude/v3-sod-en` — režim DPH a skladné v SoD realizace v3
 
 Rozhodnutí J. V. 18. 10. (přes koordinaci): DPH volbou v krycím listu OCK, skladné kurzem do měny smlouvy.

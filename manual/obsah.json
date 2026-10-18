@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v18.10.7 · sestaveno 18. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
+  "verze": "Platí pro aplikaci v18.10.8 · sestaveno 18. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -11,6 +11,12 @@
         "Snímky obrazovky v téhle příručce jsou pořízené z běžící aplikace, ale nad **zkušebním ceníkem** s vymyšlenými sazbami. **Částky na obrázcích jsou ze zkušebního ceníku a nejsou naše ceny.** Neberte je jako vodítko pro nabídku a nesrovnávejte s nimi svou kalkulaci — sledujte, kde co je a jak se to chová, ne kolik to stojí.",
         "Jména zákazníků na snímcích jsou taky **vymyšlená**. Celá ukázková zakázka **2026 - OPR - CN - 9100** je smyšlená a vznikla jen kvůli téhle příručce.",
         "Příručka je určená obchodníkům ENGINEERS CZ. Popisuje, jak firma počítá nabídky, takže ji zákazníkům ani nikomu mimo firmu neposílejte."
+      ]
+    },
+    {
+      "nadpis": "Co je nového ve verzi v18.10.8 (18. 10. 2026)",
+      "odstavce": [
+        "**Smlouva o dílo projekce podle nabídky.** S novou šablonou SoD projekce v4 obsahuje předmět díla (čl. II) i termíny plnění (čl. III) jen činnosti, které nabízíte v Kalkulaci PROJ, a věta přílohy č. 1 je vyjmenuje místo pevného „DPZ+DSP“. Platí, jakmile správce šablonu v4 zveřejní (kapitola 24)."
       ]
     },
     {
@@ -708,6 +714,16 @@
         { "typ": "text", "text": "**Režim DPH ve smlouvě** (od v18.10.1, šablona smlouvy realizace v3) vyberete ve stejné sekci: **přenesená daňová povinnost (tuzemsko)** — výchozí, věta jako dosud; **reverse charge EU** — stavba v jiném státě EU, daň odvede zákazník podle předpisů tamního státu; **česká DPH v zákonné sazbě** — k ceně se připočte DPH. Odstavec 3 článku V nese prohlášení zákazníka o snížené sazbě DPH jen u české DPH a místa plnění *bytový dům* nebo *rodinný dům*; jinak v něm stojí závazek oznámit změnu skutečností rozhodných pro DPH. Když režim napíšete vlastními slovy, věty ve Wordu zůstanou `{{…}}` k doplnění. **Skladné** (poplatek za den při prodlení zákazníka se stavební připraveností) bere smlouva z Nastavení → Firma." },
         { "typ": "podnadpis", "text": "Smlouva o dílo v angličtině" },
         { "typ": "text", "text": "Vedle tlačítka smlouvy je **Jazyk tisku** (stejná volba jako u nabídek; plná moc je vždy česky). **Anglicky** vznikne smlouva z anglické šablony smlouvy o dílo — je to věrný překlad české šablony, zkontrolovaný rodilými mluvčími, ne samostatné právní znění. Ceny a platby jsou v eurech podle pravidel cizojazyčné nabídky (kurz z ceníku, kurz se v dokumentu neuvádí), seznam splátek realizace, platby projekce a druh místa plnění (bytový dům → *an apartment building*) přeloží aplikace; co jste v krycím listu napsali vlastními slovy, zůstane, jak jste to napsali. **Bez zveřejněné anglické šablony smlouva v angličtině nevznikne** — hláška pod tlačítkem řekne, že ji administrátor nahraje v **Nastavení → Šablony → Šablona smlouvy o dílo … → EN**; do té doby tiskněte česky. Stejně fungují **němčina a francouzština** (od v18.10.1 jsou připravené německé a francouzské šablony smluv): smlouva v daném jazyce vznikne, jakmile administrátor zveřejní šablonu v Nastavení → Šablony → DE nebo FR; do té doby ji aplikace nevytvoří." },
+        { "typ": "podnadpis", "text": "Smlouva o dílo projekce vyjmenuje jen to, co nabízíte" },
+        { "typ": "text", "text": "Od šablony **SoD projekce v4** (v18.10.8) se předmět díla řídí **Kalkulací PROJ**. V čl. II (Předmět díla) a čl. III (Termíny plnění) zůstanou jen činnosti, které nabídka oceňuje, a písmena odrážek jdou dál po sobě (a, b, c …). Věta přílohy č. 1 vyjmenuje tytéž činnosti plnými názvy, např. „Cenová nabídka číslo … na činnosti: dokumentace pro povolení záměru, inženýrská činnost DOSS, podání žádosti na příslušný stavební úřad a vyřízení povolení záměru a dokumentace pro provedení stavby – objekt …“ — místo dřívějšího pevného „DPZ+DSP včetně zajištění inženýringu“." },
+        { "typ": "seznam", "polozky": [
+          { "pojem": "Zaměření a zpracování výstupů", "vyklad": "když nabídka oceňuje zaměření" },
+          { "pojem": "Dokumentace pro povolení záměru", "vyklad": "když oceňuje DPZ" },
+          { "pojem": "Inženýrská činnost DOSS, Podání žádosti a vyřízení povolení záměru", "vyklad": "obě, když oceňuje inženýrskou činnost (IČ)" },
+          { "pojem": "Dokumentace pro provedení stavby", "vyklad": "když oceňuje DPS" },
+          { "pojem": "Ekonomická zadávací část, Výběr dodavatele pro realizaci záměru", "vyklad": "obě, když oceňuje EZČ" }
+        ] },
+        { "typ": "text", "text": "Studii, projednání studie, kolaudaci ani geodetické zaměření šablona v předmětu díla nemá — do smlouvy je případně dopíšete ve Wordu. Když nabídka žádnou z činností v seznamu nemá, zůstane ve větě přílohy vidět `{{SODP_ROZSAH_DILA}}` k doplnění. Se starší šablonou v3 vznikne smlouva jako dřív (všech sedm činností a pevná věta přílohy) — novou šablonu zveřejňuje správce v **Nastavení → Šablony**." },
         { "typ": "podnadpis", "text": "Co navíc potřebuje projekce" },
         { "typ": "text", "text": "V **Krycím listu PROJ** (verze Backoffice) jsou pole pro věci, které se dřív dopisovaly ručně ve Wordu:" },
         {
