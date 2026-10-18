@@ -10,6 +10,8 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ## v18.10.15 — B188: obnova matice zobrazení ze zálohy jen s heslem správce (větev claude/o1-b188)
 
+**Celé testovací kolo K2 nad d3fda27 (v18.10.15, 18. 10. 2026) — VŠE ZELENÉ:** build OK, příručka v18.10.15 (22 snímků); sady s podklady 274/0/1 (přeskočen jen `test.js`, ostrý ceník); mutace jádra 248/248; mutace serveru 538/538 v 56 skupinách, 0 přeživších, 0 chybně zadaných; statické kontroly 3/3. Podklady: 31 šablon z Disku, PROJ v3 i jako `Sablona_NABIDKA_PROJ.docx` (B193), SoD realizace v3 a projekce v4 vyrobené z testovaného SHA. **Kandidát na `test`: d3fda27 a dokumentační commity nad ním.**
+
 Dávka O1 (zadání koordinace „ŘÍDÍCÍ 18.10“), nad `origin/claude/integrace-16-10`
 (`cdca5f3`, v18.10.14). Opravuje střední nález **B188** z auditu kola 28
 (roadmapa **#429**): B168 chtěl heslo správce jen u `POST /api/zobrazeni`,
