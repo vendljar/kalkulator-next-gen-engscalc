@@ -9,7 +9,7 @@ znění; rodilý mluvčí kontroluje jazyk a termíny, obsah se nemění.
 
 | Česká šablona | Jazykové šablony | Slovníky překladu |
 |---|---|---|
-| Sablona_SOD_REALIZACE_v2.docx | …_v2_EN.docx, …_v2_DE.docx, …_v2_FR.docx | Sablona_SOD_REALIZACE_v2.preklad_en/de/fr.json |
+| Sablona_SOD_REALIZACE_v3.docx (z v2 nástrojem) | …_v3_EN.docx, …_v3_DE.docx, …_v3_FR.docx | Sablona_SOD_REALIZACE_v3.preklad_en/de/fr.json |
 | Sablona_SOD_PROJEKCE_v3.docx | …_v3_EN.docx, …_v3_DE.docx, …_v3_FR.docx | Sablona_SOD_PROJEKCE_v3.preklad_en/de/fr.json |
 
 Předány J. V. jako přílohy sezení V3 (session_01GyotCYY7DhFnyXhceNA3de;
@@ -22,19 +22,39 @@ node nastroje/preklad_sod.js --kostra --jazyk de <složka>   # nové/změněné 
 node nastroje/preklad_sod.js --jazyk de <složka>            # → …_DE.docx + kontrola (bez --jazyk = en)
 ```
 
-## Pojmenovaná místa (sporná znění — J. V. upřesní)
+## Režim DPH a skladné (rozhodnutí J. V. 18. 10. 2026) — KE KONTROLE ÚČETNÍ
 
-Tři místa, která J. V. chce upravit, jsou ve všech třech slovnících
-samostatnými záznamy `{ misto, en|de|fr, pozn }`; odstavec na ně odkazuje
-značkou `[[JMENO]]`. Změna = přepis jednoho záznamu ve slovníku daného
-jazyka a nové vyrobení šablony (anglické šablony se 18. 10. nezměnily —
-výstup je bajtově shodný s v17.10.6):
+Česká šablona **SoD realizace v3** (`node nastroje/vyrob_sablony.js
+--sod-real-v3 <složka>` z v2) nese v čl. V místo pevných vět symboly
+a věty dosazuje aplikace podle pole krycího listu OCK **Režim DPH ve
+smlouvě**; jazykové verze přeloží slovník aplikace (`src/preklad.js`).
 
-| Místo | Kde | Dnes (věrně podle češtiny) |
-|---|---|---|
-| `DPH_REZIM` | SoD realizace čl. V odst. 2 (celý odstavec) | DPH v režimu přenesené daňové povinnosti |
-| `DPH_SNIZENA_SAZBA` | SoD realizace čl. V odst. 3 (bez „3." a tabulátoru) | prohlášení o snížené sazbě DPH pro bydlení |
-| `SKLADNE` | SoD realizace čl. VI (část věty) | skladovací poplatek za den v Kč |
+| Režim (krycí list) | `{{SOD_DPH_REZIM_VETA}}` (čl. V odst. 2) |
+|---|---|
+| přenesená daňová povinnost (tuzemsko) — výchozí | DPH bude účtováno dle platných předpisů v režimu přenesené daňové povinnosti. *(věta šablony v2)* |
+| reverse charge EU (místo plnění v jiném státě EU) | Plnění nepodléhá české DPH; daň přizná a odvede objednatel v režimu přenesení daňové povinnosti (reverse charge) podle právních předpisů státu místa plnění. |
+| česká DPH v zákonné sazbě | K ceně díla bude připočtena DPH v zákonné sazbě platné ke dni uskutečnění zdanitelného plnění. |
+
+`{{SOD_DPH_PROHLASENI}}` (čl. V odst. 3, číslo „3." zůstává): při české DPH
+a místě plnění *bytový dům* / *rodinný dům* prohlášení o snížené sazbě DPH
+podle § 48 zákona o DPH (věta šablony v2); jinak „Objednatel se zavazuje,
+že o každé změně skutečností rozhodných pro režim DPH podle odst. 2 tohoto
+článku bude zhotovitele písemně informovat do tří dnů ode dne, kdy taková
+změna nastane." (druhá věta původního odstavce, zobecněná).
+
+**K posouzení účetní:** znění věty reverse charge EU (místo plnění u
+stavebních prací = místo nemovitosti), zda prohlášení o snížené sazbě patří
+jen k bytovému a rodinnému domu, a zda u přenesené daňové povinnosti nemá
+být prohlášení zákazníka o registraci k DPH.
+
+**Skladné** `{{SOD_SKLADNE_DENNE}}` (čl. VI): částka z Nastavení → Firma
+(Kč za den, bez výchozí hodnoty) — česky „N,- Kč" jako dosud, v EN/DE/FR
+smlouvě v eurech kurzem ceníku (celá eura nahoru).
+
+Ve slovnících v3 je skladné pojmenované místo `[[SKLADNE]]`
+(„{{SOD_SKLADNE_DENNE}} per day" / „pro Tag" / „par jour"); změna znění =
+přepis jednoho záznamu a nové vyrobení šablony. Místa DPH ze slovníků v2
+zanikla — věty dodává aplikace.
 
 Ve slovníku: `<s1>…</s1>` = úsek jiným písmem (tučně, podtržení), `\t`
 tabulátor, `{{…}}` symbol — musí zůstat beze změny (kontrola to hlídá).

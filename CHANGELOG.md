@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v18.10.1 — smlouvy o dílo v němčině a francouzštině (#157 DE/FR; větev claude/v3-sod-en)
+## v18.10.1 — smlouvy o dílo v němčině a francouzštině, režim DPH a skladné (#157; větev claude/v3-sod-en)
 
 Pokračování dávky V3 podle rozhodnutí J. V. 18. 10. 2026 (přes koordinaci):
 SoD i v DE a FR stejně jako EN; #380 Q7 = varianta B, udělá ji dávka V5;
@@ -16,6 +16,30 @@ sporná místa EN šablony (DPH u zahraničního zákazníka, skladné) J. V.
 upřesní — šablony zatím beze změny, jen oddělená ve slovníku. Verze
 předběžná (koordinace přidělí při sloučení).
 
+- **Režim DPH volbou a skladné kurzem (rozhodnutí J. V. 18. 10. 2026).**
+  Šablona SoD realizace v2 nesla v čl. V natvrdo přenesenou daňovou
+  povinnost a hned za ní prohlášení o snížené sazbě DPH — jedno vylučuje
+  druhé. Nová česká šablona **SoD realizace v3**
+  (`nastroje/vyrob_sablony.js --sod-real-v3`, kotvy právě jednou, jinak
+  chyba): věta režimu → `{{SOD_DPH_REZIM_VETA}}`, tělo odstavce „3.“ →
+  `{{SOD_DPH_PROHLASENI}}` (číslo zůstává kvůli odkazům na „bod 4“), pevná
+  částka skladného → `{{SOD_SKLADNE_DENNE}}`.
+  - Krycí list OCK, sekce Smlouva o dílo: pole **Režim DPH ve smlouvě**
+    (přenesená daňová povinnost — výchozí, jako dosud / reverse charge EU /
+    česká DPH v zákonné sazbě). `sodDphSymboly` (sod.js): věta režimu;
+    prohlášení o snížené sazbě jen při české DPH a místě plnění bytový /
+    rodinný dům, jinak věta o oznámení změny (druhá věta původního
+    odstavce). Vlastní znění režimu symboly nevyplní ({{…}} ve Wordu). Věty
+    EN/DE/FR ve slovníku; znění ke kontrole účetní (SOD_EN_KONTROLA.md).
+  - Nastavení → Firma: **Skladné … Kč za den** (`skladneDenneKc`, bez
+    výchozího čísla). `sodSkladne`: česky „N,- Kč“ (tvar dosavadní
+    šablony), cizí jazyk v měně smlouvy `mena.na` (#155, celá eura nahoru);
+    `nabidkaData` nově vrací `mena`. Prázdné pole nechá `{{…}}`.
+  - Jazykové šablony **SoD realizace v3** EN/DE/FR vyrobené znovu
+    (137 odstavců, 56 symbolů, kontrola bez problémů); slovníky v3 převzaly
+    překlady v2, skladné je pojmenované místo `[[SKLADNE]]` = symbol
+    v měně smlouvy, místa DPH zanikla (věty dodává aplikace).
+    `preklad_sod.js` pracuje se šablonami realizace v3 a projekce v3.
 - **Nástroj `nastroje/preklad_sod.js` zobecněný na jazyky** `--jazyk en |
   de | fr` (slovník `*.preklad_<jazyk>.json`, výstup `_DE` / `_FR`, překlad
   z pole jazyka, odhad jazyka a zakázaná česká diakritika podle cílového
@@ -30,9 +54,17 @@ předběžná (koordinace přidělí při sloučení).
   de 96–99 %, fr 100 %), testzip a převod do PDF v pořádku; předány J. V.
   jako přílohy sezení spolu se slovníky (do repozitáře nepatří). Kontrolní
   seznam termínů DE/FR a pojmenovaná místa v `podklady/SOD_EN_KONTROLA.md`.
-- **Aplikace:** beze změny kódu — hesla DE/FR pro splátky, platby PROJ
-  a místo plnění jsou ve slovníku od v17.10.6; zábrana bez jazykové šablony
-  platí pro DE i FR. Příručka kap. 24 a Co je nového v18.10.1.
+- **Aplikace pro DE/FR:** hesla pro splátky, platby PROJ a místo plnění
+  jsou ve slovníku od v17.10.6; zábrana bez jazykové šablony platí pro DE
+  i FR. Příručka kap. 24 a Co je nového v18.10.1.
+- **Režim DPH a skladné — testy:** `src/test_sod_en.js` +10 (režimy,
+  prohlášení, vlastní znění, skladné Kč / € nahoru / prázdné; částka
+  smyšlená) proti stavu před úpravou 25 prošlo / 5 selhalo, po ní 30/0;
+  nový `src/test_sod_real_v3.js` (smyšlený úryvek čl. V a VI) bez
+  `sodRealV3` 0/1, po něm 11/0. Mutace 12/12 (dvě částky ve větě
+  o skladném napoprvé přežily → test). Celá cesta ověřená lokálně na
+  skutečných šablonách v3 CZ/EN/FR (nic se necommituje). Smoke 263 prošlo /
+  0 selhalo / 6 přeskočeno (firemní podklady).
 - **Testy (pojistka):** `src/test_preklad_sod.js` proti nástroji z v17.10.6
   14 prošlo / 5 selhalo, po rozšíření 19/0; `src/test_sod_en.js` +2 (DE
   splátky a místo plnění, FR platby PROJ) 20/0 — hlídají slovník z v17.10.6,

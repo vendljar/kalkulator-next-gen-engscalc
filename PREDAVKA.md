@@ -1,3 +1,17 @@
+# Předávka — 18. 10. 2026: dávka V3 (v18.10.1), větev `claude/v3-sod-en` — režim DPH a skladné v SoD realizace v3
+
+Rozhodnutí J. V. 18. 10. (přes koordinaci): DPH volbou v krycím listu OCK, skladné kurzem do měny smlouvy.
+
+- **Hotovo (pushnuto):** `vyrob_sablony.js --sod-real-v3` (CZ v3 se symboly SOD_DPH_REZIM_VETA,
+  SOD_DPH_PROHLASENI, SOD_SKLADNE_DENNE); pole krycího listu „Režim DPH ve smlouvě“ (výchozí přenesená);
+  Nastavení → Firma „Skladné … Kč za den“ (bez výchozího čísla); `sodDphSymboly`, `sodSkladne`, věty
+  EN/DE/FR ve slovníku. Šablony realizace v3 CZ/EN/DE/FR + projekce v3 EN/DE/FR + slovníky v3 =
+  **přílohy sezení V3**. Testy test_sod_en 30/0, test_sod_real_v3 11/0, mutace 12/12.
+- **Pořadí nasazení (J. V.):** 1) Nastavení → Firma: skladné Kč/den; 2) Nastavení → Šablony → SoD
+  realizace: česká v3; 3) jazykové verze realizace v3 a projekce v3 (EN/DE/FR). Bez kroku 1 zůstane
+  ve smlouvě {{SOD_SKLADNE_DENNE}}.
+- **Čeká na J. V.:** kontrola vět DPH účetní (SOD_EN_KONTROLA.md), rodilí mluvčí, nahrání šablon.
+
 # Předávka — 18. 10. 2026: dávka V3 pokračování (v18.10.1), větev `claude/v3-sod-en` — SoD v DE a FR
 
 Na pokyn J. V. 18. 10. (přes koordinaci session_011B3ruyPigNEMSUdesbk4Hd). Do `test-draft` / `test` /
