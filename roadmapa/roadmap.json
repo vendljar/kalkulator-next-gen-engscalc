@@ -6571,12 +6571,13 @@
   {
    "id" : "420",
    "vlna" : "B",
-   "stav" : "ceka",
+   "stav" : "hotovo",
    "dulezitost" : "nizka",
    "slozitost" : "M",
+   "hotovoV" : "v17.10.5",
    "nazev" : "Audit kola 25 (B151–B167): vysoké opraveny, zbytek nízké a informativní",
    "proc" : "Bezpečnostní audit 15. 10. 2026 nad v15.10.6 (`podklady/AUDIT_2026-10-15_v15.10.6.md`) vedl 17 nových nálezů, z toho 2 vysoké ve schvalování cenové výjimky. Rozhodnutí J. V. 15. 10. 2026: „153 a 154 proveď dle tvého doporučení; 155 a 156 řešit nebudeme a uzavři.“",
-   "detail" : "HOTOVO v17.10.5 (B165 část 1, dávka B165, `claude/b165-karta-vyjimky`): schvalovatel v kartě Cenové výjimky vidí u položek použitou vs. ceníkovou sazbu, dopad na cenu strany v % a Kč (položka i celkem), u pásu „jiné“ plochu m² a světlíky; obchodník čísla nevidí. Spolu s tím zbytek B178: plocha pásů a světlíků „jiné“ z výsledku jádra (celé m²) v obsahu výjimky. ZBÝVÁ: B165 část 2 (vlastní schválení role se `sleva.schvalovani`) — návrh koordinaci, rozhodne J. V. ROZHODNUTO J. V. 16. 10. 2026 k B165 (plán víkendu): schvalovatel v kartě cenové výjimky uvidí ceníkovou vs. použitou sazbu a dopad na cenu varianty v %. HOTOVO: B151, B152, B167 (v15.10.6). **B153** (vysoká) — dotisk dokumentu nové strany do odeslané nabídky (po vypnutí jenProj/jenOck) se posuzuje i na cenovou výjimku té strany a minimální marži její slevy; server 403, prohlížeč zábrana s hláškou o klonu (v15.10.8). **B154** (vysoká) — rozhodnutí o výjimce nese celý kanonický obsah a porovnává se přesně, ne 32bitový otisk FNV; rozhodnutí z doby před v15.10.8 se musí schválit znovu (v15.10.8). **B155** (střední) — OPRAVENO v16.10.1 (J. V. 16. 10., #421): rozsah pásu v obsahu výjimky. **B156** (střední) — UZAVŘENO jako vědomá mez (`BEZPECNOST_MEZE.md`). **B157** (nízká) — UZAVŘENO jako záměrné chování (J. V. 15. 10.: cizí obchodník smí měnit volná pole krycího listu odeslané nabídky). **Dávka A1 (v16.10.4, `claude/a1-audit25`):** B158 souběh stropu Pipedrive (výhradní úsek), B159 Origin „null“ a text/plain u zápisů, B160 klíče `Object.prototype` ve slovníku, B163 plná moc po SoD volná, B166 harness XSS a Node v CI — OPRAVENO s testy a mutacemi; B161, B162a, B164 zapsány jako vědomé meze (`BEZPECNOST_MEZE.md`). B165 část 1 hotova v17.10.5.",
+   "detail" : "HOTOVO v17.10.5 (B165 část 1, dávka B165, `claude/b165-karta-vyjimky`): schvalovatel v kartě Cenové výjimky vidí u položek použitou vs. ceníkovou sazbu, dopad na cenu strany v % a Kč (položka i celkem), u pásu „jiné“ plochu m² a světlíky; obchodník čísla nevidí. Spolu s tím zbytek B178: plocha pásů a světlíků „jiné“ z výsledku jádra (celé m²) v obsahu výjimky. B165 část 2 (vlastní schválení role se `sleva.schvalovani`) — ROZHODNUTO J. V. 18. 10. 2026: zatím ponechat (systém se testuje), do budoucna změnit → samostatná položka #425; do té doby vědomá mez v `BEZPECNOST_MEZE.md`. ROZHODNUTO J. V. 16. 10. 2026 k B165 (plán víkendu): schvalovatel v kartě cenové výjimky uvidí ceníkovou vs. použitou sazbu a dopad na cenu varianty v %. HOTOVO: B151, B152, B167 (v15.10.6). **B153** (vysoká) — dotisk dokumentu nové strany do odeslané nabídky (po vypnutí jenProj/jenOck) se posuzuje i na cenovou výjimku té strany a minimální marži její slevy; server 403, prohlížeč zábrana s hláškou o klonu (v15.10.8). **B154** (vysoká) — rozhodnutí o výjimce nese celý kanonický obsah a porovnává se přesně, ne 32bitový otisk FNV; rozhodnutí z doby před v15.10.8 se musí schválit znovu (v15.10.8). **B155** (střední) — OPRAVENO v16.10.1 (J. V. 16. 10., #421): rozsah pásu v obsahu výjimky. **B156** (střední) — UZAVŘENO jako vědomá mez (`BEZPECNOST_MEZE.md`). **B157** (nízká) — UZAVŘENO jako záměrné chování (J. V. 15. 10.: cizí obchodník smí měnit volná pole krycího listu odeslané nabídky). **Dávka A1 (v16.10.4, `claude/a1-audit25`):** B158 souběh stropu Pipedrive (výhradní úsek), B159 Origin „null“ a text/plain u zápisů, B160 klíče `Object.prototype` ve slovníku, B163 plná moc po SoD volná, B166 harness XSS a Node v CI — OPRAVENO s testy a mutacemi; B161, B162a, B164 zapsány jako vědomé meze (`BEZPECNOST_MEZE.md`). B165 část 1 hotova v17.10.5.",
    "hotovoKdyz" : "Každý zbývající nález B158–B166 je opravený s testem a mutací, nebo zapsaný jako vědomá mez s rozhodnutím J. V.",
    "kde" : "`podklady/AUDIT_2026-10-15_v15.10.6.md`, `src/vyjimky.js`, `netlify/lib/zakazka_kontrola.mjs`, `src/ui/schvalovani_ui.js`, `BEZPECNOST_MEZE.md`",
    "pozn" : "B153 + B154 ve větvi `claude/b153-b154` (v15.10.8), do test ji slučuje koordinační sezení J. V.: `src/test_vyjimky.js` 40 → 62 OK, `netlify/test_vyjimky.mjs` 36 → 46 OK, mutace B153 ×4 a B154 ×2. Dávka A1 (v16.10.4) ve větvi `claude/a1-audit25`, slučuje koordinace."
@@ -6593,7 +6594,7 @@
    "hotovoKdyz" : "Hotovo ve větvi (v16.10.2): test_leseni_specifikace 0/3 → 45/0, test_techspec_vlastni_radky 3/16 → 22/0, mutace jádra LEŠ 8/8 a VLR 4/4, harness overit_leseni_spec (Word CN v11–v15 CZ/EN/DE/FR).",
    "kde" : "`src/techspec.js` (tsLeseniNeniRadek), `src/nabidka.js` (tsRadkyNavic, tsExtra, nabidkaNahledSekce), `src/docxgen.js` (docxRadkyNavic), `overit_leseni_spec.mjs`",
    "hotovoV" : "v16.10.2 (větev claude/leseni-spec-radek)",
-   "pozn" : "Do test slučuje koordinační sezení J. V. Výchozí volby ke schválení: znění popisku „LEŠENÍ VNITŘNÍ PRO STAVBU OCK“ a věta „nabízeno jako příplatek“ (jako u soklu). Šablona CN může později dostat symbol `{{TS_NENI_LESENI_VNITRNI}}` — pak se řádek neklonuje."
+   "pozn" : "Do test slučuje koordinační sezení J. V. Výchozí volby SCHVÁLENY J. V. 17. 10. 2026 (odpovědi 1A, 2A, 3A — jak je v kódu): znění popisku „LEŠENÍ VNITŘNÍ PRO STAVBU OCK“ a věta „nabízeno jako příplatek“ (jako u soklu). Šablona CN může později dostat symbol `{{TS_NENI_LESENI_VNITRNI}}` — pak se řádek neklonuje."
   },
   {
    "id" : "423",
@@ -6614,7 +6615,7 @@
      "proc" : "cenové výjimky a jejich schvalování (B153/B154)"
     }
    ],
-   "pozn" : "Čísla přidělila koordinace: #421 S11, #422 S12, #423 S13. **Po nasazení správce v Nastavení → Ceník zkontroluje osm předzaškrtnutých položek (návrh u ceníku bez příznaků, J. V. 16. 10.) a ceník zveřejní** — do zveřejnění platí dosavadní ceník (nezaškrtnuto)."
+   "pozn" : "Čísla přidělila koordinace: #421 S11, #422 S12, #423 S13. **Po nasazení správce v Nastavení → Ceník zkontroluje osm předzaškrtnutých položek (návrh u ceníku bez příznaků, J. V. 16. 10.) a ceník zveřejní** — do zveřejnění platí dosavadní ceník (nezaškrtnuto). Od v17.10.4 (B179, J. V. 17. 10. 2026) jde příznak nastavit jen u příplatků (`C.priplatky.*`) a mapa pro zveřejnění se bere z platného ceníku a změn správce, nikdy z ceníku varianty (#424)."
   },
   {
    "id" : "421",

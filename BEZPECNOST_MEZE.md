@@ -391,7 +391,7 @@ platí dál); výjimky s pásem „jiné“ schválené před v17.10.5 čekají 
 - **Rozhodnutí J. V. 17. 10. 2026:** obě výše uvedené části zůstávají vědomou
   mezí; dořeší se spolu s B165 (plocha z výsledku jádra do obsahu výjimky).
 
-### B165 — schvalovatel nevidí částky výjimky; vlastní schválení — ČÁST 1 OPRAVENA v17.10.5
+### B165 — schvalovatel nevidí částky výjimky; vlastní schválení — ČÁST 1 OPRAVENA v17.10.5, ČÁST 2 VĚDOMÁ MEZ (#425)
 
 **Část 1 (J. V. 16. 10. 2026):** karta Cenové výjimky ukazuje tomu, kdo smí
 rozhodnout (administrátor, `sleva.schvalovani`), u každé položky směsi
@@ -402,11 +402,14 @@ a nejnižší ceníkovou sazbu, plochu a světlíky, a **dopad na cenu strany**
 práva rozhodovat čísla nevidí (ceníkové sazby platného ceníku mu karta
 neprozradí). Vše přes `esc()`. Na obsah ani na cenu dopad vliv nemá.
 
-**Část 2 (otevřeno, rozhodne J. V.):** role s právem `sleva.schvalovani`
-(i administrátor) schválí výjimku, o kterou sama požádala nebo kterou má ve
-vlastní zakázce — server porovnává jen právo, ne osobu žadatele
-(`vyjimkyServerKontrola`). Návrh poslán koordinaci 17. 10. 2026; do
-rozhodnutí se chování nemění.
+**Část 2 (vědomá mez, rozhodnutí J. V. 18. 10. 2026):** role s právem
+`sleva.schvalovani` (i administrátor) schválí výjimku, o kterou sama
+požádala nebo kterou má ve vlastní zakázce — server porovnává jen právo, ne
+osobu žadatele (`vyjimkyServerKontrola`). Návrh (server 403, když
+schvalovatel = žadatel nebo autor zakázky; administrátor vždy) poslán
+koordinaci 17. 10. 2026. **J. V. 18. 10.: „zatím ponechat“ — systém se
+testuje, do budoucna se změní (roadmapa #425).** Do té doby se chování
+nemění.
 
 ### B179 — příznak „cena dle nabídky" mimo příplatky a z ceníku varianty — OPRAVENO v17.10.4
 
