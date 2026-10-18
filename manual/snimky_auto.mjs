@@ -240,6 +240,9 @@ await page.evaluate(async () => {
  * `sloupce.naklad`). Ukládají se samy (ZOBR_ULOZ) — čeká se na dokončení. */
 krok('přidělení práv obchodníkovi v matici zobrazení');
 await page.evaluate(() => {
+  /* B168 (18. 10. 2026): uložení matice zobrazení chce heslo správce — odpoví
+   * se heslem zkušebního správce (ADMIN_INIT_HESLO výše), jinak dialog visí. */
+  window.dotazHeslo = () => Promise.resolve('Zkusebni.Heslo.123');
   ZOBR_ULOZ.stav = '';
   ['sloupce.naklad', 'kpi.marze', 'tab.detail', 'tab.detailproj']
     .forEach(k => zobrSet(k, 'Obchodník', true));
