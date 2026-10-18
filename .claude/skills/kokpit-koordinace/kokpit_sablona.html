@@ -106,10 +106,10 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
 
 <script id="data" type="application/json">
 {
- "aktualizace": "18. 10. 2026 08:07 UTC",
+ "aktualizace": "18. 10. 2026 08:40 UTC",
  "koordinace": {
   "id": "session_011B3ruyPigNEMSUdesbk4Hd",
-  "kontext": 35
+  "kontext": 62
  },
  "releasy": "vydáno v15.10.14 (55f0690), v15.10.10, v15.10.7, v15.10.4, v15.10.3 · mezistupně bez tagu: v15.10.13, v15.10.12, v15.10.11, v15.10.9, v15.10.8, v15.10.6",
  "cekaNaJV": [
@@ -132,14 +132,14 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
   },
   {
    "k": "integrace",
-   "v": "v18.10.5",
-   "d": "70c5151 · + kolo 27, V6 kontrola rozhodnutí",
+   "v": "v18.10.10",
+   "d": "0bf74e6 · + B168 heslo správce u matice, B176 fail-closed",
    "s": "ok"
   },
   {
-   "k": "celé kolo v16.10.5",
-   "v": "mutace serveru",
-   "d": "24/~40 skupin, 0 přeživších · 4. restart kontejneru 08:05, pokračuje",
+   "k": "celé kolo",
+   "v": "K1 běží",
+   "d": "nad 0dbec56 v samostatném kontejneru · kolo v16.10.5 ukončeno (restarty)",
    "s": "run"
   }
  ],
@@ -157,17 +157,17 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
    "nazev": "ŘÍDÍCÍ 16.10 - Koordinace víkendu 16.–18. 10.",
    "id": "session_011B3ruyPigNEMSUdesbk4Hd",
    "role": "koordinace",
-   "stav": "run",
-   "stavText": "řídí",
+   "stav": "warn",
+   "stavText": "kontext 62 %",
    "faze": null,
    "eta": "ne ~16:00",
-   "kontext": 35,
-   "kontextTok": 350,
+   "kontext": 62,
+   "kontextTok": 624,
    "bezi": "29 h",
    "hlaseni": "právě teď",
    "konec": "ne 16:00",
    "co": "Plán víkendu O1–O9; slučuje dávky do test, vede kokpit",
-   "dalsi": "Dokončit kolo v16.10.5 → test + release; pak O7 kolo nad v17.10.x"
+   "dalsi": "Předávka zapsána; při 75 % nové koordinační sezení"
   },
   {
    "nazev": "A2 #355 můstky ↔ přechodové plechy + #356 střecha přes můstek",
@@ -189,30 +189,15 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
    "id": "session_01GyotCYY7DhFnyXhceNA3de",
    "role": "dávka",
    "stav": "run",
-   "stavText": "pracuje",
-   "faze": 0,
+   "stavText": "doplňuje",
+   "faze": 1,
    "eta": "~3 h",
    "kontext": null,
    "bezi": "právě",
-   "hlaseni": "07:52",
+   "hlaseni": "08:19",
    "konec": "10:30",
-   "co": "SoD EN hotové (v17.10.6); nově DE + FR, režim DPH volbou, skladné přepočtem kurzem",
-   "dalsi": "DE/FR šablony hotové; teď volba režimu DPH v krycím listu + skladné přepočtem (v18.10.7)"
-  },
-  {
-   "nazev": "V5 #380 SoD projekce v4: rozsah díla podle nabídky",
-   "id": "session_01LE9PMBSsSQLZyhgUhHFrEP",
-   "role": "dávka",
-   "stav": "run",
-   "stavText": "startuje",
-   "faze": 0,
-   "eta": "~3 h",
-   "kontext": null,
-   "bezi": "právě",
-   "hlaseni": "právě teď",
-   "konec": "10:30",
-   "co": "Symbol rozsahu ve větě přílohy + bloky činností v čl. II/III, oprava odkazu čl. VII, šablona v4",
-   "dalsi": "Kód, šablona, testy (v18.10.3)"
+   "co": "Hotovo a sloučeno (v18.10.7): DPH režim, skladné, SoD EN/DE/FR; teď mutace + názvy činností EN/DE/FR + jazykové verze projekce v4",
+   "dalsi": "Větev claude/v3b-sod-preklad (v18.10.9)"
   },
   {
    "nazev": "K1 celé kolo s mutacemi nad integrací 0dbec56 (v17.10.5)",
@@ -245,22 +230,30 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
    "dalsi": "https://claude.ai/artifact/A5HrdpZfUK6vBdJDYpYrgM — doplní V3/V5 po sloučení"
   },
   {
-   "nazev": "B168 matice práv s heslem správce + B176 fail-closed + zápis nálezů 15. 10.",
-   "id": "session_01T44gRiEMNEatcXCX1YmN7T",
+   "nazev": "S1 sady + cílené mutace nad integrací 0bf74e6 (v18.10.10)",
+   "id": "session_01GLen51sjWiHa4QhtGsVbdB",
    "role": "dávka",
    "stav": "run",
    "stavText": "startuje",
-   "faze": 0,
-   "eta": "~2,5 h",
+   "faze": 5,
+   "eta": "~1,5 h",
    "kontext": null,
    "bezi": "právě",
    "hlaseni": "právě teď",
-   "konec": "10:00",
-   "co": "POST /api/zobrazeni s heslem správce; neznámé právo = zakázáno; zápis B169–B177 a kolize B178",
-   "dalsi": "Ověření stavu, kód, testy (v18.10.6)"
+   "konec": "10:10",
+   "co": "Sady s podklady + cílené mutace za změny po 0dbec56 — poslední brána před test",
+   "dalsi": "Prostředí, sady, mutace"
   }
  ],
  "log": [
+  [
+   "08:38",
+   "B168 sloučena (v18.10.10, POST /api/zobrazeni s heslem správce, B176). Ověření integrace přesunuto do S1 (kontejner koordinace se dál restartuje)."
+  ],
+  [
+   "08:30",
+   "V3 (v18.10.7) a V5 #380 (v18.10.8) sloučeny — konflikty v sod.js a vyrob_sablony.js sjednoceny, testy SoD 8 sad zelené. Kolo v16.10.5 ukončeno (5 restartů kontejneru) — test se posune po K1. Předávka zapsána (kontext 62 %)."
+  ],
   [
    "08:05",
    "V6 hotová (12 rozhodnutí v kódu, 9 drobných oprav textů/příručky) — sloučena, integrace v18.10.5. V3: DE/FR šablony hotové, dodělává DPH režim a skladné. 4. restart kontejneru — mutace v16.10.5 znovu spuštěny."
@@ -300,14 +293,6 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
   [
    "17:30",
    "Kontejner znovu restartován (so ~10:10 UTC) — mutace serveru přerušeny na 332 chycených, žádná nepřežila; běží znovu po skupinách s pokračováním. Spuštěna O6 (B178 + B179, v17.10.4)."
-  ],
-  [
-   "08:35",
-   "J. V.: B179 příznak jen u příplatků; B178 karta ukáže plochu pásu (s B165); v16.10.5 do test hned po kole. #356 odloženo — vizuální návrh na pondělí."
-  ],
-  [
-   "08:04",
-   "Kolo nad v16.10.5 přerušil restart kontejneru (pá 17:15 UTC, mutace serveru 241 chycených); sady 262/1/1 (✗ jen nastavení prostředí), jádro 219/219. Dopouštím mutace serveru + statické."
   ]
  ],
  "celkem": {
