@@ -1,3 +1,18 @@
+# Předávka — 18. 10. 2026: dávka V3 pokračování (v18.10.1), větev `claude/v3-sod-en` — SoD v DE a FR
+
+Na pokyn J. V. 18. 10. (přes koordinaci session_011B3ruyPigNEMSUdesbk4Hd). Do `test-draft` / `test` /
+`main` nic. Podrobnosti: CHANGELOG v18.10.1, `podklady/SOD_EN_KONTROLA.md`.
+
+- **Hotovo (pushnuto):** nástroj `preklad_sod.js --jazyk en|de|fr` + pojmenovaná místa `[[…]]`;
+  šablony SoD realizace v2 a projekce v3 v DE a FR (kontrola bez problémů) a slovníky EN/DE/FR
+  s místy `DPH_REZIM`, `DPH_SNIZENA_SAZBA`, `SKLADNE` — **přílohy sezení V3** (session_01GyotCYY7DhFnyXhceNA3de).
+  EN šablony beze změny (bajtově shodné). Příručka, roadmapa #157 (DE/FR), #380 (zvolena B → V5).
+- **Testy:** test_preklad_sod 14/5 (nástroj v17.10.6) → 19/0, test_sod_en 20/0, mutace 18/18,
+  smoke 262/0/6 (přeskočené = firemní podklady).
+- **Čeká na J. V.:** znění sporných míst (pak přepsat záznam místa ve slovníku a `node
+  nastroje/preklad_sod.js --jazyk <j> <složka>`), kontrola rodilými mluvčími, nahrání šablon EN/DE/FR.
+- **Verze v18.10.1 je předběžná** — koordinace přidělí při sloučení (CHANGELOG, příručka, verze.txt).
+
 # Předávka — 17. 10. 2026: dávka V3 (v17.10.6), větev `claude/v3-sod-en` — SoD v angličtině (#157), #380 Q7 návrh
 
 Nad `origin/claude/integrace-16-10` (`9bb7caf`, v17.10.4). Do `test-draft` / `test` / `main` nic —

@@ -8,6 +8,43 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v18.10.1 — smlouvy o dílo v němčině a francouzštině (#157 DE/FR; větev claude/v3-sod-en)
+
+Pokračování dávky V3 podle rozhodnutí J. V. 18. 10. 2026 (přes koordinaci):
+SoD i v DE a FR stejně jako EN; #380 Q7 = varianta B, udělá ji dávka V5;
+sporná místa EN šablony (DPH u zahraničního zákazníka, skladné) J. V.
+upřesní — šablony zatím beze změny, jen oddělená ve slovníku. Verze
+předběžná (koordinace přidělí při sloučení).
+
+- **Nástroj `nastroje/preklad_sod.js` zobecněný na jazyky** `--jazyk en |
+  de | fr` (slovník `*.preklad_<jazyk>.json`, výstup `_DE` / `_FR`, překlad
+  z pole jazyka, odhad jazyka a zakázaná česká diakritika podle cílového
+  jazyka).
+- **Pojmenovaná místa** `[[JMENO]]` — záznam `{ misto, en|de|fr, pozn }`
+  ve slovníku; neznámé nebo nepřeložené místo se odmítne. V EN, DE i FR
+  slovníku SoD realizace: `DPH_REZIM`, `DPH_SNIZENA_SAZBA`, `SKLADNE` —
+  změna znění = přepis jednoho záznamu. Anglické šablony vyrobené znovu
+  jsou s v17.10.6 bajtově shodné (document.xml).
+- **Vyrobeny** `Sablona_SOD_REALIZACE_v2_DE/FR.docx` (139 odstavců)
+  a `Sablona_SOD_PROJEKCE_v3_DE/FR.docx` (95), kontrola bez problémů (jazyk
+  de 96–99 %, fr 100 %), testzip a převod do PDF v pořádku; předány J. V.
+  jako přílohy sezení spolu se slovníky (do repozitáře nepatří). Kontrolní
+  seznam termínů DE/FR a pojmenovaná místa v `podklady/SOD_EN_KONTROLA.md`.
+- **Aplikace:** beze změny kódu — hesla DE/FR pro splátky, platby PROJ
+  a místo plnění jsou ve slovníku od v17.10.6; zábrana bez jazykové šablony
+  platí pro DE i FR. Příručka kap. 24 a Co je nového v18.10.1.
+- **Testy (pojistka):** `src/test_preklad_sod.js` proti nástroji z v17.10.6
+  14 prošlo / 5 selhalo, po rozšíření 19/0; `src/test_sod_en.js` +2 (DE
+  splátky a místo plnění, FR platby PROJ) 20/0 — hlídají slovník z v17.10.6,
+  mutace hesel DE je shodí.
+- **Mutace (cílené, oddělená kopie):** 18/18 chyceno (12 z v17.10.6
+  znovu + pole jazyka, rozvinutí míst, neznámé místo, odhad jazyka DE/FR,
+  dvě hesla DE; mutace „pole jazyka“ napoprvé přežila → test „záznam jen
+  s en“). `./spust_testy.sh --smoke` 262 prošlo / 0 selhalo / 6 přeskočeno
+  (firemní podklady).
+
+---
+
 ## v17.10.6 — smlouva o dílo v angličtině (#157; #380 Q7 jen návrh; větev claude/v3-sod-en)
 
 Dávka V3 (zadání koordinace „ŘÍDÍCÍ 16.10“, rozhodnutí J. V. 16. 10. 2026:

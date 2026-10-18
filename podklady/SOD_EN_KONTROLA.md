@@ -1,24 +1,40 @@
-# Smlouvy o dílo v angličtině — kontrolní seznam pro rodilého mluvčího
+# Smlouvy o dílo v angličtině, němčině a francouzštině — kontrolní seznam pro rodilé mluvčí
 
-Dávka V3 (#157), 17. 10. 2026, v17.10.6. Rozhodnutí J. V. 16. 10. 2026:
-anglická smlouva o dílo = **věrný překlad české šablony**, ne nové právní
+Dávka V3 (#157): EN 17. 10. 2026 (v17.10.6), DE a FR 18. 10. 2026
+(v18.10.1, rozhodnutí J. V. 18. 10.). Rozhodnutí J. V. 16. 10. 2026:
+cizojazyčná smlouva o dílo = **věrný překlad české šablony**, ne nové právní
 znění; rodilý mluvčí kontroluje jazyk a termíny, obsah se nemění.
 
 ## Soubory (mimo repozitář — firemní texty)
 
-| Česká šablona | Anglická šablona | Slovník překladu |
+| Česká šablona | Jazykové šablony | Slovníky překladu |
 |---|---|---|
-| Sablona_SOD_REALIZACE_v2.docx | Sablona_SOD_REALIZACE_v2_EN.docx | Sablona_SOD_REALIZACE_v2.preklad_en.json |
-| Sablona_SOD_PROJEKCE_v3.docx | Sablona_SOD_PROJEKCE_v3_EN.docx | Sablona_SOD_PROJEKCE_v3.preklad_en.json |
+| Sablona_SOD_REALIZACE_v2.docx | …_v2_EN.docx, …_v2_DE.docx, …_v2_FR.docx | Sablona_SOD_REALIZACE_v2.preklad_en/de/fr.json |
+| Sablona_SOD_PROJEKCE_v3.docx | …_v3_EN.docx, …_v3_DE.docx, …_v3_FR.docx | Sablona_SOD_PROJEKCE_v3.preklad_en/de/fr.json |
 
-Předány J. V. jako přílohy sezení V3 (session_01GyotCYY7DhFnyXhceNA3de).
-Opravy rodilého mluvčího se zapisují **do slovníku** (pole `en`, `pozn`)
-a šablona se vyrobí znovu:
+Předány J. V. jako přílohy sezení V3 (session_01GyotCYY7DhFnyXhceNA3de;
+EN 17. 10., DE/FR a EN slovník s pojmenovanými místy 18. 10.). Opravy
+rodilého mluvčího se zapisují **do slovníku** (pole `en` / `de` / `fr`,
+`pozn`) a šablona se vyrobí znovu:
 
 ```
-node nastroje/preklad_sod.js --kostra <složka>   # nové/změněné odstavce české šablony
-node nastroje/preklad_sod.js <složka>            # → …_EN.docx + kontrola
+node nastroje/preklad_sod.js --kostra --jazyk de <složka>   # nové/změněné odstavce české šablony
+node nastroje/preklad_sod.js --jazyk de <složka>            # → …_DE.docx + kontrola (bez --jazyk = en)
 ```
+
+## Pojmenovaná místa (sporná znění — J. V. upřesní)
+
+Tři místa, která J. V. chce upravit, jsou ve všech třech slovnících
+samostatnými záznamy `{ misto, en|de|fr, pozn }`; odstavec na ně odkazuje
+značkou `[[JMENO]]`. Změna = přepis jednoho záznamu ve slovníku daného
+jazyka a nové vyrobení šablony (anglické šablony se 18. 10. nezměnily —
+výstup je bajtově shodný s v17.10.6):
+
+| Místo | Kde | Dnes (věrně podle češtiny) |
+|---|---|---|
+| `DPH_REZIM` | SoD realizace čl. V odst. 2 (celý odstavec) | DPH v režimu přenesené daňové povinnosti |
+| `DPH_SNIZENA_SAZBA` | SoD realizace čl. V odst. 3 (bez „3." a tabulátoru) | prohlášení o snížené sazbě DPH pro bydlení |
+| `SKLADNE` | SoD realizace čl. VI (část věty) | skladovací poplatek za den v Kč |
 
 Ve slovníku: `<s1>…</s1>` = úsek jiným písmem (tučně, podtržení), `\t`
 tabulátor, `{{…}}` symbol — musí zůstat beze změny (kontrola to hlídá).
@@ -75,9 +91,44 @@ SoD projekce (PROJ):
 | ČSN, ČKAIT | ponechány zkratky | |
 | SVJ | owners’ association (SVJ) | |
 
+## Němčina a francouzština — použité termíny
+
+Navazují na hesla, která aplikace už používá v nabídkách (Vorhabengenehmigung /
+autorisation du projet, Ausführungsplanung / dossier d’exécution …).
+
+| Česky | Německy | Francouzsky | Pozn. |
+|---|---|---|---|
+| Smlouva o dílo | Werkvertrag | contrat d’entreprise | |
+| objednatel / zhotovitel | Auftraggeber / Auftragnehmer | Client / Entrepreneur | FR alt. maître d’ouvrage |
+| dílo | Werk | Ouvrage | |
+| smluvní pokuta | Vertragsstrafe | pénalité contractuelle | |
+| odstoupení od smlouvy | Rücktritt vom Vertrag | résolution du contrat | FR alt. résiliation |
+| ocelová konstrukce výtahové šachty | Stahlkonstruktion des Aufzugsschachts | structure métallique de la gaine d’ascenseur | |
+| opláštění | Verkleidung | habillage | FR alt. bardage |
+| šachetní dveře | Schachttüren | portes palières | |
+| stavební připravenost | Baubereitschaft | préparation du chantier | prověřit |
+| kolaudační řízení | Abnahmeverfahren (Kollaudierung) | réception administrative (conformité) | prověřit |
+| vícepráce | Mehrleistungen | travaux supplémentaires | |
+| stavební / montážní deník | Bau-/Montagetagebuch | journal de chantier/de montage | |
+| vady a nedodělky | Mängel und Restarbeiten | défauts et travaux inachevés | FR alt. réserves |
+| ověření shody | Konformitätsbewertung | évaluation de la conformité | |
+| skladovatel | Verwahrer | dépositaire | prověřit |
+| záruka | Garantie | garantie | DE alt. Gewährleistung |
+| započtení | Aufrechnung | compensation | |
+| soudní znalec | gerichtlich bestellter Sachverständiger | expert judiciaire | |
+| jednatel | Geschäftsführer | gérant | |
+| povolení záměru | Vorhabengenehmigung | autorisation du projet | alt. Baugenehmigung / permis de construire |
+| inženýrská činnost DOSS | Ingenieurleistungen DOSS | prestations d’ingénierie DOSS | |
+| dokumentace pro provedení stavby | Ausführungsplanung | dossier d’exécution | |
+| ekonomická zadávací část | wirtschaftlicher Ausschreibungsteil | pièces économiques de consultation | |
+| slepý rozpočet a výkaz výměr | Blankett-LV und Mengenermittlung | DQE non chiffré et métré | prověřit |
+| SVJ | Eigentümergemeinschaft | syndicat des copropriétaires | |
+| IČ / DIČ | Ident.-Nr. (IČ) / USt-IdNr. (DIČ) | N° d’identification (IČ) / N° de TVA (DIČ) | |
+
 ## Místa, kde překlad věrně opakuje českou šablonu (k posouzení J. V.)
 
-Obsah se neměnil; tyto věci vypadají v češtině i angličtině sporně:
+Obsah se neměnil; tyto věci vypadají v češtině i v překladech sporně
+(body 1 a 2 jsou pojmenovaná místa výš — J. V. je upraví):
 
 1. **SoD realizace, čl. V:** věta o režimu přenesené daňové povinnosti
    a hned za ní prohlášení o snížené sazbě DPH pro bydlení — u zahraničního
@@ -95,7 +146,7 @@ Obsah se neměnil; tyto věci vypadají v češtině i angličtině sporně:
    číslovaných odstavců nemá; převzato.
 7. **SoD PROJ, příloha č. 1:** „DPZ+DSP“ natvrdo — mění se s #380 Q7.
 
-Hodnoty, které do anglické smlouvy dosazuje aplikace (seznam splátek SoD
+Hodnoty, které do cizojazyčné smlouvy dosazuje aplikace (seznam splátek SoD
 realizace, platby SoD PROJ, druh místa plnění), jsou ve slovníku aplikace
 (`src/preklad.js`, oddíl „Smlouva o dílo v cizím jazyce (#157)“) — opravy
 termínů tam pošle J. V. stejně jako u nabídek.
