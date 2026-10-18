@@ -1,3 +1,14 @@
+# Předávka — 18. 10. 2026: dávka V7 (v18.10.14), větev `claude/v7-kontrola` — kontrola rozhodnutí 16.–18. 10.
+
+Nad `origin/claude/integrace-16-10` (`8480133`, v18.10.11). Do `test-draft` / `test` / `main` / integrace
+nic — slučuje koordinace (session_0144Y7gXWeprriv4yf4wKL5T). Výsledek: `podklady/KONTROLA_ROZHODNUTI_V7_18_10.md`.
+
+- **Hotovo (pushnuto):** 9 rozhodnutí × kód / příručka / EN-DE-FR / roadmapa; opravy jen textů V7-1 až V7-7
+  (příručka kap. 19 a 24, komentář B183 v `src/vyjimky.js`, roadmapa #366, #380, #425, SOD_EN_KONTROLA).
+- **Nálezy pro další dávku:** V7-N1 karta výjimky ukazuje setiny m², schválení drží celé m² (B183 c);
+  V7-N2 výchozí DPH podle DIČ × místo stavby (účetní).
+- **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `manual/obsah.json` / roadmapě.
+
 # Předávka — 18. 10. 2026: dávka V3b (v18.10.11), větev `claude/v3b-sod-preklad` — mutace V3, činnosti SoD PROJ EN/DE/FR, šablony v4
 
 Nad `origin/claude/integrace-16-10` (`0bf74e6`, v18.10.10) + sloučený doplněk V3 `817b378`. Do `test-draft` /
@@ -10,7 +21,6 @@ Nad `origin/claude/integrace-16-10` (`0bf74e6`, v18.10.10) + sloučený doplněk
   předávky V3 níž (Nastavení → Firma skladné, česká v3, pak jazykové).
 - **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / příručce / `mutace_jadro.mjs`.
 
-# Předávka — 18. 10. 2026: dávka V3 (v18.10.7), větev `claude/v3-sod-en` — režim DPH a skladné v SoD realizace v3
 # Předávka — 18. 10. 2026: dávka B168 (v18.10.6), větev `claude/b168-matice-heslo` — B168, B176, zápis nálezů 15. 10.
 
 Nad `origin/claude/integrace-16-10` (`0dbec56`, v17.10.5). Do `test-draft` / `test` / `main` nic —
@@ -52,7 +62,6 @@ slučuje koordinace (session_011B3ruyPigNEMSUdesbk4Hd). Podrobnosti: CHANGELOG v
 - **Další krok:** žádný v této větvi — dávka uzavřená.
 
 # Předávka — 18. 10. 2026: dávka V3 (v18.10.7), větev `claude/v3-sod-en` — režim DPH a skladné v SoD realizace v3
-# Předávka — 18. 10. 2026: dávka V3 (v18.10.1), větev `claude/v3-sod-en` — režim DPH a skladné v SoD realizace v3
 
 Rozhodnutí J. V. 18. 10. (přes koordinaci): DPH volbou v krycím listu OCK, skladné kurzem do měny smlouvy.
 Verze v18.10.7 (přidělila koordinace). Symboly {{SOD_DPH_REZIM}}, {{SOD_DPH_PROHLASENI}}, {{SOD_SKLADNE}};

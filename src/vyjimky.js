@@ -205,9 +205,11 @@ function vyjimkyObsah(data, dnesni, vyrazena, jekly) {
  * schválení větší světlíky ani posun vnějšího rozměru.
  * ZAOKROUHLENÍ (výchozí volba): obsah nese plochu na CELÉ m². Změna
  * profilu nebo zasklení posune vnější rozměr o centimetry a plochu pásu
- * o desetiny m²; po celých m² taková drobnost schválení neshodí, větší
- * změna (o půl m² a víc) ano. Nekrytý rozdíl je nejvýš ±0,5 m² na pás či
- * světlík × rozdíl sazeb. Karta ukazuje plochu na setiny (`m2`).
+ * o desetiny m²; po celých m² taková drobnost schválení většinou neshodí,
+ * změna, která přehoupne zaokrouhlení, ano. Nekrytý nárůst je proto AŽ
+ * TĚSNĚ POD 1 m² na pás či světlík (2,50 → 3,49 m² = týž obsah) × rozdíl
+ * sazeb (B183, znění meze opraveno V7 18. 10. 2026; BEZPECNOST_MEZE.md).
+ * Karta ukazuje plochu na setiny (`m2`) — jiné číslo, než drží obsah.
  * Světlík „jiné" se bere se sazbou pod mezí (táž jako u pásů); chyba
  * výpočtu = plocha null (obsah jiný než při schválení — fail-closed). */
 function vyjimkyPlochyJadra(d, pasy, jekly) {

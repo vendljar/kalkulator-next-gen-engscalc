@@ -8,6 +8,38 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v18.10.14 — kontrola rozhodnutí 16.–18. 10.: SoD DPH, skladné, DE/FR, #380, #425, B183 (větev claude/v7-kontrola)
+
+Dávka V7 (zadání koordinace „ŘÍDÍCÍ 18.10“), nad `origin/claude/integrace-16-10`
+(`8480133`, v18.10.11). Ověřeno, že rozhodnutí J. V. z 16.–18. 10. 2026 jsou
+v kódu, příručce, překladech EN/DE/FR a roadmapě; výsledek
+v `podklady/KONTROLA_ROZHODNUTI_V7_18_10.md` (9 rozhodnutí, opravy V7-1 až
+V7-7, nálezy V7-N1, V7-N2). Změny chování žádné.
+
+- **Kód sedí** u všech bodů: režim DPH volbou a výchozí podle DIČ (CZ /
+  bez DIČ / mimo EU → česká DPH, EU → reverse charge EU), skladné z Firmy
+  v Kč / v eurech kurzem ceníku, SoD EN/DE/FR se zábranou bez šablony,
+  SoD projekce v4 (#380 B), #425 beze změny, #355, #366, B165.
+- **Příručka kap. 24:** mimo EU (V7-1), skladné v eurech a `{{SOD_SKLADNE}}`
+  (V7-2), nadpis i DE/FR, „před zveřejněním kontrolují rodilí mluvčí“ místo
+  „zkontrolovaný“, věty DPH a výčet činností v4 v jazyce smlouvy (V7-3).
+- **B183 volba (a) — znění meze:** komentář `vyjimkyPlochyJadra`
+  (`src/vyjimky.js`), komentář v `netlify/test_vyjimky.mjs`, příručka kap. 19
+  a Co je nového v17.10.5 říkaly „±0,5 m² / o půl m² a víc“; obsah drží celé
+  m², nekrytý nárůst je až těsně pod 1 m² (V7-6). `BEZPECNOST_MEZE.md` už
+  sedělo.
+- **Roadmapa:** #380 `hotovoV` a verze Q7 v18.10.8 + EN/DE/FR v4 (V7-4); #425
+  `kde` mířil na neexistující `netlify/lib/vyjimky_server.mjs`, razítko
+  `pozadal` (V7-5); #366 otázka výkladu — odpovídá příkladu J. V. 16. 10.,
+  otevřená zůstává jen přípona .2 (V7-7).
+- **Mimochodem:** `podklady/SOD_EN_KONTROLA.md` — řádek SoD projekce v4
+  EN/DE/FR; `PREDAVKA.md` — dva osiřelé nadpisy po slučování.
+- **Nálezy (návrh):** V7-N1 karta výjimky ukazuje plochu na setiny, schválení
+  drží celé m² (B183 c); V7-N2 výchozí DPH podle DIČ nezohledňuje místo
+  stavby (účetní, SOD_EN_KONTROLA bod 1).
+
+---
+
 ## v18.10.11 — SoD: mutace dávky V3 v sadách, činnosti SoD PROJ v jazyce smlouvy, šablony v4 EN/DE/FR (větev claude/v3b-sod-preklad)
 
 Zadání koordinace 18. 10. 2026 (navazuje na V3 a V5 #380), nad
