@@ -77,7 +77,7 @@ test('P12-S5', 'vedoucí (výchozí matice) historii dostane — beze změny pro
 
 /* Administrátor obchodníkům náklady skryje (Nastavení → Zobrazení). */
 const mz = await (await post(zobrazeni, 'http://x/api/zobrazeni',
-  { matice: { 'naklady.ceniky': { 'Obchodník': false, 'Vedoucí': true } } }, cA)).json();
+  { hesloSpravce: 'Docasne.Heslo.123', matice: { 'naklady.ceniky': { 'Obchodník': false, 'Vedoucí': true } } }, cA)).json();
 test('P12-S7', 'administrátor uloží matici s klíčem naklady.ceniky', mz.ok, mz);
 const o = await db(cO);
 test('P12-S8', 'obchodník se skrytými náklady nedostane historii verzí ceníku',
@@ -89,7 +89,7 @@ test('P12-S6', 'ořezaná databáze projde programNormalizuj (prohlížeč ji p�
   norm && typeof norm === 'object' && norm.platny.verze === 2 && norm.historie.length === 0, norm);
 
 /* A naopak: vedoucímu odebrat, obchodníkovi vrátit. */
-await post(zobrazeni, 'http://x/api/zobrazeni', { matice: { 'naklady.ceniky': { 'Obchodník': true, 'Vedoucí': false } } }, cA);
+await post(zobrazeni, 'http://x/api/zobrazeni', { hesloSpravce: 'Docasne.Heslo.123', matice: { 'naklady.ceniky': { 'Obchodník': true, 'Vedoucí': false } } }, cA);
 const o2 = await db(cO), v2 = await db(cV);
 test('P12-S9', 'vedoucí s odebraným právem historii nedostane, obchodník s vráceným ano',
   v2 && v2.historie.length === 0 && v2.historieVynechana === 1 && o2 && o2.historie.length === 1, { v: v2 && v2.historie.length, o: o2 && o2.historie.length });

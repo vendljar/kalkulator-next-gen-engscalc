@@ -335,8 +335,10 @@ function sekceSbalena(oblast, sekceKey) {
  * i sloupec Výchozí (20. 8. 2026) — obojí je jedno zaškrtnutí, ne celá
  * matice, takže se ukládá hned a bez potvrzovacího okna. */
 function zobrazeniMaticiUloz(coSeNepovedlo) {
-  if (typeof onlineApi === 'function' && typeof jeAdminOnline === 'function' && jeAdminOnline()) {
-    onlineApi('/api/zobrazeni', { matice: NAST.zobrazeni })
+  if (typeof onlineZobrazeniPost === 'function' && typeof jeAdminOnline === 'function' && jeAdminOnline()) {
+    /* B168: přes onlineZobrazeniPost — server chce heslo správce. Zrušený
+     * dialog skončí hláškou níž, ne tichým neuložením. */
+    onlineZobrazeniPost()
       .then(() => { if (typeof onlineNactiZobrazeni === 'function') onlineNactiZobrazeni(); })
       .catch(e => { if (typeof onlineZprava === 'function') {
         onlineZprava(coSeNepovedlo + ' se nepodařilo uložit na server: ' + e.message, 'varovani'); render();

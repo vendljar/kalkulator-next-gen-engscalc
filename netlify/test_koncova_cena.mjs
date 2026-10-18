@@ -378,11 +378,11 @@ console.log('===== Nezávislá revize #398 (12. 10. 2026): N1 jenZahr, N2 nepoci
   const r = await dvakrat(z, a => { a.nazevAkce += ' (poznámka)'; d0(a).ock.zadani.nepocitat = []; }, cO, cA);
   test('N2: obchodník zakázku, které správce řádek vyřadil, uloží a smí ho vrátit (200)', r.status === 200, r); }
 { const { default: zobrazeni } = await import(R + 'netlify/functions/zobrazeni.mjs');
-  await post(zobrazeni, 'http://x/api/zobrazeni', { matice: { vychozi: { 'ock.pocitat:MONTÁŽ NA STAVBĚ': false } } }, cA);
+  await post(zobrazeni, 'http://x/api/zobrazeni', { hesloSpravce: 'Docasne.Heslo.123', matice: { vychozi: { 'ock.pocitat:MONTÁŽ NA STAVBĚ': false } } }, cA);
   const z = nova('N2 matice'); d0(z).ock.zadani.nepocitat = ['MONTÁŽ NA STAVBĚ'];
   const r = await uloz(z, cO);
   test('N2: nová zakázka s nepocitat podle matice Výchozí (200)', r.status === 200, r);
-  await post(zobrazeni, 'http://x/api/zobrazeni', { matice: {} }, cA); }
+  await post(zobrazeni, 'http://x/api/zobrazeni', { hesloSpravce: 'Docasne.Heslo.123', matice: {} }, cA); }
 { const z = nova('N3 pás'); const pred = cenaOck(z.varianty[0]); const st = {};
   ['A', 'B', 'C', 'D'].forEach(k => { st[k] = { odM: 0, pasy: [{ typ: 'jine', nazev: 'x', naklad: -3000, doM: null }] }; });
   d0(z).ock.zadani.oplasteni = { rezim: 'poStenach', steny: st }; const po = cenaOck(z.varianty[0]); zamkni(z);

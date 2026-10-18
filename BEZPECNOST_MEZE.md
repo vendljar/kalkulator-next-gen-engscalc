@@ -349,6 +349,96 @@ karta výjimek rozsah ukazuje. Rozhodnutí s pásem „jiné" vydaná před
 v16.10.1 přešla do „čeká znovu" (jako u B154). Částky v kartě a princip
 čtyř očí zůstávají u B165.
 
+## Audit 15. 10. 2026 — B168–B178 (zapsáno dávkou B168, 18. 10. 2026, v18.10.6)
+
+Audit 25. kola nad v15.10.4 (Disk `Testovani/2026-10-15_kalkulator_BEZPECNOSTNI_AUDIT_v15.10.4.md`)
+přidělil B168–B178; do repa se do 18. 10. nedostal (jen věta v
+`podklady/AUDIT_2026-10-17_v16.10.5.md`). Úkoly jsou v roadmapě (#426 hotovo,
+#427 čeká), tady meze a stav. Kola 26 (N2) a 27 (N3, od B183) číslují samostatně.
+
+### B168 — změna matice zobrazení bez hesla správce — OPRAVENO v18.10.6
+
+`POST /api/zobrazeni` chce od v18.10.6 pole `hesloSpravce` (`potvrdHesloSpravce`,
+týž limit pokusů jako B77). **Zbývající mez:** klient drží ověřené heslo
+v paměti stránky 10 minut po posledním úspěšném uložení matice (jinak by
+autosave panelu chtěl heslo u každého zaškrtnutí). Kdo v tom okně dostane
+odemčený počítač správce, matici změní bez hesla; cookie sama (bez stránky)
+nestačí. Odhlášením nebo odmítnutím serverem se heslo zahodí. Test
+`netlify/test_zobrazeni_heslo.mjs`, mutace „B168: …“.
+
+### B176 — neznámé právo znamenalo „povoleno“ — OPRAVENO v18.10.6
+
+`zobrazeniSmi` nejdřív pustí administrátora, pak neznámý klíč ostatním
+odmítne (fail-closed). Že kód nečeká klíč mimo seznam, hlídá statická
+kontrola v `src/test_zobrazeni.js` (přímá volání `smiZobrazit`/`zobrazeniSmi`/
+`smi('…')`, záložky, panely nastavení, `PD_PRAVO`, `ZOBRAZENI_KLIC_NAKLADY`).
+**Mez:** klíč složený za běhu (proměnná z jiného seznamu) kontrola nevidí —
+takový by po překlepu skryl prvek, ale nic neotevřel.
+
+### B169 — mez B137: server nehlídá nástupiště, sloupky a horní mez čistého vstupu (vědomá mez)
+
+Serverová kontrola rozměrů (B137, `kontrolyRozmery`) hlídá zápor, nečitelné
+číslo a zdvih nad 99 m. Počet nástupišť, sloupky ani horní mez čistého
+vstupu server nehlídá — nerealistické hodnoty zachytí jen kontroly
+v prohlížeči a schvalování ceny. Proč zůstává: vstup mění rozsah a cenu
+konstrukce, ne práva; nesmysl je v nabídce vidět. Oprava B137 je proto
+„s výhradou“.
+
+### B170 — překlad ze slovníku může změnit číslo v podmínkách (vědomá mez)
+
+Slovník (`src/slovnik.js`, `netlify/functions/slovnik.mjs`) nahrazuje text
+i uvnitř podmínek a může tak přepsat číslo (lhůtu, procento) bez upozornění.
+Zapisuje ho jen administrátor; mez je proti omylu, ne útoku. Případná
+pojistka: upozornit, když se po překladu liší čísla v textu.
+
+### B171 — odhlášení odhlásí všechna zařízení, UI to neříká (úkol #427)
+
+Oprava B6 zvedá při odhlášení `hesloVerze` (`netlify/functions/odhlaseni.mjs`),
+takže odhlášení ukončí relace na všech zařízeních. V kódu záměr, v UI věta
+chybí; cizí platná cookie tak může uživatele odhlašovat všude (obtěžování,
+ne převzetí). Navrženo: věta u tlačítka Odhlásit.
+
+### B172 — `w:delInstrText` v kontrole šablon (vědomá mez)
+
+Kontrola obsahu šablon (`src/sablona_obsah.js`) nezná `w:delInstrText`
+(instrukce pole ve smazané revizi). Word smazanou revizi nevykoná, takže
+jen informace; šablony zveřejňuje administrátor.
+
+### B173 — slovník vloží nový symbol `{{…}}` (vědomá mez)
+
+Překlad ze slovníku může vložit symbol `{{…}}` tam, kde dřív nebyl,
+a generátor ho rozvine (navazuje na B122). Jen administrátor; symboly
+nesou firemní a zakázkové údaje, ne tajemství.
+
+### B174 — `pd_cache` a `strop:` bez mazání, osobní údaje z CRM (úkol #427)
+
+`pd_cache/deal:<id>` (jméno, e-mail, telefon kontaktů z Pipedrive,
+`netlify/functions/pd_deal.mjs`) a `strop:<email>` se zapisují bez mazání
+a zůstávají v Blobs napořád; v zálohách nejsou. Navrženo: úklid starých
+záznamů (stáří, nebo při smazání účtu).
+
+### B175 — analytika: server klíče prvků jen ořízne (úkol #427)
+
+Oprava B89 čistí klíče prvků jen v prohlížeči (`src/analytika.js`);
+server (`netlify/functions/analytika.mjs`) je jen ořízne na délku. Záznamy
+se jmény v klíčích z doby před v15.10.2 zůstávají až 24 měsíců.
+Navrženo: serverová očista týmž kódem a jednorázový úklid.
+
+### B177 — podobné znaky ‹ › ＜ ＞ ve jménu u razítka (vědomá mez)
+
+`jmenoText` a `razitkoKdo` (`netlify/functions/uzivatele.mjs`,
+`netlify/lib/sdilene.mjs`) odstraní jen ASCII `< >`. Podobné znaky projdou;
+skutečný e-mail je ale v razítku vždy na konci, takže jméno nikoho
+nezamaskuje. Jen informace.
+
+### Kolize čísla B178 — nechycená mutace B31 (audit 15. 10.) — UZAVŘENO v15.10.14
+
+Audit 15. 10. přidělil B178 nechycené mutaci „B31: hesloVerze se obnovou
+sníží“ (test B31 po B93 zkoušel jen obnovu s jiným heslem). Opraveno
+v15.10.14 (S10, `6d9ecdb`), mutace chycena. **Není to B178 auditu 17. 10.**
+(výška šachty / meze pásu „jiné“, opraveno O6 v17.10.4, níž) — v repu
+platí B178 = nález 17. 10.; nález 15. 10. se uvádí jako „B178 (15. 10.) / B31“.
+
 ## Audit kola 26 — B178 a B179 (opraveno v17.10.4, rozhodnutí J. V. 17. 10. 2026)
 
 ### B178 — výška a rozměry stěny u schváleného pásu „jiné" — OPRAVENO v17.10.4

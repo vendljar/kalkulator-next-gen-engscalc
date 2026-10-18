@@ -57,6 +57,10 @@ const dlgStub = async (page) => page.evaluate(() => {
   window.potvrd = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(true); };
   window.hlaska = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(); };
   window.dotaz = (t, v) => { window.__dlgTexty.push(String(t)); return Promise.resolve(v == null ? '' : v); };
+  /* B168 (18. 10. 2026): uložení matice zobrazení chce heslo správce — harness
+   * odpoví heslem zkušebního správce (`window.__dlgHeslo` ho přebije, null = zrušeno). */
+  window.dotazHeslo = (t) => { window.__dlgTexty.push(String(t));
+    return Promise.resolve(window.__dlgHeslo === undefined ? 'Zkusebni.Heslo.123' : window.__dlgHeslo); };
 });
 const dlgPosledni = async (page) => page.evaluate(() =>
   (window.__dlgTexty && window.__dlgTexty.length) ? window.__dlgTexty[window.__dlgTexty.length - 1] : '');

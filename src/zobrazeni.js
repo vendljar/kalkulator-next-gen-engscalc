@@ -514,13 +514,16 @@ function zobrazeniPrvek(klic) {
  *   klic  – klíč prvku
  *   mat   – uložená matice (může být neúplná i undefined)
  *
- * Neznámý klíč vrací true. Je to schválně: kdyby se někde v UI zeptalo na
- * prvek, který v seznamu (ještě) není, nemá se kvůli překlepu ztratit kus
- * rozhraní. Že seznam a volání v UI sedí, hlídá test_zobrazeni.js. */
+ * Administrátor smí vždy (i u neznámého klíče — o ovládání nepřijde).
+ * Neznámý klíč ostatním NEPOVOLUJE (B176, audit 15. 10., zadání 18. 10. 2026):
+ * do v18.10.5 vracel true, aby překlep neutnul kus UI — jenže na matici se
+ * ptá i server (CRM, náklady, ceník v zakázce) a překlep v konstantě práva
+ * by právo otevřel všem. Že každý klíč, na který se kód ptá, v seznamu je,
+ * hlídá test_zobrazeni.js (statická kontrola src/ i netlify/). */
 function zobrazeniSmi(role, klic, mat) {
-  const p = zobrazeniPrvek(klic);
-  if (!p) return true;
   if (role === ZOBRAZENI_ROLE_VZDY) return true;
+  const p = zobrazeniPrvek(klic);
+  if (!p) return false;                            // B176: fail-closed
   if (p.pevne) return false;                       // drží server, nepřiděluje se
   if (ZOBRAZENI_ROLE_PRIDELITELNE.indexOf(role) < 0) return false;
   const r = mat && mat[klic];

@@ -8,6 +8,38 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v18.10.6 — B168, B176 a zápis nálezů 15. 10. (větev claude/b168-matice-heslo)
+
+Dávka B168 (zadání J. V. 18. 10. 2026 přes koordinaci „ŘÍDÍCÍ 16.10“), nad
+`origin/claude/integrace-16-10` (`0dbec56`, v17.10.5). Obranné zpevnění podle
+bezpečnostních auditů 15. a 17. 10. 2026. B178 a B179 (O6) beze změny.
+
+- **B168 (střední) — změna matice zobrazení chce heslo správce.** Matice
+  řídí i serverová práva (CRM, čtení nákladového ceníku, úpravy ceníku
+  v zakázce), ale `POST /api/zobrazeni` chtěl jen roli. Teď pole
+  `hesloSpravce` (`potvrdHesloSpravce`, týž limit pokusů jako citlivé akce
+  účtů B77), odmítnutí 401/429 s `kod: 'hesloSpravce'`; GET beze změny.
+  Klient se ptá týmž dialogem; ověřené heslo drží jen paměť stránky
+  10 minut po posledním uložení (výchozí volba dávky, jinak by autosave
+  panelu chtěl heslo u každého zaškrtnutí), odhlášení a odmítnutí ho
+  zahodí. Zrušené heslo matici neuloží a řekne to hláškou s návodem
+  „Uložit teď“ — zaškrtnutí zůstane.
+- **B176 (informativní) — neznámé právo už neznamená „povoleno“.**
+  `zobrazeniSmi`: administrátor smí vždy, klíč mimo seznam prvků ostatním
+  false. Nová statická kontrola: každé právo, na které se kód ptá (src/
+  i netlify/), je v seznamu — všechny byly, nic se nedoplňovalo.
+- **Zápis nálezů auditu 15. 10.:** roadmapa #426 (B168, B176 — hotovo)
+  a #427 (B171, B174, B175 jako drobné úkoly; meze B169, B170, B172, B173,
+  B177), `BEZPECNOST_MEZE.md` oddíl „Audit 15. 10. 2026“. Kolize čísla
+  B178: nález 15. 10. (nechycená mutace B31) zapsán jako uzavřený
+  v15.10.14 (S10, `6d9ecdb`), B178 = nález 17. 10.
+- **Testy:** nová sada `netlify/test_zobrazeni_heslo.mjs` (před opravou
+  3 OK / 10 FAIL, po ní 13/0); `src/test_zobrazeni.js` B176 (před opravou
+  2 FAIL, po ní 0); `overit_zobrazeni.mjs` zrušené heslo a dialog hesla;
+  sady a harnessy, které matici ukládají, posílají heslo. Mutace „B168:
+  matice zobrazení se uloží bez potvrzení heslem“ a „B176: neznámý klíč
+  matice znamená povoleno“.
+
 ## v17.10.5 — B165: sazby a dopad v kartě cenové výjimky, zbytek B178 (větev claude/b165-karta-vyjimky)
 
 Dávka B165 (zadání koordinace „ŘÍDÍCÍ 16.10“, rozhodnutí J. V. 16. a 17. 10.

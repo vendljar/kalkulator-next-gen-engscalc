@@ -58,6 +58,10 @@ const dlgStub = async (page) => page.evaluate(() => {
   window.potvrd = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(true); };
   window.hlaska = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(); };
   window.dotaz = (t, v) => { window.__dlgTexty.push(String(t)); return Promise.resolve(v == null ? '' : v); };
+  /* B168 (18. 10. 2026): uložení matice zobrazení chce heslo správce — harness
+   * odpoví heslem zkušebního správce (`window.__dlgHeslo` ho přebije, null = zrušeno). */
+  window.dotazHeslo = (t) => { window.__dlgTexty.push(String(t));
+    return Promise.resolve(window.__dlgHeslo === undefined ? 'Zkusebni.Heslo.123' : window.__dlgHeslo); };
 });
 const dlgPosledni = async (page) => page.evaluate(() =>
   (window.__dlgTexty && window.__dlgTexty.length) ? window.__dlgTexty[window.__dlgTexty.length - 1] : '');
@@ -186,11 +190,26 @@ test('prvek držený serverem zůstane nepřidělený i po zásahu z konzole',
 
 /* ---------- 3) zveřejnění online ---------- */
 
+/* B168 (18. 10. 2026): bez hesla správce se matice neuloží a neztratí se
+ * potichu — správce dostane hlášku a zaškrtnutí zůstane k dalšímu pokusu. */
+await page.evaluate(() => { window.__dlgTexty = []; window.__dlgHeslo = null; });
+const b168Zrus = await page.evaluate(() => onlineZverejniZobrazeni());
+await page.waitForTimeout(400);
+test('B168: zrušené heslo — matice se na server neodeslala',
+  b168Zrus === false && !volani.includes('POST /api/zobrazeni'), volani.join(', '));
+test('B168: zrušené heslo — hláška říká, že se neuložilo a jak to zopakovat',
+  await page.evaluate(() => /neuložilo.*Uložit teď/.test(ONLINE_STAV.hlaska || '')),
+  await page.evaluate(() => ONLINE_STAV.hlaska));
+test('B168: zrušené heslo — zaškrtnutí v paměti zůstalo',
+  await page.evaluate(() => NAST.zobrazeni['tab.detail']['Obchodník'] === true));
+await page.evaluate(() => { delete window.__dlgHeslo; });
+
 await page.evaluate(() => { window.__dlgTexty = []; });
 await page.evaluate(() => onlineZverejniZobrazeni());
 await page.waitForTimeout(800);
-poslednihlaska = await dlgPosledni(page);
-test('zveřejnění se administrátora nejdřív zeptá', /Zveřejnit/.test(poslednihlaska), poslednihlaska);
+const dlgZverejneni = await page.evaluate(() => window.__dlgTexty.slice());
+test('zveřejnění se administrátora nejdřív zeptá', /Zveřejnit/.test(dlgZverejneni[0] || ''), dlgZverejneni);
+test('B168: zveřejnění si vyžádá heslo správce', /Potvrďte ji svým heslem/.test(dlgZverejneni[1] || ''), dlgZverejneni);
 test('zveřejnění poslalo matici na server',
   volani.includes('POST /api/zobrazeni'), volani.join(', '));
 test('server matici přijal a vrátil ji zpět',
