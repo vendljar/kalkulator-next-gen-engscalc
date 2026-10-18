@@ -1,3 +1,15 @@
+# Předávka — 18. 10. 2026: dávka V3b (v18.10.11), větev `claude/v3b-sod-preklad` — mutace V3, činnosti SoD PROJ EN/DE/FR, šablony v4
+
+Nad `origin/claude/integrace-16-10` (`0bf74e6`, v18.10.10) + sloučený doplněk V3 `817b378`. Do `test-draft` /
+`test` / `main` nic — slučuje koordinace. Podrobnosti: CHANGELOG v18.10.11, `podklady/SOD_EN_KONTROLA.md`.
+
+- **Hotovo (pushnuto):** 25 mutací dávky V3 v `mutace_jadro.mjs` (jádra + sod.js a nástroje šablon SoD),
+  `--kontrola` 247/247, filtry 25/25; názvy činností SoD PROJ ve slovníku EN/DE/FR (zaměření u činnosti);
+  šablony SoD projekce v4 EN/DE/FR + slovníky v4 = **přílohy sezení V3** (session_01GyotCYY7DhFnyXhceNA3de).
+- **Nasazení (J. V.):** česká SoD projekce v4 (sezení V5), pak EN/DE/FR v4 z přílohy; realizace podle
+  předávky V3 níž (Nastavení → Firma skladné, česká v3, pak jazykové).
+- **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / příručce / `mutace_jadro.mjs`.
+
 # Předávka — 18. 10. 2026: dávka B168 (v18.10.6), větev `claude/b168-matice-heslo` — B168, B176, zápis nálezů 15. 10.
 
 Nad `origin/claude/integrace-16-10` (`0dbec56`, v17.10.5). Do `test-draft` / `test` / `main` nic —

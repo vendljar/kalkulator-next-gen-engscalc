@@ -8,6 +8,39 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v18.10.11 — SoD: mutace dávky V3 v sadách, činnosti SoD PROJ v jazyce smlouvy, šablony v4 EN/DE/FR (větev claude/v3b-sod-preklad)
+
+Zadání koordinace 18. 10. 2026 (navazuje na V3 a V5 #380), nad
+`origin/claude/integrace-16-10` (`0bf74e6`, v18.10.10); sloučen i doplněk
+V3 `817b378` (symboly `{{SOD_DPH_REZIM}}` / `{{SOD_SKLADNE}}`, výchozí režim
+DPH podle DIČ — v integraci chyběl).
+
+- **Mutace V3 v sadách mutací jádra.** `mutace_jadro.mjs`: jádra + `sod.js`,
+  `../nastroje/preklad_sod.js`, `../nastroje/vyrob_sablony.js` (výběr sad
+  podle názvu souboru), 25 úseků MUTACE (#157 5, #380/#157 1, DPH 7,
+  SKLADNE 3, SoD v3 3, preklad_sod 6), rychlé sady SoD v PRIORITA.
+  `--kontrola` 247 úseků právě jednou; filtry 25/25 chycených.
+- **Názvy sedmi činností SoD projekce v jazyce smlouvy** (#380 V5 —
+  `{{SODP_ROZSAH_DILA}}` byl v EN/DE/FR česky). Šest názvů ve slovníku
+  (`src/preklad.js`), „Zaměření a zpracování výstupů“ má překlad u činnosti
+  (`SODP_CINNOSTI.preklad` v `src/sod.js`) — slovník porovnává bez ohledu na
+  velikost písmen a nadpis nabídky „ZAMĚŘENÍ a zpracování výstupů“ by dal
+  „sURVEY and processing …“; nadpis nabídky beze změny. Znění jako v čl. II
+  přeložených šablon, ke kontrole rodilými mluvčími (SOD_EN_KONTROLA.md).
+- **Šablony SoD projekce v4 EN/DE/FR** z české v4 (`--sod-proj-v4` nad v3)
+  nástrojem `preklad_sod.js` (nově pracuje s realizací v3 a projekcí v4):
+  slovníky v3 převzaty, nová věta přílohy „… for the activities /
+  für die Leistungen / pour les prestations: {{SODP_ROZSAH_DILA}} …“,
+  záznam „DPZ+DSP“ odstraněn, poznámka k „odst. 5“ zrušena (V5 ověřila, že
+  odkaz sedí). Kontrola bez problémů (95 odstavců, 56 symbolů); celá cesta
+  ověřená lokálně CZ/EN/DE/FR (výčet jen nabízených činností, žádná zbylá
+  značka). Soubory jako přílohy sezení.
+- **Testy:** `src/test_sod_en.js` +4 (výčet EN/DE/FR, nadpis nabídky beze
+  změny) — bez doplnění 31 prošlo / 3 selhalo, po něm 34/0. Smoke
+  266 prošlo / 0 selhalo / 6 přeskočeno (firemní podklady).
+
+---
+
 ## v18.10.10 — B168, B176 a zápis nálezů 15. 10. (větev claude/b168-matice-heslo)
 
 Dávka B168 (zadání J. V. 18. 10. 2026 přes koordinaci „ŘÍDÍCÍ 16.10“), nad
