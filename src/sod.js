@@ -100,7 +100,7 @@ function sodPrelozHodnoty(placeholders, L) {
  * tím prohlášení o snížené sazbě DPH pro bydlení — jedno vylučuje druhé.
  * Šablona v3 má místo nich symboly a věty skládá aplikace podle volby
  * „Režim DPH ve smlouvě" v krycím listu OCK:
- *   {{SOD_DPH_REZIM_VETA}}  odst. 2 — věta zvoleného režimu,
+ *   {{SOD_DPH_REZIM}}  odst. 2 — věta zvoleného režimu,
  *   {{SOD_DPH_PROHLASENI}}  odst. 3 — prohlášení o snížené sazbě jen při
  *                           české DPH a stavbě pro bydlení (bytový / rodinný
  *                           dům), jinak věta o oznámení změny (druhá věta
@@ -109,14 +109,14 @@ function sodPrelozHodnoty(placeholders, L) {
  * Znění vět je ke kontrole účetní (podklady/SOD_EN_KONTROLA.md); cizí jazyk
  * přeloží slovník. Vlastní znění režimu v krycím listu aplikace nečte —
  * symboly pak zůstanou ve Wordu {{…}} k doplnění.
- * {{SOD_SKLADNE_DENNE}} — skladné z Nastavení → Firma (Kč za den): česky
+ * {{SOD_SKLADNE}} — skladné z Nastavení → Firma (Kč za den): česky
  * „N,- Kč" jako dřív v šabloně, jinak v měně smlouvy (#155, celá eura
  * nahoru). Bez částky symbol zůstane {{…}}. */
-const SOD_DPH_REZIMY = ['prenesena', 'eu', 'ceska'];
+const SOD_DPH_REZIMY = ['ceska', 'prenesena', 'eu'];
 const SOD_DPH_VETY = {
-  prenesena: 'DPH bude účtováno dle platných předpisů v režimu přenesené daňové povinnosti.',
-  eu: 'Plnění nepodléhá české DPH; daň přizná a odvede objednatel v režimu přenesení daňové povinnosti (reverse charge) podle právních předpisů státu místa plnění.',
   ceska: 'K ceně díla bude připočtena DPH v zákonné sazbě platné ke dni uskutečnění zdanitelného plnění.',
+  prenesena: 'DPH bude účtováno dle platných předpisů v režimu přenesené daňové povinnosti.',
+  eu: 'Plnění není předmětem české DPH; daň přizná a odvede objednatel v režimu přenesení daňové povinnosti (reverse charge) podle čl. 196 směrnice Rady 2006/112/ES.',
 };
 const SOD_DPH_PROHLASENI_SNIZENA = 'Objednatel prohlašuje, že objekt, v němž je prováděno dílo, je ve smyslu § 48 zákona č. 235/2004 Sb., '
   + 'o dani z přidané hodnoty, ve znění pozdějších předpisů, dokončenou stavbou pro bydlení nebo stavbu pro sociální bydlení, a splňuje tak '
@@ -135,7 +135,7 @@ function sodDphSymboly(placeholders, rezimText, mistoText, L) {
   const P = (L && L !== 'cz' && typeof tr === 'function') ? (t => tr(t, L)) : (t => t);
   const k = sodDphRezimKlic(rezimText);
   if (!k || !placeholders) return placeholders;
-  placeholders.SOD_DPH_REZIM_VETA = P(SOD_DPH_VETY[k]);
+  placeholders.SOD_DPH_REZIM = P(SOD_DPH_VETY[k]);
   const bydleni = SOD_BYDLENI.indexOf(String(mistoText == null ? '' : mistoText).trim().toLowerCase()) >= 0;
   placeholders.SOD_DPH_PROHLASENI = P(k === 'ceska' && bydleni ? SOD_DPH_PROHLASENI_SNIZENA : SOD_DPH_PROHLASENI_OZNAMENI);
   return placeholders;
@@ -144,8 +144,8 @@ function sodSkladne(placeholders, firma, mena, L) {
   const m = String((firma || {}).skladneDenneKc == null ? '' : firma.skladneDenneKc).replace(/\s/g, '').replace(',', '.').match(/^(\d+(?:\.\d+)?)/);
   const kc = m ? +m[1] : 0;
   if (!(kc > 0) || !placeholders) return placeholders;
-  if (!L || L === 'cz' || !mena || !mena.eur) placeholders.SOD_SKLADNE_DENNE = Math.round(kc).toLocaleString('cs-CZ') + ',- Kč';
-  else placeholders.SOD_SKLADNE_DENNE = mena.fmt(mena.na(kc));
+  if (!L || L === 'cz' || !mena || !mena.eur) placeholders.SOD_SKLADNE = Math.round(kc).toLocaleString('cs-CZ') + ',- Kč';
+  else placeholders.SOD_SKLADNE = mena.fmt(mena.na(kc));
   return placeholders;
 }
 

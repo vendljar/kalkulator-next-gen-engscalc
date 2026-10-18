@@ -105,10 +105,10 @@
  *   node nastroje/vyrob_sablony.js --sod-real-v3 <složka podkladů> [výstupní složka]
  * Vstup:  Sablona_SOD_REALIZACE_v2.docx
  * Výstup: Sablona_SOD_REALIZACE_v3.docx — v čl. V věta o režimu DPH →
- *         {{SOD_DPH_REZIM_VETA}}, tělo odstavce „3." (prohlášení o snížené
+ *         {{SOD_DPH_REZIM}}, tělo odstavce „3." (prohlášení o snížené
  *         sazbě) → {{SOD_DPH_PROHLASENI}} (číslo „3." a tabulátor zůstávají,
  *         ať sedí odkazy na „bod 4"), pevná částka skladného „… Kč" ve větě
- *         o skladovacích poplatcích → {{SOD_SKLADNE_DENNE}} („/denně" zůstává).
+ *         o skladovacích poplatcích → {{SOD_SKLADNE}} („/denně" zůstává).
  *         Věty i částku dosazuje aplikace (krycí list OCK „Režim DPH ve
  *         smlouvě", Nastavení → Firma „Skladné"); jazykové verze dělá
  *         nastroje/preklad_sod.js.
@@ -657,7 +657,7 @@ function sodRealV3(xml, zaznam) {
   const t = tělo(xml);
   let body = t.body;
   const sym = dg.klicePlaceholderu(body);
-  ['SOD_DPH_REZIM_VETA', 'SOD_DPH_PROHLASENI', 'SOD_SKLADNE_DENNE'].forEach(k => {
+  ['SOD_DPH_REZIM', 'SOD_DPH_PROHLASENI', 'SOD_SKLADNE'].forEach(k => {
     if (sym.indexOf(k) >= 0) chyba('SoD realizace: šablona už symbol {{' + k + '}} má');
   });
   const z = Array.isArray(zaznam) ? zaznam : [];
@@ -670,8 +670,8 @@ function sodRealV3(xml, zaznam) {
   /* 1) věta o režimu DPH — celý odstavec */
   let o = jedna('o režimu DPH („DPH bude účtováno … přenesené daňové povinnosti")',
     tx => /^\s*DPH bude účtováno/.test(tx) && /přenesené daňové povinnosti/.test(tx));
-  body = body.slice(0, o.sp.zac) + prepisUsekOdstavce(o.p, 0, o.t.length, '{{SOD_DPH_REZIM_VETA}}') + body.slice(o.sp.kon);
-  z.push('čl. V: věta o režimu DPH → {{SOD_DPH_REZIM_VETA}}');
+  body = body.slice(0, o.sp.zac) + prepisUsekOdstavce(o.p, 0, o.t.length, '{{SOD_DPH_REZIM}}') + body.slice(o.sp.kon);
+  z.push('čl. V: věta o režimu DPH → {{SOD_DPH_REZIM}}');
   /* 2) prohlášení o snížené sazbě — tělo za „3." */
   o = jedna('s prohlášením o snížené sazbě DPH („3. Objednatel prohlašuje, že objekt …")',
     tx => /Objednatel prohlašuje, že objekt/.test(tx) && /snížené sazby DPH/.test(tx));
@@ -684,8 +684,8 @@ function sodRealV3(xml, zaznam) {
   const castky = Array.from(o.t.matchAll(SKLADNE_KC_RE));
   if (castky.length !== 1) chyba('SoD realizace: ve větě o skladovacích poplatcích čekám právě jednu částku „N,- Kč", je jich ' + castky.length + ' — nic nehádám');
   const m = castky[0];
-  body = body.slice(0, o.sp.zac) + prepisUsekOdstavce(o.p, m.index, m.index + m[0].length, '{{SOD_SKLADNE_DENNE}}') + body.slice(o.sp.kon);
-  z.push('čl. VI: pevná částka skladného → {{SOD_SKLADNE_DENNE}} (částku dosadí aplikace z Nastavení → Firma)');
+  body = body.slice(0, o.sp.zac) + prepisUsekOdstavce(o.p, m.index, m.index + m[0].length, '{{SOD_SKLADNE}}') + body.slice(o.sp.kon);
+  z.push('čl. VI: pevná částka skladného → {{SOD_SKLADNE}} (částku dosadí aplikace z Nastavení → Firma)');
   return t.pred + body + t.po;
 }
 
@@ -774,7 +774,7 @@ async function hlavni() {
     fs.writeFileSync(soubor, bajty);
     const vady = await dg.docxXmlVady(bajty.slice().buffer);
     const rozdil = so.sablonaSymbolyRozdil(await symbolyASablona(new Uint8Array(fs.readFileSync(vstup))), await symbolyASablona(bajty));
-    const cekane = ['SOD_DPH_PROHLASENI', 'SOD_DPH_REZIM_VETA', 'SOD_SKLADNE_DENNE'];
+    const cekane = ['SOD_DPH_PROHLASENI', 'SOD_DPH_REZIM', 'SOD_SKLADNE'];
     const prob = vady.length + rozdil.ubylo.length + (rozdil.pribylo.join() === cekane.join() ? 0 : 1);
     console.log((prob ? '✗ ' : '✓ ') + path.basename(soubor) + ' — z Sablona_SOD_REALIZACE_v2.docx'
       + zaznam.map(r => '\n    nahrazeno: ' + r).join('')

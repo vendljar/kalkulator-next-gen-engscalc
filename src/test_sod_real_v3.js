@@ -3,11 +3,11 @@
  *
  * Na SMYŠLENÉM úryvku článků V a VI (žádný firemní text, smyšlená částka)
  * se hlídá:
- *   – věta o režimu DPH → {{SOD_DPH_REZIM_VETA}} (celý odstavec, číslování
+ *   – věta o režimu DPH → {{SOD_DPH_REZIM}} (celý odstavec, číslování
  *     odstavce zůstává),
  *   – tělo odstavce „3." s prohlášením o snížené sazbě → {{SOD_DPH_PROHLASENI}},
  *     číslo „3." a tabulátor zůstávají (odkazy na „bod 4"),
- *   – částka skladného „N,- Kč" rozdělená do dvou běhů → {{SOD_SKLADNE_DENNE}}
+ *   – částka skladného „N,- Kč" rozdělená do dvou běhů → {{SOD_SKLADNE}}
  *     v jednom běhu, „/denně" a zbytek věty zůstávají,
  *   – platné XML, kotva dvakrát nebo vůbec = chyba (nic se nehádá),
  *   – šablona v3 vyplněná aplikací dá české věty a částku jako dřív.
@@ -36,11 +36,11 @@ const zaznam = [];
 try { vys = VS.sodRealV3(vstup, zaznam); } catch (e) { chybaV = e.message; }
 const texty = (dg.odstavcoveSpany(vys).map(sp => dg.odstavecText(vys.slice(sp.zac, sp.kon))));
 test('úprava proběhla, tři záznamy', !chybaV && zaznam.length === 3, chybaV || zaznam);
-test('věta o režimu DPH → {{SOD_DPH_REZIM_VETA}}, odrážka zůstala', texty[0] === '{{SOD_DPH_REZIM_VETA}}' && vys.indexOf(num + '<w:r><w:t xml:space="preserve">{{SOD_DPH_REZIM_VETA}}') >= 0, texty[0]);
+test('věta o režimu DPH → {{SOD_DPH_REZIM}}, odrážka zůstala', texty[0] === '{{SOD_DPH_REZIM}}' && vys.indexOf(num + '<w:r><w:t xml:space="preserve">{{SOD_DPH_REZIM}}') >= 0, texty[0]);
 test('odstavec „3." + tabulátor + {{SOD_DPH_PROHLASENI}}', texty[1] === '3.{{SOD_DPH_PROHLASENI}}' && /3\.<\/w:t><\/w:r><w:r><w:tab\/><\/w:r>/.test(vys), texty[1]);
-test('skladné: částka z dvou běhů → {{SOD_SKLADNE_DENNE}} v jednom běhu, „/denně" zůstává',
-  texty[2] === 'Zhotovitel je oprávněn požadovat skladovacích poplatků ve výši {{SOD_SKLADNE_DENNE}}/denně. Vyúčtují se měsíčně.'
-    && /<w:t[^>]*>[^<]*\{\{SOD_SKLADNE_DENNE\}\}[^<]*<\/w:t>/.test(vys), texty[2]);
+test('skladné: částka z dvou běhů → {{SOD_SKLADNE}} v jednom běhu, „/denně" zůstává',
+  texty[2] === 'Zhotovitel je oprávněn požadovat skladovacích poplatků ve výši {{SOD_SKLADNE}}/denně. Vyúčtují se měsíčně.'
+    && /<w:t[^>]*>[^<]*\{\{SOD_SKLADNE\}\}[^<]*<\/w:t>/.test(vys), texty[2]);
 test('platné XML', !dg.xmlStrukturaVada(vys), dg.xmlStrukturaVada(vys));
 const hazi = x => { try { VS.sodRealV3(x, []); return ''; } catch (e) { return e.message; } };
 test('věta o DPH dvakrát → chyba', /právě jeden odstavec o režimu DPH/.test(hazi(doc(dph + dph + prohl + skl))));
@@ -50,7 +50,7 @@ test('dvě částky ve větě o skladném → chyba', /právě jednu částku/.t
 (async () => {
   /* v3 vyplněná aplikací: české věty a částka „N,- Kč" jako dřív */
   const buf = await (await dg.zipZapis([{ nazev: 'word/document.xml', data: new TextEncoder().encode(vys) }])).arrayBuffer();
-  const ph = { SOD_DPH_REZIM_VETA: 'Věta A.', SOD_DPH_PROHLASENI: 'Věta B.', SOD_SKLADNE_DENNE: '600,- Kč' };
+  const ph = { SOD_DPH_REZIM: 'Věta A.', SOD_DPH_PROHLASENI: 'Věta B.', SOD_SKLADNE: '600,- Kč' };
   const blob = await dg.docxVyplnSablonu(buf, ph);
   const t = (await dg.docxTextSablony(await blob.arrayBuffer())).join('|');
   test('vyplněná v3: „Věta A.|3.Věta B.|… ve výši 600,- Kč/denně …"', t === 'Věta A.|3.Věta B.|Zhotovitel je oprávněn požadovat skladovacích poplatků ve výši 600,- Kč/denně. Vyúčtují se měsíčně.', t);

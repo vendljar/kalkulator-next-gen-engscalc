@@ -1,21 +1,23 @@
-# Předávka — 18. 10. 2026: dávka V3 (v18.10.1), větev `claude/v3-sod-en` — režim DPH a skladné v SoD realizace v3
+# Předávka — 18. 10. 2026: dávka V3 (v18.10.7), větev `claude/v3-sod-en` — režim DPH a skladné v SoD realizace v3
 
 Rozhodnutí J. V. 18. 10. (přes koordinaci): DPH volbou v krycím listu OCK, skladné kurzem do měny smlouvy.
+Verze v18.10.7 (přidělila koordinace). Symboly {{SOD_DPH_REZIM}}, {{SOD_DPH_PROHLASENI}}, {{SOD_SKLADNE}};
+výchozí režim podle DIČ objednatele (CZ / bez DIČ / mimo EU → česká DPH, EU → reverse charge EU).
 
-- **Hotovo (pushnuto):** `vyrob_sablony.js --sod-real-v3` (CZ v3 se symboly SOD_DPH_REZIM_VETA,
-  SOD_DPH_PROHLASENI, SOD_SKLADNE_DENNE); pole krycího listu „Režim DPH ve smlouvě“ (výchozí přenesená);
+- **Hotovo (pushnuto):** `vyrob_sablony.js --sod-real-v3` (CZ v3 se symboly SOD_DPH_REZIM,
+  SOD_DPH_PROHLASENI, SOD_SKLADNE); pole krycího listu „Režim DPH ve smlouvě“ (výchozí podle DIČ);
   Nastavení → Firma „Skladné … Kč za den“ (bez výchozího čísla); `sodDphSymboly`, `sodSkladne`, věty
   EN/DE/FR ve slovníku. Šablony realizace v3 CZ/EN/DE/FR + projekce v3 EN/DE/FR + slovníky v3 =
   **přílohy sezení V3**. Testy test_sod_en 30/0, test_sod_real_v3 11/0, mutace 12/12.
 - **Pořadí nasazení (J. V.):** 1) Nastavení → Firma: skladné Kč/den; 2) Nastavení → Šablony → SoD
   realizace: česká v3; 3) jazykové verze realizace v3 a projekce v3 (EN/DE/FR). Bez kroku 1 zůstane
-  ve smlouvě {{SOD_SKLADNE_DENNE}}.
+  ve smlouvě {{SOD_SKLADNE}}.
 - **Čeká na J. V.:** kontrola vět DPH účetní (SOD_EN_KONTROLA.md), rodilí mluvčí, nahrání šablon.
 
-# Předávka — 18. 10. 2026: dávka V3 pokračování (v18.10.1), větev `claude/v3-sod-en` — SoD v DE a FR
+# Předávka — 18. 10. 2026: dávka V3 pokračování (v18.10.7), větev `claude/v3-sod-en` — SoD v DE a FR
 
 Na pokyn J. V. 18. 10. (přes koordinaci session_011B3ruyPigNEMSUdesbk4Hd). Do `test-draft` / `test` /
-`main` nic. Podrobnosti: CHANGELOG v18.10.1, `podklady/SOD_EN_KONTROLA.md`.
+`main` nic. Podrobnosti: CHANGELOG v18.10.7, `podklady/SOD_EN_KONTROLA.md`.
 
 - **Hotovo (pushnuto):** nástroj `preklad_sod.js --jazyk en|de|fr` + pojmenovaná místa `[[…]]`;
   šablony SoD realizace v2 a projekce v3 v DE a FR (kontrola bez problémů) a slovníky EN/DE/FR
@@ -25,7 +27,7 @@ Na pokyn J. V. 18. 10. (přes koordinaci session_011B3ruyPigNEMSUdesbk4Hd). Do `
   smoke 262/0/6 (přeskočené = firemní podklady).
 - **Čeká na J. V.:** znění sporných míst (pak přepsat záznam místa ve slovníku a `node
   nastroje/preklad_sod.js --jazyk <j> <složka>`), kontrola rodilými mluvčími, nahrání šablon EN/DE/FR.
-- **Verze v18.10.1 je předběžná** — koordinace přidělí při sloučení (CHANGELOG, příručka, verze.txt).
+- **Verze v18.10.7** (přidělila koordinace).
 
 # Předávka — 17. 10. 2026: dávka V3 (v17.10.6), větev `claude/v3-sod-en` — SoD v angličtině (#157), #380 Q7 návrh
 
