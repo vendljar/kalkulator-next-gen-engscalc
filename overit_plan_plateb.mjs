@@ -54,7 +54,9 @@ const odmitni = async () => {
 };
 
 console.log('\n1) Nastavení → Smlouvy / Šablony: firemní plán plateb projekce');
-await p.evaluate(() => { NAST.jeAdmin = true; NAST.panel = 'sablony'; otevriNastaveni(); });
+/* Plán plateb projekce je od #367 fáze 2 (19. 10. 2026) na kartě PROJ
+ * přepínače OCK | PROJ v Nastavení → Smlouvy / Šablony. */
+await p.evaluate(() => { NAST.jeAdmin = true; NAST.panel = 'sablony'; NAST.panelPodminky = 'proj'; otevriNastaveni(); });
 const panel = () => p.evaluate(() => {
   const o = document.getElementById('nastaveni-overlay');
   /* textContent, ne innerText: nadpisy sekcí mají text-transform: uppercase. */

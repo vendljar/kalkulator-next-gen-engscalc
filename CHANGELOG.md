@@ -10,6 +10,8 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ## v19.10.6 — #367 fáze 2a: platební podmínky OCK a PROJ z Nastavení → Firma (větev claude/v8-367-firma)
 
+**Kolo `--jen build,sady,staticke` nad 260df3e (v19.10.6, 19. 10. 2026):** sady 270 prošlo / 1 selhalo / 6 přeskočeno — selhal jen `overit_plan_plateb.mjs` (plán plateb PROJ je nově na kartě PROJ, harness otevíral kartu OCK; upraven, samostatně **49 / 0**). Přeskočeno: `test.js` (ostrý ceník) a 5 harnessů s firemními podklady (`KNG_PODKLADY` v sezení nebyly). Statické 3/3. Cílené mutace `#367`: jádro **10/10**, server **2/2**; `--kontrola` jádro 264, server 541 úseků. Plné mutační kolo neběželo.
+
 Dávka V8a (koordinace „ŘÍDÍCÍ 19.10“), nad `origin/claude/integrace-16-10`
 (`e3995e6`). Rozhodnutí J. V. 19. 10. 2026 k náhledu
 (https://claude.ai/artifact/UZC5zQB14xBBvkN1MMdnPE, návrh
