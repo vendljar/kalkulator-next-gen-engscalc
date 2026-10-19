@@ -13,6 +13,7 @@ Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kv�
 ## STAV 19. 10. ~16:25 UTC — noční koordinace „ŘÍDÍCÍ 19.10 noc“ session_01XJumJDekDRpCTu4kDzdi9e
 
 - **Integrace = 1b0e2f7 (v19.10.10)**: W1 (v19.10.9, šablona PROJ v6) + F1 (v19.10.10, B194 zámek mutací) sloučeny, konflikty jen dokumentace/.gitignore/verze.txt. Kolo `--bez-mutaci` 279/0/6, statické 3/3; mutace jádro „W1“ 11/11, server „#367“ 2/2 (zámek se uvolní). **Fast-forward `test` 1a4d26b → 1b0e2f7 zamítla kontrola oprávnění tohoto sezení** → čeká na J. V. (kokpit). Release odkaz v19.10.10 (souhrn v19.10.9–10) v kokpitu; v19.10.8 stále k vydání.
+- **19:20 UTC:** M1 (mutace O3, 43 zaregistrováno, 2 testy zesíleny) sloučena → **integrace dd97ed3** ověřena: sady 279/0/6, jádro O3 7/7, server O3 40/40. Do `test` doporučeno rovnou dd97ed3 (čeká na J. V.), release odkaz v19.10.10 míří na dd97ed3. Poučení: dlouhé běhy na pozadí s `timeout` 2 h (výchozích 30 min přerušilo mutace; skript mutaci vrátil).
 - **Běží:** K3 session_01Jy3RSLoj7dAqXwZTs8WrAH (celé kolo s mutacemi + audit nad 1b0e2f7 → `claude/k3-kolo`), M1 session_01Kki2eUyt1cB9T42xSSd5hS (registrace mutací O3 → `claude/m1-mutace-o3`).
 - **Hodinová kontrola:** opakovaný scheduled task zamítla kontrola oprávnění → řetěz `send_later` po ~60 min (každá kontrola naplánuje další). Ráno ~06:00 UTC souhrn noci.
 - Staré sezení ŘÍDÍCÍ 19.10 session_017KEALG3ppimL5fW2XswzrB nečinné (archivuje J. V.).
