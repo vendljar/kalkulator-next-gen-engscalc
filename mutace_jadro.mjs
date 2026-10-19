@@ -86,6 +86,16 @@ const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLow
  * i spust_testy.sh, aby mutace nemířily do prázdna, když se jádro změní. */
 const JEN_KONTROLA = process.argv.includes('--kontrola');
 
+/* ZÁMEK (B194, 19. 10. 2026): druhý mutační běh v téže pracovní kopii by
+ * pouštěl sady nad cizí mutací a — horší — níž by si do zálohy ZALOHA uložil
+ * cizí zmutované jádro a na konci ho „vrátil". Proto zámek dřív, než se
+ * cokoli přečte; `--kontrola` jen čte, zámek nepotřebuje. */
+if (!JEN_KONTROLA) {
+  const { zamkniMutace, zamekHlaska } = await import('./nastroje/mutace_zamek.mjs');
+  const drzi = zamkniMutace('mutace_jadro.mjs ' + process.argv.slice(2).join(' '));
+  if (drzi) { console.log(zamekHlaska(drzi)); process.exit(2); }
+}
+
 /* Sady, které se pouštějí nejdřív. Nejsou lepší než ostatní — jen nejrychleji
  * chytají chyby v jádře, a protože se běh zastaví na první červené sadě,
  * ušetří to u rozbité mutace většinu času. */

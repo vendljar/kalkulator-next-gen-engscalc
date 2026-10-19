@@ -6794,6 +6794,20 @@
    "kde" : "`src/vyjimky.js`, `src/docxgen.js`, `src/ui/online_ui.js`, `mutace_jadro.mjs`, `netlify/mutace.mjs`",
    "hotovoV" : "v19.10.4",
    "pozn" : "Předběžné id (přidělí koordinace při sloučení; 431–432 nechány souběžným dávkám)."
+  },
+  {
+   "id" : "435",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "nizka",
+   "slozitost" : "S",
+   "nazev" : "B194: nestabilní výchozí stav mutací (test_vyjimky 1 selhalo) — zámek mutačních běhů",
+   "proc" : "19. 10. 2026 13:07 skončil `mutace.mjs b168` na „sady nejsou zelené ani bez mutace — test_vyjimky.mjs: 1 selhalo“; samostatně test prošel. Rozbor F1: vnitřní nestabilita se nenašla (400 + 32 pod zátěží + 21 s posunutými hodinami + 10× výchozí stav v pořadí sad), doložený mechanismus je souběžný mutační běh nad toutéž pracovní kopií (1–5 FAIL v 7 z 11).",
+   "detail" : "`nastroje/mutace_zamek.mjs`: zámek `.mutace_bezi.json` (PID, atomicky) v `mutace_jadro.mjs` i `netlify/mutace.mjs`; druhý běh skončí kódem 2, zámek mrtvého běhu se převezme, `--kontrola` zámek nebere. Výchozí stav mutací serveru při pádu vypíše řádky FAIL. Test `netlify/test_mutace_zamek.mjs` (pojistka 4 FAIL → 9/0).",
+   "hotovoKdyz" : "Zámek v obou mutačních skriptech, test s pojistkou, rozbor v `podklady/F1_TEST_VYJIMKY_NESTABILNI.md`.",
+   "kde" : "`nastroje/mutace_zamek.mjs`, `mutace_jadro.mjs`, `netlify/mutace.mjs`, `netlify/test_mutace_zamek.mjs`",
+   "hotovoV" : "v19.10.10",
+   "pozn" : "Předběžné id (přidělí koordinace při sloučení; 434 je v jiné větvi). Příčina jednoho pádu ve 13:07 neprokázaná — při opakování se teď vypíše padlá kontrola."
   }
  ],
  "meta" : {

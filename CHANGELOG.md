@@ -8,6 +8,34 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v19.10.10 — B194: zámek mutačních běhů a výpis padlých kontrol výchozího stavu (větev claude/f1-test-vyjimky)
+
+Dávka F1 (koordinace „ŘÍDÍCÍ 19.10“), nález z 19. 10. 2026 ~13:07 UTC:
+`node netlify/mutace.mjs b168` nad 4cc1b81 skončil „sady nejsou zelené ani
+bez mutace — test_vyjimky.mjs: 1 selhalo“, hned potom 3× 72 OK / 0 FAIL.
+Rozbor v `podklady/F1_TEST_VYJIMKY_NESTABILNI.md`.
+
+- **Vnitřní nestabilita test_vyjimky.mjs se nenašla:** 400 samostatných běhů
+  (4 souběžně), 32 pod zátěží (8 souběžně na 4 jádrech), 21 s posunutými
+  hodinami (celá hodina, půlnoc, konec měsíce i roku, změna času), 10×
+  výchozí stav všech 42 sad v pořadí `mutace.mjs` — vše zelené. Test se
+  proto neměnil.
+- **Doložený mechanismus — souběžný mutační běh nad toutéž pracovní kopií:**
+  `mutace.mjs b178` (mutuje `src/vyjimky.js`) souběžně se samostatnými běhy
+  test_vyjimky → 1–5 FAIL v 7 z 11 běhů. (Ve 13:07 se souběh z přepisu
+  koordinace nepotvrdil — osiřelý `import()` mutací byl zabit ve 12:18; příčina
+  toho jednoho pádu zůstává neprokázaná.)
+- **B194 — zámek mutačních běhů** (`nastroje/mutace_zamek.mjs`): `mutace_jadro.mjs`
+  i `netlify/mutace.mjs` berou zámek `.mutace_bezi.json` (v .gitignore, atomicky
+  `wx`, s PID); druhý běh skončí kódem 2 s hláškou, kdo zámek drží. Zámek po
+  mrtvém procesu se převezme, `--kontrola` zámek nebere. U jádra se zámek bere
+  dřív, než si skript uloží zálohu souborů — jinak by si zálohoval cizí mutaci.
+- **Výpis padlých kontrol:** když výchozí stav `netlify/mutace.mjs` není
+  zelený, vypíšou se řádky `FAIL`/`✗` padlé sady (nejvýš 20) — jednorázový pád
+  se tak příště dá dohledat.
+- **Test:** `netlify/test_mutace_zamek.mjs` (9 kontrol; pojistka: bez zámku
+  4 FAIL, se zámkem 9 / 0).
+
 ## v19.10.8 — #151 N5 retence otisků a N6 týdenní kopie na Disk Google (rozhodnutí J. V., větev claude/o4-zalohy)
 
 **Testy nad v19.10.8 (19. 10. 2026):** `spust_testy.sh --smoke` **274 prošlo / 0 selhalo / 6 přeskočeno** (`test.js`, 5 harnessů bez `KNG_PODKLADY`). Mutace serveru filtrem `zaloh` (sady test_zalohy, test_funkce, test_obnova, test_prava, test_obnova_nanecisto, test_uklid, ../src/test_kopie_disk.js) **50/50** (vč. hranice RETENCE_OD; smoke i po ní 274/0/6), filtrem `#151 N6` (vč. `src/uloziste.js`) **11/11**; `--kontrola` OK. Statická kontrola údajů čistá.

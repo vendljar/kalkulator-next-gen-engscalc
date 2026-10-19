@@ -81,3 +81,6 @@ manual/*_MANUAL_OBCHODNIK.html
 # u každé dávky nafoukl o půl megabajtu.
 roadmapa/ROADMAPA.html
 roadmapa/ROADMAPA.md
+
+# Zámek běžícího mutačního běhu (nastroje/mutace_zamek.mjs, B194) — jen za běhu
+.mutace_bezi.json
