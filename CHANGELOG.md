@@ -10,6 +10,8 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ## v19.10.9 — šablona Wordu nabídky PROJ v6: texty nabídky PROJ z Nastavení → Firma (větev claude/w1-sablona-proj-v6)
 
+**Kolo `--bez-mutaci` nad eefcd88 (v19.10.9, 19. 10. 2026) — VŠE ZELENÉ:** sady 277 prošlo / 0 selhalo / 6 přeskočeno (`test.js` ostrý ceník, 5 harnessů bez `KNG_PODKLADY`), statické 3/3. Cílené mutace `W1` **11/11** chycených, `--kontrola` 291 úseků. Plné mutační kolo neběželo.
+
 Dávka W1 (koordinace „ŘÍDÍCÍ 19.10“), nad `claude/v8-367-firma` (v19.10.7). Zadání J. V. 19. 10. 2026: texty nabídky PROJ z Firmy (#367 Q5) se mají tisknout i ve Wordu.
 
 - **Šablona PROJ v6** (`node nastroje/vyrob_sablony.js --proj-v6 <podklady> [výstup]`,

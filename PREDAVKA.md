@@ -14,6 +14,7 @@ CHANGELOG v19.10.9, roadmapa #434 (předběžné id).
   do složky „Sablony“ sám, nebo je vyrobí příkazem z podkladu.
 - **Ke slučování:** CHANGELOG / `verze.txt` / `manual/obsah.json` — O4 má v19.10.8, nechat oddíly všech, novější nahoru.
   `mutace_jadro.mjs` (JADRA + blok W1 za #367b), `src/docxgen.js` (DOCX_RADKY_ZA_RADEK, exporty).
+- **Kolo `--bez-mutaci`:** 277 / 0 / 6 přeskočeno, statické 3/3; mutace W1 11/11.
 - **Nahrání v aplikaci až po nasazení v19.10.9** (starší aplikace nové symboly nezná).
 
 # Předávka — 19. 10. 2026: dávka V8 (v19.10.6 + v19.10.7), větev `claude/v8-367-firma` — #367 platební podmínky z Nastavení → Firma
