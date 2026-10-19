@@ -1,3 +1,33 @@
+# Předávka — 19. 10. 2026: dávka V8 (v19.10.6 + v19.10.7), větev `claude/v8-367-firma` — #367 platební podmínky z Nastavení → Firma
+
+Nad `origin/claude/integrace-16-10` (`e3995e6`). Do integrace / `test` / `main` nic — slučuje koordinace
+(session_017KEALG3ppimL5fW2XswzrB). Návrh a náhled: `podklady/367_NASTAVENI_FIRMA_NAVRH.md`,
+https://claude.ai/artifact/UZC5zQB14xBBvkN1MMdnPE. Podrobnosti: CHANGELOG v19.10.6 a v19.10.7, roadmapa #367.
+
+- **Rozhodnutí J. V. 19. 10.:** varianta B, „z kódu vše převést do Firma“; Q1–Q6 podle doporučení
+  (Q4 rozhodnuto J. V. „Nedovolit zveřejnit“ — `PODMINKY_SOUCET_BLOKUJE = true` v `src/podminky.js`).
+- **Větev obsahuje integraci `4cc1b81` (v19.10.5: A2, O3, H2, O4)** — sloučeno 19. 10.; FR kapitoly mají `{TERMIN}`,
+  doplnění výchozích textů (O3) zahrnuje i FR.
+- **v19.10.6 (a):** `src/podminky.js` (továrna = dnešní hodnoty, sloučení s Firmou při čtení po polích),
+  krycí listy OCK/PROJ bez literálů platebních podmínek, zveřejnění + serverová kontrola, Nastavení →
+  Smlouvy / Šablony: společný blok + přepínač OCK | PROJ (`src/ui/podminky_ui.js`), filtr šablon.
+- **v19.10.7 (b):** věty kalendáře nabídky OCK a splátek SoD realizace v CZ/EN/DE/FR (cizí výchozí = slovník),
+  texty nabídky PROJ z Firmy (+ symboly `PROJ_*`), doložky PROJ prázdné a vypnuté, rozšíření (typ smlouvy,
+  Cena nezahrnuje, licence, pojištění), kap. V. bez věty o záruce, FR výchozí kapitoly IV.–VI.
+  (`podklady/367_PREKLADY_KONTROLA.md`).
+- **Testy:** `test_podminky.js` 74, `test_podminky_texty.js` 50, `overit_podminky_firma.mjs` 26,
+  `test_funkce` +4; pojistky doloženy v commitech; mutace #367 jádro 18/18, server 2/2.
+- **Výchozí volby (J. V. se neptal):** plán plateb PROJ jen na kartě PROJ; platnost nabídky ve společném
+  bloku; procenta zádržného se zamčené variantě z Firmy nedoplní; neplatné uložené pole → továrna;
+  texty PROJ cizí znění platí jen se stejným počtem řádků jako čeština.
+- **Meze:** Word šablona PROJ (v3–v5) má texty nabídky pevně — symboly `PROJ_CENA_NEZAHRNUJE` atd. čekají
+  na novou šablonu; plné mutační kolo neběželo (jen cílené); harnessy s `KNG_PODKLADY` přeskočeny.
+- **Při slučování s O3 (`claude/o3-kapitoly-vychozi`):** CHANGELOG, `verze.txt`, `manual/obsah.json`,
+  roadmapa #367, `src/firma.js` (DEFAULT_FIRMA — FR kapitoly + kap. V bez záruky; O3 TD1 přidává `{TERMIN}`
+  do kap. V — doplnit i do FR), `src/ui/nastaveni_ui.js` (nastSmluvniStandardy vs. nastKapitolyNabidky).
+- **Další krok:** sloučení do integrace; šablona Wordu PROJ se symboly textů; kontrola
+  překladů rodilými mluvčími; releasy v19.10.6/v19.10.7 až po sloučení.
+
 # Předávka — 19. 10. 2026: dávka O4 (v19.10.5), větev `claude/o4-zalohy` — #151 opravy zálohování N1–N4
 
 Nad `claude/z1-zalohy` (`421f556`, podklad `podklady/151_ZALOHOVANI_KONTROLA_2026-10-19.md`). Do integrace / `test`

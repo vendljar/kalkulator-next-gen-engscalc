@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v19.10.5 · sestaveno 19. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
+  "verze": "Platí pro aplikaci v19.10.7 · sestaveno 19. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -11,6 +11,18 @@
         "Snímky obrazovky v téhle příručce jsou pořízené z běžící aplikace, ale nad **zkušebním ceníkem** s vymyšlenými sazbami. **Částky na obrázcích jsou ze zkušebního ceníku a nejsou naše ceny.** Neberte je jako vodítko pro nabídku a nesrovnávejte s nimi svou kalkulaci — sledujte, kde co je a jak se to chová, ne kolik to stojí.",
         "Jména zákazníků na snímcích jsou taky **vymyšlená**. Celá ukázková zakázka **2026 - OPR - CN - 9100** je smyšlená a vznikla jen kvůli téhle příručce.",
         "Příručka je určená obchodníkům ENGINEERS CZ. Popisuje, jak firma počítá nabídky, takže ji zákazníkům ani nikomu mimo firmu neposílejte."
+      ]
+    },
+    {
+      "nadpis": "Co je nového ve verzi v19.10.7 (19. 10. 2026)",
+      "odstavce": [
+        "**Znění platebních podmínek v nabídce a ve smlouvě nastavuje administrátor** (Nastavení → Smlouvy / Šablony → OCK → Věty platebního kalendáře), česky i v cizích jazycích. Ve francouzské nabídce se kapitoly IV.–VI. tisknou nově francouzsky. Z kapitoly Termíny realizace zmizela věta o pětileté záruce, záruku uvádí krycí list. Texty nabídky PROJ (Cena nezahrnuje, Požadováno od investora, Termíny), typ smlouvy, licence a pojištění se nastavují tamtéž na kartě PROJ."
+      ]
+    },
+    {
+      "nadpis": "Co je nového ve verzi v19.10.6 (19. 10. 2026)",
+      "odstavce": [
+        "**Výchozí platební podmínky jsou firemní nastavení.** Splatnost faktur, záloha a další splátky, zádržné, záruka, smluvní pokuty a limit pokut, které se předvyplňují v krycím listu OCK i PROJ, nastavuje administrátor v **Nastavení → Smlouvy / Šablony** (přepínač **OCK | PROJ**). Dnešní hodnoty zůstaly stejné. V zakázce je dál můžete přepsat a tlačítko ↺ vrátí hodnotu z Nastavení. Odeslané nabídky se nemění."
       ]
     },
     {

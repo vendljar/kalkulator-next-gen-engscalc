@@ -800,7 +800,7 @@ async function sablonyRezimUI(rezim) {
  * z téhle záložky udělalo nepřehlednou zeď a hledá se v nich jednou za rok. */
 function nastKapitolyNabidky() {
   const f = NAST.firma || (NAST.firma = firmaDefault());
-  const JAZ = [['', 'česky'], ['En', 'anglicky'], ['De', 'německy']];
+  const JAZ = [['', 'česky'], ['En', 'anglicky'], ['De', 'německy'], ['Fr', 'francouzsky']];   // FR od #367 fáze 2b (výchozí FR texty)
   const blok = kap => {
     const pola = JAZ.map(([suf, jmeno]) => {
       const id = kap.base + suf;
@@ -837,17 +837,17 @@ function nastKapitolyNabidky() {
       <b>Kapitola III. Platební podmínky se tady nevyplňuje</b> — skládá se ze zálohy, splatnosti
       a platnosti nabídky z krycího listu, aby se dvě místa nemohla rozejít.
       Každý jazyk má vlastní pole: smluvní podmínky se <b>nepřekládají strojově</b>. Jazyk, který
-      necháte prázdný, nabídka <b>vypustí i s nadpisem</b> (Word od šablony CN v13); francouzština se zatím neřeší a vytiskne
-      češtinu s upozorněním. Značka <code>{FIRMA}</code> se nahradí názvem firmy, značka
+      necháte prázdný, nabídka <b>vypustí i s nadpisem</b> (Word od šablony CN v13); prázdná francouzština vytiskne
+      češtinu s upozorněním (výchozí FR texty ke kontrole: podklady/367_PREKLADY_KONTROLA.md). Značka <code>{FIRMA}</code> se nahradí názvem firmy, značka
       <code>{TERMIN}</code> (kapitola V.) termínem dodání ze zakázky — z krycího listu, u atypické
       zakázky i s prodloužením; s ní nabídka samostatnou odrážku „Termín dodání“ nepřidává.
       Firma uložená dřív, než kapitoly existovaly, dostane při načtení <b>výchozí texty</b>
-      (česky, anglicky, německy); pole, které <b>vymažete</b>, zůstane prázdné — to je vědomé
+      (česky, anglicky, německy, francouzsky); pole, které <b>vymažete</b>, zůstane prázdné — to je vědomé
       vypuštění kapitoly.</div>
     ${(typeof FIRMA_KAPITOLY !== 'undefined' ? FIRMA_KAPITOLY : []).map(blok).join('')}
     <div class="btns" style="margin-top:6px"><button class="mini" onclick="firmaKapitolyVychozi()">↺ Doplnit všechny prázdné</button>
-      <span class="note">doplní výchozí znění do prázdných kapitol česky, anglicky a německy; vlastní texty
-      ani francouzštinu nemění</span></div>`;
+      <span class="note">doplní výchozí znění do prázdných kapitol ve všech jazycích; vlastní texty
+      nemění</span></div>`;
 }
 
 /* Ruční doplnění výchozích textů kapitol (dávka O3, 19. 10. 2026) — jen
@@ -860,7 +860,7 @@ function firmaKapitolyVychozi() {
   if (!NAST.firma) NAST.firma = firmaDefault();
   const zmeneno = firmaDoplnVychoziTexty(NAST.firma, true);
   hlaska(zmeneno.length ? 'Doplněno výchozích textů: ' + zmeneno.length + '. Online je zveřejníte tlačítkem „Zveřejnit".'
-    : 'Žádná kapitola (česky, anglicky, německy) není prázdná.');
+    : 'Žádná kapitola (česky, anglicky, německy, francouzsky) není prázdná.');
   nastRefresh();
 }
 async function firmaKapitolaVychozi(id) {
@@ -874,7 +874,13 @@ async function firmaKapitolaVychozi(id) {
 
 function nastSmluvniStandardy() {
   const f = NAST.firma || (NAST.firma = firmaDefault());
-  const pole = FIRMA_POLE.filter(p => p.sekce === 'Smluvní standardy');
+  /* #367 fáze 2 (19. 10. 2026): platnost nabídky je ve společném bloku nad
+   * přepínačem OCK | PROJ, způsob fakturace PROJ na kartě PROJ, ostatní
+   * smluvní standardy patří k OCK. */
+  const cast = typeof podmCast === 'function' ? podmCast() : 'ock';
+  const PROJ_STD = ['zpusobFakturaceProj'];
+  const pole = FIRMA_POLE.filter(p => p.sekce === 'Smluvní standardy' && p.id !== 'platnostNabidky'
+    && (cast === 'proj') === (PROJ_STD.indexOf(p.id) >= 0));
   /* Prázdné pole neznamená „nic" — krycí list má pro ten případ záložní větu
    * napsanou v kódu. Do 20. 8. 2026 to nebylo nikde vidět, takže formulář
    * vypadal jako nevyplněný duplikát krycího listu (dotaz J. V.). Teď se
@@ -894,7 +900,9 @@ function nastSmluvniStandardy() {
       <span class="note" style="flex:none;width:210px;font-size:11.5px"><code>{{${p.symbol}}}</code>${
         prazdne ? ' <span class="pill mut">platí záložní věta</span>' : ''}</span></div>`;
   };
-  return `<div class="sec-title">Smluvní standardy</div>
+  const hlava = typeof nastPodminkyHlava === 'function' ? nastPodminkyHlava() : '';
+  const podminky = typeof nastPodminkyOck !== 'function' ? '' : (cast === 'proj' ? nastPodminkyProj() : nastPodminkyOck());
+  return `${hlava}${podminky}<div class="sec-title">Smluvní standardy${cast === 'proj' ? ' PROJ' : ' OCK'}</div>
     <div class="note" style="margin-top:0">Věty, které platí pro celou firmu a propisují se do
       <b>každé</b> nabídky, smlouvy i krycího listu. Mění se jednou za čas a pro všechny naráz —
       proto tady, a ne v každé zakázce zvlášť. <b>Nejsou to duplicitní pole ke krycímu listu:</b>
@@ -903,9 +911,9 @@ function nastSmluvniStandardy() {
       <b>záložní věta napsaná v kódu</b> — je vidět jako šedá nápověda v poli.</div>
     ${pole.map(radek).join('')}
 
-    ${typeof nastPlanPlatebProj === 'function' ? nastPlanPlatebProj() : ''}
+    ${cast === 'proj' && typeof nastPlanPlatebProj === 'function' ? nastPlanPlatebProj() : ''}
 
-    ${nastKapitolyNabidky()}
+    ${cast === 'ock' ? nastKapitolyNabidky() : ''}
 
     <div class="sec-title">Logo firmy</div>
     <div data-vlozobrazek="logo" title="logo jde vložit i klávesami Ctrl+V ze schránky"
@@ -918,6 +926,15 @@ function nastSmluvniStandardy() {
     <div class="note" style="margin-top:6px"><b>Logo jde vložit klávesami Ctrl+V</b> ze schránky.
       PNG / JPG / SVG do 400 kB. Ukládá se přímo do konfigurace (data URL),
       aby se přeneslo spolu s ostatním nastavením. Logo se zobrazuje v hlavičce tiskových náhledů.</div>`;
+}
+
+/* Popisek filtru šablon podle přepínače OCK | PROJ (#367) + volba „všechny". */
+function nastSablonyFiltr() {
+  if (typeof podmCast !== 'function') return '';
+  const vse = !!NAST.sablonyVse;
+  return `<span style="text-transform:none;letter-spacing:0;font-weight:400">— ${vse ? 'všechny'
+    : 'jen ' + podmCast().toUpperCase()} <label style="margin-left:8px"><input type="checkbox" ${vse ? 'checked' : ''}
+    onchange="podmSablonyVse(this.checked)"> všechny šablony</label></span>`;
 }
 
 function nastSablony() {
@@ -940,6 +957,8 @@ function nastSablony() {
       ? kusy.join(' · ') : '<b>žádná šablona zatím zveřejněná</b>'}</div>`;
   };
   const radek = (typ, label, pozn) => {
+    /* filtr přepínačem OCK | PROJ (#367) */
+    if (typeof podmSablonaViditelna === 'function' && !podmSablonaViditelna(typ)) return '';
     const s = SABLONY[typ];
     const mutace = ['en', 'de', 'fr'].map(l => {
       const m = SABLONY[typ + '_' + l];
@@ -991,7 +1010,7 @@ function nastSablony() {
    * Stará obrazovka níž zůstává pro práci bez serveru. */
   if (sablonyOnlineAktivni() && typeof sablonySpravaHtml === 'function')
     return `${nastSmluvniStandardy()}
-    <div class="sec-title">Šablony dokumentů</div>
+    <div class="sec-title">Šablony dokumentů ${nastSablonyFiltr()}</div>
     <div class="note">Platí to, co je zveřejněné na serveru — z toho tisknou všichni přihlášení. Česká šablona je zdroj,
       ze kterého se vyrábějí jazykové verze; každá jazyková verze ví, ze které české verze vznikla.
       ${jeAdmin() ? 'Klikněte na dokument v tabulce: dole se ukáže jeho detail, jazykové verze a historie.' : ''}</div>
@@ -999,7 +1018,7 @@ function nastSablony() {
     ${rezimBlok()}`;
   return `${nastSmluvniStandardy()}
 
-    <div class="sec-title">Šablony dokumentů</div>
+    <div class="sec-title">Šablony dokumentů ${nastSablonyFiltr()}</div>
     <div class="note">Šablony <b>.docx</b> se od 13. 8. 2026 řídí <b>centrálně</b> (#139): administrátor je zveřejní
     na serveru a všichni přihlášení z nich automaticky tisknou — nikdo nemůže omylem použít starou verzi. Nahrání
     souboru níže je příprava (a nouzová cesta pro práci bez serveru); teprve <b>„Zveřejnit online"</b> ji učiní platnou

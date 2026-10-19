@@ -468,6 +468,15 @@ const MUTACE = [
     hledej: '  if (vadyPlanu.length)',
     nahrad: '  if (false)',
     proc: 'poškozený plán (součet ≠ 100 %, neznámý milník) by se rozeslal všem obchodníkům' },
+  /* ---------- #367 fáze 2 (19. 10. 2026): platební podmínky firmy ---------- */
+  { nazev: '#367: vadné platební podmínky server zveřejní', soubor: '../src/firma.js',
+    hledej: '  if (vadyPodm.length)',
+    nahrad: '  if (false)',
+    proc: 'standard se součtem splátek 105 % nebo splatností „zítra" by se rozeslal všem obchodníkům' },
+  { nazev: '#367: platební podmínky se se zveřejněním neodešlou', soubor: '../src/firma.js',
+    hledej: '    if (ciste) out.podminky = ciste;',
+    nahrad: '    if (false) out.podminky = ciste;',
+    proc: 'administrátor zveřejní nový standard a obchodníci dál tisknou starý' },
 
   /* ---------- B99 (29. 9. 2026): obsah šablony Wordu ---------- */
   { nazev: 'B99: kontrola obsahu šablony se na serveru nevolá', soubor: 'functions/sablony.mjs',

@@ -55,11 +55,12 @@ const atyp = v => { v.data.ock.zadani.atyp = true; };
 const vsechnyHodnoty = ph => Object.keys(ph).map(k => String(ph[k] == null ? '' : ph[k])).join('\n');
 
 // ---- 1. výchozí texty --------------------------------------------------------
-['', 'En', 'De'].forEach(suf => {
+/* FR výchozí text od #367 fáze 2b (rozhodnutí J. V. k Q3) — nese značku taky. */
+['', 'En', 'De', 'Fr'].forEach(suf => {
   const t = fm.DEFAULT_FIRMA['kapTerminy' + suf];
   test('výchozí kapTerminy' + suf + ' nese {TERMIN} a ne pevné 12', /\{TERMIN\}/.test(t) && !/\b12\b/.test(t), t.split('\n')[0]);
 });
-test('FR výchozí text nemá', fm.DEFAULT_FIRMA.kapTerminyFr === undefined || fm.DEFAULT_FIRMA.kapTerminyFr === '');
+test('#367 Q3: FR výchozí text existuje a nevrací větu o záruce', !!fm.DEFAULT_FIRMA.kapTerminyFr && !/garantie/i.test(fm.DEFAULT_FIRMA.kapTerminyFr));
 
 // ---- 2. běžná zakázka CZ --------------------------------------------------------
 {
@@ -92,7 +93,12 @@ test('FR výchozí text nemá', fm.DEFAULT_FIRMA.kapTerminyFr === undefined || f
         !m.sekce.some(x => x.radky.some(r => /^(Delivery time|Lieferzeit)$/.test(r[0]))));
       test(jaz + ' ATYP: značka nikde nezůstala', !/\{TERMIN\}/.test(vsechnyHodnoty(m.ph)) && !/\{TERMIN\}/.test(m.text));
     });
-  const fr = nahled('fr', null, atyp);
+  const frVych = nahled('fr', null, atyp);
+  test('#367 Q3: FR s výchozím textem: francouzská věta s francouzským termínem, bez upozornění',
+    /^Le montage commencera env\. 16 semaines \(dont 4 semaines pour l.exécution spéciale\) après/.test(frVych.ph.FIRMA_NAB_TERMINY)
+    && !frVych.ph.FIRMA_NAB_TERMINY_CHYBI, String(frVych.ph.FIRMA_NAB_TERMINY).split('\n')[0]);
+  /* Záloha češtinou platí dál pro firmu, která FR pole vyprázdnila. */
+  const fr = nahled('fr', f => { f.kapTerminyFr = ''; }, atyp);
   test('FR bez vlastního znění: česká věta s ČESKÝM termínem (+ upozornění)',
     /Zahájení montáže cca 16 týdnů \(vč\. 4 týdnů za ATYP\) po podpisu/.test(fr.ph.FIRMA_NAB_TERMINY) && fr.ph.FIRMA_NAB_TERMINY_CHYBI === '1',
     String(fr.ph.FIRMA_NAB_TERMINY).split('\n')[0]);

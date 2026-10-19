@@ -8,6 +8,105 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v19.10.7 — #367 fáze 2b: věty kalendáře v jazycích, texty nabídky PROJ a rozšíření z Firmy (větev claude/v8-367-firma)
+
+**Po sloučení integrace `4cc1b81` (v19.10.5: A2, O3, H2, O4) — kolo `--bez-mutaci` nad 4d9f67a, 19. 10. 2026 — VŠE ZELENÉ:** sady 276 / 0 / 6 přeskočeno (`test.js`, 5 harnessů bez `KNG_PODKLADY`), statické 3/3. Cílené mutace: `#367` jádro 18/18, server 2/2; místa sloučení V8 × O3 (FR v bílé listině doplnění, `{TERMIN}` ve FR, věta o záruce, prázdný FR text) 4/4. Testy O3 upravené na FR (`test_kapitoly_vychozi`, `test_termin_kapitola`, `test_nabidka_kapitoly` #330).
+
+**Kolo `--jen build,sady,staticke` nad 7862576 (v19.10.7, 19. 10. 2026) — VŠE ZELENÉ:** sady 272 prošlo / 0 selhalo / 6 přeskočeno (`test.js` ostrý ceník, 5 harnessů bez `KNG_PODKLADY`), statické 3/3. Cílené mutace `#367` jádro 18/18, server 2/2. Plné mutační kolo neběželo.
+
+Dávka V8b, navazuje na v19.10.6. Rozhodnutí J. V. 19. 10. 2026 k Q3, Q5 a Q6.
+
+- **Věty platebního kalendáře (Q3):** věty nabídky OCK (záloha, dílčí
+  doklad, konečný doklad, měsíční fakturace) a díly seznamu splátek smlouvy
+  o dílo realizace (milník zálohy, konečné splátky, „zbývajících", „z celkové
+  ceny díla") jsou v `podminky.vety` s poli CZ / EN / DE / FR. Značky
+  `{PORADI}` (pořadí v jazyce: „1.", „1st", „1re") a `{PROC}` (anglicky
+  desetinná tečka). Bez vlastního cizího znění se tiskne **překlad výchozí
+  české věty ze slovníku** = dosavadní výstup, takže žádný jazyk nespadne do
+  češtiny; upravená čeština bez cizího znění svítí v Nastavení „odpovídá
+  výchozí češtině — přeložte úpravu". Zamčené nabídky ze starších pravidel
+  (věty v13) beze změny.
+- **Texty nabídky PROJ (Q5):** bloky CENA NEZAHRNUJE, POŽADOVÁNO OD
+  INVESTORA a TERMÍNY (řádek = činnost + termín + sekce; tiskne se jen
+  nabízená činnost) se přesunuly z `NABIDKA_PROJ_DEF` do `podminky.nabidkaProj`
+  s jazykovými poli (výchozí cizí = slovník). Nový blok **DOLOŽKY PROJ —
+  výchozí prázdný a vypnutý** (zaškrtávátko „Tisknout doložky", `{FIRMA}` se
+  nahradí). Pro Word nové symboly `{{PROJ_CENA_NEZAHRNUJE}}`,
+  `{{PROJ_POZADOVANO_OD_INVESTORA}}`, `{{PROJ_TERMINY}}`, `{{PROJ_DOLOZKY}}` —
+  dnešní šablony PROJ (v3–v5) mají tyto bloky pevně, Word je ponese až nová
+  šablona (návrh na příští dávku).
+- **Rozšíření (Q6):** typ smlouvy (OCK i PROJ), „Cena nezahrnuje" krycího
+  listu (OCK i PROJ), licence k PD a pojištění projektanta jsou ve Firmě;
+  prefilly krycích listů už nemají literály. Ceny AD a variant SP zůstávají
+  pro ceník PROJ (mimo Firmu).
+- **Kapitola V.:** věta „5 let záruka na celé dílo." vypadla z výchozího textu
+  ve všech jazycích (záruka z krycího listu, P10.7).
+- **Francouzština kapitol IV.–VI. a doložek (Q3):** výchozí FR texty
+  v `DEFAULT_FIRMA` (dosud žádné — FR nabídka tiskla češtinu s upozorněním).
+  Seznam ke kontrole rodilým mluvčím: `podklady/367_PREKLADY_KONTROLA.md`.
+- **Nastavení:** karta OCK = typ smlouvy, „Cena nezahrnuje", blok „Věty
+  platebního kalendáře" (8 vět × 4 jazyky, šedá nápověda = co se vytiskne);
+  karta PROJ = typ smlouvy, licence, pojištění, „Cena nezahrnuje", blok
+  „Texty nabídky PROJ" (termíny `sekce | činnost | termín`); kapitoly nabídky mají nově
+  i pole FR, aby šly francouzské texty opravit po kontrole.
+- **Testy:** `src/test_podminky_texty.js` 50 kontrol — proti v19.10.6
+  (`dd21d37`) padá (4 selhání a výjimka), po změně **50 / 0**;
+  `test_nabidka_kapitoly.js` upraven (záloha češtinou se zkouší na firmě bez FR
+  polí; nově výchozí FR bez upozornění a kapitola V. bez záruky);
+  `overit_podminky_firma.mjs` 26 kontrol. Mutace „#367b: …“ 8 v `mutace_jadro.mjs`; cílený běh `#367` (a + b) **18 / 18** chycených, `--kontrola` 272 úseků.
+
+## v19.10.6 — #367 fáze 2a: platební podmínky OCK a PROJ z Nastavení → Firma (větev claude/v8-367-firma)
+
+**Kolo `--jen build,sady,staticke` nad 260df3e (v19.10.6, 19. 10. 2026):** sady 270 prošlo / 1 selhalo / 6 přeskočeno — selhal jen `overit_plan_plateb.mjs` (plán plateb PROJ je nově na kartě PROJ, harness otevíral kartu OCK; upraven, samostatně **49 / 0**). Přeskočeno: `test.js` (ostrý ceník) a 5 harnessů s firemními podklady (`KNG_PODKLADY` v sezení nebyly). Statické 3/3. Cílené mutace `#367`: jádro **10/10**, server **2/2**; `--kontrola` jádro 264, server 541 úseků. Plné mutační kolo neběželo.
+
+Dávka V8a (koordinace „ŘÍDÍCÍ 19.10“), nad `origin/claude/integrace-16-10`
+(`e3995e6`). Rozhodnutí J. V. 19. 10. 2026 k náhledu
+(https://claude.ai/artifact/UZC5zQB14xBBvkN1MMdnPE, návrh
+`podklady/367_NASTAVENI_FIRMA_NAVRH.md`): „Varianta B + z kódu vše převést do
+Firma“, Q1–Q6 podle doporučení (Q4 zatím doporučené, izolované v jedné konstantě).
+
+- **Nový modul `src/podminky.js`:** jediná továrna dnešních hodnot
+  `PODMINKY_VYCHOZI` (splatnost 14 / 14 dní, zálohy 0 / 30 / 50 / 70 %
+  s milníkem „po podpisu smlouvy“, výchozí 50 %, 40 % po zahájení montáže,
+  10 % po předání, zádržné Ano / Ne bez procent, záruka 60 měsíců, pokuty 0
+  a 0,05 % / den, číselník sazeb, limit 10 %). `podminkyEf(firma)` slučuje
+  Firmu s továrnou **při čtení, po polích** (neplatná uložená hodnota → továrna),
+  takže prázdné Nastavení, starší `_nastaveni.json` i starší online firma
+  tisknou beze změny. `podminkyVady` / `podminkyCiste` pro zveřejnění.
+- **Q4 (rozhodnutí J. V. 19. 10. 2026: „Nedovolit zveřejnit“):** `PODMINKY_SOUCET_BLOKUJE = true` — součet záloha + faktura 2
+  + konečná ≠ 100 % zablokuje zveřejnění (prohlížeč i server) a v Nastavení
+  svítí červeně. Přepnutí na „jen upozornění“ = jedna konstanta.
+- **Krycí listy bez literálů:** `kryci.js` (splatnost, volby a výchozí záloha,
+  faktura 2, konečná, zádržné ×2 včetně procent, záruka, pokuty, limit,
+  dopočet faktury 2) a `kryci_proj.js` (splatnost, pokuty, limit) berou hodnoty
+  z Firmy; rozbalovátka mají `o` jako getter nad Firmou. `NABIDKA_PROJ_SAZBY`
+  splatnost čte Firmu. Zdroj u pole: „Nastavení → Firma“. `KRYCI_POKUTY`,
+  `KRYCI_ZALOHY`, `KRYCI_LIMIT_POKUT` zůstávají jen jako znění továrny.
+- **Zamčené varianty beze změny:** zmrazené hodnoty mají přednost; procenta
+  zádržného (dřív bez předvyplnění) se zamčené variantě z Firmy nedoplní.
+  Rozpracované varianty bez ručního přepisu převezmou změněný standard (Q2).
+- **Firma a server:** `firmaLzeZverejnit` odmítne vadné podmínky,
+  `firmaKZverejneni` nese čistou kopii, `firmaShodaSOnline` hlásí „Platební
+  podmínky“; `netlify/lib/jadro_moduly.cjs` načítá `podminky.js`.
+- **Nastavení → Smlouvy / Šablony (`src/ui/podminky_ui.js`):** společný blok
+  (platnost nabídky, sazby pokut, limit), přepínač **OCK · ocelová konstrukce |
+  PROJ · projekce**; karta OCK = platební podmínky OCK se živým součtem,
+  smluvní standardy OCK, kapitoly nabídky (beze změny — doplnění kapitol řeší
+  dávka O3); karta PROJ = podmínky PROJ, způsob fakturace PROJ, plán plateb
+  projekce. Přepínač filtruje tabulku šablon (volba „všechny šablony“).
+  Štítky „výchozí / upraveno“, tlačítka „Zapsat výchozí hodnoty do Firmy“
+  a „↺ Vrátit platební podmínky na výchozí“. Měnit smí jen administrátor,
+  ostatní vidí pole vypnutá.
+- **Testy:** `src/test_podminky.js` 74 kontrol (továrna = dnešní výstup,
+  propis Firmy do OCK i PROJ, ruční přednost, zamčená varianta, neplatná data,
+  vady, zveřejnění, přepínač Q4, žádný literál v prefillech) — proti
+  `e3995e6` **44 prošlo / 30 selhalo**, po změně **74 / 0**;
+  `overit_podminky_firma.mjs` (prohlížeč, 22 kontrol; nad starým sestavením
+  spadne); `netlify/test_funkce.mjs` +4 (zveřejnění, součet 105 %, vadná
+  splatnost, obchodník 403) — proti `e3995e6` 3 selhaly, po změně 249 / 0.
+  Mutace „#367: …“ 10 v `mutace_jadro.mjs` (`podminky.js` přidán do JADER),
+  2 v `netlify/mutace.mjs`.
+
 ## v19.10.5 — #151: opravy nočního zálohování N1–N4 (větev claude/o4-zalohy)
 
 **Testy nad v19.10.5 (19. 10. 2026):** `spust_testy.sh --smoke` **270 prošlo / 0 selhalo / 6 přeskočeno** (`test.js`, 5 harnessů bez `KNG_PODKLADY`), vč. `overit_online` (samočinná záloha, přehled, obnova). Mutace serveru filtrem `zaloh` (sady test_zalohy, test_funkce, test_obnova, test_prava, test_obnova_nanecisto, test_uklid) **22/22 chycených**, žádná nepřežila; `--kontrola` 549 úseků. Statická kontrola údajů čistá.

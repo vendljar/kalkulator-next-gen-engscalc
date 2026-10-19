@@ -15,20 +15,29 @@
  * s nulou ani s odhadem.
  * ============================================================ */
 
-/* Číselník sazeb smluvní pokuty je definovaný v kryci.js — v sestavené
- * aplikaci jsou oba moduly v jednom scope. V Node testech, kde bývá načtený
- * jen tenhle modul, se použije stejná trojice jako záloha. Že se ty dva
- * seznamy nerozešly, hlídá test_standardy.js. */
-const KRYCI_POKUTY_SAZBY = (typeof KRYCI_POKUTY !== 'undefined')
-  ? KRYCI_POKUTY : ['0', '0,05 % / den', '0,1 % / den'];
+/* PLATEBNÍ PODMÍNKY PROJ Z FIRMY (#367 fáze 2, 19. 10. 2026): splatnost,
+ * pokuty a limit pokut nese Nastavení → Firma (NAST.firma.podminky.proj),
+ * továrna je PODMINKY_VYCHOZI v podminky.js. V Node testech, kde bývá
+ * načtený jen tenhle modul, se podminky.js načte vedle. */
+function kryciProjPodm() {
+  if (typeof PODMINKY !== 'undefined') return PODMINKY;
+  return (typeof require === 'function') ? require('./podminky.js').PODMINKY : null;
+}
+function kryciProjPodmEf(firma) {
+  const f = firma !== undefined ? firma : ((typeof firmaAktualni === 'function') ? firmaAktualni() : {});
+  return kryciProjPodm().podminkyEf(f);
+}
+/* Číselník sazeb smluvní pokuty — znění továrny (dřív trojice v kryci.js
+ * a její kopie tady). Pole krycího listu berou číselník z Firmy. Že se OCK
+ * a PROJ nerozešly, hlídá test_standardy.js. */
+const KRYCI_POKUTY_SAZBY = kryciProjPodm().podminkyEf({}).sazbyPokut.slice();
 
 /* Zálohy a limit pokut (12. 8. 2026) — také jeden zdroj v kryci.js, tady jen
  * záloha pro samostatný Node běh. U projekce nesou volby holé procento bez
  * milníku: projekce se fakturuje po stupních dokumentace, ne po podpisu
  * a montáži, takže by věta u zálohy mátla. */
 const KRYCI_PROJ_ZALOHY = ['Bez zálohy', 'Záloha 30 %', 'Záloha 50 %', 'Záloha 70 %'];
-const KRYCI_PROJ_LIMIT_POKUT = (typeof KRYCI_LIMIT_POKUT !== 'undefined')
-  ? KRYCI_LIMIT_POKUT : ['Uplatněn limit 10 %', 'NEUPLATNĚN limit 10 %'];
+const KRYCI_PROJ_LIMIT_POKUT = kryciProjPodm().podminkyLimitVolby(kryciProjPodm().podminkyEf({}));   // znění továrny
 
 /* devět činností v pořadí VZORu (klíče sekcí engine_proj.js) */
 /* Kdo nabídku vypracoval (#146) – u projekce platí totéž co u OCK; funkce
@@ -192,17 +201,21 @@ const KRYCI_PROJ_SEKCE = [
     { id: 'odpovednyEmail', label: 'E-mail', verze: ['bo', 'techdata'] },
   ] },
   { sekce: 'Typ smlouvy', pole: [
-    { id: 'typSmlouvy', label: 'Typ smlouvy', verze: ['bo'], typ: 'radio', o: ['Naše bez úprav', 'Naše s úpravami', 'Cizí'], prefill: () => 'Naše bez úprav', src: 'výchozí' },
+    { id: 'typSmlouvy', label: 'Typ smlouvy', verze: ['bo'], typ: 'radio', o: ['Naše bez úprav', 'Naše s úpravami', 'Cizí'],
+      prefill: c => kryciProjPodmEf(c && c.firma).proj.typSmlouvy, src: 'Nastavení → Firma' },
     { id: 'typProjektu', label: 'Typ projektu', verze: ['bo', 'techdata'], typ: 'radio', o: ['Nový projekt (novostavba)', 'Rekonstrukce objektu'], prefill: () => 'Rekonstrukce objektu', src: 'výchozí' },
     { id: 'pamatkovaOchrana', label: 'Objekt v památkové ochraně', verze: ['bo', 'techdata'], typ: 'radio', o: ['Ano', 'Ne', 'Zjišťuje se'] },
-    { id: 'autorskaPrava', label: 'Licence k projektové dokumentaci', verze: ['bo'], prefill: () => 'nevýhradní, pro účel stavby dle smlouvy', src: 'výchozí' },
+    { id: 'autorskaPrava', label: 'Licence k projektové dokumentaci', verze: ['bo'],
+      prefill: c => kryciProjPodmEf(c && c.firma).proj.licence, src: 'Nastavení → Firma' },
   ] },
   { sekce: 'Rozsah projekčních prací (dle Kalkulace PROJ)', pole: KRYCI_PROJ_ROZSAH.concat([
     { id: 'rozsahJine', label: 'Jiné dohodnuté činnosti', verze: ['bo'], typ: 'textarea' },
-    { id: 'cenaNezahrnuje', label: 'Cena nezahrnuje', verze: ['bo'], typ: 'textarea', prefill: () => 'správní poplatky, posudky nad rámec nabídky, činnosti neuvedené v nabídce', src: 'výchozí' },
+    { id: 'cenaNezahrnuje', label: 'Cena nezahrnuje', verze: ['bo'], typ: 'textarea',
+      prefill: c => kryciProjPodmEf(c && c.firma).proj.cenaNezahrnuje, src: 'Nastavení → Firma' },
   ]) },
   { sekce: 'Platební podmínky', pole: [
-    { id: 'splatnostDni', label: 'Splatnost faktur (dní)', verze: ['bo'], prefill: c => String(c.sazby.splatnostDni), src: 'z cenové nabídky PROJ' },
+    { id: 'splatnostDni', label: 'Splatnost faktur (dní)', verze: ['bo'],
+      prefill: c => String(kryciProjPodmEf(c && c.firma).proj.splatnostDni), src: 'Nastavení → Firma' },
     /* Firemní standardy (10. 8. 2026) — stejně jako u OCK. Platnost nabídky
      * měla dosud dva zdroje: krycí list ji bral z ceníku PROJ, ale v nabídce
      * OCK stála natvrdo jiná hodnota. Teď je zdroj jeden pro obojí a hodnota
@@ -242,12 +255,16 @@ const KRYCI_PROJ_SEKCE = [
     /* Výběr sazby pokuty — tentýž číselník jako u OCK (KRYCI_POKUTY v kryci.js),
      * aby se dvě verze seznamu nerozešly. Předvyplněná je nula, tedy bez pokuty. */
     { id: 'pokutaTermin', label: 'Smluvní pokuta – prodlení s odevzdáním', verze: ['bo', 'techdata'],
-      typ: 'vyber', o: KRYCI_POKUTY_SAZBY, prefill: () => KRYCI_POKUTY_SAZBY[0], src: 'výchozí' },
+      typ: 'vyber', get o() { return kryciProjPodmEf().sazbyPokut; },
+      prefill: c => kryciProjPodmEf(c && c.firma).proj.pokutaTermin, src: 'Nastavení → Firma' },
     { id: 'pokutaSplatnost', label: 'Smluvní pokuta – prodlení splatnosti', verze: ['bo', 'techdata'],
       /* Předvyplněných 0,05 % / den od 12. 8. 2026 — stejně jako u OCK. */
-      typ: 'vyber', o: KRYCI_POKUTY_SAZBY, prefill: () => KRYCI_POKUTY_SAZBY[1], src: 'výchozí' },
+      typ: 'vyber', get o() { return kryciProjPodmEf().sazbyPokut; },
+      prefill: c => kryciProjPodmEf(c && c.firma).proj.pokutaSplatnost, src: 'Nastavení → Firma' },
     { id: 'pokutaLimit', label: 'Limit smluvních pokut', verze: ['bo', 'techdata'],
-      typ: 'vyber', o: KRYCI_PROJ_LIMIT_POKUT, prefill: () => KRYCI_PROJ_LIMIT_POKUT[0], src: 'výchozí' },
+      typ: 'vyber', get o() { return kryciProjPodm().podminkyLimitVolby(kryciProjPodmEf()); },
+      prefill: c => { const ef = kryciProjPodmEf(c && c.firma); return kryciProjPodm().podminkyLimitText(ef, ef.proj.pokutaLimit); },
+      src: 'Nastavení → Firma' },
     { id: 'pokutyJine', label: 'Jiné', verze: ['bo'], typ: 'textarea' },
     { id: 'platceDph', label: 'Plátce DPH', verze: ['bo'], typ: 'radio', o: ['Ano', 'Ne'], prefill: () => 'Ano', src: 'výchozí' },
     /* KL-7: viz kryci.js. Projekce má vlastní sazbu (PC.dph) — projekční práce
@@ -255,7 +272,8 @@ const KRYCI_PROJ_SEKCE = [
      * Kalkulace PROJ, ne do sazby OCK. */
     { id: 'sazbaDph', label: 'Sazba DPH', verze: ['bo'], typ: 'dph', dphBind: 'PC.dph',
       prefill: c => c.dph + ' %', src: 'z hlavičky kalkulace PROJ' },
-    { id: 'pojisteni', label: 'Pojištění odpovědnosti projektanta', verze: ['bo'], prefill: () => 'ANO – dle pojistné smlouvy zhotovitele', src: 'výchozí' },
+    { id: 'pojisteni', label: 'Pojištění odpovědnosti projektanta', verze: ['bo'],
+      prefill: c => kryciProjPodmEf(c && c.firma).proj.pojisteni, src: 'Nastavení → Firma' },
   ]) },
   { sekce: 'Termíny', pole: [
     { id: 'terminZahajeni', label: 'Zahájení prací (podpis smlouvy)', verze: ['bo', 'techdata'], typ: 'date' },
@@ -382,9 +400,12 @@ function kryciProjCtx(zak, varianta) {
     neocenene = ne.length ? ne.map(s => s.nazev).join(', ') : 'žádná – oceněny jsou všechny činnosti';
   } catch (e) {}
   const firma = (typeof firmaAktualni === 'function') ? firmaAktualni() : {};
-  const sazby = (typeof NABIDKA_PROJ_SAZBY !== 'undefined') ? NABIDKA_PROJ_SAZBY
+  /* Splatnost z Firmy (#367) — do kontextu se opíše, ať ji čte každý,
+   * kdo dosud bral `c.sazby.splatnostDni`. */
+  const sazby = Object.assign({}, (typeof NABIDKA_PROJ_SAZBY !== 'undefined') ? NABIDKA_PROJ_SAZBY
     /* platnost 2 měsíce jako všude jinde (P10.1, rozhodnutí J. V. 29. 9. 2026) */
-    : { splatnostDni: 14, platnostMesicu: 2, dphPct: 21, autorskyDozorKcMesic: 35000, autorskyDozorMaxHodin: 30, variantaSpKc: 8500 };
+    : { platnostMesicu: 2, dphPct: 21, autorskyDozorKcMesic: 35000, autorskyDozorMaxHodin: 30, variantaSpKc: 8500 },
+    { splatnostDni: kryciProjPodmEf(firma).proj.splatnostDni });
   // DPH: přednost má vlastní sazba projekční části, jinak dosud platná z ceníku OCK
   const dph = (d.proj && d.proj.cenik && d.proj.cenik.dph != null) ? Math.round(d.proj.cenik.dph * 100)
     : (d.cenik && d.cenik.dph != null) ? Math.round(d.cenik.dph * 100) : sazby.dphPct;

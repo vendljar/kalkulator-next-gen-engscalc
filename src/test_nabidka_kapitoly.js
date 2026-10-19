@@ -210,13 +210,18 @@ test('doložka používá značku {FIRMA}', /\{FIRMA\}/.test(String(fm.DEFAULT_F
     bezNazvu.radky[0] === 'od {FIRMA}', bezNazvu.radky);
 }
 
-/* ---------- 4) francouzština: čeština + hlasité upozornění ---------- */
+/* ---------- 4) francouzština: čeština + hlasité upozornění ----------
+ * Od #367 fáze 2b (19. 10. 2026, Q3) má francouzština výchozí text, takže
+ * záloha češtinou platí jen pro firmu, která FR pole vyprázdnila (starší
+ * uložená firma). Mechanismus se zkouší na takové firmě. */
+const BEZ_FR = f => { ['kapPozadavkyFr', 'kapTerminyFr', 'kapPredaniFr', 'dolozkyFr'].forEach(k => { delete f[k]; }); };
 {
-  const fr = fm.firmaKapitola(Object.assign({}, fm.DEFAULT_FIRMA), 'kapPredani', 'fr');
-  test('francouzština hlásí chybějící překlad', fr.chybi === true);
+  const bezFr = Object.assign({}, fm.DEFAULT_FIRMA); BEZ_FR(bezFr);
+  const fr = fm.firmaKapitola(bezFr, 'kapPredani', 'fr');
+  test('francouzština bez FR textu hlásí chybějící překlad', fr.chybi === true);
   test('a vydá český text, ne prázdno', fr.radky.length > 0, fr.radky.length);
 
-  const n = nahled('fr');
+  const n = nahled('fr', BEZ_FR);
   const sek = n.sekce.find(s => /REMISE|PŘEDÁNÍ/.test(s.sekce));
   test('francouzský náhled kapitolu má', !!sek, n.nazvy.join(' | '));
   const varovani = sek ? sek.radky.filter(r => /⚠/.test(String(r[0]))) : [];
@@ -297,8 +302,15 @@ KAPITOLY.forEach(base => {
   test('anglické symboly nesou anglický text',
     /Handover protocol/.test(String(n.ph.FIRMA_NAB_PREDANI || '')), String(n.ph.FIRMA_NAB_PREDANI || '').slice(0, 60));
   test('a příznak chybějícího překladu je prázdný', !n.ph.FIRMA_NAB_PREDANI_CHYBI);
-  const fr = nahled('fr');
-  test('u francouzštiny je příznak nastavený', fr.ph.FIRMA_NAB_PREDANI_CHYBI === '1');
+  const fr = nahled('fr', BEZ_FR);
+  test('u francouzštiny bez FR textu je příznak nastavený', fr.ph.FIRMA_NAB_PREDANI_CHYBI === '1');
+  const frVych = nahled('fr');
+  test('#367 Q3: s výchozí firmou nese FR nabídka francouzský text a žádné upozornění',
+    /procès-verbal de réception/.test(String(frVych.ph.FIRMA_NAB_PREDANI || '')) && !frVych.ph.FIRMA_NAB_PREDANI_CHYBI
+    && ['POZADAVKY', 'TERMINY', 'DOLOZKY'].every(k => !frVych.ph['FIRMA_NAB_' + k + '_CHYBI']),
+    String(frVych.ph.FIRMA_NAB_PREDANI || '').slice(0, 60));
+  test('#367 Q6: výchozí kapitola V. v žádném jazyce nenese větu o záruce',
+    ['kapTerminy', 'kapTerminyEn', 'kapTerminyDe', 'kapTerminyFr'].every(k => !/záruk|warrant|Garantie|garantie/i.test(fm.DEFAULT_FIRMA[k])));
 }
 
 /* ---------- 10) jazykové symboly do šablony nesou hotový text ----------
@@ -378,9 +390,9 @@ KAPITOLY.forEach(base => {
   /* Od O3 (19. 10. 2026) nese výchozí text kapitoly V. značku {TERMIN}.
    * Tyhle kontroly hlídají chování STARÉHO textu bez značky (uloženého ve
    * Firmě dřív) — proto se do firmy vrací pevné „cca 12 týdnů". */
-  const stary = f => ['', 'En', 'De'].forEach(suf => {
+  const stary = f => ['', 'En', 'De', 'Fr'].forEach(suf => {
     f['kapTerminy' + suf] = fm.DEFAULT_FIRMA['kapTerminy' + suf]
-      .replace('{TERMIN}', { '': 'cca 12 týdnů', En: 'cca 12 weeks', De: 'ca. 12 Wochen' }[suf]);
+      .replace('{TERMIN}', { '': 'cca 12 týdnů', En: 'cca 12 weeks', De: 'ca. 12 Wochen', Fr: 'environ 12 semaines' }[suf]);
   });
   const lhuta = f => { f.terminDodaniOck = 'cca 12 týdnů'; f.terminAtypTydny = '4'; stary(f); };
   const kapV = (n) => (n.sekce.find(s => /^V\. /.test(s.sekce) || /^V\. /.test(String(s.sekce))) || { radky: [] }).radky;
@@ -433,7 +445,7 @@ KAPITOLY.forEach(base => {
  * dál spadne na češtinu s upozorněním (nic se nevypustí). */
 {
   const FR_TEXT = 'Premier point du procès-verbal\nSecond point';
-  const sFr = nahled('fr', f => { f.kapPredaniFr = FR_TEXT; });
+  const sFr = nahled('fr', f => { BEZ_FR(f); f.kapPredaniFr = FR_TEXT; });
   test('N41c: vyplněné FR pole se v FR nabídce použije',
     sFr.ph.FIRMA_NAB_PREDANI === FR_TEXT, sFr.ph.FIRMA_NAB_PREDANI);
   test('N41c: a upozornění „překlad nebyl dodán" u ní není', sFr.ph.FIRMA_NAB_PREDANI_CHYBI === '', sFr.ph.FIRMA_NAB_PREDANI_CHYBI);
