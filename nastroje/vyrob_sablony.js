@@ -50,6 +50,22 @@
  *           dá oba symboly prázdné a bloky zmizí. Nadpis ROZŠÍŘENÁ NABÍDKA
  *           zůstává — ve Wordu pod ním stojí i geodetické zaměření.
  *
+ * PROJ v6 (texty nabídky PROJ z Nastavení → Firma, W1 19. 10. 2026):
+ *   node nastroje/vyrob_sablony.js --proj-v6 <složka podkladů> [výstupní složka]
+ * Vstup:  Sablona_NABIDKA_PROJ_v5.docx
+ * Výstup: Sablona_NABIDKA_PROJ_v6.docx + _EN/_DE/_FR
+ * PROJ v6 = v5, v níž pevné řádky tabulek CENA NEZAHRNUJE a POŽADOVÁNO OD
+ *           INVESTORA nahradí jeden řádek (stavba prvního pevného) se symbolem
+ *           {{PROJ_CENA_NEZAHRNUJE}} / {{PROJ_POZADOVANO_OD_INVESTORA}}
+ *           a řádky TERMÍNŮ jeden dvousloupcový řádek {{PROJ_TERMINY_CINNOST}}
+ *           | {{PROJ_TERMINY_TERMIN}}; aplikace řádek zopakuje za každou
+ *           odrážku / nabízenou činnost (docxgen rozvinRadkyZaRadek). Každá
+ *           tabulka stojí mezi {{BLOK_<X>_ZAC}}/{{BLOK_<X>_KON}} (poznámky pod
+ *           termíny patří do bloku termínů). Za termíny přibude blok DOLOŽKY
+ *           (tabulka ve stavbě CENA NEZAHRNUJE, {{PROJ_DOLOZKY}}) — zmizí,
+ *           když jsou doložky PROJ vypnuté nebo prázdné (odstranPrazdneBloky).
+ *           Nadpisy tabulek zůstávají z v5.
+ *
  * CN v14 (etapa A platebních podmínek OCK, 30. 9. 2026) — samostatný režim:
  *   node nastroje/vyrob_sablony.js --cn-v14 <složka podkladů> [výstupní složka]
  * Vstup:  Sablona_NABIDKA_CN_v13.docx
@@ -143,6 +159,7 @@ const REZIM_SOD_CISLO = REZIM === '--sod-proj-cislo';
 const REZIM_SOD_REAL3 = REZIM === '--sod-real-v3';
 const REZIM_CN15 = REZIM === '--cn-v15';
 const REZIM_V5 = REZIM === '--proj-v5';
+const REZIM_V6 = REZIM === '--proj-v6';
 const REZIM_SOD_V4 = REZIM === '--sod-proj-v4';
 const ARGY = REZIM ? process.argv.slice(3) : process.argv.slice(2);
 const PODKLADY = ARGY[0] || process.env.KNG_PODKLADY;
@@ -352,6 +369,92 @@ function projV5(xml) {
   const blok = body.slice(top[iAd - 1].zac, top[iVeta].kon).replace('{{PROJ_CENA_AD}}', '{{PROJ_CENA_AD_BLOK}}');
   if (blok.indexOf('{{PROJ_CENA_AD_BLOK}}') < 0) chyba('PROJ: symbol {{PROJ_CENA_AD}} není v jednom běhu — nic nehádám');
   body = body.slice(0, top[iAd - 1].zac) + znacka('BLOK_AD_ZAC') + blok + znacka('BLOK_AD_KON') + body.slice(top[iVeta].kon);
+  return t.pred + body + t.po;
+}
+
+/* ---------- PROJ v6: texty nabídky PROJ z Nastavení → Firma ----------
+ * Ve v5 jsou CENA NEZAHRNUJE a POŽADOVÁNO OD INVESTORA tabulky o jednom
+ * sloupci: první řádek nadpis („CENA NEZAHRNUJE:"), další řádky pevné
+ * odrážky. TERMÍNY je tabulka o dvou sloupcích: nadpis a řádky činnost |
+ * termín; pod ní dvě poznámky („*) Termíny pro vyjádření…", „Termíny
+ * zpracování…"). Nadpisový řádek zůstává, z pevných řádků zbude první se
+ * symbolem místo textu (vlastnosti odstavce a písmo prvního běhu buňky);
+ * kopie nenesou w14:paraId — aplikace řádek zopakuje a id by se zdvojila.
+ * Stavba jiná než čekaná = chyba, nic se nehádá. */
+const PROJ_V6_BLOKY = [
+  { nadpis: 'CENA NEZAHRNUJE:', blok: 'BLOK_CENA_NEZAHRNUJE', symboly: ['PROJ_CENA_NEZAHRNUJE'] },
+  { nadpis: 'POŽADOVÁNO OD INVESTORA:', blok: 'BLOK_POZADOVANO', symboly: ['PROJ_POZADOVANO_OD_INVESTORA'] },
+  { nadpis: 'TERMÍNY:', blok: 'BLOK_TERMINY', symboly: ['PROJ_TERMINY_CINNOST', 'PROJ_TERMINY_TERMIN'] },
+];
+const PROJ_V6_POZNAMKY_TERMINU = [/^\*\)\s*Termíny pro vyjádření/, /^Termíny zpracování/];
+const bezW14 = s => s.replace(/\sw14:(?:paraId|textId)="[^"]*"/g, '');
+/* Řádek tabulky, v němž každá buňka dostane jediný odstavec se symbolem —
+ * vlastnosti odstavce a první běh s písmem z prvního neprázdného odstavce
+ * buňky (prázdná buňka: z prvního odstavce). */
+function radekSeSymboly(radek, symboly, kde) {
+  const bunky = radek.match(/<w:tc[\s>][\s\S]*?<\/w:tc>/g) || [];
+  if (bunky.length !== symboly.length) chyba(kde + ': řádek tabulky má ' + bunky.length + ' buněk, čekám ' + symboly.length);
+  let i = 0;
+  return bezW14(radek.replace(/<w:tc[\s>][\s\S]*?<\/w:tc>/g, tc => {
+    const sym = symboly[i++];
+    const tcPr = (tc.match(/<w:tcPr>[\s\S]*?<\/w:tcPr>/) || [''])[0];
+    const odst = tc.match(/<w:p[\s>](?:(?!<\/w:p>)[\s\S])*?<\/w:p>/g) || [];
+    const vzor = odst.find(p => textPrvku(p)) || odst[0];
+    if (!vzor) chyba(kde + ': buňka tabulky nemá odstavec');
+    const pPr = (vzor.match(/<w:pPr>[\s\S]*?<\/w:pPr>/) || [''])[0];
+    const beh = (vzor.replace(pPr, '').match(/<w:r[\s>](?:(?!<\/w:r>)[\s\S])*?<w:t[\s>]/) || [''])[0];
+    const rPr = (beh.match(/<w:rPr>[\s\S]*?<\/w:rPr>/) || [''])[0];
+    return tc.slice(0, tc.indexOf('>') + 1) + tcPr + '<w:p>' + pPr + '<w:r>' + rPr
+      + '<w:t xml:space="preserve">{{' + sym + '}}</w:t></w:r></w:p></w:tc>';
+  }));
+}
+function projV6(xml) {
+  const t = tělo(xml);
+  let body = t.body;
+  const sym = dg.klicePlaceholderu(body);
+  if (sym.indexOf('PROJ_CENA_NEZAHRNUJE') >= 0 || sym.indexOf('PROJ_DOLOZKY') >= 0)
+    chyba('PROJ: šablona už texty nabídky PROJ z Firmy ({{PROJ_CENA_NEZAHRNUJE}} / {{PROJ_DOLOZKY}}) má — není co doplnit');
+  if (sym.indexOf('PROJ_CENA_AD_BLOK') < 0) chyba('PROJ: vstup není PROJ v5 (chybí blok autorského dozoru {{PROJ_CENA_AD_BLOK}}) — nejdřív vyrobte v5');
+  const txt = el => textPrvku(body.slice(el.zac, el.kon));
+  let vzorDolozek = null;
+  /* odzadu (termíny jsou poslední), ať pozice výš platí dál */
+  for (const d of PROJ_V6_BLOKY.slice().reverse()) {
+    const top = prvkyTela(body);
+    const nalez = top.map((el, i) => i).filter(i => top[i].tag === 'tbl'
+      && textPrvku((radkyTabulky(body.slice(top[i].zac, top[i].kon))[0] || '')) === d.nadpis);
+    if (nalez.length !== 1) chyba('PROJ: čekám právě jednu tabulku s nadpisem „' + d.nadpis + '", je jich ' + nalez.length);
+    const i = nalez[0], el = top[i];
+    const tab = body.slice(el.zac, el.kon);
+    const radky = radkyTabulky(tab);
+    if (radky.length < 2) chyba('PROJ: tabulka „' + d.nadpis + '" nemá pod nadpisem žádný řádek');
+    if (radky.some(r => dg.klicePlaceholderu(r).length)) chyba('PROJ: tabulka „' + d.nadpis + '" už nese symbol — nic nehádám');
+    const zacRadku = tab.indexOf(radky[0]), konRadku = tab.lastIndexOf(radky[radky.length - 1]) + radky[radky.length - 1].length;
+    const nova = tab.slice(0, zacRadku) + radky[0] + radekSeSymboly(radky[1], d.symboly, 'PROJ „' + d.nadpis + '"') + tab.slice(konRadku);
+    /* termíny: blok bere i poznámky hned pod tabulkou */
+    let kon = el.kon;
+    if (d.blok === 'BLOK_TERMINY') {
+      let j = i + 1;
+      for (const re of PROJ_V6_POZNAMKY_TERMINU) {
+        if (!top[j] || top[j].tag !== 'p' || !re.test(txt(top[j])))
+          chyba('PROJ: pod tabulkou TERMÍNY nejsou čekané poznámky („*) Termíny pro vyjádření…", „Termíny zpracování…")');
+        kon = top[j].kon; j++;
+      }
+    }
+    if (d.blok === 'BLOK_CENA_NEZAHRNUJE') vzorDolozek = { tab: nova, nadpis: radky[0] };
+    body = body.slice(0, el.zac) + znacka(d.blok + '_ZAC') + nova + body.slice(el.kon, kon) + znacka(d.blok + '_KON') + body.slice(kon);
+  }
+  /* DOLOŽKY: tabulka ve stavbě CENA NEZAHRNUJE, nadpis přepsaný v prvním běhu */
+  let prvni = true;
+  const nadpis = bezW14(vzorDolozek.nadpis).replace(/(<w:t(?:\s[^>]*)?>)[^<]*(<\/w:t>)/g, (x, a, b) => {
+    if (prvni) { prvni = false; return '<w:t xml:space="preserve">DOLOŽKY:' + b; }
+    return a + b;
+  });
+  if (textPrvku(nadpis) !== 'DOLOŽKY:') chyba('PROJ: nadpis doložek se nepodařilo složit');
+  const tabD = bezW14(vzorDolozek.tab).replace(bezW14(vzorDolozek.nadpis), () => nadpis).split('{{PROJ_CENA_NEZAHRNUJE}}').join('{{PROJ_DOLOZKY}}');
+  const mezera = '<w:p><w:pPr><w:pStyle w:val="Bezmezer"/></w:pPr></w:p>';
+  const dolozky = znacka('BLOK_DOLOZKY_ZAC') + mezera + tabD + znacka('BLOK_DOLOZKY_KON');
+  const konTerminu = body.indexOf(znacka('BLOK_TERMINY_KON')) + znacka('BLOK_TERMINY_KON').length;
+  body = body.slice(0, konTerminu) + dolozky + body.slice(konTerminu);
   return t.pred + body + t.po;
 }
 
@@ -857,7 +960,7 @@ async function ulozSMutacemi(bajty, zaklad) {
 
 async function hlavni() {
   if (!PODKLADY) {
-    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --proj-v5 | --sod-proj | --sod-real | --sod-real-v3 | --sod-proj-cislo | --sod-proj-v4 | --cn-v14 | --cn-v15] <složka podkladů> [výstupní složka]');
+    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --proj-v5 | --proj-v6 | --sod-proj | --sod-real | --sod-real-v3 | --sod-proj-cislo | --sod-proj-v4 | --cn-v14 | --cn-v15] <složka podkladů> [výstupní složka]');
     process.exit(2);
   }
   const cnVstup = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v12.docx');
@@ -867,7 +970,8 @@ async function hlavni() {
   const sodRealVstup = path.join(PODKLADY, 'Sablona_SOD_REALIZACE.docx');
   const cn14Vstup = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v14.docx');
   const proj4Vstup = path.join(PODKLADY, 'Sablona_NABIDKA_PROJ_v4.docx');
-  (REZIM_SOD_CISLO || REZIM_SOD_REAL3 || REZIM_SOD_V4 ? [] : REZIM_V5 ? [proj4Vstup] : REZIM_V4 ? [projVstup] : REZIM_SOD ? [sodVstup] : REZIM_SOD_REAL ? [sodRealVstup] : REZIM_CN14 ? [cn13Vstup]
+  const proj5Vstup = path.join(PODKLADY, 'Sablona_NABIDKA_PROJ_v5.docx');
+  (REZIM_SOD_CISLO || REZIM_SOD_REAL3 || REZIM_SOD_V4 ? [] : REZIM_V6 ? [proj5Vstup] : REZIM_V5 ? [proj4Vstup] : REZIM_V4 ? [projVstup] : REZIM_SOD ? [sodVstup] : REZIM_SOD_REAL ? [sodRealVstup] : REZIM_CN14 ? [cn13Vstup]
     : REZIM_CN15 ? [cn14Vstup] : [cnVstup, projVstup])
     .forEach(f => { if (!fs.existsSync(f)) chyba('Chybí vstupní šablona ' + f); });
   if (!fs.existsSync(VYSTUP)) fs.mkdirSync(VYSTUP, { recursive: true });
@@ -973,7 +1077,9 @@ async function hlavni() {
     console.log('\nVýstup: ' + VYSTUP);
     process.exit(prob ? 1 : 0);
   }
-  const vse = REZIM_V5
+  const vse = REZIM_V6
+    ? await ulozSMutacemi(await vyrob(proj5Vstup, projV6), 'Sablona_NABIDKA_PROJ_v6')
+    : REZIM_V5
     ? await ulozSMutacemi(await vyrob(proj4Vstup, projV5), 'Sablona_NABIDKA_PROJ_v5')
     : REZIM_V4
     ? await ulozSMutacemi(await vyrob(projVstup, projV4), 'Sablona_NABIDKA_PROJ_v4')
@@ -999,4 +1105,4 @@ async function hlavni() {
 
 /* Úpravy document.xml jdou testovat bez souborů (src/test_sablona_proj_v4.js). */
 if (require.main === module) hlavni().catch(e => { console.error('CHYBA: ' + e.message); process.exit(1); });
-module.exports = { cnV13, cnV14, projV3, projV4, projV5, sodProjV2, sodRealV2, sodRealV3, sodProjCislo, sodProjV4, prepisUsekOdstavce };
+module.exports = { cnV13, cnV14, projV3, projV4, projV5, projV6, sodProjV2, sodRealV2, sodRealV3, sodProjCislo, sodProjV4, prepisUsekOdstavce };

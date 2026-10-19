@@ -243,7 +243,7 @@ function nastPodminkyProj() {
 const PODM_TEXTY_PROJ = [
   ['cenaNezahrnuje', 'CENA NEZAHRNUJE', '{{PROJ_CENA_NEZAHRNUJE}}'],
   ['pozadovano', 'POŽADOVÁNO OD INVESTORA', '{{PROJ_POZADOVANO_OD_INVESTORA}}'],
-  ['terminy', 'TERMÍNY', '{{PROJ_TERMINY}}'],
+  ['terminy', 'TERMÍNY', '{{PROJ_TERMINY_CINNOST}} | {{PROJ_TERMINY_TERMIN}}'],
   ['dolozky', 'DOLOŽKY', '{{PROJ_DOLOZKY}}'],
 ];
 /* Textarea → řádky. Termíny česky „sekce | činnost | termín", cizí jazyk
@@ -296,7 +296,9 @@ function nastPodminkyTextyProj(ef) {
       česky jako <code>sekce | činnost | termín</code> (sekce: zamereni, studie, projednani, dpz, ic, dps, ezc, kolaudace, geodet —
       řádek se vytiskne jen u nabízené činnosti), v cizím jazyce <code>činnost | termín</code> ve stejném pořadí.
       <b>Prázdné pole = výchozí znění</b> (česky dnešní text, cizí jazyk překlad ze slovníku — šedý text v poli).
-      Online nabídka je bere hned; šablona Wordu PROJ (v3–v5) má tyto bloky zatím pevně, symboly ponese až nová šablona.</div>
+      Online nabídka je bere hned, Word od šablony PROJ v6 (řádek tabulky za odrážku, termíny ve dvou sloupcích;
+      starší šablony v3–v5 mají tyto bloky pevně). Pro šablonu s jedním místem jsou i <code>{{PROJ_TERMINY}}</code>
+      („činnost – termín" na řádek).</div>
     ${PODM_TEXTY_PROJ.map(blok).join('')}`;
 }
 

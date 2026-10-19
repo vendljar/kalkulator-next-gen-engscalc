@@ -81,3 +81,8 @@ manual/*_MANUAL_OBCHODNIK.html
 # u každé dávky nafoukl o půl megabajtu.
 roadmapa/ROADMAPA.html
 roadmapa/ROADMAPA.md
+
+# Wordové šablony (firemní texty) — vstupy stažené z Disku a vyrobené
+# výstupy nastroje/vyrob_sablony.js. Patří na Disk, ne do repozitáře (W1, 19. 10. 2026).
+podklady/sablony_vstup/
+podklady/sablony_vystup/

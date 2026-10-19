@@ -925,13 +925,18 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
      * zaokrouhlují se položky, takže žádný dorovnávací řádek nevzniká.
      * Kdyby se klíč zrušil, zůstal by v takové šabloně viset text {{…}}. */
     PROJ_ZAOKROUHLENI_KC: '',
-    /* Texty nabídky z Nastavení → Firma (#367 fáze 2b). Dnešní šablony PROJ
-     * (v3–v5) mají tyto bloky natvrdo; symboly čekají na šablonu, která je
-     * ponese. Řádek = odrážka; termíny „činnost – termín" jen nabízených
-     * činností; doložky jen zapnuté. */
+    /* Texty nabídky z Nastavení → Firma (#367 fáze 2b). Šablony PROJ v3–v5
+     * mají tyto bloky natvrdo, nese je PROJ v6 (nastroje/vyrob_sablony.js
+     * --proj-v6, W1). Řádek = odrážka (v6: řádek tabulky); termíny „činnost
+     * – termín" jen nabízených činností; doložky jen zapnuté. */
     PROJ_CENA_NEZAHRNUJE: textProj('cenaNezahrnuje').join('\n'),
     PROJ_POZADOVANO_OD_INVESTORA: textProj('pozadovano').join('\n'),
     PROJ_TERMINY: textProj('terminy').filter(radekVRozsahu).map(x => x[0] + ' – ' + x[1]).join('\n'),
+    /* Šablona PROJ v6 tiskne termíny ve dvou sloupcích jako v5: řádek tabulky
+     * za každou dvojici (docxgen rozvinRadkyZaRadek), činnost a termín na
+     * stejném řádku hodnoty. */
+    PROJ_TERMINY_CINNOST: textProj('terminy').filter(radekVRozsahu).map(x => x[0]).join('\n'),
+    PROJ_TERMINY_TERMIN: textProj('terminy').filter(radekVRozsahu).map(x => x[1]).join('\n'),
     PROJ_DOLOZKY: podmEf.nabidkaProj.dolozkyTisk ? textProj('dolozky').join('\n') : '',
   };
   if (typeof firmaPlaceholders === 'function')

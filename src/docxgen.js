@@ -292,18 +292,29 @@ function rozvinOdstavceZaRadek(xml, ph) {
  * zálohy tedy dva řádky, výchozích 50 / 40 / 10 tři jako dřív. Rozvíjí se
  * nejvnitřnější řádek se symbolem; bez neprázdného řádku hodnoty zůstane
  * řádek, jak je (prázdnou tabulku odstraní značky bloku, které běží dřív). */
-const DOCX_RADKY_ZA_RADEK = ['PODM_PLATEBNI_KALENDAR'];
+/* Texty nabídky PROJ z Nastavení → Firma (šablona PROJ v6, W1 19. 10. 2026):
+ * odrážka = vlastní orámovaný řádek, jako byly pevné řádky v5. Termíny mají
+ * dva sloupce — skupina symbolů se rozvíjí SPOLEČNĚ: i-tý řádek tabulky
+ * dostane i-tý řádek každé hodnoty (činnost vlevo, termín vpravo). Řádek
+ * tabulky, který z dvojice nese jen jeden symbol, se rozvine sám. */
+const DOCX_RADKY_ZA_RADEK = ['PODM_PLATEBNI_KALENDAR', 'PROJ_CENA_NEZAHRNUJE', 'PROJ_POZADOVANO_OD_INVESTORA', 'PROJ_DOLOZKY',
+  ['PROJ_TERMINY_CINNOST', 'PROJ_TERMINY_TERMIN']];
 function rozvinRadkyZaRadek(xml, ph) {
-  DOCX_RADKY_ZA_RADEK.forEach(klic => {
-    if (!ph || ph[klic] == null) return;
-    const radky = String(ph[klic]).replace(/\r/g, '').split('\n').filter(r => r.trim() !== '');
-    if (!radky.length) return;
+  DOCX_RADKY_ZA_RADEK.forEach(skupina => {
+    const klice = (Array.isArray(skupina) ? skupina : [skupina]).filter(k => ph && ph[k] != null);
+    if (!klice.length) return;
+    const hodnoty = klice.map(k => String(ph[k]).replace(/\r/g, '').split('\n'));
+    const pocet = Math.max(...hodnoty.map(h => h.length));
+    /* řádek (index), který má aspoň v jedné hodnotě text — sloupce zůstanou zarovnané */
+    const indexy = [...Array(pocet).keys()].filter(i => hodnoty.some(h => String(h[i] || '').trim() !== ''));
+    if (!indexy.length) return;
     radkoveSpany(xml)
-      .filter(sp => klicePlaceholderu(vlastniObsahRadku(xml.slice(sp.zac, sp.kon))).indexOf(klic) >= 0)
+      .filter(sp => klicePlaceholderu(vlastniObsahRadku(xml.slice(sp.zac, sp.kon))).some(k => klice.indexOf(k) >= 0))
       .sort((a, b) => b.zac - a.zac)                               // odzadu, ať sedí pozice
       .forEach(sp => {
         const radek = xml.slice(sp.zac, sp.kon);
-        xml = xml.slice(0, sp.zac) + radky.map(r => nahradPlaceholdery(radek, { [klic]: r })).join('') + xml.slice(sp.kon);
+        xml = xml.slice(0, sp.zac) + indexy.map(i => nahradPlaceholdery(radek,
+          klice.reduce((o, k, j) => { o[k] = hodnoty[j][i] || ''; return o; }, {}))).join('') + xml.slice(sp.kon);
       });
   });
   return xml;
@@ -1191,7 +1202,7 @@ async function docxXmlVady(arrayBuffer) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
+  module.exports = { docxZnackyBloku, docxVyvazene, docxVBunce, docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
     odstranPrazdneTsRadky, jePrazdnaHodnota, klicePlaceholderu, odstranPrazdneBloky, odstranOdstavceSeSymboly, docxZnackyBloku,
     docxVlozObrazky, rozmeryObrazku, dataUrlNaBajty,
     docxDokumentBlob, docxTeloZeSekci, docxSestavBlob, docxPar, docxEsc,
