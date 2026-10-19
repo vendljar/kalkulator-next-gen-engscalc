@@ -1,3 +1,21 @@
+# Předávka — 19. 10. 2026: dávka W1 (v19.10.9), větev `claude/w1-sablona-proj-v6` — šablona Wordu PROJ v6
+
+Nad `claude/v8-367-firma` (v19.10.7, `4d9f67a`). Do integrace / `test` nic — slučuje koordinace
+(session_017KEALG3ppimL5fW2XswzrB). Podrobnosti a postup pro J. V.: `podklady/W1_SABLONA_PROJ_V6.md`,
+CHANGELOG v19.10.9, roadmapa #434 (předběžné id).
+
+- **Hotovo:** `nastroje/vyrob_sablony.js --proj-v6` (v5 → v6 + EN/DE/FR): CENA NEZAHRNUJE, POŽADOVÁNO OD
+  INVESTORA, TERMÍNY ze symbolů Firmy (řádek tabulky za odrážku, termíny dvojice `PROJ_TERMINY_CINNOST/_TERMIN`),
+  bloky `BLOK_*_ZAC/KON`, nový blok DOLOŽKY. `src/docxgen.js` rozvíjí řádky i pro texty PROJ (skupiny symbolů),
+  `src/nabidka_proj.js` nové symboly termínů, popis v Nastavení. Test `src/test_sablona_proj_v6.js`
+  (35 se skutečnou v5 / 30 bez ní), mutace „W1: …“ (11) v `mutace_jadro.mjs`, `nabidka_proj.js` v JADRA.
+- **Šablony v6** vyrobené ze skutečné v5 (Disk, složka „Sablony“): v sezení `podklady/sablony_vystup/` (gitignore),
+  poslané J. V. jako soubory sezení; **na Disk nenahrané** (konektor neunese 1 MB base64) — J. V. je nahraje
+  do složky „Sablony“ sám, nebo je vyrobí příkazem z podkladu.
+- **Ke slučování:** CHANGELOG / `verze.txt` / `manual/obsah.json` — O4 má v19.10.8, nechat oddíly všech, novější nahoru.
+  `mutace_jadro.mjs` (JADRA + blok W1 za #367b), `src/docxgen.js` (DOCX_RADKY_ZA_RADEK, exporty).
+- **Nahrání v aplikaci až po nasazení v19.10.9** (starší aplikace nové symboly nezná).
+
 # Předávka — 19. 10. 2026: dávka V8 (v19.10.6 + v19.10.7), větev `claude/v8-367-firma` — #367 platební podmínky z Nastavení → Firma
 
 Nad `origin/claude/integrace-16-10` (`e3995e6`). Do integrace / `test` / `main` nic — slučuje koordinace

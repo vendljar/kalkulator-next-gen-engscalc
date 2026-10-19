@@ -34,8 +34,8 @@ Dávka W1 (koordinace „ŘÍDÍCÍ 19.10“), nad `claude/v8-367-firma` (v19.10
   EZC bez dovětku) a termíny se tisknou **jen u nabízených činností** (v5 všech 10).
 - **Nastavení → Smlouvy / Šablony → PROJ → Texty nabídky PROJ:** popis říká, že
   Word je bere od šablony v6.
-- **Testy:** `src/test_sablona_proj_v6.js` (33 kontrol se skutečnou v5,
-  28 bez ní) — bez změny selže na prvních dvou kontrolách, po změně zelený.
+- **Testy:** `src/test_sablona_proj_v6.js` (35 kontrol se skutečnou v5,
+  30 bez ní) — bez změny selže na prvních dvou kontrolách, po změně zelený.
 
 ## v19.10.7 — #367 fáze 2b: věty kalendáře v jazycích, texty nabídky PROJ a rozšíření z Firmy (větev claude/v8-367-firma)
 
