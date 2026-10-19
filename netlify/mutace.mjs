@@ -2908,7 +2908,7 @@ async function spustSady() {
     const { chyba, vystup } = await spustSadu(sada);
     /* test_obnova.mjs píše souhrn „N OK, M FAIL", ostatní „prošlo/selhalo". */
     const m = /(\d+) (?:prošlo|OK), (\d+) (?:selhalo|FAIL)/.exec(vystup);
-    if (m && Number(m[2]) > 0) return { chycena: true, kde: sada + ': ' + m[2] + ' selhalo' };
+    if (m && Number(m[2]) > 0) return { chycena: true, kde: sada + ': ' + m[2] + ' selhalo', vystup };
     /* Pád sady je taky chycení — mutace rozbila kód tak, že se nedá ani
      * dojít na konec. Tichý průchod je jediná špatná odpověď. */
     if (chyba) return { chycena: true, kde: sada + ' (spadla)' };
@@ -2947,6 +2947,13 @@ if (process.argv.includes('--kontrola')) {
   process.exit(0);
 }
 
+/* ZÁMEK (B194, 19. 10. 2026): souběžný mutační běh nad toutéž pracovní
+ * kopií shodí výchozí stav „bez mutace" (doloženo na test_vyjimky.mjs se
+ * souběžnou mutací src/vyjimky.js) — nastroje/mutace_zamek.mjs. */
+{ const { zamkniMutace, zamekHlaska } = await import('../nastroje/mutace_zamek.mjs');
+  const drzi = zamkniMutace('netlify/mutace.mjs ' + process.argv.slice(2).join(' '));
+  if (drzi) { console.log(zamekHlaska(drzi)); process.exit(2); } }
+
 console.log('MUTAČNÍ TESTOVÁNÍ SERVEROVÉ VRSTVY');
 console.log('Mutací k ověření: ' + vybrane.length + '   (sady: ' + SADY.join(', ') + ')\n');
 
@@ -2955,6 +2962,10 @@ console.log('Mutací k ověření: ' + vybrane.length + '   (sady: ' + SADY.join
 const vychozi = await spustSady();
 if (vychozi.chycena) {
   console.log('PŘERUŠENO: sady nejsou zelené ani bez mutace — ' + vychozi.kde);
+  /* B194: které kontroly spadly — bez toho se jednorázový pád výchozího
+   * stavu (19. 10. 2026, test_vyjimky.mjs) nedal dohledat. */
+  const padle = String(vychozi.vystup || '').split('\n').filter(r => /^\s*(FAIL|✗)/.test(r));
+  if (padle.length) console.log(padle.slice(0, 20).map(r => '  ' + r.slice(0, 300)).join('\n'));
   process.exit(1);
 }
 console.log('Výchozí stav: obě sady zelené.\n');
