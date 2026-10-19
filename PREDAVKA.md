@@ -5,7 +5,9 @@ Nad `origin/claude/integrace-16-10` (`e3995e6`). Do integrace / `test` / `main` 
 https://claude.ai/artifact/UZC5zQB14xBBvkN1MMdnPE. Podrobnosti: CHANGELOG v19.10.6 a v19.10.7, roadmapa #367.
 
 - **Rozhodnutí J. V. 19. 10.:** varianta B, „z kódu vše převést do Firma“; Q1–Q6 podle doporučení
-  (Q4 zatím blokovat — `PODMINKY_SOUCET_BLOKUJE` v `src/podminky.js`, přepnutí = jedna konstanta).
+  (Q4 rozhodnuto J. V. „Nedovolit zveřejnit“ — `PODMINKY_SOUCET_BLOKUJE = true` v `src/podminky.js`).
+- **Větev obsahuje integraci `4cc1b81` (v19.10.5: A2, O3, H2, O4)** — sloučeno 19. 10.; FR kapitoly mají `{TERMIN}`,
+  doplnění výchozích textů (O3) zahrnuje i FR.
 - **v19.10.6 (a):** `src/podminky.js` (továrna = dnešní hodnoty, sloučení s Firmou při čtení po polích),
   krycí listy OCK/PROJ bez literálů platebních podmínek, zveřejnění + serverová kontrola, Nastavení →
   Smlouvy / Šablony: společný blok + přepínač OCK | PROJ (`src/ui/podminky_ui.js`), filtr šablon.
@@ -23,8 +25,75 @@ https://claude.ai/artifact/UZC5zQB14xBBvkN1MMdnPE. Podrobnosti: CHANGELOG v19.10
 - **Při slučování s O3 (`claude/o3-kapitoly-vychozi`):** CHANGELOG, `verze.txt`, `manual/obsah.json`,
   roadmapa #367, `src/firma.js` (DEFAULT_FIRMA — FR kapitoly + kap. V bez záruky; O3 TD1 přidává `{TERMIN}`
   do kap. V — doplnit i do FR), `src/ui/nastaveni_ui.js` (nastSmluvniStandardy vs. nastKapitolyNabidky).
-- **Další krok:** odpověď J. V. k Q4; sloučení do integrace; šablona Wordu PROJ se symboly textů; kontrola
+- **Další krok:** sloučení do integrace; šablona Wordu PROJ se symboly textů; kontrola
   překladů rodilými mluvčími; releasy v19.10.6/v19.10.7 až po sloučení.
+
+# Předávka — 19. 10. 2026: dávka O4 (v19.10.5), větev `claude/o4-zalohy` — #151 opravy zálohování N1–N4
+
+Nad `claude/z1-zalohy` (`421f556`, podklad `podklady/151_ZALOHOVANI_KONTROLA_2026-10-19.md`). Do integrace / `test`
+nic — slučuje koordinace (session_017KEALG3ppimL5fW2XswzrB). Podrobnosti: CHANGELOG v19.10.5, roadmapa #151 (hotovo),
+#151a (N5 retence) a #151b (N6 kopie mimo Netlify) čekají na J. V.
+
+- **Hotovo:** N1 vynucený otisk do slotu `<den>T<hhmmss>-rucne|-auto` (noční `YYYY-MM-DD` nedotčený, vlastní limit 10
+  v přehledu, `OTISK_KLIC` rozšířen, klient `onlineZalohaAuto` pozná dnešní podle dne v klíči); N2 `ctiPoDavkach`
+  po 20, `trvaniMs`/`velikostB` v odpovědi a logu `zaloha_nocni`; N3 `souhrn/<klíč>` vedle otisku, přehled čte
+  souhrny (fallback na celý otisk); N4 `netlify/test_zalohy.mjs` — sken `uloziste(…)`/`zapis(…)` v kódu × tabulka.
+- **Testy:** `test_zalohy` proti 421f556 9 OK/10 FAIL → 29/0; `--smoke` 270/0/6; mutace `zaloh` 22/22 (10 nových #151 + B52/B58 upraveny).
+- **Výchozí volby (J. V. se neptal):** tvar klíče `T<hhmmss>-rucne` (shodně s B28) místo `_HHMMSS_rucni`; POST bez
+  `duvod` = ruční slot; souhrn jako samostatný klíč (obal `uloziste()` metadata Blobs nezná); dávka čtení 20.
+- **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `manual/obsah.json` (verze + „Co je nového“)
+  / `roadmap.json` (#151) / `netlify/mutace.mjs` (SADY + blok #151).
+- **Na J. V.:** ověřit v Netlify délku nočního běhu (podklad oddíl 5 — nově je v logu řádek s ms a kB); rozhodnout N5, N6.
+
+# Předávka — 19. 10. 2026: dávka H2 (v19.10.4), větev `claude/h2-drobnosti` — V7-N1, B191, B192
+
+Nad `origin/claude/integrace-16-10` (`e3995e6`, v19.10.1). Do integrace / `test` nic — slučuje koordinace
+(ŘÍDÍCÍ 19.10, session_017KEALG3ppimL5fW2XswzrB). Souběžně A2 (v19.10.2), O3 (v19.10.3). Podrobnosti: CHANGELOG
+v19.10.4, `BEZPECNOST_MEZE.md` (B191–B193), roadmapa #433 (předběžné id, 431–432 nechány souběžným dávkám).
+
+- **Hotovo:** V7-N1 — karta výjimky ukáže plochu na celé m² (`vyjimkyM2Schvaleni`, totéž zaokrouhlení jako obsah)
+  s poznámkou „zaokrouhleno pro schválení“; B183 beze změny. B191 — `odstranPrazdneBloky` hází u nevyváženého bloku
+  z `blokyPryc` (SoD projekce nevznikne). B192 — okno hesla správce od zadání, neprodlužuje se; mez o XSS zapsána.
+- **Výchozí volby (J. V. se neptal):** poznámka jen u neceločíselné plochy; B191 chybou při generování (ne kontrolou
+  při zveřejnění šablony); B192 okno neprodlužovat (víc dotazů na heslo při dlouhém nastavování).
+- **Doporučení pro J. V.:** B191 navíc kontrolovat při zveřejnění šablony; B192 úplně — heslo nedržet (token od serveru).
+- **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `manual/obsah.json` (verze, úvod) /
+  `roadmap.json` (konec seznamu) / `mutace_jadro.mjs` / `netlify/mutace.mjs` (SADY + blok H2) / `BEZPECNOST_MEZE.md`.
+
+# Předávka — 19. 10. 2026: dávka O3 (v19.10.3), větev `claude/o3-kapitoly-vychozi` — výchozí texty kapitol + TD1 {TERMIN}
+
+Nad `origin/claude/integrace-16-10` (`e3995e6`, v19.10.1; v19.10.2 drží A2). Do integrace / `test` nic — slučuje
+koordinace (session_017KEALG3ppimL5fW2XswzrB). Podrobnosti: CHANGELOG v19.10.3, roadmapa #431 (hotovo), #330 (TD1).
+
+- **Hotovo (pushnuto):** `firmaDoplnVychoziTexty` po každém načtení firmy (import / `_nastaveni.json` přes
+  `konfiguraceImport`, online firma v `online_ui.js`) doplní CHYBĚJÍCÍ klíče kapitol CZ/EN/DE (bílá listina,
+  FR ne); `""` = vědomé vypuštění zůstává. Tlačítka „Doplnit výchozí text“ (pole) a „Doplnit všechny prázdné“.
+  TD1: výchozí kapitola V. se značkou `{TERMIN}` (termín dodání zakázky s ATYP, přeložený); se značkou bez
+  odrážky „Termín dodání“, bez termínu lhůta z Firmy / „dle dohody“; kontrola `terminAtyp` přepracovaná.
+  Řešení TD1 schválil J. V. 19. 10. ~11:25 UTC (přes koordinaci).
+- **Testy:** `test_kapitoly_vychozi` 51, `test_termin_kapitola` 39, `test_kontroly` +10; kolo nad 91f8111 VŠE
+  ZELENÉ 271/0/6, statické 3/3; cílené mutace 43/43.
+- **Po nasazení (J. V.):** Nastavení → Smlouvy / Šablony → Kapitoly nabídky zkontrolovat doplněné texty (kapitola V.
+  nově se `{TERMIN}`) → Nastavení → Firma → Zveřejnit firemní údaje online. Starší text kapitoly V. s pevným
+  číslem hlásí kontrola před nabídkou (radí značku).
+- **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `roadmap.json` (#431 předběžné id) /
+  `manual/obsah.json` / `src/firma.js` (V8 #367 sahá na Firmu) / `src/preklad.js` (heslo „dle dohody“).
+
+# Předávka — 19. 10. 2026: dávka A2 dokončení (v19.10.2), větev `claude/a2-356` — #356 střecha přes nejvyšší můstek
+
+Nad `origin/claude/integrace-16-10` (e3995e6, v19.10.1). Do integrace / `test` / `main` nic —
+slučuje koordinace (ŘÍDÍCÍ 19.10, session_017KEALG3ppimL5fW2XswzrB). Podrobnosti: CHANGELOG v19.10.2.
+
+- **Hotovo:** #356 podle rozhodnutí J. V. 19. 10. (A1 + B1 + C1 + D1 + E1, návrh
+  https://claude.ai/artifact/9nMGAMnggiVEByuZoty9Qt) — kód převzatý cherry-pickem 75f9fd1
+  z `claude/a2-356-navrh`; konflikt jen v `mutace_jadro.mjs` (blok #355 / #356). Příručka
+  (kap. 11, Co je nového v19.10.2, záhlaví verze v19.10.2), roadmapa #356 → hotovo.
+- **Testy:** test_mustky 53/6 → 59/0, test_kontroly 137/1 → 138/0 (37 pravidel), otisky
+  test_profil_neznamy 30/0, fuzz 19/0; mutace jádra #356 5 (výsledek v CHANGELOG/souhrnu).
+- **Při slučování:** konflikty v CHANGELOG / PREDAVKA / `verze.txt` / `manual/obsah.json`
+  (Co je nového, záhlaví) / počet pravidel kontrol (37 v `src/test_kontroly.js`, `overit_lista.mjs`).
+- **Větev `claude/a2-356-navrh`** je tím převzatá — po sloučení ke smazání (J. V.).
+- **Další krok:** žádný — dávka A2 uzavřená.
 
 # Předávka — 19. 10. 2026: dávka O2 (v19.10.1), větev `claude/o2-b189` — B189 výchozí režim DPH ve SoD realizace
 

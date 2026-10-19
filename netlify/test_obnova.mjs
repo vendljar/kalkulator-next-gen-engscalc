@@ -98,7 +98,9 @@ test('záloha ke stažení nese obě zakázky a účty bez hesel',
   Object.keys(zalSoubor.zakazky).length === 2 && zalSoubor.uzivatele.length === 2
   && zalSoubor.uzivatele.every(u => u.heslo === undefined));
 const vyn = await (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', {}, cookie)).json();
-test('serverový otisk pořízen pod dnešním dnem', vyn.ok && vyn.den === dnes(), vyn);
+/* #151 N1 (19. 10. 2026): vynucený otisk má vlastní slot s časem, noční den nepřepíše. */
+test('serverový otisk pořízen pod dnešním dnem (vlastní slot s časem, #151 N1)',
+  vyn.ok && /^\d{4}-\d{2}-\d{2}T\d{6}-rucne$/.test(vyn.den) && vyn.den.startsWith(dnes() + 'T'), vyn);
 const otiskDen = vyn.den;
 const otiskPuvodni = kopie(await ulz('zalohy').cti(otiskDen));
 
@@ -162,7 +164,7 @@ test('rejstřík nese číslo a název obnovené zakázky',
   rej1.zakazky.some(z => z.soubor === ulA.soubor && z.cislo === zakA.cislo && z.nazevAkce === 'Zakázka A'));
 const pred = await ulz('zalohy').cti(String(o1.otiskPred));
 test('před obnovou vznikl otisk pod vlastním klíčem s časem (B28) a hlásí se v odpovědi',
-  !!pred && PRED_OBNOVOU.test(o1.otiskPred) && o1.otiskPred.startsWith(otiskDen + 'T'), o1.otiskPred);
+  !!pred && PRED_OBNOVOU.test(o1.otiskPred) && o1.otiskPred.startsWith(dnes() + 'T'), o1.otiskPred);
 test('otisk před obnovou nese stav PŘED obnovou (firma „Po havárii", bez zakázky A)',
   pred.firma.udaje.nazev === 'Po havárii s.r.o.' && !(ulA.soubor in pred.zakazky) && pred.zdroj === 'pred-obnovou' && pred.kdo === ADMIN_EMAIL);
 test('dnešní otisk zůstal nedotčený (žádná kolize klíčů)',

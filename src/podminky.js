@@ -121,10 +121,10 @@ const PODMINKY_TYPY_SMLOUVY = ['Naše bez úprav', 'Naše s úpravami', 'Cizí']
 const PODMINKY_PROJ_SEKCE = ['zamereni', 'studie', 'projednani', 'dpz', 'ic', 'dps', 'ezc', 'kolaudace', 'geodet'];
 const PODMINKY_RADKU_MAX = 30;
 
-/* SOUČET SPLÁTEK OCK ≠ 100 % (Q4, J. V. 19. 10. 2026 si nechal vysvětlit).
- * Zatím doporučené: chybný součet ZABLOKUJE zveřejnění firemních podmínek
+/* SOUČET SPLÁTEK OCK ≠ 100 % (Q4) — ROZHODNUTÍ J. V. 19. 10. 2026: „Nedovolit
+ * zveřejnit". Chybný součet ZABLOKUJE zveřejnění firemních podmínek
  * (prohlížeč i server), v Nastavení svítí červený součet. Změna na „jen
- * upozornění" = přepsat tuhle jednu konstantu na false. */
+ * upozornění" by byla jen přepsání téhle jedné konstanty na false. */
 const PODMINKY_SOUCET_BLOKUJE = true;
 
 const PODMINKY_ZADRZNE_MAX = 20;

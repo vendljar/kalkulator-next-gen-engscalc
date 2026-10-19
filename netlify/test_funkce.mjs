@@ -301,7 +301,9 @@ test('vynucená záloha jen pro administrátora',
 test('seznam otisků jen pro administrátora',
   (await get(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', cookieObch)).status === 403);
 const vyn = await (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', {}, cookie)).json();
-test('administrátor vynutí otisk', vyn.ok === true && vyn.den === new Date().toISOString().slice(0, 10), JSON.stringify(vyn));
+/* #151 N1 (19. 10. 2026): vynucený otisk do vlastního slotu s časem, ne přes noční. */
+test('administrátor vynutí otisk', vyn.ok === true && vyn.den.startsWith(new Date().toISOString().slice(0, 10) + 'T')
+  && vyn.den.endsWith('-rucne'), JSON.stringify(vyn));
 test('vynucený otisk hlásí, kolik zakázek uložil', vyn.pocetZakazek === 1, JSON.stringify(vyn));
 const vynOtisk = await (await globalThis.__TEST_ULOZISTE('zalohy')).cti(vyn.den);
 test('vynucený otisk nese celou databázi', !!vynOtisk && vynOtisk.program.platny.verze === 2

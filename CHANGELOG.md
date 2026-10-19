@@ -71,7 +71,7 @@ Firma“, Q1–Q6 podle doporučení (Q4 zatím doporučené, izolované v jedn�
   Firmu s továrnou **při čtení, po polích** (neplatná uložená hodnota → továrna),
   takže prázdné Nastavení, starší `_nastaveni.json` i starší online firma
   tisknou beze změny. `podminkyVady` / `podminkyCiste` pro zveřejnění.
-- **Q4 izolované:** `PODMINKY_SOUCET_BLOKUJE = true` — součet záloha + faktura 2
+- **Q4 (rozhodnutí J. V. 19. 10. 2026: „Nedovolit zveřejnit“):** `PODMINKY_SOUCET_BLOKUJE = true` — součet záloha + faktura 2
   + konečná ≠ 100 % zablokuje zveřejnění (prohlížeč i server) a v Nastavení
   svítí červeně. Přepnutí na „jen upozornění“ = jedna konstanta.
 - **Krycí listy bez literálů:** `kryci.js` (splatnost, volby a výchozí záloha,
@@ -104,6 +104,173 @@ Firma“, Q1–Q6 podle doporučení (Q4 zatím doporučené, izolované v jedn�
   splatnost, obchodník 403) — proti `e3995e6` 3 selhaly, po změně 249 / 0.
   Mutace „#367: …“ 10 v `mutace_jadro.mjs` (`podminky.js` přidán do JADER),
   2 v `netlify/mutace.mjs`.
+
+## v19.10.5 — #151: opravy nočního zálohování N1–N4 (větev claude/o4-zalohy)
+
+**Testy nad v19.10.5 (19. 10. 2026):** `spust_testy.sh --smoke` **270 prošlo / 0 selhalo / 6 přeskočeno** (`test.js`, 5 harnessů bez `KNG_PODKLADY`), vč. `overit_online` (samočinná záloha, přehled, obnova). Mutace serveru filtrem `zaloh` (sady test_zalohy, test_funkce, test_obnova, test_prava, test_obnova_nanecisto, test_uklid) **22/22 chycených**, žádná nepřežila; `--kontrola` 549 úseků. Statická kontrola údajů čistá.
+
+Dávka O4 (koordinace „ŘÍDÍCÍ 19.10“), nad `claude/z1-zalohy` (`421f556`).
+Opravuje nálezy N1–N4 kontroly zálohování
+(`podklady/151_ZALOHOVANI_KONTROLA_2026-10-19.md`, roadmapa **#151** → hotovo).
+N5 (retence) a N6 (kopie mimo Netlify) čekají na rozhodnutí J. V.
+(roadmapa **#151a**, **#151b**).
+
+- **N1 — ruční záloha nepřepíše noční otisk dne.** „Zálohovat teď“
+  (`duvod: rucne`) i otisk při přihlášení správce (`duvod: auto`) se ukládají
+  do vlastního slotu `<den>T<hhmmss>-rucne` / `-auto` (`klicVynuceny`,
+  `lib/zalohovani.mjs`); klíč `YYYY-MM-DD` patří jen noční funkci. `OTISK_KLIC`
+  oba tvary přijímá (přehled i obnova), přehled drží vynucené otisky ve
+  vlastním limitu (10, jako otisky před obnovou — B52), takže noční zálohy
+  z něj nevytlačí a hlídka #152 nehlásí falešné varování. Klient: „dnešní
+  otisk“ pro samočinnou zálohu se pozná podle dne v klíči, přehled ukazuje
+  „při přihlášení“. Volba tvaru klíče (`T<hhmmss>-rucne` místo
+  `_HHMMSS_rucni` ze zadání): sjednocení s otisky před obnovou (B28).
+- **N2 — noční funkce blíž 30s limitu nenarazí.** Otisk čte paralelně po
+  dávkách 20 (`ctiPoDavkach`, `Promise.all`) místo záznam po záznamu;
+  odpověď nese `trvaniMs` a `velikostB`, `zaloha_nocni` je zapíše do logu
+  (a chybu otisku celou přes `console.error`). Opraven komentář o velikosti
+  otisku (~20 MB, ~7 GB/rok — retence je N5).
+- **N3 — přehled záloh nečte celé otisky.** K otisku se zapíše souhrn
+  `souhrn/<klíč>` (zdroj, čas, kdo, počty, velikost, trvání — bez dat);
+  `seznamOtisku` čte jen souhrny, starší otisk bez souhrnu dočte celý jako dřív.
+- **N4 — test úplnosti zálohy.** `netlify/test_zalohy.mjs` projde kód
+  serverových funkcí, najde všechna zapisovaná úložiště a pevné klíče
+  a každé musí být v tabulce zálohovaných, nebo výjimek s důvodem; tvrzení
+  tabulky ověří skutečný otisk (značka v každém zálohovaném úložišti a klíči).
+  Nové úložiště nebo klíč bez zálohy test shodí (ověřeno: vyřazený slovník
+  i smyšlené nové úložiště → FAIL).
+- **Testy:** nová sada `netlify/test_zalohy.mjs` (29 kontrol) — proti
+  `421f556` **9 OK / 10 FAIL** (N1–N3; N4 je nová pojistka, na starém kódu
+  projde a padá na vyřazený klíč), po opravě **29 / 0**. Upraveny
+  `test_funkce.mjs` a `test_obnova.mjs` (vynucený otisk má slot s časem).
+  Mutace serveru: 10 nových (`#151 N1–N4`), upraveny B52 a B58 (změněný kód);
+  sada `test_zalohy.mjs` přidána do `mutace.mjs`.
+
+## v19.10.4 — H2: plocha v kartě výjimky na celé m² (V7-N1), B191, B192 (větev claude/h2-drobnosti)
+
+**Výsledky nad 755e84b (19. 10. 2026):** `./spust_testy.sh --smoke` (build bez zvýšení verze, Playwright 1.56.1,
+bez KNG_PODKLADY) **270 prošlo / 0 selhalo / 6 přeskočeno** (test.js, overit_manual, overit_nabidka_proj_word,
+overit_sablona, overit_sablony_online, overit_sod — firemní podklady). Mutace cíleně: jádro „h2“ 3/3, „blok“ 5/5;
+server „h2“ 4/4, „b178“ 9/9, „b168“ 1/1 — bez přeživší; `--kontrola` jádro 257, server 543 úseků.
+
+Dávka H2 (zadání koordinace „ŘÍDÍCÍ 19.10“), nad `origin/claude/integrace-16-10`
+(`e3995e6`, v19.10.1). Souběžně běží A2 (v19.10.2) a O3 (v19.10.3).
+Roadmapa **#433** (předběžné id).
+
+- **V7-N1 (kontrola V7, B183 volba c):** karta Cenové výjimky ukazovala plochu
+  pásu a světlíku „jiné“ na setiny (2,61 m²), schválení ale drží celé m².
+  Výchozí volba dávky: karta ukáže **plochu na celé m²** toutéž funkcí jako
+  obsah schválení (`vyjimkyM2Schvaleni`, `src/vyjimky.js`) a u plochy, která
+  celá není, **poznámku „zaokrouhleno pro schválení“** („3 m² (zaokrouhleno
+  pro schválení)“). Pravidlo B183 ani obsah výjimky se nemění — schválení
+  neshodí.
+- **B191 (audit kola 28, informativní) — opraveno:** blok `CIN_*` z
+  `blokyPryc` s nevyváženými značkami (začátek v tabulce a konec za ní,
+  značka bez páru — šablona SoD projekce upravená ve Wordu) dřív v dokumentu
+  tiše zůstal a smlouva vyjmenovala nenabízenou činnost. `odstranPrazdneBloky`
+  (`src/docxgen.js`) teď **hází — dokument nevznikne** s hláškou „Opravte
+  šablonu“. Blok mimo seznam (kapitoly nabídek) beze změny. Kontrola už při
+  zveřejnění šablony nepřibyla (doporučení v `BEZPECNOST_MEZE.md`).
+- **B192 (audit kola 28, informativní) — zmírněno:** mez B168 doplněna o XSS
+  (heslo správce v paměti stránky v čitelné podobě, CSP `unsafe-inline`). Okno
+  10 min se nově počítá **od zadání hesla**, uložení matice ho neprodlouží
+  (`onlineZobrazeniPost`, `src/ui/online_ui.js`; výchozí volba). Heslo vůbec
+  nedržet (krátkodobý token) = změna rozhraní, doporučení pro J. V.
+- **B193** se dávky netýká (podklad).
+- **Testy (pojistka):** `src/test_vyjimky.js` (plocha v kartě na celé m²,
+  shoda karty s obsahem u pásu i světlíku, B155 karta) — proti e3995e6
+  **104 / 3**, po opravě **107 / 0**; `src/test_sod_proj_rozsah.js` (B191,
+  4 kontroly) **36 / 2 → 38 / 0**; nový `src/test_zobrazeni_heslo_okno.js`
+  (B192, vyříznutý úsek online_ui.js ve vm) **4 / 3 → 7 / 0**; pokus
+  `podklady/AUDIT28_pokus_sod.mjs` P3 otočen (17 / 1 → 18 / 0).
+- **Mutace:** jádro „H2 B191: …“ (3), server „H2 V7-N1: …“ (3) a „H2 B192: …“
+  (1, sada `test_zobrazeni_heslo_okno.js` přidána do serverového seznamu);
+  zadání mutace „B178 zbytek: plocha v obsahu na desítky m²“ posunuto na
+  nový tvar (`vyjimkyM2Schvaleni`).
+
+## v19.10.3 — O3: výchozí texty kapitol nabídky se doplní do Nastavení (větev claude/o3-kapitoly-vychozi)
+
+**Kolo `--jen build,sady,staticke` nad 91f8111 (v19.10.3, 19. 10. 2026) — VŠE ZELENÉ:** sady 271 prošlo / 0 selhalo / 6 přeskočeno (`test.js` — ostrý ceník; `overit_manual`, `overit_nabidka_proj_word`, `overit_sablona`, `overit_sablony_online`, `overit_sod` — firemní šablony `KNG_PODKLADY` v sezení nebyly), statické 3/3. Cílené mutace O3 + TD1 (`firma.js`, `nabidka.js`, `kontroly.js`, `preklad.js`, `konfigurace.js`, `online_ui.js`, `nastaveni_ui.js`) 43/43 chycených; celé mutační kroky jádra a serveru se nepouštěly.
+
+Dávka O3 (zadání J. V. 19. 10. 2026 „Doplň výchozí texty do Nastavení rovnou.“),
+nad `origin/claude/integrace-16-10` (`e3995e6`, v19.10.1; v19.10.2 drží souběžná
+dávka A2). Roadmapa **#431** (navazuje na #282).
+
+- **Příčina** (rozbor V8, `podklady/367_NASTAVENI_FIRMA_NAVRH.md` odd. 8):
+  v produkci byly v Nastavení → Smlouvy / Šablony → Kapitoly nabídky pole IV.,
+  V., VI. a Doložky prázdná (žlutý rámeček „Česky nevyplněno … nabídka tyto
+  kapitoly vypustí“), ač `DEFAULT_FIRMA` výchozí texty má. Uložená firma
+  (online `/api/firma` i `_DB/_nastaveni.json`) je z doby před #282 a klíče
+  kapitol vůbec nemá; `konfigNahradVMiste()` ji při načtení kopíruje celou
+  (výchozí texty zmizí) a `KONFIG_DOPLNIT_KLICE` firmu záměrně vynechává.
+- **Oprava (`src/firma.js`):** `firmaDoplnVychoziTexty(f, iPrazdne)` doplní
+  CHYBĚJÍCÍ klíče z bílé listiny `FIRMA_KAP_VYCHOZI_KLICE` (kapitoly IV.–VI.
+  a doložky CZ/EN/DE; FR výchozí text nemá). Volá se po každém načtení firmy:
+  import konfigurace i `_nastaveni.json` (`konfiguraceImport`, s varováním,
+  co se doplnilo) a nasazení online firmy (`src/ui/online_ui.js`).
+  Identifikace firmy se nikdy nedoplňuje.
+- **Vědomé vypuštění = prázdný řetězec** (výchozí volba koordinace): pole,
+  které administrátor vymaže, se nedoplňuje a nabídka kapitolu vypustí;
+  kontrola před nabídkou ji dál hlásí (K9-N32). Žádná zvláštní značka.
+- **Tlačítka (jen administrátor):** „↺ Doplnit výchozí text“ u každé kapitoly
+  a jazyka (CZ/EN/DE; vlastní text přepíše po potvrzení) a „↺ Doplnit všechny
+  prázdné“ (doplní prázdná pole, vlastní texty ani FR nemění).
+- **Zveřejnění:** `firmaKZverejneni` doplněné klíče zveřejní (jsou ve
+  `FIRMA_POLE`), `firmaLzeZverejnit` je přijme; panel zveřejnění ukáže rozdíl
+  proti online kopii bez kapitol, takže administrátorovi stačí **Zveřejnit**.
+- **Test** `src/test_kapitoly_vychozi.js` (51 kontrol; před opravou padá —
+  `firmaDoplnVychoziTexty` neexistuje a import nechá kapitoly prázdné).
+- **Značka `{TERMIN}` v kapitole V. (TD1, #330) — ROZHODNUTÍ J. V.
+  19. 10. 2026 (~11:25 UTC, přes koordinaci): schváleno přesně podle zadání —
+  bez odrážky navíc při značce, záloha na standardní lhůtu z Firmy, značka
+  nikdy viditelná v tisku, starý text funguje a kontrola radí značku.** výchozí text kapitoly V. (CZ/EN/DE) má místo
+  pevného „cca 12 týdnů“ značku `{TERMIN}`; `firmaKapitola(f, base, jazyk,
+  termin)` za ni dosadí termín dodání zakázky (týž jako `{{PODM_TERMIN_DODANI}}`,
+  s ATYP i ručním přepisem, přeložený; u FR bez vlastního znění česky).
+  S termínem v textu se samostatná odrážka „Termín dodání“ nepřidává (náhled
+  i Word `{{NAB_KAP_TERMINY}}`, příznak `FIRMA_NAB_TERMINY_TERMIN`). Bez termínu
+  platí standardní lhůta z Firmy, jinak „dle dohody“ (nové heslo slovníku) —
+  značka nikdy nezůstane v tisku (ani v `firmaPlaceholders` mimo zakázku, tedy
+  ani ve smlouvě). Kontrola `terminAtyp`: u textu se značkou mlčí, hlásí jen
+  „dle dohody“ a ATYP se smazaným termínem; u starého textu s pevným číslem
+  radí „nahraďte číslo značkou {TERMIN}“. Starý text bez značky beze změny.
+  Test `src/test_termin_kapitola.js` (39 kontrol; před opravou 26 selže a sada spadne),
+  `test_kontroly.js` +10 (před opravou 7 selže), testy #330 v `test_nabidka_kapitoly.js` a
+  `test_kontroly.js` převedené na starý text s pevnou lhůtou.
+
+**Po nasazení (J. V.):** Nastavení → Smlouvy / Šablony → Kapitoly nabídky
+zkontrolovat doplněné texty → Nastavení → Firma → **Zveřejnit firemní údaje online**.
+
+## v19.10.2 — #356 střecha EXT přes nejvyšší můstek (větev claude/a2-356)
+
+Dávka A2, dokončení #356 podle rozhodnutí J. V. 19. 10. 2026: varianty
+**A1 + B1 + C1 + D1 + E1** z návrhu https://claude.ai/artifact/9nMGAMnggiVEByuZoty9Qt.
+Nad `origin/claude/integrace-16-10` (e3995e6, v19.10.1); kód převzatý
+z `claude/a2-356-navrh` (cherry-pick 75f9fd1).
+
+- **#356 hotovo — střecha přes nejvyšší můstek se připočte:** je-li můstek
+  i v nejvyšším nástupišti (D1: můstků ≥ nadzemní nástupiště, táž podmínka
+  jako věta specifikace „přetažená i přes nástupní můstek“), přičte jádro
+  k ZASTŘEŠENÍ ŠACHTY (EXT) i k PŘÍPLATKU ZA STŘECHU V MĚDI (B1, jedna
+  položka) plochu **(šířka můstku + 0,2 m) × hloubka můstku** (A1).
+  Oplechování k fasádě beze změny (C1); platí v Modelu 1 i 2 (E1). Bez
+  rozměrů můstku nic navíc a nové upozornění `mustekStrecha` (ne zábrana).
+  Výsledek jádra nese `strecha` (`m2`, `mustekNahore`, `mustekM2`).
+- **Ruční reference** (`src/test_mustky.js`): šachta 1,51 × 1,515 m →
+  2,76165 m², můstek 1 300 × 900 mm → +1,35 m² = 4,11165 m²; zkušební ceník
+  13 808,25 → 20 558,25 Kč nákladu. Ukázkové zakázky (zkušební ceník,
+  Model 2): nabídka 1 550 000 → 1 558 000, 1 519 000 → 1 524 000,
+  1 951 000 → 1 968 000 Kč.
+- **Pojistka:** `src/test_mustky.js` 53/6 → 59/0, `src/test_kontroly.js`
+  (37 pravidel, `overit_lista.mjs` čeká 37) 137/1 → 138/0. Zakázky bez
+  můstku nebo s můstky jen níž beze změny: otisky výsledku
+  `src/test_profil_neznamy.js` 30/0 (pole `strecha` mimo otisk), fuzz
+  `src/test_fuzz_invarianty.js` 19/0.
+- **Mutace jádra #356 +5** (plocha, přesah, podmínka, měď, upozornění).
+- Příručka: kapitola 11 (můstky) a „Co je nového ve verzi v19.10.2“;
+  roadmapa #356 → hotovo.
+
+---
 
 ## v19.10.1 — B189: výchozí režim DPH ve smlouvě o dílo realizace podle rozhodnutí J. V. (větev claude/o2-b189)
 

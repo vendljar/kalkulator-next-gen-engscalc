@@ -3202,17 +3202,46 @@
    "id" : "150"
   },
   {
-   "stav" : "ceka",
+   "stav" : "hotovo",
    "nazev" : "Prověřit noční zálohování v Netlify — jednorázová kontrola",
    "hotovoKdyz" : "Existuje zapsaný protokol: plánovaná funkce prokazatelně běží každou noc, otisky v úložišti přibývají a jsou úplné, retence funguje a stažený otisk odpovídá stavu databáze.",
    "id" : "151",
-   "pozn" : "Vyžaduje pohled do administrace Netlify (logy plánované funkce) — část musí provést uživatel nebo se udělá společně. Nespouštět bez pokynu.",
+   "pozn" : "Vyžaduje pohled do administrace Netlify (logy plánované funkce) — část musí provést uživatel nebo se udělá společně. Nespouštět bez pokynu.\n\nKONTROLA 19. 10. 2026 (dávka Z1): podklady/151_ZALOHOVANI_KONTROLA_2026-10-19.md — co a kdy se zálohuje, kdo smí obnovit, mezery, postup ověření v Netlify (oddíl 5), nálezy N1–N6.\n\nHOTOVO v19.10.5 (dávka O4, větev claude/o4-zalohy): N1 ruční a přihlašovací otisk do vlastního slotu `<den>T<hhmmss>-rucne|-auto`, noční `YYYY-MM-DD` se nepřepíše (přehled má vlastní limit vynucených, hlídka #152 bez falešného varování); N2 čtení po dávkách 20 (Promise.all), trvání a velikost v odpovědi i logu noční funkce; N3 souhrn `souhrn/<klíč>` vedle otisku, přehled čte jen souhrny (starší otisky dočte); N4 test úplnosti netlify/test_zalohy.mjs (sken zápisů v kódu × tabulka zálohovaných úložišť a klíčů × skutečný otisk). Zbývá na J. V.: ověření v Netlify (oddíl 5 podkladu), N5 retence (#151a), N6 kopie mimo Netlify (#151b).",
    "detail" : "Ověřit celou cestu nočního zálohování: 1) plánovaná funkce Netlify se opravdu spouští (log funkcí v administraci Netlify, čas posledních běhů); 2) v úložišti Blobs „zalohy\" přibývají otisky se správným datem a obsahem (ceník s historií, zakázky, rejstřík, účty bez otisků hesel, šablony); 3) starší otisky se drží podle plánu (retence) a úložiště neroste bez omezení; 4) tlačítka „Zálohovat teď\" a „Stáhnout zálohu\" vracejí tentýž tvar otisku; 5) stáhnout jeden noční otisk a porovnat s aktuálním stavem databáze. Výstupem je zapsaný protokol kontroly (co se ověřilo, čísla, případné nálezy).",
    "vlna" : "E",
-   "dulezitost" : "vysoka",
+   "dulezitost" : "",
    "proc" : "Zadání 18. 8. 2026: automatické zálohování stačí online v Netlify — „přidej mi do road mapy úkoly k jeho prověření a zda běží správně.\" Po konci odlévání na Disk (#150) je noční záloha v Netlify jediná automatická. Dokud se jednou nedoloží, že opravdu běží, je to jen předpoklad.",
    "slozitost" : "S",
-   "kde" : "netlify/functions (plánovaná funkce zálohy), úložiště Blobs „zalohy\", administrace Netlify"
+   "kde" : "netlify/lib/zalohovani.mjs, netlify/functions/zaloha_nocni.mjs, zaloha_vynuceno.mjs, src/ui/online_ui.js, netlify/test_zalohy.mjs",
+   "hotovoV" : "v19.10.5"
+  },
+  {
+   "id" : "151a",
+   "nazev" : "Retence nočních otisků v Netlify Blobs (#151 N5)",
+   "vlna" : "E",
+   "stav" : "ceka",
+   "dulezitost" : "nizka",
+   "slozitost" : "S",
+   "proc" : "Otisk nese i šablony, podpisy a přílohy (u schaftscalc ~20 MB); jeden za den bez mazání ≈ 7 GB za rok v Blobs. Kontrola #151, nález N5.",
+   "detail" : "Rozhodnout pravidlo retence, např. denní otisky 60 dní, pak natrvalo jen 1. den v měsíci; otisky před obnovou a vynucené (`…-rucne`, `…-auto`) zvlášť. Mazání jen vědomou dávkou s testem, nikdy ne cesta zpátky mladší než rozhodnutá lhůta.",
+   "hotovoKdyz" : "J. V. rozhodl pravidlo retence a dávka ho zavedla s testem (nebo rozhodl, že se nemaže).",
+   "cekaNa" : "rozhodnutí J. V. (podklady/151_ZALOHOVANI_KONTROLA_2026-10-19.md, N5)",
+   "pozn" : "Čeká na rozhodnutí J. V. Komentář o velikosti otisku v zaloha_nocni.mjs opraven ve v19.10.5.",
+   "zavisi" : [{"id": "151", "typ": "tvrda", "proc": "vychází z kontroly zálohování"}]
+  },
+  {
+   "id" : "151b",
+   "nazev" : "Kopie nočních otisků mimo Netlify (#151 N6)",
+   "vlna" : "E",
+   "stav" : "ceka",
+   "dulezitost" : "stredni",
+   "slozitost" : "M",
+   "proc" : "Otisky leží ve stejném Blobs jako ostrá data; smazání webu nebo chyba účtu Netlify vezme data i zálohy najednou. Mimo Netlify je jen soubor na Disku bez hesel a podpisů. Kontrola #151, nález N6 (hlavní mezera).",
+   "detail" : "Varianty k rozhodnutí: (a) pravidelně (týdně) ručně stáhnout zálohu na Disk — bez hesel, po havárii celého webu se účty zakládají znovu; (b) samostatná dávka: týdenní šifrovaná kopie otisku mimo Netlify.",
+   "hotovoKdyz" : "J. V. zvolil variantu a je zavedená (postup zapsaný, nebo funkce s testem).",
+   "cekaNa" : "rozhodnutí J. V. (podklady/151_ZALOHOVANI_KONTROLA_2026-10-19.md, N6)",
+   "pozn" : "Čeká na rozhodnutí J. V.",
+   "zavisi" : [{"id": "151", "typ": "tvrda", "proc": "vychází z kontroly zálohování"}]
   },
   {
    "dulezitost": "",
@@ -5240,7 +5269,7 @@
    "detail": "Návrh: termín dodání jako první odrážka kapitoly V. (náhled i Word), pevné číslo z textu Firmy vypustit. U atypické zakázky dnes zákazník dostane o 4 týdny kratší termín, než počítá krycí list.",
    "hotovoKdyz": "Nabídka u ATYP nese prodloužený termín z krycího listu; test v náhledu i ve Wordu.",
    "kde": "`src/kryci.js` (kryciTerminDodani), `src/nabidka.js` (kapitoly)",
-   "pozn": "ROZHODNUTÍ J. V. 24. 9. 2026: schváleno (podklad #277, bod 2). Pevné „cca 12 týdnů\" v textu kapitoly V. ve Firmě na webech upraví administrátor.\n\nHOTOVO v24.9.1 (E1): termín dodání z krycího listu (s ATYP a ručním přepisem) je první odrážkou kapitoly V. v náhledu i PDF; ve Wordu přes {{NAB_KAP_TERMINY}} v šabloně v11 (#331). Překlad EN/DE/FR vzorem. Nové pravidlo kontrol „Termín dodání u atypické zakázky“ hlásí dvě různé lhůty (text kapitoly V. z Firmy × termín) i chybějící lhůtu ve Firmě. Testy test_nabidka_kapitoly +11, test_kontroly +8. Vypustit „cca 12 týdnů“ z textu Firmy na webech zůstává administrátorovi — kontrola na to upozorní.",
+   "pozn": "ROZHODNUTÍ J. V. 24. 9. 2026: schváleno (podklad #277, bod 2). Pevné „cca 12 týdnů\" v textu kapitoly V. ve Firmě na webech upraví administrátor.\n\nHOTOVO v24.9.1 (E1): termín dodání z krycího listu (s ATYP a ručním přepisem) je první odrážkou kapitoly V. v náhledu i PDF; ve Wordu přes {{NAB_KAP_TERMINY}} v šabloně v11 (#331). Překlad EN/DE/FR vzorem. Nové pravidlo kontrol „Termín dodání u atypické zakázky“ hlásí dvě různé lhůty (text kapitoly V. z Firmy × termín) i chybějící lhůtu ve Firmě. Testy test_nabidka_kapitoly +11, test_kontroly +8. Vypustit „cca 12 týdnů“ z textu Firmy na webech zůstává administrátorovi — kontrola na to upozorní.\n\nROZHODNUTÍ J. V. 19. 10. 2026 (~11:25 UTC, přes koordinaci): řešení se značkou {TERMIN} schváleno přesně podle zadání — bez odrážky navíc při značce, záloha na standardní lhůtu z Firmy, značka nikdy viditelná v tisku, starý text funguje a kontrola radí značku. DOTAŽENO v19.10.3 (dávka O3; zadání J. V. „TD1 vymysli, jak zohlednit“): výchozí text kapitoly V. (CZ/EN/DE) nese značku {TERMIN} místo pevného „cca 12 týdnů“ a nabídka za ni dosadí termín dodání zakázky (s ATYP, přeložený); s ní se samostatná odrážka nepřidává (náhled i Word {{NAB_KAP_TERMINY}}). Bez termínu lhůta z Firmy, jinak „dle dohody“. Kontrola terminAtyp u starého textu radí číslo nahradit značkou. Viz #431.",
    "hotovoV": "v24.9.1"
   },
   {
@@ -5591,7 +5620,7 @@
   {
    "id": "356",
    "vlna": "B",
-   "stav": "ceka",
+   "stav": "hotovo",
    "dulezitost": "stredni",
    "slozitost": "S",
    "nazev": "Můstky ↔ zastřešení (EXT): střecha přetažená přes nejvyšší můstek má plochu navíc (bod 4 z rozboru K13)",
@@ -5599,7 +5628,8 @@
    "detail": "ROZHODNUTO J. V. 16. 10. 2026 (plán víkendu, dávka A2): plochu střechy přes nejvyšší můstek (EXT) automaticky PŘIPOČÍTAT do zastřešení. DNES (src/engine.js, jen exteriér): ZASTŘEŠENÍ ŠACHTY (EXT) = (šířka + 0,2) × (hloubka + 0,1) m² × C.zastreseniM2Kc; PŘÍPLATEK ZA STŘECHU V MĚDI (EXT) = tatáž plocha × C.priplatky.medStrechaM2; OPLECHOVÁNÍ K FASÁDĚ (EXT) = (H − prohlubeň) × 2 bm. Text „přetažená i přes nástupní můstek\" platí, když je můstek i v nejvyšším nástupišti (dnes: mustkyKs ≥ počet nadzemních nástupišť). NÁVRH: za téže podmínky plocha navíc = (mustekSirkaMm/1000 + 0,2) × (mustekHloubkaMm/1000) m² — přesah 0,2 m jako u šachty, hloubka = vzdálenost od šachty k fasádě; přičíst k ZASTŘEŠENÍ ŠACHTY (EXT) i k příplatku za měď (jedna střecha, jedna položka), nebo samostatný řádek ZASTŘEŠENÍ MŮSTKU (EXT) — viz otázka (b). Nižší můstky se nezastřešují (kryje je můstek nad nimi). OTÁZKY PRO J. V.: (a) přesahy: 0,2 m do šířky jako u šachty? přesah do hloubky žádný (střecha končí u fasády)? (b) přičíst do položky zastřešení šachty, nebo samostatný řádek? (c) mění se OPLECHOVÁNÍ K FASÁDĚ (napojení střechy na fasádu je u můstku, ne u šachty; boky střechy nad můstkem = 2 × hloubka můstku lemování navíc?) (d) nestačí podmínka „můstek ve všech nadzemních\" — přidat do zadání zaškrtávátko „můstek i v nejvyšším nástupišti\"? (e) Model 1 × Model 2 jako u #355.",
    "hotovoKdyz": "Plocha střechy (a příplatku za měď) zahrnuje střechu nad nejvyšším můstkem podle schválených přesahů; interiér a zakázky bez můstku beze změny; test + mutace jádra.",
    "kde": "`src/engine.js` (ZASTŘEŠENÍ ŠACHTY (EXT), medStrecha, oplechFasada), `src/techspec.js` (tsStrecha), `src/test_mustky.js`",
-   "pozn": "Návrh pro J. V. na 19. 10. 2026: https://claude.ai/artifact/9nMGAMnggiVEByuZoty9Qt (varianty a–e s řezem, půdorysem a dopadem na tři ukázkové zakázky ze zkušebního ceníku; doporučení A1 + B1 + C1 + D1 + E1). J. V. 17. 10.: „toto přeskoč a připrav mi na pondělí detailní vizuální návrh variant“ — do kódu zatím ne. Hotový kód doporučené kombinace leží ve větvi `claude/a2-356-navrh` (nesloučí se; test_mustky 59/0, mutace jádra 5/5); v `claude/a2-mustky` revertován."
+   "pozn": "Hotovo v19.10.2 (větev `claude/a2-356`) podle rozhodnutí J. V. 19. 10. 2026: varianty A1 + B1 + C1 + D1 + E1 z návrhu https://claude.ai/artifact/9nMGAMnggiVEByuZoty9Qt — plocha (šířka můstku + 0,2 m) × hloubka můstku do ZASTŘEŠENÍ ŠACHTY (EXT) i příplatku za měď, podmínka můstků ≥ nadzemní nástupiště, oplechování beze změny, Model 1 i 2; bez rozměrů upozornění `mustekStrecha`. Test `src/test_mustky.js` 53/6 → 59/0, mutace jádra 5.",
+   "hotovoV": "v19.10.2"
   },
   {
    "id": "357",
@@ -5780,7 +5810,7 @@
    "slozitost" : "L",
    "nazev" : "P10: platební podmínky z krycího listu — 2 měsíce, splatnost, „bez DPH\", po milnících, záruka + návrh plánu plateb",
    "proc" : "K15-N71: platební podmínky žijí na devíti místech a v sedmi bodech si odporují. Rozhodnutí J. V. 29. 9. 2026: vše se dotahuje z krycího listu, při rozporu má přednost krycí list; standard 50 / 40 / 10; platnost 2 měsíce; splatnost z krycího listu; znění „bez DPH\"; fakturace většinou po milnících, může být i měsíční; pro plán plateb PROJ (4 znění) a „vše z krycího listu\" připravit návrh.",
-   "detail" : "ODLOŽENO J. V. 16. 10. 2026: „musíme to projít víc na detail“ — projít s J. V. v pondělí 19. 10. 2026, o víkendu nespouštět. ROZHODNUTO J. V. 29. 9. 2026 (oddíl 7 návrhu, po vyzkoušení prototypu): OCK tři firemní milníky, věty o podmínce úhrady u 1. a 2. splátky, měsíční fakturace větou „Fakturace probíhá měsíčně podle skutečně provedených prací.“; PROJ čtyři předvolby, výchozí Standard po činnostech, splátky SoD PROJ se stejným milníkem sečíst, šablona SoD PROJ se seznamem plateb jedním symbolem. POŘADÍ: nejdřív etapa B (PROJ plán plateb + šablona PROJ v4 + dopočet SoD PROJ, bod P9.3 z #366), pak etapa A (OCK platební kalendář + šablona CN v14 + SoD OCK). NÁVRH v29.9.3: podklady/NAVRH_PLATEBNI_PODMINKY_2026-09-29.md — krycí list jako jediný zdroj; OCK platební kalendář (procento + milník, předvolby, součet 100 %, symbol {{PODM_PLATEBNI_KALENDAR}} pro CN v14 a SoD); PROJ plán plateb po činnostech s předvolbami, ze kterého se odvodí nabídka, krycí list, SoD (dopočet splátek) i Nastavení. Věty „(bez DPH)\" jsou v šabloně CN v13. HOTOVO v29.9.2: 10.1 platnost 2 měsíce i v náhradních hodnotách + skloňování, 10.2 náhled PROJ bere splatnost a platnost z krycího listu PROJ, 10.4 slovník zná věty o dílčích dokladech se zněním „(bez DPH)\", 10.5 způsob fakturace výběrem Po milnících / Měsíční (výchozí po milnících, staré „Náš standard / měsíční\" se čte jako po milnících), 10.7 záruka v kapitole V. z krycího listu (věta o záruce z Firmy vypadne). ZBÝVÁ: návrh 10.3 („vše z krycího listu\") a 10.6 (plán plateb PROJ), věty „(bez DPH)\" do šablony CN v13. Hned: platnost 2 měsíce všude a skloňování, náhled PROJ bere splatnost a platnost z krycího listu, způsob fakturace výchozí po milnících (volba měsíční), záruka z krycího listu, věty „bez DPH\". Návrh: jak by krycí list řídil celé znění podmínek v nabídce, Wordu a SoD (OCK i PROJ), včetně splátek SoD PROJ a řady čísel smluv. ETAPA B HOTOVÁ ve v30.9.2 (větev claude/etapa-b-plan-plateb-v30.9.1, sloučeno do test-draft): src/plan_plateb.js (předvolby, dopočet, kontroly, snímek, převod starších), plán v krycím listu PROJ, Nastavení → Smlouvy / Šablony (firemní plán), nabídka PROJ online + symboly PROJ_PLATBY_* (šablona PROJ v4: nastroje/vyrob_sablony.js --proj-v4), smlouva o dílo PROJ se {{SODP_PLATEBNI_KALENDAR}} (šablona SoD PROJ v2: --sod-proj), zábrany planPlateb100/planPlatebSoucet a brána dokumentů. Zbývá etapa A (OCK platební kalendář). ETAPA A ČÁST 1 HOTOVÁ ve v30.9.4 (větev claude/ock-platebni-podminky-nabidka): nabídka OCK tiskne platební kalendář z krycího listu — splátka s 0 % (Bez zálohy, K18-N94) se vynechá a doklady se přečíslují, způsob fakturace „Měsíční“ dá větu „Fakturace probíhá měsíčně podle skutečně provedených prací.“ místo 50/40/10 (online náhled i Word: symboly {{PODM_PLATEBNI_KALENDAR}} a {{PODM_FAKTURACE_MESICNE}}, šablona CN v14 z nastroje/vyrob_sablony.js --cn-v14, kontrola platbyWordOck). ZBÝVÁ z etapy A: smlouva o dílo OCK (symboly SOD_SPLATKA* aplikace neplní, šablona SoD nové symboly nemá — potřeby J. V.), 10.3 „vše z krycího listu“. — OD v1.10.2 (#383, pokyn J. V. 1. 10. 2026 „Nastav plán plateb viz příloha jako výchozí standard“): výchozí předvolba nové zakázky je Záloha + zbytek po předání se zálohou 70 % (dřív Standard po činnostech, záloha 50 %). — ROZHODNUTÍ J. V. 19. 10. 2026 (náhled https://claude.ai/artifact/UZC5zQB14xBBvkN1MMdnPE, návrh podklady/367_NASTAVENI_FIRMA_NAVRH.md): varianta B, „z kódu vše převést do Firma“, Q1–Q6 podle doporučení (Q4 zatím blokovat, izolováno v PODMINKY_SOUCET_BLOKUJE). FÁZE 2a HOTOVÁ v19.10.6 (větev claude/v8-367-firma, dávka V8): src/podminky.js (továrna = dnešní hodnoty, sloučení s Firmou při čtení), krycí listy OCK a PROJ bez literálů platebních podmínek, Nastavení → Smlouvy / Šablony s přepínačem OCK | PROJ, zveřejnění a serverová kontrola. FÁZE 2b HOTOVÁ v19.10.7: věty platebního kalendáře CN a SoD ve Firmě v CZ/EN/DE/FR (cizí výchozí = slovník), texty nabídky PROJ ve Firmě (+ symboly PROJ_CENA_NEZAHRNUJE, PROJ_POZADOVANO_OD_INVESTORA, PROJ_TERMINY, PROJ_DOLOZKY), doložky PROJ prázdné a vypnuté, rozšíření (typ smlouvy, licence PD, pojištění, Cena nezahrnuje), věta „5 let záruka“ z kap. V pryč, FR výchozí kapitoly IV.–VI. (ke kontrole: podklady/367_PREKLADY_KONTROLA.md). ZBÝVÁ: šablona Wordu PROJ se symboly textů nabídky; kontrola překladů rodilými mluvčími; odpověď J. V. k Q4 (blokovat / jen upozornit).",
+   "detail" : "ODLOŽENO J. V. 16. 10. 2026: „musíme to projít víc na detail“ — projít s J. V. v pondělí 19. 10. 2026, o víkendu nespouštět. ROZHODNUTO J. V. 29. 9. 2026 (oddíl 7 návrhu, po vyzkoušení prototypu): OCK tři firemní milníky, věty o podmínce úhrady u 1. a 2. splátky, měsíční fakturace větou „Fakturace probíhá měsíčně podle skutečně provedených prací.“; PROJ čtyři předvolby, výchozí Standard po činnostech, splátky SoD PROJ se stejným milníkem sečíst, šablona SoD PROJ se seznamem plateb jedním symbolem. POŘADÍ: nejdřív etapa B (PROJ plán plateb + šablona PROJ v4 + dopočet SoD PROJ, bod P9.3 z #366), pak etapa A (OCK platební kalendář + šablona CN v14 + SoD OCK). NÁVRH v29.9.3: podklady/NAVRH_PLATEBNI_PODMINKY_2026-09-29.md — krycí list jako jediný zdroj; OCK platební kalendář (procento + milník, předvolby, součet 100 %, symbol {{PODM_PLATEBNI_KALENDAR}} pro CN v14 a SoD); PROJ plán plateb po činnostech s předvolbami, ze kterého se odvodí nabídka, krycí list, SoD (dopočet splátek) i Nastavení. Věty „(bez DPH)\" jsou v šabloně CN v13. HOTOVO v29.9.2: 10.1 platnost 2 měsíce i v náhradních hodnotách + skloňování, 10.2 náhled PROJ bere splatnost a platnost z krycího listu PROJ, 10.4 slovník zná věty o dílčích dokladech se zněním „(bez DPH)\", 10.5 způsob fakturace výběrem Po milnících / Měsíční (výchozí po milnících, staré „Náš standard / měsíční\" se čte jako po milnících), 10.7 záruka v kapitole V. z krycího listu (věta o záruce z Firmy vypadne). ZBÝVÁ: návrh 10.3 („vše z krycího listu\") a 10.6 (plán plateb PROJ), věty „(bez DPH)\" do šablony CN v13. Hned: platnost 2 měsíce všude a skloňování, náhled PROJ bere splatnost a platnost z krycího listu, způsob fakturace výchozí po milnících (volba měsíční), záruka z krycího listu, věty „bez DPH\". Návrh: jak by krycí list řídil celé znění podmínek v nabídce, Wordu a SoD (OCK i PROJ), včetně splátek SoD PROJ a řady čísel smluv. ETAPA B HOTOVÁ ve v30.9.2 (větev claude/etapa-b-plan-plateb-v30.9.1, sloučeno do test-draft): src/plan_plateb.js (předvolby, dopočet, kontroly, snímek, převod starších), plán v krycím listu PROJ, Nastavení → Smlouvy / Šablony (firemní plán), nabídka PROJ online + symboly PROJ_PLATBY_* (šablona PROJ v4: nastroje/vyrob_sablony.js --proj-v4), smlouva o dílo PROJ se {{SODP_PLATEBNI_KALENDAR}} (šablona SoD PROJ v2: --sod-proj), zábrany planPlateb100/planPlatebSoucet a brána dokumentů. Zbývá etapa A (OCK platební kalendář). ETAPA A ČÁST 1 HOTOVÁ ve v30.9.4 (větev claude/ock-platebni-podminky-nabidka): nabídka OCK tiskne platební kalendář z krycího listu — splátka s 0 % (Bez zálohy, K18-N94) se vynechá a doklady se přečíslují, způsob fakturace „Měsíční“ dá větu „Fakturace probíhá měsíčně podle skutečně provedených prací.“ místo 50/40/10 (online náhled i Word: symboly {{PODM_PLATEBNI_KALENDAR}} a {{PODM_FAKTURACE_MESICNE}}, šablona CN v14 z nastroje/vyrob_sablony.js --cn-v14, kontrola platbyWordOck). ZBÝVÁ z etapy A: smlouva o dílo OCK (symboly SOD_SPLATKA* aplikace neplní, šablona SoD nové symboly nemá — potřeby J. V.), 10.3 „vše z krycího listu“. — OD v1.10.2 (#383, pokyn J. V. 1. 10. 2026 „Nastav plán plateb viz příloha jako výchozí standard“): výchozí předvolba nové zakázky je Záloha + zbytek po předání se zálohou 70 % (dřív Standard po činnostech, záloha 50 %). — ROZHODNUTÍ J. V. 19. 10. 2026 (náhled https://claude.ai/artifact/UZC5zQB14xBBvkN1MMdnPE, návrh podklady/367_NASTAVENI_FIRMA_NAVRH.md): varianta B, „z kódu vše převést do Firma“, Q1–Q6 podle doporučení (Q4: J. V. „Nedovolit zveřejnit“ — PODMINKY_SOUCET_BLOKUJE). FÁZE 2a HOTOVÁ v19.10.6 (větev claude/v8-367-firma, dávka V8): src/podminky.js (továrna = dnešní hodnoty, sloučení s Firmou při čtení), krycí listy OCK a PROJ bez literálů platebních podmínek, Nastavení → Smlouvy / Šablony s přepínačem OCK | PROJ, zveřejnění a serverová kontrola. FÁZE 2b HOTOVÁ v19.10.7: věty platebního kalendáře CN a SoD ve Firmě v CZ/EN/DE/FR (cizí výchozí = slovník), texty nabídky PROJ ve Firmě (+ symboly PROJ_CENA_NEZAHRNUJE, PROJ_POZADOVANO_OD_INVESTORA, PROJ_TERMINY, PROJ_DOLOZKY), doložky PROJ prázdné a vypnuté, rozšíření (typ smlouvy, licence PD, pojištění, Cena nezahrnuje), věta „5 let záruka“ z kap. V pryč, FR výchozí kapitoly IV.–VI. (ke kontrole: podklady/367_PREKLADY_KONTROLA.md). ZBÝVÁ: šablona Wordu PROJ se symboly textů nabídky; kontrola překladů rodilými mluvčími.",
    "hotovoKdyz" : "Etapa B i A hotové: náhled, Word i SoD (OCK i PROJ) berou platební podmínky z krycího listu; test před opravou → po opravě.",
    "kde" : "`src/kryci.js`, `src/kryci_proj.js`, `src/firma.js`, `src/nabidka.js`, `src/nabidka_proj.js`, `src/preklad.js`",
    "zavisi" : [
@@ -6731,6 +6761,37 @@
    "kde" : "`src/kryci.js`, `src/sod.js`, `src/ui/ukazkove_ui.js`, `src/ui/sod_ui.js`, `src/test_sod_en.js`",
    "hotovoV" : "v19.10.1",
    "pozn" : "Předběžné id (přidělí koordinace při sloučení)."
+  },
+ {
+  "id" : "431",
+  "vlna" : "B",
+  "stav" : "hotovo",
+  "dulezitost" : "vysoka",
+  "slozitost" : "S",
+  "hotovoV" : "v19.10.3",
+  "nazev" : "Výchozí texty kapitol nabídky IV.–VI. a doložek se doplní do Nastavení (prázdná pole v produkci)",
+  "proc" : "Zadání J. V. 19. 10. 2026: „Doplň výchozí texty do Nastavení rovnou.“ V produkci byla česká pole kapitol IV.–VI. a doložek prázdná, ač DEFAULT_FIRMA texty má — uložená firma (online i _nastaveni.json) je neměla nebo měla prázdné a konfigNahradVMiste() ji kopíruje celou; nabídka kapitoly vypouštěla.",
+  "detail" : "HOTOVO v19.10.3 (dávka O3, větev claude/o3-kapitoly-vychozi). Příčina (rozbor V8): uložená firma je z doby před #282 a klíče kapitol nemá; konfigNahradVMiste() ji kopíruje celou. firmaDoplnVychoziTexty() po každém načtení firmy (konfiguraceImport → import i _nastaveni.json, online_ui po nasazení online firmy) doplní CHYBĚJÍCÍ klíče z bílé listiny FIRMA_KAP_VYCHOZI_KLICE (CZ/EN/DE; FR ne); prázdný řetězec = vědomé vypuštění a zůstává; identifikace firmy se nedoplňuje. Tlačítka (jen administrátor) „Doplnit výchozí text“ u kapitoly a jazyka a „Doplnit všechny prázdné“. firmaKZverejneni doplněné klíče zveřejní, firmaLzeZverejnit je přijme. ROZŠÍŘENO o TD1 (#330): značka {TERMIN} v kapitole V. — termín dodání zakázky přímo ve větě, bez dvojí lhůty u ATYP (schváleno J. V. 19. 10. 2026). Testy src/test_kapitoly_vychozi.js a src/test_termin_kapitola.js. Po nasazení: J. V. zkontroluje texty a zveřejní firmu.",
+  "hotovoKdyz" : "Chybějící klíče kapitol se při načtení doplní, prázdné „“ zůstává, tlačítka fungují, zveřejnění je nese; testy a cílené mutace bez přeživší.",
+  "kde" : "`src/firma.js`, `src/konfigurace.js`, `src/ui/online_ui.js`, `src/ui/nastaveni_ui.js`, `src/test_kapitoly_vychozi.js`",
+  "zavisi" : [
+   "282"
+  ],
+  "pozn" : "Předběžné id (přidělí koordinace při sloučení)."
+ },
+  {
+   "id" : "433",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "nizka",
+   "slozitost" : "S",
+   "nazev" : "H2 drobnosti: plocha v kartě výjimky na celé m² (V7-N1), blok CIN_* bez páru chybou (B191), okno hesla správce se neprodlužuje (B192)",
+   "proc" : "Kontrola V7 (V7-N1): karta Cenové výjimky ukazovala plochu na setiny, schválení drží celé m² (B183 c). Audit kola 28, informativní: B191 nevyvážený blok z blokyPryc tiše zůstal v SoD projekce, B192 heslo správce v paměti stránky klouzavě až neomezeně.",
+   "detail" : "V7-N1: karta ukáže plochu toutéž funkcí jako obsah (`vyjimkyM2Schvaleni`, celé m²) a u neceločíselné plochy poznámku „zaokrouhleno pro schválení“; mez B183 beze změny. B191: `odstranPrazdneBloky` hází, když blok z `blokyPryc` nejde odstranit (dokument nevznikne, hláška „Opravte šablonu“). B192: okno ZOBRAZENI_HESLO_MS se počítá od zadání hesla, uložením se neprodlužuje; mez XSS zapsána v BEZPECNOST_MEZE.md. B193 (podklad) beze změny.",
+   "hotovoKdyz" : "Testy s pojistkou (test_vyjimky, test_sod_proj_rozsah, test_zobrazeni_heslo_okno), mutace „H2 …“ chycené, meze zapsané.",
+   "kde" : "`src/vyjimky.js`, `src/docxgen.js`, `src/ui/online_ui.js`, `mutace_jadro.mjs`, `netlify/mutace.mjs`",
+   "hotovoV" : "v19.10.4",
+   "pozn" : "Předběžné id (přidělí koordinace při sloučení; 431–432 nechány souběžným dávkám)."
   }
  ],
  "meta" : {

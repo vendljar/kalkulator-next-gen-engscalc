@@ -114,13 +114,16 @@ test('B126: hláška u chybějícího profilu říká „rozměr chybí"', eng.p
  * a nové jádro dává bajt po bajtu totéž — ceny ani mezivýsledky se nehnuly.
  * Totéž platí pro šířku bočního světlíku (#381, 1. 10. 2026): tři nová pole
  * (předpočítaná, ruční a použitá šířka) do otisku nevstupují, otisky se
- * nemění. */
+ * nemění. Střecha přes nejvyšší můstek (#356, 17. 10. 2026) přidala
+ * popisné pole `strecha` (plocha, příznak, plocha nad můstkem); bez můstku
+ * se ceny nemění, pole do otisku nevstupuje a otisky zůstávají. */
 const OTISK_BEZ = ['bokyKs', 'bokyKsAuto', 'bokyKsRucne', 'dvere', 'dvereDva', 'dvereJeden', 'dvereBez',
   'mezera', 'nadM2', 'bokyM2', 'material', 'boky', 'sirkaPredpocitana', 'sirkaRucne', 'sirka'];
 const otiskOcisti = r => {
   const x = JSON.parse(JSON.stringify(r));
   OTISK_BEZ.forEach(k => { delete x.zaskleni.vypln[k]; });
   delete x.oplasteni.zakladPasu; delete x.oplasteni.svetliky;
+  delete x.strecha;
   return x;
 };
 const OTISKY = {

@@ -83,6 +83,7 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
 .done li:last-child{border-bottom:0}
 .done b{font-family:var(--display);font-size:15px;min-width:22px}
 .note{font-size:10.5px;color:var(--muted)}
+a{color:var(--steel);overflow-wrap:anywhere}
 @media (max-width:480px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.row{grid-template-columns:minmax(0,1fr) 72px}.steps{flex-basis:84px}}
 .celkem{margin-left:auto;text-align:right;display:grid;gap:1px}
 .celkem .ck{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
@@ -106,26 +107,24 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
 
 <script id="data" type="application/json">
 {
- "aktualizace": "19. 10. 2026 08:22 UTC",
+ "aktualizace": "19. 10. 2026 11:31 UTC",
  "koordinace": {
-  "id": "session_0144Y7gXWeprriv4yf4wKL5T",
-  "kontext": 37
+  "id": "session_017KEALG3ppimL5fW2XswzrB",
+  "kontext": 12
  },
- "releasy": "vydáno v18.10.15 (c9577ed), v15.10.14 · k vydání: v19.10.1 (65ca5b5)",
+ "releasy": "vydáno v19.10.1 (65ca5b5), v18.10.15 (c9577ed), v15.10.14 · bez tagu: žádná",
  "cekaNaJV": [
-  "Pondělní souhrn víkendu a seznam rozhodnutí s doporučeními: https://claude.ai/artifact/Dxsfj3UhvSxPnpRzuLeuUi",
-  "Vydat release v19.10.1 (B189) — odkaz v sezení ŘÍDÍCÍ 18.10 (v18.10.15 už vydán).",
-  "Pondělí 19. 10.: zvolit varianty #356 — https://claude.ai/artifact/9nMGAMnggiVEByuZoty9Qt (doporučeno A1+B1+C1+D1+E1).",
-  "Pondělí 19. 10.: #367 platební podmínky — podklad s 12 otázkami a doporučeními https://claude.ai/artifact/1Szx195YEHNcmTwXGh1Doi (doporučeno: varianta B, firemní standard OCK v Nastavení → Firma).",
-  "Pondělí (nepovinné): B183 — zpřesnit obsah výjimky na 0,1 m² (dnes celé m², nekrytý nárůst < 1 m²; výchozí: nechat a jen opravit znění — hotovo).",
-  "Po posunu test: Ceník → 8 předzaškrtnutých → Zveřejnit; Firma → skladné; Šablony → SoD realizace v3, projekce v4, pak EN/DE/FR (přílohy V3/V5); kontrola účetní a rodilých mluvčích (podklady/SOD_EN_KONTROLA.md); sdílet soupis novinek obchodníkům."
+  "#367: schválit náhled Nastavení → Firma https://claude.ai/artifact/UZC5zQB14xBBvkN1MMdnPE a otázky Q1–Q6 (doporučeno vše ano: data ve Firmě, přepínač OCK|PROJ + společný blok, propis do rozpracovaných variant, věty i EN/DE/FR, součet ≠ 100 % blokuje, splatnost 14/14, rozšíření R1–R8).",
+  "Po nasazení O3 do test: Nastavení → Firma → zkontrolovat doplněné kapitoly IV.–VI. a doložky → Zveřejnit.",
+  "Nasazení po test: Firma → skladné; Šablony SoD realizace v3, projekce v4, pak EN/DE/FR (přílohy V3/V5); kontrola účetní a rodilých mluvčích; sdílet soupis novinek.",
+  "Nepovinné: B183 (plocha výjimky 0,1 m²), V7-N1, mazání sloučených větví, main (dnes v15.10.14)."
  ],
  "dlazdice": [
   {
    "k": "main",
    "v": "v15.10.14",
-   "d": "1cbab3a · = test",
-   "s": "ok"
+   "d": "1cbab3a · jen na pokyn J. V.",
+   "s": "idle"
   },
   {
    "k": "test",
@@ -136,7 +135,7 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
   {
    "k": "integrace",
    "v": "v19.10.1",
-   "d": "65ca5b5 · = test",
+   "d": "e3995e6 · = test + předávka",
    "s": "ok"
   },
   {
@@ -157,36 +156,100 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
  ],
  "sezeni": [
   {
-   "nazev": "ŘÍDÍCÍ 18.10 - Koordinace neděle/noci 18.–19. 10. a pondělní souhrn",
-   "id": "session_0144Y7gXWeprriv4yf4wKL5T",
+   "nazev": "ŘÍDÍCÍ 19.10 - Koordinace po v19.10.1 (#356, #367, nasazení)",
+   "id": "session_017KEALG3ppimL5fW2XswzrB",
    "role": "koordinace",
    "stav": "run",
    "stavText": "koordinuje",
    "faze": null,
-   "eta": "po 06:30",
-   "kontext": 3,
-   "kontextTok": 20,
-   "bezi": "15 min",
-   "hlaseni": "právě teď",
-   "konec": "po 04:30 UTC",
-   "co": "Slučuje K1/S1 do test, spouští noční dávky N4, H1, V7, K2; pondělní souhrn pro J. V.",
-   "dalsi": "O2 B189 → integrace → test"
+   "eta": "~3 h",
+   "kontext": 12,
+   "kontextTok": 123,
+   "bezi": "2 h 55 min",
+   "hlaseni": "11:15",
+   "konec": null,
+   "co": "Rozhodnutí J. V.: #356 A1+B1+C1+D1+E1 → A2 dokončuje (v19.10.2); #367 B + vše z kódu do Firma → V8 nejdřív náhled.",
+   "dalsi": "A2 → integrace → sady + mutace → test → release"
   },
   {
    "nazev": "A2 #355 můstky ↔ přechodové plechy + #356 střecha přes můstek",
    "id": "session_01BDzh45kuUGJRwFiQATyvgS",
    "role": "dávka",
+   "stav": "run",
+   "stavText": "dokončuje #356",
+   "faze": 0,
+   "eta": "~1,5 h",
+   "kontext": 29,
+   "bezi": "5 min",
+   "hlaseni": "11:14",
+   "konec": "~12:45 UTC",
+   "co": "#356 A1+B1+C1+D1+E1 (rozhodnutí J. V. 19. 10.) — převod do claude/a2-356 nad integrací, v19.10.2, sady + cílené mutace",
+   "dalsi": "Souhrn koordinaci → sloučení do integrace",
+   "kontextTok": 291
+  },
+  {
+   "nazev": "V8 #367 platební podmínky do Nastavení → Firma — návrh obrazovky (OCK/PROJ)",
+   "id": "session_01CbJXVvjaLYFgsPHkjAD7T3",
+   "role": "dávka",
    "stav": "warn",
    "stavText": "čeká na J. V.",
-   "faze": 4,
-   "eta": "po",
-   "kontext": 25,
-   "bezi": "5 min",
-   "hlaseni": "08:58",
-   "konec": "po 19. 10.",
-   "co": "#355 jen upozornění v kontrolách; #356 plocha přes nejvyšší můstek do zastřešení",
-   "dalsi": "#355 v integraci (8d76b1c); #356 jen návrh — volba variant v pondělí",
-   "kontextTok": 255
+   "faze": 0,
+   "eta": "po schválení",
+   "kontext": null,
+   "kontextTok": null,
+   "bezi": "právě",
+   "hlaseni": "11:21",
+   "konec": null,
+   "co": "Fáze 1 hotová: náhled https://claude.ai/artifact/UZC5zQB14xBBvkN1MMdnPE, podklad 367_NASTAVENI_FIRMA_NAVRH.md (a04c3df); mapa natvrdo: OCK 17, PROJ 9, rozšíření R1–R8",
+   "dalsi": "Fáze 2 (~1,5 dávky) po schválení Q1–Q6"
+  },
+  {
+   "nazev": "O3 výchozí texty kapitol IV.–VI. a doložek do prázdného Nastavení → Firma (v19.10.3)",
+   "id": "session_01SZFKugr7LSrLJEAKUKzcPC",
+   "role": "dávka",
+   "stav": "run",
+   "stavText": "kód",
+   "faze": 0,
+   "eta": "~1,5 h",
+   "kontext": null,
+   "kontextTok": null,
+   "bezi": "právě",
+   "hlaseni": "11:18",
+   "konec": "~12:50 UTC",
+   "co": "Prázdné kapitoly IV.–VI. a doložky v Nastavení → Firma doplnit výchozími texty + tlačítko; TD1: značka {TERMIN} v kapitole V. (termín ze zakázky vč. ATYP +4 týdny)",
+   "dalsi": "Souhrn → integrace → test → J. V. Zveřejnit"
+  },
+  {
+   "nazev": "H2 drobné nálezy V7-N1 (plocha výjimky v kartě) + B191, B192 (v19.10.4)",
+   "id": "session_019ebByGfUeLaVQf6kNdj8MV",
+   "role": "dávka",
+   "stav": "run",
+   "stavText": "kód",
+   "faze": 0,
+   "eta": "~1,25 h",
+   "kontext": null,
+   "kontextTok": null,
+   "bezi": "právě",
+   "hlaseni": "11:20",
+   "konec": "~12:35 UTC",
+   "co": "V7-N1 karta výjimky ukáže plochu jako schválení (celé m²); B191/B192 malé opravy nebo zápis",
+   "dalsi": "Souhrn → integrace → test"
+  },
+  {
+   "nazev": "Z1 #151 kontrola nočního zálohování v Netlify (jen rozbor, bez kódu)",
+   "id": "session_01K3WxZuMWd8hP3quKCxfFoY",
+   "role": "dávka",
+   "stav": "run",
+   "stavText": "rozbor",
+   "faze": null,
+   "eta": "~1 h",
+   "kontext": null,
+   "kontextTok": null,
+   "bezi": "právě",
+   "hlaseni": "11:20",
+   "konec": "~12:20 UTC",
+   "co": "#151: co se v noci zálohuje, mezery, jak ověřit v Netlify, test obnovy",
+   "dalsi": "Podklad + artefakt pro J. V."
   },
   {
    "nazev": "V3 #380 + #157 smlouva o dílo v angličtině",
@@ -196,32 +259,60 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
    "stavText": "hotovo",
    "faze": 4,
    "eta": "hotovo",
-   "kontext": 71,
+   "kontext": 72,
    "bezi": null,
    "hlaseni": "10:00",
    "konec": null,
    "co": "V3 + V3b sloučeny (v18.10.7, v18.10.11): DPH režim, skladné, SoD EN/DE/FR, projekce v4 EN/DE/FR",
    "dalsi": "Nearchivovat — přílohy šablon; čeká kontrola účetní a rodilých mluvčích",
-   "kontextTok": 708
-  },
-  {
-   "nazev": "P1 soupis novinek pro obchodníky v15.10.14 → v17.10.x",
-   "id": "session_01AkJ7656iFTJU8urGe7Rbnk",
-   "role": "dávka",
-   "stav": "ok",
-   "stavText": "doplněno",
-   "faze": null,
-   "eta": "hotovo",
-   "kontext": 13,
-   "bezi": "právě",
-   "hlaseni": "10:01",
-   "konec": "08:30",
-   "co": "Soupis novinek doplněn nad v18.10.11 (SoD EN/DE/FR, DPH, skladné, projekce v4, B168) — verze 2 artefaktu",
-   "dalsi": "Případný doplněk po H1/V7; sdílení obchodníkům = J. V.",
-   "kontextTok": 134
+   "kontextTok": 725
   }
  ],
  "log": [
+  [
+   "11:31",
+   "J. V.: odkazy v kokpitu vždy jako živé proklikávací linky → kokpit převeden (čeká na vás, karty, deník, releasy), pravidlo zapsáno do skillu kokpit-koordinace."
+  ],
+  [
+   "11:28",
+   "V8 našla příčinu prázdných kapitol (Firma z doby před #282, načtení nahradí Firmu celou) → předáno O3 (doplní jen chybějící klíče, „“ = vědomé vypuštění). Náhled #367 rozšířen o texty PROJ; fáze 2 = 2 dávky po schválení."
+  ],
+  [
+   "11:26",
+   "V8 fáze 1 hotová (náhled #367, Q1–Q6 doporučeno ano) → čeká na J. V. J. V. schválil řešení TD1 se značkou {TERMIN} (O3, v19.10.3)."
+  ],
+  [
+   "11:21",
+   "J. V.: „rozběhni více sezení, mám ~90 min“ → spuštěny H2 (V7-N1, B191, B192; v19.10.4) a Z1 (#151 zálohování, rozbor). Běží A2, O3, V8, H2, Z1. Cíl: vše v test do ~13:00 UTC."
+  ],
+  [
+   "11:22",
+   "J. V.: TD1 vyřešit a poslat do test → O3 rozšířena: značka {TERMIN} ve výchozím textu kapitoly V. (místo pevných „cca 12 týdnů“), bez duplicitní odrážky, starý text beze změny + kontrola."
+  ],
+  [
+   "11:18",
+   "J. V.: Ceník – 8 předzaškrtnutých položek v test OK. „Doplň výchozí texty do Nastavení rovnou“ → online firmu zapisuje jen administrátor, proto spuštěna dávka O3 (v19.10.3): automatické doplnění prázdných kapitol + tlačítko."
+  ],
+  [
+   "11:25",
+   "J. V. vydal release v19.10.1 (tag ověřen). Dotaz J. V. na vzor kapitol IV.–VI. a doložek: výchozí texty jsou v src/firma.js (původ Word šablona CN v10) — předáno i V8 do návrhu #367."
+  ],
+  [
+   "11:15",
+   "J. V.: #356 = A1+B1+C1+D1+E1 → A2 dokončuje (claude/a2-356, v19.10.2). #367 = B + vše natvrdo z kódu do Nastavení → Firma, přepínač OCK/PROJ v Šablonách smlouvy; nejdřív náhled → spuštěna V8. Po zelených sadách standardně do test."
+  ],
+  [
+   "10:25",
+   "Kontrola: beze změny, test = integrace v19.10.1. Dotaz na #356 a #367 položen J. V. v dialogu koordinace."
+  ],
+  [
+   "09:24",
+   "Kontrola: beze změny (test = integrace v19.10.1). ŘÍDÍCÍ 18.10 archivováno. Čeká se na J. V. (#356, #367)."
+  ],
+  [
+   "08:21",
+   "Koordinaci převzalo session_017KEALG3ppimL5fW2XswzrB (ŘÍDÍCÍ 19.10). P1 a O2 archivovány. Čeká se na J. V.: #356, #367, release v19.10.1."
+  ],
   [
    "08:20",
    "O2 hotová: B189 výchozí DPH (DIČ CZ → přenesená, bez DIČ → česká, EU/mimo EU bez volby, zábrana tisku), sady 274/0/1, mutace B189 9/9, DPH 13/13, SoD 28/28. Fast-forward integrace i test → 65ca5b5 (v19.10.1). Release odkaz poslán, P1 upravuje soupis. O2 archivována."
@@ -253,27 +344,11 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
   [
    "13:07",
    "H1 hotová (v18.10.13): B171 nápověda u Odhlásit, B174 úklid pd_cache po 30 dnech, B175 očista klíčů analytiky, B186 čísla textem → čísla, B187 XSS karta schvalovatele; mutace 14/14, sady 270/4/1 (3 jen podklady z Disku, 1 opravena). Sloučeno → integrace 9479f44 (konflikty roadmapy a BEZPECNOST_MEZE spojeny), H1 archivována."
-  ],
-  [
-   "11:52",
-   "Kontrola: staré řídící sezení archivováno; H1 stála od 10:13 na schválení příkazu (rm) → přerušena, poslán obchvat; O1 první commit; K1 požádán o průběžný stav."
-  ],
-  [
-   "11:02",
-   "N4 hotová: kolo 28 sady 270/0/2, audit VYHOVUJE S VÝHRADOU — B188 střední (obnova matice bez hesla) → dávka O1; B189 střední (výchozí DPH) → rozhodnutí J. V. + účetní; B190 nízký opraven (skladné 1.500); B191–B193 info. Sloučeno → integrace cdca5f3. N4 archivována."
-  ],
-  [
-   "10:55",
-   "V7 hotová (v18.10.14): rozhodnutí 16.–18. 10. sedí v kódu; opraveny texty příručky, roadmapy a komentáře (V7-1 až V7-7); návrhy V7-N1 (plocha výjimky v kartě) a V7-N2 (DPH podle místa stavby → účetní). Sloučeno → integrace 48c4b94, V7 archivována."
-  ],
-  [
-   "10:08",
-   "S1 hotová: nad d138384 sady 271/0/1, statické 3/3, cílené mutace serveru i jádra bez přeživší; oprava snimky_auto (heslo správce po B168) sloučena → integrace a7f1f60. S1 archivována. Test se posune po K1."
   ]
  ],
  "celkem": {
-  "eta": "čeká na J. V.",
-  "detail": "test = v19.10.1; #356, #367, nasazení šablon a release v19.10.1 čekají na J. V."
+  "eta": "~1,7 h",
+  "detail": "do ~13:00 UTC: A2 + O3 + H2 → integrace, sady + cílené mutace → test, release odkaz; V8 náhled ~12:15; #367 fáze 2 po schválení (nezahrnuto)"
  }
 }
 </script>
@@ -283,6 +358,8 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
   try{D=JSON.parse(document.getElementById('data').textContent);}
   catch(e){var c0=document.getElementById('cekani');c0.className='alert';c0.innerHTML='<div class="h">Data kokpitu jsou poškozená — koordinace je opraví při příští aktualizaci.</div><div class="mono">'+String(e.message).replace(/[<&]/g,'')+'</div>';return;}
   var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+  /* Odkazy v textech vždy živé a proklikávací (J. V. 19. 10. 2026). */
+  var lnk=function(s){return esc(s).replace(/https?:\/\/[^\s<"]+/g,function(u){var k='';var m=u.match(/[.,;:)\u201c\u201d]+$/);if(m){k=m[0];u=u.slice(0,-k.length);}return '<a href="'+u+'" target="_blank" rel="noopener">'+u+'</a>'+k;})};
   var pill={run:'p-run',ok:'p-ok',warn:'p-warn',bad:'p-bad',idle:'p-idle'};
   var ctx=function(p,tok){
     var tt=(tok!=null)?' · '+tok+' tis.':'';
@@ -291,13 +368,13 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
     return '<div class="ctx"><span class="mono">kontext '+p+' %'+tt+'</span><div class="bar"><i class="'+c+'" style="width:'+Math.min(p,100)+'%"></i></div></div>'};
   document.getElementById('stamp').textContent=D.aktualizace;
   (function(){var C=D.celkem,el=document.getElementById('celkem');if(!el||!C)return;
-    el.innerHTML='<div class="ck">do konce úkolu</div><div class="cv">'+esc(C.eta)+'</div><div class="cd">'+esc(C.detail||'')+'</div>';})();
+    el.innerHTML='<div class="ck">do konce úkolu</div><div class="cv">'+esc(C.eta)+'</div><div class="cd">'+lnk(C.detail||'')+'</div>';})();
   var c=document.getElementById('cekani');
-  if(D.cekaNaJV.length){c.innerHTML='<div class="h">Čeká na vás</div><ol>'+D.cekaNaJV.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ol>'}
+  if(D.cekaNaJV.length){c.innerHTML='<div class="h">Čeká na vás</div><ol>'+D.cekaNaJV.map(function(x){return '<li>'+lnk(x)+'</li>'}).join('')+'</ol>'}
   else{c.className='alert empty';c.innerHTML='<div class="h">Nic na vás nečeká — koordinace běží sama.</div>'}
   document.getElementById('tiles').innerHTML=D.dlazdice.map(function(t){
     return '<div class="tile '+t.s+'"><div class="k">'+esc(t.k)+'</div><div class="v">'+esc(t.v)+'</div><div class="d">'+esc(t.d)+'</div></div>'}).join('');
-  document.getElementById('releasy').innerHTML='<b>Releasy:</b> '+esc(D.releasy||'');
+  document.getElementById('releasy').innerHTML='<b>Releasy:</b> '+lnk(D.releasy||'');
   document.getElementById('board').innerHTML=D.sezeni.map(function(s){
     var ph='';
     if(s.faze!=null){
@@ -306,9 +383,9 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
     }
     return '<div class="row r-'+s.stav+'"><div class="main"><div class="name">'+esc(s.nazev)+'</div>'+
       '<div class="meta"><span class="pill '+pill[s.stav]+'">'+esc(s.stavText)+'</span><span class="role">'+esc(s.role)+'</span><span class="mono sid">'+esc(s.id)+'</span></div>'+
-      '<div class="co">'+esc(s.co)+'</div>'+ph+'</div>'+
+      '<div class="co">'+lnk(s.co)+'</div>'+ph+'</div>'+
       '<div class="right"><div><div class="eta">'+esc(s.eta)+'</div><div class="etal">zbývá</div>'+(s.konec?'<div class="rt">konec ~'+esc(s.konec)+'</div>':'')+(s.bezi?'<div class="rt">běží '+esc(s.bezi)+'</div>':'')+'</div>'+ctx(s.kontext,s.kontextTok)+'</div>'+
-      '<div class="next"><b>Další:</b> '+esc(s.dalsi)+'</div></div>'}).join('');
-  document.getElementById('log').innerHTML=D.log.map(function(r){return '<tr><td class="cas">'+esc(r[0])+'</td><td>'+esc(r[1])+'</td></tr>'}).join('');
+      '<div class="next"><b>Další:</b> '+lnk(s.dalsi)+'</div></div>'}).join('');
+  document.getElementById('log').innerHTML=D.log.map(function(r){return '<tr><td class="cas">'+esc(r[0])+'</td><td>'+lnk(r[1])+'</td></tr>'}).join('');
 })();
 </script>

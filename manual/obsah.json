@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v19.10.1 · sestaveno 19. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
+  "verze": "Platí pro aplikaci v19.10.7 · sestaveno 19. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -23,6 +23,34 @@
       "nadpis": "Co je nového ve verzi v19.10.6 (19. 10. 2026)",
       "odstavce": [
         "**Výchozí platební podmínky jsou firemní nastavení.** Splatnost faktur, záloha a další splátky, zádržné, záruka, smluvní pokuty a limit pokut, které se předvyplňují v krycím listu OCK i PROJ, nastavuje administrátor v **Nastavení → Smlouvy / Šablony** (přepínač **OCK | PROJ**). Dnešní hodnoty zůstaly stejné. V zakázce je dál můžete přepsat a tlačítko ↺ vrátí hodnotu z Nastavení. Odeslané nabídky se nemění."
+      ]
+    },
+    {
+      "nadpis": "Co je nového ve verzi v19.10.5 (19. 10. 2026)",
+      "odstavce": [
+        "**Zálohy databáze jsou spolehlivější.** Ruční záloha administrátora (*Zálohovat teď*) i záloha při jeho přihlášení se ukládají každá zvlášť s časem a **noční zálohu dne už nepřepíšou** — stav z noci zůstane, i když se data přes den pokazí a někdo pak zálohuje. Noční záloha se pořizuje rychleji a přehled záloh v Nastavení → Databáze se načítá bez stahování celých záloh. Pro práci obchodníka se nic nemění (kapitola 30)."
+      ]
+    },
+    {
+      "nadpis": "Co je nového ve verzi v19.10.4 (19. 10. 2026)",
+      "odstavce": [
+        "**Plocha pásu „jiné“ v kartě Cenové výjimky na celé m².** Karta teď ukazuje plochu pásu a světlíku tak, jak ji drží schválení — zaokrouhlenou na celé m² (třeba „3 m² (zaokrouhleno pro schválení)“ místo 2,61 m²). Pravidlo se nemění: posun o necelý 1 m² schválení shodit nemusí (kapitola 19).",
+        "**Smlouva o dílo projekce z poškozené šablony nevznikne.** Když administrátor šablonu upraví ve Wordu tak, že se rozpadnou značky nenabízené činnosti, smlouva místo tichého vyjmenování té činnosti nevznikne a hláška řekne, že je potřeba opravit šablonu.",
+        "**Heslo pro uložení Nastavení → Zobrazení se ptá nejpozději po 10 minutách od zadání** — průběžné ukládání už lhůtu neprodlužuje."
+      ]
+    },
+    {
+      "nadpis": "Co je nového ve verzi v19.10.3 (19. 10. 2026)",
+      "odstavce": [
+        "**Kapitoly nabídky mají zase výchozí texty.** Firemní údaje uložené dřív, než aplikace kapitoly nabídky znala, kapitoly IV. Požadavky, V. Termíny, VI. Předání a Doložky neměly — v Nastavení → Smlouvy / Šablony → **Kapitoly nabídky III.–VI.** byla prázdná pole. Aplikace je teď při načtení firmy **sama doplní výchozím zněním** (česky, anglicky, německy) — nabídka je tak už nevypustí. Administrátor texty zkontroluje a v Nastavení → Firma je **zveřejní**.",
+        "**Kapitolu vypustíte vědomě tak, že její pole vymažete.** Prázdné pole se už nedoplňuje a nabídka kapitolu vynechá i s nadpisem (kontrola před nabídkou na to dál upozorní). U každé kapitoly a jazyka je tlačítko **↺ Doplnit výchozí text**, pod kapitolami **↺ Doplnit všechny prázdné** — doplní výchozí znění do prázdných polí (česky, anglicky, německy), vlastní texty nemění; francouzština výchozí text nemá.",
+        "**Termín dodání přímo ve větě kapitoly V.** Výchozí text kapitoly V. nese místo pevného „cca 12 týdnů“ značku **{TERMIN}** — nabídka za ni dosadí termín dodání z krycího listu, u atypické zakázky i s prodloužením (např. „Zahájení montáže 16 týdnů (vč. 4 týdnů za ATYP) po podpisu SoD…“), v angličtině a němčině přeložený. Samostatná odrážka „Termín dodání“ pak odpadá, takže nabídka už nemůže nést dvě různé lhůty. Máte-li ve Firmě starší text s pevným číslem, kontrola před nabídkou poradí číslo nahradit značkou {TERMIN}. Bez termínu v krycím listu i ve Firmě se vytiskne „dle dohody“ a kontrola na to upozorní."
+      ]
+    },
+    {
+      "nadpis": "Co je nového ve verzi v19.10.2 (19. 10. 2026)",
+      "odstavce": [
+        "**Střecha přes nejvyšší můstek se započítá.** U exteriérové šachty s můstkem i v nejvyšším nástupišti připočte kalkulace k zastřešení (a k příplatku za střechu v mědi) plochu nad můstkem až k fasádě: (šířka můstku + 0,2 m) × hloubka můstku. Šachty bez můstku nebo s můstky jen v nižších nástupištích se nemění. Chybí-li rozměry můstku, kontrola před nabídkou to řekne; tisk to nezastaví (kapitola 11)."
       ]
     },
     {
@@ -355,7 +383,7 @@
           "odkazy": [
             { "popisek": "Stříška nad nástupiště", "cely": ".row", "text": "**Dřív zaškrtávátko, dnes počet kusů.** Zadává se číslo — kolik stříšek nad nástupiště zakázka obsahuje. Staré zaškrtávátko už v aplikaci není." },
             { "popisek": "Počet nástupišť", "cely": ".row", "text": "Nová nabídka začíná s **5 nástupišti**, s **odškrtnutými přechodovými plechy** a s **plechem nad dveřmi** — to jsou hodnoty, se kterými se nejčastěji počítá. Rozměry šachty naopak začínají na nule, aby se do nabídky nedostal rozměr, který nikdo nezadal." },
-            { "popisek": "Můstky mezi budovou a OCK", "cely": ".row", "text": "**Počet kusů, ne zaškrtávátko.** 0 = šachta žádný můstek nemá, jiné číslo = kolik jich je. Po zadání se ukáže hloubka a šířka můstku (pro kontrolu standardu a specifikaci). **Přechodové plechy** se v nástupištích s můstkem počítají dál za všechna nástupiště — kontrola před nabídkou na to upozorní, ať případně množství upravíte ručně; tisk to nezastaví." },
+            { "popisek": "Můstky mezi budovou a OCK", "cely": ".row", "text": "**Počet kusů, ne zaškrtávátko.** 0 = šachta žádný můstek nemá, jiné číslo = kolik jich je. Po zadání se ukáže hloubka a šířka můstku (pro kontrolu standardu a specifikaci). **Střecha přes můstek (od v19.10.2):** je-li u exteriérové šachty můstek i v nejvyšším nástupišti (počet můstků = počet nadzemních nástupišť), střecha pokračuje nad ním až k fasádě a kalkulace k ploše ZASTŘEŠENÍ ŠACHTY (EXT) i k příplatku za měď sama připočte (šířka můstku + 0,2 m) × hloubka můstku; bez rozměrů můstku nic a kontrola před nabídkou to řekne. **Přechodové plechy** se v nástupištích s můstkem počítají dál za všechna nástupiště — kontrola před nabídkou na to upozorní, ať případně množství upravíte ručně; tisk to nezastaví." },
             { "popisek": "Způsob zasklení", "cely": ".row", "text": "Volba mezi **na terče** a **mezi příčníky (lišty)**. Co která znamená pro cenu, je v kapitole 13." },
             { "popisek": "ATYP (nestandardní zakázka)", "cely": ".row", "text": "Zaškrtávátko zůstalo, ale políčko na procenta přirážky vedle něj **zmizelo** — viz kapitola 14." },
             { "popisek": "Opláštit i prohlubeň", "cely": ".row", "text": "**Opláštit i prohlubeň** — zkratka, která pošle opláštění všech čtyř stěn až na dno prohlubně. Co přesně udělá, je v kapitole 13." }
@@ -590,7 +618,7 @@
         },
         { "typ": "text", "text": "Tři věci, které vám ušetří telefonáty. **Rozhodnutí je podepsané** jménem a časem, takže se zpětně pozná, kdo slevu pustil. **Rozhodnutí platí na to procento, o kterém se rozhodovalo** — když po schválení slevu zvednete třeba z 6 na 9 %, žádost se vrátí do stavu *čeká* a staré razítko se smaže; snížit slevu po schválení můžete bez nového kolečka. A **uzamčená nabídka se už nepřepočítává**: co odešlo zákazníkovi, je doklad." },
         { "typ": "text", "text": "**Rozhodnutí vrátit zpět smí jen nadřízený** (od 13. 10. 2026). Tlačítko **Vrátit rozhodnutí** v záložce *Schvalování slev* má jen ten, kdo smí o té slevě rozhodnout. Uložením zakázky se schválení ani zamítnutí do stavu *čeká* nevrátí — server ponechá uložené rozhodnutí i s podpisem. Chcete-li o zamítnuté slevě jednat znovu, změňte procento: nové procento je nová žádost." },
-        { "typ": "text", "text": "**Cenové výjimky** (karta *Cenové výjimky* v záložce Schvalování) — ceník varianty, který je směsí platného ceníku a starších cen, nebo ruční sazba pásu opláštění „jiné“ pod ceníkem. Bez práva ceníku je odešlete jen se schválením nadřízeného. **Schválení platí jen pro přesně ten obsah, který nadřízený schválil** (od v15.10.8): změna kterékoli položky směsi, sazby nebo názvu pásu ho zruší a žádost čeká znovu — od v17.10.4 i změna zdvihu, přejezdu, šířky nebo hloubky šachty, která pás zvětší či zmenší, a od v17.10.5 i změna plochy pásu nebo světlíků „jiné“ u dveří, která se projeví na celých m² (zasklení, profily, počet nástupišť; schválení drží plochu zaokrouhlenou na celé m², nárůst o necelý 1 m² ho proto shodit nemusí); karta u pásu ukazuje rozsah a plochu v m². Schvalovatel (administrátor a role s právem „Schvalování slevy nad strop role“) vidí v kartě u každé položky použitou a ceníkovou sazbu a dopad na cenu OCK či PROJ v % a v Kč, dole dopad celkem; výjimky schválené před v15.10.8 se musí schválit znovu. Totéž schválení (a sleva nad minimální marží) platí i pro **dokument druhé strany, který do odeslané nabídky tisknete dodatečně** — třeba nabídku OCK po vypnutí „jen projekce“. Odeslanou nabídku už změnit nejde, takže bez schválení pokračujte klonem varianty." },
+        { "typ": "text", "text": "**Cenové výjimky** (karta *Cenové výjimky* v záložce Schvalování) — ceník varianty, který je směsí platného ceníku a starších cen, nebo ruční sazba pásu opláštění „jiné“ pod ceníkem. Bez práva ceníku je odešlete jen se schválením nadřízeného. **Schválení platí jen pro přesně ten obsah, který nadřízený schválil** (od v15.10.8): změna kterékoli položky směsi, sazby nebo názvu pásu ho zruší a žádost čeká znovu — od v17.10.4 i změna zdvihu, přejezdu, šířky nebo hloubky šachty, která pás zvětší či zmenší, a od v17.10.5 i změna plochy pásu nebo světlíků „jiné“ u dveří, která se projeví na celých m² (zasklení, profily, počet nástupišť; schválení drží plochu zaokrouhlenou na celé m², nárůst o necelý 1 m² ho proto shodit nemusí); karta u pásu ukazuje rozsah a plochu v m² — od v19.10.4 na celé m², tak jak ji drží schválení (u zaokrouhlené plochy s poznámkou „zaokrouhleno pro schválení“). Schvalovatel (administrátor a role s právem „Schvalování slevy nad strop role“) vidí v kartě u každé položky použitou a ceníkovou sazbu a dopad na cenu OCK či PROJ v % a v Kč, dole dopad celkem; výjimky schválené před v15.10.8 se musí schválit znovu. Totéž schválení (a sleva nad minimální marží) platí i pro **dokument druhé strany, který do odeslané nabídky tisknete dodatečně** — třeba nabídku OCK po vypnutí „jen projekce“. Odeslanou nabídku už změnit nejde, takže bez schválení pokračujte klonem varianty." },
         { "typ": "text", "text": "Rozhoduje se v záložce *Schvalování slev*, kterou podle nastavení nemusíte vidět vůbec. Schválení ověřuje **server**, ne prohlížeč — jméno schvalovatele si píše sám podle toho, kdo je přihlášený, a pokus uložit schválení nad vlastní strop neprojde." }
       ]
     },
@@ -896,7 +924,7 @@
       "id": "kap-zalohy",
       "nadpis": "30. Zálohy a výpadky",
       "bloky": [
-        { "typ": "text", "text": "O zálohy se starat nemusíte a ani je nemáte čím spustit — jsou celé v rukou administrátora. Databáze se zálohuje sama, navíc denně automaticky, a administrátor si může kdykoli stáhnout otisk celého obsahu. Umí ji i **nalít zpátky**, přičemž se nejdřív zobrazí náhled s tím, kolik záznamů přibude, kolik se přepíše a co se přeskočí a proč." },
+        { "typ": "text", "text": "O zálohy se starat nemusíte a ani je nemáte čím spustit — jsou celé v rukou administrátora. Databáze se zálohuje sama, navíc denně automaticky, a administrátor si může kdykoli stáhnout otisk celého obsahu. Noční záloha každého dne zůstává nedotčená — ruční záloha administrátora se od v19.10.5 ukládá vedle ní, ne přes ni. Umí ji i **nalít zpátky**, přičemž se nejdřív zobrazí náhled s tím, kolik záznamů přibude, kolik se přepíše a co se přeskočí a proč." },
         { "typ": "text", "text": "**Vaše vytištěné nabídky jsou i při obnově v bezpečí.** Zakázku, které by obnova změnila data uzamčené varianty nebo jí sundala zámek, aplikace přeskočí a vypíše — a to i v režimu „přepsat vším ze zálohy“. Obnova také nikdy nemaže: zakázka, která vznikla až po záloze, na serveru zůstane. Obnovu účtů a **nastavení zobrazení** (to řídí i to, kam vás server pustí — CRM, náklady, ceník v zakázce) potvrzuje administrátor svým heslem, stejně jako změnu zobrazení v Nastavení." },
         { "typ": "text", "text": "Prakticky vás to zajímá ve dvou situacích. **Když vypadne internet**, přestane se ukládat a lišta zakázky to napíše; rozpracovanou zakázku si v takové chvíli uložte do souboru a po obnovení spojení ji načtěte zpět. **Když si nejste jistý, že se něco uložilo**, podívejte se na čas na liště — a když ani to nestačí, otevřete *Načíst zakázku* a zkontrolujte sloupec *Uloženo* u své zakázky." },
         { "typ": "text", "text": "Offline kopie aplikace (jeden soubor HTML) existuje dál jako záložní varianta pro případ, že by online provoz vypadl. Není to hlavní způsob práce a některé funkce v ní z povahy věci nefungují — hlavně vše, co potřebuje server." }

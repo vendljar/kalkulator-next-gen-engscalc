@@ -179,9 +179,10 @@ const pravidla = kontrolyPravidla();
  * ručně přepsaná statika OCK a zároveň řádek statiky opláštění z ceníku. */
 /* 33. „stranyDriv" 13. 10. 2026 (P6 / K19-N114, test_zamek_strany.js):
  * zakázka dřív počítala projekci i OCK — od P6 je druhá strana vynulovaná. */
-/* 34. „mustkyPrechodove" 17. 10. 2026 (#355, test_mustky.js): přechodové
- * plechy v nástupišti s můstkem — upozornění. */
-test('pravidel je třicet šest (17. 10. 2026: + mustkyPrechodove)', pravidla.length === 36, pravidla.length);
+/* 34.–35. „mustkyPrechodove" a „mustekStrecha" 17. 10. 2026 (#355, #356,
+ * test_mustky.js): plechy v nástupišti s můstkem a střecha přes nejvyšší
+ * můstek bez rozměrů — obojí upozornění. */
+test('pravidel je třicet sedm (17. 10. 2026: + mustkyPrechodove, mustekStrecha)', pravidla.length === 37, pravidla.length);
 test('kódy pravidel jsou jedinečné',
   new Set(pravidla.map(p => p.kod)).size === pravidla.length,
   pravidla.map(p => p.kod).join(','));
@@ -485,7 +486,9 @@ test('nekompletní kontext nic neshodí a nálezy dorazí',
 {
   const fm = require('./firma.js');
   global.firmaKapitola = fm.firmaKapitola;
-  const firma = Object.assign(fm.firmaDefault(), { terminDodaniOck: 'cca 12 týdnů', terminAtypTydny: '4' });
+  /* Starý text kapitoly V. s pevnou lhůtou (výchozí od O3 nese {TERMIN}). */
+  const firma = Object.assign(fm.firmaDefault(), { terminDodaniOck: 'cca 12 týdnů', terminAtypTydny: '4',
+    kapTerminy: fm.DEFAULT_FIRMA.kapTerminy.replace('{TERMIN}', 'cca 12 týdnů') });
   const s = (f, extra, atyp) => kontrolyProved(Object.assign({
     nast: Object.assign({}, NAST, { firma: f }), zadani: Object.assign(kopie(eng.DEFAULT_ZADANI), { atyp: atyp !== false }),
     terminDodani: 'cca 16 týdnů (vč. 4 týdnů za ATYP)' }, extra || {}));
@@ -504,6 +507,28 @@ test('nekompletní kontext nic neshodí a nálezy dorazí',
   test('#330: anglická kapitola se hlídá také (weeks)',
     kody(s(Object.assign({}, firma, { kapTerminyEn: 'Installation will start approx. 12 weeks from contract signature.' }), { jazyk: 'en' })).includes('terminAtyp'));
   test('#330: zakázka jen projekce pravidlo nemá', !kody(s(firma, { jenProj: true })).includes('terminAtyp'));
+  test('O3/TD1: starý text s pevnou lhůtou — rada „nahraďte číslo značkou {TERMIN}"',
+    !!n && /značkou \{TERMIN\}/.test(n.text), n && n.text);
+  /* Značka {TERMIN} ve výchozím textu (dávka O3 / TD1, 19. 10. 2026). */
+  const znacka = Object.assign(fm.firmaDefault(), { terminDodaniOck: 'cca 12 týdnů', terminAtypTydny: '4' });
+  test('O3/TD1: výchozí text kapitoly V. nese {TERMIN}', /\{TERMIN\}/.test(znacka.kapTerminy));
+  test('O3/TD1: ATYP + {TERMIN} — dvě čísla vzniknout nemůžou, nic se nehlásí',
+    !kody(s(znacka)).includes('terminAtyp'), JSON.stringify(kody(s(znacka))));
+  test('O3/TD1: běžná zakázka bez termínu v krycím listu, lhůta ve Firmě — mlčí (dosadí se lhůta)',
+    !kody(s(znacka, { terminDodani: '' }, false)).includes('terminAtyp'));
+  const dleDohody = (atyp) => (s(Object.assign({}, znacka, { terminDodaniOck: '' }), { terminDodani: '' }, atyp)
+    .nalezy.find(x => x.kod === 'terminAtyp') || {}).text || '';
+  test('O3/TD1: bez termínu i lhůty — hlásí „dle dohody" (běžná zakázka)', /dle dohody/.test(dleDohody(false)), dleDohody(false));
+  test('O3/TD1: bez termínu i lhůty — hlásí „dle dohody" (ATYP)', /dle dohody/.test(dleDohody(true)) && /ATYP/.test(dleDohody(true)));
+  const bezAtyp = (s(znacka, { terminDodani: '' }).nalezy.find(x => x.kod === 'terminAtyp') || {}).text || '';
+  test('O3/TD1: ATYP bez termínu v krycím listu (lhůta ve Firmě bez ATYP) — hlásí lhůtu bez prodloužení',
+    /bez prodloužení za ATYP/.test(bezAtyp) && /cca 12 týdnů/.test(bezAtyp), bezAtyp);
+  test('O3/TD1: běžná zakázka se starým textem a smazaným termínem — mlčí (ATYP se netýká)',
+    !kody(s(firma, { terminDodani: '' }, false)).includes('terminAtyp'));
+  test('O3/TD1: běžná zakázka se starým textem a jiným termínem — mlčí',
+    !kody(s(firma, { terminDodani: '20 týdnů' }, false)).includes('terminAtyp'));
+  test('O3/TD1: EN text se značkou (jazyk en) — nic nehlásí',
+    !kody(s(znacka, { jazyk: 'en' })).includes('terminAtyp'));
 }
 
 /* B111 (29. 9. 2026) — záporná vlastní položka, množství nebo hodiny je
