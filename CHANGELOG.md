@@ -38,6 +38,24 @@ Rozbor v `podklady/F1_TEST_VYJIMKY_NESTABILNI.md`.
 - **Test:** `netlify/test_mutace_zamek.mjs` (9 kontrol; pojistka: bez zámku
   4 FAIL, se zámkem 9 / 0).
 
+**Doplněno M1 (19. 10. 2026, větev `claude/m1-mutace-o3`, verze se nemění —
+jen testovací infrastruktura):** mutace dávky O3 / TD1 (v19.10.3) ověřené
+jen ručně (43/43) teď jsou zaregistrované a jdou opakovat filtrem „O3":
+jádro **7** (`kontroly.js`, `terminAtyp` se značkou `{TERMIN}`), server **40**
+(`firma.js`, `konfigurace.js`, `nabidka.js`, `preklad.js`, `ui/online_ui.js`,
+`ui/nastaveni_ui.js`); do serverových sad přibyly `src/test_kapitoly_vychozi.js`
+a `src/test_termin_kapitola.js` (`test_nabidka_kapitoly.js` ne — souhrn
+„OK n" runner nečte). První běh: jádro 7/7, server 38/40 — přežily
+„příznak termínu podle českého textu" a „vlastní text kapitoly se přepíše
+bez potvrzení". Doplněné testy (pojistka proti mutaci před/po):
+`src/test_termin_kapitola.js` +3 (příznak `termin` a `_TERMIN` podle textu
+v jazyce tisku; se mutací 42 / 2, bez ní 44 / 0), `src/test_kapitoly_vychozi.js`
++3 (`firmaKapitolaVychozi` ve vm: bez potvrzení vlastní text zůstane; se
+mutací 53 / 1, bez ní 54 / 0). Opakovaný běh `node mutace_jadro.mjs O3` **7/7**,
+`cd netlify && node mutace.mjs O3` **40/40** (`--kontrola` obou zelená: 298 a 627
+úseků). Kolo `testovaci_kolo.sh --bez-mutaci`: sady 279 prošlo / 0 selhalo /
+6 přeskočeno, statické 3/3 — VŠE ZELENÉ.
+
 ## v19.10.9 — šablona Wordu nabídky PROJ v6: texty nabídky PROJ z Nastavení → Firma (větev claude/w1-sablona-proj-v6)
 
 **Kolo `--bez-mutaci` nad eefcd88 (v19.10.9, 19. 10. 2026) — VŠE ZELENÉ:** sady 277 prošlo / 0 selhalo / 6 přeskočeno (`test.js` ostrý ceník, 5 harnessů bez `KNG_PODKLADY`), statické 3/3. Cílené mutace `W1` **11/11** chycených, `--kontrola` 291 úseků. Plné mutační kolo neběželo.

@@ -140,11 +140,40 @@ function produkcniFirma() {
   test('nastaveni_ui: „vše prázdné" volá doplnění i prázdných', /firmaDoplnVychoziTexty\(NAST\.firma, true\)/.test(nast));
   test('nastaveni_ui: tlačítko u kapitoly a jazyka', /onclick="firmaKapitolaVychozi\('\$\{escJs\(id\)\}'\)">↺ Doplnit výchozí text</.test(nast)
     && /firmaDoplnVychoziText\(NAST\.firma, id\)/.test(nast));
+  /* M1 (19. 10. 2026): mutace „vlastní text se přepíše bez potvrzení" přežila —
+   * regulární výrazy výš potvrzení nehlídaly. Funkce se pustí ve vm. */
+  {
+    const vm = require('vm');
+    const m = /async function firmaKapitolaVychozi\(id\) \{[\s\S]*?\n\}\n/.exec(nast);
+    const spust = (puvodni, odpoved) => {
+      const ctx = { NAST: { firma: Object.assign({}, F.DEFAULT_FIRMA, { kapTerminy: puvodni }) },
+        jeAdmin: () => true, hlaska: () => {}, nastRefresh: () => {}, firmaDefault: F.firmaDefault,
+        firmaDoplnVychoziText: F.firmaDoplnVychoziText, dotazy: 0 };
+      ctx.potvrd = async () => { ctx.dotazy++; return odpoved; };
+      vm.createContext(ctx);
+      vm.runInContext((m ? m[0] : '') + '\nthis.fn = firmaKapitolaVychozi;', ctx);
+      return ctx.fn ? ctx.fn('kapTerminy').then(() => ctx) : Promise.resolve(ctx);
+    };
+    globalThis.cekaniVm = (async () => {
+      const ne = await spust('Vlastní text firmy', false);
+      test('nastaveni_ui: vlastní text se bez potvrzení nepřepíše',
+        ne.dotazy === 1 && ne.NAST.firma.kapTerminy === 'Vlastní text firmy', { dotazy: ne.dotazy, t: ne.NAST.firma.kapTerminy });
+      const ano = await spust('Vlastní text firmy', true);
+      test('nastaveni_ui: po potvrzení se vlastní text přepíše výchozím',
+        ano.NAST.firma.kapTerminy === F.DEFAULT_FIRMA.kapTerminy);
+      const prazdne = await spust('  ', false);
+      test('nastaveni_ui: prázdné pole se doplní bez dotazu',
+        prazdne.dotazy === 0 && prazdne.NAST.firma.kapTerminy === F.DEFAULT_FIRMA.kapTerminy);
+    })().catch(e => test('nastaveni_ui: firmaKapitolaVychozi ve vm', false, String(e)));
+  }
   test('nastaveni_ui: tlačítka jen pro administrátora', (nast.match(/function firmaKapitol[ay]Vychozi[\s\S]{0,120}if \(!jeAdmin\(\)\) return/g) || []).length === 2);
   const build = fs.readFileSync(__dirname + '/../build.py', 'utf8');
   test('firma.js je v sestavení před konfigurace.js', build.indexOf("'firma.js'") >= 0
     && build.indexOf("'firma.js'") < build.indexOf("'konfigurace.js'"));
 }
 
-console.log(`\n${ok} OK, ${fail} FAIL`);
-process.exit(fail ? 1 : 0);
+/* Souhrn až po asynchronní kontrole potvrzení (M1). */
+Promise.resolve(globalThis.cekaniVm).then(() => {
+  console.log(`\n${ok} OK, ${fail} FAIL`);
+  process.exit(fail ? 1 : 0);
+});
