@@ -262,6 +262,12 @@ function hodnotaBezpecna(v) {
  * kdyby se okolní kód změnil, důvod musí platit dál, jinak řádek ze seznamu
  * patří pryč. Nový záznam sem přidávejte jen po skutečné kontrole zdroje. */
 const PROVERENO = {
+  /* #367 fáze 2 (19. 10. 2026): podmRadek(label, vstup, pozn) — label se
+   * escapuje uvnitř, pozn je hotové HTML skládané v témže souboru
+   * (podmStitek a literály — hodnoty v nich jdou přes esc). */
+  'podminky_ui.js': {
+    "pozn || ''": 'hotové HTML štítků z podmStitek() a literálů v podminky_ui.js — žádná data bez esc()',
+  },
   'common.js': {
     'label': 'popisek pole ve formulářové šabloně txt(path, label) – volá se s literály',
     'id': 'id karty / sekce / kotvy (card(), sekce(), detailKotvy) – literály z kódu, ne data',

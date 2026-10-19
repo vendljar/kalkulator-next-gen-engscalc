@@ -497,6 +497,13 @@ function firmaLzeZverejnit(f) {
   /* PLÁN PLATEB PROJEKCE (etapa B, 30. 9. 2026) — není textové pole
    * formuláře, ale strukturovaný výchozí plán; tvar hlídá plan_plateb.js
    * (táž funkce na serveru). Chybějící plán nevadí — platí výchozí z kódu. */
+  /* PLATEBNÍ PODMÍNKY OCK / PROJ (#367 fáze 2, 19. 10. 2026) — tvar a součet
+   * splátek hlídá podminky.js (táž funkce na serveru). Chybějící objekt
+   * nevadí — platí továrna PODMINKY_VYCHOZI. */
+  const vadyPodm = firmaPodmVady(f.podminky);
+  if (vadyPodm.length)
+    return { ok: false, duvod: 'Platební podmínky (Nastavení → Smlouvy / Šablony) nejsou v pořádku: '
+      + vadyPodm.slice(0, 5).join('; ') + (vadyPodm.length > 5 ? ' …' : '') + '.' };
   const vadyPlanu = firmaPlanVady(f.planPlatebProj);
   if (vadyPlanu.length)
     return { ok: false, duvod: 'Plán plateb projekce (Nastavení → Smlouvy / Šablony) nemá platný tvar: '
@@ -515,6 +522,15 @@ function firmaPlanVady(plan) {
   return m ? m.planPlatebFirmaVady(plan) : [];
 }
 const FIRMA_POLE_MAX = 2000, FIRMA_TEXT_MAX = 20000;
+/* podminky.js — v prohlížeči globální, v Node vedle (vzor firmaPlanModul). */
+function firmaPodmModul() {
+  if (typeof PODMINKY !== 'undefined') return PODMINKY;
+  return (typeof require === 'function') ? require('./podminky.js').PODMINKY : null;
+}
+function firmaPodmVady(p) {
+  const m = firmaPodmModul();
+  return m ? m.podminkyVady(p) : [];
+}
 
 /* Kopie pro zápis na server: bez značek vymyšlených dat a bez klíčů,
  * které do firemních údajů nepatří (server ukládá jen známá pole).
@@ -530,6 +546,12 @@ function firmaKZverejneni(f) {
    * nabídky. Cokoli jiného se tiše zahodí (logo je volitelné). */
   if (f && f.logo && /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(String(f.logo)))
     { out.logo = f.logo; out.logoNazev = f.logoNazev || ''; }
+  /* Platební podmínky jen platné a jen čistá kopie (známé klíče, #367). */
+  if (f && f.podminky && !firmaPodmVady(f.podminky).length) {
+    const m = firmaPodmModul();
+    const ciste = m ? m.podminkyCiste(f.podminky) : null;
+    if (ciste) out.podminky = ciste;
+  }
   /* Plán plateb projekce jen platný a jen čistá kopie (známé klíče). */
   if (f && f.planPlatebProj && !firmaPlanVady(f.planPlatebProj).length) {
     const m = firmaPlanModul();
@@ -580,6 +602,8 @@ function firmaShodaSOnline(mistni, online) {
   if (String((a.logo || '')).trim() !== String((b.logo || '')).trim()) rozdily.push('Logo');
   if (JSON.stringify(a.planPlatebProj || null) !== JSON.stringify(b.planPlatebProj || null))
     rozdily.push('Plán plateb projekce');
+  if (JSON.stringify(a.podminky || null) !== JSON.stringify(b.podminky || null))
+    rozdily.push('Platební podmínky');
   return { maOnline: true, shodne: rozdily.length === 0, rozdily };
 }
 

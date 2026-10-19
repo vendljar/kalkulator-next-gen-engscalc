@@ -35,11 +35,20 @@ const NABIDKA_PROJ_SAZBY = {
   autorskyDozorKcMesic: 35000,
   autorskyDozorMaxHodin: 30,
   dphPct: 21,                // použije se, nemá-li varianta vlastní ceník
-  splatnostDni: 14,
+  /* Splatnost je od #367 (19. 10. 2026) firemní údaj (Nastavení → Firma,
+   * podminky.proj.splatnostDni); getter ji čte odtamtud, ať starší volající
+   * `NABIDKA_PROJ_SAZBY.splatnostDni` dostanou totéž co krycí list. */
+  get splatnostDni() { return nabidkaProjPodmEf().proj.splatnostDni; },
   /* 12. 8. 2026: platnost nabídky dva měsíce (rozhodnutí J. V.); do té doby tři.
    * Číslo je tady i v krycím listu PROJ — bere si ho odsud, ať se nerozejdou. */
   platnostMesicu: 2,
 };
+
+function nabidkaProjPodmEf() {
+  const P = (typeof PODMINKY !== 'undefined') ? PODMINKY
+    : ((typeof require === 'function') ? require('./podminky.js').PODMINKY : null);
+  return P.podminkyEf((typeof firmaAktualni === 'function') ? firmaAktualni() : {});
+}
 
 /* AUTORSKÝ DOZOR JEN KDYŽ SE NABÍZÍ (připomínka D. Sikory a J. Laudy,
  * rozhodnutí J. V. 14. 10. 2026). Do té doby nabídka PROJ, krycí list PROJ

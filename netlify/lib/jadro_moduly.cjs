@@ -58,6 +58,8 @@ Object.assign(globalThis, require('../../src/kontroly.js'));
  * v src/test_zamek_historie.js. Pořadí jako v CORE build.py. */
 Object.assign(globalThis, require('../../src/poznamky.js'));
 Object.assign(globalThis, require('../../src/protokol.js'));
+/* Platební podmínky firmy (#367): krycí listy a firmaLzeZverejnit je čtou. */
+Object.assign(globalThis, require('../../src/podminky.js'));
 Object.assign(globalThis, require('../../src/firma.js'));
 Object.assign(globalThis, require('../../src/kryci.js'));        // migrace krycího listu (A3 / N43)
 Object.assign(globalThis, require('../../src/kryci_proj.js'));

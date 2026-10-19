@@ -8,6 +8,56 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v19.10.6 — #367 fáze 2a: platební podmínky OCK a PROJ z Nastavení → Firma (větev claude/v8-367-firma)
+
+Dávka V8a (koordinace „ŘÍDÍCÍ 19.10“), nad `origin/claude/integrace-16-10`
+(`e3995e6`). Rozhodnutí J. V. 19. 10. 2026 k náhledu
+(https://claude.ai/artifact/UZC5zQB14xBBvkN1MMdnPE, návrh
+`podklady/367_NASTAVENI_FIRMA_NAVRH.md`): „Varianta B + z kódu vše převést do
+Firma“, Q1–Q6 podle doporučení (Q4 zatím doporučené, izolované v jedné konstantě).
+
+- **Nový modul `src/podminky.js`:** jediná továrna dnešních hodnot
+  `PODMINKY_VYCHOZI` (splatnost 14 / 14 dní, zálohy 0 / 30 / 50 / 70 %
+  s milníkem „po podpisu smlouvy“, výchozí 50 %, 40 % po zahájení montáže,
+  10 % po předání, zádržné Ano / Ne bez procent, záruka 60 měsíců, pokuty 0
+  a 0,05 % / den, číselník sazeb, limit 10 %). `podminkyEf(firma)` slučuje
+  Firmu s továrnou **při čtení, po polích** (neplatná uložená hodnota → továrna),
+  takže prázdné Nastavení, starší `_nastaveni.json` i starší online firma
+  tisknou beze změny. `podminkyVady` / `podminkyCiste` pro zveřejnění.
+- **Q4 izolované:** `PODMINKY_SOUCET_BLOKUJE = true` — součet záloha + faktura 2
+  + konečná ≠ 100 % zablokuje zveřejnění (prohlížeč i server) a v Nastavení
+  svítí červeně. Přepnutí na „jen upozornění“ = jedna konstanta.
+- **Krycí listy bez literálů:** `kryci.js` (splatnost, volby a výchozí záloha,
+  faktura 2, konečná, zádržné ×2 včetně procent, záruka, pokuty, limit,
+  dopočet faktury 2) a `kryci_proj.js` (splatnost, pokuty, limit) berou hodnoty
+  z Firmy; rozbalovátka mají `o` jako getter nad Firmou. `NABIDKA_PROJ_SAZBY`
+  splatnost čte Firmu. Zdroj u pole: „Nastavení → Firma“. `KRYCI_POKUTY`,
+  `KRYCI_ZALOHY`, `KRYCI_LIMIT_POKUT` zůstávají jen jako znění továrny.
+- **Zamčené varianty beze změny:** zmrazené hodnoty mají přednost; procenta
+  zádržného (dřív bez předvyplnění) se zamčené variantě z Firmy nedoplní.
+  Rozpracované varianty bez ručního přepisu převezmou změněný standard (Q2).
+- **Firma a server:** `firmaLzeZverejnit` odmítne vadné podmínky,
+  `firmaKZverejneni` nese čistou kopii, `firmaShodaSOnline` hlásí „Platební
+  podmínky“; `netlify/lib/jadro_moduly.cjs` načítá `podminky.js`.
+- **Nastavení → Smlouvy / Šablony (`src/ui/podminky_ui.js`):** společný blok
+  (platnost nabídky, sazby pokut, limit), přepínač **OCK · ocelová konstrukce |
+  PROJ · projekce**; karta OCK = platební podmínky OCK se živým součtem,
+  smluvní standardy OCK, kapitoly nabídky (beze změny — doplnění kapitol řeší
+  dávka O3); karta PROJ = podmínky PROJ, způsob fakturace PROJ, plán plateb
+  projekce. Přepínač filtruje tabulku šablon (volba „všechny šablony“).
+  Štítky „výchozí / upraveno“, tlačítka „Zapsat výchozí hodnoty do Firmy“
+  a „↺ Vrátit platební podmínky na výchozí“. Měnit smí jen administrátor,
+  ostatní vidí pole vypnutá.
+- **Testy:** `src/test_podminky.js` 74 kontrol (továrna = dnešní výstup,
+  propis Firmy do OCK i PROJ, ruční přednost, zamčená varianta, neplatná data,
+  vady, zveřejnění, přepínač Q4, žádný literál v prefillech) — proti
+  `e3995e6` **44 prošlo / 30 selhalo**, po změně **74 / 0**;
+  `overit_podminky_firma.mjs` (prohlížeč, 22 kontrol; nad starým sestavením
+  spadne); `netlify/test_funkce.mjs` +4 (zveřejnění, součet 105 %, vadná
+  splatnost, obchodník 403) — proti `e3995e6` 3 selhaly, po změně 249 / 0.
+  Mutace „#367: …“ 10 v `mutace_jadro.mjs` (`podminky.js` přidán do JADER),
+  2 v `netlify/mutace.mjs`.
+
 ## v19.10.1 — B189: výchozí režim DPH ve smlouvě o dílo realizace podle rozhodnutí J. V. (větev claude/o2-b189)
 
 **Kolo `--jen build,sady,staticke` nad 542d0ef (v19.10.1, 19. 10. 2026) — VŠE ZELENÉ:** sady 274 prošlo / 0 selhalo / 1 přeskočeno (`test.js`, ostrý ceník), statické 3/3. Mutace cíleně: `B189` jádro 8/8 + server 1/1, `DPH` 13/13, `sod`/`SoD` (filtr nerozlišuje velikost písmen) 28/28; `--kontrola` jádro 254, server 539 úseků. Podklady: šablony z Disku v `KNG_PODKLADY` (CN v8–v15 + EN/DE/FR v15, PROJ v3 i jako `Sablona_NABIDKA_PROJ.docx`, v4, v5, EN, SoD v1/v2, plná moc), SoD realizace v3 a projekce v4 vyrobené `vyrob_sablony.js`, příručka v19.10.1 vyrobená `manual/snimky_auto.mjs` + `sestav.sh` (22 snímků; první běh kola padl jen na `overit_manual` se starou příručkou v25.9.3 z Disku).

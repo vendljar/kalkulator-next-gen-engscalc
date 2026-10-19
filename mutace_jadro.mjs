@@ -74,7 +74,11 @@ const SRC = resolve(KOREN, 'src');
  * podepisuje; nástroje vyrábějí šablony, ze kterých se tiskne. Cesty
  * k nástrojům jsou relativní ke src/. */
 const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sablony_online.js', 'kontroly.js', 'plan_plateb.js', 'docxgen.js', 'sablona_obsah.js', 'techspec.js',
-  'kryci.js', 'kryci_proj.js', 'sod.js', '../nastroje/preklad_sod.js', '../nastroje/vyrob_sablony.js'];
+  'kryci.js', 'kryci_proj.js', 'sod.js', '../nastroje/preklad_sod.js', '../nastroje/vyrob_sablony.js',
+  /* podminky.js (#367 fáze 2, 19. 10. 2026): výchozí platební podmínky
+   * krycích listů z Nastavení → Firma — splatnost, splátky, záruka, pokuty
+   * v každé nabídce a smlouvě. */
+  'podminky.js'];
 /* Filtr = první argument, který není přepínač (stejně jako netlify/mutace.mjs). */
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 /* --kontrola (23. 9. 2026, nález N19): jen ověří, že každý hledaný úsek je
@@ -1297,6 +1301,48 @@ const MUTACE = [
     hledej: "    'C.priplatky.naterOkopovychKc': true, 'C.priplatky.prosklenaStenaKc': true,",
     nahrad: "    'C.priplatky.naterOkopovychKc': true,",
     proc: 'položka z e-mailu D. S. by v novém ceníku zůstala hlídaná jako běžná cena' },
+
+  /* ---------- #367 fáze 2 (19. 10. 2026): platební podmínky z Nastavení → Firma ---------- */
+  { nazev: '#367: Firma se při čtení ignoruje (vždy továrna)', soubor: 'podminky.js',
+    hledej: '      out[pole] = podmKopie(ok ? v : T[k][pole]);',
+    nahrad: '      out[pole] = podmKopie(T[k][pole]);',
+    proc: 'administrátor změní splatnost nebo záruku a krycí listy dál tisknou kód — přesně to, co J. V. odmítl' },
+  { nazev: '#367: neplatná uložená hodnota se do krycího listu propustí', soubor: 'podminky.js',
+    hledej: '      const ok = v !== undefined && pravidla[pole](v, sazby);',
+    nahrad: '      const ok = v !== undefined;',
+    proc: 'poškozená firma (splatnost „abc", záruka 999 měsíců) by šla rovnou do nabídky' },
+  { nazev: '#367: součet splátek OCK ≠ 100 % zveřejnění neblokuje', soubor: 'podminky.js',
+    hledej: '  if (s.blokuje) v.push(',
+    nahrad: '  if (false) v.push(',
+    proc: 'standard 50 / 45 / 10 by se rozeslal všem a nabídka by odporovala smlouvě' },
+  { nazev: '#367: přepínač Q4 vypnutý (součet jen upozorní)', soubor: 'podminky.js',
+    hledej: 'const PODMINKY_SOUCET_BLOKUJE = true;',
+    nahrad: 'const PODMINKY_SOUCET_BLOKUJE = false;',
+    proc: 'rozhodnutí J. V. k Q4 zatím zní „blokovat" — změna musí být vědomá' },
+  { nazev: '#367: výchozí záloha mimo volby rozbalovátka', soubor: 'podminky.js',
+    hledej: '  if (ef.ock.zalohyProc.map(Number).indexOf(+ef.ock.zalohaProc) < 0)',
+    nahrad: '  if (false)',
+    proc: 'krycí list by předvyplnil zálohu, kterou výběr nenabízí' },
+  { nazev: '#367: pokuta mimo upravený číselník zůstane', soubor: 'podminky.js',
+    hledej: "      if (/^pokuta(?!Limit)/.test(pole) && sazby.indexOf(out[pole]) < 0) out[pole] = sazby[0];",
+    nahrad: "      if (false) out[pole] = sazby[0];",
+    proc: 'krycí list by předvyplnil sazbu, kterou administrátor z číselníku vyřadil' },
+  { nazev: '#367: splatnost OCK zase natvrdo z továrny', soubor: 'kryci.js',
+    hledej: "      prefill: c => String(kryciPodmEf(c && c.firma).ock.splatnostDni), src: 'Nastavení → Firma' },",
+    nahrad: "      prefill: c => String(KRYCI_PODM_TOVARNA.ock.splatnostDni), src: 'Nastavení → Firma' },",
+    proc: 'změna firemní splatnosti by se do krycího listu OCK nepropsala' },
+  { nazev: '#367: zamčená varianta dostane procento zádržného z nové Firmy', soubor: 'kryci.js',
+    hledej: "      prefill: c => (c && c.zmrazeno) ? '' : String(kryciPodmEf(c && c.firma).ock.zadrzneVanProc), src: 'Nastavení → Firma' },",
+    nahrad: "      prefill: c => String(kryciPodmEf(c && c.firma).ock.zadrzneVanProc), src: 'Nastavení → Firma' },",
+    proc: 'odeslaná nabídka by po změně Firmy tiskla jiné zádržné, než s jakým odešla (P9.5)' },
+  { nazev: '#367: splatnost PROJ zase natvrdo z továrny', soubor: 'kryci_proj.js',
+    hledej: "      prefill: c => String(kryciProjPodmEf(c && c.firma).proj.splatnostDni), src: 'Nastavení → Firma' },",
+    nahrad: "      prefill: c => String(kryciProjPodm().podminkyEf({}).proj.splatnostDni), src: 'Nastavení → Firma' },",
+    proc: 'změna firemní splatnosti projekce by se do krycího listu PROJ nepropsala' },
+  { nazev: '#367: limit pokut OCK ignoruje volbu Firmy', soubor: 'kryci.js',
+    hledej: "      prefill: c => { const ef = kryciPodmEf(c && c.firma); return kryciPodm().podminkyLimitText(ef, ef.ock.pokutaLimit); },",
+    nahrad: "      prefill: c => { const ef = kryciPodmEf(c && c.firma); return kryciPodm().podminkyLimitText(ef, 'uplatnen'); },",
+    proc: 'firma s „NEUPLATNĚN limit" by v krycím listu měla uplatněný limit' },
 ];
 
 /* ============================================================

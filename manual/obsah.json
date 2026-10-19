@@ -14,6 +14,12 @@
       ]
     },
     {
+      "nadpis": "Co je nového ve verzi v19.10.6 (19. 10. 2026)",
+      "odstavce": [
+        "**Výchozí platební podmínky jsou firemní nastavení.** Splatnost faktur, záloha a další splátky, zádržné, záruka, smluvní pokuty a limit pokut, které se předvyplňují v krycím listu OCK i PROJ, nastavuje administrátor v **Nastavení → Smlouvy / Šablony** (přepínač **OCK | PROJ**). Dnešní hodnoty zůstaly stejné. V zakázce je dál můžete přepsat a tlačítko ↺ vrátí hodnotu z Nastavení. Odeslané nabídky se nemění."
+      ]
+    },
+    {
       "nadpis": "Co je nového ve verzi v19.10.1 (19. 10. 2026)",
       "odstavce": [
         "**Režim DPH ve smlouvě o dílo realizace se předvyplňuje nově.** České DIČ zákazníka → **přenesená daňová povinnost (tuzemsko)**, jako dřív v šabloně; bez DIČ → **česká DPH**. U zákazníka s DIČ z jiného státu EU i mimo EU se nepředvyplní nic — režim vyberete sami podle místa stavby a **bez zvoleného režimu smlouva nevznikne**: tlačítko zhasne a pod ním svítí důvod s tlačítkem *Přejít na volbu režimu DPH*. Vaše ruční volba má vždy přednost a u zakázek, kde je volba už uložená, se nic nemění. Znění vět o DPH je předběžné, dokud ho nezkontroluje účetní (kapitola 24)."

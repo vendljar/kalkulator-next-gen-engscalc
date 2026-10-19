@@ -1,0 +1,205 @@
+/* ============================================================
+ * Nastavení → Smlouvy / Šablony: PLATEBNÍ PODMÍNKY FIRMY (#367 fáze 2)
+ *
+ * Rozhodnutí J. V. 19. 10. 2026 (Q1): data ve Firmě (NAST.firma.podminky),
+ * editace na záložce Smlouvy / Šablony. Nahoře společný blok (platnost
+ * nabídky, číselník sazeb pokut, limit pokut), pod ním přepínač
+ * OCK | PROJ — karta OCK nese platební podmínky OCK, smluvní standardy
+ * a kapitoly nabídky, karta PROJ podmínky PROJ a plán plateb projekce.
+ * Týž přepínač filtruje tabulku šablon dokumentů.
+ *
+ * Měnit smí jen administrátor (jeAdmin); ostatní vidí hodnoty jen ke čtení.
+ * Zveřejňuje se s firemními údaji (firmaKZverejneni → /api/firma, server
+ * pustí jen roli Administrátor). Logika a pravidla jsou v podminky.js.
+ * ============================================================ */
+
+/* Která karta přepínače je otevřená — stav obrazovky, ne nastavení firmy
+ * (do konfigurace se neukládá, viz NASTDB_NEUKLADAT „panel"). */
+function podmCast() { return (typeof NAST !== 'undefined' && NAST.panelPodminky === 'proj') ? 'proj' : 'ock'; }
+function podmPrepni(c) { NAST.panelPodminky = c === 'proj' ? 'proj' : 'ock'; nastRefresh(); }
+
+/* Které šablony patří ke které kartě (filtr tabulky šablon). Šablona, která
+ * tu není, se ukáže na obou kartách. */
+const PODM_SABLONY_CAST = { nabidka: 'ock', sod: 'ock', nabidkaProj: 'proj', sodProj: 'proj', plnaMoc: 'proj' };
+function podmSablonaViditelna(typ) {
+  if (typeof NAST !== 'undefined' && NAST.sablonyVse) return true;
+  const c = PODM_SABLONY_CAST[typ];
+  return !c || c === podmCast();
+}
+function podmSablonyVse(v) { NAST.sablonyVse = !!v; nastRefresh(); }
+
+/* Zápis jednoho pole: hodnota se převede podle typu, prázdné číselné pole
+ * vrátí továrnu (klíč zmizí). Jde přes firmaSet — stejné gesto jako ostatní
+ * firemní údaje (práva, značka ukázkových dat, překreslení). */
+function podmSet(cast, pole, hodnota, typ) {
+  if (!jeAdmin()) { hlaska('Platební podmínky firmy smí měnit jen administrátor.'); return; }
+  const f = NAST.firma || (NAST.firma = firmaDefault());
+  let v = hodnota;
+  if (typ === 'cislo') {
+    const t = String(hodnota == null ? '' : hodnota).trim();
+    v = t === '' ? undefined : PODMINKY.podmCislo(t);
+    if (v !== undefined && !isFinite(v)) v = t;      // nečíslo nechá projít — ukáže ho validace
+  } else if (typ === 'procentaVolitelne') {
+    const t = String(hodnota == null ? '' : hodnota).trim();
+    v = t === '' ? '' : (isFinite(PODMINKY.podmCislo(t)) ? PODMINKY.podmCislo(t) : t);
+  } else if (typ === 'seznamProcent') {
+    v = String(hodnota || '').split(/[;·|]/).map(x => x.trim()).filter(Boolean)
+      .map(x => /^bez/i.test(x) ? 0 : PODMINKY.podmCislo(x.replace('%', '')));
+    if (!v.length) v = undefined;
+  } else if (typ === 'seznamSazeb') {
+    v = String(hodnota || '').split(/[;·|]/).map(x => x.trim()).filter(Boolean);
+    if (!v.length) v = undefined;
+  } else if (typeof v === 'string') {
+    v = v.trim() === '' ? undefined : v.trim();
+  }
+  firmaSet('podminky', PODMINKY.podminkyNastav(f.podminky, cast, pole, v));
+}
+async function podmVratitVse() {
+  if (!jeAdmin()) { hlaska('Platební podmínky firmy smí měnit jen administrátor.'); return; }
+  if (!await potvrd('Vrátit platební podmínky OCK i PROJ na výchozí hodnoty (dnešní standard z kódu)? '
+    + 'Ostatní firemní údaje zůstanou.')) return;
+  const f = NAST.firma || (NAST.firma = firmaDefault());
+  delete f.podminky;
+  nastRefresh();
+}
+/* „Zapsat výchozí hodnoty do Firmy" — továrna se zkopíruje do záznamu,
+ * aby šla zveřejnit a od té doby platila jen Firma. Bez kliknutí se nic
+ * nemění (podminkyEf továrnu doplní při čtení). */
+function podmZapsatVychozi() {
+  if (!jeAdmin()) { hlaska('Platební podmínky firmy smí měnit jen administrátor.'); return; }
+  const ef = PODMINKY.podminkyEf(NAST.firma || {});
+  firmaSet('podminky', PODMINKY.podminkyCiste(ef));
+  hlaska('Platební podmínky jsou zapsané ve Firmě. Online je zveřejníte tlačítkem „Zveřejnit".');
+}
+
+/* ---------- vykreslení ---------- */
+
+function podmStitek(cast, pole) {
+  const upr = PODMINKY.podminkyUpraveno(NAST.firma || {}, cast, pole);
+  return upr ? '<span class="pill">upraveno</span>' : '<span class="pill mut">výchozí</span>';
+}
+function podmRadek(label, vstup, pozn) {
+  return `<div class="row"><label>${esc(label)}</label>${vstup}
+    <span class="note" style="flex:none;width:210px;font-size:11.5px">${pozn || ''}</span></div>`;
+}
+function podmCisloVstup(cast, pole, hodnota, min, max, jednotka) {
+  const dis = jeAdmin() ? '' : ' disabled';
+  return `<span style="display:flex;gap:6px;align-items:center;flex:1;min-width:0">
+    <input type="number" min="${min}" max="${max}" step="1" value="${esc(String(hodnota))}" style="width:90px"
+      onchange="podmSet(${cast ? `'${cast}'` : 'null'}, '${escJs(pole)}', this.value, 'cislo')"${dis}> ${esc(jednotka || '')}</span>`;
+}
+function podmVyberVstup(cast, pole, hodnota, volby) {
+  const dis = jeAdmin() ? '' : ' disabled';
+  return `<select onchange="podmSet('${cast}', '${escJs(pole)}', this.value)"${dis}>${volby.map(([val, txt]) =>
+    `<option value="${esc(val)}"${val === hodnota ? ' selected' : ''}>${esc(txt)}</option>`).join('')}</select>`;
+}
+function podmTextVstup(cast, pole, hodnota) {
+  const dis = jeAdmin() ? '' : ' disabled';
+  return `<input type="text" value="${esc(hodnota)}" maxlength="200"
+    onchange="podmSet('${cast}', '${escJs(pole)}', this.value)"${dis}>`;
+}
+
+/* Společný blok nad přepínačem. */
+function nastPodminkySpolecne() {
+  const f = NAST.firma || {};
+  const ef = PODMINKY.podminkyEf(f);
+  const dis = jeAdmin() ? '' : ' disabled';
+  const plat = FIRMA_POLE.find(p => p.id === 'platnostNabidky');
+  return `<div class="sec-title">Společné pro OCK i PROJ</div>
+    ${podmRadek(plat.label, `<input type="text" value="${esc(f.platnostNabidky == null ? '' : f.platnostNabidky)}"
+      placeholder="2 měsíce" onchange="firmaSet('platnostNabidky', this.value)"${dis}>`,
+      `<code>{{${esc(plat.symbol)}}}</code>`)}
+    ${podmRadek('Sazby smluvních pokut (výběr v krycím listu)', `<input type="text" id="podmSazby"
+      value="${esc(ef.sazbyPokut.join(' · '))}" onchange="podmSet(null, 'sazbyPokut', this.value, 'seznamSazeb')"${dis}>`,
+      podmStitek(null, 'sazbyPokut') + ' první musí být „0" (bez pokuty), další „N % / den", odděleno tečkou ·')}
+    ${podmRadek('Limit smluvních pokut', podmCisloVstup(null, 'limitPokutProc', ef.limitPokutProc, 0, 100, '% z ceny díla'),
+      podmStitek(null, 'limitPokutProc') + ' volby „Uplatněn / NEUPLATNĚN limit N %"')}`;
+}
+
+function podmPrepinac() {
+  const c = podmCast();
+  const tl = (k, txt) => `<button type="button" class="${c === k ? 'primary' : ''}" aria-pressed="${c === k}"
+    onclick="podmPrepni('${k}')">${txt}</button>`;
+  return `<div class="btns podm-prepinac" role="group" aria-label="Část zakázky" style="margin:14px 0 4px">
+    ${tl('ock', 'OCK · ocelová konstrukce')}${tl('proj', 'PROJ · projekce')}</div>`;
+}
+
+function nastPodminkyOck() {
+  const f = NAST.firma || {};
+  const ef = PODMINKY.podminkyEf(f), o = ef.ock;
+  const dis = jeAdmin() ? '' : ' disabled';
+  const s = PODMINKY.podminkySoucetOck(ef);
+  const sazby = ef.sazbyPokut.map(x => [x, x]);
+  const limit = [['uplatnen', PODMINKY.podminkyLimitVolby(ef)[0]], ['neuplatnen', PODMINKY.podminkyLimitVolby(ef)[1]]];
+  const anoNe = [['Ano', 'Ano'], ['Ne', 'Ne']];
+  const splatka = (popis, kProc, kMil, pozn) => podmRadek(popis,
+    `<span style="display:flex;gap:6px;align-items:center;flex:1;min-width:0">
+      <input type="number" min="0" max="100" step="1" value="${esc(String(o[kProc]))}" style="width:80px"
+        class="podm-proc${s.ok ? '' : ' podm-chyba'}" onchange="podmSet('ock', '${kProc}', this.value, 'cislo')"${dis}> %
+      <input type="text" value="${esc(o[kMil])}" maxlength="200" style="flex:1;min-width:0"
+        onchange="podmSet('ock', '${kMil}', this.value)"${dis}></span>`, podmStitek('ock', kProc) + (pozn || ''));
+  const soucet = `<div class="row podm-soucet"><label><b>Součet</b></label>
+    <span><b class="${s.ok ? '' : 'podm-chyba-text'}">${esc(PODMINKY.podmProcText(s.soucet))} %</b>
+    ${s.ok ? '<span class="pill">v pořádku</span>'
+      : `<span class="pill bad">${s.blokuje ? 'musí dát 100 % — zveřejnění je zablokované' : 'nedává 100 %'}</span>`}</span></div>`;
+  return `<div class="sec-title">Platební podmínky OCK</div>
+    <div class="note" style="margin-top:0">Výchozí hodnoty <b>krycího listu OCK</b>. Obchodník je v zakázce může přepsat
+      (↺ v krycím listu vrátí hodnotu odsud). Změna se propíše do rozpracovaných variant; odeslané a zamčené
+      nabídky mají podmínky zmrazené a nezmění se.</div>
+    ${podmRadek('Splatnost faktur', podmCisloVstup('ock', 'splatnostDni', o.splatnostDni, 1, 120, 'dní'), podmStitek('ock', 'splatnostDni'))}
+    ${splatka('Záloha / dílčí faktura č. 1 — výchozí', 'zalohaProc', 'zalohaMilnik', ' milník platí pro všechny volby zálohy')}
+    ${podmRadek('Volby zálohy v krycím listu', `<input type="text" value="${esc(o.zalohyProc.map(p => +p === 0 ? 'Bez zálohy' : PODMINKY.podmProcText(p) + ' %').join(' · '))}"
+      onchange="podmSet('ock', 'zalohyProc', this.value, 'seznamProcent')"${dis}>`, podmStitek('ock', 'zalohyProc') + ' oddělte tečkou ·, první „Bez zálohy"')}
+    ${splatka('Dílčí faktura č. 2', 'faktura2Proc', 'faktura2Milnik', ' v krycím listu se dopočítá do 100 %')}
+    ${splatka('Konečná faktura', 'konecnaProc', 'konecnaMilnik')}
+    ${soucet}
+    ${podmRadek('Zádržné do odstranění vad a nedodělků', `<span style="display:flex;gap:6px;align-items:center;flex:1">
+      ${podmVyberVstup('ock', 'zadrzneVan', o.zadrzneVan, anoNe)}
+      <input type="number" min="0" max="20" placeholder="%" value="${esc(String(o.zadrzneVanProc))}" style="width:80px"
+        onchange="podmSet('ock', 'zadrzneVanProc', this.value, 'procentaVolitelne')"${dis}> %</span>`,
+      podmStitek('ock', 'zadrzneVan') + (o.zadrzneVan === 'Ano' && o.zadrzneVanProc === '' ? ' <span class="pill warn">Ano bez procenta</span>' : ''))}
+    ${podmRadek('Zádržné po dobu záruky', `<span style="display:flex;gap:6px;align-items:center;flex:1">
+      ${podmVyberVstup('ock', 'zadrzneZaruka', o.zadrzneZaruka, anoNe)}
+      <input type="number" min="0" max="20" placeholder="%" value="${esc(String(o.zadrzneZarukaProc))}" style="width:80px"
+        onchange="podmSet('ock', 'zadrzneZarukaProc', this.value, 'procentaVolitelne')"${dis}> %</span>`,
+      podmStitek('ock', 'zadrzneZaruka') + (o.zadrzneZaruka === 'Ano' && o.zadrzneZarukaProc === '' ? ' <span class="pill warn">Ano bez procenta</span>' : ''))}
+    ${podmRadek('Doba záruky', podmCisloVstup('ock', 'zarukaMesicu', o.zarukaMesicu, 0, 240, 'měsíců'), podmStitek('ock', 'zarukaMesicu'))}
+    ${podmRadek('Smluvní pokuta – prodlení dodávky', podmVyberVstup('ock', 'pokutaDodavka', o.pokutaDodavka, sazby), podmStitek('ock', 'pokutaDodavka'))}
+    ${podmRadek('Smluvní pokuta – prodlení splatnosti', podmVyberVstup('ock', 'pokutaSplatnost', o.pokutaSplatnost, sazby), podmStitek('ock', 'pokutaSplatnost'))}
+    ${podmRadek('Limit smluvních pokut', podmVyberVstup('ock', 'pokutaLimit', o.pokutaLimit, limit), podmStitek('ock', 'pokutaLimit'))}`;
+}
+
+function nastPodminkyProj() {
+  const f = NAST.firma || {};
+  const ef = PODMINKY.podminkyEf(f), p = ef.proj;
+  const sazby = ef.sazbyPokut.map(x => [x, x]);
+  const limit = [['uplatnen', PODMINKY.podminkyLimitVolby(ef)[0]], ['neuplatnen', PODMINKY.podminkyLimitVolby(ef)[1]]];
+  return `<div class="sec-title">Platební podmínky PROJ</div>
+    <div class="note" style="margin-top:0">Výchozí hodnoty <b>krycího listu PROJ</b>; v zakázce jdou přepsat. Splátky projekce
+      určuje plán plateb níž.</div>
+    ${podmRadek('Splatnost faktur', podmCisloVstup('proj', 'splatnostDni', p.splatnostDni, 1, 120, 'dní'), podmStitek('proj', 'splatnostDni'))}
+    ${podmRadek('Smluvní pokuta – prodlení s odevzdáním', podmVyberVstup('proj', 'pokutaTermin', p.pokutaTermin, sazby), podmStitek('proj', 'pokutaTermin'))}
+    ${podmRadek('Smluvní pokuta – prodlení splatnosti', podmVyberVstup('proj', 'pokutaSplatnost', p.pokutaSplatnost, sazby), podmStitek('proj', 'pokutaSplatnost'))}
+    ${podmRadek('Limit smluvních pokut', podmVyberVstup('proj', 'pokutaLimit', p.pokutaLimit, limit), podmStitek('proj', 'pokutaLimit'))}`;
+}
+
+/* Celý blok podmínek pro záložku Smlouvy / Šablony. Smluvní standardy,
+ * kapitoly nabídky a logo dodává volající (nastSmluvniStandardy) podle
+ * přepínače. */
+function nastPodminkyHlava() {
+  const f = NAST.firma || {};
+  const vady = PODMINKY.podminkyVady(f.podminky);
+  const admin = jeAdmin();
+  return `${admin ? '' : `<div class="note" style="margin:0 0 6px;color:var(--warn)">Platební podmínky firmy smí měnit jen
+      administrátor. Vidíte je jen pro čtení; v konkrétní zakázce je přepíšete v krycím listu.</div>`}
+    ${vady.length ? `<div class="note" style="color:#b91c1c;margin:6px 0"><b>Platební podmínky mají vady — zveřejnit nepůjde,
+      krycí listy u vadných polí používají výchozí hodnoty:</b><br>${vady.map(v => esc(v)).join('<br>')}</div>` : ''}
+    ${nastPodminkySpolecne()}
+    ${admin ? `<div class="btns" style="margin-top:6px">
+      <button class="mini" onclick="podmZapsatVychozi()" title="zkopíruje platné hodnoty do záznamu firmy, aby šly zveřejnit">Zapsat výchozí hodnoty do Firmy</button>
+      ${f.podminky ? '<button class="mini" onclick="podmVratitVse()">↺ Vrátit platební podmínky na výchozí</button>' : ''}</div>` : ''}
+    ${podmPrepinac()}`;
+}
+
+if (typeof module !== 'undefined')
+  module.exports = { podmCast, podmSablonaViditelna, PODM_SABLONY_CAST };
