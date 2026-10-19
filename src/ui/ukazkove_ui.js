@@ -138,6 +138,13 @@ function dokumentZabrana(typ, varianta) {
   }
   /* Dotisk dokumentu nové strany do odeslané varianty (B153): cenová
    * výjimka a marže té strany — zrcadlo serveru (403). */
+  /* Smlouva o dílo realizace bez zvoleného režimu DPH (B189, 19. 10. 2026)
+   * — táž věta, kterou by hodil sodData; tlačítko zhasne s důvodem. */
+  if (typ === 'sod' && typeof sodDphZabrana === 'function' && typeof ZAK !== 'undefined') {
+    let duvod = '';
+    try { duvod = sodDphZabrana(ZAK, varianta || aktivniVarianta(ZAK)); } catch (e) { duvod = ''; }
+    if (duvod) return duvod;
+  }
   if (typ && typeof vyjimkyDotiskZabrana === 'function' && typeof ZAK !== 'undefined') {
     let duvod = '';
     try { duvod = vyjimkyDotiskZabrana(typ, varianta || aktivniVarianta(ZAK)); } catch (e) { duvod = ''; }
