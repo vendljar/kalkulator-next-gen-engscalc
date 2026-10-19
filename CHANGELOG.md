@@ -10,6 +10,8 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ## v19.10.10 — B194: zámek mutačních běhů a výpis padlých kontrol výchozího stavu (větev claude/f1-test-vyjimky)
 
+**Kolo `testovaci_kolo.sh --bez-mutaci` nad 3b50553 (v19.10.10, 19. 10. 2026) — VŠE ZELENÉ:** sady 278 prošlo / 0 selhalo / 6 přeskočeno (`test.js`, 5 harnessů bez `KNG_PODKLADY`), statické 3/3; `--kontrola` jádro 280, server 587 úseků.
+
 Dávka F1 (koordinace „ŘÍDÍCÍ 19.10“), nález z 19. 10. 2026 ~13:07 UTC:
 `node netlify/mutace.mjs b168` nad 4cc1b81 skončil „sady nejsou zelené ani
 bez mutace — test_vyjimky.mjs: 1 selhalo“, hned potom 3× 72 OK / 0 FAIL.
