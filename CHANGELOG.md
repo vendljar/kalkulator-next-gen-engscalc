@@ -51,7 +51,10 @@ bez potvrzení". Doplněné testy (pojistka proti mutaci před/po):
 `src/test_termin_kapitola.js` +3 (příznak `termin` a `_TERMIN` podle textu
 v jazyce tisku; se mutací 42 / 2, bez ní 44 / 0), `src/test_kapitoly_vychozi.js`
 +3 (`firmaKapitolaVychozi` ve vm: bez potvrzení vlastní text zůstane; se
-mutací 53 / 1, bez ní 54 / 0).
+mutací 53 / 1, bez ní 54 / 0). Opakovaný běh `node mutace_jadro.mjs O3` **7/7**,
+`cd netlify && node mutace.mjs O3` **40/40** (`--kontrola` obou zelená: 298 a 627
+úseků). Kolo `testovaci_kolo.sh --bez-mutaci`: sady 279 prošlo / 0 selhalo /
+6 přeskočeno, statické 3/3 — VŠE ZELENÉ.
 
 ## v19.10.9 — šablona Wordu nabídky PROJ v6: texty nabídky PROJ z Nastavení → Firma (větev claude/w1-sablona-proj-v6)
 
