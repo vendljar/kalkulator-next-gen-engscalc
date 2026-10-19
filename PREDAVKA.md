@@ -12,7 +12,7 @@ Podrobnosti: CHANGELOG v19.10.5, roadmapa #151, #151a (N5), #151b (N6) — vše 
   `zalohaDisk`; `_DB` je od #150 vypnutá); `GET /api/zaloha?zdroj=nocni` (bez hesel a podpisů), `otisk_YYYY-MM-DD.json`
   + `posledni_kopie.json`; záznam `zalohy/kopie-disk` na serveru → hlídka 14 dní všude; auto po 7 dnech jen s právem.
 - **Testy:** `test_zalohy` 55/0 (N5/N6 proti f07d650 33/6 FAIL), `src/test_kopie_disk.js` 10/0, `overit_online` 253/0
-  (5c3 složka v paměti stránky); mutace `#151` 32 (viz commit); smoke viz commit.
+  (5c3 složka v paměti stránky); mutace `#151` 32/32; `--smoke` 271/0/6.
 - **Výchozí volby (J. V. se neptal):** klíč `T<hhmmss>-rucne`; POST bez `duvod` = ruční; souhrn samostatný klíč;
   dávka čtení 20; 30 dní = věk 0–29; 12 měsíců = měsíc dneška + 12 předchozích, drží se nejstarší otisk měsíce;
   před obnovou se nemaže; kopie na Disk ze dne nočního otisku, bez nočního za 7 dní aktuální stav (hláška to řekne);
