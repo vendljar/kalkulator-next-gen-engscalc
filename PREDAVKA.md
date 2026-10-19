@@ -1,3 +1,19 @@
+# Předávka — 19. 10. 2026: dávka A2 dokončení (v19.10.2), větev `claude/a2-356` — #356 střecha přes nejvyšší můstek
+
+Nad `origin/claude/integrace-16-10` (e3995e6, v19.10.1). Do integrace / `test` / `main` nic —
+slučuje koordinace (ŘÍDÍCÍ 19.10, session_017KEALG3ppimL5fW2XswzrB). Podrobnosti: CHANGELOG v19.10.2.
+
+- **Hotovo:** #356 podle rozhodnutí J. V. 19. 10. (A1 + B1 + C1 + D1 + E1, návrh
+  https://claude.ai/artifact/9nMGAMnggiVEByuZoty9Qt) — kód převzatý cherry-pickem 75f9fd1
+  z `claude/a2-356-navrh`; konflikt jen v `mutace_jadro.mjs` (blok #355 / #356). Příručka
+  (kap. 11, Co je nového v19.10.2, záhlaví verze v19.10.2), roadmapa #356 → hotovo.
+- **Testy:** test_mustky 53/6 → 59/0, test_kontroly 137/1 → 138/0 (37 pravidel), otisky
+  test_profil_neznamy 30/0, fuzz 19/0; mutace jádra #356 5 (výsledek v CHANGELOG/souhrnu).
+- **Při slučování:** konflikty v CHANGELOG / PREDAVKA / `verze.txt` / `manual/obsah.json`
+  (Co je nového, záhlaví) / počet pravidel kontrol (37 v `src/test_kontroly.js`, `overit_lista.mjs`).
+- **Větev `claude/a2-356-navrh`** je tím převzatá — po sloučení ke smazání (J. V.).
+- **Další krok:** žádný — dávka A2 uzavřená.
+
 # Předávka — 19. 10. 2026: dávka O2 (v19.10.1), větev `claude/o2-b189` — B189 výchozí režim DPH ve SoD realizace
 
 Nad `origin/claude/integrace-16-10` (`62bd0b6`, v18.10.15). Do `test-draft` / `test` / `main` ani do integrace nic —

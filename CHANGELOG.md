@@ -8,6 +8,37 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v19.10.2 — #356 střecha EXT přes nejvyšší můstek (větev claude/a2-356)
+
+Dávka A2, dokončení #356 podle rozhodnutí J. V. 19. 10. 2026: varianty
+**A1 + B1 + C1 + D1 + E1** z návrhu https://claude.ai/artifact/9nMGAMnggiVEByuZoty9Qt.
+Nad `origin/claude/integrace-16-10` (e3995e6, v19.10.1); kód převzatý
+z `claude/a2-356-navrh` (cherry-pick 75f9fd1).
+
+- **#356 hotovo — střecha přes nejvyšší můstek se připočte:** je-li můstek
+  i v nejvyšším nástupišti (D1: můstků ≥ nadzemní nástupiště, táž podmínka
+  jako věta specifikace „přetažená i přes nástupní můstek“), přičte jádro
+  k ZASTŘEŠENÍ ŠACHTY (EXT) i k PŘÍPLATKU ZA STŘECHU V MĚDI (B1, jedna
+  položka) plochu **(šířka můstku + 0,2 m) × hloubka můstku** (A1).
+  Oplechování k fasádě beze změny (C1); platí v Modelu 1 i 2 (E1). Bez
+  rozměrů můstku nic navíc a nové upozornění `mustekStrecha` (ne zábrana).
+  Výsledek jádra nese `strecha` (`m2`, `mustekNahore`, `mustekM2`).
+- **Ruční reference** (`src/test_mustky.js`): šachta 1,51 × 1,515 m →
+  2,76165 m², můstek 1 300 × 900 mm → +1,35 m² = 4,11165 m²; zkušební ceník
+  13 808,25 → 20 558,25 Kč nákladu. Ukázkové zakázky (zkušební ceník,
+  Model 2): nabídka 1 550 000 → 1 558 000, 1 519 000 → 1 524 000,
+  1 951 000 → 1 968 000 Kč.
+- **Pojistka:** `src/test_mustky.js` 53/6 → 59/0, `src/test_kontroly.js`
+  (37 pravidel, `overit_lista.mjs` čeká 37) 137/1 → 138/0. Zakázky bez
+  můstku nebo s můstky jen níž beze změny: otisky výsledku
+  `src/test_profil_neznamy.js` 30/0 (pole `strecha` mimo otisk), fuzz
+  `src/test_fuzz_invarianty.js` 19/0.
+- **Mutace jádra #356 +5** (plocha, přesah, podmínka, měď, upozornění).
+- Příručka: kapitola 11 (můstky) a „Co je nového ve verzi v19.10.2“;
+  roadmapa #356 → hotovo.
+
+---
+
 ## v19.10.1 — B189: výchozí režim DPH ve smlouvě o dílo realizace podle rozhodnutí J. V. (větev claude/o2-b189)
 
 **Kolo `--jen build,sady,staticke` nad 542d0ef (v19.10.1, 19. 10. 2026) — VŠE ZELENÉ:** sady 274 prošlo / 0 selhalo / 1 přeskočeno (`test.js`, ostrý ceník), statické 3/3. Mutace cíleně: `B189` jádro 8/8 + server 1/1, `DPH` 13/13, `sod`/`SoD` (filtr nerozlišuje velikost písmen) 28/28; `--kontrola` jádro 254, server 539 úseků. Podklady: šablony z Disku v `KNG_PODKLADY` (CN v8–v15 + EN/DE/FR v15, PROJ v3 i jako `Sablona_NABIDKA_PROJ.docx`, v4, v5, EN, SoD v1/v2, plná moc), SoD realizace v3 a projekce v4 vyrobené `vyrob_sablony.js`, příručka v19.10.1 vyrobená `manual/snimky_auto.mjs` + `sestav.sh` (22 snímků; první běh kola padl jen na `overit_manual` se starou příručkou v25.9.3 z Disku).

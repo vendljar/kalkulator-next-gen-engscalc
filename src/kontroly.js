@@ -538,6 +538,19 @@ const KONTROLY = [
     },
   },
   {
+    /* STŘECHA PŘES NEJVYŠŠÍ MŮSTEK BEZ ROZMĚRŮ (#356). Jádro připočte
+     * plochu nad můstkem jen ze zadané šířky a hloubky můstku; bez nich
+     * jde do nabídky střecha jen nad šachtou. Upozornění, ne zábrana. */
+    kod: 'mustekStrecha', kde: 'Kalkulace OCK', nazev: 'Střecha přes nejvyšší můstek',
+    zjisti(ctx) {
+      const r = ctx.vysledek;
+      if (!r || !r.strecha || !r.strecha.mustekNahore || r.strecha.mustekM2 > 0) return null;
+      return { text: 'Můstek je i v nejvyšším nástupišti, takže střecha šachty pokračuje nad ním až k fasádě, '
+        + 'ale chybí rozměr můstku (šířka nebo hloubka) — plocha střechy nad můstkem se do zastřešení '
+        + 'nepřipočetla. Doplňte rozměry můstku v zadání šachty.' };
+    },
+  },
+  {
     /* STATIKA DVAKRÁT (P5 / K19-N109, 2. 10. 2026). Než měla aplikace druhý
      * řádek statiky (opláštění), dorovnávaly se převedené zakázky ručním
      * přepisem hodin řádku STATICKÉ POSOUZENÍ (10–20 h = OCK + opláštění).
