@@ -100,7 +100,7 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* B168, B176 (18. 10. 2026): matice jen s heslem správce, neznámé právo nepovoleno. */
      'test_zobrazeni_heslo.mjs', '../src/test_zobrazeni.js',
      /* H1 (18. 10. 2026): B171 text odhlášení, B174/B175 noční úklid, B186 čísla textem. */
-     '../src/test_odhlaseni_text.js', 'test_uklid.mjs', '../src/test_cisla_textem.js',
+     '../src/test_odhlaseni_text.js', /* H2 B192 */ '../src/test_zobrazeni_heslo_okno.js', 'test_uklid.mjs', '../src/test_cisla_textem.js',
      /* B189 (19. 10. 2026): zábrana SoD bez režimu DPH v prohlížeči. */
      '../src/test_sod_en.js'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
@@ -1797,8 +1797,8 @@ const MUTACE = [
     nahrad: "",
     proc: 'schválení pásu by krylo světlíky „jiné" u dveří v libovolném počtu a velikosti' },
   { nazev: 'B178 zbytek: plocha v obsahu na desítky m²', soubor: '../src/vyjimky.js',
-    hledej: "isFinite(x) ? Math.round(x) : null);",
-    nahrad: "isFinite(x) ? Math.round(x / 50) : null);",
+    hledej: "isFinite(x) ? Math.round(x) : null;",
+    nahrad: "isFinite(x) ? Math.round(x / 50) : null;",
     proc: 'zaokrouhlení by spolklo i změnu plochy o metry čtvereční' },
   { nazev: 'B178 zbytek: server počítá obsah zámku bez katalogu profilů', soubor: 'lib/zakazka_kontrola.mjs',
     hledej: "globalThis.vyjimkyZamekProblem(zak, v, relace, { matice: ctx.matice, program: ctx.program, jekly: JEKLY });",
@@ -2587,6 +2587,24 @@ const MUTACE = [
     proc: 'pomocná funkce by počítala správně, ale správce by v dialogu nic neviděl' },
   /* H1 (18. 10. 2026): hygiena drobných nálezů. Hlídají test_odhlaseni_text.js,
    * test_uklid.mjs, test_analytika.js a test_cisla_textem.js. */
+  /* H2 (v19.10.4): V7-N1 plocha v kartě výjimky na celé m² (test_vyjimky.js),
+   * B192 okno paměti hesla správce se neprodlužuje (test_zobrazeni_heslo_okno.js). */
+  { nazev: 'H2 V7-N1: karta ukáže plochu na setiny', soubor: '../src/vyjimky.js',
+    hledej: "  return c + ' m²' + (c === p.m2 ? '' : ' (zaokrouhleno pro schválení)');",
+    nahrad: "  return String(p.m2).replace('.', ',') + ' m²';",
+    proc: 'schvalovatel by v kartě viděl jiné číslo (2,61 m²), než drží schválení (3 m²)' },
+  { nazev: 'H2 V7-N1: karta bez poznámky o zaokrouhlení', soubor: '../src/vyjimky.js',
+    hledej: "  return c + ' m²' + (c === p.m2 ? '' : ' (zaokrouhleno pro schválení)');",
+    nahrad: "  return c + ' m²';",
+    proc: 'schvalovatel by nepoznal, že plocha v kartě je zaokrouhlená' },
+  { nazev: 'H2 V7-N1: karta zaokrouhlí jinak než obsah', soubor: '../src/vyjimky.js',
+    hledej: "  const c = vyjimkyM2Schvaleni(p.m2);",
+    nahrad: "  const c = Math.floor(p.m2);",
+    proc: 'číslo v kartě by se u x,5–x,99 m² lišilo od obsahu schválení' },
+  { nazev: 'H2 B192: okno hesla se prodlužuje každým uložením', soubor: '../src/ui/online_ui.js',
+    hledej: "  const zPameti = !!ZOBRAZENI_HESLO.h && Date.now() < ZOBRAZENI_HESLO.plati;",
+    nahrad: "  const zPameti = false;",
+    proc: 'heslo správce by v paměti stránky leželo libovolně dlouho (B192)' },
   /* B189 (19. 10. 2026): tlačítko SoD realizace zhasne bez režimu DPH. Hlídá test_sod_en (2c). */
   { nazev: 'B189: zábrana SoD bez režimu DPH v prohlížeči mlčí', soubor: '../src/ui/ukazkove_ui.js',
     hledej: "  if (typ === 'sod' && typeof sodDphZabrana === 'function' && typeof ZAK !== 'undefined') {",

@@ -267,8 +267,19 @@ console.log('— B178: výška a rozměry stěny v obsahu výjimky —');
   const pl = vyjimkyPasyPlochy(obsah(d).pasy, r);
   test('plocha pásu pro kartu = m² z jádra (zdvih 40 m)', pl.length === 2 && pl.every(p => typeof p.m2 === 'number')
     && pl[1].m2 === Math.round(r.oplasteni.pasy.find(p => p.typ === 'jine' && p.stena === 'B').m2 * 100) / 100 && pl[1].m2 > 50, pl);
-  test('plocha v kartě „62,79 m²"-tvar, neznámá plocha prázdná', vyjimkyPasPlocha({ m2: 2.16 }) === '2,16 m²'
-    && vyjimkyPasPlocha({ m2: null }) === '' && vyjimkyPasyPlochy(obsah(d).pasy, null).every(p => p.m2 === null));
+  test('plocha v kartě na celé m² jako schválení (V7-N1), neznámá plocha prázdná',
+    vyjimkyPasPlocha({ m2: 2.16 }) === '2 m² (zaokrouhleno pro schválení)' && vyjimkyPasPlocha({ m2: 2.5 }) === '3 m² (zaokrouhleno pro schválení)'
+    && vyjimkyPasPlocha({ m2: 4 }) === '4 m²' && vyjimkyPasPlocha({ m2: null }) === '' && vyjimkyPasyPlochy(obsah(d).pasy, null).every(p => p.m2 === null),
+    [vyjimkyPasPlocha({ m2: 2.16 }), vyjimkyPasPlocha({ m2: 4 })]);
+  /* V7-N1: číslo v kartě = číslo v obsahu schválení (pás i světlík). */
+  {
+    const oV = obsah(d), ob = JSON.parse(oV.obsah);
+    const vKarte = x => { const m = /^(\d+) m²/.exec(vyjimkyPasPlocha(x)); return m ? +m[1] : null; };
+    test('V7-N1: plocha pásu v kartě = m² v obsahu schválení', oV.pasy.length > 0
+      && oV.pasy.every((p, i) => vKarte(p) === ob.p[i][7]), [oV.pasy.map(vKarte), ob.p.map(x => x[7])]);
+    test('V7-N1: plocha světlíku v kartě = m² v obsahu schválení', (oV.svetliky || []).every((x, i) => vKarte(x) === ob.l[i][4]),
+      [(oV.svetliky || []).map(vKarte), ob.l]);
+  }
   /* Dva pásy „jiné" na jedné stěně: každý svou plochu (párování mezemi). */
   zd.oplasteni.steny.B.pasy = [{ typ: 'jine', nazev: 'Deska', naklad: 1, doM: 1 }, { typ: 'C.cetrisKc', doM: 11 }, { typ: 'jine', nazev: 'Deska', naklad: 1, doM: null }];
   const r2 = vypocet(zd, d.cenik, JSON.parse(require('fs').readFileSync(__dirname + '/jekly.json', 'utf8')));
@@ -290,7 +301,7 @@ console.log('— B178: výška a rozměry stěny v obsahu výjimky —');
     B: { odM: 0, pasy: [{ typ: 'C.cetrisKc', doM: 2.2 }, { typ: 'jine', nazev: 'Deska', naklad: 1, doM: null }] } } };
   const h = vyjimkyKarta();
   test('B155 karta: stěna A (Deska, -1,2–1 m) a stěna B (Deska, od 2,2 m až nahoru), název přes esc()',
-    /stěna A \(Deska &lt;b&gt;, -1,2–1 m, [0-9]+,[0-9]+ m²\)/.test(h) && /stěna B \(Deska, od 2,2 m až nahoru \(12,2 m\), [0-9]+,?[0-9]* m²\)/.test(h), h.slice(0, 1200));
+    /stěna A \(Deska &lt;b&gt;, -1,2–1 m, [0-9]+ m²( \(zaokrouhleno pro schválení\))?\)/.test(h) && /stěna B \(Deska, od 2,2 m až nahoru \(12,2 m\), [0-9]+ m²( \(zaokrouhleno pro schválení\))?\)/.test(h), h.slice(0, 1200));
   delete global.ZAK; }
 
 console.log('— B178 zbytek: plocha z jádra v obsahu (v17.10.5) —');

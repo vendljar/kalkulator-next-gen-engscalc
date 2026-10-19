@@ -339,7 +339,13 @@ function docxVyvazene(fr) {
  * symbolu — prázdnou hodnotou se zmizet nedá. Builder proto dodá výslovný
  * seznam jmen bloků (`blokyPryc`, např. CIN_EZC), které zmizí celé i s obsahem
  * (jako `odstavcePryc` u vět, K18-N101). Blok, o kterém builder nic neřekl,
- * se řídí obsahem jako dřív. */
+ * se řídí obsahem jako dřív.
+ * NEVYVÁŽENÝ BLOK ZE SEZNAMU (B191, audit kola 28; dávka H2 19. 10. 2026):
+ * blok z `blokyPryc`, který nejde odstranit (značky bez páru, zkřížené,
+ * nebo začátek v buňce tabulky a konec mimo ni — šablona upravená ve
+ * Wordu), dřív v dokumentu tiše zůstal a zmizely jen značky — smlouva by
+ * vyjmenovala nenabízenou činnost. Teď generátor hází (fail-closed,
+ * dokument nevznikne); blok mimo seznam se řídí obsahem jako dřív. */
 function odstranPrazdneBloky(xml, ph, blokyPryc) {
   if (!/_(?:ZAC|KON)(?:<[^>]+>)*\}/.test(xml)) return xml;       // šablona bez značek
   const pryc = Array.isArray(blokyPryc) ? blokyPryc : [];
@@ -353,17 +359,26 @@ function odstranPrazdneBloky(xml, ph, blokyPryc) {
     const [a, b] = par;
     const uvnitr = xml.slice(a.kon, b.zac);
     const klice = klicePlaceholderu(uvnitr);
+    if (pryc.indexOf(a.jmeno) >= 0 && !docxVyvazene(uvnitr)) throw new Error(docxBlokNejdeText(a.jmeno));
     const prazdny = docxVyvazene(uvnitr) && (pryc.indexOf(a.jmeno) >= 0
       || (klice.length > 0 && klice.every(k => ph && ph[k] != null && jePrazdnaHodnota(ph[k]))));
     xml = prazdny ? xml.slice(0, a.zac) + xml.slice(b.kon)
       : xml.slice(0, a.zac) + bezZnacky(xml, a) + uvnitr + bezZnacky(xml, b) + xml.slice(b.kon);
   }
-  /* značky bez páru nebo zkřížené: jen pryč, obsah zůstává */
+  /* značky bez páru nebo zkřížené: jen pryč, obsah zůstává — kromě bloku
+   * ze seznamu pryč (B191: ten by v dokumentu zůstal) */
+  const zbyle = docxZnackyBloku(xml).find(z => pryc.indexOf(z.jmeno) >= 0);
+  if (zbyle) throw new Error(docxBlokNejdeText(zbyle.jmeno));
   docxZnackyBloku(xml).sort((p, q) => q.zac - p.zac)
     .forEach(z => { xml = xml.slice(0, z.zac) + bezZnacky(xml, z) + xml.slice(z.kon); });
   return xml;
 }
 
+function docxBlokNejdeText(jmeno) {
+  return 'Šablona má blok ' + jmeno + ', který do dokumentu nepatří, ale jeho značky {{' + jmeno
+    + '_ZAC}} a {{' + jmeno + '_KON}} nejsou správně spárované (např. začátek v tabulce a konec za ní) — '
+    + 'blok nejde odstranit, dokument proto nevznikne. Opravte šablonu.';
+}
 /* páry <w:tr>…</w:tr> se správným párováním (počítání vnoření – tabulka v tabulce) */
 function radkoveSpany(xml) {
   const ev = [];

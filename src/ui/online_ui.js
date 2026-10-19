@@ -1039,6 +1039,13 @@ function onlineUlozZobrazeniTise() {
  * se zahodí. Ochrana proti ukradené cookie tím platí dál — kdo má jen
  * cookie, heslo nemá. Souběžná uložení sdílí jeden dialog.
  *
+ * OKNO SE NEPRODLUŽUJE (B192, audit kola 28; dávka H2 19. 10. 2026,
+ * výchozí volba): ZOBRAZENI_HESLO_MS se počítá od ZADÁNÍ hesla, ne od
+ * posledního uložení — dřív každé uložení matice okno posunulo a heslo
+ * v čitelné podobě mohlo v paměti stránky ležet libovolně dlouho (XSS na
+ * stránce by ho přečetl; mez v BEZPECNOST_MEZE.md, B168/B192). Po vypršení
+ * se panel zeptá znovu.
+ *
  * Zrušený dialog nebo špatné heslo tiše neselže: volající dostane chybu
  * s hláškou (panel ji ukáže u „Uložit teď", ostatní místa přes onlineZprava)
  * a matice zůstane v paměti k dalšímu pokusu. */
@@ -1059,12 +1066,13 @@ function onlineZobrazeniHeslo(text) {
   return ZOBRAZENI_HESLO.dotaz;
 }
 async function onlineZobrazeniPost() {
+  const zPameti = !!ZOBRAZENI_HESLO.h && Date.now() < ZOBRAZENI_HESLO.plati;
   const h = await onlineZobrazeniHeslo();
   if (!h) throw new Error('Nastavení zobrazení se neuložilo — bez vašeho hesla ho nelze potvrdit. '
     + 'Uložte ho znovu („Uložit teď" v Nastavení → Zobrazení) a heslo zadejte.');
   try {
     const d = await onlineApi('/api/zobrazeni', { matice: NAST.zobrazeni, hesloSpravce: h });
-    ZOBRAZENI_HESLO.h = h; ZOBRAZENI_HESLO.plati = Date.now() + ZOBRAZENI_HESLO_MS;
+    if (!zPameti) { ZOBRAZENI_HESLO.h = h; ZOBRAZENI_HESLO.plati = Date.now() + ZOBRAZENI_HESLO_MS; }   // B192: jen čerstvě zadané heslo
     return d;
   } catch (e) {
     if (e && e.data && e.data.kod === 'hesloSpravce') onlineZobrazeniHesloZapomen();
