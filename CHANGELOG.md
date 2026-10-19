@@ -14,31 +14,34 @@ Dávka O3 (zadání J. V. 19. 10. 2026 „Doplň výchozí texty do Nastavení r
 nad `origin/claude/integrace-16-10` (`e3995e6`, v19.10.1; v19.10.2 drží souběžná
 dávka A2). Roadmapa **#431** (navazuje na #282).
 
-- **Příčina:** v produkci byly v Nastavení → Smlouvy / Šablony → Kapitoly nabídky
-  česká pole IV. Požadavky, V. Termíny, VI. Předání a Doložky prázdná (žlutý
-  rámeček „Česky nevyplněno … nabídka tyto kapitoly vypustí“), ač
-  `DEFAULT_FIRMA` výchozí texty má. Uložená firma (online záznam `/api/firma`
-  i `_DB/_nastaveni.json`) je neměla nebo měla prázdné a `konfigNahradVMiste()`
-  ji při načtení kopíruje celou místo výchozí — nabídka pak kapitoly vypouštěla.
-- **Oprava (`src/firma.js`):** `firmaKapitolyDoplnVychozi(f, vynutit)` doplní
-  chybějící nebo prázdná (jen bílé znaky) pole kapitol CZ/EN/DE z
-  `DEFAULT_FIRMA`; FR výchozí text nemá a nedoplňuje se. Volá se při každém
-  načtení firmy: import konfigurace i `_nastaveni.json` (`konfiguraceImport`,
-  s varováním, co se doplnilo) a nasazení online firmy (`src/ui/online_ui.js`).
-  Jiná firemní pole se nedoplňují (ukázkové údaje do skutečné firmy nepatří).
-- **Vědomé vypuštění:** do pole se zapíše jediný znak **`-`**
-  (`FIRMA_KAP_VYPUSTIT`). Takové pole se nedoplňuje, nabídka kapitolu vypustí
-  i s nadpisem, symbol do Wordu je prázdný, kontrola před nabídkou ani žlutý
-  rámeček na ni neupozorňují; u FR se „-“ nenahrazuje češtinou. Formulář
-  ukazuje štítek „vědomě vypuštěno“.
-- **Tlačítko „↺ Doplnit výchozí texty“** v sekci Kapitoly nabídky (s potvrzením)
-  vrátí výchozí znění všech kapitol CZ/EN/DE, ostatní firemní údaje nechá.
-- **Server:** `firmaLzeZverejnit` doplněné texty i značku „-“ přijme beze
-  změny; panel zveřejnění ukáže rozdíl proti online kopii bez kapitol, takže
-  administrátorovi stačí **Zveřejnit**.
-- **Test** `src/test_kapitoly_vychozi.js` (47 kontrol; před opravou padá).
-- **Značka `{TERMIN}` v kapitole V. (TD1, rozšíření koordinace — J. V. „TD1
-  vymysli, jak zohlednit“):** výchozí text kapitoly V. (CZ/EN/DE) má místo
+- **Příčina** (rozbor V8, `podklady/367_NASTAVENI_FIRMA_NAVRH.md` odd. 8):
+  v produkci byly v Nastavení → Smlouvy / Šablony → Kapitoly nabídky pole IV.,
+  V., VI. a Doložky prázdná (žlutý rámeček „Česky nevyplněno … nabídka tyto
+  kapitoly vypustí“), ač `DEFAULT_FIRMA` výchozí texty má. Uložená firma
+  (online `/api/firma` i `_DB/_nastaveni.json`) je z doby před #282 a klíče
+  kapitol vůbec nemá; `konfigNahradVMiste()` ji při načtení kopíruje celou
+  (výchozí texty zmizí) a `KONFIG_DOPLNIT_KLICE` firmu záměrně vynechává.
+- **Oprava (`src/firma.js`):** `firmaDoplnVychoziTexty(f, iPrazdne)` doplní
+  CHYBĚJÍCÍ klíče z bílé listiny `FIRMA_KAP_VYCHOZI_KLICE` (kapitoly IV.–VI.
+  a doložky CZ/EN/DE; FR výchozí text nemá). Volá se po každém načtení firmy:
+  import konfigurace i `_nastaveni.json` (`konfiguraceImport`, s varováním,
+  co se doplnilo) a nasazení online firmy (`src/ui/online_ui.js`).
+  Identifikace firmy se nikdy nedoplňuje.
+- **Vědomé vypuštění = prázdný řetězec** (výchozí volba koordinace): pole,
+  které administrátor vymaže, se nedoplňuje a nabídka kapitolu vypustí;
+  kontrola před nabídkou ji dál hlásí (K9-N32). Žádná zvláštní značka.
+- **Tlačítka (jen administrátor):** „↺ Doplnit výchozí text“ u každé kapitoly
+  a jazyka (CZ/EN/DE; vlastní text přepíše po potvrzení) a „↺ Doplnit všechny
+  prázdné“ (doplní prázdná pole, vlastní texty ani FR nemění).
+- **Zveřejnění:** `firmaKZverejneni` doplněné klíče zveřejní (jsou ve
+  `FIRMA_POLE`), `firmaLzeZverejnit` je přijme; panel zveřejnění ukáže rozdíl
+  proti online kopii bez kapitol, takže administrátorovi stačí **Zveřejnit**.
+- **Test** `src/test_kapitoly_vychozi.js` (51 kontrol; před opravou padá —
+  `firmaDoplnVychoziTexty` neexistuje a import nechá kapitoly prázdné).
+- **Značka `{TERMIN}` v kapitole V. (TD1, #330) — ROZHODNUTÍ J. V.
+  19. 10. 2026 (~11:25 UTC, přes koordinaci): schváleno přesně podle zadání —
+  bez odrážky navíc při značce, záloha na standardní lhůtu z Firmy, značka
+  nikdy viditelná v tisku, starý text funguje a kontrola radí značku.** výchozí text kapitoly V. (CZ/EN/DE) má místo
   pevného „cca 12 týdnů“ značku `{TERMIN}`; `firmaKapitola(f, base, jazyk,
   termin)` za ni dosadí termín dodání zakázky (týž jako `{{PODM_TERMIN_DODANI}}`,
   s ATYP i ručním přepisem, přeložený; u FR bez vlastního znění česky).

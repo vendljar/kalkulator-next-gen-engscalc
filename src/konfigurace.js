@@ -220,10 +220,11 @@ function konfiguraceImport(data, ctx, volby) {
       + doplneno.join(', ') + ' – doplněno výchozím nastavením');
     /* Výjimka z „firma se nedoplňuje" (dávka O3, 19. 10. 2026): texty
      * kapitol nabídky NEJSOU ukázkové údaje, ale obchodní standard. Firma
-     * uložená před #282 (nebo s prázdnými poli) by je jinak vypustila
-     * z každé nabídky. Značka „-" = vědomé vypuštění, ta zůstává. */
-    if (ctx.NAST.firma && typeof ctx.NAST.firma === 'object' && typeof firmaKapitolyDoplnVychozi === 'function') {
-      const kap = firmaKapitolyDoplnVychozi(ctx.NAST.firma, false);
+     * uložená před #282 jejich klíče nemá a nabídka by je vypustila.
+     * Doplňují se jen CHYBĚJÍCÍ klíče z bílé listiny; prázdný řetězec je
+     * vědomé vypuštění a zůstává (firmaDoplnVychoziTexty). */
+    if (ctx.NAST.firma && typeof ctx.NAST.firma === 'object' && typeof firmaDoplnVychoziTexty === 'function') {
+      const kap = firmaDoplnVychoziTexty(ctx.NAST.firma, false);
       if (kap.length) varovani.push('firemní údaje neměly texty kapitol nabídky ('
         + kap.join(', ') + ') – doplněny výchozími; zkontrolujte je v Nastavení → Smlouvy / Šablony a zveřejněte');
     }

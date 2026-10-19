@@ -133,7 +133,7 @@ test('FR výchozí text nemá', fm.DEFAULT_FIRMA.kapTerminyFr === undefined || f
     && fm.firmaKapitola(f, 'kapPredani', 'cz').termin === false);
   test('firmaKapitola: vlastní termín má přednost', /^Zahájení montáže X týdnů po/.test(fm.firmaKapitola(f, 'kapTerminy', 'cz', 'X týdnů').radky[0]));
   test('firmaKapitola: prázdný vlastní termín → záloha', /^Zahájení montáže 12 týdnů po/.test(fm.firmaKapitola(f, 'kapTerminy', 'cz', () => '  ').radky[0]));
-  test('firmaKapitola: značka „-" nemá příznak termin', fm.firmaKapitola({ kapTerminy: '-' }, 'kapTerminy', 'cz').termin === false);
+  test('firmaKapitola: vymazaná kapitola nemá příznak termin', fm.firmaKapitola({ kapTerminy: '' }, 'kapTerminy', 'cz').termin === false);
   test('firmaTerminZaloha DE', fm.firmaTerminZaloha({}, 'de') === 'nach Vereinbarung' && fm.FIRMA_KAP_TERMIN === '{TERMIN}');
   test('značka víckrát v řádku se nahradí celá', fm.firmaKapitola({ kapTerminy: '{TERMIN} / {TERMIN}' }, 'kapTerminy', 'cz', 'A').radky[0] === 'A / A');
 }

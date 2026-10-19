@@ -213,22 +213,18 @@ function firmaKapitola(f, base, jazyk, termin) {
     const t = String((typeof termin === 'function' ? termin(jazTextu) : termin) || '').trim();
     return t || firmaTerminZaloha(firma, jazTextu);
   };
-  const rozloz = (k, jazTextu) => firmaKapVypusteno(firma[k]) ? []
-    : String(firma[k] == null ? '' : firma[k]).split('\n')
+  const rozloz = (k, jazTextu) => String(firma[k] == null ? '' : firma[k]).split('\n')
       .map(r => r.replace(/\{FIRMA\}/g, nazev || '{FIRMA}'))
       .map(r => r.indexOf(FIRMA_KAP_TERMIN) < 0 ? r : r.split(FIRMA_KAP_TERMIN).join(terminPro(jazTextu)))
       .map(r => r.trim())
       .filter(r => r !== '');
-  const vypusteno = firmaKapVypusteno(firma[klic]);
   let radky = rozloz(klic, jaz);
-  /* Prázdné francouzské znění → česky s upozorněním (FIRMA_KAP_ZALOHA_CZ).
-   * Vědomě vypuštěné (značka „-") se češtinou nenahrazuje. */
-  if (znamy && !radky.length && !vypusteno && FIRMA_KAP_ZALOHA_CZ[jaz]) {
+  /* Prázdné francouzské znění → česky s upozorněním (FIRMA_KAP_ZALOHA_CZ). */
+  if (znamy && !radky.length && FIRMA_KAP_ZALOHA_CZ[jaz]) {
     znamy = false; klic = base; radky = rozloz(base, 'cz');
   }
   return { radky, prazdne: radky.length === 0, jazykChybi: !znamy,
            chybi: !znamy || radky.length === 0, jazyk: jaz, klic,
-           vypusteno: vypusteno || firmaKapVypusteno(firma[klic]),
            termin: String(firma[klic] == null ? '' : firma[klic]).indexOf(FIRMA_KAP_TERMIN) >= 0 };
 }
 
@@ -253,50 +249,50 @@ function firmaTerminZaloha(f, jazyk) {
   return (jaz !== 'cz' && typeof tr === 'function') ? tr(t, jaz) : t;
 }
 
-/* VĚDOMÉ VYPUŠTĚNÍ KAPITOLY (dávka O3, 19. 10. 2026, v19.10.3).
+/* VÝCHOZÍ TEXTY KAPITOL DO ULOŽENÉ FIRMY (dávka O3, 19. 10. 2026, v19.10.3).
  *
  * Zadání J. V. „Doplň výchozí texty do Nastavení rovnou." — v produkci byly
- * české kapitoly IV.–VI. a doložky prázdné, ač DEFAULT_FIRMA texty má.
- * Příčina: uložená firma (online záznam i `_nastaveni.json`) vznikla dřív,
- * než kapitoly existovaly (#282), nebo je nesla prázdné; při načtení ji
- * konfigNahradVMiste() zkopíruje CELOU místo výchozí, takže výchozí texty
- * zmizely a nabídka kapitoly vypouštěla.
+ * kapitoly IV.–VI. a doložky v Nastavení prázdné, ač DEFAULT_FIRMA texty má.
+ * Příčina (rozbor V8, podklady/367_NASTAVENI_FIRMA_NAVRH.md, oddíl 8):
+ * uložená firma (online záznam i `_nastaveni.json`) pochází z doby před
+ * #282 a klíče kapitol VŮBEC NEMÁ; konfigNahradVMiste() ji při načtení
+ * kopíruje celou, takže výchozí texty zmizí, a KONFIG_DOPLNIT_KLICE firmu
+ * záměrně vynechává (ukázková adresa do skutečné firmy nepatří).
  *
- * Proto se při každém načtení firmy chybějící nebo prázdné (jen bílé znaky)
- * kapitoly doplní výchozím textem. Aby šlo kapitolu i tak vědomě vypustit,
- * zapíše se do pole jediný znak „-" (FIRMA_KAP_VYPUSTIT): ten se nedoplňuje,
- * nabídka kapitolu vypustí a kontrola před nabídkou na ni neupozorňuje.
- * Francouzština výchozí text nemá (smluvní podmínky se nevymýšlejí), proto
- * se nedoplňuje a prázdná dál tiskne češtinu s upozorněním. */
-const FIRMA_KAP_VYPUSTIT = '-';
-function firmaKapVypusteno(v) {
-  return typeof v === 'string' && v.trim() === FIRMA_KAP_VYPUSTIT;
-}
+ * Proto se po každém načtení firmy doplní CHYBĚJÍCÍ klíče z bílé listiny
+ * FIRMA_KAP_VYCHOZI_KLICE (kapitoly CZ/EN/DE; FR výchozí text nemá).
+ * PRÁZDNÝ ŘETĚZEC SE NECHÁVÁ: „" znamená, že administrátor kapitolu vědomě
+ * vymazal — žádná zvláštní značka není potřeba (výchozí volba koordinace
+ * 19. 10. 2026). Identifikace firmy se nikdy nedoplňuje. */
+const FIRMA_KAP_VYCHOZI_KLICE = [];
+FIRMA_KAPITOLY.forEach(kap => ['', 'En', 'De'].forEach(suf => FIRMA_KAP_VYCHOZI_KLICE.push(kap.base + suf)));
 
-/* Doplní do f výchozí texty kapitol (CZ/EN/DE) z DEFAULT_FIRMA.
- *   vynutit = false … jen chybějící a prázdná pole (při načtení firmy);
- *                     značka „-" zůstává.
- *   vynutit = true  … tlačítko „Doplnit výchozí texty": přepíše i upravené
- *                     a vypuštěné kapitoly výchozím zněním.
- * Vrací seznam doplněných klíčů (prázdný = nic se nezměnilo). Jiných polí
- * firmy se nedotkne — ukázkové údaje do skutečné firmy nepatří. */
-function firmaKapitolyDoplnVychozi(f, vynutit) {
+/* iPrazdne = false … jen chybějící klíče (undefined/null) — při načtení firmy;
+ * iPrazdne = true  … i prázdná pole (jen bílé znaky) — tlačítko „Doplnit
+ *                    všechny prázdné". Vlastní text se nepřepisuje nikdy.
+ * Vrací seznam doplněných klíčů. */
+function firmaDoplnVychoziTexty(f, iPrazdne) {
   if (!f || typeof f !== 'object') return [];
   const doplneno = [];
-  FIRMA_KAPITOLY.forEach(kap => {
-    Object.keys(FIRMA_KAP_JAZYK).forEach(jaz => {
-      const klic = kap.base + FIRMA_KAP_JAZYK[jaz];
-      const vychozi = DEFAULT_FIRMA[klic];
-      if (typeof vychozi !== 'string' || !vychozi.trim()) return;
-      const v = f[klic];
-      const prazdne = v == null || (typeof v === 'string' && !v.trim());
-      if (!vynutit && !prazdne) return;
-      if (v === vychozi) return;
-      f[klic] = vychozi;
-      doplneno.push(klic);
-    });
+  FIRMA_KAP_VYCHOZI_KLICE.forEach(klic => {
+    const v = f[klic];
+    const chybi = v === undefined || v === null;
+    const prazdne = typeof v === 'string' && !v.trim();
+    if (!chybi && !(iPrazdne && prazdne)) return;
+    f[klic] = DEFAULT_FIRMA[klic];
+    doplneno.push(klic);
   });
   return doplneno;
+}
+
+/* Tlačítko „Doplnit výchozí text" u jedné kapitoly a jazyka: přepíše pole
+ * výchozím zněním (UI se před přepsáním vlastního textu ptá). Jen klíče
+ * z bílé listiny. Vrací true, když se pole změnilo. */
+function firmaDoplnVychoziText(f, klic) {
+  if (!f || typeof f !== 'object' || FIRMA_KAP_VYCHOZI_KLICE.indexOf(klic) < 0) return false;
+  if (f[klic] === DEFAULT_FIRMA[klic]) return false;
+  f[klic] = DEFAULT_FIRMA[klic];
+  return true;
 }
 
 /* Kapitoly, které v nabídce v daném jazyce CHYBĚT BUDOU (23. 9. 2026,
@@ -312,11 +308,7 @@ function firmaKapitolyDoplnVychozi(f, vynutit) {
  * Jazyk, který kapitoly nemají (FR), bere český text — prázdný je tedy,
  * když je prázdná čeština (stejné pravidlo jako firmaKapitola). */
 function firmaKapitolyPrazdne(f, jazyk) {
-  /* Vědomě vypuštěná kapitola (značka „-") není opomenutí — nehlásí se. */
-  return FIRMA_KAPITOLY.filter(kap => {
-    const k = firmaKapitola(f, kap.base, jazyk);
-    return k.prazdne && !k.vypusteno;
-  })
+  return FIRMA_KAPITOLY.filter(kap => firmaKapitola(f, kap.base, jazyk).prazdne)
     .map(kap => ({ base: kap.base, cislo: kap.cislo, nadpis: kap.nadpis,
                    popis: (kap.cislo ? kap.cislo + ' ' : '') + kap.nadpis.toLowerCase() }));
 }
@@ -671,7 +663,7 @@ function firmaShodaSOnline(mistni, online) {
 
 if (typeof module !== 'undefined')
   module.exports = { FIRMA_KAPITOLY, FIRMA_KAP_JAZYK, firmaKapitola, firmaKapitolyPrazdne,
-    FIRMA_KAP_VYPUSTIT, firmaKapVypusteno, firmaKapitolyDoplnVychozi, FIRMA_KAP_TERMIN, firmaTerminZaloha,
+    FIRMA_KAP_VYCHOZI_KLICE, firmaDoplnVychoziTexty, firmaDoplnVychoziText, FIRMA_KAP_TERMIN, firmaTerminZaloha,
     FIRMA_POLE, FIRMA_SEKCE, DEFAULT_FIRMA, firmaDefault, firmaAktualni,
     firmaPole, firmaHodnota, firmaAdresaRadek, firmaSidlo, firmaKorespondencni, firmaBankaRadek,
     firmaIcoDic, firmaPaticka, firmaPlaceholders, firmaSymboly, firmaRadky, firmaKontrola,
