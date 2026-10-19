@@ -800,7 +800,7 @@ async function sablonyRezimUI(rezim) {
  * z téhle záložky udělalo nepřehlednou zeď a hledá se v nich jednou za rok. */
 function nastKapitolyNabidky() {
   const f = NAST.firma || (NAST.firma = firmaDefault());
-  const JAZ = [['', 'česky'], ['En', 'anglicky'], ['De', 'německy']];
+  const JAZ = [['', 'česky'], ['En', 'anglicky'], ['De', 'německy'], ['Fr', 'francouzsky']];   // FR od #367 fáze 2b (výchozí FR texty)
   const blok = kap => {
     const pola = JAZ.map(([suf, jmeno]) => {
       const id = kap.base + suf;
@@ -832,8 +832,8 @@ function nastKapitolyNabidky() {
       <b>Kapitola III. Platební podmínky se tady nevyplňuje</b> — skládá se ze zálohy, splatnosti
       a platnosti nabídky z krycího listu, aby se dvě místa nemohla rozejít.
       Každý jazyk má vlastní pole: smluvní podmínky se <b>nepřekládají strojově</b>. Jazyk, který
-      necháte prázdný, nabídka <b>vypustí i s nadpisem</b> (Word od šablony CN v13); francouzština se zatím neřeší a vytiskne
-      češtinu s upozorněním. Značka <code>{FIRMA}</code> se nahradí názvem firmy.</div>
+      necháte prázdný, nabídka <b>vypustí i s nadpisem</b> (Word od šablony CN v13); prázdná francouzština vytiskne
+      češtinu s upozorněním (výchozí FR texty ke kontrole: podklady/367_PREKLADY_KONTROLA.md). Značka <code>{FIRMA}</code> se nahradí názvem firmy.</div>
     ${(typeof FIRMA_KAPITOLY !== 'undefined' ? FIRMA_KAPITOLY : []).map(blok).join('')}`;
 }
 

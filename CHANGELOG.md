@@ -10,6 +10,8 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ## v19.10.7 — #367 fáze 2b: věty kalendáře v jazycích, texty nabídky PROJ a rozšíření z Firmy (větev claude/v8-367-firma)
 
+**Kolo `--jen build,sady,staticke` nad 7862576 (v19.10.7, 19. 10. 2026) — VŠE ZELENÉ:** sady 272 prošlo / 0 selhalo / 6 přeskočeno (`test.js` ostrý ceník, 5 harnessů bez `KNG_PODKLADY`), statické 3/3. Cílené mutace `#367` jádro 18/18, server 2/2. Plné mutační kolo neběželo.
+
 Dávka V8b, navazuje na v19.10.6. Rozhodnutí J. V. 19. 10. 2026 k Q3, Q5 a Q6.
 
 - **Věty platebního kalendáře (Q3):** věty nabídky OCK (záloha, dílčí
@@ -43,7 +45,8 @@ Dávka V8b, navazuje na v19.10.6. Rozhodnutí J. V. 19. 10. 2026 k Q3, Q5 a Q6.
 - **Nastavení:** karta OCK = typ smlouvy, „Cena nezahrnuje", blok „Věty
   platebního kalendáře" (8 vět × 4 jazyky, šedá nápověda = co se vytiskne);
   karta PROJ = typ smlouvy, licence, pojištění, „Cena nezahrnuje", blok
-  „Texty nabídky PROJ" (termíny `sekce | činnost | termín`).
+  „Texty nabídky PROJ" (termíny `sekce | činnost | termín`); kapitoly nabídky mají nově
+  i pole FR, aby šly francouzské texty opravit po kontrole.
 - **Testy:** `src/test_podminky_texty.js` 50 kontrol — proti v19.10.6
   (`dd21d37`) padá (4 selhání a výjimka), po změně **50 / 0**;
   `test_nabidka_kapitoly.js` upraven (záloha češtinou se zkouší na firmě bez FR
