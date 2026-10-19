@@ -835,7 +835,9 @@ function nastKapitolyNabidky() {
       a platnosti nabídky z krycího listu, aby se dvě místa nemohla rozejít.
       Každý jazyk má vlastní pole: smluvní podmínky se <b>nepřekládají strojově</b>. Jazyk, který
       necháte prázdný, nabídka <b>vypustí i s nadpisem</b> (Word od šablony CN v13); francouzština se zatím neřeší a vytiskne
-      češtinu s upozorněním. Značka <code>{FIRMA}</code> se nahradí názvem firmy.
+      češtinu s upozorněním. Značka <code>{FIRMA}</code> se nahradí názvem firmy, značka
+      <code>{TERMIN}</code> (kapitola V.) termínem dodání ze zakázky — z krycího listu, u atypické
+      zakázky i s prodloužením; s ní nabídka samostatnou odrážku „Termín dodání“ nepřidává.
       Prázdné pole (CZ/EN/DE) se při načtení firmy samo <b>doplní výchozím textem</b>;
       kapitolu, kterou v nabídce vědomě nechcete, vypustíte zapsáním jediného znaku
       <code>-</code> (pomlčka).</div>

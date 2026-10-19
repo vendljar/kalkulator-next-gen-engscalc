@@ -199,26 +199,58 @@ const FIRMA_KAP_ZALOHA_CZ = { fr: true };
  * Prázdné řádky se zahazují; `{FIRMA}` se nahradí názvem firmy, aby název
  * nemusel být v kódu. Bez vyplněného názvu značka ZŮSTANE vidět — prázdné
  * místo v doložce o autorských právech by vypadalo jako chyba sazby. */
-function firmaKapitola(f, base, jazyk) {
+/* `termin` (nepovinný) dodá text za značku {TERMIN}: řetězec, nebo funkce
+ * (jazykTextu) → řetězec — jazyk TEXTU, ne tisku: FR bez vlastního znění
+ * tiskne český text a ten potřebuje český termín. Bez `termin` (symboly
+ * firmaPlaceholders mimo zakázku) platí firmaTerminZaloha(). */
+function firmaKapitola(f, base, jazyk, termin) {
   const firma = f || {};
   const jaz = String(jazyk || 'cz').toLowerCase();
   let znamy = Object.prototype.hasOwnProperty.call(FIRMA_KAP_JAZYK, jaz);
   let klic = base + (znamy ? FIRMA_KAP_JAZYK[jaz] : '');
   const nazev = String(firma.nazev || '').trim();
-  const rozloz = k => firmaKapVypusteno(firma[k]) ? []
+  const terminPro = jazTextu => {
+    const t = String((typeof termin === 'function' ? termin(jazTextu) : termin) || '').trim();
+    return t || firmaTerminZaloha(firma, jazTextu);
+  };
+  const rozloz = (k, jazTextu) => firmaKapVypusteno(firma[k]) ? []
     : String(firma[k] == null ? '' : firma[k]).split('\n')
-      .map(r => r.replace(/\{FIRMA\}/g, nazev || '{FIRMA}').trim())
+      .map(r => r.replace(/\{FIRMA\}/g, nazev || '{FIRMA}'))
+      .map(r => r.indexOf(FIRMA_KAP_TERMIN) < 0 ? r : r.split(FIRMA_KAP_TERMIN).join(terminPro(jazTextu)))
+      .map(r => r.trim())
       .filter(r => r !== '');
   const vypusteno = firmaKapVypusteno(firma[klic]);
-  let radky = rozloz(klic);
+  let radky = rozloz(klic, jaz);
   /* Prázdné francouzské znění → česky s upozorněním (FIRMA_KAP_ZALOHA_CZ).
    * Vědomě vypuštěné (značka „-") se češtinou nenahrazuje. */
   if (znamy && !radky.length && !vypusteno && FIRMA_KAP_ZALOHA_CZ[jaz]) {
-    znamy = false; klic = base; radky = rozloz(base);
+    znamy = false; klic = base; radky = rozloz(base, 'cz');
   }
   return { radky, prazdne: radky.length === 0, jazykChybi: !znamy,
            chybi: !znamy || radky.length === 0, jazyk: jaz, klic,
-           vypusteno: vypusteno || firmaKapVypusteno(firma[klic]) };
+           vypusteno: vypusteno || firmaKapVypusteno(firma[klic]),
+           termin: String(firma[klic] == null ? '' : firma[klic]).indexOf(FIRMA_KAP_TERMIN) >= 0 };
+}
+
+/* ZNAČKA {TERMIN} V TEXTU KAPITOLY (dávka O3 / TD1, 19. 10. 2026, rozšíření
+ * koordinace po „TD1 vymysli, jak zohlednit").
+ *
+ * Výchozí text kapitoly V. říkal pevné „cca 12 týdnů" a nabídka nad něj od
+ * #330 dávala termín dodání ze zakázky (s ATYP +4 týdny) — atypická zakázka
+ * tak nesla 12 i 16 týdnů. Teď text nese značku a ta se nahradí termínem
+ * dodání zakázky (tentýž, co {{PODM_TERMIN_DODANI}}, přeložený). Obsahuje-li
+ * kapitola V. značku, samostatná odrážka „Termín dodání" se už nepřidává.
+ * Starý text bez značky se chová jako dřív (odrážka + kontrola terminAtyp).
+ *
+ * Značka nikdy nezůstane vidět: bez termínu zakázky platí standardní lhůta
+ * z Firmy (terminDodaniOck), bez ní „dle dohody" (kontrola to hlásí). */
+const FIRMA_KAP_TERMIN = '{TERMIN}';
+function firmaTerminZaloha(f, jazyk) {
+  let t = String((f || {}).terminDodaniOck == null ? '' : f.terminDodaniOck).trim();
+  if (t && typeof kryciTerminSJednotkou === 'function') t = kryciTerminSJednotkou(t);
+  if (!t) t = 'dle dohody';
+  const jaz = String(jazyk || 'cz').toLowerCase();
+  return (jaz !== 'cz' && typeof tr === 'function') ? tr(t, jaz) : t;
 }
 
 /* VĚDOMÉ VYPUŠTĚNÍ KAPITOLY (dávka O3, 19. 10. 2026, v19.10.3).
@@ -349,9 +381,9 @@ const DEFAULT_FIRMA = {
   kapPozadavky: "Pro dokončení projekční části je nutné poskytnout finální dispoziční výkresy výtahové technologie\nDohoda ohledně termínů realizace a součinnosti s dodavatelem technologie výtahu\nNutná koordinace s celkovým harmonogramem stavby.\nZajištění přístupu na místo realizace a do všech prostor s realizací díla souvisejících včetně transportních cest (nutné dojednat před zahájením přípravných prací)\nOchrana proti pádu nesmí bránit naší instalaci\nZajištění montážního lešení\nProstor pro skladování materiálu a nářadí během montáže\nParkovací místo v bezprostřední blízkosti stavby pro potřeby montáže a vykládání materiálu.\nPřipojení na elektřinu 230V\nBez časového omezení v běžné pracovní době, možnost práce o víkendech\nWC\nStatika objektu a zkušební statika",
   kapPozadavkyEn: "Final and approved layour drawings of elevator technology is needed to complete shaft design.\nInstallation time schedule for key project milestones will be aligned with elevator supplier.\nCoordination with overall site installation schedule is mandatory.\nEnsuring access to the site and to all areas related to installation, including transport routes (to be arranged before the start of pre-work).\nFall protection must not impede our installation.\nProvide installation scaffolding.\nStorage location for materials and tools during installation.\nParking space next to the building for the purpose of installation and unloading of material.\nElectric power line of 230V for installation needs.\nNo time restrictions during normal working hours, possibility of working at weekends.\nWC\nBuilding statics and test statics.",
   kapPozadavkyDe: "Endgültige und genehmigte Drehzeichnungen der Aufzugstechnik sind erforderlich, um die Schachtplanung abzuschließen.\nDer Zeitplan für die Installation wichtiger Projektmeilensteine wird mit dem Aufzugslieferanten abgestimmt.\nDie Koordinierung mit dem gesamten Zeitplan für die Installation vor Ort ist obligatorisch.\nSicherstellung des Zugangs zur Baustelle und zu allen mit der Installation zusammenhängenden Bereichen, einschließlich der Transportwege (vor Beginn der Vorarbeiten zu vereinbaren).\nDie Absturzsicherung darf unsere Montage nicht behindern.\nBereitstellung eines Montagegerüsts.\nLagerplatz für Material und Werkzeug während der Montage.\nParkplatz neben dem Gebäude für die Montage und das Abladen des Materials.\nStromanschluss mit 230 V für die Installation.\nKeine zeitlichen Einschränkungen während der normalen Arbeitszeiten, Möglichkeit der Arbeit an Wochenenden.\nWC\nGebäudestatik und Prüfstatik.",
-  kapTerminy: "Zahájení montáže cca 12 týdnů po podpisu SoD a odsouhlasení finálních dispozičních výkresů celé technologie výtahu a šachty.\nMontáž ocelové konstrukce výtahové šachty cca 1-2 týdny.\nNásledné opláštění konstrukce šachty cca 1-2 týdny.\nDokončovací práce do cca 2 týdny po ukončení montáže technologie výtahu – šachetních dveří.\nHarmonogram montáže bude vypracován cca 3 týdny po podpisu smlouvy.\n5 let záruka na celé dílo.",
-  kapTerminyEn: "Installation will start cca 12 weeks from contract signature AND final approved elevator and shaft layout drawings.\nInstallation of steel shaft cunstruction need 1-2 weeks time.\nShaft cladding installation need 1-2 weeks time.\nFinishing work (mainly landing door entrance portals) will be done within 2 weeks after elevator installation is completed.\nThe shaft installation schedule will be compiled within cca 3 weeks after the contract is signed.\n5 years warranty for the whole shaft structure and cladding.",
-  kapTerminyDe: "Die Installation beginnt ca. 12 Wochen nach Vertragsunterzeichnung UND endgültiger Genehmigung der Aufzugs- und Schachtgrundrisszeichnungen.\nDie Montage der Stahlschachtkonstruktion dauert 1-2 Wochen.\nDie Montage der Schachtverkleidung dauert 1-2 Wochen.\nDie abschließenden Arbeiten (vor allem die Protokolle der Schachttüren) werden innerhalb von 2 Wochen nach Abschluss der Aufzugsinstallation durchgeführt.\nDer Zeitplan für die Schachtinstallation wird innerhalb von ca. 3 Wochen nach Vertragsunterzeichnung erstellt.\n5 Jahre Garantie für die gesamte Schachtstruktur und Verkleidung.",
+  kapTerminy: "Zahájení montáže {TERMIN} po podpisu SoD a odsouhlasení finálních dispozičních výkresů celé technologie výtahu a šachty.\nMontáž ocelové konstrukce výtahové šachty cca 1-2 týdny.\nNásledné opláštění konstrukce šachty cca 1-2 týdny.\nDokončovací práce do cca 2 týdny po ukončení montáže technologie výtahu – šachetních dveří.\nHarmonogram montáže bude vypracován cca 3 týdny po podpisu smlouvy.\n5 let záruka na celé dílo.",
+  kapTerminyEn: "Installation will start {TERMIN} from contract signature AND final approved elevator and shaft layout drawings.\nInstallation of steel shaft cunstruction need 1-2 weeks time.\nShaft cladding installation need 1-2 weeks time.\nFinishing work (mainly landing door entrance portals) will be done within 2 weeks after elevator installation is completed.\nThe shaft installation schedule will be compiled within cca 3 weeks after the contract is signed.\n5 years warranty for the whole shaft structure and cladding.",
+  kapTerminyDe: "Die Installation beginnt {TERMIN} nach Vertragsunterzeichnung UND endgültiger Genehmigung der Aufzugs- und Schachtgrundrisszeichnungen.\nDie Montage der Stahlschachtkonstruktion dauert 1-2 Wochen.\nDie Montage der Schachtverkleidung dauert 1-2 Wochen.\nDie abschließenden Arbeiten (vor allem die Protokolle der Schachttüren) werden innerhalb von 2 Wochen nach Abschluss der Aufzugsinstallation durchgeführt.\nDer Zeitplan für die Schachtinstallation wird innerhalb von ca. 3 Wochen nach Vertragsunterzeichnung erstellt.\n5 Jahre Garantie für die gesamte Schachtstruktur und Verkleidung.",
   kapPredani: "1.  předávací protokol bude požadován po dokončení montáže ocelové konstrukce\n2.  předávací protokol bude požadován po provedení opláštění výtahové šachty\n3.  předávací protokol bude požadován po provedení dokončovacích prací při předání a převzetí díla.",
   kapPredaniEn: "1.  Handover protocol will be used when shaft steel structure is completed.\n2.  Handover protocol will be used when shaft cladding is completed.\n3.  Handover protocol will be used when finishing works are done for final handover of completed shaft.",
   kapPredaniDe: "1. Das Übergabeprotokoll wird verwendet, wenn die Schachtstahlkonstruktion fertiggestellt ist.\n2. Das Übergabeprotokoll wird verwendet, wenn die Schachtverkleidung abgeschlossen ist.\n3. Das Übergabeprotokoll wird verwendet, wenn die Abschlussarbeiten für die endgültige Übergabe des fertigen Schachtes durchgeführt werden.",
@@ -639,7 +671,7 @@ function firmaShodaSOnline(mistni, online) {
 
 if (typeof module !== 'undefined')
   module.exports = { FIRMA_KAPITOLY, FIRMA_KAP_JAZYK, firmaKapitola, firmaKapitolyPrazdne,
-    FIRMA_KAP_VYPUSTIT, firmaKapVypusteno, firmaKapitolyDoplnVychozi,
+    FIRMA_KAP_VYPUSTIT, firmaKapVypusteno, firmaKapitolyDoplnVychozi, FIRMA_KAP_TERMIN, firmaTerminZaloha,
     FIRMA_POLE, FIRMA_SEKCE, DEFAULT_FIRMA, firmaDefault, firmaAktualni,
     firmaPole, firmaHodnota, firmaAdresaRadek, firmaSidlo, firmaKorespondencni, firmaBankaRadek,
     firmaIcoDic, firmaPaticka, firmaPlaceholders, firmaSymboly, firmaRadky, firmaKontrola,

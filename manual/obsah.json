@@ -17,7 +17,8 @@
       "nadpis": "Co je nového ve verzi v19.10.3 (19. 10. 2026)",
       "odstavce": [
         "**Kapitoly nabídky mají zase výchozí texty.** Pokud byla v Nastavení → Smlouvy / Šablony → **Kapitoly nabídky III.–VI.** pole IV. Požadavky, V. Termíny, VI. Předání nebo Doložky prázdná (česky, anglicky či německy), aplikace je při načtení firmy **sama doplní výchozím zněním** — nabídka je tak už nevypustí. Administrátor texty zkontroluje a v Nastavení → Firma je **zveřejní**.",
-        "**Kapitolu vypustíte vědomě pomlčkou.** Nechcete-li některou kapitolu v nabídce, zapište do jejího pole jediný znak **-** (pomlčka). Pole se pak nedoplňuje, nabídka kapitolu vynechá i s nadpisem a formulář u ní ukazuje štítek *vědomě vypuštěno*. Tlačítko **↺ Doplnit výchozí texty** pod kapitolami vrátí výchozí znění všech kapitol (česky, anglicky, německy); francouzština výchozí text nemá."
+        "**Kapitolu vypustíte vědomě pomlčkou.** Nechcete-li některou kapitolu v nabídce, zapište do jejího pole jediný znak **-** (pomlčka). Pole se pak nedoplňuje, nabídka kapitolu vynechá i s nadpisem a formulář u ní ukazuje štítek *vědomě vypuštěno*. Tlačítko **↺ Doplnit výchozí texty** pod kapitolami vrátí výchozí znění všech kapitol (česky, anglicky, německy); francouzština výchozí text nemá.",
+        "**Termín dodání přímo ve větě kapitoly V.** Výchozí text kapitoly V. nese místo pevného „cca 12 týdnů“ značku **{TERMIN}** — nabídka za ni dosadí termín dodání z krycího listu, u atypické zakázky i s prodloužením (např. „Zahájení montáže 16 týdnů (vč. 4 týdnů za ATYP) po podpisu SoD…“), v angličtině a němčině přeložený. Samostatná odrážka „Termín dodání“ pak odpadá, takže nabídka už nemůže nést dvě různé lhůty. Máte-li ve Firmě starší text s pevným číslem, kontrola před nabídkou poradí číslo nahradit značkou {TERMIN}. Bez termínu v krycím listu i ve Firmě se vytiskne „dle dohody“ a kontrola na to upozorní."
       ]
     },
     {

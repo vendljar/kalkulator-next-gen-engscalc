@@ -37,6 +37,21 @@ dávka A2). Roadmapa **#431** (navazuje na #282).
   změny; panel zveřejnění ukáže rozdíl proti online kopii bez kapitol, takže
   administrátorovi stačí **Zveřejnit**.
 - **Test** `src/test_kapitoly_vychozi.js` (47 kontrol; před opravou padá).
+- **Značka `{TERMIN}` v kapitole V. (TD1, rozšíření koordinace — J. V. „TD1
+  vymysli, jak zohlednit“):** výchozí text kapitoly V. (CZ/EN/DE) má místo
+  pevného „cca 12 týdnů“ značku `{TERMIN}`; `firmaKapitola(f, base, jazyk,
+  termin)` za ni dosadí termín dodání zakázky (týž jako `{{PODM_TERMIN_DODANI}}`,
+  s ATYP i ručním přepisem, přeložený; u FR bez vlastního znění česky).
+  S termínem v textu se samostatná odrážka „Termín dodání“ nepřidává (náhled
+  i Word `{{NAB_KAP_TERMINY}}`, příznak `FIRMA_NAB_TERMINY_TERMIN`). Bez termínu
+  platí standardní lhůta z Firmy, jinak „dle dohody“ (nové heslo slovníku) —
+  značka nikdy nezůstane v tisku (ani v `firmaPlaceholders` mimo zakázku, tedy
+  ani ve smlouvě). Kontrola `terminAtyp`: u textu se značkou mlčí, hlásí jen
+  „dle dohody“ a ATYP se smazaným termínem; u starého textu s pevným číslem
+  radí „nahraďte číslo značkou {TERMIN}“. Starý text bez značky beze změny.
+  Test `src/test_termin_kapitola.js` (39 kontrol; před opravou 26 selže a sada spadne),
+  `test_kontroly.js` +10 (před opravou 7 selže), testy #330 v `test_nabidka_kapitoly.js` a
+  `test_kontroly.js` převedené na starý text s pevnou lhůtou.
 
 **Po nasazení (J. V.):** Nastavení → Smlouvy / Šablony → Kapitoly nabídky
 zkontrolovat doplněné texty → Nastavení → Firma → **Zveřejnit firemní údaje online**.
