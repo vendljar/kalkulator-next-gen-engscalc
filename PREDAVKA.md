@@ -8,7 +8,7 @@ nic — slučuje koordinace (session_017KEALG3ppimL5fW2XswzrB). Podrobnosti: CHA
   v přehledu, `OTISK_KLIC` rozšířen, klient `onlineZalohaAuto` pozná dnešní podle dne v klíči); N2 `ctiPoDavkach`
   po 20, `trvaniMs`/`velikostB` v odpovědi a logu `zaloha_nocni`; N3 `souhrn/<klíč>` vedle otisku, přehled čte
   souhrny (fallback na celý otisk); N4 `netlify/test_zalohy.mjs` — sken `uloziste(…)`/`zapis(…)` v kódu × tabulka.
-- **Testy:** `test_zalohy` proti 421f556 9/10 FAIL → 29/0; mutace `zaloh` 22/22 (10 nových #151 + B52/B58 upraveny).
+- **Testy:** `test_zalohy` proti 421f556 9 OK/10 FAIL → 29/0; `--smoke` 270/0/6; mutace `zaloh` 22/22 (10 nových #151 + B52/B58 upraveny).
 - **Výchozí volby (J. V. se neptal):** tvar klíče `T<hhmmss>-rucne` (shodně s B28) místo `_HHMMSS_rucni`; POST bez
   `duvod` = ruční slot; souhrn jako samostatný klíč (obal `uloziste()` metadata Blobs nezná); dávka čtení 20.
 - **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `manual/obsah.json` (verze + „Co je nového“)

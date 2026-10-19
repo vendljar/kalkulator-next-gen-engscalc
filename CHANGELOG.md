@@ -10,6 +10,8 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ## v19.10.5 — #151: opravy nočního zálohování N1–N4 (větev claude/o4-zalohy)
 
+**Testy nad v19.10.5 (19. 10. 2026):** `spust_testy.sh --smoke` **270 prošlo / 0 selhalo / 6 přeskočeno** (`test.js`, 5 harnessů bez `KNG_PODKLADY`), vč. `overit_online` (samočinná záloha, přehled, obnova). Mutace serveru filtrem `zaloh` (sady test_zalohy, test_funkce, test_obnova, test_prava, test_obnova_nanecisto, test_uklid) **22/22 chycených**, žádná nepřežila; `--kontrola` 549 úseků. Statická kontrola údajů čistá.
+
 Dávka O4 (koordinace „ŘÍDÍCÍ 19.10“), nad `claude/z1-zalohy` (`421f556`).
 Opravuje nálezy N1–N4 kontroly zálohování
 (`podklady/151_ZALOHOVANI_KONTROLA_2026-10-19.md`, roadmapa **#151** → hotovo).
