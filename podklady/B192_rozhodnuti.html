@@ -1,0 +1,102 @@
+<title>B192 potvrzení správce</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: jeden sloupec rozhodovacího listu — souhrn, tři varianty vedle sebe, otázky s doporučenou odpovědí */
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --fg: #1b2230; --muted: #5a6475; --line: #d9dee6;
+  --accent: #1f5fa8; --ok: #1d7a4a; --warn: #a3620a;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12161d; --panel: #1a2029; --fg: #e4e8ee; --muted: #9aa4b3; --line: #2c3440;
+  --accent: #7fb0ea; --ok: #5cc28e; --warn: #e0a24a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #12161d; --panel: #1a2029; --fg: #e4e8ee; --muted: #9aa4b3; --line: #2c3440;
+  --accent: #7fb0ea; --ok: #5cc28e; --warn: #e0a24a; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--sans);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 48px; }
+main { max-width: 980px; margin: 0 auto; display: grid; gap: 28px; }
+h1 { font-size: 1.6rem; margin: 0; text-wrap: balance; }
+h2 { font-size: 1.1rem; margin: 0 0 10px; text-wrap: balance; }
+.eyebrow { font: 500 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+p { margin: 0; max-width: 68ch; }
+code { font: 13px var(--mono); }
+.lead { display: grid; gap: 10px; }
+.variants { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 760px) { .variants { grid-template-columns: 1fr; } }
+.v { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; display: grid; gap: 8px; align-content: start; }
+.v.rec { border-color: var(--accent); border-width: 2px; }
+.v h3 { margin: 0; font-size: 1rem; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.pill { font: 500 11px var(--mono); padding: 2px 7px; border-radius: 999px; border: 1px solid currentColor; }
+.pill.rec { color: var(--accent); }
+.meta { font: 13px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.plus { color: var(--ok); } .minus { color: var(--warn); }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 600; color: var(--muted); }
+ol.q { margin: 0; padding-left: 22px; display: grid; gap: 12px; }
+ol.q li strong { display: block; }
+.ans { color: var(--accent); font-weight: 600; }
+.foot { color: var(--muted); font-size: 13px; }
+</style>
+<main>
+  <header class="lead">
+    <span class="eyebrow">Kalkulator Next Gen · audit 28 · nález B192 · 19. 10. 2026</span>
+    <h1>Potvrzení správce bez držení hesla</h1>
+    <p>Dnes stránka drží ověřené heslo správce v čitelné podobě až 10 minut (matice zobrazení, obnova ze zálohy). Skript vložený do stránky by ho přečetl a heslo by pak fungovalo i k přihlášení odjinud. Úplné řešení: heslo se zadá jednou, server vydá krátkodobé potvrzení a stránka heslo nedrží.</p>
+    <p class="foot">Podrobný podklad: <code>podklady/B192_TOKEN_NAVRH_2026-10-19.md</code> ve větvi <code>claude/n1-b192-navrh</code>. Kód ani verze se nemění.</p>
+  </header>
+
+  <section>
+    <h2>Kde se heslo správce posílá</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Akce</th><th>Server</th><th>Stránka heslo drží?</th></tr></thead>
+      <tbody>
+        <tr><td>Uložení matice zobrazení (B168)</td><td><code>zobrazeni.mjs:58</code></td><td class="minus">ano, 10 min</td></tr>
+        <tr><td>Obnova matice / účtů ze zálohy (B188, B77)</td><td><code>obnova.mjs:427-433</code>, v každé dávce</td><td class="minus">ano, po dobu obnovy + 10 min</td></tr>
+        <tr><td>Založení a povýšení správce, reset cizího hesla (B77)</td><td><code>uzivatele.mjs:203, 244, 258</code></td><td class="plus">ne, dialog pokaždé</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Varianty</h2>
+    <div class="variants">
+      <article class="v">
+        <h3>A · minimální</h3>
+        <span class="meta">1 dávka · riziko nízké</span>
+        <p>Heslo nedržet vůbec. Matice: dialog při každém uložení. Obnova: heslo jednou na začátku, server si to poznamená v tokenu obnovy.</p>
+        <ul><li class="plus">nejmenší zásah, žádná nová cookie</li><li class="minus">otravné při ladění oprávnění</li></ul>
+      </article>
+      <article class="v rec">
+        <h3>B · doporučená <span class="pill rec">doporučeno</span></h3>
+        <span class="meta">2 dávky · riziko nízké až střední</span>
+        <p>Po ověření hesla server pošle podepsané potvrzení v HttpOnly cookie na 10 minut, vázané na účet, verzi hesla a prostředí. Stránka ho nepřečte, jen se posílá s požadavky.</p>
+        <ul><li class="plus">stejný komfort jako dnes, obnova chce heslo jednou</li><li class="plus">bezstavové, nic nového v zálohách, nikoho neodhlásí</li><li class="minus">podvržený dialog hesla (B5) neřeší</li></ul>
+      </article>
+      <article class="v">
+        <h3>C · plná</h3>
+        <span class="meta">4–5 dávek · riziko vyšší</span>
+        <p>Serverové relace s rolí a úrovní potvrzení. Odhlášení zneplatní relaci, přehled aktivních přihlášení, potvrzení i u dalších zápisů správce.</p>
+        <ul><li class="plus">odvolatelné relace</li><li class="minus">zásah do přihlášení všech, relace mimo zálohy, úklid klíčů</li></ul>
+      </article>
+    </div>
+  </section>
+
+  <section>
+    <h2>Otázky pro J. V.</h2>
+    <ol class="q">
+      <li><strong>Kterou variantu?</strong><span class="ans">Doporučeno B</span> ve dvou dávkách: server, pak stránka a celé testovací kolo.</li>
+      <li><strong>Kde držet potvrzení: HttpOnly cookie, nebo token v paměti stránky?</strong><span class="ans">Doporučeno HttpOnly cookie</span> (SameSite=Strict, jen pro /api). Skript na stránce ji nepřečte.</li>
+      <li><strong>Délka okna?</strong><span class="ans">Doporučeno 10 minut od zadání, neprodlužovat</span>, plus tlačítko „Zamknout“.</li>
+      <li><strong>Účty (založení a povýšení správce, reset hesla): dál heslo pokaždé?</strong><span class="ans">Doporučeno ano, dál pokaždé.</span> Převzetí účtu je horší než změna matice.</li>
+      <li><strong>Rozšířit potvrzení na smazání a vypnutí účtů, nákladový ceník, firmu a šablony?</strong><span class="ans">Doporučeno teď ne.</span> Zapsat jako samostatnou položku roadmapy a rozhodnout po nasazení B.</li>
+    </ol>
+  </section>
+
+  <p class="foot">Vazby: B168 a B188 přejdou na potvrzení současně. Změna hesla potvrzení zruší (B6). Nové testy nastaví proměnné prostředí před importem (B167), cookie se kontroluje typem a délkou (B152), B nic neukládá do úložiště (B151).</p>
+</main>
