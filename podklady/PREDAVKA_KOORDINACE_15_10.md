@@ -10,6 +10,15 @@ Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kv�
 - **Ještě nesloučené zápisové commity** (jen CHANGELOG/PREDAVKA/verze/roadmapa, bez kódu): `claude/b80-pipedrive` 38996f2 (v15.10.7, roadmapa #345, NASAZENI), `claude/p12-naklady` 1f2a365 (výsledky po úpravě, mutace 13/13, smoke 248/0/2), `claude/kolo25-audit` dcc3d5f (smoke 247/0/6).
 - **Další krok:** do `claude/integrace-15-10` sloučit 38996f2, 1f2a365, dcc3d5f (konflikty jen v dokumentaci — novější oddíl nahoru, `verze.txt` = 15.10.7, příručka `manual/obsah.json` verze + nadpis „Co je nového ve verzi v15.10.7"), `--kontrola` mutací, sestavit, příručka ze snímků, `spust_testy.sh --smoke` s podklady → zelené → zápis do CHANGELOG → push `claude/integrace-15-10` a fast-forward `test` (`git merge-base --is-ancestor origin/test HEAD`).
 
+## PŘEDÁNÍ po 19. 10. ~08:30 UTC → nové koordinační sezení (staré ŘÍDÍCÍ 18.10 session_0144Y7gXWeprriv4yf4wKL5T, kontext ~70 %)
+
+- **`test` = integrace `claude/integrace-16-10` = 65ca5b5 (v19.10.1)**; `main` = 1cbab3a (v15.10.14), jen na pokyn J. V. Release **v18.10.15 vydán** (J. V.); **v19.10.1 (B189) k vydání** — odkaz poslán J. V. (krátký popis jen B189).
+- **B189 hotovo (O2):** DIČ CZ → přenesená (§ 92e), bez DIČ → česká, EU/mimo EU bez výchozí volby + zábrana tisku. Otázky pro účetní (5) a (6) v `podklady/SOD_EN_KONTROLA.md`.
+- **Soupis novinek** verze 4 (v19.10.1): https://claude.ai/artifact/A5HrdpZfUK6vBdJDYpYrgM — sdílení obchodníkům dělá J. V. Pondělní souhrn: https://claude.ai/artifact/Dxsfj3UhvSxPnpRzuLeuUi. Kokpit: https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2 (šablona zkopírována do skillu).
+- **Čeká na J. V. (dnes projde detailně):** #356 varianty (doporučeno A1+B1+C1+D1+E1; sezení A2 session_01BDzh45kuUGJRwFiQATyvgS čeká, kód doporučené ve `claude/a2-356-navrh`), #367 platební podmínky (doporučeno B), nasazení po test (Ceník → 8 předzaškrtnutých → Zveřejnit; Firma → skladné; Šablony: české SoD realizace v3 + projekce v4, pak EN/DE/FR — přílohy sezení V3 session_01GyotCYY7DhFnyXhceNA3de a archivovaného V5), kontrola účetní + rodilí mluvčí, release v19.10.1, main; nepovinně B183, V7-N1, mazání sloučených větví.
+- **Otevřená sezení:** nové koordinační, A2 (čeká #356), V3 (nearchivovat — přílohy; J. V. 19. 10.: „archivuj vše hotové“ — V3 ponecháno kvůli přílohám, archivovat na výslovný pokyn), Pipedrive API integrace (nechat).
+- **Pravidla:** viz zadání ŘÍDÍCÍ 18.10 + poučení: dlouhé běhy jen se sezením drženým vzhůru hlídací úlohou; v zadáních „nic nemaž přes rm“; push do test po zeleném standardním postupu je schválen (19. 10. prošel bez zamítnutí).
+
 ## STAV po 19. 10. ~05:00 UTC — test = c9577ed (v18.10.15)
 
 - J. V. potvrdil „pushni do test“ → fast-forward `test` 1cbab3a → c9577ed. Release odkaz v18.10.15 poslán (tag zatím neexistuje). `main` = 1cbab3a, jen na pokyn.
