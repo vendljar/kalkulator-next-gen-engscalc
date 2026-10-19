@@ -54,6 +54,19 @@ function nahled(jazyk, upravFirmu, upravVariantu) {
 const atyp = v => { v.data.ock.zadani.atyp = true; };
 const vsechnyHodnoty = ph => Object.keys(ph).map(k => String(ph[k] == null ? '' : ph[k])).join('\n');
 
+/* M1 (19. 10. 2026): mutace „příznak termínu podle českého textu" přežila —
+ * příznak se musí řídit textem kapitoly v jazyce tisku. Anglický vlastní text
+ * bez značky (český výchozí ji má) dál dostane odrážku „Termín dodání". */
+{
+  const enBez = f => { f.kapTerminyEn = 'Installation will start within the agreed time.\nShaft cladding 1-2 weeks.'; };
+  test('M1: příznak termínu podle textu v jazyce tisku (EN bez značky)',
+    fm.firmaKapitola(Object.assign({}, fm.DEFAULT_FIRMA, { kapTerminyEn: 'Installation soon.' }), 'kapTerminy', 'en').termin === false);
+  test('M1: český text se značkou příznak má',
+    fm.firmaKapitola(fm.DEFAULT_FIRMA, 'kapTerminy', 'cz').termin === true);
+  const r = nahled('en', enBez);
+  test('M1: EN text bez značky → příznak _TERMIN prázdný', r.ph.FIRMA_NAB_TERMINY_TERMIN === '', r.ph.FIRMA_NAB_TERMINY_TERMIN);
+}
+
 // ---- 1. výchozí texty --------------------------------------------------------
 /* FR výchozí text od #367 fáze 2b (rozhodnutí J. V. k Q3) — nese značku taky. */
 ['', 'En', 'De', 'Fr'].forEach(suf => {
