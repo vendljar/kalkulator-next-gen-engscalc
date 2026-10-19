@@ -1,19 +1,26 @@
-# Předávka — 19. 10. 2026: dávka O4 (v19.10.5), větev `claude/o4-zalohy` — #151 opravy zálohování N1–N4
+# Předávka — 19. 10. 2026: dávka O4 (v19.10.5), větev `claude/o4-zalohy` — #151 opravy zálohování N1–N6
 
-Nad `claude/z1-zalohy` (`421f556`, podklad `podklady/151_ZALOHOVANI_KONTROLA_2026-10-19.md`). Do integrace / `test`
-nic — slučuje koordinace (session_017KEALG3ppimL5fW2XswzrB). Podrobnosti: CHANGELOG v19.10.5, roadmapa #151 (hotovo),
-#151a (N5 retence) a #151b (N6 kopie mimo Netlify) čekají na J. V.
+Nad `claude/z1-zalohy` (`421f556`, podklad `podklady/151_ZALOHOVANI_KONTROLA_2026-10-19.md`, oddíl 9 = doplněk
+a postup prvního běhu). Do integrace / `test` nic — slučuje koordinace (session_017KEALG3ppimL5fW2XswzrB).
+Podrobnosti: CHANGELOG v19.10.5, roadmapa #151, #151a (N5), #151b (N6) — vše hotovo.
 
-- **Hotovo:** N1 vynucený otisk do slotu `<den>T<hhmmss>-rucne|-auto` (noční `YYYY-MM-DD` nedotčený, vlastní limit 10
-  v přehledu, `OTISK_KLIC` rozšířen, klient `onlineZalohaAuto` pozná dnešní podle dne v klíči); N2 `ctiPoDavkach`
-  po 20, `trvaniMs`/`velikostB` v odpovědi a logu `zaloha_nocni`; N3 `souhrn/<klíč>` vedle otisku, přehled čte
-  souhrny (fallback na celý otisk); N4 `netlify/test_zalohy.mjs` — sken `uloziste(…)`/`zapis(…)` v kódu × tabulka.
-- **Testy:** `test_zalohy` proti 421f556 9 OK/10 FAIL → 29/0; `--smoke` 270/0/6; mutace `zaloh` 22/22 (10 nových #151 + B52/B58 upraveny).
-- **Výchozí volby (J. V. se neptal):** tvar klíče `T<hhmmss>-rucne` (shodně s B28) místo `_HHMMSS_rucni`; POST bez
-  `duvod` = ruční slot; souhrn jako samostatný klíč (obal `uloziste()` metadata Blobs nezná); dávka čtení 20.
-- **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `manual/obsah.json` (verze + „Co je nového“)
-  / `roadmap.json` (#151) / `netlify/mutace.mjs` (SADY + blok #151).
-- **Na J. V.:** ověřit v Netlify délku nočního běhu (podklad oddíl 5 — nově je v logu řádek s ms a kB); rozhodnout N5, N6.
+- **N1–N4 (1. část, f07d650):** vynucený otisk do `<den>T<hhmmss>-rucne|-auto`; čtení po dávkách 20 + log;
+  souhrn `souhrn/<klíč>`; test úplnosti `netlify/test_zalohy.mjs`.
+- **N5 retence (J. V. 19. 10.):** noční 30 dní + první v měsíci 12 měsíců zpět, vynucené 90 dní, před obnovou nikdy;
+  `retenceProved` v `zaloha_nocni` až po úspěšném otisku, nikdy nejnovější, log klíčů.
+- **N6 kopie na Disk (J. V. 19. 10.):** prohlížeč správce → vlastní vybraná složka `_Zaloha Netlify DB` (IndexedDB
+  `zalohaDisk`; `_DB` je od #150 vypnutá); `GET /api/zaloha?zdroj=nocni` (bez hesel a podpisů), `otisk_YYYY-MM-DD.json`
+  + `posledni_kopie.json`; záznam `zalohy/kopie-disk` na serveru → hlídka 14 dní všude; auto po 7 dnech jen s právem.
+- **Testy:** `test_zalohy` 55/0 (N5/N6 proti f07d650 33/6 FAIL), `src/test_kopie_disk.js` 10/0, `overit_online` 253/0
+  (5c3 složka v paměti stránky); mutace `#151` 32 (viz commit); smoke viz commit.
+- **Výchozí volby (J. V. se neptal):** klíč `T<hhmmss>-rucne`; POST bez `duvod` = ruční; souhrn samostatný klíč;
+  dávka čtení 20; 30 dní = věk 0–29; 12 měsíců = měsíc dneška + 12 předchozích, drží se nejstarší otisk měsíce;
+  před obnovou se nemaže; kopie na Disk ze dne nočního otisku, bez nočního za 7 dní aktuální stav (hláška to řekne);
+  kopie jen v Chrome/Edge; vybraná složka s jiným jménem projde s varováním.
+- **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `manual/obsah.json` / `roadmap.json`
+  (#151, #151a, #151b) / `netlify/mutace.mjs` (SADY + blok #151) / `overit_online.mjs` (5c3).
+- **Na J. V.:** první běh kopie na Disk po nasazení (podklad oddíl 9); ověřit v Netlify délku nočního běhu a řádek
+  retence v logu (oddíl 5).
 
 # Předávka — 19. 10. 2026: dávka O2 (v19.10.1), větev `claude/o2-b189` — B189 výchozí režim DPH ve SoD realizace
 

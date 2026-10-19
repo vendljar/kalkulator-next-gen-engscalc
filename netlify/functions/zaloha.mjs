@@ -4,11 +4,26 @@
  * připojené složky na Disku (File System Access), takže záloha končí tam,
  * kde ji chce uživatel mít — verzovaná jménem s datem. */
 import { uloziste, vyzadujRoli, json, hostitel } from '../lib/sdilene.mjs';
-import { zalohaDoplnky } from '../lib/zalohovani.mjs';
+import { zalohaDoplnky, posledniNocniOtisk, otiskProDisk } from '../lib/zalohovani.mjs';
 
 export default async (req) => {
   const { chyba } = await vyzadujRoli(req, 'Administrátor');
   if (chyba) return chyba;
+  /* KOPIE NA DISK (#151 N6, 19. 10. 2026): `?zdroj=nocni` vrátí poslední
+   * NOČNÍ otisk očištěný pro Disk (bez otisků hesel a bez podpisů —
+   * rozhodnutí J. V.). Není-li za posledních 7 dní žádný, vrátí aktuální
+   * stav v témž tvaru; `puvod` říká, co to je. */
+  if (new URL(req.url).searchParams.get('zdroj') === 'nocni') {
+    const n = await posledniNocniOtisk();
+    if (n) return json({ ok: true, puvod: 'nocni-otisk', otisk: n.klic,
+      zaloha: { ...otiskProDisk(n.otisk), web: hostitel(req) || 'neznámý web' } });
+    const ted = await (await zalohaTed(req)).json();
+    return json({ ok: true, puvod: 'aktualni-stav', otisk: null, zaloha: otiskProDisk(ted.zaloha) });
+  }
+  return zalohaTed(req);
+};
+
+async function zalohaTed(req) {
   const sProg = await uloziste('program');
   const prog = await sProg.cti('db');
   /* Firemní údaje jsou od 4. 8. 2026 taky online (obchodník složku nemapuje),
@@ -43,5 +58,5 @@ export default async (req) => {
     rejstrik: rejstrik || null, zakazky, uzivatele,
     sablony: Object.keys(sablony).length ? sablony : null,
     ...(await zalohaDoplnky()) } });          // zobrazeni, zakaznici, podpisy (B9, 22. 8. 2026)
-};
+}
 export const config = { path: '/api/zaloha' };

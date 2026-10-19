@@ -14,6 +14,12 @@
  *       zapisují, musí být v otisku, nebo na výslovném seznamu výjimek.
  *       Stalo se třikrát (B9, B104, slovník #401), že nový klíč do zálohy
  *       nikdo nepřidal a obnova by ho tiše smazala.
+ *   N5  Retence (rozhodnutí J. V. 19. 10.): noční 30 dní + první otisk měsíce
+ *       12 měsíců zpět, vynucené 90 dní, před obnovou nikdy; jen po úspěšném
+ *       zápisu nového otisku, nikdy nejnovější.
+ *   N6  Kopie na Disk (rozhodnutí J. V. 19. 10.): /api/zaloha?zdroj=nocni
+ *       vrátí poslední noční otisk bez otisků hesel a bez podpisů; záznam
+ *       o kopii drží server (POST akce kopie-disk), GET ho vrací.
  *
  * Paměťové úložiště, žádná síť. Spuštění: node netlify/test_zalohy.mjs */
 process.env.TAJEMSTVI_RELACE = 'testovaci-tajemstvi-jen-pro-lokalni-beh';
@@ -44,6 +50,7 @@ globalThis.__TEST_ULOZISTE = (nazev) => ({
 import prihlaseni from './functions/prihlaseni.mjs';
 import zalohaNocni from './functions/zaloha_nocni.mjs';
 import zalohaVynuceno from './functions/zaloha_vynuceno.mjs';
+import zalohaFn from './functions/zaloha.mjs';
 import * as Z from './lib/zalohovani.mjs';
 import { ADMIN_EMAIL } from './lib/sdilene.mjs';
 const require = createRequire(import.meta.url);
@@ -174,6 +181,7 @@ const KLICE = {
   rejstrik: ['sablony', true],
   rezim: ['analytika', false], 'den/': ['analytika', false], 'ocista-b175': ['analytika', false],
   pole: ['pipedrive', false],
+  'kopie-disk': ['zalohy', false],         // záznam o kopii na Disk (#151 N6), ne data
 };
 /* Dynamické výrazy v uloziste(…), které nejsou nové úložiště. */
 const DYNAMICKE = {
@@ -229,6 +237,109 @@ await zkus('N4', async () => {
   await Z.porizOtisk('test', '', '2000-01-03');
   test('N4: kontrola testu — výjimka (analytika) v otisku není',
     !JSON.stringify(await ulz('zalohy').cti('2000-01-03')).includes('ZNACKA-VYJIMKA'));
+});
+
+
+/* ---------------- N5: retence ---------------- */
+await zkus('N5', async () => {
+  const V = Z.retenceVyber;
+  const D = '2026-10-19';
+  const v = (klice) => V(klice, D);
+  test('N5: hranice 30. dne — věk 29 dní zůstane, 30 dní se smaže',
+    JSON.stringify(v(['2026-10-19', '2026-09-20', '2026-09-19', '2026-09-05'])) === JSON.stringify(['2026-09-19']), v(['2026-10-19', '2026-09-20', '2026-09-19', '2026-09-05']));
+  test('N5: z měsíce se drží první (nejstarší) otisk, ostatní staré se smažou',
+    JSON.stringify(v(['2026-10-19', '2026-08-03', '2026-08-04', '2026-08-31'])) === JSON.stringify(['2026-08-04', '2026-08-31']));
+  test('N5: hranice 12. měsíce — měsíc dneška + 12 zpět (říjen 2025) drží, září 2025 se smaže',
+    JSON.stringify(v(['2026-10-19', '2025-10-01', '2025-09-01'])) === JSON.stringify(['2025-09-01']));
+  test('N5: vynucené — 89 dní zůstane, 90 dní se smaže (ruční i při přihlášení)',
+    JSON.stringify(v(['2026-10-19', '2026-07-22T101010-rucne', '2026-07-21T101010-rucne', '2026-07-21T090000-auto']))
+      === JSON.stringify(['2026-07-21T090000-auto', '2026-07-21T101010-rucne']));
+  test('N5: otisky před obnovou se nemažou nikdy (oba tvary)',
+    v(['2026-10-19', '2024-01-01T101010-pred-obnovou', '2024-01-01-pred-obnovou']).length === 0);
+  test('N5: nejnovější otisk se nesmaže, i když je starý',
+    v(['2025-01-05']).length === 0 && JSON.stringify(v(['2025-01-05', '2025-01-06'])) === JSON.stringify(['2025-01-05']));
+  test('N5: cizí klíče (souhrny, tokeny, kopie-disk) výběr nevidí',
+    v(['2026-10-19', 'souhrn/2020-01-02', 'obnova-abc', 'kopie-disk', 'nesmysl']).length === 0);
+  test('N5: neplatný dnešek = nemaže se nic', V(['2020-01-01', '2020-01-02'], 'x').length === 0);
+
+  /* Provedení nad úložištěm */
+  const s = ulz('zalohy');
+  for (const k of [...pamet.keys()]) if (k.startsWith('zalohy/')) pamet.delete(k);
+  for (const k of ['2026-09-19', '2026-09-01', '2026-09-02', '2026-07-01T101010-rucne', '2026-01-01T101010-pred-obnovou'])
+    { await s.zapis(k, { zdroj: 'x' }); await s.zapis(Z.souhrnKlic(k), { porizena: '2026', zdroj: 'x' }); }
+  await s.zapis(Z.KOPIE_DISK_KLIC, { soubor: 'otisk_2026-10-18.json' });
+  /* selhání zápisu → nic se nemaže */
+  const bez = await Z.retenceProved('2026-10-19', D);
+  test('N5: nový otisk chybí (zápis selhal) → nesmaže se nic',
+    bez.smazano.length === 0 && bez.chyby.length === 1 && (await s.seznam()).length === 11, bez);
+  await s.zapis('2026-10-19', { zdroj: 'nocni-otisk' }); await s.zapis(Z.souhrnKlic('2026-10-19'), { porizena: 'x' });
+  const r = await Z.retenceProved('2026-10-19', D);
+  test('N5: smaže jen vybrané otisky i s jejich souhrny',
+    JSON.stringify(r.smazano) === JSON.stringify(['2026-07-01T101010-rucne', '2026-09-02', '2026-09-19'])
+    && !pamet.has('zalohy/2026-09-19') && !pamet.has('zalohy/souhrn/2026-09-19'), r);
+  test('N5: dnešní, první v měsíci, před obnovou a záznam kopie zůstaly',
+    ['2026-10-19', '2026-09-01', '2026-01-01T101010-pred-obnovou', 'kopie-disk', 'souhrn/2026-09-01'].every(k => pamet.has('zalohy/' + k)));
+  /* noční funkce: retence až po otisku, loguje počet a klíče */
+  await s.zapis('2026-01-02T101010-rucne', { zdroj: 'vynuceno' });
+  const logy = [];
+  const l = console.log; console.log = (...a) => logy.push(a.join(' '));
+  let noc; try { noc = await (await zalohaNocni()).json(); } finally { console.log = l; }
+  test('N5: noční funkce po otisku smaže prošlé a zaloguje počet i klíče',
+    noc.ok && noc.retence.smazano.includes('2026-01-02T101010-rucne') && !pamet.has('zalohy/2026-01-02T101010-rucne')
+    && logy.some(x => /retence smazala \d+ otisků: .*2026-01-02T101010-rucne/.test(x)), { noc: noc && noc.retence, logy });
+  /* selhání otisku → retence vůbec neběží */
+  await s.zapis('2026-01-03T101010-rucne', { zdroj: 'vynuceno' });
+  const puvodni = globalThis.__TEST_ULOZISTE;
+  globalThis.__TEST_ULOZISTE = (n) => { const u = puvodni(n);
+    return n === 'zalohy' ? { ...u, zapis: async (k, x) => { if (/^\d{4}-\d{2}-\d{2}$/.test(k)) throw new Error('Blobs nedostupné'); return u.zapis(k, x); } } : u; };
+  let padla = false;
+  const ce = console.error; console.error = () => {};
+  try { await zalohaNocni(); } catch (e) { padla = true; } finally { globalThis.__TEST_ULOZISTE = puvodni; console.error = ce; }
+  test('N5: když zápis otisku selže, funkce skončí chybou a nic se nesmaže',
+    padla && pamet.has('zalohy/2026-01-03T101010-rucne'));
+});
+
+/* ---------------- N6: kopie na Disk ---------------- */
+await zkus('N6', async () => {
+  const s = ulz('zalohy');
+  await ulz('podpisy').zapis(ADMIN_EMAIL, { obrazek: 'data:image/png;base64,PODPISDATA' });
+  await ulz('uzivatele').zapis('obchodnik@priklad.cz', { email: 'obchodnik@priklad.cz', jmeno: 'O', role: 'Obchodník', heslo: 'scrypt$TAJNE' });
+  const noc = await ticho(async () => (await zalohaNocni()).json());
+  await s.zapis(dnes() + 'T235959-rucne', { zdroj: 'vynuceno' });   // novější ruční nesmí vyhrát
+  const r = await (await get(zalohaFn, 'http://x/api/zaloha?zdroj=nocni', cookie)).json();
+  const t = JSON.stringify(r);
+  test('N6: ?zdroj=nocni vrátí poslední NOČNÍ otisk', r.ok && r.puvod === 'nocni-otisk' && r.otisk === noc.den
+    && r.zaloha.zdroj === 'nocni-otisk', { ok: r.ok, puvod: r.puvod, otisk: r.otisk });
+  /* otisk pod klíčem dne s ručním zdrojem (tvar před v19.10.5) noční není */
+  await s.zapis('2099-01-01', { porizena: '2099-01-01T08:00:00Z', zdroj: 'vynuceno', zakazky: {}, uzivatele: [] });
+  const r1 = await (await get(zalohaFn, 'http://x/api/zaloha?zdroj=nocni', cookie)).json();
+  test('N6: starší ruční otisk pod klíčem dne se přeskočí, vrátí se noční', r1.ok && r1.otisk === noc.den, { otisk: r1.otisk });
+  pamet.delete('zalohy/2099-01-01');
+  test('N6: kopie pro Disk nenese otisky hesel', !t.includes('scrypt$') && !t.includes('"heslo"')
+    && r.zaloha.uzivatele.some(u => u.email === 'obchodnik@priklad.cz' && u.role === 'Obchodník'));
+  test('N6: kopie pro Disk nenese podpisy', !t.includes('PODPISDATA') && r.zaloha.podpisy === null);
+  test('N6: kopie nese data databáze (zakázky, firma)', Object.keys(r.zaloha.zakazky || {}).length > 0 && !!r.zaloha.firma);
+  test('N6: ?zdroj=nocni bez přihlášení správce 401/403', [401, 403].includes((await get(zalohaFn, 'http://x/api/zaloha?zdroj=nocni', '')).status));
+  /* bez nočního otisku → aktuální stav v tomtéž tvaru */
+  for (const k of [...pamet.keys()]) if (/^zalohy\/\d{4}-\d{2}-\d{2}$/.test(k)) pamet.delete(k);
+  const r2 = await (await get(zalohaFn, 'http://x/api/zaloha?zdroj=nocni', cookie)).json();
+  test('N6: bez nočního otisku vrátí aktuální stav, bez hesel i podpisů', r2.ok && r2.puvod === 'aktualni-stav'
+    && r2.otisk === null && r2.zaloha.podpisy === null && !JSON.stringify(r2).includes('PODPISDATA'), { puvod: r2.puvod });
+  const bez = await (await get(zalohaFn, 'http://x/api/zaloha', cookie)).json();
+  test('N6: běžná záloha ke stažení se nezměnila (podpisy v ní zůstávají)', bez.ok && !!bez.zaloha.podpisy);
+  /* záznam o kopii */
+  const zap = await (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { akce: 'kopie-disk',
+    kopie: { soubor: 'otisk_2026-10-19.json', velikostB: 1234, sha256: 'a'.repeat(64), otisk: '2026-10-19',
+      puvod: 'nocni-otisk', slozka: '_Zaloha Netlify DB', data: 'NESMI' } }, cookie)).json();
+  test('N6: záznam kopie se uloží a vrátí', zap.ok && zap.kopieDisk.soubor === 'otisk_2026-10-19.json'
+    && zap.kopieDisk.kdo === ADMIN_EMAIL && zap.kopieDisk.velikostB === 1234, zap);
+  test('N6: záznam kopie nenese nic navíc', !JSON.stringify(zap).includes('NESMI'));
+  const g = await (await get(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', cookie)).json();
+  test('N6: GET přehledu záloh vrací záznam poslední kopie', g.ok && g.kopieDisk && g.kopieDisk.sha256 === 'a'.repeat(64));
+  const pocetPred = (await s.seznam()).length;
+  const spatne = await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { akce: 'kopie-disk', kopie: { soubor: '../x.json' } }, cookie);
+  test('N6: záznam kopie s neplatným jménem souboru 400 (a otisk nevznikne)', spatne.status === 400);
+  test('N6: odmítnutý záznam kopie nezapíše nic (ani otisk)', (await s.seznam()).length === pocetPred);
 });
 
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');

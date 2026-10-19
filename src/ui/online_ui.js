@@ -53,6 +53,7 @@ const ONLINE_STAV = {
   rejstrik: [],      // rejstřík online zakázek
   otisky: [],        // souhrny záloh databáze (jen administrátor; bez dat)
   otiskyNacteno: false,
+  kopieDisk: null,   // záznam poslední kopie otisku na Disk (#151 N6) — ze serveru, bez dat
   soubor: '',        // pod jakým jménem je otevřená zakázka online
   razitko: '',
   /* Kolize verzí při zápisu (nález V27, 8. 9. 2026): { soubor, kdo, naDisku,
@@ -1514,6 +1515,7 @@ function onlineOtiskyNacti() {
   if (!jeAdminOnline()) return Promise.resolve(false);
   return onlineApi('/api/zaloha_vynuceno').then(o => {
     ONLINE_STAV.otisky = o.otisky || [];
+    ONLINE_STAV.kopieDisk = o.kopieDisk || null;
     ONLINE_STAV.otiskyNacteno = true;
     return true;
   }).catch(e => {
@@ -1583,10 +1585,142 @@ function onlineZalohaAuto() {
      * teď. Hláška jde přes onlineZprava AŽ NAKONEC, aby ji nepřepsala
      * zpráva o dnešní záloze; administrátor ji uvidí hned po přihlášení,
      * ne až v Nastavení → Databáze. */
-    const hl = (typeof uloZalohaHlidka === 'function') ? uloZalohaHlidka(ONLINE_STAV.otisky, Date.now()) : null;
-    if (hl && hl.stara) onlineZprava(hl.text, 'varovani');
-    render(); return v;
+    return onlineKopieDiskAuto().catch(() => false).then(() => {
+      const hl = (typeof uloZalohaHlidka === 'function') ? uloZalohaHlidka(ONLINE_STAV.otisky, Date.now()) : null;
+      /* Hlídka kopie na Disku (#151 N6): starší než 14 dní → varování. */
+      const kd = (typeof uloKopieDiskStav === 'function') ? uloKopieDiskStav(ONLINE_STAV.kopieDisk, Date.now()) : null;
+      const varovani = [hl && hl.stara ? hl.text : '', kd && kd.stara ? kd.text : ''].filter(Boolean);
+      if (varovani.length) onlineZprava(varovani.join(' '), 'varovani');
+      render(); return v;
+    });
   }));
+}
+
+/* ---------- KOPIE ZÁLOH NA DISK GOOGLE (#151 N6, 19. 10. 2026) ----------
+ *
+ * Rozhodnutí J. V.: jednou týdně kopie posledního nočního otisku mimo
+ * Netlify, do složky „_Zaloha Netlify DB" na Disku Google (sourozenec
+ * složky _DB). Netlify na Disk nedosáhne, takže kopii píše prohlížeč
+ * správce přes File System Access — stejně jako dřív odlévání do _DB, jen
+ * s VLASTNÍ složkou: složka _DB je od #150 vypnutá (ULO_SLOZKA_POVOLENA)
+ * a k sourozenci se z jejího odkazu dostat nejde. Složka se vybírá jednou
+ * tlačítkem a pamatuje se v IndexedDB (klíč „zalohaDisk"); prohlížeč se
+ * na právo zápisu může po restartu znovu zeptat — zeptat se smí jen po
+ * kliknutí, proto automatika po přihlášení bez uděleného práva mlčí a
+ * zbude hlídka (14 dní).
+ *
+ * Obsah (J. V.): BEZ otisků hesel a BEZ podpisů — server ho vydá očištěný
+ * (GET /api/zaloha?zdroj=nocni). Soubor `otisk_YYYY-MM-DD.json` (den
+ * nočního otisku) + `posledni_kopie.json` (datum, velikost, SHA-256);
+ * stejný záznam si poznamená server, aby hlídka fungovala všude. Na Disku
+ * se nic nemaže. */
+const KOPIE_DISK = { slozka: null, nacteno: false };
+const KOPIE_DISK_IDB_KLIC = 'zalohaDisk';
+
+function kopieDiskIdb(hodnota) {
+  if (typeof uloDb !== 'function') return Promise.resolve(null);
+  return uloDb().then(db => new Promise((res, rej) => {
+    const zapis = hodnota !== undefined;
+    const t = db.transaction(ULO_DB_STORE, zapis ? 'readwrite' : 'readonly');
+    const st = t.objectStore(ULO_DB_STORE);
+    const q = zapis ? st.put(hodnota, KOPIE_DISK_IDB_KLIC) : st.get(KOPIE_DISK_IDB_KLIC);
+    if (zapis) { t.oncomplete = () => res(true); t.onerror = () => rej(t.error); }
+    else { q.onsuccess = () => res(q.result || null); q.onerror = () => rej(q.error); }
+  }));
+}
+
+function kopieDiskSlozka() {
+  if (KOPIE_DISK.slozka || KOPIE_DISK.nacteno) return Promise.resolve(KOPIE_DISK.slozka);
+  return kopieDiskIdb().catch(() => null).then(h => {
+    KOPIE_DISK.nacteno = true;
+    if (h && !KOPIE_DISK.slozka) KOPIE_DISK.slozka = h;
+    return KOPIE_DISK.slozka;
+  });
+}
+
+async function kopieDiskSha256(text) {
+  if (typeof crypto === 'undefined' || !crypto.subtle) return '';
+  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+}
+
+async function kopieDiskZapisSoubor(h, jmeno, text) {
+  const fh = await h.getFileHandle(jmeno, { create: true });
+  const w = await fh.createWritable();
+  await w.write(text); await w.close();
+  const f = await fh.getFile();
+  return f.size;
+}
+
+/* Vlastní kopie do složky `h` (právo zápisu už musí být udělené). */
+async function kopieDiskProved(h) {
+  const o = await onlineApi('/api/zaloha?zdroj=nocni');
+  if (!o || !o.ok || !o.zaloha) throw new Error((o && o.chyba) || 'server zálohu nevydal');
+  const jmeno = uloKopieDiskJmeno(o.otisk || new Date().toISOString().slice(0, 10));
+  const text = JSON.stringify(o.zaloha);
+  const ocekavano = new TextEncoder().encode(text).length;
+  const sha256 = await kopieDiskSha256(text);
+  const velikostB = await kopieDiskZapisSoubor(h, jmeno, text);
+  /* Kontrola zápisu: soubor na Disku musí mít celou délku, jinak se kopie
+   * nezapočítá (hlídka by jinak mlčela nad useknutým souborem). */
+  if (velikostB !== ocekavano) throw new Error('soubor ' + jmeno + ' se nezapsal celý (' + velikostB + ' z ' + ocekavano + ' B)');
+  const kopie = { soubor: jmeno, velikostB, sha256, otisk: o.otisk || null, puvod: o.puvod, slozka: String(h.name || '') };
+  await kopieDiskZapisSoubor(h, 'posledni_kopie.json',
+    JSON.stringify(Object.assign({ kdy: new Date().toISOString() }, kopie), null, 1));
+  const z = await onlineApi('/api/zaloha_vynuceno', { akce: 'kopie-disk', kopie });
+  ONLINE_STAV.kopieDisk = (z && z.kopieDisk) || ONLINE_STAV.kopieDisk;
+  return kopie;
+}
+
+function kopieDiskVelikost(b) {
+  return b >= 1048576 ? (b / 1048576).toLocaleString('cs-CZ', { maximumFractionDigits: 1 }) + ' MB'
+    : Math.max(1, Math.round(b / 1024)) + ' kB';
+}
+
+/* Tlačítko „Zkopírovat zálohu na Disk teď" — první běh i kdykoli potom.
+ * Ke kliknutí smí prohlížeč ukázat výběr složky i dotaz na právo zápisu. */
+async function onlineKopieDiskTed() {
+  if (!jeAdminOnline()) { onlineZprava('Kopii zálohy na Disk smí pořídit jen administrátor.', 'varovani'); render(); return false; }
+  ONLINE_STAV.pracuje = true; render();
+  try {
+    let h = await kopieDiskSlozka();
+    if (!h) {
+      if (typeof window === 'undefined' || typeof window.showDirectoryPicker !== 'function')
+        throw new Error('tenhle prohlížeč neumí zapisovat do složky — použijte Chrome nebo Edge na počítači s Diskem Google');
+      try { h = await window.showDirectoryPicker({ id: 'kng-zaloha-disk', mode: 'readwrite' }); }
+      catch (e) { if (e && e.name === 'AbortError') { onlineZprava('Kopie na Disk se nepořídila — složka nebyla vybrána.', 'varovani'); return false; } throw e; }
+      KOPIE_DISK.slozka = h;
+      kopieDiskIdb(h).catch(() => false);      // zapamatování je pohodlí, ne podmínka
+    }
+    if (!(await uloPravo(h, false))) throw new Error('prohlížeč nepovolil zápis do složky „' + h.name + '"');
+    const k = await kopieDiskProved(h);
+    onlineZprava('Záloha zkopírována na Disk: ' + h.name + '/' + k.soubor + ' (' + kopieDiskVelikost(k.velikostB) + ', '
+      + (k.puvod === 'nocni-otisk' ? 'noční otisk ' + k.otisk : 'aktuální stav — noční otisk za posledních 7 dní chybí') + ')'
+      + (h.name !== ULO_KOPIE_DISK_SLOZKA ? '. Pozor: vybraná složka se nejmenuje „' + ULO_KOPIE_DISK_SLOZKA + '".' : '.'),
+      h.name !== ULO_KOPIE_DISK_SLOZKA ? 'varovani' : '');
+    return true;
+  } catch (e) {
+    onlineZprava('Kopii zálohy na Disk se nepodařilo pořídit: ' + (e && e.message || e), 'varovani');
+    return false;
+  } finally { ONLINE_STAV.pracuje = false; render(); }
+}
+
+/* Po přihlášení správce: je-li poslední kopie starší než 7 dní (nebo žádná)
+ * a v tomhle prohlížeči je složka vybraná s uděleným právem, zkopíruje se
+ * sama. Bez práva mlčí (zeptat se smí jen po kliknutí) — hlídka varuje. */
+async function onlineKopieDiskAuto() {
+  if (!jeAdminOnline() || typeof uloKopieDiskStav !== 'function') return false;
+  if (!uloKopieDiskStav(ONLINE_STAV.kopieDisk, Date.now()).potreba) return false;
+  const h = await kopieDiskSlozka();
+  if (!h || !(await uloPravo(h, true))) return false;
+  try {
+    const k = await kopieDiskProved(h);
+    onlineZprava('Týdenní kopie zálohy se sama uložila na Disk: ' + h.name + '/' + k.soubor + ' (' + kopieDiskVelikost(k.velikostB) + ').');
+    return true;
+  } catch (e) {
+    onlineZprava('Týdenní kopii zálohy na Disk se nepodařilo pořídit: ' + (e && e.message || e), 'varovani');
+    return false;
+  }
 }
 
 /* Odlití kopie na Disk Google. Jen když je složka opravdu připojená a
@@ -2391,6 +2525,8 @@ function renderOnlineKarta() {
            title="pořídí otisk celé databáze na serveru – stejný, jaký si server bere každou noc">Zálohovat teď</button>
          ${typeof ULO_STAV !== 'undefined' && ULO_STAV.pripraveno
     ? `<button onclick="onlineZaloha(true)" ${ONLINE_STAV.pracuje ? 'disabled' : ''}>Odlít zálohu do složky (Disk)</button>` : ''}
+         <button onclick="onlineKopieDiskTed()" ${ONLINE_STAV.pracuje ? 'disabled' : ''}
+           title="zkopíruje poslední noční zálohu (bez hesel a podpisů) do složky „_Zaloha Netlify DB“ na Disku Google">Zkopírovat zálohu na Disk teď</button>
          <button onclick="onlineZaloha(false)" ${ONLINE_STAV.pracuje ? 'disabled' : ''}>Stáhnout zálohu</button>
          <button onclick="onlineObnovaOtevri()" ${ONLINE_STAV.pracuje ? 'disabled' : ''}
            title="nalije zálohu zpátky do online databáze – nejdřív náhled, teprve pak obnova">Obnovit ze zálohy…</button>` : '';
@@ -2398,9 +2534,13 @@ function renderOnlineKarta() {
      * výpadku delším než 48 hodin jako varování. */
     const hlidka = (jeAdminOnline() && ONLINE_STAV.otiskyNacteno && typeof uloZalohaHlidka === 'function')
       ? uloZalohaHlidka(ONLINE_STAV.otisky, Date.now()) : null;
+    /* Hlídka kopie na Disku (#151 N6): starší než 14 dní → varování. */
+    const kopieHl = (jeAdminOnline() && ONLINE_STAV.otiskyNacteno && typeof uloKopieDiskStav === 'function')
+      ? uloKopieDiskStav(ONLINE_STAV.kopieDisk, Date.now()) : null;
     const zalohaRadek = jeAdminOnline()
       ? `<div class="note" id="online-zalohy">${esc(onlineOtiskPopis())}</div>`
         + (hlidka ? `<div id="online-zalohy-nocni" class="${hlidka.stara ? 'seznam-varovani' : 'note'}">${esc(hlidka.text)}</div>` : '')
+        + (kopieHl ? `<div id="online-kopie-disk" class="${kopieHl.stara ? 'seznam-varovani' : 'note'}">${esc(kopieHl.text)}</div>` : '')
       : '';
     telo = `${hlaska}${onlineKolizeTlacitka()}${zalohaRadek}
       <div class="btns" style="margin-top:10px">

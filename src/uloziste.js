@@ -1986,8 +1986,42 @@ function uloZalohaHlidka(otisky, ted) {
       : 'Poslední noční záloha: ' + kdy + '.' };
 }
 
+/* KOPIE ZÁLOH NA DISK GOOGLE (#151 N6, rozhodnutí J. V. 19. 10. 2026).
+ *
+ * Otisky leží ve stejném Netlify Blobs jako ostrá data — smazání webu by
+ * vzalo obojí. Netlify na Disk nedosáhne, proto kopii píše prohlížeč
+ * správce do vybrané složky „_Zaloha Netlify DB" (sourozenec složky _DB).
+ * Jednou za 7 dní sama po přihlášení (je-li složka vybraná a právo
+ * udělené), kdykoli tlačítkem; hlídka varuje, je-li poslední kopie starší
+ * než 14 dní. Na Disku se nic nemaže (retence N5 platí jen pro Blobs).
+ * Čisté funkce nad záznamem ze serveru (GET /api/zaloha_vynuceno →
+ * kopieDisk), `ted` v ms. */
+const ULO_KOPIE_DISK_SLOZKA = '_Zaloha Netlify DB';
+const ULO_KOPIE_DISK_INTERVAL_DNU = 7;
+const ULO_KOPIE_DISK_HLIDKA_DNU = 14;
+function uloKopieDiskJmeno(den) {
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(String(den || '')) ? String(den) : new Date().toISOString().slice(0, 10);
+  return 'otisk_' + d + '.json';
+}
+function uloKopieDiskStav(kopie, ted) {
+  const t = kopie && Date.parse(kopie.kdy || '');
+  if (!kopie || !isFinite(t)) {
+    return { dnu: null, potreba: true, stara: true,
+      text: 'Kopie záloh na Disku Google (složka „' + ULO_KOPIE_DISK_SLOZKA + '") zatím žádná není. '
+        + 'Pořiďte ji tlačítkem „Zkopírovat zálohu na Disk teď".' };
+  }
+  const dnu = Math.max(0, Math.floor(((+ted || Date.now()) - t) / 86400000));
+  const stara = dnu > ULO_KOPIE_DISK_HLIDKA_DNU;
+  const kdy = new Date(t).toLocaleString('cs-CZ');
+  return { dnu, potreba: dnu >= ULO_KOPIE_DISK_INTERVAL_DNU, stara,
+    text: stara
+      ? 'Kopie záloh na Disku Google je stará ' + dnu + ' dní (naposledy ' + kdy + ', ' + String(kopie.soubor || '') + '). '
+        + 'Zkopírujte zálohu na Disk — tlačítko „Zkopírovat zálohu na Disk teď"; samo se to děje jen v prohlížeči s vybranou složkou.'
+      : 'Poslední kopie záloh na Disku Google: ' + kdy + ' (' + String(kopie.soubor || '') + ').' };
+}
+
 if (typeof module !== 'undefined')
-  module.exports = { uloPodProhlubniText, ULO_ODM_TOL, ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, ULO_ZADANI_BEZ_ZAPORU, ULO_ZADANI_MIMO_JADRO, ULO_HODINY_N56, uloCisloJadro, uloRozmeryVZadani, uloRozmeryProblemy, uloModelProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
+  module.exports = { uloPodProhlubniText, ULO_ODM_TOL, ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, ULO_ZADANI_BEZ_ZAPORU, ULO_ZADANI_MIMO_JADRO, ULO_HODINY_N56, uloCisloJadro, uloRozmeryVZadani, uloRozmeryProblemy, uloModelProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloKopieDiskStav, uloKopieDiskJmeno, ULO_KOPIE_DISK_SLOZKA, ULO_KOPIE_DISK_INTERVAL_DNU, ULO_KOPIE_DISK_HLIDKA_DNU, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
                      uloNorm, uloSlova, uloCisloVyplneno, uloKlicSouboru,
                      uloJmenoSouboru, uloJeZakazkovySoubor,
                      ULO_HLAVICKA_POLE, uloHlavickaChybi, uloHlavickaVyplnena, uloMaCislo, uloUlozeniStav,
