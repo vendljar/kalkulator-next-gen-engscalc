@@ -237,9 +237,16 @@ export async function seznamOtisku(kolik) {
  *   - otisky PŘED OBNOVOU se nemažou nikdy (cesta zpátky, maže jen člověk);
  *   - klíče mimo OTISK_KLIC (souhrny, tokeny, záznam kopie) výběr nevidí —
  *     souhrn odchází jen spolu se svým otiskem;
- *   - nejnovější otisk se nesmaže nikdy, ať je jakkoli starý.
+ *   - nejnovější otisk se nesmaže nikdy, ať je jakkoli starý;
+ *   - otisky s datem před RETENCE_OD (2026-10-20) se nesmažou nikdy (J. V.).
  * Čistá funkce: `dnes` je 'YYYY-MM-DD' (UTC), vrací klíče ke smazání.
  * ============================================================ */
+/* HRANICE RETENCE (rozhodnutí J. V. 19. 10. 2026 ~13:20 UTC: „Staré zálohy
+ * všechny ponech."). Otisk (a jeho souhrn) s datem PŘED touto hranicí
+ * retence nikdy nesmaže — všechno, co existuje do nasazení v19.10.8, zůstane
+ * navždy. Pravidlo níž platí jen pro otisky od 20. 10. 2026. Jediné místo,
+ * kde se hranice nastavuje. */
+export const RETENCE_OD = '2026-10-20';
 export const RETENCE_DENNI_DNU = 30;
 export const RETENCE_MESICU = 12;
 export const RETENCE_VYNUCENE_DNU = 90;
@@ -266,9 +273,10 @@ export function retenceVyber(klice, dnes) {
     if (!videno.has(m)) { videno.add(m); if (mesice.has(m)) prvniVMesici.add(k); }
   }
   const smazat = [];
-  for (const k of denni)
+  const chraneny = (k) => k.slice(0, 10) < RETENCE_OD;   // staré zálohy J. V. ponechal
+  for (const k of denni.filter(k => !chraneny(k)))
     if (vek(k) >= RETENCE_DENNI_DNU && !prvniVMesici.has(k) && k !== nejnovejsi) smazat.push(k);
-  for (const k of vynucene)
+  for (const k of vynucene.filter(k => !chraneny(k)))
     if (vek(k) >= RETENCE_VYNUCENE_DNU && k !== nejnovejsi) smazat.push(k);
   return smazat.sort();
 }

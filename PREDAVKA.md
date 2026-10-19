@@ -8,6 +8,7 @@ a postup prvního běhu). CHANGELOG v19.10.8, roadmapa #151a (N5), #151b (N6) ho
 - **N5 retence (J. V. 19. 10.):** noční 30 dní + první v měsíci 12 měsíců zpět, vynucené 90 dní, před obnovou nikdy;
   `retenceProved` v `zaloha_nocni` až po úspěšném otisku, nikdy nejnovější, log klíčů. **Pojistka (koordinace):**
   maže jen při záznamu kopie na Disk (`zalohy/kopie-disk`) mladším 7 dní, jinak log „retence čeká na první kopii na Disk“.
+  **Staré zálohy do 19. 10. 2026 se nemažou nikdy** (J. V. ~13:20 UTC): `RETENCE_OD = '2026-10-20'`.
 - **N6 kopie na Disk (J. V. 19. 10.):** prohlížeč správce → vlastní vybraná složka `_Zaloha Netlify DB` (IndexedDB
   `zalohaDisk`; `_DB` je od #150 vypnutá); `GET /api/zaloha?zdroj=nocni` (bez hesel a podpisů), `otisk_YYYY-MM-DD.json`
   + `posledni_kopie.json`; záznam na serveru → hlídka 14 dní všude; auto po 7 dnech jen s uděleným právem.
@@ -18,7 +19,8 @@ a postup prvního běhu). CHANGELOG v19.10.8, roadmapa #151a (N5), #151b (N6) ho
   nočního otisku, bez nočního za 7 dní aktuální stav; jen Chrome/Edge; složka s jiným jménem projde s varováním.
 - **Při slučování:** CHANGELOG / PREDAVKA / `verze.txt` / `manual/obsah.json` / `roadmap.json` (#151, #151a, #151b) /
   `netlify/mutace.mjs` (SADY + blok #151) / `overit_online.mjs` (5c3) / podklad 151 (oddíl 9).
-- **Na J. V.:** první běh kopie na Disk po nasazení v19.10.8 (podklad oddíl 9) — do té doby retence nic nemaže.
+- **Na J. V.:** první běh kopie na Disk po nasazení v19.10.8 (podklad oddíl 9) — do té doby retence nic nemaže;
+  zálohy do 19. 10. 2026 nesmaže nikdy.
 
 # Předávka — 19. 10. 2026: dávka H2 (v19.10.4), větev `claude/h2-drobnosti` — V7-N1, B191, B192
 

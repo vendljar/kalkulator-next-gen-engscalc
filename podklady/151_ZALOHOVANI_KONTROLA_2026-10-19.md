@@ -210,10 +210,13 @@ N1–N4 opraveny podle oddílu 6 (v19.10.5). N5 a N6 rozhodl J. V. 19. 10.
   dneška + 12 předchozích); ruční a přihlašovací otisky (`…-rucne`,
   `…-auto`) 90 dní; otisky před obnovou se nemažou. Maže noční funkce až po
   úspěšném zápisu dnešního otisku, nikdy poslední otisk; v logu funkce řádek
-  `zaloha_nocni: retence smazala N otisků: …`. **Pojistka (výchozí volba
+  `zaloha_nocni: retence smazala N otisků: …`. **Staré zálohy do 19. 10. 2026
+  se nemažou (J. V. 19. 10. ~13:20 UTC: „Staré zálohy všechny ponech.“):**
+  pravidlo platí jen pro otisky od `RETENCE_OD = 2026-10-20`; všechno starší
+  zůstává natrvalo. **Pojistka (výchozí volba
   koordinace):** maže se jen tehdy, když je záznam úspěšné kopie na Disk
   mladší než 7 dní; jinak se nesmaže nic a v logu je `retence čeká na první
-  kopii na Disk`. Dokud J. V. neudělá první kopii, staré otisky zůstávají.
+  kopii na Disk`. Dokud J. V. neudělá první kopii, nemaže se nic.
 - **N6 kopie na Disk Google:** složka `_Zaloha Netlify DB` (vedle `_DB`),
   soubor `otisk_RRRR-MM-DD.json` (poslední noční otisk, BEZ otisků hesel
   a podpisů) + `posledni_kopie.json` (datum, velikost, SHA-256). Na Disku se
