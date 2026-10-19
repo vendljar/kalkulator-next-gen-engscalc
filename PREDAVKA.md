@@ -1,3 +1,25 @@
+# Předávka — 19. 10. 2026: dávka O2 (v19.10.1), větev `claude/o2-b189` — B189 výchozí režim DPH ve SoD realizace
+
+Nad `origin/claude/integrace-16-10` (`62bd0b6`, v18.10.15). Do `test-draft` / `test` / `main` ani do integrace nic —
+slučuje koordinace (session_0144Y7gXWeprriv4yf4wKL5T). Podrobnosti: CHANGELOG v19.10.1, `BEZPECNOST_MEZE.md` (B189),
+`podklady/SOD_EN_KONTROLA.md` (oddíl „Výchozí režim podle DIČ“), roadmapa #430 (hotovo).
+
+- **Hotovo (pushnuto):** rozhodnutí J. V. 19. 10. — DIČ CZ → přenesená (tuzemsko, § 92e), bez DIČ → česká DPH,
+  DIČ EU i mimo EU → bez výchozí volby; bez režimu SoD realizace nevznikne (`sodDphZabrana` v `src/sod.js`:
+  `sodData` hází → serverová i místní šablona; `dokumentZabrana('sod')` zhasne tlačítko; pod tlačítkem důvod
+  + „Přejít na volbu režimu DPH“). Ruční volba přednost, uložená / zmrazená volba beze změny.
+- **Věty:** nové nepřibyly (tuzemská věta existuje od v3, odlišná od čl. 196); znění předběžné do kontroly účetní,
+  nové otázky (5) § 92e / „domestic reverse charge“, (6) věta pro zákazníka mimo EU se stavbou v ČR.
+- **Testy:** `test_sod_en` 2c B189 (proti 62bd0b6 40/7 → 47/0); kolo nad 542d0ef VŠE ZELENÉ 274/0/1, statické 3/3;
+  mutace B189 8/8 + 1/1, DPH 13/13, sod 28/28.
+- **Výchozí volby (J. V. se neptal):** vlastní znění režimu = volba (tiskne se, symboly `{{…}}`); DIČ bez předpony
+  CZ (jen číslice) = cizí → bez volby; zábrana jen SoD realizace (projekce a plná moc režim DPH nemají);
+  `KRYCI_SOD_OPIS` beze změny (režim se při tisku nezmrazuje navíc — zamčená varianta drží zmrazené předvyplnění).
+- **Mez:** smlouvy vytištěné před v19.10.1 bez uložené volby se při dotisku řídí novou výchozí volbou.
+- **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `roadmap.json` (#430) / `mutace_jadro.mjs`
+  (blok DPH/B189) / `netlify/mutace.mjs` (SADY + B189) / `BEZPECNOST_MEZE.md` / `manual/obsah.json`.
+- **Další krok:** sloučení do integrace; J. V. předat účetní `SOD_EN_KONTROLA.md`; release v19.10.1 až po sloučení.
+
 # Předávka — 18. 10. 2026: dávka O1 (v18.10.15), větev `claude/o1-b188` — B188 heslo u obnovy matice
 
 Nad `origin/claude/integrace-16-10` (`cdca5f3`, v18.10.14). Do `test-draft` / `test` / `main` / integrace
