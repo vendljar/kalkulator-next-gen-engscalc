@@ -764,14 +764,26 @@ bez uložené volby se při dotisku řídí novou výchozí volbou (CZ → přen
 „,-“ a „Kč“ pomine); „1.500“ nebo „1.000,50“ se nevyplní a `{{SOD_SKLADNE}}`
 zůstane k doplnění. Test `src/test_sod_en.js` (2c), mutace „B190: …“.
 
-### B191–B193 — vědomé meze (kolo 28)
+### B191–B193 — kolo 28 (B191 a B192 upraveny v19.10.4, dávka H2)
 
-- **B191:** blok `CIN_*` z `blokyPryc` s nevyváženými značkami (ručně
-  upravená šablona) zůstane v dokumentu a značky zmizí — smlouva vyjmenuje
-  nenabízenou činnost. Generovaná v4 je vyvážená.
-- **B192:** k mezi B168 — heslo v paměti stránky je v čitelné podobě; XSS na
-  stránce (CSP `unsafe-inline`, B5) by ho přečetl, okno se každým uložením
-  matice prodlužuje.
+- **B191 — OPRAVENO v19.10.4:** blok `CIN_*` z `blokyPryc` s nevyváženými
+  značkami (ručně upravená šablona — začátek v tabulce a konec za ní, značka
+  bez páru) dřív v dokumentu zůstal a značky zmizely — smlouva vyjmenovala
+  nenabízenou činnost. Teď `odstranPrazdneBloky` hází a dokument nevznikne
+  (fail-closed, hláška „Opravte šablonu“). Blok mimo seznam (kapitoly
+  nabídky) se řídí obsahem jako dřív — nevyvážený zůstane i se značkami pryč.
+  Kontrola při zveřejnění šablony nepřibyla (doporučení zůstává). Test
+  `src/test_sod_proj_rozsah.js` (2), mutace „H2 B191: …“.
+- **B192 — zmírněno v19.10.4, mez trvá:** k mezi B168 — heslo správce leží
+  v paměti stránky v čitelné podobě (`ZOBRAZENI_HESLO.h`). Skript vložený do
+  stránky (XSS; CSP dovoluje `unsafe-inline`, B5) by ho přečetl, případně
+  podvrhl `dotazHeslo`; cookie je HttpOnly, heslo jde ale použít i mimo
+  relaci (přihlášení). Do úložiště prohlížeče ani do logu se nedostane.
+  Od v19.10.4 se okno 10 minut počítá **od zadání hesla** — uložení matice
+  ho neprodlouží (dřív klouzavě, při průběžném ukládání neomezeně). Test
+  `src/test_zobrazeni_heslo_okno.js`, mutace „H2 B192: …“. Úplné řešení
+  (heslo vůbec nedržet, např. krátkodobý token od serveru) je změna
+  rozhraní — doporučení pro J. V., ne oprava bez rozhodnutí.
 - **B193:** harnessy PROJ v3 (`test_sablona_proj_v4`, `overit_nabidka_proj_word`)
   čekají šablonu PROJ v3 pod jménem `Sablona_NABIDKA_PROJ.docx`; na Disku je
   pod tím jménem starší verze (podklad, ne kód).

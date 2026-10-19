@@ -157,6 +157,16 @@ const zaznam = [];
   test('generátor: blok ze seznamu zmizí celý (i s textem bez symbolu i se symbolem)', JSON.stringify(t) === JSON.stringify(['Činnost A']), t);
   const t2 = text(dg.odstranPrazdneBloky(xml, { X: 'x' }));
   test('generátor: bez seznamu zůstane obsah, zmizí jen značky (jako dřív)', JSON.stringify(t2) === JSON.stringify(['Činnost A', 'Činnost B', 'Činnost C {{X}}']), t2);
+  /* B191 (audit kola 28): nevyvážený blok ze seznamu pryč → chyba, ne tiché ponechání */
+  const nevyv = '<w:body><w:tbl><w:tr><w:tc>' + zn('CIN_B_ZAC') + odst('Činnost B') + '</w:tc></w:tr></w:tbl>' + zn('CIN_B_KON') + '</w:body>';
+  const e1 = hazi(() => dg.odstranPrazdneBloky(nevyv, {}, ['CIN_B']));
+  test('B191: blok ze seznamu se začátkem v tabulce a koncem za ní → chyba (dokument nevznikne)', /CIN_B/.test(e1) && /nevznikne/.test(e1), e1);
+  const e2 = hazi(() => dg.odstranPrazdneBloky('<w:body>' + zn('CIN_B_ZAC') + odst('Činnost B') + '</w:body>', {}, ['CIN_B']));
+  test('B191: blok ze seznamu bez koncové značky → chyba', /CIN_B/.test(e2), e2);
+  const e3 = hazi(() => dg.odstranPrazdneBloky(nevyv, {}, ['CIN_A']));
+  test('B191: nevyvážený blok mimo seznam pryč → bez chyby, obsah zůstane (jako dřív)', e3 === ''
+    && text(dg.odstranPrazdneBloky(nevyv, {}, ['CIN_A'])).indexOf('Činnost B') >= 0, e3);
+  test('B191: vyvážený blok ze seznamu dál zmizí bez chyby', hazi(() => dg.odstranPrazdneBloky(xml, { X: 'x' }, ['CIN_B'])) === '');
 }
 
 /* ---- 3) builder ---- */

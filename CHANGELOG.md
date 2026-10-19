@@ -8,6 +8,48 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v19.10.4 — H2: plocha v kartě výjimky na celé m² (V7-N1), B191, B192 (větev claude/h2-drobnosti)
+
+**Výsledky nad 755e84b (19. 10. 2026):** `./spust_testy.sh --smoke` (build bez zvýšení verze, Playwright 1.56.1,
+bez KNG_PODKLADY) **270 prošlo / 0 selhalo / 6 přeskočeno** (test.js, overit_manual, overit_nabidka_proj_word,
+overit_sablona, overit_sablony_online, overit_sod — firemní podklady). Mutace cíleně: jádro „h2“ 3/3, „blok“ 5/5;
+server „h2“ 4/4, „b178“ 9/9, „b168“ 1/1 — bez přeživší; `--kontrola` jádro 257, server 543 úseků.
+
+Dávka H2 (zadání koordinace „ŘÍDÍCÍ 19.10“), nad `origin/claude/integrace-16-10`
+(`e3995e6`, v19.10.1). Souběžně běží A2 (v19.10.2) a O3 (v19.10.3).
+Roadmapa **#433** (předběžné id).
+
+- **V7-N1 (kontrola V7, B183 volba c):** karta Cenové výjimky ukazovala plochu
+  pásu a světlíku „jiné“ na setiny (2,61 m²), schválení ale drží celé m².
+  Výchozí volba dávky: karta ukáže **plochu na celé m²** toutéž funkcí jako
+  obsah schválení (`vyjimkyM2Schvaleni`, `src/vyjimky.js`) a u plochy, která
+  celá není, **poznámku „zaokrouhleno pro schválení“** („3 m² (zaokrouhleno
+  pro schválení)“). Pravidlo B183 ani obsah výjimky se nemění — schválení
+  neshodí.
+- **B191 (audit kola 28, informativní) — opraveno:** blok `CIN_*` z
+  `blokyPryc` s nevyváženými značkami (začátek v tabulce a konec za ní,
+  značka bez páru — šablona SoD projekce upravená ve Wordu) dřív v dokumentu
+  tiše zůstal a smlouva vyjmenovala nenabízenou činnost. `odstranPrazdneBloky`
+  (`src/docxgen.js`) teď **hází — dokument nevznikne** s hláškou „Opravte
+  šablonu“. Blok mimo seznam (kapitoly nabídek) beze změny. Kontrola už při
+  zveřejnění šablony nepřibyla (doporučení v `BEZPECNOST_MEZE.md`).
+- **B192 (audit kola 28, informativní) — zmírněno:** mez B168 doplněna o XSS
+  (heslo správce v paměti stránky v čitelné podobě, CSP `unsafe-inline`). Okno
+  10 min se nově počítá **od zadání hesla**, uložení matice ho neprodlouží
+  (`onlineZobrazeniPost`, `src/ui/online_ui.js`; výchozí volba). Heslo vůbec
+  nedržet (krátkodobý token) = změna rozhraní, doporučení pro J. V.
+- **B193** se dávky netýká (podklad).
+- **Testy (pojistka):** `src/test_vyjimky.js` (plocha v kartě na celé m²,
+  shoda karty s obsahem u pásu i světlíku, B155 karta) — proti e3995e6
+  **104 / 3**, po opravě **107 / 0**; `src/test_sod_proj_rozsah.js` (B191,
+  4 kontroly) **36 / 2 → 38 / 0**; nový `src/test_zobrazeni_heslo_okno.js`
+  (B192, vyříznutý úsek online_ui.js ve vm) **4 / 3 → 7 / 0**; pokus
+  `podklady/AUDIT28_pokus_sod.mjs` P3 otočen (17 / 1 → 18 / 0).
+- **Mutace:** jádro „H2 B191: …“ (3), server „H2 V7-N1: …“ (3) a „H2 B192: …“
+  (1, sada `test_zobrazeni_heslo_okno.js` přidána do serverového seznamu);
+  zadání mutace „B178 zbytek: plocha v obsahu na desítky m²“ posunuto na
+  nový tvar (`vyjimkyM2Schvaleni`).
+
 ## v19.10.3 — O3: výchozí texty kapitol nabídky se doplní do Nastavení (větev claude/o3-kapitoly-vychozi)
 
 **Kolo `--jen build,sady,staticke` nad 91f8111 (v19.10.3, 19. 10. 2026) — VŠE ZELENÉ:** sady 271 prošlo / 0 selhalo / 6 přeskočeno (`test.js` — ostrý ceník; `overit_manual`, `overit_nabidka_proj_word`, `overit_sablona`, `overit_sablony_online`, `overit_sod` — firemní šablony `KNG_PODKLADY` v sezení nebyly), statické 3/3. Cílené mutace O3 + TD1 (`firma.js`, `nabidka.js`, `kontroly.js`, `preklad.js`, `konfigurace.js`, `online_ui.js`, `nastaveni_ui.js`) 43/43 chycených; celé mutační kroky jádra a serveru se nepouštěly.
