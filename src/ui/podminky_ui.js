@@ -166,7 +166,58 @@ function nastPodminkyOck() {
     ${podmRadek('Doba záruky', podmCisloVstup('ock', 'zarukaMesicu', o.zarukaMesicu, 0, 240, 'měsíců'), podmStitek('ock', 'zarukaMesicu'))}
     ${podmRadek('Smluvní pokuta – prodlení dodávky', podmVyberVstup('ock', 'pokutaDodavka', o.pokutaDodavka, sazby), podmStitek('ock', 'pokutaDodavka'))}
     ${podmRadek('Smluvní pokuta – prodlení splatnosti', podmVyberVstup('ock', 'pokutaSplatnost', o.pokutaSplatnost, sazby), podmStitek('ock', 'pokutaSplatnost'))}
-    ${podmRadek('Limit smluvních pokut', podmVyberVstup('ock', 'pokutaLimit', o.pokutaLimit, limit), podmStitek('ock', 'pokutaLimit'))}`;
+    ${podmRadek('Limit smluvních pokut', podmVyberVstup('ock', 'pokutaLimit', o.pokutaLimit, limit), podmStitek('ock', 'pokutaLimit'))}
+    ${podmRadek('Typ smlouvy', podmVyberVstup('ock', 'typSmlouvy', o.typSmlouvy, podmTypySmlouvy()), podmStitek('ock', 'typSmlouvy'))}
+    ${podmRadek('Cena nezahrnuje (krycí list)', podmTextVstup('ock', 'cenaNezahrnuje', o.cenaNezahrnuje), podmStitek('ock', 'cenaNezahrnuje'))}
+    ${nastPodminkyVety(ef)}`;
+}
+
+function podmTypySmlouvy() { return PODMINKY.PODMINKY_TYPY_SMLOUVY.map(x => [x, x]); }
+
+/* ---------- věty platebního kalendáře (#367 fáze 2b, Q3) ---------- */
+const PODM_VETY_POPIS = {
+  zaloha: 'Nabídka — záloha (dílčí doklad po podpisu SoD)',
+  faktura2: 'Nabídka — dílčí doklad po zahájení prací',
+  konecna: 'Nabídka — konečný doklad',
+  mesicne: 'Nabídka i smlouva — měsíční fakturace',
+  sodZaloha: 'Smlouva — milník zálohy',
+  sodKonecna: 'Smlouva — milník konečné splátky',
+  sodZbyvajici: 'Smlouva — slovo „zbývajících" u konečné splátky',
+  sodZCeny: 'Smlouva — „z celkové ceny díla"',
+};
+const PODM_JAZYKY_POPIS = { cz: 'česky', en: 'anglicky', de: 'německy', fr: 'francouzsky' };
+function podmTr(L) { return x => (typeof tr === 'function') ? tr(x, L) : x; }
+function podmVetaSet(klic, jaz, text) {
+  if (!jeAdmin()) { hlaska('Platební podmínky firmy smí měnit jen administrátor.'); return; }
+  const f = NAST.firma || (NAST.firma = firmaDefault());
+  firmaSet('podminky', PODMINKY.podminkyNastavVetu(f.podminky, klic, jaz, text));
+}
+function nastPodminkyVety(ef) {
+  const dis = jeAdmin() ? '' : ' disabled';
+  const ulozene = ((NAST.firma || {}).podminky || {}).vety || {};
+  const blok = klic => {
+    const pole = PODMINKY.PODMINKY_JAZYKY.map(L => {
+      const vlastni = (ulozene[klic] || {})[L];
+      const efekt = PODMINKY.podminkyVeta(ef, klic, L, 1, '50 %', podmTr(L));
+      const jenVych = PODMINKY.podminkyVetaJenVychoziPreklad(ef, klic, L);
+      const stitek = L === 'cz' ? (vlastni ? '<span class="pill">upraveno</span>' : '<span class="pill mut">výchozí</span>')
+        : (vlastni ? '<span class="pill">vlastní znění</span>' : '<span class="pill mut">ze slovníku</span>')
+          + (jenVych ? ' <span class="pill warn">odpovídá výchozí češtině — přeložte úpravu</span>' : '');
+      return `<div class="row" style="align-items:flex-start">
+        <label style="flex:none;width:96px;padding-top:6px">${esc(PODM_JAZYKY_POPIS[L])}</label>
+        <textarea rows="3" style="flex:1;min-width:0;font-family:inherit" placeholder="${esc(efekt)}"
+          onchange="podmVetaSet('${escJs(klic)}', '${L}', this.value)"${dis}>${esc(vlastni || '')}</textarea>
+        <span class="note" style="flex:none;width:170px;font-size:11.5px;padding-top:6px">${stitek}</span></div>`;
+    }).join('');
+    return `<details style="margin:6px 0;border:1px solid var(--line);border-radius:6px;padding:6px 10px">
+      <summary style="cursor:pointer;font-weight:600">${esc(PODM_VETY_POPIS[klic] || klic)}</summary>${pole}</details>`;
+  };
+  return `<div class="sec-title">Věty platebního kalendáře</div>
+    <div class="note" style="margin-top:0">Věty nabídky OCK (<code>{{PODM_PLATEBNI_KALENDAR}}</code>) a seznamu splátek smlouvy
+      o dílo realizace (<code>{{SOD_PLATEBNI_KALENDAR}}</code>). Značky <code>{PORADI}</code> a <code>{PROC}</code> doplní aplikace
+      (pořadí dokladu a procento v jazyce dokumentu). <b>Prázdné pole = výchozí znění</b>: česky dnešní věta, v cizím jazyce
+      překlad výchozí české věty ze slovníku (šedý text v poli ukazuje, co se vytiskne). Odeslané nabídky se nemění.</div>
+    ${Object.keys(PODM_VETY_POPIS).map(blok).join('')}`;
 }
 
 function nastPodminkyProj() {
@@ -180,7 +231,73 @@ function nastPodminkyProj() {
     ${podmRadek('Splatnost faktur', podmCisloVstup('proj', 'splatnostDni', p.splatnostDni, 1, 120, 'dní'), podmStitek('proj', 'splatnostDni'))}
     ${podmRadek('Smluvní pokuta – prodlení s odevzdáním', podmVyberVstup('proj', 'pokutaTermin', p.pokutaTermin, sazby), podmStitek('proj', 'pokutaTermin'))}
     ${podmRadek('Smluvní pokuta – prodlení splatnosti', podmVyberVstup('proj', 'pokutaSplatnost', p.pokutaSplatnost, sazby), podmStitek('proj', 'pokutaSplatnost'))}
-    ${podmRadek('Limit smluvních pokut', podmVyberVstup('proj', 'pokutaLimit', p.pokutaLimit, limit), podmStitek('proj', 'pokutaLimit'))}`;
+    ${podmRadek('Limit smluvních pokut', podmVyberVstup('proj', 'pokutaLimit', p.pokutaLimit, limit), podmStitek('proj', 'pokutaLimit'))}
+    ${podmRadek('Typ smlouvy', podmVyberVstup('proj', 'typSmlouvy', p.typSmlouvy, podmTypySmlouvy()), podmStitek('proj', 'typSmlouvy'))}
+    ${podmRadek('Licence k projektové dokumentaci', podmTextVstup('proj', 'licence', p.licence), podmStitek('proj', 'licence'))}
+    ${podmRadek('Pojištění odpovědnosti projektanta', podmTextVstup('proj', 'pojisteni', p.pojisteni), podmStitek('proj', 'pojisteni'))}
+    ${podmRadek('Cena nezahrnuje (krycí list)', podmTextVstup('proj', 'cenaNezahrnuje', p.cenaNezahrnuje), podmStitek('proj', 'cenaNezahrnuje'))}
+    ${nastPodminkyTextyProj(ef)}`;
+}
+
+/* ---------- texty nabídky PROJ (#367 fáze 2b, Q5) ---------- */
+const PODM_TEXTY_PROJ = [
+  ['cenaNezahrnuje', 'CENA NEZAHRNUJE', '{{PROJ_CENA_NEZAHRNUJE}}'],
+  ['pozadovano', 'POŽADOVÁNO OD INVESTORA', '{{PROJ_POZADOVANO_OD_INVESTORA}}'],
+  ['terminy', 'TERMÍNY', '{{PROJ_TERMINY}}'],
+  ['dolozky', 'DOLOŽKY', '{{PROJ_DOLOZKY}}'],
+];
+/* Textarea → řádky. Termíny česky „sekce | činnost | termín", cizí jazyk
+ * „činnost | termín" (pořadí jako česky). Prázdné pole = výchozí. */
+function podmTextProjParse(klic, jaz, text) {
+  const radky = String(text || '').split('\n').map(x => x.trim()).filter(Boolean);
+  if (!radky.length) return null;
+  if (klic !== 'terminy') return radky;
+  return radky.map(r => {
+    const c = r.split('|').map(x => x.trim());
+    return jaz === 'cz' ? [c[1] || '', c[2] || '', c[0] || ''] : [c[0] || '', c[1] || ''];
+  });
+}
+function podmTextProjText(klic, jaz, radky) {
+  if (klic !== 'terminy') return radky.join('\n');
+  return radky.map(r => jaz === 'cz' ? r[2] + ' | ' + r[0] + ' | ' + r[1] : r[0] + ' | ' + r[1]).join('\n');
+}
+function podmTextProjSet(klic, jaz, text) {
+  if (!jeAdmin()) { hlaska('Platební podmínky firmy smí měnit jen administrátor.'); return; }
+  const f = NAST.firma || (NAST.firma = firmaDefault());
+  firmaSet('podminky', PODMINKY.podminkyNastavTextProj(f.podminky, klic, jaz,
+    klic === 'dolozkyTisk' ? !!text : podmTextProjParse(klic, jaz, text)));
+}
+function nastPodminkyTextyProj(ef) {
+  const dis = jeAdmin() ? '' : ' disabled';
+  const ulozene = ((NAST.firma || {}).podminky || {}).nabidkaProj || {};
+  const blok = ([klic, nadpis, symbol]) => {
+    const pole = PODMINKY.PODMINKY_JAZYKY.map(L => {
+      const vlastni = (ulozene[klic] || {})[L];
+      const efekt = PODMINKY.podminkyTextProj(ef, klic, L, podmTr(L));
+      const hodnota = Array.isArray(vlastni) ? podmTextProjText(klic, L, vlastni) : '';
+      const stitek = L === 'cz' ? (vlastni ? '<span class="pill">upraveno</span>' : '<span class="pill mut">výchozí</span>')
+        : (vlastni ? '<span class="pill">vlastní znění</span>' : '<span class="pill mut">ze slovníku</span>');
+      return `<div class="row" style="align-items:flex-start">
+        <label style="flex:none;width:96px;padding-top:6px">${esc(PODM_JAZYKY_POPIS[L])}</label>
+        <textarea rows="${Math.min(10, Math.max(3, efekt.length + 1))}" style="flex:1;min-width:0;font-family:inherit"
+          placeholder="${esc(podmTextProjText(klic, L, klic === 'terminy' && L !== 'cz' ? efekt.map(x => [x[0], x[1]]) : efekt))}"
+          onchange="podmTextProjSet('${escJs(klic)}', '${L}', this.value)"${dis}>${esc(hodnota)}</textarea>
+        <span class="note" style="flex:none;width:150px;font-size:11.5px;padding-top:6px">${stitek}</span></div>`;
+    }).join('');
+    const tisk = klic !== 'dolozky' ? '' : `<label style="display:flex;gap:8px;align-items:center;margin:6px 0">
+      <input type="checkbox" ${ef.nabidkaProj.dolozkyTisk ? 'checked' : ''} onchange="podmTextProjSet('dolozkyTisk', null, this.checked)"${dis}>
+      Tisknout doložky v nabídce PROJ <span class="note">(výchozí vypnuto — zapíná J. V.)</span></label>`;
+    return `<details style="margin:6px 0;border:1px solid var(--line);border-radius:6px;padding:6px 10px">
+      <summary style="cursor:pointer;font-weight:600">${esc(nadpis)} <code style="font-weight:400">${esc(symbol)}</code></summary>
+      ${tisk}${pole}</details>`;
+  };
+  return `<div class="sec-title">Texty nabídky PROJ</div>
+    <div class="note" style="margin-top:0">Bloky pod cenou v nabídce PROJ. <b>Jeden řádek = jedna odrážka.</b> Termíny se píšou
+      česky jako <code>sekce | činnost | termín</code> (sekce: zamereni, studie, projednani, dpz, ic, dps, ezc, kolaudace, geodet —
+      řádek se vytiskne jen u nabízené činnosti), v cizím jazyce <code>činnost | termín</code> ve stejném pořadí.
+      <b>Prázdné pole = výchozí znění</b> (česky dnešní text, cizí jazyk překlad ze slovníku — šedý text v poli).
+      Online nabídka je bere hned; šablona Wordu PROJ (v3–v5) má tyto bloky zatím pevně, symboly ponese až nová šablona.</div>
+    ${PODM_TEXTY_PROJ.map(blok).join('')}`;
 }
 
 /* Celý blok podmínek pro záložku Smlouvy / Šablony. Smluvní standardy,

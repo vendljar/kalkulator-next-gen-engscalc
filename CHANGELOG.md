@@ -8,6 +8,48 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v19.10.7 — #367 fáze 2b: věty kalendáře v jazycích, texty nabídky PROJ a rozšíření z Firmy (větev claude/v8-367-firma)
+
+Dávka V8b, navazuje na v19.10.6. Rozhodnutí J. V. 19. 10. 2026 k Q3, Q5 a Q6.
+
+- **Věty platebního kalendáře (Q3):** věty nabídky OCK (záloha, dílčí
+  doklad, konečný doklad, měsíční fakturace) a díly seznamu splátek smlouvy
+  o dílo realizace (milník zálohy, konečné splátky, „zbývajících", „z celkové
+  ceny díla") jsou v `podminky.vety` s poli CZ / EN / DE / FR. Značky
+  `{PORADI}` (pořadí v jazyce: „1.", „1st", „1re") a `{PROC}` (anglicky
+  desetinná tečka). Bez vlastního cizího znění se tiskne **překlad výchozí
+  české věty ze slovníku** = dosavadní výstup, takže žádný jazyk nespadne do
+  češtiny; upravená čeština bez cizího znění svítí v Nastavení „odpovídá
+  výchozí češtině — přeložte úpravu". Zamčené nabídky ze starších pravidel
+  (věty v13) beze změny.
+- **Texty nabídky PROJ (Q5):** bloky CENA NEZAHRNUJE, POŽADOVÁNO OD
+  INVESTORA a TERMÍNY (řádek = činnost + termín + sekce; tiskne se jen
+  nabízená činnost) se přesunuly z `NABIDKA_PROJ_DEF` do `podminky.nabidkaProj`
+  s jazykovými poli (výchozí cizí = slovník). Nový blok **DOLOŽKY PROJ —
+  výchozí prázdný a vypnutý** (zaškrtávátko „Tisknout doložky", `{FIRMA}` se
+  nahradí). Pro Word nové symboly `{{PROJ_CENA_NEZAHRNUJE}}`,
+  `{{PROJ_POZADOVANO_OD_INVESTORA}}`, `{{PROJ_TERMINY}}`, `{{PROJ_DOLOZKY}}` —
+  dnešní šablony PROJ (v3–v5) mají tyto bloky pevně, Word je ponese až nová
+  šablona (návrh na příští dávku).
+- **Rozšíření (Q6):** typ smlouvy (OCK i PROJ), „Cena nezahrnuje" krycího
+  listu (OCK i PROJ), licence k PD a pojištění projektanta jsou ve Firmě;
+  prefilly krycích listů už nemají literály. Ceny AD a variant SP zůstávají
+  pro ceník PROJ (mimo Firmu).
+- **Kapitola V.:** věta „5 let záruka na celé dílo." vypadla z výchozího textu
+  ve všech jazycích (záruka z krycího listu, P10.7).
+- **Francouzština kapitol IV.–VI. a doložek (Q3):** výchozí FR texty
+  v `DEFAULT_FIRMA` (dosud žádné — FR nabídka tiskla češtinu s upozorněním).
+  Seznam ke kontrole rodilým mluvčím: `podklady/367_PREKLADY_KONTROLA.md`.
+- **Nastavení:** karta OCK = typ smlouvy, „Cena nezahrnuje", blok „Věty
+  platebního kalendáře" (8 vět × 4 jazyky, šedá nápověda = co se vytiskne);
+  karta PROJ = typ smlouvy, licence, pojištění, „Cena nezahrnuje", blok
+  „Texty nabídky PROJ" (termíny `sekce | činnost | termín`).
+- **Testy:** `src/test_podminky_texty.js` 50 kontrol — proti v19.10.6
+  (`dd21d37`) padá (4 selhání a výjimka), po změně **50 / 0**;
+  `test_nabidka_kapitoly.js` upraven (záloha češtinou se zkouší na firmě bez FR
+  polí; nově výchozí FR bez upozornění a kapitola V. bez záruky);
+  `overit_podminky_firma.mjs` 26 kontrol. Mutace „#367b: …“ 8 v `mutace_jadro.mjs`; cílený běh `#367` (a + b) **18 / 18** chycených, `--kontrola` 272 úseků.
+
 ## v19.10.6 — #367 fáze 2a: platební podmínky OCK a PROJ z Nastavení → Firma (větev claude/v8-367-firma)
 
 **Kolo `--jen build,sady,staticke` nad 260df3e (v19.10.6, 19. 10. 2026):** sady 270 prošlo / 1 selhalo / 6 přeskočeno — selhal jen `overit_plan_plateb.mjs` (plán plateb PROJ je nově na kartě PROJ, harness otevíral kartu OCK; upraven, samostatně **49 / 0**). Přeskočeno: `test.js` (ostrý ceník) a 5 harnessů s firemními podklady (`KNG_PODKLADY` v sezení nebyly). Statické 3/3. Cílené mutace `#367`: jádro **10/10**, server **2/2**; `--kontrola` jádro 264, server 541 úseků. Plné mutační kolo neběželo.

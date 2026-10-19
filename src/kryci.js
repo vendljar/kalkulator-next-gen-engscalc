@@ -194,7 +194,8 @@ const KRYCI_SEKCE = [
   ] },
 
   { sekce: 'Typ smlouvy a produktu', pole: [
-    { id: 'typSmlouvy', label: 'Typ smlouvy', verze: ['bo'], typ: 'radio', o: ['Naše bez úprav', 'Naše s úpravami', 'Cizí'], prefill: () => 'Naše bez úprav', src: 'výchozí' },
+    { id: 'typSmlouvy', label: 'Typ smlouvy', verze: ['bo'], typ: 'radio', o: ['Naše bez úprav', 'Naše s úpravami', 'Cizí'],
+      prefill: c => kryciPodmEf(c && c.firma).ock.typSmlouvy, src: 'Nastavení → Firma' },
     /* KL-3: formulář zná i třetí možnost „Projekce". Čistě projekční zakázka
      * (OCK nula, PROJ oceněné) se nesmí označit jako šachta. Zůstává textové
      * pole, ne přepínač – kombinovaná zakázka se do tří škatulek nevejde. */
@@ -340,7 +341,8 @@ const KRYCI_SEKCE = [
     { id: 'zamereniStrojovna', label: 'Zaměření strojovna', verze: ['bo', 'techdata'], typ: 'radio', o: ['Ano', 'Ne'], prefill: c => c.sken3d, odvozene: true,
       src: 'z kalkulace OCK (Režie → ZAMĚŘENÍ 3D SKENEREM)' },
     { id: 'situacniFoto', label: 'Situační fotografie', verze: ['bo', 'techdata'], prefill: () => 'Ve složce', src: 'výchozí' },
-    { id: 'cenaNezahrnuje', label: 'Cena nezahrnuje', verze: ['bo'], prefill: () => 'dle CN', src: 'výchozí' },
+    { id: 'cenaNezahrnuje', label: 'Cena nezahrnuje', verze: ['bo'],
+      prefill: c => kryciPodmEf(c && c.firma).ock.cenaNezahrnuje, src: 'Nastavení → Firma' },
     { id: 'rozsah', label: 'Rozsah', verze: ['bo'],
       prefill: c => firmaHodnota(c.firma, 'rozsahDefinice') || 'je definován přílohou ke smlouvě (specifikace)',
       src: 'Nastavení → Firma' },
@@ -1069,12 +1071,15 @@ function kryciPlatebniSymboly(kal, P, lang) {
       .replace('{{PODM_FAKTURA2_PROC}}', () => kryciProcentoZTextu(h.faktura2)));
     return { PODM_PLATEBNI_KALENDAR: vety.join('\n'), PODM_FAKTURACE_MESICNE: '' };
   }
-  if (kal.mesicne) return { PODM_PLATEBNI_KALENDAR: '', PODM_FAKTURACE_MESICNE: tr_(KRYCI_FAKTURACE_MESICNE_VETA) };
+  /* Věty z Firmy (#367 fáze 2b, Q3): česky znění Nastavení, cizí jazyk
+   * uložené znění, jinak slovník nad výchozí větou (= dosavadní výstup). */
+  const ef = kryciPodmEf(), V = (klic, s) => kryciPodm().podminkyVeta(ef, klic, lang, s && s.poradi, s && s.proc, tr_);
+  if (kal.mesicne) return { PODM_PLATEBNI_KALENDAR: '', PODM_FAKTURACE_MESICNE: V('mesicne') };
   const dvojtecka = lang === 'fr' ? ' : ' : ': ';
   const vety = (kal.splatky || []).map(s => {
-    if (s.id === 'fakturaKonc') return tr_(KRYCI_VETA_KONECNA);
+    if (s.id === 'fakturaKonc') return V('konecna');
     if (s.pct === null) return tr_(s.poradi + '. dílčí faktura') + dvojtecka + tr_(s.text);
-    return tr_(s.id === 'zaloha1' ? kryciVetaZalohy(s.poradi, s.proc) : kryciVetaFaktury2(s.poradi, s.proc));
+    return V(s.id === 'zaloha1' ? 'zaloha' : 'faktura2', s);
   });
   return { PODM_PLATEBNI_KALENDAR: vety.join('\n'), PODM_FAKTURACE_MESICNE: '' };
 }
@@ -1122,22 +1127,25 @@ function kryciSodPlatby(zak, varianta, jekly, sablona, lang) {
   const L = lang || 'cz';
   const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
   const kal = kryciPlatebniKalendar(zak, varianta, jekly);
+  /* Díly vět z Firmy (#367 fáze 2b): česky Nastavení, cizí uložené znění,
+   * jinak slovník nad výchozím dílem (= dosavadní výstup). */
+  const ef = kryciPodmEf(), V = klic => kryciPodm().podminkyVeta(ef, klic, L, null, null, P);
   const sym = sablona && sablona.symboly;
   const ma = (k) => !!sym && (typeof sym.has === 'function' ? sym.has(k) : Array.from(sym).indexOf(k) >= 0);
   const symboly = {}, odstavcePryc = [];
   const cislo = (proc) => String(proc || '').replace(/\s*%\s*$/, '');
   /* seznam plateb (šablona v2, náhled) */
-  const radky = kal.mesicne ? [P(KRYCI_FAKTURACE_MESICNE_VETA)] : kal.splatky.map(sp => {
+  const radky = kal.mesicne ? [V('mesicne')] : kal.splatky.map(sp => {
     if (sp.pct === null) return P(String(sp.text).trim());
     if (L !== 'cz') {
       /* „<milník> – [zbývajících] N % z celkové ceny díla" — pořadí, které
        * drží ve všech jazycích; čeština zůstává beze změny (níž). */
       const konecna = sp.id === 'fakturaKonc';
-      const milnik = sp.id === 'zaloha1' ? KRYCI_SOD_VETA_ZALOHY : konecna ? KRYCI_SOD_VETA_KONECNA_CIZI : kryciSodMilnik(sp.text);
-      return P(milnik) + ' – ' + (konecna ? P(KRYCI_SOD_ZBYVAJICI) + ' ' : '') + sp.proc + ' ' + P(KRYCI_SOD_Z_CENY);
+      const milnik = sp.id === 'zaloha1' ? V('sodZaloha') : konecna ? V('sodKonecna') : P(kryciSodMilnik(sp.text));
+      return milnik + ' – ' + (konecna ? V('sodZbyvajici') + ' ' : '') + sp.proc + ' ' + V('sodZCeny');
     }
-    const milnik = sp.id === 'zaloha1' ? KRYCI_SOD_VETA_ZALOHY : sp.id === 'fakturaKonc' ? KRYCI_SOD_VETA_KONECNA : kryciSodMilnik(sp.text);
-    return milnik + ' ' + sp.proc + ' ' + KRYCI_SOD_Z_CENY;
+    const milnik = sp.id === 'zaloha1' ? V('sodZaloha') : sp.id === 'fakturaKonc' ? V('sodKonecna') + ' ' + V('sodZbyvajici') : kryciSodMilnik(sp.text);
+    return milnik + ' ' + sp.proc + ' ' + V('sodZCeny');
   }).filter(Boolean);
   if (radky.length) symboly.SOD_PLATEBNI_KALENDAR = radky.join('\n');
   const stara = !!sym && !ma('SOD_PLATEBNI_KALENDAR') && ['SOD_SPLATKA1_PROC', 'SOD_SPLATKA2_PROC', 'SOD_SPLATKA3_PROC', 'SOD_SPLATKA4_PROC'].some(ma);

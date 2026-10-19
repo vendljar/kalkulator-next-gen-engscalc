@@ -93,6 +93,17 @@ await p.evaluate(() => podmSet('ock', 'faktura2Proc', '40', 'cislo'));
 await p.waitForTimeout(100);
 ok('oprava součtu: štítek zmizí', (await obrazovka()).chyba === 0);
 
+// --- 3b) věty platebního kalendáře (fáze 2b) ----------------------------------
+o = await obrazovka();
+ok('karta OCK: blok „Věty platebního kalendáře" a rozšíření (typ smlouvy)', /Věty platebního kalendáře/i.test(o.text) && /Typ smlouvy/.test(o.text));
+await p.evaluate(() => podmVetaSet('zaloha', 'en', 'Invoice {PORADI}: {PROC} on signature.'));
+await p.waitForTimeout(100);
+const vetaEn = await p.evaluate(() => {
+  const v = aktivniVarianta(ZAK);
+  return kryciPlatebniSymboly(kryciPlatebniKalendar(ZAK, v, JEKLY), x => tr(x, 'en'), 'en').PODM_PLATEBNI_KALENDAR.split('\n')[0];
+});
+ok('vlastní anglická věta z Nastavení jde do kalendáře nabídky EN', vetaEn === 'Invoice 1st: 50 % on signature.', vetaEn);
+
 // --- 4) přepínač PROJ -------------------------------------------------------------
 await p.evaluate(() => podmPrepni('proj'));
 await p.waitForTimeout(150);
@@ -103,6 +114,10 @@ ok('karta PROJ: šablony jen PROJ', /PROJEKČNÍ PRÁCE/.test(o.text) && !/REALI
 await p.evaluate(() => podmSet('proj', 'pokutaTermin', '0,1 % / den'));
 await p.waitForTimeout(100);
 ok('krycí list PROJ: pokuta za prodlení s odevzdáním z Firmy', await kl('pokutaTermin', 'proj') === '0,1 % / den', await kl('pokutaTermin', 'proj'));
+o = await obrazovka();
+ok('karta PROJ: texty nabídky PROJ, doložky a licence', /Texty nabídky PROJ/i.test(o.text) && /DOLOŽKY/.test(o.text) && /Licence k projektové/.test(o.text));
+await p.evaluate(() => podmTextProjSet('dolozkyTisk', null, true));
+ok('zaškrtnutí „Tisknout doložky" se zapíše do Firmy', await p.evaluate(() => NAST.firma.podminky.nabidkaProj.dolozkyTisk === true));
 await p.evaluate(() => podmSablonyVse(true));
 await p.waitForTimeout(100);
 o = await obrazovka();

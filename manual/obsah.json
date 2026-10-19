@@ -14,6 +14,12 @@
       ]
     },
     {
+      "nadpis": "Co je nového ve verzi v19.10.7 (19. 10. 2026)",
+      "odstavce": [
+        "**Znění platebních podmínek v nabídce a ve smlouvě nastavuje administrátor** (Nastavení → Smlouvy / Šablony → OCK → Věty platebního kalendáře), česky i v cizích jazycích. Ve francouzské nabídce se kapitoly IV.–VI. tisknou nově francouzsky. Z kapitoly Termíny realizace zmizela věta o pětileté záruce, záruku uvádí krycí list. Texty nabídky PROJ (Cena nezahrnuje, Požadováno od investora, Termíny), typ smlouvy, licence a pojištění se nastavují tamtéž na kartě PROJ."
+      ]
+    },
+    {
       "nadpis": "Co je nového ve verzi v19.10.6 (19. 10. 2026)",
       "odstavce": [
         "**Výchozí platební podmínky jsou firemní nastavení.** Splatnost faktur, záloha a další splátky, zádržné, záruka, smluvní pokuty a limit pokut, které se předvyplňují v krycím listu OCK i PROJ, nastavuje administrátor v **Nastavení → Smlouvy / Šablony** (přepínač **OCK | PROJ**). Dnešní hodnoty zůstaly stejné. V zakázce je dál můžete přepsat a tlačítko ↺ vrátí hodnotu z Nastavení. Odeslané nabídky se nemění."

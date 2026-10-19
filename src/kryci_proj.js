@@ -201,14 +201,17 @@ const KRYCI_PROJ_SEKCE = [
     { id: 'odpovednyEmail', label: 'E-mail', verze: ['bo', 'techdata'] },
   ] },
   { sekce: 'Typ smlouvy', pole: [
-    { id: 'typSmlouvy', label: 'Typ smlouvy', verze: ['bo'], typ: 'radio', o: ['Naše bez úprav', 'Naše s úpravami', 'Cizí'], prefill: () => 'Naše bez úprav', src: 'výchozí' },
+    { id: 'typSmlouvy', label: 'Typ smlouvy', verze: ['bo'], typ: 'radio', o: ['Naše bez úprav', 'Naše s úpravami', 'Cizí'],
+      prefill: c => kryciProjPodmEf(c && c.firma).proj.typSmlouvy, src: 'Nastavení → Firma' },
     { id: 'typProjektu', label: 'Typ projektu', verze: ['bo', 'techdata'], typ: 'radio', o: ['Nový projekt (novostavba)', 'Rekonstrukce objektu'], prefill: () => 'Rekonstrukce objektu', src: 'výchozí' },
     { id: 'pamatkovaOchrana', label: 'Objekt v památkové ochraně', verze: ['bo', 'techdata'], typ: 'radio', o: ['Ano', 'Ne', 'Zjišťuje se'] },
-    { id: 'autorskaPrava', label: 'Licence k projektové dokumentaci', verze: ['bo'], prefill: () => 'nevýhradní, pro účel stavby dle smlouvy', src: 'výchozí' },
+    { id: 'autorskaPrava', label: 'Licence k projektové dokumentaci', verze: ['bo'],
+      prefill: c => kryciProjPodmEf(c && c.firma).proj.licence, src: 'Nastavení → Firma' },
   ] },
   { sekce: 'Rozsah projekčních prací (dle Kalkulace PROJ)', pole: KRYCI_PROJ_ROZSAH.concat([
     { id: 'rozsahJine', label: 'Jiné dohodnuté činnosti', verze: ['bo'], typ: 'textarea' },
-    { id: 'cenaNezahrnuje', label: 'Cena nezahrnuje', verze: ['bo'], typ: 'textarea', prefill: () => 'správní poplatky, posudky nad rámec nabídky, činnosti neuvedené v nabídce', src: 'výchozí' },
+    { id: 'cenaNezahrnuje', label: 'Cena nezahrnuje', verze: ['bo'], typ: 'textarea',
+      prefill: c => kryciProjPodmEf(c && c.firma).proj.cenaNezahrnuje, src: 'Nastavení → Firma' },
   ]) },
   { sekce: 'Platební podmínky', pole: [
     { id: 'splatnostDni', label: 'Splatnost faktur (dní)', verze: ['bo'],
@@ -269,7 +272,8 @@ const KRYCI_PROJ_SEKCE = [
      * Kalkulace PROJ, ne do sazby OCK. */
     { id: 'sazbaDph', label: 'Sazba DPH', verze: ['bo'], typ: 'dph', dphBind: 'PC.dph',
       prefill: c => c.dph + ' %', src: 'z hlavičky kalkulace PROJ' },
-    { id: 'pojisteni', label: 'Pojištění odpovědnosti projektanta', verze: ['bo'], prefill: () => 'ANO – dle pojistné smlouvy zhotovitele', src: 'výchozí' },
+    { id: 'pojisteni', label: 'Pojištění odpovědnosti projektanta', verze: ['bo'],
+      prefill: c => kryciProjPodmEf(c && c.firma).proj.pojisteni, src: 'Nastavení → Firma' },
   ]) },
   { sekce: 'Termíny', pole: [
     { id: 'terminZahajeni', label: 'Zahájení prací (podpis smlouvy)', verze: ['bo', 'techdata'], typ: 'date' },
