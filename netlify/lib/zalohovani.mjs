@@ -278,11 +278,20 @@ export function retenceVyber(klice, dnes) {
  * (zápis se nepovedl, nebo ho nejde přečíst), nesmaže se nic. Vrací
  * { smazano: [klíče], chyby: [..] }; chyba mazání jednoho klíče ostatní
  * nezastaví a otisk nikdy neohrozí. */
-export async function retenceProved(novyKlic, dnes) {
+export async function retenceProved(novyKlic, dnes, ted) {
   const s = await uloziste('zalohy');
   const klice = await s.seznam();
   if (!novyKlic || !klice.includes(novyKlic) || !(await s.cti(souhrnKlic(novyKlic)) || await s.cti(novyKlic)))
     return { smazano: [], chyby: ['nový otisk ' + String(novyKlic) + ' v úložišti není — retence se neprovedla'] };
+  /* POJISTKA KOPIE NA DISK (v19.10.8, výchozí volba koordinace 19. 10. 2026).
+   * Retence je nevratná — první noc po nasazení by smazala všechny starší
+   * otisky mimo pravidlo. Maže se proto jen tehdy, když existuje záznam
+   * úspěšné kopie na Disk (N6) mladší než 7 dní; jinak se nesmaže nic a do
+   * logu jde „retence čeká na první kopii na Disk". Platí trvale: když se
+   * kopie na Disk přestanou dělat, retence se zastaví (úložiště poroste, ale
+   * nic se neztratí). */
+  if (!kopieDiskCerstva(await s.cti(KOPIE_DISK_KLIC), ted))
+    return { smazano: [], chyby: [], ceka: 'retence čeká na první kopii na Disk' };
   const smazano = [], chyby = [];
   for (const k of retenceVyber(klice, dnes || denDnes())) {
     if (k === novyKlic) continue;
@@ -330,3 +339,9 @@ export async function posledniNocniOtisk() {
 /* Záznam o poslední kopii na Disku — na serveru, aby hlídka (14 dní)
  * fungovala v každém prohlížeči, i tam, kde složka připojená není. */
 export const KOPIE_DISK_KLIC = 'kopie-disk';
+export const RETENCE_KOPIE_DISK_DNU = 7;
+export function kopieDiskCerstva(zaznam, ted) {
+  const t = zaznam && Date.parse(zaznam.kdy || '');
+  const nyni = Number.isFinite(+ted) && ted ? +ted : Date.now();
+  return Number.isFinite(t) && nyni - t >= 0 && nyni - t < RETENCE_KOPIE_DISK_DNU * DEN_MS;
+}

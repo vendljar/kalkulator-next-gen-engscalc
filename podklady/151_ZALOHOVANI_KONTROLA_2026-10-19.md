@@ -200,23 +200,26 @@ pak 1. den v měsíci natrvalo) — mazání jen vědomou dávkou.
 3. Rozhodnutí J. V.: retence (N5) a kopie mimo Netlify (N6).
 4. Zkouška obnovy dle oddílu 7 jednou za čtvrtletí.
 
-## 9. Doplněk 19. 10. 2026 — opravy N1–N6 (dávka O4, v19.10.5)
+## 9. Doplněk 19. 10. 2026 — opravy N1–N6 (dávka O4: N1–N4 v19.10.5, N5–N6 v19.10.8)
 
-N1–N4 opraveny podle oddílu 6. N5 a N6 rozhodl J. V. 19. 10. (~11:45 a
-~11:50 UTC, přes koordinaci) a jsou hotové v téže verzi:
+N1–N4 opraveny podle oddílu 6 (v19.10.5). N5 a N6 rozhodl J. V. 19. 10.
+(~11:45 a ~11:50 UTC, přes koordinaci); hotové ve v19.10.8:
 
 - **N5 retence (Netlify Blobs `zalohy`):** noční otisky posledních 30 dní
   (věk 0–29 dní) + první noční otisk každého měsíce 12 měsíců zpět (měsíc
   dneška + 12 předchozích); ruční a přihlašovací otisky (`…-rucne`,
   `…-auto`) 90 dní; otisky před obnovou se nemažou. Maže noční funkce až po
   úspěšném zápisu dnešního otisku, nikdy poslední otisk; v logu funkce řádek
-  `zaloha_nocni: retence smazala N otisků: …`.
+  `zaloha_nocni: retence smazala N otisků: …`. **Pojistka (výchozí volba
+  koordinace):** maže se jen tehdy, když je záznam úspěšné kopie na Disk
+  mladší než 7 dní; jinak se nesmaže nic a v logu je `retence čeká na první
+  kopii na Disk`. Dokud J. V. neudělá první kopii, staré otisky zůstávají.
 - **N6 kopie na Disk Google:** složka `_Zaloha Netlify DB` (vedle `_DB`),
   soubor `otisk_RRRR-MM-DD.json` (poslední noční otisk, BEZ otisků hesel
   a podpisů) + `posledni_kopie.json` (datum, velikost, SHA-256). Na Disku se
   nic nemaže.
 
-### Postup prvního běhu kopie na Disk (J. V., po nasazení v19.10.5)
+### Postup prvního běhu kopie na Disk (J. V., po nasazení v19.10.8)
 
 1. Na počítači s **Diskem Google pro počítače** otevřít aplikaci v **Chrome
    nebo Edge** (jiné prohlížeče zápis do složky neumí) a přihlásit se jako
@@ -235,7 +238,10 @@ N1–N4 opraveny podle oddílu 6. N5 a N6 rozhodl J. V. 19. 10. (~11:45 a
 5. Kontrola na Disku: ve složce leží `otisk_RRRR-MM-DD.json` (u schaftscalc
    řádově jednotky až desítky MB) a `posledni_kopie.json`; v kartě se řádek
    „Poslední kopie záloh na Disku Google: …“ ukáže bez varování.
-6. Dál: kopie se pořídí sama při přihlášení správce, je-li poslední starší
+6. Od příští noci smí běžet retence (kopie je mladší než 7 dní); v logu
+   `zaloha_nocni` se místo „retence čeká na první kopii na Disk“ objeví
+   „retence smazala N otisků: …“.
+7. Dál: kopie se pořídí sama při přihlášení správce, je-li poslední starší
    než 7 dní (jen v prohlížeči s vybranou složkou a povoleným zápisem). Je-li
    starší než 14 dní, karta i hláška po přihlášení varuje — pak zopakovat
    krok 2 (složka se pamatuje, výběr se neopakuje; prohlížeč se jen může

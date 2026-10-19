@@ -8,16 +8,56 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v19.10.8 — #151 N5 retence otisků a N6 týdenní kopie na Disk Google (rozhodnutí J. V., větev claude/o4-zalohy)
+
+Rozšíření dávky O4 nad integrací `4cc1b81` (v19.10.5). Rozhodnutí J. V.
+19. 10. 2026 (~11:45 a ~11:50 UTC, přes koordinaci) k nálezům N5 a N6
+kontroly `podklady/151_ZALOHOVANI_KONTROLA_2026-10-19.md` (roadmapa
+**#151a**, **#151b** → hotovo; postup prvního běhu kopie v podkladu, oddíl 9).
+
+- **N5 — retence otisků v Blobs** (rozhodnutí J. V.): noční 30 dní (věk
+  0–29) + první noční otisk každého měsíce 12 měsíců zpět (měsíc dneška + 12
+  předchozích), vynucené 90 dní, otisky před obnovou nikdy. `retenceVyber`
+  (čistá funkce) a `retenceProved` v `lib/zalohovani.mjs`; volá je
+  `zaloha_nocni` až po úspěšném otisku (nový otisk musí v úložišti být,
+  jinak se nemaže nic), nikdy nesmaže nejnovější, s otiskem maže i souhrn,
+  do logu počet a klíče.
+- **Pojistka retence (výchozí volba koordinace):** maže se jen tehdy, když
+  existuje záznam úspěšné kopie na Disk (`zalohy/kopie-disk`) mladší než
+  7 dní (`kopieDiskCerstva`); jinak se nesmaže nic a do logu jde „retence
+  čeká na první kopii na Disk“. Staré otisky se tak neztratí dřív, než J. V.
+  udělá první kopii; když se kopie přestanou dělat, retence se zastaví.
+- **N6 — týdenní kopie na Disk Google** (rozhodnutí J. V.): prohlížeč
+  správce zapisuje do vlastní vybrané složky `_Zaloha Netlify DB`
+  (File System Access, pamatuje se v IndexedDB; složka `_DB` je od #150
+  vypnutá) soubor `otisk_YYYY-MM-DD.json` + `posledni_kopie.json` (datum,
+  velikost, SHA-256; kontrola délky zápisu). Obsah z nové
+  `GET /api/zaloha?zdroj=nocni` — poslední noční otisk očištěný
+  `otiskProDisk` (BEZ otisků hesel a BEZ podpisů; bez nočního otisku za 7 dní
+  aktuální stav v témž tvaru). Záznam kopie drží server
+  (`POST /api/zaloha_vynuceno {akce:'kopie-disk'}`, GET vrací `kopieDisk`),
+  takže hlídka funguje v každém prohlížeči. Tlačítko „Zkopírovat zálohu na
+  Disk teď“, automaticky po přihlášení správce po 7 dnech (jen s uděleným
+  právem), varování nad 14 dní (`uloKopieDiskStav`, `src/uloziste.js`).
+  Na Disku se nic nemaže. Běžná záloha ke stažení se nemění.
+- **Testy:** `netlify/test_zalohy.mjs` +30 kontrol (59 celkem) — N5/N6
+  proti `f07d650` **33 OK / 6 FAIL** (+ výjimky), pojistka kopie proti
+  `3ef7c6f` **50 / 3 FAIL**, po změně **59 / 0**; nová
+  `src/test_kopie_disk.js` (10; proti f07d650 padá, po 10/0);
+  `overit_online.mjs` oddíl 5c3 (15 kontrol se složkou v paměti stránky;
+  proti f07d650 FAIL, po 0 FAIL). Mutace: 27 nových `#151 N5/N6`
+  (`mutace.mjs` vč. `../src/uloziste.js`), sada `../src/test_kopie_disk.js`
+  v SADY.
+
 ## v19.10.5 — #151: opravy nočního zálohování N1–N4 (větev claude/o4-zalohy)
 
-**Testy nad v19.10.5 vč. N5/N6 (19. 10. 2026):** `spust_testy.sh --smoke` **271 prošlo / 0 selhalo / 6 přeskočeno**; mutace `#151` (N1–N6, sady jako níž + `../src/test_kopie_disk.js`) **32/32 chycených**; `--kontrola` 571 úseků. Před N5/N6: smoke **270 / 0 / 6** (`test.js`, 5 harnessů bez `KNG_PODKLADY`), vč. `overit_online` (samočinná záloha, přehled, obnova). Mutace serveru filtrem `zaloh` (sady test_zalohy, test_funkce, test_obnova, test_prava, test_obnova_nanecisto, test_uklid) **22/22 chycených**, žádná nepřežila; `--kontrola` 549 úseků. Statická kontrola údajů čistá.
+**Testy nad v19.10.5 (19. 10. 2026):** `spust_testy.sh --smoke` **270 prošlo / 0 selhalo / 6 přeskočeno** (`test.js`, 5 harnessů bez `KNG_PODKLADY`), vč. `overit_online` (samočinná záloha, přehled, obnova). Mutace serveru filtrem `zaloh` (sady test_zalohy, test_funkce, test_obnova, test_prava, test_obnova_nanecisto, test_uklid) **22/22 chycených**, žádná nepřežila; `--kontrola` 549 úseků. Statická kontrola údajů čistá.
 
 Dávka O4 (koordinace „ŘÍDÍCÍ 19.10“), nad `claude/z1-zalohy` (`421f556`).
-Opravuje nálezy N1–N6 kontroly zálohování
+Opravuje nálezy N1–N4 kontroly zálohování
 (`podklady/151_ZALOHOVANI_KONTROLA_2026-10-19.md`, roadmapa **#151** → hotovo).
-N5 (retence) a N6 (kopie na Disk) podle rozhodnutí J. V. 19. 10. 2026
-(roadmapa **#151a**, **#151b** → hotovo; postup prvního běhu kopie v podkladu,
-oddíl 9).
+N5 (retence) a N6 (kopie mimo Netlify) čekají na rozhodnutí J. V.
+(roadmapa **#151a**, **#151b**).
 
 - **N1 — ruční záloha nepřepíše noční otisk dne.** „Zálohovat teď“
   (`duvod: rucne`) i otisk při přihlášení správce (`duvod: auto`) se ukládají
@@ -43,39 +83,12 @@ oddíl 9).
   tabulky ověří skutečný otisk (značka v každém zálohovaném úložišti a klíči).
   Nové úložiště nebo klíč bez zálohy test shodí (ověřeno: vyřazený slovník
   i smyšlené nové úložiště → FAIL).
-- **N5 — retence otisků v Blobs** (rozhodnutí J. V.): noční 30 dní (věk
-  0–29) + první noční otisk každého měsíce 12 měsíců zpět (měsíc dneška + 12
-  předchozích), vynucené 90 dní, otisky před obnovou nikdy. `retenceVyber`
-  (čistá funkce) a `retenceProved` v `lib/zalohovani.mjs`; volá je
-  `zaloha_nocni` až po úspěšném otisku (nový otisk musí v úložišti být,
-  jinak se nemaže nic), nikdy nesmaže nejnovější, s otiskem maže i souhrn,
-  do logu počet a klíče.
-- **N6 — týdenní kopie na Disk Google** (rozhodnutí J. V.): prohlížeč
-  správce zapisuje do vlastní vybrané složky `_Zaloha Netlify DB`
-  (File System Access, pamatuje se v IndexedDB; složka `_DB` je od #150
-  vypnutá) soubor `otisk_YYYY-MM-DD.json` + `posledni_kopie.json` (datum,
-  velikost, SHA-256; kontrola délky zápisu). Obsah z nové
-  `GET /api/zaloha?zdroj=nocni` — poslední noční otisk očištěný
-  `otiskProDisk` (BEZ otisků hesel a BEZ podpisů; bez nočního otisku za 7 dní
-  aktuální stav v témž tvaru). Záznam kopie drží server
-  (`POST /api/zaloha_vynuceno {akce:'kopie-disk'}`, GET vrací `kopieDisk`),
-  takže hlídka funguje v každém prohlížeči. Tlačítko „Zkopírovat zálohu na
-  Disk teď“, automaticky po přihlášení správce po 7 dnech (jen s uděleným
-  právem), varování nad 14 dní (`uloKopieDiskStav`, `src/uloziste.js`).
-  Na Disku se nic nemaže. Běžná záloha ke stažení se nemění.
 - **Testy:** nová sada `netlify/test_zalohy.mjs` (29 kontrol) — proti
   `421f556` **9 OK / 10 FAIL** (N1–N3; N4 je nová pojistka, na starém kódu
   projde a padá na vyřazený klíč), po opravě **29 / 0**. Upraveny
   `test_funkce.mjs` a `test_obnova.mjs` (vynucený otisk má slot s časem).
   Mutace serveru: 10 nových (`#151 N1–N4`), upraveny B52 a B58 (změněný kód);
   sada `test_zalohy.mjs` přidána do `mutace.mjs`.
-- **Testy N5/N6:** `test_zalohy.mjs` +26 kontrol (55 celkem) — proti
-  `f07d650` **33 OK / 6 FAIL** (+ výjimky v N5/N6), po změně **55 / 0**;
-  nová `src/test_kopie_disk.js` (10; proti f07d650 padá, po 10/0);
-  `overit_online.mjs` oddíl 5c3 (15 kontrol se složkou v paměti stránky;
-  proti f07d650 FAIL, po 253/0). Mutace: 22 nových `#151 N5/N6`
-  (`mutace.mjs` vč. `../src/uloziste.js`), sada `../src/test_kopie_disk.js`
-  v SADY.
 
 ## v19.10.4 — H2: plocha v kartě výjimky na celé m² (V7-N1), B191, B192 (větev claude/h2-drobnosti)
 

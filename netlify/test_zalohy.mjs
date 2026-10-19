@@ -267,7 +267,21 @@ await zkus('N5', async () => {
   for (const k of [...pamet.keys()]) if (k.startsWith('zalohy/')) pamet.delete(k);
   for (const k of ['2026-09-19', '2026-09-01', '2026-09-02', '2026-07-01T101010-rucne', '2026-01-01T101010-pred-obnovou'])
     { await s.zapis(k, { zdroj: 'x' }); await s.zapis(Z.souhrnKlic(k), { porizena: '2026', zdroj: 'x' }); }
-  await s.zapis(Z.KOPIE_DISK_KLIC, { soubor: 'otisk_2026-10-18.json' });
+  /* POJISTKA v19.10.8: bez čerstvé kopie na Disk (záznam mladší 7 dní) se nemaže. */
+  await s.zapis('2026-10-19', { zdroj: 'nocni-otisk' }); await s.zapis(Z.souhrnKlic('2026-10-19'), { porizena: 'x' });
+  const bezKopie = await Z.retenceProved('2026-10-19', D);
+  test('N5 v19.10.8: bez záznamu kopie na Disk retence nic nesmaže a čeká',
+    bezKopie.smazano.length === 0 && bezKopie.ceka === 'retence čeká na první kopii na Disk' && pamet.has('zalohy/2026-09-19'), bezKopie);
+  const ted = Date.now();
+  await s.zapis(Z.KOPIE_DISK_KLIC, { kdy: new Date(ted - 7 * 86400000).toISOString(), soubor: 'otisk_2026-10-12.json' });
+  const staraKopie = await Z.retenceProved('2026-10-19', D, ted);
+  test('N5 v19.10.8: kopie stará přesně 7 dní nestačí — nic se nesmaže',
+    staraKopie.smazano.length === 0 && !!staraKopie.ceka && pamet.has('zalohy/2026-09-19'), staraKopie);
+  test('N5 v19.10.8: kopie stará 6 dní 23 h stačí', Z.kopieDiskCerstva({ kdy: new Date(ted - 7 * 86400000 + 3600000).toISOString() }, ted)
+    && !Z.kopieDiskCerstva({ kdy: 'x' }, ted) && !Z.kopieDiskCerstva(null, ted)
+    && !Z.kopieDiskCerstva({ kdy: new Date(ted + 86400000).toISOString() }, ted));
+  pamet.delete('zalohy/2026-10-19'); pamet.delete('zalohy/souhrn/2026-10-19');
+  await s.zapis(Z.KOPIE_DISK_KLIC, { kdy: new Date(ted - 3600000).toISOString(), soubor: 'otisk_2026-10-18.json' });
   /* selhání zápisu → nic se nemaže */
   const bez = await Z.retenceProved('2026-10-19', D);
   test('N5: nový otisk chybí (zápis selhal) → nesmaže se nic',
@@ -279,6 +293,16 @@ await zkus('N5', async () => {
     && !pamet.has('zalohy/2026-09-19') && !pamet.has('zalohy/souhrn/2026-09-19'), r);
   test('N5: dnešní, první v měsíci, před obnovou a záznam kopie zůstaly',
     ['2026-10-19', '2026-09-01', '2026-01-01T101010-pred-obnovou', 'kopie-disk', 'souhrn/2026-09-01'].every(k => pamet.has('zalohy/' + k)));
+  /* noční funkce bez čerstvé kopie: nic nesmaže a zaloguje čekání (v19.10.8) */
+  const kopieZaznam = pamet.get('zalohy/kopie-disk');
+  pamet.delete('zalohy/kopie-disk');
+  await s.zapis('2026-01-04T101010-rucne', { zdroj: 'vynuceno' });
+  const logyCek = [];
+  { const l = console.log; console.log = (...a) => logyCek.push(a.join(' '));
+    try { await zalohaNocni(); } finally { console.log = l; } }
+  test('N5 v19.10.8: noční funkce bez kopie na Disk nesmaže nic a zaloguje „retence čeká na první kopii na Disk"',
+    pamet.has('zalohy/2026-01-04T101010-rucne') && logyCek.some(x => /retence čeká na první kopii na Disk/.test(x)), logyCek);
+  pamet.set('zalohy/kopie-disk', kopieZaznam);
   /* noční funkce: retence až po otisku, loguje počet a klíče */
   await s.zapis('2026-01-02T101010-rucne', { zdroj: 'vynuceno' });
   const logy = [];
@@ -286,6 +310,7 @@ await zkus('N5', async () => {
   let noc; try { noc = await (await zalohaNocni()).json(); } finally { console.log = l; }
   test('N5: noční funkce po otisku smaže prošlé a zaloguje počet i klíče',
     noc.ok && noc.retence.smazano.includes('2026-01-02T101010-rucne') && !pamet.has('zalohy/2026-01-02T101010-rucne')
+    && noc.retence.smazano.includes('2026-01-04T101010-rucne')
     && logy.some(x => /retence smazala \d+ otisků: .*2026-01-02T101010-rucne/.test(x)), { noc: noc && noc.retence, logy });
   /* selhání otisku → retence vůbec neběží */
   await s.zapis('2026-01-03T101010-rucne', { zdroj: 'vynuceno' });
