@@ -202,6 +202,9 @@ a v `_nastaveni.json` klíč `kapPozadavky` chybí. Kdyby tam byl jako `""`, pla
 
 ### 8b. Návrh nápravy
 
+> **Pozor (koordinace 19. 10.):** body 1–4 a značku `{TERMIN}` v kapitole V. (TD1) dělá souběžná dávka
+> O3 (`claude/o3-kapitoly-vychozi`, v19.10.3). Fáze 2 #367 je vynechá a převezme stav po O3.
+
 1. **Automatické doplnění chybějících (ne smazaných) textů.** Nová funkce `firmaDoplnVychoziTexty(f)`:
    pro bílou listinu klíčů (kapitoly IV.–VI. + doložky ve všech jazycích, nové `podminky`, texty PROJ z 8c)
    doplní hodnotu z `DEFAULT_FIRMA` **jen když klíč chybí** (`undefined`). Identifikační údaje (název, IČO,
