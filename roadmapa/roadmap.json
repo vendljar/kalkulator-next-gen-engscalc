@@ -6731,6 +6731,20 @@
    "kde" : "`src/kryci.js`, `src/sod.js`, `src/ui/ukazkove_ui.js`, `src/ui/sod_ui.js`, `src/test_sod_en.js`",
    "hotovoV" : "v19.10.1",
    "pozn" : "Předběžné id (přidělí koordinace při sloučení)."
+  },
+  {
+   "id" : "433",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "nizka",
+   "slozitost" : "S",
+   "nazev" : "H2 drobnosti: plocha v kartě výjimky na celé m² (V7-N1), blok CIN_* bez páru chybou (B191), okno hesla správce se neprodlužuje (B192)",
+   "proc" : "Kontrola V7 (V7-N1): karta Cenové výjimky ukazovala plochu na setiny, schválení drží celé m² (B183 c). Audit kola 28, informativní: B191 nevyvážený blok z blokyPryc tiše zůstal v SoD projekce, B192 heslo správce v paměti stránky klouzavě až neomezeně.",
+   "detail" : "V7-N1: karta ukáže plochu toutéž funkcí jako obsah (`vyjimkyM2Schvaleni`, celé m²) a u neceločíselné plochy poznámku „zaokrouhleno pro schválení“; mez B183 beze změny. B191: `odstranPrazdneBloky` hází, když blok z `blokyPryc` nejde odstranit (dokument nevznikne, hláška „Opravte šablonu“). B192: okno ZOBRAZENI_HESLO_MS se počítá od zadání hesla, uložením se neprodlužuje; mez XSS zapsána v BEZPECNOST_MEZE.md. B193 (podklad) beze změny.",
+   "hotovoKdyz" : "Testy s pojistkou (test_vyjimky, test_sod_proj_rozsah, test_zobrazeni_heslo_okno), mutace „H2 …“ chycené, meze zapsané.",
+   "kde" : "`src/vyjimky.js`, `src/docxgen.js`, `src/ui/online_ui.js`, `mutace_jadro.mjs`, `netlify/mutace.mjs`",
+   "hotovoV" : "v19.10.4",
+   "pozn" : "Předběžné id (přidělí koordinace při sloučení; 431–432 nechány souběžným dávkám)."
   }
  ],
  "meta" : {

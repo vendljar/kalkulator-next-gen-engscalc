@@ -8,6 +8,43 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v19.10.4 — H2: plocha v kartě výjimky na celé m² (V7-N1), B191, B192 (větev claude/h2-drobnosti)
+
+Dávka H2 (zadání koordinace „ŘÍDÍCÍ 19.10“), nad `origin/claude/integrace-16-10`
+(`e3995e6`, v19.10.1). Souběžně běží A2 (v19.10.2) a O3 (v19.10.3).
+Roadmapa **#433** (předběžné id).
+
+- **V7-N1 (kontrola V7, B183 volba c):** karta Cenové výjimky ukazovala plochu
+  pásu a světlíku „jiné“ na setiny (2,61 m²), schválení ale drží celé m².
+  Výchozí volba dávky: karta ukáže **plochu na celé m²** toutéž funkcí jako
+  obsah schválení (`vyjimkyM2Schvaleni`, `src/vyjimky.js`) a u plochy, která
+  celá není, **poznámku „zaokrouhleno pro schválení“** („3 m² (zaokrouhleno
+  pro schválení)“). Pravidlo B183 ani obsah výjimky se nemění — schválení
+  neshodí.
+- **B191 (audit kola 28, informativní) — opraveno:** blok `CIN_*` z
+  `blokyPryc` s nevyváženými značkami (začátek v tabulce a konec za ní,
+  značka bez páru — šablona SoD projekce upravená ve Wordu) dřív v dokumentu
+  tiše zůstal a smlouva vyjmenovala nenabízenou činnost. `odstranPrazdneBloky`
+  (`src/docxgen.js`) teď **hází — dokument nevznikne** s hláškou „Opravte
+  šablonu“. Blok mimo seznam (kapitoly nabídek) beze změny. Kontrola už při
+  zveřejnění šablony nepřibyla (doporučení v `BEZPECNOST_MEZE.md`).
+- **B192 (audit kola 28, informativní) — zmírněno:** mez B168 doplněna o XSS
+  (heslo správce v paměti stránky v čitelné podobě, CSP `unsafe-inline`). Okno
+  10 min se nově počítá **od zadání hesla**, uložení matice ho neprodlouží
+  (`onlineZobrazeniPost`, `src/ui/online_ui.js`; výchozí volba). Heslo vůbec
+  nedržet (krátkodobý token) = změna rozhraní, doporučení pro J. V.
+- **B193** se dávky netýká (podklad).
+- **Testy (pojistka):** `src/test_vyjimky.js` (plocha v kartě na celé m²,
+  shoda karty s obsahem u pásu i světlíku, B155 karta) — proti e3995e6
+  **104 / 3**, po opravě **107 / 0**; `src/test_sod_proj_rozsah.js` (B191,
+  4 kontroly) **36 / 2 → 38 / 0**; nový `src/test_zobrazeni_heslo_okno.js`
+  (B192, vyříznutý úsek online_ui.js ve vm) **4 / 3 → 7 / 0**; pokus
+  `podklady/AUDIT28_pokus_sod.mjs` P3 otočen (17 / 1 → 18 / 0).
+- **Mutace:** jádro „H2 B191: …“ (3), server „H2 V7-N1: …“ (3) a „H2 B192: …“
+  (1, sada `test_zobrazeni_heslo_okno.js` přidána do serverového seznamu);
+  zadání mutace „B178 zbytek: plocha v obsahu na desítky m²“ posunuto na
+  nový tvar (`vyjimkyM2Schvaleni`).
+
 ## v19.10.1 — B189: výchozí režim DPH ve smlouvě o dílo realizace podle rozhodnutí J. V. (větev claude/o2-b189)
 
 **Kolo `--jen build,sady,staticke` nad 542d0ef (v19.10.1, 19. 10. 2026) — VŠE ZELENÉ:** sady 274 prošlo / 0 selhalo / 1 přeskočeno (`test.js`, ostrý ceník), statické 3/3. Mutace cíleně: `B189` jádro 8/8 + server 1/1, `DPH` 13/13, `sod`/`SoD` (filtr nerozlišuje velikost písmen) 28/28; `--kontrola` jádro 254, server 539 úseků. Podklady: šablony z Disku v `KNG_PODKLADY` (CN v8–v15 + EN/DE/FR v15, PROJ v3 i jako `Sablona_NABIDKA_PROJ.docx`, v4, v5, EN, SoD v1/v2, plná moc), SoD realizace v3 a projekce v4 vyrobené `vyrob_sablony.js`, příručka v19.10.1 vyrobená `manual/snimky_auto.mjs` + `sestav.sh` (22 snímků; první běh kola padl jen na `overit_manual` se starou příručkou v25.9.3 z Disku).

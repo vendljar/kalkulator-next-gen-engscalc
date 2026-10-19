@@ -1,3 +1,18 @@
+# Předávka — 19. 10. 2026: dávka H2 (v19.10.4), větev `claude/h2-drobnosti` — V7-N1, B191, B192
+
+Nad `origin/claude/integrace-16-10` (`e3995e6`, v19.10.1). Do integrace / `test` nic — slučuje koordinace
+(ŘÍDÍCÍ 19.10, session_017KEALG3ppimL5fW2XswzrB). Souběžně A2 (v19.10.2), O3 (v19.10.3). Podrobnosti: CHANGELOG
+v19.10.4, `BEZPECNOST_MEZE.md` (B191–B193), roadmapa #433 (předběžné id, 431–432 nechány souběžným dávkám).
+
+- **Hotovo:** V7-N1 — karta výjimky ukáže plochu na celé m² (`vyjimkyM2Schvaleni`, totéž zaokrouhlení jako obsah)
+  s poznámkou „zaokrouhleno pro schválení“; B183 beze změny. B191 — `odstranPrazdneBloky` hází u nevyváženého bloku
+  z `blokyPryc` (SoD projekce nevznikne). B192 — okno hesla správce od zadání, neprodlužuje se; mez o XSS zapsána.
+- **Výchozí volby (J. V. se neptal):** poznámka jen u neceločíselné plochy; B191 chybou při generování (ne kontrolou
+  při zveřejnění šablony); B192 okno neprodlužovat (víc dotazů na heslo při dlouhém nastavování).
+- **Doporučení pro J. V.:** B191 navíc kontrolovat při zveřejnění šablony; B192 úplně — heslo nedržet (token od serveru).
+- **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `manual/obsah.json` (verze, úvod) /
+  `roadmap.json` (konec seznamu) / `mutace_jadro.mjs` / `netlify/mutace.mjs` (SADY + blok H2) / `BEZPECNOST_MEZE.md`.
+
 # Předávka — 19. 10. 2026: dávka O2 (v19.10.1), větev `claude/o2-b189` — B189 výchozí režim DPH ve SoD realizace
 
 Nad `origin/claude/integrace-16-10` (`62bd0b6`, v18.10.15). Do `test-draft` / `test` / `main` ani do integrace nic —
