@@ -11,8 +11,8 @@ a postup prvního běhu). CHANGELOG v19.10.8, roadmapa #151a (N5), #151b (N6) ho
 - **N6 kopie na Disk (J. V. 19. 10.):** prohlížeč správce → vlastní vybraná složka `_Zaloha Netlify DB` (IndexedDB
   `zalohaDisk`; `_DB` je od #150 vypnutá); `GET /api/zaloha?zdroj=nocni` (bez hesel a podpisů), `otisk_YYYY-MM-DD.json`
   + `posledni_kopie.json`; záznam na serveru → hlídka 14 dní všude; auto po 7 dnech jen s uděleným právem.
-- **Testy:** `test_zalohy` 59/0, `src/test_kopie_disk.js` 10/0, `overit_online` 5c3; pojistky v CHANGELOG v19.10.8;
-  mutace a `--smoke` viz commit.
+- **Testy:** `test_zalohy` 59/0, `src/test_kopie_disk.js` 10/0, `overit_online` 5c3; `--smoke` 274/0/6; mutace `zaloh` 45/45, `#151 N6` 11/11;
+  pojistky v CHANGELOG v19.10.8.
 - **Výchozí volby (J. V. se neptal):** 30 dní = věk 0–29; 12 měsíců = měsíc dneška + 12 předchozích, drží se nejstarší
   otisk měsíce; před obnovou se nemaže; pojistka retence platí trvale (bez čerstvé kopie retence stojí); kopie ze dne
   nočního otisku, bez nočního za 7 dní aktuální stav; jen Chrome/Edge; složka s jiným jménem projde s varováním.

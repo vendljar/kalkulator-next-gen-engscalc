@@ -10,6 +10,8 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ## v19.10.8 — #151 N5 retence otisků a N6 týdenní kopie na Disk Google (rozhodnutí J. V., větev claude/o4-zalohy)
 
+**Testy nad v19.10.8 (19. 10. 2026):** `spust_testy.sh --smoke` **274 prošlo / 0 selhalo / 6 přeskočeno** (`test.js`, 5 harnessů bez `KNG_PODKLADY`). Mutace serveru filtrem `zaloh` (sady test_zalohy, test_funkce, test_obnova, test_prava, test_obnova_nanecisto, test_uklid, ../src/test_kopie_disk.js) **45/45**, filtrem `#151 N6` (vč. `src/uloziste.js`) **11/11**; `--kontrola` OK. Statická kontrola údajů čistá.
+
 Rozšíření dávky O4 nad integrací `4cc1b81` (v19.10.5). Rozhodnutí J. V.
 19. 10. 2026 (~11:45 a ~11:50 UTC, přes koordinaci) k nálezům N5 a N6
 kontroly `podklady/151_ZALOHOVANI_KONTROLA_2026-10-19.md` (roadmapa
