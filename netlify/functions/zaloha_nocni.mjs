@@ -17,13 +17,22 @@
  * úložišti jako ostrá data a nikdy neopouští server, takže obnova nevyžaduje
  * reset všech hesel (otisk hesla není heslo: scrypt se solí).
  *
- * Klíčů neubývá (jeden za den ≈ 365 za rok, každý pár set kB) — mazání
- * starých by byla další příležitost k chybě za pár ušetřených megabajtů. */
+ * Klíčů neubývá (jeden za den ≈ 365 za rok). Otisk nese i šablony, podpisy
+ * a přílohy — u schaftscalc kolem 20 MB, tedy ~7 GB za rok; o retenci
+ * rozhodne J. V. (#151 N5), mazání jen vědomou dávkou.
+ *
+ * Log (#151 N2): každý běh zapíše trvání a velikost otisku, chyba jde do logu
+ * celá. Limit plánované funkce je 30 s — v Netlify → Logs → Functions →
+ * zaloha_nocni je vidět, jak blízko je. */
 import { porizOtisk } from '../lib/zalohovani.mjs';
 import { nocniUklid } from '../lib/uklid.mjs';
 
 export default async () => {
-  const v = await porizOtisk('nocni-otisk', '');
+  let v;
+  try { v = await porizOtisk('nocni-otisk', ''); }
+  catch (e) { console.error('zaloha_nocni: otisk se nepořídil', e); throw e; }
+  console.log('zaloha_nocni: otisk ' + v.den + ' — ' + v.trvaniMs + ' ms, '
+    + Math.round(v.velikostB / 1024) + ' kB, ' + v.pocetZakazek + ' zakázek, ' + v.pocetUctu + ' účtů');
   /* Úklid cache Pipedrive a očista analytiky (B174, B175, dávka H1) až PO
    * otisku — jeho chyba zálohu neohrozí, jen se vrátí v odpovědi. */
   let uklid;

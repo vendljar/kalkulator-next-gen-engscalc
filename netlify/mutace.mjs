@@ -102,7 +102,9 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* H1 (18. 10. 2026): B171 text odhlášení, B174/B175 noční úklid, B186 čísla textem. */
      '../src/test_odhlaseni_text.js', /* H2 B192 */ '../src/test_zobrazeni_heslo_okno.js', 'test_uklid.mjs', '../src/test_cisla_textem.js',
      /* B189 (19. 10. 2026): zábrana SoD bez režimu DPH v prohlížeči. */
-     '../src/test_sod_en.js'];
+     '../src/test_sod_en.js',
+     /* O4 / #151 (19. 10. 2026): zálohy — N1 slot ruční zálohy, N2 dávky, N3 souhrn, N4 úplnost. */
+     'test_zalohy.mjs'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -2100,6 +2102,48 @@ const MUTACE = [
     nahrad: "  return d.slice(0, 10) + '-pred-obnovou';",
     proc: 'opakování po selhané dávce by přepsalo jedinou cestu zpátky' },
 
+  /* O4 / #151 (19. 10. 2026) — nálezy kontroly zálohování (test_zalohy.mjs). */
+  { nazev: '#151 N1: ruční záloha míří pod dnešní datum (přes noční otisk)', soubor: 'functions/zaloha_vynuceno.mjs',
+    hledej: "  const v = await porizOtisk('vynuceno', relace.email, klicVynuceny(duvod));",
+    nahrad: "  const v = await porizOtisk('vynuceno', relace.email);",
+    proc: 'ruční „Zálohovat teď" by přepsal poslední dobrý noční stav a hlídka #152 by falešně varovala' },
+  { nazev: '#151 N1: otisk při přihlášení dostane ruční slot', soubor: 'lib/zalohovani.mjs',
+    hledej: "(druh === 'auto' ? '-auto' : '-rucne')",
+    nahrad: "'-rucne'",
+    proc: 'přehled by nerozlišil zálohu při přihlášení od ruční' },
+  { nazev: '#151 N1: vynucené otisky bez vlastního limitu v přehledu', soubor: 'lib/zalohovani.mjs',
+    hledej: "  const denni = vsechny.filter(k => !jePredObnovou(k) && !jeVynuceny(k));",
+    nahrad: "  const denni = vsechny.filter(k => !jePredObnovou(k));",
+    proc: 'časté ruční zálohy by z přehledu vytlačily noční otisky a hlídka #152 by je nenašla' },
+  { nazev: '#151 N1: limit vynucených otisků v přehledu se neuplatní', soubor: 'lib/zalohovani.mjs',
+    hledej: '    .concat(vynucene.slice(0, OTISKY_VYNUCENE_LIMIT))',
+    nahrad: '    .concat(vynucene)',
+    proc: 'přehled by s každým kliknutím rostl bez meze' },
+  { nazev: '#151 N1: OTISK_KLIC nezná ruční slot', soubor: 'lib/zalohovani.mjs',
+    hledej: "T\\d{6}-(pred-obnovou|rucne|auto))?$/;",
+    nahrad: "T\\d{6}-pred-obnovou)?$/;",
+    proc: 'ruční otisk by nebyl v přehledu a obnova by ho odmítla' },
+  { nazev: '#151 N2: otisk čte po jednom záznamu', soubor: 'lib/zalohovani.mjs',
+    hledej: 'export const DAVKA_CTENI = 20;',
+    nahrad: 'export const DAVKA_CTENI = 1;',
+    proc: 'noční funkce by s růstem dat narazila na 30s limit plánované funkce' },
+  { nazev: '#151 N2: noční funkce nezapíše trvání a velikost do logu', soubor: 'functions/zaloha_nocni.mjs',
+    hledej: "  console.log('zaloha_nocni: otisk ' + v.den",
+    nahrad: "  (() => {})('zaloha_nocni: otisk ' + v.den",
+    proc: 'J. V. by v logu Netlify neviděl, jak blízko je běh limitu' },
+  { nazev: '#151 N3: souhrn otisku se nezapíše', soubor: 'lib/zalohovani.mjs',
+    hledej: '  try { await sZal.zapis(souhrnKlic(den), souhrn); }',
+    nahrad: '  try { }',
+    proc: 'přehled záloh by dál četl celé ~20MB otisky kvůli počtům' },
+  { nazev: '#151 N3: přehled souhrn nepoužije', soubor: 'lib/zalohovani.mjs',
+    hledej: '    if (sh && sh.porizena) {',
+    nahrad: '    if (false) {',
+    proc: 'přehled záloh by dál četl celé ~20MB otisky kvůli počtům' },
+  { nazev: '#151 N4: slovník vypadne z otisku', soubor: 'lib/zalohovani.mjs',
+    hledej: '           slovnik: slovnik || null,',
+    nahrad: '           slovnik: null,',
+    proc: 'obnova by tiše smazala zveřejněný slovník (opakování B9/B104/#401)' },
+
   { nazev: 'B29: duplicitní id varianty projde', soubor: '../src/uloziste.js',
     hledej: "    if (videno.has(id)) out.push({ kde, id, duvod: 'duplicita' });",
     nahrad: '    ;',
@@ -2167,8 +2211,8 @@ const MUTACE = [
     proc: 'název sekce jde z dat rovnou do nadpisu Detailu výpočtu a do dokumentů' },
 
   { nazev: 'B52: otisky před obnovou nemají vlastní limit', soubor: 'lib/zalohovani.mjs',
-    hledej: '  const denni = vsechny.filter(k => !jePredObnovou(k));',
-    nahrad: '  const denni = vsechny;',
+    hledej: '  const denni = vsechny.filter(k => !jePredObnovou(k) && !jeVynuceny(k));',
+    nahrad: '  const denni = vsechny.filter(k => !jeVynuceny(k));',
     proc: 'série pokusů o obnovu by z přehledu vytlačila všechny denní zálohy' },
 
   /* Noční dávka 23. 9. 2026 (D2): B57, B58, B61, B62. */
@@ -2177,8 +2221,8 @@ const MUTACE = [
     nahrad: "    spravceNastaven: spravceNastaven(),",
     proc: 'provozní údaj o slabině serveru by dostal každý přihlášený' },
   { nazev: 'B58: záloha přestane vozit knihu smazaných účtů', soubor: 'lib/zalohovani.mjs',
-    hledej: "  for (const k of await sm.seznam()) smazani[k] = await sm.cti(k);",
-    nahrad: "  if (false) for (const k of await sm.seznam()) smazani[k] = await sm.cti(k);",
+    hledej: "  const smazani = await ctiCele(await uloziste(SMAZANI_ULOZISTE));",
+    nahrad: "  const smazani = {};",
     proc: 'po havárii by zmizela jediná stopa po tom, kdo koho smazal' },
   { nazev: 'B58: obnova zapíše smazání i u živého účtu', soubor: 'functions/obnova.mjs',
     hledej: "        if (ucet && !ucet.smazano) { preskoc(bs, email,",

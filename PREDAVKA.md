@@ -1,3 +1,20 @@
+# Předávka — 19. 10. 2026: dávka O4 (v19.10.5), větev `claude/o4-zalohy` — #151 opravy zálohování N1–N4
+
+Nad `claude/z1-zalohy` (`421f556`, podklad `podklady/151_ZALOHOVANI_KONTROLA_2026-10-19.md`). Do integrace / `test`
+nic — slučuje koordinace (session_017KEALG3ppimL5fW2XswzrB). Podrobnosti: CHANGELOG v19.10.5, roadmapa #151 (hotovo),
+#151a (N5 retence) a #151b (N6 kopie mimo Netlify) čekají na J. V.
+
+- **Hotovo:** N1 vynucený otisk do slotu `<den>T<hhmmss>-rucne|-auto` (noční `YYYY-MM-DD` nedotčený, vlastní limit 10
+  v přehledu, `OTISK_KLIC` rozšířen, klient `onlineZalohaAuto` pozná dnešní podle dne v klíči); N2 `ctiPoDavkach`
+  po 20, `trvaniMs`/`velikostB` v odpovědi a logu `zaloha_nocni`; N3 `souhrn/<klíč>` vedle otisku, přehled čte
+  souhrny (fallback na celý otisk); N4 `netlify/test_zalohy.mjs` — sken `uloziste(…)`/`zapis(…)` v kódu × tabulka.
+- **Testy:** `test_zalohy` proti 421f556 9 OK/10 FAIL → 29/0; `--smoke` 270/0/6; mutace `zaloh` 22/22 (10 nových #151 + B52/B58 upraveny).
+- **Výchozí volby (J. V. se neptal):** tvar klíče `T<hhmmss>-rucne` (shodně s B28) místo `_HHMMSS_rucni`; POST bez
+  `duvod` = ruční slot; souhrn jako samostatný klíč (obal `uloziste()` metadata Blobs nezná); dávka čtení 20.
+- **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `manual/obsah.json` (verze + „Co je nového“)
+  / `roadmap.json` (#151) / `netlify/mutace.mjs` (SADY + blok #151).
+- **Na J. V.:** ověřit v Netlify délku nočního běhu (podklad oddíl 5 — nově je v logu řádek s ms a kB); rozhodnout N5, N6.
+
 # Předávka — 19. 10. 2026: dávka H2 (v19.10.4), větev `claude/h2-drobnosti` — V7-N1, B191, B192
 
 Nad `origin/claude/integrace-16-10` (`e3995e6`, v19.10.1). Do integrace / `test` nic — slučuje koordinace

@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v19.10.4 · sestaveno 19. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
+  "verze": "Platí pro aplikaci v19.10.5 · sestaveno 19. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -11,6 +11,12 @@
         "Snímky obrazovky v téhle příručce jsou pořízené z běžící aplikace, ale nad **zkušebním ceníkem** s vymyšlenými sazbami. **Částky na obrázcích jsou ze zkušebního ceníku a nejsou naše ceny.** Neberte je jako vodítko pro nabídku a nesrovnávejte s nimi svou kalkulaci — sledujte, kde co je a jak se to chová, ne kolik to stojí.",
         "Jména zákazníků na snímcích jsou taky **vymyšlená**. Celá ukázková zakázka **2026 - OPR - CN - 9100** je smyšlená a vznikla jen kvůli téhle příručce.",
         "Příručka je určená obchodníkům ENGINEERS CZ. Popisuje, jak firma počítá nabídky, takže ji zákazníkům ani nikomu mimo firmu neposílejte."
+      ]
+    },
+    {
+      "nadpis": "Co je nového ve verzi v19.10.5 (19. 10. 2026)",
+      "odstavce": [
+        "**Zálohy databáze jsou spolehlivější.** Ruční záloha administrátora (*Zálohovat teď*) i záloha při jeho přihlášení se ukládají každá zvlášť s časem a **noční zálohu dne už nepřepíšou** — stav z noci zůstane, i když se data přes den pokazí a někdo pak zálohuje. Noční záloha se pořizuje rychleji a přehled záloh v Nastavení → Databáze se načítá bez stahování celých záloh. Pro práci obchodníka se nic nemění (kapitola 30)."
       ]
     },
     {
@@ -906,7 +912,7 @@
       "id": "kap-zalohy",
       "nadpis": "30. Zálohy a výpadky",
       "bloky": [
-        { "typ": "text", "text": "O zálohy se starat nemusíte a ani je nemáte čím spustit — jsou celé v rukou administrátora. Databáze se zálohuje sama, navíc denně automaticky, a administrátor si může kdykoli stáhnout otisk celého obsahu. Umí ji i **nalít zpátky**, přičemž se nejdřív zobrazí náhled s tím, kolik záznamů přibude, kolik se přepíše a co se přeskočí a proč." },
+        { "typ": "text", "text": "O zálohy se starat nemusíte a ani je nemáte čím spustit — jsou celé v rukou administrátora. Databáze se zálohuje sama, navíc denně automaticky, a administrátor si může kdykoli stáhnout otisk celého obsahu. Noční záloha každého dne zůstává nedotčená — ruční záloha administrátora se od v19.10.5 ukládá vedle ní, ne přes ni. Umí ji i **nalít zpátky**, přičemž se nejdřív zobrazí náhled s tím, kolik záznamů přibude, kolik se přepíše a co se přeskočí a proč." },
         { "typ": "text", "text": "**Vaše vytištěné nabídky jsou i při obnově v bezpečí.** Zakázku, které by obnova změnila data uzamčené varianty nebo jí sundala zámek, aplikace přeskočí a vypíše — a to i v režimu „přepsat vším ze zálohy“. Obnova také nikdy nemaže: zakázka, která vznikla až po záloze, na serveru zůstane. Obnovu účtů a **nastavení zobrazení** (to řídí i to, kam vás server pustí — CRM, náklady, ceník v zakázce) potvrzuje administrátor svým heslem, stejně jako změnu zobrazení v Nastavení." },
         { "typ": "text", "text": "Prakticky vás to zajímá ve dvou situacích. **Když vypadne internet**, přestane se ukládat a lišta zakázky to napíše; rozpracovanou zakázku si v takové chvíli uložte do souboru a po obnovení spojení ji načtěte zpět. **Když si nejste jistý, že se něco uložilo**, podívejte se na čas na liště — a když ani to nestačí, otevřete *Načíst zakázku* a zkontrolujte sloupec *Uloženo* u své zakázky." },
         { "typ": "text", "text": "Offline kopie aplikace (jeden soubor HTML) existuje dál jako záložní varianta pro případ, že by online provoz vypadl. Není to hlavní způsob práce a některé funkce v ní z povahy věci nefungují — hlavně vše, co potřebuje server." }
