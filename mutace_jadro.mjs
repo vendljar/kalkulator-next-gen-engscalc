@@ -78,7 +78,10 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   /* podminky.js (#367 fáze 2, 19. 10. 2026): výchozí platební podmínky
    * krycích listů z Nastavení → Firma — splatnost, splátky, záruka, pokuty
    * v každé nabídce a smlouvě. */
-  'podminky.js'];
+  'podminky.js',
+  /* nabidka_proj.js (W1, 19. 10. 2026): symboly textů nabídky PROJ pro
+   * šablonu Wordu v6 — termíny jen nabízených činností, dvojice sloupců. */
+  'nabidka_proj.js'];
 /* Filtr = první argument, který není přepínač (stejně jako netlify/mutace.mjs). */
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 /* --kontrola (23. 9. 2026, nález N19): jen ověří, že každý hledaný úsek je
@@ -1398,6 +1401,51 @@ const MUTACE = [
     hledej: "  if (L !== 'cz' && z[L]) return z[L].slice();",
     nahrad: '',
     proc: 'vlastní anglické „Cena nezahrnuje" by se do nabídky nedostalo' },
+  /* ---------- W1 (19. 10. 2026): šablona PROJ v6, texty PROJ ve Wordu ---------- */
+  { nazev: 'W1: Cena nezahrnuje se nerozvíjí po řádcích', soubor: 'docxgen.js',
+    hledej: "const DOCX_RADKY_ZA_RADEK = ['PODM_PLATEBNI_KALENDAR', 'PROJ_CENA_NEZAHRNUJE', ",
+    nahrad: "const DOCX_RADKY_ZA_RADEK = ['PODM_PLATEBNI_KALENDAR', ",
+    proc: 'odrážky by ve Wordu skončily v jednom řádku tabulky' },
+  { nazev: 'W1: řádek termínu jen s textem vpravo vypadne', soubor: 'docxgen.js',
+    hledej: "filter(i => hodnoty.some(h => String(h[i] || '').trim() !== ''));",
+    nahrad: "filter(i => hodnoty.every(h => String(h[i] || '').trim() !== ''));",
+    proc: 'sloupce termínů by se rozjely nebo by termín chyběl' },
+  { nazev: 'W1: dvojice termínů se rozvíjí jen podle prvního sloupce', soubor: 'docxgen.js',
+    hledej: "klice.reduce((o, k, j) => { o[k] = hodnoty[j][i] || ''; return o; }, {})",
+    nahrad: "{ [klice[0]]: hodnoty[0][i] || '' }",
+    proc: 'vpravo by v každém řádku stály všechny termíny najednou' },
+  { nazev: 'W1: činnosti termínů bez filtru nabízených', soubor: 'nabidka_proj.js',
+    hledej: "    PROJ_TERMINY_CINNOST: textProj('terminy').filter(radekVRozsahu).map(x => x[0]).join('\\n'),",
+    nahrad: "    PROJ_TERMINY_CINNOST: textProj('terminy').map(x => x[0]).join('\\n'),",
+    proc: 'Word by vypsal nenabízené činnosti a posunul termíny o řádek' },
+  { nazev: 'W1: termín = činnost', soubor: 'nabidka_proj.js',
+    hledej: "    PROJ_TERMINY_TERMIN: textProj('terminy').filter(radekVRozsahu).map(x => x[1]).join('\\n'),",
+    nahrad: "    PROJ_TERMINY_TERMIN: textProj('terminy').filter(radekVRozsahu).map(x => x[0]).join('\\n'),",
+    proc: 'pravý sloupec termínů by opakoval činnost' },
+  { nazev: 'W1: v6 nepozná šablonu, která už v6 je', soubor: '../nastroje/vyrob_sablony.js',
+    hledej: "  if (sym.indexOf('PROJ_CENA_NEZAHRNUJE') >= 0 || sym.indexOf('PROJ_DOLOZKY') >= 0)",
+    nahrad: '  if (false)',
+    proc: 'druhý průchod by hlásil matoucí chybu nebo blok zdvojil' },
+  { nazev: 'W1: dvě tabulky s nadpisem projdou', soubor: '../nastroje/vyrob_sablony.js',
+    hledej: "    if (nalez.length !== 1) chyba('PROJ: čekám právě jednu tabulku s nadpisem",
+    nahrad: "    if (!nalez.length) chyba('PROJ: čekám právě jednu tabulku s nadpisem",
+    proc: 'upravená šablona by se přepsala na nečekaném místě' },
+  { nazev: 'W1: poznámky pod termíny mimo blok', soubor: '../nastroje/vyrob_sablony.js',
+    hledej: '        kon = top[j].kon; j++;',
+    nahrad: '        j++;',
+    proc: 'poznámky o termínech by zůstaly, i když blok termínů zmizí' },
+  { nazev: 'W1: řádek se symbolem nese w14:paraId', soubor: '../nastroje/vyrob_sablony.js',
+    hledej: '  return bezW14(radek.replace(/<w:tc[\\s>][\\s\\S]*?<\\/w:tc>/g, tc => {',
+    nahrad: '  return (radek.replace(/<w:tc[\\s>][\\s\\S]*?<\\/w:tc>/g, tc => {',
+    proc: 'aplikace řádek zopakuje — zdvojená id, Word hlásí poškozený soubor' },
+  { nazev: 'W1: písmo z prázdného odstavce buňky', soubor: '../nastroje/vyrob_sablony.js',
+    hledej: '    const vzor = odst.find(p => textPrvku(p)) || odst[0];',
+    nahrad: '    const vzor = odst[0];',
+    proc: 'termín by se tiskl bez písma šablony' },
+  { nazev: 'W1: doložky před termíny', soubor: '../nastroje/vyrob_sablony.js',
+    hledej: "  const konTerminu = body.indexOf(znacka('BLOK_TERMINY_KON')) + znacka('BLOK_TERMINY_KON').length;",
+    nahrad: "  const konTerminu = body.indexOf(znacka('BLOK_TERMINY_ZAC'));",
+    proc: 'doložky by stály uprostřed podmínek místo za termíny' },
   { nazev: '#367b: věta zálohy bez {PROC} projde', soubor: 'podminky.js',
     hledej: '  return (PODMINKY_VETY_TOKENY[klic] || []).every(t => v.indexOf(t) >= 0);',
     nahrad: '  return true;',

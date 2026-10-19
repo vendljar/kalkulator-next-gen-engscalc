@@ -107,6 +107,10 @@ test('v6: platné XML', !dg.xmlStrukturaVada(v6), dg.xmlStrukturaVada(v6));
 test('v6: řádky se symboly nenesou w14:paraId (aplikace je opakuje)', !/w14:paraId="1111000/.test(v6)
   && (v6.match(/<w:tr w14:paraId=/g) || []).length === 6, (v6.match(/<w:tr w14:paraId=/g) || []).length);
 test('v6: řádek se symbolem má písmo prvního běhu vzoru', /<w:rPr><w:b\/><w:sz w:val="22"\/><\/w:rPr><w:t xml:space="preserve">\{\{PROJ_CENA_NEZAHRNUJE\}\}/.test(v6));
+test('v6: termín bere písmo z prvního NEPRÁZDNÉHO odstavce buňky (v5 má nad termínem prázdný řádek)',
+  /<w:rPr><w:b\/><w:sz w:val="22"\/><\/w:rPr><w:t xml:space="preserve">\{\{PROJ_TERMINY_TERMIN\}\}/.test(v6));
+test('v6: dvě tabulky CENA NEZAHRNUJE → chyba (nic nehádá)', /právě jednu tabulku/.test(chybaZ(() => VS.projV6(V5XML.replace('<w:sectPr/>',
+  tbl(1, tr(tc(p('CENA NEZAHRNUJE:'))), tr(tc(p('Jiná výjimka')))) + '<w:sectPr/>')))));
 test('v6: druhý průchod odmítne', /už texty nabídky PROJ/.test(chybaZ(() => VS.projV6(v6))));
 test('v6: vstup bez bloku AD (v4) odmítne', /není PROJ v5/.test(chybaZ(() => VS.projV6(V5XML.replace('{{PROJ_CENA_AD_BLOK}}', '{{PROJ_CENA_AD}}')))));
 test('v6: chybí tabulka CENA NEZAHRNUJE → chyba (nic nehádá)', /CENA NEZAHRNUJE/.test(chybaZ(() => VS.projV6(V5XML.replace('CENA NEZAHRNUJE:', 'X')))));
