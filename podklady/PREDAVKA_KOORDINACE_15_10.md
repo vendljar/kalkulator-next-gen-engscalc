@@ -10,6 +10,14 @@ Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kv�
 - **Ještě nesloučené zápisové commity** (jen CHANGELOG/PREDAVKA/verze/roadmapa, bez kódu): `claude/b80-pipedrive` 38996f2 (v15.10.7, roadmapa #345, NASAZENI), `claude/p12-naklady` 1f2a365 (výsledky po úpravě, mutace 13/13, smoke 248/0/2), `claude/kolo25-audit` dcc3d5f (smoke 247/0/6).
 - **Další krok:** do `claude/integrace-15-10` sloučit 38996f2, 1f2a365, dcc3d5f (konflikty jen v dokumentaci — novější oddíl nahoru, `verze.txt` = 15.10.7, příručka `manual/obsah.json` verze + nadpis „Co je nového ve verzi v15.10.7"), `--kontrola` mutací, sestavit, příručka ze snímků, `spust_testy.sh --smoke` s podklady → zelené → zápis do CHANGELOG → push `claude/integrace-15-10` a fast-forward `test` (`git merge-base --is-ancestor origin/test HEAD`).
 
+## STAV 19. 10. ~13:30 UTC — koordinace ŘÍDÍCÍ 19.10 session_017KEALG3ppimL5fW2XswzrB (kontext ~40 %), J. V. přes noc pryč
+
+- **test = integrace = 4cc1b81 (v19.10.5)**, release v19.10.5 vydán (souhrn v19.10.2–5: #356, kapitoly IV.–VI. + TD1 {TERMIN}, H2 V7-N1/B191/B192, zálohy N1–N4). J. V. doplnil skladné, texty kapitol a zveřejnil firemní údaje. `main` = v15.10.14 jen na pokyn.
+- **Rozhodnutí J. V. 19. 10.:** #356 A1+B1+C1+D1+E1; #367 B + vše natvrdo do Firmy, Q1–Q6 dle doporučení (Q3 prázdné jazyky přeložit, Q4 součet ≠ 100 % blokuje); TD1 {TERMIN}; N5 retence 30 denních + 12 měsíčních, ruční 90 dní, **staré zálohy do 19. 10. nikdy nemazat**; N6 týdenní kopie na Disk „_Zaloha Netlify DB“ bez hesel/podpisů; odkazy v kokpitu vždy živé.
+- **Rozpracováno (dávky):** V8 `claude/v8-367-firma` (v19.10.6–7, #367, obsahuje 4cc1b81, kolo běží); O4 `claude/o4-zalohy` (v19.10.8 N5+N6+pojistka + úprava „staré zálohy ponechat“); W1 `claude/w1-sablona-proj-v6` (PROJ v6, v19.10.9); F1 `claude/f1-test-vyjimky` (nestabilní test_vyjimky.mjs, případně v19.10.10); N1 návrh B192 token; P2 soupis novinek.
+- **Plán noci:** V8 → O4 do integrace (pořadí verzí), sady + cílené mutace → test v19.10.8 + release odkaz (souhrn v19.10.6–8) do kokpitu; pak K3 celé kolo s mutacemi + audit; W1, F1 → test. Hodinová kontrola: scheduled task trig_01M2aJJtkTEXcTHbLe16Na3o (:27) — ráno vypnout.
+- **Poučení:** filtr cílených mutací musí odpovídat názvům v mutace_jadro.mjs / netlify/mutace.mjs (ověřit `--kontrola`/výpis), jinak „0 mutací“; `import()` mutace.mjs mutace SPUSTÍ — nikdy ho nenačítat ke kontrole syntaxe; v kontejneru chybí node_modules/playwright → symlink na /opt/node22/lib/node_modules/playwright.
+
 ## PŘEDÁNÍ po 19. 10. ~08:30 UTC → nové koordinační sezení (staré ŘÍDÍCÍ 18.10 session_0144Y7gXWeprriv4yf4wKL5T, kontext ~70 %)
 
 - **`test` = integrace `claude/integrace-16-10` = 65ca5b5 (v19.10.1)**; `main` = 1cbab3a (v15.10.14), jen na pokyn J. V. Release **v18.10.15 vydán** (J. V.); **v19.10.1 (B189) k vydání** — odkaz poslán J. V. (krátký popis jen B189).

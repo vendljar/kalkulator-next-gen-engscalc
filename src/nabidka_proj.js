@@ -35,11 +35,20 @@ const NABIDKA_PROJ_SAZBY = {
   autorskyDozorKcMesic: 35000,
   autorskyDozorMaxHodin: 30,
   dphPct: 21,                // použije se, nemá-li varianta vlastní ceník
-  splatnostDni: 14,
+  /* Splatnost je od #367 (19. 10. 2026) firemní údaj (Nastavení → Firma,
+   * podminky.proj.splatnostDni); getter ji čte odtamtud, ať starší volající
+   * `NABIDKA_PROJ_SAZBY.splatnostDni` dostanou totéž co krycí list. */
+  get splatnostDni() { return nabidkaProjPodmEf().proj.splatnostDni; },
   /* 12. 8. 2026: platnost nabídky dva měsíce (rozhodnutí J. V.); do té doby tři.
    * Číslo je tady i v krycím listu PROJ — bere si ho odsud, ať se nerozejdou. */
   platnostMesicu: 2,
 };
+
+function nabidkaProjPodmEf() {
+  const P = (typeof PODMINKY !== 'undefined') ? PODMINKY
+    : ((typeof require === 'function') ? require('./podminky.js').PODMINKY : null);
+  return P.podminkyEf((typeof firmaAktualni === 'function') ? firmaAktualni() : {});
+}
 
 /* AUTORSKÝ DOZOR JEN KDYŽ SE NABÍZÍ (připomínka D. Sikory a J. Laudy,
  * rozhodnutí J. V. 14. 10. 2026). Do té doby nabídka PROJ, krycí list PROJ
@@ -301,16 +310,14 @@ const NABIDKA_PROJ_DEF = [
     popis: 'Sazbu je možné určit i celkovou částkou za určité období, hradí se měsíčně. Obsahuje maximálně 30 hodin výkonu AD za měsíc.' },
 
   /* ---------------- podmínky ---------------- */
-  { typ: 'seznam', nadpis: 'CENA NEZAHRNUJE', radky: [
-    'Případné studie a průzkumy nad rámec nabídky',
-    'Správní poplatky úřadům, správcům sítí a za KOLAUDACI',
-    'Součástí ceny není řešení samostatných řízení vyplývajících z podmínek stanovisek DOSS, zejména pak Odboru památkové péče, a řešení námitek nebo odvolání účastníků řízení',
-  ] },
-  { typ: 'seznam', nadpis: 'POŽADOVÁNO OD INVESTORA', radky: [
-    'Plná moc k přístupu do archivu stavebního úřadu',
-    'Zajištění přístupu do objektu',
-    'Součinnost investora, investorská schválení potřebných podkladů a návrhů',
-  ] },
+  /* Texty z Nastavení → Firma (#367 fáze 2b, Q5): do 19. 10. 2026 tu stály
+   * pevné řádky. `firma` = klíč textu v podminky.nabidkaProj; `radky` je
+   * česká podoba z Firmy (továrna = dosavadní řádky), cizí jazyk skládá
+   * nabidkaProjData přes podminkyTextProj (uložené znění, jinak slovník). */
+  { typ: 'seznam', nadpis: 'CENA NEZAHRNUJE', firma: 'cenaNezahrnuje',
+    get radky() { return nabidkaProjPodmEf().nabidkaProj.cenaNezahrnuje.cz; } },
+  { typ: 'seznam', nadpis: 'POŽADOVÁNO OD INVESTORA', firma: 'pozadovano',
+    get radky() { return nabidkaProjPodmEf().nabidkaProj.pozadovano.cz; } },
   { typ: 'pary', nadpis: 'DPH, SPLATNOST FAKTUR A PLATNOST NABÍDKY', klic: 'obchodni', radky: [] },
 
   /* PLÁN PLATEB (etapa B, #367, 30. 9. 2026): platební podmínky činností
@@ -353,18 +360,9 @@ const NABIDKA_PROJ_DEF = [
     ['Platba po zajištění autorského dozoru a součtu hodin', '100 % z celkové ceny za tuto činnost, fakturováno měsíčně'],
   ] },
 
-  { typ: 'pary', nadpis: 'TERMÍNY', radky: [
-    ['Provedení detailního zaměření a stavebně technického průzkumu', 'ZAMĚŘENÍ na stavbě do 4 týdnů od objednání a předání plné moci; zpracování VÝSTUPŮ do 4–6 týdnů od zaměření', 'zamereni'],
-    ['Zpracování STUDIE PROVEDITELNOSTI (SP)', 'do 10–12 týdnů od zpracování výstupů ze zaměření', 'studie'],
-    ['Projednání s odborem památkové péče HMP', 'do cca 2–3 měsíců od podání žádosti – záleží na vytíženosti úředníků státní správy', 'projednani'],
-    ['Zpracování dokumentace pro dotčené orgány (hrubopis DPZ)', 'do 10–12 týdnů od schválení studie investorem a objednání', 'dpz'],
-    ['Zajištění stanovisek dotčených orgánů *)', 'cca do 4 týdnů od podání žádosti (v případě potřeby stanoviska hygieny a/nebo památkové péče cca do 2,5 měsíce)', 'ic'],
-    ['Dopracování dokumentace pro povolení záměru (čistopis DPZ)', 'proběhne v průběhu lhůty vyjádření dotčených orgánů', 'dpz'],
-    ['Podání žádosti o povolení záměru', 'po obdržení souhlasných stanovisek dotčených orgánů (+ 14 dní v případě nutnosti zapracování podmínek dotčených orgánů do dokumentace)', 'ic'],
-    ['Inženýrská činnost (IČ) – vyřízení povolení záměru *)', 'cca 2 měsíce od podání žádosti + 1 měsíc na nabytí právní moci povolení záměru', 'ic'],
-    ['Zpracování dokumentace pro provedení stavby (DPS)', 'cca do 6 týdnů od schválení dokumentace a povolení záměru stavebním úřadem', 'dps'],
-    ['Ekonomická zadávací část (EZC)', 'do 2 týdnů od zpracování projektu pro provedení stavby', 'ezc'],
-  ] },
+  /* Termíny z Nastavení → Firma (#367 fáze 2b): [činnost, termín, sekce]. */
+  { typ: 'pary', nadpis: 'TERMÍNY', firma: 'terminy',
+    get radky() { return nabidkaProjPodmEf().nabidkaProj.terminy.cz; } },
   /* Poznámky pod TERMÍNY se od K18-N95 (30. 9. 2026) PŘEKLÁDAJÍ — do té doby
    * byly { cz } (souvislá próza zůstává česky) z doby, kdy je slovník neznal.
    * Od překladu šablony PROJ (25. 9. 2026) je zná a jazykové mutace Wordu je
@@ -377,6 +375,10 @@ const NABIDKA_PROJ_DEF = [
     { t: '*) Termíny pro vyjádření dotčených orgánů a stavebního úřadu nejsou závazné. Jedná se o termíny, které nemůže zhotovitel z velké části ovlivnit.', sekce: 'ic' },
     'Termíny zpracování mohou být upraveny dle volných kapacit zhotovitele v okamžiku objednání.',
   ] },
+  /* Doložky nabídky PROJ (#367 fáze 2b, Q5): výchozí prázdné a VYPNUTÉ —
+   * tisknou se, až je J. V. zapne (Nastavení → Smlouvy / Šablony → PROJ). */
+  { typ: 'seznam', nadpis: 'DOLOŽKY', firma: 'dolozky', dolozky: true,
+    get radky() { return nabidkaProjPodmEf().nabidkaProj.dolozky.cz; } },
 ];
 
 /* Které sekce Kalkulace PROJ se v nabídce oceňují (pro rekapitulaci).
@@ -673,8 +675,18 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
   });
   const platbyBloky = Object.keys(platbyRadky).map(k => ({ typ: 'pary', nadpis: P(NABIDKA_PROJ_PLATBY[k].nadpis), sekce: k, radky: platbyRadky[k] }));
   const nabiziAD = nabidkaProjNabiziAD(varianta);
+  /* Texty nabídky PROJ z Firmy (#367 fáze 2b) v jazyce dokumentu; v doložkách
+   * se {FIRMA} nahradí názvem firmy jako u doložek OCK. */
+  const podmEf = nabidkaProjPodmEf();
+  const nazevFirmy = String(((typeof firmaAktualni === 'function') ? firmaAktualni() : {}).nazev || '').trim();
+  const textProj = klic => {
+    const PD = (typeof PODMINKY !== 'undefined') ? PODMINKY : require('./podminky.js').PODMINKY;
+    const r = PD.podminkyTextProj(podmEf, klic, L, P);
+    return klic === 'dolozky' ? r.map(x => String(x).replace(/\{FIRMA\}/g, nazevFirmy || '{FIRMA}')) : r;
+  };
   const bloky = NABIDKA_PROJ_DEF.filter(b => b.klic !== 'uvodNabidky' || uvodOdst.length)
     .filter(b => !b.ad || nabiziAD)
+    .filter(b => !b.dolozky || podmEf.nabidkaProj.dolozkyTisk)
     .filter(b => planStary ? b.typ !== 'platby' : !b.stary)
     .filter(blokVRozsahu).map(b => {
     if (b.typ === 'platby') return platbyBloky;
@@ -691,7 +703,8 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
       }
       return { typ: 'proza', nadpis: P(b.nadpis), odstavce: odst, prazdny: b.klic === 'popisZameru' && !(zak && zak.popisZameru || '').trim() };
     }
-    if (b.typ === 'seznam') return { typ: 'seznam', nadpis: P(b.nadpis), radky: b.radky.map(P) };
+    if (b.typ === 'seznam') return { typ: 'seznam', nadpis: P(b.nadpis),
+      radky: b.firma ? textProj(b.firma) : b.radky.map(P) };
     if (b.typ === 'rozsah') {
       /* PŘESKLÁDÁNÍ ROZSAHU (17. 8. 2026 večer, zadání J. V.): podnadpis
        * části nese v závorce POPIS (společný levý štítek řádků pod ním) —
@@ -738,6 +751,8 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
           [P('Platnost nabídky'), platnost || P(NABIDKA_PROJ_SAZBY.platnostMesicu + ' měsíce')],
         ] };
       }
+      if (b.firma === 'terminy') return { typ: 'pary', nadpis: P(b.nadpis),
+        radky: textProj('terminy').filter(radekVRozsahu).map(x => [x[0], x[1]]) };
       return { typ: 'pary', nadpis: P(b.nadpis),
         radky: b.radky.filter(radekVRozsahu).map(x => [P(x[0]), P(x[1])]) };
     }
@@ -910,6 +925,14 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
      * zaokrouhlují se položky, takže žádný dorovnávací řádek nevzniká.
      * Kdyby se klíč zrušil, zůstal by v takové šabloně viset text {{…}}. */
     PROJ_ZAOKROUHLENI_KC: '',
+    /* Texty nabídky z Nastavení → Firma (#367 fáze 2b). Dnešní šablony PROJ
+     * (v3–v5) mají tyto bloky natvrdo; symboly čekají na šablonu, která je
+     * ponese. Řádek = odrážka; termíny „činnost – termín" jen nabízených
+     * činností; doložky jen zapnuté. */
+    PROJ_CENA_NEZAHRNUJE: textProj('cenaNezahrnuje').join('\n'),
+    PROJ_POZADOVANO_OD_INVESTORA: textProj('pozadovano').join('\n'),
+    PROJ_TERMINY: textProj('terminy').filter(radekVRozsahu).map(x => x[0] + ' – ' + x[1]).join('\n'),
+    PROJ_DOLOZKY: podmEf.nabidkaProj.dolozkyTisk ? textProj('dolozky').join('\n') : '',
   };
   if (typeof firmaPlaceholders === 'function')
     Object.assign(placeholders, firmaPlaceholders(

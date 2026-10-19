@@ -218,6 +218,29 @@ test('zveřejněná firma nenese značku ukázkových dat', fCteni.firma.udaje.u
   await post(firma, 'http://x/api/firma', { udaje: SKUT }, cookie);
 }
 
+/* #367 fáze 2 (19. 10. 2026): platební podmínky firmy OCK / PROJ jdou se
+ * zveřejněním na server a zpět k obchodníkovi jako čistá kopie; součet
+ * splátek OCK ≠ 100 % a vadný tvar server odmítne toutéž kontrolou jako
+ * prohlížeč (podminky.js), obchodník zveřejnit nesmí vůbec. */
+{
+  const podm = { v: 1, ock: { splatnostDni: 21, zarukaMesicu: 36 }, proj: { splatnostDni: 30 }, cizi: 'pryč' };
+  const sPodm = Object.assign(JSON.parse(JSON.stringify(SKUT)), { podminky: podm });
+  const rP = await (await post(firma, 'http://x/api/firma', { udaje: sPodm }, cookie)).json();
+  const cP = await (await get(firma, 'http://x/api/firma', cookieObch)).json();
+  const pP = (cP.firma && cP.firma.udaje && cP.firma.udaje.podminky) || {};
+  test('platební podmínky firmy se zveřejní a obchodník je přečte (bez cizích klíčů)', rP.ok === true
+    && pP.ock && pP.ock.splatnostDni === 21 && pP.proj && pP.proj.splatnostDni === 30 && !('cizi' in pP), pP);
+  const soucet = Object.assign(JSON.parse(JSON.stringify(SKUT)), { podminky: { ock: { faktura2Proc: 45 } } });
+  const rS = await post(firma, 'http://x/api/firma', { udaje: soucet }, cookie);
+  test('součet splátek OCK 105 % server odmítne (400) a řekne proč', rS.status === 400 && /100 %/.test((await rS.json()).chyba || ''));
+  const tvar = Object.assign(JSON.parse(JSON.stringify(SKUT)), { podminky: { proj: { splatnostDni: 'zítra' } } });
+  const rT = await post(firma, 'http://x/api/firma', { udaje: tvar }, cookie);
+  test('vadná splatnost PROJ server odmítne (400)', rT.status === 400 && /splatnost/.test((await rT.json()).chyba || ''));
+  test('obchodník platební podmínky zveřejnit nesmí (403)',
+    (await post(firma, 'http://x/api/firma', { udaje: sPodm }, cookieObch)).status === 403);
+  await post(firma, 'http://x/api/firma', { udaje: SKUT }, cookie);
+}
+
 /* 5) zakázky: uložení, rejstřík, načtení, ochrana zámku */
 Object.assign(globalThis, require('../src/format.js'), require('../src/engine.js'), require('../src/engine_proj.js'), require('../src/techspec.js'), require('../src/sleva.js'), require('../src/zaokrouhleni.js'), require('../src/zamek.js'));
 const zm = require('../src/zamek.js');

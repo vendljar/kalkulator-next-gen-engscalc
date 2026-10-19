@@ -7,8 +7,8 @@
  * uloženou firmu celou a výchozí texty zmizí. Nabídka kapitoly vypouštěla.
  *
  * Příčina (rozbor V8): uložená firma je z doby před #282 a klíče kapitol
- * vůbec nemá. Doplňují se jen CHYBĚJÍCÍ klíče (bílá listina CZ/EN/DE, FR
- * ne); prázdný řetězec = vědomé vypuštění a zůstává. Zkouší se i ruční
+ * vůbec nemá. Doplňují se jen CHYBĚJÍCÍ klíče (bílá listina CZ/EN/DE/FR —
+ * FR od #367 fáze 2b, rozhodnutí J. V. k Q3); prázdný řetězec = vědomé vypuštění a zůstává. Zkouší se i ruční
  * tlačítka (vše prázdné / jedno pole), načtení přes konfiguraceImport /
  * nastdbPouzij, zveřejnění (firmaKZverejneni, firmaLzeZverejnit) a napojení
  * v UI (online_ui, nastaveni_ui).
@@ -46,10 +46,10 @@ function produkcniFirma() {
   const f = produkcniFirma();
   const dopl = F.firmaDoplnVychoziTexty(f, false);
   KAP.forEach(b => JAZ.forEach(s => test('doplněno ' + b + s, f[b + s] === D[b + s] && D[b + s].trim().length > 0)));
-  test('vrací všech 12 doplněných klíčů (CZ/EN/DE × 4)', dopl.length === 12, dopl);
-  test('bílá listina = 12 klíčů CZ/EN/DE', F.FIRMA_KAP_VYCHOZI_KLICE.length === 12
-    && F.FIRMA_KAP_VYCHOZI_KLICE.every(k => /^(kapPozadavky|kapTerminy|kapPredani|dolozky)(En|De)?$/.test(k)));
-  test('FR se nedoplňuje (nemá výchozí text)', KAP.every(b => f[b + 'Fr'] === undefined));
+  test('vrací všech 16 doplněných klíčů (CZ/EN/DE/FR × 4)', dopl.length === 16, dopl);
+  test('bílá listina = 16 klíčů CZ/EN/DE/FR', F.FIRMA_KAP_VYCHOZI_KLICE.length === 16
+    && F.FIRMA_KAP_VYCHOZI_KLICE.every(k => /^(kapPozadavky|kapTerminy|kapPredani|dolozky)(En|De|Fr)?$/.test(k)));
+  test('#367 Q3: FR se doplní výchozím francouzským textem', KAP.every(b => f[b + 'Fr'] === D[b + 'Fr'] && D[b + 'Fr'].trim().length > 0));
   test('identifikace firmy se nemění (žádné ukázkové údaje)',
     f.nazev === 'Zkušební stavby s.r.o.' && f.ico === '123 45 678' && f.ukazkove === undefined && f.dic === undefined
     && f.web === undefined && f.banka === undefined);
@@ -65,12 +65,13 @@ function produkcniFirma() {
   const dopl = F.firmaDoplnVychoziTexty(f, false);
   test('prázdný řetězec zůstává (vědomé vypuštění)', f.kapPredani === '' && f.kapPredaniEn === '  \n ');
   test('vlastní text zůstává', f.kapTerminyDe === 'Eigener Text');
-  test('doplněno jen 9 chybějících', dopl.length === 9 && dopl.indexOf('kapPredani') < 0, dopl);
+  test('doplněno jen 13 chybějících (9 CZ/EN/DE + 4 FR)', dopl.length === 13 && dopl.indexOf('kapPredani') < 0, dopl);
   test('vymazaná kapitola se v nabídce vypustí (prázdné řádky)', F.firmaKapitola(f, 'kapPredani', 'cz').radky.length === 0);
   test('vymazaná česká kapitola se dál hlásí kontrolou (K9-N32)',
     F.firmaKapitolyPrazdne(f, 'cz').some(x => x.base === 'kapPredani'));
-  test('prázdná FR dál bere češtinu s upozorněním', F.firmaKapitola(f, 'kapPozadavky', 'fr').jazykChybi
-    && F.firmaKapitola(f, 'kapPozadavky', 'fr').radky.length > 0);
+  const g = Object.assign({}, f, { kapPozadavkyFr: '' });
+  test('prázdná FR dál bere češtinu s upozorněním', F.firmaKapitola(g, 'kapPozadavky', 'fr').jazykChybi
+    && F.firmaKapitola(g, 'kapPozadavky', 'fr').radky.length > 0);
 }
 
 // ---- 3. tlačítka: „Doplnit všechny prázdné" a „Doplnit výchozí text" ------------
@@ -79,8 +80,8 @@ function produkcniFirma() {
   const dopl = F.firmaDoplnVychoziTexty(f, true);
   test('vše prázdné: doplní i prázdná pole', f.kapPredani === D.kapPredani && f.kapPredaniEn === D.kapPredaniEn);
   test('vše prázdné: vlastní text nepřepíše', f.kapTerminyDe === 'Eigener Text');
-  test('vše prázdné: FR nechá', f.kapPozadavkyFr === '');
-  test('vše prázdné: vrací 11 klíčů', dopl.length === 11, dopl);
+  test('vše prázdné: doplní i prázdnou FR', f.kapPozadavkyFr === D.kapPozadavkyFr);
+  test('vše prázdné: vrací 15 klíčů', dopl.length === 15, dopl);
   test('vše prázdné podruhé nic', F.firmaDoplnVychoziTexty(f, true).length === 0);
   test('jedno pole: přepíše vlastní text', F.firmaDoplnVychoziText(f, 'kapTerminyDe') === true && f.kapTerminyDe === D.kapTerminyDe);
   test('jedno pole: podruhé false', F.firmaDoplnVychoziText(f, 'kapTerminyDe') === false);

@@ -106,7 +106,8 @@ function sablonySpravaHtml() {
   const banner = zastarale.length ? `<div class="sabl-banner"><b>${zastarale.length} ${zastarale.length === 1
       ? 'jazyková verze vznikla' : 'jazykové verze vznikly'} ze starší české šablony.</b> V přísném režimu se z nich
       netiskne, dokud je administrátor nepřegeneruje (tlačítko „Přegenerovat" u dokumentu níže).</div>` : '';
-  const radky = SABL_DOKUMENTY.map(d => {
+  /* filtr přepínačem OCK | PROJ v Nastavení → Smlouvy / Šablony (#367) */
+  const radky = SABL_DOKUMENTY.filter(d => typeof podmSablonaViditelna !== 'function' || podmSablonaViditelna(d.typ)).map(d => {
     const bunky = [sablBunkaCz(rej, d.typ)].concat(SABL_JAZYKY.map(([l]) => d.jazyky
       ? sablBunkaJazyk(rej, d.typ, l) : { cls: 'na', label: '—', sub: '' }));
     return `<tr class="sabl-radek ${d.typ === SABL_UI.vybrany ? 'sabl-vybrany' : ''}" data-sabl-typ="${esc(d.typ)}"
