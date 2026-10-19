@@ -5240,7 +5240,7 @@
    "detail": "Návrh: termín dodání jako první odrážka kapitoly V. (náhled i Word), pevné číslo z textu Firmy vypustit. U atypické zakázky dnes zákazník dostane o 4 týdny kratší termín, než počítá krycí list.",
    "hotovoKdyz": "Nabídka u ATYP nese prodloužený termín z krycího listu; test v náhledu i ve Wordu.",
    "kde": "`src/kryci.js` (kryciTerminDodani), `src/nabidka.js` (kapitoly)",
-   "pozn": "ROZHODNUTÍ J. V. 24. 9. 2026: schváleno (podklad #277, bod 2). Pevné „cca 12 týdnů\" v textu kapitoly V. ve Firmě na webech upraví administrátor.\n\nHOTOVO v24.9.1 (E1): termín dodání z krycího listu (s ATYP a ručním přepisem) je první odrážkou kapitoly V. v náhledu i PDF; ve Wordu přes {{NAB_KAP_TERMINY}} v šabloně v11 (#331). Překlad EN/DE/FR vzorem. Nové pravidlo kontrol „Termín dodání u atypické zakázky“ hlásí dvě různé lhůty (text kapitoly V. z Firmy × termín) i chybějící lhůtu ve Firmě. Testy test_nabidka_kapitoly +11, test_kontroly +8. Vypustit „cca 12 týdnů“ z textu Firmy na webech zůstává administrátorovi — kontrola na to upozorní.",
+   "pozn": "ROZHODNUTÍ J. V. 24. 9. 2026: schváleno (podklad #277, bod 2). Pevné „cca 12 týdnů\" v textu kapitoly V. ve Firmě na webech upraví administrátor.\n\nHOTOVO v24.9.1 (E1): termín dodání z krycího listu (s ATYP a ručním přepisem) je první odrážkou kapitoly V. v náhledu i PDF; ve Wordu přes {{NAB_KAP_TERMINY}} v šabloně v11 (#331). Překlad EN/DE/FR vzorem. Nové pravidlo kontrol „Termín dodání u atypické zakázky“ hlásí dvě různé lhůty (text kapitoly V. z Firmy × termín) i chybějící lhůtu ve Firmě. Testy test_nabidka_kapitoly +11, test_kontroly +8. Vypustit „cca 12 týdnů“ z textu Firmy na webech zůstává administrátorovi — kontrola na to upozorní.\n\nROZHODNUTÍ J. V. 19. 10. 2026 (~11:25 UTC, přes koordinaci): řešení se značkou {TERMIN} schváleno přesně podle zadání — bez odrážky navíc při značce, záloha na standardní lhůtu z Firmy, značka nikdy viditelná v tisku, starý text funguje a kontrola radí značku. DOTAŽENO v19.10.3 (dávka O3; zadání J. V. „TD1 vymysli, jak zohlednit“): výchozí text kapitoly V. (CZ/EN/DE) nese značku {TERMIN} místo pevného „cca 12 týdnů“ a nabídka za ni dosadí termín dodání zakázky (s ATYP, přeložený); s ní se samostatná odrážka nepřidává (náhled i Word {{NAB_KAP_TERMINY}}). Bez termínu lhůta z Firmy, jinak „dle dohody“. Kontrola terminAtyp u starého textu radí číslo nahradit značkou. Viz #431.",
    "hotovoV": "v24.9.1"
   },
   {
@@ -6732,7 +6732,24 @@
    "kde" : "`src/kryci.js`, `src/sod.js`, `src/ui/ukazkove_ui.js`, `src/ui/sod_ui.js`, `src/test_sod_en.js`",
    "hotovoV" : "v19.10.1",
    "pozn" : "Předběžné id (přidělí koordinace při sloučení)."
-  }
+  },
+ {
+  "id" : "431",
+  "vlna" : "B",
+  "stav" : "hotovo",
+  "dulezitost" : "vysoka",
+  "slozitost" : "S",
+  "hotovoV" : "v19.10.3",
+  "nazev" : "Výchozí texty kapitol nabídky IV.–VI. a doložek se doplní do Nastavení (prázdná pole v produkci)",
+  "proc" : "Zadání J. V. 19. 10. 2026: „Doplň výchozí texty do Nastavení rovnou.“ V produkci byla česká pole kapitol IV.–VI. a doložek prázdná, ač DEFAULT_FIRMA texty má — uložená firma (online i _nastaveni.json) je neměla nebo měla prázdné a konfigNahradVMiste() ji kopíruje celou; nabídka kapitoly vypouštěla.",
+  "detail" : "HOTOVO v19.10.3 (dávka O3, větev claude/o3-kapitoly-vychozi). Příčina (rozbor V8): uložená firma je z doby před #282 a klíče kapitol nemá; konfigNahradVMiste() ji kopíruje celou. firmaDoplnVychoziTexty() po každém načtení firmy (konfiguraceImport → import i _nastaveni.json, online_ui po nasazení online firmy) doplní CHYBĚJÍCÍ klíče z bílé listiny FIRMA_KAP_VYCHOZI_KLICE (CZ/EN/DE; FR ne); prázdný řetězec = vědomé vypuštění a zůstává; identifikace firmy se nedoplňuje. Tlačítka (jen administrátor) „Doplnit výchozí text“ u kapitoly a jazyka a „Doplnit všechny prázdné“. firmaKZverejneni doplněné klíče zveřejní, firmaLzeZverejnit je přijme. ROZŠÍŘENO o TD1 (#330): značka {TERMIN} v kapitole V. — termín dodání zakázky přímo ve větě, bez dvojí lhůty u ATYP (schváleno J. V. 19. 10. 2026). Testy src/test_kapitoly_vychozi.js a src/test_termin_kapitola.js. Po nasazení: J. V. zkontroluje texty a zveřejní firmu.",
+  "hotovoKdyz" : "Chybějící klíče kapitol se při načtení doplní, prázdné „“ zůstává, tlačítka fungují, zveřejnění je nese; testy a cílené mutace bez přeživší.",
+  "kde" : "`src/firma.js`, `src/konfigurace.js`, `src/ui/online_ui.js`, `src/ui/nastaveni_ui.js`, `src/test_kapitoly_vychozi.js`",
+  "zavisi" : [
+   "282"
+  ],
+  "pozn" : "Předběžné id (přidělí koordinace při sloučení)."
+ }
  ],
  "meta" : {
   "projekt" : "Kalkulator Next Gen",

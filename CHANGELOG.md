@@ -8,6 +8,59 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v19.10.3 — O3: výchozí texty kapitol nabídky se doplní do Nastavení (větev claude/o3-kapitoly-vychozi)
+
+**Kolo `--jen build,sady,staticke` nad 91f8111 (v19.10.3, 19. 10. 2026) — VŠE ZELENÉ:** sady 271 prošlo / 0 selhalo / 6 přeskočeno (`test.js` — ostrý ceník; `overit_manual`, `overit_nabidka_proj_word`, `overit_sablona`, `overit_sablony_online`, `overit_sod` — firemní šablony `KNG_PODKLADY` v sezení nebyly), statické 3/3. Cílené mutace O3 + TD1 (`firma.js`, `nabidka.js`, `kontroly.js`, `preklad.js`, `konfigurace.js`, `online_ui.js`, `nastaveni_ui.js`) 43/43 chycených; celé mutační kroky jádra a serveru se nepouštěly.
+
+Dávka O3 (zadání J. V. 19. 10. 2026 „Doplň výchozí texty do Nastavení rovnou.“),
+nad `origin/claude/integrace-16-10` (`e3995e6`, v19.10.1; v19.10.2 drží souběžná
+dávka A2). Roadmapa **#431** (navazuje na #282).
+
+- **Příčina** (rozbor V8, `podklady/367_NASTAVENI_FIRMA_NAVRH.md` odd. 8):
+  v produkci byly v Nastavení → Smlouvy / Šablony → Kapitoly nabídky pole IV.,
+  V., VI. a Doložky prázdná (žlutý rámeček „Česky nevyplněno … nabídka tyto
+  kapitoly vypustí“), ač `DEFAULT_FIRMA` výchozí texty má. Uložená firma
+  (online `/api/firma` i `_DB/_nastaveni.json`) je z doby před #282 a klíče
+  kapitol vůbec nemá; `konfigNahradVMiste()` ji při načtení kopíruje celou
+  (výchozí texty zmizí) a `KONFIG_DOPLNIT_KLICE` firmu záměrně vynechává.
+- **Oprava (`src/firma.js`):** `firmaDoplnVychoziTexty(f, iPrazdne)` doplní
+  CHYBĚJÍCÍ klíče z bílé listiny `FIRMA_KAP_VYCHOZI_KLICE` (kapitoly IV.–VI.
+  a doložky CZ/EN/DE; FR výchozí text nemá). Volá se po každém načtení firmy:
+  import konfigurace i `_nastaveni.json` (`konfiguraceImport`, s varováním,
+  co se doplnilo) a nasazení online firmy (`src/ui/online_ui.js`).
+  Identifikace firmy se nikdy nedoplňuje.
+- **Vědomé vypuštění = prázdný řetězec** (výchozí volba koordinace): pole,
+  které administrátor vymaže, se nedoplňuje a nabídka kapitolu vypustí;
+  kontrola před nabídkou ji dál hlásí (K9-N32). Žádná zvláštní značka.
+- **Tlačítka (jen administrátor):** „↺ Doplnit výchozí text“ u každé kapitoly
+  a jazyka (CZ/EN/DE; vlastní text přepíše po potvrzení) a „↺ Doplnit všechny
+  prázdné“ (doplní prázdná pole, vlastní texty ani FR nemění).
+- **Zveřejnění:** `firmaKZverejneni` doplněné klíče zveřejní (jsou ve
+  `FIRMA_POLE`), `firmaLzeZverejnit` je přijme; panel zveřejnění ukáže rozdíl
+  proti online kopii bez kapitol, takže administrátorovi stačí **Zveřejnit**.
+- **Test** `src/test_kapitoly_vychozi.js` (51 kontrol; před opravou padá —
+  `firmaDoplnVychoziTexty` neexistuje a import nechá kapitoly prázdné).
+- **Značka `{TERMIN}` v kapitole V. (TD1, #330) — ROZHODNUTÍ J. V.
+  19. 10. 2026 (~11:25 UTC, přes koordinaci): schváleno přesně podle zadání —
+  bez odrážky navíc při značce, záloha na standardní lhůtu z Firmy, značka
+  nikdy viditelná v tisku, starý text funguje a kontrola radí značku.** výchozí text kapitoly V. (CZ/EN/DE) má místo
+  pevného „cca 12 týdnů“ značku `{TERMIN}`; `firmaKapitola(f, base, jazyk,
+  termin)` za ni dosadí termín dodání zakázky (týž jako `{{PODM_TERMIN_DODANI}}`,
+  s ATYP i ručním přepisem, přeložený; u FR bez vlastního znění česky).
+  S termínem v textu se samostatná odrážka „Termín dodání“ nepřidává (náhled
+  i Word `{{NAB_KAP_TERMINY}}`, příznak `FIRMA_NAB_TERMINY_TERMIN`). Bez termínu
+  platí standardní lhůta z Firmy, jinak „dle dohody“ (nové heslo slovníku) —
+  značka nikdy nezůstane v tisku (ani v `firmaPlaceholders` mimo zakázku, tedy
+  ani ve smlouvě). Kontrola `terminAtyp`: u textu se značkou mlčí, hlásí jen
+  „dle dohody“ a ATYP se smazaným termínem; u starého textu s pevným číslem
+  radí „nahraďte číslo značkou {TERMIN}“. Starý text bez značky beze změny.
+  Test `src/test_termin_kapitola.js` (39 kontrol; před opravou 26 selže a sada spadne),
+  `test_kontroly.js` +10 (před opravou 7 selže), testy #330 v `test_nabidka_kapitoly.js` a
+  `test_kontroly.js` převedené na starý text s pevnou lhůtou.
+
+**Po nasazení (J. V.):** Nastavení → Smlouvy / Šablony → Kapitoly nabídky
+zkontrolovat doplněné texty → Nastavení → Firma → **Zveřejnit firemní údaje online**.
+
 ## v19.10.2 — #356 střecha EXT přes nejvyšší můstek (větev claude/a2-356)
 
 Dávka A2, dokončení #356 podle rozhodnutí J. V. 19. 10. 2026: varianty

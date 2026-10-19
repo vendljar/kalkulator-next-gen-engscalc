@@ -359,8 +359,17 @@ function nabidkaData(zak, varianta, jekly, lang, sablona) {
      * nepřekládá, každý jazyk má vlastní ručně psaný text. */
     const leseniVDodavce = leseniVnejsiVCene;
     const LESENI_RE = /lešen|scaffold|gerüst|gerust|échafaud|echafaud/i;
+    /* Značka {TERMIN} (dávka O3 / TD1): termín dodání zakázky v jazyce
+     * TEXTU kapitoly. Přeložený už je v PODM_TERMIN_DODANI; český (pro FR
+     * bez vlastního znění) se dopočte jen tehdy, když je potřeba. */
+    const terminKap = jazTextu => {
+      if (jazTextu === L) return placeholders.PODM_TERMIN_DODANI;
+      if (jazTextu === 'cz' && typeof kryciPodminkoveSymboly === 'function')
+        return kryciPodminkoveSymboly(zak, varianta, jekly, x => x).PODM_TERMIN_DODANI;
+      return '';
+    };
     FIRMA_KAPITOLY.forEach(kap => {
-      const k = firmaKapitola(f, kap.base, L);
+      const k = firmaKapitola(f, kap.base, L, terminKap);
       const sym = 'FIRMA_NAB_' + kap.base.replace(/^kap/, '').toUpperCase();
       const radky = (kap.base === 'kapPozadavky' && leseniVDodavce)
         ? k.radky.filter(rr => !LESENI_RE.test(rr)) : k.radky;
@@ -370,6 +379,9 @@ function nabidkaData(zak, varianta, jekly, lang, sablona) {
        * vypustí i s nadpisem (Word od šablony CN v13 se značkami kapitol,
        * P8A 29. 9. 2026) a upozorňovat na ni není na co. */
       placeholders[sym + '_CHYBI'] = k.jazykChybi ? '1' : '';
+      /* Text kapitoly nese termín sám (značka {TERMIN}) — samostatná
+       * odrážka „Termín dodání" by ho opakovala. */
+      if (kap.base === 'kapTerminy') placeholders[sym + '_TERMIN'] = k.termin ? '1' : '';
     });
   }
 
@@ -387,7 +399,7 @@ function nabidkaData(zak, varianta, jekly, lang, sablona) {
   {
     const termin = String(placeholders.PODM_TERMIN_DODANI == null ? '' : placeholders.PODM_TERMIN_DODANI).trim();
     const zaruka = nabidkaZarukaText(placeholders.PODM_ZARUKA_MESICU);
-    const obsah = (termin ? [P('Termín dodání') + ': ' + termin] : [])
+    const obsah = (termin && !placeholders.FIRMA_NAB_TERMINY_TERMIN ? [P('Termín dodání') + ': ' + termin] : [])
       .concat(String(placeholders.FIRMA_NAB_TERMINY || '').split('\n')
         .filter(r => r.trim() !== '' && !nabidkaJeVetaOZaruce(r, L)));
     /* Záruka jen ke kapitole, která má i jiný obsah — prázdná kapitola
@@ -700,7 +712,8 @@ function nabidkaNahledSekce(ph, lang, platby, extra) {
      * kapitoly zůstává textem z Firmy. Prázdný termín se nevymýšlí —
      * odrážka se vynechá (hlídá to kontrola před nabídkou). */
     const termin = String(ph.PODM_TERMIN_DODANI == null ? '' : ph.PODM_TERMIN_DODANI).trim();
-    if (sym === 'FIRMA_NAB_TERMINY' && termin) radky = [['Termín dodání', termin]].concat(radky);
+    if (sym === 'FIRMA_NAB_TERMINY' && termin && !ph.FIRMA_NAB_TERMINY_TERMIN)
+      radky = [['Termín dodání', termin]].concat(radky);
     /* Záruka z krycího listu, věta o záruce z Firmy pryč (P10.7). */
     /* Hodnota se překládá stejně jako ve Wordu (K18-N93, 30. 9. 2026): popisek
      * řádku přeloží `popisek` níž, hodnotu ne — všech 22 cizojazyčných

@@ -806,13 +806,18 @@ function nastKapitolyNabidky() {
       const id = kap.base + suf;
       const hodnota = f[id] == null ? '' : String(f[id]);
       const pocet = hodnota.split('\n').filter(r => r.trim()).length;
+      /* „Doplnit výchozí text" jen tam, kde výchozí text existuje (ne FR)
+       * a pole ho už nemá (dávka O3). */
+      const maVychozi = typeof FIRMA_KAP_VYCHOZI_KLICE !== 'undefined' && FIRMA_KAP_VYCHOZI_KLICE.indexOf(id) >= 0
+        && typeof DEFAULT_FIRMA !== 'undefined' && f[id] !== DEFAULT_FIRMA[id];
       return `<div class="row" style="align-items:flex-start">
         <label style="flex:none;width:86px;padding-top:6px">${esc(jmeno)}</label>
         <textarea rows="${Math.min(14, Math.max(4, pocet + 1))}" style="flex:1;min-width:0;font-family:inherit"
           onchange="firmaSet('${escJs(id)}', this.value)">${esc(hodnota)}</textarea>
         <span class="note" style="flex:none;width:150px;font-size:11.5px;padding-top:6px">
           <code>{{${esc('FIRMA_NAB_' + kap.base.replace(/^kap/, '').toUpperCase() + (suf ? '_' + suf.toUpperCase() : ''))}}}</code><br>
-          ${pocet ? pocet + ' odrážek' : '<span class="pill mut">nevyplněno</span>'}</span></div>`;
+          ${pocet ? pocet + ' odrážek' : '<span class="pill mut">nevyplněno</span>'}
+          ${maVychozi ? `<br><button class="mini" style="margin-top:4px" onclick="firmaKapitolaVychozi('${escJs(id)}')">↺ Doplnit výchozí text</button>` : ''}</span></div>`;
     }).join('');
     return `<details style="margin:6px 0;border:1px solid var(--line);border-radius:6px;padding:6px 10px">
       <summary style="cursor:pointer;font-weight:600">${esc((kap.cislo ? kap.cislo + ' ' : '') + kap.nadpis)}</summary>
@@ -833,8 +838,38 @@ function nastKapitolyNabidky() {
       a platnosti nabídky z krycího listu, aby se dvě místa nemohla rozejít.
       Každý jazyk má vlastní pole: smluvní podmínky se <b>nepřekládají strojově</b>. Jazyk, který
       necháte prázdný, nabídka <b>vypustí i s nadpisem</b> (Word od šablony CN v13); francouzština se zatím neřeší a vytiskne
-      češtinu s upozorněním. Značka <code>{FIRMA}</code> se nahradí názvem firmy.</div>
-    ${(typeof FIRMA_KAPITOLY !== 'undefined' ? FIRMA_KAPITOLY : []).map(blok).join('')}`;
+      češtinu s upozorněním. Značka <code>{FIRMA}</code> se nahradí názvem firmy, značka
+      <code>{TERMIN}</code> (kapitola V.) termínem dodání ze zakázky — z krycího listu, u atypické
+      zakázky i s prodloužením; s ní nabídka samostatnou odrážku „Termín dodání“ nepřidává.
+      Firma uložená dřív, než kapitoly existovaly, dostane při načtení <b>výchozí texty</b>
+      (česky, anglicky, německy); pole, které <b>vymažete</b>, zůstane prázdné — to je vědomé
+      vypuštění kapitoly.</div>
+    ${(typeof FIRMA_KAPITOLY !== 'undefined' ? FIRMA_KAPITOLY : []).map(blok).join('')}
+    <div class="btns" style="margin-top:6px"><button class="mini" onclick="firmaKapitolyVychozi()">↺ Doplnit všechny prázdné</button>
+      <span class="note">doplní výchozí znění do prázdných kapitol česky, anglicky a německy; vlastní texty
+      ani francouzštinu nemění</span></div>`;
+}
+
+/* Ruční doplnění výchozích textů kapitol (dávka O3, 19. 10. 2026) — jen
+ * administrátor. „Doplnit všechny prázdné" vlastní texty nepřepíše; tlačítko
+ * u jednoho pole se před přepsáním vlastního textu zeptá. Značku ukázkových
+ * dat to nesundává: výchozí text kapitol z firmy skutečnou nedělá. Zveřejnění
+ * online je pak běžné „Zveřejnit". */
+function firmaKapitolyVychozi() {
+  if (!jeAdmin()) return hlaska('Firemní údaje smí měnit jen administrátor.');
+  if (!NAST.firma) NAST.firma = firmaDefault();
+  const zmeneno = firmaDoplnVychoziTexty(NAST.firma, true);
+  hlaska(zmeneno.length ? 'Doplněno výchozích textů: ' + zmeneno.length + '. Online je zveřejníte tlačítkem „Zveřejnit".'
+    : 'Žádná kapitola (česky, anglicky, německy) není prázdná.');
+  nastRefresh();
+}
+async function firmaKapitolaVychozi(id) {
+  if (!jeAdmin()) return hlaska('Firemní údaje smí měnit jen administrátor.');
+  if (!NAST.firma) NAST.firma = firmaDefault();
+  if (String(NAST.firma[id] == null ? '' : NAST.firma[id]).trim()
+    && !await potvrd('Přepsat vlastní text této kapitoly výchozím zněním?')) return;
+  firmaDoplnVychoziText(NAST.firma, id);
+  nastRefresh();
 }
 
 function nastSmluvniStandardy() {
