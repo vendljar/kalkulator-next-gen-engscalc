@@ -5591,7 +5591,7 @@
   {
    "id": "356",
    "vlna": "B",
-   "stav": "ceka",
+   "stav": "hotovo",
    "dulezitost": "stredni",
    "slozitost": "S",
    "nazev": "Můstky ↔ zastřešení (EXT): střecha přetažená přes nejvyšší můstek má plochu navíc (bod 4 z rozboru K13)",
@@ -5599,7 +5599,8 @@
    "detail": "ROZHODNUTO J. V. 16. 10. 2026 (plán víkendu, dávka A2): plochu střechy přes nejvyšší můstek (EXT) automaticky PŘIPOČÍTAT do zastřešení. DNES (src/engine.js, jen exteriér): ZASTŘEŠENÍ ŠACHTY (EXT) = (šířka + 0,2) × (hloubka + 0,1) m² × C.zastreseniM2Kc; PŘÍPLATEK ZA STŘECHU V MĚDI (EXT) = tatáž plocha × C.priplatky.medStrechaM2; OPLECHOVÁNÍ K FASÁDĚ (EXT) = (H − prohlubeň) × 2 bm. Text „přetažená i přes nástupní můstek\" platí, když je můstek i v nejvyšším nástupišti (dnes: mustkyKs ≥ počet nadzemních nástupišť). NÁVRH: za téže podmínky plocha navíc = (mustekSirkaMm/1000 + 0,2) × (mustekHloubkaMm/1000) m² — přesah 0,2 m jako u šachty, hloubka = vzdálenost od šachty k fasádě; přičíst k ZASTŘEŠENÍ ŠACHTY (EXT) i k příplatku za měď (jedna střecha, jedna položka), nebo samostatný řádek ZASTŘEŠENÍ MŮSTKU (EXT) — viz otázka (b). Nižší můstky se nezastřešují (kryje je můstek nad nimi). OTÁZKY PRO J. V.: (a) přesahy: 0,2 m do šířky jako u šachty? přesah do hloubky žádný (střecha končí u fasády)? (b) přičíst do položky zastřešení šachty, nebo samostatný řádek? (c) mění se OPLECHOVÁNÍ K FASÁDĚ (napojení střechy na fasádu je u můstku, ne u šachty; boky střechy nad můstkem = 2 × hloubka můstku lemování navíc?) (d) nestačí podmínka „můstek ve všech nadzemních\" — přidat do zadání zaškrtávátko „můstek i v nejvyšším nástupišti\"? (e) Model 1 × Model 2 jako u #355.",
    "hotovoKdyz": "Plocha střechy (a příplatku za měď) zahrnuje střechu nad nejvyšším můstkem podle schválených přesahů; interiér a zakázky bez můstku beze změny; test + mutace jádra.",
    "kde": "`src/engine.js` (ZASTŘEŠENÍ ŠACHTY (EXT), medStrecha, oplechFasada), `src/techspec.js` (tsStrecha), `src/test_mustky.js`",
-   "pozn": "Návrh pro J. V. na 19. 10. 2026: https://claude.ai/artifact/9nMGAMnggiVEByuZoty9Qt (varianty a–e s řezem, půdorysem a dopadem na tři ukázkové zakázky ze zkušebního ceníku; doporučení A1 + B1 + C1 + D1 + E1). J. V. 17. 10.: „toto přeskoč a připrav mi na pondělí detailní vizuální návrh variant“ — do kódu zatím ne. Hotový kód doporučené kombinace leží ve větvi `claude/a2-356-navrh` (nesloučí se; test_mustky 59/0, mutace jádra 5/5); v `claude/a2-mustky` revertován."
+   "pozn": "Hotovo v19.10.2 (větev `claude/a2-356`) podle rozhodnutí J. V. 19. 10. 2026: varianty A1 + B1 + C1 + D1 + E1 z návrhu https://claude.ai/artifact/9nMGAMnggiVEByuZoty9Qt — plocha (šířka můstku + 0,2 m) × hloubka můstku do ZASTŘEŠENÍ ŠACHTY (EXT) i příplatku za měď, podmínka můstků ≥ nadzemní nástupiště, oplechování beze změny, Model 1 i 2; bez rozměrů upozornění `mustekStrecha`. Test `src/test_mustky.js` 53/6 → 59/0, mutace jádra 5.",
+   "hotovoV": "v19.10.2"
   },
   {
    "id": "357",

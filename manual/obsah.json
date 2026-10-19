@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v19.10.1 · sestaveno 19. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
+  "verze": "Platí pro aplikaci v19.10.2 · sestaveno 19. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -11,6 +11,12 @@
         "Snímky obrazovky v téhle příručce jsou pořízené z běžící aplikace, ale nad **zkušebním ceníkem** s vymyšlenými sazbami. **Částky na obrázcích jsou ze zkušebního ceníku a nejsou naše ceny.** Neberte je jako vodítko pro nabídku a nesrovnávejte s nimi svou kalkulaci — sledujte, kde co je a jak se to chová, ne kolik to stojí.",
         "Jména zákazníků na snímcích jsou taky **vymyšlená**. Celá ukázková zakázka **2026 - OPR - CN - 9100** je smyšlená a vznikla jen kvůli téhle příručce.",
         "Příručka je určená obchodníkům ENGINEERS CZ. Popisuje, jak firma počítá nabídky, takže ji zákazníkům ani nikomu mimo firmu neposílejte."
+      ]
+    },
+    {
+      "nadpis": "Co je nového ve verzi v19.10.2 (19. 10. 2026)",
+      "odstavce": [
+        "**Střecha přes nejvyšší můstek se započítá.** U exteriérové šachty s můstkem i v nejvyšším nástupišti připočte kalkulace k zastřešení (a k příplatku za střechu v mědi) plochu nad můstkem až k fasádě: (šířka můstku + 0,2 m) × hloubka můstku. Šachty bez můstku nebo s můstky jen v nižších nástupištích se nemění. Chybí-li rozměry můstku, kontrola před nabídkou to řekne; tisk to nezastaví (kapitola 11)."
       ]
     },
     {
@@ -343,7 +349,7 @@
           "odkazy": [
             { "popisek": "Stříška nad nástupiště", "cely": ".row", "text": "**Dřív zaškrtávátko, dnes počet kusů.** Zadává se číslo — kolik stříšek nad nástupiště zakázka obsahuje. Staré zaškrtávátko už v aplikaci není." },
             { "popisek": "Počet nástupišť", "cely": ".row", "text": "Nová nabídka začíná s **5 nástupišti**, s **odškrtnutými přechodovými plechy** a s **plechem nad dveřmi** — to jsou hodnoty, se kterými se nejčastěji počítá. Rozměry šachty naopak začínají na nule, aby se do nabídky nedostal rozměr, který nikdo nezadal." },
-            { "popisek": "Můstky mezi budovou a OCK", "cely": ".row", "text": "**Počet kusů, ne zaškrtávátko.** 0 = šachta žádný můstek nemá, jiné číslo = kolik jich je. Po zadání se ukáže hloubka a šířka můstku (pro kontrolu standardu a specifikaci). **Přechodové plechy** se v nástupištích s můstkem počítají dál za všechna nástupiště — kontrola před nabídkou na to upozorní, ať případně množství upravíte ručně; tisk to nezastaví." },
+            { "popisek": "Můstky mezi budovou a OCK", "cely": ".row", "text": "**Počet kusů, ne zaškrtávátko.** 0 = šachta žádný můstek nemá, jiné číslo = kolik jich je. Po zadání se ukáže hloubka a šířka můstku (pro kontrolu standardu a specifikaci). **Střecha přes můstek (od v19.10.2):** je-li u exteriérové šachty můstek i v nejvyšším nástupišti (počet můstků = počet nadzemních nástupišť), střecha pokračuje nad ním až k fasádě a kalkulace k ploše ZASTŘEŠENÍ ŠACHTY (EXT) i k příplatku za měď sama připočte (šířka můstku + 0,2 m) × hloubka můstku; bez rozměrů můstku nic a kontrola před nabídkou to řekne. **Přechodové plechy** se v nástupištích s můstkem počítají dál za všechna nástupiště — kontrola před nabídkou na to upozorní, ať případně množství upravíte ručně; tisk to nezastaví." },
             { "popisek": "Způsob zasklení", "cely": ".row", "text": "Volba mezi **na terče** a **mezi příčníky (lišty)**. Co která znamená pro cenu, je v kapitole 13." },
             { "popisek": "ATYP (nestandardní zakázka)", "cely": ".row", "text": "Zaškrtávátko zůstalo, ale políčko na procenta přirážky vedle něj **zmizelo** — viz kapitola 14." },
             { "popisek": "Opláštit i prohlubeň", "cely": ".row", "text": "**Opláštit i prohlubeň** — zkratka, která pošle opláštění všech čtyř stěn až na dno prohlubně. Co přesně udělá, je v kapitole 13." }
