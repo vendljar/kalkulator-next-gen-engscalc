@@ -10,6 +10,8 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ## v19.10.3 — O3: výchozí texty kapitol nabídky se doplní do Nastavení (větev claude/o3-kapitoly-vychozi)
 
+**Kolo `--jen build,sady,staticke` nad 91f8111 (v19.10.3, 19. 10. 2026) — VŠE ZELENÉ:** sady 271 prošlo / 0 selhalo / 6 přeskočeno (`test.js` — ostrý ceník; `overit_manual`, `overit_nabidka_proj_word`, `overit_sablona`, `overit_sablony_online`, `overit_sod` — firemní šablony `KNG_PODKLADY` v sezení nebyly), statické 3/3. Cílené mutace O3 + TD1 (`firma.js`, `nabidka.js`, `kontroly.js`, `preklad.js`, `konfigurace.js`, `online_ui.js`, `nastaveni_ui.js`) 43/43 chycených; celé mutační kroky jádra a serveru se nepouštěly.
+
 Dávka O3 (zadání J. V. 19. 10. 2026 „Doplň výchozí texty do Nastavení rovnou.“),
 nad `origin/claude/integrace-16-10` (`e3995e6`, v19.10.1; v19.10.2 drží souběžná
 dávka A2). Roadmapa **#431** (navazuje na #282).

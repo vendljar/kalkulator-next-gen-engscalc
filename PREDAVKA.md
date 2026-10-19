@@ -1,3 +1,22 @@
+# Předávka — 19. 10. 2026: dávka O3 (v19.10.3), větev `claude/o3-kapitoly-vychozi` — výchozí texty kapitol + TD1 {TERMIN}
+
+Nad `origin/claude/integrace-16-10` (`e3995e6`, v19.10.1; v19.10.2 drží A2). Do integrace / `test` nic — slučuje
+koordinace (session_017KEALG3ppimL5fW2XswzrB). Podrobnosti: CHANGELOG v19.10.3, roadmapa #431 (hotovo), #330 (TD1).
+
+- **Hotovo (pushnuto):** `firmaDoplnVychoziTexty` po každém načtení firmy (import / `_nastaveni.json` přes
+  `konfiguraceImport`, online firma v `online_ui.js`) doplní CHYBĚJÍCÍ klíče kapitol CZ/EN/DE (bílá listina,
+  FR ne); `""` = vědomé vypuštění zůstává. Tlačítka „Doplnit výchozí text“ (pole) a „Doplnit všechny prázdné“.
+  TD1: výchozí kapitola V. se značkou `{TERMIN}` (termín dodání zakázky s ATYP, přeložený); se značkou bez
+  odrážky „Termín dodání“, bez termínu lhůta z Firmy / „dle dohody“; kontrola `terminAtyp` přepracovaná.
+  Řešení TD1 schválil J. V. 19. 10. ~11:25 UTC (přes koordinaci).
+- **Testy:** `test_kapitoly_vychozi` 51, `test_termin_kapitola` 39, `test_kontroly` +10; kolo nad 91f8111 VŠE
+  ZELENÉ 271/0/6, statické 3/3; cílené mutace 43/43.
+- **Po nasazení (J. V.):** Nastavení → Smlouvy / Šablony → Kapitoly nabídky zkontrolovat doplněné texty (kapitola V.
+  nově se `{TERMIN}`) → Nastavení → Firma → Zveřejnit firemní údaje online. Starší text kapitoly V. s pevným
+  číslem hlásí kontrola před nabídkou (radí značku).
+- **Při slučování:** konflikty čekej v CHANGELOG / PREDAVKA / `verze.txt` / `roadmap.json` (#431 předběžné id) /
+  `manual/obsah.json` / `src/firma.js` (V8 #367 sahá na Firmu) / `src/preklad.js` (heslo „dle dohody“).
+
 # Předávka — 19. 10. 2026: dávka O2 (v19.10.1), větev `claude/o2-b189` — B189 výchozí režim DPH ve SoD realizace
 
 Nad `origin/claude/integrace-16-10` (`62bd0b6`, v18.10.15). Do `test-draft` / `test` / `main` ani do integrace nic —
