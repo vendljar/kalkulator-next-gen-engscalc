@@ -171,17 +171,76 @@ Plán plateb PROJ: beze změny (`planPlatebFirmaVady`).
    cílené mutace (`'14'` v prefillu, součet 100 %, kontrola role). Každý nový test doložen před/po.
 6. Verze `vDEN.MĚSÍC.pořadí` podle dne commitu, příručka (Nastavení), CHANGELOG, roadmapa #367.
 
-Odhad: 1 dávka (jádro + UI) + půl dávky (věty v jazycích, rozšíření R1, R3–R5).
+Odhad: 1 dávka (jádro + UI + doplnění kapitol 8b) + 1 dávka (věty v jazycích, texty PROJ 8c, rozšíření R1, R3–R5).
 
-## 8. Otázky pro J. V. (s doporučením)
+## 8. Kapitoly nabídky IV.–VI. a doložky (doplněk koordinace 19. 10.)
+
+**Hlášení J. V.:** v produkčním Nastavení jsou kapitoly IV.–VI. a doložky česky nevyplněné a nabídka je
+vypouští, ač výchozí texty v `src/firma.js` (`DEFAULT_FIRMA.kapPozadavky … dolozkyDe`, ř. 295–306) jsou.
+
+### 8a. Proč se výchozí texty do uloženého Nastavení nedostaly
+
+1. Výchozí texty vznikly 21. 9. 2026 (#282). Firemní záznam produkce (`_DB/_nastaveni.json`
+   a zveřejněná kopie `/api/firma`) je starší — klíče kapitol v něm **vůbec nejsou** (ne prázdný řetězec).
+2. Načtení firmy obsah **celý nahradí**: `konfigNahradVMiste(NAST.firma, …)` nejdřív smaže všechny klíče
+   a pak vloží uložené (`src/konfigurace.js:107–116`; volá se při importu konfigurace `:201`, při načtení
+   složky _DB a při nasazení online firmy `src/ui/online_ui.js:1887`). Výchozí `DEFAULT_FIRMA` tím zmizí.
+3. Dorovnání chybějících klíčů po načtení (`konfigDorovnejNast`) se týká jen `KONFIG_DOPLNIT_KLICE =
+   ['tabViditelnost', 'kpiViditelne', 'zobrazeni']` (`src/konfigurace.js:51`) — **`firma` v seznamu není**.
+   Je to záměr: plošné doplnění by do skutečné firmy vrátilo ukázkový název, IČO a adresu.
+4. `firmaKZverejneni` kopíruje jen klíče, které v objektu jsou (`src/firma.js:525–539`), takže každé další
+   zveřejnění chybějící kapitoly zase vynechá.
+5. `firmaKapitola` pak čte `undefined` jako prázdno → `prazdne: true` → nabídka kapitolu vypustí
+   a kontrola `firmaKapitolyPrazdne` ji hlásí. Prázdný řetězec (vědomé smazání) a chybějící klíč (nikdy
+   nevyplněno) dnes nejdou rozlišit.
+
+Totéž by potkalo nové platební podmínky, kdyby se spoléhaly na uložené klíče — proto `podminkyEf`
+slučuje Firmu s továrnou **při čtení** (kap. 4), ne při ukládání.
+
+Ověření na produkci (fáze 2, bez zásahu): v Nastavení → Smlouvy / Šablony u kapitol svítí „nevyplněno“
+a v `_nastaveni.json` klíč `kapPozadavky` chybí. Kdyby tam byl jako `""`, platí bod 8b/2 (tlačítko).
+
+### 8b. Návrh nápravy
+
+1. **Automatické doplnění chybějících (ne smazaných) textů.** Nová funkce `firmaDoplnVychoziTexty(f)`:
+   pro bílou listinu klíčů (kapitoly IV.–VI. + doložky ve všech jazycích, nové `podminky`, texty PROJ z 8c)
+   doplní hodnotu z `DEFAULT_FIRMA` **jen když klíč chybí** (`undefined`). Identifikační údaje (název, IČO,
+   adresa, banka) se nikdy nedoplňují — jsou ukázkové. Volá se po každém `konfigNahradVMiste(NAST.firma, …)`.
+   Prázdný řetězec zůstane prázdný (vědomé smazání).
+2. **Tlačítko „Doplnit výchozí text“** u každé kapitoly a jazyka (jen administrátor) — naplní i pole se
+   `""`; u vyplněného pole se zeptá „Nahradit vlastní text výchozím?“ (potvrzení v aplikaci, ne `confirm()`).
+   Nahoře souhrnné „Doplnit všechny prázdné kapitoly“.
+3. Po doplnění pruh „místní změny: N polí → Zveřejnit“ (`firmaShodaSOnline`), aby to dostali i obchodníci.
+4. Testy: (a) načtení starého záznamu bez klíčů → kapitoly z výchozích, název firmy zůstane; (b) `""` se
+   nepřepíše; (c) tlačítko přepíše jen vybraný jazyk; pojistka před/po (dnes test a) selže).
+
+### 8c. Kapitoly ve stejné obrazovce s přepínačem OCK ↔ PROJ
+
+- **OCK:** dnešní kapitoly IV. Požadavky pro provedení realizace, V. Termíny realizace, VI. Předání díla,
+  Doložky (CZ/EN/DE/FR) přejdou pod kartu OCK vedle platebních podmínek.
+- **PROJ dnes kapitoly z Firmy nemá**, ale má jejich obdobu **natvrdo v kódu** `src/nabidka_proj.js`:
+  - ř. 304–308 „CENA NEZAHRNUJE“ (3 odrážky),
+  - ř. 309–313 „POŽADOVÁNO OD INVESTORA“ (3 odrážky) = obdoba kap. IV.,
+  - ř. 352–354 platební podmínky autorského dozoru,
+  - ř. 356–367 „TERMÍNY“ (10 řádků vázaných na činnost) = obdoba kap. V.,
+  - předání díla ani doložky nemá.
+- **Návrh:** karta PROJ dostane „Texty nabídky PROJ“: Cena nezahrnuje, Požadováno od investora, Termíny
+  (řádek = činnost + text, činnost určuje, zda se řádek tiskne), Doložky. Výchozí = dnešní texty z kódu,
+  překlady jako dnes ze slovníku (jazyková pole jako u OCK). **Doložky PROJ výchozí prázdné**, aby se výstup
+  nezměnil; zda je PROJ má tisknout (autorská práva ke studii a PD dávají smysl), rozhodne J. V. (Q5).
+- Předání díla (kap. VI.) PROJ nepotřebuje — předání dokumentace řeší SoD projekce čl. III.
+
+## 9. Otázky pro J. V. (s doporučením)
 
 1. **Umístění:** data ve Firmě, editace v Nastavení → Smlouvy / Šablony s přepínačem OCK | PROJ a společným
-   blokem nahoře? — *Doporučení: ano (náhled).*
+   blokem nahoře; splatnost zvlášť pro OCK a PROJ (14 / 14)? — *Doporučení: ano (náhled).*
 2. **Rozpracované zakázky:** změna standardu se propíše do rozpracovaných variant bez ručního přepisu,
    odeslané a zamčené zůstanou? — *Ano, jako plán plateb PROJ (K20-N1).*
 3. **Věty platebních podmínek (CN, SoD) i v EN/DE/FR do Firmy?** — *Ano, výchozí znění = dnešní
    slovník; FR jako u kapitol (prázdné → čeština s upozorněním).*
 4. **Součet ≠ 100 % ve firemním standardu:** zablokovat zveřejnění? — *Ano, blokovat; místně jen červený součet.*
-5. **Splatnost zvlášť pro OCK a PROJ?** — *Ano, každá karta vlastní pole, výchozí 14 / 14.*
-6. **Rozšíření:** typ smlouvy, licence PD, pojištění, „Cena nezahrnuje“ přidat do Firmy v téže dávce;
+5. **Kapitoly:** chybějící texty kapitol doplnit při načtení automaticky (ručně smazané ne) + tlačítko
+   „Doplnit výchozí text“; PROJ dostane vlastní texty (Cena nezahrnuje, Požadováno od investora, Termíny)
+   z dnešního kódu; doložky v nabídce PROJ? — *Ano; doložky PROJ zatím prázdné, zapnout je až rozhodnutím.*
+6. **Rozšíření:** typ smlouvy, licence PD, pojištění, „Cena nezahrnuje“ OCK do Firmy v téže dávce;
    ceny AD a variant SP ne (patří do ceníku PROJ), věta „5 let záruka“ z kapitoly V. pryč? — *Ano.*
