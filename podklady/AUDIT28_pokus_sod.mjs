@@ -51,9 +51,10 @@ const vyv = p('{{CIN_EZC_ZAC}}') + p('Ekonomická zadávací část') + p('{{CIN
 test('P3: vyvážený blok v blokyPryc zmizí i s textem', !dg.odstranPrazdneBloky(vyv, {}, ['CIN_EZC']).includes('Ekonomická'));
 /* začátek bloku v buňce tabulky, konec mimo ni (šablona upravená ve Wordu) */
 const nevyv = '<w:tbl><w:tr><w:tc>' + p('{{CIN_EZC_ZAC}}') + p('Ekonomická zadávací část') + '</w:tc></w:tr></w:tbl>' + p('{{CIN_EZC_KON}}');
-const out = dg.odstranPrazdneBloky(nevyv, {}, ['CIN_EZC']);
-test('P3 B191 trvá: nevyvážený blok z blokyPryc zůstane v dokumentu a značky zmizí (tiše)',
-  out.includes('Ekonomická') && !out.includes('CIN_EZC'), out);
+let out = '';
+try { out = dg.odstranPrazdneBloky(nevyv, {}, ['CIN_EZC']); } catch (e) { out = 'CHYBA: ' + e.message; }
+test('P3 B191 opraveno (v19.10.4): nevyvážený blok z blokyPryc → chyba, dokument nevznikne (dřív tiše zůstal)',
+  out.startsWith('CHYBA: ') && out.includes('CIN_EZC'), out);
 
 /* P4 — injekce {{…}} a XML z hodnot uživatele do nových symbolů. */
 const ph = { SOD_MISTO_PLNENI_DRUH: '{{SOD_CISLO_SMLOUVY}}</w:t><w:t>x&', SOD_CISLO_SMLOUVY: 'TAJNE' };

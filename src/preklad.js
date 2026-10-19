@@ -409,6 +409,8 @@ const PREKLAD = {
   "XX.XX.2026": ["XX.XX.2026","XX.XX.2026","XX.XX.2026"],
   "xxxx": ["xxxx","xxxx","xxxx"],
   "XXXXX": ["XXXXX","XXXXX","XXXXX"],
+  /* Náhrada značky {TERMIN} bez termínu (dávka O3 / TD1, 19. 10. 2026). */
+  "dle dohody": ["as agreed", "nach Vereinbarung", "selon accord"],
   "Zahájení montáže cca 12 týdnů po podpisu SoD a odsouhlasení finálních dispozičních výkresů celé technologie výtahu a šachty.": ["Installation will start approx. 12 weeks from contract signature AND final approved elevator and shaft layout drawings.", "Die Installation beginnt ca. 12 Wochen nach Vertragsunterzeichnung UND endgültiger Genehmigung der Aufzugs- und Schachtgrundrisszeichnungen.", "Le montage commencera env. 12 semaines après la signature du contrat ET l’approbation définitive des plans d’implantation de l’ascenseur et de la gaine."],
   "Zajištění montážního lešení": ["Provide installation scaffolding.", "Bereitstellung eines Montagegerüsts.", "Mise à disposition d’un échafaudage de montage."],
   "Zajištění přístupu na místo realizace a do všech prostor s realizací díla souvisejících včetně transportních cest (nutné dojednat před zahájením přípravných prací)": ["Ensuring access to the site and to all areas related to installation, including transport routes (to be arranged before the start of pre-work).", "Sicherstellung des Zugangs zur Baustelle und zu allen mit der Installation zusammenhängenden Bereichen, einschließlich der Transportwege (vor Beginn der Vorarbeiten zu vereinbaren).", "Assurer l’accès au site et à tous les espaces liés à la réalisation, y compris les voies de transport (à convenir avant le début des travaux préparatoires)."],

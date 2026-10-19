@@ -538,6 +538,19 @@ const KONTROLY = [
     },
   },
   {
+    /* STŘECHA PŘES NEJVYŠŠÍ MŮSTEK BEZ ROZMĚRŮ (#356). Jádro připočte
+     * plochu nad můstkem jen ze zadané šířky a hloubky můstku; bez nich
+     * jde do nabídky střecha jen nad šachtou. Upozornění, ne zábrana. */
+    kod: 'mustekStrecha', kde: 'Kalkulace OCK', nazev: 'Střecha přes nejvyšší můstek',
+    zjisti(ctx) {
+      const r = ctx.vysledek;
+      if (!r || !r.strecha || !r.strecha.mustekNahore || r.strecha.mustekM2 > 0) return null;
+      return { text: 'Můstek je i v nejvyšším nástupišti, takže střecha šachty pokračuje nad ním až k fasádě, '
+        + 'ale chybí rozměr můstku (šířka nebo hloubka) — plocha střechy nad můstkem se do zastřešení '
+        + 'nepřipočetla. Doplňte rozměry můstku v zadání šachty.' };
+    },
+  },
+  {
     /* STATIKA DVAKRÁT (P5 / K19-N109, 2. 10. 2026). Než měla aplikace druhý
      * řádek statiky (opláštění), dorovnávaly se převedené zakázky ručním
      * přepisem hodin řádku STATICKÉ POSOUZENÍ (10–20 h = OCK + opláštění).
@@ -815,10 +828,27 @@ const KONTROLY = [
     kod: 'terminAtyp', kde: 'Nabídka', nazev: 'Termín dodání u atypické zakázky',
     zjisti(ctx) {
       const z = ctx.zadani;
-      if (ctx.jenProj || !z || !z.atyp || !ctx.nast || !ctx.nast.firma) return null;
+      if (ctx.jenProj || !z || !ctx.nast || !ctx.nast.firma) return null;
       const f = ctx.nast.firma;
       const hodn = id => String(f[id] == null ? '' : f[id]).trim();
       const termin = String(ctx.terminDodani || '').trim();
+      /* ZNAČKA {TERMIN} (dávka O3 / TD1, 19. 10. 2026): text kapitoly V.
+       * nese termín zakázky sám, dvě čísla vzniknout nemůžou. Ozve se jen
+       * tehdy, když termín chybí úplně — pak by v nabídce stálo
+       * „dle dohody" (u běžné zakázky i u ATYP). */
+      const kapV = (typeof firmaKapitola === 'function') ? firmaKapitola(f, 'kapTerminy', ctx.jazyk) : null;
+      if (kapV && kapV.termin) {
+        if (termin) return null;
+        if (!hodn('terminDodaniOck'))
+          return { text: 'Nabídka uvede v kapitole V. místo termínu dodání „dle dohody“: termín dodání '
+            + 'není v krycím listu ani jako standardní lhůta v Nastavení → Firma → Smluvní standardy'
+            + (z.atyp ? ' (u atypické zakázky se navíc prodlužuje o ATYP)' : '') + '.' };
+        if (!z.atyp) return null;
+        return { text: 'Zakázka je atypická, ale termín dodání v krycím listu je smazaný — kapitola V. '
+          + 'uvede standardní lhůtu z Firmy („' + hodn('terminDodaniOck') + '“) bez prodloužení za ATYP. '
+          + 'Doplňte termín v krycím listu (sekce Termín dodání).' };
+      }
+      if (!z.atyp) return null;
       if (!termin) {
         return { text: 'Zakázka je atypická, ale nabídka neuvede termín dodání s prodloužením za ATYP — '
           + 'v Nastavení → Firma → Smluvní standardy není vyplněná standardní lhůta dodání OCK '
@@ -828,15 +858,14 @@ const KONTROLY = [
       const zaklad = cislo(hodn('terminDodaniOck'));
       const vNabidce = cislo(termin);
       if (zaklad == null || vNabidce == null || zaklad === vNabidce) return null;
-      const kap = (typeof firmaKapitola === 'function')
-        ? firmaKapitola(f, 'kapTerminy', ctx.jazyk).radky.join('\n') : '';
+      const kap = kapV ? kapV.radky.join('\n') : '';
       const re = /(\d+)\s*(?:týdn|weeks?\b|wochen|semaines)/gi;
       let m, koliduje = false;
       while ((m = re.exec(kap))) if (parseInt(m[1], 10) === zaklad) koliduje = true;
       if (!koliduje) return null;
       return { text: 'V nabídce budou dva různé termíny: termín dodání „' + termin + '" a v textu kapitoly V. '
-        + 'z Firmy standardní lhůta ' + zaklad + ' týdnů. Vypusťte číslo z textu kapitoly V. '
-        + '(Nastavení → Firma → Kapitoly nabídky) — termín se doplňuje ze zakázky sám.' };
+        + 'z Firmy standardní lhůta ' + zaklad + ' týdnů. Nahraďte číslo v textu kapitoly V. značkou {TERMIN} '
+        + '(Nastavení → Firma → Kapitoly nabídky) — dosadí se za ni termín dodání ze zakázky.' };
     },
   },
   {

@@ -69,6 +69,11 @@ chybu chytit dřív. Mazat celé objekty i s čárkou před nimi.
 
 ## Vzhled (neměnit bez pokynu)
 
+**Odkazy vždy živé a proklikávací (J. V. 19. 10. 2026):** URL v `cekaNaJV`, `co`,
+`dalsi`, `log`, `releasy` a `celkem.detail` stránka sama převádí na odkaz (funkce
+`lnk` v šabloně) — psát celé `https://…`, nikdy zkrácené; vlastní render bez `lnk`
+nepoužívat.
+
 Týdenní limit v kokpitu NE (J. V. 16. 10.): procento čerpání z prostředí nejde zjistit, odhad by byl zavádějící.
 
 

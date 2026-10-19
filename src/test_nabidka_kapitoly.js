@@ -375,7 +375,14 @@ KAPITOLY.forEach(base => {
  * zákazník dostal o 4 týdny kratší termín. Rozhodnutí J. V. 24. 9. 2026:
  * termín ze zakázky je první odrážka kapitoly V., zbytek zůstává z Firmy. */
 {
-  const lhuta = f => { f.terminDodaniOck = 'cca 12 týdnů'; f.terminAtypTydny = '4'; };
+  /* Od O3 (19. 10. 2026) nese výchozí text kapitoly V. značku {TERMIN}.
+   * Tyhle kontroly hlídají chování STARÉHO textu bez značky (uloženého ve
+   * Firmě dřív) — proto se do firmy vrací pevné „cca 12 týdnů". */
+  const stary = f => ['', 'En', 'De'].forEach(suf => {
+    f['kapTerminy' + suf] = fm.DEFAULT_FIRMA['kapTerminy' + suf]
+      .replace('{TERMIN}', { '': 'cca 12 týdnů', En: 'cca 12 weeks', De: 'ca. 12 Wochen' }[suf]);
+  });
+  const lhuta = f => { f.terminDodaniOck = 'cca 12 týdnů'; f.terminAtypTydny = '4'; stary(f); };
   const kapV = (n) => (n.sekce.find(s => /^V\. /.test(s.sekce) || /^V\. /.test(String(s.sekce))) || { radky: [] }).radky;
   const bezny = nahled('cz', lhuta, z => { z.atyp = false; });
   const atyp = nahled('cz', lhuta, z => { z.atyp = true; });

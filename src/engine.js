@@ -1075,6 +1075,21 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
    * Montáž má od 11. 8. 2026 vlastní přepínač právě proto, aby šla objednat
    * bez materiálu; kdyby se její množství dál řídilo materiálem, zůstala by
    * v tom případě na nule a ten přepínač by byl k ničemu. */
+  /* STŘECHA PŘES NEJVYŠŠÍ MŮSTEK (#356, rozhodnutí J. V. 16. 10. 2026).
+   * Je-li můstek i v nejvyšším nástupišti (počet můstků ≥ nadzemní
+   * nástupiště — táž podmínka jako věta specifikace „přetažená i přes
+   * nástupní můstek"), střecha EXT pokračuje nad ním až k fasádě: plocha
+   * navíc = (šířka můstku + 0,2 m přesah jako u šachty) × hloubka můstku
+   * (k fasádě bez přesahu). Jedna střecha = jedna položka zastřešení
+   * i příplatku za měď. Nižší můstky kryje můstek nad nimi; bez rozměrů
+   * se nepřičte nic (kontrola `mustekStrecha` to řekne). Zakázka bez můstku
+   * nebo s můstky jen níž má plochu beze změny — Model 1 tím 1:1 zůstává. */
+  const mustekNahore = ext && mustky > 0 && nastupist > 1 && mustky >= nastupist - 1;
+  const mustekSirka = +z.mustekSirkaMm > 0 ? +z.mustekSirkaMm / 1000 : 0;
+  const mustekHloubka = +z.mustekHloubkaMm > 0 ? +z.mustekHloubkaMm / 1000 : 0;
+  const strechaMustekM2 = (mustekNahore && mustekSirka && mustekHloubka) ? (mustekSirka + 0.2) * mustekHloubka : 0;
+  const strechaM2 = (z.sirka + 0.2) * (z.hloubka + 0.1) + strechaMustekM2;
+
   const prechKs = prechodoveAno ? nastupist : 0;
   const prechKsMont = prechMontAno ? nastupist : 0;
   const prechKg1 = 8500 * (0.1 * sirkaDveri * 0.002);
@@ -1763,7 +1778,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     mkItem('MONTÁŽ NA STAVBĚ', montazHod, c.montazHodKc, { cenaPath: 'C.montazHodKc' }),
     ext ? mkItem('VĚTRACÍ MŘÍŽKA (EXT)', 2, c.vetraciMrizkaKc, { cenaPath: 'C.vetraciMrizkaKc' }) : null,
     mkItem('INTERNÍ TRANSPORT', 2, c.transportKc, { cenaPath: 'C.transportKc' }),
-    ext ? mkItem('ZASTŘEŠENÍ ŠACHTY (EXT)', (z.sirka + 0.2) * (z.hloubka + 0.1), c.zastreseniM2Kc, { cenaPath: 'C.zastreseniM2Kc' }) : null,
+    ext ? mkItem('ZASTŘEŠENÍ ŠACHTY (EXT)', strechaM2, c.zastreseniM2Kc, { cenaPath: 'C.zastreseniM2Kc' }) : null,
     ext ? mkItem('OPLECHOVÁNÍ K FASÁDĚ (EXT)', (H - z.prohluben) * 2, c.oplechFasadaBmKc, { cenaPath: 'C.oplechFasadaBmKc' }) : null,
     /* MŮSTKY (P7 / K13-N59, 25. 9. 2026). Do 25. 9. byl můstek jen evidenční
      * údaj a v ceně nebyl nikde. Řádek vzniká JEN u zakázky s můstky, takže
@@ -2077,7 +2092,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     prechMontAno ? null : mkPrip('prechMont', 'PŘECHODOVÉ PLECHY - NEREZ (MONTÁŽ)', nastupist, pp.prechMontKc, { cenaPath: 'C.priplatky.prechMontKc' }),
     mkPrip('madlaBoky', 'MADLA NA BOČNÍCH STĚNÁCH (dřevo, lak)', (nastupist - 1) * ((z.hloubka + 0.16) * 1.2) * 2, pp.madlaBmKc, { cenaPath: 'C.priplatky.madlaBmKc' }),
     mkPrip('madlaZadni', 'MADLA NA ZADNÍ STĚNĚ (dřevo, lak)', (nastupist - 1) * ((z.sirka + 0.16) * 1.2), pp.madlaBmKc, { cenaPath: 'C.priplatky.madlaBmKc' }),
-    ext ? mkPrip('medStrecha', 'PŘÍPLATEK ZA STŘECHU V MĚDI (EXT)', (z.sirka + 0.2) * (z.hloubka + 0.1), pp.medStrechaM2, { cenaPath: 'C.priplatky.medStrechaM2' }) : null,
+    ext ? mkPrip('medStrecha', 'PŘÍPLATEK ZA STŘECHU V MĚDI (EXT)', strechaM2, pp.medStrechaM2, { cenaPath: 'C.priplatky.medStrechaM2' }) : null,
     ext ? mkPrip('ventilator', 'VENTILÁTOR (EXT)', 1, pp.ventilatorKc, { cenaPath: 'C.priplatky.ventilatorKc' }) : null,
     mkPrip('zabranyDvere', 'ZÁBRANY DO DVEŘNÍCH VSTUPŮ', nastupist, pp.zabranyDvereKc, { cenaPath: 'C.priplatky.zabranyDvereKc' }),
     /* MONTÁŽ ŠACHETNÍCH DVEŘÍ zrušena 2. 9. 2026 na pokyn J. V.: v excelové
@@ -2211,6 +2226,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     dily: { terceKs, terceKg, listyKs, listyBm: listyCelkBm, listyKg, oplDvereKs, oplDvereKg, oplDvereM2,
             podestKs, podestKg, podestM2, prechKs, prechKg },
     spojovaci: { rows: spojovaciRows, celkem: spojovaciKc, nytovaniKs },
+    strecha: { m2: ext ? strechaM2 : 0, mustekNahore, mustekM2: strechaMustekM2 },
     lakovani: { lakovna, tomas, pouzito: lakovaniKc, rezim: L.rezim, vlastniRows: vlLakRows, vlastniKc: lakVlastniKc },
     montaz: { hodinyNavic: hn, hodinyNavicCelkem: hodinyNavic, hod1osoba: montazHod1, hodCelkem: montazHod, dni: montazHod1 / 8 },
     nazvyPolozek,
