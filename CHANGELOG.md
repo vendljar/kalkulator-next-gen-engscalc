@@ -8,6 +8,35 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v19.10.9 — šablona Wordu nabídky PROJ v6: texty nabídky PROJ z Nastavení → Firma (větev claude/w1-sablona-proj-v6)
+
+Dávka W1 (koordinace „ŘÍDÍCÍ 19.10“), nad `claude/v8-367-firma` (v19.10.7). Zadání J. V. 19. 10. 2026: texty nabídky PROJ z Firmy (#367 Q5) se mají tisknout i ve Wordu.
+
+- **Šablona PROJ v6** (`node nastroje/vyrob_sablony.js --proj-v6 <podklady> [výstup]`,
+  vstup `Sablona_NABIDKA_PROJ_v5.docx`, výstup v6 + `_EN/_DE/_FR`): pevné řádky
+  tabulek **CENA NEZAHRNUJE** a **POŽADOVÁNO OD INVESTORA** nahradí jeden řádek
+  se symbolem `{{PROJ_CENA_NEZAHRNUJE}}` / `{{PROJ_POZADOVANO_OD_INVESTORA}}`,
+  **TERMÍNY** dvousloupcový řádek `{{PROJ_TERMINY_CINNOST}}` |
+  `{{PROJ_TERMINY_TERMIN}}`; za termíny přibude blok **DOLOŽKY**
+  (`{{PROJ_DOLOZKY}}`). Každý blok stojí ve značkách `{{BLOK_<X>_ZAC/_KON}}`
+  (poznámky pod termíny patří k termínům), takže prázdný blok — výchozí
+  vypnuté doložky PROJ — zmizí i s nadpisem. Nadpisy a vzhled tabulek z v5.
+- **Aplikace:** řádek tabulky se symbolem textu PROJ se zopakuje za každou
+  odrážku (`rozvinRadkyZaRadek`, jako věty platebního kalendáře CN v14);
+  termíny se rozvíjí jako **dvojice symbolů** — i-tý řádek tabulky dostane
+  i-tou činnost vlevo a i-tý termín vpravo. Nové symboly
+  `{{PROJ_TERMINY_CINNOST}}`, `{{PROJ_TERMINY_TERMIN}}` (jen nabízené činnosti);
+  `{{PROJ_TERMINY}}` zůstává pro šablonu s jedním místem.
+- **Rozdíl Wordu v6 proti v5 s výchozí Firmou:** mimo tři bloky shodný text
+  (ověřeno nad skutečnou v5). V blocích se tiskne výchozí znění Firmy (= online
+  nabídka): pět řádků se od pevného textu v5 drobně liší (čárka a „vyplývajících“
+  v CENA NEZAHRNUJE, termín zaměření v jednom řádku, termín stanovisek a IČ,
+  EZC bez dovětku) a termíny se tisknou **jen u nabízených činností** (v5 všech 10).
+- **Nastavení → Smlouvy / Šablony → PROJ → Texty nabídky PROJ:** popis říká, že
+  Word je bere od šablony v6.
+- **Testy:** `src/test_sablona_proj_v6.js` (33 kontrol se skutečnou v5,
+  28 bez ní) — bez změny selže na prvních dvou kontrolách, po změně zelený.
+
 ## v19.10.7 — #367 fáze 2b: věty kalendáře v jazycích, texty nabídky PROJ a rozšíření z Firmy (větev claude/v8-367-firma)
 
 **Kolo `--jen build,sady,staticke` nad 7862576 (v19.10.7, 19. 10. 2026) — VŠE ZELENÉ:** sady 272 prošlo / 0 selhalo / 6 přeskočeno (`test.js` ostrý ceník, 5 harnessů bez `KNG_PODKLADY`), statické 3/3. Cílené mutace `#367` jádro 18/18, server 2/2. Plné mutační kolo neběželo.
