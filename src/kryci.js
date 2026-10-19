@@ -51,19 +51,26 @@ const KRYCI_LIMIT_POKUT = ['Uplatněn limit 10 %', 'NEUPLATNĚN limit 10 %'];
  * stavby zná jen obchodník; rozbalovátko přidá „jiné znění…" samo. */
 const KRYCI_MISTO_PLNENI = ['bytový dům', 'rodinný dům', 'administrativní budova'];
 /* Režim DPH ve smlouvě o dílo realizace (rozhodnutí J. V. 18. 10. 2026).
- * Pořadí = klíče SOD_DPH_REZIMY v sod.js. Výchozí podle země objednatele
- * (kryciDphRezimVychozi): CZ → česká DPH, jiný stát EU → reverse charge EU;
- * obchodník přepíše. */
+ * Pořadí = klíče SOD_DPH_REZIMY v sod.js. Výchozí podle DIČ objednatele
+ * (kryciDphRezimVychozi, B189 — rozhodnutí J. V. 19. 10. 2026):
+ *   DIČ CZ…   → přenesená daňová povinnost (tuzemsko, § 92e ZDPH) — jako
+ *               šablona v2, kde byla natvrdo,
+ *   bez DIČ   → česká DPH (nepodnikatel / neplátce),
+ *   jiné DIČ  → BEZ výchozí volby (EU i mimo EU): u prací na stavbě rozhoduje
+ *               místo stavby, ne DIČ — obchodník vybere sám a smlouva bez
+ *               volby nevznikne (sodDphZabrana v sod.js).
+ * Ruční volba má vždy přednost (kryciHodnota); uložená volba se nemění. */
 const KRYCI_DPH_REZIMY = ['česká DPH v zákonné sazbě', 'přenesená daňová povinnost (tuzemsko)',
   'reverse charge EU (zákazník z jiného státu EU)'];
 /* Země objednatele: zakázka nemá pole státu, pozná se z předpony DIČ
- * objednatele (formát VIES — CZ…, DE…, EL… pro Řecko). Prázdné DIČ, CZ
- * a stát mimo EU = česká DPH (mimo EU rozhodne obchodník ručně). */
+ * objednatele (formát VIES — CZ…, DE…, EL… pro Řecko). Seznam států EU
+ * zůstává pro ostatní moduly; výchozí volbu od B189 neurčuje. */
 const KRYCI_EU_DIC = ['AT', 'BE', 'BG', 'CY', 'DE', 'DK', 'EE', 'EL', 'ES', 'FI', 'FR', 'HR', 'HU', 'IE', 'IT',
   'LT', 'LU', 'LV', 'MT', 'NL', 'PL', 'PT', 'RO', 'SE', 'SI', 'SK'];
 function kryciDphRezimVychozi(zak) {
-  const pre = String((zak && zak.dic) || '').replace(/\s/g, '').toUpperCase().slice(0, 2);
-  return KRYCI_EU_DIC.indexOf(pre === 'GR' ? 'EL' : pre) >= 0 ? KRYCI_DPH_REZIMY[2] : KRYCI_DPH_REZIMY[0];
+  const dic = String((zak && zak.dic) || '').replace(/\s/g, '').toUpperCase();
+  if (!dic) return KRYCI_DPH_REZIMY[0];
+  return dic.slice(0, 2) === 'CZ' ? KRYCI_DPH_REZIMY[1] : '';
 }
 
 /* Datum tisku pro předvyplnění pole „Dne" (20. 8. 2026). Formát YYYY-MM-DD,
@@ -340,7 +347,7 @@ const KRYCI_SEKCE = [
     /* Režim DPH (18. 10. 2026): věta čl. V odst. 2 a odst. 3 šablony v3
      * ({{SOD_DPH_REZIM}}, {{SOD_DPH_PROHLASENI}}) — skládá sod.js. */
     { id: 'sodDphRezim', label: 'Režim DPH ve smlouvě', verze: ['bo'], typ: 'vyber', o: KRYCI_DPH_REZIMY,
-      prefill: c => kryciDphRezimVychozi(c && c.zak), src: 'podle DIČ zákazníka (CZ → česká DPH, EU → reverse charge EU)' },
+      prefill: c => kryciDphRezimVychozi(c && c.zak), src: 'podle DIČ zákazníka (CZ → přenesená povinnost, bez DIČ → česká DPH, cizí DIČ → vyberte podle místa stavby)' },
     { id: 'sodMistoPlneni', label: 'Místo plnění — druh stavby', verze: ['bo'], typ: 'vyber', o: KRYCI_MISTO_PLNENI,
       sod: 'SOD_MISTO_PLNENI_DRUH', ph: 'např. polyfunkční dům',
       src: 'věta smlouvy „Místem provádění díla je … na adrese …"' },
@@ -1170,4 +1177,4 @@ if (typeof module !== 'undefined')
     kryciFaktura2Dopocet, kryciFaktura2Sync,
     KRYCI_PRAVIDLA_PLATEB, KRYCI_FAKTURACE_MESICNE_VETA, KRYCI_VETY_V13, kryciPlatbaProcento, kryciPlatbyStary,
     kryciPlatebniKalendar, kryciPlatebniSymboly, kryciSodPlatby, kryciSodMilnik,
-    KRYCI_MISTO_PLNENI, KRYCI_DPH_REZIMY, kryciDphRezimVychozi, kryciDnesIso, kryciPokutaStav, kryciPoleHodnota };
+    KRYCI_MISTO_PLNENI, KRYCI_DPH_REZIMY, KRYCI_EU_DIC, kryciDphRezimVychozi, kryciDnesIso, kryciPokutaStav, kryciPoleHodnota };

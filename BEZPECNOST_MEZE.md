@@ -741,12 +741,22 @@ v prohlížeči jde na server týmž `/api/zobrazeni`. Hlídá `test_zobrazeni_h
 Mez: části `program` (ceník) a `firma` heslo nechtějí ani na své přímé cestě —
 to je otázka rozsahu B168, ne obejití.
 
-### B189 — výchozí režim DPH ve SoD realizace podle DIČ (OTEVŘENO, střední)
+### B189 — výchozí režim DPH ve SoD realizace podle DIČ — VYŘEŠENO v19.10.1 (rozhodnutí J. V. 19. 10. 2026)
 
-DIČ CZ → česká DPH (šablona v2 měla přenesenou daňovou povinnost), DIČ EU →
-reverse charge podle čl. 196 bez ohledu na místo stavby. Obchodník volbu
-přepíše; do rozhodnutí J. V. / účetní (roadmapa #430) se volba u každé SoD
-realizace v3 kontroluje ručně.
+`kryciDphRezimVychozi`: DIČ CZ → přenesená daňová povinnost (tuzemsko, § 92e
+ZDPH, jako šablona v2), bez DIČ → česká DPH, DIČ jiného státu EU i mimo EU →
+**bez výchozí volby** (místo plnění u stavby určuje adresa nemovitosti, ne DIČ).
+Bez zvoleného režimu smlouva o dílo realizace **nevznikne** (fail-closed):
+`sodDphZabrana` v `src/sod.js` — `sodData` hází, takže zastaví serverovou
+i místní šablonu (obě jdou přes registr dokumentů), a `dokumentZabrana('sod')`
+zhasne tlačítko s toutéž větou a odkazem na volbu v krycím listu. Ruční volba
+má přednost; uložená volba i zmrazené předvyplnění zamčené varianty se
+nemění. Vlastní znění režimu se počítá jako volba (symboly zůstanou `{{…}}`).
+Hlídá `src/test_sod_en.js` (2c, oddíl B189; proti 62bd0b6 40/7 → 47/0),
+pokus `AUDIT28_pokus_sod.mjs` P1 (otočen), mutace „B189: …“ (8 v jádru, 1
+v `netlify/mutace.mjs`). **Mez:** znění vět je předběžné do kontroly účetní
+(`podklady/SOD_EN_KONTROLA.md`, body 1–6); smlouvy vytištěné před v19.10.1
+bez uložené volby se při dotisku řídí novou výchozí volbou (CZ → přenesená).
 
 ### B190 — skladné s tečkou tisíců — OPRAVENO v18.10.12
 

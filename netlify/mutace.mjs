@@ -100,7 +100,9 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* B168, B176 (18. 10. 2026): matice jen s heslem správce, neznámé právo nepovoleno. */
      'test_zobrazeni_heslo.mjs', '../src/test_zobrazeni.js',
      /* H1 (18. 10. 2026): B171 text odhlášení, B174/B175 noční úklid, B186 čísla textem. */
-     '../src/test_odhlaseni_text.js', 'test_uklid.mjs', '../src/test_cisla_textem.js'];
+     '../src/test_odhlaseni_text.js', 'test_uklid.mjs', '../src/test_cisla_textem.js',
+     /* B189 (19. 10. 2026): zábrana SoD bez režimu DPH v prohlížeči. */
+     '../src/test_sod_en.js'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -2585,6 +2587,11 @@ const MUTACE = [
     proc: 'pomocná funkce by počítala správně, ale správce by v dialogu nic neviděl' },
   /* H1 (18. 10. 2026): hygiena drobných nálezů. Hlídají test_odhlaseni_text.js,
    * test_uklid.mjs, test_analytika.js a test_cisla_textem.js. */
+  /* B189 (19. 10. 2026): tlačítko SoD realizace zhasne bez režimu DPH. Hlídá test_sod_en (2c). */
+  { nazev: 'B189: zábrana SoD bez režimu DPH v prohlížeči mlčí', soubor: '../src/ui/ukazkove_ui.js',
+    hledej: "  if (typ === 'sod' && typeof sodDphZabrana === 'function' && typeof ZAK !== 'undefined') {",
+    nahrad: "  if (false) {",
+    proc: 'tlačítko by svítilo a obchodník by se o chybějícím režimu DPH dozvěděl až chybou z registru' },
   { nazev: 'B171: tlačítko Odhlásit v liště bez nápovědy o všech zařízeních', soubor: '../src/ui/online_ui.js',
     hledej: '    <button class="mini" onclick="onlineOdhlas()" title="${esc(ODHLASIT_TITULEK)}">Odhlásit</button>`;',
     nahrad: '    <button class="mini" onclick="onlineOdhlas()">Odhlásit</button>`;',

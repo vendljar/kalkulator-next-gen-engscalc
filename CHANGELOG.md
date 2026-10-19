@@ -8,6 +8,39 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v19.10.1 — B189: výchozí režim DPH ve smlouvě o dílo realizace podle rozhodnutí J. V. (větev claude/o2-b189)
+
+Dávka O2 (zadání koordinace „ŘÍDÍCÍ 18.10“), nad `origin/claude/integrace-16-10`
+(`62bd0b6`, v18.10.15). Řeší střední nález **B189** z auditu kola 28 (roadmapa
+**#430**) rozhodnutím J. V. 19. 10. 2026.
+
+- **Výchozí režim (`kryciDphRezimVychozi`, `src/kryci.js`):** DIČ zákazníka
+  **CZ… → přenesená daňová povinnost (tuzemsko, § 92e ZDPH)** — jako pevná věta
+  šablony v2; **bez DIČ → česká DPH**; **DIČ jiného státu EU i mimo EU → bez
+  výchozí volby** (pole „— nevybráno —“; rozhoduje místo stavby). Ruční volba
+  má vždy přednost, uložená volba ani zmrazené předvyplnění zamčené varianty
+  se nemění.
+- **Zábrana tisku (fail-closed):** `sodDphZabrana` (`src/sod.js`) — bez
+  zvoleného režimu smlouva o dílo realizace nevznikne. `sodData` hází (registr
+  dokumentů → serverová i místní šablona), `dokumentZabrana('sod')` zhasne
+  tlačítko s toutéž větou, pod tlačítkem svítí důvod a tlačítko *Přejít na
+  volbu režimu DPH* (`src/ui/sod_ui.js`). Vlastní znění režimu se počítá jako
+  volba (symboly zůstanou `{{…}}`). SoD projekce a plné moci se netýká.
+- **Věty DPH:** tuzemská přenesená povinnost má vlastní větu (odlišnou od
+  reverse charge čl. 196) už od šablony v3 — nový symbol ani věta nepřibyly,
+  EN/DE/FR beze změny. Znění všech vět je **předběžné do kontroly účetní**;
+  do `podklady/SOD_EN_KONTROLA.md` přibyl oddíl o výchozí volbě a otázky
+  (5) odkaz na § 92e / „domestic reverse charge“ a (6) věta pro zákazníka mimo
+  EU se stavbou v ČR.
+- **Testy:** `src/test_sod_en.js` 2c, oddíl B189 (10 kontrol: CZ, bez DIČ, EU,
+  mimo EU, zábrana v registru i v UI, ruční přednost, vlastní znění, zamčená
+  varianta) — proti 62bd0b6 **40 prošlo / 7 selhalo**, po opravě **47 / 0**;
+  pokus `podklady/AUDIT28_pokus_sod.mjs` P1 otočen (18 / 0). Mutace „B189: …“
+  8 v `mutace_jadro.mjs` (dvě zastaralé mutace DPH nahrazeny), 1 v
+  `netlify/mutace.mjs` (UI zábrana; sada `test_sod_en.js` přidána do SADY).
+- **Zápis:** `BEZPECNOST_MEZE.md` a audit (B189 vyřešeno), roadmapa #430
+  hotovo, příručka (kap. 24, „Co je nového ve verzi v19.10.1“).
+
 ## v18.10.15 — B188: obnova matice zobrazení ze zálohy jen s heslem správce (větev claude/o1-b188)
 
 **Celé testovací kolo K2 nad d3fda27 (v18.10.15, 18. 10. 2026) — VŠE ZELENÉ:** build OK, příručka v18.10.15 (22 snímků); sady s podklady 274/0/1 (přeskočen jen `test.js`, ostrý ceník); mutace jádra 248/248; mutace serveru 538/538 v 56 skupinách, 0 přeživších, 0 chybně zadaných; statické kontroly 3/3. Podklady: 31 šablon z Disku, PROJ v3 i jako `Sablona_NABIDKA_PROJ.docx` (B193), SoD realizace v3 a projekce v4 vyrobené z testovaného SHA. **Integrace do `test`: fast-forward 1cbab3a → c9577ed 19. 10. 2026 (pokyn J. V. „pushni do test“).**

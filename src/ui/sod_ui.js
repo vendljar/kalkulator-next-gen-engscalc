@@ -127,9 +127,27 @@ function sodKarta() {
       <button class="primary"${zab} onclick="sodWord('sod')">Vytvořit smlouvu o dílo (Word)</button>
       ${typeof tiskJazykVyber === 'function' ? tiskJazykVyber() : ''}
     </div>
+    ${sodDphZabranaNote()}
     <div class="note">Anglická smlouva (Jazyk tisku „anglicky") vzniká z anglické šablony smlouvy (překlad české,
       Nastavení → Šablony → EN) s cenou v eurech; bez ní aplikace smlouvu v angličtině nevytvoří.</div>
     <div class="note sodStav_sod" style="margin-top:4px"></div>`;
+}
+
+/* B189 (19. 10. 2026): bez zvoleného režimu DPH (zákazník s cizím DIČ)
+ * svítí pod tlačítkem důvod a odkaz přímo na volbu v krycím listu výše. */
+function sodDphZabranaNote() {
+  if (typeof sodDphZabrana !== 'function' || typeof ZAK === 'undefined') return '';
+  let duvod = '';
+  try { duvod = sodDphZabrana(ZAK, aktivniVarianta(ZAK)); } catch (e) { duvod = ''; }
+  if (!duvod) return '';
+  return `<div class="note sod-dph-zabrana" style="color:#b91c1c;font-weight:600;margin-top:4px">⛔ ${esc(duvod)}
+    <button class="mini noprint" onclick="sodDphNaVolbu()">Přejít na volbu režimu DPH</button></div>`;
+}
+function sodDphNaVolbu() {
+  const el = document.querySelector('select[onchange^="klVyber(\'sodDphRezim\'"]');
+  if (!el) return;
+  if (typeof el.scrollIntoView === 'function') el.scrollIntoView({ block: 'center' });
+  el.focus();
 }
 
 /* ---------- karta v Kalkulaci PROJ: SoD projekce + plná moc ---------- */

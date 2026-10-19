@@ -22,11 +22,11 @@ const test = (n, cond, info) => { if (cond) { ok++; console.log('OK   ' + n); }
 const R0 = kr.KRYCI_DPH_REZIMY;
 const vych = dic => kr.kryciDphRezimVychozi({ dic });
 test('P1: bez DIČ → česká DPH', vych('') === R0[0]);
-test('P1 B189 trvá: DIČ CZ (plátce) → česká DPH, ne přenesená (v2 měla natvrdo přenesenou)', vych('CZ12345678') === R0[0], vych('CZ12345678'));
-test('P1: DIČ DE → reverse charge EU bez ohledu na místo stavby (B189)', vych('DE123456789') === R0[2]);
-test('P1: DIČ GR → EL → reverse charge EU', vych('GR123456789') === R0[2]);
-test('P1: DIČ mimo EU (CHE…) → česká DPH', vych('CHE-123.456.789') === R0[0]);
-test('P1: DIČ s mezerou a malými písmeny (" de 123") → EU', vych(' de 123') === R0[2]);
+test('P1 B189 opraveno (v19.10.1): DIČ CZ (plátce) → přenesená povinnost (tuzemsko) jako v2', vych('CZ12345678') === R0[1], vych('CZ12345678'));
+test('P1 B189 opraveno: DIČ DE → bez výchozí volby (rozhoduje místo stavby)', vych('DE123456789') === '');
+test('P1: DIČ GR → bez výchozí volby', vych('GR123456789') === '');
+test('P1 B189 opraveno: DIČ mimo EU (CHE…) → bez výchozí volby', vych('CHE-123.456.789') === '');
+test('P1: DIČ s mezerou a malými písmeny (" cz 123") → přenesená', vych(' cz 123') === R0[1]);
 test('P1: neznámý text režimu → symboly zůstanou {{…}} (fail-safe)',
   (() => { const p = {}; sod.sodDphSymboly(p, 'jiné znění režimu', 'bytový dům', 'cz'); return p.SOD_DPH_REZIM === undefined; })());
 test('P1: snížená sazba jen při české DPH a bydlení',

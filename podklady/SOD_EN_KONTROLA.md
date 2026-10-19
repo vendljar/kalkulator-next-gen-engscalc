@@ -33,9 +33,9 @@ smlouvě**; jazykové verze přeloží slovník aplikace (`src/preklad.js`).
 
 | Režim (krycí list) | `{{SOD_DPH_REZIM}}` (čl. V odst. 2) |
 |---|---|
-| česká DPH v zákonné sazbě — výchozí při DIČ CZ / bez DIČ / mimo EU | K ceně díla bude připočtena DPH v zákonné sazbě platné ke dni uskutečnění zdanitelného plnění. |
-| přenesená daňová povinnost (tuzemsko) | DPH bude účtováno dle platných předpisů v režimu přenesené daňové povinnosti. *(věta šablony v2; tuzemský reverse charge u stavebních prací)* |
-| reverse charge EU (zákazník z jiného státu EU) — výchozí při DIČ státu EU | Plnění není předmětem české DPH; daň přizná a odvede objednatel v režimu přenesení daňové povinnosti (reverse charge) podle čl. 196 směrnice Rady 2006/112/ES. |
+| česká DPH v zákonné sazbě — výchozí **jen bez DIČ** (od v19.10.1, B189) | K ceně díla bude připočtena DPH v zákonné sazbě platné ke dni uskutečnění zdanitelného plnění. |
+| přenesená daňová povinnost (tuzemsko) — výchozí při **DIČ CZ** (od v19.10.1, B189) | DPH bude účtováno dle platných předpisů v režimu přenesené daňové povinnosti. *(věta šablony v2; tuzemský reverse charge u stavebních prací, § 92e ZDPH — vlastní věta, odlišná od reverse charge čl. 196)* |
+| reverse charge EU (zákazník z jiného státu EU) — **nikdy výchozí** (od v19.10.1; jen ruční volba) | Plnění není předmětem české DPH; daň přizná a odvede objednatel v režimu přenesení daňové povinnosti (reverse charge) podle čl. 196 směrnice Rady 2006/112/ES. |
 
 `{{SOD_DPH_PROHLASENI}}` (čl. V odst. 3, číslo „3." zůstává): při české DPH
 a místě plnění *bytový dům* / *rodinný dům* prohlášení o snížené sazbě DPH
@@ -51,6 +51,27 @@ může jít o českou DPH; (2) přenesená daňová povinnost — ustanovení ZD
 o registraci k DPH; (3) zda prohlášení o snížené sazbě patří jen k české
 DPH u bytového a rodinného domu; (4) výchozí volba podle předpony DIČ
 objednatele.
+
+### Výchozí režim podle DIČ — rozhodnutí J. V. 19. 10. 2026 (B189, v19.10.1)
+
+- **DIČ CZ…** → přenesená daňová povinnost (tuzemsko, § 92e ZDPH) — jako
+  pevná věta šablony v2;
+- **bez DIČ** → česká DPH v zákonné sazbě;
+- **DIČ jiného státu EU i mimo EU** → **bez výchozí volby**: obchodník režim
+  vybere sám podle místa stavby; dokud nevybere, smlouva o dílo realizace
+  **nevznikne** (hláška s cestou ke volbě v krycím listu, serverová i místní
+  šablona).
+- Ruční volba obchodníka má vždy přednost; zakázky s uloženou volbou (i
+  zmrazené předvyplnění zamčené varianty) se nemění.
+
+**Znění všech tří vět (CZ i EN/DE/FR) je PŘEDBĚŽNÉ do kontroly účetní.**
+Nové věty B189 nepřibyly — tuzemská přenesená povinnost má vlastní větu už
+od šablony v3 (symbol `{{SOD_DPH_REZIM}}`). K posouzení navíc: (5) zda do
+tuzemské věty doplnit odkaz „podle § 92e zákona č. 235/2004 Sb." a v cizích
+jazycích „domestic reverse charge" / „inländisches Reverse-Charge-Verfahren"
+/ „autoliquidation interne" (dnešní překlad „reverse-charge regime" se dá
+splést s čl. 196); (6) jaká věta patří k zákazníkovi mimo EU se stavbou v ČR
+(dnes obchodník volí „česká DPH").
 
 **Skladné** `{{SOD_SKLADNE}}` (čl. VI): částka z Nastavení → Firma
 (Kč za den, bez výchozí hodnoty) — česky „N,- Kč" jako dosud, v EN/DE/FR

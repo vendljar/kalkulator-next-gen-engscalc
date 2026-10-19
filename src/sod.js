@@ -140,6 +140,23 @@ function sodDphSymboly(placeholders, rezimText, mistoText, L) {
   placeholders.SOD_DPH_PROHLASENI = P(k === 'ceska' && bydleni ? SOD_DPH_PROHLASENI_SNIZENA : SOD_DPH_PROHLASENI_OZNAMENI);
   return placeholders;
 }
+/* ZÁBRANA: SMLOUVA BEZ ZVOLENÉHO REŽIMU DPH (B189, rozhodnutí J. V.
+ * 19. 10. 2026). Zákazník s DIČ jiného státu (EU i mimo EU) nemá výchozí
+ * režim — u prací na stavbě rozhoduje místo stavby, ne DIČ. Dokud obchodník
+ * režim v krycím listu OCK nevybere, smlouva o dílo realizace nevznikne
+ * (fail-closed; sodData hází, UI ukáže tutéž větu dřív). Vlastní znění
+ * režimu se počítá jako volba — symboly pak doplní ve Wordu. Vrací větu pro
+ * obchodníka, nebo '' (smí se tisknout). */
+function sodDphZabrana(zak, varianta) {
+  if (typeof kryciPoleHodnota !== 'function') return '';
+  if (String(kryciPoleHodnota(zak, varianta, 'sodDphRezim') || '').trim()) return '';
+  const dic = String((zak && zak.dic) || '').replace(/\s/g, '').toUpperCase();
+  const pre = dic.slice(0, 2) === 'GR' ? 'EL' : dic.slice(0, 2);
+  const eu = typeof KRYCI_EU_DIC !== 'undefined' && KRYCI_EU_DIC.indexOf(pre) >= 0;
+  return 'Smlouva o dílo nevznikne: není zvolený režim DPH. Zákazník má DIČ ' + (eu ? 'z jiného státu EU' : 'mimo Českou republiku a EU')
+    + (dic ? ' (' + dic + ')' : '') + ' a výchozí režim se u něj nevolí — rozhoduje místo stavby. '
+    + 'Vyberte ho v Krycím listu zakázky OCK, sekce „Smlouva o dílo (SoD realizace)" → „Režim DPH ve smlouvě".';
+}
 /* Částka skladného z volného pole firmy (B190, audit kola 28, 18. 10. 2026).
  * Do v18.10.11 se brala první číslice regexem s tečkou jako desetinnou
  * čárkou — „1.500" (tisíce s tečkou) dalo 1,5 → „2,- Kč" a nikdo si toho
@@ -176,6 +193,8 @@ function sodJazykZabrana(typ, L, maMutaci) {
 
 /* SoD realizace (OCK) — stejná data jako nabídka OCK, jiné jméno souboru. */
 function sodData(zak, varianta, jekly, lang, sablona) {
+  const zabranaDph = sodDphZabrana(zak, varianta);   // B189: bez režimu DPH smlouva nevznikne
+  if (zabranaDph) throw new Error(zabranaDph);
   const d = nabidkaData(zak, varianta, jekly, lang);
   const L = d.jazyk || 'cz';
   const nazev = ('SOD_' + (d.placeholders.CISLO_NABIDKY || 'CN')
@@ -440,4 +459,4 @@ if (typeof dokumentRegistruj === 'function') {
 
 if (typeof module !== 'undefined')
   module.exports = { sodData, sodProjData, sodProjRozsahText, SODP_CINNOSTI, plnaMocData, sodObjednatelDoplna, sodVedouciMontaziDoplna, sodPokutaZhotovitele,
-    sodJazykZabrana, sodPrelozHodnoty, sodDphSymboly, sodSkladne, SOD_DPH_VETY, SOD_DPH_PROHLASENI_SNIZENA, SOD_DPH_PROHLASENI_OZNAMENI };
+    sodJazykZabrana, sodPrelozHodnoty, sodDphSymboly, sodDphZabrana, sodSkladne, SOD_DPH_VETY, SOD_DPH_PROHLASENI_SNIZENA, SOD_DPH_PROHLASENI_OZNAMENI };
