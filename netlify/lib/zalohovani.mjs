@@ -222,3 +222,134 @@ export async function seznamOtisku(kolik) {
   }
   return otisky;
 }
+
+/* ============================================================
+ * RETENCE OTISKŮ (#151 N5, rozhodnutí J. V. 19. 10. 2026)
+ *
+ * Do 19. 10. se nemazalo nic: ~20 MB za noc ≈ 7 GB za rok v Blobs. Pravidlo
+ * J. V.: noční otisky posledních 30 dní + první otisk každého měsíce 12
+ * měsíců zpět; vynucené (ruční, při přihlášení) 90 dní. Výchozí volby
+ * dávky O4 (J. V. se neptal):
+ *   - „posledních 30 dní" = věk 0–29 dní (dnešek je den 0), 30. den se maže;
+ *   - „12 měsíců zpět" = měsíc dneška + 12 předchozích; z každého se drží
+ *     NEJSTARŠÍ noční otisk měsíce (první, který v něm vznikl);
+ *   - vynucené: věk 0–89 dní;
+ *   - otisky PŘED OBNOVOU se nemažou nikdy (cesta zpátky, maže jen člověk);
+ *   - klíče mimo OTISK_KLIC (souhrny, tokeny, záznam kopie) výběr nevidí —
+ *     souhrn odchází jen spolu se svým otiskem;
+ *   - nejnovější otisk se nesmaže nikdy, ať je jakkoli starý;
+ *   - otisky s datem před RETENCE_OD (2026-10-20) se nesmažou nikdy (J. V.).
+ * Čistá funkce: `dnes` je 'YYYY-MM-DD' (UTC), vrací klíče ke smazání.
+ * ============================================================ */
+/* HRANICE RETENCE (rozhodnutí J. V. 19. 10. 2026 ~13:20 UTC: „Staré zálohy
+ * všechny ponech."). Otisk (a jeho souhrn) s datem PŘED touto hranicí
+ * retence nikdy nesmaže — všechno, co existuje do nasazení v19.10.8, zůstane
+ * navždy. Pravidlo níž platí jen pro otisky od 20. 10. 2026. Jediné místo,
+ * kde se hranice nastavuje. */
+export const RETENCE_OD = '2026-10-20';
+export const RETENCE_DENNI_DNU = 30;
+export const RETENCE_MESICU = 12;
+export const RETENCE_VYNUCENE_DNU = 90;
+const DEN_MS = 86400000;
+export function retenceVyber(klice, dnes) {
+  const dnesMs = Date.parse(String(dnes || '') + 'T00:00:00Z');
+  if (!Number.isFinite(dnesMs)) return [];
+  const vek = (k) => Math.round((dnesMs - Date.parse(k.slice(0, 10) + 'T00:00:00Z')) / DEN_MS);
+  const otisky = [...new Set((klice || []).map(String))]
+    .filter(k => OTISK_KLIC.test(k) && Number.isFinite(Date.parse(k.slice(0, 10) + 'T00:00:00Z')));
+  if (!otisky.length) return [];
+  const nejnovejsi = otisky.slice().sort().pop();
+  const denni = otisky.filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
+  const vynucene = otisky.filter(k => /T\d{6}-(rucne|auto)$/.test(k));
+  /* měsíce, ze kterých se drží první otisk: dnešní + 12 předchozích */
+  const d = new Date(dnesMs);
+  const mesice = new Set();
+  for (let i = 0; i <= RETENCE_MESICU; i++)
+    mesice.add(new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - i, 1)).toISOString().slice(0, 7));
+  const prvniVMesici = new Set();
+  const videno = new Set();
+  for (const k of denni) {                       // seřazené vzestupně → první je nejstarší
+    const m = k.slice(0, 7);
+    if (!videno.has(m)) { videno.add(m); if (mesice.has(m)) prvniVMesici.add(k); }
+  }
+  const smazat = [];
+  const chraneny = (k) => k.slice(0, 10) < RETENCE_OD;   // staré zálohy J. V. ponechal
+  for (const k of denni.filter(k => !chraneny(k)))
+    if (vek(k) >= RETENCE_DENNI_DNU && !prvniVMesici.has(k) && k !== nejnovejsi) smazat.push(k);
+  for (const k of vynucene.filter(k => !chraneny(k)))
+    if (vek(k) >= RETENCE_VYNUCENE_DNU && k !== nejnovejsi) smazat.push(k);
+  return smazat.sort();
+}
+
+/* Provedení retence — volá ji noční funkce AŽ PO úspěšném zápisu nového
+ * otisku `novyKlic`. Pojistka navíc: když nový otisk v úložišti není
+ * (zápis se nepovedl, nebo ho nejde přečíst), nesmaže se nic. Vrací
+ * { smazano: [klíče], chyby: [..] }; chyba mazání jednoho klíče ostatní
+ * nezastaví a otisk nikdy neohrozí. */
+export async function retenceProved(novyKlic, dnes, ted) {
+  const s = await uloziste('zalohy');
+  const klice = await s.seznam();
+  if (!novyKlic || !klice.includes(novyKlic) || !(await s.cti(souhrnKlic(novyKlic)) || await s.cti(novyKlic)))
+    return { smazano: [], chyby: ['nový otisk ' + String(novyKlic) + ' v úložišti není — retence se neprovedla'] };
+  /* POJISTKA KOPIE NA DISK (v19.10.8, výchozí volba koordinace 19. 10. 2026).
+   * Retence je nevratná — první noc po nasazení by smazala všechny starší
+   * otisky mimo pravidlo. Maže se proto jen tehdy, když existuje záznam
+   * úspěšné kopie na Disk (N6) mladší než 7 dní; jinak se nesmaže nic a do
+   * logu jde „retence čeká na první kopii na Disk". Platí trvale: když se
+   * kopie na Disk přestanou dělat, retence se zastaví (úložiště poroste, ale
+   * nic se neztratí). */
+  if (!kopieDiskCerstva(await s.cti(KOPIE_DISK_KLIC), ted))
+    return { smazano: [], chyby: [], ceka: 'retence čeká na první kopii na Disk' };
+  const smazano = [], chyby = [];
+  for (const k of retenceVyber(klice, dnes || denDnes())) {
+    if (k === novyKlic) continue;
+    try {
+      await s.smaz(k);
+      if (klice.includes(souhrnKlic(k))) await s.smaz(souhrnKlic(k));
+      smazano.push(k);
+    } catch (e) { chyby.push(k + ': ' + String(e && e.message || e)); }
+  }
+  return { smazano, chyby };
+}
+
+/* ============================================================
+ * KOPIE OTISKU NA DISK GOOGLE (#151 N6, rozhodnutí J. V. 19. 10. 2026)
+ *
+ * Netlify na Disk nedosáhne (nemá přihlašovací údaje Google), proto kopii
+ * zapisuje prohlížeč správce do vybrané složky „_Zaloha Netlify DB".
+ * Obsah podle J. V.: BEZ otisků hesel a BEZ podpisů — jako záloha ke
+ * stažení, jen ještě bez skenů podpisů. Účty nesou e-mail, jméno, roli
+ * a stav; obnova je ze souboru stejně nikdy nebere (B27).
+ * ============================================================ */
+export function otiskProDisk(o) {
+  if (!o || typeof o !== 'object') return null;
+  return { ...o,
+    uzivatele: (Array.isArray(o.uzivatele) ? o.uzivatele : []).filter(Boolean)
+      .map(x => ({ email: x.email, jmeno: x.jmeno, role: x.role, aktivni: x.aktivni !== false })),
+    podpisy: null };
+}
+
+/* Nejnovější NOČNÍ otisk (klíč dne se zdrojem nocni-otisk). Zdroj se bere ze
+ * souhrnu, u starších otisků z otisku samého; prochází se nejvýš 7 dní
+ * zpátky — starší noční otisk znamená výpadek, který hlásí hlídka #152. */
+export async function posledniNocniOtisk() {
+  const s = await uloziste('zalohy');
+  const denni = (await s.seznam()).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort().reverse().slice(0, 7);
+  for (const k of denni) {
+    const sh = await s.cti(souhrnKlic(k));
+    if (sh && sh.zdroj && sh.zdroj !== 'nocni-otisk') continue;
+    const o = await s.cti(k);
+    if (o && o.zdroj === 'nocni-otisk') return { klic: k, otisk: o };
+  }
+  return null;
+}
+
+/* Záznam o poslední kopii na Disku — na serveru, aby hlídka (14 dní)
+ * fungovala v každém prohlížeči, i tam, kde složka připojená není. */
+export const KOPIE_DISK_KLIC = 'kopie-disk';
+export const RETENCE_KOPIE_DISK_DNU = 7;
+export function kopieDiskCerstva(zaznam, ted) {
+  const t = zaznam && Date.parse(zaznam.kdy || '');
+  const nyni = Number.isFinite(+ted) && ted ? +ted : Date.now();
+  return Number.isFinite(t) && nyni - t >= 0 && nyni - t < RETENCE_KOPIE_DISK_DNU * DEN_MS;
+}

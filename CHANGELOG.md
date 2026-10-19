@@ -8,6 +8,58 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v19.10.8 — #151 N5 retence otisků a N6 týdenní kopie na Disk Google (rozhodnutí J. V., větev claude/o4-zalohy)
+
+**Testy nad v19.10.8 (19. 10. 2026):** `spust_testy.sh --smoke` **274 prošlo / 0 selhalo / 6 přeskočeno** (`test.js`, 5 harnessů bez `KNG_PODKLADY`). Mutace serveru filtrem `zaloh` (sady test_zalohy, test_funkce, test_obnova, test_prava, test_obnova_nanecisto, test_uklid, ../src/test_kopie_disk.js) **50/50** (vč. hranice RETENCE_OD; smoke i po ní 274/0/6), filtrem `#151 N6` (vč. `src/uloziste.js`) **11/11**; `--kontrola` OK. Statická kontrola údajů čistá.
+
+Rozšíření dávky O4 nad integrací `4cc1b81` (v19.10.5). Rozhodnutí J. V.
+19. 10. 2026 (~11:45 a ~11:50 UTC, přes koordinaci) k nálezům N5 a N6
+kontroly `podklady/151_ZALOHOVANI_KONTROLA_2026-10-19.md` (roadmapa
+**#151a**, **#151b** → hotovo; postup prvního běhu kopie v podkladu, oddíl 9).
+
+- **N5 — retence otisků v Blobs** (rozhodnutí J. V.): noční 30 dní (věk
+  0–29) + první noční otisk každého měsíce 12 měsíců zpět (měsíc dneška + 12
+  předchozích), vynucené 90 dní, otisky před obnovou nikdy. `retenceVyber`
+  (čistá funkce) a `retenceProved` v `lib/zalohovani.mjs`; volá je
+  `zaloha_nocni` až po úspěšném otisku (nový otisk musí v úložišti být,
+  jinak se nemaže nic), nikdy nesmaže nejnovější, s otiskem maže i souhrn,
+  do logu počet a klíče.
+- **Staré zálohy do 19. 10. 2026 se nemažou (J. V. 19. 10. ~13:20 UTC:
+  „Staré zálohy všechny ponech.“):** `RETENCE_OD = '2026-10-20'` (jediné
+  místo v `lib/zalohovani.mjs`) — otisk ani jeho souhrn s datem před
+  hranicí retence nikdy nesmaže, denní ani vynucený; pravidlo 30 dní +
+  1. v měsíci + 90 dní platí jen pro otisky od 20. 10. 2026.
+- **Pojistka retence (výchozí volba koordinace):** maže se jen tehdy, když
+  existuje záznam úspěšné kopie na Disk (`zalohy/kopie-disk`) mladší než
+  7 dní (`kopieDiskCerstva`); jinak se nesmaže nic a do logu jde „retence
+  čeká na první kopii na Disk“. Staré otisky se tak neztratí dřív, než J. V.
+  udělá první kopii; když se kopie přestanou dělat, retence se zastaví.
+- **N6 — týdenní kopie na Disk Google** (rozhodnutí J. V.): prohlížeč
+  správce zapisuje do vlastní vybrané složky `_Zaloha Netlify DB`
+  (File System Access, pamatuje se v IndexedDB; složka `_DB` je od #150
+  vypnutá) soubor `otisk_YYYY-MM-DD.json` + `posledni_kopie.json` (datum,
+  velikost, SHA-256; kontrola délky zápisu). Obsah z nové
+  `GET /api/zaloha?zdroj=nocni` — poslední noční otisk očištěný
+  `otiskProDisk` (BEZ otisků hesel a BEZ podpisů; bez nočního otisku za 7 dní
+  aktuální stav v témž tvaru). Záznam kopie drží server
+  (`POST /api/zaloha_vynuceno {akce:'kopie-disk'}`, GET vrací `kopieDisk`),
+  takže hlídka funguje v každém prohlížeči. Tlačítko „Zkopírovat zálohu na
+  Disk teď“, automaticky po přihlášení správce po 7 dnech (jen s uděleným
+  právem), varování nad 14 dní (`uloKopieDiskStav`, `src/uloziste.js`).
+  Na Disku se nic nemaže. Běžná záloha ke stažení se nemění.
+- **Testy hranice:** test_zalohy +5 (otisk 2026-08-01 a 2026-10-19 zůstane
+  i v roce 2031, 2026-10-20+ podle pravidla, noční funkce v roce 2028 staré
+  nesmaže) — proti `004d748` **59 OK / 5 FAIL**, po změně **64 / 0**; testy
+  pravidla posunuty za hranici (rok 2028). Mutace hranice 5 (`#151 N5 hranice`).
+- **Testy:** `netlify/test_zalohy.mjs` +30 kontrol (59 celkem) — N5/N6
+  proti `f07d650` **33 OK / 6 FAIL** (+ výjimky), pojistka kopie proti
+  `3ef7c6f` **50 / 3 FAIL**, po změně **59 / 0**; nová
+  `src/test_kopie_disk.js` (10; proti f07d650 padá, po 10/0);
+  `overit_online.mjs` oddíl 5c3 (15 kontrol se složkou v paměti stránky;
+  proti f07d650 FAIL, po 0 FAIL). Mutace: 27 nových `#151 N5/N6`
+  (`mutace.mjs` vč. `../src/uloziste.js`), sada `../src/test_kopie_disk.js`
+  v SADY.
+
 ## v19.10.7 — #367 fáze 2b: věty kalendáře v jazycích, texty nabídky PROJ a rozšíření z Firmy (větev claude/v8-367-firma)
 
 **Po sloučení integrace `4cc1b81` (v19.10.5: A2, O3, H2, O4) — kolo `--bez-mutaci` nad 4d9f67a, 19. 10. 2026 — VŠE ZELENÉ:** sady 276 / 0 / 6 přeskočeno (`test.js`, 5 harnessů bez `KNG_PODKLADY`), statické 3/3. Cílené mutace: `#367` jádro 18/18, server 2/2; místa sloučení V8 × O3 (FR v bílé listině doplnění, `{TERMIN}` ve FR, věta o záruce, prázdný FR text) 4/4. Testy O3 upravené na FR (`test_kapitoly_vychozi`, `test_termin_kapitola`, `test_nabidka_kapitoly` #330).

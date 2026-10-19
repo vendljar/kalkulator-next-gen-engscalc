@@ -841,6 +841,86 @@ test('#152: obchodník hlídku nevidí (jen administrátor)',
 test('#152: (pojistka testu) administrátorovi karta hlídku ukazuje',
   await page.evaluate(() => renderOnlineKarta().includes('online-zalohy-nocni')));
 
+/* ---- 5c3) kopie záloh na Disk Google (#151 N6, dávka O4, 19. 10. 2026) ----
+ * Rozhodnutí J. V.: týdenní kopie posledního nočního otisku (bez hesel
+ * a podpisů) do složky „_Zaloha Netlify DB". File System Access v headless
+ * Chromiu výběr složky neukáže — složku nahradí složka v paměti stránky
+ * (stejné rozhraní: getFileHandle / createWritable / getFile / práva). */
+await page.evaluate(() => {
+  const soubory = window.__diskSoubory = new Map();
+  window.__diskPravo = 'granted';
+  window.__diskVyber = 0;
+  const slozka = { kind: 'directory', name: '_Zaloha Netlify DB',
+    queryPermission: async () => window.__diskPravo, requestPermission: async () => window.__diskPravo,
+    getFileHandle: async (jmeno, o) => {
+      if (!soubory.has(jmeno) && !(o && o.create)) throw new DOMException('není', 'NotFoundError');
+      return { createWritable: async () => { let buf = '';
+          return { write: async (t) => { buf += t; }, close: async () => { soubory.set(jmeno, buf); } }; },
+        getFile: async () => new Blob([soubory.get(jmeno) || '']) };
+    } };
+  window.showDirectoryPicker = async () => { window.__diskVyber++; return slozka; };
+});
+await page.evaluate(() => onlineOtiskyNacti().then(() => render()));
+await page.waitForTimeout(150);
+{
+  const html = await page.locator('#nastaveni-panel').innerHTML();
+  test('N6: bez kopie na Disku hlídka varuje (seznam-varovani)',
+    /id="online-kopie-disk" class="seznam-varovani"/.test(html) && /zatím žádná/.test(html),
+    (html.match(/online-kopie-disk[^<]*<?[^<]{0,160}/) || [''])[0]);
+  test('N6: administrátor má tlačítko „Zkopírovat zálohu na Disk teď"', html.includes('Zkopírovat zálohu na Disk teď'));
+}
+const nocniDen = new Date(Date.now() - 20 * 3600000).toISOString().slice(0, 10);
+test('N6: tlačítko kopii pořídí', await page.evaluate(() => onlineKopieDiskTed()) === true,
+  await page.evaluate(() => ONLINE_STAV.hlaska));
+{
+  const r = await page.evaluate(async () => {
+    const s = window.__diskSoubory;
+    const jm = [...s.keys()];
+    const otisk = jm.find(j => /^otisk_/.test(j));
+    const text = otisk ? s.get(otisk) : '';
+    const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    const sha = [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+    return { jm, otisk, text, sha, posledni: JSON.parse(s.get('posledni_kopie.json') || 'null'),
+      hlaska: ONLINE_STAV.hlaska, kopie: ONLINE_STAV.kopieDisk, vyber: window.__diskVyber };
+  });
+  test('N6: soubor otisk_<den nočního otisku>.json + posledni_kopie.json', r.otisk === 'otisk_' + nocniDen + '.json'
+    && r.jm.includes('posledni_kopie.json'), r.jm);
+  const z = JSON.parse(r.text || '{}');
+  test('N6: kopie je noční otisk bez otisků hesel a bez podpisů', z.zdroj === 'nocni-otisk' && z.podpisy === null
+    && !/"heslo"|scrypt/.test(r.text) && Array.isArray(z.uzivatele) && z.uzivatele.length > 0);
+  test('N6: kopie nese zakázky a ceník', Object.keys(z.zakazky || {}).length > 0 && !!z.program);
+  test('N6: posledni_kopie.json nese datum, velikost a SHA-256 shodné se souborem',
+    !!r.posledni && !!r.posledni.kdy && r.posledni.velikostB === new TextEncoder().encode(r.text).length && r.posledni.sha256 === r.sha, r.posledni);
+  test('N6: hláška ukáže cestu a velikost', /_Zaloha Netlify DB\/otisk_\d{4}-\d{2}-\d{2}\.json \(\d/.test(r.hlaska), r.hlaska);
+  test('N6: server si kopii poznamenal (hlídka všude)', !!r.kopie && r.kopie.soubor === r.otisk
+    && JSON.parse(pamet.get('zalohy/kopie-disk')).sha256 === r.sha);
+  const html = await page.locator('#nastaveni-panel').innerHTML();
+  test('N6: po kopii je hlídka klidná', /id="online-kopie-disk" class="note"/.test(html) && /Poslední kopie/.test(html));
+}
+/* Automatika po přihlášení: kopie starší než 7 dní → sama, bez výběru složky. */
+await page.evaluate(() => { window.__diskSoubory.clear(); });
+pamet.set('zalohy/kopie-disk', JSON.stringify({ kdy: new Date(Date.now() - 8 * 86400000).toISOString(), soubor: 'otisk_stary.json' }));
+await page.evaluate(() => onlineOtiskyNacti());
+await page.evaluate(() => { window.__diskPravo = 'prompt'; });
+test('N6: bez uděleného práva automatika mlčí (zeptat se smí jen po kliknutí)',
+  await page.evaluate(async () => (await onlineKopieDiskAuto()) === false && window.__diskSoubory.size === 0));
+await page.evaluate(() => { window.__diskPravo = 'granted'; });
+test('N6: po 8 dnech se kopie po přihlášení pořídí sama, bez nového výběru složky',
+  await page.evaluate(async () => (await onlineKopieDiskAuto()) === true
+    && [...window.__diskSoubory.keys()].some(j => /^otisk_/.test(j)) && window.__diskVyber === 1));
+test('N6: čerstvá kopie (méně než 7 dní) se automaticky neopakuje',
+  await page.evaluate(async () => { window.__diskSoubory.clear(); return (await onlineKopieDiskAuto()) === false && window.__diskSoubory.size === 0; }));
+pamet.set('zalohy/kopie-disk', JSON.stringify({ kdy: new Date(Date.now() - 15 * 86400000).toISOString(), soubor: 'otisk_stary.json' }));
+await page.evaluate(() => onlineOtiskyNacti().then(() => render()));
+await page.waitForTimeout(150);
+test('N6: kopie starší než 14 dní → varování v Nastavení → Databáze',
+  /id="online-kopie-disk" class="seznam-varovani"[^>]*>[^<]*stará 15 dní/.test(await page.locator('#nastaveni-panel').innerHTML()));
+test('N6: obchodník tlačítko ani hlídku kopie nevidí', await page.evaluate(() => {
+  const ja = ONLINE_STAV.ja; ONLINE_STAV.ja = Object.assign({}, ja, { role: 'Obchodník' });
+  try { const h = renderOnlineKarta(); return !h.includes('online-kopie-disk') && !h.includes('Zkopírovat zálohu na Disk'); }
+  finally { ONLINE_STAV.ja = ja; }
+}));
+
 /* ---- 5d) obnova databáze ze zálohy (7. 9. 2026) ----
  * Skutečný klient proti skutečné funkci /api/obnova: panel se otevře, bez
  * náhledu je obnova zhasnutá, náhled ukáže čísla a nic nezapíše, obnova
