@@ -7,7 +7,7 @@ Kód se v této fázi **neměnil** — jen návrh, mapa a náhled obrazovky.
 natvrdo v kódu. Ukaž mi nejdříve, jak by to v Nastavení vypadalo. Asi bychom v sekci Šablony smlouvy
 měli mít přepínač mezi OCK a PROJ.“
 
-Vizuální náhled (světlé i tmavé téma): artefakt „Platební podmínky ve Firmě“ (odkaz v PREDAVKA / zprávě koordinaci).
+Vizuální náhled (světlé i tmavé téma): https://claude.ai/artifact/UZC5zQB14xBBvkN1MMdnPE („Platební podmínky ve Firmě“)
 Předchozí podklad s variantami A–E a 12 otázkami: https://claude.ai/artifact/1Szx195YEHNcmTwXGh1Doi
 
 ---
