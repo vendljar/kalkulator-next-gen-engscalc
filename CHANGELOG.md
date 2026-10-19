@@ -10,6 +10,11 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ## v19.10.4 — H2: plocha v kartě výjimky na celé m² (V7-N1), B191, B192 (větev claude/h2-drobnosti)
 
+**Výsledky nad 755e84b (19. 10. 2026):** `./spust_testy.sh --smoke` (build bez zvýšení verze, Playwright 1.56.1,
+bez KNG_PODKLADY) **270 prošlo / 0 selhalo / 6 přeskočeno** (test.js, overit_manual, overit_nabidka_proj_word,
+overit_sablona, overit_sablony_online, overit_sod — firemní podklady). Mutace cíleně: jádro „h2“ 3/3, „blok“ 5/5;
+server „h2“ 4/4, „b178“ 9/9, „b168“ 1/1 — bez přeživší; `--kontrola` jádro 257, server 543 úseků.
+
 Dávka H2 (zadání koordinace „ŘÍDÍCÍ 19.10“), nad `origin/claude/integrace-16-10`
 (`e3995e6`, v19.10.1). Souběžně běží A2 (v19.10.2) a O3 (v19.10.3).
 Roadmapa **#433** (předběžné id).
