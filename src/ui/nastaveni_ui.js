@@ -805,14 +805,16 @@ function nastKapitolyNabidky() {
     const pola = JAZ.map(([suf, jmeno]) => {
       const id = kap.base + suf;
       const hodnota = f[id] == null ? '' : String(f[id]);
-      const pocet = hodnota.split('\n').filter(r => r.trim()).length;
+      const vypusteno = typeof firmaKapVypusteno === 'function' && firmaKapVypusteno(hodnota);
+      const pocet = vypusteno ? 0 : hodnota.split('\n').filter(r => r.trim()).length;
       return `<div class="row" style="align-items:flex-start">
         <label style="flex:none;width:86px;padding-top:6px">${esc(jmeno)}</label>
         <textarea rows="${Math.min(14, Math.max(4, pocet + 1))}" style="flex:1;min-width:0;font-family:inherit"
           onchange="firmaSet('${escJs(id)}', this.value)">${esc(hodnota)}</textarea>
         <span class="note" style="flex:none;width:150px;font-size:11.5px;padding-top:6px">
           <code>{{${esc('FIRMA_NAB_' + kap.base.replace(/^kap/, '').toUpperCase() + (suf ? '_' + suf.toUpperCase() : ''))}}}</code><br>
-          ${pocet ? pocet + ' odrážek' : '<span class="pill mut">nevyplněno</span>'}</span></div>`;
+          ${vypusteno ? '<span class="pill mut">vědomě vypuštěno</span>'
+            : pocet ? pocet + ' odrážek' : '<span class="pill mut">nevyplněno</span>'}</span></div>`;
     }).join('');
     return `<details style="margin:6px 0;border:1px solid var(--line);border-radius:6px;padding:6px 10px">
       <summary style="cursor:pointer;font-weight:600">${esc((kap.cislo ? kap.cislo + ' ' : '') + kap.nadpis)}</summary>
@@ -833,8 +835,29 @@ function nastKapitolyNabidky() {
       a platnosti nabídky z krycího listu, aby se dvě místa nemohla rozejít.
       Každý jazyk má vlastní pole: smluvní podmínky se <b>nepřekládají strojově</b>. Jazyk, který
       necháte prázdný, nabídka <b>vypustí i s nadpisem</b> (Word od šablony CN v13); francouzština se zatím neřeší a vytiskne
-      češtinu s upozorněním. Značka <code>{FIRMA}</code> se nahradí názvem firmy.</div>
-    ${(typeof FIRMA_KAPITOLY !== 'undefined' ? FIRMA_KAPITOLY : []).map(blok).join('')}`;
+      češtinu s upozorněním. Značka <code>{FIRMA}</code> se nahradí názvem firmy.
+      Prázdné pole (CZ/EN/DE) se při načtení firmy samo <b>doplní výchozím textem</b>;
+      kapitolu, kterou v nabídce vědomě nechcete, vypustíte zapsáním jediného znaku
+      <code>-</code> (pomlčka).</div>
+    ${(typeof FIRMA_KAPITOLY !== 'undefined' ? FIRMA_KAPITOLY : []).map(blok).join('')}
+    <div class="btns" style="margin-top:6px"><button class="mini" onclick="firmaKapitolyVychozi()">↺ Doplnit výchozí texty</button>
+      <span class="note">vrátí výchozí znění všech kapitol česky, anglicky a německy (francouzština zůstává)</span></div>`;
+}
+
+/* Ruční obnova výchozích textů kapitol (dávka O3, 19. 10. 2026). Přepíše
+ * i upravené a vypuštěné kapitoly, proto s potvrzením; ostatních firemních
+ * údajů se nedotkne. Zveřejnění online je pak běžné „Zveřejnit". */
+async function firmaKapitolyVychozi() {
+  if (!jeAdmin()) return hlaska('Firemní údaje smí měnit jen administrátor.');
+  if (!await potvrd('Vrátit texty kapitol IV.–VI. a doložek (česky, anglicky, německy) na výchozí znění? '
+    + 'Vaše úpravy těchto textů se přepíšou, ostatní firemní údaje zůstanou.')) return;
+  if (!NAST.firma) NAST.firma = firmaDefault();
+  const zmeneno = firmaKapitolyDoplnVychozi(NAST.firma, true);
+  /* Značku ukázkových dat to NEsundává: výchozí text kapitol z firmy
+   * skutečnou nedělá (na rozdíl od ručního přepsání pole ve firmaSet). */
+  hlaska(zmeneno.length ? 'Doplněno výchozích textů: ' + zmeneno.length + '. Online je zveřejníte tlačítkem „Zveřejnit".'
+    : 'Kapitoly už mají výchozí znění.');
+  nastRefresh();
 }
 
 function nastSmluvniStandardy() {

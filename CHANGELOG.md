@@ -8,6 +8,39 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v19.10.3 — O3: výchozí texty kapitol nabídky se doplní do Nastavení (větev claude/o3-kapitoly-vychozi)
+
+Dávka O3 (zadání J. V. 19. 10. 2026 „Doplň výchozí texty do Nastavení rovnou.“),
+nad `origin/claude/integrace-16-10` (`e3995e6`, v19.10.1; v19.10.2 drží souběžná
+dávka A2). Roadmapa **#431** (navazuje na #282).
+
+- **Příčina:** v produkci byly v Nastavení → Smlouvy / Šablony → Kapitoly nabídky
+  česká pole IV. Požadavky, V. Termíny, VI. Předání a Doložky prázdná (žlutý
+  rámeček „Česky nevyplněno … nabídka tyto kapitoly vypustí“), ač
+  `DEFAULT_FIRMA` výchozí texty má. Uložená firma (online záznam `/api/firma`
+  i `_DB/_nastaveni.json`) je neměla nebo měla prázdné a `konfigNahradVMiste()`
+  ji při načtení kopíruje celou místo výchozí — nabídka pak kapitoly vypouštěla.
+- **Oprava (`src/firma.js`):** `firmaKapitolyDoplnVychozi(f, vynutit)` doplní
+  chybějící nebo prázdná (jen bílé znaky) pole kapitol CZ/EN/DE z
+  `DEFAULT_FIRMA`; FR výchozí text nemá a nedoplňuje se. Volá se při každém
+  načtení firmy: import konfigurace i `_nastaveni.json` (`konfiguraceImport`,
+  s varováním, co se doplnilo) a nasazení online firmy (`src/ui/online_ui.js`).
+  Jiná firemní pole se nedoplňují (ukázkové údaje do skutečné firmy nepatří).
+- **Vědomé vypuštění:** do pole se zapíše jediný znak **`-`**
+  (`FIRMA_KAP_VYPUSTIT`). Takové pole se nedoplňuje, nabídka kapitolu vypustí
+  i s nadpisem, symbol do Wordu je prázdný, kontrola před nabídkou ani žlutý
+  rámeček na ni neupozorňují; u FR se „-“ nenahrazuje češtinou. Formulář
+  ukazuje štítek „vědomě vypuštěno“.
+- **Tlačítko „↺ Doplnit výchozí texty“** v sekci Kapitoly nabídky (s potvrzením)
+  vrátí výchozí znění všech kapitol CZ/EN/DE, ostatní firemní údaje nechá.
+- **Server:** `firmaLzeZverejnit` doplněné texty i značku „-“ přijme beze
+  změny; panel zveřejnění ukáže rozdíl proti online kopii bez kapitol, takže
+  administrátorovi stačí **Zveřejnit**.
+- **Test** `src/test_kapitoly_vychozi.js` (47 kontrol; před opravou padá).
+
+**Po nasazení (J. V.):** Nastavení → Smlouvy / Šablony → Kapitoly nabídky
+zkontrolovat doplněné texty → Nastavení → Firma → **Zveřejnit firemní údaje online**.
+
 ## v19.10.1 — B189: výchozí režim DPH ve smlouvě o dílo realizace podle rozhodnutí J. V. (větev claude/o2-b189)
 
 **Kolo `--jen build,sady,staticke` nad 542d0ef (v19.10.1, 19. 10. 2026) — VŠE ZELENÉ:** sady 274 prošlo / 0 selhalo / 1 přeskočeno (`test.js`, ostrý ceník), statické 3/3. Mutace cíleně: `B189` jádro 8/8 + server 1/1, `DPH` 13/13, `sod`/`SoD` (filtr nerozlišuje velikost písmen) 28/28; `--kontrola` jádro 254, server 539 úseků. Podklady: šablony z Disku v `KNG_PODKLADY` (CN v8–v15 + EN/DE/FR v15, PROJ v3 i jako `Sablona_NABIDKA_PROJ.docx`, v4, v5, EN, SoD v1/v2, plná moc), SoD realizace v3 a projekce v4 vyrobené `vyrob_sablony.js`, příručka v19.10.1 vyrobená `manual/snimky_auto.mjs` + `sestav.sh` (22 snímků; první běh kola padl jen na `overit_manual` se starou příručkou v25.9.3 z Disku).

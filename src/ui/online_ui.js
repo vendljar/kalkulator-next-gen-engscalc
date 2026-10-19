@@ -1885,6 +1885,10 @@ function onlineTik() {
     ONLINE_STAV.firmaPouzita = true;
     setTimeout(() => {
       konfigNahradVMiste(NAST.firma, ONLINE_STAV.firma.udaje);
+      /* Online záznam z doby před kapitolami (#282) nebo s prázdnými poli
+       * — doplní se výchozí texty (dávka O3); administrátor je pak jen
+       * zkontroluje a zveřejní (panel ukáže rozdíl proti online kopii). */
+      if (typeof firmaKapitolyDoplnVychozi === 'function') firmaKapitolyDoplnVychozi(NAST.firma, false);
       render();
     }, 0);
     /* Bez `return` ze stejného důvodu jako u ceníku výše. */

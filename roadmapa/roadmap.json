@@ -6731,7 +6731,24 @@
    "kde" : "`src/kryci.js`, `src/sod.js`, `src/ui/ukazkove_ui.js`, `src/ui/sod_ui.js`, `src/test_sod_en.js`",
    "hotovoV" : "v19.10.1",
    "pozn" : "Předběžné id (přidělí koordinace při sloučení)."
-  }
+  },
+ {
+  "id" : "431",
+  "vlna" : "B",
+  "stav" : "hotovo",
+  "dulezitost" : "vysoka",
+  "slozitost" : "S",
+  "hotovoV" : "v19.10.3",
+  "nazev" : "Výchozí texty kapitol nabídky IV.–VI. a doložek se doplní do Nastavení (prázdná pole v produkci)",
+  "proc" : "Zadání J. V. 19. 10. 2026: „Doplň výchozí texty do Nastavení rovnou.“ V produkci byla česká pole kapitol IV.–VI. a doložek prázdná, ač DEFAULT_FIRMA texty má — uložená firma (online i _nastaveni.json) je neměla nebo měla prázdné a konfigNahradVMiste() ji kopíruje celou; nabídka kapitoly vypouštěla.",
+  "detail" : "HOTOVO v19.10.3 (dávka O3, větev claude/o3-kapitoly-vychozi): firmaKapitolyDoplnVychozi() doplní chybějící/prázdná pole CZ/EN/DE z DEFAULT_FIRMA při každém načtení firmy (konfiguraceImport → import i _nastaveni.json, online_ui po nasazení online firmy); FR se nedoplňuje. Vědomé vypuštění = jediný znak „-“ v poli (FIRMA_KAP_VYPUSTIT): nedoplňuje se, nabídka kapitolu vypustí, kontrola ji nehlásí, FR „-“ se nenahrazuje češtinou. Tlačítko „↺ Doplnit výchozí texty“ v sekci Kapitoly nabídky (vynutí výchozí znění CZ/EN/DE). Server (firmaLzeZverejnit) texty i značku přijme. Po nasazení: J. V. zkontroluje texty a zveřejní firmu.",
+  "hotovoKdyz" : "Prázdná pole se při načtení doplní, „-“ zůstává, tlačítko funguje, test src/test_kapitoly_vychozi.js a cílené mutace bez přeživší.",
+  "kde" : "`src/firma.js`, `src/konfigurace.js`, `src/ui/online_ui.js`, `src/ui/nastaveni_ui.js`, `src/test_kapitoly_vychozi.js`",
+  "zavisi" : [
+   "282"
+  ],
+  "pozn" : "Předběžné id (přidělí koordinace při sloučení)."
+ }
  ],
  "meta" : {
   "projekt" : "Kalkulator Next Gen",
