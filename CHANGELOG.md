@@ -8,6 +8,45 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v19.10.5 — #151: opravy nočního zálohování N1–N4 (větev claude/o4-zalohy)
+
+Dávka O4 (koordinace „ŘÍDÍCÍ 19.10“), nad `claude/z1-zalohy` (`421f556`).
+Opravuje nálezy N1–N4 kontroly zálohování
+(`podklady/151_ZALOHOVANI_KONTROLA_2026-10-19.md`, roadmapa **#151** → hotovo).
+N5 (retence) a N6 (kopie mimo Netlify) čekají na rozhodnutí J. V.
+(roadmapa **#151a**, **#151b**).
+
+- **N1 — ruční záloha nepřepíše noční otisk dne.** „Zálohovat teď“
+  (`duvod: rucne`) i otisk při přihlášení správce (`duvod: auto`) se ukládají
+  do vlastního slotu `<den>T<hhmmss>-rucne` / `-auto` (`klicVynuceny`,
+  `lib/zalohovani.mjs`); klíč `YYYY-MM-DD` patří jen noční funkci. `OTISK_KLIC`
+  oba tvary přijímá (přehled i obnova), přehled drží vynucené otisky ve
+  vlastním limitu (10, jako otisky před obnovou — B52), takže noční zálohy
+  z něj nevytlačí a hlídka #152 nehlásí falešné varování. Klient: „dnešní
+  otisk“ pro samočinnou zálohu se pozná podle dne v klíči, přehled ukazuje
+  „při přihlášení“. Volba tvaru klíče (`T<hhmmss>-rucne` místo
+  `_HHMMSS_rucni` ze zadání): sjednocení s otisky před obnovou (B28).
+- **N2 — noční funkce blíž 30s limitu nenarazí.** Otisk čte paralelně po
+  dávkách 20 (`ctiPoDavkach`, `Promise.all`) místo záznam po záznamu;
+  odpověď nese `trvaniMs` a `velikostB`, `zaloha_nocni` je zapíše do logu
+  (a chybu otisku celou přes `console.error`). Opraven komentář o velikosti
+  otisku (~20 MB, ~7 GB/rok — retence je N5).
+- **N3 — přehled záloh nečte celé otisky.** K otisku se zapíše souhrn
+  `souhrn/<klíč>` (zdroj, čas, kdo, počty, velikost, trvání — bez dat);
+  `seznamOtisku` čte jen souhrny, starší otisk bez souhrnu dočte celý jako dřív.
+- **N4 — test úplnosti zálohy.** `netlify/test_zalohy.mjs` projde kód
+  serverových funkcí, najde všechna zapisovaná úložiště a pevné klíče
+  a každé musí být v tabulce zálohovaných, nebo výjimek s důvodem; tvrzení
+  tabulky ověří skutečný otisk (značka v každém zálohovaném úložišti a klíči).
+  Nové úložiště nebo klíč bez zálohy test shodí (ověřeno: vyřazený slovník
+  i smyšlené nové úložiště → FAIL).
+- **Testy:** nová sada `netlify/test_zalohy.mjs` (29 kontrol) — proti
+  `421f556` **9 OK / 10 FAIL** (N1–N3; N4 je nová pojistka, na starém kódu
+  projde a padá na vyřazený klíč), po opravě **29 / 0**. Upraveny
+  `test_funkce.mjs` a `test_obnova.mjs` (vynucený otisk má slot s časem).
+  Mutace serveru: 10 nových (`#151 N1–N4`), upraveny B52 a B58 (změněný kód);
+  sada `test_zalohy.mjs` přidána do `mutace.mjs`.
+
 ## v19.10.1 — B189: výchozí režim DPH ve smlouvě o dílo realizace podle rozhodnutí J. V. (větev claude/o2-b189)
 
 **Kolo `--jen build,sady,staticke` nad 542d0ef (v19.10.1, 19. 10. 2026) — VŠE ZELENÉ:** sady 274 prošlo / 0 selhalo / 1 přeskočeno (`test.js`, ostrý ceník), statické 3/3. Mutace cíleně: `B189` jádro 8/8 + server 1/1, `DPH` 13/13, `sod`/`SoD` (filtr nerozlišuje velikost písmen) 28/28; `--kontrola` jádro 254, server 539 úseků. Podklady: šablony z Disku v `KNG_PODKLADY` (CN v8–v15 + EN/DE/FR v15, PROJ v3 i jako `Sablona_NABIDKA_PROJ.docx`, v4, v5, EN, SoD v1/v2, plná moc), SoD realizace v3 a projekce v4 vyrobené `vyrob_sablony.js`, příručka v19.10.1 vyrobená `manual/snimky_auto.mjs` + `sestav.sh` (22 snímků; první běh kola padl jen na `overit_manual` se starou příručkou v25.9.3 z Disku).

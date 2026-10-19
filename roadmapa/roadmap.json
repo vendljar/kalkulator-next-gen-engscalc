@@ -3202,17 +3202,46 @@
    "id" : "150"
   },
   {
-   "stav" : "ceka",
+   "stav" : "hotovo",
    "nazev" : "Prověřit noční zálohování v Netlify — jednorázová kontrola",
    "hotovoKdyz" : "Existuje zapsaný protokol: plánovaná funkce prokazatelně běží každou noc, otisky v úložišti přibývají a jsou úplné, retence funguje a stažený otisk odpovídá stavu databáze.",
    "id" : "151",
-   "pozn" : "Vyžaduje pohled do administrace Netlify (logy plánované funkce) — část musí provést uživatel nebo se udělá společně. Nespouštět bez pokynu.",
+   "pozn" : "Vyžaduje pohled do administrace Netlify (logy plánované funkce) — část musí provést uživatel nebo se udělá společně. Nespouštět bez pokynu.\n\nKONTROLA 19. 10. 2026 (dávka Z1): podklady/151_ZALOHOVANI_KONTROLA_2026-10-19.md — co a kdy se zálohuje, kdo smí obnovit, mezery, postup ověření v Netlify (oddíl 5), nálezy N1–N6.\n\nHOTOVO v19.10.5 (dávka O4, větev claude/o4-zalohy): N1 ruční a přihlašovací otisk do vlastního slotu `<den>T<hhmmss>-rucne|-auto`, noční `YYYY-MM-DD` se nepřepíše (přehled má vlastní limit vynucených, hlídka #152 bez falešného varování); N2 čtení po dávkách 20 (Promise.all), trvání a velikost v odpovědi i logu noční funkce; N3 souhrn `souhrn/<klíč>` vedle otisku, přehled čte jen souhrny (starší otisky dočte); N4 test úplnosti netlify/test_zalohy.mjs (sken zápisů v kódu × tabulka zálohovaných úložišť a klíčů × skutečný otisk). Zbývá na J. V.: ověření v Netlify (oddíl 5 podkladu), N5 retence (#151a), N6 kopie mimo Netlify (#151b).",
    "detail" : "Ověřit celou cestu nočního zálohování: 1) plánovaná funkce Netlify se opravdu spouští (log funkcí v administraci Netlify, čas posledních běhů); 2) v úložišti Blobs „zalohy\" přibývají otisky se správným datem a obsahem (ceník s historií, zakázky, rejstřík, účty bez otisků hesel, šablony); 3) starší otisky se drží podle plánu (retence) a úložiště neroste bez omezení; 4) tlačítka „Zálohovat teď\" a „Stáhnout zálohu\" vracejí tentýž tvar otisku; 5) stáhnout jeden noční otisk a porovnat s aktuálním stavem databáze. Výstupem je zapsaný protokol kontroly (co se ověřilo, čísla, případné nálezy).",
    "vlna" : "E",
-   "dulezitost" : "vysoka",
+   "dulezitost" : "",
    "proc" : "Zadání 18. 8. 2026: automatické zálohování stačí online v Netlify — „přidej mi do road mapy úkoly k jeho prověření a zda běží správně.\" Po konci odlévání na Disk (#150) je noční záloha v Netlify jediná automatická. Dokud se jednou nedoloží, že opravdu běží, je to jen předpoklad.",
    "slozitost" : "S",
-   "kde" : "netlify/functions (plánovaná funkce zálohy), úložiště Blobs „zalohy\", administrace Netlify"
+   "kde" : "netlify/lib/zalohovani.mjs, netlify/functions/zaloha_nocni.mjs, zaloha_vynuceno.mjs, src/ui/online_ui.js, netlify/test_zalohy.mjs",
+   "hotovoV" : "v19.10.5"
+  },
+  {
+   "id" : "151a",
+   "nazev" : "Retence nočních otisků v Netlify Blobs (#151 N5)",
+   "vlna" : "E",
+   "stav" : "ceka",
+   "dulezitost" : "nizka",
+   "slozitost" : "S",
+   "proc" : "Otisk nese i šablony, podpisy a přílohy (u schaftscalc ~20 MB); jeden za den bez mazání ≈ 7 GB za rok v Blobs. Kontrola #151, nález N5.",
+   "detail" : "Rozhodnout pravidlo retence, např. denní otisky 60 dní, pak natrvalo jen 1. den v měsíci; otisky před obnovou a vynucené (`…-rucne`, `…-auto`) zvlášť. Mazání jen vědomou dávkou s testem, nikdy ne cesta zpátky mladší než rozhodnutá lhůta.",
+   "hotovoKdyz" : "J. V. rozhodl pravidlo retence a dávka ho zavedla s testem (nebo rozhodl, že se nemaže).",
+   "cekaNa" : "rozhodnutí J. V. (podklady/151_ZALOHOVANI_KONTROLA_2026-10-19.md, N5)",
+   "pozn" : "Čeká na rozhodnutí J. V. Komentář o velikosti otisku v zaloha_nocni.mjs opraven ve v19.10.5.",
+   "zavisi" : [{"id": "151", "typ": "tvrda", "proc": "vychází z kontroly zálohování"}]
+  },
+  {
+   "id" : "151b",
+   "nazev" : "Kopie nočních otisků mimo Netlify (#151 N6)",
+   "vlna" : "E",
+   "stav" : "ceka",
+   "dulezitost" : "stredni",
+   "slozitost" : "M",
+   "proc" : "Otisky leží ve stejném Blobs jako ostrá data; smazání webu nebo chyba účtu Netlify vezme data i zálohy najednou. Mimo Netlify je jen soubor na Disku bez hesel a podpisů. Kontrola #151, nález N6 (hlavní mezera).",
+   "detail" : "Varianty k rozhodnutí: (a) pravidelně (týdně) ručně stáhnout zálohu na Disk — bez hesel, po havárii celého webu se účty zakládají znovu; (b) samostatná dávka: týdenní šifrovaná kopie otisku mimo Netlify.",
+   "hotovoKdyz" : "J. V. zvolil variantu a je zavedená (postup zapsaný, nebo funkce s testem).",
+   "cekaNa" : "rozhodnutí J. V. (podklady/151_ZALOHOVANI_KONTROLA_2026-10-19.md, N6)",
+   "pozn" : "Čeká na rozhodnutí J. V.",
+   "zavisi" : [{"id": "151", "typ": "tvrda", "proc": "vychází z kontroly zálohování"}]
   },
   {
    "dulezitost": "",

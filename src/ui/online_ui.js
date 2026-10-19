@@ -1564,7 +1564,11 @@ function onlineZalohaAuto() {
   if (!jeAdminOnline()) return Promise.resolve(false);
   const dnes = new Date().toISOString().slice(0, 10);
   return onlineOtiskyNacti().then(() => {
-    const mameDnesni = (ONLINE_STAV.otisky || []).some(o => o.den === dnes);
+    /* Od 19. 10. 2026 (#151 N1) má vynucený otisk vlastní klíč s časem
+     * (`<den>T<hhmmss>-rucne|-auto`); dnešní je tedy noční i vynucený,
+     * jen otisk před obnovou ne — ten stav databáze nezálohuje. */
+    const mameDnesni = (ONLINE_STAV.otisky || []).some(o => String(o.den || '').slice(0, 10) === dnes
+      && !/pred-obnovou/.test(o.den));
     if (mameDnesni) return false;
     return onlineApi('/api/zaloha_vynuceno', { duvod: 'auto' })
       .then(o => onlineOtiskyNacti().then(() => {
@@ -2794,7 +2798,8 @@ function renderOnlineObnova() {
   const dis = o.pracuje ? 'disabled' : '';
   const otisky = ONLINE_STAV.otisky || [];
   const popisOtisku = (x) => x.den + ' · '
-    + (/pred-obnovou/.test(x.zdroj) ? 'stav před obnovou' : /vynuc/.test(x.zdroj) ? 'ručně' : 'noční')
+    + (/pred-obnovou/.test(x.zdroj) ? 'stav před obnovou' : /-auto$/.test(x.den) ? 'při přihlášení'
+      : /vynuc/.test(x.zdroj) ? 'ručně' : 'noční')
     + ' · ' + onlinePocetText(x.pocetZakazek) + ', ' + x.pocetUctu + ' účtů';
   const volby = otisky.map(x => `<option value="${esc(x.den)}" ${x.den === o.otiskDen ? 'selected' : ''}>${esc(popisOtisku(x))}</option>`).join('');
   const zdrojTelo = o.zdrojTyp === 'otisk'
