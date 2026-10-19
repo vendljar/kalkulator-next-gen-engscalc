@@ -10,6 +10,13 @@ Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kv�
 - **Ještě nesloučené zápisové commity** (jen CHANGELOG/PREDAVKA/verze/roadmapa, bez kódu): `claude/b80-pipedrive` 38996f2 (v15.10.7, roadmapa #345, NASAZENI), `claude/p12-naklady` 1f2a365 (výsledky po úpravě, mutace 13/13, smoke 248/0/2), `claude/kolo25-audit` dcc3d5f (smoke 247/0/6).
 - **Další krok:** do `claude/integrace-15-10` sloučit 38996f2, 1f2a365, dcc3d5f (konflikty jen v dokumentaci — novější oddíl nahoru, `verze.txt` = 15.10.7, příručka `manual/obsah.json` verze + nadpis „Co je nového ve verzi v15.10.7"), `--kontrola` mutací, sestavit, příručka ze snímků, `spust_testy.sh --smoke` s podklady → zelené → zápis do CHANGELOG → push `claude/integrace-15-10` a fast-forward `test` (`git merge-base --is-ancestor origin/test HEAD`).
 
+## STAV 19. 10. ~16:25 UTC — noční koordinace „ŘÍDÍCÍ 19.10 noc“ session_01XJumJDekDRpCTu4kDzdi9e
+
+- **Integrace = 1b0e2f7 (v19.10.10)**: W1 (v19.10.9, šablona PROJ v6) + F1 (v19.10.10, B194 zámek mutací) sloučeny, konflikty jen dokumentace/.gitignore/verze.txt. Kolo `--bez-mutaci` 279/0/6, statické 3/3; mutace jádro „W1“ 11/11, server „#367“ 2/2 (zámek se uvolní). **Fast-forward `test` 1a4d26b → 1b0e2f7 zamítla kontrola oprávnění tohoto sezení** → čeká na J. V. (kokpit). Release odkaz v19.10.10 (souhrn v19.10.9–10) v kokpitu; v19.10.8 stále k vydání.
+- **Běží:** K3 session_01Jy3RSLoj7dAqXwZTs8WrAH (celé kolo s mutacemi + audit nad 1b0e2f7 → `claude/k3-kolo`), M1 session_01Kki2eUyt1cB9T42xSSd5hS (registrace mutací O3 → `claude/m1-mutace-o3`).
+- **Hodinová kontrola:** opakovaný scheduled task zamítla kontrola oprávnění → řetěz `send_later` po ~60 min (každá kontrola naplánuje další). Ráno ~06:00 UTC souhrn noci.
+- Staré sezení ŘÍDÍCÍ 19.10 session_017KEALG3ppimL5fW2XswzrB nečinné (archivuje J. V.).
+
 ## PŘEDÁNÍ 19. 10. ~15:50 UTC → noční koordinační sezení (staré ŘÍDÍCÍ 19.10 session_017KEALG3ppimL5fW2XswzrB, kontext ~55 %)
 
 - **test = integrace = 1a4d26b (v19.10.8)** — #356, kapitoly + TD1, H2, zálohy N1–N6 (staré zálohy do 19. 10. se nemažou, RETENCE_OD 2026-10-20), #367 platební podmínky a texty ve Firmě. Ověřeno: sady 277/0/6, cílené mutace jádro #367 18/18, 356 5/5, h2 3/3; server #367 2/2, #151 42/42, h2 4/4, zaloh 50/50. Release v19.10.5 vydán; **v19.10.8 k vydání** (odkaz v kokpitu „Čeká na vás“). `main` = v15.10.14 jen na pokyn.
