@@ -107,13 +107,16 @@ a{color:var(--steel);overflow-wrap:anywhere}
 
 <script id="data" type="application/json">
 {
- "aktualizace": "19. 10. 2026 15:50 UTC",
+ "aktualizace": "20. 10. 2026 05:45 UTC",
  "koordinace": {
-  "id": "session_017KEALG3ppimL5fW2XswzrB",
-  "kontext": 53
+  "id": "session_01XJumJDekDRpCTu4kDzdi9e",
+  "kontext": 36
  },
- "releasy": "vydáno v19.10.5 · k vydání v19.10.8 (souhrnný v19.10.6–8, 1a4d26b) — odkaz v „Čeká na vás“",
+ "releasy": "vydáno v19.10.5 · k vydání v19.10.8 (1a4d26b, v test) · připraven v20.10.1 (c1a4c81, souhrn v19.10.9–v20.10.1, čeká na posun test) · v19.10.9–10 mezilehlé",
  "cekaNaJV": [
+  "Ranní souhrn noci: https://claude.ai/artifact/TqV2b7smXUvs9Kmhaau9aS — posun test na integraci c1a4c81 (v20.10.1; W1 šablona PROJ v6, F1 zámek mutací, M1 mutace O3, O5 opravy auditu K3, O6 test). Ověřeno: celé kolo K3 (jádro 291/291, server 586/587 → přeživší vyřešena v O5), nad v20.10.1 sady 281/0/6, statické 3/3, jádro O5 13/13 + #367 18/18, server O5 11/11, B58 2/2, #367 2/2, H2 4/4, #151 42/42. Push do test zamítla kontrola oprávnění tohoto sezení → stačí „pushni do test“ (nebo git push origin c1a4c81:test).",
+  "Po posunu test: vydat release v20.10.1 (souhrnný v19.10.9–v20.10.1, cíl c1a4c81; nejdřív v19.10.8 níže): https://github.com/vendljar/kalkulator-next-gen-engscalc/releases/new?tag=v20.10.1&target=c1a4c8122503cd1bacfe323afb3cddd8ff76e8aa&title=v20.10.1%20%E2%80%94%20%C5%A1ablona%20Wordu%20PROJ%20v6%2C%20opravy%20z%20bezpe%C4%8Dnostn%C3%ADho%20auditu%20K3&body=Souhrnn%C3%BD%20release%20v19.10.9%20%E2%80%93%20v20.10.1%20%2819.%E2%80%9320.%2010.%202026%29%0A%0A%23%23%23%20v19.10.9%20%E2%80%94%20%C5%A1ablona%20Wordu%20nab%C3%ADdky%20PROJ%20v6%20%28W1%2C%20%23367%20Q5%29%0A-%20Nov%C3%A1%20%C5%A1ablona%20PROJ%20v6%20%28CZ%20%2B%20EN%2FDE%2FFR%2C%20%60nastroje%2Fvyrob_sablony.js%20--proj-v6%60%29%3A%20bloky%20Cena%20nezahrnuje%2C%20Po%C5%BEadov%C3%A1no%20od%20investora%2C%20Term%C3%ADny%20a%20nov%C3%BD%20blok%20Dolo%C5%BEky%20se%20tisknou%20z%20Nastaven%C3%AD%20%E2%86%92%20Firma%20%28texty%20nab%C3%ADdky%20PROJ%29%2C%20jako%20online%20nab%C3%ADdka.%0A-%20%C5%98%C3%A1dek%20tabulky%20se%20rozv%C3%ADj%C3%AD%20za%20ka%C5%BEdou%20odr%C3%A1%C5%BEku%2C%20term%C3%ADny%20jako%20dvojice%20%C4%8Dinnost%20%7C%20term%C3%ADn%20%28jen%20nab%C3%ADzen%C3%A9%20%C4%8Dinnosti%29%3B%20pr%C3%A1zdn%C3%BD%20blok%20zmiz%C3%AD%20i%20s%20nadpisem.%0A-%20%C5%A0ablonu%20v6%20nahr%C3%A1t%20v%20aplikaci%20a%C5%BE%20po%20nasazen%C3%AD%20v19.10.9%20%28star%C5%A1%C3%AD%20aplikace%20nov%C3%A9%20symboly%20nezn%C3%A1%29.%0A%0A%23%23%23%20v19.10.10%20%E2%80%94%20B194%20z%C3%A1mek%20muta%C4%8Dn%C3%ADch%20b%C4%9Bh%C5%AF%20%28F1%29%0A-%20Rozbor%20jednor%C3%A1zov%C3%A9ho%20p%C3%A1du%20test_vyjimky.mjs%3A%20vnit%C5%99n%C3%AD%20nestabilita%20nenalezena%20%28400%2B%20b%C4%9Bh%C5%AF%29%2C%20dolo%C5%BEen%20soub%C4%9Bh%20dvou%20muta%C4%8Dn%C3%ADch%20b%C4%9Bh%C5%AF%20nad%20tout%C3%A9%C5%BE%20kopi%C3%AD.%0A-%20Z%C3%A1mek%20%60.mutace_bezi.json%60%20v%20mutace_jadro.mjs%20i%20netlify%2Fmutace.mjs%3B%20v%C3%BDpis%20padl%C3%BDch%20kontrol%20v%C3%BDchoz%C3%ADho%20stavu.%0A%0A%23%23%23%20v20.10.1%20%E2%80%94%20opravy%20n%C3%A1lez%C5%AF%20bezpe%C4%8Dnostn%C3%ADho%20auditu%20K3%20%28O5%2C%20O6%29%0A-%20Retenci%20z%C3%A1loh%20odemkne%20jen%20z%C3%A1znam%20kopie%20na%20Disk%20podlo%C5%BEen%C3%BD%20skute%C4%8Dn%C3%BDm%20no%C4%8Dn%C3%ADm%20otiskem%20%28velikost%2C%20sha256%29%3B%20%C5%A1ablona%20SoD%20PROJ%20v4%20bez%20povinn%C3%BDch%20zna%C4%8Dek%20dokument%20nevyrob%C3%AD.%0A-%20Drobn%C3%A9%20opravy%3A%20neplatn%C3%A9%20kl%C3%AD%C4%8De%20vrac%C3%AD%20chybu%20m%C3%ADsto%20p%C3%A1du%20serveru%2C%20%E2%80%9E12%2C5%E2%80%9C%20se%20nezobraz%C3%AD%20jako%20%E2%80%9ENaN%20%25%E2%80%9C%2C%20heslo%20spr%C3%A1vce%20se%20po%20vypr%C5%A1en%C3%AD%20ma%C5%BEe%20z%20pam%C4%9Bti%2C%20zalomen%C3%AD%20%C5%99%C3%A1dk%C5%AF%20v%20textech%20PROJ%20jsou%20neplatn%C3%A1%2C%20p%C5%99%C3%ADsn%C4%9Bj%C5%A1%C3%AD%20kontrola%20zna%C4%8Dek%20blok%C5%AF%20v%20%C5%A1ablon%C3%A1ch%2C%20atomick%C3%BD%20z%C3%A1mek%20mutac%C3%AD.%0A-%20Testy%3A%20obnova%20B58%20a%20hranice%207%20dn%C3%AD%20kopie%20na%20Disk%20testov%C3%A1ny%20s%20platn%C3%BDmi%20daty%20%28d%C5%99%C3%ADve%20napr%C3%A1zdno%29.%0A%0A%23%23%23%20V%C3%BDsledek%0A-%20Kolo%20bez%20mutac%C3%AD%20nad%20integrac%C3%AD%20%28v19.10.10%29%3A%20sady%20279%2F0%2F6%20%28p%C5%99esko%C4%8Deny%20jen%20sady%20s%20firemn%C3%ADmi%20podklady%29%2C%20statick%C3%A9%20kontroly%203%2F3.%0A-%20Dopln%C4%9Bno%20M1%3A%2043%20mutac%C3%AD%20O3%20%28kapitoly%20IV.%E2%80%93VI.%2C%20%7BTERMIN%7D%29%20zaregistrov%C3%A1no%20a%20opakovateln%C3%A9%20filtrem%20%E2%80%9EO3%E2%80%9C%2C%202%20testy%20zes%C3%ADleny%3B%20nad%20dd97ed3%20j%C3%A1dro%20O3%207%2F7%2C%20server%20O3%2040%2F40%2C%20sady%20279%2F0%2F6.-%20Cel%C3%A9%20kolo%20K3%20s%20mutacemi%20nad%20v19.10.10%3A%20j%C3%A1dro%20291%2F291%2C%20server%20586%2F587%20%281%20pr%C3%A1zdn%C3%BD%20test%2C%20opraven%20v20.10.1%29%2C%20statick%C3%A9%203%2F3%3B%20bezpe%C4%8Dnostn%C3%AD%20audit%3A%200%20kritick%C3%BDch%2C%200%20vysok%C3%BDch%20n%C3%A1lez%C5%AF.%0A-%20Nad%20v20.10.1%3A%20sady%20281%2F0%2F6%2C%20statick%C3%A9%203%2F3%2C%20mutace%20j%C3%A1dra%20O5%2013%2F13%2C%20%23367%2018%2F18%3B%20serveru%20O5%2011%2F11%2C%20B58%202%2F2%2C%20%23367%202%2F2%2C%20H2%204%2F4%2C%20%23151%2042%2F42.%0A",
+  "Rozhodnutí z auditu K3 (https://github.com/vendljar/kalkulator-next-gen-engscalc/blob/claude/integrace-16-10/podklady/K3_AUDIT_19_10.md; 0 kritických, 0 vysokých — nic nebrání v19.10.10 → test): K3-N2 věty kalendáře, SoD a texty PROJ z Firmy se u odeslané nabídky nezmrazují → doporučuji zmrazit při prvním zamčení, staré varianty tisknout jako dosud; K3-N1 heslo správce u záznamu kopie-disk + jen složka _Zaloha Netlify DB → doporučuji ano; K3-N4 limit vynucených otisků → doporučuji 1 / 10 min a 20 / den; K3-N13 pojistka retence → přeskočit retenci při poklesu zakázek nebo účtů pod 50 %; K3-N15 heslo správce i u zveřejnění Firmy → doporučuji ano. Navíc z O5: K3-N18 souhrnný strop velikosti podmínek (chce číslo) a horní mez rozměru můstku. Stačí „podle doporučení“.",
   "Vydat release v19.10.8 (souhrnný v19.10.6–v19.10.8): https://github.com/vendljar/kalkulator-next-gen-engscalc/releases/new?tag=v19.10.8&target=1a4d26b2c298874c126a3ab013dd2c63e8ef0537&title=v19.10.8%20%E2%80%94%20%23367%20platebn%C3%AD%20podm%C3%ADnky%20a%20texty%20ve%20Firm%C4%9B%2C%20z%C3%A1lohy%3A%20retence%20%2B%20kopie%20na%20Disk&body=Souhrnn%C3%BD%20release%20v19.10.6%20%E2%80%93%20v19.10.8%20%2819.%2010.%202026%29%0A%0A%23%23%23%20v19.10.6%20%E2%80%94%20%23367%20f%C3%A1ze%202a%3A%20platebn%C3%AD%20podm%C3%ADnky%20z%20Nastaven%C3%AD%20%E2%86%92%20Firma%0A-%20Platebn%C3%AD%20podm%C3%ADnky%20OCK%20a%20PROJ%20%28splatnost%2C%20z%C3%A1lohy%2C%20faktura%202%2C%20kone%C4%8Dn%C3%A1%2C%20z%C3%A1dr%C5%BEn%C3%A9%2C%20z%C3%A1ruka%2C%20pokuty%2C%20limit%29%20u%C5%BE%20nejsou%20natvrdo%20v%20k%C3%B3du%3B%20v%C3%BDchoz%C3%AD%20%3D%20dosavadn%C3%AD%20hodnoty%2C%20v%C3%BDstup%20se%20nem%C4%9Bn%C3%AD.%0A-%20Nastaven%C3%AD%20%E2%86%92%20Smlouvy%20/%20%C5%A0ablony%3A%20spole%C4%8Dn%C3%BD%20blok%20%2B%20p%C5%99ep%C3%ADna%C4%8D%20OCK%20%7C%20PROJ%2C%20%C5%BEiv%C3%BD%20sou%C4%8Det%3B%20sou%C4%8Det%20%E2%89%A0%20100%20%25%20zve%C5%99ejn%C4%9Bn%C3%AD%20zablokuje%20%28rozhodnut%C3%AD%20J.%20V.%29.%20Rozpracovan%C3%A9%20varianty%20p%C5%99evezmou%20standard%2C%20zam%C4%8Den%C3%A9%20beze%20zm%C4%9Bny.%0A%0A%23%23%23%20v19.10.7%20%E2%80%94%20%23367%20f%C3%A1ze%202b%0A-%20V%C4%9Bty%20platebn%C3%ADho%20kalend%C3%A1%C5%99e%20%28nab%C3%ADdka%2C%20SoD%29%20ve%20Firm%C4%9B%20v%20CZ/EN/DE/FR%3B%20v%C3%BDchoz%C3%AD%20FR%20texty%20kapitol%20IV.%E2%80%93VI.%20a%20dolo%C5%BEek%3B%20%7BTERMIN%7D%20ve%20v%C5%A1ech%20jazyc%C3%ADch%3B%20v%C4%9Bta%20%E2%80%9E5%20let%20z%C3%A1ruka%E2%80%9C%20z%20kapitoly%20V.%20pry%C4%8D%20%28z%C3%A1ruka%20z%20kryc%C3%ADho%20listu%29.%0A-%20Texty%20nab%C3%ADdky%20PROJ%20ve%20Firm%C4%9B%20%28Cena%20nezahrnuje%2C%20Po%C5%BEadov%C3%A1no%20od%20investora%2C%20Term%C3%ADny%29%2C%20dolo%C5%BEky%20PROJ%20vypnut%C3%A9%3B%20typ%20smlouvy%2C%20licence%20PD%2C%20poji%C5%A1t%C4%9Bn%C3%AD%20ve%20Firm%C4%9B.%0A%0A%23%23%23%20v19.10.8%20%E2%80%94%20%23151%20N5%20%2B%20N6%20z%C3%A1lohy%0A-%20Retence%20no%C4%8Dn%C3%ADch%20otisk%C5%AF%3A%2030%20denn%C3%ADch%20%2B%20prvn%C3%AD%20v%20m%C4%9Bs%C3%ADci%2012%20m%C4%9Bs%C3%ADc%C5%AF%2C%20vynucen%C3%A9%2090%20dn%C3%AD%20%E2%80%94%20jen%20pro%20otisky%20od%2020.%2010.%202026%3B%20star%C5%A1%C3%AD%20z%C3%A1lohy%20se%20nema%C5%BEou%20nikdy%20%28J.%20V.%29.%20Retence%20nic%20nesma%C5%BEe%20bez%20%C4%8Derstv%C3%A9%20kopie%20na%20Disku.%0A-%20T%C3%BDdenn%C3%AD%20kopie%20z%C3%A1lohy%20na%20Disk%20Google%20do%20%E2%80%9E_Zaloha%20Netlify%20DB%E2%80%9C%20%28bez%20hesel%20a%20podpis%C5%AF%29%2C%20tla%C4%8D%C3%ADtko%20%E2%80%9EZkop%C3%ADrovat%20z%C3%A1lohu%20na%20Disk%20te%C4%8F%E2%80%9C%2C%20hl%C3%ADdka%20nad%2014%20dn%C3%AD.%0A%0A%23%23%23%20V%C3%BDsledek%0A-%20Kolo%20bez%20mutac%C3%AD%20nad%201a4d26b%3A%20build%20OK%2C%20sady%20277/0/6%20%28p%C5%99esko%C4%8Deny%20jen%20sady%20s%20firemn%C3%ADmi%20podklady%29%2C%20statick%C3%A9%20kontroly%20OK.%0A-%20C%C3%ADlen%C3%A9%20mutace%3A%20j%C3%A1dro%20%23367%2018/18%2C%20%23356%205/5%2C%20H2%203/3%3B%20server%20%23367%202/2%2C%20%23151%2042/42%2C%20H2%204/4%2C%20z%C3%A1lohy%2050/50.",
   "B192 heslo správce → potvrzení: zvolit variantu https://claude.ai/artifact/GtKYY7Qe6553LS4oJNjLXx — doporučeno B (HMAC potvrzení v HttpOnly cookie 10 min, neprodlužuje se, tlačítko Zamknout; účty B77 dál s heslem; rozšíření na další akce až jako samostatná položka). 2 dávky.",
   "Šablona PROJ v6 (W1): stáhnout 4 soubory .docx ze sezení W1 https://claude.ai/code/session_014gvkcV3MSrbqzSLBUfoNcg → nahrát na Disk do „Sablony“ vedle v5; po nasazení v19.10.9: Nastavení → Šablony → Šablona cenové nabídky PROJ → nahrát v6 CZ + EN/DE/FR → zveřejnit; vyzkoušet Word nabídky PROJ. Postup: podklady/W1_SABLONA_PROJ_V6.md.",
@@ -131,19 +134,19 @@ a{color:var(--steel);overflow-wrap:anywhere}
   {
    "k": "test",
    "v": "v19.10.8",
-   "d": "1a4d26b · #367 platební podmínky + texty, zálohy N5/N6",
-   "s": "ok"
+   "d": "1a4d26b · posun na c1a4c81 (v20.10.1) čeká na potvrzení J. V.",
+   "s": "warn"
   },
   {
    "k": "integrace",
-   "v": "v19.10.8",
-   "d": "1a4d26b · = test; čeká W1 (v19.10.9) + F1 (v19.10.10)",
+   "v": "v20.10.1",
+   "d": "c1a4c81 · W1 + F1 + M1 + K3 + O5 + O6; ověřeno",
    "s": "ok"
   },
   {
    "k": "sady + mutace",
    "v": "zelené",
-   "d": "1a4d26b: sady 277/0/6; jádro #367 18/18, #356 5/5, H2 3/3; server #367 2/2, #151 42/42, H2 4/4, zálohy 50/50",
+   "d": "c1a4c81: sady 281/0/6, statické 3/3; jádro O5 13/13, #367 18/18; server O5 11/11, B58 2/2, #367 2/2, H2 4/4, #151 42/42; celé kolo K3 nad 1b0e2f7",
    "s": "ok"
   }
  ],
@@ -158,20 +161,20 @@ a{color:var(--steel);overflow-wrap:anywhere}
  ],
  "sezeni": [
   {
-   "nazev": "ŘÍDÍCÍ 19.10 - Koordinace po v19.10.1 (#356, #367, nasazení)",
-   "id": "session_017KEALG3ppimL5fW2XswzrB",
+   "nazev": "ŘÍDÍCÍ 19.10 noc - Koordinace noci 19./20. 10. (W1, F1, K3, ranní souhrn)",
+   "id": "session_01XJumJDekDRpCTu4kDzdi9e",
    "role": "koordinace",
-   "stav": "run",
-   "stavText": "koordinuje",
+   "stav": "ok",
+   "stavText": "noc hotová",
    "faze": null,
-   "eta": "~3 h",
-   "kontext": 53,
-   "kontextTok": 528,
-   "bezi": "2 h 55 min",
-   "hlaseni": "14:30",
+   "eta": "hotovo",
+   "kontext": 36,
+   "kontextTok": 360,
+   "bezi": "13 h 50 min",
+   "hlaseni": "právě teď",
    "konec": null,
-   "co": "Ověření v19.10.8 (1a4d26b): sady 277/0/6 zelené, cílené mutace dobíhají → test. Pak W1 (v19.10.9) + F1 (v19.10.10) → integrace a předání noci novému koordinačnímu sezení (kontext 53 %).",
-   "dalsi": "A2 → integrace → sady + mutace → test → release"
+   "co": "Noc 19./20. 10. hotová: integrace c1a4c81 (v20.10.1) ověřená, souhrn noci https://claude.ai/artifact/TqV2b7smXUvs9Kmhaau9aS. Čeká se na J. V. (posun test, releasy, rozhodnutí z auditu).",
+   "dalsi": "Čeká na J. V.; noční kontroly ukončeny"
   },
   {
    "nazev": "V3 #380 + #157 smlouva o dílo v angličtině",
@@ -191,6 +194,82 @@ a{color:var(--steel);overflow-wrap:anywhere}
   }
  ],
  "log": [
+  [
+   "05:45",
+   "Noc hotová. O6 (c1a4c81) sloučena fast-forward, kontrolní #151 42/42 → integrace c1a4c81 (v20.10.1) plně ověřená. Ranní souhrn: https://claude.ai/artifact/TqV2b7smXUvs9Kmhaau9aS. Noční kontroly ukončeny."
+  ],
+  [
+   "04:15",
+   "Ověření integrace 54f1cbc (v20.10.1): sady 281/0/6, statické 3/3, jádro O5 13/13, server O5 11/11, B58 2/2, #367 2/2; #151 40/42 — přežily „kopie na Disk stačí 7 dní stará“ a „lhůta kopie 8 dní“ (test hranice po O5 naprázdno). Spuštěna O6 (jen test). Restart kontejneru ve ~03:30 přerušil běh, mutace vrácena, kopie čistá."
+  ],
+  [
+   "02:55",
+   "O5 hotová (f117b1e, v20.10.1): opraveny K3-N19 (test B58, mutace 2/2), N1 část bez J. V. (kopie-disk podložená otiskem), N3, N5–N11, info N12/N14/N16/N17; sady 281/0/6, mutace jádro O5 13/13, server O5 11/11. Sloučeno → integrace 54f1cbc, O5 archivována. Běží ověření (kolo + mutace O5, B58, #367, #151, H2)."
+  ],
+  [
+   "02:11",
+   "Kontrola: O5 má opravy v kódu, běží kolo testů a mutace O5 + B58."
+  ],
+  [
+   "01:53",
+   "K3 hotová (a844d1e): celé kolo nad 1b0e2f7 — sady 279/0/6, jádro 291/291, server 586/587 (přežila B58 = prázdný test po #151 N1, kód v pořádku), statické 3/3. Audit c9577ed..1b0e2f7: 0 kritických, 0 vysokých, 3 střední, 9 nízkých, 7 info. Zápis sloučen → integrace 3b49d57, K3 archivována. Spuštěna O5 (opravy bez J. V., v20.10.1); 5 rozhodnutí → Čeká na vás."
+  ],
+  [
+   "01:12",
+   "K3 průběžně: sady 279/0/6, jádro 291/291, server zatím 565/566 — přežila „B58: obnova zapíše smazání i u živého účtu“ (test_obnova.mjs po #151 N1 testuje naprázdno; kód v pořádku). Audit: 3 střední (K3-N1 retence odemčená nepodloženým záznamem kopie-disk z prohlížeče, K3-N2 odeslaná nabídka nezmrazuje věty/texty z Firmy, K3-N3 B191 nekryje šablonu bez značek CIN_*), 9 nízkých, 7 info. Konec ~02:00."
+  ],
+  [
+   "01:10",
+   "Kontrola: K3 dál v mutačním běhu (hlášení 00:54), claude/k3-kolo zatím prázdná. Vyžádán průběžný stav (počty, nálezy auditu)."
+  ],
+  [
+   "00:08",
+   "Kontrola: K3 běží (mutační skupina 92, poslední hlášení 00:03); claude/k3-kolo zatím bez commitu. Kolo je delší než odhad (~8 h)."
+  ],
+  [
+   "23:05",
+   "Kontrola: K3 čeká na dokončení mutačního běhu, pak commit (poslední hlášení 22:54)."
+  ],
+  [
+   "22:04",
+   "Kontrola: K3 aktivní (dobíhají mutace serveru), odhad konce ~23:00."
+  ],
+  [
+   "21:02",
+   "Kontrola: K3 dělá mutace serveru nad lib/ (134), vlastní kontrola 21:28; odhad konce ~22:30."
+  ],
+  [
+   "20:00",
+   "Kontrola: K3 mutační běh pokračuje (poslední hlášení 19:57), commit po doběhnutí všech částí. Integrace dd97ed3 zelená, test čeká na J. V."
+  ],
+  [
+   "19:20",
+   "Integrace dd97ed3 (v19.10.10 + M1) VŠE ZELENÉ: server O3 40/40 (opakovaný běh), jádro O3 7/7, sady 279/0/6. Doporučení posunout test rovnou na dd97ed3; release odkaz v19.10.10 přepnut na dd97ed3."
+  ],
+  [
+   "18:59",
+   "Ověření integrace dd97ed3: sady 279/0/6, statické 3/3, jádro O3 7/7; server O3 přerušil časový limit pozadí (mutace vrácena, kopie čistá) → běží znovu (29/40 chyceno). K3: mutace serveru běží."
+  ],
+  [
+   "17:58",
+   "M1 hotová (1b813f7): 43 mutací O3 obnoveno z diffu a zaregistrováno (jádro 7 + server 40, filtr „O3“), 2 přeživší → zesíleny testy (pojistka před/po doložena); 47/47 chyceno, kolo 279/0/6. Sloučeno → integrace dd97ed3 (verze beze změny v19.10.10), M1 archivována. Běží ověření integrace (kolo bez mutací + mutace O3). K3 v mutační fázi."
+  ],
+  [
+   "16:57",
+   "Kontrola: K3 — kolo s mutacemi běží, koncept auditu rozpracován; M1 — mutace O3 (jádro 7 + server 40) běží. test stále 1a4d26b (posun čeká na J. V.). Kontext koordinace 18 %."
+  ],
+  [
+   "16:22",
+   "Integrace 1b0e2f7 (v19.10.10) VŠE ZELENÉ: sady 279/0/6, statické 3/3, mutace jádro W1 11/11, server #367 2/2. Fast-forward test zamítla kontrola oprávnění → čeká na J. V. (Čeká na vás). Release odkaz v19.10.10 připraven. Spuštěny K3 (celé kolo + audit nad 1b0e2f7) a M1 (registrace mutací O3)."
+  ],
+  [
+   "16:05",
+   "W1 (v19.10.9) a F1 (v19.10.10) sloučeny → integrace 1b0e2f7 (konflikty jen dokumentace, .gitignore, verze.txt; mutace_jadro.mjs a netlify/mutace.mjs automaticky). Běží kolo bez mutací (~20 min), pak cílené mutace jádro „W1“ (11) + server „#367“ (ověří i zámek B194). Hodinová kontrola: plánovaná připomínka každou hodinu (opakovaný scheduled task zamítla kontrola oprávnění)."
+  ],
+  [
+   "15:55",
+   "Koordinaci převzalo session_01XJumJDekDRpCTu4kDzdi9e (ŘÍDÍCÍ 19.10 noc); předchozí ŘÍDÍCÍ 19.10 session_017KEALG3ppimL5fW2XswzrB končí (kontext ~55 %). Začíná slučování W1 → F1."
+  ],
   [
    "15:50",
    "test fast-forward 4cc1b81 → 1a4d26b (v19.10.8: #367 platební podmínky a texty ve Firmě, zálohy retence + kopie na Disk, staré zálohy se nemažou). Sady 277/0/6, cílené mutace bez přeživší. Release odkaz v19.10.8 v „Čeká na vás“."
@@ -286,87 +365,11 @@ a{color:var(--steel);overflow-wrap:anywhere}
   [
    "11:33",
    "Z1 hotová (#151): noční záloha běží, mezery N1–N6, podklad https://claude.ai/artifact/6j6ZEh6nYUzpZXKrDLihi9; Z1 archivována. N1–N4 → dávka O4 (v19.10.5); N5/N6 čekají na J. V."
-  ],
-  [
-   "11:31",
-   "J. V.: odkazy v kokpitu vždy jako živé proklikávací linky → kokpit převeden (čeká na vás, karty, deník, releasy), pravidlo zapsáno do skillu kokpit-koordinace."
-  ],
-  [
-   "11:28",
-   "V8 našla příčinu prázdných kapitol (Firma z doby před #282, načtení nahradí Firmu celou) → předáno O3 (doplní jen chybějící klíče, „“ = vědomé vypuštění). Náhled #367 rozšířen o texty PROJ; fáze 2 = 2 dávky po schválení."
-  ],
-  [
-   "11:26",
-   "V8 fáze 1 hotová (náhled #367, Q1–Q6 doporučeno ano) → čeká na J. V. J. V. schválil řešení TD1 se značkou {TERMIN} (O3, v19.10.3)."
-  ],
-  [
-   "11:21",
-   "J. V.: „rozběhni více sezení, mám ~90 min“ → spuštěny H2 (V7-N1, B191, B192; v19.10.4) a Z1 (#151 zálohování, rozbor). Běží A2, O3, V8, H2, Z1. Cíl: vše v test do ~13:00 UTC."
-  ],
-  [
-   "11:22",
-   "J. V.: TD1 vyřešit a poslat do test → O3 rozšířena: značka {TERMIN} ve výchozím textu kapitoly V. (místo pevných „cca 12 týdnů“), bez duplicitní odrážky, starý text beze změny + kontrola."
-  ],
-  [
-   "11:18",
-   "J. V.: Ceník – 8 předzaškrtnutých položek v test OK. „Doplň výchozí texty do Nastavení rovnou“ → online firmu zapisuje jen administrátor, proto spuštěna dávka O3 (v19.10.3): automatické doplnění prázdných kapitol + tlačítko."
-  ],
-  [
-   "11:25",
-   "J. V. vydal release v19.10.1 (tag ověřen). Dotaz J. V. na vzor kapitol IV.–VI. a doložek: výchozí texty jsou v src/firma.js (původ Word šablona CN v10) — předáno i V8 do návrhu #367."
-  ],
-  [
-   "11:15",
-   "J. V.: #356 = A1+B1+C1+D1+E1 → A2 dokončuje (claude/a2-356, v19.10.2). #367 = B + vše natvrdo z kódu do Nastavení → Firma, přepínač OCK/PROJ v Šablonách smlouvy; nejdřív náhled → spuštěna V8. Po zelených sadách standardně do test."
-  ],
-  [
-   "10:25",
-   "Kontrola: beze změny, test = integrace v19.10.1. Dotaz na #356 a #367 položen J. V. v dialogu koordinace."
-  ],
-  [
-   "09:24",
-   "Kontrola: beze změny (test = integrace v19.10.1). ŘÍDÍCÍ 18.10 archivováno. Čeká se na J. V. (#356, #367)."
-  ],
-  [
-   "08:21",
-   "Koordinaci převzalo session_017KEALG3ppimL5fW2XswzrB (ŘÍDÍCÍ 19.10). P1 a O2 archivovány. Čeká se na J. V.: #356, #367, release v19.10.1."
-  ],
-  [
-   "08:20",
-   "O2 hotová: B189 výchozí DPH (DIČ CZ → přenesená, bez DIČ → česká, EU/mimo EU bez volby, zábrana tisku), sady 274/0/1, mutace B189 9/9, DPH 13/13, SoD 28/28. Fast-forward integrace i test → 65ca5b5 (v19.10.1). Release odkaz poslán, P1 upravuje soupis. O2 archivována."
-  ],
-  [
-   "07:25",
-   "J. V.: B189 podle doporučení (DIČ CZ → přenesená, bez DIČ → česká, EU/mimo EU bez výchozí volby). Spuštěna dávka O2 (v19.10.1). Zbytek J. V. projde dnes."
-  ],
-  [
-   "05:03",
-   "J. V.: „pushni do test“ → test fast-forward 1cbab3a → c9577ed (v18.10.15). Release odkaz v18.10.15 poslán; zapsáno do CHANGELOG (62bd0b6)."
-  ],
-  [
-   "03:45",
-   "Pondělní souhrn pro J. V. publikován (https://claude.ai/artifact/Dxsfj3UhvSxPnpRzuLeuUi). Přes noc beze změny: integrace c9577ed v18.10.15 zelená, test čeká na potvrzení."
-  ],
-  [
-   "20:50",
-   "K2 hotová: celé kolo s mutacemi nad d3fda27 (v18.10.15) VŠE ZELENÉ — sady 274/0/1, jádro 248/248, server 538/538 (56 skupin), statické 3/3. Zapsáno do CHANGELOG (c9577ed). K2 archivována. Posun test čeká na potvrzení J. V."
-  ],
-  [
-   "13:52",
-   "O1 hotová: B188 opraven (obnova matice ze souboru, otisku i dávky chce heslo správce, fail-closed), sady 270/0/2, mutace 66/66. Sloučeno bez konfliktů → integrace d3fda27 (v18.10.15). Spuštěna K2 (celé kolo nad finální integrací). K1 a O1 archivovány."
-  ],
-  [
-   "13:11",
-   "K1 hotová: celé kolo nad 0dbec56 — sady 262/2/1, jádro 222/222, server 509/509, statické 2/3; všechna selhání známá a opravená v integraci. Fast-forward test na a7f1f60 (v18.10.11) zamítla kontrola oprávnění → čeká na potvrzení J. V. Archivaci K1 zamítla kontrola oprávnění."
-  ],
-  [
-   "13:07",
-   "H1 hotová (v18.10.13): B171 nápověda u Odhlásit, B174 úklid pd_cache po 30 dnech, B175 očista klíčů analytiky, B186 čísla textem → čísla, B187 XSS karta schvalovatele; mutace 14/14, sady 270/4/1 (3 jen podklady z Disku, 1 opravena). Sloučeno → integrace 9479f44 (konflikty roadmapy a BEZPECNOST_MEZE spojeny), H1 archivována."
   ]
  ],
  "celkem": {
-  "eta": "přes noc",
-  "detail": "~15:00 UTC test = v19.10.8; ~16:00 W1 + F1 → test; K3 celé kolo s mutacemi + audit ~4 h; ráno ~06:00 UTC souhrn noci"
+  "eta": "hotovo",
+  "detail": "Noc 19./20. 10. dokončena (05:45 UTC). Zbývá jen to, co čeká na J. V.: posun test, releasy v19.10.8 a v20.10.1, 7 rozhodnutí z auditu K3."
  }
 }
 </script>
