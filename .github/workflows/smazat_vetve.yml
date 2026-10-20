@@ -9,6 +9,10 @@
 # nastroje/test_sloucene_vetve.sh ve statických kontrolách kola): smaže se
 # větev celá v test, kromě main, test, test-draft, claude/integrace-*,
 # větví s posledním commitem mladším než „stari_hodin“ a větví z „vynechat“.
+# Skutečné stáří větve (K4-N2, O8) se bere z času poslední aktivity větve
+# v GitHub API (gh api …/activity, GH_TOKEN = GITHUB_TOKEN); bez něj se smaže
+# jen větev sloučená merge commitem mimo hlavní linii chráněných větví.
+# Maže se s --force-with-lease (K4-N3): souběžný push smazání zastaví.
 # Souhrn (smazané, vynechané s důvodem, počty) je v souhrnu běhu.
 name: Smazat sloučené větve
 
@@ -54,7 +58,8 @@ jobs:
           JEN_VYPSAT: ${{ inputs.jen_vypsat }}
           STARI_HODIN: ${{ inputs.stari_hodin }}
           VYNECHAT: ${{ inputs.vynechat }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          volby=(--stari-hodin "$STARI_HODIN" --vynechat "$VYNECHAT")
+          volby=(--stari-hodin "$STARI_HODIN" --vynechat "$VYNECHAT" --github-repo "$GITHUB_REPOSITORY")
           [ "$JEN_VYPSAT" = "true" ] && volby+=(--jen-vypsat)
           bash nastroje/sloucene_vetve.sh "${volby[@]}"

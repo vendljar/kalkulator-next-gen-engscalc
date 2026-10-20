@@ -11,15 +11,41 @@
 #   git merge-base --is-ancestor origin/<větev> origin/test
 # Nikdy se nemaže:
 #   - main, test, test-draft a claude/integrace-* (chráněné),
-#   - větev s posledním commitem mladším než --stari-hodin (výchozí 24) —
-#     nová dávková větev založená nad test je „celá v test“, i když dávka
-#     teprve běží,
+#   - větev s posledním commitem mladším než --stari-hodin (výchozí 24),
+#   - větev, jejíž SKUTEČNÉ stáří je mladší než --stari-hodin nebo ho nelze
+#     doložit (K4-N2, O8) — viz „Stáří větve“ níže,
 #   - větve z --vynechat (mezerami oddělené názvy),
 #   - větev, která celá v základu není (nesloučená práce).
+#
+# Stáří větve (K4-N2): čerstvá dávková větev bez vlastního commitu ukazuje
+# na STARÝ commit, který už v test je (založená nad test, test-draft nebo
+# integrací) — „celá v test“ a podle data commitu stará, přitom dávka běží.
+# Git čas založení ani pushe větve nezná (vzdálený reflog není), proto:
+#   1. S --github-repo vlastník/repo (workflow) se stáří bere z GitHubu:
+#      čas poslední aktivity větve (push, založení, force-push) z API
+#      repos/<repo>/activity?ref=refs/heads/<větev> přes `gh api`. Mladší
+#      než limit → nechat. To je jediný údaj o skutečném stáří větve.
+#   2. Bez API nebo když API čas nevrátí (selhání, prázdná historie) se
+#      větev smaže jen tehdy, když je její špička doložitelně ukončená
+#      sloučená práce: (a) špička je druhým (ne prvním) rodičem merge
+#      commitu v základu — větev se do test sloučila merge commitem — a
+#      (b) špička NELEŽÍ na hlavní linii (first-parent) žádné chráněné
+#      větve. Čerstvá větev založená nad test, test-draft nebo integrací
+#      ukazuje na commit z jejich hlavní linie, takže (b) ji podrží, i když
+#      je ten commit zároveň druhým rodičem nějakého sloučení (integrace
+#      sloučená do test). Větev sloučená rychlým převinutím (fast-forward)
+#      se od čerstvé větve odlišit nedá → zůstane, s důvodem v souhrnu.
+#      Zbývá úzký případ: větev založená přesně na špičce jiné, už sloučené
+#      dávkové větve — tu bez API odlišit nejde; workflow proto API používá.
+#
+# Mazání (K4-N3, K4-N9): plným jménem refs/heads/<větev> a s
+# --force-with-lease na hodnotu z fetch — pushne-li dávka do větve mezi
+# načtením a smazáním, smazání se odmítne (stale info) a nová práce zůstane.
 #
 # Použití (v kořeni klonu):
 #   bash nastroje/sloucene_vetve.sh --jen-vypsat
 #   bash nastroje/sloucene_vetve.sh [--stari-hodin N] [--vynechat "a b"] [--zaklad test] [--remote origin]
+#                                   [--github-repo vlastník/repo]
 # Souhrn jde na výstup a — je-li nastavené GITHUB_STEP_SUMMARY — i do souhrnu běhu.
 # Návratový kód: 0 = v pořádku, 1 = některé smazání selhalo, 2 = špatné zadání.
 
@@ -30,6 +56,7 @@ STARI_HODIN=24
 VYNECHAT=""
 ZAKLAD="test"
 REMOTE="origin"
+GITHUB_REPO=""
 CHRANENE_PRESNE="main test test-draft"
 CHRANENE_VZOR="claude/integrace-*"
 
@@ -42,7 +69,8 @@ while [ $# -gt 0 ]; do
     --vynechat=*) VYNECHAT="${1#--vynechat=}" ;;
     --zaklad) shift; ZAKLAD="${1:-}" ;;
     --remote) shift; REMOTE="${1:-}" ;;
-    -h|--help) sed -n '2,25p' "$0"; exit 0 ;;
+    --github-repo) shift; GITHUB_REPO="${1:-}" ;;
+    -h|--help) sed -n '2,50p' "$0"; exit 0 ;;
     *) echo "neznámá volba: $1 (viz --help)"; exit 2 ;;
   esac
   shift
@@ -62,7 +90,7 @@ fi
 
 ted=$(date +%s)
 hranice=$((ted - STARI_HODIN * 3600))
-smazat=(); vynechane=(); nesloucene=(); selhane=()
+smazat=(); smazat_sha=(); vynechane=(); nesloucene=(); selhane=()
 
 chranena() {
   local v="$1" c
@@ -71,6 +99,27 @@ chranena() {
   case "$v" in $CHRANENE_VZOR) return 0 ;; esac
   return 1
 }
+# Hlavní linie (first-parent) chráněných větví a druzí rodiče merge commitů
+# v základu — podklad kritéria 2 (viz „Stáří větve“).
+declare -A HLAVNI_LINIE=() SLOUCENO_MERGEM=()
+while IFS= read -r chr; do
+  chranena "$chr" || continue
+  while IFS= read -r c; do HLAVNI_LINIE[$c]="$chr"; done \
+    < <(git rev-list --first-parent "refs/remotes/$REMOTE/$chr")
+done < <(git for-each-ref --format='%(refname:strip=3)' "refs/remotes/$REMOTE/")
+while read -r _ prvni dalsi; do
+  for c in $dalsi; do SLOUCENO_MERGEM[$c]=1; done
+done < <(git log --merges --format='%H %P' "refs/remotes/$REMOTE/$ZAKLAD")
+
+# Čas poslední aktivity větve na GitHubu (epoch), prázdný = nezjištěn.
+cas_aktivity() {
+  [ -n "$GITHUB_REPO" ] || return 0
+  local t
+  t=$(gh api "repos/$GITHUB_REPO/activity?ref=refs/heads/$1&per_page=1" --jq '.[0].timestamp // empty' 2>/dev/null) || return 0
+  [ -n "$t" ] || return 0
+  date -d "$t" +%s 2>/dev/null || true
+}
+
 vynechana() {
   local v="$1" c
   for c in $VYNECHAT; do [ "$v" = "$c" ] && return 0; done
@@ -85,18 +134,41 @@ while IFS= read -r vetev; do
   if ! git merge-base --is-ancestor "$ref" "refs/remotes/$REMOTE/$ZAKLAD"; then
     nesloucene+=("$vetev"); continue
   fi
+  sha=$(git rev-parse --verify --quiet "$ref^{commit}")
   cas=$(git log -1 --format=%ct "$ref")
+  case "$sha:$cas" in
+    :*|*:|*:*[!0-9]*) vynechane+=("$vetev — nelze přečíst špičku ani čas commitu"); continue ;;
+  esac
   if [ "$cas" -gt "$hranice" ]; then
     vynechane+=("$vetev — poslední commit mladší než $STARI_HODIN h ($(( (ted - cas) / 3600 )) h)")
     continue
   fi
-  smazat+=("$vetev")
+  akt=$(cas_aktivity "$vetev")
+  case "$akt" in *[!0-9]*) akt="" ;; esac
+  if [ -n "$akt" ]; then
+    if [ "$akt" -gt "$hranice" ]; then
+      vynechane+=("$vetev — poslední push mladší než $STARI_HODIN h ($(( (ted - akt) / 3600 )) h, GitHub)")
+      continue
+    fi
+  elif [ -n "${HLAVNI_LINIE[$sha]:-}" ]; then
+    vynechane+=("$vetev — stáří nelze doložit: špička leží na hlavní linii ${HLAVNI_LINIE[$sha]} (čerstvá větev bez vlastního commitu, nebo sloučená převinutím)")
+    continue
+  elif [ -z "${SLOUCENO_MERGEM[$sha]:-}" ]; then
+    vynechane+=("$vetev — stáří nelze doložit: špička není sloučená merge commitem do $ZAKLAD")
+    continue
+  fi
+  smazat+=("$vetev"); smazat_sha+=("$sha")
 done < <(git for-each-ref --format='%(refname:strip=3)' "refs/remotes/$REMOTE/")
 
 smazane=()
 if [ "$JEN_VYPSAT" -eq 0 ]; then
-  for v in "${smazat[@]}"; do
-    if git push --quiet "$REMOTE" --delete "$v"; then smazane+=("$v"); else selhane+=("$v"); fi
+  for i in "${!smazat[@]}"; do
+    v="${smazat[$i]}"
+    if git push --quiet --force-with-lease="refs/heads/$v:${smazat_sha[$i]}" "$REMOTE" --delete "refs/heads/$v"; then
+      smazane+=("$v")
+    else
+      selhane+=("$v")
+    fi
   done
 fi
 
@@ -119,6 +191,8 @@ souhrn() {
     if [ "${#selhane[@]}" -gt 0 ]; then
       echo
       echo "### Smazání selhalo (${#selhane[@]})"
+      echo
+      echo "Větev se mezitím změnila (souběžný push — nová práce zůstala) nebo mazání odmítl GitHub."
       for v in "${selhane[@]}"; do echo "- \`$v\`"; done
     fi
   fi

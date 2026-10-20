@@ -8,6 +8,43 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## Nástroj a testy (bez nové verze aplikace) — O8: opravy nálezů K4 bez rozhodnutí J. V. (větev claude/o8-k4-nalezy)
+
+Dávka O8 (noční koordinace 20. 10. 2026) nad `claude/integrace-16-10` 89816fe (v20.10.8). Aplikace se nemění,
+verze zůstává v20.10.8. Nálezy z auditu K4 (`podklady/K4_AUDIT_20_10.md` ve větvi `claude/k4-kolo`).
+
+- **#452 (K4-N2) — W2 nesmaže čerstvou dávkovou větev.** `nastroje/sloucene_vetve.sh` dřív bral stáří jen
+  z committer date špičky, takže nová větev bez vlastního commitu nad starou špičkou `test` (nebo `test-draft`,
+  integrace) byla „stará a celá v test“ a smazala se. Git čas založení ani pushe vzdálené větve nezná, proto:
+  1. s `--github-repo` (workflow předává `$GITHUB_REPOSITORY` a `GH_TOKEN`) se bere **čas poslední aktivity
+     větve z GitHubu** (`gh api repos/<repo>/activity?ref=refs/heads/<větev>`) — push, založení, force-push;
+     mladší než `stari_hodin` → větev zůstane;
+  2. bez údaje z API (lokálně, selhání, prázdná historie) se smaže jen **doložitelně sloučená práce**: špička je
+     druhým rodičem merge commitu v `test` a **neleží na hlavní linii (first-parent)** `main`, `test`, `test-draft`
+     ani `claude/integrace-*`. Čerstvá větev nad test/integrací ukazuje na commit z jejich hlavní linie → zůstane,
+     i když je ten commit zároveň druhým rodičem sloučení integrace. Větev sloučená převinutím (fast-forward) se od
+     čerstvé odlišit nedá → zůstane s důvodem „stáří nelze doložit“. Zbylá mez bez API: větev založená přesně na
+     špičce jiné, už mergem sloučené dávkové větve.
+  Nad skutečným repem bez API (20. 10. noc): kandidátů 25 → 20; 5 větví (3 na hlavní linii test, 2 nesloučené
+  mergem) je nově „stáří nelze doložit“ — s API ve workflow se rozhodnou podle času pushe.
+- **#453 (K4-N3, s ním K4-N9) — mazání s `--force-with-lease`.** `git push --force-with-lease=refs/heads/<v>:<sha
+  z fetch> origin --delete refs/heads/<v>`: pushne-li dávka do větve mezi načtením a smazáním, smazání se odmítne,
+  větev i nový commit zůstanou, souhrn má oddíl „Smazání selhalo“ s vysvětlením, kód 1. Plné jméno ref.
+  Nečitelná špička nebo čas commitu → větev vynechaná (část K4-N19).
+- **Test `nastroje/test_sloucene_vetve.sh` 17 → 33 kontrol:** nové větve `nova-davka` (na staré špičce test),
+  `nova-nad-integraci`, `ff-sloucena`, `vnitrni-commit`; podvržené `gh` (čas aktivity, selhání, bez údaje);
+  podvržený `git`, který těsně před smazáním pushne z druhého klonu (souběh). **Pojistka:** původní skript
+  12 prošlo / 21 selhalo, nový 33 / 0. Mutace skriptu ručně: bez lease 9 ✗, bez hlavní linie 10 ✗, bez merge
+  kritéria 8 ✗, bez API 4 ✗, ignoruje čas API 2 ✗, selhání počítané jako smazání 5 ✗ — všechny chycené.
+- **#454 — prázdný test po V7-N2.** `src/test_sod_en.js` „česká DPH + administrativní budova“ běžel s výchozím
+  režimem (od V7-N2 přenesená povinnost), takže mutace „prohlášení o snížené sazbě i mimo stavbu pro bydlení“
+  přežila. Test volí českou DPH výslovně a ověří i bytový dům (prohlášení má). `node mutace_jadro.mjs "snížené
+  sazbě"`: před úpravou 1 nechycená, po ní 2/2. Kód aplikace beze změny.
+- Mimo rozsah (zůstávají z K4): K4-N10 (přetečení `stari_hodin`), K4-N11 (`if` na `main` ve workflow), zbytek
+  K4-N19 (glob ve `--vynechat`), K4-N20 (Rulesets — J. V.).
+
+---
+
 ## v20.10.8 — K29-N1: příplatek za měď jen se zastřešením šachty v nabídce (větev claude/k29-med-bez-strechy)
 
 Nález 29. testovacího kola (20. 10. 2026): PŘÍPLATEK ZA STŘECHU V MĚDI (EXT) se nabízel

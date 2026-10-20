@@ -203,8 +203,14 @@ const sablona = (...symboly) => ({ symboly: new Set(symboly) });
       uEu === (typeof sod.sodDphZabrana === 'function' ? sod.sodDphZabrana(z, z.varianty[0]) : 'x') && /nevznikne/.test(uEu) && uCz === '' && uBez === '' && uProj === '', [uEu, uCz, uBez, uProj]);
     delete global.ZAK;
   }
-  const ceskaAdm = fn({ sodMistoPlneni: 'administrativní budova' });
-  test('česká DPH + administrativní budova: bez prohlášení o snížené sazbě', ceskaAdm.SOD_DPH_PROHLASENI === sod.SOD_DPH_PROHLASENI_OZNAMENI, ceskaAdm.SOD_DPH_PROHLASENI);
+  /* #454 (O8): od V7-N2 je výchozí režim přenesená povinnost — česká DPH se
+   * musí zvolit výslovně, jinak by případ mutaci „prohlášení i mimo bydlení“
+   * nechytil (přežila v kole K4). Před opravou mutace přežije, po opravě chycena. */
+  const ceskaAdm = fn({ sodDphRezim: KRYCI_DPH_REZIMY[0], sodMistoPlneni: 'administrativní budova' });
+  const ceskaByt = fn({ sodDphRezim: KRYCI_DPH_REZIMY[0] });
+  test('česká DPH + administrativní budova: bez prohlášení o snížené sazbě (bytový dům ho má)',
+    ceskaAdm.SOD_DPH_REZIM === S.ceska && ceskaAdm.SOD_DPH_PROHLASENI === sod.SOD_DPH_PROHLASENI_OZNAMENI
+      && ceskaByt.SOD_DPH_PROHLASENI === sod.SOD_DPH_PROHLASENI_SNIZENA, [ceskaAdm.SOD_DPH_REZIM, ceskaAdm.SOD_DPH_PROHLASENI]);
   const prenByt = fn({ sodDphRezim: 'přenesená daňová povinnost (tuzemsko)' });
   test('přenesená DPH + bytový dům: věta šablony v2, prohlášení o snížené sazbě NE (nesoulad v2 zmizel)',
     prenByt.SOD_DPH_REZIM === 'DPH bude účtováno dle platných předpisů v režimu přenesené daňové povinnosti.'
