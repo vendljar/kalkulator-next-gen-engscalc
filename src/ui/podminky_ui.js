@@ -296,7 +296,7 @@ function nastPodminkyTextyProj(ef) {
   return `<div class="sec-title">Texty nabídky PROJ</div>
     <div class="note" style="margin-top:0">Bloky pod cenou v nabídce PROJ. <b>Jeden řádek = jedna odrážka.</b> Termíny se píšou
       česky jako <code>sekce | činnost | termín</code> (sekce: zamereni, studie, projednani, dpz, ic, dps, ezc, kolaudace, geodet —
-      řádek se vytiskne jen u nabízené činnosti), v cizím jazyce <code>činnost | termín</code> ve stejném pořadí.
+      řádek se vytiskne jen u nabízené činnosti; <code>dpz+studie</code> / <code>dpz-studie</code> = DPZ se studií / bez studie), v cizím jazyce <code>činnost | termín</code> ve stejném pořadí.
       <b>Prázdné pole = výchozí znění</b> (česky dnešní text, cizí jazyk překlad ze slovníku — šedý text v poli).
       Online nabídka je bere hned, Word od šablony PROJ v6 (řádek tabulky za odrážku, termíny ve dvou sloupcích;
       starší šablony v3–v5 mají tyto bloky pevně). Pro šablonu s jedním místem jsou i <code>{{PROJ_TERMINY}}</code>

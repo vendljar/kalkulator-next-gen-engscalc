@@ -75,6 +75,14 @@
  *           Ta rozpracovává … obsahuje tyto části:" nese jen {{PROJ_DPZ_UVOD}}
  *           (písmo a odstavec zůstávají). Aplikace dosadí větu v jazyce
  *           dokumentu: se studií v nabídce s navázáním, bez ní bez navázání.
+ *           + rozhodnutí J. V. 20. 10. 2026 (Q1–Q3): titul „STUDIE
+ *           PROVEDITELNOSTI" → {{PROJ_TITUL_STUDIE}}, „Navazující PROJEKTOVÉ
+ *           a INŽENÝRSKÉ ČINNOSTI" → {{PROJ_TITUL_CINNOSTI}}; hvězdička
+ *           u nadpisu ceny DPZ → {{PROJ_DPZ_HVEZDICKA_ZNACKA}} a poznámka
+ *           „* Cena je platná…" → {{PROJ_DPZ_HVEZDICKA}} v bloku
+ *           BLOK_DPZ_HVEZDICKA; bloky bez symbolu BLOK_STUDIE_ROZSAH (tabulka
+ *           ST), BLOK_STUDIE_CENA (nadpis a tabulka cen SP) a BLOK_STUDIE_POZN
+ *           (poznámka o studii) — zmizí, když je aplikace dá do blokyPryc.
  *
  * CN v14 (etapa A platebních podmínek OCK, 30. 9. 2026) — samostatný režim:
  *   node nastroje/vyrob_sablony.js --cn-v14 <složka podkladů> [výstupní složka]
@@ -483,11 +491,94 @@ function projV7(xml) {
   const sp = odstavceSTextem(body, x => PROJ_V7_DPZ_UVOD_RE.test(x.trim()));
   if (sp.length !== 1) chyba('PROJ: čekám právě jeden odstavec úvodu DPZ „Dokumentace pro povolení záměru (DPZ) navazuje na…", je jich ' + sp.length + ' — nic nehádám');
   const p = body.slice(sp[0].zac, sp[0].kon);
-  /* délka v témže počtu jako prepisUsekOdstavce (texty běhů w:t) */
-  const delka = (p.match(/<w:t(?:\s[^>]*)?>[\s\S]*?<\/w:t>/g) || [])
-    .reduce((a, x) => a + dg.xmlUnesc(x.replace(/^<w:t(?:\s[^>]*)?>/, '').replace(/<\/w:t>$/, '')).length, 0);
-  body = body.slice(0, sp[0].zac) + prepisUsekOdstavce(p, 0, delka, '{{PROJ_DPZ_UVOD}}') + body.slice(sp[0].kon);
+  body = body.slice(0, sp[0].zac) + prepisUsekOdstavce(p, 0, delkaTextu(p), '{{PROJ_DPZ_UVOD}}') + body.slice(sp[0].kon);
+
+  /* Q1–Q3 (rozhodnutí J. V. 20. 10. 2026): titul a bloky studie, hvězdička ceny DPZ. */
+  /* titul: „STUDIE PROVEDITELNOSTI" (samostatný odstavec, nebo konec odstavce
+   * s {{NAZEV_AKCE}}) a „Navazující PROJEKTOVÉ a INŽENÝRSKÉ ČINNOSTI";
+   * 1–2 stejné výskyty (textové pole nese i záložní kopii) */
+  body = nahradVOdstavcich(body, 'titul „STUDIE PROVEDITELNOSTI"', x => {
+    const S = 'STUDIE PROVEDITELNOSTI', N = '{{NAZEV_AKCE}}';
+    if (x.trim() === S) return [x.indexOf(S), x.indexOf(S) + S.length];
+    const m = /\{\{NAZEV_AKCE\}\}(\s*)STUDIE PROVEDITELNOSTI\s*$/.exec(x);
+    return m ? [m.index + N.length + m[1].length, m.index + N.length + m[1].length + S.length] : null;
+  }, '{{PROJ_TITUL_STUDIE}}');
+  body = nahradVOdstavcich(body, 'titul „Navazující PROJEKTOVÉ a INŽENÝRSKÉ ČINNOSTI"', x => {
+    const S = 'Navazující PROJEKTOVÉ a INŽENÝRSKÉ ČINNOSTI', i = x.indexOf(S);
+    return i >= 0 && x.trim() === S ? [i, i + S.length] : null;
+  }, '{{PROJ_TITUL_CINNOSTI}}');
+  /* hvězdička u nadpisu ceny DPZ */
+  {
+    const h = odstavceSTextem(body, x => /^CENA ZA DOKUMENTACI PRO POVOLENÍ ZÁMĚRU \(DPZ\)\s*\*/.test(x.trim()));
+    if (h.length !== 1) chyba('PROJ: čekám právě jeden nadpis „CENA ZA DOKUMENTACI PRO POVOLENÍ ZÁMĚRU (DPZ)*", je jich ' + h.length + ' — nic nehádám');
+    const ph = body.slice(h[0].zac, h[0].kon), tx = textBehu(ph);
+    const i = tx.indexOf('*');
+    body = body.slice(0, h[0].zac) + prepisUsekOdstavce(ph, i, i + 1, '{{PROJ_DPZ_HVEZDICKA_ZNACKA}}') + body.slice(h[0].kon);
+  }
+  /* bloky odzadu: hvězdička, poznámka o studii, cena SP, rozsah ST */
+  const top = () => prvkyTela(body);
+  const txt = el => textPrvku(body.slice(el.zac, el.kon)).replace(/\u00a0/g, ' ');
+  const jeden = (popis, test) => {
+    const t2 = top(), idx = t2.map((el, i) => i).filter(i => test(t2[i]));
+    if (idx.length !== 1) chyba('PROJ: čekám právě jeden ' + popis + ', je jich ' + idx.length + ' — nic nehádám');
+    return { t: t2, i: idx[0] };
+  };
+  const obal = (jmeno, zac, kon) => {
+    body = body.slice(0, zac) + znacka(jmeno + '_ZAC') + body.slice(zac, kon) + znacka(jmeno + '_KON') + body.slice(kon);
+  };
+  {
+    const { t: t2, i } = jeden('odstavec „* Cena je platná v případě návaznosti na STUDII…" (mimo tabulku)',
+      el => el.tag === 'p' && /^\*\s*Cena je platná v případě návaznosti na STUDII/.test(txt(el)));
+    const el = t2[i], pp = body.slice(el.zac, el.kon);
+    const nove = prepisUsekOdstavce(pp, 0, delkaTextu(pp), '{{PROJ_DPZ_HVEZDICKA}}');
+    body = body.slice(0, el.zac) + nove + body.slice(el.kon);
+    obal('BLOK_DPZ_HVEZDICKA', el.zac, el.zac + nove.length);
+  }
+  {
+    const { t: t2, i } = jeden('odstavec „V případě, že se investor rozhodne pro zpracování STUDIE…" (mimo tabulku)',
+      el => el.tag === 'p' && /^V případě, že se investor rozhodne pro zpracování STUDIE/.test(txt(el)));
+    let j = i + 1;
+    while (t2[j] && t2[j].tag === 'p' && !txt(t2[j])) j++;
+    if (!t2[j] || t2[j].tag !== 'p' || !/^TATO SKUTEČNOST JE ZOHLEDNĚNA/.test(txt(t2[j])))
+      chyba('PROJ: pod poznámkou o studii čekám odstavec „TATO SKUTEČNOST JE ZOHLEDNĚNA…" — nic nehádám');
+    obal('BLOK_STUDIE_POZN', t2[i].zac, t2[j].kon);
+  }
+  {
+    const { t: t2, i } = jeden('nadpis „CENA ZA STUDII PROVEDITELNOSTI (SP):" (mimo tabulku)',
+      el => el.tag === 'p' && txt(el) === 'CENA ZA STUDII PROVEDITELNOSTI (SP):');
+    let j = i + 1;
+    while (t2[j] && t2[j].tag === 'p' && !txt(t2[j])) j++;
+    if (!t2[j] || t2[j].tag !== 'tbl' || body.slice(t2[j].zac, t2[j].kon).indexOf('PROJ_CENA_SP1') < 0)
+      chyba('PROJ: pod nadpisem ceny studie čekám tabulku s {{PROJ_CENA_SP1}} — nic nehádám');
+    obal('BLOK_STUDIE_CENA', t2[i].zac, t2[j].kon);
+  }
+  {
+    const { t: t2, i } = jeden('tabulku s nadpisem „STUDIE PROVEDITELNOSTI (ST):"',
+      el => el.tag === 'tbl' && textPrvku((radkyTabulky(body.slice(el.zac, el.kon))[0] || '')).replace(/\u00a0/g, ' ') === 'STUDIE PROVEDITELNOSTI (ST):');
+    obal('BLOK_STUDIE_ROZSAH', t2[i].zac, t2[i].kon);
+  }
   return t.pred + body + t.po;
+}
+/* délka textu odstavce v témže počtu jako prepisUsekOdstavce (texty běhů w:t) */
+function textBehu(p) {
+  return (p.match(/<w:t(?:\s[^>]*)?>[\s\S]*?<\/w:t>/g) || [])
+    .map(x => dg.xmlUnesc(x.replace(/^<w:t(?:\s[^>]*)?>/, '').replace(/<\/w:t>$/, ''))).join('');
+}
+function delkaTextu(p) { return textBehu(p).length; }
+/* Úsek ve všech nejvnitřnějších odstavcích, kde `najdi(text)` vrátí [od, do]:
+ * 1–2 výskyty se stejným textem (textové pole nese i záložní kopii VML),
+ * jinak chyba. Odzadu, ať pozice platí. */
+function nahradVOdstavcich(body, popis, najdi, nahrada) {
+  const sp = odstavceSTextem(body, x => !!najdi(x));
+  /* pozice se počítají v textu běhů (bez tabulátorů a zalomení), jako prepisUsekOdstavce */
+  const texty = sp.map(x => textBehu(body.slice(x.zac, x.kon)).replace(/\u00a0/g, ' '));
+  if (sp.length < 1 || sp.length > 2 || new Set(texty).size !== 1)
+    chyba('PROJ: čekám jeden ' + popis + ' (nebo dva stejné v textovém poli), je jich ' + sp.length + ' — nic nehádám');
+  for (let k = sp.length - 1; k >= 0; k--) {
+    const p = body.slice(sp[k].zac, sp[k].kon), [od, kon] = najdi(texty[k]);
+    body = body.slice(0, sp[k].zac) + prepisUsekOdstavce(p, od, kon, nahrada) + body.slice(sp[k].kon);
+  }
+  return body;
 }
 
 /* ---------- CN v14: platební podmínky z platebního kalendáře OCK ----------
@@ -1140,4 +1231,4 @@ async function hlavni() {
 
 /* Úpravy document.xml jdou testovat bez souborů (src/test_sablona_proj_v4.js). */
 if (require.main === module) hlavni().catch(e => { console.error('CHYBA: ' + e.message); process.exit(1); });
-module.exports = { cnV13, cnV14, projV3, projV4, projV5, projV6, projV7, sodProjV2, sodRealV2, sodRealV3, sodProjCislo, sodProjV4, prepisUsekOdstavce };
+module.exports = { cnV13, cnV14, projV3, projV4, projV5, projV6, projV7, textBehu, sodProjV2, sodRealV2, sodRealV3, sodProjCislo, sodProjV4, prepisUsekOdstavce };

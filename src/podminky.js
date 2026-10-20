@@ -102,7 +102,11 @@ const PODMINKY_VYCHOZI = {
       ['Provedení detailního zaměření a stavebně technického průzkumu', 'ZAMĚŘENÍ na stavbě do 4 týdnů od objednání a předání plné moci; zpracování VÝSTUPŮ do 4–6 týdnů od zaměření', 'zamereni'],
       ['Zpracování STUDIE PROVEDITELNOSTI (SP)', 'do 10–12 týdnů od zpracování výstupů ze zaměření', 'studie'],
       ['Projednání s odborem památkové péče HMP', 'do cca 2–3 měsíců od podání žádosti – záleží na vytíženosti úředníků státní správy', 'projednani'],
-      ['Zpracování dokumentace pro dotčené orgány (hrubopis DPZ)', 'do 10–12 týdnů od schválení studie investorem a objednání', 'dpz'],
+      /* D1 (rozhodnutí J. V. 20. 10. 2026): bez studie v nabídce termín bez
+       * „schválení studie" — klíč „dpz+studie" / „dpz-studie" (viz vRozsahu
+       * v nabidka_proj.js). */
+      ['Zpracování dokumentace pro dotčené orgány (hrubopis DPZ)', 'do 10–12 týdnů od schválení studie investorem a objednání', 'dpz+studie'],
+      ['Zpracování dokumentace pro dotčené orgány (hrubopis DPZ)', 'do 12-ti týdnů od objednání a předání podkladů', 'dpz-studie'],
       ['Zajištění stanovisek dotčených orgánů *)', 'cca do 4 týdnů od podání žádosti (v případě potřeby stanoviska hygieny a/nebo památkové péče cca do 2,5 měsíce)', 'ic'],
       ['Dopracování dokumentace pro povolení záměru (čistopis DPZ)', 'proběhne v průběhu lhůty vyjádření dotčených orgánů', 'dpz'],
       ['Podání žádosti o povolení záměru', 'po obdržení souhlasných stanovisek dotčených orgánů (+ 14 dní v případě nutnosti zapracování podmínek dotčených orgánů do dokumentace)', 'ic'],
@@ -119,6 +123,8 @@ const PODMINKY_VETY_TOKENY = { zaloha: ['{PORADI}', '{PROC}'], faktura2: ['{PORA
 const PODMINKY_VETA_MAX = 1000;
 const PODMINKY_TYPY_SMLOUVY = ['Naše bez úprav', 'Naše s úpravami', 'Cizí'];
 const PODMINKY_PROJ_SEKCE = ['zamereni', 'studie', 'projednani', 'dpz', 'ic', 'dps', 'ezc', 'kolaudace', 'geodet'];
+/* klíče termínů navíc: činnost jen se studií / jen bez ní (D1) */
+const PODMINKY_PROJ_SEKCE_PODMINENE = ['dpz+studie', 'dpz-studie'];
 const PODMINKY_RADKU_MAX = 30;
 
 /* SOUČET SPLÁTEK OCK ≠ 100 % (Q4) — ROZHODNUTÍ J. V. 19. 10. 2026: „Nedovolit
@@ -244,7 +250,7 @@ function podmRadkyPlatne(klic, jaz, v) {
   const txt = x => typeof x === 'string' && x.trim() !== '' && x.length <= PODMINKY_VETA_MAX && !/[\r\n]/.test(x);
   if (klic !== 'terminy') return v.every(txt);
   return v.every(r => Array.isArray(r) && txt(r[0]) && txt(r[1])
-    && (jaz !== 'cz' || PODMINKY_PROJ_SEKCE.indexOf(r[2]) >= 0) && r.length === (jaz === 'cz' ? 3 : 2));
+    && (jaz !== 'cz' || PODMINKY_PROJ_SEKCE.indexOf(r[2]) >= 0 || PODMINKY_PROJ_SEKCE_PODMINENE.indexOf(r[2]) >= 0) && r.length === (jaz === 'cz' ? 3 : 2));
 }
 
 /* ---------- sloučení Firmy s továrnou ---------- */
