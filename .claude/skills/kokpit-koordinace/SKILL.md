@@ -73,6 +73,8 @@ chybu chytit dřív. Mazat celé objekty i s čárkou před nimi.
 `dalsi`, `log`, `releasy` a `celkem.detail` stránka sama převádí na odkaz (funkce
 `lnk` v šabloně) — psát celé `https://…`, nikdy zkrácené; vlastní render bez `lnk`
 nepoužívat.
+Zobrazený text odkazu stránka zkracuje sama (funkce `kratko`: „artefakt …“, „sezení …“,
+„nový release vX“, název souboru; J. V. 20. 10. 2026) — do dat dál psát celé URL.
 
 Týdenní limit v kokpitu NE (J. V. 16. 10.): procento čerpání z prostředí nejde zjistit, odhad by byl zavádějící.
 

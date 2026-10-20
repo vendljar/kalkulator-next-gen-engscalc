@@ -29,6 +29,19 @@ Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kv�
 - **Hodinová kontrola:** opakovaný scheduled task zamítla kontrola oprávnění → řetěz `send_later` po ~60 min (každá kontrola naplánuje další). Ráno ~06:00 UTC souhrn noci.
 - Staré sezení ŘÍDÍCÍ 19.10 session_017KEALG3ppimL5fW2XswzrB nečinné (archivuje J. V.).
 
+## PŘEDÁNÍ 20. 10. ~15:50 UTC → noční koordinační sezení (staré ŘÍDÍCÍ 20.10 session_01Ln2mMn7iC6W9ECztHTJpZe, kontext ~58 %)
+
+- **test = integrace = fa08e9c (v20.10.7, kód b6f49a7)** — J. V. „pushni do test“ 15:20; **release v20.10.7 vydán** (15:33, souhrn v20.10.2–7). `main` = 5dc28d1 (v20.10.1) — J. V.: zatím NE.
+- **Rozhodnutí J. V. 15:45 (dialog):** přes noc K4; K29-N1 SLOUČIT jako v20.10.8; Controlling C2 přes noc ano; main zatím ne.
+- **Běží:**
+  - **K4** session_011TNhhP4qdyPSxXQsiE8nJy, `claude/k4-kolo` nad test: celé kolo s mutacemi + bezpečnostní audit 1b0e2f7..b6f49a7 → `podklady/K4_AUDIT_20_10.md`, roadmapa #449. Nálezy, které nepotřebují J. V., opravit navazující dávkou (O8) až po K4; rozhodnutí → ráno J. V.
+  - **K29-N1** session_016n1qtH3wQFbKP1VLQD7jf2, `claude/k29-med-bez-strechy`: bere integraci v20.10.7, verze 20.10.8, roadmapa #450, kolo + mutace „K29-N1“/„mustky“ → pak koordinace sloučí (fast-forward nebo merge) do integrace, ověří sady + cílené mutace; **test jen na pokyn J. V.** (release odkaz v20.10.8 připravit do kokpitu).
+  - **S10** session_01RogHrxV3LS1vj4DZWyoPSL: šablona PROJ **v8** CZ+EN/DE/FR (v7 + cestovné D2) nad integrací v20.10.7; soubory + artefakt https://claude.ai/artifact/5RqvHSPuuun2dcUg26UwUD → J. V. (na test rovnou v8; main až s v20.10.7 v main). S10 má i opravu nástroje (překlad „(DPZ)*“) → sloučit do integrace s další verzí.
+  - **CONTROLLING** session_01TbMCaR4k38Rix8XxoRBnr5, `claude/controlling-navrh` (#447): C1 hotová, C2 přes noc (obrazovka + export). C1+C2 sloučit jako další verzi (po K29 v20.10.9), test na pokyn J. V.
+- **Ráno:** souhrn noci artefaktem (co hotovo, výsledky K4, nálezy k rozhodnutí s doporučením, release odkazy) + kokpit; otázky J. V. hromadně dialogem.
+- **Další kandidáti (nespuštěno):** oprava docxPrelozUseky („vyrobit jazykovou verzi“ nechává česky „CENA ZA … (DPZ)*“, nález S10) — malá kódová dávka; soupis novinek v20.10.2–7 pro obchodníky; K29 „mimo rozsah“ (měď při ručně přepsané ploše).
+- **Kokpit:** https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2 — odkazy se nově zobrazují zkráceně (funkce `kratko`, href celý; J. V. 20. 10.); šablona zkopírována do skillu. Push do test z koordinačního sezení zamítá kontrola oprávnění, dokud J. V. výslovně neřekne „pushni do test“.
+
 ## STAV 20. 10. ~15:00 UTC — koordinace „ŘÍDÍCÍ 20.10“ session_01Ln2mMn7iC6W9ECztHTJpZe (kontext ~55 %)
 
 - **Integrace `claude/integrace-16-10` = b6f49a7 (v20.10.7), plně ověřená:** O7 (v20.10.2), D1 (v20.10.3), D2 (v20.10.4), B183 (v20.10.5, plocha výjimky na 0,1 m² NAHORU — J. V.), V7-N2 (v20.10.6, výchozí DPH v ČR přenesená i bez DIČ — J. V.), U1 (v20.10.7, „Zapsat výchozí hodnoty“ zapíše a zveřejní), W2 (workflow Smazat sloučené větve). Kolo 286/0/6, statické 4/4; mutace O7 16/16 + 25/25, d1 38/38, #151 42/42, D2 18/18, V7-N2 3/3, B189 8/8, B183 11/11 + 5/5, výjimky 40/40. Pravidel kontrol 43. Roadmapa: D1 #440–#443, D2 #444–#446, V7-N2 #438, B183 #448, Controlling #447.
