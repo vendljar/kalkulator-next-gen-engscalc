@@ -1,3 +1,23 @@
+# Předávka — 20. 10. 2026: dávka S10, větev `claude/s10-sablona-proj-v7` — šablona PROJ v7 pro ostrou verzi
+
+Nad `claude/d1-sikora` (8c912a7, v20.10.3). Kód aplikace a verze beze změny; do test/main/integrace nic.
+Podklad `podklady/SABLONA_PROJ_V7_20_10.md`.
+
+- **Hotovo:** v5 z Disku → `--proj-v6` (document.xml bajtově = v6, kterou J. V. dnes nahrál na Disk) →
+  `--proj-v7` CZ + EN/DE/FR (95 symbolů, přeloženo 195/206, jazyk sedí, `sablonaObsahVady` prázdné,
+  1,40 MB base64; proti v6 přibylo přesně 13 symbolů D1, ubylo 0). Soubory = soubory sezení S10
+  (na Disk konektorem nejdou, ~1,4 MB base64).
+- **Oprava nástroje:** EN/DE/FR nechávaly česky „CENA ZA … (DPZ){{PROJ_DPZ_HVEZDICKA_ZNACKA}}:" —
+  `docxPrelozUseky` (docxgen) odřízne „)" před symbolem. `vyrob_sablony.js`: `trStavSeZavorkou` +
+  `prelozSablonu`; test `src/test_sablona_proj_v7_preklad.js` 13/0 (před opravou FAIL). **Návrh pro
+  kódovou dávku:** opravit totéž v `docxPrelozUseky` (jinak „vyrobit jazykovou verzi" v aplikaci
+  dá nadpis česky).
+- **main v20.10.1 + v7 (ověřeno kódem origin/main):** nahrání projde, Word vznikne s viditelnými
+  `{{PROJ_TITUL_*}}`, `{{PROJ_DPZ_UVOD}}`, `{{PROJ_DPZ_HVEZDICKA*}}` a bez studie i se všemi bloky
+  studie; přísný režim to nezastaví (hlídá jen zastaralé/chybějící šablony). ⇒ v7 na main až po v20.10.3.
+- **Čeká na J. V.:** znění titulu bez studie „PROJEKTOVÉ a INŽENÝRSKÉ ČINNOSTI"; nové texty EN/DE/FR
+  ke kontrole rodilými mluvčími (tabulka v podkladu). D2 (v20.10.4) staví PROJ v8 nad touto v7.
+
 # Předávka — 20. 10. 2026: dávka D1 (v20.10.3), větev `claude/d1-sikora` — postřehy D. Sikory 19. 10.
 
 Nad `claude/integrace-16-10` (5dc28d1, v20.10.1). Do integrace / `test` nic — slučuje koordinace

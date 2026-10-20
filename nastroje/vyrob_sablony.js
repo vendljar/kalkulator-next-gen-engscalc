@@ -1059,6 +1059,31 @@ async function vyrob(vstup, uprava) {
 async function symbolyASablona(bajty) {
   return so.sablonaSymboly(await dg.docxTextSablony(bajty.slice().buffer));
 }
+/* ZÁVORKA PŘED SYMBOLEM (S10, 20. 10. 2026 — PROJ v7 na skutečné šabloně).
+ * Nadpis „CENA ZA DOKUMENTACI PRO POVOLENÍ ZÁMĚRU (DPZ){{PROJ_DPZ_HVEZDICKA_ZNACKA}}:"
+ * zůstával v EN/DE/FR česky: docxPrelozUseky (src/docxgen.js) před překladem
+ * úseku odřízne koncové znaky mimo písmena a „:.!?*", tedy i „)", a slovník
+ * pak hledá „… (DPZ" — nezná. Kód aplikace se v dávce šablon nemění, proto
+ * se tu slovník obalí: nepřeložený text s jednou neuzavřenou „(" se zkusí
+ * i s „)" a z překladu se koncová „)" zase vezme (zůstává v dokumentu za
+ * přeloženým úsekem). Vše ostatní jde beze změny do původního trStav. */
+function trStavSeZavorkou(puvodni) {
+  return (cz, lang) => {
+    const st = puvodni(cz, lang);
+    if (st && st.prelozeno) return st;
+    const s = String(cz), poc = re => (s.match(re) || []).length;
+    if (poc(/\(/g) !== poc(/\)/g) + 1 || /\)\s*$/.test(s)) return st;
+    const z = puvodni(s + ')', lang);
+    if (!z || !z.prelozeno || z.zdroj === 'neutrální' || !/\)\s*$/.test(z.text)) return st;
+    return Object.assign({}, z, { text: String(z.text).replace(/\)\s*$/, '') });
+  };
+}
+async function prelozSablonu(bajty, L, stat) {
+  const puvodni = global.trStav;
+  global.trStav = trStavSeZavorkou(puvodni);
+  try { return await dg.docxPrelozSablonu(bajty.slice().buffer, L, stat); }
+  finally { global.trStav = puvodni; }
+}
 async function ulozSMutacemi(bajty, zaklad) {
   const vysledek = [];
   const cz = path.join(VYSTUP, zaklad + '.docx');
@@ -1068,7 +1093,7 @@ async function ulozSMutacemi(bajty, zaklad) {
   vysledek.push({ soubor: path.basename(cz), vady: vadyCz, symbolu: symCz.length });
   for (const L of JAZYKY) {
     const stat = {};
-    const blob = await dg.docxPrelozSablonu(bajty.slice().buffer, L, stat);
+    const blob = await prelozSablonu(bajty, L, stat);
     const b = new Uint8Array(await blob.arrayBuffer());
     const soubor = path.join(VYSTUP, zaklad + '_' + L.toUpperCase() + '.docx');
     fs.writeFileSync(soubor, b);
@@ -1231,4 +1256,4 @@ async function hlavni() {
 
 /* Úpravy document.xml jdou testovat bez souborů (src/test_sablona_proj_v4.js). */
 if (require.main === module) hlavni().catch(e => { console.error('CHYBA: ' + e.message); process.exit(1); });
-module.exports = { cnV13, cnV14, projV3, projV4, projV5, projV6, projV7, textBehu, sodProjV2, sodRealV2, sodRealV3, sodProjCislo, sodProjV4, prepisUsekOdstavce };
+module.exports = { cnV13, cnV14, projV3, projV4, projV5, projV6, projV7, textBehu, sodProjV2, sodRealV2, sodRealV3, sodProjCislo, sodProjV4, prepisUsekOdstavce, trStavSeZavorkou, prelozSablonu };
