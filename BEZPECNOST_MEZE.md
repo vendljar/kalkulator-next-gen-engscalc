@@ -884,7 +884,12 @@ Podklad `podklady/K3_AUDIT_19_10.md` (K3-N14: tyto meze tu chyběly).
   Disk (`KOPIE_DISK_CASTI`) i v obnově; obnova ho čistí touž kontrolou jako
   zápis (`ctrlDbOciste`) — mapování na neexistující skupinu ani prototypový
   klíč do databáze nepustí.
-- **Export předkalkulace** (nákupní ceny a marže) přijde v dávkách C2–C3;
-  i ten jen pro administrátora a hlídaný serverem — B88 (náklady v DOM
-  každé role) se tím nezhoršuje, ale hromadný přenosný soubor je nová mez,
-  zapíše se s exportem.
+- **Export předkalkulace jedné varianty (C2) běží v prohlížeči** z dat
+  otevřené zakázky — tlačítko je jen v záložce Controlling (`jenAdmin`) a
+  mapování se čte z `/api/controlling` (jen admin). **Mez:** hranici tu drží
+  jen klient; nákladová data zakázky v prohlížeči jsou už dnes (B88), takže
+  se tím nic nového neodkrývá, ale XLSX je přenosný soubor s nákupními
+  cenami a marží. Hromadný export za období (C3) poběží na serveru s kontrolou
+  role a protokolem exportů.
+- **CSV exportu** jde přes `csvBunka` (ochrana proti vzorcům, text „=…" se
+  nespustí); čísla bez uvozovek s desetinnou čárkou.

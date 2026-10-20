@@ -8,6 +8,31 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## (bez verze) — C2: Controlling — obrazovka, upozornění u ceníku, export předkalkulace (#447, větev claude/controlling-navrh)
+
+Spuštěno na pokyn J. V. předaný koordinací 20. 10. ~15:45 („C2 přes noc"). Verzi přidělí koordinace (C1 + C2 jako jedna verze).
+
+- **Nastavení → Controlling** (jen administrátor online, J7; `src/ui/controlling_ui.js`): karty **Nákladové skupiny**
+  (název, položka ManVysl, účty Helios nyní/budoucí, přímý/nepřímý, variabilní/fixní, oblast; přidat / zrušit),
+  **Mapování položek** (každý klíč ceníku, pseudo-klíč i trvalá položka → skupina, filtr OCK/PROJ, „jen nezařazené",
+  hledání, stažení a nahrání mapování v XLSX s náhledem změn) a **Export předkalkulace**. Změny v pracovní kopii,
+  na server tlačítkem „Uložit jako novou verzi" (s poznámkou); ukládají se jen **odchylky** mapování od výchozího.
+- **Upozornění u zveřejnění ceníku (J5):** karta „Platný ceník programu" ukáže trvalé položky bez skupiny a nabídne
+  je rovnou zařadit a uložit; zveřejnění neblokuje.
+- **Export předkalkulace jedné varianty (J9):** jen **zamčená řídící** varianta otevřené zakázky (zmrazený výsledek
+  z tisku), XLSX s listy **Řádky** (32 sloupců: číslo, akce, zákazník, verze ceníku a mapování, klíč, skupina,
+  účty, množství, jednotková a celková nákladová cena, prodejní cena), **Kapitoly** (součty po skupinách + souhrn
+  zakázky se slevou, zaokrouhlením a marží) a **Popis**; CSV = list Řádky (středník, desetinná čárka, BOM, ochrana
+  proti vzorcům). Kč bez DPH i u zahraniční řady; příplatky označené jako volby.
+- Oprava modelu C1 nalezená harnessem: trvalé položky katalogu OCK leží pod `KATALOG.polozky` (dřív se hledaly
+  o úroveň výš a nezařazené by se neukázaly).
+- Testy: `src/test_controlling.js` 146 (export, CSV, import, odchylky), nový harness `overit_controlling.mjs` 30
+  (záložka, uložení, zařazení z karty ceníku, stažený XLSX a CSV, import), mutace „#447 C2" (7).
+  Pojistka: harness před opravou katalogu padal (TypeError / 0 nezařazených), testy exportu padají bez kontroly
+  zámku, řídící varianty, ochrany CSV a odmítnutí klíče v importu (mutace).
+
+---
+
 ## (bez verze) — C1: Controlling — nákladové skupiny a mapování (#447, větev claude/controlling-navrh)
 
 Nad `test` 5dc28d1 (v20.10.1). Návrh a rozhodnutí J. V. J1–J11: `podklady/CONTROLLING_NAVRH_20_10.md`.

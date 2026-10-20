@@ -178,6 +178,11 @@ for (const [jm, uprav] of varianty) {
   test('mapování na zrušenou skupinu padá do Nezařazeno', C.ctrlPlatne(d2).mapa['C.leseniFix'] === C.CTRL_NEZARAZENO);
   const kid = C.ctrlKliceKatalogu({ hrubaOck: [{ kid: 'k7', nazev: 'X' }] }, { vlastniPolozky: { dps: [{ kid: 'pk2' }] } });
   test('klíče trvalých položek katalogu OCK i PROJ', JSON.stringify(kid) === '["K.k7","K.pk2"]', kid);
+  /* Skutečný tvar katalogu (src/katalog.js): sekce pod `polozky`. Nalezeno
+   * harnessem overit_controlling.mjs — holý objekt sekcí v testu chybu skryl. */
+  const kat = require('./katalog.js').katalogPrazdny(); kat.polozky.atyp.push({ kid: 'k8', nazev: 'Atyp X' });
+  test('klíče a názvy trvalých položek ze skutečného tvaru katalogu',
+    JSON.stringify(C.ctrlKliceKatalogu(kat, null)) === '["K.k8"]' && C.ctrlKatalogNazvy(kat, null)['K.k8'] === 'Atyp X');
   const nez = C.ctrlNezarazene(null, C.ctrlKliceCeniku().concat(kid));
   test('nezařazené = jen trvalé položky bez vlastního zařazení (J5)', JSON.stringify(nez) === '["K.k7","K.pk2"]', nez);
   const d3 = C.ctrlVychozi(); d3.mapa['K.k7'] = 'mat-ostatni';
@@ -316,11 +321,13 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
   rows.push(['K.k7', 'Kotva', 'OCK', '', '', 'mat-ostatni']);
   rows.push(['C.zle klic', '', '', '', '', 'mat-ostatni']);
   rows.push(['C.transportKc', '', '', '', '', 'neni-takova']);
+  rows.push(['hasOwnProperty', '', '', '', '', 'mat-ostatni']);
   const sk = listy[1].rows; sk[1][3] = '512001, 512009';
   const imp = C.ctrlImportZListu(listy, null);
   test('import převezme změnu skupiny i zařazení trvalé položky', imp.data.mapa['C.mustekKc'] === 'mat-ostatni' && imp.data.mapa['K.k7'] === 'mat-ostatni');
   test('import převezme účty ze Skupin', JSON.stringify(imp.data.skupiny[0].ucetNyni) === '["512001","512009"]', imp.data.skupiny[0]);
-  test('import odmítne vadný klíč a neznámou skupinu (bez zápisu)', imp.chyby.length === 2 && imp.data.mapa['C.transportKc'] === 'sl-dopravne', imp.chyby);
+  test('import odmítne vadný klíč, prototypový klíč a neznámou skupinu (bez zápisu)', imp.chyby.length === 3
+    && imp.data.mapa['C.transportKc'] === 'sl-dopravne' && !Object.prototype.hasOwnProperty.call(imp.data.mapa, 'hasOwnProperty'), imp.chyby);
   test('import vrátí seznam změn k náhledu', imp.zmeny.some(z => z.klic === 'C.mustekKc' && z.z === 'sl-zamecnici' && z.na === 'mat-ostatni'));
   test('importovaná data projdou kontrolou zápisu', C.ctrlDataKontrola(C.ctrlOdchylky(imp.data)).ok);
   test('import bez listu Mapování → chyba', C.ctrlImportZListu([{ nazev: 'Jiný', rows: [] }], null).chyby.length === 1);

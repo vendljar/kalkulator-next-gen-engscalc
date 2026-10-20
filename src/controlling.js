@@ -366,10 +366,14 @@ function ctrlNezarazene(data, klice) {
   return K.filter(k => !ctrlMa(P.mapa, k));
 }
 /* Klíče trvalých vlastních položek katalogu OCK a ceníku PROJ (K.<kid>). */
+/* Katalog OCK má sekce pod `polozky` ({ verze, seq, polozky: { sekce: [...] } },
+ * src/katalog.js); holý objekt sekcí se bere taky. */
+const ctrlKatalogSekce = (k) => (k && typeof k === 'object') ? ((k.polozky && typeof k.polozky === 'object') ? k.polozky : k) : null;
 function ctrlKliceKatalogu(katalog, cenikProj) {
   const out = [];
-  if (katalog && typeof katalog === 'object')
-    Object.keys(katalog).forEach(sek => (Array.isArray(katalog[sek]) ? katalog[sek] : [])
+  const sekce = ctrlKatalogSekce(katalog);
+  if (sekce)
+    Object.keys(sekce).forEach(sek => (Array.isArray(sekce[sek]) ? sekce[sek] : [])
       .forEach(p => { if (p && p.kid) out.push('K.' + p.kid); }));
   const vl = cenikProj && cenikProj.vlastniPolozky;
   if (vl && typeof vl === 'object')
@@ -547,7 +551,7 @@ function ctrlKatalogNazvy(katalog, cenikProj) {
   const out = {};
   const projdi = (o) => { if (o && typeof o === 'object') Object.keys(o).forEach(sek =>
     (Array.isArray(o[sek]) ? o[sek] : []).forEach(p => { if (p && p.kid) out['K.' + p.kid] = String(p.nazev || ''); })); };
-  projdi(katalog); projdi(cenikProj && cenikProj.vlastniPolozky);
+  projdi(ctrlKatalogSekce(katalog)); projdi(cenikProj && cenikProj.vlastniPolozky);
   return out;
 }
 
