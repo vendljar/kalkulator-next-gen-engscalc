@@ -58,6 +58,16 @@ const post = (fn, url, telo, cookie) => fn(new Request(url, { method: 'POST',
   headers: cookie ? { cookie } : {}, body: JSON.stringify(telo) }));
 const get = (fn, url, cookie) => fn(new Request(url, { headers: cookie ? { cookie } : {} }));
 const ulz = (n) => globalThis.__TEST_ULOZISTE(n);
+/* K3-N4 (O7, 20. 10. 2026): vynucený otisk má limit 1 za 10 minut. Sada
+ * jich pořizuje několik za sebou — každý „o 11 minut později": hodiny se
+ * posunou jen na dobu požadavku (klíč otisku i limit počítají z Date.now). */
+let posunHodin = 0;
+const postVynuceny = async (ck) => {
+  posunHodin += 11 * 60000;
+  const puv = Date.now; Date.now = () => puv.call(Date) + posunHodin;
+  try { return await (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', {}, ck)).json(); }
+  finally { Date.now = puv; }
+};
 const kopie = (x) => JSON.parse(JSON.stringify(x));
 const obnov = (telo, cookie) => post(obnova, 'http://x/api/obnova', telo, cookie);
 const obnovJson = async (telo, cookie) => (await obnov(telo, cookie)).json();
@@ -97,7 +107,7 @@ const zalSoubor = (await (await get(zaloha, 'http://x/api/zaloha', cookie)).json
 test('záloha ke stažení nese obě zakázky a účty bez hesel',
   Object.keys(zalSoubor.zakazky).length === 2 && zalSoubor.uzivatele.length === 2
   && zalSoubor.uzivatele.every(u => u.heslo === undefined));
-const vyn = await (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', {}, cookie)).json();
+const vyn = await postVynuceny(cookie);
 /* #151 N1 (19. 10. 2026): vynucený otisk má vlastní slot s časem, noční den nepřepíše. */
 test('serverový otisk pořízen pod dnešním dnem (vlastní slot s časem, #151 N1)',
   vyn.ok && /^\d{4}-\d{2}-\d{2}T\d{6}-rucne$/.test(vyn.den) && vyn.den.startsWith(dnes() + 'T'), vyn);
@@ -469,7 +479,7 @@ test('B30: smazaný obchodník se po obnově nepřihlásí',
 test('účty pro B30/B31 založeny',
   (await (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'zaloz', email: 'archiv@priklad.cz', jmeno: 'Archivovaný', role: 'Obchodník', heslo: 'ArchivHeslo1' }, cookie)).json()).ok === true
   && (await (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'zaloz', email: 'verze@priklad.cz', jmeno: 'Verze', role: 'Obchodník', heslo: 'VerzeHeslo1' }, cookie)).json()).ok === true);
-const otiskB30 = await (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', {}, cookie)).json();
+const otiskB30 = await postVynuceny(cookie);
 test('otisk s oběma účty činnými pořízen', otiskB30.ok === true, otiskB30);
 test('archiv@ archivován', (await (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'archiv', email: 'archiv@priklad.cz', archiv: true }, cookie)).json()).ok === true);
 /* Od B76 (25. 9. 2026) má nový účet verzi hesla už od založení (čas
@@ -493,7 +503,7 @@ test('B31: hesloVerze po obnově z otisku neklesne (B93: obnova starého hesla j
  * obnova z otisku pořízeného před odhlášením vrátila starší verzi a cookie,
  * kterou odhlášení odvolalo, by zase platila. */
 {
-  const otiskB31 = await (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', {}, cookie)).json();
+  const otiskB31 = await postVynuceny(cookie);
   test('B31: otisk před odhlášením pořízen', otiskB31.ok === true, otiskB31);
   const pV = await post(prihlaseni, 'http://x/api/prihlaseni', { email: 'verze@priklad.cz', heslo: 'VerzeHeslo1' });
   const cV = (pV.headers.get('set-cookie') || '').split(';')[0];
@@ -541,7 +551,7 @@ console.log('\n===== B58: kniha smazaných účtů jde se zálohou (23. 9. 2026)
   await kniha.zapis('byvaly@priklad.cz', { email: 'byvaly@priklad.cz', smazano: true, kdy: '2026-09-01T08:00:00.000Z', kdo: ADMIN_EMAIL, zakazek: 0 });
   const zal = (await (await get(zaloha, 'http://x/api/zaloha', cookie)).json()).zaloha;
   test('B58: záloha ke stažení nese knihu smazaných', !!(zal.smazani && zal.smazani['byvaly@priklad.cz']), Object.keys(zal.smazani || {}));
-  const v2 = await (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', {}, cookie)).json();
+  const v2 = await postVynuceny(cookie);
   const ot = await ulz('zalohy').cti(v2.den);
   test('B58: serverový otisk nese knihu smazaných', !!(ot && ot.smazani && ot.smazani['byvaly@priklad.cz']));
   /* Havárie: kniha zmizela. Obnova ze serverového otisku ji doplní. */

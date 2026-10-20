@@ -65,6 +65,9 @@ const KONTROLY_VYSKA_DVERI = 2.3;
  * šachty (max a upozornění u pole, ui/kalk_ock.js) — jedno místo, ať se
  * pole a kontrola nerozejdou. */
 const KONTROLY_ZDVIH_MAX_M = 99;
+/* Nezvykle velký rozměr můstku (K3-N17, J. V. 20. 10. 2026 „jen upozornit";
+ * práh výchozí volbou dávky O7). */
+const KONTROLY_MUSTEK_MAX_MM = 6000;
 
 /* ROZMĚRY ŠACHTY — JEDNA PRAVIDLA PRO ZÁBRANU I SERVER (B137, 12. 10. 2026).
  *
@@ -551,6 +554,33 @@ const KONTROLY = [
     },
   },
   {
+    /* ROZMĚRY MŮSTKU (K3-N17, rozhodnutí J. V. 20. 10. 2026: „jen upozornit").
+     * Hodnota se přijme, jádro ji započte (plocha střechy nad můstkem) —
+     * jen se upozorní na nezvykle velký rozměr (> KONTROLY_MUSTEK_MAX_MM,
+     * výchozí volba dávky O7), nejspíš překlep v jednotkách nebo nula navíc.
+     * Nečíselný nebo nekonečný údaj jádro bere jako prázdný (K3-N17, O5);
+     * tady se to řekne nahlas, ať obchodník neví jen o „chybějícím" rozměru. */
+    kod: 'mustekRozmer', kde: 'Kalkulace OCK', nazev: 'Rozměry můstku',
+    zjisti(ctx) {
+      const z = ctx.zadani;
+      if (!z) return null;
+      const n = (typeof mustkyPocet === 'function') ? mustkyPocet(z) : (+z.mustkyKs || (z.mustek ? 1 : 0));
+      if (!n) return null;
+      const potize = [];
+      [['mustekSirkaMm', 'šířka'], ['mustekHloubkaMm', 'hloubka']].forEach(([k, jm]) => {
+        const v = z[k];
+        if (v === undefined || v === null || String(v).trim() === '') return;
+        const c = +v;
+        if (!Number.isFinite(c) || c < 0) potize.push(jm + ' „' + String(v) + '" není platné číslo — počítá se jako nevyplněná');
+        else if (c > KONTROLY_MUSTEK_MAX_MM) potize.push(jm + ' ' + c.toLocaleString('cs-CZ') + ' mm je nezvykle velká (víc než '
+          + KONTROLY_MUSTEK_MAX_MM.toLocaleString('cs-CZ') + ' mm)');
+      });
+      if (!potize.length) return null;
+      return { text: 'Rozměry můstku: ' + kontrolyVyctem(potize) + '. Zkontrolujte zadání šachty (rozměr se zadává v milimetrech); '
+        + 'hodnota se do výpočtu bere, jak je zadaná. Tisk to nezastaví.' };
+    },
+  },
+  {
     /* STATIKA DVAKRÁT (P5 / K19-N109, 2. 10. 2026). Než měla aplikace druhý
      * řádek statiky (opláštění), dorovnávaly se převedené zakázky ručním
      * přepisem hodin řádku STATICKÉ POSOUZENÍ (10–20 h = OCK + opláštění).
@@ -1006,6 +1036,29 @@ const KONTROLY = [
     },
   },
   {
+    /* ÚVOD DPZ VE WORDU BEZ STUDIE (D1, postřeh D. Sikory 19. 10. 2026).
+     * Nabídka začíná rovnou DPZ (studie nemá cenu): online nabídka věta
+     * „… navazuje na vzájemně odsouhlasenou STUDII PROVEDITELNOSTI. Ta …"
+     * vynechá, šablona PROJ v6 a starší ji ale má natvrdo. Varování, ne
+     * zábrana (viz cenaWordProj); oprava je šablona PROJ v7
+     * (nastroje/vyrob_sablony.js --proj-v7) se symbolem {{PROJ_DPZ_UVOD}}. */
+    kod: 'dpzUvodWordProj', kde: 'Nabídka PROJ', nazev: 'Word nabídky PROJ navazuje DPZ na studii, která se nenabízí',
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      const sekce = (ctx.projVysledek && ctx.projVysledek.sekce) || [];
+      const nabizena = k => sekce.some(x => x && x.key === k && Number(x.celkem) > 0);
+      if (!nabizena('dpz') || nabizena('studie')) return null;
+      const s = ctx.sablonaNabidkaProj;
+      if (!s || !Array.isArray(s.symboly) || !s.symboly.length) return null;
+      if (s.symboly.indexOf('PROJ_DPZ_UVOD') >= 0) return null;
+      return { text: 'Studie proveditelnosti se v této variantě nenabízí, wordová nabídka PROJ ale v úvodu DPZ napíše, '
+        + 'že DPZ „navazuje na vzájemně odsouhlasenou STUDII PROVEDITELNOSTI": šablona nabídky PROJ'
+        + (s.nazev ? ' „' + s.nazev + '"' : '') + (s.verze ? ' (verze ' + s.verze + ')' : '')
+        + ' má větu natvrdo (bez symbolu {{PROJ_DPZ_UVOD}}). Online náhled nabídky PROJ ji správně vynechá. '
+        + 'Nahrajte šablonu nabídky PROJ v7, nebo větu ve Wordu upravte ručně.' };
+    },
+  },
+  {
     /* PLÁN PLATEB PROJEKCE — 100 % U ČINNOSTI (etapa B, #367, rozhodnutí J. V.
      * 29. 9. 2026: „součet u každé činnosti 100 %, dokument nevznikne,
      * odklepnout nejde"). Splátky nabízené činnosti musí dát 100 %, mít
@@ -1157,6 +1210,76 @@ const KONTROLY = [
           + (x.zamitnuto ? 'nadřízený výjimku zamítl. Přepočítejte variantu podle platného ceníku, nebo požádejte znovu po úpravě. '
             : 'požádejte o schválení nadřízeného v záložce Schvalování (nebo přepočítejte variantu podle platného ceníku). ')
           + 'Rozpracovanou zakázku lze dál ukládat.' };
+    },
+  },
+  /* ---- D2: šablona nabídky PROJ D. Sikory (rozhodnutí J. V. 20. 10. 2026) ---- */
+  {
+    /* JEDNOSTUPŇOVÁ DOKUMENTACE. Aplikace nabídku nepřepisuje (DPZ a DPS
+     * zůstávají dvěma činnostmi) — kontrola jen připomene, co je nutné
+     * upravit ve Wordu ručně. Upozornění, ne zábrana. */
+    kod: 'jednostupnovaProj', kde: 'Nabídka PROJ', nazev: 'Jednostupňová dokumentace — nabídku upravte ve Wordu',
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      if (!ctx.projZadani || !ctx.projZadani.jednostupnova) return null;
+      return { text: 'Varianta je označená jako jednostupňová dokumentace. Nabídku PROJ je nutné upravit ve Wordu ručně — '
+        + 'aplikace nic automaticky nepřepisuje. Hlídejte: DPZ a DPS se zpracují v jednom stupni (sloučit popis rozsahu '
+        + 'a úvod), ceny DPZ a DPS (jedna cena, nebo jasně rozdělená), plán plateb (milníky jednoho stupně, součet 100 %) '
+        + 'a termíny.' };
+    },
+  },
+  {
+    /* AKCE MIMO PRAHU BEZ CENY VÝJEZDU. Přepínač zapnutý, ale cena 1 výjezdu
+     * technika není v ceníku PROJ ani přepsaná u zakázky — nic se nepřičte
+     * a nabídka o cestovném mlčí (ceny se nevymýšlejí). Výslovná nula
+     * u zakázky je platná dohoda („cestu neúčtujeme") a pravidlo mlčí. */
+    kod: 'vyjezdCenaChybi', kde: 'Kalkulace PROJ', nazev: 'Akce mimo Prahu bez ceny výjezdu technika',
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      const z = ctx.projZadani;
+      if (!z || !z.akceMimoPrahu) return null;
+      const prepis = !(z.vyjezdKcPrepis === undefined || z.vyjezdKcPrepis === null || z.vyjezdKcPrepis === '');
+      if (prepis) return null;
+      if (+((ctx.cenikProj && ctx.cenikProj.vyjezdTechnikKc) || 0) > 0) return null;
+      return { text: 'Zakázka je označená „Akce mimo Prahu", cena 1 výjezdu technika ale není vyplněná v ceníku PROJ '
+        + 'ani u zakázky — k cenám zaměření, studie, DPZ a kolaudace se nic nepřičte a nabídka cestovné neuvede. '
+        + 'Vyplňte cenu v Kalkulaci PROJ (nebo v Ceníku nákladů PROJ).' };
+    },
+  },
+  {
+    /* RUČNÍ ÚVOD NABÍDKY, KTERÝ NEMUSÍ SEDĚT. Obchodník úvod „Naše NABÍDKA
+     * a doporučení" upravil a potom se změnily nabízené činnosti — výchozí
+     * znění by dnes bylo jiné než to, ze kterého vycházel. */
+    kod: 'uvodProjNesedi', kde: 'Nabídka PROJ', nazev: 'Ruční úvod nabídky PROJ nemusí sedět',
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      const z = ctx.projZadani;
+      if (!z || typeof nabidkaProjUvodNesedi !== 'function' || typeof nabidkaProjUvod !== 'function') return null;
+      const sekce = (ctx.projVysledek && ctx.projVysledek.sekce) || [];
+      const vRozsahu = k => sekce.some(x => x && x.key === k && Number(x.celkem) > 0);
+      if (!nabidkaProjUvodNesedi(z, nabidkaProjUvod(vRozsahu).join('\n'))) return null;
+      return { text: 'Úvod nabídky PROJ („Naše NABÍDKA a doporučení") byl upraven ručně a nabízené činnosti se od té doby '
+        + 'změnily — ruční text nemusí sedět. Zkontrolujte ho v kartě Cenová nabídka (PROJ), nebo vraťte výchozí znění.' };
+    },
+  },
+  {
+    /* CESTOVNÉ VE WORDU. Akce mimo Prahu s cenou výjezdu: online nabídka
+     * věty o cestovném tiskne, šablona PROJ bez symbolů {{PROJ_CESTOVNE_…}}
+     * (v7 a starší) je nemá kam dát — cena činnosti ve Wordu výjezd obsahuje,
+     * věta ne. Varování, ne zábrana (viz cenaWordProj); oprava je šablona
+     * PROJ v8 (nastroje/vyrob_sablony.js --proj-v8). */
+    kod: 'cestovneWordProj', kde: 'Nabídka PROJ', nazev: 'Word nabídky PROJ neuvede cestovné',
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      const z = ctx.projZadani;
+      if (!z || !z.akceMimoPrahu || typeof vyjezdTechnikaKc !== 'function') return null;
+      if (!(vyjezdTechnikaKc(z, ctx.cenikProj || {}) > 0)) return null;
+      const s = ctx.sablonaNabidkaProj;
+      if (!s || !Array.isArray(s.symboly) || !s.symboly.length) return null;
+      if (s.symboly.some(k => /^PROJ_CESTOVNE_/.test(k))) return null;
+      return { text: 'Akce je mimo Prahu: ceny činností ve Wordu výjezd technika obsahují, šablona nabídky PROJ'
+        + (s.nazev ? ' „' + s.nazev + '"' : '') + (s.verze ? ' (verze ' + s.verze + ')' : '')
+        + ' ale nemá místo pro věty o cestovném ({{PROJ_CESTOVNE_…}}). Online náhled nabídky PROJ je uvede. '
+        + 'Nahrajte šablonu nabídky PROJ v8, nebo věty doplňte ve Wordu ručně.' };
     },
   },
 ];
@@ -1396,7 +1519,7 @@ function kontrolyPotvrzeniPlati(potvrzeni, vysl) {
 
 if (typeof module !== 'undefined')
   module.exports = { KONTROLY_UROVEN, KONTROLY_UROVEN_ZABRANA,
-                     KONTROLY_VYSKA_DVERI, KONTROLY_ZDVIH_MAX_M, KONTROLY_ROZMERY_KLADNE, KONTROLY_ROZMERY_NEZAPORNE, KONTROLY_ROZMER_MIN_M, KONTROLY_ROZMERY_MIN, kontrolyRozmery, kontrolyVyctem, kontrolyBokySirka,
+                     KONTROLY_VYSKA_DVERI, KONTROLY_ZDVIH_MAX_M, KONTROLY_MUSTEK_MAX_MM, KONTROLY_ROZMERY_KLADNE, KONTROLY_ROZMERY_NEZAPORNE, KONTROLY_ROZMER_MIN_M, KONTROLY_ROZMERY_MIN, kontrolyRozmery, kontrolyVyctem, kontrolyBokySirka,
                      kontrolyPravidla, kontrolyProved, kontrolyText, kontrolyProjNavic, kontrolyPlatbyDuvody, kontrolyProjCenyBezSymbolu,
                      kontrolyPotvrzeni, kontrolyPotvrzeniPlati,
                      KONTROLY_DOKUMENTY_STRANY, KONTROLY_BRANA_JINDE, kontrolyDokumentStrana, kontrolyZabranaDokumentu,

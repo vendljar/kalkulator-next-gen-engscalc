@@ -27,6 +27,248 @@ Verzi přidělí koordinace při slučování.
   obnova), řádky v `test_prava.mjs`, mutace „#447“ v `netlify/mutace.mjs`.
   Pojistka: bez zařazení položky (C.oplechFasadaBmKc), bez řádku rezervy a bez rozpoznání přirážky
   ATYP testy padají; bez `controlling` v záloze a bez očisty v obnově padá serverová sada.
+## Nástroj (bez nové verze aplikace) — W2: mazání sloučených větví jedním klikem (větev claude/w2-mazani-vetvi)
+
+Dávka W2 (J. V. 20. 10. 2026) nad `test` 5dc28d1. Aplikace se nemění, verze zůstává v20.10.1.
+
+- **Nový workflow `.github/workflows/smazat_vetve.yml` „Smazat sloučené větve“** — jen ruční spuštění
+  (GitHub → Actions → Smazat sloučené větve → Run workflow), `permissions: contents: write` jen pro něj
+  (testy.yml dál `contents: read`, B125), checkout připnutý na SHA, mazání `git push origin --delete`
+  přes GITHUB_TOKEN. Vstupy `jen_vypsat` (výchozí false), `stari_hodin` (24), `vynechat`. Souhrn běhu:
+  smazané, vynechané s důvodem, nesloučené, počty. **V Actions se objeví až po sloučení do `main`.**
+- **`nastroje/sloucene_vetve.sh`** — výběr: větev celá v `test`, nikdy `main`, `test`, `test-draft`,
+  `claude/integrace-*`, větev s commitem mladším než N hodin ani větev z `--vynechat`; lokálně `--jen-vypsat`.
+- **Test `nastroje/test_sloucene_vetve.sh`** (17 kontrol na dočasném holém originu) ve statických
+  kontrolách `testovaci_kolo.sh` (nově 4 kontroly). CLAUDE.md: mazání dělá J. V. tlačítkem, koordinace
+  už odkazy po větvích nepřipravuje.
+
+---
+
+## v20.10.7 — U1: zveřejnění platebních podmínek přímo na záložce Smlouvy / Šablony, zarovnání limitu pokut (větev claude/u1-podminky-zverejnit)
+
+Dávka U1 (postřehy J. V. 20. 10. 2026 + zpřesnění ~12:00), základ `test` 5dc28d1 (v20.10.1).
+
+- **Tlačítko „Zapsat výchozí hodnoty"** (dřív „Zapsat výchozí hodnoty do Firmy"): stisk zapíše
+  výchozí podmínky do firemních údajů a **na serveru je rovnou zveřejní** — stejná cesta a kontroly jako
+  zveřejnění ve Firmě (`onlineZverejniFirmu(true)`: jen administrátor online, `firmaLzeZverejnit`, chyba
+  serveru se ohlásí), jen bez druhého dotazu. Výsledek (úspěch / chyba) se ukáže přímo na záložce.
+  Hláška dřív posílala na tlačítko „Zveřejnit", které na záložce nebylo.
+- **Stav a tlačítko na záložce** (pod oddílem „Společné pro OCK i PROJ"): po ruční úpravě kteréhokoli
+  pole záložky (sazby, limit, OCK/PROJ, věty, kapitoly) svítí **„Neuloženo online"** s výčtem rozdílů a
+  primární **„Zveřejnit změny online"**; když je online totéž, jen nenápadné „Zveřejnit znovu (není
+  potřeba)". Bez serveru / bez přihlášení administrátora se tlačítko nekreslí a záložka i hláška řeknou
+  proč. Panel v Nastavení → Firma zůstává (sdílí `onlineFirmaZverejnitBlok`). Hláška „Doplnit všechny
+  prázdné" u kapitol nabídky říká totéž.
+- **Značka ukázkových dat:** „Zapsat výchozí hodnoty" ji nově nesundává (zápis mimo `firmaSet`, stejně
+  jako doplnění kapitol) — se zveřejněním rovnou stiskem by jinak na server mohla jít ukázková firma.
+- **Zarovnání:** řádky platebních podmínek mají sloupec jednotek pevné šířky (`.podm-jednotka`), takže
+  vstupy končí v jedné svislici — „Limit smluvních pokut", „Splatnost faktur", „Doba záruky" a
+  zádržné (výběr + %) byly posunuté doleva. Ověřeno snímkem 1400 i 760 px.
+- **Test** `overit_podminky_zverejnit.mjs` (30): přejmenované tlačítko, offline jen zápis + věta proč,
+  stisk online = zápis + POST `/api/firma` (podvržené `onlineApi`) bez dotazu, potvrzení a stav na
+  záložce, ruční úprava → „Neuloženo online", chyba serveru, ukázková data, hláška kapitol, pravé okraje
+  vstupů ±2 px v obou kartách a dvou šířkách. Pojistka: nad původním kódem padá (tlačítko, hlášky, stav).
+  `test_escape.js`: `z.tlacitko` v `PROVERENO_CLENY` (literál z kódu).
+
+---
+
+## v20.10.6 — V7-N2: výchozí režim DPH v ČR = přenesená daňová povinnost (větev claude/v7n2-dph-pdp)
+
+Dávka V7-N2, základ `test` 5dc28d1 (v20.10.1). **Rozhodnutí J. V. 20. 10. 2026:** „toto ignoruj,
+zadej v ČR primárně přenesenou daňovou povinnost a obchodník si může měnit" — otázka pro účetní
+(nález V7-N2, `podklady/SOD_EN_KONTROLA.md` body 1 a 4) se neřeší.
+
+- **Změna chování (roadmapa #438):** `kryciDphRezimVychozi` — zákazník **bez DIČ** dostane ve SoD
+  realizace výchozí **přenesenou daňovou povinnost (tuzemsko)** jako DIČ CZ (do v20.10.5 česká DPH,
+  B189). Cizí DIČ beze změny (bez výchozí volby, zábrana `sodDphZabrana`). Ruční volba má přednost
+  (rozbalovátko, ↺ vrátí výchozí), uložená volba i zmrazené předvyplnění zamčené varianty se nemění.
+- **Testy:** `src/test_sod_en.js` — výchozí bez DIČ, přepnutí na českou DPH v SoD CZ/EN/DE/FR (věta
+  i prohlášení o snížené sazbě), ↺, UI zábrana bez DIČ mlčí. Pojistka: proti 5dc28d1 3 FAIL, po
+  opravě 49 / 0. Mutace `V7-N2` 3/3 (nahrazují „B189: bez DIČ přenesená povinnost"), `B189` 8/8.
+- Příručka: „Co je nového v20.10.6" a kapitola 24; SOD_EN_KONTROLA: body 1 a 4 vyřešeny.
+- **Ověření:** `testovaci_kolo.sh --bez-mutaci` VŠE ZELENÉ — 281 prošlo / 0 selhalo / 6 přeskočeno, statické 3/3.
+
+---
+
+## v20.10.5 — B183 volba (b): plocha v obsahu cenové výjimky na 0,1 m² (větev claude/b183-plocha-01)
+
+Rozhodnutí J. V. 20. 10. 2026 (audit kola 27, `podklady/AUDIT_2026-10-18_v17.10.5.md`, B183;
+kontrola V7: V7-6, V7-N1). Základ `test` 5dc28d1 (v20.10.1).
+
+- **B183 (nízká, opraveno):** obsah výjimky nesl plochu pásu a světlíku „jiné“ na celé m² — zvětšení
+  po schválení 2,50 → 3,49 m² dalo týž obsah (nekrytý nárůst až skoro 1 m²). Teď `vyjimkyM2Schvaleni`
+  drží plochu **na 0,1 m² nahoru** (J. V. ~13:20: „pak bude vždy nákladově pokrývat horší variantu“;
+  2,50 → 2,5, 2,51 i 2,60 → 2,6, 2,61 → 2,7; tolerance šumu plovoucí čárky): mez < 0,1 m² na pás či
+  světlík × rozdíl sazeb, nejvýš do plochy, kterou schvalovatel viděl (`BEZPECNOST_MEZE.md`). Klient i server počítají obsah toutéž funkcí
+  (`src/vyjimky.js`). Obsah s pásem nese značku tvaru `v: 2`; obsah jen se směsí se nemění.
+- **Dřív schválené výjimky platí dál:** záznam z doby celých m² (bez značky) se porovná i s obsahem
+  starého tvaru (`obsahStary`, `vyjimkaObsahSedi`) — v `vyjimkaPlati`, `vyjimkaKategorie`,
+  `vyjimkaPrepocti`, serverové kontrole (B101) i zámku. Platí, dokud se obsah starého tvaru nezmění
+  (u nich zůstává tehdy schválená mez < 1 m²); nové schválení razí server vždy v novém tvaru, nový
+  záznam se starým zaokrouhlením neporovnává (značka) a starý tvar si obchodník podvrhnout nemůže (403).
+- **V7-N1:** karta Cenové výjimky ukazuje plochu ve tvaru schválení („2,5 m² (zaokrouhleno pro
+  schválení)“), u dřív schválené výjimky celé m² a poznámku „Schváleno před v20.10.5 s plochou na celé m²“.
+- **Testy:** `src/test_vyjimky.js` +16 (2,50/2,51/2,60/2,61 a šum plovoucí čárky, schválení přes obal jádra, starý tvar, přepočet, kategorie,
+  karta, desetiny nahoru 0,01–20 000 m² přesně), `netlify/test_vyjimky.mjs` +8 (server razí `v: 2`, podvrh starého
+  tvaru 403, uložené schválení starého tvaru: uložení / „čeká“ od obchodníka / zámek 200, změna sazby 403;
+  zasklení u pásu 1,2 m dřív 200, teď 403). Pojistka: proti 5dc28d1 obě sady spadnou.
+- **Mutace:** `vyjimky.js` přidán do JADRA `mutace_jadro.mjs`; cílené „B183“ jádro 11, server 5; úseky
+  starších mutací B154, B178, H2 a „výjimky:“ přesměrované na nový kód.
+- **Ověření (20. 10. 2026, zaokrouhlení nahoru):** `testovaci_kolo.sh --bez-mutaci` **281 prošlo /
+  0 selhalo / 6 přeskočeno**, statické 3/3; `--kontrola` jádro 322, server 643 úseků. Mutace: jádro
+  `B183` **11/11** (vč. matematicky / dolů / bez tolerance šumu), server `B183` **5/5**, `H2 V7-N1`
+  **3/3**. Předchozí varianta (dolů) měla navíc server `vyjimky.js` 40/40 a `schvalovani_ui` 6/6 —
+  od té doby se v serverové cestě měnila jen zaokrouhlovací funkce.
+
+---
+
+## v20.10.4 — D2: šablona nabídky PROJ D. Sikory — cestovné mimo Prahu, upravitelný úvod, jednostupňová dokumentace (větev claude/d2-proj-sikora)
+
+Dávka D2 (koordinace „ŘÍDÍCÍ 19.10“), základ `claude/integrace-16-10` 5dc28d1 (v20.10.1). Zdroj: šablona
+nabídky PROJ od D. Sikory (OVP-CN „online calkulak“, rev. 33, 15. 9. 2026) — roadmapa **#260** tím
+dodána a uzavřena. Rozhodnutí J. V. 20. 10. 2026, výchozí volby a postup v `podklady/D2_SIKORA_PROJ.md`.
+
+**Nové**
+- **#444 Akce mimo Prahu:** přepínač v Kalkulaci PROJ + cena 1 výjezdu technika v ceníku PROJ (Doprava,
+  `PC.vyjezdTechnikKc`), přepsatelná u zakázky (prázdno = ceník, 0 = neúčtovat). Výjezd se přičte po
+  přirážce k ceně ZAMĚŘENÍ, DPZ, KOLAUDACE a STUDIE (ke studii jen bez samostatného zaměření — jedna
+  cesta); nabídka to řekne větou „Cena zahrnuje i cestovní náklady na 1 výjezd technika na stavbu
+  (X Kč bez DPH)“ (DPZ a KOLAUDACE + „Případné další cesty…“), u IČ „Cena NEZAHRNUJE cestovní
+  náklady…“ a u AD „Cestovní náklady na každý 1 výjezd AD…“ (bez přičtení). V Praze nic. Krycí list,
+  plán plateb, rekapitulace a SoD berou cenu z jádra. Word: symboly `{{PROJ_CESTOVNE_ZAMERENI|SP|DPZ|IC|
+  KOLAUDACE|AD}}`, šablona **PROJ v8** (`nastroje/vyrob_sablony.js --proj-v8`, vstup v7 z D1, jinak v6).
+  EN/DE/FR výchozí znění (ke kontrole rodilými mluvčími). Kontroly `vyjezdCenaChybi`, `cestovneWordProj`.
+- **#445 Úvod „Naše NABÍDKA a doporučení“** upravitelný obchodníkem u varianty (karta Cenová nabídka
+  PROJ), **↺ Vrátit výchozí**, upozornění v kartě a kontrola `uvodProjNesedi`, když se po úpravě změní
+  nabízené činnosti. Zamčená varianta drží svůj text; ruční text platí pro český dokument.
+- **#446 Jednostupňová dokumentace:** nové zaškrtávátko v Kalkulaci PROJ; kontrola `jednostupnovaProj`
+  upozorní, že nabídku je nutné upravit ve Wordu ručně (DPZ+DPS v jednom stupni, ceny, plán plateb,
+  termíny). Nic se nepřepisuje.
+
+**Testy:** `src/test_d2_proj_sikora.js` (71 kontrol; na stromu před D2 selže hned na prvních dvou —
+pojistka), `src/test_kontroly.js` a `overit_lista.mjs` počet pravidel 37 → 41.
+
+**Ověření (20. 10. 2026, nad sloučením integrace 6fe92d8):** `testovaci_kolo.sh --bez-mutaci` — sady **282 prošlo /
+0 selhalo / 6 přeskočeno** (`test.js` + 5 harnessů bez `KNG_PODKLADY`), statické **3/3**; cílené mutace jádra
+`D2` **18/18** (engine_proj, nabidka_proj, kontroly, vyrob_sablony), pracovní kopie po běhu čistá. Šablony
+.docx se v dávce nevyráběly (navazující dávka S10).
+
+---
+
+## v20.10.3 — D1: postřehy D. Sikory 19. 10. 2026 (větev claude/d1-sikora)
+
+Dávka D1 (koordinace „ŘÍDÍCÍ 19.10“), základ `claude/integrace-16-10` 5dc28d1 (v20.10.1).
+Souběžně O7 má v20.10.2. Podklad `podklady/D1_SIKORA_19_10.md`, roadmapa #440–#443 (předběžná id).
+
+**Ověření (20. 10. 2026, po všech rozhodnutích J. V.):** `testovaci_kolo.sh --bez-mutaci` **282 prošlo /
+0 selhalo / 6 přeskočeno** (`test.js` + 5 harnessů bez `KNG_PODKLADY`), statické **3/3**; `--kontrola`
+jádro 347 úseků; cílené mutace `mutace_jadro.mjs "d1"` **38/38** + po dosazení znění Q2 `"d1 q2"` **5/5**
+chycených, pracovní kopie po každém běhu beze změny.
+
+- **Bod 1 — nabídka PROJ bez studie proveditelnosti (#440, opraveno):** úvod bloku
+  DOKUMENTACE PRO POVOLENÍ ZÁMĚRU (DPZ) zní bez studie v nabídce „Dokumentace pro povolení
+  záměru (DPZ) rozpracovává dokumentaci dle platné vyhlášky…“ — věta „navazuje na vzájemně
+  odsouhlasenou STUDII PROVEDITELNOSTI. Ta …“ jen tehdy, když má studie cenu (samotné
+  projednání nestačí). `src/nabidka_proj.js` (`NABIDKA_PROJ_DPZ_UVOD`, odstavec úvodu se sekcí
+  a zněním `jinak`), Word symbol `{{PROJ_DPZ_UVOD}}` v jazyce dokumentu (slovník EN/DE/FR,
+  `src/preklad.js`), šablona **PROJ v7** z `nastroje/vyrob_sablony.js --proj-v7` (vstup v6;
+  odstavec úvodu DPZ → jediný symbol, písmo zůstává). Kontrola **`dpzUvodWordProj`**
+  (varování): studie se nenabízí, DPZ ano a šablona PROJ nemá `{{PROJ_DPZ_UVOD}}`.
+  Pravidel kontrol je 38. Test `src/test_d1_dpz_bez_studie.js` (před opravou selže na první).
+- **Další odkazy na studii bez studie (#441, rozhodnutí J. V. 20. 10. 2026 ~11:05, opraveno):**
+  - **Q1** hvězdička ceny DPZ „Cena je platná v případě návaznosti na STUDII PROVEDITELNOSTI.“ se
+    bez studie vynechá — online (`hvezdickaJenSe`), Word v7 `{{PROJ_DPZ_HVEZDICKA_ZNACKA}}`
+    u nadpisu ceny a poznámka `{{PROJ_DPZ_HVEZDICKA}}` v bloku `BLOK_DPZ_HVEZDICKA`;
+  - **Q2** termín hrubopisu DPZ (rozhodnutí J. V. 20. 10. ~11:35): se studií beze změny „do 10–12 týdnů
+    od schválení studie investorem a objednání“, bez studie **„do 12 týdnů od zpracování výstupů ze
+    zaměření“** (`PODMINKY_TERMIN_DPZ_BEZ_STUDIE`, EN/DE/FR ve slovníku, online i Word
+    `{{PROJ_TERMINY_TERMIN}}`); dva řádky termínů ve Firmě s klíčem `dpz+studie` / `dpz-studie`
+    (nový podmíněný klíč, Nastavení → Smlouvy / Šablony → Texty nabídky PROJ; **uložené vlastní
+    termíny se nemění** — kdo je má uložené, doplní řádek sám);
+  - **Q3** šablona **PROJ v7** navíc: titul `{{PROJ_TITUL_STUDIE}}` („STUDIE PROVEDITELNOSTI“ jen
+    se studií nebo projednáním) a `{{PROJ_TITUL_CINNOSTI}}` („Navazující PROJEKTOVÉ a INŽENÝRSKÉ
+    ČINNOSTI“, bez studie „PROJEKTOVÉ a INŽENÝRSKÉ ČINNOSTI“), bloky `BLOK_STUDIE_ROZSAH` (tabulka
+    ST), `BLOK_STUDIE_CENA` (nadpis a ceny SP) — pryč bez studie i projednání, `BLOK_STUDIE_POZN`
+    (poznámka o studii) — pryč bez studie (`blokyPryc` nabídky PROJ; smlouva o dílo PROJ si je
+    nebere). Test rozšířen na 88 kontrol (před Q1–Q3 17 FAIL + pád sady).
+- **Bod 2 — šířka bočního světlíku 600 mm (#442, rozhodnutí J. V. 20. 10. ~11:25, popisek):**
+  600 = šířka skla na terčích 1 680 − otvor dveří 1 040 − 40 — výpočet je správně a zůstává
+  (Model 1 i 2), variantu C neplánovat. Popisky: „Šířka skla bočního světlíku (přes sloupky)“,
+  „předpočítaná šířka skla přes sloupky 600 mm“, Detail, technická specifikace „šířka skla N mm“
+  (EN glass width / DE Glasbreite / FR largeur du verre; starší „šířka N mm“ se překládá dál),
+  příručka; hlášky kontroly beze změny. Testy `test_svetliky_sirka.js` 70 (se starými popisky
+  6 FAIL), `overit_svetliky_sirka.mjs` 24 (se starými 15 FAIL).
+- **Bod 3 — dimenze profilů portálu (#443, uzavřeno beze změny):** rozhodnutí J. V. 20. 10.
+  ~11:40 — dnešní stav je správně (sloupek portálu 40×40/3 EXT i INT, příčník portálu 80×40/3);
+  návrh z větve `claude/d1-sikora-navrh-profily` se nepoužije (větev smaže J. V.).
+
+---
+
+## v20.10.2 — O7: rozhodnutí J. V. k auditu K3 (větev claude/o7-k3-rozhodnuti)
+
+Dávka O7 (koordinace „ŘÍDÍCÍ 19.10“), základ `claude/integrace-16-10` 5dc28d1
+(v20.10.1 = test), podklad `podklady/K3_AUDIT_19_10.md`, rozhodnutí J. V.
+20. 10. 2026 (dialog). Roadmapa #437 uzavřena.
+
+- **K3-N2 — odeslaná nabídka se nemění ani po změně Firmy.** Při PRVNÍM
+  zamčení varianty se do ní opíše efektivní znění vět platebního kalendáře
+  a dílů vět SoD (`data.kryci.zmrazenoPodminky`, kryciZmrazPodminky) a textů
+  nabídky PROJ včetně `dolozkyTisk` (`data.kryciProj.zmrazenoPodminky`,
+  kryciProjZmrazPodminky). Dotisk zamčené varianty (nabídka OCK v14, SoD
+  realizace, online nabídka i Word PROJ) čte snímek (`podminkyEfZmrazene`);
+  bez snímku — varianty zamčené před v20.10.2 — tiskne aktuální Firmu jako
+  dosud. Snímek prochází týmiž pravidly jako Firma (poškozené pole = továrna).
+  Data zamčené varianty hlídá server (zamekDataPorovnani), snímek nikdo
+  nepřepíše. Test `src/test_o7_zmrazeni.js`.
+- **K3-N1 — kopie na Disk s heslem správce a jen do „_Zaloha Netlify DB“.**
+  `POST /api/zaloha_vynuceno {akce:'kopie-disk'}` chce `hesloSpravce`
+  (potvrdHesloSpravce, jako matice a obnova) a odmítne jinou složku (400,
+  složka se kontroluje před heslem, aby nespotřebovala pokus). Záznam nese
+  `potvrzeno: 'heslo-spravce'`; retenci odemkne jen takový (kopieDiskPodlozena)
+  — záznamy před v20.10.2 ne, retence počká na novou kopii. Klient se zeptá
+  na heslo dřív, než cokoli stáhne, do jiné složky nezapíše a její výběr
+  zapomene; týdenní automatika po přihlášení se zeptá taky (zrušení = nic).
+- **K3-N4 — limit vynucených otisků 1 za 10 min a 20 za 24 h** (ruční i při
+  přihlášení dohromady, klouzavě; `vynuceneLimit` z klíčů otisků). Nad limit
+  429 `kod:'limitZalohy'` s časem, kdy to půjde (Praha). Noční otisk a otisk
+  před obnovou se nepočítají a limit je nezastaví. Automatická záloha po
+  přihlášení 429 nehlásí.
+- **K3-N13 — pojistka retence.** Nový noční otisk s méně než 50 % zakázek
+  nebo účtů proti předchozímu NOČNÍMU (nejvýš 7 denních klíčů zpět) →
+  retence se ten den přeskočí, `console.warn` VAROVÁNÍ v logu noční funkce,
+  záznam `retence-varovani` (GET přehledu ho vrací) a hlídka v Nastavení →
+  Databáze i po přihlášení správce 30 dní (`uloRetenceVarovani`).
+- **K3-N15 — beze změny** (Firma dál jen s relací administrátora), zapsáno
+  v `BEZPECNOST_MEZE.md` spolu s K3-N1, N4 a N13.
+- **K3-N18 — souhrnný strop podmínek ve Firmě 500 kB** (UTF-8 bajty JSON,
+  `PODMINKY_MAX_B`): vada v `podminkyVady` → server odmítne zveřejnění
+  srozumitelnou hláškou, formulář v Nastavení ji ukáže mezi vadami.
+- **K3-N17 — rozměr můstku jen upozornit.** Nová kontrola `mustekRozmer`
+  (38. pravidlo): šířka nebo hloubka > 6000 mm (výchozí volba,
+  `KONTROLY_MUSTEK_MAX_MM`) nebo nečíselná / nekonečná hodnota → upozornění,
+  ne zábrana; hodnota se do výpočtu bere, jak je (nečíselná = prázdná, O5).
+
+**Testy s pojistkou (před → po):** `src/test_o7_zmrazeni.js` 21/13 → 34/0
+(bez opravy podminky.js test spadne); `src/test_mustky.js` 68/5 → 73/0;
+`netlify/test_zalohy.mjs` 87/17 → 130/0; `src/test_o7_kopie_klient.js`
+9 selhání + pád → 16/0; `overit_online.mjs` +16 kontrol O7 (266/0, třikrát
+po sobě). `test_obnova.mjs` a `test_zalohy.mjs` pořizují vynucené otisky
+s posunem hodin o 11 min, `overit_online.mjs` posouvá klíče otisků před
+ruční zálohou (limit K3-N4); 429 mezi očekávanými chybami konzole.
+
+**Mutace:** jádro „O7“ 16, server „O7“ 25 (+ opravené zadání dvou mutací
+#151, jejichž kód O7 změnil).
+
+**Ověření (20. 10. 2026, 10:27–12:17 UTC) — VŠE ZELENÉ po dvou doplněních:**
+cílené mutace jádro `O7` **16/16**, server `O7` **25/25**; server `#151`
+**41/42** — přežila „#151 N6: záznam kopie bez kontroly jména souboru“ (test
+posílal neplatné jméno bez složky, 400 vracela už kontrola složky K3-N1) →
+test doplněn o správnou složku a heslo, opakování `#151 N6` **11/11**.
+První kolo `--bez-mutaci` 282/1/6 (`overit_lista.mjs` čekal 37 pravidel
+kontrol, s `mustekRozmer` je 38) → opraveno; konečné kolo `--bez-mutaci`
+nad 56aa5cd: sady **283 prošlo / 0 selhalo / 6 přeskočeno**
+(`test.js` + 5 harnessů bez `KNG_PODKLADY`), statické **3/3**; `--kontrola`
+jádro 327, server 663 úseků. Pracovní kopie po každém běhu čistá.
 
 ---
 

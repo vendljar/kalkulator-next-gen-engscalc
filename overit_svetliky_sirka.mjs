@@ -60,7 +60,7 @@ await p.evaluate(([c, cp]) => {
 const stav = () => p.evaluate(() => {
   prepniTab('kalk'); render();
   const lbl = t => [...document.querySelectorAll('#inputs .row > label')].find(l => l.textContent.trim().indexOf(t) === 0);
-  const pocet = lbl('Celkem světlíků na bocích dveří'), sirka = lbl('Šířka bočního světlíku');
+  const pocet = lbl('Celkem světlíků na bocích dveří'), sirka = lbl('Šířka skla bočního světlíku (přes sloupky)');
   const radek = sirka ? sirka.parentElement : null;
   const pod = [];
   for (let el = radek ? radek.nextElementSibling : null; el && el.classList.contains('note'); el = el.nextElementSibling)
@@ -89,7 +89,7 @@ const zapis = (popisek, h) => p.evaluate(([popisek, h]) => {
   if (!i) return false;
   i.value = h; i.dispatchEvent(new Event('change')); return true;
 }, [popisek, h]);
-const zapisSirku = h => zapis('Šířka bočního světlíku', h);
+const zapisSirku = h => zapis('Šířka skla bočního světlíku (přes sloupky)', h);
 const zapisPocet = h => zapis('Celkem světlíků na bocích dveří', h);
 const klikZpet = co => p.evaluate(co => {
   const l = [...document.querySelectorAll('#inputs .row > label')].find(x => x.textContent.trim().indexOf(co) === 0);
@@ -104,17 +104,17 @@ let s = await stav();
 zkus('Model 2, automatický počet (10): řádek šířky se neukáže', s.pocet === '10' && !s.sirka, JSON.stringify(s));
 await zapisPocet('5');
 s = await stav();
-zkus('ruční počet 5 v Modelu 2: řádek „Šířka bočního světlíku" se ukáže hned pod počtem, jednotka mm',
+zkus('ruční počet 5 v Modelu 2: řádek „Šířka skla bočního světlíku (přes sloupky)" (#442) se ukáže hned pod počtem, jednotka mm',
   s.pocet === '5' && s.sirka && s.hned && s.jednotka === 'mm', JSON.stringify(s));
 zkus('… s předpočítanou šířkou 600 mm, bez štítku „ručně" a bez ↺', s.hodnota === '600' && !s.rucne && !s.zpet && s.data === '',
   JSON.stringify(s));
-zkus('… nápověda „předpočítáno z mezery vedle dveří 600 mm: 5 dveří s jedním (600 mm)"',
-  s.pod.length === 1 && s.pod[0].text === 'předpočítáno z mezery vedle dveří 600 mm: 5 dveří s jedním (600 mm)', JSON.stringify(s.pod));
+zkus('… nápověda „šířka skla přes sloupky, předpočítaná z mezery vedle dveří 600 mm: 5 dveří s jedním (600 mm)"',
+  s.pod.length === 1 && s.pod[0].text === 'šířka skla přes sloupky, předpočítaná z mezery vedle dveří 600 mm: 5 dveří s jedním (600 mm)', JSON.stringify(s.pod));
 zkus('… plocha v kalkulaci zůstává 6,6 m² (předpočítaná šířka cenou nehne)', s.vsg === '6.6' && Math.abs(s.bokyM2 - 6.6) < 1e-9, s.vsg);
 await zapisPocet('7');
 s = await stav();
 zkus('smíšené 7 ks: předpočítaná 429 mm a nápověda „2 dveře se dvěma (po 300 mm), 3 dveře s jedním (600 mm) → průměr"',
-  s.hodnota === '429' && s.pod[0] && s.pod[0].text === 'předpočítáno z mezery vedle dveří 600 mm: 2 dveře se dvěma (po 300 mm), 3 dveře s jedním (600 mm) → průměr',
+  s.hodnota === '429' && s.pod[0] && s.pod[0].text === 'šířka skla přes sloupky, předpočítaná z mezery vedle dveří 600 mm: 2 dveře se dvěma (po 300 mm), 3 dveře s jedním (600 mm) → průměr',
   JSON.stringify(s));
 await zapisPocet('5');
 const m1 = await p.evaluate(() => { OCK.fixes = false; render(); return null; });
@@ -127,24 +127,24 @@ console.log('\n2) zápis šířky změní plochu v kalkulaci');
 await zapisSirku('300');
 s = await stav();
 zkus('šířka 300 mm se uloží jako číslo a označí „ručně" s ↺', s.data === 300 && s.hodnota === '300' && s.rucne && s.zpet
-  && /předpočítaná šířka 600 mm/.test(s.pillTitul), JSON.stringify(s));
+  && /předpočítaná šířka skla přes sloupky 600 mm/.test(s.pillTitul), JSON.stringify(s));
 zkus('kalkulace: MATERIÁL VSG 4.4.1 6,6 → 3,3 m² (5 × 0,3 × 2,2)', s.vsg === '3.3' && Math.abs(s.bokyM2 - 3.3) < 1e-9, s.vsg);
-zkus('nápověda „zadáno ručně; předpočítaná šířka 600 mm" a oranžové upozornění na zbytek 300 mm u dveří (celkem 1,50 m)',
-  s.pod.length === 2 && s.pod[0].text === 'zadáno ručně; předpočítaná šířka 600 mm'
+zkus('nápověda „zadáno ručně; předpočítaná šířka skla přes sloupky 600 mm" a oranžové upozornění na zbytek 300 mm u dveří (celkem 1,50 m)',
+  s.pod.length === 2 && s.pod[0].text === 'zadáno ručně; předpočítaná šířka skla přes sloupky 600 mm'
   && /boky-sirka-upozorneni/.test(s.pod[1].trida)
   && s.pod[1].text === 'Vedle každých dveří zůstane neoceněných 300 mm (mezera 600 mm − světlík 300 mm), u 5 dveří celkem 1,50 m.',
   JSON.stringify(s.pod));
 const det = await p.evaluate(() => { prepniTab('detail'); render(); const t = document.getElementById('page-detail').textContent; prepniTab('kalk'); render(); return t; });
 zkus('Detail mezivýpočtů: mezera 600 mm, šířka předpočítaná / použitá 600 mm / 300 mm (ručně), plocha boků 3,3 m² = 5 × 0,3 × 2,2',
-  /Mezera vedle dveří\s*600 mm/.test(det) && /Šířka bočního světlíku — předpočítaná \/ použitá\s*600 mm \/ 300 mm \(ručně\)/.test(det)
+  /Mezera vedle dveří\s*600 mm/.test(det) && /Šířka skla bočního světlíku \(přes sloupky\) — předpočítaná \/ použitá\s*600 mm \/ 300 mm \(ručně\)/.test(det)
   && /Plocha boků \(výplň vedle dveří\)\s*3,3 m²\s*počet × šířka × 2,2 m = 5 × 0,3 × 2,2/.test(det),
   det.slice(det.indexOf('Plocha boků'), det.indexOf('Plocha boků') + 200));
 const spec = await p.evaluate(() => {
   const pole = TECHSPEC_DEF.map(x => x.pole).flat().find(x => x.id === 'svetlikyDveri');
   return tsHodnota(pole, TS, vypocetAkt(), Z, C, 'cz').text;
 });
-zkus('technická specifikace: „Světlíky na bocích dveří: 5 ks, šířka 300 mm, sklo VSG 4.4.1, na terče"',
-  spec.indexOf('Světlíky na bocích dveří: 5 ks, šířka 300 mm, sklo VSG 4.4.1, na terče') >= 0, spec);
+zkus('technická specifikace: „Světlíky na bocích dveří: 5 ks, šířka skla 300 mm, sklo VSG 4.4.1, na terče" (#442)',
+  spec.indexOf('Světlíky na bocích dveří: 5 ks, šířka skla 300 mm, sklo VSG 4.4.1, na terče') >= 0, spec);
 const pred = await p.evaluate(() => ({ zab: dokumentZabrana('nabidka'), kody: kontrolyStavAkt().kodyBrani }));
 zkus('zbytek mezery dokument nezastaví (jen upozornění)', pred.zab === '' && pred.kody.indexOf('bokyDveri') < 0, JSON.stringify(pred));
 
@@ -177,7 +177,7 @@ zkus('v Modelu 1 se šířka nehlídá (stejná data, žádná zábrana)', m1z.k
 
 /* ---------------------------------------------------------------- */
 console.log('\n4) ↺ u šířky a ↺ u počtu');
-await klikZpet('Šířka bočního světlíku');
+await klikZpet('Šířka skla bočního světlíku (přes sloupky)');
 s = await stav();
 zkus('↺ u šířky: předpočítaná 600 mm, bez štítku, plocha zpět 6,6 m², zábrana pryč', s.data === '' && s.hodnota === '600' && !s.rucne && !s.zpet
   && s.vsg === '6.6' && await p.evaluate(() => dokumentZabrana('nabidka') === ''), JSON.stringify(s));

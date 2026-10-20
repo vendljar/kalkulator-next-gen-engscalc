@@ -296,22 +296,25 @@ test('konstrukce a montáž dál po kusech (sloupky portálu, krátké příčn�
   global.TECHSPEC_DEF = tsm.TECHSPEC_DEF; global.tsHodnota = tsm.tsHodnota; global.DEFAULT_TECHSPEC = tsm.DEFAULT_TECHSPEC;
   const pole = id => { let p = null; tsm.TECHSPEC_DEF.forEach(s => s.pole.forEach(x => { if (x.id === id) p = x; })); return p; };
   const t = (z, fixes) => pole('svetlikyDveri').prefill(spocti(z, fixes), z, CENIK(), 'cz');
-  const VETA = 'Nadpraží nad šachetními dveřmi: 5 ks, plech; Světlíky na bocích dveří: 5 ks, šířka 300 mm, sklo VSG 4.4.1, na terče';
-  test('spec: ruční šířka v Modelu 2 → „5 ks, šířka 300 mm"', () => t(zad({ svetlikyBokyKs: 5, svetlikyBokySirkaMm: 300 })) === VETA,
+  /* #442 (rozhodnutí J. V. 20. 10. 2026): „šířka skla" — tabule přes sloupky */
+  const VETA = 'Nadpraží nad šachetními dveřmi: 5 ks, plech; Světlíky na bocích dveří: 5 ks, šířka skla 300 mm, sklo VSG 4.4.1, na terče';
+  test('spec: ruční šířka v Modelu 2 → „5 ks, šířka skla 300 mm"', () => t(zad({ svetlikyBokyKs: 5, svetlikyBokySirkaMm: 300 })) === VETA,
     () => t(zad({ svetlikyBokyKs: 5, svetlikyBokySirkaMm: 300 })));
   test('spec: bez ruční šířky beze změny (žádná „šířka")', () => t(zad({ svetlikyBokyKs: 5 }))
     === 'Nadpraží nad šachetními dveřmi: 5 ks, plech; Světlíky na bocích dveří: 5 ks, sklo VSG 4.4.1, na terče');
   test('spec: Model 1 šířku neuvádí, ani když je v datech', () => !/šířka/.test(t(zad({ svetlikyBokyKs: 5, svetlikyBokySirkaMm: 300 }), false)));
   test('spec: plech a „zajistí stavba" nesou šířku taky', () =>
-    t(zad({ nadDvermi: 'bez', bokyDveri: 'plech', svetlikyBokyKs: 5, svetlikyBokySirkaMm: 450 })) === 'Světlíky na bocích dveří: 5 ks, šířka 450 mm, plech'
-    && t(zad({ nadDvermi: 'bez', bokyDveri: 'stavba', svetlikyBokyKs: 5, svetlikyBokySirkaMm: 450 })) === 'Světlíky na bocích dveří: 5 ks, šířka 450 mm, výplň zajistí objednatel');
+    t(zad({ nadDvermi: 'bez', bokyDveri: 'plech', svetlikyBokyKs: 5, svetlikyBokySirkaMm: 450 })) === 'Světlíky na bocích dveří: 5 ks, šířka skla 450 mm, plech'
+    && t(zad({ nadDvermi: 'bez', bokyDveri: 'stavba', svetlikyBokyKs: 5, svetlikyBokySirkaMm: 450 })) === 'Světlíky na bocích dveří: 5 ks, šířka skla 450 mm, výplň zajistí objednatel');
   const pr = require('./preklad.js');
   test('překlad: věta se šířkou se přeloží do EN, DE i FR', () => ['en', 'de', 'fr'].every(L => pr.trStav(VETA, L).prelozeno),
     () => ['en', 'de', 'fr'].map(L => pr.tr(VETA, L)));
-  test('překlad EN: „width 300 mm"', () => pr.tr(VETA, 'en') === 'Panel above the landing doors: 5 pcs, sheet metal; '
-    + 'Side lights beside the landing doors: 5 pcs, width 300 mm, laminated safety glass VSG 4.4.1, on glazing fixing points', () => pr.tr(VETA, 'en'));
-  test('překlad DE „Breite 300 mm", FR „largeur 300 mm"', () => pr.tr(VETA, 'de').indexOf('5 Stk., Breite 300 mm, ') >= 0
-    && pr.tr(VETA, 'fr').indexOf('5 pcs, largeur 300 mm, ') >= 0, () => [pr.tr(VETA, 'de'), pr.tr(VETA, 'fr')]);
+  test('překlad EN: „glass width 300 mm"', () => pr.tr(VETA, 'en') === 'Panel above the landing doors: 5 pcs, sheet metal; '
+    + 'Side lights beside the landing doors: 5 pcs, glass width 300 mm, laminated safety glass VSG 4.4.1, on glazing fixing points', () => pr.tr(VETA, 'en'));
+  test('překlad DE „Glasbreite 300 mm", FR „largeur du verre 300 mm"', () => pr.tr(VETA, 'de').indexOf('5 Stk., Glasbreite 300 mm, ') >= 0
+    && pr.tr(VETA, 'fr').indexOf('5 pcs, largeur du verre 300 mm, ') >= 0, () => [pr.tr(VETA, 'de'), pr.tr(VETA, 'fr')]);
+  test('překlad: starší otisk „šířka 300 mm" (před #442) se přeloží dál', () => ['en', 'de', 'fr'].every(L =>
+    pr.trStav(VETA.replace('šířka skla 300', 'šířka 300'), L).prelozeno) && pr.tr(VETA.replace('šířka skla 300', 'šířka 300'), 'en').indexOf('5 pcs, width 300 mm, ') >= 0);
   test('překlad: šířka bez čísla v milimetrech vzorem neprojde (nic se nevymýšlí)',
     () => !pr.trStav('Světlíky na bocích dveří: 5 ks, šířka asi půl metru, plech', 'en').prelozeno);
 

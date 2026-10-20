@@ -854,12 +854,13 @@ function nastKapitolyNabidky() {
  * administrátor. „Doplnit všechny prázdné" vlastní texty nepřepíše; tlačítko
  * u jednoho pole se před přepsáním vlastního textu zeptá. Značku ukázkových
  * dat to nesundává: výchozí text kapitol z firmy skutečnou nedělá. Zveřejnění
- * online je pak běžné „Zveřejnit". */
+ * online: tlačítko „Zveřejnit změny online" nahoře na téže záložce (U1). */
 function firmaKapitolyVychozi() {
   if (!jeAdmin()) return hlaska('Firemní údaje smí měnit jen administrátor.');
   if (!NAST.firma) NAST.firma = firmaDefault();
   const zmeneno = firmaDoplnVychoziTexty(NAST.firma, true);
-  hlaska(zmeneno.length ? 'Doplněno výchozích textů: ' + zmeneno.length + '. Online je zveřejníte tlačítkem „Zveřejnit".'
+  hlaska(zmeneno.length ? 'Doplněno výchozích textů: ' + zmeneno.length + '. '
+      + (typeof onlineFirmaKdeZverejnit === 'function' ? onlineFirmaKdeZverejnit() : '')
     : 'Žádná kapitola (česky, anglicky, německy, francouzsky) není prázdná.');
   nastRefresh();
 }

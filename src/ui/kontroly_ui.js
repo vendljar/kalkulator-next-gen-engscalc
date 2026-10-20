@@ -156,7 +156,9 @@ function kontrolySablonaNabidkaProj(slevaProj, projVysledek, jazyk) {
   /* Varianta bez autorského dozoru — šablona bez značek AD by ho vytiskla
    * (pravidlo autorskyDozorWordProj, 14. 10. 2026). */
   const bezAD = typeof PJ !== 'undefined' && !!PJ && PJ.nabizetAD === false;
-  if (!sleva && !navic && !plan && !geodet && !bezAD) return null;
+  /* Akce mimo Prahu (D2) — šablona bez symbolů cestovného (cestovneWordProj). */
+  const mimoPrahu = typeof PJ !== 'undefined' && !!PJ && !!PJ.akceMimoPrahu;
+  if (!sleva && !navic && !plan && !geodet && !bezAD && !mimoPrahu) return null;
   return kontrolySablonaSymboly('nabidkaProj', jazyk);
 }
 function kontrolySablonaSymboly(zaklad, jazyk) {

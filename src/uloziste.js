@@ -2020,8 +2020,27 @@ function uloKopieDiskStav(kopie, ted) {
       : 'Poslední kopie záloh na Disku Google: ' + kdy + ' (' + String(kopie.soubor || '') + ').' };
 }
 
+/* POJISTKA RETENCE (K3-N13, rozhodnutí J. V. 20. 10. 2026). Noční funkce
+ * přeskočí mazání starých otisků, když nový noční otisk nese méně než
+ * polovinu zakázek nebo účtů proti předchozímu nočnímu, a zapíše záznam
+ * (GET /api/zaloha_vynuceno → retenceVarovani). Hlídka ho ukazuje
+ * ULO_RETENCE_VAROVANI_DNU dní — tak dlouho drží retence denní otisky
+ * z doby před poklesem. Vrací null nebo { text }. */
+const ULO_RETENCE_VAROVANI_DNU = 30;
+function uloRetenceVarovani(v, ted) {
+  const t = v && Date.parse(v.kdy || '');
+  if (!v || !isFinite(t)) return null;
+  const dnu = Math.floor(((+ted || Date.now()) - t) / 86400000);
+  if (dnu < 0 || dnu >= ULO_RETENCE_VAROVANI_DNU) return null;
+  const pocty = (a, b) => [a && b && a.pocetZakazek !== b.pocetZakazek ? 'zakázek ' + (+a.pocetZakazek || 0) + ' → ' + (+b.pocetZakazek || 0) : '',
+    a && b && a.pocetUctu !== b.pocetUctu ? 'účtů ' + (+a.pocetUctu || 0) + ' → ' + (+b.pocetUctu || 0) : ''].filter(Boolean).join(', ');
+  return { dnu, text: 'Pozor: noční záloha ' + String(v.den || '') + ' nese proti ' + String(v.predchozi || '') + ' méně než polovinu dat ('
+    + pocty(v.pred, v.nove) + '). Mazání starých záloh se ten den přeskočilo. Zkontrolujte, jestli se data neztratila — '
+    + 'starší zálohy jsou pro obnovu k dispozici (Obnovit ze zálohy…).' };
+}
+
 if (typeof module !== 'undefined')
-  module.exports = { uloPodProhlubniText, ULO_ODM_TOL, ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, ULO_ZADANI_BEZ_ZAPORU, ULO_ZADANI_MIMO_JADRO, ULO_HODINY_N56, uloCisloJadro, uloRozmeryVZadani, uloRozmeryProblemy, uloModelProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloKopieDiskStav, uloKopieDiskJmeno, ULO_KOPIE_DISK_SLOZKA, ULO_KOPIE_DISK_INTERVAL_DNU, ULO_KOPIE_DISK_HLIDKA_DNU, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
+  module.exports = { uloRetenceVarovani, ULO_RETENCE_VAROVANI_DNU, uloPodProhlubniText, ULO_ODM_TOL, ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, ULO_ZADANI_BEZ_ZAPORU, ULO_ZADANI_MIMO_JADRO, ULO_HODINY_N56, uloCisloJadro, uloRozmeryVZadani, uloRozmeryProblemy, uloModelProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloKopieDiskStav, uloKopieDiskJmeno, ULO_KOPIE_DISK_SLOZKA, ULO_KOPIE_DISK_INTERVAL_DNU, ULO_KOPIE_DISK_HLIDKA_DNU, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
                      uloNorm, uloSlova, uloCisloVyplneno, uloKlicSouboru,
                      uloJmenoSouboru, uloJeZakazkovySoubor,
                      ULO_HLAVICKA_POLE, uloHlavickaChybi, uloHlavickaVyplnena, uloMaCislo, uloUlozeniStav,

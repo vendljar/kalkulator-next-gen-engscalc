@@ -133,7 +133,8 @@ const chyby = [];
 page.on('console', m => {
   const t = m.text();
   // 401/403/400/409 z /api jsou v testu záměr – aplikace s nimi počítá.
-  if (m.type() === 'error' && !/status of (401|403|400|409)/.test(t)) chyby.push('console: ' + t);
+  // 429 od O7 (K3-N4): limit vynucených záloh harness zkouší záměrně.
+  if (m.type() === 'error' && !/status of (401|403|400|409|429)/.test(t)) chyby.push('console: ' + t);
 });
 page.on('pageerror', e => chyby.push('pageerror: ' + e.message));
 page.on('dialog', d => (d.type() === 'prompt' ? d.accept('zkušební zveřejnění') : d.accept()));
@@ -783,6 +784,18 @@ test('a naplánovaný autosave předchozí zakázky se zrušil', dup.timer === n
 test('kliknutí v dialogu se za práci na duplikátu nepočítá', dup.zmena === false, dup);
 test('(úklid: zpátky na uloženou zakázku)', dup.zpet === true, dup);
 
+/* K3-N4 (O7): vynucený otisk má limit 1 za 10 minut. Harness před ruční
+ * zálohou „posune" dosavadní vynucené otisky (klíč i souhrn) o 11 minut
+ * zpátky, jako by vznikly dřív. Přehled bere den z klíče, ne ze souhrnu. */
+const uvolniLimitZaloh = () => {
+  for (const k of [...pamet.keys()]) {
+    const m = /^zalohy\/(souhrn\/)?(\d{4}-\d{2}-\d{2})T(\d{2})(\d{2})(\d{2})-(rucne|auto)$/.exec(k);
+    if (!m) continue;
+    const t = new Date(Date.parse(m[2] + 'T' + m[3] + ':' + m[4] + ':' + m[5] + 'Z') - 11 * 60000).toISOString();
+    const v = pamet.get(k); pamet.delete(k);
+    pamet.set('zalohy/' + (m[1] || '') + t.slice(0, 10) + 'T' + t.slice(11, 19).replace(/:/g, '') + '-' + m[6], v);
+  }
+};
 /* ---- 5c) záloha databáze: automatická po přihlášení i vynucená ---- */
 test('po přihlášení administrátora vznikla dnešní záloha databáze sama',
   await page.evaluate(() => ONLINE_STAV.otiskyNacteno && ONLINE_STAV.otisky.length >= 1),
@@ -790,6 +803,7 @@ test('po přihlášení administrátora vznikla dnešní záloha databáze sama'
 test('záloha nese, kdy vznikla a kolik zakázek zachytila',
   await page.evaluate(() => { const o = ONLINE_STAV.otisky[0];
     return !!o && !!o.porizena && typeof o.pocetZakazek === 'number' && o.pocetUctu >= 1; }));
+uvolniLimitZaloh();
 await page.evaluate(() => onlineZalohaTed());
 await page.waitForFunction(() => { try { return !ONLINE_STAV.pracuje && /Záloha databáze pořízena/.test(ONLINE_STAV.hlaska); } catch (e) { return false; } },
   null, { timeout: 8000 });
@@ -858,7 +872,10 @@ await page.evaluate(() => {
           return { write: async (t) => { buf += t; }, close: async () => { soubory.set(jmeno, buf); } }; },
         getFile: async () => new Blob([soubory.get(jmeno) || '']) };
     } };
-  window.showDirectoryPicker = async () => { window.__diskVyber++; return slozka; };
+  window.showDirectoryPicker = async () => { window.__diskVyber++;
+    /* K3-N1 (O7): harness umí podstrčit jednou složku s jiným jménem */
+    if (window.__diskJinaSlozka) { window.__diskJinaSlozka = false; return Object.assign({}, slozka, { name: 'Stažené soubory' }); }
+    return slozka; };
 });
 await page.evaluate(() => onlineOtiskyNacti().then(() => render()));
 await page.waitForTimeout(150);
@@ -870,8 +887,32 @@ await page.waitForTimeout(150);
   test('N6: administrátor má tlačítko „Zkopírovat zálohu na Disk teď"', html.includes('Zkopírovat zálohu na Disk teď'));
 }
 const nocniDen = new Date(Date.now() - 20 * 3600000).toISOString().slice(0, 10);
+/* K3-N1 (O7, rozhodnutí J. V. 20. 10. 2026): kopie jen do složky
+ * „_Zaloha Netlify DB" a záznam jen s heslem správce. */
+await page.evaluate(() => { window.__diskJinaSlozka = true; window.__dlgHeslo = 'Zkusebni.Heslo.123'; window.__dlgTexty = []; });
+test('K3-N1 O7: složka s jiným jménem → kopie se nepořídí, nic se nezapíše, hláška jmenuje „_Zaloha Netlify DB"',
+  await page.evaluate(async () => (await onlineKopieDiskTed()) === false && window.__diskSoubory.size === 0
+    && /se nejmenuje „_Zaloha Netlify DB"/.test(ONLINE_STAV.hlaska) && window.__dlgTexty.length === 0),
+  await page.evaluate(() => ONLINE_STAV.hlaska));
+test('K3-N1 O7: server o kopii z jiné složky neví', !pamet.has('zalohy/kopie-disk'));
+await page.evaluate(() => { window.__dlgHeslo = null; window.__dlgTexty = []; });
+test('K3-N1 O7: zrušený dialog hesla → kopie se nepořídí, nic se nezapíše (složka se vybírá znovu)',
+  await page.evaluate(async () => (await onlineKopieDiskTed()) === false && window.__diskSoubory.size === 0
+    && /bez vašeho hesla/.test(ONLINE_STAV.hlaska) && window.__dlgTexty.some(t => /mazání starých záloh/.test(t))
+    && window.__diskVyber === 2), await page.evaluate(() => [ONLINE_STAV.hlaska, window.__diskVyber]));
+test('K3-N1 O7: bez hesla server záznam nemá', !pamet.has('zalohy/kopie-disk'));
+await page.evaluate(() => { window.__dlgHeslo = 'Spatne.Heslo.999'; });
+test('K3-N1 O7: špatné heslo → server odmítne, kopie se nezapočítá',
+  await page.evaluate(async () => (await onlineKopieDiskTed()) === false && /heslo nesouhlasí/.test(ONLINE_STAV.hlaska)),
+  await page.evaluate(() => ONLINE_STAV.hlaska));
+test('K3-N1 O7: po špatném hesle server záznam nemá a přihlášení trvá',
+  !pamet.has('zalohy/kopie-disk') && await page.evaluate(() => !!ONLINE_STAV.ja));
+await page.evaluate(() => { window.__dlgHeslo = 'Zkusebni.Heslo.123'; window.__diskSoubory.clear(); });
 test('N6: tlačítko kopii pořídí', await page.evaluate(() => onlineKopieDiskTed()) === true,
   await page.evaluate(() => ONLINE_STAV.hlaska));
+test('K3-N1 O7: záznam na serveru nese složku a potvrzení heslem',
+  (() => { const z = JSON.parse(pamet.get('zalohy/kopie-disk') || 'null'); return !!z && z.potvrzeno === 'heslo-spravce' && z.slozka === '_Zaloha Netlify DB'; })(),
+  pamet.get('zalohy/kopie-disk'));
 {
   const r = await page.evaluate(async () => {
     const s = window.__diskSoubory;
@@ -906,8 +947,17 @@ test('N6: bez uděleného práva automatika mlčí (zeptat se smí jen po kliknu
   await page.evaluate(async () => (await onlineKopieDiskAuto()) === false && window.__diskSoubory.size === 0));
 await page.evaluate(() => { window.__diskPravo = 'granted'; });
 test('N6: po 8 dnech se kopie po přihlášení pořídí sama, bez nového výběru složky',
-  await page.evaluate(async () => (await onlineKopieDiskAuto()) === true
-    && [...window.__diskSoubory.keys()].some(j => /^otisk_/.test(j)) && window.__diskVyber === 1));
+  await page.evaluate(async () => { const vyber = window.__diskVyber;
+    return (await onlineKopieDiskAuto()) === true
+      && [...window.__diskSoubory.keys()].some(j => /^otisk_/.test(j)) && window.__diskVyber === vyber; }));
+pamet.set('zalohy/kopie-disk', JSON.stringify({ kdy: new Date(Date.now() - 8 * 86400000).toISOString(), soubor: 'otisk_stary.json' }));
+await page.evaluate(() => onlineOtiskyNacti());
+await page.evaluate(() => { window.__diskSoubory.clear(); window.__dlgHeslo = null; });
+test('K3-N1 O7: automatika po přihlášení se zrušeným heslem kopii nepořídí a záznam nezmění',
+  await page.evaluate(async () => (await onlineKopieDiskAuto()) === false && window.__diskSoubory.size === 0)
+    && JSON.parse(pamet.get('zalohy/kopie-disk')).soubor === 'otisk_stary.json');
+await page.evaluate(() => { window.__dlgHeslo = 'Zkusebni.Heslo.123'; });
+test('K3-N1 O7: automatika s heslem kopii pořídí', await page.evaluate(async () => (await onlineKopieDiskAuto()) === true));
 test('N6: čerstvá kopie (méně než 7 dní) se automaticky neopakuje',
   await page.evaluate(async () => { window.__diskSoubory.clear(); return (await onlineKopieDiskAuto()) === false && window.__diskSoubory.size === 0; }));
 pamet.set('zalohy/kopie-disk', JSON.stringify({ kdy: new Date(Date.now() - 15 * 86400000).toISOString(), soubor: 'otisk_stary.json' }));
@@ -915,6 +965,27 @@ await page.evaluate(() => onlineOtiskyNacti().then(() => render()));
 await page.waitForTimeout(150);
 test('N6: kopie starší než 14 dní → varování v Nastavení → Databáze',
   /id="online-kopie-disk" class="seznam-varovani"[^>]*>[^<]*stará 15 dní/.test(await page.locator('#nastaveni-panel').innerHTML()));
+/* K3-N13 (O7): pojistka retence přeskočila mazání → hlídka v Databázi */
+pamet.set('zalohy/retence-varovani', JSON.stringify({ kdy: new Date(Date.now() - 3600000).toISOString(), den: '2026-10-21',
+  predchozi: '2026-10-20', pred: { pocetZakazek: 100, pocetUctu: 10 }, nove: { pocetZakazek: 40, pocetUctu: 10 }, text: 'x' }));
+await page.evaluate(() => onlineOtiskyNacti().then(() => render()));
+await page.waitForTimeout(150);
+test('K3-N13 O7: varování pojistky retence svítí v Nastavení → Databáze',
+  /id="online-retence-varovani" class="seznam-varovani"[^>]*>[^<]*zakázek 100 → 40/.test(await page.locator('#nastaveni-panel').innerHTML()));
+pamet.set('zalohy/retence-varovani', JSON.stringify({ kdy: new Date(Date.now() - 31 * 86400000).toISOString(), den: 'x', predchozi: 'y',
+  pred: { pocetZakazek: 100 }, nove: { pocetZakazek: 1 } }));
+await page.evaluate(() => onlineOtiskyNacti().then(() => render()));
+await page.waitForTimeout(150);
+test('K3-N13 O7: varování starší 30 dní už nesvítí', !(await page.locator('#nastaveni-panel').innerHTML()).includes('online-retence-varovani'));
+pamet.delete('zalohy/retence-varovani');
+/* K3-N4 (O7): limit vynucených otisků — ruční záloha hned po jiné ukáže, kdy to půjde */
+uvolniLimitZaloh();
+await page.evaluate(() => onlineZalohaTed());
+test('K3-N4 O7: druhá ruční záloha do 10 minut → hláška s časem, kdy to půjde',
+  await page.evaluate(async () => (await onlineZalohaTed()) === false && /Znovu to půjde dnes v \d{1,2}:\d{2}/.test(ONLINE_STAV.hlaska)),
+  await page.evaluate(() => ONLINE_STAV.hlaska));
+test('K3-N4 O7: otisk při přihlášení je pod týmž limitem — klient dostane chybu se stavem 429 (onlineZalohaAuto ji zamlčí)',
+  await page.evaluate(async () => (await onlineApi('/api/zaloha_vynuceno', { duvod: 'auto' }).then(() => 'ok', e => e.stav)) === 429));
 test('N6: obchodník tlačítko ani hlídku kopie nevidí', await page.evaluate(() => {
   const ja = ONLINE_STAV.ja; ONLINE_STAV.ja = Object.assign({}, ja, { role: 'Obchodník' });
   try { const h = renderOnlineKarta(); return !h.includes('online-kopie-disk') && !h.includes('Zkopírovat zálohu na Disk'); }
@@ -1142,6 +1213,7 @@ const soubeh = await page.evaluate(async () => {
 test('dva ruční zápisy najednou se serializují a žádný neskončí kolizí', soubeh.a === true && soubeh.b === true && soubeh.kolize === null, soubeh);
 /* úklid: původní název, čerstvý otisk (další kroky s ním počítají), zámek jako předtím */
 await page.evaluate(async () => { ZAK.nazevAkce = 'Online ověření'; await onlineUloz(); ONLINE_STAV.zmenaUzivatele = false; });
+uvolniLimitZaloh();
 await page.evaluate(() => onlineZalohaTed());
 await page.waitForFunction(() => { try { return !ONLINE_STAV.pracuje && /Záloha databáze pořízena/.test(ONLINE_STAV.hlaska); } catch (e) { return false; } },
   null, { timeout: 8000 });

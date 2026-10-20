@@ -724,6 +724,7 @@ const PREKLAD = {
   "ROZŠÍŘENÍ CENOVÉ NABÍDKY – PŘÍPLATKY": ["QUOTATION EXTENSIONS – SURCHARGES","ERWEITERUNG DES ANGEBOTS – ZUSCHLÄGE","EXTENSIONS DE L'OFFRE – SUPPLÉMENTS"],
   "Tisk specifikace / PDF": ["Print specification / PDF","Spezifikation drucken / PDF","Imprimer la spécification / PDF"],
   "šířka": ["width","Breite","largeur"],
+  "šířka skla": ["glass width", "Glasbreite", "largeur du verre"],
   "hloubka": ["depth","Tiefe","profondeur"],
   "sazba": ["rate","Satz","taux"],
 
@@ -1033,6 +1034,13 @@ const PREKLAD = {
   "100 % z celkové ceny za tuto činnost, fakturováno měsíčně": ["100 % of the total price for this service, invoiced monthly", "100 % des Gesamtpreises für diese Leistung, monatlich abgerechnet", "100 % du prix total de cette prestation, facturé mensuellement"],
   "Platba po zajištění autorského dozoru a součtu hodin": ["Payment after the designer's site supervision has been provided and the hours totalled", "Zahlung nach erbrachter planerischer Objektüberwachung und Summierung der Stunden", "Paiement après réalisation du suivi architectural et décompte des heures"],
   "50 % z celkové ceny za tuto činnost": ["50 % of the total price for this service", "50 % des Gesamtpreises für diese Leistung", "50 % du prix total de cette prestation"],
+  /* D2 (20. 10. 2026): cestovné u akce mimo Prahu (šablona PROJ D. Sikory,
+   * symboly {{PROJ_CESTOVNE_…}}); {X} = cena 1 výjezdu v měně dokumentu.
+   * Výchozí znění — ke kontrole rodilými mluvčími (podklady/D2_SIKORA_PROJ.md). */
+  "Cena zahrnuje i cestovní náklady na 1 výjezd technika na stavbu ({X} bez DPH).": ["The price also includes travel costs for 1 visit of a technician to the site ({X} excl. VAT).", "Der Preis beinhaltet auch die Reisekosten für 1 Fahrt eines Technikers zur Baustelle ({X} ohne MwSt.).", "Le prix comprend également les frais de déplacement pour 1 visite d'un technicien sur le chantier ({X} HT)."],
+  "Případné další cesty budou fakturovány individuálně.": ["Any further trips will be invoiced separately.", "Eventuelle weitere Fahrten werden gesondert in Rechnung gestellt.", "Les éventuels déplacements supplémentaires seront facturés séparément."],
+  "Cena NEZAHRNUJE cestovní náklady – případné cesty budou fakturovány individuálně ve výši {X} bez DPH za jeden výjezd.": ["The price does NOT INCLUDE travel costs – any trips will be invoiced separately at {X} excl. VAT per visit.", "Der Preis beinhaltet KEINE Reisekosten – eventuelle Fahrten werden gesondert mit {X} ohne MwSt. je Fahrt in Rechnung gestellt.", "Le prix N'INCLUT PAS les frais de déplacement – les éventuels déplacements seront facturés séparément à raison de {X} HT par visite."],
+  "Cestovní náklady na každý 1 výjezd AD na stavbu ({X} bez DPH) budou fakturovány individuálně.": ["Travel costs for each site visit within the designer's supervision ({X} excl. VAT) will be invoiced separately.", "Die Reisekosten für jede Fahrt im Rahmen der Autorenaufsicht zur Baustelle ({X} ohne MwSt.) werden gesondert in Rechnung gestellt.", "Les frais de déplacement pour chaque visite de chantier au titre de la supervision de l'auteur ({X} HT) seront facturés séparément."],
   "Platba po vydání kolaudačního rozhodnutí": ["Payment after the final building approval decision has been issued", "Zahlung nach Erteilung des Bauabnahmebescheids", "Paiement après délivrance de la décision de réception des travaux"],
   "Platba před zahájením kolaudačního řízení": ["Payment before the final building approval procedure starts", "Zahlung vor Beginn des Bauabnahmeverfahrens", "Paiement avant le début de la procédure de réception des travaux"],
   "50 % z nabídkové ceny za tuto činnost": ["50 % of the quoted price for this service", "50 % des Angebotspreises für diese Leistung", "50 % du prix proposé pour cette prestation"],
@@ -1133,6 +1141,13 @@ const PREKLAD = {
   "situace stavby": ["site plan", "Lageplan", "plan de situation"],
   "Stavební část projektu:": ["Building part of the design:", "Baulicher Teil der Planung:", "Partie bâtiment du projet :"],
   "Dokumentace pro povolení záměru – část 1:": ["Documentation for the project permit – part 1:", "Unterlagen für die Vorhabengenehmigung – Teil 1:", "Dossier de demande d'autorisation – partie 1 :"],
+  /* D1 (20. 10. 2026): úvod DPZ v znění online nabídky a šablony PROJ v7
+   * ({{PROJ_DPZ_UVOD}}) — se studií (bez čárky za „dokumentaci") a bez ní. */
+  "Dokumentace pro povolení záměru (DPZ) navazuje na vzájemně odsouhlasenou STUDII PROVEDITELNOSTI. Ta rozpracovává dokumentaci dle platné vyhlášky do legislativou požadované úrovně s autorizacemi inženýrů dle příslušných oborů.": ["The documentation for the project permit (DPZ) follows on from the mutually agreed FEASIBILITY STUDY. It develops the documentation in accordance with the applicable decree to the level required by legislation, with the authorisations of engineers in the relevant disciplines.", "Die Unterlagen für die Vorhabengenehmigung (DPZ) bauen auf der gemeinsam abgestimmten MACHBARKEITSSTUDIE auf. Sie arbeiten die Dokumentation gemäß geltender Verordnung bis zum gesetzlich geforderten Niveau aus, mit Autorisierung der Ingenieure der jeweiligen Fachrichtungen.", "Le dossier de demande d'autorisation (DPZ) s'appuie sur l'ÉTUDE DE FAISABILITÉ validée d'un commun accord. Il développe la documentation conformément au décret en vigueur jusqu'au niveau exigé par la législation, avec les agréments des ingénieurs des disciplines concernées."],
+  "Dokumentace pro povolení záměru (DPZ) rozpracovává dokumentaci dle platné vyhlášky do legislativou požadované úrovně s autorizacemi inženýrů dle příslušných oborů.": ["The documentation for the project permit (DPZ) is prepared in accordance with the applicable decree to the level required by legislation, with the authorisations of engineers in the relevant disciplines.", "Die Unterlagen für die Vorhabengenehmigung (DPZ) werden gemäß geltender Verordnung bis zum gesetzlich geforderten Niveau ausgearbeitet, mit Autorisierung der Ingenieure der jeweiligen Fachrichtungen.", "Le dossier de demande d'autorisation (DPZ) est élaboré conformément au décret en vigueur jusqu'au niveau exigé par la législation, avec les agréments des ingénieurs des disciplines concernées."],
+  "Dokumentace pro povolení záměru obsahuje tyto části:": ["The documentation for the project permit contains the following parts:", "Die Unterlagen für die Vorhabengenehmigung umfassen folgende Teile:", "Le dossier de demande d'autorisation comprend les parties suivantes :"],
+  /* D1 Q2 (rozhodnutí J. V. 20. 10. 2026): termín hrubopisu DPZ bez studie */
+  "do 12 týdnů od zpracování výstupů ze zaměření": ["within 12 weeks of processing the survey outputs", "innerhalb von 12 Wochen nach Ausarbeitung der Aufmaßergebnisse", "dans un délai de 12 semaines après l'élaboration des résultats du relevé"],
   "Dokumentace povolení záměru obsahuje tyto části:": ["The documentation for the project permit contains the following parts:", "Die Unterlagen für die Vorhabengenehmigung umfassen folgende Teile:", "Le dossier de demande d'autorisation comprend les parties suivantes :"],
   "Dokumentace pro povolení záměru (DPZ) navazuje na vzájemně odsouhlasenou STUDII PROVEDITELNOSTI. Ta rozpracovává dokumentaci, dle platné vyhlášky do legislativou požadované úrovně s autorizacemi inženýrů dle příslušných oborů.": ["The documentation for the project permit (DPZ) follows on from the mutually agreed FEASIBILITY STUDY. It develops the documentation in accordance with the applicable decree to the level required by legislation, with the authorisations of engineers in the relevant disciplines.", "Die Unterlagen für die Vorhabengenehmigung (DPZ) bauen auf der gemeinsam abgestimmten MACHBARKEITSSTUDIE auf. Sie arbeiten die Dokumentation gemäß geltender Verordnung bis zum gesetzlich geforderten Niveau aus, mit Autorisierung der Ingenieure der jeweiligen Fachrichtungen.", "Le dossier de demande d'autorisation (DPZ) s'appuie sur l'ÉTUDE DE FAISABILITÉ validée d'un commun accord. Il développe la documentation conformément au décret en vigueur jusqu'au niveau exigé par la législation, avec les agréments des ingénieurs des disciplines concernées."],
   "DPZ": ["DPZ", "DPZ", "DPZ"],
@@ -1167,6 +1182,8 @@ const PREKLAD = {
   "Studie proveditelnosti – podoba úprav domu, umístění výtahové šachty a technologie výtahu, se zpracovává jako prvotní dokumentace, do které se zapracují veškeré požadavky investora v kombinaci s realizovatelností záměru a legislativních požadavků. Tím se docílí podkladu, který poté slouží nejen pro projednání záměru na stavebním úřadě, ale také je možné ho dále rozpracovat do dalších stupňů projektových dokumentací.": ["Feasibility study – the form of the building modifications, the location of the lift shaft and the lift technology – is prepared as the initial documentation incorporating all of the client's requirements together with the feasibility of the project and the legislative requirements. The result is a basis that serves not only for discussing the project with the building authority but can also be developed further into the subsequent stages of the design documentation.", "Machbarkeitsstudie – Gestaltung der Gebäudeanpassungen, Lage des Aufzugsschachts und Aufzugstechnik – wird als erste Dokumentation erstellt, in die alle Anforderungen des Bauherrn zusammen mit der Realisierbarkeit des Vorhabens und den gesetzlichen Anforderungen eingearbeitet werden. So entsteht eine Grundlage, die nicht nur der Abstimmung des Vorhabens mit dem Bauamt dient, sondern auch in die weiteren Planungsphasen weiterentwickelt werden kann.", "Étude de faisabilité – forme des aménagements du bâtiment, emplacement de la gaine et technologie de l'ascenseur – élaborée comme document initial intégrant toutes les exigences du maître d'ouvrage ainsi que la faisabilité du projet et les exigences légales. On obtient ainsi une base qui sert non seulement à l'instruction du projet auprès du service de l'urbanisme, mais qui peut aussi être développée dans les phases suivantes du projet."],
   "ST": ["ST", "ST", "ST"],
   "POHLED NA OBJEKT": ["VIEW OF THE BUILDING", "ANSICHT DES GEBÄUDES", "VUE DU BÂTIMENT"],
+  /* D1 (20. 10. 2026): titul nabídky PROJ bez studie ({{PROJ_TITUL_CINNOSTI}}, šablona v7) */
+  "PROJEKTOVÉ a INŽENÝRSKÉ ČINNOSTI": ["DESIGN and ENGINEERING SERVICES", "PLANUNGS- und INGENIEURLEISTUNGEN", "PRESTATIONS DE CONCEPTION et D'INGÉNIERIE"],
   "Navazující PROJEKTOVÉ a INŽENÝRSKÉ ČINNOSTI": ["Follow-up DESIGN and ENGINEERING SERVICES", "Anschließende PLANUNGS- und INGENIEURLEISTUNGEN", "PRESTATIONS DE CONCEPTION et D'INGÉNIERIE ultérieures"],
   /* ÚSEKY KOLEM SYMBOLŮ A PLATEBNÍ PODMÍNKY (P3 / K14-N63, K16-N84,
    * 25. 9. 2026). Mutace šablon CN v12 a PROJ v2 nechávaly česky hlavičku
@@ -1279,7 +1296,7 @@ function prekladPoradiFr(n) { return parseInt(n, 10) === 1 ? '1re' : parseInt(n,
  * („5 ks, šířka 600 mm") — přeloží se obecné heslo „šířka" ze slovníku
  * a číslo s „mm" zůstane. NÁVRH PŘEKLADU — čeká na odbornou kontrolu J. V. */
 const PREKLAD_SVETLIKY_CAST = '(?:(?:Světlík nad šachetními dveřmi|Nadpraží nad šachetními dveřmi|Světlíky na bocích dveří): \\d+ ks'
-  + '(?:, šířka \\d+ mm)?'
+  + '(?:, šířka(?: skla)? \\d+ mm)?'   // #442: šířka skla (od v20.10.3), šířka ve starších otiscích
   + '(?:, (?:sklo VSG 4\\.4\\.1|sklo VSG 4\\.4\\.2|izolační dvojsklo|Cetris|plech|výplň zajistí objednatel)(?: \\(stěna [AC]\\))?)*'
   + '(?:, (?:na terče|v lištách))?|Nadpraží nad šachetními dveřmi zajistí objednatel)';
 const PREKLAD_SVETLIKY_RE = new RegExp('^' + PREKLAD_SVETLIKY_CAST + '(?:; ' + PREKLAD_SVETLIKY_CAST + ')*$');
@@ -1298,8 +1315,8 @@ function prekladSvetlikyDveri(text, lang) {
     const polozky = cast.slice(i + 2).split(', ').map(p => {
       let m = p.match(/^(\d+) ks$/);
       if (m) return m[1] + ' ' + ks;
-      m = p.match(/^šířka (\d+) mm$/);   // #381: ruční šířka bočního světlíku
-      if (m) return male(T('šířka')) + ' ' + m[1] + ' mm';
+      m = p.match(/^šířka( skla)? (\d+) mm$/);   // #381 ruční šířka bočního světlíku, #442 šířka skla
+      if (m) return male(T(m[1] ? 'šířka skla' : 'šířka')) + ' ' + m[2] + ' mm';
       m = p.match(/^(.+) \(stěna ([AC])\)$/);
       if (m) return male(T(m[1])) + ' (' + male(T('stěna')) + ' ' + m[2] + ')';
       return male(T(p));

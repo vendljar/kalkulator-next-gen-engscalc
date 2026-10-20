@@ -26,6 +26,11 @@
  * ============================================================ */
 
 /* Továrna = dnešní hodnoty z kódu (stav e3995e6), aby se výstup nezměnil. */
+/* TERMÍN HRUBOPISU DPZ BEZ STUDIE (D1) — rozhodnutí J. V. 20. 10. 2026 ~11:35:
+ * pevných 12 týdnů s navázáním D. Sikory (na výstupy ze zaměření); se studií
+ * zůstává „do 10–12 týdnů od schválení studie investorem a objednání". */
+const PODMINKY_TERMIN_DPZ_BEZ_STUDIE = 'do 12 týdnů od zpracování výstupů ze zaměření';
+
 const PODMINKY_VYCHOZI = {
   v: 1,
   /* Číselník sazeb smluvní pokuty (dřív KRYCI_POKUTY v kryci.js a kopie
@@ -102,7 +107,11 @@ const PODMINKY_VYCHOZI = {
       ['Provedení detailního zaměření a stavebně technického průzkumu', 'ZAMĚŘENÍ na stavbě do 4 týdnů od objednání a předání plné moci; zpracování VÝSTUPŮ do 4–6 týdnů od zaměření', 'zamereni'],
       ['Zpracování STUDIE PROVEDITELNOSTI (SP)', 'do 10–12 týdnů od zpracování výstupů ze zaměření', 'studie'],
       ['Projednání s odborem památkové péče HMP', 'do cca 2–3 měsíců od podání žádosti – záleží na vytíženosti úředníků státní správy', 'projednani'],
-      ['Zpracování dokumentace pro dotčené orgány (hrubopis DPZ)', 'do 10–12 týdnů od schválení studie investorem a objednání', 'dpz'],
+      /* D1 (20. 10. 2026): termín hrubopisu DPZ podle studie — klíč
+       * „dpz+studie" / „dpz-studie" (viz vRozsahu v nabidka_proj.js). Znění
+       * bez studie je v PODMINKY_TERMIN_DPZ_BEZ_STUDIE (vybírá J. V.). */
+      ['Zpracování dokumentace pro dotčené orgány (hrubopis DPZ)', 'do 10–12 týdnů od schválení studie investorem a objednání', 'dpz+studie'],
+      ['Zpracování dokumentace pro dotčené orgány (hrubopis DPZ)', PODMINKY_TERMIN_DPZ_BEZ_STUDIE, 'dpz-studie'],
       ['Zajištění stanovisek dotčených orgánů *)', 'cca do 4 týdnů od podání žádosti (v případě potřeby stanoviska hygieny a/nebo památkové péče cca do 2,5 měsíce)', 'ic'],
       ['Dopracování dokumentace pro povolení záměru (čistopis DPZ)', 'proběhne v průběhu lhůty vyjádření dotčených orgánů', 'dpz'],
       ['Podání žádosti o povolení záměru', 'po obdržení souhlasných stanovisek dotčených orgánů (+ 14 dní v případě nutnosti zapracování podmínek dotčených orgánů do dokumentace)', 'ic'],
@@ -119,6 +128,8 @@ const PODMINKY_VETY_TOKENY = { zaloha: ['{PORADI}', '{PROC}'], faktura2: ['{PORA
 const PODMINKY_VETA_MAX = 1000;
 const PODMINKY_TYPY_SMLOUVY = ['Naše bez úprav', 'Naše s úpravami', 'Cizí'];
 const PODMINKY_PROJ_SEKCE = ['zamereni', 'studie', 'projednani', 'dpz', 'ic', 'dps', 'ezc', 'kolaudace', 'geodet'];
+/* klíče termínů navíc: činnost jen se studií / jen bez ní (D1) */
+const PODMINKY_PROJ_SEKCE_PODMINENE = ['dpz+studie', 'dpz-studie'];
 const PODMINKY_RADKU_MAX = 30;
 
 /* SOUČET SPLÁTEK OCK ≠ 100 % (Q4) — ROZHODNUTÍ J. V. 19. 10. 2026: „Nedovolit
@@ -244,7 +255,7 @@ function podmRadkyPlatne(klic, jaz, v) {
   const txt = x => typeof x === 'string' && x.trim() !== '' && x.length <= PODMINKY_VETA_MAX && !/[\r\n]/.test(x);
   if (klic !== 'terminy') return v.every(txt);
   return v.every(r => Array.isArray(r) && txt(r[0]) && txt(r[1])
-    && (jaz !== 'cz' || PODMINKY_PROJ_SEKCE.indexOf(r[2]) >= 0) && r.length === (jaz === 'cz' ? 3 : 2));
+    && (jaz !== 'cz' || PODMINKY_PROJ_SEKCE.indexOf(r[2]) >= 0 || PODMINKY_PROJ_SEKCE_PODMINENE.indexOf(r[2]) >= 0) && r.length === (jaz === 'cz' ? 3 : 2));
 }
 
 /* ---------- sloučení Firmy s továrnou ---------- */
@@ -341,12 +352,26 @@ function podminkySoucetOck(ef) {
 
 /* ---------- kontrola před zveřejněním ---------- */
 
+/* SOUHRNNÝ STROP VELIKOSTI (K3-N18, rozhodnutí J. V. 20. 10. 2026: 500 kB).
+ * Délky a počty řádků jsou omezené po polích, ale bloky textů PROJ ve čtyřech
+ * jazycích dají dohromady i megabajty — a Firma jde s každou zálohou,
+ * otiskem a načtením aplikace. Měří se UTF-8 bajty JSON záznamu podmínek. */
+const PODMINKY_MAX_B = 500 * 1024;
+function podminkyVelikostB(p) {
+  const t = JSON.stringify(p === undefined ? null : p);
+  return (typeof TextEncoder !== 'undefined') ? new TextEncoder().encode(t).length : unescape(encodeURIComponent(t)).length;
+}
+
 /* Seznam vad uložených podmínek (prázdný = v pořádku). Chybějící objekt
  * nevadí — platí továrna. Volá firmaLzeZverejnit (prohlížeč i server). */
 function podminkyVady(p) {
   if (p === undefined || p === null) return [];
   if (typeof p !== 'object' || Array.isArray(p)) return ['podmínky nejsou objekt'];
   const v = [];
+  const velikost = podminkyVelikostB(p);
+  if (velikost > PODMINKY_MAX_B)
+    v.push('podmínky jsou příliš velké: ' + Math.ceil(velikost / 1024) + ' kB, nejvýš ' + (PODMINKY_MAX_B / 1024)
+      + ' kB — zkraťte texty nabídky PROJ nebo věty (nejvíc místa berou cizí jazyky)');
   if (p.sazbyPokut !== undefined && !podmSazbyPlatne(p.sazbyPokut))
     v.push('sazby pokut (1–' + PODMINKY_VOLEB_MAX + ' různých, první „0", další ve tvaru „N % / den")');
   if (p.limitPokutProc !== undefined && !podmCeleVRozsahu(p.limitPokutProc, 0, 100))
@@ -536,12 +561,43 @@ function podminkyNastav(p, cast, pole, hodnota) {
   return out;
 }
 
+/* ZMRAZENÍ PRO ODESLANOU NABÍDKU (K3-N2, rozhodnutí J. V. 20. 10. 2026).
+ * Věty platebního kalendáře a díly vět SoD (OCK) a texty nabídky PROJ
+ * (včetně `dolozkyTisk`) se při PRVNÍM zamčení varianty opíšou do varianty
+ * (kryciZmrazPodminky → data.kryci.zmrazenoPodminky, kryciProjZmrazPodminky
+ * → data.kryciProj.zmrazenoPodminky). Dotisk zamčené varianty pak čte
+ * opsané znění, ne aktuální Firmu. Opisuje se EFEKTIVNÍ znění (Firma
+ * sloučená s továrnou), takže pozdější změna továrny v kódu dotisk taky
+ * nezmění. `casti` = ['vety'] / ['nabidkaProj'] (jen to, co list tiskne). */
+const PODMINKY_ZMRAZ_CASTI = ['vety', 'nabidkaProj'];
+function podminkySnimek(firma, casti) {
+  const ef = podminkyEf(firma);
+  const out = { v: 1 };
+  (Array.isArray(casti) ? casti : PODMINKY_ZMRAZ_CASTI).forEach(k => {
+    if (PODMINKY_ZMRAZ_CASTI.indexOf(k) >= 0) out[k] = podmKopie(ef[k]);
+  });
+  return out;
+}
+/* Efektivní podmínky zamčené varianty: aktuální Firma, přes ni opsané
+ * části snímku. Snímek prochází týmiž pravidly jako Firma (podminkyEf) —
+ * poškozené pole spadne na továrnu, nikdy na výjimku. Bez snímku (varianta
+ * zamčená před v20.10.2) = aktuální Firma, jako dosud. */
+function podminkyEfZmrazene(firma, snimek) {
+  const ef = podminkyEf(firma);
+  if (!snimek || typeof snimek !== 'object' || Array.isArray(snimek)) return ef;
+  const z = podminkyEf({ podminky: { vety: snimek.vety, nabidkaProj: snimek.nabidkaProj } });
+  PODMINKY_ZMRAZ_CASTI.forEach(k => {
+    if (snimek[k] && typeof snimek[k] === 'object' && !Array.isArray(snimek[k])) ef[k] = z[k];
+  });
+  return ef;
+}
+
 /* Jeden objekt pro ostatní moduly — v prohlížeči jsou soubory v jednom
  * scope, v Node se načte přes require (vzor firmaPlanModul). */
-const PODMINKY = { PODMINKY_VYCHOZI, PODMINKY_SOUCET_BLOKUJE, PODMINKY_JAZYKY, PODMINKY_TYPY_SMLOUVY, podminkyEf, podminkyUpraveno,
+const PODMINKY = { PODMINKY_VYCHOZI, PODMINKY_TERMIN_DPZ_BEZ_STUDIE, PODMINKY_SOUCET_BLOKUJE, PODMINKY_JAZYKY, PODMINKY_TYPY_SMLOUVY, podminkyEf, podminkyUpraveno,
   podminkyVeta, podminkyVetaJenVychoziPreklad, podminkyTextProj, podminkyNastavVetu, podminkyNastavTextProj, podmPoradi,
   podminkyZalohaText, podminkyZalohyVolby, podminkyZalohaVychozi, podminkyFaktura2, podminkyKonecna,
   podminkyLimitVolby, podminkyLimitText, podminkySoucetOck, podminkyVady, podminkyCiste, podminkyNastav,
-  podmProcText, podmCislo };
+  podmProcText, podmCislo, podminkySnimek, podminkyEfZmrazene, podminkyVelikostB, PODMINKY_MAX_B };
 
 if (typeof module !== 'undefined') module.exports = Object.assign({ PODMINKY }, PODMINKY);
