@@ -6991,6 +6991,20 @@
     "430"
    ],
    "pozn": "Předběžné id (přidělí koordinace při sloučení)."
+  },
+  {
+   "id": "448",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "nazev": "B183 volba (b): plocha pásu a světlíku v obsahu cenové výjimky na 0,1 m² (dřív schválené platí dál)",
+   "proc": "Audit kola 27 (B183): obsah výjimky nesl plochu na celé m², takže zvětšení po schválení např. 2,50 → 3,49 m² dalo týž obsah — nekrytý nárůst až skoro 1 m² na pás či světlík. Rozhodnutí J. V. 20. 10. 2026: volba (b), 0,1 m².",
+   "detail": "`vyjimkyM2Schvaleni` na desetiny nahoru (J. V. 20. 10. ~13:20: vždy horší varianta; 2,50 → 2,5, 2,51 i 2,60 → 2,6, 2,61 → 2,7), obsah s pásem nese značku tvaru `v: 2`. Dřív schválené výjimky (celé m², bez značky) se porovnávají i obsahem starého tvaru (`obsahStary`, `vyjimkaObsahSedi`) v prohlížeči i na serveru — platí, dokud se jejich obsah nezmění; nové schválení razí server vždy v novém tvaru, starý tvar podvrhnout nejde (403). Karta Cenové výjimky ukazuje plochu na 0,1 m², u dřív schválené na celé m² s poznámkou (V7-N1).",
+   "hotovoKdyz": "Testy s pojistkou (src/test_vyjimky.js, netlify/test_vyjimky.mjs), cílené mutace „B183“ chycené, mez < 0,1 m² v BEZPECNOST_MEZE.md.",
+   "kde": "`src/vyjimky.js`, `src/ui/schvalovani_ui.js`, `mutace_jadro.mjs`, `netlify/mutace.mjs`",
+   "hotovoV": "v20.10.5",
+   "pozn": "Id 448 přidělila koordinace (předběžné 441 kolidovalo s D1) (přidělí koordinace při sloučení; 438–440 nechány souběžným dávkám O7, D1, D2)."
   }
  ],
  "meta" : {

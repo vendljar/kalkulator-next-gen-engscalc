@@ -81,7 +81,10 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   'podminky.js',
   /* nabidka_proj.js (W1, 19. 10. 2026): symboly textů nabídky PROJ pro
    * šablonu Wordu v6 — termíny jen nabízených činností, dvojice sloupců. */
-  'nabidka_proj.js'];
+  'nabidka_proj.js',
+  /* vyjimky.js (B183, 20. 10. 2026): obsah cenové výjimky — plocha pásu
+   * a světlíku na 0,1 m², dřív schválené výjimky starým tvarem. */
+  'vyjimky.js'];
 /* Filtr = první argument, který není přepínač (stejně jako netlify/mutace.mjs). */
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 /* --kontrola (23. 9. 2026, nález N19): jen ověří, že každý hledaný úsek je
@@ -136,6 +139,51 @@ function najdiSady() {
  *   proc   … co by se v praxi pokazilo, kdyby tuhle chybu někdo udělal doopravdy
  * ============================================================ */
 const MUTACE = [
+  /* ---------- B183: plocha v obsahu cenové výjimky na 0,1 m² (20. 10. 2026, v20.10.5) ---------- */
+  { nazev: 'B183: plocha v obsahu výjimky zpět na celé m²', soubor: 'vyjimky.js',
+    hledej: "  return typeof x === 'number' && isFinite(x) ? Math.ceil(x * 10 - 1e-6) / 10 : null;",
+    nahrad: "  return typeof x === 'number' && isFinite(x) ? Math.round(x) : null;",
+    proc: 'zvětšení plochy pásu po schválení až o skoro 1 m² by výjimku nechalo platit' },
+  { nazev: 'B183: plocha zaokrouhlená matematicky místo nahoru', soubor: 'vyjimky.js',
+    hledej: "Math.ceil(x * 10 - 1e-6) / 10",
+    nahrad: "Math.round(x * 10) / 10",
+    proc: 'schválení 2,51 m² by drželo 2,5 m² — obsah by nepokrýval horší variantu (J. V.)' },
+  { nazev: 'B183: plocha zaokrouhlená dolů místo nahoru', soubor: 'vyjimky.js',
+    hledej: "Math.ceil(x * 10 - 1e-6) / 10",
+    nahrad: "Math.floor(x * 10) / 10",
+    proc: 'schvalovatel by viděl menší plochu, než pás má' },
+  { nazev: 'B183: nahoru bez tolerance šumu plovoucí čárky', soubor: 'vyjimky.js',
+    hledej: "Math.ceil(x * 10 - 1e-6) / 10",
+    nahrad: "Math.ceil(x * 10) / 10",
+    proc: 'plocha 2,5 m² se šumem (2,5000000000000004) by v obsahu stála jako 2,6' },
+  { nazev: 'B183: nový obsah bez značky tvaru', soubor: 'vyjimky.js',
+    hledej: "    if (pasy.length && !stary) ob.v = VYJ_OBSAH_TVAR;",
+    nahrad: "",
+    proc: 'nové schválení s celou plochou (3 m²) by se pletlo se starým tvarem a starým zaokrouhlením by platilo dál' },
+  { nazev: 'B183: starý tvar nese značku', soubor: 'vyjimky.js',
+    hledej: "  const obsahStary = pasy.length ? zapis(vyjimkyM2Stary, true) : '';",
+    nahrad: "  const obsahStary = pasy.length ? zapis(vyjimkyM2Stary, false) : '';",
+    proc: 'dřív schválené výjimky (bez značky) by se se starým tvarem nikdy neshodly a spadly do „čeká"' },
+  { nazev: 'B183: starý tvar se nepočítá', soubor: 'vyjimky.js',
+    hledej: "  const obsahStary = pasy.length ? zapis(vyjimkyM2Stary, true) : '';",
+    nahrad: "  const obsahStary = '';",
+    proc: 'dřív schválené výjimky s pásem by po nasazení přestaly platit' },
+  { nazev: 'B183: shoda jen přesným textem (bez starého tvaru)', soubor: 'vyjimky.js',
+    hledej: "  return typeof obsah.obsahStary === 'string' && obsah.obsahStary !== '' && rec.obsah === obsah.obsahStary;",
+    nahrad: "  return false;",
+    proc: 'dřív schválené výjimky by po nasazení přestaly platit' },
+  { nazev: 'B183: přepočet záznamu vrátí dřív schválenou do „čeká"', soubor: 'vyjimky.js',
+    hledej: "  if (vyjimkaObsahSedi(rec, obsah) && rec.polozek === obsah.polozek && rec.pasu === obsah.pasu) return false;",
+    nahrad: "  if (rec.obsah === obsah.obsah && rec.polozek === obsah.polozek && rec.pasu === obsah.pasu) return false;",
+    proc: 'otevření záložky Schvalování by dřív schválenou výjimku shodilo' },
+  { nazev: 'B183: kategorie dřív zamítnuté/schválené = „čeká"', soubor: 'vyjimky.js',
+    hledej: "  if (!vyjimkaObsahSedi(rec, obsah)) return 'ceka';",
+    nahrad: "  if (rec.obsah !== obsah.obsah) return 'ceka';",
+    proc: 'záložka by u dřív rozhodnuté výjimky ukazovala „čeká"' },
+  { nazev: 'B183: karta ignoruje starý tvar', soubor: 'vyjimky.js',
+    hledej: "  const c = (stary ? vyjimkyM2Stary : vyjimkyM2Schvaleni)(p.m2);",
+    nahrad: "  const c = vyjimkyM2Schvaleni(p.m2);",
+    proc: 'u dřív schválené výjimky by karta ukázala jiné číslo, než schvalovatel schválil' },
   /* ---------- #157: smlouva o dílo v jazyce tisku (17. 10. 2026, v17.10.6) ---------- */
   { nazev: '#157: smlouva v cizím jazyce vznikne i bez jazykové šablony', soubor: 'sod.js',
     hledej: "  if ((typ !== 'sod' && typ !== 'sodProj') || !L || L === 'cz' || maMutaci) return '';",

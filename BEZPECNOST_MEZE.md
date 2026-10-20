@@ -480,11 +480,20 @@ s pásem „jiné" schválené před v17.10.4 přešly do „čeká znovu".
 výjimky s pásem „jiné“ nese i **plochu každého pásu z výsledku jádra**
 a klíč `l` se **světlíky „jiné“ u dveří** (`[kde, stěna, název, sazba,
 m²]`) — `vyjimkyPlochyJadra`, server i prohlížeč počítají `vypocet` týmž
-katalogem JEKLY (`ctx.jekly`). Plocha je v obsahu **na celé m²**: posun
-vnějšího rozměru o centimetry (profily, zasklení) u nízkého pásu schválení
-neshodí. Kvůli zaokrouhlení může nárůst bez nového schválení dosáhnout
-téměř 1 m² (např. 2,50 → 3,49 m²): nekrytý zbytek je **< 1 m² na pás
-či světlík** × rozdíl sazeb (vědomá mez; B183, kolo 27, výchozí volba 18. 10.). Chyba výpočtu nebo chybějící
+katalogem JEKLY (`ctx.jekly`). Plocha je v obsahu **na 0,1 m² nahoru**
+(B183 volba b, J. V. 20. 10. 2026, v20.10.5; do v20.10.4 na celé m²):
+2,50 → 2,5; 2,51 i 2,60 → 2,6; 2,61 → 2,7 — schvalovatel vidí a schvaluje
+vždy horší variantu (plochu nejvýš o necelou desetinu větší). Nekrytý
+nárůst bez nového schválení je **< 0,1 m² na pás či světlík** × rozdíl
+sazeb a vždy jen do plochy, kterou schvalovatel viděl (vědomá mez).
+Obsah s pásem nese značku tvaru `v: 2`. **Výjimky schválené před v20.10.5**
+(obsah na celé m², bez značky) platí dál, dokud se jejich obsah starého
+tvaru nezmění (`obsahStary`, `vyjimkaObsahSedi` v prohlížeči i na serveru) —
+u nich zůstává mez < 1 m², kterou schvalovatel tehdy schválil; první změna,
+která obsah starého tvaru změní, je vrátí do „čeká“ a nové schválení už je
+v novém tvaru. Nový tvar se starým zaokrouhlením nikdy neporovnává (značka),
+nové schválení razí server vždy z nového obsahu a záznam starého tvaru
+nejde podvrhnout (rozhodnutí bez práva = 403). Chyba výpočtu nebo chybějící
 katalog = plocha `null` → obsah se liší od schváleného → zámek 403
 (fail-closed). Obsah jen se směsí ceníku má tvar jako dřív (schválení
 platí dál); výjimky s pásem „jiné“ schválené před v17.10.5 čekají znovu.
