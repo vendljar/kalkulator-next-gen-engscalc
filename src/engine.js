@@ -1091,6 +1091,19 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const mustekHloubka = mustekRozmer(z.mustekHloubkaMm);
   const strechaMustekM2 = (mustekNahore && mustekSirka && mustekHloubka) ? (mustekSirka + 0.2) * mustekHloubka : 0;
   const strechaM2 = (z.sirka + 0.2) * (z.hloubka + 0.1) + strechaMustekM2;
+  /* ZASTŘEŠENÍ V NABÍDCE (K29-N1, rozhodnutí J. V. 20. 10. 2026: „pokud není
+   * na zakázce střecha, tak zastřešení můstku nejspíš řešit nebudeme").
+   * Jediné místo, kde se rozhoduje, zda střecha šachty do nabídky patří:
+   * jen EXT, řádek ZASTŘEŠENÍ ŠACHTY (EXT) není vyřazený (`nepocitat`)
+   * a jeho ruční množství není platná nula (prázdno není nula). Bez střechy
+   * se nenabízí ani příplatek za měď (a s ním plocha stříšky nad můstkem)
+   * a kontrola `mustekStrecha` mlčí. */
+  const strechaNazev = 'ZASTŘEŠENÍ ŠACHTY (EXT)';
+  const strechaPrepis = z.mnozstviPrepis ? z.mnozstviPrepis[strechaNazev] : null;
+  const strechaPrepisJe = !(strechaPrepis === undefined || strechaPrepis === null || strechaPrepis === '');
+  const zastreseniVNabidce = ext
+    && !(Array.isArray(z.nepocitat) && z.nepocitat.map(String).indexOf(strechaNazev) >= 0)
+    && !(strechaPrepisJe && +strechaPrepis === 0);
 
   const prechKs = prechodoveAno ? nastupist : 0;
   const prechKsMont = prechMontAno ? nastupist : 0;
@@ -2082,6 +2095,9 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
               * cenikPopisNastav() — tvar {cesta: text} se drží tam. */
              popisNabidka: popisZCeniku(nazev) }, nazev);
   };
+  const MED_STRECHA_NAZEV = 'PŘÍPLATEK ZA STŘECHU V MĚDI (EXT)';
+  const medStrechaPrepis = z.mnozstviPrepis ? z.mnozstviPrepis[MED_STRECHA_NAZEV] : null;
+  const medStrechaPrepsana = !(medStrechaPrepis === undefined || medStrechaPrepis === null || medStrechaPrepis === '');
   const sknZPrepisu = (it) => (skloBokyPrepis != null ? sPlochouSkla(it) : it);
   let priplatky = [
     /* #392: značka pro Detail výpočtu jako u PRÁCE / TMELENÍ (P3); SKN jen
@@ -2094,7 +2110,12 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     prechMontAno ? null : mkPrip('prechMont', 'PŘECHODOVÉ PLECHY - NEREZ (MONTÁŽ)', nastupist, pp.prechMontKc, { cenaPath: 'C.priplatky.prechMontKc' }),
     mkPrip('madlaBoky', 'MADLA NA BOČNÍCH STĚNÁCH (dřevo, lak)', (nastupist - 1) * ((z.hloubka + 0.16) * 1.2) * 2, pp.madlaBmKc, { cenaPath: 'C.priplatky.madlaBmKc' }),
     mkPrip('madlaZadni', 'MADLA NA ZADNÍ STĚNĚ (dřevo, lak)', (nastupist - 1) * ((z.sirka + 0.16) * 1.2), pp.madlaBmKc, { cenaPath: 'C.priplatky.madlaBmKc' }),
-    ext ? mkPrip('medStrecha', 'PŘÍPLATEK ZA STŘECHU V MĚDI (EXT)', strechaM2, pp.medStrechaM2, { cenaPath: 'C.priplatky.medStrechaM2' }) : null,
+    /* K29-N1: měď jen se zastřešením v nabídce. Výjimka: vlastní platné
+     * ruční množství mědi = vědomá dohoda obchodníka, řádek zůstává. Název
+     * se zapíše i bez řádku, ať přepisy mědi nejsou „sirotci" (#4). */
+    ext ? ((zastreseniVNabidce || medStrechaPrepsana)
+      ? mkPrip('medStrecha', MED_STRECHA_NAZEV, strechaM2, pp.medStrechaM2, { cenaPath: 'C.priplatky.medStrechaM2' })
+      : (zapisNazev(MED_STRECHA_NAZEV), null)) : null,
     ext ? mkPrip('ventilator', 'VENTILÁTOR (EXT)', 1, pp.ventilatorKc, { cenaPath: 'C.priplatky.ventilatorKc' }) : null,
     mkPrip('zabranyDvere', 'ZÁBRANY DO DVEŘNÍCH VSTUPŮ', nastupist, pp.zabranyDvereKc, { cenaPath: 'C.priplatky.zabranyDvereKc' }),
     /* MONTÁŽ ŠACHETNÍCH DVEŘÍ zrušena 2. 9. 2026 na pokyn J. V.: v excelové
@@ -2228,7 +2249,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     dily: { terceKs, terceKg, listyKs, listyBm: listyCelkBm, listyKg, oplDvereKs, oplDvereKg, oplDvereM2,
             podestKs, podestKg, podestM2, prechKs, prechKg },
     spojovaci: { rows: spojovaciRows, celkem: spojovaciKc, nytovaniKs },
-    strecha: { m2: ext ? strechaM2 : 0, mustekNahore, mustekM2: strechaMustekM2 },
+    strecha: { m2: ext ? strechaM2 : 0, mustekNahore, mustekM2: strechaMustekM2, vNabidce: zastreseniVNabidce },
     lakovani: { lakovna, tomas, pouzito: lakovaniKc, rezim: L.rezim, vlastniRows: vlLakRows, vlastniKc: lakVlastniKc },
     montaz: { hodinyNavic: hn, hodinyNavicCelkem: hodinyNavic, hod1osoba: montazHod1, hodCelkem: montazHod, dni: montazHod1 / 8 },
     nazvyPolozek,

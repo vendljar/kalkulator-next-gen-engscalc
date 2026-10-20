@@ -544,7 +544,8 @@ const KONTROLY = [
     kod: 'mustekStrecha', kde: 'Kalkulace OCK', nazev: 'Střecha přes nejvyšší můstek',
     zjisti(ctx) {
       const r = ctx.vysledek;
-      if (!r || !r.strecha || !r.strecha.mustekNahore || r.strecha.mustekM2 > 0) return null;
+      /* K29-N1: zastřešení vyřazené z nabídky → střecha nad můstkem se neřeší. */
+      if (!r || !r.strecha || r.strecha.vNabidce === false || !r.strecha.mustekNahore || r.strecha.mustekM2 > 0) return null;
       return { text: 'Můstek je i v nejvyšším nástupišti, takže střecha šachty pokračuje nad ním až k fasádě, '
         + 'ale chybí rozměr můstku (šířka nebo hloubka) — plocha střechy nad můstkem se do zastřešení '
         + 'nepřipočetla. Doplňte rozměry můstku v zadání šachty.' };
