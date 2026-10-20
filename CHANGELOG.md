@@ -24,6 +24,17 @@ prvkem) → doplněny 2 kontroly v `src/test_o5_docx.js` (s mutací 12/2, bez 14
 (K3-N19 — „B58: obnova zapíše smazání i u živého účtu“ je chycená). Pracovní kopie po
 každém běhu čistá.
 
+**Doplněno O6 (20. 10. 2026, větev `claude/o6-hranice-kopie` nad 54f1cbc, jen testy):**
+po O5 přežily mutace `#151` „kopie na Disk stačí 7 dní stará“ a „lhůta kopie 8 dní“
+(`node mutace.mjs "#151"` 40/42). Příčina: test hranice 7 dní v `netlify/test_zalohy.mjs`
+psal **nepodložený** záznam `kopie-disk` (bez původu, otisku, velikosti a SHA-256), takže
+retenci zastavila už `kopieDiskPodlozena()` (K3-N1) a stáří kopie se neověřilo. Kód
+aplikace je v pořádku. Test teď píše podložený záznam kopie stáří přesně 7 a 8 dní
+(retence nic nesmaže a čeká „na první kopii na Disk“) a přímo ověří `kopieDiskCerstva`
+pro 7 dní (ne) a 6 dní (ano). Pojistka: se starým testem obě mutace přežijí (0/1, 0/1),
+s novým `#151` **42/42**; `test_zalohy.mjs` 88 OK / 0 FAIL; `testovaci_kolo.sh
+--bez-mutaci` **281 prošlo / 0 selhalo / 6 přeskočeno**, statické 3/3.
+
 - **K3-N19 (test B58 naprázdno):** `netlify/test_obnova.mjs` zapisoval podvržený otisk
   pod `v2.den + 'T000001-pred-obnovou'` — od #151 N1 neplatný klíč, obnova ho odmítla
   a kontrola „živý účet se do knihy smazaných nezapíše“ prošla, aniž obnova běžela.
