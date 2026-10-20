@@ -47,6 +47,9 @@ const NAST_PANELY = [
    * matici zobrazení: časy zakázek a čísla provozu se nepřidělují (rozhodnutí
    * 17. 8. 2026), takže by řádek v matici jen sváděl k omylu. */
   { id: 'analytika', nazev: 'Analytika', jenAdmin: true, telo: () => nastAnalytika() },
+  /* Controlling (#447, C2) — JEN administrátor (rozhodnutí J. V. 20. 10. 2026,
+   * J7), natvrdo jako Analytika; hranici drží /api/controlling. */
+  { id: 'controlling', nazev: 'Controlling', jenAdmin: true, telo: () => nastControlling() },
 ];
 function nastPanelSmi(x) {
   if (x.jenAdmin && !(typeof jeAdmin === 'function' && jeAdmin())) return false;

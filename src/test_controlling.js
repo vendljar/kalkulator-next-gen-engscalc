@@ -230,5 +230,101 @@ for (const [jm, uprav] of varianty) {
     !C.ctrlDbOciste(null).ok && !C.ctrlDbOciste([]).ok && !C.ctrlDbOciste({ historie: [] }).ok);
 }
 
+/* ---------- 4. C2: odchylky, export varianty, CSV, mapování ---------- */
+['./format.js', './techspec.js', './sleva.js', './zaokrouhleni.js', './zamek.js', './zakazka.js', './docxgen.js', './xlsx.js']
+  .forEach(f => { try { nacti(f); } catch (e) { /* modul v Node nemusí jít načíst */ } });
+{
+  const d = C.ctrlVychozi(); d.mapa['C.transportKc'] = 'cestovne'; d.mapa['K.k7'] = 'mat-ostatni';
+  const o = C.ctrlOdchylky(d);
+  test('ukládají se jen odchylky mapování od výchozího', JSON.stringify(o.mapa) === JSON.stringify({ 'C.transportKc': 'cestovne', 'K.k7': 'mat-ostatni' }), o.mapa);
+  test('odchylky projdou kontrolou zápisu', C.ctrlDataKontrola(o).ok);
+  test('z odchylek se složí totéž platné mapování', JSON.stringify(C.ctrlPlatne(o).mapa) === JSON.stringify(C.ctrlPlatne(d).mapa));
+}
+test('popis klíče z ceníku nese název a jednotku', JSON.stringify(C.ctrlPopisKlice('C.transportKc')) === JSON.stringify({ nazev: 'Interní transport', oblast: 'ock', sekce: 'HRUBÁ OCK', jednotka: 'Kč/cesta' }));
+test('popis pseudo-klíče i trvalé položky', /Rezerva/.test(C.ctrlPopisKlice('R.rezervaZaklad').nazev)
+  && C.ctrlPopisKlice('K.k7', { 'K.k7': 'Kotva X' }).nazev === 'Kotva X' && C.ctrlPopisKlice('K.pk2').oblast === 'proj');
+
+function zakazkaZamcena() {
+  const zak = novaZakazka();
+  zak.cislo = '2026 - OPR - CN - 0901'; zak.nazevAkce = 'Zkušební akce'; zak.objednatel = 'Zkušební zákazník s.r.o.'; zak.ico = '12345678';
+  const v = zak.varianty[0];
+  Object.assign(v.data.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2, rezervaPriplatkyPct: 0.2 });
+  v.data.cenik = kopie(CEN);
+  v.data.sleva = { pct: 0 };
+  zamkniVariantu(v, { cislo: variantaCislo(zak, v), kdo: 'admin@priklad.cz', typ: 'nabidka',
+    vysledek: zamekVysledekSpocti(v, JEKLY, 'test') });
+  return zak;
+}
+if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
+  const zak = zakazkaZamcena();
+  const v = zak.varianty[0];
+  const exp = C.ctrlExportVarianty(zak, v, { jekly: JEKLY, kdo: 'admin@priklad.cz', kdy: '2026-10-20T20:00:00Z', build: 'test' });
+  test('export zamčené řídící varianty projde', exp.ok, exp.chyba);
+  if (exp.ok) {
+    const vO = vypocetZ(v, JEKLY);
+    const ock = exp.strany.find(s => s.oblast === 'ock');
+    test('export nese stranu OCK s číslem nabídky', !!ock && ock.cislo === '2026 - OPR - CN - 0901', exp.strany);
+    const zaklad = exp.radky.filter(r => r.oblast === 'ock' && r.vZakladu).reduce((a, r) => a + r.naklad, 0);
+    test('náklad základní ceny v exportu = zmrazený souhrn', blizko(zaklad, vO.souhrn.zakladNaklad) && blizko(ock.naklad, vO.souhrn.zakladNaklad));
+    test('export bere zmrazený výsledek (příznak v hlavičce)', exp.hlavicka.zmrazeno === true && exp.hlavicka.zamkl === 'admin@priklad.cz');
+    test('export nese model výpočtu a řadu', exp.hlavicka.model === (v.data.ock.fixes ? 2 : 1) && exp.hlavicka.rada === 'ČR');
+    /* Ceník se po zamčení změní — export musí zůstat stejný (zmrazený výsledek). */
+    const pred = JSON.stringify(exp.radky);
+    v.data.cenik.transportKc = 999999;
+    const exp2 = C.ctrlExportVarianty(zak, v, { jekly: JEKLY });
+    test('změna ceníku po zamčení export nezmění', JSON.stringify(exp2.radky) === pred);
+    const listy = C.ctrlExportListy(exp);
+    test('export má listy Řádky, Kapitoly, Popis', listy.map(l => l.nazev).join(',') === 'Řádky,Kapitoly,Popis');
+    test('list Řádky: hlavička + jeden řádek na řádek kalkulace', listy[0].rows.length === exp.radky.length + 1
+      && listy[0].rows[0].length === C.CTRL_RADKY_HLAVICKA.length && listy[0].rows.every(r => r.length === C.CTRL_RADKY_HLAVICKA.length));
+    const iN = C.CTRL_RADKY_HLAVICKA.indexOf('Náklad celkem (Kč)');
+    test('čísla v listu jsou čísla, ne text', listy[0].rows.slice(1).every(r => typeof r[iN] === 'number'));
+    const souhrnRadek = listy[1].rows.find(r => r[0] === '2026 - OPR - CN - 0901' && r[1] === 'OCK' && typeof r[2] === 'number' && r.length === 10);
+    test('list Kapitoly nese souhrn zakázky s cenou nabídky', !!souhrnRadek && souhrnRadek[7] > 0, souhrnRadek);
+    const kapZaklad = listy[1].rows.filter(r => r.length === 13 && r[1] === 'OCK' && typeof r[9] === 'number').reduce((a, r) => a + r[9], 0);
+    test('součet kapitol v listu = náklad základní ceny (na haléře)', Math.abs(kapZaklad - vO.souhrn.zakladNaklad) < 0.05 * 30, { kapZaklad, n: vO.souhrn.zakladNaklad });
+    const csv = C.ctrlExportCsv(exp);
+    test('CSV: BOM, středník, řádek na řádek kalkulace', csv.charCodeAt(0) === 0xFEFF && csv.split('\r\n').filter(Boolean).length === exp.radky.length + 1
+      && csv.split('\r\n')[0].includes('";"'));
+    test('CSV: desetinná čárka u čísel', /;\d+,\d+(;|\r)/.test(csv));
+    const zak3 = kopie(zak); zak3.nazevAkce = '=HYPERLINK("x")';
+    const csv3 = C.ctrlExportCsv(C.ctrlExportVarianty(zak3, zak3.varianty[0], { jekly: JEKLY }));
+    test('CSV: text začínající „=" nejde jako vzorec', csv3.includes('"\'=HYPERLINK(""x"")"'));
+    if (typeof xlsxZapis === 'function') {
+      let okX = true; try { xlsxZapis(listy); } catch (e) { okX = e.message; }
+      test('XLSX se ze tří listů sestaví', okX === true, okX);
+    }
+  }
+  /* Nezamčená a neřídící varianta se nevyváží (J9). */
+  const zakN = kopie(zak); zakN.varianty[0].zamek = null;
+  const eN = C.ctrlExportVarianty(zakN, zakN.varianty[0], { jekly: JEKLY });
+  test('nezamčená varianta se nevyváží', !eN.ok && /zamčen/.test(eN.chyba), eN);
+  const zakR = kopie(zak); const v2 = kopie(zakR.varianty[0]); v2.id = 'v-dalsi'; v2.ridici = false; zakR.varianty.push(v2);
+  const eR = C.ctrlExportVarianty(zakR, v2, { jekly: JEKLY });
+  test('zamčená, ale neřídící varianta se nevyváží', !eR.ok && /řídící/.test(eR.chyba), eR);
+} else test('modely zakázky a zámku jdou v Node načíst', false);
+
+/* Mapování: export a zpětný import (tvar Andyiny tabulky). */
+{
+  const listy = C.ctrlMapaListy(null, { 'K.k7': 'Kotva' });
+  test('export mapování: listy Mapování a Skupiny', listy[0].nazev === 'Mapování' && listy[1].nazev === 'Skupiny');
+  const rows = listy[0].rows;
+  const iK = rows[0].indexOf('Klíč'), iS = rows[0].indexOf('Skupina (id)');
+  const r = rows.find(x => x[iK] === 'C.mustekKc');
+  test('export mapování nese klíč a skupinu', !!r && r[iS] === 'sl-zamecnici');
+  r[iS] = 'mat-ostatni';
+  rows.push(['K.k7', 'Kotva', 'OCK', '', '', 'mat-ostatni']);
+  rows.push(['C.zle klic', '', '', '', '', 'mat-ostatni']);
+  rows.push(['C.transportKc', '', '', '', '', 'neni-takova']);
+  const sk = listy[1].rows; sk[1][3] = '512001, 512009';
+  const imp = C.ctrlImportZListu(listy, null);
+  test('import převezme změnu skupiny i zařazení trvalé položky', imp.data.mapa['C.mustekKc'] === 'mat-ostatni' && imp.data.mapa['K.k7'] === 'mat-ostatni');
+  test('import převezme účty ze Skupin', JSON.stringify(imp.data.skupiny[0].ucetNyni) === '["512001","512009"]', imp.data.skupiny[0]);
+  test('import odmítne vadný klíč a neznámou skupinu (bez zápisu)', imp.chyby.length === 2 && imp.data.mapa['C.transportKc'] === 'sl-dopravne', imp.chyby);
+  test('import vrátí seznam změn k náhledu', imp.zmeny.some(z => z.klic === 'C.mustekKc' && z.z === 'sl-zamecnici' && z.na === 'mat-ostatni'));
+  test('importovaná data projdou kontrolou zápisu', C.ctrlDataKontrola(C.ctrlOdchylky(imp.data)).ok);
+  test('import bez listu Mapování → chyba', C.ctrlImportZListu([{ nazev: 'Jiný', rows: [] }], null).chyby.length === 1);
+}
+
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 if (fail) process.exit(1);
