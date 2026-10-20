@@ -8,6 +8,8 @@ Nad `test` 5dc28d1 (v20.10.1). Do `test` / `main` / `test-draft` / integrace nic
   stáří < `stari_hodin` h, `vynechat`, `jen_vypsat`), test `nastroje/test_sloucene_vetve.sh` (17 kontrol)
   ve statických kontrolách kola (4/4). CLAUDE.md oddíl „Tagy, releasy a mazání větví“ upraven, CHANGELOG
   oddíl bez verze.
+- **Kolo `--bez-mutaci` nad 4a75d93: VŠE ZELENÉ** — sady 281 / 0 / 6 přeskočeno (`test.js` + 5 bez
+  `KNG_PODKLADY`), statické 4/4 (z toho test větví 17/17). Mutace netřeba (jádro ani server se neměnily).
 - **Čeká na J. V.:** workflow se v Actions objeví až ve výchozí větvi `main` („pošli do main“). Pak
   poprvé pustit s `jen_vypsat` = true a zkontrolovat seznam, potom bez něj.
 - **Ke slučování:** CHANGELOG (oddíl W2 nad v20.10.1), `testovaci_kolo.sh` (statické 3 → 4),
