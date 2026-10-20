@@ -355,4 +355,5 @@ dotýkají serveru, takže `netlify/mutace.mjs`), kolo `nastroje/testovaci_kolo.
 
 - Kód: beze změny.
 - Roadmapa: přidána položka #438 (předběžné id), stav `ceka` na souhlas J. V.
-- Artefakt pro J. V.: odkaz v `PREDAVKA` sezení / zprávě koordinaci.
+- Artefakt pro J. V.: https://claude.ai/artifact/MNaTnXQ4847f2rNiAT9br7 („Controlling v kalkulátoru“).
+- Další krok: čekat na odpovědi J. V. (J1–J11); po souhlasu dávka D1.
