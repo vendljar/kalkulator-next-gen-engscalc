@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v19.10.9 · sestaveno 19. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
+  "verze": "Platí pro aplikaci v20.10.2 · sestaveno 20. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -11,6 +11,14 @@
         "Snímky obrazovky v téhle příručce jsou pořízené z běžící aplikace, ale nad **zkušebním ceníkem** s vymyšlenými sazbami. **Částky na obrázcích jsou ze zkušebního ceníku a nejsou naše ceny.** Neberte je jako vodítko pro nabídku a nesrovnávejte s nimi svou kalkulaci — sledujte, kde co je a jak se to chová, ne kolik to stojí.",
         "Jména zákazníků na snímcích jsou taky **vymyšlená**. Celá ukázková zakázka **2026 - OPR - CN - 9100** je smyšlená a vznikla jen kvůli téhle příručce.",
         "Příručka je určená obchodníkům ENGINEERS CZ. Popisuje, jak firma počítá nabídky, takže ji zákazníkům ani nikomu mimo firmu neposílejte."
+      ]
+    },
+    {
+      "nadpis": "Co je nového ve verzi v20.10.2 (20. 10. 2026)",
+      "odstavce": [
+        "**Odeslaná nabídka se nezmění ani po změně firemních textů.** Věty platebního kalendáře nabídky OCK, splátky smlouvy o dílo a texty nabídky PROJ (Cena nezahrnuje, Požadováno od investora, Termíny a doložky) se při odeslání nabídky uloží do varianty. Dotisk odeslané nabídky i smlouva z ní je tisknou tak, jak odešly, i když administrátor znění v Nastavení mezitím změní. Nabídky odeslané před touto verzí se tisknou jako dosud.",
+        "**Upozornění na velký rozměr můstku.** Zadáte-li šířku nebo hloubku můstku větší než 6 000 mm (nejspíš nula navíc), kontrola před nabídkou upozorní; hodnota se přesto započte. Nečíselný rozměr se bere jako nevyplněný a kontrola to řekne. Tisk to nezastaví.",
+        "**Pro administrátora — zálohy.** Kopii zálohy na Disk potvrzujete svým heslem a ukládá se jen do složky **_Zaloha Netlify DB**. Ruční zálohu (*Zálohovat teď*) jde pořídit nejvýš jednou za 10 minut a 20× za den — jinak aplikace řekne, kdy to půjde znovu. Když noční záloha nese méně než polovinu zakázek nebo účtů proti předchozí noci, mazání starých záloh se ten den přeskočí a Nastavení → Databáze varuje. Firemní podmínky smí mít dohromady nejvýš 500 kB."
       ]
     },
     {
