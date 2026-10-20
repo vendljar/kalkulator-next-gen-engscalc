@@ -8,6 +8,32 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v20.10.3 — D1: postřehy D. Sikory 19. 10. 2026 (větev claude/d1-sikora)
+
+Dávka D1 (koordinace „ŘÍDÍCÍ 19.10“), základ `claude/integrace-16-10` 5dc28d1 (v20.10.1).
+Souběžně O7 má v20.10.2. Podklad `podklady/D1_SIKORA_19_10.md`, roadmapa #440–#443 (předběžná id).
+
+- **Bod 1 — nabídka PROJ bez studie proveditelnosti (#440, opraveno):** úvod bloku
+  DOKUMENTACE PRO POVOLENÍ ZÁMĚRU (DPZ) zní bez studie v nabídce „Dokumentace pro povolení
+  záměru (DPZ) rozpracovává dokumentaci dle platné vyhlášky…“ — věta „navazuje na vzájemně
+  odsouhlasenou STUDII PROVEDITELNOSTI. Ta …“ jen tehdy, když má studie cenu (samotné
+  projednání nestačí). `src/nabidka_proj.js` (`NABIDKA_PROJ_DPZ_UVOD`, odstavec úvodu se sekcí
+  a zněním `jinak`), Word symbol `{{PROJ_DPZ_UVOD}}` v jazyce dokumentu (slovník EN/DE/FR,
+  `src/preklad.js`), šablona **PROJ v7** z `nastroje/vyrob_sablony.js --proj-v7` (vstup v6;
+  odstavec úvodu DPZ → jediný symbol, písmo zůstává). Kontrola **`dpzUvodWordProj`**
+  (varování): studie se nenabízí, DPZ ano a šablona PROJ nemá `{{PROJ_DPZ_UVOD}}`.
+  Pravidel kontrol je 38. Test `src/test_d1_dpz_bez_studie.js` (51 kontrol; před opravou selže
+  na první), mutace „D1: …“ 13/13.
+- **Další odkazy na studii bez studie (#441, čeká na J. V.):** hvězdička ceny DPZ „Cena je
+  platná v případě návaznosti na STUDII PROVEDITELNOSTI.“, termín DPZ z Firmy „od schválení
+  studie investorem“, pevné bloky studie ve Wordu — neměněno, otázky Q1–Q3 s doporučením.
+- **Bod 2 — šířka bočního světlíku 600 mm (#442, rozbor, beze změny):** 600 = šířka skla
+  na terčích 1 680 − otvor dveří 1 040 − 40 (schváleno J. V. #375/#381/#385); varianty A–C
+  s čísly k rozhodnutí J. V. / Jirky L.
+- **Bod 3 — dimenze profilů portálu (#443, návrh, beze změny):** dnešní pravidlo, dopad na
+  cenu (zkušební ceník) a otázky; kód návrhu v samostatné větvi `claude/d1-sikora-navrh-profily`
+  (nesloučit bez potvrzení).
+
 ## v20.10.1 — O5: opravy nálezů auditu K3 bez rozhodnutí J. V. (větev claude/o5-k3-nalezy)
 
 Dávka O5 (koordinace „ŘÍDÍCÍ 19.10 noc“), základ `claude/integrace-16-10` 3b49d57

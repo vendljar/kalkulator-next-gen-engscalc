@@ -66,6 +66,16 @@
  *           když jsou doložky PROJ vypnuté nebo prázdné (odstranPrazdneBloky).
  *           Nadpisy tabulek zůstávají z v5.
  *
+ * PROJ v7 (úvod DPZ bez studie, D1 20. 10. 2026, postřeh D. Sikory):
+ *   node nastroje/vyrob_sablony.js --proj-v7 <složka podkladů> [výstupní složka]
+ * Vstup:  Sablona_NABIDKA_PROJ_v6.docx
+ * Výstup: Sablona_NABIDKA_PROJ_v7.docx + _EN/_DE/_FR
+ * PROJ v7 = v6, v níž odstavec úvodu DPZ „Dokumentace pro povolení záměru
+ *           (DPZ) navazuje na vzájemně odsouhlasenou STUDII PROVEDITELNOSTI.
+ *           Ta rozpracovává … obsahuje tyto části:" nese jen {{PROJ_DPZ_UVOD}}
+ *           (písmo a odstavec zůstávají). Aplikace dosadí větu v jazyce
+ *           dokumentu: se studií v nabídce s navázáním, bez ní bez navázání.
+ *
  * CN v14 (etapa A platebních podmínek OCK, 30. 9. 2026) — samostatný režim:
  *   node nastroje/vyrob_sablony.js --cn-v14 <složka podkladů> [výstupní složka]
  * Vstup:  Sablona_NABIDKA_CN_v13.docx
@@ -160,6 +170,7 @@ const REZIM_SOD_REAL3 = REZIM === '--sod-real-v3';
 const REZIM_CN15 = REZIM === '--cn-v15';
 const REZIM_V5 = REZIM === '--proj-v5';
 const REZIM_V6 = REZIM === '--proj-v6';
+const REZIM_V7 = REZIM === '--proj-v7';
 const REZIM_SOD_V4 = REZIM === '--sod-proj-v4';
 const ARGY = REZIM ? process.argv.slice(3) : process.argv.slice(2);
 const PODKLADY = ARGY[0] || process.env.KNG_PODKLADY;
@@ -455,6 +466,27 @@ function projV6(xml) {
   const dolozky = znacka('BLOK_DOLOZKY_ZAC') + mezera + tabD + znacka('BLOK_DOLOZKY_KON');
   const konTerminu = body.indexOf(znacka('BLOK_TERMINY_KON')) + znacka('BLOK_TERMINY_KON').length;
   body = body.slice(0, konTerminu) + dolozky + body.slice(konTerminu);
+  return t.pred + body + t.po;
+}
+
+/* ---------- PROJ v7: úvod DPZ symbolem (D1) ----------
+ * Právě jeden odstavec, jehož text začíná „Dokumentace pro povolení záměru
+ * (DPZ) navazuje na vzájemně odsouhlasenou STUDII" — celý jeho text nahradí
+ * {{PROJ_DPZ_UVOD}} v prvním běhu (prepisUsekOdstavce). Jiná stavba = chyba. */
+const PROJ_V7_DPZ_UVOD_RE = /^Dokumentace pro povolení záměru \(DPZ\) navazuje na vzájemně odsouhlasenou STUDII/;
+function projV7(xml) {
+  const t = tělo(xml);
+  let body = t.body;
+  const sym = dg.klicePlaceholderu(body);
+  if (sym.indexOf('PROJ_DPZ_UVOD') >= 0) chyba('PROJ: šablona už úvod DPZ symbolem {{PROJ_DPZ_UVOD}} má — není co doplnit');
+  if (sym.indexOf('PROJ_DOLOZKY') < 0) chyba('PROJ: vstup není PROJ v6 (chybí blok doložek {{PROJ_DOLOZKY}}) — nejdřív vyrobte v6');
+  const sp = odstavceSTextem(body, x => PROJ_V7_DPZ_UVOD_RE.test(x.trim()));
+  if (sp.length !== 1) chyba('PROJ: čekám právě jeden odstavec úvodu DPZ „Dokumentace pro povolení záměru (DPZ) navazuje na…", je jich ' + sp.length + ' — nic nehádám');
+  const p = body.slice(sp[0].zac, sp[0].kon);
+  /* délka v témže počtu jako prepisUsekOdstavce (texty běhů w:t) */
+  const delka = (p.match(/<w:t(?:\s[^>]*)?>[\s\S]*?<\/w:t>/g) || [])
+    .reduce((a, x) => a + dg.xmlUnesc(x.replace(/^<w:t(?:\s[^>]*)?>/, '').replace(/<\/w:t>$/, '')).length, 0);
+  body = body.slice(0, sp[0].zac) + prepisUsekOdstavce(p, 0, delka, '{{PROJ_DPZ_UVOD}}') + body.slice(sp[0].kon);
   return t.pred + body + t.po;
 }
 
@@ -960,7 +992,7 @@ async function ulozSMutacemi(bajty, zaklad) {
 
 async function hlavni() {
   if (!PODKLADY) {
-    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --proj-v5 | --proj-v6 | --sod-proj | --sod-real | --sod-real-v3 | --sod-proj-cislo | --sod-proj-v4 | --cn-v14 | --cn-v15] <složka podkladů> [výstupní složka]');
+    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --proj-v5 | --proj-v6 | --proj-v7 | --sod-proj | --sod-real | --sod-real-v3 | --sod-proj-cislo | --sod-proj-v4 | --cn-v14 | --cn-v15] <složka podkladů> [výstupní složka]');
     process.exit(2);
   }
   const cnVstup = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v12.docx');
@@ -971,7 +1003,8 @@ async function hlavni() {
   const cn14Vstup = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v14.docx');
   const proj4Vstup = path.join(PODKLADY, 'Sablona_NABIDKA_PROJ_v4.docx');
   const proj5Vstup = path.join(PODKLADY, 'Sablona_NABIDKA_PROJ_v5.docx');
-  (REZIM_SOD_CISLO || REZIM_SOD_REAL3 || REZIM_SOD_V4 ? [] : REZIM_V6 ? [proj5Vstup] : REZIM_V5 ? [proj4Vstup] : REZIM_V4 ? [projVstup] : REZIM_SOD ? [sodVstup] : REZIM_SOD_REAL ? [sodRealVstup] : REZIM_CN14 ? [cn13Vstup]
+  const proj6Vstup = path.join(PODKLADY, 'Sablona_NABIDKA_PROJ_v6.docx');
+  (REZIM_SOD_CISLO || REZIM_SOD_REAL3 || REZIM_SOD_V4 ? [] : REZIM_V7 ? [proj6Vstup] : REZIM_V6 ? [proj5Vstup] : REZIM_V5 ? [proj4Vstup] : REZIM_V4 ? [projVstup] : REZIM_SOD ? [sodVstup] : REZIM_SOD_REAL ? [sodRealVstup] : REZIM_CN14 ? [cn13Vstup]
     : REZIM_CN15 ? [cn14Vstup] : [cnVstup, projVstup])
     .forEach(f => { if (!fs.existsSync(f)) chyba('Chybí vstupní šablona ' + f); });
   if (!fs.existsSync(VYSTUP)) fs.mkdirSync(VYSTUP, { recursive: true });
@@ -1077,7 +1110,9 @@ async function hlavni() {
     console.log('\nVýstup: ' + VYSTUP);
     process.exit(prob ? 1 : 0);
   }
-  const vse = REZIM_V6
+  const vse = REZIM_V7
+    ? await ulozSMutacemi(await vyrob(proj6Vstup, projV7), 'Sablona_NABIDKA_PROJ_v7')
+    : REZIM_V6
     ? await ulozSMutacemi(await vyrob(proj5Vstup, projV6), 'Sablona_NABIDKA_PROJ_v6')
     : REZIM_V5
     ? await ulozSMutacemi(await vyrob(proj4Vstup, projV5), 'Sablona_NABIDKA_PROJ_v5')
@@ -1105,4 +1140,4 @@ async function hlavni() {
 
 /* Úpravy document.xml jdou testovat bez souborů (src/test_sablona_proj_v4.js). */
 if (require.main === module) hlavni().catch(e => { console.error('CHYBA: ' + e.message); process.exit(1); });
-module.exports = { cnV13, cnV14, projV3, projV4, projV5, projV6, sodProjV2, sodRealV2, sodRealV3, sodProjCislo, sodProjV4, prepisUsekOdstavce };
+module.exports = { cnV13, cnV14, projV3, projV4, projV5, projV6, projV7, sodProjV2, sodRealV2, sodRealV3, sodProjCislo, sodProjV4, prepisUsekOdstavce };

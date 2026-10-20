@@ -6857,6 +6857,72 @@
     "436"
    ],
    "pozn": "Předběžné id (přidělí koordinace při sloučení)."
+  },
+  {
+   "id": "440",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "vysoka",
+   "slozitost": "S",
+   "hotovoV": "v20.10.3",
+   "nazev": "Nabídka PROJ bez studie proveditelnosti: úvod DPZ bez věty „navazuje na vzájemně odsouhlasenou STUDII PROVEDITELNOSTI“ (online, Word v7, EN/DE/FR)",
+   "proc": "Postřeh D. Sikory (e-mail J. V. 19. 10. 2026): když nenabízíme studii a začínáme rovnou DPZ, nabídka nesmí psát, že DPZ navazuje na odsouhlasenou studii.",
+   "detail": "HOTOVO v20.10.3 (dávka D1, větev claude/d1-sikora). src/nabidka_proj.js: NABIDKA_PROJ_DPZ_UVOD (studie / bez / zaver), odstavec úvodu bloku DPZ nese sekce 'studie' a znění `jinak`; bez studie s cenou zní „Dokumentace pro povolení záměru (DPZ) rozpracovává dokumentaci dle platné vyhlášky…“. Word: symbol {{PROJ_DPZ_UVOD}} (přeložený do EN/DE/FR), šablona PROJ v7 z nastroje/vyrob_sablony.js --proj-v7 (vstup v6). Kontrola dpzUvodWordProj varuje, když se studie nenabízí a šablona PROJ je starší než v7. Další místa se studií bez studie v nabídce (hvězdička ceny DPZ, termín DPZ „od schválení studie investorem“, pevné bloky studie ve Wordu) čekají na rozhodnutí — #441.",
+   "hotovoKdyz": "Online nabídka i symbol Wordu bez navázání na studii, když se studie nenabízí; test s pojistkou; mutace D1 bez přeživší.",
+   "kde": "`src/nabidka_proj.js`, `src/kontroly.js`, `src/preklad.js`, `nastroje/vyrob_sablony.js`, `src/test_d1_dpz_bez_studie.js`",
+   "zavisi": [
+    "434"
+   ],
+   "pozn": "Předběžné id (přidělí koordinace při sloučení). Šablonu PROJ v7 vyrobí a nahraje J. V. (podklady/D1_SIKORA_19_10.md)."
+  },
+  {
+   "id": "441",
+   "vlna": "B",
+   "stav": "blokovano",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "cekaNa": "J. V.: další odkazy na studii v nabídce PROJ bez studie (Q1–Q3 v podklady/D1_SIKORA_19_10.md)",
+   "nazev": "Nabídka PROJ bez studie: hvězdička ceny DPZ, termín DPZ „od schválení studie“, pevné bloky studie ve Wordu",
+   "proc": "Při rozboru postřehu D. Sikory (D1) se našla další místa, která se odkazují na studii i tehdy, když se nenabízí.",
+   "detail": "Q1 hvězdička „Cena je platná v případě návaznosti na STUDII PROVEDITELNOSTI.“ u ceny DPZ (online i Word) — doporučení: bez studie vynechat (Word symbolem v šabloně v7+). Q2 termín DPZ v Nastavení → Firma „do 10–12 týdnů od schválení studie investorem a objednání“ — doporučení: druhé znění bez studie („od objednání a předání podkladů“). Q3 Word tiskne bloky STUDIE, poznámku o studii a nadpis „STUDIE PROVEDITELNOSTI“ v titulu pevně — doporučení: značky bloků v další šabloně (obdoba AD v5).",
+   "hotovoKdyz": "Rozhodnutí zapsaná, promítnutá s testy.",
+   "kde": "`podklady/D1_SIKORA_19_10.md`",
+   "zavisi": [
+    "440"
+   ],
+   "pozn": "Předběžné id."
+  },
+  {
+   "id": "442",
+   "vlna": "B",
+   "stav": "blokovano",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "cekaNa": "J. V. / Jirka L.: co znamená „šířka bočního světlíku“ (tabule skla přes sloupky × světlá šířka) a zda měnit plochu a cenu (varianty A–C v podklady/D1_SIKORA_19_10.md)",
+   "nazev": "Šířka bočního světlíku: předpočítaných 600 mm u šachty 1,5 m (postřeh D. Sikory)",
+   "proc": "D. Sikora (19. 10. 2026): šachta 1 500 mm, 4 nástupiště, čistý vstup 800 mm, rám 100 mm, 4 světlíky → aplikace 600 mm, on počítá 1,5 − 0,8 − 2×0,1 = 0,5 m a ani to „není zarovno se stojkou“.",
+   "detail": "Rozbor D1: 600 = šířka skla stěny na terčích (1 500 + 2×80 + 20 = 1 680) − otvor dveří (800 + 2×100 + 2×20 = 1 040) − 40 (engine.js bokMezera, #375/#381/#385, potvrzeno J. V. 1. 10. a 6. 10.). Výpočet dělá, co bylo schválené — chyba není jednoznačná, nic se neměnilo. Varianty: A ponechat a přejmenovat na „šířka skla (přes sloupky)“; B 500 (Sikora); C světlá šířka z vnitřní šířky (1 500 − 1 040 − 40) = 420 mm. Plocha při 4 ks: A 5,28 / B 4,40 / C 3,70 m².",
+   "hotovoKdyz": "Rozhodnutá definice, promítnutá do Modelu 2 (Model 1 1:1 s Excelem) s testy.",
+   "kde": "`src/engine.js` (bokMezera, bokySirkaPredpocet), `podklady/D1_SIKORA_19_10.md`",
+   "zavisi": [
+    "385"
+   ],
+   "pozn": "Předběžné id."
+  },
+  {
+   "id": "443",
+   "vlna": "B",
+   "stav": "blokovano",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "cekaNa": "J. V. / Jirka L.: potvrzení dimenzí portálu (EXT sloupek portálu 80×40, INT příčník portálu 40×40) a otázky Q5–Q11 v podklady/D1_SIKORA_19_10.md",
+   "nazev": "Výchozí dimenze profilů portálu: EXT sloupek portálu 80×40 (dnes 40×40), INT příčník portálu 40×40 (dnes 80×40)",
+   "proc": "Postřeh D. Sikory (19. 10. 2026), „ještě to prověř s Jirkou L.“ — beze změny do potvrzení.",
+   "detail": "Dnes PROFILY_VYCHOZI v src/engine.js (ext: sloupekPortal 40×40/3, precnikPortal 80×40/3; int: sloupekPortal 40×40/3, precnikPortal 80×40/3), DEFAULT_ZADANI = exteriér. Návrh = dva řádky (větev claude/d1-sikora-navrh-profily, nesloučit). Dopad zkušební ceník (šachta 1,5 × 1,55, 4 nástupiště): EXT zapuštěný bez světlíků 0 Kč (sloupek portálu má délku 0), se světlíky +0,6 %, předsazený +0,75 až +1,3 %; INT −0,8 až −1,1 %. Uložené zakázky se nemění.",
+   "hotovoKdyz": "Potvrzené dimenze v PROFILY_VYCHOZI s testem a novými otisky test_profil_neznamy.",
+   "kde": "`src/engine.js` (PROFILY_VYCHOZI), `podklady/D1_SIKORA_19_10.md`",
+   "zavisi": [],
+   "pozn": "Předběžné id."
   }
  ],
  "meta" : {

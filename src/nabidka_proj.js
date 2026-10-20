@@ -115,6 +115,16 @@ function nabidkaProjUvod(vRozsahu, P) {
   return odst;
 }
 
+/* Úvod rozsahu DPZ (D1, 20. 10. 2026): se studií v nabídce „navazuje na
+ * vzájemně odsouhlasenou STUDII PROVEDITELNOSTI. Ta rozpracovává…", bez ní
+ * DPZ „rozpracovává…" rovnou — nabídka nesmí navazovat na studii, kterou
+ * zákazníkovi nenabízíme. */
+const NABIDKA_PROJ_DPZ_UVOD = {
+  studie: 'Dokumentace pro povolení záměru (DPZ) navazuje na vzájemně odsouhlasenou STUDII PROVEDITELNOSTI. Ta rozpracovává dokumentaci dle platné vyhlášky do legislativou požadované úrovně s autorizacemi inženýrů dle příslušných oborů.',
+  bez: 'Dokumentace pro povolení záměru (DPZ) rozpracovává dokumentaci dle platné vyhlášky do legislativou požadované úrovně s autorizacemi inženýrů dle příslušných oborů.',
+  zaver: 'Dokumentace pro povolení záměru obsahuje tyto části:',
+};
+
 /* Definice dokumentu – pořadí i znění podle VZORu.
  * typ: 'nadpis' | 'proza' | 'rozsah' | 'cena' | 'seznam' | 'pary' | 'pozn' */
 const NABIDKA_PROJ_DEF = [
@@ -202,8 +212,13 @@ const NABIDKA_PROJ_DEF = [
   ] },
 
   /* ---------------- DPZ ---------------- */
+  /* Úvod DPZ se odkazuje na studii, jen když se studie nabízí (D1, postřeh
+   * D. Sikory 19. 10. 2026: „pokud nenabízíme Studii proveditelnosti a přímo
+   * začínáme s DPZ, je potřeba v textu CN vymazat"). `jinak` = znění bez
+   * navázání; věty drží NABIDKA_PROJ_DPZ_UVOD (i pro Word {{PROJ_DPZ_UVOD}}). */
   { typ: 'rozsah', nadpis: 'DOKUMENTACE PRO POVOLENÍ ZÁMĚRU (DPZ)', sekce: 'dpz', uvod: [
-    { cz: 'Dokumentace pro povolení záměru (DPZ) navazuje na vzájemně odsouhlasenou STUDII PROVEDITELNOSTI. Ta rozpracovává dokumentaci dle platné vyhlášky do legislativou požadované úrovně s autorizacemi inženýrů dle příslušných oborů. Dokumentace pro povolení záměru obsahuje tyto části:' },
+    { cz: NABIDKA_PROJ_DPZ_UVOD.studie + ' ' + NABIDKA_PROJ_DPZ_UVOD.zaver, sekce: 'studie',
+      jinak: NABIDKA_PROJ_DPZ_UVOD.bez + ' ' + NABIDKA_PROJ_DPZ_UVOD.zaver },
   ], radky: [
     ['Dokumentace pro povolení záměru – část 1', ''],
     ['Stavební část projektu', 'situace stavby – v rozsahu požadovaném pro řízení o povolení záměru'],
@@ -733,7 +748,10 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
           skupina.forEach(r => radky.push(['', '– ' + r[1]]));
         }
       }
-      return { typ: 'rozsah', nadpis: P(b.nadpis), uvod: (b.uvod || []).map(proza), radky };
+      /* odstavec úvodu se sekcí platí, jen když je sekce v rozsahu; jinak jeho `jinak` (D1) */
+      const uvod = (b.uvod || []).map(o => (o && o.sekce && !vRozsahu(o.sekce))
+        ? (o.jinak !== undefined ? { cz: o.jinak } : null) : o).filter(Boolean);
+      return { typ: 'rozsah', nadpis: P(b.nadpis), uvod: uvod.map(proza), radky };
     }
     if (b.typ === 'pary') {
       /* Splatnost a platnost z KRYCÍHO LISTU PROJ (P10.2, rozhodnutí J. V.
@@ -857,6 +875,11 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
      * která místo pevného odstavce nese {{UVOD_NABIDKY_PROJ}}. Odstavce
      * odděluje nový řádek. */
     UVOD_NABIDKY_PROJ: uvodOdst.join('\n'),
+    /* Úvod rozsahu DPZ (D1) pro šablonu PROJ v7, která místo pevné věty
+     * „… navazuje na vzájemně odsouhlasenou STUDII PROVEDITELNOSTI. Ta …"
+     * nese {{PROJ_DPZ_UVOD}}: bez studie v nabídce věta bez navázání. */
+    PROJ_DPZ_UVOD: P(vRozsahu('studie') ? NABIDKA_PROJ_DPZ_UVOD.studie : NABIDKA_PROJ_DPZ_UVOD.bez)
+      + ' ' + P(NABIDKA_PROJ_DPZ_UVOD.zaver),
     /* Ceny jednotlivých činností do šablony (#136, 12. 8. 2026). Wordová
      * nabídka PROJ je jinak sázená než ta online: text je natvrdo v šabloně
      * a doplňují se jen částky. Klíče odpovídají cenovým blokům v pořadí,
@@ -1022,4 +1045,4 @@ if (typeof dokumentRegistruj === 'function')
   });
 
 if (typeof module !== 'undefined')
-  module.exports = { nabidkaProjData, nabidkaProjNabiziAD, nabidkaProjCeny, nabidkaProjPlatby, NABIDKA_PROJ_PLATBY, nabidkaProjSlevaZvlast, nabidkaProjUvod, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_UVOD_ZAVER, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE, NABIDKA_PROJ_CENA_SYMBOL };
+  module.exports = { nabidkaProjData, nabidkaProjNabiziAD, nabidkaProjCeny, nabidkaProjPlatby, NABIDKA_PROJ_PLATBY, nabidkaProjSlevaZvlast, nabidkaProjUvod, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_UVOD_ZAVER, NABIDKA_PROJ_DPZ_UVOD, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE, NABIDKA_PROJ_CENA_SYMBOL };
