@@ -26,6 +26,12 @@
  * ============================================================ */
 
 /* Továrna = dnešní hodnoty z kódu (stav e3995e6), aby se výstup nezměnil. */
+/* TERMÍN HRUBOPISU DPZ BEZ STUDIE (D1, 20. 10. 2026) — ZNĚNÍ ČEKÁ NA J. V.:
+ * „do 12-ti týdnů od objednání a předání podkladů" (návrh J. V., předběžně)
+ * nebo „do 10–12 týdnů od zpracování výstupů ze zaměření" (D. Sikora, šablona
+ * rev. 33). Obě znění zná slovník (EN/DE/FR); mění se jen tahle konstanta. */
+const PODMINKY_TERMIN_DPZ_BEZ_STUDIE = 'do 12-ti týdnů od objednání a předání podkladů';
+
 const PODMINKY_VYCHOZI = {
   v: 1,
   /* Číselník sazeb smluvní pokuty (dřív KRYCI_POKUTY v kryci.js a kopie
@@ -102,11 +108,11 @@ const PODMINKY_VYCHOZI = {
       ['Provedení detailního zaměření a stavebně technického průzkumu', 'ZAMĚŘENÍ na stavbě do 4 týdnů od objednání a předání plné moci; zpracování VÝSTUPŮ do 4–6 týdnů od zaměření', 'zamereni'],
       ['Zpracování STUDIE PROVEDITELNOSTI (SP)', 'do 10–12 týdnů od zpracování výstupů ze zaměření', 'studie'],
       ['Projednání s odborem památkové péče HMP', 'do cca 2–3 měsíců od podání žádosti – záleží na vytíženosti úředníků státní správy', 'projednani'],
-      /* D1 (rozhodnutí J. V. 20. 10. 2026): bez studie v nabídce termín bez
-       * „schválení studie" — klíč „dpz+studie" / „dpz-studie" (viz vRozsahu
-       * v nabidka_proj.js). */
+      /* D1 (20. 10. 2026): termín hrubopisu DPZ podle studie — klíč
+       * „dpz+studie" / „dpz-studie" (viz vRozsahu v nabidka_proj.js). Znění
+       * bez studie je v PODMINKY_TERMIN_DPZ_BEZ_STUDIE (vybírá J. V.). */
       ['Zpracování dokumentace pro dotčené orgány (hrubopis DPZ)', 'do 10–12 týdnů od schválení studie investorem a objednání', 'dpz+studie'],
-      ['Zpracování dokumentace pro dotčené orgány (hrubopis DPZ)', 'do 12-ti týdnů od objednání a předání podkladů', 'dpz-studie'],
+      ['Zpracování dokumentace pro dotčené orgány (hrubopis DPZ)', PODMINKY_TERMIN_DPZ_BEZ_STUDIE, 'dpz-studie'],
       ['Zajištění stanovisek dotčených orgánů *)', 'cca do 4 týdnů od podání žádosti (v případě potřeby stanoviska hygieny a/nebo památkové péče cca do 2,5 měsíce)', 'ic'],
       ['Dopracování dokumentace pro povolení záměru (čistopis DPZ)', 'proběhne v průběhu lhůty vyjádření dotčených orgánů', 'dpz'],
       ['Podání žádosti o povolení záměru', 'po obdržení souhlasných stanovisek dotčených orgánů (+ 14 dní v případě nutnosti zapracování podmínek dotčených orgánů do dokumentace)', 'ic'],
@@ -544,7 +550,7 @@ function podminkyNastav(p, cast, pole, hodnota) {
 
 /* Jeden objekt pro ostatní moduly — v prohlížeči jsou soubory v jednom
  * scope, v Node se načte přes require (vzor firmaPlanModul). */
-const PODMINKY = { PODMINKY_VYCHOZI, PODMINKY_SOUCET_BLOKUJE, PODMINKY_JAZYKY, PODMINKY_TYPY_SMLOUVY, podminkyEf, podminkyUpraveno,
+const PODMINKY = { PODMINKY_VYCHOZI, PODMINKY_TERMIN_DPZ_BEZ_STUDIE, PODMINKY_SOUCET_BLOKUJE, PODMINKY_JAZYKY, PODMINKY_TYPY_SMLOUVY, podminkyEf, podminkyUpraveno,
   podminkyVeta, podminkyVetaJenVychoziPreklad, podminkyTextProj, podminkyNastavVetu, podminkyNastavTextProj, podmPoradi,
   podminkyZalohaText, podminkyZalohyVolby, podminkyZalohaVychozi, podminkyFaktura2, podminkyKonecna,
   podminkyLimitVolby, podminkyLimitText, podminkySoucetOck, podminkyVady, podminkyCiste, podminkyNastav,

@@ -17,8 +17,8 @@
  *   4) kontrola dpzUvodWordProj (starší šablona bez symbolu a DPZ bez studie
  *      → varování; v7, nabízená studie, neznámé symboly → mlčí).
  *   5) Q1–Q3 (rozhodnutí J. V. 20. 10. 2026): hvězdička ceny DPZ jen se studií,
- *      termín hrubopisu DPZ bez studie „do 12-ti týdnů od objednání a předání
- *      podkladů“, ve Wordu v7 titul a bloky studie (blokyPryc).
+ *      termín hrubopisu DPZ bez studie (znění PODMINKY_TERMIN_DPZ_BEZ_STUDIE vybírá
+ *      J. V.), ve Wordu v7 titul a bloky studie (blokyPryc).
  * Před opravou sada selže na prvním testu (NABIDKA_PROJ_DPZ_UVOD neexistuje,
  * úvod DPZ nese „navazuje" i bez studie).
  *
@@ -240,9 +240,16 @@ const uvodDpz = d => { const b = d.bloky.find(x => x.typ === 'rozsah' && /\(DPZ\
   test('Q1 online bez studie: hvězdička ceny DPZ vynechaná', cenaDpz(bez).hvezdicka === '', cenaDpz(bez).hvezdicka);
   const terminDpz = d => { const b = d.bloky.find(x => x.nadpis === 'TERMÍNY'); return b ? b.radky.filter(r => /hrubopis DPZ/.test(r[0])).map(r => r[1]) : null; };
   test('Q2 online se studií: termín hrubopisu DPZ „od schválení studie" (jednou)', JSON.stringify(terminDpz(se)) === JSON.stringify(['do 10–12 týdnů od schválení studie investorem a objednání']), terminDpz(se));
-  test('Q2 online bez studie: „do 12-ti týdnů od objednání a předání podkladů" (jednou)', JSON.stringify(terminDpz(bez)) === JSON.stringify(['do 12-ti týdnů od objednání a předání podkladů']), terminDpz(bez));
-  test('Q2 Word bez studie: PROJ_TERMINY_TERMIN nese nové znění, ne studii',
-    bez.placeholders.PROJ_TERMINY_TERMIN.indexOf('do 12-ti týdnů od objednání a předání podkladů') >= 0 && !/schválení studie/.test(bez.placeholders.PROJ_TERMINY_TERMIN)
+  const PD0 = require('./podminky.js'), BEZ = PD0.PODMINKY_TERMIN_DPZ_BEZ_STUDIE;
+  test('Q2 znění bez studie je jedna z variant k rozhodnutí J. V.', ['do 12-ti týdnů od objednání a předání podkladů',
+    'do 10–12 týdnů od zpracování výstupů ze zaměření'].indexOf(BEZ) >= 0, BEZ);
+  ['do 12-ti týdnů od objednání a předání podkladů', 'do 10–12 týdnů od zpracování výstupů ze zaměření'].forEach(t => ['en', 'de', 'fr'].forEach(L => {
+    const st = PR.trStav(t, L);
+    test('Q2 slovník ' + L.toUpperCase() + ': „' + t + '"', st.prelozeno && !CESKA.test(st.text), st);
+  }));
+  test('Q2 online bez studie: termín hrubopisu DPZ = znění bez studie (jednou)', JSON.stringify(terminDpz(bez)) === JSON.stringify([BEZ]), terminDpz(bez));
+  test('Q2 Word bez studie: PROJ_TERMINY_TERMIN nese znění bez studie, ne studii',
+    bez.placeholders.PROJ_TERMINY_TERMIN.indexOf(BEZ) >= 0 && !/schválení studie/.test(bez.placeholders.PROJ_TERMINY_TERMIN)
     && bez.placeholders.PROJ_TERMINY_CINNOST.split('\n').length === bez.placeholders.PROJ_TERMINY_TERMIN.split('\n').length);
   const PD = require('./podminky.js');
   test('Q2 Firma: klíče dpz+studie / dpz-studie projdou kontrolou, neznámý ne',

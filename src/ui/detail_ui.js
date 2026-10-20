@@ -86,7 +86,7 @@ function dvBokySirkaRadky(v, M) {
   const rucne = v.sirkaRucne != null;
   return [
     ['Mezera vedle dveří', mm(v.mezera), `šířka stěny − otvor dveří − 0,04 m = ${M(v.mezera, 3)} m na každých dveřích`],
-    ['Šířka bočního světlíku — předpočítaná / použitá', mm(v.sirkaPredpocitana) + ' / ' + mm(v.sirka) + (rucne ? ' (ručně)' : ''),
+    ['Šířka skla bočního světlíku (přes sloupky) — předpočítaná / použitá', mm(v.sirkaPredpocitana) + ' / ' + mm(v.sirka) + (rucne ? ' (ručně)' : ''),
       'předpočítaná = plocha podle rozložení / (2,2 m × ' + n + ' světlíků) — u dveří s jedním světlíkem celá mezera, se dvěma polovina, '
       + 'smíšené rozložení průměr; ruční šířku zadává obchodník v Modelu 2 při ručním počtu světlíků (rozhodnutí J. V. 1. 10. 2026)'
       + ((typeof OCK !== 'undefined' && OCK && OCK.fixes) ? '' : ' — Model 1 ruční šířku nečte')],

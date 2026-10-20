@@ -294,7 +294,7 @@ function tsSvetlikyDveri(Z, r) {
   const v = tsVyplnDveri(z, r);
   const zask = z.zaskleni === 'mezi příčníky' ? 'v lištách' : 'na terče';
   const cast = (popisek, ks, druh, kde) => {
-    const kusy = ks + ' ks' + (kde === 'boky' && v.sirkaRucne != null ? ', šířka ' + Math.round(v.sirkaRucne * 1000) + ' mm' : '');
+    const kusy = ks + ' ks' + (kde === 'boky' && v.sirkaRucne != null ? ', šířka skla ' + Math.round(v.sirkaRucne * 1000) + ' mm' : '');   // #442: šířka SKLA
     if (druh === 'stavba') return kde === 'nad' ? 'Nadpraží nad šachetními dveřmi zajistí objednatel'
       : popisek + ': ' + kusy + ', výplň zajistí objednatel';
     if (druh === 'plech') return popisek + ': ' + kusy + ', plech';

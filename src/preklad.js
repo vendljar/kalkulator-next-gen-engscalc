@@ -724,6 +724,7 @@ const PREKLAD = {
   "ROZŠÍŘENÍ CENOVÉ NABÍDKY – PŘÍPLATKY": ["QUOTATION EXTENSIONS – SURCHARGES","ERWEITERUNG DES ANGEBOTS – ZUSCHLÄGE","EXTENSIONS DE L'OFFRE – SUPPLÉMENTS"],
   "Tisk specifikace / PDF": ["Print specification / PDF","Spezifikation drucken / PDF","Imprimer la spécification / PDF"],
   "šířka": ["width","Breite","largeur"],
+  "šířka skla": ["glass width", "Glasbreite", "largeur du verre"],
   "hloubka": ["depth","Tiefe","profondeur"],
   "sazba": ["rate","Satz","taux"],
 
@@ -1287,7 +1288,7 @@ function prekladPoradiFr(n) { return parseInt(n, 10) === 1 ? '1re' : parseInt(n,
  * („5 ks, šířka 600 mm") — přeloží se obecné heslo „šířka" ze slovníku
  * a číslo s „mm" zůstane. NÁVRH PŘEKLADU — čeká na odbornou kontrolu J. V. */
 const PREKLAD_SVETLIKY_CAST = '(?:(?:Světlík nad šachetními dveřmi|Nadpraží nad šachetními dveřmi|Světlíky na bocích dveří): \\d+ ks'
-  + '(?:, šířka \\d+ mm)?'
+  + '(?:, šířka(?: skla)? \\d+ mm)?'   // #442: šířka skla (od v20.10.3), šířka ve starších otiscích
   + '(?:, (?:sklo VSG 4\\.4\\.1|sklo VSG 4\\.4\\.2|izolační dvojsklo|Cetris|plech|výplň zajistí objednatel)(?: \\(stěna [AC]\\))?)*'
   + '(?:, (?:na terče|v lištách))?|Nadpraží nad šachetními dveřmi zajistí objednatel)';
 const PREKLAD_SVETLIKY_RE = new RegExp('^' + PREKLAD_SVETLIKY_CAST + '(?:; ' + PREKLAD_SVETLIKY_CAST + ')*$');
@@ -1306,8 +1307,8 @@ function prekladSvetlikyDveri(text, lang) {
     const polozky = cast.slice(i + 2).split(', ').map(p => {
       let m = p.match(/^(\d+) ks$/);
       if (m) return m[1] + ' ' + ks;
-      m = p.match(/^šířka (\d+) mm$/);   // #381: ruční šířka bočního světlíku
-      if (m) return male(T('šířka')) + ' ' + m[1] + ' mm';
+      m = p.match(/^šířka( skla)? (\d+) mm$/);   // #381 ruční šířka bočního světlíku, #442 šířka skla
+      if (m) return male(T(m[1] ? 'šířka skla' : 'šířka')) + ' ' + m[2] + ' mm';
       m = p.match(/^(.+) \(stěna ([AC])\)$/);
       if (m) return male(T(m[1])) + ' (' + male(T('stěna')) + ' ' + m[2] + ')';
       return male(T(p));
