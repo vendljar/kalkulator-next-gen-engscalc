@@ -4915,16 +4915,16 @@
    "pozn" : "Pokyn J. V.: **překlady zatím NEMĚNIT**, jen vypsat."
   },
   {
-   "id" : "260",
-   "vlna" : "E",
-   "stav" : "blokovano",
-   "dulezitost" : "nizka",
-   "slozitost" : "S",
-   "nazev" : "Chybějící příloha k nálezu D3 (online calkulak)",
-   "cekaNa" : "J. V. — soubor online calkulak.doc nebyl dodán",
-   "proc" : "Bez přílohy je nález D3 opravený jen zpola; nejde ověřit, co přesně měl dokument obsahovat.",
-   "detail" : "ZBÝVÁ: dodat soubor a doplnit zbývající část D3.",
-   "hotovoKdyz" : "Příloha je k dispozici a D3 je uzavřené celé."
+   "id": "260",
+   "vlna": "E",
+   "stav": "hotovo",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "nazev": "Chybějící příloha k nálezu D3 (online calkulak)",
+   "proc": "Bez přílohy je nález D3 opravený jen zpola; nejde ověřit, co přesně měl dokument obsahovat.",
+   "detail": "HOTOVO v20.10.4 (dávka D2): soubor dodán — šablona nabídky PROJ od D. Sikory (OVP-CN „online calkulak“, rev. 33, 15. 9. 2026) s barevně vyznačenými podmíněnými texty; J. V. ho má. Rozhodnutí J. V. 20. 10. 2026 promítnuta jako #444 (cestovné mimo Prahu), #445 (úvod upravitelný obchodníkem), #446 (jednostupňová dokumentace).",
+   "hotovoKdyz": "Příloha je k dispozici a D3 je uzavřené celé.",
+   "hotovoV": "v20.10.4"
   }
   ,
   {
@@ -6758,7 +6758,7 @@
    "slozitost" : "S",
    "nazev" : "B189: výchozí režim DPH ve SoD realizace podle DIČ (CZ plátce, stavba v ČR)",
    "proc" : "Audit kola 28: DIČ CZ → „česká DPH“ (šablona v2 měla přenesenou daňovou povinnost, § 92e u stavebních prací plátci), DIČ EU → reverse charge podle čl. 196 bez ohledu na místo stavby.",
-   "detail" : "Rozhodnutí J. V. 19. 10. 2026: DIČ CZ → přenesená daňová povinnost (tuzemsko, § 92e), bez DIČ → česká DPH, DIČ z EU i mimo EU → bez výchozí volby; bez zvoleného režimu smlouva o dílo realizace nevznikne (sodDphZabrana — registr i tlačítko s hláškou a odkazem na volbu). Ruční volba má přednost, uložená volba se nemění. Znění vět předběžné do kontroly účetní (`podklady/SOD_EN_KONTROLA.md`).",
+   "detail" : "Rozhodnutí J. V. 19. 10. 2026: DIČ CZ → přenesená daňová povinnost (tuzemsko, § 92e), bez DIČ → česká DPH (od v20.10.6 přenesená — V7-N2, #438), DIČ z EU i mimo EU → bez výchozí volby; bez zvoleného režimu smlouva o dílo realizace nevznikne (sodDphZabrana — registr i tlačítko s hláškou a odkazem na volbu). Ruční volba má přednost, uložená volba se nemění. Znění vět předběžné do kontroly účetní (`podklady/SOD_EN_KONTROLA.md`).",
    "hotovoKdyz" : "Rozhodnutí J. V. zapsané, `kryciDphRezimVychozi` podle něj, test a mutace.",
    "kde" : "`src/kryci.js`, `src/sod.js`, `src/ui/ukazkove_ui.js`, `src/ui/sod_ui.js`, `src/test_sod_en.js`",
    "hotovoV" : "v19.10.1",
@@ -6844,15 +6844,15 @@
   {
    "id": "437",
    "vlna": "B",
-   "stav": "blokovano",
+   "stav": "hotovo",
    "dulezitost": "stredni",
    "slozitost": "M",
-   "cekaNa": "J. V.: rozhodnutí k nálezům auditu K3 (doporučení v podklady/K3_AUDIT_19_10.md, oddíl Doporučený postup)",
-   "nazev": "Audit K3 — nálezy čekající na rozhodnutí J. V. (K3-N2, N1 heslo a složka, N4, N13, N15, N18, mez rozměru můstku)",
-   "proc": "Audit K3 (19. 10. 2026): část nálezů mění chování pro uživatele nebo potřebuje čísla — bez J. V. se nedělají.",
-   "detail": "K3-N2 odeslaná nabídka tiskne aktuální věty z Firmy (doporučení: zmrazit při prvním zamčení); K3-N1 heslo správce u záznamu kopie-disk a omezení na složku „_Zaloha Netlify DB“ (doporučení: obojí ano); K3-N4 limit četnosti ručních otisků (doporučení 1 / 10 min, 20 / den); K3-N13 práh smysluplnosti otisku před retencí (doporučení pokles pod 50 %); K3-N15 heslo správce i u POST /api/firma (doporučení ano); K3-N18 souhrnný strop velikosti podmínek (číslo); K3-N17 horní mez rozměru můstku (číslo).",
-   "hotovoKdyz": "Rozhodnutí J. V. zapsaná a promítnutá do kódu s testy, nebo zapsaná jako vědomé meze v BEZPECNOST_MEZE.md.",
-   "kde": "`podklady/K3_AUDIT_19_10.md`",
+   "hotovoV": "v20.10.2",
+   "nazev": "Audit K3 — rozhodnutí J. V. (K3-N2 zmrazení, N1 heslo a složka, N4 limit otisků, N13 pojistka retence, N15, N18 strop, N17 rozměr můstku)",
+   "proc": "Audit K3 (19. 10. 2026): část nálezů mění chování pro uživatele nebo potřebuje čísla — rozhodl J. V. 20. 10. 2026 (dialog).",
+   "detail": "HOTOVO v20.10.2 (dávka O7, větev claude/o7-k3-rozhodnuti). K3-N2: při prvním zamčení se věty platebního kalendáře, díly vět SoD (data.kryci.zmrazenoPodminky) a texty nabídky PROJ vč. dolozkyTisk (data.kryciProj.zmrazenoPodminky) uloží do varianty, dotisk je čte odtud; starší zamčené varianty tisknou aktuální Firmu. K3-N1: záznam kopie-disk jen s heslem správce a ze složky „_Zaloha Netlify DB“, retenci odemkne jen záznam se značkou potvrzeno. K3-N4: vynucené otisky 1 / 10 min a 20 / 24 h → 429 s časem; noční a před obnovou se nepočítají. K3-N13: noční otisk s < 50 % zakázek nebo účtů proti předchozímu nočnímu → retence přeskočena, varování v logu a v hlídce administrace (30 dní). K3-N15 beze změny (BEZPECNOST_MEZE.md). K3-N18: strop podmínek 500 kB. K3-N17: kontrola mustekRozmer upozorní nad 6000 mm a u nečíselného rozměru. Testy src/test_o7_zmrazeni.js, src/test_o7_kopie_klient.js, netlify/test_zalohy.mjs, src/test_mustky.js, overit_online.mjs; mutace „O7: …“.",
+   "hotovoKdyz": "Rozhodnutí J. V. promítnutá do kódu s testy s pojistkou, K3-N15 zapsané jako vědomá mez, kolo --bez-mutaci zelené, cílené mutace O7 bez přeživší.",
+   "kde": "`src/podminky.js`, `src/kryci.js`, `src/kryci_proj.js`, `src/nabidka_proj.js`, `src/kontroly.js`, `netlify/lib/zalohovani.mjs`, `netlify/functions/zaloha_vynuceno.mjs`, `netlify/functions/zaloha_nocni.mjs`, `src/ui/online_ui.js`, `src/uloziste.js`, `BEZPECNOST_MEZE.md`",
    "zavisi": [
     "436"
    ],
@@ -6923,6 +6923,88 @@
    "kde": "`podklady/D1_SIKORA_19_10.md`",
    "zavisi": [],
    "pozn": "Předběžné id."
+  },
+  {
+   "id": "444",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "vysoka",
+   "slozitost": "M",
+   "hotovoV": "v20.10.4",
+   "nazev": "Nabídka PROJ: cestovné u akce mimo Prahu (1 výjezd technika) — ZA, SP, DPZ, KOLAUDACE v ceně, IČ a AD jen uvedeno",
+   "proc": "Šablona D. Sikory (rev. 33) má podmíněné věty o cestovném; rozhodnutí J. V. 20. 10. 2026 bod 1.",
+   "detail": "HOTOVO v20.10.4 (dávka D2, větev claude/d2-proj-sikora). Přepínač „Akce mimo Prahu“ v Kalkulaci PROJ (PJ.akceMimoPrahu), cena v ceníku PROJ PC.vyjezdTechnikKc, přepis u zakázky PJ.vyjezdKcPrepis (prázdno = ceník, 0 = neúčtovat). engine_proj.js přičte výjezd po přirážce k zaměření, DPZ a kolaudaci a ke studii jen bez samostatného zaměření (jedna cesta; výchozí volba D2). Věty online i ve Wordu ({{PROJ_CESTOVNE_ZAMERENI/SP/DPZ/IC/KOLAUDACE/AD}}, šablona PROJ v8 z vyrob_sablony.js --proj-v8 nad v7 D1, jinak v6). Krycí list, plán plateb a SoD berou cenu z jádra — konzistentní. Kontroly vyjezdCenaChybi, cestovneWordProj. EN/DE/FR výchozí znění ke kontrole rodilými mluvčími.",
+   "hotovoKdyz": "Cena činnosti s výjezdem všude stejná, věty online i ve Wordu, v Praze nic; test s pojistkou, mutace D2 bez přeživší.",
+   "kde": "`src/engine_proj.js`, `src/nabidka_proj.js`, `src/ui/kalk_proj.js`, `src/ui/nabidka_proj_ui.js`, `src/kontroly.js`, `src/preklad.js`, `nastroje/vyrob_sablony.js`, `src/test_d2_proj_sikora.js`",
+   "zavisi": [
+    "260"
+   ],
+   "pozn": "Předběžné id (přidělí koordinace). Šablonu PROJ v8 vyrobí a nahraje J. V. (podklady/D2_SIKORA_PROJ.md)."
+  },
+  {
+   "id": "445",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "hotovoV": "v20.10.4",
+   "nazev": "Nabídka PROJ: úvod „Naše NABÍDKA a doporučení“ upravitelný obchodníkem (Vrátit výchozí, upozornění při změně činností)",
+   "proc": "Rozhodnutí J. V. 20. 10. 2026 bod 2 (šablona D. Sikory).",
+   "detail": "HOTOVO v20.10.4: karta Cenová nabídka (PROJ) — pole úvodu předvyplněné podle činností, ruční text v zadání varianty (PJ.uvodNabidkyRucne + výchozí znění PJ.uvodNabidkyZaklad), tlačítko ↺ Vrátit výchozí, upozornění v kartě i kontrola uvodProjNesedi, když se změní nabízené činnosti. Zamčená varianta drží text. Ruční text platí pro český dokument; EN/DE/FR tisknou výchozí přeložené znění (výchozí volba D2).",
+   "hotovoKdyz": "Ruční úvod online i ve Wordu ({{UVOD_NABIDKY_PROJ}}), návrat výchozího, upozornění; test s pojistkou.",
+   "kde": "`src/engine_proj.js`, `src/nabidka_proj.js`, `src/ui/kalk_proj.js`, `src/ui/nabidka_proj_ui.js`, `src/kontroly.js`, `src/preklad.js`, `nastroje/vyrob_sablony.js`, `src/test_d2_proj_sikora.js`",
+   "zavisi": [
+    "260"
+   ],
+   "pozn": "Předběžné id."
+  },
+  {
+   "id": "446",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "hotovoV": "v20.10.4",
+   "nazev": "Kalkulace PROJ: volba „Jednostupňová dokumentace“ — kontrola před nabídkou upozorní na ruční úpravu ve Wordu",
+   "proc": "Rozhodnutí J. V. 20. 10. 2026 bod 3 (šablona D. Sikory).",
+   "detail": "HOTOVO v20.10.4: zaškrtávátko v Kalkulaci PROJ (PJ.jednostupnova, dosud neexistovalo); kontrola jednostupnovaProj (upozornění) vypíše, co hlídat: DPZ+DPS v jednom stupni, ceny, plán plateb, termíny. Nic se automaticky nepřepisuje ani nepřepočítává.",
+   "hotovoKdyz": "Upozornění se ozve jen se zapnutou volbou; test s pojistkou.",
+   "kde": "`src/engine_proj.js`, `src/nabidka_proj.js`, `src/ui/kalk_proj.js`, `src/ui/nabidka_proj_ui.js`, `src/kontroly.js`, `src/preklad.js`, `nastroje/vyrob_sablony.js`, `src/test_d2_proj_sikora.js`",
+   "zavisi": [
+    "260"
+   ],
+   "pozn": "Předběžné id."
+  },
+  {
+   "id": "438",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "hotovoV": "v20.10.6",
+   "nazev": "V7-N2: výchozí režim DPH ve SoD realizace v ČR = přenesená daňová povinnost (i bez DIČ)",
+   "proc": "Kontrola V7 (18. 10.): výchozí režim podle DIČ nezohledňoval místo stavby, otázka čekala na účetní. Rozhodnutí J. V. 20. 10. 2026: „toto ignoruj, zadej v ČR primárně přenesenou daňovou povinnost a obchodník si může měnit“.",
+   "detail": "HOTOVO v20.10.6 (dávka V7-N2, větev claude/v7n2-dph-pdp): `kryciDphRezimVychozi` — DIČ CZ i bez DIČ → přenesená daňová povinnost (tuzemsko); bez DIČ dřív česká DPH (B189). Cizí DIČ beze změny (bez výchozí volby, zábrana sodDphZabrana). Ruční volba v krycím listu má přednost (rozbalovátko, ↺ vrátí výchozí), uložená volba ani zmrazené předvyplnění zamčené varianty se nemění; ruční česká DPH se propíše do SoD CZ/EN/DE/FR. Otázka pro účetní (SOD_EN_KONTROLA bod 1 a 4) uzavřena rozhodnutím J. V.",
+   "hotovoKdyz": "Bez DIČ výchozí přenesená, přepnutí na českou DPH v SoD CZ/EN/DE/FR, ↺ vrátí výchozí; test s pojistkou a mutace V7-N2.",
+   "kde": "`src/kryci.js`, `src/test_sod_en.js`, `mutace_jadro.mjs`, `podklady/SOD_EN_KONTROLA.md`, `manual/obsah.json`",
+   "zavisi": [
+    "430"
+   ],
+   "pozn": "Předběžné id (přidělí koordinace při sloučení)."
+  },
+  {
+   "id": "448",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "nazev": "B183 volba (b): plocha pásu a světlíku v obsahu cenové výjimky na 0,1 m² (dřív schválené platí dál)",
+   "proc": "Audit kola 27 (B183): obsah výjimky nesl plochu na celé m², takže zvětšení po schválení např. 2,50 → 3,49 m² dalo týž obsah — nekrytý nárůst až skoro 1 m² na pás či světlík. Rozhodnutí J. V. 20. 10. 2026: volba (b), 0,1 m².",
+   "detail": "`vyjimkyM2Schvaleni` na desetiny nahoru (J. V. 20. 10. ~13:20: vždy horší varianta; 2,50 → 2,5, 2,51 i 2,60 → 2,6, 2,61 → 2,7), obsah s pásem nese značku tvaru `v: 2`. Dřív schválené výjimky (celé m², bez značky) se porovnávají i obsahem starého tvaru (`obsahStary`, `vyjimkaObsahSedi`) v prohlížeči i na serveru — platí, dokud se jejich obsah nezmění; nové schválení razí server vždy v novém tvaru, starý tvar podvrhnout nejde (403). Karta Cenové výjimky ukazuje plochu na 0,1 m², u dřív schválené na celé m² s poznámkou (V7-N1).",
+   "hotovoKdyz": "Testy s pojistkou (src/test_vyjimky.js, netlify/test_vyjimky.mjs), cílené mutace „B183“ chycené, mez < 0,1 m² v BEZPECNOST_MEZE.md.",
+   "kde": "`src/vyjimky.js`, `src/ui/schvalovani_ui.js`, `mutace_jadro.mjs`, `netlify/mutace.mjs`",
+   "hotovoV": "v20.10.5",
+   "pozn": "Id 448 přidělila koordinace (předběžné 441 kolidovalo s D1) (přidělí koordinace při sloučení; 438–440 nechány souběžným dávkám O7, D1, D2)."
   }
  ],
  "meta" : {

@@ -54,10 +54,16 @@ Komunikace česky. Know-how projektu je ve skillech `kalkulator-next-gen`,
   a vypíše odkaz na vydaný release. Verze bez tagu:
   `python3 nastroje/release_odkaz.py --chybejici`.
 - Tagy jsou jednoduché (lightweight) ve tvaru `vDEN.MĚSÍC.pořadí`.
-- Sloučené pomocné větve maže J. V. — poslat odkaz
-  `https://github.com/vendljar/kalkulator-next-gen-engscalc/branches/all?query=<větev>`.
-  Ke smazání navrhnout jen větev, která je celá v `test-draft`
-  (`git merge-base --is-ancestor origin/<větev> origin/test-draft`).
+- **Sloučené pomocné větve maže J. V. tlačítkem v Actions (W2, 20. 10. 2026):**
+  GitHub → Actions → „Smazat sloučené větve“ → Run workflow
+  (https://github.com/vendljar/kalkulator-next-gen-engscalc/actions/workflows/smazat_vetve.yml).
+  Smaže větve celé v `test` (`git merge-base --is-ancestor origin/<větev> origin/test`),
+  nikdy `main`, `test`, `test-draft`, `claude/integrace-*` ani větev s posledním
+  commitem mladším než `stari_hodin` (výchozí 24 h); vstupy `vynechat`
+  a `jen_vypsat`. Logika je v `nastroje/sloucene_vetve.sh` (lokálně
+  `--jen-vypsat` ukáže, co by se smazalo), test `nastroje/test_sloucene_vetve.sh`.
+  **Koordinace už seznam odkazů na mazání jednotlivých větví nepřipravuje** —
+  nanejvýš J. V. připomene, že je co mazat.
 
 ## Předávací soubor `PREDAVKA.md`
 

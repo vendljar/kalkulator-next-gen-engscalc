@@ -62,14 +62,32 @@ async function podmVratitVse() {
   delete f.podminky;
   nastRefresh();
 }
-/* „Zapsat výchozí hodnoty do Firmy" — továrna se zkopíruje do záznamu,
- * aby šla zveřejnit a od té doby platila jen Firma. Bez kliknutí se nic
- * nemění (podminkyEf továrnu doplní při čtení). */
-function podmZapsatVychozi() {
-  if (!jeAdmin()) { hlaska('Platební podmínky firmy smí měnit jen administrátor.'); return; }
-  const ef = PODMINKY.podminkyEf(NAST.firma || {});
-  firmaSet('podminky', PODMINKY.podminkyCiste(ef));
-  hlaska('Platební podmínky jsou zapsané ve Firmě. Online je zveřejníte tlačítkem „Zveřejnit".');
+/* „Zapsat výchozí hodnoty" — továrna se zkopíruje do záznamu Firmy a na
+ * serveru se rovnou zveřejní (U1, 20. 10. 2026, J. V.: „zapisuj je rovnou
+ * stiskem"; dřív jen zápis a hláška odkazovala na tlačítko, které na záložce
+ * nebylo). Zveřejnění jde stejnou cestou jako tlačítko ve Firmě
+ * (onlineZverejniFirmu: jen administrátor online, firmaLzeZverejnit, chyba
+ * serveru se ohlásí); výsledek ukáže záložka u tlačítka. Bez serveru jen
+ * zápis a hláška řekne proč. Bez kliknutí se nic nemění (podminkyEf
+ * továrnu doplní při čtení). */
+async function podmZapsatVychozi() {
+  if (!jeAdmin()) { hlaska('Platební podmínky firmy smí měnit jen administrátor.'); return false; }
+  const f = NAST.firma || (NAST.firma = firmaDefault());
+  /* Přímo, ne přes firmaSet: ten sundává značku ukázkových dat, a výchozí
+   * podmínky z kódu z ukázkové firmy skutečnou nedělají (stejně jako
+   * „Doplnit všechny prázdné" u kapitol). Se zveřejněním rovnou stiskem by
+   * jinak šla na server ukázková firma ze sestavení. */
+  f.podminky = PODMINKY.podminkyCiste(PODMINKY.podminkyEf(f));
+  nastRefresh();
+  if (typeof onlineFirmaZverejnitMozne === 'function' && onlineFirmaZverejnitMozne())
+    return onlineZverejniFirmu(true);
+  hlaska('Platební podmínky jsou zapsané. ' + podmKdeZverejnit());
+  return false;
+}
+/* Kde se zveřejňuje — věta z online_ui.js; bez něj (Node testy) obecná. */
+function podmKdeZverejnit() {
+  return typeof onlineFirmaKdeZverejnit === 'function' ? onlineFirmaKdeZverejnit()
+    : 'Online zveřejnit teď nejde — aplikace neběží na serveru.';
 }
 
 /* ---------- vykreslení ---------- */
@@ -78,15 +96,19 @@ function podmStitek(cast, pole) {
   const upr = PODMINKY.podminkyUpraveno(NAST.firma || {}, cast, pole);
   return upr ? '<span class="pill">upraveno</span>' : '<span class="pill mut">výchozí</span>';
 }
-function podmRadek(label, vstup, pozn) {
-  return `<div class="row"><label>${esc(label)}</label>${vstup}
+/* Řádek: popisek | vstup | jednotka | poznámka. Jednotka má vlastní sloupec
+ * pevné šířky i tam, kde žádná není — jen tak končí všechny vstupy oddílu
+ * ve stejné svislici (U1, 20. 10. 2026: „Limit smluvních pokut" s jednotkou
+ * uvnitř pružného obalu ujížděl doleva). */
+function podmRadek(label, vstup, pozn, jednotka) {
+  return `<div class="row podm-radek"><label>${esc(label)}</label>${vstup}
+    <span class="podm-jednotka">${esc(jednotka || '')}</span>
     <span class="note" style="flex:none;width:210px;font-size:11.5px">${pozn || ''}</span></div>`;
 }
-function podmCisloVstup(cast, pole, hodnota, min, max, jednotka) {
+function podmCisloVstup(cast, pole, hodnota, min, max) {
   const dis = jeAdmin() ? '' : ' disabled';
-  return `<span style="display:flex;gap:6px;align-items:center;flex:1;min-width:0">
-    <input type="number" min="${min}" max="${max}" step="1" value="${esc(String(hodnota))}" style="width:90px"
-      onchange="podmSet(${cast ? `'${cast}'` : 'null'}, '${escJs(pole)}', this.value, 'cislo')"${dis}> ${esc(jednotka || '')}</span>`;
+  return `<input type="number" min="${min}" max="${max}" step="1" value="${esc(String(hodnota))}"
+      onchange="podmSet(${cast ? `'${cast}'` : 'null'}, '${escJs(pole)}', this.value, 'cislo')"${dis}>`;
 }
 function podmVyberVstup(cast, pole, hodnota, volby) {
   const dis = jeAdmin() ? '' : ' disabled';
@@ -112,8 +134,8 @@ function nastPodminkySpolecne() {
     ${podmRadek('Sazby smluvních pokut (výběr v krycím listu)', `<input type="text" id="podmSazby"
       value="${esc(ef.sazbyPokut.join(' · '))}" onchange="podmSet(null, 'sazbyPokut', this.value, 'seznamSazeb')"${dis}>`,
       podmStitek(null, 'sazbyPokut') + ' první musí být „0" (bez pokuty), další „N % / den", odděleno tečkou ·')}
-    ${podmRadek('Limit smluvních pokut', podmCisloVstup(null, 'limitPokutProc', ef.limitPokutProc, 0, 100, '% z ceny díla'),
-      podmStitek(null, 'limitPokutProc') + ' volby „Uplatněn / NEUPLATNĚN limit N %"')}`;
+    ${podmRadek('Limit smluvních pokut', podmCisloVstup(null, 'limitPokutProc', ef.limitPokutProc, 0, 100),
+      podmStitek(null, 'limitPokutProc') + ' volby „Uplatněn / NEUPLATNĚN limit N %"', '% z ceny díla')}`;
 }
 
 function podmPrepinac() {
@@ -146,24 +168,24 @@ function nastPodminkyOck() {
     <div class="note" style="margin-top:0">Výchozí hodnoty <b>krycího listu OCK</b>. Obchodník je v zakázce může přepsat
       (↺ v krycím listu vrátí hodnotu odsud). Změna se propíše do rozpracovaných variant; odeslané a zamčené
       nabídky mají podmínky zmrazené a nezmění se.</div>
-    ${podmRadek('Splatnost faktur', podmCisloVstup('ock', 'splatnostDni', o.splatnostDni, 1, 120, 'dní'), podmStitek('ock', 'splatnostDni'))}
+    ${podmRadek('Splatnost faktur', podmCisloVstup('ock', 'splatnostDni', o.splatnostDni, 1, 120), podmStitek('ock', 'splatnostDni'), 'dní')}
     ${splatka('Záloha / dílčí faktura č. 1 — výchozí', 'zalohaProc', 'zalohaMilnik', ' milník platí pro všechny volby zálohy')}
     ${podmRadek('Volby zálohy v krycím listu', `<input type="text" value="${esc(o.zalohyProc.map(p => +p === 0 ? 'Bez zálohy' : PODMINKY.podmProcText(p) + ' %').join(' · '))}"
       onchange="podmSet('ock', 'zalohyProc', this.value, 'seznamProcent')"${dis}>`, podmStitek('ock', 'zalohyProc') + ' oddělte tečkou ·, první „Bez zálohy"')}
     ${splatka('Dílčí faktura č. 2', 'faktura2Proc', 'faktura2Milnik', ' v krycím listu se dopočítá do 100 %')}
     ${splatka('Konečná faktura', 'konecnaProc', 'konecnaMilnik')}
     ${soucet}
-    ${podmRadek('Zádržné do odstranění vad a nedodělků', `<span style="display:flex;gap:6px;align-items:center;flex:1">
+    ${podmRadek('Zádržné do odstranění vad a nedodělků', `<span style="display:flex;gap:6px;align-items:center;flex:none">
       ${podmVyberVstup('ock', 'zadrzneVan', o.zadrzneVan, anoNe)}
       <input type="number" min="0" max="20" placeholder="%" value="${esc(String(o.zadrzneVanProc))}" style="width:80px"
-        onchange="podmSet('ock', 'zadrzneVanProc', this.value, 'procentaVolitelne')"${dis}> %</span>`,
-      podmStitek('ock', 'zadrzneVan') + (o.zadrzneVan === 'Ano' && o.zadrzneVanProc === '' ? ' <span class="pill warn">Ano bez procenta</span>' : ''))}
-    ${podmRadek('Zádržné po dobu záruky', `<span style="display:flex;gap:6px;align-items:center;flex:1">
+        onchange="podmSet('ock', 'zadrzneVanProc', this.value, 'procentaVolitelne')"${dis}></span>`,
+      podmStitek('ock', 'zadrzneVan') + (o.zadrzneVan === 'Ano' && o.zadrzneVanProc === '' ? ' <span class="pill warn">Ano bez procenta</span>' : ''), '%')}
+    ${podmRadek('Zádržné po dobu záruky', `<span style="display:flex;gap:6px;align-items:center;flex:none">
       ${podmVyberVstup('ock', 'zadrzneZaruka', o.zadrzneZaruka, anoNe)}
       <input type="number" min="0" max="20" placeholder="%" value="${esc(String(o.zadrzneZarukaProc))}" style="width:80px"
-        onchange="podmSet('ock', 'zadrzneZarukaProc', this.value, 'procentaVolitelne')"${dis}> %</span>`,
-      podmStitek('ock', 'zadrzneZaruka') + (o.zadrzneZaruka === 'Ano' && o.zadrzneZarukaProc === '' ? ' <span class="pill warn">Ano bez procenta</span>' : ''))}
-    ${podmRadek('Doba záruky', podmCisloVstup('ock', 'zarukaMesicu', o.zarukaMesicu, 0, 240, 'měsíců'), podmStitek('ock', 'zarukaMesicu'))}
+        onchange="podmSet('ock', 'zadrzneZarukaProc', this.value, 'procentaVolitelne')"${dis}></span>`,
+      podmStitek('ock', 'zadrzneZaruka') + (o.zadrzneZaruka === 'Ano' && o.zadrzneZarukaProc === '' ? ' <span class="pill warn">Ano bez procenta</span>' : ''), '%')}
+    ${podmRadek('Doba záruky', podmCisloVstup('ock', 'zarukaMesicu', o.zarukaMesicu, 0, 240), podmStitek('ock', 'zarukaMesicu'), 'měsíců')}
     ${podmRadek('Smluvní pokuta – prodlení dodávky', podmVyberVstup('ock', 'pokutaDodavka', o.pokutaDodavka, sazby), podmStitek('ock', 'pokutaDodavka'))}
     ${podmRadek('Smluvní pokuta – prodlení splatnosti', podmVyberVstup('ock', 'pokutaSplatnost', o.pokutaSplatnost, sazby), podmStitek('ock', 'pokutaSplatnost'))}
     ${podmRadek('Limit smluvních pokut', podmVyberVstup('ock', 'pokutaLimit', o.pokutaLimit, limit), podmStitek('ock', 'pokutaLimit'))}
@@ -216,7 +238,8 @@ function nastPodminkyVety(ef) {
     <div class="note" style="margin-top:0">Věty nabídky OCK (<code>{{PODM_PLATEBNI_KALENDAR}}</code>) a seznamu splátek smlouvy
       o dílo realizace (<code>{{SOD_PLATEBNI_KALENDAR}}</code>). Značky <code>{PORADI}</code> a <code>{PROC}</code> doplní aplikace
       (pořadí dokladu a procento v jazyce dokumentu). <b>Prázdné pole = výchozí znění</b>: česky dnešní věta, v cizím jazyce
-      překlad výchozí české věty ze slovníku (šedý text v poli ukazuje, co se vytiskne). Odeslané nabídky se nemění.</div>
+      překlad výchozí české věty ze slovníku (šedý text v poli ukazuje, co se vytiskne). Odeslané nabídky se nemění —
+      věty se při odeslání opíšou do varianty (od v20.10.2; nabídky odeslané dřív tisknou aktuální znění).</div>
     ${Object.keys(PODM_VETY_POPIS).map(blok).join('')}`;
 }
 
@@ -228,7 +251,7 @@ function nastPodminkyProj() {
   return `<div class="sec-title">Platební podmínky PROJ</div>
     <div class="note" style="margin-top:0">Výchozí hodnoty <b>krycího listu PROJ</b>; v zakázce jdou přepsat. Splátky projekce
       určuje plán plateb níž.</div>
-    ${podmRadek('Splatnost faktur', podmCisloVstup('proj', 'splatnostDni', p.splatnostDni, 1, 120, 'dní'), podmStitek('proj', 'splatnostDni'))}
+    ${podmRadek('Splatnost faktur', podmCisloVstup('proj', 'splatnostDni', p.splatnostDni, 1, 120), podmStitek('proj', 'splatnostDni'), 'dní')}
     ${podmRadek('Smluvní pokuta – prodlení s odevzdáním', podmVyberVstup('proj', 'pokutaTermin', p.pokutaTermin, sazby), podmStitek('proj', 'pokutaTermin'))}
     ${podmRadek('Smluvní pokuta – prodlení splatnosti', podmVyberVstup('proj', 'pokutaSplatnost', p.pokutaSplatnost, sazby), podmStitek('proj', 'pokutaSplatnost'))}
     ${podmRadek('Limit smluvních pokut', podmVyberVstup('proj', 'pokutaLimit', p.pokutaLimit, limit), podmStitek('proj', 'pokutaLimit'))}
@@ -300,7 +323,8 @@ function nastPodminkyTextyProj(ef) {
       <b>Prázdné pole = výchozí znění</b> (česky dnešní text, cizí jazyk překlad ze slovníku — šedý text v poli).
       Online nabídka je bere hned, Word od šablony PROJ v6 (řádek tabulky za odrážku, termíny ve dvou sloupcích;
       starší šablony v3–v5 mají tyto bloky pevně). Pro šablonu s jedním místem jsou i <code>{{PROJ_TERMINY}}</code>
-      („činnost – termín" na řádek).</div>
+      („činnost – termín" na řádek). Odeslané nabídky se nemění — texty včetně volby tisku doložek se při odeslání
+      opíšou do varianty (od v20.10.2).</div>
     ${PODM_TEXTY_PROJ.map(blok).join('')}`;
 }
 
@@ -317,9 +341,31 @@ function nastPodminkyHlava() {
       krycí listy u vadných polí používají výchozí hodnoty:</b><br>${vady.map(v => esc(v)).join('<br>')}</div>` : ''}
     ${nastPodminkySpolecne()}
     ${admin ? `<div class="btns" style="margin-top:6px">
-      <button class="mini" onclick="podmZapsatVychozi()" title="zkopíruje platné hodnoty do záznamu firmy, aby šly zveřejnit">Zapsat výchozí hodnoty do Firmy</button>
-      ${f.podminky ? '<button class="mini" onclick="podmVratitVse()">↺ Vrátit platební podmínky na výchozí</button>' : ''}</div>` : ''}
+      <button class="mini" onclick="podmZapsatVychozi()" title="zapíše platné hodnoty do firemních údajů a na serveru je rovnou zveřejní online">Zapsat výchozí hodnoty</button>
+      ${f.podminky ? '<button class="mini" onclick="podmVratitVse()">↺ Vrátit platební podmínky na výchozí</button>' : ''}</div>
+      ${podmZverejnitBlok()}` : ''}
     ${podmPrepinac()}`;
+}
+
+/* Stav zveřejnění a tlačítko přímo tady (U1, 20. 10. 2026) — stejné
+ * tlačítko a stejné podmínky jako panel v Nastavení → Firma (online_ui.js).
+ * Ruční úprava kteréhokoli pole na záložce (sazby, limit, OCK/PROJ, věty,
+ * kapitoly) se tu ukáže jako „neuloženo online" s výčtem rozdílů. Bez serveru
+ * nebo bez přihlášení administrátora se tlačítko nekreslí, jen věta proč. */
+function podmZverejnitBlok() {
+  if (typeof onlineFirmaZverejnitMozne !== 'function') return '';
+  if (!onlineFirmaZverejnitMozne())
+    return `<div class="note podm-zverejnit" style="margin-top:6px">Změny se ukládají jen v této aplikaci — online zveřejnit
+      teď nejde, ${esc(onlineFirmaProcNe())}.</div>`;
+  const z = onlineFirmaZverejnitBlok('Zveřejnit změny online');
+  /* Úspěch se ukazuje, jen dokud je online totéž — po další úpravě by lhal. */
+  const v = ONLINE_STAV.firmaVysledek && (!ONLINE_STAV.firmaVysledek.ok || z.hotovo) ? ONLINE_STAV.firmaVysledek : null;
+  const stav = z.hotovo ? '' : `<div class="note" style="color:var(--warn);margin-top:0">⚠ <b>Neuloženo online</b> —
+      ostatním začnou změny platit, až je zveřejníte.</div>`;
+  return `<div class="podm-zverejnit" style="margin-top:6px">
+      ${v ? `<div class="note podm-vysledek" style="margin-top:0;color:var(${v.ok ? '--ok' : '--warn'})">${v.ok ? '✓' : '⚠'} ${esc(v.text)}</div>` : ''}
+      ${stav}${z.poznamky}
+      <div class="btns" style="margin-top:6px">${z.tlacitko}</div></div>`;
 }
 
 if (typeof module !== 'undefined')

@@ -21,6 +21,14 @@
  *       vrátí poslední noční otisk bez otisků hesel a bez podpisů; záznam
  *       o kopii drží server (POST akce kopie-disk), GET ho vrací.
  *
+ * Dávka O7 (rozhodnutí J. V. 20. 10. 2026, audit K3):
+ *   K3-N1  záznam kopie-disk jen s heslem správce a ze složky
+ *          „_Zaloha Netlify DB"; retenci odemkne jen takový záznam.
+ *   K3-N4  vynucený otisk nejvýš 1 za 10 min a 20 za 24 h → 429 s časem;
+ *          noční a „před obnovou" se nepočítají.
+ *   K3-N13 nový noční otisk s < 50 % zakázek nebo účtů proti předchozímu
+ *          nočnímu → retence se přeskočí, varování do logu a hlídky.
+ *
  * Paměťové úložiště, žádná síť. Spuštění: node netlify/test_zalohy.mjs */
 process.env.TAJEMSTVI_RELACE = 'testovaci-tajemstvi-jen-pro-lokalni-beh';
 process.env.ADMIN_INIT_HESLO = 'Docasne.Heslo.123';
@@ -66,6 +74,16 @@ const get = (fn, url, cookie) => fn(new Request(url, { headers: cookie ? { cooki
 const ulz = (n) => globalThis.__TEST_ULOZISTE(n);
 const ticho = async (fn) => { const l = console.log; console.log = () => {}; try { return await fn(); } finally { console.log = l; } };
 const dnes = () => new Date().toISOString().slice(0, 10);
+/* K3-N4 (O7): vynucený otisk má limit 1 za 10 minut. Sada jich pořizuje
+ * několik za sebou — každý „o 11 minut později": hodiny se posunou jen na
+ * dobu požadavku (klíč otisku i limit počítají z Date.now). */
+let posunHodin = 0;
+const postVynuceny = async (telo, ck, request) => {
+  posunHodin += 11 * 60000;
+  const puv = Date.now; Date.now = () => puv.call(Date) + posunHodin;
+  try { return await (await (request ? zalohaVynuceno(request) : post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', telo, ck === undefined ? cookie : ck))).json(); }
+  finally { Date.now = puv; }
+};
 
 const r = await post(prihlaseni, 'http://x/api/prihlaseni', { email: ADMIN_EMAIL, heslo: 'Docasne.Heslo.123' });
 const cookie = (r.headers.get('set-cookie') || '').split(';')[0];
@@ -80,7 +98,7 @@ await zkus('N1', async () => {
   const nocniPred = await ulz('zalohy').cti(dnes());
   /* Dopoledne se data pokazí a správce zmáčkne „Zálohovat teď". */
   await ulz('program').zapis('firma', { udaje: { nazev: 'POKAŽENO' } });
-  const ruc = await (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { duvod: 'rucne' }, cookie)).json();
+  const ruc = await postVynuceny({ duvod: 'rucne' });
   test('N1: ruční otisk má vlastní klíč s časem (<den>T<hhmmss>-rucne)',
     ruc.ok && /^\d{4}-\d{2}-\d{2}T\d{6}-rucne$/.test(ruc.den) && ruc.den.startsWith(dnes() + 'T'), ruc);
   const nocniPo = await ulz('zalohy').cti(dnes());
@@ -90,10 +108,10 @@ await zkus('N1', async () => {
   const rucni = await ulz('zalohy').cti(ruc.den);
   test('N1: ruční otisk nese aktuální stav, zdroj „vynuceno" a kdo', !!rucni && rucni.firma.udaje.nazev === 'POKAŽENO'
     && rucni.zdroj === 'vynuceno' && rucni.kdo === ADMIN_EMAIL);
-  const aut = await (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { duvod: 'auto' }, cookie)).json();
+  const aut = await postVynuceny({ duvod: 'auto' });
   test('N1: otisk při přihlášení má slot -auto', aut.ok && /^\d{4}-\d{2}-\d{2}T\d{6}-auto$/.test(aut.den), aut);
-  const bezTela = await (await zalohaVynuceno(new Request('http://x/api/zaloha_vynuceno',
-    { method: 'POST', headers: { cookie } }))).json();
+  const bezTela = await postVynuceny(null, null, new Request('http://x/api/zaloha_vynuceno',
+    { method: 'POST', headers: { cookie } }));
   test('N1: POST bez těla = ruční slot, ne noční den', bezTela.ok && /-rucne$/.test(bezTela.den), bezTela);
   test('N1: OTISK_KLIC přijme noční, ruční, auto i před obnovou; odmítne cizí',
     ['2026-10-19', '2026-10-19T101010-rucne', '2026-10-19T101010-auto', '2026-10-19T101010-pred-obnovou',
@@ -182,6 +200,7 @@ const KLICE = {
   rezim: ['analytika', false], 'den/': ['analytika', false], 'ocista-b175': ['analytika', false],
   pole: ['pipedrive', false],
   'kopie-disk': ['zalohy', false],         // záznam o kopii na Disk (#151 N6), ne data
+  'retence-varovani': ['zalohy', false],   // varování pojistky retence (K3-N13, O7), ne data
 };
 /* Dynamické výrazy v uloziste(…), které nejsou nové úložiště. */
 const DYNAMICKE = {
@@ -284,7 +303,7 @@ await zkus('N5', async () => {
     bezKopie.smazano.length === 0 && bezKopie.ceka === 'retence čeká na první kopii na Disk' && pamet.has('zalohy/2028-09-19'), bezKopie);
   const ted = Date.now();
   const kopiePodlozena = (kdy, otisk) => ({ kdy, soubor: 'otisk_' + otisk + '.json', velikostB: 1234,
-    sha256: 'b'.repeat(64), otisk, puvod: 'nocni-otisk', slozka: '_Zaloha Netlify DB' });
+    sha256: 'b'.repeat(64), otisk, puvod: 'nocni-otisk', slozka: '_Zaloha Netlify DB', potvrzeno: 'heslo-spravce' });
   /* O6 (20. 10. 2026): hranice 7 dní se ověřuje s PODLOŽENÝM záznamem —
    * nepodložený zastaví retenci už K3-N1 a stáří kopie by se netestovalo
    * (mutace „7 dní stará" a „lhůta 8 dní" po O5 přežily). Pojistka: se
@@ -324,6 +343,12 @@ await zkus('N5', async () => {
     'otisk v úložišti není': { ...dobra, otisk: '2028-08-15', soubor: 'otisk_2028-08-15.json' },
     'jméno souboru k jinému otisku': { ...dobra, soubor: 'otisk_2028-10-19.json' },
     'vynucený otisk místo nočního': { ...dobra, otisk: '2028-07-01T101010-rucne' },
+    /* K3-N1 O7 (J. V. 20. 10. 2026): heslo správce a složka. Záznam zapsaný
+     * před v20.10.2 (bez značky potvrzeno) retenci neodemkne. */
+    'bez potvrzení heslem (záznam před v20.10.2)': { ...dobra, potvrzeno: undefined },
+    'potvrzeno jinak než heslem': { ...dobra, potvrzeno: 'cookie' },
+    'jiná složka než _Zaloha Netlify DB': { ...dobra, slozka: 'Stažené soubory' },
+    'bez složky': { ...dobra, slozka: '' },
   };
   for (const [popis, z] of Object.entries(nepodlozene)) {
     test('K3-N1: nepodložený záznam kopie (' + popis + ') retenci neodemkne', !Z.kopieDiskPodlozena(z, [...pamet.keys()].map(k => k.slice(7))));
@@ -423,19 +448,151 @@ await zkus('N6', async () => {
     && r2.otisk === null && r2.zaloha.podpisy === null && !JSON.stringify(r2).includes('PODPISDATA'), { puvod: r2.puvod });
   const bez = await (await get(zalohaFn, 'http://x/api/zaloha', cookie)).json();
   test('N6: běžná záloha ke stažení se nezměnila (podpisy v ní zůstávají)', bez.ok && !!bez.zaloha.podpisy);
-  /* záznam o kopii */
+  /* záznam o kopii — od O7 (K3-N1) jen s heslem správce a ze složky „_Zaloha Netlify DB" */
+  const kopieTelo = { soubor: 'otisk_2026-10-19.json', velikostB: 1234, sha256: 'a'.repeat(64), otisk: '2026-10-19',
+    puvod: 'nocni-otisk', slozka: '_Zaloha Netlify DB', data: 'NESMI' };
+  const zaznamPred = pamet.get('zalohy/kopie-disk');
+  const bezHesla = await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { akce: 'kopie-disk', kopie: kopieTelo }, cookie);
+  const bezHeslaJ = await bezHesla.json();
+  test('K3-N1 O7: záznam kopie bez hesla správce → 401 s kódem hesloSpravce a nic se nezapíše',
+    bezHesla.status === 401 && bezHeslaJ.kod === 'hesloSpravce' && pamet.get('zalohy/kopie-disk') === zaznamPred, bezHeslaJ);
+  const spatneHeslo = await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { akce: 'kopie-disk', kopie: kopieTelo,
+    hesloSpravce: 'Spatne.Heslo.999' }, cookie);
+  test('K3-N1 O7: se špatným heslem → 401 a nic se nezapíše',
+    spatneHeslo.status === 401 && (await spatneHeslo.json()).kod === 'hesloSpravce' && pamet.get('zalohy/kopie-disk') === zaznamPred);
+  const jinaSlozka = await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { akce: 'kopie-disk',
+    kopie: { ...kopieTelo, slozka: 'Stažené soubory' }, hesloSpravce: 'Docasne.Heslo.123' }, cookie);
+  const jinaSlozkaJ = await jinaSlozka.json();
+  test('K3-N1 O7: kopie z jiné složky → 400 s hláškou o „_Zaloha Netlify DB" a nic se nezapíše',
+    jinaSlozka.status === 400 && /_Zaloha Netlify DB/.test(jinaSlozkaJ.chyba) && pamet.get('zalohy/kopie-disk') === zaznamPred, jinaSlozkaJ);
   const zap = await (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { akce: 'kopie-disk',
-    kopie: { soubor: 'otisk_2026-10-19.json', velikostB: 1234, sha256: 'a'.repeat(64), otisk: '2026-10-19',
-      puvod: 'nocni-otisk', slozka: '_Zaloha Netlify DB', data: 'NESMI' } }, cookie)).json();
+    kopie: kopieTelo, hesloSpravce: 'Docasne.Heslo.123' }, cookie)).json();
   test('N6: záznam kopie se uloží a vrátí', zap.ok && zap.kopieDisk.soubor === 'otisk_2026-10-19.json'
     && zap.kopieDisk.kdo === ADMIN_EMAIL && zap.kopieDisk.velikostB === 1234, zap);
+  test('K3-N1 O7: uložený záznam nese složku a značku potvrzení heslem (podložený, když otisk existuje)',
+    zap.ok && zap.kopieDisk.slozka === '_Zaloha Netlify DB' && zap.kopieDisk.potvrzeno === 'heslo-spravce'
+    && Z.kopieDiskPodlozena(zap.kopieDisk, ['2026-10-19']), zap.kopieDisk);
   test('N6: záznam kopie nenese nic navíc', !JSON.stringify(zap).includes('NESMI'));
   const g = await (await get(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', cookie)).json();
   test('N6: GET přehledu záloh vrací záznam poslední kopie', g.ok && g.kopieDisk && g.kopieDisk.sha256 === 'a'.repeat(64));
   const pocetPred = (await s.seznam()).length;
-  const spatne = await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { akce: 'kopie-disk', kopie: { soubor: '../x.json' } }, cookie);
+  const spatne = await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { akce: 'kopie-disk', kopie: { ...kopieTelo, soubor: '../x.json' },
+    hesloSpravce: 'Docasne.Heslo.123' }, cookie);
   test('N6: záznam kopie s neplatným jménem souboru 400 (a otisk nevznikne)', spatne.status === 400);
   test('N6: odmítnutý záznam kopie nezapíše nic (ani otisk)', (await s.seznam()).length === pocetPred);
+});
+
+/* ---------------- K3-N4 (O7): limit vynucených otisků ---------------- */
+await zkus('K3-N4', async () => {
+  const L = Z.vynuceneLimit;
+  const T0 = Date.parse('2028-03-10T12:00:00Z');
+  const klic = (msZpet, druh) => Z.klicVynuceny(druh || 'rucne', T0 - msZpet);
+  test('K3-N4: limity podle J. V. — 10 minut odstup, 20 za den', Z.VYNUCENE_ODSTUP_MS === 600000 && Z.VYNUCENE_ZA_DEN === 20);
+  test('K3-N4: bez vynucených otisků projde', L([], T0).ok === true && L(['2028-03-10', 'kopie-disk'], T0).ok === true);
+  const r5 = L([klic(5 * 60000)], T0);
+  test('K3-N4: otisk před 5 min → odmítnuto, další za 5 min, hláška s časem (Praha)',
+    r5.ok === false && r5.dalsiMs === T0 + 5 * 60000 && /mladší než 10 minut/.test(r5.chyba) && /dnes v 13:05/.test(r5.chyba), r5);
+  test('K3-N4: hranice — přesně 10 min projde, 9 min 59 s ne',
+    L([klic(600000)], T0).ok === true && L([klic(599000)], T0).ok === false);
+  test('K3-N4: auto se počítá stejně jako ruční', L([klic(60000, 'auto')], T0).ok === false);
+  test('K3-N4: noční otisk a otisk před obnovou se nepočítají',
+    L(['2028-03-10', Z.klicPredObnovou(T0 - 60000), '2028-03-10T115900-pred-obnovou'], T0).ok === true);
+  const den = (n, odstupMs) => Array.from({ length: n }, (_, i) => klic(3600000 + i * (odstupMs || 30 * 60000)));
+  test('K3-N4: 19 za 24 h projde', L(den(19), T0).ok === true);
+  const r20 = L(den(20), T0);
+  const nejstarsi = T0 - 3600000 - 19 * 30 * 60000;
+  test('K3-N4: 20 za 24 h → odmítnuto do 24 h od nejstaršího z dvaceti, hláška o denním limitu',
+    r20.ok === false && r20.dalsiMs === nejstarsi + 86400000 && /20 vynucených záloh/.test(r20.chyba), r20);
+  test('K3-N4: otisk starší 24 h se do denního limitu nepočítá',
+    L(den(19).concat([Z.klicVynuceny('rucne', T0 - 86400000)]), T0).ok === true
+    && L(den(19).concat([Z.klicVynuceny('rucne', T0 - 86400000 + 1000)]), T0).ok === false);
+  test('K3-N4: zítřejší den v hlášce s datem', /znovu to půjde 11\. 3\. 2028/i.test(L(den(20, 60000), T0).chyba || '')
+    || /11\. 3\. 2028/.test(L(den(20, 60000), T0).chyba || ''), L(den(20, 60000), T0).chyba);
+
+  /* přes API */
+  for (const k of [...pamet.keys()]) if (k.startsWith('zalohy/')) pamet.delete(k);
+  const prvni = await (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { duvod: 'rucne' }, cookie)).json();
+  test('K3-N4: první ruční otisk projde', prvni.ok === true, prvni);
+  const pocet = (await ulz('zalohy').seznam()).length;
+  const druhy = await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { duvod: 'rucne' }, cookie);
+  const druhyJ = await druhy.json();
+  test('K3-N4: druhý hned po něm → 429, kód limitZalohy, kdy to půjde, a otisk nevznikne',
+    druhy.status === 429 && druhyJ.kod === 'limitZalohy' && /Znovu to půjde/.test(druhyJ.chyba) && !!Date.parse(druhyJ.dalsi)
+    && (await ulz('zalohy').seznam()).length === pocet, druhyJ);
+  const auto = await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { duvod: 'auto' }, cookie);
+  test('K3-N4: otisk při přihlášení je pod týmž limitem (429)', auto.status === 429);
+  const noc = await ticho(async () => (await zalohaNocni()).json());
+  test('K3-N4: noční otisk limit nezastaví', noc.ok === true && pamet.has('zalohy/' + noc.den));
+  const pred = await Z.porizOtisk('pred-obnovou', ADMIN_EMAIL, Z.klicPredObnovou());
+  test('K3-N4: otisk před obnovou limit nezastaví a do limitu se nepočítá',
+    !!pred.den && Z.vynuceneLimit([pred.den, noc.den], Date.now()).ok === true);
+  test('K3-N4: o 11 minut později projde', (await postVynuceny({ duvod: 'rucne' })).ok === true);
+  test('K3-N4: GET přehledu limit neomezuje', (await get(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', cookie)).status === 200);
+});
+
+/* ---------------- K3-N13 (O7): pojistka retence proti tiché ztrátě dat ---------------- */
+await zkus('K3-N13', async () => {
+  const P = Z.retencePoklesPocty;
+  test('K3-N13: práh 50 %', Z.RETENCE_POKLES_PRAH === 0.5);
+  test('K3-N13: zakázek 100 → 49 je pokles', JSON.stringify(P({ pocetZakazek: 100, pocetUctu: 10 }, { pocetZakazek: 49, pocetUctu: 10 }))
+    === JSON.stringify(['zakázek 100 → 49']));
+  test('K3-N13: hranice — přesně 50 % pokles není', P({ pocetZakazek: 100, pocetUctu: 10 }, { pocetZakazek: 50, pocetUctu: 5 }) === null);
+  test('K3-N13: účtů 10 → 4 je pokles i při stejných zakázkách',
+    JSON.stringify(P({ pocetZakazek: 100, pocetUctu: 10 }, { pocetZakazek: 100, pocetUctu: 4 })) === JSON.stringify(['účtů 10 → 4']));
+  test('K3-N13: z nuly se pokles nepočítá; nárůst není pokles',
+    P({ pocetZakazek: 0, pocetUctu: 0 }, { pocetZakazek: 0, pocetUctu: 0 }) === null && P({ pocetZakazek: 5, pocetUctu: 2 }, { pocetZakazek: 50, pocetUctu: 20 }) === null);
+
+  const s = ulz('zalohy');
+  const D = '2028-10-19';
+  const ted = Date.parse('2028-10-19T03:00:00Z');
+  const pripravit = async (nove, predchozi) => {
+    for (const k of [...pamet.keys()]) if (k.startsWith('zalohy/')) pamet.delete(k);
+    /* staré otisky, které by retence smazala */
+    for (const k of ['2028-09-02', '2028-09-03'])
+      { await s.zapis(k, { zdroj: 'x' }); await s.zapis(Z.souhrnKlic(k), { porizena: 'x', zdroj: 'x', pocetZakazek: 100, pocetUctu: 10 }); }
+    for (const [k, v] of Object.entries(predchozi)) { await s.zapis(k, { zdroj: v.zdroj }); await s.zapis(Z.souhrnKlic(k), { porizena: 'x', ...v }); }
+    await s.zapis(D, { zdroj: 'nocni-otisk' }); await s.zapis(Z.souhrnKlic(D), { porizena: 'x', zdroj: 'nocni-otisk', ...nove });
+    await s.zapis('2028-09-01', { zdroj: 'nocni-otisk' });
+    await s.zapis(Z.KOPIE_DISK_KLIC, { kdy: new Date(ted - 3600000).toISOString(), soubor: 'otisk_2028-09-01.json', velikostB: 1234,
+      sha256: 'b'.repeat(64), otisk: '2028-09-01', puvod: 'nocni-otisk', slozka: '_Zaloha Netlify DB', potvrzeno: 'heslo-spravce' });
+  };
+  const nocni = (z, u) => ({ zdroj: 'nocni-otisk', pocetZakazek: z, pocetUctu: u });
+  await pripravit({ pocetZakazek: 40, pocetUctu: 10 }, { '2028-10-18': nocni(100, 10) });
+  const r = await Z.retenceProved(D, D, ted);
+  const zaznam = await s.cti(Z.RETENCE_VAROVANI_KLIC);
+  test('K3-N13: pokles zakázek pod polovinu → retence se přeskočí, nic se nesmaže (i s podloženou kopií)',
+    r.smazano.length === 0 && /retence přeskočena/.test(r.ceka || '') && pamet.has('zalohy/2028-09-02') && pamet.has('zalohy/2028-09-03'), r);
+  test('K3-N13: varování nese dny a počty a uloží se pro hlídku',
+    !!r.varovani && !!zaznam && zaznam.den === D && zaznam.predchozi === '2028-10-18' && zaznam.pred.pocetZakazek === 100
+    && zaznam.nove.pocetZakazek === 40 && /zakázek 100 → 40/.test(zaznam.text) && !!Date.parse(zaznam.kdy), zaznam);
+  await pripravit({ pocetZakazek: 60, pocetUctu: 6 }, { '2028-10-18': nocni(100, 10) });
+  const r2 = await Z.retenceProved(D, D, ted);
+  test('K3-N13: pokles nad polovinou → retence proběhne', JSON.stringify(r2.smazano) === JSON.stringify(['2028-09-02', '2028-09-03']), r2);
+  await pripravit({ pocetZakazek: 100, pocetUctu: 4 }, { '2028-10-18': nocni(100, 10) });
+  test('K3-N13: pokles účtů pod polovinu → přeskočí', (await Z.retenceProved(D, D, ted)).smazano.length === 0);
+  /* porovnává se s předchozím NOČNÍM, vynucený / jiný zdroj se přeskočí */
+  await pripravit({ pocetZakazek: 40, pocetUctu: 10 }, { '2028-10-18': { zdroj: 'vynuceno', pocetZakazek: 40, pocetUctu: 10 },
+    '2028-10-17': nocni(100, 10) });
+  const r3 = await Z.retenceProved(D, D, ted);
+  test('K3-N13: porovnává se s předchozím nočním (otisk jiného zdroje se přeskočí)',
+    r3.smazano.length === 0 && r3.varovani && r3.varovani.predchozi === '2028-10-17', r3);
+  await pripravit({ pocetZakazek: 40, pocetUctu: 10 }, {});
+  test('K3-N13: bez předchozího nočního se nic neporovnává (retence běží)', (await Z.retenceProved(D, D, ted)).smazano.length === 2);
+  /* noční funkce: varování do logu, přehled ho vrací */
+  const realNow = Date.now; Date.now = () => ted;
+  try {
+    for (const k of [...pamet.keys()]) if (k.startsWith('zalohy/') || k.startsWith('zakazky/')) pamet.delete(k);
+    for (let i = 0; i < 6; i++) await ulz('zakazky').zapis('z/N13-' + i + '.json', { nazev: 'N13 ' + i });
+    await s.zapis('2028-10-18', { zdroj: 'nocni-otisk' }); await s.zapis(Z.souhrnKlic('2028-10-18'), { porizena: 'x', ...nocni(100, 1) });
+    const logy = [], varovani = [];
+    const l = console.log, w = console.warn;
+    console.log = (...a) => logy.push(a.join(' ')); console.warn = (...a) => varovani.push(a.join(' '));
+    let noc; try { noc = await (await zalohaNocni()).json(); } finally { console.log = l; console.warn = w; }
+    test('K3-N13: noční funkce zaloguje VAROVÁNÍ a nic nesmaže', noc.ok && noc.retence.smazano.length === 0
+      && varovani.some(x => /VAROVÁNÍ — retence přeskočena — noční otisk 2028-10-19 .*zakázek 100 → 6/.test(x)), { varovani, r: noc && noc.retence });
+  } finally { Date.now = realNow; }
+  const g = await (await get(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', cookie)).json();
+  test('K3-N13: přehled záloh vrací varování pro hlídku', g.ok && g.retenceVarovani && g.retenceVarovani.den === '2028-10-19', g.retenceVarovani);
 });
 
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');

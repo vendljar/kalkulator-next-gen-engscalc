@@ -429,7 +429,7 @@ function vyjimkyStavVarianty(v) {
   return {
     potreba: vyjimkyPotreba(o, k => smiZobrazit(k)).potreba,
     plati: vyjimkaPlati(rec, o),
-    zamitnuto: !!(rec && rec.stav === VYJ_ZAMITNUTO && rec.obsah === o.obsah),
+    zamitnuto: !!(rec && rec.stav === VYJ_ZAMITNUTO && vyjimkaObsahSedi(rec, o)),
     text: vyjimkyText(o),
   };
 }
@@ -555,6 +555,10 @@ function vyjimkyKarta() {
      * matice). Plocha pásu (B178) z výsledku jádra, jako v obsahu. */
     const co = [];
     const dp = smi && !zamceno ? vyjDopad(v, o) : null;
+    /* Dřív schválená výjimka (plocha na celé m², B183 b): karta ukáže
+     * plochu tak, jak byla schválena. */
+    const st = !zamceno && vyjimkaStaryTvar(rec, o);
+    const plocha = x => vyjimkyPasPlocha(x, st);
     if (o.polozek) {
       const pol = dp ? dp.polozky : o.smes;
       co.push('Položky ceníku: ' + pol.slice(0, 8).map(x => esc(x.popis) + (dp ? ' (' + vyjSazby(x) + ')' : '')).join(dp ? '; ' : ', ')
@@ -563,10 +567,10 @@ function vyjimkyKarta() {
     if (o.pasu) {
       const pas = dp ? dp.pasy : o.pasy;
       co.push('Pásy „jiné": ' + pas.map(p => 'stěna ' + esc(p.stena) + ' (' + esc(p.nazev || 'bez názvu') + ', ' + esc(vyjimkyPasRozsah(p))
-        + (vyjimkyPasPlocha(p) ? ', ' + esc(vyjimkyPasPlocha(p)) : '') + (dp ? '; ' + vyjSazby(Object.assign({ jed: 'Kč/m²' }, p)) : '') + ')').join(', '));
+        + (plocha(p) ? ', ' + esc(plocha(p)) : '') + (dp ? '; ' + vyjSazby(Object.assign({ jed: 'Kč/m²' }, p)) : '') + ')').join(', '));
       if (o.svetliky && o.svetliky.length)
         co.push('Světlíky „jiné" u dveří: ' + o.svetliky.map(x => (x.kde === 'boky' ? 'boky dveří ' : 'nad dveřmi ') + esc(x.stena)
-          + ' (' + esc(x.nazev || 'bez názvu') + (vyjimkyPasPlocha(x) ? ', ' + esc(vyjimkyPasPlocha(x)) : '') + ')').join(', '));
+          + ' (' + esc(x.nazev || 'bez názvu') + (plocha(x) ? ', ' + esc(plocha(x)) : '') + ')').join(', '));
     }
     if (dp) {
       const cel = [['OCK', dp.ock], ['PROJ', dp.proj]].filter(([, x]) => vyjimkyDopadText(x))
@@ -581,6 +585,7 @@ function vyjimkyKarta() {
     if (kat === 'zamitnuto' && rec.zamitl) podr.push('Zamítl: <b>' + esc(rec.zamitl) + '</b>'
       + (rec.zamitlKdy ? ' · ' + new Date(rec.zamitlKdy).toLocaleString('cs-CZ') : '')
       + (rec.zamitnutoDuvod ? ' – ' + esc(rec.zamitnutoDuvod) : ''));
+    if (st && kat === 'schvaleno') podr.push('Schváleno před v20.10.5 s plochou na celé m² — platí, dokud se výjimka nezmění');
     if (!zamceno) podr.push(potreba ? 'Vaše role ji bez schválení neodešle.' : 'Vaše role ji smí odeslat i bez schválení (právo ceníku).');
     const duvod = smi && !zamceno && kat !== 'zamitnuto'
       ? `<div class="row" style="max-width:520px;margin-top:4px"><label>Důvod zamítnutí <span class="note">(nepovinný)</span></label>

@@ -1,3 +1,16 @@
+# Předávka — 20. 10. 2026 odpoledne: dávka S10 část 2 — šablona PROJ v8 (`claude/s10-sablona-proj-v7`)
+
+Sloučena integrace `claude/integrace-16-10` (fa08e9c, v20.10.7; konflikt jen v exportech
+`vyrob_sablony.js` — oprava závorky S10 + `projV8` D2, obojí zachováno). Kód beze změny.
+Podklad `podklady/SABLONA_PROJ_V8_20_10.md`, artefakt https://claude.ai/artifact/5RqvHSPuuun2dcUg26UwUD.
+
+- **Hotovo:** `--proj-v8` ze skutečné v7 (S10) → v8 CZ + EN/DE/FR, 113 symbolů, přeloženo 195/206, nadpis
+  „(DPZ)*" přeložený, `sablonaObsahVady` prázdné, 1,40 MB; v8 proti v7 +18 (6 `PROJ_CESTOVNE_*` + 12 značek), −0.
+  Vyplnění v20.10.7 ve 16 kombinacích (jazyk × studie × Praha/mimo): Praha 0 vět, mimo Prahu 3/4 věty,
+  žádný symbol nezůstal. Soubory = soubory sezení S10 (na Disk konektorem nejdou).
+- **Nahrání:** test rovnou v8 (v7 vůbec ne); main až s v20.10.7; všechny čtyři najednou.
+- **main v20.10.1 + v8 (ověřeno):** viditelné `{{PROJ_TITUL_*}}`, `{{PROJ_DPZ_*}}` i `{{PROJ_CESTOVNE_*}}`.
+
 # Předávka — 20. 10. 2026: dávka S10, větev `claude/s10-sablona-proj-v7` — šablona PROJ v7 pro ostrou verzi
 
 Nad `claude/d1-sikora` (8c912a7, v20.10.3). Kód aplikace a verze beze změny; do test/main/integrace nic.
@@ -18,6 +31,89 @@ Podklad `podklady/SABLONA_PROJ_V7_20_10.md`.
 - **Titul bez studie „PROJEKTOVÉ a INŽENÝRSKÉ ČINNOSTI“ potvrdil J. V. 20. 10.** (podklad D1 v integraci).
   Čeká: nové texty EN/DE/FR ke kontrole rodilými mluvčími (tabulka v podkladu); oprava
   `docxPrelozUseky` jde do příští kódové dávky. D2 (v20.10.4) staví PROJ v8 nad touto v7.
+
+# Předávka — 20. 10. 2026: dávka B183 (v20.10.5), větev `claude/b183-plocha-01` — plocha výjimky na 0,1 m²
+
+Nad `test` (5dc28d1, v20.10.1). Do test / main / test-draft / integrace nic — slučuje koordinace
+(session_01Ln2mMn7iC6W9ECztHTJpZe). Podrobnosti: CHANGELOG v20.10.5, roadmapa #441 (předběžné id;
+438–440 nechány O7, D1, D2), BEZPECNOST_MEZE.md (oddíl výjimek, plocha).
+
+- **Hotovo:** `vyjimkyM2Schvaleni` na 0,1 m² NAHORU (J. V. ~13:20; 2,50 → 2,5, 2,51/2,60 → 2,6, 2,61 → 2,7), značka `v: 2`
+  v obsahu s pásem; dřív schválené (celé m², bez značky) platí přes `obsahStary` / `vyjimkaObsahSedi`
+  (klient i server), dokud se obsah nezmění. Karta: 0,1 m², u starého schválení celé m² + poznámka.
+- **Rozhodnuto J. V.:** nahoru (příklad 2,50/2,59 ze zadání byl od koordinace, neplatí); dřív schválené beze změny.
+- **Ke slučování:** CHANGELOG / `verze.txt` / `manual/obsah.json` (Co je nového + kap. 19) / roadmapa —
+  souběžně O7 (v20.10.2), D1 (v20.10.3), D2 (v20.10.4); `mutace_jadro.mjs` (JADRA + blok B183 na začátku
+  MUTACE), `netlify/mutace.mjs` (H2, B154, B178, „výjimky:“ úseky + blok B183).
+- **Ověření (nahoru):** kolo `--bez-mutaci` 281 / 0 / 6 přeskočeno, statické 3/3; mutace jádro B183 11/11,
+  server B183 5/5, H2 V7-N1 3/3 (dřív, varianta dolů: server `vyjimky.js` 40/40, `schvalovani_ui` 6/6).
+- **Další krok:** sloučení; release v20.10.5 až po sloučení.
+
+# Předávka — 20. 10. 2026: dávka W2 (bez verze aplikace), větev `claude/w2-mazani-vetvi` — mazání sloučených větví v Actions
+
+Nad `test` 5dc28d1 (v20.10.1). Do `test` / `main` / `test-draft` / integrace nic — slučuje koordinace
+(session_01Ln2mMn7iC6W9ECztHTJpZe).
+
+- **Hotovo:** `.github/workflows/smazat_vetve.yml` (ručně, `contents: write` jen tady), logika
+  `nastroje/sloucene_vetve.sh` (celé v `test`, chráněné `main`/`test`/`test-draft`/`claude/integrace-*`,
+  stáří < `stari_hodin` h, `vynechat`, `jen_vypsat`), test `nastroje/test_sloucene_vetve.sh` (17 kontrol)
+  ve statických kontrolách kola (4/4). CLAUDE.md oddíl „Tagy, releasy a mazání větví“ upraven, CHANGELOG
+  oddíl bez verze.
+- **Kolo `--bez-mutaci` nad 4a75d93: VŠE ZELENÉ** — sady 281 / 0 / 6 přeskočeno (`test.js` + 5 bez
+  `KNG_PODKLADY`), statické 4/4 (z toho test větví 17/17). Mutace netřeba (jádro ani server se neměnily).
+- **Čeká na J. V.:** workflow se v Actions objeví až ve výchozí větvi `main` („pošli do main“). Pak
+  poprvé pustit s `jen_vypsat` = true a zkontrolovat seznam, potom bez něj.
+- **Ke slučování:** CHANGELOG (oddíl W2 nad v20.10.1), `testovaci_kolo.sh` (statické 3 → 4),
+  CLAUDE.md (odrážka o mazání).
+
+# Předávka — 20. 10. 2026: dávka U1 (v20.10.7), větev `claude/u1-podminky-zverejnit` — zveřejnění podmínek na záložce Smlouvy / Šablony
+
+Nad `test` 5dc28d1 (v20.10.1). Do test / main / test-draft / integrace nic — slučuje koordinace
+(session_01Ln2mMn7iC6W9ECztHTJpZe). Podrobnosti: CHANGELOG v20.10.7.
+
+- **Hotovo:** „Zapsat výchozí hodnoty" = zápis + rovnou zveřejnění online (`podmZapsatVychozi` →
+  `onlineZverejniFirmu(true)`); stav „Neuloženo online" / výsledek / „Zveřejnit změny online" přímo na záložce
+  (`podmZverejnitBlok`, sdílené `onlineFirmaZverejnitBlok`); offline věta proč; zarovnání sloupcem jednotek.
+  Test `overit_podminky_zverejnit.mjs` 30/0 (pojistka doložena).
+- **Ke slučování:** `CHANGELOG.md`, `verze.txt`, `manual/obsah.json` (paralelně O7, D1, D2, B183, V7-N2 —
+  v20.10.2–6; oddíly všech, novější nahoru), `src/ui/online_ui.js` (onlineZverejniFirmu, panel Firma),
+  `src/test_escape.js` (PROVERENO_CLENY), `src/app_template.html` (CSS za `.podm-chyba-text`).
+- **Otevřené pro J. V.:** panel ve Firmě zůstal (jediné místo pro zveřejnění ostatních firemních údajů).
+
+# Předávka — 20. 10. 2026: dávka V7-N2 (v20.10.6), větev `claude/v7n2-dph-pdp` — výchozí DPH v ČR = přenesená
+
+Nad `test` (`5dc28d1`, v20.10.1). Do `test` / `main` / `test-draft` / integrace nic — slučuje koordinace
+(session_01Ln2mMn7iC6W9ECztHTJpZe). Paralelně O7 (v20.10.2), D1 (v20.10.3), D2 (v20.10.4), B183 (v20.10.5).
+
+- **Rozhodnutí J. V. 20. 10.:** „toto ignoruj, zadej v ČR primárně přenesenou daňovou povinnost a obchodník si může
+  měnit" — otázka pro účetní (V7-N2) se neřeší.
+- **Hotovo:** `src/kryci.js` `kryciDphRezimVychozi` — DIČ CZ i bez DIČ → přenesená (tuzemsko); cizí DIČ beze změny
+  (bez volby, zábrana). Komentář `KRYCI_DPH_REZIMY`, zdroj pole. Testy `src/test_sod_en.js` (výchozí, přepnutí do
+  SoD CZ/EN/DE/FR, ↺, UI zábrana bez DIČ mlčí) — pojistka proti 5dc28d1: 3 FAIL, po opravě 49/0. Mutace `V7-N2`
+  3/3 (`mutace_jadro.mjs`, nahradily „B189: bez DIČ přenesená povinnost"), `B189` 8/8. Roadmapa #438 (předběžné
+  id), #430 poznámka; SOD_EN_KONTROLA body 1 a 4 vyřešeny; příručka „Co je nového v20.10.6" + kap. 24; CHANGELOG.
+- **Testy:** `testovaci_kolo.sh --bez-mutaci` VŠE ZELENÉ — sady 281 prošlo / 0 selhalo / 6 přeskočeno (firemní
+  podklady), statické 3/3. Otevřené otázky: žádné.
+- **Při slučování:** konflikty v CHANGELOG / PREDAVKA / `verze.txt` / `manual/obsah.json` (záhlaví verze, Co je nového)
+  / roadmapě (id 438 může kolidovat s paralelními dávkami).
+
+# Předávka — 20. 10. 2026: dávka D2 (v20.10.4), větev `claude/d2-proj-sikora` — šablona nabídky PROJ D. Sikory
+
+Nad `claude/integrace-16-10` (5dc28d1 + 6fe92d8). Do integrace / `test` nic — slučuje koordinace
+„ŘÍDÍCÍ 20.10“ (session_01Ln2mMn7iC6W9ECztHTJpZe), pořadí O7 → D1 → D2. Podklad `podklady/D2_SIKORA_PROJ.md`,
+CHANGELOG v20.10.4, roadmapa #260 (uzavřeno), #444–#446 (předběžná id).
+
+- **Hotovo:** cestovné u akce mimo Prahu (jádro `engine_proj.js` `vyjezdTechnikaKc`/`vyjezdPricti`, ceník
+  `PC.vyjezdTechnikKc`, přepis `PJ.vyjezdKcPrepis`, věty online + symboly `PROJ_CESTOVNE_*`, EN/DE/FR); ruční
+  úvod nabídky PROJ (`PJ.uvodNabidkyRucne`/`uvodNabidkyZaklad`, ↺ Vrátit výchozí, kontrola `uvodProjNesedi`);
+  jednostupňová dokumentace (`PJ.jednostupnova`, kontrola `jednostupnovaProj`); kontroly `vyjezdCenaChybi`,
+  `cestovneWordProj`; nástroj `vyrob_sablony.js --proj-v8` (vstup v7 z D1, jinak v6). **.docx se nevyrábí**
+  (koordinace: navazující dávka S10).
+- **Testy:** `src/test_d2_proj_sikora.js` 73 (pojistka: před D2 selže na prvních 2), mutace D2 **18/18**.
+- **Ke slučování s D1:** `test_kontroly.js` + `overit_lista.mjs` počet pravidel (37 + D1 1 + D2 4 = **42**),
+  `vyrob_sablony.js` (exporty, oba režimy `--proj-v7` i `--proj-v8`), `nabidka_proj.js` (vRozsahu/DPZ D1 ×
+  úvod/cestovné D2, návratový objekt), CHANGELOG/verze/příručka (novější nahoru), `mutace_jadro.mjs`.
+- **Čeká na J. V.:** cena výjezdu v ceníku PROJ (zveřejnit), šablona v8 (S10), kontrola překladů D2.
 
 # Předávka — 20. 10. 2026: dávka D1 (v20.10.3), větev `claude/d1-sikora` — postřehy D. Sikory 19. 10.
 
@@ -40,6 +136,26 @@ CHANGELOG v20.10.3, roadmapa #440–#443 uzavřené (předběžná id).
 - **Ke slučování:** CHANGELOG / `verze.txt` / `manual/obsah.json` (O7 v20.10.2 — novější nahoru),
   `mutace_jadro.mjs` (blok D1 před #367b), `src/kontroly.js` (38 pravidel v `test_kontroly.js` a `overit_lista.mjs`;
   přidá-li O7 pravidlo, sečíst), `roadmapa/roadmap.json` (#440–#443 na konci), `src/podminky.js` (výchozí termíny PROJ).
+
+# Předávka — 20. 10. 2026: dávka O7 (v20.10.2), větev `claude/o7-k3-rozhodnuti` — rozhodnutí J. V. k auditu K3
+
+Nad `claude/integrace-16-10` 5dc28d1 (v20.10.1 = test). Do integrace / `test` nic — slučuje koordinace
+(„ŘÍDÍCÍ 20.10“ session_01Ln2mMn7iC6W9ECztHTJpZe, pořadí O7 → D1 → D2). Podrobnosti: CHANGELOG v20.10.2,
+roadmapa #437 (hotovo), `BEZPECNOST_MEZE.md` (K3-N1, N4, N13, N15).
+
+- **Hotovo:** K3-N2 zmrazení vět kalendáře, dílů SoD a textů PROJ (vč. dolozkyTisk) při prvním zamčení;
+  K3-N1 kopie na Disk s heslem správce a jen ze „_Zaloha Netlify DB“; K3-N4 limit 1/10 min a 20/24 h (429);
+  K3-N13 pojistka retence < 50 % + hlídka; K3-N15 beze změny (mez); K3-N18 strop podmínek 500 kB;
+  K3-N17 kontrola mustekRozmer (> 6000 mm, nečíselné).
+- **Výchozí volby (J. V. se neptal):** limit 24 h klouzavě; hlídka varování retence 30 dní; předchozí noční
+  otisk = nejbližší denní klíč se zdrojem nocni-otisk (max 7 klíčů zpět); záznamy kopie před v20.10.2
+  retenci neodemknou (čeká se na novou kopii s heslem); týdenní automatika kopie se po přihlášení na heslo
+  zeptá dialogem; práh můstku 6000 mm.
+- **Ověření:** kolo `--bez-mutaci` 283/0/6, statické 3/3; mutace jádro O7 16/16, server O7 25/25,
+  #151 41/42 → test doplněn, #151 N6 11/11.
+- **Ke slučování:** CHANGELOG / `verze.txt` / `manual/obsah.json` (oddíly všech dávek, novější nahoru),
+  `mutace_jadro.mjs` a `netlify/mutace.mjs` (bloky O7 na konci MUTACE), `src/test_kontroly.js` a
+  `overit_lista.mjs` (počet pravidel 38 — přidá-li jiná dávka pravidlo, sečíst).
 
 # Předávka — 19. 10. 2026: dávka W1 (v19.10.9), větev `claude/w1-sablona-proj-v6` — šablona Wordu PROJ v6
 

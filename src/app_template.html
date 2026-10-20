@@ -558,6 +558,10 @@
   .pill.bad { background:#fde8e8; color:#b91c1c; }
   input.podm-chyba { border-color:#b91c1c; background:#fde8e8; }
   .podm-chyba-text { color:#b91c1c; }
+  /* Sloupec jednotek v oddílech platebních podmínek (U1, 20. 10. 2026): pevná
+   * šířka i v řádcích bez jednotky, aby vstupy končily v jedné svislici. */
+  .podm-radek .podm-jednotka { flex:none; width:92px; white-space:nowrap; }
+  .podm-radek > input[type=number] { width:110px; }
   .note { color:var(--mut); font-size:12px; margin:6px 0; }
   /* SPRÁVA ŠABLON (#349, 24. 9. 2026): tabulka dokument × jazyk, detail a průvodce. */
   .sabl-tab { width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden; }

@@ -62,7 +62,7 @@ selže na prvním testu, před Q1–Q3 17 FAIL a pád sady. Cílené mutace „d
 - **Q3 šablona PROJ v7** — kromě úvodu DPZ:
   - titul: „STUDIE PROVEDITELNOSTI“ → `{{PROJ_TITUL_STUDIE}}` (jen se studií nebo projednáním),
     „Navazující PROJEKTOVÉ a INŽENÝRSKÉ ČINNOSTI“ → `{{PROJ_TITUL_CINNOSTI}}` (bez studie
-    „PROJEKTOVÉ a INŽENÝRSKÉ ČINNOSTI“ — **výchozí volba sezení**, J. V. může změnit znění);
+    „PROJEKTOVÉ a INŽENÝRSKÉ ČINNOSTI“ — **potvrdil J. V. 20. 10. 2026**);
   - bloky bez symbolu, které aplikace odstraní výslovně (`blokyPryc` nabídky PROJ):
     `BLOK_STUDIE_ROZSAH` (tabulka STUDIE PROVEDITELNOSTI (ST)) a `BLOK_STUDIE_CENA` (nadpis
     „CENA ZA STUDII PROVEDITELNOSTI (SP):“ a tabulka cen) — pryč bez studie i projednání (jako online

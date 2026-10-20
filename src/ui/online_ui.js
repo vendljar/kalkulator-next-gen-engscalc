@@ -54,6 +54,7 @@ const ONLINE_STAV = {
   otisky: [],        // souhrny záloh databáze (jen administrátor; bez dat)
   otiskyNacteno: false,
   kopieDisk: null,   // záznam poslední kopie otisku na Disk (#151 N6) — ze serveru, bez dat
+  retenceVarovani: null,   // pojistka retence přeskočila mazání (K3-N13) — ze serveru
   soubor: '',        // pod jakým jménem je otevřená zakázka online
   razitko: '',
   /* Kolize verzí při zápisu (nález V27, 8. 9. 2026): { soubor, kdo, naDisku,
@@ -644,17 +645,25 @@ function onlineFirmaPopis() {
 /* Zveřejnění – posílá se to, co je právě v Nastavení → Firma. Posílají se
  * ÚDAJE TAK, JAK JSOU (i se značkou ukázkových dat): server si musí umět sám
  * říct ne, kdyby prohlížeč někdo obešel. Čistou kopii si udělá on. */
-async function onlineZverejniFirmu() {
+/* `bezPotvrzeni` (U1, 20. 10. 2026): „Zapsat výchozí hodnoty" na záložce
+ * Smlouvy / Šablony zveřejňuje rovnou — stisk sám je to rozhodnutí (J. V.:
+ * „zapisuj je rovnou stiskem"). Kontroly zůstávají stejné. Výsledek se
+ * pamatuje v ONLINE_STAV.firmaVysledek, aby ho záložka ukázala u sebe. */
+async function onlineZverejniFirmu(bezPotvrzeni) {
+  const vysledek = (ok, text) => { ONLINE_STAV.firmaVysledek = { ok, text }; };
   if (!jeAdminOnline()) {
-    onlineZprava('Firemní údaje smí zveřejnit jen administrátor.', 'varovani'); render();
+    onlineZprava('Firemní údaje smí zveřejnit jen administrátor.', 'varovani');
+    vysledek(false, 'Firemní údaje smí zveřejnit jen administrátor.'); render();
     return Promise.resolve(false);
   }
   const lze = firmaLzeZverejnit(typeof NAST !== 'undefined' ? NAST.firma : null);
   if (!lze.ok) {
-    onlineZprava('Zveřejnit se nedají: ' + lze.duvod, 'varovani'); render();
+    onlineZprava('Zveřejnit se nedají: ' + lze.duvod, 'varovani');
+    vysledek(false, 'Online zveřejnit nešly: ' + lze.duvod); render();
+    if (typeof nastRefresh === 'function') nastRefresh();
     return Promise.resolve(false);
   }
-  if (!await potvrd('Zveřejnit firemní údaje online pro celý program?\n\n'
+  if (!bezPotvrzeni && !await potvrd('Zveřejnit firemní údaje online pro celý program?\n\n'
     + (NAST.firma.nazev || '') + ', ' + firmaSidlo(NAST.firma) + '\n\n'
     + 'Od této chvíle je uvidí v hlavičce nabídky všichni přihlášení, i ti, '
     + 'kdo nemají připojenou složku _DB.')) return Promise.resolve(false);
@@ -663,15 +672,26 @@ async function onlineZverejniFirmu() {
   return onlineApi('/api/firma', { udaje: NAST.firma })
     .then(() => onlineNactiFirmu().then(() => {
       onlineZprava('Firemní údaje jsou zveřejněné online – obchodníci je uvidí po přihlášení.');
+      vysledek(true, 'Zveřejněno online – obchodníci to uvidí po přihlášení.');
       return true;
     }))
-    .catch(e => { onlineZprava('Zveřejnit firemní údaje se nepodařilo: ' + e.message, 'chyba'); return false; })
+    .catch(e => {
+      onlineZprava('Zveřejnit firemní údaje se nepodařilo: ' + e.message, 'chyba');
+      vysledek(false, 'Zveřejnit online se nepodařilo: ' + e.message);
+      return false;
+    })
     .then(v => { ONLINE_STAV.pracuje = false; render(); if (typeof nastRefresh === 'function') nastRefresh(); return v; });
 }
 
-/* Panel do Nastavení → Firma (jen administrátor, jen na serveru). */
-function onlineFirmaPanel() {
-  if (!onlineMozne() || !ONLINE_STAV.bezi || !jeAdminOnline()) return '';
+/* Zveřejnit firemní údaje jde jen na serveru a jen administrátorovi. */
+function onlineFirmaZverejnitMozne() {
+  return onlineMozne() && ONLINE_STAV.bezi && jeAdminOnline();
+}
+
+/* Stav zveřejnění a tlačítko — sdílí panel v Nastavení → Firma a záložka
+ * Smlouvy / Šablony (U1, 20. 10. 2026: J. V. po „Zapsat výchozí hodnoty do
+ * Firmy" tlačítko „Zveřejnit" na záložce nenašel; bylo jen dole ve Firmě). */
+function onlineFirmaZverejnitBlok(popisek) {
   const lze = firmaLzeZverejnit(typeof NAST !== 'undefined' ? NAST.firma : null);
   const sh = onlineFirmaShoda();
   /* Když je nahoře totéž, co má administrátor u sebe, nemá se po něm chtít
@@ -684,17 +704,42 @@ function onlineFirmaPanel() {
     ? 'Oproti online kopii se liší: ' + sh.rozdily.slice(0, 6).join(', ')
       + (sh.rozdily.length > 6 ? ' a další' : '') + '.'
     : '';
-  return `<div class="sec-title">Firemní údaje v online databázi</div>
-    <div class="note" style="margin-top:0">${esc(onlineFirmaPopis())}</div>
-    ${lze.ok ? '' : `<div class="note" style="color:var(--warn)">⚠ ${esc(lze.duvod)}</div>`}
+  return {
+    poznamky: `${lze.ok ? '' : `<div class="note" style="color:var(--warn)">⚠ ${esc(lze.duvod)}</div>`}
     ${hotovo ? `<div class="note" style="color:var(--ok)">✓ Online databáze má přesně tyhle údaje.
       Zveřejňovat je znovu není potřeba.</div>` : ''}
     ${rozdilVeta ? `<div class="note" style="color:var(--warn)">⚠ ${esc(rozdilVeta)}
-      Dokud je nezveřejníte, platí pro ostatní pořád ta starší verze.</div>` : ''}
-    <div class="btns" style="margin-top:8px">
-      <button class="${hotovo ? 'mini' : 'primary'}" onclick="onlineZverejniFirmu()"
+      Dokud je nezveřejníte, platí pro ostatní pořád ta starší verze.</div>` : ''}`,
+    tlacitko: `<button class="${hotovo ? 'mini' : 'primary'}" onclick="onlineZverejniFirmu()"
         ${ONLINE_STAV.pracuje || !lze.ok ? 'disabled' : ''}>${hotovo
-          ? 'Zveřejnit znovu (není potřeba)' : 'Zveřejnit firemní údaje online'}</button>
+          ? 'Zveřejnit znovu (není potřeba)' : (popisek || 'Zveřejnit firemní údaje online')}</button>`,
+    hotovo, rozdilVeta, lze,
+  };
+}
+
+/* Věta do hlášek po změně firemních údajů na záložce Smlouvy / Šablony:
+ * tlačítko je na téže záložce nahoře; když tu zveřejnit nejde, proč. */
+function onlineFirmaKdeZverejnit() {
+  if (onlineFirmaZverejnitMozne())
+    return 'Online je zveřejníte tlačítkem „Zveřejnit změny online" nahoře na této záložce (pod oddílem „Společné pro OCK i PROJ").';
+  return 'Zapsáno jen v této aplikaci — online zveřejnit teď nejde, ' + onlineFirmaProcNe()
+    + '. Ostatním začnou platit, až je zveřejníte z aplikace na serveru přihlášen jako administrátor.';
+}
+function onlineFirmaProcNe() {
+  return !onlineMozne() ? 'aplikace neběží na serveru (je otevřená ze souboru)'
+    : !ONLINE_STAV.bezi ? 'server teď neodpovídá'
+    : 'nejste přihlášen k online databázi jako administrátor';
+}
+
+/* Panel do Nastavení → Firma (jen administrátor, jen na serveru). */
+function onlineFirmaPanel() {
+  if (!onlineFirmaZverejnitMozne()) return '';
+  const z = onlineFirmaZverejnitBlok();
+  return `<div class="sec-title">Firemní údaje v online databázi</div>
+    <div class="note" style="margin-top:0">${esc(onlineFirmaPopis())}</div>
+    ${z.poznamky}
+    <div class="btns" style="margin-top:8px">
+      ${z.tlacitko}
       <button class="mini" onclick="onlineNactiFirmu().then(function(){render();nastRefresh()})">Načíst online znovu</button>
     </div>
     <div class="note">Obchodník ani vedoucí složku <code>_DB</code> nemapují – hlavičku nabídky
@@ -1541,6 +1586,7 @@ function onlineOtiskyNacti() {
   return onlineApi('/api/zaloha_vynuceno').then(o => {
     ONLINE_STAV.otisky = o.otisky || [];
     ONLINE_STAV.kopieDisk = o.kopieDisk || null;
+    ONLINE_STAV.retenceVarovani = o.retenceVarovani || null;
     ONLINE_STAV.otiskyNacteno = true;
     return true;
   }).catch(e => {
@@ -1603,7 +1649,12 @@ function onlineZalohaAuto() {
           + onlinePocetText(o.pocetZakazek) + ').');
         return true;
       }))
-      .catch(e => { onlineZprava('Dnešní zálohu databáze se nepodařilo pořídit: ' + e.message, 'varovani'); return false; });
+      .catch(e => {
+        /* K3-N4: limit vynucených otisků (429) není porucha — dnešní záloha
+         * vznikla před chvílí jinde (jiná karta, jiný správce); mlčí se. */
+        if (e && e.stav === 429) return false;
+        onlineZprava('Dnešní zálohu databáze se nepodařilo pořídit: ' + e.message, 'varovani'); return false;
+      });
   }).then(v => onlineZalohaDoSlozkyAuto().then(() => {
     /* Hlídka noční zálohy (#152). Dopořízený dnešní otisk je „vynucený",
      * noční otisky nepřepíše ani nezakryje — hlídka se proto smí ptát až
@@ -1614,7 +1665,9 @@ function onlineZalohaAuto() {
       const hl = (typeof uloZalohaHlidka === 'function') ? uloZalohaHlidka(ONLINE_STAV.otisky, Date.now()) : null;
       /* Hlídka kopie na Disku (#151 N6): starší než 14 dní → varování. */
       const kd = (typeof uloKopieDiskStav === 'function') ? uloKopieDiskStav(ONLINE_STAV.kopieDisk, Date.now()) : null;
-      const varovani = [hl && hl.stara ? hl.text : '', kd && kd.stara ? kd.text : ''].filter(Boolean);
+      /* Pojistka retence (K3-N13): pokles dat v noční záloze. */
+      const rv = (typeof uloRetenceVarovani === 'function') ? uloRetenceVarovani(ONLINE_STAV.retenceVarovani, Date.now()) : null;
+      const varovani = [rv ? rv.text : '', hl && hl.stara ? hl.text : '', kd && kd.stara ? kd.text : ''].filter(Boolean);
       if (varovani.length) onlineZprava(varovani.join(' '), 'varovani');
       render(); return v;
     });
@@ -1677,8 +1730,25 @@ async function kopieDiskZapisSoubor(h, jmeno, text) {
   return f.size;
 }
 
-/* Vlastní kopie do složky `h` (právo zápisu už musí být udělené). */
-async function kopieDiskProved(h) {
+/* Vlastní kopie do složky `h` (právo zápisu už musí být udělené).
+ *
+ * K3-N1 (rozhodnutí J. V. 20. 10. 2026): záznam kopie odemyká na serveru
+ * mazání starých záloh, proto ho server přijme jen s heslem správce a jen ze
+ * složky „_Zaloha Netlify DB". Složka se kontroluje DŘÍV, než se cokoli
+ * zapíše (jinak by na Disku ležela kopie, o které server neví), a heslo se
+ * ptá dřív, než se stahuje záloha — zrušený dialog nic nezapíše.
+ * `heslo` = už zadané heslo (tlačítko), jinak se zeptá. */
+async function kopieDiskProved(h, heslo) {
+  if (String(h && h.name || '') !== ULO_KOPIE_DISK_SLOZKA) {
+    KOPIE_DISK.slozka = null;                 // příště se vybere znovu
+    kopieDiskIdb(null).catch(() => false);
+    throw new Error('vybraná složka „' + String(h && h.name || '') + '" se nejmenuje „' + ULO_KOPIE_DISK_SLOZKA
+      + '" — kopie se počítá jen v ní. Klikněte znovu na „Zkopírovat zálohu na Disk teď" a vyberte složku „'
+      + ULO_KOPIE_DISK_SLOZKA + '" na Disku Google');
+  }
+  const hesloSpravce = heslo || await dotazHeslo('Kopie zálohy na Disk odemyká na serveru mazání starých záloh. '
+    + 'Potvrďte ji svým heslem (tím, kterým se přihlašujete do aplikace).', { nadpis: 'Potvrzení heslem správce' });
+  if (!hesloSpravce) throw new Error('bez vašeho hesla se kopie nepořídila');
   const o = await onlineApi('/api/zaloha?zdroj=nocni');
   if (!o || !o.ok || !o.zaloha) throw new Error((o && o.chyba) || 'server zálohu nevydal');
   const jmeno = uloKopieDiskJmeno(o.otisk || new Date().toISOString().slice(0, 10));
@@ -1692,7 +1762,7 @@ async function kopieDiskProved(h) {
   const kopie = { soubor: jmeno, velikostB, sha256, otisk: o.otisk || null, puvod: o.puvod, slozka: String(h.name || '') };
   await kopieDiskZapisSoubor(h, 'posledni_kopie.json',
     JSON.stringify(Object.assign({ kdy: new Date().toISOString() }, kopie), null, 1));
-  const z = await onlineApi('/api/zaloha_vynuceno', { akce: 'kopie-disk', kopie });
+  const z = await onlineApi('/api/zaloha_vynuceno', { akce: 'kopie-disk', kopie, hesloSpravce });
   ONLINE_STAV.kopieDisk = (z && z.kopieDisk) || ONLINE_STAV.kopieDisk;
   return kopie;
 }
@@ -1720,9 +1790,7 @@ async function onlineKopieDiskTed() {
     if (!(await uloPravo(h, false))) throw new Error('prohlížeč nepovolil zápis do složky „' + h.name + '"');
     const k = await kopieDiskProved(h);
     onlineZprava('Záloha zkopírována na Disk: ' + h.name + '/' + k.soubor + ' (' + kopieDiskVelikost(k.velikostB) + ', '
-      + (k.puvod === 'nocni-otisk' ? 'noční otisk ' + k.otisk : 'aktuální stav — noční otisk za posledních 7 dní chybí') + ')'
-      + (h.name !== ULO_KOPIE_DISK_SLOZKA ? '. Pozor: vybraná složka se nejmenuje „' + ULO_KOPIE_DISK_SLOZKA + '".' : '.'),
-      h.name !== ULO_KOPIE_DISK_SLOZKA ? 'varovani' : '');
+      + (k.puvod === 'nocni-otisk' ? 'noční otisk ' + k.otisk : 'aktuální stav — noční otisk za posledních 7 dní chybí') + ').');
     return true;
   } catch (e) {
     onlineZprava('Kopii zálohy na Disk se nepodařilo pořídit: ' + (e && e.message || e), 'varovani');
@@ -2567,10 +2635,14 @@ function renderOnlineKarta() {
     /* Hlídka kopie na Disku (#151 N6): starší než 14 dní → varování. */
     const kopieHl = (jeAdminOnline() && ONLINE_STAV.otiskyNacteno && typeof uloKopieDiskStav === 'function')
       ? uloKopieDiskStav(ONLINE_STAV.kopieDisk, Date.now()) : null;
+    /* Pojistka retence (K3-N13): noční záloha s poklesem dat pod polovinu. */
+    const retenceHl = (jeAdminOnline() && ONLINE_STAV.otiskyNacteno && typeof uloRetenceVarovani === 'function')
+      ? uloRetenceVarovani(ONLINE_STAV.retenceVarovani, Date.now()) : null;
     const zalohaRadek = jeAdminOnline()
       ? `<div class="note" id="online-zalohy">${esc(onlineOtiskPopis())}</div>`
         + (hlidka ? `<div id="online-zalohy-nocni" class="${hlidka.stara ? 'seznam-varovani' : 'note'}">${esc(hlidka.text)}</div>` : '')
         + (kopieHl ? `<div id="online-kopie-disk" class="${kopieHl.stara ? 'seznam-varovani' : 'note'}">${esc(kopieHl.text)}</div>` : '')
+        + (retenceHl ? `<div id="online-retence-varovani" class="seznam-varovani">${esc(retenceHl.text)}</div>` : '')
       : '';
     telo = `${hlaska}${onlineKolizeTlacitka()}${zalohaRadek}
       <div class="btns" style="margin-top:10px">

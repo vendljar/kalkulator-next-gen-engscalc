@@ -20,7 +20,8 @@
 #   mutace-jadro   mutace_jadro.mjs (výpočetní jádro)
 #   mutace-server  netlify/mutace.mjs (serverové funkce)
 #   staticke       verze = den posledního commitu, žádné CRLF, osobní údaje
-#                  a tajemství mimo povolený seznam (nastroje/kontrola_udaju.py)
+#                  a tajemství mimo povolený seznam (nastroje/kontrola_udaju.py),
+#                  výběr sloučených větví ke smazání (nastroje/test_sloucene_vetve.sh)
 #
 # Použití:
 #   bash nastroje/testovaci_kolo.sh                    celé kolo (mutace trvají dohromady kolem 40 minut)
@@ -47,7 +48,7 @@ while [ $# -gt 0 ]; do
     --bez-mutaci) KROKY="build,sady,staticke" ;;
     --jen) shift; KROKY="${1:-}" ;;
     --jen=*) KROKY="${1#--jen=}" ;;
-    -h|--help) sed -n '2,32p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,33p' "$0"; exit 0 ;;
     *) echo "neznámá volba: $1 (viz --help)"; exit 2 ;;
   esac
   shift
@@ -135,10 +136,12 @@ staticke() {
   else echo "Konce řádků v pořádku (LF)."; fi
   echo "— osobní údaje a tajemství (nastroje/kontrola_udaju.py, povolený seznam nastroje/povolene_kontakty.txt)"
   python3 nastroje/kontrola_udaju.py || chyb=$((chyb + 1))
-  echo "STATICKE_KONTROLY: $((3 - chyb)) z 3 prošly"
+  echo "— výběr sloučených větví ke smazání (nastroje/test_sloucene_vetve.sh, W2)"
+  bash nastroje/test_sloucene_vetve.sh || chyb=$((chyb + 1))
+  echo "STATICKE_KONTROLY: $((4 - chyb)) z 4 prošly"
   return "$chyb"
 }
-poznamka_staticke() { grep -o 'STATICKE_KONTROLY: [0-9]* z 3 prošly' "$1" | tail -1 | sed 's/^STATICKE_KONTROLY: //'; }
+poznamka_staticke() { grep -o 'STATICKE_KONTROLY: [0-9]* z 4 prošly' "$1" | tail -1 | sed 's/^STATICKE_KONTROLY: //'; }
 
 # ---------- běh ----------
 echo "TESTOVACÍ KOLO — kroky: $KROKY   (logy: $LOGY)"
