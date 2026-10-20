@@ -31,8 +31,10 @@ Souběžně O7 má v20.10.2. Podklad `podklady/D1_SIKORA_19_10.md`, roadmapa #44
   - **Q1** hvězdička ceny DPZ „Cena je platná v případě návaznosti na STUDII PROVEDITELNOSTI.“ se
     bez studie vynechá — online (`hvezdickaJenSe`), Word v7 `{{PROJ_DPZ_HVEZDICKA_ZNACKA}}`
     u nadpisu ceny a poznámka `{{PROJ_DPZ_HVEZDICKA}}` v bloku `BLOK_DPZ_HVEZDICKA`;
-  - **Q2** termín hrubopisu DPZ: se studií beze změny, bez studie „do 12-ti týdnů od objednání
-    a předání podkladů“ — dva řádky termínů ve Firmě s klíčem `dpz+studie` / `dpz-studie`
+  - **Q2** termín hrubopisu DPZ: se studií beze změny, bez studie znění z konstanty
+    `PODMINKY_TERMIN_DPZ_BEZ_STUDIE` (`src/podminky.js`) — **znění vybírá J. V.** („do 12-ti týdnů od
+    objednání a předání podkladů“ předběžně × „do 10–12 týdnů od zpracování výstupů ze zaměření“,
+    D. Sikora); dva řádky termínů ve Firmě s klíčem `dpz+studie` / `dpz-studie`
     (nový podmíněný klíč, Nastavení → Smlouvy / Šablony → Texty nabídky PROJ; **uložené vlastní
     termíny se nemění** — kdo je má uložené, doplní řádek sám);
   - **Q3** šablona **PROJ v7** navíc: titul `{{PROJ_TITUL_STUDIE}}` („STUDIE PROVEDITELNOSTI“ jen
@@ -41,9 +43,13 @@ Souběžně O7 má v20.10.2. Podklad `podklady/D1_SIKORA_19_10.md`, roadmapa #44
     ST), `BLOK_STUDIE_CENA` (nadpis a ceny SP) — pryč bez studie i projednání, `BLOK_STUDIE_POZN`
     (poznámka o studii) — pryč bez studie (`blokyPryc` nabídky PROJ; smlouva o dílo PROJ si je
     nebere). Test rozšířen na 88 kontrol (před Q1–Q3 17 FAIL + pád sady).
-- **Bod 2 — šířka bočního světlíku 600 mm (#442, rozbor, beze změny):** 600 = šířka skla
-  na terčích 1 680 − otvor dveří 1 040 − 40 (schváleno J. V. #375/#381/#385); varianty A–C
-  s čísly k rozhodnutí J. V. / Jirky L.
+- **Bod 2 — šířka bočního světlíku 600 mm (#442, rozhodnutí J. V. 20. 10. ~11:25, popisek):**
+  600 = šířka skla na terčích 1 680 − otvor dveří 1 040 − 40 — výpočet je správně a zůstává
+  (Model 1 i 2), variantu C neplánovat. Popisky: „Šířka skla bočního světlíku (přes sloupky)“,
+  „předpočítaná šířka skla přes sloupky 600 mm“, Detail, technická specifikace „šířka skla N mm“
+  (EN glass width / DE Glasbreite / FR largeur du verre; starší „šířka N mm“ se překládá dál),
+  příručka; hlášky kontroly beze změny. Testy `test_svetliky_sirka.js` 70 (se starými popisky
+  6 FAIL), `overit_svetliky_sirka.mjs` 24 (se starými 15 FAIL).
 - **Bod 3 — dimenze profilů portálu (#443, návrh, beze změny):** dnešní pravidlo, dopad na
   cenu (zkušební ceník) a otázky; kód návrhu v samostatné větvi `claude/d1-sikora-navrh-profily`
   (nesloučit bez potvrzení).

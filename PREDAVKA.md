@@ -2,19 +2,22 @@
 
 Nad `claude/integrace-16-10` (5dc28d1, v20.10.1). Do integrace / `test` nic — slučuje koordinace
 (session_017KEALG3ppimL5fW2XswzrB); O7 má souběžně v20.10.2. Podklad `podklady/D1_SIKORA_19_10.md`,
-CHANGELOG v20.10.3, roadmapa #440 (hotovo), #441–#443 (čekají; předběžná id).
+CHANGELOG v20.10.3, roadmapa #440, #441, #442 hotovo, #443 čeká (předběžná id).
 
-- **Bod 1 hotovo:** úvod DPZ bez studie bez věty „navazuje na vzájemně odsouhlasenou STUDII…“ — online
-  (`src/nabidka_proj.js`), Word symbol `{{PROJ_DPZ_UVOD}}` + `nastroje/vyrob_sablony.js --proj-v7`
-  (šablonu v7 vyrobí J. V. z v6), slovník EN/DE/FR, kontrola `dpzUvodWordProj` (38 pravidel).
-  Test `src/test_d1_dpz_bez_studie.js` 51, mutace D1 13/13.
-- **Čeká na J. V.:** Q1–Q3 (hvězdička DPZ, termín DPZ, pevné bloky studie ve Wordu); bod 2 varianty A–C
-  šířky bočního světlíku (dnes 600 = sklo 1 680 − otvor 1 040 − 40, schválené 1. a 6. 10.); bod 3 dimenze
-  portálu Q4–Q10 — návrh ve větvi `claude/d1-sikora-navrh-profily` (NESLUČOVAT bez potvrzení Jirky L.).
-- **Kolo `--bez-mutaci`:** 282 / 0 / 6 přeskočeno, statické 3/3; mutace D1 13/13.
+- **Bod 1 hotovo (#440):** úvod DPZ bez studie bez „navazuje na vzájemně odsouhlasenou STUDII…“ — online,
+  Word `{{PROJ_DPZ_UVOD}}`, `nastroje/vyrob_sablony.js --proj-v7`, slovník, kontrola `dpzUvodWordProj` (38 pravidel).
+- **#441 (rozhodnutí J. V. 20. 10.):** Q1 hvězdička DPZ bez studie pryč (online + v7 symbol/blok), Q3 v7 titul
+  `{{PROJ_TITUL_STUDIE}}` / `{{PROJ_TITUL_CINNOSTI}}` a bloky `BLOK_STUDIE_ROZSAH/_CENA/_POZN` (`blokyPryc`,
+  SoD PROJ je nebere), Q2 mechanismus `dpz+studie` / `dpz-studie` — **znění bez studie vybírá J. V.**, mění se
+  jen `PODMINKY_TERMIN_DPZ_BEZ_STUDIE` v `src/podminky.js` (předběžně „do 12-ti týdnů od objednání a předání
+  podkladů“, druhá varianta „do 10–12 týdnů od zpracování výstupů ze zaměření“; obě ve slovníku).
+  **Šablona .docx v7 nevznikla** — v6 v sezení není (Disk má jen v5, 1 MB konektorem nejde); J. V. ji vyrobí z v6.
+- **#442 hotovo:** výpočet šířky bočního světlíku beze změny, popisky „Šířka skla bočního světlíku (přes sloupky)“,
+  nápověda, Detail, TS „šířka skla N mm“ (EN/DE/FR), příručka.
+- **#443 čeká:** profily portálu, návrh ve větvi `claude/d1-sikora-navrh-profily` (NESLUČOVAT bez Jirky L.).
 - **Ke slučování:** CHANGELOG / `verze.txt` / `manual/obsah.json` (O7 v20.10.2 — novější nahoru),
-  `mutace_jadro.mjs` (blok D1 před #367b), `src/kontroly.js` (nové pravidlo → počty 38 v `test_kontroly.js`
-  a `overit_lista.mjs`; přidá-li O7 pravidlo, sečíst), `roadmapa/roadmap.json` (#440–#443 na konci).
+  `mutace_jadro.mjs` (blok D1 před #367b), `src/kontroly.js` (38 pravidel v `test_kontroly.js` a `overit_lista.mjs`;
+  přidá-li O7 pravidlo, sečíst), `roadmapa/roadmap.json` (#440–#443 na konci), `src/podminky.js` (výchozí termíny PROJ).
 
 # Předávka — 19. 10. 2026: dávka W1 (v19.10.9), větev `claude/w1-sablona-proj-v6` — šablona Wordu PROJ v6
 

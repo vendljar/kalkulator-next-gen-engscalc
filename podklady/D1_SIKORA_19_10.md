@@ -7,7 +7,7 @@ Roadmapa #440–#443 (předběžná id, přidělí koordinace). Částky níž j
 | # | Postřeh | Stav |
 |---|---|---|
 | 1 | Nabídka PROJ bez studie: věta „DPZ navazuje na vzájemně odsouhlasenou STUDII PROVEDITELNOSTI. Ta …“ | ✅ opraveno (online, Word v7, EN/DE/FR) — #440; Q1–Q3 rozhodl J. V. 20. 10. ~11:05, opraveno — #441 |
-| 2 | OCK — předpočítaná šířka bočního světlíku 600 mm | ⬜ rozbor hotový, chyba není jednoznačná → varianty A–C k rozhodnutí (#442) |
+| 2 | OCK — předpočítaná šířka bočního světlíku 600 mm | ✅ J. V. 20. 10.: varianta A, výpočet zůstává, přejmenovány popisky „šířka skla … (přes sloupky)“ (#442) |
 | 3 | Dimenze profilů portálu EXT / INT | ⬜ nic se neměnilo; návrh + dopad + otázky, kód ve větvi návrhu (#443) |
 
 ---
@@ -52,8 +52,10 @@ selže na prvním testu, před Q1–Q3 17 FAIL a pád sady. Cílené mutace „D
   bez studie **vynechat**: online hned (`hvezdickaJenSe: 'studie'`), Word v7 symbolem
   `{{PROJ_DPZ_HVEZDICKA_ZNACKA}}` u nadpisu ceny DPZ (hvězdička / nic) a poznámka
   `{{PROJ_DPZ_HVEZDICKA}}` v bloku `BLOK_DPZ_HVEZDICKA` (prázdný symbol blok odstraní).
-- **Q2 termín hrubopisu DPZ** — se studií beze změny, bez studie přesně „do 12-ti týdnů od objednání
-  a předání podkladů“. Ve Firmě dva řádky s klíčem `dpz+studie` (se studií) a `dpz-studie` (bez studie);
+- **Q2 termín hrubopisu DPZ** — se studií beze změny, bez studie znění z konstanty
+  `PODMINKY_TERMIN_DPZ_BEZ_STUDIE` (`src/podminky.js`). **Znění vybírá J. V.:** „do 12-ti týdnů od objednání
+  a předání podkladů“ (jeho, předběžně nastavené) nebo „do 10–12 týdnů od zpracování výstupů ze zaměření“
+  (D. Sikora, šablona rev. 33); obě zná slovník EN/DE/FR, mění se jeden řádek. Ve Firmě dva řádky s klíčem `dpz+studie` (se studií) a `dpz-studie` (bez studie);
   klíč umí zapsat i administrátor v Nastavení → Smlouvy / Šablony → Texty nabídky PROJ.
   **Pozor:** kdo má termíny PROJ ve Firmě uložené vlastní, má dál svůj seznam (s jedním řádkem `dpz`) —
   řádek bez studie si doplní sám (výchozí znění = prázdné pole). Do Wordu jde přes
@@ -75,7 +77,14 @@ selže na prvním testu, před Q1–Q3 17 FAIL a pád sady. Cílené mutace „D
 - Bez nálezu: „Případné studie a průzkumy nad rámec nabídky“ (Cena nezahrnuje — obecné), plán plateb
   (platby jen nabízených činností), úvod „Naše NABÍDKA a doporučení“ (věty podle sekcí, P11).
 
-## 2. OCK — šířka bočního světlíku 600 mm (rozbor, beze změny)
+## 2. OCK — šířka bočního světlíku 600 mm
+
+**Rozhodnutí J. V. 20. 10. 2026 (~11:25):** varianta A je správně a zůstává (Model 1 i 2), variantu C
+neplánovat. Hotovo v20.10.3: popisek „Šířka skla bočního světlíku (přes sloupky)“, nápověda
+a bublina „předpočítaná šířka skla přes sloupky 600 mm“, Detail, technická specifikace „šířka skla
+N mm“ (EN glass width / DE Glasbreite / FR largeur du verre), příručka. Hlášky kontroly beze změny.
+
+Rozbor (pro záznam):
 
 Zadání: vnitřní šířka 1 500 mm, hloubka 1 550 mm, 4 nástupiště, zapuštěný portál, boky sklo
 **4 ks** (celkem za šachtu = jeden světlík u každých dveří), rám dveří 100 mm, čistý vstup 800 mm.

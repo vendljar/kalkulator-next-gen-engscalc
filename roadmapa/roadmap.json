@@ -6884,7 +6884,7 @@
    "hotovoV": "v20.10.3",
    "nazev": "Nabídka PROJ bez studie: hvězdička ceny DPZ, termín DPZ „od schválení studie“, titul a bloky studie ve Wordu (PROJ v7)",
    "proc": "Při rozboru postřehu D. Sikory (D1) se našla další místa, která se odkazují na studii i tehdy, když se nenabízí.",
-   "detail": "ROZHODNUTÍ J. V. 20. 10. 2026 (~11:05, přes koordinaci): Q1 hvězdičku bez studie vynechat (online hned, Word symbolem); Q2 bez studie termín „do 12-ti týdnů od objednání a předání podkladů“ (druhý text ve Firmě podle studie); Q3 bloky studie a symbol titulu v šabloně PROJ v7. HOTOVO v20.10.3: online hvezdickaJenSe; Firma termíny s klíčem dpz+studie / dpz-studie (vRozsahu v nabidka_proj.js, PODMINKY_PROJ_SEKCE_PODMINENE); v7 (nastroje/vyrob_sablony.js --proj-v7) PROJ_TITUL_STUDIE, PROJ_TITUL_CINNOSTI, PROJ_DPZ_HVEZDICKA_ZNACKA, PROJ_DPZ_HVEZDICKA v BLOK_DPZ_HVEZDICKA, bloky BLOK_STUDIE_ROZSAH / BLOK_STUDIE_CENA / BLOK_STUDIE_POZN (blokyPryc). Uložené vlastní termíny Firmy se nemění.",
+   "detail": "ROZHODNUTÍ J. V. 20. 10. 2026 (přes koordinaci): Q1 hvězdičku bez studie vynechat (online hned, Word symbolem); Q3 bloky studie a symbol titulu v šabloně PROJ v7; Q2 termín DPZ bez studie — mechanismus druhého textu ve Firmě, ZNĚNÍ VYBÍRÁ J. V. („do 12-ti týdnů od objednání a předání podkladů“ × „do 10–12 týdnů od zpracování výstupů ze zaměření“, D. Sikora rev. 33), dosadí koordinace do PODMINKY_TERMIN_DPZ_BEZ_STUDIE (src/podminky.js; předběžně první). HOTOVO v20.10.3: online hvezdickaJenSe; Firma termíny s klíčem dpz+studie / dpz-studie (vRozsahu v nabidka_proj.js, PODMINKY_PROJ_SEKCE_PODMINENE); v7 (nastroje/vyrob_sablony.js --proj-v7) PROJ_TITUL_STUDIE, PROJ_TITUL_CINNOSTI, PROJ_DPZ_HVEZDICKA_ZNACKA, PROJ_DPZ_HVEZDICKA v BLOK_DPZ_HVEZDICKA, bloky BLOK_STUDIE_ROZSAH / BLOK_STUDIE_CENA / BLOK_STUDIE_POZN (blokyPryc). Uložené vlastní termíny Firmy se nemění.",
    "hotovoKdyz": "Bez studie nabídka (online i Word v7) studii nezmiňuje; test s pojistkou; mutace D1 bez přeživší.",
    "kde": "`src/nabidka_proj.js`, `src/podminky.js`, `src/sod.js`, `nastroje/vyrob_sablony.js`, `src/test_d1_dpz_bez_studie.js`",
    "zavisi": [
@@ -6895,15 +6895,15 @@
   {
    "id": "442",
    "vlna": "B",
-   "stav": "blokovano",
+   "stav": "hotovo",
    "dulezitost": "stredni",
    "slozitost": "S",
-   "cekaNa": "J. V. / Jirka L.: co znamená „šířka bočního světlíku“ (tabule skla přes sloupky × světlá šířka) a zda měnit plochu a cenu (varianty A–C v podklady/D1_SIKORA_19_10.md)",
-   "nazev": "Šířka bočního světlíku: předpočítaných 600 mm u šachty 1,5 m (postřeh D. Sikory)",
+   "hotovoV": "v20.10.3",
+   "nazev": "Šířka bočního světlíku: popisek „šířka skla bočního světlíku (přes sloupky)“ (postřeh D. Sikory, výpočet beze změny)",
    "proc": "D. Sikora (19. 10. 2026): šachta 1 500 mm, 4 nástupiště, čistý vstup 800 mm, rám 100 mm, 4 světlíky → aplikace 600 mm, on počítá 1,5 − 0,8 − 2×0,1 = 0,5 m a ani to „není zarovno se stojkou“.",
-   "detail": "Rozbor D1: 600 = šířka skla stěny na terčích (1 500 + 2×80 + 20 = 1 680) − otvor dveří (800 + 2×100 + 2×20 = 1 040) − 40 (engine.js bokMezera, #375/#381/#385, potvrzeno J. V. 1. 10. a 6. 10.). Výpočet dělá, co bylo schválené — chyba není jednoznačná, nic se neměnilo. Varianty: A ponechat a přejmenovat na „šířka skla (přes sloupky)“; B 500 (Sikora); C světlá šířka z vnitřní šířky (1 500 − 1 040 − 40) = 420 mm. Plocha při 4 ks: A 5,28 / B 4,40 / C 3,70 m².",
-   "hotovoKdyz": "Rozhodnutá definice, promítnutá do Modelu 2 (Model 1 1:1 s Excelem) s testy.",
-   "kde": "`src/engine.js` (bokMezera, bokySirkaPredpocet), `podklady/D1_SIKORA_19_10.md`",
+   "detail": "Rozbor D1: 600 = šířka skla stěny na terčích (1 500 + 2×80 + 20 = 1 680) − otvor dveří (800 + 2×100 + 2×20 = 1 040) − 40 (engine.js bokMezera, #375/#381/#385). ROZHODNUTÍ J. V. 20. 10. 2026 ~11:25: varianta A — výpočet je správně a zůstává v Modelu 1 i 2; jen popisek, aby bylo jasné, že šířka přesahuje sloupky; variantu C (světlá šířka) neplánovat. HOTOVO v20.10.3: kalkulace OCK „Šířka skla bočního světlíku (přes sloupky)“, nápověda a bublina „předpočítaná šířka skla přes sloupky 600 mm“, Detail, technická specifikace „šířka skla N mm“ (EN glass width, DE Glasbreite, FR largeur du verre; starší otisky „šířka N mm“ se překládají dál), příručka. Hlášky kontroly (zábrana, neoceněný zbytek) beze změny.",
+   "hotovoKdyz": "Popisky ve všech místech, test popisku s pojistkou, overit_svetliky_sirka.mjs zelené.",
+   "kde": "`src/ui/kalk_ock.js`, `src/ui/detail_ui.js`, `src/techspec.js`, `src/preklad.js`, `src/test_svetliky_sirka.js`, `overit_svetliky_sirka.mjs`",
    "zavisi": [
     "385"
    ],
