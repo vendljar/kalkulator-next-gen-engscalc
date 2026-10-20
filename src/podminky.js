@@ -341,12 +341,26 @@ function podminkySoucetOck(ef) {
 
 /* ---------- kontrola před zveřejněním ---------- */
 
+/* SOUHRNNÝ STROP VELIKOSTI (K3-N18, rozhodnutí J. V. 20. 10. 2026: 500 kB).
+ * Délky a počty řádků jsou omezené po polích, ale bloky textů PROJ ve čtyřech
+ * jazycích dají dohromady i megabajty — a Firma jde s každou zálohou,
+ * otiskem a načtením aplikace. Měří se UTF-8 bajty JSON záznamu podmínek. */
+const PODMINKY_MAX_B = 500 * 1024;
+function podminkyVelikostB(p) {
+  const t = JSON.stringify(p === undefined ? null : p);
+  return (typeof TextEncoder !== 'undefined') ? new TextEncoder().encode(t).length : unescape(encodeURIComponent(t)).length;
+}
+
 /* Seznam vad uložených podmínek (prázdný = v pořádku). Chybějící objekt
  * nevadí — platí továrna. Volá firmaLzeZverejnit (prohlížeč i server). */
 function podminkyVady(p) {
   if (p === undefined || p === null) return [];
   if (typeof p !== 'object' || Array.isArray(p)) return ['podmínky nejsou objekt'];
   const v = [];
+  const velikost = podminkyVelikostB(p);
+  if (velikost > PODMINKY_MAX_B)
+    v.push('podmínky jsou příliš velké: ' + Math.ceil(velikost / 1024) + ' kB, nejvýš ' + (PODMINKY_MAX_B / 1024)
+      + ' kB — zkraťte texty nabídky PROJ nebo věty (nejvíc místa berou cizí jazyky)');
   if (p.sazbyPokut !== undefined && !podmSazbyPlatne(p.sazbyPokut))
     v.push('sazby pokut (1–' + PODMINKY_VOLEB_MAX + ' různých, první „0", další ve tvaru „N % / den")');
   if (p.limitPokutProc !== undefined && !podmCeleVRozsahu(p.limitPokutProc, 0, 100))
@@ -536,12 +550,43 @@ function podminkyNastav(p, cast, pole, hodnota) {
   return out;
 }
 
+/* ZMRAZENÍ PRO ODESLANOU NABÍDKU (K3-N2, rozhodnutí J. V. 20. 10. 2026).
+ * Věty platebního kalendáře a díly vět SoD (OCK) a texty nabídky PROJ
+ * (včetně `dolozkyTisk`) se při PRVNÍM zamčení varianty opíšou do varianty
+ * (kryciZmrazPodminky → data.kryci.zmrazenoPodminky, kryciProjZmrazPodminky
+ * → data.kryciProj.zmrazenoPodminky). Dotisk zamčené varianty pak čte
+ * opsané znění, ne aktuální Firmu. Opisuje se EFEKTIVNÍ znění (Firma
+ * sloučená s továrnou), takže pozdější změna továrny v kódu dotisk taky
+ * nezmění. `casti` = ['vety'] / ['nabidkaProj'] (jen to, co list tiskne). */
+const PODMINKY_ZMRAZ_CASTI = ['vety', 'nabidkaProj'];
+function podminkySnimek(firma, casti) {
+  const ef = podminkyEf(firma);
+  const out = { v: 1 };
+  (Array.isArray(casti) ? casti : PODMINKY_ZMRAZ_CASTI).forEach(k => {
+    if (PODMINKY_ZMRAZ_CASTI.indexOf(k) >= 0) out[k] = podmKopie(ef[k]);
+  });
+  return out;
+}
+/* Efektivní podmínky zamčené varianty: aktuální Firma, přes ni opsané
+ * části snímku. Snímek prochází týmiž pravidly jako Firma (podminkyEf) —
+ * poškozené pole spadne na továrnu, nikdy na výjimku. Bez snímku (varianta
+ * zamčená před v20.10.2) = aktuální Firma, jako dosud. */
+function podminkyEfZmrazene(firma, snimek) {
+  const ef = podminkyEf(firma);
+  if (!snimek || typeof snimek !== 'object' || Array.isArray(snimek)) return ef;
+  const z = podminkyEf({ podminky: { vety: snimek.vety, nabidkaProj: snimek.nabidkaProj } });
+  PODMINKY_ZMRAZ_CASTI.forEach(k => {
+    if (snimek[k] && typeof snimek[k] === 'object' && !Array.isArray(snimek[k])) ef[k] = z[k];
+  });
+  return ef;
+}
+
 /* Jeden objekt pro ostatní moduly — v prohlížeči jsou soubory v jednom
  * scope, v Node se načte přes require (vzor firmaPlanModul). */
 const PODMINKY = { PODMINKY_VYCHOZI, PODMINKY_SOUCET_BLOKUJE, PODMINKY_JAZYKY, PODMINKY_TYPY_SMLOUVY, podminkyEf, podminkyUpraveno,
   podminkyVeta, podminkyVetaJenVychoziPreklad, podminkyTextProj, podminkyNastavVetu, podminkyNastavTextProj, podmPoradi,
   podminkyZalohaText, podminkyZalohyVolby, podminkyZalohaVychozi, podminkyFaktura2, podminkyKonecna,
   podminkyLimitVolby, podminkyLimitText, podminkySoucetOck, podminkyVady, podminkyCiste, podminkyNastav,
-  podmProcText, podmCislo };
+  podmProcText, podmCislo, podminkySnimek, podminkyEfZmrazene, podminkyVelikostB, PODMINKY_MAX_B };
 
 if (typeof module !== 'undefined') module.exports = Object.assign({ PODMINKY }, PODMINKY);

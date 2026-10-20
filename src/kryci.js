@@ -37,6 +37,16 @@ function kryciPodmEf(firma) {
   return kryciPodm().podminkyEf(f);
 }
 const KRYCI_PODM_TOVARNA = kryciPodm().podminkyEf({});
+/* Podmínky pro TISK varianty (K3-N2, rozhodnutí J. V. 20. 10. 2026): zamčená
+ * varianta se snímkem (`data.kryci.zmrazenoPodminky`, kryciZmrazPodminky)
+ * tiskne věty platebního kalendáře a díly vět SoD z doby odeslání; bez
+ * snímku (zamčená před v20.10.2) a nezamčená = aktuální Firma. */
+function kryciPodmEfVarianty(varianta) {
+  const d = varianta && varianta.data;
+  const snimek = varianta && varianta.zamek && varianta.zamek.zamceno && d && d.kryci && d.kryci.zmrazenoPodminky;
+  const f = (typeof firmaAktualni === 'function') ? firmaAktualni() : {};
+  return snimek ? kryciPodm().podminkyEfZmrazene(f, snimek) : kryciPodm().podminkyEf(f);
+}
 
 /* Nabídka sazeb smluvní pokuty (10. 8. 2026). První hodnota je předvyplněná.
  * Sdílí ji krycí list OCK i PROJ, aby se sazby nerozešly mezi dvěma seznamy.
@@ -923,6 +933,9 @@ function kryciZmrazPodminky(zak, varianta, jekly) {
     if (v != null && v !== '') out[p.id] = String(v);
   }));
   d.kryci.zmrazeno = out;
+  /* K3-N2: s předvyplněnými poli zamrznou i věty platebního kalendáře
+   * nabídky a díly vět SoD z Firmy (kryciPodmEfVarianty). */
+  d.kryci.zmrazenoPodminky = kryciPodm().podminkySnimek(c.firma, ['vety']);
   /* Značka pravidel platebních podmínek, pod kterými nabídka odešla (D1/D2,
    * 30. 9. 2026) — zamčená varianta bez ní odešla dřív a tiskne se jako
    * dřív (kryciPlatbyStary). */
@@ -1053,7 +1066,7 @@ function kryciPlatebniKalendar(zak, varianta, jekly) {
     }
     splatky.push({ id, text, pct, proc, poradi: konecna ? null : ++poradi });
   });
-  return { stary, mesicne, splatky, vynechane, necitelne, hodnoty };
+  return { stary, mesicne, splatky, vynechane, necitelne, hodnoty, podmEf: kryciPodmEfVarianty(varianta) };
 }
 
 /* Symboly pro šablonu CN v14 (a online náhled) z kalendáře. P = překlad
@@ -1073,7 +1086,7 @@ function kryciPlatebniSymboly(kal, P, lang) {
   }
   /* Věty z Firmy (#367 fáze 2b, Q3): česky znění Nastavení, cizí jazyk
    * uložené znění, jinak slovník nad výchozí větou (= dosavadní výstup). */
-  const ef = kryciPodmEf(), V = (klic, s) => kryciPodm().podminkyVeta(ef, klic, lang, s && s.poradi, s && s.proc, tr_);
+  const ef = kal.podmEf || kryciPodmEf(), V = (klic, s) => kryciPodm().podminkyVeta(ef, klic, lang, s && s.poradi, s && s.proc, tr_);
   if (kal.mesicne) return { PODM_PLATEBNI_KALENDAR: '', PODM_FAKTURACE_MESICNE: V('mesicne') };
   const dvojtecka = lang === 'fr' ? ' : ' : ': ';
   const vety = (kal.splatky || []).map(s => {
@@ -1129,7 +1142,7 @@ function kryciSodPlatby(zak, varianta, jekly, sablona, lang) {
   const kal = kryciPlatebniKalendar(zak, varianta, jekly);
   /* Díly vět z Firmy (#367 fáze 2b): česky Nastavení, cizí uložené znění,
    * jinak slovník nad výchozím dílem (= dosavadní výstup). */
-  const ef = kryciPodmEf(), V = klic => kryciPodm().podminkyVeta(ef, klic, L, null, null, P);
+  const ef = kryciPodmEfVarianty(varianta), V = klic => kryciPodm().podminkyVeta(ef, klic, L, null, null, P);
   const sym = sablona && sablona.symboly;
   const ma = (k) => !!sym && (typeof sym.has === 'function' ? sym.has(k) : Array.from(sym).indexOf(k) >= 0);
   const symboly = {}, odstavcePryc = [];
@@ -1213,7 +1226,7 @@ function kryciPodminkoveSymboly(zak, varianta, jekly, P) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { kryciHodiny, kryciHodinySekce, KRYCI_HODINY_OCK, kryciKc, KRYCI_SEKCE, KRYCI_NABIDKA_SEKCE, KRYCI_DPH_SAZBY, KRYCI_POKUTY, KRYCI_ZALOHY, KRYCI_LIMIT_POKUT, kryciPokutySazby, kryciLimitVolby, kryciPodmEf, KRYCI_FAKTURACE, kryciCtx, kryciHodnota,
+  module.exports = { kryciHodiny, kryciHodinySekce, KRYCI_HODINY_OCK, kryciKc, KRYCI_SEKCE, KRYCI_NABIDKA_SEKCE, KRYCI_DPH_SAZBY, KRYCI_POKUTY, KRYCI_ZALOHY, KRYCI_LIMIT_POKUT, kryciPokutySazby, kryciLimitVolby, kryciPodmEf, kryciPodmEfVarianty, KRYCI_FAKTURACE, kryciCtx, kryciHodnota,
     kryciData, kryciMigraceZadrzne, kryciMigraceSazbaDph,
     PODM_PREFIX, kryciSymbolId, kryciCisloZTextu, kryciProcentoZTextu,
     kryciTerminDodani, kryciTerminDodaniText, kryciTerminSJednotkou, kryciTydnu,

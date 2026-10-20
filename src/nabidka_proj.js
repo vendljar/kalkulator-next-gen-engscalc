@@ -44,10 +44,16 @@ const NABIDKA_PROJ_SAZBY = {
   platnostMesicu: 2,
 };
 
-function nabidkaProjPodmEf() {
+/* `varianta` (K3-N2, J. V. 20. 10. 2026): zamčená varianta se snímkem
+ * (`data.kryciProj.zmrazenoPodminky`, kryciProjZmrazPodminky) tiskne texty
+ * nabídky z doby odeslání; bez snímku a bez varianty = aktuální Firma. */
+function nabidkaProjPodmEf(varianta) {
   const P = (typeof PODMINKY !== 'undefined') ? PODMINKY
     : ((typeof require === 'function') ? require('./podminky.js').PODMINKY : null);
-  return P.podminkyEf((typeof firmaAktualni === 'function') ? firmaAktualni() : {});
+  const f = (typeof firmaAktualni === 'function') ? firmaAktualni() : {};
+  const d = varianta && varianta.data;
+  const snimek = varianta && varianta.zamek && varianta.zamek.zamceno && d && d.kryciProj && d.kryciProj.zmrazenoPodminky;
+  return snimek ? P.podminkyEfZmrazene(f, snimek) : P.podminkyEf(f);
 }
 
 /* AUTORSKÝ DOZOR JEN KDYŽ SE NABÍZÍ (připomínka D. Sikory a J. Laudy,
@@ -677,7 +683,7 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
   const nabiziAD = nabidkaProjNabiziAD(varianta);
   /* Texty nabídky PROJ z Firmy (#367 fáze 2b) v jazyce dokumentu; v doložkách
    * se {FIRMA} nahradí názvem firmy jako u doložek OCK. */
-  const podmEf = nabidkaProjPodmEf();
+  const podmEf = nabidkaProjPodmEf(varianta);
   const nazevFirmy = String(((typeof firmaAktualni === 'function') ? firmaAktualni() : {}).nazev || '').trim();
   const textProj = klic => {
     const PD = (typeof PODMINKY !== 'undefined') ? PODMINKY : require('./podminky.js').PODMINKY;

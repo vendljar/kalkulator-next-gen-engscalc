@@ -496,6 +496,10 @@ function kryciProjZmrazPodminky(zak, varianta) {
     if (v != null && v !== '') out[p.id] = String(v);
   }));
   d.kryciProj.zmrazeno = out;
+  /* K3-N2 (J. V. 20. 10. 2026): texty nabídky PROJ z Firmy (cena nezahrnuje,
+   * požadováno, termíny, doložky i `dolozkyTisk`) zamrznou s nabídkou —
+   * dotisk je čte ze snímku (nabidkaProjPodmEf(varianta)). */
+  d.kryciProj.zmrazenoPodminky = kryciProjPodm().podminkySnimek(c.firma, ['nabidkaProj']);
   kryciProjZmrazPlan(zak, varianta);
   return Object.keys(out).length;
 }

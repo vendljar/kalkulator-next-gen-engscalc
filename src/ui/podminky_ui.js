@@ -216,7 +216,8 @@ function nastPodminkyVety(ef) {
     <div class="note" style="margin-top:0">Věty nabídky OCK (<code>{{PODM_PLATEBNI_KALENDAR}}</code>) a seznamu splátek smlouvy
       o dílo realizace (<code>{{SOD_PLATEBNI_KALENDAR}}</code>). Značky <code>{PORADI}</code> a <code>{PROC}</code> doplní aplikace
       (pořadí dokladu a procento v jazyce dokumentu). <b>Prázdné pole = výchozí znění</b>: česky dnešní věta, v cizím jazyce
-      překlad výchozí české věty ze slovníku (šedý text v poli ukazuje, co se vytiskne). Odeslané nabídky se nemění.</div>
+      překlad výchozí české věty ze slovníku (šedý text v poli ukazuje, co se vytiskne). Odeslané nabídky se nemění —
+      věty se při odeslání opíšou do varianty (od v20.10.2; nabídky odeslané dřív tisknou aktuální znění).</div>
     ${Object.keys(PODM_VETY_POPIS).map(blok).join('')}`;
 }
 
@@ -300,7 +301,8 @@ function nastPodminkyTextyProj(ef) {
       <b>Prázdné pole = výchozí znění</b> (česky dnešní text, cizí jazyk překlad ze slovníku — šedý text v poli).
       Online nabídka je bere hned, Word od šablony PROJ v6 (řádek tabulky za odrážku, termíny ve dvou sloupcích;
       starší šablony v3–v5 mají tyto bloky pevně). Pro šablonu s jedním místem jsou i <code>{{PROJ_TERMINY}}</code>
-      („činnost – termín" na řádek).</div>
+      („činnost – termín" na řádek). Odeslané nabídky se nemění — texty včetně volby tisku doložek se při odeslání
+      opíšou do varianty (od v20.10.2).</div>
     ${PODM_TEXTY_PROJ.map(blok).join('')}`;
 }
 
