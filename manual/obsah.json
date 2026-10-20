@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v20.10.6 · sestaveno 20. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
+  "verze": "Platí pro aplikaci v20.10.7 · sestaveno 20. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -11,6 +11,13 @@
         "Snímky obrazovky v téhle příručce jsou pořízené z běžící aplikace, ale nad **zkušebním ceníkem** s vymyšlenými sazbami. **Částky na obrázcích jsou ze zkušebního ceníku a nejsou naše ceny.** Neberte je jako vodítko pro nabídku a nesrovnávejte s nimi svou kalkulaci — sledujte, kde co je a jak se to chová, ne kolik to stojí.",
         "Jména zákazníků na snímcích jsou taky **vymyšlená**. Celá ukázková zakázka **2026 - OPR - CN - 9100** je smyšlená a vznikla jen kvůli téhle příručce.",
         "Příručka je určená obchodníkům ENGINEERS CZ. Popisuje, jak firma počítá nabídky, takže ji zákazníkům ani nikomu mimo firmu neposílejte."
+      ]
+    },
+    {
+      "nadpis": "Co je nového ve verzi v20.10.7 (20. 10. 2026)",
+      "odstavce": [
+        "**Platební podmínky se zveřejňují přímo v Nastavení → Smlouvy / Šablony.** Tlačítko **Zapsat výchozí hodnoty** (dřív „… do Firmy“) zapíše výchozí podmínky a na serveru je rovnou zveřejní online; výsledek se ukáže hned pod ním. Když na záložce něco změníte, svítí tam **Neuloženo online** a tlačítko **Zveřejnit změny online**. Bez serveru se změny jen zapíšou v aplikaci a záložka řekne proč. Týká se administrátora; pro práci obchodníka se nic nemění.",
+        "**Pole Limit smluvních pokut je zarovnané s ostatními** — jednotky (dní, měsíců, %) mají v oddílu vlastní sloupec."
       ]
     },
     {

@@ -486,6 +486,9 @@ const clenBezpecny = t => /\.length$/.test(t);
  * odkud hodnota přichází — kdyby se zdroj změnil na data, řádek ze seznamu
  * patří pryč a hodnota do esc(). */
 const PROVERENO_CLENY = {
+  'podminky_ui.js': {
+    'z.tlacitko': 'hotové HTML tlačítka z onlineFirmaZverejnitBlok() v online_ui.js — popisek je literál z kódu, žádná data (U1, 20. 10. 2026)',
+  },
   'analytika_ui.js': {
     'p.zakazky': 'počet ze serverové analytiky (/api/analytika sčítá záznamy) — číslo',
     'p.kalkulace': 'počet ze serverové analytiky — číslo',

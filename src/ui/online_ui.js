@@ -645,17 +645,25 @@ function onlineFirmaPopis() {
 /* Zveřejnění – posílá se to, co je právě v Nastavení → Firma. Posílají se
  * ÚDAJE TAK, JAK JSOU (i se značkou ukázkových dat): server si musí umět sám
  * říct ne, kdyby prohlížeč někdo obešel. Čistou kopii si udělá on. */
-async function onlineZverejniFirmu() {
+/* `bezPotvrzeni` (U1, 20. 10. 2026): „Zapsat výchozí hodnoty" na záložce
+ * Smlouvy / Šablony zveřejňuje rovnou — stisk sám je to rozhodnutí (J. V.:
+ * „zapisuj je rovnou stiskem"). Kontroly zůstávají stejné. Výsledek se
+ * pamatuje v ONLINE_STAV.firmaVysledek, aby ho záložka ukázala u sebe. */
+async function onlineZverejniFirmu(bezPotvrzeni) {
+  const vysledek = (ok, text) => { ONLINE_STAV.firmaVysledek = { ok, text }; };
   if (!jeAdminOnline()) {
-    onlineZprava('Firemní údaje smí zveřejnit jen administrátor.', 'varovani'); render();
+    onlineZprava('Firemní údaje smí zveřejnit jen administrátor.', 'varovani');
+    vysledek(false, 'Firemní údaje smí zveřejnit jen administrátor.'); render();
     return Promise.resolve(false);
   }
   const lze = firmaLzeZverejnit(typeof NAST !== 'undefined' ? NAST.firma : null);
   if (!lze.ok) {
-    onlineZprava('Zveřejnit se nedají: ' + lze.duvod, 'varovani'); render();
+    onlineZprava('Zveřejnit se nedají: ' + lze.duvod, 'varovani');
+    vysledek(false, 'Online zveřejnit nešly: ' + lze.duvod); render();
+    if (typeof nastRefresh === 'function') nastRefresh();
     return Promise.resolve(false);
   }
-  if (!await potvrd('Zveřejnit firemní údaje online pro celý program?\n\n'
+  if (!bezPotvrzeni && !await potvrd('Zveřejnit firemní údaje online pro celý program?\n\n'
     + (NAST.firma.nazev || '') + ', ' + firmaSidlo(NAST.firma) + '\n\n'
     + 'Od této chvíle je uvidí v hlavičce nabídky všichni přihlášení, i ti, '
     + 'kdo nemají připojenou složku _DB.')) return Promise.resolve(false);
@@ -664,15 +672,26 @@ async function onlineZverejniFirmu() {
   return onlineApi('/api/firma', { udaje: NAST.firma })
     .then(() => onlineNactiFirmu().then(() => {
       onlineZprava('Firemní údaje jsou zveřejněné online – obchodníci je uvidí po přihlášení.');
+      vysledek(true, 'Zveřejněno online – obchodníci to uvidí po přihlášení.');
       return true;
     }))
-    .catch(e => { onlineZprava('Zveřejnit firemní údaje se nepodařilo: ' + e.message, 'chyba'); return false; })
+    .catch(e => {
+      onlineZprava('Zveřejnit firemní údaje se nepodařilo: ' + e.message, 'chyba');
+      vysledek(false, 'Zveřejnit online se nepodařilo: ' + e.message);
+      return false;
+    })
     .then(v => { ONLINE_STAV.pracuje = false; render(); if (typeof nastRefresh === 'function') nastRefresh(); return v; });
 }
 
-/* Panel do Nastavení → Firma (jen administrátor, jen na serveru). */
-function onlineFirmaPanel() {
-  if (!onlineMozne() || !ONLINE_STAV.bezi || !jeAdminOnline()) return '';
+/* Zveřejnit firemní údaje jde jen na serveru a jen administrátorovi. */
+function onlineFirmaZverejnitMozne() {
+  return onlineMozne() && ONLINE_STAV.bezi && jeAdminOnline();
+}
+
+/* Stav zveřejnění a tlačítko — sdílí panel v Nastavení → Firma a záložka
+ * Smlouvy / Šablony (U1, 20. 10. 2026: J. V. po „Zapsat výchozí hodnoty do
+ * Firmy" tlačítko „Zveřejnit" na záložce nenašel; bylo jen dole ve Firmě). */
+function onlineFirmaZverejnitBlok(popisek) {
   const lze = firmaLzeZverejnit(typeof NAST !== 'undefined' ? NAST.firma : null);
   const sh = onlineFirmaShoda();
   /* Když je nahoře totéž, co má administrátor u sebe, nemá se po něm chtít
@@ -685,17 +704,42 @@ function onlineFirmaPanel() {
     ? 'Oproti online kopii se liší: ' + sh.rozdily.slice(0, 6).join(', ')
       + (sh.rozdily.length > 6 ? ' a další' : '') + '.'
     : '';
-  return `<div class="sec-title">Firemní údaje v online databázi</div>
-    <div class="note" style="margin-top:0">${esc(onlineFirmaPopis())}</div>
-    ${lze.ok ? '' : `<div class="note" style="color:var(--warn)">⚠ ${esc(lze.duvod)}</div>`}
+  return {
+    poznamky: `${lze.ok ? '' : `<div class="note" style="color:var(--warn)">⚠ ${esc(lze.duvod)}</div>`}
     ${hotovo ? `<div class="note" style="color:var(--ok)">✓ Online databáze má přesně tyhle údaje.
       Zveřejňovat je znovu není potřeba.</div>` : ''}
     ${rozdilVeta ? `<div class="note" style="color:var(--warn)">⚠ ${esc(rozdilVeta)}
-      Dokud je nezveřejníte, platí pro ostatní pořád ta starší verze.</div>` : ''}
-    <div class="btns" style="margin-top:8px">
-      <button class="${hotovo ? 'mini' : 'primary'}" onclick="onlineZverejniFirmu()"
+      Dokud je nezveřejníte, platí pro ostatní pořád ta starší verze.</div>` : ''}`,
+    tlacitko: `<button class="${hotovo ? 'mini' : 'primary'}" onclick="onlineZverejniFirmu()"
         ${ONLINE_STAV.pracuje || !lze.ok ? 'disabled' : ''}>${hotovo
-          ? 'Zveřejnit znovu (není potřeba)' : 'Zveřejnit firemní údaje online'}</button>
+          ? 'Zveřejnit znovu (není potřeba)' : (popisek || 'Zveřejnit firemní údaje online')}</button>`,
+    hotovo, rozdilVeta, lze,
+  };
+}
+
+/* Věta do hlášek po změně firemních údajů na záložce Smlouvy / Šablony:
+ * tlačítko je na téže záložce nahoře; když tu zveřejnit nejde, proč. */
+function onlineFirmaKdeZverejnit() {
+  if (onlineFirmaZverejnitMozne())
+    return 'Online je zveřejníte tlačítkem „Zveřejnit změny online" nahoře na této záložce (pod oddílem „Společné pro OCK i PROJ").';
+  return 'Zapsáno jen v této aplikaci — online zveřejnit teď nejde, ' + onlineFirmaProcNe()
+    + '. Ostatním začnou platit, až je zveřejníte z aplikace na serveru přihlášen jako administrátor.';
+}
+function onlineFirmaProcNe() {
+  return !onlineMozne() ? 'aplikace neběží na serveru (je otevřená ze souboru)'
+    : !ONLINE_STAV.bezi ? 'server teď neodpovídá'
+    : 'nejste přihlášen k online databázi jako administrátor';
+}
+
+/* Panel do Nastavení → Firma (jen administrátor, jen na serveru). */
+function onlineFirmaPanel() {
+  if (!onlineFirmaZverejnitMozne()) return '';
+  const z = onlineFirmaZverejnitBlok();
+  return `<div class="sec-title">Firemní údaje v online databázi</div>
+    <div class="note" style="margin-top:0">${esc(onlineFirmaPopis())}</div>
+    ${z.poznamky}
+    <div class="btns" style="margin-top:8px">
+      ${z.tlacitko}
       <button class="mini" onclick="onlineNactiFirmu().then(function(){render();nastRefresh()})">Načíst online znovu</button>
     </div>
     <div class="note">Obchodník ani vedoucí složku <code>_DB</code> nemapují – hlavičku nabídky

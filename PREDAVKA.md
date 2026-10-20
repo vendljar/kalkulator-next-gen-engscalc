@@ -1,3 +1,17 @@
+# Předávka — 20. 10. 2026: dávka U1 (v20.10.7), větev `claude/u1-podminky-zverejnit` — zveřejnění podmínek na záložce Smlouvy / Šablony
+
+Nad `test` 5dc28d1 (v20.10.1). Do test / main / test-draft / integrace nic — slučuje koordinace
+(session_01Ln2mMn7iC6W9ECztHTJpZe). Podrobnosti: CHANGELOG v20.10.7.
+
+- **Hotovo:** „Zapsat výchozí hodnoty" = zápis + rovnou zveřejnění online (`podmZapsatVychozi` →
+  `onlineZverejniFirmu(true)`); stav „Neuloženo online" / výsledek / „Zveřejnit změny online" přímo na záložce
+  (`podmZverejnitBlok`, sdílené `onlineFirmaZverejnitBlok`); offline věta proč; zarovnání sloupcem jednotek.
+  Test `overit_podminky_zverejnit.mjs` 30/0 (pojistka doložena).
+- **Ke slučování:** `CHANGELOG.md`, `verze.txt`, `manual/obsah.json` (paralelně O7, D1, D2, B183, V7-N2 —
+  v20.10.2–6; oddíly všech, novější nahoru), `src/ui/online_ui.js` (onlineZverejniFirmu, panel Firma),
+  `src/test_escape.js` (PROVERENO_CLENY), `src/app_template.html` (CSS za `.podm-chyba-text`).
+- **Otevřené pro J. V.:** panel ve Firmě zůstal (jediné místo pro zveřejnění ostatních firemních údajů).
+
 # Předávka — 20. 10. 2026: dávka V7-N2 (v20.10.6), větev `claude/v7n2-dph-pdp` — výchozí DPH v ČR = přenesená
 
 Nad `test` (`5dc28d1`, v20.10.1). Do `test` / `main` / `test-draft` / integrace nic — slučuje koordinace
