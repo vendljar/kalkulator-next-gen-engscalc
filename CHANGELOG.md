@@ -32,11 +32,11 @@ kontrola V7: V7-6, V7-N1). Základ `test` 5dc28d1 (v20.10.1).
   zasklení u pásu 1,2 m dřív 200, teď 403). Pojistka: proti 5dc28d1 obě sady spadnou.
 - **Mutace:** `vyjimky.js` přidán do JADRA `mutace_jadro.mjs`; cílené „B183“ jádro 11, server 5; úseky
   starších mutací B154, B178, H2 a „výjimky:“ přesměrované na nový kód.
-- **Ověření (20. 10. 2026):** `testovaci_kolo.sh --bez-mutaci` **281 prošlo / 0 selhalo / 6 přeskočeno**,
-  statické 3/3; `--kontrola` jádro 320, server 643 úseků. Mutace: jádro `B183` **9/9**, server `B183`
-  **5/5**, server celá skupina `vyjimky.js` **40/40** a `schvalovani_ui` **6/6**. (Mutace „plocha bez
-  rezervy na plovoucí chybu“ přežila — rezerva byla pro plochy na setiny mrtvý kód, test 0,01–20 000 m²
-  to dokládá; rezerva i mutace odstraněny.)
+- **Ověření (20. 10. 2026, zaokrouhlení nahoru):** `testovaci_kolo.sh --bez-mutaci` **281 prošlo /
+  0 selhalo / 6 přeskočeno**, statické 3/3; `--kontrola` jádro 322, server 643 úseků. Mutace: jádro
+  `B183` **11/11** (vč. matematicky / dolů / bez tolerance šumu), server `B183` **5/5**, `H2 V7-N1`
+  **3/3**. Předchozí varianta (dolů) měla navíc server `vyjimky.js` 40/40 a `schvalovani_ui` 6/6 —
+  od té doby se v serverové cestě měnila jen zaokrouhlovací funkce.
 
 ---
 
