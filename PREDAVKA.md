@@ -1,3 +1,30 @@
+# Předávka — 20. 10. 2026: K29-N1, větev `claude/k29-med-bez-strechy` — příplatek za měď jen se zastřešením v nabídce
+
+Nad `origin/test` `5dc28d1` (v20.10.1). Verze se nezvyšuje (build `KNG_NEZVYSOVAT_VERZI=1` → v20.10.1),
+číslo přidělí sloučení. **Do `test-draft` / `test` / `main` nic — o sloučení rozhodne J. V.**
+Koordinace: ŘÍDÍCÍ 20.10 session_01Ln2mMn7iC6W9ECztHTJpZe. Podrobnosti: CHANGELOG oddíl „K29-N1“.
+
+- **Hotovo (48ec641):** `zastreseniVNabidce` v `src/engine.js` (EXT && zastřešení není v `nepocitat`
+  && ruční množství zastřešení není platná nula; prázdno není nula). Bez něj řádek `medStrecha` nevznikne,
+  Model 1 i 2. Výjimka: platné ruční množství mědi → řádek zůstává (přes `mkPrip`, ověřeno testem).
+  Název mědi se zapíše do `nazvyPolozek` i bez řádku (přepisy mědi nejsou sirotci #4).
+  `strecha.vNabidce` ve výsledku (otisk `test_profil_neznamy` maže celé `strecha`). `mustekStrecha`
+  mlčí při `vNabidce === false`.
+- **Testy:** `src/test_mustky.js` +18 (oba modely), pojistka bez opravy 67/18 → s opravou 85/0.
+  `spust_testy.sh` 222/0/1 přeskočeno (`test.js`, ostrý ceník). `--kontrola` jádro 316, server 638.
+  Mutace „K29-N1“ 5/5 chycených. Celé mutace jádra (316) běží — výsledek doplní další commit.
+- **Zámky odeslaných nabídek (bod 4):** zmrazený výsledek zámku se nemění (dokumenty tisknou ze zámku).
+  Razítko ověření se přepočítává jen (a) při prvním uložení nového zámku (přísně) a (b) při obnově
+  ze souboru / zámku bez razítka (volně). Změnit se může jen u varianty EXT se zastřešením vyřazeným
+  (nebo na 0) a nabízeným příplatkem za měď: nový zámek ze stránky načtené před nasazením → „nesouhlasí“
+  (řádek mědi jen v klientovi + `priplatkyCena`), radí obnovit stránku a vytisknout znovu — stejně jako u #356;
+  obnova ze souboru takové starší zamčené varianty → razítko „nesouhlasí“ (rozdíl `ock.souhrn.priplatkyCena`),
+  čísla nabídky se nezmění. Fixtury `src/fixtury/*.json`: 12 variant EXT, 5 zamčených — staré vs. nové jádro
+  na korunu stejně, **0 fixtur / 0 testů zasaženo**. Data se nepřepočítávala ani neměnila.
+- **Mimo rozsah (jen hlášeno):** zastřešení v nabídce s ručně přepsanou plochou (ne nulou) — měď dál bere
+  vypočtenou `strechaM2`, ne přepsanou. Nic neměněno; k rozhodnutí J. V.
+- **Další krok:** J. V. rozhodne o sloučení; testovací kolo ověří na N17 a S03–S05 se zastřešením vyřazeným (K29).
+
 # Předávka — 19. 10. 2026: dávka W1 (v19.10.9), větev `claude/w1-sablona-proj-v6` — šablona Wordu PROJ v6
 
 Nad `claude/v8-367-firma` (v19.10.7, `4d9f67a`). Do integrace / `test` nic — slučuje koordinace
