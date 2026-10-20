@@ -12,7 +12,7 @@ Koordinace: ŘÍDÍCÍ 20.10 session_01Ln2mMn7iC6W9ECztHTJpZe. Podrobnosti: CHAN
   mlčí při `vNabidce === false`.
 - **Testy:** `src/test_mustky.js` +18 (oba modely), pojistka bez opravy 67/18 → s opravou 85/0.
   `spust_testy.sh` 222/0/1 přeskočeno (`test.js`, ostrý ceník). `--kontrola` jádro 316, server 638.
-  Mutace „K29-N1“ 5/5 chycených. Celé mutace jádra (316) běží — výsledek doplní další commit.
+  Mutace „K29-N1“ 5/5 chycených. Celé mutace jádra **316/316** chycených (dřív 291/291 + nové, žádná dříve chycená nespadla), otisky jader po běhu souhlasí.
 - **Zámky odeslaných nabídek (bod 4):** zmrazený výsledek zámku se nemění (dokumenty tisknou ze zámku).
   Razítko ověření se přepočítává jen (a) při prvním uložení nového zámku (přísně) a (b) při obnově
   ze souboru / zámku bez razítka (volně). Změnit se může jen u varianty EXT se zastřešením vyřazeným

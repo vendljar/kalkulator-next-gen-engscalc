@@ -23,7 +23,7 @@ můstku nejspíš řešit nebudeme.“
   `strecha.vNabidce` (mimo otisky).
 - `src/kontroly.js`: `mustekStrecha` mlčí při `strecha.vNabidce === false`.
 - Testy `src/test_mustky.js` +18 (oba modely): před opravou 18 selže, po ní 85/0.
-  Mutace jádra „K29-N1“ +5 (5/5 chycených); hledaný úsek mutace #356 „měď nezná střechu nad
+  Mutace jádra „K29-N1“ +5 (5/5 chycených), celé mutace jádra 316/316; sady 222/0/1 přeskočeno; hledaný úsek mutace #356 „měď nezná střechu nad
   můstkem“ upraven na konstantu názvu.
 - Zakázky se zastřešením v nabídce beze změny (stávající testy #356, fixtury 12 variant / 5 zamčených
   na korunu stejně).
