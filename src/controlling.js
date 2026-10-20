@@ -102,7 +102,9 @@ const CTRL_SKUPINY_VYCHOZI = [
 const CTRL_MAPA_VYCHOZI = (() => {
   const m = {};
   const dej = (skupina, klice) => klice.forEach(k => { m[k] = skupina; });
-  dej('cestovne', ['C.cestovniKc', 'PC.dopravaKmKc', 'PC.dopravaHodKc', 'PC.doprava']);
+  /* PC.vyjezdTechnikKc (D2, 20. 10. 2026): pevná cena 1 výjezdu technika u akce
+   * mimo Prahu — cestovní náklad, proto cestovné. */
+  dej('cestovne', ['C.cestovniKc', 'PC.dopravaKmKc', 'PC.dopravaHodKc', 'PC.doprava', 'PC.vyjezdTechnikKc']);
   dej('sl-dopravne', ['C.transportKc']);
   dej('sl-lakovani', ['C.lak.lakovnaProfilBm', 'C.lak.lakovnaListaBm', 'C.lak.lakovnaM2', 'C.lak.tomasProfilM2',
     'C.lak.tomasListaBm', 'C.lak.tomasPlechKs', 'C.lak.tomasOplechM2', 'C.lak.tomasTercKs', 'C.lak.*']);
@@ -298,7 +300,9 @@ function ctrlRozvrhOck(vysledek, opts) {
 
 /* ROZVRH VÝSLEDKU PROJ. Položka typu hod → PC.sazby.<sazba>, fixní
  * s klíčem ceníku → PC.fixy.<fixKey>, trvalá → K.<kid>, jinak V.proj.
- * Doprava sekce je samostatný řádek PC.doprava. Vyřazené položky se
+ * Doprava sekce je samostatný řádek PC.doprava, výjezd technika (D2)
+ * řádek PC.vyjezdTechnikKc — jádro ho přičítá k ceně sekce PO přirážce,
+ * takže prodej = náklad (cestu účtujeme tak, jak stojí). Vyřazené položky se
  * vynechají (nepočítají se ani v ceně). Prodejní cena položky = náklad ×
  * (1 + procento sekce); doprava nese přirážku taky (V29). */
 function ctrlRozvrhProj(vysledek, opts) {
@@ -325,6 +329,12 @@ function ctrlRozvrhProj(vysledek, opts) {
       out.push({ oblast: 'proj', sekce: String(s.key || ''), nazev: 'DOPRAVA', klic: 'PC.doprava',
         skupina: g.skupina, zarazeno: g.zarazeno, vZakladu: true, vlastni: false,
         mnozstvi: 1, cena: +s.dopravaKc, naklad: +s.dopravaKc, prodej: (+s.dopravaKc) * (1 + pct) });
+    }
+    if (+s.vyjezdKc) {
+      const g = ctrlSkupinaKlice(P.mapa, 'PC.vyjezdTechnikKc', 'proj');
+      out.push({ oblast: 'proj', sekce: String(s.key || ''), nazev: 'VÝJEZD TECHNIKA (AKCE MIMO PRAHU)',
+        klic: 'PC.vyjezdTechnikKc', skupina: g.skupina, zarazeno: g.zarazeno, vZakladu: true, vlastni: false,
+        mnozstvi: 1, cena: +s.vyjezdKc, naklad: +s.vyjezdKc, prodej: +s.vyjezdKc });
     }
   });
   return out;

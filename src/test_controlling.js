@@ -150,6 +150,19 @@ for (const [jm, uprav] of varianty) {
     && radky.some(r => r.klic === 'PC.doprava' && r.skupina === 'cestovne'));
   const nez = radky.filter(r => r.skupina === C.CTRL_NEZARAZENO);
   test('PROJ: výchozí zadání nemá nic v Nezařazeno', nez.length === 0, nez.map(r => r.klic));
+  /* Výjezd technika u akce mimo Prahu (D2): přičítá se k ceně sekce po přirážce. */
+  if (typeof ep.vyjezdTechnikaKc === 'function') {
+    cp.vyjezdTechnikKc = 2500;
+    const zv = kopie(zp); zv.akceMimoPrahu = true;
+    const vv = ep.vypocetProj(zv, cp);
+    const rv = C.ctrlRozvrhProj(vv);
+    test('PROJ s výjezdem technika: výjezd se v souhrnu opravdu počítá', vv.souhrn.vyjezd > 0, vv.souhrn);
+    test('PROJ s výjezdem technika: náklad řádků = náklad + doprava + výjezd',
+      blizko(rv.reduce((a, r) => a + r.naklad, 0), vv.souhrn.naklad + vv.souhrn.doprava + vv.souhrn.vyjezd));
+    test('PROJ s výjezdem technika: prodej řádků = celková cena', blizko(rv.reduce((a, r) => a + r.prodej, 0), vv.souhrn.celkem));
+    test('PROJ s výjezdem technika: řádek výjezdu je v cestovném',
+      rv.some(r => r.klic === 'PC.vyjezdTechnikKc' && r.skupina === 'cestovne'));
+  }
 }
 
 /* ---------- 3. platné mapování, nezařazené, záznam ---------- */
