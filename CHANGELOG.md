@@ -56,6 +56,7 @@ verze zůstává v20.10.8. Nálezy z auditu K4 (`podklady/K4_AUDIT_20_10.md` ve 
     48/0. Ruční mutace finálního skriptu 14/14 chycené (`|| true` u mazání, bez lease, selhání jako smazání,
     bez `set -f`, bez délky, bez odříznutí nul, bez horní meze, nula povolena, bez kontroly ref, bez hlavní
     linie, bez merge kritéria, ignoruje čas API, bez API, bez stáří commitu).
+  - Kolo `--bez-mutaci` po pokračování: sady 286 / 0 / 6 přeskočeno, statické 4/4; mutace jádra „D2“ 18/18.
   - Mimo rozsah: opravy v kódu aplikace z K4 (N1, N4–N7, N12–N18, texty MEZE) čekají na konečný audit K4
     a rozhodnutí J. V.; K4-N20 (Rulesets) → J. V.
 

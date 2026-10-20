@@ -18,6 +18,7 @@ integrace nic — slučuje koordinace** (noční ŘÍDÍCÍ session_01By6bWivtf2
   #456 K4-N11 (job `if` na main + skript v Actions mimo main kód 2), #457 K4-N19 (`set -euo pipefail`, `set -f`),
   cesta „smazání selhalo“ krytá, #458 K4-N8 (test D2 zamčené varianty přes `zamkniVariantu`, výjimka = FAIL).
   Test W2 48/0 (skript z 1. části O8 35/13), ruční mutace skriptu 14/14, K4-N8 pojistka 73/0 → 72/1.
+  Kolo `--bez-mutaci` 286/0/6 přeskočeno, statické 4/4; mutace jádra „D2“ 18/18.
 - **Zbývá z K4:** opravy v kódu aplikace (N1, N4–N7, N12–N18, texty MEZE) — čekají na konečný audit K4 a ranní
   rozhodnutí J. V.; K4-N20 Rulesets → J. V.
 
