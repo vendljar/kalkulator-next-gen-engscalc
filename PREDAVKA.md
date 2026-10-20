@@ -1,4 +1,4 @@
-# Předávka — 20. 10. 2026: Controlling (návrh, fáze 1), větev `claude/controlling-navrh`
+# Předávka — 20. 10. 2026: Controlling (návrh + dávka C1), větev `claude/controlling-navrh`
 
 Nad `test` (`5dc28d1`, v20.10.1). Do `test` / integrace nic — slučuje koordinace
 (session_01Ln2mMn7iC6W9ECztHTJpZe). C1 v kódu.
@@ -7,7 +7,7 @@ Nad `test` (`5dc28d1`, v20.10.1). Do `test` / integrace nic — slučuje koordin
   (číselník skupin, mapování klíčů, hlídání nezařazených, export předkalkulace XLSX/CSV), dávky C1–C4,
   otázky J1–J11 a A1–A6 → `podklady/CONTROLLING_NAVRH_20_10.md`; roadmapa #447 (předběžné id, `ceka`).
 - **Artefakt pro J. V.:** https://claude.ai/artifact/MNaTnXQ4847f2rNiAT9br7
-- **Čeká se na:** souhlas J. V. a odpovědi J1–J11. A. Mácová je mimo do prosince (A1–A6 počkají).
+- **Čeká se na:** pokyn J. V. k C2. A. Mácová je mimo do prosince (A1–A6 počkají).
 - **Rozhodnutí J. V. J1–J11 zapsaná** (podklad, oddíl Rozhodnutí). **C1 hotová** (f377c80): src/controlling.js,
   /api/controlling, záloha/obnova, testy + mutace #447 11/11, kolo --bez-mutaci zelené.
 - **Další krok:** C2 (UI Nastavení → Controlling + upozornění při zveřejnění ceníku + export varianty) — na pokyn J. V.
