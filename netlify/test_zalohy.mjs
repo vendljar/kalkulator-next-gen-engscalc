@@ -476,7 +476,7 @@ await zkus('N6', async () => {
   const g = await (await get(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', cookie)).json();
   test('N6: GET přehledu záloh vrací záznam poslední kopie', g.ok && g.kopieDisk && g.kopieDisk.sha256 === 'a'.repeat(64));
   const pocetPred = (await s.seznam()).length;
-  const spatne = await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { akce: 'kopie-disk', kopie: { soubor: '../x.json' },
+  const spatne = await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { akce: 'kopie-disk', kopie: { ...kopieTelo, soubor: '../x.json' },
     hesloSpravce: 'Docasne.Heslo.123' }, cookie);
   test('N6: záznam kopie s neplatným jménem souboru 400 (a otisk nevznikne)', spatne.status === 400);
   test('N6: odmítnutý záznam kopie nezapíše nic (ani otisk)', (await s.seznam()).length === pocetPred);
