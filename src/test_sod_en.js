@@ -125,9 +125,11 @@ const sablona = (...symboly) => ({ symboly: new Set(symboly) });
     return sod.sodData(z, v, JEKLY, L || 'cz', sablona('SOD_DPH_REZIM', 'SOD_DPH_PROHLASENI', 'SOD_SKLADNE')).placeholders;
   };
   const vychozi = fn();
-  test('DPH výchozí (bez DIČ = CZ): česká DPH v zákonné sazbě; bytový dům → prohlášení o snížené sazbě',
-    vychozi.SOD_DPH_REZIM === 'K ceně díla bude připočtena DPH v zákonné sazbě platné ke dni uskutečnění zdanitelného plnění.'
-      && vychozi.SOD_DPH_PROHLASENI === sod.SOD_DPH_PROHLASENI_SNIZENA, [vychozi.SOD_DPH_REZIM, vychozi.SOD_DPH_PROHLASENI]);
+  /* V7-N2 (rozhodnutí J. V. 20. 10. 2026): bez DIČ výchozí přenesená daňová
+   * povinnost (tuzemsko) — do v20.10.5 česká DPH s prohlášením o snížené sazbě. */
+  test('V7-N2: DPH výchozí (bez DIČ = tuzemsko): přenesená daňová povinnost; bytový dům → bez prohlášení o snížené sazbě',
+    vychozi.SOD_DPH_REZIM === 'DPH bude účtováno dle platných předpisů v režimu přenesené daňové povinnosti.'
+      && vychozi.SOD_DPH_PROHLASENI === sod.SOD_DPH_PROHLASENI_OZNAMENI, [vychozi.SOD_DPH_REZIM, vychozi.SOD_DPH_PROHLASENI]);
   /* B189 (rozhodnutí J. V. 19. 10. 2026, roadmapa #430): DIČ CZ → přenesená
    * daňová povinnost (tuzemsko, § 92e ZDPH), bez DIČ → česká DPH, DIČ z EU
    * i mimo EU → BEZ výchozí volby a smlouva bez zvoleného režimu NEVZNIKNE
@@ -138,8 +140,30 @@ const sablona = (...symboly) => ({ symboly: new Set(symboly) });
   test('B189: DIČ CZ → přenesená daňová povinnost (tuzemsko), věta odlišná od reverse charge čl. 196',
     vychZ('CZ12345678') === KRYCI_DPH_REZIMY[1] && dCz.SOD_DPH_REZIM === S.prenesena && dCzMez.SOD_DPH_REZIM === S.prenesena
       && S.prenesena !== S.eu && !/196/.test(S.prenesena || '196'), [vychZ('CZ12345678'), dCz.SOD_DPH_REZIM, dCzMez.SOD_DPH_REZIM]);
-  test('B189: bez DIČ → česká DPH', vychZ('') === KRYCI_DPH_REZIMY[0] && vychZ('   ') === KRYCI_DPH_REZIMY[0] && fnZ('').SOD_DPH_REZIM === S.ceska,
+  /* V7-N2 (20. 10. 2026): bez DIČ → přenesená (dřív B189 česká DPH), obchodník
+   * ji přepne rozbalovátkem a ↺ (smazání ruční hodnoty) vrátí výchozí. Proti
+   * 5dc28d1 (v20.10.1): 3 FAIL (výchozí, bez DIČ, ↺), po opravě 49 / 0;
+   * přepnutí do CZ/EN/DE/FR prochází i tam (ruční volba fungovala už dřív). */
+  test('V7-N2: bez DIČ → přenesená daňová povinnost (tuzemsko), smlouva vznikne',
+    vychZ('') === KRYCI_DPH_REZIMY[1] && vychZ('   ') === KRYCI_DPH_REZIMY[1] && fnZ('').SOD_DPH_REZIM === S.prenesena
+      && fnZ('   ').SOD_DPH_REZIM === S.prenesena
+      && (() => { const z = novaZ(); return sod.sodDphZabrana(z, z.varianty[0]) === ''; })(),
     [vychZ(''), fnZ('').SOD_DPH_REZIM]);
+  {
+    const jazyky = ['cz', 'en', 'de', 'fr'];
+    const vety = jazyky.map(L => fnZ('', { sodDphRezim: KRYCI_DPH_REZIMY[0] }, L));
+    const ok = vety.every((p, i) => p.SOD_DPH_REZIM === (i ? tr(S.ceska, jazyky[i]) : S.ceska)
+      && p.SOD_DPH_PROHLASENI === (i ? tr(sod.SOD_DPH_PROHLASENI_SNIZENA, jazyky[i]) : sod.SOD_DPH_PROHLASENI_SNIZENA)
+      && (!i || (!CESKY.test(p.SOD_DPH_REZIM) && p.SOD_DPH_REZIM !== S.ceska)));
+    test('V7-N2: obchodník přepne bez DIČ na českou DPH — propíše se do SoD CZ/EN/DE/FR (věta i prohlášení o snížené sazbě)',
+      ok, vety.map(p => p.SOD_DPH_REZIM));
+    const z = novaZ(), v = z.varianty[0];
+    v.data.kryci.hodnoty.sodDphRezim = KRYCI_DPH_REZIMY[0];
+    const rucne = kryciPoleHodnota(z, v, 'sodDphRezim');
+    delete v.data.kryci.hodnoty.sodDphRezim;   // ↺ = klReset (smaže ruční hodnotu)
+    test('V7-N2: ↺ vrátí výchozí přenesenou povinnost', rucne === KRYCI_DPH_REZIMY[0]
+      && kryciPoleHodnota(z, v, 'sodDphRezim') === KRYCI_DPH_REZIMY[1], [rucne, kryciPoleHodnota(z, v, 'sodDphRezim')]);
+  }
   const euDic = ['DE 123456789', 'EL123456789', 'GR123456789', ' at u12345678', 'SK2020123456'], mimoDic = ['CHE-123.456.789', 'GB123456789', 'US12-3456789'];
   test('B189: DIČ z EU (DE, EL/GR, „ at u…", SK) → bez výchozí volby', euDic.every(d => vychZ(d) === ''), euDic.map(vychZ));
   test('B189: DIČ mimo EU (CH, GB, US) → bez výchozí volby', mimoDic.every(d => vychZ(d) === ''), mimoDic.map(vychZ));
@@ -153,9 +177,9 @@ const sablona = (...symboly) => ({ symboly: new Set(symboly) });
       && (() => { const z = novaZ(); z.dic = 'DE123456789'; return /není zvolený režim DPH/.test(sod.sodDphZabrana(z, z.varianty[0])); })());
   const rucEu = hazi(() => fnZ('DE123456789', { sodDphRezim: KRYCI_DPH_REZIMY[0] }));
   const ruc = (dic, i) => fnZ(dic, { sodDphRezim: KRYCI_DPH_REZIMY[i] }).SOD_DPH_REZIM;
-  test('B189: ruční volba má přednost — EU + česká DPH (stavba v ČR), EU + reverse charge, mimo EU + česká, CZ + česká, bez DIČ + přenesená',
+  test('B189: ruční volba má přednost — EU + česká DPH (stavba v ČR), EU + reverse charge, mimo EU + česká, CZ + česká, bez DIČ + česká / reverse charge',
     rucEu === '' && ruc('DE123456789', 0) === S.ceska && ruc('DE123456789', 2) === S.eu && ruc('CHE-1', 0) === S.ceska
-      && ruc('CZ12345678', 0) === S.ceska && ruc('', 1) === S.prenesena, [rucEu, ruc('DE123456789', 0), ruc('CZ12345678', 0)]);
+      && ruc('CZ12345678', 0) === S.ceska && ruc('', 0) === S.ceska && ruc('', 2) === S.eu, [rucEu, ruc('DE123456789', 0), ruc('CZ12345678', 0)]);
   test('B189: vlastní znění režimu u cizího DIČ se počítá jako volba (symboly {{…}} doplní ve Wordu)',
     hazi(() => fnZ('DE123456789', { sodDphRezim: 'dle dohody' })) === '');
   /* Existující zakázka s uloženou volbou se nemění: ruční hodnota i zmrazené předvyplnění zamčené varianty. */
@@ -173,9 +197,10 @@ const sablona = (...symboly) => ({ symboly: new Set(symboly) });
     global.aktivniVarianta = zz => zz.varianty[0];
     const uEu = dokumentZabrana('sod', z.varianty[0]);   // před opravou ''
     z.dic = 'CZ12345678'; const uCz = dokumentZabrana('sod', z.varianty[0]);
+    z.dic = ''; const uBez = dokumentZabrana('sod', z.varianty[0]);   // V7-N2: bez DIČ výchozí přenesená → tlačítko svítí
     z.dic = 'DE123456789'; const uProj = dokumentZabrana('sodProj', z.varianty[0]);
-    test('B189: UI zábrana — cizí DIČ bez volby zhasne SoD realizace, CZ ne, SoD PROJ se netýká',
-      uEu === (typeof sod.sodDphZabrana === 'function' ? sod.sodDphZabrana(z, z.varianty[0]) : 'x') && /nevznikne/.test(uEu) && uCz === '' && uProj === '', [uEu, uCz, uProj]);
+    test('B189: UI zábrana — cizí DIČ bez volby zhasne SoD realizace, CZ ani bez DIČ ne, SoD PROJ se netýká',
+      uEu === (typeof sod.sodDphZabrana === 'function' ? sod.sodDphZabrana(z, z.varianty[0]) : 'x') && /nevznikne/.test(uEu) && uCz === '' && uBez === '' && uProj === '', [uEu, uCz, uBez, uProj]);
     delete global.ZAK;
   }
   const ceskaAdm = fn({ sodMistoPlneni: 'administrativní budova' });

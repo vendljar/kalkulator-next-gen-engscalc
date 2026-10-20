@@ -44,7 +44,8 @@ podle § 48 zákona o DPH (věta šablony v2); jinak „Objednatel se zavazuje,
 článku bude zhotovitele písemně informovat do tří dnů ode dne, kdy taková
 změna nastane." (druhá věta původního odstavce, zobecněná).
 
-**K posouzení účetní:** (1) věta reverse charge EU — u stavebních prací je
+**K posouzení účetní:** ~~(1) a (4)~~ **vyřešeno rozhodnutím J. V. 20. 10. 2026
+(V7-N2, v20.10.6) — otázka pro účetní se neřeší**, viz oddíl níže. (1) věta reverse charge EU — u stavebních prací je
 místem plnění místo nemovitosti, takže u stavby v ČR a zákazníka z EU
 může jít o českou DPH; (2) přenesená daňová povinnost — ustanovení ZDPH
 (§ 92a / § 92e u stavebních prací) a zda nemá být prohlášení zákazníka
@@ -63,6 +64,19 @@ objednatele.
   šablona).
 - Ruční volba obchodníka má vždy přednost; zakázky s uloženou volbou (i
   zmrazené předvyplnění zamčené varianty) se nemění.
+
+### V7-N2 — vyřešeno rozhodnutím J. V. 20. 10. 2026 (v20.10.6)
+
+Otázka „výchozí režim podle DIČ nezohledňuje místo stavby" (body 1 a 4,
+nález V7-N2 z `podklady/KONTROLA_ROZHODNUTI_V7_18_10.md`) se **účetní
+nepředkládá**. J. V.: „toto ignoruj, zadej v ČR primárně přenesenou daňovou
+povinnost a obchodník si může měnit".
+
+- **DIČ CZ… i bez DIČ** → přenesená daňová povinnost (tuzemsko); bez DIČ
+  bylo do v20.10.5 česká DPH;
+- **DIČ jiného státu EU i mimo EU** → beze změny (bez výchozí volby, zábrana);
+- obchodník režim v krycím listu přepne rozbalovátkem, ↺ vrátí výchozí;
+  volba se propíše do SoD CZ/EN/DE/FR. Uložené volby se nemění.
 
 **Znění všech tří vět (CZ i EN/DE/FR) je PŘEDBĚŽNÉ do kontroly účetní.**
 Nové věty B189 nepřibyly — tuzemská přenesená povinnost má vlastní větu už

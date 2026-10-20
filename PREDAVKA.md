@@ -1,3 +1,18 @@
+# Předávka — 20. 10. 2026: dávka V7-N2 (v20.10.6), větev `claude/v7n2-dph-pdp` — výchozí DPH v ČR = přenesená
+
+Nad `test` (`5dc28d1`, v20.10.1). Do `test` / `main` / `test-draft` / integrace nic — slučuje koordinace
+(session_01Ln2mMn7iC6W9ECztHTJpZe). Paralelně O7 (v20.10.2), D1 (v20.10.3), D2 (v20.10.4), B183 (v20.10.5).
+
+- **Rozhodnutí J. V. 20. 10.:** „toto ignoruj, zadej v ČR primárně přenesenou daňovou povinnost a obchodník si může
+  měnit" — otázka pro účetní (V7-N2) se neřeší.
+- **Hotovo:** `src/kryci.js` `kryciDphRezimVychozi` — DIČ CZ i bez DIČ → přenesená (tuzemsko); cizí DIČ beze změny
+  (bez volby, zábrana). Komentář `KRYCI_DPH_REZIMY`, zdroj pole. Testy `src/test_sod_en.js` (výchozí, přepnutí do
+  SoD CZ/EN/DE/FR, ↺, UI zábrana bez DIČ mlčí) — pojistka proti 5dc28d1: 3 FAIL, po opravě 49/0. Mutace `V7-N2`
+  3/3 (`mutace_jadro.mjs`, nahradily „B189: bez DIČ přenesená povinnost"), `B189` 8/8. Roadmapa #438 (předběžné
+  id), #430 poznámka; SOD_EN_KONTROLA body 1 a 4 vyřešeny; příručka „Co je nového v20.10.6" + kap. 24; CHANGELOG.
+- **Při slučování:** konflikty v CHANGELOG / PREDAVKA / `verze.txt` / `manual/obsah.json` (záhlaví verze, Co je nového)
+  / roadmapě (id 438 může kolidovat s paralelními dávkami).
+
 # Předávka — 19. 10. 2026: dávka W1 (v19.10.9), větev `claude/w1-sablona-proj-v6` — šablona Wordu PROJ v6
 
 Nad `claude/v8-367-firma` (v19.10.7, `4d9f67a`). Do integrace / `test` nic — slučuje koordinace
