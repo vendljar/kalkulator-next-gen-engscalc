@@ -1,20 +1,32 @@
-# Předávka — 20. 10. 2026: Controlling (návrh + dávka C1), větev `claude/controlling-navrh`
+# Předávka — 20. 10. 2026 večer: Controlling #447 — C1 + C2, větev `claude/controlling-navrh`
 
-Nad `test` (`5dc28d1`, v20.10.1). Do `test` / integrace nic — slučuje koordinace
-(session_01Ln2mMn7iC6W9ECztHTJpZe). C1 v kódu.
+Nad integrací v20.10.7 (merge 4612643). Do `test` / integrace nic — C1+C2 sloučí koordinace (noc:
+session_01By6bWivtf2rTJYJFGVv8e1) ráno po K4 jako další verzi. Podklad: `podklady/CONTROLLING_NAVRH_20_10.md`
+(rozbor, návrh, rozhodnutí J. V. J1–J11), artefakt https://claude.ai/artifact/MNaTnXQ4847f2rNiAT9br7.
 
-- **Hotovo:** rozbor rozvržení nákladů A. Mácové × ceník a výpočet, návrh Nastavení → Controlling
-  (číselník skupin, mapování klíčů, hlídání nezařazených, export předkalkulace XLSX/CSV), dávky C1–C4,
-  otázky J1–J11 a A1–A6 → `podklady/CONTROLLING_NAVRH_20_10.md`; roadmapa #447 (předběžné id, `ceka`).
-- **Artefakt pro J. V.:** https://claude.ai/artifact/MNaTnXQ4847f2rNiAT9br7
-- **Čeká se na:** pokyn J. V. k C2. A. Mácová je mimo do prosince (A1–A6 počkají).
-- **Rozhodnutí J. V. J1–J11 zapsaná** (podklad, oddíl Rozhodnutí). **C1 hotová** (f377c80): src/controlling.js,
-  /api/controlling, záloha/obnova, testy + mutace #447 11/11.
-- **Sloučena integrace v20.10.7** (b6f49a7, merge 4612643); po ní zařazen `PC.vyjezdTechnikKc` (D2) do cestovného
-  (4073573). Kolo `--bez-mutaci` S PLAYWRIGHTEM: **288 prošlo / 0 selhalo / 6 přeskočeno** (jen KNG_PODKLADY a test.js) — zelené.
-- **Další krok:** C2 (UI Nastavení → Controlling + upozornění při zveřejnění ceníku + export varianty) — na pokyn J. V.
-- **Ke slučování:** `roadmapa/roadmap.json` (#447 za #437), CHANGELOG oddíl „(bez verze) — C1“ (verzi přidělí
-  koordinace), `netlify/mutace.mjs` (blok #447 + opravené dvě mutace #401 v obnově), `obnova.mjs`/`zalohovani.mjs` (část controlling).
+- **C1 hotová** (f377c80 … 4073573): `src/controlling.js` (skupiny, výchozí mapování podle klíče, rozvrh OCK/PROJ,
+  kapitoly, záznam), `/api/controlling` (jen admin, verze), záloha + kopie na Disk + obnova s očistou.
+- **C2 hotová** (8799993, 49a9353): `src/ui/controlling_ui.js` — Nastavení → Controlling (karty Nákladové skupiny,
+  Mapování položek s filtrem nezařazených a XLSX export/import s náhledem, Export předkalkulace); upozornění na
+  nezařazené trvalé položky v kartě „Platný ceník programu" s možností zařadit (J5); export jedné **zamčené řídící**
+  varianty (J9) do XLSX (Řádky / Kapitoly / Popis) a CSV. Načítání po přihlášení správce, ze souboru se neptá.
+  Oprava C1: trvalé položky katalogu jsou pod `KATALOG.polozky`.
+- **Testy:** src `test_controlling.js` 146/0, server `test_controlling.mjs` 31/0, `overit_controlling.mjs` 30/0,
+  mutace #447 18/18 (C1 11 + C2 7). Kolo `--bez-mutaci` s Playwrightem: 1. běh 282/7/6 → opraveno (49a9353),
+  **2. běh běží** — výsledek doplní další commit (výpis v kontejneru `scratchpad/koloC2b.txt`).
+- **Zbývá:** C3 hromadný export za období na serveru (filtry, strop, protokol exportů, mez), C4 Pipedrive deal id
+  u zakázky + rozvržení PROJ s A. Mácovou (v prosinci).
+- **Ke slučování:** CHANGELOG oddíly „(bez verze) — C1“ a „— C2“, `netlify/mutace.mjs` (#447 + 2 opravené #401),
+  `obnova.mjs`/`zalohovani.mjs` (část controlling), `online_ui.js` (obnova + načtení po přihlášení), `build.py`,
+  `jadro_moduly.cjs`, `overit_online.mjs` (cesta /api/controlling), `test_escape.js` (PROVERENO), `test_csv_vzorce.js`,
+  roadmapa #447.
+
+**Otázky pro J. V. (s doporučenou odpovědí):**
+1. Tlačítko exportu předkalkulace i v Přehledu cenových nabídek (u řádku zakázky)? → Ano, v C3 spolu s hromadným exportem.
+2. Hromadný export (C3) filtrovat podle data zamčení (odeslání) nabídky? → Ano; volitelně OCK × PROJ a řada ČR / zahraničí.
+3. Příplatky v exportu: dnes všechny nabídnuté jako volby (označené). Rozlišit i ty, které se do nabídky netiskly? → Ano, sloupec „v nabídce“ v C3.
+4. Uložení controllingu bez hesla správce (mapování nemění práva ani cenu) — ponechat? → Ano.
+5. Pipedrive deal id (C4): doplnit automaticky při výběru dealu z Pipedrive, ručně jen správce? → Ano.
 
 ---
 # Předávka — 20. 10. 2026: dávka B183 (v20.10.5), větev `claude/b183-plocha-01` — plocha výjimky na 0,1 m²
