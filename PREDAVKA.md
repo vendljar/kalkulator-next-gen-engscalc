@@ -8,9 +8,8 @@ CHANGELOG v20.10.3, roadmapa #440, #441, #442 hotovo, #443 čeká (předběžná
   Word `{{PROJ_DPZ_UVOD}}`, `nastroje/vyrob_sablony.js --proj-v7`, slovník, kontrola `dpzUvodWordProj` (38 pravidel).
 - **#441 (rozhodnutí J. V. 20. 10.):** Q1 hvězdička DPZ bez studie pryč (online + v7 symbol/blok), Q3 v7 titul
   `{{PROJ_TITUL_STUDIE}}` / `{{PROJ_TITUL_CINNOSTI}}` a bloky `BLOK_STUDIE_ROZSAH/_CENA/_POZN` (`blokyPryc`,
-  SoD PROJ je nebere), Q2 mechanismus `dpz+studie` / `dpz-studie` — **znění bez studie vybírá J. V.**, mění se
-  jen `PODMINKY_TERMIN_DPZ_BEZ_STUDIE` v `src/podminky.js` (předběžně „do 12-ti týdnů od objednání a předání
-  podkladů“, druhá varianta „do 10–12 týdnů od zpracování výstupů ze zaměření“; obě ve slovníku).
+  SoD PROJ je nebere), Q2 `dpz+studie` / `dpz-studie` — bez studie „do 12 týdnů od zpracování výstupů ze
+  zaměření“ (J. V. 20. 10. ~11:35, `PODMINKY_TERMIN_DPZ_BEZ_STUDIE`). Body D2 (cestovné, úvod, jednostupňová) nedělat.
   **Šablona .docx v7 nevznikla** — v6 v sezení není (Disk má jen v5, 1 MB konektorem nejde); J. V. ji vyrobí z v6.
 - **#442 hotovo:** výpočet šířky bočního světlíku beze změny, popisky „Šířka skla bočního světlíku (přes sloupky)“,
   nápověda, Detail, TS „šířka skla N mm“ (EN/DE/FR), příručka.

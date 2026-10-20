@@ -31,10 +31,10 @@ Souběžně O7 má v20.10.2. Podklad `podklady/D1_SIKORA_19_10.md`, roadmapa #44
   - **Q1** hvězdička ceny DPZ „Cena je platná v případě návaznosti na STUDII PROVEDITELNOSTI.“ se
     bez studie vynechá — online (`hvezdickaJenSe`), Word v7 `{{PROJ_DPZ_HVEZDICKA_ZNACKA}}`
     u nadpisu ceny a poznámka `{{PROJ_DPZ_HVEZDICKA}}` v bloku `BLOK_DPZ_HVEZDICKA`;
-  - **Q2** termín hrubopisu DPZ: se studií beze změny, bez studie znění z konstanty
-    `PODMINKY_TERMIN_DPZ_BEZ_STUDIE` (`src/podminky.js`) — **znění vybírá J. V.** („do 12-ti týdnů od
-    objednání a předání podkladů“ předběžně × „do 10–12 týdnů od zpracování výstupů ze zaměření“,
-    D. Sikora); dva řádky termínů ve Firmě s klíčem `dpz+studie` / `dpz-studie`
+  - **Q2** termín hrubopisu DPZ (rozhodnutí J. V. 20. 10. ~11:35): se studií beze změny „do 10–12 týdnů
+    od schválení studie investorem a objednání“, bez studie **„do 12 týdnů od zpracování výstupů ze
+    zaměření“** (`PODMINKY_TERMIN_DPZ_BEZ_STUDIE`, EN/DE/FR ve slovníku, online i Word
+    `{{PROJ_TERMINY_TERMIN}}`); dva řádky termínů ve Firmě s klíčem `dpz+studie` / `dpz-studie`
     (nový podmíněný klíč, Nastavení → Smlouvy / Šablony → Texty nabídky PROJ; **uložené vlastní
     termíny se nemění** — kdo je má uložené, doplní řádek sám);
   - **Q3** šablona **PROJ v7** navíc: titul `{{PROJ_TITUL_STUDIE}}` („STUDIE PROVEDITELNOSTI“ jen

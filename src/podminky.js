@@ -26,11 +26,10 @@
  * ============================================================ */
 
 /* Továrna = dnešní hodnoty z kódu (stav e3995e6), aby se výstup nezměnil. */
-/* TERMÍN HRUBOPISU DPZ BEZ STUDIE (D1, 20. 10. 2026) — ZNĚNÍ ČEKÁ NA J. V.:
- * „do 12-ti týdnů od objednání a předání podkladů" (návrh J. V., předběžně)
- * nebo „do 10–12 týdnů od zpracování výstupů ze zaměření" (D. Sikora, šablona
- * rev. 33). Obě znění zná slovník (EN/DE/FR); mění se jen tahle konstanta. */
-const PODMINKY_TERMIN_DPZ_BEZ_STUDIE = 'do 12-ti týdnů od objednání a předání podkladů';
+/* TERMÍN HRUBOPISU DPZ BEZ STUDIE (D1) — rozhodnutí J. V. 20. 10. 2026 ~11:35:
+ * pevných 12 týdnů s navázáním D. Sikory (na výstupy ze zaměření); se studií
+ * zůstává „do 10–12 týdnů od schválení studie investorem a objednání". */
+const PODMINKY_TERMIN_DPZ_BEZ_STUDIE = 'do 12 týdnů od zpracování výstupů ze zaměření';
 
 const PODMINKY_VYCHOZI = {
   v: 1,

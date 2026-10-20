@@ -241,9 +241,9 @@ const uvodDpz = d => { const b = d.bloky.find(x => x.typ === 'rozsah' && /\(DPZ\
   const terminDpz = d => { const b = d.bloky.find(x => x.nadpis === 'TERMÍNY'); return b ? b.radky.filter(r => /hrubopis DPZ/.test(r[0])).map(r => r[1]) : null; };
   test('Q2 online se studií: termín hrubopisu DPZ „od schválení studie" (jednou)', JSON.stringify(terminDpz(se)) === JSON.stringify(['do 10–12 týdnů od schválení studie investorem a objednání']), terminDpz(se));
   const PD0 = require('./podminky.js'), BEZ = PD0.PODMINKY_TERMIN_DPZ_BEZ_STUDIE;
-  test('Q2 znění bez studie je jedna z variant k rozhodnutí J. V.', ['do 12-ti týdnů od objednání a předání podkladů',
-    'do 10–12 týdnů od zpracování výstupů ze zaměření'].indexOf(BEZ) >= 0, BEZ);
-  ['do 12-ti týdnů od objednání a předání podkladů', 'do 10–12 týdnů od zpracování výstupů ze zaměření'].forEach(t => ['en', 'de', 'fr'].forEach(L => {
+  /* rozhodnutí J. V. 20. 10. 2026 ~11:35 */
+  test('Q2 znění bez studie = „do 12 týdnů od zpracování výstupů ze zaměření"', BEZ === 'do 12 týdnů od zpracování výstupů ze zaměření', BEZ);
+  ['do 12 týdnů od zpracování výstupů ze zaměření'].forEach(t => ['en', 'de', 'fr'].forEach(L => {
     const st = PR.trStav(t, L);
     test('Q2 slovník ' + L.toUpperCase() + ': „' + t + '"', st.prelozeno && !CESKA.test(st.text), st);
   }));

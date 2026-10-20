@@ -52,10 +52,9 @@ selže na prvním testu, před Q1–Q3 17 FAIL a pád sady. Cílené mutace „D
   bez studie **vynechat**: online hned (`hvezdickaJenSe: 'studie'`), Word v7 symbolem
   `{{PROJ_DPZ_HVEZDICKA_ZNACKA}}` u nadpisu ceny DPZ (hvězdička / nic) a poznámka
   `{{PROJ_DPZ_HVEZDICKA}}` v bloku `BLOK_DPZ_HVEZDICKA` (prázdný symbol blok odstraní).
-- **Q2 termín hrubopisu DPZ** — se studií beze změny, bez studie znění z konstanty
-  `PODMINKY_TERMIN_DPZ_BEZ_STUDIE` (`src/podminky.js`). **Znění vybírá J. V.:** „do 12-ti týdnů od objednání
-  a předání podkladů“ (jeho, předběžně nastavené) nebo „do 10–12 týdnů od zpracování výstupů ze zaměření“
-  (D. Sikora, šablona rev. 33); obě zná slovník EN/DE/FR, mění se jeden řádek. Ve Firmě dva řádky s klíčem `dpz+studie` (se studií) a `dpz-studie` (bez studie);
+- **Q2 termín hrubopisu DPZ** (rozhodnutí J. V. 20. 10. ~11:35) — se studií beze změny, bez studie
+  **„do 12 týdnů od zpracování výstupů ze zaměření“** (`PODMINKY_TERMIN_DPZ_BEZ_STUDIE` v `src/podminky.js`,
+  EN/DE/FR ve slovníku). Ve Firmě dva řádky s klíčem `dpz+studie` (se studií) a `dpz-studie` (bez studie);
   klíč umí zapsat i administrátor v Nastavení → Smlouvy / Šablony → Texty nabídky PROJ.
   **Pozor:** kdo má termíny PROJ ve Firmě uložené vlastní, má dál svůj seznam (s jedním řádkem `dpz`) —
   řádek bez studie si doplní sám (výchozí znění = prázdné pole). Do Wordu jde přes
