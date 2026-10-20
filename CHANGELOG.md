@@ -32,7 +32,12 @@ dodána a uzavřena. Rozhodnutí J. V. 20. 10. 2026, výchozí volby a postup v 
   termíny). Nic se nepřepisuje.
 
 **Testy:** `src/test_d2_proj_sikora.js` (71 kontrol; na stromu před D2 selže hned na prvních dvou —
-pojistka), `src/test_kontroly.js` počet pravidel 37 → 41. Výsledek kola a mutací D2 níž.
+pojistka), `src/test_kontroly.js` a `overit_lista.mjs` počet pravidel 37 → 41.
+
+**Ověření (20. 10. 2026, nad sloučením integrace 6fe92d8):** `testovaci_kolo.sh --bez-mutaci` — sady **282 prošlo /
+0 selhalo / 6 přeskočeno** (`test.js` + 5 harnessů bez `KNG_PODKLADY`), statické **3/3**; cílené mutace jádra
+`D2` **18/18** (engine_proj, nabidka_proj, kontroly, vyrob_sablony), pracovní kopie po běhu čistá. Šablony
+.docx se v dávce nevyráběly (navazující dávka S10).
 
 ---
 
