@@ -11,6 +11,7 @@ CHANGELOG v20.10.3, roadmapa #440 (hotovo), #441–#443 (čekají; předběžná
 - **Čeká na J. V.:** Q1–Q3 (hvězdička DPZ, termín DPZ, pevné bloky studie ve Wordu); bod 2 varianty A–C
   šířky bočního světlíku (dnes 600 = sklo 1 680 − otvor 1 040 − 40, schválené 1. a 6. 10.); bod 3 dimenze
   portálu Q4–Q10 — návrh ve větvi `claude/d1-sikora-navrh-profily` (NESLUČOVAT bez potvrzení Jirky L.).
+- **Kolo `--bez-mutaci`:** 282 / 0 / 6 přeskočeno, statické 3/3; mutace D1 13/13.
 - **Ke slučování:** CHANGELOG / `verze.txt` / `manual/obsah.json` (O7 v20.10.2 — novější nahoru),
   `mutace_jadro.mjs` (blok D1 před #367b), `src/kontroly.js` (nové pravidlo → počty 38 v `test_kontroly.js`
   a `overit_lista.mjs`; přidá-li O7 pravidlo, sečíst), `roadmapa/roadmap.json` (#440–#443 na konci).
