@@ -141,15 +141,11 @@ function najdiSady() {
 const MUTACE = [
   /* ---------- B183: plocha v obsahu cenové výjimky na 0,1 m² (20. 10. 2026, v20.10.5) ---------- */
   { nazev: 'B183: plocha v obsahu výjimky zpět na celé m²', soubor: 'vyjimky.js',
-    hledej: "  return typeof x === 'number' && isFinite(x) ? Math.floor(x * 10 + 1e-6) / 10 : null;",
+    hledej: "  return typeof x === 'number' && isFinite(x) ? Math.floor(x * 10) / 10 : null;",
     nahrad: "  return typeof x === 'number' && isFinite(x) ? Math.round(x) : null;",
     proc: 'zvětšení plochy pásu po schválení až o skoro 1 m² by výjimku nechalo platit' },
-  { nazev: 'B183: plocha na desetiny bez rezervy (2,3 × 10 = 22,999…)', soubor: 'vyjimky.js',
-    hledej: "Math.floor(x * 10 + 1e-6) / 10",
-    nahrad: "Math.floor(x * 10) / 10",
-    proc: 'plocha 2,3 m² by v obsahu stála jako 2,2 — karta by ukazovala jiné číslo, než pás má' },
   { nazev: 'B183: plocha zaokrouhlená matematicky místo dolů', soubor: 'vyjimky.js',
-    hledej: "Math.floor(x * 10 + 1e-6) / 10",
+    hledej: "Math.floor(x * 10) / 10",
     nahrad: "Math.round(x * 10) / 10",
     proc: '2,50 a 2,59 m² by daly jiný obsah (zadání: týž), mez by se posunula o půl desetiny' },
   { nazev: 'B183: nový obsah bez značky tvaru', soubor: 'vyjimky.js',

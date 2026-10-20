@@ -8,6 +8,32 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v20.10.5 — B183 volba (b): plocha v obsahu cenové výjimky na 0,1 m² (větev claude/b183-plocha-01)
+
+Rozhodnutí J. V. 20. 10. 2026 (audit kola 27, `podklady/AUDIT_2026-10-18_v17.10.5.md`, B183;
+kontrola V7: V7-6, V7-N1). Základ `test` 5dc28d1 (v20.10.1).
+
+- **B183 (nízká, opraveno):** obsah výjimky nesl plochu pásu a světlíku „jiné“ na celé m² — zvětšení
+  po schválení 2,50 → 3,49 m² dalo týž obsah (nekrytý nárůst až skoro 1 m²). Teď `vyjimkyM2Schvaleni`
+  drží plochu **na 0,1 m² dolů** (2,50 a 2,59 m² týž obsah, 2,61 m² jiný): mez < 0,1 m² na pás či
+  světlík × rozdíl sazeb (`BEZPECNOST_MEZE.md`). Klient i server počítají obsah toutéž funkcí
+  (`src/vyjimky.js`). Obsah s pásem nese značku tvaru `v: 2`; obsah jen se směsí se nemění.
+- **Dřív schválené výjimky platí dál:** záznam z doby celých m² (bez značky) se porovná i s obsahem
+  starého tvaru (`obsahStary`, `vyjimkaObsahSedi`) — v `vyjimkaPlati`, `vyjimkaKategorie`,
+  `vyjimkaPrepocti`, serverové kontrole (B101) i zámku. Platí, dokud se obsah starého tvaru nezmění
+  (u nich zůstává tehdy schválená mez < 1 m²); nové schválení razí server vždy v novém tvaru, nový
+  záznam se starým zaokrouhlením neporovnává (značka) a starý tvar si obchodník podvrhnout nemůže (403).
+- **V7-N1:** karta Cenové výjimky ukazuje plochu ve tvaru schválení („2,5 m² (zaokrouhleno pro
+  schválení)“), u dřív schválené výjimky celé m² a poznámku „Schváleno před v20.10.5 s plochou na celé m²“.
+- **Testy:** `src/test_vyjimky.js` +14 (2,50/2,59/2,61 přes obal jádra, starý tvar, přepočet, kategorie,
+  karta, desetiny 0,01–20 000 m² přesně), `netlify/test_vyjimky.mjs` +8 (server razí `v: 2`, podvrh starého
+  tvaru 403, uložené schválení starého tvaru: uložení / „čeká“ od obchodníka / zámek 200, změna sazby 403;
+  zasklení u pásu 1,2 m dřív 200, teď 403). Pojistka: proti 5dc28d1 obě sady spadnou.
+- **Mutace:** `vyjimky.js` přidán do JADRA `mutace_jadro.mjs`; cílené „B183“ jádro 9, server 5; úseky
+  starších mutací B154, B178, H2 a „výjimky:“ přesměrované na nový kód.
+
+---
+
 ## v20.10.1 — O5: opravy nálezů auditu K3 bez rozhodnutí J. V. (větev claude/o5-k3-nalezy)
 
 Dávka O5 (koordinace „ŘÍDÍCÍ 19.10 noc“), základ `claude/integrace-16-10` 3b49d57

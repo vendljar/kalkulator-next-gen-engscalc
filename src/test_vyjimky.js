@@ -359,6 +359,11 @@ console.log('— B183: plocha v obsahu na 0,1 m², dřív schválené platí sta
     vyjimkyM2Schvaleni(2.50) === vyjimkyM2Schvaleni(2.59) && vyjimkyM2Schvaleni(2.61) !== vyjimkyM2Schvaleni(2.50)
     && vyjimkyM2Schvaleni(2.3) === 2.3 && vyjimkyM2Schvaleni(2.7) === 2.7 && vyjimkyM2Schvaleni(null) === null,
     [vyjimkyM2Schvaleni(2.5), vyjimkyM2Schvaleni(2.59), vyjimkyM2Schvaleni(2.61), vyjimkyM2Schvaleni(2.3)]);
+  { /* Plocha na setiny (0,01–20 000 m²): obsah = celé desetiny dolů (přesně, bez plovoucí chyby). */
+    let zle = null;
+    for (let i = 1; i <= 2000000 && zle === null; i++) { const x = i / 100, c = vyjimkyM2Schvaleni(x);
+      if (c !== Math.floor(i / 10) / 10) zle = [x, c]; }
+    test('B183: plocha na setiny 0,01–20 000 m² → desetiny dolů přesně', zle === null, zle); }
   const vyp = global.vypocet; let m2 = 2.5;
   global.vypocet = (...a) => { const r = vyp(...a);
     (r.oplasteni.pasy || []).forEach(p => { if (p.typ === 'jine') p.m2 = m2; }); return r; };

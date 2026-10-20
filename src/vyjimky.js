@@ -379,10 +379,10 @@ function vyjimkyPasyPlochy(pasy, vysledek) {
 /* Plocha pásu či světlíku tak, jak ji drží obsah schválení: na 0,1 m²
  * DOLŮ (B183 volba b, J. V. 20. 10. 2026; zadání: 2,50 a 2,59 m² týž
  * obsah, 2,61 m² jiný) — každý nárůst o 0,1 m² obsah změní. Plocha
- * přichází na setiny (vyjimkyPasyPlochy); drobná rezerva chrání před
- * 2,3 × 10 = 22,999…  Null = plochu neznáme. */
+ * přichází na setiny (vyjimkyPasyPlochy, vyjimkyPlochyJadra) a pro ty je
+ * x × 10 dolů přesné (test do 20 000 m²). Null = plochu neznáme. */
 function vyjimkyM2Schvaleni(x) {
-  return typeof x === 'number' && isFinite(x) ? Math.floor(x * 10 + 1e-6) / 10 : null;
+  return typeof x === 'number' && isFinite(x) ? Math.floor(x * 10) / 10 : null;
 }
 /* Starý tvar (do v20.10.4): celé m². Jen pro dřív schválené výjimky. */
 function vyjimkyM2Stary(x) {

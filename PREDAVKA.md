@@ -1,3 +1,18 @@
+# Předávka — 20. 10. 2026: dávka B183 (v20.10.5), větev `claude/b183-plocha-01` — plocha výjimky na 0,1 m²
+
+Nad `test` (5dc28d1, v20.10.1). Do test / main / test-draft / integrace nic — slučuje koordinace
+(session_01Ln2mMn7iC6W9ECztHTJpZe). Podrobnosti: CHANGELOG v20.10.5, roadmapa #441 (předběžné id;
+438–440 nechány O7, D1, D2), BEZPECNOST_MEZE.md (oddíl výjimek, plocha).
+
+- **Hotovo:** `vyjimkyM2Schvaleni` na 0,1 m² dolů (zadání: 2,50 = 2,59, 2,61 jiné), značka tvaru `v: 2`
+  v obsahu s pásem; dřív schválené (celé m², bez značky) platí přes `obsahStary` / `vyjimkaObsahSedi`
+  (klient i server), dokud se obsah nezmění. Karta: 0,1 m², u starého schválení celé m² + poznámka.
+- **Volba bez dotazu:** zaokrouhlení DOLŮ (ne matematicky) — tak vychází příklad zadání 2,50/2,59/2,61.
+- **Ke slučování:** CHANGELOG / `verze.txt` / `manual/obsah.json` (Co je nového + kap. 19) / roadmapa —
+  souběžně O7 (v20.10.2), D1 (v20.10.3), D2 (v20.10.4); `mutace_jadro.mjs` (JADRA + blok B183 na začátku
+  MUTACE), `netlify/mutace.mjs` (H2, B154, B178, „výjimky:“ úseky + blok B183).
+- **Další krok:** sloučení; release v20.10.5 až po sloučení.
+
 # Předávka — 19. 10. 2026: dávka W1 (v19.10.9), větev `claude/w1-sablona-proj-v6` — šablona Wordu PROJ v6
 
 Nad `claude/v8-367-firma` (v19.10.7, `4d9f67a`). Do integrace / `test` nic — slučuje koordinace

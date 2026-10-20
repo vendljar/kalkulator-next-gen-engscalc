@@ -2793,7 +2793,7 @@ const MUTACE = [
    * výjimky (celé m², bez značky tvaru) platí starým tvarem. Hlídá
    * test_vyjimky.mjs (zámky přes server) a src/test_vyjimky.js. */
   { nazev: 'B183: server — obsah výjimky zpět na celé m²', soubor: '../src/vyjimky.js',
-    hledej: "  return typeof x === 'number' && isFinite(x) ? Math.floor(x * 10 + 1e-6) / 10 : null;",
+    hledej: "  return typeof x === 'number' && isFinite(x) ? Math.floor(x * 10) / 10 : null;",
     nahrad: "  return typeof x === 'number' && isFinite(x) ? Math.round(x) : null;",
     proc: 'zvětšení plochy pásu po schválení až o skoro 1 m² by výjimku nechalo platit (B183)' },
   { nazev: 'B183: server — zámek uzná jen přesně týž obsah (dřív schválené padnou)', soubor: '../src/vyjimky.js',
