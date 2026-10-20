@@ -9,7 +9,9 @@ Nad `test` (`5dc28d1`, v20.10.1). Do `test` / integrace nic — slučuje koordin
 - **Artefakt pro J. V.:** https://claude.ai/artifact/MNaTnXQ4847f2rNiAT9br7
 - **Čeká se na:** pokyn J. V. k C2. A. Mácová je mimo do prosince (A1–A6 počkají).
 - **Rozhodnutí J. V. J1–J11 zapsaná** (podklad, oddíl Rozhodnutí). **C1 hotová** (f377c80): src/controlling.js,
-  /api/controlling, záloha/obnova, testy + mutace #447 11/11, kolo --bez-mutaci zelené.
+  /api/controlling, záloha/obnova, testy + mutace #447 11/11.
+- **Sloučena integrace v20.10.7** (b6f49a7, merge 4612643); po ní zařazen `PC.vyjezdTechnikKc` (D2) do cestovného
+  (4073573). Kolo `--bez-mutaci` S PLAYWRIGHTEM: **288 prošlo / 0 selhalo / 6 přeskočeno** (jen KNG_PODKLADY a test.js) — zelené.
 - **Další krok:** C2 (UI Nastavení → Controlling + upozornění při zveřejnění ceníku + export varianty) — na pokyn J. V.
 - **Ke slučování:** `roadmapa/roadmap.json` (#447 za #437), CHANGELOG oddíl „(bez verze) — C1“ (verzi přidělí
   koordinace), `netlify/mutace.mjs` (blok #447 + opravené dvě mutace #401 v obnově), `obnova.mjs`/`zalohovani.mjs` (část controlling).
