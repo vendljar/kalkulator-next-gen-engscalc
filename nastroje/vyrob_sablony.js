@@ -161,6 +161,7 @@ const REZIM_CN15 = REZIM === '--cn-v15';
 const REZIM_V5 = REZIM === '--proj-v5';
 const REZIM_V6 = REZIM === '--proj-v6';
 const REZIM_SOD_V4 = REZIM === '--sod-proj-v4';
+const REZIM_V8 = REZIM === '--proj-v8';   // D2: cestovné u akce mimo Prahu
 const ARGY = REZIM ? process.argv.slice(3) : process.argv.slice(2);
 const PODKLADY = ARGY[0] || process.env.KNG_PODKLADY;
 const VYSTUP = ARGY[1] || PODKLADY;
@@ -456,6 +457,62 @@ function projV6(xml) {
   const konTerminu = body.indexOf(znacka('BLOK_TERMINY_KON')) + znacka('BLOK_TERMINY_KON').length;
   body = body.slice(0, konTerminu) + dolozky + body.slice(konTerminu);
   return t.pred + body + t.po;
+}
+
+/* ---------- PROJ v8: cestovné u akce mimo Prahu (D2) ----------
+ *   node nastroje/vyrob_sablony.js --proj-v8 <složka podkladů> [výstupní složka]
+ * Vstup:  Sablona_NABIDKA_PROJ_v7.docx (D1); když v7 ve složce není,
+ *         Sablona_NABIDKA_PROJ_v6.docx (W1) — výstup se pak jmenuje stejně,
+ *         jen nenese úpravy D1 (skript to vypíše).
+ * Výstup: Sablona_NABIDKA_PROJ_v8.docx + _EN/_DE/_FR
+ * PROJ v8 = vstup, v němž hned pod tabulkou s cenou ZAMĚŘENÍ ({{PROJ_CENA_ZAMERENI}}),
+ *           STUDIE – část 2 ({{PROJ_CENA_SP2}}), DPZ, IČ, KOLAUDACE a pod sazbou
+ *           AD ({{PROJ_CENA_AD_BLOK}}, uvnitř bloku AD) přibude odstavec
+ *           {{PROJ_CESTOVNE_<X>}} mezi značkami {{BLOK_CESTOVNE_<X>_ZAC/_KON}}.
+ *           Aplikace do něj dá věty o cestovném (rozhodnutí J. V. 20. 10. 2026,
+ *           šablona D. Sikory rev. 33); akce v Praze = prázdný symbol, blok zmizí.
+ * Každý symbol ceny musí být v právě jednom prvku těla (tabulce), jinak chyba —
+ * nic se nehádá. Písmo odstavce: styl „Bezmezer", 9 pt kurzívou. */
+const PROJ_V8_CESTOVNE = [['PROJ_CENA_ZAMERENI', 'ZAMERENI'], ['PROJ_CENA_SP2', 'SP'], ['PROJ_CENA_DPZ', 'DPZ'],
+  ['PROJ_CENA_IC', 'IC'], ['PROJ_CENA_KOLAUDACE', 'KOLAUDACE'], ['PROJ_CENA_AD_BLOK', 'AD']];
+const odstavecCestovne = x => '<w:p><w:pPr><w:pStyle w:val="Bezmezer"/><w:jc w:val="both"/></w:pPr>'
+  + '<w:r><w:rPr><w:i/><w:sz w:val="18"/></w:rPr><w:t xml:space="preserve">{{PROJ_CESTOVNE_' + x + '}}</w:t></w:r></w:p>';
+function projV8(xml) {
+  const t = tělo(xml);
+  let body = t.body;
+  const sym = dg.klicePlaceholderu(body);
+  if (sym.some(k => /^PROJ_CESTOVNE_/.test(k))) chyba('PROJ: šablona už symboly cestovného {{PROJ_CESTOVNE_…}} má — není co doplnit');
+  if (sym.indexOf('PROJ_DOLOZKY') < 0) chyba('PROJ: vstup není PROJ v6/v7 (chybí blok doložek {{PROJ_DOLOZKY}}) — nejdřív vyrobte v6');
+  const top = prvkyTela(body);
+  const vlozit = PROJ_V8_CESTOVNE.map(([cena, x]) => {
+    const kde = top.filter(el => dg.klicePlaceholderu(body.slice(el.zac, el.kon)).indexOf(cena) >= 0);
+    if (kde.length !== 1) chyba('PROJ: symbol {{' + cena + '}} čekám v právě jednom prvku těla, je v ' + kde.length + ' — nic nehádám');
+    return { kon: kde[0].kon, x };
+  });
+  /* odzadu, ať pozice výš platí; dva symboly v téže tabulce = bloky v pořadí seznamu */
+  vlozit.map((v, i) => Object.assign(v, { i })).sort((a, b) => (b.kon - a.kon) || (b.i - a.i)).forEach(v => {
+    body = body.slice(0, v.kon) + znacka('BLOK_CESTOVNE_' + v.x + '_ZAC') + odstavecCestovne(v.x)
+      + znacka('BLOK_CESTOVNE_' + v.x + '_KON') + body.slice(v.kon);
+  });
+  return t.pred + body + t.po;
+}
+async function hlavniV8() {
+  if (!PODKLADY) { console.error('Použití: node nastroje/vyrob_sablony.js --proj-v8 <složka podkladů> [výstupní složka]'); process.exit(2); }
+  const v7 = path.join(PODKLADY, 'Sablona_NABIDKA_PROJ_v7.docx'), v6 = path.join(PODKLADY, 'Sablona_NABIDKA_PROJ_v6.docx');
+  const vstup = fs.existsSync(v7) ? v7 : v6;
+  if (!fs.existsSync(vstup)) chyba('Chybí vstupní šablona ' + v7 + ' (ani ' + path.basename(v6) + ')');
+  if (vstup === v6) console.log('! Sablona_NABIDKA_PROJ_v7.docx (D1) ve složce není — v8 vzniká z v6 a úpravy D1 nenese.');
+  if (!fs.existsSync(VYSTUP)) fs.mkdirSync(VYSTUP, { recursive: true });
+  const vse = await ulozSMutacemi(await vyrob(vstup, projV8), 'Sablona_NABIDKA_PROJ_v8');
+  let prob = 0;
+  vse.forEach(v => {
+    const vada = v.vady.length + ((v.ubylo || []).length) + ((v.pribylo || []).length);
+    prob += vada;
+    console.log((vada ? '✗ ' : '✓ ') + v.soubor + ' — symbolů ' + v.symbolu + (v.prelozeno ? ', přeloženo ' + v.prelozeno : '')
+      + (v.vady.length ? '\n    vady XML: ' + v.vady.join('; ') : ''));
+  });
+  console.log('\nVýstup: ' + VYSTUP + ' (vstup ' + path.basename(vstup) + ')');
+  process.exit(prob ? 1 : 0);
 }
 
 /* ---------- CN v14: platební podmínky z platebního kalendáře OCK ----------
@@ -959,6 +1016,7 @@ async function ulozSMutacemi(bajty, zaklad) {
 }
 
 async function hlavni() {
+  if (REZIM_V8) return hlavniV8();
   if (!PODKLADY) {
     console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --proj-v5 | --proj-v6 | --sod-proj | --sod-real | --sod-real-v3 | --sod-proj-cislo | --sod-proj-v4 | --cn-v14 | --cn-v15] <složka podkladů> [výstupní složka]');
     process.exit(2);
@@ -1105,4 +1163,4 @@ async function hlavni() {
 
 /* Úpravy document.xml jdou testovat bez souborů (src/test_sablona_proj_v4.js). */
 if (require.main === module) hlavni().catch(e => { console.error('CHYBA: ' + e.message); process.exit(1); });
-module.exports = { cnV13, cnV14, projV3, projV4, projV5, projV6, sodProjV2, sodRealV2, sodRealV3, sodProjCislo, sodProjV4, prepisUsekOdstavce };
+module.exports = { cnV13, cnV14, projV3, projV4, projV5, projV6, projV8, PROJ_V8_CESTOVNE, sodProjV2, sodRealV2, sodRealV3, sodProjCislo, sodProjV4, prepisUsekOdstavce };

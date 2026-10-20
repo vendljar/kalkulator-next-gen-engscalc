@@ -4915,16 +4915,16 @@
    "pozn" : "Pokyn J. V.: **překlady zatím NEMĚNIT**, jen vypsat."
   },
   {
-   "id" : "260",
-   "vlna" : "E",
-   "stav" : "blokovano",
-   "dulezitost" : "nizka",
-   "slozitost" : "S",
-   "nazev" : "Chybějící příloha k nálezu D3 (online calkulak)",
-   "cekaNa" : "J. V. — soubor online calkulak.doc nebyl dodán",
-   "proc" : "Bez přílohy je nález D3 opravený jen zpola; nejde ověřit, co přesně měl dokument obsahovat.",
-   "detail" : "ZBÝVÁ: dodat soubor a doplnit zbývající část D3.",
-   "hotovoKdyz" : "Příloha je k dispozici a D3 je uzavřené celé."
+   "id": "260",
+   "vlna": "E",
+   "stav": "hotovo",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "nazev": "Chybějící příloha k nálezu D3 (online calkulak)",
+   "proc": "Bez přílohy je nález D3 opravený jen zpola; nejde ověřit, co přesně měl dokument obsahovat.",
+   "detail": "HOTOVO v20.10.4 (dávka D2): soubor dodán — šablona nabídky PROJ od D. Sikory (OVP-CN „online calkulak“, rev. 33, 15. 9. 2026) s barevně vyznačenými podmíněnými texty; J. V. ho má. Rozhodnutí J. V. 20. 10. 2026 promítnuta jako #444 (cestovné mimo Prahu), #445 (úvod upravitelný obchodníkem), #446 (jednostupňová dokumentace).",
+   "hotovoKdyz": "Příloha je k dispozici a D3 je uzavřené celé.",
+   "hotovoV": "v20.10.4"
   }
   ,
   {
@@ -6857,6 +6857,57 @@
     "436"
    ],
    "pozn": "Předběžné id (přidělí koordinace při sloučení)."
+  },
+  {
+   "id": "444",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "vysoka",
+   "slozitost": "M",
+   "hotovoV": "v20.10.4",
+   "nazev": "Nabídka PROJ: cestovné u akce mimo Prahu (1 výjezd technika) — ZA, SP, DPZ, KOLAUDACE v ceně, IČ a AD jen uvedeno",
+   "proc": "Šablona D. Sikory (rev. 33) má podmíněné věty o cestovném; rozhodnutí J. V. 20. 10. 2026 bod 1.",
+   "detail": "HOTOVO v20.10.4 (dávka D2, větev claude/d2-proj-sikora). Přepínač „Akce mimo Prahu“ v Kalkulaci PROJ (PJ.akceMimoPrahu), cena v ceníku PROJ PC.vyjezdTechnikKc, přepis u zakázky PJ.vyjezdKcPrepis (prázdno = ceník, 0 = neúčtovat). engine_proj.js přičte výjezd po přirážce k zaměření, DPZ a kolaudaci a ke studii jen bez samostatného zaměření (jedna cesta; výchozí volba D2). Věty online i ve Wordu ({{PROJ_CESTOVNE_ZAMERENI/SP/DPZ/IC/KOLAUDACE/AD}}, šablona PROJ v8 z vyrob_sablony.js --proj-v8 nad v7 D1, jinak v6). Krycí list, plán plateb a SoD berou cenu z jádra — konzistentní. Kontroly vyjezdCenaChybi, cestovneWordProj. EN/DE/FR výchozí znění ke kontrole rodilými mluvčími.",
+   "hotovoKdyz": "Cena činnosti s výjezdem všude stejná, věty online i ve Wordu, v Praze nic; test s pojistkou, mutace D2 bez přeživší.",
+   "kde": "`src/engine_proj.js`, `src/nabidka_proj.js`, `src/ui/kalk_proj.js`, `src/ui/nabidka_proj_ui.js`, `src/kontroly.js`, `src/preklad.js`, `nastroje/vyrob_sablony.js`, `src/test_d2_proj_sikora.js`",
+   "zavisi": [
+    "260"
+   ],
+   "pozn": "Předběžné id (přidělí koordinace). Šablonu PROJ v8 vyrobí a nahraje J. V. (podklady/D2_SIKORA_PROJ.md)."
+  },
+  {
+   "id": "445",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "hotovoV": "v20.10.4",
+   "nazev": "Nabídka PROJ: úvod „Naše NABÍDKA a doporučení“ upravitelný obchodníkem (Vrátit výchozí, upozornění při změně činností)",
+   "proc": "Rozhodnutí J. V. 20. 10. 2026 bod 2 (šablona D. Sikory).",
+   "detail": "HOTOVO v20.10.4: karta Cenová nabídka (PROJ) — pole úvodu předvyplněné podle činností, ruční text v zadání varianty (PJ.uvodNabidkyRucne + výchozí znění PJ.uvodNabidkyZaklad), tlačítko ↺ Vrátit výchozí, upozornění v kartě i kontrola uvodProjNesedi, když se změní nabízené činnosti. Zamčená varianta drží text. Ruční text platí pro český dokument; EN/DE/FR tisknou výchozí přeložené znění (výchozí volba D2).",
+   "hotovoKdyz": "Ruční úvod online i ve Wordu ({{UVOD_NABIDKY_PROJ}}), návrat výchozího, upozornění; test s pojistkou.",
+   "kde": "`src/engine_proj.js`, `src/nabidka_proj.js`, `src/ui/kalk_proj.js`, `src/ui/nabidka_proj_ui.js`, `src/kontroly.js`, `src/preklad.js`, `nastroje/vyrob_sablony.js`, `src/test_d2_proj_sikora.js`",
+   "zavisi": [
+    "260"
+   ],
+   "pozn": "Předběžné id."
+  },
+  {
+   "id": "446",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "hotovoV": "v20.10.4",
+   "nazev": "Kalkulace PROJ: volba „Jednostupňová dokumentace“ — kontrola před nabídkou upozorní na ruční úpravu ve Wordu",
+   "proc": "Rozhodnutí J. V. 20. 10. 2026 bod 3 (šablona D. Sikory).",
+   "detail": "HOTOVO v20.10.4: zaškrtávátko v Kalkulaci PROJ (PJ.jednostupnova, dosud neexistovalo); kontrola jednostupnovaProj (upozornění) vypíše, co hlídat: DPZ+DPS v jednom stupni, ceny, plán plateb, termíny. Nic se automaticky nepřepisuje ani nepřepočítává.",
+   "hotovoKdyz": "Upozornění se ozve jen se zapnutou volbou; test s pojistkou.",
+   "kde": "`src/engine_proj.js`, `src/nabidka_proj.js`, `src/ui/kalk_proj.js`, `src/ui/nabidka_proj_ui.js`, `src/kontroly.js`, `src/preklad.js`, `nastroje/vyrob_sablony.js`, `src/test_d2_proj_sikora.js`",
+   "zavisi": [
+    "260"
+   ],
+   "pozn": "Předběžné id."
   }
  ],
  "meta" : {

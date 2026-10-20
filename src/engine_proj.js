@@ -31,6 +31,10 @@ const DEFAULT_CENIK_PROJ = {  // HODNOTY VYNULOVÁNY pro GitHub (pripravit_githu
    * natvrdo v kódu; 0 nebo prázdno = výchozích 1 000 Kč/h (dopravaHodinaKc),
    * aby ceníky zveřejněné před tímhle klíčem počítaly dál stejně. */
   dopravaHodKc: 0,
+  /* Cena 1 výjezdu technika (D2, rozhodnutí J. V. 20. 10. 2026, šablona
+   * D. Sikory): přičte se k ceně ZAMĚŘENÍ, STUDIE, DPZ a KOLAUDACE, když je
+   * zakázka „Akce mimo Prahu" (zadání PROJ `akceMimoPrahu`). 0 = nevyplněno. */
+  vyjezdTechnikKc: 0,
   dopravaPausalKc: 0,                // mrtvý klíč (paušál do 17. 8. 2026), nesou ho staré ceníky
   kurzEurKc: 0,                      // Kč/EUR — cizojazyčné dokumenty (#155); 0 = nenastaveno, tisk se zastaví
   fixy: {                            // fixní náklady po sekcích (Kč)
@@ -220,12 +224,19 @@ function vypocetProj(zadani, cenik) {
      * (cenaNabidkyProj). Přirážka říká, kolik si účtujeme; sleva kolik
      * z toho zákazníkovi odpustíme, a to je jiná otázka i jiný řádek
      * v nabídce. */
-    const celkem = cenaSDopravou;                     // celková cena sekce
-    return { key: s.key, nazev: s.nazev, polozky, naklad, marze, cena, dopravaKc,
+    /* VÝJEZD TECHNIKA (D2): pevná cena jednoho výjezdu se přičte k ceně
+     * činnosti až PO přirážce — v nabídce stojí „Cena zahrnuje i cestovní
+     * náklady na 1 výjezd technika (X Kč bez DPH)" a X musí být přesně to,
+     * co se přičetlo. Jen u činnosti, která se počítá (náklad > 0) — jinak
+     * by se vyřazená sekce vrátila do nabídky jen kvůli cestě. */
+    const vyjezdKc = 0;                               // doplní vyjezdPricti níž
+    const celkem = cenaSDopravou + vyjezdKc;          // celková cena sekce
+    return { key: s.key, nazev: s.nazev, polozky, naklad, marze, cena, dopravaKc, vyjezdKc,
              cenaSDopravou, prirazkaPct: s.prirazkaPct == null ? null : s.prirazkaPct,
              pouzitePct: pct * 100, celkem };
   });
 
+  vyjezdPricti(sekce, vyjezdTechnikaKc(zadani, c));
   const sum = f => sekce.reduce((a, s) => a + s[f], 0);
   return {
     sekce,
@@ -233,6 +244,7 @@ function vypocetProj(zadani, cenik) {
       naklad: sum('naklad'),
       marze: sum('marze'),             // přirážka v Kč (jedno procento, viz výše)
       doprava: sum('dopravaKc'),
+      vyjezd: sum('vyjezdKc'),         // výjezdy technika (D2), v `celkem` už jsou
       cena: sum('cenaSDopravou'),
       celkem: sum('celkem'),           // celková nabídková cena
     },
@@ -248,6 +260,37 @@ function dopravaHodinaKc(c) {
   return (isFinite(v) && v > 0) ? v : DOPRAVA_HOD_VYCHOZI_KC;
 }
 
+/* AKCE MIMO PRAHU — CENA 1 VÝJEZDU TECHNIKA (D2, rozhodnutí J. V.
+ * 20. 10. 2026). Přepínač je v zadání PROJ varianty (`akceMimoPrahu`), cena
+ * v ceníku PROJ (`vyjezdTechnikKc`); u zakázky ji jde přepsat
+ * (`vyjezdKcPrepis`, ruční přednost jako u ostatních přepisů — prázdno =
+ * ceník, nula = „cestu neúčtujeme"). Vypnuto (akce v Praze) = 0.
+ * Pozor na záměnu: `doprava.mimoPrahu` u sekce je starší příplatek podle
+ * kilometrů a zůstává beze změny. */
+function vyjezdTechnikaKc(zadani, c) {
+  if (!zadani || !zadani.akceMimoPrahu) return 0;
+  const v = _prepisPlati(zadani.vyjezdKcPrepis) ? +zadani.vyjezdKcPrepis : +((c && c.vyjezdTechnikKc) || 0);
+  return (isFinite(v) && v > 0) ? v : 0;
+}
+/* Činnosti, k jejichž ceně se výjezd přičítá. Zaměření je část 1 studie
+ * (jeden výjezd na stavbu), proto se u STUDIE výjezd přičte jen tehdy,
+ * když se zaměření samostatně nepočítá — jinak by zákazník platil tutéž
+ * cestu dvakrát (výchozí volba D2, zapsaná v podkladu). */
+const VYJEZD_SEKCE = ['zamereni', 'studie', 'dpz', 'kolaudace'];
+function vyjezdSekceZ(sekce) {
+  const zam = (sekce || []).find(s => s && s.key === 'zamereni');
+  return (zam && zam.naklad > 0) ? VYJEZD_SEKCE.filter(k => k !== 'studie') : VYJEZD_SEKCE.slice();
+}
+function vyjezdPricti(sekce, vyjezd) {
+  if (!(vyjezd > 0)) return;
+  const kde = vyjezdSekceZ(sekce);
+  sekce.forEach(s => {
+    if (kde.indexOf(s.key) < 0 || !(s.naklad > 0)) return;
+    s.vyjezdKc = vyjezd;
+    s.celkem = s.cenaSDopravou + vyjezd;
+  });
+}
+
 if (typeof module !== 'undefined')
   module.exports = { vypocetProj, presunPolozku, DEFAULT_ZADANI_PROJ, DEFAULT_CENIK_PROJ,
-                     dopravaHodinaKc, DOPRAVA_HOD_VYCHOZI_KC };
+                     dopravaHodinaKc, DOPRAVA_HOD_VYCHOZI_KC, vyjezdTechnikaKc, vyjezdSekceZ, VYJEZD_SEKCE };

@@ -246,6 +246,11 @@ const CENIK_DEF_PROJ = [
      * číslo bez účinku je past; klíč v datech zůstává kvůli starým ceníkům. */
     ['PC.dopravaHodKc', 'Cesta mimo Prahu – hodina cesty', 'Kč/h',
       'příplatek „mimo Prahu" = km / 60 × tato sazba (hodina cesty při 60 km/h); prázdné nebo 0 = 1 000 Kč/h'],
+    /* D2 (rozhodnutí J. V. 20. 10. 2026): pevná cena jednoho výjezdu technika
+     * u „Akce mimo Prahu" — přičte se k ceně zaměření, studie, DPZ a kolaudace,
+     * u IČ a AD se jen uvede v nabídce. U zakázky jde přepsat. */
+    ['PC.vyjezdTechnikKc', 'Akce mimo Prahu – 1 výjezd technika', 'Kč',
+      'přičte se k ceně ZAMĚŘENÍ, STUDIE, DPZ a KOLAUDACE, když je v Kalkulaci PROJ zapnuto „Akce mimo Prahu"; u IČ a AD se cena jen uvede v nabídce'],
   ]],
   /* Kurz EUR — viz poznámka u sekce Cizí měna v ceníku OCK (#155). */
   /* SAZBY DPH a KURZ EUR v ceníku PROJ NEJSOU (2. 9. 2026, pokyn J. V.:

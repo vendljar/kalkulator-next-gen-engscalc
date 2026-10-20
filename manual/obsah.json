@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v19.10.9 · sestaveno 19. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
+  "verze": "Platí pro aplikaci v20.10.4 · sestaveno 20. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -11,6 +11,14 @@
         "Snímky obrazovky v téhle příručce jsou pořízené z běžící aplikace, ale nad **zkušebním ceníkem** s vymyšlenými sazbami. **Částky na obrázcích jsou ze zkušebního ceníku a nejsou naše ceny.** Neberte je jako vodítko pro nabídku a nesrovnávejte s nimi svou kalkulaci — sledujte, kde co je a jak se to chová, ne kolik to stojí.",
         "Jména zákazníků na snímcích jsou taky **vymyšlená**. Celá ukázková zakázka **2026 - OPR - CN - 9100** je smyšlená a vznikla jen kvůli téhle příručce.",
         "Příručka je určená obchodníkům ENGINEERS CZ. Popisuje, jak firma počítá nabídky, takže ji zákazníkům ani nikomu mimo firmu neposílejte."
+      ]
+    },
+    {
+      "nadpis": "Co je nového ve verzi v20.10.4 (20. 10. 2026)",
+      "odstavce": [
+        "**Akce mimo Prahu v nabídce PROJ.** V Kalkulaci PROJ nahoře zaškrtněte **Akce mimo Prahu**. K ceně zaměření, studie, DPZ a kolaudace se přičte cena jednoho výjezdu technika (z Ceníku nákladů PROJ; u zakázky ji můžete přepsat, ↺ vrátí ceník) a nabídka u nich napíše „Cena zahrnuje i cestovní náklady na 1 výjezd technika na stavbu (… Kč bez DPH)“ — u DPZ a kolaudace navíc „Případné další cesty budou fakturovány individuálně“. U inženýrské činnosti a autorského dozoru se cena výjezdu jen uvede (cesty se fakturují zvlášť). Když se zaměření nabízí samostatně, výjezd je jen u něj (studie zaměření obsahuje). V Praze nechte nezaškrtnuté — nic se nepřičte ani netiskne. Ve Wordu věty tiskne šablona nabídky PROJ v8 (nahrává administrátor).",
+        "**Úvod nabídky PROJ můžete upravit.** V kartě Cenová nabídka (PROJ) je pod popisem záměru pole **Naše NABÍDKA a doporučení** — předvyplní se podle nabízených činností, přepsat ho můžete jako popis záměru a **↺ Vrátit výchozí** vrátí původní znění. Když po úpravě změníte nabízené činnosti, aplikace upozorní, že ruční text nemusí sedět. Odeslaná (zamčená) varianta si svůj text drží. Ruční text platí pro český dokument; anglická, německá a francouzská nabídka mají výchozí úvod.",
+        "**Jednostupňová dokumentace.** Když DPZ a DPS zpracováváte v jednom stupni, zaškrtněte v Kalkulaci PROJ **Jednostupňová dokumentace**. Aplikace nic nepřepočítá ani nepřepíše — kontrola před nabídkou vám připomene, že nabídku je nutné upravit ve Wordu ručně (popis DPZ+DPS, ceny, plán plateb, termíny)."
       ]
     },
     {

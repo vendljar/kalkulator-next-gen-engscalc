@@ -207,7 +207,7 @@ function renderProj() {
     `<td>${fmt(cena)}</td>`;
 
   /* ---------------- hlavička: dlaždice úplně stejné jako v OCK ---------------- */
-  const naklad = r.souhrn.naklad + r.souhrn.doprava;
+  const naklad = r.souhrn.naklad + r.souhrn.doprava + (r.souhrn.vyjezd || 0);   // výjezd technika (D2) je průběžná položka
   const hrubyZisk = projCena - naklad;
   const marze = projCena > 0 ? hrubyZisk / projCena : 0;
   /* Poskytnutá sleva projekce (#134) – z vlastní slevy PROJ, ne z OCK
@@ -452,7 +452,12 @@ function renderProj() {
     return `<tr class="sechd" id="proj-sek-${i}"><td colspan="${NC}">
         <div style="display:flex;align-items:center;gap:12px">
           <span style="flex:1">${esc(s.nazev)}</span>${vlastniPct}${vpravoSek}${sekceChk}</div></td></tr>`
-      + (sbalenoSek ? '' : radky + doprava + pridat)
+      + (sbalenoSek ? '' : radky + doprava
+        /* Výjezd technika u akce mimo Prahu (D2) — přičítá se po přirážce. */
+        + (s.vyjezdKc > 0 ? `<tr class="vyjezd-radek"><td colspan="${POPIS_SL}">Cestovné – 1 výjezd technika (akce mimo Prahu)
+             <span class="pill mut" style="margin-left:6px" title="cena 1 výjezdu z ceníku PROJ nebo přepsaná u zakázky; přičítá se k ceně činnosti bez přirážky a v nabídce stojí větou „Cena zahrnuje i cestovní náklady…“">bez přirážky</span></td>
+           ${penize(s.vyjezdKc, 0, s.vyjezdKc)}${prazdneAdmin}</tr>` : '')
+        + pridat)
       /* Součtový řádek: závorka z názvu se stěhuje AŽ ZA slovo CELKEM
        * (zadání 18. 8.) — „KOLAUDACE CELKEM (pro 1 ks výtahu)". */
       + `<tr class="sectot"><td colspan="${POPIS_SL}">${esc(nazevBezZavorek(s.nazev))} CELKEM${
@@ -466,7 +471,7 @@ function renderProj() {
             return n ? ` <span class="note" style="font-weight:400">· ${n} ${
               n === 1 ? 'položka vypnuta' : (n < 5 ? 'položky vypnuty' : 'položek vypnuto')}</span>` : '';
           })()}</td>`
-      + penize(s.naklad + s.dopravaKc, s.marze, s.celkem)
+      + penize(s.naklad + s.dopravaKc + (s.vyjezdKc || 0), s.marze, s.celkem)
       + prazdneAdmin + '</tr>';
   }).join('');
 
@@ -499,8 +504,8 @@ function renderProj() {
     <tr><th>Sekce</th><th>Náklad</th><th>Přirážka</th><th>Doprava</th><th>Celkem</th></tr>
     ${r.sekce.filter(s => s.celkem !== 0 || s.naklad !== 0).map(s =>
       `<tr><td>${esc(s.nazev)}</td><td>${fmt(s.naklad)}</td><td>${num(s.pouzitePct)} % ⇒ ${fmt(s.marze)}</td>
-       <td>${fmt(s.dopravaKc)}</td><td>${fmt(s.celkem)}</td></tr>`).join('')}
-    <tr class="tot"><td>CELKEM</td><td>${fmt(r.souhrn.naklad)}</td><td>${fmt(r.souhrn.marze)}</td><td>${fmt(r.souhrn.doprava)}</td>
+       <td>${fmt(s.dopravaKc + (s.vyjezdKc || 0))}</td><td>${fmt(s.celkem)}</td></tr>`).join('')}
+    <tr class="tot"><td>CELKEM</td><td>${fmt(r.souhrn.naklad)}</td><td>${fmt(r.souhrn.marze)}</td><td>${fmt(r.souhrn.doprava + (r.souhrn.vyjezd || 0))}</td>
       <td><b>${fmt0(r.souhrn.celkem)}</b></td></tr>
     ${projZaokr && typeof zaokrKc === 'function' ? `
     <tr><td colspan="4">Obchodní zaokrouhlení${typeof zaokrStav === 'function' && zaokrStav(r.souhrn.celkem, ZOP).popis ? ' (' + esc(zaokrStav(r.souhrn.celkem, ZOP).popis) + ')' : ''}</td>
@@ -519,6 +524,7 @@ function renderProj() {
        <div class="row noprint" style="margin-top:6px"><label>Zakázka je jen projekce (bez OCK)
          <span class="note">(vypne hlídání a porovnávání části OCK)</span></label>
          <input type="checkbox" ${ZAK.jenProj ? 'checked' : ''} onchange="set('ZAK.jenProj', this.checked)"><span class="u"></span></div>
+       ${kalkProjVolbyD2()}
        ${marzeLista({ cast: 'proj' })}</div></div>` +
     /* INTERNÍ POZNÁMKY I TADY (zadání J. V. 22. 9. 2026). Je to jeden
      * zápisník ZAKÁZKY, ne dva: obě karty píšou do téhož pole, takže co
@@ -551,4 +557,30 @@ function renderProj() {
     + `</div>`;
   if (typeof zamekStranyNasad === 'function') zamekStranyNasad('proj');
   if (typeof zamekCteniNasad === 'function') zamekCteniNasad('proj');
+}
+
+/* VOLBY VARIANTY PROJ Z ŠABLONY D. SIKORY (D2, rozhodnutí J. V. 20. 10. 2026).
+ * „Akce mimo Prahu" přičte cenu 1 výjezdu technika k zaměření, studii, DPZ
+ * a kolaudaci a nabídka to řekne větou (u IČ a AD jen uvede cenu výjezdu);
+ * cena je z ceníku PROJ, u zakázky jde přepsat (prázdno = ceník).
+ * „Jednostupňová dokumentace" nic nepřepočítává — kontrola před nabídkou
+ * upozorní, že nabídku je nutné upravit ve Wordu ručně. Obojí je v zadání
+ * varianty (PJ), takže je hlídá zámek odeslané nabídky. */
+function kalkProjVolbyD2() {
+  const z = (typeof PJ !== 'undefined' && PJ) || {};
+  const cenikVyjezd = +((typeof PC !== 'undefined' && PC && PC.vyjezdTechnikKc) || 0);
+  const prepis = (z.vyjezdKcPrepis === undefined || z.vyjezdKcPrepis === null || z.vyjezdKcPrepis === '') ? '' : z.vyjezdKcPrepis;
+  const ucinna = (typeof vyjezdTechnikaKc === 'function') ? vyjezdTechnikaKc(Object.assign({}, z, { akceMimoPrahu: true }), PC) : 0;
+  return `<div class="row noprint" style="margin-top:6px"><label>Akce mimo Prahu
+      <span class="note">(k ceně zaměření, studie, DPZ a kolaudace se přičte 1 výjezd technika; nabídka to uvede větou)</span></label>
+      <input type="checkbox" id="projAkceMimoPrahu" ${z.akceMimoPrahu ? 'checked' : ''} onchange="set('PJ.akceMimoPrahu', this.checked)"><span class="u"></span></div>
+    ${z.akceMimoPrahu ? `<div class="row noprint"><label>Cena 1 výjezdu technika
+      <span class="note">(prázdné = ceník PROJ${cenikVyjezd > 0 ? ': ' + esc(fmt(cenikVyjezd)) : ' — v ceníku nevyplněno'})</span></label>
+      <input type="number" step="1" min="0" style="width:110px" id="projVyjezdPrepis" value="${esc(prepis)}" placeholder="${esc(cenikVyjezd || '')}"
+        onchange="set('PJ.vyjezdKcPrepis', this.value === '' ? null : +this.value)"><span class="u">Kč</span>
+      ${prepis !== '' ? `<button class="mini" onclick="set('PJ.vyjezdKcPrepis', null)" title="vrátit cenu z ceníku PROJ">↺</button>` : ''}
+      ${!(ucinna > 0) ? '<span class="neg" style="margin-left:6px">cena výjezdu chybí — nic se nepřičte ani nevytiskne</span>' : ''}</div>` : ''}
+    <div class="row noprint"><label>Jednostupňová dokumentace
+      <span class="note">(DPZ + DPS v jednom stupni — nabídku PROJ pak upravte ve Wordu ručně, aplikace nic nepřepisuje)</span></label>
+      <input type="checkbox" id="projJednostupnova" ${z.jednostupnova ? 'checked' : ''} onchange="set('PJ.jednostupnova', this.checked)"><span class="u"></span></div>`;
 }
