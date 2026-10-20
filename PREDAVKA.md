@@ -11,6 +11,8 @@ Nad `test` (5dc28d1, v20.10.1). Do test / main / test-draft / integrace nic — 
 - **Ke slučování:** CHANGELOG / `verze.txt` / `manual/obsah.json` (Co je nového + kap. 19) / roadmapa —
   souběžně O7 (v20.10.2), D1 (v20.10.3), D2 (v20.10.4); `mutace_jadro.mjs` (JADRA + blok B183 na začátku
   MUTACE), `netlify/mutace.mjs` (H2, B154, B178, „výjimky:“ úseky + blok B183).
+- **Ověření:** kolo `--bez-mutaci` 281 / 0 / 6 přeskočeno, statické 3/3; mutace jádro B183 9/9, server B183 5/5,
+  server `vyjimky.js` 40/40, `schvalovani_ui` 6/6.
 - **Další krok:** sloučení; release v20.10.5 až po sloučení.
 
 # Předávka — 19. 10. 2026: dávka W1 (v19.10.9), větev `claude/w1-sablona-proj-v6` — šablona Wordu PROJ v6
