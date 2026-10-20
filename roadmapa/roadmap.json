@@ -7155,6 +7155,21 @@
    ],
    "hotovoV": "nástroj (O8)",
    "pozn": "Id přidělila koordinace (pokračování O8)."
+  },
+  {
+   "id": "459",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "nizka",
+   "slozitost": "XS",
+   "nazev": "K4-N23: test obnovy padal kolem půlnoci UTC (posunuté hodiny vs. dnes())",
+   "proc": "Audit K4: netlify/test_obnova.mjs posouvá Date.now o +11 min na každý vynucený otisk, ale klíč otisku porovnával s dnes() ze skutečných hodin — v okně ~23:49–24:00 UTC FAIL „serverový otisk pořízen pod dnešním dnem“, červené mutace serveru i CI.",
+   "detail": "HOTOVO (O8, jen test, bez nové verze aplikace): postVynuceny si v době požadavku zapamatuje den posunutých hodin (denPosunuty) a kontrola klíče otisku porovnává s ním.",
+   "hotovoKdyz": "Pojistka se zfalšovaným časem 23:55 UTC (node --import s podvrženým Date): před opravou 234 OK / 1 FAIL, po ní 235/0; ve skutečném čase 235/0. Mutace serveru „obnov“ po opravě — viz CHANGELOG.",
+   "kde": "`netlify/test_obnova.mjs`",
+   "zavisi": [],
+   "hotovoV": "nástroj (O8)",
+   "pozn": "Id přidělila koordinace (O8 část 3)."
   }
  ],
  "meta" : {

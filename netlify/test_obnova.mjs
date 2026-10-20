@@ -62,9 +62,14 @@ const ulz = (n) => globalThis.__TEST_ULOZISTE(n);
  * jich pořizuje několik za sebou — každý „o 11 minut později": hodiny se
  * posunou jen na dobu požadavku (klíč otisku i limit počítají z Date.now). */
 let posunHodin = 0;
+/* K4-N23 (O8): den posunutých hodin z doby požadavku — klíč otisku se
+ * porovnává s ním, ne s dnes() (skutečné hodiny). Jinak test kolem půlnoci
+ * UTC (posun +11 min za volání) padal: otisk už „zítra“, dnes() ještě dnes. */
+let denPosunuty = null;
 const postVynuceny = async (ck) => {
   posunHodin += 11 * 60000;
   const puv = Date.now; Date.now = () => puv.call(Date) + posunHodin;
+  denPosunuty = new Date(Date.now()).toISOString().slice(0, 10);
   try { return await (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', {}, ck)).json(); }
   finally { Date.now = puv; }
 };
@@ -110,7 +115,7 @@ test('záloha ke stažení nese obě zakázky a účty bez hesel',
 const vyn = await postVynuceny(cookie);
 /* #151 N1 (19. 10. 2026): vynucený otisk má vlastní slot s časem, noční den nepřepíše. */
 test('serverový otisk pořízen pod dnešním dnem (vlastní slot s časem, #151 N1)',
-  vyn.ok && /^\d{4}-\d{2}-\d{2}T\d{6}-rucne$/.test(vyn.den) && vyn.den.startsWith(dnes() + 'T'), vyn);
+  vyn.ok && /^\d{4}-\d{2}-\d{2}T\d{6}-rucne$/.test(vyn.den) && vyn.den.startsWith(denPosunuty + 'T'), [vyn, denPosunuty]);
 const otiskDen = vyn.den;
 const otiskPuvodni = kopie(await ulz('zalohy').cti(otiskDen));
 
