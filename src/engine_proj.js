@@ -224,14 +224,10 @@ function vypocetProj(zadani, cenik) {
      * (cenaNabidkyProj). Přirážka říká, kolik si účtujeme; sleva kolik
      * z toho zákazníkovi odpustíme, a to je jiná otázka i jiný řádek
      * v nabídce. */
-    /* VÝJEZD TECHNIKA (D2): pevná cena jednoho výjezdu se přičte k ceně
-     * činnosti až PO přirážce — v nabídce stojí „Cena zahrnuje i cestovní
-     * náklady na 1 výjezd technika (X Kč bez DPH)" a X musí být přesně to,
-     * co se přičetlo. Jen u činnosti, která se počítá (náklad > 0) — jinak
-     * by se vyřazená sekce vrátila do nabídky jen kvůli cestě. */
-    const vyjezdKc = 0;                               // doplní vyjezdPricti níž
-    const celkem = cenaSDopravou + vyjezdKc;          // celková cena sekce
-    return { key: s.key, nazev: s.nazev, polozky, naklad, marze, cena, dopravaKc, vyjezdKc,
+    const celkem = cenaSDopravou;                     // celková cena sekce
+    /* vyjezdKc: výjezd technika u akce mimo Prahu (D2) doplní vyjezdPricti
+     * níž — přičítá se až PO přirážce, viz tam. */
+    return { key: s.key, nazev: s.nazev, polozky, naklad, marze, cena, dopravaKc, vyjezdKc: 0,
              cenaSDopravou, prirazkaPct: s.prirazkaPct == null ? null : s.prirazkaPct,
              pouzitePct: pct * 100, celkem };
   });
@@ -281,6 +277,11 @@ function vyjezdSekceZ(sekce) {
   const zam = (sekce || []).find(s => s && s.key === 'zamereni');
   return (zam && zam.naklad > 0) ? VYJEZD_SEKCE.filter(k => k !== 'studie') : VYJEZD_SEKCE.slice();
 }
+/* Pevná cena jednoho výjezdu se přičte k ceně činnosti až PO přirážce —
+ * v nabídce stojí „Cena zahrnuje i cestovní náklady na 1 výjezd technika
+ * (X Kč bez DPH)" a X musí být přesně to, co se přičetlo. Jen u činnosti,
+ * která se počítá (náklad > 0) — jinak by se vyřazená sekce vrátila do
+ * nabídky jen kvůli cestě. */
 function vyjezdPricti(sekce, vyjezd) {
   if (!(vyjezd > 0)) return;
   const kde = vyjezdSekceZ(sekce);
