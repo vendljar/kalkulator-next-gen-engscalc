@@ -2,7 +2,7 @@
 
 Sezení 20. 10. 2026, větev `claude/controlling-navrh` nad `test` (`5dc28d1`, v20.10.1).
 **Kód se v této fázi neměnil.** Jde jen o rozbor, návrh a otázky. Implementace začne až po souhlasu J. V.
-Předběžné číslo v roadmapě je **#438** (přidělí koordinace).
+Předběžné číslo v roadmapě je **#444** (přidělí koordinace).
 
 Cíl (J. V.): dát controllerce Andree Mácové všechny informace o **předkalkulovaných nákladech rozdělených
 do nákladových skupin (kapitol)**, aby je mohla v Reporting CZ porovnat s účetními daty z Heliosu (PRE × POST).
@@ -142,7 +142,7 @@ zakázek se proto **nemá** rovnat rozpočtu všech nákladů. Zbytek jde přes 
 Řádky bez klíče řeší A3.
 
 **„Vzorek dat skutečných zakázek“** — do repozitáře nepatří (ceny a zákazníci). Navrhuji, aby ho po
-dávce D2 vyrobil J. V. exportem z ostré databáze (CSV/XLSX níže) a poslal Andy sám.
+dávce C2 vyrobil J. V. exportem z ostré databáze (CSV/XLSX níže) a poslal Andy sám.
 
 **Andyiny poznámky v tabulce:**
 
@@ -280,7 +280,7 @@ pro dokument a do controllingu nepatří. Kurz je ve sloupci pro informaci.
    Volitelně lze u zakázky doplnit ručně pole „Číslo projektu Helios“ (jen admin), až bude zakázka vyhraná.
 2. **Pipedrive deal id do zakázky.** Dnes se nikde neukládá (je jen serverové čtení dealu). Pro
    párování CRM ↔ kalkulace je to nejlevnější klíč. Navazuje na připravovaný zápis do Pipedrive
-   (`podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md`), samostatná dávka D4.
+   (`podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md`), samostatná dávka C4.
 3. **Typ nákladu po skupině s výjimkou po klíči.** Přímý / nepřímý a variabilní / fixní se nastaví u
    skupiny a jednotlivý klíč ho může přepsat (např. Režie kanceláře = nepřímý/fixní).
 4. **OPR × PROJ zvlášť.** Číselník skupin je společný, ale mapování a export se filtrují zvlášť. Kalkulace
@@ -309,12 +309,12 @@ pro dokument a do controllingu nepatří. Kurz je ve sloupci pro informaci.
 
 | Dávka | Obsah | Velikost | Závisí na |
 |---|---|---|---|
-| **D1** | `src/controlling.js` (číselník skupin + výchozí mapování z Andyiny tabulky, pseudo-klíče, výpočet „řádek → skupina“), test úplnosti s pojistkou, server `/api/controlling` (GET/POST admin + heslo správce, historie verzí), záloha, `test_prava` | M | souhlas J. V. |
-| **D2** | Nastavení → Controlling (3 karty: číselník, mapování s filtrem nezařazených, import/export mapování XLSX), upozornění při zveřejnění ceníku, export **jedné varianty** XLSX/CSV z `vypocetZ` | M | D1 |
-| **D3** | Hromadný export za období na serveru, filtry, strop, protokol exportů, mez v `BEZPECNOST_MEZE.md`, Playwright harness | M–L | D2 |
-| **D4** | Pipedrive deal id a (volitelně) číslo projektu Helios u zakázky; PROJ mapování podle Andy | S–M | rozhodnutí J4/J8, návrat Andy (prosinec) |
+| **C1** | `src/controlling.js` (číselník skupin + výchozí mapování z Andyiny tabulky, pseudo-klíče, výpočet „řádek → skupina“), test úplnosti s pojistkou, server `/api/controlling` (GET/POST admin + heslo správce, historie verzí), záloha, `test_prava` | M | souhlas J. V. |
+| **C2** | Nastavení → Controlling (3 karty: číselník, mapování s filtrem nezařazených, import/export mapování XLSX), upozornění při zveřejnění ceníku, export **jedné varianty** XLSX/CSV z `vypocetZ` | M | C1 |
+| **C3** | Hromadný export za období na serveru, filtry, strop, protokol exportů, mez v `BEZPECNOST_MEZE.md`, Playwright harness | M–L | C2 |
+| **C4** | Pipedrive deal id a (volitelně) číslo projektu Helios u zakázky; PROJ mapování podle Andy | S–M | rozhodnutí J4/J8, návrat Andy (prosinec) |
 
-Každá dávka podle CLAUDE.md: testy s pojistkou (před opravou selže, po ní projde), mutace (D1–D3 se
+Každá dávka podle CLAUDE.md: testy s pojistkou (před opravou selže, po ní projde), mutace (C1–C3 se
 dotýkají serveru, takže `netlify/mutace.mjs`), kolo `nastroje/testovaci_kolo.sh --bez-mutaci`, push do
 `claude/controlling-navrh`. Do `test` a `main` slučuje koordinace.
 
@@ -333,10 +333,10 @@ dotýkají serveru, takže `netlify/mutace.mjs`), kolo `nastroje/testovaci_kolo.
 | J5 | Má nezařazená položka zveřejnění ceníku **blokovat**, nebo jen upozornit? | Jen upozornit (obchod nečeká na controlling). |
 | J6 | Tmelení: nechat jednu sazbu (stavební práce), nebo rozdělit ceník na materiál a práci? | Nechat jednu, rozdělit až na žádost Andy. |
 | J7 | Kdo smí exportovat? Má Andy dostat účet? | Jen Administrátor. Andy účet zatím ne, exporty jí posílá J. V. |
-| J8 | Ukládat u zakázky Pipedrive deal id a ručně číslo projektu Helios? | Deal id ano (D4, s mapováním Pipedrive). Číslo projektu ne, párovat převodníkem v Reportingu. |
+| J8 | Ukládat u zakázky Pipedrive deal id a ručně číslo projektu Helios? | Deal id ano (C4, s mapováním Pipedrive). Číslo projektu ne, párovat převodníkem v Reportingu. |
 | J9 | Exportovat jen zamčené (odeslané) varianty, nebo i rozpracované? | Výchozí jen zamčené řídící. Rozpracované na zaškrtnutí s příznakem. |
 | J10 | Můstek (`C.mustekKc`, vč. montáže): zámečníci, nebo materiál? | Zámečníci (kooperace). |
-| J11 | Začít D1–D2 hned s Andyiným rozvržením jako výchozím, než se v prosinci vrátí? | Ano. Mapování jde přepsat v Nastavení bez nové verze aplikace. |
+| J11 | Začít C1–C2 hned s Andyiným rozvržením jako výchozím, než se v prosinci vrátí? | Ano. Mapování jde přepsat v Nastavení bez nové verze aplikace. |
 
 ### Pro A. Mácovou (až se vrátí; navržené odpovědi k potvrzení)
 
@@ -354,6 +354,6 @@ dotýkají serveru, takže `netlify/mutace.mjs`), kolo `nastroje/testovaci_kolo.
 ## D. Stav
 
 - Kód: beze změny.
-- Roadmapa: přidána položka #438 (předběžné id), stav `ceka` na souhlas J. V.
+- Roadmapa: přidána položka #444 (předběžné id), stav `ceka` na souhlas J. V.
 - Artefakt pro J. V.: https://claude.ai/artifact/MNaTnXQ4847f2rNiAT9br7 („Controlling v kalkulátoru“).
-- Další krok: čekat na odpovědi J. V. (J1–J11); po souhlasu dávka D1.
+- Další krok: čekat na odpovědi J. V. (J1–J11); po souhlasu dávka C1.

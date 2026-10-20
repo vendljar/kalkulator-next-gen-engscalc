@@ -6859,7 +6859,7 @@
    "pozn": "Předběžné id (přidělí koordinace při sloučení)."
   },
   {
-   "id": "438",
+   "id": "444",
    "vlna": "C",
    "stav": "ceka",
    "dulezitost": "vysoka",
@@ -6867,7 +6867,7 @@
    "cekaNa": "J. V.: souhlas s návrhem a odpovědi J1–J11 (podklady/CONTROLLING_NAVRH_20_10.md)",
    "nazev": "Nastavení → Controlling: nákladové skupiny (kapitoly), mapování klíčů ceníku a export předkalkulace pro Reporting CZ",
    "proc": "Controlling (A. Mácová) potřebuje předkalkulované náklady po nákladových skupinách s účty Helios, aby šly v Reporting CZ porovnat se skutečností (PRE × POST).",
-   "detail": "Číselník skupin (ManVysl, účet Helios nyní/budoucí, přímý/nepřímý, variabilní/fixní); mapování každého klíče C.*/PC.* a pseudo-klíčů (rezerva, přirážka ATYP, vlastní položky) podle stabilního klíče; hlídání nezařazených (test úplnosti + upozornění při zveřejnění ceníku); export varianty i hromadně za období (XLSX/CSV, u zamčené varianty zmrazený výsledek). Dávky D1–D4.",
+   "detail": "Číselník skupin (ManVysl, účet Helios nyní/budoucí, přímý/nepřímý, variabilní/fixní); mapování každého klíče C.*/PC.* a pseudo-klíčů (rezerva, přirážka ATYP, vlastní položky) podle stabilního klíče; hlídání nezařazených (test úplnosti + upozornění při zveřejnění ceníku); export varianty i hromadně za období (XLSX/CSV, u zamčené varianty zmrazený výsledek). Dávky C1–C4.",
    "hotovoKdyz": "Admin v Nastavení → Controlling spravuje skupiny a mapování, test úplnosti hlídá nové klíče, export po kapitolách jde stáhnout pro variantu i za období; práva drží server.",
    "kde": "`podklady/CONTROLLING_NAVRH_20_10.md`, větev `claude/controlling-navrh`",
    "zavisi": [],
