@@ -5,11 +5,11 @@ Nad `test` (`5dc28d1`, v20.10.1). Do `test` / integrace nic — slučuje koordin
 
 - **Hotovo:** rozbor rozvržení nákladů A. Mácové × ceník a výpočet, návrh Nastavení → Controlling
   (číselník skupin, mapování klíčů, hlídání nezařazených, export předkalkulace XLSX/CSV), dávky C1–C4,
-  otázky J1–J11 a A1–A6 → `podklady/CONTROLLING_NAVRH_20_10.md`; roadmapa #444 (předběžné id, `ceka`).
+  otázky J1–J11 a A1–A6 → `podklady/CONTROLLING_NAVRH_20_10.md`; roadmapa #447 (předběžné id, `ceka`).
 - **Artefakt pro J. V.:** https://claude.ai/artifact/MNaTnXQ4847f2rNiAT9br7
 - **Čeká se na:** souhlas J. V. a odpovědi J1–J11. A. Mácová je mimo do prosince (A1–A6 počkají).
 - **Další krok:** po souhlasu dávka C1 (src/controlling.js, test úplnosti, /api/controlling), pak C2.
-- **Ke slučování:** `roadmapa/roadmap.json` — jedna nová položka #444 za #437.
+- **Ke slučování:** `roadmapa/roadmap.json` — jedna nová položka #447 za #437.
 
 ---
 

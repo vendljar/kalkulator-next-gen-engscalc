@@ -2,7 +2,7 @@
 
 Sezení 20. 10. 2026, větev `claude/controlling-navrh` nad `test` (`5dc28d1`, v20.10.1).
 **Kód se v této fázi neměnil.** Jde jen o rozbor, návrh a otázky. Implementace začne až po souhlasu J. V.
-Předběžné číslo v roadmapě je **#444** (přidělí koordinace).
+Předběžné číslo v roadmapě je **#447** (přidělí koordinace).
 
 Cíl (J. V.): dát controllerce Andree Mácové všechny informace o **předkalkulovaných nákladech rozdělených
 do nákladových skupin (kapitol)**, aby je mohla v Reporting CZ porovnat s účetními daty z Heliosu (PRE × POST).
@@ -354,6 +354,6 @@ dotýkají serveru, takže `netlify/mutace.mjs`), kolo `nastroje/testovaci_kolo.
 ## D. Stav
 
 - Kód: beze změny.
-- Roadmapa: přidána položka #444 (předběžné id), stav `ceka` na souhlas J. V.
+- Roadmapa: přidána položka #447 (předběžné id), stav `ceka` na souhlas J. V.
 - Artefakt pro J. V.: https://claude.ai/artifact/MNaTnXQ4847f2rNiAT9br7 („Controlling v kalkulátoru“).
 - Další krok: čekat na odpovědi J. V. (J1–J11); po souhlasu dávka C1.
