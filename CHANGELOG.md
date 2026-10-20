@@ -61,7 +61,18 @@ s posunem hodin o 11 min, `overit_online.mjs` posouvá klíče otisků před
 ruční zálohou (limit K3-N4); 429 mezi očekávanými chybami konzole.
 
 **Mutace:** jádro „O7“ 16, server „O7“ 25 (+ opravené zadání dvou mutací
-#151, jejichž kód O7 změnil). Výsledky kola a mutací — viz níže.
+#151, jejichž kód O7 změnil).
+
+**Ověření (20. 10. 2026, 10:27–12:17 UTC) — VŠE ZELENÉ po dvou doplněních:**
+cílené mutace jádro `O7` **16/16**, server `O7` **25/25**; server `#151`
+**41/42** — přežila „#151 N6: záznam kopie bez kontroly jména souboru“ (test
+posílal neplatné jméno bez složky, 400 vracela už kontrola složky K3-N1) →
+test doplněn o správnou složku a heslo, opakování `#151 N6` **11/11**.
+První kolo `--bez-mutaci` 282/1/6 (`overit_lista.mjs` čekal 37 pravidel
+kontrol, s `mustekRozmer` je 38) → opraveno; konečné kolo `--bez-mutaci`
+nad 56aa5cd: sady **283 prošlo / 0 selhalo / 6 přeskočeno**
+(`test.js` + 5 harnessů bez `KNG_PODKLADY`), statické **3/3**; `--kontrola`
+jádro 327, server 663 úseků. Pracovní kopie po každém běhu čistá.
 
 ---
 
