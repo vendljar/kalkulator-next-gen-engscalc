@@ -1,3 +1,21 @@
+# Předávka — 20. 10. 2026: dávka D2 (v20.10.4), větev `claude/d2-proj-sikora` — šablona nabídky PROJ D. Sikory
+
+Nad `claude/integrace-16-10` (5dc28d1 + 6fe92d8). Do integrace / `test` nic — slučuje koordinace
+„ŘÍDÍCÍ 20.10“ (session_01Ln2mMn7iC6W9ECztHTJpZe), pořadí O7 → D1 → D2. Podklad `podklady/D2_SIKORA_PROJ.md`,
+CHANGELOG v20.10.4, roadmapa #260 (uzavřeno), #444–#446 (předběžná id).
+
+- **Hotovo:** cestovné u akce mimo Prahu (jádro `engine_proj.js` `vyjezdTechnikaKc`/`vyjezdPricti`, ceník
+  `PC.vyjezdTechnikKc`, přepis `PJ.vyjezdKcPrepis`, věty online + symboly `PROJ_CESTOVNE_*`, EN/DE/FR); ruční
+  úvod nabídky PROJ (`PJ.uvodNabidkyRucne`/`uvodNabidkyZaklad`, ↺ Vrátit výchozí, kontrola `uvodProjNesedi`);
+  jednostupňová dokumentace (`PJ.jednostupnova`, kontrola `jednostupnovaProj`); kontroly `vyjezdCenaChybi`,
+  `cestovneWordProj`; nástroj `vyrob_sablony.js --proj-v8` (vstup v7 z D1, jinak v6). **.docx se nevyrábí**
+  (koordinace: navazující dávka S10).
+- **Testy:** `src/test_d2_proj_sikora.js` 73 (pojistka: před D2 selže na prvních 2), mutace D2 **18/18**.
+- **Ke slučování s D1:** `test_kontroly.js` + `overit_lista.mjs` počet pravidel (37 + D1 1 + D2 4 = **42**),
+  `vyrob_sablony.js` (exporty, oba režimy `--proj-v7` i `--proj-v8`), `nabidka_proj.js` (vRozsahu/DPZ D1 ×
+  úvod/cestovné D2, návratový objekt), CHANGELOG/verze/příručka (novější nahoru), `mutace_jadro.mjs`.
+- **Čeká na J. V.:** cena výjezdu v ceníku PROJ (zveřejnit), šablona v8 (S10), kontrola překladů D2.
+
 # Předávka — 19. 10. 2026: dávka W1 (v19.10.9), větev `claude/w1-sablona-proj-v6` — šablona Wordu PROJ v6
 
 Nad `claude/v8-367-firma` (v19.10.7, `4d9f67a`). Do integrace / `test` nic — slučuje koordinace
