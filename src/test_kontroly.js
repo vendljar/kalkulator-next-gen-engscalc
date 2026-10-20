@@ -182,7 +182,9 @@ const pravidla = kontrolyPravidla();
 /* 34.–35. „mustkyPrechodove" a „mustekStrecha" 17. 10. 2026 (#355, #356,
  * test_mustky.js): plechy v nástupišti s můstkem a střecha přes nejvyšší
  * můstek bez rozměrů — obojí upozornění. */
-test('pravidel je třicet sedm (17. 10. 2026: + mustkyPrechodove, mustekStrecha)', pravidla.length === 37, pravidla.length);
+/* 38. „mustekRozmer" 20. 10. 2026 (K3-N17, O7, test_mustky.js): nezvykle
+ * velký nebo nečíselný rozměr můstku — upozornění. */
+test('pravidel je třicet osm (20. 10. 2026: + mustekRozmer)', pravidla.length === 38, pravidla.length);
 test('kódy pravidel jsou jedinečné',
   new Set(pravidla.map(p => p.kod)).size === pravidla.length,
   pravidla.map(p => p.kod).join(','));

@@ -65,6 +65,9 @@ const KONTROLY_VYSKA_DVERI = 2.3;
  * šachty (max a upozornění u pole, ui/kalk_ock.js) — jedno místo, ať se
  * pole a kontrola nerozejdou. */
 const KONTROLY_ZDVIH_MAX_M = 99;
+/* Nezvykle velký rozměr můstku (K3-N17, J. V. 20. 10. 2026 „jen upozornit";
+ * práh výchozí volbou dávky O7). */
+const KONTROLY_MUSTEK_MAX_MM = 6000;
 
 /* ROZMĚRY ŠACHTY — JEDNA PRAVIDLA PRO ZÁBRANU I SERVER (B137, 12. 10. 2026).
  *
@@ -548,6 +551,33 @@ const KONTROLY = [
       return { text: 'Můstek je i v nejvyšším nástupišti, takže střecha šachty pokračuje nad ním až k fasádě, '
         + 'ale chybí rozměr můstku (šířka nebo hloubka) — plocha střechy nad můstkem se do zastřešení '
         + 'nepřipočetla. Doplňte rozměry můstku v zadání šachty.' };
+    },
+  },
+  {
+    /* ROZMĚRY MŮSTKU (K3-N17, rozhodnutí J. V. 20. 10. 2026: „jen upozornit").
+     * Hodnota se přijme, jádro ji započte (plocha střechy nad můstkem) —
+     * jen se upozorní na nezvykle velký rozměr (> KONTROLY_MUSTEK_MAX_MM,
+     * výchozí volba dávky O7), nejspíš překlep v jednotkách nebo nula navíc.
+     * Nečíselný nebo nekonečný údaj jádro bere jako prázdný (K3-N17, O5);
+     * tady se to řekne nahlas, ať obchodník neví jen o „chybějícím" rozměru. */
+    kod: 'mustekRozmer', kde: 'Kalkulace OCK', nazev: 'Rozměry můstku',
+    zjisti(ctx) {
+      const z = ctx.zadani;
+      if (!z) return null;
+      const n = (typeof mustkyPocet === 'function') ? mustkyPocet(z) : (+z.mustkyKs || (z.mustek ? 1 : 0));
+      if (!n) return null;
+      const potize = [];
+      [['mustekSirkaMm', 'šířka'], ['mustekHloubkaMm', 'hloubka']].forEach(([k, jm]) => {
+        const v = z[k];
+        if (v === undefined || v === null || String(v).trim() === '') return;
+        const c = +v;
+        if (!Number.isFinite(c) || c < 0) potize.push(jm + ' „' + String(v) + '" není platné číslo — počítá se jako nevyplněná');
+        else if (c > KONTROLY_MUSTEK_MAX_MM) potize.push(jm + ' ' + c.toLocaleString('cs-CZ') + ' mm je nezvykle velká (víc než '
+          + KONTROLY_MUSTEK_MAX_MM.toLocaleString('cs-CZ') + ' mm)');
+      });
+      if (!potize.length) return null;
+      return { text: 'Rozměry můstku: ' + kontrolyVyctem(potize) + '. Zkontrolujte zadání šachty (rozměr se zadává v milimetrech); '
+        + 'hodnota se do výpočtu bere, jak je zadaná. Tisk to nezastaví.' };
     },
   },
   {
@@ -1396,7 +1426,7 @@ function kontrolyPotvrzeniPlati(potvrzeni, vysl) {
 
 if (typeof module !== 'undefined')
   module.exports = { KONTROLY_UROVEN, KONTROLY_UROVEN_ZABRANA,
-                     KONTROLY_VYSKA_DVERI, KONTROLY_ZDVIH_MAX_M, KONTROLY_ROZMERY_KLADNE, KONTROLY_ROZMERY_NEZAPORNE, KONTROLY_ROZMER_MIN_M, KONTROLY_ROZMERY_MIN, kontrolyRozmery, kontrolyVyctem, kontrolyBokySirka,
+                     KONTROLY_VYSKA_DVERI, KONTROLY_ZDVIH_MAX_M, KONTROLY_MUSTEK_MAX_MM, KONTROLY_ROZMERY_KLADNE, KONTROLY_ROZMERY_NEZAPORNE, KONTROLY_ROZMER_MIN_M, KONTROLY_ROZMERY_MIN, kontrolyRozmery, kontrolyVyctem, kontrolyBokySirka,
                      kontrolyPravidla, kontrolyProved, kontrolyText, kontrolyProjNavic, kontrolyPlatbyDuvody, kontrolyProjCenyBezSymbolu,
                      kontrolyPotvrzeni, kontrolyPotvrzeniPlati,
                      KONTROLY_DOKUMENTY_STRANY, KONTROLY_BRANA_JINDE, kontrolyDokumentStrana, kontrolyZabranaDokumentu,
