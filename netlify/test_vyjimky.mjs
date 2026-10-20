@@ -361,8 +361,8 @@ console.log('===== B178: zdvih a rozměry stěny u schváleného pásu „jiné"
 console.log('===== B178 zbytek: plocha z jádra v obsahu (v17.10.5) =====');
 /* Pojistka: proti v17.10.4 (9bb7caf) vracely zámky po změně zasklení
  * (vnější rozměr stěny) a po přidání nástupišť (světlíky „jiné" u dveří)
- * 200. Drobná změna, která nepřehoupne zaokrouhlení na celé m² (obsah),
- * schválení nechá — nekrytý nárůst může být až těsně pod 1 m² (B183). */
+ * 200. Od v20.10.5 (B183 volba b) nese obsah plochu na 0,1 m² dolů —
+ * nekrytý nárůst je těsně pod 0,1 m² (do v20.10.4 těsně pod 1 m²). */
 { const zaskl = x => (x === 'na terče' ? 'mezi příčníky' : 'na terče');
   const priprav = async (nazev, uprav) => {
     const z = nova(nazev); uprav(d0(z).ock.zadani, z);
@@ -395,7 +395,59 @@ console.log('===== B178 zbytek: plocha z jádra v obsahu (v17.10.5) =====');
       zd.oplasteni = { rezim: 'poStenach', steny: st }; });
     const { a, razitko } = await P.vezmi(); const zd = d0(a).ock.zadani; zd.zaskleni = zaskl(zd.zaskleni);
     const r = await uloz(zamkni(a), cO, razitko);
-    test('B178 zbytek: změna zasklení u pásu 1,2 m (posun pod půl m²) — schválení platí (200)', P.ok && r.status === 200, r); } }
+    test('B183: změna zasklení u pásu 1,2 m (posun o desetiny m²) — dřív platilo, od v20.10.5 → 403', P.ok && r.status === 403, r); } }
+
+console.log('===== B183: plocha na 0,1 m², dřív schválené výjimky platí starým tvarem (v20.10.5) =====');
+/* Pojistka: proti v20.10.1 (5dc28d1) spadne zasklení u pásu 1,2 m (200),
+ * značka tvaru v obsahu i zámek se záznamem starého tvaru (obsah na celé
+ * m² bez značky, jak ho server razil do v20.10.4 — tady přepsaný přímo
+ * v úložišti): starý kód obsah starého tvaru nezná a vrátí 403. */
+{ const prepisUlozene = (cislo, fn) => { let n = 0;
+    for (const [k, v] of pamet) { let x; try { x = JSON.parse(v); } catch (e) { continue; }
+      if (!x || x.cislo !== cislo || !Array.isArray(x.varianty)) continue;
+      fn(x.varianty[0].data); pamet.set(k, JSON.stringify(x)); n++; }
+    return n; };
+  const celaA = (z) => { const st = globalThis.oplasteniStenyVychozi(d0(z).ock.zadani, d0(z).cenik);
+    st.A = { odM: 0, pasy: [{ typ: 'jine', nazev: 'Deska', naklad: 1, doM: null }] };
+    d0(z).ock.zadani.oplasteni = { rezim: 'poStenach', steny: st }; };
+  const schvalena = async (nazev) => {
+    const z = nova(nazev); celaA(z); const r1 = await uloz(z, cO);
+    const gV = await nacti(r1.soubor, cV); const b = zk.importZakazka(kopie(gV));
+    VY.vyjimkaSchval(d0(b), obsah(b), 'Ved'); const r2 = await uloz(b, cV, gV.uloRazitko);
+    const g = await nacti(r1.soubor, cO);
+    return { ok: r1.status === 200 && r2.status === 200, soubor: r1.soubor, cislo: z.cislo, g, r: [r1, r2] }; };
+  { const S = await schvalena('B183 nový tvar');
+    const rec = d0(S.g).cenovaVyjimka || {};
+    test('B183: server razí obsah se značkou tvaru v=2 a plochou na 0,1 m²', S.ok && rec.stav === VY.VYJ_SCHVALENO
+      && JSON.parse(rec.obsah).v === VY.VYJ_OBSAH_TVAR && JSON.parse(rec.obsah).p.every(p => Math.round(p[7] * 10) === p[7] * 10), [S.r, rec.obsah]);
+    /* Obchodník si schválení „starým tvarem" sám nepřepíše (podvrh). */
+    const a = zk.importZakazka(kopie(S.g)); d0(a).cenovaVyjimka.obsah = obsah(a).obsahStary;
+    const r = await uloz(zamkni(a), cO, S.g.uloRazitko);
+    test('B183: obchodník přepíše schválení na starý tvar sám → 403', r.status === 403, r); }
+  { const S = await schvalena('B183 starý tvar');
+    const a0 = zk.importZakazka(kopie(S.g)); const st = obsah(a0).obsahStary;
+    const n = prepisUlozene(S.cislo, d => { d.cenovaVyjimka.obsah = st; });
+    const g = await nacti(S.soubor, cO); const a = zk.importZakazka(kopie(g));
+    test('B183 příprava: uložené schválení přepsané na starý tvar (celé m², bez značky)', S.ok && n === 1
+      && d0(a).cenovaVyjimka.obsah === st && !('v' in JSON.parse(st)), [S.r, n]);
+    const rs = await uloz(kopie(a), cO, g.uloRazitko);
+    const g2 = await nacti(S.soubor, cO);
+    test('B183: rozpracované uložení obchodníkem dřív schválenou výjimku nechá (stav i starý obsah)', rs.status === 200
+      && d0(g2).cenovaVyjimka.stav === VY.VYJ_SCHVALENO && d0(g2).cenovaVyjimka.obsah === st, [rs, d0(g2).cenovaVyjimka]);
+    const c = zk.importZakazka(kopie(g2)); VY.vyjimkaVrat(d0(c), obsah(c));
+    const rc = await uloz(c, cO, g2.uloRazitko);
+    const g3 = await nacti(S.soubor, cO);
+    test('B183: obchodník pošle „čeká" s novým obsahem — server vrátí dřív schválenou (B101)', rc.status === 200
+      && d0(g3).cenovaVyjimka.stav === VY.VYJ_SCHVALENO && d0(g3).cenovaVyjimka.obsah === st, [rc, d0(g3).cenovaVyjimka]);
+    const r = await uloz(zamkni(zk.importZakazka(kopie(g3))), cO, g3.uloRazitko);
+    test('B183: dřív schválená výjimka (starý tvar) beze změny — zámek obchodníkem 200', r.status === 200, r); }
+  { const S = await schvalena('B183 starý tvar změna');
+    const a0 = zk.importZakazka(kopie(S.g)); const st = obsah(a0).obsahStary;
+    prepisUlozene(S.cislo, d => { d.cenovaVyjimka.obsah = st; });
+    const g = await nacti(S.soubor, cO); const a = zk.importZakazka(kopie(g));
+    d0(a).ock.zadani.oplasteni.steny.A.pasy[0].naklad = 0.5;
+    const r = await uloz(zamkni(a), cO, g.uloRazitko);
+    test('B183: dřív schválená výjimka po změně sazby pásu — zámek → 403', r.status === 403, r); } }
 
 console.log('===== B153: dotisk strany vyřazené při zámku (jenProj → vypnutí → dotisk OCK) =====');
 /* Pokus auditu 15. 10. 2026 (podklady/AUDIT25_pokus_B153_dotisk.mjs). Zakázka
