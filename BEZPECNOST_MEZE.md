@@ -801,8 +801,10 @@ Podklad `podklady/K3_AUDIT_19_10.md` (K3-N14: tyto meze tu chyběly).
   (`netlify/lib/zalohovani.mjs`, K3-N12 v20.10.1). Nové úložiště na Disk
   samo neodejde — zapisuje se do seznamu vědomě (test `test_zalohy.mjs` N6).
 - **Kopii zapisuje prohlížeč správce** do složky, kterou vybere; server
-  o kopii ví jen ze záznamu `kopie-disk`, který prohlížeč pošle. Složka
-  jiného jména než „_Zaloha Netlify DB“ se jen varuje.
+  o kopii ví jen ze záznamu `kopie-disk`, který prohlížeč pošle. Od v20.10.2
+  (K3-N1, rozhodnutí J. V. 20. 10. 2026) server záznam ze složky jiného
+  jména než „_Zaloha Netlify DB“ odmítne (400) a klient do jiné složky
+  vůbec nezapíše. Jméno složky hlásí klient — server ho ověřit nemůže.
 
 ### #151 N5 — retenci odemyká záznam od klienta (zmírněno v20.10.1, mez trvá)
 
@@ -815,7 +817,39 @@ Podklad `podklady/K3_AUDIT_19_10.md` (K3-N14: tyto meze tu chyběly).
   na Disk nedosáhne). Kdo má relaci správce, může POSTem s věrohodnými poli
   retenci odemknout. Dopad omezuje pravidlo retence (nic před 20. 10. 2026,
   denní otisky až po 30 dnech, první v měsíci 12 měsíců, nejnovější nikdy).
-  Heslo správce u záznamu a podmínka na složku čekají na J. V. (K3-N1).
+- **v20.10.2 (K3-N1, rozhodnutí J. V. 20. 10. 2026):** záznam `kopie-disk`
+  přijme server jen s **heslem přihlášeného správce** (`hesloSpravce`,
+  stejný mechanismus a limit pokusů jako matice zobrazení a obnova — B77,
+  B168) a jen ze složky „_Zaloha Netlify DB“; uložený záznam nese značku
+  `potvrzeno: 'heslo-spravce'` a retenci odemkne jen takový. Kdo má jen
+  cookie správce, retenci neodemkne. Záznamy zapsané před v20.10.2 značku
+  nemají — retence počká na první novou kopii. Trvá: kdo zná heslo správce,
+  může věrohodný záznam poslat i bez souboru na Disku.
+- **Pojistka proti tiché ztrátě dat (K3-N13, rozhodnutí J. V. 20. 10. 2026):**
+  nese-li nový noční otisk méně než 50 % zakázek nebo účtů proti
+  předchozímu nočnímu, retence se ten den přeskočí, do logu jde varování
+  a záznam `retence-varovani` ukáže hlídka v Nastavení → Databáze a po
+  přihlášení správce (30 dní). Mez: pomalý úbytek (každou noc méně než
+  o polovinu) pojistka nezachytí; porovnávají se jen počty, ne obsah.
+
+### #151 N1 — limit vynucených otisků (K3-N4, rozhodnutí J. V. 20. 10. 2026, v20.10.2)
+
+- Ruční „Zálohovat teď“ a otisk při přihlášení správce mají dohromady limit
+  **1 za 10 minut a 20 za 24 hodin** (klouzavě); nad limit server odpoví
+  429 s hláškou, kdy to půjde znovu. Noční otisk a otisk před obnovou se
+  nepočítají a limit je nezastaví. Počítá se z klíčů otisků v úložišti
+  (čas je v klíči). Mez: dva souběžné požadavky v téže sekundě mohou projít
+  oba (limit není transakční) — jen Administrátor, nanejvýš jednotky otisků.
+
+### K3-N15 — zveřejnění Firmy jen s relací administrátora (vědomá mez, rozhodnutí J. V. 20. 10. 2026)
+
+- `POST /api/firma` chce roli Administrátor, **ne heslo správce** (B168 se
+  na Firmu nerozšiřuje — rozhodnutí J. V. „beze změny“). Firma od #367 nese
+  i výchozí platební podmínky, pokuty, záruky a texty nabídky PROJ pro
+  všechny NOVÉ nabídky; kdo má cookie správce, může je změnit bez hesla.
+  Odeslané nabídky to od v20.10.2 nezasáhne (K3-N2 — věty a texty jsou
+  zmrazené ve variantě), rozpracované převezmou změnu. Souhrnný strop
+  podmínek 500 kB (K3-N18) omezuje velikost záznamu.
 
 ### B194 — zámek mutačních běhů (jen vývoj, ne produkce)
 
