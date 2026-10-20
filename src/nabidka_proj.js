@@ -105,6 +105,50 @@ const NABIDKA_PROJ_UVOD = [
 ];
 const NABIDKA_PROJ_UVOD_ZAVER = 'Všechny nabízené činnosti jsou popsány na dalších stránkách naší nabídky.';
 
+/* ÚVOD UPRAVENÝ OBCHODNÍKEM (D2, rozhodnutí J. V. 20. 10. 2026, šablona
+ * D. Sikory). Úvod se dál předvyplní podle nabízených činností; obchodník
+ * ho u varianty smí přepsat (`proj.zadani.uvodNabidkyRucne`, odstavce
+ * oddělené koncem řádku) a tlačítkem „Vrátit výchozí" vrátit. S ručním
+ * textem se ukládá i výchozí znění, ze kterého obchodník vycházel
+ * (`uvodNabidkyZaklad`) — když se pak změní nabízené činnosti, aplikace
+ * upozorní, že ruční text nemusí sedět. Zadání patří variantě, takže
+ * zamčená (odeslaná) varianta drží svůj text. Ruční text je česky
+ * a platí pro český dokument; EN/DE/FR tisknou výchozí přeložený úvod. */
+function nabidkaProjUvodRucne(zadani) {
+  const t = zadani && typeof zadani.uvodNabidkyRucne === 'string' ? zadani.uvodNabidkyRucne.trim() : '';
+  return t;
+}
+/* true = ruční úvod vznikl nad jiným výchozím zněním, než jaké dávají
+ * dnešní nabízené činnosti. `vychoziCz` = výchozí úvod (odstavce \n). */
+function nabidkaProjUvodNesedi(zadani, vychoziCz) {
+  if (!nabidkaProjUvodRucne(zadani)) return false;
+  const z = zadani.uvodNabidkyZaklad;
+  return typeof z === 'string' && z.trim() !== String(vychoziCz || '').trim();
+}
+
+/* CESTOVNÉ U AKCE MIMO PRAHU (D2, rozhodnutí J. V. 20. 10. 2026, šablona
+ * nabídky PROJ D. Sikory rev. 33). `{X}` = cena 1 výjezdu technika
+ * v měně dokumentu. U ZAMĚŘENÍ, STUDIE, DPZ a KOLAUDACE je výjezd v ceně
+ * činnosti (přičítá ho engine_proj.js), u DPZ a KOLAUDACE s dovětkem
+ * o dalších cestách; u IČ a AD se cena výjezdu jen uvede. Akce v Praze
+ * (přepínač vypnutý) nebo bez ceny výjezdu = nic se netiskne. */
+const NABIDKA_PROJ_CESTOVNE = {
+  zahrnuje: 'Cena zahrnuje i cestovní náklady na 1 výjezd technika na stavbu ({X} bez DPH).',
+  dalsi: 'Případné další cesty budou fakturovány individuálně.',
+  ic: 'Cena NEZAHRNUJE cestovní náklady – případné cesty budou fakturovány individuálně ve výši {X} bez DPH za jeden výjezd.',
+  ad: 'Cestovní náklady na každý 1 výjezd AD na stavbu ({X} bez DPH) budou fakturovány individuálně.',
+};
+/* Kde se co tiskne: klíč = sekce kalkulace (ad = autorský dozor), symbol =
+ * {{PROJ_CESTOVNE_<symbol>}} šablony PROJ v8, vety = klíče z výčtu výš. */
+const NABIDKA_PROJ_CESTOVNE_KDE = {
+  zamereni: { symbol: 'ZAMERENI', vety: ['zahrnuje'], prictene: true },
+  studie: { symbol: 'SP', vety: ['zahrnuje'], prictene: true },
+  dpz: { symbol: 'DPZ', vety: ['zahrnuje', 'dalsi'], prictene: true },
+  ic: { symbol: 'IC', vety: ['ic'] },
+  kolaudace: { symbol: 'KOLAUDACE', vety: ['zahrnuje', 'dalsi'], prictene: true },
+  ad: { symbol: 'AD', vety: ['ad'] },
+};
+
 /* Odstavce úvodu pro sekce v rozsahu. `vRozsahu(sekce)` rozhoduje stejně
  * jako u ostatních bloků nabídky (sekce s cenou). */
 function nabidkaProjUvod(vRozsahu, P) {
@@ -694,7 +738,28 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
   });
   const navicVypsano = {};
 
-  const uvodOdst = nabidkaProjUvod(vRozsahu, P);   // P11: úvod podle rozsahu
+  /* P11: úvod podle rozsahu; D2: ruční úvod obchodníka má v češtině přednost */
+  const uvodVychoziCz = nabidkaProjUvod(vRozsahu).join('\n');
+  const uvodRucne = L === 'cz' ? nabidkaProjUvodRucne(pj.zadani) : '';
+  const uvodOdst = uvodRucne ? uvodRucne.split(/\n+/).map(x => x.trim()).filter(Boolean) : nabidkaProjUvod(vRozsahu, P);
+  /* Cestovné u akce mimo Prahu (D2) — věty v jazyce dokumentu po činnostech. */
+  const vyjezdJednotka = (typeof vyjezdTechnikaKc === 'function') ? vyjezdTechnikaKc(pj.zadani, pj.cenik || DEFAULT_CENIK_PROJ) : 0;
+  const cestovne = k => {
+    const def = NABIDKA_PROJ_CESTOVNE_KDE[k];
+    if (!def || !(vyjezdJednotka > 0)) return [];
+    let castka = vyjezdJednotka;
+    if (k === 'ad') { if (!nabidkaProjNabiziAD(varianta)) return []; }
+    else if (!cenaSekce(k)) return [];
+    if (def.prictene) {
+      /* přičtený výjezd bere z výsledku (u zamčené varianty z otisku) */
+      const sek = (r.sekce || []).find(x => x.key === k);
+      if (!sek || !(+sek.vyjezdKc > 0)) return [];
+      castka = +sek.vyjezdKc;
+    }
+    const X = kc(mena.na(castka));
+    return def.vety.map(v => String(P(NABIDKA_PROJ_CESTOVNE[v])).split('{X}').join(X));
+  };
+  const cestovneVypsano = {};
   /* studie nebo její projednání v nabídce — bloky studie ve Wordu v7 a titul (D1, Q3) */
   const nabiziStudii = vRozsahu('studie') || vRozsahu('projednani');
   /* Řádky plánu po činnostech — pro bloky online nabídky i symboly šablony v4. */
@@ -833,7 +898,14 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
     if (b.sekce && !b.pausal && !odkaz && !neuvedena && navicMapa[b.sekce] && !navicVypsano[b.sekce]) {
       navic = navicMapa[b.sekce]; navicVypsano[b.sekce] = true;
     }
-    return { typ: 'cena', nadpis: P(b.nadpis), popis, sekce: b.sekce || null, navic,
+    /* Cestovné (D2) k prvnímu cenovému bloku činnosti (AD: k jeho sazbě). */
+    let cestovneVety = [];
+    const kCest = b.ad ? 'ad' : (b.sekce && !b.pausal && !odkaz && !neuvedena ? b.sekce : null);
+    if (kCest && !cestovneVypsano[kCest]) {
+      cestovneVety = cestovne(kCest);
+      if (cestovneVety.length) cestovneVypsano[kCest] = true;
+    }
+    return { typ: 'cena', nadpis: P(b.nadpis), popis, sekce: b.sekce || null, navic, cestovne: cestovneVety,
       castka: odkaz ? odkaz
         : (neuvedena ? P('není součástí této nabídky') : kc(hodnota)
             + (b.jednotka ? ' / ' + P(b.jednotka) : '')),
@@ -988,6 +1060,13 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
     PROJ_TERMINY_CINNOST: textProj('terminy').filter(radekVRozsahu).map(x => x[0]).join('\n'),
     PROJ_TERMINY_TERMIN: textProj('terminy').filter(radekVRozsahu).map(x => x[1]).join('\n'),
     PROJ_DOLOZKY: podmEf.nabidkaProj.dolozkyTisk ? textProj('dolozky').join('\n') : '',
+    /* Cestovné u akce mimo Prahu (D2) pro šablonu PROJ v8: věta (věty) pod
+     * cenou činnosti, v bloku {{BLOK_CESTOVNE_<X>_ZAC}}…{{…_KON}} — prázdné
+     * (akce v Praze, činnost se nenabízí) blok zmizí. */
+    ...Object.keys(NABIDKA_PROJ_CESTOVNE_KDE).reduce((o, k) => {
+      o['PROJ_CESTOVNE_' + NABIDKA_PROJ_CESTOVNE_KDE[k].symbol] = cestovne(k).join(' ');
+      return o;
+    }, {}),
   };
   if (typeof firmaPlaceholders === 'function')
     Object.assign(placeholders, firmaPlaceholders(
@@ -1044,6 +1123,10 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
   if (!nabiziStudii) blokyPryc.push('BLOK_STUDIE_ROZSAH', 'BLOK_STUDIE_CENA');
 
   return { placeholders, bloky, rekapitulace, jazyk: L, nazevSouboru, platbyProj, blokyPryc,
+    /* Úvod (D2): výchozí české znění, ruční text a zda ruční text sedí. */
+    uvod: { vychoziCz: uvodVychoziCz, rucne: nabidkaProjUvodRucne(pj.zadani),
+            nesedi: nabidkaProjUvodNesedi(pj.zadani, uvodVychoziCz) },
+    vyjezdKc: vyjezdJednotka,
     /* Sekce kalkulace, které tato nabídka oceňuje — rozsah díla SoD PROJ (#380 Q7). */
     nabizeneSekce: NABIDKA_PROJ_SEKCE.filter(k => !!cenaSekce(k)),
     /* Úvodní fotka nabídky PROJ. Je to VLASTNÍ fotka projekční nabídky
@@ -1079,4 +1162,4 @@ if (typeof dokumentRegistruj === 'function')
   });
 
 if (typeof module !== 'undefined')
-  module.exports = { nabidkaProjData, nabidkaProjNabiziAD, nabidkaProjCeny, nabidkaProjPlatby, NABIDKA_PROJ_PLATBY, nabidkaProjSlevaZvlast, nabidkaProjUvod, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_UVOD_ZAVER, NABIDKA_PROJ_DPZ_UVOD, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE, NABIDKA_PROJ_CENA_SYMBOL };
+  module.exports = { nabidkaProjData, nabidkaProjNabiziAD, nabidkaProjCeny, nabidkaProjPlatby, NABIDKA_PROJ_PLATBY, nabidkaProjSlevaZvlast, nabidkaProjUvod, nabidkaProjUvodRucne, nabidkaProjUvodNesedi, NABIDKA_PROJ_CESTOVNE, NABIDKA_PROJ_CESTOVNE_KDE, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_UVOD_ZAVER, NABIDKA_PROJ_DPZ_UVOD, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE, NABIDKA_PROJ_CENA_SYMBOL };

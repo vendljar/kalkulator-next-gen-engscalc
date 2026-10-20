@@ -8,6 +8,39 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v20.10.4 — D2: šablona nabídky PROJ D. Sikory — cestovné mimo Prahu, upravitelný úvod, jednostupňová dokumentace (větev claude/d2-proj-sikora)
+
+Dávka D2 (koordinace „ŘÍDÍCÍ 19.10“), základ `claude/integrace-16-10` 5dc28d1 (v20.10.1). Zdroj: šablona
+nabídky PROJ od D. Sikory (OVP-CN „online calkulak“, rev. 33, 15. 9. 2026) — roadmapa **#260** tím
+dodána a uzavřena. Rozhodnutí J. V. 20. 10. 2026, výchozí volby a postup v `podklady/D2_SIKORA_PROJ.md`.
+
+**Nové**
+- **#444 Akce mimo Prahu:** přepínač v Kalkulaci PROJ + cena 1 výjezdu technika v ceníku PROJ (Doprava,
+  `PC.vyjezdTechnikKc`), přepsatelná u zakázky (prázdno = ceník, 0 = neúčtovat). Výjezd se přičte po
+  přirážce k ceně ZAMĚŘENÍ, DPZ, KOLAUDACE a STUDIE (ke studii jen bez samostatného zaměření — jedna
+  cesta); nabídka to řekne větou „Cena zahrnuje i cestovní náklady na 1 výjezd technika na stavbu
+  (X Kč bez DPH)“ (DPZ a KOLAUDACE + „Případné další cesty…“), u IČ „Cena NEZAHRNUJE cestovní
+  náklady…“ a u AD „Cestovní náklady na každý 1 výjezd AD…“ (bez přičtení). V Praze nic. Krycí list,
+  plán plateb, rekapitulace a SoD berou cenu z jádra. Word: symboly `{{PROJ_CESTOVNE_ZAMERENI|SP|DPZ|IC|
+  KOLAUDACE|AD}}`, šablona **PROJ v8** (`nastroje/vyrob_sablony.js --proj-v8`, vstup v7 z D1, jinak v6).
+  EN/DE/FR výchozí znění (ke kontrole rodilými mluvčími). Kontroly `vyjezdCenaChybi`, `cestovneWordProj`.
+- **#445 Úvod „Naše NABÍDKA a doporučení“** upravitelný obchodníkem u varianty (karta Cenová nabídka
+  PROJ), **↺ Vrátit výchozí**, upozornění v kartě a kontrola `uvodProjNesedi`, když se po úpravě změní
+  nabízené činnosti. Zamčená varianta drží svůj text; ruční text platí pro český dokument.
+- **#446 Jednostupňová dokumentace:** nové zaškrtávátko v Kalkulaci PROJ; kontrola `jednostupnovaProj`
+  upozorní, že nabídku je nutné upravit ve Wordu ručně (DPZ+DPS v jednom stupni, ceny, plán plateb,
+  termíny). Nic se nepřepisuje.
+
+**Testy:** `src/test_d2_proj_sikora.js` (71 kontrol; na stromu před D2 selže hned na prvních dvou —
+pojistka), `src/test_kontroly.js` a `overit_lista.mjs` počet pravidel 37 → 41.
+
+**Ověření (20. 10. 2026, nad sloučením integrace 6fe92d8):** `testovaci_kolo.sh --bez-mutaci` — sady **282 prošlo /
+0 selhalo / 6 přeskočeno** (`test.js` + 5 harnessů bez `KNG_PODKLADY`), statické **3/3**; cílené mutace jádra
+`D2` **18/18** (engine_proj, nabidka_proj, kontroly, vyrob_sablony), pracovní kopie po běhu čistá. Šablony
+.docx se v dávce nevyráběly (navazující dávka S10).
+
+---
+
 ## v20.10.3 — D1: postřehy D. Sikory 19. 10. 2026 (větev claude/d1-sikora)
 
 Dávka D1 (koordinace „ŘÍDÍCÍ 19.10“), základ `claude/integrace-16-10` 5dc28d1 (v20.10.1).

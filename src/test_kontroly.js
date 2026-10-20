@@ -184,8 +184,9 @@ const pravidla = kontrolyPravidla();
  * můstek bez rozměrů — obojí upozornění. */
 /* 38. „mustekRozmer" 20. 10. 2026 (K3-N17, O7, test_mustky.js): nezvykle
  * velký nebo nečíselný rozměr můstku — upozornění. */
-/* 39. „dpzUvodWordProj" 20. 10. 2026 (D1). */
-test('pravidel je třicet devět (20. 10. 2026: + mustekRozmer, + dpzUvodWordProj D1)', pravidla.length === 39, pravidla.length);
+/* 39. „dpzUvodWordProj" 20. 10. 2026 (D1); 40.–43. D2: jednostupnovaProj,
+ * vyjezdCenaChybi, uvodProjNesedi, cestovneWordProj. */
+test('pravidel je čtyřicet tři (20. 10. 2026: + mustekRozmer, + dpzUvodWordProj D1, + 4 pravidla D2)', pravidla.length === 43, pravidla.length);
 test('kódy pravidel jsou jedinečné',
   new Set(pravidla.map(p => p.kod)).size === pravidla.length,
   pravidla.map(p => p.kod).join(','));

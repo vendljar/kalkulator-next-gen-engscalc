@@ -10,6 +10,23 @@
  * Ukládá se do zakázky (ZAK.popisZameru), takže přežije uložení i export. */
 function nabidkaProjPopis(val) { ZAK.popisZameru = val; }
 
+/* Ruční úvod nabídky PROJ (D2). Text shodný s výchozím (nebo prázdný) = bez
+ * ruční úpravy. Se zápisem textu se uloží i výchozí znění, ze kterého
+ * obchodník vycházel — podle něj nabidkaProjUvodNesedi pozná, že se mezitím
+ * změnily nabízené činnosti. Zápis jde přes set(), takže ho hlídá zámek. */
+function nabidkaProjUvodNastav(val) {
+  let d = null;
+  try { d = nabidkaProjData(ZAK, aktivniVarianta(ZAK)); } catch (e) { return; }
+  const t = String(val || '').replace(/\r/g, '').trim();
+  if (!t || t === String(d.uvod.vychoziCz || '').trim()) { nabidkaProjUvodVychozi(); return; }
+  set('PJ.uvodNabidkyRucne', t);
+  if (typeof PJ !== 'undefined' && PJ && PJ.uvodNabidkyRucne === t) set('PJ.uvodNabidkyZaklad', d.uvod.vychoziCz);
+}
+function nabidkaProjUvodVychozi() {
+  set('PJ.uvodNabidkyRucne', '');
+  if (typeof PJ !== 'undefined' && PJ && !PJ.uvodNabidkyRucne) set('PJ.uvodNabidkyZaklad', null);
+}
+
 /* Karta pod souhrnem Kalkulace PROJ. */
 function nabidkaProjKarta() {
   const akt = (typeof aktivniVarianta === 'function') ? aktivniVarianta(ZAK) : (ZAK.varianty || [])[0];
@@ -72,6 +89,19 @@ function nabidkaProjKarta() {
     <div class="note" style="font-weight:600;margin-top:10px">Popis záměru (úvodní odstavec nabídky):</div>
     <textarea rows="4" style="width:100%" placeholder="Např.: Bytový dům, přístavba výtahu do zrcadla schodiště…"
       oninput="nabidkaProjPopis(this.value)">${esc(ZAK.popisZameru || '')}</textarea>
+    ${/* Úvod „Naše NABÍDKA a doporučení" (D2, 20. 10. 2026): předvyplněný
+         podle nabízených činností, obchodník ho smí upravit. */ ''}
+    <div class="note" style="font-weight:600;margin-top:10px">Naše NABÍDKA a doporučení (úvod nabídky)${d.uvod && d.uvod.rucne
+      ? ' <span class="pill" title="text upravený obchodníkem — platí pro tuto variantu">upraveno ručně</span>' : ''}:</div>
+    ${d.uvod && d.uvod.nesedi ? `<div class="neg" id="projUvodNesedi">⚠ Nabízené činnosti se od ruční úpravy úvodu změnily — ruční text nemusí sedět.
+      Zkontrolujte ho, nebo vraťte výchozí znění.</div>` : ''}
+    <textarea rows="5" style="width:100%" id="projUvodNabidky"
+      onchange="nabidkaProjUvodNastav(this.value)">${esc((d.uvod && (d.uvod.rucne || d.uvod.vychoziCz)) || '')}</textarea>
+    <div class="btns" style="margin-top:4px"><button class="mini" id="projUvodVychozi" ${d.uvod && d.uvod.rucne ? '' : 'disabled'}
+      onclick="nabidkaProjUvodVychozi()">↺ Vrátit výchozí</button></div>
+    <div class="note">Předvyplní se podle nabízených činností (studie, projednání s památkáři, DPZ…). Ruční úprava platí
+      pro tuto variantu a český dokument (online i Word se symbolem <code>{{UVOD_NABIDKY_PROJ}}</code>); EN/DE/FR tisknou
+      výchozí přeložené znění. Odstavce oddělte novým řádkem. Odeslaná (zamčená) varianta drží svůj text.</div>
     ${typeof nabidkaFotoKarta === 'function' ? nabidkaFotoKarta('proj') : ''}
     ${typeof kontrolyPanel === 'function' ? kontrolyPanel() : ''}
     ${typeof ukazkoveZabranaPanel === 'function' ? ukazkoveZabranaPanel() : ''}
@@ -248,6 +278,7 @@ async function nabidkaProjNahled() {
           `<br><span class="popis polozka-navic">– ${esc(n)}</span>`).join('')}</td>
       <td class="castka${b.neuvedena ? ' chybi' : ''}">${esc(b.castka)}${b.neuvedena ? '' : '<br><span class="popis">'
         + esc(P('bez DPH')) + '</span>'}</td></tr>
+      ${(b.cestovne || []).length ? `<tr><td colspan="2" class="popis cestovne">${esc(b.cestovne.join(' '))}</td></tr>` : ''}
       ${b.hvezdicka ? `<tr><td colspan="2" class="popis">*) ${esc(b.hvezdicka)}</td></tr>` : ''}</table>`;
   }).join('');
 
