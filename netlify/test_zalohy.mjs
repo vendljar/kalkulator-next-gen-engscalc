@@ -283,19 +283,30 @@ await zkus('N5', async () => {
   test('N5 v19.10.8: bez záznamu kopie na Disk retence nic nesmaže a čeká',
     bezKopie.smazano.length === 0 && bezKopie.ceka === 'retence čeká na první kopii na Disk' && pamet.has('zalohy/2028-09-19'), bezKopie);
   const ted = Date.now();
-  await s.zapis(Z.KOPIE_DISK_KLIC, { kdy: new Date(ted - 7 * 86400000).toISOString(), soubor: 'otisk_2028-10-12.json' });
-  const staraKopie = await Z.retenceProved('2028-10-19', D, ted);
-  test('N5 v19.10.8: kopie stará přesně 7 dní nestačí — nic se nesmaže',
-    staraKopie.smazano.length === 0 && !!staraKopie.ceka && pamet.has('zalohy/2028-09-19'), staraKopie);
+  const kopiePodlozena = (kdy, otisk) => ({ kdy, soubor: 'otisk_' + otisk + '.json', velikostB: 1234,
+    sha256: 'b'.repeat(64), otisk, puvod: 'nocni-otisk', slozka: '_Zaloha Netlify DB' });
+  /* O6 (20. 10. 2026): hranice 7 dní se ověřuje s PODLOŽENÝM záznamem —
+   * nepodložený zastaví retenci už K3-N1 a stáří kopie by se netestovalo
+   * (mutace „7 dní stará" a „lhůta 8 dní" po O5 přežily). Pojistka: se
+   * starým nepodloženým záznamem obě mutace přežijí, s tímto jsou chycené. */
+  for (const [dnu, popis] of [[7, 'přesně 7 dní'], [8, '8 dní']]) {
+    await s.zapis(Z.KOPIE_DISK_KLIC, kopiePodlozena(new Date(ted - dnu * 86400000).toISOString(), '2028-09-01'));
+    const staraKopie = await Z.retenceProved('2028-10-19', D, ted);
+    test('N5 v19.10.8: podložená kopie stará ' + popis + ' nestačí — nic se nesmaže a čeká se na kopii',
+      staraKopie.smazano.length === 0 && staraKopie.ceka === 'retence čeká na první kopii na Disk'
+      && pamet.has('zalohy/2028-09-19'), staraKopie);
+  }
+  test('N5 v19.10.8: kopie stará přesně 7 dní není čerstvá, 6 dní ano',
+    !Z.kopieDiskCerstva({ kdy: new Date(ted - 7 * 86400000).toISOString() }, ted)
+    && Z.kopieDiskCerstva({ kdy: new Date(ted - 6 * 86400000).toISOString() }, ted));
   test('N5 v19.10.8: kopie stará 6 dní 23 h stačí', Z.kopieDiskCerstva({ kdy: new Date(ted - 7 * 86400000 + 3600000).toISOString() }, ted)
     && !Z.kopieDiskCerstva({ kdy: 'x' }, ted) && !Z.kopieDiskCerstva(null, ted)
     && !Z.kopieDiskCerstva({ kdy: new Date(ted + 86400000).toISOString() }, ted));
   pamet.delete('zalohy/2028-10-19'); pamet.delete('zalohy/souhrn/2028-10-19');
   /* K3-N1 (20. 10. 2026): retenci odemkne jen PODLOŽENÝ záznam — kopie
    * nočního otisku, který v úložišti je, s nenulovou velikostí a platným
-   * SHA-256. Záznam s polem navíc/chybějícím z prohlížeče nestačí. */
-  const kopiePodlozena = (kdy, otisk) => ({ kdy, soubor: 'otisk_' + otisk + '.json', velikostB: 1234,
-    sha256: 'b'.repeat(64), otisk, puvod: 'nocni-otisk', slozka: '_Zaloha Netlify DB' });
+   * SHA-256. Záznam s polem navíc/chybějícím z prohlížeče nestačí
+   * (pomocník kopiePodlozena je výš, u hranice 7 dní). */
   await s.zapis(Z.KOPIE_DISK_KLIC, kopiePodlozena(new Date(ted - 3600000).toISOString(), '2028-09-01'));
   /* selhání zápisu → nic se nemaže */
   const bez = await Z.retenceProved('2028-10-19', D);
