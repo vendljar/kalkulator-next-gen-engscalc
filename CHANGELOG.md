@@ -14,7 +14,15 @@ Dávka O5 (koordinace „ŘÍDÍCÍ 19.10 noc“), základ `claude/integrace-16-
 (v19.10.10 + M1 + zápis K3), podklad `podklady/K3_AUDIT_19_10.md`. J. V. nepřítomen —
 výchozí volby zapsány u nálezů.
 
-<!-- VYSLEDKY_O5 -->
+**Ověření nad e6f3b14 (v20.10.1, 20. 10. 2026 02:10–02:50 UTC) — VŠE ZELENÉ po doplnění jednoho testu:**
+`testovaci_kolo.sh --bez-mutaci`: sady **281 prošlo / 0 selhalo / 6 přeskočeno** (`test.js`
++ 5 harnessů bez `KNG_PODKLADY`), statické **3/3**; `--kontrola` jádro 311, server 638 úseků.
+Cílené mutace: jádro `O5` **12/13** — přežila „O5: K3-N11 vyváženost bez kontroly zbytku
+zásobníku“ (`return true` místo `zas.length === 0`; testy neměly fragment s neuzavřeným
+prvkem) → doplněny 2 kontroly v `src/test_o5_docx.js` (s mutací 12/2, bez 14/0), opakování
+`mutace_jadro.mjs "O5: K3-N11"` **2/2**; server `O5` **11/11**; server `B58` **2/2**
+(K3-N19 — „B58: obnova zapíše smazání i u živého účtu“ je chycená). Pracovní kopie po
+každém běhu čistá.
 
 - **K3-N19 (test B58 naprázdno):** `netlify/test_obnova.mjs` zapisoval podvržený otisk
   pod `v2.den + 'T000001-pred-obnovou'` — od #151 N1 neplatný klíč, obnova ho odmítla
@@ -59,7 +67,7 @@ výchozí volby zapsány u nálezů.
   šachtou, kontrola `mustekStrecha` upozorní). Horní mez rozměru je číslo pro J. V.
 - **Nedělá se (rozhodnutí J. V.):** K3-N2, K3-N4, K3-N13, K3-N15, heslová část K3-N1;
   **K3-N18** (souhrnný strop velikosti podmínek) chce číslo — roadmapa #437.
-- **Testy (pojistky v commitech):** nové `src/test_o5_docx.js` (před 5/7, po 12/0),
+- **Testy (pojistky v commitech):** nové `src/test_o5_docx.js` (před 5/7, po 14/0),
   `src/test_o5_podminky.js` (před 23/16 a 39/2, po 41/0); doplněné `netlify/test_obnova.mjs`,
   `netlify/test_zalohy.mjs` (K3-N1 před FAIL, K3-N12 83/3 → 86/0),
   `src/test_zobrazeni_heslo_okno.js` (7/3 → 13/0), `netlify/test_mutace_zamek.mjs`

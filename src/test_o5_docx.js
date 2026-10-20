@@ -76,6 +76,13 @@ const text = xml => (xml.match(/<w:p[\s>](?:(?!<\/w:p>)[\s\S])*?<\/w:p>/g) || []
     + '</w:tc></w:tr></w:tbl></w:body>';
   const e = hazi(() => dg.odstranPrazdneBloky(presBunky, {}, ['CIN_B']));
   test('K3-N11: blok ze seznamu od buňky 1 do buňky 2 → chyba, buňky se neslučují', /CIN_B/.test(e) && /nevznikne/.test(e), e);
+  /* neuzavřené prvky na konci (zásobník není prázdný) — mutace „O5: K3-N11
+   * vyváženost bez kontroly zbytku zásobníku" s ním přežila */
+  test('K3-N11: fragment s neuzavřenou tabulkou není vyvážený', !dg.docxVyvazene('<w:tbl><w:tr><w:tc>' + odst('a')));
+  const doBunky = '<w:body>' + zn('CIN_B_ZAC') + odst('a') + '<w:tbl><w:tr><w:tc>' + odst('b') + zn('CIN_B_KON')
+    + '</w:tc></w:tr></w:tbl></w:body>';
+  const e2 = hazi(() => dg.odstranPrazdneBloky(doBunky, {}, ['CIN_B']));
+  test('K3-N11: blok ze seznamu od odstavce před tabulkou do buňky → chyba', /CIN_B/.test(e2) && /nevznikne/.test(e2), e2);
 }
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
