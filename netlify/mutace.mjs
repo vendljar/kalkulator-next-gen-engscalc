@@ -2788,12 +2788,12 @@ const MUTACE = [
   { nazev: 'H2 V7-N1: karta zaokrouhlí jinak než obsah', soubor: '../src/vyjimky.js',
     hledej: "  const c = (stary ? vyjimkyM2Stary : vyjimkyM2Schvaleni)(p.m2);",
     nahrad: "  const c = stary ? vyjimkyM2Stary(p.m2) : Math.round(p.m2 * 10) / 10;",
-    proc: 'číslo v kartě by se u x,x5–x,x9 m² lišilo od obsahu schválení' },
+    proc: 'číslo v kartě by se u x,x1–x,x4 m² lišilo od obsahu schválení (2,51 → 2,5 místo 2,6)' },
   /* B183 (v20.10.5): plocha v obsahu výjimky na 0,1 m², dřív schválené
    * výjimky (celé m², bez značky tvaru) platí starým tvarem. Hlídá
    * test_vyjimky.mjs (zámky přes server) a src/test_vyjimky.js. */
   { nazev: 'B183: server — obsah výjimky zpět na celé m²', soubor: '../src/vyjimky.js',
-    hledej: "  return typeof x === 'number' && isFinite(x) ? Math.floor(x * 10) / 10 : null;",
+    hledej: "  return typeof x === 'number' && isFinite(x) ? Math.ceil(x * 10 - 1e-6) / 10 : null;",
     nahrad: "  return typeof x === 'number' && isFinite(x) ? Math.round(x) : null;",
     proc: 'zvětšení plochy pásu po schválení až o skoro 1 m² by výjimku nechalo platit (B183)' },
   { nazev: 'B183: server — zámek uzná jen přesně týž obsah (dřív schválené padnou)', soubor: '../src/vyjimky.js',

@@ -4,10 +4,10 @@ Nad `test` (5dc28d1, v20.10.1). Do test / main / test-draft / integrace nic — 
 (session_01Ln2mMn7iC6W9ECztHTJpZe). Podrobnosti: CHANGELOG v20.10.5, roadmapa #441 (předběžné id;
 438–440 nechány O7, D1, D2), BEZPECNOST_MEZE.md (oddíl výjimek, plocha).
 
-- **Hotovo:** `vyjimkyM2Schvaleni` na 0,1 m² dolů (zadání: 2,50 = 2,59, 2,61 jiné), značka tvaru `v: 2`
+- **Hotovo:** `vyjimkyM2Schvaleni` na 0,1 m² NAHORU (J. V. ~13:20; 2,50 → 2,5, 2,51/2,60 → 2,6, 2,61 → 2,7), značka `v: 2`
   v obsahu s pásem; dřív schválené (celé m², bez značky) platí přes `obsahStary` / `vyjimkaObsahSedi`
   (klient i server), dokud se obsah nezmění. Karta: 0,1 m², u starého schválení celé m² + poznámka.
-- **Volba bez dotazu:** zaokrouhlení DOLŮ (ne matematicky) — tak vychází příklad zadání 2,50/2,59/2,61.
+- **Rozhodnuto J. V.:** nahoru (příklad 2,50/2,59 ze zadání byl od koordinace, neplatí); dřív schválené beze změny.
 - **Ke slučování:** CHANGELOG / `verze.txt` / `manual/obsah.json` (Co je nového + kap. 19) / roadmapa —
   souběžně O7 (v20.10.2), D1 (v20.10.3), D2 (v20.10.4); `mutace_jadro.mjs` (JADRA + blok B183 na začátku
   MUTACE), `netlify/mutace.mjs` (H2, B154, B178, „výjimky:“ úseky + blok B183).

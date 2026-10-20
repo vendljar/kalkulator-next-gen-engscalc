@@ -216,10 +216,10 @@ function vyjimkyObsah(data, dnesni, vyrazena, jekly) {
  * proto patří do obsahu: schválení levného pásu nekryje bez nového
  * schválení větší světlíky ani posun vnějšího rozměru.
  * ZAOKROUHLENÍ (B183 volba b, J. V. 20. 10. 2026, v20.10.5): obsah nese
- * plochu na 0,1 m² (do v20.10.4 na celé m² — nekrytý nárůst až těsně pod
+ * plochu na 0,1 m² NAHORU (do v20.10.4 na celé m² — nekrytý nárůst až těsně pod
  * 1 m²). Změna, která plochu posune přes zaokrouhlení na desetiny,
  * schválení shodí; nekrytý nárůst je AŽ TĚSNĚ POD 0,1 m² na pás či
- * světlík (2,50 → 2,59 m² = týž obsah, 2,50 → 2,61 m² jiný) × rozdíl sazeb
+ * světlík (2,51 → 2,60 m² = týž obsah „2,6“, 2,61 m² jiný) × rozdíl sazeb
  * (BEZPECNOST_MEZE.md). Dřív schválené výjimky (obsah na celé m², bez
  * značky tvaru) platí dál, dokud se jejich obsah starého tvaru nezmění
  * (vyjimkaObsahSedi) — s mezí < 1 m², kterou schvalovatel tehdy schválil.
@@ -377,12 +377,15 @@ function vyjimkyPasyPlochy(pasy, vysledek) {
 }
 
 /* Plocha pásu či světlíku tak, jak ji drží obsah schválení: na 0,1 m²
- * DOLŮ (B183 volba b, J. V. 20. 10. 2026; zadání: 2,50 a 2,59 m² týž
- * obsah, 2,61 m² jiný) — každý nárůst o 0,1 m² obsah změní. Plocha
- * přichází na setiny (vyjimkyPasyPlochy, vyjimkyPlochyJadra) a pro ty je
- * x × 10 dolů přesné (test do 20 000 m²). Null = plochu neznáme. */
+ * NAHORU (B183 volba b, J. V. 20. 10. 2026: „pak bude vždy nákladově
+ * pokrývat horší variantu“) — 2,50 → 2,5; 2,51 i 2,60 → 2,6; 2,61 → 2,7.
+ * Schvalovatel vidí plochu nejvýš o necelou desetinu větší, než je, a
+ * nárůst o 0,1 m² obsah změní. Tolerance 1e-6 (× 10) srovná šum plovoucí
+ * čárky (2,5000000000000004 → 2,5, ne 2,6); plocha přichází na setiny
+ * (vyjimkyPasyPlochy, vyjimkyPlochyJadra), test 0,01–20 000 m². Null =
+ * plochu neznáme. */
 function vyjimkyM2Schvaleni(x) {
-  return typeof x === 'number' && isFinite(x) ? Math.floor(x * 10) / 10 : null;
+  return typeof x === 'number' && isFinite(x) ? Math.ceil(x * 10 - 1e-6) / 10 : null;
 }
 /* Starý tvar (do v20.10.4): celé m². Jen pro dřív schválené výjimky. */
 function vyjimkyM2Stary(x) {

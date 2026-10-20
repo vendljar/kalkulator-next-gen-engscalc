@@ -268,10 +268,10 @@ console.log('— B178: výška a rozměry stěny v obsahu výjimky —');
   test('plocha pásu pro kartu = m² z jádra (zdvih 40 m)', pl.length === 2 && pl.every(p => typeof p.m2 === 'number')
     && pl[1].m2 === Math.round(r.oplasteni.pasy.find(p => p.typ === 'jine' && p.stena === 'B').m2 * 100) / 100 && pl[1].m2 > 50, pl);
   test('plocha v kartě na 0,1 m² jako schválení (V7-N1, B183 b), neznámá plocha prázdná',
-    vyjimkyPasPlocha({ m2: 2.16 }) === '2,1 m² (zaokrouhleno pro schválení)' && vyjimkyPasPlocha({ m2: 2.59 }) === '2,5 m² (zaokrouhleno pro schválení)'
+    vyjimkyPasPlocha({ m2: 2.16 }) === '2,2 m² (zaokrouhleno pro schválení)' && vyjimkyPasPlocha({ m2: 2.51 }) === '2,6 m² (zaokrouhleno pro schválení)'
     && vyjimkyPasPlocha({ m2: 2.5 }) === '2,5 m²' && vyjimkyPasPlocha({ m2: 4 }) === '4 m²' && vyjimkyPasPlocha({ m2: null }) === ''
     && vyjimkyPasyPlochy(obsah(d).pasy, null).every(p => p.m2 === null),
-    [vyjimkyPasPlocha({ m2: 2.16 }), vyjimkyPasPlocha({ m2: 2.59 }), vyjimkyPasPlocha({ m2: 4 })]);
+    [vyjimkyPasPlocha({ m2: 2.16 }), vyjimkyPasPlocha({ m2: 2.51 }), vyjimkyPasPlocha({ m2: 4 })]);
   test('B183: karta dřív schválené výjimky (starý tvar) ukáže celé m², jak bylo schváleno',
     vyjimkyPasPlocha({ m2: 2.5 }, true) === '3 m² (zaokrouhleno pro schválení)' && vyjimkyPasPlocha({ m2: 4 }, true) === '4 m²',
     [vyjimkyPasPlocha({ m2: 2.5 }, true), vyjimkyPasPlocha({ m2: 4 }, true)]);
@@ -319,7 +319,7 @@ console.log('— B178 zbytek: plocha z jádra v obsahu (v17.10.5) —');
   const o1 = obsah(d);
   test('pás nese plochu z jádra (m², 2 desetinná místa)', o1.pasu === 1 && typeof o1.pasy[0].m2 === 'number' && o1.pasy[0].m2 > 10, o1.pasy);
   const p1 = JSON.parse(o1.obsah).p[0];
-  test('obsah nese plochu pásu na 0,1 m² dolů (B183 b)', p1[p1.length - 1] === Math.floor(o1.pasy[0].m2 * 10 + 1e-6) / 10
+  test('obsah nese plochu pásu na 0,1 m² nahoru (B183 b)', p1[p1.length - 1] === Math.ceil(Math.round(o1.pasy[0].m2 * 100) / 10) / 10
 , [p1, o1.pasy[0].m2]);
   vyjimkaSchval(d, o1, 'Ved');
   const puv = zd.zaskleni; zd.zaskleni = puv === 'na terče' ? 'mezi příčníky' : 'na terče';
@@ -352,33 +352,37 @@ console.log('— B178 zbytek: plocha z jádra v obsahu (v17.10.5) —');
     && !vyjimkaPlati(d.cenovaVyjimka, bez), bez.obsah); }
 
 console.log('— B183: plocha v obsahu na 0,1 m², dřív schválené platí starým tvarem (v20.10.5) —');
-{ /* Pojistka: proti v20.10.1 (5dc28d1, celé m²) padají testy 2,50 vs 2,61,
+{ /* Pojistka: proti v20.10.1 (5dc28d1, celé m²) padají testy 2,51 vs 2,61,
    * značky tvaru, starého tvaru i karty na desetiny. Plochu pásu podstrčí
-   * obal výpočtu jádra (jinak by se 2,50 / 2,59 / 2,61 m² hledaly rozměry). */
-  test('B183: 2,50 a 2,59 m² v obsahu totéž, 2,61 m² jiné; 2,3 m² zůstane 2,3',
-    vyjimkyM2Schvaleni(2.50) === vyjimkyM2Schvaleni(2.59) && vyjimkyM2Schvaleni(2.61) !== vyjimkyM2Schvaleni(2.50)
-    && vyjimkyM2Schvaleni(2.3) === 2.3 && vyjimkyM2Schvaleni(2.7) === 2.7 && vyjimkyM2Schvaleni(null) === null,
-    [vyjimkyM2Schvaleni(2.5), vyjimkyM2Schvaleni(2.59), vyjimkyM2Schvaleni(2.61), vyjimkyM2Schvaleni(2.3)]);
-  { /* Plocha na setiny (0,01–20 000 m²): obsah = celé desetiny dolů (přesně, bez plovoucí chyby). */
+   * obal výpočtu jádra (jinak by se 2,51 / 2,60 / 2,61 m² hledaly rozměry).
+   * Zaokrouhlení NAHORU (J. V. 20. 10. 2026 ~13:20). */
+  const M = vyjimkyM2Schvaleni;
+  test('B183: nahoru na 0,1 m² — 2,50 → 2,5; 2,51 a 2,60 → 2,6; 2,61 → 2,7; 2,3 zůstane 2,3',
+    M(2.50) === 2.5 && M(2.51) === 2.6 && M(2.60) === 2.6 && M(2.61) === 2.7 && M(2.3) === 2.3 && M(2.7) === 2.7
+    && M(0.01) === 0.1 && M(0) === 0 && M(null) === null,
+    [M(2.5), M(2.51), M(2.6), M(2.61), M(2.3), M(0.01)]);
+  test('B183: šum plovoucí čárky nezvedne plochu o desetinu (2,5000000000000004 → 2,5; 0,1 + 0,2 → 0,3)',
+    M(2.5000000000000004) === 2.5 && M(0.1 + 0.2) === 0.3 && M(2.501) === 2.6, [M(2.5000000000000004), M(0.1 + 0.2), M(2.501)]);
+  { /* Plocha na setiny (0,01–20 000 m²): obsah = celé desetiny nahoru, přesně. */
     let zle = null;
-    for (let i = 1; i <= 2000000 && zle === null; i++) { const x = i / 100, c = vyjimkyM2Schvaleni(x);
-      if (c !== Math.floor(i / 10) / 10) zle = [x, c]; }
-    test('B183: plocha na setiny 0,01–20 000 m² → desetiny dolů přesně', zle === null, zle); }
-  const vyp = global.vypocet; let m2 = 2.5;
+    for (let i = 1; i <= 2000000 && zle === null; i++) { const x = i / 100, c = M(x);
+      if (c !== Math.ceil(i / 10) / 10) zle = [x, c]; }
+    test('B183: plocha na setiny 0,01–20 000 m² → desetiny nahoru přesně', zle === null, zle); }
+  const vyp = global.vypocet; let m2 = 2.51;
   global.vypocet = (...a) => { const r = vyp(...a);
     (r.oplasteni.pasy || []).forEach(p => { if (p.typ === 'jine') p.m2 = m2; }); return r; };
   try {
     const d = varianta();
     d.ock.zadani.oplasteni = { rezim: 'poStenach', steny: { B: { odM: 0, pasy: [{ typ: 'jine', nazev: 'Deska', naklad: 1, doM: null }] } } };
     const o = obsah(d), ob = JSON.parse(o.obsah), os = JSON.parse(o.obsahStary);
-    test('B183: obsah s pásem nese značku tvaru v=2 a plochu 2,5; starý tvar bez značky s celými m²',
-      ob.v === VYJ_OBSAH_TVAR && ob.p[0][7] === 2.5 && !('v' in os) && os.p[0][7] === 3
+    test('B183: obsah s pásem nese značku tvaru v=2 a plochu 2,6 (z 2,51); starý tvar bez značky s celými m²',
+      ob.v === VYJ_OBSAH_TVAR && ob.p[0][7] === 2.6 && !('v' in os) && os.p[0][7] === 3
       && JSON.stringify(Object.keys(os)) === '["s","p","l"]', [o.obsah, o.obsahStary]);
     vyjimkaSchval(d, o, 'Ved');
-    m2 = 2.59; test('B183: nové schválení 2,50 → 2,59 m² platí dál', vyjimkaPlati(d.cenovaVyjimka, obsah(d)));
-    m2 = 2.61; test('B183: nové schválení 2,50 → 2,61 m² neplatí (čeká znovu)',
+    m2 = 2.60; test('B183: nové schválení 2,51 → 2,60 m² platí dál', vyjimkaPlati(d.cenovaVyjimka, obsah(d)));
+    m2 = 2.61; test('B183: nové schválení 2,51 → 2,61 m² neplatí (čeká znovu)',
       !vyjimkaPlati(d.cenovaVyjimka, obsah(d)) && vyjimkaKategorie(d.cenovaVyjimka, obsah(d)) === 'ceka');
-    m2 = 3.49; test('B183: nové schválení 2,50 → 3,49 m² neplatí, i když starým zaokrouhlením sedí (díra B183 zavřená)',
+    m2 = 3.49; test('B183: nové schválení 2,51 → 3,49 m² neplatí, i když starým zaokrouhlením sedí (díra B183 zavřená)',
       obsah(d).obsahStary === o.obsahStary && !vyjimkaPlati(d.cenovaVyjimka, obsah(d)), obsah(d).obsah);
     /* Dřív schválená výjimka (záznam z doby celých m², bez značky). */
     m2 = 2.5;

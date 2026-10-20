@@ -480,10 +480,12 @@ s pásem „jiné" schválené před v17.10.4 přešly do „čeká znovu".
 výjimky s pásem „jiné“ nese i **plochu každého pásu z výsledku jádra**
 a klíč `l` se **světlíky „jiné“ u dveří** (`[kde, stěna, název, sazba,
 m²]`) — `vyjimkyPlochyJadra`, server i prohlížeč počítají `vypocet` týmž
-katalogem JEKLY (`ctx.jekly`). Plocha je v obsahu **na 0,1 m² dolů**
+katalogem JEKLY (`ctx.jekly`). Plocha je v obsahu **na 0,1 m² nahoru**
 (B183 volba b, J. V. 20. 10. 2026, v20.10.5; do v20.10.4 na celé m²):
-2,50 a 2,59 m² dají týž obsah, 2,61 m² jiný. Nekrytý nárůst bez nového
-schválení je **< 0,1 m² na pás či světlík** × rozdíl sazeb (vědomá mez).
+2,50 → 2,5; 2,51 i 2,60 → 2,6; 2,61 → 2,7 — schvalovatel vidí a schvaluje
+vždy horší variantu (plochu nejvýš o necelou desetinu větší). Nekrytý
+nárůst bez nového schválení je **< 0,1 m² na pás či světlík** × rozdíl
+sazeb a vždy jen do plochy, kterou schvalovatel viděl (vědomá mez).
 Obsah s pásem nese značku tvaru `v: 2`. **Výjimky schválené před v20.10.5**
 (obsah na celé m², bez značky) platí dál, dokud se jejich obsah starého
 tvaru nezmění (`obsahStary`, `vyjimkaObsahSedi` v prohlížeči i na serveru) —

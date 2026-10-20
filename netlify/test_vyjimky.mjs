@@ -361,7 +361,7 @@ console.log('===== B178: zdvih a rozměry stěny u schváleného pásu „jiné"
 console.log('===== B178 zbytek: plocha z jádra v obsahu (v17.10.5) =====');
 /* Pojistka: proti v17.10.4 (9bb7caf) vracely zámky po změně zasklení
  * (vnější rozměr stěny) a po přidání nástupišť (světlíky „jiné" u dveří)
- * 200. Od v20.10.5 (B183 volba b) nese obsah plochu na 0,1 m² dolů —
+ * 200. Od v20.10.5 (B183 volba b) nese obsah plochu na 0,1 m² nahoru —
  * nekrytý nárůst je těsně pod 0,1 m² (do v20.10.4 těsně pod 1 m²). */
 { const zaskl = x => (x === 'na terče' ? 'mezi příčníky' : 'na terče');
   const priprav = async (nazev, uprav) => {

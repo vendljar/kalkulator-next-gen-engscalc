@@ -15,8 +15,9 @@ kontrola V7: V7-6, V7-N1). Základ `test` 5dc28d1 (v20.10.1).
 
 - **B183 (nízká, opraveno):** obsah výjimky nesl plochu pásu a světlíku „jiné“ na celé m² — zvětšení
   po schválení 2,50 → 3,49 m² dalo týž obsah (nekrytý nárůst až skoro 1 m²). Teď `vyjimkyM2Schvaleni`
-  drží plochu **na 0,1 m² dolů** (2,50 a 2,59 m² týž obsah, 2,61 m² jiný): mez < 0,1 m² na pás či
-  světlík × rozdíl sazeb (`BEZPECNOST_MEZE.md`). Klient i server počítají obsah toutéž funkcí
+  drží plochu **na 0,1 m² nahoru** (J. V. ~13:20: „pak bude vždy nákladově pokrývat horší variantu“;
+  2,50 → 2,5, 2,51 i 2,60 → 2,6, 2,61 → 2,7; tolerance šumu plovoucí čárky): mez < 0,1 m² na pás či
+  světlík × rozdíl sazeb, nejvýš do plochy, kterou schvalovatel viděl (`BEZPECNOST_MEZE.md`). Klient i server počítají obsah toutéž funkcí
   (`src/vyjimky.js`). Obsah s pásem nese značku tvaru `v: 2`; obsah jen se směsí se nemění.
 - **Dřív schválené výjimky platí dál:** záznam z doby celých m² (bez značky) se porovná i s obsahem
   starého tvaru (`obsahStary`, `vyjimkaObsahSedi`) — v `vyjimkaPlati`, `vyjimkaKategorie`,
@@ -25,11 +26,11 @@ kontrola V7: V7-6, V7-N1). Základ `test` 5dc28d1 (v20.10.1).
   záznam se starým zaokrouhlením neporovnává (značka) a starý tvar si obchodník podvrhnout nemůže (403).
 - **V7-N1:** karta Cenové výjimky ukazuje plochu ve tvaru schválení („2,5 m² (zaokrouhleno pro
   schválení)“), u dřív schválené výjimky celé m² a poznámku „Schváleno před v20.10.5 s plochou na celé m²“.
-- **Testy:** `src/test_vyjimky.js` +14 (2,50/2,59/2,61 přes obal jádra, starý tvar, přepočet, kategorie,
-  karta, desetiny 0,01–20 000 m² přesně), `netlify/test_vyjimky.mjs` +8 (server razí `v: 2`, podvrh starého
+- **Testy:** `src/test_vyjimky.js` +16 (2,50/2,51/2,60/2,61 a šum plovoucí čárky, schválení přes obal jádra, starý tvar, přepočet, kategorie,
+  karta, desetiny nahoru 0,01–20 000 m² přesně), `netlify/test_vyjimky.mjs` +8 (server razí `v: 2`, podvrh starého
   tvaru 403, uložené schválení starého tvaru: uložení / „čeká“ od obchodníka / zámek 200, změna sazby 403;
   zasklení u pásu 1,2 m dřív 200, teď 403). Pojistka: proti 5dc28d1 obě sady spadnou.
-- **Mutace:** `vyjimky.js` přidán do JADRA `mutace_jadro.mjs`; cílené „B183“ jádro 9, server 5; úseky
+- **Mutace:** `vyjimky.js` přidán do JADRA `mutace_jadro.mjs`; cílené „B183“ jádro 11, server 5; úseky
   starších mutací B154, B178, H2 a „výjimky:“ přesměrované na nový kód.
 - **Ověření (20. 10. 2026):** `testovaci_kolo.sh --bez-mutaci` **281 prošlo / 0 selhalo / 6 přeskočeno**,
   statické 3/3; `--kontrola` jádro 320, server 643 úseků. Mutace: jádro `B183` **9/9**, server `B183`
