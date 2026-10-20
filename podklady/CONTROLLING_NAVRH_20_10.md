@@ -351,9 +351,26 @@ dotýkají serveru, takže `netlify/mutace.mjs`), kolo `nastroje/testovaci_kolo.
 
 ---
 
+## Rozhodnutí J. V. 20. 10. 2026 (dialog v sezení)
+
+| # | Rozhodnutí |
+|---|---|
+| J1 | Režie kanceláře = **příspěvek na správní režii** (nepřímý/fixní), neporovnávat s přímými náklady. |
+| J2 | Výrobní režie se nekalkuluje — skupinu **nezakládat**. |
+| J3 | 3D zaměření dělá **interně** náš technik/projektant (skupina projekce). „Tomáš“ v lakování = **Tomáš Chládek**. |
+| J4 | **Rezerva** samostatná skupina, **přirážka za ATYP do projekce**. |
+| J5 | Při zveřejnění ceníku **upozornit a umožnit položku rovnou zařadit do skupiny** (neblokovat). |
+| J6 | Tmelení **jedna sazba** (stavební práce). |
+| J7 | Export **jen administrátor** (server), Andy účet nedostane. |
+| J8 | **Pipedrive deal id ano** (C4), číslo projektu Helios ne — převodník v Reportingu. |
+| J9 | Exportovat **jen zamčené řídící varianty** (bez volby rozpracovaných). |
+| J10 | Můstek → **Ostatní služby – zámečníci**. |
+| J11 | **Začít C1** s Andyiným rozvržením jako výchozím. |
+
+
 ## D. Stav
 
 - Kód: beze změny.
 - Roadmapa: přidána položka #447 (předběžné id), stav `ceka` na souhlas J. V.
 - Artefakt pro J. V.: https://claude.ai/artifact/MNaTnXQ4847f2rNiAT9br7 („Controlling v kalkulátoru“).
-- Další krok: čekat na odpovědi J. V. (J1–J11); po souhlasu dávka C1.
+- Další krok: dávka C1 (schváleno J. V. 20. 10.).
