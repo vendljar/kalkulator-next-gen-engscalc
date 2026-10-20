@@ -16,7 +16,7 @@
     {
       "nadpis": "Co je nového ve verzi v20.10.3 (20. 10. 2026)",
       "odstavce": [
-        "**Nabídka PROJ bez studie proveditelnosti.** Když studii nenabízíte a začínáte rovnou dokumentací pro povolení záměru (DPZ), nabídka už nepíše, že DPZ „navazuje na vzájemně odsouhlasenou STUDII PROVEDITELNOSTI“ — úvod DPZ zní „Dokumentace pro povolení záměru (DPZ) rozpracovává dokumentaci dle platné vyhlášky…“. Platí pro online nabídku hned, pro Word po nahrání šablony nabídky PROJ v7 (nahrává administrátor v Nastavení → Šablony). Se starší šablonou vás na větu upozorní kontrola u nabídky PROJ."
+        "**Nabídka PROJ bez studie proveditelnosti.** Když studii nenabízíte a začínáte rovnou dokumentací pro povolení záměru (DPZ), nabídka už nepíše, že DPZ „navazuje na vzájemně odsouhlasenou STUDII PROVEDITELNOSTI“ — úvod DPZ zní „Dokumentace pro povolení záměru (DPZ) rozpracovává dokumentaci dle platné vyhlášky…“. Platí pro online nabídku hned, pro Word po nahrání šablony nabídky PROJ v7 (nahrává administrátor v Nastavení → Šablony). Bez studie se vynechá i hvězdička u ceny DPZ („Cena je platná v případě návaznosti na STUDII PROVEDITELNOSTI“) a termín hrubopisu DPZ zní „do 12-ti týdnů od objednání a předání podkladů“. Wordová šablona PROJ v7 navíc bez studie vynechá bloky studie a v titulu nepíše „STUDIE PROVEDITELNOSTI“. Se starší šablonou vás na větu upozorní kontrola u nabídky PROJ."
       ]
     },
     {

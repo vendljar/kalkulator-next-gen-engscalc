@@ -6878,19 +6878,19 @@
   {
    "id": "441",
    "vlna": "B",
-   "stav": "blokovano",
+   "stav": "hotovo",
    "dulezitost": "stredni",
    "slozitost": "S",
-   "cekaNa": "J. V.: další odkazy na studii v nabídce PROJ bez studie (Q1–Q3 v podklady/D1_SIKORA_19_10.md)",
-   "nazev": "Nabídka PROJ bez studie: hvězdička ceny DPZ, termín DPZ „od schválení studie“, pevné bloky studie ve Wordu",
+   "hotovoV": "v20.10.3",
+   "nazev": "Nabídka PROJ bez studie: hvězdička ceny DPZ, termín DPZ „od schválení studie“, titul a bloky studie ve Wordu (PROJ v7)",
    "proc": "Při rozboru postřehu D. Sikory (D1) se našla další místa, která se odkazují na studii i tehdy, když se nenabízí.",
-   "detail": "Q1 hvězdička „Cena je platná v případě návaznosti na STUDII PROVEDITELNOSTI.“ u ceny DPZ (online i Word) — doporučení: bez studie vynechat (Word symbolem v šabloně v7+). Q2 termín DPZ v Nastavení → Firma „do 10–12 týdnů od schválení studie investorem a objednání“ — doporučení: druhé znění bez studie („od objednání a předání podkladů“). Q3 Word tiskne bloky STUDIE, poznámku o studii a nadpis „STUDIE PROVEDITELNOSTI“ v titulu pevně — doporučení: značky bloků v další šabloně (obdoba AD v5).",
-   "hotovoKdyz": "Rozhodnutí zapsaná, promítnutá s testy.",
-   "kde": "`podklady/D1_SIKORA_19_10.md`",
+   "detail": "ROZHODNUTÍ J. V. 20. 10. 2026 (~11:05, přes koordinaci): Q1 hvězdičku bez studie vynechat (online hned, Word symbolem); Q2 bez studie termín „do 12-ti týdnů od objednání a předání podkladů“ (druhý text ve Firmě podle studie); Q3 bloky studie a symbol titulu v šabloně PROJ v7. HOTOVO v20.10.3: online hvezdickaJenSe; Firma termíny s klíčem dpz+studie / dpz-studie (vRozsahu v nabidka_proj.js, PODMINKY_PROJ_SEKCE_PODMINENE); v7 (nastroje/vyrob_sablony.js --proj-v7) PROJ_TITUL_STUDIE, PROJ_TITUL_CINNOSTI, PROJ_DPZ_HVEZDICKA_ZNACKA, PROJ_DPZ_HVEZDICKA v BLOK_DPZ_HVEZDICKA, bloky BLOK_STUDIE_ROZSAH / BLOK_STUDIE_CENA / BLOK_STUDIE_POZN (blokyPryc). Uložené vlastní termíny Firmy se nemění.",
+   "hotovoKdyz": "Bez studie nabídka (online i Word v7) studii nezmiňuje; test s pojistkou; mutace D1 bez přeživší.",
+   "kde": "`src/nabidka_proj.js`, `src/podminky.js`, `src/sod.js`, `nastroje/vyrob_sablony.js`, `src/test_d1_dpz_bez_studie.js`",
    "zavisi": [
     "440"
    ],
-   "pozn": "Předběžné id."
+   "pozn": "Předběžné id. Šablonu v7 vyrobí J. V. z v6 (v sezení není)."
   },
   {
    "id": "442",

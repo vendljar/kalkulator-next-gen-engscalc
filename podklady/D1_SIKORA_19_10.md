@@ -6,7 +6,7 @@ Roadmapa #440–#443 (předběžná id, přidělí koordinace). Částky níž j
 
 | # | Postřeh | Stav |
 |---|---|---|
-| 1 | Nabídka PROJ bez studie: věta „DPZ navazuje na vzájemně odsouhlasenou STUDII PROVEDITELNOSTI. Ta …“ | ✅ opraveno (online, Word v7, EN/DE/FR) — #440; další místa se studií čekají (Q1–Q3, #441) |
+| 1 | Nabídka PROJ bez studie: věta „DPZ navazuje na vzájemně odsouhlasenou STUDII PROVEDITELNOSTI. Ta …“ | ✅ opraveno (online, Word v7, EN/DE/FR) — #440; Q1–Q3 rozhodl J. V. 20. 10. ~11:05, opraveno — #441 |
 | 2 | OCK — předpočítaná šířka bočního světlíku 600 mm | ⬜ rozbor hotový, chyba není jednoznačná → varianty A–C k rozhodnutí (#442) |
 | 3 | Dimenze profilů portálu EXT / INT | ⬜ nic se neměnilo; návrh + dopad + otázky, kód ve větvi návrhu (#443) |
 
@@ -40,26 +40,38 @@ o odsouhlasené studii):
 - kontrola `dpzUvodWordProj` (varování, ne zábrana): studie se nenabízí, DPZ ano a nahraná šablona
   PROJ nemá `{{PROJ_DPZ_UVOD}}` → „Nahrajte šablonu nabídky PROJ v7, nebo větu ve Wordu upravte ručně.“
 
-**Testy:** `src/test_d1_dpz_bez_studie.js` 51 kontrol (online CZ se studií / bez / jen projednání,
-symbol CZ/EN/DE/FR, slovník, `--proj-v7` na syntetickém XML vč. chyb, kontrola); pojistka —
-před opravou selže na prvním testu. Cílené mutace „D1: …“ **13/13**. `test_kontroly` a
+**Testy:** `src/test_d1_dpz_bez_studie.js` 88 kontrol (online CZ se studií / bez / jen projednání,
+symboly CZ/EN/DE/FR, slovník, `--proj-v7` na syntetické šabloně ve stavbě v5 vč. chyb kotev, vyplnění
+bez studie / se studií / jen projednání, smlouva PROJ, Q1, Q2, kontrola); pojistka — před opravou bodu 1
+selže na prvním testu, před Q1–Q3 17 FAIL a pád sady. Cílené mutace „D1: …“ **13/13**. `test_kontroly` a
 `overit_lista` počítají 38 pravidel.
 
-### Další místa, která se odkazují na studii, i když se nenabízí (neměněno — rozhodnutí J. V.)
+### Další místa se studií — rozhodnutí J. V. 20. 10. 2026 (~11:05), opraveno (#441)
 
-- **Q1 — hvězdička ceny DPZ** „* Cena je platná v případě návaznosti na STUDII PROVEDITELNOSTI.“
-  (online i Word pevně). Bez studie zní jako „cena neplatí“.
-  **Doporučení:** bez studie vynechat (online podmínkou, Word symbolem v příští šabloně).
-  *(Alternativa: nechat — cena DPZ bez studie by pak měla být jiná.)*
-- **Q2 — termín DPZ** z Nastavení → Firma: „Zpracování dokumentace pro dotčené orgány (hrubopis DPZ)
-  – do 10–12 týdnů **od schválení studie investorem** a objednání“.
-  **Doporučení:** bez studie znění „do 10–12 týdnů od objednání a předání podkladů“ (druhý text
-  ve Firmě, vybírá se podle studie).
-- **Q3 — Word tiskne studii pevně:** v šabloně PROJ stojí bloky STUDIE PROVEDITELNOSTI (ST), ceny
-  částí 1–3, poznámka „V případě, že se investor rozhodne pro zpracování STUDIE…“ a v titulu
-  „Název akce: … STUDIE PROVEDITELNOSTI / Navazující PROJEKTOVÉ a INŽENÝRSKÉ ČINNOSTI“
-  (online nabídka je vynechá). **Doporučení:** značky bloků studie a symbol titulu v další šabloně
-  (stejně jako autorský dozor ve v5).
+- **Q1 hvězdička ceny DPZ** „* Cena je platná v případě návaznosti na STUDII PROVEDITELNOSTI.“ —
+  bez studie **vynechat**: online hned (`hvezdickaJenSe: 'studie'`), Word v7 symbolem
+  `{{PROJ_DPZ_HVEZDICKA_ZNACKA}}` u nadpisu ceny DPZ (hvězdička / nic) a poznámka
+  `{{PROJ_DPZ_HVEZDICKA}}` v bloku `BLOK_DPZ_HVEZDICKA` (prázdný symbol blok odstraní).
+- **Q2 termín hrubopisu DPZ** — se studií beze změny, bez studie přesně „do 12-ti týdnů od objednání
+  a předání podkladů“. Ve Firmě dva řádky s klíčem `dpz+studie` (se studií) a `dpz-studie` (bez studie);
+  klíč umí zapsat i administrátor v Nastavení → Smlouvy / Šablony → Texty nabídky PROJ.
+  **Pozor:** kdo má termíny PROJ ve Firmě uložené vlastní, má dál svůj seznam (s jedním řádkem `dpz`) —
+  řádek bez studie si doplní sám (výchozí znění = prázdné pole). Do Wordu jde přes
+  `{{PROJ_TERMINY_CINNOST}}` / `{{PROJ_TERMINY_TERMIN}}` (v6+).
+- **Q3 šablona PROJ v7** — kromě úvodu DPZ:
+  - titul: „STUDIE PROVEDITELNOSTI“ → `{{PROJ_TITUL_STUDIE}}` (jen se studií nebo projednáním),
+    „Navazující PROJEKTOVÉ a INŽENÝRSKÉ ČINNOSTI“ → `{{PROJ_TITUL_CINNOSTI}}` (bez studie
+    „PROJEKTOVÉ a INŽENÝRSKÉ ČINNOSTI“ — **výchozí volba sezení**, J. V. může změnit znění);
+  - bloky bez symbolu, které aplikace odstraní výslovně (`blokyPryc` nabídky PROJ):
+    `BLOK_STUDIE_ROZSAH` (tabulka STUDIE PROVEDITELNOSTI (ST)) a `BLOK_STUDIE_CENA` (nadpis
+    „CENA ZA STUDII PROVEDITELNOSTI (SP):“ a tabulka cen) — pryč bez studie i projednání (jako online
+    blok ST); `BLOK_STUDIE_POZN` („V případě, že se investor rozhodne…“ + „TATO SKUTEČNOST…“) — pryč
+    bez studie. Smlouva o dílo PROJ si tyto bloky nebere (`sodProjData`).
+  - Nástroj hledá kotvy v textu a při nečekané stavbě skončí chybou (titul smí být 1× nebo 2× stejně —
+    textové pole nese záložní kopii). **Skutečná šablona v6 v sezení není** (na Disku je jen v5;
+    stáhnout 1 MB přes konektor nejde), proto `.docx` v7 nevznikl — J. V. ho vyrobí:
+    `node nastroje/vyrob_sablony.js --proj-v7 <složka se Sablona_NABIDKA_PROJ_v6.docx>`.
+    Kdyby skript ohlásil chybu kotvy, pošlete mi v6 a upravím ho.
 - Bez nálezu: „Případné studie a průzkumy nad rámec nabídky“ (Cena nezahrnuje — obecné), plán plateb
   (platby jen nabízených činností), úvod „Naše NABÍDKA a doporučení“ (věty podle sekcí, P11).
 
