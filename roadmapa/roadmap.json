@@ -7005,6 +7005,39 @@
    "kde": "`src/vyjimky.js`, `src/ui/schvalovani_ui.js`, `mutace_jadro.mjs`, `netlify/mutace.mjs`",
    "hotovoV": "v20.10.5",
    "pozn": "Id 448 přidělila koordinace (předběžné 441 kolidovalo s D1) (přidělí koordinace při sloučení; 438–440 nechány souběžným dávkám O7, D1, D2)."
+  },
+  {
+   "id": "450",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "nazev": "K29-N1: příplatek za měď jen se zastřešením šachty v nabídce",
+   "proc": "Nález 29. testovacího kola (20. 10. 2026): PŘÍPLATEK ZA STŘECHU V MĚDI (EXT) se nabízel i u EXT šachty bez zastřešení v nabídce (od #356 i s plochou stříšky nad můstkem). Rozhodnutí J. V. 20. 10.: „pokud není na zakázce střecha, tak zastřešení můstku nejspíš řešit nebudeme.“",
+   "detail": "HOTOVO v20.10.8 (dávka K29-N1, větev claude/k29-med-bez-strechy): `zastreseniVNabidce` v jádru = EXT, zastřešení není v `nepocitat` a jeho ruční množství není platná nula (prázdno není nula); bez toho řádek `medStrecha` nevznikne (Model 1 i 2). Výjimka: vlastní ruční množství mědi zůstává. Výsledek nese `strecha.vNabidce`, kontrola `mustekStrecha` pak mlčí.",
+   "hotovoKdyz": "Testy src/test_mustky.js +18 s pojistkou (před opravou 18 selže), mutace jádra „K29-N1“ 5/5.",
+   "kde": "`src/engine.js`, `src/kontroly.js`, `src/test_mustky.js`, `mutace_jadro.mjs`",
+   "zavisi": [
+    "356"
+   ],
+   "hotovoV": "v20.10.8",
+   "pozn": "Id 450 přidělila koordinace při zadání dávky."
+  },
+  {
+   "id": "451",
+   "vlna": "C",
+   "stav": "ceka",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "nazev": "Měď na střechu při ručně přepsané ploše zastřešení bere vypočtenou plochu",
+   "proc": "Zjištěno v dávce K29-N1 (20. 10. 2026), mimo její rozsah: když je zastřešení šachty v nabídce, ale s ručně přepsaným množstvím (ne nulou), příplatek za měď dál počítá s vypočtenou plochou, ne s přepsanou.",
+   "detail": "Rozhodnout, zda má měď převzít ruční plochu zastřešení (a případně stříšku nad můstkem), nebo zůstat u vypočtené. Neopravovat bez pokynu J. V.",
+   "hotovoKdyz": "Rozhodnutí J. V.; případně test s pojistkou a mutace.",
+   "kde": "`src/engine.js`",
+   "zavisi": [
+    "450"
+   ],
+   "pozn": "Otevřený bod z K29-N1."
   }
  ],
  "meta" : {

@@ -236,5 +236,46 @@ for (const fixes of [true, false]) {
   test('K3-N17 O7: bez můstku mlčí i s velkým rozměrem', !najdi(spocti({ mustekSirkaMm: 99999 })));
 }
 
+/* K29-N1 (rozhodnutí J. V. 20. 10. 2026: „pokud není na zakázce střecha,
+ * tak zastřešení můstku nejspíš řešit nebudeme"). Zastřešení šachty mimo
+ * nabídku (vyřazené přes `nepocitat`, nebo ruční množství 0) → příplatek
+ * za měď se nenabízí a `mustekStrecha` mlčí. Prázdný přepis není nula.
+ * Výjimka: vlastní ruční množství mědi = vědomá dohoda, řádek zůstává. */
+{
+  const ZAS = 'ZASTŘEŠENÍ ŠACHTY (EXT)', MED_N = 'PŘÍPLATEK ZA STŘECHU V MĚDI (EXT)';
+  const med = r => r.priplatky.find(x => x.key === 'medStrecha');
+  const kt = require('./kontroly.js');
+  const mlci = ({ r, z }) => !kt.kontrolyProved({ zadani: z, vysledek: r, cenik: CENIK }).nalezy.some(x => x.kod === 'mustekStrecha');
+  const blizko = (a, b) => Math.abs(a - b) < 1e-6;
+  for (const fixes of [true, false]) {
+    const M = fixes ? 'Model 2' : 'Model 1';
+    const vyr = spocti({ nepocitat: [ZAS] }, fixes).r;
+    test(M + ' K29-N1: zastřešení vyřazené, bez můstků → žádná měď', !med(vyr) && vyr.strecha.vNabidce === false, med(vyr));
+    test(M + ' K29-N1: název mědi zůstává v rejstříku (přepisy nejsou sirotci)', vyr.nazvyPolozek.indexOf(MED_N) >= 0);
+    const m3 = { nastupiste: 4, mustkyKs: 3, mustekSirkaMm: 1300, mustekHloubkaMm: 900, nepocitat: [ZAS] };
+    const s3 = spocti(m3, fixes);
+    test(M + ' K29-N1: 4 nástupiště, 3 můstky, zastřešení vyřazené → žádná měď', !med(s3.r) && s3.r.strecha.vNabidce === false
+      && s3.r.strecha.mustekNahore === true, s3.r.strecha);
+    const s3b = spocti(Object.assign({}, m3, { mustekSirkaMm: '', mustekHloubkaMm: '' }), fixes);
+    test(M + ' K29-N1: zastřešení vyřazené → mustekStrecha mlčí i bez rozměrů', s3b.r.strecha.mustekNahore === true && mlci(s3b));
+    const nula = spocti({ mnozstviPrepis: { [ZAS]: 0 } }, fixes).r;
+    test(M + ' K29-N1: ruční množství zastřešení 0 → žádná měď', !med(nula) && nula.strecha.vNabidce === false);
+    const nulaTxt = spocti({ mnozstviPrepis: { [ZAS]: '0' } }, fixes).r;
+    test(M + ' K29-N1: ruční množství zastřešení „0" → žádná měď', !med(nulaTxt));
+    const prazdno = spocti({ mnozstviPrepis: { [ZAS]: '' } }, fixes).r;
+    test(M + ' K29-N1: prázdný přepis zastřešení není nula → měď zůstává', med(prazdno) && blizko(med(prazdno).mnozstvi, 2.76165)
+      && prazdno.strecha.vNabidce === true, med(prazdno));
+    const vyj = spocti({ nepocitat: [ZAS], mnozstviPrepis: { [MED_N]: 7.5 } }, fixes).r;
+    test(M + ' K29-N1: výjimka — vlastní ruční množství mědi → řádek zůstává s ním', med(vyj) && med(vyj).mnozstvi === 7.5
+      && med(vyj).prepsano === true && vyj.strecha.vNabidce === false, med(vyj));
+    const ok1 = spocti({}, fixes).r, ok2 = spocti(Object.assign({}, m3, { nepocitat: [] }), fixes).r;
+    test(M + ' K29-N1: se zastřešením beze změny (bez můstku 2,76165 m², s můstkem nahoře 4,11165 m²)',
+      med(ok1) && blizko(med(ok1).mnozstvi, 2.76165) && ok1.strecha.vNabidce === true
+      && med(ok2) && blizko(med(ok2).mnozstvi, 4.11165), [med(ok1), med(ok2)]);
+    const int = spocti({}, fixes, 'interiérová').r;
+    test(M + ' K29-N1: interiér → žádná měď, vNabidce false', !med(int) && int.strecha.vNabidce === false);
+  }
+}
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

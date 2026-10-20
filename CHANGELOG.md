@@ -8,6 +8,30 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v20.10.8 — K29-N1: příplatek za měď jen se zastřešením šachty v nabídce (větev claude/k29-med-bez-strechy)
+
+Nález 29. testovacího kola (20. 10. 2026): PŘÍPLATEK ZA STŘECHU V MĚDI (EXT) se nabízel
+i u EXT šachty, která zastřešení v nabídce nemá (řádek ZASTŘEŠENÍ ŠACHTY (EXT) vyřazený přes
+`nepocitat`); od #356 v něm byla i plocha stříšky nad můstkem. Main v15.10.14 stejně (bez #356),
+není to regrese. **Rozhodnutí J. V. 20. 10.:** „pokud není na zakázce střecha, tak zastřešení
+můstku nejspíš řešit nebudeme.“
+
+- `src/engine.js`: jedno místo `zastreseniVNabidce` = EXT && zastřešení není v `nepocitat` &&
+  jeho ruční množství není platná nula (prázdno není nula). Bez toho řádek `medStrecha` nevznikne
+  (Model 1 i 2). Výjimka: vlastní platné ruční množství mědi = vědomá dohoda, řádek zůstává.
+  Název mědi se zapíše do rejstříku i bez řádku (přepisy nejsou sirotci). Výsledek nese
+  `strecha.vNabidce` (mimo otisky).
+- `src/kontroly.js`: `mustekStrecha` mlčí při `strecha.vNabidce === false`.
+- Testy `src/test_mustky.js` +18 (oba modely): před opravou 18 selže, po ní 85/0.
+  Mutace jádra „K29-N1“ +5 (5/5 chycených), celé mutace jádra 316/316; sady 222/0/1 přeskočeno; hledaný úsek mutace #356 „měď nezná střechu nad
+  můstkem“ upraven na konstantu názvu.
+- Zakázky se zastřešením v nabídce beze změny (stávající testy #356, fixtury 12 variant / 5 zamčených
+  na korunu stejně).
+- Mimo rozsah (nehlášeno jako oprava): zastřešení v nabídce s ručně přepsanou plochou (ne nulou) —
+  měď dál bere vypočtenou plochu, ne přepsanou.
+
+---
+
 ## Nástroj (bez nové verze aplikace) — W2: mazání sloučených větví jedním klikem (větev claude/w2-mazani-vetvi)
 
 Dávka W2 (J. V. 20. 10. 2026) nad `test` 5dc28d1. Aplikace se nemění, verze zůstává v20.10.1.
