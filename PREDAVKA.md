@@ -13,7 +13,7 @@ session_01By6bWivtf2rTJYJFGVv8e1) ráno po K4 jako další verzi. Podklad: `podk
   Oprava C1: trvalé položky katalogu jsou pod `KATALOG.polozky`.
 - **Testy:** src `test_controlling.js` 146/0, server `test_controlling.mjs` 31/0, `overit_controlling.mjs` 30/0,
   mutace #447 18/18 (C1 11 + C2 7). Kolo `--bez-mutaci` s Playwrightem: 1. běh 282/7/6 → opraveno (49a9353),
-  **2. běh běží** — výsledek doplní další commit (výpis v kontejneru `scratchpad/koloC2b.txt`).
+  **2. běh (49a9353): 289 prošlo / 0 selhalo / 6 přeskočeno (jen KNG_PODKLADY a test.js) — VŠE ZELENÉ.**
 - **Zbývá:** C3 hromadný export za období na serveru (filtry, strop, protokol exportů, mez), C4 Pipedrive deal id
   u zakázky + rozvržení PROJ s A. Mácovou (v prosinci).
 - **Ke slučování:** CHANGELOG oddíly „(bez verze) — C1“ a „— C2“, `netlify/mutace.mjs` (#447 + 2 opravené #401),
