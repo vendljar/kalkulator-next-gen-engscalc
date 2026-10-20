@@ -10,6 +10,8 @@ Nad `test` (`5dc28d1`, v20.10.1). Do `test` / `main` / `test-draft` / integrace 
   SoD CZ/EN/DE/FR, ↺, UI zábrana bez DIČ mlčí) — pojistka proti 5dc28d1: 3 FAIL, po opravě 49/0. Mutace `V7-N2`
   3/3 (`mutace_jadro.mjs`, nahradily „B189: bez DIČ přenesená povinnost"), `B189` 8/8. Roadmapa #438 (předběžné
   id), #430 poznámka; SOD_EN_KONTROLA body 1 a 4 vyřešeny; příručka „Co je nového v20.10.6" + kap. 24; CHANGELOG.
+- **Testy:** `testovaci_kolo.sh --bez-mutaci` VŠE ZELENÉ — sady 281 prošlo / 0 selhalo / 6 přeskočeno (firemní
+  podklady), statické 3/3. Otevřené otázky: žádné.
 - **Při slučování:** konflikty v CHANGELOG / PREDAVKA / `verze.txt` / `manual/obsah.json` (záhlaví verze, Co je nového)
   / roadmapě (id 438 může kolidovat s paralelními dávkami).
 
