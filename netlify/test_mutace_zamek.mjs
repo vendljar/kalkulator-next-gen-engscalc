@@ -20,9 +20,19 @@
  *
  * POJISTKA: proti stavu před B194 (bez zámku) selže 4 kontroly — oba
  * skripty se zámkem živého procesu klidně rozběhnou.
+ *
+ * K3-N5 (audit K3, dávka O5 20. 10. 2026) — oddíl 3:
+ *   – souběžné převzetí zámku po mrtvém procesu získá právě jeden běh
+ *     (dřív oba smazali a založili zámek → běžely dva, stav B194);
+ *   – čerstvý prázdný (rozepsaný) zámek se nepřevezme, starý ano;
+ *   – zámek, jehož PID mezitím dostal jiný proces (jiný čas startu),
+ *     se převezme;
+ *   – zámek vzniká celý najednou (pomocný soubor se po sobě uklidí).
+ * Pojistka: proti zámku z v19.10.10 selžou kontroly prázdného zámku,
+ * opětovného PID a (podle časování) souběhu; po opravě vše zelené.
  * ============================================================ */
 import { spawn, spawnSync } from 'node:child_process';
-import { writeFileSync, existsSync, mkdtempSync, rmSync, readFileSync } from 'node:fs';
+import { writeFileSync, existsSync, mkdtempSync, rmSync, readFileSync, readdirSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -67,6 +77,46 @@ try {
   test('zámek mrtvého běhu se převezme, výchozí stav zelený (zámek během běhu drží tento běh)',
     r2.status === 0 && /Výchozí stav/.test(vystup(r2)), vystup(r2).slice(-300));
   test('po skončení běhu zámek zmizel', !existsSync(ZAMEK));
+
+  /* 3) K3-N5: atomické převzetí, rozepsaný zámek, opětovné PID */
+  const POMOC = join(tmp, 'zamkni.mjs');
+  writeFileSync(POMOC, `import { zamkniMutace } from ${JSON.stringify(resolve(REPO, 'nastroje', 'mutace_zamek.mjs'))};
+const [cesta, drz, start] = process.argv.slice(2);
+if (start) { const s = Number(start); while (Date.now() < s) {} }   // souběžný start
+const r = zamkniMutace('test K3-N5', cesta);
+console.log(JSON.stringify({ moje: r === null, drzi: r }));
+setTimeout(() => process.exit(0), Number(drz || 0));`);
+  const zamkni = (cesta, drz) => JSON.parse(spawnSync('node', [POMOC, cesta, String(drz || 0)], { encoding: 'utf8' }).stdout.trim().split('\n').pop());
+  const Z2 = join(tmp, 'zamek2.json');
+  /* čerstvý prázdný zámek = jiný běh ho právě zakládá */
+  writeFileSync(Z2, '');
+  test('K3-N5: čerstvý prázdný zámek se nepřevezme', zamkni(Z2).moje === false && existsSync(Z2));
+  if (!existsSync(Z2)) writeFileSync(Z2, '');                      // před opravou ho převzetí smazalo
+  const stary = new Date(Date.now() - 5 * 60000);
+  utimesSync(Z2, stary, stary);
+  test('K3-N5: starý prázdný (poškozený) zámek se převezme', zamkni(Z2).moje === true);
+  test('K3-N5: po převzetí a konci běhu zámek zmizel', !existsSync(Z2));
+  /* PID žije, ale je to jiný proces (čas startu nesedí) */
+  writeFileSync(Z2, JSON.stringify({ pid: spac.pid, beh: 'starý běh', od: '2026-10-19T13:00:00.000Z', start: 'jiny-start-1' }));
+  test('K3-N5: zámek s PID, které mezitím dostal jiný proces, se převezme', zamkni(Z2).moje === true);
+  writeFileSync(Z2, JSON.stringify({ pid: spac.pid, beh: 'cizí běh', od: '' }));
+  test('K3-N5: zámek živého procesu bez času startu (starší tvar) dál drží', zamkni(Z2).moje === false);
+  /* souběžné převzetí: 6 běhů naráz nad zámkem mrtvého procesu */
+  const DEAD = Number(spawnSync('node', ['-e', 'console.log(process.pid)'], { encoding: 'utf8' }).stdout.trim());
+  let jeden = true, vysledky = [];
+  for (let kolo = 0; kolo < 5 && jeden; kolo++) {
+    writeFileSync(Z2, JSON.stringify({ pid: DEAD, beh: 'mrtvý běh', od: '' }));
+    const start = Date.now() + 800;
+    const deti = [...Array(6)].map(() => new Promise(res => {
+      let out = ''; const d = spawn('node', [POMOC, Z2, '1500', String(start)]);
+      d.stdout.on('data', x => { out += x; }); d.on('close', () => res(out.trim()));
+    }));
+    vysledky = (await Promise.all(deti)).map(x => { try { return JSON.parse(x.split('\n').pop()); } catch (e) { return { chyba: x }; } });
+    if (vysledky.filter(v => v.moje).length !== 1) jeden = false;
+  }
+  test('K3-N5: souběžné převzetí zámku po mrtvém procesu získá právě jeden běh (5 kol × 6 běhů)', jeden,
+    JSON.stringify(vysledky.map(v => v.moje)));
+  test('K3-N5: pomocný soubor zámku nezůstal', !readdirSync(tmp).some(f => /zamek2\.json\./.test(f)), readdirSync(tmp));
 } finally {
   try { spac.kill('SIGKILL'); } catch (e) { /* už skončil */ }
   rmSync(tmp, { recursive: true, force: true });

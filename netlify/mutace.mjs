@@ -2222,7 +2222,7 @@ const MUTACE = [
     proc: 'retence by smazala staré ruční zálohy, které J. V. ponechal' },
   /* v19.10.8: retence jen s čerstvou kopií na Disk (výchozí volba koordinace). */
   { nazev: '#151 N5 v19.10.8: retence bez pojistky kopie na Disk', soubor: 'lib/zalohovani.mjs',
-    hledej: '  if (!kopieDiskCerstva(await s.cti(KOPIE_DISK_KLIC), ted))',
+    hledej: '  if (!kopieDiskCerstva(kopie, ted))',
     nahrad: '  if (false)',
     proc: 'první noc po nasazení by se smazaly staré otisky dřív, než existuje kopie mimo Netlify' },
   { nazev: '#151 N5 v19.10.8: kopie na Disk stačí 7 dní stará', soubor: 'lib/zalohovani.mjs',
@@ -2788,7 +2788,7 @@ const MUTACE = [
     nahrad: "  const c = Math.floor(p.m2);",
     proc: 'číslo v kartě by se u x,5–x,99 m² lišilo od obsahu schválení' },
   { nazev: 'H2 B192: okno hesla se prodlužuje každým uložením', soubor: '../src/ui/online_ui.js',
-    hledej: "  const zPameti = !!ZOBRAZENI_HESLO.h && Date.now() < ZOBRAZENI_HESLO.plati;",
+    hledej: "  const zPameti = onlineZobrazeniHesloPlatne();",
     nahrad: "  const zPameti = false;",
     proc: 'heslo správce by v paměti stránky leželo libovolně dlouho (B192)' },
   /* B189 (19. 10. 2026): tlačítko SoD realizace zhasne bez režimu DPH. Hlídá test_sod_en (2c). */

@@ -1051,12 +1051,29 @@ function onlineUlozZobrazeniTise() {
  * s hláškou (panel ji ukáže u „Uložit teď", ostatní místa přes onlineZprava)
  * a matice zůstane v paměti k dalšímu pokusu. */
 const ZOBRAZENI_HESLO_MS = 10 * 60 * 1000;
-const ZOBRAZENI_HESLO = { h: '', plati: 0, dotaz: null };
+const ZOBRAZENI_HESLO = { h: '', plati: 0, dotaz: null, casovac: null };
 function onlineZobrazeniHesloZapomen() {
   ZOBRAZENI_HESLO.h = ''; ZOBRAZENI_HESLO.plati = 0;
+  if (ZOBRAZENI_HESLO.casovac) { clearTimeout(ZOBRAZENI_HESLO.casovac); ZOBRAZENI_HESLO.casovac = null; }
+}
+/* K3-N8 (audit K3, dávka O5 20. 10. 2026): heslo se po vypršení okna MAŽE
+ * (časovač + při každém dotazu) — dřív leželo čitelné do odhlášení, jen se
+ * nepoužilo. Okno se nastavuje jen čerstvě zadanému heslu. */
+function onlineZobrazeniHesloZapamatuj(h) {
+  onlineZobrazeniHesloZapomen();
+  ZOBRAZENI_HESLO.h = h; ZOBRAZENI_HESLO.plati = Date.now() + ZOBRAZENI_HESLO_MS;
+  ZOBRAZENI_HESLO.casovac = setTimeout(onlineZobrazeniHesloZapomen, ZOBRAZENI_HESLO_MS + 1000);
+}
+function onlineZobrazeniHesloPlatne() {
+  if (ZOBRAZENI_HESLO.h && Date.now() >= ZOBRAZENI_HESLO.plati) onlineZobrazeniHesloZapomen();
+  return !!ZOBRAZENI_HESLO.h;
+}
+/* Obnova s maticí: heslo z paměti okno neprodlužuje (cesta, kterou B192 nepokryl). */
+function onlineZobrazeniHesloPoObnove(h, zPameti) {
+  if (h && !zPameti) onlineZobrazeniHesloZapamatuj(h);
 }
 function onlineZobrazeniHeslo(text) {
-  if (ZOBRAZENI_HESLO.h && Date.now() < ZOBRAZENI_HESLO.plati) return Promise.resolve(ZOBRAZENI_HESLO.h);
+  if (onlineZobrazeniHesloPlatne()) return Promise.resolve(ZOBRAZENI_HESLO.h);
   if (!ZOBRAZENI_HESLO.dotaz) {
     ZOBRAZENI_HESLO.dotaz = Promise.resolve(dotazHeslo(text || ('Změna nastavení zobrazení řídí i to, kam server '
       + 'pustí obchodníka a vedoucího (CRM, náklady, ceník v zakázce). Potvrďte ji svým heslem '
@@ -1067,13 +1084,13 @@ function onlineZobrazeniHeslo(text) {
   return ZOBRAZENI_HESLO.dotaz;
 }
 async function onlineZobrazeniPost() {
-  const zPameti = !!ZOBRAZENI_HESLO.h && Date.now() < ZOBRAZENI_HESLO.plati;
+  const zPameti = onlineZobrazeniHesloPlatne();
   const h = await onlineZobrazeniHeslo();
   if (!h) throw new Error('Nastavení zobrazení se neuložilo — bez vašeho hesla ho nelze potvrdit. '
     + 'Uložte ho znovu („Uložit teď" v Nastavení → Zobrazení) a heslo zadejte.');
   try {
     const d = await onlineApi('/api/zobrazeni', { matice: NAST.zobrazeni, hesloSpravce: h });
-    if (!zPameti) { ZOBRAZENI_HESLO.h = h; ZOBRAZENI_HESLO.plati = Date.now() + ZOBRAZENI_HESLO_MS; }   // B192: jen čerstvě zadané heslo
+    if (!zPameti) onlineZobrazeniHesloZapamatuj(h);   // B192: jen čerstvě zadané heslo
     return d;
   } catch (e) {
     if (e && e.data && e.data.kod === 'hesloSpravce') onlineZobrazeniHesloZapomen();
@@ -2818,7 +2835,7 @@ function onlineObnovaProved() {
     const casti = onlineObnovaCasti();
     const hesloUcty = o.zdrojTyp !== 'soubor' && casti.includes('uzivatele');
     const hesloMatice = casti.includes('zobrazeni') && (o.zdrojTyp !== 'soubor' || onlineObnovaNeseMatici(o.soubor));
-    let hesloSpravce;
+    let hesloSpravce, hesloZPameti = false;
     if (hesloUcty) {
       hesloSpravce = await dotazHeslo('Obnova vrátí účtům uživatelů stav z otisku včetně hesel'
         + (hesloMatice ? ' a nastavení zobrazení (práva obchodníka a vedoucího)' : '') + '. '
@@ -2828,6 +2845,7 @@ function onlineObnovaProved() {
         return false;
       }
     } else if (hesloMatice) {
+      hesloZPameti = onlineZobrazeniHesloPlatne();
       hesloSpravce = await onlineZobrazeniHeslo('Obnova přepíše nastavení zobrazení, které řídí i to, kam server '
         + 'pustí obchodníka a vedoucího (CRM, náklady, ceník v zakázce). Potvrďte ji svým heslem '
         + '(tím, kterým se přihlašujete do aplikace).');
@@ -2870,7 +2888,7 @@ function onlineObnovaProved() {
         if (chybaDavky) throw new Error('dávka ' + (hotovo + 1) + ' z ' + davky.length + ' selhala (' + chybaDavky.message
           + '); zapsáno bylo ' + hotovo + ' dávek, rejstřík je přestavený a stav před obnovou leží v otisku ' + otiskPred + '.');
       }
-      if (hesloMatice) { ZOBRAZENI_HESLO.h = hesloSpravce; ZOBRAZENI_HESLO.plati = Date.now() + ZOBRAZENI_HESLO_MS; }
+      if (hesloMatice) onlineZobrazeniHesloPoObnove(hesloSpravce, hesloZPameti);   // K3-N8
       o.nahled = null;
       const zprava = 'Databáze obnovena: zapsáno ' + (r.nove + r.prepsane) + ' záznamů (' + r.nove + ' nových, '
         + r.prepsane + ' přepsaných), ' + r.preskocene + ' přeskočeno. ' + upoz.join(' ');
