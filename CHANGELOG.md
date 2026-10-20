@@ -10,6 +10,38 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ## v19.10.10 — B194: zámek mutačních běhů a výpis padlých kontrol výchozího stavu (větev claude/f1-test-vyjimky)
 
+**Celé kolo K3 nad 1b0e2f7 (v19.10.10, 19.–20. 10. 2026; dávka K3, koordinace „ŘÍDÍCÍ 19.10 noc“) — 1 PŘEŽIVŠÍ MUTACE SERVERU (prázdný test B58, kód v pořádku):**
+build OK (verze odpovídá dni commitu); sady **279 prošlo / 0 selhalo / 6 přeskočeno**
+(285 sad; `test.js` + 5 harnessů bez `KNG_PODKLADY` — `overit_manual`,
+`overit_nabidka_proj_word`, `overit_sablona`, `overit_sablony_online`, `overit_sod`);
+mutace jádra **291/291**, otisky obou jader po běhu souhlasí; mutace serveru
+**586/587**, 0 chybně zadaných; statické kontroly **3/3**.
+Zbývá jen J. V. lokálně: sady s firemními podklady (šablony z Disku) a `test.js` s ostrým ceníkem.
+- **Přeživší: „B58: obnova zapíše smazání i u živého účtu“** (`functions/obnova.mjs`).
+  Kód obnovy je beze změny a v pořádku, vyprázdnil se test: od #151 N1 (v19.10.5)
+  nese vynucený otisk klíč `RRRR-MM-DDTHHMMSS-rucne`, ale `netlify/test_obnova.mjs:553`
+  zapisuje podvržený otisk pod `v2.den + 'T000001-pred-obnovou'`. To je neplatný klíč
+  (`OTISK_KLIC`), obnova ho odmítne a kontrola „živý účet se do knihy smazaných
+  nezapíše“ projde naprázdno. Nález **K3-N19** (nízký), oprava testu jde bez J. V.
+- **Průběh:** celé kolo zastavil 2h strop úlohy na pozadí na začátku mutací serveru
+  (po sadách a celém jádru). Odpojený opakovaný běh zanikl při restartu kontejneru
+  (~18:27 UTC): zmutovaný `netlify/functions/prihlaseni.mjs` vrácen `git checkout`
+  na commit, zámek `.mutace_bezi.json` převzat. Server se proto pouštěl po částech
+  filtrem souboru: `functions/` 191, `lib/` 134, `../` 262 (součet 587, ověřeno
+  výpisem „Mutací k ověření“). Část `../` opět zastavil strop po 182 mutacích
+  (SIGTERM, skript soubor vrátil); pořadí 183–262 dopuštěno 18 filtry podle štítku
+  názvu (P12, B62, B80, B89, S5, B152, S7, S9, #380, #366, S13, B180, V7-N1, B192,
+  B189, B171, B175, B186 — pokrývají všech 80, 12 mutací proběhlo podruhé): 92/92.
+  Žádná mutace nebyla přerušena uprostřed ověření, aniž by se opakovala. Pracovní
+  kopie po každé části čistá.
+- **Bezpečnostní audit `c9577ed..1b0e2f7`:** `podklady/K3_AUDIT_19_10.md` — 0 kritických,
+  0 vysokých, **3 střední** (K3-N1 retenci záloh odemkne nepodložený záznam
+  `kopie-disk` od klienta; K3-N2 odeslaná nabídka tiskne aktuální věty kalendáře,
+  SoD a texty PROJ z Firmy, nezmrazují se; K3-N3 B191 nekryje šablonu, ze které
+  značky `CIN_*` zmizely úplně), 9 nízkých (vč. K3-N19), 7 informativních.
+  Rozhodnutí J. V. chtějí K3-N2 (zmrazovat vs. mez), heslo správce u `kopie-disk`
+  a u Firmy (K3-N1, K3-N15), čísla limitů a prahů (K3-N4, K3-N13). Ostatní jdou opravit bez něj.
+
 **Kolo `testovaci_kolo.sh --bez-mutaci` nad 3b50553 (v19.10.10, 19. 10. 2026) — VŠE ZELENÉ:** sady 278 prošlo / 0 selhalo / 6 přeskočeno (`test.js`, 5 harnessů bez `KNG_PODKLADY`), statické 3/3; `--kontrola` jádro 280, server 587 úseků.
 
 Dávka F1 (koordinace „ŘÍDÍCÍ 19.10“), nález z 19. 10. 2026 ~13:07 UTC:
