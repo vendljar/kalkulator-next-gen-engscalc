@@ -43,7 +43,7 @@ o odsouhlasené studii):
 **Testy:** `src/test_d1_dpz_bez_studie.js` 88 kontrol (online CZ se studií / bez / jen projednání,
 symboly CZ/EN/DE/FR, slovník, `--proj-v7` na syntetické šabloně ve stavbě v5 vč. chyb kotev, vyplnění
 bez studie / se studií / jen projednání, smlouva PROJ, Q1, Q2, kontrola); pojistka — před opravou bodu 1
-selže na prvním testu, před Q1–Q3 17 FAIL a pád sady. Cílené mutace „D1: …“ **13/13**. `test_kontroly` a
+selže na prvním testu, před Q1–Q3 17 FAIL a pád sady. Cílené mutace „d1“ **38/38** (+ Q2 5/5); kolo `--bez-mutaci` 282/0/6. `test_kontroly` a
 `overit_lista` počítají 38 pravidel.
 
 ### Další místa se studií — rozhodnutí J. V. 20. 10. 2026 (~11:05), opraveno (#441)

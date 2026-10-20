@@ -13,9 +13,10 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 Dávka D1 (koordinace „ŘÍDÍCÍ 19.10“), základ `claude/integrace-16-10` 5dc28d1 (v20.10.1).
 Souběžně O7 má v20.10.2. Podklad `podklady/D1_SIKORA_19_10.md`, roadmapa #440–#443 (předběžná id).
 
-**Ověření (20. 10. 2026):** `testovaci_kolo.sh --bez-mutaci` **282 prošlo / 0 selhalo / 6 přeskočeno**
-(`test.js` + 5 harnessů bez `KNG_PODKLADY`), statické **3/3**; `--kontrola` jádro 324 úseků; cílené mutace
-`mutace_jadro.mjs "d1:"` **13/13** chycených, pracovní kopie po běhu beze změny.
+**Ověření (20. 10. 2026, po všech rozhodnutích J. V.):** `testovaci_kolo.sh --bez-mutaci` **282 prošlo /
+0 selhalo / 6 přeskočeno** (`test.js` + 5 harnessů bez `KNG_PODKLADY`), statické **3/3**; `--kontrola`
+jádro 347 úseků; cílené mutace `mutace_jadro.mjs "d1"` **38/38** + po dosazení znění Q2 `"d1 q2"` **5/5**
+chycených, pracovní kopie po každém běhu beze změny.
 
 - **Bod 1 — nabídka PROJ bez studie proveditelnosti (#440, opraveno):** úvod bloku
   DOKUMENTACE PRO POVOLENÍ ZÁMĚRU (DPZ) zní bez studie v nabídce „Dokumentace pro povolení

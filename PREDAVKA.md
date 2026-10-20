@@ -15,6 +15,7 @@ CHANGELOG v20.10.3, roadmapa #440–#443 uzavřené (předběžná id).
   nápověda, Detail, TS „šířka skla N mm“ (EN/DE/FR), příručka.
 - **#443 uzavřeno beze změny** (J. V. 20. 10. ~11:40: dnešní profily portálu jsou správně); větev
   `claude/d1-sikora-navrh-profily` se nepoužije — smaže J. V.
+- **Kolo `--bez-mutaci` (konečné, 20. 10. ~12:00):** 282 / 0 / 6 přeskočeno, statické 3/3; mutace d1 38/38 + d1 q2 5/5.
 - **Ke slučování:** CHANGELOG / `verze.txt` / `manual/obsah.json` (O7 v20.10.2 — novější nahoru),
   `mutace_jadro.mjs` (blok D1 před #367b), `src/kontroly.js` (38 pravidel v `test_kontroly.js` a `overit_lista.mjs`;
   přidá-li O7 pravidlo, sečíst), `roadmapa/roadmap.json` (#440–#443 na konci), `src/podminky.js` (výchozí termíny PROJ).
