@@ -373,4 +373,10 @@ dotýkají serveru, takže `netlify/mutace.mjs`), kolo `nastroje/testovaci_kolo.
 - Kód: beze změny.
 - Roadmapa: přidána položka #447 (předběžné id), stav `ceka` na souhlas J. V.
 - Artefakt pro J. V.: https://claude.ai/artifact/MNaTnXQ4847f2rNiAT9br7 („Controlling v kalkulátoru“).
-- Další krok: dávka C1 (schváleno J. V. 20. 10.).
+- **C1 hotová (20. 10. 2026, commit f377c80):** `src/controlling.js` (číselník, výchozí mapování, rozvrh
+  OCK/PROJ, kapitoly, záznam), `/api/controlling` (jen admin, verze s historií, bez hesla správce — viz
+  `BEZPECNOST_MEZE.md`), záloha + kopie na Disk + obnova s očistou. Testy: src 111, server 31, test_prava 863,
+  mutace #447 11/11, kolo `--bez-mutaci` 248/0/41 přeskočeno (Playwright), harnessy online 253, nastavení 54,
+  program 79 — vše zelené.
+- Další krok: dávka **C2** (záložka Nastavení → Controlling, upozornění při zveřejnění ceníku s možností zařadit,
+  export jedné zamčené řídící varianty XLSX/CSV) — čeká na pokyn J. V.

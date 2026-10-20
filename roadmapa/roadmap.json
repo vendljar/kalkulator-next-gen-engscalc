@@ -6870,7 +6870,7 @@
    "hotovoKdyz": "Admin v Nastavení → Controlling spravuje skupiny a mapování, test úplnosti hlídá nové klíče, export po kapitolách jde stáhnout pro variantu i za období; práva drží server.",
    "kde": "`podklady/CONTROLLING_NAVRH_20_10.md`, větev `claude/controlling-navrh`",
    "zavisi": [],
-   "pozn": "Předběžné id (přidělí koordinace při sloučení). A. Mácová je mimo do prosince — rozvržení PROJ a budoucí účty doplní pak."
+   "pozn": "Předběžné id (přidělí koordinace při sloučení). Rozhodnutí J. V. J1–J11 20. 10. 2026; C1 HOTOVO 20. 10. (f377c80: model, /api/controlling, záloha a obnova, mutace 11/11). Zbývá C2–C4. A. Mácová je mimo do prosince — rozvržení PROJ a budoucí účty doplní pak."
   }
  ],
  "meta" : {
