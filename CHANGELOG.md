@@ -39,7 +39,8 @@ verze zůstává v20.10.8. Nálezy z auditu K4 (`podklady/K4_AUDIT_20_10.md` ve 
 - **#454 — prázdný test po V7-N2.** `src/test_sod_en.js` „česká DPH + administrativní budova“ běžel s výchozím
   režimem (od V7-N2 přenesená povinnost), takže mutace „prohlášení o snížené sazbě i mimo stavbu pro bydlení“
   přežila. Test volí českou DPH výslovně a ověří i bytový dům (prohlášení má). `node mutace_jadro.mjs "snížené
-  sazbě"`: před úpravou 1 nechycená, po ní 2/2. Kód aplikace beze změny.
+  sazbě"`: před úpravou 1 nechycená, po ní 2/2; mutace „DPH“ 15/15. Kód aplikace beze změny.
+- Kolo `--bez-mutaci`: sady 286 prošlo / 0 selhalo / 6 přeskočeno, statické kontroly 4/4.
 - Mimo rozsah (zůstávají z K4): K4-N10 (přetečení `stari_hodin`), K4-N11 (`if` na `main` ve workflow), zbytek
   K4-N19 (glob ve `--vynechat`), K4-N20 (Rulesets — J. V.).
 

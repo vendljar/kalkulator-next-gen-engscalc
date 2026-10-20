@@ -8,7 +8,8 @@ integrace nic — slučuje koordinace** (noční ŘÍDÍCÍ session_01By6bWivtf2
   hlavní linii chráněných větví), #453 K4-N3 (+K4-N9: mazání `--force-with-lease` plným ref), #454 test „česká DPH +
   administrativní budova“ výslovně s českou DPH. Workflow `smazat_vetve.yml` předává `--github-repo` a `GH_TOKEN`.
 - **Ověření:** `nastroje/test_sloucene_vetve.sh` 33/0 (původní skript 12/21); ruční mutace skriptu 6/6 chycené;
-  `mutace_jadro.mjs "snížené sazbě"` 2/2 (před 1 nechycená). Kolo `--bez-mutaci` a cílené mutace — viz commit.
+  `mutace_jadro.mjs "snížené sazbě"` 2/2 (před 1 nechycená), mutace jádra „DPH“ 15/15. Kolo `--bez-mutaci`:
+  sady 286 / 0 / 6 přeskočeno (firemní podklady), statické 4/4 — vše zelené.
 - **Ke slučování:** CHANGELOG (oddíl nahoře), roadmapa (+3 položky na konci `polozky`), PREDAVKA.
 - **Pozor:** workflow se z formuláře spouští z `main` — oprava platí až po sloučení do `main`; do té doby W2 jen
   s `jen_vypsat` a běžící dávky do `vynechat`. Zda GITHUB_TOKEN smí číst `/activity`, se ověří prvním během
