@@ -208,5 +208,33 @@ for (const fixes of [true, false]) {
   }
 }
 
+/* K3-N17 (rozhodnutí J. V. 20. 10. 2026, dávka O7): rozměry můstku „jen
+ * upozornit". Velký rozměr se přijme a započte, kontrola mustekRozmer
+ * upozorní nad KONTROLY_MUSTEK_MAX_MM (6000 mm); nečíselný údaj jádro bere
+ * jako prázdný a kontrola to řekne. Upozornění, ne zábrana.
+ * Před opravou (bez pravidla mustekRozmer) selže 5 kontrol. */
+{
+  const kt = require('./kontroly.js');
+  const ZAS = 'ZASTŘEŠENÍ ŠACHTY (EXT)';
+  const zas = r => r.sekce.hrubaOck.find(x => x.origNazev === ZAS);
+  const najdi = (zr) => kt.kontrolyProved({ zadani: zr.z, vysledek: zr.r, cenik: CENIK }).nalezy.find(x => x.kod === 'mustekRozmer');
+  test('K3-N17 O7: práh nezvyklého rozměru můstku je 6000 mm', kt.KONTROLY_MUSTEK_MAX_MM === 6000);
+  const velky = spocti({ mustkyKs: 5, mustekSirkaMm: 13000, mustekHloubkaMm: 900 });
+  const n = najdi(velky);
+  test('K3-N17 O7: šířka 13 000 mm → upozornění (ne zábrana) s rozměrem a prahem',
+    !!n && n.uroven !== kt.KONTROLY_UROVEN_ZABRANA && /šířka 13\s000 mm je nezvykle velká/.test(n.text) && /6\s000 mm/.test(n.text), n && n.text);
+  test('K3-N17 O7: velký rozměr se přijme a započte (plocha 13,2 × 0,9 nad šachtou)',
+    Math.abs(zas(velky.r).mnozstvi - (2.76165 + 13.2 * 0.9)) < 1e-6, zas(velky.r).mnozstvi);
+  test('K3-N17 O7: hranice — 6000 mm mlčí, 6001 mm upozorní',
+    !najdi(spocti({ mustkyKs: 5, mustekSirkaMm: 6000, mustekHloubkaMm: 6000 }))
+    && !!najdi(spocti({ mustkyKs: 5, mustekSirkaMm: 1300, mustekHloubkaMm: 6001 })));
+  const text = najdi(spocti({ mustkyKs: 5, mustekSirkaMm: 'abc', mustekHloubkaMm: 900 }));
+  test('K3-N17 O7: nečíselný rozměr → upozornění, že se bere jako nevyplněný', !!text && /„abc" není platné číslo/.test(text.text), text && text.text);
+  test('K3-N17 O7: Infinity → upozornění', !!najdi(spocti({ mustkyKs: 5, mustekSirkaMm: Infinity, mustekHloubkaMm: 900 })));
+  test('K3-N17 O7: běžné rozměry a prázdno mlčí', !najdi(spocti({ mustkyKs: 5, mustekSirkaMm: 1300, mustekHloubkaMm: 900 }))
+    && !najdi(spocti({ mustkyKs: 5 })));
+  test('K3-N17 O7: bez můstku mlčí i s velkým rozměrem', !najdi(spocti({ mustekSirkaMm: 99999 })));
+}
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

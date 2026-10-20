@@ -8,6 +8,74 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v20.10.2 — O7: rozhodnutí J. V. k auditu K3 (větev claude/o7-k3-rozhodnuti)
+
+Dávka O7 (koordinace „ŘÍDÍCÍ 19.10“), základ `claude/integrace-16-10` 5dc28d1
+(v20.10.1 = test), podklad `podklady/K3_AUDIT_19_10.md`, rozhodnutí J. V.
+20. 10. 2026 (dialog). Roadmapa #437 uzavřena.
+
+- **K3-N2 — odeslaná nabídka se nemění ani po změně Firmy.** Při PRVNÍM
+  zamčení varianty se do ní opíše efektivní znění vět platebního kalendáře
+  a dílů vět SoD (`data.kryci.zmrazenoPodminky`, kryciZmrazPodminky) a textů
+  nabídky PROJ včetně `dolozkyTisk` (`data.kryciProj.zmrazenoPodminky`,
+  kryciProjZmrazPodminky). Dotisk zamčené varianty (nabídka OCK v14, SoD
+  realizace, online nabídka i Word PROJ) čte snímek (`podminkyEfZmrazene`);
+  bez snímku — varianty zamčené před v20.10.2 — tiskne aktuální Firmu jako
+  dosud. Snímek prochází týmiž pravidly jako Firma (poškozené pole = továrna).
+  Data zamčené varianty hlídá server (zamekDataPorovnani), snímek nikdo
+  nepřepíše. Test `src/test_o7_zmrazeni.js`.
+- **K3-N1 — kopie na Disk s heslem správce a jen do „_Zaloha Netlify DB“.**
+  `POST /api/zaloha_vynuceno {akce:'kopie-disk'}` chce `hesloSpravce`
+  (potvrdHesloSpravce, jako matice a obnova) a odmítne jinou složku (400,
+  složka se kontroluje před heslem, aby nespotřebovala pokus). Záznam nese
+  `potvrzeno: 'heslo-spravce'`; retenci odemkne jen takový (kopieDiskPodlozena)
+  — záznamy před v20.10.2 ne, retence počká na novou kopii. Klient se zeptá
+  na heslo dřív, než cokoli stáhne, do jiné složky nezapíše a její výběr
+  zapomene; týdenní automatika po přihlášení se zeptá taky (zrušení = nic).
+- **K3-N4 — limit vynucených otisků 1 za 10 min a 20 za 24 h** (ruční i při
+  přihlášení dohromady, klouzavě; `vynuceneLimit` z klíčů otisků). Nad limit
+  429 `kod:'limitZalohy'` s časem, kdy to půjde (Praha). Noční otisk a otisk
+  před obnovou se nepočítají a limit je nezastaví. Automatická záloha po
+  přihlášení 429 nehlásí.
+- **K3-N13 — pojistka retence.** Nový noční otisk s méně než 50 % zakázek
+  nebo účtů proti předchozímu NOČNÍMU (nejvýš 7 denních klíčů zpět) →
+  retence se ten den přeskočí, `console.warn` VAROVÁNÍ v logu noční funkce,
+  záznam `retence-varovani` (GET přehledu ho vrací) a hlídka v Nastavení →
+  Databáze i po přihlášení správce 30 dní (`uloRetenceVarovani`).
+- **K3-N15 — beze změny** (Firma dál jen s relací administrátora), zapsáno
+  v `BEZPECNOST_MEZE.md` spolu s K3-N1, N4 a N13.
+- **K3-N18 — souhrnný strop podmínek ve Firmě 500 kB** (UTF-8 bajty JSON,
+  `PODMINKY_MAX_B`): vada v `podminkyVady` → server odmítne zveřejnění
+  srozumitelnou hláškou, formulář v Nastavení ji ukáže mezi vadami.
+- **K3-N17 — rozměr můstku jen upozornit.** Nová kontrola `mustekRozmer`
+  (38. pravidlo): šířka nebo hloubka > 6000 mm (výchozí volba,
+  `KONTROLY_MUSTEK_MAX_MM`) nebo nečíselná / nekonečná hodnota → upozornění,
+  ne zábrana; hodnota se do výpočtu bere, jak je (nečíselná = prázdná, O5).
+
+**Testy s pojistkou (před → po):** `src/test_o7_zmrazeni.js` 21/13 → 34/0
+(bez opravy podminky.js test spadne); `src/test_mustky.js` 68/5 → 73/0;
+`netlify/test_zalohy.mjs` 87/17 → 130/0; `src/test_o7_kopie_klient.js`
+9 selhání + pád → 16/0; `overit_online.mjs` +16 kontrol O7 (266/0, třikrát
+po sobě). `test_obnova.mjs` a `test_zalohy.mjs` pořizují vynucené otisky
+s posunem hodin o 11 min, `overit_online.mjs` posouvá klíče otisků před
+ruční zálohou (limit K3-N4); 429 mezi očekávanými chybami konzole.
+
+**Mutace:** jádro „O7“ 16, server „O7“ 25 (+ opravené zadání dvou mutací
+#151, jejichž kód O7 změnil).
+
+**Ověření (20. 10. 2026, 10:27–12:17 UTC) — VŠE ZELENÉ po dvou doplněních:**
+cílené mutace jádro `O7` **16/16**, server `O7` **25/25**; server `#151`
+**41/42** — přežila „#151 N6: záznam kopie bez kontroly jména souboru“ (test
+posílal neplatné jméno bez složky, 400 vracela už kontrola složky K3-N1) →
+test doplněn o správnou složku a heslo, opakování `#151 N6` **11/11**.
+První kolo `--bez-mutaci` 282/1/6 (`overit_lista.mjs` čekal 37 pravidel
+kontrol, s `mustekRozmer` je 38) → opraveno; konečné kolo `--bez-mutaci`
+nad 56aa5cd: sady **283 prošlo / 0 selhalo / 6 přeskočeno**
+(`test.js` + 5 harnessů bez `KNG_PODKLADY`), statické **3/3**; `--kontrola`
+jádro 327, server 663 úseků. Pracovní kopie po každém běhu čistá.
+
+---
+
 ## v20.10.1 — O5: opravy nálezů auditu K3 bez rozhodnutí J. V. (větev claude/o5-k3-nalezy)
 
 Dávka O5 (koordinace „ŘÍDÍCÍ 19.10 noc“), základ `claude/integrace-16-10` 3b49d57

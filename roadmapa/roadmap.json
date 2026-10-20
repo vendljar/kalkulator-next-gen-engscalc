@@ -6844,15 +6844,15 @@
   {
    "id": "437",
    "vlna": "B",
-   "stav": "blokovano",
+   "stav": "hotovo",
    "dulezitost": "stredni",
    "slozitost": "M",
-   "cekaNa": "J. V.: rozhodnutí k nálezům auditu K3 (doporučení v podklady/K3_AUDIT_19_10.md, oddíl Doporučený postup)",
-   "nazev": "Audit K3 — nálezy čekající na rozhodnutí J. V. (K3-N2, N1 heslo a složka, N4, N13, N15, N18, mez rozměru můstku)",
-   "proc": "Audit K3 (19. 10. 2026): část nálezů mění chování pro uživatele nebo potřebuje čísla — bez J. V. se nedělají.",
-   "detail": "K3-N2 odeslaná nabídka tiskne aktuální věty z Firmy (doporučení: zmrazit při prvním zamčení); K3-N1 heslo správce u záznamu kopie-disk a omezení na složku „_Zaloha Netlify DB“ (doporučení: obojí ano); K3-N4 limit četnosti ručních otisků (doporučení 1 / 10 min, 20 / den); K3-N13 práh smysluplnosti otisku před retencí (doporučení pokles pod 50 %); K3-N15 heslo správce i u POST /api/firma (doporučení ano); K3-N18 souhrnný strop velikosti podmínek (číslo); K3-N17 horní mez rozměru můstku (číslo).",
-   "hotovoKdyz": "Rozhodnutí J. V. zapsaná a promítnutá do kódu s testy, nebo zapsaná jako vědomé meze v BEZPECNOST_MEZE.md.",
-   "kde": "`podklady/K3_AUDIT_19_10.md`",
+   "hotovoV": "v20.10.2",
+   "nazev": "Audit K3 — rozhodnutí J. V. (K3-N2 zmrazení, N1 heslo a složka, N4 limit otisků, N13 pojistka retence, N15, N18 strop, N17 rozměr můstku)",
+   "proc": "Audit K3 (19. 10. 2026): část nálezů mění chování pro uživatele nebo potřebuje čísla — rozhodl J. V. 20. 10. 2026 (dialog).",
+   "detail": "HOTOVO v20.10.2 (dávka O7, větev claude/o7-k3-rozhodnuti). K3-N2: při prvním zamčení se věty platebního kalendáře, díly vět SoD (data.kryci.zmrazenoPodminky) a texty nabídky PROJ vč. dolozkyTisk (data.kryciProj.zmrazenoPodminky) uloží do varianty, dotisk je čte odtud; starší zamčené varianty tisknou aktuální Firmu. K3-N1: záznam kopie-disk jen s heslem správce a ze složky „_Zaloha Netlify DB“, retenci odemkne jen záznam se značkou potvrzeno. K3-N4: vynucené otisky 1 / 10 min a 20 / 24 h → 429 s časem; noční a před obnovou se nepočítají. K3-N13: noční otisk s < 50 % zakázek nebo účtů proti předchozímu nočnímu → retence přeskočena, varování v logu a v hlídce administrace (30 dní). K3-N15 beze změny (BEZPECNOST_MEZE.md). K3-N18: strop podmínek 500 kB. K3-N17: kontrola mustekRozmer upozorní nad 6000 mm a u nečíselného rozměru. Testy src/test_o7_zmrazeni.js, src/test_o7_kopie_klient.js, netlify/test_zalohy.mjs, src/test_mustky.js, overit_online.mjs; mutace „O7: …“.",
+   "hotovoKdyz": "Rozhodnutí J. V. promítnutá do kódu s testy s pojistkou, K3-N15 zapsané jako vědomá mez, kolo --bez-mutaci zelené, cílené mutace O7 bez přeživší.",
+   "kde": "`src/podminky.js`, `src/kryci.js`, `src/kryci_proj.js`, `src/nabidka_proj.js`, `src/kontroly.js`, `netlify/lib/zalohovani.mjs`, `netlify/functions/zaloha_vynuceno.mjs`, `netlify/functions/zaloha_nocni.mjs`, `src/ui/online_ui.js`, `src/uloziste.js`, `BEZPECNOST_MEZE.md`",
    "zavisi": [
     "436"
    ],

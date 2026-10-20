@@ -1,3 +1,23 @@
+# Předávka — 20. 10. 2026: dávka O7 (v20.10.2), větev `claude/o7-k3-rozhodnuti` — rozhodnutí J. V. k auditu K3
+
+Nad `claude/integrace-16-10` 5dc28d1 (v20.10.1 = test). Do integrace / `test` nic — slučuje koordinace
+(„ŘÍDÍCÍ 20.10“ session_01Ln2mMn7iC6W9ECztHTJpZe, pořadí O7 → D1 → D2). Podrobnosti: CHANGELOG v20.10.2,
+roadmapa #437 (hotovo), `BEZPECNOST_MEZE.md` (K3-N1, N4, N13, N15).
+
+- **Hotovo:** K3-N2 zmrazení vět kalendáře, dílů SoD a textů PROJ (vč. dolozkyTisk) při prvním zamčení;
+  K3-N1 kopie na Disk s heslem správce a jen ze „_Zaloha Netlify DB“; K3-N4 limit 1/10 min a 20/24 h (429);
+  K3-N13 pojistka retence < 50 % + hlídka; K3-N15 beze změny (mez); K3-N18 strop podmínek 500 kB;
+  K3-N17 kontrola mustekRozmer (> 6000 mm, nečíselné).
+- **Výchozí volby (J. V. se neptal):** limit 24 h klouzavě; hlídka varování retence 30 dní; předchozí noční
+  otisk = nejbližší denní klíč se zdrojem nocni-otisk (max 7 klíčů zpět); záznamy kopie před v20.10.2
+  retenci neodemknou (čeká se na novou kopii s heslem); týdenní automatika kopie se po přihlášení na heslo
+  zeptá dialogem; práh můstku 6000 mm.
+- **Ověření:** kolo `--bez-mutaci` 283/0/6, statické 3/3; mutace jádro O7 16/16, server O7 25/25,
+  #151 41/42 → test doplněn, #151 N6 11/11.
+- **Ke slučování:** CHANGELOG / `verze.txt` / `manual/obsah.json` (oddíly všech dávek, novější nahoru),
+  `mutace_jadro.mjs` a `netlify/mutace.mjs` (bloky O7 na konci MUTACE), `src/test_kontroly.js` a
+  `overit_lista.mjs` (počet pravidel 38 — přidá-li jiná dávka pravidlo, sečíst).
+
 # Předávka — 19. 10. 2026: dávka W1 (v19.10.9), větev `claude/w1-sablona-proj-v6` — šablona Wordu PROJ v6
 
 Nad `claude/v8-367-firma` (v19.10.7, `4d9f67a`). Do integrace / `test` nic — slučuje koordinace
