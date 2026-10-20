@@ -6915,7 +6915,7 @@
    "stav": "blokovano",
    "dulezitost": "stredni",
    "slozitost": "S",
-   "cekaNa": "J. V. / Jirka L.: potvrzení dimenzí portálu (EXT sloupek portálu 80×40, INT příčník portálu 40×40) a otázky Q5–Q11 v podklady/D1_SIKORA_19_10.md",
+   "cekaNa": "J. V. / Jirka L.: potvrzení dimenzí portálu (EXT sloupek portálu 80×40, INT příčník portálu 40×40) a otázky Q4–Q10 v podklady/D1_SIKORA_19_10.md",
    "nazev": "Výchozí dimenze profilů portálu: EXT sloupek portálu 80×40 (dnes 40×40), INT příčník portálu 40×40 (dnes 80×40)",
    "proc": "Postřeh D. Sikory (19. 10. 2026), „ještě to prověř s Jirkou L.“ — beze změny do potvrzení.",
    "detail": "Dnes PROFILY_VYCHOZI v src/engine.js (ext: sloupekPortal 40×40/3, precnikPortal 80×40/3; int: sloupekPortal 40×40/3, precnikPortal 80×40/3), DEFAULT_ZADANI = exteriér. Návrh = dva řádky (větev claude/d1-sikora-navrh-profily, nesloučit). Dopad zkušební ceník (šachta 1,5 × 1,55, 4 nástupiště): EXT zapuštěný bez světlíků 0 Kč (sloupek portálu má délku 0), se světlíky +0,6 %, předsazený +0,75 až +1,3 %; INT −0,8 až −1,1 %. Uložené zakázky se nemění.",

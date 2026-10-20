@@ -1,3 +1,20 @@
+# Předávka — 20. 10. 2026: dávka D1 (v20.10.3), větev `claude/d1-sikora` — postřehy D. Sikory 19. 10.
+
+Nad `claude/integrace-16-10` (5dc28d1, v20.10.1). Do integrace / `test` nic — slučuje koordinace
+(session_017KEALG3ppimL5fW2XswzrB); O7 má souběžně v20.10.2. Podklad `podklady/D1_SIKORA_19_10.md`,
+CHANGELOG v20.10.3, roadmapa #440 (hotovo), #441–#443 (čekají; předběžná id).
+
+- **Bod 1 hotovo:** úvod DPZ bez studie bez věty „navazuje na vzájemně odsouhlasenou STUDII…“ — online
+  (`src/nabidka_proj.js`), Word symbol `{{PROJ_DPZ_UVOD}}` + `nastroje/vyrob_sablony.js --proj-v7`
+  (šablonu v7 vyrobí J. V. z v6), slovník EN/DE/FR, kontrola `dpzUvodWordProj` (38 pravidel).
+  Test `src/test_d1_dpz_bez_studie.js` 51, mutace D1 13/13.
+- **Čeká na J. V.:** Q1–Q3 (hvězdička DPZ, termín DPZ, pevné bloky studie ve Wordu); bod 2 varianty A–C
+  šířky bočního světlíku (dnes 600 = sklo 1 680 − otvor 1 040 − 40, schválené 1. a 6. 10.); bod 3 dimenze
+  portálu Q4–Q10 — návrh ve větvi `claude/d1-sikora-navrh-profily` (NESLUČOVAT bez potvrzení Jirky L.).
+- **Ke slučování:** CHANGELOG / `verze.txt` / `manual/obsah.json` (O7 v20.10.2 — novější nahoru),
+  `mutace_jadro.mjs` (blok D1 před #367b), `src/kontroly.js` (nové pravidlo → počty 38 v `test_kontroly.js`
+  a `overit_lista.mjs`; přidá-li O7 pravidlo, sečíst), `roadmapa/roadmap.json` (#440–#443 na konci).
+
 # Předávka — 19. 10. 2026: dávka W1 (v19.10.9), větev `claude/w1-sablona-proj-v6` — šablona Wordu PROJ v6
 
 Nad `claude/v8-367-firma` (v19.10.7, `4d9f67a`). Do integrace / `test` nic — slučuje koordinace
