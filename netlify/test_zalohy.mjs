@@ -291,12 +291,38 @@ await zkus('N5', async () => {
     && !Z.kopieDiskCerstva({ kdy: 'x' }, ted) && !Z.kopieDiskCerstva(null, ted)
     && !Z.kopieDiskCerstva({ kdy: new Date(ted + 86400000).toISOString() }, ted));
   pamet.delete('zalohy/2028-10-19'); pamet.delete('zalohy/souhrn/2028-10-19');
-  await s.zapis(Z.KOPIE_DISK_KLIC, { kdy: new Date(ted - 3600000).toISOString(), soubor: 'otisk_2028-10-18.json' });
+  /* K3-N1 (20. 10. 2026): retenci odemkne jen PODLOŽENÝ záznam — kopie
+   * nočního otisku, který v úložišti je, s nenulovou velikostí a platným
+   * SHA-256. Záznam s polem navíc/chybějícím z prohlížeče nestačí. */
+  const kopiePodlozena = (kdy, otisk) => ({ kdy, soubor: 'otisk_' + otisk + '.json', velikostB: 1234,
+    sha256: 'b'.repeat(64), otisk, puvod: 'nocni-otisk', slozka: '_Zaloha Netlify DB' });
+  await s.zapis(Z.KOPIE_DISK_KLIC, kopiePodlozena(new Date(ted - 3600000).toISOString(), '2028-09-01'));
   /* selhání zápisu → nic se nemaže */
   const bez = await Z.retenceProved('2028-10-19', D);
   test('N5: nový otisk chybí (zápis selhal) → nesmaže se nic',
     bez.smazano.length === 0 && bez.chyby.length === 1 && (await s.seznam()).length === 11, bez);
   await s.zapis('2028-10-19', { zdroj: 'nocni-otisk' }); await s.zapis(Z.souhrnKlic('2028-10-19'), { porizena: 'x' });
+  const dobra = kopiePodlozena(new Date(ted - 3600000).toISOString(), '2028-09-01');
+  const nepodlozene = {
+    'velikost 0': { ...dobra, velikostB: 0 },
+    'bez velikosti': { ...dobra, velikostB: undefined },
+    'prázdné sha256': { ...dobra, sha256: '' },
+    'sha256 v jiném tvaru': { ...dobra, sha256: 'B'.repeat(64) },
+    'otisk null': { ...dobra, otisk: null, soubor: 'otisk_2028-10-19.json' },
+    'původ aktuální stav': { ...dobra, puvod: 'aktualni-stav' },
+    'otisk v úložišti není': { ...dobra, otisk: '2028-08-15', soubor: 'otisk_2028-08-15.json' },
+    'jméno souboru k jinému otisku': { ...dobra, soubor: 'otisk_2028-10-19.json' },
+    'vynucený otisk místo nočního': { ...dobra, otisk: '2028-07-01T101010-rucne' },
+  };
+  for (const [popis, z] of Object.entries(nepodlozene)) {
+    test('K3-N1: nepodložený záznam kopie (' + popis + ') retenci neodemkne', !Z.kopieDiskPodlozena(z, [...pamet.keys()].map(k => k.slice(7))));
+    await s.zapis(Z.KOPIE_DISK_KLIC, z);
+    const rr = await Z.retenceProved('2028-10-19', D, ted);
+    test('K3-N1: s nepodloženým záznamem (' + popis + ') se nesmaže nic a retence čeká',
+      rr.smazano.length === 0 && /retence čeká/.test(rr.ceka || '') && pamet.has('zalohy/2028-09-19'), rr);
+  }
+  test('K3-N1: podložený záznam retenci odemkne', Z.kopieDiskPodlozena(dobra, [...pamet.keys()].map(k => k.slice(7))));
+  await s.zapis(Z.KOPIE_DISK_KLIC, dobra);
   const r = await Z.retenceProved('2028-10-19', D);
   test('N5: smaže jen vybrané otisky i s jejich souhrny',
     JSON.stringify(r.smazano) === JSON.stringify(['2028-07-01T101010-rucne', '2028-09-02', '2028-09-19'])
@@ -308,7 +334,7 @@ await zkus('N5', async () => {
   const realNow = Date.now;
   const posun = Date.parse('2028-10-19T03:00:00Z');
   Date.now = () => posun;
-  pamet.set('zalohy/kopie-disk', JSON.stringify({ kdy: new Date(posun - 3600000).toISOString(), soubor: 'otisk_2028-10-18.json' }));
+  pamet.set('zalohy/kopie-disk', JSON.stringify(kopiePodlozena(new Date(posun - 3600000).toISOString(), '2028-09-01')));
   try {
   /* noční funkce bez čerstvé kopie: nic nesmaže a zaloguje čekání (v19.10.8) */
   const kopieZaznam = pamet.get('zalohy/kopie-disk');
@@ -368,6 +394,16 @@ await zkus('N6', async () => {
     && r.zaloha.uzivatele.some(u => u.email === 'obchodnik@priklad.cz' && u.role === 'Obchodník'));
   test('N6: kopie pro Disk nenese podpisy', !t.includes('PODPISDATA') && r.zaloha.podpisy === null);
   test('N6: kopie nese data databáze (zakázky, firma)', Object.keys(r.zaloha.zakazky || {}).length > 0 && !!r.zaloha.firma);
+  /* K3-N12 (O5): kopie bere části POVOLENÝM SEZNAMEM — nová část s tajemstvím
+   * na Disk sama neodejde. Pojistka: před opravou KOPIE_DISK_CASTI chybí
+   * a část navíc projde. */
+  test('K3-N12: část mimo povolený seznam do kopie pro Disk nejde',
+    !('noveTajne' in (Z.otiskProDisk({ porizena: 'x', zakazky: {}, uzivatele: [], noveTajne: 'TAJNE' }) || {})));
+  test('K3-N12: povolený seznam pokrývá všechny dnešní části zálohy (otisk i doplňky)',
+    Array.isArray(Z.KOPIE_DISK_CASTI) && [...Object.keys(await Z.zalohaDoplnky()), 'porizena', 'zdroj', 'kdo', 'program', 'firma',
+      'rejstrik', 'zakazky', 'uzivatele', 'sablony'].every(k => Z.KOPIE_DISK_CASTI.includes(k)), Z.KOPIE_DISK_CASTI);
+  test('K3-N12: kopie nese všechny povolené části otisku', Object.keys(r.zaloha).filter(k => k !== 'web')
+    .every(k => (Z.KOPIE_DISK_CASTI || []).includes(k)) && 'zakaznici' in r.zaloha && 'smazani' in r.zaloha, Object.keys(r.zaloha));
   test('N6: ?zdroj=nocni bez přihlášení správce 401/403', [401, 403].includes((await get(zalohaFn, 'http://x/api/zaloha?zdroj=nocni', '')).status));
   /* bez nočního otisku → aktuální stav v tomtéž tvaru */
   for (const k of [...pamet.keys()]) if (/^zalohy\/\d{4}-\d{2}-\d{2}$/.test(k)) pamet.delete(k);

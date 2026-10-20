@@ -1085,8 +1085,10 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
    * se nepřičte nic (kontrola `mustekStrecha` to řekne). Zakázka bez můstku
    * nebo s můstky jen níž má plochu beze změny — Model 1 tím 1:1 zůstává. */
   const mustekNahore = ext && mustky > 0 && nastupist > 1 && mustky >= nastupist - 1;
-  const mustekSirka = +z.mustekSirkaMm > 0 ? +z.mustekSirkaMm / 1000 : 0;
-  const mustekHloubka = +z.mustekHloubkaMm > 0 ? +z.mustekHloubkaMm / 1000 : 0;
+  /* K3-N17: nekonečný rozměr (Infinity, „1e400" z importu) = nevyplněný */
+  const mustekRozmer = v => (Number.isFinite(+v) && +v > 0 ? +v / 1000 : 0);
+  const mustekSirka = mustekRozmer(z.mustekSirkaMm);
+  const mustekHloubka = mustekRozmer(z.mustekHloubkaMm);
   const strechaMustekM2 = (mustekNahore && mustekSirka && mustekHloubka) ? (mustekSirka + 0.2) * mustekHloubka : 0;
   const strechaM2 = (z.sirka + 0.2) * (z.hloubka + 0.1) + strechaMustekM2;
 

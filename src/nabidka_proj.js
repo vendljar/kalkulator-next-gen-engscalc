@@ -682,7 +682,8 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
   const textProj = klic => {
     const PD = (typeof PODMINKY !== 'undefined') ? PODMINKY : require('./podminky.js').PODMINKY;
     const r = PD.podminkyTextProj(podmEf, klic, L, P);
-    return klic === 'dolozky' ? r.map(x => String(x).replace(/\{FIRMA\}/g, nazevFirmy || '{FIRMA}')) : r;
+    /* K3-N16: náhrada funkcí — vzory „$&“, „$`“ v názvu firmy by vložily okolní text */
+    return klic === 'dolozky' ? r.map(x => String(x).replace(/\{FIRMA\}/g, () => nazevFirmy || '{FIRMA}')) : r;
   };
   const bloky = NABIDKA_PROJ_DEF.filter(b => b.klic !== 'uvodNabidky' || uvodOdst.length)
     .filter(b => !b.ad || nabiziAD)

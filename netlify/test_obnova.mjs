@@ -549,11 +549,25 @@ console.log('\n===== B58: kniha smazaných účtů jde se zálohou (23. 9. 2026)
   const o = await obnovJson({ zdroj: { otisk: v2.den }, rezim: 'doplnit', potvrzeni: 'OBNOVIT', casti: ['uzivatele'], hesloSpravce: 'Docasne.Heslo.123' }, cookie);
   test('B58: obnova ze serverového otisku knihu doplní', !!(await kniha.cti('byvaly@priklad.cz')) && o.casti.smazani && o.casti.smazani.nove >= 1,
     JSON.stringify(o.casti && o.casti.smazani));
-  /* Pod e-mailem, kde dnes žije účet, se do knihy nezapisuje. */
+  /* Pod e-mailem, kde dnes žije účet, se do knihy nezapisuje.
+   * K3-N19 (20. 10. 2026): od #151 N1 má vynucený otisk klíč
+   * `RRRR-MM-DDTHHMMSS-rucne`, takže `v2.den + 'T000001-pred-obnovou'` byl
+   * neplatný klíč (OTISK_KLIC), obnova ho odmítla a kontrola níž prošla
+   * naprázdno. Klíč se proto skládá z dnešního dne a test ověří, že obnova
+   * opravdu proběhla a záznam přeskočila s důvodem. */
+  test('B58: výchozí stav — obchodník žije a v knize smazaných není',
+    !!(await ulz('uzivatele').cti('obchodnik@priklad.cz')) && (await kniha.cti('obchodnik@priklad.cz')) === null);
   const ot2 = kopie(ot); ot2.smazani = { 'obchodnik@priklad.cz': { smazano: true, kdy: '2026-01-01', kdo: 'x' } };
-  await ulz('zalohy').zapis(v2.den + 'T000001-pred-obnovou', ot2);
-  await obnovJson({ zdroj: { otisk: v2.den + 'T000001-pred-obnovou' }, rezim: 'doplnit', potvrzeni: 'OBNOVIT', casti: ['uzivatele'], hesloSpravce: 'Docasne.Heslo.123' }, cookie);
+  const klicPodvrh = dnes() + 'T000001-pred-obnovou';
+  await ulz('zalohy').zapis(klicPodvrh, ot2);
+  const oZivy = await obnovJson({ zdroj: { otisk: klicPodvrh }, rezim: 'doplnit', potvrzeni: 'OBNOVIT', casti: ['uzivatele'], hesloSpravce: 'Docasne.Heslo.123' }, cookie);
+  test('B58: obnova z podvrženého otisku proběhla (klíč je platný)', oZivy.ok === true && !!(oZivy.casti && oZivy.casti.smazani), oZivy);
+  test('B58: záznam živého účtu obnova přeskočí s důvodem',
+    !!(oZivy.casti && oZivy.casti.smazani) && oZivy.casti.smazani.preskocene >= 1
+      && oZivy.casti.smazani.duvody.some(d => d.klic === 'obchodnik@priklad.cz' && /dnes je účet/.test(d.duvod)),
+    JSON.stringify(oZivy.casti && oZivy.casti.smazani));
   test('B58: živý účet se do knihy smazaných nezapíše', (await kniha.cti('obchodnik@priklad.cz')) === null);
+  await ulz('zalohy').smaz(klicPodvrh);
 }
 
 console.log('\n===== B47–B49, B52: dotažení obnovy po dávkách (19. kolo, 14. 9. 2026) =====');

@@ -188,5 +188,25 @@ for (const fixes of [true, false]) {
   test('#356: s rozměry upozornění mlčí', !kt.kontrolyProved({ zadani: z, vysledek: r, cenik: CENIK }).nalezy.some(x => x.kod === 'mustekStrecha'));
 }
 
+/* K3-N17 (audit K3, dávka O5 20. 10. 2026): rozměr můstku Infinity
+ * (`+z.mustekSirkaMm > 0` ho propustil) dal nekonečnou plochu a cenu.
+ * Nekonečný rozměr = jako nevyplněný (střecha jen nad šachtou, kontrola
+ * mustekStrecha upozorní). Horní mez rozměru je číslo k rozhodnutí J. V.
+ * Před opravou selžou 3 kontroly (plocha i cena Infinity). */
+{
+  const kt = require('./kontroly.js');
+  const ZAS = 'ZASTŘEŠENÍ ŠACHTY (EXT)';
+  const zas = r => r.sekce.hrubaOck.find(x => x.origNazev === ZAS);
+  for (const [popis, rozm] of [['šířka Infinity', { mustekSirkaMm: Infinity, mustekHloubkaMm: 900 }],
+                               ['hloubka „1e400"', { mustekSirkaMm: 1300, mustekHloubkaMm: '1e400' }]]) {
+    const { r, z } = spocti(Object.assign({ mustkyKs: 5 }, rozm));
+    test('K3-N17: ' + popis + ' → střecha jen nad šachtou (konečná plocha)', Number.isFinite(zas(r).mnozstvi)
+      && Math.abs(zas(r).mnozstvi - 2.76165) < 1e-6, zas(r).mnozstvi);
+    test('K3-N17: ' + popis + ' → konečná cena', Number.isFinite(r.souhrn.zakladCena), r.souhrn.zakladCena);
+    test('K3-N17: ' + popis + ' → kontrola upozorní na chybějící rozměr',
+      kt.kontrolyProved({ zadani: z, vysledek: r, cenik: CENIK }).nalezy.some(x => x.kod === 'mustekStrecha'));
+  }
+}
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

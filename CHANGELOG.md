@@ -8,6 +8,77 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v20.10.1 — O5: opravy nálezů auditu K3 bez rozhodnutí J. V. (větev claude/o5-k3-nalezy)
+
+Dávka O5 (koordinace „ŘÍDÍCÍ 19.10 noc“), základ `claude/integrace-16-10` 3b49d57
+(v19.10.10 + M1 + zápis K3), podklad `podklady/K3_AUDIT_19_10.md`. J. V. nepřítomen —
+výchozí volby zapsány u nálezů.
+
+**Ověření nad e6f3b14 (v20.10.1, 20. 10. 2026 02:10–02:50 UTC) — VŠE ZELENÉ po doplnění jednoho testu:**
+`testovaci_kolo.sh --bez-mutaci`: sady **281 prošlo / 0 selhalo / 6 přeskočeno** (`test.js`
++ 5 harnessů bez `KNG_PODKLADY`), statické **3/3**; `--kontrola` jádro 311, server 638 úseků.
+Cílené mutace: jádro `O5` **12/13** — přežila „O5: K3-N11 vyváženost bez kontroly zbytku
+zásobníku“ (`return true` místo `zas.length === 0`; testy neměly fragment s neuzavřeným
+prvkem) → doplněny 2 kontroly v `src/test_o5_docx.js` (s mutací 12/2, bez 14/0), opakování
+`mutace_jadro.mjs "O5: K3-N11"` **2/2**; server `O5` **11/11**; server `B58` **2/2**
+(K3-N19 — „B58: obnova zapíše smazání i u živého účtu“ je chycená). Pracovní kopie po
+každém běhu čistá.
+
+- **K3-N19 (test B58 naprázdno):** `netlify/test_obnova.mjs` zapisoval podvržený otisk
+  pod `v2.den + 'T000001-pred-obnovou'` — od #151 N1 neplatný klíč, obnova ho odmítla
+  a kontrola „živý účet se do knihy smazaných nezapíše“ prošla, aniž obnova běžela.
+  Klíč je teď `dnes() + 'T000001-pred-obnovou'` a test ověří, že obnova proběhla
+  (`ok`, `casti.smazani`) a záznam živého účtu přeskočila s důvodem. Pojistka:
+  s mutací B58 starý test 232 OK / 0 FAIL (přežila), nový 2–3 FAIL (chycena).
+- **K3-N1 (část bez rozhodnutí):** retenci záloh odemkne jen záznam `kopie-disk`, který
+  popisuje kopii **nočního otisku, který v úložišti je** — `kopieDiskPodlozena()`:
+  původ `nocni-otisk`, otisk ve tvaru dne a v seznamu úložiště, jméno souboru
+  `otisk_<den>.json`, velikost > 0, platný SHA-256. Jinak noční funkce zaloguje
+  „retence čeká na podloženou kopii nočního otisku na Disk“. Velikost se proti souhrnu
+  neporovnává (kopie je bez hesel a podpisů, velikosti se liší vždy). **Nedělá se**
+  (J. V.): heslo správce u `kopie-disk`, omezení na složku „_Zaloha Netlify DB“.
+- **K3-N3:** šablona SoD PROJ, která nese `{{SODP_ROZSAH_DILA}}` nebo značku `CIN_*`,
+  musí mít blok každého jména z `blokyPryc`; chybí-li (oba odstavce značek smazané ve
+  Wordu), dokument nevznikne s hláškou „Opravte šablonu“ (fail-closed jako B191).
+  v3, záhlaví a zápatí beze změny.
+- **K3-N10:** značka bloku se nerozpoznává z odstavce, který nese složenou závorku jako
+  entitu (`&#123;` — text obchodníka ve vlastních řádcích TS, B122).
+- **K3-N11:** `docxVyvazene` kontroluje pořadí zásobníkem — blok od buňky 1 do buňky 2
+  téhož řádku už není „vyvážený“ (ze seznamu pryč → chyba místo sloučení buněk).
+- **K3-N6:** klíče `__proto__`, `constructor` apod. v podmínkách Firmy jsou vada
+  („neznámé pole / věta / blok“), ne výjimka (HTTP 500 na `/api/firma`, pád obnovy).
+- **K3-N7:** procenta zálohy a faktur OCK se v `podminkyEf` i `podminkyCiste` převádějí
+  přes `podmCislo` — „12,5“ z API/importu už nedá „NaN % – po podpisu smlouvy“.
+- **K3-N9:** položka textů nabídky PROJ s `\n`/`\r` je neplatná (posunula by činnosti
+  proti termínům); formulář už nezahodí 3. a další „|“ v řádku termínů (připojí je k termínu).
+- **K3-N8:** heslo správce se po vypršení 10minutového okna z paměti stránky **maže**
+  (časovač + kontrola při každém dotazu); obnova s heslem z paměti okno neprodlouží
+  (`onlineZobrazeniHesloPoObnove`). „Heslo vůbec nedržet“ zůstává J. V.
+- **K3-N5:** zámek mutačních běhů vzniká atomicky (`linkSync` z dočasného souboru, nikdy
+  rozepsaný), mrtvý zámek smí smazat jen držitel výlučného zámku převzetí po znovupřečtení,
+  záznam nese čas startu procesu (opětovné PID). Test: 6 běhů naráz nad mrtvým zámkem
+  dřív dostali zámek tři, teď právě jeden (5 kol). Mutace se neregistrují — sada spouští
+  podprocesy (desítky sekund na mutaci × 600 mutací); hlídá ji samotný test.
+- **K3-N12:** kopie zálohy na Disk bere části **povoleným seznamem** `KOPIE_DISK_CASTI`
+  (= dnešní části); test hlídá, že každá část zálohy v seznamu je.
+- **K3-N14:** `BEZPECNOST_MEZE.md` — meze #151 N5/N6 a B194.
+- **K3-N16:** název firmy se do kapitol a doložek PROJ dosazuje funkcí (`$&` v názvu se nerozvine).
+- **K3-N17:** nekonečný rozměr můstku (`Infinity`, „1e400“) = nevyplněný (střecha jen nad
+  šachtou, kontrola `mustekStrecha` upozorní). Horní mez rozměru je číslo pro J. V.
+- **Nedělá se (rozhodnutí J. V.):** K3-N2, K3-N4, K3-N13, K3-N15, heslová část K3-N1;
+  **K3-N18** (souhrnný strop velikosti podmínek) chce číslo — roadmapa #437.
+- **Testy (pojistky v commitech):** nové `src/test_o5_docx.js` (před 5/7, po 14/0),
+  `src/test_o5_podminky.js` (před 23/16 a 39/2, po 41/0); doplněné `netlify/test_obnova.mjs`,
+  `netlify/test_zalohy.mjs` (K3-N1 před FAIL, K3-N12 83/3 → 86/0),
+  `src/test_zobrazeni_heslo_okno.js` (7/3 → 13/0), `netlify/test_mutace_zamek.mjs`
+  (13/3 → 16/0), `src/test_mustky.js` (59/6 → 65/0); `src/test_sod_proj_rozsah.js`
+  (B191 e3 doplněn o vyvážený blok kvůli K3-N3).
+- **Mutace:** jádro +13 „O5: …“ (docxgen, podminky, engine, nabidka_proj), server +11
+  „O5: …“ (lib/zalohovani, ui/online_ui, firma; sada `../src/test_o5_podminky.js`
+  přidána do serverových). Přepsané hledané úseky po změně kódu: „#367: výchozí záloha
+  mimo volby“, „#367b: věta zálohy bez {PROC}“, „H2 B192“, „#151 N5 v19.10.8: retence
+  bez pojistky“, „#151 N6: kopie pro Disk nese podpisy / otisky hesel“.
+
 ## v19.10.10 — B194: zámek mutačních běhů a výpis padlých kontrol výchozího stavu (větev claude/f1-test-vyjimky)
 
 **Celé kolo K3 nad 1b0e2f7 (v19.10.10, 19.–20. 10. 2026; dávka K3, koordinace „ŘÍDÍCÍ 19.10 noc“) — 1 PŘEŽIVŠÍ MUTACE SERVERU (prázdný test B58, kód v pořádku):**

@@ -214,7 +214,7 @@ function firmaKapitola(f, base, jazyk, termin) {
     return t || firmaTerminZaloha(firma, jazTextu);
   };
   const rozloz = (k, jazTextu) => String(firma[k] == null ? '' : firma[k]).split('\n')
-      .map(r => r.replace(/\{FIRMA\}/g, nazev || '{FIRMA}'))
+      .map(r => r.replace(/\{FIRMA\}/g, () => nazev || '{FIRMA}'))   // K3-N16: funkcí — „$&“ v názvu se nerozvine
       .map(r => r.indexOf(FIRMA_KAP_TERMIN) < 0 ? r : r.split(FIRMA_KAP_TERMIN).join(terminPro(jazTextu)))
       .map(r => r.trim())
       .filter(r => r !== '');

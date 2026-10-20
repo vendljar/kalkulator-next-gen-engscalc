@@ -6826,6 +6826,37 @@
     "367"
    ],
    "pozn" : "Předběžné id (přidělí koordinace při sloučení). Šablony v6 nejsou v repozitáři (firemní texty) — Disk, složka vedle v5. Návrh na později: kontrola „texty Firmy PROJ upravené, ale šablona PROJ je starší než v6“ (obdoba autorskyDozorWordProj)."
+  },
+  {
+   "id": "436",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "M",
+   "hotovoV": "v20.10.1",
+   "nazev": "Audit K3 — opravy nálezů bez rozhodnutí J. V. (K3-N19, N1 část, N3, N5–N12, N14, N16, N17)",
+   "proc": "Bezpečnostní audit K3 nad v19.10.10 (`podklady/K3_AUDIT_19_10.md`): 3 střední, 9 nízkých, 7 informativních; mutace B58 přežila (prázdný test K3-N19).",
+   "detail": "HOTOVO v20.10.1 (dávka O5, větev claude/o5-k3-nalezy). K3-N19 test B58 s platným klíčem otisku a kontrolou, že obnova proběhla; K3-N1 retenci odemkne jen podložená kopie nočního otisku (kopieDiskPodlozena: původ, otisk v úložišti, jméno souboru, velikost > 0, SHA-256); K3-N3 šablona SoD PROJ v4 bez bloku ze seznamu blokyPryc → dokument nevznikne; K3-N10 značka bloku z entity &#123; se nerozpozná; K3-N11 vyváženost bloku zásobníkem; K3-N6 __proto__/constructor v podmínkách = vada, ne HTTP 500; K3-N7 procenta OCK přes podmCislo; K3-N9 \\n v textech PROJ neplatné; K3-N8 heslo správce se po vypršení maže, obnova okno neprodlouží; K3-N5 zámek mutací atomicky (linkSync, zámek převzetí, čas startu procesu); K3-N12 povolený seznam částí kopie na Disk; K3-N14 meze v BEZPECNOST_MEZE.md; K3-N16 název firmy funkcí; K3-N17 nekonečný rozměr můstku = nevyplněný. Testy src/test_o5_docx.js, src/test_o5_podminky.js a doplněné sady; mutace „O5: …“.",
+   "hotovoKdyz": "Každý nález s testem s pojistkou, kolo --bez-mutaci zelené, cílené mutace O5 a B58 chycené.",
+   "kde": "`netlify/test_obnova.mjs`, `netlify/lib/zalohovani.mjs`, `src/docxgen.js`, `src/podminky.js`, `src/ui/online_ui.js`, `nastroje/mutace_zamek.mjs`, `src/engine.js`, `src/firma.js`, `src/nabidka_proj.js`, `BEZPECNOST_MEZE.md`",
+   "pozn": "Předběžné id (přidělí koordinace při sloučení). Nedělalo se (rozhodnutí J. V.): K3-N2, K3-N4, K3-N13, K3-N15 a heslová část K3-N1 — viz #437. K3-N18 (strop velikosti podmínek) a horní mez rozměru můstku (K3-N17) chtějí číslo — viz #437."
+  },
+  {
+   "id": "437",
+   "vlna": "B",
+   "stav": "blokovano",
+   "dulezitost": "stredni",
+   "slozitost": "M",
+   "cekaNa": "J. V.: rozhodnutí k nálezům auditu K3 (doporučení v podklady/K3_AUDIT_19_10.md, oddíl Doporučený postup)",
+   "nazev": "Audit K3 — nálezy čekající na rozhodnutí J. V. (K3-N2, N1 heslo a složka, N4, N13, N15, N18, mez rozměru můstku)",
+   "proc": "Audit K3 (19. 10. 2026): část nálezů mění chování pro uživatele nebo potřebuje čísla — bez J. V. se nedělají.",
+   "detail": "K3-N2 odeslaná nabídka tiskne aktuální věty z Firmy (doporučení: zmrazit při prvním zamčení); K3-N1 heslo správce u záznamu kopie-disk a omezení na složku „_Zaloha Netlify DB“ (doporučení: obojí ano); K3-N4 limit četnosti ručních otisků (doporučení 1 / 10 min, 20 / den); K3-N13 práh smysluplnosti otisku před retencí (doporučení pokles pod 50 %); K3-N15 heslo správce i u POST /api/firma (doporučení ano); K3-N18 souhrnný strop velikosti podmínek (číslo); K3-N17 horní mez rozměru můstku (číslo).",
+   "hotovoKdyz": "Rozhodnutí J. V. zapsaná a promítnutá do kódu s testy, nebo zapsaná jako vědomé meze v BEZPECNOST_MEZE.md.",
+   "kde": "`podklady/K3_AUDIT_19_10.md`",
+   "zavisi": [
+    "436"
+   ],
+   "pozn": "Předběžné id (přidělí koordinace při sloučení)."
   }
  ],
  "meta" : {

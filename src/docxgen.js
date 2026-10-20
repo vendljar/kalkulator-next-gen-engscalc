@@ -254,9 +254,17 @@ function klicePlaceholderu(fragment) {
  * (v buňce se nahradí prázdným odstavcem, buňka bez odstavce by byla vada).
  * Šablona bez značek se chová jako dřív. */
 const DOCX_ZNACKA_BLOKU_RE = /^\s*\{\{([A-Z0-9_]+?)_(ZAC|KON)\}\}\s*$/;
+/* K3-N10 (20. 10. 2026): značka se nerozpoznává z entity. Text uživatele
+ * (vlastní řádky TS) nese „{" jako `&#123;` (B122) a `odstavecText` ho
+ * dekóduje zpět — odstavec „{{X_KON}}" napsaný obchodníkem by jinak
+ * rozpároval skutečný blok kapitoly. Word sám složené závorky entitou
+ * nepíše, takže šablony to nezasáhne. */
+const DOCX_ZAVORKA_ENTITOU_RE = /&#(?:123|125|x7[bd]);/i;
 function docxZnackyBloku(xml) {
   return odstavcoveSpany(xml).map(sp => {
-    const m = odstavecText(xml.slice(sp.zac, sp.kon)).match(DOCX_ZNACKA_BLOKU_RE);
+    const odst = xml.slice(sp.zac, sp.kon);
+    if (DOCX_ZAVORKA_ENTITOU_RE.test(odst)) return null;
+    const m = odstavecText(odst).match(DOCX_ZNACKA_BLOKU_RE);
     return m ? { zac: sp.zac, kon: sp.kon, jmeno: m[1], typ: m[2] } : null;
   }).filter(Boolean);
 }
@@ -340,10 +348,19 @@ function docxVBunce(xml, pos) {
   const pred = xml.slice(0, pos);
   return (pred.match(/<w:tc[\s>]/g) || []).length > (pred.match(/<\/w:tc>/g) || []).length;
 }
+/* K3-N11 (20. 10. 2026): zásobník, ne jen počty — „</w:tc><w:tc>" (blok od
+ * buňky 1 do buňky 2 téhož řádku) má počty stejné, ale vyvážený není;
+ * jeho odstranění by buňky sloučilo. Prázdné `<w:p/>` se nepočítá. */
 function docxVyvazene(fr) {
-  const n = re => (fr.match(re) || []).length;
-  return n(/<w:tbl[\s>]/g) === n(/<\/w:tbl>/g) && n(/<w:tr[\s>]/g) === n(/<\/w:tr>/g)
-    && n(/<w:tc[\s>]/g) === n(/<\/w:tc>/g) && n(/<w:p(?:\s[^>]*)?(?<!\/)>/g) === n(/<\/w:p>/g);
+  const zas = [];
+  const re = /<(\/?)w:(tbl|tr|tc|p)(?=[\s>\/])([^>]*)>/g;
+  let m;
+  while ((m = re.exec(fr))) {
+    if (!m[1] && /\/$/.test(m[3])) continue;                     // <w:p/>, <w:p …/>
+    if (!m[1]) zas.push(m[2]);
+    else if (zas.pop() !== m[2]) return false;
+  }
+  return zas.length === 0;
 }
 /* BLOK, KTERÝ DO DOKUMENTU NEPATŘÍ (#380 Q7, rozhodnutí J. V. 17. 10. 2026).
  * Činnost v předmětu díla a v termínech SoD PROJ v4 je pevný text bez
@@ -357,9 +374,25 @@ function docxVyvazene(fr) {
  * Wordu), dřív v dokumentu tiše zůstal a zmizely jen značky — smlouva by
  * vyjmenovala nenabízenou činnost. Teď generátor hází (fail-closed,
  * dokument nevznikne); blok mimo seznam se řídí obsahem jako dřív. */
+/* CHYBĚJÍCÍ BLOK ZE SEZNAMU (K3-N3, audit K3; dávka O5 20. 10. 2026):
+ * šablona SoD PROJ v4 (nese {{SODP_ROZSAH_DILA}} nebo značku CIN_*), ze
+ * které někdo ve Wordu smazal OBA odstavce se značkami bloku ze seznamu,
+ * by se vytiskla s nenabízenou činností bez varování — B191 hlídal jen
+ * značku, která v dokumentu je. Teď musí mít taková šablona blok každého
+ * jména z `blokyPryc`, jinak dokument nevznikne. Šablona bez symbolu
+ * rozsahu i bez značek CIN_* (v3, záhlaví, zápatí) se chová jako dřív. */
+function docxBlokyPrycChybi(xml, pryc) {
+  if (!pryc.length) return null;
+  const klice = klicePlaceholderu(xml);
+  if (!klice.some(k => k === 'SODP_ROZSAH_DILA' || /^CIN_[A-Z0-9_]+_(?:ZAC|KON)$/.test(k))) return null;
+  const jmena = new Set(docxZnackyBloku(xml).map(z => z.jmeno));
+  return pryc.find(j => !jmena.has(j)) || null;
+}
 function odstranPrazdneBloky(xml, ph, blokyPryc) {
-  if (!/_(?:ZAC|KON)(?:<[^>]+>)*\}/.test(xml)) return xml;       // šablona bez značek
   const pryc = Array.isArray(blokyPryc) ? blokyPryc : [];
+  const chybi = docxBlokyPrycChybi(xml, pryc);
+  if (chybi) throw new Error(docxBlokChybiText(chybi));
+  if (!/_(?:ZAC|KON)(?:<[^>]+>)*\}/.test(xml)) return xml;       // šablona bez značek
   const bezZnacky = (x, z) => (docxVBunce(x, z.zac) ? '<w:p/>' : '');
   for (let kolo = 0; kolo < 500; kolo++) {
     const zn = docxZnackyBloku(xml);
@@ -385,6 +418,11 @@ function odstranPrazdneBloky(xml, ph, blokyPryc) {
   return xml;
 }
 
+function docxBlokChybiText(jmeno) {
+  return 'Šablona smlouvy má rozsah díla po činnostech, ale chybí v ní blok ' + jmeno + ' (značky {{' + jmeno
+    + '_ZAC}} a {{' + jmeno + '_KON}}) — činnost, která do dokumentu nepatří, by v něm zůstala. '
+    + 'Dokument proto nevznikne. Opravte šablonu.';
+}
 function docxBlokNejdeText(jmeno) {
   return 'Šablona má blok ' + jmeno + ', který do dokumentu nepatří, ale jeho značky {{' + jmeno
     + '_ZAC}} a {{' + jmeno + '_KON}} nejsou správně spárované (např. začátek v tabulce a konec za ní) — '

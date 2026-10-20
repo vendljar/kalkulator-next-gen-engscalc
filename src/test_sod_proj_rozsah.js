@@ -163,9 +163,12 @@ const zaznam = [];
   test('B191: blok ze seznamu se začátkem v tabulce a koncem za ní → chyba (dokument nevznikne)', /CIN_B/.test(e1) && /nevznikne/.test(e1), e1);
   const e2 = hazi(() => dg.odstranPrazdneBloky('<w:body>' + zn('CIN_B_ZAC') + odst('Činnost B') + '</w:body>', {}, ['CIN_B']));
   test('B191: blok ze seznamu bez koncové značky → chyba', /CIN_B/.test(e2), e2);
-  const e3 = hazi(() => dg.odstranPrazdneBloky(nevyv, {}, ['CIN_A']));
+  /* K3-N3 (O5): šablona se značkami CIN_* musí mít blok každého jména ze
+   * seznamu — CIN_A proto v dokumentu je (vyvážený), nevyvážený je CIN_B. */
+  const nevyvA = nevyv.replace('<w:body>', '<w:body>' + zn('CIN_A_ZAC') + odst('Činnost A') + zn('CIN_A_KON'));
+  const e3 = hazi(() => dg.odstranPrazdneBloky(nevyvA, {}, ['CIN_A']));
   test('B191: nevyvážený blok mimo seznam pryč → bez chyby, obsah zůstane (jako dřív)', e3 === ''
-    && text(dg.odstranPrazdneBloky(nevyv, {}, ['CIN_A'])).indexOf('Činnost B') >= 0, e3);
+    && text(dg.odstranPrazdneBloky(nevyvA, {}, ['CIN_A'])).indexOf('Činnost B') >= 0, e3);
   test('B191: vyvážený blok ze seznamu dál zmizí bez chyby', hazi(() => dg.odstranPrazdneBloky(xml, { X: 'x' }, ['CIN_B'])) === '');
 }
 
