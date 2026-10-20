@@ -66,6 +66,24 @@
  *           když jsou doložky PROJ vypnuté nebo prázdné (odstranPrazdneBloky).
  *           Nadpisy tabulek zůstávají z v5.
  *
+ * PROJ v7 (úvod DPZ bez studie, D1 20. 10. 2026, postřeh D. Sikory):
+ *   node nastroje/vyrob_sablony.js --proj-v7 <složka podkladů> [výstupní složka]
+ * Vstup:  Sablona_NABIDKA_PROJ_v6.docx
+ * Výstup: Sablona_NABIDKA_PROJ_v7.docx + _EN/_DE/_FR
+ * PROJ v7 = v6, v níž odstavec úvodu DPZ „Dokumentace pro povolení záměru
+ *           (DPZ) navazuje na vzájemně odsouhlasenou STUDII PROVEDITELNOSTI.
+ *           Ta rozpracovává … obsahuje tyto části:" nese jen {{PROJ_DPZ_UVOD}}
+ *           (písmo a odstavec zůstávají). Aplikace dosadí větu v jazyce
+ *           dokumentu: se studií v nabídce s navázáním, bez ní bez navázání.
+ *           + rozhodnutí J. V. 20. 10. 2026 (Q1–Q3): titul „STUDIE
+ *           PROVEDITELNOSTI" → {{PROJ_TITUL_STUDIE}}, „Navazující PROJEKTOVÉ
+ *           a INŽENÝRSKÉ ČINNOSTI" → {{PROJ_TITUL_CINNOSTI}}; hvězdička
+ *           u nadpisu ceny DPZ → {{PROJ_DPZ_HVEZDICKA_ZNACKA}} a poznámka
+ *           „* Cena je platná…" → {{PROJ_DPZ_HVEZDICKA}} v bloku
+ *           BLOK_DPZ_HVEZDICKA; bloky bez symbolu BLOK_STUDIE_ROZSAH (tabulka
+ *           ST), BLOK_STUDIE_CENA (nadpis a tabulka cen SP) a BLOK_STUDIE_POZN
+ *           (poznámka o studii) — zmizí, když je aplikace dá do blokyPryc.
+ *
  * CN v14 (etapa A platebních podmínek OCK, 30. 9. 2026) — samostatný režim:
  *   node nastroje/vyrob_sablony.js --cn-v14 <složka podkladů> [výstupní složka]
  * Vstup:  Sablona_NABIDKA_CN_v13.docx
@@ -160,6 +178,7 @@ const REZIM_SOD_REAL3 = REZIM === '--sod-real-v3';
 const REZIM_CN15 = REZIM === '--cn-v15';
 const REZIM_V5 = REZIM === '--proj-v5';
 const REZIM_V6 = REZIM === '--proj-v6';
+const REZIM_V7 = REZIM === '--proj-v7';
 const REZIM_SOD_V4 = REZIM === '--sod-proj-v4';
 const ARGY = REZIM ? process.argv.slice(3) : process.argv.slice(2);
 const PODKLADY = ARGY[0] || process.env.KNG_PODKLADY;
@@ -456,6 +475,110 @@ function projV6(xml) {
   const konTerminu = body.indexOf(znacka('BLOK_TERMINY_KON')) + znacka('BLOK_TERMINY_KON').length;
   body = body.slice(0, konTerminu) + dolozky + body.slice(konTerminu);
   return t.pred + body + t.po;
+}
+
+/* ---------- PROJ v7: úvod DPZ symbolem (D1) ----------
+ * Právě jeden odstavec, jehož text začíná „Dokumentace pro povolení záměru
+ * (DPZ) navazuje na vzájemně odsouhlasenou STUDII" — celý jeho text nahradí
+ * {{PROJ_DPZ_UVOD}} v prvním běhu (prepisUsekOdstavce). Jiná stavba = chyba. */
+const PROJ_V7_DPZ_UVOD_RE = /^Dokumentace pro povolení záměru \(DPZ\) navazuje na vzájemně odsouhlasenou STUDII/;
+function projV7(xml) {
+  const t = tělo(xml);
+  let body = t.body;
+  const sym = dg.klicePlaceholderu(body);
+  if (sym.indexOf('PROJ_DPZ_UVOD') >= 0) chyba('PROJ: šablona už úvod DPZ symbolem {{PROJ_DPZ_UVOD}} má — není co doplnit');
+  if (sym.indexOf('PROJ_DOLOZKY') < 0) chyba('PROJ: vstup není PROJ v6 (chybí blok doložek {{PROJ_DOLOZKY}}) — nejdřív vyrobte v6');
+  const sp = odstavceSTextem(body, x => PROJ_V7_DPZ_UVOD_RE.test(x.trim()));
+  if (sp.length !== 1) chyba('PROJ: čekám právě jeden odstavec úvodu DPZ „Dokumentace pro povolení záměru (DPZ) navazuje na…", je jich ' + sp.length + ' — nic nehádám');
+  const p = body.slice(sp[0].zac, sp[0].kon);
+  body = body.slice(0, sp[0].zac) + prepisUsekOdstavce(p, 0, delkaTextu(p), '{{PROJ_DPZ_UVOD}}') + body.slice(sp[0].kon);
+
+  /* Q1–Q3 (rozhodnutí J. V. 20. 10. 2026): titul a bloky studie, hvězdička ceny DPZ. */
+  /* titul: „STUDIE PROVEDITELNOSTI" (samostatný odstavec, nebo konec odstavce
+   * s {{NAZEV_AKCE}}) a „Navazující PROJEKTOVÉ a INŽENÝRSKÉ ČINNOSTI";
+   * 1–2 stejné výskyty (textové pole nese i záložní kopii) */
+  body = nahradVOdstavcich(body, 'titul „STUDIE PROVEDITELNOSTI"', x => {
+    const S = 'STUDIE PROVEDITELNOSTI', N = '{{NAZEV_AKCE}}';
+    if (x.trim() === S) return [x.indexOf(S), x.indexOf(S) + S.length];
+    const m = /\{\{NAZEV_AKCE\}\}(\s*)STUDIE PROVEDITELNOSTI\s*$/.exec(x);
+    return m ? [m.index + N.length + m[1].length, m.index + N.length + m[1].length + S.length] : null;
+  }, '{{PROJ_TITUL_STUDIE}}');
+  body = nahradVOdstavcich(body, 'titul „Navazující PROJEKTOVÉ a INŽENÝRSKÉ ČINNOSTI"', x => {
+    const S = 'Navazující PROJEKTOVÉ a INŽENÝRSKÉ ČINNOSTI', i = x.indexOf(S);
+    return i >= 0 && x.trim() === S ? [i, i + S.length] : null;
+  }, '{{PROJ_TITUL_CINNOSTI}}');
+  /* hvězdička u nadpisu ceny DPZ */
+  {
+    const h = odstavceSTextem(body, x => /^CENA ZA DOKUMENTACI PRO POVOLENÍ ZÁMĚRU \(DPZ\)\s*\*/.test(x.trim()));
+    if (h.length !== 1) chyba('PROJ: čekám právě jeden nadpis „CENA ZA DOKUMENTACI PRO POVOLENÍ ZÁMĚRU (DPZ)*", je jich ' + h.length + ' — nic nehádám');
+    const ph = body.slice(h[0].zac, h[0].kon), tx = textBehu(ph);
+    const i = tx.indexOf('*');
+    body = body.slice(0, h[0].zac) + prepisUsekOdstavce(ph, i, i + 1, '{{PROJ_DPZ_HVEZDICKA_ZNACKA}}') + body.slice(h[0].kon);
+  }
+  /* bloky odzadu: hvězdička, poznámka o studii, cena SP, rozsah ST */
+  const top = () => prvkyTela(body);
+  const txt = el => textPrvku(body.slice(el.zac, el.kon)).replace(/\u00a0/g, ' ');
+  const jeden = (popis, test) => {
+    const t2 = top(), idx = t2.map((el, i) => i).filter(i => test(t2[i]));
+    if (idx.length !== 1) chyba('PROJ: čekám právě jeden ' + popis + ', je jich ' + idx.length + ' — nic nehádám');
+    return { t: t2, i: idx[0] };
+  };
+  const obal = (jmeno, zac, kon) => {
+    body = body.slice(0, zac) + znacka(jmeno + '_ZAC') + body.slice(zac, kon) + znacka(jmeno + '_KON') + body.slice(kon);
+  };
+  {
+    const { t: t2, i } = jeden('odstavec „* Cena je platná v případě návaznosti na STUDII…" (mimo tabulku)',
+      el => el.tag === 'p' && /^\*\s*Cena je platná v případě návaznosti na STUDII/.test(txt(el)));
+    const el = t2[i], pp = body.slice(el.zac, el.kon);
+    const nove = prepisUsekOdstavce(pp, 0, delkaTextu(pp), '{{PROJ_DPZ_HVEZDICKA}}');
+    body = body.slice(0, el.zac) + nove + body.slice(el.kon);
+    obal('BLOK_DPZ_HVEZDICKA', el.zac, el.zac + nove.length);
+  }
+  {
+    const { t: t2, i } = jeden('odstavec „V případě, že se investor rozhodne pro zpracování STUDIE…" (mimo tabulku)',
+      el => el.tag === 'p' && /^V případě, že se investor rozhodne pro zpracování STUDIE/.test(txt(el)));
+    let j = i + 1;
+    while (t2[j] && t2[j].tag === 'p' && !txt(t2[j])) j++;
+    if (!t2[j] || t2[j].tag !== 'p' || !/^TATO SKUTEČNOST JE ZOHLEDNĚNA/.test(txt(t2[j])))
+      chyba('PROJ: pod poznámkou o studii čekám odstavec „TATO SKUTEČNOST JE ZOHLEDNĚNA…" — nic nehádám');
+    obal('BLOK_STUDIE_POZN', t2[i].zac, t2[j].kon);
+  }
+  {
+    const { t: t2, i } = jeden('nadpis „CENA ZA STUDII PROVEDITELNOSTI (SP):" (mimo tabulku)',
+      el => el.tag === 'p' && txt(el) === 'CENA ZA STUDII PROVEDITELNOSTI (SP):');
+    let j = i + 1;
+    while (t2[j] && t2[j].tag === 'p' && !txt(t2[j])) j++;
+    if (!t2[j] || t2[j].tag !== 'tbl' || body.slice(t2[j].zac, t2[j].kon).indexOf('PROJ_CENA_SP1') < 0)
+      chyba('PROJ: pod nadpisem ceny studie čekám tabulku s {{PROJ_CENA_SP1}} — nic nehádám');
+    obal('BLOK_STUDIE_CENA', t2[i].zac, t2[j].kon);
+  }
+  {
+    const { t: t2, i } = jeden('tabulku s nadpisem „STUDIE PROVEDITELNOSTI (ST):"',
+      el => el.tag === 'tbl' && textPrvku((radkyTabulky(body.slice(el.zac, el.kon))[0] || '')).replace(/\u00a0/g, ' ') === 'STUDIE PROVEDITELNOSTI (ST):');
+    obal('BLOK_STUDIE_ROZSAH', t2[i].zac, t2[i].kon);
+  }
+  return t.pred + body + t.po;
+}
+/* délka textu odstavce v témže počtu jako prepisUsekOdstavce (texty běhů w:t) */
+function textBehu(p) {
+  return (p.match(/<w:t(?:\s[^>]*)?>[\s\S]*?<\/w:t>/g) || [])
+    .map(x => dg.xmlUnesc(x.replace(/^<w:t(?:\s[^>]*)?>/, '').replace(/<\/w:t>$/, ''))).join('');
+}
+function delkaTextu(p) { return textBehu(p).length; }
+/* Úsek ve všech nejvnitřnějších odstavcích, kde `najdi(text)` vrátí [od, do]:
+ * 1–2 výskyty se stejným textem (textové pole nese i záložní kopii VML),
+ * jinak chyba. Odzadu, ať pozice platí. */
+function nahradVOdstavcich(body, popis, najdi, nahrada) {
+  const sp = odstavceSTextem(body, x => !!najdi(x));
+  /* pozice se počítají v textu běhů (bez tabulátorů a zalomení), jako prepisUsekOdstavce */
+  const texty = sp.map(x => textBehu(body.slice(x.zac, x.kon)).replace(/\u00a0/g, ' '));
+  if (sp.length < 1 || sp.length > 2 || new Set(texty).size !== 1)
+    chyba('PROJ: čekám jeden ' + popis + ' (nebo dva stejné v textovém poli), je jich ' + sp.length + ' — nic nehádám');
+  for (let k = sp.length - 1; k >= 0; k--) {
+    const p = body.slice(sp[k].zac, sp[k].kon), [od, kon] = najdi(texty[k]);
+    body = body.slice(0, sp[k].zac) + prepisUsekOdstavce(p, od, kon, nahrada) + body.slice(sp[k].kon);
+  }
+  return body;
 }
 
 /* ---------- CN v14: platební podmínky z platebního kalendáře OCK ----------
@@ -960,7 +1083,7 @@ async function ulozSMutacemi(bajty, zaklad) {
 
 async function hlavni() {
   if (!PODKLADY) {
-    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --proj-v5 | --proj-v6 | --sod-proj | --sod-real | --sod-real-v3 | --sod-proj-cislo | --sod-proj-v4 | --cn-v14 | --cn-v15] <složka podkladů> [výstupní složka]');
+    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --proj-v5 | --proj-v6 | --proj-v7 | --sod-proj | --sod-real | --sod-real-v3 | --sod-proj-cislo | --sod-proj-v4 | --cn-v14 | --cn-v15] <složka podkladů> [výstupní složka]');
     process.exit(2);
   }
   const cnVstup = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v12.docx');
@@ -971,7 +1094,8 @@ async function hlavni() {
   const cn14Vstup = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v14.docx');
   const proj4Vstup = path.join(PODKLADY, 'Sablona_NABIDKA_PROJ_v4.docx');
   const proj5Vstup = path.join(PODKLADY, 'Sablona_NABIDKA_PROJ_v5.docx');
-  (REZIM_SOD_CISLO || REZIM_SOD_REAL3 || REZIM_SOD_V4 ? [] : REZIM_V6 ? [proj5Vstup] : REZIM_V5 ? [proj4Vstup] : REZIM_V4 ? [projVstup] : REZIM_SOD ? [sodVstup] : REZIM_SOD_REAL ? [sodRealVstup] : REZIM_CN14 ? [cn13Vstup]
+  const proj6Vstup = path.join(PODKLADY, 'Sablona_NABIDKA_PROJ_v6.docx');
+  (REZIM_SOD_CISLO || REZIM_SOD_REAL3 || REZIM_SOD_V4 ? [] : REZIM_V7 ? [proj6Vstup] : REZIM_V6 ? [proj5Vstup] : REZIM_V5 ? [proj4Vstup] : REZIM_V4 ? [projVstup] : REZIM_SOD ? [sodVstup] : REZIM_SOD_REAL ? [sodRealVstup] : REZIM_CN14 ? [cn13Vstup]
     : REZIM_CN15 ? [cn14Vstup] : [cnVstup, projVstup])
     .forEach(f => { if (!fs.existsSync(f)) chyba('Chybí vstupní šablona ' + f); });
   if (!fs.existsSync(VYSTUP)) fs.mkdirSync(VYSTUP, { recursive: true });
@@ -1077,7 +1201,9 @@ async function hlavni() {
     console.log('\nVýstup: ' + VYSTUP);
     process.exit(prob ? 1 : 0);
   }
-  const vse = REZIM_V6
+  const vse = REZIM_V7
+    ? await ulozSMutacemi(await vyrob(proj6Vstup, projV7), 'Sablona_NABIDKA_PROJ_v7')
+    : REZIM_V6
     ? await ulozSMutacemi(await vyrob(proj5Vstup, projV6), 'Sablona_NABIDKA_PROJ_v6')
     : REZIM_V5
     ? await ulozSMutacemi(await vyrob(proj4Vstup, projV5), 'Sablona_NABIDKA_PROJ_v5')
@@ -1105,4 +1231,4 @@ async function hlavni() {
 
 /* Úpravy document.xml jdou testovat bez souborů (src/test_sablona_proj_v4.js). */
 if (require.main === module) hlavni().catch(e => { console.error('CHYBA: ' + e.message); process.exit(1); });
-module.exports = { cnV13, cnV14, projV3, projV4, projV5, projV6, sodProjV2, sodRealV2, sodRealV3, sodProjCislo, sodProjV4, prepisUsekOdstavce };
+module.exports = { cnV13, cnV14, projV3, projV4, projV5, projV6, projV7, textBehu, sodProjV2, sodRealV2, sodRealV3, sodProjCislo, sodProjV4, prepisUsekOdstavce };

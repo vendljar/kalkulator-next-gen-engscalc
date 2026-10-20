@@ -1036,6 +1036,29 @@ const KONTROLY = [
     },
   },
   {
+    /* ÚVOD DPZ VE WORDU BEZ STUDIE (D1, postřeh D. Sikory 19. 10. 2026).
+     * Nabídka začíná rovnou DPZ (studie nemá cenu): online nabídka věta
+     * „… navazuje na vzájemně odsouhlasenou STUDII PROVEDITELNOSTI. Ta …"
+     * vynechá, šablona PROJ v6 a starší ji ale má natvrdo. Varování, ne
+     * zábrana (viz cenaWordProj); oprava je šablona PROJ v7
+     * (nastroje/vyrob_sablony.js --proj-v7) se symbolem {{PROJ_DPZ_UVOD}}. */
+    kod: 'dpzUvodWordProj', kde: 'Nabídka PROJ', nazev: 'Word nabídky PROJ navazuje DPZ na studii, která se nenabízí',
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      const sekce = (ctx.projVysledek && ctx.projVysledek.sekce) || [];
+      const nabizena = k => sekce.some(x => x && x.key === k && Number(x.celkem) > 0);
+      if (!nabizena('dpz') || nabizena('studie')) return null;
+      const s = ctx.sablonaNabidkaProj;
+      if (!s || !Array.isArray(s.symboly) || !s.symboly.length) return null;
+      if (s.symboly.indexOf('PROJ_DPZ_UVOD') >= 0) return null;
+      return { text: 'Studie proveditelnosti se v této variantě nenabízí, wordová nabídka PROJ ale v úvodu DPZ napíše, '
+        + 'že DPZ „navazuje na vzájemně odsouhlasenou STUDII PROVEDITELNOSTI": šablona nabídky PROJ'
+        + (s.nazev ? ' „' + s.nazev + '"' : '') + (s.verze ? ' (verze ' + s.verze + ')' : '')
+        + ' má větu natvrdo (bez symbolu {{PROJ_DPZ_UVOD}}). Online náhled nabídky PROJ ji správně vynechá. '
+        + 'Nahrajte šablonu nabídky PROJ v7, nebo větu ve Wordu upravte ručně.' };
+    },
+  },
+  {
     /* PLÁN PLATEB PROJEKCE — 100 % U ČINNOSTI (etapa B, #367, rozhodnutí J. V.
      * 29. 9. 2026: „součet u každé činnosti 100 %, dokument nevznikne,
      * odklepnout nejde"). Splátky nabízené činnosti musí dát 100 %, mít

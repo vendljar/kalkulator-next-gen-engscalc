@@ -1,3 +1,25 @@
+# Předávka — 20. 10. 2026: dávka D1 (v20.10.3), větev `claude/d1-sikora` — postřehy D. Sikory 19. 10.
+
+Nad `claude/integrace-16-10` (5dc28d1, v20.10.1). Do integrace / `test` nic — slučuje koordinace
+(session_017KEALG3ppimL5fW2XswzrB); O7 má souběžně v20.10.2. Podklad `podklady/D1_SIKORA_19_10.md`,
+CHANGELOG v20.10.3, roadmapa #440–#443 uzavřené (předběžná id).
+
+- **Bod 1 hotovo (#440):** úvod DPZ bez studie bez „navazuje na vzájemně odsouhlasenou STUDII…“ — online,
+  Word `{{PROJ_DPZ_UVOD}}`, `nastroje/vyrob_sablony.js --proj-v7`, slovník, kontrola `dpzUvodWordProj` (38 pravidel).
+- **#441 (rozhodnutí J. V. 20. 10.):** Q1 hvězdička DPZ bez studie pryč (online + v7 symbol/blok), Q3 v7 titul
+  `{{PROJ_TITUL_STUDIE}}` / `{{PROJ_TITUL_CINNOSTI}}` a bloky `BLOK_STUDIE_ROZSAH/_CENA/_POZN` (`blokyPryc`,
+  SoD PROJ je nebere), Q2 `dpz+studie` / `dpz-studie` — bez studie „do 12 týdnů od zpracování výstupů ze
+  zaměření“ (J. V. 20. 10. ~11:35, `PODMINKY_TERMIN_DPZ_BEZ_STUDIE`). Body D2 (cestovné, úvod, jednostupňová) nedělat.
+  **Šablona .docx v7 nevznikla** — v6 v sezení není (Disk má jen v5, 1 MB konektorem nejde); J. V. ji vyrobí z v6.
+- **#442 hotovo:** výpočet šířky bočního světlíku beze změny, popisky „Šířka skla bočního světlíku (přes sloupky)“,
+  nápověda, Detail, TS „šířka skla N mm“ (EN/DE/FR), příručka.
+- **#443 uzavřeno beze změny** (J. V. 20. 10. ~11:40: dnešní profily portálu jsou správně); větev
+  `claude/d1-sikora-navrh-profily` se nepoužije — smaže J. V.
+- **Kolo `--bez-mutaci` (konečné, 20. 10. ~12:00):** 282 / 0 / 6 přeskočeno, statické 3/3; mutace d1 38/38 + d1 q2 5/5.
+- **Ke slučování:** CHANGELOG / `verze.txt` / `manual/obsah.json` (O7 v20.10.2 — novější nahoru),
+  `mutace_jadro.mjs` (blok D1 před #367b), `src/kontroly.js` (38 pravidel v `test_kontroly.js` a `overit_lista.mjs`;
+  přidá-li O7 pravidlo, sečíst), `roadmapa/roadmap.json` (#440–#443 na konci), `src/podminky.js` (výchozí termíny PROJ).
+
 # Předávka — 20. 10. 2026: dávka O7 (v20.10.2), větev `claude/o7-k3-rozhodnuti` — rozhodnutí J. V. k auditu K3
 
 Nad `claude/integrace-16-10` 5dc28d1 (v20.10.1 = test). Do integrace / `test` nic — slučuje koordinace

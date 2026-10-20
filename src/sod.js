@@ -254,6 +254,9 @@ function sodProjData(zak, varianta, lang, sablona) {
   /* Smlouva nese cenu díla: činnosti po slevě, ať se sečtou na cenu, kterou
    * objednatel platí (řádek slevy smlouva nemá). */
   const d = nabidkaProjData(zak, varianta, lang, { slevaZvlast: false });
+  /* Bloky studie jsou bloky NABÍDKY PROJ v7 (D1) — smlouva má vlastní seznam
+   * (sodProjRozsah); cizí jméno by u šablony SoD v4 zastavilo dokument. */
+  d.blokyPryc = [];
   const L = d.jazyk || 'cz';
   const nazev = ('SOD_PROJ_' + (d.placeholders.CISLO_NABIDKY || 'OVP-CN')
     + (varianta && varianta.zakaznik ? '_' + varianta.zakaznik : '')

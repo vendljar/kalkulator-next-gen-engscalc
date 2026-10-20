@@ -854,7 +854,7 @@ ok('modul kontrol je v sestavení', k33.logika && k33.panelFn);
 // 11 = 10 z vlny B + „ico" (30. 7. 2026)
 /* 12 = 10 z vlny B + „ico" + „atypBezCeny" (obojí 30. 7. 2026). Číslo je tu
  * napevno schválně: omylem zdvojené pravidlo by se jinak nepoznalo. */
-ok(`pravidel je ${k33.pravidel} (čekám 38 – slevaProjMax po auditu, kapitoly 23. 9., terminAtyp, nadDvermiBez a slevaWord 24. 9., mustky, cenaNula, slevaWordProj a polozkyNavicWordProj 25. 9., projZahranici, profilNeznamy a zapornaPolozka 29. 9., planPlateb100, planPlatebSoucet, planPlatebWordProj a platbyWordOck 30. 9. 2026, cenaWordProj a dodatekCesky — K18-N92, N96, bokyDveri — #375, statikaDvakrat — P5 / K19-N109, stranyDriv — P6 / K19-N114, cenovaVyjimka 13. 10. 2026, autorskyDozorWordProj 14. 10. 2026, mustkyPrechodove a mustekStrecha 17. 10. 2026 — #355, #356, mustekRozmer 20. 10. 2026 — K3-N17)`, k33.pravidel === 38);
+ok(`pravidel je ${k33.pravidel} (čekám 39 – slevaProjMax po auditu, kapitoly 23. 9., terminAtyp, nadDvermiBez a slevaWord 24. 9., mustky, cenaNula, slevaWordProj a polozkyNavicWordProj 25. 9., projZahranici, profilNeznamy a zapornaPolozka 29. 9., planPlateb100, planPlatebSoucet, planPlatebWordProj a platbyWordOck 30. 9. 2026, cenaWordProj a dodatekCesky — K18-N92, N96, bokyDveri — #375, statikaDvakrat — P5 / K19-N109, stranyDriv — P6 / K19-N114, cenovaVyjimka 13. 10. 2026, autorskyDozorWordProj 14. 10. 2026, mustkyPrechodove a mustekStrecha 17. 10. 2026 — #355, #356, mustekRozmer 20. 10. 2026 — K3-N17, dpzUvodWordProj 20. 10. 2026 — D1)`, k33.pravidel === 39);
 ok('všechna pravidla jsou varování (úroveň 2)', k33.uroven);
 /* Sestavení nese ukázkový ceník, takže tohle pravidlo svítí vždycky – je to
  * zároveň důkaz, že se panel v čerstvé instalaci opravdu ukáže. */

@@ -121,6 +121,16 @@ function nabidkaProjUvod(vRozsahu, P) {
   return odst;
 }
 
+/* Úvod rozsahu DPZ (D1, 20. 10. 2026): se studií v nabídce „navazuje na
+ * vzájemně odsouhlasenou STUDII PROVEDITELNOSTI. Ta rozpracovává…", bez ní
+ * DPZ „rozpracovává…" rovnou — nabídka nesmí navazovat na studii, kterou
+ * zákazníkovi nenabízíme. */
+const NABIDKA_PROJ_DPZ_UVOD = {
+  studie: 'Dokumentace pro povolení záměru (DPZ) navazuje na vzájemně odsouhlasenou STUDII PROVEDITELNOSTI. Ta rozpracovává dokumentaci dle platné vyhlášky do legislativou požadované úrovně s autorizacemi inženýrů dle příslušných oborů.',
+  bez: 'Dokumentace pro povolení záměru (DPZ) rozpracovává dokumentaci dle platné vyhlášky do legislativou požadované úrovně s autorizacemi inženýrů dle příslušných oborů.',
+  zaver: 'Dokumentace pro povolení záměru obsahuje tyto části:',
+};
+
 /* Definice dokumentu – pořadí i znění podle VZORu.
  * typ: 'nadpis' | 'proza' | 'rozsah' | 'cena' | 'seznam' | 'pary' | 'pozn' */
 const NABIDKA_PROJ_DEF = [
@@ -208,8 +218,13 @@ const NABIDKA_PROJ_DEF = [
   ] },
 
   /* ---------------- DPZ ---------------- */
+  /* Úvod DPZ se odkazuje na studii, jen když se studie nabízí (D1, postřeh
+   * D. Sikory 19. 10. 2026: „pokud nenabízíme Studii proveditelnosti a přímo
+   * začínáme s DPZ, je potřeba v textu CN vymazat"). `jinak` = znění bez
+   * navázání; věty drží NABIDKA_PROJ_DPZ_UVOD (i pro Word {{PROJ_DPZ_UVOD}}). */
   { typ: 'rozsah', nadpis: 'DOKUMENTACE PRO POVOLENÍ ZÁMĚRU (DPZ)', sekce: 'dpz', uvod: [
-    { cz: 'Dokumentace pro povolení záměru (DPZ) navazuje na vzájemně odsouhlasenou STUDII PROVEDITELNOSTI. Ta rozpracovává dokumentaci dle platné vyhlášky do legislativou požadované úrovně s autorizacemi inženýrů dle příslušných oborů. Dokumentace pro povolení záměru obsahuje tyto části:' },
+    { cz: NABIDKA_PROJ_DPZ_UVOD.studie + ' ' + NABIDKA_PROJ_DPZ_UVOD.zaver, sekce: 'studie',
+      jinak: NABIDKA_PROJ_DPZ_UVOD.bez + ' ' + NABIDKA_PROJ_DPZ_UVOD.zaver },
   ], radky: [
     ['Dokumentace pro povolení záměru – část 1', ''],
     ['Stavební část projektu', 'situace stavby – v rozsahu požadovaném pro řízení o povolení záměru'],
@@ -244,7 +259,9 @@ const NABIDKA_PROJ_DEF = [
     popis: 'Zpracování projektu pro DPZ', popisPredpona: 'včetně',
     popisZ: [['dpz:PBŘ', 'PBŘ'], ['dpz:Statika', 'STATIKY'],
              ['dpz:Elektro projekt', 'ELEKTRO PROJEKTU'], ['dpz:Studie osvitu (Praha 4 a 6)', 'STUDIE OSVITU']],
-    hvezdicka: 'Cena je platná v případě návaznosti na STUDII PROVEDITELNOSTI.' },
+    /* Hvězdička platí jen u nabídky se studií (D1, rozhodnutí J. V. 20. 10. 2026:
+     * bez studie „vynechat" — jinak by zněla, jako by cena neplatila). */
+    hvezdicka: 'Cena je platná v případě návaznosti na STUDII PROVEDITELNOSTI.', hvezdickaJenSe: 'studie' },
 
   /* ---------------- INŽENÝRSKÁ ČINNOST ---------------- */
   { typ: 'seznam', nadpis: 'INŽENÝRSKÁ ČINNOST (IČ)', sekce: 'ic', radky: [
@@ -641,7 +658,13 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
      * nepočítaný — text bez ceny je horší než chybějící text. */
     return !!cenaSekce(sekce) && !!polozkyMapa[sekce + ':' + jmeno];
   };
-  const vRozsahu = k => (String(k).indexOf(':') > 0) ? polozkaVRozsahu(String(k)) : !!cenaSekce(k);
+  /* Podmíněný klíč (D1, termín DPZ podle studie): „dpz+studie" = DPZ se
+   * studií, „dpz-studie" = DPZ bez studie. */
+  const vRozsahu = k => {
+    const m = /^([a-z]+)([+-])([a-z]+)$/.exec(String(k));
+    if (m) return !!cenaSekce(m[1]) && (m[2] === '+' ? !!cenaSekce(m[3]) : !cenaSekce(m[3]));
+    return (String(k).indexOf(':') > 0) ? polozkaVRozsahu(String(k)) : !!cenaSekce(k);
+  };
   /* `jenSe` = podmínka VIDITELNOSTI nezávislá na tom, odkud se bere částka.
    * Bez ní by šlo říct jen „ukaž se, když má tahle sekce cenu", což u částí
    * jedné dokumentace nestačí (viz CENA ZA STUDII – část 1). */
@@ -672,6 +695,8 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
   const navicVypsano = {};
 
   const uvodOdst = nabidkaProjUvod(vRozsahu, P);   // P11: úvod podle rozsahu
+  /* studie nebo její projednání v nabídce — bloky studie ve Wordu v7 a titul (D1, Q3) */
+  const nabiziStudii = vRozsahu('studie') || vRozsahu('projednani');
   /* Řádky plánu po činnostech — pro bloky online nabídky i symboly šablony v4. */
   const platbyRadky = {};
   if (!planStary) NABIDKA_PROJ_SEKCE.forEach(k => {
@@ -739,7 +764,10 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
           skupina.forEach(r => radky.push(['', '– ' + r[1]]));
         }
       }
-      return { typ: 'rozsah', nadpis: P(b.nadpis), uvod: (b.uvod || []).map(proza), radky };
+      /* odstavec úvodu se sekcí platí, jen když je sekce v rozsahu; jinak jeho `jinak` (D1) */
+      const uvod = (b.uvod || []).map(o => (o && o.sekce && !vRozsahu(o.sekce))
+        ? (o.jinak !== undefined ? { cz: o.jinak } : null) : o).filter(Boolean);
+      return { typ: 'rozsah', nadpis: P(b.nadpis), uvod: uvod.map(proza), radky };
     }
     if (b.typ === 'pary') {
       /* Splatnost a platnost z KRYCÍHO LISTU PROJ (P10.2, rozhodnutí J. V.
@@ -811,7 +839,7 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
             + (b.jednotka ? ' / ' + P(b.jednotka) : '')),
       odkaz: !!odkaz,
       neuvedena: neuvedena,
-      hvezdicka: b.hvezdicka ? P(b.hvezdicka) : '' };
+      hvezdicka: b.hvezdicka && (!b.hvezdickaJenSe || vRozsahu(b.hvezdickaJenSe)) ? P(b.hvezdicka) : '' };
   })
     /* blok 'platby' se rozvinul na blok za každou nabízenou činnost */
     .reduce((a, x) => a.concat(x), [])
@@ -863,6 +891,21 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
      * která místo pevného odstavce nese {{UVOD_NABIDKY_PROJ}}. Odstavce
      * odděluje nový řádek. */
     UVOD_NABIDKY_PROJ: uvodOdst.join('\n'),
+    /* Úvod rozsahu DPZ (D1) pro šablonu PROJ v7, která místo pevné věty
+     * „… navazuje na vzájemně odsouhlasenou STUDII PROVEDITELNOSTI. Ta …"
+     * nese {{PROJ_DPZ_UVOD}}: bez studie v nabídce věta bez navázání. */
+    PROJ_DPZ_UVOD: P(vRozsahu('studie') ? NABIDKA_PROJ_DPZ_UVOD.studie : NABIDKA_PROJ_DPZ_UVOD.bez)
+      + ' ' + P(NABIDKA_PROJ_DPZ_UVOD.zaver),
+    /* Hvězdička ceny DPZ jen se studií (D1, Q1): v7 má u nadpisu ceny
+     * {{PROJ_DPZ_HVEZDICKA_ZNACKA}} a poznámku v bloku BLOK_DPZ_HVEZDICKA
+     * se symbolem {{PROJ_DPZ_HVEZDICKA}} — prázdný symbol blok odstraní. */
+    PROJ_DPZ_HVEZDICKA_ZNACKA: vRozsahu('studie') ? '*' : '',
+    PROJ_DPZ_HVEZDICKA: vRozsahu('studie') ? P('* Cena je platná v případě návaznosti na STUDII PROVEDITELNOSTI') : '',
+    /* Titul nabídky (D1, Q3): „STUDIE PROVEDITELNOSTI / Navazující PROJEKTOVÉ
+     * a INŽENÝRSKÉ ČINNOSTI" jen se studií nebo jejím projednáním (jako blok
+     * ST online), jinak „PROJEKTOVÉ a INŽENÝRSKÉ ČINNOSTI". */
+    PROJ_TITUL_STUDIE: nabiziStudii ? String(P('STUDIE PROVEDITELNOSTI')).replace(/\s*:\s*$/, '') : '',
+    PROJ_TITUL_CINNOSTI: P(nabiziStudii ? 'Navazující PROJEKTOVÉ a INŽENÝRSKÉ ČINNOSTI' : 'PROJEKTOVÉ a INŽENÝRSKÉ ČINNOSTI'),
     /* Ceny jednotlivých činností do šablony (#136, 12. 8. 2026). Wordová
      * nabídka PROJ je jinak sázená než ta online: text je natvrdo v šabloně
      * a doplňují se jen částky. Klíče odpovídají cenovým blokům v pořadí,
@@ -992,7 +1035,15 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
     + (varianta && varianta.zakaznik ? '_' + varianta.zakaznik : '')
     + (L !== 'cz' ? '_' + L.toUpperCase() : '')).replace(/[\\/:*?"<>|]+/g, '-');
 
-  return { placeholders, bloky, rekapitulace, jazyk: L, nazevSouboru, platbyProj,
+  /* Bloky studie šablony PROJ v7 (D1, Q3) — pevný text bez symbolu, zmizí
+   * výslovně (docxgen blokyPryc). Starší šablona bloky nemá a nic se nestane.
+   * Poznámka o studii jen se studií (jako online `pozn` se sekcí studie),
+   * rozsah ST a ceny částí 1–3 se studií nebo projednáním (jako online blok ST). */
+  const blokyPryc = [];
+  if (!vRozsahu('studie')) blokyPryc.push('BLOK_STUDIE_POZN');
+  if (!nabiziStudii) blokyPryc.push('BLOK_STUDIE_ROZSAH', 'BLOK_STUDIE_CENA');
+
+  return { placeholders, bloky, rekapitulace, jazyk: L, nazevSouboru, platbyProj, blokyPryc,
     /* Sekce kalkulace, které tato nabídka oceňuje — rozsah díla SoD PROJ (#380 Q7). */
     nabizeneSekce: NABIDKA_PROJ_SEKCE.filter(k => !!cenaSekce(k)),
     /* Úvodní fotka nabídky PROJ. Je to VLASTNÍ fotka projekční nabídky
@@ -1028,4 +1079,4 @@ if (typeof dokumentRegistruj === 'function')
   });
 
 if (typeof module !== 'undefined')
-  module.exports = { nabidkaProjData, nabidkaProjNabiziAD, nabidkaProjCeny, nabidkaProjPlatby, NABIDKA_PROJ_PLATBY, nabidkaProjSlevaZvlast, nabidkaProjUvod, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_UVOD_ZAVER, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE, NABIDKA_PROJ_CENA_SYMBOL };
+  module.exports = { nabidkaProjData, nabidkaProjNabiziAD, nabidkaProjCeny, nabidkaProjPlatby, NABIDKA_PROJ_PLATBY, nabidkaProjSlevaZvlast, nabidkaProjUvod, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_UVOD_ZAVER, NABIDKA_PROJ_DPZ_UVOD, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE, NABIDKA_PROJ_CENA_SYMBOL };

@@ -769,22 +769,25 @@ function bokySirkaRadek(r) {
   const hodnota = rucne ? rucniMm : (predMm != null ? predMm : '');
   const mezMm = v && isFinite(+v.mezera) ? Math.round(+v.mezera * 1000) : null;
   let napoveda = '';
-  if (rucne) napoveda = 'zadáno ručně' + (predMm != null ? '; předpočítaná šířka ' + predMm + ' mm' : '');
+  /* Šířka SKLA přes sloupky (#442, rozhodnutí J. V. 20. 10. 2026): výpočet
+   * beze změny, popisek říká, že tabule přesahuje sloupky — světlo vedle
+   * dveří je užší (postřeh D. Sikory 19. 10.). */
+  if (rucne) napoveda = 'zadáno ručně' + (predMm != null ? '; předpočítaná šířka skla přes sloupky ' + predMm + ' mm' : '');
   else if (v && mezMm != null) {
     const dva = +v.dvereDva || 0, jeden = +v.dvereJeden || 0, bez = +v.dvereBez || 0;
     const slozeni = [];
     if (dva) slozeni.push(bokySirkaDvere(dva) + ' se dvěma (po ' + Math.round(+v.mezera * 500) + ' mm)');
     if (jeden) slozeni.push(bokySirkaDvere(jeden) + ' s jedním (' + mezMm + ' mm)');
     if (bez) slozeni.push(bokySirkaDvere(bez) + ' bez světlíku');
-    napoveda = 'předpočítáno z mezery vedle dveří ' + mezMm + ' mm: ' + slozeni.join(', ') + (dva && jeden ? ' → průměr' : '');
+    napoveda = 'šířka skla přes sloupky, předpočítaná z mezery vedle dveří ' + mezMm + ' mm: ' + slozeni.join(', ') + (dva && jeden ? ' → průměr' : '');
   }
   const k = (typeof kontrolyBokySirka === 'function') ? kontrolyBokySirka(r) : { zabrana: [], upozorneni: [] };
-  const titulPred = predMm != null ? 'předpočítaná šířka ' + predMm + ' mm' : 'předpočítaná šířka';
-  return `<div class="row boky-sirka"><label>Šířka bočního světlíku${rucne
+  const titulPred = predMm != null ? 'předpočítaná šířka skla přes sloupky ' + predMm + ' mm' : 'předpočítaná šířka skla přes sloupky';
+  return `<div class="row boky-sirka"><label>Šířka skla bočního světlíku (přes sloupky)${rucne
       ? ' <span class="pill mut" title="' + esc('zadáno ručně; ' + titulPred) + '">ručně</span>' : ''}</label>
       <span class="par"><input type="number" step="1" min="0" value="${esc(hodnota)}"
         title="${esc(rucne ? 'zadáno ručně; ' + titulPred
-          : 'šířka jednoho bočního světlíku — přepište, když je jiná (plocha boků = počet × šířka × 2,2 m)')}"
+          : 'šířka skla jednoho bočního světlíku přes sloupky (tabule přesahuje sloupky, světlo vedle dveří je užší) — přepište, když je jiná (plocha boků = počet × šířka × 2,2 m)')}"
         onchange="bokySirkaSet(this.value)">${rucne
         ? `<button class="mini noprint" title="${esc('vrátit ' + titulPred)}" onclick="bokySirkaZpet()">↺</button>` : ''}</span>
       <span class="u">mm</span></div>`

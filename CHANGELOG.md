@@ -8,6 +8,55 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v20.10.3 — D1: postřehy D. Sikory 19. 10. 2026 (větev claude/d1-sikora)
+
+Dávka D1 (koordinace „ŘÍDÍCÍ 19.10“), základ `claude/integrace-16-10` 5dc28d1 (v20.10.1).
+Souběžně O7 má v20.10.2. Podklad `podklady/D1_SIKORA_19_10.md`, roadmapa #440–#443 (předběžná id).
+
+**Ověření (20. 10. 2026, po všech rozhodnutích J. V.):** `testovaci_kolo.sh --bez-mutaci` **282 prošlo /
+0 selhalo / 6 přeskočeno** (`test.js` + 5 harnessů bez `KNG_PODKLADY`), statické **3/3**; `--kontrola`
+jádro 347 úseků; cílené mutace `mutace_jadro.mjs "d1"` **38/38** + po dosazení znění Q2 `"d1 q2"` **5/5**
+chycených, pracovní kopie po každém běhu beze změny.
+
+- **Bod 1 — nabídka PROJ bez studie proveditelnosti (#440, opraveno):** úvod bloku
+  DOKUMENTACE PRO POVOLENÍ ZÁMĚRU (DPZ) zní bez studie v nabídce „Dokumentace pro povolení
+  záměru (DPZ) rozpracovává dokumentaci dle platné vyhlášky…“ — věta „navazuje na vzájemně
+  odsouhlasenou STUDII PROVEDITELNOSTI. Ta …“ jen tehdy, když má studie cenu (samotné
+  projednání nestačí). `src/nabidka_proj.js` (`NABIDKA_PROJ_DPZ_UVOD`, odstavec úvodu se sekcí
+  a zněním `jinak`), Word symbol `{{PROJ_DPZ_UVOD}}` v jazyce dokumentu (slovník EN/DE/FR,
+  `src/preklad.js`), šablona **PROJ v7** z `nastroje/vyrob_sablony.js --proj-v7` (vstup v6;
+  odstavec úvodu DPZ → jediný symbol, písmo zůstává). Kontrola **`dpzUvodWordProj`**
+  (varování): studie se nenabízí, DPZ ano a šablona PROJ nemá `{{PROJ_DPZ_UVOD}}`.
+  Pravidel kontrol je 38. Test `src/test_d1_dpz_bez_studie.js` (před opravou selže na první).
+- **Další odkazy na studii bez studie (#441, rozhodnutí J. V. 20. 10. 2026 ~11:05, opraveno):**
+  - **Q1** hvězdička ceny DPZ „Cena je platná v případě návaznosti na STUDII PROVEDITELNOSTI.“ se
+    bez studie vynechá — online (`hvezdickaJenSe`), Word v7 `{{PROJ_DPZ_HVEZDICKA_ZNACKA}}`
+    u nadpisu ceny a poznámka `{{PROJ_DPZ_HVEZDICKA}}` v bloku `BLOK_DPZ_HVEZDICKA`;
+  - **Q2** termín hrubopisu DPZ (rozhodnutí J. V. 20. 10. ~11:35): se studií beze změny „do 10–12 týdnů
+    od schválení studie investorem a objednání“, bez studie **„do 12 týdnů od zpracování výstupů ze
+    zaměření“** (`PODMINKY_TERMIN_DPZ_BEZ_STUDIE`, EN/DE/FR ve slovníku, online i Word
+    `{{PROJ_TERMINY_TERMIN}}`); dva řádky termínů ve Firmě s klíčem `dpz+studie` / `dpz-studie`
+    (nový podmíněný klíč, Nastavení → Smlouvy / Šablony → Texty nabídky PROJ; **uložené vlastní
+    termíny se nemění** — kdo je má uložené, doplní řádek sám);
+  - **Q3** šablona **PROJ v7** navíc: titul `{{PROJ_TITUL_STUDIE}}` („STUDIE PROVEDITELNOSTI“ jen
+    se studií nebo projednáním) a `{{PROJ_TITUL_CINNOSTI}}` („Navazující PROJEKTOVÉ a INŽENÝRSKÉ
+    ČINNOSTI“, bez studie „PROJEKTOVÉ a INŽENÝRSKÉ ČINNOSTI“), bloky `BLOK_STUDIE_ROZSAH` (tabulka
+    ST), `BLOK_STUDIE_CENA` (nadpis a ceny SP) — pryč bez studie i projednání, `BLOK_STUDIE_POZN`
+    (poznámka o studii) — pryč bez studie (`blokyPryc` nabídky PROJ; smlouva o dílo PROJ si je
+    nebere). Test rozšířen na 88 kontrol (před Q1–Q3 17 FAIL + pád sady).
+- **Bod 2 — šířka bočního světlíku 600 mm (#442, rozhodnutí J. V. 20. 10. ~11:25, popisek):**
+  600 = šířka skla na terčích 1 680 − otvor dveří 1 040 − 40 — výpočet je správně a zůstává
+  (Model 1 i 2), variantu C neplánovat. Popisky: „Šířka skla bočního světlíku (přes sloupky)“,
+  „předpočítaná šířka skla přes sloupky 600 mm“, Detail, technická specifikace „šířka skla N mm“
+  (EN glass width / DE Glasbreite / FR largeur du verre; starší „šířka N mm“ se překládá dál),
+  příručka; hlášky kontroly beze změny. Testy `test_svetliky_sirka.js` 70 (se starými popisky
+  6 FAIL), `overit_svetliky_sirka.mjs` 24 (se starými 15 FAIL).
+- **Bod 3 — dimenze profilů portálu (#443, uzavřeno beze změny):** rozhodnutí J. V. 20. 10.
+  ~11:40 — dnešní stav je správně (sloupek portálu 40×40/3 EXT i INT, příčník portálu 80×40/3);
+  návrh z větve `claude/d1-sikora-navrh-profily` se nepoužije (větev smaže J. V.).
+
+---
+
 ## v20.10.2 — O7: rozhodnutí J. V. k auditu K3 (větev claude/o7-k3-rozhodnuti)
 
 Dávka O7 (koordinace „ŘÍDÍCÍ 19.10“), základ `claude/integrace-16-10` 5dc28d1
