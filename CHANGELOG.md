@@ -8,6 +8,34 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v20.10.7 — U1: zveřejnění platebních podmínek přímo na záložce Smlouvy / Šablony, zarovnání limitu pokut (větev claude/u1-podminky-zverejnit)
+
+Dávka U1 (postřehy J. V. 20. 10. 2026 + zpřesnění ~12:00), základ `test` 5dc28d1 (v20.10.1).
+
+- **Tlačítko „Zapsat výchozí hodnoty"** (dřív „Zapsat výchozí hodnoty do Firmy"): stisk zapíše
+  výchozí podmínky do firemních údajů a **na serveru je rovnou zveřejní** — stejná cesta a kontroly jako
+  zveřejnění ve Firmě (`onlineZverejniFirmu(true)`: jen administrátor online, `firmaLzeZverejnit`, chyba
+  serveru se ohlásí), jen bez druhého dotazu. Výsledek (úspěch / chyba) se ukáže přímo na záložce.
+  Hláška dřív posílala na tlačítko „Zveřejnit", které na záložce nebylo.
+- **Stav a tlačítko na záložce** (pod oddílem „Společné pro OCK i PROJ"): po ruční úpravě kteréhokoli
+  pole záložky (sazby, limit, OCK/PROJ, věty, kapitoly) svítí **„Neuloženo online"** s výčtem rozdílů a
+  primární **„Zveřejnit změny online"**; když je online totéž, jen nenápadné „Zveřejnit znovu (není
+  potřeba)". Bez serveru / bez přihlášení administrátora se tlačítko nekreslí a záložka i hláška řeknou
+  proč. Panel v Nastavení → Firma zůstává (sdílí `onlineFirmaZverejnitBlok`). Hláška „Doplnit všechny
+  prázdné" u kapitol nabídky říká totéž.
+- **Značka ukázkových dat:** „Zapsat výchozí hodnoty" ji nově nesundává (zápis mimo `firmaSet`, stejně
+  jako doplnění kapitol) — se zveřejněním rovnou stiskem by jinak na server mohla jít ukázková firma.
+- **Zarovnání:** řádky platebních podmínek mají sloupec jednotek pevné šířky (`.podm-jednotka`), takže
+  vstupy končí v jedné svislici — „Limit smluvních pokut", „Splatnost faktur", „Doba záruky" a
+  zádržné (výběr + %) byly posunuté doleva. Ověřeno snímkem 1400 i 760 px.
+- **Test** `overit_podminky_zverejnit.mjs` (30): přejmenované tlačítko, offline jen zápis + věta proč,
+  stisk online = zápis + POST `/api/firma` (podvržené `onlineApi`) bez dotazu, potvrzení a stav na
+  záložce, ruční úprava → „Neuloženo online", chyba serveru, ukázková data, hláška kapitol, pravé okraje
+  vstupů ±2 px v obou kartách a dvou šířkách. Pojistka: nad původním kódem padá (tlačítko, hlášky, stav).
+  `test_escape.js`: `z.tlacitko` v `PROVERENO_CLENY` (literál z kódu).
+
+---
+
 ## v20.10.1 — O5: opravy nálezů auditu K3 bez rozhodnutí J. V. (větev claude/o5-k3-nalezy)
 
 Dávka O5 (koordinace „ŘÍDÍCÍ 19.10 noc“), základ `claude/integrace-16-10` 3b49d57
