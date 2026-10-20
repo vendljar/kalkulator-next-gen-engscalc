@@ -42,14 +42,24 @@
 # --force-with-lease na hodnotu z fetch — pushne-li dávka do větve mezi
 # načtením a smazáním, smazání se odmítne (stale info) a nová práce zůstane.
 #
+# Vstupy a běh (K4-N10, K4-N11, K4-N19, O8): --stari-hodin je celé číslo
+# 1–8760 (rok; 0, nečíselné, přetečení → kód 2), čte se desítkově („08“ = 8).
+# V GitHub Actions (GITHUB_ACTIONS=true) skript běží jen ze spuštění nad main
+# (GITHUB_REF=refs/heads/main), jinak kód 2 bez mazání — workflow spuštěný
+# z jiné větve by nesl její (možná upravenou) kopii skriptu; job má tutéž
+# podmínku. Bez rozvinutí globů (set -f: „*“ ve --vynechat je jen text),
+# set -eu -o pipefail; selhání čtení u větve = větev vynechaná, ne smazaná.
+#
 # Použití (v kořeni klonu):
 #   bash nastroje/sloucene_vetve.sh --jen-vypsat
 #   bash nastroje/sloucene_vetve.sh [--stari-hodin N] [--vynechat "a b"] [--zaklad test] [--remote origin]
 #                                   [--github-repo vlastník/repo]
 # Souhrn jde na výstup a — je-li nastavené GITHUB_STEP_SUMMARY — i do souhrnu běhu.
-# Návratový kód: 0 = v pořádku, 1 = některé smazání selhalo, 2 = špatné zadání.
+# Návratový kód: 0 = v pořádku, 1 = některé smazání selhalo, 2 = špatné zadání
+# nebo běh v Actions mimo main (nic se nesmazalo).
 
-set -u
+set -euo pipefail
+set -f
 
 JEN_VYPSAT=0
 STARI_HODIN=24
@@ -63,22 +73,34 @@ CHRANENE_VZOR="claude/integrace-*"
 while [ $# -gt 0 ]; do
   case "$1" in
     --jen-vypsat) JEN_VYPSAT=1 ;;
-    --stari-hodin) shift; STARI_HODIN="${1:-}" ;;
+    --stari-hodin) shift || true; STARI_HODIN="${1:-}" ;;
     --stari-hodin=*) STARI_HODIN="${1#--stari-hodin=}" ;;
-    --vynechat) shift; VYNECHAT="${1:-}" ;;
+    --vynechat) shift || true; VYNECHAT="${1:-}" ;;
     --vynechat=*) VYNECHAT="${1#--vynechat=}" ;;
-    --zaklad) shift; ZAKLAD="${1:-}" ;;
-    --remote) shift; REMOTE="${1:-}" ;;
-    --github-repo) shift; GITHUB_REPO="${1:-}" ;;
-    -h|--help) sed -n '2,50p' "$0"; exit 0 ;;
+    --zaklad) shift || true; ZAKLAD="${1:-}" ;;
+    --remote) shift || true; REMOTE="${1:-}" ;;
+    --github-repo) shift || true; GITHUB_REPO="${1:-}" ;;
+    -h|--help) sed -n '2,/^set -euo/p' "$0" | sed '$d'; exit 0 ;;
     *) echo "neznámá volba: $1 (viz --help)"; exit 2 ;;
   esac
-  shift
+  shift || true
 done
 
 case "$STARI_HODIN" in
   ''|*[!0-9]*) echo "CHYBA: --stari-hodin musí být celé číslo hodin (zadáno: '$STARI_HODIN')"; exit 2 ;;
 esac
+# Nuly na začátku se odříznou („08“ = 8, ne oktal) a délka je nejvýš 4
+# číslice — delší číslo by v bash přeteklo (2^64 + 24 = 24) a mez obešlo (K4-N10).
+STARI_HODIN="${STARI_HODIN#"${STARI_HODIN%%[!0]*}"}"
+if [ "${#STARI_HODIN}" -gt 4 ] || [ "$((${STARI_HODIN:-0}))" -lt 1 ] || [ "$((${STARI_HODIN:-0}))" -gt 8760 ]; then
+  echo "CHYBA: --stari-hodin musí být 1–8760 hodin (zadáno mimo rozsah)"; exit 2
+fi
+
+# K4-N11: v Actions jen ze spuštění nad main.
+if [ "${GITHUB_ACTIONS:-}" = "true" ] && [ "${GITHUB_REF:-}" != "refs/heads/main" ]; then
+  echo "CHYBA: workflow spuštěný z '${GITHUB_REF:-?}' — mazat se smí jen ze spuštění nad main (Use workflow from: main); nic se nesmazalo"
+  exit 2
+fi
 
 # Aktuální seznam vzdálených větví (i smazaných mezitím jinde).
 if ! git fetch --prune --quiet "$REMOTE" "+refs/heads/*:refs/remotes/$REMOTE/*"; then
@@ -134,8 +156,8 @@ while IFS= read -r vetev; do
   if ! git merge-base --is-ancestor "$ref" "refs/remotes/$REMOTE/$ZAKLAD"; then
     nesloucene+=("$vetev"); continue
   fi
-  sha=$(git rev-parse --verify --quiet "$ref^{commit}")
-  cas=$(git log -1 --format=%ct "$ref")
+  sha=$(git rev-parse --verify --quiet "$ref^{commit}" || true)
+  cas=$(git log -1 --format=%ct "$ref" 2>/dev/null || true)
   case "$sha:$cas" in
     :*|*:|*:*[!0-9]*) vynechane+=("$vetev — nelze přečíst špičku ani čas commitu"); continue ;;
   esac

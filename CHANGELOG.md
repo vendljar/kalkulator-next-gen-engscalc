@@ -41,8 +41,23 @@ verze zůstává v20.10.8. Nálezy z auditu K4 (`podklady/K4_AUDIT_20_10.md` ve 
   přežila. Test volí českou DPH výslovně a ověří i bytový dům (prohlášení má). `node mutace_jadro.mjs "snížené
   sazbě"`: před úpravou 1 nechycená, po ní 2/2; mutace „DPH“ 15/15. Kód aplikace beze změny.
 - Kolo `--bez-mutaci`: sady 286 prošlo / 0 selhalo / 6 přeskočeno, statické kontroly 4/4.
-- Mimo rozsah (zůstávají z K4): K4-N10 (přetečení `stari_hodin`), K4-N11 (`if` na `main` ve workflow), zbytek
-  K4-N19 (glob ve `--vynechat`), K4-N20 (Rulesets — J. V.).
+- **Pokračování O8 (zadání koordinace 20. 10. noc):**
+  - **#455 (K4-N10)** `--stari-hodin` jen 1–8760: nuly na začátku se odříznou („08“ = 8, ne oktal), nejvýš
+    4 číslice (2^64 + 24 by v bash přeteklo na 24), 0 / nečíselné / mimo rozsah → kód 2.
+  - **#456 (K4-N11)** job `smazat` má `if: github.ref == 'refs/heads/main'`; skript v Actions mimo
+    `refs/heads/main` skončí kódem 2 bez mazání; komentář workflow opraven (formulář dovolí i jinou větev).
+  - **#457 (K4-N19)** `set -euo pipefail` + `set -f` (`*` ve `--vynechat` je text); přepínač bez hodnoty
+    nespadne na `shift`.
+  - Cesta „smazání selhalo“ krytá (mutant `|| true` u mazání: 5 kontrol selže).
+  - **#458 (K4-N8)** `src/test_d2_proj_sikora.js` „zamčená varianta: ruční text zůstává“: zámek přes
+    `zamkniVariantu` (zamceno, zmrazený výsledek PROJ), výjimka z `nabidkaProjData` = selhání. Pojistka:
+    s podvrženou výjimkou starý test 73/0, nový 72/1.
+  - Test `nastroje/test_sloucene_vetve.sh` 33 → 48 kontrol; proti skriptu z první části O8 35 / 13 ✗, nový
+    48/0. Ruční mutace finálního skriptu 14/14 chycené (`|| true` u mazání, bez lease, selhání jako smazání,
+    bez `set -f`, bez délky, bez odříznutí nul, bez horní meze, nula povolena, bez kontroly ref, bez hlavní
+    linie, bez merge kritéria, ignoruje čas API, bez API, bez stáří commitu).
+  - Mimo rozsah: opravy v kódu aplikace z K4 (N1, N4–N7, N12–N18, texty MEZE) čekají na konečný audit K4
+    a rozhodnutí J. V.; K4-N20 (Rulesets) → J. V.
 
 ---
 

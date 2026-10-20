@@ -195,9 +195,18 @@ const cenaBlok = (d, nadpis) => d.bloky.find(b => b.typ === 'cena' && b.nadpis =
   test('Vrátit výchozí: zpět výchozí znění bez upozornění', d3.placeholders.UVOD_NABIDKY_PROJ === d3.uvod.vychoziCz && !d3.uvod.nesedi);
   /* zamčená varianta drží text (zadání je její) */
   Object.assign(v.data.proj.zadani, { uvodNabidkyRucne: RUC });
-  v.zamek = { kdy: '2026-10-20T08:00:00Z', otisk: null };
-  let dz = null; try { dz = NP.nabidkaProjData(zak, v, 'cz'); } catch (e) { dz = null; }
-  test('zamčená varianta: ruční text zůstává', !dz || dz.placeholders.UVOD_NABIDKY_PROJ === RUC);
+  /* #458 (K4-N8, O8): zámek jako ve skutečnosti (zamkniVariantu → zamceno,
+   * výsledek PROJ zmrazený při odeslání) a výjimka z nabidkaProjData je
+   * selhání, ne „projde“. Před úpravou test prošel i s výjimkou (dz = null)
+   * a se zámkem bez `zamceno`; ověřeno podvržením výjimky — před 0, po 1 FAIL. */
+  delete v.zamek;
+  zamkniVariantu(v, { kdy: '2026-10-20T08:00:00Z', typ: 'nabidkaProj',
+    vysledek: { proj: EP.vypocetProj(v.data.proj.zadani, v.data.proj.cenik) } });
+  let dz = null, chybaZ = null;
+  try { dz = NP.nabidkaProjData(zak, v, 'cz'); } catch (e) { chybaZ = String(e && e.message || e); }
+  test('zamčená varianta (zamkniVariantu): ruční text zůstává',
+    v.zamek && v.zamek.zamceno === true && !chybaZ && !!dz && dz.placeholders.UVOD_NABIDKY_PROJ === RUC,
+    chybaZ || (dz && dz.placeholders.UVOD_NABIDKY_PROJ));
 }
 
 /* ---------------- 4) kontroly: jednostupňová, cena výjezdu, Word ---------------- */

@@ -7039,55 +7039,123 @@
    ],
    "pozn": "Otevřený bod z K29-N1."
   },
- {
-  "id": "452",
-  "vlna": "B",
-  "stav": "hotovo",
-  "dulezitost": "stredni",
-  "slozitost": "S",
-  "nazev": "K4-N2: W2 nesmaže čerstvou dávkovou větev založenou nad starou špičkou test",
-  "proc": "Audit K4 (20. 10. 2026, nad v20.10.7): ochrana „poslední commit mladší než 24 h“ bere committer date špičky; nová větev bez vlastního commitu nad starým commitem test (test-draft, integrace) byla zároveň „stará“ i „celá v test“ a skript ji smazal (ověřeno pokusem).",
-  "detail": "HOTOVO (dávka O8, větev claude/o8-k4-nalezy, bez nové verze aplikace): `nastroje/sloucene_vetve.sh` bere skutečné stáří větve z GitHubu — čas poslední aktivity větve (`gh api repos/<repo>/activity?ref=refs/heads/<v>`, workflow předává `--github-repo` a GH_TOKEN). Bez údaje z API konzervativně: smaže jen větev, jejíž špička je druhým rodičem merge commitu v test a neleží na hlavní linii (first-parent) main/test/test-draft/claude/integrace-*; jinak „stáří nelze doložit“ s důvodem v souhrnu. Zbylá mez bez API: větev založená přesně na špičce jiné, už mergem sloučené dávkové větve.",
-  "hotovoKdyz": "nastroje/test_sloucene_vetve.sh: čerstvá větev na staré špičce test i na špičce integrace zůstane, s API rozhoduje čas pushe; pojistka — původní skript 12/21, nový 33/0; mutace skriptu (bez hlavní linie, bez merge kritéria, bez API, ignoruje čas API) chycené.",
-  "kde": "`nastroje/sloucene_vetve.sh`, `nastroje/test_sloucene_vetve.sh`, `.github/workflows/smazat_vetve.yml`",
-  "zavisi": [],
-  "hotovoV": "nástroj (O8)",
-  "pozn": "Id 452 přidělila koordinace při zadání dávky."
- },
- {
-  "id": "453",
-  "vlna": "B",
-  "stav": "hotovo",
-  "dulezitost": "stredni",
-  "slozitost": "S",
-  "nazev": "K4-N3: W2 maže s --force-with-lease — souběžný push do mazané větve se neztratí",
-  "proc": "Audit K4: mezi fetch a `git push --delete <krátké jméno>` mohla dávka pushnout nový commit a smazání ho odřízlo (TOCTOU, ověřeno pokusem).",
-  "detail": "HOTOVO (dávka O8): mazání `git push --force-with-lease=refs/heads/<v>:<sha z fetch> origin --delete refs/heads/<v>`; změněná větev → smazání odmítnuto, oddíl „Smazání selhalo“ s vysvětlením, kód 1. Plné jméno ref řeší i K4-N9.",
-  "hotovoKdyz": "Test se souběžným pushem (podvržený git pushne z druhého klonu těsně před smazáním): větev i nový commit zůstanou, kód 1; před opravou se větev smazala. Pokryta i cesta „smazání selhalo“ (mutace selhání→smazáno chycena).",
-  "kde": "`nastroje/sloucene_vetve.sh`, `nastroje/test_sloucene_vetve.sh`",
-  "zavisi": [
-   "452"
-  ],
-  "hotovoV": "nástroj (O8)",
-  "pozn": "Id 453 přidělila koordinace při zadání dávky."
- },
- {
-  "id": "454",
-  "vlna": "B",
-  "stav": "hotovo",
-  "dulezitost": "nizka",
-  "slozitost": "XS",
-  "nazev": "Prázdný test po V7-N2: „česká DPH + administrativní budova“ nastavuje českou DPH výslovně",
-  "proc": "Kolo K4: mutace jádra „DPH: prohlášení o snížené sazbě i mimo stavbu pro bydlení“ přežila — případ v src/test_sod_en.js běžel s výchozím režimem, který je od V7-N2 přenesená povinnost. Kód v pořádku.",
-  "detail": "HOTOVO (dávka O8): test volí `sodDphRezim` = česká DPH, ověří větu režimu a že bytový dům prohlášení o snížené sazbě má a administrativní budova ne.",
-  "hotovoKdyz": "`node mutace_jadro.mjs \"snížené sazbě\"`: před úpravou testu 1 nechycená, po ní 2/2 chycené.",
-  "kde": "`src/test_sod_en.js`",
-  "zavisi": [
-   "438"
-  ],
-  "hotovoV": "nástroj (O8)",
-  "pozn": "Id 454 přidělila koordinace při zadání dávky."
- }
+  {
+   "id": "452",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "nazev": "K4-N2: W2 nesmaže čerstvou dávkovou větev založenou nad starou špičkou test",
+   "proc": "Audit K4 (20. 10. 2026, nad v20.10.7): ochrana „poslední commit mladší než 24 h“ bere committer date špičky; nová větev bez vlastního commitu nad starým commitem test (test-draft, integrace) byla zároveň „stará“ i „celá v test“ a skript ji smazal (ověřeno pokusem).",
+   "detail": "HOTOVO (dávka O8, větev claude/o8-k4-nalezy, bez nové verze aplikace): `nastroje/sloucene_vetve.sh` bere skutečné stáří větve z GitHubu — čas poslední aktivity větve (`gh api repos/<repo>/activity?ref=refs/heads/<v>`, workflow předává `--github-repo` a GH_TOKEN). Bez údaje z API konzervativně: smaže jen větev, jejíž špička je druhým rodičem merge commitu v test a neleží na hlavní linii (first-parent) main/test/test-draft/claude/integrace-*; jinak „stáří nelze doložit“ s důvodem v souhrnu. Zbylá mez bez API: větev založená přesně na špičce jiné, už mergem sloučené dávkové větve.",
+   "hotovoKdyz": "nastroje/test_sloucene_vetve.sh: čerstvá větev na staré špičce test i na špičce integrace zůstane, s API rozhoduje čas pushe; pojistka — původní skript 12/21, nový 33/0; mutace skriptu (bez hlavní linie, bez merge kritéria, bez API, ignoruje čas API) chycené.",
+   "kde": "`nastroje/sloucene_vetve.sh`, `nastroje/test_sloucene_vetve.sh`, `.github/workflows/smazat_vetve.yml`",
+   "zavisi": [],
+   "hotovoV": "nástroj (O8)",
+   "pozn": "Id 452 přidělila koordinace při zadání dávky."
+  },
+  {
+   "id": "453",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "nazev": "K4-N3: W2 maže s --force-with-lease — souběžný push do mazané větve se neztratí",
+   "proc": "Audit K4: mezi fetch a `git push --delete <krátké jméno>` mohla dávka pushnout nový commit a smazání ho odřízlo (TOCTOU, ověřeno pokusem).",
+   "detail": "HOTOVO (dávka O8): mazání `git push --force-with-lease=refs/heads/<v>:<sha z fetch> origin --delete refs/heads/<v>`; změněná větev → smazání odmítnuto, oddíl „Smazání selhalo“ s vysvětlením, kód 1. Plné jméno ref řeší i K4-N9.",
+   "hotovoKdyz": "Test se souběžným pushem (podvržený git pushne z druhého klonu těsně před smazáním): větev i nový commit zůstanou, kód 1; před opravou se větev smazala. Pokryta i cesta „smazání selhalo“ (mutace selhání→smazáno chycena).",
+   "kde": "`nastroje/sloucene_vetve.sh`, `nastroje/test_sloucene_vetve.sh`",
+   "zavisi": [
+    "452"
+   ],
+   "hotovoV": "nástroj (O8)",
+   "pozn": "Id 453 přidělila koordinace při zadání dávky."
+  },
+  {
+   "id": "454",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "nizka",
+   "slozitost": "XS",
+   "nazev": "Prázdný test po V7-N2: „česká DPH + administrativní budova“ nastavuje českou DPH výslovně",
+   "proc": "Kolo K4: mutace jádra „DPH: prohlášení o snížené sazbě i mimo stavbu pro bydlení“ přežila — případ v src/test_sod_en.js běžel s výchozím režimem, který je od V7-N2 přenesená povinnost. Kód v pořádku.",
+   "detail": "HOTOVO (dávka O8): test volí `sodDphRezim` = česká DPH, ověří větu režimu a že bytový dům prohlášení o snížené sazbě má a administrativní budova ne.",
+   "hotovoKdyz": "`node mutace_jadro.mjs \"snížené sazbě\"`: před úpravou testu 1 nechycená, po ní 2/2 chycené.",
+   "kde": "`src/test_sod_en.js`",
+   "zavisi": [
+    "438"
+   ],
+   "hotovoV": "nástroj (O8)",
+   "pozn": "Id 454 přidělila koordinace při zadání dávky."
+  },
+  {
+   "id": "455",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "nizka",
+   "slozitost": "XS",
+   "nazev": "K4-N10: W2 — stari_hodin jen 1–8760, bez přetečení a oktalu",
+   "proc": "Audit K4: kontrola jen „samé číslice“ — 99999999999999999999 přeteklo a ochranu stáří vypnulo, „08“ skončilo chybou bash (oktal).",
+   "detail": "HOTOVO (O8, bez nové verze aplikace): nuly na začátku se odříznou („08“ = 8), délka nejvýš 4 číslice (2^64 + 24 by přeteklo na 24), rozsah 1–8760 h; 0, nečíselné a mimo rozsah → kód 2, nic se nesmaže.",
+   "hotovoKdyz": "Test: 0, 00, 8761, 99999, 99999999999999999999, 18446744073709551640, -1, prázdné → kód 2; 08 = 8 h; 8760 přijato. Pojistka: skript O8 tyto kontroly nesplní; mutace (bez délky, bez odříznutí nul, nula povolena, bez horní meze) chycené.",
+   "kde": "`nastroje/sloucene_vetve.sh`, `nastroje/test_sloucene_vetve.sh`",
+   "zavisi": [
+    "452"
+   ],
+   "hotovoV": "nástroj (O8)",
+   "pozn": "Id přidělila koordinace (pokračování O8)."
+  },
+  {
+   "id": "456",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "nizka",
+   "slozitost": "XS",
+   "nazev": "K4-N11: W2 maže jen ze spuštění nad main",
+   "proc": "Audit K4: formulář „Use workflow from“ dovolí vybrat libovolnou větev — běžel by workflow i skript z té větve s contents: write; komentář tvrdil opak.",
+   "detail": "HOTOVO (O8): job `smazat` má `if: github.ref == 'refs/heads/main'`, skript v Actions (GITHUB_ACTIONS=true) mimo refs/heads/main skončí kódem 2 bez mazání; komentář workflow opraven. Mez: upravená kopie ve větvi může obě kontroly odstranit — proto spouštět vždy z main (druhá vrstva K4-N20 Rulesets → J. V.).",
+   "hotovoKdyz": "Test: GITHUB_REF jiné větve → kód 2, hláška, nic nesmazáno; nad main projde. Pojistka: skript O8 3 kontroly nesplní; mutace kontroly ref chycena.",
+   "kde": "`.github/workflows/smazat_vetve.yml`, `nastroje/sloucene_vetve.sh`, `nastroje/test_sloucene_vetve.sh`",
+   "zavisi": [
+    "452"
+   ],
+   "hotovoV": "nástroj (O8)",
+   "pozn": "Id přidělila koordinace (pokračování O8)."
+  },
+  {
+   "id": "457",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "nizka",
+   "slozitost": "XS",
+   "nazev": "K4-N19: W2 — bez globu ve --vynechat, set -euo pipefail, fail-closed čtení",
+   "proc": "Audit K4: `for c in $VYNECHAT` rozvinulo „*“ na soubory checkoutu; skript bez set -e/pipefail; prázdný čas commitu by větev pustil do mazání.",
+   "detail": "HOTOVO (O8): `set -euo pipefail` + `set -f`; nečitelná špička nebo čas commitu → větev vynechaná s důvodem; přepínače bez hodnoty nespadnou na shift.",
+   "hotovoKdyz": "Test: `--vynechat 'v*'` se souborem „vynechana“ v pracovní složce nevynechá větev vynechana. Pojistka: skript O8 2 kontroly nesplní; mutace bez set -f chycena.",
+   "kde": "`nastroje/sloucene_vetve.sh`, `nastroje/test_sloucene_vetve.sh`",
+   "zavisi": [
+    "452"
+   ],
+   "hotovoV": "nástroj (O8)",
+   "pozn": "Id přidělila koordinace (pokračování O8)."
+  },
+  {
+   "id": "458",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "nizka",
+   "slozitost": "XS",
+   "nazev": "K4-N8: prázdný test D2 „zamčená varianta: ruční text zůstává“",
+   "proc": "Audit K4: test prošel i tehdy, když nabidkaProjData hodí výjimku (dz = null), a zámek v testu byl bez `zamceno`.",
+   "detail": "HOTOVO (O8): zámek přes `zamkniVariantu` (zamceno, zmrazený výsledek PROJ jako při odeslání), výjimka = selhání s textem chyby, vyžaduje dz a ruční text.",
+   "hotovoKdyz": "Pojistka: s podvrženou výjimkou v nabidkaProjData u zamčené varianty starý test 73/0, nový 72/1; bez ní 73/0.",
+   "kde": "`src/test_d2_proj_sikora.js`",
+   "zavisi": [
+    "446"
+   ],
+   "hotovoV": "nástroj (O8)",
+   "pozn": "Id přidělila koordinace (pokračování O8)."
+  }
  ],
  "meta" : {
   "projekt" : "Kalkulator Next Gen",

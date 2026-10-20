@@ -24,12 +24,16 @@
 # K4-N3: podvržený `git` při mazání claude/stara-davka nejdřív pushne do té
 # větve nový commit z druhého klonu — smazání musí selhat (kód 1, oddíl
 # „Smazání selhalo“) a nový commit zůstat na originu.
-# Dál výpis (--jen-vypsat nic nesmaže), souhrn do GITHUB_STEP_SUMMARY
-# a odmítnutí špatného zadání. Jiný skript k ověření (pojistka proti
+# Dál výpis (--jen-vypsat nic nesmaže), souhrn do GITHUB_STEP_SUMMARY,
+# odmítnutí špatného zadání a mimo rozsah stari_hodin (K4-N10), běh v Actions
+# jen nad main (K4-N11) a „*“ ve --vynechat bez rozvinutí globu (K4-N19). Jiný skript k ověření (pojistka proti
 # prázdnému testu): SLOUCENE_VETVE_SKRIPT=<cesta>.
 # Návratový kód = počet selhaných kontrol.
 
 set -u
+# V CI (testy.yml) jsou GITHUB_ACTIONS a GITHUB_REF nastavené na testovanou
+# větev — skript by běh mimo main odmítl (K4-N11). Test si je nastaví sám.
+unset GITHUB_ACTIONS GITHUB_REF GITHUB_STEP_SUMMARY
 SKRIPT="${SLOUCENE_VETVE_SKRIPT:-$(cd "$(dirname "$0")" && pwd)/sloucene_vetve.sh}"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
@@ -164,10 +168,31 @@ kontrola "  …a v něm claude/stara-davka" bash -c 'grep -A4 "^### Smazání se
 kontrola "souhrn do GITHUB_STEP_SUMMARY" grep -q '^### Smazané (1)$' "$GITHUB_STEP_SUMMARY"
 unset GITHUB_STEP_SUMMARY
 
-echo "— hranice stáří 0 h a bez --vynechat"
-vystup="$(bash "$SKRIPT" --jen-vypsat --stari-hodin 0 2>&1)"
-kontrola "mladá i vynechana jsou kandidáti, chráněné a nové ne; souběžná práce nesloučená" \
-  grep -q 'SLOUCENE_VETVE: ke smazání 2, smazáno 0, vynecháno 8, nesloučené 2' <<<"$vystup"
+echo "— hranice stáří 1 h, --vynechat s globem (K4-N19)"
+touch vynechana   # soubor v pracovní složce: rozvinutý glob „v*“ by dal jméno větve
+vystup="$(bash "$SKRIPT" --jen-vypsat --stari-hodin 1 --vynechat 'v*' 2>&1)"
+kontrola "„v*“ je text, ne glob — vynechana je kandidát, mladá ne; souběžná práce nesloučená" \
+  grep -q 'SLOUCENE_VETVE: ke smazání 1, smazáno 0, vynecháno 9, nesloučené 2' <<<"$vystup"
+kontrola "  …vynechana mezi kandidáty" grep -q '^- `vynechana`$' <<<"$vystup"
+rm -f vynechana
+
+echo "— stari_hodin mimo rozsah (K4-N10)"
+for spatne in 0 00 8761 99999 99999999999999999999 18446744073709551640 -1 ''; do
+  bash "$SKRIPT" --jen-vypsat --stari-hodin "$spatne" >/dev/null 2>&1; kod=$?
+  kontrola "stari_hodin '$spatne' odmítnuto (kód 2)" [ "$kod" -eq 2 ]
+done
+vystup="$(bash "$SKRIPT" --jen-vypsat --stari-hodin 08 2>&1)"; kod=$?
+kontrola "„08“ = 8 h (desítkově, ne oktal)" bash -c '[ "$1" -eq 0 ] && grep -q "hranice stáří: 8 h" <<<"$2"' _ "$kod" "$vystup"
+bash "$SKRIPT" --jen-vypsat --stari-hodin 8760 >/dev/null 2>&1; kod=$?
+kontrola "8760 h (rok) přijato" [ "$kod" -eq 0 ]
+
+echo "— běh v GitHub Actions jen nad main (K4-N11)"
+vystup="$(GITHUB_ACTIONS=true GITHUB_REF=refs/heads/claude/upraveny-skript bash "$SKRIPT" --stari-hodin 1 2>&1)"; kod=$?
+kontrola "spuštění z jiné větve → kód 2" [ "$kod" -eq 2 ]
+kontrola "  …s hláškou" grep -q "mazat se smí jen ze spuštění nad main" <<<"$vystup"
+kontrola "  …a nic se nesmazalo" [ "$(vzdalene)" = "$ZBYT" ]
+GITHUB_ACTIONS=true GITHUB_REF=refs/heads/main bash "$SKRIPT" --jen-vypsat >/dev/null 2>&1; kod=$?
+kontrola "spuštění nad main projde" [ "$kod" -eq 0 ]
 
 echo "— špatné zadání"
 bash "$SKRIPT" --jen-vypsat --stari-hodin "24; rm" >/dev/null 2>&1; kod=$?

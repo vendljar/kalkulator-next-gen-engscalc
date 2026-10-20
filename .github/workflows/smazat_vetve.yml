@@ -2,8 +2,11 @@
 #
 # Proč: z cloudového sezení vzdálenou větev smazat nejde (proxy vrací 403)
 # a seznam odkazů na mazání po jedné větvi byl zdlouhavý. Spouští se JEN
-# RUČNĚ: GitHub → Actions → Smazat sloučené větve → Run workflow. Ruční
-# spuštění workflow GitHub nabízí jen pro soubor ve výchozí větvi (main).
+# RUČNĚ: GitHub → Actions → Smazat sloučené větve → Run workflow, „Use
+# workflow from“ = main. Tlačítko se objeví jen pro workflow ve výchozí
+# větvi, ale formulář dovolí vybrat i jinou větev — pak by běžel workflow
+# i skript z té větve s právem zápisu (K4-N11). Proto job běží jen nad main
+# (podmínka `if` níže) a skript totéž hlídá sám (GITHUB_REF, kód 2).
 #
 # Logika výběru je v nastroje/sloucene_vetve.sh (test
 # nastroje/test_sloucene_vetve.sh ve statických kontrolách kola): smaže se
@@ -44,6 +47,7 @@ concurrency:
 
 jobs:
   smazat:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

@@ -1,8 +1,8 @@
-# Předávka — 20. 10. 2026 noc: dávka O8 (bez verze aplikace), větev `claude/o8-k4-nalezy` — opravy K4-N2, K4-N3, test V7-N2
+# Předávka — 20. 10. 2026 noc: dávka O8 (bez verze aplikace), větev `claude/o8-k4-nalezy` — opravy K4-N2, N3, N8, N10, N11, N19, test V7-N2
 
 Nad `claude/integrace-16-10` 89816fe (v20.10.8). Verze aplikace se nemění. **Do test / main / test-draft /
 integrace nic — slučuje koordinace** (noční ŘÍDÍCÍ session_01By6bWivtf2rTJYJFGVv8e1). Podrobnosti: CHANGELOG oddíl
-„O8“, roadmapa #452–#454, audit `podklady/K4_AUDIT_20_10.md` (větev `claude/k4-kolo`).
+„O8“, roadmapa #452–#458, audit `podklady/K4_AUDIT_20_10.md` (větev `claude/k4-kolo`).
 
 - **Hotovo:** #452 K4-N2 (stáří větve z GitHub API `activity`, bez API jen špička = druhý rodič merge v test mimo
   hlavní linii chráněných větví), #453 K4-N3 (+K4-N9: mazání `--force-with-lease` plným ref), #454 test „česká DPH +
@@ -14,7 +14,12 @@ integrace nic — slučuje koordinace** (noční ŘÍDÍCÍ session_01By6bWivtf2
 - **Pozor:** workflow se z formuláře spouští z `main` — oprava platí až po sloučení do `main`; do té doby W2 jen
   s `jen_vypsat` a běžící dávky do `vynechat`. Zda GITHUB_TOKEN smí číst `/activity`, se ověří prvním během
   (`jen_vypsat`): když ne, skript tiše přejde na kritérium bez API (fail-closed, nic navíc nesmaže).
-- **Zbývá z K4 (mimo zadání O8):** K4-N10, K4-N11, zbytek K4-N19; K4-N20 Rulesets → J. V.
+- **Pokračování O8 (koordinace 20. 10. noc):** #455 K4-N10 (`stari_hodin` 1–8760, bez přetečení/oktalu),
+  #456 K4-N11 (job `if` na main + skript v Actions mimo main kód 2), #457 K4-N19 (`set -euo pipefail`, `set -f`),
+  cesta „smazání selhalo“ krytá, #458 K4-N8 (test D2 zamčené varianty přes `zamkniVariantu`, výjimka = FAIL).
+  Test W2 48/0 (skript z 1. části O8 35/13), ruční mutace skriptu 14/14, K4-N8 pojistka 73/0 → 72/1.
+- **Zbývá z K4:** opravy v kódu aplikace (N1, N4–N7, N12–N18, texty MEZE) — čekají na konečný audit K4 a ranní
+  rozhodnutí J. V.; K4-N20 Rulesets → J. V.
 
 # Předávka — 20. 10. 2026: K29-N1 (v20.10.8, sloučeno do integrace noční koordinací session_01By6bWivtf2rTJYJFGVv8e1), větev `claude/k29-med-bez-strechy` — příplatek za měď jen se zastřešením v nabídce
 
