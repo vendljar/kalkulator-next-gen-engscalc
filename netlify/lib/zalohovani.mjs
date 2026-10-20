@@ -298,8 +298,14 @@ export async function retenceProved(novyKlic, dnes, ted) {
    * logu jde „retence čeká na první kopii na Disk". Platí trvale: když se
    * kopie na Disk přestanou dělat, retence se zastaví (úložiště poroste, ale
    * nic se neztratí). */
-  if (!kopieDiskCerstva(await s.cti(KOPIE_DISK_KLIC), ted))
+  const kopie = await s.cti(KOPIE_DISK_KLIC);
+  if (!kopieDiskCerstva(kopie, ted))
     return { smazano: [], chyby: [], ceka: 'retence čeká na první kopii na Disk' };
+  /* K3-N1 (20. 10. 2026): záznam píše prohlížeč, takže sám čas nestačí —
+   * retenci odemkne jen kopie existujícího nočního otisku s velikostí
+   * a otiskem SHA-256 (kopieDiskPodlozena). */
+  if (!kopieDiskPodlozena(kopie, klice))
+    return { smazano: [], chyby: [], ceka: 'retence čeká na podloženou kopii nočního otisku na Disk' };
   const smazano = [], chyby = [];
   for (const k of retenceVyber(klice, dnes || denDnes())) {
     if (k === novyKlic) continue;
@@ -348,6 +354,22 @@ export async function posledniNocniOtisk() {
  * fungovala v každém prohlížeči, i tam, kde složka připojená není. */
 export const KOPIE_DISK_KLIC = 'kopie-disk';
 export const RETENCE_KOPIE_DISK_DNU = 7;
+/* K3-N1 (audit K3, 20. 10. 2026): záznam kopie odemyká retenci, jen když
+ * popisuje skutečnou kopii NOČNÍHO otisku — původ `nocni-otisk`, klíč dne,
+ * který v úložišti je (`klice` = seznam úložiště `zalohy`), jméno souboru
+ * k tomu otisku, velikost > 0 a platný SHA-256. Záznam „aktuální stav",
+ * s nulovou velikostí nebo bez otisku hlídku 14 dní dál uspokojí, retenci
+ * ne. Velikost se proti souhrnu neporovnává: na Disk jde otisk bez hesel
+ * a podpisů (otiskProDisk), takže velikosti se liší vždy. Heslo správce
+ * u záznamu a omezení na složku „_Zaloha Netlify DB" čekají na J. V. */
+export function kopieDiskPodlozena(zaznam, klice) {
+  if (!zaznam || typeof zaznam !== 'object' || zaznam.puvod !== 'nocni-otisk') return false;
+  const otisk = String(zaznam.otisk || '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(otisk) || !Array.isArray(klice) || !klice.includes(otisk)) return false;
+  if (zaznam.soubor !== 'otisk_' + otisk + '.json') return false;
+  return Number.isSafeInteger(zaznam.velikostB) && zaznam.velikostB > 0
+    && /^[0-9a-f]{64}$/.test(String(zaznam.sha256 || ''));
+}
 export function kopieDiskCerstva(zaznam, ted) {
   const t = zaznam && Date.parse(zaznam.kdy || '');
   const nyni = Number.isFinite(+ted) && ted ? +ted : Date.now();
