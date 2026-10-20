@@ -15,8 +15,9 @@ Podklad `podklady/SABLONA_PROJ_V7_20_10.md`.
 - **main v20.10.1 + v7 (ověřeno kódem origin/main):** nahrání projde, Word vznikne s viditelnými
   `{{PROJ_TITUL_*}}`, `{{PROJ_DPZ_UVOD}}`, `{{PROJ_DPZ_HVEZDICKA*}}` a bez studie i se všemi bloky
   studie; přísný režim to nezastaví (hlídá jen zastaralé/chybějící šablony). ⇒ v7 na main až po v20.10.3.
-- **Čeká na J. V.:** znění titulu bez studie „PROJEKTOVÉ a INŽENÝRSKÉ ČINNOSTI"; nové texty EN/DE/FR
-  ke kontrole rodilými mluvčími (tabulka v podkladu). D2 (v20.10.4) staví PROJ v8 nad touto v7.
+- **Titul bez studie „PROJEKTOVÉ a INŽENÝRSKÉ ČINNOSTI“ potvrdil J. V. 20. 10.** (podklad D1 v integraci).
+  Čeká: nové texty EN/DE/FR ke kontrole rodilými mluvčími (tabulka v podkladu); oprava
+  `docxPrelozUseky` jde do příští kódové dávky. D2 (v20.10.4) staví PROJ v8 nad touto v7.
 
 # Předávka — 20. 10. 2026: dávka D1 (v20.10.3), větev `claude/d1-sikora` — postřehy D. Sikory 19. 10.
 
