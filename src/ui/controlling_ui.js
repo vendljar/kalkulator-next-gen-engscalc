@@ -19,8 +19,11 @@
  * jen ODCHYLKY mapování od výchozího v kódu (ctrlOdchylky).
  *
  * Model (výpočty, kontrola, export) je v src/controlling.js — tady jen
- * kreslení a obsluha. Načtení se spouští jednou za otevření záložky:
- * příznak `nacita` se nastaví PŘED dotazem, jinak by překreslení během
+ * kreslení a obsluha. Načítá se po přihlášení správce (onlinePoPrihlaseni,
+ * vedle slovníku) a z otevřené záložky Controlling; KARTA CENÍKU SE NA
+ * SERVER NEPTÁ — vykreslení nesmí spouštět dotaz (nález kola C2: harness
+ * simulující online režim nad file:// hlásil chybu fetch v konzoli).
+ * Příznak `nacita` se nastaví PŘED dotazem, jinak by překreslení během
  * čekání spouštělo další a další dotaz (poučení z kartotéky zákazníků).
  * ============================================================ */
 
@@ -31,6 +34,11 @@ const CTRL_STAV = { nacteno: false, nacita: false, chyba: '', db: null, data: nu
 function ctrlUiPrekresli() { if (typeof render === 'function') render(); }
 function ctrlUiZprava(text, chyba) { CTRL_STAV.hlaska = text || ''; CTRL_STAV.hlaskaChyba = !!chyba; ctrlUiPrekresli(); }
 function ctrlUiSmi() { return typeof jeAdminOnline === 'function' && jeAdminOnline(); }
+/* Server je na dosah jen přes http(s) — otevřený soubor (file://) se ptát
+ * nesmí: dotaz by jen skončil chybou v konzoli (nález kola C2: harnessy,
+ * které kreslí kartu ceníku jako správce, hlásily „Fetch API cannot load
+ * file:///api/controlling"). Harness controllingu si funkci nahradí. */
+function ctrlUiServer() { return typeof onlineMozne !== 'function' || onlineMozne(); }
 /* Platná (uložená) data a pracovní kopie. Otisk pracovní kopie se porovnává
  * s otiskem při načtení — tak se pozná, že je co ukládat. */
 function ctrlUiUlozena() { const p = CTRL_STAV.db && CTRL_STAV.db.platny; return ctrlPlatne(p ? p.data : null); }
@@ -43,7 +51,7 @@ function ctrlUiNastavDb(db) {
 }
 
 function ctrlUiNacti() {
-  if (!ctrlUiSmi() || CTRL_STAV.nacita) return Promise.resolve(false);
+  if (!ctrlUiSmi() || !ctrlUiServer() || CTRL_STAV.nacita) return Promise.resolve(false);
   CTRL_STAV.nacita = true; CTRL_STAV.chyba = '';
   return onlineApi('/api/controlling').then(o => { ctrlUiNastavDb(o.db); return true; })
     .catch(e => { CTRL_STAV.chyba = e.message || String(e); return false; })
@@ -52,7 +60,7 @@ function ctrlUiNacti() {
 /* Pro kreslení: načíst jen jednou; z render() se volá přes setTimeout,
  * aby zápis stavu neproběhl uvnitř vykreslování. */
 function ctrlUiNactiBrzy() {
-  if (CTRL_STAV.nacteno || CTRL_STAV.nacita || !ctrlUiSmi()) return;
+  if (CTRL_STAV.nacteno || CTRL_STAV.nacita || !ctrlUiSmi() || !ctrlUiServer()) return;
   CTRL_STAV.nacita = true;
   setTimeout(() => { CTRL_STAV.nacita = false; ctrlUiNacti(); }, 0);
 }
@@ -206,8 +214,9 @@ function ctrlUiSelectSkupiny(hodnota, onchange, id, sNenaklad) {
 }
 function ctrlUiKartaSkupiny() {
   const d = CTRL_STAV.data;
-  const sel = (i, pole, hodnoty, akt) => `<select onchange="ctrlUiSkupina(${i}, '${pole}', this.value)">${hodnoty.map(([v, t]) =>
-    `<option value="${v}"${v === akt ? ' selected' : ''}>${t}</option>`).join('')}</select>`;
+  /* Volby jsou literály z kódu (typ, chování, oblast); escapují se i tak. */
+  const sel = (i, pole, hodnoty, akt) => `<select onchange="ctrlUiSkupina(${+i}, '${escJs(pole)}', this.value)">${hodnoty.map(([v, t]) =>
+    `<option value="${esc(v)}"${v === akt ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select>`;
   const radky = d.skupiny.map((s, i) => `<tr data-ctrl-skupina="${esc(s.id)}">
       <td><code>${esc(s.id)}</code></td>
       <td><input value="${esc(s.nazev)}" style="min-width:16em" onchange="ctrlUiSkupina(${i}, 'nazev', this.value)"></td>
@@ -313,6 +322,7 @@ function ctrlUiKartaExport() {
 function nastControlling() {
   if (!ctrlUiSmi()) return `<div class="note">Controlling je dostupný <b>jen administrátorovi přihlášenému online</b>
       — číselník i mapování leží na serveru.</div>`;
+  if (!ctrlUiServer()) return `<div class="note">Controlling leží na serveru — otevřete aplikaci z webu (ne ze souboru).</div>`;
   if (!CTRL_STAV.nacteno) { ctrlUiNactiBrzy(); return `<div class="note">Načítám controlling ze serveru…</div>`; }
   if (CTRL_STAV.chyba && !CTRL_STAV.data) return `<div class="note" style="color:var(--red, #c0392b)">Controlling se nepodařilo
       načíst: ${esc(CTRL_STAV.chyba)}</div><div class="btns"><button onclick="CTRL_STAV.nacteno=false;ctrlUiNacti()">Zkusit znovu</button></div>`;
@@ -342,8 +352,7 @@ function nastControlling() {
  * klíče mají výchozí zařazení v kódu (hlídá src/test_controlling.js), takže
  * se tu objevují jen trvalé položky přidané administrátorem. */
 function ctrlUpozorneniBlok() {
-  if (!ctrlUiSmi()) return '';
-  if (!CTRL_STAV.nacteno) { ctrlUiNactiBrzy(); return ''; }
+  if (!ctrlUiSmi() || !CTRL_STAV.nacteno || !CTRL_STAV.data) return '';
   const nez = ctrlUiNezarazene();
   if (!nez.length) return '';
   const nazvy = ctrlUiKatalogNazvy();

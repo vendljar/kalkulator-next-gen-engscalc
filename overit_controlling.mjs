@@ -37,6 +37,9 @@ await stranka.evaluate(() => {
   window.potvrd = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(window.__odpoved); };
   window.hlaska = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(); };
   window.dotaz = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(window.__dotaz); };
+  /* Stránka je z file:// — controlling se na server ptá jen přes http(s);
+   * tady server nahrazuje onlineApi níž. */
+  window.ctrlUiServer = () => true;
   /* Náhrada serveru: /api/controlling v paměti. */
   window.__srv = { db: null, posty: [], gety: 0 };
   window.onlineApi = (cesta, telo) => {

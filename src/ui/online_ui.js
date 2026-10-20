@@ -356,6 +356,10 @@ function onlinePoPrihlaseni(ja) {
                       onlineNactiSablony(),
                       /* zveřejněný slovník překladů (#401) — na ceníku nezávisí */
                       onlineNactiSlovnik(),
+                      /* controlling (#447) — jen administrátor; chyba načtení
+                       * přihlášení nezastaví (ctrlUiNacti ji jen zapíše) */
+                      (typeof ctrlUiNacti === 'function' && typeof jeAdminOnline === 'function' && jeAdminOnline())
+                        ? ctrlUiNacti() : Promise.resolve(),
                       /* analytika (#27): zjistit, jestli je sběr zapnutý, a nastartovat ho */
                       typeof analytikaPoPrihlaseni === 'function' ? analytikaPoPrihlaseni() : Promise.resolve()])
     /* SPOLEČNÉ DODATKOVÉ TEXTY AŽ PO CENÍKU, NE VEDLE NĚJ (22. 9. 2026).
