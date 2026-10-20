@@ -12,7 +12,10 @@
  *         posunul ve Wordu činnosti proti termínům. Řádek s \n / \r je
  *         neplatný.
  *
- * Před opravou selžou K3-N6 (výjimky), K3-N7 (NaN) a K3-N9 (\n projde).
+ *  K3-N16 název firmy se dosazuje funkcí — „$&" v názvu se nerozvine.
+ *
+ * Před opravou selžou K3-N6 (výjimky), K3-N7 (NaN), K3-N9 (\n projde)
+ * a K3-N16 (2 kontroly).
  * Spuštění: cd src && node test_o5_podminky.js */
 const PD = require('./podminky.js');
 
@@ -74,6 +77,16 @@ const zkus = (fn) => { try { return { v: fn() }; } catch (e) { return { chyba: e
   const ef = PD.podminkyEf({ podminky: { nabidkaProj: { terminy: { cz: sNl } } } });
   test('K3-N9: neplatné termíny se nepoužijí (platí továrna)', JSON.stringify(ef.nabidkaProj.terminy.cz) === JSON.stringify(T));
   test('K3-N9: tovární termíny dál platné', PD.podminkyVady({ nabidkaProj: { terminy: { cz: T } } }).length === 0);
+}
+
+/* ---- K3-N16: název firmy jako náhradní řetězec ---- */
+{
+  const fm = require('./firma.js');
+  const k = fm.firmaKapitola({ nazev: 'Zkušební $& $` s.r.o.', dolozky: 'Práva má {FIRMA}.' }, 'dolozky', 'cz');
+  test('K3-N16: vzory $& a $` v názvu firmy se v kapitole nerozvinou', k.radky[0] === 'Práva má Zkušební $& $` s.r.o..', k.radky);
+  const np = require('fs').readFileSync(__dirname + '/nabidka_proj.js', 'utf8');
+  test('K3-N16: doložky PROJ dosazují název firmy funkcí (ne náhradním řetězcem)',
+    /replace\(\/\\\{FIRMA\\\}\/g, \(\) => nazevFirmy/.test(np) && !/replace\(\/\\\{FIRMA\\\}\/g, nazevFirmy/.test(np));
 }
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);

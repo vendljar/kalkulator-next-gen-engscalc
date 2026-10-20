@@ -787,3 +787,42 @@ zůstane k doplnění. Test `src/test_sod_en.js` (2c), mutace „B190: …“.
 - **B193:** harnessy PROJ v3 (`test_sablona_proj_v4`, `overit_nabidka_proj_word`)
   čekají šablonu PROJ v3 pod jménem `Sablona_NABIDKA_PROJ.docx`; na Disku je
   pod tím jménem starší verze (podklad, ne kód).
+
+## Audit K3 — #151 N5/N6, B194 (dávka O5, 20. 10. 2026, v20.10.1)
+
+Podklad `podklady/K3_AUDIT_19_10.md` (K3-N14: tyto meze tu chyběly).
+
+### #151 N6 — kopie zálohy na Disk Google (vědomá mez, rozhodnutí J. V. 19. 10. 2026)
+
+- **Kopie nenese otisky hesel ani podpisy.** Po ztrátě webu i serverových
+  otisků se z kopie na Disku obnoví data, ale účty dostanou nová hesla
+  (obnova ze souboru hesla nebere, B27) a skeny podpisů se nahrají znovu.
+- **Části vybírá povolený seznam** `KOPIE_DISK_CASTI`
+  (`netlify/lib/zalohovani.mjs`, K3-N12 v20.10.1). Nové úložiště na Disk
+  samo neodejde — zapisuje se do seznamu vědomě (test `test_zalohy.mjs` N6).
+- **Kopii zapisuje prohlížeč správce** do složky, kterou vybere; server
+  o kopii ví jen ze záznamu `kopie-disk`, který prohlížeč pošle. Složka
+  jiného jména než „_Zaloha Netlify DB“ se jen varuje.
+
+### #151 N5 — retenci odemyká záznam od klienta (zmírněno v20.10.1, mez trvá)
+
+- Retence nočních a ručních otisků smaže něco jen při záznamu kopie na Disk
+  mladším 7 dní. Od v20.10.1 (K3-N1) musí záznam popisovat kopii
+  **nočního otisku, který v úložišti je** (původ `nocni-otisk`, jméno
+  souboru k němu, velikost > 0, platný SHA-256) — nepodložený záznam
+  („aktuální stav“, velikost 0, bez otisku) retenci neodemkne.
+- **Trvá:** server nemá jak ověřit, že soubor na Disku opravdu leží (Netlify
+  na Disk nedosáhne). Kdo má relaci správce, může POSTem s věrohodnými poli
+  retenci odemknout. Dopad omezuje pravidlo retence (nic před 20. 10. 2026,
+  denní otisky až po 30 dnech, první v měsíci 12 měsíců, nejnovější nikdy).
+  Heslo správce u záznamu a podmínka na složku čekají na J. V. (K3-N1).
+
+### B194 — zámek mutačních běhů (jen vývoj, ne produkce)
+
+- Zámek `.mutace_bezi.json` chrání pracovní kopii před dvěma souběžnými
+  mutačními běhy. Od v20.10.1 (K3-N5) vzniká atomicky (`linkSync`), mrtvý
+  zámek smí smazat jen držitel výlučného zámku převzetí a záznam nese čas
+  startu procesu (opětovné PID). **Mez:** bez `/proc` (jiný systém než Linux)
+  se opětovné PID nepozná; zámek převzetí starší 10 s se považuje za
+  mrtvý. Zámek chrání jen běhy v téže pracovní kopii, ne ruční zásahy do
+  souborů během mutací.

@@ -394,6 +394,16 @@ await zkus('N6', async () => {
     && r.zaloha.uzivatele.some(u => u.email === 'obchodnik@priklad.cz' && u.role === 'Obchodník'));
   test('N6: kopie pro Disk nenese podpisy', !t.includes('PODPISDATA') && r.zaloha.podpisy === null);
   test('N6: kopie nese data databáze (zakázky, firma)', Object.keys(r.zaloha.zakazky || {}).length > 0 && !!r.zaloha.firma);
+  /* K3-N12 (O5): kopie bere části POVOLENÝM SEZNAMEM — nová část s tajemstvím
+   * na Disk sama neodejde. Pojistka: před opravou KOPIE_DISK_CASTI chybí
+   * a část navíc projde. */
+  test('K3-N12: část mimo povolený seznam do kopie pro Disk nejde',
+    !('noveTajne' in (Z.otiskProDisk({ porizena: 'x', zakazky: {}, uzivatele: [], noveTajne: 'TAJNE' }) || {})));
+  test('K3-N12: povolený seznam pokrývá všechny dnešní části zálohy (otisk i doplňky)',
+    Array.isArray(Z.KOPIE_DISK_CASTI) && [...Object.keys(await Z.zalohaDoplnky()), 'porizena', 'zdroj', 'kdo', 'program', 'firma',
+      'rejstrik', 'zakazky', 'uzivatele', 'sablony'].every(k => Z.KOPIE_DISK_CASTI.includes(k)), Z.KOPIE_DISK_CASTI);
+  test('K3-N12: kopie nese všechny povolené části otisku', Object.keys(r.zaloha).filter(k => k !== 'web')
+    .every(k => (Z.KOPIE_DISK_CASTI || []).includes(k)) && 'zakaznici' in r.zaloha && 'smazani' in r.zaloha, Object.keys(r.zaloha));
   test('N6: ?zdroj=nocni bez přihlášení správce 401/403', [401, 403].includes((await get(zalohaFn, 'http://x/api/zaloha?zdroj=nocni', '')).status));
   /* bez nočního otisku → aktuální stav v tomtéž tvaru */
   for (const k of [...pamet.keys()]) if (/^zalohy\/\d{4}-\d{2}-\d{2}$/.test(k)) pamet.delete(k);

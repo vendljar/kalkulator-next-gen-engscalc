@@ -327,12 +327,21 @@ export async function retenceProved(novyKlic, dnes, ted) {
  * stažení, jen ještě bez skenů podpisů. Účty nesou e-mail, jméno, roli
  * a stav; obnova je ze souboru stejně nikdy nebere (B27).
  * ============================================================ */
+/* POVOLENÝ SEZNAM ČÁSTÍ (K3-N12, audit K3; dávka O5 20. 10. 2026). Kopie
+ * do 20. 10. brala vše kromě hesel a podpisů — nové úložiště s tajemstvím
+ * by na Disk odešlo bez vědomého rozhodnutí. Teď jdou jen tyto části
+ * (= stav 20. 10. 2026); novou část je třeba dopsat sem (test_zalohy N6
+ * hlídá, že každá část zálohy je tu, nebo ji test vědomě vynechá). */
+export const KOPIE_DISK_CASTI = ['porizena', 'zdroj', 'kdo', 'program', 'firma', 'rejstrik', 'zakazky', 'uzivatele',
+  'sablony', 'zobrazeni', 'smazani', 'popisy', 'slovnik', 'zakaznici', 'podpisy'];
 export function otiskProDisk(o) {
   if (!o || typeof o !== 'object') return null;
-  return { ...o,
-    uzivatele: (Array.isArray(o.uzivatele) ? o.uzivatele : []).filter(Boolean)
-      .map(x => ({ email: x.email, jmeno: x.jmeno, role: x.role, aktivni: x.aktivni !== false })),
-    podpisy: null };
+  const out = {};
+  for (const k of KOPIE_DISK_CASTI) if (Object.prototype.hasOwnProperty.call(o, k)) out[k] = o[k];
+  out.uzivatele = (Array.isArray(o.uzivatele) ? o.uzivatele : []).filter(Boolean)
+    .map(x => ({ email: x.email, jmeno: x.jmeno, role: x.role, aktivni: x.aktivni !== false }));
+  out.podpisy = null;
+  return out;
 }
 
 /* Nejnovější NOČNÍ otisk (klíč dne se zdrojem nocni-otisk). Zdroj se bere ze
