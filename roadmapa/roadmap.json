@@ -6758,7 +6758,7 @@
    "slozitost" : "S",
    "nazev" : "B189: výchozí režim DPH ve SoD realizace podle DIČ (CZ plátce, stavba v ČR)",
    "proc" : "Audit kola 28: DIČ CZ → „česká DPH“ (šablona v2 měla přenesenou daňovou povinnost, § 92e u stavebních prací plátci), DIČ EU → reverse charge podle čl. 196 bez ohledu na místo stavby.",
-   "detail" : "Rozhodnutí J. V. 19. 10. 2026: DIČ CZ → přenesená daňová povinnost (tuzemsko, § 92e), bez DIČ → česká DPH, DIČ z EU i mimo EU → bez výchozí volby; bez zvoleného režimu smlouva o dílo realizace nevznikne (sodDphZabrana — registr i tlačítko s hláškou a odkazem na volbu). Ruční volba má přednost, uložená volba se nemění. Znění vět předběžné do kontroly účetní (`podklady/SOD_EN_KONTROLA.md`).",
+   "detail" : "Rozhodnutí J. V. 19. 10. 2026: DIČ CZ → přenesená daňová povinnost (tuzemsko, § 92e), bez DIČ → česká DPH (od v20.10.6 přenesená — V7-N2, #438), DIČ z EU i mimo EU → bez výchozí volby; bez zvoleného režimu smlouva o dílo realizace nevznikne (sodDphZabrana — registr i tlačítko s hláškou a odkazem na volbu). Ruční volba má přednost, uložená volba se nemění. Znění vět předběžné do kontroly účetní (`podklady/SOD_EN_KONTROLA.md`).",
    "hotovoKdyz" : "Rozhodnutí J. V. zapsané, `kryciDphRezimVychozi` podle něj, test a mutace.",
    "kde" : "`src/kryci.js`, `src/sod.js`, `src/ui/ukazkove_ui.js`, `src/ui/sod_ui.js`, `src/test_sod_en.js`",
    "hotovoV" : "v19.10.1",
@@ -6974,6 +6974,23 @@
     "260"
    ],
    "pozn": "Předběžné id."
+  },
+  {
+   "id": "438",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "hotovoV": "v20.10.6",
+   "nazev": "V7-N2: výchozí režim DPH ve SoD realizace v ČR = přenesená daňová povinnost (i bez DIČ)",
+   "proc": "Kontrola V7 (18. 10.): výchozí režim podle DIČ nezohledňoval místo stavby, otázka čekala na účetní. Rozhodnutí J. V. 20. 10. 2026: „toto ignoruj, zadej v ČR primárně přenesenou daňovou povinnost a obchodník si může měnit“.",
+   "detail": "HOTOVO v20.10.6 (dávka V7-N2, větev claude/v7n2-dph-pdp): `kryciDphRezimVychozi` — DIČ CZ i bez DIČ → přenesená daňová povinnost (tuzemsko); bez DIČ dřív česká DPH (B189). Cizí DIČ beze změny (bez výchozí volby, zábrana sodDphZabrana). Ruční volba v krycím listu má přednost (rozbalovátko, ↺ vrátí výchozí), uložená volba ani zmrazené předvyplnění zamčené varianty se nemění; ruční česká DPH se propíše do SoD CZ/EN/DE/FR. Otázka pro účetní (SOD_EN_KONTROLA bod 1 a 4) uzavřena rozhodnutím J. V.",
+   "hotovoKdyz": "Bez DIČ výchozí přenesená, přepnutí na českou DPH v SoD CZ/EN/DE/FR, ↺ vrátí výchozí; test s pojistkou a mutace V7-N2.",
+   "kde": "`src/kryci.js`, `src/test_sod_en.js`, `mutace_jadro.mjs`, `podklady/SOD_EN_KONTROLA.md`, `manual/obsah.json`",
+   "zavisi": [
+    "430"
+   ],
+   "pozn": "Předběžné id (přidělí koordinace při sloučení)."
   }
  ],
  "meta" : {

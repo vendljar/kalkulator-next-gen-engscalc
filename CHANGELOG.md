@@ -8,6 +8,24 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v20.10.6 — V7-N2: výchozí režim DPH v ČR = přenesená daňová povinnost (větev claude/v7n2-dph-pdp)
+
+Dávka V7-N2, základ `test` 5dc28d1 (v20.10.1). **Rozhodnutí J. V. 20. 10. 2026:** „toto ignoruj,
+zadej v ČR primárně přenesenou daňovou povinnost a obchodník si může měnit" — otázka pro účetní
+(nález V7-N2, `podklady/SOD_EN_KONTROLA.md` body 1 a 4) se neřeší.
+
+- **Změna chování (roadmapa #438):** `kryciDphRezimVychozi` — zákazník **bez DIČ** dostane ve SoD
+  realizace výchozí **přenesenou daňovou povinnost (tuzemsko)** jako DIČ CZ (do v20.10.5 česká DPH,
+  B189). Cizí DIČ beze změny (bez výchozí volby, zábrana `sodDphZabrana`). Ruční volba má přednost
+  (rozbalovátko, ↺ vrátí výchozí), uložená volba i zmrazené předvyplnění zamčené varianty se nemění.
+- **Testy:** `src/test_sod_en.js` — výchozí bez DIČ, přepnutí na českou DPH v SoD CZ/EN/DE/FR (věta
+  i prohlášení o snížené sazbě), ↺, UI zábrana bez DIČ mlčí. Pojistka: proti 5dc28d1 3 FAIL, po
+  opravě 49 / 0. Mutace `V7-N2` 3/3 (nahrazují „B189: bez DIČ přenesená povinnost"), `B189` 8/8.
+- Příručka: „Co je nového v20.10.6" a kapitola 24; SOD_EN_KONTROLA: body 1 a 4 vyřešeny.
+- **Ověření:** `testovaci_kolo.sh --bez-mutaci` VŠE ZELENÉ — 281 prošlo / 0 selhalo / 6 přeskočeno, statické 3/3.
+
+---
+
 ## v20.10.4 — D2: šablona nabídky PROJ D. Sikory — cestovné mimo Prahu, upravitelný úvod, jednostupňová dokumentace (větev claude/d2-proj-sikora)
 
 Dávka D2 (koordinace „ŘÍDÍCÍ 19.10“), základ `claude/integrace-16-10` 5dc28d1 (v20.10.1). Zdroj: šablona
