@@ -253,8 +253,10 @@ function podmTextProjParse(klic, jaz, text) {
   if (!radky.length) return null;
   if (klic !== 'terminy') return radky;
   return radky.map(r => {
+    /* K3-N9 drobnost: další „|" patří do termínu (dřív se 4. a další pole tiše zahodila) */
     const c = r.split('|').map(x => x.trim());
-    return jaz === 'cz' ? [c[1] || '', c[2] || '', c[0] || ''] : [c[0] || '', c[1] || ''];
+    const zbytek = (od) => c.slice(od).join(' | ');
+    return jaz === 'cz' ? [c[1] || '', zbytek(2), c[0] || ''] : [c[0] || '', zbytek(1)];
   });
 }
 function podmTextProjText(klic, jaz, radky) {

@@ -136,6 +136,10 @@ const PODMINKY_VOLEB_MAX = 6;
 /* ---------- pomocné ---------- */
 
 function podmKopie(x) { return JSON.parse(JSON.stringify(x)); }
+/* Vlastní klíč tabulky (K3-N6, 20. 10. 2026): `__proto__`, `constructor`
+ * a spol. z JSON nejsou pole podmínek — přes `tabulka[klic]` by se sáhlo
+ * na prototyp a kontrola spadla výjimkou (HTTP 500 na /api/firma). */
+const podmMa = (o, k) => !!o && Object.prototype.hasOwnProperty.call(o, k);
 
 /* Číslo z hodnoty pole: číslo nebo text „12,5". Prázdno a nesmysl = NaN. */
 function podmCislo(v) {
@@ -162,13 +166,14 @@ function podmSazbyPlatne(s) {
 }
 function podmZalohyPlatne(z) {
   if (!Array.isArray(z) || !z.length || z.length > PODMINKY_VOLEB_MAX) return false;
-  if (+z[0] !== 0) return false;
-  if (new Set(z.map(Number)).size !== z.length) return false;
+  if (podmCislo(z[0]) !== 0) return false;
+  if (new Set(z.map(podmCislo)).size !== z.length) return false;
   return z.every(podmProcPlatne);
 }
 
 /* Pravidla jednotlivých polí: [klíč, je platné(v, celek)]. Z nich se skládá
  * jak sloučení (neplatná uložená hodnota → továrna), tak seznam vad. */
+const PODMINKY_OCK_PROC = ['zalohaProc', 'faktura2Proc', 'konecnaProc'];
 const PODMINKY_PRAVIDLA_OCK = {
   splatnostDni: v => podmCeleVRozsahu(v, 1, PODMINKY_SPLATNOST_MAX),
   zalohyProc: podmZalohyPlatne,
@@ -226,7 +231,7 @@ const PODMINKY_POPISKY = {
 
 function podmVetaPlatna(klic, v) {
   if (typeof v !== 'string' || !v.trim() || v.length > PODMINKY_VETA_MAX) return false;
-  return (PODMINKY_VETY_TOKENY[klic] || []).every(t => v.indexOf(t) >= 0);
+  return (podmMa(PODMINKY_VETY_TOKENY, klic) ? PODMINKY_VETY_TOKENY[klic] : []).every(t => v.indexOf(t) >= 0);
 }
 /* Řádky textu nabídky PROJ: pole neprázdných textů (termíny: [činnost,
  * termín, sekce] u češtiny, [činnost, termín] u cizích jazyků). */
@@ -234,7 +239,9 @@ function podmRadkyPlatne(klic, jaz, v) {
   if (!Array.isArray(v) || v.length > PODMINKY_RADKU_MAX) return false;
   if (klic === 'dolozky' && !v.length) return true;
   if (!v.length) return false;
-  const txt = x => typeof x === 'string' && x.trim() !== '' && x.length <= PODMINKY_VETA_MAX;
+  /* K3-N9: konec řádku uvnitř položky by ve Wordu posunul činnosti proti
+   * termínům (DOCX_RADKY_ZA_RADEK páruje i-tý řádek) — položka je jeden řádek. */
+  const txt = x => typeof x === 'string' && x.trim() !== '' && x.length <= PODMINKY_VETA_MAX && !/[\r\n]/.test(x);
   if (klic !== 'terminy') return v.every(txt);
   return v.every(r => Array.isArray(r) && txt(r[0]) && txt(r[1])
     && (jaz !== 'cz' || PODMINKY_PROJ_SEKCE.indexOf(r[2]) >= 0) && r.length === (jaz === 'cz' ? 3 : 2));
@@ -288,9 +295,13 @@ function podminkyEf(firma) {
     });
     ef.nabidkaProj[k] = out;
   });
+  /* K3-N7 (20. 10. 2026): procenta zálohy a faktur jako čísla — „12,5" (text
+   * z API/importu) projde kontrolou, ale `map(Number)` z něj dělal NaN. */
+  ef.ock.zalohyProc = ef.ock.zalohyProc.map(podmCislo);
+  PODMINKY_OCK_PROC.forEach(k => { ef.ock[k] = podmCislo(ef.ock[k]); });
   /* Výchozí záloha musí být mezi volbami — jinak by krycí list předvyplnil
    * hodnotu, kterou rozbalovátko nenabízí. */
-  if (ef.ock.zalohyProc.map(Number).indexOf(+ef.ock.zalohaProc) < 0) ef.ock.zalohaProc = +ef.ock.zalohyProc[ef.ock.zalohyProc.length - 1];
+  if (ef.ock.zalohyProc.indexOf(ef.ock.zalohaProc) < 0) ef.ock.zalohaProc = +ef.ock.zalohyProc[ef.ock.zalohyProc.length - 1];
   return ef;
 }
 
@@ -345,14 +356,14 @@ function podminkyVady(p) {
     if (p[k] === undefined) return;
     if (!p[k] || typeof p[k] !== 'object' || Array.isArray(p[k])) { v.push(jm + ': není objekt'); return; }
     Object.keys(p[k]).forEach(pole => {
-      if (!pravidla[pole]) { v.push(jm + ': neznámé pole „' + pole + '"'); return; }
+      if (!podmMa(pravidla, pole)) { v.push(jm + ': neznámé pole „' + pole + '"'); return; }
       if (!pravidla[pole](p[k][pole], sazby)) v.push(jm + ': ' + PODMINKY_POPISKY[pole]);
     });
   });
   if (p.vety !== undefined) {
     if (!p.vety || typeof p.vety !== 'object' || Array.isArray(p.vety)) v.push('věty: nejsou objekt');
     else Object.keys(p.vety).forEach(k => {
-      if (!PODMINKY_VYCHOZI.vety[k]) { v.push('věty: neznámá věta „' + k + '"'); return; }
+      if (!podmMa(PODMINKY_VYCHOZI.vety, k)) { v.push('věty: neznámá věta „' + k + '"'); return; }
       const z = p.vety[k];
       if (!z || typeof z !== 'object' || Array.isArray(z)) { v.push('věty: „' + k + '" není objekt'); return; }
       Object.keys(z).forEach(j => {
@@ -368,7 +379,7 @@ function podminkyVady(p) {
     if (!n || typeof n !== 'object' || Array.isArray(n)) v.push('texty nabídky PROJ: nejsou objekt');
     else Object.keys(n).forEach(k => {
       if (k === 'dolozkyTisk') { if (typeof n[k] !== 'boolean') v.push('texty nabídky PROJ: tisk doložek není ano/ne'); return; }
-      if (!PODMINKY_VYCHOZI.nabidkaProj[k]) { v.push('texty nabídky PROJ: neznámý blok „' + k + '"'); return; }
+      if (!podmMa(PODMINKY_VYCHOZI.nabidkaProj, k)) { v.push('texty nabídky PROJ: neznámý blok „' + k + '"'); return; }
       const z = n[k];
       if (!z || typeof z !== 'object' || Array.isArray(z)) { v.push('texty nabídky PROJ: „' + k + '" není objekt'); return; }
       const pocetCz = podmRadkyPlatne(k, 'cz', z.cz) ? z.cz.length : PODMINKY_VYCHOZI.nabidkaProj[k].cz.length;
@@ -383,7 +394,7 @@ function podminkyVady(p) {
   const ef = podminkyEf({ podminky: p });
   const volby = p.ock && podmZalohyPlatne(p.ock.zalohyProc) ? p.ock.zalohyProc : PODMINKY_VYCHOZI.ock.zalohyProc;
   if (p.ock && p.ock.zalohaProc !== undefined && podmProcPlatne(p.ock.zalohaProc)
-      && volby.map(Number).indexOf(+p.ock.zalohaProc) < 0)
+      && volby.map(podmCislo).indexOf(podmCislo(p.ock.zalohaProc)) < 0)
     v.push('OCK: výchozí záloha musí být jednou z voleb zálohy');
   const s = podminkySoucetOck(ef);
   if (s.blokuje) v.push('OCK: záloha + dílčí faktura č. 2 + konečná faktura = ' + podmProcText(s.soucet) + ' %, musí dát 100 %');
@@ -399,7 +410,12 @@ function podminkyCiste(p) {
   [['ock', PODMINKY_PRAVIDLA_OCK], ['proj', PODMINKY_PRAVIDLA_PROJ]].forEach(([k, pravidla]) => {
     if (!p[k] || typeof p[k] !== 'object') return;
     const c = {};
-    Object.keys(pravidla).forEach(pole => { if (p[k][pole] !== undefined) c[pole] = podmKopie(p[k][pole]); });
+    Object.keys(pravidla).forEach(pole => { if (podmMa(p[k], pole) && p[k][pole] !== undefined) c[pole] = podmKopie(p[k][pole]); });
+    /* K3-N7: platná procenta OCK se ukládají jako čísla */
+    if (k === 'ock') {
+      if (podmZalohyPlatne(c.zalohyProc)) c.zalohyProc = c.zalohyProc.map(podmCislo);
+      PODMINKY_OCK_PROC.forEach(pole => { if (podmProcPlatne(c[pole])) c[pole] = podmCislo(c[pole]); });
+    }
     out[k] = c;
   });
   if (p.vety && typeof p.vety === 'object') {
