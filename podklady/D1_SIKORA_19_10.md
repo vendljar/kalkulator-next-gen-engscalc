@@ -8,7 +8,7 @@ Roadmapa #440–#443 (předběžná id, přidělí koordinace). Částky níž j
 |---|---|---|
 | 1 | Nabídka PROJ bez studie: věta „DPZ navazuje na vzájemně odsouhlasenou STUDII PROVEDITELNOSTI. Ta …“ | ✅ opraveno (online, Word v7, EN/DE/FR) — #440; Q1–Q3 rozhodl J. V. 20. 10. ~11:05, opraveno — #441 |
 | 2 | OCK — předpočítaná šířka bočního světlíku 600 mm | ✅ J. V. 20. 10.: varianta A, výpočet zůstává, přejmenovány popisky „šířka skla … (přes sloupky)“ (#442) |
-| 3 | Dimenze profilů portálu EXT / INT | ⬜ nic se neměnilo; návrh + dopad + otázky, kód ve větvi návrhu (#443) |
+| 3 | Dimenze profilů portálu EXT / INT | ✅ uzavřeno beze změny — J. V. 20. 10.: dnešní stav je správně (#443) |
 
 ---
 
@@ -118,7 +118,11 @@ prvek dvě šířky (sklo 600 / 252 × délka krátkých příčníků světlík
 v Modelu 2 (Model 1 zůstává 1:1 s Excelem). Testy, kterých se změna týká: `test_svetliky_boky.js`,
 `test_svetliky_sirka.js`, `overit_svetliky_sirka.mjs`, mutace #375 / #381 / #385 v `mutace_jadro.mjs`.
 
-## 3. Dimenze profilů portálu (návrh, beze změny)
+## 3. Dimenze profilů portálu — uzavřeno beze změny
+
+**Rozhodnutí J. V. 20. 10. 2026 (~11:40):** dnešní stav je správně — sloupek portálu 40×40/3 (EXT i INT),
+příčník portálu 80×40/3 zůstává. Návrh z větve `claude/d1-sikora-navrh-profily` se **nepoužije** (větev
+zůstává, smaže ji J. V.). Rozbor níže je jen pro záznam.
 
 **Dnes** (`src/engine.js` `PROFILY_VYCHOZI`; `DEFAULT_ZADANI.profily` = exteriér; přepnutí typu šachty
 dosadí sadu typu, `src/ui/kalk_ock.js` `typSachtyPrepni`; uložené zakázky nesou profily ve svém zadání):
@@ -151,7 +155,7 @@ materiál „PROFILY - HLAVNÍ NOSNÉ PRVKY“ a lakování (plocha m²/m). Dél
 | INT, boky bez | 18,0 m | −34 | −0,8 % |
 | INT, boky sklo | 25,4 m | −48 | −1,0 až −1,1 % |
 
-**Otázky pro J. V. / Jirku L.** (doporučení v závorce):
+**Otázky (už bezpředmětné, pro záznam):**
 - **Q4** Platí EXT sloupek portálu 80×40 pro zapuštěný i předsazený portál? (ano)
 - **Q5** U EXT zůstává příčník portálu 80×40/3 a u INT sloupek portálu 40×40/3? (ano)
 - **Q6** Tloušťka 80×40/**3** jako příčník, nebo /4 jako hlavní sloupek? (3)

@@ -50,9 +50,9 @@ Souběžně O7 má v20.10.2. Podklad `podklady/D1_SIKORA_19_10.md`, roadmapa #44
   (EN glass width / DE Glasbreite / FR largeur du verre; starší „šířka N mm“ se překládá dál),
   příručka; hlášky kontroly beze změny. Testy `test_svetliky_sirka.js` 70 (se starými popisky
   6 FAIL), `overit_svetliky_sirka.mjs` 24 (se starými 15 FAIL).
-- **Bod 3 — dimenze profilů portálu (#443, návrh, beze změny):** dnešní pravidlo, dopad na
-  cenu (zkušební ceník) a otázky; kód návrhu v samostatné větvi `claude/d1-sikora-navrh-profily`
-  (nesloučit bez potvrzení).
+- **Bod 3 — dimenze profilů portálu (#443, uzavřeno beze změny):** rozhodnutí J. V. 20. 10.
+  ~11:40 — dnešní stav je správně (sloupek portálu 40×40/3 EXT i INT, příčník portálu 80×40/3);
+  návrh z větve `claude/d1-sikora-navrh-profily` se nepoužije (větev smaže J. V.).
 
 ## v20.10.1 — O5: opravy nálezů auditu K3 bez rozhodnutí J. V. (větev claude/o5-k3-nalezy)
 

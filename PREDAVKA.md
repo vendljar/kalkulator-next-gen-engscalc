@@ -2,7 +2,7 @@
 
 Nad `claude/integrace-16-10` (5dc28d1, v20.10.1). Do integrace / `test` nic — slučuje koordinace
 (session_017KEALG3ppimL5fW2XswzrB); O7 má souběžně v20.10.2. Podklad `podklady/D1_SIKORA_19_10.md`,
-CHANGELOG v20.10.3, roadmapa #440, #441, #442 hotovo, #443 čeká (předběžná id).
+CHANGELOG v20.10.3, roadmapa #440–#443 uzavřené (předběžná id).
 
 - **Bod 1 hotovo (#440):** úvod DPZ bez studie bez „navazuje na vzájemně odsouhlasenou STUDII…“ — online,
   Word `{{PROJ_DPZ_UVOD}}`, `nastroje/vyrob_sablony.js --proj-v7`, slovník, kontrola `dpzUvodWordProj` (38 pravidel).
@@ -13,7 +13,8 @@ CHANGELOG v20.10.3, roadmapa #440, #441, #442 hotovo, #443 čeká (předběžná
   **Šablona .docx v7 nevznikla** — v6 v sezení není (Disk má jen v5, 1 MB konektorem nejde); J. V. ji vyrobí z v6.
 - **#442 hotovo:** výpočet šířky bočního světlíku beze změny, popisky „Šířka skla bočního světlíku (přes sloupky)“,
   nápověda, Detail, TS „šířka skla N mm“ (EN/DE/FR), příručka.
-- **#443 čeká:** profily portálu, návrh ve větvi `claude/d1-sikora-navrh-profily` (NESLUČOVAT bez Jirky L.).
+- **#443 uzavřeno beze změny** (J. V. 20. 10. ~11:40: dnešní profily portálu jsou správně); větev
+  `claude/d1-sikora-navrh-profily` se nepoužije — smaže J. V.
 - **Ke slučování:** CHANGELOG / `verze.txt` / `manual/obsah.json` (O7 v20.10.2 — novější nahoru),
   `mutace_jadro.mjs` (blok D1 před #367b), `src/kontroly.js` (38 pravidel v `test_kontroly.js` a `overit_lista.mjs`;
   přidá-li O7 pravidlo, sečíst), `roadmapa/roadmap.json` (#440–#443 na konci), `src/podminky.js` (výchozí termíny PROJ).
