@@ -826,3 +826,22 @@ Podklad `podklady/K3_AUDIT_19_10.md` (K3-N14: tyto meze tu chyběly).
   se opětovné PID nepozná; zámek převzetí starší 10 s se považuje za
   mrtvý. Zámek chrání jen běhy v téže pracovní kopii, ne ruční zásahy do
   souborů během mutací.
+
+## Controlling #447 — číselník skupin a mapování (dávka C1, 20. 10. 2026)
+
+- **`/api/controlling` čte i zapisuje jen Administrátor** (rozhodnutí J. V.
+  20. 10. 2026, J7). Hlídá server (`vyzadujRoli`), matice zobrazení na to
+  vliv nemá; řádky v `netlify/test_prava.mjs`, mutace „#447“.
+- **Zápis nechce heslo správce** (na rozdíl od matice, B168). Vědomě:
+  mapování nepřiděluje práva ani nemění cenu, jen říká, do které kapitoly
+  controllingu patří který klíč. Kdo má relaci správce, může mapování
+  přeskládat — dopad je rozházený export, ne přístup k datům; každá verze
+  nese autora z relace a předchozí verze zůstávají v historii (30).
+- **Záloha a obnova:** záznam `program/controlling` je v záloze, v kopii na
+  Disk (`KOPIE_DISK_CASTI`) i v obnově; obnova ho čistí touž kontrolou jako
+  zápis (`ctrlDbOciste`) — mapování na neexistující skupinu ani prototypový
+  klíč do databáze nepustí.
+- **Export předkalkulace** (nákupní ceny a marže) přijde v dávkách C2–C3;
+  i ten jen pro administrátora a hlídaný serverem — B88 (náklady v DOM
+  každé role) se tím nezhoršuje, ale hromadný přenosný soubor je nová mez,
+  zapíše se s exportem.

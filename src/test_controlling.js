@@ -1,0 +1,221 @@
+/* CONTROLLING (#447, dávka C1) — nákladové skupiny a rozvrh předkalkulace.
+ *
+ * Hlídá:
+ *   1. ÚPLNOST — každý klíč ceníku OCK i PROJ (CENIK_DEF, CENIK_DEF_PROJ,
+ *      CENIK_STARI_EXTRA) a každá `cenaPath` / `cenaSkupina` z jádra má
+ *      ve výchozím mapování skupinu nebo značku „není náklad". Nová položka
+ *      ceníku bez zařazení shodí tuhle sadu dřív, než se dostane k Andy.
+ *   2. SOUČTY — rozvrh výsledku do skupin nic neztratí ani nezdvojí:
+ *      náklad řádků základní ceny = souhrn.zakladNaklad, příplatky zvlášť,
+ *      PROJ = náklad + doprava.
+ *   3. ZÁZNAM — kontrola a verze uloženého číselníku a mapování (server
+ *      ho zapisuje touž funkcí, obnova čistí touž očistou).
+ * Ceník v testu je SMYŠLENÝ (vyplněný pořadovými čísly) — skutečné ceny do
+ * repozitáře nepatří a nulový ceník by součty neověřil. */
+const fs = require('fs');
+const path = require('path');
+const nacti = f => { const m = require(f); Object.keys(m).forEach(k => { global[k] = m[k]; }); return m; };
+nacti('./cenik.js');
+nacti('./cenik_stari.js');
+const eng = nacti('./engine.js');
+const ep = nacti('./engine_proj.js');
+const C = nacti('./controlling.js');
+const JEKLY = require('./jekly.json');
+
+let ok = 0, fail = 0;
+const test = (n, cond, info) => {
+  if (cond) { ok++; console.log('OK  ' + n); }
+  else { fail++; console.log('FAIL ' + n, info === undefined ? '' : JSON.stringify(info).slice(0, 400)); }
+};
+const kopie = x => JSON.parse(JSON.stringify(x));
+const blizko = (a, b) => Math.abs(a - b) < 1e-6 * Math.max(1, Math.abs(a), Math.abs(b));
+
+/* ---------- 1. úplnost mapování ---------- */
+const ids = new Set(C.CTRL_SKUPINY_VYCHOZI.map(s => s.id));
+const mapa = C.CTRL_MAPA_VYCHOZI;
+const kliceCeniku = C.ctrlKliceCeniku();
+test('klíčů ceníku k zařazení je víc než 100 (OCK + PROJ + zakázkové)', kliceCeniku.length > 100, kliceCeniku.length);
+const chybi = kliceCeniku.filter(k => !Object.prototype.hasOwnProperty.call(mapa, k));
+test('každý klíč ceníku má ve výchozím mapování skupinu nebo „není náklad"', chybi.length === 0, chybi);
+const spatne = Object.keys(mapa).filter(k => mapa[k] !== C.CTRL_NENI_NAKLAD && !ids.has(mapa[k]));
+test('výchozí mapování ukazuje jen na skupiny z číselníku', spatne.length === 0, spatne);
+
+const jadro = fs.readFileSync(path.join(__dirname, 'engine.js'), 'utf8');
+const cesty = [...jadro.matchAll(/cenaPath:\s*'([^']+)'/g)].map(m => m[1])
+  .concat([...jadro.matchAll(/cenaSkupina:\s*'([^']+)'/g)].map(m => m[1]))
+  .filter((k, i, a) => a.indexOf(k) === i);
+test('jádro vydává klíče řádků (cenaPath / cenaSkupina)', cesty.length > 40, cesty.length);
+const cestyBez = cesty.filter(k => !Object.prototype.hasOwnProperty.call(mapa, k));
+test('každý klíč řádku z jádra je zařazený', cestyBez.length === 0, cestyBez);
+const cestyNeNaklad = cesty.filter(k => mapa[k] === C.CTRL_NENI_NAKLAD);
+test('klíč, který v jádře nese řádek nákladu, není označený „není náklad"', cestyNeNaklad.length === 0, cestyNeNaklad);
+test('jádro pořád vydává řádek přirážky za ATYP pod názvem, podle kterého ho controlling pozná',
+  jadro.includes("'" + C.CTRL_NAZEV_ATYP_PRIRAZKA + "'"));
+['R.rezervaZaklad', 'R.rezervaPriplatky', 'R.atypPrirazka', 'Z.zamecnikAtypKc', 'PC.doprava',
+ 'V.hrubaOck', 'V.oplasteni', 'V.volitelne', 'V.rezie', 'V.atyp', 'V.priplatky', 'V.spojovaci', 'V.lakovani', 'V.proj']
+  .forEach(k => test('pseudo-klíč ' + k + ' má skupinu', ids.has(mapa[k]), mapa[k]));
+test('rozhodnutí J. V.: Režie kanceláře = kalkulační příspěvek (nepřímý, fixní)',
+  mapa['C.rezieKancelareKc'] === 'rezie-prispevek'
+  && C.CTRL_SKUPINY_VYCHOZI.find(s => s.id === 'rezie-prispevek').typ === 'neprimy');
+test('rozhodnutí J. V.: rezervy samostatně, přirážka ATYP do projekce, můstek k zámečníkům, tmelení stavební práce',
+  mapa['R.rezervaZaklad'] === 'rezerva' && mapa['R.atypPrirazka'] === 'sl-projekce'
+  && mapa['C.mustekKc'] === 'sl-zamecnici' && mapa['C.tmeleniKc'] === 'sl-stavebni');
+test('skupina „Režie výroba" se nezakládá (J2)', !C.CTRL_SKUPINY_VYCHOZI.some(s => /v[ýy]rob/i.test(s.nazev) && /re[žz]ie/i.test(s.nazev)));
+
+/* ---------- 2. rozvrh výsledku ---------- */
+/* Smyšlený ceník: každé číslo dostane jinou hodnotu, aby záměna řádků byla vidět. */
+function smyslenyCenik() {
+  const c = kopie(eng.DEFAULT_CENIK);
+  let i = 7;
+  const projdi = (o) => Object.keys(o).forEach(k => {
+    if (o[k] && typeof o[k] === 'object' && !Array.isArray(o[k])) projdi(o[k]);
+    else if (typeof o[k] === 'number' || o[k] === null) o[k] = 10 + (i++ % 97) * 3;
+  });
+  projdi(c);
+  c.marze = 0.3; c.dph = 0.21; c.atypPrirazka = 0.1;
+  c.atypMontazPct = 0.3; c.atypProjekcePct = 0.5; c.atypRezervaZakladPct = 0.1; c.atypRezervaPriplatkyPct = 0.2;
+  delete c.ukazkove; delete c.prazdny;
+  return c;
+}
+const CEN = smyslenyCenik();
+const varianty = [
+  ['interiér, výchozí zadání', z => z],
+  ['exteriér', z => { z.typSachty = 'ext'; return z; }],
+  ['interiér s ATYP a rezervami', z => { z.atyp = true; z.rezervaZakladPct = 0.1; z.rezervaPriplatkyPct = 0.2; z.zamecnikAtypKc = 12345; return z; }],
+  ['exteriér, všechna volitelná, ruční položka', z => { z.typSachty = 'ext';
+    Object.keys(z.volitelne).forEach(k => { z.volitelne[k] = true; });
+    z.vlastniPolozky = Object.assign({}, z.vlastniPolozky || {}, { hrubaOck: [{ nazev: 'Ruční prvek', mnozstvi: 2, cena: 500 }] });
+    return z; }],
+];
+for (const [jm, uprav] of varianty) {
+  for (const fixes of [true, false]) {
+    const z = uprav(kopie(eng.DEFAULT_ZADANI));
+    let v;
+    try { v = eng.vypocet(z, kopie(CEN), JEKLY, fixes); } catch (e) { test(jm + ': výpočet proběhl', false, e.message); continue; }
+    const radky = C.ctrlRozvrhOck(v, { fixes, rezervaPriplatkyPct: z.rezervaPriplatkyPct, marze: CEN.marze });
+    const zaklad = radky.filter(r => r.vZakladu).reduce((a, r) => a + r.naklad, 0);
+    const m = fixes ? 'Model 2' : 'Model 1';
+    test(jm + ' (' + m + '): náklad řádků základní ceny = souhrn.zakladNaklad',
+      blizko(zaklad, v.souhrn.zakladNaklad) && zaklad > 0, { zaklad, souhrn: v.souhrn.zakladNaklad });
+    const prip = radky.filter(r => !r.vZakladu && r.klic !== 'R.rezervaPriplatky').reduce((a, r) => a + r.naklad, 0);
+    const pripV = (v.priplatky || []).reduce((a, r) => a + r.naklad, 0);
+    test(jm + ' (' + m + '): náklad příplatků se přenese celý', blizko(prip, pripV), { prip, pripV });
+    const nez = radky.filter(r => r.skupina === C.CTRL_NEZARAZENO);
+    test(jm + ' (' + m + '): žádný řádek nepadl do Nezařazeno', nez.length === 0, nez.map(r => r.nazev + ' ' + r.klic));
+    test(jm + ' (' + m + '): každý řádek má skupinu z číselníku', radky.every(r => ids.has(r.skupina)));
+    const kap = C.ctrlKapitoly(radky, { jenZaklad: true });
+    test(jm + ' (' + m + '): součet kapitol = náklad základní ceny',
+      blizko(kap.reduce((a, k) => a + k.naklad, 0), v.souhrn.zakladNaklad));
+    if (z.atyp) {
+      test(jm + ' (' + m + '): řádek přirážky ATYP je rozpoznaný a v projekci',
+        radky.some(r => r.klic === 'R.atypPrirazka' && r.skupina === 'sl-projekce' && r.naklad > 0));
+      test(jm + ' (' + m + '): rezerva základu je ve skupině Rezerva',
+        radky.some(r => r.klic === 'R.rezervaZaklad' && r.skupina === 'rezerva' && blizko(r.naklad, v.rezerva.naklad)));
+      const pripRez = radky.find(r => r.klic === 'R.rezervaPriplatky');
+      const ocekavano = (v.priplatky || []).reduce((a, r) => a + (fixes ? r.naklad : r.sMarzi), 0) * z.rezervaPriplatkyPct;
+      test(jm + ' (' + m + '): rezerva příplatků odpovídá jádru (Model 1 ze ceny, Model 2 z nákladu)',
+        !!pripRez && blizko(pripRez.naklad, ocekavano), { pripRez, ocekavano });
+    }
+    if (/ruční/.test(jm))
+      test(jm + ' (' + m + '): ruční řádek jde pod výchozí skupinu sekce (V.hrubaOck)',
+        radky.some(r => r.klic === 'V.hrubaOck' && r.vlastni && r.skupina === mapa['V.hrubaOck']));
+  }
+}
+/* Ruční přepis ceny ani název řádku zařazení nemění — rozhoduje klíč. */
+{
+  const z = kopie(eng.DEFAULT_ZADANI);
+  z.nazvyPrepis = { 'INTERNÍ TRANSPORT': 'DOPRAVA NA STAVBU' };
+  const v = eng.vypocet(z, kopie(CEN), JEKLY, true);
+  const r = C.ctrlRozvrhOck(v).find(x => x.klic === 'C.transportKc');
+  test('přejmenovaný řádek se zařadí podle klíče, ne názvu', !!r && r.skupina === 'sl-dopravne', r);
+}
+
+/* PROJ */
+{
+  const cp = kopie(ep.DEFAULT_CENIK_PROJ);
+  cp.marze = 0.3; cp.dopravaKmKc = 12; cp.dopravaHodKc = 1000;
+  Object.keys(cp.sazby || {}).forEach((k, i) => { cp.sazby[k] = 500 + i * 100; });
+  Object.keys(cp.fixy || {}).forEach((k, i) => { cp.fixy[k] = 1000 + i * 250; });
+  const zp = kopie(ep.DEFAULT_ZADANI_PROJ);
+  (zp.sekce || []).forEach((s, i) => { s.doprava = { km: 30 + i, mimoPrahu: i % 2 === 0, pausal: 0 };
+    (s.polozky || []).forEach(p => { if (p.typ === 'hod') p.hodiny = (+p.hodiny || 0) + 3; }); });
+  const v = ep.vypocetProj(zp, cp);
+  const radky = C.ctrlRozvrhProj(v);
+  const n = radky.reduce((a, r) => a + r.naklad, 0);
+  test('PROJ: náklad řádků = náklad + doprava ze souhrnu', blizko(n, v.souhrn.naklad + v.souhrn.doprava) && n > 0,
+    { n, naklad: v.souhrn.naklad, doprava: v.souhrn.doprava });
+  test('PROJ: prodejní cena řádků = cena ze souhrnu', blizko(radky.reduce((a, r) => a + r.prodej, 0), v.souhrn.cena));
+  test('PROJ: hodinové položky jdou do vlastní práce, doprava do cestovného',
+    radky.some(r => r.klic.startsWith('PC.sazby.') && r.skupina === 'proj-prace')
+    && radky.some(r => r.klic === 'PC.doprava' && r.skupina === 'cestovne'));
+  const nez = radky.filter(r => r.skupina === C.CTRL_NEZARAZENO);
+  test('PROJ: výchozí zadání nemá nic v Nezařazeno', nez.length === 0, nez.map(r => r.klic));
+}
+
+/* ---------- 3. platné mapování, nezařazené, záznam ---------- */
+{
+  const d = C.ctrlVychozi();
+  d.mapa['C.transportKc'] = 'cestovne';
+  delete d.mapa['C.cestovniKc'];
+  const P = C.ctrlPlatne(d);
+  test('uložená odchylka platí přes výchozí mapování', P.mapa['C.transportKc'] === 'cestovne');
+  test('klíč, který uložený záznam nezná, dostane výchozí skupinu z kódu', P.mapa['C.cestovniKc'] === 'cestovne');
+  const d2 = C.ctrlVychozi();
+  d2.skupiny = d2.skupiny.filter(s => s.id !== 'sl-leseni');
+  test('mapování na zrušenou skupinu padá do Nezařazeno', C.ctrlPlatne(d2).mapa['C.leseniFix'] === C.CTRL_NEZARAZENO);
+  const kid = C.ctrlKliceKatalogu({ hrubaOck: [{ kid: 'k7', nazev: 'X' }] }, { vlastniPolozky: { dps: [{ kid: 'pk2' }] } });
+  test('klíče trvalých položek katalogu OCK i PROJ', JSON.stringify(kid) === '["K.k7","K.pk2"]', kid);
+  const nez = C.ctrlNezarazene(null, C.ctrlKliceCeniku().concat(kid));
+  test('nezařazené = jen trvalé položky bez vlastního zařazení (J5)', JSON.stringify(nez) === '["K.k7","K.pk2"]', nez);
+  const d3 = C.ctrlVychozi(); d3.mapa['K.k7'] = 'mat-ostatni';
+  test('po zařazení trvalá položka z nezařazených zmizí', JSON.stringify(C.ctrlNezarazene(d3, ['K.k7', 'K.pk2'])) === '["K.pk2"]');
+  test('trvalá položka bez zařazení se v rozvrhu přidrží výchozí skupiny své sekce',
+    JSON.stringify(C.ctrlSkupinaKlice(C.ctrlPlatne(null).mapa, 'K.k9', 'atyp')) === JSON.stringify({ skupina: 'sl-zamecnici', zarazeno: false }));
+}
+{
+  const ok1 = C.ctrlDataKontrola(C.ctrlVychozi());
+  test('výchozí číselník a mapování projdou kontrolou zápisu', ok1.ok, ok1.chyba);
+  const zle = (jm, f) => { const d = C.ctrlVychozi(); f(d); const k = C.ctrlDataKontrola(d); test('kontrola odmítne: ' + jm, !k.ok, k); };
+  zle('klíč __proto__', d => { d.mapa = JSON.parse('{"__proto__":"cestovne"}'); });
+  zle('klíč hasOwnProperty', d => { d.mapa.hasOwnProperty = 'cestovne'; });
+  zle('klíč s mezerou', d => { d.mapa['C.a b'] = 'cestovne'; });
+  zle('mapování na neznámou skupinu', d => { d.mapa['C.transportKc'] = 'neni-takova'; });
+  zle('zrušená skupina Nezařazeno', d => { d.skupiny = d.skupiny.filter(s => s.id !== 'nezarazeno'); });
+  zle('dvakrát stejné id skupiny', d => { d.skupiny.push(Object.assign({}, d.skupiny[0])); });
+  zle('id skupiny „x"', d => { d.skupiny[0].id = 'x'; });
+  zle('id skupiny s velkými písmeny', d => { d.skupiny[0].id = 'Cestovne'; });
+  zle('prázdný název skupiny', d => { d.skupiny[0].nazev = '  '; });
+  zle('řídicí znak v názvu', d => { d.skupiny[0].nazev = 'A\u0007B'; });
+  zle('neznámý typ nákladu', d => { d.skupiny[0].typ = 'jiny'; });
+  zle('neznámé chování', d => { d.skupiny[0].chovani = 'smisene'; });
+  zle('účet jako číslo, ne text', d => { d.skupiny[0].ucetNyni = [512001]; });
+  zle('účet s mezerou', d => { d.skupiny[0].ucetNyni = ['512 001']; });
+  zle('mapování jako pole', d => { d.mapa = []; });
+  zle('prázdný číselník', d => { d.skupiny = []; });
+  test('kontrola odmítne i null a pole', !C.ctrlDataKontrola(null).ok && !C.ctrlDataKontrola([]).ok);
+
+  const v1 = C.ctrlDbNovaVerze(null, { data: C.ctrlVychozi(), kdo: 'admin@example.com', poznamka: 'první' });
+  test('první zápis = verze 1 bez historie', v1.platny.verze === 1 && v1.historie.length === 0);
+  const d2 = C.ctrlVychozi(); d2.mapa['C.transportKc'] = 'cestovne';
+  test('stejná data = beze změny, změněná ne', C.ctrlBezeZmeny(v1, C.ctrlVychozi()) && !C.ctrlBezeZmeny(v1, d2));
+  const v2 = C.ctrlDbNovaVerze(v1, { data: d2, kdo: 'admin@example.com' });
+  test('druhý zápis = verze 2, předchozí v historii s platnoDo',
+    v2.platny.verze === 2 && v2.historie.length === 1 && v2.historie[0].verze === 1 && !!v2.historie[0].platnoDo);
+  let hodila = false; try { C.ctrlDbNovaVerze(v2, { data: { skupiny: [] } }); } catch (e) { hodila = true; }
+  test('nová verze s vadnými daty se nezapíše (výjimka)', hodila);
+
+  const o1 = C.ctrlDbOciste(v2);
+  test('očista platného záznamu ho nezmění', o1.ok && JSON.stringify(o1.db) === JSON.stringify(v2), o1.chyba);
+  const otr = kopie(v2); otr.platny.data.mapa['C.transportKc'] = 'neni-takova';
+  test('očista odmítne záznam s vadnou platnou verzí', !C.ctrlDbOciste(otr).ok);
+  const otrH = kopie(v2); otrH.historie[0].data.skupiny = [];
+  const o2 = C.ctrlDbOciste(otrH);
+  test('vadná starší verze z historie vypadne, platná zůstane', o2.ok && o2.db.historie.length === 0 && o2.db.platny.verze === 2);
+  const otrV = kopie(v2); otrV.platny.verze = Infinity;
+  test('verze Infinity ze zálohy neprojde', !C.ctrlDbOciste(otrV).ok);
+  test('očista odmítne prázdno, pole i záznam bez platné verze',
+    !C.ctrlDbOciste(null).ok && !C.ctrlDbOciste([]).ok && !C.ctrlDbOciste({ historie: [] }).ok);
+}
+
+console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
+if (fail) process.exit(1);

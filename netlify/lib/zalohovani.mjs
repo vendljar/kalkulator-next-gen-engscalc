@@ -54,7 +54,7 @@ async function ctiCele(s, prefix) {
  * nerozešly. */
 export async function zalohaDoplnky() {
   const sProg = await uloziste('program');
-  const [zobrazeni, popisy, slovnik] = await ctiPoDavkach(sProg, ['zobrazeni', 'popisy', 'slovnik']);
+  const [zobrazeni, popisy, slovnik, controlling] = await ctiPoDavkach(sProg, ['zobrazeni', 'popisy', 'slovnik', 'controlling']);
   /* Dodatkové texty položek (22. 9. 2026) leží ve stejném úložišti pod
    * vlastním klíčem. Bez tohohle řádku by je obnova ze zálohy tiše smazala —
    * přesně ta chyba, kvůli které vznikl nález B9 (`popisy` výše).
@@ -71,6 +71,9 @@ export async function zalohaDoplnky() {
            smazani: Object.keys(smazani).length ? smazani : null,
            popisy: popisy || null,
            slovnik: slovnik || null,
+           /* Controlling (#447): číselník skupin a mapování — bez něj by obnova
+            * vrátila controlling na výchozí rozvržení z kódu. */
+           controlling: controlling || null,
            zakaznici: Object.keys(zakaznici).length ? zakaznici : null,
            podpisy: Object.keys(podpisy).length ? podpisy : null };
 }
@@ -146,7 +149,7 @@ export async function porizOtisk(zdroj, kdo, klic) {
     program: program || null, firma: firma || null,
     rejstrik: rejstrik || null, zakazky, uzivatele,
     sablony: Object.keys(sablony).length ? sablony : null,
-    ...(await zalohaDoplnky()),              // zobrazeni, popisy, slovnik, zakaznici, podpisy (B9), smazani (B58)
+    ...(await zalohaDoplnky()),              // zobrazeni, popisy, slovnik, controlling, zakaznici, podpisy (B9), smazani (B58)
   };
   const sZal = await uloziste('zalohy');
   await sZal.zapis(den, otisk);
@@ -333,7 +336,7 @@ export async function retenceProved(novyKlic, dnes, ted) {
  * (= stav 20. 10. 2026); novou část je třeba dopsat sem (test_zalohy N6
  * hlídá, že každá část zálohy je tu, nebo ji test vědomě vynechá). */
 export const KOPIE_DISK_CASTI = ['porizena', 'zdroj', 'kdo', 'program', 'firma', 'rejstrik', 'zakazky', 'uzivatele',
-  'sablony', 'zobrazeni', 'smazani', 'popisy', 'slovnik', 'zakaznici', 'podpisy'];
+  'sablony', 'zobrazeni', 'smazani', 'popisy', 'slovnik', 'controlling', 'zakaznici', 'podpisy'];
 export function otiskProDisk(o) {
   if (!o || typeof o !== 'object') return null;
   const out = {};

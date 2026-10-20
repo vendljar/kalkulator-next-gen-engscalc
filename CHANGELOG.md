@@ -8,6 +8,28 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## (bez verze) — C1: Controlling — nákladové skupiny a mapování (#447, větev claude/controlling-navrh)
+
+Nad `test` 5dc28d1 (v20.10.1). Návrh a rozhodnutí J. V. J1–J11: `podklady/CONTROLLING_NAVRH_20_10.md`.
+Verzi přidělí koordinace při slučování.
+
+- **Nové `src/controlling.js`** — číselník nákladových skupin (Andyiných 12 + Režie – kalkulační
+  příspěvek, Rezerva, 3 návrhové PROJ, Nezařazeno), výchozí mapování každého klíče ceníku OCK i PROJ
+  podle stabilního klíče (nové od v2.9.4 zařazené: můstek → zámečníci, VSG 4.4.2 → sklo, Cetris →
+  materiál, hodina cesty PROJ → cestovné), pseudo-klíče řádků bez klíče ceníku (rezervy, přirážka
+  ATYP, zámečník atyp, souhrny spojovacího materiálu a lakování, doprava PROJ, trvalé a ruční
+  položky), rozvrh výsledku výpočtu OCK i PROJ do skupin a souhrn po kapitolách. Mimo jádro výpočtu —
+  engine se nemění, Model 1 zůstává 1:1.
+- **Nové `/api/controlling`** (GET/POST jen Administrátor, verze s historií, úložiště
+  `program/controlling`); záloha, kopie na Disk a obnova (s očistou) controlling nesou.
+- Testy: `src/test_controlling.js` (úplnost mapování proti ceníku i jádru, součty rozvrhu = náklad
+  kalkulace v Modelu 1 i 2, záznam), `netlify/test_controlling.mjs` (práva, verze, odmítnutí, záloha,
+  obnova), řádky v `test_prava.mjs`, mutace „#447“ v `netlify/mutace.mjs`.
+  Pojistka: bez zařazení položky (C.oplechFasadaBmKc), bez řádku rezervy a bez rozpoznání přirážky
+  ATYP testy padají; bez `controlling` v záloze a bez očisty v obnově padá serverová sada.
+
+---
+
 ## v20.10.1 — O5: opravy nálezů auditu K3 bez rozhodnutí J. V. (větev claude/o5-k3-nalezy)
 
 Dávka O5 (koordinace „ŘÍDÍCÍ 19.10 noc“), základ `claude/integrace-16-10` 3b49d57
