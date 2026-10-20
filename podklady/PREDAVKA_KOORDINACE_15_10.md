@@ -29,6 +29,19 @@ Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kv�
 - **Hodinová kontrola:** opakovaný scheduled task zamítla kontrola oprávnění → řetěz `send_later` po ~60 min (každá kontrola naplánuje další). Ráno ~06:00 UTC souhrn noci.
 - Staré sezení ŘÍDÍCÍ 19.10 session_017KEALG3ppimL5fW2XswzrB nečinné (archivuje J. V.).
 
+## PŘEDÁNÍ 20. 10. ~11:45 UTC → nové koordinační sezení (staré ŘÍDÍCÍ 19.10 session_017KEALG3ppimL5fW2XswzrB, kontext ~70 %)
+
+- **main = test = 5dc28d1 (v20.10.1)** — J. V. 20. 10.: „pošli aktuální test do main“ (fast-forward 1cbab3a → 5dc28d1). Releasy v19.10.5, v19.10.8, v20.10.1 vydány. Integrace `claude/integrace-16-10` = 5dc28d1 (+ tento zápis).
+- **Běžící dávky (souhrn posílají na `koordinace.id` v kokpitu):**
+  - **O7** session_01SZNfBb5aGMjdfDNuv8VsAG, `claude/o7-k3-rozhodnuti` (v20.10.2): rozhodnutí J. V. k auditu K3 — N2 zmrazit texty při zamčení, N1 heslo + jen složka _Zaloha Netlify DB, N4 1/10 min a 20/den, N13 pojistka retence < 50 %, N15 beze změny, N18 strop 500 kB, N17 jen upozornit. Dobíhá mutační běh #151.
+  - **D1** session_016MmT6QmJRCHHBCGJyJwSnC, `claude/d1-sikora` (v20.10.3): věta DPZ bez studie (hotovo), Q1 hvězdička bez studie vynechat, Q2 termín DPZ bez studie „do 12 týdnů od zpracování výstupů ze zaměření“, Q3 bloky studie `--proj-v7`, světlík = varianta A správně, jen popisek „Šířka skla bočního světlíku (přes sloupky)“, #443 profily portálu beze změny (sloupek 40×40, příčník 80×40).
+  - **D2** session_01Qykxug7jUEq3ChN3dDATcg, `claude/d2-proj-sikora` (v20.10.4): cestovné PROJ mimo Prahu (přepínač + cena výjezdu + věty), upravitelný úvod „Naše nabídka a doporučení“, upozornění u jednostupňové; #260 uzavřít.
+  - **K29-N1** session_016n1qtH3wQFbKP1VLQD7jf2, `claude/k29-med-bez-strechy` nad test: příplatek za měď jen se zastřešením v nabídce. **Zadání J. V.: NESLUČOVAT** — o sloučení rozhodne J. V.
+  - **S9** session_01FeJSprZDeJmos6TvkDgHzD, `claude/s9-sablony`: soupis + výroba všech šablon k nahrání do test i main, artefakt s postupem.
+- **Plán:** O7 → D1 → D2 do integrace (pořadí verzí, konflikty jen dokumentace/mutace — novější oddíl nahoru), sady + cílené mutace (filtry „O7“, „d1:“, „D2“; `export ADMIN_EMAIL=spravce@priklad.cz`; během mutací nesahat na kopii), zelené → test (push do test po zelených schválen) + release odkaz se souhrnným popisem do kokpitu. `main` jen na pokyn J. V.
+- **Čeká na J. V.:** B192 varianta (doporučeno B, https://claude.ai/artifact/GtKYY7Qe6553LS4oJNjLXx); šablony (podle S9); první kopie záloh na Disk; Smlouvy/Šablony → Zveřejnit; kontrola účetní a rodilých mluvčích; sdílet soupis novinek https://claude.ai/artifact/A5HrdpZfUK6vBdJDYpYrgM; K29-N1 sloučení.
+- **Podklady dne:** obrázek variant světlíku https://claude.ai/artifact/VqYpgk9jRMMWHytyQFBjW9; artefakt D1 https://claude.ai/artifact/QFMdJQ5ruf9QrDuSjv7Xt4; ranní souhrn noci https://claude.ai/artifact/TqV2b7smXUvs9Kmhaau9aS. K28-N1 (test B58) = K3-N19, opraveno v O5 (0255b98), ověřeno nad test: test_obnova 235/0, mutace B58 2/2.
+
 ## PŘEDÁNÍ 19. 10. ~15:50 UTC → noční koordinační sezení (staré ŘÍDÍCÍ 19.10 session_017KEALG3ppimL5fW2XswzrB, kontext ~55 %)
 
 - **test = integrace = 1a4d26b (v19.10.8)** — #356, kapitoly + TD1, H2, zálohy N1–N6 (staré zálohy do 19. 10. se nemažou, RETENCE_OD 2026-10-20), #367 platební podmínky a texty ve Firmě. Ověřeno: sady 277/0/6, cílené mutace jádro #367 18/18, 356 5/5, h2 3/3; server #367 2/2, #151 42/42, h2 4/4, zaloh 50/50. Release v19.10.5 vydán; **v19.10.8 k vydání** (odkaz v kokpitu „Čeká na vás“). `main` = v15.10.14 jen na pokyn.
