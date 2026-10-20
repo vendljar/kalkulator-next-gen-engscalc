@@ -126,10 +126,18 @@ const otiskOcisti = r => {
   delete x.strecha;
   return x;
 };
+/* NÁVRH D1 (20. 10. 2026): nové výchozí dimenze portálu (EXT sloupek 80×40,
+ * INT příčník 40×40) mění výsledek výchozího zadání — interiér i v ceně
+ * (kratší profil příčníku), exteriér jen v kg/m (sloupek portálu má u
+ * zapuštěného portálu bez světlíků délku 0). Dřívější otisky:
+ * int 3e1a08b9085b572e / ee70861796207bb6, ext b57c60c38e8245e6 / 0e338ef1b802eb4f. */
 const OTISKY = {
-  'interiérová M1': '3e1a08b9085b572e', 'interiérová M2': 'ee70861796207bb6',
-  'exteriérová M1': 'b57c60c38e8245e6', 'exteriérová M2': '0e338ef1b802eb4f',
+  'interiérová M1': '7c7aaa3f98e37265', 'interiérová M2': 'e65e74a27b0ee4a5',
+  'exteriérová M1': '6c058be5727676b2', 'exteriérová M2': '12c3d536cd987759',
 };
+test('NÁVRH D1: EXT sloupek portálu 80×40, INT příčník portálu 40×40',
+  eng.PROFILY_VYCHOZI['exteriérová'].sloupekPortal.dim === '80x40' && eng.PROFILY_VYCHOZI['interiérová'].precnikPortal.dim === '40x40'
+  && eng.PROFILY_VYCHOZI['interiérová'].sloupekPortal.dim === '40x40' && eng.PROFILY_VYCHOZI['exteriérová'].precnikPortal.dim === '80x40');
 for (const typ of ['interiérová', 'exteriérová']) for (const fixes of [false, true]) {
   const { r, chyba } = spocti(zadani(z => { z.typSachty = typ; }), fixes);
   const otisk = r ? crypto.createHash('sha256').update(JSON.stringify(otiskOcisti(r))).digest('hex').slice(0, 16) : chyba;

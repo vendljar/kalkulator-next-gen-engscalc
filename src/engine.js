@@ -160,11 +160,15 @@ const DEFAULT_CENIK = {  // HODNOTY VYNULOVÁNY pro GitHub (pripravit_github.py)
  * u interiérové vedené taky, ale do výpočtu nevstupuje — položka
  * „PROFILY - LEMOVÁNÍ ŠACHTY (EXT)" se skládá jen u exteriérové, a obrazovka
  * proto u interiérové ukazuje místo dimenzí pomlčku. */
+/* NÁVRH D1 (20. 10. 2026, postřeh D. Sikory 19. 10.; NESLUČOVAT bez
+ * potvrzení J. V. / Jirky L.): u venkovní šachty sloupek portálu 80×40
+ * (dřív 40×40, to je vnitřní), u vnitřní příčník portálu 40×40 (dřív 80×40).
+ * Tloušťka zůstává 3 mm — otázka Q6 v podklady/D1_SIKORA_19_10.md. */
 const PROFILY_VYCHOZI = {
   'exteriérová': {
     sloupek:       { dim: '80x80', tl: 4 },
     precnikBok:    { dim: '80x80', tl: 3 },
-    sloupekPortal: { dim: '40x40', tl: 3 },
+    sloupekPortal: { dim: '80x40', tl: 3 },
     precnikPortal: { dim: '80x40', tl: 3 },
     spojka:        { dim: '70x70', tl: 3 },
     lemovani:      { dim: '60x30', tl: 2 },
@@ -173,7 +177,7 @@ const PROFILY_VYCHOZI = {
     sloupek:       { dim: '80x40', tl: 4 },
     precnikBok:    { dim: '80x40', tl: 3 },
     sloupekPortal: { dim: '40x40', tl: 3 },
-    precnikPortal: { dim: '80x40', tl: 3 },
+    precnikPortal: { dim: '40x40', tl: 3 },
     spojka:        { dim: '70x30', tl: 3 },
     lemovani:      { dim: '60x30', tl: 2 },
   },
