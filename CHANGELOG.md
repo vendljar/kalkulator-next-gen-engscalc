@@ -8,6 +8,21 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## Nástroj (bez nové verze aplikace) — W2: mazání sloučených větví jedním klikem (větev claude/w2-mazani-vetvi)
+
+Dávka W2 (J. V. 20. 10. 2026) nad `test` 5dc28d1. Aplikace se nemění, verze zůstává v20.10.1.
+
+- **Nový workflow `.github/workflows/smazat_vetve.yml` „Smazat sloučené větve“** — jen ruční spuštění
+  (GitHub → Actions → Smazat sloučené větve → Run workflow), `permissions: contents: write` jen pro něj
+  (testy.yml dál `contents: read`, B125), checkout připnutý na SHA, mazání `git push origin --delete`
+  přes GITHUB_TOKEN. Vstupy `jen_vypsat` (výchozí false), `stari_hodin` (24), `vynechat`. Souhrn běhu:
+  smazané, vynechané s důvodem, nesloučené, počty. **V Actions se objeví až po sloučení do `main`.**
+- **`nastroje/sloucene_vetve.sh`** — výběr: větev celá v `test`, nikdy `main`, `test`, `test-draft`,
+  `claude/integrace-*`, větev s commitem mladším než N hodin ani větev z `--vynechat`; lokálně `--jen-vypsat`.
+- **Test `nastroje/test_sloucene_vetve.sh`** (17 kontrol na dočasném holém originu) ve statických
+  kontrolách `testovaci_kolo.sh` (nově 4 kontroly). CLAUDE.md: mazání dělá J. V. tlačítkem, koordinace
+  už odkazy po větvích nepřipravuje.
+
 ## v20.10.1 — O5: opravy nálezů auditu K3 bez rozhodnutí J. V. (větev claude/o5-k3-nalezy)
 
 Dávka O5 (koordinace „ŘÍDÍCÍ 19.10 noc“), základ `claude/integrace-16-10` 3b49d57

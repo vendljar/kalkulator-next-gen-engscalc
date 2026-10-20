@@ -1,3 +1,18 @@
+# Předávka — 20. 10. 2026: dávka W2 (bez verze aplikace), větev `claude/w2-mazani-vetvi` — mazání sloučených větví v Actions
+
+Nad `test` 5dc28d1 (v20.10.1). Do `test` / `main` / `test-draft` / integrace nic — slučuje koordinace
+(session_01Ln2mMn7iC6W9ECztHTJpZe).
+
+- **Hotovo:** `.github/workflows/smazat_vetve.yml` (ručně, `contents: write` jen tady), logika
+  `nastroje/sloucene_vetve.sh` (celé v `test`, chráněné `main`/`test`/`test-draft`/`claude/integrace-*`,
+  stáří < `stari_hodin` h, `vynechat`, `jen_vypsat`), test `nastroje/test_sloucene_vetve.sh` (17 kontrol)
+  ve statických kontrolách kola (4/4). CLAUDE.md oddíl „Tagy, releasy a mazání větví“ upraven, CHANGELOG
+  oddíl bez verze.
+- **Čeká na J. V.:** workflow se v Actions objeví až ve výchozí větvi `main` („pošli do main“). Pak
+  poprvé pustit s `jen_vypsat` = true a zkontrolovat seznam, potom bez něj.
+- **Ke slučování:** CHANGELOG (oddíl W2 nad v20.10.1), `testovaci_kolo.sh` (statické 3 → 4),
+  CLAUDE.md (odrážka o mazání).
+
 # Předávka — 19. 10. 2026: dávka W1 (v19.10.9), větev `claude/w1-sablona-proj-v6` — šablona Wordu PROJ v6
 
 Nad `claude/v8-367-firma` (v19.10.7, `4d9f67a`). Do integrace / `test` nic — slučuje koordinace
