@@ -10,6 +10,13 @@ Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kv�
 - **Ještě nesloučené zápisové commity** (jen CHANGELOG/PREDAVKA/verze/roadmapa, bez kódu): `claude/b80-pipedrive` 38996f2 (v15.10.7, roadmapa #345, NASAZENI), `claude/p12-naklady` 1f2a365 (výsledky po úpravě, mutace 13/13, smoke 248/0/2), `claude/kolo25-audit` dcc3d5f (smoke 247/0/6).
 - **Další krok:** do `claude/integrace-15-10` sloučit 38996f2, 1f2a365, dcc3d5f (konflikty jen v dokumentaci — novější oddíl nahoru, `verze.txt` = 15.10.7, příručka `manual/obsah.json` verze + nadpis „Co je nového ve verzi v15.10.7"), `--kontrola` mutací, sestavit, příručka ze snímků, `spust_testy.sh --smoke` s podklady → zelené → zápis do CHANGELOG → push `claude/integrace-15-10` a fast-forward `test` (`git merge-base --is-ancestor origin/test HEAD`).
 
+## STAV 20. 10. ~16:20 UTC — noční koordinace „ŘÍDÍCÍ 20.10 noc“ session_01By6bWivtf2rTJYJFGVv8e1
+
+- **Integrace = b04873f (v20.10.8)**: K29-N1 sloučila koordinace (dávce kontrola oprávnění nedovolila sloučit integraci z pokynu jiného sezení). Konflikty CHANGELOG, PREDAVKA, `src/test_mustky.js` (oba bloky, 93/0); příručka, roadmapa #450 (hotovo) + #451 (otevřený bod: měď při ručně přepsané ploše zastřešení, neopravovat bez J. V.). Kolo `--bez-mutaci` 286/0/6, statické 4/4; mutace jádra K29-N1 5/5, „můst“ 13/13, #356 5/5 (filtr „mustky“ nic nenajde — používat „můst“). Release odkaz v20.10.8 (cíl b04873f, tag neexistuje) v kokpitu. **test beze změny (fa08e9c) — jen na pokyn J. V.**
+- **S10 hotová:** šablona PROJ v8 CZ+EN/DE/FR, `claude/s10-sablona-proj-v7` @ 51ea6e2 (oprava nástroje „(DPZ)*“ 60b916e — do integrace s další verzí). Soubory jen v sezení S10 (ne na Disku). Navržena oprava `docxPrelozUseky` v aplikaci (stejná chyba při „vyrobit jazykovou verzi“) → příští kódová dávka.
+- **Běží:** K4 session_011TNhhP4qdyPSxXQsiE8nJy (celé kolo + audit), CONTROLLING session_01TbMCaR4k38Rix8XxoRBnr5 (C2). Kontroly řetězem send_later.
+- **Ráno:** C1+C2 + oprava nástroje S10 → integrace jako v20.10.9 (po K4); nálezy K4 bez J. V. → dávka O8; souhrn noci artefaktem.
+
 ## ZÁVĚR noci 19./20. 10. (~05:45 UTC) — koordinace „ŘÍDÍCÍ 19.10 noc“ session_01XJumJDekDRpCTu4kDzdi9e (kontext ~36 %)
 
 - **Integrace = c1a4c81 (v20.10.1), plně ověřená:** W1 (PROJ v6, v19.10.9), F1 (zámek mutací, v19.10.10), M1 (mutace O3), zápis K3, O5 (opravy auditu K3 bez J. V., v20.10.1), O6 (test hranice 7 dní). Celé kolo K3 nad 1b0e2f7: sady 279/0/6, jádro 291/291, server 586/587 (B58 prázdný test → O5), statické 3/3. Nad 54f1cbc/c1a4c81: sady 281/0/6, statické 3/3, jádro O5 13/13, #367 18/18; server O5 11/11, B58 2/2, #367 2/2, H2 4/4, #151 42/42.
