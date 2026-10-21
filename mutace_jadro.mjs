@@ -88,7 +88,10 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   /* ui/sablony_sprava_ui.js (#474, O12, 21. 10. 2026): průvodce šablon
    * rozhoduje, jestli se zveřejní čeština, nebo jen jazykové verze k platné
    * češtině — a s jakým zdrojovým otiskem. Hlídá ho src/test_sablony_online.js. */
-  'ui/sablony_sprava_ui.js'];
+  'ui/sablony_sprava_ui.js',
+  /* xlsx.js (K6-K8, D3 21. 10. 2026): sešit pro controlling a ceník —
+   * řídicí znak v textu buňky by rozbil celý soubor. Hlídá src/test_cenik_xlsx.js. */
+  'xlsx.js'];
 /* Filtr = první argument, který není přepínač (stejně jako netlify/mutace.mjs). */
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 /* --kontrola (23. 9. 2026, nález N19): jen ověří, že každý hledaný úsek je
@@ -1524,6 +1527,27 @@ const MUTACE = [
     hledej: "        st = Object.assign({}, z, { text: String(z.text).replace(/\\)\\s*$/, '') });",
     nahrad: "        st = z;",
     proc: 'v nadpisu by stála zdvojená závorka „(DPZ))"' },
+  /* D3 (21. 10. 2026): nálezy auditu K6 v jádře a nástrojích šablon. */
+  { nazev: 'K6-W3: <w:ind> před <w:pStyle> (pořadí w:pPr)', soubor: '../nastroje/vyrob_sablony.js',
+    hledej: "  return m ? pPr.slice(0, m.index) + ind + pPr.slice(m.index) : pPr.replace('</w:pPr>', ind + '</w:pPr>');",
+    nahrad: "  return pPr.replace('<w:pPr>', '<w:pPr>' + ind);",
+    proc: 'šablona SoD v4 by porušila schéma OOXML — Word může hlásit nečitelný obsah' },
+  { nazev: 'K6-W3: <w:ind> až za <w:jc>', soubor: '../nastroje/vyrob_sablony.js',
+    hledej: "const PPR_PO_IND = /<w:(?:contextualSpacing|mirrorIndents|suppressOverlap|jc|",
+    nahrad: "const PPR_PO_IND = /<w:(?:contextualSpacing|mirrorIndents|suppressOverlap|",
+    proc: 'odsazení by stálo za zarovnáním — mimo pořadí schématu' },
+  { nazev: 'O13/D3: obal závorky přeloží jen to, co aplikace', soubor: '../nastroje/vyrob_sablony.js',
+    hledej: "    const z = puvodni(s + ')', lang);",
+    nahrad: "    const z = null;",
+    proc: 'nadpis „(…{{SYMBOL}})" by v jazykové šabloně zůstal česky' },
+  { nazev: 'K6-K6: název příplatku ve SoD se zalomením', soubor: 'sod.js',
+    hledej: "P(String(p.nazev).replace(/\\s+/g, ' ').trim())",
+    nahrad: "P(p.nazev)",
+    proc: 'vlastní název s \\n by ve smlouvě vypadal jako další položka' },
+  { nazev: 'K6-K8: XLSX propustí řídicí znaky', soubor: 'xlsx.js',
+    hledej: "  return String(s == null ? '' : s).replace(XLSX_RIDICI, '')",
+    nahrad: "  return String(s == null ? '' : s)",
+    proc: 'jeden řídicí znak v názvu akce by rozbil celý sešit za období' },
   { nazev: 'W1: činnosti termínů bez filtru nabízených', soubor: 'nabidka_proj.js',
     hledej: "    PROJ_TERMINY_CINNOST: textProj('terminy').filter(radekVRozsahu).map(x => x[0]).join('\\n'),",
     nahrad: "    PROJ_TERMINY_CINNOST: textProj('terminy').map(x => x[0]).join('\\n'),",

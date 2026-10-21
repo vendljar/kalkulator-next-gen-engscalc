@@ -94,6 +94,8 @@ test('tvar pole místo objektu odmítne (400)', (K(zak, Object.assign(kopie(zak)
   const ul = sObj(zak, [k1]); ul.objednane.varianta = [v.id];
   let st2; try { st2 = (K(ul, kopie(ul), ADM) || {}).status; } catch (e) { st2 = 'výjimka'; }
   test('K6-S3: varianta jako pole neprojde ani jako „beze změny“', st2 === 400, st2);
+  const n201 = sObj(zak, Array.from({ length: O.OBJ_MAX_KLICU + 1 }, (_, i) => 'k' + i));
+  test('nad strop klíčů (201) → 400 neplatný tvar', /tvar/.test((K(zak, n201, ADM) || {}).chyba || ''), K(zak, n201, ADM));
   let ot; try { ot = O.objOtisk({ varianta: { toString: 1 }, klice: [{ toString: 1 }], datum: 'x' }); } catch (e) { ot = 'výjimka'; }
   test('K6-S1: objOtisk s objekty nevyhodí výjimku', typeof ot === 'string' && ot !== 'výjimka', ot); }
 const ulozena = sObj(zak, [k1]);

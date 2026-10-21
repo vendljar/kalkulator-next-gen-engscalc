@@ -150,8 +150,7 @@ function objKontrola(stara, zak, relace, ctx) {
   if (!admin && staraVar && objPodepsano(staraVar, c.ted))
     return { status: 403, chyba: 'Smlouva o dílo je podepsaná — objednané příplatky mění jen administrátor' };
   if (!otNova) return null;                                          // smazání (před SoD) smí, kdo smí zapisovat
-  if (!nova.klice.every(k => typeof k === 'string' && OBJ_KLIC_TVAR.test(k)) || nova.klice.length > OBJ_MAX_KLICU
-    || new Set(nova.klice).size !== nova.klice.length)
+  if (!nova.klice.every(k => OBJ_KLIC_TVAR.test(k)) || new Set(nova.klice).size !== nova.klice.length)
     return { status: 400, chyba: 'Objednané příplatky nesou neplatný nebo zdvojený klíč' };
   if (!objDatumPlatne(nova.datum)) return { status: 400, chyba: 'Datum prodeje (podpisu SoD) chybí nebo je neplatné' };
   if (nova.datum > objDnes(c.ted)) return { status: 400, chyba: 'Datum prodeje (podpisu SoD) nesmí být v budoucnosti' };
