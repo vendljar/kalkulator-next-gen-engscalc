@@ -797,8 +797,9 @@ const MUTACE = [
     nahrad: "mustky > 0;",
     proc: 'nižší můstky kryje můstek nad nimi — střecha by se naúčtovala navíc' },
   { nazev: '#356: příplatek za měď nezná střechu nad můstkem', soubor: 'engine.js',
-    hledej: "mkPrip('medStrecha', MED_STRECHA_NAZEV, strechaM2,",
-    nahrad: "mkPrip('medStrecha', MED_STRECHA_NAZEV, (z.sirka + 0.2) * (z.hloubka + 0.1),",
+    /* #451 (O11): měď bere `medStrechaM2` — bez přepisu je to `strechaM2`. */
+    hledej: "    ? +strechaPrepis : strechaM2;",
+    nahrad: "    ? +strechaPrepis : (z.sirka + 0.2) * (z.hloubka + 0.1);",
     proc: 'měděná střecha by měla menší plochu než střecha, kterou nahrazuje' },
   { nazev: '#356: chybějící rozměry můstku se hlásí vždy', soubor: 'kontroly.js',
     hledej: "!r.strecha.mustekNahore || r.strecha.mustekM2 > 0) return null;",
@@ -1927,6 +1928,19 @@ const MUTACE = [
     hledej: "  if (/^BLOK_STUDIE_/.test(jmeno))",
     nahrad: "  if (false)",
     proc: "obchodník by hledal chybu ve smlouvě místo v šabloně nabídky" },
+  /* #451 (O11, rozhodnutí J. V. 21. 10. 2026): měď podle ruční plochy zastřešení. */
+  { nazev: "#451: měď ignoruje ruční plochu zastřešení", soubor: "engine.js",
+    hledej: "      ? mkPrip('medStrecha', MED_STRECHA_NAZEV, medStrechaM2,",
+    nahrad: "      ? mkPrip('medStrecha', MED_STRECHA_NAZEV, strechaM2,",
+    proc: "měď by se účtovala za jinou plochu než střecha" },
+  { nazev: "#451: k ruční ploše se přičte stříška nad můstkem", soubor: "engine.js",
+    hledej: "    ? +strechaPrepis : strechaM2;\n",
+    nahrad: "    ? +strechaPrepis + strechaMustekM2 : strechaM2;\n",
+    proc: "stříška nad můstkem by se účtovala dvakrát" },
+  { nazev: "#451: nečitelný přepis zastřešení jde do mědi", soubor: "engine.js",
+    hledej: "strechaPrepisJe && Number.isFinite(+strechaPrepis) && +strechaPrepis !== 0)",
+    nahrad: "strechaPrepisJe && +strechaPrepis !== 0)",
+    proc: "„9,5\" by dalo NaN v ceně mědi" },
 ];
 
 /* ============================================================

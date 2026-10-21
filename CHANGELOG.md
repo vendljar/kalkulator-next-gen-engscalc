@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## O11 — rozhodnutí J. V. k auditu K4: cena výjezdu PROJ, retence záloh (verzi přidělí sloučení)
+## O11 — rozhodnutí J. V. k auditu K4: cena výjezdu PROJ, retence záloh; #451 měď (verzi přidělí sloučení)
 
 Dávka O11 (koordinace 21. 10. 2026) nad `claude/integrace-16-10` 2cb9d2b (v21.10.2), větev `claude/o11-k4-n4-n13`.
 Build bez zvýšení verze (`KNG_NEZVYSOVAT_VERZI=1`). Podklad `podklady/K4_AUDIT_20_10.md`, rozhodnutí J. V. 21. 10. 2026.
@@ -23,6 +23,14 @@ Každá oprava má test s pojistkou (před opravou selže, po ní projde) a muta
   dřív stála jen jednu noc; teď drží, dokud správce v Nastavení → Databáze nestiskne „Úbytek byl záměrný“ (dotaz +
   heslo správce, `POST /api/zaloha_vynuceno { akce: 'retence-potvrdit' }`), nejdéle 30 dní. Potvrzené varování zhasne.
 - **#472 (K4-N17)** — beze změny (J. V. ponechal), uzavřeno v roadmapě.
+- **#451 — příplatek za střechu v mědi podle ručně přepsané plochy zastřešení** (rozhodnutí J. V. 21. 10. 2026,
+  varianta A). Je-li řádek ZASTŘEŠENÍ ŠACHTY (EXT) v nabídce s ručním množstvím (platné číslo ≠ 0), bere PŘÍPLATEK ZA
+  STŘECHU V MĚDI (EXT) tuto plochu místo vypočtené; stříška nad nejvyšším můstkem je v ní už obsažená (nic se
+  nepřičítá). Prázdný nebo nečitelný přepis = vypočtená plocha, vlastní ruční množství mědi má přednost, vyřazené
+  zastřešení = bez mědi (K29-N1), zamčené varianty beze změny (zmrazený výsledek). `src/engine.js`, test
+  `src/test_mustky.js` (oba modely, pojistka 4 FAIL), mutace „#451“ (3) a upravená „#356: příplatek za měď…“.
+- Oprava během dávky: nový řádek s heslem v `zaloha_vynuceno.mjs` zdvojil hledaný úsek mutace O7 K3-N1 — přepsán
+  jinak, ať zadání mutací sedí.
 
 ## v21.10.2 — O9: opravy kódu aplikace z auditu K4 bez rozhodnutí J. V. (větev claude/o8-k4-nalezy)
 

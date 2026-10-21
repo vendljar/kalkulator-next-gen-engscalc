@@ -7026,18 +7026,19 @@
   {
    "id": "451",
    "vlna": "C",
-   "stav": "ceka",
+   "stav": "hotovo",
    "dulezitost": "nizka",
    "slozitost": "S",
    "nazev": "Měď na střechu při ručně přepsané ploše zastřešení bere vypočtenou plochu",
    "proc": "Zjištěno v dávce K29-N1 (20. 10. 2026), mimo její rozsah: když je zastřešení šachty v nabídce, ale s ručně přepsaným množstvím (ne nulou), příplatek za měď dál počítá s vypočtenou plochou, ne s přepsanou.",
-   "detail": "Rozhodnout, zda má měď převzít ruční plochu zastřešení (a případně stříšku nad můstkem), nebo zůstat u vypočtené. Neopravovat bez pokynu J. V.",
-   "hotovoKdyz": "Rozhodnutí J. V.; případně test s pojistkou a mutace.",
+   "detail": "HOTOVO (O11, rozhodnutí J. V. 21. 10. 2026, varianta A): s ručním množstvím zastřešení (platné číslo ≠ 0) bere měď přepsanou plochu; stříška nad můstkem je v ní obsažená, nic se nepřičítá. Prázdný/nečitelný přepis = vypočtená, vlastní množství mědi má přednost, zamčené varianty beze změny.",
+   "hotovoKdyz": "test_mustky.js #451 (oba modely, pojistka 4 FAIL); mutace jádra #451 (3) + upravená #356.",
+ "hotovoV": "",
    "kde": "`src/engine.js`",
    "zavisi": [
     "450"
    ],
-   "pozn": "Otevřený bod z K29-N1."
+   "pozn": "Otevřený bod z K29-N1; uzavřeno v dávce O11 (verzi přidělí sloučení)."
   },
   {
    "id": "452",

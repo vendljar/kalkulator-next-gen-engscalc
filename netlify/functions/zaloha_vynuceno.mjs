@@ -88,7 +88,8 @@ export default async (req) => {
       return json({ ok: false, chyba: 'Není co potvrdit — retence záloh nestojí (varování chybí, je potvrzené nebo starší než 30 dní).' }, 409);
     if (txt(telo.den) !== String(v.den || ''))
       return json({ ok: false, chyba: 'Varování se mezitím změnilo — načtěte přehled záloh znovu a zkontrolujte ho.' }, 409);
-    { const stop = await potvrdHesloSpravce(req, relace, telo.hesloSpravce); if (stop) return stop; }
+    const stopHeslo = await potvrdHesloSpravce(req, relace, telo.hesloSpravce);
+    if (stopHeslo) return stopHeslo;
     const zaznam = { ...v, potvrzeno: { kdy: new Date().toISOString(), kdo: relace.email } };
     await sZal.zapis(RETENCE_VAROVANI_KLIC, zaznam);
     return json({ ok: true, retenceVarovani: zaznam });
