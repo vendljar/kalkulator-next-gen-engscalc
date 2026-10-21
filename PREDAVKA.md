@@ -1,4 +1,4 @@
-# Předávka — 21. 10. 2026: dávka O11 (verzi přidělí sloučení) — rozhodnutí J. V. k auditu K4: K4-N4, K4-N13, K4-N17
+# Předávka — 21. 10. 2026: dávka O11 (verzi přidělí sloučení) — rozhodnutí J. V.: K4-N4, K4-N13, K4-N17, #451
 
 Nad `claude/integrace-16-10` 2cb9d2b (v21.10.2), build `KNG_NEZVYSOVAT_VERZI=1`. Větev `claude/o11-k4-n4-n13`.
 **Do test / main / test-draft / integrace nic** — slučuje koordinace (ŘÍDÍCÍ session_01By6bWivtf2rTJYJFGVv8e1).
@@ -7,12 +7,19 @@ Souběžně O10 (K4-N1 zmrazení kapitol) — konflikty čekat jen v dokumentaci
 - **Hotovo:** #470 K4-N4 (pole ceny výjezdu PROJ jen se `sloupce.naklad`, B112 zná `vyjezdKcPrepis`, tvar/zápor/strop
   v `uloZaporneVZadani`, `pjVyjezdPrepis` s upozorněním), #471 K4-N13 (retence stojí do potvrzení správcem ≤ 30 dní,
   `retenceDrzena`, POST `retence-potvrdit` s heslem správce a `den`, tlačítko „Úbytek byl záměrný“), #472 K4-N17
-  uzavřeno bez změny.
+  uzavřeno bez změny; **#451** (doplnění koordinace) měď podle ručně přepsané plochy zastřešení, varianta A
+  (stříška nad můstkem je v přepsané ploše, nic se nepřičítá) — `src/engine.js` `medStrechaM2`.
 - **Ke slučování:** CHANGELOG oddíl „O11 — …“ (přejmenovat na číslo verze), `manual/obsah.json` („Co je nového
   v dávce O11“ → číslo verze), roadmapa +3 na konci (`hotovoV` doplnit verzí), `BEZPECNOST_MEZE.md` (odstavec pod
   K3-N13 + oddíl „Audit K4 — rozhodnutí J. V. 21. 10. 2026 (dávka O11)“), `netlify/mutace.mjs` (blok O11 na konci
   + SADY `../src/test_uloziste.js`), nový harness `overit_o11_vyjezd.mjs`.
-- **Ověření:** viz souhrn na konci dávky (mutace O11, kolo `--bez-mutaci`).
+- **Ke slučování navíc:** `mutace_jadro.mjs` (blok #451 na konci + upravená „#356: příplatek za měď…“ — hledá teď
+  `? +strechaPrepis : strechaM2;`), `src/test_mustky.js` (#451 na konci bloku K29-N1), roadmapa #451 → hotovo.
+  `zaloha_vynuceno.mjs`: kontrola hesla v `retence-potvrdit` je zapsaná jinak (`stopHeslo`), ať úsek mutace O7 K3-N1
+  zůstane jedinečný.
+- **Ověření:** mutace server O11 10/10, jádro #451 3/3 + #356 1/1; kolo `--bez-mutaci` 293 / 0 / 6 přeskočeno
+  (KNG_PODKLADY, test.js), statické 4/4 — VŠE ZELENÉ. Pozor: kolo neběžet s exportovaným `KNG_NEZVYSOVAT_VERZI`
+  (shodí `overit_verzi.mjs`); kolo samo verzi nezvyšuje.
 
 # Předávka — 21. 10. 2026: dávka O10 (verzi přidělí sloučení, v21.10.3) — K4-N1 zmrazení kapitol OCK (#469)
 
