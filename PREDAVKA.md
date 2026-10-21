@@ -11,9 +11,9 @@ koordinace (session_016CbSudw1q9GXrrtfiJKvAG). Zápis: `podklady/SABLONA_SOD_REA
   ručním přepisem). CHANGELOG (bez verze), roadmapa #447 (pozn + kde).
 - **Nález:** EN/DE/FR v3 na Disku jsou revidované (≠ slovníky preklad_sod, EN 99 odstavců) → v4 jazyky z nich
   (vložení přeloženého bloku), slovníky jen záloha. Slovníky na Disku revizi nenesou — k rozhodnutí J. V./koordinace.
-- **Čeká (bod 4):** `sodObjednaneSymboly` v `claude/controlling-c3` (C6). Pak ODDĚLENÝ worktree nad
-  `origin/claude/controlling-c3`, vyplnit CZ/EN/DE/FR × bez / 1 / 3 příplatky (odstavce zmizí celé, součty, DPH
-  z celku, žádný symbol) a doplnit oddíl 4 zápisu. Vstupy: v3 z Disku (ID v zápisu) do scratchpadu, `--sod-real-v4`.
+- **Hotovo (bod 4):** vyplnění kódem C6 (controlling-c3 5d6ae24) v odděleném worktree: CZ/EN/DE/FR × 0/1/3
+  příplatky 72/0 — bez příplatků blok zmizí celý (žádný popisek ani prázdný odstavec), součty a DPH z celku sedí,
+  žádný symbol ceny nezůstal. Koordinace potvrdila pořadí „celková cena první, rozpis z toho pod ní".
 - **Kolo:** viz níže (doplněno po doběhu).
 
 # Předávka — 21. 10. 2026: Controlling #447 — C3 + C4, větev `claude/controlling-c3` (verzi přidělí sloučení)

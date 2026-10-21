@@ -87,8 +87,26 @@ zkratky IČ / DIČ (jako v v3). Test `src/test_sod_real_v4.js` 17/0 (pojistka: p
 smyšlený úryvek: tři samostatné odstavce bez odrážky, symbol v jednom běhu, chyba u dvojí / chybějící kotvy,
 vyplnění `docxVyplnSablonu` bez příplatků (odstavce zmizí celé) a s příplatky, překlad bloku, jazyková kotva.
 
-**Vyplnění kódem C6** (`sodObjednaneSymboly`, CZ/EN/DE/FR × bez / 1 / 3 příplatky): čeká, až C6 dodá kód do
-`claude/controlling-c3` — výsledek doplní tento oddíl.
+**Vyplnění kódem C6** — oddělený worktree nad `origin/claude/controlling-c3` 5d6ae24 (`sodObjednaneSymboly`),
+`dokumentVygeneruj('sod', v4, …)` přesně jako aplikace, zkušební ceník, zakázka 1,6 × 1,8 m, zdvih 9 m, sleva 10 %,
+kurz 25, zamčená řídící varianta; objednané = první 1 / 3 nabízené příplatky. **72 kontrol prošlo, 0 selhalo.**
+
+| | bez příplatků | 1 příplatek | 3 příplatky |
+|---|---|---|---|
+| CZ | 983 000,00 Kč; DPH 117 960,00; s DPH 1 100 960,00 | 989 000,00 = 983 000,00 + 6 000,00; DPH 118 680,00 | 1 041 000,00 = 983 000,00 + 58 000,00; DPH 124 920,00 |
+| EN/DE/FR | € 39 320; DPH € 4 719; s DPH € 44 039 | € 39 560 = € 39 320 + € 240; DPH € 4 748 | € 41 640 = € 39 320 + € 2 320; DPH € 4 997 |
+
+- **Bez příplatků** tři odstavce zmizí celé — žádný popisek „objednané příplatky" / „ordered surcharges" …,
+  žádný prázdný odstavec; za cenou rovnou věta o režimu DPH, jako v3.
+- **S příplatky** tři odstavce pod celkovou cenou; seznam má řádek na příplatek (`<w:br/>` v témže odstavci jako
+  popisek), součet řádků = „příplatky celkem", celková cena = nabídka + příplatky, s DPH = celek + DPH (DPH z celku;
+  v eurech po položkách nahoru). Názvy příplatků přeložené (např. EN „SILL EXTENSION PLATES - STAINLESS STEEL
+  (MATERIAL)"; přechodové plechy jdou jako dvě položky materiál / montáž, jak říká podklad).
+- **Žádný symbol ceny ani rozpisu nezůstal.** Zbylé `{{OBJEDNATEL_*}}`, `{{SOD_TERMIN_*}}`, `{{SOD_SKLADNE}}` …
+  jsou pole krycího listu, která zkušební zakázka nevyplnila — stejné jako u v3.
+
+Skript ověření leží jen ve scratchpadu sezení (potřebuje kód C6, který v této větvi není); test šablony
+`src/test_sod_real_v4.js` (18/0) hlídá totéž na smyšleném úryvku přes `docxVyplnSablonu` + `odstavcePryc`.
 
 ## 5. Starší verze aplikace
 

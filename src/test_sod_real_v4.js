@@ -15,7 +15,7 @@
  *   – překlad nových odstavců (SOD_REAL_V4_PREKLAD) do EN/DE/FR přes
  *     nastroje/preklad_sod.js: stejné symboly, žádná česká diakritika,
  *   – jazyková v3 (revidovaná na Disku): blok se vloží přeložený za kotvu v jazyce.
- * Před vznikem sodRealV4: 0 prošlo / 1 selhalo; po něm 17 / 0.
+ * Před vznikem sodRealV4: 0 prošlo / 1 selhalo; po něm 18 / 0.
  *
  * Spuštění: cd src && node test_sod_real_v4.js */
 const path = require('path');
@@ -94,6 +94,8 @@ if (fail) { console.log(`\n${ok} prošlo, ${fail} selhalo`); process.exit(1); }
     { odstavcePryc: ['SOD_CENA_NABIDKY', 'SOD_PRIPLATKY_OBJEDNANE', 'SOD_PRIPLATKY_KC'] });
   const tBez = dg.odstavcoveSpany(bez).map(sp => dg.odstavecText(bez.slice(sp.zac, sp.kon)));
   test('bez objednaných příplatků zmizí tři odstavce celé (jako v3)', tBez.length === 4 && tBez[1] === '100 000,00 Kč (bez DPH)' && !/\{\{/.test(bez), tBez);
+  test('bez příplatků nezůstane popisek „objednané příplatky" ani prázdný odstavec (popisek a seznam v TÉMŽE odstavci)',
+    bez.indexOf('objednané příplatky') < 0 && bez.indexOf('z toho') < 0 && tBez.every(t => t.trim() !== ''), tBez);
   const s = await vypln(Object.assign({}, zaklad, { CENA_BEZ_DPH: '130 000,00 Kč', SOD_CENA_NABIDKY: '100 000,00 Kč',
     SOD_PRIPLATKY_OBJEDNANE: 'Příplatek A – 10 000,00 Kč\nPříplatek B – 20 000,00 Kč', SOD_PRIPLATKY_KC: '30 000,00 Kč' }), { odstavcePryc: [] });
   const tS = dg.odstavcoveSpany(s).map(sp => dg.odstavecText(s.slice(sp.zac, sp.kon)));
