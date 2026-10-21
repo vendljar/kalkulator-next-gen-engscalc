@@ -10,6 +10,7 @@ Kokpit: https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2
 - **Novou koordinaci zakládá koordinace sama** při kontextu nad 75 % (předávka sem + do PREDAVKA_KOORDINACE_15_10.md, kontroly send_later).
 - **Stará koordinace ŘÍDÍCÍ 21.10** session_013EFud9jETTivWTCJNmbAX4: archivovat, až doběhne O12 a předá SHA (pokyn J. V.).
 - **22. 10. J. V. celý den u počítače NEBUDE** → zítra jen dávky bez jeho rozhodnutí; otázky se jen sbírají do „Čeká na vás“. #19 zítra nedělat.
+- **V3 (#380 + #157) uzavřena 21. 10. ~14:45 (J. V.):** finální jazykové verze SoD (EN/DE/FR) má J. V. připravené ve složce šablon na Disku (revidované znění, liší se od strojového překladu V3 v 99 odstavcích) = závazné znění; **kontrola účetní (režim DPH, prohlášení, skladné) se nedělá** — otevře se znovu jen při potřebě; **revize promítnout do slovníků** `nastroje/preklad_sod.js` (dávka D4). Sezení V3 archivováno (přílohy zůstávají v archivovaném sezení).
 - **Týdenní limit: do pátku 23. 10. rána nepřekročit 90 % (max +2 %).** Stav 21. 10. 14:15 = **63 %**, obnova **so 24. 10. 7:00** (Praha).
 
 ## Rozpočet limitu (kalibrace koordinace)
@@ -34,11 +35,11 @@ Kokpit: https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2
 | Čas UTC | Co | Kdo |
 |---|---|---|
 | 14:00–15:30 | kolo C5 ve větvi C3; O12 (stará koordinace) | C3 session_01JtioiPRsGUDpkKu1m66Rdt, ŘÍDÍCÍ 21.10 |
-| 15:30–17:00 | **v21.10.5 = C5 + O12** → integrace, kolo `--bez-mutaci` + cílené mutace (#447 C, O12) → **test** + release odkaz | koordinace |
+| 15:30–17:00 | ~~v21.10.5 = C5 + O12~~ → úprava 14:30: C5 a C6 se slučují najednou (kolo nad samotnou C5 neplatné) | — |
 | ~16:00 | K5 doběhne (mutace serveru 734) → výsledek nad v21.10.4 | K5 session_01162HK7JqEFF32eE31rMeaU |
 | 14:10–17:00 | **O13**: K5-S1, K5-K1, K5-W1, K5-W2 + „(DPZ)*“ v jazykové verzi | O13 session_011JErifeDYRjmfEhbv3EoWN |
-| 14:00–18:30 | C6 kód SoD (`sodObjednaneSymboly`) + S11 šablona SoD realizace v4 (vyplnění ověří nad C6) | C3, S11 session_01UYfLxJt1UUBU9Ygd5A2mw7 |
-| 18:30–20:30 | **v21.10.6 = C6 + S11 (nástroj) + O13** → integrace, kolo + cílené mutace → **test** + release odkaz | koordinace |
+| 14:00–18:30 | C6 kód SoD (`sodObjednaneSymboly`, 5d6ae24) + S11 šablona SoD realizace v4 (vyplnění ověří nad C6) | C3, S11 session_01UYfLxJt1UUBU9Ygd5A2mw7 |
+| 18:00–19:30 | **v21.10.5 = C5 + C6 + O12 + S11 (nástroj) + O13** (jedno kolo místo dvou — šetří limit) → integrace, kolo + cílené mutace → **test** + release odkaz | koordinace |
 | 20:30–05:00 | **K6** celé kolo s mutacemi + audit diffu 7652bb9..v21.10.6 nad test (kandidát pro main) | nová dávka |
 | 05:00–06:00 | ranní souhrn (artefakt), návrh main, „Čeká na vás“ | koordinace |
 
@@ -49,6 +50,7 @@ Kokpit: https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2
 | 06:00–09:00 | **D1** roadmapa dorovnat (meta, pořadí v18.10.12–v21.10.6, uzavřít hotové, #473 K5, #447 C5/C6) + soupis novinek pro obchodníky v20.10.2–v21.10.6 + ukázkový XLSX exportu v2 (zkušební data, z kódu) → soubor pro J. V. | nová dávka |
 | 06:00–09:00 | **D2** podklad k #367 P10 (platební podmínky z krycího listu): návrh odpovědí, prototyp, otázky — bez kódu, k projití s J. V. po návratu | nová dávka |
 | 08:00–12:00 | **D3** (jen když K6 něco najde): opravy nálezů K6 bez J. V. + přeživší mutace → v22.10.1 → kolo + mutace → test | nová dávka |
+| 06:00–09:00 | **D4** revize jazykových verzí SoD do slovníků: z Disku (složka šablon) česká SoD realizace v3 + projekce v4 a revidované EN/DE/FR → slovníky `preklad_sod` (mimo repozitář, uložit na Disk) tak, aby nástroj z češtiny vyrobil přesně revidované znění (0 rozdílů) a z CZ realizace v4 (S11) tytéž EN/DE/FR jako S11; test kruhem | nová dávka (~1 % limitu) |
 | 12:00 | kontrola rozpočtu; při odhadu ≤ 80 % rezervní dávky R1–R3 | koordinace |
 
 Rezerva (jen při rozpočtu): **R1** #28 MCP — jen návrh rozhraní (role, bez ceníků a nákladů) k rozhodnutí; **R2** informativní nálezy K5/K6, které jdou jen testem; **R3** příručka — kontrola snímků a textů u nových funkcí (Controlling, objednané příplatky).
