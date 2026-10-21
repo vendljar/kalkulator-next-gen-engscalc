@@ -1,3 +1,41 @@
+# Předávka — 21. 10. 2026 odpoledne: #114 Pipedrive — párování polí podle přesného názvu a převod hodnot (bez verze), větev `claude/eager-carson-1xznt2`
+
+Nad `test` v21.10.2 (merge a5f0308). **Do test / main / test-draft / integrace nic.** Podklad:
+`podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md` §10–§11, CHANGELOG oddíl „(bez verze) — #114“, roadmapa #16, #114, #115
+a nové #473–#475.
+
+- **Hotovo:** test polí, která integrátor založil 21. 10. (jen čtením: 53/54 nových + 4/4 úprav sedí, #10 nahrazuje
+  „Typ zakázky“ — k potvrzení). Oprava párování v `netlify/lib/pd_mapa.mjs`: přesný název + typ místo vzorů (vzory by
+  spárovaly záruku se zádržným, pokutu s limitem, objednatele s podepisující firmou), 66 polí dealu se zdrojem v krycím
+  listu OCK / PROJ a směrem, IČ s nulami (`pdIco`), verze mapy v cache (`PD_POLE_VERZE`), `typNesedi` / `nejednoznacne`.
+  `pd_deal`: varování jen pro čtená pole (`PD_CTENI`), třetí splátka z CRM má přednost. Nový `netlify/lib/pd_prevod.mjs`:
+  převod hodnot krycího listu pro zápis #115 (`pdZapisDealu` = 1 PATCH, 5 tokenů; prázdné se neposílá, nejednoznačné
+  s důvodem, u OCK + PROJ rozhoduje OCK).
+- **Přejímka na skutečných datech (jen v kontejneru, nic v repu):** 66/66 polí, 0 špatně; na 372 dealech se nově načte
+  první/druhá splátka 370×, záruka 67×, pokuta 31× (dřív nic).
+- **Testy:** `test_pipedrive.mjs` 94/0 (pojistka: na původním kódu 26 selže), `test_pd_prevod.mjs` 101/0 (modul dřív
+  neexistoval), `test_pd_pristup.mjs` 54/0; mutace „#114“ 19/19 chycených; kolo `--bez-mutaci` 256 prošlo / 0 selhalo / 43 přeskočeno (40 prohlížečových sad — v kontejneru chybí balíček playwright, klient se nemění; 3 bez firemních podkladů), statické 4/4; kontrola
+  osobních údajů čistá.
+- **Mimo repozitář (pro J. V.):** dokument pro integrátora — Claude Doc https://claude.ai/artifact/RCVznN7Dn2goRM8TmuAZfz
+  + export `.docx`; koncept e-mailu jako text (Outlook konektor nemá `Mail.ReadWrite`, koncept do Konceptů vložit nešel).
+- **Čeká:** odpovědi integrátora (#473), zkušební zápis (#474 — po potvrzení automatizací v Make; přes konektor kdykoli,
+  z aplikace až po #115 a z testovacího webu s vlastním `PIPEDRIVE_TOKEN` / `PIPEDRIVE_DOMENA`), rozhodnutí J. V. (#475).
+- **Ke slučování:** CHANGELOG (oddíl nahoře), `netlify/mutace.mjs` (blok #114 před blokem S5 + `test_pipedrive.mjs`,
+  `test_pd_prevod.mjs` na konci `SADY`), roadmapa (#16, #114, #115 upravené; nové #473–#475 — integrace má už #470–#472,
+  čísla přidělí sloučení), `podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md` §10–§11.
+
+**Otázky pro J. V. (s doporučenou odpovědí, roadmapa #475):**
+1. Předvolby plánu plateb PROJ → „Způsob fakturace“: „záloha X % …, zbytek po předání stupňů“ i „po předání
+   jednotlivých stupňů“ → „Po dokončení stupňů dokumentace“; vlastní plán a „po milnících činností“ neposílat? → Ano.
+2. „Předpokládané datum ukončení realizace“ = „Konečné předání díla“ z krycího listu OCK (úprava #4, P7)? → Ano; do té
+   doby se jen čte.
+3. Limit smluvních pokut „NEUPLATNĚN“ posílat do Pipedrive jako 0? → Ano.
+4. „Cizí“ smlouvu dál překládat na „Smlouva zákazníka“, nebo přejmenovat popisek v krycím listu? → Ponechat překlad.
+5. Navrhnout integrátorovi textové pole „Platební kalendář SoD PROJ“ (Platby 1–8 jen pro starší nabídky)? → Ano
+   (v dokumentu je to návrh; komentář v dokumentu čeká na tvé potvrzení).
+
+---
+
 # Předávka — 21. 10. 2026 noc: dávka O9 (kód aplikace, verzi přidělí sloučení) — opravy K4 bez rozhodnutí J. V.
 
 Nad `claude/integrace-16-10` 12b41b0 (v20.10.8), build `KNG_NEZVYSOVAT_VERZI=1`. Lokálně větev `claude/o9-k4-kod`;

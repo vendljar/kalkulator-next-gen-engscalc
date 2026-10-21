@@ -1,6 +1,7 @@
 /* Mapa vlastních polí Pipedrive (9. 8. 2026, #16).
  *
- * GET /api/pd/pole            → { ok, nastaveno, mapa, popisy, chybi, nezarazeno, poridano }
+ * GET /api/pd/pole            → { ok, nastaveno, mapa, popisy, chybi, typNesedi,
+ *                                 nejednoznacne, nezarazeno, poridano, … }
  * GET /api/pd/pole?obnovit=1  → totéž, ale s vynuceným dotazem do Pipedrive
  *                               (jen Administrátor)
  *
@@ -10,14 +11,16 @@
  * obnovení — bez cache by pár desítek načtení denně ukrojilo znatelný kus
  * limitu jen za čtení něčeho, co se nemění. Platnost jeden den je kompromis: když se pole
  * v CRM přejmenuje, projeví se to nejpozději zítra a administrátor to umí
- * uspíšit přepínačem `obnovit`.
+ * uspíšit přepínačem `obnovit`. Mapa uložená ve starším tvaru (`verze`) se
+ * nepoužije vůbec — po změně párování (21. 10. 2026) by jinak ještě den
+ * platila mapa, která tři pole párovala se špatným polem CRM.
  *
  * Odpověď schválně NENESE token ani nic z prostředí — jen názvy polí a jejich
  * hashe, což je informace o tvaru CRM, ne o datech zakázek. */
 import { uloziste, json } from '../lib/sdilene.mjs';
 import { pdNastaveno, pdZavolej, PdChyba, PD_TOKEN_PROMENNA, PD_DOMENA_PROMENNA,
          pdPristup } from '../lib/pipedrive.mjs';
-import { pdMapaZPoli, POLE_DEALU, POLE_ORGANIZACE } from '../lib/pd_mapa.mjs';
+import { pdMapaZPoli, POLE_DEALU, POLE_ORGANIZACE, PD_POLE_VERZE } from '../lib/pd_mapa.mjs';
 
 const ULOZISTE = 'pipedrive';
 const KLIC = 'pole';
@@ -28,7 +31,8 @@ export const PLATNOST_MS = 24 * 3600 * 1000;
 export async function pdPoleMapa(obnovit = false) {
   const s = await uloziste(ULOZISTE);
   const ulozene = await s.cti(KLIC);
-  if (!obnovit && ulozene && (Date.now() - (ulozene.poridano || 0)) < PLATNOST_MS)
+  if (!obnovit && ulozene && ulozene.verze === PD_POLE_VERZE
+      && (Date.now() - (ulozene.poridano || 0)) < PLATNOST_MS)
     return ulozene;
 
   const [poleDealu, poleOrg] = await Promise.all([
@@ -38,9 +42,11 @@ export async function pdPoleMapa(obnovit = false) {
   const deal = pdMapaZPoli(poleDealu, POLE_DEALU);
   const org = pdMapaZPoli(poleOrg, POLE_ORGANIZACE);
   const cerstve = {
-    poridano: Date.now(),
-    mapa: deal.mapa, popisy: deal.popisy, chybi: deal.chybi, nezarazeno: deal.nezarazeno,
+    verze: PD_POLE_VERZE, poridano: Date.now(),
+    mapa: deal.mapa, popisy: deal.popisy, chybi: deal.chybi, typNesedi: deal.typNesedi,
+    nejednoznacne: deal.nejednoznacne, nezarazeno: deal.nezarazeno,
     mapaOrganizace: org.mapa, popisyOrganizace: org.popisy, chybiOrganizace: org.chybi,
+    typNesediOrganizace: org.typNesedi, nejednoznacneOrganizace: org.nejednoznacne,
   };
   await s.zapis(KLIC, cerstve);
   return cerstve;
@@ -52,7 +58,7 @@ export default async (req) => {
   if (chyba) return chyba;
 
   if (!pdNastaveno())
-    return json({ ok: true, nastaveno: false, mapa: {}, chybi: [], nezarazeno: [],
+    return json({ ok: true, nastaveno: false, mapa: {}, chybi: [], typNesedi: [], nejednoznacne: [], nezarazeno: [],
       chyba: 'Napojení na Pipedrive zatím není nastavené. Administrátor doplní '
         + PD_TOKEN_PROMENNA + ' a ' + PD_DOMENA_PROMENNA + ' v Netlify.' });
 

@@ -8,6 +8,37 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## (bez verze) — #114: párování polí Pipedrive podle přesného názvu, převod hodnot krycího listu (větev claude/eager-carson-1xznt2)
+
+Nad `test` v21.10.2 (merge a5f0308). Verzi přidělí sloučení. Podklad: `podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md`
+§11 (test polí založených integrátorem 21. 10. 2026, jen čtením).
+
+- **Oprava — párování polí dealu se s novými poli rozbilo.** Párovalo se podle vzorů a vyhrával nejkratší název:
+  na skutečném účtu by se doba záruky spárovala se „Zádržné – po dobu záruky" (výběr), pokuta za den s „Limit
+  smluvních pokut (%)", objednatel s „Podepisující firma (pokud jiná)" a první/druhá splátka s ničím. Teď
+  `netlify/lib/pd_mapa.mjs` páruje **přesně podle názvu z tabulky s integrátorem a podle typu** (velikost písmen,
+  mezery a druh pomlčky nerozhodují, diakritika ano); jiný typ (`typNesedi`) a dvojí název (`nejednoznacne`) se
+  nespárují a ohlásí. 66 polí dealu s údajem, odkud se hodnota bere v krycím listu OCK / PROJ a jestli se čte,
+  zapisuje, nebo obojí. Přejímka nad skutečnými definicemi: 66/66, žádné špatně.
+- **Oprava — IČ organizace.** Pole se jmenuje „IČ" (vzor ho nechytil, `\b` bez `/u` nebere „Č") a je číselné:
+  `pdIco` doplní nuly na osm číslic (00064581 místo 64581).
+- **Mapa polí v cache nese verzi** (`PD_POLE_VERZE`) — mapa z doby vzorů se po nasazení nepoužije ani do konce své
+  denní platnosti. `/api/pd/pole` vrací i `typNesedi` a `nejednoznacne`.
+- **Detail dealu** (`/api/pd/deal`): třetí splátka z CRM má přednost před dopočtem do sta procent; varování
+  o chybějících polích jen pro pole, která detail čte (`PD_CTENI`), nově i o poli jiného typu a o dvojím názvu.
+- **Nové — převod hodnot pro zápis** (`netlify/lib/pd_prevod.mjs`, zápis #115 ho jen zavolá): krycí list → číslo,
+  datum ISO, ID volby, vícevýběr, `{ value, currency }`, uživatel; celá zakázka jedním PATCH (5 tokenů). Prázdné se
+  neposílá (zápis v CRM nic nemaže), nejednoznačné se neposílá s důvodem („NEUPLATNĚN limit 10 %" ≠ 10, rozsah
+  „10–12 týdnů" se nehádá), volba podle textu, ne pořadí. U kombinované zakázky rozhoduje OCK. Datum podpisu OCK jen
+  ručně zadané (předvyplněné je datum tisku); Platby 1–8 a záloha PROJ jen u nabídky z doby před plánem plateb.
+- **Testy:** `netlify/test_pipedrive.mjs` — testovací data se skutečnými názvy polí ve tvaru API v2 a třemi pastmi
+  (94 kontrol; pojistka: na původním kódu 26 selže — záruka „Ne" ze zádržného, pokuta 10 z limitu, objednatel
+  z podepisující firmy, IČ nenalezeno, stará cache použita). Nový `netlify/test_pd_prevod.mjs` (101 kontrol; před
+  změnou modul neexistoval) včetně křížové kontroly s `src/kryci.js` a `src/kryci_proj.js`: každé zdrojové pole
+  existuje a výchozí znění aplikace se převede. Mutace „#114" v `netlify/mutace.mjs` chycené 19/19, obě sady v `SADY`.
+- **Ke slučování:** CHANGELOG (tento oddíl), `netlify/mutace.mjs` (blok #114 před S5 + dvě sady na konci `SADY`),
+  roadmapa, `PREDAVKA.md` (oddíl nahoře), `podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md` §10–§11.
+
 ## v21.10.2 — O9: opravy kódu aplikace z auditu K4 bez rozhodnutí J. V. (větev claude/o8-k4-nalezy)
 
 Dávka O9 (noční koordinace 21. 10. 2026) nad `claude/integrace-16-10` 12b41b0 (v20.10.8). Build bez zvýšení

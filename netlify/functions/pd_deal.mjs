@@ -22,7 +22,7 @@
 import { uloziste, json } from '../lib/sdilene.mjs';
 import { pdNastaveno, pdZavolej, pdOdkazNaDeal, PdChyba, pdPristup, pdStropCerstvych,
          PD_CACHE_ULOZISTE } from '../lib/pipedrive.mjs';
-import { pdDealNaNase, pdZbytekDoSta, pdHodnota } from '../lib/pd_mapa.mjs';
+import { pdDealNaNase, pdZbytekDoSta, pdHodnota, PD_CTENI } from '../lib/pd_mapa.mjs';
 import { pdPoleMapa } from './pd_pole.mjs';
 
 /* Krátká cache detailu (B80): opakované otevření téhož případu nejde do
@@ -77,7 +77,9 @@ export default async (req) => {
 
     const nase = pdDealNaNase(deal, pole.mapa,
       { organizace, osoba, mapaOrganizace: pole.mapaOrganizace });
-    nase.fakturaKoncProc = pdZbytekDoSta(nase.zaloha1Proc, nase.faktura2Proc);
+    /* „Třetí splátka (%)" je v CRM od 21. 10. 2026; dopočet do sta procent
+     * zůstává pro případy, kde vyplněná není. */
+    if (nase.fakturaKoncProc === '') nase.fakturaKoncProc = pdZbytekDoSta(nase.zaloha1Proc, nase.faktura2Proc);
     nase.odkaz = pdOdkazNaDeal(id);
 
     /* Varování říkají obchodníkovi, co si musí doplnit sám. Bez nich by se
@@ -89,12 +91,26 @@ export default async (req) => {
     if (!organizace) varovani.push('K případu není navázaná organizace, objednatel zůstal prázdný.');
     else if (!nase.ico) varovani.push('Organizace v CRM nemá vyplněné IČO.');
     if (!nase.adresa) varovani.push('V CRM není vyplněná adresa stavby.');
-    if (pole.chybi && pole.chybi.length)
+    /* Jen pole, která detail opravdu čte (PD_CTENI). Pole pro zápis, která
+     * v CRM chybí, obchodníka při načítání nezajímají — ukazuje je přehled mapy. */
+    const ctene = (s) => (s || []).filter((x) => PD_CTENI.includes(x.klic));
+    const chybi = ctene(pole.chybi);
+    if (chybi.length)
       varovani.push('Nepodařilo se v CRM najít pole: '
-        + pole.chybi.map((x) => x.popis).join(', ') + '.');
+        + chybi.map((x) => '„' + x.nazev + '"').join(', ') + '.');
+    /* Správný název, jiný typ: pole se nečte vůbec — výběr místo čísla by se
+     * do krycího listu dostal jako popiska, ne jako hodnota. */
+    const jinyTyp = ctene(pole.typNesedi);
+    if (jinyTyp.length)
+      varovani.push('Pole v CRM má jiný typ, než kalkulačka čeká, a nenačetlo se: '
+        + jinyTyp.map((x) => '„' + x.nazev + '" (je ' + x.je + ', čeká se ' + x.ocekavano + ')').join(', ') + '.');
+    const vickrat = ctene(pole.nejednoznacne);
+    if (vickrat.length)
+      varovani.push('Pole je v CRM víckrát pod stejným názvem a nenačetlo se: '
+        + vickrat.map((x) => '„' + x.nazev + '"').join(', ') + '.');
 
     const odpoved = { ok: true, nastaveno: true, deal: nase,
-      chybiPole: pole.chybi || [], varovani };
+      chybiPole: chybi, varovani };
     await cache.zapis(klic, { poridano: Date.now(), odpoved });
     return json(odpoved);
   } catch (e) {

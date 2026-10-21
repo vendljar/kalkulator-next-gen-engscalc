@@ -614,10 +614,12 @@ opět ne přes mě).
 | 17 | Vyjmenovat nativní pole, která se nepřenášejí | ✅ | §5.2 |
 | 18 | Webhook v Pipedrive + `PIPEDRIVE_WEBHOOK_HESLO` v Netlify | ⬜ | integrátor + ty; otázka K |
 | 19 | Otestovat pole založená integrátorem | ✅ | §11 — 53/54 nových + 4/4 úpravy sedí; nález v našem párování |
-| 20 | Přepnout párování polí na přesné názvy | ⬜ | §11.3 — bez toho se tři údaje spárují špatně a čtyři ztratí |
-| 21 | Opravit čtení IČ na organizaci | ⬜ | §11.3 — regex nechytí „IČ", pole je číslo (ztráta nul na začátku) |
-| 22 | Převodní tabulka hodnot krycí list → volby Pipedrive | ⬜ | §11.4 — sedm polí potřebuje překlad, jedno volbu navíc |
-| 23 | Zkušební zápis na testovacím dealu | ⬜ | §11.5 — čeká na souhlas (automatizace v Make) |
+| 20 | Přepnout párování polí na přesné názvy | ✅ | §11.3 — 66/66 polí na skutečném účtu, žádné špatně; typ a duplicity se hlídají |
+| 21 | Opravit čtení IČ na organizaci | ✅ | §11.3 — pole „IČ" (i „IČO"), nuly doplněné na 8 číslic (`pdIco`) |
+| 22 | Převodní tabulka hodnot krycí list → volby Pipedrive | ✅ | §11.4 — `netlify/lib/pd_prevod.mjs`; zbývá volba „Zjišťuje se" a předvolby plánu PROJ |
+| 23 | Zkušební zápis na testovacím dealu | ⬜ | §11.5 — čeká na souhlas (automatizace v Make); z aplikace až z testovacího webu, §11.8 |
+| 24 | Dokument a koncept e-mailu pro integrátora | ✅ | mimo repozitář; otázky §11.9 |
+| 25 | Odpovědi integrátora na §11.9 | ⬜ | čeká na integrátora |
 
 ---
 
@@ -680,8 +682,7 @@ pole zádržného.** Vzor na IČO selže ze dvou důvodů: pole se jmenuje „I�
 a `\b` v JavaScriptu bez příznaku `/u` nebere „Č" jako písmeno.
 
 **Oprava (úkol 20):** názvy polí jsou teď dohodnuté písemně v tabulce
-s integrátorem, takže se párují **přesně podle názvu a typu**; vzory zůstanou
-jen jako *návrh* pro administrátora v přehledu mapy (#114), nikdy pro zápis.
+s integrátorem, takže se párují **přesně podle názvu a typu**.
 Hashe se do kódu pořád nedávají — název je smlouva s integrátorem, hash ne.
 Přejmenování pole v CRM se pak projeví jako „chybí pole" v přehledu, ne jako
 tichý zápis jinam.
@@ -691,27 +692,70 @@ tichý zápis jinam.
 stačí při čtení doplnit nuly zleva na osm číslic — kontrolní součet mod 11
 pak projde.
 
-### 11.4 Hodnoty krycího listu proti volbám Pipedrive
+**Stav 21. 10. 2026 odpoledne: opraveno (úkoly 20–22).** Vzory se zrušily
+úplně. `netlify/lib/pd_mapa.mjs` má jednu definici na jedno pole Pipedrive
+(66 polí dealu, 2 organizace): přesný název z tabulky, dovolené typy, odkud
+se hodnota bere v krycím listu OCK / PROJ a směr (čte se / zapisuje se /
+obojí). Název se porovnává bez ohledu na velikost písmen, mezery a druh
+pomlčky, diakritika rozhoduje. Pole se správným názvem a jiným typem se
+nespáruje (`typNesedi`), dvě pole stejného názvu taky ne (`nejednoznacne`)
+— obojí se ohlásí, nic se nezapíše naslepo. Uložená mapa nese verzi, takže
+mapa z doby vzorů se po nasazení nepoužije ani do konce své denní platnosti.
 
-Výběrová pole se zapisují **ID volby** (§3.4), takže hodnota z krycího listu
-musí na volbu přesně sednout. Sedí u: Typ projektu, Zaměření strojovny,
-Zádržné (Ne + procenta), ATYP. Překlad potřebuje:
+Přejímka nad skutečnými definicemi a 372 skutečnými dealy (jen čtením,
+data zůstala mimo repozitář):
 
-| pole | krycí list dává | Pipedrive zná | řešení |
-|---|---|---|---|
-| Typ smlouvy | „Cizí" | „Smlouva zákazníka" | překlad (nebo sjednotit popisek v krycím listu) |
-| Objekt v památkové ochraně | Ano / Ne / **„Zjišťuje se"** | Ano / Ne | **požádat integrátora o volbu „Zjišťuje se"** |
-| Licence k PD | volný text „nevýhradní, pro účel stavby…" | dvě pevné volby | v krycím listu udělat výběr se stejnými volbami |
-| Pojištění projektanta | volný text „ANO – dle…" | „Ano – dle…" / „Ne" | totéž |
-| Situační fotografie | volný text „Ve složce" | „Ve složce" / „Nejsou k dispozici" | totéž |
-| Způsob fakturace | „Náš standard / měsíční" (OCK), „po dokončení jednotlivých stupňů…" (PROJ) | tři pevné volby | výběr; **znamená „Náš standard" totéž co „Měsíční"?** |
-| DSP + Prováděcí dokumentace | dvě pole Ano/Ne | jedno pole s více volbami | složit do jedné hodnoty |
-| Sazba DPH | číslo z ceníku (21) | „21 %" / „12 %" / „0 % – přenesená…" | překlad čísla na volbu |
+| | před opravou | po opravě |
+|---|---|---|
+| spárovaná pole dealu | 8 z 11 (3 špatně) | **66 z 66, žádné špatně** |
+| IČ organizace | nenalezeno | nalezeno, nuly doplněné na 8 číslic |
+| po načtení vyplněná první / druhá splátka | 0 / 0 | **370 / 370** |
+| doba záruky / pokuta za den | 0 / 0 (z cizích polí) | **67 / 31** |
 
-Čísla se převádějí z textu (`kryciCisloZTextu`, už existuje): platnost
-nabídky „2 měsíce" → 2, termín dodání „12 týdnů…" → 12, záloha „50 % – po
-podpisu" → 50, pokuta „0,05 % / den" → 0,05, limit „Uplatněn limit 10 %" → 10
-a „NEUPLATNĚN" → 0.
+Testy: `netlify/test_pipedrive.mjs` (testovací data se skutečnými názvy
+a třemi „pastmi"; na původním kódu 26 z 94 selže) a nový
+`netlify/test_pd_prevod.mjs` (101 kontrol včetně křížové kontroly
+s krycími listy). Mutace „#114" v `netlify/mutace.mjs`.
+
+### 11.4 Hodnoty krycího listu proti volbám Pipedrive (podle kódu 21. 10. 2026)
+
+Převod je v `netlify/lib/pd_prevod.mjs` (`pdDoPd` pro jedno pole,
+`pdZapisDealu` pro celou zakázku = **jeden PATCH, 5 tokenů**). Platí tři
+zásady: **prázdné se neposílá** (zápis z kalkulace v CRM nic nemaže),
+**co nejde převést jednoznačně, se neposílá a vrátí se důvod** (nebere se
+„první číslo z textu" — „NEUPLATNĚN limit 10 %" by jinak odešlo jako 10),
+a **volba se hledá podle textu, ne podle pořadí**. U kombinované zakázky
+rozhoduje u společných polí OCK; nepřevoditelnou hodnotu OCK hodnota PROJ
+nenahradí.
+
+| pole Pipedrive | krycí list dnes dává | převod |
+|---|---|---|
+| Způsob fakturace | OCK výběr „Po milnících" / „Měsíční" | Po milnících → **Náš standard** (P10.5: „náš standard je 50, 40, 10"), Měsíční → Měsíční, dřívější „Náš standard / měsíční" → Náš standard |
+| Způsob fakturace | PROJ větu z plánu plateb | „po dokončení jednotlivých stupňů dokumentace" → Po dokončení stupňů dokumentace; **ostatní předvolby plánu (záloha X %…, po milnících činností, vlastní plán) zatím bez protějšku — neposílá se** |
+| Typ smlouvy | Naše bez úprav / Naše s úpravami / **Cizí** | Cizí → Smlouva zákazníka |
+| Typ projektu, Zaměření strojovny, ATYP, Situační fotografie | stejné volby | přímo |
+| Objekt v památkové ochraně | Ano / Ne / **Zjišťuje se** | Ano, Ne přímo; **„Zjišťuje se" v Pipedrive chybí** — neposílá se s důvodem |
+| Licence k PD, Pojištění projektanta | text z Firmy („nevýhradní, pro účel stavby dle smlouvy", „ANO – dle pojistné smlouvy zhotovitele") | po srovnání textu přesná shoda; upravený text podle prvního slova (nevýhradní / výhradní, ano / ne) |
+| Sazba DPH | sazba z hlavičky („21 %") + OCK režim DPH smlouvy | přenesená daňová povinnost i reverse charge EU → **0 % – přenesená…**; jinak 21 % / 12 % |
+| Zádržné – do odstranění VaN / po dobu záruky | přepínač Ano/Ne + procento | Ne → Ne; Ano + 5/10/15/20 → „N%"; **jiné procento nebo Ano bez procenta → neposílá se** |
+| Dokumentace v rozsahu (více voleb) | DSP Ano/Ne + Prováděcí dokumentace Ano/Ne | Ano → volba; obojí Ne → `null` (v2 vícevýběr maže jen `null`) |
+| První / Druhá / Třetí splátka (%) | „50 % – po podpisu smlouvy", „Bez zálohy", „40 % – po zahájení montáže" | právě jedno číslo, „Bez zálohy" → 0; **PROJ jen nabídka z doby před plánem plateb** |
+| Smluvní pokuty (% / den) | „0", „0,05 % / den", „0,1 % / den" | 0 / 0,05 / 0,1 |
+| Limit smluvních pokut (%) | „Uplatněn limit 10 %" / „NEUPLATNĚN limit 10 %" | 10 / **0** (0 = neuplatněn — k potvrzení) |
+| Platnost nabídky (měsíce) | „2 měsíce" | 2; v týdnech nebo datum → neposílá se |
+| Termín dodání OCK (týdny) | „12 týdnů", s ATYP „16 týdnů (vč. 4 týdnů za ATYP)" | 12 / 16; **rozsah „10–12 týdnů" → neposílá se** |
+| Datum podpisu smlouvy | OCK předvyplní **datum tisku**; PROJ „Zahájení prací (podpis smlouvy)" | OCK **jen ručně zadané**; PROJ přímo |
+| ostatní termíny | pole typu datum | ISO; „30. 11. 2026" se převede |
+| Platba 1–8, správní poplatky, pokuta za součinnost (měna) | částka „95 880 Kč" | `{ value, currency }`; procento do měny nepatří; **Platby 1–8 jen nabídka PROJ před plánem plateb** |
+| Faktury v kopii (1)/(2), Číslo nabídky, Příplatky (krátký text) | text | přímo; nad 255 znaků se nezkracuje — neposílá se |
+| Nabídku vypracoval, Hlavní projektant, Odpovědná osoba (uživatel) | jméno / „jméno, autorizace" / e-mail | uživatel Pipedrive podle e-mailu, jinak podle jména bez titulů; nenalezený → neposílá se (token potřebuje `users:read`) |
+| Kontakty, Druhý podepisující, Podepisující firma, Zmocnitel (osoba / organizace) | jména jako text | **nezapisuje se** — v CRM jsou zdrojem; Zmocnitel s datem narození vůbec (osobní údaje) |
+| Typ zakázky, Adresa realizace, Zdroj poptávky, Předpokládané datum ukončení realizace | — | **jen se čte** (zdrojem je CRM; datum ukončení do potvrzení úpravy #4) |
+
+Křížová kontrola v testu ověřuje, že každé pole krycího listu, ze kterého
+mapa bere hodnotu, existuje, a že výchozí znění aplikace (volby přepínačů,
+zálohy, sazby pokut, limit, režimy DPH) se na hodnotu Pipedrive převede.
+Kdo v krycím listu přejmenuje volbu, dozví se to z testu, ne z CRM.
 
 ### 11.5 Zkušební zápis — neproveden, čeká na souhlas
 
@@ -737,3 +781,38 @@ Smluvní pokuta 0,5 %/den u dvou dealů (krycí list zná 0 / 0,05 / 0,1 — sp�
 překlep), doba záruky 61 měsíců jednou a 0 měsíců patnáctkrát. „Způsob
 fakturace" má po převodu ze starého ANO/NE čtyřikrát „Náš standard" — je
 dobré vědět, jak integrátor ANO a NE převáděl.
+
+### 11.8 Kde poběží zkouška zápisu z aplikace
+
+**Ne z `main`.** Postup podle pravidel větví: větev se sloučí přes
+integraci do `test` (na pokyn J. V.) a zkouška běží na **testovacím webu**
+(větev `test`, vlastní databáze, červená lišta). Testovací web potřebuje
+**vlastní** `PIPEDRIVE_TOKEN` a `PIPEDRIVE_DOMENA` v Netlify (zadává
+J. V., token se nikam neposílá). `main` (ostrá verze) až po odsouhlasení.
+
+Pozor: Pipedrive je **jeden** — testovací web zapisuje do skutečného CRM.
+Proto zkouška jen na samostatném dealu „TEST – integrace kalkulačky"
+a až po potvrzení automatizací (§11.5). Náhled nasazení (deploy preview)
+v Netlify sdílí databázi s ostrým webem (Blobs jsou celé stránky) — na
+zkoušku se nehodí. Zkouška přes konektor (§11.5) na větvi nezávisí.
+
+### 11.9 Otázky pro integrátora (v konceptu e-mailu 21. 10. 2026, neodesláno)
+
+1. Doplnit volbu **„Zjišťuje se"** do „Objekt v památkové ochraně".
+2. #10 „Typ produktu / služby": nahrazuje ho „Typ zakázky"? Kalkulátor ho
+   dnes jen čte.
+3. Viditelnost polí OCK / PROJ při jediné pipeline „Obchod".
+4. Co v Make (nebo jinde) reaguje na nový / změněný deal — před zkušebním zápisem.
+5. Jak se převáděl starý ANO / NE u „Způsob fakturace".
+6. Objednatel: je „Zdroj poptávky – Organizace" vždy výtahová firma (objednatel)
+   a `org_id` investor?
+7. „Hlavní projektant" je typu Uživatel — kalkulátor má volný text „jméno,
+   autorizace"; projektant mimo uživatele Pipedrive se nezapíše.
+8. „Informováno Backoffice / Technické odd." — datum doplní automatizace?
+9. Platby 1–8: nové nabídky PROJ mají proměnný plán plateb; návrh —
+   textové pole „Platební kalendář SoD PROJ", Platby 1–8 jen pro starší nabídky.
+10. Zádržné jen 5 / 10 / 15 / 20 %: stačí?
+11. Číslo nabídky (CN) s mezerami a příponou „.2" — pole nevalidovat vzorem.
+12. Vícevýběr se maže hodnotou `null` (ne `[]`) — v pořádku i pro Make?
+13. Limit smluvních pokut: „neuplatněn" posílat jako 0?
+14. „Stav kalkulace" + webhook (§3.8) — kdy?

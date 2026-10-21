@@ -1288,7 +1288,7 @@
    ],
    "nazev" : "CRM-12 — Pipedrive (zastřešující)",
    "hotovoKdyz" : "Obchodník si v hlavičce vybere existující deal, spočítá nad ním kalkulaci, potvrzeným zápisem do něj vrátí částku a platební podmínky a odešle do něj vygenerovanou nabídku jako přílohu. Token není nikde ve staženém HTML ani v repozitáři, souběžný zápis se pozná a ohlásí, a při chybě spojení se to řekne nahlas místo tichého selhání.",
-   "cekaNa" : "názvy vlastních polí, API token a doménu v Netlify (odsunuto 10. 8. 2026)",
+   "cekaNa" : "API token a doménu v Netlify; odpovědi integrátora (#473)",
    "pozn" : "API token, doménu, seznam custom fieldů",
    "proc" : "Nabídka vzniká v kalkulačce a obchodní případ žije v Pipedrivu; propojení je dnes ruční přepisování. Napojení ušetří přepisování a hlavně srovná čísla — co je v nabídce, je i v obchodním případu. Zadání 9. 8. 2026 upřesnilo cíl: počítat kalkulace nad EXISTUJÍCÍMI dealy, sdílet vybrané údaje oběma směry a posílat vygenerovanou nabídku rovnou do dealu.",
    "dulezitost" : "vysoka",
@@ -1298,7 +1298,7 @@
    "id" : "16",
    "slozitost" : "L",
    "vlna" : "E",
-   "otazka" : "Potřebuji od tebe tři věci — jsou rozepsané u #114 (názvy vlastních polí), #113 (token a doména v Netlify) a #117 (co s nedopsanými poli)."
+   "otazka" : "Potřebuji od tebe: token a doménu v Netlify (#113) — pro testovací web vlastní, na ostrý až při převodu do main; rozhodnutí u #475 a #117. Integrátor odpovídá na otázky #473."
   },
   {
    "hotovoV" : "hotovo",
@@ -2684,17 +2684,15 @@
     }
    ],
    "nazev" : "CRM-15 — Mapa vlastních polí a její kontrola v Nastavení",
-   "hotovoKdyz" : "V Nastavení je vidět celá mapa polí včetně nespárovaných, administrátor ji umí opravit ručně a obnovit z CRM, a kalkulačka podle ní plní krycí list.",
-   "cekaNa" : "názvy čtyř vlastních polí z Pipedrive (odsunuto 10. 8. 2026)",
+   "hotovoKdyz" : "V Nastavení je vidět celá mapa polí včetně chybějících, polí jiného typu a nezařazených, administrátor ji umí obnovit z CRM, a kalkulačka podle ní plní krycí list.",
    "proc" : "Vlastní pole se v Pipedrive adresují čtyřicetiznakovým hashem, ne názvem. Mapa se dnes skládá automaticky podle názvu pole, což pokryje většinu — ale u čtyř polí se z hodnot nedá poznat, co znamenají, a hádat u pole, do kterého se bude zapisovat, se nesmí.",
    "dulezitost" : "stredni",
-   "detail" : "V Nastavení přibude přehled: které pole v CRM se spárovalo s kterým polem kalkulačky, co se nespárovalo, a možnost přiřazení opravit ručně. Bez toho se přejmenování pole v CRM projeví jako tiché prázdno v krycím listu.\nNejasná pole (stav k 9. 8. 2026, ověřeno na 308 případech): dvě odkazová pole na organizaci a osobu (podle dat objednatel = výtahová firma a kontakt u ní), výběr s hodnotami 1/2/3 a textové pole s odkazy na jiné nabídky (OVP/CN).",
-   "kde" : "netlify/lib/pd_mapa.mjs, src/ui/nastaveni_ui.js",
-   "stav" : "blokovano",
+   "detail" : "HOTOVO 21. 10. 2026 (větev claude/eager-carson-1xznt2, bez verze): párování podle PŘESNÉHO názvu z tabulky s integrátorem a podle typu pole (`netlify/lib/pd_mapa.mjs`) místo vzorů — vzory by na skutečném účtu spojily dobu záruky se „Zádržné – po dobu záruky“, pokutu za den s limitem pokut a objednatele s podepisující firmou. 66 polí dealu se zdrojem v krycím listu OCK / PROJ a směrem (čte se / zapisuje se / obojí), IČ organizace s doplněním nul (`pdIco`); pole jiného typu (`typNesedi`) a dvojí název (`nejednoznacne`) se nespárují a ohlásí, mapa v cache nese verzi. Přejímka nad skutečnými definicemi 66/66, žádné špatně (podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md §11.3).\nZBÝVÁ: přehled v Nastavení — které pole CRM se spárovalo, co chybí, co má jiný typ nebo je dvakrát, a nezařazená vlastní pole CRM (data už vrací /api/pd/pole). Ruční přiřazení se nedělá: název je dohoda s integrátorem, přejmenování pole se má ukázat jako „chybí“, ne opravit klikem.\nPůvodní nejasná pole (9. 8. 2026) integrátor pojmenoval 21. 10. 2026: „Zdroj poptávky – Organizace / Osoba“, „Priorita“, „Podmínky a technická specifikace zakázky“.",
+   "kde" : "netlify/lib/pd_mapa.mjs, netlify/functions/pd_pole.mjs, src/ui/nastaveni_ui.js",
+   "stav" : "ceka",
    "id" : "114",
    "slozitost" : "S",
-   "vlna" : "D",
-   "otazka" : "Otevři Nastavení firmy → Datová pole → Deal a pošli mi názvy polí s API klíči 8a78acc4…, 0fe80f1e…, 829a4684… a ab0a94b7… (u každého je tlačítko Kopírovat API klíč)."
+   "vlna" : "D"
   },
   {
    "slozitost" : "M",
@@ -2703,7 +2701,7 @@
    "id" : "115",
    "dulezitost" : "vysoka",
    "proc" : "Dnes se částka a platební podmínky zadávají dvakrát — v kalkulačce a v CRM — a nikdo nehlídá, že se shodují. Trojice splatnost 14 dní, záloha 50 %, dílčí faktura 40 % je v CRM vyplněná u 306 z 308 případů a je to přesně to, co od v5.8.15 plníme do šablony nabídky.",
-   "detail" : "Zápis je JEDNOSMĚRNÝ a POTVRZENÝ: obchodník uvidí tabulku pole / stará hodnota / nová hodnota a teprve pak klikne. Posílají se jen skutečně změněná pole (PATCH je částečná aktualizace, takže se kolize zúží na tentýž údaj). Posun fáze na Nabídka odeslána je zaškrtávátko, ne automatika — někdy se počítá jen na zkoušku.\nTiché zápisy na pozadí se dělat nebudou: jednak je nikdo neuhlídá, jednak by posouvaly čas poslední změny u případů a rozbily pozdější inkrementální synchronizaci.",
+   "detail" : "Zápis je JEDNOSMĚRNÝ a POTVRZENÝ: obchodník uvidí tabulku pole / stará hodnota / nová hodnota a teprve pak klikne. Posílají se jen skutečně změněná pole (PATCH je částečná aktualizace, takže se kolize zúží na tentýž údaj). Posun fáze na Nabídka odeslána je zaškrtávátko, ne automatika — někdy se počítá jen na zkoušku.\nTiché zápisy na pozadí se dělat nebudou: jednak je nikdo neuhlídá, jednak by posouvaly čas poslední změny u případů a rozbily pozdější inkrementální synchronizaci.\nHOTOVO 21. 10. 2026 (claude/eager-carson-1xznt2): převod hodnot krycího listu na hodnoty Pipedrive (`netlify/lib/pd_prevod.mjs`) — číslo, datum ISO, ID volby, vícevýběr, částka s měnou, uživatel; celá zakázka jedním PATCH (5 tokenů). Prázdné se neposílá, nejednoznačné se neposílá s důvodem, u kombinované zakázky rozhoduje OCK. Tabulka převodů v podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md §11.4.\nZBÝVÁ: serverový zápis (POST /api/pd/deal), potvrzovací tabulka v UI, kontrola update_time proti souběhu.",
    "kde" : "netlify/functions/pd_deal.mjs (POST), src/ui/zakazka_ui.js",
    "cekaNa" : "rozhodnutí z kontrolní tabulky — kolize dvou kalkulací nad jedním polem v CRM (odsunuto 10. 8. 2026)",
    "hotovoKdyz" : "Z hotové kalkulace se do případu zapíše částka, měna a platební podmínky až po potvrzení, zapíšou se jen změněná pole, a při chybě spojení se to řekne nahlas místo tichého selhání.",
@@ -7335,6 +7333,72 @@
    "zavisi": [],
    "hotovoV": "v21.10.2",
    "pozn": "Id přidělila koordinace (dávka O9)."
+  },
+  {
+   "id": "473",
+   "nazev": "Pipedrive: odpovědi integrátora k založeným polím",
+   "vlna": "D",
+   "stav": "blokovano",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "cekaNa": "odpovědi integrátora na otázky z 21. 10. 2026 (koncept e-mailu a dokument připraveny, odesílá J. V.)",
+   "proc": "Integrátor 21. 10. 2026 založil pole podle tabulky (53 z 54 nových a 4 ze 4 úprav sedí). Zbylo pár věcí, které rozhodují, jestli zápis z kalkulace půjde bez ztráty: chybějící volba, viditelnost polí, automatizace, které na změnu dealu reagují, a výklad několika polí.",
+   "detail": "Otázky (podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md §11.9): volba „Zjišťuje se“ v „Objekt v památkové ochraně“; #10 „Typ produktu / služby“ × „Typ zakázky“; viditelnost polí OCK / PROJ při jediné pipeline; co v Make reaguje na nový / změněný deal; převod starého ANO/NE u „Způsob fakturace“; objednatel = „Zdroj poptávky – Organizace“; „Hlavní projektant“ jako Uživatel; datum „Informováno…“ automatizací; Platby 1–8 × proměnný plán plateb PROJ; zádržné jen 5–20 %; formát čísla CN; mazání vícevýběru hodnotou null; limit pokut „neuplatněn“ = 0; „Stav kalkulace“ a webhook.",
+   "hotovoKdyz": "Na každou otázku je odpověď a co z ní plyne, je zapsané v mapě polí (pd_mapa.mjs) nebo v převodu (pd_prevod.mjs).",
+   "kde": "podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md §11.9",
+   "zavisi": [
+    {
+     "id": "114",
+     "typ": "doporuceno",
+     "proc": "odpovědi upřesní mapu polí"
+    }
+   ]
+  },
+  {
+   "id": "474",
+   "nazev": "Pipedrive: zkušební zápis na testovacím dealu",
+   "vlna": "D",
+   "stav": "blokovano",
+   "dulezitost": "vysoka",
+   "slozitost": "S",
+   "cekaNa": "potvrzení integrátora, co na změnu dealu reaguje (Make), a token s doménou na testovacím webu",
+   "proc": "Čtení ověřilo nastavení polí, ne zápis. Bez zkoušky se nepozná, jak Pipedrive přijme částku s měnou, vícevýběr, uživatele nebo mazání hodnotou null — a zápis do skutečného dealu by mohl spustit automatizaci v Make.",
+   "detail": "Samostatný deal „TEST – integrace kalkulačky“: zapsat jednu hodnotu od každého typu (varchar, text, double, date, enum, set, monetary, user, people, org), přečíst zpět, deal smazat — řádově 14 tokenů. Nejdřív přes konektor (na větvi nezávisí), z aplikace až z testovacího webu (větev test, vlastní databáze, vlastní PIPEDRIVE_TOKEN a PIPEDRIVE_DOMENA). Ne z main a ne z náhledu nasazení — náhled sdílí databázi s ostrým webem. Pipedrive je jeden, testovací web tedy píše do skutečného CRM.",
+   "hotovoKdyz": "Každý typ pole se zapsal a přečetl zpět ve stejném tvaru, testovací deal je smazaný a žádná automatizace se nespustila.",
+   "kde": "netlify/lib/pd_prevod.mjs, podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md §11.5 a §11.8",
+   "zavisi": [
+    {
+     "id": "473",
+     "typ": "tvrda",
+     "proc": "nejdřív vědět, co na změnu dealu reaguje"
+    },
+    {
+     "id": "115",
+     "typ": "doporuceno",
+     "proc": "zkouška z aplikace potřebuje serverový zápis"
+    }
+   ]
+  },
+  {
+   "id": "475",
+   "nazev": "Pipedrive: rozhodnutí J. V. k převodu hodnot",
+   "vlna": "D",
+   "stav": "blokovano",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "cekaNa": "rozhodnutí J. V. (otázky 21. 10. 2026)",
+   "proc": "Převod hodnot krycího listu do Pipedrive neposílá nic, co by si musel domyslet. Čtyři pravidla ale potřebují rozhodnutí — do té doby se dotčené hodnoty neposílají (u limitu pokut se posílají podle navrženého výkladu).",
+   "detail": "Navržené výchozí odpovědi: (1) předvolby plánu plateb PROJ → „Způsob fakturace“: dnes se převede jen „po dokončení jednotlivých stupňů dokumentace“; návrh — „záloha X % po podpisu smlouvy, zbytek po předání jednotlivých stupňů dokumentace“ i „po předání jednotlivých stupňů dokumentace“ → „Po dokončení stupňů dokumentace“, vlastní plán a „po milnících jednotlivých činností“ neposílat. (2) „Předpokládané datum ukončení realizace“ = „Konečné předání díla“ z krycího listu OCK (úprava #4, P7)? Návrh ano; do té doby se jen čte. (3) Limit smluvních pokut „NEUPLATNĚN“ posílat jako 0. (4) „Cizí“ smlouvu překládat na „Smlouva zákazníka“ (dnes překlad), nebo popisek v krycím listu přejmenovat — návrh ponechat překlad.",
+   "otazka": "Souhlasíš s výchozími odpověďmi (1)–(4) v detailu?",
+   "hotovoKdyz": "Rozhodnutí je zapsané v mapě polí a převodu a pokryté testem v netlify/test_pd_prevod.mjs.",
+   "kde": "netlify/lib/pd_mapa.mjs, netlify/lib/pd_prevod.mjs",
+   "zavisi": [
+    {
+     "id": "115",
+     "typ": "doporuceno",
+     "proc": "týká se převodu pro zápis"
+    }
+   ]
   }
  ],
  "meta" : {
@@ -7937,6 +8001,11 @@
    "text" : "17. 10. 2026 — dávka B165 (claude/b165-karta-vyjimky, v17.10.5): karta cenové výjimky ukazuje schvalovateli použitou vs. ceníkovou sazbu, dopad na cenu v % a Kč a plochu pásu; zbytek B178 — plocha pásů a světlíků „jiné“ z jádra v obsahu výjimky. Vlastní schválení (B165 část 2) čeká na J. V. #420, #424.",
    "hotovo" : true,
    "pozn" : "Pojistka a mutace v CHANGELOG v17.10.5."
+  },
+  {
+   "text": "21. 10. 2026 — dávka #114 (claude/eager-carson-1xznt2, bez verze): test polí, která integrátor založil (53/54 nových, 4/4 úprav), párování polí Pipedrive podle přesného názvu a typu (66/66 na skutečném účtu), IČ s nulami, verze mapy v cache, převod hodnot krycího listu pro zápis (pd_prevod.mjs). #114, #115, #473–#475.",
+   "hotovo": true,
+   "pozn": "test_pipedrive 94/0 (pojistka: na původním kódu 26 selže), test_pd_prevod 101/0, mutace #114 v netlify/mutace.mjs; čísla #473–#475 může slučování přečíslovat (integrace má #470–#472)."
   }
   ],
   "pravidla" : [
@@ -8023,8 +8092,8 @@
     "id" : "F"
    }
   ],
-  "build" : "v18.10.11 (engscalc, claude/integrace-16-10)",
-  "stavKDatu" : "16. 10. 2026"
+  "build" : "v21.10.2 (test) + #114 bez verze (claude/eager-carson-1xznt2)",
+  "stavKDatu" : "21. 10. 2026"
  },
  "_comment" : [
   "JEDINÝ ZDROJ PRAVDY pro roadmapu Kalkulátoru Next Gen.",

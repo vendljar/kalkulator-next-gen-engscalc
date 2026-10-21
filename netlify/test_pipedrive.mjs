@@ -28,7 +28,7 @@ import pdPole from './functions/pd_pole.mjs';
 import pdDealy from './functions/pd_dealy.mjs';
 import pdDeal from './functions/pd_deal.mjs';
 import { ADMIN_EMAIL } from './lib/sdilene.mjs';
-import { pdCisloZNazvu, pdNazevAkce, pdMapaZPoli, pdHodnota, pdZbytekDoSta,
+import { pdCisloZNazvu, pdNazevAkce, pdMapaZPoli, pdHodnota, pdZbytekDoSta, pdIco,
          pdDealNaNase, POLE_DEALU, POLE_ORGANIZACE } from './lib/pd_mapa.mjs';
 import { pdZaklad, pdOdkazNaDeal, PD_TOKEN_PROMENNA, PD_DOMENA_PROMENNA } from './lib/pipedrive.mjs';
 
@@ -43,45 +43,47 @@ const post = (fn, url, telo, cookie) => fn(new Request(url, { method: 'POST',
 
 /* ---------- náhradní Pipedrive ---------- */
 
+/* Definice polí ve tvaru API v2 (field_code / field_name / field_type /
+ * is_custom_field) se SKUTEČNÝMI názvy z tabulky dohodnuté s integrátorem
+ * (Pipedrive_nova_pole_dealu, revize J. V. 14. 10. 2026); hashe jsou
+ * smyšlené. Do 21. 10. 2026 tu stály vymyšlené názvy („Záloha %", „Adresa
+ * stavby") a testy procházely, zatímco párování na skutečném účtu tři pole
+ * spletlo a čtyři nenašlo. Pasti (`zadrzneZaruka`, `limit`, `podpisFirma`)
+ * jsou skutečná pole, jejichž názvy obsahují slova, podle kterých se dřív
+ * párovalo — a stojí napřed, protože dřív vyhrával první a nejkratší. */
+const h = (n) => n.toString(16).padStart(2, '0').repeat(20);
 const HASH = {
-  splatnost: 'a'.repeat(40),
-  zaloha: 'b'.repeat(40),
-  faktura2: 'c'.repeat(40),
-  adresa: 'd'.repeat(40),
-  termin: 'e'.repeat(40),
-  typ: 'f'.repeat(40),
-  firma: '1'.repeat(40),
-  osoba: '2'.repeat(40),
-  zaruka: '3'.repeat(40),
-  pokuta: '4'.repeat(40),
-  zadrzne: '5'.repeat(40),
-  neznamé: '9'.repeat(40),
-  ico: '7'.repeat(40),
-  typOrg: '8'.repeat(40),
+  splatnost: h(1), zaloha: h(2), faktura2: h(3), adresa: h(4), termin: h(5), typ: h(6),
+  firma: h(7), osoba: h(8), zaruka: h(9), pokuta: h(10), zadrzne: h(11), neznamé: h(12),
+  ico: h(13), typOrg: h(14), treti: h(15),
+  zadrzneZaruka: h(16), limit: h(17), podpisFirma: h(18),
 };
+const V2 = (field_code, field_name, field_type, options) =>
+  ({ field_code, field_name, field_type, is_custom_field: true, is_writable: true, options: options || null });
 
 const POLE_ODPOVED = [
-  { key: HASH.splatnost, name: 'Splatnost faktur (dny)', field_type: 'double', edit_flag: true },
-  { key: HASH.zaloha, name: 'Záloha %', field_type: 'double', edit_flag: true },
-  { key: HASH.faktura2, name: 'Dílčí faktura 2 %', field_type: 'double', edit_flag: true },
-  { key: HASH.adresa, name: 'Adresa stavby', field_type: 'varchar', edit_flag: true },
-  { key: HASH.termin, name: 'Termín realizace', field_type: 'date', edit_flag: true },
-  { key: HASH.typ, name: 'Typ zakázky', field_type: 'enum', edit_flag: true,
-    options: [{ id: 54, label: 'Projekce - Výtah + OCK' }, { id: 55, label: 'Realizace' }] },
-  { key: HASH.firma, name: 'Objednatel (výtahová firma)', field_type: 'org', edit_flag: true },
-  { key: HASH.osoba, name: 'Kontakt objednatele', field_type: 'people', edit_flag: true },
-  { key: HASH.zaruka, name: 'Záruka měsíců', field_type: 'double', edit_flag: true },
-  { key: HASH.pokuta, name: 'Smluvní pokuta % den', field_type: 'double', edit_flag: true },
-  { key: HASH.zadrzne, name: 'Zádržné VaN', field_type: 'enum', edit_flag: true,
-    options: [{ id: 71, label: 'Ne' }, { id: 72, label: '10%' }] },
-  { key: HASH.neznamé, name: 'Interní příznak XYZ', field_type: 'varchar', edit_flag: true },
-  { key: 'title', name: 'Title', field_type: 'varchar', edit_flag: false },
+  V2(HASH.zadrzneZaruka, 'Zádržné – po dobu záruky', 'enum', [{ id: 81, label: 'Ne' }, { id: 82, label: '5%' }]),
+  V2(HASH.limit, 'Limit smluvních pokut (%)', 'double'),
+  V2(HASH.podpisFirma, 'Podepisující firma (pokud jiná)', 'org'),
+  V2(HASH.splatnost, 'Splatnost faktur (dny)', 'double'),
+  V2(HASH.zaloha, 'První splátka (%)', 'double'),
+  V2(HASH.faktura2, 'Druhá splátka (%)', 'double'),
+  V2(HASH.treti, 'Třetí splátka (%)', 'double'),
+  V2(HASH.adresa, 'Adresa realizace', 'text'),
+  V2(HASH.termin, 'Předpokládané datum ukončení realizace', 'date'),
+  V2(HASH.typ, 'Typ zakázky', 'enum', [{ id: 54, label: 'Projekce - Výtah + OCK' }, { id: 55, label: 'Realizace' }]),
+  V2(HASH.firma, 'Zdroj poptávky - Organizace', 'org'),
+  V2(HASH.osoba, 'Zdroj poptávky - Osoba', 'people'),
+  V2(HASH.zaruka, 'Doba trvání záruky (počet měsíců)', 'double'),
+  V2(HASH.pokuta, 'Smluvní pokuta – prodlení dodávky / odevzdání (% / den)', 'double'),
+  V2(HASH.zadrzne, 'Zádržné – do odstranění VaN', 'enum', [{ id: 71, label: 'Ne' }, { id: 73, label: '10%' }]),
+  V2(HASH.neznamé, 'Interní příznak XYZ', 'varchar'),
+  { field_code: 'title', field_name: 'Název', field_type: 'varchar', is_custom_field: false, is_writable: true },
 ];
 
 const POLE_ORG_ODPOVED = [
-  { key: HASH.ico, name: 'IČO', field_type: 'double', edit_flag: true },
-  { key: HASH.typOrg, name: 'Typ organizace', field_type: 'enum', edit_flag: true,
-    options: [{ id: 1, label: 'Výtahová společnost' }] },
+  V2(HASH.ico, 'IČ', 'double'),
+  V2(HASH.typOrg, 'Role', 'enum', [{ id: 1, label: 'Výtahová společnost' }]),
 ];
 
 const DEAL = (id, nazev, extra = {}) => ({
@@ -92,13 +94,17 @@ const DEAL = (id, nazev, extra = {}) => ({
     [HASH.adresa]: 'Zkušební 12, Zkušebín', [HASH.termin]: '2027-03-31',
     [HASH.typ]: { id: 54, label: 'Projekce - Výtah + OCK' },
     [HASH.firma]: 901, [HASH.osoba]: 801,
+    [HASH.zaruka]: 60, [HASH.pokuta]: 0, [HASH.zadrzne]: { id: 73, label: '10%' },
+    /* pasti: kdyby se spárovaly místo správných polí, krycí list dostane tohle */
+    [HASH.zadrzneZaruka]: { id: 81, label: 'Ne' }, [HASH.limit]: 10, [HASH.podpisFirma]: 902,
     ...extra,
   },
 });
 
 const DEALY = [
   DEAL(1, 'CN-84 Zkušební ulice 1, Zkušebín'),
-  DEAL(2, 'CN-85 Náměstí Bořivojovo 3'),
+  /* bez první splátky, zato s třetí: dopočet by dal prázdno, CRM říká 10 */
+  DEAL(2, 'CN-85 Náměstí Bořivojovo 3', { [HASH.zaloha]: null, [HASH.treti]: 10 }),
   { ...DEAL(3, 'OPR12-2025 Oprava zkušební'), status: 'won' },
   { ...DEAL(4, 'Bez čísla — jen popis'), status: 'lost' },
 ];
@@ -106,6 +112,9 @@ const DEALY = [
 const ORGANIZACE = {
   900: { id: 900, name: 'Investor zkušební a.s.', custom_fields: { [HASH.ico]: 11111111 } },
   901: { id: 901, name: 'Výtahy Zkušební s.r.o.', custom_fields: { [HASH.ico]: 12345678 } },
+  902: { id: 902, name: 'Podepisující jiná s.r.o.', custom_fields: { [HASH.ico]: 87654321 } },
+  /* IČ je v účtu číselné pole: 00064581 drží Pipedrive jako 64581 */
+  903: { id: 903, name: 'Nulová zkušební a.s.', custom_fields: { [HASH.ico]: 64581 } },
 };
 const OSOBY = {
   800: { id: 800, first_name: 'Jan', last_name: 'Investorský', emails: [], phones: [] },
@@ -186,11 +195,60 @@ test('co se nespárovalo, se nezahodí, ale vypíše',
   m.nezarazeno.some(x => x.hash === HASH.neznamé), JSON.stringify(m.nezarazeno));
 /* Kdyby se pole v CRM přejmenovalo, mapa musí říct, že chybí — jinak by
  * kalkulačka tiše vracela prázdno a nikdo by nevěděl proč. */
-const mBezAdresy = pdMapaZPoli(POLE_ODPOVED.filter(p => p.key !== HASH.adresa), POLE_DEALU);
+const mBezAdresy = pdMapaZPoli(POLE_ODPOVED.filter(p => p.field_code !== HASH.adresa), POLE_DEALU);
 test('přejmenované (chybějící) pole se ohlásí jako chybějící',
   mBezAdresy.chybi.some(x => x.klic === 'adresaStavby'));
+test('chybějící pole nese přesný název, pod kterým se hledalo',
+  mBezAdresy.chybi.some(x => x.klic === 'adresaStavby' && x.nazev === 'Adresa realizace'),
+  JSON.stringify(mBezAdresy.chybi.find(x => x.klic === 'adresaStavby')));
+
+/* #114 (21. 10. 2026): párování podle přesného názvu. Na skutečném účtu by
+ * párování podle vzorů spojilo dobu záruky se „Zádržné – po dobu záruky",
+ * pokutu za den s „Limit smluvních pokut (%)" a objednatele s „Podepisující
+ * firma (pokud jiná)". */
+test('#114: doba záruky se nespáruje se zádržným po dobu záruky',
+  m.mapa.zarukaMesicu === HASH.zaruka && m.mapa.zadrzneZaruka === HASH.zadrzneZaruka, JSON.stringify(m.mapa));
+test('#114: pokuta za den se nespáruje s limitem smluvních pokut',
+  m.mapa.pokutaProcDen === HASH.pokuta && m.mapa.pokutaLimit === HASH.limit);
+test('#114: objednatel se nespáruje s podepisující firmou',
+  m.mapa.objednatelFirma === HASH.firma && m.mapa.podpisFirma === HASH.podpisFirma);
+test('#114: první, druhá i třetí splátka se spárují každá zvlášť',
+  m.mapa.zaloha1Proc === HASH.zaloha && m.mapa.faktura2Proc === HASH.faktura2 && m.mapa.fakturaKoncProc === HASH.treti);
+test('#114: pořadí polí v odpovědi CRM nerozhoduje',
+  JSON.stringify(pdMapaZPoli(POLE_ODPOVED.slice().reverse(), POLE_DEALU).mapa) === JSON.stringify(m.mapa));
+const mJinak = pdMapaZPoli(POLE_ODPOVED.map(p => p.field_code === HASH.pokuta
+  ? { ...p, field_name: '  smluvní pokuta - prodlení dodávky /  odevzdání (% / den) ' } : p), POLE_DEALU);
+test('#114: velikost písmen, mezery a druh pomlčky nerozhodují', mJinak.mapa.pokutaProcDen === HASH.pokuta);
+const mBezDiakritiky = pdMapaZPoli(POLE_ODPOVED.map(p => p.field_code === HASH.typ
+  ? { ...p, field_name: 'Typ zakazky' } : p), POLE_DEALU);
+test('#114: diakritika rozhoduje (jiný název = jiné pole)',
+  !mBezDiakritiky.mapa.typZakazky && mBezDiakritiky.chybi.some(x => x.klic === 'typZakazky'));
+/* Název sedí, typ ne: výběr místo čísla by zápis buď odmítl, nebo — hůř —
+ * zapsal do jiné volby. Do mapy se proto nedostane a ohlásí se. */
+const mTyp = pdMapaZPoli(POLE_ODPOVED.map(p => p.field_code === HASH.zaruka
+  ? { ...p, field_type: 'enum' } : p), POLE_DEALU);
+test('#114: pole se správným názvem a jiným typem se nespáruje',
+  !mTyp.mapa.zarukaMesicu && mTyp.typNesedi.some(x => x.klic === 'zarukaMesicu' && x.je === 'enum'),
+  JSON.stringify(mTyp.typNesedi));
+const mDvakrat = pdMapaZPoli(POLE_ODPOVED.concat([V2(h(99), 'Splatnost faktur (dny)', 'double')]), POLE_DEALU);
+test('#114: dvě pole stejného názvu se nespárují, ale ohlásí',
+  !mDvakrat.mapa.splatnostDni && mDvakrat.nejednoznacne.some(x => x.klic === 'splatnostDni' && x.pocet === 2),
+  JSON.stringify(mDvakrat.nejednoznacne));
+test('#114: starší tvar odpovědi (key / name) se přečte taky',
+  pdMapaZPoli([{ key: HASH.splatnost, name: 'Splatnost faktur (dny)', field_type: 'double', edit_flag: true }],
+    POLE_DEALU).mapa.splatnostDni === HASH.splatnost);
+test('#114: každé pole Pipedrive je v mapě jen jednou (název i klíč)',
+  new Set(POLE_DEALU.map(d => String(d.nazev || '').toLowerCase())).size === POLE_DEALU.length
+  && new Set(POLE_DEALU.map(d => d.klic)).size === POLE_DEALU.length);
+
 const mo2 = pdMapaZPoli(POLE_ORG_ODPOVED, POLE_ORGANIZACE);
-test('IČO se najde mezi poli organizace', mo2.mapa.ico === HASH.ico);
+test('IČO se najde mezi poli organizace (pole „IČ")', mo2.mapa.ico === HASH.ico);
+test('#114: IČ s nulami na začátku se doplní na osm číslic',
+  pdIco(64581) === '00064581' && pdIco('12345678') === '12345678' && pdIco(12345678) === '12345678');
+test('#114: IČO, které číslem není, se nepřepisuje', pdIco('CZ12345678') === 'CZ12345678' && pdIco(null) === '');
+test('#114: IČO delší než osm číslic se nezkracuje', pdIco(123456789) === '123456789');
+test('#114: v detailu organizace se IČ doplní nulami',
+  pdDealNaNase(DEALY[0], m.mapa, { organizace: ORGANIZACE[903], mapaOrganizace: mo2.mapa }).ico === '00064581');
 
 const prelozeny = pdDealNaNase(DEALY[0], m.mapa,
   { organizace: ORGANIZACE[901], osoba: OSOBY[801], mapaOrganizace: mo2.mapa });
@@ -287,6 +345,17 @@ test('krycí list dostane zálohu i dílčí fakturu',
   String(detail.deal.zaloha1Proc) === '50' && String(detail.deal.faktura2Proc) === '40');
 test('konečná faktura se dopočítá na 10 %', detail.deal.fakturaKoncProc === '10');
 test('krycí list dostane termín', detail.deal.terminPlneni === '2027-03-31');
+test('#114: krycí list dostane dobu záruky, ne zádržné po dobu záruky',
+  detail.deal.zarukaMesicu === '60', detail.deal.zarukaMesicu);
+test('#114: krycí list dostane pokutu za den, ne limit pokut',
+  detail.deal.pokutaProcDen === '0', detail.deal.pokutaProcDen);
+test('#114: zádržné do odstranění VaN se přečte jako volba', detail.deal.zadrzne === '10%', detail.deal.zadrzne);
+/* Fixture má z 66 polí mapy jen část — všechna pole, která detail čte, ale
+ * ne pole pro zápis. Obchodník nemá při načítání slyšet o polích, která
+ * načítání nepotřebuje. */
+test('#114: chybějící pole pro zápis se při načítání nehlásí',
+  !detail.varovani.some(v => /najít pole/.test(v)) && detail.chybiPole.length === 0,
+  JSON.stringify(detail.varovani));
 test('krycí list dostane odkaz do Pipedrivu (pole Scoring)',
   detail.deal.odkaz === 'https://zkusebni-firma.pipedrive.com/deal/1');
 test('odpověď nikde neveze přístupový token',
@@ -305,9 +374,22 @@ console.log('\n===== ŠETŘENÍ ROZPOČTU A CHOVÁNÍ PŘI POTÍŽÍCH =====\n')
 
 const naPole = () => volani.filter(v => /Fields/.test(v.url)).length;
 const pred = naPole();
-await get(pdDeal, 'http://x/api/pd/deal?id=2', cObch);
+const detail2 = await (await get(pdDeal, 'http://x/api/pd/deal?id=2', cObch)).json();
 await get(pdDeal, 'http://x/api/pd/deal?id=2', cObch);
 test('mapa polí se cachuje (další načtení už do CRM nechodí)', naPole() === pred, naPole() - pred);
+test('#114: třetí splátka z CRM má přednost před dopočtem',
+  detail2.deal.fakturaKoncProc === '10' && detail2.deal.zaloha1Proc === '', JSON.stringify(detail2.deal));
+
+/* Mapa uložená před 21. 10. 2026 (bez `verze`) párovala podle vzorů — po
+ * nasazení se nesmí použít, ani když ještě neuplynul den její platnosti. */
+const mapaPredOpravou = { poridano: Date.now(), mapa: { zarukaMesicu: HASH.zadrzneZaruka, pokutaProcDen: HASH.limit },
+  popisy: {}, chybi: [], nezarazeno: [], mapaOrganizace: {} };
+pamet.set('pipedrive/pole', JSON.stringify(mapaPredOpravou));
+const predStara = naPole();
+const detail3 = await (await get(pdDeal, 'http://x/api/pd/deal?id=3', cObch)).json();
+test('#114: mapa ve starém tvaru se zahodí a načte znovu', naPole() > predStara, naPole() - predStara);
+test('#114: a detail pak čte správná pole',
+  detail3.deal.zarukaMesicu === '60' && detail3.deal.pokutaProcDen === '0', JSON.stringify(detail3.deal));
 
 test('obnovit mapu polí smí jen administrátor',
   (await get(pdPole, 'http://x/api/pd/pole?obnovit=1', cObch)).status === 403);
