@@ -595,5 +595,98 @@ await zkus('K3-N13', async () => {
   test('K3-N13: přehled záloh vrací varování pro hlídku', g.ok && g.retenceVarovani && g.retenceVarovani.den === '2028-10-19', g.retenceVarovani);
 });
 
+/* ---------------- O9: K4-N12 (vstup jako text) a K4-N14 (čerstvý otisk kopie) ---------------- */
+await zkus('O9', async () => {
+  /* K4-N12: objekt s klíčem „toString" (z JSON, ne funkce) → String() vyhodil
+   * výjimku → HTTP 500. Teď 400 / běžná odpověď. Pojistka: před opravou
+   * 4 FAIL (výjimka = 500), po opravě projde. */
+  const stav = async (telo) => { try { return (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', telo, cookie)).status; }
+    catch (e) { return 500; } };
+  const OBJ = { toString: 1, valueOf: 1 };
+  const kopie = { soubor: 'otisk_2026-10-19.json', velikostB: 1, sha256: 'c'.repeat(64), otisk: '2026-10-19',
+    puvod: 'nocni-otisk', slozka: '_Zaloha Netlify DB' };
+  test('K4-N12: soubor jako objekt → 400, ne 500', await stav({ akce: 'kopie-disk', kopie: { ...kopie, soubor: OBJ },
+    hesloSpravce: 'Docasne.Heslo.123' }) === 400);
+  test('K4-N12: složka jako objekt → 400, ne 500', await stav({ akce: 'kopie-disk', kopie: { ...kopie, slozka: OBJ },
+    hesloSpravce: 'Docasne.Heslo.123' }) === 400);
+  let zap = null;
+  try { zap = await (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { akce: 'kopie-disk',
+    kopie: { ...kopie, velikostB: OBJ, sha256: OBJ, otisk: OBJ }, hesloSpravce: 'Docasne.Heslo.123' }, cookie)).json(); } catch (e) { zap = null; }
+  test('K4-N12: velikost, SHA a otisk jako objekt → záznam bez nich (0, prázdné, null), ne 500',
+    !!zap && zap.ok && zap.kopieDisk.velikostB === 0 && zap.kopieDisk.sha256 === '' && zap.kopieDisk.otisk === null, zap);
+  let vyn = null;
+  try { vyn = await postVynuceny({ duvod: OBJ }); } catch (e) { vyn = null; }
+  test('K4-N12: důvod vynuceného otisku jako objekt → ruční otisk, ne 500', !!vyn && vyn.ok && /-rucne$/.test(vyn.den), vyn);
+  test('K4-N12: tělo jako pole / číslo → běžná odpověď, ne 500',
+    (await stav([1, 2])) !== 500 && (await stav(7)) !== 500 && (await stav({ akce: 'kopie-disk', kopie: 'x' })) === 400);
+
+  /* K4-N14: retenci odemkne jen kopie jednoho ze 7 nejnovějších nočních
+   * otisků. Pojistka: před opravou 8. nejnovější (a starý otisk z roku
+   * 2026 mezi novými) prošel → 2 FAIL. */
+  const dny = Array.from({ length: 8 }, (_, i) => '2028-10-' + String(12 + i).padStart(2, '0'));   // 12. … 19. 10.
+  const zaznam = (otisk) => ({ kdy: '2028-10-19T08:00:00Z', soubor: 'otisk_' + otisk + '.json', velikostB: 1,
+    sha256: 'd'.repeat(64), otisk, puvod: 'nocni-otisk', slozka: '_Zaloha Netlify DB', potvrzeno: 'heslo-spravce' });
+  const klice = dny.concat(['2026-08-01', '2028-10-19T101010-rucne', 'souhrn/2028-10-19', 'kopie-disk']);
+  test('K4-N14: nejnovější a 7. nejnovější noční otisk → podložená kopie',
+    Z.kopieDiskPodlozena(zaznam('2028-10-19'), klice) && Z.kopieDiskPodlozena(zaznam('2028-10-13'), klice));
+  test('K4-N14: 8. nejnovější noční otisk → nepodložená', !Z.kopieDiskPodlozena(zaznam('2028-10-12'), klice));
+  test('K4-N14: starý otisk (2026-08-01, staré se nemažou) → nepodložená', !Z.kopieDiskPodlozena(zaznam('2026-08-01'), klice));
+  test('K4-N14: vynucené otisky a souhrny se mezi 7 nejnovějších nepočítají',
+    Z.kopieDiskPodlozena(zaznam('2028-10-13'), klice.concat(['2028-10-20T000000-rucne', '2028-10-21T000000-auto', 'souhrn/2028-10-25'])));
+
+  /* K4-N5: limit vynucených otisků bez souběhu. Pojistka: před opravou
+   * 5 souběžných požadavků → 5× 200 a cizí rezervace limit nezastaví
+   * (FAIL), po opravě 1× 200 + 4× 429 a 429 při cizí rezervaci. */
+  const vynKlice = () => [...pamet.keys()].filter(k => /^zalohy\/\d{4}-\d{2}-\d{2}T\d{6}-(rucne|auto)$/.test(k));
+  const rezKlice = () => [...pamet.keys()].filter(k => k.startsWith('zalohy/vynucene-rezervace/'));
+  const sHodinami = async (fn) => { posunHodin += 11 * 60000; const puv = Date.now;
+    Date.now = () => puv.call(Date) + posunHodin; try { return await fn(); } finally { Date.now = puv; } };
+  for (const k of [...pamet.keys()]) if (k.startsWith('zalohy/')) pamet.delete(k);
+  const puvodni = globalThis.__TEST_ULOZISTE;
+  /* pořízení otisku trvá (čtení zakázek zpomalené o 30 ms), jako u skutečné databáze */
+  globalThis.__TEST_ULOZISTE = (n) => { const u = puvodni(n); if (n !== 'zakazky') return u;
+    return { ...u, async seznam(p) { await new Promise(r => setTimeout(r, 30)); return u.seznam(p); } }; };
+  let stavy = [];
+  try {
+    stavy = await sHodinami(() => Promise.all(Array.from({ length: 5 }, () =>
+      post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { duvod: 'rucne' }, cookie).then(r => r.status))));
+  } finally { globalThis.__TEST_ULOZISTE = puvodni; }
+  test('K4-N5: 5 souběžných vynucených otisků → jeden projde, 4× 429', stavy.filter(x => x === 200).length === 1
+    && stavy.filter(x => x === 429).length === 4, stavy);
+  test('K4-N5: vznikl jeden vynucený otisk a žádná rezervace nezůstala', vynKlice().length === 1 && rezKlice().length === 0,
+    [vynKlice(), rezKlice()]);
+  /* jiná instance funkce zarezervuje slot mezi naší první kontrolou a zápisem rezervace */
+  for (const k of [...pamet.keys()]) if (k.startsWith('zalohy/')) pamet.delete(k);
+  let cizi = null;
+  globalThis.__TEST_ULOZISTE = (n) => { const u = puvodni(n); if (n !== 'zalohy') return u;
+    return { ...u, async zapis(k, v) { if (k.startsWith(Z.VYNUCENE_REZERVACE) && !cizi) {
+      cizi = Z.VYNUCENE_REZERVACE + Z.klicVynuceny('rucne', Date.now()) + '~0bcdef12';
+      pamet.set('zalohy/' + cizi, JSON.stringify({ kdy: new Date().toISOString(), kdo: 'jina-instance' })); }
+      return u.zapis(k, v); } }; };
+  let soub = null;
+  try { soub = await sHodinami(() => post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { duvod: 'rucne' }, cookie)); }
+  finally { globalThis.__TEST_ULOZISTE = puvodni; }
+  test('K4-N5: cizí rezervace z jiné instance → 429, otisk nevznikne, vlastní rezervace smazaná, cizí zůstala',
+    !!soub && soub.status === 429 && vynKlice().length === 0 && rezKlice().length === 1 && rezKlice()[0] === 'zalohy/' + cizi,
+    [soub && soub.status, vynKlice(), rezKlice()]);
+  const T1 = Date.parse('2028-03-10T12:00:00Z');
+  const slot = (ms, druh) => Z.klicVynuceny(druh || 'rucne', T1 - ms);
+  test('K4-N5: rezervace se do limitu počítá jako otisk (10 min)',
+    Z.vynuceneLimit([Z.VYNUCENE_REZERVACE + slot(60000) + '~ab12cd34'], T1).ok === false
+    && Z.vynuceneLimit([Z.VYNUCENE_REZERVACE + slot(11 * 60000) + '~ab12cd34'], T1).ok === true);
+  const den19 = Array.from({ length: 19 }, (_, i) => slot(3600000 + i * 30 * 60000));
+  test('K4-N5: otisk a jeho rezervace = jeden slot (19 + rezervace téhož slotu projde, cizí 20. ne)',
+    Z.vynuceneLimit(den19.concat([Z.VYNUCENE_REZERVACE + den19[0] + '~ab12cd34']), T1).ok === true
+    && Z.vynuceneLimit(den19.concat([Z.VYNUCENE_REZERVACE + slot(2 * 3600000 + 60000) + '~ab12cd34']), T1).ok === false);
+  test('K4-N5: rezervace bez náhodné přípony, cizí klíče a vnořené cesty se nepočítají',
+    Z.vynuceneLimit([Z.VYNUCENE_REZERVACE + slot(60000), slot(60000) + '~ab12cd34', 'x/' + slot(60000)], T1).ok === true);
+  /* stará rezervace (pád funkce) se uklidí a limit po 24 h nedrží */
+  for (const k of [...pamet.keys()]) if (k.startsWith('zalohy/')) pamet.delete(k);
+  const stara = 'zalohy/' + Z.VYNUCENE_REZERVACE + Z.klicVynuceny('rucne', Date.now() + posunHodin - 25 * 3600000) + '~deadbeef';
+  pamet.set(stara, JSON.stringify({ kdy: 'x' }));
+  const poStare = await postVynuceny({ duvod: 'rucne' });
+  test('K4-N5: rezervace starší 24 h limit nedrží a uklidí se', poStare.ok === true && !pamet.has(stara) && rezKlice().length === 0, poStare);
+});
+
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);

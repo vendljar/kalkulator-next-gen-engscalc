@@ -22,8 +22,13 @@
  * Otisk míří do Blobs (úložiště `zalohy`), NE ke stažení – ven se stahuje
  * /api/zaloha, která otisky hesel nenese. */
 import { vyzadujRoli, json, uloziste, potvrdHesloSpravce } from '../lib/sdilene.mjs';
-import { porizOtisk, seznamOtisku, klicVynuceny, KOPIE_DISK_KLIC, KOPIE_DISK_SLOZKA, vynuceneLimit,
+import { seznamOtisku, KOPIE_DISK_KLIC, KOPIE_DISK_SLOZKA, porizVynuceny,
   RETENCE_VAROVANI_KLIC } from '../lib/zalohovani.mjs';
+
+/* K4-N12 (O9): pole z těla jen jako text / číslo. String() nad objektem
+ * z JSON s klíčem „toString", který není funkce, vyhodil výjimku → 500. */
+const txt = (x) => (typeof x === 'string' ? x : '');
+const cislo = (x) => (typeof x === 'number' && Number.isFinite(x) ? x : 0);
 
 export default async (req) => {
   const { chyba, relace } = await vyzadujRoli(req, 'Administrátor');
@@ -46,33 +51,34 @@ export default async (req) => {
   /* ZÁZNAM KOPIE NA DISK (#151 N6). Kopii zapisuje prohlížeč správce, server
    * si jen poznamená kdy a co — z toho hlídka (14 dní) v každém prohlížeči.
    * Jen souhrnná pole, žádná data; jméno souboru jen v bezpečném tvaru. */
+  if (!telo || typeof telo !== 'object' || Array.isArray(telo)) telo = {};
   if (telo.akce === 'kopie-disk') {
-    const k = telo.kopie || {};
-    const soubor = String(k.soubor || '');
+    const k = (telo.kopie && typeof telo.kopie === 'object') ? telo.kopie : {};
+    const soubor = txt(k.soubor);
     if (!/^otisk_\d{4}-\d{2}-\d{2}\.json$/.test(soubor))
       return json({ ok: false, chyba: 'Neplatné jméno souboru kopie.' }, 400);
     /* K3-N1 (rozhodnutí J. V. 20. 10. 2026): záznam odemyká retenci, proto
      * jen kopie do složky „_Zaloha Netlify DB" a jen s heslem správce —
      * kdo má jen cookie, retenci neodemkne. Složka se kontroluje dřív než
      * heslo, aby špatná složka nespotřebovala pokus. */
-    if (String(k.slozka || '') !== KOPIE_DISK_SLOZKA)
+    if (txt(k.slozka) !== KOPIE_DISK_SLOZKA)
       return json({ ok: false, chyba: 'Kopie zálohy se počítá jen ve složce „' + KOPIE_DISK_SLOZKA + '" na Disku Google. '
         + 'Vyberte tuto složku (tlačítko „Zkopírovat zálohu na Disk teď") a kopii pořiďte znovu.' }, 400);
     { const stop = await potvrdHesloSpravce(req, relace, telo.hesloSpravce); if (stop) return stop; }
     const zaznam = { kdy: new Date().toISOString(), kdo: relace.email, soubor,
-      velikostB: Math.max(0, Math.floor(+k.velikostB || 0)),
-      sha256: /^[0-9a-f]{64}$/.test(String(k.sha256 || '')) ? String(k.sha256) : '',
-      otisk: /^\d{4}-\d{2}-\d{2}$/.test(String(k.otisk || '')) ? String(k.otisk) : null,
+      velikostB: Math.max(0, Math.floor(cislo(k.velikostB))),
+      sha256: /^[0-9a-f]{64}$/.test(txt(k.sha256)) ? txt(k.sha256) : '',
+      otisk: /^\d{4}-\d{2}-\d{2}$/.test(txt(k.otisk)) ? txt(k.otisk) : null,
       puvod: k.puvod === 'nocni-otisk' ? 'nocni-otisk' : 'aktualni-stav',
       slozka: KOPIE_DISK_SLOZKA, potvrzeno: 'heslo-spravce' };
     await (await uloziste('zalohy')).zapis(KOPIE_DISK_KLIC, zaznam);
     return json({ ok: true, kopieDisk: zaznam });
   }
-  const duvod = String(telo.duvod || '');
-  /* K3-N4: limit vynucených otisků; 429 řekne, kdy to půjde znovu. */
-  const limit = vynuceneLimit(await (await uloziste('zalohy')).seznam(), Date.now());
-  if (!limit.ok) return json({ ok: false, kod: 'limitZalohy', chyba: limit.chyba, dalsi: new Date(limit.dalsiMs).toISOString() }, 429);
-  const v = await porizOtisk('vynuceno', relace.email, klicVynuceny(duvod));
+  const duvod = txt(telo.duvod);
+  /* K3-N4: limit vynucených otisků; 429 řekne, kdy to půjde znovu.
+   * K4-N5 (O9): kontrola i rezervace slotu před pořízením (porizVynuceny). */
+  const v = await porizVynuceny(duvod, relace.email);
+  if (v.limit) return json({ ok: false, kod: 'limitZalohy', chyba: v.limit.chyba, dalsi: new Date(v.limit.dalsiMs).toISOString() }, 429);
   return json({ ok: true, ...v });
 };
 export const config = { path: '/api/zaloha_vynuceno' };
