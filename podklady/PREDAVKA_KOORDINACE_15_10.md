@@ -10,6 +10,19 @@ Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kv�
 - **Ještě nesloučené zápisové commity** (jen CHANGELOG/PREDAVKA/verze/roadmapa, bez kódu): `claude/b80-pipedrive` 38996f2 (v15.10.7, roadmapa #345, NASAZENI), `claude/p12-naklady` 1f2a365 (výsledky po úpravě, mutace 13/13, smoke 248/0/2), `claude/kolo25-audit` dcc3d5f (smoke 247/0/6).
 - **Další krok:** do `claude/integrace-15-10` sloučit 38996f2, 1f2a365, dcc3d5f (konflikty jen v dokumentaci — novější oddíl nahoru, `verze.txt` = 15.10.7, příručka `manual/obsah.json` verze + nadpis „Co je nového ve verzi v15.10.7"), `--kontrola` mutací, sestavit, příručka ze snímků, `spust_testy.sh --smoke` s podklady → zelené → zápis do CHANGELOG → push `claude/integrace-15-10` a fast-forward `test` (`git merge-base --is-ancestor origin/test HEAD`).
 
+## PŘEVZETÍ 21. 10. ~14:00 UTC — koordinace „ŘÍDÍCÍ 21.10 noc“ session_016CbSudw1q9GXrrtfiJKvAG (ručně založená J. V., hloubka řetězu 0/8)
+
+- Převzato od „ŘÍDÍCÍ 21.10“ session_013EFud9jETTivWTCJNmbAX4 (hloubka 8/8 — nešlo zakládat sezení ani send_later; končí po doběhnutí O12). Kokpit https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2 převzat (verze 241).
+- **main = 5dc28d1 (v20.10.1)** jen na výslovný pokyn J. V. **test = 7652bb9 (v21.10.4)**, release vydán (text releasu NEUPRAVOVAT — J. V.). **Integrace = 7ce01b3** (= test + předávka).
+- **Běží:**
+  - **C3** session_01JtioiPRsGUDpkKu1m66Rdt (`claude/controlling-c3`): C5 hotová 641b9c2 (kolo ve větvi běží) → sloučit jako **v21.10.5** (s O12, kdo dřív). C6 rozpracovaná: a2b22f6 (objednané příplatky — záznam, server, krycí list, export), 1284515 podklad `podklady/SOD_V4_OBJEDNANE_PRIPLATKY_21_10.md`; kód SoD (`sodObjednaneSymboly`) ještě nepushnut. Rozhodnutí J. V. k C6: sleva jen na základ (DPH z celku), nové symboly SOD_CENA_NABIDKY / SOD_PRIPLATKY_OBJEDNANE / SOD_PRIPLATKY_KC, „po podpisu“ = datum podpisu ≤ dnes → mění jen admin.
+  - **K5** session_01162HK7JqEFF32eE31rMeaU (`claude/k5-kolo` = 7652bb9): sady 294/0/6, statické 4/4; audit hotov (5139f2d WIP): 0 krit./0 vys./0 stř./5 nízkých (K5-S1 pdDealId objekt → 500, K5-K1 CSV „+ “/„- “, K5-W1 kokpit dekódované jméno větve bez escapu, K5-W2 W2 neURL-kóduje větev, K5-W3 zbytek K4-N2 — J. V.)/10 info; mutace jádra a serveru (734) běží, konec ~16–22 UTC. Pak nálezy bez J. V. → opravná dávka, zelené → návrh test → main.
+  - **O12** (agent ve staré koordinaci, `claude/o12-sablony-jazyky`): průvodce šablon u platné češtiny přeskočí CZ a zveřejní jen EN/DE/FR; výsledek a SHA pošle stará koordinace → sloučit jako v21.10.5/6.
+  - **S11** session_01UYfLxJt1UUBU9Ygd5A2mw7 (`claude/s11-sod-realizace-v4` nad integrací): šablona SoD realizace v4 CZ+EN/DE/FR z v3 (Disk) podle podkladu C3; vyplnění ověří nad `claude/controlling-c3`, až C3 pushne kód SoD.
+- **Nearchivovat:** V3 session_01GyotCYY7DhFnyXhceNA3de, „Pipedrive API integrace“. Stará koordinace → J. V. k archivaci po O12.
+- **Nespuštění kandidáti:** oprava „vyrobit jazykovou verzi“ (docxPrelozUseky, „(DPZ)*“ česky); #425 čtyři oči u výjimky; soupis novinek v20.10.2–v21.10.4; #367 P10 s J. V.; ukázkový XLSX exportu v2 po C5 (z kódu, zkušební data) → J. V.
+- **Kontroly:** řetěz send_later ~45–60 min (první 14:44 UTC).
+
 ## PŘEDÁNÍ 21. 10. ~13:35 UTC → nové koordinační sezení (staré „ŘÍDÍCÍ 20.10 noc“ session_01By6bWivtf2rTJYJFGVv8e1, kontext ~67 %)
 
 - **test = ced34cc (v21.10.3, release vydán).** **Integrace = 7652bb9 (v21.10.4: Controlling C3 + C4)** — kolo 294/0/6, statické 4/4 zelené; mutace serveru (#447, O10, O11) dobíhají ve starém sezení. Zelené → `git push origin 7652bb9:test` (trvalý pokyn J. V. 21. 10.: „co bude hotovo pošli do test“ = hotové a ověřené posouvat do test bez ptaní) + release odkaz v21.10.4 (`python3 nastroje/release_odkaz.py 21.10.4 <plný SHA 7652bb9>`). **main = v20.10.1 jen na výslovný pokyn J. V.**
