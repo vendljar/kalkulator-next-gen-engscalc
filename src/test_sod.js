@@ -257,14 +257,18 @@ test('a bez firemního údaje se symbol nevyrobí',
   vO.data.cenik.kurzEurKc = 25;
   vO.data.sleva = { pct: 0.1, schvaleno: true, stav: 'schvaleno' };
   zamkniVariantu(vO, { typ: 'nabidka', kdo: 'test', cislo: variantaCislo(zO, vO), vysledek: zamekVysledekSpocti(vO, JEKLY, 'test') });
-  const bez = sodData(zO, vO, JEKLY, 'cz');
+  const v4 = { symboly: new Set(['CENA_BEZ_DPH', 'SOD_CENA_NABIDKY', 'SOD_PRIPLATKY_OBJEDNANE', 'SOD_PRIPLATKY_KC']) };
+  const bez = sodData(zO, vO, JEKLY, 'cz', v4);
   const nabO = nabidkaData(zO, vO, JEKLY, 'cz');
-  test('C6 bez objednaných: cena díla = cena nabídky, rozpis prázdný a jeho odstavce pryč',
+  test('C6 bez objednaných: cena díla = cena nabídky, rozpis prázdný a jeho odstavce (šablona v4) pryč',
     bez.placeholders.CENA_BEZ_DPH === nabO.placeholders.CENA_BEZ_DPH && bez.placeholders.SOD_CENA_NABIDKY === ''
     && ['SOD_CENA_NABIDKY', 'SOD_PRIPLATKY_OBJEDNANE', 'SOD_PRIPLATKY_KC'].every(k => (bez.odstavcePryc || []).includes(k)));
+  const bezV3 = sodData(zO, vO, JEKLY, 'cz', { symboly: new Set(['CENA_BEZ_DPH']) });
+  test('C6 šablona bez nových symbolů ani náhled nic navíc nemažou', !(bezV3.odstavcePryc || []).some(k => /^SOD_(CENA_NABIDKY|PRIPLATKY)/.test(k))
+    && !(sodData(zO, vO, JEKLY, 'cz').odstavcePryc || []).some(k => /^SOD_(CENA_NABIDKY|PRIPLATKY)/.test(k)));
   const nabidnute = objNabidnute(vO, JEKLY);
   zO.objednane = { varianta: vO.id, klice: nabidnute.slice(0, 2).map(p => p.key), datum: '2026-10-20' };
-  const s = sodData(zO, vO, JEKLY, 'cz');
+  const s = sodData(zO, vO, JEKLY, 'cz', v4);
   const cislo = t => +String(t).replace(/[^0-9,]/g, '').replace(',', '.');
   const prip = nabidnute.slice(0, 2).reduce((a, p) => a + p.sMarzi, 0);
   test('C6 rozpis: cena dle nabídky = cena nabídky (po slevě)', s.placeholders.SOD_CENA_NABIDKY === nabO.placeholders.CENA_BEZ_DPH, s.placeholders.SOD_CENA_NABIDKY);
@@ -283,4 +287,6 @@ test('a bez firemního údaje se symbol nevyrobí',
 }
 
 console.log('\nPASS=' + passes + ' FAIL=' + fails);
+/* Souhrn i ve tvaru, který čte netlify/mutace.mjs (sada je v SADY od #447 C6). */
+console.log(passes + ' prošlo, ' + fails + ' selhalo');
 process.exit(fails ? 1 : 0);

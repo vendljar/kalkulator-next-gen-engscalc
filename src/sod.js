@@ -198,7 +198,7 @@ function sodData(zak, varianta, jekly, lang, sablona) {
   const d = nabidkaData(zak, varianta, jekly, lang);
   const L = d.jazyk || 'cz';
   /* Objednané příplatky (#447 C6) — cena díla = nabídka + objednané. */
-  const objPryc = sodObjednaneSymboly(d, zak, varianta, jekly, L);
+  const objPryc = sodObjednaneSymboly(d, zak, varianta, jekly, L, sablona);
   const nazev = ('SOD_' + (d.placeholders.CISLO_NABIDKY || 'CN')
     + (varianta && varianta.zakaznik ? '_' + varianta.zakaznik : '')
     + (L !== 'cz' ? '_' + L.toUpperCase() : ''));
@@ -237,14 +237,18 @@ function sodData(zak, varianta, jekly, lang, sablona) {
  * CENA_BEZ_DPH / DPH_KC / CENA_S_DPH pak nesou celkovou cenu díla, rozpis
  * nesou SOD_CENA_NABIDKY, SOD_PRIPLATKY_OBJEDNANE (řádek na příplatek)
  * a SOD_PRIPLATKY_KC. Bez objednaných příplatků se ceny nemění a odstavce
- * s rozpisem zmizí (vrací se jako odstavcePryc). */
+ * s rozpisem zmizí (vrací se jako odstavcePryc) — ale jen ty, které šablona
+ * opravdu má; bez informace o šabloně (náhled) se nic nemaže, jako
+ * u sodPokutaZhotovitele. */
 const SOD_OBJ_SYMBOLY = ['SOD_CENA_NABIDKY', 'SOD_PRIPLATKY_OBJEDNANE', 'SOD_PRIPLATKY_KC'];
-function sodObjednaneSymboly(d, zak, varianta, jekly, L) {
+function sodObjednaneSymboly(d, zak, varianta, jekly, L, sablona) {
   const ph = d.placeholders;
   const obj = (typeof objObjednaneVarianty === 'function') ? objObjednaneVarianty(zak, varianta, jekly) : [];
   if (!obj.length || !d.ceny || !d.mena) {
     SOD_OBJ_SYMBOLY.forEach(k => { ph[k] = ''; });
-    return SOD_OBJ_SYMBOLY.slice();
+    const sym = sablona && sablona.symboly;
+    const ma = (k) => !!sym && (typeof sym.has === 'function' ? sym.has(k) : Array.from(sym).indexOf(k) >= 0);
+    return SOD_OBJ_SYMBOLY.filter(ma);
   }
   const mena = d.mena, kc = mena.fmt, sazba = d.ceny.dphSazba;
   const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;

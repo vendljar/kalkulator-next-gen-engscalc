@@ -939,7 +939,7 @@ const MUTACE = [
     nahrad: "  const celkem = zaklad;",
     proc: 'smlouva by nesla cenu bez příplatků, které zákazník objednal' },
   { nazev: '#447 C6: SoD bez příplatků nechá prázdný rozpis', soubor: '../src/sod.js',
-    hledej: "    return SOD_OBJ_SYMBOLY.slice();",
+    hledej: "    return SOD_OBJ_SYMBOLY.filter(ma);",
     nahrad: "    return [];",
     proc: 'smlouva v4 bez objednaných příplatků by nesla prázdné řádky „Objednané příplatky:"' },
   { nazev: '#447 C6: podpis i z předvyplněného dnešku', soubor: '../src/objednane.js',
