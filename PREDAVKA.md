@@ -22,7 +22,7 @@ Nad `test` v21.10.2 (merge a5f0308). **Do test / main / test-draft / integrace n
     uložit, upraví se Pipedrive — otázky 13 a 15 pro integrátora).
 - **Přejímka na skutečných datech (jen v kontejneru, nic v repu):** 66/66 polí, 0 špatně.
 - **Testy:** `test_pipedrive.mjs` 91/0 (pojistky: na kódu před opravou 26 z 94 selže; na 0db8476 selže 6 z 90),
-  `test_pd_prevod.mjs` 102/0 (na 0db8476 selže 1), `test_pd_pristup.mjs` 54/0; mutace „#114“ 21/21 v plném běhu
+  `test_pd_prevod.mjs` 102/0 (test předpokládaného ukončení chytá mutace „přepisuje se z kalkulace"; na 0db8476, kde se pole jen četlo, projde), `test_pd_pristup.mjs` 54/0; mutace „#114“ 21/21 v plném běhu
   + 2/2 cílené po poslední úpravě (předpokládané ukončení, čtení podmínek); kolo `--bez-mutaci` 256 prošlo / 0 selhalo / 43 přeskočeno (40 prohlížečových sad — v kontejneru chybí balíček playwright, klient se nemění; 3 bez firemních podkladů), statické 4/4;
   kontrola osobních údajů čistá.
 - **Mimo repozitář (pro J. V.):** dokument pro integrátora — Claude Doc https://claude.ai/artifact/RCVznN7Dn2goRM8TmuAZfz
