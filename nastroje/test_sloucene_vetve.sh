@@ -27,7 +27,8 @@
 # Dál výpis (--jen-vypsat nic nesmaže), souhrn do GITHUB_STEP_SUMMARY,
 # odmítnutí špatného zadání a mimo rozsah stari_hodin (K4-N10), běh v Actions
 # jen nad main (K4-N11) a „*“ ve --vynechat bez rozvinutí globu (K4-N19). Jiný skript k ověření (pojistka proti
-# prázdnému testu): SLOUCENE_VETVE_SKRIPT=<cesta>.
+# prázdnému testu): SLOUCENE_VETVE_SKRIPT=<cesta>. Jméno větve se znaky & # %
+# jde do dotazu na API zakódované (K5-W2, O13; před opravou 2 ✗).
 # Návratový kód = počet selhaných kontrol.
 
 set -u
@@ -107,7 +108,7 @@ cat > "$TMP/bin/gh" <<'GH'
 #!/usr/bin/env bash
 # gh api repos/<repo>/activity?ref=refs/heads/<větev>&per_page=1 --jq …
 echo "$*" >> "$GH_LOG"
-v="${2#*ref=refs/heads/}"; v="${v%%&*}"
+v="${2#*ref=refs/heads/}"; v="${v%%&*}"; v="$(printf '%b' "${v//%/\\x}")"   # jméno z URL-kódování (K5-W2)
 case "$(awk -v v="$v" '$1 == v { print $2 }' "$GH_AKTIVITA")" in
   SELHANI) exit 1 ;;
   '') exit 0 ;;
@@ -200,6 +201,20 @@ kontrola "nečíselné stáří odmítnuto (kód 2)" [ "$kod" -eq 2 ]
 bash "$SKRIPT" --jen-vypsat --zaklad neexistuje >/dev/null 2>&1; kod=$?
 kontrola "chybějící základ odmítnut (kód 2)" [ "$kod" -eq 2 ]
 kontrola "po chybách nic nesmazáno" [ "$(vzdalene)" = "$ZBYT" ]
+
+echo "— jméno větve se znaky & # % v dotazu na API (K5-W2)"
+ZVL='claude/zvl&ref=refs/heads/ff-sloucena#x%41'
+git checkout --quiet -b "$ZVL" main; commit zvlastni "$STARY"; git checkout --quiet test; slouc "$ZVL"
+git push --quiet origin test "$ZVL" 2>/dev/null
+rm -f "$TMP/bin/git"   # podvržený git ze souběhu (K4-N3) tu nepatří
+echo "$ZVL $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GH_AKTIVITA"
+: > "$GH_LOG"
+vystup="$(PATH="$TMP/bin:$PATH" bash "$SKRIPT" --jen-vypsat --github-repo vlastnik/repo 2>&1)"; kod=$?
+kontrola "kód 0" [ "$kod" -eq 0 ]
+kontrola "API: jméno zakódované po segmentech (bez zdvojeného ref, bez useknutí u #)" \
+  grep -qF 'api repos/vlastnik/repo/activity?ref=refs/heads/claude/zvl%26ref%3Drefs/heads/ff-sloucena%23x%2541&per_page=1 ' "$GH_LOG"
+kontrola "API: čas se vzal z té větve (čerstvý push → zůstává)" \
+  grep -qF -- "- \`$ZVL\` — poslední push mladší než 24 h (0 h, GitHub)" <<<"$vystup"
 
 echo "TEST_SLOUCENE_VETVE: $ok prošlo, $chyb selhalo"
 exit "$chyb"

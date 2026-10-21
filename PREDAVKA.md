@@ -72,6 +72,42 @@ Rozhodnutí J. V. ~12:50 nad ukázkovým XLSX (koordinace session_01By6bWivtf2rT
   roadmapa #447 pozn, `netlify/mutace.mjs` (blok „#447 C5" před C4, upravené úseky C2 „neřídící" a C3 „nezamčené").
 - **Testy:** src `test_controlling.js` 188/0, server `test_controlling.mjs` 51/0, `overit_controlling.mjs` 44/0, mutace „#447 C" 29/29 (C5 5/5). Kolo viz další commit.
 
+# Předávka — 21. 10. 2026: dávka O13 — nálezy K5 bez J. V. (v21.10.6, přečísluje koordinace), větev `claude/o13-k5-nalezy`
+
+Nad `claude/integrace-16-10` f4298f9 (v21.10.4); `verze.txt` beze změny (21.10.4), CHANGELOG oddíl `## v21.10.6 — O13`.
+**Do integrace / test / main nic** — slučuje koordinace (session_016CbSudw1q9GXrrtfiJKvAG). Podklad
+`podklady/K5_AUDIT_21_10.md` ve větvi `claude/k5-kolo`.
+
+- **Hotovo — #O13-1 K5-S1:** `ctrlPdDealIdNorm` (`src/controlling.js`) pustí jen string/number; objekt/pole/bool → 400
+  „Pipedrive deal id musí být…" (dřív `String({toString:1})` → TypeError → HTTP 500, i v obnově).
+- **Hotovo — #O13-2 K5-K1 (+ K5-K3):** `ctrlCsvBunka` vlastní přísná ochrana: apostrof u textu začínajícího
+  `= + - @ TAB CR`; čísla (i záporná) bez uvozovek; globální `csvBunka` (odrážky překladů) beze změny; záložní cesta
+  bez ochrany zmizela.
+- **Hotovo — #O13-3 K5-W1:** kokpit `kratko`/`lnk` — popisek z odescapovaného odkazu, `dek()` v try/catch, výstup přes
+  `esc()`; vzhled beze změny.
+- **Hotovo — #O13-4 K5-W2:** `nastroje/sloucene_vetve.sh` `uri_segmenty` (encodeURIComponent po segmentech, „/" zůstává)
+  v dotazu `activity?ref=`.
+- **Hotovo — #O13-5 jazyková verze „(DPZ)*":** `docxPrelozUseky` (`src/docxgen.js`) zkusí jádro s jednou neuzavřenou „(",
+  za nímž v dokumentu stojí „)", i se „)" a koncovou „)" z překladu vezme (oprava S10 z nástroje). Obal
+  `trStavSeZavorkou` v `nastroje/vyrob_sablony.js` je teď nadbytečný — ponechán (neškodný); **návrh #O13-6:** odstranit
+  ho i s testy obalu v příští dávce šablon (rozhodne koordinace).
+- **Nedělat:** K5-W3 (čeká na J. V.). Nedělané „ANO" nálezy mimo zadání: K5-S2 (uložení beze změny s neplatným
+  uloženým `pdDealId`), K5-W4, K5-W7 (testy W2) — **návrh #O13-7** do další opravné dávky.
+- **Testy s pojistkou (před → po):** `src/test_controlling.js` S1 3 FAIL → 0, K1 2 FAIL → 0 (189/0);
+  `netlify/test_prava.mjs` 2 FAIL → 0 (897/0); `overit_kokpit.mjs` 3 ✕ → 0 (12/0); `nastroje/test_sloucene_vetve.sh`
+  2 ✗ → 0 (51/0); `src/test_sablona_proj_v7_preklad.js` 3 FAIL (EN/DE/FR) → 0 (17/0).
+- **Mutace (cílené):** `netlify/mutace.mjs` „k5-" 3/3 + upravená „#447 C2: CSV bez ochrany" 1/1; `mutace_jadro.mjs`
+  „O13:" 3/3 → **7/7 chycených, 0 přeživších**. Kokpit (HTML) a W2 (shell) v mutačních nástrojích nejsou — mutant
+  = vrácení opravy, doložen pojistkou testu.
+- **Ke slučování:** CHANGELOG (oddíl v21.10.6 → číslo verze), `netlify/mutace.mjs` (blok „O13" za „#447 C2: CSV…",
+  ta mutace má nový `hledej`), `mutace_jadro.mjs` (blok O13 za „W1: dvojice termínů…"), `test_prava.mjs` (+2 za C4),
+  `test_controlling.js` (+10), `overit_kokpit.mjs`, `test_sloucene_vetve.sh`, `test_sablona_proj_v7_preklad.js`
+  (blok „bez obalu" nahrazen), roadmapa a `manual/obsah.json` nedotčeny (čísla #O13-1…7 přidělí koordinace).
+- **Kolo `--bez-mutaci` (nastroje/testovaci_kolo.sh): 256 prošlo / 0 selhalo / 44 přeskočeno (playwright v kořeni,
+  test.js, KNG_PODKLADY), statické 4/4 — VŠE ZELENÉ.** Ručně navíc: `overit_kokpit` 12/0, `overit_xss` 383/0,
+  `overit_controlling` 44/0, `overit_zahranicni` 56/0, `overit_sod_en` 6/0, `overit_slovnik` 21/0. Celé kolo s harnessy
+  a mutacemi pustí koordinace po sloučení.
+
 # Předávka — 21. 10. 2026: Controlling #447 — C3 + C4, větev `claude/controlling-c3` (verzi přidělí sloučení)
 
 Nad `claude/integrace-16-10` 2cb9d2b (v21.10.2), build `KNG_NEZVYSOVAT_VERZI=1`. **Do test / main / integrace nic** —

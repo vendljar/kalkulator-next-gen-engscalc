@@ -750,6 +750,9 @@ function ctrlProtokolPridej(db, zaznam) {
 const CTRL_PD_ID_MAX = 2147483647;
 function ctrlPdDealIdNorm(x) {
   if (x === undefined || x === null || x === '') return '';
+  /* K5-S1 (O13): jen text nebo číslo — objekt z JSON ({"toString":1})
+   * by v String() vyhodil výjimku a server vrátil 500 místo 400. */
+  if (typeof x !== 'string' && typeof x !== 'number') return null;
   const s = String(x).trim();
   if (s === '') return '';
   if (!/^[1-9][0-9]{0,9}$/.test(s) || +s > CTRL_PD_ID_MAX) return null;
@@ -893,11 +896,18 @@ function ctrlExportListy(exp, data, opts) {
 }
 
 /* CSV = list Řádky (Excel v češtině: středník, desetinná čárka, UTF-8 s BOM).
- * Texty jdou přes csvBunka (ochrana proti vzorcům), čísla bez uvozovek. */
+ * Čísla (i záporná) bez uvozovek. Texty s ochranou proti vzorcům PŘÍSNĚJŠÍ
+ * než csvBunka (format.js): apostrof dostane každý text začínající =, +, -,
+ * @, tabulátorem nebo CR — i „+ 1+1" a „-<TAB>X" (K5-K1, O13), protože sem
+ * jdou texty obchodníka (název akce, zákazník, vlastní řádky). csvBunka
+ * nechává „- položka" bez apostrofu kvůli odrážkám v CSV překladů. Vlastní
+ * funkce bez závislosti na format.js — záložní cesta bez ochrany (K5-K3)
+ * tím odpadla. */
 function ctrlCsvBunka(x) {
   if (typeof x === 'number') return String(x).replace('.', ',');
-  if (typeof csvBunka === 'function') return csvBunka(x);
-  return '"' + String(x == null ? '' : x).replace(/"/g, '""') + '"';
+  let s = String(x == null ? '' : x);
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+  return '"' + s.replace(/"/g, '""') + '"';
 }
 /* `list` (nepovinné) = název listu; výchozí Řádky (jen náklady v ceně
  * nabídky, C5). Příplatky-volby jdou stejně: list CTRL_LIST_PRIPLATKY. */
@@ -981,6 +991,6 @@ if (typeof module !== 'undefined' && module.exports)
     ctrlKapitoly, ctrlNezarazene, ctrlKliceKatalogu, ctrlBajty, ctrlDataKontrola, ctrlBezeZmeny,
     ctrlDbNovaVerze, ctrlDbOciste,
     ctrlOdchylky, CTRL_PSEUDO_POPIS, ctrlPopisKlice, ctrlKatalogNazvy, CTRL_EXPORT_VERZE, ctrlExportVarianty,
-    CTRL_RADKY_HLAVICKA, CTRL_LIST_PRIPLATKY, ctrlExportListy, ctrlExportCsv, ctrlVZakladuText, ctrlHromadnyVarianta,
+    CTRL_RADKY_HLAVICKA, CTRL_LIST_PRIPLATKY, ctrlExportListy, ctrlCsvBunka, ctrlExportCsv, ctrlVZakladuText, ctrlHromadnyVarianta,
     CTRL_PD_ID_MAX, ctrlPdDealIdNorm, ctrlPdDealKontrola,
     CTRL_HROMADNY, ctrlDatumPlatne, ctrlDenPraha, ctrlHromadnyFiltr, ctrlHromadnyKandidati, ctrlHromadnyZakazka, ctrlProtokolPridej, CTRL_MAPA_HLAVICKA, ctrlMapaListy, ctrlImportZListu };

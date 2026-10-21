@@ -1268,7 +1268,9 @@ async function symbolyASablona(bajty) {
  * pak hledá „… (DPZ" — nezná. Kód aplikace se v dávce šablon nemění, proto
  * se tu slovník obalí: nepřeložený text s jednou neuzavřenou „(" se zkusí
  * i s „)" a z překladu se koncová „)" zase vezme (zůstává v dokumentu za
- * přeloženým úsekem). Vše ostatní jde beze změny do původního trStav. */
+ * přeloženým úsekem). Vše ostatní jde beze změny do původního trStav.
+ * Od O13 (21. 10. 2026) totéž dělá sama aplikace (docxPrelozUseky), obal
+ * je tím nadbytečný a neškodný — odstranění zapsáno do PREDAVKA.md. */
 function trStavSeZavorkou(puvodni) {
   return (cz, lang) => {
     const st = puvodni(cz, lang);

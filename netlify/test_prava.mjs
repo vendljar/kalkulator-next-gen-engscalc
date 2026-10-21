@@ -1666,6 +1666,12 @@ console.log('\n===== #374 (B113, B114): KONCOVÁ CENA BEZ SCHVÁLENÍ — IDENTI
   test('C4: obchodník deal id nesmaže (403)', je403(pd7, /deal id/), pd7);
   const pd8 = await uprav374(a => { a.pdDealId = '12ab'; }, cAdmin);
   test('C4: neplatný tvar deal id neuloží ani správce (400)', pd8.status === 400 && /deal id/.test(pd8.chyba || ''), pd8);
+  /* K5-S1 (O13): deal id jako objekt (JSON {"toString":1}) nebo pole shodilo
+   * uložení na HTTP 500 (String(x) vyhodí TypeError) — má být 400 s českou větou. */
+  const pd9 = await uprav374(a => { a.pdDealId = { toString: 1 }; }, cObch).catch(e => ({ status: 500, chyba: e.message }));
+  test('K5-S1: deal id jako objekt → 400, ne 500', pd9.status === 400 && /deal id/.test(pd9.chyba || ''), pd9);
+  const pd10 = await uprav374(a => { a.pdDealId = ['4718']; }, cAdmin).catch(e => ({ status: 500, chyba: e.message }));
+  test('K5-S1: deal id jako pole neuloží ani správce (400)', pd10.status === 400 && /deal id/.test(pd10.chyba || ''), pd10);
 
   /* #447 C6 (21. 10. 2026): objednané příplatky — mimo zámek nabídky, jen
    * nabídnuté příplatky zamčené varianty, kdo/kdy z relace, po vytištěné SoD

@@ -93,6 +93,31 @@ do větve), build bez zvýšení verze. Struktura souboru **verze 2** (`CTRL_EXP
   exportu), `overit_controlling.mjs` 44/0 (listy v2), mutace „#447 C5" (5) + upravené úseky C2/C3. Pojistka: proti kódu
   před C5 selžou 3 modelové (sada pak spadne) a 3 serverové testy.
 
+## v21.10.5 — O13: opravy nálezů auditu K5 bez rozhodnutí J. V. (větev claude/o13-k5-nalezy)
+
+Nad `claude/integrace-16-10` f4298f9 (v21.10.4). Nálezy z `podklady/K5_AUDIT_21_10.md` (větev `claude/k5-kolo`)
+označené „opravit bez J. V.". Číslo verze může koordinace při slučování přečíslovat; K5-W3 se nedělá (čeká na J. V.).
+
+- **K5-S1 — `pdDealId` jako objekt už neshodí uložení zakázky na HTTP 500:** `ctrlPdDealIdNorm` pustí jen text
+  nebo číslo, objekt / pole / logická hodnota → **400** s českou zprávou „Pipedrive deal id musí být kladné celé
+  číslo…". Týká se i obnovy (stejná kontrola, už bez výjimky uprostřed dávky); neplatná uložená hodnota (i objekt)
+  se dál bere jako prázdná.
+- **K5-K1 — CSV pro controlling: ochrana proti vzorcům i u „+ " / „- ":** controlling má vlastní přísnější buňku
+  (`ctrlCsvBunka`) — apostrof dostane každý text začínající `=`, `+`, `-`, `@`, tabulátorem nebo CR (dřív prošly
+  „+ 1+1", „- 2+3", „+⇥HYPERLINK(…)"). Čísla včetně záporných částek zůstávají čísly bez uvozovek. Globální
+  `csvBunka` (CSV překladů s odrážkami „- položka") beze změny. Tím odpadla i záložní cesta bez ochrany (K5-K3).
+- **K5-W1 — kokpit koordinace:** popisek odkazu (`kratko`) se po dekódování jména větve / tagu / souboru escapuje
+  a vadné `%E0` už kokpit neshodí; vzhled beze změny (`.claude/skills/kokpit-koordinace/kokpit_sablona.html`).
+- **K5-W2 — mazání sloučených větví (W2):** jméno větve jde do dotazu `activity?ref=` URL-kódované po segmentech
+  (`uri_segmenty`, jako `encodeURIComponent`, „/" zůstává) — „a&ref=…" už nezdvojí `ref` a „h#x" se neusekne.
+- **Jazyková verze: nadpis „CENA ZA DOKUMENTACI PRO POVOLENÍ ZÁMĚRU (DPZ)*" v EN/DE/FR:** „Vyrobit jazykovou
+  verzi" (`docxPrelozUseky`) ho nechávala česky — koncová „)" před symbolem `{{PROJ_DPZ_HVEZDICKA_ZNACKA}}` spadla
+  mimo překládané jádro. Oprava závorky z nástroje šablon (S10, `trStavSeZavorkou`) přenesena do aplikace; obal
+  v nástroji je teď nadbytečný (ponechán, neškodný).
+- Testy s pojistkou: `src/test_controlling.js` (+10), `netlify/test_prava.mjs` (+2), `overit_kokpit.mjs` (+3),
+  `nastroje/test_sloucene_vetve.sh` (+3), `src/test_sablona_proj_v7_preklad.js` (EN/DE/FR bez obalu). Mutace:
+  `netlify/mutace.mjs` K5-K1 ×2, K5-S1 (+ upravená „#447 C2: CSV bez ochrany"), `mutace_jadro.mjs` O13 ×3.
+
 ---
 
 ## v21.10.4 — C3 + C4: Controlling: hromadný export za období, export z Přehledu, Pipedrive deal id (#447, větev claude/controlling-c3)
