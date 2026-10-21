@@ -184,8 +184,14 @@ test('záloha se spáruje', m.mapa.zaloha1Proc === HASH.zaloha);
 test('dílčí faktura se nespletla se zálohou', m.mapa.faktura2Proc === HASH.faktura2);
 test('adresa stavby se spáruje', m.mapa.adresaStavby === HASH.adresa);
 test('termín se spáruje', m.mapa.terminPlneni === HASH.termin);
-test('objednatel a kontakt se spárují',
-  m.mapa.objednatelFirma === HASH.firma && m.mapa.objednatelOsoba === HASH.osoba);
+test('zdroj poptávky (organizace i osoba) se spáruje',
+  m.mapa.zdrojFirma === HASH.firma && m.mapa.zdrojOsoba === HASH.osoba);
+/* Pravidlo J. V. 21. 10. 2026: do Pipedrive se přenáší, co je v kalkulačce.
+ * Každé pole má jednoho vlastníka — obousměrné pole by znamenalo, že se
+ * hodnota kalkulace dá z CRM přepsat a příští zápis ji zase přepíše zpět. */
+test('#114: každé pole má jediného vlastníka (nic obousměrně)',
+  POLE_DEALU.every(d => ['cteni', 'zapis', 'nic'].includes(d.smer)),
+  POLE_DEALU.filter(d => !['cteni', 'zapis', 'nic'].includes(d.smer)).map(d => d.klic).join(', '));
 test('jedno pole se nepoužije dvakrát',
   new Set(Object.values(m.mapa)).size === Object.values(m.mapa).length,
   JSON.stringify(m.mapa));
@@ -210,8 +216,8 @@ test('#114: doba záruky se nespáruje se zádržným po dobu záruky',
   m.mapa.zarukaMesicu === HASH.zaruka && m.mapa.zadrzneZaruka === HASH.zadrzneZaruka, JSON.stringify(m.mapa));
 test('#114: pokuta za den se nespáruje s limitem smluvních pokut',
   m.mapa.pokutaProcDen === HASH.pokuta && m.mapa.pokutaLimit === HASH.limit);
-test('#114: objednatel se nespáruje s podepisující firmou',
-  m.mapa.objednatelFirma === HASH.firma && m.mapa.podpisFirma === HASH.podpisFirma);
+test('#114: zdroj poptávky se nespáruje s podepisující firmou',
+  m.mapa.zdrojFirma === HASH.firma && m.mapa.podpisFirma === HASH.podpisFirma);
 test('#114: první, druhá i třetí splátka se spárují každá zvlášť',
   m.mapa.zaloha1Proc === HASH.zaloha && m.mapa.faktura2Proc === HASH.faktura2 && m.mapa.fakturaKoncProc === HASH.treti);
 test('#114: pořadí polí v odpovědi CRM nerozhoduje',
@@ -252,7 +258,7 @@ test('#114: v detailu organizace se IČ doplní nulami',
 
 const prelozeny = pdDealNaNase(DEALY[0], m.mapa,
   { organizace: ORGANIZACE[901], osoba: OSOBY[801], mapaOrganizace: mo2.mapa });
-test('objednatel se vezme z organizace', prelozeny.objednatel === 'Výtahy Zkušební s.r.o.');
+test('zákazník se vezme z organizace', prelozeny.objednatel === 'Výtahy Zkušební s.r.o.');
 test('IČO se přenese z organizace', prelozeny.ico === '12345678');
 test('kontakt nese e-mail i telefon',
   prelozeny.kontaktObjednatel === 'jan.zkusebni@priklad.cz, +420 602 000 000');
@@ -335,21 +341,26 @@ const detail = await (await get(pdDeal, 'http://x/api/pd/deal?id=1', cObch)).jso
 test('detail se načte', detail.ok === true, JSON.stringify(detail).slice(0, 200));
 test('hlavička dostane číslo nabídky', detail.deal.cislo === 'CN-84');
 test('hlavička dostane název akce', detail.deal.nazevAkce === 'Zkušební ulice 1, Zkušebín');
-test('hlavička dostane adresu stavby', detail.deal.adresa === 'Zkušební 12, Zkušebín');
-/* Dvouúrovňový model: org_id dealu je investor, objednatel visí ve vlastním
- * poli. Kdyby se vzala organizace dealu, stál by na nabídce investor. */
-test('objednatelem je výtahová firma z vlastního pole, ne investor z org_id',
-  detail.deal.objednatel === 'Výtahy Zkušební s.r.o.', detail.deal.objednatel);
-test('krycí list dostane splatnost', String(detail.deal.splatnostDni) === '14');
-test('krycí list dostane zálohu i dílčí fakturu',
-  String(detail.deal.zaloha1Proc) === '50' && String(detail.deal.faktura2Proc) === '40');
-test('konečná faktura se dopočítá na 10 %', detail.deal.fakturaKoncProc === '10');
-test('krycí list dostane termín', detail.deal.terminPlneni === '2027-03-31');
-test('#114: krycí list dostane dobu záruky, ne zádržné po dobu záruky',
-  detail.deal.zarukaMesicu === '60', detail.deal.zarukaMesicu);
-test('#114: krycí list dostane pokutu za den, ne limit pokut',
-  detail.deal.pokutaProcDen === '0', detail.deal.pokutaProcDen);
-test('#114: zádržné do odstranění VaN se přečte jako volba', detail.deal.zadrzne === '10%', detail.deal.zadrzne);
+test('hlavička dostane adresu realizace', detail.deal.adresa === 'Zkušební 12, Zkušebín');
+/* Zákazník = organizace a osoba DEALU (J. V. 21. 10. 2026). „Zdroj poptávky"
+ * je ten, kdo poptávku přinesl, a nebývá vždy výtahová firma — do 21. 10.
+ * tu měl přednost a na nabídce by u projekce stála výtahovka místo investora. */
+test('#114: zákazníkem je organizace dealu, ne zdroj poptávky',
+  detail.deal.objednatel === 'Investor zkušební a.s.' && detail.deal.ico === '11111111',
+  detail.deal.objednatel + ' / ' + detail.deal.ico);
+test('#114: kontaktem je osoba dealu, ne osoba zdroje poptávky',
+  detail.deal.kontakt === 'Jan Investorský', detail.deal.kontakt);
+test('typ zakázky se přečte jako popiska', detail.deal.typZakazky === 'Projekce - Výtah + OCK', detail.deal.typZakazky);
+/* Podmínky krycího listu vlastní kalkulace: do Pipedrive se zapisují, zpátky
+ * se nečtou — jinak by nová kalkulace převzala hodnoty, které do CRM kdysi
+ * někdo napsal ručně, a příští zápis by je vydával za výsledek kalkulace. */
+test('#114: podmínky krycího listu se z CRM nečtou',
+  ['splatnostDni', 'zaloha1Proc', 'faktura2Proc', 'fakturaKoncProc', 'zarukaMesicu', 'pokutaProcDen', 'zadrzne']
+    .every(k => !(k in detail.deal)), Object.keys(detail.deal).join(', '));
+/* Předpokládané ukončení realizace vyplňují obchodníci v Pipedrive (u všech
+ * vyhraných dealů) — čte se a předvyplní Konečné předání díla. */
+test('#114: předpokládané ukončení realizace se čte z Pipedrive',
+  detail.deal.terminPlneni === '2027-03-31', detail.deal.terminPlneni);
 /* Fixture má z 66 polí mapy jen část — všechna pole, která detail čte, ale
  * ne pole pro zápis. Obchodník nemá při načítání slyšet o polích, která
  * načítání nepotřebuje. */
@@ -374,22 +385,21 @@ console.log('\n===== ŠETŘENÍ ROZPOČTU A CHOVÁNÍ PŘI POTÍŽÍCH =====\n')
 
 const naPole = () => volani.filter(v => /Fields/.test(v.url)).length;
 const pred = naPole();
-const detail2 = await (await get(pdDeal, 'http://x/api/pd/deal?id=2', cObch)).json();
+await get(pdDeal, 'http://x/api/pd/deal?id=2', cObch);
 await get(pdDeal, 'http://x/api/pd/deal?id=2', cObch);
 test('mapa polí se cachuje (další načtení už do CRM nechodí)', naPole() === pred, naPole() - pred);
-test('#114: třetí splátka z CRM má přednost před dopočtem',
-  detail2.deal.fakturaKoncProc === '10' && detail2.deal.zaloha1Proc === '', JSON.stringify(detail2.deal));
 
 /* Mapa uložená před 21. 10. 2026 (bez `verze`) párovala podle vzorů — po
  * nasazení se nesmí použít, ani když ještě neuplynul den její platnosti. */
-const mapaPredOpravou = { poridano: Date.now(), mapa: { zarukaMesicu: HASH.zadrzneZaruka, pokutaProcDen: HASH.limit },
+const mapaPredOpravou = { poridano: Date.now(), mapa: { adresaStavby: HASH.podpisFirma, typZakazky: HASH.zadrzneZaruka },
   popisy: {}, chybi: [], nezarazeno: [], mapaOrganizace: {} };
 pamet.set('pipedrive/pole', JSON.stringify(mapaPredOpravou));
 const predStara = naPole();
 const detail3 = await (await get(pdDeal, 'http://x/api/pd/deal?id=3', cObch)).json();
 test('#114: mapa ve starém tvaru se zahodí a načte znovu', naPole() > predStara, naPole() - predStara);
 test('#114: a detail pak čte správná pole',
-  detail3.deal.zarukaMesicu === '60' && detail3.deal.pokutaProcDen === '0', JSON.stringify(detail3.deal));
+  detail3.deal.adresa === 'Zkušební 12, Zkušebín' && detail3.deal.typZakazky === 'Projekce - Výtah + OCK',
+  JSON.stringify(detail3.deal));
 
 test('obnovit mapu polí smí jen administrátor',
   (await get(pdPole, 'http://x/api/pd/pole?obnovit=1', cObch)).status === 403);

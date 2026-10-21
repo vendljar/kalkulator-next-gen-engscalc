@@ -18,24 +18,41 @@ Nad `test` v21.10.2 (merge a5f0308). Verzi přidělí sloučení. Podklad: `podk
   smluvních pokut (%)", objednatel s „Podepisující firma (pokud jiná)" a první/druhá splátka s ničím. Teď
   `netlify/lib/pd_mapa.mjs` páruje **přesně podle názvu z tabulky s integrátorem a podle typu** (velikost písmen,
   mezery a druh pomlčky nerozhodují, diakritika ano); jiný typ (`typNesedi`) a dvojí název (`nejednoznacne`) se
-  nespárují a ohlásí. 66 polí dealu s údajem, odkud se hodnota bere v krycím listu OCK / PROJ a jestli se čte,
-  zapisuje, nebo obojí. Přejímka nad skutečnými definicemi: 66/66, žádné špatně.
+  nespárují a ohlásí. 66 polí dealu s údajem, odkud se hodnota bere v krycím listu OCK / PROJ, a s jediným
+  vlastníkem (čte se, nebo zapisuje se). Přejímka nad skutečnými definicemi: 66/66, žádné špatně.
 - **Oprava — IČ organizace.** Pole se jmenuje „IČ" (vzor ho nechytil, `\b` bez `/u` nebere „Č") a je číselné:
   `pdIco` doplní nuly na osm číslic (00064581 místo 64581).
 - **Mapa polí v cache nese verzi** (`PD_POLE_VERZE`) — mapa z doby vzorů se po nasazení nepoužije ani do konce své
   denní platnosti. `/api/pd/pole` vrací i `typNesedi` a `nejednoznacne`.
-- **Detail dealu** (`/api/pd/deal`): třetí splátka z CRM má přednost před dopočtem do sta procent; varování
-  o chybějících polích jen pro pole, která detail čte (`PD_CTENI`), nově i o poli jiného typu a o dvojím názvu.
+- **Každé pole má jediného vlastníka, nic se nesynchronizuje oběma směry** (pravidlo J. V. 21. 10. 2026: „do
+  pipedrive by se mělo přenášet to, co je v kalkulačním nástroji"). Zadání z Pipedrive (zákazník, adresa
+  realizace, typ zakázky) se čte do kalkulace; co vznikne v kalkulaci (krycí list řídící varianty), se zapisuje
+  a zpátky se nečte. V mapě zmizel směr „oba" (35 polí krycího listu → `zapis`). Otázky #475 tím odpadly.
+- **Kdo co vyplňuje — podle 85 vyhraných dealů** (`podklady/NAVRH…` §12, návrh k potvrzení): hlavičku a kontakty
+  obchodníci vyplňují v Pipedrive (název dealu, organizace, osoba s telefonem a e-mailem, Typ zakázky, Adresa
+  realizace, Předpokládané datum ukončení realizace — vše 84–85/85), podmínky krycího listu jsou v CRM 84× jen
+  výchozí 14/50/40. „Předpokládané datum ukončení realizace" se proto čte (předvyplní Konečné předání díla)
+  a kalkulace ho nepřepisuje.
+- **Zákazník = organizace a osoba dealu, ne „Zdroj poptávky".** Zdroj je ten, kdo poptávku přinesl: ze 138
+  vyplněných 119× výtahová společnost, 19× jiná role (poptávkový server, stavební, správcovská, investor,
+  konzultant, projektant). Dosavadní přednost zdroje by u 49 dealů projekce dala na nabídku výtahovku místo
+  investora (`podklady/NAVRH…` §11.11).
+- **Detail dealu** (`/api/pd/deal`): vrací zadání (číslo a název akce, adresu, zákazníka, IČO, kontakt, typ
+  zakázky, předpokládané ukončení realizace), podmínky krycího listu už ne; varování o chybějících polích jen pro pole, která detail čte
+  (`PD_CTENI`), nově i o poli jiného typu a o dvojím názvu.
 - **Nové — převod hodnot pro zápis** (`netlify/lib/pd_prevod.mjs`, zápis #115 ho jen zavolá): krycí list → číslo,
   datum ISO, ID volby, vícevýběr, `{ value, currency }`, uživatel; celá zakázka jedním PATCH (5 tokenů). Prázdné se
   neposílá (zápis v CRM nic nemaže), nejednoznačné se neposílá s důvodem („NEUPLATNĚN limit 10 %" ≠ 10, rozsah
   „10–12 týdnů" se nehádá), volba podle textu, ne pořadí. U kombinované zakázky rozhoduje OCK. Datum podpisu OCK jen
   ručně zadané (předvyplněné je datum tisku); Platby 1–8 a záloha PROJ jen u nabídky z doby před plánem plateb.
 - **Testy:** `netlify/test_pipedrive.mjs` — testovací data se skutečnými názvy polí ve tvaru API v2 a třemi pastmi
-  (94 kontrol; pojistka: na původním kódu 26 selže — záruka „Ne" ze zádržného, pokuta 10 z limitu, objednatel
-  z podepisující firmy, IČ nenalezeno, stará cache použita). Nový `netlify/test_pd_prevod.mjs` (101 kontrol; před
-  změnou modul neexistoval) včetně křížové kontroly s `src/kryci.js` a `src/kryci_proj.js`: každé zdrojové pole
-  existuje a výchozí znění aplikace se převede. Mutace „#114" v `netlify/mutace.mjs` chycené 19/19, obě sady v `SADY`.
+  (pojistka první části: na kódu před opravou 26 z 94 selže — záruka „Ne" ze zádržného, pokuta 10 z limitu,
+  zákazník z podepisující firmy, IČ nenalezeno, stará cache použita; pojistka druhé části: na 0db8476 selže 6 z 90
+  — zákazník ze zdroje poptávky, obousměrná pole, podmínky čtené z CRM; 91 kontrol po úpravě). Nový
+  `netlify/test_pd_prevod.mjs`
+  (102 kontrol; před změnou modul neexistoval) včetně křížové kontroly s `src/kryci.js` a `src/kryci_proj.js`:
+  každé zdrojové pole existuje a výchozí znění aplikace se převede. Mutace „#114" v `netlify/mutace.mjs`
+  chycené 21/21 v plném běhu a 2/2 cílené po poslední úpravě, obě sady v `SADY`.
 - **Ke slučování:** CHANGELOG (tento oddíl), `netlify/mutace.mjs` (blok #114 před S5 + dvě sady na konci `SADY`),
   roadmapa, `PREDAVKA.md` (oddíl nahoře), `podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md` §10–§11.
 

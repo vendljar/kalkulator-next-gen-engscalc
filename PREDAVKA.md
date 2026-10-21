@@ -1,38 +1,48 @@
-# Předávka — 21. 10. 2026 odpoledne: #114 Pipedrive — párování polí podle přesného názvu a převod hodnot (bez verze), větev `claude/eager-carson-1xznt2`
+# Předávka — 21. 10. 2026 odpoledne: #114 Pipedrive — párování polí podle přesného názvu, převod hodnot, jediný vlastník pole (bez verze), větev `claude/eager-carson-1xznt2`
 
 Nad `test` v21.10.2 (merge a5f0308). **Do test / main / test-draft / integrace nic.** Podklad:
-`podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md` §10–§11, CHANGELOG oddíl „(bez verze) — #114“, roadmapa #16, #114, #115
-a nové #473–#475.
+`podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md` §10–§11, CHANGELOG oddíl „(bez verze) — #114“, roadmapa #16, #114, #115,
+#117 a nové #473–#475 (#475 uzavřená).
 
-- **Hotovo:** test polí, která integrátor založil 21. 10. (jen čtením: 53/54 nových + 4/4 úprav sedí, #10 nahrazuje
-  „Typ zakázky“ — k potvrzení). Oprava párování v `netlify/lib/pd_mapa.mjs`: přesný název + typ místo vzorů (vzory by
-  spárovaly záruku se zádržným, pokutu s limitem, objednatele s podepisující firmou), 66 polí dealu se zdrojem v krycím
-  listu OCK / PROJ a směrem, IČ s nulami (`pdIco`), verze mapy v cache (`PD_POLE_VERZE`), `typNesedi` / `nejednoznacne`.
-  `pd_deal`: varování jen pro čtená pole (`PD_CTENI`), třetí splátka z CRM má přednost. Nový `netlify/lib/pd_prevod.mjs`:
-  převod hodnot krycího listu pro zápis #115 (`pdZapisDealu` = 1 PATCH, 5 tokenů; prázdné se neposílá, nejednoznačné
-  s důvodem, u OCK + PROJ rozhoduje OCK).
-- **Přejímka na skutečných datech (jen v kontejneru, nic v repu):** 66/66 polí, 0 špatně; na 372 dealech se nově načte
-  první/druhá splátka 370×, záruka 67×, pokuta 31× (dřív nic).
-- **Testy:** `test_pipedrive.mjs` 94/0 (pojistka: na původním kódu 26 selže), `test_pd_prevod.mjs` 101/0 (modul dřív
-  neexistoval), `test_pd_pristup.mjs` 54/0; mutace „#114“ 19/19 chycených; kolo `--bez-mutaci` 256 prošlo / 0 selhalo / 43 přeskočeno (40 prohlížečových sad — v kontejneru chybí balíček playwright, klient se nemění; 3 bez firemních podkladů), statické 4/4; kontrola
-  osobních údajů čistá.
+- **Hotovo (0db8476):** test polí, která integrátor založil 21. 10. (jen čtením: 53/54 nových + 4/4 úprav sedí, #10
+  nahrazuje „Typ zakázky“ — k potvrzení). Párování v `netlify/lib/pd_mapa.mjs`: přesný název + typ místo vzorů (vzory
+  by spárovaly záruku se zádržným, pokutu s limitem a podepisující firmu), 66 polí dealu se zdrojem v krycím listu,
+  IČ s nulami (`pdIco`), verze mapy v cache, `typNesedi` / `nejednoznacne`. Nový `netlify/lib/pd_prevod.mjs`: převod
+  hodnot krycího listu pro zápis #115 (`pdZapisDealu` = 1 PATCH, 5 tokenů).
+- **Hotovo (odpoledne, po připomínkách J. V.):**
+  - **zákazník = organizace a osoba dealu**, ne „Zdroj poptávky“ (J. V.: „zdroj poptávky není vždy výtahová firma“;
+    role 194 organizací: zdroj 119× výtahovka, 19× jiná role; organizace dealu všech rolí — §11.11),
+  - **každé pole má jediného vlastníka, nic obousměrně** (J. V.: „do pipedrive by se mělo přenášet to, co je
+    v kalkulačním nástroji“): 35 polí krycího listu `oba` → `zapis`, detail dealu vrací jen zadání (podmínky
+    krycího listu z CRM nečte) — §11.10,
+  - **návrh směru dat podle 85 vyhraných dealů** (J. V.: „hlavičku dealu a kontaktní údaje, které obchodník
+    standardně vyplňuje“ z Pipedrive do kalkulace) — §12, čeká na potvrzení; „Předpokládané datum ukončení
+    realizace“ vyplňují obchodníci (85/85) → čte se a předvyplní Konečné předání díla, nezapisuje se,
+  - **#475 uzavřena** (otázky na J. V. byly špatně položené: co kalkulace má, to se zapíše; kde to Pipedrive neumí
+    uložit, upraví se Pipedrive — otázky 13 a 15 pro integrátora).
+- **Přejímka na skutečných datech (jen v kontejneru, nic v repu):** 66/66 polí, 0 špatně.
+- **Testy:** `test_pipedrive.mjs` 91/0 (pojistky: na kódu před opravou 26 z 94 selže; na 0db8476 selže 6 z 90),
+  `test_pd_prevod.mjs` 102/0 (na 0db8476 selže 1), `test_pd_pristup.mjs` 54/0; mutace „#114“ 21/21 v plném běhu
+  + 2/2 cílené po poslední úpravě (předpokládané ukončení, čtení podmínek); kolo `--bez-mutaci` 256 prošlo / 0 selhalo / 43 přeskočeno (40 prohlížečových sad — v kontejneru chybí balíček playwright, klient se nemění; 3 bez firemních podkladů), statické 4/4;
+  kontrola osobních údajů čistá.
 - **Mimo repozitář (pro J. V.):** dokument pro integrátora — Claude Doc https://claude.ai/artifact/RCVznN7Dn2goRM8TmuAZfz
-  + export `.docx`; koncept e-mailu jako text (Outlook konektor nemá `Mail.ReadWrite`, koncept do Konceptů vložit nešel).
+  (upravený: zákazník, žádná obousměrná synchronizace, otázka 15) + export `.docx`; koncept e-mailu jako text (Outlook
+  konektor nemá `Mail.ReadWrite`).
 - **Čeká:** odpovědi integrátora (#473), zkušební zápis (#474 — po potvrzení automatizací v Make; přes konektor kdykoli,
-  z aplikace až po #115 a z testovacího webu s vlastním `PIPEDRIVE_TOKEN` / `PIPEDRIVE_DOMENA`), rozhodnutí J. V. (#475).
+  z aplikace až po #115 a z testovacího webu s vlastním `PIPEDRIVE_TOKEN` / `PIPEDRIVE_DOMENA`).
 - **Ke slučování:** CHANGELOG (oddíl nahoře), `netlify/mutace.mjs` (blok #114 před blokem S5 + `test_pipedrive.mjs`,
-  `test_pd_prevod.mjs` na konci `SADY`), roadmapa (#16, #114, #115 upravené; nové #473–#475 — integrace má už #470–#472,
-  čísla přidělí sloučení), `podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md` §10–§11.
+  `test_pd_prevod.mjs` na konci `SADY`), roadmapa (#16, #114, #115, #117 upravené; nové #473–#475 — integrace má už
+  #470–#472, čísla přidělí sloučení), `podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md` §10–§11.
+- **Další krok:** po potvrzení §12 dotáhnout čtení zadání (#113: telefon a e-mail zvlášť, obchodník, zástupci,
+  specifikace, druh kalkulace podle Typu zakázky), pak serverový zápis řídící varianty (#115: POST `/api/pd/deal`
+  nad `pdZapisDealu`, potvrzení „stará → nová“, kontrola `update_time`) a zkouška z testovacího webu (#474).
 
-**Otázky pro J. V. (s doporučenou odpovědí, roadmapa #475):**
-1. Předvolby plánu plateb PROJ → „Způsob fakturace“: „záloha X % …, zbytek po předání stupňů“ i „po předání
-   jednotlivých stupňů“ → „Po dokončení stupňů dokumentace“; vlastní plán a „po milnících činností“ neposílat? → Ano.
-2. „Předpokládané datum ukončení realizace“ = „Konečné předání díla“ z krycího listu OCK (úprava #4, P7)? → Ano; do té
-   doby se jen čte.
-3. Limit smluvních pokut „NEUPLATNĚN“ posílat do Pipedrive jako 0? → Ano.
-4. „Cizí“ smlouvu dál překládat na „Smlouva zákazníka“, nebo přejmenovat popisek v krycím listu? → Ponechat překlad.
-5. Navrhnout integrátorovi textové pole „Platební kalendář SoD PROJ“ (Platby 1–8 jen pro starší nabídky)? → Ano
-   (v dokumentu je to návrh; komentář v dokumentu čeká na tvé potvrzení).
+**Otázky pro J. V.:**
+1. Souhlasí návrh směru dat v `podklady/NAVRH…` §12 (hlavička a kontakty z Pipedrive, krycí list do Pipedrive)? →
+   doporučuji ano.
+2. Zapisovat z kalkulace i hodnotu dealu (cena řídící varianty bez DPH; nativní pole, dnes ruční 85/85)? →
+   doporučuji ano, srovná pipeline s nabídkami.
+Z dřívějška platí token a doména v Netlify (#113, pro testovací web vlastní) a #117 (nedopsaná pole v CRM).
 
 ---
 

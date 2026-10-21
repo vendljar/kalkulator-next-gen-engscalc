@@ -95,10 +95,15 @@ test('prázdné pole se neposílá (zápis nikdy nemaže, co je v CRM)',
   P('splatnostDni', 'ock', { splatnostDni: '' }).prazdne === true && P('odchylky', 'ock', {}).prazdne === true);
 test('pole, které čte jen kalkulátor z CRM, se nezapisuje',
   P('typZakazky', 'ock', { typZakazky: 'Realizace' }).prazdne === true
-  && pdDoPd(DEF.objednatelFirma, 'ock', { hodnoty: { objPodpisFirma: 'X' } }, pole.popisy.objednatelFirma).prazdne === true);
-/* „Předpokládané datum ukončení realizace" má v krycím listu zdroj (Konečné
- * předání díla), ale do potvrzení významu (úprava #4) se jen čte. */
-test('pole čtené z CRM se nezapisuje, ani když má v krycím listu zdroj',
+  && pdDoPd(DEF.zdrojFirma, 'ock', { hodnoty: { objPodpisFirma: 'X' } }, pole.popisy.zdrojFirma).prazdne === true);
+/* Kontakty mají v krycím listu protějšek (jméno zástupce), ale jsou to osoby
+ * v CRM — zdrojem je Pipedrive, kalkulátor je nikdy nepřepíše. */
+test('pole čtené z CRM se nezapisuje, ani když má v krycím listu protějšek',
+  P('kontaktSmluvni', 'ock', { zastSmluvniJmeno: 'Jan Vzorový' }).prazdne === true);
+/* „Předpokládané datum ukončení realizace" vyplňují obchodníci v Pipedrive
+ * (21. 10. 2026: u 85 z 85 vyhraných dealů) — zápis z kalkulace by jim ho
+ * přepsal. Kalkulace ho jen čte do Konečného předání díla. */
+test('předpokládané ukončení realizace se z kalkulace nepřepisuje',
   P('terminPlneni', 'ock', { terminPredani: '2026-12-01' }).prazdne === true);
 test('pole bez zdroje na téhle straně se neposílá', P('faktura2Proc', 'proj', { faktura2: '40 % – x' }).prazdne === true);
 test('číslo: splatnost 14', P('splatnostDni', 'ock', { splatnostDni: '14' }).hodnota === 14);
@@ -212,8 +217,8 @@ test('prázdné hodnoty v zápisu nejsou (ani jako null)', !(H('odchylky') in z.
 test('co nejde převést, v zápisu není a vrátí se s důvodem',
   !(H('pamatkovaOchrana') in z.custom_fields)
   && z.duvody.some((d) => d.klic === 'pamatkovaOchrana' && /Zjišťuje se/.test(d.duvod)), J(z.duvody));
-test('pole čtená z CRM (typ zakázky, objednatel) se nikdy nezapisují',
-  !(H('typZakazky') in z.custom_fields) && !(H('objednatelFirma') in z.custom_fields)
+test('pole čtená z CRM (typ zakázky, zdroj poptávky, kontakty) se nikdy nezapisují',
+  !(H('typZakazky') in z.custom_fields) && !(H('zdrojFirma') in z.custom_fields)
   && !(H('kontaktSmluvni') in z.custom_fields));
 test('zápis nese jen hashe polí z mapy', Object.keys(z.custom_fields).every((k) => /^[0-9a-f]{40}$/.test(k)));
 test('OCK s nepřevoditelnou hodnotou nenahradí hodnota PROJ',

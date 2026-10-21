@@ -620,6 +620,8 @@ opět ne přes mě).
 | 23 | Zkušební zápis na testovacím dealu | ⬜ | §11.5 — čeká na souhlas (automatizace v Make); z aplikace až z testovacího webu, §11.8 |
 | 24 | Dokument a koncept e-mailu pro integrátora | ✅ | mimo repozitář; otázky §11.9 |
 | 25 | Odpovědi integrátora na §11.9 | ⬜ | čeká na integrátora |
+| 26 | Zákazník = organizace dealu, ne zdroj poptávky | ✅ | §11.11 — ověřeno na rolích organizací |
+| 27 | Každé pole jeden vlastník, žádná obousměrná synchronizace | ✅ | §11.10 — pravidlo J. V. 21. 10. 2026; #475 uzavřeno |
 
 ---
 
@@ -695,8 +697,8 @@ pak projde.
 **Stav 21. 10. 2026 odpoledne: opraveno (úkoly 20–22).** Vzory se zrušily
 úplně. `netlify/lib/pd_mapa.mjs` má jednu definici na jedno pole Pipedrive
 (66 polí dealu, 2 organizace): přesný název z tabulky, dovolené typy, odkud
-se hodnota bere v krycím listu OCK / PROJ a směr (čte se / zapisuje se /
-obojí). Název se porovnává bez ohledu na velikost písmen, mezery a druh
+se hodnota bere v krycím listu OCK / PROJ a jediný vlastník (čte se, nebo
+zapisuje se — §11.10). Název se porovnává bez ohledu na velikost písmen, mezery a druh
 pomlčky, diakritika rozhoduje. Pole se správným názvem a jiným typem se
 nespáruje (`typNesedi`), dvě pole stejného názvu taky ne (`nejednoznacne`)
 — obojí se ohlásí, nic se nezapíše naslepo. Uložená mapa nese verzi, takže
@@ -750,7 +752,9 @@ nenahradí.
 | Faktury v kopii (1)/(2), Číslo nabídky, Příplatky (krátký text) | text | přímo; nad 255 znaků se nezkracuje — neposílá se |
 | Nabídku vypracoval, Hlavní projektant, Odpovědná osoba (uživatel) | jméno / „jméno, autorizace" / e-mail | uživatel Pipedrive podle e-mailu, jinak podle jména bez titulů; nenalezený → neposílá se (token potřebuje `users:read`) |
 | Kontakty, Druhý podepisující, Podepisující firma, Zmocnitel (osoba / organizace) | jména jako text | **nezapisuje se** — v CRM jsou zdrojem; Zmocnitel s datem narození vůbec (osobní údaje) |
-| Typ zakázky, Adresa realizace, Zdroj poptávky, Předpokládané datum ukončení realizace | — | **jen se čte** (zdrojem je CRM; datum ukončení do potvrzení úpravy #4) |
+| Předpokládané datum ukončení realizace | — | **jen se čte** — obchodníci ho vyplňují v Pipedrive (85/85 vyhraných, §12); v kalkulaci předvyplní Konečné předání díla |
+| Typ zakázky, Adresa realizace | — | **jen se čte** při založení kalkulace (zadání z Pipedrive) |
+| Zdroj poptávky – Organizace / Osoba | — | **nepoužívá se** — zákazník je organizace a osoba dealu (§11.11) |
 
 Křížová kontrola v testu ověřuje, že každé pole krycího listu, ze kterého
 mapa bere hodnotu, existuje, a že výchozí znění aplikace (volby přepínačů,
@@ -804,8 +808,9 @@ zkoušku se nehodí. Zkouška přes konektor (§11.5) na větvi nezávisí.
 3. Viditelnost polí OCK / PROJ při jediné pipeline „Obchod".
 4. Co v Make (nebo jinde) reaguje na nový / změněný deal — před zkušebním zápisem.
 5. Jak se převáděl starý ANO / NE u „Způsob fakturace".
-6. Objednatel: je „Zdroj poptávky – Organizace" vždy výtahová firma (objednatel)
-   a `org_id` investor?
+6. Zákazník: bereme ho z Organizace a Osoby dealu, Zdroj poptávky jen jako
+   informaci, kdo poptávku přinesl (§11.11) — je Organizace dealu vždy smluvní
+   partner?
 7. „Hlavní projektant" je typu Uživatel — kalkulátor má volný text „jméno,
    autorizace"; projektant mimo uživatele Pipedrive se nezapíše.
 8. „Informováno Backoffice / Technické odd." — datum doplní automatizace?
@@ -816,3 +821,125 @@ zkoušku se nehodí. Zkouška přes konektor (§11.5) na větvi nezávisí.
 12. Vícevýběr se maže hodnotou `null` (ne `[]`) — v pořádku i pro Make?
 13. Limit smluvních pokut: „neuplatněn" posílat jako 0?
 14. „Stav kalkulace" + webhook (§3.8) — kdy?
+15. „Způsob fakturace" u projekce: kalkulace PROJ má předvolby plánu plateb
+    („záloha X % po podpisu, zbytek po předání stupňů", „po milnících
+    jednotlivých činností", „podle dohodnutého plánu plateb"), Pipedrive jen
+    tři volby — doplnit volby, nebo pole změnit na text?
+
+### 11.10 Kdo je zdrojem — nic se nesynchronizuje oběma směry (J. V. 21. 10. 2026)
+
+„Do Pipedrive by se mělo přenášet to, co je v kalkulačním nástroji." Každé
+pole má **jednoho vlastníka** (`smer` v `netlify/lib/pd_mapa.mjs` je jen
+`cteni`, `zapis` nebo `nic`):
+
+| směr | pole | kdy |
+|---|---|---|
+| Pipedrive → kalkulace | zákazník (organizace a osoba dealu), IČO, adresa realizace, typ zakázky, číslo a název akce z názvu dealu | při založení kalkulace z požadavku |
+| kalkulace → Pipedrive | vše z krycího listu řídící varianty (§11.4) | po označení řídící varianty a potvrzení |
+
+Pole kalkulace se do kalkulace zpátky nečtou: ruční změnu takového pole
+v Pipedrive přepíše další zápis řídící varianty a obchodník ji uvidí
+v potvrzení „stará → nová" (#115). Detail dealu (`/api/pd/deal`) proto
+podmínky krycího listu nevrací. Otázky z roadmapy #475 (plán plateb PROJ,
+limit pokut, „Cizí") se tím vyřešily bez dalšího dotazu na J. V.: co
+kalkulace má, to se zapíše; kde Pipedrive hodnotu kalkulace neumí uložit,
+upraví se Pipedrive (otázky 1, 9, 10, 13 a 15 v §11.9). Které údaje vlastní
+Pipedrive a které kalkulace, upřesňuje podle skutečně vyplněných dat §12.
+
+### 11.11 Zdroj poptávky není zákazník (ověřeno 21. 10. 2026)
+
+Role 194 organizací, na které dealy odkazují (2 dotazy po 20 tokenech, jen
+čtení; data zůstala mimo repozitář):
+
+| | výtahová spol. | investor | správcovská | stavební | projektant | konzultant | bez role |
+|---|---|---|---|---|---|---|---|
+| Zdroj poptávky – Organizace (138 dealů) | 119 | 2 | 3 | 4 | 2 | 2 | 6 |
+| Organizace dealu (369 dealů) | 136 | 142 | 37 | 27 | 25 | 0 | 2 |
+
+Zdroj poptávky se od organizace dealu liší u 80 dealů, nejčastěji výtahovka →
+investor (52, z toho 36 projekce). Dosavadní pravidlo „zdroj poptávky má
+přednost" by u 49 dealů projekce dalo do hlavičky výtahovku místo investora.
+Proto **zákazník = organizace a osoba dealu**; zdroj poptávky kalkulátor zná
+(aby ho přehled mapy nehlásil jako nezařazené), ale nepoužívá.
+
+---
+
+## 12) Návrh: co z Pipedrive do kalkulace a co zpátky (21. 10. 2026)
+
+Zadání J. V.: „některé položky bychom z Pipedrive do kalkuláku přenášet mohli
+— zejména hlavičku dealu a kontaktní údaje, které obchodník standardně
+vyplňuje". Podklad: všech **85 vyhraných dealů** a jejich 59 osob a 55
+organizací (jen čtení: dealy 20 tokenů, osoby a organizace 2 × 20; data
+zůstala mimo repozitář). Zásada z §11.10 platí: každé pole má jednoho
+vlastníka — kdo údaj vyplňuje, tam je jeho zdroj.
+
+### 12.1 Co obchodníci u vyhraných dealů vyplňují
+
+| údaj v Pipedrive | vyplněno | poznámka |
+|---|---|---|
+| název dealu | 85/85 | 77× „CN-…", 8× „OPR…" — číslo nabídky a název akce |
+| organizace dealu | 85/85 | 55 různých organizací |
+| — IČ | 34/55 | 9× chybí nuly na začátku, 1× deset číslic (neplatné IČO) |
+| — adresa (sídlo) | 8/55 | |
+| — role | 55/55 | |
+| osoba dealu | 84/85 | 59 různých osob; 4 dealy mají dvě |
+| — telefon / e-mail | 59/59 / 59/59 | čísla v různých tvarech |
+| — pozice | 0/59 | titul v poli 2×, jinak ve jménu; 2× prohozené jméno a příjmení, 2× celé jméno v příjmení |
+| vlastník dealu (obchodník) | 85/85 | |
+| hodnota a měna | 85/85 | vždy CZK |
+| očekávané datum uzavření | 85/85 | |
+| Typ zakázky | 85/85 | 69× Projekce – Výtah + OCK, 15× Realizace, 1× Projekce |
+| Adresa realizace | 85/85 | |
+| Předpokládané datum ukončení realizace | 85/85 | 83× po datu výhry |
+| Splatnost, 1. a 2. splátka | 85/85 | 84× výchozí 14 dní / 50 % / 40 % |
+| SM Poznámky | 60/85 | |
+| Priorita | 44/85 | |
+| Zdroj poptávky – organizace / osoba | 30/85 / 12/85 | |
+| záruka, zádržné VaN, smluvní pokuta | 27/85 | |
+| Podmínky a technická specifikace zakázky | 26/85 | |
+| 54 nových polí od integrátora | 0/85 | založená 21. 10. 2026 |
+
+### 12.2 Pipedrive → kalkulace (při založení kalkulace z požadavku)
+
+| v kalkulaci | z Pipedrive | proč |
+|---|---|---|
+| číslo nabídky a název akce | název dealu | 85/85 |
+| druh kalkulace | Typ zakázky | 85/85; Realizace… → OCK, Projekce… → PROJ (kombinaci pozná kalkulace) |
+| adresa stavby | Adresa realizace | 85/85 |
+| zákazník | organizace dealu | 85/85 (§11.11) |
+| IČO | organizace → IČ | 34/55, nuly doplní `pdIco`; sídlo a DIČ z ARES podle IČO (adresa v CRM jen 8/55) |
+| kontaktní osoba, telefon, e-mail | osoba dealu | 84/85; telefon i e-mail 100 % |
+| jméno obchodníka | vlastník dealu | 85/85 |
+| Konečné předání díla (OCK) | Předpokládané datum ukončení realizace | 85/85 — předvyplní; změna v kalkulaci se zpátky nezapisuje |
+| zástupci zákazníka (smluvní, obchodní, technický) | Kontakt – ve věcech … (nová pole) | zatím 0/85 — až je obchodníci začnou vyplňovat |
+| technická specifikace (k nahlédnutí) | Podmínky a technická specifikace zakázky | 26/85 |
+
+### 12.3 Kalkulace → Pipedrive (zápis řídící varianty)
+
+| v Pipedrive | z kalkulace | proč |
+|---|---|---|
+| splatnost, 1./2./3. splátka, záruka, zádržné, pokuty, limit, způsob fakturace | krycí list | v CRM je dnes 84× jen výchozí 14/50/40; sjednané podmínky jsou v kalkulaci |
+| typ smlouvy, typ projektu, DPH, ATYP, dokumentace, termíny OCK a PROJ, částky SoD, odchylky… | krycí list | nová pole (§11.4) |
+| Číslo nabídky (CN) | číslo varianty (i s příponou „.2") | nové pole; název dealu se nemění |
+| Nabídku vypracoval | přihlášený uživatel | nové pole |
+| hodnota dealu (bez DPH) | cena řídící varianty | **k potvrzení** — nativní pole, dnes ho obchodníci píšou ručně (85/85) |
+
+### 12.4 Zůstává jen na jedné straně
+
+- **Jen Pipedrive:** očekávané datum uzavření, fáze, Priorita, SM Poznámky,
+  Zdroj poptávky, štítky, poznámky, soubory.
+- **Jen kalkulace:** DIČ, bankovní spojení a zápis v rejstříku (ARES),
+  podpisové údaje, zmocnitel (osobní údaje), sekce Dodavatel.
+
+### 12.5 Co je už v kódu a co zbývá
+
+- Mapa polí (`netlify/lib/pd_mapa.mjs`) má směry podle 12.2 a 12.3 pro
+  vlastní pole. „Předpokládané datum ukončení realizace" se **čte** (21. 10.
+  odpoledne chvíli zapisované — opraveno, zápis by přepsal datum, které
+  obchodníci vyplňují u všech vyhraných dealů).
+- Detail dealu (`/api/pd/deal`) vrací číslo, název akce, adresu, zákazníka,
+  IČO, kontakt, typ zakázky a předpokládané ukončení.
+- **Zbývá (#113):** telefon a e-mail kontaktu zvlášť, jméno obchodníka
+  (vlastník dealu → uživatel Pipedrive), zástupci zákazníka z nových polí,
+  technická specifikace, volba druhu kalkulace podle Typu zakázky.
+  **Hodnota dealu (#115)** až po potvrzení J. V.

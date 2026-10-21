@@ -15,14 +15,18 @@
  * denního rozpočtu, což je proti jedné stránce seznamu (10) zanedbatelné.
  * (Ceny podle x-token-cost ve specifikaci v2, ověřeno 22. 9. 2026.)
  *
- * Dvouúrovňový model objednatele (ověřeno na účtu 9. 8. 2026): `org_id`
- * dealu bývá investor nebo majitel, kdežto skutečný objednatel — výtahová
- * firma — visí ve vlastním poli. Když je vyplněné, má přednost; jinak se
- * bere organizace dealu. */
+ * Zákazník je organizace a osoba DEALU (`org_id`, `person_id`). Do 21. 10.
+ * 2026 měl přednost „Zdroj poptávky – Organizace" s předpokladem, že je to
+ * vždy výtahová firma. Není (J. V. 21. 10. 2026, ověřeno na účtu): zdroj
+ * je ten, kdo poptávku přinesl, a 19 ze 138 vyplněných má jinou roli; u 49
+ * dealů projekce by se zákazníkem stala výtahovka místo investora.
+ *
+ * Podmínky krycího listu se z CRM nečtou — jejich vlastníkem je kalkulace
+ * a do Pipedrive se zapisují (pd_mapa.mjs, „KDO JE ZDROJEM"). */
 import { uloziste, json } from '../lib/sdilene.mjs';
 import { pdNastaveno, pdZavolej, pdOdkazNaDeal, PdChyba, pdPristup, pdStropCerstvych,
          PD_CACHE_ULOZISTE } from '../lib/pipedrive.mjs';
-import { pdDealNaNase, pdZbytekDoSta, pdHodnota, PD_CTENI } from '../lib/pd_mapa.mjs';
+import { pdDealNaNase, PD_CTENI } from '../lib/pd_mapa.mjs';
 import { pdPoleMapa } from './pd_pole.mjs';
 
 /* Krátká cache detailu (B80): opakované otevření téhož případu nejde do
@@ -32,7 +36,7 @@ const ID_MAX = 2147483647;
 
 async function bezpecne(cesta) {
   /* Chybějící organizace nebo osoba nesmí shodit celé načtení — deal je
-   * použitelný i bez nich, jen se nedoplní objednatel. */
+   * použitelný i bez nich, jen se nedoplní zákazník. */
   try { return await pdZavolej(cesta); } catch (e) { return null; }
 }
 
@@ -66,9 +70,8 @@ export default async (req) => {
     const deal = await pdZavolej('/api/v2/deals/' + id, { dotaz: { include_option_labels: true } });
     if (!deal) return json({ ok: false, chyba: 'Pipedrive takový případ nezná.' }, 404);
 
-    const cf = deal.custom_fields || {};
-    const idFirmy = Number(pdHodnota(cf[pole.mapa.objednatelFirma])) || deal.org_id || null;
-    const idOsoby = Number(pdHodnota(cf[pole.mapa.objednatelOsoba])) || deal.person_id || null;
+    const idFirmy = deal.org_id || null;
+    const idOsoby = deal.person_id || null;
 
     const [organizace, osoba] = await Promise.all([
       idFirmy ? bezpecne('/api/v2/organizations/' + idFirmy) : null,
@@ -77,9 +80,6 @@ export default async (req) => {
 
     const nase = pdDealNaNase(deal, pole.mapa,
       { organizace, osoba, mapaOrganizace: pole.mapaOrganizace });
-    /* „Třetí splátka (%)" je v CRM od 21. 10. 2026; dopočet do sta procent
-     * zůstává pro případy, kde vyplněná není. */
-    if (nase.fakturaKoncProc === '') nase.fakturaKoncProc = pdZbytekDoSta(nase.zaloha1Proc, nase.faktura2Proc);
     nase.odkaz = pdOdkazNaDeal(id);
 
     /* Varování říkají obchodníkovi, co si musí doplnit sám. Bez nich by se
@@ -88,9 +88,9 @@ export default async (req) => {
     const varovani = [];
     if (!nase.cislo) varovani.push('Z názvu případu nejde vyčíst číslo nabídky '
       + '(očekává se tvar „CN-123 …") — doplňte ho v hlavičce ručně.');
-    if (!organizace) varovani.push('K případu není navázaná organizace, objednatel zůstal prázdný.');
+    if (!organizace) varovani.push('K případu není navázaná organizace, zákazník zůstal prázdný.');
     else if (!nase.ico) varovani.push('Organizace v CRM nemá vyplněné IČO.');
-    if (!nase.adresa) varovani.push('V CRM není vyplněná adresa stavby.');
+    if (!nase.adresa) varovani.push('V CRM není vyplněná adresa realizace.');
     /* Jen pole, která detail opravdu čte (PD_CTENI). Pole pro zápis, která
      * v CRM chybí, obchodníka při načítání nezajímají — ukazuje je přehled mapy. */
     const ctene = (s) => (s || []).filter((x) => PD_CTENI.includes(x.klic));

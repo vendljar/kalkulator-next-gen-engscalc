@@ -22,8 +22,9 @@
  * (není co poslat) nebo { duvod } (nejde převést — ukázat obchodníkovi).
  * ============================================================ */
 
-/* Smysl zápisu: jen tahle dvě označení v mapě (pd_mapa.mjs) se zapisují. */
-export const PD_SMER_ZAPIS = ['oba', 'zapis'];
+/* Zapisují se jen pole, jejichž vlastníkem je kalkulace (pd_mapa.mjs,
+ * `smer: 'zapis'`). Pole, jejichž zdrojem je CRM, kalkulátor nikdy nepřepíše. */
+export const PD_SMER_ZAPIS = ['zapis'];
 
 /* Text volby pro porovnání: bez diakritiky a velikosti písmen, interpunkce
  * a pomlčky jako mezera, procento bez mezery („10 %" = „10%"). Krycí list
