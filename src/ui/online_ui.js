@@ -649,14 +649,17 @@ function onlineFirmaPopis() {
  * Smlouvy / Šablony zveřejňuje rovnou — stisk sám je to rozhodnutí (J. V.:
  * „zapisuj je rovnou stiskem"). Kontroly zůstávají stejné. Výsledek se
  * pamatuje v ONLINE_STAV.firmaVysledek, aby ho záložka ukázala u sebe. */
-async function onlineZverejniFirmu(bezPotvrzeni) {
+/* `udaje` (K4-N7, O9): co odeslat — výchozí NAST.firma; „Zapsat výchozí
+ * hodnoty" posílá online kopii s novými podmínkami (firmaJenPodminky). */
+async function onlineZverejniFirmu(bezPotvrzeni, udaje, poznamka) {
   const vysledek = (ok, text) => { ONLINE_STAV.firmaVysledek = { ok, text }; };
+  const posli = udaje || (typeof NAST !== 'undefined' ? NAST.firma : null);
   if (!jeAdminOnline()) {
     onlineZprava('Firemní údaje smí zveřejnit jen administrátor.', 'varovani');
     vysledek(false, 'Firemní údaje smí zveřejnit jen administrátor.'); render();
     return Promise.resolve(false);
   }
-  const lze = firmaLzeZverejnit(typeof NAST !== 'undefined' ? NAST.firma : null);
+  const lze = firmaLzeZverejnit(posli);
   if (!lze.ok) {
     onlineZprava('Zveřejnit se nedají: ' + lze.duvod, 'varovani');
     vysledek(false, 'Online zveřejnit nešly: ' + lze.duvod); render();
@@ -669,10 +672,10 @@ async function onlineZverejniFirmu(bezPotvrzeni) {
     + 'kdo nemají připojenou složku _DB.')) return Promise.resolve(false);
 
   ONLINE_STAV.pracuje = true; render();
-  return onlineApi('/api/firma', { udaje: NAST.firma })
+  return onlineApi('/api/firma', { udaje: posli })
     .then(() => onlineNactiFirmu().then(() => {
-      onlineZprava('Firemní údaje jsou zveřejněné online – obchodníci je uvidí po přihlášení.');
-      vysledek(true, 'Zveřejněno online – obchodníci to uvidí po přihlášení.');
+      onlineZprava('Firemní údaje jsou zveřejněné online – obchodníci je uvidí po přihlášení.' + (poznamka ? ' ' + poznamka : ''));
+      vysledek(true, 'Zveřejněno online – obchodníci to uvidí po přihlášení.' + (poznamka ? ' ' + poznamka : ''));
       return true;
     }))
     .catch(e => {
@@ -681,6 +684,18 @@ async function onlineZverejniFirmu(bezPotvrzeni) {
       return false;
     })
     .then(v => { ONLINE_STAV.pracuje = false; render(); if (typeof nastRefresh === 'function') nastRefresh(); return v; });
+}
+
+/* „Zapsat výchozí hodnoty" (K4-N7, O9): zveřejní jen platební podmínky.
+ * Ostatní rozdíly místní Firmy proti online kopii zůstanou nezveřejněné
+ * a hláška je vyjmenuje. Bez online kopie není co zachovat — zveřejní se
+ * Firma jako dosud (první zveřejnění, stisk sám je rozhodnutí, U1). */
+async function onlineZverejniPodminky() {
+  const online = ONLINE_STAV.firma ? ONLINE_STAV.firma.udaje : null;
+  const jen = typeof firmaJenPodminky === 'function' ? firmaJenPodminky(NAST.firma, online) : null;
+  if (!jen || !jen.ostatni.length) return onlineZverejniFirmu(true);
+  return onlineZverejniFirmu(true, jen.udaje, 'Zveřejněné jsou jen platební podmínky; ostatní změny Firmy ('
+    + jen.ostatni.join(', ') + ') zůstaly jen tady — zveřejníte je tlačítkem v Nastavení → Firma.');
 }
 
 /* Zveřejnit firemní údaje jde jen na serveru a jen administrátorovi. */

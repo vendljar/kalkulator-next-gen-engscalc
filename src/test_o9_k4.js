@@ -5,7 +5,10 @@
  *         `blokyPryc`, se vytiskla bez chyby — nabídka bez studie nesla rozsah
  *         a cenu studie. Teď fail-closed jako K3-N3 (SoD PROJ v4); v6 beze změny.
  *
- * Pojistka: před opravou K4-N6 2 kontroly selžou (dokument vznikne).
+ *  K4-N7  „Zapsat výchozí hodnoty" odeslal celou místní Firmu; teď jen podmínky
+ *         (firmaJenPodminky — online kopie s novými podmínkami).
+ *
+ * Pojistka: před opravou K4-N6 2 kontroly selžou (dokument vznikne), K4-N7 3 (funkce chybí); prohlížeč overit_podminky_zverejnit.mjs 3 ✗.
  * Spuštění: cd src && node test_o9_k4.js */
 const dg = require('./docxgen.js');
 
@@ -40,6 +43,26 @@ const PRYC = ['BLOK_STUDIE_POZN', 'BLOK_STUDIE_ROZSAH', 'BLOK_STUDIE_CENA'];
     && dg.odstranPrazdneBloky(v6, {}, PRYC) === v6);
   const e3 = hazi(() => dg.odstranPrazdneBloky('<w:body>' + odst('{{SODP_ROZSAH_DILA}}') + '</w:body>', {}, ['CIN_B']));
   test('K3-N3 beze změny: SoD PROJ v4 dál hlásí chybějící činnost textem smlouvy', /Šablona smlouvy/.test(e3) && /CIN_B/.test(e3), e3);
+}
+
+/* ---- K4-N7: „Zapsat výchozí hodnoty" zveřejní jen podmínky (firmaJenPodminky) ---- */
+{
+  const fm = require('./firma.js');
+  const online = Object.assign(fm.firmaDefault(), { nazev: 'Online s.r.o.', kapPozadavky: 'Online IV.', podminky: { v: 1, limitPokutProc: 10 } });
+  delete online.ukazkove;
+  const mistni = JSON.parse(JSON.stringify(online));
+  mistni.podminky = { v: 1, limitPokutProc: 12 };
+  const jen1 = typeof fm.firmaJenPodminky === 'function' ? fm.firmaJenPodminky(mistni, online) : null;
+  test('K4-N7: liší se jen podmínky → odejde místní Firma, nic dalšího nehlásí',
+    !!jen1 && jen1.udaje === mistni && jen1.ostatni.length === 0, jen1);
+  mistni.nazev = 'Místní rozepsaný název'; mistni.kapPozadavky = 'Místní IV.';
+  const jen2 = typeof fm.firmaJenPodminky === 'function' ? fm.firmaJenPodminky(mistni, online) : null;
+  test('K4-N7: další rozdíly → odejde online kopie s místními podmínkami, rozdíly vyjmenované',
+    !!jen2 && jen2.udaje.nazev === 'Online s.r.o.' && jen2.udaje.kapPozadavky === 'Online IV.'
+      && jen2.udaje.podminky.limitPokutProc === 12 && jen2.ostatni.length === 2 && jen2.ostatni[0] === 'Název firmy', jen2);
+  test('K4-N7: online kopie se nepřepíše (kopie, ne odkaz)', online.podminky.limitPokutProc === 10 && online.nazev === 'Online s.r.o.');
+  test('K4-N7: bez online kopie null (první zveřejnění jako dosud)',
+    typeof fm.firmaJenPodminky === 'function' && fm.firmaJenPodminky(mistni, null) === null);
 }
 
 console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
