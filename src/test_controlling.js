@@ -414,5 +414,23 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
   test('C3 protokol exportů: nový záznam první, drží se strop', p.zaznamy[0].nove === 1 && p.zaznamy.length === C.CTRL_HROMADNY.protokol);
 }
 
+/* ---------- 6. C4: Pipedrive deal id ---------- */
+{
+  const N = C.ctrlPdDealIdNorm, K = C.ctrlPdDealKontrola;
+  test('C4 tvar: prázdno, číslo i text čísla', N('') === '' && N(undefined) === '' && N(1234) === '1234' && N(' 42 ') === '42');
+  test('C4 tvar: nula, záporné, desetinné, text, nad int32 → neplatné', [0, '0', -5, '1.5', 'abc', '012', '2147483648', '1e3'].every(x => N(x) === null));
+  test('C4: obchodník uloží zakázku s nezměněným deal id', K({ pdDealId: '77' }, { pdDealId: 77 }, 'Obchodník') === null);
+  test('C4: obchodník deal id nezadá ani neopraví (403)', K({}, { pdDealId: '77' }, 'Obchodník').status === 403
+    && K({ pdDealId: '77' }, { pdDealId: '78' }, 'Vedoucí').status === 403 && K({ pdDealId: '77' }, {}, 'Obchodník').status === 403);
+  test('C4: nová zakázka obchodníka s deal id → 403', K(null, { pdDealId: '5' }, 'Obchodník').status === 403);
+  test('C4: administrátor zadá i opraví', K({}, { pdDealId: '77' }, 'Administrátor') === null && K({ pdDealId: '7' }, { pdDealId: '8' }, 'Administrátor') === null);
+  test('C4: neplatný tvar neuloží nikdo (400)', K({}, { pdDealId: 'x1' }, 'Administrátor').status === 400);
+  test('C4: neplatná uložená hodnota se bere jako prázdná', K({ pdDealId: 'x' }, {}, 'Obchodník') === null);
+  if (typeof zakazkaDuplikuj === 'function') {
+    const z = novaZakazka(); z.pdDealId = '991';
+    test('C4: duplikát zakázky deal id nepřebírá', !('pdDealId' in zakazkaDuplikuj(z, '2026 - OPR - CN - 1')));
+  }
+}
+
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 if (fail) process.exit(1);

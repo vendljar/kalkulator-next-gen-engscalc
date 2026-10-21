@@ -960,6 +960,13 @@ Podklad `podklady/K3_AUDIT_19_10.md` (K3-N14: tyto meze tu chyběly).
   přístupu, ne data k obnově. **Mez:** stažený XLSX je dál přenosný soubor
   s nákupními cenami a marží celé firmy za období; kam ho správce pošle
   (Andy), protokol nehlídá.
+- **Pipedrive deal id zakázky (C4, 21. 10. 2026):** `zak.pdDealId` mění jen
+  Administrátor — server (`zakazkaServerKontrola` → `ctrlPdDealKontrola`)
+  vrátí 403 jiné roli při zadání, opravě i smazání, 400 každému při tvaru
+  mimo kladné celé číslo ≤ 2147483647; mutace „#447 C4“. **Mez:** server
+  neověřuje, že id v Pipedrive existuje (to by stálo dotaz do denního
+  rozpočtu); admin může zadat překlep. Automatické převzetí z propojeného
+  dealu zatím neexistuje.
 - **Tlačítko „Export pro controlling“ v Přehledu (C3)** kreslí jen
   administrátorovi online a ne v rolovém náhledu; export jedné varianty běží
   dál v prohlížeči (mez jako u C2 výše).

@@ -236,6 +236,18 @@ function ctrlUiPrehledTlacitko(r) {
         title="Export pro controlling — předkalkulace zamčené řídící varianty (.xlsx), jen administrátor">Export pro controlling</button>`;
 }
 
+/* C4 (rozhodnutí J. V. 21. 10. 2026, bod 5): ruční zadání / oprava deal id
+ * otevřené zakázky. Zapisuje se do hlavičky (ZAK.pdDealId) a uloží se
+ * se zakázkou; server odmítne změnu od kohokoli jiného než správce
+ * (ctrlPdDealKontrola v lib/zakazka_kontrola.mjs). */
+function ctrlUiPdDeal(hodnota) {
+  if (!ctrlUiSmi()) return ctrlUiZprava('Pipedrive deal id zadává jen administrátor přihlášený online.', true);
+  const n = ctrlPdDealIdNorm(hodnota);
+  if (n === null) return ctrlUiZprava('Pipedrive deal id musí být kladné celé číslo (id obchodního případu).', true);
+  if (typeof set === 'function') set('ZAK.pdDealId', n);
+  ctrlUiZprava(n ? 'Deal id ' + n + ' zapsáno do zakázky — uloží se se zakázkou.' : 'Deal id ze zakázky odebráno — uloží se se zakázkou.');
+}
+
 /* ---------- C3: hromadný export za období ---------- */
 /* Výchozí období: od prvního dne tohoto měsíce do dneška (místní čas). */
 function ctrlUiDenLokal(d) {
@@ -415,6 +427,10 @@ function ctrlUiKartaExport() {
       už neovlivní. Vše v <b>Kč bez DPH</b>, i u zahraniční řady. Řadí se podle <b>uloženého</b> mapování
       (${p ? 'verze ' + esc(p.verze) : 'výchozí rozvržení'}).</div>
     <div class="note" id="ctrlExportStav" style="margin-top:8px">${stav}</div>
+    ${zak ? `<div class="btns" style="margin-top:6px;align-items:center">
+      <label>Pipedrive deal id zakázky <input id="ctrlPdDeal" inputmode="numeric" size="12" value="${esc(zak.pdDealId || '')}"
+        placeholder="např. 1234" onchange="ctrlUiPdDeal(this.value)"></label>
+      <span class="note">jde do sloupce „Pipedrive deal" — zadává a opravuje jen administrátor (hlídá server)</span></div>` : ''}
     <div class="btns" style="margin-top:8px">
       <button class="primary" id="ctrlExportXlsx" onclick="ctrlUiExport('xlsx')" ${zamek ? '' : 'disabled'}>⤓ Stáhnout předkalkulaci (.xlsx)</button>
       <button id="ctrlExportCsv" onclick="ctrlUiExport('csv')" ${zamek ? '' : 'disabled'}>⤓ CSV (list Řádky)</button></div>

@@ -17,7 +17,8 @@
       "nadpis": "Co je nového — controlling za období (verzi přidělí sloučení)",
       "odstavce": [
         "**Jen pro administrátora.** V Přehledu cenových nabídek má zamčená řídící varianta otevřené zakázky tlačítko **„Export pro controlling“** — stáhne předkalkulaci do Excelu stejně jako Nastavení → Controlling.",
-        "**Hromadný export za období:** Nastavení → Controlling → Export předkalkulace → „Hromadně za období“. Zadáte období podle data zamčení (odeslání) nabídky, OCK / PROJ / obojí a číselnou řadu ČR / ZAHR / obojí; server vybere všechny zamčené řídící varianty a stáhne jeden sešit (Řádky, Kapitoly, Popis) nebo CSV. Každý export se zapíše do protokolu, posledních deset je vidět pod formulářem. Pro práci obchodníka se nic nemění."
+        "**Hromadný export za období:** Nastavení → Controlling → Export předkalkulace → „Hromadně za období“. Zadáte období podle data zamčení (odeslání) nabídky, OCK / PROJ / obojí a číselnou řadu ČR / ZAHR / obojí; server vybere všechny zamčené řídící varianty a stáhne jeden sešit (Řádky, Kapitoly, Popis) nebo CSV. Každý export se zapíše do protokolu, posledních deset je vidět pod formulářem. Pro práci obchodníka se nic nemění.",
+        "**Pipedrive deal id zakázky** zadáte tamtéž (Export předkalkulace, pole nad tlačítky) — jde do sloupce „Pipedrive deal“ exportu. Zadat a opravit ho smí jen administrátor; obchodník zakázku s deal id normálně uloží, jen ho nezmění. Duplikát zakázky deal id nepřebírá."
       ]
     },
     {

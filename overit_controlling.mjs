@@ -219,6 +219,12 @@ await stranka.evaluate(() => { otevriNastaveni(); nastPanel('controlling'); CTRL
 await stranka.waitForFunction(() => !!document.getElementById('ctrlHromXlsx'));
 const vychozi = await stranka.evaluate(() => ({ od: document.getElementById('ctrlHromOd').value, do: document.getElementById('ctrlHromDo').value }));
 zkus('výchozí období = od 1. dne měsíce do dneška', /^\d{4}-\d{2}-01$/.test(vychozi.od) && vychozi.od <= vychozi.do, JSON.stringify(vychozi));
+await stranka.fill('#ctrlPdDeal', '12ab'); await stranka.dispatchEvent('#ctrlPdDeal', 'change');
+const pdZle = await stranka.evaluate(() => ({ id: ZAK.pdDealId, stav: document.getElementById('ctrlStav').textContent }));
+zkus('C4: neplatné deal id se do zakázky nezapíše a hlásí chybu', !pdZle.id && /kladné celé číslo/.test(pdZle.stav), JSON.stringify(pdZle));
+await stranka.fill('#ctrlPdDeal', '4711'); await stranka.dispatchEvent('#ctrlPdDeal', 'change');
+const pdOk = await stranka.evaluate(() => ({ id: ZAK.pdDealId, exp: ctrlExportVarianty(ZAK, ridiciVarianta(ZAK), { jekly: JEKLY }).hlavicka.pipedrive }));
+zkus('C4: deal id se zapíše do zakázky a jde do exportu', pdOk.id === '4711' && pdOk.exp === '4711', JSON.stringify(pdOk));
 await stranka.evaluate(() => { const v = ridiciVarianta(ZAK); CTRL_STAV.hrom.od = ctrlDenPraha(v.zamek.kdy); CTRL_STAV.hrom.do = CTRL_STAV.hrom.od; render(); });
 await stranka.selectOption('#ctrlHromOblast', 'ock');
 const [stHrom] = await Promise.all([stranka.waitForEvent('download'), stranka.click('#ctrlHromXlsx')]);

@@ -704,6 +704,33 @@ function ctrlProtokolPridej(db, zaznam) {
   return { schema: 1, zaznamy: [zaznam].concat(stare).slice(0, CTRL_HROMADNY.protokol) };
 }
 
+/* ---------- C4: Pipedrive deal id u zakázky (21. 10. 2026) ----------
+ * Rozhodnutí J. V. 21. 10. 2026, bod 5: deal id se má brát automaticky
+ * z propojeného dealu; ručně ho zadat nebo opravit smí JEN ADMINISTRÁTOR
+ * a hlídá to server (lib/zakazka_kontrola.mjs). Propojení dealu se zakázkou
+ * v rozhraní zatím není (výběr z CRM, src/zobrazeni.js „pd.cist") — až
+ * vznikne, zapíše `zak.pdDealId` touž cestou a tahle kontrola ho pustí jen
+ * správci, dokud se nerozhodne, jak server ověří, že id přišlo z Pipedrive.
+ * Tvar: kladné celé číslo jako text (Pipedrive id je int32, viz pd_deal.mjs). */
+const CTRL_PD_ID_MAX = 2147483647;
+function ctrlPdDealIdNorm(x) {
+  if (x === undefined || x === null || x === '') return '';
+  const s = String(x).trim();
+  if (s === '') return '';
+  if (!/^[1-9][0-9]{0,9}$/.test(s) || +s > CTRL_PD_ID_MAX) return null;
+  return s;
+}
+/* null = v pořádku; jinak { status, chyba }. Neplatná hodnota v uložené
+ * verzi se bere jako prázdná — jinak by ji nikdo kromě správce neopravil. */
+function ctrlPdDealKontrola(stara, zak, role) {
+  const nova = ctrlPdDealIdNorm(zak && zak.pdDealId);
+  if (nova === null) return { status: 400, chyba: 'Pipedrive deal id musí být kladné celé číslo (id obchodního případu)' };
+  const puvodni = ctrlPdDealIdNorm(stara && stara.pdDealId) || '';
+  if (nova !== puvodni && role !== 'Administrátor')
+    return { status: 403, chyba: 'Pipedrive deal id zakázky zadává nebo opravuje jen administrátor' };
+  return null;
+}
+
 const ctrlZaokr = (x) => Math.round((+x || 0) * 100) / 100;
 const CTRL_RADKY_HLAVICKA = ['Číslo nabídky', 'Název akce', 'Zákazník', 'IČO', 'Datum varianty', 'Zamčeno', 'Zamkl',
   'Řada', 'Model výpočtu', 'Verze ceníku', 'Otisk ceníku', 'Verze mapování', 'Pipedrive deal',
@@ -906,4 +933,5 @@ if (typeof module !== 'undefined' && module.exports)
     ctrlDbNovaVerze, ctrlDbOciste,
     ctrlOdchylky, CTRL_PSEUDO_POPIS, ctrlPopisKlice, ctrlKatalogNazvy, CTRL_EXPORT_VERZE, ctrlExportVarianty,
     CTRL_RADKY_HLAVICKA, ctrlExportListy, ctrlExportCsv, ctrlVZakladuText,
+    CTRL_PD_ID_MAX, ctrlPdDealIdNorm, ctrlPdDealKontrola,
     CTRL_HROMADNY, ctrlDatumPlatne, ctrlDenPraha, ctrlHromadnyFiltr, ctrlHromadnyKandidati, ctrlHromadnyZakazka, ctrlProtokolPridej, CTRL_MAPA_HLAVICKA, ctrlMapaListy, ctrlImportZListu };

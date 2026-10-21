@@ -237,6 +237,10 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   /* Záporná částka, množství nebo hodiny (B111, 29. 9. 2026) — nikomu. */
   const zaporne = ULO.uloZaporneProblemy(zak, stara);
   if (zaporne.length) return odmitni(400, 'Zakázka nese ' + ULO.uloIdProblemyText(zaporne) + '.');
+  /* Pipedrive deal id (#447 C4, rozhodnutí J. V. 21. 10. 2026): tvar
+   * hlídá každému, ruční zadání a opravu pustí jen administrátorovi. */
+  const pdDeal = globalThis.ctrlPdDealKontrola ? globalThis.ctrlPdDealKontrola(stara, zak, relace.role) : null;
+  if (pdDeal) return odmitni(pdDeal.status, veta(pdDeal.chyba));
   /* Rozměr šachty, který nedává smysl (B137, 12. 10. 2026) — záporný,
    * nečitelný pro jádro nebo zdvih nad 99 m — nikomu. Nulu a prázdno
    * (rozpracovaná zakázka) odmítne až nový zámek níž. */

@@ -1,4 +1,4 @@
-# Předávka — 21. 10. 2026: Controlling #447 — C3, větev `claude/controlling-c3` (verzi přidělí sloučení)
+# Předávka — 21. 10. 2026: Controlling #447 — C3 + C4, větev `claude/controlling-c3` (verzi přidělí sloučení)
 
 Nad `claude/integrace-16-10` 2cb9d2b (v21.10.2), build `KNG_NEZVYSOVAT_VERZI=1`. **Do test / main / integrace nic** —
 slučuje koordinace (ŘÍDÍCÍ session_01By6bWivtf2rTJYJFGVv8e1). Rozhodnutí J. V. 21. 10. 2026 body 1–5 (prompt dávky).
@@ -10,15 +10,25 @@ slučuje koordinace (ŘÍDÍCÍ session_01By6bWivtf2rTJYJFGVv8e1). Rozhodnutí J
   prohlížeč skládá sešit `ctrlExportListy(pole exportů, data, { hromadny })` (stejné listy/sloupce, Popis s obdobím,
   zakázkami a přeskočenými) nebo CSV. Protokol `program/controlling_exporty` (200, ?protokol=1). Meze `CTRL_HROMADNY`
   (400 dní, 600 čtení, 150 zakázek, 5 MB → 413). Model v `src/controlling.js` (ctrlHromadnyFiltr/Kandidati/Zakazka).
-- **Bod 4:** beze změny (bez hesla). **Bod 3 (sloupec „V nabídce") NEDĚLÁNO** — čeká na potvrzení koordinace;
-  text sloupce je na jednom místě `ctrlVZakladuText` (+ Kapitoly v `ctrlExportListy`).
-- **Bod 5 / C4 neděláno:** klient deal k zakázce nepropojuje (`zak.pdDealId` nikdo nezapisuje, výběr z CRM „v rozhraní
-  zatím není" — `src/zobrazeni.js`), automatické převzetí nemá na co navázat. Potřeba zadání výběru dealu.
-- **Čeká na J. V.:** výjimka zálohy `controlling_exporty` (protokol není v otisku — stopa přístupu; `test_zalohy.mjs` N4).
-- **Ke slučování:** CHANGELOG oddíl „C3", `manual/obsah.json` („Co je nového — controlling za období" → číslo verze),
-  roadmapa #447 (pozn, kde), `netlify/mutace.mjs` (blok „#447 C3" za C2), `test_prava.mjs` (+2), `test_zalohy.mjs`
-  (výjimka), `BEZPECNOST_MEZE.md` (oddíl Controlling), `seznam_ui.js` (1 řádek).
-- **Testy:** viz souhrn níže (doplněno po kole).
+- **Bod 4:** beze změny (bez hesla). **Bod 3 (sloupec „V nabídce") NEDĚLAT** — koordinace 21. 10. ~11:00: J. V. chce
+  nejdřív ukázkový XLSX (dělá koordinace). Text sloupce je na jednom místě `ctrlVZakladuText` (+ Kapitoly).
+- **Hotovo (bod 5 / C4):** `zak.pdDealId` ručně jen admin (pole v Nastavení → Controlling → Export), server
+  `ctrlPdDealKontrola` v `lib/zakazka_kontrola.mjs` (403 jiné roli, 400 tvar), duplikát id nepřebírá. Automatické
+  převzetí z propojeného dealu NENÍ — výběr dealu z CRM v rozhraní neexistuje (`src/zobrazeni.js` pd.cist).
+- **Nálezy koordinace z ukázky na 5 nabídkách (21. 10. ~11:08) — jen poznamenáno, NEOPRAVOVAT bez J. V.:**
+  (1) zaokrouhlení OCK nahoru (CEIL) export neukazuje, sloupec Zaokrouhlení = 0; (2) zakázka se zamčenou jen
+  NEřídící variantou se nevyveze; (3) přepočtený výsledek (bez zmrazení) není v řádcích vidět; (4) Kapitoly
+  zaokrouhlují po skupinách (podíl 100,01 %). Návrh řešení (2) a (3) poslán koordinaci v souhrnu.
+- **Čeká na J. V.:** výjimka zálohy `controlling_exporty` (protokol není v otisku — stopa přístupu; `test_zalohy.mjs` N4);
+  nálezy (1)–(4); bod 3.
+- **Ke slučování:** CHANGELOG oddíl „C3 + C4", `manual/obsah.json` („Co je nového — controlling za období" → číslo
+  verze), roadmapa #447 (pozn, kde), `netlify/mutace.mjs` (bloky „#447 C3" a „#447 C4" za C2), `test_prava.mjs` (+2
+  řádky matice, +8 C4 v bloku #374), `test_zalohy.mjs` (výjimka), `BEZPECNOST_MEZE.md` (oddíl Controlling),
+  `seznam_ui.js` (1 řádek), `zakazka.js` (zakazkaDuplikuj), `lib/zakazka_kontrola.mjs` (1 kontrola).
+- **Testy:** src `test_controlling.js` 179/0, server `test_controlling.mjs` 50/0, `test_prava` 883/0, `test_zalohy`
+  147/0, `overit_controlling.mjs` 44/0, `test_escape` 37/0; mutace „#447 C" 24/24 (C2 7, C3 13, C4 4). Kolo
+  `--bez-mutaci` (ca592dc předchůdce): 290/2/6 → obě opravené (test_escape `${id}`; overit_verzi jen kvůli
+  `KNG_NEZVYSOVAT_VERZI` exportované do kola — bez ní 7/0).
 
 # Předávka — 21. 10. 2026 noc: dávka O9 (kód aplikace, verzi přidělí sloučení) — opravy K4 bez rozhodnutí J. V.
 

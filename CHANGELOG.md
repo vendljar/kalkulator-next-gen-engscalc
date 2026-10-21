@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## C3 — Controlling: hromadný export za období a export z Přehledu (#447, větev claude/controlling-c3) — verzi přidělí sloučení
+## C3 + C4 — Controlling: hromadný export za období, export z Přehledu, Pipedrive deal id (#447, větev claude/controlling-c3) — verzi přidělí sloučení
 
 Rozhodnutí J. V. 21. 10. 2026 (dialog s koordinací), body 1, 2 a 4. Nad `claude/integrace-16-10` 2cb9d2b (v21.10.2),
 build bez zvýšení verze (`KNG_NEZVYSOVAT_VERZI=1`).
@@ -30,6 +30,14 @@ build bez zvýšení verze (`KNG_NEZVYSOVAT_VERZI=1`).
 - **Nastavení controllingu dál bez hesla správce** (bod 4) — beze změny.
 - **Sloupec „V nabídce" u příplatků (bod 3) se NEDĚLÁ** — čeká na rozhodnutí J. V.; text sloupce „V základní ceně"
   je nově na jednom místě (`ctrlVZakladuText`), kam se rozhodnutí doplní.
+- **C4 — Pipedrive deal id u zakázky** (bod 5): `zak.pdDealId` (kladné celé číslo) zadává a opravuje **jen
+  administrátor** — pole v Nastavení → Controlling → Export předkalkulace; **server** (`lib/zakazka_kontrola.mjs`,
+  `ctrlPdDealKontrola`) odmítne změnu, zadání i smazání od jiné role (403) a neplatný tvar komukoli (400); uložení
+  zakázky s nezměněným id projde každému. Duplikát zakázky deal id nepřebírá. Hodnota jde do sloupce „Pipedrive
+  deal" exportu. **Automatické převzetí z propojeného dealu zatím není na co navázat** — výběr dealu z CRM
+  v rozhraní chybí (`zak.pdDealId` dosud nikdo nezapisoval); až vznikne, zapíše totéž pole.
+- Testy C4: `src/test_controlling.js` +9 (179), `test_prava` +8 (883), `overit_controlling.mjs` +2 (44), mutace
+  „#447 C4" (4). Pojistka: bez kódu C4 šest serverových testů selže (obchodník id zadá/opraví/smaže, tvar projde).
 - Testy: `src/test_controlling.js` 170 (+24: filtr, den v Praze, předvýběr, výběr zakázky, oblast, sešit za období,
   CSV), `netlify/test_controlling.mjs` 50 (+22: práva, období, řada, oblast, přeskočené, protokol, strop 413),
   `test_prava` +2 řádky matice, `overit_controlling.mjs` 42 (+12: tlačítko v Přehledu jen admin a jen u zamčené
