@@ -1,3 +1,22 @@
+# Předávka — 21. 10. 2026: dávka K6 — celé kolo + bezpečnostní audit nad v21.10.5, větev `claude/k6-kolo` (#475)
+
+Nad `7fac477` (v21.10.5 = `test`). **Do test / main / integrace nic** — slučuje koordinace (ŘÍDÍCÍ 21.10 noc 2,
+session_01X93Edh1U8MQru6HV28FdBY). Kód se neopravoval (zadání).
+
+- **Hotovo — kolo (celé, s mutacemi):** sady **296 / 0 / 6** přeskočeno (`test.js` + 5 harnessů bez
+  `KNG_PODKLADY`), mutace jádra **417/417** (otisky souhlasí), mutace serveru **753/753** (64 částí po souborech
+  ve 3 `git worktree` nad týmž SHA, nic nepřerušeno, úplnost po názvech 753/753, `--kontrola` OK), statické **4/4**.
+  **Žádná přeživší mutace, žádný prázdný test.**
+- **Hotovo — audit `7652bb9..7fac477`:** `podklady/K6_AUDIT_21_10.md` — 0 kritických, 0 vysokých, 1 střední
+  (K6-K1), 9 nízkých, 12 informativních; opravy K5 (O13) drží, regrese K4/K5 žádná. Zápis také v CHANGELOG
+  (oddíl v21.10.5 Integrace).
+- **Opravit bez J. V. (samostatná dávka):** přednostně K6-K1 (`OBJ_KLIC_TVAR` bez `:` → vlastní příplatek nejde
+  uložit), K6-S1 (objekt v `objednane` → 500), K6-S3 (`varianta` jako pole); dál K6-S4, S6, K5, K6, K8, K9,
+  K5-S2, nástroje K6-W2, W3, W4, K5-W4, K5-W7, kokpit K6-W1 (koordinace).
+- **Čeká na J. V.:** posun `test` → `main` (doporučeno s opravou K6-K1 + S1 + S3), K6-S2 (vrácení podpisu SoD),
+  K6-K2 (zveřejnit SoD v4 spolu s C6), K6-K3, K6-K4, K6-S5, K6-S7, K6-K7, K6-W5, K6-W6 + trvající K5 (W3/W5, K2,
+  S3, S4, K4).
+
 # Předávka — 21. 10. 2026: dávka O12 — jazykové verze šablony k už platné češtině (#474, v21.10.5)
 
 Větev `claude/o12-sablony-jazyky` nad `claude/integrace-16-10` 7ce01b3 (v21.10.4). **Do integrace / test nic** —

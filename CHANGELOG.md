@@ -14,6 +14,18 @@ v21.10.5 = O12 (#474 průvodce šablon — jazykové verze k platné češtině)
 `--sod-real-v4`) + C5 + C6 (#447 controlling: export v2, objednané příplatky u SoD, krycí list, export prodané zakázky)
 + O13 (nízké nálezy K5: S1, K1 + K3, W1, W2; „(DPZ)*" v jazykové verzi) + zápis K5 (#473). Integrace `claude/integrace-16-10`.
 
+**Celé kolo K6 nad 7fac477 (v21.10.5 = test, 21. 10. 2026; dávka K6, koordinace „ŘÍDÍCÍ 21.10 noc 2“, větev claude/k6-kolo, #475) — VŠE ZELENÉ, ŽÁDNÁ PŘEŽIVŠÍ MUTACE:**
+build OK; sady **296 prošlo / 0 selhalo / 6 přeskočeno** (`test.js` + 5 harnessů bez `KNG_PODKLADY`);
+mutace jádra **417/417** (otisky souhlasí); mutace serveru **753/753**, 0 chybně zadaných (64 částí po
+souborech ve 3 `git worktree`, úplnost ověřena po názvech, nic nepřerušeno); statické **4/4** (W2 51/0).
+Kód aplikace ani verze se neměnily. Prázdné testy: žádné.
+- **Bezpečnostní audit `7652bb9..7fac477`:** `podklady/K6_AUDIT_21_10.md` — 0 kritických, 0 vysokých,
+  1 střední (K6-K1 objednaný vlastní příplatek `vlastni:N` server odmítne → uložení selže, SoD se vytiskne),
+  9 nízkých (mj. K6-S1 objekt v `objednane` → HTTP 500, K6-S2 „vrácení“ podpisu SoD obchodníkem, K6-S3
+  `varianta` jako pole skryje prodej z exportu, K6-W1 `</ScRiPt>` v datech kokpitu, K6-W2 kontrola osobních
+  údajů nečte `podklady/` a `.claude/`), 12 informativních. Opravy K5 z O13 drží; K5-S2, K5-W4, K5-W7
+  neopraveny. Regrese K4/K5: žádná.
+
 - Kolo `--bez-mutaci` nad dda2abc: **296 prošlo / 0 selhalo / 6 přeskočeno** (test.js + 5 harnessů bez KNG_PODKLADY),
   statické 4/4 — VŠE ZELENÉ.
 - Cílené mutace: server „#447 C" **40/40**, „k5-" **3/3**; jádro „#474" **8/8**, „O13:" **3/3** — 0 přeživších.
