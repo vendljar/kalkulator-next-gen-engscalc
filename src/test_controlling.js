@@ -333,5 +333,104 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
   test('import bez listu Mapování → chyba', C.ctrlImportZListu([{ nazev: 'Jiný', rows: [] }], null).chyby.length === 1);
 }
 
+/* ---------- 5. C3: hromadný export za období ---------- */
+{
+  const F = (q) => C.ctrlHromadnyFiltr(q);
+  test('C3 filtr: platné období, výchozí oblast i řada = obojí',
+    JSON.stringify(F({ od: '2026-10-01', do: '2026-10-31' })) === JSON.stringify({ ok: true, filtr: { od: '2026-10-01', do: '2026-10-31', oblast: 'obe', rada: 'obe' } }));
+  test('C3 filtr: neplatné datum (31. 2.) odmítne', !F({ od: '2026-02-31', do: '2026-03-01' }).ok);
+  test('C3 filtr: datum v jiném tvaru odmítne', !F({ od: '1. 10. 2026', do: '2026-10-31' }).ok && !F({ do: '2026-10-31' }).ok);
+  test('C3 filtr: od po do odmítne', !F({ od: '2026-11-01', do: '2026-10-01' }).ok);
+  test('C3 filtr: období nad strop dní odmítne', !F({ od: '2024-01-01', do: '2026-10-01' }).ok);
+  test('C3 filtr: neznámá oblast a řada odmítne (ne „obojí")', !F({ od: '2026-10-01', do: '2026-10-02', oblast: 'vse' }).ok
+    && !F({ od: '2026-10-01', do: '2026-10-02', rada: 'ZAHR' }).ok);
+  test('C3 den zámku v českém čase (23:30 UTC 31. 10. = 1. 11.)', C.ctrlDenPraha('2026-10-31T23:30:00Z') === '2026-11-01'
+    && C.ctrlDenPraha('2026-10-31T21:30:00Z') === '2026-10-31' && C.ctrlDenPraha('nesmysl') === '');
+
+  const rej = { zakazky: [
+    { soubor: 'a.json', cislo: 'A', odeslane: 1, rada: '', upraveno: '2026-10-15T10:00:00Z' },
+    { soubor: 'b.json', cislo: 'B', odeslane: 0, rada: '', upraveno: '2026-10-15T10:00:00Z' },
+    { soubor: 'c.json', cislo: 'C', odeslane: 2, rada: 'zahr', upraveno: '2026-10-15T10:00:00Z' },
+    { soubor: 'd.json', cislo: 'D', odeslane: 1, rada: '', upraveno: '2026-09-28T10:00:00Z' },
+    { soubor: 'f.json', cislo: 'F', odeslane: 1, rada: '', upraveno: '2026-09-30T10:00:00Z' },
+    { soubor: 'e.json', cislo: 'E', odeslane: 1, rada: '' } ] };
+  const fo = F({ od: '2026-10-01', do: '2026-10-31' }).filtr;
+  test('C3 předvýběr: jen s odeslanou nabídkou a s úpravou v období (rezerva 2 dny na hodiny) nebo bez razítka',
+    C.ctrlHromadnyKandidati(rej, fo).map(z => z.soubor).join(',') === 'a.json,c.json,f.json,e.json', C.ctrlHromadnyKandidati(rej, fo));
+  test('C3 předvýběr: řada ZAHR / ČR podle rejstříku',
+    C.ctrlHromadnyKandidati(rej, Object.assign({}, fo, { rada: 'zahr' })).map(z => z.soubor).join(',') === 'c.json'
+    && C.ctrlHromadnyKandidati(rej, Object.assign({}, fo, { rada: 'cr' })).map(z => z.soubor).join(',') === 'a.json,f.json,e.json');
+
+  if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
+    const zak = zakazkaZamcena();
+    const v = zak.varianty[0];
+    v.zamek.kdy = '2026-10-10T08:00:00Z';
+    const opts = { jekly: JEKLY, kdo: 'admin@priklad.cz', kdy: '2026-10-21T08:00:00Z' };
+    const r1 = C.ctrlHromadnyZakazka(zak, fo, opts);
+    test('C3 zakázka zamčená v období se vyváží', r1.ok && r1.exp.radky.length > 0, r1.duvod);
+    const mimo = C.ctrlHromadnyZakazka(zak, F({ od: '2026-10-11', do: '2026-10-31' }).filtr, opts);
+    test('C3 zakázka zamčená před obdobím vypadne (mimo, nehlásí se)', !mimo.ok && mimo.mimo === true, mimo);
+    const zakN = kopie(zak); zakN.varianty[0].zamek = null;
+    const n = C.ctrlHromadnyZakazka(zakN, fo, opts);
+    test('C3 nezamčená řídící varianta se nevyváží', !n.ok && n.mimo === true, n);
+    const zakR = kopie(zak); const v2 = kopie(zakR.varianty[0]); v2.id = 'v-nezamcena'; v2.zamek = null;
+    zakR.varianty.forEach(x => { x.ridici = false; }); v2.ridici = true; zakR.varianty.push(v2);
+    const rr = C.ctrlHromadnyZakazka(zakR, fo, opts);
+    test('C3 zamčená, ale neřídící varianta se nevyváží (řídící je nezamčená)', !rr.ok && rr.mimo === true, rr);
+    const zahr = C.ctrlHromadnyZakazka(zak, Object.assign({}, fo, { rada: 'zahr' }), opts);
+    test('C3 tuzemská zakázka ve filtru ZAHR vypadne', !zahr.ok && zahr.mimo === true);
+    const proj = C.ctrlHromadnyZakazka(zak, Object.assign({}, fo, { oblast: 'proj' }), opts);
+    const ock = C.ctrlHromadnyZakazka(zak, Object.assign({}, fo, { oblast: 'ock' }), opts);
+    test('C3 filtr OCK nechá jen řádky a strany OCK', ock.ok && ock.exp.radky.every(r => r.oblast === 'ock')
+      && ock.exp.strany.every(s => s.oblast === 'ock'));
+    test('C3 filtr PROJ: zakázka jen s OCK vypadne nebo nese jen PROJ',
+      (!proj.ok && proj.mimo) || (proj.ok && proj.exp.radky.every(r => r.oblast === 'proj')), proj);
+
+    /* Dvě zakázky v jednom sešitu: řádky se sečtou, sloupce zůstanou. */
+    const zak2 = kopie(zak); zak2.cislo = '2026 - OPR - CN - 0902'; zak2.nazevAkce = 'Druhá akce';
+    const e2 = C.ctrlHromadnyZakazka(zak2, fo, opts).exp;
+    const listy = C.ctrlExportListy([r1.exp, e2], null, { kdy: opts.kdy, kdo: opts.kdo,
+      hromadny: { od: fo.od, do: fo.do, oblast: 'obe', rada: 'obe', preskoceno: [{ cislo: 'X', duvod: 'zkouška' }] } });
+    test('C3 sešit za období: list Řádky = hlavička + řádky obou zakázek',
+      listy[0].rows.length === 1 + r1.exp.radky.length + e2.radky.length
+      && listy[0].rows.every(r => r.length === C.CTRL_RADKY_HLAVICKA.length));
+    test('C3 sešit za období: každý řádek nese číslo své zakázky',
+      listy[0].rows.slice(1).filter(r => r[0] === '2026 - OPR - CN - 0902').length === e2.radky.length
+      && listy[0].rows.slice(1).filter(r => r[1] === 'Druhá akce').length === e2.radky.length);
+    const souhrny = listy[1].rows.filter(r => r.length === 10 && typeof r[2] === 'number');
+    test('C3 sešit za období: Kapitoly nesou souhrn obou zakázek', souhrny.length === 2, souhrny.map(r => r[0]));
+    const pop = listy[2].rows;
+    const najdi = (k) => (pop.find(r => r[0] === k) || [])[1];
+    test('C3 Popis: období, počet zakázek a přeskočené', najdi('Období zamčení (odeslání)') === '2026-10-01 – 2026-10-31'
+      && najdi('Zakázek v exportu') === 2 && najdi('X') === 'zkouška' && najdi('Exportoval') === 'admin@priklad.cz');
+    const csv = C.ctrlExportCsv([r1.exp, e2], null, { hromadny: { od: fo.od, do: fo.do } });
+    test('C3 CSV za období: řádek na řádek obou zakázek', csv.split('\r\n').filter(Boolean).length === 1 + r1.exp.radky.length + e2.radky.length);
+    test('C3 jedna varianta: sešit beze změny proti C2 (pole o jedné = objekt)',
+      JSON.stringify(C.ctrlExportListy([r1.exp])) === JSON.stringify(C.ctrlExportListy(r1.exp)));
+    test('C3 sloupec V základní ceně jde přes jedno místo (příprava „V nabídce")',
+      C.ctrlVZakladuText({ vZakladu: true }) === 'ano' && C.ctrlVZakladuText({ vZakladu: false }) === 'ne (příplatek – volba)');
+  }
+  const p = C.ctrlProtokolPridej({ zaznamy: Array.from({ length: C.CTRL_HROMADNY.protokol }, (_, i) => ({ i })) }, { nove: 1 });
+  test('C3 protokol exportů: nový záznam první, drží se strop', p.zaznamy[0].nove === 1 && p.zaznamy.length === C.CTRL_HROMADNY.protokol);
+}
+
+/* ---------- 6. C4: Pipedrive deal id ---------- */
+{
+  const N = C.ctrlPdDealIdNorm, K = C.ctrlPdDealKontrola;
+  test('C4 tvar: prázdno, číslo i text čísla', N('') === '' && N(undefined) === '' && N(1234) === '1234' && N(' 42 ') === '42');
+  test('C4 tvar: nula, záporné, desetinné, text, nad int32 → neplatné', [0, '0', -5, '1.5', 'abc', '012', '2147483648', '1e3'].every(x => N(x) === null));
+  test('C4: obchodník uloží zakázku s nezměněným deal id', K({ pdDealId: '77' }, { pdDealId: 77 }, 'Obchodník') === null);
+  test('C4: obchodník deal id nezadá ani neopraví (403)', K({}, { pdDealId: '77' }, 'Obchodník').status === 403
+    && K({ pdDealId: '77' }, { pdDealId: '78' }, 'Vedoucí').status === 403 && K({ pdDealId: '77' }, {}, 'Obchodník').status === 403);
+  test('C4: nová zakázka obchodníka s deal id → 403', K(null, { pdDealId: '5' }, 'Obchodník').status === 403);
+  test('C4: administrátor zadá i opraví', K({}, { pdDealId: '77' }, 'Administrátor') === null && K({ pdDealId: '7' }, { pdDealId: '8' }, 'Administrátor') === null);
+  test('C4: neplatný tvar neuloží nikdo (400)', K({}, { pdDealId: 'x1' }, 'Administrátor').status === 400);
+  test('C4: neplatná uložená hodnota se bere jako prázdná', K({ pdDealId: 'x' }, {}, 'Obchodník') === null);
+  if (typeof zakazkaDuplikuj === 'function') {
+    const z = novaZakazka(); z.pdDealId = '991';
+    test('C4: duplikát zakázky deal id nepřebírá', !('pdDealId' in zakazkaDuplikuj(z, '2026 - OPR - CN - 1')));
+  }
+}
+
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 if (fail) process.exit(1);

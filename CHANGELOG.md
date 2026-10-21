@@ -8,6 +8,47 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.10.4 — C3 + C4: Controlling: hromadný export za období, export z Přehledu, Pipedrive deal id (#447, větev claude/controlling-c3)
+
+Rozhodnutí J. V. 21. 10. 2026 (dialog s koordinací), body 1, 2 a 4. Nad `claude/integrace-16-10` 2cb9d2b (v21.10.2),
+build bez zvýšení verze (`KNG_NEZVYSOVAT_VERZI=1`).
+
+- **Tlačítko „Export pro controlling" v Přehledu cenových nabídek** (bod 1): u zamčené řídící varianty otevřené
+  zakázky v seznamu variant, jen administrátor online (v rolovém náhledu se nekreslí). Stáhne týž XLSX jako
+  Nastavení → Controlling → Export předkalkulace; mapování se dotáhne ze serveru, chyba jde do dialogu.
+- **Hromadný export za období na serveru** (bod 2): nové `GET /api/controlling/export?od=&do=&oblast=&rada=`
+  (`netlify/functions/controlling_export.mjs`), **jen administrátor** (server, matice `test_prava`). Výběr podle
+  **dne zamčení (odeslání) v českém čase**, filtr **OCK / PROJ / obojí** a **číselná řada ČR / ZAHR / obojí**; jen
+  zamčené řídící varianty, částky ze zmrazeného výsledku tisku, mapování = platná uložená verze. Prohlížeč z odpovědi
+  složí **týž sešit** (Řádky, Kapitoly, Popis — stejné sloupce, víc zakázek) nebo CSV; Popis nese období, filtry,
+  seznam zakázek (zmrazený / přepočtený výsledek) a **přeskočené zakázky s důvodem**. Ovládání v Nastavení →
+  Controlling → Export předkalkulace → „Hromadně za období" (výchozí období = tento měsíc).
+- **Protokol exportů:** každý hromadný export se zapíše (kdo z relace, kdy, období, oblast, řada, počet zakázek
+  a řádků; posledních 200 v `program/controlling_exporty`), posledních 10 je vidět pod formulářem.
+- **Meze:** období nejvýš 400 dní, nejvýš 600 zakázek k přečtení, 150 zakázek v souboru a 5 MB odpovědi — při
+  překročení **413 s výzvou zúžit období**, nikdy potichu oříznutý soubor (`CTRL_HROMADNY`, `BEZPECNOST_MEZE.md`).
+- **Nastavení controllingu dál bez hesla správce** (bod 4) — beze změny.
+- **Sloupec „V nabídce" u příplatků (bod 3) se NEDĚLÁ** — čeká na rozhodnutí J. V.; text sloupce „V základní ceně"
+  je nově na jednom místě (`ctrlVZakladuText`), kam se rozhodnutí doplní.
+- **C4 — Pipedrive deal id u zakázky** (bod 5): `zak.pdDealId` (kladné celé číslo) zadává a opravuje **jen
+  administrátor** — pole v Nastavení → Controlling → Export předkalkulace; **server** (`lib/zakazka_kontrola.mjs`,
+  `ctrlPdDealKontrola`) odmítne změnu, zadání i smazání od jiné role (403) a neplatný tvar komukoli (400); uložení
+  zakázky s nezměněným id projde každému. Duplikát zakázky deal id nepřebírá. Hodnota jde do sloupce „Pipedrive
+  deal" exportu. **Automatické převzetí z propojeného dealu zatím není na co navázat** — výběr dealu z CRM
+  v rozhraní chybí (`zak.pdDealId` dosud nikdo nezapisoval); až vznikne, zapíše totéž pole.
+- Testy C4: `src/test_controlling.js` +9 (179), `test_prava` +8 (883), `overit_controlling.mjs` +2 (44), mutace
+  „#447 C4" (4). Pojistka: bez kódu C4 šest serverových testů selže (obchodník id zadá/opraví/smaže, tvar projde).
+- Testy: `src/test_controlling.js` 170 (+24: filtr, den v Praze, předvýběr, výběr zakázky, oblast, sešit za období,
+  CSV), `netlify/test_controlling.mjs` 50 (+22: práva, období, řada, oblast, přeskočené, protokol, strop 413),
+  `test_prava` +2 řádky matice, `overit_controlling.mjs` 42 (+12: tlačítko v Přehledu jen admin a jen u zamčené
+  řídící, stažení, hromadný XLSX/CSV, protokol, neplatné období se nepošle), mutace „#447 C3" (13).
+  Pojistka: před opravou model padal (funkce neexistovaly), serverová sada nenašla funkci, harness neviděl tlačítko.
+
+---
+
+
+---
+
 ## v21.10.3 — O11: rozhodnutí J. V. k auditu K4 — cena výjezdu PROJ, retence záloh; #451 měď (větev claude/o11-k4-n4-n13)
 
 Dávka O11 (koordinace 21. 10. 2026) nad `claude/integrace-16-10` 2cb9d2b (v21.10.2), větev `claude/o11-k4-n4-n13`.

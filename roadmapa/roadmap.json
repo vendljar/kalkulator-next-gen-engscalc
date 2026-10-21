@@ -7196,9 +7196,9 @@
    "proc": "Controlling (A. Mácová) potřebuje předkalkulované náklady po nákladových skupinách s účty Helios, aby šly v Reporting CZ porovnat se skutečností (PRE × POST).",
    "detail": "Číselník skupin (ManVysl, účet Helios nyní/budoucí, přímý/nepřímý, variabilní/fixní); mapování každého klíče C.*/PC.* a pseudo-klíčů (rezerva, přirážka ATYP, vlastní položky) podle stabilního klíče; hlídání nezařazených (test úplnosti + upozornění při zveřejnění ceníku); export varianty i hromadně za období (XLSX/CSV, u zamčené varianty zmrazený výsledek). Dávky C1–C4.",
    "hotovoKdyz": "Admin v Nastavení → Controlling spravuje skupiny a mapování, test úplnosti hlídá nové klíče, export po kapitolách jde stáhnout pro variantu i za období; práva drží server.",
-   "kde": "`podklady/CONTROLLING_NAVRH_20_10.md`, větev `claude/controlling-navrh`",
+   "kde": "`podklady/CONTROLLING_NAVRH_20_10.md`, `src/controlling.js`, `src/ui/controlling_ui.js`, `netlify/functions/controlling.mjs`, `netlify/functions/controlling_export.mjs`; větve `claude/controlling-navrh`, `claude/controlling-c3`",
    "zavisi": [],
-   "pozn": "Předběžné id (přidělí koordinace při sloučení). Rozhodnutí J. V. J1–J11 20. 10. 2026; C1 HOTOVO 20. 10. (f377c80: model, /api/controlling, záloha a obnova, mutace 11/11). Zbývá C2–C4. A. Mácová je mimo do prosince — rozvržení PROJ a budoucí účty doplní pak."
+   "pozn": "Předběžné id (přidělí koordinace při sloučení). Rozhodnutí J. V. J1–J11 20. 10. 2026; C1 HOTOVO 20. 10. (f377c80: model, /api/controlling, záloha a obnova, mutace 11/11). C2 HOTOVO v21.10.1 (obrazovka Nastavení → Controlling, upozornění u ceníku, export jedné zamčené řídící varianty). C3 HOTOVO v21.10.4 (větev claude/controlling-c3; rozhodnutí J. V. 21. 10. body 1, 2, 4): tlačítko „Export pro controlling“ v Přehledu (jen admin), hromadný export za období na serveru GET /api/controlling/export (den zamčení v českém čase, OCK/PROJ/obojí, ČR/ZAHR/obojí, jen zamčené řídící, protokol exportů, meze 413). Čeká na J. V.: bod 3 — sloupec „V nabídce“ u příplatků (návrh https://claude.ai/artifact/ELHhaqkbhBaGEeyJGoxUPb), kód připraven (ctrlVZakladuText). C4 HOTOVO 21. 10. (táž větev): zak.pdDealId ručně jen admin (Nastavení → Controlling → Export), server 403/400, duplikát id nepřebírá; automatické převzetí z propojeného dealu čeká na výběr dealu z CRM v rozhraní (zatím neexistuje). Nálezy koordinace z ukázky na 5 nabídkách (21. 10.) čekají na J. V.: zaokrouhlení OCK nahoru v exportu nevidět, zamčená jen neřídící varianta se nevyveze, přepočtený výsledek není vidět v řádcích, Kapitoly zaokrouhlují po skupinách. A. Mácová je mimo do prosince — rozvržení PROJ a budoucí účty doplní pak."
   },
   {
    "id": "460",
@@ -7365,7 +7365,7 @@
    "kde": "`src/ui/kalk_proj.js`, `src/uloziste.js`, `netlify/test_prava.mjs`, `src/test_uloziste.js`, `overit_o11_vyjezd.mjs`",
    "zavisi": [],
    "hotovoV": "",
-   "pozn": "Id přidělila koordinace (dávka O11); verzi přidělí sloučení."
+   "pozn": "Id přidělila koordinace (dávka O11); v21.10.3."
   },
   {
    "id": "471",
@@ -7380,7 +7380,7 @@
    "kde": "`netlify/lib/zalohovani.mjs`, `netlify/functions/zaloha_vynuceno.mjs`, `netlify/functions/zaloha_nocni.mjs`, `src/uloziste.js`, `src/ui/online_ui.js`",
    "zavisi": [],
    "hotovoV": "",
-   "pozn": "Id přidělila koordinace (dávka O11); verzi přidělí sloučení."
+   "pozn": "Id přidělila koordinace (dávka O11); v21.10.3."
   },
   {
    "id": "472",

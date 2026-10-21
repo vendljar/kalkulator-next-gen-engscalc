@@ -54,6 +54,7 @@ import zobrazeni from './functions/zobrazeni.mjs';
 import popisy from './functions/popisy.mjs';
 import slovnikFn from './functions/slovnik.mjs';
 import controllingFn from './functions/controlling.mjs';
+import controllingExportFn from './functions/controlling_export.mjs';
 import zakazniciFn from './functions/zakaznici.mjs';
 import schvalovaniFn from './functions/schvalovani.mjs';
 import sablonyFn from './functions/sablony.mjs';
@@ -418,6 +419,18 @@ const MATICE = [
     telo: (r) => { const d = require('../src/controlling.js').ctrlVychozi();
       d.skupiny[0].nazev = 'Cestovné ' + r; return { data: d, poznamka: 'matice' }; },
     proc: 'mapování určuje, do které kapitoly controllingu jde který náklad — mění ho jen administrátor (J7)',
+    prava: JEN_ADMIN },
+
+  /* C3 (21. 10. 2026): hromadný export předkalkulace za období a protokol
+   * exportů — nákupní ceny a marže celé firmy, jen administrátor (J7). */
+  { fn: controllingExportFn, soubor: 'controlling_export.mjs', nazev: 'controlling — hromadný export (GET /api/controlling/export)', metoda: 'GET',
+    url: 'http://x/api/controlling/export?od=2026-10-01&do=2026-10-31',
+    proc: 'export nese nákupní ceny a marže všech odeslaných nabídek za období — jen správce (J7, rozhodnutí J. V. 21. 10. 2026)',
+    prava: JEN_ADMIN },
+
+  { fn: controllingExportFn, nazev: 'controlling — protokol exportů (GET /api/controlling/export?protokol=1)', metoda: 'GET',
+    url: 'http://x/api/controlling/export?protokol=1',
+    proc: 'protokol říká, kdo si kdy vyvezl náklady — vidí ho jen správce',
     prava: JEN_ADMIN },
 
   { fn: zakazky, soubor: 'zakazky.mjs', nazev: 'zakázky — rejstřík (GET /api/zakazky)', metoda: 'GET',
@@ -1633,6 +1646,26 @@ console.log('\n===== #374 (B113, B114): KONCOVÁ CENA BEZ SCHVÁLENÍ — IDENTI
   test('B114: vedoucí (bez práva v matici) — klíč sazby → 403', je403(a7), a7);
   const a8 = await uprav374(a => { hod(a).sazba = 'statik'; hod(a).hodiny = 30; delete fix(a).fixKey; fix(a).cena = 1; }, cAdmin);
   test('B114: administrátor smí identitu položek změnit (200)', a8.status === 200, a8);
+
+  /* #447 C4 (21. 10. 2026): Pipedrive deal id zakázky zadává a opravuje jen
+   * administrátor — hlídá server; tvar (kladné celé číslo) platí všem. */
+  const pd1 = await uprav374(a => { a.pdDealId = '4711'; }, cObch);
+  test('C4: obchodník deal id do uložené zakázky nezadá (403)', je403(pd1, /deal id/), pd1);
+  const pdN = nova374(); pdN.pdDealId = '4711';
+  const pd2 = await uloz374(pdN, cObch);
+  test('C4: obchodník nezaloží zakázku s deal id (403)', je403(pd2, /deal id/), pd2);
+  const pd3 = await uprav374(a => { a.pdDealId = '4712'; }, cVed);
+  test('C4: vedoucí deal id nezadá (403)', je403(pd3, /deal id/), pd3);
+  const pd4 = await uprav374(a => { a.pdDealId = '4713'; }, cAdmin);
+  test('C4: administrátor deal id zadá (200)', pd4.status === 200, pd4);
+  const pd5 = await uprav374(a => { a.nazevAkce = 'jiný název'; }, cObch, z => { z.pdDealId = '4714'; });
+  test('C4: obchodník uloží zakázku s deal id od správce beze změny (200)', pd5.status === 200, pd5);
+  const pd6 = await uprav374(a => { a.pdDealId = '4716'; }, cObch, z => { z.pdDealId = '4715'; });
+  test('C4: obchodník deal id od správce neopraví (403)', je403(pd6, /deal id/), pd6);
+  const pd7 = await uprav374(a => { delete a.pdDealId; }, cObch, z => { z.pdDealId = '4717'; });
+  test('C4: obchodník deal id nesmaže (403)', je403(pd7, /deal id/), pd7);
+  const pd8 = await uprav374(a => { a.pdDealId = '12ab'; }, cAdmin);
+  test('C4: neplatný tvar deal id neuloží ani správce (400)', pd8.status === 400 && /deal id/.test(pd8.chyba || ''), pd8);
   const n1 = nova374(); hod(n1).sazba = 'neexistuje'; hod(n1).sazbaKc = 1;
   const a9 = await uloz374(n1, cObch);
   test('B114: nová zakázka obchodníka s pozměněnou položkou → 403 (proti výchozímu zadání)', je403(a9), a9);
