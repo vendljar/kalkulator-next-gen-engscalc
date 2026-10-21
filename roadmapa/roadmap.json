@@ -7997,7 +7997,7 @@
   {
    "text": "21. 10. 2026 — dávka #114 (claude/eager-carson-1xznt2, bez verze): test polí, která integrátor založil (53/54 nových, 4/4 úprav), párování polí Pipedrive podle přesného názvu a typu (66/66 na skutečném účtu), IČ s nulami, verze mapy v cache, převod hodnot krycího listu pro zápis (pd_prevod.mjs). Odpoledne: zákazník = organizace dealu (ne zdroj poptávky), každé pole jediný vlastník — nic obousměrně (pravidlo J. V.), #475 uzavřeno. Návrh směru dat podle 85 vyhraných dealů (podklady §12): hlavička a kontakty z Pipedrive, krycí list do Pipedrive. #114, #115, #117, #473–#475.",
    "hotovo": true,
-   "pozn": "test_pipedrive 94/0 (pojistka: na původním kódu 26 selže), test_pd_prevod 101/0, mutace #114 v netlify/mutace.mjs; čísla #473–#475 může slučování přečíslovat (integrace má #470–#472)."
+   "pozn": "test_pipedrive 91/0 (pojistka: na 0db8476 selže 6 z 91; dopolední verze sady s 94 kontrolami selhala na kódu před opravou 26×), test_pd_prevod 102/0, test_pd_pristup 54/0, mutace #114 21/21 v plném běhu a 2/2 cílené (netlify/mutace.mjs); čísla #473–#475 může slučování přečíslovat (integrace má #470–#472)."
   }
   ],
   "pravidla" : [
