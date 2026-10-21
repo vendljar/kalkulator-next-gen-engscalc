@@ -1,3 +1,21 @@
+# Předávka — 21. 10. 2026: dávka S11 — šablona SoD realizace v4 CZ/EN/DE/FR (#447 C6), větev `claude/s11-sod-realizace-v4`
+
+Nad `claude/integrace-16-10` 7ce01b3 (v21.10.4). **Kód aplikace beze změny.** Do integrace / test nic — slučuje
+koordinace (session_016CbSudw1q9GXrrtfiJKvAG). Zápis: `podklady/SABLONA_SOD_REALIZACE_V4_21_10.md`.
+
+- **Hotovo (body 1–3, 5):** `node nastroje/vyrob_sablony.js --sod-real-v4 <složka s v3 + v3_EN/_DE/_FR>` → v4
+  CZ/EN/DE/FR. V čl. V pod „{{CENA_BEZ_DPH}} (bez DPH)" tři samostatné odstavce „z toho cena … {{SOD_CENA_NABIDKY}}",
+  „objednané příplatky:↵{{SOD_PRIPLATKY_OBJEDNANE}}", „příplatky celkem: {{SOD_PRIPLATKY_KC}}". v4 × v3 +3 −0,
+  EN/DE/FR × CZ v4 +0 −0, obsahVady prázdné, XML bez vad, jazyky OK. Test `src/test_sod_real_v4.js` 17/0
+  (pojistka 0/1). Soubory přiloženy J. V. (SendUserFile); na Disk nenahrány (base64 0,44–0,50 MB — konektor jen
+  ručním přepisem). CHANGELOG (bez verze), roadmapa #447 (pozn + kde).
+- **Nález:** EN/DE/FR v3 na Disku jsou revidované (≠ slovníky preklad_sod, EN 99 odstavců) → v4 jazyky z nich
+  (vložení přeloženého bloku), slovníky jen záloha. Slovníky na Disku revizi nenesou — k rozhodnutí J. V./koordinace.
+- **Čeká (bod 4):** `sodObjednaneSymboly` v `claude/controlling-c3` (C6). Pak ODDĚLENÝ worktree nad
+  `origin/claude/controlling-c3`, vyplnit CZ/EN/DE/FR × bez / 1 / 3 příplatky (odstavce zmizí celé, součty, DPH
+  z celku, žádný symbol) a doplnit oddíl 4 zápisu. Vstupy: v3 z Disku (ID v zápisu) do scratchpadu, `--sod-real-v4`.
+- **Kolo:** viz níže (doplněno po doběhu).
+
 # Předávka — 21. 10. 2026: Controlling #447 — C3 + C4, větev `claude/controlling-c3` (verzi přidělí sloučení)
 
 Nad `claude/integrace-16-10` 2cb9d2b (v21.10.2), build `KNG_NEZVYSOVAT_VERZI=1`. **Do test / main / integrace nic** —
