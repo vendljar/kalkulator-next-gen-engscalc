@@ -8,6 +8,53 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v20.10.9 — C2: Controlling — obrazovka, upozornění u ceníku, export předkalkulace (#447, větev claude/controlling-navrh)
+
+Spuštěno na pokyn J. V. předaný koordinací 20. 10. ~15:45 („C2 přes noc"). Verzi přidělí koordinace (C1 + C2 jako jedna verze).
+
+- **Nastavení → Controlling** (jen administrátor online, J7; `src/ui/controlling_ui.js`): karty **Nákladové skupiny**
+  (název, položka ManVysl, účty Helios nyní/budoucí, přímý/nepřímý, variabilní/fixní, oblast; přidat / zrušit),
+  **Mapování položek** (každý klíč ceníku, pseudo-klíč i trvalá položka → skupina, filtr OCK/PROJ, „jen nezařazené",
+  hledání, stažení a nahrání mapování v XLSX s náhledem změn) a **Export předkalkulace**. Změny v pracovní kopii,
+  na server tlačítkem „Uložit jako novou verzi" (s poznámkou); ukládají se jen **odchylky** mapování od výchozího.
+- **Upozornění u zveřejnění ceníku (J5):** karta „Platný ceník programu" ukáže trvalé položky bez skupiny a nabídne
+  je rovnou zařadit a uložit; zveřejnění neblokuje.
+- **Export předkalkulace jedné varianty (J9):** jen **zamčená řídící** varianta otevřené zakázky (zmrazený výsledek
+  z tisku), XLSX s listy **Řádky** (32 sloupců: číslo, akce, zákazník, verze ceníku a mapování, klíč, skupina,
+  účty, množství, jednotková a celková nákladová cena, prodejní cena), **Kapitoly** (součty po skupinách + souhrn
+  zakázky se slevou, zaokrouhlením a marží) a **Popis**; CSV = list Řádky (středník, desetinná čárka, BOM, ochrana
+  proti vzorcům). Kč bez DPH i u zahraniční řady; příplatky označené jako volby.
+- Oprava modelu C1 nalezená harnessem: trvalé položky katalogu OCK leží pod `KATALOG.polozky` (dřív se hledaly
+  o úroveň výš a nezařazené by se neukázaly).
+- Testy: `src/test_controlling.js` 146 (export, CSV, import, odchylky), nový harness `overit_controlling.mjs` 30
+  (záložka, uložení, zařazení z karty ceníku, stažený XLSX a CSV, import), mutace „#447 C2" (7).
+  Pojistka: harness před opravou katalogu padal (TypeError / 0 nezařazených), testy exportu padají bez kontroly
+  zámku, řídící varianty, ochrany CSV a odmítnutí klíče v importu (mutace).
+
+---
+
+## v20.10.9 — C1: Controlling — nákladové skupiny a mapování (#447, větev claude/controlling-navrh)
+
+Nad `test` 5dc28d1 (v20.10.1). Návrh a rozhodnutí J. V. J1–J11: `podklady/CONTROLLING_NAVRH_20_10.md`.
+Verzi přidělí koordinace při slučování.
+
+- **Nové `src/controlling.js`** — číselník nákladových skupin (Andyiných 12 + Režie – kalkulační
+  příspěvek, Rezerva, 3 návrhové PROJ, Nezařazeno), výchozí mapování každého klíče ceníku OCK i PROJ
+  podle stabilního klíče (nové od v2.9.4 zařazené: můstek → zámečníci, VSG 4.4.2 → sklo, Cetris →
+  materiál, hodina cesty PROJ → cestovné), pseudo-klíče řádků bez klíče ceníku (rezervy, přirážka
+  ATYP, zámečník atyp, souhrny spojovacího materiálu a lakování, doprava PROJ, trvalé a ruční
+  položky), rozvrh výsledku výpočtu OCK i PROJ do skupin a souhrn po kapitolách. Mimo jádro výpočtu —
+  engine se nemění, Model 1 zůstává 1:1.
+- **Nové `/api/controlling`** (GET/POST jen Administrátor, verze s historií, úložiště
+  `program/controlling`); záloha, kopie na Disk a obnova (s očistou) controlling nesou.
+- Testy: `src/test_controlling.js` (úplnost mapování proti ceníku i jádru, součty rozvrhu = náklad
+  kalkulace v Modelu 1 i 2, záznam), `netlify/test_controlling.mjs` (práva, verze, odmítnutí, záloha,
+  obnova), řádky v `test_prava.mjs`, mutace „#447“ v `netlify/mutace.mjs`.
+  Pojistka: bez zařazení položky (C.oplechFasadaBmKc), bez řádku rezervy a bez rozpoznání přirážky
+  ATYP testy padají; bez `controlling` v záloze a bez očisty v obnově padá serverová sada.
+
+---
+
 ## Nástroj a testy (bez nové verze aplikace) — O8: opravy nálezů K4 bez rozhodnutí J. V. (větev claude/o8-k4-nalezy)
 
 Dávka O8 (noční koordinace 20. 10. 2026) nad `claude/integrace-16-10` 89816fe (v20.10.8). Aplikace se nemění,

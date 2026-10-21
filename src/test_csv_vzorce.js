@@ -30,7 +30,20 @@ for (const f of fs.readdirSync(ui).filter(f => f.endsWith('.js'))) {
   const t = fs.readFileSync(path.join(ui, f), 'utf8');
   const kusy = t.split(/\nfunction |\nasync function /).filter(k => /text\/csv/.test(k));
   kusy.forEach(k => test('CSV export v ui/' + f + ' (' + k.slice(0, k.indexOf('(')) + ') jde přes csvBunka',
-    /csvBunka|slovnikCsvJenVApp/.test(k) && !/replace\(\/"\/g/.test(k)));
+    /csvBunka|slovnikCsvJenVApp|ctrlExportCsv/.test(k) && !/replace\(\/"\/g/.test(k)));
+}
+
+/* Controlling (#447 C2): ctrlExportCsv (src/controlling.js) skládá CSV přes
+ * csvBunka — ověřeno tady, aby výjimka výš nebyla slepá. */
+{
+  const C = require('./controlling.js');
+  global.csvBunka = csvBunka;
+  const csv2 = C.ctrlExportCsv({ hlavicka: { nazevAkce: '=1+1', zakaznik: '@SUM(A1)', ico: '', datum: '', zamceno: '', zamkl: '',
+    rada: 'ČR', model: 2, cenikVerze: '', cenikOtisk: '', verzeMapovani: '', pipedrive: '' },
+    strany: [{ oblast: 'ock', cislo: '-2' }], radky: [{ oblast: 'ock', sekce: 'rezie', nazev: '+X', klic: 'C.transportKc',
+      skupina: 'sl-dopravne', vZakladu: true, vlastni: false, zarazeno: true, mnozstvi: 1, cena: 2, naklad: 2, prodej: 3 }] });
+  test('controlling: CSV exportu předkalkulace chrání buňky před vzorci',
+    csv2.includes('"\'=1+1"') && csv2.includes('"\'@SUM(A1)"') && csv2.includes('"\'-2"') && csv2.includes('"\'+X"'), csv2.slice(0, 300));
 }
 
 console.log(`\n${ok} OK, ${fail} FAIL`);

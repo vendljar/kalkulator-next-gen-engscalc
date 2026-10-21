@@ -49,6 +49,7 @@ import sablonyFn from './netlify/functions/sablony.mjs';
 import analytikaFn from './netlify/functions/analytika.mjs';
 import obnovaFn from './netlify/functions/obnova.mjs';
 import slovnikFn from './netlify/functions/slovnik.mjs';
+import controllingFn from './netlify/functions/controlling.mjs';
 
 /* Dialogy jsou od 2. 9. 2026 v aplikaci (src/ui/dialog.js), ne nativní —
  * `page.on('dialog')` už tedy nic nechytí. Harness si proto potvrzování
@@ -103,6 +104,8 @@ const FUNKCE = {
   '/api/obnova': obnovaFn,
   /* Zveřejněný slovník překladů (#401) — načítá se hned po přihlášení. */
   '/api/slovnik': slovnikFn,
+  /* Controlling (#447): správce si ho po přihlášení načte vedle slovníku. */
+  '/api/controlling': controllingFn,
 };
 
 let ok = 0, fail = 0;

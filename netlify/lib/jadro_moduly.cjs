@@ -85,6 +85,9 @@ Object.assign(globalThis, require('../../src/program.js'));
 Object.assign(globalThis, require('../../src/ukazkove.js'));
 Object.assign(globalThis, require('../../src/zobrazeni.js'));
 Object.assign(globalThis, require('../../src/zakaznici.js'));
+/* Controlling (#447): /api/controlling a obnova kontrolují číselník a mapování
+ * týmž kódem jako prohlížeč (ctrlDataKontrola, ctrlDbOciste). */
+Object.assign(globalThis, require('../../src/controlling.js'));
 Object.assign(globalThis, require('../../src/sluzba.js'));   // jen server (služba K2)
 
 /* Pojmenované držáky pro moduly, které se v kódu funkcí volají přes tečku

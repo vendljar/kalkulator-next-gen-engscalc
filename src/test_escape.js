@@ -262,6 +262,12 @@ function hodnotaBezpecna(v) {
  * kdyby se okolní kód změnil, důvod musí platit dál, jinak řádek ze seznamu
  * patří pryč. Nový záznam sem přidávejte jen po skutečné kontrole zdroje. */
 const PROVERENO = {
+  /* #447 C2 (20. 10. 2026): sel() v ctrlUiKartaSkupiny skládá <select>
+   * z literálů kódu (typ, chování, oblast) a hodnoty i popisky escapuje
+   * uvnitř (esc / escJs) — interpolace je hotové HTML. */
+  'controlling_ui.js': {
+    "sel(i, 'typ', [['primy', 'přímý'], ['neprimy', 'nepřímý']], s.typ)": 'hotové HTML z sel() — literály kódu, hodnoty uvnitř přes esc()/escJs()',
+  },
   /* #367 fáze 2 (19. 10. 2026): podmRadek(label, vstup, pozn) — label se
    * escapuje uvnitř, pozn je hotové HTML skládané v témže souboru
    * (podmStitek a literály — hodnoty v nich jdou přes esc). */

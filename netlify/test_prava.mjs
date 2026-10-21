@@ -53,6 +53,7 @@ import zdravi from './functions/zdravi.mjs';
 import zobrazeni from './functions/zobrazeni.mjs';
 import popisy from './functions/popisy.mjs';
 import slovnikFn from './functions/slovnik.mjs';
+import controllingFn from './functions/controlling.mjs';
 import zakazniciFn from './functions/zakaznici.mjs';
 import schvalovaniFn from './functions/schvalovani.mjs';
 import sablonyFn from './functions/sablony.mjs';
@@ -403,6 +404,20 @@ const MATICE = [
     url: 'http://x/api/slovnik',
     telo: (r) => ({ hesla: { 'Zkušební heslo matice': ['Matrix test ' + r, '', ''] }, poznamka: 'matice' }),
     proc: 'zveřejněný slovník překládá nabídky všech — mění ho jen administrátor (zadání J. V. 12. 10. 2026: „jako ceník")',
+    prava: JEN_ADMIN },
+
+  /* Controlling (#447, C1): číselník nákladových skupin a mapování klíčů
+   * ceníku — čtení i zápis jen administrátor (rozhodnutí J. V. 20. 10. 2026, J7). */
+  { fn: controllingFn, soubor: 'controlling.mjs', nazev: 'controlling — čtení (GET /api/controlling)', metoda: 'GET',
+    url: 'http://x/api/controlling',
+    proc: 'controlling a export předkalkulace jsou jen pro správce (J7, 20. 10. 2026)',
+    prava: JEN_ADMIN },
+
+  { fn: controllingFn, nazev: 'controlling — zápis (POST /api/controlling)', metoda: 'POST',
+    url: 'http://x/api/controlling',
+    telo: (r) => { const d = require('../src/controlling.js').ctrlVychozi();
+      d.skupiny[0].nazev = 'Cestovné ' + r; return { data: d, poznamka: 'matice' }; },
+    proc: 'mapování určuje, do které kapitoly controllingu jde který náklad — mění ho jen administrátor (J7)',
     prava: JEN_ADMIN },
 
   { fn: zakazky, soubor: 'zakazky.mjs', nazev: 'zakázky — rejstřík (GET /api/zakazky)', metoda: 'GET',
@@ -1747,7 +1762,7 @@ console.log('\n===== #374 (B113, B114): KONCOVÁ CENA BEZ SCHVÁLENÍ — IDENTI
   for (const [jm, fn, url, c] of [['zakazky', zakazky, '/api/zakazky', cObch], ['zakaznici', zakazniciFn, '/api/zakaznici', cObch],
     ['uzivatele', uzivatele, '/api/uzivatele', cAdmin], ['program', program, '/api/program', cAdmin], ['firma', firma, '/api/firma', cAdmin],
     ['zobrazeni', zobrazeni, '/api/zobrazeni', cAdmin], ['popisy', popisy, '/api/popisy', cAdmin], ['sablony', sablonyFn, '/api/sablony', cAdmin],
-    ['slovnik', slovnikFn, '/api/slovnik', cAdmin],
+    ['slovnik', slovnikFn, '/api/slovnik', cAdmin], ['controlling', controllingFn, '/api/controlling', cAdmin],
     ['obnova', obnova, '/api/obnova', cAdmin], ['analytika', analytikaFn, '/api/analytika', cObch]]) {
     /* B150 (12. 10. 2026): i pole a číslo — kontrola má odmítnout každé
      * tělo, které není objekt (pole by např. matici zobrazení vynulovalo). */

@@ -697,6 +697,7 @@ function renderCenikProgramKarta() {
   return card('Platný ceník programu (OCK i PROJ)',
     `<div class="note" style="margin-top:0">${esc(stav)}</div>
      ${hlasky}
+     ${typeof ctrlUpozorneniBlok === 'function' ? ctrlUpozorneniBlok() : ''}
      <div class="btns" style="margin-top:10px">
        <button class="primary" onclick="cenikZverejniVse()" ${PROG_STAV.pracuje || ONLINE_STAV.pracuje ? 'disabled' : ''}>Zveřejnit ceník této varianty jako platný</button>
        ${akt.db ? `<button onclick="otevriProgram()">Verze ceníku… (historie)</button>` : ''}

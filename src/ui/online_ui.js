@@ -356,6 +356,10 @@ function onlinePoPrihlaseni(ja) {
                       onlineNactiSablony(),
                       /* zveřejněný slovník překladů (#401) — na ceníku nezávisí */
                       onlineNactiSlovnik(),
+                      /* controlling (#447) — jen administrátor; chyba načtení
+                       * přihlášení nezastaví (ctrlUiNacti ji jen zapíše) */
+                      (typeof ctrlUiNacti === 'function' && typeof jeAdminOnline === 'function' && jeAdminOnline())
+                        ? ctrlUiNacti() : Promise.resolve(),
                       /* analytika (#27): zjistit, jestli je sběr zapnutý, a nastartovat ho */
                       typeof analytikaPoPrihlaseni === 'function' ? analytikaPoPrihlaseni() : Promise.resolve()])
     /* SPOLEČNÉ DODATKOVÉ TEXTY AŽ PO CENÍKU, NE VEDLE NĚJ (22. 9. 2026).
@@ -2688,6 +2692,7 @@ const OBNOVA_CASTI = [
   ['zobrazeni', 'Matice zobrazení'],
   ['popisy', 'Dodatkové texty položek'],
   ['slovnik', 'Slovník překladů (zveřejněné verze)'],
+  ['controlling', 'Controlling – nákladové skupiny a mapování'],
   ['zakazky', 'Zakázky (rejstřík se přestaví sám)'],
   ['uzivatele', 'Účty uživatelů (jen ze serverového otisku)'],
   ['sablony', 'Šablony dokumentů'],
@@ -2803,7 +2808,7 @@ function onlineObnovaDavky(zaloha, casti) {
   let d = { ...hlava }, velikost = onlineObnovaVelikost(d);
   const neprazdna = () => Object.keys(d).length > Object.keys(hlava).length;
   const uzavri = () => { if (neprazdna()) davky.push(d); d = { ...hlava }; velikost = onlineObnovaVelikost(d); };
-  for (const k of ['program', 'firma', 'zobrazeni', 'popisy', 'slovnik', 'uzivatele'].filter(k => casti.includes(k))) {
+  for (const k of ['program', 'firma', 'zobrazeni', 'popisy', 'slovnik', 'controlling', 'uzivatele'].filter(k => casti.includes(k))) {
     const v = zaloha[k] === undefined ? null : zaloha[k];
     const s = onlineObnovaVelikost(v);
     if (s > OBNOVA_DAVKA_MAX_B) { prilisVelke.push({ cast: k, klic: k, velikost: s }); continue; }

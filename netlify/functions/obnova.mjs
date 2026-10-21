@@ -12,7 +12,7 @@
  *               | { otisk: 'YYYY-MM-DD' | '…-pred-obnovou' },
  *   rezim:      'doplnit' (zapíše jen to, co na serveru chybí)
  *               | 'prepsat' (zapíše všechno ze zálohy přes stávající),
- *   casti:      ['program','firma','zobrazeni','popisy','slovnik','zakazky','uzivatele',
+ *   casti:      ['program','firma','zobrazeni','popisy','slovnik','controlling','zakazky','uzivatele',
  *                'sablony','zakaznici','podpisy']   — nepovinné = všechny,
  *   nahled:     true  → NIC nezapíše, jen vrátí, co by se stalo,
  *   potvrzeni:  'OBNOVIT' → bez něj se ostrá obnova odmítne (428)
@@ -89,7 +89,7 @@ import { jadro, jadroChyba } from '../lib/jadro.mjs';
 import { zakazkaPrijmi, zakazkaServerKontrola } from '../lib/zakazka_kontrola.mjs';
 import { porizOtisk, klicPredObnovou, OTISK_KLIC } from '../lib/zalohovani.mjs';
 
-export const OBNOVA_CASTI = ['program', 'firma', 'zobrazeni', 'popisy', 'slovnik', 'zakazky', 'uzivatele',
+export const OBNOVA_CASTI = ['program', 'firma', 'zobrazeni', 'popisy', 'slovnik', 'controlling', 'zakazky', 'uzivatele',
                              'sablony', 'zakaznici', 'podpisy'];
 export const OBNOVA_REZIMY = ['doplnit', 'prepsat'];
 export const OBNOVA_POTVRZENI = 'OBNOVIT';
@@ -463,7 +463,8 @@ export default async (req) => {
   const sProg = await uloziste('program');
 
   /* Jednozáznamové části v úložišti `program`. */
-  const jednoduche = { program: 'db', firma: 'firma', zobrazeni: 'zobrazeni', popisy: 'popisy', slovnik: 'slovnik' };
+  const jednoduche = { program: 'db', firma: 'firma', zobrazeni: 'zobrazeni', popisy: 'popisy', slovnik: 'slovnik',
+                       controlling: 'controlling' };
   for (const cast of Object.keys(jednoduche)) {
     if (!casti.includes(cast) || !maVlastni(zaloha, cast)) continue;
     const b = bilance();
@@ -526,6 +527,16 @@ export default async (req) => {
         ? globalThis.slovnikDbOciste(hodnota, globalThis.PREKLAD_ZABUDOVANY)
         : { ok: false, chyba: 'kontrola slovníku není k dispozici' };
       if (!c.ok) preskoc(b, 'slovnik', c.chyba + ' — neobnovuje se');
+      else await zaznam(b, sProg, jednoduche[cast], c.db, rezim, zapisovat);
+    }
+    else if (cast === 'controlling') {
+      /* CONTROLLING (#447) projde touž kontrolou jako /api/controlling —
+       * záloha je soubor, který mohl projít čímkoli. Vadná platná verze =
+       * část se přeskočí celá, vadné starší verze vypadnou. */
+      const c = (typeof globalThis.ctrlDbOciste === 'function')
+        ? globalThis.ctrlDbOciste(hodnota)
+        : { ok: false, chyba: 'kontrola controllingu není k dispozici' };
+      if (!c.ok) preskoc(b, 'controlling', c.chyba + ' — neobnovuje se');
       else await zaznam(b, sProg, jednoduche[cast], c.db, rezim, zapisovat);
     }
     else await zaznam(b, sProg, jednoduche[cast], hodnota, rezim, zapisovat);

@@ -194,6 +194,7 @@ const ULOZISTE = {
 const KLICE = {
   db: ['program', true], firma: ['program', true], zobrazeni: ['program', true], popisy: ['program', true],
   slovnik: ['program', true],
+  controlling: ['program', true],
   popisy_historie: ['program', 'výjimka: historie 30 verzí dodatkových textů, platné popisy jsou v otisku'],
   'z/': ['zakazky', true], _rejstrik: ['zakazky', true],
   rejstrik: ['sablony', true],
