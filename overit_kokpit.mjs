@@ -75,6 +75,39 @@ zkus('skutečná data: třídy dlaždic beze změny', r2.tiles.length > 0 && r2.
 zkus('skutečná data: řádky sezení beze změny', r2.rows.length > 0 && r2.rows.every(t => /^row r-(ok|warn|run|bad|idle)$/.test(t)), r2.rows.join(','));
 zkus('skutečná data: kontext s procenty', r2.ctx.some(t => /kontext \d+ %/.test(t)), r2.ctx.join(','));
 
+/* K5-W1 (O13): popisek odkazu (kratko) dekóduje jméno větve/tagu/souboru —
+ * dekódovaný text musí jít do HTML escapovaný a vadné „%E0" nesmí shodit
+ * vykreslení. Pojistka: šablona před O13 → 3 ✕. */
+const G = 'https://github.com/vendljar/kalkulator-next-gen-engscalc';
+const data3 = JSON.parse(html.slice(a, b));
+data3.sezeni = [Object.assign({}, data3.sezeni[0] || {}, {
+  nazev: 'Odkazy', stav: 'ok', id: 'session_y', eta: '1 h', kontext: 10,
+  co: 'větev ' + G + '/tree/claude/%3Cimg%20data-utok%3D%224%22%20src%3Dx%20onerror%3Dwindow.__xss%3D4%3E a tag '
+    + G + '/releases/tag/v1%3Cb%20data-utok%3D5%3E',
+  dalsi: 'běžná ' + G + '/tree/claude/o13-k5-nalezy a soubor '
+    + G + '/blob/test/podklady/K5_AUDIT_21_10.md' })];
+const p3 = await prohlizec.newPage();
+const chyby3 = [];
+p3.on('pageerror', e => chyby3.push(String(e)));
+await p3.setContent(html.slice(0, a) + JSON.stringify(data3).replace(/</g, '\\u003c') + html.slice(b), { waitUntil: 'load' });
+await p3.waitForTimeout(300);
+const r3 = await p3.evaluate(() => ({
+  utok: document.querySelectorAll('[data-utok],[onerror]').length, xss: window.__xss || 0,
+  odkazy: [...document.querySelectorAll('#board a')].map(x => x.textContent),
+}));
+zkus('K5-W1: dekódované jméno větve/tagu nepřidá prvek ani obsluhu', chyby3.length === 0 && r3.odkazy.length >= 4 && r3.utok === 0 && r3.xss === 0, chyby3.join(' | ') + JSON.stringify(r3));
+data3.sezeni[0].co = 'vadné ' + G + '/tree/claude/%E0%A4%A';
+const p4 = await prohlizec.newPage();
+const chyby4 = [];
+p4.on('pageerror', e => chyby4.push(String(e)));
+await p4.setContent(html.slice(0, a) + JSON.stringify(data3).replace(/</g, '\\u003c') + html.slice(b), { waitUntil: 'load' });
+await p4.waitForTimeout(300);
+const r4 = await p4.evaluate(() => [...document.querySelectorAll('#board a')].map(x => x.textContent));
+zkus('K5-W1: vadné %E0 v odkazu kokpit neshodí', chyby4.length === 0 && r4.includes('větev claude/%E0%A4%A'), chyby4.join(' | ') + ' ' + r4.join(','));
+zkus('K5-W1: popisky beze změny vzhledu (větev, soubor, text se „<")',
+  r3.odkazy.includes('větev claude/o13-k5-nalezy') && r3.odkazy.includes('K5_AUDIT_21_10.md')
+  && r3.odkazy.some(t => t === 'větev claude/<img data-utok="4" src=x onerror=window.__xss=4>'), r3.odkazy.join(' | '));
+
 await prohlizec.close();
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);

@@ -411,16 +411,21 @@ a{color:var(--steel);overflow-wrap:anywhere}
   var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
   /* Odkazy v textech vždy živé a proklikávací (J. V. 19. 10. 2026). */
   /* Krátký popisek odkazu (J. V. 20. 10. 2026): href zůstává celý, zobrazí se jen čitelný název. */
+  /* K5-W1 (O13): popisek se skládá z odescapovaného odkazu, dekóduje se bez
+   * výjimky (vadné „%E0" kokpit neshodí) a do HTML jde přes esc() — jméno
+   * větve „%3Cimg…%3E" tak zůstane textem. Vzhled beze změny. */
+  var odEsc=function(s){return s.replace(/&(amp|lt|gt|quot);/g,function(_,e){return {amp:'&',lt:'<',gt:'>',quot:'"'}[e]})};
+  var dek=function(s){try{return decodeURIComponent(s)}catch(e){return s}};
   var kratko=function(u){var m;
     if((m=u.match(/claude\.ai\/artifact\/([A-Za-z0-9]+)/)))return 'artefakt '+m[1].slice(0,6)+'…';
     if((m=u.match(/claude\.ai\/code\/(session_[A-Za-z0-9]+)/)))return 'sezení '+m[1].slice(8,14)+'…';
-    if((m=u.match(/releases\/new\?tag=([^&]+)/)))return 'nový release '+decodeURIComponent(m[1]);
-    if((m=u.match(/releases\/tag\/([^/?#]+)/)))return 'release '+decodeURIComponent(m[1]);
+    if((m=u.match(/releases\/new\?tag=([^&]+)/)))return 'nový release '+dek(m[1]);
+    if((m=u.match(/releases\/tag\/([^/?#]+)/)))return 'release '+dek(m[1]);
     if((m=u.match(/actions\/workflows\/([^/?#]+)/)))return 'Actions: '+m[1];
-    if((m=u.match(/github\.com\/[^/]+\/[^/]+\/tree\/(.+)$/)))return 'větev '+decodeURIComponent(m[1]);
-    if((m=u.match(/github\.com\/[^/]+\/[^/]+\/blob\/[^/]+\/(.+)$/)))return decodeURIComponent(m[1]).split('/').pop();
+    if((m=u.match(/github\.com\/[^/]+\/[^/]+\/tree\/(.+)$/)))return 'větev '+dek(m[1]);
+    if((m=u.match(/github\.com\/[^/]+\/[^/]+\/blob\/[^/]+\/(.+)$/)))return dek(m[1]).split('/').pop();
     var t=u.replace(/^https?:\/\//,'');return t.length>40?t.slice(0,38)+'…':t;};
-  var lnk=function(s){return esc(s).replace(/https?:\/\/[^\s<"]+/g,function(u){var k='';var m=u.match(/[.,;:)\u201c\u201d]+$/);if(m){k=m[0];u=u.slice(0,-k.length);}return '<a href="'+u+'" target="_blank" rel="noopener" title="'+u+'">'+kratko(u)+'</a>'+k;})};
+  var lnk=function(s){return esc(s).replace(/https?:\/\/[^\s<"]+/g,function(u){var k='';var m=u.match(/[.,;:)\u201c\u201d]+$/);if(m){k=m[0];u=u.slice(0,-k.length);}return '<a href="'+u+'" target="_blank" rel="noopener" title="'+u+'">'+esc(kratko(odEsc(u)))+'</a>'+k;})};
   var pill={run:'p-run',ok:'p-ok',warn:'p-warn',bad:'p-bad',idle:'p-idle'};
   var ctx=function(p,tok){
     p=cislo(p); tok=cislo(tok);

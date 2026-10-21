@@ -295,6 +295,21 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
     const zak3 = kopie(zak); zak3.nazevAkce = '=HYPERLINK("x")';
     const csv3 = C.ctrlExportCsv(C.ctrlExportVarianty(zak3, zak3.varianty[0], { jekly: JEKLY }));
     test('CSV: text začínající „=" nejde jako vzorec', csv3.includes('"\'=HYPERLINK(""x"")"'));
+    /* K5-K1 (O13): „+ "/„- "/tabulátor za znaménkem — controlling dostane
+     * apostrof u každého textu začínajícího =, +, -, @, TAB, CR; čísla
+     * (i záporná) zůstanou čísly bez uvozovek. Globální csvBunka (odrážky
+     * „- položka" v CSV překladů) se nemění. */
+    const B = C.ctrlCsvBunka;
+    test('K5-K1: „+ 1+1", „- 2+3", „-\tX", „+\tHYPERLINK" dostanou apostrof',
+      B('+ 1+1') === '"\'+ 1+1"' && B('- 2+3') === '"\'- 2+3"' && B('-\tX') === '"\'-\tX"' && B('+\tHYPERLINK(1)') === '"\'+\tHYPERLINK(1)"');
+    test('K5-K1: =, @, TAB, CR i „-1" jako text dostanou apostrof', ['=1', '@A', '\tA', '\rA', '-1', '+1'].every(t => B(t) === '"\'' + t + '"'));
+    test('K5-K1: čísla i záporné částky zůstanou čísly', B(-1234.5) === '-1234,5' && B(0) === '0' && B(12.25) === '12,25');
+    test('K5-K1: běžný text beze změny', B('Zkušební zákazník s.r.o.') === '"Zkušební zákazník s.r.o."' && B('a "b"') === '"a ""b"""' && B(null) === '""');
+    const zak4 = kopie(zak); zak4.nazevAkce = '- 2+3';
+    test('K5-K1: název akce „- 2+3" jde do CSV s apostrofem',
+      C.ctrlExportCsv(C.ctrlExportVarianty(zak4, zak4.varianty[0], { jekly: JEKLY })).includes('"\'- 2+3"'));
+    if (typeof csvBunka === 'function')
+      test('K5-K1: globální csvBunka nechá odrážku „- položka" bez apostrofu', csvBunka('- položka') === '"- položka"');
     if (typeof xlsxZapis === 'function') {
       let okX = true; try { xlsxZapis(listy); } catch (e) { okX = e.message; }
       test('XLSX se ze tří listů sestaví', okX === true, okX);
@@ -426,6 +441,13 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
   test('C4: administrátor zadá i opraví', K({}, { pdDealId: '77' }, 'Administrátor') === null && K({ pdDealId: '7' }, { pdDealId: '8' }, 'Administrátor') === null);
   test('C4: neplatný tvar neuloží nikdo (400)', K({}, { pdDealId: 'x1' }, 'Administrátor').status === 400);
   test('C4: neplatná uložená hodnota se bere jako prázdná', K({ pdDealId: 'x' }, {}, 'Obchodník') === null);
+  /* K5-S1 (O13): objekt/pole/bool místo id → 400, ne výjimka (HTTP 500). */
+  const Kz = (s, z, r) => { try { return K(s, z, r); } catch (e) { return { status: 500, chyba: e.message }; } };
+  test('K5-S1: deal id jako objekt {toString:1} → 400, ne výjimka', (Kz({}, { pdDealId: { toString: 1 } }, 'Administrátor') || {}).status === 400);
+  test('K5-S1: deal id jako pole / true → 400', (Kz({}, { pdDealId: ['5'] }, 'Administrátor') || {}).status === 400
+    && (Kz({}, { pdDealId: true }, 'Administrátor') || {}).status === 400);
+  test('K5-S1: uložený objekt se bere jako prázdný (bez výjimky)', Kz({ pdDealId: { toString: 1 } }, {}, 'Obchodník') === null);
+  test('K5-S1: číslo i text čísla dál platí', C.ctrlPdDealIdNorm(77) === '77' && C.ctrlPdDealIdNorm(' 77 ') === '77');
   if (typeof zakazkaDuplikuj === 'function') {
     const z = novaZakazka(); z.pdDealId = '991';
     test('C4: duplikát zakázky deal id nepřebírá', !('pdDealId' in zakazkaDuplikuj(z, '2026 - OPR - CN - 1')));
