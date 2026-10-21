@@ -1,3 +1,18 @@
+# Předávka — 21. 10. 2026 noc: dávka O9 (kód aplikace, verzi přidělí sloučení) — opravy K4 bez rozhodnutí J. V.
+
+Nad `claude/integrace-16-10` 12b41b0 (v20.10.8), build `KNG_NEZVYSOVAT_VERZI=1`. Lokálně větev `claude/o9-k4-kod`;
+push podle odpovědi koordinace (sezení smí pushovat jen do `claude/o8-k4-nalezy` — fast-forward nad 12b41b0).
+**Do test / main / test-draft / integrace nic.** Koordinace: noční ŘÍDÍCÍ session_01By6bWivtf2rTJYJFGVv8e1.
+Podrobnosti: CHANGELOG oddíl „O9“, roadmapa #460–#468, `BEZPECNOST_MEZE.md` oddíl „Audit K4 — opravy O9“.
+
+- **Hotovo:** #460 K4-N1+N5 texty mezí, #461 K4-N5 rezervace vynuceného otisku, #462 K4-N6 v7 bez bloků studie,
+  #463 K4-N7 jen podmínky, #464 K4-N12+N14, #465 K4-N15, #466 K4-N16, #467 K4-N18, #468 K4-N21 (kokpit).
+- **Ke slučování:** CHANGELOG (oddíl nahoře), roadmapa (+9 na konci `polozky`), `manual/obsah.json` („Co je nového
+  v dávce O9“ → přejmenovat na číslo verze), `netlify/mutace.mjs` (blok O9 na konci + SADY `test_o9_k4.js`; upravené
+  úseky #151 N1, K3-N8, K3-N1, K3-N4), `mutace_jadro.mjs` (blok O9 na konci, upravené K3-N3), `BEZPECNOST_MEZE.md`.
+- **Čeká na J. V.:** K4-N1 zmrazení kapitol/doložek OCK, K4-N4, K4-N13, K4-N17, K4-N20.
+- **Ověření:** viz commit (kolo `--bez-mutaci`, cílené mutace O9 a upravených úseků).
+
 # Předávka — 20. 10. 2026 noc: dávka O8 (bez verze aplikace), větev `claude/o8-k4-nalezy` — opravy K4-N2, N3, N8, N10, N11, N19, N23, test V7-N2
 
 Nad `claude/integrace-16-10` 89816fe (v20.10.8). Verze aplikace se nemění. **Do test / main / test-draft /

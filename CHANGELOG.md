@@ -8,6 +8,49 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## O9 — opravy kódu aplikace z auditu K4 bez rozhodnutí J. V. (verzi přidělí sloučení)
+
+Dávka O9 (noční koordinace 21. 10. 2026) nad `claude/integrace-16-10` 12b41b0 (v20.10.8). Build bez zvýšení
+verze (`KNG_NEZVYSOVAT_VERZI=1`), číslo přidělí sloučení. Audit `podklady/K4_AUDIT_20_10.md` (`claude/k4-kolo` 5113d0a).
+Každá oprava má test s pojistkou (před opravou selže, po ní projde) a mutace „O9“.
+
+- **#460 (K4-N1, K4-N5 — texty mezí).** `BEZPECNOST_MEZE.md` oddíl K3-N15 tvrdil, že odeslané nabídky změna Firmy
+  nezasáhne — kapitoly IV.–VI. a doložky OCK se ale při zamčení nezmrazují (dotisk je bere z aktuální Firmy);
+  opraveno na skutečný stav, zmrazení kapitol rozhodne J. V. Oddíl #151 N1 (limit otisků) popisuje opravu K4-N5.
+- **#461 (K4-N5) — limit vynucených otisků bez souběhu.** `porizVynuceny` (`netlify/lib/zalohovani.mjs`): v instanci
+  pod `vyhradne` kontrola limitu a zápis rezervace `vynucene-rezervace/<slot>~<náhoda>` PŘED pořízením otisku
+  (rezervace se počítá jako otisk, se svým otiskem jako jeden slot); druhá kontrola bez vlastní rezervace — cizí
+  rezervace jiné instance → vlastní smazat a 429 (fail-closed); po otisku se rezervace smaže, starší 24 h se uklidí.
+  Pojistka: 5 souběžných požadavků před opravou 5× 200, po ní 1× 200 + 4× 429.
+- **#462 (K4-N6)** — šablona nabídky PROJ v7 (`{{PROJ_DPZ_UVOD}}` / `{{PROJ_TITUL_CINNOSTI}}`) bez bloků
+  `BLOK_STUDIE_*` ze seznamu k odstranění → dokument nevznikne s hláškou o šabloně nabídky (`src/docxgen.js`).
+- **#463 (K4-N7)** — „Zapsat výchozí hodnoty“ zveřejní jen platební podmínky: `firmaJenPodminky` (`src/firma.js`) —
+  liší-li se místní Firma od online kopie i jinde, odejde online kopie s novými podmínkami a ostatní rozdíly zůstanou
+  místně (hláška je vyjmenuje). Zvolena varianta bez nového dialogu (J. V. U1: „zapisuj je rovnou stiskem“; dotaz by
+  stisk zase zdržel a na stav Firmy se admin dívá ve Firmě). Bez online kopie jako dosud.
+- **#464 (K4-N12, K4-N14)** — `/api/zaloha_vynuceno` bere pole těla jen jako text/číslo (objekt s `toString` dřív
+  500 → teď 400 / běžná odpověď); záznam kopie na Disk odemkne retenci jen ke kopii jednoho ze 7 nejnovějších nočních
+  otisků (z klíčů úložiště, ne z hodin — žádná časovaná bomba v testech).
+- **#465 (K4-N15)** — automatika po přihlášení správce kopii na Disk nepořizuje a na heslo se neptá, jen připomene
+  tlačítko; `posledni_kopie.json` se zapíše až po přijetí záznamu serverem (`src/ui/online_ui.js`).
+- **#466 (K4-N16)** — okno hesla správce po obnově běží od ZADÁNÍ hesla; obnova delší než okno heslo neuloží.
+- **#467 (K4-N18)** — 413 u zakázky nad 4 MB rozepíše velikost (přílohy a fotky / zmrazené údaje odeslaných variant
+  / ostatní) a poradí podle největší části (`zakazkaVelikostHlaska`); tělo do 2× stropu se kvůli tomu přečte.
+- **#468 (K4-N21)** — kokpit koordinace: třídy z dat jen z povoleného seznamu, čísla jen jako čísla; nový
+  prohlížečový test `overit_kokpit.mjs` (stará šablona 5 ✕, XSS se spustil; nová 9/0).
+- **Testy a pojistky:** `netlify/test_zalohy.mjs` 130 → 146 (před opravou 135/11), `netlify/test_prava.mjs` +3
+  (před 2 FAIL), nový `src/test_o9_k4.js` 10 (před opravou 5 FAIL: K4-N6 2, K4-N7 3), `src/test_zobrazeni_heslo_okno.js` +2
+  (před 2 FAIL), `src/test_o7_kopie_klient.js` +2 (před 1 FAIL), `overit_online.mjs` (před 4 ✗, po 268/0),
+  `overit_podminky_zverejnit.mjs` (před 3 ✗, po 35/0), `overit_kokpit.mjs` 9.
+- **Mutace:** server +14 „O9“, jádro +3 „O9“; úseky starších mutací (#151 N1, K3-N8 ×2, K3-N1, K3-N4 ×2, jádro
+  K3-N3 ×2) přepsané na nový kód (`--kontrola` server 682, jádro 402 úseků — vše právě jednou).
+- **Příručka:** „Co je nového v dávce O9“ (admin: Zapsat výchozí hodnoty, kopie na Disk po kliknutí, hláška 413) —
+  při sloučení přejmenovat na číslo verze.
+- **Nedělá se (rozhodne J. V.):** zmrazení kapitol a doložek OCK (K4-N1), kdo smí přepsat výjezd (K4-N4), retence
+  do potvrzení (K4-N13), termín starého tvaru výjimky (K4-N17), Rulesets (K4-N20).
+
+---
+
 ## Nástroj a testy (bez nové verze aplikace) — O8: opravy nálezů K4 bez rozhodnutí J. V. (větev claude/o8-k4-nalezy)
 
 Dávka O8 (noční koordinace 20. 10. 2026) nad `claude/integrace-16-10` 89816fe (v20.10.8). Aplikace se nemění,

@@ -14,6 +14,14 @@
       ]
     },
     {
+      "nadpis": "Co je nového v dávce O9 (21. 10. 2026 — číslo verze doplní sloučení)",
+      "odstavce": [
+        "**Zapsat výchozí hodnoty zveřejní jen platební podmínky** (Nastavení → Smlouvy / Šablony, jen administrátor). Máte-li v Nastavení → Firma ještě nezveřejněné úpravy jiných údajů (název, kapitoly nabídky…), zůstanou jen u vás — hláška je vyjmenuje a zveřejníte je tlačítkem v Nastavení → Firma.",
+        "**Týdenní kopie zálohy na Disk se po přihlášení už sama nepořizuje** — aplikace jen připomene tlačítko Nastavení → Databáze → „Zkopírovat zálohu na Disk teď“, kde kopii potvrdíte svým heslem. Na heslo se po přihlášení nikdo neptá.",
+        "**Srozumitelnější hláška u příliš velké zakázky.** Když zakázka přeroste strop 4 MB, aplikace řekne, z čeho se skládá (přílohy a fotky, odeslané varianty, ostatní) a co s tím: u příloh je zmenšit, u mnoha odeslaných variant založit další nabídku jako novou zakázku."
+      ]
+    },
+    {
       "nadpis": "Co je nového ve verzi v20.10.8 (20. 10. 2026)",
       "odstavce": [
         "**Příplatek za střechu v mědi jen se zastřešením šachty.** Když u exteriérové šachty zastřešení v nabídce není (řádek ZASTŘEŠENÍ ŠACHTY (EXT) vyřadíte, nebo mu ručně dáte množství 0), aplikace už nenabízí ani PŘÍPLATEK ZA STŘECHU V MĚDI (EXT) a kontrola před nabídkou nežádá rozměry stříšky nad můstkem. Kdo mědi ručně zadá vlastní množství, tomu řádek zůstane. Zakázky se zastřešením v nabídce se nemění."
