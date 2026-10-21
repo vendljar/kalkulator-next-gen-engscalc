@@ -57,6 +57,12 @@ verze zůstává v20.10.8. Nálezy z auditu K4 (`podklady/K4_AUDIT_20_10.md` ve 
     bez `set -f`, bez délky, bez odříznutí nul, bez horní meze, nula povolena, bez kontroly ref, bez hlavní
     linie, bez merge kritéria, ignoruje čas API, bez API, bez stáří commitu).
   - Kolo `--bez-mutaci` po pokračování: sady 286 / 0 / 6 přeskočeno, statické 4/4; mutace jádra „D2“ 18/18.
+- **O8 část 3 — #459 (K4-N23, jen test):** `netlify/test_obnova.mjs` posouvá hodiny o +11 min na každý vynucený
+  otisk, ale klíč otisku porovnával s `dnes()` ze skutečných hodin → v okně ~23:49–24:00 UTC FAIL „serverový otisk
+  pořízen pod dnešním dnem“ (červené mutace serveru i CI kolem půlnoci). `postVynuceny` si v době požadavku zapamatuje
+  den posunutých hodin a kontrola porovnává s ním. Pojistka se zfalšovaným časem 23:55 UTC (`node --import` s
+  podvrženým `Date`): před opravou 234 OK / 1 FAIL, po ní 235/0; ve skutečném čase 235/0. Kolo `--bez-mutaci`
+  286 / 0 / 6 přeskočeno, statické 4/4; mutace serveru „obnov“ 55/55.
   - Mimo rozsah: opravy v kódu aplikace z K4 (N1, N4–N7, N12–N18, texty MEZE) čekají na konečný audit K4
     a rozhodnutí J. V.; K4-N20 (Rulesets) → J. V.
 

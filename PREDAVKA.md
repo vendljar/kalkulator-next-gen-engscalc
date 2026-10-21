@@ -1,8 +1,8 @@
-# Předávka — 20. 10. 2026 noc: dávka O8 (bez verze aplikace), větev `claude/o8-k4-nalezy` — opravy K4-N2, N3, N8, N10, N11, N19, test V7-N2
+# Předávka — 20. 10. 2026 noc: dávka O8 (bez verze aplikace), větev `claude/o8-k4-nalezy` — opravy K4-N2, N3, N8, N10, N11, N19, N23, test V7-N2
 
 Nad `claude/integrace-16-10` 89816fe (v20.10.8). Verze aplikace se nemění. **Do test / main / test-draft /
 integrace nic — slučuje koordinace** (noční ŘÍDÍCÍ session_01By6bWivtf2rTJYJFGVv8e1). Podrobnosti: CHANGELOG oddíl
-„O8“, roadmapa #452–#458, audit `podklady/K4_AUDIT_20_10.md` (větev `claude/k4-kolo`).
+„O8“, roadmapa #452–#459, audit `podklady/K4_AUDIT_20_10.md` (větev `claude/k4-kolo`).
 
 - **Hotovo:** #452 K4-N2 (stáří větve z GitHub API `activity`, bez API jen špička = druhý rodič merge v test mimo
   hlavní linii chráněných větví), #453 K4-N3 (+K4-N9: mazání `--force-with-lease` plným ref), #454 test „česká DPH +
@@ -19,6 +19,8 @@ integrace nic — slučuje koordinace** (noční ŘÍDÍCÍ session_01By6bWivtf2
   cesta „smazání selhalo“ krytá, #458 K4-N8 (test D2 zamčené varianty přes `zamkniVariantu`, výjimka = FAIL).
   Test W2 48/0 (skript z 1. části O8 35/13), ruční mutace skriptu 14/14, K4-N8 pojistka 73/0 → 72/1.
   Kolo `--bez-mutaci` 286/0/6 přeskočeno, statické 4/4; mutace jádra „D2“ 18/18.
+- **O8 část 3:** #459 K4-N23 — `netlify/test_obnova.mjs` porovnává klíč otisku s dnem posunutých hodin (dřív FAIL
+  ~23:49–24:00 UTC). Pojistka 23:55 UTC: 234/1 → 235/0. Kolo 286/0/6, statické 4/4, mutace serveru „obnov“ 55/55.
 - **Zbývá z K4:** opravy v kódu aplikace (N1, N4–N7, N12–N18, texty MEZE) — čekají na konečný audit K4 a ranní
   rozhodnutí J. V.; K4-N20 Rulesets → J. V.
 
