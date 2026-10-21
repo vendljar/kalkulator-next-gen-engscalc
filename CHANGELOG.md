@@ -8,6 +8,24 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.10.5 — O12: jazykové verze šablony k už platné češtině (#473, větev claude/o12-sablony-jazyky)
+
+Chyba J. V. 21. 10. 2026 (screenshot): SoD REALIZACE (OCK) má platnou češtinu v2; průvodce spuštěný znovu se
+stejným českým souborem a vlastními EN/DE/FR skončil hláškou „Tahle šablona už je zveřejněná jako platná verze 2 –
+není co zveřejňovat." a nezveřejnil nic. Totéž u SoD PROJEKČNÍ PRÁCE (v3). Nad `claude/integrace-16-10` 7ce01b3.
+
+- **Opraveno:** když je nahraný český soubor shodný s platnou češtinou (stejný otisk), průvodce češtinu znovu
+  nezveřejňuje a zveřejní jen zaškrtnuté jazykové verze se zdrojem = platná čeština („vlastní soubor / vyrobeno
+  … k české verzi N"). Záhlaví, krok Kontrola, text kroku 3 a potvrzení to říkají; tlačítko zní „Zveřejnit
+  jazykové verze k platné češtině vN: EN + DE + FR", bez vybraného jazyka je zakázané s vysvětlením.
+- Výsledek „Hotovo (k platné češtině vN): …" vypíše jazyky i chyby po jazycích; chyba jednoho jazyka nezastaví
+  ostatní. Když se nepovede žádný, průvodce zůstane otevřený.
+- Ověřeno: „Nahrát doladěný soubor" u jazyka (i ve stavu „chybí") v detailu dokumentu funguje — beze změny.
+- Server beze změny (jeho kontrola stejného souboru je správná). Nové `sablonaCestinaShodna` a `sablonaAbNaB64`
+  v `src/sablony_online.js` (převod base64 sdílí i `onlineSablonaZverejni`).
+- Testy: `src/test_sablony_online.js` +22 (průvodce ve vm se zástupným serverem); mutace jádra „#473" 8
+  (`ui/sablony_sprava_ui.js` nově mezi soubory mutačního běhu).
+
 ## v21.10.4 — C3 + C4: Controlling: hromadný export za období, export z Přehledu, Pipedrive deal id (#447, větev claude/controlling-c3)
 
 Rozhodnutí J. V. 21. 10. 2026 (dialog s koordinací), body 1, 2 a 4. Nad `claude/integrace-16-10` 2cb9d2b (v21.10.2),

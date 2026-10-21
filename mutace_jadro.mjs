@@ -84,7 +84,11 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   'nabidka_proj.js',
   /* vyjimky.js (B183, 20. 10. 2026): obsah cenové výjimky — plocha pásu
    * a světlíku na 0,1 m², dřív schválené výjimky starým tvarem. */
-  'vyjimky.js'];
+  'vyjimky.js',
+  /* ui/sablony_sprava_ui.js (#473, O12, 21. 10. 2026): průvodce šablon
+   * rozhoduje, jestli se zveřejní čeština, nebo jen jazykové verze k platné
+   * češtině — a s jakým zdrojovým otiskem. Hlídá ho src/test_sablony_online.js. */
+  'ui/sablony_sprava_ui.js'];
 /* Filtr = první argument, který není přepínač (stejně jako netlify/mutace.mjs). */
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 /* --kontrola (23. 9. 2026, nález N19): jen ověří, že každý hledaný úsek je
@@ -111,6 +115,8 @@ const PRIORITA = [
   'test_prepisy.js', 'test_atyp_katalog.js', 'test_ukazkove.js',
   /* rychlé sady smlouvy o dílo (#157, 18. 10. 2026) — chytají mutace sod.js a nástrojů šablon */
   'test_sod_en.js', 'test_sod_real_v3.js', 'test_preklad_sod.js',
+  /* průvodce šablon (#473, O12) — rychlá sada, chytá mutace ui/sablony_sprava_ui.js */
+  'test_sablony_online.js',
 ];
 
 /* Které sady vůbec pouštět: všechny, které si berou některé z obou jader.
@@ -1947,6 +1953,39 @@ const MUTACE = [
     hledej: "strechaPrepisJe && Number.isFinite(+strechaPrepis) && +strechaPrepis !== 0)",
     nahrad: "strechaPrepisJe && +strechaPrepis !== 0)",
     proc: "„9,5\" by dalo NaN v ceně mědi" },
+  /* #473 (O12, 21. 10. 2026): jazykové verze k už platné češtině. */
+  { nazev: "#473: shoda češtiny se nepozná (vždy null)", soubor: "sablony_online.js",
+    hledej: "  return sablonaOtisk(b64) === cz.otisk ? cz : null;",
+    nahrad: "  return null;",
+    proc: "průvodce se stejnou češtinou by ji zveřejňoval znovu a skončil hláškou „už je zveřejněná“ bez jazyků (J. V. 21. 10.)" },
+  { nazev: "#473: jakákoli čeština se tváří jako shodná", soubor: "sablony_online.js",
+    hledej: "  return sablonaOtisk(b64) === cz.otisk ? cz : null;",
+    nahrad: "  return cz;",
+    proc: "nová česká verze by se nezveřejnila a jazyky by se přidaly ke staré" },
+  { nazev: "#473: base64 bez posledního bloku", soubor: "sablony_online.js",
+    hledej: "  for (let i = 0; i < u8.length; i += KROK)\n    bin += String.fromCharCode.apply(null, u8.subarray(i, i + KROK));\n  return btoa(bin);",
+    nahrad: "  for (let i = 0; i + 1 < u8.length; i += KROK)\n    bin += String.fromCharCode.apply(null, u8.subarray(i, i + KROK - 1));\n  return btoa(bin);",
+    proc: "otisk z prohlížeče by se nikdy neshodoval se serverovým" },
+  { nazev: "#473: průvodce shodu češtiny nepoužije", soubor: "ui/sablony_sprava_ui.js",
+    hledej: "  if (shoda) return sablPruvodceZverejniJazyky(p, shoda, jazyky);",
+    nahrad: "  ;",
+    proc: "stejná čeština by šla na server znovu → 400 a jazyky by se nezveřejnily" },
+  { nazev: "#473: jazyky k platné češtině bez zdrojového otisku", soubor: "ui/sablony_sprava_ui.js",
+    hledej: "        + (p.poznamka ? ' – ' + p.poznamka : ''), cz.otisk);",
+    nahrad: "        + (p.poznamka ? ' – ' + p.poznamka : ''));",
+    proc: "jazykové verze by nevěděly, ke které češtině patří (stav podle času)" },
+  { nazev: "#473: chyba jednoho jazyka zastaví ostatní", soubor: "ui/sablony_sprava_ui.js",
+    hledej: "    } catch (e) { vysledky.push(l.toUpperCase() + ': ' + e.message); }\n  }\n  if (!povedlo) {",
+    nahrad: "    } catch (e) { vysledky.push(l.toUpperCase() + ': ' + e.message); break; }\n  }\n  if (!povedlo) {",
+    proc: "výpadek u FR by nechal nezveřejněné i další jazyky bez upozornění" },
+  { nazev: "#473: tlačítko bez jazyka není zakázané", soubor: "ui/sablony_sprava_ui.js",
+    hledej: "    ? `<button class=\"primary\" ${vybrane.length ? '' : 'disabled'} onclick=\"sablPruvodceZverejni()\">",
+    nahrad: "    ? `<button class=\"primary\"  onclick=\"sablPruvodceZverejni()\">",
+    proc: "administrátor by klikl na zveřejnění, které nic nezveřejní" },
+  { nazev: "#473: záhlaví průvodce dál hlásí novou českou verzi", soubor: "ui/sablony_sprava_ui.js",
+    hledej: "${shoda ? 'čeština shodná s platnou verzí ' + esc(shoda.verze) : 'nová česká verze'}",
+    nahrad: "nová česká verze",
+    proc: "J. V. by nevěděl, že se čeština znovu nezveřejní" },
 ];
 
 /* ============================================================

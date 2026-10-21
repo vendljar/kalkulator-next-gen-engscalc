@@ -14,6 +14,12 @@
       ]
     },
     {
+      "nadpis": "Co je nového ve verzi v21.10.5 (21. 10. 2026)",
+      "odstavce": [
+        "**Jen pro administrátora — šablony dokumentů.** Jazykové verze (EN, DE, FR) jde přidat i k české šabloně, která už platí: spusťte průvodce „Nahrát novou českou verzi…“ se stejným českým souborem. Průvodce pozná, že čeština je shodná s platnou verzí, znovu ji nezveřejní a zveřejní jen zaškrtnuté jazykové verze (tlačítko „Zveřejnit jazykové verze k platné češtině…“). Jednotlivý jazyk jde doplnit i bez průvodce tlačítkem „Nahrát doladěný soubor“ u jazyka. Pro práci obchodníka se nic nemění."
+      ]
+    },
+    {
       "nadpis": "Co je nového ve verzi v21.10.4 (21. 10. 2026)",
       "odstavce": [
         "**Jen pro administrátora.** V Přehledu cenových nabídek má zamčená řídící varianta otevřené zakázky tlačítko **„Export pro controlling“** — stáhne předkalkulaci do Excelu stejně jako Nastavení → Controlling.",
