@@ -63,6 +63,11 @@ Rezerva (jen při rozpočtu): **R1** #28 MCP — jen návrh rozhraní (role, bez
 | průběžně | kontroly koordinace po 60–90 min | koordinace |
 | 05:00 | páteční souhrn: verze, testy, odhad limitu, návrh main, co čeká na J. V. | koordinace |
 
+## Stav 21. 10. 16:40 UTC
+
+- v21.10.5 (7fac477) v test, release odkaz poslán. K5 hotová (v21.10.4 plně ověřená). Koordinace předána „ŘÍDÍCÍ 21.10 noc 2“ (levnější noční kontroly). Další: K6 nad 7fac477.
+- Do každého promptu dávky: **vyhýbat se příkazům, které potřebují schválení** (O13 kvůli tomu stála 20 min).
+
 ## Co čeká na J. V. (sbírá se, neblokuje)
 
 - `main` (dnes v20.10.1): návrh posunu na ověřenou verzi po K6.
