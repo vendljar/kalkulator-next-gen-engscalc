@@ -559,6 +559,19 @@ function renderProj() {
   if (typeof zamekCteniNasad === 'function') zamekCteniNasad('proj');
 }
 
+/* Ruční cena výjezdu technika (K4-N4, O11). Pole type=number vrací při
+ * nečitelném vstupu („100,5" v anglickém prohlížeči) prázdný řetězec —
+ * dřív to tiše vrátilo cenu z ceníku. Teď upozornění a beze změny. */
+function pjVyjezdPrepis(el) {
+  if (el && el.validity && el.validity.badInput) {
+    if (typeof hlaska === 'function') hlaska('Cena výjezdu není platné číslo — zadejte celé Kč (např. 3500). Hodnota se nezměnila.');
+    render(); return;
+  }
+  const v = el ? el.value : '';
+  if (typeof zaporneOdmitni === 'function' && zaporneOdmitni(v)) return;
+  set('PJ.vyjezdKcPrepis', v === '' ? null : +v);
+}
+
 /* VOLBY VARIANTY PROJ Z ŠABLONY D. SIKORY (D2, rozhodnutí J. V. 20. 10. 2026).
  * „Akce mimo Prahu" přičte cenu 1 výjezdu technika k zaměření, studii, DPZ
  * a kolaudaci a nabídka to řekne větou (u IČ a AD jen uvede cenu výjezdu);
@@ -571,15 +584,25 @@ function kalkProjVolbyD2() {
   const cenikVyjezd = +((typeof PC !== 'undefined' && PC && PC.vyjezdTechnikKc) || 0);
   const prepis = (z.vyjezdKcPrepis === undefined || z.vyjezdKcPrepis === null || z.vyjezdKcPrepis === '') ? '' : z.vyjezdKcPrepis;
   const ucinna = (typeof vyjezdTechnikaKc === 'function') ? vyjezdTechnikaKc(Object.assign({}, z, { akceMimoPrahu: true }), PC) : 0;
+  /* K4-N4 (O11, rozhodnutí J. V. 21. 10. 2026): cenu výjezdu přepisuje jen
+   * role s právem sloupce.naklad (jako sazbu a fixní částku; na serveru
+   * B112). Obchodník vidí účinnou cenu a smí jen zaškrtnout akci mimo Prahu.
+   * Tvar čísla (B135): „100,5" by jádro tiše četlo jako 0 — upozornit. */
+  const smiPrepis = typeof smiZobrazit === 'function' && smiZobrazit('sloupce.naklad');
+  const spatnyTvar = prepis !== '' && typeof uloCisloJadro === 'function' && !uloCisloJadro(prepis);
+  const pole = smiPrepis
+    ? `<input type="number" step="1" min="0" style="width:110px" id="projVyjezdPrepis" value="${esc(prepis)}" placeholder="${esc(cenikVyjezd || '')}"
+        onchange="pjVyjezdPrepis(this)"><span class="u">Kč</span>
+      ${prepis !== '' ? `<button class="mini" onclick="set('PJ.vyjezdKcPrepis', null)" title="vrátit cenu z ceníku PROJ">↺</button>` : ''}`
+    : `<span id="projVyjezdCena" title="cenu výjezdu přepisuje jen role s právem vidět náklady">${ucinna > 0 ? esc(fmt(ucinna)) : '—'}</span>`;
   return `<div class="row noprint" style="margin-top:6px"><label>Akce mimo Prahu
       <span class="note">(k ceně zaměření, studie, DPZ a kolaudace se přičte 1 výjezd technika; nabídka to uvede větou)</span></label>
       <input type="checkbox" id="projAkceMimoPrahu" ${z.akceMimoPrahu ? 'checked' : ''} onchange="set('PJ.akceMimoPrahu', this.checked)"><span class="u"></span></div>
     ${z.akceMimoPrahu ? `<div class="row noprint"><label>Cena 1 výjezdu technika
-      <span class="note">(prázdné = ceník PROJ${cenikVyjezd > 0 ? ': ' + esc(fmt(cenikVyjezd)) : ' — v ceníku nevyplněno'})</span></label>
-      <input type="number" step="1" min="0" style="width:110px" id="projVyjezdPrepis" value="${esc(prepis)}" placeholder="${esc(cenikVyjezd || '')}"
-        onchange="set('PJ.vyjezdKcPrepis', this.value === '' ? null : +this.value)"><span class="u">Kč</span>
-      ${prepis !== '' ? `<button class="mini" onclick="set('PJ.vyjezdKcPrepis', null)" title="vrátit cenu z ceníku PROJ">↺</button>` : ''}
-      ${!(ucinna > 0) ? '<span class="neg" style="margin-left:6px">cena výjezdu chybí — nic se nepřičte ani nevytiskne</span>' : ''}</div>` : ''}
+      <span class="note">(${smiPrepis ? 'prázdné = ' : ''}ceník PROJ${cenikVyjezd > 0 ? ': ' + esc(fmt(cenikVyjezd)) : ' — v ceníku nevyplněno'}${!smiPrepis && prepis !== '' ? '; u zakázky sjednaná cena' : ''})</span></label>
+      ${pole}
+      ${spatnyTvar ? `<span class="neg" id="projVyjezdTvar" style="margin-left:6px">cena výjezdu „${esc(prepis)}“ není platné číslo (desetinná tečka, bez mezer) — počítalo by se 0; opravte ji</span>`
+        : (!(ucinna > 0) ? '<span class="neg" style="margin-left:6px">cena výjezdu chybí — nic se nepřičte ani nevytiskne</span>' : '')}</div>` : ''}
     <div class="row noprint"><label>Jednostupňová dokumentace
       <span class="note">(DPZ + DPS v jednom stupni — nabídku PROJ pak upravte ve Wordu ručně, aplikace nic nepřepisuje)</span></label>
       <input type="checkbox" id="projJednostupnova" ${z.jednostupnova ? 'checked' : ''} onchange="set('PJ.jednostupnova', this.checked)"><span class="u"></span></div>`;
