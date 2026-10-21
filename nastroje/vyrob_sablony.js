@@ -147,6 +147,11 @@
  *         smlouvě", Nastavení → Firma „Skladné"); jazykové verze dělá
  *         nastroje/preklad_sod.js.
  *
+ * SoD realizace v4 — objednané příplatky v ceně díla (C6 #447, 21. 10. 2026):
+ *   node nastroje/vyrob_sablony.js --sod-real-v4 <složka podkladů> [výstupní složka]
+ * Vstup:  Sablona_SOD_REALIZACE_v3.docx + _EN/_DE/_FR (nebo slovníky .preklad_<en|de|fr>.json)
+ * Výstup: Sablona_SOD_REALIZACE_v4.docx + _EN/_DE/_FR (viz sodRealV4).
+ *
  * SoD PROJ v4 — rozsah díla podle nabídky (#380 Q7, rozhodnutí J. V. 17. 10. 2026):
  *   node nastroje/vyrob_sablony.js --sod-proj-v4 <složka podkladů> [výstupní složka]
  * Vstup:  Sablona_SOD_PROJEKCE_v3.docx
@@ -181,6 +186,7 @@ const REZIM_V6 = REZIM === '--proj-v6';
 const REZIM_V7 = REZIM === '--proj-v7';
 const REZIM_SOD_V4 = REZIM === '--sod-proj-v4';
 const REZIM_V8 = REZIM === '--proj-v8';   // D2: cestovné u akce mimo Prahu
+const REZIM_SOD_REAL4 = REZIM === '--sod-real-v4';   // C6 #447: objednané příplatky
 const ARGY = REZIM ? process.argv.slice(3) : process.argv.slice(2);
 const PODKLADY = ARGY[0] || process.env.KNG_PODKLADY;
 const VYSTUP = ARGY[1] || PODKLADY;
@@ -981,6 +987,146 @@ function sodRealV3(xml, zaznam) {
   return t.pred + body + t.po;
 }
 
+/* ---------- SoD realizace v4: objednané příplatky v ceně díla (C6 #447, 21. 10. 2026) ----------
+ *   node nastroje/vyrob_sablony.js --sod-real-v4 <složka podkladů> [výstupní složka]
+ * Vstup:  Sablona_SOD_REALIZACE_v3.docx a jazykové Sablona_SOD_REALIZACE_v3_<EN|DE|FR>.docx
+ *         (revidované znění na Disku 21. 10. 2026 — do nich se vloží přeložený blok);
+ *         jazyk bez souboru v3 se přeloží slovníkem Sablona_SOD_REALIZACE_v3.preklad_<en|de|fr>.json
+ *         (nastroje/preklad_sod.js) doplněným o SOD_REAL_V4_PREKLAD
+ * Výstup: Sablona_SOD_REALIZACE_v4.docx + _EN/_DE/_FR
+ * Cena díla = nabídka po slevě + objednané příplatky, DPH z celku
+ * (podklady/SOD_V4_OBJEDNANE_PRIPLATKY_21_10.md ve větvi claude/controlling-c3).
+ * V čl. V za odrážku „{{CENA_BEZ_DPH}} (bez DPH)" (celková cena díla) přibudou
+ * tři SAMOSTATNÉ odstavce „z toho cena díla dle cenové nabídky č. … {{SOD_CENA_NABIDKY}}",
+ * „objednané příplatky: ↵ {{SOD_PRIPLATKY_OBJEDNANE}}" a „příplatky celkem:
+ * {{SOD_PRIPLATKY_KC}}" — bez objednaných příplatků je aplikace vrátí
+ * v odstavcePryc a docxgen je odstraní celé, smlouva je pak jako v3. Odstavce
+ * mají styl a zarovnání odrážky s cenou, bez odrážky (číslování článku se
+ * neposune), odsazení na text odrážky; písmo běhu se symbolem ceny. v3 nemá
+ * v článku o ceně CENA_PRED_SLEVOU ani SLEVA_* — není co přesouvat. */
+const SOD_V4_ODSTAVCE = [
+  'z toho cena díla dle cenové nabídky č. {{CISLO_NABIDKY}}: {{SOD_CENA_NABIDKY}} (bez DPH)',
+  'objednané příplatky:\n{{SOD_PRIPLATKY_OBJEDNANE}}',
+  'příplatky celkem: {{SOD_PRIPLATKY_KC}} (bez DPH)'];
+/* Překlad nových odstavců (záznamy slovníku nastroje/preklad_sod.js; terminologie
+ * jako revidované EN/DE/FR v3 na Disku — EN Work / price quotation / excl. VAT,
+ * DE Werkpreis / Preisangebot / ohne MwSt., FR Ouvrage / offre de prix / HT;
+ * příplatky jako sekce II. nabídky: surcharges / Zuschläge / suppléments). */
+const SOD_REAL_V4_PREKLAD = [
+  { cz: SOD_V4_ODSTAVCE[0],
+    en: 'of which the price of the Work according to price quotation No. {{CISLO_NABIDKY}}: {{SOD_CENA_NABIDKY}} (excl. VAT)',
+    de: 'davon Werkpreis gemäß Preisangebot Nr. {{CISLO_NABIDKY}}: {{SOD_CENA_NABIDKY}} (ohne MwSt.)',
+    fr: 'dont prix de l’Ouvrage selon l’offre de prix n° {{CISLO_NABIDKY}} : {{SOD_CENA_NABIDKY}} (HT)',
+    pozn: 'SoD v4 (C6): cena dle nabídky po slevě, bez objednaných příplatků' },
+  { cz: SOD_V4_ODSTAVCE[1],
+    en: 'ordered surcharges:\n{{SOD_PRIPLATKY_OBJEDNANE}}',
+    de: 'bestellte Zuschläge:\n{{SOD_PRIPLATKY_OBJEDNANE}}',
+    fr: 'suppléments commandés :\n{{SOD_PRIPLATKY_OBJEDNANE}}',
+    pozn: 'SoD v4 (C6): seznam „název – cena", řádek na příplatek' },
+  { cz: SOD_V4_ODSTAVCE[2],
+    en: 'surcharges in total: {{SOD_PRIPLATKY_KC}} (excl. VAT)',
+    de: 'Zuschläge insgesamt: {{SOD_PRIPLATKY_KC}} (ohne MwSt.)',
+    fr: 'total des suppléments : {{SOD_PRIPLATKY_KC}} (HT)',
+    pozn: 'SoD v4 (C6): součet objednaných příplatků (sleva se na ně neuplatní)' }];
+const SOD_V4_SYMBOLY = ['SOD_CENA_NABIDKY', 'SOD_PRIPLATKY_KC', 'SOD_PRIPLATKY_OBJEDNANE'];
+/* L = 'cz' (výchozí) nebo 'en' | 'de' | 'fr' — u jazykové v3 se vloží přeložené
+ * odstavce za „{{CENA_BEZ_DPH}} (…)" (kotva v závorce v jazyce dokumentu). */
+function sodRealV4(xml, zaznam, L) {
+  L = L || 'cz';
+  if (L !== 'cz' && JAZYKY.indexOf(L) < 0) chyba('SoD realizace: neznámý jazyk „' + L + '"');
+  const t = tělo(xml);
+  let body = t.body;
+  const sym = dg.klicePlaceholderu(body);
+  SOD_V4_SYMBOLY.forEach(k => { if (sym.indexOf(k) >= 0) chyba('SoD realizace: šablona už symbol {{' + k + '}} má — není co doplnit'); });
+  const norm = s => String(s).replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
+  const sp = odstavceSTextem(body, tx => (L === 'cz' ? norm(tx) === '{{CENA_BEZ_DPH}} (bez DPH)' : /^\{\{CENA_BEZ_DPH\}\} \([^()]+\)$/.test(norm(tx))));
+  if (sp.length !== 1) chyba('SoD realizace: v čl. V čekám právě jeden odstavec „{{CENA_BEZ_DPH}} (bez DPH)"' + (L === 'cz' ? '' : ' (v jazyce ' + L + ')') + ', je jich ' + sp.length + ' — nic nehádám');
+  const p = body.slice(sp[0].zac, sp[0].kon);
+  /* odstavec před ním je úvod článku o ceně („… dohodnutou cenu … ve výši") */
+  const pred = prvkyTela(body.slice(0, sp[0].zac)).pop();
+  const predText = pred ? norm(dg.odstavecText(body.slice(pred.zac, pred.kon))) : '';
+  if (L === 'cz' && (!/dohodnutou cenu/.test(predText) || !/ve výši$/.test(predText))) chyba('SoD realizace: před odstavcem s cenou čekám úvod „… dohodnutou cenu … ve výši" — nic nehádám');
+  if (docxVBunce(body, sp[0].zac)) chyba('SoD realizace: odstavec s cenou je v tabulce — nové odstavce mají být samostatné');
+  const pPrM = p.match(/<w:pPr>[\s\S]*?<\/w:pPr>/);
+  const pPr = (pPrM ? pPrM[0] : '<w:pPr></w:pPr>').replace(/<w:numPr>[\s\S]*?<\/w:numPr>/, '').replace(/<w:tabs>[\s\S]*?<\/w:tabs>/, '')
+    .replace(/<w:ind\b[^>]*\/>/, '').replace(/(<w:pStyle\b[^>]*\/>)|<w:pPr>/, (m, st) => (st ? st : m) + '<w:ind w:left="1080" w:right="340"/>');
+  const behM = p.match(/<w:r\b[^>]*>(?:(?!<\/w:r>)[\s\S])*?\{\{CENA_BEZ_DPH\}\}[\s\S]*?<\/w:r>/);
+  const rPrM = behM && behM[0].match(/<w:rPr>[\s\S]*?<\/w:rPr>/);
+  const rPr = rPrM ? rPrM[0] : '';
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const odstavec = text => '<w:p>' + pPr + '<w:r>' + rPr + text.split('\n')
+    .map(r => '<w:t xml:space="preserve">' + esc(r) + '</w:t>').join('<w:br/>') + '</w:r></w:p>';
+  const texty = L === 'cz' ? SOD_V4_ODSTAVCE : SOD_REAL_V4_PREKLAD.map(z => z[L]);
+  body = body.slice(0, sp[0].kon) + texty.map(odstavec).join('') + body.slice(sp[0].kon);
+  (Array.isArray(zaznam) ? zaznam : []).push('čl. V: za „{{CENA_BEZ_DPH}} (bez DPH)" tři odstavce — cena dle nabídky {{SOD_CENA_NABIDKY}}, '
+    + 'objednané příplatky {{SOD_PRIPLATKY_OBJEDNANE}}, příplatky celkem {{SOD_PRIPLATKY_KC}}');
+  return t.pred + body + t.po;
+}
+function docxVBunce(xml, pos) {
+  const pr = xml.slice(0, pos);
+  return (pr.match(/<w:tc[\s>]/g) || []).length > (pr.match(/<\/w:tc>/g) || []).length;
+}
+async function hlavniSodRealV4() {
+  if (!PODKLADY) { console.error('Použití: node nastroje/vyrob_sablony.js --sod-real-v4 <složka podkladů> [výstupní složka]'); process.exit(2); }
+  const ps = require(path.join(__dirname, 'preklad_sod.js'));
+  const vstup = path.join(PODKLADY, 'Sablona_SOD_REALIZACE_v3.docx');
+  if (!fs.existsSync(vstup)) chyba('Chybí vstupní šablona ' + vstup);
+  if (!fs.existsSync(VYSTUP)) fs.mkdirSync(VYSTUP, { recursive: true });
+  const zaznam = [];
+  const bajty = await vyrob(vstup, x => sodRealV4(x, zaznam));
+  const zaklad = path.join(VYSTUP, 'Sablona_SOD_REALIZACE_v4');
+  fs.writeFileSync(zaklad + '.docx', bajty);
+  const vady = await dg.docxXmlVady(bajty.slice().buffer);
+  const symV3 = await symbolyASablona(new Uint8Array(fs.readFileSync(vstup)));
+  const sym = await symbolyASablona(bajty);
+  const rozdil = so.sablonaSymbolyRozdil(symV3, sym);
+  let prob = vady.length + rozdil.ubylo.length + (rozdil.pribylo.slice().sort().join() === SOD_V4_SYMBOLY.join() ? 0 : 1);
+  console.log((prob ? '✗ ' : '✓ ') + 'Sablona_SOD_REALIZACE_v4.docx — symbolů ' + sym.length + ' (v3 ' + symV3.length + ')'
+    + zaznam.map(r => '\n    vloženo: ' + r).join('')
+    + '\n    proti v3 přibylo: ' + rozdil.pribylo.join(', ') + '; ubylo: ' + (rozdil.ubylo.join(', ') || 'nic')
+    + (vady.length ? '\n    vady XML: ' + vady.join('; ') : '\n    XML: bez vad'));
+  for (const L of JAZYKY) {
+    /* Revidovaná jazyková v3 (Disk, Sablony) má přednost — do ní se vloží přeložený
+     * blok a její znění zůstane; bez ní překlad slovníkem v3 (nastroje/preklad_sod.js). */
+    const jazV3 = path.join(PODKLADY, 'Sablona_SOD_REALIZACE_v3_' + L.toUpperCase() + '.docx');
+    if (fs.existsSync(jazV3)) {
+      const zz = [];
+      const b = await vyrob(jazV3, x => sodRealV4(x, zz, L));
+      fs.writeFileSync(zaklad + '_' + L.toUpperCase() + '.docx', b);
+      const t = await dg.docxTextSablony(b.slice().buffer);
+      const symL = so.sablonaSymboly(t);
+      const r = so.sablonaSymbolyRozdil(sym, symL);
+      const rV3 = so.sablonaSymbolyRozdil(await symbolyASablona(new Uint8Array(fs.readFileSync(jazV3))), symL);
+      const jaz = so.sablonaJazykOdhad(t);
+      const vadyL = await dg.docxXmlVady(b.slice().buffer);
+      const cesky = t.filter(x => /[áčďěíňóřšťúůýž]/i.test(x.replace(/\{\{[A-Z0-9_]+\}\}/g, '').replace(/(^|[^\p{L}])(IČO|IČ|DIČ|ČSN|ČKAIT)(?=[^\p{L}]|$)/gu, '$1')));
+      const p = vadyL.length + r.pribylo.length + r.ubylo.length + (jaz.jazyk === L ? 0 : 1) + cesky.length
+        + (rV3.ubylo.length || rV3.pribylo.slice().sort().join() !== SOD_V4_SYMBOLY.join() ? 1 : 0);
+      prob += p;
+      console.log((p ? '✗ ' : '✓ ') + 'Sablona_SOD_REALIZACE_v4_' + L.toUpperCase() + '.docx — z ' + path.basename(jazV3) + ' (revidované znění), jazyk '
+        + jaz.jazyk + ' (' + Math.round(jaz.podil * 100) + ' %), proti CZ v4 +' + r.pribylo.length + ' −' + r.ubylo.length
+        + ', proti své v3 +' + rV3.pribylo.length + ' −' + rV3.ubylo.length + (vadyL.length ? '\n    vady XML: ' + vadyL.join('; ') : ', XML bez vad')
+        + cesky.map(x => '\n    česky: „' + x.slice(0, 80) + '"').join(''));
+      continue;
+    }
+    const slV3 = path.join(PODKLADY, 'Sablona_SOD_REALIZACE_v3.preklad_' + L + '.json');
+    if (!fs.existsSync(slV3)) chyba('Chybí slovník ' + slV3 + ' (Disk, složka Sablony, vedle v3)');
+    const zaznamy = JSON.parse(fs.readFileSync(slV3, 'utf8'))
+      .filter(z => !(z && SOD_REAL_V4_PREKLAD.some(n => n.cz === z.cz)))
+      .concat(SOD_REAL_V4_PREKLAD.map(n => ({ cz: n.cz, [L]: n[L], pozn: n.pozn })));
+    fs.writeFileSync(zaklad + '.preklad_' + L + '.json', JSON.stringify(zaznamy, null, 1) + '\n');
+    const v = await ps.prelozSablonu(bajty, zaznamy, L);
+    fs.writeFileSync(zaklad + '_' + L.toUpperCase() + '.docx', v.bajty);
+    const r = so.sablonaSymbolyRozdil(sym, await symbolyASablona(v.bajty));
+    prob += v.problemy.length;
+    console.log((v.problemy.length ? '✗ ' : '✓ ') + 'Sablona_SOD_REALIZACE_v4_' + L.toUpperCase() + '.docx — přeloženo odstavců ' + v.prelozeno
+      + ', jazyk ' + v.jazyk.jazyk + ' (' + Math.round(v.jazyk.podil * 100) + ' %), proti CZ v4 +' + r.pribylo.length + ' −' + r.ubylo.length
+      + v.problemy.map(x => '\n    ' + x).join(''));
+  }
+  console.log('\nVýstup: ' + VYSTUP);
+  process.exit(prob ? 1 : 0);
+}
+
 /* ---------- SoD PROJ: číslo smlouvy z krycího listu (S9, 15. 10. 2026) ----------
  * Zadání J. V.: „Aktualizuj šablony, aby se nám do nich číslo SoD propisovalo
  * z krycího listu zakázky." SoD realizace má pod nadpisem samostatný řádek
@@ -1164,8 +1310,9 @@ async function ulozSMutacemi(bajty, zaklad) {
 
 async function hlavni() {
   if (REZIM_V8) return hlavniV8();
+  if (REZIM_SOD_REAL4) return hlavniSodRealV4();
   if (!PODKLADY) {
-    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --proj-v5 | --proj-v6 | --proj-v7 | --sod-proj | --sod-real | --sod-real-v3 | --sod-proj-cislo | --sod-proj-v4 | --cn-v14 | --cn-v15] <složka podkladů> [výstupní složka]');
+    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --proj-v5 | --proj-v6 | --proj-v7 | --sod-proj | --sod-real | --sod-real-v3 | --sod-real-v4 | --sod-proj-cislo | --sod-proj-v4 | --cn-v14 | --cn-v15] <složka podkladů> [výstupní složka]');
     process.exit(2);
   }
   const cnVstup = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v12.docx');
@@ -1313,4 +1460,4 @@ async function hlavni() {
 
 /* Úpravy document.xml jdou testovat bez souborů (src/test_sablona_proj_v4.js). */
 if (require.main === module) hlavni().catch(e => { console.error('CHYBA: ' + e.message); process.exit(1); });
-module.exports = { cnV13, cnV14, projV3, projV4, projV5, projV6, projV7, projV8, PROJ_V8_CESTOVNE, textBehu, sodProjV2, sodRealV2, sodRealV3, sodProjCislo, sodProjV4, prepisUsekOdstavce, trStavSeZavorkou, prelozSablonu };
+module.exports = { cnV13, cnV14, projV3, projV4, projV5, projV6, projV7, projV8, PROJ_V8_CESTOVNE, textBehu, sodProjV2, sodRealV2, sodRealV3, sodRealV4, SOD_REAL_V4_PREKLAD, sodProjCislo, sodProjV4, prepisUsekOdstavce, trStavSeZavorkou, prelozSablonu };
