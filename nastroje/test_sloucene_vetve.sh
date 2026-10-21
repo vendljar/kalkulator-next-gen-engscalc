@@ -28,7 +28,11 @@
 # odmítnutí špatného zadání a mimo rozsah stari_hodin (K4-N10), běh v Actions
 # jen nad main (K4-N11) a „*“ ve --vynechat bez rozvinutí globu (K4-N19). Jiný skript k ověření (pojistka proti
 # prázdnému testu): SLOUCENE_VETVE_SKRIPT=<cesta>. Jméno větve se znaky & # %
-# jde do dotazu na API zakódované (K5-W2, O13; před opravou 2 ✗).
+# jde do dotazu na API zakódované (K5-W2, O13; před opravou 2 ✗). D3 (21. 10. 2026):
+# diakritika v locale C.UTF-8 (K6-W4), nečíselný čas commitu i odpovědi API
+# (K5-W7), větev shodná s tagem a větev „-x“ (K5-W4) — mutanty z auditu K6
+# (bez „local LC_ALL=C“, „--delete \"$v\"“, bez kontroly čísla na :176 / :183)
+# dřív prošly 51/0, teď 2, 3, 1 a 1 ✗.
 # Návratový kód = počet selhaných kontrol.
 
 set -u
@@ -215,6 +219,60 @@ kontrola "API: jméno zakódované po segmentech (bez zdvojeného ref, bez usekn
   grep -qF 'api repos/vlastnik/repo/activity?ref=refs/heads/claude/zvl%26ref%3Drefs/heads/ff-sloucena%23x%2541&per_page=1 ' "$GH_LOG"
 kontrola "API: čas se vzal z té větve (čerstvý push → zůstává)" \
   grep -qF -- "- \`$ZVL\` — poslední push mladší než 24 h (0 h, GitHub)" <<<"$vystup"
+
+echo "— diakritika v UTF-8 (K6-W4), nečíselný čas (K5-W7), větev shodná s tagem a „-x“ (K5-W4)"
+# claude/příliš: v C.UTF-8 by uri_segmenty bez „local LC_ALL=C“ kódoval znaky
+# (%159…) místo bajtů UTF-8 — API by čas nevrátilo a větev (sloučená mergem)
+# by se smazala, přestože má čerstvý push. necislo-git: čas commitu není
+# číslo (podvržený git) → vynechat. necislo-api: API vrátí nečíselný čas
+# (podvržený date) → kritérium bez API (špička na hlavní linii test) → nechat.
+# shoda: větev i tag téhož jména — smazat se má větev, tag zůstat (mazání
+# plným refs/heads/…); totéž větev „-x“ (bez refs/heads/ by byla volbou).
+DIA='claude/příliš'
+for v in "$DIA" necislo-git shoda; do
+  git checkout --quiet -b "$v" main; commit "k_${v//\//_}" "$STARY"; git checkout --quiet test; slouc "$v"
+done
+git checkout --quiet -b pomlcka main; commit k_pomlcka "$STARY"; git checkout --quiet test; slouc pomlcka
+git update-ref refs/heads/-x pomlcka; git branch --quiet -D pomlcka
+git tag shoda main
+git branch necislo-api test
+git push --quiet origin refs/heads/test "refs/heads/$DIA" refs/heads/necislo-git refs/heads/shoda refs/heads/necislo-api \
+  refs/heads/-x refs/tags/shoda 2>"$TMP/push.err" || cat "$TMP/push.err"
+kontrola "příprava: nové větve i tag shoda na originu" bash -c 'for r in "refs/heads/$1" refs/heads/necislo-git refs/heads/shoda \
+  refs/heads/necislo-api refs/heads/-x refs/tags/shoda; do git ls-remote --exit-code origin "$r" >/dev/null || exit 1; done' _ "$DIA"
+echo "$DIA $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GH_AKTIVITA"
+echo "necislo-api NECISELNE" >> "$GH_AKTIVITA"
+cat > "$TMP/bin/git" <<'GIT'
+#!/usr/bin/env bash
+# Čas commitu větve necislo-git podvržený jako text (K5-W7).
+case " $* " in
+  *" log -1 --format=%ct refs/remotes/origin/necislo-git "*) echo abc; exit 0 ;;
+esac
+exec "$REAL_GIT" "$@"
+GIT
+cat > "$TMP/bin/date" <<'DATE'
+#!/usr/bin/env bash
+# Nečíselná odpověď API (K5-W7): „NECISELNE“ převede na nečíselný „čas“.
+if [ "${1:-}" = "-d" ] && [ "${2:-}" = "NECISELNE" ]; then echo 12abc; exit 0; fi
+exec "$REAL_DATE" "$@"
+DATE
+chmod +x "$TMP/bin/git" "$TMP/bin/date"
+: > "$GH_LOG"
+vystup="$(LC_ALL=C.UTF-8 REAL_GIT="$(command -v git)" REAL_DATE="$(command -v date)" PATH="$TMP/bin:$PATH" \
+  bash "$SKRIPT" --github-repo vlastnik/repo 2>&1)"; kod=$?
+rm -f "$TMP/bin/git" "$TMP/bin/date"
+kontrola "K6-W4: diakritika zakódovaná po bajtech UTF-8" \
+  grep -qF 'api repos/vlastnik/repo/activity?ref=refs/heads/claude/p%C5%99%C3%ADli%C5%A1&per_page=1 ' "$GH_LOG"
+kontrola "K6-W4: čas se vzal z té větve (čerstvý push → zůstává na originu)" \
+  bash -c 'grep -qF -- "- \`$1\` — poslední push mladší než 24 h (0 h, GitHub)" <<<"$2" && git ls-remote --exit-code origin "refs/heads/$1" >/dev/null' _ "$DIA" "$vystup"
+kontrola "K5-W7: nečíselný čas commitu → vynechána, nesmazána" \
+  bash -c 'grep -qF -- "- \`necislo-git\` — nelze přečíst špičku ani čas commitu" <<<"$1" && git ls-remote --exit-code origin refs/heads/necislo-git >/dev/null' _ "$vystup"
+kontrola "K5-W7: nečíselný čas z API → kritérium bez API (hlavní linie), nesmazána" \
+  bash -c 'grep -qF -- "- \`necislo-api\` — stáří nelze doložit: špička leží na hlavní linii test" <<<"$1" && git ls-remote --exit-code origin refs/heads/necislo-api >/dev/null' _ "$vystup"
+kontrola "K5-W4: větev shodná s tagem smazána, tag zůstal" \
+  bash -c '! git ls-remote --exit-code origin refs/heads/shoda >/dev/null && git ls-remote --exit-code origin refs/tags/shoda >/dev/null' _
+kontrola "K5-W4: větev „-x“ smazána" bash -c '! git ls-remote --exit-code origin refs/heads/-x >/dev/null' _
+kontrola "  …a žádné mazání neselhalo" bash -c '! grep -q "^### Smazání selhalo" <<<"$1"' _ "$vystup"
 
 echo "TEST_SLOUCENE_VETVE: $ok prošlo, $chyb selhalo"
 exit "$chyb"

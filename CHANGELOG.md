@@ -8,6 +8,47 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.10.6 — D3: opravy nálezů auditu K6 (#483, větev claude/d3-k6-opravy)
+
+Opravná dávka nad `test` = v21.10.5 (7fac477), podklad `podklady/K6_AUDIT_21_10.md` (větev `claude/k6-kolo`),
+oddíly „Nálezy — opravit bez J. V.“ a „Co testy nehlídají“. Každá oprava má test s pojistkou (před opravou
+selže, po ní projde — v commitu).
+
+- **K6-K1 (střední):** objednaný **vlastní příplatek** (klíč `vlastni:N`) server odmítal s 400 „neplatný nebo
+  zdvojený klíč“ a celé uložení zakázky propadlo (SoD se přitom vytiskla). Tvar klíče teď pustí přesně
+  `vlastni:<číslo>`; jiný tvar s dvojtečkou dál ne. Test celé cesty klient (karta SoD, `objNastav`) → server.
+- **K6-S1, K6-S3:** objekt v `objednane.klice[]` / `varianta` / `datum` shodil uložení na HTTP 500 (i obnovu);
+  `varianta` jako pole prošla a skryla prodej z exportu. Nová `objTvarPlatny` na začátku `objKontrola`
+  → 400 „Objednané příplatky mají neplatný tvar“; `objOtisk` objekt přes `String` nepřevádí. V obnově se
+  taková zakázka přeskočí s důvodem, ostatní se obnoví.
+- **K6-S4:** server ukládá `objednane` jen z polí `varianta, klice, datum, kdo, kdy` (cizí pole ani
+  `"__proto__"` z JSON se neuloží), i v obnově; prázdný záznam smaže.
+- **K5-S2:** shodné příchozí a uložené `pdDealId` (i neplatné) projde beze změny — uložení jiné části zakázky
+  už neblokuje (jak sliboval komentář).
+- **K6-S6:** výjimka u jedné zakázky v hromadném exportu pro controlling ji zapíše mezi přeskočené, export
+  nespadne na 500.
+- **K6-K6:** název objednaného příplatku ve SoD na jeden řádek (`\s+` → mezera).
+- **K6-K8:** XLSX (`xlsxEsc`) vynechá řídicí znaky, které XML nepovoluje (jako `XML_RIDICI` u Wordu).
+- **K6-W1:** `kokpit-koordinace/kontrola.py` odmítne jakýkoli `<` v datech kokpitu (`</ScRiPt>` v jakékoli
+  velikosti písmen, `<!--`); SKILL.md: `<` se zapisuje jako `<`.
+- **K6-W2:** `nastroje/kontrola_udaju.py` čte i `podklady/` a `.claude/`; jediný nový výskyt (technická adresa
+  noreply v řádku Co-Authored-By) v povoleném seznamu s důvodem.
+- **K6-W3:** `vyrob_sablony.js --sod-real-v4` vkládá `<w:ind>` podle pořadí prvků `w:pPr` (za `pStyle`,
+  před `jc`/`rPr`), ne před `pStyle`. Už vyrobené soubory v4 je třeba vyrobit znovu.
+- **K6-W4, K5-W4, K5-W7:** `nastroje/test_sloucene_vetve.sh` — diakritika v C.UTF-8, větev shodná s tagem
+  a větev „-x“, nečíselný čas commitu i odpovědi API. Mutanty z auditu (dřív 51/0) teď chycené.
+- **O13 (návrh odstranit obal `trStavSeZavorkou`):** obal **ponechán** — není nadbytečný: u „(…{{SYMBOL}})“
+  (závorka až za symbolem) aplikace úsek nechá česky, obal ho přeloží. Test to hlídá. Rozšířit aplikaci → #485.
+- Zapsáno, neopraveno: K6-K5, K6-K9 (karta SoD — #484). Nedělat (J. V.): K6-S2, K6-K3, K6-K4, K6-K2, K6-S5,
+  K6-S7, K6-K7, K6-W5, K6-W6, K5-W3/W5/K2/S3/S4/K4; N46 beze změny.
+- Testy s pojistkou: `netlify/test_prava.mjs` 8 FAIL → 0; `src/test_objednane.js` 4 FAIL → 42/0;
+  `src/test_controlling.js` 1 → 200/0; `netlify/test_controlling.mjs` 1 → 54/0; `src/test_sod.js` 1 → 60/0;
+  `src/test_cenik_xlsx.js` 2 → 0; nové `src/test_kokpit_kontrola.js` 2 → 5/0 a `src/test_kontrola_udaju.js`
+  2 → 5/0; `src/test_sod_real_v4.js` 1 → 20/0; `nastroje/test_sloucene_vetve.sh` mutanty 2/3/1/1 ✗ → 59/0;
+  `src/test_sablona_proj_v7_preklad.js` 18/0 (obal vyřazený → FAIL).
+- Cílené mutace: server „k6-“ **9/9**, „k5-s2“ **1/1**, upravená „#447 C6: kdo zapsal…“ **1/1**; jádro „k6-“ **4/4**,
+  „O13/D3“ **1/1** — **16/16, 0 přeživších**. `--kontrola` server 763, jádro 422 úseků (JADRA + `xlsx.js`).
+
 ## v21.10.5 — Integrace do test (koordinace 21. 10. 2026)
 
 v21.10.5 = O12 (#474 průvodce šablon — jazykové verze k platné češtině) + S11 (šablona SoD realizace v4, nástroj

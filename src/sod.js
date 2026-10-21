@@ -260,7 +260,9 @@ function sodObjednaneSymboly(d, zak, varianta, jekly, L, sablona) {
   const dph = mena.eur ? Math.ceil(celkem * sazba)
     : ((typeof cenaSDph === 'function') ? cenaSDph(celkem, sazba).dphKc : celkem * sazba);
   ph.SOD_CENA_NABIDKY = kc(zaklad);
-  ph.SOD_PRIPLATKY_OBJEDNANE = obj.map((p, i) => P(p.nazev) + ' – ' + kc(castky[i])).join('\n');
+  /* Název na jeden řádek (K6-K6): `\n` z vlastního názvu by ve smlouvě
+   * vypadal jako další položka. */
+  ph.SOD_PRIPLATKY_OBJEDNANE = obj.map((p, i) => P(String(p.nazev).replace(/\s+/g, ' ').trim()) + ' – ' + kc(castky[i])).join('\n');
   ph.SOD_PRIPLATKY_KC = kc(prip);
   ph.CENA_BEZ_DPH = kc(celkem);
   ph.DPH_KC = kc(dph);

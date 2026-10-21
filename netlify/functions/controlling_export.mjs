@@ -70,7 +70,10 @@ export default async (req) => {
       zak = raw ? G.importZakazka(raw) : null;
     } catch (e) { zak = null; }
     if (!zak) { preskoceno.push({ soubor: k.soubor, cislo: k.cislo, duvod: 'zakázku se nepodařilo přečíst' }); continue; }
-    const v = G.ctrlHromadnyZakazka(zak, filtr, opts);
+    /* Nečekaný tvar uložené zakázky shodí jen ji, ne celý export (K6-S6). */
+    let v;
+    try { v = G.ctrlHromadnyZakazka(zak, filtr, opts); }
+    catch (e) { v = { ok: false, duvod: 'zakázku se nepodařilo zpracovat' }; }
     if (v.ok) exporty.push(v.exp);
     else if (!v.mimo) preskoceno.push({ soubor: k.soubor, cislo: k.cislo, duvod: v.duvod });
   }

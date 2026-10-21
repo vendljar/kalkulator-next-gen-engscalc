@@ -225,6 +225,19 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
   const e413 = await ex('?od=2026-10-01&do=2026-10-31', cAdmin);
   test('C3: nad strop čtení → 413 s výzvou zúžit období', e413.st === 413 && /zužte/.test(e413.o.chyba), e413);
   await sZ.zapis('_rejstrik', { schema: 1, zakazky: rejstrik });
+  /* K6-S6 (D3): nečekaný tvar uložené zakázky (sem podstrčený mimo server —
+   * datum prodeje jako objekt, String() vyhodí výjimku) shodil celý export na
+   * 500; má jít mezi přeskočené a zbytek se vyveze. */
+  {
+    const z = zamcena('2026 - OPR - CN - 0807', '2026-10-06T09:00:00Z');
+    z.objednane = { varianta: z.varianty[0].id, klice: ['x'], datum: { toString: 1 } };
+    const sb = await vloz(z);
+    const eS = await (async () => { try { return await ex('?od=2026-10-01&do=2026-10-31&podle=prodej', cAdmin); }
+      catch (e) { return { st: 500, o: { chyba: e.message } }; } })();
+    test('K6-S6: výjimka u jedné zakázky v exportu → 200, zakázka mezi přeskočenými', eS.st === 200
+      && (eS.o.preskoceno || []).some(p => p.soubor === sb), eS);
+    rejstrik.pop(); await sZ.smaz('z/' + sb); await sZ.zapis('_rejstrik', { schema: 1, zakazky: rejstrik });
+  }
 }
 
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');

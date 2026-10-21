@@ -471,6 +471,12 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
   test('K5-S1: deal id jako pole / true → 400', (Kz({}, { pdDealId: ['5'] }, 'Administrátor') || {}).status === 400
     && (Kz({}, { pdDealId: true }, 'Administrátor') || {}).status === 400);
   test('K5-S1: uložený objekt se bere jako prázdný (bez výjimky)', Kz({ pdDealId: { toString: 1 } }, {}, 'Obchodník') === null);
+  /* K5-S2 (D3): shodná příchozí a uložená (i neplatná) hodnota projde
+   * beze změny — dřív 400 blokovalo uložení jiné části zakázky. */
+  test('K5-S2: shodné neplatné deal id v uložené i příchozí verzi projde (null)', K({ pdDealId: 'x' }, { pdDealId: 'x' }, 'Obchodník') === null
+    && K({ pdDealId: '012' }, { pdDealId: '012' }, 'Vedoucí') === null);
+  test('K5-S2: změna neplatného na jiné neplatné dál 400, nová zakázka s neplatným 400', (K({ pdDealId: 'x' }, { pdDealId: 'y' }, 'Administrátor') || {}).status === 400
+    && (K(null, { pdDealId: 'x' }, 'Administrátor') || {}).status === 400);
   test('K5-S1: číslo i text čísla dál platí', C.ctrlPdDealIdNorm(77) === '77' && C.ctrlPdDealIdNorm(' 77 ') === '77');
   if (typeof zakazkaDuplikuj === 'function') {
     const z = novaZakazka(); z.pdDealId = '991';

@@ -759,8 +759,11 @@ function ctrlPdDealIdNorm(x) {
   return s;
 }
 /* null = v pořádku; jinak { status, chyba }. Neplatná hodnota v uložené
- * verzi se bere jako prázdná — jinak by ji nikdo kromě správce neopravil. */
+ * verzi se bere jako prázdná — jinak by ji nikdo kromě správce neopravil.
+ * Shodná příchozí a uložená hodnota (i neplatná) projde beze změny —
+ * uložení jiné části zakázky ji neblokuje (K5-S2). */
 function ctrlPdDealKontrola(stara, zak, role) {
+  if (stara && zak && zak.pdDealId !== undefined && zak.pdDealId === stara.pdDealId) return null;
   const nova = ctrlPdDealIdNorm(zak && zak.pdDealId);
   if (nova === null) return { status: 400, chyba: 'Pipedrive deal id musí být kladné celé číslo (id obchodního případu)' };
   const puvodni = ctrlPdDealIdNorm(stara && stara.pdDealId) || '';

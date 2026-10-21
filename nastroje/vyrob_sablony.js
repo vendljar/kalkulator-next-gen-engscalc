@@ -1048,8 +1048,9 @@ function sodRealV4(xml, zaznam, L) {
   if (L === 'cz' && (!/dohodnutou cenu/.test(predText) || !/ve výši$/.test(predText))) chyba('SoD realizace: před odstavcem s cenou čekám úvod „… dohodnutou cenu … ve výši" — nic nehádám');
   if (docxVBunce(body, sp[0].zac)) chyba('SoD realizace: odstavec s cenou je v tabulce — nové odstavce mají být samostatné');
   const pPrM = p.match(/<w:pPr>[\s\S]*?<\/w:pPr>/);
-  const pPr = (pPrM ? pPrM[0] : '<w:pPr></w:pPr>').replace(/<w:numPr>[\s\S]*?<\/w:numPr>/, '').replace(/<w:tabs>[\s\S]*?<\/w:tabs>/, '')
-    .replace(/<w:ind\b[^>]*\/>/, '').replace(/(<w:pStyle\b[^>]*\/>)|<w:pPr>/, (m, st) => (st ? st : m) + '<w:ind w:left="1080" w:right="340"/>');
+  const pPr0 = (pPrM ? pPrM[0] : '<w:pPr></w:pPr>').replace(/<w:numPr>[\s\S]*?<\/w:numPr>/, '').replace(/<w:tabs>[\s\S]*?<\/w:tabs>/, '')
+    .replace(/<w:ind\b[^>]*\/>/, '');
+  const pPr = pPrSInd(pPr0, '<w:ind w:left="1080" w:right="340"/>');
   const behM = p.match(/<w:r\b[^>]*>(?:(?!<\/w:r>)[\s\S])*?\{\{CENA_BEZ_DPH\}\}[\s\S]*?<\/w:r>/);
   const rPrM = behM && behM[0].match(/<w:rPr>[\s\S]*?<\/w:rPr>/);
   const rPr = rPrM ? rPrM[0] : '';
@@ -1061,6 +1062,13 @@ function sodRealV4(xml, zaznam, L) {
   (Array.isArray(zaznam) ? zaznam : []).push('čl. V: za „{{CENA_BEZ_DPH}} (bez DPH)" tři odstavce — cena dle nabídky {{SOD_CENA_NABIDKY}}, '
     + 'objednané příplatky {{SOD_PRIPLATKY_OBJEDNANE}}, příplatky celkem {{SOD_PRIPLATKY_KC}}');
   return t.pred + body + t.po;
+}
+/* <w:ind> na místo podle pořadí prvků w:pPr ve schématu OOXML (K6-W3):
+ * za pStyle … spacing, před první z prvků, které jdou až po ind. */
+const PPR_PO_IND = /<w:(?:contextualSpacing|mirrorIndents|suppressOverlap|jc|textDirection|textAlignment|textboxTightWrap|outlineLvl|divId|cnfStyle|rPr|sectPr|pPrChange)\b/;
+function pPrSInd(pPr, ind) {
+  const m = pPr.match(PPR_PO_IND);
+  return m ? pPr.slice(0, m.index) + ind + pPr.slice(m.index) : pPr.replace('</w:pPr>', ind + '</w:pPr>');
 }
 function docxVBunce(xml, pos) {
   const pr = xml.slice(0, pos);
@@ -1269,8 +1277,12 @@ async function symbolyASablona(bajty) {
  * se tu slovník obalí: nepřeložený text s jednou neuzavřenou „(" se zkusí
  * i s „)" a z překladu se koncová „)" zase vezme (zůstává v dokumentu za
  * přeloženým úsekem). Vše ostatní jde beze změny do původního trStav.
- * Od O13 (21. 10. 2026) totéž dělá sama aplikace (docxPrelozUseky), obal
- * je tím nadbytečný a neškodný — odstranění zapsáno do PREDAVKA.md. */
+ * Od O13 (21. 10. 2026) totéž dělá sama aplikace (docxPrelozUseky), ale jen
+ * když „)" stojí hned za úsekem. Obal NENÍ nadbytečný (ověřeno v D3,
+ * 21. 10. 2026, nad všemi slovníkovými texty končícími „)" × EN/DE/FR):
+ * u „Splatnost faktur (dní{{X}})" — „)" až za symbolem — aplikace úsek
+ * nechá česky, obal ho přeloží (338 rozdílů ze 2304 porovnání; další se liší
+ * jen u textu bez „)" vůbec). Proto zůstává. */
 function trStavSeZavorkou(puvodni) {
   return (cz, lang) => {
     const st = puvodni(cz, lang);
@@ -1462,4 +1474,4 @@ async function hlavni() {
 
 /* Úpravy document.xml jdou testovat bez souborů (src/test_sablona_proj_v4.js). */
 if (require.main === module) hlavni().catch(e => { console.error('CHYBA: ' + e.message); process.exit(1); });
-module.exports = { cnV13, cnV14, projV3, projV4, projV5, projV6, projV7, projV8, PROJ_V8_CESTOVNE, textBehu, sodProjV2, sodRealV2, sodRealV3, sodRealV4, SOD_REAL_V4_PREKLAD, sodProjCislo, sodProjV4, prepisUsekOdstavce, trStavSeZavorkou, prelozSablonu };
+module.exports = { cnV13, cnV14, projV3, projV4, projV5, projV6, projV7, projV8, PROJ_V8_CESTOVNE, textBehu, sodProjV2, sodRealV2, sodRealV3, sodRealV4, SOD_REAL_V4_PREKLAD, pPrSInd, sodProjCislo, sodProjV4, prepisUsekOdstavce, trStavSeZavorkou, prelozSablonu };

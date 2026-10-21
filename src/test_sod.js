@@ -284,6 +284,17 @@ test('a bez firemního údaje se symbol nevyrobí',
   test('C6 v eurech: cena díla = nabídka + příplatky po položkách nahoru, DPH z celku nahoru', !!eur && !eur.chyba
     && cislo(eur.CENA_BEZ_DPH) === cislo(eur.SOD_CENA_NABIDKY) + cislo(eur.SOD_PRIPLATKY_KC)
     && cislo(eur.CENA_S_DPH) === cislo(eur.CENA_BEZ_DPH) + cislo(eur.DPH_KC), eur && [eur.chyba, eur.CENA_BEZ_DPH, eur.SOD_CENA_NABIDKY, eur.SOD_PRIPLATKY_KC]);
+  /* K6-K6 (D3): vlastní název příplatku s \n se ve SoD rozpadl na dva
+   * řádky (vypadal jako další položka) — bílé znaky jdou na mezeru. */
+  {
+    const zV = JSON.parse(JSON.stringify(zO)); const vV = zV.varianty[0];
+    vV.zamek = null; vV.data.ock.zadani.priplatkyVlastni = [{ nazev: 'Řádek A\nŘádek  B\t', mnozstvi: 1, cena: 50 }];
+    zamkniVariantu(vV, { typ: 'nabidka', kdo: 'test', cislo: variantaCislo(zV, vV), vysledek: zamekVysledekSpocti(vV, JEKLY, 'test') });
+    zV.objednane = { varianta: vV.id, klice: ['vlastni:0'], datum: '2026-10-20' };
+    const sV = sodData(zV, vV, JEKLY, 'cz', v4).placeholders.SOD_PRIPLATKY_OBJEDNANE;
+    test('K6-K6: vlastní název s \\n je ve SoD jeden řádek „Řádek A Řádek B – …"', typeof sV === 'string' && !sV.includes('\n')
+      && sV.startsWith('Řádek A Řádek B – '), sV);
+  }
 }
 
 console.log('\nPASS=' + passes + ' FAIL=' + fails);

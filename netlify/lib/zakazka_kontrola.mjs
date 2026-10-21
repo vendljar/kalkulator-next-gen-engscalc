@@ -248,13 +248,16 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   if (globalThis.objKontrola) {
     const obj = globalThis.objKontrola(stara, zak, relace, { jekly: JEKLY });
     if (obj) return odmitni(obj.status, veta(obj.chyba));
-    if (!obnova && zak.objednane && globalThis.objOtisk(zak.objednane)) {
-      const beze = globalThis.objOtisk(zak.objednane) === globalThis.objOtisk(stara && stara.objednane);
-      /* Beze změny drží razítko uložené verze — klient ho nepřepíše. */
-      zak.objednane.kdo = beze ? String(stara.objednane.kdo || '') : String(relace.email || '');
-      zak.objednane.kdy = beze ? String(stara.objednane.kdy || '') : new Date().toISOString();
-    }
-    if (!obnova && zak.objednane && !globalThis.objOtisk(zak.objednane)) delete zak.objednane;
+    if (zak.objednane && globalThis.objOtisk(zak.objednane)) {
+      const o = zak.objednane;
+      const beze = globalThis.objOtisk(o) === globalThis.objOtisk(stara && stara.objednane);
+      const txt = x => (typeof x === 'string' ? x : '');
+      /* Záznam jen z povolených polí (K6-S4) — cizí pole ani `__proto__` se
+       * neuloží. Beze změny drží razítko uložené verze, klient ho nepřepíše. */
+      zak.objednane = { varianta: o.varianta, klice: o.klice.slice(), datum: o.datum,
+        kdo: obnova ? txt(o.kdo) : beze ? String(stara.objednane.kdo || '') : String(relace.email || ''),
+        kdy: obnova ? txt(o.kdy) : beze ? String(stara.objednane.kdy || '') : new Date().toISOString() };
+    } else if (zak.objednane !== undefined) delete zak.objednane;
   }
   /* Rozměr šachty, který nedává smysl (B137, 12. 10. 2026) — záporný,
    * nečitelný pro jádro nebo zdvih nad 99 m — nikomu. Nulu a prázdno
