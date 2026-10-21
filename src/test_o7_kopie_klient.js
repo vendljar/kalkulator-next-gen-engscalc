@@ -96,6 +96,22 @@ const slozka = (ctx, name) => ({ name, getFileHandle: async (jm) => {
     test('K3-N1: předané heslo se použije bez dalšího dialogu', ctx.dotazu === 0
       && ctx.volani.find(v => v[0] === '/api/zaloha_vynuceno')[1].hesloSpravce === 'Predane.Heslo.2');
   }
+  /* ---- K4-N15 (O9): posledni_kopie.json až po přijetí záznamu serverem ---- */
+  {
+    const ctx = novyCtx();
+    ctx.odpoved = async (cesta) => {
+      if (cesta === '/api/zaloha?zdroj=nocni') return { ok: true, zaloha: { zdroj: 'nocni-otisk' }, otisk: '2026-10-19', puvod: 'nocni-otisk' };
+      const e = new Error('Vaše heslo nesouhlasí — akce se neprovedla.'); e.stav = 401; throw e; };
+    let chyba = '';
+    try { await ctx.proved(slozka(ctx, '_Zaloha Netlify DB')); } catch (e) { chyba = e.message; }
+    test('K4-N15: server záznam odmítne (špatné heslo) → posledni_kopie.json se nezapíše',
+      /nesouhlasí/.test(chyba) && !('posledni_kopie.json' in ctx.zapsano) && !!ctx.zapsano['otisk_2026-10-19.json'], [chyba, Object.keys(ctx.zapsano)]);
+    const ctx2 = novyCtx();
+    await ctx2.proved(slozka(ctx2, '_Zaloha Netlify DB'));
+    const poradi = ctx2.volani.map(v => v[0]);
+    test('K4-N15: s přijatým záznamem posledni_kopie.json vznikne (po odpovědi serveru)',
+      !!ctx2.zapsano['posledni_kopie.json'] && poradi[poradi.length - 1] === '/api/zaloha_vynuceno', [poradi, Object.keys(ctx2.zapsano)]);
+  }
   /* ---- K3-N4: 429 u automatické zálohy mlčí ---- */
   {
     const ctx = novyCtx();
