@@ -1602,6 +1602,32 @@ function onlineZaloha(doSlozky) {
 
 /* ---------- otisky databáze na serveru (vynucená i noční záloha) ---------- */
 
+/* POTVRZENÍ ÚBYTKU DAT (K4-N13, O11, rozhodnutí J. V. 21. 10. 2026). Po
+ * poklesu dat v noční záloze pod polovinu stojí mazání starých záloh, dokud
+ * to správce nepotvrdí (nejdéle 30 dní). Potvrzení odemyká mazání, proto
+ * heslem správce; server ověří, že jde o totéž varování (`den`). */
+async function onlineRetencePotvrd() {
+  const v = ONLINE_STAV.retenceVarovani;
+  if (!v || !jeAdminOnline()) return false;
+  const ano = await potvrd('Opravdu data ubyla záměrně (smazané zakázky nebo účty)? Po potvrzení se mazání starých záloh '
+    + 'znovu rozběhne a zálohy z doby před úbytkem začnou postupně mizet podle pravidel retence.',
+    { nadpis: 'Úbytek dat v noční záloze', ano: 'Ano, úbytek byl záměrný', ne: 'Zpět' });
+  if (!ano) return false;
+  const hesloSpravce = await dotazHeslo('Potvrzení odemyká mazání starých záloh na serveru. '
+    + 'Potvrďte ho svým heslem (tím, kterým se přihlašujete do aplikace).', { nadpis: 'Potvrzení heslem správce' });
+  if (!hesloSpravce) return false;
+  ONLINE_STAV.pracuje = true; render();
+  try {
+    const o = await onlineApi('/api/zaloha_vynuceno', { akce: 'retence-potvrdit', den: String(v.den || ''), hesloSpravce });
+    ONLINE_STAV.retenceVarovani = (o && o.retenceVarovani) || null;
+    onlineZprava('Úbytek dat potvrzen — mazání starých záloh poběží zase podle pravidel retence.', '');
+    return true;
+  } catch (e) {
+    onlineZprava('Potvrzení se nepovedlo: ' + e.message, 'varovani');
+    return false;
+  } finally { ONLINE_STAV.pracuje = false; render(); }
+}
+
 /* Přehled otisků: kdy záloha naposledy vznikla a odkud. Seznam vozí JEN
  * souhrny (den, čas, zdroj, počty) – obsah otisků z něj vytáhnout nejde,
  * viz netlify/lib/zalohovani.mjs. */
@@ -2666,7 +2692,9 @@ function renderOnlineKarta() {
       ? `<div class="note" id="online-zalohy">${esc(onlineOtiskPopis())}</div>`
         + (hlidka ? `<div id="online-zalohy-nocni" class="${hlidka.stara ? 'seznam-varovani' : 'note'}">${esc(hlidka.text)}</div>` : '')
         + (kopieHl ? `<div id="online-kopie-disk" class="${kopieHl.stara ? 'seznam-varovani' : 'note'}">${esc(kopieHl.text)}</div>` : '')
-        + (retenceHl ? `<div id="online-retence-varovani" class="seznam-varovani">${esc(retenceHl.text)}</div>` : '')
+        + (retenceHl ? `<div id="online-retence-varovani" class="seznam-varovani">${esc(retenceHl.text)}
+            <button class="mini" id="online-retence-potvrdit" onclick="onlineRetencePotvrd()" ${ONLINE_STAV.pracuje ? 'disabled' : ''}
+              title="potvrdí, že data ubyla záměrně (smazané zakázky, účty) — mazání starých záloh se znovu rozběhne">Úbytek byl záměrný</button></div>` : '')
       : '';
     telo = `${hlaska}${onlineKolizeTlacitka()}${zalohaRadek}
       <div class="btns" style="margin-top:10px">

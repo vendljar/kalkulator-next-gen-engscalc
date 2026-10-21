@@ -44,6 +44,7 @@ export default async () => {
   /* K3-N13: pokles zakázek nebo účtů pod polovinu → retence stojí, varování
    * do logu (a do hlídky v administraci přes záznam retence-varovani). */
   if (retence.varovani) console.warn('zaloha_nocni: VAROVÁNÍ — ' + retence.ceka + ' — nic se nesmazalo, zkontrolujte data');
+  else if (retence.drzeno) console.warn('zaloha_nocni: ' + retence.ceka + ' — nic se nesmazalo (K4-N13)');
   else if (retence.ceka) console.log('zaloha_nocni: ' + retence.ceka + ' (záznam kopie chybí, je starší než 7 dní nebo nepodložený) — nic se nesmazalo');
   else console.log('zaloha_nocni: retence smazala ' + retence.smazano.length + ' otisků'
     + (retence.smazano.length ? ': ' + retence.smazano.join(', ') : '')
