@@ -33,6 +33,9 @@ otázka na J. V. Malé změny posílej jako `edits` na publish téhož souboru
 — 15. 10. kokpit „havaroval“ (prázdná stránka) kvůli čárce navíc v JSON po smazání
 řádků. Stránka teď poškozená data ohlásí v rámečku nahoře, ale kontrola má
 chybu chytit dřív. Mazat celé objekty i s čárkou před nimi.
+**Znak `<` se v datech vždy zapisuje jako `\u003c`** (K6-W1, 21. 10. 2026): jméno
+větve s `</ScRiPt>` by jinak ukončilo datový blok bez ohledu na velikost písmen
+a spustilo skript. `kontrola.py` data se znakem `<` odmítne.
 
 ## Data (JSON) — co kam
 

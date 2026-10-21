@@ -53,3 +53,4 @@ vendl.jaroslav@engineers-cz.cz
 # nebo kontrolu přepsat na obecné „v šabloně není žádný telefon ani e-mail"
 # a číslo i jméno ze zdrojáků odstranit.
 +420 724 323 407
+noreply@anthropic.com  # K6-W2 (D3, 21. 10. 2026): technická adresa v řádku Co-Authored-By ve vzoru promptu (podklady/PROMPT_roadmapa_405_406.md) — ne osobní kontakt
